@@ -170,7 +170,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
 
   const tieuDe = data ? t('Xét lại lộ trình · {lop} · {n} em', { lop: data.lop.code, n: em.length }) : t('Xét lại lộ trình');
   const dong = () => { if (!busy) onClose(); };
-  if (error) return <KhungPanel tieuDe={tieuDe} rong="rong" onDong={onClose}><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></KhungPanel>;
+  if (error) return <KhungPanel tieuDe={tieuDe} rong="rong" onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!data || ds === null) return <KhungPanel tieuDe={tieuDe} rong="rong" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
   const tomTat = tomTatLuu(soan.map((e) => ({ e, c: chon[e.studentId] })), data, homNay);

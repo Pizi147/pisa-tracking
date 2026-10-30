@@ -87,7 +87,7 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
           data.soBaiChuaCoGv ? t('+ {n} bài chưa có GV', { n: data.soBaiChuaCoGv }) : null,
           soDu ? t('{n} dòng vừa đủ', { n: soDu }) : null,
         ] : [] }}>
-        {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
+        {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
           : loading && !data ? <div className="pt-3"><Skeleton rows={5} /></div>
           : !nhom.length ? <Empty title={cauHinh.trong} />
           : nhom.map((g) => <NhomGv key={g.gvId} g={g} mo={moKhoa} onMo={moDong} dai={!motGv} />)}
@@ -206,7 +206,7 @@ type OEm = { diem: string } | { trong: true } | { khong: string };
 /** Các em của dòng × cột của việc (cùng lưới `diem-theo-luot` mà Nhập hộ mở). */
 function BangEm({ d }: { d: DongGvTre }) {
   const { data, error, reload } = useApi<BangTheoLuot>(`/classes/${d.classId}/diem-theo-luot/${encodeURIComponent(d.luot!)}`, [d.classId, d.luot]);
-  if (error) return <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>;
+  if (error) return <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>;
   if (!data) return <div className="pt-3"><Skeleton rows={4} /></div>;
   const em = new Set(d.em);
   const hang: { id: number; ten: string; o: OEm[] }[] = data.ft

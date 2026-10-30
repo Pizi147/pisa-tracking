@@ -108,7 +108,7 @@ export function PanelTutor({ id, tieuChi, khoang, onKhoang, dsChiNhanh, ds, onDo
     <KhungPanel tieuDe={tu?.ten ?? t('Tutor')} rong="rong" onDong={onDong}
       chan={{ huy: { onClick: onDong }, daSua: daGo, conThieu: data?.coSua ? lf.conThieu(loi) : undefined,
         chinh: data?.coSua ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={gui} onClick={luu}>{dangSua ? t('Lưu sửa') : t('Lưu nhận xét')}</button> : undefined }}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data || !tu || !so ? <Skeleton rows={8} /> : (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">

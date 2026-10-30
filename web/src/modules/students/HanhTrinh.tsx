@@ -123,7 +123,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
   }, [khung, data, cheDoKhoang, rong]);
 
   if (!active) return null;
-  if (error) return <ErrorState message={error.message} hint={error.hint} onRetry={reload} />;
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={6} />;
   if (!data.cacGiaiDoan.length) {
     return data.chuong?.length

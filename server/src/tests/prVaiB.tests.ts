@@ -339,8 +339,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     voiNhatKy(sid, [['pause', addDays(tu, -14)], ['resume', addDays(tu, -7)]], () => {
       assert((skillSupportBoard(P.admin, sid) as any).tamDungTu === null, 'đã Quay lại → null');
     });
-    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
-    assert(/tamDung && tt\.t === 'qua-han' \? <NhanTamDung/.test(web) && /tamDung && \(v\.quaHan \|\| v\.homNay \|\| v\.han\)\) \{[\s\S]{0,160}<NhanTamDung/.test(web), 'SkillBoard thay "Quá hạn" bằng NhanTamDung');
+    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
+    assert(/tamDung && tt\.t === 'qua-han' \? <NhanTamDung/.test(the) && /tamDung && han \? <> <NhanTamDung/.test(the), 'thẻ kỹ năng thay "Quá hạn" bằng NhanTamDung');
     assert(/data\.tamDungTu \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8')), 'Ngăn Case thay quá hạn bằng NhanTamDung');
   });
 
@@ -425,7 +425,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const dong11 = web.split('\n').filter((l) => l.includes('text-[11px]'));
     assert(dong11.every((l) => /rounded/.test(l)), `còn chữ 11 px không phải nhãn: ${dong11.map((l) => l.trim().slice(0, 90)).join(' | ')}`);
     assert(/loai === 'Case' \? 'border-current/.test(web) && /bg-\[color:var\(--line-strong\)\]/.test(web), 'Case khung rỗng / PA khối đặc');
-    assert(/<NhanLoai loai="Case" \/>/.test(web) && /<NhanLoai loai="PA" \/>/.test(web), 'hàng Case / hàng PA dùng NhanLoai');
+    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
+    assert(/<NhanLoai loai="Case" \/>/.test(the) && /<NhanLoai loai="PA" \/>/.test(the), 'khối Case / khối PA dùng NhanLoai');
     assert(!/ngan\(p\.startedOn\)|ngan\(p\.lastOutcomeOn\)/.test(web), 'khoảng PA / kết quả còn dd/mm');
   });
 
@@ -439,8 +440,6 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     ]) as { row: { ten: string }; gon: boolean }[];
     assert(ds.map((x) => x.row.ten).join() === 'W2,S,R,L,W1,X', ds.map((x) => x.row.ten).join());
     assert(ds.map((x) => x.gon).join() === 'false,false,false,true,true,false', `gọn: ${ds.map((x) => x.gon)}`);
-    const web = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
-    assert(/if \(dienThoai\) return <TamDungCtx\.Provider[^]*?<TheKyNangDs/.test(web), 'SkillBoard chọn thẻ trên điện thoại, không vẽ bảng rồi ẩn');
     const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
     assert(/xepTheKyNang\(rows/.test(the) && /min-h-\[44px\]/.test(the) && !/text-\[11px\]/.test(the), 'thẻ: xếp theo luật, vùng bấm 44 px, không chữ 11 px');
   });
@@ -650,8 +649,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       conn.prepare(`UPDATE enrollments SET status = 'active' WHERE id = ?`).run(e.id);
       conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
     }
-    const sb = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/SkillBoard.tsx'), 'utf8');
     const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
-    assert(/tamDung && \(v\.quaHan \|\| v\.homNay \|\| v\.han\)/.test(sb) && /tamDung && han \?/.test(the), 'Việc tiếp của em Tạm dừng còn hiện hạn');
+    assert(/tamDung && han \?/.test(the), 'Việc tiếp của em Tạm dừng còn hiện hạn');
   });
 }

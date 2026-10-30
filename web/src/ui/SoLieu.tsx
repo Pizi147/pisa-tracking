@@ -499,7 +499,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           soTre ? t('quá hạn lên đầu') : null],
       }}
       chan={vuaXong && !nhomCase ? { v3: true, dongTren: <span className="flex flex-wrap items-center gap-x-3"><span className="font-semibold text-ok">✓ {vuaXong.chu}</span><NutHoanTac key={vuaXong.lan} hoanTac={vuaXong.hoanTac} onHoanTac={() => setVuaXong(null)} /></span> } : undefined}>
-      {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
+      {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={5} /></div>
         : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
         : (

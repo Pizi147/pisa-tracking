@@ -40,7 +40,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
   );
   return (
     <div className="py-1">
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <Skeleton rows={4} />
         : (
           <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}

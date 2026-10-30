@@ -192,7 +192,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
       <KhungPanel tieuDe={t('Tổng kết lộ trình')} hocVien={data ? `${data.hocVien.ten} · ${chuongTrinh}` : null} rong="rong" onDong={onClose}
         chan={{ huy: null, phu: data ? <Link className="btn btn-ghost min-h-[44px] sm:min-h-0" to={duongHoSoHocVien(data.hocVien.id, { loTrinh: cycleId })}>{t('Mở hồ sơ')}</Link> : undefined,
           chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
-        {error && <ErrorState message={error.message} hint={error.hint} onRetry={reload} />}
+        {error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
         {loading && !data && <Skeleton rows={6} />}
         {data && kq && (
           <div className="space-y-3">

@@ -483,7 +483,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     void ask; void askIvId;
   });
 
-  check('PR-Ra · Dòng "mgmt" (việc quản lý được giao) có href /cong-viec?mo-viec=', () => {
+  check('PR-Ra · Dòng "mgmt" (việc quản lý được giao) có href /cong-viec?viec=mgmt:<id>', () => {
     const anyAssignee = conn.prepare(
       `SELECT assignee_user_id AS id FROM tasks WHERE assignee_user_id IS NOT NULL AND progress NOT IN ('done','stopped') LIMIT 1`,
     ).get() as any;
@@ -491,7 +491,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     const pr = permMod.loadPrincipal(anyAssignee.id);
     const mgmtItem = mywork.myWork(pr, {}).items.find((i: any) => i.group === 'mgmt');
     assert(mgmtItem, `Người được giao việc (uid=${anyAssignee.id}) phải thấy dòng "mgmt"`);
-    assert(mgmtItem.href.startsWith('/cong-viec?mo-viec='), `href dòng mgmt sai: ${mgmtItem.href}`);
+    assert(mgmtItem.href.startsWith('/cong-viec?viec=mgmt:'), `href dòng mgmt sai: ${mgmtItem.href}`);
   });
 
   // ---- Phần qua HTTP thật: /my-work?nguoi=…, /ref/nguoi?trongPhamVi=1 ----

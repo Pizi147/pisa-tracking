@@ -121,7 +121,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     if (soDoi && !window.confirm(t('Bỏ thay đổi chưa lưu của {n} em?', { n: soDoi }))) return;
     if (location.key !== 'default') navigate(-1); else navigate(`/hoc-vien/lop/${classId}`);
   };
-  if (kh.error) return <ErrorState message={kh.error.message} hint={kh.error.hint} onRetry={kh.reload} />;
+  if (kh.error) return <ErrorState message={kh.error.message} hint={kh.error.hint} status={kh.error.status} onRetry={kh.reload} />;
   if (kh.loading || !d) return <div className="page"><Skeleton rows={8} /></div>;
 
   const h = homNay ?? '';

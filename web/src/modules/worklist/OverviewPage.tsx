@@ -55,7 +55,7 @@ export default function OverviewPage() {
   }
   const d = v5.data;
   const phamVi = d?.tenChiNhanh ?? t('Tất cả chi nhánh');
-  const than = v5.error ? <ErrorState message={v5.error.message} hint={v5.error.hint} onRetry={v5.reload} />
+  const than = v5.error ? <ErrorState message={v5.error.message} hint={v5.error.hint} status={v5.error.status} onRetry={v5.reload} />
     : !d ? <Skeleton rows={8} />
       : vai === 'cx' ? <TongQuanCxV5 d={d} onChiNhanh={setBranchId} />
         : d.lop ? <TongQuanQlV5 d={d} />

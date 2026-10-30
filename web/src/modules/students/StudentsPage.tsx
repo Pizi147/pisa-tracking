@@ -424,7 +424,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {goc !== 'tat-ca' && lopDangLoc && 'needScores' in lopDangLoc && <DaiLop lop={lopDangLoc as LopTrenTrang} vai={vai} dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} soViecQuaHan={new Set(goc0.filter(coQuaHan).map((h) => h.id)).size}
         onThemHocVien={() => setThem(chiLop ? { id: chiLop, code: lopDangLoc.code } : null)} onBo={() => setParam({ classId: null })} />}
 
-      {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} onRetry={trang.reload} />}
+      {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />}
       {trang.loading && !data && <Skeleton rows={6} />}
 
       {goc === 'tat-ca' && data && (
@@ -487,7 +487,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
             </div>
           )}
           <div className={trang.cu ? 'dang-tai-lai' : undefined} aria-busy={trang.cu || undefined}>
-          {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} onRetry={theoVai.reload} /></div>}
+          {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} status={theoVai.error.status} onRetry={theoVai.reload} /></div>}
           {laVai && !vaiTrang && !theoVai.error ? <div className="p-3"><Skeleton rows={6} /></div>
           : laVai && pv?.dangDung === 'cua-toi' && dsEm.length === 0 && !q.trim() ? (
             <Empty title={t('Chưa có học viên nào của bạn')} hint={t('Học viên có TVV là bạn sẽ hiện ở đây.')}
@@ -523,7 +523,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
             </button>
           </div>
           <div className={sos.cu ? 'dang-tai-lai' : undefined} aria-busy={sos.cu || undefined}>
-          {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} onRetry={sos.reload} /></div>
+          {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} status={sos.error.status} onRetry={sos.reload} /></div>
             : !sos.data ? <div className="p-3"><Skeleton rows={6} /></div>
             : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
             : (

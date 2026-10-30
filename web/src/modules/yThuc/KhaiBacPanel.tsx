@@ -39,7 +39,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
 
   if (!studentId) return null;
   const tieuDe = sua ? t('Sửa cấp bậc vi phạm') : t('Xác nhận cấp bậc vi phạm');
-  if (loiTai) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={reload} /></KhungPanel>;
+  if (loiTai) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
   if (daLuu) {

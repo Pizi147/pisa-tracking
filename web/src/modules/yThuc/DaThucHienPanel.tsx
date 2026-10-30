@@ -31,7 +31,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); lf.datLai(); }, [measureId, homNay]);
 
   if (!measureId) return null;
-  if (loiTai) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} onRetry={reload} /></KhungPanel>;
+  if (loiTai) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
   if (!m) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
   if (daLuu) {

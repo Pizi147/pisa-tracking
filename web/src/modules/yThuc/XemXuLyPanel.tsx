@@ -152,7 +152,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
               : d?.status === 'da_duyet' && d.canManage && onDaThucHien
                 ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => onDaThucHien(d.id)}>{t('Đã thực hiện…')}</button> : undefined,
         }}>
-        {error ? <div className="pt-3"><ErrorState message={error.message} onRetry={reload} /></div> : !d ? <div className="pt-3"><Skeleton rows={4} /></div> : (
+        {error ? <div className="pt-3"><ErrorState message={error.message} status={error.status} onRetry={reload} /></div> : !d ? <div className="pt-3"><Skeleton rows={4} /></div> : (
           <>
             {dongThuHoi && <p className="m-0 pt-3 text-sm text-slate-300" role="status">{dongThuHoi}</p>}
             {d.status === 'done' && tt ? (

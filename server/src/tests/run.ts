@@ -92,7 +92,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9908,6 +9908,9 @@ await runPrBangEmGonTests({ check, assert } as any);
 // ==================================================================== DUYET-QL (panel duyệt Công việc QL — PANEL-V10 khu C)
 const { runPrDuyetQlTests } = bocTep('prDuyetQl', await import('./prDuyetQl.tests.ts'));
 await runPrDuyetQlTests({ check, assert } as any);
+// ==================================================================== DON-MA (mã chết + gộp mã không đổi màn)
+const { runDonMaTests } = bocTep('donMa', await import('./donMa.tests.ts'));
+await runDonMaTests({ check, checkAsync, assert, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

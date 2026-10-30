@@ -161,7 +161,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
           )}
         </VaoHangLoc>
       )}
-      {error ? <Card><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></Card>
+      {error ? <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
         : loading || !data ? <Card><Skeleton rows={8} /></Card>
         : data.scopeEmpty ? <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>
         : (

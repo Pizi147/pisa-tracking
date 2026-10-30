@@ -71,7 +71,6 @@ export async function runPrOv12eTests(t: YThucTestKit) {
       assert(!/\.slice\(0, 10\) < homNay|\.han < homNay|86_400_000/.test(doc(f)), `${f} còn tự tính quá hạn`);
     }
     assert(/hanV!\.ganHan \? 'text-soon'/.test(doc('web/src/modules/duyet/TheYeuCau.tsx')), 'TheYeuCau');
-    assert(/v\.ganHan \? <span className="font-semibold text-soon">/.test(doc('web/src/modules/cases/SkillBoard.tsx')), 'SkillBoard');
     assert(/han\.ganHan \? 'font-semibold text-soon'/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'TheKyNang');
     assert(/v\.ganHan && !v\.homNay/.test(doc('web/src/ui/Han.tsx')), 'Han');
   });

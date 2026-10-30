@@ -122,7 +122,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
           <span className="whitespace-nowrap text-[13px] text-[color:var(--text-dim)] max-sm:hidden">{t('{n} GV · xếp theo tên', { n: data.hang.length })}</span>
         </VaoHangLoc>
       )}
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : (
           <>
@@ -192,7 +192,7 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
         ),
         chinh: <Link to="/test/lich" className="link text-xs">Mở Lịch Test / Chấm Test ›</Link>,
       }}>
-      {error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
+      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <div className="pt-3"><Skeleton rows={6} /></div>
         : !rows.length ? <div className="pt-3"><Empty title={chiTre ? t('Không có bài trễ.') : t('Không có bài nào trong khoảng này.')} /></div>
         : (
