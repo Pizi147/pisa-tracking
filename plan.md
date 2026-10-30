@@ -249,6 +249,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 31/10 sáng — chủ SP duyệt ảnh #736, #732, #731, #726 (kèm chỉnh)
+- **Nút ⋯ trong ô lưới điểm (luật):** đứng NGAY SAU nội dung ô, cùng hàng, giữa theo chiều dọc với dòng chữ đầu (vd "✗ 14 /25 ⋯"); không đè chữ / số; máy có chuột chỉ hiện khi rê / focus, cảm ứng hiện sẵn (#732 làm đúng kiểu này).
+- **Bảng lớp góc Phân công GV (#726) — thay ý "giãn hết" 30/10:** chừa MỘT cột cố định ở mép phải cho nút dòng (Huỷ / Lưu, Chờ đổi…) ở MỌI nhóm, để cột kỹ năng / GVCN không thụt ra thụt vào giữa các nhóm; cột GVCN thẳng hàng giữa nhóm FT và nhóm lớp thường. 375: bảng tổng hợp đủ cột "Tổng".
+
 ### Backlog phát sinh đêm 30/10 (PTA rà PR)
 - ~~**QUYEN-LIEN-HE (PR riêng, quyền):**~~ (đang làm — PR QUYEN-LIEN-HE) luật 13/10 "GV không sửa ô Liên hệ" mới chỉ ở giao diện — GVCN gửi thẳng PATCH `{parentPhone…}` vẫn lưu (cả em đang học). Sửa: `updateStudent` (`students.ts` ~845, sau khối quyền) — patch có trường liên hệ và `!coONhapLienHe(p.roleKeys)` → 403; soát trước "Sửa cả lớp" của GVCN có gửi cột liên hệ không. Rà `/security-review`. (Nguồn: rà sâu #729.)
 - **PANEL [XM] (#736 PANEL-CHUNG):** XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
