@@ -263,15 +263,22 @@ export function ErrorState({ message, hint, onRetry }: { message: string; hint?:
   /* UI-CON-LAI k6: nói loại lỗi + đường khác. 404 hồ sơ HV → tìm trong lưu trữ; 403 hồ sơ GV người khác → hồ sơ của chính mình (nếu là GV). */
   const hsHv = k404 && /^\/hoc-vien\/\d+$/.test(pathname);
   const hsGvToi = k403 && /^\/giao-vien\/\d+$/.test(pathname) && session?.user && session.roles?.includes('teacher') ? `/giao-vien/${session.user.id}` : null;
+  const trungTinh = k403 || k404;
+  /* SUA-NHO-UI U1 (mockup v8 `.bao-loi`, spec 30/10): dải hết bề rộng khối cha — ⚠ · chữ trái · nút phải (< 640 nút xuống dưới chữ, cao 44).
+     403 / 404 không phải lỗi hỏng → cùng khuôn nhưng trung tính (nền surface-2, không ⚠, không đỏ). */
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-10 px-6 text-center">
-      {(k403 || k404) && <span className="text-[12px] font-semibold text-slate-500">{k403 ? t('Không có quyền') : t('Không thấy')}</span>}
-      <div className={`${k403 || k404 ? 'text-slate-100' : 'text-bad'} font-medium`}>{message}</div>
-      {hint && <p className="text-slate-400 text-xs max-w-md">{hint}</p>}
-      {hsHv && <p className="m-0 text-xs text-slate-400">{t('Đường dẫn có thể cũ.')} <Link className="link" to="/hoc-vien/luu-tru">{t('Tìm trong HV lưu trữ ›')}</Link></p>}
-      {hsGvToi && <Link className="link text-sm" to={hsGvToi}>{t('Hồ sơ của tôi ›')}</Link>}
+    <div role="alert" className={`flex flex-wrap items-start gap-2.5 rounded-lg border px-3.5 py-3 text-left text-sm text-slate-100 ${trungTinh ? 'surface-2' : 'border-bad-line bg-bad-bg'}`}
+      style={trungTinh ? { borderColor: 'var(--line-strong)' } : undefined}>
+      {!trungTinh && <span aria-hidden className="font-bold leading-5 text-bad">⚠</span>}
+      <div className="min-w-0 flex-1 basis-48 break-words leading-5">
+        {trungTinh && <b className="mr-1.5 font-semibold">{k403 ? t('Không có quyền') : t('Không thấy')}</b>}
+        <span className={trungTinh ? '' : 'font-semibold text-bad'}>{message}</span>
+        {hint && <p className="m-0 mt-0.5">{hint}</p>}
+        {hsHv && <p className="m-0 mt-0.5 text-slate-400">{t('Đường dẫn có thể cũ.')} <Link className="link" to="/hoc-vien/luu-tru">{t('Tìm trong HV lưu trữ ›')}</Link></p>}
+        {hsGvToi && <p className="m-0 mt-0.5"><Link className="link" to={hsGvToi}>{t('Hồ sơ của tôi ›')}</Link></p>}
+      </div>
       {/* OV-11i (HL-15 · PT-11 · TQ-16): 403 / 404 thử lại vẫn vậy — nút về nguồn / trang cha thay "Thử lại". */}
-      {k403 || k404 ? <NutVeCha /> : onRetry && <button className="btn btn-sm mt-2" onClick={onRetry}>{t('Thử lại')}</button>}
+      {trungTinh ? <NutVeCha /> : onRetry && <button className={NUT_DAI_LOI} onClick={onRetry}>{t('Thử lại')}</button>}
     </div>
   );
 }
@@ -284,8 +291,10 @@ function NutVeCha() {
   const hs = loaiHoSo(pathname);
   const dich = chong[0] ?? (hs ? trangCha(hs) : { url: '/', ten: t('Tổng quan') });
   if (dich.url === pathname) return null;
-  return <button type="button" className="btn btn-sm mt-2" onClick={() => ve(dich.url, !chong.length)}><span aria-hidden>‹</span> {dich.ten}</button>;
+  return <button type="button" className={NUT_DAI_LOI} onClick={() => ve(dich.url, !chong.length)}><span aria-hidden>‹</span> {dich.ten}</button>;
 }
+/** Nút phải của dải lỗi; < 640 xuống dưới chữ, hết bề rộng dải, cao 44. */
+const NUT_DAI_LOI = 'btn btn-sm ml-auto shrink-0 max-sm:min-h-[44px] max-sm:basis-full max-sm:justify-center';
 
 /** 6c (bảng kê lỗi 6): lỗi tải GỌN cho chỗ hẹp (chuông, dải đầu hồ sơ) — nói rõ không tải được + Thử lại, không im lặng như rỗng. */
 export function LoiTaiNho({ chu, onRetry, className = 'px-3.5 py-2.5' }: { chu: string; onRetry: () => void; className?: string }) {
@@ -538,7 +547,9 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
     );
   }
   /* OV-14b (rà UX 17/10, thay PR-KHUNG G5 vuốt ngang): điện thoại nút đoạn XUỐNG DÒNG — mỗi nút một viền như hàng chip, không nút nào bị cắt.
-     RA-UI-7 (PTA 29/10, mockup v7 cong-viec-2 / ke-hoach-test 375 — duyệt sau OV-14b): ≤ 3 mục giữ MỘT khối liền như máy tính; > 3 mục vẫn xuống dòng. */
+     RA-UI-7 (PTA 29/10, mockup v7 cong-viec-2 / ke-hoach-test 375 — duyệt sau OV-14b): ≤ 3 mục giữ MỘT khối liền như máy tính; > 3 mục vẫn xuống dòng.
+     SUA-NHO-UI U2 (chủ SP 30/10, mọi màn — mockup v7 `.doan`): gọn "Fast Track 4" — không ô ✓ (kể cả ✓ ẩn chiếm chỗ), số sau tên cách 6 px, chữ 13;
+     mục chọn phân biệt không chỉ bằng màu: nền accent-soft + viền trong + chữ 600 + aria-pressed. */
   const lien = muc.length <= 3;
   return (
     <div className="inline-flex max-w-full sm:overflow-x-auto">
@@ -548,9 +559,9 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
         const chon = !tat && m.key === value;
         return (
           <button key={m.key} type="button" aria-pressed={chon} title={tat ? undefined : m.title} disabled={!!tat} onClick={() => onChange(m.key)} style={{ borderColor: 'var(--line)' }}
-            className={`inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap px-3 text-xs disabled:pointer-events-none sm:min-h-[32px] ${lien ? (i ? 'border-l' : '') : `max-sm:rounded-lg max-sm:border ${i ? 'sm:border-l' : ''}`} ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap px-3 text-[13px] disabled:pointer-events-none max-sm:px-2 sm:min-h-[32px] ${lien ? (i ? 'border-l' : '') : `max-sm:rounded-lg max-sm:border ${i ? 'sm:border-l' : ''}`} ${
               chon ? 'bg-[color:var(--accent-soft)] font-semibold text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-            <span aria-hidden className={`text-[12px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>{m.nhan}
+            {m.nhan}
             {m.so != null && <span className="tabular-nums text-slate-500">{m.so}</span>}
           </button>
         );

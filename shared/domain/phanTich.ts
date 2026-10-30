@@ -28,7 +28,7 @@ export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'bao-cao': 'Báo cáo HV',
   'tong-hop': 'Test + SOS',
-  'ket-qua-thi': 'Kết quả Test',
+  'ket-qua-thi': 'Kết quả Test / Thi',
   'hieu-qua-pa': 'Hiệu quả PA',
   'giao-vien': 'Phân tích GV',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này

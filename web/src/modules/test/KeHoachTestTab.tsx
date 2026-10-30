@@ -7,7 +7,6 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Menu } from '../../ui/Menu.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
 import { NganXepLichMt } from './keHoach/NganXepLichMt.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
@@ -30,7 +29,6 @@ export function KeHoachTestTab() {
   const { branchCount } = useSession();
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const macDinh = useChiNhanhMacDinh();
-  const dienThoai = useDienThoai();
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
   const loaiParam = params.get('loai') as 'ft' | 'thuong' | null;
   const classIdParam = params.get('classId') ? Number(params.get('classId')) : null;
@@ -130,7 +128,7 @@ export function KeHoachTestTab() {
       {/* RA-UI-1 (mockup `v7/ke-hoach-test.html` 375): công tắc · Lọc ▾ · ⓘ MỘT hàng — 375 bỏ chữ "lớp" sau số, ô tìm + nút xuất xuống sau (order). */}
       <div className="flex flex-wrap items-end gap-x-2 gap-y-2 sm:gap-x-3" data-hd="kht-loc">
         {/* MH4: công tắc khung đứng ĐẦU hàng lọc (chỉ hiện khi có cả hai khung). */}
-        <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }} donVi={dienThoai ? '' : 'lớp'}
+        <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
           onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />
         {tuanXem && (
           <span className="pb-1">

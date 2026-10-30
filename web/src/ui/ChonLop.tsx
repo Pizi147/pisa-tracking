@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { ChonNguoi } from './PeoplePicker.tsx';
 import { t } from '@shared/i18n/index.ts';
 
-/** Một lớp trong ô: `ma` = mã lớp, `phu` = dòng phụ (`phuLopDich`: chương trình · chi nhánh · sĩ số). */
-export type LopChon = { id: number; ma: string; phu?: string };
+/** Một lớp trong ô: `ma` = mã lớp, `phu` = dòng phụ (`phuLopDich`: chương trình · chi nhánh · sĩ số); `tat` = lý do không chọn được (dòng mờ). */
+export type LopChon = { id: number; ma: string; phu?: string; tat?: string };
 
 /**
  * Ô chọn lớp dùng chung (P4, R6.3b): gõ → tìm không dấu → danh sách → chọn, như ô chọn người (`ChonNguoi ds`).
@@ -45,7 +45,7 @@ export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKh
   }
   return (
     <div className={`${noi ? 'relative [&_[role=listbox]]:absolute [&_[role=listbox]]:inset-x-0 [&_[role=listbox]]:z-30 [&_[role=listbox]]:shadow-lg ' : ''}${className ?? ''}`}>
-      <ChonNguoi key={lan} value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={ds.map((l) => ({ id: l.id, ten: l.ma, phu: l.phu }))}
+      <ChonNguoi key={lan} value={null} nhom="nhan_vien" choToi={false} choNgoai={false} ds={ds.map((l) => ({ id: l.id, ten: l.ma, phu: l.phu, tat: l.tat }))}
         placeholder={placeholder ?? t('Gõ tên lớp…')} ariaLabel={ariaLabel} disabled={tat} tuMo={lan > 0} choTrong={choTrong}
         id={id} invalid={invalid} onBlur={onBlur} khongKhop={(q) => t('Không có lớp khớp “{q}”', { q })}
         them={moLopMoi ? { nhan: t('+ Mở lớp mới…'), onChon: moLopMoi, phu: ghiChuDs } : undefined}
