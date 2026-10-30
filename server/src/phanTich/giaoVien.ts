@@ -11,7 +11,7 @@ import {
   type ChiSoHoSoGv, type HangPtGv, type KhungPtGv, type OPtGv, type PhanTichGvKq, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
-import { db } from '../db.ts';
+import { DS_JSON, db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { BUSINESS_TZ, addDays, badRequest, forbidden, notFound } from '../util.ts';
@@ -126,11 +126,11 @@ export const napDayDuKhiKiem = { bat: false };
 export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
   const conn = db();
   const rows: any[] = [];
-  const chon = (loc: string) => conn.prepare(
-      `SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
+  const chon = (loc: string, nguon = 'assessment_attempts a', cte = '') => conn.prepare(
+      `${cte}SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
               -- P12 (E6): Target + KCK LÚC LƯỢT (như resultOf) — đổi Target / KCK lộ trình sau đó không viết lại kỳ đã qua
               a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
-         FROM assessment_attempts a
+         FROM ${nguon}
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id
          LEFT JOIN programmes pg ON pg.code = cl.programme_code
@@ -141,8 +141,23 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
                         WHERE k.attempt_id = a.id AND r2.week_start BETWEEN ? AND ?)
                OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start BETWEEN ? AND ?))`,
   );
-  if (gv == null || napDayDuKhiKiem.bat) {
+  if (napDayDuKhiKiem.bat) {
     for (const lo of theoLo([...c.lop.keys()])) rows.push(...chon(`a.class_id IN (${cho(lo.length)})`).all(...lo, c.tu, c.den, c.tu, c.den) as any[]);
+  } else if (gv == null) {
+    /*
+     * TL-NAPBAI (Q2 làm lại sau #724): cả chi nhánh → đi từ Ô KỸ NĂNG CỦA CHI NHÁNH trong kỳ (`idx_attempt_skills_cn_tuan`, cột giữ bằng trigger) ∪ lượt
+     * KHÔNG lịch kỹ năng của lớp chi nhánh + khung có tuần trong kỳ (`idx_attempt_lop_tuan`), không `class_id IN (cả chi nhánh)` + EXISTS từng lượt (mọi kỳ).
+     * `CROSS JOIN` ép SQLite đi `luot` trước rồi tìm lượt theo khoá — không trông vào planner. Vế EXISTS / NOT EXISTS của `chon` giữ nguyên (đúng luật cũ);
+     * lớp ngoài khung (ô kỹ năng chi nhánh là mọi khung) lọc bằng `c.lop`. Phép kiểm: prTlNapBai "B2".
+     */
+    const lop = JSON.stringify([...c.lop.keys()]);
+    const cte = `WITH ky(id) AS (SELECT id FROM report_periods WHERE week_start BETWEEN ? AND ?),
+     luot(id) AS (SELECT k.attempt_id FROM attempt_skills k WHERE k.branch_id = ? AND k.planned_period_id IN (SELECT id FROM ky)
+                  UNION SELECT a2.id FROM assessment_attempts a2 WHERE a2.class_id IN (${DS_JSON}) AND a2.planned_period_id IN (SELECT id FROM ky)
+                    AND NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a2.id))
+`;
+    if (c.lop.size) rows.push(...(chon('1', 'luot x CROSS JOIN assessment_attempts a ON a.id = x.id', cte).all(c.tu, c.den, c.cn, lop, c.tu, c.den, c.tu, c.den) as any[])
+      .filter((r) => c.lop.has(r.class_id)).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
   } else {
     /*
      * S1 (giảm dòng đọc Turso): MỘT GV → chỉ lượt có thể gán cho GV đó, không mọi lượt của chi nhánh + khung. Mọi tập dùng `napBai` gán người qua

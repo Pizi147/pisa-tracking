@@ -9902,6 +9902,9 @@ await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);
 // ==================================================================== SUA-NHO-UI (lớp sai loại ở ô Lớp khác — Lộ trình mới)
 const { runPrSuaNhoUiTests } = bocTep('prSuaNhoUi', await import('./prSuaNhoUi.tests.ts'));
 await runPrSuaNhoUiTests({ check, assert } as any);
+// ==================================================================== TL-NAPBAI (lịch kỹ năng có chi nhánh, napBai cả chi nhánh theo kỳ — CUỐI: B1-c bất biến)
+const { runPrTlNapBaiTests } = bocTep('prTlNapBai', await import('./prTlNapBai.tests.ts'));
+await runPrTlNapBaiTests({ check, assert, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
