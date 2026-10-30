@@ -523,6 +523,8 @@
   .pc-bang .bang { min-width: 0 !important; }
   .pc-bang .bang col:not(:first-child) { width: auto !important; }
   .pc-bang.co-luu .bang col:last-child { width: 120px !important; }
+  /* Chủ SP 31/10: GVCN rộng cố định + cột nút luôn có → cột GVCN thẳng hàng giữa mọi nhóm, cột môn chia đều phần còn lại. */
+  .pc-bang.co-luu .bang col:nth-last-child(2), .pc-bang:not(.co-luu) .bang col:last-child { width: 184px !important; }
   .pc-bang .bang > thead > tr > th { height: 34px; padding: 0 16px; font-size: 13px; font-weight: 600; color: var(--text-dim); border-top: 1px solid var(--line); vertical-align: middle; }
   .pc-bang .bang > thead > tr > th:first-child { padding-left: 28px; }
   .pc-bang .bang > tbody > tr > td { height: 50px; padding: 5px 4px; vertical-align: middle; font-size: 15px; overflow: visible; }

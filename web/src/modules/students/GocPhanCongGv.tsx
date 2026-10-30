@@ -249,7 +249,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
       const lyDo = loi.length ? `${nhanO(l, loi[0].khoa)}: ${dich(loi[0].lyDo)}` : undefined;
       return (
         <div className={the ? 'pc-hai-nut' : 'pc-hang-nut'}>
-          <button type="button" className="btn btn-sm" aria-label={t('Huỷ sửa {lop}', { lop: l.code })} onClick={() => { huyDong([l.id]); if (the) setDangSuaThe(null); }}>{t('Huỷ')}</button>
+          <button type="button" className="btn btn-sm" aria-label={t('Huỷ sửa {lop}', { lop: l.code })} onClick={() => { huyDong([l.id]); if (the) setDangSuaThe(null); }}>{t('Huỷ sửa')}</button>
           <button type="button" className="btn btn-sm btn-primary" aria-label={t('Lưu {lop}', { lop: l.code })} aria-disabled={!!loi.length || !nhap[l.id] || busy || undefined}
             aria-describedby={loi.length ? `pc-loi-${l.id}-${loi[0].khoa}` : undefined} title={lyDo}
             onClick={(e) => { if (nhap[l.id]) void luu([l.id], e.currentTarget); }}>{t('Lưu')}</button>

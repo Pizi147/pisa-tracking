@@ -276,7 +276,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 6. **CHECK-NHANH** (sau 1–3, việc lớn): phép kiểm tự dựng dữ liệu (gon-ma.md mục 3, đề xuất 1) — mục tiêu check ≤ 50 % thời gian hiện nay.
 7. **Còn mở từ ra-luong:** Q-RL4 (chuyển lớp một em tuần trước Final → không MT0 / Xét lại) · Q-RL5 (MT0 khi Lên FT sau Final sinh ra đã quá hạn) · văng phiên 401 chưa tái hiện.
 8. **Dọn:** xoá DB `pisatracking-261027` (token đã lộ); DB `261028` xoá ~06/11; worktree `claude-6c-nho`, nhánh `pta-dot4` + `compassionate-gauss-…-pta`, ứng dụng ~14 GB — chủ SP tự gỡ ứng dụng.
-- **[XM] PR-C Góc Phân công GV (để sau / chờ chủ SP):** hộp Chờ đổi chưa hiện "Việc bàn giao của A: a/b em đã viết" (cần dữ liệu PR-B) · ô tuần hiệu lực là ô chọn 12 tuần tới (mockup "W1 NOV ▾"), không `WeekPicker` · "✓ Đã lưu" xám (luật K-HTT-3), mockup xanh · bảng lớp không giữ cột GVCN thẳng hàng giữa nhóm 4 kỹ năng và FT (chủ SP 30/10: giãn đều, bỏ cột trống) · dòng môn gộp cũ (PET L+S) không tính vào số "cũ → mới" của dòng nháp.
+- **[XM] PR-C Góc Phân công GV (để sau / chờ chủ SP):** hộp Chờ đổi chưa hiện "Việc bàn giao của A: a/b em đã viết" (cần dữ liệu PR-B) · ô tuần hiệu lực là ô chọn 12 tuần tới (mockup "W1 NOV ▾"), không `WeekPicker` · "✓ Đã lưu" xám (luật K-HTT-3), mockup xanh · dòng môn gộp cũ (PET L+S) không tính vào số "cũ → mới" của dòng nháp.
 - Đã làm 30/10: DESIGN.md chữ phụ "≥ 7:1" → "≥ 4,5:1" cho khớp phép kiểm `prOv15a` (NEN-V5).
 
 ### SÁNG 27/10 — kết quả đêm (PTA Plan)

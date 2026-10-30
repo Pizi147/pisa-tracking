@@ -2,6 +2,7 @@
 
 Mockup: `thiet-ke/v9/phan-cong-gv.html` (chủ SP duyệt 30/10) · ảnh cặp trong thư mục này: trái mockup, phải web (1440 tối, 375 sáng; dữ liệu seed demo chi nhánh MB, không phải dữ liệu Cẩm Phả của mockup).
 Ảnh chụp bằng Playwright từ máy dev (QL = vai 2, CX = vai 24). Ảnh 375: web ép giao diện SÁNG (`pisa-giao-dien=light` + `colorScheme: light`, nền web đo được rgb(243, 245, 249)) — chụp lại 31/10 theo PTA rà.
+31/10 chiều (chủ SP duyệt ảnh, 2 chỉnh): chụp lại cap-k1 / k2 / k3 / k7-1440 và cap-k1-375 bằng `scripts/anh-cap.mjs` (k2, k3 thêm bước bấm). cap-k4 / k5a / k5b / k5c-1440 giữ ảnh cũ: chỉ khác bề rộng cột (cột nút đã có sẵn ở các ảnh đó vì có dòng nháp / chờ đổi). Đo 375: hai bảng tổng hợp 341 px trong thẻ 343 px, cột GV 155 · FT 48 · Lớp thường 86 · Tổng 52, không cuộn ngang.
 
 ## Bảng truy vết khung → thành phần → ảnh
 
@@ -11,7 +12,7 @@ Mockup: `thiet-ke/v9/phan-cong-gv.html` (chủ SP duyệt 30/10) · ảnh cặp 
 | 2 | k1 · 375 thẻ lớp | `TheLopPc` (`rutGonThe`) | cap-k1-375 | KHỚP: mỗi nhóm 3 thẻ đầu + thẻ có ô thiếu / nháp / chờ đổi / đang sửa luôn hiện, còn lại "… n lớp FT nữa" (bấm mở cả nhóm); đang tìm / lọc Thiếu GV thì hiện đủ. Tổng hợp 6 / 4 dòng + "Xem đủ n GV"; đủ 4 cột GV · FT · Lớp thường · Tổng trong 343 px (cột số 48 / 86 / 52, tên GV co giãn + cắt "…", không cuộn ngang — sửa theo PTA rà lần 2) |
 | 3 | k2 · 1440 tô sáng | `TongHopPc` · `DaiToPc` | cap-k2-1440 | KHỚP |
 | 4 | k2 · 375 dải tô dính | `TheLopPc` · `DaiToPc gon` | cap-k2-375 | KHỚP |
-| 5 | k3 · 1440 dòng nháp, lỗi GVCN, ô ▾ mở | `OGv` · `ChonGvPc` · `BangLopPc` | cap-k3-1440 | KHỚP (danh sách chọn = `ChonNguoi` sẵn có: ô gõ + nhóm "Đang dạy lớp này" / "GV khác · CN") |
+| 5 | k3 · 1440 dòng nháp, lỗi GVCN, ô ▾ mở | `OGv` · `ChonGvPc` · `BangLopPc` | cap-k3-1440 | KHỚP (danh sách chọn = `ChonNguoi` sẵn có: ô gõ + nhóm "Đang dạy lớp này" / "GV khác · CN"; ảnh 31/10 chụp dòng nháp hợp lệ, cột không xê dịch; nút "Huỷ sửa" thay "Huỷ" — luật chữ S3, "Huỷ" trần cấm) |
 | 6 | k3 · 375 Sửa thẻ | `TheLopPc` | cap-k3-375 | KHỚP (thẻ FT 101 đổi L; mockup thẻ BE 07 đổi S) |
 | 7 | k4 · 1440 409 | `OGv khac-doi` · dải lỗi dưới hàng | cap-k4-1440 | KHỚP (seed không có GV đã nghỉ → ô "⚠ đã nghỉ" kiểm bằng phép kiểm `C4 · RF1-web`, không có ảnh) |
 | 8 | k5 · 1440 hộp Lưu Từ tuần | `HopLuuPhanCong` | cap-k5a-1440 | KHỚP · BỎ "· n việc" trong dòng Luôn chuyển (tự quyết, PTA duyệt) |
@@ -33,7 +34,7 @@ GIỮ (không vẽ): tab "Cần làm" đã bỏ trên web · `+ Thêm học viê
 
 | Chỗ | Mockup | Web | Lý do |
 |---|---|---|---|
-| Bề rộng cột | 6 cột × 184 px, cột 5 trống ở FOU/BE, cột Lưu luôn có | Cột Lớp 200 · cột kỹ năng + GVCN chia đều phần còn lại · nhóm 4 kỹ năng không chừa cột trống · cột Lưu 120 chỉ khi nhóm có dòng nháp / đã lưu / chờ đổi | Chủ SP 30/10 (duyệt mockup: dùng tối đa bề rộng) + chủ SP 30/10 trong phiên: "giãn hợp lý các cột kỹ năng và GVCN" |
+| Bề rộng cột | 6 cột × 184 px, cột 5 trống ở FOU/BE, cột Lưu luôn có | Cột Lớp 200 · GVCN 184 · cột nút dòng 120 luôn có ở MỌI nhóm (CX không có) → GVCN thẳng hàng giữa FT và các nhóm lớp thường · cột môn chia đều phần còn lại, nhóm 4 kỹ năng không chừa cột trống | Chủ SP 31/10 (duyệt ảnh: cột Lưu cố định, không thụt ra thụt vào) — thay ý "giãn hết" 30/10 |
 | Cột GVCN | nền thường | nền `surface-2` cả cột + vạch nhấn trái 3 px, tiêu đề 700 | Chủ SP 30/10 (ghi chú duyệt đặc tả) |
 | "✓ Đã lưu" | chữ xanh `ok` | chữ xám + vạch `ok-line` đầu dòng | Luật NEN K-HTT-3 ("Đã lưu" một cách báo — xám) |
 | Ô tuần hiệu lực | ô "W1 NOV ▾" | `<select>` 12 tuần từ tuần sau (mã tuần) | Đúng hình mockup; `WeekPicker` (‹ › Tuần này) to hơn khung hộp — [XM] ghi plan.md mục 4 |
