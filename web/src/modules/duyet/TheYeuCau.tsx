@@ -88,7 +88,12 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [moPanelSua, setMoPanelSua] = useState(false);
   const [lyDoKtd, setLyDoKtd] = useState<string>('');
 
-  useEffect(() => { if (o && o.loai !== 'tuan' && o.loai !== 'rut') oNhap.current?.focus(); }, [o]);
+  useEffect(() => {
+    if (!o || o.loai === 'tuan' || o.loai === 'rut') return;
+    oNhap.current?.focus();
+    /* DUYET-QL: chân dính che đáy thân — đưa ô vừa mở ra giữa vùng nhìn. */
+    if (chanEl !== undefined) oNhap.current?.scrollIntoView({ block: 'center' });
+  }, [o]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const moO = (loai: NonNullable<O>['loai'], nut: HTMLButtonElement, chuDau = '') => {
     nutMo.current = nut; setO({ loai }); setChu(chuDau); setDaBam(false); setLoiMay(null);

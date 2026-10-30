@@ -51,4 +51,9 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
     assert(dd.includes('giu') && dd.includes("t('Hoàn tác')"), 'DongDuyet chưa vẽ dòng giữ chỗ + Hoàn tác');
     assert(hop.includes("t('✓ Đã lưu')") && hop.includes("t('Yêu cầu tiếp ›')"), 'panel sau Duyệt thiếu chân Đã lưu / Yêu cầu tiếp');
   });
+
+  check('D1 · dòng Lịch sử không lộ mã máy (case.dismiss.request) — mã ngoài bảng riêng dùng nhãn nhật ký chung', () => {
+    const f = than(doc('server/src/duyet/yeuCau.ts'), 'export function lichSuYeuCau');
+    assert(f.includes('nhanHanhDongNhatKy(r.action)') && !/\[r\.action, r\.entity_label\]/.test(f), 'lichSuYeuCau còn trả mã thô');
+  });
 }
