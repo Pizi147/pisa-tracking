@@ -378,7 +378,7 @@ export const TRAN: Record<string, number> = {
   'QL /hoc-vien-lop/phan-cong?branchId=1': 26, 'QT /hoc-vien-lop/phan-cong?branchId=1': 26, 'CX /hoc-vien-lop/phan-cong?branchId=1': 26,
   'GVCN /hoc-vien-lop/phan-cong?branchId=1': 14, 'GVBM /hoc-vien-lop/phan-cong?branchId=1': 14, 'TVV /hoc-vien-lop/phan-cong?branchId=1': 14,
   /* HSL-MAY-CHU: một lượt lớp thường — trần = max(đo+10, ⌈đo×1,3⌉), đo 27/10 (27 · 24 · 27). */
-  'QL /regular/attempts/24': 37, 'QT /regular/attempts/24': 34, 'GVCN_THUONG /regular/attempts/24': 37,
+  'QL /regular/attempts/24': 31, 'QT /regular/attempts/24': 34, 'GVCN_THUONG /regular/attempts/24': 37,   // TL-NEN: đo 21 (trước 26)
   /* UI-HO-SO-LOP (22/10): thanh Việc cần làm = `/my-work` của người xem lọc theo lớp (đo GV 61 · QL / QT 78 = cùng số `/my-work`) — trần như `/my-work` (+2);
      LOP-1-LOP: đo GV 60–61 · QL / QT 79 (trước 61–62 · 80) — câu gần như không đổi (các khối khác của `myWork` đọc theo chi nhánh rồi lọc — chờ TRANG-LON); trần giữ;
      Đánh giá đầu ra lớp thường đo 8 / 7 / 9 — trần max(đo+10, ⌈đo×1,3⌉). */
@@ -386,7 +386,7 @@ export const TRAN: Record<string, number> = {
   'QL /classes/3/viec-theo-em?chi=toi': 81, 'QT /classes/3/viec-theo-em?chi=toi': 81,
   'QL /classes/6/danh-gia-dau-ra': 18, 'QT /classes/6/danh-gia-dau-ra': 17, 'GVCN_THUONG /classes/6/danh-gia-dau-ra': 19,
   /* SV-SO2: hồ sơ GV theo kỳ, Đạt MT, Thi tháng này, khoảng ~29 tuần (P9) — trần = max(đo+10, ⌈đo×1,3⌉), đo ×3 22/10. */
-  'QL /giao-vien/7/chi-so': 63, 'GVCN /giao-vien/7/chi-so': 60, 'GVBM /giao-vien/7/chi-so': 16, 'GVCN_THUONG /giao-vien/7/chi-so': 60, 'QT /giao-vien/7/chi-so': 62, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 64, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 62, 'GVBM /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 16, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 62, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 63, 'QL /giao-vien/7/chi-so/o?cot=cham-diem': 40, 'GVCN /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'GVBM /giao-vien/7/chi-so/o?cot=cham-diem': 16, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'QT /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'QL /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 43, 'GVCN /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'GVBM /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 16, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'QT /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'QL /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 50, 'QT /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 47, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 14, 'QL /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 41, 'QT /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 39, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 14, 'QL /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 77, 'QT /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 72, 'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 66, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 63,
+  'QL /giao-vien/7/chi-so': 51, 'GVCN /giao-vien/7/chi-so': 60, 'GVBM /giao-vien/7/chi-so': 16, 'GVCN_THUONG /giao-vien/7/chi-so': 60, 'QT /giao-vien/7/chi-so': 62, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 64, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 62, 'GVBM /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 16, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 62, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 63, 'QL /giao-vien/7/chi-so/o?cot=cham-diem': 40, 'GVCN /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'GVBM /giao-vien/7/chi-so/o?cot=cham-diem': 16, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'QT /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'QL /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 43, 'GVCN /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'GVBM /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 16, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'QT /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'QL /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 50, 'QT /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 47, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 14, 'QL /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 41, 'QT /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 39, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 14, 'QL /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 77, 'QT /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 72, 'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 66, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 63,   // TL-NEN: đo 39 (trước 44)
   /* OV-15g: Lịch sử thay đổi — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /lich-su?loai=hv&id=1': 16, 'QT /lich-su?loai=hv&id=1': 14, 'GVCN /lich-su?loai=hv&id=1': 19, 'GVBM /lich-su?loai=hv&id=1': 18,
   'QL /lich-su?loai=lop&id=3': 16, 'GVCN /lich-su?loai=lop&id=3': 17, 'GVBM /lich-su?loai=lop&id=3': 17, 'GVCN_THUONG /lich-su?loai=lop&id=3': 17, 'QT /lich-su?loai=lop&id=3': 15,
@@ -415,7 +415,7 @@ export const TRAN: Record<string, number> = {
   /* PR-TK (TK-7): ba đường đọc bản chụp — trần = max(đo+10, ⌈đo×1,3⌉), đo 07/10. */
   'QL /students/1/lo-trinh': 21, 'QT /students/1/lo-trinh': 19, 'GVCN /students/1/lo-trinh': 22, 'GVBM /students/1/lo-trinh': 22,
   /* OV-13m: panel Bước tiếp — trần = max(đo+10, ⌈đo×1,3⌉), đo 15/10: QL 10 · QT 8 · GVCN 11 · GVBM 11. */
-  'QL /cycles/1/buoc-tiep': 20, 'QT /cycles/1/buoc-tiep': 18, 'GVCN /cycles/1/buoc-tiep': 21, 'GVBM /cycles/1/buoc-tiep': 21,
+  'QL /cycles/1/buoc-tiep': 16, 'QT /cycles/1/buoc-tiep': 18, 'GVCN /cycles/1/buoc-tiep': 21, 'GVBM /cycles/1/buoc-tiep': 21,   // TL-NEN: đo 6 (trước 11)
   'QL /lo-trinh/1/tong-ket': 20, 'QT /lo-trinh/1/tong-ket': 18, 'GVCN /lo-trinh/1/tong-ket': 21, 'GVBM /lo-trinh/1/tong-ket': 21,
   'QL /classes/1/tong-ket': 19, 'QT /classes/1/tong-ket': 18, 'GVCN /classes/1/tong-ket': 19, 'GVBM /classes/1/tong-ket': 19, 'GVCN_THUONG /classes/1/tong-ket': 19,
   'GVCN /ref/branches': 15,
@@ -435,34 +435,34 @@ export const TRAN: Record<string, number> = {
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=duoiKyVong': 47,   // {lopFT} = MB FT 101
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=bai-qua-han': 54,   // PR-S6F-b D10 — đo 46 (01/10)
   /* SV-TQ-GV: trần = max(đo+10, ⌈đo×1,3⌉), đo 24/10 — hai khối = `lopToiDay` FT (34) + Lớp thường (36) + hồ sơ GV theo kỳ (đã nhớ) + Thi tháng này. */
-  'GVCN /tong-quan/lop-toi-day/hai-khoi': 91, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 91, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 91,
+  'GVCN /tong-quan/lop-toi-day/hai-khoi': 78, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 91, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 91,   // TL-NEN: đo 60 (trước 65)
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=thi-thang-nay': 45,   // đo 34
   'QL /signals': 41,   // PR-S6F-b: đo 38 (một metricSet mỗi chỉ số)
   'QT /signals': 38,   // đo 35
-  'QL /tong-quan/quan-ly': 92,   // OV-15d: + "Cần bạn quyết" (Case quá hạn · Bước tiếp · Chốt lộ trình) — đo 73; trang Tổng quan QL bỏ 6 ô số + Điểm đáng chú ý nên tổng trang giảm
-  'QT /tong-quan/quan-ly': 99,   // OV-15d: đo 76   // PR-LCb: đo 60 (PR-MT0 đo 76)
-  'GVCN /tong-quan/quan-ly': 15,
-  'GVBM /tong-quan/quan-ly': 15,
+  'QL /tong-quan/quan-ly': 71,   // OV-15d: + "Cần bạn quyết" (Case quá hạn · Bước tiếp · Chốt lộ trình) — đo 73; trang Tổng quan QL bỏ 6 ô số + Điểm đáng chú ý nên tổng trang giảm; TL-NEN: đo 54 (trước 69)
+  'QT /tong-quan/quan-ly': 67,   // OV-15d: đo 76   // PR-LCb: đo 60 (PR-MT0 đo 76); TL-NEN: đo 51 (trước 66)
+  'GVCN /tong-quan/quan-ly': 12,   // TL-NEN: đo 2 (trước 7)
+  'GVBM /tong-quan/quan-ly': 12,   // TL-NEN: đo 2 (trước 7)
   'QL /highlights': 25,
   'QT /highlights': 25,
   /* OV-10c: Tổng quan theo vai — CX / QT gọi thêm danh sách Học viên & Lớp (chip Thiếu thông tin cùng nguồn): đo TVV 71, CX 95, QT 94, CX một CN 77, Admin 62 / 15. */
-  'TVV /tong-quan/hoc-vien': 85,
-  'CX /tong-quan/hoc-vien': 100,
-  'QT /tong-quan/hoc-vien': 100,
-  'CX /tong-quan/hoc-vien?branchId=1': 90,   // {cn} = Móng Bình
+  'TVV /tong-quan/hoc-vien': 72,   // TL-NEN: đo 55 (trước 68)
+  'CX /tong-quan/hoc-vien': 94,   // TL-NEN: đo 72 (trước 80)
+  'QT /tong-quan/hoc-vien': 93,   // TL-NEN: đo 71 (trước 81)
+  'CX /tong-quan/hoc-vien?branchId=1': 81,   // {cn} = Móng Bình; TL-NEN: đo 62 (trước 75)
   /* OV-10b: Học viên & Lớp / hồ sơ HV theo vai — trần = min(max(đo+10, ⌈đo×1,3⌉), 100); đo 13/10: TVV 74 · TVV cả CN 72 · CX 97 (chip = chipHocVien, 95 như Tổng quan) · CX một CN 80 · Admin 70 · hồ sơ CX 83 / Admin 86. */
-  'TVV /hoc-vien-lop/theo-vai': 97,
-  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 94,
-  'CX /hoc-vien-lop/theo-vai': 100,
-  'CX /hoc-vien-lop/theo-vai?branchId=1': 100,
-  'ADMIN /hoc-vien-lop': 91,
-  'CX /students/1': 100,
+  'TVV /hoc-vien-lop/theo-vai': 80,   // TL-NEN: đo 61 (trước 73)
+  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 78,   // TL-NEN: đo 60 (trước 72)
+  'CX /hoc-vien-lop/theo-vai': 98,   // TL-NEN: đo 75 (trước 84)
+  'CX /hoc-vien-lop/theo-vai?branchId=1': 88,   // TL-NEN: đo 67 (trước 79)
+  'ADMIN /hoc-vien-lop': 72,   // TL-NEN: đo 55 (trước 69)
+  'CX /students/1': 99,   // TL-NEN: đo 76 (trước 82)
   'ADMIN /students/1': 100,
-  'ADMIN /tong-quan/mock-test': 75,
+  'ADMIN /tong-quan/mock-test': 38,   // TL-NEN: đo 28 (trước 42)
   'ADMIN /highlights': 20,
   /* OV-15h1: trần = đo + 6 (đo demo 20/10: QL 56 · 54 · 21 · 15; QT 52 · 50 · 19 · 14). */
   'QL /tong-quan/ql?ct=ft': 62, 'QT /tong-quan/ql?ct=ft': 58, 'GVCN /tong-quan/ql?ct=ft': 15, 'QL /tong-quan/ql?ct=thuong': 60, 'QT /tong-quan/ql?ct=thuong': 56,
-  'QL /yeu-cau/dem?branchId=1': 21, 'QT /yeu-cau/dem?branchId=1': 20,
+  'QL /yeu-cau/dem?branchId=1': 15, 'QT /yeu-cau/dem?branchId=1': 20,   // TL-NEN: đo 5 (trước 16)
   'QL /tong-quan/chi-nhanh': 45,
   'QT /tong-quan/chi-nhanh': 41,
   'QL /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 63,   // OV-15d: + tập Case chưa chốt PA (cột Lớp cần chú ý) — đo 48
@@ -476,8 +476,8 @@ export const TRAN: Record<string, number> = {
   'QT /metrics/hv-sos-hien-tai?rows=1': 20,
   'QL /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 20,
   'QT /metrics/hv-duoi-ky-vong-mon?rows=1&skill=reading': 20,
-  'QL /yeu-cau?hop=cho-duyet&boiCanh=1': 41,   // PANEL-MC: không cờ đo 27 · cờ đo 31 (QT 30) = + lượt · chương trình · lịch kỹ năng · điểm (mỗi loại 1 câu theo lô); số Lịch sử đếm trong câu đọc thẻ
-  'QT /yeu-cau?hop=cho-duyet&boiCanh=1': 40,
+  'QL /yeu-cau?hop=cho-duyet&boiCanh=1': 29,   // PANEL-MC: không cờ đo 27 · cờ đo 31 (QT 30) = + lượt · chương trình · lịch kỹ năng · điểm (mỗi loại 1 câu theo lô); số Lịch sử đếm trong câu đọc thẻ; TL-NEN: đo 19 (trước 31)
+  'QT /yeu-cau?hop=cho-duyet&boiCanh=1': 29,   // TL-NEN: đo 19 (trước 30)
   'QL /lich-su?loai=yeu-cau&id={ycPa}': 16,
   'QT /lich-su?loai=yeu-cau&id={ycPa}': 15,
   'QL /metrics/hv-sos-hien-tai': 23,
@@ -509,35 +509,35 @@ export const TRAN: Record<string, number> = {
   // PR-VAI-a (Q7): đường /phan-tich/bo-quen đã gỡ cùng boQuen.ts.
   'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 24,
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 21,
-  'GVCN /my-work': 64,   // TD4: đo 61 (trước 64), trần đo + 2
-  'GVBM /my-work': 63,   // TD4: đo 61 (trước 64)
-  'GVCN_THUONG /my-work': 64,   // TD4: đo 61 (trước 64)
+  'GVCN /my-work': 60,   // TD4: đo 61 (trước 64), trần đo + 2; TL-NEN: đo 46 (trước 61)
+  'GVBM /my-work': 59,   // TD4: đo 61 (trước 64); TL-NEN: đo 45 (trước 60)
+  'GVCN_THUONG /my-work': 60,   // TD4: đo 61 (trước 64); TL-NEN: đo 46 (trước 61)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
-  'QL /my-work': 72,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn — một câu rẻ trong `quetLenhDenHan`, mọi đường đọc có quét); SV-NX-CASE +1 (MT mới nhất của em, một câu / trang); TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu); SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70)
-  'QT /my-work': 72,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn); SV-NX-CASE +1; TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70)
+  'QL /my-work': 71,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn — một câu rẻ trong `quetLenhDenHan`, mọi đường đọc có quét); SV-NX-CASE +1 (MT mới nhất của em, một câu / trang); TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu); SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70); TL-NEN: đo 54 (trước 69)
+  'QT /my-work': 71,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn); SV-NX-CASE +1; TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70); TL-NEN: đo 54 (trước 69)
   'QL /my-work?nguoi=tat-ca': 82,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80)
   'QT /my-work?nguoi=tat-ca': 82,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80)
-  'GVCN /my-work?nguoi=tat-ca': 15,
-  'QL /my-work?nguoi=7': 70,   // P13 KET-PET +1: dữ liệu demo MB PET 01 tách 4 môn (GV 7 dạy L và S thay L+S) — mã P13 trên dữ liệu main đo 68, trên dữ liệu mới 69
+  'GVCN /my-work?nguoi=tat-ca': 12,   // TL-NEN: đo 2 (trước 7)
+  'QL /my-work?nguoi=7': 68,   // P13 KET-PET +1: dữ liệu demo MB PET 01 tách 4 môn (GV 7 dạy L và S thay L+S) — mã P13 trên dữ liệu main đo 68, trên dữ liệu mới 69; TL-NEN: đo 52 (trước 67)
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
   'GVCN /my-work/cham-speaking': 14, 'GVBM /my-work/cham-speaking': 14, 'QL /my-work/cham-speaking': 14,   // TD4: đo 66 (trước 70)
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?hop=cho-duyet': 38,   // PR-CT gộp LT2b: 34 → 38   // PR-LT2a (11): demo G1–G5 có thẻ ke_hoach_bo_tro → loại thẻ thêm câu nạp (đo 32, MỘT lần mỗi loại, không theo số thẻ); PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30   // PR-LT2b: hai loại thẻ Báo QL mới (+1–2 câu nap)
-  'QT /yeu-cau?hop=cho-duyet': 37,   // PR-CT gộp LT2b: 33 → 37
+  'QL /yeu-cau?hop=cho-duyet': 26,   // PR-CT gộp LT2b: 34 → 38   // PR-LT2a (11): demo G1–G5 có thẻ ke_hoach_bo_tro → loại thẻ thêm câu nạp (đo 32, MỘT lần mỗi loại, không theo số thẻ); PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30   // PR-LT2b: hai loại thẻ Báo QL mới (+1–2 câu nap); TL-NEN: đo 16 (trước 27)
+  'QT /yeu-cau?hop=cho-duyet': 26,   // PR-CT gộp LT2b: 33 → 37; TL-NEN: đo 16 (trước 26)
   'GVCN /yeu-cau?hop=cho-duyet': 12,
   /* PR-VAI-b (V1/K3-47): dải chờ duyệt của hồ sơ HV — đo 21/20/7, trần max(sau+10, ⌈sau×1,3⌉). */
-  'QL /yeu-cau?studentId=1': 26,
-  'QT /yeu-cau?studentId=1': 25,
+  'QL /yeu-cau?studentId=1': 14,   // TL-NEN: đo 4 (trước 15)
+  'QT /yeu-cau?studentId=1': 14,   // TL-NEN: đo 4 (trước 14)
   'GVCN /yeu-cau?studentId=1': 12,
-  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 30,   // PR-CT gộp main (LT2a + GV + demo CT): 29 → 30   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)   // PR-CT: 28 → 29 (gộp main)
-  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 29,   // PR-CT gộp main (LT2a + GV + demo CT): 28 → 29   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)   // PR-CT: 27 → 28 (gộp main)
-  'GVCN /yeu-cau?hop=cua-toi': 28,   // PR-CT gộp main (LT2a + GV + demo CT): 27 → 28   // PR-CT: 25 → 27 (gộp main)
-  'GVBM /yeu-cau?hop=cua-toi': 22,   // PR-CT gộp main (LT2a + GV + demo CT): 21 → 22
-  'QL /yeu-cau/dem': 25,
-  'GVCN /yeu-cau/dem': 21,
-  'GVBM /yeu-cau/dem': 21,
-  'GVCN_THUONG /yeu-cau/dem': 21,
-  'QT /yeu-cau/dem': 24,
+  'QL /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 24,   // PR-CT gộp main (LT2a + GV + demo CT): 29 → 30   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 23); + thẻ Ý thức PR-YT4 (đo 27)   // PR-CT: 28 → 29 (gộp main); TL-NEN: đo 14 (trước 25)
+  'QT /yeu-cau?hop=cho-duyet&xem=da-xu-ly': 24,   // PR-CT gộp main (LT2a + GV + demo CT): 28 → 29   // PR-SOS: loại thẻ khong_theo_doi thêm câu nạp (đo 22)   // PR-CT: 27 → 28 (gộp main); TL-NEN: đo 14 (trước 24)
+  'GVCN /yeu-cau?hop=cua-toi': 23,   // PR-CT gộp main (LT2a + GV + demo CT): 27 → 28   // PR-CT: 25 → 27 (gộp main); TL-NEN: đo 13 (trước 23)
+  'GVBM /yeu-cau?hop=cua-toi': 13,   // PR-CT gộp main (LT2a + GV + demo CT): 21 → 22; TL-NEN: đo 3 (trước 13)
+  'QL /yeu-cau/dem': 15,   // TL-NEN: đo 5 (trước 16)
+  'GVCN /yeu-cau/dem': 13,   // TL-NEN: đo 3 (trước 13)
+  'GVBM /yeu-cau/dem': 13,   // TL-NEN: đo 3 (trước 13)
+  'GVCN_THUONG /yeu-cau/dem': 13,   // TL-NEN: đo 3 (trước 13)
+  'QT /yeu-cau/dem': 15,   // TL-NEN: đo 5 (trước 15)
   'QL /mgmt-tasks': 17,
   'QT /mgmt-tasks': 17,
   'GVCN /mgmt-tasks': 12,
@@ -558,19 +558,19 @@ export const TRAN: Record<string, number> = {
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
   /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo phụ huynh qua TVV của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
-  'QL /hoc-vien-lop': 83,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10
-  'GVCN /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
-  'GVBM /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
-  'GVCN_THUONG /hoc-vien-lop': 93,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
-  'QT /hoc-vien-lop': 84,
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 83,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10
-  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 83,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10
-  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 87,   // OV-15h2: đo 77 (= trang 71 + `chiTietCaseMo` Case đang mở + một câu tuần thi) → đo + 10
-  'QL /classes/3/overview': 62,   // PR-CT gộp LT2b: 61 → 62
-  'GVCN /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
-  'GVBM /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
-  'GVCN_THUONG /classes/3/overview': 80,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62
-  'QT /classes/3/overview': 59,   // PR-CT gộp LT2b: 58 → 59   // PR-CT gộp main (LT2a + GV + demo CT): 57 → 58   // PR-S4F #5: +3 câu quét thẻ chờ duyệt   // PR-CT: 54 → 57 (gộp main)
+  'QL /hoc-vien-lop': 72,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10; TL-NEN: đo 55 (trước 69)
+  'GVCN /hoc-vien-lop': 75,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 57 (trước 71)
+  'GVBM /hoc-vien-lop': 75,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 57 (trước 71)
+  'GVCN_THUONG /hoc-vien-lop': 75,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 57 (trước 71)
+  'QT /hoc-vien-lop': 72,   // TL-NEN: đo 55 (trước 69)
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10; TL-NEN: đo 55 (trước 69)
+  'QT /hoc-vien-lop?phamVi=chi-nhanh&branchId=1': 72,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10; TL-NEN: đo 55 (trước 69)
+  'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 80,   // OV-15h2: đo 77 (= trang 71 + `chiTietCaseMo` Case đang mở + một câu tuần thi) → đo + 10; TL-NEN: đo 61 (trước 75)
+  'QL /classes/3/overview': 51,   // PR-CT gộp LT2b: 61 → 62; TL-NEN: đo 39 (trước 55)
+  'GVCN /classes/3/overview': 54,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62; TL-NEN: đo 41 (trước 57)
+  'GVBM /classes/3/overview': 54,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62; TL-NEN: đo 41 (trước 57)
+  'GVCN_THUONG /classes/3/overview': 54,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 68, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)   // PR-CT gộp LT2b: 61 → 62; TL-NEN: đo 41 (trước 57)
+  'QT /classes/3/overview': 50,   // PR-CT gộp LT2b: 58 → 59   // PR-CT gộp main (LT2a + GV + demo CT): 57 → 58   // PR-S4F #5: +3 câu quét thẻ chờ duyệt   // PR-CT: 54 → 57 (gộp main); TL-NEN: đo 38 (trước 53)
   /* PR-HVL (2): mốc 46 (QT 43) + Case mở theo lô (`chiTietCaseMo`) đo 50 (QT 47) — trần kế hoạch = mốc + 6. */
   /* PR-HVL (5): `/classes/:id/can-ho-tro` đo 25 (QT 22) = `/cases?classId=` 17 (QT 14) + 8 — đúng trần kế hoạch. */
   /* PR-HVL (7): `/classes/:id/progress` đo 17 (QT 16) sau khi thêm `tomTatMt` — trần = đo + 3. */
@@ -599,11 +599,11 @@ export const TRAN: Record<string, number> = {
   'QL /classes/6/can-ho-tro': 25,
   'GVCN_THUONG /classes/6/can-ho-tro': 25,
   'QT /classes/6/can-ho-tro': 22,
-  'QL /classes/3/roster': 52,
-  'GVCN /classes/3/roster': 65,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
-  'GVBM /classes/3/roster': 65,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
-  'GVCN_THUONG /classes/3/roster': 65,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋)
-  'QT /classes/3/roster': 49,
+  'QL /classes/3/roster': 38,   // TL-NEN: đo 28 (trước 32)
+  'GVCN /classes/3/roster': 38,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 28 (trước 32)
+  'GVBM /classes/3/roster': 38,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 28 (trước 32)
+  'GVCN_THUONG /classes/3/roster': 38,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 28 (trước 32)
+  'QT /classes/3/roster': 37,   // TL-NEN: đo 27 (trước 30)
   /* PR-TD2-b: danh sách Trước/Sau nhẹ (đo 07/10, ×3 không đổi) — trần max(đo+10, ⌈đo×1,3⌉). */
   'QL /classes/3/roster?chiId=1': 21,
   'GVCN /classes/3/roster?chiId=1': 22,
@@ -635,9 +635,9 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /classes/3/issue-board/o?category=listening&cot=case': 19,
   'QT /classes/3/issue-board/o?category=listening&cot=case': 18,
   'QL /classes/3/phan-tich-lop': 24,
-  'GVCN /classes/3/phan-tich-lop': 25,
-  'GVBM /classes/3/phan-tich-lop': 25,
-  'GVCN_THUONG /classes/3/phan-tich-lop': 25,
+  'GVCN /classes/3/phan-tich-lop': 18,   // TL-NEN: đo 8 (trước 13)
+  'GVBM /classes/3/phan-tich-lop': 18,   // TL-NEN: đo 8 (trước 13)
+  'GVCN_THUONG /classes/3/phan-tich-lop': 18,   // TL-NEN: đo 8 (trước 13)
   'QT /classes/3/phan-tich-lop': 23,
   'QL /classes/3/y-thuc': 24,
   'GVCN /classes/3/y-thuc': 24,
@@ -666,7 +666,7 @@ export const TRAN: Record<string, number> = {
   'QT /classes/3/diem-theo-luot/mt:2': 35,   // TD2-a: đo 30 → max(đo+10, ⌈đo×1,3⌉), cũ 41
   /* OV-6b2: lớp liên tục MB PET 01 (id 30) — trần = max(đo+10, ⌈đo×1,3⌉), đo 12/10 (gồm 1–3 câu quét Checkpoint kế tiếp khi đọc). */
   'QL /classes/30/diem-theo-luot': 24, 'QT /classes/30/diem-theo-luot': 23,
-  'QL /classes/30/diem-theo-luot/cp:1': 32, 'QT /classes/30/diem-theo-luot/cp:1': 31,
+  'QL /classes/30/diem-theo-luot/cp:1': 30, 'QT /classes/30/diem-theo-luot/cp:1': 31,   // TL-NEN: đo 20 (trước 25)
   'QL /ke-hoach-test/thuong/30': 31, 'QT /ke-hoach-test/thuong/30': 30,
   'QL /diem-theo-lop/lop': 21,
   'GVCN /diem-theo-lop/lop': 21,
@@ -679,21 +679,21 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /cases?classId=3': 22,
   'QT /cases?classId=3': 19,
   /* PR-S6F-b (UXF-a P2): roster lớp thường — id lớp {lopThuong} nay là 6 (các khoá /classes/5/… cũ không còn khớp, xem thân PR). Đo 01/10. */
-  'QL /classes/6/roster': 62,
+  'QL /classes/6/roster': 40,   // TL-NEN: đo 30 (trước 35)
   'QT /classes/6/roster': 58,
-  'GVCN_THUONG /classes/6/roster': 67,   // TD2-a: đo 56 → max(đo+10, ⌈đo×1,3⌉), cũ 76
+  'GVCN_THUONG /classes/6/roster': 40,   // TD2-a: đo 56 → max(đo+10, ⌈đo×1,3⌉), cũ 76; TL-NEN: đo 30 (trước 35)
   // PR-UX1 (3), 23/09/2026 — Lịch Test gộp Cần chấm (thêm `listAttempts` cho khối Nợ tuần trước): 16 → 26 câu (QT 28),
   // vẫn ít hơn hai trang cũ cộng lại (16 + 24). Trần max(sau+10, ⌈sau×1.3⌉).
   // PR-LT3 06/10 — ba khối (khối 2 = hàng lớp tuần trước, thêm ~3 câu; mỗi tuần có ô hạn riêng thêm ~3): đo 30–34 câu (QT 34) — trong trần cũ, giữ.
-  'QL /cham/lich-test': 36,
-  'GVCN /cham/lich-test': 36,
-  'GVBM /cham/lich-test': 36,
-  'GVCN_THUONG /cham/lich-test': 36,
+  'QL /cham/lich-test': 32,   // TL-NEN: đo 22 (trước 27)
+  'GVCN /cham/lich-test': 30,   // TL-NEN: đo 20 (trước 25)
+  'GVBM /cham/lich-test': 31,   // TL-NEN: đo 21 (trước 26)
+  'GVCN_THUONG /cham/lich-test': 30,   // TL-NEN: đo 20 (trước 25)
   'QT /cham/lich-test': 38,
-  'QL /cham/lich-test?phamVi=tat-ca': 36,
-  'GVCN /cham/lich-test?phamVi=tat-ca': 36,
-  'GVBM /cham/lich-test?phamVi=tat-ca': 36,
-  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 36,
+  'QL /cham/lich-test?phamVi=tat-ca': 32,   // TL-NEN: đo 22 (trước 27)
+  'GVCN /cham/lich-test?phamVi=tat-ca': 30,   // TL-NEN: đo 20 (trước 25)
+  'GVBM /cham/lich-test?phamVi=tat-ca': 31,   // TL-NEN: đo 21 (trước 26)
+  'GVCN_THUONG /cham/lich-test?phamVi=tat-ca': 30,   // TL-NEN: đo 20 (trước 25)
   'QT /cham/lich-test?phamVi=tat-ca': 38,
   'QL /cham/lich-test?classId=3': 36,
   'QT /cham/lich-test?classId=3': 35,
@@ -712,18 +712,18 @@ export const TRAN: Record<string, number> = {
   'GVCN /ref/nguoi?nhom=giao_vien&studentId=1': 20,
   'GVBM /ref/nguoi?nhom=giao_vien&studentId=1': 20,
   /* PR-Dọn (9c): khoá lớp thường đổi /5 → /6 ({lopThuong} thật) — đo 01/10, trần max(đo + 10, ⌈đo × 1,3⌉), trần cứng 100. */
-  'QL /classes/6/overview': 88,   // TD2-a: đo 72 → max(đo+10, ⌈đo×1,3⌉), cũ 97
-  'QT /classes/6/overview': 84,   // TD2-a: đo 69 → max(đo+10, ⌈đo×1,3⌉), cũ 93
-  'GVCN_THUONG /classes/6/overview': 93,   // TD2-a: đo 76 → max(đo+10, ⌈đo×1,3⌉), cũ 100
+  'QL /classes/6/overview': 64,   // TD2-a: đo 72 → max(đo+10, ⌈đo×1,3⌉), cũ 97; TL-NEN: đo 49 (trước 65)
+  'QT /classes/6/overview': 63,   // TD2-a: đo 69 → max(đo+10, ⌈đo×1,3⌉), cũ 93; TL-NEN: đo 48 (trước 63)
+  'GVCN_THUONG /classes/6/overview': 60,   // TD2-a: đo 76 → max(đo+10, ⌈đo×1,3⌉), cũ 100; TL-NEN: đo 46 (trước 63)
   'QL /classes/6/phan-tich-lop': 24,
   'QT /classes/6/phan-tich-lop': 23,
-  'GVCN_THUONG /classes/6/phan-tich-lop': 25,
+  'GVCN_THUONG /classes/6/phan-tich-lop': 18,   // TL-NEN: đo 8 (trước 13)
   'QL /classes/6/y-thuc': 23,
   'QT /classes/6/y-thuc': 22,
   'GVCN_THUONG /classes/6/y-thuc': 23,
-  'QL /classes/6/cham': 29,   // TD2-a: đo 24 → max(đo+10, ⌈đo×1,3⌉), cũ 35
+  'QL /classes/6/cham': 27,   // TD2-a: đo 24 → max(đo+10, ⌈đo×1,3⌉), cũ 35; TL-NEN: đo 17 (trước 22)
   'QT /classes/6/cham': 28,   // TD2-a: đo 23 → max(đo+10, ⌈đo×1,3⌉), cũ 34
-  'GVCN_THUONG /classes/6/cham': 29,   // TD2-a: đo 24 → max(đo+10, ⌈đo×1,3⌉), cũ 35
+  'GVCN_THUONG /classes/6/cham': 25,   // TD2-a: đo 24 → max(đo+10, ⌈đo×1,3⌉), cũ 35; TL-NEN: đo 15 (trước 20)
   'QL /cases?classId=6': 22,
   'QT /cases?classId=6': 19,
   'GVCN_THUONG /cases?classId=6': 22,
@@ -769,7 +769,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /notifications': 13,
   'GVBM /notifications': 13,
   'GVCN_THUONG /notifications': 13,
-  'QT /notifications': 37,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ ngay (`daGhi`). PR CHUONG-NHE: đo 27 (trước 35) — đồng bộ chỉ đọc lượt lớp đang dạy; trong mốc 4
+  'QT /notifications': 25,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ ngay (`daGhi`). PR CHUONG-NHE: đo 27 (trước 35) — đồng bộ chỉ đọc lượt lớp đang dạy; trong mốc 4; TL-NEN: đo 15 (trước 25)
   'QL /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
   'GVCN /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
   'GVBM /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
@@ -793,9 +793,9 @@ export const TRAN: Record<string, number> = {
   'QT /hoc-vien-lop/luu-tru?branchId=1': 20,
   /* PR-HVL (8): `/classes/:id/transition` thêm `ketQua` từng em (một lần `standingFor`, 7 câu): 28 → 35 (QT 27 → 34). Kế hoạch dự kiến mốc + 5 = 33; `standingFor` tự nó tốn 7 câu nên lệch 2 — ghi Nhật ký. */
   /* PR-LT2b (3): `cuoiKhoaTheoHocVien` cho cả lớp (+2 câu: lượt Cuối khoá · lộ trình tiếp theo; điểm + chương trình đã đọc chung): QL 37 → 39, QT 36 → 38, GVCN_THUONG 37 → 39 (+5 %). */
-  'QL /classes/6/transition': 50,   // PR-CT gộp LT2b: 39 → 42; PR-MT0: + một câu MT0 cả lớp, đo 43; trần max(n+10, ⌈n×1,3⌉) = 56 (planning 07/10)
-  'QT /classes/6/transition': 49,   // PR-CT gộp LT2b: 38 → 41; PR-MT0 → 42
-  'GVCN_THUONG /classes/6/transition': 50,   // PR-CT gộp LT2b: 39 → 42; PR-MT0 → 43
+  'QL /classes/6/transition': 45,   // PR-CT gộp LT2b: 39 → 42; PR-MT0: + một câu MT0 cả lớp, đo 43; trần max(n+10, ⌈n×1,3⌉) = 56 (planning 07/10); TL-NEN: đo 34 (trước 42)
+  'QT /classes/6/transition': 45,   // PR-CT gộp LT2b: 38 → 41; PR-MT0 → 42; TL-NEN: đo 34 (trước 41)
+  'GVCN_THUONG /classes/6/transition': 38,   // PR-CT gộp LT2b: 39 → 42; PR-MT0 → 43; TL-NEN: đo 28 (trước 36)
   'QL /classes/6/lo-trinh-tiep': 28,   // PR-K26 mới: đo 19
   'QT /classes/6/lo-trinh-tiep': 27,   // PR-K26 mới: đo 18
   'GVCN_THUONG /classes/6/lo-trinh-tiep': 28,   // PR-K26 mới: đo 20
@@ -831,16 +831,16 @@ export const TRAN: Record<string, number> = {
   'GVCN /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 21,
   'GVCN_THUONG /xuat-mt/xem-truoc?khung=thuong&tg=dot&dot=giua,cuoi': 24,
   // PR-GV (3), 30/09/2026 — hồ sơ GV tách 3 lời gọi (gộp một lời gọi đo 113–126 câu, vượt trần cứng 100): max(sau+10, ⌈sau×1.3⌉). Đo GVCN id 7 (6 lớp, 17 Case): hồ sơ 60–65, việc 61–72, kết quả 44–45, ô 20–27 câu; 403 = 10 câu.
-  'QL /giao-vien/7': 84,
-  'GVCN /giao-vien/7': 76,
+  'QL /giao-vien/7': 60,   // TL-NEN: đo 46 (trước 59)
+  'GVCN /giao-vien/7': 54,   // TL-NEN: đo 41 (trước 54)
   'GVBM /giao-vien/7': 16,
-  'GVCN_THUONG /giao-vien/7': 76,
-  'QT /giao-vien/7': 78,
-  'QL /giao-vien/7/viec': 94,
-  'GVCN /giao-vien/7/viec': 80,
+  'GVCN_THUONG /giao-vien/7': 54,   // TL-NEN: đo 41 (trước 54)
+  'QT /giao-vien/7': 56,   // TL-NEN: đo 43 (trước 56)
+  'QL /giao-vien/7/viec': 72,   // TL-NEN: đo 55 (trước 67)
+  'GVCN /giao-vien/7/viec': 62,   // TL-NEN: đo 47 (trước 59)
   'GVBM /giao-vien/7/viec': 16,
-  'GVCN_THUONG /giao-vien/7/viec': 80,
-  'QT /giao-vien/7/viec': 91,
+  'GVCN_THUONG /giao-vien/7/viec': 62,   // TL-NEN: đo 47 (trước 59)
+  'QT /giao-vien/7/viec': 69,   // TL-NEN: đo 53 (trước 65)
   'QL /giao-vien/7/o?cot=chua-nhap': 34,
   'GVCN /giao-vien/7/o?cot=chua-nhap': 32,
   'GVBM /giao-vien/7/o?cot=chua-nhap': 16,
@@ -871,7 +871,7 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/giao-vien?cn=1&ct=ft': 66,   // đo 63 (UI-PHAN-TICH: + Quá hạn · Case có PA · HV cần chú ý — cùng hàm Tổng quan)
   'QT /phan-tich/giao-vien?cn=1&ct=ft': 63,   // đo 60 (UI-PHAN-TICH)
   'GVCN /phan-tich/giao-vien?cn=1&ct=ft': 14,   // 403, đo 9
-  'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 58,   // đo 55 (UI-PHAN-TICH)
+  'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 42,   // đo 55 (UI-PHAN-TICH); TL-NEN: đo 32 (trước 37)
   'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 55,   // đo 52 (UI-PHAN-TICH)
   'QL /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 29,   // đo 24
   'QT /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 28,   // đo 23
@@ -919,8 +919,8 @@ export const TRAN: Record<string, number> = {
 export const TRAN_DONG: Record<string, number> = {
   /* LOP-1-LOP: hồ sơ lớp chỉ đọc lượt của lớp (`myWork({ classIds })`) — đo QL / QT 1 278 (trước 1 448), GVCN / GVCN_THUONG 854 (trước 935), GVBM 850 (trước 958);
      badge quá hạn nay trong cùng đường (trước thêm `/my-work` QL 1 414 · GV 921–944 dòng). Trần = max(đo + 50, ⌈đo × 1,3⌉). */
-  'QL /classes/3/viec-theo-em?chi=toi': 1662, 'QT /classes/3/viec-theo-em?chi=toi': 1662,
-  'GVCN /classes/3/viec-theo-em?chi=toi': 1111, 'GVBM /classes/3/viec-theo-em?chi=toi': 1105, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 1111,
+  'QL /classes/3/viec-theo-em?chi=toi': 1502, 'QT /classes/3/viec-theo-em?chi=toi': 1502,   // TL-NEN: đo 1155 · 1155 (trước 1245 · 1245)
+  'GVCN /classes/3/viec-theo-em?chi=toi': 951, 'GVBM /classes/3/viec-theo-em?chi=toi': 1105, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 1111,   // TL-NEN: đo 731 (trước 821)
   /* PR CHUONG-NHE: chuông — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trong mốc QL 34 · GVCN 47 · GVBM 16 · GVCN_THUONG 47; QT đồng bộ vì vừa ghi 345, trước 853). */
   'QL /notifications': 84, 'GVCN /notifications': 97, 'GVBM /notifications': 66, 'GVCN_THUONG /notifications': 97, 'QT /notifications': 449,
   /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */
@@ -956,15 +956,15 @@ export const TRAN_DONG: Record<string, number> = {
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
-  'QL /my-work': 1551,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
-  'GVCN /my-work': 1481,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
-  'GVBM /my-work': 1553,   // TD4: đo 847 (trước 2016)   // V5 SV-SO1 sau gộp main: đo 1194 (trần cũ 1102) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
-  'GVCN_THUONG /my-work': 1481,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
-  'QT /my-work': 2264,   // TD4: đo 971 (trước 2889); V5 SV-SO1: đo 1741 (trước 1263) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
-  'QL /my-work?nguoi=tat-ca': 1943,   // TD4: đo 1119 (trước 2793); V5 SV-SO1: đo 1494 (trước 1455) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
-  'QT /my-work?nguoi=tat-ca': 2681,   // TD4: đo 1254 (trước 3688); V5 SV-SO1: đo 2062 (trước 1631) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ
+  'QL /my-work': 1416,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1089 (trước 1147)
+  'GVCN /my-work': 1079,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)
+  'GVBM /my-work': 1109,   // TD4: đo 847 (trước 2016)   // V5 SV-SO1 sau gộp main: đo 1194 (trần cũ 1102) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 853 (trước 911)
+  'GVCN_THUONG /my-work': 1079,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)
+  'QT /my-work': 1653,   // TD4: đo 971 (trước 2889); V5 SV-SO1: đo 1741 (trước 1263) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1271 (trước 1329)
+  'QL /my-work?nguoi=tat-ca': 1880,   // TD4: đo 1119 (trước 2793); V5 SV-SO1: đo 1494 (trước 1455) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1446 (trước 1504)
+  'QT /my-work?nguoi=tat-ca': 2152,   // TD4: đo 1254 (trước 3688); V5 SV-SO1: đo 2062 (trước 1631) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1655 (trước 1713)
   'QL /classes/3/roster': 2226,   // đo 1712
-  'GVCN /classes/3/roster': 2447,   // đo 1882
+  'GVCN /classes/3/roster': 2256,   // đo 1882; TL-NEN: đo 1735 (trước 1778)
   'GVBM /classes/3/roster': 2463,   // đo 1894
   'GVCN_THUONG /classes/3/roster': 2447,   // đo 1882
   'QT /classes/3/roster': 2153,   // đo 1656
@@ -998,14 +998,17 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /hoc-vien-lop': 2975,   // TD3-b: đo 2288 (72 câu)
   'GVCN_THUONG /hoc-vien-lop': 2602,   // TD3-b: đo 2001 (72 câu)
   'QT /hoc-vien-lop': 3305,   // TD3-b: đo 2542 (67 câu)
-  'QL /classes/3/overview': 1605,   // TD3-b: đo 886 (56 câu)   // V5 SV-SO1 sau gộp main: đo 1234 (trần cũ 1152) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
-  'GVCN /classes/3/overview': 1675,   // TD3-b: đo 931 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1288 (trần cũ 1211) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QL /classes/3/overview': 927,   // TD3-b: đo 886 (56 câu)   // V5 SV-SO1 sau gộp main: đo 1234 (trần cũ 1152) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 713 (trước 808)
+  'GVCN /classes/3/overview': 966,   // TD3-b: đo 931 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1288 (trần cũ 1211) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 743 (trước 838)
   'GVBM /classes/3/overview': 1672,   // TD3-b: đo 929 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1286 (trần cũ 1208) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
   'GVCN_THUONG /classes/3/overview': 1675,   // TD3-b: đo 931 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1288 (trần cũ 1211) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
-  'QT /classes/3/overview': 1537,   // TD3-b: đo 827 (53 câu)   // V5 SV-SO1 sau gộp main: đo 1182 (trần cũ 1076) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
+  'QT /classes/3/overview': 901,   // TD3-b: đo 827 (53 câu)   // V5 SV-SO1 sau gộp main: đo 1182 (trần cũ 1076) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 693 (trước 754)
   'QL /classes/6/overview': 801,   // TD3-b: đo 616 (68 câu)
   'QT /classes/6/overview': 756,   // TD3-b: đo 581 (65 câu)
   'GVCN_THUONG /classes/6/overview': 819,   // TD3-b: đo 630 (72 câu)
+  'QL /tong-quan/v5?ct=ft': 3317,   // TL-NEN: đo 2551 (trước 2594)
+  'QT /tong-quan/v5?ct=ft': 4396,   // TL-NEN: đo 3381 (trước 3390)
+  'GVCN /my-work?nguoi=tat-ca': 51,   // TL-NEN: đo 1 (trước 3)
 };
 
 export const TRAN_GHI_LO = {

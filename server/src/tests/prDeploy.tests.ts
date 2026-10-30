@@ -287,7 +287,10 @@ export async function runPrDeployTests(t: YThucTestKit) {
     if (r.status !== 0) throw new Error(`migrate lỗi (${r.status}): ${String(r.stderr).slice(-2000)}`);
     return JSON.parse(String(r.stdout).split('@@').pop()!.trim());
   };
-  /** Ảnh chụp: mọi đối tượng sqlite_master + cột từng bảng + MỌI dòng MỌI bảng (theo rowid). Bỏ đúng dòng `case_engine_migrated_at` (Q4). */
+  /**
+   * Ảnh chụp: mọi đối tượng sqlite_master + cột từng bảng + MỌI dòng MỌI bảng (theo rowid). Bỏ đúng dòng `case_engine_migrated_at` (Q4)
+   * và số phiên bản `moc_he_thong.so` (TL-NEN: trigger tăng ở MỌI ghi bảng tham chiếu, kể cả dòng Q4 — không phải dữ liệu).
+   */
   const chup = (f: string) => {
     const c = new Database(f, { readonly: true });
     try {
@@ -298,7 +301,8 @@ export async function runPrDeployTests(t: YThucTestKit) {
       for (const b of bang) {
         out[`cot:${b}`] = JSON.stringify(c.prepare(`PRAGMA table_info("${b}")`).all());
         const dong = c.prepare(`SELECT * FROM "${b}" ORDER BY rowid`).all() as any[];
-        out[`dong:${b}`] = JSON.stringify(b === 'demo_config' ? dong.filter((r) => r.key !== 'case_engine_migrated_at') : dong);
+        out[`dong:${b}`] = JSON.stringify(b === 'demo_config' ? dong.filter((r) => r.key !== 'case_engine_migrated_at')
+          : b === 'moc_he_thong' ? dong.map(({ so: _so, ...r }) => r) : dong);
       }
       return out;
     } finally { c.close(); }

@@ -998,13 +998,16 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
     ['thẻ Báo lên Ý thức', /y\.loai = 'bao_len_y_thuc' AND y\.doi_tuong_id = s\.id/, ['yeu_cau_duyet'], 'idx_ycd_loai_doi_tuong_cho'],
   ];
   const ghi: { sql: string; args: unknown[] }[] = [];
+  const PISA_DO_QUET_GOC = process.env.PISA_DO_QUET;
   doQuet.ghi = ghi;
+  process.env.PISA_DO_QUET = '1';   // TL-NEN: câu "thẻ Báo lên Ý thức" nằm trong lượt quét — đo khi quét chạy
   try {
     for (const [vai, url] of [['CX', '/tong-quan/hoc-vien'], ['GVCN', '/my-work'], ['QL', '/classes/{lopFT}/diem-theo-luot/mt:2'], ['TVV', '/hoc-vien-lop/theo-vai']] as [Vai, string][]) {
       assert((await doSql(vai, 'GET', urlFor(url))).status === 200, `${vai} ${url} không 200`);
     }
   } finally {
     doQuet.ghi = null;
+    if (!PISA_DO_QUET_GOC) delete process.env.PISA_DO_QUET;
   }
   const quet: string[] = [];
   for (const [ten, re, lon, chiMuc] of CAU) {
