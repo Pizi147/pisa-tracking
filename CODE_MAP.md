@@ -417,6 +417,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 |---|---|
 | Ngữ cảnh request: nhớ tra cứu lặp (chỉ GET), đếm câu SQL | `server/src/platform/nguCanhRequest.ts` (`chayTrongRequest`, `nho`, `nhoTheoId`) |
 | Không sửa giá trị nhận từ hàm có `nho()` (copy trước) | đầu tệp `nguCanhRequest.ts`; `PISA_DONG_BANG_NHO=1` để lộ chỗ sửa nhầm |
+| TL-NEN: mốc chung toàn hệ thống (bảng tham chiếu nhớ theo tiến trình, khoá phiên bản DB · quét đường đọc theo mốc 60 s / sau ghi / sang ngày) | `server/src/platform/mocHeThong.ts` (`nhoThamChieu`, `quetTheoMoc`, `COT_MOC` đọc kèm câu phiên `auth.ts`) · bảng `moc_he_thong` + trigger `tg_tc_*` — migrate `server/src/migrate/prTlNen.ts` · móc xoá mốc sau ghi `routes/index.ts` |
 | Kết nối, đếm câu / dòng, nhớ câu lệnh (libsql rò bộ nhớ) | `server/src/db.ts` (`db`, `tx`, `demDong`) |
 | Log `[cham]`, hạn 10 giây Netlify | `server/src/app.ts` (`demGio`) · `server/src/platform/hanGio.ts` |
 | Đường đo × vai, trần câu SQL / dòng | `server/src/tests/tocDoDuong.ts` (`DUONG_DO`, `TRAN`) · `server/src/tests/tocDo.run.ts` |

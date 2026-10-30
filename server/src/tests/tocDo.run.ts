@@ -265,6 +265,12 @@ async function callHttp(vai: Vai, method: string, url: string, body?: unknown) {
 
 /** Đếm câu SQL của MỘT lượt gọi HTTP — gọi TUẦN TỰ (không song song, để số không lẫn giữa các lượt gọi). */
 async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number; dong: number; status: number }> {
+  /*
+   * TL-NEN: quét đường đọc chạy theo mốc DB (60 s / sau ghi qua API / sang ngày) — các lượt ghi lô ở tệp này xoá mốc. Đo GET với mốc CÒN HẠN
+   * (như phần lớn GET thật); `PISA_DO_QUET=1` đo khi quét chạy (mốc NULL). Đặt trước khi tính câu — không vào số đo.
+   */
+  if (method === 'GET') conn.prepare(`UPDATE moc_he_thong SET luc = ?, ngay = ? WHERE khoa LIKE 'quet:%'`)
+    .run(process.env.PISA_DO_QUET === '1' ? null : new Date().toISOString(), demoToday15d());
   const truoc = soCauSql(), dongTruoc = soDongSql();
   if (process.env.PISA_DEM_SQL === '1') console.log(`[vai] ${vai}`);   // TD3-0: dòng `[sql]` ngay sau là của vai này
   const { status } = await callHttp(vai, method, url);
