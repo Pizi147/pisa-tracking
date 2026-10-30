@@ -209,7 +209,7 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
   Ô hàng nhóm ghi `font-normal` thì giữ chữ thường (`.hang-lon > :where(td)`).
 - **Số căn giữa** + `tabular-nums` (`td.tabular-nums`, đầu cột số); tên / chữ dài căn trái (C06).
 - Đối tượng trong khối **Cần làm** của panel v3 (tên PA, mức kỷ luật, loại meeting): **15 px đậm 700** (OV-12e, chủ SP 14/10).
-- **Không chữ < 11 px** ở bất kỳ đâu (→ Luật 21/10 G13: tối thiểu 12).
+- **Không chữ < 11 px** ở bất kỳ đâu (→ Luật 21/10 G13: tối thiểu 12 (trừ .tvv, G13)).
 - Số liệu, điểm, mã tuần: `tabular-nums`.
 
 ## Layout
@@ -259,6 +259,6 @@ trái (inset) của hàng nhóm / hàng chọn và vòng focus `0 0 0 3px var(--
 **Don't**
 - Không đổi phông, bảng màu, bố cục đã khoá khi kế hoạch PR không ghi rõ và màn không có mockup mới đã duyệt.
 - Không dùng màu trạng thái để trang trí; không dùng màu nhấn cho thông tin thường.
-- Không chữ < 12 px (G13); không câu giải thích dưới nút/ô.
+- Không chữ < 12 px (trừ .tvv, G13); không câu giải thích dưới nút/ô.
 - Không hàng nút "Hôm nay · Hôm qua · 2 ngày trước" cho ô ngày.
 - Không gradient, glassmorphism, đổ bóng lớn, minh hoạ trang trí.

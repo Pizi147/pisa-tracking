@@ -49,6 +49,8 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
     /* 16 px chỉ cho ô nhập ở điện thoại (Safari không tự phóng to — OV-14b). */
     for (const m of css.matchAll(/([^{}]+)\{[^}]*?font-size:\s*(\d+(?:\.\d+)?)px/g)) {
       const n = Number(m[2]);
+      /* G13 ngoại lệ duy nhất (chủ SP 30/10): `.tvv` 11 px — tên TVV dưới tên HV ở bảng em hồ sơ lớp (BANG-EM-GON). */
+      if (n === 11 && m[1].trim().endsWith('.tvv')) continue;
       if (n === 16 ? !/input|select|textarea|\.field/.test(m[1]) : ngoai(n)) hong.push(`index.css ${m[1].trim().slice(-40)} ${n}px`);
     }
     assert(hong.length === 0, tom(hong));

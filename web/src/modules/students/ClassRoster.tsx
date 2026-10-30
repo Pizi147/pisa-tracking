@@ -41,6 +41,8 @@ type HistoryRow = {
 export type RosterRow = {
   missing: { key: string; label: string; who: string }[];
   id: number; studentCode: string; fullName: string; status: string; archived: boolean; moiVao?: boolean;
+  /** Tên Tư vấn viên của em (`students.consultant_user_id`) — BANG-EM-GON: chữ nhỏ dưới tên. */
+  tvv?: string | null;
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC, thay cho nhãn chung "Đã kết thúc". */
   ketThucVi?: string | null;
   skills: string[] | null;
