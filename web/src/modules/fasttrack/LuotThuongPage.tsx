@@ -32,7 +32,7 @@ import { KHOA_HOAN_TAT_HINT, ODiemThuong, datPhanTram } from './ScoreEntry.tsx';
 import { ONhanXet } from './NhanXet.tsx';
 import { CaseLuotKn } from './CaseLuotKn.tsx';
 import { dongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
-import { ChonDot, ConLaiLuot, Info, LichSuGon, VungMoKn, tenNguoiLam, viecCaseLuot, type ViecConLai } from './MockDetailPage.tsx';
+import { ChonDot, ConLaiLuot, Info, LichSuGon, VungMoKn, dongKhoiPhucVang, tenNguoiLam, viecCaseLuot, type ViecConLai } from './MockDetailPage.tsx';
 import { attemptHref, fmtDate } from '../../lib/format.ts';
 import {
   CHU_THAO_TAC, CHU_THEM_PA, NAV_RONG, PERMISSIONS, duongDotTest, duongNhapDiemCu, moDiemLopCu, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangCha, trangThaiTT, tuanDaQua, tuanLich,
@@ -415,7 +415,8 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               <span className="tabular-nums">
                 {goc && <><s className="whitespace-nowrap text-slate-500" title={t('Lịch gốc')}>{goc}</s><span className="mx-1 text-slate-500">→</span></>}
                 <span className="whitespace-nowrap font-semibold text-slate-200">{tuanLich(s.weekStart, homNay)}</span>
-                {goc && <span className="block text-xs text-slate-500">{t('vắng')}</span>}
+                {goc ? <span className="block text-xs text-slate-500">{t('vắng')}</span>
+                  : dongKhoiPhucVang(d.history, k, homNay) && <span className="block text-xs text-slate-500">{dongKhoiPhucVang(d.history, k, homNay)}</span>}
               </span>
             ) : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
           </div>

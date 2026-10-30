@@ -21,7 +21,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     sai({ tg: 'thang', tu: '2026-01', den: '2028-01' }, /24 tháng/);
     sai({ tg: 'dot', dot: 'mt:9' }, /MT1 đến MT8/);
     sai({ tg: 'dot', dot: 'giua' }, /MT1 đến MT8/);                                // Progress Test ở khung FT
-    sai({ tg: 'dot', dot: 'mt:1', khung: 'thuong' }, /Progress Test và Final Test/);
+    sai({ tg: 'dot', dot: 'mt:1', khung: 'thuong' }, /Progress Test, Checkpoint và Final Test/);
     sai({ tg: 'dot', dot: '' }, /ít nhất một đợt/);
     sai({ ...tuan, chiNhanh: 'abc' }, /Chi nhánh không hợp lệ/);
     sai({ ...tuan, lop: '-1' }, /Lớp không hợp lệ/);
@@ -327,7 +327,7 @@ async function mayChu(t: YThucTestKit) {
 
   check('PR-XUAT (3) · khung thường + đợt MT → 400 câu tiếng Việt; GVCN lớp FT lọc lớp FT hỏi khung thường → 0 lượt, không lỗi; Pre FOU đúng một cột "Tổng hợp %"', () => {
     const sai = d.docBoLocXuatMt({ khung: 'thuong', tg: 'dot', dot: 'mt:1' });
-    assert(typeof sai === 'string' && /Progress Test và Final Test/.test(sai), String(sai));
+    assert(typeof sai === 'string' && /Progress Test, Checkpoint và Final Test/.test(sai), String(sai));
     const rong = xm.duLieuXuatMt(P.coreTeacher, locThuong({ lop: String(mbLop) }));
     assert(rong.dem.luot === 0 && rong.sheets.map((s) => s.ten).join() === 'Bộ lọc đã dùng', `${rong.dem.luot} lượt, sheet ${rong.sheets.map((s) => s.ten)}`);
     const pf = xm.duLieuXuatMt(P.admin, locThuong());

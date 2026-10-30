@@ -33,7 +33,7 @@ export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, o
         <span className="font-normal max-md:hidden"><kbd>↑</kbd> <kbd>↓</kbd> {t('đi từng em')}</span>
       </div>
       <ul ref={ref} role="listbox" aria-label={nhan} onKeyDown={phim}
-        className="m-0 max-h-[60vh] list-none divide-y overflow-y-auto rounded-lg p-0 surface-2 max-md:max-h-[40vh]" style={{ borderColor: 'var(--line)' }}>
+        className="m-0 list-none divide-y rounded-lg p-0 surface-2" style={{ borderColor: 'var(--line)' }}>
         {ds.map((e) => {
           const tt = trangThai?.(e) ?? null;
           return (
@@ -91,7 +91,7 @@ export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placehold
     if (chu.trim() === giaTri.trim()) { if (tt === 'go') setTt('yen'); return; }
     if (batBuoc && !chu.trim()) { setTt('loi'); setLoi(t('Viết góp ý cho em này.')); return; }
     setTt('luu');
-    try { await onLuu(chu.trim()); setTt('da'); setLoi(null); } catch (e: any) { setTt('loi'); setLoi(e?.message ?? t('Chưa lưu được — chữ vẫn giữ, thử lại khi rời ô.')); }
+    try { await onLuu(chu.trim()); setTt('da'); setLoi(null); } catch (e: any) { setTt('loi'); setLoi(e?.message ?? t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.')); }
   };
   const nhanEl = (
     <span className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-slate-200">

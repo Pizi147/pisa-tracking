@@ -228,6 +228,9 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const r1 = xl.luuXetLai(QL, BE_D.id, [{ studentId: A.sid, quyetDinh: 'tiep_tuc' }, { studentId: B.sid, quyetDinh: 'tiep_tuc' }]);
     assert(r1.failed.length === 1 && r1.failed[0].studentId === A.sid && r1.failed[0].message === 'Ghi lý do ngắn' && r1.ok.length === 1 && r1.ok[0].studentId === B.sid, JSON.stringify(r1));
     assert(dong(A.sid) && !dong(B.sid), 'A còn dòng, B hết');
+    /* DON-LUONG K39b: GVCN lớp mới ghi nhận xét SAU khi QL quyết (panel cũ) → 409 nói bước đã quyết (không 403 không bước tiếp). */
+    let k39: any = null; try { trongBoNho(() => xl.ghiNhanXetGvcnMoi(GVCN_BE, BE_D.id, B.sid, 'x')); } catch (e: any) { k39 = e; }
+    assert(k39?.status === 409 && /^QL đã quyết Tiếp tục lúc \d\d\/\d\d — nhận xét không còn cần\.$/.test(k39.message), `K39b: ${k39?.status} ${k39?.message}`);
     const j = get(`SELECT title, detail FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`, B.sid);
     assert(j?.title === 'QL xét lại: Tiếp tục BE' && /đã lên BE/.test(j.detail) && /Final 55 %/.test(j.detail), JSON.stringify(j));
     const l0 = lenhCua(CHO.sid);

@@ -304,9 +304,8 @@ export function Header() {
                   /* Góc nhìn khác: chỉ đánh dấu những thông báo đang thấy (vai này mở được) — thông báo của vai gốc giữ chưa đọc. */
                   try {
                     if (gocKhac) {
-                      /* Lô ≤ 20 yêu cầu song song (đường sẵn có `/notifications/:id/read`) — không dồn 40+ yêu cầu một lúc. */
-                      const ids = dsThongBao.filter((n) => !n.read_at).map((n) => n.id);
-                      for (let i = 0; i < ids.length; i += 20) await Promise.all(ids.slice(i, i + 20).map((id) => api.post(`/notifications/${id}/read`)));
+                      /* DON-LUONG A6: một lệnh `doc-nhieu` (≤ 200 id — chuông ≤ 70 dòng) thay vòng lô 20 yêu cầu. */
+                      await api.post('/notifications/doc-nhieu', { ids: dsThongBao.filter((n) => !n.read_at).map((n) => n.id) });
                     }
                     else await api.post('/notifications/doc-het');
                     notifications.reload();

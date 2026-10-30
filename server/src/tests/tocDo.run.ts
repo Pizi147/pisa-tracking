@@ -1344,7 +1344,7 @@ await checkAsync(`OV-15f · Xuất Excel danh sách HV mẫu Theo dõi SOS cả 
   assert(n <= TRAN_GHI_LO.xuatDanhSachSos, `${n} câu > trần ${TRAN_GHI_LO.xuatDanhSachSos}`);
 });
 
-for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_GHI_LO.dongBoThongBaoGVCN]] as const) {
+for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_GHI_LO.dongBoThongBaoGVCN], ['QT', TRAN_GHI_LO.dongBoThongBaoQT]] as const) {
   check(`OV-15d · đồng bộ thông báo tự động (dongBoThongBaoTuDong) ${vai} ≤ ${tran} câu SQL`, () => {
     const { dongBoThongBaoTuDong } = td15d;
     const p = loadPrincipal(USER[vai]);
@@ -1506,6 +1506,27 @@ await checkAsync(`PR-Dọn (9d) · Đọc hết thông báo (POST /notifications
   assert(r.status === 200 && typeof r.json?.daDoc === 'number', `doc-het: ${r.status} ${JSON.stringify(r.json)}`);
   console.log(`      (đo: ${r.n} câu)`);
   assert(r.n <= TRAN_GHI_LO.docHet, `${r.n} câu > trần ${TRAN_GHI_LO.docHet}`);
+});
+
+/* DON-LUONG K42a (rà sâu #742): người ~500 thông báo — trang đầu đầy nên có lượt 2 "Cần làm đã đọc"; lượt 2 lọc ở WHERE bên trong (đã đọc, cũ hơn trang,
+   loại có thể còn việc) → dòng quét lượt 2 = số dòng thoả lọc đó (in ra), không phải ~500. */
+await checkAsync(`DON-LUONG K42a · GET /notifications người 500 thông báo ≤ ${TRAN_GHI_LO.chuong500} câu, ≤ ${TRAN_GHI_LO.chuong500Dong} dòng trả về`, async () => {
+  const u = accounts.createAccount(loadPrincipal(userByRole('system_admin', null)), {
+    email: `do.chuong500${accounts.EMAIL_SUFFIX}`, password: 'matkhau-do-chuong', fullName: 'Đo chuông 500', roles: [{ role: 'teacher', branches: ['MB'] }],
+  }).userId as number;
+  const luc = new Date().toISOString();
+  const them = conn.prepare(`INSERT INTO notifications (user_id, kind, title, dedup_key, created_at, read_at) VALUES (?,?,?,?,?,?)`);
+  for (let i = 0; i < 500; i++) {
+    const kind = i % 25 === 0 ? 'case_giao' : 'thu_do';   // 20 dòng loại Cần làm (Case không có → để biết), 480 dòng thường
+    them.run(u, kind, `Đo ${i}`, `do500:${i}`, luc, i < 470 ? luc : null);   // 30 dòng mới nhất chưa đọc
+  }
+  const truoc = soCauSql(), dongTruoc = soDongSql();
+  const r = await callHttpUser(u, 'GET', '/notifications');
+  const n = soCauSql() - truoc, dong = soDongSql() - dongTruoc;
+  const moc = Math.min(...(r.json as any[]).filter((x) => x.read_at).map((x) => x.id));
+  const quet2 = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND read_at IS NOT NULL AND id < ? AND kind IN ('case_giao')`).get(u, moc) as any).n;
+  console.log(`      (đo: ${n} câu, ${dong} dòng trả về; lượt 2 quét ~${quet2} dòng thay vì 500)`);
+  assert(r.status === 200 && n <= TRAN_GHI_LO.chuong500 && dong <= TRAN_GHI_LO.chuong500Dong, `${r.status} · ${n} câu · ${dong} dòng`);
 });
 
 await checkAsync(`PR-XUAT · Xuất Excel cả chi nhánh MB, MT1–MT8, cột đầy đủ (POST /xuat-mt) ≤ ${TRAN_GHI_LO.xuatMtChiNhanh} câu SQL, phản hồi < 6 MB`, async () => {

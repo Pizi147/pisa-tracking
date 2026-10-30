@@ -80,8 +80,8 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, onBanGiaoGv
  */
 function DaiDoiGv({ dai, h, onMo }: { dai: DaiLop; h: string; onMo?: (id: number) => void }) {
   const x = dai.xemTam;
-  const nutBg = (id: number, du: number, tong: number, chinh = true) => onMo && (
-    <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chinh ? 'btn-primary' : ''}`} onClick={() => onMo(id)}>{t('Bàn giao · {a}/{b} em', { a: du, b: tong })}</button>
+  const nutBg = (id: number, du: number, tong: number) => onMo && (
+    <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onMo(id)}>{t('Bàn giao · {a}/{b} em', { a: du, b: tong })}</button>
   );
   return (
     <>

@@ -223,7 +223,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
             </Truong>
             {ghi && !em.xacNhan && (nxLuu !== 'yen' || !canNx) && (
               <p className="m-0 -mt-2 text-xs text-slate-500" aria-live="polite">
-                {nxLuu === 'luu' ? t('Đang lưu…') : nxLuu === 'da' ? t('✓ Đã lưu') : nxLuu === 'loi' ? <span className="text-late">{t('Chưa lưu được — chữ vẫn giữ, thử lại khi rời ô.')}</span> : null}
+                {nxLuu === 'luu' ? t('Đang lưu…') : nxLuu === 'da' ? t('✓ Đã lưu') : nxLuu === 'loi' ? <span className="text-late">{t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.')}</span> : null}
                 {!canNx && nxLuu === 'yen' && t('GVCN lớp mới là bạn — nhận xét chung không bắt buộc.')}
               </p>
             )}

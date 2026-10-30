@@ -49,6 +49,8 @@ export type Principal = {
   kyNang?: string[];
   /** PC-GV-A: lớp vừa bị ĐỔI khỏi (A → B; bỏ người không có) — CHỈ XEM (`ATTEMPT_VIEW`, `STUDENT_VIEW`) từ hiệu lực tới `den`. Đọc cùng câu phiên. */
   xemTam?: { classId: number; tu: string; den: string; doiId: number }[];
+  /** CHUONG-NHE: mốc đồng bộ thông báo tự động gần nhất (`users.chuong_dong_bo_luc`, NULL = lần mở chuông kế đồng bộ ngay). Đọc cùng câu phiên. */
+  chuongDongBoLuc?: string | null;
 };
 
 export type Ctx = {
@@ -67,7 +69,7 @@ export type Ctx = {
  * hiệu lực ngay). Ba khối JSON giữ đúng câu cũ (lọc, JOIN, thứ tự): vai (kèm quyền theo vai), quyền cấp riêng, phân công.
  * `json(...)` vì cột con lấy qua truy vấn con mất kiểu JSON — không bọc thì quyền thành chuỗi.
  */
-export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_full_name, u.title AS u_title, u.ngon_ngu AS u_ngon_ngu, u.da_xem_huong_dan AS u_da_xem_hd,
+export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_full_name, u.title AS u_title, u.ngon_ngu AS u_ngon_ngu, u.da_xem_huong_dan AS u_da_xem_hd, u.chuong_dong_bo_luc AS u_chuong_luc,
   (SELECT json_group_array(json_array(g.id, g.branch_id, g.role_key, g.role_name, g.branch_name, json(g.perms))) FROM (
      SELECT ur.id, ur.branch_id, r.key AS role_key, r.name_vi AS role_name, b.name AS branch_name,
             (SELECT json_group_array(p.key) FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
@@ -130,6 +132,7 @@ export function principalTuDong(row: any): Principal {
     title: row.u_title,
     ngonNgu: row.u_ngon_ngu ?? null,
     daXemHuongDan: row.u_da_xem_hd === 1,
+    chuongDongBoLuc: row.u_chuong_luc ?? null,
     kyNang: row.u_ky_nang ? JSON.parse(row.u_ky_nang) : [],
     xemTam: (row.u_xem_tam ? JSON.parse(row.u_xem_tam) as any[][] : []).map(([classId, tu, den, doiId]) => ({ classId, tu, den, doiId })),
     grants,

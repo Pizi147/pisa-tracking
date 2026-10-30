@@ -2,6 +2,10 @@
 import type { Dich } from '../en.ts';
 
 export const EN_BAN_GIAO_GV = {
+  /* máy chủ — dòng Công việc */
+  'Bàn giao {lop} · {mon}': 'Handover {lop} · {mon}',
+  '{n} em chưa đủ góp ý bàn giao': (b) => `${b.n} ${Number(b.n) === 1 ? 'student' : 'students'} missing handover notes`,
+  'cho {ten} · {a}/{b} em': 'to {ten} · {a}/{b} students',
   /* máy chủ */
   'Còn {n} em thiếu góp ý.': (b) => `${b.n} ${Number(b.n) === 1 ? 'student is' : 'students are'} missing notes.`,
   'Viết góp ý cho em này.': 'Write a note for this student.',
@@ -38,7 +42,7 @@ export const EN_BAN_GIAO_GV = {
   '● Đang gõ · lưu khi rời ô': '● Typing · saves when you leave the box',
   '✓ Đã lưu': '✓ Saved',
   'Đang lưu…': 'Saving…',
-  'Chưa lưu được — chữ vẫn giữ, thử lại khi rời ô.': 'Not saved — your text is kept, it retries when you leave the box.',
+  'Không lưu được — chữ vẫn giữ, thử lại khi rời ô.': 'Not saved — your text is kept, it retries when you leave the box.',
   'Nhận xét chung cả lớp': 'General note for the class',
   '· tuỳ chọn': '· optional',
   '· chưa viết': '· not written',

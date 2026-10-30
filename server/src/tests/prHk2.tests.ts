@@ -596,7 +596,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const pg = d.nhanGhim(luotThuong('progress')), fg = d.nhanGhim(luotThuong('final'));
     assert(pg.day.startsWith('Progress Test') && fg.day.startsWith('Final Test') && fg.chu.startsWith('Final') && pg.hai[0] === 'Progress' && fg.hai[0] === 'Final', JSON.stringify([pg, fg]));
     const sai = d.docBoLocXuatMt({ khung: 'thuong', tg: 'dot', dot: 'mt:1' });
-    assert(typeof sai === 'string' && /Progress Test và Final Test/.test(sai) && !CHU_CU.test(sai), String(sai));
+    assert(typeof sai === 'string' && /Progress Test, Checkpoint và Final Test/.test(sai) && !CHU_CU.test(sai), String(sai));   // DON-LUONG A8: thêm đợt Checkpoint (ATTEMPT_KIND_SHORT)
     const kl = d.chuHopKetLuan({ ct: 'FOU', tyLe: 0.66, scored: 4, required: 4, mon: [], goiY: { dai: 'dat', nhan: 'Pass', nhanNgan: 'Pass' } as any, quyetDinh: null, ketLuanFt: null });
     assert(kl.chinh === 'Final Test 66%', kl.chinh);
     assert(d.chuHopKetLuan({ ct: 'FOU', tyLe: null, scored: 2, required: 4, mon: [], goiY: null, quyetDinh: null, ketLuanFt: null }).chinh === 'Final Test · 2/4 môn có điểm', 'thiếu môn');
