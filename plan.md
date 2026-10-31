@@ -249,6 +249,14 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 31/10 chiều — PTA Plan rà toàn bộ (đối chiếu mã thật, main 0f01f541d)
+- **#761 PANEL-RIENG:** check gộp main 4974/4974 · chấm lại 10/12 = 83 % → **chờ chủ SP đồng ý 2 KHÁC, chưa merge** (`#p7` 375 môn 2 × 2 · `#p3` Phân công đổi trang). Chưa xác minh (không phải luồng chính): panel "PA chưa có kết quả", dòng "chưa phân công" (demo 0 dòng); chưa chạy `audit`, `web-design-guidelines`, `/ponytail-review`. [XM] của PR ở khối backlog dưới khi #761 merge.
+- **Thứ tự còn lại:** ① #761 → ② **PR-D** hồ sơ lớp Lưu phân công (đủ điều kiện từ #726) → ③ **TL-VIEC** ‖ **TL-TQ** (DON-MA đã merge), **TL-HVL** sau PR-D → ④ **CN-3** + MA-MO-COI (`TheKyNang.tsx` còn) → ⑤ **DON-HINH** (chữ phụ tối còn 183 / 154, QL mở Công việc mặc định "Của tôi", tên "Speaking chấm chéo" chưa làm) → ⑥ **V8-PT-2**, **V8-HSL-2** sau #761.
+- **Mới, chưa có chủ — DO-KHUNG-DO:** `do-khung` 31/10 có 47 ✗ ở màn #761 không chạm: dấu "·" đầu panel bị tính là chữ cắt (công cụ hay chữ thật — cần soi) · Bảng điểm lớp thường g1 lệch tiêu đề ↔ ô tới 83 px · `panel-sua-tt`, `chon-nhieu-hv` hết giờ · 9 kịch bản 375 cuối lượt crash (Page crashed). **Chưa đo trên main sạch** → PR nhỏ: chạy lại trên main, sửa thật, thêm miễn phần công cụ. Muốn chạy trong worktree cần gói `playwright` (không có trong `package.json`).
+- **Chờ chủ SP bảo:** deploy (main hơn bản chính 199 commit; 5 migrate: `prChuongNhe`, `donLuong`, `prBanGiaoGv`, `prTlNen`, `prTlNapBai`) · xoá DB `261027`, `261028` (~06/11) · email Monbay 14 nhóm trùng / 13 thiếu · sổ tay PDF: làm hay bỏ (Hướng dẫn web đã thay; dòng 17/10 còn treo).
+- **Sổ sách:** dòng "Cập nhật" đầu tệp dừng 26/10, mục 11 Nhật ký dừng 27/10 — tra PR đã merge bằng GitHub, không bằng mục 11.
+- **Bẫy preview:** `preview_start` luôn chạy ở thư mục chính (log `D:/Github/Pisa-tracking/dist-server`), không chạy mã worktree dù session đã vào worktree; DB `data/` thư mục chính cũ → "no such table". `do-khung` ghi đè `thiet-ke/anh/khung/*.png`: `git checkout -- thiet-ke` sau khi đo.
+
 ### 31/10 sáng — chủ SP duyệt ảnh #736, #732, #731, #726 (kèm chỉnh)
 - **Nút ⋯ trong ô lưới điểm (luật):** đứng NGAY SAU nội dung ô, cùng hàng, giữa theo chiều dọc với dòng chữ đầu (vd "✗ 14 /25 ⋯"); không đè chữ / số; máy có chuột chỉ hiện khi rê / focus, cảm ứng hiện sẵn (#732 làm đúng kiểu này).
 - **Bảng lớp góc Phân công GV (#726) — thay ý "giãn hết" 30/10:** chừa MỘT cột cố định ở mép phải cho nút dòng (Huỷ / Lưu, Chờ đổi…) ở MỌI nhóm, để cột kỹ năng / GVCN không thụt ra thụt vào giữa các nhóm; cột GVCN thẳng hàng giữa nhóm FT và nhóm lớp thường. 375: bảng tổng hợp đủ cột "Tổng".
