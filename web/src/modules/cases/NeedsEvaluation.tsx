@@ -1,53 +1,37 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { invalidate } from '../../lib/api.ts';
+import { NutLuat } from '../../ui/NutLuat.tsx';
+import { NganDanhSach, type DongSoLieu } from '../../ui/SoLieu.tsx';
 import { t } from '@shared/i18n/index.ts';
 
+const VI_SAO = t('Không tính vào bảng hiệu quả tới khi có kết quả');
+
 /**
- * "CẦN BỔ SUNG ĐÁNH GIÁ" — phương án đã kết thúc mà chưa có kết quả xác định (F05).
+ * "n PA CHƯA CÓ KẾT QUẢ ⓘ" (PANEL-RIENG B6 — tên mới, khớp nút "Ghi kết quả") — phương án đã kết thúc mà chưa có kết quả xác định (F05).
  *
- * Chúng KHÔNG nằm trong bảng hiệu quả và không vào mẫu số (D03): bảng không được bày một hàng/cột
- * "chưa rõ" như thể nó thuộc mẫu. Nhưng chúng cũng không được biến mất — đây là một việc cần người
- * làm — nên hiện thành MỘT LIÊN KẾT ngoài bảng, mở ra danh sách đúng những phương án đó (cùng bộ lọc
- * phạm vi với bảng vừa xem, nên số ghi ở đây và số dòng trong danh sách là một).
+ * Chúng KHÔNG nằm trong bảng hiệu quả và không vào mẫu số (D03), nhưng là việc cần người làm — nên hiện thành MỘT nút chữ ngoài bảng, mở panel số
+ * chung (`NganDanhSach`): tên em là link hồ sơ, nút "Ghi kết quả" riêng khi người xem ghi được (máy chủ `rowsFor('phuong-an')` + `ghiDuocPaMany`).
+ * Cùng bộ lọc phạm vi với bảng vừa xem, nên số ở đây và số dòng trong panel là một.
  */
 export function NeedsEvaluation({ count, url }: { count: number; url: string }) {
   const [open, setOpen] = useState(false);
-  const { data, loading, error, reload } = useApi<{ count: number; rows: { id: number; title: string; sub: string; href: string }[] }>(
-    open ? url : null, [url, open],
-  );
+  const { data, loading, error, reload } = useApi<{ count: number; rows: DongSoLieu[] }>(open ? url : null, [url, open]);
   if (count <= 0) return null;
+  /* Ghi kết quả trong panel làm số ngoài bảng đổi — đóng panel thì bảng của trang đọc lại. */
+  const dong = () => { setOpen(false); invalidate(url.split('/needs-evaluation')[0]); };
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)}
-        className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-xs text-amber-200 underline decoration-dotted underline-offset-4 hover:text-amber-100 text-left">
-        {t('Cần bổ sung đánh giá · {count} phương án đã kết thúc nhưng chưa có kết quả xác định', { count })}
-      </button>
+      <span className="inline-flex items-center gap-1.5 text-sm">
+        <button type="button" onClick={() => setOpen(true)}
+          className="min-h-[44px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-semibold text-[color:var(--accent)] underline decoration-1 underline-offset-[3px] sm:min-h-0">
+          {t('{n} PA chưa có kết quả', { n: count })}
+        </button>
+        <NutLuat label={VI_SAO}>{VI_SAO}</NutLuat>
+      </span>
       {open && (
-        <KhungPanel tieuDe={t('{count} phương án — Cần bổ sung đánh giá', { count })} onDong={() => setOpen(false)}
-          ngCanh={t('Không tính vào bảng hiệu quả cho tới khi có kết quả xác định')}>
-          <div className="pt-3">
-            {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
-              : loading || !data ? <Skeleton rows={4} />
-              : !data.rows.length ? <Empty title={t('Không còn phương án nào cần bổ sung')} />
-              : (
-                <ul className="list-none p-0 m-0 space-y-1.5">
-                  {data.rows.map((r) => (
-                    <li key={r.id}>
-                      <Link to={r.href} onClick={() => setOpen(false)}
-                        className="block rounded-lg border px-3 py-2 no-underline hover:brightness-125"
-                        style={{ borderColor: 'var(--line)' }}>
-                        <span className="block text-sm text-slate-100">{r.title}</span>
-                        {r.sub && <span className="block text-xs text-slate-500 mt-0.5">{r.sub}</span>}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-          </div>
-        </KhungPanel>
+        <NganDanhSach tieuDe={t('PA chưa có kết quả')} dv="PA" onDong={dong} cachTinh={VI_SAO} trong={t('Không còn PA nào chưa có kết quả')}
+          data={data ? { n: data.count, rows: data.rows } : null} loading={loading} error={error} reload={reload} />
       )}
     </>
   );

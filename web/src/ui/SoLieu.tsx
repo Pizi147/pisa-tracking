@@ -1,4 +1,4 @@
-import { Fragment, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, dauDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -11,6 +11,7 @@ import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
+import { NutLuat } from './NutLuat.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { lazyTai } from '../lib/taiLaiManh.ts';
 
@@ -45,6 +46,8 @@ export type DongSoLieu = {
   id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null;
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null; ngayThiThat?: string;
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
+  /** PANEL-RIENG (XM-2): bài không có người chấm (môn chưa phân công) — "chưa phân công" + "Phân công ›" (QL). */
+  chuaPhanCong?: true;
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ; có nhóm thì panel vẽ dải nhóm và dòng mở view Case trong cùng panel. */
   nhom?: NhomCaseChuaChot | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
@@ -62,13 +65,15 @@ export type DongSoLieu = {
  * │ Overall ✓ / ✗ + mốc so. Đạt và hụt cùng màu ô Overall (`DiemKq`: `text-kq-bang` / `text-kq-duoi`); chưa đủ căn cứ: không ký hiệu.
  * `knNhan` = kỹ năng của chỉ số đang xem (nền nhấn) · `cua` (hồ sơ GV) = kỹ năng GV phụ trách (viền nhấn, XM-2) · `kck` = hụt không tô đỏ (như `ODiem`).
  */
-export function DongDiem({ d, knNhan, kck }: { d: DiemHv; knNhan?: string | null; kck?: boolean }) {
+export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: string | null; kck?: boolean;
+  /** Cột lượt hẹp hơn 132 px khi mọi dòng cùng nơi chỉ một nhãn ngắn ("Final" ở thẻ Xét lại) — chừa chỗ cho 4 môn % + Tổng trong thẻ hẹp. */
+  rongLuot?: number }) {
   const pt = d.donVi === '%';
   const so = (v: number) => (pt ? `${Math.round(v)} %` : v.toFixed(1));
   const mau = (dat: boolean | null) => (dat === null ? '' : dat ? 'text-kq-bang' : kck ? '' : 'text-kq-duoi');
   const ovDat = d.overall != null && d.soVoi ? d.overall >= d.soVoi.v : null;
   return (
-    <span className="dd mt-1" style={d.kn.length !== 4 ? { gridTemplateColumns: `132px repeat(${d.kn.length}, 64px) minmax(0, 1fr)` } : undefined}>
+    <span className={`dd mt-1${pt ? ' pt' : ''}`} style={{ ...(d.kn.length !== 4 ? { '--so-kn': d.kn.length } : {}), ...(rongLuot ? { '--rong-lu': `${rongLuot}px` } : {}) } as CSSProperties}>
       <span className="lu">
         <span>{[d.luot, d.tuan && tuanLich(d.tuan)].filter(Boolean).join(' · ')}</span>
         {d.tam && <span className="tam-chu" title={t('Lượt chưa chốt điểm')}>{t('tạm')}</span>}
@@ -174,7 +179,9 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   cachTinh?: ReactNode; trong?: string;
 }) {
   const { homNay } = useNgayNghiepVu();
-  const toi = useSession().session?.user?.id ?? null;
+  const phien = useSession().session;
+  const toi = phien?.user?.id ?? null;
+  const laQl = !!phien?.nav?.workOps;
   /* OV-13b: dòng đang mở rộng ghi lên URL (`?dong=`) — về từ hồ sơ (‹ Tổng quan) mở lại đúng dòng. */
   const [moChu, datMo] = useThamSoUrl('dong', '');
   const mo = moChu ? Number(moChu) : null;
@@ -399,7 +406,11 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       v && !v.lam && dich(v.chu), r.tinhTrang && dich(r.tinhTrang),
       han && <HanDong han={han} loai={r.viec?.loaiHan} />,
       r.nguoi && r.nguoiId !== toi && r.nguoi,
+      r.chuaPhanCong && !r.xong && t('chưa phân công'),
     ];
+    /* PANEL-RIENG (XM-2): QL / Quản trị gán người chấm ở phần Phân công của hồ sơ lớp (đổi trang — "›"; trang đó kiểm quyền lần nữa). */
+    const phanCong = r.chuaPhanCong && !r.xong && laQl && r.viec?.classId
+      ? <Link to={`/hoc-vien/lop/${r.viec.classId}?viec=phan-cong`} className="btn btn-sm min-h-[32px] no-underline max-sm:min-h-[44px]">{t('Phân công')} ›</Link> : null;
     return (
       <li key={r.id} data-dong={r.id} className="border-t px-4 pb-[11px] pt-2.5 first:border-t-0" style={{ borderColor: 'var(--line)', ...(r.xong ? { background: 'rgb(var(--ok-bg-rgb))' } : moRong ? { background: 'var(--accent-soft)' } : {}) }}>
         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1.5">
@@ -409,6 +420,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           <span className="ml-auto inline-flex items-center gap-2">
             {r.xuHuong?.truoc && r.xuHuong.sau && <span className="doi">{r.xuHuong.truoc.luot} <b>{r.xuHuong.truoc.v.toFixed(1)}</b> → {r.xuHuong.sau.luot} <b>{r.xuHuong.sau.v.toFixed(1)}</b></span>}
             {chipHan}
+            {phanCong}
             {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>
               : v?.lam && (
                 <button type="button" className="btn btn-sm min-h-[32px] max-sm:min-h-[44px]" aria-expanded={v.loai === 'xac-nhan-pa' && v.pa ? moRong : undefined}
@@ -494,8 +506,16 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
       loai={nhomCase ? t('SỐ LIỆU · TỔNG QUAN') : hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
       dau={{
         han: soTre ? <ChipSoQuaHan n={soTre} /> : null,
+        /* PANEL-RIENG (XM-1, mockup v10 `.pn-tieu`): số + đơn vị ngay sau tên số liệu ("SOS 2 · MB FT 101 4 HV"), "Cách tính" là ⓘ cuối dòng tiêu đề. */
+        tieu: (
+          <>
+            <span className="min-w-0">{tieuDe}</span>
+            {data && (dv || nhomCase) && <span className="whitespace-nowrap"><span className="tabular-nums">{data.n}</span> <span className="text-sm font-medium text-slate-400">{dv ?? 'Case'}</span></span>}
+            {cachTinh && <NutLuat label={t('Cách tính')}>{cachTinh}</NutLuat>}
+          </>
+        ),
         /* 6b-2: dòng vừa xử lý giữ chỗ nhưng không còn trong tập — đầu panel nói rõ để số khớp số dòng ("6 Case · 1 vừa xử lý"). */
-        dong2: [data && (dv || nhomCase) ? `${data.n} ${dv ?? 'Case'}` : null, nhomCase && hien.length > data!.n ? t('{n} vừa xử lý', { n: hien.length - data!.n }) : null,
+        dong2: [nhomCase && hien.length > data!.n ? t('{n} vừa xử lý', { n: hien.length - data!.n }) : null,
           soTre ? t('quá hạn lên đầu') : null],
       }}
       chan={vuaXong && !nhomCase ? { v3: true, dongTren: <span className="flex flex-wrap items-center gap-x-3"><span className="font-semibold text-ok">✓ {vuaXong.chu}</span><NutHoanTac key={vuaXong.lan} hoanTac={vuaXong.hoanTac} onHoanTac={() => setVuaXong(null)} /></span> } : undefined}>
@@ -520,12 +540,6 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
             <PhanTrang {...pt.thanh} duoi />
           </>
         )}
-      {cachTinh && (
-        <details className="mt-4 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <summary className="min-h-[44px] cursor-pointer text-[13px] font-semibold text-[color:var(--accent)] sm:min-h-0">{t('Cách tính')}</summary>
-          <div className="mt-2">{cachTinh}</div>
-        </details>
-      )}
     </KhungPanel>
   );
 }

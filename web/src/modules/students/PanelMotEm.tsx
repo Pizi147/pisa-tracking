@@ -15,17 +15,22 @@ import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, thuNgay, vaiXemHocVien, type GiaiDoanSauThi, type LienHe } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, duongHoSoHocVien, tachNhanLichThi, thuNgay, vaiXemHocVien, type DiemHv, type GiaiDoanSauThi, type LichThi, type LienHe } from '@shared/domain/index.ts';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { DongDiem } from '../../ui/SoLieu.tsx';
 
 /** `GET /hoc-vien-lop/em/:id` (server/src/classes/hocVienSos.ts → panelMotEm). */
 type DuLieuEm = {
-  em: { id: number; ten: string; ma: string; lop: { id: number; code: string; ft: boolean } | null; tvv: string | null; lienHe: LienHe };
-  luot: { nhan: string | null; sosLevel: number | null } | null;
+  em: { id: number; ten: string; ma: string; lop: { id: number; code: string; ft: boolean } | null; tvv: string | null; lienHe: LienHe;
+    /** PANEL-RIENG (B5): Target lộ trình mới nhất ("6.5" · "6.5 KCK") + lịch thi (cùng hàm đầu hồ sơ). */
+    target: string | null; lichThi: LichThi | null };
+  luot: { nhan: string | null; sosLevel: number | null; tam: boolean; kyNang: string[]; soLieu: Array<[string, string]> } | null;
+  /** PANEL-MC (B5): dòng điểm lượt mới nhất (`diemTuStanding`). */
+  diem: DiemHv | null;
   cases: CaseTomTat[];
   /** OV-13q: lộ trình FT mới nhất đã thi chưa xong (`sauThiCuaEm`) + nút người xem bấm được. */
   sauThi: { cycleId: number; giaiDoan: GiaiDoanSauThi; ngayThi: string | null; han: string | null; quaHan: boolean; daGiaHan: boolean;
@@ -112,25 +117,52 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
     if (dangMo(c)) { s.delete(c.id); s.add(-c.id); } else { s.add(c.id); s.delete(-c.id); }
     return s;
   });
-  /* OV-12e — đầu panel v3 chung (mockup v3 §9): tên em · chip hạn = việc gấp nhất của người xem / Hồ sơ · lớp · lượt · SOS. */
+  /* PANEL-RIENG (B5, mockup v10 `#p5`): dòng loại "HỌC VIÊN" · tên em (link hồ sơ) + chip SOS (không lặp kỹ năng — dòng điểm ngay dưới đã ✗; bấm = hộp
+     "Vì sao SOS n" có số) · chip hạn việc gấp nhất của người xem + "Hồ sơ ›" bên phải. Lớp · lượt sang hàng thông tin + dòng điểm trong thân. */
   const gapNhat = (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x]))
     .filter((x) => x.studentId === studentId && VIEC_CUA_NHOM[x.group] && x.due && LOAI_HAN_CUA_VIEC[x.group])
     .sort((a, b) => a.due!.localeCompare(b.due!))[0];
+  const l = data?.luot;
   const dau = {
-    han: gapNhat ? <ChipHan loai={LOAI_HAN_CUA_VIEC[gapNhat.group]!} han={gapNhat.due} /> : null,
-    dong2: data ? [
-      <Link className="link inline-flex min-h-[44px] items-center sm:min-h-0" to={`/hoc-vien/${studentId}`}>{t('Hồ sơ')}</Link>,
-      lop, data.luot?.nhan ? dich(data.luot.nhan) : null,
-      data.luot?.sosLevel ? <ChipSos muc={data.luot.sosLevel} dot={data.luot.nhan ? dich(data.luot.nhan) : null} /> : null,
-    ] : [],
+    loai: t('HỌC VIÊN'),
+    tieu: (
+      <>
+        <Link className="min-w-0 text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-[11px] max-sm:py-[11px]" to={duongHoSoHocVien(studentId)}>{ten}</Link>
+        {l?.sosLevel ? <ChipSos muc={l.sosLevel} tam={l.tam} kyNang={l.kyNang} hienKyNang={false} ten={ten} dot={l.nhan ? dich(l.nhan) : null}
+          soLieu={l.soLieu.map(([a, b]) => [dich(a), b] as [string, string])} /> : null}
+      </>
+    ),
+    han: (
+      <span className="inline-flex shrink-0 items-center gap-3">
+        {gapNhat ? <ChipHan loai={LOAI_HAN_CUA_VIEC[gapNhat.group]!} han={gapNhat.due} /> : null}
+        <Link className="link inline-flex min-h-[44px] items-center whitespace-nowrap text-sm font-semibold sm:min-h-[24px]" to={duongHoSoHocVien(studentId)}>{t('Hồ sơ')} ›</Link>
+      </span>
+    ),
+    dong2: [],
   };
+  const lich = data?.em.lichThi && homNay ? tachNhanLichThi(data.em.lichThi, homNay) : null;
+  /* Hàng thông tin (mockup `.em-dau .gt`): nhãn mờ 13 · giá trị 600; mục không có dữ liệu thì không vẽ. */
+  const thongTin: [string, string][] = data ? ([
+    [t('Lớp'), lop], ['Target', data.em.target], ['TVV', data.em.tvv], [lich?.nhan ?? t('Thi'), lich?.gt || null],
+  ] as [string, string | null][]).filter((x): x is [string, string] => !!x[1]) : [];
 
   return (
-    <KhungPanel tieuDe={ten} dau={dau} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
+    <KhungPanel tieuDe={ten} dau={dau} rong="rong" onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
             <div className="space-y-2 pt-2">
+              {(thongTin.length > 0 || data.diem) && (
+                <div className="grid gap-2.5 pb-1.5 pt-1.5">
+                  {thongTin.length > 0 && (
+                    <p className="m-0 flex flex-wrap gap-x-[22px] gap-y-1 text-[13px] text-slate-400">
+                      {thongTin.map(([n, v]) => <span key={n}>{n}<b className="ml-1.5 font-semibold text-slate-100">{v}</b></span>)}
+                    </p>
+                  )}
+                  {/* Dòng điểm lượt mới nhất (cùng mẫu `DongDiem` mọi panel): ✓ / ✗ trước số của CHÍNH lượt. */}
+                  {data.diem && <div className="rounded-lg px-3 pb-2.5 pt-1.5 max-sm:px-2.5" style={{ background: 'var(--surface-2)' }}><DongDiem d={data.diem} kck={data.em.target?.endsWith('KCK')} /></div>}
+                </div>
+              )}
               {data.sauThi && (
                 /* OV-13q: dòng trạng thái sau thi + nút làm việc (cùng hàm với việc Công việc; nút theo quyền máy chủ). */
                 <CanLam>

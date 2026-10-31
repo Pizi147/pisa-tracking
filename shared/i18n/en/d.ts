@@ -102,12 +102,6 @@ const EN_D_WEB = {
   'Đang xoá…': 'Deleting…',
   ' · {soKetQua} kết quả tuần sẽ xoá': (b) => ` · ${so(b.soKetQua, 'weekly result', 'weekly results')} will be deleted`,
 
-  /* Cần bổ sung đánh giá */
-  'Cần bổ sung đánh giá · {count} phương án đã kết thúc nhưng chưa có kết quả xác định': (b) => `Needs evaluation · ${so(b.count, 'PA ended', 'PAs ended')} with no clear result`,
-  '{count} phương án — Cần bổ sung đánh giá': (b) => `${so(b.count, 'PA', 'PAs')} — needs evaluation`,
-  'Không tính vào bảng hiệu quả cho tới khi có kết quả xác định': 'Not counted in the effectiveness table until there is a clear result',
-  'Không còn phương án nào cần bổ sung': 'No PA needs evaluation',
-
   /* Tạo Case (QuickReport) */
   'tôi': 'me',
   'Đã ghi vào Case đang có «{tieuDe}»{x}': 'Added to existing case «{tieuDe}»{x}',

@@ -130,6 +130,8 @@ export type MetricRow = {
   id: number; title: string; sub: string; href: string;
   /** PR-VAI-a (Q26): dòng Case/PA — người phụ trách/thực hiện và hạn (xác nhận nguyên nhân / ghi kết quả), 12 px ở panel. */
   nguoi?: string | null; han?: string | null;
+  /** PANEL-RIENG (XM-2): dòng BÀI không có người giữ ô (môn chưa phân công GV). */
+  chuaPhanCong?: true;
   /** OV-12e: đầu dòng v3 — em (link hồ sơ) · lớp · ngữ cảnh; việc của dòng (null = không còn việc, ví dụ Case đã xong). */
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ (`nhomCaseChuaChot`). */
@@ -506,7 +508,9 @@ function ganChiTiet(r: MetricResult, rows: MetricRow[]): MetricRow[] {
     const c = r.chiTiet!.get(x.id);
     if (!c) return x;
     const nguoi = c.nguoi.map((u) => ten.get(u)).filter(Boolean).join(' · ');
-    return { ...x, nguoi: nguoi ? (c.chamCheo ? `${nguoi} ${t('chấm chéo')}` : nguoi) : c.chamCheo ? t('chấm chéo') : null, han: c.han[0] ?? null };
+    /* PANEL-RIENG (XM-2, mockup B3): "Hà chấm" / "Trang chấm chéo"; không ai giữ ô (môn chưa phân công) → `chuaPhanCong` — web ghi "chưa phân công" + Phân công ›. */
+    return { ...x, nguoi: nguoi ? (c.chamCheo ? `${nguoi} ${t('chấm chéo')}` : t('{ten} chấm', { ten: nguoi })) : c.chamCheo ? t('chấm chéo') : null,
+      ...(nguoi || c.chamCheo ? {} : { chuaPhanCong: true }), han: c.han[0] ?? null };
   });
 }
 

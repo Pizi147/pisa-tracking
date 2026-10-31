@@ -172,7 +172,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
   loai?: string | null;
   /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link) · lớp · ngữ cảnh.
    *  Có `dau` thì `hocVien` / `lop` không vẽ ở đầu một dòng cũ. */
-  dau?: { han?: ReactNode; dong2: ReactNode[]; loai?: string };
+  dau?: { han?: ReactNode; dong2: ReactNode[]; loai?: string;
+    /** PANEL-RIENG (XM-1, mockup v10 `.pn-tieu`): nội dung dòng tiêu đề thay chữ `tieuDe` — tên em là link + chip SOS, hay tên số liệu + số + đơn vị + ⓘ. */
+    tieu?: ReactNode };
   /** Lớp z — panel mở từ một popover `z-[60]` (hộp xếp lịch `HopKyNang`) cần nằm trên popover đó (PR-LM). */
   z?: string;
   /** Không vào `khoPanelChung`: panel con mở đè (Chuyển tiếp → Tạo lớp) không đóng panel này, state giữ nguyên.
@@ -311,7 +313,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
             {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
               {/* RA-UI-6 (critique A4): panel nằm trong cột hồ sơ (`trongCot`) dưới đầu mục 15 → tiêu đề 15, không lớn hơn tầng cha. */}
-              <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}`}>{tieuDe}</h2>
+              <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
               {dau.han}
               {!lui && nutDong}
             </div>
