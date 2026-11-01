@@ -527,7 +527,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     : <span className="text-xs text-slate-400">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</span>;
   return (
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
-      <div className="flex min-w-0 items-center gap-x-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2">{/* DO-KHUNG-DO: thiếu chỗ thì chip xuống dòng, không cắt tên */}
         <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
         <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>

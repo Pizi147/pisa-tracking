@@ -570,7 +570,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
         className="grid min-w-0 scroll-mt-14 appearance-none gap-px border-0 bg-transparent p-0 text-left">
         <span className={`text-[15px] leading-snug text-[color:var(--text)] ${em ? 'font-medium' : 'font-semibold'}`}>{dich(y.tieuDe)}</span>
         {phu && <span className="min-w-0 break-words text-[13px] leading-snug text-dim">{phu}</span>}
-        {neuDuyet && <span className="min-w-0 truncate text-[13px] leading-normal text-dim" title={neuDuyet}>{neuDuyet}</span>}
+        {neuDuyet && <span className="min-w-0 truncate text-[13px] leading-normal text-dim max-sm:whitespace-normal" title={neuDuyet}>{neuDuyet}</span>}
       </button>
       <span className="col-start-2 sm:col-start-auto">{y.hanDuyet && <ChipHan loai="duyet" han={y.hanDuyet} />}</span>
       <span className="col-start-2 flex flex-wrap items-center gap-x-4 gap-y-1 sm:col-start-auto sm:flex-col sm:items-stretch sm:gap-1" onClick={dungLai}>
