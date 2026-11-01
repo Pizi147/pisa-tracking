@@ -255,6 +255,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Merge:** PR máy chủ / phép kiểm (TL-VIEC, TL-TQ, CN-3) PTA tự merge khi rà đạt + check xanh; PR-D, V8-PT-2, DON-HINH chờ chủ SP duyệt ảnh. Không deploy.
 
 - **Kết quả đêm 01/11:** merge #765 CN-3 · #770 TL-VIEC (`/my-work` QL 54 → 39 câu) · #769 TL-TQ (`/tong-quan/v5?ct=ft` QL 53 → 40 câu). Chờ chủ SP duyệt ảnh: #767 PR-D (~83 %), #768 V8-PT-2 (96 %, 3 câu hỏi trong PR). Mở được TL-HVL, V8-HSL-2 sau #767.
+- **#772 DON-HINH mở, chờ chủ SP duyệt ảnh** (check 4990). Thêm vào DO-KHUNG-DO, chưa đối chiếu main: `test-diem-lop-375` tên cắt 5 px · `phan-tich-375` ⓘ · `hv-thuong-375` Progress Test · `cv-ho-tro` "Nếu duyệt".
 - **Để sau:** chỉ mục `status` cho `teacher_assignments` nếu bảng dày lịch sử (`phanCongDangHoatDong` SCAN cả bảng, #770) — cần migrate. Còn > 30 câu theo đo: `/my-work` QL 39, `viec-theo-em` QL 46, `/tong-quan/v5?ct=ft` QL 40, `kemBaoCao=1` QL 58 → S1 xét sau một tuần log.
 
 ### 31/10 chiều — PTA Plan rà toàn bộ (đối chiếu mã thật, main 0f01f541d)
