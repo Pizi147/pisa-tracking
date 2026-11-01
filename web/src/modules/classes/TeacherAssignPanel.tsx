@@ -132,6 +132,10 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
       .map((a) => ({ id: a.userId, name: a.name, classCount: 0 })),
   ];
 
+  /** Các ô đổi của bức tranh đang sửa so với bức tranh đang chạy — chip Nháp và quyết định mở hộp. */
+  const doiNhap = data ? doiTheoO(data.programmeCode, data.skills,
+    [...data.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })), ...data.bySkill.map((c) => ({ userId: c.userId, skill: c.skill, isCore: false }))],
+    moRongPhanCong(data.programmeCode, data.skills, slots)) : [];
   const tenNguoi = (id: number | null) => (id === null ? t('Chưa có') : nguoi.find((x) => x.id === id)?.name ?? `#${id}`);
   /** Lưu xong (thẳng hoặc qua hộp): toast + Hoàn tác (`lo`), làm tươi hồ sơ lớp / Công việc / góc Phân công GV. */
   const daLuu = (kq: KetQuaLuuPc, viec = 0, nguoiCu: string | null = null) => {
@@ -150,7 +154,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
     onDone();
   };
   /** Lỗi lưu: giữ nguyên lựa chọn đang sửa; 409 → tải bức tranh mới, gộp lại (`gopChonSau409`). */
-  const loiLuu_ = (e: unknown) => {
+  const baoLoiLuu = (e: unknown) => {
     const m = e instanceof Error ? e.message : t('Không lưu được');
     setHop(null); setBusy(false); setLoiLuu(m); toast.push('error', m);
     if (e instanceof ApiError && e.status === 409) { giuChon.current = true; reload(); }
@@ -158,8 +162,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
   const luu = async () => {
     if (!data || oLoi.length) { lf.bam(); setLoiLuu(oLoi[0] ? `${oLoi[0].nhan}: ${loiO(oLoi[0].khoa)}` : null); return; }
     setLoiLuu(null);
-    const cu = [...data.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })), ...data.bySkill.map((c) => ({ userId: c.userId, skill: c.skill, isCore: false }))];
-    const doi = doiTheoO(data.programmeCode, data.skills, cu, moRongPhanCong(data.programmeCode, data.skills, slots));
+    const doi = doiNhap;
     /* Có cặp A → B: cùng hộp hiệu lực + bàn giao với góc Phân công GV; không cặp (Chưa có → B, bỏ người): lưu thẳng, hôm nay. */
     if (doi.some(laCapBanGiao)) {
       const dialog = goc.current?.closest<HTMLElement>('[role="dialog"]') ?? goc.current;
@@ -167,14 +170,14 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
       return;
     }
     setBusy(true);
-    try { daLuu(await luuThang([{ classId: lop.id, slots, phienBan: data.phienBan ?? '' }])); } catch (e) { loiLuu_(e); } finally { setBusy(false); }
+    try { daLuu(await luuThang([{ classId: lop.id, slots, phienBan: data.phienBan ?? '' }])); } catch (e) { baoLoiLuu(e); } finally { setBusy(false); }
   };
   const gvcn = lop.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(lop.skills.map((x) => x.skill), lop.skillTeachers, lop.programme?.code ?? null);
 
   return (
     <div ref={goc}>
-    <PhanThongTin tieuDe={t('Phân công')} suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} nhanLuu={t('Lưu phân công')} loi={loiLuu}
+    <PhanThongTin tieuDe={t('Phân công')} nhanPhu={dangSua && doiNhap.length > 0 ? <span className="pc-nhan-nhap">{t('Nháp · {n} ô đổi', { n: doiNhap.length })}</span> : undefined} suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} nhanLuu={t('Lưu phân công')} loi={loiLuu}
       cuonToi={moSua} onSua={() => setDangSua(true)} onHuy={() => { setDangSua(false); setLoiLuu(null); giuChon.current = false; }} onLuu={luu}>
       {!dangSua && (
         <>
@@ -234,7 +237,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
     {hop && data && (
       <HopLuuPhanCong lop={[{ classId: lop.id, code: lop.code, slots: hop.slots, phienBan: data.phienBan ?? '' }]} ten={tenNguoi}
         neoEl={hop.neo} neo={window.innerWidth < 1100 ? 'tam-duoi' : 'dong'} canh="trai"
-        onQuayLai={() => setHop(null)} onDaLuu={(kq) => daLuu(kq, kq.viec, kq.nguoiCu)} onLoi={loiLuu_} />
+        onQuayLai={() => setHop(null)} onDaLuu={(kq) => daLuu(kq, kq.viec, kq.nguoiCu)} onLoi={baoLoiLuu} />
     )}
     </div>
   );
