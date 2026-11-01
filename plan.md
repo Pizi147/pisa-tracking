@@ -249,6 +249,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 01/11 tối — chủ SP đi vắng, giao chạy sau khi token tuần reset 19:00
+- **Đã mở (session local, chờ giờ rồi tự làm):** từ 19:05 PR-D (Sonnet 5.5 · high) · TL-VIEC · TL-TQ · V8-PT-2 · CN-3 + MA-MO-COI (Opus 5.5 · medium) · từ 22:30 DON-HINH (Opus 5.5 · medium).
+- **Chưa mở, có lý do:** TL-HVL, V8-HSL-2 chờ PR-D merge (cùng hồ sơ lớp) · DO-KHUNG-DO chờ đo trên main sạch.
+- **Merge:** PR máy chủ / phép kiểm (TL-VIEC, TL-TQ, CN-3) PTA tự merge khi rà đạt + check xanh; PR-D, V8-PT-2, DON-HINH chờ chủ SP duyệt ảnh. Không deploy.
+
 ### 31/10 chiều — PTA Plan rà toàn bộ (đối chiếu mã thật, main 0f01f541d)
 - **#761 PANEL-RIENG ĐÃ MERGE** (31/10, chủ SP đồng ý 2 KHÁC: Xét lại 375 môn 2 × 2 · Phân công đổi trang; check gộp main 4974/4974). Còn chưa xác minh (không phải luồng chính): panel "PA chưa có kết quả", dòng "chưa phân công" (demo 0 dòng); chưa chạy `audit`, `web-design-guidelines`, `/ponytail-review`.
 - **Thứ tự còn lại:** ② **PR-D** hồ sơ lớp Lưu phân công (đủ điều kiện từ #726) → ③ **TL-VIEC** ‖ **TL-TQ** (DON-MA đã merge), **TL-HVL** sau PR-D → ④ **CN-3** + MA-MO-COI (`TheKyNang.tsx` còn) → ⑤ **DON-HINH** (chữ phụ tối còn 183 / 154, QL mở Công việc mặc định "Của tôi", tên "Speaking chấm chéo" chưa làm) → ⑥ **V8-PT-2**, **V8-HSL-2**.
