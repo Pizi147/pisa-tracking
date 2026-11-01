@@ -71,7 +71,7 @@ export async function runPrTlViecTests(t: any) {
 
   await checkAsync('TV1 · /my-work?nguoi=tat-ca QL: câu đọc teacher_assignments ≤ 1, câu FROM sos_cases ≤ 2', async () => {
     const { cau } = await doGet(P.mbManager.userId, '/my-work?nguoi=tat-ca');
-    const ta = cau.filter((s) => /^SELECT [^()]*FROM teacher_assignments/.test(s)), sos = cau.filter((s) => /FROM sos_cases sc/.test(s));
+    const ta = cau.filter((s) => /^SELECT [^()]*FROM teacher_assignments/.test(s)), sos = cau.filter((s) => /\bFROM sos_cases sc\b/.test(s));
     assert(ta.length <= 1, `${ta.length} câu teacher_assignments: ${ta.map((s) => s.slice(0, 120)).join(' | ')}`);
     assert(sos.length <= 2, `${sos.length} câu sos_cases: ${sos.map((s) => s.slice(0, 120)).join(' | ')}`);
   });
