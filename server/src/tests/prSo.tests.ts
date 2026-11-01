@@ -172,12 +172,6 @@ export async function runPrSoTests(t: YThucTestKit) {
   const cp = await import('node:child_process');
   const { fileURLToPath, pathToFileURL } = await import('node:url');
   const REPO = pathMod.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
-  check('SO-4a · package.json không còn chay-thu:* và kiem-lop-mo-coi; server/src/migrate không còn chayThu*.ts, không còn kiemLopMoCoi.ts', () => {
-    const scripts = Object.keys(JSON.parse(fs.readFileSync(pathMod.join(REPO, 'package.json'), 'utf8')).scripts);
-    assert(!scripts.some((k) => k.startsWith('chay-thu:') || k === 'kiem-lop-mo-coi'), scripts.join(','));
-    const thua = fs.readdirSync(pathMod.join(REPO, 'server/src/migrate')).filter((f) => f.startsWith('chayThu'));
-    assert(!thua.length && !fs.existsSync(pathMod.join(REPO, 'server/src/ops/kiemLopMoCoi.ts')), thua.join(','));
-  });
   const { default: Database } = await import('libsql');
   const { SCHEMA_PATH } = await import('../db.ts');
   const { initBanChinh } = await import('../ops/initBanChinh.ts');

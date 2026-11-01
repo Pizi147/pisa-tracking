@@ -167,7 +167,6 @@ const EN_D_WEB = {
   'Em đang Tạm dừng học — mọi hạn đang dừng; quay lại học thì hạn tính lại từ ngày quay lại': 'Student is on pause — all due dates are paused and restart from the return date',
   'Chưa có hạng mục nào để theo dõi': 'Nothing to track yet',
   'Gần nhất': 'Latest',
-  'từ {tuLopTruoc}': 'from {tuLopTruoc}',
   'Không có việc tiếp': 'Nothing next',
   'Không có vấn đề nào đang theo dõi ở {label}.': 'No issue tracked in {label}.',
   'Không theo dõi (Quản lý duyệt {ngan})': 'Not tracked (manager approved {ngan})',
@@ -193,15 +192,10 @@ const EN_D_WEB = {
   'Tăng {xu}': 'Up {xu}',
   'Giảm {abs}': 'Down {abs}',
   'Không đổi': 'No change',
-  'Mở Hồ sơ Mock Test · MT{bandAttemptNo} · {label}': 'Open Mock Test record · MT{bandAttemptNo} · {label}',
-  ' · đạt': ' · passed',
-  ' · chưa đạt': ' · not passed',
   'mới có một bài': 'only one test so far',
   'mới có MT{attemptNo}': 'only MT{attemptNo} so far',
   '+ Case cho {label}': '+ Case for {label}',
   '· {parallelCount} Case song song': '· {parallelCount} parallel cases',
-  /* thẻ kỹ năng < 640 px (TheKyNang) */
-  'Thu gọn {label}': 'Collapse {label}',
   'Việc của {ten}': 'Task of {ten}',
   'Việc của người khác': 'Someone else\'s task',
 

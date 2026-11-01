@@ -153,7 +153,7 @@ Dựng **từ hành trình học viên**, viết tay, không sinh ngẫu nhiên.
 | Ngày / tuần hiển thị | `shared/domain/hienThiNgay.ts` (`ngay`, `tuanLich`, `tuanKhoa`) · trục tuần biểu đồ `shared/domain/trucTuan.ts` |
 | Hành trình theo kỹ năng (biểu đồ, Case & PA cột phải) | `web/src/modules/students/{HanhTrinhKyNang,BieuDoD,CotCaseHv}.tsx` |
 | Tab Lộ trình & lớp (lưới, chuỗi ▲▼, PA theo tầng, chương theo lớp) | `web/src/modules/students/HanhTrinh.tsx` (`KhoiPa`) · `shared/domain/hanhTrinh.ts` (`chuoiDiem`, `nhanGhim`, `xepTang`, `chiaChuong`) · `server/src/students/hanhTrinh.ts` |
-| Bảng kỹ năng thành thẻ < 640 px; link "MT2 · Speaking" | `web/src/modules/cases/TheKyNang.tsx` · `shared/domain/duongHoSo.ts` (`duongDotTest`, `docKnMock`) |
+| Link "MT2 · Speaking" | `shared/domain/duongHoSo.ts` (`duongDotTest`, `docKnMock`) |
 | Bài trên lớp (không vào MT / KPI) | `web/src/modules/students/TienDoTrenLop.tsx` · `shared/domain/baiTrenLop.ts` · `server/src/students/baiTrenLop.ts` (`themBaiTrenLop`) |
 | Sửa thông tin một em (Target, TVV, đầu vào, liên hệ) | `web/src/modules/students/StudentManagePanel.tsx` (`ThongTinPanel`) · `shared/domain/{quanLyHocVien,lienHe}.ts` · `server/src/students/students.ts` |
 | Email là định danh, không trùng | `server/src/students/emailHocVien.ts` (`emailDangDung`, `cauEmailTrung`) |
@@ -211,7 +211,6 @@ Dựng **từ hành trình học viên**, viết tay, không sinh ngẫu nhiên.
 | Không nhập trước tuần thi · dời vượt lượt sau | `server/src/fasttrack/skillSchedule.ts` (`kiemDaToiTuanThi`, `kiemVuot`, `boTuanLuot`) · `shared/domain/lichMt.ts` (`luotBiVuot`) |
 | Cờ "còn ô chờ điểm" của lượt | `server/src/fasttrack/conOCho.ts` (`capNhatConOCho`, `capNhatConOChoLop`) |
 | Đếm "bài cần chấm" (một chỗ) · ai phụ trách bài thiếu | `shared/domain/fasttrack.ts` → `pendingSkillsOf` · `server/src/fasttrack/attempts.ts` (`ownersOf`, `classScoreSheet`) |
-| Ô điểm ± kỳ vọng, bốn màu | `web/src/modules/cases/SkillBoard.tsx` (`DongMt`, `gapText`, `SCORE_CHIP_ROW`) · `server/src/cases/cases.ts` → `skillSupportBoard` |
 | Ô MT dùng chung (trạng thái đợt) | `shared/domain/oMt.ts` (`oMt`, `chipDongKyNang`) · `web/src/ui/OMt.tsx` (`OMt`) |
 | Thao tác một kỹ năng theo trạng thái | `shared/domain/thaoTacMt.ts` (`thaoTacKyNang`, `menuHopKyNang`) · `web/src/modules/fasttrack/HopThaoTacMt.tsx` |
 | Hộp nhập điểm MT, band W / S tự tính | `web/src/modules/fasttrack/HopNhapDiem.tsx` (`ODiemMt`, `HopNhapDiem`) · `shared/domain/chamDiem.ts` (`duocNhapBandThang`) · `attempts.ts` → `saveScore` |

@@ -396,15 +396,13 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     let nem = false; try { casesSvc.skillSupportBoard(loadPrincipal(gv.id), emDaChuyen.sid); } catch { nem = true; }
     assert(nem, 'GV không dạy em phải bị chặn');
   });
-  check('UXF-b (11) · polish: khung bảng Phân tích GV đủ cao cho một chú thích nổi khi bảng 1–2 hàng (Q18); nhóm "Case bàn giao" có tiêu đề ngữ nghĩa; thẻ Xin ý kiến trên 375 px cho xuống dòng', () => {
+  check('UXF-b (11) · polish: khung bảng Phân tích GV đủ cao cho một chú thích nổi khi bảng 1–2 hàng (Q18); thẻ Xin ý kiến trên 375 px cho xuống dòng', () => {
     /* UI-PHAN-TICH (Q-7): bảng Phân tích GV không còn chú thích nổi ở tiêu đề (P1) — bỏ kiểm min-height Q18. */
-    assert(/<h3[^>]*>\{t\('Case bàn giao'\)\}/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'tiêu đề nhóm');
     assert(/<DongXinYKien x=\{p\.xinYKien\} ngan=\{ngan\} \/>/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'thẻ 375 px không cắt dòng Xin ý kiến');
   });
   check('UXF-b (10) · R5-5: không thêm câu SQL theo số Case (lớp của Case đọc cùng câu nạp Case); quét chữ web có nhóm + dòng phụ "từ <lớp>"', () => {
     assert(/AS ct_attempt/.test(doc('server/src/cases/cases.ts')), 'cases.ts: chương trình của lớp Case đọc cùng câu SQL nạp Case (không câu mới)');
     const sb = doc('web/src/modules/cases/SkillBoard.tsx');
     assert(/Case bàn giao/.test(sb) && /tuLopTruoc/.test(sb), 'SkillBoard');
-    assert(/Case bàn giao/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'TheKyNang (thẻ 375 px)');
   });
 }

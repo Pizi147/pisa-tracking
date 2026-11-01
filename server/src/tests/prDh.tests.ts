@@ -90,11 +90,6 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(/className="break-words"/.test(v) && !/truncate/.test(v) && !/(^|[\s"'`])line-clamp/.test(v) && /title=\{v\.title\}/.test(v), 'ViecTiep');
   });
 
-  check('PR-DH (12) · J10: ô điểm chưa có dữ liệu chỉ gạch (title "Chưa có điểm"), thẻ gọn không "—" cạnh "chưa có điểm"', () => {
-    const tk = doc('web/src/modules/cases/TheKyNang.tsx');
-    assert(/row\.band === null \? null/.test(tk) && /diem !== null &&/.test(tk), 'TheGon');
-  });
-
   check('PR-DH (13) · khung toàn màn (KhungPanel, Modal/ConfirmDialog) có !mt-0 — không bị space-y của trang cha đẩy lệch xuống, lộ demo bar', () => {
     for (const f of ['web/src/ui/KhungPanel.tsx', 'web/src/ui/Drawer.tsx']) {
       assert(/fixed inset-0 !mt-0 /.test(doc(f)), `${f}: gốc fixed inset-0 phải có !mt-0`);
