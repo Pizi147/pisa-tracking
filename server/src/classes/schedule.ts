@@ -8,12 +8,12 @@ import {
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, notFound, nowIso, loi } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { lopDayDu, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
+import { coNho, nho } from '../platform/nguCanhRequest.ts';
 
 /**
  * TUẦN BẮT ĐẦU HỌC → LỊCH MT MẶC ĐỊNH, VÀ TIẾN ĐỘ LỚP.
@@ -423,7 +423,8 @@ export function classProgressMany(classIds: number[]): Map<number, ClassProgress
   const conn = db();
   /* PR-LCb (R-B2): theo lô — Turso nhận tối đa ~900 tham số một câu (ứng viên lớp chuyển đến mọi chi nhánh có thể vượt). S5: một tham số JSON. */
   const classes: any[] = [];
-  theoLoJson(classIds, (json) => { classes.push(...(conn.prepare(`SELECT * FROM classes WHERE id IN (${DS_JSON})`).all(json) as any[])); });
+  if (coNho()) { const can = new Set(classIds); classes.push(...[...lopDayDu().values()].filter((c) => can.has(c.id))); }   // TL-VIEC: GET đọc bảng lớp đã nhớ
+  else theoLoJson(classIds, (json) => { classes.push(...(conn.prepare(`SELECT * FROM classes WHERE id IN (${DS_JSON})`).all(json) as any[])); });
   const periodIds = [...new Set(classes.map((c) => c.start_period_id).filter(Boolean))];
   const periods = new Map<number, any>();
   theoLoJson(periodIds, (json) => {

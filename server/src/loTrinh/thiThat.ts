@@ -3,11 +3,11 @@
  * (`ketQuaThiThat`, so với Target; lộ trình đã đóng thì so với Target trong BẢN CHỤP — Target lúc đóng). Không còn ô chọn kết luận tay.
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
-import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
+import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, coQuyenBuocTiep, type Principal } from '../permissions.ts';
+import { can, coQuyenBuocTiep, lopDayDu, type Principal } from '../permissions.ts';
 import { coTheGiuViecTvv, nguoiGiuTvv } from '../worklist/viecTvv.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -160,15 +160,10 @@ export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>
  * (không quá hạn, không chuông). Hết việc khi lưu đủ 4 kỹ năng hoặc "Không thi". Một câu cho cả tập + một câu lớp + một câu TVV (không N+1).
  */
 export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; branchId: number | null }): any[] {
-  const conn = db();
   if (!coTheGiuViecTvv(p)) return [];
   const moc = loTrinhChoKetQuaThi(f.today);
   if (!moc.length) return [];
-  const idLop = [...new Set(moc.map((x) => x.c.class_id as number | null).filter((x): x is number => !!x))];
-  const lop = new Map<number, any>();
-  theoLo(idLop, (lo, ph) => {
-    for (const l of conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) lop.set(l.id, l);
-  });
+  const lop = lopDayDu();
   const giu = nguoiGiuTvv(p, f.today);
   const out: any[] = [];
   for (const { c, s } of moc) {
