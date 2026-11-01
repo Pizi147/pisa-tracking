@@ -42,7 +42,7 @@ Loại PR: **làm lại màn** (một màn một PR). Mockup `thiet-ke/v8/ho-so-
 | C | Hàng em, vi phạm chờ, bậc xử lý, nút việc, Đã xử lý / Nhật ký gập, Phối hợp SOS | KHỚP | V5 sẵn có |
 | D | Hàng công cụ "Đạt theo kỹ năng · 33 HV · ô = HV đạt / HV có điểm · ⓘ" (ⓘ ra khỏi đầu cột — G9) | KHỚP | |
 | D | Tên kỹ năng đầy đủ · ô dưới nửa "✗ 8/18" màu dưới kỳ vọng (G12) · mở dòng ra 2 bảng nhỏ | KHỚP | |
-| D | Dòng "Overall" đầu bảng FT | KHÁC | máy chủ không trả dòng Overall cho FT (dữ liệu) — PR máy chủ riêng |
+| D | Dòng "Overall" đầu bảng FT | KHỚP | V8-HSL-2, `docs/anh/overall-ft-lop/khop-khac.md` |
 | D | Hàng kỹ năng cao 40, số đậm | KHÁC | dáng `HangNhom` chung (Phân tích GV, Test + SOS…) — đổi ở PR V8-PT |
 | E | Rỗng "Lớp chưa có học viên" + Thêm học viên · lọc rỗng có nút "Tất cả n" | KHỚP | thêm nút "Tất cả n" |
 | F | ⋯ dòng em (thứ tự MENU-DONG #692) · lỗi tải (ErrorState + Thử lại) · đang tải (Skeleton) | KHỚP | giữ web |

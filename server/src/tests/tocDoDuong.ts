@@ -158,6 +158,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/progress' },
   /* PR-HVL (6): danh sách sau một số ở bảng vấn đề / hiệu quả PA — tính lại bằng chính `issueBoard`. */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board/o?category=listening&cot=case' },
+  /* V8-HSL-2: ô dòng Overall bảng FT — chạy khi MỞ, tính bằng chính `phanTichNhieuLop`. */
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board/o?category=overall&cot=overall&kind=mt1' },
   /* PR-HVL (5): tab Học viên › Cần hỗ trợ — trần = `/cases?classId=` + 8. */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/can-ho-tro' },
   /* OV-3c: cách xem Kết quả đầu ra (KQĐR lớp trước, 4 tuần theo đợt) — em · MT0 · Final · Case theo lô. */
@@ -639,6 +641,11 @@ export const TRAN: Record<string, number> = {
   'GVBM /classes/3/issue-board/o?category=listening&cot=case': 19,
   'GVCN_THUONG /classes/3/issue-board/o?category=listening&cot=case': 19,
   'QT /classes/3/issue-board/o?category=listening&cot=case': 18,
+  'QL /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 11,
+  'GVCN /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 11,
+  'GVBM /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 11,
+  'GVCN_THUONG /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 11,
+  'QT /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 11,
   'QL /classes/3/phan-tich-lop': 24,
   'GVCN /classes/3/phan-tich-lop': 18,   // TL-NEN: đo 8 (trước 13)
   'GVBM /classes/3/phan-tich-lop': 18,   // TL-NEN: đo 8 (trước 13)
@@ -937,6 +944,11 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  'QL /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,   // V8-HSL-2: đo 276 (một đợt)
+  'GVCN /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
+  'GVBM /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
+  'GVCN_THUONG /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
+  'QT /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
   /* LOP-1-LOP: hồ sơ lớp chỉ đọc lượt của lớp (`myWork({ classIds })`) — đo QL / QT 1 278 (trước 1 448), GVCN / GVCN_THUONG 854 (trước 935), GVBM 850 (trước 958);
      badge quá hạn nay trong cùng đường (trước thêm `/my-work` QL 1 414 · GV 921–944 dòng). Trần = max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /classes/3/viec-theo-em?chi=toi': 1304, 'QT /classes/3/viec-theo-em?chi=toi': 1304,   // TL-NEN: đo 1155 · 1155 (trước 1245 · 1245); TL-VIEC: đo 1003 · 1003 (trước 1155 · 1155)

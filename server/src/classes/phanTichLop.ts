@@ -3,18 +3,21 @@
  *
  *   FT         5 kỹ năng (L · R · W1 · W2 · S) × MT1…MT5. Ô = số HV đạt / số HV có điểm ô đó ở lượt ĐỦ Overall (V5 C09, C10 — `danhGiaMon`):
  *              Overall ≥ kỳ vọng CỦA ĐỢT ĐÓ → mọi kỹ năng đạt; chưa đạt → band từng kỹ năng (W1, W2 riêng) so kỳ vọng; thiếu Overall → ngoài mẫu.
+ *              V8-HSL-2: dòng đầu "Overall" — em có Overall ≥ kỳ vọng đợt / em đủ Overall, không tính lượt KCK (OV-9, như Đạt MT).
  *   Lớp thường 4 môn (L · R · W · S) × Giữa khoá / Cuối khoá. Ô = số HV đạt (từ 70%) / số HV có điểm môn đó.
  *
  * Chỉ học viên ĐANG HỌC lớp này (không lưu trữ), chỉ lộ trình đang chạy. Chưa có điểm KHÁC trượt: không vào mẫu số.
  */
 import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, type AttemptKind, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
+  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, type AttemptKind, type DiemHv, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
   caseCategoryLabel, khoaBai, nhanBai, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { classIssueBoard } from '../cases/effectiveness.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
+import { diemTuEval } from '../worklist/diemDong.ts';
 import { badRequest, loi } from '../util.ts';
 import { entryBandsOf, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
@@ -32,6 +35,9 @@ export type PhanTichLop = {
   soHocVien: number;
 };
 
+/** Dòng điểm từng em ở đợt `mt` (điểm đúng lượt làm em vào ô Overall) — xem `phanTichNhieuLop`. */
+type DiemDot = { mt: number; diem: Map<number, DiemHv> };
+
 export function phanTichLop(p: Principal, classId: number): PhanTichLop {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   return phanTichNhieuLop([classId]).get(classId)!;
@@ -40,8 +46,9 @@ export function phanTichLop(p: Principal, classId: number): PhanTichLop {
 /**
  * NHIỀU LỚP MỘT LƯỢT (PR-S5F-b — hồ sơ GV 15–16 lớp từng tốn ≈ 7 câu/lớp): lớp · học viên · bài thi · điểm mỗi thứ một câu (chia lô),
  * tính từng lớp trong bộ nhớ — cùng luật với `phanTichLop`. KHÔNG kiểm quyền: nơi gọi lọc lớp theo `ATTEMPT_VIEW` trước.
+ * `diemDot` (V8-HSL-2, chỉ panel ô Overall): chỉ đọc đợt `mt` và gom dòng điểm của đợt đó — kết quả trả về khi ấy chỉ có cột đợt này, chỉ dùng cho panel.
  */
-export function phanTichNhieuLop(classIds: readonly number[]): Map<number, PhanTichLop> {
+export function phanTichNhieuLop(classIds: readonly number[], diemDot?: DiemDot): Map<number, PhanTichLop> {
   const out = new Map<number, PhanTichLop>();
   if (!classIds.length) return out;
   const conn = db();
@@ -62,20 +69,21 @@ export function phanTichNhieuLop(classIds: readonly number[]): Map<number, PhanT
   const baiCua = new Map<number, any[]>();
   for (const l of lo(cycleIds)) {
     for (const a of conn.prepare(
-      `SELECT a.*, cy.route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
-        WHERE a.cycle_id IN (${cho(l.length)}) AND a.status != 'cancelled'`,
-    ).all(...l) as any[]) baiCua.set(a.cycle_id, [...(baiCua.get(a.cycle_id) ?? []), a]);
+      `SELECT a.*, cy.route, cy.khong_cam_ket AS cy_kck, rp.week_start FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.cycle_id IN (${cho(l.length)}) AND a.status != 'cancelled'${diemDot ? ` AND a.kind = 'mock' AND a.attempt_no = ?` : ''}`,
+    ).all(...l, ...(diemDot ? [diemDot.mt] : [])) as any[]) baiCua.set(a.cycle_id, [...(baiCua.get(a.cycle_id) ?? []), a]);
   }
   const bundle = loadBundle([...baiCua.values()].flat().map((a) => a.id));
   for (const id of classIds) {
     const hv = hvCua.get(id) ?? [];
     const mucTieu = new Map<number, number | null>(hv.filter((h) => h.cycle_id).map((h) => [h.cycle_id, h.target_score ?? null]));
-    out.set(id, tinhMotLop(progCua.get(id) ?? null, nguongDatLop(id), hv.length, mucTieu, [...mucTieu.keys()].flatMap((c) => baiCua.get(c) ?? []), bundle));
+    out.set(id, tinhMotLop(progCua.get(id) ?? null, nguongDatLop(id), hv.length, mucTieu, [...mucTieu.keys()].flatMap((c) => baiCua.get(c) ?? []), bundle, diemDot));
   }
   return out;
 }
 
-function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: number, mucTieu: Map<number, number | null>, attempts: any[], bundle: ReturnType<typeof loadBundle>): PhanTichLop {
+function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: number, mucTieu: Map<number, number | null>, attempts: any[], bundle: ReturnType<typeof loadBundle>, diemDot?: DiemDot): PhanTichLop {
   const thuong = prog?.scoringMode === 'ratio';
   const o: Record<string, OPhanTich> = {};
   const ds: PhanTichLop['ds'] = {};
@@ -121,13 +129,23 @@ function tinhMotLop(prog: ProgrammeInfo | null, nguong: number, soHocVien: numbe
   for (const a of attempts) {
     if ((a.kind ?? 'mock') !== 'mock') continue;
     soDot = Math.max(soDot, a.attempt_no);
-    for (const x of danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, mucTieu.get(a.cycle_id) ?? null, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id))?.mon ?? []) {
-      cong(`${x.skill}|mt${a.attempt_no}`, x.dat, a.student_id);
+    const r = danhGiaMon(a, bundle.scores.get(a.id) ?? [], prog, mucTieu.get(a.cycle_id) ?? null, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id));
+    for (const x of r?.mon ?? []) cong(`${x.skill}|mt${a.attempt_no}`, x.dat, a.student_id);
+    if (!r || luotKck(a)) continue;
+    const { ovr, kv } = r as { ovr: number; kv: number };   // FT: `danhGiaMon` khác null thì đủ cả hai
+    cong(`overall|mt${a.attempt_no}`, ovr >= kv, a.student_id);
+    if (diemDot && diemDot.mt === a.attempt_no) {
+      const ev = evaluateAttemptRow(a, bundle, new Map());
+      /* Overall + kỳ vọng lấy CHÍNH cặp vừa so (Target hiện tại của em), không phải Target lúc lượt của `ev` — dòng điểm giải thích đúng kết luận của ô. */
+      diemDot.diem.set(a.student_id, { ...diemTuEval({ ...ev, attemptId: a.id, studentId: a.student_id, kind: 'mock', attemptNo: a.attempt_no, weekStart: a.week_start }), overall: ovr, soVoi: { nhan: 'KV', v: kv } });
     }
   }
   return {
     loai: 'ft',
-    dong: ENTRY_SKILLS.map((k) => ({ key: k, nhan: ENTRY_SKILL_SHORT[k], tenDayDu: tenKyNang(k), category: k })),
+    dong: [
+      { key: 'overall', nhan: 'Overall', tenDayDu: 'Overall', category: '', moRong: false },
+      ...ENTRY_SKILLS.map((k) => ({ key: k, nhan: ENTRY_SKILL_SHORT[k], tenDayDu: tenKyNang(k), category: k })),
+    ],
     cot: Array.from({ length: soDot }, (_, i) => ({ key: `mt${i + 1}`, nhan: `MT${i + 1}` })),
     o, ds, soHocVien,
   };
@@ -169,9 +187,22 @@ export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo |
  * DANH SÁCH SAU MỘT SỐ Ở BẢNG VẤN ĐỀ / HIỆU QUẢ PA CỦA MỘT KỸ NĂNG (PR-HVL, M5, G-10) — `GET /classes/:id/issue-board/o`. Tính bằng CHÍNH `issueBoard`
  * (`classIssueBoard`): số ở ô = độ dài tập `tong` / `plans[].ids`, danh sách khi bấm = chính tập đó, không đếm lần hai.
  * `cot`: hv · Case · dang-theo-doi · da-co-pa · da-xong · thanh-cong (Case) · pa-dang · pa-da · pa-thanh-cong (PA, kèm `kind`).
+ * V8-HSL-2: `cot=overall` + `kind=mt<n>` = ô dòng Overall bảng FT — chính tập `ds` của ô (Chưa đạt · Đạt), dòng điểm đúng đợt đó; `category` bỏ qua.
  */
-export function oPhanTichLop(p: Principal, classId: number, category: string, cot: string, kind: string | null): { n: number; tieuDe: string; rows: MetricRow[] } {
+export function oPhanTichLop(p: Principal, classId: number, category: string, cot: string, kind: string | null): { n: number; tieuDe: string; unit?: 'hoc-vien'; rows: MetricRow[] } {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  if (cot === 'overall') {
+    const mt = /^mt(\d+)$/.exec(kind ?? '')?.[1];
+    if (!mt) throw loi(400, 'Cột "{cot}" không hợp lệ.', { cot: `overall ${kind ?? ''}` });
+    const diem = new Map<number, DiemHv>();
+    const x = phanTichNhieuLop([classId], { mt: Number(mt), diem }).get(classId)!.ds[`overall|${kind}`] ?? { dat: [], chua: [] };
+    const ids = [...x.chua, ...x.dat];
+    const dat = new Set(x.dat);
+    return {
+      n: ids.length, tieuDe: `${ids.length} HV · Overall MT${mt}`, unit: 'hoc-vien',
+      rows: rowsFor('hoc-vien', ids, undefined, p, false, diem).map((r) => ({ ...r, ketQua: dat.has(r.id) ? 'dat' : 'chua' })),
+    };
+  }
   const b = classIssueBoard(classId, category);
   const mon = caseCategoryLabel(category);
   const caseCot: Record<string, [number[], string]> = {
