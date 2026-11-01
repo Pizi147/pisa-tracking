@@ -160,7 +160,7 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
         </span>
       </span>
     );
-    const dongPhu = <span className={`mt-1 block min-h-[1rem] truncate text-xs ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>;
+    const dongPhu = <span className={`mt-1 block min-h-[1rem] text-xs ${gon ? 'md:truncate' : 'truncate'} ${phu.mau ?? 'text-slate-500'}`} title={laW ? undefined : phu.title}>{phu.chu}</span>;
     const noiDung = gon ? so : (
       <>
         <span className="block text-xs font-medium text-slate-400">{NHAN[k]}</span>

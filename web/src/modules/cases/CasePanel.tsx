@@ -524,7 +524,8 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua 
   const moPanel = () => onViec({ loai: 'ghi-ket-qua', paId: iv.id });
   return (
     <li className="flex flex-col gap-2 rounded-lg border px-3 py-2.5 surface-2" style={vienVua(vua)} data-pa-id={iv.id}>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <div className="flex items-start gap-x-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
         <span className="text-[15px] font-semibold text-slate-100">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</span>
         {iv.preset && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-slate-400"><KhoaNho />{t('theo quy chế')}</span>}
         <Nhan tone="doing">{t('Đang chạy')}</Nhan>
@@ -534,7 +535,7 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua 
         )}
         {hanGhi && !daLuu && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
           : <span className={`text-[13px] tabular-nums ${hanGhi.tone === 'overdue' ? 'font-semibold text-late' : 'text-slate-400'}`}>· {hanGhi.quaHan ? `⚠ ${hanGhi.quaHan}` : t('hạn kế {ngay}', { ngay: ngan(iv.actionDue) })}</span>)}
-        <span className="flex-1" />
+        </div>
         <MenuPa iv={iv} ten={iv.description || iv.kind} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
       </div>

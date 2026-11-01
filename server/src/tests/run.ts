@@ -9917,6 +9917,9 @@ await runPrDuyetQlTests({ check, assert } as any);
 // ==================================================================== DON-MA (mã chết + gộp mã không đổi màn)
 const { runDonMaTests } = bocTep('donMa', await import('./donMa.tests.ts'));
 await runDonMaTests({ check, checkAsync, assert, conn, P } as any);
+// ==================================================================== DON-HINH (hình còn sót)
+const { runDonHinhTests } = bocTep('donHinh', await import('./donHinh.tests.ts'));
+await runDonHinhTests({ check, assert } as any);
 // ==================================================================== TL-TQ (`/tong-quan/v5` dùng chung dữ liệu nạp — TRANG-LON S3)
 const { runPrTlTqTests } = bocTep('prTlTq', await import('./prTlTq.tests.ts'));
 await runPrTlTqTests({ check, assert, P, TODAY } as any);

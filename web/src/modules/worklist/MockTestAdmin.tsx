@@ -43,7 +43,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
       <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
         <ChiSo ten={t('Lượt MT tuần này')} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
           mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
-        <ChiSo ten={t('Bài chưa nhập điểm')} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
+        <ChiSo ten={t('Bài chưa nhập điểm')} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&nguoi=tat-ca&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
           mau={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {t('{n} quá hạn', { n: data.oChuaNhap.quaHan })}</span> : t('không bài nào quá hạn')} />
         <ChiSo ten={t('HV chưa có MT tiếp theo')} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
           mau={t('đã thi hết lượt MT đã xếp')} />

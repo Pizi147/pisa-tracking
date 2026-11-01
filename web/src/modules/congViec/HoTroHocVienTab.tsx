@@ -40,12 +40,16 @@ type Work = {
 /** Tên loại việc mở từ Tổng quan bằng `loai=` (dòng "Đang xem"). */
 const TEN_LOAI: Record<string, string> = { ghi_ket_qua_pa: t('Kết quả PA') };
 
-/** OV-15d: `nguoi` = `toi` · `gv` · id một GV · không có = Tất cả (mặc định, thấy hết). */
+/** OV-15d: `nguoi` = `toi` · `gv` · `tat-ca` · id một GV. */
 const thamSoNguoi = (s: string | null): LocNguoiViec | number => {
   if (s === 'toi' || s === 'gv') return s;
   if (s && /^[1-9]\d*$/.test(s)) return Number(s);
   return 'tat-ca';
 };
+/** DON-HINH (chủ SP 30/10): QL không có `nguoi` trên URL → lựa chọn đã nhớ trong phiên, chưa có thì "Của tôi". Link cần tất cả tự ghi `nguoi=tat-ca`. */
+const khoaNguoi = (uid: number | undefined) => `pisa.cong-viec.nguoi.u${uid ?? ''}`;
+const nguoiDaNho = (uid: number | undefined) => { try { return sessionStorage.getItem(khoaNguoi(uid)); } catch { return null; } };
+const nhoNguoi = (uid: number | undefined, k: string) => { try { sessionStorage.setItem(khoaNguoi(uid), k); } catch { /* không lưu được: lần sau về mặc định */ } };
 const MAN_HEP = '(max-width: 1023px)';
 /** Vùng cuộn của trang là `<main id="noi-dung">` (App.tsx), không phải cửa sổ. */
 const vungCuon = () => document.getElementById('noi-dung');
@@ -76,7 +80,8 @@ export function HoTroHocVienTab() {
   const laQuanLy = !!session?.nav?.workOps || chiChamDiem;
   /* SUA-CHAM-LAI Đ1: 375 — QL / QT danh sách dài, nhóm thứ 3 trở đi gập sẵn (bấm đầu nhóm để mở; số đầu nhóm vẫn đủ). */
   const hep = useManHinh('(max-width: 767px)');
-  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi')) : 'tat-ca';
+  const uid = session?.user?.id;
+  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
   /* UI-CV-TVV (mockup `tvv.html`): TVV — chỉ việc của mình, chia nhóm theo việc TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ). */
   const laTvv = !laQuanLy && !!session?.nav?.hvCuaToi;
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';
@@ -150,9 +155,10 @@ export function HoTroHocVienTab() {
   const cuoiItems = useMemo(() => (nhom ? locItems.filter((it) => nhomViecCua(it.group) === nhom) : locItems), [locItems, nhom]);
   /* `viec` trỏ tới việc không có panel (đường cũ, gõ tay) → như chưa chọn. */
   const chon = useMemo(() => {
-    const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? null : null;
+    /* DON-HINH: việc mở từ chuông / link có thể không thuộc "Của tôi" — tìm cả danh sách QL đã nạp, không riêng dòng đang lọc. */
+    const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? phang(dsGoc).find((y) => y.key === viec) ?? null : null;
     return x && lamTaiCho(x) ? x : null;
-  }, [viec, hienThi, giu]);
+  }, [viec, hienThi, giu, dsGoc]);
   /*
    * Danh sách vẽ: cùng bộ lọc, cộng dòng đã làm giữ chỗ. OV-11c (CV-3): đang mở panel thì GIỮ THỨ TỰ lúc mở — dòng xong / làm một phần (hạn đổi) đứng
    * đúng chỗ cũ, không sắp lại theo hạn mới, không rơi sau "Xem thêm"; việc mới (không có ở lần vẽ trước) xuống cuối nhóm. Đóng panel / đổi lọc thì sắp lại.
@@ -343,10 +349,10 @@ export function HoTroHocVienTab() {
               <>
                 {!chiChamDiem && <span className="max-sm:col-span-2 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center [&_button]:max-sm:text-[15px]">
                   <BoLocDoan ariaLabel={t('Việc của ai')} value={typeof nguoi === 'number' ? 'gv' : nguoi}
-                    onChange={(k) => setParam('nguoi', k === 'tat-ca' ? null : k)}
+                    onChange={(k) => { nhoNguoi(uid, k); setParam('nguoi', k); }}
                     muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: hienSoNguoi ? demNguoi[k] : null }))} /></span>}
                 <ChonPhuTrach chiChonGv value={typeof nguoi === 'number' ? nguoi : 'tat-ca'} valueName={tenGvChon}
-                  onChange={(v, name) => { setTenGv(name ?? null); setParam('nguoi', v === 'tat-ca' ? null : String(v)); }} />
+                  onChange={(v, name) => { setTenGv(name ?? null); setParam('nguoi', String(v)); }} />
               </>
             )}
             {haiKhung && <CongTacKhung trang="cong-viec" coTatCa kieu="chon" chuTatCa={t('Mọi khung')} value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />}

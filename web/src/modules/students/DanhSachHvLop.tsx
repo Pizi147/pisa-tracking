@@ -15,7 +15,7 @@ import { ChipLichThi, MiniKn, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { SO_DONG_VIEC_MAC_DINH, chuPhuHuynh, daysBetween, gopViecTheoMon, monCuaViec, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { SO_DONG_VIEC_MAC_DINH, boTenEm, chuPhuHuynh, daysBetween, gopViecTheoMon, monCuaViec, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
@@ -79,8 +79,8 @@ export function OViec({ v, onMo, onMoEm, gopMon }: { v: ViecEm[] | undefined; on
   if (!v?.length) return trong;
   const hien = (gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)).map((d) => d.dau) : v).slice(0, SO_DONG_VIEC_MAC_DINH);
   const con = v.length - hien.length;
-  /* Ô Việc nằm trên dòng của em → bỏ " · {tên em}" cuối tên việc (không lặp). */
-  const chuCua = (x: ViecEm) => { const c = dich(x.chu); const duoi = ` · ${x.it.studentName}`; return x.it.studentName && c.endsWith(duoi) ? c.slice(0, -duoi.length) : c; };
+  /* Ô Việc nằm trên dòng của em → bỏ tên em khỏi tên việc, ở mọi vị trí (không lặp). */
+  const chuCua = (x: ViecEm) => boTenEm(dich(x.chu), x.it.studentName);
   const han = (x: ViecEm) => (!x.han ? null : x.quaHan ? `⚠ ${t('quá {n} ngày', { n: Math.max(1, daysBetween(x.han, homNay)) })}` : t('hạn {ngay}', { ngay: shortDate(x.han, homNay) }));
   return (
     <span className="grid min-w-0 justify-items-start gap-1 max-sm:gap-1.5">

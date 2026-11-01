@@ -70,7 +70,7 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet, onMotKyNang,
 }: {
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
@@ -92,6 +92,8 @@ export function LuoiChamLop({
   sEx?: SExTuan;
   /** R1-LUU-TIEP: hết bài của người xem ở lưới FT → nút "Lớp tiếp" / "Việc tiếp" của nơi gọi. */
   onHet?: OnHet;
+  /** DON-HINH A1: báo đang ở dạng một kỹ năng (đã có hàng chip riêng) — nơi gọi ẩn hàng chọn môn của mình. */
+  onMotKyNang?: (co: boolean) => void;
 }) {
   const hep = useManHinhHep();
   /* Mỗi dòng báo số ô lỗi của nó (`useBaoLuu`); cộng lại rồi báo lên trên. */
@@ -153,6 +155,7 @@ export function LuoiChamLop({
   /* UI-LICH-TUAN (mockup 375 khu a): lưới FT ở Lịch tuần (có `sEx`) trên điện thoại = thẻ từng em, không "một kỹ năng một lúc". */
   const theHv = hep && laFt && sEx !== undefined && !xemBang;
   const tungKyNang = hep && !xemBang && !theHv;
+  useEffect(() => { onMotKyNang?.(tungKyNang); }, [tungKyNang, onMotKyNang]);
   const luoi = (
     <>
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} onHet={onHet} />}
