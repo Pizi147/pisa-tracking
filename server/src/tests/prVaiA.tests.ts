@@ -263,7 +263,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const ngay = o.filter((c) => c.han).map((c) => soNgay(c.han, TODAY));
     const a = Math.min(...ngay), b = Math.max(...ngay);
     eq(dong.han.chu, a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, 'hạn ngắn nhất–dài nhất');
-    eq([dong.trangThai, dong.den], ['qua-han', `/cong-viec?nhom=cham-diem&loc=qua-han&khung=tat-ca&cn=${MB}`], 'Quá hạn + nút tới Công việc đã lọc');
+    eq([dong.trangThai, dong.den], ['qua-han', `/cong-viec?nhom=cham-diem&loc=qua-han&nguoi=tat-ca&khung=tat-ca&cn=${MB}`], 'Quá hạn + nút tới Công việc đã lọc');
     const mbLop = new Set((conn.prepare('SELECT id FROM classes WHERE branch_id = ?').all(MB) as any[]).map((x) => x.id));
     for (const u of dong.nguoi.ids) {
       assert((conn.prepare(`SELECT class_id FROM teacher_assignments WHERE user_id = ? AND status = 'active'`).all(u) as any[]).some((x) => mbLop.has(x.class_id)), `GV ${u} không dạy lớp MB`);
