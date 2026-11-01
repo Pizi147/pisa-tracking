@@ -61,8 +61,8 @@
     --doing-rgb: 156 189 231; --doing-bg-rgb: 25 43 70;  --doing-line-rgb: 67 99 148;  /* đang làm · đang lưu */
     --done-rgb: 158 172 200;  --done-bg-rgb: 22 34 58;   --done-line-rgb: 51 70 105;   /* đã xong */
     --muted-rgb: 186 198 222; --muted-bg-rgb: 22 34 58;  --muted-line-rgb: 51 70 105;  /* trung tính · thông tin · chip */
-    --text-dim-rgb: 183 194 216;    /* = chu-2 V5 (#b7c2d8) */
-    --text-faint-rgb: 154 168 194;  /* = chu-3 V5 (#9aa8c2), mờ nhất được phép */
+    --text-dim-rgb: 186 198 222;    /* DON-HINH T10: bảng màu D4 (thiet-ke/v7/bang-mau-moi.css) */
+    --text-faint-rgb: 158 172 200;  /* DON-HINH T10: bảng màu D4, mờ nhất được phép */
     /* N-1b — Đạt dùng chung xanh lá của `ok`. */
     --dat-rgb: var(--ok-rgb);    --dat-bg-rgb: var(--ok-bg-rgb);    --dat-line-rgb: var(--ok-line-rgb);
     /* SOS (C23): vàng → cam → ĐỎ (bỏ magenta trùng hồng nhận diện) — viền (`--sosN-rgb`) + chữ (`--sosN-chu-rgb`). */

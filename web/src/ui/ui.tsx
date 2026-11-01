@@ -461,8 +461,8 @@ export function TargetText({ band, kck, kyThi }: { band: number | null | undefin
   if (kyThi) return <span title={`${kyThi.ten} ${kyThi.min}–${kyThi.max}`}>{band == null ? '—' : String(band)}</span>;
   if (!kck) return <>{fmtBand(band)}</>;
   return (
-    <>{fmtBand(band)} · <abbr title={GIAI_THICH_KCK} aria-label={`${KCK}: ${GIAI_THICH_KCK}`}
-      className="cursor-help underline decoration-dotted decoration-slate-500 underline-offset-2">{KCK}</abbr></>
+    <span className="whitespace-nowrap">{fmtBand(band)} · <abbr title={GIAI_THICH_KCK} aria-label={`${KCK}: ${GIAI_THICH_KCK}`}
+      className="cursor-help underline decoration-dotted decoration-slate-500 underline-offset-2">{KCK}</abbr></span>
   );
 }
 

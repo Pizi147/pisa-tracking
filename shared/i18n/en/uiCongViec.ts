@@ -3,7 +3,6 @@ import type { Dich } from '../en.ts';
 
 export const EN_UI_CONG_VIEC = {
   'nhóm': 'groups',
-  'Bài thi Speaking tuần này': 'Speaking tests this week',
   'BÀI THI SPEAKING': 'SPEAKING TESTS',
   '⚠ {n} hạn hôm nay': '⚠ {n} due today',
   'Hạn đến {ngay}': 'Due by {ngay}',
