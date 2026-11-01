@@ -1,4 +1,5 @@
-import { db } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
@@ -156,6 +157,21 @@ export const standingNapDuKhiKiem = { bat: false };
  * hợp đều cần con số này cho hàng chục em cùng lúc. Hỏi từng em một thì mỗi màn sinh hàng
  * trăm câu truy vấn — chậm mà không chỗ nào báo lỗi.
  */
+/** TL-HVL: Case đang mở của các em (cột lộ trình) — nhớ theo em, `standingFor` và cột bàn giao của bảng lớp đọc chung một lượt. */
+export function caseMoTheoEm(studentIds: number[]): Map<number, { student_id: number; cycle_id: number | null }[]> {
+  return nhoTheoId('case-mo-em:', studentIds, (ids) => {
+    const out = new Map<number, { student_id: number; cycle_id: number | null }[]>();
+    theoLoJson(ids, (json) => {
+      for (const r of db().prepare(`SELECT student_id, cycle_id FROM sos_cases sc
+          WHERE student_id IN (${DS_JSON}) AND status != 'done' AND ${CASE_THAT('sc')}`).all(json) as any[]) {
+        if (!out.has(r.student_id)) out.set(r.student_id, []);
+        out.get(r.student_id)!.push(r);
+      }
+    });
+    return out;
+  });
+}
+
 export function standingFor(studentIds: number[]): Map<number, Standing> {
   const out = new Map<number, Standing>();
   if (!studentIds.length) return out;
@@ -219,12 +235,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   for (const list of byStudent.values()) list.sort((x, y) => moiNhatTruoc(y, x));
 
   /* Case đang mở, đếm riêng phần mang từ lộ trình trước sang. */
-  for (const r of conn
-    .prepare(
-      `SELECT student_id, cycle_id FROM sos_cases sc
-        WHERE student_id IN (${ph}) AND status != 'done' AND ${CASE_THAT('sc')}`,
-    )
-    .all(...studentIds) as any[]) {
+  for (const r of [...caseMoTheoEm(studentIds).values()].flat()) {
     const s = out.get(r.student_id);
     if (!s) continue;
     s.openCases += 1;

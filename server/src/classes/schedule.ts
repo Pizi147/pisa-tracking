@@ -802,7 +802,8 @@ export function missingForClasses(classIds: number[]): Map<number, { items: Miss
   const conn = db();
   const ph = DS_JSON, json = JSON.stringify(classIds);   // S5: một tham số JSON
 
-  const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(json) as any[];
+  const can = new Set(classIds);
+  const classes = coNho() ? [...lopDayDu().values()].filter((c) => can.has(c.id)) : conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(json) as any[];   // TL-HVL: GET đọc bảng lớp đã nhớ
   let programmes: Map<string, ProgrammeInfo> | undefined;   // nạp một lần, chỉ khi có lớp cần
   const byClass = new Map<number, any[]>();
   for (const a of conn

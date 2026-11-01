@@ -24,7 +24,8 @@ import { EM_KQDR_FT_SQL, KQDR_HIEN_NGAY, laChiAdmin } from '../normal/kyVong.ts'
 export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop {
   const conn = db();
   const homNay = demoToday();
-  const pc = phanCongO(conn, p.userId, classId);
+  const cuaToi = p.assignments.filter((a) => a.classId === classId);   // TL-HVL: phiên đã có phân công `status = 'active'` của người xem — không hỏi lại
+  const pc = { gvcn: cuaToi.some((a) => a.isCore), kyNang: new Set(cuaToi.flatMap((a) => (a.skill ? [a.skill] : []))) };
   const ra = coTheRaLenh(p, classId);
   const rows = conn.prepare(
     `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g, l.loi AS h

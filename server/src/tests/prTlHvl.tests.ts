@@ -5,13 +5,15 @@
 import { chupHoacSo } from './soGoc.ts';
 
 export async function runPrTlHvlTests(t: any) {
-  const { check, P } = t;
+  const { check, checkAsync, assert, P } = t;
   console.log('\nTL-HVL · Học viên & Lớp, hồ sơ lớp dùng chung ghi danh / Case / lượt');
   const { db } = await import('../db.ts');
-  const { chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
+  const { chayTrongRequest, soDongSql } = await import('../platform/nguCanhRequest.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { classOverview, classRoster } = await import('../classes/classes.ts');
   const { danhSachHocVienLop } = await import('../classes/hocVienLop.ts');
+  const { createApp } = await import('../app.ts');
+  const { demoToday } = await import('../demoConfig.ts');
 
   const c = () => db() as any;
   const ids = (sql: string, ...a: unknown[]) => (c().prepare(sql).all(...a) as any[]).map((r) => r.id as number);
@@ -42,4 +44,37 @@ export async function runPrTlHvlTests(t: any) {
     }
     return out;
   }));
+
+  /** Câu SQL + số dòng của MỘT GET (mốc quét còn hạn → không quét, như đo `tocDo.run`). */
+  async function doGet(userId: number, url: string) {
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    try {
+      const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId }) });
+      const cookie = (s.headers.get('set-cookie') ?? '').split(';')[0];
+      c().prepare(`UPDATE moc_he_thong SET luc = ?, ngay = ? WHERE khoa LIKE 'quet:%'`).run(new Date().toISOString(), demoToday());
+      await (await fetch(`http://127.0.0.1:${cong}/api${url}`, { headers: { cookie } })).text();   // lần đầu: nạp nhớ tiến trình bảng tham chiếu
+      const k = c(), cau: string[] = [], goc = k.prepare, d0 = soDongSql();
+      k.prepare = function (this: unknown, sql: string) { cau.push(sql.replace(/\s+/g, ' ').trim()); return goc.call(this, sql); };
+      try { await (await fetch(`http://127.0.0.1:${cong}/api${url}`, { headers: { cookie } })).text(); } finally { delete k.prepare; }
+      return { cau, dong: soDongSql() - d0 };
+    } finally { may.close(); }
+  }
+  const lopFt = ids(`SELECT id FROM classes WHERE code = 'MB FT 101'`)[0];
+  const dem = (cau: string[], r: RegExp) => cau.filter((x) => r.test(x)).length;
+
+  await checkAsync('H1 · /classes/{lopFT}/overview QL: ghi danh một câu, listCases một lần, câu ≤ 32', async () => {
+    const { cau } = await doGet(P.mbManager.userId, `/classes/${lopFt}/overview`);
+    const gd = cau.filter((x) => /^SELECT [^()]*FROM enrollments/.test(x)), lc = dem(cau, /^SELECT sc\.\*, COALESCE\(sc\.student_id/);
+    assert(gd.length <= 1, `${gd.length} câu ghi danh: ${gd.map((x) => x.slice(0, 100)).join(' | ')}`);
+    assert(lc <= 1, `listCases ${lc} lần`);
+    assert(cau.length <= 32, `${cau.length} câu`);
+  });
+
+  await checkAsync('H1 · /classes/{lopFT}/roster QL: câu ≤ 22, bảng lớp + điểm + Case mở không đọc lại', async () => {
+    const { cau } = await doGet(P.mbManager.userId, `/classes/${lopFt}/roster`);
+    const lap = [dem(cau, /^SELECT [^()]*FROM classes WHERE id = \?/), dem(cau, /FROM assessment_scores WHERE attempt_id IN/), dem(cau, /^SELECT (sc\.)?student_id, .*FROM sos_cases sc/) - 1];
+    assert(lap.every((n) => n <= 0), `đọc lại: lớp ${lap[0]} · điểm ${lap[1]} · Case mở ${lap[2]}`);
+    assert(cau.length <= 22, `${cau.length} câu`);
+  });
 }
