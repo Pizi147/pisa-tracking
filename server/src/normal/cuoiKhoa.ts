@@ -17,6 +17,7 @@ import { suggestCaseOwner } from '../cases/owner.ts';
 import { chenPa, type DongPa } from '../cases/taoPa.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
+import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { phanCongO } from '../classes/quyenChuyenLop.ts';
 import { classProgressMany } from '../classes/schedule.ts';
@@ -42,9 +43,26 @@ export type TyLeLuot = {
 const GOP = Object.keys(MON_GOP);
 const GOP_PH = GOP.map(() => '?').join(',');
 
+const TY_LE_CHO = 'ty-le-cho';
+/** TL-VIEC: hẹn lượt cần tỷ lệ — gộp vào `tyLeTongLo` kế tiếp trong request (như `laMtMoiNhatCuaEm`), Công việc (Báo PH + Xét lại) đọc một lần. */
+export function henTyLe(attemptIds: readonly number[]): void {
+  const cho = nho(TY_LE_CHO, () => new Set<number>());
+  for (const id of attemptIds) cho.add(id);
+}
+
 export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   const out = new Map<number, TyLeLuot>();
   if (!attemptIds.length) return out;
+  const cho = nho(TY_LE_CHO, () => new Set<number>());
+  const hoi = cho.size ? [...new Set([...attemptIds, ...cho])] : attemptIds;
+  cho.clear();
+  const m = nhoTheoId('ty-le:', [...hoi], (ids) => new Map([...tinhTyLeTongLo(ids)].map(([id, t]) => [id, [{ t }]])));
+  for (const id of attemptIds) { const t = m.get(id)?.[0].t; if (t) out.set(id, t); }
+  return out;
+}
+
+function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
+  const out = new Map<number, TyLeLuot>();
   const conn = db();
   const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null }>();
   const diem = new Map<number, any[]>();

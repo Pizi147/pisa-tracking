@@ -83,4 +83,11 @@ export async function runPrTlViecTests(t: any) {
     }
     assert(!lech.length, lech.join(' · '));
   });
+
+  await checkAsync('TV2 · tat-ca QL: câu khối napTruocPhamVi ≤ 2 (viecBuocTiep nạp tập riêng), napChu ≤ 1, tyLeTongLo ≤ 1', async () => {
+    const { cau } = await doGet(P.mbManager.userId, '/my-work?nguoi=tat-ca');
+    const dem = (r: RegExp) => cau.filter((s) => r.test(s)).length;
+    const nap = dem(/^SELECT s\.id AS sid, s\.branch_id AS sbid/), chu = dem(/FROM users u WHERE u\.id IN \(\?/), ty = dem(/^SELECT a\.id, a\.kind, c\.programme_code, c\.nguong_dat FROM assessment_attempts/);
+    assert(nap <= 2 && chu <= 1 && ty <= 1, `napTruocPhamVi ${nap} · napChu ${chu} · tyLeTongLo ${ty}`);
+  });
 }
