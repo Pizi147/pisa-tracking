@@ -1,9 +1,6 @@
 import { createContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { SCORE_CHIP, type ScoreTone } from '../../ui/ui.tsx';
-import { fmtBand } from '../../lib/format.ts';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
 import type { XinYKien } from './DongXinYKien.tsx';
 import type { BoTro } from './CasePanel.tsx';
@@ -249,48 +246,5 @@ export const chuBuoi = (p: { soBuoi?: number | null; daDay?: number }) => (p.soB
 /** PR-PA (§8): người ở dòng phụ PA — theo Loại như panel Case: Tự học không có người; Tutor/Bổ trợ "chưa có người dạy". */
 export const chuNguoi = (p: { kind: string; performer?: string | null }) =>
   coNguoiDay(p.kind) ? p.performer ?? (nhanNguoiDay(p.kind) === 'Người dạy' ? t('chưa có người dạy') : t('chưa có người thực hiện')) : null;
-
-/** Dòng dưới ô điểm: `MT1 · kỳ vọng 5.5` · KCK: `MT1 · KCK` · lớp thường: `W4 SEP · đạt`. Bảng và thẻ điện thoại dùng chung. */
-export function DongMt({ row }: { row: Row }) {
-  const { homNay } = useNgayNghiepVu();
-  return (
-    <>
-      {row.bandAttemptNo ? (row.ratio ? boNamCungNam(row.bandWeek, homNay) : row.bandAttemptId
-        ? <Link to={duongDotTest({ id: row.bandAttemptId, kind: 'mock' }, row.category)} className="link tabular-nums max-sm:inline-block max-sm:py-3 max-sm:-my-3"
-          title={t('Mở Hồ sơ Mock Test · MT{bandAttemptNo} · {label}', { bandAttemptNo: row.bandAttemptNo, label: row.label })} onClick={(e) => e.stopPropagation()}>MT{row.bandAttemptNo}</Link>
-        : `MT${row.bandAttemptNo}`) : ''}
-      {row.ratio
-        ? (row.missed === false ? t(' · đạt') : row.missed === true ? t(' · chưa đạt') : '')
-        : `${row.expectation !== null ? t(' · kỳ vọng {fmtBand}', { fmtBand: fmtBand(row.expectation) }) : ''}${row.kck ? ' · KCK' : ''}`}
-    </>
-  );
-}
-
-/** Mã tuần "W1 SEP 2026" → "W1 SEP" khi cùng năm với hôm nay (G-6: chỉ hiện năm khi khác năm). */
-function boNamCungNam(code: string | null, homNay: string): string {
-  if (!code) return '';
-  const m = /^(.*\S)\s(\d{4})$/.exec(code);
-  return m && m[2] === homNay.slice(0, 4) ? m[1] : code;
-}
-
-export function gapText(gap: number): string {
-  if (gap === 0) return t('đạt kỳ vọng');
-  return gap < 0 ? `-${Math.abs(gap)}` : `+${gap}`;
-}
-
-/* Bảng bốn màu điểm nằm ở MỘT chỗ duy nhất: `ui.tsx` (SCORE_CHIP / SCORE_TEXT). */
-/** Chip điểm của một hàng — thẻ điện thoại dùng chung với ô điểm của bảng. */
-export const SCORE_CHIP_ROW = (row: Row): string => SCORE_CHIP[scoreToneFamily(row)];
-function scoreToneFamily(row: Row): ScoreTone {
-  if (row.band === null) return 'slate';
-  if (row.ratio) {
-    if (row.missed === null) return 'slate';
-    return row.missed ? 'rose' : 'emerald';
-  }
-  if (row.expectation === null) return 'slate';
-  if (row.band < row.expectation) return row.kck ? 'slate' : 'rose';   // OV-9: em KCK dưới kỳ vọng — không đỏ
-  if (row.band === row.expectation) return 'sky';
-  return 'emerald';
-}
 
 export type { Row as SkillBoardRow, CaseCard, Plan };

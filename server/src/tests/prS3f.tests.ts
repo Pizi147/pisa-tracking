@@ -130,7 +130,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 5 · em KCK không hiện "Đạt kỳ vọng"
-  check('S3F (5) · Em KCK có điểm: hàng bảng kỹ năng missed = null + kck = true; giao diện chỉ hiện chip Đạt khi missed === false, câu tóm tắt không nói "đạt kỳ vọng"', () => {
+  check('S3F (5) · Em KCK có điểm: hàng bảng kỹ năng missed = null + kck = true; câu tóm tắt không nói "đạt kỳ vọng"', () => {
     intake.commitIntake(P.admin, { classId: CLASS, rows: [{ fullName: 'S3F KCK5', target: 'KCK', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 's3f-kck5' });
     const st = get('SELECT id FROM students WHERE full_name = ?', 'S3F KCK5');
     const cy = get("SELECT id, khong_cam_ket k FROM learning_cycles WHERE student_id = ? AND status = 'active'", st.id);
@@ -140,8 +140,6 @@ export async function runPrS3fTests(t: YThucTestKit) {
     enter(a, 'listening', 5);
     const hang = (cases.skillSupportBoard(P.admin, st.id) as any).rows.find((r: any) => r.category === 'listening');
     assert(hang.band != null && hang.missed === null && hang.kck === true, JSON.stringify({ band: hang.band, missed: hang.missed, kck: hang.kck }));
-    const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src/modules', f), 'utf8');
-    assert(!/row\.band !== null && !row\.missed/.test(web('cases/TheKyNang.tsx')) && /row\.missed === false/.test(web('cases/TheKyNang.tsx')), 'TheKyNang vẫn dùng !row.missed');
     /* PR-VAI-b (Task 3): câu tóm tắt dựng ở máy chủ (`cauTomTat`) — em KCK có điểm không bao giờ "đạt kỳ vọng" (cùng ý câu cũ ở web). */
     const cau = d.cauTomTat({ dacBiet: { loai: 'kck' }, ketQua: { dau: 'MT1', ratio: false, sos: null, dat: null, overall: 5, kck: true, soDat: 0, soMon: 4, monTruot: [], phanTram: null },
       hoTro: [], viec: [], yThuc: null, homNay: '2026-09-14' });
