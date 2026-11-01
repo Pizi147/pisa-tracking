@@ -16,8 +16,8 @@ import { t } from '@shared/i18n/index.ts';
  * HỘP NỔI NEO (PC-GV-C): vẽ qua portal, đặt tuyệt đối theo nút neo (mép phải nút, dưới nút) — không bị khung bảng cuộn ngang cắt; lùi vào
  * trong khi tràn mép màn. `tamDuoi`: < 640 px / thẻ 375 → tấm dưới đáy màn có nền che (mockup v9 khu 5 375). Esc / bấm ra ngoài → `onDong`.
  */
-export function NoiNeo({ neo, rong, tamDuoi, nhan, giuFocus = true, onDong, children, className = '' }: {
-  neo: HTMLElement | null; rong: number; tamDuoi?: boolean; nhan: string; giuFocus?: boolean; onDong: () => void; children: ReactNode; className?: string;
+export function NoiNeo({ neo, rong, tamDuoi, canh = 'duoi', nhan, giuFocus = true, onDong, children, className = '' }: {
+  neo: HTMLElement | null; rong: number; tamDuoi?: boolean; /** `trai`: cạnh trái phần tử neo, ngang đầu nó (hộp Lưu cạnh panel Thông tin lớp — mockup v9 khu 9). */ canh?: 'duoi' | 'trai'; nhan: string; giuFocus?: boolean; onDong: () => void; children: ReactNode; className?: string;
 }) {
   const hop = useRef<HTMLDivElement>(null);
   const [vt, setVt] = useState<{ top: number; left: number } | null>(null);
@@ -25,9 +25,10 @@ export function NoiNeo({ neo, rong, tamDuoi, nhan, giuFocus = true, onDong, chil
     if (tamDuoi || !neo) return;
     const r = neo.getBoundingClientRect();
     const w = Math.min(rong, window.innerWidth - 16);
+    if (canh === 'trai') { setVt({ top: r.top + window.scrollY, left: Math.max(8, r.left - w - 8) + window.scrollX }); return; }
     const left = Math.max(8, Math.min(r.right - w, window.innerWidth - 8 - w));
     setVt({ top: r.bottom + window.scrollY + 6, left: left + window.scrollX });
-  }, [neo, rong, tamDuoi]);
+  }, [neo, rong, tamDuoi, canh]);
   useGiuFocus(hop, giuFocus);
   const bam = useBamNgoai(true, () => onDong(), hop);
   useEffect(() => {
@@ -98,7 +99,7 @@ const hieuLucGui = async (loai: 'hom-nay' | 'tuan', tuan: string): Promise<HieuL
  * vùng bấm (việc đang mở luôn chuyển) · tải bàn giao · quyền xem của GV cũ · nút chính nói kết quả. Lỗi lưu (409 / 400 có `classId`) trả về nơi gọi
  * (`onLoi`) — nơi gọi giữ mọi dòng nháp.
  */
-export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, neo = 'dong', neoEl, ten }: {
+export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, neo = 'dong', canh, neoEl, ten }: {
   lop: LopLuuPc[];
   /** Thứ Hai của lịch chờ đang đổi (ô Chờ đổi chọn người khác cùng mốc) — mở sẵn "Từ tuần" đó. */
   tuanMacDinh?: string | null;
@@ -106,6 +107,7 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
   onDaLuu: (kq: KetQuaLuuPc & { viec: number; nguoiCu: string | null }) => void;
   onLoi?: (e: unknown) => void;
   neo?: 'dong' | 'tam-duoi';
+  canh?: 'duoi' | 'trai';
   neoEl?: HTMLElement | null;
   /** Tên người theo id (ứng viên + người giữ ô) — nơi gọi đã nạp. */
   ten: (id: number | null) => string;
@@ -195,7 +197,7 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
   };
 
   return (
-    <NoiNeo neo={neoEl ?? null} rong={nhieu ? 560 : 480} tamDuoi={neo === 'tam-duoi'} nhan={tieuDe} onDong={() => { if (!busy) onQuayLai(); }}>
+    <NoiNeo neo={neoEl ?? null} rong={nhieu ? 560 : 480} tamDuoi={neo === 'tam-duoi'} canh={canh} nhan={tieuDe} onDong={() => { if (!busy) onQuayLai(); }}>
       <div className="pc-hop-dau">
         <h3>{tieuDe}</h3>
         <span className="ng">{nhieu ? `${t('{n} ô đổi', { n: soO })} · ${lop.map((l) => l.code).join(' · ')}` : `${t('{n} ô đổi', { n: soO })} · ${t('{n} HV', { n: soHv })}`}</span>

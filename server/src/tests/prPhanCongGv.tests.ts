@@ -592,4 +592,29 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const d3 = cacDuong(loadPrincipal(gF));
     assert(Object.values(d3).every(Boolean), `GV khác (không liên quan lần đổi) còn mở: ${JSON.stringify(d3)}`);
   }));
+
+  /* ---------------------------------------------------------------- PR-D · hồ sơ lớp dùng cùng đường + hộp Lưu */
+  check('D1 · GVCN lưu đổi R (C → B) lớp mình qua POST /phan-cong/luu có banGiao → đạt, có việc bàn giao; CX → 403', () => thu(() => {
+    const cx = loadPrincipal(nguoi([{ role: 'cx', branches: [] }]));
+    assert(maLoi(() => pc.luuPhanCong(cx, { lop: [{ classId: X, slots: doiO(X, 'reading', gB) }], hieuLuc: { loai: 'hom-nay' } }))?.status === 403, 'CX 403');
+    const gvcn = loadPrincipal(gA);
+    const n0 = one(`SELECT COUNT(*) n FROM ban_giao_gv WHERE class_id = ?`, X).n;
+    pc.luuPhanCong(gvcn, { lop: [{ classId: X, slots: doiO(X, 'reading', gB), banGiao: { reading: true } }], hieuLuc: { loai: 'hom-nay' } });
+    assert(ai(X, 'reading')[0] === gB, 'R sang B');
+    assert(one(`SELECT COUNT(*) n FROM ban_giao_gv WHERE class_id = ?`, X).n === n0 + 1, 'có việc bàn giao');
+  }));
+  check('D2 · classOverview có phanCongCho đúng dòng cho (tên cũ / mới, mốc); lỗi áp chỉ QL thấy; số câu SQL không đổi khi có lịch chờ', () => thu(() => {
+    const dem = (p: any) => ngc.trongBoNho(() => { const a = ngc.soCauSql(); classes.classOverview(p, X); return ngc.soCauSql() - a; });
+    assert(classes.classOverview(QL, X).phanCongCho.length === 0, 'chưa có lịch');
+    dem(QL);
+    const n0 = dem(QL);
+    const r = henL(gB);
+    const ds = classes.classOverview(QL, X).phanCongCho;
+    assert(ds.length === 1 && ds[0].khoa === 'listening' && ds[0].nguoiCu === gA && ds[0].nguoiMoi === gB && ds[0].hieuLuc === addDays(T2, 14), JSON.stringify(ds));
+    assert(typeof ds[0].tenCu === 'string' && typeof ds[0].tenMoi === 'string', 'có tên');
+    assert(dem(QL) === n0, `số câu đổi: ${n0} → ${dem(QL)}`);
+    conn.prepare(`UPDATE doi_phan_cong SET loi = 'GVCN phải dạy' WHERE id = ?`).run(r.lo);
+    assert(classes.classOverview(QL, X).phanCongCho[0].loi === 'GVCN phải dạy', 'QL thấy lỗi');
+    assert(classes.classOverview(loadPrincipal(gA), X).phanCongCho[0].loi === null, 'GVCN không thấy lỗi');
+  }));
 }

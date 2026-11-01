@@ -3,7 +3,7 @@ import { CASE_THAT } from '../cases/sosState.ts';
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
   oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa,
-  type AssessedSkill, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
+  type AssessedSkill, type DoiChoPc, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
   coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, daGhiLuot, MON_GOP,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -815,6 +815,15 @@ function classOverviewThat(p: Principal, classId: number) {
     )
     .all(classId) as any[];
   const skills = (conn.prepare('SELECT skill, sessions_per_week FROM class_skills WHERE class_id = ?').all(classId) as any[]);
+  /* PR-D: lịch đổi phân công đang chờ (hàng GV + Thông tin lớp › Phân công) + cờ "có góp ý tuần cũ" — MỘT câu (vế 2 là dòng cờ `gy`), không thêm lượt đọc. */
+  const choVaGopY = conn.prepare(
+    `SELECT d.id, d.khoa, d.nguoi_cu, d.nguoi_moi, d.hieu_luc, d.loi, uc.full_name AS ten_cu, um.full_name AS ten_moi, 0 AS gy
+       FROM doi_phan_cong d LEFT JOIN users uc ON uc.id = d.nguoi_cu LEFT JOIN users um ON um.id = d.nguoi_moi
+      WHERE d.class_id = ? AND d.trang_thai = 'cho'
+     UNION ALL
+     SELECT 0, '', NULL, NULL, '', NULL, NULL, NULL, 1 WHERE EXISTS (SELECT 1 FROM gop_y_tuan WHERE class_id = ?)
+     ORDER BY 1`,
+  ).all(classId, classId) as any[];
 
   // Bộ kỹ năng của lớp lấy theo CHƯƠNG TRÌNH của lớp đó, không mặc định là bộ IELTS.
   const prog = programmeOfClass(classId);
@@ -854,6 +863,11 @@ function classOverviewThat(p: Principal, classId: number) {
     status: cls.status as string, finishedAt: cls.finished_at ?? null,
     summary,
     skills: skills.map((s) => ({ skill: s.skill, sessionsPerWeek: s.sessions_per_week })),
+    /** PR-D: ô có lịch đổi chờ — `loi` (lần áp trước bị chặn) chỉ Quản lý (`class.assign`) thấy. Lớp đã kết thúc: không. */
+    phanCongCho: finished ? [] : choVaGopY.filter((r) => r.gy === 0).map((r): DoiChoPc & { tenCu: string | null; tenMoi: string | null } => ({
+      id: r.id, khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi, hieuLuc: r.hieu_luc,
+      loi: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) ? r.loi : null, tenCu: r.ten_cu, tenMoi: r.ten_moi,
+    })),
     coreTeachers: assignments.filter((a) => a.is_core === 1).map((a) => ({ id: a.user_id, name: a.full_name })),
     skillTeachers: assignments.filter((a) => a.skill).map((a) => ({ skill: a.skill, id: a.user_id, name: a.full_name })),
     /**
@@ -881,7 +895,7 @@ function classOverviewThat(p: Principal, classId: number) {
     /** Số học viên có vi phạm chưa xử lý quá 5 ngày — dấu ⚠ trên tab Ý thức & Phối hợp (Q15). */
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /** P3 (PTA Plan 25/10): Góp ý hàng tuần gỡ khỏi giao diện — ⋯ › Lịch sử góp ý tuần chỉ hiện khi lớp có góp ý cũ. */
-    coGopY: !!db().prepare('SELECT 1 FROM gop_y_tuan WHERE class_id = ? LIMIT 1').get(classId),
+    coGopY: choVaGopY.some((r) => r.gy === 1),
     /*
      * LỚP ĐÃ KẾT THÚC → CHẾ ĐỘ CHỈ XEM (Q22): mọi cờ thao tác `false`, không nút nào hiện,
      * không nhánh nào ở web đoán riêng — kể cả với Quản trị hệ thống (QT). Lớp đã đóng thì

@@ -11,6 +11,7 @@ import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { CHE_DO_NHAN, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
+import { DongChoDoi, type ChoDoiLop } from './TeacherAssignPanel.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
@@ -47,6 +48,8 @@ export type HoSoLop = {
   canhBaoYThuc: number;
   /** P3: lớp có góp ý hàng tuần cũ → ⋯ › Lịch sử góp ý tuần. */
   coGopY?: boolean;
+  /** PR-D: lịch đổi phân công đang chờ (hàng GV + Thông tin lớp › Phân công). */
+  phanCongCho?: ChoDoiLop[];
   /** PR-CT: dữ liệu dải Kết thúc khoá / Bàn giao / Sắp nhận (mockup 20 — A, H); null khi lớp đã kết thúc. */
   dai: DaiLop | null;
   status?: string; finishedAt?: string | null;
@@ -217,6 +220,7 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
 
       {/* ③ GVCN + GV bộ môn một dòng 13 px — tên chữ thường (link hồ sơ GV khi được xem), không xanh to. */}
       <DongGiaoVienBoMon nhom={[...(gvcn ? [{ nhan: t('GVCN'), title: t('Giáo viên chủ nhiệm'), id: gvcn.id, ten: gvcn.name, kyNang: [] }] : []), ...nhom]} />
+      <DongChoDoi cho={data.phanCongCho ?? []} ct={data.programme?.code ?? null} homNay={homNay} />
 
       {/* ④ số của lớp | badge đổi trang. */}
       <div className="flex min-h-7 flex-wrap items-center gap-x-[26px] gap-y-2">

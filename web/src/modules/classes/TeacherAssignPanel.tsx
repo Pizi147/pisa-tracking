@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
-import { ApiError, api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidateGop } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Empty, Skeleton } from '../../ui/ui.tsx';
-import { chonKhiDoiTach, gopChonSau409, kiemPhanCong, nenTachFou, nhomGiaoVienBoMon, slotsTuO, tenMon, tuanLich } from '@shared/domain/index.ts';
+import {
+  chonKhiDoiTach, doiTheoO, gopChonSau409, kiemPhanCong, laCapBanGiao, moRongPhanCong, nenTachFou, nhomGiaoVienBoMon, slotsTuO, tenMon, tenMonNgan, tuanLich,
+  type DoiChoPc, type KetQuaLuuPc,
+} from '@shared/domain/index.ts';
 import { LuoiPhanCong, NutTachFou, loiTaiO, useTachFou } from './ClassCreatePanel.tsx';
 import { DongXem, PhanThongTin } from './ThongTinLopPanel.tsx';
 import { TenGiaoVien } from './TenGiaoVien.tsx';
+import { HopLuuPhanCong, luuThang, type LopLuuPc } from './HopLuuPhanCong.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -38,6 +42,24 @@ type Teachers = {
   phienBan?: string;
 };
 
+/** Lịch đổi phân công đang chờ: "{môn} {A} → {B} từ {W1 NOV}" (hàng GV đầu hồ sơ lớp + Thông tin lớp › Phân công); lỗi áp chỉ máy chủ gửi cho QL. */
+export type ChoDoiLop = DoiChoPc & { tenCu: string | null; tenMoi: string | null };
+export function DongChoDoi({ cho, ct, homNay, className = '' }: { cho: ChoDoiLop[]; ct: string | null; homNay: string | null; className?: string }) {
+  if (!cho.length) return null;
+  return (
+    <ul className={`m-0 list-none p-0 text-[13px] ${className}`} aria-label={t('Chờ đổi')}>
+      {cho.map((c) => (
+        <li key={c.id}>
+          <span className="font-semibold" style={{ color: 'rgb(var(--doing-rgb))' }}>
+            {c.khoa === 'gvcn' ? t('GVCN') : tenMonNgan(ct, c.khoa)} {c.tenCu ?? t('Chưa có')} → {c.tenMoi ?? t('Chưa có')} {t('từ {tuan}', { tuan: tuanLich(c.hieuLuc, homNay ?? c.hieuLuc) })}
+          </span>
+          {c.loi && <span className="ml-2 text-late">⚠ {t('chưa đổi được: {loi}', { loi: c.loi })}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
   lop: HoSoLop; suaDuoc: boolean; moSua?: boolean; onDone: () => void;
 }) {
@@ -55,6 +77,9 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
   const [busy, setBusy] = useState(false);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const [moDaDay, setMoDaDay] = useState(false);
+  /** Hộp Lưu (hiệu lực + bàn giao) đang mở: bức tranh chốt lúc bấm Lưu; hộp neo cạnh panel Thông tin lớp. */
+  const [hop, setHop] = useState<{ slots: LopLuuPc['slots']; neo: HTMLElement | null } | null>(null);
+  const goc = useRef<HTMLDivElement>(null);
   const lf = useLoiForm();
   const fou = useTachFou(data?.programmeCode ?? null, data?.skills ?? [], chon, setChon);
 
@@ -107,31 +132,58 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
       .map((a) => ({ id: a.userId, name: a.name, classCount: 0 })),
   ];
 
+  const tenNguoi = (id: number | null) => (id === null ? t('Chưa có') : nguoi.find((x) => x.id === id)?.name ?? `#${id}`);
+  /** Lưu xong (thẳng hoặc qua hộp): toast + Hoàn tác (`lo`), làm tươi hồ sơ lớp / Công việc / góc Phân công GV. */
+  const daLuu = (kq: KetQuaLuuPc, viec = 0, nguoiCu: string | null = null) => {
+    const text = viec
+      ? (nguoiCu ? t('Đã lưu phân công {lop} · tạo {n} việc bàn giao cho {gv}', { lop: lop.code, n: viec, gv: nguoiCu }) : t('Đã lưu phân công {lop} · tạo {n} việc bàn giao', { lop: lop.code, n: viec }))
+      : t('Đã lưu phân công {lop}', { lop: lop.code });
+    if (kq.lo !== null) {
+      toast.hoanTac(text, () => {
+        api.post('/phan-cong/hoan-tac', { lo: kq.lo })
+          .then(() => { invalidateGop('/classes', '/my-work', '/hoc-vien-lop/phan-cong'); toast.push('ok', t('Đã hoàn tác')); onDone(); })
+          .catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
+      });
+    } else toast.push('ok', text);
+    invalidateGop('/classes', '/my-work', '/hoc-vien-lop/phan-cong');
+    setHop(null); setDangSua(false);
+    onDone();
+  };
+  /** Lỗi lưu: giữ nguyên lựa chọn đang sửa; 409 → tải bức tranh mới, gộp lại (`gopChonSau409`). */
+  const loiLuu_ = (e: unknown) => {
+    const m = e instanceof Error ? e.message : t('Không lưu được');
+    setHop(null); setBusy(false); setLoiLuu(m); toast.push('error', m);
+    if (e instanceof ApiError && e.status === 409) { giuChon.current = true; reload(); }
+  };
   const luu = async () => {
     if (!data || oLoi.length) { lf.bam(); setLoiLuu(oLoi[0] ? `${oLoi[0].nhan}: ${loiO(oLoi[0].khoa)}` : null); return; }
-    setBusy(true); setLoiLuu(null);
-    try {
-      await api.put(`/classes/${lop.id}/teachers`, { slots, phienBan: data.phienBan });
-      invalidate('/classes'); invalidate('/my-work');
-      toast.push('ok', t('Đã lưu phân công'));
-      setDangSua(false);
-      onDone();
-    } catch (e: any) {
-      setLoiLuu(e.message); toast.push('error', e.message);
-      if (e instanceof ApiError && e.status === 409) { giuChon.current = true; reload(); }
-    } finally { setBusy(false); }
+    setLoiLuu(null);
+    const cu = [...data.core.map((c) => ({ userId: c.userId, skill: null, isCore: true })), ...data.bySkill.map((c) => ({ userId: c.userId, skill: c.skill, isCore: false }))];
+    const doi = doiTheoO(data.programmeCode, data.skills, cu, moRongPhanCong(data.programmeCode, data.skills, slots));
+    /* Có cặp A → B: cùng hộp hiệu lực + bàn giao với góc Phân công GV; không cặp (Chưa có → B, bỏ người): lưu thẳng, hôm nay. */
+    if (doi.some(laCapBanGiao)) {
+      const dialog = goc.current?.closest<HTMLElement>('[role="dialog"]') ?? goc.current;
+      setHop({ slots, neo: dialog });
+      return;
+    }
+    setBusy(true);
+    try { daLuu(await luuThang([{ classId: lop.id, slots, phienBan: data.phienBan ?? '' }])); } catch (e) { loiLuu_(e); } finally { setBusy(false); }
   };
   const gvcn = lop.coreTeachers[0] ?? null;
   const nhom = nhomGiaoVienBoMon(lop.skills.map((x) => x.skill), lop.skillTeachers, lop.programme?.code ?? null);
 
   return (
+    <div ref={goc}>
     <PhanThongTin tieuDe={t('Phân công')} suaDuoc={suaDuoc} dangSua={dangSua} busy={busy} nhanLuu={t('Lưu phân công')} loi={loiLuu}
       cuonToi={moSua} onSua={() => setDangSua(true)} onHuy={() => { setDangSua(false); setLoiLuu(null); giuChon.current = false; }} onLuu={luu}>
       {!dangSua && (
+        <>
         <DongXem dong={[
           [t('GVCN'), gvcn ? <TenGiaoVien id={gvcn.id} ten={gvcn.name} /> : <span className="text-amber-200">{t('Chưa có GVCN')}</span>],
           ...nhom.map((g): [string, ReactNode] => [g.nhan, g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>]),
         ]} />
+        <DongChoDoi cho={lop.phanCongCho ?? []} ct={lop.programme?.code ?? null} homNay={homNay} className="mt-2" />
+        </>
       )}
       {dangSua && loading && <Skeleton rows={5} />}
       {dangSua && error && <Empty title={t('Không đọc được phân công')} hint={error.message} />}
@@ -179,5 +231,11 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
         </div>
       )}
     </PhanThongTin>
+    {hop && data && (
+      <HopLuuPhanCong lop={[{ classId: lop.id, code: lop.code, slots: hop.slots, phienBan: data.phienBan ?? '' }]} ten={tenNguoi}
+        neoEl={hop.neo} neo={window.innerWidth < 1100 ? 'tam-duoi' : 'dong'} canh="trai"
+        onQuayLai={() => setHop(null)} onDaLuu={(kq) => daLuu(kq, kq.viec, kq.nguoiCu)} onLoi={loiLuu_} />
+    )}
+    </div>
   );
 }
