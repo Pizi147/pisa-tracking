@@ -182,6 +182,32 @@ export function luotSinhViecRow(a: any, homNay: string): boolean {
   return luotSinhViec({ lich_su: 1, tuanKetThuc: a.period_end ?? null, created_at: ngayTaoLuot(a.created_at, homNay) });
 }
 
+/** Lọc không cần điểm / lịch kỹ năng (đọc ngay trên dòng lượt). */
+function quaLocNhanh(a: any, kieu: 'valid' | 'due', today: string): boolean {
+  if (kieu === 'due') return !!(a.period_start && a.period_start <= today);
+  if (!luotSinhViecRow(a, today)) return false;
+  if (a.cy_ft_dang_chay && a.cycle_id !== a.cy_ft_dang_chay) return false;   // OV-11f (PT-3): như `standingFor`
+  return !!a._co_diem;   // TD7: không band / điểm thô → scored = 0, như vòng cũ bỏ qua
+}
+
+/**
+ * TL-TQ: lượt `latestAttempts` ('valid' + 'due') sẽ cần lịch + điểm — nơi đọc nhiều chỉ số nạp chung một lô trước (`nhoTheoId` theo lượt), vòng của
+ * `latestAttempts` khỏi tốn câu. 'due' bỏ qua MT lịch sử chưa đủ điểm nên lấy tới lượt không lịch sử đầu tiên. Chỉ là nạp trước: thiếu thì `latestAttempts` tự đọc.
+ */
+export function ungVienLuotMoi(studentIds: number[], today: string): number[] {
+  const out = new Set<number>();
+  for (const list of attemptsNewestFirst(studentIds).values()) {
+    for (const kieu of ['valid', 'due'] as const) {
+      for (const a of list) {
+        if (!quaLocNhanh(a, kieu, today)) continue;
+        out.add(a.id);
+        if (kieu === 'valid' || !a.lich_su) break;
+      }
+    }
+  }
+  return [...out];
+}
+
 /**
  * ĐỢT MỚI NHẤT của mỗi em theo `pick`: 'valid' (đã có điểm) hoặc 'due' (đã đến lịch, kể cả chưa chấm).
  * Em không có đợt nào thoả thì không có mục trong kết quả.
@@ -193,13 +219,6 @@ export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', toda
   return nho(`luot-moi:${pick}:${today}:${createHash('sha1').update(studentIds.join(',')).digest('hex')}`, () => {
     const byStudent = attemptsNewestFirst(studentIds);
     const programmes = allProgrammes();
-    /* Lọc không cần điểm / lịch kỹ năng (đọc ngay trên dòng lượt). */
-    const quaLocNhanh = (a: any, kieu: 'valid' | 'due') => {
-      if (kieu === 'due') return !!(a.period_start && a.period_start <= today);
-      if (!luotSinhViecRow(a, today)) return false;
-      if (a.cy_ft_dang_chay && a.cycle_id !== a.cy_ft_dang_chay) return false;   // OV-11f (PT-3): như `standingFor`
-      return !!a._co_diem;   // TD7: không band / điểm thô → scored = 0, như vòng cũ bỏ qua
-    };
     /*
      * TD7: nạp lịch + điểm THEO VÒNG — mỗi vòng chỉ lượt ứng viên kế tiếp của từng em chưa có kết quả, thay vì mọi lượt của mọi em (Turso: câu lịch
      * kỹ năng ~5 k dòng / lần). Vòng đầu nạp kèm ứng viên đầu của kiểu kia ('valid' ↔ 'due', Tổng quan gọi cả hai) — lần gọi sau đọc từ bộ nhớ
@@ -216,10 +235,10 @@ export function latestAttempts(studentIds: number[], pick: 'valid' | 'due', toda
       for (const sid of cho) {
         const list = byStudent.get(sid)!;
         let i = viTri.get(sid) ?? 0;
-        while (i < list.length && !quaLocNhanh(list[i], pick)) i++;
+        while (i < list.length && !quaLocNhanh(list[i], pick, today)) i++;
         viTri.set(sid, i);
         if (i < list.length) ungVien.push([sid, list[i]]);
-        if (vongDau) { const k = list.find((a) => quaLocNhanh(a, kieuKia)); if (k) kem.push(k.id); }
+        if (vongDau) { const k = list.find((a) => quaLocNhanh(a, kieuKia, today)); if (k) kem.push(k.id); }
       }
       if (!ungVien.length) break;
       const bundle = loadBundle([...new Set([...ungVien.map(([, a]) => a.id as number), ...kem])], { boCase: true });
