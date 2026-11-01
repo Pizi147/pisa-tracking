@@ -4,9 +4,12 @@ import {
 } from '../../../shared/domain/index.ts';
 import { forbidden, badRequest, loi } from '../util.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { latestAttempts, studentsInScope } from './danhGia.ts';
+import { latestAttempts, studentsInScope, ungVienLuotMoi } from './danhGia.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 import { demoToday } from '../demoConfig.ts';
+import { coNho, datNho } from '../platform/nguCanhRequest.ts';
+import { loadBundle } from '../fasttrack/attempts.ts';
+import { KEM_NO_DIEM } from './scoreDebt.ts';
 import { locTheoChuongTrinh, lopCuaTap } from './chuongTrinh.ts';
 import { metricSet, nhomCaseChuaChot, rowsFor, type MetricRow } from './metrics.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
@@ -50,6 +53,18 @@ const NHAN_COT: Record<CotBang, string> = {
   chuaDiem: 'chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
 };
 
+/**
+ * TL-TQ: các `metricSet` của bảng cùng nạp một lần — lớp của mọi em trong phạm vi, lịch + điểm của lượt mới nhất và lượt nợ điểm (cột chú ý) chung một lô.
+ * Không đổi hàm tính: chỉ làm đầy bộ nhớ request, các hàm tập đọc lại 0 câu. Ngoài request GET (không có bộ nhớ) bỏ qua.
+ */
+function napTruocBang(p: Principal, base: { branchId: number | null; program: ChuongTrinh }, chuY: boolean | undefined) {
+  if (!coNho()) return;
+  const hv = studentsInScope(p, base.branchId);
+  lopCuaTap('hoc-vien', hv);
+  const kem = ungVienLuotMoi(hv, demoToday());
+  if (chuY) { datNho(KEM_NO_DIEM, kem); metricSet(p, 'bai-qua-han-nhap-diem', base); }
+  loadBundle(kem, { boCase: true });
+}
 
 function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean }) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
@@ -58,6 +73,7 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
   /* Một chi nhánh: đã chọn, hoặc phạm vi chỉ có một chi nhánh (P5 "1 CN thì ưu tiên bảng lớp"). */
   const branchId = f.branchId ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
   const base = { branchId, program: f.ct };
+  napTruocBang(p, base, f.chuY);
   const duoi = metricSet(p, 'hv-duoi-ky-vong-mon', base);
   const sos = metricSet(p, 'hv-sos-hien-tai', base);
   const caseMo = metricSet(p, 'case-mo', base);

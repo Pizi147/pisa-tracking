@@ -53,6 +53,9 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
   return out;
 }
 
+/** TL-TQ: khoá nhớ — lượt nơi gọi muốn nạp cùng lô lịch + điểm với lượt nợ (`napTruocBang`); một lô thay hai. */
+export const KEM_NO_DIEM = 'no-diem-kem';
+
 export function scoreDebtCells(p: Principal, today: string, branchIds: number[] | null, classIds?: readonly number[]): DebtCell[] {
   if (Array.isArray(branchIds) && branchIds.length === 0) return [];
   /* SL1 (V2B-3): một lớp (Điểm theo lớp) — lọc ngay trong câu, không quét cả chi nhánh. */
@@ -93,7 +96,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
   /* PR-UXF-a → PR-Dọn (Q13): phân công ĐANG HIỆU LỰC, một luật chung (`phanCongDangHieuLuc`). */
   const teacherOf = new Map([...phanCongDangHieuLuc([...new Set(rows.map((r) => r.class_id as number))], today)].map(([k, v]) => [k, v.userId]));
 
-  const bundle = loadBundle(rows.map((r) => r.id));
+  const bundle = loadBundle([...rows.map((r) => r.id as number), ...nho<number[]>(KEM_NO_DIEM, () => [])], { boCase: true });   // TL-TQ: không dùng Case
   const programmes = allProgrammes();          // một lần cho cả bảng, không mỗi lượt một câu
   const out: DebtCell[] = [];
   for (const a of rows) {

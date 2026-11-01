@@ -6,7 +6,8 @@ type Ctx = { check: (ten: string, fn: () => void) => void; assert: (ok: unknown,
 
 export async function runPrTlTqTests({ check, assert, P }: Ctx) {
   const { db } = await import('../db.ts');
-  const { chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
+  const { chayTrongRequest, datMoc, demHienTai, soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { COT_MOC, docMoc } = await import('../platform/mocHeThong.ts');
   const { COT_BANG, khoangMacDinh } = await import('../../../shared/domain/index.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { demoToday } = await import('../demoConfig.ts');
@@ -27,6 +28,15 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
   const mot = (fn: () => unknown) => {
     try { return ser(chayTrongRequest('GET', fn)); } catch (e: any) { return String(e?.status ?? e?.message); }
   };
+
+  /** Số câu của `fn` trong một request GET có mốc phiên (bảng tham chiếu đã ấm — như request thật), `theoCau` đếm dòng theo câu. */
+  const moc = docMoc((db().prepare(`SELECT ${COT_MOC}`).get() as any).u_moc);
+  const demCauGet = (fn: () => unknown) => chayTrongRequest('GET', () => {
+    datMoc(moc);
+    const d0 = soCauSql();
+    fn();
+    return { cau: soCauSql() - d0, theoCau: demHienTai()!.theoCau };
+  });
 
   check('TQ · giống hệt bản chụp', () => {
     chupHoacSo('tl-tq', () => {
@@ -74,5 +84,22 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
       return out;
     });
     assert(true);
+  });
+
+  check('Q1 · /tong-quan/v5?ct=ft QL: bangChiNhanh ≤ 22 câu; câu lớp học viên ≤ 1 (lớp của tập một lượt đọc)', () => {
+    const bang = () => bangChiNhanh(P.mbManager, { ct: 'ft', chuY: true });
+    demCauGet(bang);   // ấm bảng tham chiếu (nhớ tiến trình theo phiên bản)
+    const { cau, theoCau } = demCauGet(bang);
+    const lopHv = [...theoCau.keys()].filter((c) => c.startsWith('SELECT e.student_id AS id, c.id AS class_id'));
+    console.log(`   bangChiNhanh QL ft: ${cau} câu; lớp HV ${lopHv.length} khoá câu`);
+    if (process.env.PISA_IN_CAU) console.log([...theoCau].map(([c, n]) => `${n} ${c.slice(0, 74)}`).join(String.fromCharCode(10)));
+    assert(cau <= 22, `${cau} câu`);
+  });
+  check('Q1 · lopCuaTap(hoc-vien) trong bảng: một lượt đọc mỗi đơn vị', () => {
+    let lan = 0;
+    const k = db() as any, goc = k.prepare;
+    k.prepare = function (this: unknown, sql: string) { if (sql.includes('e.student_id AS id, c.id AS class_id')) lan++; return goc.call(this, sql); };
+    try { demCauGet(() => bangChiNhanh(P.mbManager, { ct: 'ft', chuY: true })); } finally { delete k.prepare; }
+    assert(lan <= 1, `${lan} lượt đọc lớp HV`);
   });
 }
