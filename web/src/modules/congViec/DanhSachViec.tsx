@@ -77,13 +77,13 @@ export function DanhSachViec({ nhom, dem, homNay, soHien, moHet, gapSan, cuoiNho
   const [mo, setMo] = useState<Record<string, boolean>>({});
   const [them, setThem] = useState<Record<string, number>>({});
   const [moSau, setMoSau] = useState(false);
-  /* T03: bài chấm chéo tách khỏi Chấm điểm — "Bài thi Speaking tuần này". */
+  /* T03: bài chấm chéo tách khỏi Chấm điểm — "Speaking chấm chéo". */
   const ds = nhom.flatMap((g) => {
     if (g.key !== 'cham-diem') return [g];
     const cc = g.items.filter(laViecChamCheo);
     if (!cc.length) return [g];
     const con = g.items.filter((x) => !laViecChamCheo(x));
-    return [...(con.length ? [{ ...g, items: con }] : []), { ...g, key: 'cham-cheo' as never, label: t('Bài thi Speaking tuần này'), items: cc }];
+    return [...(con.length ? [{ ...g, items: con }] : []), { ...g, key: 'cham-cheo' as never, label: t('Speaking chấm chéo'), items: cc }];
   });
   /* "+ n việc ở {nhóm}" ở tầng em: em có việc ở nhóm khác — không phải nhớ qua lại giữa hai nhóm. */
   const nhomCuaEm = new Map<number, { k: string; ten: string }[]>();

@@ -7,12 +7,12 @@ import { NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DeadlinePill, KHOA_HOAN_TAT_HINT, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
-import { ODiemMt, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
+import { ODiemMt, chuVangO, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import {
   fmtBand, skillLabel, skillShort, sosLabel, sosTone,
 } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, conThieuFt, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
@@ -355,8 +355,10 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   /* Một ô điểm MT (mọi cột L/R/W1/W2/S): nút → hộp nhập điểm. */
   /* OV-15b (6b): ✓ / ✗ so kỳ vọng ở ô L · R · S khi lưới có cột Kỳ vọng; W1 / W2 là ô nhập thường (✓ / ✗ ở cột W). */
   const kyVong = cot.kyVong ? row.result.expectation ?? null : null;
+  const { homNay } = useNgayNghiepVu();
+  const vangHang = gopVangHang(row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem)).map((c) => chuVangO(c, tuanXem, homNay)));
   const oDiem = (s: string, cell: Cell) => (
-    <ODiemMt cell={cell} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d) => onTiep(s, d)} tuanXem={tuanXem}
+    <ODiemMt cell={cell} anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d) => onTiep(s, d)} tuanXem={tuanXem}
       {...(moS === s ? hop : null)} dauKq={soKyVong(cell.band, kyVong)}
       onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
       ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos,
@@ -383,6 +385,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           {row.hoanTat && <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(row.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
+          {vangHang && <span className="whitespace-nowrap">{vangHang}</span>}
           <DongThi tienTo={`MT${row.attemptNo}`} muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
             .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
@@ -515,6 +518,8 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
   useEffect(() => { xoaVuaLuu(); }, [row]);
   const cellOf = (skill: string) => { const c = row.cells.find((x) => x.skill === skill); return c && apDiemVuaLuu(c, vuaLuu[skill]); };
   const kyVong = row.result.expectation ?? null;
+  const { homNay } = useNgayNghiepVu();
+  const vangHang = gopVangHang(row.cells.filter((c) => c.required && !khacTuanFt(c, tuanDangXem)).map((c) => chuVangO(c, tuanXem, homNay)));
   const ketQua = row.ngungHoc ? <Level tone="muted">{dich(row.ngungHoc)}</Level>
     : row.result.kckDuoi ? <ChipDuoiKck />
     : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
@@ -527,6 +532,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
         <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
+      {vangHang && <span className="-mt-2 text-xs text-slate-400">{vangHang}</span>}
       <div className="grid grid-cols-5 gap-1.5 text-center">
         {(['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const).map((s) => {
           const cell = cellOf(s);
@@ -538,7 +544,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
                 : khacTuanFt(cell, tuanDangXem) && !nutTuanGoc(cell) ? <span className="text-xs text-slate-500">{cell.daChot?.doiSang ?? tuanLich(cell.weekStart)}</span>
                 : (
                   <>
-                    <ODiemMt cell={cell} lon mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d) => onTiep(s, d)} tuanXem={tuanXem} {...(moS === s ? hop : null)}
+                    <ODiemMt cell={cell} lon anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d) => onTiep(s, d)} tuanXem={tuanXem} {...(moS === s ? hop : null)}
                       dauKq={soKyVong(cell.band, kyVong)} onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
                       ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong, mt0: !!row.mt0Sos,
                         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />

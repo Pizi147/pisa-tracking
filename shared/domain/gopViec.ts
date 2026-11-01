@@ -37,6 +37,12 @@ export type DongGop<T> = T & { con: ConGop<T>[] };
 const GIU_TUNG_DONG_FT = new Set(['no_plan']);
 /** OV-13c (Q4): Case SOS FT gộp theo lớp + tuần thi + mức SOS. */
 const GOP_TUAN_SOS = new Set(['ghi_nhan_xet', 'xac_nhan_pa']);
+/** DON-HINH B7: tên việc trên dòng của chính em — bỏ tên em ở mọi vị trí; bỏ xong rỗng thì giữ nguyên. */
+export function boTenEm(chu: string, ten: string | null | undefined): string {
+  if (!ten) return chu;
+  return chu.split(' · ').filter((x) => x !== ten).join(' · ').replaceAll(ten, '').replace(/\s+/g, ' ').trim() || chu;
+}
+
 /** Khoá Nhập điểm Speaking chấm chéo (T18, `mywork.ts`) — việc lẻ `…|cc`, dòng gộp theo tuần cũng `…|cc`. */
 export const laViecChamCheo = (it: { key: string }): boolean => it.key.endsWith('|cc');
 /** OV-13g (Q7); OV-14c: tên việc chấm chéo của GV Speaking ở Công việc › Chấm điểm. */

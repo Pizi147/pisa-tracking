@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { Card, Empty, ErrorState, NhanTrangThai, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
@@ -19,9 +19,7 @@ import {
  * Mọi số mở đúng danh sách bằng `/phan-tich/y-thuc/o` (G-10). Bảng "Xử lý theo loại" chỉ có trong ⤓ Xuất Excel (cuối hàng lọc).
  * V8-PT (khung B3): thẻ chỉ số đầu tab — HV cần chú ý đếm từ danh sách HV; Vi phạm · Chưa xử lý · Lớp có vi phạm CỘNG từ bảng Lớp (cùng số).
  */
-const nhanNhom = (x: DongHvCanChuY) => (x.nhom === 'qua_han'
-  ? <NhanTrangThai t="qua-han" />
-  : <Nhan tone={x.nhom === 'bat_buoc' ? 'soon' : 'muted'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>);
+const nhanNhom = (x: DongHvCanChuY) => <Nhan tone={x.nhom === 'qua_han' ? 'late' : x.nhom === 'bat_buoc' ? 'soon' : 'muted'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>;
 
 export function YThucPhoiHop(props: PhamViPhanTich) {
   const demoDate = useNgayNghiepVu().homNay || null;
@@ -120,7 +118,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               <td className="td text-right tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={`${x.ten} · vi phạm`} /></td>
               <td className="td text-right tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
               <td className="td truncate text-slate-300" title={x.bienPhapGanNhat ?? undefined}>
-                {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : <span className="text-faint">—</span>}
+                {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
                 {x.lanXuLyMoi && <div className="text-xs text-muted">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}
               </td>
             </tr>

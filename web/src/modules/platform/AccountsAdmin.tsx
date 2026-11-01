@@ -166,7 +166,7 @@ export function AccountsAdmin() {
         </div>
         <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
           {PHAN_LOAI_TAI_KHOAN.map((k) => (
-            <NutChon key={k} nho chon={loc3.phanLoai === k} onClick={() => datLoc({ phanLoai: loc3.phanLoai === k ? null : k })}>
+            <NutChon key={k} nho chon={loc3.phanLoai === k} disabled={!phanLoai[k] && loc3.phanLoai !== k} onClick={() => datLoc({ phanLoai: loc3.phanLoai === k ? null : k })}>
               {NHAN_PHAN_LOAI[k]} <span className="tabular-nums text-slate-400">{phanLoai[k]}</span>
             </NutChon>
           ))}

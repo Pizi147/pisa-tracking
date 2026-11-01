@@ -139,7 +139,7 @@ type DotCuaHv = {
  * Lưới một dòng kỹ năng của bảng kết quả (khung M4-A): Kỹ năng · Lịch · Điểm · Trạng thái · Nhận xét · Case · thao tác. Dưới `md` mỗi kỹ năng là
  * một thẻ: tên + điểm, rồi lịch · trạng thái, nhận xét · Case, nút (các nhóm `md:contents` thành ô lưới ở màn rộng).
  */
-const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_minmax(11rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
+const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_7.5rem] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_minmax(11rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
 
 export default function MockDetailPage() {
   const { id } = useParams();
@@ -852,7 +852,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
               <span aria-hidden className="w-3 text-xs text-slate-500">{mo ? '▾' : '▸'}</span>{skillLabel(k)}
             </button>
           </div>
-          <div role="cell" className="justify-self-end md:order-none md:col-start-3 md:row-start-1 md:justify-self-start">{o(k, true)}</div>
+          <div role="cell" className="min-w-0 md:order-none md:col-start-3 md:row-start-1">{o(k, true)}</div>
           <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 md:contents">
             <div role="cell" className="text-sm md:col-start-2 md:row-start-1">
               {!r.required ? <span className="text-slate-500 max-md:hidden">—</span> : r.periodCode ? (
