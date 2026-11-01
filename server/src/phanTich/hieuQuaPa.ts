@@ -179,15 +179,20 @@ function tinh(p: Principal, f: FilterHieuQuaPa) {
 
 type Tinh = ReturnType<typeof tinh>;
 
+/** "Thời gian thường mất" (P9b): MỘT công thức cho cột bảng và thẻ chỉ số (V8-PT-2) — PA có cải thiện; dưới ngưỡng ít dữ liệu không hiện. */
+export function tvTuanCua(pa: Pick<Plan, 'group' | 'startedOn' | 'outcomeOn'>[]): number | null {
+  if (pa.length < NGUONG_IT_DU_LIEU) return null;
+  return tuanTrungVi(pa.filter((x) => x.group === 'success' && x.startedOn && x.outcomeOn).map((x) => Math.max(0, ngayGiua(x.startedOn!, x.outcomeOn!))));
+}
+/** Mọi PA của hai bảng (mỗi PA đúng một khoá gốc) — CHÍNH tập cộng thành số thẻ chỉ số "PA có kết quả". */
+const paCaHaiBang = (r: Tinh) => [...r.tap].filter(([k]) => !k.includes('|')).flatMap(([, pa]) => pa);
+
 function dongOf(r: Tinh, khoa: string): DongHieuQuaPa {
   const pa = r.tap.get(khoa)!;
-  const cai = pa.filter((x) => x.group === 'success');
   const soPa = pa.length;
-  const itDuLieu = soPa < NGUONG_IT_DU_LIEU;
-  const ngay = cai.filter((x) => x.startedOn && x.outcomeOn).map((x) => Math.max(0, ngayGiua(x.startedOn!, x.outcomeOn!)));
   return {
-    khoa, nhan: r.nhan.get(khoa)!, soPa, caiThien: cai.length, hocVien: new Set(pa.map((x) => x.studentId)).size,
-    itDuLieu, tvTuan: itDuLieu ? null : tuanTrungVi(ngay), dongThoi: pa.filter((x) => r.dongThoi.has(x.id)).length, nenDung: false,
+    khoa, nhan: r.nhan.get(khoa)!, soPa, caiThien: pa.filter((x) => x.group === 'success').length, hocVien: new Set(pa.map((x) => x.studentId)).size,
+    itDuLieu: soPa < NGUONG_IT_DU_LIEU, tvTuan: tvTuanCua(pa), dongThoi: pa.filter((x) => r.dongThoi.has(x.id)).length, nenDung: false,
   };
 }
 const xepSo = (a: DongHieuQuaPa, b: DongHieuQuaPa) => b.soPa - a.soPa || a.nhan.localeCompare(b.nhan);
@@ -223,6 +228,7 @@ export function hieuQuaPa(p: Principal, f: FilterHieuQuaPa): HieuQuaPaKetQua {
       gom: it.length ? { soVanDe: it.length, hang: it } : null,
     },
     quyChe: { tomTat: { paCoKetQua: cong(quyChe, 'soPa'), caiThien: cong(quyChe, 'caiThien') }, hang: quyChe },
+    thoiGianThuongMat: tvTuanCua(paCaHaiBang(r)),   // V8-PT-2: +0 câu — từ cùng dòng đã nạp
     chuaGhiKetQua: r.chuaGhiIds.length,
     caseChuaPhanLoai: r.caseChuaPhanLoai.size,
     chuaRoNguon: r.chuaRoNguonIds.length,
@@ -248,11 +254,12 @@ export function oHieuQuaPa(p: Principal, f: FilterHieuQuaPa & { dong: string; co
     const ids = sx(r.chuaRoNguonIds);
     return { n: ids.length, tieuDe: `${ids.length} PA chưa rõ nơi học lúc làm PA`, rows: rowsFor('phuong-an', ids) };
   }
-  const t = r.tap.get(f.dong);
+  /* V8-PT-2: `dong=tong` = thẻ chỉ số PA có kết quả · Có cải thiện. */
+  const t = f.dong === 'tong' ? paCaHaiBang(r) : r.tap.get(f.dong);
   if (!t) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
   if (f.cot !== 'pa' && f.cot !== 'cai-thien' && f.cot !== 'hv') throw badRequest(`Cột "${f.cot}" không hợp lệ.`);
   const [cha] = f.dong.split('|');
-  const nhan = cha === f.dong ? r.nhan.get(f.dong)! : `${r.nhan.get(cha)} · ${r.nhan.get(f.dong)}`;
+  const nhan = f.dong === 'tong' ? 'Hiệu quả PA' : cha === f.dong ? r.nhan.get(f.dong)! : `${r.nhan.get(cha)} · ${r.nhan.get(f.dong)}`;
   if (f.cot === 'hv') {
     const ids = sx(new Set(t.map((x) => x.studentId)));
     return { n: ids.length, tieuDe: `${nhan} · ${ids.length} học viên`, rows: rowsFor('hoc-vien', ids) };

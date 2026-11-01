@@ -7,10 +7,13 @@
  */
 import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
 import {
-  KN_THI, NHAN_SAU_THI, kyNangDaBo, boMonDaBo, PERMISSIONS, chuTargetKck, ketQuaMock, xepDongMock,
-  type DongMock, type DongThiThat, type KetQuaMock, type KetQuaMockKq, type KetQuaThiThatKq, type LuaChonSauThi, type XepMock,
+  KN_THI, NHAN_SAU_THI, kyNangDaBo, boMonDaBo, PERMISSIONS, chuTargetKck, ketQuaMock, tuanLich, xepDongMock,
+  type DongMock, type DongThiThat, type KetQuaMock, type KetQuaMockKq, type KetQuaThiThatKq, type LoaiThi, type LuaChonSauThi, type XepMock,
 } from '../../../shared/domain/index.ts';
-import { forbidden } from '../util.ts';
+import { t as tl } from '../../../shared/i18n/index.ts';
+import { badRequest, forbidden } from '../util.ts';
+import { diemTuMock } from '../worklist/diemDong.ts';
+import type { MetricRow } from '../worklist/metrics.ts';
 import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { classScopeSql, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -92,6 +95,42 @@ export function mockTrongKhoang(p: Principal, f: LocKetQuaThi, o: { luot?: any[]
       casePa: t?.trangThai ?? null, caseId: c?.id ?? null, viecTiep,
     };
   });
+}
+
+/** "05/09" từ ISO ngày thi (thẻ / panel thi thật). */
+const ngayNgan = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '');
+const dongMockPanel = (d: DongMock): MetricRow => ({
+  id: d.attemptId, title: d.ten, sub: `${d.lop} · MT${d.mt} · ${tuanLich(d.tuan)}`, href: `/hoc-vien/${d.studentId}`, diemHv: diemTuMock(d),
+});
+export const dongThiPanel = (d: DongThiThat): MetricRow => {
+  const target = d.target === null ? null : Number(d.target);
+  return {
+    id: d.cycleId, title: d.ten, sub: [d.lop, d.khongThi ? tl('Không thi') : ngayNgan(d.ngayThi), d.buocTiepChu ?? tl('Bước tiếp chưa chọn')].filter(Boolean).join(' · '), href: `/hoc-vien/${d.studentId}`,
+    diemHv: {
+      luot: tl('Thi thật'), tuan: d.ngayThi, tam: false, overall: d.ovr, soVoi: target === null || Number.isNaN(target) ? null : { nhan: 'Target', v: target },
+      kn: ([['L', d.l], ['R', d.r], ['W', d.w], ['S', d.s]] as const).map(([k, v]) => ({ k, v, dat: null })),
+    },
+  };
+};
+const CHON_MOCK: Record<string, (d: DongMock) => boolean> = {
+  luot: () => true, dat: (d) => d.ketQua === 'dat', 'chua-dat': (d) => d.ketQua === 'chua-dat', 'chua-du': (d) => d.ketQua === 'chua-du',
+  sos1: (d) => d.sos === 1, sos2: (d) => d.sos === 2, sos3: (d) => d.sos === 3,
+};
+const CHON_THI: Record<string, (d: DongThiThat) => boolean> = {
+  luot: () => true, dat: (d) => d.dat === true, 'chua-dat': (d) => d.dat === false, 'chua-chon': (d) => !d.buocTiep,
+};
+
+/**
+ * V8-PT-2: danh sách của MỘT thẻ chỉ số Kết quả Test (chạy khi MỞ, 0 câu khi vẽ) — lọc CHÍNH dòng sinh ra `tong` nên số = số dòng (G-10), một dòng một lượt
+ * như thẻ đếm. Mock bỏ nạp Case (`boCase` — thẻ chỉ cần kết quả, SOS); Thi thật bỏ hỏi quyền chọn bước.
+ */
+export function oKetQuaThi(p: Principal, f: LocKetQuaThi & { loai: LoaiThi; o: string }): { n: number; tieuDe: string; unit: 'luot-sos'; rows: MetricRow[] } {
+  const thi = f.loai === 'thi-that';
+  const chon = (thi ? CHON_THI : CHON_MOCK)[f.o];
+  if (!chon) throw badRequest('Số này không có trong Kết quả Test — có thể bộ lọc vừa đổi.');
+  const rows = thi ? ketQuaThiThatKq(p, f, { boQuyen: true }).rows.filter(chon as (d: DongThiThat) => boolean).map(dongThiPanel)
+    : xepDongMock(mockTrongKhoang(p, f, { boCase: true }).filter(chon as (d: DongMock) => boolean), 'lop').map(dongMockPanel);
+  return { n: rows.length, tieuDe: `${rows.length} lượt`, unit: 'luot-sos', rows };
 }
 
 export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq?: KetQuaMock | null }): KetQuaMockKq {

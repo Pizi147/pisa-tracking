@@ -98,6 +98,9 @@ export function PhanTich() {
   const [dau, setDau] = useState<HTMLSpanElement | null>(null);
   const [giua, setGiua] = useState<HTMLSpanElement | null>(null);
   const [phai, setPhai] = useState<HTMLSpanElement | null>(null);
+  /* V8-PT-2 (khung C1, C2): 375 — ⋯ / Xuất đứng ngay cạnh ô đoạn đầu (44 + khoảng 8), không xuống cuối hàng lọc. */
+  const canhDoan = goc === 'tong-hop' || goc === 'ket-qua-thi';
+  const LOP_DOAN = 'max-sm:order-[-2] max-sm:w-[calc(100%-52px)] sm:contents';
 
   return (
     <div className="space-y-3">
@@ -107,8 +110,8 @@ export function PhanTich() {
       {/* V8-PT (P2): MỘT hàng lọc, mọi ô cao 36 chữ 14 — [chương trình | ô đoạn đầu của tab] · [Toàn bộ | Chọn khoảng tuần] · tuần → tuần · Mọi lớp ▾ ·
           ô riêng tab · (phải) Xuất / In / ⋯. 375: ô đoạn và thời gian hết hàng, ô chọn hai cột. */}
       <div className="flex flex-wrap items-center gap-2 print:hidden" data-hd="pt-hang-loc">
-        {coCt && <ChonChuongTrinh value={ct} onChange={setCt} />}
-        <span ref={setDau} className="contents" />
+        {coCt && <span className={canhDoan ? LOP_DOAN : 'contents'}><ChonChuongTrinh value={ct} onChange={setCt} /></span>}
+        <span ref={setDau} className={goc === 'ket-qua-thi' ? LOP_DOAN : 'contents'} />
         <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo />
         {coLop && (
           <OChon className="max-sm:w-[calc(50%-4px)]" dangLoc={!!classId} value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
@@ -122,7 +125,7 @@ export function PhanTich() {
           </OChon>
         )}
         <span ref={setGiua} className="contents" />
-        <span ref={setPhai} className="ml-auto flex items-center gap-2 empty:hidden">
+        <span ref={setPhai} className={`ml-auto flex items-center gap-2 empty:hidden ${canhDoan ? 'max-sm:order-[-1] max-sm:ml-0' : ''}`}>
           {/* "In" (V4, Báo cáo HV): giấy sáng A4 ngang — cuối hàng lọc như mockup. */}
           {goc === 'bao-cao' && <button type="button" className="btn h-9 max-sm:hidden" onClick={() => window.print()}>{t('In')}</button>}
         </span>

@@ -254,6 +254,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Chưa mở, có lý do:** TL-HVL, V8-HSL-2 chờ PR-D merge (cùng hồ sơ lớp) · DO-KHUNG-DO chờ đo trên main sạch.
 - **Merge:** PR máy chủ / phép kiểm (TL-VIEC, TL-TQ, CN-3) PTA tự merge khi rà đạt + check xanh; PR-D, V8-PT-2, DON-HINH chờ chủ SP duyệt ảnh. Không deploy.
 
+- **[XM] V8-PT-2 (`docs/anh/v8-pt-2/khop-khac.md`), chờ chủ SP:** thẻ "Thời gian thường mất" tính PA có cải thiện, dưới 5 PA ghi "—" (theo mockup + cột bảng; kế hoạch ghi "PA có kết quả") · panel thẻ Kết quả Test 6 câu nghiệp vụ (kế hoạch ≤ ~4) · Phân tích GV chưa có Xem Toàn bộ khi rỗng · `do-khung` chưa có kịch bản riêng 5 tab Phân tích (đưa vào DO-KHUNG-DO cùng lỗi g1 bảng đầu cột `rowSpan`).
 - **Kết quả đêm 01/11:** merge #765 CN-3 · #770 TL-VIEC (`/my-work` QL 54 → 39 câu) · #769 TL-TQ (`/tong-quan/v5?ct=ft` QL 53 → 40 câu). Chờ chủ SP duyệt ảnh: #767 PR-D (~83 %), #768 V8-PT-2 (96 %, 3 câu hỏi trong PR). Mở được TL-HVL, V8-HSL-2 sau #767.
 - **#772 DON-HINH mở, chờ chủ SP duyệt ảnh** (check 4990). Thêm vào DO-KHUNG-DO, chưa đối chiếu main: `test-diem-lop-375` tên cắt 5 px · `phan-tich-375` ⓘ · `hv-thuong-375` Progress Test · `cv-ho-tro` "Nếu duyệt".
 - **PTA rà #767, #768, #772 (02/11): không lỗi chặn, chủ SP cho tạm dừng tại đây, chưa merge.** #768 cần sửa nhỏ: `oKetQuaThi` trả thêm `unit` (đầu panel có số + đơn vị) · thi thật KET / PET in "140.0" (kiểm `DongDiem`). #768 và #772 cùng sửa `YThucPhoiHop.tsx`: PR merge sau phải gộp lại.

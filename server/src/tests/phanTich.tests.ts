@@ -646,7 +646,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
   check('UX4 · Ý thức: không còn khoá/trường phối hợp SOS, không bảng 9 loại PA xử lý ở kết quả bảng', () => {
     const kq = yThucSvc.yThucPhanTich(P.admin, FY());
     assert(!/phoiHop|phoi-hop|coordination/i.test(JSON.stringify(Object.keys(kq))), `không được có khoá phối hợp: ${Object.keys(kq)}`);
-    eq(Object.keys(kq).sort(), ['bienPhapTheoLoai', 'gom', 'hvCanChuY', 'lop', 'scopeEmpty'], 'đúng các khoá đã chốt');
+    eq(Object.keys(kq).sort(), ['bienPhapTheoLoai', 'gom', 'hvCanChuY', 'lop', 'scopeEmpty', 'soVoiTruoc'], 'đúng các khoá đã chốt');
     for (const k of Object.keys(kq.bienPhapTheoLoai)) assert(d.KHOA_LOAI_XU_LY.includes(k), `bienPhapTheoLoai chỉ có loại xử lý v4 (+ loai-cu, Q2): ${k}`);
   });
 

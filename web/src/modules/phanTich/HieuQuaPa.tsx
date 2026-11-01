@@ -6,7 +6,7 @@ import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { CHIP_SOS, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, DaiChiSo, DauThe, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DaiChiSo, DauThe, NutXemToanBo, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
@@ -171,10 +171,13 @@ export function HieuQuaPa(props: PhamViPhanTich) {
           <>
             {/* Thẻ chỉ số — cùng số với đầu hai thẻ bảng (tóm tắt máy chủ). "Chưa tính" = ba số "Để số liệu đủ tin" cũ ở chân bảng. */}
             <DaiChiSo ds={[
-              { ten: t('PA có kết quả'), ky: t('trong kỳ'), gt: tongPa, mau: t('GV thêm {a} · quy chế {b}', { a: data.gvThem.tomTat.paCoKetQua, b: data.quyChe.tomTat.paCoKetQua }) },
-              { ten: t('Có cải thiện'), gt: tongCt, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined, mau: t('tiến bộ rõ + một phần') },
+              { ten: t('PA có kết quả'), ky: t('trong kỳ'), gt: <OSo giaTri={tongPa} nguon={nguon('tong', 'pa')} tieuDe={t('PA có kết quả')} vung="chi-so" />, mau: t('GV thêm {a} · quy chế {b}', { a: data.gvThem.tomTat.paCoKetQua, b: data.quyChe.tomTat.paCoKetQua }) },
+              { ten: t('Có cải thiện'), gt: <OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" />, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined, mau: t('tiến bộ rõ + một phần') },
+              data.thoiGianThuongMat !== null
+                ? { ten: t('Thời gian thường mất'), gt: data.thoiGianThuongMat, nho: t('{n} tuần', { n: data.thoiGianThuongMat }).replace(String(data.thoiGianThuongMat), '').trim(), mau: t('trung vị · PA có cải thiện') }
+                : { ten: t('Thời gian thường mất'), gt: <span className="text-[color:var(--text-faint)]">—</span>, mau: t('Ít dữ liệu') },
               {
-                ten: t('Chưa tính'), rong2: true,
+                ten: t('Chưa tính'),
                 gt: (
                   <span className="mt-1 grid w-full gap-1 text-[13px] font-normal leading-normal text-[color:var(--text-dim)] [font-family:inherit]">
                     {chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', t('PA chưa có kết quả'), t('Không tính vào bảng hiệu quả tới khi có kết quả'))}
@@ -198,7 +201,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   </>
                 )} />
               {data.gvThem.hang.length === 0 && !data.gvThem.gom
-                ? <p className="m-0 px-4 py-3 text-sm text-[color:var(--text-dim)]">Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
+                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p><NutXemToanBo /></div>
                 : (
                   <>
                     <div ref={ptGv.thanh.dauBang} />
@@ -239,7 +242,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   </>
                 )} />
               {dongQc.length === 0
-                ? <p className="m-0 px-4 py-3 text-sm text-[color:var(--text-dim)]">Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p>
+                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p><NutXemToanBo /></div>
                 : (
                   <>
                     <div ref={ptQc.thanh.dauBang} />

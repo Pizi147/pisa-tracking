@@ -342,6 +342,11 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=ghi-pa' },
+  /* V8-PT-2: panel thẻ chỉ số — chỉ gọi khi MỞ (0 câu khi vẽ); đường vẽ `/phan-tich/*` giữ trần cũ. */
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi/o?loai=mock&o=dat&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi/o?loai=thi-that&o=luot&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/hieu-qua-pa/o?dong=tong&cot=pa' },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/y-thuc/o?dong=tong&cot=lop' },
   // ---------------------------------------------------------------- SV-SO2 — hồ sơ GV theo kỳ (GV tự xem / QL / QT), Đạt MT, Thi tháng này; khoảng ~29 tuần (P9 không trần)
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/chi-so', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/chi-so?tu=2026-03-02&den=2026-09-14', maChuDich: { GVBM: 403 } },
@@ -902,6 +907,15 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 15,   // đo 5
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 29,   // đo 19
   'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 27,   // đo 17
+  /* V8-PT-2: panel thẻ chỉ số (chỉ khi MỞ, gồm ~4 câu đăng nhập) — max(đo+10, ⌈đo×1,3⌉). */
+  'QL /phan-tich/ket-qua-thi/o?loai=mock&o=dat&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 7
+  'QT /phan-tich/ket-qua-thi/o?loai=mock&o=dat&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 7
+  'QL /phan-tich/ket-qua-thi/o?loai=thi-that&o=luot&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6
+  'QT /phan-tich/ket-qua-thi/o?loai=thi-that&o=luot&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6
+  'QL /phan-tich/hieu-qua-pa/o?dong=tong&cot=pa': 25,   // đo 15
+  'QT /phan-tich/hieu-qua-pa/o?dong=tong&cot=pa': 25,   // đo 15
+  'QL /phan-tich/y-thuc/o?dong=tong&cot=lop': 22,   // đo 12
+  'QT /phan-tich/y-thuc/o?dong=tong&cot=lop': 22,   // đo 12
   'QL /tong-quan/v5?ct=ft': 54,   // TL-TQ: đo 41 (trước 54)
   'QT /tong-quan/v5?ct=ft': 47,   // TL-TQ: đo 36 (trước 49)
   'QL /tong-quan/v5?ct=thuong': 40,   // TL-TQ: đo 30 (trước 39)

@@ -1,6 +1,6 @@
 import { Fragment, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, dauDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
@@ -69,7 +69,7 @@ export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: str
   /** Cột lượt hẹp hơn 132 px khi mọi dòng cùng nơi chỉ một nhãn ngắn ("Final" ở thẻ Xét lại) — chừa chỗ cho 4 môn % + Tổng trong thẻ hẹp. */
   rongLuot?: number }) {
   const pt = d.donVi === '%';
-  const so = (v: number) => (pt ? `${Math.round(v)} %` : v.toFixed(1));
+  const so = (v: number) => chuDiem(v, pt);
   const mau = (dat: boolean | null) => (dat === null ? '' : dat ? 'text-kq-bang' : kck ? '' : 'text-kq-duoi');
   const ovDat = d.overall != null && d.soVoi ? d.overall >= d.soVoi.v : null;
   return (

@@ -225,6 +225,7 @@ function tinh(p: Principal, f: FilterTongHop) {
     if (!pl) continue;   // chưa chấm · Q29-1: em KCK ngoài mẫu số
     if (laThuong && a.kind === 'final') cuoiDaDem.push(a.id);
     for (const tap of [cha.tap, con.tap, tongTap]) { them(tap, 'luot', a.id); them(tap, pl.loai, a.id); }
+    them(tongTap, 'hvLuot', a.student_id);   // V8-PT-2: "16 HV" ở thẻ Lượt MT — cùng tập lượt, +0 câu
     for (const kn of pl.kyNangDuoi) for (const tap of [cha.tap, con.tap, tongTap]) them(tap, `kn:${kn}`, a.student_id);
   }
 
@@ -311,7 +312,7 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
     khoa: d.khoa, nhan: d.nhan, phu: d.phu, ...(d.tuanNay !== undefined ? { tuanNay: d.tuanNay } : {}), o: soCuaTap(d.tap, oCols), ...(r.ct === 'thuong' ? { coDot: d.coDot } : {}),
     con: (d as any).conSorted?.length ? (d as any).conSorted.map(gon) : undefined,
   });
-  return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, oCols), tongCoDot: r.tongCoDot, scopeEmpty: r.scopeEmpty };
+  return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, oCols), soHv: r.tongTap.get('hvLuot')?.size ?? 0, tongCoDot: r.tongCoDot, scopeEmpty: r.scopeEmpty };
 }
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */

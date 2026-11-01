@@ -9926,6 +9926,9 @@ await runPrTlTqTests({ check, assert, P, TODAY } as any);
 // ==================================================================== TL-NAPBAI (lịch kỹ năng có chi nhánh, napBai cả chi nhánh theo kỳ — CUỐI: B1-c bất biến)
 const { runPrTlNapBaiTests } = bocTep('prTlNapBai', await import('./prTlNapBai.tests.ts'));
 await runPrTlNapBaiTests({ check, assert, conn, P } as any);
+
+const { runV8Pt2Tests } = bocTep('v8Pt2', await import('./v8Pt2.tests.ts'));
+await runV8Pt2Tests({ check, assert, conn, P } as any);
 // ==================================================================== TL-VIEC (myWork nạp chung một lần mỗi request — so bản chụp gốc)
 const { runPrTlViecTests } = bocTep('prTlViec', await import('./prTlViec.tests.ts'));
 await runPrTlViecTests({ check, checkAsync, assert, P } as any);

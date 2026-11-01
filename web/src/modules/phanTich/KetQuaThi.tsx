@@ -10,7 +10,7 @@ import { CHIP_SOS, NhanKq, lopSos } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang, type ThanhPhanTrang } from '../../ui/PhanTrang.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { DOAN, DaiChiSo, DauThe, OChon, VaoHangLoc, doanNut, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DOAN, DaiChiSo, DauThe, NutXemToanBo, NutXuat, OChon, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, doanNut, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { duongDotTest } from '@shared/domain/index.ts';
 import {
   KN_THI, LOAI_THI, NHAN_KET_QUA_MOCK, NHAN_KN_THI, NHAN_LOAI_THI, XEP_MOCK, ngay, nhanKhoang, tuanLich,
@@ -27,8 +27,10 @@ import {
 const ALL = 'tat-ca' as const;
 type LocKq = KetQuaMock | typeof ALL;
 
-/** Số 0 xám chữ thường (mockup `.oso-0`). */
-const so0 = (n: number) => (n ? n : <span className="font-medium text-faint">0</span>);
+/** Số thẻ chỉ số: bấm mở panel đúng tập (V8-PT-2 — `/phan-tich/ket-qua-thi/o`, chỉ gọi khi mở); 0 xám chữ thường không bấm (mockup `.oso-0`). */
+const soThe = (query: string, o: string, n: number, tieuDe: string) => (n
+  ? <OSo giaTri={n} nguon={`/phan-tich/ket-qua-thi/o?${query}&o=${o}`} tieuDe={tieuDe} vung="chi-so" />
+  : <span className="font-medium text-faint">0</span>);
 /** "29 %" trên lượt có kết quả (Chưa đủ điểm không vào tỷ lệ — `shared/domain/ketQuaThi.ts`). */
 const phanTram = (a: number, b: number) => (b > 0 ? `${Math.round((a * 100) / b)} %` : undefined);
 /** Chữ thường mở hồ sơ (MT · tuần, trạng thái Case): không xanh như link, rê mới xanh + gạch (cùng luật `.ten-ho-so`). */
@@ -131,7 +133,9 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
   const tg = data?.tong;
   const soSos = tg ? tg.sos1 + tg.sos2 + tg.sos3 : 0;
   const chipSos = (m: 1 | 2 | 3, n: number) => (
-    <span key={m} className={`${CHIP_SOS} ${n ? lopSos(m) : 'border border-[color:var(--line)] text-faint'}`}>SOS {m} · {n}</span>
+    <span key={m} className={`${CHIP_SOS} ${n ? lopSos(m) : 'border border-[color:var(--line)] text-faint'}`}>
+      {n ? <OSo giaTri={n} nhan={`SOS ${m} · ${n}`} className={SO_TRONG_CHIP} nguon={`/phan-tich/ket-qua-thi/o?${query}&o=sos${m}`} tieuDe={`SOS ${m} · ${t('Mock Test')}`} vung="chi-so" /> : `SOS ${m} · 0`}
+    </span>
   );
   const dauThe = (
     <DauThe ten={t('Lượt Mock Test')} dem={t('{n} lượt', { n: rows.length })}
@@ -157,16 +161,16 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
         </OChon>
       </VaoHangLoc>
       <VaoHangLoc o="phai">
-        <button type="button" className="btn h-9" disabled={!rows.length} onClick={xuatExcel}>⤓ {t('Xuất Excel · {n} lượt', { n: rows.length })}</button>
+        <NutXuat nhan={t('Xuất Excel · {n} lượt', { n: rows.length })} tat={!rows.length} onClick={xuatExcel} />
       </VaoHangLoc>
       <div className="space-y-3">
         {tg && (
-          /* G7: cùng `tong` máy chủ với bảng (trước là dòng chữ 12 px đầu bảng). Số không bấm — chưa có đường danh sách cho thẻ (không thêm API). */
+          /* G7: cùng `tong` máy chủ với bảng (trước là dòng chữ 12 px đầu bảng). V8-PT-2: số bấm mở panel đúng tập, cùng hàm đếm. */
           <DaiChiSo ds={[
-            { ten: t('Lượt'), ky: t('trong kỳ'), gt: so0(tg.luot), mau: t('{n} HV', { n: tg.hv }) },
-            { ten: t('Đạt'), gt: so0(tg.dat), nho: phanTram(tg.dat, tg.dat + tg.chuaDat) },
-            { ten: t('Chưa đạt'), gt: so0(tg.chuaDat), nho: phanTram(tg.chuaDat, tg.dat + tg.chuaDat) },
-            { ten: t('Chưa đủ điểm'), gt: so0(tg.chuaDu), mau: t('không vào tỷ lệ') },
+            { ten: t('Lượt'), ky: t('trong kỳ'), gt: soThe(query, 'luot', tg.luot, `${t('Lượt')} · ${t('Mock Test')}`), mau: t('{n} HV', { n: tg.hv }) },
+            { ten: t('Đạt'), gt: soThe(query, 'dat', tg.dat, `${t('Đạt')} · ${t('Mock Test')}`), nho: phanTram(tg.dat, tg.dat + tg.chuaDat) },
+            { ten: t('Chưa đạt'), gt: soThe(query, 'chua-dat', tg.chuaDat, `${t('Chưa đạt')} · ${t('Mock Test')}`), nho: phanTram(tg.chuaDat, tg.dat + tg.chuaDat) },
+            { ten: t('Chưa đủ điểm'), gt: soThe(query, 'chua-du', tg.chuaDu, `${t('Chưa đủ điểm')} · ${t('Mock Test')}`), mau: t('không vào tỷ lệ') },
             {
               ten: 'SOS', rong2: true,
               gt: <span className="mt-1.5 flex flex-wrap gap-1.5">{chipSos(3, tg.sos3)}{chipSos(2, tg.sos2)}{chipSos(1, tg.sos1)}</span>,
@@ -175,7 +179,7 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
           ]} />
         )}
         <VungBang dau={dauThe} error={error} reload={reload} loading={loading || !data} pt={pt.thanh}
-          rong={!rows.length ? <Empty title={t('Không có lượt Mock Test nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} hint={t('Thử khoảng thời gian dài hơn.')} /> : null}
+          rong={!rows.length ? <Empty title={t('Không có lượt Mock Test nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} hint={t('Thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /> : null}
           the={pt.cat(rows).map((r) => (
             <div key={r.attemptId} className={THE_HV} style={nenThe}>
               <div className="flex items-center gap-2">
@@ -211,7 +215,7 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
                 </tr></thead>
                 <tbody>
                   {pt.cat(rows).map((r) => (
-                    <tr key={r.attemptId} className="row-hover">
+                    <tr key={r.attemptId} className="row-hover [&>td]:h-11">
                       <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="ten-ho-so">{r.ten}</Link></td>
                       <td className="td text-dim">{r.lop}</td>
                       <td className="td text-dim">{mt(r)}</td>
@@ -281,19 +285,19 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
   return (
     <>
       <VaoHangLoc o="phai">
-        <button type="button" className="btn h-9" disabled={!rows.length} onClick={xuatExcel}>⤓ {t('Xuất Excel · {n} lượt', { n: rows.length })}</button>
+        <NutXuat nhan={t('Xuất Excel · {n} lượt', { n: rows.length })} tat={!rows.length} onClick={xuatExcel} />
       </VaoHangLoc>
       <div className="space-y-3">
         {tg && (
           <DaiChiSo ds={[
-            { ten: t('Lượt thi'), ky: t('trong kỳ'), gt: so0(tg.luot), mau: t('{n} HV', { n: tg.hv }) },
-            { ten: t('Đạt Target'), gt: so0(tg.dat), nho: phanTram(tg.dat, tg.dat + tg.chuaDat) },
-            { ten: t('Chưa đạt'), gt: so0(tg.chuaDat), nho: phanTram(tg.chuaDat, tg.dat + tg.chuaDat) },
-            { ten: t('Bước tiếp chưa chọn'), gt: so0(tg.chuaChon), mau: t('chọn ở Sau thi (TVV)') },
+            { ten: t('Lượt thi'), ky: t('trong kỳ'), gt: soThe(query, 'luot', tg.luot, t('Lượt thi')), mau: t('{n} HV', { n: tg.hv }) },
+            { ten: t('Đạt Target'), gt: soThe(query, 'dat', tg.dat, t('Đạt Target')), nho: phanTram(tg.dat, tg.dat + tg.chuaDat) },
+            { ten: t('Chưa đạt'), gt: soThe(query, 'chua-dat', tg.chuaDat, `${t('Chưa đạt')} · ${t('Thi thật')}`), nho: phanTram(tg.chuaDat, tg.dat + tg.chuaDat) },
+            { ten: t('Bước tiếp chưa chọn'), gt: soThe(query, 'chua-chon', tg.chuaChon, t('Bước tiếp chưa chọn')), mau: t('chọn ở Sau thi (TVV)') },
           ]} />
         )}
         <VungBang dau={dauThe} error={error} reload={reload} loading={loading || !data} pt={pt.thanh}
-          rong={!rows.length ? <Empty title={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} hint={t('Kết quả thi thật nhập ở hồ sơ học viên; thử khoảng thời gian dài hơn.')} /> : null}
+          rong={!rows.length ? <Empty title={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} hint={t('Kết quả thi thật nhập ở hồ sơ học viên; thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /> : null}
           the={hien.map((r) => (
             <div key={r.cycleId} className={THE_HV} style={nenThe}>
               <div className="flex items-center gap-2">
@@ -335,7 +339,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                           {lop || '—'} <span className="ml-1 text-[13px] font-normal text-dim">{t('{n} lượt · {hv} HV', { n: cuaLop.length, hv: new Set(cuaLop.map((r) => r.studentId)).size })}</span>
                         </td></tr>
                         {ds.map((r) => (
-                          <tr key={r.cycleId} className="row-hover">
+                          <tr key={r.cycleId} className="row-hover [&>td]:h-11">
                             <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className="ten-ho-so">{r.ten}</Link></td>
                             <td className="td text-dim">{r.lop}</td>
                             <td className="td text-dim tabular-nums">{ngay(r.ngayThi, homNay)}</td>

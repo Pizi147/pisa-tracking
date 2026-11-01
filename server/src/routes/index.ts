@@ -877,6 +877,11 @@ api.get('/phan-tich/ket-qua-thi', requireAuth, wrap((req) => {
     ...f, xep: qStr(req, 'xep') === 'sos' ? 'sos' : 'lop', kq: kq === 'dat' || kq === 'chua-dat' || kq === 'chua-du' ? kq : null,
   });
 }));
+/* V8-PT-2: panel thẻ chỉ số Kết quả Test — `o` = luot · dat · chua-dat · chua-du · sos1-3 (Mock) | luot · dat · chua-dat · chua-chon (Thi thật). */
+api.get('/phan-tich/ket-qua-thi/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return ketQuaThiSvc.oKetQuaThi(principalOf(req), { ...filterBaoCaoOf(req), loai: qStr(req, 'loai') === 'thi-that' ? 'thi-that' : 'mock', o: qStr(req, 'o') ?? '' });
+}));
 
 /** Việc sinh ra từ dữ liệu — tự hết khi nguồn được xử lý, không có nút đóng giả. */
 api.get('/signals', requireAuth, wrap((req) => signalsFor(principalOf(req), {
