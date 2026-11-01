@@ -70,6 +70,7 @@ export type ClassSummary = {
   phaseLabel: string;
   currentWeek: number | null;
   totalWeeks: number | null;
+  startWeekStart: string | null;
   /** Lớp đã hết chương trình và còn học viên đang học → phải xếp lớp tiếp cho từng em. */
   needsPlacement: boolean;
   placementOptions: { code: string; name: string }[];

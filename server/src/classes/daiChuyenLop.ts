@@ -24,8 +24,6 @@ import { EM_KQDR_FT_SQL, KQDR_HIEN_NGAY, laChiAdmin } from '../normal/kyVong.ts'
 export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop {
   const conn = db();
   const homNay = demoToday();
-  const cuaToi = p.assignments.filter((a) => a.classId === classId);   // TL-HVL: phiên đã có phân công `status = 'active'` của người xem — không hỏi lại
-  const pc = { gvcn: cuaToi.some((a) => a.isCore), kyNang: new Set(cuaToi.flatMap((a) => (a.skill ? [a.skill] : []))) };
   const ra = coTheRaLenh(p, classId);
   const rows = conn.prepare(
     `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g, l.loi AS h
@@ -79,6 +77,9 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
     x.rows.push({ user_id: r.c, skill: r.d ?? null, is_core: r.e });
     pcLop.set(r.a, x);
   }
+  /* TL-HVL: phân công của người xem ở lớp lấy từ các dòng `ta` vừa đọc — không theo phiên: đổi góc nhìn làm rỗng `p.assignments`. */
+  const cuaToi = pcLop.get(classId)!.rows.filter((r) => r.user_id === p.userId);
+  const pc = { gvcn: cuaToi.some((r) => !!r.is_core), kyNang: new Set(cuaToi.flatMap((r) => (r.skill ? [r.skill] : []))) };
   const cung = cungGvTuPhanCong(rows.filter((x) => x.k === 'ld').map((r) => ({ id: r.a as number, lop_nguon_id: classId, lop_dich_id: r.b as number })), pcLop);
   const banGiaoMon = chuaXn.length
     ? boMonCt(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => {

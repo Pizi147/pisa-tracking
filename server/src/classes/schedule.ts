@@ -13,7 +13,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
-import { coNho, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { coNho, nho } from '../platform/nguCanhRequest.ts';
 
 /**
  * TUẦN BẮT ĐẦU HỌC → LỊCH MT MẶC ĐỊNH, VÀ TIẾN ĐỘ LỚP.
@@ -417,13 +417,7 @@ export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
   return { tuanCuoiKhoa: pr?.finalWeekStart ?? null, tuanKetThuc, hetKhoa, tuCuoiKhoa: hetKhoa || (!!pr?.finalWeekStart && thu2 >= pr.finalWeekStart) };
 }
 
-/** TL-HVL: nhớ theo lớp trong request — tóm tắt lớp và trang Học viên & Lớp hỏi chung một tập lớp. */
 export function classProgressMany(classIds: number[]): Map<number, ClassProgress> {
-  const nap = nhoTheoId<ClassProgress>('tien-do-lop:', classIds, (ids) => new Map([...napTienDoLop(ids)].map(([id, x]) => [id, [x]])));
-  return new Map([...nap].map(([id, [x]]) => [id, x]));
-}
-
-function napTienDoLop(classIds: number[]): Map<number, ClassProgress> {
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;
   const conn = db();
@@ -812,7 +806,7 @@ export function missingForClasses(classIds: number[]): Map<number, { items: Miss
   const classes = coNho() ? [...lopDayDu().values()].filter((c) => can.has(c.id)) : conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(json) as any[];   // TL-HVL: GET đọc bảng lớp đã nhớ
   let programmes: Map<string, ProgrammeInfo> | undefined;   // nạp một lần, chỉ khi có lớp cần
   const byClass = new Map<number, any[]>();
-  const da = phanCongDaNap();   // TL-HVL: Học viên & Lớp cấp chi nhánh đã nạp phân công — lọc đúng WHERE dưới
+  const da = phanCongDaNap();   // TL-HVL: Học viên & Lớp toàn hệ thống đã nạp phân công — lọc đúng WHERE dưới
   for (const a of da ? da.filter((x) => can.has(x.classId)).map((x) => ({ class_id: x.classId, skill: x.skill, is_core: x.isCore })) : conn
     .prepare(
       `SELECT class_id, skill, is_core FROM teacher_assignments

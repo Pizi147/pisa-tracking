@@ -15,13 +15,13 @@ import { addDays } from '../util.ts';
 import { bangLop, can, editableSkills, lopXemTam, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
-import { classProgressMany, lichMtCua, missingForStudent } from './schedule.ts';
+import { lichMtCua, missingForStudent } from './schedule.ts';
 import { standingFor, type Standing } from '../students/standing.ts';
 import { diemCuaLuot } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
-import { chiTietCaseMo } from '../cases/caseLop.ts';
+import type { CaseChiTiet } from '../cases/caseLop.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { danhSachLuuTru } from './luuTru.ts';
 import { nhapDiemTheoEm, viecHocVienTheoLop } from './dongHocVien.ts';
@@ -142,8 +142,8 @@ export function danhSachHocVienLop(
   const today = demoToday();
   const conn = db();
   const { coThe, dangDung, chiNhanh, phanCong, lopCuaToi } = phamViTrang(p, f, today);
-  /* TL-HVL: phạm vi chi nhánh trở lên — ba nơi đọc phân công lọc từ một câu (cỡ phân công một chi nhánh × ba lần đọc cũ); "Lớp tôi dạy" vài lớp giữ câu theo lớp, ít dòng hơn. */
-  if (coNho() && dangDung !== 'toi' && dangDung !== 'cua-toi') phanCongDangHoatDong();
+  /* TL-HVL: Toàn hệ thống — ba nơi đọc phân công lọc từ một câu. Phạm vi hẹp hơn giữ câu theo lớp: ít dòng hơn cả bảng (đo QL: 2 595 so với 2 630 dòng, thêm 2 câu). */
+  if (coNho() && dangDung === 'tat-ca') phanCongDangHoatDong();
   /*
    * "+ LỚP MỚI" đầu trang: không gắn với lớp nào — PR-QU (B) kiểm `CLASS_CREATE` theo TỪNG chi nhánh đang hoạt động (không chỉ chi nhánh
    * người xem thấy được: GV được cấp riêng `class.create` ở một chi nhánh vẫn chỉ "thấy" lớp mình dạy).
@@ -228,7 +228,6 @@ export function danhSachHocVienLop(
     soCaseByClass.set(classId, (soCaseByClass.get(classId) ?? 0) + 1);
   }
 
-  const tienDo = classProgressMany(ids);
   /* Việc tiếp theo của em (chip Cần làm), yêu cầu chờ duyệt, em quá hạn theo lớp — MỘT hàm dùng chung với `classOverview`. */
   const emTheoLop = new Map<number, number[]>();
   /* PR-CT: lớp rỗng (em đã chuyển đi hết, GVCN còn phải xác nhận bàn giao) vẫn có thẻ Báo QL theo lớp → cũng nằm trong tập lớp để đếm. */
@@ -254,13 +253,12 @@ export function danhSachHocVienLop(
   }
 
   const rows: LopHocVienLop[] = lops.map((r) => {
-    const pr = tienDo.get(r.id);
     return {
       ...r,
       gvcn: gvcn.get(r.id) ?? null,
       soCaseMo: soCaseByClass.get(r.id) ?? 0,
       soChoDuyet: vl.soChoDuyet.get(r.id) ?? 0, soEmQuaHan: vl.soEmQuaHan.get(r.id) ?? 0,
-      tuanKetThuc: pr?.startWeekStart && pr.totalWeeks ? addDays(pr.startWeekStart, (pr.totalWeeks - 1) * 7) : null,
+      tuanKetThuc: r.startWeekStart && r.totalWeeks ? addDays(r.startWeekStart, (r.totalWeeks - 1) * 7) : null,
       viewer: {
         coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId: r.id }),
         /* OV-13p: "+ Học viên" theo `student.add` (TVV / CX có, không có `student.edit`). */
@@ -291,7 +289,7 @@ export function danhSachHocVienLop(
   const standing = standingFor(hvKhop.map((h) => h.id));
 
   /* OV-15h2 (ý 3): nhãn Bộ lọc thêm — CHỈ khi web hỏi (`them=1`, người dùng mở Bộ lọc thêm): lần mở trang thường không thêm câu đọc. */
-  const them = f.them ? nhanLocThem(hvKhop.map((h) => h.id as number), allCases, standing) : null;
+  const them = f.them ? nhanLocThem(hvKhop.map((h) => h.id as number), allCases, standing, vl.chiTiet) : null;
   const laFt = new Map(lops.map((r) => [r.id, r.programmeCode === 'FT']));
   /* OV-14b: lọc "Đã thi · chờ kết quả" — cùng tập với chip TVV / CX (`hvCuaToi.ts`). */
   const daThi = new Set(loTrinhChoKetQuaThi(today).map((x) => x.c.student_id as number));
@@ -388,13 +386,12 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
 }
 
 /**
- * NHÃN BỘ LỌC THÊM của từng em (OV-15h2 ý 3) — cùng nguồn trang đã đọc: Case đang mở (`allCases` → `chiTietCaseMo`, trạng thái V4 + PA), kết quả gần nhất
- * (`standing`). Thêm: các câu của `chiTietCaseMo` cho Case ĐANG MỞ của các em trên trang + một câu tuần thi của lượt gần nhất (mỗi lô ≤ 900 lượt).
+ * NHÃN BỘ LỌC THÊM của từng em (OV-15h2 ý 3) — cùng nguồn trang đã đọc: Case đang mở (`ct` — `chiTietCaseMo` của `viecHocVienTheoLop`, trạng thái V4 + PA), kết quả gần nhất
+ * (`standing`). Thêm: một câu tuần thi của lượt gần nhất (mỗi lô ≤ 900 lượt).
  */
-function nhanLocThem(ids: readonly number[], allCases: readonly MappedCase[], standing: Map<number, unknown>): Map<number, ThemEm> {
+function nhanLocThem(ids: readonly number[], allCases: readonly MappedCase[], standing: Map<number, unknown>, ct: ReadonlyMap<number, CaseChiTiet>): Map<number, ThemEm> {
   const co = new Set(ids);
   const mo = allCases.filter((c) => c.status !== 'done' && c.studentId !== null && co.has(c.studentId));
-  const ct = chiTietCaseMo(mo);
   const caseEm = new Map<number, { k: string; pa: { xong: boolean }[] }[]>();
   for (const c of mo) {
     const x = ct.get(c.id);

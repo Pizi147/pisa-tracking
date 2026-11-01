@@ -13,6 +13,9 @@ export async function runPrTlHvlTests(t: any) {
   const { classOverview, classRoster } = await import('../classes/classes.ts');
   const { danhSachHocVienLop } = await import('../classes/hocVienLop.ts');
   const { createApp } = await import('../app.ts');
+  const { listCases } = await import('../cases/cases.ts');
+  const { chiTietCaseMo } = await import('../cases/caseLop.ts');
+  const { daiLop } = await import('../classes/daiChuyenLop.ts');
   const { demoToday } = await import('../demoConfig.ts');
 
   const c = () => db() as any;
@@ -78,18 +81,37 @@ export async function runPrTlHvlTests(t: any) {
     assert(cau.length <= 22, `${cau.length} câu`);
   });
 
-  await checkAsync('H2 · /hoc-vien-lop QL: Case chi tiết + Ý thức + tiến độ lớp mỗi thứ một lượt, phân công một câu, câu ≤ 46 (them=1 ≤ 47)', async () => {
-    for (const [url, tran] of [['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1', 46], ['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1', 47]] as [string, number][]) {
+  await checkAsync('H2 · /hoc-vien-lop QL: Case chi tiết + Ý thức + tiến độ lớp mỗi thứ một lượt, câu ≤ 48 (them=1 ≤ 49)', async () => {
+    for (const [url, tran] of [['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1', 48], ['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1', 49]] as [string, number][]) {
       const { cau } = await doGet(P.mbManager.userId, url);
       const so = { 'Case chi tiết': dem(cau, /^SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN/), 'Ý thức': dem(cau, /^SELECT 0 AS loai, id AS id/),
-        'tiến độ lớp': dem(cau, /^SELECT e\.class_id, COUNT\(\*\) n, SUM/), 'phân công': dem(cau, /^SELECT [^()]*FROM teacher_assignments/) };
+        'tiến độ lớp': dem(cau, /^SELECT e\.class_id, COUNT\(\*\) n, SUM/) };
       assert(Object.values(so).every((n) => n <= 1), `${url}: ${JSON.stringify(so)}`);
       assert(cau.length <= tran, `${url}: ${cau.length} câu`);
     }
   });
 
-  await checkAsync('H2 · GV không nạp cả bảng phân công: đọc theo lớp của mình', async () => {
-    const { cau } = await doGet(P.coreTeacher.userId, '/hoc-vien-lop');
-    assert(!cau.some((x) => x.startsWith('SELECT ta.id, ta.class_id, ta.user_id')), 'GV nạp cả bảng phân công');
+  await checkAsync('H2 · phân công: phạm vi hẹp đọc theo lớp, Toàn hệ thống một câu', async () => {
+    const caBang = (cau: string[]) => cau.some((x) => x.startsWith('SELECT ta.id, ta.class_id, ta.user_id'));
+    for (const [uid, url] of [[P.coreTeacher.userId, '/hoc-vien-lop'], [P.mbManager.userId, '/hoc-vien-lop?phamVi=chi-nhanh&branchId=1']] as [number, string][]) assert(!caBang((await doGet(uid, url)).cau), `${url}: nạp cả bảng phân công`);
+    const { cau } = await doGet(P.admin.userId, '/hoc-vien-lop?phamVi=tat-ca');
+    const n = dem(cau, /^SELECT [^()]*FROM teacher_assignments/);
+    assert(caBang(cau) && n === 1, `Toàn hệ thống: ${n} câu phân công`);
+  });
+
+  check('HVL · chiTietCaseMo không lẫn giữa Case thật và dòng dựng của metrics cùng request', () => {
+    const that = (listCases(P.admin, {}).rows as any[]).find((x) => x.status !== 'done' && x.studentId !== null && x.originKind === 'mock' && x.classKind === 'ft');
+    assert(that, 'seed phải có Case SOS FT đang mở');
+    const ten = chayTrongRequest('GET', () => {
+      chiTietCaseMo([{ ...that, classKind: 'normal' }]);
+      return chiTietCaseMo([that]).get(that.id)?.tenSos;
+    });
+    assert(ten, 'Case thật bị lấy kết quả của dòng dựng');
+  });
+
+  check('HVL · dải lớp giữ vai GVCN khi người đó đổi góc nhìn (phiên không còn phân công)', () => {
+    const gv = (c().prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(lopFt) as any).user_id as number;
+    const dai = chayTrongRequest('GET', () => daiLop({ ...loadPrincipal(gv), assignments: [] }, lopFt, { pr: {} as any, ft: true, ct: 'FT' }));
+    assert(dai.viewer.laGvcn, 'mất vai GVCN');
   });
 }

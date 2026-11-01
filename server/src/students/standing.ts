@@ -150,13 +150,6 @@ const labelOf = (kind: string | null, no: number | null) =>
 /** S2: CHỈ phép kiểm bật — `standingFor` nạp bundle mọi lượt có điểm một lần (đường cũ) để so với đường nạp theo vòng. */
 export const standingNapDuKhiKiem = { bat: false };
 
-/**
- * Tính tình trạng cho MỘT LOẠT học viên trong một lần.
- *
- * Cố ý nhận cả danh sách chứ không nhận từng em: bảng lớp, danh sách học viên và bảng tổng
- * hợp đều cần con số này cho hàng chục em cùng lúc. Hỏi từng em một thì mỗi màn sinh hàng
- * trăm câu truy vấn — chậm mà không chỗ nào báo lỗi.
- */
 /** TL-HVL: Case đang mở của các em (cột lộ trình) — nhớ theo em, `standingFor` và cột bàn giao của bảng lớp đọc chung một lượt. */
 export function caseMoTheoEm(studentIds: number[]): Map<number, { student_id: number; cycle_id: number | null }[]> {
   return nhoTheoId('case-mo-em:', studentIds, (ids) => {
@@ -172,6 +165,13 @@ export function caseMoTheoEm(studentIds: number[]): Map<number, { student_id: nu
   });
 }
 
+/**
+ * Tính tình trạng cho MỘT LOẠT học viên trong một lần.
+ *
+ * Cố ý nhận cả danh sách chứ không nhận từng em: bảng lớp, danh sách học viên và bảng tổng
+ * hợp đều cần con số này cho hàng chục em cùng lúc. Hỏi từng em một thì mỗi màn sinh hàng
+ * trăm câu truy vấn — chậm mà không chỗ nào báo lỗi.
+ */
 export function standingFor(studentIds: number[]): Map<number, Standing> {
   const out = new Map<number, Standing>();
   if (!studentIds.length) return out;
