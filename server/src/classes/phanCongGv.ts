@@ -18,9 +18,9 @@ import { GhiDao, daoLai, luuGhiDao, timGhiDao, type BanGhiDao } from '../platfor
 import { HttpError, badRequest, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
 import { allProgrammes, programmeByCode, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany } from './schedule.ts';
-import { caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi } from '../cases/owner.ts';
-import { docSlots, ghiPhanCong, kiemTruocPhanCong, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
-import { doiMocViecTheoDoi, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi } from './banGiaoGv.ts';
+import { boCotPhu, caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi, docViecLo, type ViecLop } from '../cases/owner.ts';
+import { docSlots, ghiPhanCong, kiemTruocPhanCong, monGopConCanMany, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
+import { doiMocViecTheoDoi, docBanGiaoLo, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi } from './banGiaoGv.ts';
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
 /** `viec` = số việc bàn giao mới (PR-B). */
@@ -67,13 +67,13 @@ function duocXepCua(nho: Map<number, DuocXep>, branchId: number, nguoiGiu: reado
 }
 
 /** Ngày hiệu lực: "Ngay hôm nay" → hôm nay; "Từ tuần …" → Thứ Hai tuần đó, phải sau tuần này. */
-function ngayHieuLuc(h: HieuLucVao | undefined): { ngay: string; homNay: boolean } {
+function ngayHieuLuc(h: HieuLucVao | undefined): { ngay: string; homNay: boolean; hom: string } {
   const homNay = demoToday();
-  if (!h || h.loai === 'hom-nay') return { ngay: homNay, homNay: true };
+  if (!h || h.loai === 'hom-nay') return { ngay: homNay, homNay: true, hom: homNay };
   if (h.loai !== 'tuan') throw badRequest('Hiệu lực không hợp lệ.');
   const tuan = Number.isInteger(Number(h.tuanId)) ? periodById(Number(h.tuanId)) : null;
   if (!tuan || tuan.week_start <= mondayOf(homNay)) throw badRequest('Chọn tuần sau tuần này hoặc Ngay hôm nay.');
-  return { ngay: tuan.week_start as string, homNay: false };
+  return { ngay: tuan.week_start as string, homNay: false, hom: homNay };
 }
 
 /** Phân công đang chạy + dòng chờ đổi của các lớp — hai câu cho cả tập. */
@@ -81,7 +81,7 @@ function docHienTai(ids: readonly number[]) {
   const conn = db();
   const active = new Map<number, any[]>(ids.map((id) => [id, []]));
   const cho = new Map<number, any[]>(ids.map((id) => [id, []]));
-  for (const r of conn.prepare(`SELECT id, class_id, user_id, skill, is_core FROM teacher_assignments WHERE status = 'active' AND class_id IN (${inHang(ids.length)})`).all(...ids) as any[]) active.get(r.class_id)!.push(r);
+  for (const r of conn.prepare(`SELECT rowid AS __r, * FROM teacher_assignments WHERE status = 'active' AND class_id IN (${inHang(ids.length)})`).all(...ids) as any[]) active.get(r.class_id)!.push(r);
   for (const r of conn.prepare(`SELECT id, class_id, khoa, nguoi_cu, nguoi_moi, hieu_luc FROM doi_phan_cong WHERE trang_thai = 'cho' AND class_id IN (${inHang(ids.length)})`).all(...ids) as any[]) cho.get(r.class_id)!.push(r);
   return { active, cho };
 }
@@ -110,7 +110,7 @@ function docLopVao(body: { lop?: unknown }) {
 
 export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuLucVao }): KetQuaLuu {
   const { vao, ids, cls, progCua } = docLopVao(body);
-  const { ngay, homNay } = ngayHieuLuc(body.hieuLuc);
+  const { ngay, homNay, hom } = ngayHieuLuc(body.hieuLuc);
   const conn = db();
 
   const nhieu = vao.length > 1;
@@ -173,6 +173,9 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const luc = nowIso();
     const moi: number[] = [];
     let viec = 0;
+    const sanHn = homNay ? sanLo(lop, sau.active) : null;
+    let bgDoc: ReturnType<typeof docBanGiaoLo> | undefined;
+    const bgLo = () => (bgDoc ??= docBanGiaoLo(ids));   // đọc lười, một lần cho cả lô
     const kq = theoDoiMoi(g, ['ban_giao_gv_mon', 'ban_giao_gv', 'doi_phan_cong', 'teacher_assignments', 'sos_case_history', 'notifications'], () => lop.map((l) => {
       const khoa = [...new Set(l.doi.map((d) => d.khoa))].filter((k) => sau.cho.get(l.classId)!.some((c) => c.khoa === k));
       const thay = sau.cho.get(l.classId)!.filter((c) => khoa.includes(c.khoa)).map((c) => c.id as number);
@@ -193,10 +196,12 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
         return { id, khoa: d.khoa, nguoi_cu: d.nguoiCu, nguoi_moi: d.nguoiMoi, taoBanGiao };
       });
       /* PR-B: việc bàn giao theo các dòng vừa chèn (tạo / gộp cột / đổi người nhận / huỷ khi đổi về người cũ). */
+      const bg = bgLo();
       viec += dongBoViecBanGiao(p, { classId: l.classId, ct: l.ct, slotsTruoc: sau.active.get(l.classId)!.map(slotCua), thay, duocXep: xepNho.get(l.branchId),
+        san: { homNay: hom, cot: bg.cot.get(l.classId)!, viecMo: bg.viecMo.get(l.classId)! },
         doi: rows.map((r) => ({ id: r.id, khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi, hieuLuc: ngay, taoBanGiao: r.taoBanGiao === 1 })) }, g);
       /* Luôn áp ở "hôm nay" (kể cả không ô nào đổi) — đúng đường cũ: dòng môn gộp cũ hết việc thì kết thúc như mọi lần lưu. */
-      const r = homNay ? apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn',
+      const r = homNay ? apDoiLop(p, l.classId, rows, ngay, { g, duocXep: xepNho.get(l.branchId), via: l.full ? 'quan_ly' : 'gvcn', san: { lo: sanHn!, active: sau.active.get(l.classId)! },
         lop: { branch_id: l.branchId, code: l.code, ct: l.ct, kyNang: l.kyNang } }) : null;
       {
         /* GVCN đổi GV bộ môn (ngay hoặc lịch từ tuần sau) → QL chi nhánh biết ngay lúc lưu (để biết, không duyệt — G3). */
@@ -235,31 +240,70 @@ function theoDoiMoi<T>(g: GhiDao, bang: readonly string[], fn: () => T): T {
  * `moRongPhanCong` → kiểm ba luật + người xếp được → `ghiPhanCong`. Ném lỗi luật (nơi gọi quyết: lưu → 400; quét → giữ `cho` + lỗi).
  */
 export function apDoiLop(p: Principal, classId: number, rows: DongDoi[], ngay: string,
-  o: { g?: GhiDao; duocXep?: DuocXep; via?: string; lop?: { branch_id: number; code: string; ct: string | null; kyNang: string[] } } = {}): { added: number; ended: number } {
+  o: { g?: GhiDao; duocXep?: DuocXep; via?: string; lop?: { branch_id: number; code: string; ct: string | null; kyNang: string[] };
+    /** Lưu nhiều lớp: dữ liệu đã đọc cho cả lô (`sanLo`) + dòng phân công đang chạy của lớp (`rowid AS __r, *`). */
+    san?: { lo: SanLo; active: any[] } } = {}): { added: number; ended: number } {
   const conn = db();
   const c = o.lop ?? conn.prepare('SELECT branch_id, code FROM classes WHERE id = ?').get(classId) as any;
   const prog = o.lop ? null : programmeOfClass(classId);
   const ct: string | null = o.lop ? o.lop.ct : prog?.code ?? null;
   const kyNang: string[] = o.lop ? o.lop.kyNang : prog?.skills ?? [...ENTRY_SKILLS];
-  const cu = (conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[]).map(slotCua);
+  const cu = (o.san?.active ?? conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(classId) as any[]).map(slotCua);
   const doi: DoiO[] = rows.map((r) => ({ khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi }));
   const slots = moRongPhanCong(ct, kyNang, apDoi(cu, doi, kyNang));
   kiemTruocPhanCong(classId, c.branch_id, ct, kyNang, slots, o.duocXep ?? duocXepCua(new Map(), c.branch_id, slots.map((s) => s.userId)));
   /* Case / PA của GV cũ ở ô đổi → GV mới (A3). Chụp ĐÚNG các dòng sẽ ghi (+ Case thiếu chủ `ghiPhanCong` có thể gán) trước khi ghi. */
   const conDay = (u: number) => new Set(slots.filter((s) => s.userId === u && !s.isCore && s.skill).map((s) => s.skill!));
   const gvcnSau = slots.find((s) => s.isCore)?.userId ?? null;
-  const chon = chonViecChuyen(classId, ct, doi, conDay, gvcnSau);
+  const viec = o.san?.lo.viec().get(classId);
+  const chon = chonViecChuyen(classId, ct, doi, conDay, gvcnSau, viec);
+  const caseThieu = viec?.cases.filter((r) => r.owner_user_id === null);
   if (o.g) {
-    const caseIds = [...new Set([...[...chon.values()].flatMap((v) => v.caseIds), ...caseThieuChuLop(classId)])];
+    const caseIds = [...new Set([...[...chon.values()].flatMap((v) => v.caseIds), ...(caseThieu ? caseThieu.map((r) => r.id as number) : caseThieuChuLop(classId))])];
     const paIds = [...chon.values()].flatMap((v) => v.paIds);
-    if (caseIds.length) o.g.sua('sos_cases', `id IN (${inHang(caseIds.length)})`, ...caseIds);
-    if (paIds.length) o.g.sua('case_interventions', `id IN (${inHang(paIds.length)})`, ...paIds);
-    o.g.sua('teacher_assignments', `class_id = ? AND status = 'active'`, classId);
+    if (viec) {
+      /* Ảnh chụp từ dòng đã đọc cả lô — cùng dòng, cùng thứ tự rowid như câu `WHERE id IN (…)`. */
+      const chup = (rs: any[], ids: number[]) => { const co = new Set(ids); return rs.filter((r) => co.has(r.id)).sort((a, b) => a.__r - b.__r).map(boCotPhu); };
+      o.g.suaDong('sos_cases', chup(viec.cases, caseIds));
+      o.g.suaDong('case_interventions', chup(viec.pas, paIds));
+      o.g.suaDong('teacher_assignments', [...o.san!.active].sort((a, b) => a.__r - b.__r));
+    } else {
+      if (caseIds.length) o.g.sua('sos_cases', `id IN (${inHang(caseIds.length)})`, ...caseIds);
+      if (paIds.length) o.g.sua('case_interventions', `id IN (${inHang(paIds.length)})`, ...paIds);
+      o.g.sua('teacher_assignments', `class_id = ? AND status = 'active'`, classId);
+    }
   }
-  const chuyen = chuyenViecKhiDoi({ classId, ct, doi: rows.map((r, i) => ({ ...doi[i], id: r.id })), conDay, actorId: p.userId, luc: nowIso(), code: c.code, chon, gvcnSau });
+  const chuyen = chuyenViecKhiDoi({ classId, ct, doi: rows.map((r, i) => ({ ...doi[i], id: r.id })), conDay, actorId: p.userId, luc: nowIso(), code: c.code, chon, gvcnSau,
+    ...(o.san ? { ten: o.san.lo.ten } : {}) });
   const tom = (ds: SlotPhanCong[]) => ds.map((x) => `${x.isCore ? 'GVCN' : x.skill}:${x.userId}`).sort();
   return ghiPhanCong(p, classId, slots, ngay,
-    { via: o.via ?? 'quan_ly', truoc: tom(cu), sau: tom(slots), doi: rows.map((r) => r.id), chuyen: Object.fromEntries(chuyen) }, c.code);
+    { via: o.via ?? 'quan_ly', truoc: tom(cu), sau: tom(slots), doi: rows.map((r) => r.id), chuyen: Object.fromEntries(chuyen) }, c.code,
+    o.san ? { active: o.san.active, gopCan: o.san.lo.gop().get(classId)!, ...(caseThieu ? { caseThieu: caseThieu as any } : {}) } : undefined);
+}
+
+/**
+ * Dữ liệu đọc MỘT lần cho cả lô khi lưu nhiều lớp "hôm nay" (thay cho một lượt đọc mỗi lớp): Case / PA (`docViecLo`), môn gộp còn cần, tên người.
+ * Đọc lười — lô không có cặp bàn giao thì không đọc Case. Mỗi Case / PA thuộc đúng một lớp, nên đọc trước khi ghi lớp đầu cho cùng kết quả đọc từng lớp.
+ */
+type SanLo = { viec: () => Map<number, ViecLop>; gop: () => Map<number, Set<string>>; ten: (ids: readonly number[]) => ReadonlyMap<number, string> };
+function sanLo(lop: readonly LopChuan[], active: ReadonlyMap<number, any[]>): SanLo {
+  const ids = lop.map((l) => l.classId);
+  const nguoiCu = [...new Set(lop.flatMap((l) => l.doi.filter(laCapBanGiao).map((d) => d.nguoiCu!)))];
+  let viec: Map<number, ViecLop> | undefined, gop: Map<number, Set<string>> | undefined, ten: Map<number, string> | undefined;
+  return {
+    viec: () => (viec ??= docViecLo(ids, nguoiCu)),
+    gop: () => (gop ??= monGopConCanMany(ids)),
+    ten: (can) => {
+      if (!ten) {
+        const moi = [...new Set([...lop.flatMap((l) => l.doi.flatMap((d) => [d.nguoiCu, d.nguoiMoi])), ...[...active.values()].flat().map((r) => r.user_id as number)])]
+          .filter((x): x is number => x !== null);
+        ten = new Map((moi.length ? (db().prepare(`SELECT id, full_name FROM users WHERE id IN (${inHang(moi.length)})`).all(...moi) as any[]) : []).map((u) => [u.id as number, u.full_name as string]));
+      }
+      const thieu = can.filter((id) => !ten!.has(id));
+      if (thieu.length) for (const u of db().prepare(`SELECT id, full_name FROM users WHERE id IN (${inHang(thieu.length)})`).all(...thieu) as any[]) ten.set(u.id, u.full_name);
+      return ten;
+    },
+  };
 }
 
 /* ================= A4 · lịch đổi tới hạn · Đổi mốc · Huỷ lịch đổi · Hoàn tác ================= */

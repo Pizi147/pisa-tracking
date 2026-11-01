@@ -249,6 +249,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 02/11 đêm — chủ SP đi ngủ, "còn gì nữa chạy tiếp"
+- **Đã mở (local):** TL-HVL · LECH-CACH-CHAM · V8-HSL-2 · DO-KHUNG-DO (Opus 5.5 · medium) · LUU-PC-LO (Sonnet 5.5 · high).
+- **Merge:** PR máy chủ PTA tự merge khi rà đạt + check xanh; LECH-CACH-CHAM đổi mức SOS / Case em thật thì giữ chờ chủ SP. V8-HSL-2, DO-KHUNG-DO chờ duyệt ảnh sáng (không merge qua đêm).
+- **Chưa mở:** TAB-A11Y + DUYET-QL a11y (đủ 2 PR giao diện đang chạy) · QUYEN-THEO-CN, XM-BE-1, KET-PET-THI-THAT (chờ chủ SP quyết) · chỉ mục `status` `teacher_assignments` (chờ log).
+
 ### 01/11 tối — chủ SP đi vắng, giao chạy sau khi token tuần reset 19:00
 - **Đã mở (session local, chờ giờ rồi tự làm):** từ 19:05 PR-D (Sonnet 5.5 · high) · TL-VIEC · TL-TQ · V8-PT-2 · CN-3 + MA-MO-COI (Opus 5.5 · medium) · từ 22:30 DON-HINH (Opus 5.5 · medium).
 - **Chưa mở, có lý do:** TL-HVL, V8-HSL-2 chờ PR-D merge (cùng hồ sơ lớp) · DO-KHUNG-DO chờ đo trên main sạch.
@@ -273,7 +278,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Nút ⋯ trong ô lưới điểm (luật):** đứng NGAY SAU nội dung ô, cùng hàng, giữa theo chiều dọc với dòng chữ đầu (vd "✗ 14 /25 ⋯"); không đè chữ / số; máy có chuột chỉ hiện khi rê / focus, cảm ứng hiện sẵn (#732 làm đúng kiểu này).
 - **Bảng lớp góc Phân công GV (#726) — thay ý "giãn hết" 30/10:** chừa MỘT cột cố định ở mép phải cho nút dòng (Huỷ / Lưu, Chờ đổi…) ở MỌI nhóm, để cột kỹ năng / GVCN không thụt ra thụt vào giữa các nhóm; cột GVCN thẳng hàng giữa nhóm FT và nhóm lớp thường. 375: bảng tổng hợp đủ cột "Tổng".
 ### 30/10 (đêm) — PR-B BAN-GIAO-GV #731 để lại
-- [XM] Gom câu `luuPhanCong` theo lô (`TRAN_GHI_LO.luuPhanCong8Lop`, ~23 câu / lớp) — chưa làm ở PR-B; PR riêng (kế hoạch toc-do).
+- ~~[XM] Gom câu `luuPhanCong` theo lô~~ — xong ở PR LUU-PC-LO: 8 lớp 241 → 127 câu, trần `luuPhanCong8Lop` 166, bỏ ghi chú ponytail.
 - `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
 - Hỏi chủ SP: GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán], đã làm). (Hạn việc khi "Từ tuần": PTA quyết = max(tạo, hiệu lực) + 5 — đã làm.)
 

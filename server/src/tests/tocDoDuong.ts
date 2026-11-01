@@ -1053,7 +1053,7 @@ export const TRAN_DONG: Record<string, number> = {
 
 export const TRAN_GHI_LO = {
   /** PC-GV-A: POST /phan-cong/luu 8 lớp (trần một lần lưu) mỗi lớp một ô + 1 Case + 1 PA chuyển, hôm nay — lõi chung (kiểm + ghi_dao + áp + chuyển + nhật ký); đo trong prPhanCongGv. */
-  luuPhanCong8Lop: 241,   // đo 185 câu (~23 câu / lớp; trước gom: 281) → max(185 + 10, ⌈185 × 1,3⌉). ponytail: còn ~23 câu / lớp (đọc phân công / Case / PA / môn gộp từng lớp) — gom theo lô nếu cần nâng trần 8 lớp
+  luuPhanCong8Lop: 166,   // LUU-PC-LO: đo 127 câu (trước gom theo lô: 241, ~30 / lớp; nay ~16 / lớp, phần còn lại chủ yếu là câu GHI mỗi lớp) → max(127 + 10, ⌈127 × 1,3⌉)
   /** PC-GV-A: POST /phan-cong/hoan-tac cả lô 8 lớp trên (daoLai đọc / xoá theo lô, bỏ dòng không đổi). */
   hoanTacPhanCong8Lop: 62,   // đo 47 câu (trước 68) → max(47 + 10, ⌈47 × 1,3⌉)
   /** TU-b: POST /tutors/tai-len lưu 50 dòng (40 mới + 10 cập nhật) — đọc tutors + chi nhánh một lần, ghi gom một câu upsert, một nhật ký. */

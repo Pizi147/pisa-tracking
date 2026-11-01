@@ -468,6 +468,35 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     });
   });
 
+  /* PC-LO: gom câu đọc theo lô KHÔNG đổi kết quả — một lô nhiều lớp (Case có chủ + Case chưa chủ + PA + GVCN + bàn giao) = lưu lẻ lần lượt từng lớp;
+     Hoàn tác cả lô trả đúng từng bảng như trước khi lưu (ảnh chụp ghi_dao dựng từ dòng đọc cả lô). */
+  const BANG_PC = ['teacher_assignments', 'sos_cases', 'case_interventions', 'sos_case_history', 'notifications', 'ban_giao_gv', 'ban_giao_gv_mon', 'doi_phan_cong', 'audit_logs'];
+  const chupBang = () => JSON.stringify(BANG_PC.map((b) => all(`SELECT * FROM ${b} ORDER BY rowid`).map((r) => Object.fromEntries(
+    Object.entries(r).filter(([k]) => !/(_at|_luc|^luc|^lo)$/.test(k) && !(b === 'audit_logs' && k === 'id'))))));
+  const kichBanLo = () => {
+    for (const l of [X, Y, Z]) { const em = emMoi(l); paMoi(caseMoi(em, 'listening', gA), gA); caseMoi(emMoi(l), 'speaking', gA); }
+    caseMoi(emMoi(Y), 'listening', null);
+    caseMoi(emMoi(Z), 'reading', null);
+    xoaNho();
+    const slotsY = slotsCua(Y).filter((x) => !x.isCore && x.skill !== 'listening').concat([{ userId: gB, skill: null, isCore: true }, { userId: gB, skill: 'listening', isCore: false }]);
+    return [{ classId: X, slots: doiO(X, 'listening', gB) }, { classId: Y, slots: slotsY }, { classId: Z, slots: doiO(Z, 'reading', gF) }];
+  };
+  check('PC-LO · lô 3 lớp = lưu lẻ từng lớp (mọi bảng); Hoàn tác cả lô = trước khi lưu', () => {
+    const lo = thu(() => { const vao = kichBanLo(); const r = pc.luuPhanCong(QL, { lop: vao }); return { r, bang: chupBang() }; });
+    const le = thu(() => { const vao = kichBanLo(); let viec = 0; for (const v of vao) viec += pc.luuPhanCong(QL, { lop: [v] }).viec; return { viec, bang: chupBang() }; });
+    assert(lo.r.viec === le.viec && lo.r.lop.length === 3 && lo.r.viec >= 2, `viec ${lo.r.viec} / ${le.viec}`);
+    assert(lo.bang === le.bang, 'lô khác lưu lẻ');
+    thu(() => {
+      const vao = kichBanLo();
+      const truoc = chupBang();
+      const r = pc.luuPhanCong(QL, { lop: vao });
+      assert(chupBang() !== truoc, 'lưu phải đổi dữ liệu');
+      pc.hoanTacLuu(QL, { lo: r.lo });
+      const a = JSON.parse(truoc), b = JSON.parse(chupBang());
+      BANG_PC.forEach((t, i) => { if (t !== 'audit_logs') assert(JSON.stringify(a[i]) === JSON.stringify(b[i]), 'Hoàn tác không trả đủ bảng ' + t); });
+    });
+  });
+
   /* ---------------------------------------------------------------- Rà cuối (reviewer): Hoàn tác không tạo hai lịch chờ một ô · trần lớp · lịch chờ gộp */
   check('Rà-1a · Huỷ lịch L A→B, lưu lịch L A→C cùng tuần, Hoàn tác huỷ → 409 (không thành hai lịch chờ một ô)', () => thu(() => {
     const r = henL(gB);
