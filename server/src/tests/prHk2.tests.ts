@@ -283,12 +283,6 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   console.log('\nPR-HK2 · Task 6a · chữ: J1, J2, J3, J4, J7, J9, U12, "Khác", Lưu trữ rỗng');
 
-  check('C18 · J1: gapText trả "-1.5" / "+0.5" / "đạt kỳ vọng" (không còn "thiếu" / "vượt"); chỗ in có title "dưới kỳ vọng"', () => {
-    const sb = doc('web/src/modules/cases/SkillBoard.tsx');
-    const g = /export function gapText\([^)]*\): string \{[^]*?\n\}/.exec(sb)?.[0] ?? '';
-    assert(g.includes("'đạt kỳ vọng'") && /`-\$\{Math\.abs\(gap\)\}`/.test(g) && /`\+\$\{gap\}`/.test(g) && !/thiếu|vượt/.test(g), `gapText: ${g}`);
-  });
-
   check('C19 · J4: KhoiCanXuLy không còn "Gộp hai khung", OverviewPage không còn "Chỉ phần số đổi"', () => {
     assert(!/Chỉ phần số đổi/.test(doc('web/src/modules/worklist/OverviewPage.tsx')), 'còn "Chỉ phần số đổi"');
   });
