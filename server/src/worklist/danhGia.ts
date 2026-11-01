@@ -201,7 +201,7 @@ export function ungVienLuotMoi(studentIds: number[], today: string): number[] {
       for (const a of list) {
         if (!quaLocNhanh(a, kieu, today)) continue;
         out.add(a.id);
-        if (!a.lich_su) break;
+        if (kieu === 'valid' || !a.lich_su) break;
       }
     }
   }

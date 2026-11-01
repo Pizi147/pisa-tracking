@@ -14,6 +14,7 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
   const { tongQuanV5 } = await import('../worklist/tongQuanV5.ts');
   const { bangChiNhanh, oBangChiNhanh } = await import('../worklist/bangChiNhanh.ts');
   const { LISTED_METRICS, metricSet } = await import('../worklist/metrics.ts');
+  const { phamViPhanTich } = await import('../phanTich/phamVi.ts');
   const { baoCao, ketQuaMt, tapDatMt, tapKqMt } = await import('../phanTich/baoCao.ts');
   const { chupHoacSo } = await import('./soGoc.ts');
 
@@ -90,7 +91,6 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
     const bang = () => bangChiNhanh(P.mbManager, { ct: 'ft', chuY: true });
     demCauGet(bang);   // ấm bảng tham chiếu (nhớ tiến trình theo phiên bản)
     const cau = demCauGet(bang);
-    
     console.log(`   bangChiNhanh QL ft: ${cau} câu`);
     assert(cau <= 22, `${cau} câu`);
   });
@@ -107,6 +107,15 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
     });
     console.log(`   tapDatMt + tapKqMt QL: ${r} câu`);
     assert(r <= 9, `${r} câu`);
+  });
+  check('Q2 · EXPLAIN lượt khoảng lùi (kèm MT0): đi từ tuần (report_periods) qua idx_attempt_period, không quét bảng lượt', () => {
+    const { cs } = phamViPhanTich(P.mbManager, mb, null);
+    const plan = (db().prepare(`EXPLAIN QUERY PLAN SELECT a.id FROM assessment_attempts a
+        JOIN report_periods rp ON rp.id = a.planned_period_id LEFT JOIN classes c ON c.id = a.class_id
+       WHERE ${cs.sql} AND a.status != 'cancelled' AND (a.kind = 'mt0' OR (a.kind = 'mock' AND c.is_fast_track = 1))
+         AND rp.week_start >= ? AND rp.week_start <= ? AND c.branch_id = ?`).all(...cs.params, '2026-06-01', '2026-09-14', mb) as any[]).map((r) => String(r.detail));
+    assert(!plan.some((d) => /^SCAN a/.test(d)), plan.join(' | '));
+    assert(plan.some((d) => /SEARCH a USING INDEX idx_attempt_(period|lop_tuan|class)/.test(d)), plan.join(' | '));
   });
   check('Q1 · lopCuaTap(hoc-vien) trong bảng: một lượt đọc mỗi đơn vị', () => {
     let lan = 0;

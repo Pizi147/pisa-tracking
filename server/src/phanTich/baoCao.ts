@@ -114,9 +114,9 @@ export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: S
   /* Ngày chốt từ điểm đã nạp (`diemCuaLuot`), không thêm câu. */
   const chot = new Map<number, string>();
   for (const [id, ds] of diemCuaLuot(dong.map((d) => d.attemptId))) {
-    const co = ds.filter((s) => s.band !== null);
-    const ngay = co.map((s) => s.nhap_dau_ngay ?? '').reduce((a, b) => (b > a ? b : a), '');
-    if (ngay && co.every((s) => s.nhap_dau_ngay !== null && s.nhap_dau_ngay !== undefined)) chot.set(id, ngay.slice(0, 10));
+    const ngay = ds.filter((s) => s.band !== null).map((s) => s.nhap_dau_ngay ?? null);
+    const moiNhatNgay = ngay.includes(null) ? null : (ngay as string[]).sort().at(-1);
+    if (moiNhatNgay) chot.set(id, moiNhatNgay.slice(0, 10));
   }
   const moiNhat = new Map<number, { d: DongMock; ngay: string }>();
   const chuaDu = new Set<number>();
@@ -193,7 +193,8 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
     if (kckCuaLuot(cua.get(d.attemptId))) continue;
     const m = chon.get(luotKqMt(d.mt))!;
     const cu = m.get(d.studentId);
-    if (!cu || d.mt > cu.mt || (d.mt === cu.mt && d.tuan > cu.tuan)) m.set(d.studentId, d);
+    /* TL-TQ: hoà (cùng MT, cùng tuần ở hai lộ trình) chọn lượt mới hơn — hai nguồn `luot` ở trên không cùng thứ tự dòng. */
+    if (!cu || d.mt > cu.mt || (d.mt === cu.mt && (d.tuan > cu.tuan || (d.tuan === cu.tuan && d.attemptId > cu.attemptId)))) m.set(d.studentId, d);
   }
   /* "So lượt trước" — CÙNG hàm Xu hướng của hàng HV (`luotTruocCoOverall`). */
   const cycleCua = (d: DongMock) => cua.get(d.attemptId)!.cycle_id as number | null;
