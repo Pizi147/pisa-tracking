@@ -17,7 +17,7 @@ export function luotTheoLoTrinh(cycleIds: readonly number[]): Map<number, LuotLo
         WHERE a.cycle_id IN (${DS_JSON}) AND a.status != 'cancelled' AND a.kind IN ('mock', 'mt0', 'final')
           AND EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id)`).all(json) as any[]);   // chưa điểm thì không có Overall
   });
-  const bd = loadBundle(luot.map((a) => a.id));
+  const bd = loadBundle(luot.map((a) => a.id), { boCase: true });
   const out = new Map<number, LuotLoTrinh[]>();
   for (const a of luot.sort((x, y) => x.attempt_no - y.attempt_no)) {
     const ovr = resultOf(a, bd.scores.get(a.id) ?? [], bd.skips.get(a.id) ?? [], bd.skillRows.get(a.id) ?? []).overall ?? null;

@@ -12,12 +12,13 @@ import { badRequest } from '../util.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import type { Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
+import { coKhoa, nho } from '../platform/nguCanhRequest.ts';
 import { mondayOf } from '../platform/week.ts';
 import { metricSet, overdueScoreBai, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { phamViPhanTich } from './phamVi.ts';
 import { luotTrongKhoang } from './tongHop.ts';
-import { ketQuaThiThatKq, mockTrongKhoang } from './ketQuaThi.ts';
-import { kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
+import { ketQuaThiThatKq, luotMockKhoang, mockTrongKhoang } from './ketQuaThi.ts';
+import { diemCuaLuot, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 import { tienBoTheoKyNang } from './giaoVien.ts';
 import { diemTuEval, diemTuMock } from '../worklist/diemDong.ts';
@@ -93,6 +94,14 @@ const THU_TU_KN = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
 const LUI_TUAN_CHOT = 12;
 
 /**
+ * TL-TQ: Đạt MT và Kết quả MT cùng khoảng trong một request (Tổng quan) đọc lượt MỘT lần — khoảng lùi của Đạt MT phủ khoảng của Kết quả MT, mỗi bên lọc JS đúng điều kiện cũ.
+ * Kết quả MT gọi riêng (`/phan-tich/bao-cao/ket-qua-mt`) không đọc khoảng lùi: chỉ dùng chung khi Đạt MT đã nạp (`coKhoa`).
+ */
+const khoaLuotMt = (p: Principal, f: LocBaoCao) => `luot-mt:${p.userId}:${f.branchId ?? '-'}:${mondayOf(f.tu)}:${mondayOf(f.den)}`;
+const luotMtLui = (p: Principal, f: LocBaoCao): any[] => nho(khoaLuotMt(p, f), () =>
+  luotMockKhoang(p, { branchId: f.branchId, tu: addDaysIso(mondayOf(f.tu), -7 * LUI_TUAN_CHOT), den: f.den }, true));
+
+/**
  * ĐẠT MT (V5 `05` #1, K9, T11, T20) — đơn vị HỌC VIÊN. Mỗi em lấy lượt MT MỚI NHẤT CHỐT TRONG KỲ; ngày chốt = ngày nhập lần đầu MUỘN NHẤT trong các kỹ năng
  * có điểm của lượt (Overall chỉ có khi đủ), nên MT thi W3 AUG nhập xong W1 SEP thuộc kỳ W1 SEP. Đạt ⇔ Overall ≥ kỳ vọng của chính lượt (`ketQuaMock`).
  * Em không có lượt chốt trong kỳ mà có lượt thi trong kỳ chưa đủ Overall (hoặc KCK — không kỳ vọng) → "Chưa đủ dữ liệu", NGOÀI mẫu.
@@ -101,12 +110,14 @@ const LUI_TUAN_CHOT = 12;
  */
 export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: Set<number>; chuaDu: Set<number>; luot: Map<number, DongMock> } {
   const tuDau = mondayOf(f.tu), cuoi = addDaysIso(mondayOf(f.den), 6);
-  const dong = mockTrongKhoang(p, { branchId: f.branchId, tu: addDaysIso(tuDau, -7 * LUI_TUAN_CHOT), den: f.den }, { boCase: true });
+  const dong = mockTrongKhoang(p, { branchId: f.branchId, tu: addDaysIso(tuDau, -7 * LUI_TUAN_CHOT), den: f.den }, { luot: luotMtLui(p, f).filter((a) => a.kind === 'mock'), boCase: true });
+  /* Ngày chốt từ điểm đã nạp (`diemCuaLuot`), không thêm câu. */
   const chot = new Map<number, string>();
-  theoLo(dong.map((d) => d.attemptId), (lo, ph) => {
-    for (const r of db().prepare(`SELECT attempt_id, MAX(nhap_dau_ngay) AS ngay, COUNT(*) - COUNT(nhap_dau_ngay) AS thieu FROM assessment_scores
-        WHERE attempt_id IN (${ph}) AND band IS NOT NULL GROUP BY attempt_id`).all(...lo) as any[]) if (!r.thieu && r.ngay) chot.set(r.attempt_id, String(r.ngay).slice(0, 10));
-  });
+  for (const [id, ds] of diemCuaLuot(dong.map((d) => d.attemptId))) {
+    const co = ds.filter((s) => s.band !== null);
+    const ngay = co.map((s) => s.nhap_dau_ngay ?? '').reduce((a, b) => (b > a ? b : a), '');
+    if (ngay && co.every((s) => s.nhap_dau_ngay !== null && s.nhap_dau_ngay !== undefined)) chot.set(id, ngay.slice(0, 10));
+  }
   const moiNhat = new Map<number, { d: DongMock; ngay: string }>();
   const chuaDu = new Set<number>();
   for (const d of dong) {
@@ -162,7 +173,7 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
   const where = [cs.sql, `a.status != 'cancelled'`, `(a.kind = 'mt0' OR (a.kind = 'mock' AND c.is_fast_track = 1))`, 'rp.week_start >= ?', 'rp.week_start <= ?'];
   const args: unknown[] = [...cs.params, mondayOf(f.tu), mondayOf(f.den)];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
-  const luot = luotTrongKhoang(where.join(' AND '), args);
+  const luot = coKhoa(khoaLuotMt(p, f)) ? luotMtLui(p, f).filter((a) => a.week_start >= mondayOf(f.tu) && a.week_start <= mondayOf(f.den)) : luotTrongKhoang(where.join(' AND '), args);
   const thi = new Map<number, ReturnType<typeof ketQuaThiThatKq>['rows'][number]>();
   for (const r of ketQuaThiThatKq(p, { branchId: f.branchId, tu: mondayOf(f.tu), den: addDaysIso(mondayOf(f.den), 6) }, { boQuyen: true }).rows) {
     if (!r.khongThi && (!thi.has(r.studentId) || (r.ngayThi ?? '') > (thi.get(r.studentId)!.ngayThi ?? ''))) thi.set(r.studentId, r);

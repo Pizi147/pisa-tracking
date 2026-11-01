@@ -14,7 +14,7 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
   const { tongQuanV5 } = await import('../worklist/tongQuanV5.ts');
   const { bangChiNhanh, oBangChiNhanh } = await import('../worklist/bangChiNhanh.ts');
   const { LISTED_METRICS, metricSet } = await import('../worklist/metrics.ts');
-  const { baoCao, ketQuaMt, tapDatMt } = await import('../phanTich/baoCao.ts');
+  const { baoCao, ketQuaMt, tapDatMt, tapKqMt } = await import('../phanTich/baoCao.ts');
   const { chupHoacSo } = await import('./soGoc.ts');
 
   const cx = (db().prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'cx' ORDER BY ur.user_id LIMIT 1`).get() as any).id as number;
@@ -94,6 +94,20 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
     console.log(`   bangChiNhanh QL ft: ${cau} câu; lớp HV ${lopHv.length} khoá câu`);
     if (process.env.PISA_IN_CAU) console.log([...theoCau].map(([c, n]) => `${n} ${c.slice(0, 74)}`).join(String.fromCharCode(10)));
     assert(cau <= 22, `${cau} câu`);
+  });
+  check('Q2 · tapDatMt + tapKqMt cùng request ≤ 9 câu (trước 13)', () => {
+    const k = khoangMacDinh(demoToday());
+    const loc = { branchId: mb, ct: 'ft' as const, tu: k.tu, den: k.den };
+    const r = chayTrongRequest('GET', () => {
+      datMoc(moc);
+      bangChiNhanh(P.mbManager, { branchId: mb, ct: 'ft', chuY: true });   // như `tongQuanV5`: bảng trước
+      const d0 = soCauSql();
+      tapDatMt(P.mbManager, loc);
+      tapKqMt(P.mbManager, loc);
+      return soCauSql() - d0;
+    });
+    console.log(`   tapDatMt + tapKqMt QL: ${r} câu`);
+    assert(r <= 9, `${r} câu`);
   });
   check('Q1 · lopCuaTap(hoc-vien) trong bảng: một lượt đọc mỗi đơn vị', () => {
     let lan = 0;
