@@ -817,7 +817,7 @@ function classOverviewThat(p: Principal, classId: number) {
   const skills = (conn.prepare('SELECT skill, sessions_per_week FROM class_skills WHERE class_id = ?').all(classId) as any[]);
   /* PR-D: lịch đổi phân công đang chờ (hàng GV + Thông tin lớp › Phân công) + cờ "có góp ý tuần cũ" — MỘT câu (vế 2 là dòng cờ `gy`), không thêm lượt đọc. */
   const choVaGopY = conn.prepare(
-    `SELECT d.id, d.khoa, d.nguoi_cu, d.nguoi_moi, d.hieu_luc, d.loi, uc.full_name AS ten_cu, um.full_name AS ten_moi, 0 AS gy
+    `SELECT d.id AS id, d.khoa AS khoa, d.nguoi_cu AS nguoi_cu, d.nguoi_moi AS nguoi_moi, d.hieu_luc AS hieu_luc, d.loi AS loi, uc.full_name AS ten_cu, um.full_name AS ten_moi, 0 AS gy
        FROM doi_phan_cong d LEFT JOIN users uc ON uc.id = d.nguoi_cu LEFT JOIN users um ON um.id = d.nguoi_moi
       WHERE d.class_id = ? AND d.trang_thai = 'cho'
      UNION ALL
