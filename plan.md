@@ -278,7 +278,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Nút ⋯ trong ô lưới điểm (luật):** đứng NGAY SAU nội dung ô, cùng hàng, giữa theo chiều dọc với dòng chữ đầu (vd "✗ 14 /25 ⋯"); không đè chữ / số; máy có chuột chỉ hiện khi rê / focus, cảm ứng hiện sẵn (#732 làm đúng kiểu này).
 - **Bảng lớp góc Phân công GV (#726) — thay ý "giãn hết" 30/10:** chừa MỘT cột cố định ở mép phải cho nút dòng (Huỷ / Lưu, Chờ đổi…) ở MỌI nhóm, để cột kỹ năng / GVCN không thụt ra thụt vào giữa các nhóm; cột GVCN thẳng hàng giữa nhóm FT và nhóm lớp thường. 375: bảng tổng hợp đủ cột "Tổng".
 ### 30/10 (đêm) — PR-B BAN-GIAO-GV #731 để lại
-- [XM] Gom câu `luuPhanCong` theo lô (`TRAN_GHI_LO.luuPhanCong8Lop`, ~23 câu / lớp) — chưa làm ở PR-B; PR riêng (kế hoạch toc-do).
+- ~~[XM] Gom câu `luuPhanCong` theo lô~~ — xong ở PR LUU-PC-LO: 8 lớp 241 → 127 câu, trần `luuPhanCong8Lop` 166, bỏ ghi chú ponytail.
 - `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
 - Hỏi chủ SP: GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán], đã làm). (Hạn việc khi "Từ tuần": PTA quyết = max(tạo, hiệu lực) + 5 — đã làm.)
 

@@ -1135,16 +1135,18 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
   /** PR-QU: thêm vào nhật ký (`via`, `truoc`, `sau`). */
   meta?: Record<string, unknown>,
   /** PC-GV-A: mã lớp đã đọc (lưu nhiều lớp) — khỏi đọc lại cho nhật ký. */
-  maLop?: string): { added: number; ended: number } {
+  maLop?: string,
+  /** Lưu nhiều lớp: dòng đang chạy của lớp + môn gộp còn cần, đã đọc cho cả lô — khỏi đọc lại từng lớp. */
+  san?: { active: readonly any[]; gopCan: ReadonlySet<string>; caseThieu?: Parameters<typeof ganChuCaseThieu>[0]['caseThieu'] }): { added: number; ended: number } {
   const conn = db();
   const keyOf = (userId: number, skill: string | null, isCore: boolean | number) => `${userId}|${skill ?? ''}|${isCore ? 1 : 0}`;
   const wanted = new Map(slots.map((s) => [keyOf(s.userId, s.skill, s.isCore), s] as const));
-  const active = conn
+  const active = san?.active ?? conn
     .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND status = 'active'`)
     .all(classId) as any[];
 
   let added = 0; let ended = 0;
-  const gopCan = monGopConCan(classId);
+  const gopCan = san?.gopCan ?? monGopConCan(classId);
   for (const a of active) {
     const k = keyOf(a.user_id, a.skill, a.is_core);
     if (wanted.has(k)) { wanted.delete(k); continue; }
@@ -1164,7 +1166,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
   }
 
   /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
-  if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso() });
+  if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso(), ...(san?.caseThieu ? { caseThieu: san.caseThieu } : {}) });
   if (added || ended) {
     const code = maLop ?? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({
@@ -1180,15 +1182,21 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
  * của lượt thuộc lớp. Phân công giữ dòng môn gộp của các môn này (không ai mất việc nhập điểm / xử lý Case cũ).
  */
 export function monGopConCan(classId: number): Set<string> {
+  return monGopConCanMany([classId]).get(classId)!;
+}
+/** Như `monGopConCan` cho nhiều lớp — MỘT câu (lưu phân công nhiều lớp). */
+export function monGopConCanMany(classIds: readonly number[]): Map<number, Set<string>> {
   const gop = Object.keys(MON_GOP);
-  const ph = gop.map(() => '?').join(',');
-  return new Set((db().prepare(
-    `SELECT DISTINCT k.skill AS m FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
-      WHERE a.class_id = ? AND a.status != 'cancelled' AND k.skill IN (${ph})
+  const ph = gop.map(() => '?').join(','), lop = classIds.map(() => '?').join(',');
+  const kq = new Map<number, Set<string>>(classIds.map((id) => [id, new Set<string>()]));
+  for (const r of db().prepare(
+    `SELECT DISTINCT a.class_id AS c, k.skill AS m FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.class_id IN (${lop}) AND a.status != 'cancelled' AND k.skill IN (${ph})
         AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = k.skill AND (s.raw_score IS NOT NULL OR s.no_show_period_id IS NOT NULL))
-     UNION SELECT DISTINCT COALESCE(sc.topic, sc.category) FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE a.class_id = ? AND sc.status != 'done' AND COALESCE(sc.topic, sc.category) IN (${ph})`,
-  ).all(classId, ...gop, classId, ...gop) as any[]).map((r) => r.m as string));
+     UNION SELECT DISTINCT a.class_id, COALESCE(sc.topic, sc.category) FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE a.class_id IN (${lop}) AND sc.status != 'done' AND COALESCE(sc.topic, sc.category) IN (${ph})`,
+  ).all(...classIds, ...gop, ...classIds, ...gop) as any[]) kq.get(r.c)?.add(r.m as string);
+  return kq;
 }
 
 /**
