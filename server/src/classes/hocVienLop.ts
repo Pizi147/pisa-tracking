@@ -12,7 +12,8 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
-import { bangLop, can, editableSkills, lopXemTam, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, lopXemTam, phanCongDaNap, phanCongDangHoatDong, scopeFor, type Principal } from '../permissions.ts';
+import { coNho } from '../platform/nguCanhRequest.ts';
 import { listClassSummaries, lopTrongPhamVi, type ClassSummary } from './classes.ts';
 import { classProgressMany, lichMtCua, missingForStudent } from './schedule.ts';
 import { standingFor, type Standing } from '../students/standing.ts';
@@ -141,6 +142,8 @@ export function danhSachHocVienLop(
   const today = demoToday();
   const conn = db();
   const { coThe, dangDung, chiNhanh, phanCong, lopCuaToi } = phamViTrang(p, f, today);
+  /* TL-HVL: phạm vi chi nhánh trở lên — ba nơi đọc phân công lọc từ một câu (cỡ phân công một chi nhánh × ba lần đọc cũ); "Lớp tôi dạy" vài lớp giữ câu theo lớp, ít dòng hơn. */
+  if (coNho() && dangDung !== 'toi' && dangDung !== 'cua-toi') phanCongDangHoatDong();
   /*
    * "+ LỚP MỚI" đầu trang: không gắn với lớp nào — PR-QU (B) kiểm `CLASS_CREATE` theo TỪNG chi nhánh đang hoạt động (không chỉ chi nhánh
    * người xem thấy được: GV được cấp riêng `class.create` ở một chi nhánh vẫn chỉ "thấy" lớp mình dạy).
@@ -174,7 +177,8 @@ export function danhSachHocVienLop(
   const ph = ids.map(() => '?').join(',');
 
   const gvcn = new Map<number, { id: number; name: string }>();
-  for (const r of conn.prepare(
+  const da = phanCongDaNap(), trongTrang = new Set(ids);
+  for (const r of da ? da.filter((a) => a.isCore && trongTrang.has(a.classId)).map((a) => ({ class_id: a.classId, id: a.userId, full_name: a.ten })) : conn.prepare(
     `SELECT ta.class_id, u.id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
       WHERE ta.class_id IN (${ph}) AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id`,
   ).all(...ids) as any[]) if (!gvcn.has(r.class_id)) gvcn.set(r.class_id, { id: r.id, name: r.full_name });

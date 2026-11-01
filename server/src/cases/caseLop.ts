@@ -13,6 +13,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, type Principal } from '../permissions.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { listCases, type MappedCase } from './cases.ts';
 import { choDoiPa, sosCaseStateMany } from './sosState.ts';
 import { mtCuoiCuaLoTrinh } from './sosAuto.ts';
@@ -46,9 +47,16 @@ const gom = <T extends { case_id: number }>(rows: T[]) => {
   return m;
 };
 
+/** TL-HVL: nhớ theo Case trong request — việc theo lớp và nhãn Bộ lọc thêm của Học viên & Lớp hỏi chung một tập Case. Kết quả không phụ thuộc người xem. */
 export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChiTiet> {
-  const out = new Map<number, CaseChiTiet>();
   const ds = cases.filter((c) => c.studentId !== null);
+  const theoId = new Map(ds.map((c) => [c.id, c]));
+  const nap = nhoTheoId<CaseChiTiet>('ct-case-mo:', ds.map((c) => c.id), (ids) => new Map([...napChiTietCase(ids.map((id) => theoId.get(id)!))].map(([id, x]) => [id, [x]])));
+  return new Map([...nap].map(([id, [x]]) => [id, x]));
+}
+
+function napChiTietCase(ds: readonly MappedCase[]): Map<number, CaseChiTiet> {
+  const out = new Map<number, CaseChiTiet>();
   if (!ds.length) return out;
   const conn = db();
   const homNay = demoToday();

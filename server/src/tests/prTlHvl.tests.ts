@@ -77,4 +77,19 @@ export async function runPrTlHvlTests(t: any) {
     assert(lap.every((n) => n <= 0), `đọc lại: lớp ${lap[0]} · điểm ${lap[1]} · Case mở ${lap[2]}`);
     assert(cau.length <= 22, `${cau.length} câu`);
   });
+
+  await checkAsync('H2 · /hoc-vien-lop QL: Case chi tiết + Ý thức + tiến độ lớp mỗi thứ một lượt, phân công một câu, câu ≤ 46 (them=1 ≤ 47)', async () => {
+    for (const [url, tran] of [['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1', 46], ['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1', 47]] as [string, number][]) {
+      const { cau } = await doGet(P.mbManager.userId, url);
+      const so = { 'Case chi tiết': dem(cau, /^SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN/), 'Ý thức': dem(cau, /^SELECT 0 AS loai, id AS id/),
+        'tiến độ lớp': dem(cau, /^SELECT e\.class_id, COUNT\(\*\) n, SUM/), 'phân công': dem(cau, /^SELECT [^()]*FROM teacher_assignments/) };
+      assert(Object.values(so).every((n) => n <= 1), `${url}: ${JSON.stringify(so)}`);
+      assert(cau.length <= tran, `${url}: ${cau.length} câu`);
+    }
+  });
+
+  await checkAsync('H2 · GV không nạp cả bảng phân công: đọc theo lớp của mình', async () => {
+    const { cau } = await doGet(P.coreTeacher.userId, '/hoc-vien-lop');
+    assert(!cau.some((x) => x.startsWith('SELECT ta.id, ta.class_id, ta.user_id')), 'GV nạp cả bảng phân công');
+  });
 }
