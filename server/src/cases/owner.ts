@@ -59,12 +59,14 @@ export function ganChuCaseThieu(o: {
   classId?: number; studentIds?: readonly number[]; actorId: number | null; luc: string;
   /** SUA-NO-RA (CV-LOI-b): người gán không phải một tài khoản (migrate) → nhật ký mỗi Case một dòng ghi nguồn này. */
   nguon?: string;
+  /** Lưu nhiều lớp: Case chưa chủ của `classId` đã đọc sẵn cho cả lô (`docViecLo`) — khỏi đọc lại từng lớp. */
+  caseThieu?: readonly { id: number; category: string | null; __cid: number }[];
 }): number {
   const conn = db();
   /* Em đang học (không Tạm dừng / Lưu trữ), Case không tạm (Case tạm chưa là việc — OV-13a). `studentIds`: chỉ các em vừa xếp / chuyển lớp.
      DON-LUONG K8: với `studentIds` cùng câu đọc thêm Case CÓ chủ (đổi chủ theo lớp mới — `doiChuTheoLopMoi`), không thêm lượt. */
   const theoEm = o.studentIds?.length ? `AND s.id IN (${o.studentIds.map(() => '?').join(',')})` : '';
-  const tatCa = conn.prepare(
+  const tatCa = o.caseThieu?.map((r) => ({ ...r, class_id: r.__cid, owner_user_id: null })) ?? conn.prepare(
     `SELECT sc.id, sc.category, sc.topic, sc.goc_programme_code, sc.owner_user_id, COALESCE(a.class_id, cur.class_id) AS class_id, cur.class_id AS lop_hien_tai, s.full_name
             ${theoEm ? `, ${CHU_THEO_LOP_SQL}` : ''}
        FROM sos_cases sc
@@ -262,16 +264,49 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
 /* ================= PC-GV-A (đặc tả 30/10 mục 2b) — ĐỔI GV: VIỆC ĐANG MỞ CỦA GV CŨ CHUYỂN SANG GV MỚI ================= */
 
 /** Case mở (không tạm) của em đang học lớp — cùng điều kiện `ganChuCaseThieu` (lớp của lượt, không có thì lớp đang học). */
-const NOI_CASE_LOP = `LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+const NOI_CASE_MO = `LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
   JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
   LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-  WHERE sc.status != 'done' AND sc.tam = 0 AND COALESCE(a.class_id, cur.class_id) = ?`;
+  WHERE sc.status != 'done' AND sc.tam = 0`;
+const NOI_CASE_LOP = `${NOI_CASE_MO} AND COALESCE(a.class_id, cur.class_id) = ?`;
 const CASE_MO_CUA_LOP = `FROM sos_cases sc ${NOI_CASE_LOP}`;
 
 /** Id Case mở CHƯA có người phụ trách của lớp — tập `ganChuCaseThieu` có thể gán (chụp trước để Hoàn tác). */
 export function caseThieuChuLop(classId: number): number[] {
   return [...new Set((db().prepare(`SELECT sc.id ${CASE_MO_CUA_LOP} AND sc.owner_user_id IS NULL`).all(classId) as any[]).map((r) => r.id as number))];
 }
+
+/**
+ * LƯU NHIỀU LỚP: đọc MỘT lần cho cả lô thứ `chonViecChuyen` / `caseThieuChuLop` / ảnh chụp Hoàn tác đọc từng lớp — Case mở (không tạm) của các lớp
+ * mà chưa có chủ hoặc chủ là một trong `nguoiCu`, và PA `planned | started` của các GV đó. Dòng đủ cột (`rowid AS __r, *`) để chụp `ghi_dao` không đọc lại;
+ * `__cid` = lớp, `__cat` = hạng mục Case của PA (bỏ khi chụp — `bo`). Cùng điều kiện lớp / em đang học với các câu từng lớp.
+ */
+export type ViecLop = { cases: any[]; pas: any[] };
+export function docViecLo(classIds: readonly number[], nguoiCu: readonly number[]): Map<number, ViecLop> {
+  const conn = db();
+  const kq = new Map<number, ViecLop>(classIds.map((id) => [id, { cases: [], pas: [] }]));
+  const lop = inHang(classIds), ph = inHang(nguoiCu);
+  const cid = 'COALESCE(a.class_id, cur.class_id)';
+  const da = new Set<string>();
+  for (const r of conn.prepare(
+    `SELECT sc.rowid AS __r, sc.*, ${cid} AS __cid FROM sos_cases sc ${NOI_CASE_MO} AND ${cid} IN (${lop})
+        AND (sc.owner_user_id IS NULL${nguoiCu.length ? ` OR sc.owner_user_id IN (${ph})` : ''}) ORDER BY sc.id`,
+  ).all(...classIds, ...nguoiCu) as any[]) {
+    if (!da.has(`${r.id}|${r.__cid}`)) { da.add(`${r.id}|${r.__cid}`); kq.get(r.__cid)?.cases.push(r); }
+  }
+  da.clear();
+  if (nguoiCu.length) {
+    for (const r of conn.prepare(
+      `SELECT iv.rowid AS __r, iv.*, sc.category AS __cat, ${cid} AS __cid FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+         ${NOI_CASE_MO} AND ${cid} IN (${lop}) AND iv.status IN ('planned', 'started') AND iv.performer_user_id IN (${ph}) ORDER BY iv.id`,
+    ).all(...classIds, ...nguoiCu) as any[]) {
+      if (!da.has(`${r.id}|${r.__cid}`)) { da.add(`${r.id}|${r.__cid}`); kq.get(r.__cid)?.pas.push(r); }
+    }
+  }
+  return kq;
+}
+/** Dòng đọc ở `docViecLo` → dạng `rowid AS __r, *` của bảng (bỏ cột phụ `__cid` / `__cat`). */
+export const boCotPhu = (r: Record<string, unknown>) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== '__cid' && k !== '__cat'));
 
 /**
  * Case / PA SẼ chuyển khi đổi người (KHÔNG ghi) — dùng chung cho xem trước hộp Lưu và lúc áp. Chỉ cặp có người giao + người nhận khác nhau.
@@ -283,7 +318,9 @@ export const GVCN_LOP = '_gvcn';
 /** Id Case / PA sẽ chuyển + người cũ đã đọc (`c{id}` / `p{id}`) — lúc áp dùng lại, không đọc lại từng dòng. */
 export type ViecChuyen = { caseIds: number[]; paIds: number[]; cu: Map<string, { u: number; caseId?: number }> };
 export function chonViecChuyen(classId: number, ct: string | null, doi: readonly DoiO[], conDay: (userId: number) => ReadonlySet<string>,
-  gvcnSau: number | null = null): Map<string, ViecChuyen> {
+  gvcnSau: number | null = null,
+  /** Lưu nhiều lớp: Case / PA của lớp đã đọc sẵn (`docViecLo`) — không đọc lại. */
+  san?: ViecLop): Map<string, ViecChuyen> {
   const cap = doi.filter(laCapBanGiao);
   const m = new Map<string, ViecChuyen>(cap.map((d) => [d.khoa, { caseIds: [], paIds: [], cu: new Map() }]));
   if (!cap.length) return m;
@@ -296,16 +333,20 @@ export function chonViecChuyen(classId: number, ct: string | null, doi: readonly
   };
   const conn = db();
   const da = new Set<number>();
-  for (const r of conn.prepare(`SELECT sc.id, sc.owner_user_id AS u, sc.category ${CASE_MO_CUA_LOP} AND sc.owner_user_id IN (${ph}) ORDER BY sc.id`).all(classId, ...cu) as any[]) {
+  const dongCase = san ? san.cases.filter((r) => cu.includes(r.owner_user_id)).map((r) => ({ id: r.id, u: r.owner_user_id, category: r.category }))
+    : conn.prepare(`SELECT sc.id, sc.owner_user_id AS u, sc.category ${CASE_MO_CUA_LOP} AND sc.owner_user_id IN (${ph}) ORDER BY sc.id`).all(classId, ...cu) as any[];
+  for (const r of dongCase) {
     const d = !da.has(r.id) && theoO(r.u, r.category);
     if (d) { da.add(r.id); m.get(d.khoa)!.caseIds.push(r.id); m.get(d.khoa)!.cu.set(`c${r.id}`, { u: r.u }); }
   }
   da.clear();
   const roiLop = (u: number) => gvcnSau !== null && gvcnSau !== u && conDay(u).size === 0;
-  for (const r of conn.prepare(
-    `SELECT iv.id, iv.case_id, iv.performer_user_id AS u, sc.category FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-       ${NOI_CASE_LOP} AND iv.status IN ('planned', 'started') AND iv.performer_user_id IN (${ph}) ORDER BY iv.id`,
-  ).all(classId, ...cu) as any[]) {
+  const dongPa = san ? san.pas.filter((r) => cu.includes(r.performer_user_id)).map((r) => ({ id: r.id, case_id: r.case_id, u: r.performer_user_id, category: r.__cat }))
+    : conn.prepare(
+      `SELECT iv.id, iv.case_id, iv.performer_user_id AS u, sc.category FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+         ${NOI_CASE_LOP} AND iv.status IN ('planned', 'started') AND iv.performer_user_id IN (${ph}) ORDER BY iv.id`,
+    ).all(classId, ...cu) as any[];
+  for (const r of dongPa) {
     if (da.has(r.id)) continue;
     da.add(r.id);
     const d = theoO(r.u, r.category);
@@ -328,6 +369,8 @@ export function chuyenViecKhiDoi(o: {
   actorId: number | null; luc: string; code: string; gvcnSau?: number | null;
   /** Đã chọn sẵn (để chụp `ghi_dao` trước khi ghi) — không truyền thì tự chọn. */
   chon?: Map<string, ViecChuyen>;
+  /** Lưu nhiều lớp: tên người của cả lô (đọc một lần, đọc thêm id còn thiếu) thay cho một câu mỗi lớp. */
+  ten?: (ids: readonly number[]) => ReadonlyMap<number, string>;
 }): Map<string, { soCase: number; soPa: number }> {
   const conn = db();
   const chon = o.chon ?? chonViecChuyen(o.classId, o.ct, o.doi, o.conDay, o.gvcnSau ?? null);
@@ -338,7 +381,7 @@ export function chuyenViecKhiDoi(o: {
   if (!nhanMoi.length) return kq;
   const coPa = [...chon.values()].some((v) => v.paIds.length);
   const nguoi = coPa ? [...new Set([...cap.flatMap((d) => [d.nguoiCu!, d.nguoiMoi!]), ...(o.gvcnSau ? [o.gvcnSau] : [])])] : [];
-  const ten = new Map(nguoi.length ? (conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${inHang(nguoi)})`).all(...nguoi) as any[])
+  const ten = o.ten ? o.ten(nguoi) : new Map(nguoi.length ? (conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${inHang(nguoi)})`).all(...nguoi) as any[])
     .map((u) => [u.id as number, u.full_name as string]) : []);
   /* Lịch sử Case + PA của cả lớp: MỘT câu chèn (cuối hàm). */
   const ls: unknown[][] = [];
