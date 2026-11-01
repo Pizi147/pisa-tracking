@@ -114,7 +114,7 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
         JOIN report_periods rp ON rp.id = a.planned_period_id LEFT JOIN classes c ON c.id = a.class_id
        WHERE ${cs.sql} AND a.status != 'cancelled' AND (a.kind = 'mt0' OR (a.kind = 'mock' AND c.is_fast_track = 1))
          AND rp.week_start >= ? AND rp.week_start <= ? AND c.branch_id = ?`).all(...cs.params, '2026-06-01', '2026-09-14', mb) as any[]).map((r) => String(r.detail));
-    assert(!plan.some((d) => /^SCAN ab/.test(d)), plan.join(' | '));
+    assert(!plan.some((d) => /^SCAN a\b/.test(d)), plan.join(' | '));
     assert(plan.some((d) => /SEARCH a USING INDEX idx_attempt_(period|lop_tuan|class)/.test(d)), plan.join(' | '));
   });
   check('Q1 · lopCuaTap(hoc-vien) trong bảng: một lượt đọc mỗi đơn vị', () => {
