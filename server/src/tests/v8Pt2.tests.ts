@@ -9,7 +9,7 @@ export async function runV8Pt2Tests(t: YThucTestKit & { P: any }) {
   console.log('\nV8-PT-2 · thẻ chỉ số Phân tích');
   const { hieuQuaPa, oHieuQuaPa, tvTuanCua, paCoKetQua } = await import('../phanTich/hieuQuaPa.ts');
   const { tongHop, oTongHop } = await import('../phanTich/tongHop.ts');
-  const { ketQuaMockKq, ketQuaThiThatKq, oKetQuaThi } = await import('../phanTich/ketQuaThi.ts');
+  const { dongThiPanel, ketQuaMockKq, ketQuaThiThatKq, oKetQuaThi } = await import('../phanTich/ketQuaThi.ts');
   const { yThucPhanTich, oYThucPhanTich } = await import('../phanTich/yThucPhanTich.ts');
   const { chayTrongRequest, soCauSql } = await import('../platform/nguCanhRequest.ts');
   const d: any = await import('../../../shared/domain/index.ts');
@@ -81,6 +81,20 @@ export async function runV8Pt2Tests(t: YThucTestKit & { P: any }) {
     }
     assert(nem(() => oKetQuaThi(P.mbManager, { ...f, loai: 'mock', o: 'la' }))?.status === 400, 'ô lạ phải 400');
     assert(nem(() => oKetQuaThi(P.subjectTeacher, { ...f, loai: 'mock', o: 'dat' }))?.status === 403, 'GV phải 403');
+  });
+
+  check('V8-PT-2 · panel thẻ Kết quả Test có đơn vị (đầu panel: số + "lượt", như #761), cả Mock lẫn Thi thật', () => {
+    for (const loai of ['mock', 'thi-that'] as const) assert(oKetQuaThi(P.mbManager, { tu: TU, den: DEN, loai, o: 'luot' }).unit === 'luot-sos', loai);
+  });
+
+  check('V8-PT-2 · dòng điểm: thang Cambridge in số nguyên ("140", không "140.0"), band vẫn một chữ số lẻ, lớp thường vẫn %', () => {
+    assert(d.chuDiem(140) === '140' && d.chuDiem(100) === '100', `Cambridge: ${d.chuDiem(140)}`);
+    assert(d.chuDiem(6.5) === '6.5' && d.chuDiem(6) === '6.0' && d.chuDiem(9) === '9.0', `band: ${d.chuDiem(6)}`);
+    assert(d.chuDiem(61.4, true) === '61 %', `%: ${d.chuDiem(61.4, true)}`);
+    assert(d.chuDiem(12.5) === '12.5', 'số lẻ ngoài band không làm tròn mất');
+    assert(d.nhanDocDiem({ k: 'R', v: 130, dat: false }, { nhan: 'Target', v: 140 }) === 'R ✗ 130, dưới Target 140', d.nhanDocDiem({ k: 'R', v: 130, dat: false }, { nhan: 'Target', v: 140 }));
+    const dong = dongThiPanel({ cycleId: 1, studentId: 1, ten: 'A', classId: 1, lop: 'PET 1', ngayThi: '2026-09-05', khongThi: false, ovr: 150, l: 140, r: 150, w: 155, s: 155, target: '140.0', dat: true, buocTiep: null, buocTiepChu: null, buocTiepPhu: null, nguoiChon: null, ngayChon: null, coTheChon: false } as any).diemHv!;
+    assert(d.chuDiem(dong.soVoi!.v) === '140' && d.chuDiem(dong.overall!) === '150' && dong.kn.every((k: any) => !d.chuDiem(k.v).includes('.')), JSON.stringify(dong));
   });
 
   check('V8-PT-2 · Ý thức dong=tong / hv-can-chu-y: số thẻ = số dòng; lớp đủ cả nhóm "lớp khác"', () => {

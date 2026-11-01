@@ -102,7 +102,7 @@ const ngayNgan = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice
 const dongMockPanel = (d: DongMock): MetricRow => ({
   id: d.attemptId, title: d.ten, sub: `${d.lop} · MT${d.mt} · ${tuanLich(d.tuan)}`, href: `/hoc-vien/${d.studentId}`, diemHv: diemTuMock(d),
 });
-const dongThiPanel = (d: DongThiThat): MetricRow => {
+export const dongThiPanel = (d: DongThiThat): MetricRow => {
   const target = d.target === null ? null : Number(d.target);
   return {
     id: d.cycleId, title: d.ten, sub: [d.lop, d.khongThi ? tl('Không thi') : ngayNgan(d.ngayThi), d.buocTiepChu ?? tl('Bước tiếp chưa chọn')].filter(Boolean).join(' · '), href: `/hoc-vien/${d.studentId}`,
@@ -124,13 +124,13 @@ const CHON_THI: Record<string, (d: DongThiThat) => boolean> = {
  * V8-PT-2: danh sách của MỘT thẻ chỉ số Kết quả Test (chạy khi MỞ, 0 câu khi vẽ) — lọc CHÍNH dòng sinh ra `tong` nên số = số dòng (G-10), một dòng một lượt
  * như thẻ đếm. Mock bỏ nạp Case (`boCase` — thẻ chỉ cần kết quả, SOS); Thi thật bỏ hỏi quyền chọn bước.
  */
-export function oKetQuaThi(p: Principal, f: LocKetQuaThi & { loai: LoaiThi; o: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
+export function oKetQuaThi(p: Principal, f: LocKetQuaThi & { loai: LoaiThi; o: string }): { n: number; tieuDe: string; unit: 'luot-sos'; rows: MetricRow[] } {
   const thi = f.loai === 'thi-that';
   const chon = (thi ? CHON_THI : CHON_MOCK)[f.o];
   if (!chon) throw badRequest('Số này không có trong Kết quả Test — có thể bộ lọc vừa đổi.');
   const rows = thi ? ketQuaThiThatKq(p, f, { boQuyen: true }).rows.filter(chon as (d: DongThiThat) => boolean).map(dongThiPanel)
     : xepDongMock(mockTrongKhoang(p, f, { boCase: true }).filter(chon as (d: DongMock) => boolean), 'lop').map(dongMockPanel);
-  return { n: rows.length, tieuDe: `${rows.length} lượt`, rows };
+  return { n: rows.length, tieuDe: `${rows.length} lượt`, unit: 'luot-sos', rows };
 }
 
 export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq?: KetQuaMock | null }): KetQuaMockKq {
