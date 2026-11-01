@@ -50,8 +50,8 @@ export function NoiDungThongTinLop({ lop, phan, onDone, onChuyenTiep, chiDoc = f
  * MỘT PHẦN của panel: tiêu đề · Sửa (xem) hoặc Huỷ + Lưu (đang sửa) ngay trên đầu phần; lỗi lưu hiện trong phần (chữ đã gõ giữ nguyên).
  * `moSua`: mở sẵn chế độ sửa + cuộn tới (lối cũ "Sửa phân công").
  */
-export function PhanThongTin({ tieuDe, suaDuoc, dangSua, daDoi = true, busy, nhanLuu = t('Lưu'), loi, onSua, onHuy, onLuu, cuonToi, children }: {
-  tieuDe: string; suaDuoc: boolean; dangSua: boolean; busy: boolean; nhanLuu?: string; loi: string | null;
+export function PhanThongTin({ tieuDe, nhanPhu, suaDuoc, dangSua, daDoi = true, busy, nhanLuu = t('Lưu'), loi, onSua, onHuy, onLuu, cuonToi, children }: {
+  tieuDe: string; /** Chip cạnh tiêu đề (vd "Nháp · 1 ô đổi"). */ nhanPhu?: ReactNode; suaDuoc: boolean; dangSua: boolean; busy: boolean; nhanLuu?: string; loi: string | null;
   /** 6c (lỗi 5): phần đang sửa có đổi thật — ✕ panel hỏi trước khi bỏ. Không truyền = mở Sửa là coi như đã đổi. */
   daDoi?: boolean;
   onSua: () => void; onHuy: () => void; onLuu: () => void; cuonToi?: boolean; children: ReactNode;
@@ -63,6 +63,7 @@ export function PhanThongTin({ tieuDe, suaDuoc, dangSua, daDoi = true, busy, nha
     <section ref={ref} aria-label={tieuDe} className="border-t py-3.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
       <div className="mb-2.5 flex min-h-[32px] flex-wrap items-center gap-2">
         <h3 className="m-0 text-sm font-semibold text-slate-100">{tieuDe}</h3>
+        {nhanPhu}
         <span className="flex-1" />
         {dangSua ? (
           <>
