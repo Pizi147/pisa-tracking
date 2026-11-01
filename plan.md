@@ -249,6 +249,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 02/11 đêm — chủ SP đi ngủ, "còn gì nữa chạy tiếp"
+- **Đã mở (local):** TL-HVL · LECH-CACH-CHAM · V8-HSL-2 · DO-KHUNG-DO (Opus 5.5 · medium) · LUU-PC-LO (Sonnet 5.5 · high).
+- **Merge:** PR máy chủ PTA tự merge khi rà đạt + check xanh; LECH-CACH-CHAM đổi mức SOS / Case em thật thì giữ chờ chủ SP. V8-HSL-2, DO-KHUNG-DO chờ duyệt ảnh sáng (không merge qua đêm).
+- **Chưa mở:** TAB-A11Y + DUYET-QL a11y (đủ 2 PR giao diện đang chạy) · QUYEN-THEO-CN, XM-BE-1, KET-PET-THI-THAT (chờ chủ SP quyết) · chỉ mục `status` `teacher_assignments` (chờ log).
+
 ### 01/11 tối — chủ SP đi vắng, giao chạy sau khi token tuần reset 19:00
 - **Đã mở (session local, chờ giờ rồi tự làm):** từ 19:05 PR-D (Sonnet 5.5 · high) · TL-VIEC · TL-TQ · V8-PT-2 · CN-3 + MA-MO-COI (Opus 5.5 · medium) · từ 22:30 DON-HINH (Opus 5.5 · medium).
 - **Chưa mở, có lý do:** TL-HVL, V8-HSL-2 chờ PR-D merge (cùng hồ sơ lớp) · DO-KHUNG-DO chờ đo trên main sạch.
