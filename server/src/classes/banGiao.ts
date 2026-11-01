@@ -4,7 +4,7 @@ import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, phanCongDaNap, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import type { PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
@@ -429,10 +429,14 @@ export type ViecBanGiao =
 export function viecBanGiao(userId: number | null, branchId?: number | null): ViecBanGiao[] {
   const conn = db();
   const dk = [`ta.status = 'active'`, ...(userId !== null ? ['ta.user_id = ?'] : []), ...(branchId ? ['c.branch_id = ?'] : [])];
-  const pc = conn.prepare(
-    `SELECT ta.user_id, ta.class_id, ta.is_core, ta.skill, c.code, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
-      WHERE ${dk.join(' AND ')}`,
-  ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined)) as any[];
+  const da = phanCongDaNap();   // TL-VIEC: Công việc đã nạp mọi phân công một câu — lọc đúng WHERE dưới
+  const pc = da
+    ? da.filter((r) => (userId === null || r.userId === userId) && (!branchId || r.branchId === branchId))
+      .map((r) => ({ user_id: r.userId, class_id: r.classId, is_core: r.isCore ? 1 : 0, skill: r.skill, code: r.code, ct: r.ct }))
+    : conn.prepare(
+      `SELECT ta.user_id, ta.class_id, ta.is_core, ta.skill, c.code, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ${dk.join(' AND ')}`,
+    ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined)) as any[];
   if (!pc.length) return [];
   /* Khoá (người, lớp). */
   const lop = new Map<string, { userId: number; lopId: number; code: string; ct: string | null; gvcn: boolean; kyNang: Set<string> }>();

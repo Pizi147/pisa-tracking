@@ -4,7 +4,7 @@ import {
   CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_SYNC_REVIVE_REASONS, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
-import { napTruocPhamVi, type Principal } from '../permissions.ts';
+import { lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, conflict, loi, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday, nowNghiepVu } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
@@ -394,7 +394,8 @@ export function dongPhoiHopLop(classIds: number[]) {
     dem.set(l.lop, (dem.get(l.lop) ?? 0) + 1);
     for (const h of l.han) if (!hanLop.has(l.lop) || h < hanLop.get(l.lop)!) hanLop.set(l.lop, h);
   }
-  const ma = new Map((conn.prepare(`SELECT id, code FROM classes WHERE id IN (${ph})`).all(json) as any[]).map((c) => [c.id as number, c.code as string]));
+  const ma = new Map<number, string>();
+  for (const classId of classIds) { const l = lopDayDu().get(classId); if (l) ma.set(classId, l.code); }
   for (const classId of classIds) {
     const pendingCount = dem.get(classId) ?? 0;
     if (pendingCount > 0 && ma.has(classId)) {

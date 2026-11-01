@@ -5,7 +5,7 @@ import {
   type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { can, loadPrincipal, require_, type Principal } from '../permissions.ts';
+import { can, loadPrincipal, lopDayDu, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { quetTheoMoc } from '../platform/mocHeThong.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
@@ -836,10 +836,7 @@ export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: 
 
 function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
   const conn = db();
-  const lop = conn.prepare(
-    `SELECT c.id, c.code FROM classes c
-      WHERE c.status = 'active' AND c.is_fast_track = 0${branchId ? ' AND c.branch_id = ?' : ''}${lopId ? ' AND c.id = ?' : ''}`,
-  ).all(...(branchId ? [branchId] : []), ...(lopId ? [lopId] : [])) as any[];
+  const lop = [...lopDayDu().values()].filter((c) => c.status === 'active' && c.is_fast_track === 0 && (!branchId || c.branch_id === branchId) && (!lopId || c.id === lopId));
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
     const pr = tienDo.get(c.id);
