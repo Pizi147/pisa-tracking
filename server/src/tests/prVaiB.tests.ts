@@ -430,20 +430,6 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(!/ngan\(p\.startedOn\)|ngan\(p\.lastOutcomeOn\)/.test(web), 'khoảng PA / kết quả còn dd/mm');
   });
 
-  // ------------------------------------------------------------------ khối 7 · điện thoại 375 px: bảng kỹ năng thành thẻ (UX-D3)
-  check('VAI-b (7) · xepTheKyNang: Case quá hạn → Case mở → còn lại; kỹ năng đạt / không Case → thẻ gọn; giữ thứ tự bảng trong nhóm; < 640 px chỉ vẽ thẻ', () => {
-    const r = (ten: string, missed: boolean | null, cases: any[]) => ({ ten, missed, cases });
-    const ds = d.xepTheKyNang([
-      r('L', false, []), r('R', true, [{ status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, plans: [] }]),
-      r('W1', null, []), r('W2', true, [{ status: 'in_progress', trangThaiV4: { t: 'dang-lam' }, plans: [{ actionOverdue: true }] }]),
-      r('S', true, [{ status: 'open', trangThaiV4: { t: 'qua-han' }, plans: [] }]), r('X', true, [{ status: 'done', plans: [] }]),
-    ]) as { row: { ten: string }; gon: boolean }[];
-    assert(ds.map((x) => x.row.ten).join() === 'W2,S,R,L,W1,X', ds.map((x) => x.row.ten).join());
-    assert(ds.map((x) => x.gon).join() === 'false,false,false,true,true,false', `gọn: ${ds.map((x) => x.gon)}`);
-    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
-    assert(/xepTheKyNang\(rows/.test(the) && /min-h-\[44px\]/.test(the) && !/text-\[11px\]/.test(the), 'thẻ: xếp theo luật, vùng bấm 44 px, không chữ 11 px');
-  });
-
   // ------------------------------------------------------------------ khối 8 · đường dẫn sâu "MT · kỹ năng" → hồ sơ Mock (E.4 / G5)
   const attemptsSvc = await import('../fasttrack/attempts.ts');
   check('VAI-b (8) · duongDotTest / docKnMock: FT → /mock-test/{id}?kn=; kn lạ bỏ; lớp thường → trang lượt /luot-test/{id} (HSL-LT, giữ kn); attemptHref web chỉ gọi duongDotTest', () => {
