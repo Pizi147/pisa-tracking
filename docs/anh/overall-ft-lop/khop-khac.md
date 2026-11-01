@@ -39,5 +39,8 @@ Không mất thao tác. Lớp thường không đổi (lớp 6: `ca-bai` + 4 mô
 - Dòng kỹ năng của bảng này VẪN tính em KCK có Target (`danhGiaMon` không loại), dòng Overall thì không (đúng kế hoạch, cùng Đạt MT). Có em KCK thì mẫu số Overall nhỏ hơn dòng kỹ năng. Không sửa ở PR này vì đổi số đang hiện; ⓘ đã ghi rõ.
 - Cột Overall dùng Target hiện tại của em (`danhGiaMon`), không phải Target lúc lượt như Kết quả Test. Em đổi Target sau lượt thì hai màn có thể lệch; giữ để cùng dòng kỹ năng.
 
+## Phép kiểm sửa mốc
+- `hocVienLop` PR-Qa §3.7: khung FT thêm "Overall" đầu danh sách dòng (mockup v8 D đã duyệt); số ô kỹ năng giữ nguyên.
+
 ## Thử
 Playwright 375 + 1440: hàng đầu `Overall 7/9 14/19 2/3 — —` · bấm ô → panel `Overall · MT1 9 học viên`, Chưa đạt 2 · Đạt 7, dòng điểm MT1 · W4 AUG · Esc đóng · không tràn ngang · bản Anh có nhãn ⓘ · 0 lỗi tải. `impeccable detect`: 0 · web-design-guidelines: `<table>` ngữ nghĩa, `tabular-nums`, nút thật có `aria-label`, không lỗi mới · `/ponytail-review`: Lean already.

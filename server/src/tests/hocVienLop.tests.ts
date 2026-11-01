@@ -426,7 +426,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     bandFT(themLuot({ ...b, cid, no: 2, kind: 'mock', weekStart: '2026-09-07' }), { listening: 6.5, reading: 5.5, writing1: 5.0, writing2: 5.0, speaking: 5.0 });
     const r = ptl.phanTichLop(P.admin, cid);
     eq([r.loai, r.dong.map((x: any) => x.nhan).join(' '), r.cot.map((x: any) => x.nhan).join(' ')],
-      ['ft', 'L R W1 W2 S', 'MT1 MT2 MT3 MT4 MT5'], 'Khung');
+      ['ft', 'Overall L R W1 W2 S', 'MT1 MT2 MT3 MT4 MT5'], 'Khung');   // V8-HSL-2: dòng đầu "Overall" (mockup v8 D)
     eq(r.o['listening|mt2'], { dat: 1, tong: 2 }, 'L MT2 (kỳ vọng 6.0)');
     eq(r.o['reading|mt2'], { dat: 1, tong: 2 }, 'R MT2');
     eq(r.o['listening|mt1'] ?? null, null, 'Đợt chưa có điểm');
