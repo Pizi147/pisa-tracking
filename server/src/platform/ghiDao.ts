@@ -25,7 +25,10 @@ export class GhiDao {
   constructor(private conn: any) {}
   /** Chụp NGUYÊN dòng sắp bị sửa (gọi TRƯỚC thao tác). */
   sua(bang: string, dieuKien: string, ...args: unknown[]): void {
-    const truoc = this.conn.prepare(`SELECT rowid AS __r, * FROM ${bang} WHERE ${dieuKien}`).all(...args) as Dong[];
+    this.suaDong(bang, this.conn.prepare(`SELECT rowid AS __r, * FROM ${bang} WHERE ${dieuKien}`).all(...args) as Dong[]);
+  }
+  /** Như `sua` nhưng dòng đã đọc sẵn (lưu nhiều lớp đọc một lần cho cả lô): mỗi dòng phải có `__r` và đúng thứ tự cột `rowid AS __r, *`. */
+  suaDong(bang: string, truoc: Dong[]): void {
     if (!truoc.length) return;
     /* PC-GV-A: cùng bảng → gộp vào MỘT mục (chụp / so / đảo theo lô một câu mỗi bảng); dòng đã chụp giữ bản chụp ĐẦU (đúng "trước"). */
     const cu = this.muc.find((m) => m.k === 'sua' && m.bang === bang);

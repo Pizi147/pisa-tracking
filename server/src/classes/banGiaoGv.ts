@@ -24,7 +24,7 @@ const inHang = (n: number) => Array.from({ length: n }, () => '?').join(',');
 export type DoiBg = { id: number; khoa: string; nguoiCu: number | null; nguoiMoi: number | null; hieuLuc: string; taoBanGiao: boolean };
 
 /** Hạn việc: 5 ngày tính cả ngày tạo; hiệu lực "Từ tuần" sau → tính từ hiệu lực (PTA 30/10: không quá hạn trước khi đổi người). */
-const hanViec = (hieuLuc: string) => { const h = demoToday(); return hanBanGiaoGv(hieuLuc > h ? hieuLuc : h); };
+const hanViec = (hieuLuc: string, h = demoToday()) => { return hanBanGiaoGv(hieuLuc > h ? hieuLuc : h); };
 
 /** Việc hết cột đang mở → `huy` (góp ý đã viết giữ làm lịch sử). */
 function dongViecHetCot(ids: readonly number[], g: GhiDao) {
@@ -42,10 +42,12 @@ function dongViecHetCot(ids: readonly number[], g: GhiDao) {
  * ③ cặp A → B còn lại có ô tích → thêm cột vào việc đang mở (lớp, A, hiệu lực), không có thì tạo việc.
  */
 export function dongBoViecBanGiao(p: Principal, o: { classId: number; ct: string | null; slotsTruoc: readonly SlotPhanCong[]; doi: DoiBg[]; thay?: readonly number[];
-  duocXep?: ReadonlyMap<number, 'nghi' | 'ngoai-cn' | null> }, g: GhiDao): number {
+  duocXep?: ReadonlyMap<number, 'nghi' | 'ngoai-cn' | null>;
+  /** Lưu nhiều lớp: ngày nghiệp vụ + cột / việc đang mở của lớp, đã đọc MỘT lần cho cả lô (`docBanGiaoLo`). */
+  san?: { homNay: string; cot: readonly any[]; viecMo: readonly { id: number; nguoi_cu: number; hieu_luc: string }[] } }, g: GhiDao): number {
   const conn = db();
-  const homNay = demoToday();
-  const cot = conn.prepare(
+  const homNay = o.san?.homNay ?? demoToday();
+  const cot = o.san?.cot ?? conn.prepare(
     `SELECT m.id, m.ban_giao_id, m.mon, m.nguoi_moi, m.doi_id, b.nguoi_cu AS bg_cu, b.hieu_luc AS bg_hl FROM ban_giao_gv_mon m JOIN ban_giao_gv b ON b.id = m.ban_giao_id
       WHERE b.class_id = ? AND b.trang_thai = 'mo' AND m.trang_thai = 'mo'`,
   ).all(o.classId) as any[];
@@ -65,7 +67,7 @@ export function dongBoViecBanGiao(p: Principal, o: { classId: number; ct: string
       /* Lịch bị thay bằng lịch khác tuần → việc theo hiệu lực (và hạn) của lịch mới. */
       if (d && d.hieuLuc !== c.bg_hl) {
         g.sua('ban_giao_gv', 'id = ?', c.ban_giao_id);
-        conn.prepare(`UPDATE ban_giao_gv SET hieu_luc = ?, han = ? WHERE id = ?`).run(d.hieuLuc, hanViec(d.hieuLuc), c.ban_giao_id);
+        conn.prepare(`UPDATE ban_giao_gv SET hieu_luc = ?, han = ? WHERE id = ?`).run(d.hieuLuc, hanViec(d.hieuLuc, homNay), c.ban_giao_id);
       }
       continue;
     }
@@ -94,13 +96,16 @@ export function dongBoViecBanGiao(p: Principal, o: { classId: number; ct: string
   for (const d of cap) nhom.set(`${d.nguoiCu}|${d.hieuLuc}`, [...(nhom.get(`${d.nguoiCu}|${d.hieuLuc}`) ?? []), d]);
   for (const ds of nhom.values()) {
     const { nguoiCu, hieuLuc } = ds[0];
-    let bg = (conn.prepare(`SELECT id FROM ban_giao_gv WHERE class_id = ? AND nguoi_cu = ? AND hieu_luc = ? AND trang_thai = 'mo' ORDER BY id DESC LIMIT 1`)
-      .get(o.classId, nguoiCu, hieuLuc) as any)?.id as number | undefined;
+    /* Việc đã đọc sẵn chỉ dùng được khi chưa có việc nào của lớp bị đóng (`dongViecHetCot`) trong lần này. */
+    let bg = (o.san && !viecCham.size
+      ? o.san.viecMo.filter((v) => v.nguoi_cu === nguoiCu && v.hieu_luc === hieuLuc).sort((a, b) => b.id - a.id)[0]
+      : conn.prepare(`SELECT id FROM ban_giao_gv WHERE class_id = ? AND nguoi_cu = ? AND hieu_luc = ? AND trang_thai = 'mo' ORDER BY id DESC LIMIT 1`)
+        .get(o.classId, nguoiCu, hieuLuc) as any)?.id as number | undefined;
     if (!bg) {
       const viet = nguoiVietBanGiao({ cuNghi: nghi(nguoiCu!), nguoiCu: nguoiCu!, gvcn, gvcnNghi: gvcn !== null && nghi(gvcn) });
       bg = Number(conn.prepare(
         `INSERT INTO ban_giao_gv (class_id, nguoi_cu, nguoi_lam, hieu_luc, han, trang_thai, tao_luc, tao_boi) VALUES (?,?,?,?,?, 'mo', ?, ?)`,
-      ).run(o.classId, nguoiCu, viet.id, hieuLuc, hanViec(hieuLuc), luc, p.userId).lastInsertRowid);
+      ).run(o.classId, nguoiCu, viet.id, hieuLuc, hanViec(hieuLuc, homNay), luc, p.userId).lastInsertRowid);
       moi += 1;
     }
     for (const d of ds) {
@@ -108,6 +113,20 @@ export function dongBoViecBanGiao(p: Principal, o: { classId: number; ct: string
     }
   }
   return moi;
+}
+
+/** Lưu nhiều lớp: cột đang mở + việc đang mở của các lớp — hai câu cho cả lô (thay vì hai câu mỗi lớp). */
+export function docBanGiaoLo(classIds: readonly number[]) {
+  const conn = db();
+  const lop = inHang(classIds.length);
+  const cot = new Map<number, any[]>(classIds.map((id) => [id, []]));
+  const viecMo = new Map<number, { id: number; nguoi_cu: number; hieu_luc: string }[]>(classIds.map((id) => [id, []]));
+  for (const r of conn.prepare(
+    `SELECT m.id, m.ban_giao_id, m.mon, m.nguoi_moi, m.doi_id, b.nguoi_cu AS bg_cu, b.hieu_luc AS bg_hl, b.class_id FROM ban_giao_gv_mon m JOIN ban_giao_gv b ON b.id = m.ban_giao_id
+      WHERE b.class_id IN (${lop}) AND b.trang_thai = 'mo' AND m.trang_thai = 'mo'`,
+  ).all(...classIds) as any[]) cot.get(r.class_id)!.push(r);
+  for (const r of conn.prepare(`SELECT id, class_id, nguoi_cu, hieu_luc FROM ban_giao_gv WHERE class_id IN (${lop}) AND trang_thai = 'mo'`).all(...classIds) as any[]) viecMo.get(r.class_id)!.push(r);
+  return { cot, viecMo };
 }
 
 /** HUỶ LỊCH ĐỔI → cột trỏ các dòng đó huỷ, việc hết cột huỷ (Hoàn tác Huỷ lịch đổi mở lại — `g` chụp). */
