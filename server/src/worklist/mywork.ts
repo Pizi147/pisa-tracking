@@ -460,7 +460,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     gvcnMap = new Map();
     const da = phanCongDaNap();
     const ds = da
-      ? da.filter((r) => r.isCore && r.tu <= today && (r.den === null || r.den >= today) && r.lopStatus === 'active' && (!f.branchId || r.branchId === f.branchId))
+      ? da.filter((r) => r.isCore && activeAt(r, today) && r.lopStatus === 'active' && (!f.branchId || r.branchId === f.branchId))
         .map((r) => ({ class_id: r.classId, user_id: r.userId }))
       : conn.prepare(
         `SELECT ta.class_id, ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id

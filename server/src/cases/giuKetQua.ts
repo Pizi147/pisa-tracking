@@ -1,6 +1,6 @@
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
-import { phanCongDaNap } from '../permissions.ts';
+import { activeAt, phanCongDaNap } from '../permissions.ts';
 import { nhomChung } from './boTro.ts';
 
 /** Một PA đủ để tìm người giữ việc Kết quả. `classId` = lớp HIỆN TẠI của em trước, lớp của lượt sau (`LOP_CUA_CASE`). */
@@ -16,9 +16,10 @@ export function nguoiGiuKetQua(rows: readonly DongGiuKetQua[], ngay: string): Ma
   const lop = (ds: readonly DongGiuKetQua[]) => [...new Set(ds.map((r) => r.classId).filter((x): x is number => x != null))];
   const gvbm = phanCongDangHieuLuc(lop(rows.filter((r) => !chung(r))), ngay);
   const gvcn = new Map<number, number>();
-  const da = phanCongDaNap(), lopChung = lop(rows.filter(chung));
-  if (da) for (const r of da) { if (r.isCore && r.tu <= ngay && (r.den === null || r.den >= ngay) && lopChung.includes(r.classId) && !gvcn.has(r.classId)) gvcn.set(r.classId, r.userId); }
-  else theoLoJson(lopChung, (json) => {
+  const da = phanCongDaNap(), lopChung = new Set(lop(rows.filter(chung)));
+  if (da) {
+    for (const r of da) if (r.isCore && activeAt(r, ngay) && lopChung.has(r.classId) && !gvcn.has(r.classId)) gvcn.set(r.classId, r.userId);
+  } else theoLoJson([...lopChung], (json) => {
     for (const r of db()
       .prepare(`SELECT class_id, user_id FROM teacher_assignments WHERE class_id IN (${DS_JSON}) AND is_core = 1 AND status = 'active'
                    AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?) ORDER BY id`)

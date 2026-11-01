@@ -3,7 +3,7 @@
  * (`ketQuaThiThat`, so với Target; lộ trình đã đóng thì so với Target trong BẢN CHỤP — Target lúc đóng). Không còn ô chọn kết luận tay.
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
-import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
+import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -163,7 +163,6 @@ export function viecThiThat(p: Principal, f: { today: string; tatCa: boolean; br
   if (!coTheGiuViecTvv(p)) return [];
   const moc = loTrinhChoKetQuaThi(f.today);
   if (!moc.length) return [];
-  const idLop = [...new Set(moc.map((x) => x.c.class_id as number | null).filter((x): x is number => !!x))];
   const lop = lopDayDu();
   const giu = nguoiGiuTvv(p, f.today);
   const out: any[] = [];

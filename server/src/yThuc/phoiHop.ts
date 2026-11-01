@@ -394,12 +394,11 @@ export function dongPhoiHopLop(classIds: number[]) {
     dem.set(l.lop, (dem.get(l.lop) ?? 0) + 1);
     for (const h of l.han) if (!hanLop.has(l.lop) || h < hanLop.get(l.lop)!) hanLop.set(l.lop, h);
   }
-  const ma = new Map<number, string>();
-  for (const classId of classIds) { const l = lopDayDu().get(classId); if (l) ma.set(classId, l.code); }
+  const lop = lopDayDu();
   for (const classId of classIds) {
     const pendingCount = dem.get(classId) ?? 0;
-    if (pendingCount > 0 && ma.has(classId)) {
-      const code = ma.get(classId)!;
+    if (pendingCount > 0 && lop.has(classId)) {
+      const code = lop.get(classId).code as string;
       lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp SOS cần xử lý`, han: hanLop.get(classId) ?? null });
     }
   }

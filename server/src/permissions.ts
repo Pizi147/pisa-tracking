@@ -144,7 +144,7 @@ export function principalTuDong(row: any): Principal {
 }
 
 /** Phân công còn hiệu lực ở ngày này. Xuất ra cho Lịch Test ("Lớp tôi dạy") — không viết lại luật. */
-export const activeAt = (a: Assignment, date: string) =>
+export const activeAt = (a: Pick<Assignment, 'effectiveFrom' | 'effectiveTo'>, date: string) =>
   a.effectiveFrom <= date && (!a.effectiveTo || a.effectiveTo >= date);
 
 /**
@@ -167,11 +167,11 @@ export function lopDayDu(): ReadonlyMap<number, any> {
 
 /** TL-VIEC: một dòng phân công `status = 'active'` (mọi lớp, mọi ngày hiệu lực) — bộ lọc ngày / GVCN / trạng thái lớp là của nơi dùng. */
 export type DongPhanCong = { id: number; classId: number; userId: number; ten: string; skill: string | null; isCore: boolean;
-  tu: string; den: string | null; branchId: number | null; lopStatus: string; code: string; ct: string | null };
+  effectiveFrom: string; effectiveTo: string | null; branchId: number | null; lopStatus: string; code: string; ct: string | null };
 
 /**
  * TL-VIEC: mọi phân công đang hoạt động, MỘT câu mỗi request. CHỈ trang đọc nhiều lớp (Công việc) gọi; hàm dùng chung đọc qua `phanCongDaNap` — trang một lớp giữ câu theo lớp của nó.
- * ponytail: cả bảng (mọi chi nhánh, cỡ bảng lớp × 5) — `nguoiGiuKetQua` nhận PA mọi chi nhánh nên không lọc được theo chi nhánh người xem.
+ * ponytail: cả bảng (SCAN ta — mọi chi nhánh, cả phân công đã kết thúc; cỡ bảng lớp × 5) — `nguoiGiuKetQua` nhận PA mọi chi nhánh nên không lọc được theo chi nhánh người xem. Bảng dày lịch sử thì thêm chỉ mục `status`.
  */
 export function phanCongDangHoatDong(): readonly DongPhanCong[] {
   return nho('pc-active', () => (db().prepare(
@@ -180,7 +180,7 @@ export function phanCongDangHoatDong(): readonly DongPhanCong[] {
        FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN users u ON u.id = ta.user_id
       WHERE ta.status = 'active' ORDER BY ta.id`,
   ).all() as any[]).map((r): DongPhanCong => ({
-    id: r.id, classId: r.class_id, userId: r.user_id, ten: r.full_name, skill: r.skill ?? null, isCore: !!r.is_core, tu: r.effective_from, den: r.effective_to ?? null,
+    id: r.id, classId: r.class_id, userId: r.user_id, ten: r.full_name, skill: r.skill ?? null, isCore: !!r.is_core, effectiveFrom: r.effective_from, effectiveTo: r.effective_to ?? null,
     branchId: r.branch_id ?? null, lopStatus: r.lop_status, code: r.code, ct: r.programme_code ?? null,
   })));
 }

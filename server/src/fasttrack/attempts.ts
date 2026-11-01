@@ -755,8 +755,8 @@ export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[
 /** QUET-THEO-KY Q1: CHỈ phép kiểm bật — `listAttempts` `kemChuaTuan` đi câu `OR` cũ để so với `UNION ALL`. */
 export const listAttemptsOrKhiKiem = { bat: false };
 
-const ATTEMPT_SELECT = `
-  SELECT a.*, s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
+const chonLuot = (them = '') => `
+  SELECT a.*, ${them} s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
@@ -766,6 +766,7 @@ const ATTEMPT_SELECT = `
     LEFT JOIN classes c ON c.id = a.class_id
     LEFT JOIN branches b ON b.id = c.branch_id
     LEFT JOIN report_periods pr ON pr.id = a.planned_period_id`;
+const ATTEMPT_SELECT = chonLuot();
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   const scope = f.phamViCham ? scopeXemLuotCham(p) : scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
@@ -811,7 +812,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
   const w = where.join(' AND ');
   /* TL-VIEC: danh sách còn ô chờ (Công việc) đọc luôn "MT mới nhất" trong câu lượt — `nhacNhanXetCua` khỏi một câu riêng; trang khác giữ hỏi lười (xuất Excel không tốn). */
-  const CHON = conO ? ATTEMPT_SELECT.replace('SELECT a.*,', `SELECT a.*, (${LA_MT_MOI_NHAT_SQL}) AS la_mt_moi,`) : ATTEMPT_SELECT;
+  const CHON = chonLuot(conO ? `(${LA_MT_MOI_NHAT_SQL}) AS la_mt_moi,` : '');
   /* `a.id` phá hoà: trùng tuần + tên thì thứ tự không còn tuỳ SQLite. Câu ghép: ORDER BY theo tên cột kết quả. */
   const rows = (tachHaiVe
     ? conn.prepare(`${CHON} WHERE ${w} AND ${CON_O_SQL}

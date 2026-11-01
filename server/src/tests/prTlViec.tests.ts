@@ -4,7 +4,7 @@
  */
 import { chupHoacSo } from './soGoc.ts';
 
-/** `/my-work?nguoi=tat-ca` QL · dòng đọc trên DB gốc, đo trên main 17c2da510 (mốc quét còn hạn, không quét) — `TV1 · dòng`. */
+/** Dòng đọc trên DB gốc, đo trên main 17c2da510 (mốc quét còn hạn, không quét) — `TV1 · dòng`. */
 const DONG_GOC: Record<string, number> = { 'QL tat-ca': 1443, QL: 1086, GVCN: 828, GVBM: 851 };
 
 export async function runPrTlViecTests(t: any) {
@@ -19,6 +19,8 @@ export async function runPrTlViecTests(t: any) {
   const { phamViXemViec } = await import('../worklist/xemViec.ts');
   const { viecTheoEmCuaLop } = await import('../classes/viecTheoEm.ts');
   const { createApp } = await import('../app.ts');
+  const { caseChuaCoNguoi } = await import('../cases/owner.ts');
+  const { dongPhoiHopLop } = await import('../yThuc/phoiHop.ts');
 
   const c = () => db() as any;
   const ids = (sql: string, ...a: unknown[]) => (c().prepare(sql).all(...a) as any[]).map((r) => r.id as number);
@@ -96,5 +98,64 @@ export async function runPrTlViecTests(t: any) {
     const dem = (r: RegExp) => cau.filter((s) => r.test(s)).length;
     const ma = dem(/^SELECT code FROM report_periods WHERE id = \?/), mt = dem(/^SELECT a\.id AS attempt_id FROM assessment_attempts a WHERE a\.id IN/), lop = dem(/^SELECT .*FROM classes( c)?( WHERE|$)/);
     assert(ma === 0 && mt === 0 && lop === 0, `mã kỳ ${ma} · MT mới nhất ${mt} · bảng lớp ${lop}`);
+  });
+
+  await checkAsync('TV · câu mới đúng thứ tự bảng + chỉ mục: Case mở · phân công · đề nghị dời', async () => {
+    const { cau } = await doGet(P.mbManager.userId, '/my-work?nguoi=tat-ca');
+    const keHoach = (dau: string) => {
+      const sql = cau.find((s) => s.startsWith(dau));
+      assert(sql, `không thấy câu ${dau}`);
+      return (c().prepare(`EXPLAIN QUERY PLAN ${sql}`).all() as any[]).map((r) => String(r.detail));
+    };
+    const scan = (kh: string[]) => kh.filter((d) => /^SCAN /.test(d));
+    const mo = keHoach('SELECT sc.*,');
+    assert(/^SCAN sc\b/.test(mo[0]) && scan(mo).length === 1, `Case mở: ${mo.join(' | ')}`);
+    for (const [b, r] of [['a', 'INTEGER PRIMARY KEY'], ['s', 'INTEGER PRIMARY KEY'], ['cur', 'idx_enr_student'], ['ac', 'INTEGER PRIMARY KEY'], ['cc', 'INTEGER PRIMARY KEY'], ['rp', 'INTEGER PRIMARY KEY']]) {
+      assert(mo.some((d) => d.startsWith(`SEARCH ${b} `) && d.includes(r)), `Case mở: bảng ${b} không đi ${r}: ${mo.join(' | ')}`);
+    }
+    const pc = keHoach('SELECT ta.id, ta.class_id, ta.user_id');
+    assert(/^SCAN ta\b/.test(pc[0]) && scan(pc).length === 1 && pc.some((d) => d.startsWith('SEARCH c ')) && pc.some((d) => d.startsWith('SEARCH u ')), `phân công: ${pc.join(' | ')}`);
+    const dn = keHoach('SELECT r.*, pr.code AS to_code');
+    assert(dn.some((d) => d.startsWith('SEARCH pr ') && d.includes('INTEGER PRIMARY KEY')), `đề nghị dời: ${dn.join(' | ')}`);
+  });
+
+  check('TV · dòng Phối hợp SOS ngoài GET: đọc bảng lớp một lần, không theo từng lớp', () => {
+    const k = c(), cau: string[] = [], goc = k.prepare;
+    const lop = ids(`SELECT id FROM classes WHERE status = 'active' ORDER BY id`);
+    k.prepare = function (this: unknown, sql: string) { cau.push(sql.replace(/\s+/g, ' ').trim()); return goc.call(this, sql); };
+    try { dongPhoiHopLop(lop); } finally { delete k.prepare; }
+    const n = cau.filter((s) => /^SELECT \* FROM classes$/.test(s)).length;
+    assert(n <= 1, `${n} câu cả bảng lớp cho ${lop.length} lớp`);
+  });
+
+  /* Hai phép cuối ghi DB (tệp DOC_LAP: bản chép bỏ khi xong) — demo không có Case chưa người / em hai ghi danh, bản chụp không chạm hai nhánh này. */
+  check('TV · Case chưa có người: dòng Công việc = caseChuaCoNguoi đọc riêng (cùng tập, cùng môn thiếu)', () => {
+    c().prepare(`UPDATE sos_cases SET owner_user_id = NULL WHERE id IN (SELECT id FROM sos_cases WHERE status != 'done' AND tam = 0 ORDER BY id LIMIT 6)`).run();
+    const qt = P.admin;
+    const rieng = caseChuaCoNguoi(qt, null);
+    assert(rieng.length > 0, 'phải có Case chưa người');
+    const w = chayTrongRequest('GET', () => myWork(qt, { nguoi: 'tat-ca' })) as any;
+    const dong = w.items.filter((i: any) => i.group === 'no_owner');
+    const ky = (ds: [number, unknown, unknown][]) => JSON.stringify(ds.sort((a, b) => a[0] - b[0]));
+    assert(ky(dong.map((i: any) => [i.caseId, i.classId, i.thieuNguoi?.mon ?? null])) === ky(rieng.map((r: any) => [r.id, r.eff_class_id ?? null, r.thieu === 'chon' ? null : r.mon])),
+      `${JSON.stringify(dong.map((i: any) => i.caseId))} ≠ ${JSON.stringify(rieng.map((r: any) => r.id))}`);
+    for (const b of ids('SELECT id FROM branches')) {
+      const a = chayTrongRequest('GET', () => myWork(qt, { nguoi: 'tat-ca', branchId: b })) as any;
+      assert(a.items.filter((i: any) => i.group === 'no_owner').length === caseChuaCoNguoi(qt, b).length, `chi nhánh ${b}`);
+    }
+  });
+
+  check('TV · em hai ghi danh active: mỗi Case một dòng Thêm PA', () => {
+    const r = c().prepare(`SELECT COALESCE(sc.student_id, a.student_id) AS sid FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+       WHERE sc.status != 'done' AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL AND COALESCE(sc.sos_level, 1) > 0 AND sc.owner_user_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled') LIMIT 1`).get() as any;
+    assert(r, 'phải có Case chưa PA');
+    const e = c().prepare(`SELECT * FROM enrollments WHERE student_id = ? AND status = 'active' LIMIT 1`).get(r.sid) as any;
+    const cot = Object.keys(e).filter((k) => k !== 'id' && k !== 'class_id');
+    const lopKhac = (c().prepare(`SELECT id FROM classes WHERE id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`).get(e.class_id, e.class_id) as any).id;
+    c().prepare(`INSERT INTO enrollments (class_id, ${cot.join(', ')}) VALUES (?, ${cot.map(() => '?').join(', ')})`).run(lopKhac, ...cot.map((k) => e[k]));
+    const w = chayTrongRequest('GET', () => myWork(P.admin, { nguoi: 'tat-ca' })) as any;
+    const khoa = w.items.filter((i: any) => i.group === 'no_plan').map((i: any) => i.key);
+    assert(khoa.length > 0 && new Set(khoa).size === khoa.length, `khoá trùng: ${khoa.join(' ')}`);
   });
 }

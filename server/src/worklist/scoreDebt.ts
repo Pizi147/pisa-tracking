@@ -1,6 +1,6 @@
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
-import { phanCongDaNap, type Principal } from '../permissions.ts';
+import { activeAt, phanCongDaNap, type Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -39,7 +39,7 @@ export function phanCongDangHieuLuc(classIds: readonly number[], ngay: string): 
   if (da) {
     const lop = new Set(classIds);
     for (const r of da) {
-      if (!lop.has(r.classId) || r.skill === null || r.tu > ngay || (r.den !== null && r.den < ngay)) continue;
+      if (!lop.has(r.classId) || r.skill === null || !activeAt(r, ngay)) continue;
       const k = `${r.classId}|${r.skill}`;
       if (!out.has(k)) out.set(k, { userId: r.userId, ten: r.ten });
     }
