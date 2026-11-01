@@ -389,21 +389,3 @@ export function viecTiepHang(cases: readonly {
     title: [d && d.han !== CHUA_CO_HAN ? d.text : v.chu, nguoi].filter(Boolean).join(' · '),
   };
 }
-
-/**
- * THẺ KỸ NĂNG TRÊN ĐIỆN THOẠI (UX-D3, mockup 24 E): kỹ năng có Case mở lên trước (Case quá hạn trước nữa), kỹ năng không Case mở và không
- * dưới kỳ vọng → thẻ gọn một dòng. Trong mỗi nhóm giữ thứ tự bảng.
- */
-export function xepTheKyNang<R extends {
-  missed: boolean | null;
-  cases: readonly { status: string; trangThaiV4?: { t: string } | null; plans?: readonly { actionOverdue?: boolean }[] }[];
-}>(rows: readonly R[]): { row: R; gon: boolean }[] {
-  const bac = (r: R) => {
-    const mo = r.cases.filter((c) => c.status !== 'done');
-    if (mo.some((c) => c.trangThaiV4?.t === 'qua-han' || (c.plans ?? []).some((p) => p.actionOverdue))) return 0;
-    return mo.length ? 1 : 2;
-  };
-  return rows.map((row, i) => ({ row, i, b: bac(row) }))
-    .sort((a, b) => a.b - b.b || a.i - b.i)
-    .map(({ row, b }) => ({ row, gon: b === 2 && row.missed !== true }));
-}
