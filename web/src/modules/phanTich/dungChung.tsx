@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { OSo } from '../../ui/OSo.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -62,6 +63,31 @@ export function OChon({ className = '', dangLoc = false, children, ...p }: Selec
         dangLoc ? 'border-[color:var(--accent)] font-bold shadow-[inset_0_0_0_1px_var(--accent)]' : 'border-[color:var(--o-nhap-vien)] font-medium'}`}>{children}</select>
       <svg aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--text-faint)]" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4 4-4" /></svg>
     </span>
+  );
+}
+
+/** V8-PT: số trong chip Đạt / SOS không gạch chân, mang màu chip (chip đã là ô bấm — mockup `.chip-so`). */
+export const SO_TRONG_CHIP = '!no-underline !text-inherit !font-semibold';
+
+/** V8-PT (D2): rỗng → một bấm sang "Toàn bộ" (cùng tham số khoảng chung với ô Thời gian); đang Toàn bộ thì không vẽ. */
+export function NutXemToanBo() {
+  const [params, setParams] = useSearchParams();
+  if (params.get('kieu') === 'toan-bo') return null;
+  const xem = () => {
+    const next = new URLSearchParams(params);
+    next.set('kieu', 'toan-bo'); next.delete('tu'); next.delete('den');
+    setParams(next, { replace: false });
+  };
+  return <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={xem}>{t('Xem Toàn bộ')}</button>;
+}
+
+/** Nút Xuất Excel cuối hàng lọc (mockup `XUAT`); 375: nút vuông 44 chỉ biểu tượng, chữ đầy đủ ở aria-label (khung C2). */
+export function NutXuat({ nhan, onClick, tat, title }: { nhan: string; onClick: () => void; tat?: boolean; title?: string }) {
+  return (
+    <button type="button" className="btn h-9 text-sm font-semibold max-sm:h-11 max-sm:w-11 max-sm:justify-center max-sm:px-0" onClick={onClick} disabled={tat} title={title ?? nhan} aria-label={nhan}>
+      <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2.5v8M4.5 7.5L8 11l3.5-3.5M3 13.5h10" /></svg>
+      <span className="max-sm:hidden">{nhan}</span>
+    </button>
   );
 }
 

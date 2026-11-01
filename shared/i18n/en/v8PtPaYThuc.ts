@@ -33,4 +33,15 @@ export const EN_V8_PT_PA_Y_THUC = {
   'Học viên cần chú ý': 'Students needing attention',
   'Lớp nhiều vi phạm': 'Classes with many violations',
   'xếp theo vi phạm chưa xử lý': 'sorted by unhandled violations',
+  /* V8-PT-2 */
+  'trung vị · PA có cải thiện': 'median · improved plans',
+  'so kỳ trước': 'vs previous period',
+  'Bậc kế': 'Next step',
+  'Lần gần nhất': 'Latest',
+  'HV có vi phạm': 'Students with violations',
+  '± kỳ trước': '± previous period',
+  'Mở theo nhóm': 'Open by group',
+  '{n} nhóm': (b) => soNhieu(b.n, 'group', 'groups'),
+  '{n} chưa xử lý': (b) => `${b.n} unhandled`,
+  'Chưa có lượt MT nào trong kỳ': 'No Mock Test attempts in this period',
 } satisfies Record<string, Dich>;

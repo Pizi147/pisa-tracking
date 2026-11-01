@@ -416,6 +416,8 @@ export type TongHopKetQua = {
   hang: DongTongHop[];
   /** Dòng Tổng = HỢP các tập (đếm duy nhất), không phải cộng các dòng — nhất là các cột học viên. */
   tong: Record<string, number>;
+  /** V8-PT-2: số em khác nhau của tập lượt dòng Tổng (thẻ "16 HV"). */
+  soHv: number;
   tongCoDot?: CoDot;
   scopeEmpty: boolean;
 };
@@ -451,6 +453,8 @@ export type HieuQuaPaKetQua = {
   };
   /** PA theo quy chế (`preset = 1`, gồm Bổ trợ) — thứ tự cố định, không so, không xếp hạng. */
   quyChe: { tomTat: { paCoKetQua: number; caiThien: number }; hang: DongHieuQuaPa[] };
+  /** V8-PT-2: thẻ "Thời gian thường mất" (tuần) trên cả hai bảng — cùng luật cột `tvTuan`; ít dữ liệu / rỗng → null. */
+  thoiGianThuongMat: number | null;
   chuaGhiKetQua: number; caseChuaPhanLoai: number;
   /** PA có kết quả mà chưa rõ em học ở đâu lúc làm PA (F03) — không vào bảng nào. */
   chuaRoNguon: number;
@@ -478,6 +482,8 @@ export type DongLopViPham = {
 export type YThucPhanTichKetQua = {
   hvCanChuY: DongHvCanChuY[]; lop: DongLopViPham[];
   gom: { soLop: number; hang: DongLopViPham[] } | null;
+  /** V8-PT-2: tổng vi phạm kỳ này − kỳ liền trước, gồm cả lớp chỉ có vi phạm kỳ trước (không có dòng trong bảng). */
+  soVoiTruoc: number;
   bienPhapTheoLoai: Record<string, number>; scopeEmpty: boolean;
 };
 

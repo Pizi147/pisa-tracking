@@ -170,6 +170,7 @@ export function yThucPhanTich(p: Principal, f: FilterYThuc): YThucPhanTichKetQua
   return {
     hvCanChuY: r.hvRows, lop: hien,
     gom: gomRows.length ? { soLop: gomRows.length, hang: gomRows } : null,
+    soVoiTruoc: [...r.lopMuc.values()].reduce((s, m) => s + m.vp.size - m.truoc, 0),
     bienPhapTheoLoai: r.bienPhapTheoLoai, scopeEmpty: r.scopeEmpty,
   };
 }
@@ -178,6 +179,17 @@ export function yThucPhanTich(p: Principal, f: FilterYThuc): YThucPhanTichKetQua
 export function oYThucPhanTich(p: Principal, f: FilterYThuc & { dong: string; cot: string }):
   { n: number; tieuDe: string; rows: MetricRow[] } {
   const r = tinh(p, f);
+  /* V8-PT-2: thẻ chỉ số — `hv-can-chu-y` = danh sách HV; `tong` = mọi lớp có vi phạm (cả nhóm "lớp khác"). */
+  if (f.dong === 'hv-can-chu-y') {
+    const ids = r.hvRows.map((x) => x.studentId);
+    return { n: ids.length, tieuDe: `${ids.length} HV cần chú ý`, rows: rowsFor('hoc-vien', ids) };
+  }
+  if (f.dong === 'tong' && f.cot === 'lop') {
+    const k = [...r.lopMuc].filter(([, m]) => m.vp.size > 0).map(([id]) => id).sort((a, b) => a - b);
+    const rows = rowsFor('lop', k.filter((id) => id > 0));
+    if (k.includes(0)) rows.push({ id: 0, title: 'Không rõ lớp', sub: '', href: '/phan-tich?goc=y-thuc' });
+    return { n: k.length, tieuDe: `${k.length} lớp có vi phạm`, rows };
+  }
   if (f.dong.startsWith('hv:')) {
     const id = Number(f.dong.slice(3));
     const t = r.hvTap.get(id);
@@ -191,6 +203,9 @@ export function oYThucPhanTich(p: Principal, f: FilterYThuc & { dong: string; co
   if (f.dong === 'gom') {
     mucs = [...r.lopMuc.values()].filter((m) => m.vp.size > 0 && !laHienRo(m));
     nhan = `${mucs.length} lớp khác`;
+  } else if (f.dong === 'tong') {
+    mucs = [...r.lopMuc.values()].filter((m) => m.vp.size > 0);
+    nhan = 'Tổng';
   } else if (f.dong.startsWith('lop:')) {
     const m = f.dong.includes('|') ? r.conMuc.get(f.dong.slice(4)) : r.lopMuc.get(Number(f.dong.slice(4)));
     if (!m || m.vp.size === 0) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');

@@ -9,7 +9,7 @@ import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { DaiChiSo, DauThe, DINH_TRAI, OChon, SoO as OSo, VaoHangLoc, type ChiSo } from './dungChung.tsx';
+import { DaiChiSo, DauThe, DINH_TRAI, NutXemToanBo, NutXuat, OChon, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, type ChiSo } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -45,8 +45,6 @@ const MAU_COT: Partial<Record<string, string>> = { chuaDu: 'text-muted' };
 const MAU_O: Record<MauOKetQua, string> = {
   dat: SCORE_CHIP.emerald, sos1: SCORE_CHIP.sos1, sos2: SCORE_CHIP.sos2, sos3: SCORE_CHIP.sos3, xam: 'text-faint',
 };
-/** V8-PT: số trong chip Đạt / SOS không gạch chân, mang màu chip (chip đã là ô bấm — mockup `.chip-so`). */
-const SO_TRONG_CHIP = '!no-underline !text-inherit !font-semibold';
 const CHIP_SO = `${CHIP_VUONG} min-w-[30px] justify-center text-[13px]`;
 
 /** Tuần con của "Theo tuần" mở theo lớp; "Theo lớp" mở theo đợt; "Theo đợt"/"Theo chi nhánh" mở theo lớp. */
@@ -70,12 +68,6 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const setTheo = (v: TheoDong) => {
     const next = new URLSearchParams(params);
     if (v === 'tuan') next.delete('theo'); else next.set('theo', v);
-    setParams(next, { replace: false });
-  };
-  /* V8-PT (D2): rỗng → một bấm sang "Toàn bộ" (cùng tham số khoảng chung với ô Thời gian). */
-  const xemToanBo = () => {
-    const next = new URLSearchParams(params);
-    next.set('kieu', 'toan-bo'); next.delete('tu'); next.delete('den');
     setParams(next, { replace: false });
   };
   /* PR-OV5b: hàng đang mở nằm trên URL (`?mo-hang=`) — Quay lại từ hồ sơ về đúng tuần đang mở. */
@@ -185,7 +177,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
    */
   const soBam = (row: DongTongHop, col: CotTongHop, vung?: string, lop?: string, nhan?: string) => {
     const v = row.o[col.khoa] ?? 0;
-    if (v <= 0) return <span className="tabular-nums text-faint">0</span>;
+    if (v <= 0) return <span className="tabular-nums font-medium text-faint">0</span>;
     const nguon = `/phan-tich/tong-hop/o?${query}&khoa=${encodeURIComponent(row.khoa)}&cot=${encodeURIComponent(col.khoa)}`;
     return <OSo giaTri={v} nguon={nguon} vung={vung} className={lop} nhan={nhan} tieuDe={`${col.nhomCon ? `${NHAN_NHOM_CON[col.nhomCon]} · ` : ''}${col.nhan(ct)} · ${row.nhan}`} />;
   };
@@ -233,20 +225,20 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     if (row.con?.length) {
       return (
         <HangNhom key={row.khoa} mo={open.has(row.khoa)} onMo={() => toggleOpen(row.khoa)} nhan={`${row.nhan} — ${NHAN_MO_CON[theo]}`}
-          tieuDe={tenDong(row)} className={DINH_TRAI}>
+          tieuDe={tenDong(row)} className={`${DINH_TRAI} [&>td]:h-11`}>
           {oSo(row)}
         </HangNhom>
       );
     }
     return (
-      <tr key={row.khoa} className={`hang-lon dong ${DINH_TRAI}`}>
+      <tr key={row.khoa} className={`hang-lon dong ${DINH_TRAI} [&>td]:h-11`}>
         <td className="px-3"><span className="flex min-w-0 items-center gap-2"><span className="inline-block h-4 w-4 shrink-0" aria-hidden />{tenDong(row)}</span></td>
         {oSo(row)}
       </tr>
     );
   };
   const dongCon = (row: DongTongHop) => (
-    <HangCon key={row.khoa} className={DINH_TRAI}>
+    <HangCon key={row.khoa} className={`${DINH_TRAI} [&>td]:h-[38px]`}>
       <td><span className="block truncate">{row.nhan}</span></td>
       {oSo(row)}
     </HangCon>
@@ -309,7 +301,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       : <span key={k} className="text-xs font-medium text-[color:var(--text-faint)]">{nhan}</span>;
   });
   const chiSo: ChiSo[] = !data ? [] : [
-    { ten: laThuong ? t('Bài kiểm tra') : t('Lượt MT'), ky: t('trong kỳ'), gt: soTong('luot'), mau: demTheo(theo, data.hang.length) },
+    { ten: laThuong ? t('Bài kiểm tra') : t('Lượt MT'), ky: t('trong kỳ'), gt: soTong('luot'), mau: `${t('{n} HV', { n: data.soHv })} · ${demTheo(theo, data.hang.length)}` },
     ...(laThuong ? [] : [
       { ten: t('Đạt'), gt: soTong('dat'), nho: luot ? `${Math.round(((tong.dat ?? 0) * 100) / luot)} %` : undefined, mau: t('trên {n} lượt', { n: luot }) },
       { ten: 'SOS', rong2: true, gt: <span className="flex flex-wrap items-center gap-1.5 py-1">{chipSos}</span>,
@@ -342,7 +334,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const rong = data && !coBang ? (
     data.scopeEmpty ? <Empty title={t('Bạn chưa được cấp phạm vi nào')} />
       : <Empty title={t('Chưa có lượt nào có điểm')} hint={khoang.kieu === 'toan-bo' ? undefined : t('trong {ky}', { ky: nhanKy })}
-          action={khoang.kieu === 'toan-bo' ? undefined : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={xemToanBo}>{t('Xem Toàn bộ')}</button>} />
+          action={<NutXemToanBo />} />
   ) : null;
 
   return (
@@ -353,13 +345,8 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       </OChon>
     </VaoHangLoc>
     <VaoHangLoc o="phai">
-      {!dienThoai && (
-        <button type="button" className="btn h-9 text-sm font-semibold" onClick={xuatExcel} disabled={khongXuat} title={lyDoKhongXuat}>
-          <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2.5v8M4.5 7.5L8 11l3.5-3.5M3 13.5h10" /></svg>
-          {t('Xuất Excel')}
-        </button>
-      )}
-      <MenuDong nhan={t('Cột hiện · Xuất kết quả từng lượt')} muc={mucMenu} lopNut="btn h-9 min-w-9 justify-center px-0 text-sm font-semibold max-sm:h-11" />
+      {!dienThoai && <NutXuat nhan={t('Xuất Excel')} onClick={xuatExcel} tat={khongXuat} title={lyDoKhongXuat} />}
+      <MenuDong nhan={t('Cột hiện · Xuất kết quả từng lượt')} muc={mucMenu} lopNut="btn h-9 min-w-9 justify-center px-0 text-sm font-semibold max-sm:h-11 max-sm:w-11" />
     </VaoHangLoc>
 
     {error ? <Card bodyClass="p-0"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
@@ -422,7 +409,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
                         {open.has(r.khoa) && r.con?.map((c) => dongCon(c))}
                       </Fragment>
                     ))}
-                    <tr className="border-t" style={{ borderColor: 'var(--line-strong)' }}>
+                    <tr className="border-t [&>td]:h-11" style={{ borderColor: 'var(--line-strong)' }}>
                       <td className="td sticky-col font-bold text-[color:var(--text)] sm:whitespace-nowrap">{tongNhan}</td>
                       {cols.map((c) => (
                         <td key={c.khoa} className={`td whitespace-nowrap text-center tabular-nums font-bold ${dauNhom.has(c.khoa) ? KE_TRAI : ''}`}>{tongDong && oCell(tongDong, c)}</td>
