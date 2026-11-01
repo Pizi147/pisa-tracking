@@ -17,7 +17,7 @@ export async function runPrTlNenTests(t: any) {
   const moc: any = await import('../platform/mocHeThong.ts');
   const ngu: any = await import('../platform/nguCanhRequest.ts');
   const { createApp } = await import('../app.ts');
-  const { bangLop } = await import('../permissions.ts');
+  const { bangLop, lopDayDu } = await import('../permissions.ts');
   const { allProgrammes, nguongDatKhacMacDinh } = await import('../normal/regular.ts');
   const { getConfig } = await import('../demoConfig.ts');
   const { moBanGoc } = await import('./dbGoc.ts');
@@ -40,7 +40,7 @@ export async function runPrTlNenTests(t: any) {
     try { await fn(); } finally { delete k.prepare; }
     return ds;
   };
-  const CAU_THAM_CHIEU = [/^SELECT id, branch_id, is_fast_track, programme_code FROM classes$/, /FROM programmes p$/, /nguong_dat IS NOT NULL/];
+  const CAU_THAM_CHIEU = [/^SELECT \* FROM classes$/, /FROM programmes p$/, /nguong_dat IS NOT NULL/];
   const coCauThamChieu = (ds: string[]) => ds.filter((s) => CAU_THAM_CHIEU.some((r) => r.test(s)));
   const CAU_QUET = [/^UPDATE moc_he_thong SET luc = \?, ngay = \?/, /FROM yeu_cau_duyet y WHERE y\.trang_thai = 'cho' AND \(/,
     /FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND tuan_bat_dau <= \?/, /FROM skill_move_requests r JOIN assessment_attempts a ON a\.id = r\.attempt_id WHERE r\.status = 'pending'/];
@@ -140,7 +140,7 @@ export async function runPrTlNenTests(t: any) {
     moc.thamChieuDayDuKhiKiem.bat = true;
     try {
       ngu.chayTrongRequest('GET', () => {
-        const moi: Record<string, () => unknown> = { 'bang-lop': bangLop, 'chuong-trinh': allProgrammes, 'nguong-dat-lop': nguongDatKhacMacDinh, 'che-do-lop': cheDo };
+        const moi: Record<string, () => unknown> = { 'bang-lop': bangLop, 'lop-day-du': lopDayDu, 'chuong-trinh': allProgrammes, 'nguong-dat-lop': nguongDatKhacMacDinh, 'che-do-lop': cheDo };
         for (const [k, v] of ds) {
           const doc = moi[k] ?? (k.startsWith('cfg:') ? () => getConfig(k.slice(4)) : null);
           assert(doc, `khoá lạ ${k}`);

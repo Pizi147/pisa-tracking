@@ -144,7 +144,7 @@ export function principalTuDong(row: any): Principal {
 }
 
 /** Phân công còn hiệu lực ở ngày này. Xuất ra cho Lịch Test ("Lớp tôi dạy") — không viết lại luật. */
-export const activeAt = (a: Assignment, date: string) =>
+export const activeAt = (a: Pick<Assignment, 'effectiveFrom' | 'effectiveTo'>, date: string) =>
   a.effectiveFrom <= date && (!a.effectiveTo || a.effectiveTo >= date);
 
 /**
@@ -155,12 +155,38 @@ export const activeAt = (a: Assignment, date: string) =>
 export function bangLop(): Map<number, { branchId: number | null; isFastTrack: boolean; ct: string | null }> {
   return nhoThamChieu('bang-lop', () => {
     const map = new Map<number, { branchId: number | null; isFastTrack: boolean; ct: string | null }>();
-    for (const r of db().prepare('SELECT id, branch_id, is_fast_track, programme_code FROM classes').all() as any[]) {
-      map.set(r.id, { branchId: r.branch_id, isFastTrack: !!r.is_fast_track, ct: r.programme_code ?? null });
-    }
+    for (const r of lopDayDu().values()) map.set(r.id, { branchId: r.branch_id, isFastTrack: !!r.is_fast_track, ct: r.programme_code ?? null });
     return map;
   });
 }
+
+/** TL-VIEC: mọi cột bảng lớp, cùng nhớ tiến trình với `bangLop` (0 câu khi phiên bản chưa đổi) — nơi đọc lớp theo mã / trạng thái. CHỈ đọc, không sửa dòng. */
+export function lopDayDu(): ReadonlyMap<number, any> {
+  return nhoThamChieu('lop-day-du', () => new Map((db().prepare('SELECT * FROM classes').all() as any[]).map((r) => [r.id as number, r])));
+}
+
+/** TL-VIEC: một dòng phân công `status = 'active'` (mọi lớp, mọi ngày hiệu lực) — bộ lọc ngày / GVCN / trạng thái lớp là của nơi dùng. */
+export type DongPhanCong = { id: number; classId: number; userId: number; ten: string; skill: string | null; isCore: boolean;
+  effectiveFrom: string; effectiveTo: string | null; branchId: number | null; lopStatus: string; code: string; ct: string | null };
+
+/**
+ * TL-VIEC: mọi phân công đang hoạt động, MỘT câu mỗi request. CHỈ trang đọc nhiều lớp (Công việc) gọi; hàm dùng chung đọc qua `phanCongDaNap` — trang một lớp giữ câu theo lớp của nó.
+ * ponytail: cả bảng (SCAN ta — mọi chi nhánh, cả phân công đã kết thúc; cỡ bảng lớp × 5) — `nguoiGiuKetQua` nhận PA mọi chi nhánh nên không lọc được theo chi nhánh người xem. Bảng dày lịch sử thì thêm chỉ mục `status`.
+ */
+export function phanCongDangHoatDong(): readonly DongPhanCong[] {
+  return nho('pc-active', () => (db().prepare(
+    `SELECT ta.id, ta.class_id, ta.user_id, u.full_name, ta.skill, ta.is_core, ta.effective_from, ta.effective_to,
+            c.branch_id, c.status AS lop_status, c.code, c.programme_code
+       FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN users u ON u.id = ta.user_id
+      WHERE ta.status = 'active' ORDER BY ta.id`,
+  ).all() as any[]).map((r): DongPhanCong => ({
+    id: r.id, classId: r.class_id, userId: r.user_id, ten: r.full_name, skill: r.skill ?? null, isCore: !!r.is_core, effectiveFrom: r.effective_from, effectiveTo: r.effective_to ?? null,
+    branchId: r.branch_id ?? null, lopStatus: r.lop_status, code: r.code, ct: r.programme_code ?? null,
+  })));
+}
+
+/** Phân công đã nạp trong request (`phanCongDangHoatDong`); chưa nạp → null, nơi gọi đọc câu riêng như cũ. Một lần ghi trong GET xoá bộ nhớ → cũng null. */
+export const phanCongDaNap = (): readonly DongPhanCong[] | null => (coKhoa('pc-active') ? phanCongDangHoatDong() : null);
 
 function branchOfClass(classId: number): number | null {
   if (coNho()) return bangLop().get(classId)?.branchId ?? null;

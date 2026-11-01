@@ -124,14 +124,20 @@ const CHU_THEO_LOP_SQL = `EXISTS (SELECT 1 FROM teacher_assignments t WHERE t.cl
     (SELECT t.user_id FROM teacher_assignments t WHERE t.class_id = cur.class_id AND t.status = 'active' AND t.skill = sc.category ORDER BY t.id LIMIT 1) AS moi_mon,
     (SELECT t.user_id FROM teacher_assignments t WHERE t.class_id = cur.class_id AND t.status = 'active' AND t.is_core = 1 ORDER BY t.id LIMIT 1) AS moi_cn`;
 
+/** K1-05: lớp có môn của Case mà chưa ai dạy môn đó → gốc là phân công. Bí danh `sc`, `a`, `cur` — dùng chung với `napCaseMo` (Công việc). */
+export const COT_THIEU_GV_MON = `EXISTS (SELECT 1 FROM class_skills cs WHERE cs.class_id = COALESCE(a.class_id, cur.class_id) AND cs.skill = sc.category)
+              AND NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = COALESCE(a.class_id, cur.class_id)
+                                AND ta.status = 'active' AND ta.skill = sc.category)`;
+export const COT_THIEU_GVCN = `NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = COALESCE(a.class_id, cur.class_id) AND ta.status = 'active' AND ta.is_core = 1)`;
+
 /**
  * CV-LOI: CASE CHƯA CÓ NGƯỜI PHỤ TRÁCH mà người xem phải xử lý — MỘT nguồn cho dòng việc Công việc (`no_owner`) và số Tổng quan
  * (`case-chua-co-nguoi-phu-trach`): cùng tập, cùng quyền (lớp: `class.assign`; em không có lớp: `case.approve`), cùng lọc (em đang học, Case không tạm).
  * `thieu`: `gv-mon` (lớp có môn mà chưa ai dạy — panel Phân công môn đó) · `gvcn` (lớp chưa có GVCN) · `chon` (dự phòng: lớp đủ người mà Case vẫn
- * trống — dữ liệu cũ, hoặc em không có lớp — mở hồ sơ em).
+ * trống — dữ liệu cũ, hoặc em không có lớp — mở hồ sơ em). `coSan`: dòng đã đọc cùng câu Case mở của Công việc (TL-VIEC, `napCaseMo`).
  */
-export function caseChuaCoNguoi(p: Principal, branchId?: number | null) {
-  const rows = db().prepare(
+export function caseChuaCoNguoi(p: Principal, branchId?: number | null, coSan?: readonly any[]) {
+  const rows = coSan ?? db().prepare(
     `SELECT sc.id, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.topic, sc.category,
             sc.detected_at, sc.created_at, sc.attempt_id,
             COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -139,11 +145,8 @@ export function caseChuaCoNguoi(p: Principal, branchId?: number | null) {
             COALESCE(ac.branch_id, cc.branch_id, s.branch_id) AS eff_branch_id,
             COALESCE(ac.code, cc.code) AS class_code,
             s.full_name, a.attempt_no, a.kind AS attempt_kind,
-            /* K1-05: lớp có môn của Case mà chưa ai dạy môn đó → gốc là phân công. */
-            EXISTS (SELECT 1 FROM class_skills cs WHERE cs.class_id = COALESCE(a.class_id, cur.class_id) AND cs.skill = sc.category)
-              AND NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = COALESCE(a.class_id, cur.class_id)
-                                AND ta.status = 'active' AND ta.skill = sc.category) AS thieu_gv_mon,
-            NOT EXISTS (SELECT 1 FROM teacher_assignments ta WHERE ta.class_id = COALESCE(a.class_id, cur.class_id) AND ta.status = 'active' AND ta.is_core = 1) AS thieu_gvcn
+            ${COT_THIEU_GV_MON} AS thieu_gv_mon,
+            ${COT_THIEU_GVCN} AS thieu_gvcn
        FROM sos_cases sc
        LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
        JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
