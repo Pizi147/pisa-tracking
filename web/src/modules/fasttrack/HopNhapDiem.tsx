@@ -186,8 +186,16 @@ function SoCau({ cell }: { cell: Cell }) {
   return <span className="block text-[12px] leading-4 text-slate-500 tabular-nums" data-phu-odiem="">{t('{rawScore} câu', { rawScore: cell.rawScore })}</span>;
 }
 
-export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: Omit<HopProps, 'anchor' | 'onDong'> & {
+/** DON-HINH B6: chữ "vắng W2 SEP" của ô (đúng hai đường dòng phụ của `ODiemMt`) — để hàng gộp một lần (`gopVangHang`). */
+export function chuVangO(c: Cell, tuanXem: string | null | undefined, homNay: string | null): string | null {
+  if (c.daChot) return c.daChot.doiSang && !oVangCua(c, tuanXem) ? chuDoiVang(c.daChot.tuTuan, homNay) : null;
+  return c.noShow?.state === 'khong-co-bai' ? null : chuDoiVang(c.doiTu);
+}
+
+export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = false, ...hop }: Omit<HopProps, 'anchor' | 'onDong'> & {
   lon?: boolean; mo: boolean; onMo: (mo: boolean) => void;
+  /** DON-HINH B6: hàng đã ghi "vắng W2 SEP" một lần — ô không lặp. */
+  anVang?: boolean;
   /** Giữ cho nơi gọi cũ — BANG-1: mọi ô kỹ năng cùng một dáng (số 15 / 700). */
   chinh?: boolean;
   /** ✓ / ✗ so kỳ vọng ĐỨNG TRƯỚC band — chỉ lưới có cột Kỳ vọng (04 mục 7: W1 / W2 cũng có). */
@@ -204,9 +212,9 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, ...hop }: O
   /* MỘT dòng phụ (04 mục 7): vắng lần n / đếm ngược "-" > chữ thứ hai của ô > n câu (thiếu nhận xét = viền vàng, không chữ). */
   const thiBu = !!cell.daChot?.doiSang && !vangGoc;
   const coDongDau = (thiBu && !!cell.daChot) || (cell.noShow?.state === 'khong-co-bai' && !cell.daChot);
-  const phu = coDongDau ? <DongDau cell={cell} thiBu={thiBu} />
+  const phu = coDongDau && !(anVang && thiBu) ? <DongDau cell={cell} thiBu={thiBu} />
     /* NEN-SUA (nợ #544): ô đã có điểm ở tuần thi bù giữ "vắng W3 SEP" (thay "n câu"). */
-    : cell.doiTu ? <span className="-mx-2 block whitespace-nowrap text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDoiVang(cell.doiTu)}</span>
+    : cell.doiTu && !anVang ? <span className="-mx-2 block whitespace-nowrap text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDoiVang(cell.doiTu)}</span>
     : h.phu ? <span className="block text-xs leading-4 text-slate-400" data-phu-odiem="">{h.phu}</span>
     : <SoCau cell={cell} />;
   if (!suaDuoc(cell)) {

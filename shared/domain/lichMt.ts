@@ -244,6 +244,11 @@ export function chuDoiVang(tuanCu: string | null | undefined, homNay?: string | 
   return t('vắng {tuan}', { tuan: (iso ? tuanLich(iso, homNay) : tuanCu.replace(/ \d{4}$/, '')).replace(' ', '\u00a0') });
 }
 
+/** DON-HINH B6: chữ vắng của các ô một hàng — từ hai ô trở lên, ô nào cũng vắng cùng tuần thì gộp một chữ; khác → null (mỗi ô tự ghi). */
+export function gopVangHang(chu: readonly (string | null)[]): string | null {
+  return chu.length > 1 && chu[0] && chu.every((x) => x === chu[0]) ? chu[0] : null;
+}
+
 /** Một lượt cần lưu ở tab "Xếp theo học viên" (PR-XTHV): tuần sớm nhất trước / sau khi sửa; `taoMoi` = lượt chưa có (đi `/xep-moi`). */
 export type BuocLuuLuot = { attemptNo: number; cu: string | null; moi: string; taoMoi: boolean };
 

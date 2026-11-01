@@ -124,7 +124,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct?:
         const a = Math.min(...ngay), b = Math.max(...ngay);
         return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi,
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
-          den: `/cong-viec?nhom=cham-diem&loc=qua-han&khung=${khung}${cn}` };
+          den: `/cong-viec?nhom=cham-diem&loc=qua-han&nguoi=tat-ca&khung=${khung}${cn}` };
       }
       /* UX-2 (2): Case chưa chốt PA quá hạn — cùng cách ghi hạn; nút mở danh sách Case của chỉ số (panel, `den` null). */
       if (x.metricId === 'phoi-hop-qua-han' || x.metricId === 'case-xac-dinh-nguyen-nhan-qua-han') {
@@ -132,7 +132,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct?:
         const a = Math.min(...ngay), b = Math.max(...ngay);
         return { ...x, phu: tachTheoLop(r.unit, r.ids), nguoi,
           han: ngay.length ? { chu: a === b ? `quá hạn ${a} ngày` : `quá hạn ${a}–${b} ngày`, quaHan: true as const } : chuaCoHan,
-          den: x.metricId === 'phoi-hop-qua-han' ? `/cong-viec?loai=phoi_hop_sos&loc=qua-han&khung=${khung}${cn}` : null };
+          den: x.metricId === 'phoi-hop-qua-han' ? `/cong-viec?loai=phoi_hop_sos&loc=qua-han&nguoi=tat-ca&khung=${khung}${cn}` : null };
       }
       /* pa-can-cap-nhat: "PA chưa ghi kết quả tuần W4 SEP" — tuần của hạn cũ nhất (Q25); dòng phụ theo khung. */
       const lop = lopCuaTap(r.unit, r.ids);
@@ -142,7 +142,7 @@ export function tongQuanQuanLy(p: Principal, f: { branchId?: number | null; ct?:
         nhan: r.hanCu ? `${x.nhan} ${tuanCuaHanGhiKetQua(r.hanCu, today)}` : x.nhan,
         phu: [soFt ? `Fast Track ${soFt}` : '', soThuong ? `Lớp thường ${soThuong}` : ''].filter(Boolean).join(' · '),
         nguoi, han: r.hanCu ? { ngay: r.hanCu, loai: 'cap-nhat-pa' as const } : chuaCoHan,
-        den: `/cong-viec?loai=ghi_ket_qua_pa&loc=qua-han&khung=${khung}${cn}` };   // OV-11f (TQ-2): lọc đúng loại việc, không cả nhóm
+        den: `/cong-viec?loai=ghi_ket_qua_pa&loc=qua-han&nguoi=tat-ca&khung=${khung}${cn}` };   // OV-11f (TQ-2): lọc đúng loại việc, không cả nhóm
     }
     const chung = { nguoi: 'ban' as const, han: chuaCoHan };
     switch (x.metricId) {

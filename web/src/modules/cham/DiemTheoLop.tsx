@@ -67,6 +67,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
 
   const [chiOTrong, setChiOTrong] = useState(() => !!locBanDau || docChiOTrong());
   const [mon, setMon] = useState<string | null>(null);
+  const [motKyNang, setMotKyNang] = useState(false);   // DON-HINH A1: 375 dạng một kỹ năng đã có hàng chip riêng
   const [chiCu, setChiCu] = useState(locBanDau === 'cu');
   /* "MT cũ" chỉ áp ở lượt của link; bỏ tích ô thì về như thường. */
   const locCu = chiOTrong && chiCu && luot === luotBanDau;
@@ -215,7 +216,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
           </div>
         )}
 
-        {chonMon && b && <ChonMon b={b} mon={mon} onMon={setMon} />}
+        {chonMon && b && !motKyNang && <ChonMon b={b} mon={mon} onMon={setMon} />}
 
         <label className="inline-flex items-center gap-2 text-sm self-start min-h-[44px] sm:min-h-0 cursor-pointer">
           <input type="checkbox" checked={chiOTrong}
@@ -240,7 +241,7 @@ export function DiemTheoLop({ classId, luotBanDau, locBanDau, gon = false, congR
                     <BaoDangLuuContext.Provider value={baoLuu}>
                       <DongThiContext.Provider value>
                         <LuoiChamLop data={b} kind={null} onReload={daLuuO} gon datConTro={false}
-                          chiAttempt={chiAttempt} hangMo={hangMo} anNutTao chiCot={mon ? [mon] : null} nutCaLop={false} />
+                          chiAttempt={chiAttempt} hangMo={hangMo} anNutTao chiCot={mon ? [mon] : null} nutCaLop={false} onMotKyNang={setMotKyNang} />
                       </DongThiContext.Provider>
                     </BaoDangLuuContext.Provider>
                   </div>

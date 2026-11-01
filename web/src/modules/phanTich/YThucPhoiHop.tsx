@@ -21,9 +21,7 @@ import {
  * V8-PT (khung B3): thẻ chỉ số đầu tab — HV cần chú ý đếm từ danh sách HV; Vi phạm · Chưa xử lý · Lớp có vi phạm CỘNG từ bảng Lớp (cùng số).
  * V8-PT-2: số thẻ bấm mở panel (`dong=tong` · `hv-can-chu-y`, chỉ gọi khi mở); 375: hai bảng thành thẻ `TheDong`, không cuộn ngang (mockup luật C1 — tab này không có khung 375).
  */
-const nhanNhom = (x: DongHvCanChuY) => (x.nhom === 'qua_han'
-  ? <Nhan tone="late">{NHOM_EM_LABEL.qua_han}</Nhan>
-  : <Nhan tone={x.nhom === 'bat_buoc' ? 'soon' : 'muted'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>);
+const nhanNhom = (x: DongHvCanChuY) => <Nhan tone={x.nhom === 'qua_han' ? 'late' : x.nhom === 'bat_buoc' ? 'soon' : 'muted'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>;
 
 export function YThucPhoiHop(props: PhamViPhanTich) {
   const demoDate = useNgayNghiepVu().homNay || null;
