@@ -14,6 +14,7 @@ import { t as tl } from '../../../shared/i18n/index.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { diemTuMock } from '../worklist/diemDong.ts';
 import type { MetricRow } from '../worklist/metrics.ts';
+import { nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { classScopeSql, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
 import { diemCuaLuot, loadBundle, resultOf } from '../fasttrack/attempts.ts';
@@ -32,10 +33,13 @@ function phamVi(p: Principal) {
 
 const NHAN_KN_NGAN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 
-/** Lượt Mock (lớp FT) trong khoảng, trong phạm vi Phân tích. "Đã có ít nhất một band" lọc ở `mockTrongKhoang` sau khi nạp điểm (không EXISTS theo từng lượt). */
-export function luotMockKhoang(p: Principal, f: LocKetQuaThi): any[] {
+/**
+ * Lượt Mock (lớp FT) trong khoảng, trong phạm vi Phân tích. "Đã có ít nhất một band" lọc ở `mockTrongKhoang` sau khi nạp điểm (không EXISTS theo từng lượt).
+ * `kemMt0` (TL-TQ): thêm MT0 mọi lớp — tập của Kết quả MT, Tổng quan đọc chung một lần với Đạt MT.
+ */
+export function luotMockKhoang(p: Principal, f: LocKetQuaThi, kemMt0 = false): any[] {
   const cs = classScopeSql(phamVi(p));
-  const where = [cs.sql, `a.status != 'cancelled'`, `a.kind = 'mock'`, 'c.is_fast_track = 1', 'rp.week_start >= ?', 'rp.week_start <= ?'];
+  const where = [cs.sql, `a.status != 'cancelled'`, kemMt0 ? `(a.kind = 'mt0' OR (a.kind = 'mock' AND c.is_fast_track = 1))` : `a.kind = 'mock' AND c.is_fast_track = 1`, 'rp.week_start >= ?', 'rp.week_start <= ?'];
   const args: unknown[] = [...cs.params, mondayOf(f.tu), mondayOf(f.den)];
   if (f.branchId) { where.push('c.branch_id = ?'); args.push(f.branchId); }
   if (f.classId) { where.push('c.id = ?'); args.push(f.classId); }
@@ -51,12 +55,15 @@ export function mockTrongKhoang(p: Principal, f: LocKetQuaThi, o: { luot?: any[]
   const diem = diemCuaLuot(tat.map((a) => a.id));
   const luot = tat.filter((a) => diem.get(a.id)?.some((s) => s.band !== null));
   if (!luot.length) return [];
-  const conn = db();
-  const ten = new Map<number, string>();
-  theoLoJson([...new Set(luot.map((a) => a.student_id as number))], (json) => {
-    for (const s of conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${DS_JSON})`).all(json) as any[]) ten.set(s.id, s.full_name);
+  /* TL-TQ: tên nhớ theo em trong request — Đạt MT, Kết quả MT, Báo cáo hỏi lại cùng các em. */
+  const ten = nhoTheoId('ten-hv:', [...new Set(luot.map((a) => a.student_id as number))], (thieu) => {
+    const m = new Map<number, { full_name: string }[]>();
+    theoLoJson(thieu, (json) => {
+      for (const s of db().prepare(`SELECT id, full_name FROM students WHERE id IN (${DS_JSON})`).all(json) as any[]) m.set(s.id, [s]);
+    });
+    return m;
   });
-  const bundle = loadBundle(luot.map((a) => a.id));
+  const bundle = loadBundle(luot.map((a) => a.id), { boCase: true });   // TL-TQ: Case đọc riêng qua `listCases` bên dưới
   const kq = new Map(luot.map((a) => [a.id as number, resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? [])]));
 
   /* Case của lượt (sinh từ lượt) — chỉ chi nhánh có lượt SOS, một `listCases` mỗi chi nhánh như Đang SOS. */
@@ -77,7 +84,7 @@ export function mockTrongKhoang(p: Principal, f: LocKetQuaThi, o: { luot?: any[]
     const viecTiep = t?.viecTiep ? [t.viecTiep.chu, c?.ownerName].filter(Boolean).join(' · ')
       : ket === 'chua-du' && thieu.length ? `Nhập điểm ${thieu.join(', ')}` : null;
     return {
-      attemptId: a.id, studentId: a.student_id, ten: ten.get(a.student_id) ?? '', classId: a.class_id, lop: a.class_code ?? '', mt: a.attempt_no, tuan: a.week_start,
+      attemptId: a.id, studentId: a.student_id, ten: ten.get(a.student_id)?.[0].full_name ?? '', classId: a.class_id, lop: a.class_code ?? '', mt: a.attempt_no, tuan: a.week_start,
       ovr: r.overall, kyVong: r.expectation,
       /* PANEL-MC: môn em đã bỏ (P8, `kyNangDaBo` — cùng luật mức SOS) không ✓ / ✗. */
       kn: Object.fromEntries(KN_THI.map((k) => {

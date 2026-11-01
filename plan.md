@@ -255,6 +255,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Merge:** PR máy chủ / phép kiểm (TL-VIEC, TL-TQ, CN-3) PTA tự merge khi rà đạt + check xanh; PR-D, V8-PT-2, DON-HINH chờ chủ SP duyệt ảnh. Không deploy.
 
 - **[XM] V8-PT-2 (`docs/anh/v8-pt-2/khop-khac.md`), chờ chủ SP:** thẻ "Thời gian thường mất" tính PA có cải thiện, dưới 5 PA ghi "—" (theo mockup + cột bảng; kế hoạch ghi "PA có kết quả") · panel thẻ Kết quả Test 6 câu nghiệp vụ (kế hoạch ≤ ~4) · Phân tích GV chưa có Xem Toàn bộ khi rỗng · `do-khung` chưa có kịch bản riêng 5 tab Phân tích (đưa vào DO-KHUNG-DO cùng lỗi g1 bảng đầu cột `rowSpan`).
+- **Kết quả đêm 01/11:** merge #765 CN-3 · #770 TL-VIEC (`/my-work` QL 54 → 39 câu) · #769 TL-TQ (`/tong-quan/v5?ct=ft` QL 53 → 40 câu). Chờ chủ SP duyệt ảnh: #767 PR-D (~83 %), #768 V8-PT-2 (96 %, 3 câu hỏi trong PR). Mở được TL-HVL, V8-HSL-2 sau #767.
+- **Để sau:** chỉ mục `status` cho `teacher_assignments` nếu bảng dày lịch sử (`phanCongDangHoatDong` SCAN cả bảng, #770) — cần migrate. Còn > 30 câu theo đo: `/my-work` QL 39, `viec-theo-em` QL 46, `/tong-quan/v5?ct=ft` QL 40, `kemBaoCao=1` QL 58 → S1 xét sau một tuần log.
 
 ### 31/10 chiều — PTA Plan rà toàn bộ (đối chiếu mã thật, main 0f01f541d)
 - **#761 PANEL-RIENG ĐÃ MERGE** (31/10, chủ SP đồng ý 2 KHÁC: Xét lại 375 môn 2 × 2 · Phân công đổi trang; check gộp main 4974/4974). Còn chưa xác minh (không phải luồng chính): panel "PA chưa có kết quả", dòng "chưa phân công" (demo 0 dòng); chưa chạy `audit`, `web-design-guidelines`, `/ponytail-review`.
@@ -727,6 +729,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 01/11 | TL-VIEC · Opus 5.5 | `myWork` nạp chung một lần mỗi request: `/my-work` QL 54 → 39 câu, `tat-ca` 64 → 44, GV 46 → 33; so bản chụp 409 khoá, 0 khác |
 | 27/10/2026 | SV-BAI-LOP-2 (Opus 5.5) · `claude/dazzling-goodall-1sbh8w` | M5 PR ① máy chủ: Tiến độ trên lớp cần ít nhất một trong nhận xét / kết quả (PTA sửa: nhận xét KHÔNG bắt buộc, chủ SP 27/10) (x/y hoặc band), tên bài tuỳ chọn (migrate `prSvBaiLop2` dựng lại bảng); GET trả `gopY[]`; Hoàn tác Thêm PA `POST /interventions/:id/hoan-tac-them` (10 s, người thêm). |
 | 27/10/2026 | HSL-MAY-CHU (Opus 5.5) · `claude/zealous-sagan-h6cvma` | M4 PR 1 máy chủ: `GET /attempts/:id` thêm `sEx` cùng tuần + `lopHienTai`; `GET /regular/attempts/:id` = một dòng `regularSheet` + lịch sử lịch / điểm + người nhập; lượt thường mới ghi lịch sử "created". |
 | 27/10/2026 | R1-EN-2b (Opus 5.5) · `claude/r1-en-2b` | Tiếng Anh Lịch Test sau PHAN-CAP-TEST: chữ sót (MT{n} · n em, Thu / Xem), ghi chú vắng một dòng (1440), chip "SOS n prov." (375); do-khung EN không còn chữ Việt, lỗi khung còn lại = bản Việt. |

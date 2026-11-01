@@ -113,7 +113,7 @@ Từ vựng nghiệp vụ dùng chung: `shared/domain/` (xuất qua `shared/doma
 - `server/src/migrate/` — mỗi đợt một tệp `pr<Ma>.ts`, gọi theo thứ tự từ `server/src/migrate.ts`; `server/src/migrate/run.ts` = `npm run migrate`. Chạy lặp an toàn. Bảng gốc: `server/src/schema.sql`.
 - `server/src/seed/` — bộ demo (mục dưới); `<tínhNăng>Seed.ts` = dữ liệu demo theo tính năng, gọi từ `seed.ts`.
 - `server/src/ops/` — lệnh `npm run …`: `run*.ts` là điểm chạy, luật ở tệp cùng tên (initBanChinh, runInit, themChiNhanh, saoLuu, runSaoLuu, khoiPhuc, runKhoiPhuc, thuTurso, xoaKhoTep, kiemSauInit, chotVangDinhKy, demBoTroTrung, kiemOLop, kiemDuLieuMt, kiemTieuChiLe). Lệnh kiểm trước một lần (`kiem-truoc-*`) đã xoá sau deploy 28/10 (GON-MA-3) — cần thì lấy lại từ git.
-- `server/src/tests/` — `chayNhom.ts` = phần phép kiểm của `npm run check` / `npm test`: chạy `run.ts` chia `PISA_SO_NHOM` nhóm song song (mặc định 3; `=1` một tiến trình) + `tocDo.run.ts` cùng lúc. `run.ts` gọi mọi `*.tests.ts`; `PISA_CHI_TEP=a,b` chạy riêng vài tệp. `dbGoc.ts` (CN-1/2): DB chụp ngay sau seed; mọi tệp trừ `GIU_CHUOI` của `run.ts` chạy trên bản chép mới của nó (`PISA_DOC_LAP=a,b` thử), chia nhóm tham lam theo `THOI_GIAN_MS` (`chiaThamLam`); tệp đứng trước prTk có thêm phép `[BB] <tệp>` (`batBienDb`). Tệp phép kiểm mới phải tự dựng dữ liệu (không dựa vào tệp khác).
+- `server/src/tests/` — `chayNhom.ts` = phần phép kiểm của `npm run check` / `npm test`: chạy `run.ts` chia `PISA_SO_NHOM` nhóm song song (mặc định 3; `=1` một tiến trình) + `tocDo.run.ts` cùng lúc. `run.ts` gọi mọi `*.tests.ts`; `PISA_CHI_TEP=a,b` chạy riêng vài tệp. `soGoc.ts` (TRANG-LON): so bản chụp gốc (`PISA_CHUP_GOC` / `PISA_SO_GOC`). `dbGoc.ts` (CN-1/2): DB chụp ngay sau seed; mọi tệp trừ `GIU_CHUOI` của `run.ts` chạy trên bản chép mới của nó (`PISA_DOC_LAP=a,b` thử), chia nhóm tham lam theo `THOI_GIAN_MS` (`chiaThamLam`); tệp đứng trước prTk có thêm phép `[BB] <tệp>` (`batBienDb`). Tệp phép kiểm mới phải tự dựng dữ liệu (không dựa vào tệp khác).
 
 ---
 
@@ -419,6 +419,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | TL-NEN: mốc chung toàn hệ thống (bảng tham chiếu nhớ theo tiến trình, khoá phiên bản DB · quét đường đọc theo mốc 60 s / sau ghi / sang ngày) | `server/src/platform/mocHeThong.ts` (`nhoThamChieu`, `quetTheoMoc`, `COT_MOC` đọc kèm câu phiên `auth.ts`) · bảng `moc_he_thong` + trigger `tg_tc_*` — migrate `server/src/migrate/prTlNen.ts` · móc xoá mốc sau ghi `routes/index.ts` |
 | Kết nối, đếm câu / dòng, nhớ câu lệnh (libsql rò bộ nhớ) | `server/src/db.ts` (`db`, `tx`, `demDong`) |
 | Log `[cham]`, hạn 10 giây Netlify | `server/src/app.ts` (`demGio`) · `server/src/platform/hanGio.ts` |
+| TL-VIEC: Công việc nạp chung một lần mỗi request (phân công `phanCongDangHoatDong`, Case mở `napCaseMo`, bảng lớp `lopDayDu`) · so bản chụp gốc | `server/src/permissions.ts` · `server/src/worklist/mywork.ts` · `server/src/tests/soGoc.ts` |
 | Đường đo × vai, trần câu SQL / dòng | `server/src/tests/tocDoDuong.ts` (`DUONG_DO`, `TRAN`) · `server/src/tests/tocDo.run.ts` |
 | Tải lại mảnh JS sau deploy | `web/src/lib/taiLaiManh.ts` (`lazyTai`) |
 | Đo khung / bảng trên trang thật, miễn lỗi đã biết | `scripts/do-khung.mjs` · `scripts/do-bang.mjs` · `scripts/mien-do.json` |

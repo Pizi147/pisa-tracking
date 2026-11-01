@@ -1,5 +1,6 @@
 import { phamViXemViec } from './xemViec.ts';
-import { caseChuaCoNguoi } from '../cases/owner.ts';
+import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
+import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, theoLo } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
@@ -11,7 +12,7 @@ import {
   type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demViec, nhomViecCua, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, forbidden } from '../util.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -21,7 +22,7 @@ import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
-import { boKetQuaChoMiniTest, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
+import { boKetQuaChoMiniTest, henTyLe, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { emXetLaiLoTrinh } from '../normal/xetLai.ts';
 import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
@@ -359,6 +360,42 @@ function nhanDot(kind: string | null | undefined, no: number | null | undefined,
   return nhanDotNgan(kind, no) ?? macDinh;
 }
 
+const NOI_CASE = `LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id`;
+const COT_CASE = `COALESCE(sc.student_id, a.student_id) AS eff_student_id,
+              COALESCE(a.class_id, cur.class_id) AS eff_class_id, cur.class_id AS lop_dang_hoc,
+              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
+              COALESCE(ac.code, cc.code) AS class_code,
+              s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due, rp.week_start AS tuan_thi`;
+/** TL-VIEC: Case chưa có người — cùng WHERE với `caseChuaCoNguoi`. */
+const CHUA_CO_NGUOI = `(sc.owner_user_id IS NULL AND sc.tam = 0 AND ${HV_DANG_HOC_SQL('s')})`;
+
+/**
+ * TL-VIEC: MỌI Case mở, MỘT câu mỗi request — trước năm câu `sos_cases` ở năm khối. Cờ tính bằng ĐÚNG luật SQL cũ của từng khối (không dịch sang JS):
+ * `la_no_plan` (Thêm PA) · `la_cause` (Xác nhận / Mô tả Case) · `chua_co_nguoi` (`caseChuaCoNguoi`, kèm `cn_du` + hai cột thiếu người). `current_class_id` + `attempt_class_id` cho `ctxSuaCaseNhieu`.
+ * Một dòng mỗi (Case, ghi danh `active`) như các câu cũ — `la_no_plan` tự gom theo Case (cũ `GROUP BY sc.id`).
+ */
+function napCaseMo(): any[] {
+  return nho('case-mo', () => db().prepare(
+    `SELECT sc.*, ${COT_CASE}, a.class_id AS attempt_class_id,
+            COALESCE(ac.branch_id, cc.branch_id, s.branch_id) AS cn_du,
+            (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS iv_count,
+            (SELECT e.class_id FROM enrollments e WHERE e.student_id = COALESCE(sc.student_id, a.student_id) AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS current_class_id,
+            (COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0   /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt */
+              AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active') AS la_no_plan,   /* K3-41: em Tạm dừng dừng hạn */
+            (${HV_DANG_HOC_SQL('s')} AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
+              AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')) AS la_cause,
+            ${CHUA_CO_NGUOI} AS chua_co_nguoi,
+            CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GV_MON} END AS thieu_gv_mon,
+            CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GVCN} END AS thieu_gvcn
+       FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done' ORDER BY sc.id`,
+  ).all() as any[]);
+}
+
 /**
  * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
@@ -375,6 +412,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   const conn = db();
   quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo QL tự tạo — một lần mỗi request
+  if (coNho() && !f.chiNhom) phanCongDangHoatDong();   // TL-VIEC: năm nơi đọc phân công lọc từ một câu; dựng một phần (`chiNhom`: chuông, TVV) giữ câu riêng, ít dòng hơn
   const items: WorkItem[] = [];
   const co = (...g: WorkGroupKey[]) => !f.chiNhom || g.some((x) => f.chiNhom!.has(x));
   /*
@@ -420,13 +458,16 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const gvcnLop = (): Map<number, number> => {
     if (gvcnMap) return gvcnMap;
     gvcnMap = new Map();
-    for (const r of conn.prepare(
-      `SELECT ta.class_id, ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
-        WHERE ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
-          AND c.status = 'active' AND (? IS NULL OR c.branch_id = ?) ORDER BY ta.id`,
-    ).all(today, today, f.branchId ?? null, f.branchId ?? null) as any[]) {
-      if (!gvcnMap.has(r.class_id) && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id })) gvcnMap.set(r.class_id, r.user_id);
-    }
+    const da = phanCongDaNap();
+    const ds = da
+      ? da.filter((r) => r.isCore && activeAt(r, today) && r.lopStatus === 'active' && (!f.branchId || r.branchId === f.branchId))
+        .map((r) => ({ class_id: r.classId, user_id: r.userId }))
+      : conn.prepare(
+        `SELECT ta.class_id, ta.user_id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+          WHERE ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
+            AND c.status = 'active' AND (? IS NULL OR c.branch_id = ?) ORDER BY ta.id`,
+      ).all(today, today, f.branchId ?? null, f.branchId ?? null) as any[];
+    for (const r of ds) if (!gvcnMap.has(r.class_id) && can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id })) gvcnMap.set(r.class_id, r.user_id);
     return gvcnMap;
   };
 
@@ -663,7 +704,69 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND ${HV_DANG_HOC_SQL('s')}`,   /* K3-41: em Tạm dừng dừng hạn */
     )
     .all(addDays(today, 2)) as any[];
-  napTruocPhamVi(ghiKetQua.map((r) => r.eff_student_id));
+  /*
+   * TL-VIEC · PHA ĐỌC: mọi nguồn dòng việc đọc TRƯỚC (đoạn này không có ghi; đọc lại Mốc PA quy chế ở mục riêng sau `dienMocQuyChe`), rồi MỘT lần nạp phạm vi em / chủ Case /
+   * tỷ lệ cho cả tập; pha DỰNG phía dưới giữ nguyên thứ tự `items.push`.
+   */
+  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo() : [];
+  /* Một dòng mỗi Case (em hai ghi danh `active` có hai dòng ở `caseMo`). */
+  const caseRows = !co('no_plan') ? [] : [...new Map(caseMo.filter((c) => c.la_no_plan).map((c) => [c.id, c])).values()];
+  /* RA-LUONG-8 (N8 ④): Case tạm (em KCK, lượt chưa chốt) không sinh việc "Mô tả Case" — cùng `CASE_THAT` như mọi câu đếm. */
+  const causeCandidates = !co('cause', 'ghi_nhan_xet') ? [] : caseMo.filter((c) => c.la_cause);
+  const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
+    .prepare(
+      `SELECT sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id, sc.kck,
+              ${COT_CASE}, iv.id AS iv_id, iv.kind AS iv_kind, iv.description AS iv_mo_ta, iv.performer_user_id AS iv_nguoi_id, iv.so_buoi AS iv_so_buoi,
+              COALESCE(pu.full_name, iv.performer_name) AS iv_nguoi
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${NOI_CASE} LEFT JOIN users pu ON pu.id = iv.performer_user_id
+        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
+          AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
+          AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */`,
+    )
+    .all() as any[];
+  /* Chỉ người có phân công Speaking (của mình) hoặc "Tất cả" mới có dòng — vai khác không tốn câu SQL nào. */
+  const lopS = [...new Set(p.assignments.filter((x) => x.skill === 'speaking' && activeAt(x, today)).map((x) => x.classId))];
+  /* "Của tôi": chỉ lớp mình có phân công Speaking (người giữ việc vẫn xét `phanCongDangHieuLuc` dưới); chi nhánh lọc trong SQL. */
+  const locNxS = [
+    ...(tatCa ? [] : [`a.class_id IN (${lopS.map(() => '?').join(',')})`]),
+    ...(f.branchId ? ['c.branch_id = ?'] : []),
+  ];
+  const nxS = !(co('xem_nx_s') && (tatCa || lopS.length)) ? [] : conn.prepare(
+    `SELECT a.id AS attempt_id, a.attempt_no, a.kind, a.class_id, c.code AS class_code, c.branch_id, a.student_id, st.full_name,
+            sc.id AS case_id, sc.han_xac_nhan AS due, sc.sos_level
+       /* TD7a: CROSS JOIN giữ assessment_scores làm bảng ngoài → đi chỉ mục một phần idx_score_cho_phu_trach (vài ô), không duyệt mọi lượt của lớp / chi nhánh. */
+       FROM assessment_scores s CROSS JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
+       JOIN students st ON st.id = a.student_id AND ${HV_DANG_HOC_SQL('st')}
+       JOIN classes c ON c.id = a.class_id
+       JOIN sos_cases sc ON sc.attempt_id = a.id AND sc.topic = 'speaking' AND sc.status != 'done' AND ${CASE_THAT('sc')}
+      WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${locNxS.map((x) => ` AND ${x}`).join('')}`,
+  ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
+  const baoPh = !co('phoi_hop') ? [] : conn
+    .prepare(
+      `SELECT x.id, x.attempt_id, x.student_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
+              (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
+         FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
+         JOIN assessment_attempts a ON a.id = x.attempt_id
+         JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
+        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' ORDER BY x.id`,
+    )
+    .all() as any[];
+  const luotCuoiBaoPh = baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id as number);
+  henTyLe(luotCuoiBaoPh);   // gộp với tỷ lệ Xét lại (mục 2d') — một lần đọc
+  const miniTest = !co('mini_test') ? [] : conn
+    .prepare(
+      `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
+              (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS owner,
+              (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id,
+              (SELECT MIN(iv.id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.status IN ('planned', 'started')) AS pa_id
+         FROM mini_test m JOIN students s ON s.id = m.student_id AND ${HV_DANG_HOC_SQL('s')}
+         JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
+        WHERE m.ty_le IS NULL ORDER BY m.han, m.id`,
+    )
+    .all() as any[];
+  const uv = co('khai_bac', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null }) : [];
+  napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
+    .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
   /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
   const giu = nguoiGiuKetQua(ghiKetQua.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null, ownerUserId: r.owner_user_id ?? null })), today);
   for (const r of ghiKetQua) r.owner_id = giu.get(r.id) ?? null;
@@ -793,29 +896,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   // ------------------------------------------------- 4. vấn đề mở mà chưa có phương án nào
-  const caseRows = !co('no_plan') ? [] : conn
-    .prepare(
-      `SELECT sc.*,
-              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
-              COALESCE(a.class_id, cur.class_id) AS eff_class_id,
-              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
-              COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind,
-              (SELECT COUNT(*) FROM case_interventions iv
-                WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS iv_count
-         FROM sos_cases sc
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE sc.status != 'done' AND COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0   /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt */
-          AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active'   /* K3-41: em Tạm dừng dừng hạn */
-        GROUP BY sc.id`,
-    )
-    .all() as any[];
-
-  napTruocPhamVi(caseRows.map((r) => r.eff_student_id));
   /*
    * ĐỀ XUẤT PHƯƠNG ÁN là việc của người DẠY em, hoặc của Quản lý. Admin chi nhánh ghi hộ
    * được việc CS gọi phụ huynh nên vẫn có `sos.edit`, nhưng giao cho văn phòng năm dòng
@@ -839,8 +919,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       for (const id of lo) nguoiCoQuyen.set(id, co.get(id) ?? null);
     }
   };
-  napChu(caseRows.filter((c) => !c.iv_count && !reviewedCases.has(c.id) && (!f.branchId || c.eff_branch_id === f.branchId) && coTheThemPa(p, c))
-    .map((c) => c.owner_user_id));
+  napChu([...caseRows.filter((c) => !c.iv_count && !reviewedCases.has(c.id) && (!f.branchId || c.eff_branch_id === f.branchId) && coTheThemPa(p, c)),
+    ...(tatCa ? [...causeCandidates, ...xacNhanPa] : [])].map((c) => c.owner_user_id));
   const nguoiLamThemPa = (c: any): number | null => {
     const o = (c.owner_user_id ?? null) as number | null;
     if (o === null || o === p.userId) return o;
@@ -907,41 +987,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * AI THẤY: người phụ trách Case (GVBM đúng kỹ năng); "Của GV (nhắc)" liệt kê dòng của GV cho Quản lý. Em Tạm dừng không sinh dòng (K3-41).
    * Mọi trường hợp đều kiểm đúng quyền sửa Case theo kỹ năng (C02).
    */
-  const cotCase = `sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id, sc.kck,
-              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
-              COALESCE(a.class_id, cur.class_id) AS eff_class_id, cur.class_id AS lop_dang_hoc,
-              COALESCE(ac.branch_id, cc.branch_id) AS eff_branch_id,
-              COALESCE(ac.code, cc.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due, rp.week_start AS tuan_thi`;
-  const noiCase = `LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id`;
-  /* RA-LUONG-8 (N8 ④): Case tạm (em KCK, lượt chưa chốt) không sinh việc "Mô tả Case" — cùng `CASE_THAT` như mọi câu đếm. */
-  const causeCandidates = !co('cause', 'ghi_nhan_xet') ? [] : conn
-    .prepare(
-      `SELECT ${cotCase} FROM sos_cases sc ${noiCase}
-        WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
-          AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
-          AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')`,
-    )
-    .all() as any[];
   /* OV-12c: MỘT định nghĩa (`sosCaseStateMany`) — Progress chờ "Xác nhận Case", MT chờ "Mô tả Case"; thẻ Không cần theo dõi đang chờ thì không. */
   const stCho = sosCaseStateMany(causeCandidates.map((c) => c.id as number));
-  const xacNhanPa = !co('xac_nhan_pa') ? [] : conn
-    .prepare(
-      `SELECT ${cotCase}, iv.id AS iv_id, iv.kind AS iv_kind, iv.description AS iv_mo_ta, iv.performer_user_id AS iv_nguoi_id, iv.so_buoi AS iv_so_buoi,
-              COALESCE(pu.full_name, iv.performer_name) AS iv_nguoi
-         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${noiCase} LEFT JOIN users pu ON pu.id = iv.performer_user_id
-        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
-          AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
-          AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */`,
-    )
-    .all() as any[];
-  napTruocPhamVi([...causeCandidates, ...xacNhanPa].map((r) => r.eff_student_id));
-  if (tatCa) napChu([...causeCandidates, ...xacNhanPa].map((r) => r.owner_user_id));
   const dongCase = (c: any, loai: 'cause' | 'ghi_nhan_xet' | 'xac_nhan_pa') => {
     if (f.branchId && c.eff_branch_id !== f.branchId) return;
     /* OV-12c (đặc tả 7.2): "Xác nhận Case" Progress — GVCN lớp đang học làm được dù không dạy môn (cùng luật `coTheXacNhanCase`, không thêm câu SQL mỗi dòng). */
@@ -1011,28 +1058,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * (`han_xac_nhan`). GV chọn dùng nhận xét chấm chéo làm mô tả, giữ mô tả đang có, hoặc viết mô tả khác (`xacNhanCaseS`) → việc hết. Không có Case → không việc.
    * Thay việc "Xem nhận xét Speaking" (khoá nhóm `xem_nx_s` giữ để bộ lọc / Tổng quan không đổi). Quản lý ở "Tất cả" thấy dòng của GV trong phạm vi.
    */
-  /* Chỉ người có phân công Speaking (của mình) hoặc "Tất cả" mới có dòng — vai khác không tốn câu SQL nào. */
-  const lopS = [...new Set(p.assignments.filter((x) => x.skill === 'speaking' && activeAt(x, today)).map((x) => x.classId))];
-  if (co('xem_nx_s') && (tatCa || lopS.length)) {
-    /* "Của tôi": chỉ lớp mình có phân công Speaking (người giữ việc vẫn xét `phanCongDangHieuLuc` dưới); chi nhánh lọc trong SQL. */
-    const loc = [
-      ...(tatCa ? [] : [`a.class_id IN (${lopS.map(() => '?').join(',')})`]),
-      ...(f.branchId ? ['c.branch_id = ?'] : []),
-    ];
-    const ds = conn.prepare(
-      `SELECT a.id AS attempt_id, a.attempt_no, a.kind, a.class_id, c.code AS class_code, c.branch_id, a.student_id, st.full_name,
-              sc.id AS case_id, sc.han_xac_nhan AS due, sc.sos_level
-         /* TD7a: CROSS JOIN giữ assessment_scores làm bảng ngoài → đi chỉ mục một phần idx_score_cho_phu_trach (vài ô), không duyệt mọi lượt của lớp / chi nhánh. */
-         FROM assessment_scores s CROSS JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
-         JOIN students st ON st.id = a.student_id AND ${HV_DANG_HOC_SQL('st')}
-         JOIN classes c ON c.id = a.class_id
-         JOIN sos_cases sc ON sc.attempt_id = a.id AND sc.topic = 'speaking' AND sc.status != 'done' AND ${CASE_THAT('sc')}
-        WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${loc.map((x) => ` AND ${x}`).join('')}`,
-    ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
-    const gvS = ds.length ? phanCongDangHieuLuc([...new Set(ds.map((r) => r.class_id as number))], today) : new Map();
-    if (tatCa) napTruocPhamVi(ds.map((r) => r.student_id));   // quyền theo em một lần cho cả danh sách (không N+1)
+  if (nxS.length) {
+    const gvS = phanCongDangHieuLuc([...new Set(nxS.map((r) => r.class_id as number))], today);
     const caseXnS = new Set<number>();
-    for (const r of ds) {
+    for (const r of nxS) {
       caseXnS.add(r.case_id as number);
       const chu_ = gvS.get(`${r.class_id}|speaking`)?.userId ?? null;
       const mine = chu_ === p.userId;
@@ -1056,20 +1085,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   // ------------------------------------- 3c. Giữa khoá lớp thường: BÁO PHỤ HUYNH QUA TVV (PR-LT2a; PR-CT2 bỏ nhóm Nộp kế hoạch bổ trợ)
   /* Báo phụ huynh qua TVV: GVCN lớp em ĐANG học (và Quản lý ở "Tất cả trong phạm vi"); KHÔNG hạn (M-05), không tính quá hạn. */
-  const baoPh = !co('phoi_hop') ? [] : conn
-    .prepare(
-      `SELECT x.id, x.attempt_id, x.student_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
-              (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
-         FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
-         JOIN assessment_attempts a ON a.id = x.attempt_id
-         JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
-        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' ORDER BY x.id`,
-    )
-    .all() as any[];
-  napTruocPhamVi(baoPh.map((r) => r.student_id));
   /* PR-S5F-a: Báo PH Giữa khoá là việc của GVCN lớp em ĐANG học (`gvcn_id` đọc cùng câu) — Quản lý xem "Tất cả" thấy người đó, không "chưa ai phụ trách". */
   const phanTramCuoi = new Map<number, string>();
-  for (const [id, t] of tyLeTongLo(baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id))) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
+  for (const [id, t] of tyLeTongLo(luotCuoiBaoPh)) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
   for (const r of baoPh) {
     if (f.branchId && r.branch_id !== f.branchId) continue;
     const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
@@ -1113,18 +1131,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-LT2b (K5 §3 #10): Ghi Mini Test — hết khi đã ghi; em Tạm dừng ẩn (T65). PR-CT2 (§8): người làm = người giữ việc của nhóm (`nguoiGiuMiniTest` — GVCN lớp em
    * ĐANG học; không có → chủ Case), không còn là Người dạy (GV cũ ở lớp của bài Final). Không ai giữ → GVCN lớp đang học.
    */
-  const miniTest = !co('mini_test') ? [] : conn
-    .prepare(
-      `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
-              (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS owner,
-              (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id,
-              (SELECT MIN(iv.id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.status IN ('planned', 'started')) AS pa_id
-         FROM mini_test m JOIN students s ON s.id = m.student_id AND ${HV_DANG_HOC_SQL('s')}
-         JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
-        WHERE m.ty_le IS NULL ORDER BY m.han, m.id`,
-    )
-    .all() as any[];
-  napTruocPhamVi(miniTest.map((r) => r.student_id));
   const giuMt = nguoiGiuMiniTest(miniTest.map((m) => ({ id: m.id, nhom: m.nhom_bo_tro, lop: m.cur_class_id, owner: m.owner ?? null })));
   for (const m of miniTest) {
     m.gv = giuMt.get(m.id) ?? null;
@@ -1261,7 +1267,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * được là người có quyền phân công.
    */
   /* CV-LOI: cùng nguồn với số Tổng quan `case-chua-co-nguoi-phu-trach` (`caseChuaCoNguoi`) — số trên Tổng quan = số dòng ở đây. */
-  for (const c of !co('no_owner') ? [] : caseChuaCoNguoi(p, f.branchId ?? null)) {
+  for (const c of !co('no_owner') ? [] : caseChuaCoNguoi(p, f.branchId ?? null, caseMo.filter((x) => x.chua_co_nguoi).map((x) => ({ ...x, eff_branch_id: x.cn_du })))) {
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
       attemptKind: c.attempt_kind ?? null,
@@ -1292,7 +1298,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * ứng viên. Em Tạm dừng không sinh việc (T65). Dòng hết khi làm xong ở bất cứ đâu (Ghi nhận / Xác nhận xử lý / Đề xuất / Đã thực hiện).
    */
   if (co('khai_bac', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien')) {
-    const uv = ungVienVaThe({ branchId: f.branchId ?? null });
     /*
      * PR-VAI-a (K1-15, Q15): KHAI BẬC Ý THỨC HS CŨ — em lớp mình chủ nhiệm có hồ sơ tạo trong 14 ngày gần nhất mà còn khai được
      * (`coTheKhai`: có chuỗi, chưa lần xử lý nào, chưa khai). Một câu ứng viên; trạng thái đọc CÙNG lượt `trangThaiYThuc` với việc Ý thức.
@@ -1325,7 +1330,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa xác nhận cấp bậc',
       });
     }
-    if (tatCa) napTruocPhamVi(uv.map((r) => r.id));   // `can()` từng em bên dưới đọc bộ nhớ, không N+1
     const duongLop = (lopId: number | null, sid: number, them: string) =>
       lopId ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${sid}${them}` : duongHoSoHocVien(sid, { tab: 'y-thuc' });
     for (const r of uv) {
@@ -1587,7 +1591,7 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
  * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `SOS_EDIT` theo ngữ cảnh Case (`ctxSuaCaseNhieu` — như `cases.ts`). Việc chưa phân công / việc khác: chỉ theo dõi.
  */
 export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkItem) => boolean {
-  const ctx = ctxSuaCaseNhieu(items.filter((it) => it.caseId && nhomViecCua(it.group) === 'case-hoc-thuat').map((it) => it.caseId!));
+  const ctx = ctxSuaCaseNhieu(items.filter((it) => it.caseId && nhomViecCua(it.group) === 'case-hoc-thuat').map((it) => it.caseId!), coKhoa('case-mo') ? napCaseMo() : undefined);
   return (it) => {
     if (it.ownerId === null) return false;   // việc chưa có người giữ (chưa phân công): không "làm thay" ai
     if (it.group === 'score') return !!it.classId && !!it.kns?.length && editableSkills(p, it.classId, it.kns).length === it.kns.length;

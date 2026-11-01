@@ -6,7 +6,7 @@ const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
+import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, HttpError, notFound, loi } from '../util.ts';
 import { ghiDuocPaMany, listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
@@ -794,17 +794,10 @@ export function overdueScoreBai(p: Principal, branchId: number | null, today: st
   if (sc.all) {
     for (const x of cells) them(x);
   } else {
-    const branchOf = new Map<number, number>();
-    const classIds = [...new Set(cells.map((x) => x.classId))];
-    for (let i = 0; i < classIds.length; i += 400) {
-      const chunk = classIds.slice(i, i + 400);
-      for (const r of conn.prepare(`SELECT id, branch_id FROM classes WHERE id IN (${chunk.map(() => '?').join(',')})`).all(...chunk) as any[]) {
-        branchOf.set(r.id as number, r.branch_id as number);
-      }
-    }
+    const lop = bangLop();
     const myBranches = new Set<number>(sc.branchIds), myClasses = new Set<number>(sc.classIds);
     for (const x of cells) {
-      if (myClasses.has(x.classId) || myBranches.has(branchOf.get(x.classId) ?? -1)) them(x);
+      if (myClasses.has(x.classId) || myBranches.has(lop.get(x.classId)?.branchId ?? -1)) them(x);
     }
   }
   return { ids: [...ids].sort((a, b) => a - b), chiTiet, lopCua };
