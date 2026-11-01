@@ -41,6 +41,8 @@ import { refreshOutcome, resultOf, setSkillSkip } from './attempts.ts';
 
 export type MoveRequest = {
   id: number;
+  /** TL-VIEC: mã tuần đích, đọc cùng câu đề nghị đang chờ (`indexOfPending`). */
+  to_code?: string | null;
   attempt_id: number;
   skill: AssessedSkill;
   move_no: number;
@@ -94,7 +96,7 @@ function canDecide(p: Principal, attempt: any): boolean {
 function indexOfPending(): Map<string, MoveRequest> {
   return nho('de-nghi-doi', () => {
     const rows = db()
-      .prepare(`SELECT * FROM skill_move_requests WHERE status = 'pending' ORDER BY id`)
+      .prepare(`SELECT r.*, pr.code AS to_code FROM skill_move_requests r LEFT JOIN report_periods pr ON pr.id = r.to_period_id WHERE r.status = 'pending' ORDER BY r.id`)
       .all() as MoveRequest[];
     const m = new Map<string, MoveRequest>();
     for (const r of rows) m.set(`${r.attempt_id}:${r.skill}`, r);

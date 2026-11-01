@@ -90,4 +90,11 @@ export async function runPrTlViecTests(t: any) {
     const nap = dem(/^SELECT s\.id AS sid, s\.branch_id AS sbid/), chu = dem(/FROM users u WHERE u\.id IN \(\?/), ty = dem(/^SELECT a\.id, a\.kind, c\.programme_code, c\.nguong_dat FROM assessment_attempts/);
     assert(nap <= 2 && chu <= 1 && ty <= 1, `napTruocPhamVi ${nap} · napChu ${chu} · tyLeTongLo ${ty}`);
   });
+
+  await checkAsync('TV3 · /my-work?nguoi=tat-ca QL: listAttempts không đọc lại mã kỳ / MT mới nhất (gốc − 2); chốt lộ trình không đọc lại bảng lớp', async () => {
+    const { cau } = await doGet(P.mbManager.userId, '/my-work?nguoi=tat-ca');
+    const dem = (r: RegExp) => cau.filter((s) => r.test(s)).length;
+    const ma = dem(/^SELECT code FROM report_periods WHERE id = \?/), mt = dem(/^SELECT a\.id AS attempt_id FROM assessment_attempts a WHERE a\.id IN/), lop = dem(/^SELECT .*FROM classes( c)?( WHERE|$)/);
+    assert(ma === 0 && mt === 0 && lop === 0, `mã kỳ ${ma} · MT mới nhất ${mt} · bảng lớp ${lop}`);
+  });
 }

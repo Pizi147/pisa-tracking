@@ -48,8 +48,8 @@ export async function runPrChuongNheTests(t: any) {
       assert(khongDay(p), `${ten} phải không có phân công hiệu lực`);
       const moi = chay(p, false), du = chay(p, true);
       assert(moi.json === du.json, `${moi.json.slice(0, 300)} ≠ ${du.json.slice(0, 300)}`);
-      const luot = moi.cau.filter((c) => /assessment_(attempts|scores)|^WITH ids/.test(c));
-      assert(!luot.length && du.cau.some((c) => /assessment_attempts/.test(c)), `còn đọc lượt: ${luot.join(' | ')}`);
+      const luot = moi.cau.filter((c) => /assessment_(attempts|scores)|^WITH ids|^SELECT a.*/.test(c));
+      assert(!luot.length && du.cau.some((c) => /assessment_attempts|^SELECT a.*/.test(c)), `còn đọc lượt: ${luot.join(' | ')}`);
       assert(moi.dong < du.dong / 3, `dòng mới ${moi.dong}, đường đủ ${du.dong}`);
     });
   }

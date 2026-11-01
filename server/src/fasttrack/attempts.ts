@@ -20,7 +20,7 @@ import {
   boTaskTrong, oNhapHoc, expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
-import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { datNho, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, MON_MOT_LUOT_SQL,
@@ -165,17 +165,18 @@ function docTheoLo<T extends { attempt_id: number }>(ids: number[], sql: (ph: st
  * có band ở số MT lớn hơn (lộ trình mới hơn tính là sau). Chỉ ô của MT này nhắc vàng "nên có nhận xét / nhóm" (kể cả MT ≥ 2 tuần); MT trước không nhắc.
  * Không đổi luật "-" của MT cũ (N4 — `lich_su`). Trả tập id lượt (trong `attemptIds`) là MT mới nhất; nhớ theo lượt trong request GET (`loadBundle` nạp trước).
  */
+const LA_MT_MOI_NHAT_SQL = `a.kind = 'mock' AND a.status != 'cancelled'
+                AND NOT EXISTS (SELECT 1 FROM assessment_attempts b WHERE b.student_id = a.student_id AND b.kind = 'mock' AND b.status != 'cancelled'
+                      AND (COALESCE(b.cycle_id, 0) > COALESCE(a.cycle_id, 0) OR (COALESCE(b.cycle_id, 0) = COALESCE(a.cycle_id, 0) AND b.attempt_no > a.attempt_no))
+                      AND EXISTS (SELECT 1 FROM assessment_scores sb WHERE sb.attempt_id = b.id AND sb.band IS NOT NULL))`;
+
 export function laMtMoiNhatCuaEm(attemptIds: number[]): Set<number> {
   /* Lượt `loadBundle` đã nạp trong request mà chưa hỏi: gộp vào câu đầu tiên có người hỏi (một câu cả trang; trang không hỏi — xuất Excel, Tổng hợp — không tốn câu). */
   const cho = nho(MT_MOI_NHAT_CHO, () => new Set<number>());
   const hoi = cho.size ? [...new Set([...attemptIds, ...cho])] : attemptIds;
   cho.clear();
   const m = nhoTheoId('mt-moi-nhat:', hoi, (ids) => docTheoLo<{ attempt_id: number }>(ids,
-    (ph) => `SELECT a.id AS attempt_id FROM assessment_attempts a
-              WHERE a.id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled'
-                AND NOT EXISTS (SELECT 1 FROM assessment_attempts b WHERE b.student_id = a.student_id AND b.kind = 'mock' AND b.status != 'cancelled'
-                      AND (COALESCE(b.cycle_id, 0) > COALESCE(a.cycle_id, 0) OR (COALESCE(b.cycle_id, 0) = COALESCE(a.cycle_id, 0) AND b.attempt_no > a.attempt_no))
-                      AND EXISTS (SELECT 1 FROM assessment_scores sb WHERE sb.attempt_id = b.id AND sb.band IS NOT NULL))`));
+    (ph) => `SELECT a.id AS attempt_id FROM assessment_attempts a WHERE a.id IN (${ph}) AND ${LA_MT_MOI_NHAT_SQL}`));
   return new Set(attemptIds.filter((id) => m.has(id)));
 }
 const MT_MOI_NHAT_CHO = 'mt-moi-nhat-cho';
@@ -809,13 +810,16 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   }
 
   const w = where.join(' AND ');
+  /* TL-VIEC: danh sách còn ô chờ (Công việc) đọc luôn "MT mới nhất" trong câu lượt — `nhacNhanXetCua` khỏi một câu riêng; trang khác giữ hỏi lười (xuất Excel không tốn). */
+  const CHON = conO ? ATTEMPT_SELECT.replace('SELECT a.*,', `SELECT a.*, (${LA_MT_MOI_NHAT_SQL}) AS la_mt_moi,`) : ATTEMPT_SELECT;
   /* `a.id` phá hoà: trùng tuần + tên thì thứ tự không còn tuỳ SQLite. Câu ghép: ORDER BY theo tên cột kết quả. */
   const rows = (tachHaiVe
-    ? conn.prepare(`${ATTEMPT_SELECT} WHERE ${w} AND ${CON_O_SQL}
-        UNION ALL ${ATTEMPT_SELECT} WHERE ${w} AND a.planned_period_id IS NULL AND a.status = 'planned' AND (a.o_cho_tu IS NULL OR a.o_cho_tu > ?)
+    ? conn.prepare(`${CHON} WHERE ${w} AND ${CON_O_SQL}
+        UNION ALL ${CHON} WHERE ${w} AND a.planned_period_id IS NULL AND a.status = 'planned' AND (a.o_cho_tu IS NULL OR a.o_cho_tu > ?)
         ORDER BY period_start DESC, full_name, id`).all(...params, today, ...params, today)
-    : conn.prepare(`${ATTEMPT_SELECT} WHERE ${w} ORDER BY pr.week_start DESC, s.full_name, a.id`).all(...params)) as any[];
+    : conn.prepare(`${CHON} WHERE ${w} ORDER BY pr.week_start DESC, s.full_name, a.id`).all(...params)) as any[];
 
+  if (conO) for (const r of rows) datNho(`mt-moi-nhat:${r.id}`, r.la_mt_moi ? [{ attempt_id: r.id as number }] : []);
   const bundle = loadBundle(rows.map((r) => r.id));
   /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
   const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
@@ -2710,9 +2714,5 @@ export function attemptHref(a: { id: number; kind?: string | null; classId?: num
 function pendingView(attemptId: number, skill: string) {
   const r = pendingMove(attemptId, skill);
   if (!r) return null;
-  /* Nhớ theo request (rà #126, tốc độ): màn Công việc dựng ô của cùng lượt nhiều lần — không tra lại mã tuần mỗi lần. */
-  const w = r.to_period_id
-    ? nho(`ma-tuan:${r.to_period_id}`, () => db().prepare('SELECT code FROM report_periods WHERE id = ?').get(r.to_period_id) as any)
-    : null;
-  return { id: r.id, decideBy: r.decide_by, toWeek: w?.code ?? null, moveNo: r.move_no };
+  return { id: r.id, decideBy: r.decide_by, toWeek: r.to_code ?? null, moveNo: r.move_no };
 }
