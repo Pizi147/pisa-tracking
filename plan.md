@@ -249,6 +249,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 02/11 tối — chủ SP đi vắng: "rà lỗi, có thì sửa luôn; rà + cải thiện tốc độ tải, giảm dòng đọc Turso; session tự làm, tự rà, tự merge"
+- **Uỷ quyền đợt này:** PTA tự merge PR của 4 session khi rà đạt + check chung (ô check-3) xanh, kể cả PR web KHÔNG đổi bố cục. Đổi bố cục / luật / số liệu em thật → giữ chờ chủ SP. Không deploy. Nhóm chờ quyết (KET-PET-THI-THAT, QUYEN-THEO-CN, XM-BE-1, sổ tay PDF, [XM] lệch mockup) để chủ SP về duyệt.
+- **Session (local, worktree riêng, mỗi việc một PR nhỏ, làm nối tiếp):** RA-LOI-MAY (Opus 5.5 · high, lỗi máy chủ đợt 31/10–02/11) · RA-LOI-WEB (Opus 5.5 · high, lỗi web, trọng tâm data router #785/#787) · DOC-IT (Opus 5.5 · high, giảm dòng đọc theo đo `tocDo`) · TAI-NHANH (Opus 5.5 · medium, tải web).
+- **PTA khảo sát:** gói chính `index-*.js` 1,09 MB, không chia gói theo trang (`React.lazy` = 0); `netlify.toml` chưa có header cache cho `/assets/*`; web không gọi lại định kỳ.
+- Migrate mới (chỉ mục) nếu có → thêm vào danh sách chờ deploy (hiện 5).
+
 ### 02/11 đêm — chủ SP đi ngủ, "còn gì nữa chạy tiếp"
 - **Đã mở (local):** TL-HVL · LECH-CACH-CHAM · V8-HSL-2 · DO-KHUNG-DO (Opus 5.5 · medium) · LUU-PC-LO (Sonnet 5.5 · high).
 - **Merge:** PR máy chủ PTA tự merge khi rà đạt + check xanh; LECH-CACH-CHAM đổi mức SOS / Case em thật thì giữ chờ chủ SP. V8-HSL-2, DO-KHUNG-DO chờ duyệt ảnh sáng (không merge qua đêm).
