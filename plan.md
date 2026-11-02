@@ -249,6 +249,18 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 02/11 khuya — chủ SP quyết nhóm chờ (CHƯA làm: chờ chủ SP bảo "bắt đầu làm" mới mở session)
+- **QUYEN-KY-NANG:** GV tự khai kỹ năng ở Hồ sơ cá nhân, kể cả được chấm S chéo — GIỮ như hiện tại, không sửa.
+- **QUYEN-THEO-CN:** quyền sửa Liên hệ xét theo chi nhánh của em (không theo vai toàn tài khoản) — sửa máy chủ (`coONhapLienHe`, `students.ts:776`, `luuTru.ts:122`), PR nhỏ.
+- **LECH-KHONG-LOP:** lượt không lớp chấm một cách như lượt có lớp (theo chương trình của lộ trình) cho cả "Kết quả gần nhất" và ✓ / ✗ — đổi số liệu em thật → PR kèm SQL chỉ đọc đếm em ảnh hưởng, giữ chờ chủ SP.
+- **HSL-KET-THUC-SO:** hồ sơ lớp đã kết thúc chỉ tính lượt của chính lớp đó ("Đạt MT2 x/y") — đổi số → kèm SQL, giữ chờ chủ SP.
+- **KET-PET-THI-THAT:** tạm thời chưa làm.
+- **XM-BE-1:** giữ lưới 5 ô ở thẻ em 375 (không đổi sang `DongDiem`).
+- **Hạn xa:** theo mockup — viên xám `.td` cho `ChipHan`, một PR chung mọi danh sách (đổi hình → ảnh cặp, chủ SP duyệt).
+- **Cột Trạng thái hồ sơ lượt:** 150 px (đổi hình nhỏ → ảnh trước | sau).
+- **Sổ tay PDF:** bỏ (Hướng dẫn trên web đã thay).
+- **Deploy:** không nhắc; chủ SP bảo thì PTA đưa hướng dẫn từng bước rồi bắt đầu.
+
 ### 02/11 tối — chủ SP đi vắng: "rà lỗi, có thì sửa luôn; rà + cải thiện tốc độ tải, giảm dòng đọc Turso; session tự làm, tự rà, tự merge"
 - **Uỷ quyền đợt này:** PTA tự merge PR của 4 session khi rà đạt + check chung (ô check-3) xanh, kể cả PR web KHÔNG đổi bố cục. Đổi bố cục / luật / số liệu em thật → giữ chờ chủ SP. Không deploy. Nhóm chờ quyết (KET-PET-THI-THAT, QUYEN-THEO-CN, XM-BE-1, sổ tay PDF, [XM] lệch mockup) để chủ SP về duyệt.
 - **Session (local, worktree riêng, mỗi việc một PR nhỏ, làm nối tiếp):** RA-LOI-MAY (Opus 5.5 · high, lỗi máy chủ đợt 31/10–02/11) · RA-LOI-WEB (Opus 5.5 · high, lỗi web, trọng tâm data router #785/#787) · DOC-IT (Opus 5.5 · high, giảm dòng đọc theo đo `tocDo`) · TAI-NHANH (Opus 5.5 · medium, tải web).
