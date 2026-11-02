@@ -25,7 +25,8 @@ export type Viec = {
 
 /** PR-EN-c: chữ máy chủ dựng — có khoá thì dịch theo khoá, không thì theo chính chữ. */
 const dk = (s: string | null | undefined, k?: ChuKhoa | null): string | null => (k ? dichChu(k) : s ? dich(s) : null);
-const chuViec = (x: Viec) => dichChu(x);
+/* EN-SOT: biến chữ máy chủ ghép sẵn ("đến MT2 · Listening", "OVR 7.0 · Đạt Target") dịch theo mẫu như `dich`; tên / mã giữ nguyên. */
+const chuViec = (x: Viec) => dichChu(x.bien ? { ...x, bien: Object.fromEntries(Object.entries(x.bien).map(([k, v]) => [k, typeof v === 'string' ? dich(v) : v])) } : x);
 const nutViec = (x: Viec) => dich(x.nut);
 const vaiViec = (x: Viec) => (x.nguoi.vai ? dich(x.nguoi.vai) : null);
 /** Người không tài khoản ("Quản lý", "Chưa có người phụ trách") là vai — dịch; tên người giữ nguyên. */
