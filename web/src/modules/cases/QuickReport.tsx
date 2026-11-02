@@ -519,8 +519,9 @@ export function QuickReport({
 
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong}
+      vungTab={{ id: 'qr-vung', nhan: mode === 'now' ? t('Đang gặp vấn đề') : t('Đã xong từ trước') }}
       tabs={(
-        <HangTab cap="con" ariaLabel={t('Loại Case')} value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}
+        <HangTab cap="con" panelId="qr-vung" ariaLabel={t('Loại Case')} value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}
           tabs={[{ key: 'now', label: t('Đang gặp vấn đề') }, { key: 'backfill', label: t('Đã xong từ trước') }]} />
       )}
       chan={{

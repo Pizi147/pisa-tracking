@@ -419,145 +419,148 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         </div>
       </div>
 
-      <HangTab ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
+      <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
         ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },
         ...(coGocPc ? [{ key: 'phan-cong' as const, label: t('Phân công GV') }] : []),
       ]} />
 
-      {goc !== 'tat-ca' && lopDangLoc && 'needScores' in lopDangLoc && <DaiLop lop={lopDangLoc as LopTrenTrang} vai={vai} dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} soViecQuaHan={new Set(goc0.filter(coQuaHan).map((h) => h.id)).size}
-        onThemHocVien={() => setThem(chiLop ? { id: chiLop, code: lopDangLoc.code } : null)} onBo={() => setParam({ classId: null })} />}
+      {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-3 của trang → khoảng cách không đổi. */}
+      <div id="hvl-vung" role="tabpanel" aria-label={t('Chế độ xem')} className="space-y-3">
+        {goc !== 'tat-ca' && lopDangLoc && 'needScores' in lopDangLoc && <DaiLop lop={lopDangLoc as LopTrenTrang} vai={vai} dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} soViecQuaHan={new Set(goc0.filter(coQuaHan).map((h) => h.id)).size}
+          onThemHocVien={() => setThem(chiLop ? { id: chiLop, code: lopDangLoc.code } : null)} onBo={() => setParam({ classId: null })} />}
 
-      {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />}
-      {trang.loading && !data && <Skeleton rows={6} />}
+        {trang.error && <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />}
+        {trang.loading && !data && <Skeleton rows={6} />}
 
-      {goc === 'tat-ca' && data && (
-        <div className="card overflow-hidden !p-0">
-          <div className="flex flex-wrap items-center gap-2 border-b p-3" style={{ borderColor: 'var(--line)' }} data-hd="hvl-goc">
-            {locTim}
-            {/* Link cũ có `classId` (badge quá hạn của lớp, trang khác) → Tất cả chỉ lớp đó; chip để bỏ. */}
-            {chiLop && <button type="button" className="nut-loc nut-loc-dang" onClick={() => setParam({ classId: null })} aria-label={t('Bỏ lọc lớp')}>{lopDangLoc?.code ?? t('Lớp')} ✕</button>}
-            <button type="button" className="nut-loc" aria-pressed={locThiThang} onClick={() => setParam({ thi: locThiThang ? null : '1' })}>
-              {t('Thi tháng này')} · <span className="tabular-nums">{demThi}</span>
-            </button>
-            {laVai && CHIP_VAI_TRANG.filter((k) => !laChipPhu(k) || chipVai === k).map(chipVaiNut)}
-            {/* Đếm theo `/my-work` của người xem: GV = việc của mình; QL / Admin = việc mọi người trong chi nhánh đang xem (như Công việc "Tất cả"). */}
-            {coViec && <button type="button" className="nut-loc" aria-pressed={locQuaHan} disabled={!work.data && !work.error}
-              title={laQl || admin ? t('Việc quá hạn của mọi người trong chi nhánh') : t('Chỉ việc của bạn')}
-              onClick={() => { if (work.error) work.reload(); setParam({ qh: locQuaHan ? null : '1', view: null, loc: null }); }}>
-              {t('Có việc quá hạn')} · <span className="tabular-nums">{work.error ? '!' : work.data ? demQh : '…'}</span>
-            </button>}
-            <button type="button" className="nut-loc" title={LOC_HOC_VIEN_NHAN['da-thi'].goiY} aria-pressed={locDaThi} onClick={() => setParam({ loc: locDaThi ? null : 'da-thi', ...(laVai ? { view: null } : {}) })}>
-              {LOC_HOC_VIEN_NHAN['da-thi'].nhan} · <span className="tabular-nums">{demDaThi}</span>
-            </button>
-            <button type="button" className={`nut-loc ${soLocThem ? 'nut-loc-dang' : ''}`} aria-expanded={moLocThem} data-hd="hvl-loc-them" onClick={() => setParam({ lt: moLocThem ? null : '1' })}>
-              {t('Bộ lọc thêm')}{soLocThem ? <span className="tabular-nums font-medium">{soLocThem}</span> : null}
-            </button>
-            <span className="ml-auto text-xs tabular-nums text-slate-400 max-sm:hidden">{t('{n} HV · {m} lớp', { n: soEm(hvLoc), m: nhomLop.filter((g) => g.id > 0).length })}</span>
-          </div>
-          {moLocThem && (
-            <div role="group" aria-label={t('Bộ lọc thêm')} className="space-y-2 border-b p-3 text-sm" style={{ borderColor: 'var(--line)' }}>
-              {laVai && CHIP_VAI_PHU.some((k) => chipVai === k || goc0.some((h) => coChipVai(h, k))) && (
-                <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Theo vai')}>
-                  <span className="w-full text-xs text-slate-400 sm:w-40">{t('Theo vai')}</span>
-                  {CHIP_VAI_PHU.filter((k) => chipVai === k || goc0.some((h) => coChipVai(h, k))).map(chipVaiNut)}
-                </div>
-              )}
-              {!admin && <>
-                <NhomLocThem ten={t('Case / PA')} ds={LOC_CASE} nhan={(k) => t(NHAN_LOC_CASE[k])} dang={locThem.case} onBat={(k) => batLoc('lc', locThem.case, k)} />
-                <NhomLocThem ten={t('Kỹ năng cần xử lý')} ds={LOC_KY_NANG} nhan={(k) => KN_NGAN[k]} dang={locThem.kn} onBat={(k) => batLoc('lk', locThem.kn, k)} />
-                <NhomLocThem ten={t('Kết quả gần nhất')} ds={LOC_KET_QUA} nhan={(k) => t(NHAN_LOC_KET_QUA[k])} dang={locThem.kq} onBat={(k) => batLoc('lq', locThem.kq, k)} />
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="w-full text-xs text-slate-400 sm:w-40">{t('Thời gian')}</span>
-                  {locThem.tu && locThem.den ? (
-                    <>
-                      <BoChonThoiGian khoang={{ kieu: kieuKhoang, tu: locThem.tu, den: locThem.den }} onChange={(k) => setParam({ ltu: k.tu, lden: k.den, lkieu: k.kieu })} />
-                      <button type="button" className="nut-loc nut-loc-dang" onClick={() => setParam({ ltu: null, lden: null, lkieu: null })}>{t('Mọi lúc')} ✕</button>
-                    </>
-                  ) : (
-                    <button type="button" className="nut-loc" onClick={() => { const k = khoangMacDinh(homNay); setParam({ ltu: k.tu, lden: k.den, lkieu: k.kieu }); }}>{t('Chọn khoảng')}</button>
-                  )}
-                </div>
-              </>}
-              {/* Thứ tự em TRONG lớp (giữ từ bảng cũ): Tên · Cần chú ý trước (việc quá hạn → SOS cao). */}
-              <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Xếp em trong lớp')}>
-                <span className="w-full text-xs text-slate-400 sm:w-40">{t('Xếp em trong lớp')}</span>
-                <button type="button" className="nut-loc" aria-pressed={sapXep === 'lop'} onClick={() => setParam({ sx: null })}>{t('Theo tên')}</button>
-                <button type="button" className="nut-loc" aria-pressed={sapXep === 'chu-y'} onClick={() => setParam({ sx: 'chu-y' })}>{t('Cần chú ý trước')}</button>
-              </div>
-              {batThem && (
-                <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" onClick={() => setParam({ ...BO_LOC_THEM, lt: '1' })}>{t('Xoá lọc thêm')}</button>
-              )}
-            </div>
-          )}
-          <div className={trang.cu ? 'dang-tai-lai' : undefined} aria-busy={trang.cu || undefined}>
-          {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} status={theoVai.error.status} onRetry={theoVai.reload} /></div>}
-          {laVai && !vaiTrang && !theoVai.error ? <div className="p-3"><Skeleton rows={6} /></div>
-          : laVai && pv?.dangDung === 'cua-toi' && dsEm.length === 0 && !q.trim() ? (
-            <Empty title={t('Chưa có học viên nào của bạn')} hint={t('Học viên có TVV là bạn sẽ hiện ở đây.')}
-              action={<button type="button" className="btn btn-sm" onClick={() => setParam({ phamVi: 'chi-nhanh' })}>{t('Xem cả chi nhánh')}</button>} />
-          ) : data.scopeEmpty || nhomLop.length === 0 ? (
-            <Empty title={data.scopeEmpty ? t('Bạn chưa được cấp phạm vi nào') : t('Không có học viên nào khớp')}
-              hint={data.scopeEmpty ? t('Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.') : t('Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.')}
-              action={q.trim() ? <button type="button" className="btn btn-sm" onClick={() => { setDraftQ(''); setParam({ q: null }); }}>{t('Xoá tìm')}</button> : undefined} />
-          ) : (
-            <>
-              {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
-              {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />
-                : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />}
-              {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
-            </>
-          )}
-          </div>
-        </div>
-      )}
-
-      {goc === 'sos' && (
-        <div className="card overflow-hidden !p-0">
-          <div className="flex flex-wrap items-center gap-2 border-b p-3" style={{ borderColor: 'var(--line)' }} role="group" aria-label={t('Lọc SOS')}>
-            {locChung}
-            <button type="button" className="nut-loc" aria-pressed={!mucSos} onClick={() => setParam({ muc: null })}>{t('Tất cả')} <span className="tabular-nums">{soEm(sosTat.map((r) => ({ id: r.studentId })))}</span></button>
-            {(['3', '2', '1'] as const).map((m) => (
-              <button key={m} type="button" className="nut-loc" aria-pressed={mucSos === m} onClick={() => setParam({ muc: mucSos === m ? null : m })}>
-                SOS {m} · <span className="tabular-nums">{sosTat.filter((r) => r.sosLevel === Number(m)).length}</span>
+        {goc === 'tat-ca' && data && (
+          <div className="card overflow-hidden !p-0">
+            <div className="flex flex-wrap items-center gap-2 border-b p-3" style={{ borderColor: 'var(--line)' }} data-hd="hvl-goc">
+              {locTim}
+              {/* Link cũ có `classId` (badge quá hạn của lớp, trang khác) → Tất cả chỉ lớp đó; chip để bỏ. */}
+              {chiLop && <button type="button" className="nut-loc nut-loc-dang" onClick={() => setParam({ classId: null })} aria-label={t('Bỏ lọc lớp')}>{lopDangLoc?.code ?? t('Lớp')} ✕</button>}
+              <button type="button" className="nut-loc" aria-pressed={locThiThang} onClick={() => setParam({ thi: locThiThang ? null : '1' })}>
+                {t('Thi tháng này')} · <span className="tabular-nums">{demThi}</span>
               </button>
-            ))}
-            <button type="button" className="nut-loc" aria-pressed={mucSos === 'pa'} onClick={() => setParam({ muc: mucSos === 'pa' ? null : 'pa' })}>
-              {t('PA quá hạn')} · <span className="tabular-nums">{sosTat.filter(coPaQuaHan).length}</span>
-            </button>
-          </div>
-          <div className={sos.cu ? 'dang-tai-lai' : undefined} aria-busy={sos.cu || undefined}>
-          {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} status={sos.error.status} onRetry={sos.reload} /></div>
-            : !sos.data ? <div className="p-3"><Skeleton rows={6} /></div>
-            : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
-            : (
+              {laVai && CHIP_VAI_TRANG.filter((k) => !laChipPhu(k) || chipVai === k).map(chipVaiNut)}
+              {/* Đếm theo `/my-work` của người xem: GV = việc của mình; QL / Admin = việc mọi người trong chi nhánh đang xem (như Công việc "Tất cả"). */}
+              {coViec && <button type="button" className="nut-loc" aria-pressed={locQuaHan} disabled={!work.data && !work.error}
+                title={laQl || admin ? t('Việc quá hạn của mọi người trong chi nhánh') : t('Chỉ việc của bạn')}
+                onClick={() => { if (work.error) work.reload(); setParam({ qh: locQuaHan ? null : '1', view: null, loc: null }); }}>
+                {t('Có việc quá hạn')} · <span className="tabular-nums">{work.error ? '!' : work.data ? demQh : '…'}</span>
+              </button>}
+              <button type="button" className="nut-loc" title={LOC_HOC_VIEN_NHAN['da-thi'].goiY} aria-pressed={locDaThi} onClick={() => setParam({ loc: locDaThi ? null : 'da-thi', ...(laVai ? { view: null } : {}) })}>
+                {LOC_HOC_VIEN_NHAN['da-thi'].nhan} · <span className="tabular-nums">{demDaThi}</span>
+              </button>
+              <button type="button" className={`nut-loc ${soLocThem ? 'nut-loc-dang' : ''}`} aria-expanded={moLocThem} data-hd="hvl-loc-them" onClick={() => setParam({ lt: moLocThem ? null : '1' })}>
+                {t('Bộ lọc thêm')}{soLocThem ? <span className="tabular-nums font-medium">{soLocThem}</span> : null}
+              </button>
+              <span className="ml-auto text-xs tabular-nums text-slate-400 max-sm:hidden">{t('{n} HV · {m} lớp', { n: soEm(hvLoc), m: nhomLop.filter((g) => g.id > 0).length })}</span>
+            </div>
+            {moLocThem && (
+              <div role="group" aria-label={t('Bộ lọc thêm')} className="space-y-2 border-b p-3 text-sm" style={{ borderColor: 'var(--line)' }}>
+                {laVai && CHIP_VAI_PHU.some((k) => chipVai === k || goc0.some((h) => coChipVai(h, k))) && (
+                  <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Theo vai')}>
+                    <span className="w-full text-xs text-slate-400 sm:w-40">{t('Theo vai')}</span>
+                    {CHIP_VAI_PHU.filter((k) => chipVai === k || goc0.some((h) => coChipVai(h, k))).map(chipVaiNut)}
+                  </div>
+                )}
+                {!admin && <>
+                  <NhomLocThem ten={t('Case / PA')} ds={LOC_CASE} nhan={(k) => t(NHAN_LOC_CASE[k])} dang={locThem.case} onBat={(k) => batLoc('lc', locThem.case, k)} />
+                  <NhomLocThem ten={t('Kỹ năng cần xử lý')} ds={LOC_KY_NANG} nhan={(k) => KN_NGAN[k]} dang={locThem.kn} onBat={(k) => batLoc('lk', locThem.kn, k)} />
+                  <NhomLocThem ten={t('Kết quả gần nhất')} ds={LOC_KET_QUA} nhan={(k) => t(NHAN_LOC_KET_QUA[k])} dang={locThem.kq} onBat={(k) => batLoc('lq', locThem.kq, k)} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="w-full text-xs text-slate-400 sm:w-40">{t('Thời gian')}</span>
+                    {locThem.tu && locThem.den ? (
+                      <>
+                        <BoChonThoiGian khoang={{ kieu: kieuKhoang, tu: locThem.tu, den: locThem.den }} onChange={(k) => setParam({ ltu: k.tu, lden: k.den, lkieu: k.kieu })} />
+                        <button type="button" className="nut-loc nut-loc-dang" onClick={() => setParam({ ltu: null, lden: null, lkieu: null })}>{t('Mọi lúc')} ✕</button>
+                      </>
+                    ) : (
+                      <button type="button" className="nut-loc" onClick={() => { const k = khoangMacDinh(homNay); setParam({ ltu: k.tu, lden: k.den, lkieu: k.kieu }); }}>{t('Chọn khoảng')}</button>
+                    )}
+                  </div>
+                </>}
+                {/* Thứ tự em TRONG lớp (giữ từ bảng cũ): Tên · Cần chú ý trước (việc quá hạn → SOS cao). */}
+                <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Xếp em trong lớp')}>
+                  <span className="w-full text-xs text-slate-400 sm:w-40">{t('Xếp em trong lớp')}</span>
+                  <button type="button" className="nut-loc" aria-pressed={sapXep === 'lop'} onClick={() => setParam({ sx: null })}>{t('Theo tên')}</button>
+                  <button type="button" className="nut-loc" aria-pressed={sapXep === 'chu-y'} onClick={() => setParam({ sx: 'chu-y' })}>{t('Cần chú ý trước')}</button>
+                </div>
+                {batThem && (
+                  <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" onClick={() => setParam({ ...BO_LOC_THEM, lt: '1' })}>{t('Xoá lọc thêm')}</button>
+                )}
+              </div>
+            )}
+            <div className={trang.cu ? 'dang-tai-lai' : undefined} aria-busy={trang.cu || undefined}>
+            {theoVai.error && <div className="p-3"><ErrorState message={theoVai.error.message} hint={theoVai.error.hint} status={theoVai.error.status} onRetry={theoVai.reload} /></div>}
+            {laVai && !vaiTrang && !theoVai.error ? <div className="p-3"><Skeleton rows={6} /></div>
+            : laVai && pv?.dangDung === 'cua-toi' && dsEm.length === 0 && !q.trim() ? (
+              <Empty title={t('Chưa có học viên nào của bạn')} hint={t('Học viên có TVV là bạn sẽ hiện ở đây.')}
+                action={<button type="button" className="btn btn-sm" onClick={() => setParam({ phamVi: 'chi-nhanh' })}>{t('Xem cả chi nhánh')}</button>} />
+            ) : data.scopeEmpty || nhomLop.length === 0 ? (
+              <Empty title={data.scopeEmpty ? t('Bạn chưa được cấp phạm vi nào') : t('Không có học viên nào khớp')}
+                hint={data.scopeEmpty ? t('Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.') : t('Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.')}
+                action={q.trim() ? <button type="button" className="btn btn-sm" onClick={() => { setDraftQ(''); setParam({ q: null }); }}>{t('Xoá tìm')}</button> : undefined} />
+            ) : (
               <>
-                {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
-                <BangSosGon rows={pt.cat(sosRows)} hang={hangTheoEm} nguCanh={dsHocVien}
-                  onMo={(r: DongSos) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} />
-                {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
+                {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
+                {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />
+                  : <BangHvGon nhom={nhomHien} lop={lop} viec={viecHien} gopMon={laQl || admin} nguCanh={dsHocVien} onMoViec={moViec} onMoEm={moEm} onDoi={lamMoi} vai={vaiBang} />}
+                {nhomLop.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
               </>
             )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {goc === 'lich-thi' && (
-        <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })}
-          onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc} />
-      )}
+        {goc === 'sos' && (
+          <div className="card overflow-hidden !p-0">
+            <div className="flex flex-wrap items-center gap-2 border-b p-3" style={{ borderColor: 'var(--line)' }} role="group" aria-label={t('Lọc SOS')}>
+              {locChung}
+              <button type="button" className="nut-loc" aria-pressed={!mucSos} onClick={() => setParam({ muc: null })}>{t('Tất cả')} <span className="tabular-nums">{soEm(sosTat.map((r) => ({ id: r.studentId })))}</span></button>
+              {(['3', '2', '1'] as const).map((m) => (
+                <button key={m} type="button" className="nut-loc" aria-pressed={mucSos === m} onClick={() => setParam({ muc: mucSos === m ? null : m })}>
+                  SOS {m} · <span className="tabular-nums">{sosTat.filter((r) => r.sosLevel === Number(m)).length}</span>
+                </button>
+              ))}
+              <button type="button" className="nut-loc" aria-pressed={mucSos === 'pa'} onClick={() => setParam({ muc: mucSos === 'pa' ? null : 'pa' })}>
+                {t('PA quá hạn')} · <span className="tabular-nums">{sosTat.filter(coPaQuaHan).length}</span>
+              </button>
+            </div>
+            <div className={sos.cu ? 'dang-tai-lai' : undefined} aria-busy={sos.cu || undefined}>
+            {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} status={sos.error.status} onRetry={sos.reload} /></div>
+              : !sos.data ? <div className="p-3"><Skeleton rows={6} /></div>
+              : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
+              : (
+                <>
+                  {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
+                  <BangSosGon rows={pt.cat(sosRows)} hang={hangTheoEm} nguCanh={dsHocVien}
+                    onMo={(r: DongSos) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} />
+                  {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
-      {/* key: đổi chi nhánh (đã OK "rời đi sẽ mất") → góc dựng lại, nháp chi nhánh cũ không theo sang. */}
-      {goc === 'phan-cong' && (
-        <GocPhanCongGv key={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? 0 : 0} branchId={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? null : null} khung={khung}
-          q={params.get('tim') ?? ''} onQ={(v) => setParam({ tim: v || null })}
-          coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)}
-          chonCn={(branches.data?.length ?? 0) > 0 && (
-            <OChiNhanh branches={branches.data ?? []} branchId={null} tatCa
-              onBranch={(id) => { if (id === null) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
-          )} />
-      )}
+        {goc === 'lich-thi' && (
+          <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })}
+            onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc} />
+        )}
+
+        {/* key: đổi chi nhánh (đã OK "rời đi sẽ mất") → góc dựng lại, nháp chi nhánh cũ không theo sang. */}
+        {goc === 'phan-cong' && (
+          <GocPhanCongGv key={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? 0 : 0} branchId={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? null : null} khung={khung}
+            q={params.get('tim') ?? ''} onQ={(v) => setParam({ tim: v || null })}
+            coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)}
+            chonCn={(branches.data?.length ?? 0) > 0 && (
+              <OChiNhanh branches={branches.data ?? []} branchId={null} tatCa
+                onBranch={(id) => { if (id === null) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
+            )} />
+        )}
+      </div>
 
       {xuat && (
         <NganXuatDs ids={idsXuat} ca={caXuat} boLoc={boLocXuat} onDong={() => setXuat(false)}

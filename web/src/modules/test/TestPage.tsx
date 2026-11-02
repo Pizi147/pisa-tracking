@@ -44,13 +44,16 @@ export default function TestPage() {
     <div className="page space-y-4">
       <h1 className="text-xl font-bold text-slate-100 m-0">{t('Test')}</h1>
       {tabs.length > 1 && (
-        <HangTab ariaLabel={t('Test')} value={lopCu ? 'lich' : tab} onChange={go}
+        <HangTab panelId="test-vung" ariaLabel={t('Test')} value={lopCu ? 'lich' : tab} onChange={go}
           tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k], ...(k === 'cham' && viec.data ? { so: viecChamCuaToi(viec.data.dong).length, donVi: t('việc') } : {}) }))} />
       )}
-      {(tab === 'lich' || lopCu) && <LichTestTab />}
-      {lopCu && <PanelNhapDiemLop classId={lopCu} luot={params.get('luot')} onDong={dongLopCu} />}
-      {tab === 'cham' && <ChamTestTab />}
-      {tab === 'ke-hoach' && <KeHoachTestTab />}
+      {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
+      <div id="test-vung" role="tabpanel" aria-label={TAB_TEST_LABEL[lopCu ? 'lich' : tab]} className="space-y-4">
+        {(tab === 'lich' || lopCu) && <LichTestTab />}
+        {lopCu && <PanelNhapDiemLop classId={lopCu} luot={params.get('luot')} onDong={dongLopCu} />}
+        {tab === 'cham' && <ChamTestTab />}
+        {tab === 'ke-hoach' && <KeHoachTestTab />}
+      </div>
     </div>
   );
 }

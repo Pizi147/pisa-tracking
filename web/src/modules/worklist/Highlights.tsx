@@ -107,32 +107,35 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
   return (
     <Card title={t('Lịch sắp tới')} bodyClass="p-0" action={hep ? undefined : xemHet}>
       <div className="px-2 pt-1">
-        <HangTab cap="con" ariaLabel={t('Tuần')} value={String(i)} onChange={(k) => { setTab(k); setMoHet(false); }}
+        <HangTab cap="con" panelId="lich-sap-toi-vung" ariaLabel={t('Tuần')} value={String(i)} onChange={(k) => { setTab(k); setMoHet(false); }}
           tabs={data.weeks.map((x, j) => ({ key: String(j), label: nhanTab(x), so: theoTuan[j].reduce((n, d) => n + d.soEm, 0), donVi: t('em') }))} />
       </div>
-      {!dong.length ? (
-        <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có đợt Test nào trong tuần này.')}</p>
-      ) : (
-        <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
-          {hien.map((d) => (
-            <li key={d.key} className="grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-x-3 px-4 py-2 text-sm sm:grid-cols-[7rem_minmax(0,1fr)_auto]" style={{ borderColor: 'var(--line)' }}>
-              {d.id !== null
-                ? <Link to={`/hoc-vien/lop/${d.id}`} className="truncate font-semibold text-slate-200 no-underline hover:underline max-sm:py-3 max-sm:-my-3">{d.code}</Link>
-                : <b className="truncate font-semibold text-slate-200">{d.code}</b>}
-              <span className="flex min-w-0 flex-wrap gap-1.5">
-                {d.chip.map((c) => {
-                  const noiDung = <>{c.chu}{c.so !== null && <i className="not-italic text-slate-500">· <span className="tabular-nums">{c.so}</span><span className="max-sm:hidden"> {t('em')}</span></i>}</>;
-                  const cls = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-[7px] text-xs text-slate-300';
-                  return c.den
-                    ? <Link key={c.chu} to={c.den} className={`${cls} no-underline hover:underline`} style={{ borderColor: 'var(--line-strong)' }}>{noiDung}</Link>
-                    : <span key={c.chu} className={cls} style={{ borderColor: 'var(--line-strong)' }}>{noiDung}</span>;
-                })}
-              </span>
-              <span className="whitespace-nowrap text-xs text-slate-500 max-sm:hidden">{d.mon}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* DON-NHO-3 (TAB-A11Y): vùng tab — khối thường, p / ul đã m-0 → khoảng cách không đổi. */}
+      <div id="lich-sap-toi-vung" role="tabpanel" aria-label={nhanTab(w)}>
+        {!dong.length ? (
+          <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có đợt Test nào trong tuần này.')}</p>
+        ) : (
+          <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
+            {hien.map((d) => (
+              <li key={d.key} className="grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-x-3 px-4 py-2 text-sm sm:grid-cols-[7rem_minmax(0,1fr)_auto]" style={{ borderColor: 'var(--line)' }}>
+                {d.id !== null
+                  ? <Link to={`/hoc-vien/lop/${d.id}`} className="truncate font-semibold text-slate-200 no-underline hover:underline max-sm:py-3 max-sm:-my-3">{d.code}</Link>
+                  : <b className="truncate font-semibold text-slate-200">{d.code}</b>}
+                <span className="flex min-w-0 flex-wrap gap-1.5">
+                  {d.chip.map((c) => {
+                    const noiDung = <>{c.chu}{c.so !== null && <i className="not-italic text-slate-500">· <span className="tabular-nums">{c.so}</span><span className="max-sm:hidden"> {t('em')}</span></i>}</>;
+                    const cls = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-[7px] text-xs text-slate-300';
+                    return c.den
+                      ? <Link key={c.chu} to={c.den} className={`${cls} no-underline hover:underline`} style={{ borderColor: 'var(--line-strong)' }}>{noiDung}</Link>
+                      : <span key={c.chu} className={cls} style={{ borderColor: 'var(--line-strong)' }}>{noiDung}</span>;
+                  })}
+                </span>
+                <span className="whitespace-nowrap text-xs text-slate-500 max-sm:hidden">{d.mon}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       {(conLai > 0 || thi > 0 || chuaRo || hep) && (
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-t px-4 py-2 text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>
           {conLai > 0 && <button type="button" className="link min-h-[44px] sm:min-h-0" onClick={() => setMoHet(true)}>+ {t('{n} lớp', { n: conLai })}</button>}

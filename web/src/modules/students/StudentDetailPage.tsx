@@ -330,96 +330,99 @@ export default function StudentDetailPage() {
         Tab nhớ qua địa chỉ `?tab=` (A6) để Việc cần làm / hồ sơ lớp mở thẳng đúng tab — không nhớ bằng localStorage.
         Không có lộ trình thì chỉ tab Học thuật trống; tab Ý thức và Hành trình vẫn mở được (J8).
       */}
-      <HangTab ariaLabel={t('Nội dung hồ sơ học viên')} value={tab} onChange={setTab}
+      <HangTab panelId="hshv-vung" ariaLabel={t('Nội dung hồ sơ học viên')} value={tab} onChange={setTab}
         tabs={[
           { key: 'hoc-thuat', label: HO_SO_TAB_LABEL['hoc-thuat'] },
           { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'], canhBao: yThuc.data?.nhom === 'qua_han' || yThuc.data?.nhom === 'bat_buoc' },
           { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'] },
         ]} />
 
-      {tab === 'hoc-thuat' && (!cy ? (
-        <Empty title={t('Học viên chưa có lộ trình nào')} hint={t('Mở lộ trình để bắt đầu theo dõi Target và các mốc đánh giá.')} />
-      ) : (
-        <>
-          {/*
-            KHỐI CHÍNH CỦA HỒ SƠ (mục 4.2). Bấm một hàng thì nội dung mở ra NGAY DƯỚI hàng
-            đó — biểu đồ của chính kỹ năng ấy, các Case đang mở, lịch sử đã kết thúc.
+      {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
+      <div id="hshv-vung" role="tabpanel" aria-label={HO_SO_TAB_LABEL[tab]} className="space-y-4">
+        {tab === 'hoc-thuat' && (!cy ? (
+          <Empty title={t('Học viên chưa có lộ trình nào')} hint={t('Mở lộ trình để bắt đầu theo dõi Target và các mốc đánh giá.')} />
+        ) : (
+          <>
+            {/*
+              KHỐI CHÍNH CỦA HỒ SƠ (mục 4.2). Bấm một hàng thì nội dung mở ra NGAY DƯỚI hàng
+              đó — biểu đồ của chính kỹ năng ấy, các Case đang mở, lịch sử đã kết thúc.
 
-            Khối "Case và kết quả hỗ trợ" tách riêng ở dưới đã BỎ: nó kể lại đúng những Case
-            mà bảng này vừa tóm tắt, nên cùng một Case hiện hai lần trên một trang, và bấm
-            một hàng ở đây thì phải cuộn xuống chỗ khác mới thấy kết quả.
-          */}
-          {/* PR-LT2b (M-05): ô Mini Test ở đầu tab (lộ trình mới có bổ trợ miễn phí) · hộp Kết luận khoá (lớp thường đã có điểm Cuối khoá). */}
-          {data.miniTest && <MiniTestO mt={data.miniTest} onGhi={(caseId, paId) => setOpenCase({ caseId, paId, viec: 'ghi-ket-qua' })} />}
-          {data.cuoiKhoa && (data.cuoiKhoa.scored > 0 || data.cuoiKhoa.lenFt) && (
-            <KetLuanKhoa studentId={data.id} studentName={data.fullName} lop={data.cuoiKhoa.lop ?? data.currentClass?.code ?? null} classId={data.currentClass?.id ?? null} ct={data.cuoiKhoa.ct ?? cy.programmeCode ?? null}
-              cuoiKhoa={data.cuoiKhoa} coTheKetLuan={!!data.viewer?.coTheKetLuan} onDoi={reload} />
-          )}
-          {/*
-            HÀNH TRÌNH THEO KỸ NĂNG ĐANG CHỌN (UI-CHART-D, mockup M5): kỹ năng → chart D | Bảng (`HanhTrinhKn`); Overall (FT) → bảng Mock Test ĐẶT CHỖ CHART
-            + hàng Thi thật cuối, nổi nhất (chủ SP 27/10). Tiến độ trên lớp vẫn dưới, thang riêng, không vào MT.
-          */}
-          <section id="hanh-trinh-kn" className="card overflow-hidden" aria-label={chon === OVERALL && !cy.ratio ? 'Mock Test' : t('Hành trình · {kn}', { kn: tenChon })}>
-            {chon === OVERALL && !cy.ratio ? (
-              <>
-                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-                  <h2 className="m-0 text-[15px] font-bold text-slate-100">Mock Test</h2>
-                  <NutLuat label={t('Cách đọc bảng Mock Test')}>{t('Điểm tô theo kỳ vọng của chính lượt · hàng cuối là thi thật — kết quả cuối của lộ trình, so Target.')}</NutLuat>
-                </div>
-                <KhoiMockTest cy={cy} attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
-              </>
-            ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
-              : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
-              : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon}
-                tamDung={data.dauHoSo?.thongTin?.khoangDung} onMoCase={(caseId, paId) => moCase(caseId, { paId })} toTuan={toTuan} />}
-          </section>
+              Khối "Case và kết quả hỗ trợ" tách riêng ở dưới đã BỎ: nó kể lại đúng những Case
+              mà bảng này vừa tóm tắt, nên cùng một Case hiện hai lần trên một trang, và bấm
+              một hàng ở đây thì phải cuộn xuống chỗ khác mới thấy kết quả.
+            */}
+            {/* PR-LT2b (M-05): ô Mini Test ở đầu tab (lộ trình mới có bổ trợ miễn phí) · hộp Kết luận khoá (lớp thường đã có điểm Cuối khoá). */}
+            {data.miniTest && <MiniTestO mt={data.miniTest} onGhi={(caseId, paId) => setOpenCase({ caseId, paId, viec: 'ghi-ket-qua' })} />}
+            {data.cuoiKhoa && (data.cuoiKhoa.scored > 0 || data.cuoiKhoa.lenFt) && (
+              <KetLuanKhoa studentId={data.id} studentName={data.fullName} lop={data.cuoiKhoa.lop ?? data.currentClass?.code ?? null} classId={data.currentClass?.id ?? null} ct={data.cuoiKhoa.ct ?? cy.programmeCode ?? null}
+                cuoiKhoa={data.cuoiKhoa} coTheKetLuan={!!data.viewer?.coTheKetLuan} onDoi={reload} />
+            )}
+            {/*
+              HÀNH TRÌNH THEO KỸ NĂNG ĐANG CHỌN (UI-CHART-D, mockup M5): kỹ năng → chart D | Bảng (`HanhTrinhKn`); Overall (FT) → bảng Mock Test ĐẶT CHỖ CHART
+              + hàng Thi thật cuối, nổi nhất (chủ SP 27/10). Tiến độ trên lớp vẫn dưới, thang riêng, không vào MT.
+            */}
+            <section id="hanh-trinh-kn" className="card overflow-hidden" aria-label={chon === OVERALL && !cy.ratio ? 'Mock Test' : t('Hành trình · {kn}', { kn: tenChon })}>
+              {chon === OVERALL && !cy.ratio ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+                    <h2 className="m-0 text-[15px] font-bold text-slate-100">Mock Test</h2>
+                    <NutLuat label={t('Cách đọc bảng Mock Test')}>{t('Điểm tô theo kỳ vọng của chính lượt · hàng cuối là thi thật — kết quả cuối của lộ trình, so Target.')}</NutLuat>
+                  </div>
+                  <KhoiMockTest cy={cy} attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
+                </>
+              ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
+                : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
+                : homNay && <HanhTrinhKn studentId={data.id} kn={chon} row={hangChon} attempts={data.attempts} cy={cy} homNay={homNay} tenKn={tenChon}
+                  tamDung={data.dauHoSo?.thongTin?.khoangDung} onMoCase={(caseId, paId) => moCase(caseId, { paId })} toTuan={toTuan} />}
+            </section>
 
-          {/*
-            HAI CỘT DƯỚI HÀNH TRÌNH (UI-HO-SO-HV-2, mockup M5): trái Tiến độ trên lớp (form ghi / sửa / xoá trong cột, Hoàn tác, góp ý tuần khoá đọc) · phải
-            Case & PA của kỹ năng đang chọn (Overall: mọi Case) — khối Case A của M6, form tại chỗ. 375: xếp dọc. Bỏ panel Ghi tiến độ cũ.
-          */}
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-            {homNay && <TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan} />}
-            {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
-              : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
-              : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
-                onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}
-                onChanged={() => { board.reload(); reload(); }} />}
-          </div>
+            {/*
+              HAI CỘT DƯỚI HÀNH TRÌNH (UI-HO-SO-HV-2, mockup M5): trái Tiến độ trên lớp (form ghi / sửa / xoá trong cột, Hoàn tác, góp ý tuần khoá đọc) · phải
+              Case & PA của kỹ năng đang chọn (Overall: mọi Case) — khối Case A của M6, form tại chỗ. 375: xếp dọc. Bỏ panel Ghi tiến độ cũ.
+            */}
+            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+              {homNay && <TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan} />}
+              {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
+                : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
+                : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
+                  onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}
+                  onChanged={() => { board.reload(); reload(); }} />}
+            </div>
 
-          {/*
-            TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp thường là "Kết quả Test" (cuối tab). FT: bảng Mock Test nay ở chỗ chart khi chọn Overall (UI-CHART-D).
-          */}
-          {cy.ratio && (
-            <Card title={t('Kết quả Test')} bodyClass="p-0">
-              {data.attempts.length === 0 ? (
-                <div className="p-4"><Empty title={t('Chưa có lượt đánh giá nào trong lộ trình này')} /></div>
-              ) : <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />}
-              <GhiChuLoTrinh cy={cy} homNay={homNay} />
-            </Card>
-          )}
-        </>
-      ))}
+            {/*
+              TÊN KHỐI GỌI ĐÚNG THEO CHƯƠNG TRÌNH (mục 7.11): lớp thường là "Kết quả Test" (cuối tab). FT: bảng Mock Test nay ở chỗ chart khi chọn Overall (UI-CHART-D).
+            */}
+            {cy.ratio && (
+              <Card title={t('Kết quả Test')} bodyClass="p-0">
+                {data.attempts.length === 0 ? (
+                  <div className="p-4"><Empty title={t('Chưa có lượt đánh giá nào trong lộ trình này')} /></div>
+                ) : <RatioAttempts attempts={data.attempts} dotId={p.dot} homNay={homNay} ct={cy.programmeCode ?? null} onOpen={(a) => navigate(attemptHref(a))} />}
+                <GhiChuLoTrinh cy={cy} homNay={homNay} />
+              </Card>
+            )}
+          </>
+        ))}
 
-      {tab === 'y-thuc' && (
-        /* UI-Y-THUC-HV: các khối của tab tự là thẻ (mockup v7) — không bọc thêm một thẻ ngoài (thẻ lồng thẻ). */
-        <StudentYThucSection studentId={data.id} thuong={!!cy?.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
-      )}
+        {tab === 'y-thuc' && (
+          /* UI-Y-THUC-HV: các khối của tab tự là thẻ (mockup v7) — không bọc thêm một thẻ ngoài (thẻ lồng thẻ). */
+          <StudentYThucSection studentId={data.id} thuong={!!cy?.ratio} onGoAcademic={() => setTab('hoc-thuat')} />
+        )}
 
-      {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onBuocTiep={moBuocTiep} onHocThuat={() => setTab('hoc-thuat')} />}
+        {tab === 'hanh-trinh' && <CacLoTrinh studentId={data.id} onTongKet={moTongKet} onBuocTiep={moBuocTiep} onHocThuat={() => setTab('hoc-thuat')} />}
 
-      {tab === 'hanh-trinh' && (
-        <Card title={t('Hành trình học tập')} bodyClass="p-4 space-y-4">
-          {/*
-            TRỤC TUẦN THEO LỊCH THẬT, MỖI GIAI ĐOẠN MỘT TRỤC (§3.8, PR-Qb) — thay dòng thời gian
-            cũ vẽ lại đúng biểu đồ điểm đã có ở khối trên. Tự gọi máy chủ riêng theo giai đoạn
-            đang chọn, chỉ khi tab này đang mở.
-          */}
-          {/* PR-VAI-b: chương theo lớp (thay Lịch sử lớp) + trục tuần — một đường `/hanh-trinh`. */}
-          <HanhTrinh studentId={data.id} active={tab === 'hanh-trinh'}
-            onOpenCase={(caseId, paId) => setOpenCase({ caseId, paId })} />
-        </Card>
-      )}
+        {tab === 'hanh-trinh' && (
+          <Card title={t('Hành trình học tập')} bodyClass="p-4 space-y-4">
+            {/*
+              TRỤC TUẦN THEO LỊCH THẬT, MỖI GIAI ĐOẠN MỘT TRỤC (§3.8, PR-Qb) — thay dòng thời gian
+              cũ vẽ lại đúng biểu đồ điểm đã có ở khối trên. Tự gọi máy chủ riêng theo giai đoạn
+              đang chọn, chỉ khi tab này đang mở.
+            */}
+            {/* PR-VAI-b: chương theo lớp (thay Lịch sử lớp) + trục tuần — một đường `/hanh-trinh`. */}
+            <HanhTrinh studentId={data.id} active={tab === 'hanh-trinh'}
+              onOpenCase={(caseId, paId) => setOpenCase({ caseId, paId })} />
+          </Card>
+        )}
+      </div>
 
       {/* ============================================== hộp thoại */}
       {/* PR-DL: `?mo=lo-trinh` (bảng điểm theo lượt, em chưa có lịch MT) mở sẵn panel; đóng thì bỏ tham số. */}
