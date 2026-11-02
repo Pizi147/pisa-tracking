@@ -79,8 +79,7 @@ export function DemoBar() {
               className={`text-left card p-3 hover:border-sky-300/40 ${session?.user?.id === a.id ? 'border-sky-300/60' : ''}`}
               onClick={async () => {
                 setPickerOpen(false);
-                await switchAccount(a.id);
-                toast.push('ok', `Đang dùng tài khoản: ${a.fullName}`);
+                if (await switchAccount(a.id)) toast.push('ok', `Đang dùng tài khoản: ${a.fullName}`);
               }}
             >
               <div className="flex items-center justify-between gap-2">

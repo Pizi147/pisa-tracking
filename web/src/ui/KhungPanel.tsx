@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { docNhap, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { HopBoChu } from './Drawer.tsx';
+import { khoRoiNhap } from './chanRoiNhap.tsx';
 import { DongCanSua, useNoiLoi, type MucThieu } from './loiForm.tsx';
 import { useGiuFocus } from './giuFocus.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
@@ -227,11 +228,13 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
   hienLaiRef.current = hienLai;
   /* Hotfix 15/10 (L5) · NEN-PANEL (T16): ✕ / Esc / bấm nền / ← / đổi việc đi chung một đường — đang sửa dở thì hộp "Bỏ chữ đang gõ?" (Ở lại /
      Bỏ chữ), không mất chữ âm thầm. Bỏ chữ = xoá nháp của việc rồi làm tiếp. */
-  const [hoi, setHoi] = useState<{ nut: string; tiep: () => void } | null>(null);
+  const [hoi, setHoi] = useState<{ nut: string; tiep: () => void; o?: () => void } | null>(null);
   const daSuaRef = useRef(false);
   daSuaRef.current = daSua && !chan?.tuHoi;
+  /* CHAN-ROI-NHAP-2: đã trả lời "Bỏ chữ" ở hộp này → việc vừa bấm (đóng, sang việc khác, rời trang) không bị bộ chặn gốc hỏi lần hai. */
+  const daBo = useRef(false);
   const dong = () => { if (daSuaRef.current) setHoi({ nut: t('Bỏ chữ, đóng'), tiep: () => dongRef.current() }); else dongRef.current(); };
-  const boChu = () => { const h = hoi; setHoi(null); nhap?.xoa(); h?.tiep(); };
+  const boChu = () => { const h = hoi; setHoi(null); daBo.current = true; nhap?.xoa(); h?.tiep(); };
 
   useEffect(() => {
     if (longTrong || taiCho) return undefined;
@@ -262,11 +265,17 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
     return () => { document.removeEventListener('keydown', onKey); nganPanel.splice(nganPanel.indexOf(id), 1); };
   }, [id, taiCho]);
 
+  /* Chữ chỉ ở state (không qua `useNhap`): rời trang là mất. Chữ ở nháp máy: rời trang còn (mở lại việc là thấy), chỉ đổi tài khoản / đăng xuất mới mất. */
+  const mat = !!chan?.daSua || !!daSuaRieng || conSua;
   useEffect(() => {
-    if (!daSua) return undefined;
-    panelDangSua.set(id, (tiep) => { hienLaiRef.current?.(); setHoi({ nut: t('Bỏ chữ, sang việc khác'), tiep }); });
-    return () => { panelDangSua.delete(id); };
-  }, [id, daSua]);
+    if (!daSua) { daBo.current = false; return undefined; }
+    const hoiBo = (nut: string) => (tiep: () => void, o?: () => void) => { hienLaiRef.current?.(); setHoi({ nut, tiep, o }); };
+    panelDangSua.set(id, hoiBo(t('Bỏ chữ, sang việc khác')));
+    /* CHAN-ROI-NHAP-2: link sang trang khác, Back / tiến của trình duyệt (kể cả cùng trang — đóng panel), đổi tài khoản → bộ chặn gốc (`ChanRoiNhapGoc`)
+       gọi chính hộp này. App tự đổi URL trong cùng trang (đổi việc, lọc, việc tiếp sau khi lưu) thì panel tự lo như cũ. */
+    khoRoiNhap.dat(id, { moTa: tieuDe, conTrong: (a, b, kieu) => daBo.current || !mat || (kieu !== 'POP' && a.pathname === b.pathname), hoi: hoiBo(t('Bỏ chữ, rời đi')) });
+    return () => { panelDangSua.delete(id); khoRoiNhap.dat(id, null); };
+  }, [id, daSua, mat, tieuDe]);
   useBanPhim(!trongKhung);   // rà #530: một nơi đo — panel con đóng không gỡ `--ban-phim` khi panel ngoài còn mở
 
   /* M6 6b-1 (luật Quay lại): ‹ lùi một view KHÔNG hỏi khi chữ đã ở nháp (`useNhap` — mở lại view là còn); form chỉ giữ chữ trong state (`chan.daSua`)
@@ -372,7 +381,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, ngCanh
           </footer>
         )}
         </fieldset>
-        {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => setHoi(null)} onBo={boChu} />}
+        {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => { setHoi(null); hoi.o?.(); }} onBo={boChu} />}
     </>
   );
   const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}>{x}</QuayLaiPanel.Provider></TrongKhung.Provider>;
