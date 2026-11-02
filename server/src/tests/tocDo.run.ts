@@ -1193,6 +1193,37 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
  * TD7a (chủ SP 17/10, Turso Top Queries: câu "Xem nhận xét Speaking" ~225 k dòng / lần): câu xem_nx_s — "Tất cả" (không lọc / lọc chi nhánh) và nhánh lớp
  * ("Của tôi" của GV S) — đi chỉ mục một phần idx_score_cho_phu_trach, không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lần hai không làm gì. JSON /my-work không đổi: TD4-a ở trên.
  */
+/*
+ * DOC-IT-2 (02/11): hai câu quét cả bảng ở Công việc (mọi vai) + lượt quét nền — đo bằng `scripts/do-it.py` trên DB ×3 (mô tả PR). Mini test chưa có tỉ lệ
+ * trước đi ngược từ MỌI ghi danh active (SCAN enrollments mỗi lần mở Công việc / Tổng quan GV); hẹn Lộ trình mới tới tuần quét cả `learning_cycles`.
+ */
+await checkAsync('DOC-IT-2 (×3) · mini test chưa có tỉ lệ + hẹn Lộ trình mới: đi chỉ mục một phần, không SCAN enrollments / learning_cycles; migrate chạy lặp được', async () => {
+  const { migratePrDocIt2, CHI_MUC_DOC_IT_2 } = await import('../migrate/prDocIt2.ts');
+  const lan: string[][] = [[], []];
+  migratePrDocIt2(conn, lan[0]); migratePrDocIt2(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  const PISA_DO_QUET_GOC = process.env.PISA_DO_QUET;
+  doQuet.ghi = ghi;
+  process.env.PISA_DO_QUET = '1';   // câu hẹn Lộ trình mới nằm trong lượt quét — đo khi quét chạy
+  try {
+    for (const vai of ['GVCN', 'QL'] as Vai[]) assert((await doSql(vai, 'GET', '/my-work')).status === 200, `${vai} /my-work không 200`);
+  } finally {
+    doQuet.ghi = null;
+    if (!PISA_DO_QUET_GOC) delete process.env.PISA_DO_QUET;
+  }
+  const loi: string[] = [];
+  for (const [ten, re, chiMuc] of [['mini test chưa có tỉ lệ', /FROM mini_test m JOIN students s/, CHI_MUC_DOC_IT_2[0][0]], ['hẹn Lộ trình mới', /buoc_tiep = 'lo_trinh_moi' AND buoc_tiep_hen/, CHI_MUC_DOC_IT_2[1][0]]] as const) {
+    const cau = [...new Map(ghi.filter((g) => re.test(g.sql)).map((g) => [g.sql, g])).values()];
+    if (!cau.length) { loi.push(`không bắt được câu "${ten}"`); continue; }
+    for (const { sql, args } of cau) {
+      const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+      if (!plan.some((d) => d.includes(chiMuc)) || plan.some((d) => /^SCAN (cur|learning_cycles)$/.test(d))) loi.push(`${ten}: ${plan.join(' | ')}`);
+    }
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');
