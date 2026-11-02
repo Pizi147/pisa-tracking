@@ -1027,15 +1027,15 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
   'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507
   'QT /tong-quan/diem-chu-y?ct=ft': 4235,   // đo 3257
-  'GVCN /tong-quan/lop-toi-day?ct=ft': 2703,   // đo 2079
-  'GVBM /tong-quan/lop-toi-day?ct=ft': 3059,   // đo 2353
-  'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 2703,   // đo 2079
+  'GVCN /tong-quan/lop-toi-day?ct=ft': 1827,   // đo 2079 · DOC-IT-3: đo 1405 (Case của GV lọc theo lớp trong SQL) → ⌈đo × 1,3⌉
+  'GVBM /tong-quan/lop-toi-day?ct=ft': 2073,   // đo 2353 · DOC-IT-3: đo 1594
+  'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 1827,   // đo 2079 · DOC-IT-3: đo 1405
   'QL /metrics/hv-duoi-ky-vong-mon': 2093,   // đo 1610
   'QT /metrics/hv-duoi-ky-vong-mon': 3040,   // đo 2338
   'QL /hoc-vien-lop': 3374,   // TD3-b: đo 2627 (68 câu); TL-HVL: đo 2595 (trước 2648)
   /* DOC-IT-4: lọc phạm vi trong SQL — đo 23 · 11 · 18 · 11 · 33 (trước 33 mọi vai) → ⌈đo × 1,3⌉. */
   'QL /ref/classes': 30, 'GVCN /ref/classes': 15, 'GVBM /ref/classes': 24, 'GVCN_THUONG /ref/classes': 15, 'QT /ref/classes': 43, 'QL /ref/classes?branchId={cn}': 30,
-  'GVCN /hoc-vien-lop': 2555,   // TD3-b: đo 2001 (72 câu); TL-HVL: đo 1965 (trước 1991)
+  'GVCN /hoc-vien-lop': 2519,   // TD3-b: đo 2001 (72 câu); TL-HVL: đo 1965 (trước 1991); DOC-IT-3: đo 1937
   'GVBM /hoc-vien-lop': 2929,   // TD3-b: đo 2288 (72 câu); TL-HVL: đo 2253 (trước 2295)
   'GVCN_THUONG /hoc-vien-lop': 2555,   // TD3-b: đo 2001 (72 câu); TL-HVL: đo 1965 (trước 1991)
   'QT /hoc-vien-lop': 3305,   // TD3-b: đo 2542 (67 câu); TL-HVL: đo 2549 (trước 2602)
