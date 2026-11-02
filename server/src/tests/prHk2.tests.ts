@@ -368,7 +368,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C26 · "Khác" (T12): nhóm quyền "Chưa xếp nhóm", ô Đề xuất sửa "Thông tin khác"; Lưu trữ rỗng khi tìm: "Không có … khớp"', () => {
     const ad = doc('web/src/modules/platform/AdminPage.tsx');
-    assert(!/ten: 'Khác'/.test(ad) && /ten: 'Chưa xếp nhóm'/.test(ad), 'AdminPage');
+    assert(!/ten: (?:t\()?'Khác'/.test(ad) && /ten: t\('Chưa xếp nhóm'\)/.test(ad), 'AdminPage');   // EN-SOT: chữ qua t()
     const dx = doc('web/src/modules/duyet/DeXuatSuaPanel.tsx');
     assert(/nhan: t\('Thông tin khác'\)/.test(dx) && !/nhan: (?:t\()?'Khác'/.test(dx), 'DeXuatSuaPanel');
     const lt = doc('web/src/modules/students/LuuTruPage.tsx');

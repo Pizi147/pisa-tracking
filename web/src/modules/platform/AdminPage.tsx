@@ -11,7 +11,7 @@ import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
-import { t as tChu } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { fmtDateTime, roleLabel } from '../../lib/format.ts';
 import { MO_TA_QUYEN, NHOM_QUYEN, lyDoCamVai, nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
@@ -36,18 +36,18 @@ type AdminData = {
  * Tab nằm trên URL (`?tab=`, OV-11b QT-10g): rời trang rồi Quay lại về đúng tab.
  */
 const TABS = [
-  { key: 'accounts', label: 'Tài khoản' },
-  { key: 'catalog', label: 'Chương trình' },
-  { key: 'band', label: 'Bảng quy đổi' },
-  { key: 'config', label: 'Quyền & nhật ký' },
-  { key: 'da-xoa', label: 'Đã xoá' },
+  { key: 'accounts', label: t('Tài khoản') },
+  { key: 'catalog', label: t('Chương trình') },
+  { key: 'band', label: t('Bảng quy đổi') },
+  { key: 'config', label: t('Quyền & nhật ký') },
+  { key: 'da-xoa', label: t('Đã xoá') },
 ] as const;
 
 export default function AdminPage() {
   const [params, setParams] = useSearchParams();
   const quanTri = !!useSession().session?.nav?.admin;
-  const tabs = quanTri ? TABS : TABS.filter((t) => t.key === 'band' || t.key === 'da-xoa');
-  const tab = tabs.find((t) => t.key === params.get('tab'))?.key ?? tabs[0].key;
+  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'band' || x.key === 'da-xoa');
+  const tab = tabs.find((x) => x.key === params.get('tab'))?.key ?? tabs[0].key;
   /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
   const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === 'accounts' ? {} : { tab: k });
   const { data, loading, error, reload } = useApi<AdminData>(tab === 'config' ? '/admin/overview' : null, [tab]);
@@ -55,23 +55,23 @@ export default function AdminPage() {
   return (
     <div className="page space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-100">{quanTri ? 'Quản trị hệ thống' : tab === 'da-xoa' ? tChu('Quản trị') : 'Bảng quy đổi band'}</h1>
+        <h1 className="text-xl font-bold text-slate-100">{quanTri ? t('Quản trị hệ thống') : tab === 'da-xoa' ? t('Quản trị') : t('Bảng quy đổi band')}</h1>
         {(quanTri || tab === 'band') && (
           <p className="text-xs text-slate-500 mt-0.5">
-            {quanTri ? 'Tài khoản, danh mục và cấu hình quyền của phần mềm.' : 'Quản trị hệ thống sửa; Quản lý xem.'}
+            {quanTri ? t('Tài khoản, danh mục và cấu hình quyền của phần mềm.') : t('Quản trị hệ thống sửa; Quản lý xem.')}
           </p>
         )}
       </div>
 
       {tabs.length > 1 && (
         <div data-hd="qt-tab">
-          <HangTab panelId="qt-vung" ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
-            tabs={tabs.map((t) => ({ key: t.key, label: t.key === 'da-xoa' ? tChu(t.label) : t.label }))} />
+          <HangTab panelId="qt-vung" ariaLabel={t('Quản trị hệ thống')} value={tab} onChange={setTab}
+            tabs={tabs.map((x) => ({ key: x.key, label: x.label }))} />
         </div>
       )}
 
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
-      <div id="qt-vung" role="tabpanel" aria-label="Quản trị hệ thống" className="space-y-4">
+      <div id="qt-vung" role="tabpanel" aria-label={t('Quản trị hệ thống')} className="space-y-4">
         {tab === 'accounts' && <AccountsAdmin />}
         {tab === 'catalog' && <CatalogAdmin />}
         {tab === 'band' && <BangQuyDoiAdmin />}
@@ -90,8 +90,8 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
 
       <div className="grid gap-3 sm:grid-cols-4">
         {[
-          ['Học viên', data.counts.students], ['Lớp', data.counts.classes],
-          ['Lượt Mock', data.counts.attempts], ['Case SOS', data.counts.cases],
+          [t('Học viên'), data.counts.students], [t('Lớp'), data.counts.classes],
+          [t('Lượt Mock'), data.counts.attempts], [t('Case SOS'), data.counts.cases],
         ].map(([label, value]) => (
           <div key={label as string} className="card p-4">
             <div className="text-[12px]  text-slate-400 font-semibold">{label}</div>
@@ -104,24 +104,24 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
       <QuyenTheoVai onDaLuu={onDone} />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="Đơn vị báo cáo">
+        <Card title={t('Đơn vị báo cáo')}>
           <ul className="text-sm space-y-1.5 list-none p-0 m-0">
             {data.units.map((u) => (
               <li key={u.id} className="flex items-center gap-2">
                 <span className="text-slate-100">{u.name}</span>
-                <Info>{u.kind === 'branch' ? 'Chi nhánh' : 'Đơn vị độc lập'}</Info>
+                <Info>{u.kind === 'branch' ? t('Chi nhánh') : t('Đơn vị độc lập')}</Info>
               </li>
             ))}
           </ul>
-          <SectionNote>Tutor part-time là đơn vị báo cáo riêng, không phải chi nhánh thứ sáu.</SectionNote>
+          <SectionNote>{t('Tutor part-time là đơn vị báo cáo riêng, không phải chi nhánh thứ sáu.')}</SectionNote>
         </Card>
 
-        <Card title="Nhật ký thay đổi gần nhất" bodyClass="p-0">
+        <Card title={t('Nhật ký thay đổi gần nhất')} bodyClass="p-0">
           <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {data.audit.map((a) => (
               <li key={a.id} className="px-4 py-2 text-xs">
-                <span className="text-slate-200" title={a.action}>{nhanHanhDongNhatKy(a.action)}</span>
-                <span className="text-slate-500"> · {a.entityLabel ? nhanDoiTuongNhatKy(a.entityLabel) : a.entityType}</span>
+                <span className="text-slate-200" title={a.action}>{dich(nhanHanhDongNhatKy(a.action))}</span>
+                <span className="text-slate-500"> · {a.entityLabel ? dich(nhanDoiTuongNhatKy(a.entityLabel)) : a.entityType}</span>
                 <div className="text-slate-500">{a.actorName ?? '—'} · {fmtDateTime(a.createdAt)}</div>
               </li>
             ))}
@@ -157,7 +157,13 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
   const [busy, setBusy] = useState(false);
   const [xacNhan, setXacNhan] = useState(false);
   const [gap, setGap] = useState<ReadonlySet<string>>(new Set());
-  const d = mt.data;
+  /* EN-SOT: tên vai / quyền / ghi chú GVCN máy chủ gửi bằng chữ Việt — dịch ở chỗ hiện. `khoa[].lyDo` giữ Việt (so với `lyDoCamVai`), dịch khi hiện. */
+  const d = mt.data && {
+    ...mt.data,
+    vai: mt.data.vai.map((v) => ({ ...v, ten: dich(v.ten) })),
+    quyen: mt.data.quyen.map((q) => ({ ...q, ten: dich(q.ten) })),
+    suyRaGv: mt.data.suyRaGv.map((x) => ({ ...x, ghiChu: dich(x.ghiChu) })),
+  };
 
   const khoa = (r: string, p: string) => `${r}|${p}`;
   const bam = (r: string, p: string) => setDoi((s) => { const n = new Set(s); if (n.has(khoa(r, p))) n.delete(khoa(r, p)); else n.add(khoa(r, p)); return n; });
@@ -176,13 +182,13 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     return { coSan, daDoi: doi.has(khoa(r, p)), lyDoKhoa };
   };
 
-  if (mt.error) return <Card title="Quyền theo vai trò"><ErrorState message={mt.error.message} hint={mt.error.hint} status={mt.error.status} onRetry={mt.reload} /></Card>;
-  if (!d) return <Card title="Quyền theo vai trò"><Skeleton rows={8} /></Card>;
+  if (mt.error) return <Card title={t('Quyền theo vai trò')}><ErrorState message={mt.error.message} hint={mt.error.hint} status={mt.error.status} onRetry={mt.reload} /></Card>;
+  if (!d) return <Card title={t('Quyền theo vai trò')}><Skeleton rows={8} /></Card>;
 
   const moTa = MO_TA_QUYEN as Record<string, { nhom: string; moTa: string; phamVi?: string } | undefined>;
   const nhom = [
-    ...NHOM_QUYEN.map((g) => ({ key: g.key as string, ten: g.ten, quyen: d.quyen.filter((q) => moTa[q.key]?.nhom === g.key) })),
-    { key: 'khac', ten: 'Chưa xếp nhóm', quyen: d.quyen.filter((q) => !moTa[q.key]) },
+    ...NHOM_QUYEN.map((g) => ({ key: g.key as string, ten: dich(g.ten), quyen: d.quyen.filter((q) => moTa[q.key]?.nhom === g.key) })),
+    { key: 'khac', ten: t('Chưa xếp nhóm'), quyen: d.quyen.filter((q) => !moTa[q.key]) },
   ].filter((g) => g.quyen.length > 0);
   const gvcn = new Map(d.suyRaGv.filter((x) => x.ai === 'GVCN').map((x) => [x.quyen, x.ghiChu]));
   const tenQuyen = new Map(d.quyen.map((q) => [q.key, q.ten]));
@@ -205,11 +211,11 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     try {
       const thayDoi = [...doi].map((k) => { const [roleKey, permissionKey] = k.split('|'); return { roleKey, permissionKey, granted: !trangThai(roleKey, permissionKey).coSan }; });
       await api.put('/admin/role-permissions', { thayDoi });
-      toast.push('ok', `Đã lưu ${thayDoi.length} thay đổi quyền`);
+      toast.push('ok', t('Đã lưu {n} thay đổi quyền', { n: thayDoi.length }));
       setXacNhan(false); setDoi(new Set()); setDangSua(false); mt.reload(); onDaLuu();
     } catch (e: any) {
       /* Lỗi thì giữ các ô đã đổi để sửa rồi lưu lại — không bắt bấm lại từ đầu. */
-      setXacNhan(false); toast.push('error', e?.message ?? 'Không lưu được');
+      setXacNhan(false); toast.push('error', e?.message ?? t('Không lưu được'));
     } finally { setBusy(false); }
   };
 
@@ -222,11 +228,11 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     const nhuGv = !ghiChu && !!d.co.teacher?.includes(q.key);
     if (chip && !ghiChu) return null;
     return (
-      <span title={ghiChu ?? (nhuGv ? 'Có vì GVCN cũng là Giáo viên' : 'Không tự có theo chủ nhiệm')}
+      <span title={ghiChu ?? (nhuGv ? t('Có vì GVCN cũng là Giáo viên') : t('Không tự có theo chủ nhiệm'))}
         className={chip ? 'inline-flex min-h-[32px] items-center gap-1 rounded-md border border-dashed border-muted-line px-2 text-xs text-slate-300'
           : `block text-sm ${ghiChu ? 'text-sky-200' : nhuGv ? 'text-slate-400' : 'text-slate-500'}`}>
-        {chip && 'GVCN: '}{ghiChu || nhuGv ? 'có' : '—'}
-        {ghiChu && <span className={`${chip ? '' : 'block '}text-xs text-slate-400`}>chỉ lớp chủ nhiệm</span>}
+        {chip && `${t('GVCN')}: `}{ghiChu || nhuGv ? t('có') : '—'}
+        {ghiChu && <span className={`${chip ? '' : 'block '}text-xs text-slate-400`}>{t('chỉ lớp chủ nhiệm')}</span>}
       </span>
     );
   };
@@ -234,7 +240,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     <button type="button" aria-expanded={!gap.has(g.key)} onClick={() => doiGap(g.key)}
       className="flex w-full min-h-[44px] sm:min-h-[36px] items-center gap-2 border-0 bg-transparent px-4 text-left text-xs font-bold  text-slate-300">
       <span className="flex-1">{g.ten}</span>
-      <span className="font-normal normal-case tabular-nums text-slate-500">{g.quyen.length} quyền</span>
+      <span className="font-normal normal-case tabular-nums text-slate-500">{t('{n} quyền', { n: g.quyen.length })}</span>
       <span className="text-slate-400"><IconGap mo={!gap.has(g.key)} /></span>
     </button>
   );
@@ -244,11 +250,11 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     return (
       <>
         <span className="block text-slate-100">{q.ten}</span>
-        {m && <span className="block text-xs text-slate-400">{m.moTa}</span>}
-        {m?.phamVi && <span className="block text-xs text-slate-500">{m.phamVi}</span>}
+        {m && <span className="block text-xs text-slate-400">{dich(m.moTa)}</span>}
+        {m?.phamVi && <span className="block text-xs text-slate-500">{dich(m.phamVi)}</span>}
         {ds.map((k) => (
           <span key={k.lyDo} className="mt-0.5 flex items-start gap-1 text-xs text-slate-400">
-            <IconKhoa className="mt-0.5" /><span><span className="text-slate-300">{k.vai.join(', ')}:</span> {k.lyDo}</span>
+            <IconKhoa className="mt-0.5" /><span><span className="text-slate-300">{k.vai.join(', ')}:</span> {dich(k.lyDo)}</span>
           </span>
         ))}
       </>
@@ -256,22 +262,22 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
   };
 
   return (
-    <Card title="Quyền theo vai trò" bodyClass="p-0"
-      action={!dangSua && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>Sửa quyền</button>}>
+    <Card title={t('Quyền theo vai trò')} bodyClass="p-0"
+      action={!dangSua && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>{t('Sửa quyền')}</button>}>
       {/* ≥ 640px: bảng. Cột "Quyền" rộng nhất vì mang mô tả; cột vai hẹp, căn giữa. */}
       <div className="hidden sm:block table-scroll bang-dinh">
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <Th className="sticky-col" hint="Mỗi dòng là một việc cụ thể. Chữ “có” nghĩa là vai đó được làm việc này.">Quyền</Th>
+              <Th className="sticky-col" hint={t('Mỗi dòng là một việc cụ thể. Chữ “có” nghĩa là vai đó được làm việc này.')}>{t('Quyền')}</Th>
               {d.vai.map((v) => (
                 <Th key={v.key} align="center"
-                  hint={`Bấm "Sửa quyền", rồi bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai trò ${v.ten}. Đang có ${v.soNguoi} tài khoản mang vai này.`}>
-                  {v.ten}<span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500 tabular-nums">{v.soNguoi} tài khoản</span>
+                  hint={t('Bấm "Sửa quyền", rồi bấm một ô trong cột này để bật hoặc tắt quyền đó cho vai trò {vai}. Đang có {n} tài khoản mang vai này.', { vai: v.ten, n: v.soNguoi })}>
+                  {v.ten}<span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500 tabular-nums">{t('{n} tài khoản', { n: v.soNguoi })}</span>
                 </Th>
               ))}
-              <Th align="center" hint="Chỉ đọc. GVCN có mọi quyền của Giáo viên, cộng các quyền tự có theo phân công chủ nhiệm — chỉ trong lớp mình chủ nhiệm.">
-                GVCN<span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">chỉ đọc</span>
+              <Th align="center" hint={t('Chỉ đọc. GVCN có mọi quyền của Giáo viên, cộng các quyền tự có theo phân công chủ nhiệm — chỉ trong lớp mình chủ nhiệm.')}>
+                {t('GVCN')}<span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">{t('chỉ đọc')}</span>
               </Th>
             </tr>
           </thead>
@@ -315,27 +321,27 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
       {dangSua && (
         <div className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
           <span className="text-xs tabular-nums text-slate-400" role="status">
-            {doi.size ? `${doi.size} thay đổi · ảnh hưởng ${soAnhHuong} tài khoản` : 'Chưa đổi ô nào'}
+            {doi.size ? t('{n} thay đổi · ảnh hưởng {m} tài khoản', { n: doi.size, m: soAnhHuong }) : t('Chưa đổi ô nào')}
           </span>
           <span className="flex-1" />
-          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>{doi.size ? 'Huỷ thay đổi' : 'Đóng'}</button>
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doi.size} onClick={() => setXacNhan(true)}>Lưu</button>
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={huy}>{doi.size ? t('Huỷ thay đổi') : t('Đóng')}</button>
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !doi.size} onClick={() => setXacNhan(true)}>{t('Lưu')}</button>
         </div>
       )}
 
       <ConfirmDialog open={xacNhan} onClose={() => setXacNhan(false)} onConfirm={luu} busy={busy}
-        title="Lưu thay đổi quyền theo vai trò" confirmLabel={`Lưu ${doi.size} thay đổi`}
+        title={t('Lưu thay đổi quyền theo vai trò')} confirmLabel={t('Lưu {n} thay đổi', { n: doi.size })}
         body={
           <>
-            <p className="m-0">Quyền mới có hiệu lực ngay với <strong>mọi tài khoản</strong> mang vai đó, ở mọi chi nhánh của họ.</p>
+            <p className="m-0">{t('Quyền mới có hiệu lực ngay với')} <strong>{t('mọi tài khoản')}</strong> {t('mang vai đó, ở mọi chi nhánh của họ.')}</p>
             <ul className="mt-3 mb-0 list-none space-y-2.5 p-0">
               {theoVai.map(({ v, ds }) => (
                 <li key={v.key}>
                   <span className="text-slate-100 font-semibold">{v.ten}</span>
-                  <span className="text-slate-400"> · ảnh hưởng <span className="tabular-nums">{v.soNguoi}</span> tài khoản</span>
+                  <span className="text-slate-400"> · {t('ảnh hưởng {n} tài khoản', { n: v.soNguoi })}</span>
                   <ul className="m-0 mt-1 list-none space-y-0.5 pl-3 text-xs">
                     {ds.map((p) => (
-                      <li key={p}>{trangThai(v.key, p).coSan ? 'Tắt' : 'Bật'}: {tenQuyen.get(p) ?? p}</li>
+                      <li key={p}>{trangThai(v.key, p).coSan ? t('Tắt') : t('Bật')}: {tenQuyen.get(p) ?? p}</li>
                     ))}
                   </ul>
                 </li>
@@ -346,23 +352,18 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
 
       <div className="p-3">
         <SectionNote>
-          Quyền = quyền của vai trò × phạm vi chi nhánh của CHÍNH grant đó × phân công lớp/kỹ năng.
-          Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.
+          {t('Quyền = quyền của vai trò × phạm vi chi nhánh của CHÍNH grant đó × phân công lớp/kỹ năng. Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.')}
           <br />
-          Bấm "Sửa quyền", đổi các ô cần đổi rồi bấm Lưu: hộp xác nhận liệt kê từng thay đổi và số tài khoản bị ảnh hưởng. Chỉ các ô
-          đã đổi được gửi, mỗi ô một dòng nhật ký ở cuối trang (sửa bảng quyền là việc phải tra lại được). Bấm "Huỷ thay đổi" thì không ghi gì.
+          {t('Bấm "Sửa quyền", đổi các ô cần đổi rồi bấm Lưu: hộp xác nhận liệt kê từng thay đổi và số tài khoản bị ảnh hưởng. Chỉ các ô đã đổi được gửi, mỗi ô một dòng nhật ký ở cuối trang (sửa bảng quyền là việc phải tra lại được). Bấm "Huỷ thay đổi" thì không ghi gì.')}
           <br />
-          <strong>Ô có dấu khoá không bấm được</strong>, lý do ghi ngay dưới tên quyền: hai quyền <strong>Cấu hình hệ thống</strong> và
-          <strong> Xem học viên</strong> của vai Quản trị hệ thống không gỡ được (gỡ xong thì không còn ai vào lại được màn này);
-          <strong> Chốt tuần MT</strong> không bật cho Giáo viên (SCH-01: giáo viên chỉ dời lịch lớp thường, chốt tuần MT và xếp lịch
-          Fast Track là việc của Quản lý); quyền phân công GV bộ môn chỉ tự có theo chủ nhiệm, không bật theo vai.
+          <strong>{t('Ô có dấu khoá không bấm được')}</strong>{t(', lý do ghi ngay dưới tên quyền: hai quyền')} <strong>{t('Cấu hình hệ thống')}</strong> {t('và')}
+          <strong> {t('Xem học viên')}</strong> {t('của vai Quản trị hệ thống không gỡ được (gỡ xong thì không còn ai vào lại được màn này);')}
+          <strong> {t('Chốt tuần MT')}</strong> {t('không bật cho Giáo viên (SCH-01: giáo viên chỉ dời lịch lớp thường, chốt tuần MT và xếp lịch Fast Track là việc của Quản lý); quyền phân công GV bộ môn chỉ tự có theo chủ nhiệm, không bật theo vai.')}
           <br />
-          <strong>Cột GVCN (chỉ đọc):</strong> GVCN có mọi quyền của Giáo viên, cộng các quyền tự có theo phân công chủ nhiệm — chỉ trong
-          lớp mình chủ nhiệm, không bật/tắt ở đây. Đổi quyền của GVCN là đổi phân công chủ nhiệm ở màn Lớp.
+          <strong>{t('Cột GVCN (chỉ đọc):')}</strong> {t('GVCN có mọi quyền của Giáo viên, cộng các quyền tự có theo phân công chủ nhiệm — chỉ trong lớp mình chủ nhiệm, không bật/tắt ở đây. Đổi quyền của GVCN là đổi phân công chủ nhiệm ở màn Lớp.')}
           <br />
-          <strong>Quyền dẫn xuất khác (không có ô bật/tắt):</strong> <em>Xem hồ sơ giáo viên</em> — chính mình; Quản lý: giáo viên
-          thuộc chi nhánh mình (có vai hoặc đang dạy lớp ở đó); Quản trị hệ thống: tất cả. <em>Xuất Excel kết quả Test</em> —
-          Quản lý và Quản trị hệ thống (trong phạm vi của mình), Giáo viên chủ nhiệm (lớp mình chủ nhiệm).
+          <strong>{t('Quyền dẫn xuất khác (không có ô bật/tắt):')}</strong> <em>{t('Xem hồ sơ giáo viên')}</em> {t('— chính mình; Quản lý: giáo viên thuộc chi nhánh mình (có vai hoặc đang dạy lớp ở đó); Quản trị hệ thống: tất cả.')}
+          {' '}<em>{t('Xuất Excel kết quả Test')}</em> {t('— Quản lý và Quản trị hệ thống (trong phạm vi của mình), Giáo viên chủ nhiệm (lớp mình chủ nhiệm).')}
         </SectionNote>
       </div>
     </Card>
@@ -389,23 +390,24 @@ function OVai({ tenVai, tenQuyen, coSan, daDoi, lyDoKhoa, dangSua, onBam, chip }
 }) {
   const co = daDoi ? !coSan : coSan;
   const bamDuoc = dangSua && !lyDoKhoa;
-  const title = lyDoKhoa ?? (dangSua ? `${co ? 'Bỏ' : 'Cấp'} quyền "${tenQuyen}" cho vai trò ${tenVai}` : 'Bấm "Sửa quyền" để đổi');
+  const lyDo = lyDoKhoa ? dich(lyDoKhoa) : null;
+  const title = lyDo ?? (dangSua ? (co ? t('Bỏ quyền "{quyen}" cho vai trò {vai}', { quyen: tenQuyen, vai: tenVai }) : t('Cấp quyền "{quyen}" cho vai trò {vai}', { quyen: tenQuyen, vai: tenVai })) : t('Bấm "Sửa quyền" để đổi'));
   return (
     <button
       type="button"
       disabled={!dangSua}
       aria-disabled={!bamDuoc || undefined}
       aria-pressed={bamDuoc ? co : undefined}
-      aria-label={`${tenVai}: ${co ? 'có' : 'không'}${lyDoKhoa ? `, khoá — ${lyDoKhoa}` : ''}`}
+      aria-label={`${tenVai}: ${co ? t('có') : t('không')}${lyDo ? `, ${t('khoá')} — ${lyDo}` : ''}`}
       title={title}
       className={`${chip ? 'inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-xs' : 'w-full min-h-[44px] sm:min-h-[36px] text-sm'} bg-transparent tabular-nums ${co ? 'text-sky-200' : 'text-slate-500'} ${
         daDoi ? 'rounded-md border border-[color:var(--accent-line)]' : chip ? 'border border-muted-line' : 'border border-transparent'} ${bamDuoc ? 'cursor-pointer bam' : 'cursor-default'}`}
       onClick={() => { if (bamDuoc) onBam(); }}
     >
       {chip && <span className="text-slate-300">{tenVai}:</span>}
-      {co ? 'có' : '—'}
-      {lyDoKhoa && <span className="ml-1 inline-flex items-center gap-0.5 text-xs text-slate-400"><IconKhoa />khoá</span>}
-      {daDoi && <span className="ml-1 text-xs text-slate-400">đổi</span>}
+      {co ? t('có') : '—'}
+      {lyDoKhoa && <span className="ml-1 inline-flex items-center gap-0.5 text-xs text-slate-400"><IconKhoa />{t('khoá')}</span>}
+      {daDoi && <span className="ml-1 text-xs text-slate-400">{t('đổi')}</span>}
     </button>
   );
 }
