@@ -55,8 +55,8 @@ export function Header() {
   const [hits, setHits] = useState<SearchHit[]>([]);
   /** UI-CON-LAI k1: nhóm Giáo viên — chỉ vai xem được hồ sơ GV người khác (máy chủ lọc lại theo `phamViHoSoGv`). */
   const [gvs, setGvs] = useState<GvHit[]>([]);
-  /** Lượt tìm cuối đã trả về (để "Không tìm thấy…" không hiện khi đang chờ). */
-  const [daTim, setDaTim] = useState(false);
+  /** Câu của lượt tìm cuối đã trả về — khác câu đang gõ = đang chờ: không báo "Không thấy…", Enter không mở kết quả cũ. */
+  const [daTim, setDaTim] = useState<string | null>(null);
   /** Danh sách kết quả đang hiện (bấm ra ngoài / Esc thì ẩn, gõ hoặc vào lại ô thì hiện). */
   const [moTim, setMoTim] = useState(false);
   /** Chỉ số dòng đang sáng khi đi bằng mũi tên, đếm chung học viên rồi lớp (−1 = chưa chọn). */
@@ -83,7 +83,6 @@ export function Header() {
     : [];
 
   useEffect(() => {
-    setDaTim(false);                                   // lượt mới: chưa trả về thì không báo "Không tìm thấy", Enter không mở kết quả cũ
     if (!timDu) { setHits([]); setGvs([]); setDong(-1); return; }
     const t = setTimeout(() => {
       const k = encodeURIComponent(q);
@@ -91,8 +90,8 @@ export function Header() {
         api.get<{ rows: SearchHit[] }>(`/students?q=${k}`),
         timGv ? api.get<GvHit[]>(`/tim/giao-vien?q=${k}`).catch(() => [] as GvHit[]) : Promise.resolve([] as GvHit[]),
       ])
-        .then(([d, g]) => { setHits((d.rows ?? []).slice(0, 6)); setGvs(g); setDaTim(true); setDong(-1); })
-        .catch(() => { setHits([]); setGvs([]); setDaTim(false); setDong(-1); });
+        .then(([d, g]) => { setHits((d.rows ?? []).slice(0, 6)); setGvs(g); setDaTim(q); setDong(-1); })
+        .catch(() => { setHits([]); setGvs([]); setDaTim(null); setDong(-1); });
     }, 250);
     return () => clearTimeout(t);
   }, [q, timDu, timGv]);
@@ -116,7 +115,8 @@ export function Header() {
   /* Một danh sách cho bàn phím: học viên trước, lớp sau. */
   const den = [...hits.map((h) => `/hoc-vien/${h.id}`), ...lops.map((l) => `/hoc-vien/lop/${l.id}`), ...gvs.map((g) => `/giao-vien/${g.id}`)];
   const coDs = moTim && timDu && den.length > 0;
-  const khongThay = moTim && timDu && daTim && den.length === 0;
+  /* Danh sách lớp (`/ref/classes`) tải lần đầu chậm hơn lượt tìm học viên → chờ cả hai, không nháy "Không thấy" rồi mới ra lớp. */
+  const khongThay = moTim && timDu && daTim === q && !lopRef.loading && den.length === 0;
   const dangMo = coDs || khongThay || openMenu !== null || moTimDt;
 
   /* Esc đóng menu/danh sách đang mở và trả focus về nút/ô đã mở nó — pha bắt + chặn lan (cùng mẫu MenuDong).
@@ -135,7 +135,7 @@ export function Header() {
     return () => document.removeEventListener('keydown', phim, true);
   }, [dangMo, openMenu, moTimDt]);
 
-  const moMuc = (i: number) => { navigate(den[i]); setQ(''); setHits([]); setGvs([]); setDaTim(false); setMoTim(false); setMoTimDt(false); setDong(-1); };
+  const moMuc = (i: number) => { navigate(den[i]); setQ(''); setHits([]); setGvs([]); setDaTim(null); setMoTim(false); setMoTimDt(false); setDong(-1); };
   /** Thuộc tính chung của một dòng kết quả (học viên hay lớp) — `i` đếm chung cả hai nhóm. */
   const nutMuc = (i: number) => ({
     id: `${idDs}-${i}`,
@@ -218,7 +218,7 @@ export function Header() {
             setMoTim(true);
             const k = buocDanhSach(den.length, dong, e.key);
             if (k !== null) setDong(k);
-          } else if (e.key === 'Enter' && coDs && daTim) {
+          } else if (e.key === 'Enter' && coDs && daTim === q) {
             e.preventDefault();
             moMuc(dong >= 0 && dong < den.length ? dong : 0);
           }

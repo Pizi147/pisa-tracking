@@ -759,6 +759,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 02/11 | TIM-KHONG-NHAY · Opus 5.5 | Ô tìm thanh trên: không nháy "Không thấy" khi `/ref/classes` còn tải (sau #796) hay khi gõ lại từ đầu — nhớ câu đã tìm, chờ cả danh sách lớp. Bản build EN (#793) bấm thử: không lỗi (RA-LOI-WEB). |
 | 02/11 | PT-TIEN-BO-O · Opus 5.5 | Phân tích › Tiến bộ theo kỹ năng: ô Tăng / Giữ nguyên / Giảm mở đúng các lượt của ô (trước: cả hàng — "Giữ nguyên 4" ra 6); `o=tien-bo:<kn>:<ô>`, 0 câu thêm (RA-LOI-WEB). |
 | 02/11 | DOC-IT-3 · Opus 5.5 | `listCases` của người chỉ có quyền GV lọc tập cha theo lớp phân công trong SQL: Tổng quan GV / Case thôi đọc MỌI Case cả hệ thống (JSON trùng cách cũ, 16 GV × 5 bộ lọc) |
 | 02/11 | HSL-TUAN-KET-THUC · Opus 5.5 | Đầu hồ sơ lớp đã kết thúc không còn "tuần 42/8" (đếm tuần tới hôm nay) — bỏ số tuần khi lớp `finished` (RA-LOI-WEB). |
