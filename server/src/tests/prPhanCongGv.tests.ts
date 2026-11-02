@@ -497,6 +497,22 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     });
   });
 
+  /* RA-LOI-MAY: em hai ghi danh (X, Y) có Case không lượt → Case thuộc cả hai lớp. Lô X L A→B + Y L A→C: lớp X chuyển Case trước, lớp Y không được
+     dùng dòng đọc trước khi X ghi (UPDATE khớp 0 dòng → 409 mãi, kẹt) — phải ra đúng như lưu lẻ X rồi Y. */
+  check('PC-LO · em hai ghi danh, Case không lượt, hai lớp cùng lô đổi đúng người cũ → lưu được, = lưu lẻ', () => {
+    const kichBan = () => {
+      const em = emMoi(X);
+      conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(em, Y, start, NOW);
+      paMoi(caseMoi(em, 'listening', gA), gA);
+      xoaNho();
+      return [{ classId: X, slots: doiO(X, 'listening', gB) }, { classId: Y, slots: doiO(Y, 'listening', gF) }];
+    };
+    const lo = thu(() => { const vao = kichBan(); const e = maLoi(() => pc.luuPhanCong(QL, { lop: vao })); return { e, bang: e ? '' : chupBang() }; });
+    const le = thu(() => { const vao = kichBan(); for (const v of vao) pc.luuPhanCong(QL, { lop: [v] }); return chupBang(); });
+    assert(!lo.e, `lô lỗi ${lo.e?.status} ${lo.e?.message}`);
+    assert(lo.bang === le, 'lô khác lưu lẻ');
+  });
+
   /* ---------------------------------------------------------------- Rà cuối (reviewer): Hoàn tác không tạo hai lịch chờ một ô · trần lớp · lịch chờ gộp */
   check('Rà-1a · Huỷ lịch L A→B, lưu lịch L A→C cùng tuần, Hoàn tác huỷ → 409 (không thành hai lịch chờ một ô)', () => thu(() => {
     const r = henL(gB);

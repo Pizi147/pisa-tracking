@@ -285,13 +285,25 @@ export function apDoiLop(p: Principal, classId: number, rows: DongDoi[], ngay: s
  * Dữ liệu đọc MỘT lần cho cả lô khi lưu nhiều lớp "hôm nay" (thay cho một lượt đọc mỗi lớp): Case / PA (`docViecLo`), môn gộp còn cần, tên người.
  * Đọc lười — lô không có cặp bàn giao thì không đọc Case. Mỗi Case / PA thuộc đúng một lớp, nên đọc trước khi ghi lớp đầu cho cùng kết quả đọc từng lớp.
  */
+/**
+ * Em hai ghi danh: Case không lượt thuộc MỌI lớp em đang học → lớp ghi trước đổi Case mà dòng đọc sẵn của lớp sau không thấy (UPDATE khớp 0 dòng → 409 mãi).
+ * Lớp có Case / PA dùng chung với lớp khác trong lô → bỏ khỏi đọc sẵn, lớp đó đọc tươi từng lớp như lưu lẻ.
+ */
+function boLopChungCase(m: Map<number, ViecLop>): Map<number, ViecLop> {
+  const lopCua = new Map<number, Set<number>>();
+  for (const [lop, v] of m) for (const id of [...v.cases.map((r) => r.id as number), ...v.pas.map((r) => r.case_id as number)]) {
+    lopCua.set(id, (lopCua.get(id) ?? new Set()).add(lop));
+  }
+  for (const lops of lopCua.values()) if (lops.size > 1) for (const lop of lops) m.delete(lop);
+  return m;
+}
 type SanLo = { viec: () => Map<number, ViecLop>; gop: () => Map<number, Set<string>>; ten: (ids: readonly number[]) => ReadonlyMap<number, string> };
 function sanLo(lop: readonly LopChuan[], active: ReadonlyMap<number, any[]>): SanLo {
   const ids = lop.map((l) => l.classId);
   const nguoiCu = [...new Set(lop.flatMap((l) => l.doi.filter(laCapBanGiao).map((d) => d.nguoiCu!)))];
   let viec: Map<number, ViecLop> | undefined, gop: Map<number, Set<string>> | undefined, ten: Map<number, string> | undefined;
   return {
-    viec: () => (viec ??= docViecLo(ids, nguoiCu)),
+    viec: () => (viec ??= boLopChungCase(docViecLo(ids, nguoiCu))),
     gop: () => (gop ??= monGopConCanMany(ids)),
     ten: (can) => {
       if (!ten) {

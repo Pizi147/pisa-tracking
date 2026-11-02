@@ -527,6 +527,13 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(!/settleNoShows/.test(ham), 'Hàm Netlify không gọi luật nghiệp vụ trực tiếp — đi qua chotVangDinhKy');
   });
 
+  check('TAI-NHANH · /assets/* cache 1 năm immutable; mảnh mất trả 404 TRƯỚC redirect /* (không cache index.html thành JS)', () => {
+    const toml = fsMod.readFileSync(pathMod.join(REPO, 'netlify.toml'), 'utf8');
+    assert(/for = "\/assets\/\*"\s*\[headers\.values\]\s*Cache-Control = "public, max-age=31536000, immutable"/.test(toml), 'Thiếu header cache /assets/*');
+    const a = toml.search(/from = "\/assets\/\*"\s*to = "[^"]+"\s*status = 404/), b = toml.indexOf('from = "/*"');
+    assert(a >= 0 && a < b, 'Redirect 404 /assets/* phải đứng trước /*');
+  });
+
   // ================================================================== PR-Z2c-b · Mất luồng Turso ("stream not found")
 
   console.log('\nPR-Z2c-b · Mất luồng Turso: GET mở lại kết nối và thử lại đúng một lần; ghi thì không');
