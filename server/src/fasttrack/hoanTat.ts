@@ -43,7 +43,8 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
                  FROM assessment_scores sx WHERE sx.attempt_id = a.id) AS nhap_cuoi
          FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id
-         LEFT JOIN programmes p ON p.code = c.programme_code
+         LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id AND a.class_id IS NULL   -- LECH-KHONG-LOP (maCtCuaLuot): chỉ lượt không lớp đọc lộ trình
+         LEFT JOIN programmes p ON p.code = IIF(a.class_id IS NULL, cy.programme_code, c.programme_code)
         WHERE a.id IN (${ph})`,
     )
     .all(json) as any[]) {

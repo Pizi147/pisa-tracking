@@ -780,6 +780,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 03/11 | LECH-KHONG-LOP · Opus 5.5 | Lượt không lớp chấm theo chương trình lộ trình ở mọi đường (`maCtCuaLuot`): Kết quả gần nhất = SOS / panel = hồ sơ HV = danh sách lượt = nhập điểm (`scoringModeOf`). Đổi số em thật → giữ chờ chủ SP chạy SQL. |
 | 02/11 | TIM-KHONG-NHAY · Opus 5.5 | Ô tìm thanh trên: không nháy "Không thấy" khi `/ref/classes` còn tải (sau #796) hay khi gõ lại từ đầu — nhớ câu đã tìm, chờ cả danh sách lớp. Bản build EN (#793) bấm thử: không lỗi (RA-LOI-WEB). |
 | 02/11 | PT-TIEN-BO-O · Opus 5.5 | Phân tích › Tiến bộ theo kỹ năng: ô Tăng / Giữ nguyên / Giảm mở đúng các lượt của ô (trước: cả hàng — "Giữ nguyên 4" ra 6); `o=tien-bo:<kn>:<ô>`, 0 câu thêm (RA-LOI-WEB). |
 | 02/11 | DOC-IT-6 · Opus 5.5 | việc TVV của Công việc QL: tập cha theo chi nhánh QL quản lý trong SQL — thôi SCAN cả bảng học viên (JSON = câu cũ, S3-a) |

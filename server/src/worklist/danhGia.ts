@@ -4,7 +4,7 @@ import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, mo
 import { ngayTaoLuot } from '../classes/schedule.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
-import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, nguongDatLop, type ProgrammeInfo } from '../normal/regular.ts';
+import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, maCtCuaLuot, nguongDatLop, type ProgrammeInfo } from '../normal/regular.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 
 /**
@@ -73,7 +73,9 @@ export function evaluateAttemptRow(
   a: any, bundle: AttemptBundle, programmes: Map<string, ProgrammeInfo>,
 ): Omit<AttemptEval, 'attemptId' | 'studentId' | 'kind' | 'weekStart' | 'attemptNo'> {
   const scores = bundle.scores.get(a.id) ?? [];
-  const prog = chuongTrinhTyLeCuaLuot(a.programme_code, () => programmes);
+  /* LECH-KHONG-LOP: lượt không lớp theo chương trình lộ trình — dòng cần `cy_programme_code` (thiếu = chấm band như cũ). */
+  const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
+  const prog = chuongTrinhTyLeCuaLuot(ma, () => programmes);
   if (prog) {
     const nguong = 'lop_nguong_dat' in a ? a.lop_nguong_dat || RATIO_PASS_THRESHOLD : nguongDatLop(a.class_id);   // cùng luật `nguongDatLop` (thiếu → 70 %)
     const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguong);   // P13: bộ môn theo lượt
@@ -97,7 +99,7 @@ export function evaluateAttemptRow(
   return {
     complete: r.complete, scored: r.scoredRequired, required: r.required.length,
     sosLevel: r.sosLevel, provisional: r.provisional, chot: r.chot, skills,
-    overall: r.overall, kyVong: r.expectation, chuongTrinh: a.programme_code ?? null,
+    overall: r.overall, kyVong: r.expectation, chuongTrinh: ma,
   };
 }
 
@@ -150,7 +152,7 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
         /* S3: lộ trình của lượt nối một lần (trước: hai câu con cùng dòng), lộ trình FT đang chạy đọc một lần mỗi EM (trước: câu con theo từng lượt). */
         /* PANEL-MC: `lop_nguong_dat` — ngưỡng lớp đi cùng câu lượt, `evaluateAttemptRow` không hỏi riêng bảng lớp (`nguongDatLop`). */
         `SELECT a.*, c.programme_code, c.nguong_dat AS lop_nguong_dat, pr.week_start AS period_start, pr.week_end AS period_end,
-                cy.route AS route, cy.khong_cam_ket AS cy_kck,
+                cy.route AS route, cy.khong_cam_ket AS cy_kck, cy.programme_code AS cy_programme_code,
                 /* OV-11f (PT-3): lộ trình FAST TRACK đang chạy của em (nếu có) — SOS / dưới kỳ vọng chỉ đọc lượt của lộ trình này, không rơi về Final lớp thường cũ. */
                 ft.id AS cy_ft_dang_chay,
                 /* TD7: lượt không ô nào có band / điểm thô thì chắc chắn scored = 0 — latestAttempts bỏ qua, không nạp lịch + điểm. */
