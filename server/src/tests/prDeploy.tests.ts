@@ -109,6 +109,23 @@ export async function runPrDeployTests(t: YThucTestKit) {
     assert(ds.includes(P.mbManager.userId), 'QL MB phải có sẵn (tự thêm theo chi nhánh)');
   });
 
+  /* RA-LOI-MAY: người phụ trách — cùng phạm vi người theo dõi (vai đang hoạt động ở chi nhánh của việc, hoặc vai toàn hệ thống); sai → 400 có lý do. */
+  check('RA-LOI-MAY · việc chi nhánh MB: người phụ trách là QL CP / id không có → 400, không ghi; QL MB → được; sửa sang QL CP → 400', () => {
+    const n = () => get('SELECT COUNT(*) n FROM tasks').n;
+    const truoc = n();
+    for (const id of [P.cpManager.userId, 999999]) {
+      const e = loiCua(() => meeting.createTask(P.mbManager, { kind: 'branch_ops', title: `Việc người phụ trách ngoài CN ${id}`, assigneeUserId: id }));
+      assert(e?.status === 400 && /phụ trách/.test(e.message), `${id}: ${e?.status} ${e?.message}`);
+    }
+    assert(n() === truoc, 'đã ghi việc');
+    const tr = meeting.createTask(P.mbManager, { kind: 'branch_ops', title: 'Việc người phụ trách đúng CN', assigneeUserId: P.mbManager.userId }) as any;
+    assert(tr.assignee_user_id === P.mbManager.userId, 'người phụ trách MB');
+    const e = loiCua(() => meeting.updateTask(P.mbManager, tr.id, { assigneeUserId: P.cpManager.userId }));
+    assert(e?.status === 400, `sửa: ${e?.status} ${e?.message}`);
+    assert(get('SELECT assignee_user_id u FROM tasks WHERE id = ?', tr.id).u === P.mbManager.userId, 'sửa lọt');
+    assert(meeting.updateTask(P.mbManager, tr.id, { assigneeUserId: null }).assignee_user_id === null, 'bỏ người phụ trách được');
+  });
+
   await checkAsync('0b-1h · POST /ref/periods/resolve chặn ngày ngoài ±3 năm (0001-01-01, 9999-12-27) — không ghi báo cáo tuần rác', async () => {
     const truoc = get('SELECT COUNT(*) n FROM report_periods').n;
     await voiMayChu(async (goi) => {

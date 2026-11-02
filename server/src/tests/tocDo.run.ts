@@ -719,6 +719,28 @@ await checkAsync('DOC-IT-1 · GET /demo/session (mọi vai) không đọc sqlite
   assert(!lai, `${lai} lần đọc sqlite_master`);
 });
 
+/* DOC-IT-4: `/ref/classes` (ô chọn lớp, bộ lọc Phân tích, IntakePanel…) đọc MỌI lớp active cả hệ thống + đếm ghi danh từng lớp rồi mới lọc phạm vi / chi nhánh trong mã.
+   Nay lọc trong SQL: JSON trùng cách cũ (cờ `refLopCuKhiKiem.tat`) mọi vai × tham số; GVCN chỉ đọc dòng lớp mình dạy. */
+await checkAsync('DOC-IT-4 · /ref/classes lọc phạm vi trong SQL — trùng cách cũ mọi vai, GV không đọc lớp ngoài phạm vi', async () => {
+  const { refLopCuKhiKiem } = await import('../routes/index.ts');
+  const loi: string[] = [];
+  const goi = async (vai: Vai, url: string, cu: boolean) => {
+    refLopCuKhiKiem.tat = cu;
+    try { return await doSql(vai, 'GET', url).then(async (r) => ({ ...r, json: JSON.stringify((await callHttp(vai, 'GET', url)).json) })); } finally { refLopCuKhiKiem.tat = false; }
+  };
+  for (const vai of [...MOI_VAI, 'TVV', 'CX', 'ADMIN'] as Vai[]) {
+    for (const url of ['/ref/classes', `/ref/classes?branchId=${CN}`, '/ref/classes?fastTrackOnly=1', '/ref/classes?tg=26']) {
+      const cu = await goi(vai, url, true), moi = await goi(vai, url, false);
+      if (cu.json !== moi.json) loi.push(`${vai} ${url}: JSON khác (${cu.json.length} ≠ ${moi.json.length} ký tự)`);
+      if (moi.dong > cu.dong) loi.push(`${vai} ${url}: dòng ${cu.dong} → ${moi.dong}`);
+    }
+  }
+  const tong = (conn.prepare(`SELECT COUNT(*) n FROM classes WHERE status = 'active'`).get() as any).n as number;
+  const gv = await goi('GVCN', '/ref/classes', false);
+  if (gv.dong >= tong) loi.push(`GVCN /ref/classes đọc ${gv.dong} dòng ≥ ${tong} lớp active cả hệ thống`);
+  assert(!loi.length, loi.join(' · '));
+});
+
 check('TD2-a · không đọc lặp — mỗi request GET: câu lịch kỹ năng / câu điểm không trả cùng một lượt hai lần', () => {
   assert(docLap.length === 0, `Đọc lặp:\n${docLap.join('\n')}`);
 });
@@ -1193,6 +1215,96 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
  * TD7a (chủ SP 17/10, Turso Top Queries: câu "Xem nhận xét Speaking" ~225 k dòng / lần): câu xem_nx_s — "Tất cả" (không lọc / lọc chi nhánh) và nhánh lớp
  * ("Của tôi" của GV S) — đi chỉ mục một phần idx_score_cho_phu_trach, không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lần hai không làm gì. JSON /my-work không đổi: TD4-a ở trên.
  */
+/*
+ * DOC-IT-3 (02/11): người xem chỉ có quyền THEO LỚP (GV) — `listCases` trước đọc MỌI Case cả hệ thống (Tổng quan GV: ô Case mở, hồ sơ GV) rồi `can()` bỏ gần hết.
+ * Nay lọc trước tập cha theo lớp phân công / chỉ xem trong SQL. (1) JSON trùng cách cũ (cờ `tapChaTheoLopKhiKiem.tat`) với mọi người dùng chỉ có quyền GV,
+ * nhiều bộ lọc; (2) câu không SCAN sos_cases.
+ */
+await checkAsync('DOC-IT-3 (×3) · listCases của GV: trùng cách cũ mọi GV × bộ lọc; không SCAN sos_cases', async () => {
+  const cases = await import('../cases/cases.ts');
+  const loi: string[] = [];
+  let soGv = 0, soCase = 0;
+  const cnLop = new Map((conn.prepare('SELECT id, branch_id FROM classes').all() as any[]).map((r) => [r.id as number, r.branch_id as number | null]));
+  for (const { id } of conn.prepare(`SELECT id FROM users WHERE status = 'active' ORDER BY id`).all() as any[]) {
+    const p = loadPrincipal(id);
+    const pv = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+    if (pv.none || pv.all || pv.branchIds.length) continue;
+    soGv++;
+    const cn = [...new Set(p.assignments.map((a: any) => cnLop.get(a.classId)).filter((b: any) => b != null))] as number[];
+    for (const f of [{}, { ownerUserId: id }, { status: 'open' }, { kemTam: true }, ...cn.map((branchId) => ({ branchId }))] as any[]) {
+      cases.tapChaTheoLopKhiKiem.tat = true;
+      let cu: string;
+      try { cu = JSON.stringify(cases.listCases(p, f)); } finally { cases.tapChaTheoLopKhiKiem.tat = false; }
+      const moi = cases.listCases(p, f);
+      soCase += moi.rows.length;
+      if (JSON.stringify(moi) !== cu) loi.push(`user ${id} ${JSON.stringify(f)}: ${JSON.stringify(moi).length} ≠ ${cu.length} ký tự`);
+    }
+  }
+  assert(soGv >= 3 && soCase > 0, `bộ đo quá mỏng: ${soGv} GV, ${soCase} dòng Case`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try { cases.listCases(loadPrincipal(USER.GVCN), {}); } finally { doQuet.ghi = null; }
+  const cau = ghi.find((g) => /FROM sos_cases sc\s+LEFT JOIN assessment_attempts a/.test(g.sql));
+  assert(cau, 'không bắt được câu danh sách Case');
+  const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${cau!.sql}`).all(...cau!.args) as any[]).map((r) => r.detail as string);
+  if (plan.some((d) => /^SCAN sc\b/.test(d))) loi.push(`GVCN listCases(p, {}) vẫn SCAN sos_cases: ${plan.join(' | ')}`);
+  console.log(`      (đo ×3: ${soGv} GV, ${soCase} dòng Case so)`);
+  assert(!loi.length, loi.join(' · '));
+});
+
+/*
+ * DOC-IT-2 (02/11): hai câu quét cả bảng ở Công việc (mọi vai) + lượt quét nền — đo bằng `scripts/do-it.py` trên DB ×3 (mô tả PR). Mini test chưa có tỉ lệ
+ * trước đi ngược từ MỌI ghi danh active (SCAN enrollments mỗi lần mở Công việc / Tổng quan GV); hẹn Lộ trình mới tới tuần quét cả `learning_cycles`.
+ */
+await checkAsync('DOC-IT-2 (×3) · mini test chưa có tỉ lệ + hẹn Lộ trình mới: đi chỉ mục một phần, không SCAN enrollments / learning_cycles; migrate chạy lặp được', async () => {
+  const { migratePrDocIt2, CHI_MUC_DOC_IT_2 } = await import('../migrate/prDocIt2.ts');
+  const lan: string[][] = [[], []];
+  migratePrDocIt2(conn, lan[0]); migratePrDocIt2(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  const PISA_DO_QUET_GOC = process.env.PISA_DO_QUET;
+  doQuet.ghi = ghi;
+  process.env.PISA_DO_QUET = '1';   // câu hẹn Lộ trình mới nằm trong lượt quét — đo khi quét chạy
+  try {
+    for (const vai of ['GVCN', 'QL'] as Vai[]) assert((await doSql(vai, 'GET', '/my-work')).status === 200, `${vai} /my-work không 200`);
+  } finally {
+    doQuet.ghi = null;
+    if (!PISA_DO_QUET_GOC) delete process.env.PISA_DO_QUET;
+  }
+  const loi: string[] = [];
+  for (const [ten, re, chiMuc] of [['mini test chưa có tỉ lệ', /FROM mini_test m JOIN students s/, CHI_MUC_DOC_IT_2[0][0]], ['hẹn Lộ trình mới', /buoc_tiep = 'lo_trinh_moi' AND buoc_tiep_hen/, CHI_MUC_DOC_IT_2[1][0]]] as const) {
+    const cau = [...new Map(ghi.filter((g) => re.test(g.sql)).map((g) => [g.sql, g])).values()];
+    if (!cau.length) { loi.push(`không bắt được câu "${ten}"`); continue; }
+    for (const { sql, args } of cau) {
+      const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+      if (!plan.some((d) => d.includes(chiMuc)) || plan.some((d) => /^SCAN (cur|learning_cycles)$/.test(d))) loi.push(`${ten}: ${plan.join(' | ')}`);
+    }
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
+/* DOC-IT-5 (02/11): danh sách Lưu trữ (`danhSachLuuTru` — Học viên & Lớp mọi vai đếm Lưu trữ mỗi lần mở) `WHERE s.archived_at IS NOT NULL` trước SCAN cả `students`
+   (bản chính 844 dòng, 14 em lưu trữ) — nay đi chỉ mục một phần. */
+await checkAsync('DOC-IT-5 (×3) · Lưu trữ HV đi chỉ mục một phần, không SCAN students; migrate chạy lặp được', async () => {
+  const { migratePrDocIt5 } = await import('../migrate/prDocIt5.ts');
+  const lan: string[][] = [[], []];
+  migratePrDocIt5(conn, lan[0]); migratePrDocIt5(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    for (const vai of ['QL', 'GVCN'] as Vai[]) assert((await doSql(vai, 'GET', '/hoc-vien-lop')).status === 200, `${vai} /hoc-vien-lop không 200`);
+  } finally { doQuet.ghi = null; }
+  const cau = [...new Map(ghi.filter((g) => /FROM students s WHERE s\.archived_at IS NOT NULL/.test(g.sql)).map((g) => [g.sql, g])).values()];
+  assert(cau.length, 'không bắt được câu Lưu trữ');
+  const loi: string[] = [];
+  for (const { sql, args } of cau) {
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+    if (!plan.some((d) => d.includes('idx_student_luu_tru')) || plan.some((d) => /^SCAN s$/.test(d))) loi.push(plan.join(' | '));
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');

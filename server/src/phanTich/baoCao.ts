@@ -399,15 +399,17 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
       xuHuong: { huong: cai.has(row.id) ? 'cai-thien' as const : 'chua-cai-thien' as const } }));
     return { n: ids.length, tieuDe: t('PA cải thiện · {a}/{b} PA', { a: cai.size, b: ids.length }), rows };
   }
-  const tb = /^tien-bo:(\w+)$/.exec(f.o);
+  const tb = /^tien-bo:(\w+)(?::(tang|giu|giam))?$/.exec(f.o);
   if (tb) {
-    /* Panel chỉ đọc Tiến bộ theo kỹ năng: mục của kỹ năng (bài), chưa tăng trước — cùng tập với số. */
+    /* Panel chỉ đọc Tiến bộ theo kỹ năng: mục của kỹ năng (bài), chưa tăng trước — cùng tập với số. Đuôi `:tang|giu|giam` = ô Tăng / Giữ nguyên /
+       Giảm của bảng: chỉ các lượt của ô đó (số = dòng panel), lọc trên chính tập đã tính — 0 câu thêm. */
     if (f.ct !== 'ft' || !f.branchId) throw badRequest('Tiến bộ theo kỹ năng cần Fast Track và một chi nhánh.');
     phamViPhanTich(p, f.branchId, null);
     const x = tienBoTheoKyNang(p, f.branchId, f).get(tb[1]);
     const dung = new Set(x?.dung ?? []), giam = new Set(x?.giam ?? []);
     const hang = (id: number) => (dung.has(id) ? 0 : giam.has(id) ? 2 : 1);
-    const ids = [...(x?.tong ?? [])].sort((a, b) => hang(b) - hang(a) || a - b);   // giảm trước
+    const chiHang = tb[2] ? ['tang', 'giu', 'giam'].indexOf(tb[2]) : -1;
+    const ids = [...(x?.tong ?? [])].filter((id) => chiHang < 0 || hang(id) === chiHang).sort((a, b) => hang(b) - hang(a) || a - b);   // giảm trước
     const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, [t('Tăng'), t('Giữ nguyên'), t('Giảm')][hang(row.id)]].filter(Boolean).join(' · '),
       xuHuong: { huong: (['tang', 'giu', 'giam'] as const)[hang(row.id)], ...x?.doi.get(row.id) } }));
     return { n: ids.length, tieuDe: t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows };

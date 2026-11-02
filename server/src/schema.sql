@@ -296,6 +296,8 @@ CREATE TABLE students (
 );
 CREATE INDEX idx_student_name ON students(normalized_name);
 CREATE INDEX idx_student_consultant ON students(consultant_user_id);
+-- DOC-IT-5: danh sách Lưu trữ (`danhSachLuuTru`, Học viên & Lớp) — không quét cả bảng học viên.
+CREATE INDEX idx_student_luu_tru ON students(archived_at) WHERE archived_at IS NOT NULL;
 
 -- Lộ trình học. Mỗi lộ trình có TARGET và ngày thi IELTS riêng.
 -- Học tiếp/học lại trong cùng lộ trình: số MT tăng tiếp, target giữ nguyên.
@@ -418,6 +420,8 @@ CREATE INDEX idx_cycle_cho_buoc_tiep ON learning_cycles(student_id) WHERE route 
 -- OV-15e: Kết quả thi › Thi thật lọc theo ngày thi thật trong khoảng.
 CREATE INDEX idx_cycle_thi_that_ngay ON learning_cycles(thi_that_ngay) WHERE thi_that_ngay IS NOT NULL;
 CREATE INDEX idx_cycle_khong_thi ON learning_cycles(exam_date) WHERE thi_that_khong_thi = 1;
+-- DOC-IT-2: hẹn Lộ trình mới tới tuần (`batDauHenDenHan`, lượt quét nền) — không quét cả bảng.
+CREATE INDEX idx_cycle_hen_lo_trinh ON learning_cycles(buoc_tiep_hen) WHERE buoc_tiep = 'lo_trinh_moi';
 
 -- Lịch sử lớp. Chuyển lớp mở dòng mới, không ghi đè.
 CREATE TABLE enrollments (
@@ -2094,6 +2098,8 @@ CREATE TABLE mini_test (
   ty_le REAL, ngay_lam TEXT, ghi_boi INTEGER REFERENCES users(id), ghi_luc TEXT,
   UNIQUE (student_id, tu_attempt_id)
 );
+-- DOC-IT-2: mini test chưa có tỉ lệ (Công việc) — lối vào riêng, không đi ngược từ mọi ghi danh active.
+CREATE INDEX idx_mini_test_cho ON mini_test(han) WHERE ty_le IS NULL;
 
 /*
  * KẾT QUẢ MT ĐÃ HUỶ DO DỜI VƯỢT (PR-MTa T2): điểm của lượt bị vượt CHUYỂN sang đây (nguyên dòng), không xoá — nên mọi chỗ đọc

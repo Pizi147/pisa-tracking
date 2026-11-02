@@ -179,7 +179,8 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
   const meta: ReactNode[] = [
     dich(data.programme?.name ?? data.kind),
     <><b className="font-semibold tabular-nums text-slate-100">{s?.studentCount ?? 0}</b> HV</>,
-    s?.currentWeek ? <>{t('tuần {n}', { n: '' }).trim()} <b className="font-semibold tabular-nums text-slate-100">{s.currentWeek}{s.totalWeeks ? `/${s.totalWeeks}` : ''}</b></> : null,
+    /* Lớp đã kết thúc: không đếm tuần (tuần học tính tới hôm nay → "tuần 42/8"); dải "Lớp đã kết thúc W…" bên dưới đã nói mốc. */
+    s?.currentWeek && data.status !== 'finished' ? <>{t('tuần {n}', { n: '' }).trim()} <b className="font-semibold tabular-nums text-slate-100">{s.currentWeek}{s.totalWeeks ? `/${s.totalWeeks}` : ''}</b></> : null,
     data.startDate ? t('khai giảng {ngay}', { ngay: `${data.startDate.slice(8, 10)}/${data.startDate.slice(5, 7)}` }) : null,
   ].filter(Boolean);
   const nutBadge = (x: BadgeLop) => {

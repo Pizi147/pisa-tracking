@@ -97,6 +97,7 @@ export const EN_R1_EN_LOI = {
   'Bạn không sửa được ô điểm này.': 'You cannot edit this score cell.',
   'Bảng này dành cho Quản lý.': 'This table is for managers.',
   'Chi nhánh của việc không khớp với lớp / đơn vị đã chọn.': 'The task\'s branch does not match the chosen class / unit.',
+  'Người phụ trách phải là tài khoản đang hoạt động thuộc chi nhánh của công việc.': 'The assignee must be an active account in the task\'s branch.',
   'Chi nhánh này nằm ngoài phạm vi bạn được xem.': 'This branch is outside what you can see.',
   'Chưa chọn học viên nào để chuyển.': 'No students picked to transfer.',
   'Chưa chọn học viên nào.': 'No students picked.',
