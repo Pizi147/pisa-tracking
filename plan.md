@@ -255,7 +255,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ### 02/11 khuya — chủ SP quyết nhóm chờ (CHƯA làm: chờ chủ SP bảo "bắt đầu làm" mới mở session)
 - **QUYEN-KY-NANG:** GV tự khai kỹ năng ở Hồ sơ cá nhân, kể cả được chấm S chéo — GIỮ như hiện tại, không sửa.
-- **QUYEN-THEO-CN:** quyền sửa Liên hệ xét theo chi nhánh của em (không theo vai toàn tài khoản) — sửa máy chủ (`coONhapLienHe`, `students.ts:776`, `luuTru.ts:122`), PR nhỏ.
+- ~~**QUYEN-THEO-CN:**~~ (đã làm ở PR QUYEN-LH-CN: `vaiVoiEm` / `vaiTaiChiNhanh`) quyền sửa Liên hệ xét theo chi nhánh của em (không theo vai toàn tài khoản) — sửa máy chủ (`coONhapLienHe`, `students.ts:776`, `luuTru.ts:122`), PR nhỏ.
 - **LECH-KHONG-LOP:** lượt không lớp chấm một cách như lượt có lớp (theo chương trình của lộ trình) cho cả "Kết quả gần nhất" và ✓ / ✗ — đổi số liệu em thật → PR kèm SQL chỉ đọc đếm em ảnh hưởng, giữ chờ chủ SP.
 - **HSL-KET-THUC-SO:** hồ sơ lớp đã kết thúc chỉ tính lượt của chính lớp đó ("Đạt MT2 x/y") — đổi số → kèm SQL, giữ chờ chủ SP.
 - **KET-PET-THI-THAT:** tạm thời chưa làm.
@@ -337,7 +337,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **[XM] PANEL-RIENG:** (a) XM-2b "Phân công…" của bài chưa có người chấm nay là link "Phân công ›" sang hồ sơ lớp (`?viec=phan-cong`) — mockup mở tại chỗ; làm tại chỗ cần dữ liệu Phân công của lớp trong panel (PR riêng nếu chủ SP muốn) · (b) đầu panel số chưa có dòng ngữ cảnh "lớp · phạm vi · dữ liệu đến" như mockup (nơi gọi chưa truyền) · (c) [XM-3] Xét lại "Dừng → Kết thúc học" giữ như web (T10) · (d) `anToan` Z2c-d + `prToc` TOC rà (4) trượt cả trên `main` ở session cloud (khoá / thời gian DB) — PTA soát khi check chung.
 - ~~**LECH-CACH-CHAM (một nguồn):**~~ (đã làm ở PR LECH-CACH-CHAM: `chuongTrinhTyLeCuaLuot`) em đổi lớp FT ↔ lớp thường: `standingFor` chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt → ✓ / ✗ từng kỹ năng ở panel (diemTuEval) có thể khác hồ sơ / SOS. Lỗi có từ trước, #733 phép M1 tạm bỏ qua em đó (in số em bỏ qua). Sửa: một hàm chọn cách chấm cho lượt (theo chương trình lớp của lượt) dùng cả hai đường.
 - ~~**TAB-A11Y:**~~ xong (PR TAB-A11Y): `phimHangTab` ← → Home End + tabindex luân chuyển ở mọi tablist; `aria-controls` + `role="tabpanel"` cho SoLieu, Lưu trữ, Hồ sơ lớp, Lượt Test. ~~CÒN: `HangTab` chưa truyền `panelId` ở Test, Học viên & Lớp, Hồ sơ HV, Quản trị, Phân tích, QuickReport, Lịch sắp tới~~ — xong DON-NHO-3 (vùng bọc cùng `space-y` của trang; QuickReport gắn vào thân `KhungPanel` qua `vungTab`). (cũ: tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.)
-- **QUYEN-THEO-CN:** quyền sửa liên hệ (`coONhapLienHe`) và một số cờ Lưu trữ xét theo VAI toàn tài khoản, không theo chi nhánh (`luuTru.ts:122`, `students.ts:776`): QL chi nhánh A kiêm GVCN chi nhánh B vẫn đổi được liên hệ em ở B (web cũng vậy). Luật cũ — hỏi chủ SP có cần xét vai theo chi nhánh của em không. (Nguồn: rà #746.)
+- ~~**QUYEN-THEO-CN:**~~ (đã làm ở PR QUYEN-LH-CN) quyền sửa liên hệ (`coONhapLienHe`) và một số cờ Lưu trữ xét theo VAI toàn tài khoản, không theo chi nhánh (`luuTru.ts:122`, `students.ts:776`): QL chi nhánh A kiêm GVCN chi nhánh B vẫn đổi được liên hệ em ở B (web cũng vậy). Luật cũ — hỏi chủ SP có cần xét vai theo chi nhánh của em không. (Nguồn: rà #746.)
 - ~~**MA-MO-COI-THE (rà #755):**~~ xong #765 (CN-3). Giữ có lý do: `prUxfB (6)` soi `KhoiPa` còn sống · `mo-viec` trong `THAM_SO_DICH` (lối cũ cho chuông đã lưu) · `prDonA` 7a, 7b, 8a (tệp quyền).
 - ~~**DUYET-QL a11y (rà #754):**~~ xong (PR TAB-A11Y, `traFocus`): đóng ô Từ chối / Trả lời trả focus về nút còn trên trang (`TheYeuCau.tsx:116`).
 - **[XM-BE-1] BANG-EM-GON thẻ 375:** mockup v10 `#be` 375 vẽ dòng điểm `DongDiem` (lượt · 4 kỹ năng · Overall); PR giữ lưới 5 ô v8 (ô ✓ / ✗ mới) vì `DongDiem` mất W1 · W2, "vắng …" và bấm W / S → điểm thành phần. Hỏi chủ SP: giữ lưới hay thêm hai thứ đó vào `DongDiem`.
@@ -780,6 +780,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 03/11 | QUYEN-LH-CN · Opus 5.5 | Liên hệ em: vai có quyền xét ở chi nhánh của em (`vaiVoiEm`) — PATCH, Sửa cả lớp, cờ `nhapLienHe` hồ sơ / Sửa cả lớp; QL MB kiêm GVCN CP → 403 ở em CP. Web không đổi (dùng cờ máy chủ). |
 | 02/11 | TIM-KHONG-NHAY · Opus 5.5 | Ô tìm thanh trên: không nháy "Không thấy" khi `/ref/classes` còn tải (sau #796) hay khi gõ lại từ đầu — nhớ câu đã tìm, chờ cả danh sách lớp. Bản build EN (#793) bấm thử: không lỗi (RA-LOI-WEB). |
 | 02/11 | PT-TIEN-BO-O · Opus 5.5 | Phân tích › Tiến bộ theo kỹ năng: ô Tăng / Giữ nguyên / Giảm mở đúng các lượt của ô (trước: cả hàng — "Giữ nguyên 4" ra 6); `o=tien-bo:<kn>:<ô>`, 0 câu thêm (RA-LOI-WEB). |
 | 02/11 | DOC-IT-6 · Opus 5.5 | việc TVV của Công việc QL: tập cha theo chi nhánh QL quản lý trong SQL — thôi SCAN cả bảng học viên (JSON = câu cũ, S3-a) |

@@ -5,7 +5,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
-import { can, require_, type Ctx, type Principal } from '../permissions.ts';
+import { can, require_, vaiTaiChiNhanh, type Ctx, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, loi, loi as loiHttp, notFound, nowIso } from '../util.ts';
 import { chanDoiLienHe, chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
@@ -108,7 +108,7 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
     /** OV-13i: TVV / CX (không `student.edit`) — panel khoá cột Tuần bắt đầu (ngoài `CHI_SUA_THONG_TIN`). */
     chiThongTin: !can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }),
     /** OV-10b: cột Liên hệ — QL / Quản trị; GVCN không thấy ô nhập (chủ SP 13/10). */
-    nhapLienHe: coONhapLienHe(p.roleKeys),
+    nhapLienHe: coONhapLienHe(vaiTaiChiNhanh(p, [cls.branch_id ?? null])),   // QUYEN-THEO-CN: vai ở chi nhánh lớp
     /** PR-OV2b: ô chọn TVV — TVV cùng chi nhánh lớp lên trước. */
     tvv: dsTvv(null, cls.branch_id ?? null),
   };
