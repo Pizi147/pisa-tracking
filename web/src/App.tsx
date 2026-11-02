@@ -5,6 +5,7 @@ import { useSession } from './lib/session.tsx';
 import { onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
+import { ChanRoiNhapGoc } from './ui/chanRoiNhap.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { useGhiNguon, useTieuDeTab } from './lib/quayLai.ts';
 import { Header } from './modules/platform/Header.tsx';
@@ -282,6 +283,8 @@ export default function App() {
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">{t('Bỏ qua tới nội dung')}</a>
       {!banChinh && <div className="contents print:hidden"><DemoBar /></div>}
+      {/* CHAN-ROI-NHAP-2: bộ chặn rời trang DUY NHẤT (router chỉ giữ một) — trang / panel còn nháp ghi nguồn vào kho, hộp hỏi vẽ ở đây. */}
+      <ChanRoiNhapGoc />
       {/* PR-PH: mất kết nối khi tải lại phiên KHÔNG phải đăng xuất — giữ nguyên màn, chỉ báo và cho thử lại. */}
       {(session.loiKetNoi || matMang) && (
         <div role="status" className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-3 sm:px-4 py-2 text-xs"

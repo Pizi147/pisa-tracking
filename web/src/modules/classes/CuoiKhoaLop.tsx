@@ -15,9 +15,10 @@ import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 import { KHOI_VANG, NutHomNay, OTuan, guiTheoLo } from './chuyenLopChung.tsx';
 import { ChipXetLaiDong, XetLaiCtx } from './PanelXetLai.tsx';
+import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, canLopDich, chuDaiKetQua,
-  daysBetween, ghepMucTieu, khacGoiY, kiemDongLenh, laChuyenNgay, maHocLai, mocLoTrinh, nhanKetQuaThuong, shortDate, tachMucTieu, tacDongChot, coBaoPhKhiChot, tenMonNgan,
+  daysBetween, ghepMucTieu, khacGoiY, kiemDongLenh, laChuyenNgay, maHocLai, mocLoTrinh, nhanKetQuaThuong, shortDate, tachMucTieu, tacDongChot, coBaoPhKhiChot, conTrongCuoiKhoa, tenMonNgan,
   thuNgay, tuanLich, type GoiYCuoiKhoa, type HuongLenh, type MucTieuLenh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -108,19 +109,10 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     onDaMoEm();
   }, [d, emMo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* Không mất phần đang sửa: số em có thay đổi chưa lưu (hướng / lớp / Kỳ vọng / nhận xét) — hỏi trước khi rời trang. */
+  /* Không mất phần đang sửa: số em có thay đổi chưa lưu (hướng / lớp / Kỳ vọng / nhận xét) — ‹, link, Back, đổi tài khoản hỏi một lần (CHAN-ROI-NHAP-2). */
   const soDoi = new Set([...Object.keys(sua).filter((k) => Object.keys(sua[Number(k)]).some((x) => x !== 'mo')), ...Object.keys(nhanXet)]).size;
-  useEffect(() => {
-    if (!soDoi) return;
-    const chan = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
-    window.addEventListener('beforeunload', chan);
-    return () => window.removeEventListener('beforeunload', chan);
-  }, [soDoi]);
-  const quayLai = () => {
-    // shortcut: hộp hỏi của trình duyệt; đổi sang ConfirmDialog nếu cần cùng kiểu chữ với hộp khác.
-    if (soDoi && !window.confirm(t('Bỏ thay đổi chưa lưu của {n} em?', { n: soDoi }))) return;
-    if (location.key !== 'default') navigate(-1); else navigate(`/hoc-vien/lop/${classId}`);
-  };
+  useChanRoiNhap(soDoi > 0, t('Thay đổi lộ trình của {n} em chưa lưu — rời đi sẽ mất.', { n: soDoi }), conTrongCuoiKhoa);
+  const quayLai = () => { if (location.key !== 'default') navigate(-1); else navigate(`/hoc-vien/lop/${classId}`); };
   if (kh.error) return <ErrorState message={kh.error.message} hint={kh.error.hint} status={kh.error.status} onRetry={kh.reload} />;
   if (kh.loading || !d) return <div className="page"><Skeleton rows={8} /></div>;
 

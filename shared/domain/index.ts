@@ -57,6 +57,7 @@ export * from './lenLop.ts';
 export * from './mauNghia.ts';
 export * from './bang.ts';
 export * from './khoPanel.ts';
+export * from './roiNhap.ts';
 export * from './chonNgay.ts';
 export * from './oNgay.ts';
 export * from './khac.ts';

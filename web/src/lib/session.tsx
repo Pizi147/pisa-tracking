@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useNavigate } from 'react-router-dom';
 import { api, invalidateAll } from './api.ts';
 import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
+import { quaRoiNhap } from '../ui/chanRoiNhap.tsx';
 import { dongBoNgonNgu } from './ngonNgu.ts';
 import { datChuNhap, type NavQuyen } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -62,10 +63,11 @@ type Ctx = {
   session: Session | null;
   loading: boolean;
   reload: () => Promise<void>;
-  switchAccount: (userId: number) => Promise<void>;
-  signOut: () => Promise<void>;
+  /** CHAN-ROI-NHAP-2: còn nháp chưa lưu thì hỏi trước (đổi chủ xoá mọi nháp) — `false` = người dùng Ở lại, không đổi gì. */
+  switchAccount: (userId: number) => Promise<boolean>;
+  signOut: () => Promise<boolean>;
   /** PR-OV2a: đổi góc nhìn (null = về vai gốc) — máy chủ lưu ở phiên, tải lại toàn bộ dữ liệu theo quyền mới. */
-  doiGocNhin: (role: string | null) => Promise<void>;
+  doiGocNhin: (role: string | null) => Promise<boolean>;
   can: (permission: string) => boolean;
   /** Số chi nhánh người dùng được cấp — bộ lọc chi nhánh chỉ hiện khi > 1. */
   branchCount: number;
@@ -104,7 +106,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   /* NEN-PANEL (rà #530): nháp panel thuộc một người + góc nhìn — phiên đã tải (không phải lỗi mạng) mà đổi chủ thì xoá hết nháp, trước khi trang con đọc. */
   if (session && !session.loiKetNoi) datChuNhap(khoPhien(), session.authenticated ? `${session.user?.id}|${session.gocNhin?.dangChon ?? ''}` : 'khach');
 
-  const switchAccount = useCallback(async (userId: number) => {
+  const switchAccount = useCallback((userId: number) => quaRoiNhap(async () => {
     await api.post('/demo/session', { userId });
     invalidateAll();          // dữ liệu của tài khoản cũ không được dùng lại cho phạm vi mới
     setSession(null);
@@ -113,17 +115,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSession(s);
     setLoading(false);
     navigate(s.landing ?? '/', { replace: true });
-  }, [navigate]);
+  }), [navigate]);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(() => quaRoiNhap(async () => {
     await api.del('/demo/session');
     invalidateAll();
     setSession(null);
     await reload();
     navigate('/', { replace: true });
-  }, [navigate, reload]);
+  }), [navigate, reload]);
 
-  const doiGocNhin = useCallback(async (role: string | null) => {
+  const doiGocNhin = useCallback((role: string | null) => quaRoiNhap(async () => {
     await api.put('/session/goc-nhin', { role });
     /* Như đổi tài khoản: gỡ trang của góc nhìn cũ TRƯỚC khi bỏ dữ liệu nhớ — không thì trang cũ tải lại bằng quyền mới (403). */
     setSession(null);
@@ -131,7 +133,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     invalidateAll();
     await reload();
     navigate('/', { replace: true });
-  }, [navigate, reload]);
+  }), [navigate, reload]);
 
   /** Chỉ dùng để hiện/ẩn giao diện. Quyền thật luôn do API quyết định. */
   const can = useCallback(

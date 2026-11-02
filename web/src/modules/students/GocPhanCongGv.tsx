@@ -106,7 +106,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
   const nhanO = (l: LopPc, k: string) => (k === 'gvcn' ? t('GVCN') : tenMonNgan(l.ct, k));
   const soLopNhap = Object.keys(nhap).length;
   const soONhap = lop.filter((l) => nhap[l.id]).reduce((n, l) => n + soDoi(l), 0);
-  const hopRoi = useChanRoiNhap(soLopNhap > 0, t('{n} ô đổi ở {l} lớp chưa lưu — rời đi sẽ mất.', { n: soONhap, l: soLopNhap }), conTrongGocPc);
+  useChanRoiNhap(soLopNhap > 0, t('{n} ô đổi ở {l} lớp chưa lưu — rời đi sẽ mất.', { n: soONhap, l: soLopNhap }), conTrongGocPc);
 
   const setO = (l: LopPc, khoa: string, v: number | '') => {
     const moi = { ...chonDong(l), [khoa]: v };
@@ -294,7 +294,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
     if (id !== null) requestAnimationFrame(() => document.querySelector('[data-to="true"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   };
 
-  if (trang.error) return <>{hopRoi}<ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} /></>;
+  if (trang.error) return <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />;
   if (!data) return <div className="card p-4"><Skeleton rows={8} /></div>;
   if (data.canChonChiNhanh) {
     return <div className="card pc-rong"><span className="tieu">{t('Chọn chi nhánh để xem phân công')}</span>{chonCn}</div>;
@@ -366,7 +366,6 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
 
       <TongHopPc dem={dem} demNhap={demNhap} gv={gv} to={to} onTo={batTo} gon={dt} />
 
-      {hopRoi}
       {lopMo && mo && !chiXem && (
         <ChonGvPc neo={oRef.current.get(`${mo.classId}|${mo.khoa}`) ?? null} nhanO={`${nhanO(lopMo, mo.khoa)} ${lopMo.code}`} ds={dsChon(lopMo, mo.khoa)} tamDuoi={dt}
           onChon={(v) => setO(lopMo, mo.khoa, v)} onDong={() => setMo(null)} />
