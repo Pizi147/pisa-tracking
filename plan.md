@@ -254,6 +254,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Merge:** PR máy chủ PTA tự merge khi rà đạt + check xanh; LECH-CACH-CHAM đổi mức SOS / Case em thật thì giữ chờ chủ SP. V8-HSL-2, DO-KHUNG-DO chờ duyệt ảnh sáng (không merge qua đêm).
 - **Chưa mở:** QUYEN-THEO-CN, XM-BE-1, KET-PET-THI-THAT (chờ chủ SP quyết) · chỉ mục `status` `teacher_assignments` (chờ log).
 
+### 02/11 chiều
+- **Đã merge:** #779 V8-HSL-2 (chủ SP: dòng kỹ năng tính KCK, Overall không; so Target lúc thi lượt đó) · #781 DO-KHUNG-DO · #783 TAB-A11Y.
+- **Chờ:** #784 SUA-NHO-2 (duyệt ảnh; dòng phụ "hạn bước tiếp" Sau thi TVV bỏ) · #785 CHAN-ROI-NHAP (đổi router cả app, kiểm toàn app rồi mới rà) · #777 (SQL bản chính).
+- **Để sau (#784):** [XM] hạn xa mockup v7 viên xám `.td`, `ChipHan` còn chữ trơn — chạm mọi danh sách · cột Trạng thái hồ sơ lượt 237 px theo mockup, critique 29/10 đề xuất 150 px. **(#783):** 7 `HangTab` còn lại chưa `aria-controls`.
+- **Bẫy:** check nhóm chết 0xC0000005 (libsql) lặp lại 02/11 → chạy lại đạt; session gom số liệu đừng ghi tệp `prof*.txt` ở thư mục chính.
+
 ### 02/11 sáng — kết quả đêm
 - **Đã merge:** #778 LUU-PC-LO (lưu 8 lớp 241 → 127 câu) · #780 TL-HVL (`/hoc-vien-lop` QL 51 → 48).
 - **Chờ chủ SP:** #777 LECH-CACH-CHAM (chạy câu SQL chỉ đọc trong PR trên bản chính: ra 0 thì merge, khác 0 thì chủ SP quyết) · #779 V8-HSL-2 (duyệt ảnh + 2 câu cách tính) · #781 DO-KHUNG-DO (duyệt ảnh; 70 → 0 lỗi đo).
