@@ -129,7 +129,8 @@ function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon:
   const oCua = (h: H, c: CotBang): ReactNode => {
     if (c.key === 'kn') return <span className="inline-block min-w-[32px] rounded border px-1.5 text-center text-xs font-bold text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{tenMonNgan(null, h.skill)}</span>;
     if (rateView(so(h, c.key), h.tong).kind !== 'value') return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
-    return <OSo giaTri={so(h, c.key)} nhan={String(so(h, c.key))} tieuDe={t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} nguon={nguon(`tien-bo:${h.skill}`)} vung={c.key}
+    /* Ô mở đúng các lượt của ô (`:tang|giu|giam`) — số = dòng panel. */
+    return <OSo giaTri={so(h, c.key)} nhan={String(so(h, c.key))} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
       className={c.key === 'tang' ? 'text-ok' : c.key === 'giam' ? 'text-bad' : ''} />;
   };
   return (

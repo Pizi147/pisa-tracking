@@ -41,6 +41,20 @@ export async function runPrUiPhanTichTests(t: any) {
     assert(bc.baoCao(P.mbManager, { branchId: cn, ct: 'thuong', ...kk }).tienBo === null, 'Lớp thường không có tienBo');
   });
 
+  check('RA-LOI-WEB · Tiến bộ theo kỹ năng: ô Tăng / Giữ nguyên / Giảm mở đúng các lượt của ô (số = dòng panel)', () => {
+    const cn = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' }).branchId;
+    const kk = { tu: d.addDaysIso(k.tu, -56), den: k.den };
+    let co = 0;
+    for (const x of bc.baoCao(P.mbManager, { branchId: cn, ct: 'ft', ...kk }).tienBo) {
+      for (const [o, so] of [['tang', x.tang], ['giu', x.tong - x.tang - x.giam], ['giam', x.giam]] as const) {
+        const r = bc.oBaoCao(P.mbManager, { branchId: cn, ct: 'ft', ...kk, o: `tien-bo:${x.skill}:${o}` });
+        assert(r.n === so && r.rows.length === so && r.rows.every((d: any) => d.xuHuong?.huong === o), `${x.skill} ${o}: ô ${so} ≠ panel ${r.n} (${r.rows.map((d: any) => d.xuHuong?.huong).join(',')})`);
+        co += so;
+      }
+    }
+    assert(co > 0, 'demo không có lượt Tiến bộ nào để kiểm');
+  });
+
   check('UI-PHAN-TICH · Phân tích GV: Đạt MT + thi thật = Kết quả gộp; Case có PA = Tổng quan; ô = số dòng panel', () => {
     const cn = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' }).branchId;
     const tq = v5.tongQuanV5(P.mbManager, { branchId: cn, ct: 'ft' });
