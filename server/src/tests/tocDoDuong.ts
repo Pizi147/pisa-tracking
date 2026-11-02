@@ -408,11 +408,12 @@ export const TRAN: Record<string, number> = {
   /* TU-a: ô chọn tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors/chon?studentId=1': 17, 'QT /tutors/chon?studentId=1': 15, 'GVCN /tutors/chon?studentId=1': 19, 'GVBM /tutors/chon?studentId=1': 19,
   'QL /tutors/chon?paId=7': 20, 'QT /tutors/chon?paId=7': 17, 'GVCN /tutors/chon?paId=7': 21,
-  'QL /demo/session': 16,
-  'GVCN /demo/session': 16,
-  'GVBM /demo/session': 16,
-  'GVCN_THUONG /demo/session': 16,
-  'QT /demo/session': 16,
+  /* DOC-IT-1: isInitialised nhớ theo kết nối (−1 câu sqlite_master) — đo 3 · 4 · 4 · 4 · 3 → max(đo+10, ⌈đo×1,3⌉). */
+  'QL /demo/session': 13,
+  'GVCN /demo/session': 14,
+  'GVBM /demo/session': 14,
+  'GVCN_THUONG /demo/session': 14,
+  'QT /demo/session': 13,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */

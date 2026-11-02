@@ -426,6 +426,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Tải lại mảnh JS sau deploy | `web/src/lib/taiLaiManh.ts` (`lazyTai`) |
 | Đo khung / bảng trên trang thật, miễn lỗi đã biết | `scripts/do-khung.mjs` · `scripts/do-bang.mjs` · `scripts/mien-do.json` |
 | Cảnh báo esbuild, ảnh cặp mockup \| web, chụp API | `scripts/kiem-esbuild.mjs` · `scripts/anh-cap.mjs` · `scripts/chup-api.mjs` |
+| Đo dòng quét Turso từng (vai × đường) — `PISA_DO_IT` của `tocDo.run` + chạy lại câu (cách đọc `docs/toc-do/doc-it-0211.md`) | `scripts/do-it.py` |
 
 ### Bản chính (Netlify + Turso)
 
