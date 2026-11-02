@@ -47,6 +47,27 @@ Bỏ (không có trạng thái nháp rõ): Lịch Test — "lịch đang sửa" 
 Chưa bấm thử trên trình duyệt (chỉ có phép kiểm CRN-4 / CRN-6): ô lưới LỚP THƯỜNG lưu hỏng ở Lịch Test (seed demo khó tạo lỗi lưu ô gõ thẳng);
 bấm link khi hộp điểm đang mở bằng chuột thật (hộp tự chặn từ trước — PR này không đổi đường đó).
 
+## Vòng 2 (PTA rà #787): lưu rồi đi tiếp KHÔNG được hỏi
+Rủi ro: lưu xong rồi điều hướng ngay trong cùng lần bấm, trước khi form về "hết sửa" → bộ chặn đọc kho còn nguồn → hỏi sai.
+Sửa: `ChanRoiNhapGoc` chờ một nhịp (80 ms) rồi đọc lại kho; nguồn đã gỡ thì cho đi tiếp, không hộp nào hiện (CRN-7, router thật).
+Lưu ý thiết kế: điều hướng trong CÙNG trang (PUSH / REPLACE — việc tiếp, bài tiếp, lớp tiếp, đóng) panel và hộp điểm cho qua sẵn; chỉ đổi trang hoặc Back mới xét.
+
+| Luồng | Vai · cỡ | Kết quả |
+|---|---|---|
+| "Lưu · bài tiếp ›" × 4 bằng Enter → "Lớp tiếp: MB Pre FOU 03 ›" (Lịch Test) | GV 1440 | không hỏi |
+| "Lưu · em tiếp ›" hồ sơ MT (`/mock-test/148` → `/mock-test/13?kn=listening`, đổi trang) | GV 1440 + 375 (`cham-lien-mach`) | không hỏi, không hộp thoại nào |
+| "Việc tiếp" Chấm Test | GV 1440 + 375 (`cham-lien-mach`) | không hỏi |
+| Enter × 2 nhanh, lỗi 500 rồi lưu lại | GV 1440 (`cham-lien-mach`) | một PUT, chữ giữ, không hỏi |
+| "Xác nhận · việc tiếp ›" (Công việc, Xác nhận Case) | GV 1440 | sang việc kế, không hỏi |
+| "Lưu mô tả" rồi Back | GV 375 | đã lưu → Back không hỏi; lưu bị chặn (thiếu Nhóm nguyên nhân) → Back hỏi một lần (đúng: chữ chưa lưu) |
+| Cuối khoá "Lưu nháp" rồi ‹ | QL 1440 + 375 | không hỏi |
+| Mở panel từ chuông | GV 1440 | sang `/cong-viec?viec=…`, không hỏi |
+| Tab trong hộp điểm | GV 1440 | chỉ chuyển focus trong hộp, không điều hướng |
+| "Lưu · đóng" (hộp nhận xét, đổi người phụ trách, S Ex) | — | chỉ đóng, không đổi URL nên không qua bộ chặn |
+
+`do-khung` toàn bộ (seed riêng mỗi bên): nhánh và main giống hệt từng dòng — 439 dòng, không lỗi, 216 miễn.
+`cham-lien-mach`: kịch bản trên main dừng ở bước (f) `#dai-diem` (đã bỏ — plan.md ghi); chạy bản sửa tạm `[id^="kn-"]` (không commit): main và nhánh đều qua, nhánh không có hộp thoại nào.
+
 Hộp trình duyệt khi tải lại / đóng tab: như cũ (`beforeunload` ở Cuối khoá, Lịch Test, Phân công GV); panel không thêm.
 
 ## Thao tác TRƯỚC → SAU

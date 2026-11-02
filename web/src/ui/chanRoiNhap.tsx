@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { useBlocker, useLocation, type BlockerFunction } from 'react-router-dom';
 import { taoKhoRoiNhap, type KieuDi, type NguonNhap } from '@shared/domain/index.ts';
 import { HopBoChu } from './Drawer.tsx';
@@ -42,10 +42,21 @@ export function ChanRoiNhapGoc() {
     kieu.current = historyAction;
     return !!khoRoiNhap.giu(currentLocation, nextLocation, historyAction);
   }, []));
-  const n = giu.state === 'blocked' ? khoRoiNhap.giu(tu, giu.location, kieu.current) : null;
+  const nGiu = giu.state === 'blocked' ? khoRoiNhap.giu(tu, giu.location, kieu.current) : null;
+  /* Lưu rồi đi tiếp TRONG CÙNG lần bấm ("Lưu · em tiếp ›"): điều hướng chạy trước khi form kịp về "hết sửa" và gỡ nguồn. Chờ một nhịp rồi mới
+     hỏi — nguồn đã gỡ thì effect dưới cho đi tiếp, không hộp nào hiện. ponytail: 80 ms đủ cho lưu → setState → điều hướng cùng tác vụ; form
+     chỉ về "hết sửa" sau một lần tải lại mạng thì vẫn hỏi (sửa ở form đó: xoá trạng thái sửa trước khi điều hướng). */
+  const [chin, setChin] = useState<unknown>(null);
+  const viTri = giu.state === 'blocked' ? giu.location : null;
+  useEffect(() => {
+    if (!viTri) return undefined;
+    const h = setTimeout(() => setChin(viTri), 80);
+    return () => clearTimeout(h);
+  }, [viTri]);
+  const n = viTri && chin === viTri ? nGiu : null;
   const xin = khoRoiNhap.dangXin();
-  /* Lưu xong trong lúc hộp đang mở: không còn gì để mất → đi tiếp theo ý đã bấm. */
-  useEffect(() => { if (giu.state === 'blocked' && !n) giu.proceed(); }, [giu, n]);
+  /* Lưu xong (trước hoặc trong lúc hộp đang mở): không còn gì để mất → đi tiếp theo ý đã bấm. */
+  useEffect(() => { if (giu.state === 'blocked' && !nGiu) giu.proceed(); }, [giu, nGiu]);
   /* Panel tự hỏi bằng hộp của nó — gọi một lần cho mỗi lần bị giữ. */
   const daGoi = useRef<NguonNhap | null>(null);
   useEffect(() => {

@@ -3,7 +3,7 @@
  *   CRN-1 `conTrongGocPc`: đổi URL trong góc (tìm, lọc khung) không hỏi; đổi trang / đổi góc / đổi chi nhánh là rời.
  *   CRN-2 dùng router THẬT (`createMemoryRouter`, cùng dạng route `*` của `main.tsx`), không cần DOM: link + Back bị giữ, "Rời đi" đi tiếp đúng đích, "Ở lại" giữ nguyên chỗ.
  *   CRN-3 nguồn: app chạy data router (`useBlocker` cần) · một đường hỏi, không còn `window.confirm` / `beforeunload` riêng ở góc.
- *   CRN-4..6 (CHAN-ROI-NHAP-2): một bộ chặn cho cả app (router chỉ giữ MỘT blocker) + kho nguồn nháp `taoKhoRoiNhap` — Cuối khoá lớp, Lịch Test,
+ *   CRN-4..7 (CHAN-ROI-NHAP-2): một bộ chặn cho cả app (router chỉ giữ MỘT blocker) + kho nguồn nháp `taoKhoRoiNhap` — Cuối khoá lớp, Lịch Test,
  *   panel đang sửa (cơ chế `KhungPanel`), đổi tài khoản / đăng xuất / đổi góc nhìn khi còn nháp.
  * Không mở database.
  */
@@ -125,6 +125,29 @@ export async function runPrChanRoiNhapTests(t: YThucTestKit) {
     const q = kho.xin(async () => { lam++; });
     kho.tra(true);
     assert(await q === true && lam === 2, 'Bỏ nháp → làm');
+  });
+  await checkAsync('CRN-7 lưu rồi đi tiếp cùng lần bấm ("Lưu · em tiếp ›"): bị giữ một nhịp, nguồn gỡ → tự đi tiếp, không hộp', async () => {
+    const { createMemoryRouter } = await import('react-router-dom');
+    const kho = d.taoKhoRoiNhap();
+    const router = createMemoryRouter([{ path: '*', element: null }], { initialEntries: ['/mock-test/1'] });
+    router.getBlocker('k', ({ currentLocation, nextLocation, historyAction }: any) => !!kho.giu(currentLocation, nextLocation, historyAction));
+    const cho = () => router.state.blockers.get('k');
+    kho.dat('hop', { moTa: 'điểm', conTrong: (a: any, b: any, kieu: string) => kieu !== 'POP' && a.pathname === b.pathname, hoi: () => {} });
+    await router.navigate('/mock-test/2', { replace: true });   // lưu xong, form chưa kịp về "hết sửa"
+    assert(cho()?.state === 'blocked', 'nhịp đầu: nguồn còn → giữ');
+    kho.dat('hop', null);   // form về "hết sửa", gỡ nguồn
+    assert(kho.giu(router.state.location, cho()!.location!, 'REPLACE') === null, 'đọc lại kho: không còn gì để mất');
+    cho()!.proceed!();      // bộ chặn gốc: `!nGiu` → proceed, không hộp
+    await new Promise((r) => setTimeout(r, 0));
+    assert(router.state.location.pathname === '/mock-test/2', 'tới em tiếp');
+    kho.dat('hop', { moTa: 'điểm', conTrong: (a: any, b: any, kieu: string) => kieu !== 'POP' && a.pathname === b.pathname, hoi: () => {} });
+    await router.navigate('/mock-test/2?kn=R', { replace: true });
+    assert(cho()?.state !== 'blocked', '"Lưu · bài tiếp ›" cùng trang: không giữ');
+    router.dispose();
+  });
+  check('CRN-7 bộ chặn gốc chờ một nhịp rồi đọc lại kho trước khi hỏi', () => {
+    const h = doc('web/src/ui/chanRoiNhap.tsx');
+    assert(h.includes('setTimeout(() => setChin(viTri)') && h.includes("if (giu.state === 'blocked' && !nGiu) giu.proceed()"), 'chờ nhịp + tự đi tiếp khi nguồn gỡ');
   });
   check('CRN-6 áp vào màn: Cuối khoá, Lịch Test, panel, phiên — một đường hỏi', () => {
     const ck = doc('web/src/modules/classes/CuoiKhoaLop.tsx');
