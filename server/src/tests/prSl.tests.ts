@@ -178,7 +178,7 @@ export async function runPrSlTests(t: YThucTestKit) {
       assert(r.status === 400 && /không hợp lệ/.test(r.json?.error ?? ''), `${r.status} ${JSON.stringify(r.json)}`);
     });
 
-    await checkAsync('SL-1 (3) · đổi Target thiếu lý do → 400 "Ghi lý do đổi Target."; có lý do → thêm dòng cycle_target_revisions hôm nay', async () => {
+    await checkAsync('SL-1 (3) · đổi Target thiếu lý do → 400 "Ghi lý do đổi Target."; có lý do → thêm dòng cycle_target_revisions hôm nay (ngày nghiệp vụ)', async () => {
       const a = em[4];
       const moi = a.target_score === 7 ? 6.5 : 7;
       const r0 = await luu(QL, ft, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, target: moi }] });
@@ -186,7 +186,7 @@ export async function runPrSlTests(t: YThucTestKit) {
       const r1 = await luu(QL, ft, { idempotencyKey: khoa(), lyDoTarget: 'Em tiến bộ nhanh', rows: [{ studentId: a.sid, target: moi }] });
       assert(r1.status === 200 && r1.json.daSua === 1, `${r1.status} ${JSON.stringify(r1.json)}`);
       const rev = get('SELECT * FROM cycle_target_revisions WHERE cycle_id = ? ORDER BY id DESC LIMIT 1', a.cid);
-      assert(rev?.new_target === moi && rev.reason === 'Em tiến bộ nhanh' && rev.effective_from === new Date().toISOString().slice(0, 10), JSON.stringify(rev));
+      assert(rev?.new_target === moi && rev.reason === 'Em tiến bộ nhanh' && rev.effective_from === t.TODAY, JSON.stringify(rev));
       assert(get('SELECT target_score FROM learning_cycles WHERE id = ?', a.cid).target_score === moi, 'target lộ trình');
     });
 

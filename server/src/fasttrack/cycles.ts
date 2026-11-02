@@ -163,7 +163,7 @@ export function createCycle(p: Principal, input: {
   if (input.examPeriodId && !periodById(Number(input.examPeriodId))) throw badRequest('Dự kiến thi không hợp lệ.');
   /* PR-Dọn (quét #20): chỉ nhận mã lộ trình đang dùng trong danh mục (Quản trị › Danh mục). */
   if (input.route != null && !activeRouteCodes().includes(String(input.route))) throw badRequest('Lộ trình không có trong danh mục đang dùng.');
-  const startedAt = input.startedAt ?? nowIso().slice(0, 10);
+  const startedAt = input.startedAt ?? demoToday();
   if (!isIsoDate(startedAt)) throw badRequest('Ngày bắt đầu không hợp lệ.');
   const t = docTarget(input.targetScore);
 
@@ -342,7 +342,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     const now = patch.examPeriodId ? periodById(Number(patch.examPeriodId)) : null;
     addJourney({
       studentId: c.student_id, eventType: 'exam_plan_changed',
-      eventDate: now?.weekStart ?? nowIso().slice(0, 10),
+      eventDate: now?.weekStart ?? demoToday(),
       title: 'Đổi dự kiến thi IELTS',
       detail: `${before ?? 'chưa có'} → ${now?.code ?? 'chưa có'}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
@@ -470,7 +470,7 @@ export function setOutcome(p: Principal, cycleId: number, input: {
   if (input.outcome) {
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'cycle_outcome',
-      eventDate: c.ended_at ?? nowIso().slice(0, 10),
+      eventDate: c.ended_at ?? demoToday(),
       title: `Kết luận lộ trình: ${CYCLE_OUTCOME_LABEL[input.outcome as keyof typeof CYCLE_OUTCOME_LABEL]}`,
       detail: input.note ?? null, refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
       dedupKey: `cycle-outcome:${cycleId}:${input.outcome}`,
@@ -540,7 +540,7 @@ export function reviseTarget(p: Principal, cycleId: number, input: {
   if (target === (c.target_score ?? null) && kck === !!c.khong_cam_ket) return { cycle: c, revision: null };
   const chan = o?.daDuyet ? null : loiDoiTarget(p, c, { kck });
   if (chan) throw chan;
-  const effectiveFrom = input.effectiveFrom ?? nowIso().slice(0, 10);
+  const effectiveFrom = input.effectiveFrom ?? demoToday();
   if (!isIsoDate(effectiveFrom)) throw badRequest('Ngày hiệu lực không hợp lệ.');
   const reason = chuTuDo(input.reason, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm
   if (!reason) throw badRequest('Ghi lý do đổi Target.');

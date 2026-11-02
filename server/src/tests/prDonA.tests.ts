@@ -247,11 +247,32 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(e2?.status === 400 && /tương lai/.test(e2.message), `resultDate: ${e2?.status} ${e2?.message}`);
   });
 
+  /* RA-LOI-MAY: sửa công việc lỗi ở bước người theo dõi (sau khi đã ghi lịch sử từng trường) → không được để lại dòng lịch sử nào (một giao dịch). */
+  check('RA-LOI-MAY · updateTask lỗi 400 (quá trần người theo dõi) → không ghi task_history, việc không đổi', () => {
+    const tk = meeting.createTask(P.mbManager, { title: 'Việc thử ghi nửa chừng', kind: 'branch_ops', branchId: MB });
+    const dem = () => get(`SELECT COUNT(*) AS n FROM task_history WHERE task_id = ?`, tk.id).n;
+    const truoc = dem();
+    const e = loiCua(() => meeting.updateTask(P.mbManager, tk.id, { title: 'Tên mới', followerIds: Array.from({ length: 51 }, (_, i) => i + 1) }));
+    assert(e?.status === 400, `${e?.status} ${e?.message}`);
+    assert(dem() === truoc, `task_history ${truoc} → ${dem()}`);
+    assert(get(`SELECT title FROM tasks WHERE id = ?`, tk.id).title === 'Việc thử ghi nửa chừng', 'tên đổi');
+  });
+
   check('Dọn-a (2h) · #20 createCycle route "XX" → 400; route có trong danh mục → được', () => {
     const { sid } = emMoi('MB FT 101');
     assert(maLoi(() => cyclesSvc.createCycle(P.mbManager, { studentId: sid, route: 'XX', targetScore: 6.5 })) === 400, 'route XX');
     const cy = cyclesSvc.createCycle(P.mbManager, { studentId: sid, route: 'RF', targetScore: 6.5, startedAt: TODAY });
     assert(cy.route === 'RF', 'khẳng định: RF');
+  });
+
+  /* RA-LOI-MAY: không gửi ngày → mốc là NGÀY NGHIỆP VỤ (`demoToday`), không phải ngày UTC thật (lệch ngày demo; bản chính 0–7 h sáng ra hôm qua). */
+  check('RA-LOI-MAY · createCycle không startedAt, reviseTarget không effectiveFrom → mốc = ngày nghiệp vụ', () => {
+    const { sid } = emMoi('MB FT 101');
+    const cy = cyclesSvc.createCycle(P.mbManager, { studentId: sid, route: 'RF', targetScore: 6.5 });
+    assert(cy.started_at === TODAY, `started_at ${cy.started_at} ≠ ${TODAY}`);
+    cyclesSvc.reviseTarget(P.mbManager, cy.id, { newTarget: 7, reason: 'Thử mốc ngày' });
+    const r = get(`SELECT effective_from FROM cycle_target_revisions WHERE cycle_id = ? ORDER BY id DESC LIMIT 1`, cy.id);
+    assert(r.effective_from === TODAY, `effective_from ${r.effective_from} ≠ ${TODAY}`);
   });
 
   // ------------------------------------------------------------------ khối 3 · chia lô, trần mảng, trần chữ, chống gửi đôi, ROLLBACK
