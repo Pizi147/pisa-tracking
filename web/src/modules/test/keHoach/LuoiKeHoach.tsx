@@ -257,7 +257,7 @@ const cotMt = (n: number): Cot => ({ key: `mt${n}`, dot: { loai: 'ft', attemptNo
 function NutThemLuot({ hang, onMt, onSEx }: { hang: HangFT; onMt: (n: number, el: HTMLElement) => void; onSEx: () => void }) {
   const neo = useRef<HTMLSpanElement>(null);
   return (
-    <span ref={neo} className="self-center">
+    <span ref={neo} className="self-start">
       <Menu label={t('+ MT')} align="right" className="btn btn-sm min-h-[44px] border-dashed sm:min-h-0" items={[
         ...(hang.soKeTiep <= MT_TOI_DA ? [{ label: t('MT{n} · MT thường', { n: hang.soKeTiep }), onClick: () => onMt(hang.soKeTiep, neo.current!) }] : []),
         { label: t('S Ex · Speaking với chuyên gia'), onClick: onSEx },

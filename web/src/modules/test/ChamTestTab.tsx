@@ -201,14 +201,14 @@ function DongCham({ x, homNay, chon, xong, onMo }: { x: WorkItem | NhomS; homNay
       <button type="button" onClick={onMo} aria-current={chon ? 'true' : undefined}
         className={`grid w-full appearance-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-0 border-t bg-transparent px-4 py-2.5 text-left row-hover ${chon ? 'row-active shadow-[inset_3px_0_0_var(--accent)]' : ''} ${xong ? 'row-muted' : ''}`}
         style={{ borderColor: 'var(--line)' }}>
-        <span className="min-w-0 break-words text-[15px] font-semibold text-slate-100">
+        <span className="min-w-0 break-words text-[15px] font-semibold text-slate-100 max-sm:col-span-2">
           {cheo ? `${s.classCode} · Speaking` : `${w.classCode ?? w.studentName} · ${dich(w.reason)}`}
         </span>
-        <span className="row-span-2 flex flex-col items-end gap-1">
+        <span className="row-span-2 flex flex-col items-end gap-1 max-sm:col-span-2 max-sm:row-span-1 max-sm:row-start-3 max-sm:flex-row max-sm:items-center max-sm:justify-between">
           <span className="text-[13px] tabular-nums text-slate-300">{xong ? <span className="font-semibold text-ok">✓ {t('Xong')}</span> : t('{soBai} bài', { soBai: x.soBai ?? 0 })}</span>
           {!cheo && !xong && <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={w.due} />}
         </span>
-        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-400">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-400 max-sm:col-span-2">
           {cheo ? (
             <>
               <span>{t('{luot} · làm bài {tuan}', { luot: `MT${s.attemptNo}`, tuan: [s.tu, s.den].filter((x, i, a): x is string => !!x && a.indexOf(x) === i).map((x) => tuanLich(x, homNay)).join(' – ') || '—' })}</span>

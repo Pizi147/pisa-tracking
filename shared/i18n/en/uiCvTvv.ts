@@ -43,7 +43,6 @@ export const EN_UI_CV_TVV = {
   'chờ QL duyệt.': 'waiting for manager approval.',
   'hiện': 'now',
   'hạn 23:59 {ngay}': 'due 23:59 {ngay}',
-  'hạn bước tiếp': 'next-step due',
   'không hạn': 'no due date',
   'lưu {luc}': 'saved {luc}',
   'lưu {ngay}': 'saved {ngay}',

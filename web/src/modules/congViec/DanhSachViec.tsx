@@ -253,7 +253,6 @@ function CotHan({ it, daXong, nguoi }: { it: WorkItem; daXong: boolean; nguoi: s
       {daXong ? <span className="font-semibold text-dim">{t('✓ Đã lưu')}</span>
         : it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
         : laViecChamCheo(it) ? null : <span className="text-faint">{tvv || it.group === 'bo_sung_ho_so' ? t('không hạn') : t('Chưa có hạn')}</span>}
-      {!daXong && it.due && tvv && <HanPhu it={it} />}
       {!daXong && nguoi && <span className="pl-0.5 text-[color:var(--text)]">{nguoi}</span>}
     </span>
   );
@@ -309,7 +308,8 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
         {(phu || tvv) && (
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] leading-snug text-dim">
             {phu && <span className="min-w-0 break-words">{dich(phu)}</span>}
-            {tvv && !daXong && <span className="min-w-0 max-w-full [&>span]:h-auto [&>span]:min-h-[22px] [&>span]:whitespace-normal [&>span]:py-0.5 [&>span]:leading-snug"><BadgeViecTvv it={it} /></span>}
+            {tvv && !daXong && <span className="min-w-0 max-w-full empty:hidden [&>span]:h-auto [&>span]:min-h-[22px] [&>span]:whitespace-normal [&>span]:py-0.5 [&>span]:leading-snug"><BadgeViecTvv it={it} /></span>}
+            {tvv && !daXong && <ConNgay it={it} />}
           </span>
         )}
       </button>
@@ -395,12 +395,11 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
   && (it.group === 'bao_ph_yt' || it.group === 'thi_that' || it.group === 'buoc_tiep' || it.key.startsWith('chot-ngay-thi:'));
 
-/** Dòng phụ dưới hạn (mockup `.han .phu`): Báo PH "còn n ngày" · Sau thi "hạn bước tiếp". Quá hạn / hôm nay đã có tín hiệu của `Han`. */
-function HanPhu({ it }: { it: WorkItem }) {
+/** Báo PH hạn xa "còn n ngày" ở dòng phụ của việc (mockup `v7/cong-viec-2.html` `t2`), cột hạn một dòng. Quá hạn / sắp hạn đã có tín hiệu của `ChipHan`. */
+function ConNgay({ it }: { it: WorkItem }) {
   const { homNay } = useNgayNghiepVu();
-  if (it.urgency !== 'normal' || !it.due || !homNay) return null;
-  const chu = it.group === 'buoc_tiep' ? t('hạn bước tiếp') : it.group === 'bao_ph_yt' ? t('còn {n} ngày', { n: daysBetween(homNay, it.due) }) : null;
-  return chu ? <span className="block text-xs text-slate-500">{chu}</span> : null;
+  if (it.group !== 'bao_ph_yt' || it.urgency !== 'normal' || !it.due || !homNay) return null;
+  return <span>{t('còn {n} ngày', { n: daysBetween(homNay, it.due) })}</span>;
 }
 
 /** Badge trạng thái của việc TVV (mockup): "⚠ Chưa liên hệ được · lần n" (sắp hạn) · "Đã có kết quả · Chưa chốt bước tiếp" (tiến độ) · "Đã thi · chờ KQ" (lịch thi). */
