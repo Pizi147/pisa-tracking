@@ -780,7 +780,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
-| 03/11 | HINH-HAN-XA-2 · Opus 5.5 | Cột Trạng thái hồ sơ lượt (FT + lớp thường) 237 / 242 → 150 px; chip dài xuống dòng cân, 0 / 1 394 ô tràn |
+| 03/11 | #818 HINH-HAN-XA-2 · Opus 5.5 | Cột Trạng thái hồ sơ lượt (FT + lớp thường) 237 / 242 → 150 px; chip dài xuống dòng cân, 0 / 1 394 ô tràn |
 | 03/11 | #814 HINH-HAN-XA-1 · Opus 5.5 | Hạn xa = viên xám theo mockup v7 `.td` ở `ChipHan` chung (mọi danh sách); KHỚP 100 % |
 | 03/11 | QUYEN-LH-CN · Opus 5.5 | Liên hệ em: vai có quyền xét ở chi nhánh của em (`vaiVoiEm`) — PATCH, Sửa cả lớp, cờ `nhapLienHe` hồ sơ / Sửa cả lớp; QL MB kiêm GVCN CP → 403 ở em CP. Web không đổi (dùng cờ máy chủ). |
 | 03/11 | DON-SO-TAY · Opus 5.5 | Bỏ sổ tay PDF (chủ SP 02/11): xoá `docs/so-tay/` (47 MB: dựng, nội dung, ảnh, 10 PDF), dòng CODE_MAP / PRODUCT / .gitignore; Hướng dẫn web giữ nguyên. |
