@@ -2,6 +2,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, Empty, Skeleton, Task } from '../../ui/ui.tsx';
 import { fmtDate } from '../../lib/format.ts';
 import { khopChiNhanhBaoCao } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /**
  * VIỆC QUẢN LÝ GIAO — hai loại khác hẳn nhau (tạo ở MỘT cửa "+ Giao việc" của Vận hành, Câu 1 = A; đây chỉ còn danh sách).
@@ -26,30 +27,30 @@ export function ManagerTaskList({ periodId, chiNhanh = 'tat-ca' }: { periodId: n
   const { data, loading } = useApi<{ rows: TaskRow[] }>(
     periodId ? `/tasks?periodId=${periodId}` : null, [periodId],
   );
-  if (loading) return <Card title="Việc được giao"><Skeleton rows={3} /></Card>;
+  if (loading) return <Card title={t('Việc được giao')}><Skeleton rows={3} /></Card>;
   /* PR-BC D9-b: lọc theo chi nhánh của VIỆC (giữ việc giao GV theo lớp); chỉ thu hẹp cái máy chủ đã trả. */
-  const rows = (data?.rows ?? []).filter((t) => khopChiNhanhBaoCao(t.branchId ?? null, chiNhanh));
+  const rows = (data?.rows ?? []).filter((r) => khopChiNhanhBaoCao(r.branchId ?? null, chiNhanh));
   return (
-    <Card title={`Việc được giao (${rows.length})`} bodyClass="p-0">
+    <Card title={t('Việc được giao ({n})', { n: rows.length })} bodyClass="p-0">
       {rows.length === 0 ? (
         <div className="p-4">
-          <Empty title="Chưa giao việc nào trong tuần này"
-            hint="Việc chi nhánh là chuyện giáo trình và vận hành. Việc giao giáo viên gắn với lớp và kỹ năng, và hiện luôn trong hồ sơ từng em." />
+          <Empty title={t('Chưa giao việc nào trong tuần này')}
+            hint={t('Việc chi nhánh là chuyện giáo trình và vận hành. Việc giao giáo viên gắn với lớp và kỹ năng, và hiện luôn trong hồ sơ từng em.')} />
         </div>
       ) : (
         <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
-          {rows.map((t) => (
-            <li key={t.id} className="px-4 py-3">
+          {rows.map((r) => (
+            <li key={r.id} className="px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-slate-100">{t.title}</span>
-                {t.kind === 'teacher_task' && t.topicLabel && <Task>{t.topicLabel}</Task>}
-                {t.className && <span className="text-xs text-slate-500">{t.className}</span>}
+                <span className="text-sm text-slate-100">{r.title}</span>
+                {r.kind === 'teacher_task' && r.topicLabel && <Task>{r.topicLabel}</Task>}
+                {r.className && <span className="text-xs text-slate-500">{r.className}</span>}
               </div>
               <p className="text-xs text-slate-500 mt-0.5 mb-0">
-                {t.code}
-                {t.assigneeName && ` · ${t.assigneeName}`}
-                {t.dueDate && ` · hạn ${fmtDate(t.dueDate)}`}
-                {t.studentCount ? ` · ${t.studentCount} em` : ''}
+                {r.code}
+                {r.assigneeName && ` · ${r.assigneeName}`}
+                {r.dueDate && ` · ${t('hạn {ngay}', { ngay: fmtDate(r.dueDate) })}`}
+                {r.studentCount ? ` · ${t('{n} em', { n: r.studentCount })}` : ''}
               </p>
             </li>
           ))}

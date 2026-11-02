@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NutChon } from '../../ui/ui.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 import { MO_TA_QUYEN, NHOM_QUYEN, PERMISSION_LABEL, duocCapRieng, lyDoCamCapRieng, type PermissionKey } from '@shared/domain/index.ts';
 
 /** Một dòng cấp riêng: một quyền ở một phạm vi (`null` = toàn hệ thống) — đúng mô hình `user_permissions`. */
@@ -62,9 +63,9 @@ export function CapQuyenRieng({ value, chon, onChange, branches, macDinh, vai }:
           <section key={g.key} className="surface-2 rounded-lg">
             <button type="button" aria-expanded={dangMo} onClick={() => doiMo(g.key)}
               className="flex w-full min-h-[44px] sm:min-h-[36px] items-center gap-2 bg-transparent border-0 px-3 text-left text-sm text-slate-200">
-              <span className="flex-1 font-semibold">{g.ten}</span>
+              <span className="flex-1 font-semibold">{dich(g.ten)}</span>
               <span className="text-xs tabular-nums text-slate-500">
-                {soChon ? `${soChon} đã cấp` : `${g.quyen.length} quyền`}
+                {soChon ? t('{n} đã cấp', { n: soChon }) : t('{n} quyền', { n: g.quyen.length })}
               </span>
               <span className="text-slate-400"><IconGap mo={dangMo} /></span>
             </button>
@@ -78,25 +79,25 @@ export function CapQuyenRieng({ value, chon, onChange, branches, macDinh, vai }:
                   const cam = daChon ? null : lyDoCamCapRieng(vai, k);
                   return (
                     <li key={k} className="border-t pt-2" style={{ borderColor: 'var(--line)' }}>
-                      <label className={`flex items-start gap-2 ${cam ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`} title={cam ?? undefined}>
+                      <label className={`flex items-start gap-2 ${cam ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`} title={cam ? dich(cam) : undefined}>
                         <input type="checkbox" className="mt-1" checked={daChon} disabled={!!cam} onChange={() => tick(k)} />
                         <span className="min-w-0">
-                          <span className="block text-sm text-slate-100">{PERMISSION_LABEL[k] ?? k}</span>
-                          <span className="block text-xs text-slate-400">{mt.moTa}</span>
-                          {mt.phamVi && <span className="block text-xs text-slate-500">{mt.phamVi}</span>}
+                          <span className="block text-sm text-slate-100">{dich(PERMISSION_LABEL[k] ?? k)}</span>
+                          <span className="block text-xs text-slate-400">{dich(mt.moTa)}</span>
+                          {mt.phamVi && <span className="block text-xs text-slate-500">{dich(mt.phamVi)}</span>}
                         </span>
                       </label>
                       {daChon && (
-                        <div className="mt-1.5 ml-6 flex flex-wrap items-center gap-1" role="group" aria-label={`Phạm vi: ${PERMISSION_LABEL[k] ?? k}`}>
-                          <span className="text-xs text-slate-500 mr-1">Phạm vi:</span>
+                        <div className="mt-1.5 ml-6 flex flex-wrap items-center gap-1" role="group" aria-label={t('Phạm vi: {ten}', { ten: PERMISSION_LABEL[k] ?? k })}>
+                          <span className="text-xs text-slate-500 mr-1">{t('Phạm vi:')}</span>
                           <NutChon nho chon={pv.includes(null)} onClick={() => doiPhamVi(k, null)}
-                            title="Người này làm được việc này ở mọi chi nhánh">Toàn hệ thống</NutChon>
+                            title={t('Người này làm được việc này ở mọi chi nhánh')}>{t('Toàn hệ thống')}</NutChon>
                           {branches.map((b) => (
                             <NutChon key={b.code} nho chon={pv.includes(b.code)} onClick={() => doiPhamVi(k, b.code)} title={b.name}>
                               {b.code}
                             </NutChon>
                           ))}
-                          {pv.length === 0 && <span className="text-xs text-late">Chọn ít nhất một phạm vi</span>}
+                          {pv.length === 0 && <span className="text-xs text-late">{t('Chọn ít nhất một phạm vi')}</span>}
                         </div>
                       )}
                     </li>

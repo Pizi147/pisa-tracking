@@ -8,7 +8,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { WeekPicker, nhoChiNhanh, resolveWeek, useChiNhanhMacDinh, usePeriodWindow } from '../../ui/Filters.tsx';
 import { useSession } from '../../lib/session.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
@@ -43,9 +43,9 @@ type Board = {
 };
 
 const COT_GIUA: { key: string; label: string }[] = [
-  { key: 'teachers', label: 'Giáo viên' }, { key: 'students', label: 'Học viên / Phụ huynh' }, { key: 'curriculum', label: 'Giáo trình' },
+  { key: 'teachers', label: t('Giáo viên') }, { key: 'students', label: t('Học viên / Phụ huynh') }, { key: 'curriculum', label: t('Giáo trình') },
 ];
-const TUTOR_LABEL_NGAN: Record<string, string> = { tutor_count: 'Số lượng', tutor_quality: 'Chất lượng', tutor_other: 'Khác' };
+const TUTOR_LABEL_NGAN: Record<string, string> = { tutor_count: t('Số lượng'), tutor_quality: t('Chất lượng'), tutor_other: t('Khác') };
 
 /**
  * Thân màn Báo cáo đơn vị — Công việc › Báo cáo đơn vị (`/cong-viec/bao-cao`, PR-Ra phương án A).
@@ -144,24 +144,24 @@ export function MeetingBoard() {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <div className="w-full sm:w-[25rem]"><WeekPicker periodId={periodId} onPeriod={setPeriodId} label={null} /></div>
           <span className="flex items-center gap-1.5">
-            <span className="text-xs text-slate-400">Kỳ</span>
-            <BoLocDoan ariaLabel="Kỳ báo cáo" value={byMonth ? 'thang' : 'tuan'}
+            <span className="text-xs text-slate-400">{t('Kỳ')}</span>
+            <BoLocDoan ariaLabel={t('Kỳ báo cáo')} value={byMonth ? 'thang' : 'tuan'}
               onChange={(k) => datParam('ky', k === 'thang' ? 'thang' : null)}
-              muc={[{ key: 'tuan', nhan: 'Tuần' }, { key: 'thang', nhan: 'Tháng', title: 'Đọc lại cả tháng chứa tuần đang chọn — chỉ để đọc' }]} />
+              muc={[{ key: 'tuan', nhan: t('Tuần') }, { key: 'thang', nhan: t('Tháng'), title: t('Đọc lại cả tháng chứa tuần đang chọn — chỉ để đọc') }]} />
           </span>
           {/* Câu 1 = A (K1-36): MỘT cửa giao việc ở Vận hành — ở đây chỉ còn đường dẫn. */}
-          <Link to="/cong-viec/van-hanh?tao=1" className="link text-xs sm:ml-auto">Giao việc ở Vận hành ›</Link>
+          <Link to="/cong-viec/van-hanh?tao=1" className="link text-xs sm:ml-auto">{t('Giao việc ở Vận hành ›')}</Link>
         </div>
         {luaChonCn.length > 0 && (
           <div className="flex min-w-0 max-w-full items-center gap-1.5">
-            <span className="shrink-0 text-xs text-slate-400">Chi nhánh</span>
+            <span className="shrink-0 text-xs text-slate-400">{t('Chi nhánh')}</span>
             {/* Mỗi chi nhánh đúng một đơn vị → bỏ số đếm từng nút (toàn "2" là nhiễu); D9-a: chọn chi nhánh hiện kèm Tutor part-time. */}
-            <div className="min-w-0 flex-1"><BoLocDoan ariaLabel="Lọc chi nhánh" value={cn} onChange={(k) => {
+            <div className="min-w-0 flex-1"><BoLocDoan ariaLabel={t('Lọc chi nhánh')} value={cn} onChange={(k) => {
               if (k !== 'tutor') nhoChiNhanh(uid, k === 'tat-ca' ? null : Number(k));   // Tutor không phải chi nhánh — không nhớ
               datParam('cn', k === 'tat-ca' ? null : k);
             }}
-              muc={luaChonCn.map((m) => ({ key: m.key, nhan: m.nhan,
-                title: /^\d+$/.test(m.key) && luaChonCn.some((x) => x.key === 'tutor') ? `${m.nhan} kèm Tutor part-time` : undefined }))} /></div>
+              muc={luaChonCn.map((m) => ({ key: m.key, nhan: dich(m.nhan),
+                title: /^\d+$/.test(m.key) && luaChonCn.some((x) => x.key === 'tutor') ? t('{ten} kèm Tutor part-time', { ten: m.nhan }) : undefined }))} /></div>
           </div>
         )}
       </div>
@@ -169,16 +169,17 @@ export function MeetingBoard() {
       {/* Cửa sổ nộp — hoặc dòng phụ cho biết đang đọc cả tháng. */}
       {board.data?.scope.kind === 'month' ? (
         <p className="text-xs text-slate-500 m-0">
-          Đang đọc cả tháng <strong>{board.data.scope.month ? hienONgay(board.data.scope.month, 'thang') : ''}</strong> ({board.data.scope.weeks.join(' · ')}) — chỉ để đọc, ô hiện lần báo cáo gần nhất kèm tình trạng nặng nhất đã xuất hiện.
+          {t('Đang đọc cả tháng')} <strong>{board.data.scope.month ? hienONgay(board.data.scope.month, 'thang') : ''}</strong>{' '}
+          {t('({tuan}) — chỉ để đọc, ô hiện lần báo cáo gần nhất kèm tình trạng nặng nhất đã xuất hiện.', { tuan: board.data.scope.weeks.join(' · ') })}
         </p>
       ) : ew && (
         /* Ba trạng thái: chưa mở · trong hạn · quá hạn (OV-13h: vẫn nộp được, lần nộp ghi "nộp muộn" — không còn khoá / Quản trị mở lại). */
         <p className="text-xs m-0" style={{ color: 'var(--text-dim)' }}>
           {!ew.open
-            ? `Chưa mở — mở từ ${fmtDate(ew.opensOn)}.`
+            ? t('Chưa mở — mở từ {ngay}.', { ngay: fmtDate(ew.opensOn) })
             : ew.late
               ? t('Quá hạn (hết {ngay}) — vẫn nộp được, ghi "nộp muộn".', { ngay: fmtDate(ew.closesOn) })
-              : `Nộp từ ${fmtDate(ew.opensOn)} đến hết ${fmtDate(ew.closesOn)}.`}
+              : t('Nộp từ {tu} đến hết {den}.', { tu: fmtDate(ew.opensOn), den: fmtDate(ew.closesOn) })}
         </p>
       )}
 
@@ -187,9 +188,9 @@ export function MeetingBoard() {
       {board.data && (
         <>
           {/* Hàng số — bấm lọc hàng đơn vị (G-10). */}
-          <div className="flex flex-wrap items-center gap-2 text-xs" role="group" aria-label="Lọc theo trạng thái báo cáo">
+          <div className="flex flex-wrap items-center gap-2 text-xs" role="group" aria-label={t('Lọc theo trạng thái báo cáo')}>
             {/* PR-UXF-a F4: ba số đếm ĐƠN VỊ (cùng tập chip lọc ra), không đếm ô. L2.2: số 0 vẫn đọc rõ, bấm được (ra bảng rỗng có Xoá lọc). */}
-            {([['da-nop', 'đơn vị đã nộp', dem.daNop], ['nhap', 'đơn vị đang nhập', dem.nhap], ['chua', 'đơn vị chưa báo cáo', dem.chua]] as const).map(([ma, nhan, n]) => {
+            {([['da-nop', t('đơn vị đã nộp'), dem.daNop], ['nhap', t('đơn vị đang nhập'), dem.nhap], ['chua', t('đơn vị chưa báo cáo'), dem.chua]] as const).map(([ma, nhan, n]) => {
               const active = locTrangThai === ma;
               return (
                 <NutChon key={ma} nho chon={active} onClick={() => setLocTrangThai(active ? null : ma)}>
@@ -201,13 +202,15 @@ export function MeetingBoard() {
           </div>
 
           {/* ── ma trận: đơn vị × hạng mục, lên đầu trang (§7.3) ── */}
-          <Card title="Tình hình đơn vị" bodyClass="p-0">
+          <Card title={t('Tình hình đơn vị')} bodyClass="p-0">
             {board.data.scope.kind === 'week' && !locTrangThai && unitsCn.length > 0 && unitsCn.every((u) => u.reported === 0) ? (
               /* L2.3: tuần chưa ai báo cáo → một dòng thay hàng chục ô "—"; vẫn giữ đường mở ô báo cáo theo từng đơn vị. */
               <div className="px-4 py-3 space-y-2">
                 <p className="m-0 text-sm text-slate-400">
-                  Chưa đơn vị nào báo cáo{ew?.opensOn && ew?.closesOn ? ` — nộp từ ${fmtDate(ew.opensOn)} đến hết ${fmtDate(ew.closesOn)}` : ''}.
-                  {' '}Bấm tên đơn vị để mở ô báo cáo.
+                  {ew?.opensOn && ew?.closesOn
+                    ? t('Chưa đơn vị nào báo cáo — nộp từ {tu} đến hết {den}.', { tu: fmtDate(ew.opensOn), den: fmtDate(ew.closesOn) })
+                    : t('Chưa đơn vị nào báo cáo.')}
+                  {' '}{t('Bấm tên đơn vị để mở ô báo cáo.')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {unitsCn.filter((u) => u.cells.length > 0).map((u) => (
@@ -219,8 +222,8 @@ export function MeetingBoard() {
               </div>
             ) : unitsLoc.length === 0 ? (
               <div className="p-4">
-                <Empty title="Không có đơn vị nào khớp bộ lọc"
-                  action={<button type="button" className="btn btn-sm" onClick={xoaLoc}>Xoá lọc</button>} />
+                <Empty title={t('Không có đơn vị nào khớp bộ lọc')}
+                  action={<button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button>} />
               </div>
             ) : (
               <div className="table-scroll bang-dinh">
@@ -232,9 +235,9 @@ export function MeetingBoard() {
                   </colgroup>
                   <thead>
                     <tr>
-                      <Th>Đơn vị</Th>
+                      <Th>{t('Đơn vị')}</Th>
                       {COT_GIUA.map((c) => <Th key={c.key}>{c.label}</Th>)}
-                      <Th>Trạng thái</Th>
+                      <Th>{t('Trạng thái')}</Th>
                     </tr>
                   </thead>
                   <tbody>
@@ -243,13 +246,13 @@ export function MeetingBoard() {
                         <td className="td text-slate-100 font-medium">{u.unitName}</td>
                         {u.cells.map((c, i) => (
                           <td key={c.key} className="td cursor-pointer bam" onClick={() => setGanHoi({ unit: u, cell: c })}>
-                            <OTaBang cell={c} thTutor={u.kind !== 'branch' ? (TUTOR_LABEL_NGAN[c.key] ?? c.label) : undefined} />
+                            <OTaBang cell={c} thTutor={u.kind !== 'branch' ? (TUTOR_LABEL_NGAN[c.key] ?? dich(c.label)) : undefined} />
                           </td>
                         ))}
                         {u.cells.length < COT_GIUA.length && Array.from({ length: COT_GIUA.length - u.cells.length }).map((_, i) => <td key={`pad-${i}`} className="td text-slate-600">—</td>)}
                         <td className="td">
-                          <Status kind={u.trangThai.ma === 'da-nop' ? 'done' : u.trangThai.ma === 'nhap' ? 'waiting' : 'idle'}>{u.trangThai.nhan}</Status>
-                          {u.trangThai.phu && <div className="text-xs text-slate-500 mt-0.5">{u.trangThai.phu}</div>}
+                          <Status kind={u.trangThai.ma === 'da-nop' ? 'done' : u.trangThai.ma === 'nhap' ? 'waiting' : 'idle'}>{dich(u.trangThai.nhan)}</Status>
+                          {u.trangThai.phu && <div className="text-xs text-slate-500 mt-0.5">{dich(u.trangThai.phu)}</div>}
                         </td>
                       </tr>
                     ))}
@@ -261,11 +264,11 @@ export function MeetingBoard() {
 
           {/* ── hai khối thu gọn (Q16) — luôn có số ── */}
           <details>
-            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc được giao ({soVanDaGiao})</summary>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">{t('Việc được giao ({n})', { n: soVanDaGiao })}</summary>
             <div className="pt-2"><ManagerTaskList periodId={periodId} chiNhanh={cn} /></div>
           </details>
           <details>
-            <summary className="cursor-pointer text-sm text-slate-300 py-1">Việc đang tồn · {soTinHieuDangTon} loại việc</summary>
+            <summary className="cursor-pointer text-sm text-slate-300 py-1">{t('Việc đang tồn · {n} loại việc', { n: soTinHieuDangTon })}</summary>
             <div className="pt-2"><SignalList periodId={periodId} branchId={cnBranchId} /></div>
           </details>
 
@@ -298,12 +301,12 @@ function OTaBang({ cell, thTutor }: { cell: Cell; thTutor?: string }) {
     <span className={nhat ? 'opacity-70' : ''}>
       {thTutor && <span className="text-slate-500">{thTutor}: </span>}
       <Outcome tone={unitTone(cell.status)}>{unitStatusLabel(cell.status)}</Outcome>
-      {nhat && <span className="text-xs text-slate-500 ml-1">nháp</span>}
+      {nhat && <span className="text-xs text-slate-500 ml-1">{t('nháp')}</span>}
       {!nhat && cell.nopMuon && <span className="text-xs text-slate-500 ml-1">{t('nộp muộn')}</span>}
       {cell.worstStatus && cell.worstStatus !== cell.status && (
-        <span className="text-xs text-slate-500"> (từng {unitStatusLabel(cell.worstStatus).toLowerCase()})</span>
+        <span className="text-xs text-slate-500"> {t('(từng {muc})', { muc: unitStatusLabel(cell.worstStatus).toLowerCase() })}</span>
       )}
-      {cell.weeksTotal ? <span className="text-xs text-slate-500"> · đã nộp {cell.weeksReported}/{cell.weeksTotal} tuần</span> : ''}
+      {cell.weeksTotal ? <span className="text-xs text-slate-500"> · {t('đã nộp {a}/{b} tuần', { a: cell.weeksReported ?? 0, b: cell.weeksTotal })}</span> : ''}
     </span>
   );
 }
@@ -338,18 +341,18 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
       await api.put(`/meeting/units/${unit.unitId}/reports/${cell.key}`, { periodId, status: status || null, note, nop });
       invalidate('/meeting'); invalidate('/tong-quan'); invalidate('/signals');
       onSaved();
-      toast.push('ok', nop ? 'Đã nộp' : daNop ? t('Đã lưu') : 'Đã lưu nháp');   // rà #410: sửa bản đã nộp vẫn là đã nộp
+      toast.push('ok', nop ? t('Đã nộp') : daNop ? t('Đã lưu') : t('Đã lưu nháp'));   // rà #410: sửa bản đã nộp vẫn là đã nộp
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(null); }
   };
 
   if (!unit || !cell) return null;
   return (
-    <KhungPanel tieuDe={`${unit.unitName} · ${cell.label}`} onDong={onClose}
+    <KhungPanel tieuDe={`${unit.unitName} · ${dich(cell.label)}`} onDong={onClose}
       daSua={!chiDoc && (status !== (cell.status ?? '') || note !== (cell.note ?? ''))}
-      ngCanh={cell.submittedAt ? `đã nộp ${fmtDateTime(cell.submittedAt)}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}${cell.nopMuon ? ` · ${t('nộp muộn')}` : ''}`
-        : cell.updatedAt ? `nháp lưu ${fmtDateTime(cell.updatedAt)}` : undefined}>
+      ngCanh={cell.submittedAt ? `${t('đã nộp {ngay}', { ngay: fmtDateTime(cell.submittedAt) })}${cell.submittedBy ? ` · ${cell.submittedBy}` : ''}${cell.nopMuon ? ` · ${t('nộp muộn')}` : ''}`
+        : cell.updatedAt ? t('nháp lưu {ngay}', { ngay: fmtDateTime(cell.updatedAt) }) : undefined}>
         <div className="space-y-4 pt-3">
-          {chiDoc && <Info>Chỉ đọc — {editable ? 'bạn không có quyền sửa đơn vị này' : 'kỳ tháng chỉ để đọc'}.</Info>}
+          {chiDoc && <Info>{t('Chỉ đọc — {lyDo}.', { lyDo: editable ? t('bạn không có quyền sửa đơn vị này') : t('kỳ tháng chỉ để đọc') })}</Info>}
 
           <div className="flex gap-1.5">
             {UNIT_STATUSES.map((s) => (
@@ -359,29 +362,29 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
             ))}
           </div>
           <textarea className="field" rows={4} disabled={chiDoc} value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder="Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào" />
+            placeholder={t('Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào')} />
 
           {/* ── Nối với việc (R6) ── */}
           <section>
-            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Nối với việc:</h3>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">{t('Nối với việc:')}</h3>
             <div className="flex flex-wrap gap-1.5">
-              {cell.linkedTasks.map((t) => (
-                <span key={t.id} className={`${CHIP_TRON} gap-1 surface-2 !font-medium`}>
+              {cell.linkedTasks.map((lt) => (
+                <span key={lt.id} className={`${CHIP_TRON} gap-1 surface-2 !font-medium`}>
                   <button type="button" className="appearance-none bg-transparent border-0 p-0 text-slate-200 hover:underline cursor-pointer"
-                    onClick={() => navigate(`/cong-viec/van-hanh?open=${t.id}`)}>
-                    {t.title} · {t.progressLabel}{t.due ? ` · ${fmtDate(t.due)}` : ''}
+                    onClick={() => navigate(`/cong-viec/van-hanh?open=${lt.id}`)}>
+                    {lt.title} · {dich(lt.progressLabel)}{lt.due ? ` · ${fmtDate(lt.due)}` : ''}
                   </button>
                   {!chiDoc && cell.reportId && (
-                    <button type="button" className="text-slate-500 hover:text-slate-200" aria-label={`Gỡ "${t.title}"`}
+                    <button type="button" className="text-slate-500 hover:text-slate-200" aria-label={t('Gỡ "{ten}"', { ten: lt.title })}
                       onClick={async () => {
-                        await api.del(`/meeting/reports/${cell.reportId}/tasks/${t.id}`);
+                        await api.del(`/meeting/reports/${cell.reportId}/tasks/${lt.id}`);
                         invalidate('/meeting'); onSaved();
                       }}>✕</button>
                   )}
                 </span>
               ))}
               {!chiDoc && cell.reportId && (
-                <button type="button" className="btn btn-sm" onClick={() => setChonMo((o) => !o)}>+ Chọn việc</button>
+                <button type="button" className="btn btn-sm" onClick={() => setChonMo((o) => !o)}>{t('+ Chọn việc')}</button>
               )}
             </div>
             {chonMo && cell.reportId && (
@@ -393,21 +396,21 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
 
           {/* ── Bằng chứng ── */}
           <section>
-            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Bằng chứng</h3>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">{t('Bằng chứng')}</h3>
             {cell.reportId ? (
               <BangChung ownerType="unit_report" ownerId={cell.reportId} canEdit={!chiDoc} tieuDe="" />
             ) : (
-              <p className="text-xs text-slate-500 m-0">Lưu nháp để đính kèm bằng chứng.</p>
+              <p className="text-xs text-slate-500 m-0">{t('Lưu nháp để đính kèm bằng chứng.')}</p>
             )}
           </section>
 
           {cell.history.length > 0 && (
             <details>
-              <summary className="text-xs text-slate-500 cursor-pointer">Lịch sử ({cell.history.length})</summary>
+              <summary className="text-xs text-slate-500 cursor-pointer">{t('Lịch sử ({n})', { n: cell.history.length })}</summary>
               <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
                 {cell.history.map((h, i) => (
                   <li key={i} className="text-xs text-slate-500">
-                    {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? 'nộp' : h.kind === 'sua' ? t('sửa') : 'nháp'}` : ''}
+                    {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? t('nộp') : h.kind === 'sua' ? t('sửa') : t('nháp')}` : ''}
                     {h.actor ? ` · ${h.actor}` : ''}
                   </li>
                 ))}
@@ -418,14 +421,14 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
           {!chiDoc && (
             <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
               <button className="btn btn-sm" disabled={busy !== null} onClick={() => luu(false)}>
-                {busy === 'nhap' ? 'Đang lưu…' : daNop ? t('Lưu') : 'Lưu nháp'}
+                {busy === 'nhap' ? t('Đang lưu…') : daNop ? t('Lưu') : t('Lưu nháp')}
               </button>
               <button className="btn btn-primary btn-sm" disabled={busy !== null || !status || !(editWindow?.open ?? true)} onClick={() => luu(true)}>
-                {busy === 'nop' ? 'Đang nộp…' : daNop ? 'Nộp lại' : 'Nộp'}
+                {busy === 'nop' ? t('Đang nộp…') : daNop ? t('Nộp lại') : t('Nộp')}
               </button>
               {!(editWindow?.open ?? true) && <span className="text-xs text-slate-500">{t('Chưa tới ngày nộp — vẫn lưu nháp được.')}</span>}
               {editWindow?.open && editWindow.late && status && <span className="text-xs text-slate-500">{t('Quá hạn — ghi "nộp muộn".')}</span>}
-              {(editWindow?.open ?? true) && !status && <span className="text-xs text-slate-500">Chọn mức trước khi nộp.</span>}
+              {(editWindow?.open ?? true) && !status && <span className="text-xs text-slate-500">{t('Chọn mức trước khi nộp.')}</span>}
             </div>
           )}
         </div>
@@ -464,20 +467,20 @@ function ChonViec({ branchId, reportId, taskGroup, periodId, onLinked, onCreateN
 
   return (
     <div className="mt-2 surface-2 rounded-lg border p-2 space-y-1.5" style={{ borderColor: 'var(--line-strong)' }}>
-      <input className="field" placeholder="Gõ tên việc…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+      <input className="field" placeholder={t('Gõ tên việc…')} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
       {loading && <Skeleton rows={2} />}
       <ul className="list-none p-0 m-0 max-h-48 overflow-y-auto space-y-0.5">
         {rows.map((r) => (
           <li key={r.id}>
             <button type="button" className="w-full text-left px-2 py-1.5 rounded bam appearance-none bg-transparent border-0 text-xs text-slate-200"
               onClick={() => noi(r.id)}>
-              {r.title} <span className="text-slate-500">· {r.progressLabel}{r.due ? ` · ${fmtDate(r.due)}` : ''}</span>
+              {r.title} <span className="text-slate-500">· {dich(r.progressLabel)}{r.due ? ` · ${fmtDate(r.due)}` : ''}</span>
             </button>
           </li>
         ))}
-        {!loading && rows.length === 0 && <li className="text-xs text-slate-500 px-2 py-1.5">Không có việc nào khớp.</li>}
+        {!loading && rows.length === 0 && <li className="text-xs text-slate-500 px-2 py-1.5">{t('Không có việc nào khớp.')}</li>}
       </ul>
-      <button type="button" className="btn btn-sm w-full" onClick={onCreateNew}>+ Tạo việc từ mục này</button>
+      <button type="button" className="btn btn-sm w-full" onClick={onCreateNew}>{t('+ Tạo việc từ mục này')}</button>
       <span className="hidden" aria-hidden>{periodId}</span>
     </div>
   );
