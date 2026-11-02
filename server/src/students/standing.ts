@@ -172,7 +172,8 @@ export function caseMoTheoEm(studentIds: number[]): Map<number, { student_id: nu
  * hợp đều cần con số này cho hàng chục em cùng lúc. Hỏi từng em một thì mỗi màn sinh hàng
  * trăm câu truy vấn — chậm mà không chỗ nào báo lỗi.
  */
-export function standingFor(studentIds: number[]): Map<number, Standing> {
+/** HSL-KET-THUC-SO: `lopKetThuc` = hồ sơ lớp ĐÃ KẾT THÚC — chỉ lượt của CHÍNH lớp đó (lộ trình chứa lượt đó), không lượt lớp em đang học. */
+export function standingFor(studentIds: number[], lopKetThuc?: number): Map<number, Standing> {
   const out = new Map<number, Standing>();
   if (!studentIds.length) return out;
   const conn = db();
@@ -192,10 +193,10 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   for (const r of conn
     .prepare(
       `SELECT * FROM learning_cycles
-        WHERE student_id IN (${ph})
+        WHERE student_id IN (${ph})${lopKetThuc ? ' AND id IN (SELECT cycle_id FROM assessment_attempts WHERE class_id = ?)' : ''}
         ORDER BY (status = 'active') ASC, seq ASC`,
     )
-    .all(...studentIds) as any[]) cycleOf.set(r.student_id, r);
+    .all(...studentIds, ...(lopKetThuc ? [lopKetThuc] : [])) as any[]) cycleOf.set(r.student_id, r);
   for (const id of studentIds) out.set(id, EMPTY(id, cycleOf.get(id)?.id ?? null));
 
   const cycleIds = [...cycleOf.values()].map((c) => c.id);
@@ -216,9 +217,10 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
          LEFT JOIN classes lop ON lop.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không vào nhãn / kết quả gần nhất */
+          ${lopKetThuc ? 'AND a.class_id = ?' : ''}
         ORDER BY a.attempt_no`,
     )
-    .all(...cycleIds) as any[];
+    .all(...cycleIds, ...(lopKetThuc ? [lopKetThuc] : [])) as any[];
   /*
    * TD3-b: chỉ lượt có dòng điểm mới được đọc bundle (vòng dưới bỏ qua lượt `!scores.length`) — không nạp lịch + điểm lượt chưa thi.
    * S2 (giảm dòng đọc Turso): nạp THEO VÒNG — vòng 1 chỉ ứng viên mới nhất của mỗi em; em nào ứng viên bị loại (chưa kỹ năng nào đủ điểm) thì
