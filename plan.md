@@ -254,6 +254,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Session (local, worktree riêng, mỗi việc một PR nhỏ, làm nối tiếp):** RA-LOI-MAY (Opus 5.5 · high, lỗi máy chủ đợt 31/10–02/11) · RA-LOI-WEB (Opus 5.5 · high, lỗi web, trọng tâm data router #785/#787) · DOC-IT (Opus 5.5 · high, giảm dòng đọc theo đo `tocDo`) · TAI-NHANH (Opus 5.5 · medium, tải web).
 - **PTA khảo sát:** gói chính `index-*.js` 1,09 MB, không chia gói theo trang (`React.lazy` = 0); `netlify.toml` chưa có header cache cho `/assets/*`; web không gọi lại định kỳ.
 - Migrate mới (chỉ mục) nếu có → thêm vào danh sách chờ deploy (hiện 5).
+- **Đã merge đêm 02/11:** #790 TAI-NHANH-1 (mảnh mất → 404; header cache đã có ở `public/_headers`) · #791 RA-LOI-MAY lưu phân công lô, em hai ghi danh hết 409 · #792 mốc đổi Target / mở lộ trình = ngày nghiệp vụ (bản chính 0–7 h ghi nhầm hôm qua) · #793 TAI-NHANH-2 từ điển EN thành mảnh riêng (JS trang đầu QL gzip 421 → 249 KB; build target es2022 = Safari 15+) · #794 `updateTask` một giao dịch.
+- **Chờ chủ SP (RA-LOI-MAY, không sửa):** (1) **QUYEN-KY-NANG:** GV tự khai kỹ năng Speaking ở `PATCH /me/profile` → được chấm S chéo mọi lớp FT chi nhánh — đề xuất chỉ Quản trị sửa kỹ năng hồ sơ GV · (2) **LECH-KHONG-LOP:** lượt không lớp chấm lệch — "Kết quả gần nhất" theo tỷ lệ, `evaluateAttemptRow` theo band (có từ trước #777; sửa đổi số liệu em thật) · (3) lỗi nhẹ: giao việc cho người ngoài chi nhánh không bị chặn.
 
 ### 02/11 đêm — chủ SP đi ngủ, "còn gì nữa chạy tiếp"
 - **Đã mở (local):** TL-HVL · LECH-CACH-CHAM · V8-HSL-2 · DO-KHUNG-DO (Opus 5.5 · medium) · LUU-PC-LO (Sonnet 5.5 · high).
