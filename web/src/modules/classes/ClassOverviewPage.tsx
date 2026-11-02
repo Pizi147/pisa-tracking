@@ -158,10 +158,11 @@ export default function ClassOverviewPage() {
       <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
-      <HangTab v8 ariaLabel={t('Hồ sơ lớp')} value={tab}
+      <HangTab v8 panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null })}
         tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
 
+      <div id="ho-so-lop-vung" role="tabpanel" aria-label={TAB_HO_SO_LOP_NHAN[tab]} className="space-y-4 max-sm:space-y-3 empty:hidden">
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
       {tab === 'hoc-vien' && (
         <TabHocVienLop lop={data} cheDo={cheDo} moChon={moChon} onCheDo={(m) => doiThamSo({ 'che-do': m === 'diem' ? null : m, em: null, tuan: null })}
@@ -169,6 +170,7 @@ export default function ClassOverviewPage() {
       )}
       {tab === 'y-thuc' && <ClassYThucCard classId={data.id} thuong={thuong} />}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
+      </div>
 
       {data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 

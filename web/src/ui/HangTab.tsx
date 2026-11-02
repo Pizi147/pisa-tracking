@@ -5,7 +5,7 @@
  * Trên 375px hàng tab cuộn ngang BÊN TRONG chính nó (`overflow-x-auto`) — không đẩy cả trang cuộn ngang.
  * PR-KHUNG G5: dưới 640px mép phải mờ + đệm pr-8 (cùng mẫu bộ lọc Học viên & Lớp) — biết là còn tab để vuốt.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { CHIP_TRON } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -15,7 +15,19 @@ const CAN_XU_LY = t('Cần xử lý');
 /** `donVi` (SL2): chữ sau số trên chip ("7 em") — số không đứng trơ khi tab không nói đơn vị. */
 export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; donVi?: string; canhBao?: boolean };
 
-export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh', v8 }: {
+/** TAB-A11Y: ← → Home End chuyển FOCUS giữa các tab (WAI-ARIA tablist, kích hoạt bằng Enter / Space như nút thường). Dùng cho mọi `role="tablist"`. */
+export function phimHangTab(e: KeyboardEvent<HTMLElement>) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const ds = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]:not(:disabled)'));
+  const i = ds.indexOf(document.activeElement as HTMLElement);
+  if (i < 0) return;
+  e.preventDefault();
+  ds[e.key === 'Home' ? 0 : e.key === 'End' ? ds.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + ds.length) % ds.length].focus();
+}
+
+export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh', v8, panelId }: {
+  /** TAB-A11Y: id của vùng nội dung (`role="tabpanel"`) mà hàng tab điều khiển → `aria-controls`. Không truyền = trang chưa có vùng riêng. */
+  panelId?: string;
   /** V8-HSL (mockup v8 `.tab`): tab trang 15 px, cao 42, chọn đậm 700 — màn đã làm theo v8. */
   v8?: boolean;
   tabs: HangTabMuc<K>[]; value: K; onChange: (k: K) => void; ariaLabel: string;
@@ -34,11 +46,11 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
     h.scrollLeft = Math.max(0, h.scrollLeft + lech - (h.clientWidth - tab.offsetWidth) / 2);
   }, [value, tabs.map((x) => `${x.key}${x.so ?? ''}`).join('|')]); // eslint-disable-line react-hooks/exhaustive-deps -- số tab về sau làm tab rộng ra → canh lại
   return (
-    <div ref={hang} role="tablist" aria-label={ariaLabel} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" style={{ borderColor: 'var(--line)' }}>
+    <div ref={hang} role="tablist" aria-label={ariaLabel} onKeyDown={phimHangTab} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]" style={{ borderColor: 'var(--line)' }}>
       {tabs.map((t) => {
         const active = t.key === value;
         return (
-          <button key={t.key} type="button" role="tab" aria-selected={active} onClick={() => onChange(t.key)}
+          <button key={t.key} type="button" role="tab" aria-selected={active} aria-controls={panelId} tabIndex={active ? 0 : -1} onClick={() => onChange(t.key)}
             className={`min-h-[44px] whitespace-nowrap px-2.5 sm:px-3 py-2 -mb-px sm:min-h-0 border-b-2 appearance-none bg-transparent cursor-pointer ${
               v8 ? 'max-sm:px-2 max-sm:text-sm sm:h-[42px] sm:py-0 text-base' : cap === 'con' ? 'text-xs' : 'text-sm'
             } ${active ? `border-[color:var(--accent)] ${v8 ? 'font-bold' : 'font-semibold'} text-slate-100` : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>

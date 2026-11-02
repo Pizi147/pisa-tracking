@@ -252,7 +252,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### 02/11 đêm — chủ SP đi ngủ, "còn gì nữa chạy tiếp"
 - **Đã mở (local):** TL-HVL · LECH-CACH-CHAM · V8-HSL-2 · DO-KHUNG-DO (Opus 5.5 · medium) · LUU-PC-LO (Sonnet 5.5 · high).
 - **Merge:** PR máy chủ PTA tự merge khi rà đạt + check xanh; LECH-CACH-CHAM đổi mức SOS / Case em thật thì giữ chờ chủ SP. V8-HSL-2, DO-KHUNG-DO chờ duyệt ảnh sáng (không merge qua đêm).
-- **Chưa mở:** TAB-A11Y + DUYET-QL a11y (đủ 2 PR giao diện đang chạy) · QUYEN-THEO-CN, XM-BE-1, KET-PET-THI-THAT (chờ chủ SP quyết) · chỉ mục `status` `teacher_assignments` (chờ log).
+- **Chưa mở:** QUYEN-THEO-CN, XM-BE-1, KET-PET-THI-THAT (chờ chủ SP quyết) · chỉ mục `status` `teacher_assignments` (chờ log).
 
 ### 02/11 sáng — kết quả đêm
 - **Đã merge:** #778 LUU-PC-LO (lưu 8 lớp 241 → 127 câu) · #780 TL-HVL (`/hoc-vien-lop` QL 51 → 48).
@@ -301,10 +301,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - ~~**PANEL [XM] (#736 PANEL-CHUNG):**~~ (đã làm ở PR PANEL-RIENG) XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
 - **[XM] PANEL-RIENG:** (a) XM-2b "Phân công…" của bài chưa có người chấm nay là link "Phân công ›" sang hồ sơ lớp (`?viec=phan-cong`) — mockup mở tại chỗ; làm tại chỗ cần dữ liệu Phân công của lớp trong panel (PR riêng nếu chủ SP muốn) · (b) đầu panel số chưa có dòng ngữ cảnh "lớp · phạm vi · dữ liệu đến" như mockup (nơi gọi chưa truyền) · (c) [XM-3] Xét lại "Dừng → Kết thúc học" giữ như web (T10) · (d) `anToan` Z2c-d + `prToc` TOC rà (4) trượt cả trên `main` ở session cloud (khoá / thời gian DB) — PTA soát khi check chung.
 - **LECH-CACH-CHAM (một nguồn):** em đổi lớp FT ↔ lớp thường: `standingFor` chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt → ✓ / ✗ từng kỹ năng ở panel (diemTuEval) có thể khác hồ sơ / SOS. Lỗi có từ trước, #733 phép M1 tạm bỏ qua em đó (in số em bỏ qua). Sửa: một hàm chọn cách chấm cho lượt (theo chương trình lớp của lượt) dùng cả hai đường.
-- **TAB-A11Y:** tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.
+- ~~**TAB-A11Y:**~~ xong (PR TAB-A11Y): `phimHangTab` ← → Home End + tabindex luân chuyển ở mọi tablist; `aria-controls` + `role="tabpanel"` cho SoLieu, Lưu trữ, Hồ sơ lớp, Lượt Test. CÒN: `HangTab` chưa truyền `panelId` ở Test, Học viên & Lớp, Hồ sơ HV, Quản trị, Phân tích, QuickReport, Lịch sắp tới (vùng nội dung lẫn nhiều khối, bọc lại sẽ đổi khoảng cách) — làm khi từng màn được sửa. (cũ: tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.)
 - **QUYEN-THEO-CN:** quyền sửa liên hệ (`coONhapLienHe`) và một số cờ Lưu trữ xét theo VAI toàn tài khoản, không theo chi nhánh (`luuTru.ts:122`, `students.ts:776`): QL chi nhánh A kiêm GVCN chi nhánh B vẫn đổi được liên hệ em ở B (web cũng vậy). Luật cũ — hỏi chủ SP có cần xét vai theo chi nhánh của em không. (Nguồn: rà #746.)
 - ~~**MA-MO-COI-THE (rà #755):**~~ xong #765 (CN-3). Giữ có lý do: `prUxfB (6)` soi `KhoiPa` còn sống · `mo-viec` trong `THAM_SO_DICH` (lối cũ cho chuông đã lưu) · `prDonA` 7a, 7b, 8a (tệp quyền).
-- **DUYET-QL a11y (rà #754, nếu chưa sửa trong PR):** đóng ô Từ chối / Trả lời trả focus về nút còn trên trang (`TheYeuCau.tsx:116`).
+- ~~**DUYET-QL a11y (rà #754):**~~ xong (PR TAB-A11Y, `traFocus`): đóng ô Từ chối / Trả lời trả focus về nút còn trên trang (`TheYeuCau.tsx:116`).
 - **[XM-BE-1] BANG-EM-GON thẻ 375:** mockup v10 `#be` 375 vẽ dòng điểm `DongDiem` (lượt · 4 kỹ năng · Overall); PR giữ lưới 5 ô v8 (ô ✓ / ✗ mới) vì `DongDiem` mất W1 · W2, "vắng …" và bấm W / S → điểm thành phần. Hỏi chủ SP: giữ lưới hay thêm hai thứ đó vào `DongDiem`.
 - **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
 
