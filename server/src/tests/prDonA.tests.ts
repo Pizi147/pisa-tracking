@@ -733,6 +733,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/phan-tich/hieu-qua-pa': 'tab Phân tích — khi bấm tab', '/phan-tich/giao-vien': 'tab Phân tích', '/phan-tich/giao-vien/cham-diem': 'tab Phân tích',
     '/phan-tich/tong-hop': 'tab Phân tích', '/phan-tich/y-thuc': 'tab Phân tích', '/xuat-mt/xem-truoc': 'tab Phân tích › Xuất',
     '/giao-vien': 'bảng Theo giáo viên — tab Phân tích', '/metrics/': 'SoLieu / OSo — mở danh sách khi bấm ô (ô số lúc mở trang kiểm riêng ở dưới)',
+    '/ref/classes': 'Header — gợi ý lớp ở ô tìm thanh trên, chỉ khi gõ ≥ 2 chữ (TAI-NHANH 02/11; trước gọi mỗi lần mở trang)',
     '/yeu-cau': 'Yêu cầu của tôi — chỉ khi đã có thẻ', '/students': 'ô tìm học viên ở thanh trên — khi gõ', '/tim/giao-vien': 'UI-CON-LAI k1: nhóm GV của ô tìm thanh trên — khi gõ',
     '/students/': 'PanelViec (OV-13b) — panel Báo phụ huynh qua TVV, chỉ khi bấm việc ở Tổng quan GV',
     /* OV-13b: Tổng quan GV mở việc tại chỗ (`PanelViec`) — cây panel việc chỉ gọi khi bấm một việc, không lúc mở trang. */

@@ -73,10 +73,10 @@ export function Header() {
   const idDs = useId();
   const notifications = useApi<any[]>('/notifications');
   const { homNay, nhan } = useNgayNghiepVu();
-  /* Danh sách lớp trong phạm vi: đọc một lần (useApi nhớ sẵn), lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
-  const lopRef = useApi<LopRef[]>('/ref/classes');
   const timGv = !!session?.nav?.analysis;
   const timDu = q.trim().length >= 2;
+  /* Danh sách lớp trong phạm vi: đọc khi bắt đầu gõ tìm (TAI-NHANH: không đọc ở mỗi lần mở trang), useApi nhớ sẵn; lọc tại chỗ theo mã chuẩn hoá — gõ "ft101" ra MB FT 101. */
+  const lopRef = useApi<LopRef[]>(timDu ? '/ref/classes' : null);
   const khoaLop = chuanHoaMaLop(q);
   const lops = timDu && khoaLop
     ? (lopRef.data ?? []).filter((l) => chuanHoaMaLop(l.code).includes(khoaLop)).slice(0, 4)
