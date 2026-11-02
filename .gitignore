@@ -21,7 +21,5 @@ data/*.bak
 # Impeccable (skill thiết kế): bản chụp đánh giá, cache — không đưa lên repo
 .impeccable/
 
-# Sổ tay PDF: tệp dựng tạm (HTML, kịch bản dò)
-docs/so-tay/_dung/
 .agents/
 web-design-guidelines.zip
