@@ -14,7 +14,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { rateView, thamSoCt, tuanLich, type ChuongTrinh, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * TỔNG QUAN V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B "Tình hình trái · Điều hướng phải"). Không ô nhập trên trang (C04): số gạch chân
@@ -165,9 +165,9 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
             {/* V8: dòng không cắt chữ (xuống dòng). */}
             <button type="button" onClick={() => setMo(y)}
               className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2.5 gap-y-0.5 px-4 py-2.5 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              <span className="text-sm font-medium text-slate-100">{y.nhanLoai}{y.hocVien && <> · <b className="font-bold">{y.hocVien}</b></>}</span>
+              <span className="text-sm font-medium text-slate-100">{dich(y.nhanLoai)}{y.hocVien && <> · <b className="font-bold">{y.hocVien}</b></>}</span>
               <span className="self-start whitespace-nowrap pt-0.5 text-xs text-slate-400">{cho(y)}</span>
-              <span className="text-xs text-slate-500">{[y.lop, y.phu, y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
+              <span className="text-xs text-slate-500">{[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
             </button>
           </li>
         ))}

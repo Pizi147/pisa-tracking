@@ -67,7 +67,7 @@ export function DongThoiGianLuot({ history, scoreHistory, lichSuCase = [], ct = 
               </div>
               <div className="text-xs text-slate-500 tabular-nums">
                 {d.ai ?? '—'} · {d.at ? fmtDateTime(d.at) : '—'}
-                {d.lyDo && <> · <span className="inline-block max-w-full truncate align-bottom sm:max-w-[26rem]" title={t('Lý do: {lyDo}', { lyDo: d.lyDo })}>{t('Lý do: {lyDo}', { lyDo: d.lyDo })}</span></>}
+                {d.lyDo && <> · <span className="inline-block max-w-full truncate align-bottom sm:max-w-[26rem]" title={t('Lý do: {lyDo}', { lyDo: dich(d.lyDo) })}>{t('Lý do: {lyDo}', { lyDo: dich(d.lyDo) })}</span></>}
               </div>
             </div>
           </li>

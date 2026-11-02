@@ -263,10 +263,11 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C18a · DemoBar một dòng ở < 640 px: "Demo" · ngày · "Công cụ" · "Tài khoản" (chữ đầy đủ chỉ ở sm+), nút ≥ 44 px', () => {
     const s = doc('web/src/modules/platform/DemoBar.tsx');
-    assert(/sm:hidden">Công cụ</.test(s) && /sm:hidden">Tài khoản</.test(s), 'thiếu chữ ngắn Công cụ / Tài khoản (sm:hidden)');
-    assert(/max-sm:hidden">Công cụ demo</.test(s) && /max-sm:hidden">Đổi tài khoản demo</.test(s), 'chữ đầy đủ phải ẩn ở < 640 px');
-    assert(/sm:hidden">Demo</.test(s) && /max-sm:hidden">Dữ liệu demo</.test(s), 'chip "Demo" ngắn ở điện thoại');
-    assert(/max-sm:hidden">Ngày demo: </.test(s), 'nhãn "Ngày demo:" ẩn ở điện thoại');
+    /* EN-SOT (03/11): thanh demo theo tiếng của trang — chữ qua t(). */
+    assert(/sm:hidden">\{t\('Công cụ'\)\}</.test(s) && /sm:hidden">\{t\('Tài khoản'\)\}</.test(s), 'thiếu chữ ngắn Công cụ / Tài khoản (sm:hidden)');
+    assert(/max-sm:hidden">\{t\('Công cụ demo'\)\}</.test(s) && /max-sm:hidden">\{t\('Đổi tài khoản demo'\)\}</.test(s), 'chữ đầy đủ phải ẩn ở < 640 px');
+    assert(/sm:hidden">Demo</.test(s) && /max-sm:hidden">\{t\('Dữ liệu demo'\)\}</.test(s), 'chip "Demo" ngắn ở điện thoại');
+    assert(/max-sm:hidden">\{t\('Ngày demo:'\)\} </.test(s), 'nhãn "Ngày demo:" ẩn ở điện thoại');
     assert((s.match(/max-sm:min-h-\[44px\]/g)?.length ?? 0) >= 2, 'hai nút demo phải cao ≥ 44 px ở điện thoại');
     assert(/max-sm:py-1\b/.test(s), 'demo bar điện thoại py-1 (≤ 53 px)');
   });
@@ -367,7 +368,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C26 · "Khác" (T12): nhóm quyền "Chưa xếp nhóm", ô Đề xuất sửa "Thông tin khác"; Lưu trữ rỗng khi tìm: "Không có … khớp"', () => {
     const ad = doc('web/src/modules/platform/AdminPage.tsx');
-    assert(!/ten: 'Khác'/.test(ad) && /ten: 'Chưa xếp nhóm'/.test(ad), 'AdminPage');
+    assert(!/ten: (?:t\()?'Khác'/.test(ad) && /ten: t\('Chưa xếp nhóm'\)/.test(ad), 'AdminPage');   // EN-SOT: chữ qua t()
     const dx = doc('web/src/modules/duyet/DeXuatSuaPanel.tsx');
     assert(/nhan: t\('Thông tin khác'\)/.test(dx) && !/nhan: (?:t\()?'Khác'/.test(dx), 'DeXuatSuaPanel');
     const lt = doc('web/src/modules/students/LuuTruPage.tsx');
