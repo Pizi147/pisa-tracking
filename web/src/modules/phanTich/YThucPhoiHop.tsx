@@ -8,7 +8,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { DINH_TRAI, DaiChiSo, DauThe, MAU_SO_VOI_TRUOC, NutXemToanBo, NutXuat, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import {
   COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, NHOM_EM_LABEL, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
@@ -30,7 +30,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   const { data, loading, error, reload } = useApi<YThucPhanTichKetQua>(`/phan-tich/y-thuc?${query}`, [query]);
   const nhanKy = nhanKhoang(props.khoang).chinh;
   const ptHv = usePhanTrang(data?.hvCanChuY.length ?? 0, query, 'HV');
-  const ptLop = usePhanTrang(data?.lop.length ?? 0, query, 'lớp');
+  const ptLop = usePhanTrang(data?.lop.length ?? 0, query, t('lớp'));
   const nguon = (dong: string, cot: string) => `/phan-tich/y-thuc/o?${query}&dong=${encodeURIComponent(dong)}&cot=${encodeURIComponent(cot)}`;
   const [mo, setMo] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -47,31 +47,31 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   async function xuatExcel() {
     if (!data || !demoDate) return;
     const XLSX = await import('xlsx');
-    const moTa = [tenChiNhanh ?? 'Tất cả chi nhánh', nhanKy, tenLop, `dữ liệu đến ${ngay(demoDate)}`].filter(Boolean).join(' · ');
+    const moTa = [tenChiNhanh ?? t('Tất cả chi nhánh'), nhanKy, tenLop, t('dữ liệu đến {ngay}', { ngay: ngay(demoDate) })].filter(Boolean).join(' · ');
     const hv: (string | number)[][] = [
-      [`Học viên cần chú ý · ${moTa}`], [],
-      [...COT_XUAT_HV_CAN_CHU_Y],
-      ...data.hvCanChuY.map((x) => [x.ten, x.email ?? '', x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac ?? 'Chưa xử lý lần nào', x.bacKe ?? '', x.viPham, x.chuaXuLy,
-        `${x.bienPhapGanNhat ?? ''}${x.lanXuLyMoi ? ` (mới hơn: ${x.lanXuLyMoi.ten} · ${x.lanXuLyMoi.nhan})` : ''}`, x.ngay ? ngay(x.ngay, demoDate) : '']),
+      [t('Học viên cần chú ý · {moTa}', { moTa })], [],
+      COT_XUAT_HV_CAN_CHU_Y.map((c) => dich(c)),
+      ...data.hvCanChuY.map((x) => [x.ten, x.email ?? '', x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac != null ? dich(x.bac) : t('Chưa xử lý lần nào'), x.bacKe != null ? dich(x.bacKe) : '', x.viPham, x.chuaXuLy,
+        `${x.bienPhapGanNhat != null ? dich(x.bienPhapGanNhat) : ''}${x.lanXuLyMoi ? ` ${t('(mới hơn: {ten} · {nhan})', { ten: dich(x.lanXuLyMoi.ten), nhan: dich(x.lanXuLyMoi.nhan) })}` : ''}`, x.ngay ? ngay(x.ngay, demoDate) : '']),
     ];
     const dongLop = (x: DongLopViPham, thut: boolean): (string | number)[] => [
-      `${thut ? '  ' : ''}${x.nhan}`, x.viPham, x.chuaXuLy, x.hvCoViPham, x.siSo ?? '', nhanSoVoiTruoc(x.soVoiTruoc).chu, x.gvcn ?? '',
+      `${thut ? '  ' : ''}${dich(x.nhan)}`, x.viPham, x.chuaXuLy, x.hvCoViPham, x.siSo ?? '', nhanSoVoiTruoc(x.soVoiTruoc).chu, x.gvcn ?? '',
     ];
     const lop: (string | number)[][] = [
-      [`Lớp nhiều vi phạm · ${moTa}`], [],
-      ['Lớp / nhóm vi phạm', 'Vi phạm', 'Chưa xử lý', 'HV có vi phạm', 'Sĩ số', '± kỳ trước', 'GVCN'],
+      [t('Lớp nhiều vi phạm · {moTa}', { moTa })], [],
+      [t('Lớp / nhóm vi phạm'), t('Vi phạm'), t('Chưa xử lý'), t('HV có vi phạm'), t('Sĩ số'), t('± kỳ trước'), 'GVCN'],
       ...data.lop.flatMap((x) => [dongLop(x, false), ...(x.con ?? []).map((c) => dongLop(c, true))]),
       ...(data.gom?.hang ?? []).flatMap((x) => [dongLop(x, false), ...(x.con ?? []).map((c) => dongLop(c, true))]),
     ];
     const pa: (string | number)[][] = [
-      [`Xử lý đã xong trong kỳ theo loại · ${moTa}`], [],
-      ['Loại xử lý', 'Xong'],
+      [t('Xử lý đã xong trong kỳ theo loại · {moTa}', { moTa })], [],
+      [t('Loại xử lý'), t('Xong')],
       ...KHOA_LOAI_XU_LY.filter((k) => k !== 'loai-cu' || data.bienPhapTheoLoai[k]).map((k) => [nhanLoaiXuLy(k), data.bienPhapTheoLoai[k] ?? 0]),
     ];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hv), 'HV cần chú ý');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lop), 'Lớp nhiều vi phạm');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pa), 'Xử lý theo loại');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hv), t('HV cần chú ý'));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lop), t('Lớp nhiều vi phạm'));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pa), t('Xử lý theo loại'));
     XLSX.writeFile(wb, `y-thuc-${ngay(demoDate).split('/').join('-')}.xlsx`);
   }
 
@@ -81,10 +81,10 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   };
   const oLop = (x: DongLopViPham, con: boolean) => (
     <>
-      <td className="text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={`${x.nhan} · vi phạm`} /></td>
-      <td className="text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={`${x.nhan} · chưa xử lý`} /></td>
+      <td className="text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.nhan })} /></td>
+      <td className="text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.nhan })} /></td>
       <td className="text-center tabular-nums">
-        <OSo giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={`${x.nhan} · học viên có vi phạm`} />
+        <OSo giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={t('{ten} · học viên có vi phạm', { ten: x.nhan })} />
         {!con && x.siSo !== null && <span className="font-normal text-slate-400">/{x.siSo}</span>}
       </td>
       <td className="text-center">{soVoi(x)}</td>
@@ -93,7 +93,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   );
   const tenLopCell = (x: DongLopViPham) => (
     <span className="block min-w-0 truncate">
-      {x.classId ? <Link to={`/hoc-vien/lop/${x.classId}`} className="ten-ho-so" title="Mở hồ sơ lớp">{x.nhan}</Link> : x.nhan}
+      {x.classId ? <Link to={`/hoc-vien/lop/${x.classId}`} className="ten-ho-so" title={t('Mở hồ sơ lớp')}>{x.nhan}</Link> : x.nhan}
     </span>
   );
 
@@ -103,12 +103,12 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       dau={<span className="flex items-center gap-2"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so min-w-0 truncate">{x.ten}</Link><span className="ml-auto shrink-0">{nhanNhom(x)}</span></span>}
       dong={[
         { nhan: t('Lớp'), noiDung: x.lop ?? '—' },
-        { nhan: t('Bậc hiện tại'), noiDung: x.bac ?? <span className="text-faint">Chưa xử lý lần nào</span> },
-        { nhan: t('Bậc kế'), noiDung: x.bacKe },
-        { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={`${x.ten} · vi phạm`} /> },
-        { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /> },
-        { nhan: t('Lần gần nhất'), noiDung: <>{x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
-          {x.lanXuLyMoi && <div className="text-muted">{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}</> },
+        { nhan: t('Bậc hiện tại'), noiDung: x.bac != null ? dich(x.bac) : <span className="text-faint">{t('Chưa xử lý lần nào')}</span> },
+        { nhan: t('Bậc kế'), noiDung: x.bacKe && dich(x.bacKe) },
+        { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.ten })} /> },
+        { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} /> },
+        { nhan: t('Lần gần nhất'), noiDung: <>{x.bienPhapGanNhat ? `${dich(x.bienPhapGanNhat)}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
+          {x.lanXuLyMoi && <div className="text-muted">{dich(x.lanXuLyMoi.ten)} · {dich(x.lanXuLyMoi.nhan)}</div>}</> },
       ]} />
   );
   const theLop = (x: DongLopViPham) => {
@@ -122,12 +122,12 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
           </button>
         )}
         dong={[
-          { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={`${x.nhan} · vi phạm`} /> },
-          { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={`${x.nhan} · chưa xử lý`} /> },
-          { nhan: t('HV có vi phạm'), noiDung: <><OSo giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={`${x.nhan} · học viên có vi phạm`} />{x.siSo !== null && <span className="text-slate-400">/{x.siSo}</span>}</> },
+          { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.nhan })} /> },
+          { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.nhan })} /> },
+          { nhan: t('HV có vi phạm'), noiDung: <><OSo giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={t('{ten} · học viên có vi phạm', { ten: x.nhan })} />{x.siSo !== null && <span className="text-slate-400">/{x.siSo}</span>}</> },
           { nhan: t('± kỳ trước'), noiDung: soVoi(x) },
           ...(x.gvcn ? [{ nhan: 'GVCN', noiDung: x.gvcn }] : []),
-          ...(dangMo ? (x.con ?? []).map((c) => ({ nhan: c.nhan, noiDung: <><OSo giaTri={c.viPham} nguon={nguon(c.khoa, 'vi-pham')} tieuDe={`${x.nhan} · ${c.nhan} · vi phạm`} /> <span className="text-faint">· {t('{n} chưa xử lý', { n: c.chuaXuLy })}</span></> })) : []),
+          ...(dangMo ? (x.con ?? []).map((c) => ({ nhan: dich(c.nhan), noiDung: <><OSo giaTri={c.viPham} nguon={nguon(c.khoa, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: `${x.nhan} · ${c.nhan}` })} /> <span className="text-faint">· {t('{n} chưa xử lý', { n: c.chuaXuLy })}</span></> })) : []),
         ]} />
     );
   };
@@ -138,11 +138,11 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         <colgroup><col style={{ width: 200 }} /><col style={{ width: 120 }} /><col style={{ width: 170 }} /><col /><col /><col style={{ width: 100 }} /><col style={{ width: 110 }} /><col /></colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col">Học viên</Th><Th>Lớp</Th><Th>Trạng thái</Th>
-            <Th hint="Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web)">Bậc hiện tại</Th>
-            <Th hint="Lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt">Bậc kế</Th>
-            <Th align="center" hint="Trong khoảng đang lọc">Vi phạm</Th><Th align="center" hint="Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)">Chưa xử lý</Th>
-            <Th hint="Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái">Lần xử lý gần nhất</Th>
+            <Th className="sticky-col">{t('Học viên')}</Th><Th>{t('Lớp')}</Th><Th>{t('Trạng thái')}</Th>
+            <Th hint={t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web)')}>{t('Bậc hiện tại')}</Th>
+            <Th hint={t('Lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt')}>{t('Bậc kế')}</Th>
+            <Th align="center" hint={t('Trong khoảng đang lọc')}>{t('Vi phạm')}</Th><Th align="center" hint={t('Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)')}>{t('Chưa xử lý')}</Th>
+            <Th hint={t('Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái')}>{t('Lần xử lý gần nhất')}</Th>
           </tr>
         </thead>
         <tbody>
@@ -151,13 +151,13 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               <td className="td sticky-col"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so">{x.ten}</Link></td>
               <td className="td text-slate-300">{x.lop ?? ''}</td>
               <td className="td">{nhanNhom(x)}</td>
-              <td className="td text-slate-200">{x.bac ?? <span className="text-faint">Chưa xử lý lần nào</span>}</td>
-              <td className="td text-slate-300">{x.bacKe}</td>
-              <td className="td text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={`${x.ten} · vi phạm`} /></td>
-              <td className="td text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={`${x.ten} · chưa xử lý`} /></td>
+              <td className="td text-slate-200">{x.bac != null ? dich(x.bac) : <span className="text-faint">{t('Chưa xử lý lần nào')}</span>}</td>
+              <td className="td text-slate-300">{x.bacKe && dich(x.bacKe)}</td>
+              <td className="td text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.ten })} /></td>
+              <td className="td text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} /></td>
               <td className="td whitespace-normal text-slate-300">
-                {x.bienPhapGanNhat ? `${x.bienPhapGanNhat}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
-                {x.lanXuLyMoi && <div className={x.bienPhapGanNhat ? 'text-xs text-muted' : ''}>{x.lanXuLyMoi.ten} · {x.lanXuLyMoi.nhan}</div>}
+                {x.bienPhapGanNhat ? `${dich(x.bienPhapGanNhat)}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
+                {x.lanXuLyMoi && <div className={x.bienPhapGanNhat ? 'text-xs text-muted' : ''}>{dich(x.lanXuLyMoi.ten)} · {dich(x.lanXuLyMoi.nhan)}</div>}
               </td>
             </tr>
           ))}
@@ -168,8 +168,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
 
   const cachChon = (
     <>
-      <p className="m-0">Học viên đang học đang Quá hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.</p>
-      <p className="m-0">Bậc kế theo thang Report 1 › Report 2 › WL 1 › Report 4 + Meeting CX/GĐCN › WL 2 › WL 3 (cần QL). Đề xuất ngoài thang không đổi bậc.</p>
+      <p className="m-0">{t('Học viên đang học đang Quá hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.')}</p>
+      <p className="m-0">{t('Bậc kế theo thang Report 1 › Report 2 › WL 1 › Report 4 + Meeting CX/GĐCN › WL 2 › WL 3 (cần QL). Đề xuất ngoài thang không đổi bậc.')}</p>
     </>
   );
 
@@ -203,20 +203,20 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       </VaoHangLoc>
       {error ? <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
         : loading || !data ? <Card><Skeleton rows={6} /></Card>
-        : data.scopeEmpty ? <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>
+        : data.scopeEmpty ? <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>
         : (
           <>
             {chiSo(data)}
             <Card bodyClass="p-0">
               <DauThe ten={t('Học viên cần chú ý')} dem={t('{n} HV', { n: data.hvCanChuY.length })} cachTinh={cachChon} />
               {data.hvCanChuY.length === 0
-                ? <div className="p-4"><Empty title={`Không có học viên nào cần chú ý trong ${nhanKy}`} hint="Thử khoảng thời gian dài hơn." action={<NutXemToanBo />} /></div>
+                ? <div className="p-4"><Empty title={t('Không có học viên nào cần chú ý trong {ky}', { ky: nhanKy })} hint={t('Thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /></div>
                 : <><div ref={ptHv.thanh.dauBang} />{dienThoai ? ptHv.cat(data.hvCanChuY).map(theHv) : bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
             </Card>
             <Card bodyClass="p-0">
               <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} phu={t('xếp theo vi phạm chưa xử lý')} />
               {data.lop.length === 0 && !data.gom
-                ? <div className="p-4"><Empty title={`Chưa có vi phạm nào trong ${nhanKy}`} hint="Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn." action={<NutXemToanBo />} /></div>
+                ? <div className="p-4"><Empty title={t('Chưa có vi phạm nào trong {ky}', { ky: nhanKy })} hint={t('Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /></div>
                 : (
                   <>
                   <div ref={ptLop.thanh.dauBang} />
@@ -227,7 +227,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                         <>
                           <button type="button" aria-expanded={mo.has('gom')} onClick={() => doiMo('gom')}
                             className="flex min-h-[44px] w-full cursor-pointer items-center gap-2 border-0 border-t border-[color:var(--line)] bg-transparent px-3 py-2 text-left text-[13px] text-[color:var(--text-dim)]">
-                            {data.gom.soLop} lớp khác · ≤ 2 vi phạm, đã xử lý hết<span aria-hidden className="ml-auto">{mo.has('gom') ? '▴' : '▾'}</span>
+                            {t('{n} lớp khác · ≤ 2 vi phạm, đã xử lý hết', { n: data.gom.soLop })}<span aria-hidden className="ml-auto">{mo.has('gom') ? '▴' : '▾'}</span>
                           </button>
                           {mo.has('gom') && data.gom.hang.map(theLop)}
                         </>
@@ -239,9 +239,9 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                       <colgroup><col style={{ width: '27%' }} /><col style={{ width: 80 }} /><col style={{ width: 90 }} /><col style={{ width: 100 }} /><col style={{ width: 100 }} /><col style={{ width: '23%' }} /></colgroup>
                       <thead>
                         <tr>
-                          <Th className="sticky-col">Lớp / nhóm vi phạm</Th><Th align="center">Vi phạm</Th><Th align="center">Chưa xử lý</Th>
-                          <Th align="center" hint="Học viên có vi phạm / sĩ số lớp">HV có vi phạm</Th>
-                          <Th align="center" hint="So với khoảng cùng độ dài liền trước">± kỳ trước</Th><Th>GVCN</Th>
+                          <Th className="sticky-col">{t('Lớp / nhóm vi phạm')}</Th><Th align="center">{t('Vi phạm')}</Th><Th align="center">{t('Chưa xử lý')}</Th>
+                          <Th align="center" hint={t('Học viên có vi phạm / sĩ số lớp')}>{t('HV có vi phạm')}</Th>
+                          <Th align="center" hint={t('So với khoảng cùng độ dài liền trước')}>{t('± kỳ trước')}</Th><Th>GVCN</Th>
                         </tr>
                       </thead>
                       <tbody>
@@ -249,14 +249,14 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                           <Fragment key={x.khoa}>
                             <HangNhom mo={mo.has(x.khoa)} onMo={() => doiMo(x.khoa)} nhan={x.nhan} tieuDe={tenLopCell(x)} className={`${DINH_TRAI} [&>td]:h-11`}>{oLop(x, false)}</HangNhom>
                             {mo.has(x.khoa) && x.con?.map((c) => (
-                              <HangCon key={c.khoa} className={`${DINH_TRAI} [&>td]:h-[38px]`}><td>{c.nhan}</td>{oLop(c, true)}</HangCon>
+                              <HangCon key={c.khoa} className={`${DINH_TRAI} [&>td]:h-[38px]`}><td>{dich(c.nhan)}</td>{oLop(c, true)}</HangCon>
                             ))}
                           </Fragment>
                         ))}
                         {data.gom && (
                           <Fragment>
-                            <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan="lớp khác" soCotDau={6} className={`${DINH_TRAI} [&>td]:h-11`}
-                              tieuDe={<span className="block truncate text-slate-300">{data.gom.soLop} lớp khác · ≤ 2 vi phạm, đã xử lý hết</span>} />
+                            <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('lớp khác')} soCotDau={6} className={`${DINH_TRAI} [&>td]:h-11`}
+                              tieuDe={<span className="block truncate text-slate-300">{t('{n} lớp khác · ≤ 2 vi phạm, đã xử lý hết', { n: data.gom.soLop })}</span>} />
                             {mo.has('gom') && data.gom.hang.map((x) => (
                               <HangCon key={x.khoa} className={`${DINH_TRAI} [&>td]:h-[38px]`}><td>{tenLopCell(x)}</td>{oLop(x, false)}</HangCon>
                             ))}
