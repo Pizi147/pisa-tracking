@@ -3,6 +3,7 @@ import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNo
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { invalidate } from '../../lib/api.ts';
 import { fmtBand, skillShort } from '../../lib/format.ts';
 import { Bang, OBang } from '../../ui/Bang.tsx';
@@ -87,7 +88,9 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   const cases = useApi<{ rows: CaseLop[] }>(`/cases?classId=${classId}`, [classId]);
   const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { roster.reload(); onDoi(); } });
   const COT = cotCua(!!quyen.theoVai);
-  const [loc, setLoc] = useState<Loc>('tat-ca');
+  /* Chip lọc nằm trên URL (`?loc=`) — sang hồ sơ em rồi Quay lại / F5 vẫn đúng lọc (luật Quay lại về đúng nguồn). */
+  const [locUrl, setLoc] = useThamSoUrl('loc', 'tat-ca');
+  const loc: Loc = locUrl === 'sos' || locUrl === 'thieu' ? locUrl : 'tat-ca';
   const [mo, setMo] = useState<number | null>(null);
   const [pop, setPop] = useState<{ sid: number; kn: 'w' | 's'; nut: HTMLElement } | null>(null);
   const [ngan2, setNgan2] = useState<{ caseId: number; view: ViewCase; hv: string } | null>(null);
