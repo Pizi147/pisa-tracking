@@ -20,7 +20,7 @@
  * Ô có điểm mà thiếu: chữ nhắc vàng "nên có nhận xét" / "nên chọn nguyên nhân" dưới số (không vẽ ✓ "đủ" — trùng dấu "đã lưu" của ô).
  */
 import { OKhongHoc } from '../../ui/ODiem.tsx';
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi,
@@ -42,6 +42,7 @@ import {
 } from './ScoreEntry.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { khoRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
 
 /** Ngữ cảnh đầu hộp + dòng phụ: em · lớp · lượt ("MT2" / "MT0"), kỳ vọng (L/R), MT0 = một ô Band. */
@@ -628,7 +629,20 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
   const goTiepRef = useRef<HTMLButtonElement>(null);
   const [hoi, setHoi] = useState(false);
   useEffect(() => { if (hoi) goTiepRef.current?.focus(); }, [hoi]);
+  /* CHAN-ROI-NHAP-2: đã gõ mà Back / tiến của trình duyệt hay đổi tài khoản → bộ chặn gốc hỏi bằng CHÍNH chân hộp này (Bỏ · Gõ tiếp).
+     Bấm link / nút ngoài hộp thì `useBamNgoai` dưới đã chặn cú bấm và hỏi như cũ. */
+  const roi = useRef<{ di: () => void; o: () => void } | null>(null);
+  const daBo = useRef(false);
+  const idRoi = useId();
+  useEffect(() => {
+    if (!daGo) return undefined;
+    khoRoiNhap.dat(idRoi, { moTa: cauBo, conTrong: (a, b, kieu) => daBo.current || (kieu !== 'POP' && a.pathname === b.pathname),
+      hoi: (di, o) => { roi.current = { di, o }; setHoi(true); } });
+    return () => khoRoiNhap.dat(idRoi, null);
+  }, [idRoi, daGo, cauBo]);
+  const bo = () => { const r = roi.current; roi.current = null; daBo.current = true; onDong(); r?.di(); };
   const goTiep = () => {
+    roi.current?.o(); roi.current = null;
     setHoi(false);
     box.current?.querySelector<HTMLElement>('input:not([disabled]), textarea:not([disabled])')?.focus();
   };
@@ -707,7 +721,7 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
           {hoi ? (
             <>
               <span role="alert" className="min-w-0 flex-1 text-[13px] text-slate-200">{cauBo}</span>
-              <button type="button" className="btn btn-sm btn-danger max-sm:min-h-[44px]" onClick={onDong}>{t('Bỏ')}</button>
+              <button type="button" className="btn btn-sm btn-danger max-sm:min-h-[44px]" onClick={bo}>{t('Bỏ')}</button>
               <button ref={goTiepRef} type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={goTiep}>{t('Gõ tiếp')}</button>
             </>
           ) : chan}

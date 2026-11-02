@@ -236,6 +236,7 @@ Dựng **từ hành trình học viên**, viết tay, không sinh ngẫu nhiên.
 | Muốn sửa | Mở tệp |
 |---|---|
 | Môn theo chương trình (FOU G+V, P; Pre FOU Tổng hợp), số tuần, mốc | `shared/domain/normal.ts` (`REGULAR_SKILLS`, `PROGRAMME_TEMPLATES`, `tenMon`, `boMonLich`) · `server/src/fasttrack/skillSchedule.ts` → `boMonCuaLuot` |
+| Chọn cách chấm một lượt (band / tỷ lệ, theo lớp của lượt) — `standingFor` + `evaluateAttemptRow` | `server/src/normal/regular.ts` (`chuongTrinhTyLeCuaLuot`) |
 | Ngưỡng đạt, Pre FOU theo % tổng | `shared/domain/normal.ts` (`ratioResult`, `RATIO_PASS_THRESHOLD`) · `server/src/normal/regular.ts` (`evaluateRegular`) · `shared/domain/chamDiem.ts` (`ketQuaThuong`) |
 | Điểm → Case Giữa khoá; bài mặc định; "-" dời tuần sau | `server/src/normal/regular.ts` (`refreshRegularOutcome`, `taoBaiThuongMacDinh`, `reportRegularNoShow`) · `shared/domain/lopThuong.ts` |
 | Cuối khoá (dải, hướng gợi ý, Mini Test) | `shared/domain/cuoiKhoa.ts` (`goiYCuoiKhoa`, `tacDongChot`) · `server/src/normal/cuoiKhoa.ts` (`cuoiKhoaTheoHocVien`, `ghiKetLuanFt`) |

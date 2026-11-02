@@ -65,6 +65,16 @@ export const cheDoCua = (programmeCode: string | null | undefined): CheDo =>
   allProgrammes().get(programmeCode ?? '')?.scoringMode === 'ratio' ? 'ratio' : 'ielts_band';
 
 /** PR-TD: ba câu SQL cho CẢ hệ thống chương trình, nhớ trong request GET — gọi lặp mỗi lớp/mỗi lượt trong một request. TL-NEN: + theo tiến trình, khoá phiên bản DB. */
+/**
+ * LECH-CACH-CHAM: MỘT luật chọn cách chấm của một lượt — theo chương trình LỚP CỦA LƯỢT (lớp tại thời điểm đánh giá, như `scoringModeOf`), không theo lộ
+ * trình. Trả chương trình khi lượt chấm tỷ lệ, `null` = chấm band. `programmes` là hàm: lượt FT không đọc bảng chương trình.
+ */
+export function chuongTrinhTyLeCuaLuot(ma: string | null | undefined, programmes: () => Map<string, ProgrammeInfo>): ProgrammeInfo | null {
+  if (!ma || ma === 'FT') return null;
+  const prog = programmes().get(ma);
+  return prog?.scoringMode === 'ratio' ? prog : null;
+}
+
 export function allProgrammes(): Map<string, ProgrammeInfo> {
   return nhoThamChieu('chuong-trinh', () => {
     /* PANEL-MC (luật Turso): MỘT câu thay ba — môn + mốc gom JSON theo chương trình, xếp lại ở đây (cùng thứ tự `seq, skill` / `study_week` như ba câu cũ). */

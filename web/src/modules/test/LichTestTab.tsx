@@ -11,7 +11,8 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { CongTacKhung, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
-import { chuOChuaLuu, khungLichTestMacDinh, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
+import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
+import { chuOChuaLuu, conTrongLichTest, khungLichTestMacDinh, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
 import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
@@ -103,6 +104,9 @@ export function LichTestTab() {
     if (n) moi[khoa] = n; else delete moi[khoa];
     return moi;
   }), []);
+  /* CHAN-ROI-NHAP-2: ô lưu hỏng còn trên lưới — đổi tuần / chi nhánh / lớp, link, Back, đổi tài khoản hỏi một lần (ô vừa gõ tự lưu, không tính). */
+  const soOChuaLuu = Object.values(chuaLuu).reduce((a, b) => a + b, 0);
+  useChanRoiNhap(soOChuaLuu > 0, t('Còn {chuOChuaLuu} — rời đi sẽ mất.', { chuOChuaLuu: chuOChuaLuu(soOChuaLuu) }), conTrongLichTest);
 
   /* Khởi tạo MỘT LẦN cho mỗi (tuần, lớp đang lọc): Quá hạn chấm thu, Test tuần này mở; hàng đã nhớ; rồi lối vào từ đường dẫn (`classId`,
      `kn` — Việc cần làm, badge, chuông, `/nhap-diem/*` cũ): dòng Quá hạn khớp → mở nhóm đó + lưới dòng đó; không thì ép mở hàng lớp của tuần. */

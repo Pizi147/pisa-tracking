@@ -6,7 +6,7 @@ import {
   ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
 import { entryBandsOf, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
-import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
+import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
 import { luotSinhViecRow, type SkillEval } from '../worklist/danhGia.ts';
 
 /**
@@ -37,7 +37,7 @@ import { luotSinhViecRow, type SkillEval } from '../worklist/danhGia.ts';
 export type Standing = {
   studentId: number;
   cycleId: number | null;
-  /** `ielts_band` với Fast Track, `ratio` với lớp thường. */
+  /** `ielts_band` với Fast Track, `ratio` với lớp thường. LECH-CACH-CHAM: có lượt thì theo lớp của lượt đó, chưa có thì theo lộ trình. */
   mode: 'ielts_band' | 'ratio' | null;
 
   /** Lượt đánh giá MỚI NHẤT ĐÃ CÓ ĐIỂM trong lộ trình hiện tại. Chưa thi lượt nào thì NULL. */
@@ -74,7 +74,7 @@ export type Standing = {
   belowSkills: { skill: string; band: number }[];
   /** Lớp thường: môn chưa đạt của lượt đó, kèm điểm đúng/tổng — cột "Kết quả gần nhất" ghi "chưa đạt W 12/20". FT: []. */
   failedSkills: { skill: string; score: number; total: number }[];
-  /** Mã chương trình của lộ trình (MH2: tên môn FOU G+V/P, Pre FOU Tổng hợp). */
+  /** Mã chương trình (MH2: tên môn FOU G+V/P, Pre FOU Tổng hợp) — cùng nguồn với `mode`. */
   chuongTrinh: string | null;
   /** MH7: Pre FOU không chia môn — kết quả là % tổng (đủ điểm mới có), không phải SOS. */
   khongChiaMon: boolean;
@@ -210,9 +210,10 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const cph = cycleIds.map(() => '?').join(',');
   const attempts = conn
     .prepare(
-      `SELECT a.*, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end, ${LUOT_HUY_HET_SQL('a')} AS huyHet,
+      `SELECT a.*, lop.programme_code, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end, ${LUOT_HUY_HET_SQL('a')} AS huyHet,
               EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS _co_diem
          FROM assessment_attempts a
+         LEFT JOIN classes lop ON lop.id = a.class_id
          LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không vào nhãn / kết quả gần nhất */
         ORDER BY a.attempt_no`,
@@ -244,7 +245,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
 
   /* Bộ môn lớp thường: đọc bảng MỘT lần cho cả danh sách, chỉ khi có em lớp thường (không N+1). */
   let programmes: ReturnType<typeof allProgrammes> | null = null;
-  const boMonCua = (ct: string | null) => boMonLich(ct, (programmes ??= allProgrammes()).get(ct ?? '')?.skills);
+  const layCt = () => (programmes ??= allProgrammes());
+  const boMonCua = (ct: string | null) => boMonLich(ct, layCt().get(ct ?? '')?.skills);
   const homNay = demoToday();
   /* Em còn ứng viên: `ung` = lượt (mới nhất trước) qua lọc M-14 và có dòng điểm — đúng thứ tự vòng duyệt cũ, `k` = ứng viên đang xét. */
   const cho: { s: Standing; cycle: any; ratio: boolean; ung: any[]; k: number }[] = [];
@@ -252,7 +254,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     const s = out.get(studentId)!;
     /* P13: chương trình chỉ có ở bảng (KET / PET liên tục…) cũng chấm theo tỷ lệ — hằng số trước, mã không có hằng số mới đọc bảng (FT không đọc thêm). */
     const ratio = !!cycle.programme_code && (PROGRAMME_TEMPLATES[cycle.programme_code as keyof typeof PROGRAMME_TEMPLATES]?.scoringMode
-      ?? (programmes ??= allProgrammes()).get(cycle.programme_code)?.scoringMode) === 'ratio';
+      ?? layCt().get(cycle.programme_code)?.scoringMode) === 'ratio';
     s.mode = ratio ? 'ratio' : 'ielts_band';
     s.chuongTrinh = cycle.programme_code ?? null;
     const list = byStudent.get(studentId) ?? [];
@@ -285,13 +287,16 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   }
 
   /* Trả true = đã lấy lượt này làm kết quả gần nhất; false = xuống ứng viên cũ hơn. */
-  const xet = ({ s, cycle, ratio }: (typeof cho)[number], a: any, bundle: ReturnType<typeof loadBundle>): boolean => {
+  const xet = ({ s, cycle }: (typeof cho)[number], a: any, bundle: ReturnType<typeof loadBundle>): boolean => {
     const scores = bundle.scores.get(a.id) ?? [];
     if (!scores.length) return false;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
+    /* LECH-CACH-CHAM: cùng luật `evaluateAttemptRow` — chấm theo lớp của lượt; lượt không lớp mới theo lộ trình. */
+    const ct: string | null = a.programme_code ?? cycle.programme_code ?? null;
+    const prog = chuongTrinhTyLeCuaLuot(ct, layCt);
     /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
-    const rr = ratio ? evaluateRegular(boMonTheoLuot(boMonCua(cycle.programme_code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, cycle.programme_code, nguongDatLop(a.class_id)) : null;
-    const skips = ratio ? [] : bundle.skips.get(a.id) ?? [];
-    const ri = ratio ? null : evaluateAttempt(
+    const rr = prog ? evaluateRegular(boMonTheoLuot(boMonCua(prog.code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, prog.code, nguongDatLop(a.class_id)) : null;
+    const skips = prog ? [] : bundle.skips.get(a.id) ?? [];
+    const ri = prog ? null : evaluateAttempt(
       /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ
        * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
        * Target sau này. */
@@ -301,6 +306,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
     );
     /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
     if ((rr ? rr.scored : ri!.scoredRequired) === 0) return false;
+    s.mode = prog ? 'ratio' : 'ielts_band';
+    s.chuongTrinh = ct;
     s.attemptId = a.id;
     s.attemptNo = a.attempt_no;
     s.attemptKind = a.kind ?? 'mock';
@@ -318,7 +325,7 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
       s.failed = r.failedCount;
       s.tyLeTong = r.tyLeTong;
       s.nguong = r.passThreshold;
-      s.khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(cycle.programme_code ?? '');
+      s.khongChiaMon = CHUONG_TRINH_KHONG_CHIA_MON.includes(ct ?? '');
       s.failedSkills = r.skills
         .filter((x) => x.outcome === 'fail' && x.score !== null && x.total !== null)
         .map((x) => ({ skill: x.skill, score: x.score as number, total: x.total as number }));

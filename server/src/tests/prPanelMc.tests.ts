@@ -40,17 +40,12 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     const ids = studentsInScope(P.admin, null);
     const { kq: lat } = doCau(() => latestAttempts(ids, 'valid', TODAY));
     const st = standingFor([...lat.keys()]);
-    let so = 0, coHut = 0, coThuong = 0, khacKv = 0, khacNguon = 0;
+    let so = 0, coHut = 0, coThuong = 0, khacKv = 0;
     for (const [sid, ev] of lat) {
       const s = st.get(sid);
       if (!s || s.attemptId !== ev.attemptId) continue;
       /* Lệch CÓ SẴN (không do PANEL-MC): lượt không có Target lúc thi — `resultOf` không kỳ vọng, `standingFor` rơi về Target lộ trình (T9). Không so. */
       if (s.mode !== 'ratio' && ev.kyVong !== s.expectation) { khacKv++; continue; }
-      /*
-       * Lệch CÓ SẴN ở ĐẦU VÀO (không do PANEL-MC): `standingFor` lấy cách chấm + mã chương trình từ LỘ TRÌNH (`mode`, `chuongTrinh` — có thể rỗng → tên môn chung
-       * L R W S), `evaluateAttemptRow` từ LỚP CỦA LƯỢT (`scoringMode`, `programme_code` → G+V, P…). So trực tiếp hai đầu vào đó; khác thì không so.
-       */
-      if ((s.mode === 'ratio') !== (ev.nguong !== undefined) || (s.mode === 'ratio' && (s.chuongTrinh ?? null) !== (ev.chuongTrinh ?? null))) { khacNguon++; continue; }
       const a = diemTuEval(ev), b = diemTuStanding(s)!;
       assert(JSON.stringify(a.kn) === JSON.stringify(b.kn), `em ${sid}: kn ${JSON.stringify(a.kn)} ≠ standing ${JSON.stringify(b.kn)}`);
       assert(a.overall === b.overall && JSON.stringify(a.soVoi) === JSON.stringify(b.soVoi) && a.luot === b.luot && a.tuan === b.tuan,
@@ -63,9 +58,59 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
       if (a.donVi === '%') coThuong++;
       so++;
     }
-    console.log(`      [đo] so ${so} em · bỏ qua ${khacKv} em kỳ vọng khác nguồn (thiếu Target lúc thi) · ${khacNguon} em cách chấm / chương trình lộ trình ≠ lớp của lượt (có sẵn)`);
+    console.log(`      [đo] so ${so} em · bỏ qua ${khacKv} em kỳ vọng khác nguồn (thiếu Target lúc thi)`);
     /* Không xanh giả: phần bỏ qua phải nhỏ so với phần được so. */
-    assert(so > 20 && so >= 4 * (khacKv + khacNguon) && coHut > 0 && coThuong > 0, `demo phải có đủ loại: so ${so} em (bỏ ${khacKv + khacNguon}), ${coHut} có kỹ năng hụt, ${coThuong} lớp thường`);
+    assert(so > 20 && so >= 4 * khacKv && coHut > 0 && coThuong > 0, `demo phải có đủ loại: so ${so} em (bỏ ${khacKv}), ${coHut} có kỹ năng hụt, ${coThuong} lớp thường`);
+  });
+
+  check('LECH-CACH-CHAM · lộ trình ≠ lớp của lượt: standingFor chấm theo lớp của lượt, khớp latestAttempts (✓ / ✗, mức SOS, số môn); latestAttempts không đổi', () => {
+    const lat = latestAttempts(studentsInScope(P.admin, null), 'valid', TODAY);
+    const ctCua = (sid: number) => conn.prepare(`SELECT c.id cy, c.programme_code lo, l.programme_code lop FROM assessment_attempts a
+      JOIN learning_cycles c ON c.id = a.cycle_id JOIN classes l ON l.id = a.class_id WHERE a.id = ?`).get(lat.get(sid)!.attemptId) as any;
+    const em = (lop: string) => [...lat.keys()].find((sid) => ctCua(sid).lop === lop && ctCua(sid).lo === lop)!;
+    const coHutFt = [...lat.keys()].find((sid) => ctCua(sid).lop === 'FT' && Object.values(lat.get(sid)!.skills).some((x: any) => x.evaluable && x.under))!;
+    const tinhHuong: [number, string | null, string][] = [
+      [coHutFt, 'FOU', 'lộ trình thường, lượt ở lớp FT (band)'],
+      [em('FOU'), 'FT', 'lộ trình FT, lượt ở lớp thường (số câu đúng)'],
+      [em('FOU'), null, 'lộ trình trống chương trình, lượt ở lớp thường'],
+      [em('BE'), 'FOU', 'lộ trình FOU, lượt ở lớp BE (bộ môn khác)'],
+    ];
+    for (const [sid, ctLoTrinh, ten] of tinhHuong) {
+      assert(sid, `demo thiếu em: ${ten}`);
+      const { cy, lo } = ctCua(sid);
+      const truoc = JSON.stringify(lat.get(sid));
+      conn.prepare('UPDATE learning_cycles SET programme_code = ? WHERE id = ?').run(ctLoTrinh, cy);
+      try {
+        const ev = doCau(() => latestAttempts([sid], 'valid', TODAY)).kq.get(sid)!;
+        assert(JSON.stringify(ev) === truoc, `${ten}: latestAttempts phải không đổi`);
+        const s = standingFor([sid]).get(sid)!;
+        assert(s.attemptId === ev.attemptId, `${ten}: standing lượt ${s.attemptId} ≠ ${ev.attemptId}`);
+        assert((s.mode === 'ratio') === (ev.nguong !== undefined) && s.chuongTrinh === ev.chuongTrinh, `${ten}: mode ${s.mode} · ct ${s.chuongTrinh} ≠ lớp ${ev.chuongTrinh}`);
+        const a = diemTuEval(ev), b = diemTuStanding(s)!;
+        assert(JSON.stringify(a.kn) === JSON.stringify(b.kn), `${ten}: ${JSON.stringify(a.kn)} ≠ standing ${JSON.stringify(b.kn)}`);
+        assert(s.sosLevel === ev.sosLevel && s.scored === ev.scored && s.required === ev.required, `${ten}: SOS ${s.sosLevel} · ${s.scored}/${s.required} ≠ ${ev.sosLevel} · ${ev.scored}/${ev.required}`);
+      } finally { conn.prepare('UPDATE learning_cycles SET programme_code = ? WHERE id = ?').run(lo, cy); }
+    }
+  });
+
+  check('LECH-CACH-CHAM · lượt không lớp: standingFor chấm theo lộ trình như cũ', () => {
+    const lat = latestAttempts(studentsInScope(P.admin, null), 'valid', TODAY);
+    const ev = [...lat.values()].find((x) => x.chuongTrinh === 'FOU' && x.scored > 0)!;
+    const { class_id } = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(ev.attemptId) as any;
+    conn.prepare('UPDATE assessment_attempts SET class_id = NULL WHERE id = ?').run(ev.attemptId);
+    try {
+      const s = standingFor([ev.studentId]).get(ev.studentId)!;
+      assert(s.attemptId === ev.attemptId && s.mode === 'ratio' && s.chuongTrinh === 'FOU' && s.sosLevel === ev.sosLevel, `em ${ev.studentId}: ${s.attemptId} · ${s.mode} · ${s.chuongTrinh} · SOS ${s.sosLevel}`);
+    } finally { conn.prepare('UPDATE assessment_attempts SET class_id = ? WHERE id = ?').run(class_id, ev.attemptId); }
+  });
+
+  check('LECH-CACH-CHAM · chưa có lượt có điểm: mode + chương trình vẫn theo lộ trình (khung, số môn của em chưa thi)', () => {
+    const r = conn.prepare(`SELECT cy.student_id sid, cy.programme_code ct FROM learning_cycles cy
+      WHERE cy.status = 'active' AND cy.programme_code = 'FOU'
+        AND NOT EXISTS (SELECT 1 FROM assessment_attempts a JOIN assessment_scores sc ON sc.attempt_id = a.id WHERE a.cycle_id = cy.id) LIMIT 1`).get() as any;
+    assert(r, 'demo phải có em FOU chưa có điểm');
+    const s = standingFor([r.sid]).get(r.sid)!;
+    assert(s.attemptId === null && s.mode === 'ratio' && s.chuongTrinh === r.ct && s.required === d.boMonLich(r.ct, conn.prepare('SELECT skill FROM programme_skills WHERE programme_code = ?').all(r.ct).map((x: any) => x.skill)).length, `em ${r.sid}: ${JSON.stringify(s)}`);
   });
 
   check('M1 · RF1: kỹ năng chưa điểm → v null, dat null; môn bỏ → dat null; lớp thường đơn vị % + mốc "ngưỡng"; FT luôn L R W S', () => {
