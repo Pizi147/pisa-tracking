@@ -112,8 +112,15 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (yc.loai === 'y_thuc') return moO('rut', nut);
     void gui(`/yeu-cau/${yc.id}/rut`, {}, t('Đã rút — Quản lý không còn thấy yêu cầu này'));
   };
-  /* Đóng ô: nút gốc vẫn trong DOM (chỉ mờ khi ô mở) — đợi React bỏ `disabled` rồi mới trả focus. */
-  const dongO = () => { setO(null); setLoiMay(null); setTimeout(() => nutMo.current?.focus(), 0); };
+  /* Đóng ô: nút gốc vẫn trong DOM (chỉ mờ khi ô mở) — đợi React bỏ `disabled` rồi mới trả focus. Nút gốc đã mất (thẻ đổi trạng thái / gỡ khỏi
+     danh sách sau khi gửi) → nút đầu của thẻ này, hết thẻ thì nút đầu của thẻ còn lại trên trang: focus không rơi về <body> (TAB-A11Y). */
+  const traFocus = () => setTimeout(() => {
+    const nut = nutMo.current;
+    (nut?.isConnected && !nut.disabled ? nut
+      : document.getElementById(`the-${yc.id}`)?.querySelector<HTMLElement>('button:not(:disabled)')
+        ?? document.querySelector<HTMLElement>('[data-the-id] button:not(:disabled)'))?.focus();
+  }, 0);
+  const dongO = () => { setO(null); setLoiMay(null); traFocus(); };
 
   const gui = async (duongDan: string, than: Record<string, unknown>, xongChu: string, put = false) => {
     if (busy) return;
@@ -127,6 +134,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       if (huyDuoc) toast.hoanTac(xongChu, () => { void huy(); }, { key: `yc-${yc.id}` });
       else toast.push('ok', xongChu);
       setO(null);
+      if (o) traFocus();
       onXong(yc.id, xongChu, huyDuoc);
     } catch (e: any) {
       /* Người khác đã xử lý / thẻ tự đóng: nói rõ rồi làm mới — không để người dùng bấm lại vào một thẻ đã chết. */
