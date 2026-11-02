@@ -21,6 +21,7 @@ import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
+import { O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { TenCase, type CaseCard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
@@ -56,7 +57,7 @@ type ChiTiet = Omit<ThuongSheet, 'rows'> & {
 };
 type DotCuaHv = Parameters<typeof ChonDot>[0]['ds'][number];
 /* Như `ROW_GRID` của FT, cột Môn rộng hơn (tên môn chương trình dài: "Grammar + Vocabulary" không xuống dòng). Chuỗi viết nguyên để Tailwind sinh lớp. */
-const LUOI_MON = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 md:grid-cols-[12rem_9.5rem_7.5rem_minmax(10rem,1.2fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
+const LUOI_MON = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 md:grid-cols-[12rem_9.5rem_7.5rem_150px_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
 type MoNgan = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' };
 
 export default function LuotThuongPage() {
@@ -420,7 +421,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               </span>
             ) : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
           </div>
-          <div role="cell" aria-colindex={4} className="min-w-0 space-y-1 md:col-start-4 md:row-start-1">
+          <div role="cell" aria-colindex={4} className={`min-w-0 space-y-1 md:col-start-4 md:row-start-1 ${O_CHIP_XUONG_DONG}`}>
             <Status kind={tt.kind}>{tt.chu}</Status>
             {/* Quá hạn: đỏ khi là việc của người xem; việc người khác "⚠" + chữ mờ (cùng màu chip "Còn lại" của người khác). */}
             {han && <div className={`text-xs ${quaHan && canEdit && !chiDoc ? 'text-late' : 'text-slate-400'}`}>{quaHan ? `⚠ ${han}` : han}</div>}
