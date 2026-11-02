@@ -1283,6 +1283,24 @@ await checkAsync('DOC-IT-2 (×3) · mini test chưa có tỉ lệ + hẹn Lộ t
   assert(!loi.length, loi.join(' · '));
 });
 
+/* DOC-IT-6 (02/11): việc TVV của Công việc QL (`viecHoSoTvv`) trước SCAN cả `students` cả hệ thống rồi giữ em thuộc chi nhánh QL quản lý — nay tập cha theo chi nhánh
+   trong SQL (JSON = câu cũ: phép S3-a, prS3CauCon). Ở đây: câu thật của QL `/my-work` (Của tôi, một chi nhánh) không SCAN students. */
+await checkAsync('DOC-IT-6 (×3) · việc TVV của QL: không SCAN students', async () => {
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    for (const url of ['/my-work', `/my-work?branchId=${CN}`, '/my-work?nguoi=tat-ca']) assert((await doSql('QL', 'GET', url)).status === 200, `QL ${url} không 200`);
+  } finally { doQuet.ghi = null; }
+  const cau = [...new Map(ghi.filter((g) => /s\.consultant_user_id AS tvv, e\.class_id/.test(g.sql)).map((g) => [g.sql + JSON.stringify(g.args), g])).values()];
+  assert(cau.length, 'không bắt được câu việc TVV');
+  const loi: string[] = [];
+  for (const { sql, args } of cau) {
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+    if (plan.some((d) => /^SCAN s$/.test(d))) loi.push(plan.join(' | '));
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 /* DOC-IT-5 (02/11): danh sách Lưu trữ (`danhSachLuuTru` — Học viên & Lớp mọi vai đếm Lưu trữ mỗi lần mở) `WHERE s.archived_at IS NOT NULL` trước SCAN cả `students`
    (bản chính 844 dòng, 14 em lưu trữ) — nay đi chỉ mục một phần. */
 await checkAsync('DOC-IT-5 (×3) · Lưu trữ HV đi chỉ mục một phần, không SCAN students; migrate chạy lặp được', async () => {

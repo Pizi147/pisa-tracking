@@ -70,6 +70,19 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
   if (viecTvvCuKhiKiem.bat) { dk.push('(s.consultant_user_id = ? OR ? = 1)', '(? IS NULL OR COALESCE(c.branch_id, s.branch_id) = ?)'); thamSo.push(p.userId, ql ? 1 : 0, o.branchId, o.branchId); }
   else {
     if (!ql) { dk.push('s.consultant_user_id = ?'); thamSo.push(p.userId); }
+    else {
+      /*
+       * DOC-IT-6: QL không toàn hệ thống — `giu` chỉ giữ em mình là TVV hoặc thuộc chi nhánh mình quản lý (`nguoiGiuTvv`, CYCLE_EDIT). Trước SCAN cả `students`
+       * cả hệ thống; nay tập cha trong SQL: em có ghi danh active ở lớp active của các chi nhánh đó (chi nhánh dòng = chi nhánh lớp, `classes.branch_id` NOT NULL) ∪ em mình là TVV.
+       */
+      const pv = scopeFor(p, PERMISSIONS.CYCLE_EDIT, o.today);
+      if (!pv.all) {
+        const cn = o.branchId != null ? pv.branchIds.filter((b) => b === o.branchId) : pv.branchIds;
+        dk.push(`(s.consultant_user_id = ? OR s.id IN (SELECT x.student_id FROM classes cx JOIN enrollments x ON x.class_id = cx.id AND x.status = 'active'
+                   WHERE cx.status = 'active' AND cx.branch_id IN (${cn.map(() => '?').join(',')})))`);
+        thamSo.push(p.userId, ...cn);
+      }
+    }
     if (o.branchId != null) { dk.push('COALESCE(c.branch_id, s.branch_id) = ?'); thamSo.push(o.branchId); }
   }
   const ds = db().prepare(

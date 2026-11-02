@@ -775,6 +775,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 02/11 | PT-TIEN-BO-O · Opus 5.5 | Phân tích › Tiến bộ theo kỹ năng: ô Tăng / Giữ nguyên / Giảm mở đúng các lượt của ô (trước: cả hàng — "Giữ nguyên 4" ra 6); `o=tien-bo:<kn>:<ô>`, 0 câu thêm (RA-LOI-WEB). |
+| 02/11 | DOC-IT-6 · Opus 5.5 | việc TVV của Công việc QL: tập cha theo chi nhánh QL quản lý trong SQL — thôi SCAN cả bảng học viên (JSON = câu cũ, S3-a) |
 | 02/11 | DOC-IT-5 · Opus 5.5 | chỉ mục một phần `idx_student_luu_tru` (migrate `prDocIt5`): danh sách Lưu trữ / Học viên & Lớp mọi vai thôi SCAN cả bảng học viên |
 | 02/11 | DOC-IT-3 · Opus 5.5 | `listCases` của người chỉ có quyền GV lọc tập cha theo lớp phân công trong SQL: Tổng quan GV / Case thôi đọc MỌI Case cả hệ thống (JSON trùng cách cũ, 16 GV × 5 bộ lọc) |
 | 02/11 | HSL-TUAN-KET-THUC · Opus 5.5 | Đầu hồ sơ lớp đã kết thúc không còn "tuần 42/8" (đếm tuần tới hôm nay) — bỏ số tuần khi lớp `finished` (RA-LOI-WEB). |
