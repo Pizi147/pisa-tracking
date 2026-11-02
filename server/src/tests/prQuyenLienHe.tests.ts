@@ -111,4 +111,41 @@ export async function runPrQuyenLienHeTests(t: YThucTestKit) {
     scl.luuSuaCaLop(P.mbManager, lop, lo);
     assert(/0911/.test(one('SELECT parent_phone FROM students WHERE id = ?', em).parent_phone), 'QL lưu được');
   }));
+  /* QUYEN-THEO-CN (chủ SP 02/11): vai có quyền liên hệ xét ở CHI NHÁNH CỦA EM — QL MB kiêm GVCN lớp CP không đổi liên hệ em CP; vai toàn hệ thống vẫn được. */
+  const lopCp = one(`SELECT id FROM classes WHERE code = 'CP FT 110'`).id as number;
+  const emCp = one(`SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id AND s.status = 'active' AND s.archived_at IS NULL
+                     WHERE e.class_id = ? AND e.status = 'active' ORDER BY s.id LIMIT 1`, lopCp).id as number;
+  const qlMbGvCp = () => {
+    const u = await_accounts.createAccount(P.admin, { email: `qlh.qlmbgvcp${await_accounts.EMAIL_SUFFIX}`, password: 'matkhau-qlh', fullName: 'Thử QLH QL MB GVCN CP',
+      roles: [{ role: 'manager', branches: ['MB'] }, { role: 'teacher', branches: ['CP'] }] }).userId as number;
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,'reading',1,'2026-01-01','active',?)`)
+      .run(u, lopCp, new Date().toISOString());
+    xoaNho();
+    return loadPrincipal(u);
+  };
+  check('QCN · QL MB kiêm GVCN lớp CP: PATCH liên hệ em CP → 403 (ô khác vẫn lưu); em MB lưu được; hồ sơ cờ nhapLienHe theo chi nhánh em', () => thu(() => {
+    const p = qlMbGvCp();
+    const truoc = one('SELECT parent_phone FROM students WHERE id = ?', emCp).parent_phone;
+    const e = maLoi(() => st.updateStudent(p, emCp, { parentPhone: '0916 111 222' }));
+    assert(e?.status === 403, `em CP → ${e?.status} ${e?.message ?? ''}`);
+    assert(one('SELECT parent_phone FROM students WHERE id = ?', emCp).parent_phone === truoc, 'không ghi');
+    st.updateStudent(p, emCp, { fullName: `${one('SELECT full_name FROM students WHERE id = ?', emCp).full_name} ` });   // GVCN vẫn sửa ô khác
+    st.updateStudent(p, em, { parentPhone: '0916 333 444' });
+    assert(/0916/.test(one('SELECT parent_phone FROM students WHERE id = ?', em).parent_phone), 'em MB lưu được');
+    assert(hs.studentProfile(p, emCp).viewer.nhapLienHe === false, 'hồ sơ em CP: ẩn ô');
+    assert(hs.studentProfile(p, em).viewer.nhapLienHe === true, 'hồ sơ em MB: hiện ô');
+  }));
+  check('QCN · QL MB kiêm GVCN lớp CP: Sửa cả lớp CP — cột Liên hệ ẩn, gửi liên hệ → 403; QL MB lớp MB vẫn hiện', () => thu(() => {
+    const p = qlMbGvCp();
+    assert(scl.duLieuSuaCaLop(p, lopCp).nhapLienHe === false, 'lớp CP: ẩn cột');
+    assert(scl.duLieuSuaCaLop(p, lop).nhapLienHe === true, 'lớp MB: hiện cột');
+    const lo = { rows: [{ studentId: emCp, parentPhone: '0917 111 222' }] };
+    assert(maLoi(() => scl.xemTruocSuaCaLop(p, lopCp, lo))?.status === 403, 'xem trước 403');
+    assert(maLoi(() => scl.luuSuaCaLop(p, lopCp, lo))?.status === 403, 'lưu 403');
+  }));
+  check('QCN · Quản trị toàn hệ thống đổi liên hệ em CP được', () => thu(() => {
+    st.updateStudent(P.admin, emCp, { parentPhone: '0918 111 222' });
+    assert(/0918/.test(one('SELECT parent_phone FROM students WHERE id = ?', emCp).parent_phone), 'Quản trị lưu');
+    assert(hs.studentProfile(P.admin, emCp).viewer.nhapLienHe === true, 'hồ sơ: hiện ô');
+  }));
 }

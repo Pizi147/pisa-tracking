@@ -8,7 +8,7 @@ import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode, loi } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
-import { can, classScopeSql, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, classScopeSql, require_, scopeFor, vaiVoiEm, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { CASE_THAT, NOT_UNCONFIRMED_PRESET } from '../cases/sosState.ts';
 import { closeCasesBySystem, moLaiCaseHeThongDong, type ChupCaseDong } from '../cases/systemClose.ts';
@@ -773,13 +773,14 @@ const COT_LIEN_HE = { phone: 'phone', parentName: 'parent_name', parentRelation:
  * `vao` = patch gửi lên (chưa chuẩn hoá), `s` = dòng `students`. Một cửa cho mọi đường ghi: PATCH hồ sơ (`updateStudent`) · Sửa cả lớp (xem trước + lưu).
  */
 export function chanDoiLienHe(p: Principal, vao: Record<string, unknown> | null | undefined, s: Record<string, any>): void {
-  if (coONhapLienHe(p.roleKeys)) return;
-  for (const k of TRUONG_LIEN_HE) {
-    if (vao?.[k] === undefined) continue;
+  const doi = TRUONG_LIEN_HE.some((k) => {
+    if (vao?.[k] === undefined) return false;
     let moi: unknown;
     try { moi = chuanHoaSuaHoSo({ [k]: vao[k] })[k]; } catch { moi = Symbol('sai'); }   // sai định dạng vẫn là đổi
-    if ((moi ?? null) !== (s[COT_LIEN_HE[k]] ?? null)) throw loi(403, 'Chỉ Quản lý, TVV hoặc CX sửa được thông tin liên hệ — báo TVV / Quản lý cập nhật.');
-  }
+    return (moi ?? null) !== (s[COT_LIEN_HE[k]] ?? null);
+  });
+  /* QUYEN-THEO-CN (chủ SP 02/11): vai có quyền liên hệ phải ở CHI NHÁNH CỦA EM (`vaiVoiEm` ⊆ `roleKeys`, cả khi đổi góc nhìn) — chỉ đọc chi nhánh khi thật sự đổi. */
+  if (doi && !coONhapLienHe(vaiVoiEm(p, s.id))) throw loi(403, 'Chỉ Quản lý, TVV hoặc CX sửa được thông tin liên hệ — báo TVV / Quản lý cập nhật.');
 }
 
 /** PR-OV2b: tài khoản vai TVV còn hoạt động (đã duyệt, chưa xoá, vai chưa gỡ). */
