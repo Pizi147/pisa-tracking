@@ -22,7 +22,20 @@
   to = "/.netlify/functions/api/:splat"
   status = 200
 
+# Mảnh cũ đã mất sau deploy → 404 thật, không rơi xuống index.html (HTML mang header cache 1 năm của /assets sẽ kẹt; taiLaiManh.ts tự tải lại trang).
+[[redirects]]
+  from = "/assets/*"
+  to = "/404.html"
+  status = 404
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# TAI-NHANH 02/11: tệp trong /assets có mã băm trong tên (Vite) → cache 1 năm, không hỏi lại. index.html giữ mặc định Netlify (luôn hỏi lại) để bản mới tới ngay.
+# Header áp theo đường yêu cầu, độc lập với redirect `/*` (tệp có thật được phục vụ trước redirect 200).
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
