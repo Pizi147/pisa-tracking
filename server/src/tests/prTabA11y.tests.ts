@@ -42,6 +42,7 @@ export async function runPrTabA11yTests(t: any) {
     assert(/aria-controls=\{idPanel\}/.test(s) && /id=\{coTab \? idPanel : undefined\} role=\{coTab \? 'tabpanel'/.test(s), 'SoLieu thiếu cặp tab/tabpanel');
     const y = doc('web/src/modules/duyet/TheYeuCau.tsx');
     assert(/const traFocus = /.test(y) && /isConnected/.test(y), 'TheYeuCau chưa có traFocus (nút gốc còn trên trang?)');
+    assert(/nutChu\.current/.test(y), 'traFocus chưa tìm lại nút dựng lại ở chân panel (portal)');
     assert(!/setTimeout\(\(\) => nutMo\.current\?\.focus\(\), 0\)/.test(y), 'còn focus thẳng nutMo');
   });
 }

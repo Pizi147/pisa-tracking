@@ -69,6 +69,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và quyết định`). */
   const [moChuyenLop, setMoChuyenLop] = useState(false);
   const nutMo = useRef<HTMLButtonElement | null>(null);
+  const nutChu = useRef<string | null>(null);
   /* "Xem thêm" chỉ khi chữ THẬT SỰ bị cắt ở 2 dòng (đo, không đoán theo số ký tự). */
   const khungDong = useRef<HTMLDivElement | null>(null);
   const [biCat, setBiCat] = useState(false);
@@ -96,7 +97,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   }, [o]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const moO = (loai: NonNullable<O>['loai'], nut: HTMLButtonElement, chuDau = '') => {
-    nutMo.current = nut; setO({ loai }); setChu(chuDau); setDaBam(false); setLoiMay(null);
+    nutMo.current = nut; nutChu.current = nut.textContent; setO({ loai }); setChu(chuDau); setDaBam(false); setLoiMay(null);
   };
   /* OV-7a: Sửa… — Đề xuất sửa / chuyển lớp mở lại đúng panel cũ; Không cần theo dõi / Ý thức sửa ngay trong thẻ (điền sẵn). */
   const moSua = (nut: HTMLButtonElement) => {
@@ -116,9 +117,11 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
      danh sách sau khi gửi) → nút đầu của thẻ này, hết thẻ thì nút đầu của thẻ còn lại trên trang: focus không rơi về <body> (TAB-A11Y). */
   const traFocus = () => setTimeout(() => {
     const nut = nutMo.current;
-    (nut?.isConnected && !nut.disabled ? nut
-      : document.getElementById(`the-${yc.id}`)?.querySelector<HTMLElement>('button:not(:disabled)')
-        ?? document.querySelector<HTMLElement>('[data-the-id] button:not(:disabled)'))?.focus();
+    if (nut?.isConnected && !nut.disabled) return nut.focus();
+    /* Hộp Chờ duyệt: nút quyết ở chân panel (portal) dựng lại khi ô đóng → tìm lại đúng nút theo chữ, không có thì nút đầu. */
+    const nut2 = Array.from((chanEl ?? document.getElementById(`the-${yc.id}`))?.querySelectorAll<HTMLElement>('button:not(:disabled)') ?? []);
+    (nut2.find((x) => x.textContent === nutChu.current) ?? nut2[0]
+      ?? document.querySelector<HTMLElement>('[data-the-id] button:not(:disabled)'))?.focus();
   }, 0);
   const dongO = () => { setO(null); setLoiMay(null); traFocus(); };
 
