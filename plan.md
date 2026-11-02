@@ -757,6 +757,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 02/11 | HSL-GIU-LOC · Opus 5.5 | Hồ sơ lớp: chip lọc Học viên FT (SOS · Chưa đủ dữ liệu) và Cuối khoá (Chưa chốt…) lên `?loc=` — sang hồ sơ em rồi ‹ / Back / F5 giữ đúng lọc (RA-LOI-WEB). |
 | 01/11 | TL-VIEC · Opus 5.5 | `myWork` nạp chung một lần mỗi request: `/my-work` QL 54 → 39 câu, `tat-ca` 64 → 44, GV 46 → 33; so bản chụp 409 khoá, 0 khác |
 | 27/10/2026 | SV-BAI-LOP-2 (Opus 5.5) · `claude/dazzling-goodall-1sbh8w` | M5 PR ① máy chủ: Tiến độ trên lớp cần ít nhất một trong nhận xét / kết quả (PTA sửa: nhận xét KHÔNG bắt buộc, chủ SP 27/10) (x/y hoặc band), tên bài tuỳ chọn (migrate `prSvBaiLop2` dựng lại bảng); GET trả `gopY[]`; Hoàn tác Thêm PA `POST /interventions/:id/hoan-tac-them` (10 s, người thêm). |
 | 27/10/2026 | HSL-MAY-CHU (Opus 5.5) · `claude/zealous-sagan-h6cvma` | M4 PR 1 máy chủ: `GET /attempts/:id` thêm `sEx` cùng tuần + `lopHienTai`; `GET /regular/attempts/:id` = một dòng `regularSheet` + lịch sử lịch / điểm + người nhập; lượt thường mới ghi lịch sử "created". |
