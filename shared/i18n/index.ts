@@ -3,7 +3,9 @@
  * Ngôn ngữ của trang = `<html lang>`: script nội dòng ở `index.html` đặt nó từ `localStorage` (`NGON_NGU_KHOA`) TRƯỚC khi nạp mã,
  * nên hằng nhãn tính lúc nạp mô-đun đã đúng tiếng. Đổi tiếng = lưu + tải lại trang. Máy chủ không có `document` → luôn chữ Việt.
  */
-import { EN, KHOA_CHI_T, type Bien, type ChuKhoa, type Dich } from './en.ts';
+import type { EN, Bien, ChuKhoa, Dich } from './en.ts';
+/* TAI-NHANH: từ điển đi qua `tuDien.ts` — máy chủ nạp thẳng `en.ts`; web (vite.config) thay bằng `web/src/lib/tuDienWeb.ts` chỉ tải từ điển khi trang tiếng Anh. */
+import { BANG_EN, KHOA_CHI_T } from './tuDien.ts';
 
 export type { Bien, ChuKhoa };
 export type NgonNgu = 'vi' | 'en';
@@ -16,7 +18,7 @@ export const laNgonNgu = (v: unknown): v is NgonNgu => v === 'vi' || v === 'en';
 
 export const NGON_NGU: NgonNgu = (globalThis as { document?: { documentElement?: { lang?: string } } }).document?.documentElement?.lang === 'en' ? 'en' : 'vi';
 
-const BANG = EN as Record<string, Dich>;
+const BANG = BANG_EN as Record<string, Dich>;
 /** Biến → chữ: `ChuKhoa` dịch theo khoá của nó; ở EN, chữ Việt có trong từ điển (vd tên ô "Họ tên" máy chủ gửi kèm lỗi) cũng được dịch. */
 const giaTri = (nn: NgonNgu, v: Bien[string]): string | number => (v && typeof v === 'object' ? dichSang(nn, v.khoa ?? v.chu, v.bien)
   : nn === 'en' && typeof v === 'string' && typeof BANG[v] === 'string' ? BANG[v] as string : v ?? String(v));   // null / undefined in như `${x}` cũ
