@@ -64,16 +64,11 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   const scoresOf = new Map<number, Array<{ skill: string; band: number | null; rawScore: number | null; dauTuan: number | null }>>();
   /* TL-HVL: trong bộ nhớ request, điểm qua `diemCuaLuot` (bảng điểm lớp đã đọc đúng các lượt này ngay trước).
    * DON-NHO-3: gọi lẻ (đường ghi điểm `dotHoanTat`, không có bộ nhớ) → câu nhẹ năm cột như cũ, không câu 5 LEFT JOIN không ai dùng lại. */
-  const diem = coNho() ? diemCuaLuot(attemptIds) : (() => {
-    const m = new Map<number, Array<{ skill: string; band: number | null; raw_score: number | null; no_show_period_id: number | null }>>();
-    for (const r of conn.prepare(`SELECT attempt_id, skill, band, raw_score, no_show_period_id FROM assessment_scores WHERE attempt_id IN (${ph})`).all(json) as any[]) {
-      if (!m.has(r.attempt_id)) m.set(r.attempt_id, []);
-      m.get(r.attempt_id)!.push(r);
-    }
-    return m;
-  })();
-  for (const [id, rows] of diem) {
-    scoresOf.set(id, rows.map((r) => ({ skill: r.skill, band: r.band ?? null, rawScore: r.raw_score ?? null, dauTuan: r.no_show_period_id ?? null })));
+  const diem = (coNho() ? [...diemCuaLuot(attemptIds).values()].flat()
+    : conn.prepare(`SELECT attempt_id, skill, band, raw_score, no_show_period_id FROM assessment_scores WHERE attempt_id IN (${ph})`).all(json)) as any[];
+  for (const r of diem) {
+    if (!scoresOf.has(r.attempt_id)) scoresOf.set(r.attempt_id, []);
+    scoresOf.get(r.attempt_id)!.push({ skill: r.skill, band: r.band ?? null, rawScore: r.raw_score ?? null, dauTuan: r.no_show_period_id ?? null });
   }
 
   for (const attemptId of attemptIds) {
