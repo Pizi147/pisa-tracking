@@ -6,7 +6,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, ExamPlanText, Info as Tag, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
-import { Nhan, NhanKq } from '../../ui/Nhan.tsx';
+import { Nhan, NhanKq, O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -139,7 +139,7 @@ type DotCuaHv = {
  * Lưới một dòng kỹ năng của bảng kết quả (khung M4-A): Kỹ năng · Lịch · Điểm · Trạng thái · Nhận xét · Case · thao tác. Dưới `md` mỗi kỹ năng là
  * một thẻ: tên + điểm, rồi lịch · trạng thái, nhận xét · Case, nút (các nhóm `md:contents` thành ô lưới ở màn rộng).
  */
-const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_7.5rem] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_minmax(11rem,1fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
+const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_7.5rem] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_150px_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
 
 export default function MockDetailPage() {
   const { id } = useParams();
@@ -865,7 +865,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
                 </span>
               ) : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
             </div>
-            <div role="cell" className="min-w-0 space-y-1 md:col-start-4 md:row-start-1">
+            <div role="cell" className={`min-w-0 space-y-1 md:col-start-4 md:row-start-1 ${O_CHIP_XUONG_DONG}`}>
               {r.required ? (
                 <Status kind={prog === 'scored' ? 'done'
                   /* MT lịch sử: nhập bù, không hạn — xám như việc "không tính hạn", không màu chờ. */

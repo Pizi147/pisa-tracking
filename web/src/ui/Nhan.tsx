@@ -22,6 +22,8 @@ export function QuaHan({ ngay, gon, mo }: { ngay: number | null; gon?: boolean; 
  * Họ tròn viền trong suốt (tông có viền thì đè); tông viền đứt dùng `!border-current`.
  */
 export const CHIP_TRON = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-full border border-transparent px-2 text-xs font-semibold leading-none';
+/** Ô Trạng thái hồ sơ lượt (cột 150 px, critique 29/10): chip con trực tiếp được xuống dòng thay vì tràn — không cắt chữ ("Vắng lần 1 · chờ xếp lại"). */
+export const O_CHIP_XUONG_DONG = 'md:[&>span]:h-auto md:[&>span]:min-h-[22px] md:[&>span]:whitespace-normal md:[&>span]:rounded-[11px] md:[&>span]:py-[3px] md:[&>span]:leading-tight md:[&>span]:[text-wrap:balance]';
 export const CHIP_VUONG = 'inline-flex h-[22px] items-center whitespace-nowrap rounded border px-2 text-xs font-semibold leading-none tabular-nums';
 
 /**
