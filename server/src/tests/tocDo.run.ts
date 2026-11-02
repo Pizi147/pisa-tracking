@@ -1261,6 +1261,28 @@ await checkAsync('DOC-IT-2 (×3) · mini test chưa có tỉ lệ + hẹn Lộ t
   assert(!loi.length, loi.join(' · '));
 });
 
+/* DOC-IT-5 (02/11): danh sách Lưu trữ (`danhSachLuuTru` — Học viên & Lớp mọi vai đếm Lưu trữ mỗi lần mở) `WHERE s.archived_at IS NOT NULL` trước SCAN cả `students`
+   (bản chính 844 dòng, 14 em lưu trữ) — nay đi chỉ mục một phần. */
+await checkAsync('DOC-IT-5 (×3) · Lưu trữ HV đi chỉ mục một phần, không SCAN students; migrate chạy lặp được', async () => {
+  const { migratePrDocIt5 } = await import('../migrate/prDocIt5.ts');
+  const lan: string[][] = [[], []];
+  migratePrDocIt5(conn, lan[0]); migratePrDocIt5(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    for (const vai of ['QL', 'GVCN'] as Vai[]) assert((await doSql(vai, 'GET', '/hoc-vien-lop')).status === 200, `${vai} /hoc-vien-lop không 200`);
+  } finally { doQuet.ghi = null; }
+  const cau = [...new Map(ghi.filter((g) => /FROM students s WHERE s\.archived_at IS NOT NULL/.test(g.sql)).map((g) => [g.sql, g])).values()];
+  assert(cau.length, 'không bắt được câu Lưu trữ');
+  const loi: string[] = [];
+  for (const { sql, args } of cau) {
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+    if (!plan.some((d) => d.includes('idx_student_luu_tru')) || plan.some((d) => /^SCAN s$/.test(d))) loi.push(plan.join(' | '));
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');
