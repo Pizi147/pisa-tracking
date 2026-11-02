@@ -50,7 +50,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
       </div>
       <section className="card" aria-labelledby="gv-qua-han">
         <div className="flex flex-wrap items-baseline gap-x-2 px-4 pt-3 pb-2">
-          <h2 id="gv-qua-han" className="h-khoi m-0 text-lg font-bold text-slate-100">GV chấm quá hạn</h2>
+          <h2 id="gv-qua-han" className="h-khoi m-0 text-lg font-bold text-slate-100">{t('GV chấm quá hạn')}</h2>
           {/* M6 6b-4 (Q5): số GV mở panel theo GV → lớp · lượt · kỹ năng → em còn trống → Nhập hộ; số = số nhóm GV của panel (cùng tập). */}
           {soGv > 0 && (
             <span className="text-xs text-slate-500">
@@ -59,7 +59,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
           )}
         </div>
         {data.gvQuaHan.length === 0
-          ? <p className="m-0 px-4 pb-4 text-sm text-slate-400">Không có giáo viên nào chấm quá hạn.</p>
+          ? <p className="m-0 px-4 pb-4 text-sm text-slate-400">{t('Không có giáo viên nào chấm quá hạn.')}</p>
           : (
             <ul className="list-none m-0 p-0">
               {data.gvQuaHan.map((g) => {
