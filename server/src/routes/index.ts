@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { can, classScopeSql, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
@@ -384,11 +384,16 @@ api.get('/ref/branches', requireAuth, wrap((req) => {
   return all.filter((b) => allowed.has(b.id));
 }));
 
+/** DOC-IT-4: phép kiểm bật → đọc mọi lớp rồi lọc trong mã như trước, để so JSON. */
+export const refLopCuKhiKiem = { tat: false };
 api.get('/ref/classes', requireAuth, wrap((req) => {
   const p = principalOf(req);
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   if (scope.none) return [];
   const branchId = qInt(req, 'branchId');
+  /* DOC-IT-4: phạm vi + chi nhánh lọc trong SQL — trước đọc MỌI lớp active cả hệ thống (+ đếm ghi danh từng lớp) rồi mới lọc ở dưới. */
+  const pv = refLopCuKhiKiem.tat ? { sql: '1=1', params: [] } : classScopeSql(scope, 'c');
+  const cn = branchId && !refLopCuKhiKiem.tat ? ' AND c.branch_id = ?' : '';
   const rows = db()
     .prepare(
       /* Tên và cách chấm của chương trình đi kèm luôn: ô chọn lớp cần nói lớp đó học gì. */
@@ -398,9 +403,9 @@ api.get('/ref/classes', requireAuth, wrap((req) => {
               (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS student_count
          FROM classes c JOIN branches b ON b.id = c.branch_id
          LEFT JOIN programmes pg ON pg.code = c.programme_code
-        WHERE c.status = 'active' ORDER BY b.id, c.code`,
+        WHERE c.status = 'active' AND ${pv.sql}${cn} ORDER BY b.id, c.code`,
     )
-    .all() as any[];
+    .all(...pv.params, ...(cn ? [branchId] : [])) as any[];
   rows.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
   /* Kế hoạch Test CHỈ dành cho Fast Track (sổ MT-01) — Normal thi theo lịch lớp, không xếp lượt. */
   const fastTrackOnly = qStr(req, 'fastTrackOnly') === '1';

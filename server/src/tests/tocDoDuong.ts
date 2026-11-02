@@ -29,6 +29,9 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- Chung
   { trang: 'Chung', vai: MOI_VAI, url: '/demo/session' },
   { trang: 'Chung', vai: MOI_VAI, url: '/ref/branches' },
+  /* DOC-IT-4: ô chọn lớp (IntakePanel, LuoiTaoLop, bộ lọc Phân tích…) — trước đọc mọi lớp cả hệ thống rồi lọc trong mã. */
+  { trang: 'Chung', vai: MOI_VAI, url: '/ref/classes' },
+  { trang: 'Chung', vai: ['QL', 'QT'], url: '/ref/classes?branchId={cn}' },
 
   // ---------------------------------------------------------------- Tổng quan · Quản lý
   {
@@ -414,6 +417,9 @@ export const TRAN: Record<string, number> = {
   'GVBM /demo/session': 14,
   'GVCN_THUONG /demo/session': 14,
   'QT /demo/session': 13,
+  /* DOC-IT-4: đo 3 câu mọi vai → max(đo+10, ⌈đo×1,3⌉). */
+  'QL /ref/classes': 13, 'GVCN /ref/classes': 13, 'GVBM /ref/classes': 13, 'GVCN_THUONG /ref/classes': 13, 'QT /ref/classes': 13,
+  'QL /ref/classes?branchId={cn}': 13, 'QT /ref/classes?branchId={cn}': 13,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */
@@ -1027,6 +1033,8 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /metrics/hv-duoi-ky-vong-mon': 2093,   // đo 1610
   'QT /metrics/hv-duoi-ky-vong-mon': 3040,   // đo 2338
   'QL /hoc-vien-lop': 3374,   // TD3-b: đo 2627 (68 câu); TL-HVL: đo 2595 (trước 2648)
+  /* DOC-IT-4: lọc phạm vi trong SQL — đo 23 · 11 · 18 · 11 · 33 (trước 33 mọi vai) → ⌈đo × 1,3⌉. */
+  'QL /ref/classes': 30, 'GVCN /ref/classes': 15, 'GVBM /ref/classes': 24, 'GVCN_THUONG /ref/classes': 15, 'QT /ref/classes': 43, 'QL /ref/classes?branchId={cn}': 30,
   'GVCN /hoc-vien-lop': 2555,   // TD3-b: đo 2001 (72 câu); TL-HVL: đo 1965 (trước 1991)
   'GVBM /hoc-vien-lop': 2929,   // TD3-b: đo 2288 (72 câu); TL-HVL: đo 2253 (trước 2295)
   'GVCN_THUONG /hoc-vien-lop': 2555,   // TD3-b: đo 2001 (72 câu); TL-HVL: đo 1965 (trước 1991)

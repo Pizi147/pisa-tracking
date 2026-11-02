@@ -67,3 +67,9 @@ Giả định: ~60 người dùng, mỗi người ~10 lần mở app / ngày (F5
 |---|---|---|
 | DOC-IT-1 (#797) | ~270 dòng / lần mở app | ~160 nghìn (~5 triệu / tháng) |
 | DOC-IT-2 (#800) | ~890 dòng / lần mở Công việc / Tổng quan GV + ~890 / lượt quét nền (860 lần mở + ~600 lượt quét) | ~1,3 triệu |
+
+## DOC-IT-4 — `/ref/classes` (#PR sau DOC-IT-3)
+
+Ô chọn lớp (IntakePanel, LuoiTaoLop, bộ lọc Phân tích…) đọc MỌI lớp active cả hệ thống + đếm ghi danh active từng lớp, rồi lọc phạm vi / chi nhánh trong mã.
+Nay lọc trong SQL (`classScopeSql`). Dòng trả ×1: GV 33 → 11 · GVBM 33 → 18 · QL 33 → 23 (mọi vai trước 33); 3 câu như cũ; JSON trùng mọi vai × 4 kiểu tham số.
+Bản chính: ~88 lớp + ~800 ghi danh active được đếm mỗi lần gọi → GV ~5 lớp / ~60 dòng.
