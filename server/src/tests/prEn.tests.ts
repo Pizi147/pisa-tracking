@@ -28,6 +28,16 @@ export async function runPrEnTests(t: any) {
 
   const bienCua = (s: string) => [...new Set([...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort().join();
   /* Chữ giữ nguyên ở EN (THUAT_NGU_EN luật 3): mã, tên riêng — chữ Việt mà bản Anh trùng y nguyên phải nằm đây. */
+  check('TAI-NHANH · web: từ điển Anh là mảnh riêng — index.ts lấy qua ./tuDien.ts, vite thay bằng tuDienWeb.ts (import động khi trang EN)', () => {
+    const goc = path.resolve(fileURLToPath(import.meta.url), '../../../..');
+    const doc = (f: string) => fs.readFileSync(path.join(goc, f), 'utf8');
+    const idx = doc('shared/i18n/index.ts');
+    assert(!/^import \{[^}]*\} from '\.\/en\.ts'/m.test(idx) && idx.includes("from './tuDien.ts'"), 'index.ts chỉ `import type` từ en.ts, giá trị qua ./tuDien.ts');
+    assert(doc('vite.config.ts').includes("replacement: path.resolve(projectRoot, 'web/src/lib/tuDienWeb.ts')"), 'vite.config thay ./tuDien.ts bằng tuDienWeb.ts');
+    assert(doc('web/src/lib/tuDienWeb.ts').includes("await import('@shared/i18n/en.ts')"), 'tuDienWeb.ts tải từ điển bằng import động');
+    assert(i18n.dichSang('en', 'Đăng nhập') === 'Sign in', 'máy chủ vẫn có từ điển đầy đủ');
+  });
+
   const GIU = new Set<string>(['Tutor', 'Final Test', 'Progress Test']);   // R1-EN-2: tên bài giữ (mẫu 'Final {ct}' khớp nhầm)   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
 
   check('EN-KHOA · mọi chữ có bản Anh không rỗng, cùng {biến}, không còn "{" sau khi thay; không chép nguyên chữ Việt', () => {

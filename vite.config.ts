@@ -13,11 +13,18 @@ const webPort = Number(process.env.WEB_PORT ?? 5173);
 export default defineConfig({
   plugins: [react()],
   root: projectRoot,
-  resolve: { alias: { '@shared': path.resolve(projectRoot, 'shared') } },
+  resolve: {
+    alias: [
+      /* TAI-NHANH: `shared/i18n/index.ts` lấy từ điển qua './tuDien.ts' — web thay bằng bản tải khi trang tiếng Anh. */
+      { find: /^\.\/tuDien\.ts$/, replacement: path.resolve(projectRoot, 'web/src/lib/tuDienWeb.ts') },
+      { find: '@shared', replacement: path.resolve(projectRoot, 'shared') },
+    ],
+  },
   server: {
     port: webPort,
     strictPort: false,
     proxy: { '/api': { target: `http://127.0.0.1:${apiPort}`, changeOrigin: true } },
   },
-  build: { outDir: 'dist/web', emptyOutDir: true },
+  /* `await` cấp cao (tuDienWeb.ts) cần ES2022: Chrome / Edge 89, Firefox 89, Safari 15 trở lên. */
+  build: { outDir: 'dist/web', emptyOutDir: true, target: ['es2022', 'chrome89', 'edge89', 'firefox89', 'safari15'] },
 });
