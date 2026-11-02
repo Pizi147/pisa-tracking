@@ -2629,6 +2629,9 @@ export function phuDsCase(caseIds: number[]) {
  * PHẦN SQL + LỌC QUYỀN + DỰNG `MappedCase` của `listCases` — tách riêng để nhớ trong request theo bộ lọc SQL
  * (`khoaDsCase`), không phụ thuộc `queue`/`classKind`/`skill` (lọc trong bộ nhớ ở `listCases`, không đổi).
  */
+/** DOC-IT-3: phép kiểm bật → đọc như trước (không tập cha theo lớp của GV) để so JSON. */
+export const tapChaTheoLopKhiKiem = { tat: false };
+
 function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   return nho(khoaDsCase(p.userId, f), () => {
     const conn = db();
@@ -2672,6 +2675,21 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   if (f.ownerUserId) { where.push('sc.owner_user_id = ?'); params.push(f.ownerUserId); }
   if (f.noOwner) where.push('sc.owner_user_id IS NULL');
   if (!f.kemTam) where.push(CASE_THAT('sc'));
+  /*
+   * DOC-IT-3: người xem chỉ có quyền THEO LỚP (GV — `scopeFor` không chi nhánh, không toàn hệ thống), không lọc lớp / em → trước đọc MỌI Case cả hệ thống
+   * (Tổng quan GV: ô Case mở; hồ sơ GV lọc chi nhánh) rồi `can()` dưới bỏ gần hết. Lọc trước TẬP CHA theo mọi lớp có phân công / chỉ xem: Case `can()` cho qua
+   * có lớp quyền (`LOP_CUA_CASE`, hoặc mọi lớp em từng ghi danh khi lớp quyền trống) thuộc các lớp đó — qua ghi danh (mọi trạng thái) của em, hoặc lượt của
+   * lớp; Case chưa gắn em giữ hết. `can()` vẫn lọc như cũ → kết quả không đổi. Lọc người phụ trách đã đi chỉ mục `idx_case_owner` (hẹp hơn) — bỏ qua.
+   */
+  const pv = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (!pv.all && !pv.branchIds.length && !f.classId && !f.studentId && !f.studentIds?.length && !f.ownerUserId && !tapChaTheoLopKhiKiem.tat) {
+    const lop = [...new Set([...p.assignments.map((a) => a.classId), ...(p.xemTam ?? []).map((x) => x.classId)])];
+    const ph = lop.map(() => '?').join(',');
+    where.push(`sc.id IN (SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
+                          UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
+                          UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`);
+    params.push(...lop, ...lop);
+  }
 
   const rows = conn
     .prepare(

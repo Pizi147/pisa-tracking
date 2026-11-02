@@ -1193,6 +1193,43 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
  * TD7a (chủ SP 17/10, Turso Top Queries: câu "Xem nhận xét Speaking" ~225 k dòng / lần): câu xem_nx_s — "Tất cả" (không lọc / lọc chi nhánh) và nhánh lớp
  * ("Của tôi" của GV S) — đi chỉ mục một phần idx_score_cho_phu_trach, không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lần hai không làm gì. JSON /my-work không đổi: TD4-a ở trên.
  */
+/*
+ * DOC-IT-3 (02/11): người xem chỉ có quyền THEO LỚP (GV) — `listCases` trước đọc MỌI Case cả hệ thống (Tổng quan GV: ô Case mở, hồ sơ GV) rồi `can()` bỏ gần hết.
+ * Nay lọc trước tập cha theo lớp phân công / chỉ xem trong SQL. (1) JSON trùng cách cũ (cờ `tapChaTheoLopKhiKiem.tat`) với mọi người dùng chỉ có quyền GV,
+ * nhiều bộ lọc; (2) câu không SCAN sos_cases.
+ */
+await checkAsync('DOC-IT-3 (×3) · listCases của GV: trùng cách cũ mọi GV × bộ lọc; không SCAN sos_cases', async () => {
+  const cases = await import('../cases/cases.ts');
+  const loi: string[] = [];
+  let soGv = 0, soCase = 0;
+  const cnLop = new Map((conn.prepare('SELECT id, branch_id FROM classes').all() as any[]).map((r) => [r.id as number, r.branch_id as number | null]));
+  for (const { id } of conn.prepare(`SELECT id FROM users WHERE status = 'active' ORDER BY id`).all() as any[]) {
+    const p = loadPrincipal(id);
+    const pv = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+    if (pv.none || pv.all || pv.branchIds.length) continue;
+    soGv++;
+    const cn = [...new Set(p.assignments.map((a: any) => cnLop.get(a.classId)).filter((b: any) => b != null))] as number[];
+    for (const f of [{}, { ownerUserId: id }, { status: 'open' }, { kemTam: true }, ...cn.map((branchId) => ({ branchId }))] as any[]) {
+      cases.tapChaTheoLopKhiKiem.tat = true;
+      let cu: string;
+      try { cu = JSON.stringify(cases.listCases(p, f)); } finally { cases.tapChaTheoLopKhiKiem.tat = false; }
+      const moi = cases.listCases(p, f);
+      soCase += moi.rows.length;
+      if (JSON.stringify(moi) !== cu) loi.push(`user ${id} ${JSON.stringify(f)}: ${JSON.stringify(moi).length} ≠ ${cu.length} ký tự`);
+    }
+  }
+  assert(soGv >= 3 && soCase > 0, `bộ đo quá mỏng: ${soGv} GV, ${soCase} dòng Case`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try { cases.listCases(loadPrincipal(USER.GVCN), {}); } finally { doQuet.ghi = null; }
+  const cau = ghi.find((g) => /FROM sos_cases sc\s+LEFT JOIN assessment_attempts a/.test(g.sql));
+  assert(cau, 'không bắt được câu danh sách Case');
+  const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${cau!.sql}`).all(...cau!.args) as any[]).map((r) => r.detail as string);
+  if (plan.some((d) => /^SCAN sc\b/.test(d))) loi.push(`GVCN listCases(p, {}) vẫn SCAN sos_cases: ${plan.join(' | ')}`);
+  console.log(`      (đo ×3: ${soGv} GV, ${soCase} dòng Case so)`);
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');
