@@ -641,6 +641,7 @@ export function createTask(p: Principal, input: any) {
   }
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId, classId: lop?.id ?? null, anyScope: branchId === null }, 'Bạn không có quyền tạo công việc.');
   if (gui !== null && branchId !== null && gui !== branchId) throw badRequest('Chi nhánh của việc không khớp với lớp / đơn vị đã chọn.');
+  const nguoiPhuTrach = kiemNguoiPhuTrach(conn, branchId, input.assigneeUserId);
   if (!chuTuDo(input.title, 'Nội dung công việc', 200)) throw badRequest('Cần nội dung công việc.');   // PR-Dọn (Q4): kiểu + trần
   if (input.dueDate && !isIsoDate(input.dueDate)) throw badRequest('Hạn không hợp lệ.');
   /*
@@ -681,7 +682,7 @@ export function createTask(p: Principal, input: any) {
       .run(code, periodId, taskType, kind, lop?.id ?? null,
            kind === 'teacher_task' ? (input.topic ?? null) : null,
            input.title.trim(), input.unitId ?? null, branchId,
-           input.assigneeUserId ?? null, input.dueDate ?? null, input.note ?? null,
+           nguoiPhuTrach, input.dueDate ?? null, input.note ?? null,
            input.sourceType ?? 'manual', input.sourceUnitReportId ?? null, input.sourceSosCaseId ?? null,
            p.userId, nowIso(), khoa);
     const id = Number(info.lastInsertRowid);
@@ -698,6 +699,29 @@ export function createTask(p: Principal, input: any) {
     if (cu) return conn.prepare('SELECT * FROM tasks WHERE id = ?').get(cu);
     throw e;
   }
+}
+
+/** PR-DEPLOY (0b-1): người ĐANG có vai trong phạm vi của việc (chi nhánh của việc hoặc vai toàn hệ thống); việc Toàn hệ thống → ai đang hoạt động cũng được. */
+function nguoiTrongPhamVi(conn: ReturnType<typeof db>, branchId: number | null, ids: readonly number[]): Set<number> {
+  const co = new Set<number>();
+  theoLo(ids, (lo, ph) => {
+    const rows = branchId
+      ? conn.prepare(`SELECT DISTINCT user_id FROM user_roles WHERE status = 'active' AND (branch_id = ? OR branch_id IS NULL) AND user_id IN (${ph})`).all(branchId, ...lo)
+      : conn.prepare(`SELECT id AS user_id FROM users WHERE status = 'active' AND id IN (${ph})`).all(...lo);
+    for (const r of rows as any[]) co.add(r.user_id);
+  });
+  return co;
+}
+
+/** RA-LOI-MAY: người phụ trách — cùng phạm vi người theo dõi; ngoài phạm vi / không có → 400 (không lặng lẽ bỏ như người theo dõi: việc phải có đúng người làm). */
+function kiemNguoiPhuTrach(conn: ReturnType<typeof db>, branchId: number | null, v: unknown): number | null {
+  if (v === undefined || v === null) return null;
+  const id = Number(v);
+  const users = Number.isSafeInteger(id) && id > 0 ? conn.prepare(`SELECT 1 FROM users WHERE id = ? AND status = 'active'`).get(id) : null;
+  if (!users || !nguoiTrongPhamVi(conn, branchId, [id]).has(id)) {
+    throw badRequest('Người phụ trách phải là tài khoản đang hoạt động thuộc chi nhánh của công việc.');
+  }
+  return id;
 }
 
 /**
@@ -727,13 +751,7 @@ function setFollowers(
   const tay = Array.isArray(manualIds) ? manualIds : [];
   if (tay.length > TRAN_NGUOI_THEO_DOI) throw loi(400, 'Tối đa {TRAN_NGUOI_THEO_DOI} người theo dõi.', { TRAN_NGUOI_THEO_DOI });
   const ungVien = [...new Set(tay.map(Number).filter((n) => Number.isSafeInteger(n) && n > 0))];
-  /* PR-DEPLOY (0b-1): người theo dõi do tay chỉ nhận người ĐANG có vai trong phạm vi của việc (chi nhánh của việc hoặc toàn hệ thống); việc Toàn hệ thống → ai đang hoạt động cũng được. */
-  theoLo(ungVien, (lo, ph) => {
-    const trongPhamVi = branchId
-      ? conn.prepare(`SELECT DISTINCT user_id FROM user_roles WHERE status = 'active' AND (branch_id = ? OR branch_id IS NULL) AND user_id IN (${ph})`).all(branchId, ...lo)
-      : conn.prepare(`SELECT id AS user_id FROM users WHERE status = 'active' AND id IN (${ph})`).all(...lo);
-    for (const r of trongPhamVi as any[]) wanted.set(r.user_id, 'manual');
-  });
+  for (const id of nguoiTrongPhamVi(conn, branchId, ungVien)) wanted.set(id, 'manual');
   // Người theo dõi không phải người làm: nếu đã là người phụ trách thì không nhân đôi.
   const t = conn.prepare('SELECT assignee_user_id FROM tasks WHERE id = ?').get(taskId) as any;
   if (t?.assignee_user_id) wanted.delete(t.assignee_user_id);
@@ -766,6 +784,7 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
     throw badRequest('Tiến độ không hợp lệ.');
   }
   if (patch.dueDate && !isIsoDate(patch.dueDate)) throw badRequest('Hạn không hợp lệ.');
+  if (patch.assigneeUserId !== undefined) patch = { ...patch, assigneeUserId: kiemNguoiPhuTrach(conn, t.branch_id, patch.assigneeUserId) };
 
   const map: Record<string, string> = {
     title: 'title', progress: 'progress', dueDate: 'due_date', note: 'note',
