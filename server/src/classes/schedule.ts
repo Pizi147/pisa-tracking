@@ -8,7 +8,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, notFound, nowIso, loi } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { lopDayDu, require_, type Principal } from '../permissions.ts';
+import { lopDayDu, phanCongDaNap, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
@@ -802,10 +802,12 @@ export function missingForClasses(classIds: number[]): Map<number, { items: Miss
   const conn = db();
   const ph = DS_JSON, json = JSON.stringify(classIds);   // S5: một tham số JSON
 
-  const classes = conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(json) as any[];
+  const can = new Set(classIds);
+  const classes = coNho() ? [...lopDayDu().values()].filter((c) => can.has(c.id)) : conn.prepare(`SELECT * FROM classes WHERE id IN (${ph})`).all(json) as any[];   // TL-HVL: GET đọc bảng lớp đã nhớ
   let programmes: Map<string, ProgrammeInfo> | undefined;   // nạp một lần, chỉ khi có lớp cần
   const byClass = new Map<number, any[]>();
-  for (const a of conn
+  const da = phanCongDaNap();   // TL-HVL: Học viên & Lớp toàn hệ thống đã nạp phân công — lọc đúng WHERE dưới
+  for (const a of da ? da.filter((x) => can.has(x.classId)).map((x) => ({ class_id: x.classId, skill: x.skill, is_core: x.isCore })) : conn
     .prepare(
       `SELECT class_id, skill, is_core FROM teacher_assignments
         WHERE class_id IN (${ph}) AND status = 'active'`,

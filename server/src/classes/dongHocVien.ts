@@ -14,7 +14,7 @@ import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
 import { emConMiniTest, nguoiGhiMiniTest } from '../normal/cuoiKhoa.ts';
 import { emCuaLop, nhanNhomEm, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import type { MappedCase } from '../cases/cases.ts';
-import { chiTietCaseMo } from '../cases/caseLop.ts';
+import { chiTietCaseMo, type CaseChiTiet } from '../cases/caseLop.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
 import { listAttempts } from '../fasttrack/attempts.ts';
 
@@ -95,6 +95,8 @@ export function viecHocVienTheoLop(p: Principal, o: {
   theoEm: Map<number, ViecEm>; soChoDuyet: Map<number, number>; soEmQuaHan: Map<number, number>;
   /** SV-SO3 (hàng HV, khu d): PA của các Case đang mở + có việc Case quá hạn · bậc Ý thức (`bacHoacNgoaiThang`) — từ chính các câu đã đọc ở đây. */
   hoTro: Map<number, { soPa: number; quaHan: boolean }>; bacYThuc: Map<number, string>;
+  /** TL-HVL: chi tiết Case đang mở đã đọc ở đây — nhãn Bộ lọc thêm dùng lại, không đọc lại. */
+  chiTiet: Map<number, CaseChiTiet>;
 } {
   /* Một em có thể còn ghi danh `active` ở nhiều lớp (dữ liệu chuyển lớp dở) — đếm cho MỖI lớp em đang có mặt, việc của em tính một lần. */
   const lopCua = new Map<number, number[]>();
@@ -153,5 +155,5 @@ export function viecHocVienTheoLop(p: Principal, o: {
     theoEm.set(id, { viec, choDuyet: emChoDuyet.has(id) });
     if (viec.some((v) => v.tone === 'danger')) for (const lop of lops) soEmQuaHan.set(lop, (soEmQuaHan.get(lop) ?? 0) + 1);
   }
-  return { theoEm, soChoDuyet, soEmQuaHan, hoTro, bacYThuc };
+  return { theoEm, soChoDuyet, soEmQuaHan, hoTro, bacYThuc, chiTiet };
 }

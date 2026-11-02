@@ -293,10 +293,16 @@ export function ungVienVaThe(f: { branchId?: number | null; classId?: number | n
       ORDER BY s.id`).all(...args) as any[]).map((r) => ({ id: r.id as number, coThe: !!r.co_the, ten: r.ten, lop: r.lop ?? null }));
 }
 
+/** TL-HVL: ghi danh của MỘT lớp (mọi trạng thái), một câu mỗi request — hồ sơ lớp lọc bằng JS theo điều kiện từng nơi. */
+export function ghiDanhLop(classId: number): readonly { studentId: number; status: string; archived: boolean }[] {
+  return nho('ghi-danh-lop:' + classId, () => (db().prepare(
+    `SELECT e.student_id, e.status, s.archived_at FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? ORDER BY e.id`,
+  ).all(classId) as any[]).map((r) => ({ studentId: r.student_id as number, status: r.status as string, archived: !!r.archived_at })));
+}
+
 /** Em ĐANG HỌC (hoặc tạm dừng) ở một lớp. */
 export function emCuaLop(classId: number): number[] {
-  return (db().prepare(`SELECT DISTINCT student_id AS id FROM enrollments WHERE class_id = ? AND status IN ('active', 'paused') ORDER BY student_id`)
-    .all(classId) as any[]).map((r) => r.id as number);
+  return [...new Set(ghiDanhLop(classId).filter((e) => e.status === 'active' || e.status === 'paused').map((e) => e.studentId))].sort((a, b) => a - b);
 }
 
 /** Nhãn ngắn cho dòng em ở danh sách lớp / Tổng quan (K1-17): chỉ hai nhóm cần hành động; nhóm khác → null. */
