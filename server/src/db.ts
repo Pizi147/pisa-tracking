@@ -221,12 +221,18 @@ export function datKetNoiChoPhepKiem(c: Database.Database): void {
   instance = c;
 }
 
+/**
+ * DOC-IT-1: đã thấy bảng thì nhớ theo KẾT NỐI — `/demo/session` (mỗi lần mở app) thôi SCAN `sqlite_master` (~270 dòng Turso). Bảng chỉ mất qua
+ * `recreateSchema` (xoá nhớ trước khi xoá bảng); kết nối mới (mất kết nối Turso, phép kiểm đổi DB) hỏi lại một lần.
+ */
+const daKhoiTao = new WeakSet<object>();
 export function isInitialised(): boolean {
   if (!laDbTuXa() && !fs.existsSync(DB_PATH)) return false;
-  const row = db()
-    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='students'")
-    .get();
-  return !!row;
+  const conn = db();
+  if (daKhoiTao.has(conn)) return true;
+  const co = !!conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='students'").get();
+  if (co) daKhoiTao.add(conn);
+  return co;
 }
 
 /**
@@ -253,6 +259,7 @@ export function tuChoiXoaSachNeuTuXa(): void {
 export function recreateSchema() {
   tuChoiXoaSachNeuTuXa();
   const conn = db();
+  daKhoiTao.delete(conn);
   conn.pragma('foreign_keys = OFF');
   const tables = conn
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
