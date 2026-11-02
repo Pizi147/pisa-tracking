@@ -223,7 +223,7 @@ export async function runPrLopTests(t: YThucTestKit) {
     assert(JSON.stringify(lt.lichMt) === '[4,8]', JSON.stringify(lt));   // OV-6b1: tuần MT là cấu hình (số), không còn chữ chỉ đọc
     const src = docSach('web/src/modules/platform/CatalogAdmin.tsx');
     assert(!/\+ Thêm|loại lớp|btn-primary' : ''|ALL_SKILLS/i.test(src), 'CatalogAdmin còn chữ/nút cũ');
-    assert(/label: 'Chương trình'/.test(docSach('web/src/modules/platform/AdminPage.tsx')), 'tên tab');   // OV-6b1: đổi tên tab
+    assert(/label: t\('Chương trình'\)/.test(docSach('web/src/modules/platform/AdminPage.tsx')), 'tên tab');   // OV-6b1: đổi tên tab
   });
   check('LOP (10) · ô tìm đầu trang có nhóm Lớp; chữ mẫu tên lớp mới trong web + shared/domain (K1-43, T2)', () => {
     const h = docSach('web/src/modules/platform/Header.tsx');
