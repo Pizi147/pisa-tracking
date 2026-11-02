@@ -143,7 +143,10 @@ export async function runPrSangTests(t: YThucTestKit) {
     assert(typeof ban === 'string' && /^\d/.test(ban), `@fontsource/be-vietnam-pro phải nằm ở dependencies và ghim đúng phiên bản (không ^/~), đang "${ban}"`);
     // Be Vietnam Pro không có số cùng độ rộng → chữ số 0–9 lấy từ Inter (khai lại họ 'Be Vietnam Pro', unicode-range chữ số), đủ 5 độ đậm.
     for (const w of [400, 500, 600, 700, 800]) {
-      assert(new RegExp(`font-weight: ${w};[^}]*unicode-range: U\\+0030-0039;[^}]*inter-latin-${w}-normal\\.woff2`).test(css), `index.css thiếu mặt chữ số Inter độ đậm ${w}`);
+      assert(new RegExp(`font-weight: ${w};[^}]*unicode-range: U\\+0030-0039;[^}]*fonts/inter-so-${w}\\.woff2`).test(css), `index.css thiếu mặt chữ số Inter độ đậm ${w}`);
+      /* TAI-NHANH 02/11: Inter cắt còn 0–9 (~2,7 KB thay 24 KB cả bộ latin) — lớn lên là đã chép nhầm bản đủ. */
+      const tep = path.join(REPO, `web/src/fonts/inter-so-${w}.woff2`);
+      assert(fs.existsSync(tep) && fs.statSync(tep).size < 6144, `web/src/fonts/inter-so-${w}.woff2 thiếu hoặc không phải bản cắt (< 6 KB)`);
     }
     const inter = pkg.dependencies?.['@fontsource/inter'];
     assert(typeof inter === 'string' && /^\d/.test(inter), `@fontsource/inter phải ghim đúng phiên bản (chỉ cho chữ số), đang "${inter}"`);

@@ -296,6 +296,8 @@ CREATE TABLE students (
 );
 CREATE INDEX idx_student_name ON students(normalized_name);
 CREATE INDEX idx_student_consultant ON students(consultant_user_id);
+-- DOC-IT-5: danh sách Lưu trữ (`danhSachLuuTru`, Học viên & Lớp) — không quét cả bảng học viên.
+CREATE INDEX idx_student_luu_tru ON students(archived_at) WHERE archived_at IS NOT NULL;
 
 -- Lộ trình học. Mỗi lộ trình có TARGET và ngày thi IELTS riêng.
 -- Học tiếp/học lại trong cùng lộ trình: số MT tăng tiếp, target giữ nguyên.
