@@ -108,6 +108,12 @@ export async function runPrEnTests(t: any) {
     }
     assert(i18n.dichSang('en', 'Hoàn tác {nhan}', { nhan: 'Target' }) === 'Undo Target', 't() vẫn dịch khoá đủ');
     assert(i18n.dichMau('en', 'Dời S · MT3 · lần 2 · Duyệt = S làm bài W4 SEP') === 'Move S · MT3 · time 2 · Approve = S sits W4 SEP', 'mẫu thẻ dời MT');
+    /* DON-NHO-3: dòng "Nếu duyệt: …" thẻ Đề xuất PA / Đổi PA (`loaiYeuCau.ts` neuDuyet) — không còn chữ Việt ở EN. */
+    for (const [vi, en] of [['PA bắt đầu hôm nay · ghi kết quả hai tuần một lần · hạn đầu 28/09.', 'PA starts today · results every two weeks · first due 28/09.'],
+      ['Xếp tự học kết thúc (Đổi PA) · Học Tutor chạy từ ngày duyệt', 'Self-study ends (PA changed) · Tutoring runs from the approval date'],
+      ['Học Tutor chạy từ ngày duyệt · Xếp tự học bỏ (Đổi PA)', 'Tutoring runs from the approval date · Self-study dropped (PA changed)']]) {
+      assert(i18n.dichMau('en', vi) === en, `"${vi}" → "${i18n.dichMau('en', vi)}"`);
+    }
   });
 
   /* PTA #599 (5): lỗi máy chủ mở đầu bằng tên ô — bản Anh mở đầu bằng đúng nhãn ô (StudentManagePanel `oCuaLoi` gắn lỗi vào ô ở EN). */

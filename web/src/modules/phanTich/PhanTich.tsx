@@ -105,40 +105,43 @@ export function PhanTich() {
   return (
     <div className="space-y-3">
       <div data-hd="pt-goc" className="print:hidden">
-        <HangTab ariaLabel={t('Phân tích')} value={goc} onChange={setGoc} tabs={gocCo.map((k) => ({ key: k, label: dichGoc(nhanGocNhin(k, ct)) }))} />
+        <HangTab panelId="pt-vung" ariaLabel={t('Phân tích')} value={goc} onChange={setGoc} tabs={gocCo.map((k) => ({ key: k, label: dichGoc(nhanGocNhin(k, ct)) }))} />
       </div>
-      {/* V8-PT (P2): MỘT hàng lọc, mọi ô cao 36 chữ 14 — [chương trình | ô đoạn đầu của tab] · [Toàn bộ | Chọn khoảng tuần] · tuần → tuần · Mọi lớp ▾ ·
-          ô riêng tab · (phải) Xuất / In / ⋯. 375: ô đoạn và thời gian hết hàng, ô chọn hai cột. */}
-      <div className="flex flex-wrap items-center gap-2 print:hidden" data-hd="pt-hang-loc">
-        {coCt && <span className={canhDoan ? LOP_DOAN : 'contents'}><ChonChuongTrinh value={ct} onChange={setCt} /></span>}
-        <span ref={setDau} className={goc === 'ket-qua-thi' ? LOP_DOAN : 'contents'} />
-        <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo />
-        {coLop && (
-          <OChon className="max-sm:w-[calc(50%-4px)]" dangLoc={!!classId} value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
-            <option value="">{t('Mọi lớp')}</option>
-            {classes.filter((c) => !c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-            {classes.some((c) => c.ket_thuc) && (
-              <optgroup label={t('Đã kết thúc')}>
-                {classes.filter((c) => c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-              </optgroup>
-            )}
-          </OChon>
-        )}
-        <span ref={setGiua} className="contents" />
-        <span ref={setPhai} className={`ml-auto flex items-center gap-2 empty:hidden ${canhDoan ? 'max-sm:order-[-1] max-sm:ml-0' : ''}`}>
-          {/* "In" (V4, Báo cáo HV): giấy sáng A4 ngang — cuối hàng lọc như mockup. */}
-          {goc === 'bao-cao' && <button type="button" className="btn h-9 max-sm:hidden" onClick={() => window.print()}>{t('In')}</button>}
-        </span>
-      </div>
+      {/* DON-NHO-3 (TAB-A11Y): hàng lọc + nội dung đổi theo tab = vùng tab; cùng space-y-3 → khoảng cách không đổi. */}
+      <div id="pt-vung" role="tabpanel" aria-label={dichGoc(nhanGocNhin(goc, ct))} className="space-y-3">
+        {/* V8-PT (P2): MỘT hàng lọc, mọi ô cao 36 chữ 14 — [chương trình | ô đoạn đầu của tab] · [Toàn bộ | Chọn khoảng tuần] · tuần → tuần · Mọi lớp ▾ ·
+            ô riêng tab · (phải) Xuất / In / ⋯. 375: ô đoạn và thời gian hết hàng, ô chọn hai cột. */}
+        <div className="flex flex-wrap items-center gap-2 print:hidden" data-hd="pt-hang-loc">
+          {coCt && <span className={canhDoan ? LOP_DOAN : 'contents'}><ChonChuongTrinh value={ct} onChange={setCt} /></span>}
+          <span ref={setDau} className={goc === 'ket-qua-thi' ? LOP_DOAN : 'contents'} />
+          <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo />
+          {coLop && (
+            <OChon className="max-sm:w-[calc(50%-4px)]" dangLoc={!!classId} value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
+              <option value="">{t('Mọi lớp')}</option>
+              {classes.filter((c) => !c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+              {classes.some((c) => c.ket_thuc) && (
+                <optgroup label={t('Đã kết thúc')}>
+                  {classes.filter((c) => c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+                </optgroup>
+              )}
+            </OChon>
+          )}
+          <span ref={setGiua} className="contents" />
+          <span ref={setPhai} className={`ml-auto flex items-center gap-2 empty:hidden ${canhDoan ? 'max-sm:order-[-1] max-sm:ml-0' : ''}`}>
+            {/* "In" (V4, Báo cáo HV): giấy sáng A4 ngang — cuối hàng lọc như mockup. */}
+            {goc === 'bao-cao' && <button type="button" className="btn h-9 max-sm:hidden" onClick={() => window.print()}>{t('In')}</button>}
+          </span>
+        </div>
 
-      <KheHangLoc.Provider value={{ dau, giua, phai }}>
-        {goc === 'bao-cao' && <BaoCao {...pv} />}
-        {goc === 'tong-hop' && <TongHopTestSos {...pv} ct={ct} />}
-        {goc === 'ket-qua-thi' && <KetQuaThi {...pv} />}
-        {goc === 'hieu-qua-pa' && <HieuQuaPa {...pv} ct={ct} />}
-        {goc === 'y-thuc' && <YThucPhoiHop {...pv} ct={null} />}
-        {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} ct={ct} khoang={khoang} />}
-      </KheHangLoc.Provider>
+        <KheHangLoc.Provider value={{ dau, giua, phai }}>
+          {goc === 'bao-cao' && <BaoCao {...pv} />}
+          {goc === 'tong-hop' && <TongHopTestSos {...pv} ct={ct} />}
+          {goc === 'ket-qua-thi' && <KetQuaThi {...pv} />}
+          {goc === 'hieu-qua-pa' && <HieuQuaPa {...pv} ct={ct} />}
+          {goc === 'y-thuc' && <YThucPhoiHop {...pv} ct={null} />}
+          {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} ct={ct} khoang={khoang} />}
+        </KheHangLoc.Provider>
+      </div>
     </div>
   );
 }

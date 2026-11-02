@@ -735,7 +735,7 @@ export function NutNhanXet({ tenMon, phu, giaTri, lon = false, onLuu, nguon = nu
     <>
       <button ref={setNeo} type="button" aria-haspopup="dialog" aria-expanded={mo} title={giaTri ?? undefined}
         aria-label={t('Nhận xét · {tenMon} · {phu}', { tenMon, phu })}
-        className={`btn btn-sm btn-ghost shrink-0 px-1.5 text-xs ${lon ? 'min-h-[44px]' : ''} ${giaTri ? 'text-[color:var(--accent-strong)]' : 'text-slate-400'}`}
+        className={`btn btn-sm btn-ghost shrink-0 text-xs ${lon ? 'min-h-[44px] px-1.5' : 'px-1'} ${giaTri ? 'text-[color:var(--accent-strong)]' : 'text-slate-400'}`}
         onClick={() => setMo((m) => !m)}>{t('Nhận xét')}</button>
       {mo && neo && <HopNhanXetThuong anchor={neo} tenMon={tenMon} phu={phu} giaTri={giaTri} nguon={nguon} onLuu={onLuu} onDong={() => setMo(false)} />}
     </>

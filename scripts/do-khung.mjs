@@ -295,7 +295,8 @@ function chuVietSot([duLieu, goc, bo]) {
   const loi = [];
   const xem = (chu, el) => {
     const s = (chu ?? '').trim().replace(/\s+/g, ' ');
-    if (!s || !RE.test(s) || el.closest('[lang=vi]') || (bo && el.closest(bo)) || laDuLieu(s)) return;
+    /* DON-NHO-3: chữ tắt tên người ở ô avatar ("ĐA" = Đỗ Anh…) là dữ liệu, không phải chữ giao diện. */
+    if (!s || !RE.test(s) || el.closest('[lang=vi]') || (bo && el.closest(bo)) || laDuLieu(s) || /^\p{Lu}{1,3}$/u.test(s)) return;
     loi.push(`v chữ Việt «${s.slice(0, 70)}»`);
   };
   const vung = document.querySelector(goc) ?? document.body;
@@ -690,7 +691,8 @@ if (LOC === 'cham-lien-mach') {
       await moLop();
       await p.locator('#noi-dung [data-hv] a[href^="/mock-test/"]:visible').first().click(); await p.waitForTimeout(1200);
       const url1 = p.url();
-      await p.locator('#dai-diem button[aria-haspopup="dialog"]').first().click(); await p.waitForTimeout(400);
+      /* HSL-FT bỏ dải `#dai-diem`: ô điểm nằm trong bảng "Kết quả theo kỹ năng" (DON-NHO-3). */
+      await p.locator('[role=table][aria-label="Kết quả theo kỹ năng"] button[aria-haspopup="dialog"]:visible').first().click(); await p.waitForTimeout(400);
       const emTiep = p.locator(HOP).getByRole('button', { name: /Lưu · em tiếp ›|Lưu · bài tiếp ›/ });
       for (let i = 0; i < 5 && p.url() === url1 && (await emTiep.count()); i++) {
         const oSo = p.locator(`${HOP} #hop-diem-o`);

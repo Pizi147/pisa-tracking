@@ -65,18 +65,21 @@ export default function AdminPage() {
 
       {tabs.length > 1 && (
         <div data-hd="qt-tab">
-          <HangTab ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
+          <HangTab panelId="qt-vung" ariaLabel="Quản trị hệ thống" value={tab} onChange={setTab}
             tabs={tabs.map((t) => ({ key: t.key, label: t.key === 'da-xoa' ? tChu(t.label) : t.label }))} />
         </div>
       )}
 
-      {tab === 'accounts' && <AccountsAdmin />}
-      {tab === 'catalog' && <CatalogAdmin />}
-      {tab === 'band' && <BangQuyDoiAdmin />}
-      {tab === 'da-xoa' && <DaXoaAdmin />}
-      {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
-      {tab === 'config' && (loading || !data) && !error && <Skeleton rows={8} />}
-      {tab === 'config' && data && <ConfigTab data={data} onDone={reload} />}
+      {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
+      <div id="qt-vung" role="tabpanel" aria-label="Quản trị hệ thống" className="space-y-4">
+        {tab === 'accounts' && <AccountsAdmin />}
+        {tab === 'catalog' && <CatalogAdmin />}
+        {tab === 'band' && <BangQuyDoiAdmin />}
+        {tab === 'da-xoa' && <DaXoaAdmin />}
+        {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
+        {tab === 'config' && (loading || !data) && !error && <Skeleton rows={8} />}
+        {tab === 'config' && data && <ConfigTab data={data} onDone={reload} />}
+      </div>
     </div>
   );
 }

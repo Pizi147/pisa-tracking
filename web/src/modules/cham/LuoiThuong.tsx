@@ -447,7 +447,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             data-trong={trong ? '1' : undefined} data-luu={o[k]}>
             <DauO tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
             {/* BANG-1: Nhận xét · đúng / tổng một hàng; ⋯ ở mép phải ô, ẩn tới khi rê chuột / focus vào ô (điện thoại luôn hiện). */}
-            <div className={`inline-flex items-baseline justify-center gap-1 ${(s?.nhanXetDuoc ?? canEdit) && s ? 'pr-1.5' : ''}`}>{/* bù đệm trái nút Nhận xét → hai mép cân, số thẳng tâm cột */}
+            <div className={`inline-flex items-baseline justify-center gap-1 ${(s?.nhanXetDuoc ?? canEdit) && s ? 'pr-1' : ''}`}>{/* bù đệm trái nút Nhận xét (px-1) → hai mép cân, số thẳng tâm cột; đệm 4 (không 6) để "Comment" (EN) vẫn vừa cột 236 (DON-NHO-3) */}
             {(s?.nhanXetDuoc ?? canEdit) && s && (
               <NutNhanXet tenMon={tenMon(sheet.programme.code, k)} giaTri={s.nhanXet ?? null}
                 phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart, homNay) : null].filter(Boolean).join(' · ')}

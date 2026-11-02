@@ -114,4 +114,28 @@ export async function runPrTlHvlTests(t: any) {
     const dai = chayTrongRequest('GET', () => daiLop({ ...loadPrincipal(gv), assignments: [] }, lopFt, { pr: {} as any, ft: true, ct: 'FT' }));
     assert(dai.viewer.laGvcn, 'mất vai GVCN');
   });
+
+  /* DON-NHO-3 (#780 để sau): gọi lẻ (ngoài bộ nhớ request — đường ghi điểm `dotHoanTat`) đọc điểm bằng câu nhẹ như cũ, không câu 5 LEFT JOIN của
+     `diemCuaLuot`; trong bộ nhớ request vẫn dùng lại điểm đã đọc (không đọc `assessment_scores` lần hai). Kết quả hai đường như nhau. */
+  await checkAsync('HVL · dotHoanTatMany gọi lẻ không chạy câu điểm 5 LEFT JOIN; trong request dùng lại điểm đã nhớ', async () => {
+    const { dotHoanTatMany } = await import('../fasttrack/hoanTat.ts');
+    const { diemCuaLuot } = await import('../fasttrack/attempts.ts');
+    const { trongBoNho } = await import('../platform/nguCanhRequest.ts');
+    const conn = c();
+    const dem = (mau: RegExp, fn: () => unknown) => {
+      const coRieng = Object.prototype.hasOwnProperty.call(conn, 'prepare');
+      const goc = conn.prepare;
+      let n = 0;
+      conn.prepare = function (this: unknown, sql: string, ...r: unknown[]) { if (mau.test(sql)) n += 1; return goc.call(this, sql, ...r); };
+      try { fn(); } finally { if (coRieng) conn.prepare = goc; else delete conn.prepare; }
+      return n;
+    };
+    const luot = ids('SELECT id FROM assessment_attempts ORDER BY id LIMIT 40');
+    const homNay = demoToday();
+    let le: Map<number, unknown> = new Map(), trong: Map<number, unknown> = new Map();
+    assert(dem(/LEFT JOIN users pt/, () => { le = dotHoanTatMany(luot, homNay); }) === 0, 'gọi lẻ vẫn chạy câu điểm nặng');
+    const lanNang = dem(/LEFT JOIN users pt/, () => trongBoNho(() => { diemCuaLuot(luot); trong = dotHoanTatMany(luot, homNay); }));
+    assert(lanNang === 1, `trong request đọc điểm ${lanNang} lần (cần 1 — dùng lại điểm đã nhớ)`);
+    assert(JSON.stringify([...le]) === JSON.stringify([...trong]), 'kết quả gọi lẻ khác trong request');
+  });
 }
