@@ -229,6 +229,15 @@ export function branchesOfStudent(studentId: number): number[] {
   });
 }
 
+/**
+ * QUYEN-THEO-CN (chủ SP 02/11): vai tài khoản nắm ở các chi nhánh này — grant toàn hệ thống (`branchId` null) luôn tính; bỏ quyền cấp riêng.
+ * Cho luật theo VAI (vd `coONhapLienHe`) xét đúng chi nhánh của em / lớp, không theo mọi vai của tài khoản (QL MB kiêm GVCN CP ở em CP = GV).
+ */
+export const vaiTaiChiNhanh = (p: Pick<Principal, 'grants'>, chiNhanh: readonly (number | null)[]): string[] =>
+  [...new Set(p.grants.filter((g) => g.roleKey !== 'granted' && (g.branchId === null || chiNhanh.includes(g.branchId))).map((g) => g.roleKey))];
+/** Vai ở chi nhánh của em (`branchesOfStudent`, nhớ theo request). */
+export const vaiVoiEm = (p: Pick<Principal, 'grants'>, studentId: number) => vaiTaiChiNhanh(p, branchesOfStudent(studentId));
+
 function classesOfStudent(studentId: number): number[] {
   return nho('hv-lop:' + studentId, () =>
     (db().prepare('SELECT DISTINCT class_id FROM enrollments WHERE student_id = ?').all(studentId) as any[])

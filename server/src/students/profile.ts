@@ -10,7 +10,7 @@ import {
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { can, require_, vaiVoiEm, type Principal } from '../permissions.ts';
 import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf, tuanVangCu } from '../fasttrack/attempts.ts';
 import { assessedBands, boTaskTrong, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
@@ -1066,7 +1066,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         /** PR-OV2b: Admin / TVV / CX (`student.edit_info`) — ⋯ Sửa thông tin, chỉ các ô thông tin. */
         coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }),
         /** OV-10b: ô nhập Liên hệ ở Sửa thông tin — QL, Quản trị, TVV, CX, Admin; GV không thấy (máy chủ vẫn nhận theo `student.edit_info`). */
-        nhapLienHe: coONhapLienHe(p.roleKeys) && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId })),
+        nhapLienHe: coONhapLienHe(vaiVoiEm(p, studentId)) && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId })),
         /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */
         canEditCycle: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
         /* OV-8b: TVV / CX — Target sửa thẳng (có lý do), Ghi chú, Kết quả thi thật (`student.edit_more`). */

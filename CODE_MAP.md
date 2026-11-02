@@ -60,7 +60,6 @@ sau đó viết tắt. Luật thuần (không đụng DB, máy chủ và web cù
 | Hướng dẫn `/huong-dan`, nút "?", "Chỉ cho tôi" | `web/src/modules/huongDan/{HuongDanPage,NutHuongDan,chiChoToi,MucHuongDan,DaiMoiDung}.tsx` | nội dung `shared/huongDan/index.ts` (`HUONG_DAN`, `manCuaDuong`) |
 | Trang Tutor (đang tắt: `/tutor` về `/`) | `web/src/modules/tutor/{TutorPage,PanelTutor,HopTutor,TaiDanhSach}.tsx` | `server/src/tutors/{trang,taiLen}.ts` |
 | Sân mẫu thành phần `/dev/thanh-phan` (chỉ dev) | `web/src/modules/dev/{ThanhPhanDemo,BangMauV5,SanMauNen,BangMau}.tsx` | — |
-| Sổ tay PDF theo vai | `docs/so-tay/dung/dung.mjs` (dựng + kiểm) · nội dung `docs/so-tay/noi-dung/` | — |
 
 ---
 
