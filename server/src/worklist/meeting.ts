@@ -771,30 +771,33 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
     title: 'title', progress: 'progress', dueDate: 'due_date', note: 'note',
     assigneeUserId: 'assignee_user_id', taskType: 'task_type', unitId: 'reporting_unit_id',
   };
-  const sets: string[] = [];
-  const params: unknown[] = [];
-  for (const [k, v] of Object.entries(patch)) {
-    if (!map[k]) continue;
-    if (t[map[k]] === v) continue;
-    sets.push(`${map[k]} = ?`);
-    params.push(v);
-    conn.prepare('INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)')
-      .run(taskId, map[k], t[map[k]] === null ? null : String(t[map[k]]), v === null ? null : String(v), p.userId, nowIso());
-  }
-  if (patch.followerIds !== undefined) {
-    if (!manage) throw forbidden('Chỉ người quản lý công việc mới đổi được người theo dõi.');
-    setFollowers(conn, taskId, p.userId, t.branch_id, patch.followerIds);
-  }
-  if (patch.progress === 'done' && t.progress !== 'done') { sets.push('completed_at = ?'); params.push(nowIso()); }
-  if (patch.progress && patch.progress !== 'done' && t.progress === 'done') sets.push('completed_at = NULL');
-  if (!sets.length) return t;
-  sets.push('updated_at = ?');
-  params.push(nowIso(), taskId);
-  conn.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-  const after = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
-  writeAudit({ actorUserId: p.userId, action: 'task.update', entityType: 'task', entityId: taskId,
-    entityLabel: t.code, before: t, after });
-  return after;
+  /* RA-LOI-MAY: một giao dịch — lỗi ở bước sau (vd người theo dõi quá trần) không để lại lịch sử sửa / người theo dõi nửa chừng. */
+  return tx(() => {
+    const sets: string[] = [];
+    const params: unknown[] = [];
+    for (const [k, v] of Object.entries(patch)) {
+      if (!map[k]) continue;
+      if (t[map[k]] === v) continue;
+      sets.push(`${map[k]} = ?`);
+      params.push(v);
+      conn.prepare('INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)')
+        .run(taskId, map[k], t[map[k]] === null ? null : String(t[map[k]]), v === null ? null : String(v), p.userId, nowIso());
+    }
+    if (patch.followerIds !== undefined) {
+      if (!manage) throw forbidden('Chỉ người quản lý công việc mới đổi được người theo dõi.');
+      setFollowers(conn, taskId, p.userId, t.branch_id, patch.followerIds);
+    }
+    if (patch.progress === 'done' && t.progress !== 'done') { sets.push('completed_at = ?'); params.push(nowIso()); }
+    if (patch.progress && patch.progress !== 'done' && t.progress === 'done') sets.push('completed_at = NULL');
+    if (!sets.length) return t;
+    sets.push('updated_at = ?');
+    params.push(nowIso(), taskId);
+    conn.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    const after = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId);
+    writeAudit({ actorUserId: p.userId, action: 'task.update', entityType: 'task', entityId: taskId,
+      entityLabel: t.code, before: t, after });
+    return after;
+  });
 }
 
 
