@@ -254,6 +254,16 @@ export async function runPrDonATests(t: YThucTestKit) {
     assert(cy.route === 'RF', 'khẳng định: RF');
   });
 
+  /* RA-LOI-MAY: không gửi ngày → mốc là NGÀY NGHIỆP VỤ (`demoToday`), không phải ngày UTC thật (lệch ngày demo; bản chính 0–7 h sáng ra hôm qua). */
+  check('RA-LOI-MAY · createCycle không startedAt, reviseTarget không effectiveFrom → mốc = ngày nghiệp vụ', () => {
+    const { sid } = emMoi('MB FT 101');
+    const cy = cyclesSvc.createCycle(P.mbManager, { studentId: sid, route: 'RF', targetScore: 6.5 });
+    assert(cy.started_at === TODAY, `started_at ${cy.started_at} ≠ ${TODAY}`);
+    cyclesSvc.reviseTarget(P.mbManager, cy.id, { newTarget: 7, reason: 'Thử mốc ngày' });
+    const r = get(`SELECT effective_from FROM cycle_target_revisions WHERE cycle_id = ? ORDER BY id DESC LIMIT 1`, cy.id);
+    assert(r.effective_from === TODAY, `effective_from ${r.effective_from} ≠ ${TODAY}`);
+  });
+
   // ------------------------------------------------------------------ khối 3 · chia lô, trần mảng, trần chữ, chống gửi đôi, ROLLBACK
   console.log('\nPR-Dọn-a · (3) Quét an toàn — chia lô, trần mảng và chữ tự do, chống gửi đôi, ROLLBACK');
   const fs = await import('node:fs');
