@@ -252,7 +252,20 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### 02/11 đêm — chủ SP đi ngủ, "còn gì nữa chạy tiếp"
 - **Đã mở (local):** TL-HVL · LECH-CACH-CHAM · V8-HSL-2 · DO-KHUNG-DO (Opus 5.5 · medium) · LUU-PC-LO (Sonnet 5.5 · high).
 - **Merge:** PR máy chủ PTA tự merge khi rà đạt + check xanh; LECH-CACH-CHAM đổi mức SOS / Case em thật thì giữ chờ chủ SP. V8-HSL-2, DO-KHUNG-DO chờ duyệt ảnh sáng (không merge qua đêm).
-- **Chưa mở:** TAB-A11Y + DUYET-QL a11y (đủ 2 PR giao diện đang chạy) · QUYEN-THEO-CN, XM-BE-1, KET-PET-THI-THAT (chờ chủ SP quyết) · chỉ mục `status` `teacher_assignments` (chờ log).
+- **Chưa mở:** QUYEN-THEO-CN, XM-BE-1, KET-PET-THI-THAT (chờ chủ SP quyết) · chỉ mục `status` `teacher_assignments` (chờ log).
+
+### 02/11 chiều
+- **Đã merge:** #779 V8-HSL-2 (chủ SP: dòng kỹ năng tính KCK, Overall không; so Target lúc thi lượt đó) · #781 DO-KHUNG-DO · #783 TAB-A11Y.
+- **Chờ:** #784 SUA-NHO-2 (duyệt ảnh; dòng phụ "hạn bước tiếp" Sau thi TVV bỏ) · #785 CHAN-ROI-NHAP (đổi router cả app, kiểm toàn app rồi mới rà) · #777 (SQL bản chính).
+- **Để sau (#784):** [XM] hạn xa mockup v7 viên xám `.td`, `ChipHan` còn chữ trơn — chạm mọi danh sách · cột Trạng thái hồ sơ lượt 237 px theo mockup, critique 29/10 đề xuất 150 px. **(#783):** 7 `HangTab` còn lại chưa `aria-controls`.
+- **Bẫy:** check nhóm chết 0xC0000005 (libsql) lặp lại 02/11 → chạy lại đạt; session gom số liệu đừng ghi tệp `prof*.txt` ở thư mục chính.
+
+### 02/11 sáng — kết quả đêm
+- **Đã merge:** #778 LUU-PC-LO (lưu 8 lớp 241 → 127 câu) · #780 TL-HVL (`/hoc-vien-lop` QL 51 → 48).
+- **Chờ chủ SP:** #777 LECH-CACH-CHAM (chạy câu SQL chỉ đọc trong PR trên bản chính: ra 0 thì merge, khác 0 thì chủ SP quyết) · #779 V8-HSL-2 (duyệt ảnh + 2 câu cách tính) · #781 DO-KHUNG-DO (duyệt ảnh; 70 → 0 lỗi đo).
+- **Để sau (#781):** dòng miễn `PT-BANG` 3 tab Phân tích (chủ ý mockup v8) chưa có PR gỡ · EN cv-ho-tro "If approved: PA bắt đầu hôm nay…", "ĐA" chưa dịch · bang-diem-thuong g1 3,1 px + g3 67 · gv-nhap-diem "Expected" −3,2 px. Đo EN mới 3 màn.
+- ~~**Để sau (#779):** dòng kỹ năng tính em KCK có Target, Overall thì không (mẫu số có thể lệch) · Overall so Target hiện tại, Kết quả Test so Target lúc lượt.~~ **Chủ SP 02/11:** dòng kỹ năng CÓ tính KCK, Overall không, ghi ở ⓘ · FT so Target LÚC LƯỢT (`target_at_attempt`) cho dòng Overall, dòng kỹ năng, panel — sửa trong #779.
+- **Để sau (#780):** `dotHoanTatMany` dùng câu điểm 5 LEFT JOIN khi gọi lẻ. **(#778):** em hai ghi danh có Case không lượt, cả hai lớp cùng lô đổi đúng người cũ: đọc trước không thấy lớp đầu vừa đổi (rất hiếm).
 
 ### 01/11 tối — chủ SP đi vắng, giao chạy sau khi token tuần reset 19:00
 - **Đã mở (session local, chờ giờ rồi tự làm):** từ 19:05 PR-D (Sonnet 5.5 · high) · TL-VIEC · TL-TQ · V8-PT-2 · CN-3 + MA-MO-COI (Opus 5.5 · medium) · từ 22:30 DON-HINH (Opus 5.5 · medium).
@@ -278,7 +291,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Nút ⋯ trong ô lưới điểm (luật):** đứng NGAY SAU nội dung ô, cùng hàng, giữa theo chiều dọc với dòng chữ đầu (vd "✗ 14 /25 ⋯"); không đè chữ / số; máy có chuột chỉ hiện khi rê / focus, cảm ứng hiện sẵn (#732 làm đúng kiểu này).
 - **Bảng lớp góc Phân công GV (#726) — thay ý "giãn hết" 30/10:** chừa MỘT cột cố định ở mép phải cho nút dòng (Huỷ / Lưu, Chờ đổi…) ở MỌI nhóm, để cột kỹ năng / GVCN không thụt ra thụt vào giữa các nhóm; cột GVCN thẳng hàng giữa nhóm FT và nhóm lớp thường. 375: bảng tổng hợp đủ cột "Tổng".
 ### 30/10 (đêm) — PR-B BAN-GIAO-GV #731 để lại
-- [XM] Gom câu `luuPhanCong` theo lô (`TRAN_GHI_LO.luuPhanCong8Lop`, ~23 câu / lớp) — chưa làm ở PR-B; PR riêng (kế hoạch toc-do).
+- ~~[XM] Gom câu `luuPhanCong` theo lô~~ — xong ở PR LUU-PC-LO: 8 lớp 241 → 127 câu, trần `luuPhanCong8Lop` 166, bỏ ghi chú ponytail.
 - `tocDoDuong.ts`: thêm đường `GET /ban-giao-gv/:id` khi seed demo có việc bàn giao GV.
 - Hỏi chủ SP: GVCN cùng người → nhận xét chung bàn giao chuyển lớp không bắt buộc ([PTA đoán], đã làm). (Hạn việc khi "Từ tuần": PTA quyết = max(tạo, hiệu lực) + 5 — đã làm.)
 
@@ -294,10 +307,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - ~~**PANEL [XM] (#736 PANEL-CHUNG):**~~ (đã làm ở PR PANEL-RIENG) XM-1 đầu panel số theo mockup v10 (sửa `KhungPanel` chung — đổi mọi panel) · XM-2 bài quá hạn ghi "Hà chấm" + nút "Phân công…" (cần kiểm `ChonPhuTrach` dùng được cho bài chưa phân công). Gom vào PANEL-RIENG hoặc PR riêng.
 - **[XM] PANEL-RIENG:** (a) XM-2b "Phân công…" của bài chưa có người chấm nay là link "Phân công ›" sang hồ sơ lớp (`?viec=phan-cong`) — mockup mở tại chỗ; làm tại chỗ cần dữ liệu Phân công của lớp trong panel (PR riêng nếu chủ SP muốn) · (b) đầu panel số chưa có dòng ngữ cảnh "lớp · phạm vi · dữ liệu đến" như mockup (nơi gọi chưa truyền) · (c) [XM-3] Xét lại "Dừng → Kết thúc học" giữ như web (T10) · (d) `anToan` Z2c-d + `prToc` TOC rà (4) trượt cả trên `main` ở session cloud (khoá / thời gian DB) — PTA soát khi check chung.
 - ~~**LECH-CACH-CHAM (một nguồn):**~~ (đã làm ở PR LECH-CACH-CHAM: `chuongTrinhTyLeCuaLuot`) em đổi lớp FT ↔ lớp thường: `standingFor` chấm theo lộ trình (`mode`), `evaluateAttemptRow` theo chương trình lớp của lượt → ✓ / ✗ từng kỹ năng ở panel (diemTuEval) có thể khác hồ sơ / SOS. Lỗi có từ trước, #733 phép M1 tạm bỏ qua em đó (in số em bỏ qua). Sửa: một hàm chọn cách chấm cho lượt (theo chương trình lớp của lượt) dùng cả hai đường.
-- **TAB-A11Y:** tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.
+- ~~**TAB-A11Y:**~~ xong (PR TAB-A11Y): `phimHangTab` ← → Home End + tabindex luân chuyển ở mọi tablist; `aria-controls` + `role="tabpanel"` cho SoLieu, Lưu trữ, Hồ sơ lớp, Lượt Test. CÒN: `HangTab` chưa truyền `panelId` ở Test, Học viên & Lớp, Hồ sơ HV, Quản trị, Phân tích, QuickReport, Lịch sắp tới (vùng nội dung lẫn nhiều khối, bọc lại sẽ đổi khoảng cách) — làm khi từng màn được sửa. (cũ: tab Chưa đạt · Đạt (panel số, `SoLieu.tsx`) và các `role="tab"` khác chưa có `aria-controls`, chưa đi bằng phím ← → (có từ trước; nguồn rà #736). Sửa ở thành phần tab chung một lần.)
 - **QUYEN-THEO-CN:** quyền sửa liên hệ (`coONhapLienHe`) và một số cờ Lưu trữ xét theo VAI toàn tài khoản, không theo chi nhánh (`luuTru.ts:122`, `students.ts:776`): QL chi nhánh A kiêm GVCN chi nhánh B vẫn đổi được liên hệ em ở B (web cũng vậy). Luật cũ — hỏi chủ SP có cần xét vai theo chi nhánh của em không. (Nguồn: rà #746.)
 - ~~**MA-MO-COI-THE (rà #755):**~~ xong #765 (CN-3). Giữ có lý do: `prUxfB (6)` soi `KhoiPa` còn sống · `mo-viec` trong `THAM_SO_DICH` (lối cũ cho chuông đã lưu) · `prDonA` 7a, 7b, 8a (tệp quyền).
-- **DUYET-QL a11y (rà #754, nếu chưa sửa trong PR):** đóng ô Từ chối / Trả lời trả focus về nút còn trên trang (`TheYeuCau.tsx:116`).
+- ~~**DUYET-QL a11y (rà #754):**~~ xong (PR TAB-A11Y, `traFocus`): đóng ô Từ chối / Trả lời trả focus về nút còn trên trang (`TheYeuCau.tsx:116`).
 - **[XM-BE-1] BANG-EM-GON thẻ 375:** mockup v10 `#be` 375 vẽ dòng điểm `DongDiem` (lượt · 4 kỹ năng · Overall); PR giữ lưới 5 ô v8 (ô ✓ / ✗ mới) vì `DongDiem` mất W1 · W2, "vắng …" và bấm W / S → điểm thành phần. Hỏi chủ SP: giữ lưới hay thêm hai thứ đó vào `DongDiem`.
 - **Q2 napBai theo kỳ:** cần cột / chỉ mục chi nhánh cho lịch kỹ năng (đã ghi kế hoạch TOC-DO › TRANG-LON).
 
@@ -317,7 +330,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 7. **Còn mở từ ra-luong:** Q-RL4 (chuyển lớp một em tuần trước Final → không MT0 / Xét lại) · Q-RL5 (MT0 khi Lên FT sau Final sinh ra đã quá hạn) · văng phiên 401 chưa tái hiện.
 8. **Dọn:** xoá DB `pisatracking-261027` (token đã lộ); DB `261028` xoá ~06/11; worktree `claude-6c-nho`, nhánh `pta-dot4` + `compassionate-gauss-…-pta`, ứng dụng ~14 GB — chủ SP tự gỡ ứng dụng.
 - **[XM] PR-D Hồ sơ lớp lưu phân công (chờ chủ SP):** (a) hộp Lưu neo cạnh TRÁI panel Thông tin lớp (mockup vẽ cạnh phải trong khung; panel web sát mép phải) · (c) nút Huỷ thay đổi / Lưu phân công giữ ở đầu phần (V4), mockup đặt ở chân panel · (d) ô chọn người giữ ô "Đổi" + danh sách (mockup: select).
-- **[XM] PR-C Góc Phân công GV (để sau / chờ chủ SP):** hộp Chờ đổi chưa hiện "Việc bàn giao của A: a/b em đã viết" (cần dữ liệu PR-B) · ô tuần hiệu lực là ô chọn 12 tuần tới (mockup "W1 NOV ▾"), không `WeekPicker` · "✓ Đã lưu" xám (luật K-HTT-3), mockup xanh · dòng môn gộp cũ (PET L+S) không tính vào số "cũ → mới" của dòng nháp · link mã lớp / "Hồ sơ GV ›" khi còn nháp chuyển trang mất nháp không hỏi (cần hook chặn điều hướng chung — PR riêng; rà sâu #726 31/10).
+- **[XM] PR-C Góc Phân công GV (để sau / chờ chủ SP):** hộp Chờ đổi chưa hiện "Việc bàn giao của A: a/b em đã viết" (cần dữ liệu PR-B) · ô tuần hiệu lực là ô chọn 12 tuần tới (mockup "W1 NOV ▾"), không `WeekPicker` · "✓ Đã lưu" xám (luật K-HTT-3), mockup xanh · dòng môn gộp cũ (PET L+S) không tính vào số "cũ → mới" của dòng nháp · ~~link mã lớp / "Hồ sơ GV ›" khi còn nháp chuyển trang mất nháp không hỏi~~ (xong CHAN-ROI-NHAP 02/11: hook `useChanRoiNhap`; màn nên áp tiếp: Cuối khoá lớp, Lịch Test, Back khi panel đang sửa, đổi tài khoản / đăng xuất còn nháp — chờ PTA xếp; `do-khung cham-lien-mach` bước (f) còn tìm `#dai-diem` đã bỏ, cần sửa kịch bản).
 - **[XM] DUYET-QL panel duyệt Công việc QL (để sau / chờ chủ SP):** bối cảnh tách trường Đề xuất · PA · Hạn duyệt như mockup (máy chủ chưa trả trường riêng — web giữ câu `dong`) · ô "Ghi chú cho GV · không bắt buộc" khi Duyệt Đề xuất PA (web giữ Duyệt một bấm, thêm ô = thêm bước) · số "Lịch sử · n" ở panel sau Duyệt là số lúc mở (chưa cộng dòng vừa duyệt) · hộp đầy đủ `/cong-viec/cho-duyet` chưa xin `boiCanh` (không chip SOS / Điểm / Lịch sử).
 - Đã làm 30/10: DESIGN.md chữ phụ "≥ 7:1" → "≥ 4,5:1" cho khớp phép kiểm `prOv15a` (NEN-V5).
 - **Để sau (SUA-NHO-UI, 30/10 đêm):** `HanPhu` hạn xa TVV 2 dòng (`DanhSachViec.tsx:399-404`) · Chấm Test 375 tiêu đề dòng gãy (`ChamTestTab.tsx:204-215`) · cột Trạng thái hồ sơ lượt rộng (`MockDetailPage.tsx:930`) · ô "Lớp khác": dòng phụ 2 dòng (ô chọn chung) vs mockup v6 1 dòng phụ bên phải · tồn ra-ui 375 "chân panel Huỷ | Lưu cùng hàng", "+ MT ▾ xa cột cuối".

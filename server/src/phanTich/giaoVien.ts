@@ -298,7 +298,7 @@ function mucKetQua(c: NguCanhPtGv, nap: NapBai): MucKq[] {
     if (a.khong_cam_ket && a.scoring_mode !== 'ratio') continue;
     const ratio = a.scoring_mode === 'ratio';
     const scores = nap.bundle.scores.get(a.id) ?? [];
-    const g = danhGiaMon(a, scores, ratio ? progs.get(a.programme_code) ?? null : null, a.target_score ?? null, nap.bundle.skips.get(a.id) ?? [], nap.bundle.skillRows.get(a.id));
+    const g = danhGiaMon(a, scores, ratio ? progs.get(a.programme_code) ?? null : null, nap.bundle.skips.get(a.id) ?? [], nap.bundle.skillRows.get(a.id));
     if (!g) continue;
     for (const m of g.mon) kl.set(baiId(a.id, m.skill), { dat: m.dat, ovr: g.ovr, kv: g.kv });
   }

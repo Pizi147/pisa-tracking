@@ -320,7 +320,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   );
 
   return (
-    <div>
+    <div className="luoi-thuong">
       <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={data.rows} khoa={(r) => r.attemptId} the375={false} khung={false} dinh congCu={congCu}
         hangRieng={(r) => {
           const ri = data.rows.indexOf(r);

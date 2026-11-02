@@ -112,7 +112,7 @@ export default function LuuTruPage() {
         <BranchFilter branchId={branchId} onBranch={(id) => setParam({ cn: id ? String(id) : null, branchId: null })} />
       </div>
 
-      <HangTab ariaLabel={t('Lưu trữ')} value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
+      <HangTab panelId="luu-tru-ds" ariaLabel={t('Lưu trữ')} value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
         tabs={[
           { key: 'lop', label: t('Lớp đã kết thúc'), so: data?.lop.length },
           { key: 'hv', label: t('Học viên đã lưu trữ'), so: data?.hocVien.length },
@@ -120,7 +120,7 @@ export default function LuuTruPage() {
 
       {error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
       {loading && !data && <Skeleton rows={6} />}
-      <div className={cu ? 'dang-tai-lai space-y-3' : 'space-y-3'} aria-busy={cu || undefined}>
+      <div id="luu-tru-ds" role="tabpanel" aria-label={t('Lưu trữ')} className={cu ? 'dang-tai-lai space-y-3' : 'space-y-3'} aria-busy={cu || undefined}>
       {data && tab === 'lop' && (
         data.lop.length === 0
           ? <Card><Empty title={loc ? t('Không có lớp khớp "{loc}"', { loc }) : t('Chưa có lớp nào kết thúc')} /></Card>

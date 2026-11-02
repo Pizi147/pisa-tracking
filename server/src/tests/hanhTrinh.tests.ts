@@ -375,14 +375,14 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(d.dongPhuVanDe({ mo: '2025-12-12', dong: '2026-01-24', soPa: 2 }, h).startsWith('W2 DEC 2025'), 'Khác năm có năm');
   });
 
-  check('PR-UX5 (1) · boCucHanhTrinh: 5 tình huống (gọn · 1440 ≥ 300 · 1920 → 320 · 700px → 160 · chuỗi dài 300 < cotTen ≤ 440)', () => {
+  check('PR-UX5 (1) · boCucHanhTrinh: 5 tình huống (gọn · 1440 ≥ 300 · 1920 → 320 · 700px → 180 · chuỗi dài 300 < cotTen ≤ 440)', () => {
     const gon = d.boCucHanhTrinh({ rong: 1440, soTuan: 13, xemGon: true, rongChuoi: 100, cheDo: 'ielts' });
-    assert(gon.cotTen === 160 && gon.cotTuan === '40px' && gon.xuongDong && gon.toiDaMoc === 3, `Gọn: ${JSON.stringify(gon)}`);
+    assert(gon.cotTen === 180 && gon.cotTuan === '40px' && gon.xuongDong && gon.toiDaMoc === 3, `Gọn: ${JSON.stringify(gon)}`);
     const r1440 = d.boCucHanhTrinh({ rong: 1440, soTuan: 13, xemGon: false, rongChuoi: 100, cheDo: 'ielts' });
     assert(r1440.cotTen === 300 && !r1440.xuongDong && r1440.toiDaMoc === 5 && r1440.cotTuan === 'minmax(48px, 1fr)', `1440: ${JSON.stringify(r1440)}`);
     assert(d.boCucHanhTrinh({ rong: 1920, soTuan: 21, xemGon: false, rongChuoi: 100, cheDo: 'ratio' }).cotTen === 320, '1920 → 320');
     const hep = d.boCucHanhTrinh({ rong: 700, soTuan: 13, xemGon: false, rongChuoi: 100, cheDo: 'ielts' });
-    assert(hep.cotTen === 160 && hep.xuongDong && hep.cotTuan === 'minmax(48px, 1fr)' && hep.toiDaMoc === 3, `700px: ${JSON.stringify(hep)}`);
+    assert(hep.cotTen === 180 && hep.xuongDong && hep.cotTuan === 'minmax(48px, 1fr)' && hep.toiDaMoc === 3, `700px: ${JSON.stringify(hep)}`);
     const dai = d.boCucHanhTrinh({ rong: 1600, soTuan: 13, xemGon: false, rongChuoi: 230, cheDo: 'ielts' });
     assert(dai.cotTen > 300 && dai.cotTen <= 440, `Chuỗi dài: ${dai.cotTen}`);
     assert(d.boCucHanhTrinh({ rong: 1600, soTuan: 13, xemGon: false, rongChuoi: 900, cheDo: 'ielts' }).cotTen === 440, 'Kẹp trên 440');

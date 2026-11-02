@@ -75,6 +75,8 @@ const KICH_BAN = [
   ['hvl', 2, '/hoc-vien'], ['hvl-gvcn', 7, '/hoc-vien'],
   ['hvl-cuoi', 2, '/hoc-vien', async (p) => { await p.evaluate(() => { const m = document.getElementById('noi-dung'); m.scrollTop = m.scrollHeight; window.scrollTo(0, 1e6); }); await p.waitForTimeout(300); }],
   ['tong-quan', 2, '/'], ['tong-quan-gv', 7, '/'], ['phan-tich', 2, '/phan-tich', null, RONG_MAY], ['phan-tich-thuong', 2, '/phan-tich?ct=thuong', null, RONG_MAY],
+  // DO-KHUNG-DO: năm tab còn lại của Phân tích (V8-PT-2).
+  ...['giao-vien', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'y-thuc'].map((g) => [`phan-tich-${g}`, 2, `/phan-tich?goc=${g}`, null, RONG_MAY]),
   ['cv-ho-tro', 2, '/cong-viec'], ['cv-cho-duyet', 2, '/cong-viec/cho-duyet'], ['cv-van-hanh', 2, '/cong-viec/van-hanh'],
   ['cv-bao-cao', 2, '/cong-viec/bao-cao'], ['cv-gv', 7, '/cong-viec'],
   // DUYET-QL: panel duyệt Công việc QL — chân dính + Lịch sử mở (thẻ demo 6: Không cần theo dõi · W, SOS 2).
@@ -125,7 +127,11 @@ const KICH_BAN = [
     await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /^(Cập nhật trước hạn|Ghi kết quả|Update early|Log result)/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần|Some progress/ }).first().click().catch(() => {}); }],
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
   ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm|Log incident/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
-  ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', nut(/^Sửa thông tin$/)],
+  /* "Sửa thông tin" nay trong ⋯ đầu hồ sơ lớp. */
+  ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
+    await nut(/^Thao tác khác$/)(p);
+    await p.getByRole('menuitem', { name: /^Sửa thông tin học viên$/ }).click(); await p.waitForTimeout(500);
+  }],
   /* KHUNG-LOI: "+ Học viên" nay trong ⋯ đầu hồ sơ lớp. */
   ['panel-them-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
     await nut(/^Thao tác khác$/)(p);
@@ -142,7 +148,7 @@ const KICH_BAN = [
     if (!(await p.locator('[role=dialog]').count())) throw new Error('không thấy panel');
   }],
   ['chon-nhieu-hv', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
-    await nut(/^Chọn nhiều học viên$/)(p);
+    await nut(/^Chọn nhiều$/)(p);
     await p.locator('#noi-dung input[type=checkbox]').first().check();
     await p.getByRole('toolbar', { name: 'Việc cho học viên đã chọn' }).waitFor({ timeout: 3000 }).catch(() => {});   // KHUNG-LOI: chờ thanh, không đoán 300 ms
     if (!(await p.getByRole('toolbar', { name: 'Việc cho học viên đã chọn' }).count())) throw new Error('không thấy thanh chọn nhiều');
@@ -167,7 +173,7 @@ function doTrang() {
   for (let n = tw0.nextNode(); n; n = tw0.nextNode()) {
     if (!n.textContent.trim()) continue;
     const el = n.parentElement;
-    if (!el || ['SCRIPT', 'STYLE'].includes(el.tagName) || !thay(el) || an(el)) continue;
+    if (!el || ['SCRIPT', 'STYLE'].includes(el.tagName) || !thay(el) || an(el) || el.closest('[aria-hidden=true]')) continue;   // dấu trang trí: KhungPanel cố ý cắt "·" đầu dòng
     const rg = document.createRange(); rg.selectNodeContents(n);
     let tl = Infinity, tp = -Infinity;
     for (const q of rg.getClientRects()) if (q.width) { tl = Math.min(tl, q.left); tp = Math.max(tp, q.right); }
@@ -224,7 +230,8 @@ function doTrang() {
           if (p.querySelector('table')) break; // bảng cuộn ngang trong khung riêng: cố ý (K2 / HK2).
           const pr = p.getBoundingClientRect();
           const mo = pc.maskImage && pc.maskImage !== 'none' || pc.webkitMaskImage && pc.webkitMaskImage !== 'none';
-          if (!mo && r.left < pr.right - 1 && r.right > pr.right + 1) ghi(el, `d nút bị cắt ở mép (không mép mờ) «${ten(el)}»`);
+          // Đệm vùng chạm (ⓘ 44 px bằng p-[15px]) được phép ra ngoài khung: chỉ tính hộp nội dung của nút.
+          if (!mo && r.left < pr.right - 1 && r.right - parseFloat(cs.paddingRight) > pr.right + 1) ghi(el, `d nút bị cắt ở mép (không mép mờ) «${ten(el)}»`);
           break;
         }
         p = p.parentElement;

@@ -195,7 +195,7 @@ type ChonNguoiOption =
  */
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false,
-  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor, them,
+  khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor, them, phuPhai,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null, tutor?: TutorChon) => void;
@@ -228,6 +228,8 @@ export function ChonNguoi({
   tutor?: ThamSoTutor;
   /** P9b: dòng việc cuối danh sách, luôn hiện ("+ Mở lớp mới…" của `ChonLop`) — chọn chạy `onChon`, không đổi giá trị ô. */
   them?: { nhan: string; onChon: () => void; phu?: string };
+  /** Dòng phụ cùng hàng, đẩy phải (mockup V6 `.chon-lop .dong .phu`) — ô chọn lớp. */
+  phuPhai?: boolean;
 }) {
   const { session } = useSession();
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
@@ -423,10 +425,10 @@ export function ChonNguoi({
                   </>
                 )}
                 {opt.kind === 'nguoi' && (
-                  <>
+                  <div className={phuPhai ? 'flex flex-wrap items-baseline gap-x-2' : undefined}>
                     <div className={`text-sm ${opt.row.tat ? 'text-slate-500' : 'text-slate-100'}`}>{opt.row.ten}</div>
-                    {(opt.row.phu || opt.row.tat) && <div className="text-xs text-slate-500">{[opt.row.phu, opt.row.tat].filter(Boolean).join(' · ')}</div>}
-                  </>
+                    {(opt.row.phu || opt.row.tat) && <div className={`text-xs text-slate-500 ${phuPhai ? 'ml-auto' : ''}`}>{[opt.row.phu, opt.row.tat].filter(Boolean).join(' · ')}</div>}
+                  </div>
                 )}
                 {opt.kind === 'ngoai' && (tat(opt)
                   ? <div className="text-sm text-slate-500">{chiTutor ? t('Tutor khác: gõ tên ở ô trên') : t('Dùng tên ngoài hệ thống: gõ tên ở ô trên')}</div>

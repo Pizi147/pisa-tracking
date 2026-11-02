@@ -11,14 +11,14 @@ import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
-  can, classScopeSql, coTheXemLuotCham, defaultWorkScope, editableSkills, isCoreTeacherOf, mySkills, require_, scopeFor,
+  can, classScopeSql, coTheXemLuotCham, defaultWorkScope, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { CON_O_SQL, loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells, tuanVangCu } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';
-import { standingFor, standingLine } from '../students/standing.ts';
+import { caseMoTheoEm, standingFor, standingLine } from '../students/standing.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop, programmeOfClass } from '../normal/regular.ts';
 import { cuoiKhoaTheoHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { tomTatLuotCuaLop } from '../cham/diemTheoLuot.ts';
@@ -28,7 +28,8 @@ import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { emChuaCoLenh, emChoDuyetChuyenLop } from './lenhChuyen.ts';
 import { daiLop } from './daiChuyenLop.ts';
 import { listCases } from '../cases/cases.ts';
-import { trongBoNho } from '../platform/nguCanhRequest.ts';
+import { coNho, trongBoNho } from '../platform/nguCanhRequest.ts';
+import { ghiDanhLop } from '../yThuc/trangThai.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
@@ -69,6 +70,7 @@ export type ClassSummary = {
   phaseLabel: string;
   currentWeek: number | null;
   totalWeeks: number | null;
+  startWeekStart: string | null;
   /** Lớp đã hết chương trình và còn học viên đang học → phải xếp lớp tiếp cho từng em. */
   needsPlacement: boolean;
   placementOptions: { code: string; name: string }[];
@@ -337,7 +339,7 @@ export function rosterIds(p: Principal, classId: number) {
 function hocVienCuaLop(p: Principal, classId: number, q?: string, kemKetThuc = false) {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
-  const cls = conn.prepare('SELECT status, lich_mt, route FROM classes WHERE id = ?').get(classId) as any;
+  const cls = (coNho() ? lopDayDu().get(classId) : conn.prepare('SELECT status, lich_mt, route FROM classes WHERE id = ?').get(classId)) as any;   // TL-HVL: GET đọc bảng lớp đã nhớ
   const finished = cls?.status === 'finished';
   const params: unknown[] = [classId];
   /*
@@ -427,13 +429,6 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
    */
   const openCaseCount = new Map<number, number>();
   const handoverCount = new Map<number, number>();
-  const openRows = conn
-    .prepare(
-      `SELECT sc.student_id, sc.sos_level, sc.cycle_id, a.attempt_no FROM sos_cases sc
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-        WHERE sc.student_id IN (${ph}) AND sc.status != 'done' AND ${CASE_THAT('sc')}`,
-    )
-    .all(json) as any[];
   const activeCycle = new Map<number, number | null>(students.map((s) => [s.id, s.cycle_id ?? null]));
   /*
    * CASE CỦA LỘ TRÌNH TRƯỚC LÀ VIỆC BÀN GIAO, KHÔNG PHẢI MỨC SOS CỦA LỚP NÀY.
@@ -446,7 +441,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
    * Nên tách đôi: mức SOS tính theo lộ trình đang chạy; Case cũ còn mở đếm riêng thành việc
    * cần bàn giao, có nhãn riêng ở cột Trạng thái.
    */
-  for (const r of openRows) {
+  for (const r of [...caseMoTheoEm(sids).values()].flat()) {   // TL-HVL: cùng lượt đọc với `standingFor` bên dưới
     const cur = activeCycle.get(r.student_id) ?? null;
     const carried = cur !== null && r.cycle_id !== null && r.cycle_id !== cur;
     if (carried) handoverCount.set(r.student_id, (handoverCount.get(r.student_id) ?? 0) + 1);
@@ -799,7 +794,7 @@ function classOverviewThat(p: Principal, classId: number) {
   const summary = finished
     ? (() => {
       const pr = classProgressMany([classId]).get(classId) ?? null;
-      const studentCount = (conn.prepare('SELECT COUNT(DISTINCT student_id) n FROM enrollments WHERE class_id = ?').get(classId) as any).n as number;
+      const studentCount = new Set(ghiDanhLop(classId).map((e) => e.studentId)).size;
       return {
         studentCount, needScores: 0, workScope: defaultWorkScope(p) as WorkScope,
         phase: pr?.phase ?? 'finished', currentWeek: pr?.currentWeek ?? null, totalWeeks: pr?.totalWeeks ?? null,
@@ -830,10 +825,7 @@ function classOverviewThat(p: Principal, classId: number) {
   const classSkills = prog?.skills ?? [...ENTRY_SKILLS];
 
   /* Em ĐANG HỌC của lớp + Case của họ (lọc quyền) — dùng cho `soCaseMo` và badge `cho-duyet`/`qua-han` (cùng hàm với trang Học viên & Lớp). */
-  const emDangHoc = (conn.prepare(
-    `SELECT e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-      WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
-  ).all(classId) as any[]).map((r) => r.student_id as number);
+  const emDangHoc = ghiDanhLop(classId).filter((e) => e.status === 'active' && !e.archived).map((e) => e.studentId);
   const caseCuaLop = listCases(p, { classId }).rows;
   /* Đầu hồ sơ lớp thường ở tuần Cuối khoá / đã hết khoá (K2-14): "Cuối khoá: 6/8 em có đủ điểm" — chỉ tính ở hai chặng này. */
   const cuoiKhoa = (() => {
@@ -1135,16 +1127,18 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
   /** PR-QU: thêm vào nhật ký (`via`, `truoc`, `sau`). */
   meta?: Record<string, unknown>,
   /** PC-GV-A: mã lớp đã đọc (lưu nhiều lớp) — khỏi đọc lại cho nhật ký. */
-  maLop?: string): { added: number; ended: number } {
+  maLop?: string,
+  /** Lưu nhiều lớp: dòng đang chạy của lớp + môn gộp còn cần, đã đọc cho cả lô — khỏi đọc lại từng lớp. */
+  san?: { active: readonly any[]; gopCan: ReadonlySet<string>; caseThieu?: Parameters<typeof ganChuCaseThieu>[0]['caseThieu'] }): { added: number; ended: number } {
   const conn = db();
   const keyOf = (userId: number, skill: string | null, isCore: boolean | number) => `${userId}|${skill ?? ''}|${isCore ? 1 : 0}`;
   const wanted = new Map(slots.map((s) => [keyOf(s.userId, s.skill, s.isCore), s] as const));
-  const active = conn
+  const active = san?.active ?? conn
     .prepare(`SELECT * FROM teacher_assignments WHERE class_id = ? AND status = 'active'`)
     .all(classId) as any[];
 
   let added = 0; let ended = 0;
-  const gopCan = monGopConCan(classId);
+  const gopCan = san?.gopCan ?? monGopConCan(classId);
   for (const a of active) {
     const k = keyOf(a.user_id, a.skill, a.is_core);
     if (wanted.has(k)) { wanted.delete(k); continue; }
@@ -1164,7 +1158,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
   }
 
   /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
-  if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso() });
+  if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso(), ...(san?.caseThieu ? { caseThieu: san.caseThieu } : {}) });
   if (added || ended) {
     const code = maLop ?? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({
@@ -1180,15 +1174,21 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
  * của lượt thuộc lớp. Phân công giữ dòng môn gộp của các môn này (không ai mất việc nhập điểm / xử lý Case cũ).
  */
 export function monGopConCan(classId: number): Set<string> {
+  return monGopConCanMany([classId]).get(classId)!;
+}
+/** Như `monGopConCan` cho nhiều lớp — MỘT câu (lưu phân công nhiều lớp). */
+export function monGopConCanMany(classIds: readonly number[]): Map<number, Set<string>> {
   const gop = Object.keys(MON_GOP);
-  const ph = gop.map(() => '?').join(',');
-  return new Set((db().prepare(
-    `SELECT DISTINCT k.skill AS m FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
-      WHERE a.class_id = ? AND a.status != 'cancelled' AND k.skill IN (${ph})
+  const ph = gop.map(() => '?').join(','), lop = classIds.map(() => '?').join(',');
+  const kq = new Map<number, Set<string>>(classIds.map((id) => [id, new Set<string>()]));
+  for (const r of db().prepare(
+    `SELECT DISTINCT a.class_id AS c, k.skill AS m FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
+      WHERE a.class_id IN (${lop}) AND a.status != 'cancelled' AND k.skill IN (${ph})
         AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = k.skill AND (s.raw_score IS NOT NULL OR s.no_show_period_id IS NOT NULL))
-     UNION SELECT DISTINCT COALESCE(sc.topic, sc.category) FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE a.class_id = ? AND sc.status != 'done' AND COALESCE(sc.topic, sc.category) IN (${ph})`,
-  ).all(classId, ...gop, classId, ...gop) as any[]).map((r) => r.m as string));
+     UNION SELECT DISTINCT a.class_id, COALESCE(sc.topic, sc.category) FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE a.class_id IN (${lop}) AND sc.status != 'done' AND COALESCE(sc.topic, sc.category) IN (${ph})`,
+  ).all(...classIds, ...gop, ...classIds, ...gop) as any[]) kq.get(r.c)?.add(r.m as string);
+  return kq;
 }
 
 /**

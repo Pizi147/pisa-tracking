@@ -123,9 +123,6 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   /* PC-GV-C: góc Phân công GV — QL, Quản trị, CX (GV / TVV không thấy; máy chủ 403). */
   const coGocPc = laVaiQuanLy(session?.roles) || vai === 'cx';
   const goc: Goc = gocUrl.goc === 'lich-thi' ? 'lich-thi' : gocUrl.goc === 'sos' && !admin ? 'sos' : gocUrl.goc === 'phan-cong' && coGocPc ? 'phan-cong' : 'tat-ca';
-  /* Số dòng nháp của góc Phân công GV — hỏi MỘT lần trước khi đổi góc / chi nhánh (không mất ô đã đổi). */
-  const [nhapPc, setNhapPc] = useState(0);
-  const boNhapPc = () => !nhapPc || window.confirm(t('{n} lớp chưa lưu phân công — rời đi sẽ mất các ô đã đổi.', { n: nhapPc }));
   const locQuaHan = vai !== 'cx' && (params.get('qh') === '1' || (gocUrl.goc === 'can-lam' && (gocUrl.loc === 'qua-han' || gocUrl.loc === null)));   // CX không có Công việc → không có lọc này
   const locThiThang = params.get('thi') === '1';
   const locDaThi = params.get('loc') === 'da-thi' || params.get('view') === 'da-thi';   // OV-14b: "Đã thi · chờ kết quả" (cùng chip TVV / CX) — giữ; Tổng quan TVV / CX gửi `view=`
@@ -140,6 +137,13 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const q = params.get('q') ?? '';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const branchId = cnUrl ? Number(cnUrl) : null;
+  /* Góc Phân công còn nháp có thể giữ việc đổi chi nhánh lại ("Ở lại") → chỉ nhớ khi URL đã đổi thật. */
+  const chiNhanhCho = useRef<number | null>(null);
+  useEffect(() => {
+    if (branchId === null || chiNhanhCho.current !== branchId) return;
+    chiNhanhCho.current = null;
+    nhoChiNhanh(session?.user?.id, branchId);
+  }, [branchId, session?.user?.id]);
   const tuLienKet = useRef(coDichLienKet(params)).current;
   const daNho = tuLienKet ? null : docChiNhanhDaNho(session?.user?.id);
   const phamViUrl = params.get('phamVi');
@@ -330,7 +334,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const batLoc = (khoa: 'lc' | 'lk' | 'lq', ds: readonly string[], k: string) => setParam({ [khoa]: (ds.includes(k) ? ds.filter((x) => x !== k) : [...ds, k]).join(',') || null });
   const caXuat = { nhan: tenCn ? t('Cả chi nhánh') : t('Tất cả'), ids: [...new Set(dsEm.map((h) => h.id))] };
 
-  const doiGoc = (g: Goc) => { if (boNhapPc()) setParam({ view: g === 'tat-ca' ? null : g, loc: null, muc: null, qh: locQuaHan && g === 'tat-ca' ? '1' : null }); };
+  const doiGoc = (g: Goc) => setParam({ view: g === 'tat-ca' ? null : g, loc: null, muc: null, qh: locQuaHan && g === 'tat-ca' ? '1' : null });
   /* Chip vai và "Đã thi · chờ kết quả" cùng `loc` — bật chip này tắt chip kia (như bảng V4 của vai); `view=` của link cũ bỏ khi bấm. */
   const batChipVai = (k: string | null) => setParam({ loc: k, view: null });
 
@@ -354,14 +358,14 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     <>
       {pv && coThePv.length > 1 && (
         <select className={SELECT_GON} aria-label={t('Phạm vi')} value={pv.dangDung}
-          onChange={(e) => { if (boNhapPc()) setParam({ phamVi: e.target.value, cn: null, branchId: null }); }}>
+          onChange={(e) => setParam({ phamVi: e.target.value, cn: null, branchId: null })}>
           {coThePv.map((v) => <option key={v} value={v}>{dich(PHAM_VI_NHAN[v])}</option>)}
         </select>
       )}
       {pv?.dangDung === 'chi-nhanh' && (branches.data?.length ?? 0) > 1 && (
         /* D3: cùng ô chi nhánh gọn mọi trang (nhãn trong ô). */
         <OChiNhanh branches={branches.data ?? []} branchId={pv.chiNhanh ?? null} tatCa={false}
-          onBranch={(id) => { if (id === null || !boNhapPc()) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
+          onBranch={(id) => { if (id === null) return; chiNhanhCho.current = id; setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />
       )}
     </>
   );
@@ -548,7 +552,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {goc === 'phan-cong' && (
         <GocPhanCongGv key={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? 0 : 0} branchId={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? null : null} khung={khung}
           q={params.get('tim') ?? ''} onQ={(v) => setParam({ tim: v || null })}
-          coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)} onNhap={setNhapPc}
+          coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)}
           chonCn={(branches.data?.length ?? 0) > 0 && (
             <OChiNhanh branches={branches.data ?? []} branchId={null} tatCa
               onBranch={(id) => { if (id === null) return; nhoChiNhanh(session?.user?.id, id); setParam({ phamVi: 'chi-nhanh', cn: String(id), branchId: null }); }} />

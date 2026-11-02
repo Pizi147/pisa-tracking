@@ -9,6 +9,7 @@ import { DS_JSON, db } from '../db.ts';
 import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
+import { diemCuaLuot } from './attempts.ts';
 import { loadSkillRows, scoringModeOf } from './skillSchedule.ts';
 
 export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
@@ -60,16 +61,9 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   }
 
   const scoresOf = new Map<number, Array<{ skill: string; band: number | null; rawScore: number | null; dauTuan: number | null }>>();
-  for (const r of conn
-    .prepare(
-      `SELECT attempt_id, skill, band, raw_score, no_show_period_id
-         FROM assessment_scores WHERE attempt_id IN (${ph})`,
-    )
-    .all(json) as any[]) {
-    if (!scoresOf.has(r.attempt_id)) scoresOf.set(r.attempt_id, []);
-    scoresOf.get(r.attempt_id)!.push({
-      skill: r.skill, band: r.band ?? null, rawScore: r.raw_score ?? null, dauTuan: r.no_show_period_id ?? null,
-    });
+  /* TL-HVL: điểm qua `diemCuaLuot` (nhớ theo lượt trong request) — bảng điểm lớp đã đọc đúng các lượt này ngay trước. */
+  for (const [id, rows] of diemCuaLuot(attemptIds)) {
+    scoresOf.set(id, rows.map((r) => ({ skill: r.skill, band: r.band ?? null, rawScore: r.raw_score ?? null, dauTuan: r.no_show_period_id ?? null })));
   }
 
   for (const attemptId of attemptIds) {

@@ -1,4 +1,4 @@
-import { Fragment, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, Suspense, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -6,6 +6,7 @@ import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
+import { phimHangTab } from './HangTab.tsx';
 import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
@@ -22,7 +23,7 @@ import { lazyTai } from '../lib/taiLaiManh.ts';
 /** NEN-V5 — dáng số bấm được (`OSo`, ô chỉ số): màu nhấn, đậm, gạch chân liền 1 px; rê chuột nền nhấn nhạt. */
 export const LOP_OSO = 'appearance-none rounded border-0 bg-transparent p-0 cursor-pointer tabular-nums font-bold text-[color:var(--accent)] underline decoration-1 underline-offset-[3px] hover:bg-[color:var(--accent-soft)]';
 /** Màu chữ của nơi gọi: màu nghĩa (quá hạn, chưa đạt) giữ; màu chữ thường (`text-slate-*`, dáng cũ) bỏ để số bấm được cùng một màu nhấn. */
-export const mauOSo = (lop: string) => (/\btext-(bad|late|soon)\b/.test(lop) ? `${LOP_OSO.replace('text-[color:var(--accent)] ', '')} ${lop}` : `${LOP_OSO} ${lop.replace(/\btext-slate-\d+\b/g, '')}`);
+export const mauOSo = (lop: string) => (/\btext-(bad|late|soon|kq-duoi)\b/.test(lop) ? `${LOP_OSO.replace('text-[color:var(--accent)] ', '')} ${lop}` : `${LOP_OSO} ${lop.replace(/\btext-slate-\d+\b/g, '')}`);
 export const VUNG_BAM_SO = "relative after:absolute after:left-1/2 after:top-1/2 after:h-6 after:w-6 after:min-w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] max-sm:after:h-11 max-sm:after:w-11";
 
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {
@@ -195,6 +196,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   /* HOAN-TAC-XN: `hoanTac` — Xác nhận PA bấm thẳng có đường đảo (10 s); `lan` đổi = dòng mới, đếm lại. */
   const [vuaXong, setVuaXong] = useState<{ chu: string; hoanTac?: () => Promise<void>; lan: number } | null>(null);
   const ds = useRef<HTMLDivElement>(null);
+  const idPanel = `${useId()}-ds`;
 
   const hanCua = (r: DongSoLieu) => r.viec ? r.viec.han : r.han ?? null;
   const tre = (r: DongSoLieu) => { const h = hanCua(r); return !!h && deadlineView({ kind: r.viec?.loaiHan ?? 'viec-van-hanh', due: h, today: homNay }).tone === 'overdue'; };
@@ -525,10 +527,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         : (
           <>
             {coTab && (
-              <div role="tablist" aria-label={t('Kết quả')} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
+              <div role="tablist" aria-label={t('Kết quả')} onKeyDown={phimHangTab} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
                 {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */}
                 {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, ''], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, ''], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
-                  <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+                  <button key={k} type="button" role="tab" aria-selected={tab === k} aria-controls={idPanel} tabIndex={tab === k ? 0 : -1} onClick={() => setTab(k)}
                     className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tab === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
                     {dau}{nhan} <span className="tabular-nums">{n}</span>
                   </button>
@@ -536,7 +538,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
               </div>
             )}
             <PhanTrang {...pt.thanh} />
-            <div ref={ds}>{nhomCase ? veNhom(pt.cat(hienTab)) : <ul className="-mx-4 m-0 list-none p-0">{pt.cat(hienTab).map(veDong)}</ul>}</div>
+            <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(pt.cat(hienTab)) : <ul className="-mx-4 m-0 list-none p-0">{pt.cat(hienTab).map(veDong)}</ul>}</div>
             <PhanTrang {...pt.thanh} duoi />
           </>
         )}

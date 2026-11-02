@@ -10,12 +10,12 @@ import {
   type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel,
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
-import { can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { chanKhoiPhucThuong, huyCua, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
+import { coNho, nho } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu } from '../platform/mocHeThong.ts';
 import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, ensureSkillRows, kiemDaToiTuanThi, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
@@ -127,9 +127,8 @@ export function mocChupVaoLop(code: string | null | undefined, route: string | n
 }
 
 export function programmeOfClass(classId: number): ProgrammeInfo | null {
-  /* PR-VAI-b: nhớ trong một request GET (`nho`) — hồ sơ HV hỏi lại cùng lớp cho từng lượt (`typedResult`), mỗi lần một lượt mạng Turso. */
-  const c = nho(`ct-lop:${classId}`, () => db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any);
-  return programmeByCode(c?.programme_code);
+  /* TL-HVL: GET đọc bảng lớp đã nhớ — hồ sơ HV hỏi lại cùng lớp cho từng lượt (`typedResult`), mỗi lần một lượt mạng Turso. */
+  return programmeByCode(coNho() ? bangLop().get(classId)?.ct : (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any)?.programme_code);
 }
 
 /** Lớp này có chấm theo tỷ lệ điểm đạt/tổng điểm không (tức là lớp thường). */
