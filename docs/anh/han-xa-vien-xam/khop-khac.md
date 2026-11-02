@@ -25,3 +25,7 @@ Sửa một chỗ `web/src/ui/Nhan.tsx` `ChipHan` → 34 nơi dùng (Công việ
 | Hạn gần / quá hạn | viên ⚠ vàng / đỏ | giữ |
 
 Không mất thao tác nào (chỉ đổi hình). Không đổi dữ liệu, không thêm request.
+
+## Viên trong dòng chữ (PTA hỏi 03/11)
+- `trong-dong-cho-duyet-1440-toi.png` (QL, Công việc › Yêu cầu): viên ở cột hạn, không lệch dòng chữ hai bên.
+- `trong-dong-ho-so-hv-1440-toi.png` (GV, hồ sơ HV, đầu thẻ Case): viên cao 22 px cạnh tiêu đề 24 px, căn trên — thẳng hàng.
