@@ -253,7 +253,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Uỷ quyền đợt này:** PTA tự merge PR của 4 session khi rà đạt + check chung (ô check-3) xanh, kể cả PR web KHÔNG đổi bố cục. Đổi bố cục / luật / số liệu em thật → giữ chờ chủ SP. Không deploy. Nhóm chờ quyết (KET-PET-THI-THAT, QUYEN-THEO-CN, XM-BE-1, sổ tay PDF, [XM] lệch mockup) để chủ SP về duyệt.
 - **Session (local, worktree riêng, mỗi việc một PR nhỏ, làm nối tiếp):** RA-LOI-MAY (Opus 5.5 · high, lỗi máy chủ đợt 31/10–02/11) · RA-LOI-WEB (Opus 5.5 · high, lỗi web, trọng tâm data router #785/#787) · DOC-IT (Opus 5.5 · high, giảm dòng đọc theo đo `tocDo`) · TAI-NHANH (Opus 5.5 · medium, tải web).
 - **PTA khảo sát:** gói chính `index-*.js` 1,09 MB, không chia gói theo trang (`React.lazy` = 0); `netlify.toml` chưa có header cache cho `/assets/*`; web không gọi lại định kỳ.
-- Migrate mới (chỉ mục) nếu có → thêm vào danh sách chờ deploy (hiện 5).
+- Migrate mới (chỉ mục) nếu có → thêm vào danh sách chờ deploy (hiện 6: + `prDocIt2`).
 - **Đã merge đêm 02/11:** #790 TAI-NHANH-1 (mảnh mất → 404; header cache đã có ở `public/_headers`) · #791 RA-LOI-MAY lưu phân công lô, em hai ghi danh hết 409 · #792 mốc đổi Target / mở lộ trình = ngày nghiệp vụ (bản chính 0–7 h ghi nhầm hôm qua) · #793 TAI-NHANH-2 từ điển EN thành mảnh riêng (JS trang đầu QL gzip 421 → 249 KB; build target es2022 = Safari 15+) · #794 `updateTask` một giao dịch.
 - **Chờ chủ SP (RA-LOI-MAY, không sửa):** (1) **QUYEN-KY-NANG:** GV tự khai kỹ năng Speaking ở `PATCH /me/profile` → được chấm S chéo mọi lớp FT chi nhánh — đề xuất chỉ Quản trị sửa kỹ năng hồ sơ GV · (2) **LECH-KHONG-LOP:** lượt không lớp chấm lệch — "Kết quả gần nhất" theo tỷ lệ, `evaluateAttemptRow` theo band (có từ trước #777; sửa đổi số liệu em thật) · (3) lỗi nhẹ: giao việc cho người ngoài chi nhánh không bị chặn.
 
@@ -291,7 +291,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **#761 PANEL-RIENG ĐÃ MERGE** (31/10, chủ SP đồng ý 2 KHÁC: Xét lại 375 môn 2 × 2 · Phân công đổi trang; check gộp main 4974/4974). Còn chưa xác minh (không phải luồng chính): panel "PA chưa có kết quả", dòng "chưa phân công" (demo 0 dòng); chưa chạy `audit`, `web-design-guidelines`, `/ponytail-review`.
 - **Thứ tự còn lại:** ② **PR-D** hồ sơ lớp Lưu phân công (đủ điều kiện từ #726) → ③ **TL-VIEC** ‖ **TL-TQ** (DON-MA đã merge), **TL-HVL** sau PR-D → ④ **CN-3** + MA-MO-COI (`TheKyNang.tsx` còn) → ⑤ **DON-HINH** (chữ phụ tối còn 183 / 154, QL mở Công việc mặc định "Của tôi", tên "Speaking chấm chéo" chưa làm) → ⑥ **V8-PT-2**, **V8-HSL-2**.
 - **Mới, chưa có chủ — DO-KHUNG-DO:** `do-khung` 31/10 có 47 ✗ ở màn #761 không chạm: dấu "·" đầu panel bị tính là chữ cắt (công cụ hay chữ thật — cần soi) · Bảng điểm lớp thường g1 lệch tiêu đề ↔ ô tới 83 px · `panel-sua-tt`, `chon-nhieu-hv` hết giờ · 9 kịch bản 375 cuối lượt crash (Page crashed). **Chưa đo trên main sạch** → PR nhỏ: chạy lại trên main, sửa thật, thêm miễn phần công cụ. Muốn chạy trong worktree cần gói `playwright` (không có trong `package.json`).
-- **Chờ chủ SP bảo:** deploy (main hơn bản chính 199 commit; 5 migrate: `prChuongNhe`, `donLuong`, `prBanGiaoGv`, `prTlNen`, `prTlNapBai`) · xoá DB `261027`, `261028` (~06/11) · email Monbay 14 nhóm trùng / 13 thiếu · sổ tay PDF: làm hay bỏ (Hướng dẫn web đã thay; dòng 17/10 còn treo).
+- **Chờ chủ SP bảo:** deploy (main hơn bản chính 199 commit; 6 migrate: `prChuongNhe`, `donLuong`, `prBanGiaoGv`, `prTlNen`, `prTlNapBai`, `prDocIt2` (chỉ mục)) · xoá DB `261027`, `261028` (~06/11) · email Monbay 14 nhóm trùng / 13 thiếu · sổ tay PDF: làm hay bỏ (Hướng dẫn web đã thay; dòng 17/10 còn treo).
 - **Sổ sách:** dòng "Cập nhật" đầu tệp dừng 26/10, mục 11 Nhật ký dừng 27/10 — tra PR đã merge bằng GitHub, không bằng mục 11.
 - **Bẫy preview:** `preview_start` luôn chạy ở thư mục chính (log `D:/Github/Pisa-tracking/dist-server`), không chạy mã worktree dù session đã vào worktree; DB `data/` thư mục chính cũ → "no such table". `do-khung` ghi đè `thiet-ke/anh/khung/*.png`: `git checkout -- thiet-ke` sau khi đo.
 
@@ -760,6 +760,8 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
 | 02/11 | DOC-IT-3 · Opus 5.5 | `listCases` của người chỉ có quyền GV lọc tập cha theo lớp phân công trong SQL: Tổng quan GV / Case thôi đọc MỌI Case cả hệ thống (JSON trùng cách cũ, 16 GV × 5 bộ lọc) |
+| 02/11 | HSL-TUAN-KET-THUC · Opus 5.5 | Đầu hồ sơ lớp đã kết thúc không còn "tuần 42/8" (đếm tuần tới hôm nay) — bỏ số tuần khi lớp `finished` (RA-LOI-WEB). |
+| 02/11 | DOC-IT-2 · Opus 5.5 | chỉ mục một phần `idx_mini_test_cho`, `idx_cycle_hen_lo_trinh` (migrate `prDocIt2`): Công việc mọi vai thôi SCAN ghi danh, lượt quét nền thôi SCAN lộ trình |
 | 02/11 | HSL-GIU-LOC · Opus 5.5 | Hồ sơ lớp: chip lọc Học viên FT (SOS · Chưa đủ dữ liệu) và Cuối khoá (Chưa chốt…) lên `?loc=` — sang hồ sơ em rồi ‹ / Back / F5 giữ đúng lọc (RA-LOI-WEB). |
 | 02/11 | DOC-IT-1 · Opus 5.5 | `/demo/session` thôi SCAN `sqlite_master` (~270 dòng bản chính / lần mở app); công cụ đo dòng quét `scripts/do-it.py` + bảng `docs/toc-do/doc-it-0211.md` |
 | 01/11 | TL-VIEC · Opus 5.5 | `myWork` nạp chung một lần mỗi request: `/my-work` QL 54 → 39 câu, `tat-ca` 64 → 44, GV 46 → 33; so bản chụp 409 khoá, 0 khác |

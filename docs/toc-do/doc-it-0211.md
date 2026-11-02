@@ -32,9 +32,10 @@ python -I scripts/do-it.py <thư mục>/x3 --top "QL /my-work"
 | Đường | Vai | câu | dòng trả | bước VM | quét cả bảng | SCAN bảng lớn | Việc |
 |---|---|---|---|---|---|---|---|
 | `/demo/session` (mỗi lần mở app) | mọi vai | 4–5 → 3–4 | 4–23 | 1,9 k → 0,8 k | 307 → 3 | `sqlite_master` | **DOC-IT-1** |
-| `/tong-quan/lop-toi-day/hai-khoi` | GVCN · GVBM | 57 | 5 640 · 6 363 | 554 k · 614 k | 1 566 · 1 638 | `sos_cases` (mọi Case cả hệ thống) | DOC-IT-3 |
-| `/my-work` | GVCN · GVBM | 33 · 32 | 1 671 · 1 704 | 190 k · 188 k | 2 000 · 2 012 | `sos_cases`, `case_interventions`, `enrollments` | DOC-IT-2 |
-| `/my-work` | QL · QT | 39 | 2 365 · 2 813 | 252 k · 288 k | 3 458 · 3 602 | + `students` (việc TVV), `learning_cycles` | DOC-IT-2, -4 |
+| `/tong-quan/lop-toi-day/hai-khoi` | GVCN · GVBM | 57 → 58 | 5 640 → 5 454 · 6 363 → 6 195 | 554 k → 524 k · 614 k → 591 k | 1 566 → 1 240 · 1 638 → 1 312 | ~~`sos_cases` (mọi Case cả hệ thống)~~ | DOC-IT-3 ✓ |
+| `/tong-quan/lop-toi-day?ct=ft` (+ ô `/o`) · `/cases` | GVCN | 21 · 5 | 4 178 → 3 953 · 798 → 573 | 350 k → 320 k · 115 k → 85 k | 847 → 521 · 329 → 3 | ~~`sos_cases`~~ | DOC-IT-3 ✓ |
+| `/my-work` | GVCN · GVBM | 33 · 32 | 1 671 · 1 704 | 190 k → 184 k · 188 k → 182 k | 2 000 → 1 507 · 2 012 → 1 519 | `sos_cases`, `case_interventions` (~~`enrollments`~~) | DOC-IT-2 ✓ |
+| `/my-work` | QL · QT | 39 | 2 365 · 2 813 | 252 k → 247 k · 288 k → 283 k | 3 458 → 2 965 · 3 602 → 3 109 | + `students` (việc TVV), `learning_cycles` | DOC-IT-2 ✓, -4 |
 | `/tong-quan/v5?ct=ft` | QL | 40 | 6 970 | 514 k | 761 | — (đọc theo chi nhánh qua chỉ mục) | > 30 câu |
 | `/tong-quan/v5?ct=ft` | QT · CX | 36 · 35 | 9 267 · 9 033 | 675 k · 649 k | 2 469 | `enrollments`, `sos_cases` | DOC-IT-4 |
 | `/hoc-vien-lop` | QL · GVCN | 48 · 50 | 6 821 · 5 177 | 658 k · 525 k | 1 420 · 1 240 | `students` | DOC-IT-4 |
@@ -43,17 +44,18 @@ python -I scripts/do-it.py <thư mục>/x3 --top "QL /my-work"
 | `/students/{hv}` | QL | 77 | 144 | 11 k | 136 | — | > 30 câu, đọc ít |
 | `/highlights` | QL · GVCN | 9 | 85 · 44 | 66 k · 47 k | 3 | — | — |
 | `/yeu-cau/dem` · `/ref/branches` · `/notifications` | mọi vai | 3–5 | ≤ 46 | ≤ 11 k | ≤ 7 | — | — |
-| quét nền `quet:yeu-cau` (≤ 1 lần / 60 s hoặc sau ghi) | QL | +10 | +137 | +13 k | +443 | `sos_cases` | DOC-IT-2 |
+| quét nền (≤ 1 lần / 60 s hoặc sau ghi), đo qua QL `/my-work` | QL | +13 | +20 | 260 k → 253 k | 4 389 → 3 408 | `sos_cases` (~~`learning_cycles`~~) | DOC-IT-2 ✓ |
 
 ## Phát hiện (xếp theo lợi: dòng quét × tần suất mở)
 
 1. **`/demo/session` SCAN `sqlite_master`** (`db.ts` `isInitialised`) mỗi lần mở app — ~270 dòng bản chính / lần, không đổi được gì. → DOC-IT-1: nhớ theo kết nối.
 2. **`sc.status != 'done'`** (Case chưa xong) không chỉ mục nào dùng được → SCAN cả `sos_cases` (kể cả Case đã đóng, tăng mãi) ở Công việc mọi vai
    (`napCaseMo`), quét nền, TVV/CX. Cùng kiểu: `case_interventions` lọc `status IN ('planned','started')` / PA mặc định chưa xác nhận, `mini_test` chưa có tỉ lệ
-   (đi ngược từ MỌI ghi danh active). → DOC-IT-2: chỉ mục một phần.
+   (đi ngược từ MỌI ghi danh active). → DOC-IT-2: chỉ mục một phần `mini_test` + hẹn Lộ trình mới (#800). **Bỏ** chỉ mục `sos_cases … != 'done'` và
+   `case_interventions(status)`: SQLite đổi kế hoạch câu khác cho tệ hơn (TD7a 21 → 1 642 bước; `case_id IN (…)` +3 k); bản chính Case đóng mới 12 % → lợi nhỏ.
 3. **Tổng quan GV đọc MỌI Case cả hệ thống** rồi lọc quyền trong mã: `metricSet('case-mo')` của GV không có chi nhánh → `listCases(p, {})` (4 câu con mỗi Case).
-   → DOC-IT-3: GV chỉ có quyền theo lớp → lọc tập cha theo lớp được phân công ngay trong SQL (bộ lọc quyền cũ giữ nguyên phía sau, kết quả không đổi).
-4. `students` SCAN ở `/hoc-vien-lop`, việc TVV của Công việc QL, `/tong-quan/hoc-vien`; `enrollments` SCAN ở Tổng quan QT / CX (cả hệ thống — đúng phạm vi, ít người mở).
+   → DOC-IT-3: GV chỉ có quyền theo lớp → lọc tập cha theo lớp được phân công ngay trong SQL (bộ lọc quyền cũ giữ nguyên phía sau, kết quả không đổi). (#802; demo GVCN dạy 12/34 lớp nên lợi ở demo nhỏ, bản chính GV 3–6 / 88 lớp.)
+4. `/ref/classes` (TAI-NHANH báo): đọc MỌI lớp active cả hệ thống + đếm ghi danh từng lớp rồi lọc phạm vi bằng JS. `students` SCAN ở `/hoc-vien-lop`, việc TVV của Công việc QL, `/tong-quan/hoc-vien`; `enrollments` SCAN ở Tổng quan QT / CX (cả hệ thống — đúng phạm vi, ít người mở).
    → DOC-IT-4 (xem lại sau 1–3).
 5. Đường > 30 câu (`/my-work` QL 39, `/hoc-vien-lop` 48, `/tong-quan/v5` QL 40, `viec-theo-em` QL 46, `kemBaoCao=1` QL 58): câu nhiều nhưng phần lớn
    đọc theo chỉ mục — lợi dòng nhỏ hơn 1–3; để sau.
@@ -64,4 +66,6 @@ Giả định: ~60 người dùng, mỗi người ~10 lần mở app / ngày (F5
 
 | PR | Giảm mỗi lần | Ước giảm / ngày |
 |---|---|---|
-| DOC-IT-1 | ~270 dòng / lần mở app | ~160 nghìn (~5 triệu / tháng) |
+| DOC-IT-1 (#797) | ~270 dòng / lần mở app | ~160 nghìn (~5 triệu / tháng) |
+| DOC-IT-3 (#802) | câu Case Tổng quan GV ~573 Case × (1 + 4 câu con) ≈ 3 nghìn → vài trăm dòng (50 GV × 8 lần) | ~1 triệu |
+| DOC-IT-2 (#800) | ~890 dòng / lần mở Công việc / Tổng quan GV + ~890 / lượt quét nền (860 lần mở + ~600 lượt quét) | ~1,3 triệu |
