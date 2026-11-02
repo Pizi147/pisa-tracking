@@ -118,6 +118,12 @@ export const GOC_HOC_VIEN = ['tat-ca', 'sos', 'can-lam', 'lich-thi', 'phan-cong'
 export type GocHocVien = (typeof GOC_HOC_VIEN)[number];
 export type LocPhuCanLam = 'qua-han' | 'cho-duyet' | 'thieu_tt';
 /** `view` (+ `loc`) trên URL → góc + lọc phụ. Link cũ giữ nghĩa qua `docThamSoLoc`: `qua-han` / `cho-duyet` / `thieu_tt` / `case_*` → Cần làm. */
+/** CHAN-ROI-NHAP: URL mới vẫn là góc Phân công GV của cùng chi nhánh (tìm, lọc khung) → nháp còn nguyên, không hỏi; còn lại là rời góc. */
+export function conTrongGocPc(tu: { pathname: string; search: string }, den: { pathname: string; search: string }): boolean {
+  const a = new URLSearchParams(tu.search);
+  const b = new URLSearchParams(den.search);
+  return tu.pathname === den.pathname && b.get('view') === 'phan-cong' && ['phamVi', 'cn', 'branchId'].every((k) => a.get(k) === b.get(k));
+}
 export function docGoc(view: string | null | undefined, loc: string | null | undefined): { goc: GocHocVien; loc: LocPhuCanLam | null } {
   if (view === 'lich-thi') return { goc: 'lich-thi', loc: null };   // OV-15f: rà soát lịch thi thật khi họp
   if (view === 'phan-cong') return { goc: 'phan-cong', loc: null };   // PC-GV-C: góc Phân công GV (QL, Quản trị, CX)
