@@ -719,6 +719,28 @@ await checkAsync('DOC-IT-1 · GET /demo/session (mọi vai) không đọc sqlite
   assert(!lai, `${lai} lần đọc sqlite_master`);
 });
 
+/* DOC-IT-4: `/ref/classes` (ô chọn lớp, bộ lọc Phân tích, IntakePanel…) đọc MỌI lớp active cả hệ thống + đếm ghi danh từng lớp rồi mới lọc phạm vi / chi nhánh trong mã.
+   Nay lọc trong SQL: JSON trùng cách cũ (cờ `refLopCuKhiKiem.tat`) mọi vai × tham số; GVCN chỉ đọc dòng lớp mình dạy. */
+await checkAsync('DOC-IT-4 · /ref/classes lọc phạm vi trong SQL — trùng cách cũ mọi vai, GV không đọc lớp ngoài phạm vi', async () => {
+  const { refLopCuKhiKiem } = await import('../routes/index.ts');
+  const loi: string[] = [];
+  const goi = async (vai: Vai, url: string, cu: boolean) => {
+    refLopCuKhiKiem.tat = cu;
+    try { return await doSql(vai, 'GET', url).then(async (r) => ({ ...r, json: JSON.stringify((await callHttp(vai, 'GET', url)).json) })); } finally { refLopCuKhiKiem.tat = false; }
+  };
+  for (const vai of [...MOI_VAI, 'TVV', 'CX', 'ADMIN'] as Vai[]) {
+    for (const url of ['/ref/classes', `/ref/classes?branchId=${CN}`, '/ref/classes?fastTrackOnly=1', '/ref/classes?tg=26']) {
+      const cu = await goi(vai, url, true), moi = await goi(vai, url, false);
+      if (cu.json !== moi.json) loi.push(`${vai} ${url}: JSON khác (${cu.json.length} ≠ ${moi.json.length} ký tự)`);
+      if (moi.dong > cu.dong) loi.push(`${vai} ${url}: dòng ${cu.dong} → ${moi.dong}`);
+    }
+  }
+  const tong = (conn.prepare(`SELECT COUNT(*) n FROM classes WHERE status = 'active'`).get() as any).n as number;
+  const gv = await goi('GVCN', '/ref/classes', false);
+  if (gv.dong >= tong) loi.push(`GVCN /ref/classes đọc ${gv.dong} dòng ≥ ${tong} lớp active cả hệ thống`);
+  assert(!loi.length, loi.join(' · '));
+});
+
 check('TD2-a · không đọc lặp — mỗi request GET: câu lịch kỹ năng / câu điểm không trả cùng một lượt hai lần', () => {
   assert(docLap.length === 0, `Đọc lặp:\n${docLap.join('\n')}`);
 });
