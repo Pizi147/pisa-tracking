@@ -37,6 +37,7 @@ export const EN_UI_HO_SO_LOP = {
   'Đề xuất bước tiếp': 'Proposed next step',
   'Đã có người sửa lúc {luc} ({ai}) — bấm Lưu lần nữa để ghi đè': 'Someone saved this at {luc} ({ai}) — press Save again to overwrite',
   /* V8-HSL */
+  'Dòng Overall: số học viên có Overall đạt kỳ vọng của đợt / số học viên đủ Overall, không tính em KCK; dòng kỹ năng vẫn tính em KCK nên mẫu số có thể khác. Kỳ vọng theo Target lúc thi lượt đó.': 'Overall row: students whose Overall meets the round expectation / students with a full Overall, excluding no-commitment students; skill rows still include them, so the denominators may differ. Expectations use the Target at the time of that round.',
   'tuần {n}': 'week {n}',
   'khai giảng {ngay}': 'started {ngay}',
   'Cách tính Đạt': 'How Pass is counted',

@@ -23,7 +23,7 @@ import { lazyTai } from '../lib/taiLaiManh.ts';
 /** NEN-V5 — dáng số bấm được (`OSo`, ô chỉ số): màu nhấn, đậm, gạch chân liền 1 px; rê chuột nền nhấn nhạt. */
 export const LOP_OSO = 'appearance-none rounded border-0 bg-transparent p-0 cursor-pointer tabular-nums font-bold text-[color:var(--accent)] underline decoration-1 underline-offset-[3px] hover:bg-[color:var(--accent-soft)]';
 /** Màu chữ của nơi gọi: màu nghĩa (quá hạn, chưa đạt) giữ; màu chữ thường (`text-slate-*`, dáng cũ) bỏ để số bấm được cùng một màu nhấn. */
-export const mauOSo = (lop: string) => (/\btext-(bad|late|soon)\b/.test(lop) ? `${LOP_OSO.replace('text-[color:var(--accent)] ', '')} ${lop}` : `${LOP_OSO} ${lop.replace(/\btext-slate-\d+\b/g, '')}`);
+export const mauOSo = (lop: string) => (/\btext-(bad|late|soon|kq-duoi)\b/.test(lop) ? `${LOP_OSO.replace('text-[color:var(--accent)] ', '')} ${lop}` : `${LOP_OSO} ${lop.replace(/\btext-slate-\d+\b/g, '')}`);
 export const VUNG_BAM_SO = "relative after:absolute after:left-1/2 after:top-1/2 after:h-6 after:w-6 after:min-w-full after:-translate-x-1/2 after:-translate-y-1/2 after:content-[''] max-sm:after:h-11 max-sm:after:w-11";
 
 const THOI_GIAN_NHAN: Record<ChiSo['thoiGian'], string> = {

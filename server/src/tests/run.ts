@@ -9935,6 +9935,9 @@ await runV8Pt2Tests({ check, assert, conn, P } as any);
 // ==================================================================== TL-VIEC (myWork nạp chung một lần mỗi request — so bản chụp gốc)
 const { runPrTlViecTests } = bocTep('prTlViec', await import('./prTlViec.tests.ts'));
 await runPrTlViecTests({ check, checkAsync, assert, P } as any);
+// ==================================================================== V8-HSL-2 (dòng Overall bảng Phân tích FT hồ sơ lớp)
+const { runOverallFtLopTests } = bocTep('overallFtLop', await import('./overallFtLop.tests.ts'));
+await runOverallFtLopTests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== TL-HVL (Học viên & Lớp, hồ sơ lớp dùng chung ghi danh / Case / lượt — so bản chụp gốc)
 const { runPrTlHvlTests } = bocTep('prTlHvl', await import('./prTlHvl.tests.ts'));
 await runPrTlHvlTests({ check, checkAsync, assert, P } as any);
