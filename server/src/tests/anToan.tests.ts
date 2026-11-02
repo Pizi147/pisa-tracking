@@ -527,9 +527,12 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(!/settleNoShows/.test(ham), 'Hàm Netlify không gọi luật nghiệp vụ trực tiếp — đi qua chotVangDinhKy');
   });
 
-  check('TAI-NHANH · /assets/* cache 1 năm immutable; mảnh mất trả 404 TRƯỚC redirect /* (không cache index.html thành JS)', () => {
+  check('TAI-NHANH · /assets/* cache 1 năm immutable (public/_headers, một nguồn); mảnh mất trả 404 TRƯỚC redirect /* (không cache index.html thành JS)', () => {
     const toml = fsMod.readFileSync(pathMod.join(REPO, 'netlify.toml'), 'utf8');
-    assert(/for = "\/assets\/\*"\s*\[headers\.values\]\s*Cache-Control = "public, max-age=31536000, immutable"/.test(toml), 'Thiếu header cache /assets/*');
+    /* Một nguồn header: `public/_headers` (Vite chép vào dist/web); netlify.toml không khai lại (Netlify sẽ gộp thành Cache-Control lặp). */
+    const hd = fsMod.readFileSync(pathMod.join(REPO, 'public/_headers'), 'utf8');
+    assert(/^\/assets\/\*\s+Cache-Control: public, max-age=31536000, immutable/m.test(hd), 'Thiếu header cache /assets/* ở public/_headers');
+    assert(!/\[\[headers\]\]/.test(toml), 'netlify.toml không khai [[headers]] trùng public/_headers');
     const a = toml.search(/from = "\/assets\/\*"\s*to = "[^"]+"\s*status = 404/), b = toml.indexOf('from = "/*"');
     assert(a >= 0 && a < b, 'Redirect 404 /assets/* phải đứng trước /*');
   });
