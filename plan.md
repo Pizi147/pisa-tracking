@@ -249,6 +249,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 03/11 đêm — chủ SP đi ngủ: "cứ thế làm, tự rà tự merge"
+- **Mở (local, worktree riêng):** QUYEN-LH-CN (Opus 5.5 · medium) · SO-LIEU-LOP (Opus 5.5 · high: LECH-KHONG-LOP + HSL-KET-THUC-SO) · HINH-HAN-XA (Opus 5.5 · medium: viên xám hạn xa + cột Trạng thái 150 px) · EN-SOT (Opus 5.5 · medium: dịch EN sót + dọn sổ tay PDF).
+- **Merge:** PR đổi hình tự merge khi ảnh cặp ≥ 90 % KHỚP + đúng luật + check xanh (dưới 90 % giữ sáng) · PR đổi số liệu em thật GIỮ, kèm SQL chỉ đọc cho chủ SP chạy ở Turso · còn lại PTA tự merge như thường.
+
 ### 02/11 khuya — chủ SP quyết nhóm chờ (CHƯA làm: chờ chủ SP bảo "bắt đầu làm" mới mở session)
 - **QUYEN-KY-NANG:** GV tự khai kỹ năng ở Hồ sơ cá nhân, kể cả được chấm S chéo — GIỮ như hiện tại, không sửa.
 - **QUYEN-THEO-CN:** quyền sửa Liên hệ xét theo chi nhánh của em (không theo vai toàn tài khoản) — sửa máy chủ (`coONhapLienHe`, `students.ts:776`, `luuTru.ts:122`), PR nhỏ.
