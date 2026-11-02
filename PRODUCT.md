@@ -37,7 +37,7 @@ Công cụ làm việc nội bộ (chế độ Operate) thay sổ điểm và b�
 - Giọng: tiếng Việt đơn giản, thẳng, như đồng nghiệp nói với nhau; không văn mẫu, không cảm thán.
 
 ## Evidence on Hand
-- Mockup đã duyệt: `thiet-ke/mockup-*.html`. Sổ tay ảnh chụp: `docs/so-tay/`.
+- Mockup đã duyệt: `thiet-ke/mockup-*.html`.
 - Không có khách hàng, số liệu công khai hay lời chứng thực — không bịa.
 
 ## Product Principles
