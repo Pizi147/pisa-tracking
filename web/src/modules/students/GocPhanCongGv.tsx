@@ -4,6 +4,7 @@ import { useSession } from '../../lib/session.tsx';
 import { ApiError, api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useDienThoai, useManHinh } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -15,7 +16,7 @@ import { DaiToPc, TongHopPc } from './phanCongGv/TongHopPc.tsx';
 import { TheLopPc } from './phanCongGv/TheLopPc.tsx';
 import { ThanhLuuPc } from './phanCongGv/ThanhLuuPc.tsx';
 import {
-  chonCuaLop, demPhanCong, doiTheoO, duongHoSoGiaoVien, gopNhapBanMoi, kiemDongPc, laCapBanGiao, laVaiQuanLy, locLopPc, lopSauNhap, moRongPhanCong,
+  chonCuaLop, conTrongGocPc, demPhanCong, doiTheoO, duongHoSoGiaoVien, gopNhapBanMoi, kiemDongPc, laCapBanGiao, laVaiQuanLy, locLopPc, lopSauNhap, moRongPhanCong,
   nhanDayDuoc, oDongPc, oPhanCong, oThieuLop, oThieuPc, slotsDongPc, tenMonNgan, tuanLich,
   type ChonDongPc, type DemGv, type GocNhapPc, type GvPc, type KetQuaLuuPc, type LopPc, type SlotPhanCong, type TrangPhanCongGv,
 } from '@shared/domain/index.ts';
@@ -32,11 +33,9 @@ const bang = (a: ChonDongPc, b: ChonDongPc) => Object.keys({ ...a, ...b }).every
  * Dòng nháp nhớ bản gốc (`GocNhapPc`); Lưu gửi phiên bản của bản gốc; bản mới về khác phiên bản → gộp ba bản (rà #726: không trả lại thay đổi người khác).
  * QL / Quản trị sửa; CX chỉ xem (máy chủ 403 với GV / TVV).
  */
-export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, onNhap, chonCn }: {
+export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, chonCn }: {
   branchId: number | null; khung: 'tat-ca' | 'ft' | 'thuong'; q: string; onQ: (q: string) => void;
   coTheTaoLop?: boolean; onTaoLop?: () => void;
-  /** Số dòng nháp — trang hỏi một lần trước khi đổi tab / chi nhánh. */
-  onNhap?: (n: number) => void;
   /** Quản trị ở phạm vi toàn hệ thống: ô chọn chi nhánh trong khung rỗng (góc cần MỘT chi nhánh). */
   chonCn?: ReactNode;
 }) {
@@ -89,17 +88,6 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
     if (het.length) setLoiHang((x) => { const y = { ...x }; het.forEach((id) => delete y[id]); return y; });
   }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const soNhap = Object.keys(nhap).length;
-  useEffect(() => { onNhap?.(soNhap); }, [soNhap]); // eslint-disable-line react-hooks/exhaustive-deps
-  /* Rời góc (đổi góc / chi nhánh — StudentsPage dựng lại theo `key`): nháp mất cùng góc → trang thôi hỏi "n lớp chưa lưu". */
-  useEffect(() => () => onNhap?.(0), []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (!soNhap) return undefined;
-    const chan = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
-    window.addEventListener('beforeunload', chan);
-    return () => window.removeEventListener('beforeunload', chan);
-  }, [soNhap]);
-
   const lop = useMemo(() => (data?.lop ?? []).map((l) => (ghiDe[l.id] ? { ...l, ...ghiDe[l.id], cho: [] } : l)), [data, ghiDe]);
   const gv = data?.gv ?? [];
   const gvMap = useMemo(() => new Map(gv.map((g) => [g.id, g])), [gv]);
@@ -116,6 +104,9 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
   const loiCua = (l: LopPc) => (nhap[l.id] ? kiemDongPc(l, nhap[l.id], gv) : []);
   const soDoi = (l: LopPc) => { const a = goc(l); const b = chonDong(l); return oDongPc(l).filter((k) => (a[k] ?? '') !== (b[k] ?? '')).length; };
   const nhanO = (l: LopPc, k: string) => (k === 'gvcn' ? t('GVCN') : tenMonNgan(l.ct, k));
+  const soLopNhap = Object.keys(nhap).length;
+  const soONhap = lop.filter((l) => nhap[l.id]).reduce((n, l) => n + soDoi(l), 0);
+  const hopRoi = useChanRoiNhap(soLopNhap > 0, t('{n} ô đổi ở {l} lớp chưa lưu — rời đi sẽ mất.', { n: soONhap, l: soLopNhap }), conTrongGocPc);
 
   const setO = (l: LopPc, khoa: string, v: number | '') => {
     const moi = { ...chonDong(l), [khoa]: v };
@@ -303,14 +294,12 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
     if (id !== null) requestAnimationFrame(() => document.querySelector('[data-to="true"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   };
 
-  if (trang.error) return <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />;
+  if (trang.error) return <>{hopRoi}<ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} /></>;
   if (!data) return <div className="card p-4"><Skeleton rows={8} /></div>;
   if (data.canChonChiNhanh) {
     return <div className="card pc-rong"><span className="tieu">{t('Chọn chi nhánh để xem phân công')}</span>{chonCn}</div>;
   }
 
-  const soLopNhap = Object.keys(nhap).length;
-  const soONhap = lop.filter((l) => nhap[l.id]).reduce((n, l) => n + soDoi(l), 0);
   const loiNhap = lop.filter((l) => nhap[l.id]).find((l) => loiCua(l).length);
   const oThieu = oThieuPc(lop, gv);
   const soNghi = gv.filter((g) => g.nghi).length;
@@ -377,6 +366,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
 
       <TongHopPc dem={dem} demNhap={demNhap} gv={gv} to={to} onTo={batTo} gon={dt} />
 
+      {hopRoi}
       {lopMo && mo && !chiXem && (
         <ChonGvPc neo={oRef.current.get(`${mo.classId}|${mo.khoa}`) ?? null} nhanO={`${nhanO(lopMo, mo.khoa)} ${lopMo.code}`} ds={dsChon(lopMo, mo.khoa)} tamDuoi={dt}
           onChon={(v) => setO(lopMo, mo.khoa, v)} onDong={() => setMo(null)} />

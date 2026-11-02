@@ -41,17 +41,17 @@ function KhungModal({ onClose, title, children, footer, width, z }: {
   );
 }
 
-/** T16 (mockup `cong-viec.html` `.hop-hoi`): hộp nhỏ, "Ở lại" là nút chính và nhận focus; bỏ chữ là nút thường nói rõ việc sẽ làm. */
-export function HopBoChu({ viec, nut, onO, onBo }: { viec: string; nut: string; onO: () => void; onBo: () => void }) {
+/** T16 (mockup `cong-viec.html` `.hop-hoi`): hộp nhỏ, "Ở lại" là nút chính và nhận focus; bỏ chữ là nút thường nói rõ việc sẽ làm. `tieuDe` + `than`: nháp không phải chữ gõ. */
+export function HopBoChu({ viec, tieuDe, than, nut, onO, onBo }: { viec?: string; tieuDe?: string; than?: string; nut: string; onO: () => void; onBo: () => void }) {
   const oLai = useRef<HTMLButtonElement>(null);
   useEffect(() => { oLai.current?.focus(); }, []);   // sau effect giữ focus của Modal (con chạy trước) — focus vào "Ở lại"
   return (
-    <Modal open onClose={onO} title={t('Bỏ chữ đang gõ?')} width="max-w-[420px]" z="z-[70]"
+    <Modal open onClose={onO} title={tieuDe ?? t('Bỏ chữ đang gõ?')} width="max-w-[420px]" z="z-[70]"
       footer={<>
         <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onBo}>{nut}</button>
         <button ref={oLai} type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onO}>{t('Ở lại')}</button>
       </>}>
-      <p className="m-0 text-sm text-slate-300">{t('{viec} chưa lưu — chữ đang gõ sẽ mất.', { viec })}</p>
+      <p className="m-0 text-sm text-slate-300">{than ?? t('{viec} chưa lưu — chữ đang gõ sẽ mất.', { viec })}</p>
     </Modal>
   );
 }

@@ -71,7 +71,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prLocHienTai: 1300, chamDiem: 1200, phanTich: 1200, prLt2b: 1200, prSo: 1200, prPa: 1200, prOv12e: 1200, prOv13j: 1200, prSvSo2: 1200, prLcb: 1100,
   prOv15e2: 1100, prS5JsonEach: 1100, hoSoHocVien: 1000, lenLop: 1000, prS3Chu: 1000, prDl: 1000, prOv2a: 1000, prSvSExpert: 1000, prXetLai: 1000,
   congViec: 900, prS4f: 900, prOv13h: 900, prOv13p: 900, prOv15c: 900, prOv15h1: 900, prSvTvvViec: 900, prLt2a: 800, prPb2a: 800, prMta: 800,
-  prThungRac: 800, prCt2: 800, prOv8b: 800, prOv10b: 800, prOv11g: 800, prOv15f: 800, prSl1: 800, prSl2: 800, prSvNxCase: 800, prHoanTacXn: 800,
+  prThungRac: 800, prCt2: 800, prOv8b: 800, prOv10b: 800, prOv11g: 800, prOv15f: 800, prSl1: 800, prSl2: 800, prSvNxCase: 800, prHoanTacXn: 800, prChanRoiNhap: 100,
   prChuongNhe: 800, nenGiaoDien: 700, prUxG: 700, prOv11c: 600, panelUx3: 600, suaLoiNong: 600, prMon: 600, prXuat: 600, prMtb: 600, prBv: 600,
   prKv: 600, prOv12f: 600, prOv13o: 600, prOv14c: 600, prOv15g: 600, prOv15i1: 600, prBaoCaoLichSu: 600, prPhanCongGv: 600, prDuyet: 500,
   prXlmt: 500, prSl: 500, prQrl2cPa: 500, prQtTk: 500, prLc: 500, prOv4a: 500, prOv10c: 500, prOv12a: 500, prOv13b: 500, prOv13i: 500, prOv13g: 500,
@@ -9935,6 +9935,8 @@ await runPrTlViecTests({ check, checkAsync, assert, P } as any);
 // ==================================================================== TL-HVL (Học viên & Lớp, hồ sơ lớp dùng chung ghi danh / Case / lượt — so bản chụp gốc)
 const { runPrTlHvlTests } = bocTep('prTlHvl', await import('./prTlHvl.tests.ts'));
 await runPrTlHvlTests({ check, checkAsync, assert, P } as any);
+const { runPrChanRoiNhapTests } = bocTep('prChanRoiNhap', await import('./prChanRoiNhap.tests.ts'));
+await runPrChanRoiNhapTests({ check, checkAsync, assert } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
