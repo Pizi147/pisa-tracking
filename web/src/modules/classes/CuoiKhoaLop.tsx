@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
@@ -81,10 +82,12 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const kh = useApi<KeHoach>(`/classes/${classId}/transition`, [classId]);
   const [sua, setSua] = useState<Record<number, Sua>>({});
   const [chon, setChon] = useState<ReadonlySet<number>>(new Set());
-  const [loc, setLoc] = useState<'' | 'chua-chot' | 'con-ban-giao' | 'loi' | 'xet-lai'>('');
+  /* Chip lọc trên URL (`?loc=`) — sang hồ sơ em rồi Quay lại / F5 vẫn đúng lọc. "Lỗi" chỉ sống cùng lần lưu (F5 hết lỗi → về Tất cả). */
+  const [locUrl, setLoc] = useThamSoUrl('loc', '');
   /* P9a [XM]: em cần Xét lại lộ trình (lệnh chưa thi hành, em còn ở lớp này) — chip lọc + chip trên dòng mở panel tại trang. */
   const xetLai = useContext(XetLaiCtx);
   const [loi, setLoi] = useState<Record<number, string>>({});
+  const loc = (['chua-chot', 'con-ban-giao', 'xet-lai'].includes(locUrl) || (locUrl === 'loi' && Object.keys(loi).length) ? locUrl : '') as '' | 'chua-chot' | 'con-ban-giao' | 'loi' | 'xet-lai';
   const [ketQua, setKetQua] = useState<{ ok: number; loi: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [tienDo, setTienDo] = useState<[number, number] | null>(null);

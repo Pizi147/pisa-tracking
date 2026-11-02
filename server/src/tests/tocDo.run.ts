@@ -73,6 +73,7 @@ const doTurso = { bat: false, nhan: '(ngoài request)', soCau: 0, nangThamSo: []
 const doLap: { thay: Map<string, Map<number, number>> | null } = { thay: null };
 /** TD5: ghi câu (văn bản + tham số) trong lúc `ghi` khác null — để EXPLAIN QUERY PLAN lại sau. */
 const doQuet: { ghi: { sql: string; args: unknown[] }[] | null } = { ghi: null };
+let sauGhi = 0;   // get() của câu dùng lại đi qua all() — chỉ ghi lần gọi ngoài
 const CAU_LUOT: [string, RegExp][] = [['lịch kỹ năng', /FROM attempt_skills ask\b/], ['điểm', /FROM assessment_scores s\s+LEFT JOIN users u\b/]];
 {
   const dbProto = Object.getPrototypeOf(conn);
@@ -102,8 +103,10 @@ const CAU_LUOT: [string, RegExp][] = [['lịch kỹ năng', /FROM attempt_skills
         giuTop(doTurso.nangVe, c, 've');
         if (c.datTen && doTurso.datTen.length < 5) doTurso.datTen.push(c);
       }
-      if (doQuet.ghi && this.__sql) doQuet.ghi.push({ sql: this.__sql, args });
-      const out = goc.apply(this, args);
+      if (doQuet.ghi && this.__sql && !sauGhi) doQuet.ghi.push({ sql: this.__sql, args });
+      sauGhi++;
+      let out: any;
+      try { out = goc.apply(this, args); } finally { sauGhi--; }
       if (doLap.thay && m === 'all' && this.__sql && Array.isArray(out)) {
         for (const [ten, re] of CAU_LUOT) {
           if (!re.test(this.__sql)) continue;
@@ -669,13 +672,22 @@ await checkAsync(
  * Đo lại TOÀN BỘ DUONG_DO một lượt — dùng làm mốc "trước" cho cả phép trần và phép nhân dữ liệu. `dong` (TD2-a): số dòng SQL trả về
  * của từng (vai × đường) ghi vào Map truyền vào. `lap`: ghi các (vai × đường) đọc lặp một lượt (xem `doLap`).
  */
+/*
+ * DOC-IT (02/11): `PISA_DO_IT=<đường dẫn không đuôi>` — ghi mọi câu SQL (văn bản + tham số) của từng (vai × đường) ở lượt ×3 + 5 đường khi lượt quét chạy
+ * (khoá `QUET …`), chép DB ×3 (`VACUUM INTO`) → `python scripts/do-it.py <đường dẫn>` chạy lại từng câu: dòng quét cả bảng, bước máy ảo, SCAN. Cách đọc: docs/toc-do/doc-it-0211.md.
+ */
+const doIt: { bat: boolean; cau: Record<string, unknown> } = { bat: false, cau: {} };
 async function doMotLuot(dong?: Map<string, number>, lap?: string[]): Promise<Map<string, number>> {
   const ra = new Map<string, number>();
   for (const muc of DUONG_DO) {
     for (const vai of muc.vai) {
       const url = urlFor(muc.url);
       if (lap) doLap.thay = new Map();
+      const ghiIt: { sql: string; args: unknown[] }[] | null = doIt.bat ? [] : null;
+      doQuet.ghi = ghiIt;
       const r = await doSql(vai, 'GET', url);
+      doQuet.ghi = null;
+      if (ghiIt) doIt.cau[`${vai} ${url}`] = { n: r.n, dong: r.dong, cau: ghiIt };
       ra.set(`${vai} ${url}`, r.n);
       dong?.set(`${vai} ${url}`, r.dong);
       if (lap) {
@@ -695,6 +707,17 @@ const docLap: string[] = [];
 const truocNhan = await doMotLuot(dongTruocNhan, docLap);
 /* TL-NEN: `PISA_IN_DO=<tệp>` ghi số câu / dòng từng (vai × đường) ra JSON — cột trước → sau của mô tả PR. */
 if (process.env.PISA_IN_DO) fs.writeFileSync(process.env.PISA_IN_DO, JSON.stringify(Object.fromEntries([...truocNhan].map(([k, n]) => [k, [n, dongTruocNhan.get(k)]])), null, 1));
+
+/* DOC-IT-1: `isInitialised` hỏi `sqlite_master` (SCAN ~270 dòng trên bản chính) mỗi lần mở app — đã khởi tạo thì nhớ theo kết nối. */
+await checkAsync('DOC-IT-1 · GET /demo/session (mọi vai) không đọc sqlite_master', async () => {
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    for (const vai of MOI_VAI) assert((await doSql(vai, 'GET', '/demo/session')).status === 200, `${vai} /demo/session không 200`);
+  } finally { doQuet.ghi = null; }
+  const lai = ghi.filter((g) => /sqlite_master/.test(g.sql)).length;
+  assert(!lai, `${lai} lần đọc sqlite_master`);
+});
 
 check('TD2-a · không đọc lặp — mỗi request GET: câu lịch kỹ năng / câu điểm không trả cùng một lượt hai lần', () => {
   assert(docLap.length === 0, `Đọc lặp:\n${docLap.join('\n')}`);
@@ -859,7 +882,24 @@ console.log(
 
 let cauSauNhan = new Map<string, number>();   // TD4: số câu ×3 của từng (vai × đường)
 await checkAsync('PR-TD Task5(2) · sau khi nhân dữ liệu ×3, mọi (đường × vai) không tăng quá 5 câu so với trước', async () => {
+  doIt.bat = !!process.env.PISA_DO_IT;
   const sauNhan = cauSauNhan = await doMotLuot(dongSauNhan);
+  if (doIt.bat) {
+    process.env.PISA_DO_QUET = '1';
+    for (const [vai, url] of [['QL', '/yeu-cau/dem'], ['GVCN', '/my-work'], ['QL', '/my-work'], ['QL', '/tong-quan/v5?ct=ft'], ['GVCN', '/tong-quan/lop-toi-day/hai-khoi']] as [Vai, string][]) {
+      const g: { sql: string; args: unknown[] }[] = [];
+      doQuet.ghi = g;
+      const r = await doSql(vai, 'GET', url);
+      doQuet.ghi = null;
+      doIt.cau[`QUET ${vai} ${url}`] = { n: r.n, dong: r.dong, cau: g };
+    }
+    delete process.env.PISA_DO_QUET;
+    doIt.bat = false;
+    const ra = process.env.PISA_DO_IT!;
+    for (const s of ['', '-wal', '-shm']) if (fs.existsSync(`${ra}.sqlite${s}`)) fs.rmSync(`${ra}.sqlite${s}`);
+    conn.exec(`VACUUM INTO '${ra}.sqlite'`);
+    fs.writeFileSync(`${ra}.json`, JSON.stringify(doIt.cau));
+  }
   const sai: string[] = [];
   for (const [khoa, truoc] of truocNhan) {
     const sau = sauNhan.get(khoa) ?? 0;
