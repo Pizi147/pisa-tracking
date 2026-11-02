@@ -1227,6 +1227,10 @@ await checkAsync('DOC-IT-3 (×3) · listCases của GV: trùng cách cũ mọi G
   const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${cau!.sql}`).all(...cau!.args) as any[]).map((r) => r.detail as string);
   if (plan.some((d) => /^SCAN sc\b/.test(d))) loi.push(`GVCN listCases(p, {}) vẫn SCAN sos_cases: ${plan.join(' | ')}`);
   console.log(`      (đo ×3: ${soGv} GV, ${soCase} dòng Case so)`);
+  assert(!loi.length, loi.join(' · '));
+});
+
+/*
  * DOC-IT-2 (02/11): hai câu quét cả bảng ở Công việc (mọi vai) + lượt quét nền — đo bằng `scripts/do-it.py` trên DB ×3 (mô tả PR). Mini test chưa có tỉ lệ
  * trước đi ngược từ MỌI ghi danh active (SCAN enrollments mỗi lần mở Công việc / Tổng quan GV); hẹn Lộ trình mới tới tuần quét cả `learning_cycles`.
  */
