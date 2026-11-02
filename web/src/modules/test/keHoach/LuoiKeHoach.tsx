@@ -12,7 +12,7 @@ import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
 import { HopSEx } from './HopSEx.tsx';
 import { Menu } from '../../../ui/Menu.tsx';
 import { fmtBand } from '../../../lib/format.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import { MT_TOI_DA, oGon, tuanLich } from '@shared/domain/index.ts';
 import {
   dotCuaEm, emXongDot, khoaBaiThuong, khoaDot, nhanDot,
@@ -60,7 +60,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     }
     return (data as LuoiThuongData).cot.map((c) => ({
       key: c.kind, dot: { loai: 'thuong', kind: c.kind } as DotChon, tieu: c.nhan,
-      phu: c.nhanDeXuat ? `đề xuất ${c.nhanDeXuat}` : null, deXuat: c.deXuat, nhanDeXuat: c.nhanDeXuat,
+      phu: c.nhanDeXuat ? t('đề xuất {tuanDeXuat}', { tuanDeXuat: dich(c.nhanDeXuat) }) : null, deXuat: c.deXuat, nhanDeXuat: c.nhanDeXuat,
     }));
   }, [loai, data]);
 
@@ -82,7 +82,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     el.scrollLeft = dotDenLuot * rongDot;
   }, [dotDenLuot, rongDot]);
 
-  if (data.hang.length === 0) return <div className="p-3"><Empty title="Lớp này chưa có học viên đang học" /></div>;
+  if (data.hang.length === 0) return <div className="p-3"><Empty title={t('Lớp này chưa có học viên đang học')} /></div>;
 
   const khaiGiang = loai === 'thuong' ? (data as LuoiThuongData).khaiGiang : null;
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
@@ -114,7 +114,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         </colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col border-r border-[var(--line)] !bg-[var(--surface)]">Học viên</Th>
+            <Th className="sticky-col border-r border-[var(--line)] !bg-[var(--surface)]">{t('Học viên')}</Th>
             {cots.map((c) => (
               <Th key={c.key} className="!bg-[var(--surface)]">
                 <span className="block">{c.tieu}</span>
@@ -133,7 +133,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
               aria-current={hvChon === h.studentId ? 'true' : undefined}>
               <td className="td sticky-col border-r border-[var(--line)] py-1.5 align-middle">
                 <Link to={duongHoSoHocVien(h.studentId)} className="link block truncate font-medium text-slate-100 max-sm:line-clamp-2 max-sm:min-h-[44px] max-sm:whitespace-normal" title={h.ten}>{h.ten}</Link>
-                {'vaoMuon' in h && h.vaoMuon && <div className="text-xs text-faint">vào muộn</div>}
+                {'vaoMuon' in h && h.vaoMuon && <div className="text-xs text-faint">{t('vào muộn')}</div>}
               </td>
               {cots.map((c) => {
                 const dot = o(h, c);
@@ -161,15 +161,15 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                         <OHuy onMo={chiXem ? undefined : (el) => setHuy({ attemptId: dot.huy!, anchor: el, hang: h as HangFT, cot: c })} />
                       ) : c.dot.attemptNo === (h as HangFT).soKeTiep ? (
                         /* K4-08: chỉ MT kế tiếp có "Xếp MTn"; MT sau nữa "–" (mockup #659). GV chỉ xem: chữ mờ "chưa xếp". */
-                        <NutXepO chu={t('Xếp MT{n}', { n: c.dot.attemptNo })} title={`Bấm để xếp ${nhanDot(c.dot)}`} onMo={chiXem ? undefined : moHop} />
-                      ) : <OTrong title={`Xếp MT trước rồi mới tới ${nhanDot(c.dot)}`} />
+                        <NutXepO chu={t('Xếp MT{n}', { n: c.dot.attemptNo })} title={t('Bấm để xếp {maDot}', { maDot: nhanDot(c.dot) })} onMo={chiXem ? undefined : moHop} />
+                      ) : <OTrong title={t('Xếp MT trước rồi mới tới {maDot}', { maDot: nhanDot(c.dot) })} />
                     ) : /^cp\d+$/.test(c.key) ? (
                       /* OV-6b2: Checkpoint tự sinh theo lịch lớp — em không có Checkpoint này (vào sau) thì không có gì để xếp. */
-                      <OTrong title="Em không có Checkpoint này" />
+                      <OTrong title={t('Em không có Checkpoint này')} />
                     ) : (
                       /* Lớp thường chưa có bài: nút viền đứt "Xếp {tuần đề xuất}" — "đề xuất" ở tooltip. */
                       <NutXepO chu={c.deXuat ? t('Xếp {tuan}', { tuan: tuanLich(c.deXuat) }) : t('chưa xếp')}
-                        title={`Xếp ${nhanDot(c.dot)} cho em này${c.deXuat ? ` · đề xuất ${tuanLich(c.deXuat)}${c.nhanDeXuat ? ` (${c.nhanDeXuat})` : ''}` : ''}`}
+                        title={t('Xếp {maDot} cho em này', { maDot: nhanDot(c.dot) }) + (c.deXuat ? t(' · đề xuất {tuan}', { tuan: tuanLich(c.deXuat) }) + (c.nhanDeXuat ? ` (${dich(c.nhanDeXuat)})` : '') : '')}
                         onMo={chiXem ? undefined : moHop} />
                     )}
                     {/* PR-MT0 (mockup ④): ô MT0 ngay sau Final — bấm mở hồ sơ Mock để dời / nhập. */}

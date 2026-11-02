@@ -15,6 +15,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { fmtDate } from '../../lib/format.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
   TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
@@ -44,9 +45,9 @@ type Row = {
  * của việc (THUAT_NGU C-069…C-073, chủ sản phẩm 02/10 — "Đã dừng" là nhãn khoá học của HV nên không dùng cho việc).
  */
 const NHAN: Record<string, TrangThai> = { not_started: 'can-lam', doing: 'dang-lam', paused: 'cho-duyet', stopped: 'da-huy', done: 'xong' };
-const NhanViec = ({ progress, label }: { progress: string; label: string }) => <NhanTrangThai t={NHAN[progress] ?? 'can-lam'} chu={label} />;
+const NhanViec = ({ progress, label }: { progress: string; label: string }) => <NhanTrangThai t={NHAN[progress] ?? 'can-lam'} chu={dich(label)} />;
 
-const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = { mo: 'Đang mở', ...TASK_PROGRESS_LABEL, 'tat-ca': 'Mọi trạng thái' };
+const TRANG_THAI_LABEL: Record<TrangThaiLoc, string> = { mo: t('Đang mở'), ...TASK_PROGRESS_LABEL, 'tat-ca': t('Mọi trạng thái') };
 
 const idOfNguoi = (v: NguoiChon | null, myId: number | null): number | null => {
   if (!v) return null;
@@ -116,8 +117,8 @@ export function TasksBoard() {
   if (data?.scopeEmpty) {
     return (
       <Forbidden
-        message="Phần này dành cho Quản trị hệ thống và Quản lý chi nhánh"
-        hint="Việc được giao cho bạn vẫn hiện ở Tổng quan và mở được từ thông báo."
+        message={t('Phần này dành cho Quản trị hệ thống và Quản lý chi nhánh')}
+        hint={t('Việc được giao cho bạn vẫn hiện ở Tổng quan và mở được từ thông báo.')}
       />
     );
   }
@@ -134,7 +135,7 @@ export function TasksBoard() {
     <div className="space-y-4">
       {/* ── hàng số: bốn câu hỏi CHỒNG NHAU (Q8), mỗi số là một nút lọc ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" data-hd="vh-so" title="Bốn con số này chồng nhau có chủ ý — một việc Tạm ngưng đã tới ngày xem lại cũng có thể vừa quá hạn.">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" data-hd="vh-so" title={t('Bốn con số này chồng nhau có chủ ý — một việc Tạm ngưng đã tới ngày xem lại cũng có thể vừa quá hạn.')}>
           {HANG_SO.map((h) => {
             const n = hangSo[h] ?? 0;
             const active = hang === h;
@@ -161,45 +162,45 @@ export function TasksBoard() {
             );
           })}
         </div>
-        {data?.canEdit && <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Giao việc</button>}
+        {data?.canEdit && <button className="btn btn-primary" onClick={() => setCreating(true)}>{t('+ Giao việc')}</button>}
       </div>
 
       <Card bodyClass="p-0"
-        title={<span className="flex flex-wrap items-baseline gap-2">Công việc <span className="text-slate-500 font-normal">{rows.length} việc</span></span>}
+        title={<span className="flex flex-wrap items-baseline gap-2">{t('Công việc')} <span className="text-slate-500 font-normal">{t('{n} việc', { n: rows.length })}</span></span>}
         action={<BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />}
       >
         {/* ── hàng lọc: Nhóm · Trạng thái · Người phụ trách (§18.4 — không quá 10 nút một hàng) ── */}
         <div className="px-4 py-3 border-b flex flex-wrap items-center gap-3" style={{ borderColor: 'var(--line)' }}>
           <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-400">
-            Nhóm:
+            {t('Nhóm:')}
             <select className="field" value={group} onChange={(e) => setParam('nhom', e.target.value || null)}>
-              <option value="">Mọi nhóm</option>
+              <option value="">{t('Mọi nhóm')}</option>
               {TASK_GROUPS.map((g) => (
                 <option key={g} value={g}>{TASK_GROUP_LABEL[g]} ({data?.facets.group[g] ?? 0})</option>
               ))}
             </select>
           </label>
           <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-400">
-            Trạng thái:
+            {t('Trạng thái:')}
             <select className="field" value={progress} onChange={(e) => setParam('trangThai', e.target.value === 'mo' ? null : e.target.value)}>
-              {TRANG_THAI_LOC.map((t) => (
-                <option key={t} value={t}>{TRANG_THAI_LABEL[t]} ({data?.facets.progress[t] ?? 0})</option>
+              {TRANG_THAI_LOC.map((tt) => (
+                <option key={tt} value={tt}>{TRANG_THAI_LABEL[tt]} ({data?.facets.progress[tt] ?? 0})</option>
               ))}
             </select>
           </label>
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <span className="shrink-0">Người phụ trách:</span>
+            <span className="shrink-0">{t('Người phụ trách:')}</span>
             <div className="w-56">
               <ChonNguoi value={assigneeValue}
                 onChange={(v) => setParam('phuTrach', v?.kieu === 'toi' ? 'toi' : v?.kieu === 'tai_khoan' ? String(v.id) : null)}
-                nhom="nhan_vien" choNgoai={false} macDinhTrong="Mọi người" ariaLabel="Lọc theo người phụ trách" />
+                nhom="nhan_vien" choNgoai={false} macDinhTrong={t('Mọi người')} ariaLabel={t('Lọc theo người phụ trách')} />
             </div>
           </div>
         </div>
 
         {loading && <div className="p-4"><Skeleton rows={5} /></div>}
         {!loading && rows.length === 0 && (
-          <div className="p-4"><Empty title="Không có công việc nào khớp bộ lọc" /></div>
+          <div className="p-4"><Empty title={t('Không có công việc nào khớp bộ lọc')} /></div>
         )}
         {rows.length > 0 && (
           <div className="table-scroll bang-dinh">
@@ -210,34 +211,33 @@ export function TasksBoard() {
               </colgroup>
               <thead>
                 <tr>
-                  <Th hint="Bấm một dòng để mở chi tiết, việc con và lịch sử.">Việc</Th>
-                  <Th hint="Người chịu trách nhiệm làm. Người theo dõi chỉ xem, không sửa được.">Người phụ trách</Th>
-                  <Th hint="Quá hạn tính theo hạn HIỆN TẠI (giữ nguyên luật cũ) — hạn đã dời hiện ở dòng phụ.">Hạn</Th>
-                  <Th hint="Tạm ngưng là còn sống, tiếp tục được bất kỳ lúc nào; dừng hẳn là đã quyết định không làm.">Trạng thái</Th>
-                  <Th hint="Việc con chỉ MỘT tầng — không quy thành phần trăm khối lượng.">Việc con</Th>
+                  <Th hint={t('Bấm một dòng để mở chi tiết, việc con và lịch sử.')}>{t('Việc')}</Th>
+                  <Th hint={t('Người chịu trách nhiệm làm. Người theo dõi chỉ xem, không sửa được.')}>{t('Người phụ trách')}</Th>
+                  <Th hint={t('Quá hạn tính theo hạn HIỆN TẠI (giữ nguyên luật cũ) — hạn đã dời hiện ở dòng phụ.')}>{t('Hạn')}</Th>
+                  <Th hint={t('Tạm ngưng là còn sống, tiếp tục được bất kỳ lúc nào; dừng hẳn là đã quyết định không làm.')}>{t('Trạng thái')}</Th>
+                  <Th hint={t('Việc con chỉ MỘT tầng — không quy thành phần trăm khối lượng.')}>{t('Việc con')}</Th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => {
+                  const dongTam = t('{ly} · cần: {ten} · xem lại {ngay}', { ly: r.stopReason ?? '', ten: r.helpName ?? '—', ngay: r.reviewOn ? fmtDate(r.reviewOn) : '—' });
                   const phuTrangThai = r.progress === 'paused'
-                    ? catDongPhu(`${r.stopReason ?? ''} · cần: ${r.helpName ?? '—'} · xem lại ${r.reviewOn ? fmtDate(r.reviewOn) : '—'}`)
+                    ? catDongPhu(dongTam)
                     : r.progress === 'stopped' ? r.stopReason : null;
-                  const phuTrangThaiDu = r.progress === 'paused'
-                    ? `${r.stopReason ?? ''} · cần: ${r.helpName ?? '—'} · xem lại ${r.reviewOn ? fmtDate(r.reviewOn) : '—'}`
-                    : r.stopReason ?? '';
+                  const phuTrangThaiDu = r.progress === 'paused' ? dongTam : r.stopReason ?? '';
                   return (
                     <tr key={r.id} className="bam cursor-pointer" onClick={() => setOpen(r.id)}>
                       <td className="td">
                         <span className="text-slate-100" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</span>
                         <span className="block text-xs text-slate-500 mt-0.5">
                           {r.group ? TASK_GROUP_LABEL[r.group as keyof typeof TASK_GROUP_LABEL] : '—'}
-                          {' · '}{r.taskType === 'long_term' ? 'Dài hạn' : 'Trong kỳ'}
+                          {' · '}{r.taskType === 'long_term' ? t('Dài hạn') : t('Trong kỳ')}
                           {branchId === null && r.branchName ? ` · ${r.branchName}` : ''}
                         </span>
                       </td>
                       <td className="td text-slate-300">
-                        {r.assigneeName ?? <span className="text-slate-500">chưa giao</span>}
-                        {r.assigneeNgoai && <span className="ml-1 whitespace-nowrap text-xs text-slate-500">ngoài hệ thống</span>}
+                        {r.assigneeName ?? <span className="text-slate-500">{t('chưa giao')}</span>}
+                        {r.assigneeNgoai && <span className="ml-1 whitespace-nowrap text-xs text-slate-500">{t('ngoài hệ thống')}</span>}
                       </td>
                       <td className="td whitespace-nowrap">
                         <Han loai="viec-van-hanh" han={r.due} />
@@ -250,11 +250,11 @@ export function TasksBoard() {
                         {phuTrangThai && <div className="text-xs text-slate-500 mt-0.5" title={phuTrangThaiDu}>{phuTrangThai}</div>}
                       </td>
                       <td className="td text-xs">
-                        {r.subTotal > 0 ? <span className="text-slate-300">{r.subDone}/{r.subTotal} xong</span> : <span className="text-slate-500">—</span>}
+                        {r.subTotal > 0 ? <span className="text-slate-300">{t('{xong}/{tong} xong', { xong: r.subDone, tong: r.subTotal })}</span> : <span className="text-slate-500">—</span>}
                         {r.subOverdueCount > 0 && (
                           <div className="text-rose-300 mt-0.5">
-                            quá hạn: {r.subOverdueTitles.map((t) => `"${t}"`).join(', ')}
-                            {r.subOverdueCount > r.subOverdueTitles.length ? ` và ${r.subOverdueCount - r.subOverdueTitles.length} việc khác` : ''}
+                            {t('quá hạn: {ds}', { ds: r.subOverdueTitles.map((x) => `"${x}"`).join(', ') })}
+                            {r.subOverdueCount > r.subOverdueTitles.length ? ` ${t('và {n} việc khác', { n: r.subOverdueCount - r.subOverdueTitles.length })}` : ''}
                           </div>
                         )}
                       </td>
@@ -290,7 +290,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
   /* 6c (bảng kê lỗi 9): Sửa việc = view kế trong CÙNG panel (‹ về việc, ✕ đóng cả panel), không mở panel đè. */
   if (data && editing) return <SuaViec onClose={() => setEditing(false)} dongCa={onClose} task={data} onDone={() => { reload(); onDone(); }} />;
   return (
-    <KhungPanel tieuDe={data?.title ?? 'Công việc'} rong="rong" onDong={onClose} quayLai={quayLai}
+    <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai}
       ngCanh={data ? TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] || undefined : undefined}>
       {loading && <div className="pt-3"><Skeleton rows={6} /></div>}
       {data && (
@@ -298,20 +298,20 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
           <div className="flex flex-wrap items-center gap-2">
             <NhanViec progress={data.progress} label={data.progressLabel} />
             <Han loai="viec-van-hanh" han={data.due} />
-            {data.assigneeName && <Info>{data.assigneeName}{data.assigneeNgoai ? ' · ngoài hệ thống' : ''}</Info>}
-            {data.watcherName && <Info>theo dõi: {data.watcherName}</Info>}
+            {data.assigneeName && <Info>{data.assigneeName}{data.assigneeNgoai ? ` · ${t('ngoài hệ thống')}` : ''}</Info>}
+            {data.watcherName && <Info>{t('theo dõi: {ten}', { ten: data.watcherName })}</Info>}
           </div>
           {data.hanGoc && (
             <p className="text-xs text-slate-500 m-0">{dongHanDaDoi({ hanGoc: data.hanGoc, lyDo: null }, homNay)}</p>
           )}
           {data.dueHistory?.length > 0 && (
             <section>
-              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">Lịch sử hạn</h3>
+              <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-1.5">{t('Lịch sử hạn')}</h3>
               <ul className="list-none p-0 m-0 space-y-1 text-xs tabular-nums text-slate-400">
                 {data.dueHistory.map((h: any, i: number) => (
                   <li key={i}>
                     {/* PR-UXF-a Q16: lần đặt hạn đầu không phải "dời hạn". */}
-                    {h.old ? <>Dời hạn {fmtDate(h.old)} → {h.new ? fmtDate(h.new) : '—'}</> : <>Đặt hạn {h.new ? fmtDate(h.new) : '—'}</>}
+                    {h.old ? t('Dời hạn {cu} → {moi}', { cu: fmtDate(h.old), moi: h.new ? fmtDate(h.new) : '—' }) : t('Đặt hạn {ngay}', { ngay: h.new ? fmtDate(h.new) : '—' })}
                     {h.reason && <> · "{h.reason}"</>}
                     {h.by && <span className="text-slate-500"> · {h.by}</span>}
                     {h.at && <span className="text-slate-500"> · {fmtDate(h.at)}</span>}
@@ -322,13 +322,13 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
           )}
           {data.progress === 'paused' && (data.stopReason || data.helpName || data.reviewOn) && (
             <SectionNote>
-              <strong>Lý do:</strong> {data.stopReason}
-              {data.helpName && <> · cần: {data.helpName}</>}
-              {data.reviewOn && <> · hẹn xem lại {fmtDate(data.reviewOn)}</>}
+              <strong>{t('Lý do:')}</strong> {data.stopReason}
+              {data.helpName && <> · {t('cần: {ten}', { ten: data.helpName })}</>}
+              {data.reviewOn && <> · {t('hẹn xem lại {ngay}', { ngay: fmtDate(data.reviewOn) })}</>}
             </SectionNote>
           )}
           {data.progress === 'stopped' && data.stopReason && (
-            <SectionNote><strong>Lý do dừng hẳn:</strong> {data.stopReason}</SectionNote>
+            <SectionNote><strong>{t('Lý do dừng hẳn:')}</strong> {data.stopReason}</SectionNote>
           )}
           {data.note && <p className="text-sm text-slate-300 m-0">{data.note}</p>}
 
@@ -338,11 +338,11 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
           )}
           {data.viewer.canUpdate && !updating && (
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" onClick={() => setUpdating(true)}>Cập nhật tiến độ</button>
+              <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" onClick={() => setUpdating(true)}>{t('Cập nhật tiến độ')}</button>
               {data.viewer.canEdit && (
                 <>
-                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(true)}>Sửa</button>
-                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAddingSub(true)}>+ Việc con</button>
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setEditing(true)}>{t('Sửa')}</button>
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAddingSub(true)}>{t('+ Việc con')}</button>
                 </>
               )}
             </div>
@@ -351,15 +351,15 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
           {/* ─────────────────────────────────────────── việc con, một tầng */}
           <section>
             <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">
-              Việc con
+              {t('Việc con')}
               {data.subtasks.length > 0 && (
                 <span className="text-slate-500 font-normal tabular-nums ml-2">
-                  {data.subtasks.filter((x: any) => x.progress === 'done').length}/{data.subtasks.length} hoàn thành
+                  {t('{xong}/{tong} hoàn thành', { xong: data.subtasks.filter((x: any) => x.progress === 'done').length, tong: data.subtasks.length })}
                 </span>
               )}
             </h3>
             {data.subtasks.length === 0 ? (
-              <p className="text-xs text-slate-500 m-0">Chưa chia việc con.</p>
+              <p className="text-xs text-slate-500 m-0">{t('Chưa chia việc con.')}</p>
             ) : (
               <ul className="list-none p-0 m-0 space-y-1.5">
                 {data.subtasks.map((x: any) => (
@@ -369,8 +369,8 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
                       <NhanViec progress={x.progress} label={x.progressLabel} />
                     </span>
                     <span className="block text-xs tabular-nums text-slate-500 mt-0.5">
-                      {x.assigneeName ?? 'chưa giao'}
-                      {x.due ? ` · hạn ${fmtDate(x.due)}` : ''}
+                      {x.assigneeName ?? t('chưa giao')}
+                      {x.due ? ` · ${t('hạn {ngay}', { ngay: fmtDate(x.due) })}` : ''}
                       {x.stopReason ? ` · ${x.stopReason}` : ''}
                     </span>
                   </li>
@@ -381,9 +381,9 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
 
           {/* ─────────────────────────────────────────── lịch sử cập nhật */}
           <section>
-            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">Lịch sử</h3>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">{t('Lịch sử')}</h3>
             {data.updates.length === 0 ? (
-              <p className="text-xs text-slate-500 m-0">Chưa có cập nhật nào.</p>
+              <p className="text-xs text-slate-500 m-0">{t('Chưa có cập nhật nào.')}</p>
             ) : (
               <ol className="list-none p-0 m-0 space-y-2">
                 {data.updates.map((u: any) => (
@@ -401,10 +401,10 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
           {data.cases.length > 0 && (
             <section>
               <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-200 mt-0 mb-2">
-                Case làm căn cứ
+                {t('Case làm căn cứ')}
                 {/* ⓘ bấm được (không chỉ rê chuột — luật "không thao tác nào chỉ hiện khi hover"). */}
-                <NutLuat label="Về Case làm căn cứ">
-                  Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng Case nào, và cũng không tự tạo phương án cho em nào.
+                <NutLuat label={t('Về Case làm căn cứ')}>
+                  {t('Liên kết này chỉ là CĂN CỨ. Hoàn thành công việc quản lý KHÔNG đóng Case nào, và cũng không tự tạo phương án cho em nào.')}
                 </NutLuat>
               </h3>
               <ul className="list-none p-0 m-0 space-y-1 text-xs text-slate-300">
@@ -447,9 +447,9 @@ function UpdateDialog({ open, onClose, task, onDone }: {
   const conChuaXong: string[] = task.openSubTitles ?? [];
   const chanKhepLai = (progress === 'done' || progress === 'stopped') && conChuaXong.length > 0;
   const loi: LoiTruong[] = [
-    ...(needReason ? dsLoi([{ khoa: 'ly-do', nhan: 'Lý do', toiThieu: 1 }], { 'ly-do': reason }) : []),
-    ...(needHelp ? dsLoi([{ khoa: 'ho-tro', nhan: 'Cần ai hỗ trợ', chon: true }], { 'ho-tro': help }) : []),
-    ...(needHelp && (!reviewOn || reviewOn < homNay) ? [{ khoa: 'xem-lai', nhan: 'Ngày xem lại', lyDo: reviewOn ? 'Từ hôm nay trở đi' : 'Chưa chọn' }] : []),
+    ...(needReason ? dsLoi([{ khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }], { 'ly-do': reason }) : []),
+    ...(needHelp ? dsLoi([{ khoa: 'ho-tro', nhan: t('Cần ai hỗ trợ'), chon: true }], { 'ho-tro': help }) : []),
+    ...(needHelp && (!reviewOn || reviewOn < homNay) ? [{ khoa: 'xem-lai', nhan: t('Ngày xem lại'), lyDo: reviewOn ? t('Từ hôm nay trở đi') : t('Chưa chọn') }] : []),
   ];
 
   const luu = async () => {
@@ -464,16 +464,16 @@ function UpdateDialog({ open, onClose, task, onDone }: {
         helpName: help?.kieu === 'ngoai' ? help.ten : null,
       });
       invalidate('/mgmt-tasks');
-      toast.push('ok', 'Đã cập nhật'); onDone(); onClose();
-    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+      toast.push('ok', t('Đã cập nhật')); onDone(); onClose();
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
     finally { setBusy(false); }
   };
 
   return (
-    <section className="space-y-3 rounded-[10px] border p-3" style={{ borderColor: 'var(--line-strong)' }} aria-label="Cập nhật tiến độ">
-      <b className="block text-[14px] text-slate-100">Cập nhật tiến độ</b>
+    <section className="space-y-3 rounded-[10px] border p-3" style={{ borderColor: 'var(--line-strong)' }} aria-label={t('Cập nhật tiến độ')}>
+      <b className="block text-[14px] text-slate-100">{t('Cập nhật tiến độ')}</b>
       <div className="space-y-3">
-        <Field label="Trạng thái" as="div">
+        <Field label={t('Trạng thái')} as="div">
           <div className="flex flex-wrap gap-1.5">
             {TASK_PROGRESS.map((s) => (
               <NutChon key={s} nho chon={progress === s} onClick={() => setProgress(s)}>
@@ -484,36 +484,36 @@ function UpdateDialog({ open, onClose, task, onDone }: {
         </Field>
         {chanKhepLai && (
           <Alert>
-            Còn {conChuaXong.length} việc con chưa khép lại: {conChuaXong.slice(0, 2).map((t) => `"${t}"`).join(', ')}
-            {conChuaXong.length > 2 ? ` và ${conChuaXong.length - 2} việc khác` : ''}.
+            {t('Còn {n} việc con chưa khép lại: {ds}', { n: conChuaXong.length, ds: conChuaXong.slice(0, 2).map((x) => `"${x}"`).join(', ') })}
+            {conChuaXong.length > 2 ? ` ${t('và {n} việc khác', { n: conChuaXong.length - 2 })}` : ''}.
           </Alert>
         )}
         {needReason && (
-          <Field label="Lý do" required loi={lf.loiCua(loi, 'ly-do')}
-            hint="Một việc tự nhiên im lặng mà không ai biết vì sao là thứ vài tháng sau không ai giải thích được.">
+          <Field label={t('Lý do')} required loi={lf.loiCua(loi, 'ly-do')}
+            hint={t('Một việc tự nhiên im lặng mà không ai biết vì sao là thứ vài tháng sau không ai giải thích được.')}>
             <input className="field" maxLength={2000} {...lf.o(loi, 'ly-do')} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
         )}
         {needHelp && (
           <>
-            <Field label="Cần ai hỗ trợ" required loi={lf.loiCua(loi, 'ho-tro')}>
+            <Field label={t('Cần ai hỗ trợ')} required loi={lf.loiCua(loi, 'ho-tro')}>
               <div {...lf.o(loi, 'ho-tro')}>
-                <ChonNguoi value={help} onChange={setHelp} nhom="nhan_vien" choToi={false} choNgoai ariaLabel="Người cần hỗ trợ" />
+                <ChonNguoi value={help} onChange={setHelp} nhom="nhan_vien" choToi={false} choNgoai ariaLabel={t('Người cần hỗ trợ')} />
               </div>
             </Field>
-            <Field label="Ngày xem lại" required hint="Từ ngày cập nhật trở đi." loi={lf.loiCua(loi, 'xem-lai')}>
+            <Field label={t('Ngày xem lại')} required hint={t('Từ ngày cập nhật trở đi.')} loi={lf.loiCua(loi, 'xem-lai')}>
               <ONgay kieu="ngay" value={reviewOn} onChange={setReviewOn} toiThieu={homNay}
                 id={lf.oId('xem-lai')} onBlur={lf.roi('xem-lai')} invalid={!!lf.loiCua(loi, 'xem-lai')} />
             </Field>
           </>
         )}
-        <Field label="Ghi chú">
+        <Field label={t('Ghi chú')}>
           <textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
       <div className="flex flex-wrap justify-end gap-2">
-        <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onClose}>Đóng</button>
-        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onClose}>{t('Đóng')}</button>
+        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
       </div>
     </section>
   );
@@ -541,8 +541,8 @@ function SuaViec({ onClose, dongCa, task, onDone }: {
 
   const canDoi = !!task.due && due !== task.due;
   const loi = dsLoi([
-    { khoa: 'ten', nhan: 'Tên công việc', toiThieu: 1 },
-    ...(canDoi ? [{ khoa: 'ly-do-han', nhan: 'Lý do dời hạn', toiThieu: 1 }] : []),
+    { khoa: 'ten', nhan: t('Tên công việc'), toiThieu: 1 },
+    ...(canDoi ? [{ khoa: 'ly-do-han', nhan: t('Lý do dời hạn'), toiThieu: 1 }] : []),
   ], { ten: title, 'ly-do-han': lyDoDoiHan });
 
   const luu = async () => {
@@ -560,45 +560,45 @@ function SuaViec({ onClose, dongCa, task, onDone }: {
         note: note || null,
       });
       invalidate('/mgmt-tasks');
-      toast.push('ok', 'Đã lưu'); onDone(); onClose();
-    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+      toast.push('ok', t('Đã lưu')); onDone(); onClose();
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
     finally { setBusy(false); }
   };
 
   return (
-    <KhungPanel tieuDe="Sửa công việc" hocVien={task.title} rong="rong" quayLai={{ nhan: task.title, onClick: onClose }} onDong={dongCa}
+    <KhungPanel tieuDe={t('Sửa công việc')} hocVien={task.title} rong="rong" quayLai={{ nhan: task.title, onClick: onClose }} onDong={dongCa}
       chan={{
         daSua: title !== task.title || due !== (task.due ?? '') || note !== (task.note ?? '') || group !== (task.group ?? 'curriculum') || !!lyDoDoiHan.trim()
           || (assignee && 'id' in assignee ? assignee.id : null) !== (task.assigneeUserId ?? null) || (watcher && 'id' in watcher ? watcher.id : null) !== (task.watcherUserId ?? null),
         huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? 'Đang lưu…' : 'Lưu'}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
       }}>
       <div className="space-y-3 pt-3">
-        <Field label="Tên công việc" required loi={lf.loiCua(loi, 'ten')}>
+        <Field label={t('Tên công việc')} required loi={lf.loiCua(loi, 'ten')}>
           <input className="field" maxLength={200} {...lf.o(loi, 'ten')} value={title} onChange={(e) => setTitle(e.target.value)} />
         </Field>
-        <Field label="Nhóm" required>
+        <Field label={t('Nhóm')} required>
           <select className="field" value={group} onChange={(e) => setGroup(e.target.value)}>
             {TASK_GROUPS.map((g) => <option key={g} value={g}>{TASK_GROUP_LABEL[g]}</option>)}
           </select>
         </Field>
-        <Field label="Người phụ trách">
-          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choNgoai macDinhTrong="Chưa giao" />
+        <Field label={t('Người phụ trách')}>
+          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choNgoai macDinhTrong={t('Chưa giao')} />
         </Field>
-        <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
-          <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong="Không có" />
+        <Field label={t('Người theo dõi')} hint={t('Nhìn thấy công việc nhưng KHÔNG sửa được.')}>
+          <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong={t('Không có')} />
         </Field>
-        <Field label="Hạn">
+        <Field label={t('Hạn')}>
           <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {canDoi && (
-          <Field label="Lý do dời hạn" required hint="2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất." loi={lf.loiCua(loi, 'ly-do-han')}>
+          <Field label={t('Lý do dời hạn')} required hint={t('2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất.')} loi={lf.loiCua(loi, 'ly-do-han')}>
             <input className="field" maxLength={200} {...lf.o(loi, 'ly-do-han')} value={lyDoDoiHan} onChange={(e) => setLyDoDoiHan(e.target.value)}
-              placeholder="Ví dụ: Chờ duyệt ngân sách nhà cung cấp" />
+              placeholder={t('Ví dụ: Chờ duyệt ngân sách nhà cung cấp')} />
           </Field>
         )}
-        <Field label="Ghi chú">
+        <Field label={t('Ghi chú')}>
           <textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
@@ -683,8 +683,8 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
 
   const cls = classes.data?.rows.find((c) => String(c.id) === classId);
   const loi = dsLoi([
-    { khoa: 'ten', nhan: giaoGv ? 'Nội dung' : 'Tên công việc', toiThieu: 1 },
-    ...(giaoGv ? [{ khoa: 'lop', nhan: 'Lớp', chon: true }, { khoa: 'ky-nang', nhan: 'Kỹ năng', chon: true }] : []),
+    { khoa: 'ten', nhan: giaoGv ? t('Nội dung') : t('Tên công việc'), toiThieu: 1 },
+    ...(giaoGv ? [{ khoa: 'lop', nhan: t('Lớp'), chon: true }, { khoa: 'ky-nang', nhan: t('Kỹ năng'), chon: true }] : []),
   ], { ten: title, lop: classId, 'ky-nang': topic });
 
   const tao = async () => {
@@ -698,14 +698,14 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
         if (periodId === null) {
           /* Tuần neo chưa có hàng → xin id thật đúng lúc gửi. Lỗi thì báo và KHÔNG gửi việc nào. */
           try { periodId = (await resolveWeek(ky.weekStart)).id; }
-          catch { toast.push('error', 'Chưa xác định được tuần — bấm Thử lại.'); return; }
+          catch { toast.push('error', t('Chưa xác định được tuần — bấm Thử lại.')); return; }
         }
         await api.post('/tasks', {
           kind: 'teacher_task', title, note: note.trim() || undefined, periodId, dueDate: due || undefined,
           classId: Number(classId), topic, idempotencyKey: khoa.current,
         });
         invalidate('/tasks'); invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
-        toast.push('ok', `Đã giao việc cho ${cls?.studentCount ?? 0} em lớp ${cls?.code ?? ''}`.trim());
+        toast.push('ok', t('Đã giao việc cho {n} em lớp {lop}', { n: cls?.studentCount ?? 0, lop: cls?.code ?? '' }).trim());
       } else {
         await api.post('/mgmt-tasks', {
           title, group,
@@ -718,99 +718,99 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
           idempotencyKey: khoa.current,
         });
         invalidate('/mgmt-tasks');
-        toast.push('ok', 'Đã tạo công việc');
+        toast.push('ok', t('Đã tạo công việc'));
       }
       /* Đóng form; giao tiếp là mở lại → giá trị đầu đúng ngữ cảnh lúc đó và khoá gửi mới. */
       onDone(); onClose();
       if (unitReportId && veKyHop) navigate(`/cong-viec/bao-cao?periodId=${veKyHop}`);
-    } catch (e: any) { toast.push('error', e?.message ?? 'Không lưu được'); }
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
     finally { setBusy(false); }
   };
 
   return (
-    <KhungPanel tieuDe={parent ? 'Việc con' : 'Giao việc'} hocVien={parent?.title ?? null} longTrong={!!parent} onDong={onClose}
+    <KhungPanel tieuDe={parent ? t('Việc con') : t('Giao việc')} hocVien={parent?.title ?? null} longTrong={!!parent} onDong={onClose}
       chan={{
         daSua: daSua, huy: { onClick: onClose, disabled: busy },
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (giaoGv && !duocGiao(ky, busy))} onClick={tao}>{busy ? 'Đang lưu…' : giaoGv ? 'Giao' : 'Tạo'}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || (giaoGv && !duocGiao(ky, busy))} onClick={tao}>{busy ? t('Đang lưu…') : giaoGv ? t('Giao') : t('Tạo')}</button>,
       }}>
       <div className="space-y-3 pt-3">
         {!chiChiNhanh && (
-          <Field label="Loại việc" as="div">
+          <Field label={t('Loại việc')} as="div">
             <div className="flex flex-wrap gap-1.5">
-              <NutChon nho chon={loai === 'chi-nhanh'} onClick={() => { setLoai('chi-nhanh'); lf.datLai(); }}>Việc chi nhánh</NutChon>
-              <NutChon nho chon={loai === 'giao-gv'} onClick={() => { setLoai('giao-gv'); lf.datLai(); }}>Giao GV theo lớp + kỹ năng</NutChon>
+              <NutChon nho chon={loai === 'chi-nhanh'} onClick={() => { setLoai('chi-nhanh'); lf.datLai(); }}>{t('Việc chi nhánh')}</NutChon>
+              <NutChon nho chon={loai === 'giao-gv'} onClick={() => { setLoai('giao-gv'); lf.datLai(); }}>{t('Giao GV theo lớp + kỹ năng')}</NutChon>
             </div>
           </Field>
         )}
-        <Field label={giaoGv ? 'Nội dung' : 'Tên công việc'} required loi={lf.loiCua(loi, 'ten')}>
+        <Field label={giaoGv ? t('Nội dung') : t('Tên công việc')} required loi={lf.loiCua(loi, 'ten')}>
           <input className="field" maxLength={200} {...lf.o(loi, 'ten')} value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder={parent ? 'Ví dụ: Soạn phần Listening' : giaoGv ? 'Ví dụ: Tăng 15 phút luyện nghe chi tiết mỗi buổi' : 'Ví dụ: Xây dựng giáo trình Beginner'} />
+            placeholder={parent ? t('Ví dụ: Soạn phần Listening') : giaoGv ? t('Ví dụ: Tăng 15 phút luyện nghe chi tiết mỗi buổi') : t('Ví dụ: Xây dựng giáo trình Beginner')} />
         </Field>
         {giaoGv ? (
           <>
-            <Field label="Lớp" required loi={lf.loiCua(loi, 'lop')}>
-              <ChonLop ariaLabel="Lớp" placeholder="Chọn lớp" {...lf.o(loi, 'lop')} value={classId ? Number(classId) : null} onChange={(id) => setClassId(id ? String(id) : '')}
-                khongKhop={classes.data ? undefined : 'Đang tải…'} ds={(classes.data?.rows ?? []).map((c) => ({ id: c.id, ma: c.code, phu: `${c.studentCount} em` }))} />
+            <Field label={t('Lớp')} required loi={lf.loiCua(loi, 'lop')}>
+              <ChonLop ariaLabel={t('Lớp')} placeholder={t('Chọn lớp')} {...lf.o(loi, 'lop')} value={classId ? Number(classId) : null} onChange={(id) => setClassId(id ? String(id) : '')}
+                khongKhop={classes.data ? undefined : t('Đang tải…')} ds={(classes.data?.rows ?? []).map((c) => ({ id: c.id, ma: c.code, phu: t('{n} em', { n: c.studentCount }) }))} />
             </Field>
-            <Field label="Kỹ năng" required as="div" loi={lf.loiCua(loi, 'ky-nang')}>
+            <Field label={t('Kỹ năng')} required as="div" loi={lf.loiCua(loi, 'ky-nang')}>
               <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'ky-nang')}>
                 {ENTRY_SKILLS.map((k) => (
                   <NutChon key={k} nho chon={topic === k} onClick={() => setTopic(k)}>{ENTRY_SKILL_LABEL[k]}</NutChon>
                 ))}
               </div>
             </Field>
-            <Field label="Tuần" as="div">
+            <Field label={t('Tuần')} as="div">
               {ky.loai === 'co' ? (
                 <p className="m-0 text-sm tabular-nums">{tuanLich(ky.weekStart, homNay)}</p>
               ) : ky.loai === 'dang-tai' ? (
-                <p className="m-0 text-sm text-slate-500" role="status">Đang lấy tuần hiện tại…</p>
+                <p className="m-0 text-sm text-slate-500" role="status">{t('Đang lấy tuần hiện tại…')}</p>
               ) : (
                 <div className="flex flex-wrap items-center gap-2" role="alert">
                   <p className="m-0 text-sm text-bad">
-                    {ky.loai === 'loi' ? 'Chưa lấy được tuần hiện tại nên chưa giao được.' : 'Không xác định được tuần hiện tại nên chưa giao được.'}
+                    {ky.loai === 'loi' ? t('Chưa lấy được tuần hiện tại nên chưa giao được.') : t('Không xác định được tuần hiện tại nên chưa giao được.')}
                   </p>
-                  <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={tuanNay.reload}>Thử lại</button>
+                  <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={tuanNay.reload}>{t('Thử lại')}</button>
                 </div>
               )}
             </Field>
             <SectionNote>
-              Việc này hiện trong hồ sơ của <strong>{cls ? `${cls.studentCount} em lớp ${cls.code}` : 'từng em trong lớp'}</strong>, ở đúng
-              ô kỹ năng đã chọn — nhưng vẫn là <strong>một việc</strong>, cập nhật một lần. Em nào chưa có Case ở kỹ năng đó thì hệ thống mở
-              Case mới, ghi rõ là mở theo yêu cầu QL, và đưa thẳng vào <em>đang xử lý</em> — PA chính là việc này.
+              {t('Việc này hiện trong hồ sơ của')} <strong>{cls ? t('{n} em lớp {lop}', { n: cls.studentCount, lop: cls.code }) : t('từng em trong lớp')}</strong>
+              {t(', ở đúng ô kỹ năng đã chọn — nhưng vẫn là')} <strong>{t('một việc')}</strong>
+              {t(', cập nhật một lần. Em nào chưa có Case ở kỹ năng đó thì hệ thống mở Case mới, ghi rõ là mở theo yêu cầu QL, và đưa thẳng vào')} <em>{t('đang xử lý')}</em> {t('— PA chính là việc này.')}
             </SectionNote>
           </>
         ) : (
           <>
             {!parent && (
-              <Field label="Nhóm" required>
+              <Field label={t('Nhóm')} required>
                 <select className="field" value={group} onChange={(e) => setGroup(e.target.value)}>
                   {TASK_GROUPS.map((g) => <option key={g} value={g}>{TASK_GROUP_LABEL[g]}</option>)}
                 </select>
               </Field>
             )}
-            <Field label="Người phụ trách">
-              <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai macDinhTrong="Chưa giao" />
+            <Field label={t('Người phụ trách')}>
+              <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai macDinhTrong={t('Chưa giao')} />
             </Field>
-            <Field label="Người theo dõi" hint="Nhìn thấy công việc nhưng KHÔNG sửa được.">
-              <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong="Không có" />
+            <Field label={t('Người theo dõi')} hint={t('Nhìn thấy công việc nhưng KHÔNG sửa được.')}>
+              <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong={t('Không có')} />
             </Field>
           </>
         )}
-        <Field label="Hạn" hint={parent ? 'Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.' : undefined}>
+        <Field label={t('Hạn')} hint={parent ? t('Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.') : undefined}>
           <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {!parent && !giaoGv && (
-          <Field label="Chi nhánh">
+          <Field label={t('Chi nhánh')}>
             <select className="field" value={branch} onChange={(e) => setBranch(e.target.value)}>
-              <option value="">Toàn hệ thống</option>
+              <option value="">{t('Toàn hệ thống')}</option>
               {(branches.data ?? []).map((b: any) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
           </Field>
         )}
-        <Field label="Ghi chú">
+        <Field label={t('Ghi chú')}>
           <textarea className="field" rows={2} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
       </div>
