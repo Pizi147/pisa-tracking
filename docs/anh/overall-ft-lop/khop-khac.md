@@ -35,9 +35,11 @@ Không mất thao tác. Lớp thường không đổi (lớp 6: `ca-bai` + 4 mô
 `/classes/:id/phan-tich-lop`: 8 câu, 712 dòng trước = sau (JOIN thêm `report_periods` trong cùng câu), trần 24/25/23 giữ.
 Đường mới `/classes/:id/issue-board/o?cot=overall&kind=mt1`, chỉ chạy khi MỞ: 9 câu, 276 dòng (đọc đúng một đợt; đọc cả lớp là 721). Trần 11 câu, 360 dòng. Vượt mốc panel "≤ ~4 câu" vì dùng lại hàm tính của ô để số = danh sách; vẫn nhẹ hơn panel `cot=case` cùng tab (16 câu).
 
-## [XM] cần PTA quyết
-- Dòng kỹ năng của bảng này VẪN tính em KCK có Target (`danhGiaMon` không loại), dòng Overall thì không (đúng kế hoạch, cùng Đạt MT). Có em KCK thì mẫu số Overall nhỏ hơn dòng kỹ năng. Không sửa ở PR này vì đổi số đang hiện; ⓘ đã ghi rõ.
-- Cột Overall dùng Target hiện tại của em (`danhGiaMon`), không phải Target lúc lượt như Kết quả Test. Em đổi Target sau lượt thì hai màn có thể lệch; giữ để cùng dòng kỹ năng.
+## Chủ SP chốt 02/11
+- Dòng kỹ năng CÓ tính em KCK, dòng Overall không (như Đạt MT); ⓘ Cách tính ghi rõ để mẫu số lệch có lý do.
+- FT so Target LÚC LƯỢT (`target_at_attempt`, cùng `resultOf` / Kết quả Test): `danhGiaMon` dùng `kyVongCuaLuot`, cho dòng Overall, dòng kỹ năng, panel. Lượt không có Target lúc lượt: ngoài mẫu, như `resultOf`.
+- Phân tích GV (`mucKetQua`, cả hồ sơ GV) vốn đã so Target lúc lượt nên số không đổi. Tab Phân tích lớp: số chỉ đổi với em đổi Target sau lượt đã có điểm; MB FT 101 demo có 3 lượt lệch Target nhưng mọi ô giữ nguyên, ảnh chụp lại trùng số.
+- Đổi phép kiểm: `hocVienLop` dựng lượt có Target lúc lượt như `createAttempt`; `prNt` NT-2, `prOv11h` bỏ tham số `mucTieu` đã gỡ.
 
 ## Phép kiểm sửa mốc
 - `hocVienLop` PR-Qa §3.7: khung FT thêm "Overall" đầu danh sách dòng (mockup v8 D đã duyệt); số ô kỹ năng giữ nguyên.

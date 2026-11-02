@@ -46,13 +46,13 @@ export async function runOverallFtLopTests(t: YThucTestKit & { P: any; TODAY: st
     /* Đếm tay: em đang học + lộ trình đang chạy + MT1 chưa huỷ, không KCK, đủ Overall. */
     let dat = 0, tong = 0;
     for (const a of conn.prepare(
-      `SELECT a.id, a.attempt_no, a.kck_at_attempt, cy.target_score, cy.route, cy.khong_cam_ket
+      `SELECT a.id, a.attempt_no, a.kck_at_attempt, a.target_at_attempt, cy.route, cy.khong_cam_ket
          FROM enrollments e JOIN students s ON s.id = e.student_id JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
          JOIN assessment_attempts a ON a.cycle_id = cy.id AND a.kind = 'mock' AND a.attempt_no = 1 AND a.status != 'cancelled'
         WHERE e.class_id = ? AND e.status = 'active' AND s.archived_at IS NULL`,
     ).all(MB_FT) as any[]) {
       if (a.kck_at_attempt ?? a.khong_cam_ket) continue;
-      const kv = scoring.expectationFor(a.target_score, 1, a.route);
+      const kv = scoring.expectationFor(a.target_at_attempt, 1, a.route);
       const ovr = scoring.evaluateAttempt(null, 1, svc.entryBandsOf(svc.scoresOf(a.id)), svc.skipsOf(a.id)).overall;
       if (kv === null || ovr === null) continue;
       tong += 1;
@@ -76,6 +76,26 @@ export async function runOverallFtLopTests(t: YThucTestKit & { P: any; TODAY: st
       assert(bang().o[O1].tong === tong + 2, 'KCK phải ngoài mẫu');
     });
   });
+
+  check('OV-FT (chủ SP 02/11) · em đổi Target sau lượt → ô Overall, ô kỹ năng, panel vẫn so Target LÚC LƯỢT', () => thu(() => {
+    const em = emMt1(DU(5.5));   // Target lúc lượt 6.5 → kỳ vọng 5.5, Overall 5.5 đạt
+    const truoc = bang();
+    assert(truoc.ds[O1].dat.includes(em.sid) && truoc.ds['reading|mt1'].dat.includes(em.sid), 'trước khi đổi Target em đạt');
+    conn.prepare('UPDATE learning_cycles SET target_score = 7.5 WHERE id = ?').run(em.cy);   // đổi sau lượt: kỳ vọng hiện tại 6.5
+    const sau = bang();
+    assert(sau.ds[O1].dat.includes(em.sid), 'Overall phải so Target lúc lượt');
+    assert(sau.ds['reading|mt1'].dat.includes(em.sid), 'kỹ năng phải so Target lúc lượt');
+    xoaNho();
+    const dong = ptl.oPhanTichLop(P.admin, MB_FT, 'overall', 'overall', 'mt1').rows.find((r: any) => r.id === em.sid);
+    assert(dong?.ketQua === 'dat' && dong.diemHv.soVoi.v === 5.5, `panel: ${JSON.stringify(dong?.diemHv?.soVoi)}`);
+  }));
+
+  check('OV-FT · thiếu Target lúc lượt → ngoài mẫu, như resultOf (không lấy Target hiện tại)', () => thu(() => {
+    const em = emMt1(DU(6.0));
+    conn.prepare('UPDATE assessment_attempts SET target_at_attempt = NULL WHERE id = ?').run(em.attemptId);
+    const p = bang();
+    assert(!p.ds[O1].dat.includes(em.sid) && !p.ds[O1].chua.includes(em.sid), 'em không có Target lúc lượt phải ngoài mẫu');
+  }));
 
   check('OV-FT · lớp thường không có hàng Overall', () => {
     const lop = (conn.prepare(`SELECT c.id FROM classes c JOIN programmes pr ON pr.code = c.programme_code WHERE pr.scoring_mode = 'ratio' LIMIT 1`).get() as any).id as number;

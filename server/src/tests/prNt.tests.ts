@@ -77,7 +77,7 @@ export async function runPrNtTests(t: YThucTestKit) {
   check('NT-2 · danhGiaMon lượt lớp thường không đọc target', () => {
     const prog = { scoringMode: 'ratio', skills: ['L', 'R'], code: 'FOU' } as any;
     const a = { kind: 'progress', attempt_no: 1, route: null };
-    assert(JSON.stringify(plt.danhGiaMon(a, [], prog, 6.5)) === JSON.stringify(plt.danhGiaMon(a, [], prog, null)), 'target đổi kết quả lớp thường');
+    assert(JSON.stringify(plt.danhGiaMon({ ...a, target_at_attempt: 6.5 }, [], prog)) === JSON.stringify(plt.danhGiaMon(a, [], prog)), 'target đổi kết quả lớp thường');
   });
 
   check('NT-2 · Công việc GVCN lớp thường: em thiếu Target KHÔNG thành việc "Điền Target"', () => {

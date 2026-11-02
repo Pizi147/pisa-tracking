@@ -73,7 +73,7 @@ export type ScoreRow = {
 };
 
 /** OV-12b: kỳ vọng của lượt cho chip nhóm nguyên nhân (MT0 không kỳ vọng) — cùng `expectationFor` với `resultOf`. */
-const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a)));
+export const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a)));
 
 /** LUAT-34 (T20b): ô có điểm đã huỷ còn cất (`ket_qua_huy` loại `huy_diem`) — cột trong CÂU ĐỌC ĐIỂM sẵn có (không thêm câu SQL). */
 const DIEM_HUY_SQL = `EXISTS (SELECT 1 FROM ket_qua_huy k WHERE k.attempt_id = s.attempt_id AND k.loai = 'huy_diem' AND k.khoi_phuc_luc IS NULL

@@ -36,7 +36,7 @@ export async function runPrOv11hTests(t: YThucTestKit) {
   check('OV11h-1 · lớp PET: Phân tích lớp cột "Checkpoint 1" (2 bài), hồ sơ GV + Phân tích GV có kết quả L (P13: 4 môn), xuất từng lượt có lượt, Tổng hợp không xếp dưới Progress', () => thu(() => {
     assert(pet && cp.length === 2, `demo phải có MB PET 01 với 2 bài Checkpoint đã chấm (có ${cp.length})`);
     const prog = d.CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x: any) => x.code === 'PET');
-    const ev = ptLop.danhGiaMon(cp[0], conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(cp[0].id), { ...prog, scoringMode: 'ratio', checkpoints: [] }, null);
+    const ev = ptLop.danhGiaMon(cp[0], conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(cp[0].id), { ...prog, scoringMode: 'ratio', checkpoints: [] });
     assert(ev && ev.mon.length === 4, `danhGiaMon checkpoint phải chấm 4 môn (P13): ${JSON.stringify(ev)}`);
 
     const lop = ptLop.phanTichLop(P.mbManager, pet.id);

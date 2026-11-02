@@ -37,7 +37,7 @@ export function PhanTichLopTab({ classId }: { classId: number }) {
   if (loading || !data) return <Skeleton rows={5} />;
   const ft = data.loai === 'ft';
   const goiY = ft
-    ? `${t('Mỗi ô: số học viên đạt / số học viên đã có điểm kỹ năng đó ở lượt đủ Overall. Overall đạt kỳ vọng của đợt thì mọi kỹ năng tính đạt; chưa đạt thì xét từng kỹ năng (W1, W2 riêng). Bấm một dòng để xem vấn đề hay gặp.')} ${t('Dòng Overall: số học viên có Overall đạt kỳ vọng của đợt / số học viên đủ Overall, không tính em KCK.')}`
+    ? `${t('Mỗi ô: số học viên đạt / số học viên đã có điểm kỹ năng đó ở lượt đủ Overall. Overall đạt kỳ vọng của đợt thì mọi kỹ năng tính đạt; chưa đạt thì xét từng kỹ năng (W1, W2 riêng). Bấm một dòng để xem vấn đề hay gặp.')} ${t('Dòng Overall: số học viên có Overall đạt kỳ vọng của đợt / số học viên đủ Overall, không tính em KCK; dòng kỹ năng vẫn tính em KCK nên mẫu số có thể khác. Kỳ vọng theo Target lúc thi lượt đó.')}`
     : t('Mỗi ô: số học viên đạt (từ 70%) / số học viên đã có điểm môn đó. Bấm một dòng để xem vấn đề hay gặp.');
 
   return (

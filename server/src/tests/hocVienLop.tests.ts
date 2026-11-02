@@ -264,9 +264,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   function themLuot(o: { sid: number; cid: number; cycleId: number; no: number; kind: 'mock' | 'progress' | 'final'; weekStart: string }): number {
     const periodId = week.ensurePeriod(o.weekStart).id;
     const id = Number(conn.prepare(
-      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at)
-       VALUES (?,?,?,?,?,?, 'planned', ?)`,
-    ).run(o.cycleId, o.sid, o.no, o.kind, o.cid, periodId, NOW).lastInsertRowid);
+      /* Target lúc lượt như `createAttempt`: bảng Phân tích lớp so Target này (chủ SP 02/11). */
+      `INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, target_at_attempt, created_at)
+       VALUES (?,?,?,?,?,?, 'planned', (SELECT target_score FROM learning_cycles WHERE id = ?), ?)`,
+    ).run(o.cycleId, o.sid, o.no, o.kind, o.cid, periodId, o.cycleId, NOW).lastInsertRowid);
     skillSchedule.ensureSkillRows(id);
     return id;
   }
