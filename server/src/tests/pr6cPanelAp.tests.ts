@@ -76,7 +76,7 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(!/<KhungPanel/.test(gh) && /<Modal open onClose=\{dong\}/.test(gh), 'Gia hạn vẫn là KhungPanel đè');
     const mg = doc(W + 'worklist/MgmtTasksPage.tsx');
     assert(/if \(data && editing\) return <SuaViec /.test(mg), 'Sửa việc chưa thay view');
-    assert(/tieuDe="Sửa công việc" hocVien=\{task\.title\} rong="rong" quayLai=\{\{ nhan: task\.title, onClick: onClose \}\} onDong=\{dongCa\}/.test(mg), 'Sửa việc còn longTrong / thiếu ‹');
+    assert(/tieuDe=\{t\('Sửa công việc'\)\} hocVien=\{task\.title\} rong="rong" quayLai=\{\{ nhan: task\.title, onClick: onClose \}\} onDong=\{dongCa\}/.test(mg), 'Sửa việc còn longTrong / thiếu ‹');
   });
 
   check('6c ⑥ Nhập hộ gọn (#641 XM-2): không cột Kết quả, không nút "Cả lớp"; "·" không đứng đầu dòng 2 đầu panel (XM-3)', () => {
