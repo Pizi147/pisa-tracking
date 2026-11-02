@@ -537,6 +537,16 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(a >= 0 && a < b, 'Redirect 404 /assets/* phải đứng trước /*');
   });
 
+  check('TAI-NHANH · phông số Inter đã cắt: đủ 5 weight 400–800 trong web/src/fonts, mỗi tệp < 6 KB, index.css chỉ trỏ tới đó (không nạp Inter đủ bộ latin)', () => {
+    const css = fsMod.readFileSync(pathMod.join(REPO, 'web/src/index.css'), 'utf8');
+    for (const w of [400, 500, 600, 700, 800]) {
+      const tep = pathMod.join(REPO, `web/src/fonts/inter-so-${w}.woff2`);
+      assert(fsMod.existsSync(tep) && fsMod.statSync(tep).size < 6144, `Thiếu / quá lớn: inter-so-${w}.woff2`);
+      assert(css.includes(`font-weight: ${w}; unicode-range: U+0030-0039; src: url('./fonts/inter-so-${w}.woff2')`), `index.css chưa trỏ weight ${w} tới tệp đã cắt`);
+    }
+    assert(!css.includes('@fontsource/inter/files'), 'index.css còn nạp Inter đủ bộ');
+  });
+
   // ================================================================== PR-Z2c-b · Mất luồng Turso ("stream not found")
 
   console.log('\nPR-Z2c-b · Mất luồng Turso: GET mở lại kết nối và thử lại đúng một lần; ghi thì không');

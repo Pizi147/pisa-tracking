@@ -26,5 +26,7 @@ export default defineConfig({
     proxy: { '/api': { target: `http://127.0.0.1:${apiPort}`, changeOrigin: true } },
   },
   /* `await` cấp cao (tuDienWeb.ts) cần ES2022: Chrome / Edge 89, Firefox 89, Safari 15 trở lên. */
-  build: { outDir: 'dist/web', emptyOutDir: true, target: ['es2022', 'chrome89', 'edge89', 'firefox89', 'safari15'] },
+  build: { outDir: 'dist/web', emptyOutDir: true, target: ['es2022', 'chrome89', 'edge89', 'firefox89', 'safari15'],
+    /* Phông số Inter đã cắt (~2,7 KB) dưới ngưỡng nhúng 4 KB: giữ tệp riêng để trình duyệt chỉ tải weight đang hiện (unicode-range), không nhúng cả 5 vào CSS. */
+    assetsInlineLimit: (tep) => (tep.endsWith('.woff2') ? false : undefined) },
 });
