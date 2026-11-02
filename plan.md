@@ -759,6 +759,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 02/11 | HSL-TUAN-KET-THUC · Opus 5.5 | Đầu hồ sơ lớp đã kết thúc không còn "tuần 42/8" (đếm tuần tới hôm nay) — bỏ số tuần khi lớp `finished` (RA-LOI-WEB). |
 | 02/11 | HSL-GIU-LOC · Opus 5.5 | Hồ sơ lớp: chip lọc Học viên FT (SOS · Chưa đủ dữ liệu) và Cuối khoá (Chưa chốt…) lên `?loc=` — sang hồ sơ em rồi ‹ / Back / F5 giữ đúng lọc (RA-LOI-WEB). |
 | 02/11 | DOC-IT-1 · Opus 5.5 | `/demo/session` thôi SCAN `sqlite_master` (~270 dòng bản chính / lần mở app); công cụ đo dòng quét `scripts/do-it.py` + bảng `docs/toc-do/doc-it-0211.md` |
 | 01/11 | TL-VIEC · Opus 5.5 | `myWork` nạp chung một lần mỗi request: `/my-work` QL 54 → 39 câu, `tat-ca` 64 → 44, GV 46 → 33; so bản chụp 409 khoá, 0 khác |
