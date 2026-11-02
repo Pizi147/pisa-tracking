@@ -121,17 +121,17 @@ const CHU_HAN = 'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-
 export function ChipSoQuaHan({ n }: { n: number }) {
   return <span className={`${CHU_HAN} font-semibold text-late`}><span aria-hidden>⚠</span>{t('{n} quá hạn', { n })}</span>;
 }
-/** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn chữ phụ; luôn có chữ.
+/** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn viên xám; luôn có chữ.
  *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Chữ hạn = `nhanHan` "hạn 18/09" (NEN-V5 P7: ngày thật, kể cả hôm nay). */
 export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
-  /* NEN-PANEL (mockup V5 `v5-nen.css .bd-td.sap / .qua`, thay OV-15a "chỉ chữ"): quá hạn / sắp hạn = badge tiến độ có ⚠; xa hạn giữ chữ phụ. */
+  /* NEN-PANEL (mockup V5 `v5-nen.css .bd-td.sap / .qua`): quá hạn / sắp hạn = viên có ⚠; hạn xa = viên xám không ⚠ (mockup v7 `cong-viec-2.html .td`). */
   const can = v.tone === 'overdue' || v.ganHan;
-  const lop = v.tone === 'overdue' ? 'bg-late-bg font-semibold text-late' : v.ganHan ? 'bg-soon-bg font-semibold text-soon' : 'text-dim';
+  const lop = v.tone === 'overdue' ? 'bg-late-bg text-late' : v.ganHan ? 'bg-soon-bg text-soon' : 'surface-2 text-dim';
   return (
-    <span title={v.text} className={`${CHU_HAN} ${lop} ${can ? 'h-[22px] rounded-full px-2 text-xs' : ''}`}>
+    <span title={v.text} className={`${CHU_HAN} ${lop} h-[22px] rounded-full px-[9px] text-xs font-semibold`}>
       {can && <span aria-hidden>⚠</span>}
       {v.tone === 'overdue' ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : nhanHan(han, homNay)}
     </span>
