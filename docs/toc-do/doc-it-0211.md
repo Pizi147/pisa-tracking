@@ -69,9 +69,28 @@ Giả định: ~60 người dùng, mỗi người ~10 lần mở app / ngày (F5
 | DOC-IT-1 (#797) | ~270 dòng / lần mở app | ~160 nghìn (~5 triệu / tháng) |
 | DOC-IT-3 (#802) | câu Case Tổng quan GV ~573 Case × (1 + 4 câu con) ≈ 3 nghìn → vài trăm dòng (50 GV × 8 lần) | ~1 triệu |
 | DOC-IT-2 (#800) | ~890 dòng / lần mở Công việc / Tổng quan GV + ~890 / lượt quét nền (860 lần mở + ~600 lượt quét) | ~1,3 triệu |
+| DOC-IT-4 (#804) | `/ref/classes` GV ~900 → ~60 dòng / lần gọi (~300 lần) | ~200 nghìn |
+| DOC-IT-5 (#806) | ~830 dòng / lần mở Học viên & Lớp hoặc Tổng quan TVV / CX (60 người × 5 lần) | ~250 nghìn |
+| DOC-IT-6 | việc TVV của QL: 844 → ~1/5 HV / lần mở Công việc QL (8 QL × 20 lần) | ~100 nghìn |
+| **Tổng** | | **~3 triệu / ngày** (~90 triệu / tháng) |
 
-## DOC-IT-4 — `/ref/classes` (#PR sau DOC-IT-3)
+## DOC-IT-4 — `/ref/classes` (#804)
 
 Ô chọn lớp (IntakePanel, LuoiTaoLop, bộ lọc Phân tích…) đọc MỌI lớp active cả hệ thống + đếm ghi danh active từng lớp, rồi lọc phạm vi / chi nhánh trong mã.
 Nay lọc trong SQL (`classScopeSql`). Dòng trả ×1: GV 33 → 11 · GVBM 33 → 18 · QL 33 → 23 (mọi vai trước 33); 3 câu như cũ; JSON trùng mọi vai × 4 kiểu tham số.
 Bản chính: ~88 lớp + ~800 ghi danh active được đếm mỗi lần gọi → GV ~5 lớp / ~60 dòng.
+
+## DOC-IT-5 — HV Lưu trữ (#806) · DOC-IT-6 — việc TVV của QL
+
+- DOC-IT-5: `danhSachLuuTru` `WHERE s.archived_at IS NOT NULL` SCAN cả `students` mỗi lần mở Học viên & Lớp → chỉ mục một phần `idx_student_luu_tru` (migrate `prDocIt5`).
+  ×3: 27 đường giảm 446 dòng quét cả bảng, 0 đường tăng.
+- DOC-IT-6: `viecHoSoTvv` của QL SCAN cả `students` cả hệ thống rồi giữ em chi nhánh mình → tập cha theo chi nhánh (CYCLE_EDIT) ∪ em mình là TVV trong SQL.
+  ×3: QL `/my-work` dòng quét cả bảng 2 965 → 2 519, dòng trả 2 365 → 2 242; JSON = câu cũ (S3-a).
+
+## Còn lại (chưa làm, lý do)
+
+- `sc.status != 'done'` SCAN `sos_cases` (Công việc `napCaseMo`, quét nền, TVV / CX): chỉ mục một phần làm câu TD7a đổi kế hoạch tệ hơn; bản chính Case đóng 12 % →
+  lợi nhỏ. Khi Case đóng nhiều: đổi vế thành `status IN ('open','in_progress')` (chỉ 3 trạng thái trong mã) + chỉ mục một phần khớp đúng vế.
+- `teacher_assignments` SCAN (`phanCongDangHoatDong`, #770): PTA để chờ log; 517 dòng bản chính.
+- Đường > 30 câu: phần lớn đọc theo chỉ mục — lợi dòng nhỏ hơn các việc trên.
+- Số đo là bước máy ảo + dòng quét cả bảng của SQLite, không phải đơn vị Turso: xác nhận bằng ảnh Turso Top Queries 2–3 ngày sau deploy.

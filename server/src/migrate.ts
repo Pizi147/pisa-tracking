@@ -69,6 +69,7 @@ import { themCotPrOv15f } from './migrate/prOv15f.ts';
 import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrDocIt2 } from './migrate/prDocIt2.ts';
+import { migratePrDocIt5 } from './migrate/prDocIt5.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
 import { migratePrOv15d } from './migrate/prOv15d.ts';
 import { migratePrOv15e } from './migrate/prOv15e.ts';
@@ -432,6 +433,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* TL-NEN: bảng moc_he_thong (phiên bản bảng tham chiếu + mốc quét đường đọc) + 15 trigger tg_tc_* (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNen(conn, applied));
     /* TL-NAPBAI: attempt_skills.branch_id + chỉ mục (chi nhánh, tuần), (lớp, tuần) + 5 trigger giữ cột — napBai cả chi nhánh theo kỳ (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNapBai(conn, applied));
     /* DOC-IT-2: chỉ mục một phần mini test chưa có tỉ lệ + hẹn Lộ trình mới — giảm dòng đọc Turso (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrDocIt2(conn, applied));
+    /* DOC-IT-5: chỉ mục một phần học viên Lưu trữ — Học viên & Lớp thôi quét cả bảng students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrDocIt5(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
