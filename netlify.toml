@@ -32,10 +32,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-# TAI-NHANH 02/11: tệp trong /assets có mã băm trong tên (Vite) → cache 1 năm, không hỏi lại. index.html giữ mặc định Netlify (luôn hỏi lại) để bản mới tới ngay.
-# Header áp theo đường yêu cầu, độc lập với redirect `/*` (tệp có thật được phục vụ trước redirect 200).
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
