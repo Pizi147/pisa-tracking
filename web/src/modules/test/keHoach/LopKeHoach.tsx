@@ -8,7 +8,7 @@ import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
 import type { LopKH, LuoiFTData, LuoiThuongData } from './kieu.ts';
 import { kyHieuLop } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT LỚP TRONG KẾ HOẠCH TEST: hàng lớn `HangNhom` (N-2 — `▾/▸ {mã}` · `{chi nhánh} · {n} HV` · bên phải tóm tắt: FT
@@ -27,18 +27,18 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
     setBusy(true);
     try {
       const r = await api.post<{ created: number }>(`/regular/classes/${lop.id}/plan`, {});
-      toast.push('ok', `Đã tạo ${r.created} bài`);
+      toast.push('ok', t('Đã tạo {n} bài', { n: r.created }));
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
     } catch (e: any) {
-      toast.push('error', e.message ?? 'Không tạo được — thử lại.');
+      toast.push('error', e.message ?? t('Không tạo được — thử lại.'));
     } finally {
       setBusy(false);
     }
   };
   const nutXep = lop.loai === 'thuong' && lop.hvChuaCoLich > 0 && !lop.chiXem ? (
     <button type="button" className="btn btn-sm ml-2 min-h-[28px] align-middle font-normal" disabled={busy} onClick={() => void xepCaLop()}
-      title={`${lop.hvChuaCoLich} em chưa có Progress Test / Final Test`}>
-      {busy ? 'Đang tạo…' : 'Xếp cả lớp theo đề xuất'}
+      title={t('{n} em chưa có Progress Test / Final Test', { n: lop.hvChuaCoLich })}>
+      {busy ? t('Đang tạo…') : t('Xếp cả lớp theo đề xuất')}
     </button>
   ) : null;
 
@@ -46,7 +46,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
     <div className="overflow-hidden rounded-lg border bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
       <table className="w-full">
         <tbody>
-          <HangNhom mo={mo} onMo={onToggle} nhan={`lớp ${lop.code}`}
+          <HangNhom mo={mo} onMo={onToggle} nhan={t('lớp {ma}', { ma: lop.code })}
             tieuDe={(
               <span className="block min-w-0">
                 <span className="flex flex-wrap items-baseline gap-x-2">
@@ -54,11 +54,11 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
                   {lop.chiXem && <span className={`${CHIP_TRON} !border-[var(--line-strong)] bg-[var(--surface)] text-dim`}>{t('Chỉ xem')}</span>}
                   <span className="text-xs font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
                 </span>
-                <span className="block text-xs font-normal text-slate-400 sm:hidden">{lop.tomTat}{nutXep}</span>
+                <span className="block text-xs font-normal text-slate-400 sm:hidden">{dich(lop.tomTat)}{nutXep}</span>
               </span>
             )}>
             {/* `.hang-lon > td` đặt chữ đậm 12.5px với độ ưu tiên cao hơn tiện ích Tailwind — chữ phụ phải đặt thẳng vào style. */}
-            <td className="hidden pr-3 text-right text-slate-300 sm:table-cell" style={{ fontWeight: 400, fontSize: 12 }}>{lop.tomTat}{nutXep}</td>
+            <td className="hidden pr-3 text-right text-slate-300 sm:table-cell" style={{ fontWeight: 400, fontSize: 12 }}>{dich(lop.tomTat)}{nutXep}</td>
           </HangNhom>
         </tbody>
       </table>

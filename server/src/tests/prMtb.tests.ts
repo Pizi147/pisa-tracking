@@ -415,7 +415,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb (T3) · quét nguồn: panel Xếp lịch Mock Test vẽ theo mockup phần 1, không còn giao diện cũ', () => {
     const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
-    for (const c of ['MT mới', 'Lịch riêng ▸', 'Tuần và kỹ năng', 'Sẽ xếp ', 'Cần xem ', 'Không xếp được ', '⇆ cuộn ngang', 'Chọn tất cả',
+    for (const c of ['MT mới', 'Lịch riêng ▸', 'Tuần và kỹ năng', "t('Sẽ xếp')", "t('Cần xem')", "t('Không xếp được')", '⇆ cuộn ngang', 'Chọn tất cả',
       'kyNang', 'attemptNo: dot', '<OMt', 'nhanSeXep(', 'demSeXep(', 'aria-pressed', 'min-w-[960px]', 'indeterminate', 'Tuần đã qua',
       'force: true']) {
       assert(p.includes(c), `NganXepLichMt thiếu ${c}`);
@@ -890,7 +890,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('PR-OMT (C1, C6) · quét nguồn: panel Xếp lịch MT toàn màn, cột Mock Test không xuống dòng ở sm+; lưới FT vẽ ChipDotFT (đợt có lịch) + OMt (chưa có đợt), cột hẹp', () => {
     const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
-    assert(/<KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan"/.test(p), 'panel rong="toan"');
+    assert(/<KhungPanel tieuDe=\{t\('Xếp lịch Mock Test'\)\} rong="toan"/.test(p), 'panel rong="toan"');
     assert(/sm:flex-nowrap/.test(p) && /sm:w-\[300px\]/.test(p), 'Mock Test nowrap, cột Sẽ xếp 300px');
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/<ODotGon\b/.test(l) && /dot\.attemptId !== null/.test(l), 'lưới: ODotGon cho đợt đã có (KHT-GON)');

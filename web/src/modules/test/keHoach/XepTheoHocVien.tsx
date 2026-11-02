@@ -14,6 +14,8 @@ import {
 } from '@shared/domain/index.ts';
 import type { HangFT, KnO, LopKH, LuoiFTData } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
+/* `t` trùng tên biến tuần / hẹn giờ trong tệp → đặt tên khác. */
+import { t as tChu } from '@shared/i18n/index.ts';
 
 const KY = KY_NANG_KE_HOACH;
 const TOI_DA_EM = 3;
@@ -63,7 +65,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
     let huy = false;
     Promise.all(lopChon.map((id) => api.get<LuoiFTData>(`/ke-hoach-test/ft/${id}`).then((d) => [id, d] as const)))
       .then((ds) => { if (!huy) setLuoi(new Map(ds)); })
-      .catch((e) => { if (!huy) toast.push('error', e.message ?? 'Không tải được lớp.'); });
+      .catch((e) => { if (!huy) toast.push('error', e.message ?? tChu('Không tải được lớp.')); });
     return () => { huy = true; };
   }, [lopChon.join(','), taiLai]);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -81,10 +83,10 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
   const taiBang = (ids: number[]) => {
     for (const sid of ids) {
       const h = hangs.find((x) => x.studentId === sid);
-      if (!h?.cycleId) { setBang((m) => new Map(m).set(sid, { loi: 'Em chưa có lộ trình đang chạy.' })); continue; }
+      if (!h?.cycleId) { setBang((m) => new Map(m).set(sid, { loi: tChu('Em chưa có lộ trình đang chạy.') })); continue; }
       api.get<BangLich>(`/cycles/${h.cycleId}/suggested-mocks`)
         .then((b) => setBang((m) => new Map(m).set(sid, b)))
-        .catch((e) => setBang((m) => new Map(m).set(sid, { loi: e.message ?? 'Không tải được lịch MT.' })));
+        .catch((e) => setBang((m) => new Map(m).set(sid, { loi: e.message ?? tChu('Không tải được lịch MT.') })));
     }
   };
   const doiChon = (sid: number, v: boolean) => {
@@ -128,7 +130,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
   /* Ô bắt buộc duy nhất: lượt mới phải đủ tuần 4 kỹ năng (PR-N1: báo sau khi bấm Lưu, "n ô cần sửa ↑"). */
   const lf = useLoiForm();
   const loiO: LoiTruong[] = chon.flatMap((sid) => dongCua(sid).filter(thieuTuan).map((d) => ({
-    khoa: `xthv-${sid}-${d.n}`, nhan: `MT${d.n} · ${hangs.find((h) => h.studentId === sid)?.ten ?? ''}`, lyDo: 'Chọn tuần cho đủ 4 kỹ năng.',
+    khoa: `xthv-${sid}-${d.n}`, nhan: `MT${d.n} · ${hangs.find((h) => h.studentId === sid)?.ten ?? ''}`, lyDo: tChu('Chọn tuần cho đủ 4 kỹ năng.'),
   })));
   const coThieu = loiO.length > 0;
 
@@ -154,15 +156,15 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
             const kyNang = KY.filter((k) => doiThat(d.luot!.kn[k], d.nhap!.kn[k])).map((k) => ({ skill: k, periodId: d.nhap!.kn[k]!.periodId }));
             viec.push(api.post<{ bai: BaiXemTruoc[] }>('/ke-hoach-test/dot/kiem', { attemptId: d.luot.attemptId, kyNang })
               .then((r): [string, KetQuaKiem] => [khoa, gom(r.bai, null)])
-              .catch((e): [string, KetQuaKiem] => [khoa, { loi: e.message ?? 'Không kiểm được.', canhBao: null }]));
+              .catch((e): [string, KetQuaKiem] => [khoa, { loi: e.message ?? tChu('Không kiểm được.'), canhBao: null }]));
           } else if (d.n === moiDau && h) {
             const tuan = Object.fromEntries(KY.map((k) => [k, d.nhap!.kn[k]!.periodId]));
             viec.push(api.post<{ dong: DongHangLoat[] }>('/ke-hoach-test/hang-loat', {
               classId: h.classId, studentIds: [sid], attemptNo: d.n, kyNang: [...KY], tuan, xemTruoc: true,
             }).then((r): [string, KetQuaKiem] => {
               const x = r.dong[0];
-              return [khoa, x ? gom(x.bai, x.hanhDong === 'loi' ? x.loi ?? 'Không xếp được.' : null) : { loi: null, canhBao: null }];
-            }).catch((e): [string, KetQuaKiem] => [khoa, { loi: e.message ?? 'Không kiểm được.', canhBao: null }]));
+              return [khoa, x ? gom(x.bai, x.hanhDong === 'loi' ? x.loi ?? tChu('Không xếp được.') : null) : { loi: null, canhBao: null }];
+            }).catch((e): [string, KetQuaKiem] => [khoa, { loi: e.message ?? tChu('Không kiểm được.'), canhBao: null }]));
           }
         }
       }
@@ -195,7 +197,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
     if (!b || 'loi' in b || !homNay) return;
     const tuanNay = mondayOfDate(homNay);
     const goiY = b.hang.filter((g) => g.attemptNo > 0 && g.periodId && g.weekStart && g.weekStart.slice(0, 10) >= tuanNay);
-    if (!goiY.length) { toast.push('error', 'Lộ trình chưa có lịch gợi ý từ tuần này trở đi (chưa khai tuần bắt đầu, hoặc đã qua MT cuối).'); return; }
+    if (!goiY.length) { toast.push('error', tChu('Lộ trình chưa có lịch gợi ý từ tuần này trở đi (chưa khai tuần bắt đầu, hoặc đã qua MT cuối).')); return; }
     let them = 0;
     for (const g of goiY) {
       const t: Tuan = { periodId: g.periodId!, weekStart: g.weekStart! };
@@ -209,7 +211,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
         them++;
       }
     }
-    if (!them) toast.push('ok', 'Lịch đã khớp gợi ý — không có gì để điền.');
+    if (!them) toast.push('ok', tChu('Lịch đã khớp gợi ý — không có gì để điền.'));
   };
 
   /* LƯU: từng em; trong một em theo `thuTuLuuLuot`, dừng ở lượt lỗi và giữ nháp các lượt chưa lưu. Panel không đóng. */
@@ -250,7 +252,8 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
           } catch (e: any) {
             /* Câu lỗi đã hiện ở hàng (kiểm trước) thì không nhắc lại nguyên văn. */
             const daBao = !!kiem[`${sid}:${d.n}`]?.loi;
-            loi[sid] = `${da.length ? `Đã lưu ${da.map((n) => `MT${n}`).join(', ')}. ` : ''}MT${d.n} chưa lưu${daBao ? ' — xem lỗi ở hàng MT' + d.n + '.' : `: ${e.message ?? 'lỗi không rõ.'}`}`;
+            loi[sid] = (da.length ? tChu('Đã lưu {maMt}.', { maMt: da.map((n) => `MT${n}`).join(', ') }) + ' ' : '')
+              + (daBao ? tChu('MT{n} chưa lưu — xem lỗi ở hàng MT{n}.', { n: d.n }) : tChu('MT{n} chưa lưu: {loi}', { n: d.n, loi: e.message ?? tChu('lỗi không rõ.') }));
             break;
           }
         }
@@ -265,7 +268,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
       setTaiLai((n) => n + 1);
       onDone();
       const soLoi = Object.keys(loi).length;
-      toast.push(ok ? 'ok' : 'error', ok ? `Đã lưu lịch ${ok} em.${soLoi ? ` ${soLoi} em còn lỗi.` : ''}` : `${soLoi} em chưa lưu được — xem câu lỗi dưới tên em.`);
+      toast.push(ok ? 'ok' : 'error', ok ? tChu('Đã lưu lịch {n} em.', { n: ok }) + (soLoi ? ' ' + tChu('{n} em còn lỗi.', { n: soLoi }) : '') : tChu('{n} em chưa lưu được — xem câu lỗi dưới tên em.', { n: soLoi }));
     } finally { setBusy(false); }
   };
 
@@ -274,56 +277,56 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
   const nutLuu = (
     <button type="button" className={`btn btn-primary min-h-[44px] sm:min-h-0 ${chiTiet ? '' : 'max-sm:hidden'}`} onClick={() => void luu()}
       disabled={busy || !emCoDoi.length}>
-      {busy ? 'Đang lưu…' : `Lưu ${emCoDoi.length} em · ${soThayDoi} thay đổi`}
+      {busy ? tChu('Đang lưu…') : tChu('Lưu {n} em · {m} thay đổi', { n: emCoDoi.length, m: soThayDoi })}
     </button>
   );
   const nutXep = !chiTiet && (
-    <button type="button" className="btn btn-primary min-h-[44px] sm:hidden" disabled={!chon.length} onClick={() => setChiTiet(true)}>Xếp {chon.length} em ›</button>
+    <button type="button" className="btn btn-primary min-h-[44px] sm:hidden" disabled={!chon.length} onClick={() => setChiTiet(true)}>{tChu('Xếp {n} em ›', { n: chon.length })}</button>
   );
 
   return (
-    <KhungPanel tieuDe="Xếp lịch Mock Test" rong="toan" onDong={onClose} tabs={tabs}
+    <KhungPanel tieuDe={tChu('Xếp lịch Mock Test')} rong="toan" onDong={onClose} tabs={tabs}
       chan={{
-        huy: soThayDoi ? { nhan: 'Huỷ thay đổi', onClick: huyNhap } : { nhan: 'Đóng', onClick: onClose }, daSua: soThayDoi > 0,
-        phu: soLoiKiem ? <span className="text-xs text-bad">{soLoiKiem} em còn lỗi</span> : undefined,
+        huy: soThayDoi ? { nhan: tChu('Huỷ thay đổi'), onClick: huyNhap } : { nhan: tChu('Đóng'), onClick: onClose }, daSua: soThayDoi > 0,
+        phu: soLoiKiem ? <span className="text-xs text-bad">{tChu('{n} em còn lỗi', { n: soLoiKiem })}</span> : undefined,
         chinh: <>{nutXep}{nutLuu}</>, conThieu: lf.conThieu(loiO),
       }}>
       <div className="grid gap-4 pt-3 sm:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className={`min-w-0 space-y-2 ${chiTiet ? 'max-sm:hidden' : ''}`} aria-label="Danh sách học viên">
-          <div role="group" aria-label="Lớp" className="flex flex-wrap items-center gap-1.5">
+        <aside className={`min-w-0 space-y-2 ${chiTiet ? 'max-sm:hidden' : ''}`} aria-label={tChu('Danh sách học viên')}>
+          <div role="group" aria-label={tChu('Lớp')} className="flex flex-wrap items-center gap-1.5">
             {lopChon.map((id) => {
               const l = lopFT.find((x) => x.id === id);
               return (
                 <span key={id} className="inline-flex h-7 items-center gap-1 rounded border px-2 text-xs text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>
                   {l?.code ?? id}
                   <button type="button" className="btn btn-sm btn-ghost relative -mr-1 min-h-[28px] min-w-[28px] justify-center px-0 max-sm:after:absolute max-sm:after:-inset-2 max-sm:after:content-['']"
-                    aria-label={`Bỏ lớp ${l?.code ?? id}`} onClick={() => setLopChon((s) => s.filter((x) => x !== id))}>✕</button>
+                    aria-label={tChu('Bỏ lớp {ma}', { ma: l?.code ?? id })} onClick={() => setLopChon((s) => s.filter((x) => x !== id))}>✕</button>
                 </span>
               );
             })}
             {lopFT.some((l) => !lopChon.includes(l.id)) && (
-              <ChonLop noi className="w-44 max-sm:w-full" ariaLabel="Thêm lớp" value={null} placeholder={lopChon.length ? '+ lớp' : 'Gõ tên lớp…'}
+              <ChonLop noi className="w-44 max-sm:w-full" ariaLabel={tChu('Thêm lớp')} value={null} placeholder={lopChon.length ? tChu('+ lớp') : tChu('Gõ tên lớp…')}
                 onChange={(id) => { if (id) setLopChon((s) => [...s, id]); }}
-                ds={lopFT.filter((l) => !lopChon.includes(l.id)).map((l) => ({ id: l.id, ma: l.code, phu: `${l.soHv} em` }))} />
+                ds={lopFT.filter((l) => !lopChon.includes(l.id)).map((l) => ({ id: l.id, ma: l.code, phu: tChu('{n} em', { n: l.soHv }) }))} />
             )}
           </div>
           {!lopChon.length ? (
             <div className="rounded-[10px] border px-3 py-6 text-center text-xs text-slate-400" style={{ borderColor: 'var(--line)' }}>
-              <b className="block text-slate-200">Chọn lớp để xếp lịch</b>Sau đó tick 1–3 học viên.
+              <b className="block text-slate-200">{tChu('Chọn lớp để xếp lịch')}</b>{tChu('Sau đó tick 1–3 học viên.')}
             </div>
           ) : (
             <>
               <label className="block">
-                <span className="sr-only">Tìm học viên</span>
-                <input className="field w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder="Tìm học viên · tên hoặc mã" />
+                <span className="sr-only">{tChu('Tìm học viên')}</span>
+                <input className="field w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={tChu('Tìm học viên · tên hoặc mã')} />
               </label>
-              <div role="group" aria-label="Lọc học viên" className="flex flex-wrap gap-1.5">
-                {([['tat', 'Tất cả'], ['chua', 'Chưa có MT tiếp'], ['xep-lai', 'Cần xếp lại']] as const).map(([k, nhan]) => (
+              <div role="group" aria-label={tChu('Lọc học viên')} className="flex flex-wrap gap-1.5">
+                {([['tat', tChu('Tất cả')], ['chua', tChu('Chưa có MT tiếp')], ['xep-lai', tChu('Cần xếp lại')]] as const).map(([k, nhan]) => (
                   <button key={k} type="button" aria-pressed={loc === k} onClick={() => setLoc(k)}
                     className={`nut-loc tabular-nums ${loc === k ? 'border-doing-line bg-doing-bg text-doing' : ''}`}>{nhan} {dem[k]}</button>
                 ))}
               </div>
-              {!luoi.size ? <div className="text-xs text-slate-500">Đang tải lớp…</div> : (
+              {!luoi.size ? <div className="text-xs text-slate-500">{tChu('Đang tải lớp…')}</div> : (
                 <ul className="m-0 list-none space-y-1 p-0">
                   {hienThi.map((h) => {
                     const da = chon.includes(h.studentId);
@@ -332,36 +335,36 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
                     return (
                       <li key={h.studentId}>
                         <label className={`flex cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-2 ${da ? 'border-doing-line bg-doing-bg' : ''} ${het ? 'cursor-not-allowed opacity-60' : ''}`}
-                          style={da ? undefined : { borderColor: 'var(--line)' }} title={het ? `Chọn tối đa ${TOI_DA_EM} em một lần.` : undefined}>
+                          style={da ? undefined : { borderColor: 'var(--line)' }} title={het ? tChu('Chọn tối đa {n} em một lần.', { n: TOI_DA_EM }) : undefined}>
                           <input type="checkbox" className="mt-0.5 h-4 w-4 flex-none accent-sky-400 max-sm:h-5 max-sm:w-5" checked={da} disabled={het}
-                            onChange={(e) => doiChon(h.studentId, e.target.checked)} aria-label={`Chọn ${h.ten}`} />
+                            onChange={(e) => doiChon(h.studentId, e.target.checked)} aria-label={tChu('Chọn {ten}', { ten: h.ten })} />
                           <span className="min-w-0 flex-1">
                             <span className="font-bold text-slate-100">{h.ten}</span> {lopChon.length > 1 && <span className="text-xs text-slate-500">{h.classCode}</span>}
                             <span className="mt-1 flex flex-wrap gap-1">
                               {mt.map(([n, o]) => {
                                 const t = minTuan(Object.values(o.kn).map((k) => k?.tuan));
                                 const xepLai = !o.lichSu && Object.values(o.kn).some((k) => k?.trangThai === 'vang' || k?.trangThai === 'da-huy');
-                                return <Nhan key={n} tone={xepLai ? 'soon' : o.trangThaiDot === 'xong' ? 'done' : 'muted'}>MT{n} · {xepLai ? 'cần xếp lại' : t ? tuanLich(t, homNay) : 'chưa xếp'}</Nhan>;
+                                return <Nhan key={n} tone={xepLai ? 'soon' : o.trangThaiDot === 'xong' ? 'done' : 'muted'}>MT{n} · {xepLai ? tChu('cần xếp lại') : t ? tuanLich(t, homNay) : tChu('chưa xếp')}</Nhan>;
                               })}
-                              {!mt.length && <Nhan tone="muted">Chưa có MT</Nhan>}
-                              {daLuu.has(h.studentId) && <Nhan tone="ok">Đã lưu</Nhan>}
+                              {!mt.length && <Nhan tone="muted">{tChu('Chưa có MT')}</Nhan>}
+                              {daLuu.has(h.studentId) && <Nhan tone="ok">{tChu('Đã lưu')}</Nhan>}
                             </span>
                           </span>
                         </label>
                       </li>
                     );
                   })}
-                  {!hienThi.length && <li className="px-1 py-2 text-xs text-slate-500">Không có em.</li>}
+                  {!hienThi.length && <li className="px-1 py-2 text-xs text-slate-500">{tChu('Không có em.')}</li>}
                 </ul>
               )}
-              <p className="m-0 text-xs text-slate-500">Chọn tối đa {TOI_DA_EM} em một lần.</p>
+              <p className="m-0 text-xs text-slate-500">{tChu('Chọn tối đa {n} em một lần.', { n: TOI_DA_EM })}</p>
             </>
           )}
         </aside>
 
         <main className={`min-w-0 space-y-3 ${chiTiet ? '' : 'max-sm:hidden'}`}>
-          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:hidden" onClick={() => setChiTiet(false)}>‹ Danh sách</button>
-          {!chon.length && <div className="rounded-[10px] border px-3 py-8 text-center text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>Tick 1–3 học viên ở cột trái để xếp lịch.</div>}
+          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:hidden" onClick={() => setChiTiet(false)}>{tChu('‹ Danh sách')}</button>
+          {!chon.length && <div className="rounded-[10px] border px-3 py-8 text-center text-xs text-slate-500" style={{ borderColor: 'var(--line)' }}>{tChu('Tick 1–3 học viên ở cột trái để xếp lịch.')}</div>}
           {chon.map((sid) => {
             const h = hangs.find((x) => x.studentId === sid);
             const b = bang.get(sid);
@@ -373,7 +376,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
                   <b className="text-sm text-slate-100">{h?.ten ?? sid}</b>
                   {h && <span className="text-xs text-slate-500">{h.classCode}</span>}
                 </header>
-                {!b ? <div className="px-3 py-3 text-xs text-slate-500">Đang tải lịch MT…</div>
+                {!b ? <div className="px-3 py-3 text-xs text-slate-500">{tChu('Đang tải lịch MT…')}</div>
                   : 'loi' in b ? <div className="px-3 py-3 text-xs text-bad">{b.loi}</div> : (
                     <>
                       <BangEm sid={sid} ds={ds} homNay={homNay} kiem={kiem} lf={lf} loiO={loiO}
@@ -382,7 +385,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
                       <div className="flex flex-wrap gap-2 px-3 py-2">
                         {n && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => void themMt(sid)}>+ MT{n}</button>}
                         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => dienGoiY(sid)}
-                          title="Theo lịch đề xuất của lộ trình (MT ở tuần học 6/12/16; RF 4/8). Chỉ điền nháp ô chưa có điểm.">Điền gợi ý</button>
+                          title={tChu('Theo lịch đề xuất của lộ trình (MT ở tuần học 6/12/16; RF 4/8). Chỉ điền nháp ô chưa có điểm.')}>{tChu('Điền gợi ý')}</button>
                       </div>
                       {loiLuu[sid] && <p role="alert" className="m-0 px-3 pb-2 text-xs text-bad">{loiLuu[sid]}</p>}
                     </>
@@ -401,7 +404,7 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
   sid: number; ds: Dong[]; homNay: string | null; kiem: Record<string, KetQuaKiem>; lf: ReturnType<typeof useLoiForm>; loiO: LoiTruong[];
   onTuan: (n: number, ks: KyNangKH[], t: Tuan) => void; onBo: (n: number) => void;
 }) {
-  if (!ds.length) return <div className="px-3 py-3 text-xs text-slate-500">Chưa có MT nào. Bấm "+ MT" hoặc "Điền gợi ý".</div>;
+  if (!ds.length) return <div className="px-3 py-3 text-xs text-slate-500">{tChu('Chưa có MT nào. Bấm "+ MT" hoặc "Điền gợi ý".')}</div>;
   const hang = ds.map((d) => {
     const ks = KY.filter((k) => (d.nhap?.moi ? true : suaDuoc(d.luot?.kn[k])));
     const tuanKn = (k: KyNangKH) => d.nhap?.kn[k] ?? (d.luot?.kn[k]?.periodId && d.luot.kn[k]!.tuan ? { periodId: d.luot.kn[k]!.periodId!, weekStart: d.luot.kn[k]!.tuan! } : undefined);
@@ -409,10 +412,10 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
     const chung = ks.length && tuanSua.every((x) => x && x === tuanSua[0]) ? tuanKn(ks[0])! : null;
     const doi = d.nhap ? KY.filter((k) => (d.nhap!.moi ? !!d.nhap!.kn[k] : doiThat(d.luot?.kn[k], d.nhap!.kn[k]))) : [];
     const seDoi = d.nhap?.moi
-      ? `Tạo mới${chung ? ` · ${tuanLich(chung.weekStart, homNay)}` : KY.some((k) => !d.nhap!.kn[k]) ? ' · chọn tuần' : ''}`
+      ? `${tChu('Tạo mới')}${chung ? ` · ${tuanLich(chung.weekStart, homNay)}` : KY.some((k) => !d.nhap!.kn[k]) ? ` · ${tChu('chọn tuần')}` : ''}`
       : doi.length ? gomTheoTuan(doi, (k) => d.nhap!.kn[k]!.weekStart).map(([t, kk]) => {
         const khoiPhuc = kk.some((k) => d.luot?.kn[k]?.sit === 'cancelled');
-        return `${kk.map((k) => tenMonNgan(null, k)).join(' ')}: ${khoiPhuc ? 'Khôi phục → ' : ''}${tuanLich(t, homNay)}`;
+        return `${kk.map((k) => tenMonNgan(null, k)).join(' ')}: ${khoiPhuc ? `${tChu('Khôi phục')} → ` : ''}${tuanLich(t, homNay)}`;
       }).join(' · ') : '—';
     return { d, ks, tuanKn, chung, doi, seDoi, kq: kiem[`${sid}:${d.n}`] };
   });
@@ -431,10 +434,10 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
     </>
   );
   const menu = (x: (typeof hang)[number]) => x.d.nhap && (
-    <MenuDong nhan={x.d.nhap.moi ? `Bỏ MT${x.d.n}` : 'Bỏ thay đổi'} aria={`Thao tác MT${x.d.n}`} onClick={() => onBo(x.d.n)} />
+    <MenuDong nhan={x.d.nhap.moi ? tChu('Bỏ MT{n}', { n: x.d.n }) : tChu('Bỏ thay đổi')} aria={tChu('Thao tác MT{n}', { n: x.d.n })} onClick={() => onBo(x.d.n)} />
   );
   const tuanChung = (x: (typeof hang)[number]) => {
-    if (!x.ks.length) return <span className="text-xs text-slate-500">Không còn ô sửa được</span>;
+    if (!x.ks.length) return <span className="text-xs text-slate-500">{tChu('Không còn ô sửa được')}</span>;
     const khoa = `xthv-${sid}-${x.d.n}`;
     const loi = lf.loiCua(loiO, khoa);
     return (
@@ -448,10 +451,10 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
   return (
     <>
       <div className="overflow-x-auto max-sm:hidden">
-        <table className="w-full min-w-[860px] border-separate border-spacing-0 text-xs" aria-label="Lịch MT của em">
+        <table className="w-full min-w-[860px] border-separate border-spacing-0 text-xs" aria-label={tChu('Lịch MT của em')}>
           <thead>
             <tr className="text-left text-xs  text-slate-500">
-              {['Lượt', 'Tuần chung', ...KY.map((k) => tenMonNgan(null, k)), 'Sẽ đổi', ''].map((c, i) => (
+              {[tChu('Lượt'), tChu('Tuần chung'), ...KY.map((k) => tenMonNgan(null, k)), tChu('Sẽ đổi'), ''].map((c, i) => (
                 <th key={i} className={`px-2.5 py-2 font-semibold ${i === 1 ? 'w-[230px]' : ''}`} style={{ background: 'var(--surface-2)' }}>{c}</th>
               ))}
             </tr>
@@ -461,7 +464,7 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
               <tr key={x.d.n} className="align-middle">
                 <td className="whitespace-nowrap border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>
                   <b className="text-slate-100">MT{x.d.n}</b>
-                  {x.d.luot?.kyVong != null && <div className="text-xs text-slate-500">kỳ vọng {x.d.luot.kyVong.toFixed(1)}</div>}
+                  {x.d.luot?.kyVong != null && <div className="text-xs text-slate-500">{tChu('kỳ vọng {kv}', { kv: x.d.luot.kyVong.toFixed(1) })}</div>}
                 </td>
                 <td className="border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>{tuanChung(x)}</td>
                 {KY.map((k) => <td key={k} className="whitespace-nowrap border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>{oKn(x, k)}</td>)}
@@ -477,7 +480,7 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
           <div key={x.d.n} className="rounded-lg border p-2" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center gap-2">
               <b className="text-slate-100">MT{x.d.n}</b>
-              <span className="text-xs text-slate-500">{x.d.nhap?.moi ? 'Tạo mới' : x.d.luot?.kyVong != null ? `kỳ vọng ${x.d.luot.kyVong.toFixed(1)}` : ''}</span>
+              <span className="text-xs text-slate-500">{x.d.nhap?.moi ? tChu('Tạo mới') : x.d.luot?.kyVong != null ? tChu('kỳ vọng {kv}', { kv: x.d.luot.kyVong.toFixed(1) }) : ''}</span>
               <span className="ml-auto">{menu(x)}</span>
             </div>
             <div className="mt-1.5">{tuanChung(x)}</div>
@@ -515,10 +518,10 @@ function OTuan({ t, doi, homNay, nhan, onTuan }: { t: Tuan | undefined; doi: boo
   const neo = useRef<HTMLButtonElement>(null);
   return (
     <>
-      <button ref={neo} type="button" aria-haspopup="dialog" aria-expanded={mo} aria-label={`${nhan}: ${t ? tuanLich(t.weekStart, homNay) : 'chưa chọn tuần'} — đổi tuần`}
+      <button ref={neo} type="button" aria-haspopup="dialog" aria-expanded={mo} aria-label={tChu('{nhan}: {tuan} — đổi tuần', { nhan, tuan: t ? tuanLich(t.weekStart, homNay) : tChu('chưa chọn tuần') })}
         onClick={() => setMo((v) => !v)}
         className={`field inline-flex !w-auto min-h-[44px] items-center gap-1 whitespace-nowrap px-2 py-0 text-xs tabular-nums sm:min-h-[28px] ${doi ? 'border-doing-line bg-doing-bg text-doing' : 'text-slate-100'}`}>
-        {t ? tuanLich(t.weekStart, homNay) : 'Chọn tuần'}{doi && <span aria-hidden> ✓</span>}
+        {t ? tuanLich(t.weekStart, homNay) : tChu('Chọn tuần')}{doi && <span aria-hidden> ✓</span>}
       </button>
       {mo && homNay && (
         <LichNho kieu="tuan" goNgay value={t?.weekStart ?? null} homNay={homNay} luat={{}} neo={neo}

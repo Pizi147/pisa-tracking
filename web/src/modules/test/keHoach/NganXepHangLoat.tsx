@@ -14,6 +14,7 @@ import {
   dsLoi,
 } from '@shared/domain/index.ts';
 import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import {
   KY, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
   type DotChon, type LopKH, type LuoiThuongData,
@@ -22,8 +23,8 @@ import { KhungXepLich } from './NganXepLichMt.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 
 const TONE_GHI_CHU: Record<BaiXemTruoc['ghiChu'], { tone: ToneNhan; chu: string }> = {
-  moi: { tone: 'muted', chu: 'Mới' }, doi: { tone: 'doing', chu: 'Đổi' }, giu: { tone: 'muted', chu: 'Giữ' },
-  'canh-bao': { tone: 'soon', chu: 'Cảnh báo' }, chan: { tone: 'bad', chu: 'Chặn' },
+  moi: { tone: 'muted', chu: t('Mới') }, doi: { tone: 'doing', chu: t('Đổi') }, giu: { tone: 'muted', chu: t('Giữ') },
+  'canh-bao': { tone: 'soon', chu: t('Cảnh báo') }, chan: { tone: 'bad', chu: t('Chặn') },
 };
 
 type Hang = { studentId: number; ten: string; o: (d: DotChon) => { attemptId: number | null; kn: Parameters<typeof gomChip>[0] } };
@@ -157,9 +158,9 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
 
   const coKn = ky.some((k) => chonKn[k]);
   const loi = dsLoi([
-    { khoa: 'dot', nhan: 'Đợt', chon: true }, { khoa: 'hoc-vien', nhan: 'Học viên', chon: true }, { khoa: 'ky-nang', nhan: 'Môn', chon: true },
+    { khoa: 'dot', nhan: t('Đợt'), chon: true }, { khoa: 'hoc-vien', nhan: t('Học viên'), chon: true }, { khoa: 'ky-nang', nhan: t('Môn'), chon: true },
   ], { dot, 'hoc-vien': studentIds.length, 'ky-nang': coKn });
-  if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: 'Tuần', lyDo: `${'Môn'} đã chọn còn thiếu tuần` });
+  if (coKn && ky.some((k) => chonKn[k] && !tuan[k])) loi.push({ khoa: 'tuan', nhan: t('Tuần'), lyDo: t('Môn đã chọn còn thiếu tuần') });
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => (lf.daBam ? loi.find((l) => l.khoa === khoa)?.lyDo ?? null : null);
   const dongLoi = (khoa: string) => (loiCua(khoa) ? <span className="block text-xs text-late">{loiCua(khoa)}</span> : null);
@@ -167,7 +168,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   const luu = async () => {
     lf.bam();
     if (busy || thieu.length || !dot || !classId) return;
-    if (luuDuoc.soEmLuu === 0) { toast.push('error', 'Chưa có bài nào lưu được — xem cột Ghi chú ở Xem trước.'); return; }
+    if (luuDuoc.soEmLuu === 0) { toast.push('error', t('Chưa có bài nào lưu được — xem cột Ghi chú ở Xem trước.')); return; }
     setBusy(true);
     try {
       const r = await api.post<{ dong: DongHangLoat[]; daLuu: number }>('/ke-hoach-test/hang-loat', {
@@ -175,14 +176,14 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
       });
       invalidate('/ke-hoach-test'); invalidate('/attempts'); invalidate('/cham');
       const conLai = emGiuLaiSauLuu(r.dong);
-      toast.push(r.daLuu > 0 ? 'ok' : 'error', `Đã xếp ${r.daLuu} em${conLai.length ? `, còn ${conLai.length} em lỗi` : ''}.`);
+      toast.push(r.daLuu > 0 ? 'ok' : 'error', conLai.length ? t('Đã xếp {n} em, còn {m} em lỗi.', { n: r.daLuu, m: conLai.length }) : t('Đã xếp {n} em.', { n: r.daLuu }));
       onDone();
       if (!conLai.length) { onClose(); return; }
       /* R9b: giữ panel, chỉ còn các em lỗi được tick sẵn để sửa tuần rồi lưu lại. */
       setLoiCuoi(new Map(r.dong.filter((d) => d.hanhDong === 'loi').map((d) => [d.studentId, d.loi ?? ''])));
       setGiuLoi(conLai); setTicked(new Set(conLai)); setDong(r.dong); lf.datLai();
     } catch (e: any) {
-      toast.push('error', e.message ?? 'Không lưu được — thử lại.');
+      toast.push('error', e.message ?? t('Không lưu được — thử lại.'));
     } finally {
       setBusy(false);
     }
@@ -190,18 +191,18 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
 
   const chinh = (
     <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={busy}>
-      {busy ? 'Đang lưu…' : `Lưu lịch cho ${luuDuoc.soEmLuu} em · ${luuDuoc.soBaiLuu} bài`}
+      {busy ? t('Đang lưu…') : t('Lưu lịch cho {n} em · {b} bài', { n: luuDuoc.soEmLuu, b: luuDuoc.soBaiLuu })}
     </button>
   );
   const tatCaKn = ky.length > 0 && ky.every((k) => chonKn[k]);
   /* Chữ theo số môn thật: FT "cả 4 kỹ năng"; lớp thường "cả 4 môn"; Pre FOU "Chọn Tổng hợp". */
-  const chuChonCa = ky.length === 1 ? `Chọn ${tenMon(ct, ky[0])}` : `Chọn cả ${ky.length} môn`;
+  const chuChonCa = ky.length === 1 ? t('Chọn {ten}', { ten: dich(tenMon(ct, ky[0])) }) : t('Chọn cả {n} môn', { n: ky.length });
 
   return (
-    <KhungPanel tieuDe="Xếp lịch Test" rong="rong" onDong={onClose}
+    <KhungPanel tieuDe={t('Xếp lịch Test')} rong="rong" onDong={onClose}
       tabs={<KhungXepLich value="thuong" onChange={onDoiKhung} coFt={coFt} coThuong />}
-      chan={{ huy: { nhan: 'Đóng', onClick: onClose }, chinh, conThieu: lf.conThieu(loi), daSua: daChinh }}>
-      <Khoi tieuDe="Lớp">
+      chan={{ huy: { nhan: t('Đóng'), onClick: onClose }, chinh, conThieu: lf.conThieu(loi), daSua: daChinh }}>
+      <Khoi tieuDe={t('Lớp')}>
         {dsCt.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
             {dsCt.map((c) => (
@@ -212,37 +213,37 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
             ))}
           </div>
         )}
-        <ChonLop className="w-full sm:w-64" ariaLabel="Lớp" value={classId} onChange={setClassId}
-          ds={lopTheoCt.map((l) => ({ id: l.id, ma: l.code, phu: [l.chiNhanh, `${l.soHv} em`].filter(Boolean).join(' · ') }))} />
+        <ChonLop className="w-full sm:w-64" ariaLabel={t('Lớp')} value={classId} onChange={setClassId}
+          ds={lopTheoCt.map((l) => ({ id: l.id, ma: l.code, phu: [l.chiNhanh, t('{n} em', { n: l.soHv })].filter(Boolean).join(' · ') }))} />
       </Khoi>
-      {!classId ? <div className="py-6 text-sm text-slate-500">Chọn một lớp để xếp lịch.</div> : !sanSang ? <div className="py-6 text-sm text-slate-500">Đang tải lớp…</div> : (
+      {!classId ? <div className="py-6 text-sm text-slate-500">{t('Chọn một lớp để xếp lịch.')}</div> : !sanSang ? <div className="py-6 text-sm text-slate-500">{t('Đang tải lớp…')}</div> : (
         <>
-          <Khoi tieuDe="Đợt">
+          <Khoi tieuDe={t('Đợt')}>
             <div id={lf.oId('dot')} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none">
               {dots.map((d) => {
                 const xong = dotXongCaLop(d);
                 return (
                   <NutChon key={khoaDot(d)} disabled={xong} chon={!!dot && khoaDot(dot) === khoaDot(d)} className={xong ? 'opacity-50' : ''}
-                    title={xong ? 'Cả lớp đã xong đợt này' : undefined}
-                    onClick={() => setDot(d)}>{nhanDot(d)}{xong && <span className="text-slate-400"> · đã xong</span>}</NutChon>
+                    title={xong ? t('Cả lớp đã xong đợt này') : undefined}
+                    onClick={() => setDot(d)}>{nhanDot(d)}{xong && <span className="text-slate-400"> · {t('đã xong')}</span>}</NutChon>
                 );
               })}
-              {!dots.length && <span className="text-xs text-slate-500">Lớp chưa có đợt nào.</span>}
+              {!dots.length && <span className="text-xs text-slate-500">{t('Lớp chưa có đợt nào.')}</span>}
             </div>
             {dongLoi('dot')}
           </Khoi>
 
-          <Khoi tieuDe={`Học viên · ${studentIds.length}/${dsEm.length} đã chọn`}>
+          <Khoi tieuDe={t('Học viên · {a}/{b} đã chọn', { a: studentIds.length, b: dsEm.length })}>
             <div className="flex justify-end">
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
                 onClick={() => setTicked(ticked.size === dsEm.length ? new Set() : new Set(dsEm.map((h) => h.studentId)))}>
-                {ticked.size === dsEm.length && dsEm.length > 0 ? 'Bỏ chọn' : 'Chọn cả'}
+                {ticked.size === dsEm.length && dsEm.length > 0 ? t('Bỏ chọn') : t('Chọn cả')}
               </button>
             </div>
             <div id={lf.oId('hoc-vien')} tabIndex={-1} className="surface-2 rounded-lg p-2 outline-none">
               {dsEm.map((h) => {
                 const o = dot ? h.o(dot) : { attemptId: null, kn: {} };
-                const tinhTrang = o.attemptId ? chuTinhTrang(o.kn, ct) : `${dot ? nhanDot(dot) : ''} chưa xếp`;
+                const tinhTrang = o.attemptId ? dich(chuTinhTrang(o.kn, ct)) : t('{maDot} chưa xếp', { maDot: dot ? nhanDot(dot) : '' });
                 const loi = loiCuoi.get(h.studentId);
                 return (
                   <div key={h.studentId}>
@@ -260,12 +261,12 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                   </div>
                 );
               })}
-              {!dsEm.length && <span className="text-xs text-slate-500">Không có em nào để xếp.</span>}
+              {!dsEm.length && <span className="text-xs text-slate-500">{t('Không có em nào để xếp.')}</span>}
             </div>
             {dongLoi('hoc-vien')}
           </Khoi>
 
-          <Khoi tieuDe="Môn">
+          <Khoi tieuDe={t('Môn')}>
             {/* Lớp một môn (Pre FOU): ô "Chọn …" trùng với ô môn bên dưới → ẩn. */}
             {ky.length > 1 && (
             <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:min-h-[32px]">
@@ -286,7 +287,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
             {dongLoi('tuan')}
             <div className="grid items-start gap-2" style={{ gridTemplateColumns: 'minmax(0,1fr) auto' }}>
               <div className="min-w-0">
-                <span className="mb-1 block text-[12px] font-bold text-slate-200">Áp một tuần cho mọi môn đã chọn</span>
+                <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Áp một tuần cho mọi môn đã chọn')}</span>
                 <TuanNho nam d={ap ?? { periodId: null, weekStart: null }} goc={homNay} onTuan={(t) => { setDaChinh(true); setAp(t); }} />
               </div>
               <button type="button" className="btn mt-[22px] min-h-[44px] sm:min-h-[32px]" disabled={!ap}
@@ -294,27 +295,27 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                   const n = { ...s };
                   for (const k of ky) if (chonKn[k]) n[k] = ap;
                   return n;
-                })}>Áp</button>
+                })}>{t('Áp')}</button>
             </div>
           </Khoi>
 
-          <Khoi tieuDe="Xem trước">
+          <Khoi tieuDe={t('Xem trước')}>
             {dangXem ? (
-              <div className="text-xs text-slate-500">Đang tính…</div>
+              <div className="text-xs text-slate-500">{t('Đang tính…')}</div>
             ) : !dong ? (
-              <div className="text-xs text-slate-500">Chọn đợt, học viên và tuần để xem trước.</div>
+              <div className="text-xs text-slate-500">{t('Chọn đợt, học viên và tuần để xem trước.')}</div>
             ) : (
               <div className="space-y-2">
                 <div className="text-xs text-slate-300">
-                  {tomTat.tongBai} bài · {tomTat.luuDuoc} lưu được ({tomTat.coCanhBao} có cảnh báo) · {tomTat.biChan} bị chặn
+                  {t('{a} bài · {b} lưu được ({c} có cảnh báo) · {d} bị chặn', { a: tomTat.tongBai, b: tomTat.luuDuoc, c: tomTat.coCanhBao, d: tomTat.biChan })}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs" style={{ tableLayout: 'fixed', minWidth: 520 }}>
                     <colgroup><col style={{ width: 150 }} /><col style={{ width: 80 }} /><col style={{ width: 140 }} /><col /></colgroup>
                     <thead>
                       <tr className="text-left text-[12px]  text-slate-500">
-                        <th className="py-1 font-bold">Học viên</th><th className="py-1 font-bold">{'Môn'}</th>
-                        <th className="py-1 font-bold">Tuần cũ → mới</th><th className="py-1 font-bold">Ghi chú</th>
+                        <th className="py-1 font-bold">{t('Học viên')}</th><th className="py-1 font-bold">{t('Môn')}</th>
+                        <th className="py-1 font-bold">{t('Tuần cũ → mới')}</th><th className="py-1 font-bold">{t('Ghi chú')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -325,11 +326,11 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                 {tomTat.coCanhBao > 0 && (
                   <label className="flex min-h-[44px] items-center gap-2 text-xs text-soon sm:min-h-0">
                     <input type="checkbox" className="accent-sky-400" checked={force} onChange={(e) => setForce(e.target.checked)} />
-                    Vẫn xếp {tomTat.coCanhBao} bài có cảnh báo
+                    {t('Vẫn xếp {n} bài có cảnh báo', { n: tomTat.coCanhBao })}
                   </label>
                 )}
                 {tomTat.biChan > 0 && (
-                  <div className="text-xs text-bad">Bài bị chặn không lưu — sửa tuần ở khối Kỹ năng hoặc bỏ tích em đó.</div>
+                  <div className="text-xs text-bad">{t('Bài bị chặn không lưu — sửa tuần ở khối Kỹ năng hoặc bỏ tích em đó.')}</div>
                 )}
               </div>
             )}
@@ -352,11 +353,11 @@ function DongKyNang({ k, ct, laFt, oId, tick, onTick, tuan, goc, onTuan, nhanKho
   return (
     <div className={`grid grid-cols-[20px_92px_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[20px_108px_minmax(0,1fr)] ${tick ? '' : 'opacity-50'}`}>
       <input type="checkbox" id={oId} className="mt-3 accent-sky-400" checked={tick} onChange={(e) => onTick(e.target.checked)}
-        aria-label={`Chọn ${tenMon(ct, k)}`} />
+        aria-label={t('Chọn {ten}', { ten: dich(tenMon(ct, k)) })} />
       <div className="mt-2 text-sm text-slate-200">
         <b title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</b>
         {tenMonNgan(ct, k) !== tenMon(ct, k) && <> <span className="text-slate-400">{tenMon(ct, k)}</span></>}
-        {laFt && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title="W = chấm cả W1 và W2">ⓘ</span>}
+        {laFt && k === 'writing' && <span className="ml-1 cursor-help text-slate-500" title={t('W = chấm cả W1 và W2')}>ⓘ</span>}
       </div>
       <div className={`min-w-0 max-w-[320px] ${tick ? '' : 'pointer-events-none'}`}>
         <TuanNho nam d={tuan ?? { periodId: null, weekStart: null }} goc={goc} onTuan={onTuan} nhanKhoa={nhanKhoa} />
@@ -373,7 +374,7 @@ function DongXemTruoc({ d, ct }: { d: DongHangLoat; ct: string | null }) {
       <tr className="border-t" style={{ borderColor: 'var(--line)' }}>
         <td className="truncate py-1.5 pr-2 text-slate-200" title={d.ten}>{d.ten}</td>
         <td className="py-1.5">—</td><td className="py-1.5">—</td>
-        <td className="py-1.5"><Nhan tone="bad">Chặn</Nhan> <span className="text-slate-400" title={d.loi ?? ''}>{d.loi}</span></td>
+        <td className="py-1.5"><Nhan tone="bad">{t('Chặn')}</Nhan> <span className="text-slate-400" title={d.loi ?? ''}>{d.loi}</span></td>
       </tr>
     );
   }

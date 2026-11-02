@@ -117,11 +117,11 @@ export function KeHoachTestTab() {
   const chonHv = (h: KetQuaTim['hocVien'][number]) => { setChu(h.ten); moLop(h.classId, h.loai, h.studentId); };
 
   const lopChon = [...moList].reverse().map((id) => data?.lop.find((l) => l.id === id)).find((l) => l && l.loai === loai) ?? null;
-  const lyDoTat = hopMo ? 'Đóng hộp kỹ năng trước' : undefined;
+  const lyDoTat = hopMo ? t('Đóng hộp kỹ năng trước') : undefined;
 
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data || (tuan && hl.loading && !hl.data)) return <div className="space-y-3"><Skeleton rows={8} /></div>;
-  if (!data.lop.length) return <div className="card"><Empty title="Bạn không có lớp nào để xem lịch Test" /></div>;
+  if (!data.lop.length) return <div className="card"><Empty title={t('Bạn không có lớp nào để xem lịch Test')} /></div>;
 
   return (
     <div className="space-y-3">
@@ -132,8 +132,8 @@ export function KeHoachTestTab() {
           onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />
         {tuanXem && (
           <span className="pb-1">
-            <NutChon nho chon onClick={boTuan} title="Bỏ lọc tuần — xem mọi lớp">
-              Tuần <span className="tabular-nums">{tuanLich(tuanXem.weekStart)}</span> · <span className="tabular-nums">{lopTrongTuan!.size}</span> lớp
+            <NutChon nho chon onClick={boTuan} title={t('Bỏ lọc tuần — xem mọi lớp')}>
+              {t('Tuần')} <span className="tabular-nums">{tuanLich(tuanXem.weekStart)}</span> · <span className="tabular-nums">{lopTrongTuan!.size}</span> {t('lớp')}
             </NutChon>
           </span>
         )}
@@ -144,8 +144,8 @@ export function KeHoachTestTab() {
               const bat = !locXepLai;
               setChiXepLai(bat);
               if (bat) setMoList(lopFT.filter((l) => l.canXepLai > 0).map((l) => l.id));
-            }} title="Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại">
-              Cần xếp lại <span className="tabular-nums">({soCanXepLai})</span>
+            }} title={t('Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại')}>
+              {t('Cần xếp lại')} <span className="tabular-nums">({soCanXepLai})</span>
             </NutChon>
           ) : null;
           const doiCn = (id: number | null) => {
@@ -160,7 +160,7 @@ export function KeHoachTestTab() {
               {branchCount > 1 && <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={doiCn} /></div>}
               {(xepLai || branchCount > 1) && (
                 <details className="sm:hidden">
-                  <summary className="btn btn-sm min-h-[44px] cursor-pointer list-none">Lọc ▾</summary>
+                  <summary className="btn btn-sm min-h-[44px] cursor-pointer list-none">{t('Lọc ▾')}</summary>
                   <div className="mt-2 flex flex-col items-start gap-2">
                     {xepLai}
                     {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
@@ -172,24 +172,24 @@ export function KeHoachTestTab() {
         })()}
         <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 basis-full max-sm:order-1 sm:basis-auto sm:w-72" />
         <span className="pb-2">
-          <NutLuat label="Luật xếp lịch Test">
+          <NutLuat label={t('Luật xếp lịch Test')}>
             {loai === 'ft' ? (
               <span className="block">
-                Mỗi đợt xếp riêng <b>L</b> (Listening), <b>R</b> (Reading), <b>W</b> (Writing), <b>S</b> (Speaking). <b>W = chấm cả
-                W1 và W2</b> — một lịch W đặt cho cả hai. Kỹ năng khác tuần trong cùng đợt ghi riêng (<b>S riêng · W3 DEC</b>).
+                {t('Mỗi đợt xếp riêng')} <b>L</b> (Listening), <b>R</b> (Reading), <b>W</b> (Writing), <b>S</b> (Speaking). <b>{t('W = chấm cả W1 và W2')}</b>
+                {' '}{t('— một lịch W đặt cho cả hai.')} {t('Kỹ năng khác tuần trong cùng đợt ghi riêng')} (<b>{t('S riêng · W3 DEC')}</b>).
               </span>
             ) : (
               <span className="block">
-                Mỗi đợt (Progress Test, Final Test) xếp riêng từng môn của chương trình lớp
+                {t('Mỗi đợt (Progress Test, Final Test) xếp riêng từng môn của chương trình lớp')}
                 {monTheoCt.length ? ': ' : '.'}
                 {monTheoCt.map(([ct, mon], i) => (
                   <span key={ct}>{i ? ' · ' : ''}<b>{ct}</b> {mon}</span>
                 ))}
-                {monTheoCt.length ? '.' : ''} Môn khác tuần trong cùng đợt ghi riêng.
+                {monTheoCt.length ? '.' : ''} {t('Môn khác tuần trong cùng đợt ghi riêng.')}
               </span>
             )}
-            {loai !== 'ft' && <span className="block">Lớp thường ghi thêm tuần trong khoá (<b>W5/10</b>).</span>}
-            <span className="block">Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.</span>
+            {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>W5/10</b>).</span>}
+            <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
           </NutLuat>
         </span>
         <span className="flex-1 max-sm:hidden" />
@@ -216,13 +216,13 @@ export function KeHoachTestTab() {
         {coXep && (
           <button type="button" className="btn btn-primary btn-sm min-h-[44px] max-sm:order-2 sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
             onClick={() => setXep(loai)}>
-            {loai === 'ft' ? 'Xếp nhiều MT…' : 'Xếp lịch Test…'}
+            {loai === 'ft' ? t('Xếp nhiều MT…') : t('Xếp lịch Test…')}
           </button>
         )}
       </div>
 
       {danhSach.length === 0 ? (
-        <div className="card"><Empty title={chu ? `Không có lớp nào khớp "${chu}"` : 'Không có lớp nào có đợt Test trong tuần này'} /></div>
+        <div className="card"><Empty title={chu ? t('Không có lớp nào khớp "{chu}"', { chu }) : t('Không có lớp nào có đợt Test trong tuần này')} /></div>
       ) : (
         <div className="space-y-3">
           {danhSach.map((l) => (
