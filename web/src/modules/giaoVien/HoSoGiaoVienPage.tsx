@@ -93,7 +93,7 @@ export function HoSoGiaoVienPage() {
             <h1 className="m-0 text-xl font-bold text-slate-100">{gv.ten}</h1>
             <NhanDau nhan={t('Vai')}>{[gv.vai.map((v) => dich(v)).join(' · '), gv.chiNhanh.join(', ')].filter(Boolean).join(' · ') || '—'}</NhanDau>
             <NhanDau nhan={t('Kỹ năng')}>
-              {gv.kyNang.length ? <span className="flex flex-wrap gap-1">{gv.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span> : <span className="font-normal text-slate-500">{t('chưa khai')}</span>}
+              {gv.kyNang.length ? <span className="flex flex-wrap gap-1">{gv.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}</span> : <span className="font-normal text-slate-500">{t('chưa khai')}</span>}
             </NhanDau>
             {soGvcn > 0 && <NhanDau nhan="GVCN">{t('{n} lớp', { n: soGvcn })}</NhanDau>}
           </div>
@@ -242,7 +242,7 @@ function KhoiLop({ data }: { data: HoSo }) {
                 <ChipBanGiaoLop l={l} />
               </span>
               <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-slate-400">
-                {l.kyNang.map((k) => <ChipKy key={k} k={k} />)}
+                {l.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}
                 <span className="tabular-nums">{l.kyNang.length > 0 && '· '}{l.hocVien} HV</span>
                 {l.gvcn && <span className="min-w-0 truncate">· GVCN {l.gvcn}</span>}
                 {l.chuaNhap > 0 && (
@@ -371,10 +371,10 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   const oCua = (h: HangKn, c: CotBang): ReactNode => {
     const cot = `ket-qua:${khung}:${h.skill}`;
     /* Cột "chu" linh hoạt: chữ trong chip thẳng mép chữ tiêu đề (cùng cách `th[data-kieu=chip]` đệm 20 px). */
-    if (c.key === 'kn') return <span className={dienThoai ? '' : '-ml-2 inline-flex'}><ChipKy k={h.nhan} /></span>;   // SUA-DO-KHUNG: chip min-w 24 canh giữa → chữ lùi ~8 px, bù 8 (g1)
-    if (c.key === 'kq') return <OTyLe x={h.kq && { dat: h.kq.dung, mau: h.kq.tong }} nguon={nguonCs(cot)} tieuDe={`${c.nhan} · ${h.nhan}`} />;
+    if (c.key === 'kn') return <span className={dienThoai ? '' : '-ml-2 inline-flex'}><ChipKy k={dich(h.nhan)} /></span>;   // SUA-DO-KHUNG: chip min-w 24 canh giữa → chữ lùi ~8 px, bù 8 (g1)
+    if (c.key === 'kq') return <OTyLe x={h.kq && { dat: h.kq.dung, mau: h.kq.tong }} nguon={nguonCs(cot)} tieuDe={`${c.nhan} · ${dich(h.nhan)}`} />;
     if (!h.thi) return <span className="text-slate-500">—</span>;
-    return <BaThi gon={!dienThoai} motDong={!dienThoai} cot={`thi-that-ky:${h.skill}`} fail={h.thi.tong - h.thi.dung} pass={h.thi.dung} exceed={h.vuot} nguonCua={nguonCs} ten={`${t('Kết quả thi thật')} ${h.nhan}`} />;
+    return <BaThi gon={!dienThoai} motDong={!dienThoai} cot={`thi-that-ky:${h.skill}`} fail={h.thi.tong - h.thi.dung} pass={h.thi.dung} exceed={h.vuot} nguonCua={nguonCs} ten={`${t('Kết quả thi thật')} ${dich(h.nhan)}`} />;
   };
   return (
     <KhungBang ten={t('Theo kỹ năng')} phai={ft && hang.some((h) => h.thi) && (
@@ -440,7 +440,7 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
     switch (c.key) {
       case 'lop': return h.cong ? <b className="font-bold">{h.ma}</b>
         : <span className={`inline-flex min-w-0 items-baseline gap-1.5 ${mo}`}><Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so truncate font-semibold">{h.ma}</Link>{h.xong && <span className="text-xs text-slate-500">{t('đã kết thúc')}</span>}</span>;
-      case 'ky': return <span className={`flex gap-1 ${dienThoai ? '' : '-ml-1.5'} ${mo}`}>{h.kyNang.map((k) => <ChipKy key={k} k={k} />)}</span>;
+      case 'ky': return <span className={`flex gap-1 ${dienThoai ? '' : '-ml-1.5'} ${mo}`}>{h.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}</span>;
       case 'luot': return <span className={`whitespace-nowrap tabular-nums ${mo}`}>{h.luot}{h.theoBai.length > 0 && <span className="text-slate-500"> · {h.theoBai.map((b) => `${b.bai} ${b.n}`).join(' · ')}</span>}</span>;
       case 'kq': case 'tb': case 'tt': {
         const x = c.key === 'kq' ? h.ketQua : c.key === 'tb' ? h.tienBo : h.thiThat;

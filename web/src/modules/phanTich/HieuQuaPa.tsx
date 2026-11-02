@@ -31,8 +31,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
   const query = thamSoLoc(props, them);
   const { data, loading, error, reload } = useApi<HieuQuaPaKetQua>(`/phan-tich/hieu-qua-pa?${query}`, [query]);
   const dongQc = data ? phangQuyChe(data.quyChe.hang) : [];
-  const ptGv = usePhanTrang(data?.gvThem.hang.length ?? 0, query, 'vấn đề');
-  const ptQc = usePhanTrang(dongQc.length, query, 'dòng');
+  const ptGv = usePhanTrang(data?.gvThem.hang.length ?? 0, query, t('vấn đề'));
+  const ptQc = usePhanTrang(dongQc.length, query, t('dòng'));
   const nguon = (dong: string, cot: string) => `/phan-tich/hieu-qua-pa/o?${query}&dong=${encodeURIComponent(dong)}&cot=${encodeURIComponent(cot)}`;
   const boLoc = (...khoa: string[]) => {
     const next = new URLSearchParams(params);
@@ -58,7 +58,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
         <span aria-hidden className="h-1.5 w-16 shrink-0 overflow-hidden rounded-[3px] border max-sm:hidden" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
           <i className="block h-full" style={{ width: `${v.percent}%`, background: 'var(--ok)' }} />
         </span>
-        <OSo giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={`${ten} · có cải thiện`} />
+        <OSo giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={t('{ten} · có cải thiện', { ten })} />
         <span className="text-[color:var(--text-faint)] max-sm:text-xs"><span className="max-sm:hidden">/ {v.N} · </span>{v.percent} %</span>
       </span>
     );
@@ -67,12 +67,12 @@ export function HieuQuaPa(props: PhamViPhanTich) {
     const g = coGoiY ? goiY(d) : null;
     return (
       <>
-        <td className="td text-center tabular-nums"><OSo giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={`${ten} · PA có kết quả`} /></td>
-        <td className="td text-center tabular-nums"><OSo giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={`${ten} · học viên`} /></td>
+        <td className="td text-center tabular-nums"><OSo giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={t('{ten} · PA có kết quả', { ten })} /></td>
+        <td className="td text-center tabular-nums"><OSo giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={t('{ten} · học viên', { ten })} /></td>
         <td className="td max-sm:text-center">{caiThien(d, ten)}</td>
         <td className="td text-center tabular-nums max-sm:hidden">{d.tvTuan !== null ? t('{n} tuần', { n: d.tvTuan }) : <span className="text-[color:var(--text-faint)]">—</span>}</td>
         <td className="td max-sm:hidden">
-          {g && <Nhan tone={d.nenDung ? 'ok' : 'muted'} title={d.nenDung ? 'Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này' : `Dưới ${NGUONG_IT_DU_LIEU} PA có kết quả — chưa đủ để so sánh`}>{g}</Nhan>}
+          {g && <Nhan tone={d.nenDung ? 'ok' : 'muted'} title={d.nenDung ? t('Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này') : t('Dưới {n} PA có kết quả — chưa đủ để so sánh', { n: NGUONG_IT_DU_LIEU })}>{g}</Nhan>}
         </td>
       </>
     );
@@ -84,7 +84,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
     return (
       <span className="block min-w-0">
         <span className="block sm:truncate">{ten}</span>
-        {d.dongThoi > 0 && <span className="block text-xs font-normal tabular-nums text-[color:var(--text-faint)]">{d.dongThoi} PA chạy cùng PA khác</span>}
+        {d.dongThoi > 0 && <span className="block text-xs font-normal tabular-nums text-[color:var(--text-faint)]">{t('{n} PA chạy cùng PA khác', { n: d.dongThoi })}</span>}
         {phu375 && <span className="block text-xs font-normal text-[color:var(--text-faint)] sm:hidden">{phu375}</span>}
       </span>
     );
@@ -146,8 +146,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
   );
   const cachDoc = (
     <>
-      <p className="m-0">"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. PA huỷ vì "không cần theo dõi" không tính. Học viên: một em nhiều PA chỉ tính một lần.</p>
-      <p className="m-0">Dưới {NGUONG_IT_DU_LIEU} PA ghi "Ít dữ liệu". "Thời gian thường mất" = trung vị từ ngày bắt đầu đến ngày có kết quả của PA có cải thiện, chỉ hiện khi từ {NGUONG_IT_DU_LIEU} PA.</p>
+      <p className="m-0">{t('"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. PA huỷ vì "không cần theo dõi" không tính. Học viên: một em nhiều PA chỉ tính một lần.')}</p>
+      <p className="m-0">{t('Dưới {n} PA ghi "Ít dữ liệu". "Thời gian thường mất" = trung vị từ ngày bắt đầu đến ngày có kết quả của PA có cải thiện, chỉ hiện khi từ {n} PA.', { n: NGUONG_IT_DU_LIEU })}</p>
     </>
   );
 
@@ -156,17 +156,17 @@ export function HieuQuaPa(props: PhamViPhanTich) {
       {params.get('gv') && (
         <VaoHangLoc o="giua">
           {data?.loc.gv ? (
-            <button type="button" onClick={() => boLoc('gv')} title="Bỏ lọc giáo viên" className="nut-loc nut-loc-dang text-[color:var(--text)]">
+            <button type="button" onClick={() => boLoc('gv')} title={t('Bỏ lọc giáo viên')} className="nut-loc nut-loc-dang text-[color:var(--text)]">
               {t('GV: {ten}', { ten: data.loc.gv.ten })} <span aria-hidden>✕</span>
             </button>
           ) : data && (
-            <button type="button" onClick={() => boLoc('gv')} className="btn h-9">Không xem được giáo viên này — bỏ lọc</button>
+            <button type="button" onClick={() => boLoc('gv')} className="btn h-9">{t('Không xem được giáo viên này — bỏ lọc')}</button>
           )}
         </VaoHangLoc>
       )}
       {error ? <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
         : loading || !data ? <Card><Skeleton rows={8} /></Card>
-        : data.scopeEmpty ? <Card><Empty title="Bạn chưa được cấp phạm vi nào" /></Card>
+        : data.scopeEmpty ? <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>
         : (
           <>
             {/* Thẻ chỉ số — cùng số với đầu hai thẻ bảng (tóm tắt máy chủ). "Chưa tính" = ba số "Để số liệu đủ tin" cũ ở chân bảng. */}
@@ -181,9 +181,9 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                 gt: (
                   <span className="mt-1 grid w-full gap-1 text-[13px] font-normal leading-normal text-[color:var(--text-dim)] [font-family:inherit]">
                     {chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', t('PA chưa có kết quả'), t('Không tính vào bảng hiệu quả tới khi có kết quả'))}
-                    {chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', 'Case chưa chọn nhóm nguyên nhân')}
-                    <span title="PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào">
-                      {chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', 'PA chưa rõ nơi học lúc làm PA')}
+                    {chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', t('Case chưa chọn nhóm nguyên nhân'))}
+                    <span title={t('PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào')}>
+                      {chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', t('PA chưa rõ nơi học lúc làm PA'))}
                     </span>
                   </span>
                 ),
@@ -197,11 +197,11 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                 cachTinh={(
                   <>
                     {cachDoc}
-                    <p className="m-0">Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {NGUONG_IT_DU_LIEU} PA, cải thiện từ 70% và cao nhất trong vấn đề.</p>
+                    <p className="m-0">{t('Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {n} PA, cải thiện từ 70% và cao nhất trong vấn đề.', { n: NGUONG_IT_DU_LIEU })}</p>
                   </>
                 )} />
               {data.gvThem.hang.length === 0 && !data.gvThem.gom
-                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p><NutXemToanBo /></div>
+                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.', { khoang })}</p><NutXemToanBo /></div>
                 : (
                   <>
                     <div ref={ptGv.thanh.dauBang} />
@@ -212,7 +212,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                           {ptGv.cat(data.gvThem.hang).map(hangLon)}
                           {data.gvThem.gom && (
                             <Fragment>
-                              <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan="vấn đề khác" soCotDau={6} className={HANG_LON}
+                              <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('vấn đề khác')} soCotDau={6} className={HANG_LON}
                                 tieuDe={(
                                   <span className="block min-w-0">
                                     <span className="block truncate">{t('{n} vấn đề khác', { n: data.gvThem.gom.soVanDe })}</span>
@@ -238,11 +238,11 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                 cachTinh={(
                   <>
                     {cachDoc}
-                    {props.ct === 'ft' && <p className="m-0">Xếp theo mức SOS hiện tại của Case: Case trượt lại thì PA cũ hiện ở hàng mức mới.</p>}
+                    {props.ct === 'ft' && <p className="m-0">{t('Xếp theo mức SOS hiện tại của Case: Case trượt lại thì PA cũ hiện ở hàng mức mới.')}</p>}
                   </>
                 )} />
               {dongQc.length === 0
-                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.</p><NutXemToanBo /></div>
+                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.', { khoang })}</p><NutXemToanBo /></div>
                 : (
                   <>
                     <div ref={ptQc.thanh.dauBang} />

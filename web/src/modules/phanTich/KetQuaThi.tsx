@@ -90,7 +90,7 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
   const query = thamSoLoc(pv, { loai: 'mock', xep });
   const { data, loading, error, reload } = useApi<KetQuaMockKq>(`/phan-tich/ket-qua-thi?${query}`, [query]);
   const rows = (data?.rows ?? []).filter((r) => loc === ALL || r.ketQua === loc);
-  const pt = usePhanTrang(rows.length, `${query}|${loc}`, 'lượt');
+  const pt = usePhanTrang(rows.length, `${query}|${loc}`, t('lượt'));
   const setXep = (v: XepMock) => {
     const next = new URLSearchParams(params);
     if (v === 'lop') next.delete('xep'); else next.set('xep', v);
@@ -101,10 +101,10 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
     if (!data) return;
     const XLSX = await import('xlsx');
     const aoa: (string | number)[][] = [
-      [`Kết quả Test / Thi · Mock Test · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
-      ['Học viên', 'Lớp', 'MT', 'Tuần', 'OVR', 'L', 'R', 'W', 'S', 'Kỳ vọng', 'Kết quả', 'SOS', 'Case / PA', 'Việc tiếp'],
+      [[t('Kết quả Test / Thi'), t('Mock Test'), nhanKhoang(pv.khoang).chinh, t('dữ liệu đến {ngay}', { ngay: ngay(homNay) })].join(' · ')], [],
+      [t('Học viên'), t('Lớp'), 'MT', t('Tuần'), 'OVR', 'L', 'R', 'W', 'S', t('Kỳ vọng'), t('Kết quả'), 'SOS', 'Case / PA', t('Việc tiếp')],
       ...rows.map((r) => [r.ten, r.lop, `MT${r.mt}`, tuanLich(r.tuan, homNay), fmtBand(r.ovr), ...KN_THI.map((k) => fmtBand(r.kn[k].band)), fmtBand(r.kyVong),
-        NHAN_KET_QUA_MOCK[r.ketQua], r.sos ? `SOS ${r.sos}${r.sosTam ? ' tạm' : ''}` : '', r.casePa ?? '', r.viecTiep ?? '']),
+        NHAN_KET_QUA_MOCK[r.ketQua], r.sos ? `SOS ${r.sos}${r.sosTam ? ` ${t('tạm')}` : ''}` : '', r.casePa ?? '', r.viecTiep ? dich(r.viecTiep) : '']),
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Mock Test');
@@ -243,26 +243,26 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
   const query = thamSoLoc(pv, { loai: 'thi-that' });
   const { data, loading, error, reload } = useApi<KetQuaThiThatKq>(`/phan-tich/ket-qua-thi?${query}`, [query]);
   const rows = data?.rows ?? [];
-  const pt = usePhanTrang(rows.length, query, 'lượt');
+  const pt = usePhanTrang(rows.length, query, t('lượt'));
 
   async function xuatExcel() {
     if (!data) return;
     const XLSX = await import('xlsx');
     const aoa: (string | number)[][] = [
-      [`Kết quả Test / Thi · Thi thật · ${nhanKhoang(pv.khoang).chinh} · dữ liệu đến ${ngay(homNay)}`], [],
-      ['Học viên', 'Lớp', 'Ngày thi', 'OVR', 'L', 'R', 'W', 'S', 'Target', 'Đạt Target', 'Bước tiếp', 'Người chọn', 'Ngày chọn'],
-      ...rows.map((r) => [r.ten, r.lop ?? '', r.khongThi ? 'Không thi' : ngay(r.ngayThi, homNay), fmtBand(r.ovr), fmtBand(r.l), fmtBand(r.r), fmtBand(r.w), fmtBand(r.s), r.target,
-        r.dat === null ? '' : r.dat ? 'Đạt' : 'Chưa đạt', r.buocTiepChu ?? 'Chưa chọn', r.nguoiChon ?? '', r.ngayChon ? ngay(r.ngayChon, homNay) : '']),
+      [[t('Kết quả Test / Thi'), t('Thi thật'), nhanKhoang(pv.khoang).chinh, t('dữ liệu đến {ngay}', { ngay: ngay(homNay) })].join(' · ')], [],
+      [t('Học viên'), t('Lớp'), t('Ngày thi'), 'OVR', 'L', 'R', 'W', 'S', 'Target', t('Đạt Target'), t('Bước tiếp'), t('Người chọn'), t('Ngày chọn')],
+      ...rows.map((r) => [r.ten, r.lop ?? '', r.khongThi ? t('Không thi') : ngay(r.ngayThi, homNay), fmtBand(r.ovr), fmtBand(r.l), fmtBand(r.r), fmtBand(r.w), fmtBand(r.s), r.target,
+        r.dat === null ? '' : r.dat ? t('Đạt') : t('Chưa đạt'), r.buocTiepChu != null ? dich(r.buocTiepChu) : t('Chưa chọn'), r.nguoiChon ?? '', r.ngayChon ? ngay(r.ngayChon, homNay) : '']),
     ];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Thi thật');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), t('Thi thật'));
     XLSX.writeFile(wb, `ket-qua-thi-that-${ngay(homNay).split('/').join('-')}.xlsx`);
   }
 
   /* UI-PHAN-TICH (C16): Phân tích chỉ ĐỌC — Bước tiếp chọn ở tuyến Sau thi (Công việc TVV / hồ sơ HV); hàng chưa chọn có link sang hồ sơ. */
   const buocTiep = (r: DongThiThat) => (
     <span className={r.buocTiep ? '' : 'text-faint'}>
-      {r.buocTiepChu ? dich(r.buocTiepChu) : t('Chưa chọn')}
+      {r.buocTiepChu != null ? dich(r.buocTiepChu) : t('Chưa chọn')}
       {!r.buocTiep && r.coTheChon && <> · <Link to={`/hoc-vien/${r.studentId}`} className="link">{t('Hồ sơ HV ›')}</Link></>}
       {r.buocTiepPhu && <span className="block text-xs text-faint">{r.buocTiepPhu}</span>}
     </span>
