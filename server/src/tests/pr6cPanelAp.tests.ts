@@ -84,7 +84,7 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(/nutCaLop=\{!chiEmViec\} anKetQua=\{chiEmViec\}/.test(pv), 'PanelNhapDiem chưa gọn khi chiEmViec');
     assert(/kq: !anKetQua/.test(doc(W + 'cham/LuoiFT.tsx')), 'LuoiFT chưa ẩn được cột Kết quả');
     const kp = doc('web/src/ui/KhungPanel.tsx');
-    assert(/overflow-x-clip[^\n]*\n\s*<p className="m-0 -ml-5 flex flex-wrap/.test(kp.replace(/\r\n/g, '\n')) && /inline-block w-5 text-center/.test(kp), 'dòng 2 đầu panel vẫn có thể "·" đầu dòng');
+    assert(/overflow-x-clip[^\n]*\n\s*<p className="m-0 -ml-5 flex flex-wrap/.test(kp.replace(/\r\n/g, '\n')) && /w-5 flex-none text-center/.test(kp), 'dòng 2 đầu panel vẫn có thể "·" đầu dòng');
   });
 
   check('6c ⑥ gỡ GET /tong-quan/ql/tre + oTreCham (web không còn gọi); gvTre: luotChu lấy từ mã lượt, không cắt chuỗi contextLabel', () => {

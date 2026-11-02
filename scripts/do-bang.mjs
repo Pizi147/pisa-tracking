@@ -58,7 +58,10 @@ export function doBang() {
   const bao = (ms) => ms.length ? { x: Math.min(...ms.map((m) => m.x)), r: Math.max(...ms.map((m) => m.r)) } : null;
   const canTheo = (ink, cell) => {
     const cs = getComputedStyle(cell), b = cell.getBoundingClientRect();
-    const l = ink.x - (b.left + parseFloat(cs.paddingLeft)), r = (b.right - parseFloat(cs.paddingRight)) - ink.r;
+    const pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight);
+    /* Ô của `Bang` (kiểu cột quyết định căn) hoặc chữ lấp gần kín ô: mực không suy ra được (⋯ ẩn giữ chỗ, hai bên ≈ 0) → theo text-align. */
+    if (cell.dataset.kieu || ink.r - ink.x >= (b.width - pl - pr) * 0.9) return { left: 'trái', start: 'trái', right: 'phải', end: 'phải' }[cs.textAlign] ?? 'giữa';
+    const l = ink.x - (b.left + pl), r = (b.right - pr) - ink.r;
     return Math.abs(l - r) <= 3 ? 'giữa' : l < r ? 'trái' : 'phải';
   };
   const tenBang = (t, i) => {
@@ -91,7 +94,17 @@ export function doBang() {
     const dau = hangDau?.length ? hangDau[hangDau.length - 1] : null;
     /* Cột theo chỉ số (colSpan): tiêu đề hàng cuối của thead; ghép tiêu đề rowSpan của hàng trên (nhóm 2 tầng). */
     const cot = new Map();
-    if (hangDau) for (const hr of hangDau) { let c = 0; for (const th of hr.cells) { if ((th.colSpan || 1) === 1 && (hr === dau || th.rowSpan > 1)) cot.set(c, { th, o: [] }); c += th.colSpan || 1; } }
+    const chiem = new Set();   // ô tiêu đề hàng trên rowSpan chiếm chỗ ở hàng dưới → cột hàng dưới phải lùi qua
+    if (hangDau) for (const [h, hr] of [...hangDau].entries()) {
+      let c = 0;
+      for (const th of hr.cells) {
+        while (chiem.has(`${h}:${c}`)) c++;
+        const cs = th.colSpan || 1, rs = th.rowSpan || 1;
+        if (cs === 1 && (hr === dau || rs > 1)) cot.set(c, { th, o: [] });
+        for (let i = 1; i < rs; i++) for (let j = 0; j < cs; j++) chiem.add(`${h + i}:${c + j}`);
+        c += cs;
+      }
+    }
     const coSo = [], cao = [];
     for (const tr of hangThan) {
       const nhom = /hang-lon|khoi-nhom/.test(tr.className) || [...tr.cells].some((c) => (c.colSpan || 1) > 2) || tr.cells.length < 2;

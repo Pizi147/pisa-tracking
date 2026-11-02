@@ -419,6 +419,8 @@
   .bang > tbody > tr:has(.o-sua, button:not(.link), input) > td { padding-top: 6px; padding-bottom: 6px; }
   /* Chữ trong chip lùi 8 px (đệm chip) → tiêu đề cột chip lùi theo để thẳng chữ; chữ thường trong cột chip cũng lùi 8 (`px-2`). */
   .bang th[data-kieu="chip"] { padding-left: 20px; }
+  /* Lưới lớp thường: ⋯ ẩn chờ rê chuột vẫn giữ chỗ 32 px (28 + gap 4) cuối ô → tiêu đề chừa cùng chỗ để thẳng tâm phần đang thấy (DO-KHUNG-DO). */
+  @media (min-width: 640px) and (hover: hover) { .luoi-thuong .bang th[data-kieu="diem-ti-le"] { padding-right: 44px; } }
   .bang :is(th, td):is([data-kieu="ten"], [data-kieu="chu"], [data-kieu="chip"], [data-kieu="tuan"], [data-kieu="viec"]) { text-align: left; }
   .bang :is(th, td):is([data-kieu="so"], [data-kieu="diem"], [data-kieu="noi-bat"], [data-kieu="diem-ti-le"], [data-kieu="phan-tram"]) { text-align: center; font-variant-numeric: tabular-nums; }
   .bang :is(th, td):is([data-kieu="nut"]) { text-align: right; }
