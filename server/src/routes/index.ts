@@ -120,7 +120,7 @@ import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
-import { NHOM_VIEC_TVV, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { NHOM_VIEC_TVV, boQuaViec, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
@@ -579,6 +579,9 @@ api.get('/my-work', requireAuth, wrap((req) => {
 
   return nheMyWork(myWork(p, { branchId }));
 }));
+
+/** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */
+api.post('/my-work/bo-qua', requireAuth, wrap((req) => boQuaViec(principalOf(req), req.body?.key, req.body?.boQua !== false)));
 
 /** OV-14c: hàng đợi "Chấm Speaking" của GV Speaking (panel của việc `KHOA_CHAM_SPEAKING`) — mỗi em một ô S Mock (`baiChamSpeaking`). */
 api.get('/my-work/cham-speaking', requireAuth, wrap((req) => {

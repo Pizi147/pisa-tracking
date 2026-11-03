@@ -35,6 +35,8 @@ export type WorkItem = {
   cycleId?: number; daGiaHan?: boolean;
   /** UI-CV-TVV: Báo PH — id việc (`viec_bao_ph`) · số lần "Chưa liên hệ được". */
   viecId?: number; soLanThu?: number;
+  /** BO-QUA-XEP-MT: QL bỏ qua được ngay trên dòng (việc `moc:` Xếp lịch MT / Nhập dự kiến thi). */
+  boQuaDuoc?: boolean;
 };
 
 /** OV-13d: loại việc Ý thức mà dòng gộp theo lớp mở panel lô (`LoYThucPanel`) — `PanelViec` đọc cùng tập này. */

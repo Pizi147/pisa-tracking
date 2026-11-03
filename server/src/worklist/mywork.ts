@@ -1,7 +1,7 @@
 import { phamViXemViec } from './xemViec.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
-import { DS_JSON, db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, khoiCham, laChamCheo, laViecChamCheo, mondayOfDate,
@@ -11,7 +11,8 @@ import {
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
   type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demViec, nhomViecCua, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, forbidden } from '../util.ts';
+import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
+import { writeAudit } from '../platform/audit.ts';
 import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -146,6 +147,8 @@ export type WorkItem = {
   soLanThu?: number;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
+  /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
+  boQuaDuoc?: boolean;
 };
 
 /**
@@ -400,6 +403,63 @@ function napCaseMo(): any[] {
  * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
  */
+/**
+ * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC — nguồn việc `moc:` (một câu cho cả phạm vi). BO-QUA-XEP-MT: kèm cột bỏ qua + tên
+ * người bỏ qua (JOIN, không thêm câu). `boQuaViec` đọc lại đúng một PA bằng câu này + `AND iv.id = ?`.
+ */
+const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
+              COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
+              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+         LEFT JOIN users ub ON ub.id = iv.bo_qua_boi
+        WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
+          AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}`;
+
+/** Chữ của việc `moc:` + `dau` = mốc đang thiếu (`mt{n}` | `thi`) — bỏ qua ghi mốc này; mốc khác thì việc hiện lại. */
+function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name: string | null }) {
+  const thi = r.moc_quy_che === 'until_exam';
+  const n = (r.attempt_no ?? 0) + 1;
+  const ten = r.full_name ?? 'Học viên';
+  return {
+    thi, dau: thi ? 'thi' : `mt${n}`,
+    reason: `PA theo quy chế ${thi ? 'đến lúc thi' : `đến MT${n}`} đang chạy nhưng chưa có ${thi ? 'ngày thi' : 'lịch'}`,
+    tieuDe: thi ? `Nhập dự kiến thi · ${ten}` : `Xếp lịch MT${n} cho ${ten}`,
+    phu: thi ? 'Nhập dự kiến thi' : `Xếp lịch MT${n}`,
+  };
+}
+
+/** BO-QUA-XEP-MT: việc QL đã bỏ qua (danh sách "Đã bỏ qua" ở Công việc — khôi phục được). */
+export type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
+
+/**
+ * BO-QUA-XEP-MT (chủ SP 03/11): QL bỏ qua / khôi phục việc `moc:{PA}`. Chỉ ẩn VIỆC — không đổi lịch, PA, Case, số "HV chưa có MT tiếp theo".
+ * Một người bỏ qua là cả phạm vi QL không thấy (cờ trên PA). Quyền = người thấy việc đó (QL / Quản trị có `case.approve` với em). Nhật ký `audit_logs`.
+ */
+export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
+  const m = /^moc:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
+  if (!m) throw badRequest('Việc này không bỏ qua được.');
+  if (phamViXemViec(p) !== 'het') throw forbidden('Chỉ Quản lý trong phạm vi bỏ qua được việc này.');
+  const conn = db();
+  const r = conn.prepare(`${SQL_MOC} AND iv.id = ?`).get(Number(m[1])) as any;
+  if (!r) throw notFound('Việc này không còn — có thể đã xếp lịch.');
+  if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) throw forbidden('Học viên này ngoài phạm vi của bạn.');
+  const v = viecMoc(r);
+  const moi = boQua ? v.dau : null;
+  if ((r.bo_qua_moc ?? null) === moi) return { ok: true };   // bấm lại / hai người cùng bấm: không ghi lần hai
+  tx(() => {
+    conn.prepare('UPDATE case_interventions SET bo_qua_moc = ?, bo_qua_boi = ?, bo_qua_luc = ? WHERE id = ?')
+      .run(moi, boQua ? p.userId : null, boQua ? nowIso() : null, r.id);
+    writeAudit({ actorUserId: p.userId, action: boQua ? 'viec.bo_qua' : 'viec.khoi_phuc', entityType: 'case_intervention', entityId: r.id,
+      entityLabel: v.tieuDe, before: { boQuaMoc: r.bo_qua_moc ?? null }, after: { boQuaMoc: moi } });
+  });
+  return { ok: true };
+}
+
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
   /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[] } = {}) {
   const today = demoToday();
@@ -414,6 +474,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo QL tự tạo — một lần mỗi request
   if (coNho() && !f.chiNhom) phanCongDangHoatDong();   // TL-VIEC: năm nơi đọc phân công lọc từ một câu; dựng một phần (`chiNhom`: chuông, TVV) giữ câu riêng, ít dòng hơn
   const items: WorkItem[] = [];
+  const daBoQua: ViecDaBoQua[] = [];
   const co = (...g: WorkGroupKey[]) => !f.chiNhom || g.some((x) => f.chiNhom!.has(x));
   /*
    * Chương trình + cách chấm của MỌI lớp, nạp lười (MH2 tên môn, MH4 khung) — dùng lại bảng lớp và bảng chương trình
@@ -1224,35 +1285,28 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * kiến / Xếp lịch MT. Điền mốc trước (có lịch rồi thì hết việc), rồi đọc lại. Một câu cho cả phạm vi.
    */
   if (xemNguoiKhac && co('missing_data')) {
-    const sql = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
-              COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
-              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no
-         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
-          AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}`;
-    const truoc = conn.prepare(sql).all() as any[];
+    const truoc = conn.prepare(SQL_MOC).all() as any[];
     if (truoc.length) {
       dienMocQuyChe({ caseIds: [...new Set(truoc.map((r) => r.case_id as number))] });
-      const sau = conn.prepare(sql).all() as any[];
+      const sau = conn.prepare(SQL_MOC).all() as any[];
       napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;
         if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;
-        const thi = r.moc_quy_che === 'until_exam';
+        const v = viecMoc(r);
+        /* BO-QUA-XEP-MT: QL đã bỏ qua đúng mốc này → không là việc, chỉ ở "Đã bỏ qua" (khôi phục được). Mốc khác (MT kế khác) → hiện lại. */
+        if (r.bo_qua_moc === v.dau) {
+          daBoQua.push({ key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,
+            boi: r.bo_qua_ten ?? null, luc: r.bo_qua_luc });
+          continue;
+        }
         items.push({
           key: `moc:${r.id}`, group: 'missing_data', urgency: 'normal',
           studentId: r.sid, studentName: r.full_name ?? 'Học viên', classId: r.class_id ?? null, classCode: r.class_code ?? null,
           attemptId: null, attemptNo: r.attempt_no ?? null, caseId: r.case_id, level: null, contextLabel: null, count: null,
-          reason: `PA theo quy chế ${thi ? 'đến lúc thi' : `đến MT${(r.attempt_no ?? 0) + 1}`} đang chạy nhưng chưa có ${thi ? 'ngày thi' : 'lịch'}`,
-          tieuDe: thi ? `Nhập dự kiến thi · ${r.full_name ?? 'Học viên'}` : `Xếp lịch MT${(r.attempt_no ?? 0) + 1} cho ${r.full_name ?? 'Học viên'}`,
-          phu: thi ? 'Nhập dự kiến thi' : `Xếp lịch MT${(r.attempt_no ?? 0) + 1}`,
-          actionLabel: thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
-          ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có lịch',
+          reason: v.reason, tieuDe: v.tieuDe, phu: v.phu,
+          actionLabel: v.thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
+          ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
         });
       }
     }
@@ -1505,6 +1559,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     groups,
     scopeEmpty: false,
     xemNguoiKhac,
+    /* BO-QUA-XEP-MT: chỉ QL / Quản trị có (việc `moc:`); rỗng thì không gửi. */
+    daBoQua: daBoQua.length ? daBoQua : undefined,
   };
 }
 
