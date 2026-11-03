@@ -52,8 +52,10 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
 
   return (
     <div ref={goc} className={`relative ${className}`}>
-      <div className="relative">
-        <input className="field w-full pr-8" value={value} placeholder={t('Tìm lớp, học viên hoặc email…')} aria-label={t('Tìm lớp, học viên hoặc email')}
+      <div className="o-tim w-full">
+        {/* U05 (mockup `.otim`): kính lúp + nền --bg, chữ 14 — cùng ô tìm Học viên & Lớp. */}
+        <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input className={`field h-9 w-full max-sm:min-h-[44px] ${value ? "pr-8" : ""}`} value={value} placeholder={t('Tìm lớp, học viên hoặc email')} aria-label={t('Tìm lớp, học viên hoặc email')}
           role="combobox" aria-expanded={mo && !!q} aria-controls="tim-kht-goi-y" aria-autocomplete="list"
           aria-activedescendant={mo && ds[dong] ? `tim-kht-${dong}` : undefined}
           onChange={(e) => { onChange(e.target.value); setMo(true); }} onFocus={() => setMo(true)} onKeyDown={onKey} />

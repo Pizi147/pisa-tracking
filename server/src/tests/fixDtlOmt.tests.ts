@@ -171,7 +171,9 @@ export async function runFixDtlOmtTests(t: YThucTestKit) {
   check('DTL5 · lưới Kế hoạch Test (KHT-GON, mockup #659): dòng 1 tuần + chữ không cắt (nowrap, tuần cột cố định 58 px, môn xuống dòng thụt (PTA 28/10)); ô cao tối thiểu 56', () => {
     const c = doc('web/src/modules/test/keHoach/ChipKyNang.tsx');
     const o = c.slice(c.indexOf('export function ODotGon'), c.indexOf('export function NutXepO'));
-    assert(/grid-cols-\[54px_minmax\(0,1fr\)\]/.test(o) && /whitespace-nowrap text-xs font-semibold/.test(o), 'tuần / chữ trạng thái phải nowrap, tuần cột cố định');
-    assert(/min-h-\[56px\]/.test(c), 'ô lưới cao ≥ 56');
+    /* U05 (mockup V11 `.omt`): dòng tuần `.o-kh-hang` (tuần nowrap + 4 badge cố định), dòng trạng thái `.o-kh-tt` nowrap; ô cao ≥ 62 ở CSS. */
+    assert(/className="o-kh-hang"/.test(o) && /className="o-kh-tuan"/.test(o) && /className="o-kh-tt"/.test(o), 'ô MT: dòng tuần + dòng trạng thái');
+    const css = doc('web/src/index.css');
+    assert(/\.o-kh-tuan \{[^}]*white-space: nowrap/.test(css) && /\.o-kh-tt \{[^}]*white-space: nowrap/.test(css) && /\.o-kh \{[^}]*min-height: 62px/.test(css), 'tuần / trạng thái nowrap, ô cao ≥ 62');
   });
 }

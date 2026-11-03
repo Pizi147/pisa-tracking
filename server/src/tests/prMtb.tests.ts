@@ -681,7 +681,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/<ODotGon\b/.test(l) && /oGon\(dot\.kn, homNay, ct\)/.test(l), 'LuoiKeHoach chưa vẽ ODotGon theo oGon');
     assert(/kyNangDau: null/.test(l) && /Xếp MT trước rồi mới tới/.test(l) && /attemptNo === \(h as HangFT\)\.soKeTiep/.test(l), 'thiếu mở hộp / chỉ MT kế tiếp có nút xếp');
-    assert(/loai === 'ft' \? 180 : 250/.test(l), 'rongDot FT 180, lớp thường 250');
+    assert(/loai === 'ft' \? 190 : 220/.test(l), 'rongDot FT 190, lớp thường 220 (U05 mockup V11)');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
     assert(!/#[0-9a-fA-F]{3,8}\b/.test(c) && !/duongDotTest|NhanCu/.test(c), 'ô gọn: màu token, không liên kết thẳng');
   });
@@ -794,7 +794,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/import \{ Link\b[^}]*\} from 'react-router-dom'/.test(h) && /duongDotTest/.test(h), 'thiếu Link / duongDotTest');
     assert(/attemptId !== null\s*\?\s*<Link to=\{duongDotTest\(\{ id: attemptId,[^}]*classId \}, null\)\} onClick=\{onClose\}/.test(h), 'tên chưa là Link đóng hộp');
     const tieuDe = h.slice(h.indexOf('<Link to={duongDotTest'), h.indexOf('</Link>') + 120);
-    assert(/className="link flex min-h-\[44px\] items-center sm:min-h-0"/.test(tieuDe), 'Link chưa 44px ở 375');
+    assert(/className="ten-ho-so flex min-h-\[44px\] items-center sm:min-h-0"/.test(tieuDe), 'Link chưa 44px ở 375');
     assert(/<span className="block truncate">\{tieuDe\}<\/span>/.test(tieuDe), 'đợt mới phải là chữ');
   });
 
@@ -894,9 +894,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/sm:flex-nowrap/.test(p) && /sm:w-\[300px\]/.test(p), 'Mock Test nowrap, cột Sẽ xếp 300px');
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/<ODotGon\b/.test(l) && /dot\.attemptId !== null/.test(l), 'lưới: ODotGon cho đợt đã có (KHT-GON)');
-    assert(/loai === 'ft' \? 180 : 250/.test(l), 'cột đợt FT 180 (ô môn theo dòng tuần, chủ SP 28/10)');
+    assert(/loai === 'ft' \? 190 : 220/.test(l), 'cột đợt FT 190 (U05 mockup V11)');
     const c = nguon('web/src/modules/test/keHoach/ChipKyNang.tsx');
-    assert(/export function ODotGon\b/.test(c) && /VACH\[o\.tt\.loai\]/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ODotGon: vạch theo trạng thái, màu token');
+    assert(/export function ODotGon\b/.test(c) && /o-kh-tre/.test(c) && /o-kh-dang/.test(c) && !/#[0-9a-fA-F]{3,8}\b/.test(c), 'ODotGon: viền ô theo trạng thái (U05), màu token');
   });
 
 }
