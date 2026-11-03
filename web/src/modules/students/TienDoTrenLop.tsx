@@ -40,8 +40,12 @@ const HOAN_TAC_MS = 10_000;
  * (`ChuDich`). Góp ý tuần cũ: nhãn khoá, chỉ đọc. "+ Ghi tiến độ" và bấm dòng mình sửa được → form NGAY TRONG CỘT (không panel); lưu xong dòng viền nhấn +
  * "✓ Đã lưu · Hoàn tác" (10 giây; xoá cũng Hoàn tác được). Thang riêng: không vào MT / Overall / KPI. Quyền ghi do máy chủ (`lop[].kyNang`, `sua`).
  */
-export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe }: {
+export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns = [], tenKn }: {
   studentId: number; lopNay: number | null; chon: ChonKn; ct: string | null; homNay: string;
+  /** U02 dòng 5 (N33 ②): kỹ năng của lộ trình (thứ tự ô điểm) — Overall = mỗi kỹ năng MỘT dòng gần nhất, chỉ đọc; ghi / sửa khi chọn kỹ năng. */
+  kns?: string[];
+  /** Tên kỹ năng đang chọn ở tiêu đề ("Tiến độ trên lớp · Listening"). */
+  tenKn?: string;
   /** Rê / focus một dòng → tuần của dòng (Hành trình tô cột tuần đó); rời → null. */
   onRe?: (tuan: string | null) => void;
 }) {
@@ -58,7 +62,9 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe }: {
     ...(data?.gopY ?? []).map((g) => ({ loai: 'gy' as const, ...g })),
   ].filter((d) => !kn || d.skill === kn).sort((a, b) => b.tuan.localeCompare(a.tuan) || (a.loai === b.loai ? b.id - a.id : a.loai === 'bai' ? -1 : 1));
   const hien = du || ds.length <= TOI_DA + 1 ? ds : ds.slice(0, TOI_DA);
-  const ghiDuoc = (data?.lop ?? []).some((l) => l.kyNang.length && (!kn || l.kyNang.includes(kn)));
+  const tomTat = !kn && kns.length > 0;
+  const knTomTat = [...new Set(kns.map((k) => kyNangBai(k)))];
+  const ghiDuoc = !tomTat && (data?.lop ?? []).some((l) => l.kyNang.length && (!kn || l.kyNang.includes(kn)));
   const taiLai = () => { invalidate(duong); reload(); };
   const xong = (x: VuaLuu) => { setMo(null); setLoiHoanTac(null); setVua(x); taiLai(); };
   const hoanTac = async () => {
@@ -75,11 +81,36 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe }: {
   return (
     <section className="card flex min-w-0 flex-col" aria-label={t('Tiến độ trên lớp')}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="m-0 text-[15px] font-bold text-slate-100">{t('Tiến độ trên lớp')}</h2>
+        <h2 className="m-0 text-[17px] font-bold text-slate-100">{kn && tenKn ? t('Tiến độ trên lớp · {kn}', { kn: tenKn }) : t('Tiến độ trên lớp')}</h2>
         <NutLuat label={t('Tiến độ trên lớp là gì')}>{t('GV ghi tuỳ ý: nhận xét, có thể kèm điểm bài hoặc band · không vào MT, Overall, KPI · góp ý tuần cũ chỉ đọc.')}</NutLuat>
         {ghiDuoc && mo !== 'moi' && <button type="button" className="btn btn-sm ml-auto max-sm:min-h-[44px]" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
       </div>
-      <div className="flex flex-col gap-2 px-4 py-3">
+      {tomTat ? (
+        error ? <div className="px-4 py-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
+          : !data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
+          : (
+            <ul className="m-0 list-none p-0">
+              {knTomTat.map((k) => {
+                const d = ds.find((x) => x.skill === k);
+                return (
+                  <li key={k} className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-3 border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}
+                    onMouseEnter={d ? () => onRe?.(d.tuan) : undefined} onMouseLeave={d ? () => onRe?.(null) : undefined}>
+                    <span className="the-kn">{tenMonNgan(ct, k)}</span>
+                    {d ? (
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="flex flex-wrap gap-1.5"><span className="the-phu nhat tabular-nums">{d.tuanMa}</span></span>
+                        <span className="line-clamp-2 break-words text-[14px] leading-normal text-slate-200">
+                          {d.loai === 'gy' ? <ChuDich chu={d.noiDung} nguon={{ bang: 'gop_y_tuan', id: d.id, cot: 'noi_dung' }} />
+                            : <><KetQuaBai b={d} />{d.nhanXet && <ChuDich chu={d.nhanXet} nguon={{ bang: 'bai_tren_lop', id: d.id, cot: 'nhan_xet' }} />}</>}
+                        </span>
+                      </span>
+                    ) : <span className="pt-0.5 text-[14px] text-slate-400">{t('Chưa có ghi nhận')}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          )
+      ) : <div className="flex flex-col gap-2 px-4 py-3">
         {mo === 'moi' && data && <FormTienDo duong={duong} bai={null} lop={data.lop} lopNay={lopNay} knDau={kn} ct={ct} homNay={homNay} onHuy={() => setMo(null)} onXong={xong} />}
         {vua && vua.id === null && baoXong}
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
@@ -132,7 +163,7 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe }: {
             {du ? t('Thu gọn ▴') : t('Xem thêm {n} dòng ▾', { n: ds.length - TOI_DA })}
           </button>
         )}
-      </div>
+      </div>}
     </section>
   );
 }

@@ -19,6 +19,8 @@ export type Viec = {
   key: string; loai: string; chu: string; khoa?: string; bien?: Bien; kyNang: string | null; caseId: number | null; paId: number | null;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
   nguoi: { id: number | null; ten: string; vai: string | null }; cuaBan: boolean; nut: string;
+  /** U02: thẻ phụ dưới tên việc (kỳ, PA) — `viecHocVien.ts`. */
+  the?: { chu: string; khoa?: string; bien?: Bien }[];
   mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'them-pa' }
     | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' } | { loai: 'duong'; href: string } | null;
 };
@@ -46,14 +48,16 @@ export function DongThongTin({ tt, tvv, mon }: { tt: any; tvv?: string | null; m
   const thiThat = tt.kyThi && tt.thiThat
     && <NhanGt key="tt" n={t('Thi thật {ten}', { ten: tt.kyThi.ten })} g={<span className="tabular-nums">{chuKetQuaKyThi(tt.thiThat)}{tt.thiThat.dat != null && ` · ${tt.thiThat.dat ? t('Đạt Target') : t('Chưa đạt Target')}`}</span>} />;
   const thi = tt.thiDuKien
-    ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Ngày thi')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${dich(tt.thiDuKien.nhan) === t('Dự kiến thi') ? t('Dự kiến') : dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
-    : !tt.lopThuong && <NhanGt key="thi" n={t('Ngày thi')} g={<NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>} />;
+    ? <NhanGt key="thi" n={tt.lopThuong ? dich(tt.thiDuKien.nhan) : t('Thi thật')} g={<span className="tabular-nums">{tt.lopThuong ? tt.thiDuKien.gt : `${dich(tt.thiDuKien.nhan) === t('Dự kiến thi') ? t('Dự kiến') : dich(tt.thiDuKien.nhan)} ${tt.thiDuKien.gt}`.trim()}</span>} />
+    : !tt.lopThuong && <NhanGt key="thi" n={t('Thi thật')} g={<NhanLich loai="chua">{t('Chưa có lịch')}</NhanLich>} />;
   const muc: ReactNode[] = [
     <NhanGt key="lop" n={t('Lớp')} g={tt.lopId ? <Link to={`/hoc-vien/lop/${tt.lopId}`} className="text-slate-100 no-underline hover:underline">{tt.lop}</Link> : tt.lop} />,
     tt.loTrinh && <NhanGt key="lt" n={tt.lopThuong ? t('Chương trình') : t('Lộ trình')} g={dich(tt.loTrinh)} />,
     !tt.lopThuong && target,
     !tt.lopThuong && mon && <NhanGt key="mon" n={t('Môn học')} g={mon} />,
-    tt.tuanHoc && <NhanGt key="tuan" n={t('Khoá học')} g={<span className="tabular-nums">{chuTuanHoc(tt.tuanHoc.tuan, tt.tuanHoc.tong, tt.tuanHoc.dangDung)}</span>} />,
+    /* U02 dòng 1: nhãn "Tuần học", giá trị chỉ số (mockup `.fact`) — "đang dừng" giữ sau số. */
+    tt.tuanHoc && <NhanGt key="tuan" n={t('Tuần học')} g={<span className="tabular-nums">{tt.tuanHoc.tuan === null ? chuTuanHoc(null, null, tt.tuanHoc.dangDung)
+      : [tt.tuanHoc.tong ? `${tt.tuanHoc.tuan}/${tt.tuanHoc.tong}` : String(tt.tuanHoc.tuan), tt.tuanHoc.dangDung ? t('đang dừng') : null].filter(Boolean).join(' · ')}</span>} />,
     thi,
     tt.lopThuong && target,
     thiThat,
@@ -61,7 +65,8 @@ export function DongThongTin({ tt, tvv, mon }: { tt: any; tvv?: string | null; m
     tt.gvcn && <NhanGt key="gv" n={t('GVCN')} g={tt.gvcn} />,
     tvv && <NhanGt key="tvv" n={t('TVV')} g={tvv} />,
   ].filter(Boolean);
-  return <div className="flex flex-wrap items-start gap-x-[22px] gap-y-2.5">{muc}</div>;
+  /* U02 dòng 1 (mockup `.facts`): ô nhãn trên – giá trị dưới, vạch dọc ngăn ô. */
+  return <div className="o-tin items-start">{muc}</div>;
 }
 
 /** Số gọi được trên điện thoại (`tel:`), chữ giữ nguyên như người nhập. */
@@ -75,20 +80,17 @@ function So({ sdt }: { sdt: string }) {
  */
 export function DongLienHe({ l, email, dob, tvv }: { l: LienHe | null | undefined; email?: string | null; dob?: string | null; tvv?: string | null }) {
   const ph = chuPhuHuynh(l);
+  /* U02 dòng 1 (mockup `.lien-he`): liên hệ tách khỏi học thuật — mỗi mục một thẻ nhỏ mờ; chưa có PH ghi "PH: chưa có". */
   const muc: ReactNode[] = [
-    l?.phone && <span key="em">{t('Em')} <So sdt={l.phone} /></span>,
-    (ph || l?.parentPhone) && <span key="ph">{t('PH')}{ph ? `: ${ph}` : ''}{l?.parentPhone && <>{ph ? ' · ' : ' '}<So sdt={l.parentPhone} /></>}</span>,
-    !l?.phone && !ph && !l?.parentPhone && <span key="chua" className="text-slate-500">{t('Chưa có liên hệ')}</span>,
-    email && <span key="mail" className="break-all">{email}</span>,
-    dob && <span key="dob">{t('Sinh')} <span className="tabular-nums">{ngay(dob)}</span></span>,
-    tvv && <span key="tvv">{t('TVV')} {tvv}</span>,
+    l?.phone && <>{t('Em')} <So sdt={l.phone} /></>,
+    (ph || l?.parentPhone) ? <>{t('PH')}{ph ? `: ${ph}` : ''}{l?.parentPhone && <>{ph ? ' · ' : ' '}<So sdt={l.parentPhone} /></>}</> : <>{t('PH: chưa có')}</>,
+    email && <span className="truncate">{email}</span>,
+    dob && <>{t('Sinh')} <span className="tabular-nums">{ngay(dob)}</span></>,
+    tvv && <>{t('TVV')} {tvv}</>,
   ].filter(Boolean);
   return (
-    <ul aria-label={t('Liên hệ')} className="m-0 mt-1 flex list-none flex-wrap items-baseline gap-y-0.5 p-0 text-[13px] text-slate-300">
-      <li className="pr-2 text-[12px] font-semibold tracking-[.03em] text-slate-500">{t('Liên hệ')}</li>
-      {muc.map((m, i) => (
-        <li key={i}>{m}{i < muc.length - 1 && <span aria-hidden className="px-[7px] text-slate-500">·</span>}</li>
-      ))}
+    <ul aria-label={t('Liên hệ')} className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0">
+      {muc.map((m, i) => <li key={i} className="the-phu nhat min-w-0">{m}</li>)}
     </ul>
   );
 }
@@ -139,12 +141,6 @@ export function HanViec({ x, homNay, chiQuaHan }: { x: Viec; homNay: string | nu
   return <span className={`whitespace-nowrap text-[12px] tabular-nums ${v.ganHan ? 'font-semibold text-soon' : 'text-slate-400'}`} title={v.text}>{v.han}{v.homNay ? ` · ${t('hôm nay')}` : ''}</span>;
 }
 
-/** "Ghi kết quả tuần W4 SEP · PA …" → phần động từ đậm, phần sau thường (mockup 24 A). */
-function ChuViec({ chu }: { chu: string }) {
-  const i = chu.indexOf(' · ');
-  return i < 0 ? <b className="font-semibold">{chu}</b> : <><b className="font-semibold">{chu.slice(0, i)}</b>{chu.slice(i)}</>;
-}
-
 function NutGap({ mo, onClick, children }: { mo: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button type="button" aria-expanded={mo} onClick={onClick}
@@ -179,18 +175,21 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
   );
 }
 
-/** Một ô việc (cùng dáng `OViec` của Hồ sơ lớp): tên đậm · hạn · nút bên phải. */
+/** Một ô việc (mockup U02 `.the-viec`): tên việc đậm 15 · thẻ phụ (kỳ, PA) + hạn · nút bên phải; vạch trái nhấn (quá hạn đỏ). */
 function OViec({ x, chinh, homNay, onLam }: { x: Viec; chinh: boolean; homNay: string | null; onLam: (x: Viec) => void }) {
   const vach = x.quaHanNgay !== null ? 'rgb(var(--bad-rgb))' : 'var(--accent)';
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 rounded-[10px] border border-l-4 bg-[color:var(--surface)] px-3 py-2.5"
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-1.5 rounded-[10px] border border-l-[3px] bg-[color:var(--surface)] px-3.5 py-2.5 max-sm:grid-cols-1"
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
-      {/* SUA-375-2: điện thoại tên việc xuống dòng (không cắt "…"); ≥ 640 px một dòng + title như cũ. */}
-      <span className="min-w-0 text-[14px] text-slate-100 sm:line-clamp-2" title={chuViec(x)}><ChuViec chu={chuViec(x)} /></span>
+      {/* SUA-375-2: điện thoại tên việc xuống dòng (không cắt "…"); ≥ 640 px tối đa hai dòng + title như cũ. */}
+      <b className="min-w-0 text-[15px] font-semibold text-slate-100 sm:line-clamp-2" title={chuViec(x)}>{chuViec(x)}</b>
       {x.mo
-        ? <button type="button" className={['btn btn-sm row-span-2 max-sm:min-h-[44px]', chinh && 'btn-primary'].filter(Boolean).join(' ')} onClick={() => onLam(x)}>{nutViec(x)}</button>
-        : <span className="row-span-2" />}
-      <span className="min-w-0 text-[13px] text-slate-400">{x.han ? <HanViec x={x} homNay={homNay} /> : t('không hạn')}</span>
+        ? <button type="button" className={['btn btn-sm sm:row-span-2 max-sm:min-h-[44px]', chinh && 'btn-primary'].filter(Boolean).join(' ')} onClick={() => onLam(x)}>{nutViec(x)}</button>
+        : <span className="sm:row-span-2" />}
+      <span className="flex min-w-0 flex-wrap items-center gap-1.5 max-sm:order-2">
+        {x.the?.map((th) => <span key={th.chu} className="the-phu nhat">{dichChu(th)}</span>)}
+        {x.han ? <HanViec x={x} homNay={homNay} /> : <span className="text-[13px] text-slate-400">{t('không hạn')}</span>}
+      </span>
     </div>
   );
 }

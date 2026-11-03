@@ -366,7 +366,7 @@ export default function StudentDetailPage() {
               {chon === OVERALL && !cy.ratio ? (
                 <>
                   <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-                    <h2 className="m-0 text-[15px] font-bold text-slate-100">Mock Test</h2>
+                    <h2 className="m-0 text-[17px] font-bold text-slate-100">Mock Test</h2>
                     <NutLuat label={t('Cách đọc bảng Mock Test')}>{t('Điểm tô theo kỳ vọng của chính lượt · hàng cuối là thi thật — kết quả cuối của lộ trình, so Target.')}</NutLuat>
                   </div>
                   <KhoiMockTest cy={cy} attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
@@ -382,12 +382,16 @@ export default function StudentDetailPage() {
               Case & PA của kỹ năng đang chọn (Overall: mọi Case) — khối Case A của M6, form tại chỗ. 375: xếp dọc. Bỏ panel Ghi tiến độ cũ.
             */}
             <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-              {homNay && <TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan} />}
+              {/* U02 dòng 16: 375 xếp dọc — Case trước (việc trước), Tiến độ sau; ≥ 1024 hai cột trái Tiến độ | phải Case. */}
+              {homNay && <div className="order-2 min-w-0 lg:order-1"><TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan}
+                kns={rowsFt.map((r) => r.category)} tenKn={tenChon} /></div>}
+              <div className="order-1 min-w-0 lg:order-2">
               {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
                 : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
                 : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
                   onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}
                   onChanged={() => { board.reload(); reload(); }} />}
+              </div>
             </div>
 
             {/*
@@ -552,6 +556,22 @@ function GhiChuLoTrinh({ cy, homNay }: { cy: any; homNay: string | null }) {
   );
 }
 
+/**
+ * Ô Kết quả một lượt ở bảng Mock Test hồ sơ (U02, UA-Q4 — bỏ nhãn "Đủ điểm"): đủ điểm + đạt → "✓ Đạt kỳ vọng"; đủ điểm + SOS → chip SOS kèm kỹ năng dưới
+ * kỳ vọng ("SOS 3 · L, W, S"); còn lại (thiếu điểm, KCK…) giữ `KetQuaDot`.
+ */
+function KetQuaMt({ a, gon = false }: { a: any; /** 375: "✓ Đạt", chip SOS không kèm kỹ năng. */ gon?: boolean }) {
+  const du = a.scored >= a.required && a.evaluable && !a.kckDuoi;
+  if (du && a.sosLevel === 0) return gon ? <span className="inline-flex items-center whitespace-nowrap rounded border border-[color:rgb(var(--ok-line-rgb))] px-2 py-0.5 text-xs font-semibold text-ok">✓ {t('Đạt')}</span>
+    : <KetQuaDot phan="overall" coDiem={a.scored} yeuCau={a.required} dat sos={0} chot={a.chot} />;
+  if (du && gon && a.sosLevel > 0) return <ChipSos muc={a.sosLevel} dot={`MT${a.attemptNo}`} hienKyNang={false} />;
+  if (du && a.sosLevel > 0 && a.expectation != null) {
+    const duoi = (['listening', 'reading', 'writing', 'speaking'] as const).filter((k) => a.bands?.[k] != null && a.bands[k] < a.expectation).map((k) => CHU_KY_NANG[k === 'writing' ? 'writing1' : k].slice(0, 1));
+    return <ChipSos muc={a.sosLevel} kyNang={duoi} dot={`MT${a.attemptNo}`} />;
+  }
+  return <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} kckDuoi={a.kckDuoi} />;
+}
+
 /** Kết quả của hàng Thi thật: Đạt Target / Chưa đạt Target · −0.5 (OVR so Target lúc nhập) · đã thi chờ KQ · chưa thi · không thi. */
 function KetQuaThi({ th }: { th: ThiThatD | 'khong' }) {
   if (th === 'khong') return <span className="text-slate-300">{t('Không thi')}</span>;
@@ -584,6 +604,8 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
   const diemThi = (k: 'l' | 'r' | 'w' | 's' | 'ovr') => (thiKq?.diem[k] != null ? <DiemKq diem={thiKq.diem[k]!} kyVong={thiKq.target} /> : '—');
   const ngayThi = !thi || thi === 'khong' ? '—' : thi.loai === 'du-kien' ? t('dự kiến {thang}', { thang: thi.nhan }) : thi.nhan;
   const dienThoai = useDienThoai();
+  /* U02 dòng 14 (rỗng ≠ thiếu ≠ chưa tới): lượt chưa tới tuần, chưa điểm nào → một ô "Chưa tới tuần" thay sáu "—". */
+  const chuaToi = (a: any) => !a.scored && !!a.weekStart && !!homNay && a.weekStart > homNay;
   /* G12: số điểm tô ✓ / ✗ theo kỳ vọng của lượt (như lưới lớp), không màu link. G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
   const diemKyNang = (a: any, k: typeof KN_MOCK[number]) => {
     const w = k === 'writing1' || k === 'writing2', b = w ? a.diemKn?.[k] ?? null : a.bands?.[k] ?? null, kd = w ? 'writing' : k;
@@ -595,34 +617,21 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
    * ĐIỆN THOẠI (PR-UXD Q9): mỗi lượt MỘT thẻ — đầu thẻ `MT2 · W3 SEP` + Kết quả bên phải (tầng 1), rồi Điểm L R W S · Overall · Kỳ vọng ·
    * Lớp (tầng 3, cuối). Cùng trường `a.*` và cùng link `attemptHref` / `duongDotTest` với bảng — đổi bảng thì đổi thẻ.
    */
+  /* U02 B1 (mockup `.mt-the`): điện thoại mỗi lượt MỘT dòng — MTn › · tuần · OVR · Kết quả; điểm từng kỹ năng ở hồ sơ lượt (link MTn ›). */
   if (dienThoai) {
     return (
       <div>
         {attempts.map((a) => (
-          <TheDong key={a.id} id={`dot-${a.id}`} className={a.id === dotId ? 'bg-[color:var(--accent-soft)]' : ''}
-            dau={(
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <Link to={attemptHref(a)} className="link min-w-[44px] font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} />
-                  <div className="text-xs text-slate-500">{a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}</div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} kckDuoi={a.kckDuoi} />
-                  {a.scopeNote && <div className="text-xs text-slate-500">{dich(a.scopeNote)}</div>}
-                </div>
-              </div>
-            )}
-            dong={[
-              {
-                nhan: t('Điểm'),
-                noiDung: KN_MOCK.map((k, i) => (
-                  <Fragment key={k}>{i > 0 && ' · '}<span className="whitespace-nowrap"><span className="text-slate-500">{CHU_KY_NANG[k]}</span> {diemKyNang(a, k)}</span></Fragment>
-                )),
-              },
-              { nhan: 'Overall', noiDung: a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall) },
-              { nhan: t('Kỳ vọng'), noiDung: fmtBand(a.expectation) },
-              { nhan: t('Lớp'), noiDung: a.classCode ?? '—' },
-            ]} />
+          <div key={a.id} id={`dot-${a.id}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 border-t px-3 py-2.5 text-[14px] first:border-t-0 ${a.id === dotId ? 'bg-[color:var(--accent-soft)]' : ''}`}
+            style={{ borderColor: 'var(--line)' }}>
+            <span className="whitespace-nowrap"><Link to={attemptHref(a)} className="link inline-flex min-h-[44px] items-center font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} /></span>
+            <span className="min-w-0 tabular-nums text-slate-200">
+              {a.weekStart ? tuanLich(a.weekStart, homNay) : t('Chưa có tuần')}
+              {' · '}{chuaToi(a) ? <span className="text-slate-400">{t('Chưa tới tuần')}</span>
+                : <>OVR {a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}</>}
+            </span>
+            <span className="justify-self-end">{chuaToi(a) ? null : <KetQuaMt a={a} gon />}</span>
+          </div>
         ))}
         {thi && (
           <TheDong className="hang-thi-that" dau={(
@@ -669,13 +678,15 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
                 <td className="td whitespace-nowrap">
                   {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}
                 </td>
-                {KN_MOCK.map((k) => (
-                  <td key={k} className={so}>{diemKyNang(a, k)}</td>
-                ))}
-                <td className={`${so} text-slate-100`}>{a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}</td>
+                {chuaToi(a) ? <td colSpan={6} className="td"><span className="block text-center text-slate-400">{t('Chưa tới tuần')}</span></td> : <>
+                  {KN_MOCK.map((k) => (
+                    <td key={k} className={so}>{diemKyNang(a, k)}</td>
+                  ))}
+                  <td className={`${so} text-slate-100`}>{a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}</td>
+                </>}
                 <td className={so}>{fmtBand(a.expectation)}</td>
                 <td className="td">
-                  <KetQuaDot coDiem={a.scored} yeuCau={a.required} dat={a.evaluable ? a.sosLevel === 0 : null} sos={a.sosLevel ?? null} chot={a.chot} kckDuoi={a.kckDuoi} />
+                  {chuaToi(a) ? null : <KetQuaMt a={a} />}
                   {a.scopeNote && <div className="text-xs text-slate-500">{dich(a.scopeNote)}</div>}
                 </td>
               </tr>
@@ -687,7 +698,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
               <td className="td">IELTS</td>
               <td className="td whitespace-nowrap">{ngayThi}</td>
  {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} colSpan={k === 'w' ? 2 : undefined} className={so}>{diemThi(k)}</td>)
-                : <td colSpan={6} className="td font-normal text-slate-400">—</td>}
+                : <td colSpan={6} className="td" />}
               <td className={so}>{thi !== 'khong' && thi.target != null ? `Target ${fmtBand(thi.target)}` : '—'}</td>
               <td className="td"><KetQuaThi th={thi} /></td>
             </tr>

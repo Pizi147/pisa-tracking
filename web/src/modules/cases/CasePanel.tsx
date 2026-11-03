@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
+import { ThanTrongCot } from '../../ui/KhungPanel.tsx';
 import { MenuPa } from './MenuXoaPa.tsx';
 import { KhoaNho, NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
@@ -164,7 +165,9 @@ export type VuaDoiPa = { paId: number; chu: string; hoanTac?: () => Promise<void
  * Mô tả) → Phương án (Chờ duyệt · xác nhận / Đang theo dõi; Đã kết thúc gập; việc của PA nằm ngay trong thẻ PA; dòng PA mang `data-pa-id` cho Hành trình
  * cuộn tới) → Kết luận → Lịch sử (gập) → Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của nơi gọi.
  */
-export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac }: {
+export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false }: {
+  /** U02: nút "Mô tả Case" đã ở dòng tóm tắt Case (cột hồ sơ HV) — trường Mô tả chỉ ghi "Chưa có". */
+  anNutMoTa?: boolean;
   /** 6c (#644 XM-4): PA mà việc đang mở (view dưới, panel việc) đã làm — thẻ PA đó không lặp thao tác của việc. */
   paViec?: number | null;
   data: CaseDetail; onViec: (v: ViewCase) => void; /** OV-13b: đã lưu tại chỗ (ghi nhanh, chọn người dạy, rút) — nơi gọi tải lại. */ onDoi?: () => void;
@@ -192,6 +195,8 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
   /* OV-11d (HV-20): Case giữ sau "Overall đã đạt" (OV-1c) — nói ngay đầu Case, không chỉ trong Lịch sử thu gọn. */
   const overallDat = data.status !== 'done' ? [...(data.milestones ?? [])].reverse().find((m) => m.kind === 'overall_dat') : null;
   const diem = ketQuaGanNhat(data);
+  const khung = useContext(ThanTrongCot);
+  const [moBc, setMoBc] = useState(false);
   const pa = (iv: any) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} anViec={iv.id === paViec}
     vua={vuaDoi?.paId === iv.id ? vuaDoi : null} onHoanTac={onHoanTac} />;
   const nhomPa = (ten: string, ds: any[]) => ds.length > 0 && (
@@ -210,8 +215,8 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
       )}
       {/* VIEW-CASE-LUOT (mockup panel-pilot đầu mục Case): có lượt → đầu mục "Case MT3 · W2 SEP" (link), tên Case (phần giữa + SOS) là dòng đầu ngay dưới; Case tay giữ tên ở đầu mục. */}
       <DauMuc dau tieuDe="Case" phu={data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
-        : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
-        {data.luot && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
+        : khung ? null : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
+        {data.luot && !khung && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
         {/* Case A (luật chữ): nhãn 13 phụ / giá trị 15; điểm là giá trị chính (màu kết quả + ✓ / ✗). "Ghi nhận" → "Mô tả" (N8, chủ SP 27/10). */}
         <dl className="m-0 grid grid-cols-[7.5rem_1fr] gap-x-3 gap-y-2 max-sm:grid-cols-1 max-sm:gap-y-0.5">
           {diem && <><dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Điểm')}</dt><dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2">{diem}</dd></>}
@@ -225,6 +230,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
             {/* N8: mô tả Case = câu của nguyên nhân chính (cùng nguồn #626: đi theo nhận xét bài `moTaTuMt` — chỉ ghi lượt, vì ngày dòng là ngày đồng bộ,
                 không phải ngày GV nhận xét; hoặc người ghi / sửa riêng `byName` · ngày) ·
                 không có thì tóm tắt của Case · thật sự không có → "Chưa có" + "Mô tả Case" khi người xem làm được. */}
+            <MoTaGon dai={(primary?.observation ?? data.summary ?? '').length > 180}>
             {primary?.observation ? (
               <>
                 “<ChuDich chu={primary.observation} nguon={{ bang: 'case_issues', id: primary.id, cot: 'observation' }} />”
@@ -237,7 +243,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
               : (
                 <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="text-slate-400">{t('Chưa có')}</span>
-                  {data.viewer.canEdit && data.trangThaiV4?.k === 'cho-nhan-xet' && (
+                  {data.viewer.canEdit && data.trangThaiV4?.k === 'cho-nhan-xet' && !anNutMoTa && (
                     <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-nhan-xet' })}>{t('Mô tả Case')}</button>
                   )}
                 </span>
@@ -246,6 +252,7 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
               <span className="mt-1 block text-[13px] text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “<ChuDich chu={primary.nhanXetPhuTrach} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' } : null} />”</span>
             )}
             {data.note && <span className="mt-1 block text-[13px] text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></span>}
+            </MoTaGon>
           </dd>
           {context.length > 0 && <>
             <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Bối cảnh')}</dt>
@@ -295,9 +302,10 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
       )}
 
       {lichSu.length > 0 && (
-        <details className="group mt-[22px] border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 sm:min-h-[32px]">
-            <TieuDeMuc tieuDe={t('Lịch sử')} dem={lichSu.length} />
+        <details className={`group border-t ${khung ? 'py-2.5' : 'mt-[22px] pt-3'}`} style={{ borderColor: 'var(--line)' }}>
+          <summary className={`flex min-h-[44px] cursor-pointer list-none items-center gap-2 sm:min-h-[32px] ${khung ? 'sm:grid sm:grid-cols-[7.5rem_auto_auto] sm:justify-start sm:gap-x-3' : ''}`}>
+            {khung ? <><span className="text-[13px] font-medium text-slate-400">{t('Lịch sử')}</span><span className="text-[15px] font-semibold text-[color:var(--accent)]">{t('{n} thay đổi', { n: lichSu.length })}</span></>
+              : <TieuDeMuc tieuDe={t('Lịch sử')} dem={lichSu.length} />}
             <span aria-hidden className="inline-flex text-slate-400 transition-transform group-open:rotate-90"><MuiTen mo={false} /></span>
           </summary>
           <ol className="m-0 mt-3 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
@@ -314,8 +322,27 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
       )}
 
       <DauMuc tieuDe={t('Bằng chứng')} dem={bc.data?.rows.length || undefined}>
-        <BangChung ownerType="sos_case" ownerId={data.id} canEdit={data.viewer.canEdit} tieuDe="" onChanged={bc.reload} />
+        {/* U02 (D7): trong cột, chưa có bằng chứng → "chưa có · + Thêm"; bấm mới mở khung thêm tệp / liên kết. */}
+        {khung && !moBc && bc.data && bc.data.rows.length === 0 ? (
+          <span className="flex flex-wrap items-center gap-x-3 text-[15px] text-slate-400">{t('chưa có')}
+            {data.viewer.canEdit && <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" onClick={() => setMoBc(true)}>{t('+ Thêm')}</button>}
+          </span>
+        ) : <BangChung ownerType="sos_case" ownerId={data.id} canEdit={data.viewer.canEdit} tieuDe="" onChanged={bc.reload} />}
       </DauMuc>
+    </>
+  );
+}
+
+/** U02 dòng 7 (N35, `00` 21 "Mô tả dài"): mô tả dài ≤ 3 dòng + "Xem đầy đủ" tại chỗ — không cắt dữ liệu lưu; nút Dịch nằm trong chữ (ChuDich) như cũ. */
+function MoTaGon({ dai, children }: { dai: boolean; children: ReactNode }) {
+  const [du, setDu] = useState(false);
+  if (!dai) return <>{children}</>;
+  return (
+    <>
+      <span className={du ? 'block' : 'trich-3'}>{children}</span>
+      <button type="button" className="link mt-1 appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" aria-expanded={du} onClick={() => setDu(!du)}>
+        {du ? t('Thu gọn') : t('Xem đầy đủ')}
+      </button>
     </>
   );
 }
@@ -338,6 +365,19 @@ function TieuDeMuc({ tieuDe, dem }: { tieuDe: string; dem?: number }) {
 export function DauMuc({ tieuDe, dem, phu, luat, dau = false, children }: {
   tieuDe: string; dem?: number; phu?: ReactNode; luat?: ReactNode; /** Mục đầu khối: không đường kẻ trên (nơi gọi đã có vạch / viền). */ dau?: boolean; children: ReactNode;
 }) {
+  /* U02 (mockup `.fld`): Case trong cột hồ sơ HV — mỗi mục một hàng khung trường, nhãn trái 13 mờ | nội dung phải; đầu mục "Case" không vẽ (dòng tóm tắt đã nói). */
+  const khung = useContext(ThanTrongCot);
+  if (khung && dau) return <section className="flex flex-col gap-2 pb-2.5">{phu && <div className="flex flex-wrap items-center gap-2">{phu}</div>}{children}</section>;
+  if (khung) {
+    return (
+      <section className="grid gap-x-3 border-t py-2.5 sm:grid-cols-[7.5rem_minmax(0,1fr)]" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex items-start gap-1.5 pt-0.5 text-[13px] font-medium text-slate-400">
+          {tieuDe}{dem !== undefined && <span className="tabular-nums">({dem})</span>}{luat && <NutLuat>{luat}</NutLuat>}
+        </div>
+        <div className="flex min-w-0 flex-col gap-2">{phu && <div className="flex flex-wrap items-center gap-2">{phu}</div>}{children}</div>
+      </section>
+    );
+  }
   return (
     <section className={dau ? 'mt-4 first:mt-0' : 'mt-[22px] border-t pt-3'} style={{ borderColor: 'var(--line)' }}>
       <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">

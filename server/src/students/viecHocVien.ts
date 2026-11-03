@@ -19,6 +19,8 @@ export type ViecHocVien = {
   chu: string;
   /** PR-EN-c: khoá + biến của `chu` (câu có biến) — web dịch bằng `dichChu`. Câu không biến dịch theo chính `chu`. */
   khoa?: string; bien?: Bien;
+  /** U02 (mockup `audit-0311/u02` dòng 3): thẻ phụ dưới tên việc — "Kỳ W5 OCT – W1 NOV" · "PA Học Tutor" (chữ, tên PA giữ nguyên). */
+  the?: { chu: string; khoa?: string; bien?: Bien }[];
   kyNang: string | null; caseId: number | null; paId: number | null;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
   /** "Đỗ Thanh Tùng · GVBM Speaking" · "Quản lý" (vai, không tên). */
@@ -111,9 +113,11 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       if (chayDuoc(pl) && !(pl.kind === 'bo_tro' && pl.nhom && minGhi.get(pl.nhom) !== pl.id)) {
         const cuoi = !!pl.lanCuoi;
         ds.push({ key: `action:${pl.id}`, loai: 'ghi-ket-qua',
-          ...(cuoi ? kem('Kết quả cuối · PA {pa}', { pa: pl.name }) : kem('Kết quả {ky} · PA {pa}', { ky: kyGhiKetQua(pl.actionDue, today), pa: pl.name })),
+          /* U02 dòng 3, 8: tên việc nói kỹ năng ("Ghi kết quả PA · Writing Task 2"), kỳ + PA thành thẻ phụ; nút cùng tên việc (không nút trần "Kết quả"). */
+          ...(cuoi ? kem('Ghi kết quả cuối · {kn}', { kn }) : kem('Ghi kết quả PA · {kn}', { kn })),
+          the: [...(cuoi ? [] : [kem('Kỳ {ky}', { ky: kyGhiKetQua(pl.actionDue, today) })]), { chu: `PA ${pl.name}` }],
           kyNang: r.category, caseId: c.id, paId: pl.id, han: pl.actionDue, tone: 'info', nguoiId: pl.nguoiId ?? null,
-          nut: cuoi ? 'Kết quả cuối' : 'Kết quả', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
+          nut: cuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả PA', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
       }
       if (pl.pendingApproval) {
         ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', ...kem('PA {pa} chờ Quản lý duyệt', { pa: pl.name }), kyNang: r.category, caseId: c.id, paId: pl.id,

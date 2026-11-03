@@ -148,6 +148,8 @@ export const KhungTaiCho = createContext(false);
  * (nơi gọi giữ khối luôn mở; ‹ / Huỷ / Esc về view trước), không dòng loại "VIỆC", không dòng em · lớp (đang ở chính hồ sơ em), cao theo nội dung.
  */
 export const KhungTrongCot = createContext(false);
+/** U02: thân của panel đang đặt trong cột (KhungTrongCot bị đặt lại false cho panel con) — thân Case vẽ dạng khung trường (`DauMuc`). */
+export const ThanTrongCot = createContext(false);
 /** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …") + dòng "Em này còn" dưới đầu. */
 /** `khoa`: chế độ theo dõi — thân + chân panel chỉ xem (`fieldset disabled`), đầu panel (✕, "Em này còn", link hồ sơ) vẫn bấm được. */
 /** M6 6b-3 `dai`: dải "✓ Đã lưu … · Hoàn tác" của việc vừa làm — đầu thân panel của việc kế (mockup panel-pilot ②b). */
@@ -166,8 +168,10 @@ export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; x
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, onDong, children }: {
-  tieuDe: string; hocVien?: string | null; lop?: string | null;
+export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, onDong, children }: {
+  tieuDe: string;
+  /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
+  anDau?: boolean; hocVien?: string | null; lop?: string | null;
   /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". M6 6b-1: khung KHÔNG
    *  đoán theo `dau` — panel việc khai qua `dauViec` (`dau.loai`) hoặc prop này; `null` = không vẽ. */
   loai?: string | null;
@@ -322,7 +326,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   );
   const than = (
     <>
-        {dau ? (
+        {anDau && !lui ? null : dau ? (
           <header className={`flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 sm:px-5 ${lui ? 'pt-2' : 'pt-4'}`} style={{ borderColor: 'var(--line)' }}>
             {hangLui}
             {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
@@ -400,7 +404,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
       /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
         className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
-        <KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}>{voi(than)}</KhungTaiCho.Provider></KhungTrongCot.Provider>
+        <KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider>
       </section>
     );
   }
