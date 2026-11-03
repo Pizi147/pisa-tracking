@@ -1,4 +1,4 @@
-import { boMonCt } from '../normal/regular.ts';
+import { boMonBanGiaoCt, boMonCt } from '../normal/regular.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
@@ -47,6 +47,21 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: 
   };
 }
 
+// ==================================================================== MÔN BÀN GIAO (audit 03/11 F05)
+
+/** Môn đăng ký (N13) của lộ trình FT gần nhất của em lệnh `l` — cột đi cùng câu đọc lệnh, không thêm lượt. */
+export const MDK_SQL = (l: string) =>
+  `(SELECT lc.mon_dang_ky FROM learning_cycles lc WHERE lc.student_id = ${l}.student_id AND lc.route IS NOT NULL ORDER BY lc.seq DESC LIMIT 1)`;
+
+/**
+ * Môn bàn giao của MỘT lệnh: W1 · W2 riêng, bỏ môn em không học (`boMonBanGiaoCt`). Chủ SP 03/11 (câu 17.4): phiếu ĐÃ XÁC NHẬN chỉ có câu
+ * Writing chung cũ (trước khi tách) → giữ bộ môn cũ, không mở lại; phiếu chưa xác nhận → W1 · W2 "chưa có", câu cũ chỉ đọc (`writingCu`).
+ * `dong`: môn đã có dòng `ban_giao_mon`.
+ */
+export function monCuaLenh(ct: string | null, mdk: string | null | undefined, dong: { has(m: string): boolean }, daXacNhan: boolean): string[] {
+  return daXacNhan && dong.has('writing') && !dong.has('writing1') && !dong.has('writing2') ? [...boMonCt(ct)] : boMonBanGiaoCt(ct, mdk);
+}
+
 // ==================================================================== CÙNG GV (chủ SP 30/10)
 
 /** Phân công đang chạy theo lớp: chương trình + dòng (người, kỹ năng, GVCN). */
@@ -67,7 +82,7 @@ export function cungGvTuPhanCong(lenh: readonly { id: number; lop_nguon_id: numb
   const gvcn = (classId: number) => pc.get(classId)?.rows.find((r) => !!r.is_core)?.user_id ?? null;
   for (const l of lenh) {
     if (!l.lop_dich_id) continue;
-    const mon = new Set(boMonCt(pc.get(l.lop_nguon_id)?.ct ?? null).filter((m) => {
+    const mon = new Set(boMonBanGiaoCt(pc.get(l.lop_nguon_id)?.ct ?? null).filter((m) => {
       const a = day(l.lop_nguon_id, m);
       const b = day(l.lop_dich_id!, m);
       return a.size > 0 && [...a].every((u) => b.has(u));
@@ -192,7 +207,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   const ct = (nguon.programme_code ?? null) as string | null;
 
   const rows = conn.prepare(
-    `SELECT l.*, s.full_name, s.student_code, d.code AS dich_code, xn.full_name AS xn_ten
+    `SELECT l.*, s.full_name, s.student_code, d.code AS dich_code, xn.full_name AS xn_ten, ${MDK_SQL('l')} AS mdk
        FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id
        LEFT JOIN classes d ON d.id = l.lop_dich_id LEFT JOIN users xn ON xn.id = l.xac_nhan_boi
       WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ${f.lenhId ? 'AND l.id = ?' : ''}
@@ -240,13 +255,15 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   /* PR-S5F-a: phiếu đã chụp vẫn đọc dòng Kết quả MỚI của lớp thường (sửa điểm Cuối khoá sau khi xác nhận) — không giữ chữ cũ. */
   const ketQuaMoi = programmeOf(ct) && programmeOf(ct) !== 'FT' && thay.length > chuaXacNhan.length
     ? ketQuaTheoLo({ id: lopId, ct }, thay.filter((r) => r.xac_nhan_luc).map((r) => r.student_id as number)) : new Map<number, string>();
-  const bang = boMonCt(ct);
   const gvbmCua = (ma: string) => gv.filter((r) => r.skill && kyNangPhuTrach(ct, ma).includes(r.skill)).map((r) => r.full_name as string);
-  const monDs = bang.map((ma) => ({ ma, ten: tenMon(ct, ma), ngan: tenMonNgan(ct, ma) }));
+  const monCua = (ma: string) => ({ ma, ten: tenMon(ct, ma), ngan: tenMonNgan(ct, ma) });
+  const monDs = boMonBanGiaoCt(ct).map(monCua);
 
   const ds: PhieuEm[] = thay.map((r) => {
     const dong = dongMon.get(r.id) ?? new Map();
-    const mon: PhieuMon[] = monDs.map((m) => {
+    const monEm = monCuaLenh(ct, r.mdk, dong, !!r.xac_nhan_luc);
+    const cu = monEm.includes('writing') ? null : dong.get('writing');   // 17.4: câu Writing chung cũ — chỉ đọc
+    const mon: PhieuMon[] = monEm.map(monCua).map((m) => {
       const x = dong.get(m.ma);
       return {
         ...m, noiDung: x?.noi_dung ?? null, nguoiGhi: x?.ten_ghi ?? null, ghiLuc: x?.ghi_luc ?? null, dienThay: !!x?.dien_thay, gvbm: gvbmCua(m.ma),
@@ -261,7 +278,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       hanGvbm: r.han_gvbm, hanGvcn: r.han_gvcn,
       phieu: trangThaiPhieu({ soMonDaGhi: daGhi, soMon: mon.length, daXacNhan: !!r.xac_nhan_luc }), soMonDaGhi: daGhi, soMon: mon.length,
       tuDien: chup ? { ...chup.tuDien, ketQua: ketQuaMoi.get(r.student_id) ?? chup.tuDien.ketQua } : tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
-      mon, nhanXetChung: r.nhan_xet_chung ?? null,
+      mon, writingCu: cu ? { noiDung: cu.noi_dung, nguoiGhi: cu.ten_ghi, ghiLuc: cu.ghi_luc } : null, nhanXetChung: r.nhan_xet_chung ?? null,
       xacNhan: r.xac_nhan_luc ? { boi: r.xn_ten ?? null, luc: r.xac_nhan_luc, thay: !!r.xac_nhan_thay } : null,
       gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => (!m.noiDung || m.lamLai) && !m.cungGv).map((m) => m.ngan),
       suaDuoc: false, gvcnCung: !!cung.get(r.id)?.gvcn,
@@ -282,7 +299,8 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
     hanGvcn: som?.han_gvcn ?? null, hanGvcnEm: som?.full_name ?? null,
     theoMon: monDs.map((m) => ({
-      ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return (!!x?.noiDung && !x.lamLai) || !!x?.cungGv; }).length, tong: ds.length,
+      ma: m.ma, daGhi: ds.filter((e) => { const x = e.mon.find((y) => y.ma === m.ma); return (!!x?.noiDung && !x.lamLai) || !!x?.cungGv; }).length,
+      tong: ds.filter((e) => e.mon.some((y) => y.ma === m.ma)).length,   // em không học môn này không tính (N13)
       han: thay.map((r) => r.han_gvbm as string | null).filter(Boolean).sort()[0] ?? null,
     })),
     ds,
@@ -293,7 +311,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
 
 function docLenhPhieu(id: number): any {
   const l = db().prepare(
-    `SELECT l.*, c.programme_code AS ct, c.code AS nguon_code, s.full_name FROM lenh_chuyen_lop l
+    `SELECT l.*, c.programme_code AS ct, c.code AS nguon_code, s.full_name, ${MDK_SQL('l')} AS mdk FROM lenh_chuyen_lop l
        JOIN classes c ON c.id = l.lop_nguon_id JOIN students s ON s.id = l.student_id WHERE l.id = ?`,
   ).get(id);
   if (!l) throw notFound('Không tìm thấy quyết định chuyển lớp');
@@ -301,9 +319,10 @@ function docLenhPhieu(id: number): any {
 }
 
 /** Môn chưa có câu bàn giao (tên ngắn; bỏ môn cùng GV — chủ SP 30/10) — ghi vào bản chụp lúc xác nhận / sửa. */
-function chuaBanGiaoCua(l: { id: number; lop_nguon_id: number; lop_dich_id: number | null; ct: string | null }, cung = cungGvTheoLo([l]).get(l.id)): string[] {
+function chuaBanGiaoCua(l: { id: number; lop_nguon_id: number; lop_dich_id: number | null; ct: string | null; mdk?: string | null; xac_nhan_luc?: string | null },
+  cung = cungGvTheoLo([l]).get(l.id)): string[] {
   const da = new Set((db().prepare('SELECT mon FROM ban_giao_mon WHERE lenh_id = ? AND lam_lai = 0').all(l.id) as any[]).map((r) => r.mon as string));
-  return boMonCt(l.ct).filter((m) => !da.has(m) && !cung?.mon.has(m)).map((m) => tenMonNgan(l.ct, m));
+  return monCuaLenh(l.ct, l.mdk, da, !!l.xac_nhan_luc).filter((m) => !da.has(m) && !cung?.mon.has(m)).map((m) => tenMonNgan(l.ct, m));
 }
 
 /** Một dòng môn (UPSERT). GVBM đúng môn ghi; GVCN (hoặc Quản lý khi thay được) điền thay → `dien_thay`. OV-7a / OV-13h: sau xác nhận vẫn sửa được, cả sau ngày chuyển lớp (chủ SP 15/10). */
@@ -314,7 +333,10 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
   if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
-  if (!boMonCt(l.ct).includes(mon)) throw badRequest('Môn này không có ở lớp nguồn.');
+  /* W1 · W2 riêng (F05); câu Writing chung cũ chỉ sửa được ở phiếu đã xác nhận giữ bộ môn cũ (17.4). */
+  const coCu = mon === 'writing' && !boMonBanGiaoCt(l.ct).includes(mon)
+    && !!db().prepare(`SELECT 1 FROM ban_giao_mon WHERE lenh_id = ? AND mon = 'writing'`).get(lenhId) && !!l.xac_nhan_luc;
+  if (!boMonBanGiaoCt(l.ct).includes(mon) && !coCu) throw badRequest('Môn này không có ở lớp nguồn.');
   const text = String(noiDung ?? '').trim();
   if (!text) throw badRequest('Viết một câu bàn giao.');
   if (text.length > 300) throw badRequest('Câu bàn giao tối đa 300 ký tự.');
@@ -452,7 +474,7 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
   theoLoJson(ids, (json) => {
     lenh.push(...conn.prepare(
       `SELECT l.id, l.student_id, l.lop_nguon_id, l.lop_dich_id, l.han_gvbm, l.han_gvcn, l.xac_nhan_luc, s.full_name, d.code AS dich,
-              n.programme_code AS ct_nguon, d.programme_code AS ct_dich,
+              n.programme_code AS ct_nguon, d.programme_code AS ct_dich, ${MDK_SQL('l')} AS mdk,
               CASE WHEN l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL THEN (SELECT json_group_array(json_array(ta.class_id, ta.user_id, ta.skill, ta.is_core))
                 FROM teacher_assignments ta WHERE ta.status = 'active' AND ta.class_id IN (l.lop_nguon_id, l.lop_dich_id)) END AS pc_json
          FROM lenh_chuyen_lop l JOIN students s ON s.id = l.student_id JOIN classes n ON n.id = l.lop_nguon_id LEFT JOIN classes d ON d.id = l.lop_dich_id
@@ -475,14 +497,16 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
     }
   }
   const cung = cungGvTuPhanCong(lenh.filter((l) => !l.xac_nhan_luc), pcLop);
-  const canMon = (l: any, m: string) => !daGhi.has(`${l.id}:${m}`) && !cung.get(l.id)?.mon.has(m);
+  /* Em không học môn (N13) không thành việc của GV môn đó. */
+  const hoc = (l: any, m: string) => boMonBanGiaoCt(l.ct_nguon ?? null, l.mdk).includes(m);
+  const canMon = (l: any, m: string) => hoc(l, m) && !daGhi.has(`${l.id}:${m}`) && !cung.get(l.id)?.mon.has(m);
   const out: ViecBanGiao[] = [];
   for (const x of lop.values()) {
     const { lopId } = x;
     const cua = lenh.filter((l) => l.lop_nguon_id === lopId);
     const chuaXn = cua.filter((l) => !l.xac_nhan_luc);
     if (!chuaXn.length) continue;
-    const mons = boMonCt(x.ct);
+    const mons = boMonBanGiaoCt(x.ct);
     if (x.gvcn) {
       const thieu = mons.filter((m) => chuaXn.some((l) => canMon(l, m))).map((m) => tenMonNgan(x.ct, m));
       out.push({
@@ -496,7 +520,7 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
       if (!kyNangPhuTrach(x.ct, m).some((k) => x.kyNang.has(k))) continue;
       const chua = chuaXn.filter((l) => canMon(l, m));
       if (!chua.length) continue;
-      const canGhi = chuaXn.filter((l) => !cung.get(l.id)?.mon.has(m));   // em cùng GV không tính vào việc của GVBM
+      const canGhi = chuaXn.filter((l) => hoc(l, m) && !cung.get(l.id)?.mon.has(m));   // em cùng GV / không học môn không tính vào việc của GVBM
       out.push({
         loai: 'gvbm', userId: x.userId, lopId, code: x.code, mon: m, monNgan: tenMonNgan(x.ct, m), daGhi: canGhi.length - chua.length, n: canGhi.length,
         han: chua.map((l) => l.han_gvbm as string).filter(Boolean).sort()[0] ?? '',

@@ -43,6 +43,8 @@ export const EN_BAN_GIAO_GV = {
   '✓ Đã lưu': '✓ Saved',
   'Đang lưu…': 'Saving…',
   'Không lưu được — chữ vẫn giữ, thử lại khi rời ô.': 'Not saved — your text is kept, it retries when you leave the box.',
+  'Writing · cũ': 'Writing · old',
+  'Writing · cũ, trước khi tách W1 / W2': 'Writing · old, before the W1 / W2 split',
   'Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại, hoặc bấm Đóng lần nữa để bỏ.': '{n} box(es) not saved — your text is kept. Leave the box to retry, or press Close again to discard.',
   'Nhận xét chung cả lớp': 'General note for the class',
   '· tuỳ chọn': '· optional',

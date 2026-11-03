@@ -318,4 +318,41 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     banGiao.xacNhanBanGiao(loadPrincipal(gA), id, '');
     assert(one(`SELECT xac_nhan_luc FROM lenh_chuyen_lop WHERE id = ?`, id).xac_nhan_luc, 'xác nhận không cần nhận xét chung');
   }));
+  check('Audit 03/11 F05 · chuyển lớp FT: W1 · W2 riêng (hai GV không ghi đè nhau); em không học W2 không bị đòi; câu Writing cũ (17.4) chỉ đọc, phiếu đã xác nhận giữ', () => thu(() => {
+    /* X: W1 = D, W2 = F · Y: W1, W2 = C (khác) → cả hai cần bàn giao. */
+    conn.prepare(`UPDATE teacher_assignments SET user_id = ? WHERE class_id = ? AND skill = 'writing2' AND status = 'active'`).run(gF, X);
+    conn.prepare(`UPDATE teacher_assignments SET user_id = ? WHERE class_id = ? AND skill IN ('writing1', 'writing2') AND status = 'active'`).run(gC, Y);
+    xoaNho();
+    const id = lenh(X, Y, emX[0]);
+    banGiao.ghiMon(loadPrincipal(gD), id, 'writing1', 'W1 lập ý tốt');
+    banGiao.ghiMon(loadPrincipal(gF), id, 'writing2', 'W2 thiếu ví dụ');
+    const dong = all(`SELECT mon, noi_dung FROM ban_giao_mon WHERE lenh_id = ? ORDER BY mon`, id).map((r) => `${r.mon}:${r.noi_dung}`).join(' | ');
+    assert(dong === 'writing1:W1 lập ý tốt | writing2:W2 thiếu ví dụ', dong);
+    assert(maLoi(() => banGiao.ghiMon(loadPrincipal(gD), id, 'writing2', 'x'))?.status === 403, 'GV W1 ghi W2 → 403');
+    assert(maLoi(() => banGiao.ghiMon(loadPrincipal(gD), id, 'writing', 'x'))?.status === 400, 'Writing chung (phiếu mới) → 400');
+    const monEm = (sid: number) => banGiao.phieuBanGiao(loadPrincipal(gA), { lopNguonId: X }).ds.find((e: any) => e.studentId === sid);
+    const e0 = monEm(emX[0]);
+    assert(e0.mon.map((m: any) => m.ma).join() === 'listening,reading,writing1,writing2,speaking' && e0.writingCu === null, JSON.stringify(e0.mon.map((m: any) => m.ma)));
+    /* emX[1] chỉ học W1 (N13): phiếu không có W2, GV W2 không có việc với em. */
+    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, mon_dang_ky, started_at, status, created_at) VALUES (?, 1, 'LT1', ?, ?, 'active', ?)`)
+      .run(emX[1], JSON.stringify(['listening', 'reading', 'writing1', 'speaking']), TODAY, NOW);
+    const id2 = lenh(X, Y, emX[1]);
+    const e1 = monEm(emX[1]);
+    assert(!e1.mon.some((m: any) => m.ma === 'writing2') && e1.mon.some((m: any) => m.ma === 'writing1'), JSON.stringify(e1.mon.map((m: any) => m.ma)));
+    assert(!banGiao.viecBanGiao(gF).some((v: any) => v.lopId === X), 'GV W2 không có việc (em 1 đã ghi, em 2 không học W2)');
+    assert(banGiao.viecBanGiao(gD).some((v: any) => v.lopId === X && v.mon === 'writing1' && v.emIds.includes(emX[1])), 'GV W1 còn việc với em 2');
+    /* 17.4: phiếu chưa xác nhận có câu Writing chung cũ → chỉ đọc, W1 · W2 vẫn "chưa có". */
+    conn.prepare(`DELETE FROM ban_giao_mon WHERE lenh_id = ?`).run(id);
+    conn.prepare(`INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, dien_thay, ghi_luc) VALUES (?, 'writing', 'Câu chung cũ', ?, 0, ?)`).run(id, gD, NOW);
+    const c0 = monEm(emX[0]);
+    assert(c0.writingCu?.noiDung === 'Câu chung cũ' && c0.mon.filter((m: any) => m.ma.startsWith('writing')).every((m: any) => !m.noiDung), JSON.stringify(c0));
+    assert(c0.gvbmChuaBanGiao.includes('W1') && c0.gvbmChuaBanGiao.includes('W2'), c0.gvbmChuaBanGiao.join());
+    /* Phiếu ĐÃ xác nhận chỉ có câu Writing chung → giữ bộ môn cũ (không mở lại), sửa câu cũ được. */
+    conn.prepare(`UPDATE lenh_chuyen_lop SET xac_nhan_luc = ?, xac_nhan_boi = ? WHERE id = ?`).run(NOW, gA, id);
+    const x0 = monEm(emX[0]);
+    assert(x0.mon.find((m: any) => m.ma === 'writing')?.noiDung === 'Câu chung cũ' && !x0.mon.some((m: any) => m.ma === 'writing1') && x0.writingCu === null, JSON.stringify(x0.mon.map((m: any) => m.ma)));
+    banGiao.ghiMon(loadPrincipal(gD), id, 'writing', 'Câu chung sửa');
+    assert(one(`SELECT noi_dung FROM ban_giao_mon WHERE lenh_id = ? AND mon = 'writing'`, id).noi_dung === 'Câu chung sửa', 'sửa câu cũ sau xác nhận');
+    void id2;
+  }));
 }

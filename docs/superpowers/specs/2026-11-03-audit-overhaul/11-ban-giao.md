@@ -39,8 +39,8 @@ Quy ước kết quả: tái hiện / không / đúng luật / đã sửa / thi�
 
 | PR | Nội dung | Trạng thái |
 |---|---|---|
-| PR1 F01 | Tự lưu bàn giao (đổi GV + chuyển lớp): xếp lượt theo ô (`taoOLuu` có sẵn), hàng lưu của phiếu (`taoHangLuu`): Xác nhận / Đóng chờ lần lưu, ô lỗi giữ chữ theo khoá ô, không xác nhận khi còn ô chưa lưu. 2 phép kiểm mới (`prOv14a`). Không đổi API / dữ liệu / bố cục | mở PR |
-| PR2 W1/W2 máy chủ | `boMonBanGiao` + lọc môn đăng ký + dòng `writing` cũ chỉ đọc (17.4 đã chốt) | làm sau PR1 |
+| PR1 F01 | Tự lưu bàn giao (đổi GV + chuyển lớp): xếp lượt theo ô (`taoOLuu` có sẵn), hàng lưu của phiếu (`taoHangLuu`): Xác nhận / Đóng chờ lần lưu, ô lỗi giữ chữ theo khoá ô, không xác nhận khi còn ô chưa lưu. 2 phép kiểm mới (`prOv14a`). Không đổi API / dữ liệu / bố cục | **#832 đã merge** |
+| PR2 W1/W2 | `monBanGiao` (shared) + `boMonBanGiaoCt` + `monCuaLenh` / `MDK_SQL` (`banGiao.ts`): phiếu, ghi môn, đếm, bản chụp, việc GVBM, dải lớp / HV, Cùng GV theo W1 · W2; lọc môn đăng ký; câu Writing cũ chỉ đọc (17.4 = N31). Không migrate. Kèm: chip "Chờ môn" bỏ môn Cùng GV (lỗi cũ); bỏ tải lại cả phiếu sau mỗi ô (`invalidateGop`). Một GV dạy cả W1 + W2 vẫn hai việc / hai lần mở bảng GVBM tới khi PR giao diện theo mockup | mở PR |
 | Mockup bàn giao (14.4) | W1/W2 hai GV, cùng GV, một môn không học, Writing cũ, đang lưu / lưu lỗi | soạn sau PR1, chờ chủ SP duyệt |
 
 ## 4. Nghiệm thu F01 (`00` mục 4 + 16 "Tự lưu") — đã chạy
@@ -59,5 +59,5 @@ Quy ước kết quả: tái hiện / không / đúng luật / đã sửa / thi�
 
 ## 5. Để PTA
 
-- Panel `KhungPanel`: nút **Đóng ở chân** (`chan.huy`) không qua hộp "Bỏ chữ, đóng" như ✕ / Esc (`KhungPanel.tsx:303, 377`) — mọi panel. PR1 chỉ chặn ở hai panel bàn giao; muốn đồng bộ toàn app → PR riêng (UX-A / LOI).
-- `BanGiaoPanel` (chuyển lớp) tải lại cả phiếu sau mỗi lần lưu một ô (`reload()`) — đọc Turso thêm mỗi ô; panel đổi GV đã không tải lại. Gom vào PR2 nếu chạm tệp.
+- Panel `KhungPanel`: nút **Đóng ở chân** (`chan.huy`) không qua hộp "Bỏ chữ, đóng" như ✕ / Esc (`KhungPanel.tsx:303, 377`) — mọi panel. PR1 chỉ chặn ở hai panel bàn giao; muốn đồng bộ toàn app → PR riêng (UX-A / LOI). → PTA giao AUDIT-LOI (03/11).
+- `BanGiaoPanel` (chuyển lớp) tải lại cả phiếu sau mỗi lần lưu một ô (`reload()`) — đọc Turso thêm mỗi ô; panel đổi GV đã không tải lại. Gom vào PR2 nếu chạm tệp. → **đã gom vào PR2** (`invalidateGop`).

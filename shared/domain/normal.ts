@@ -2,6 +2,7 @@
 
 import { ASSESSED_SKILLS, ENTRY_SKILLS } from './skills.ts';
 import { t } from '../i18n/index.ts';
+import { chuanMon, type MonVao } from './monDangKy.ts';
 
 // ------------------------------------------------- Chương trình và lớp thường
 
@@ -193,6 +194,17 @@ export function kyNangGoiY(_ct: string | null | undefined, o: string): readonly 
 export function kyNangPhuTrach(ct: string | null | undefined, o: string): readonly string[] {
   const c = programmeOf(ct);
   return (!c || c === 'FT') && o === 'writing' ? ['writing1', 'writing2'] : [o];
+}
+/**
+ * BỘ MÔN BÀN GIAO chuyển lớp (audit 03/11 F05): bộ môn LỊCH của lớp nguồn, FT tách W → W1 + W2 (mỗi GV một câu, không ghi đè nhau);
+ * lộ trình FT có môn đăng ký (N13) → bỏ môn em không học. Không đổi bộ môn lịch Test / cách gộp Writing · Overall · SOS.
+ */
+export function monBanGiao(ct: string | null | undefined, boMon: readonly string[], monDangKy?: MonVao): string[] {
+  const ds = boMon.flatMap((m) => kyNangPhuTrach(ct, m));
+  const c = programmeOf(ct);
+  if (monDangKy == null || (c && c !== 'FT')) return ds;
+  const hoc = chuanMon(monDangKy) as ReadonlySet<string>;
+  return ds.filter((m) => hoc.has(m));
 }
 /** Hai khung: Fast Track (band) và Lớp thường (tỷ lệ). */
 export type Khung = 'ft' | 'thuong';

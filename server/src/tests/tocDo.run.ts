@@ -1183,9 +1183,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        lượt hiện tại (lộ trình mới nhất cùng loại, em đang học; MT chưa làm sau thi thật không còn) — dữ liệu ×3 có em học lại / lưu trữ / thi thật. Chưa so
        JSON từng dòng với main — nguyên nhân lệch đọc từ mã + phép kiểm prLocHienTai LHT-1…8. Trước: QL toi e1049bc984a18aca, QT toi 7de7b28ab5fe8b93,
        GVCN toi 82fc3ddf32d43f10, GVCN_THUONG toi 82fc3ddf32d43f10, QL tat-ca 22c0808af745c50f, QT tat-ca b54f972219247783, QT tat-ca cn fdc0016b89453d9d, QL gvcn 87927080df295343 */
-    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': '71283ff70674504b',
-    'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'cf1b31474244ae4e', 'QT tat-ca': 'cd79349e0bcf3f62',
-    'QT tat-ca cn': '7cfbd540beff0e8c', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': 'b4b4e5024a108eca',
+    /* AUDIT-BAN-GIAO PR2 (03/11, F05): chụp lại 'GVBM toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: bàn giao chuyển lớp FT tách W1 · W2.
+       So JSON ×3 origin/main 6e8ac44 ↔ nhánh, 11 góc, bỏ việc `ban_giao*` + số đếm: TRÙNG hoàn toàn. Việc bàn giao lệch CHỈ ở MB FT 103 (W1 Lê Minh Khoa — lớp
+       đích vẫn Khoa → cùng GV, hết việc; W2 Cao Khánh Linh: "Bàn giao môn W" → "W2", GVCN "chờ môn W" → "W2"); lớp thường MB FOU 22 giữ "W".
+       Trước: GVBM toi 71283ff70674504b, QL tat-ca cf1b31474244ae4e, QT tat-ca cd79349e0bcf3f62, QT tat-ca cn 7cfbd540beff0e8c */
+    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': 'c64a33f25108620d',
+    'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '64c53c3e9d2f7f40', 'QT tat-ca': '85e5bab795ebfcb0',
+    'QT tat-ca cn': '29addc1ddf756b8e', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': 'b4b4e5024a108eca',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
