@@ -435,7 +435,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         {!dienThoai && chonKhung}
         <div className="ml-auto flex items-center gap-2">
           {!dienThoai && <button type="button" className="btn btn-sm whitespace-nowrap" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>}
-          {!dienThoai && data?.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
+          {!dienThoai && data?.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
           <MenuDong nhan={t('Thao tác trang')} muc={menuTrang} />
         </div>
       </div>

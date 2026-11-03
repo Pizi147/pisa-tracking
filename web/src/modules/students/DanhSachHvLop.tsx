@@ -17,7 +17,7 @@ import { ChipLichThi, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { boTenEm, chuPhuHuynh, chuThanhPhan, duongHoSoHocVien, shortDate, tuanLich, type EntrySkill, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { boTenEm, chuPhuHuynh, duongHoSoHocVien, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
@@ -43,7 +43,6 @@ export type VaiBang = { em: Map<number, EmVai>; coViec: boolean; onMoEm: (id: nu
 const chuSo = (n: number | null | undefined) => (n == null ? null : n.toFixed(1));
 const trong = <span className="text-faint">—</span>;
 const KN5 = ['L', 'R', 'W1', 'W2', 'S'] as const;
-const KN_DAY: Record<(typeof KN5)[number], EntrySkill> = { L: 'listening', R: 'reading', W1: 'writing1', W2: 'writing2', S: 'speaking' };
 
 /** ⋯ CUỐI DÒNG HỌC VIÊN — cùng menu / panel với hồ sơ lớp (`useThaoTacDongHocVien`, quyền theo lớp của em); "Nhập điểm" mở panel lớp đúng lượt còn nợ. */
 function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?: EmVai; onDoi: () => void }) {
@@ -74,7 +73,7 @@ function TenEm({ h, ev, ds, tim }: { h: HvGon; ev?: EmVai; ds: NguCanhDs; tim?: 
   const phu = [ev?.status === 'inactive' ? t('Tạm dừng') : null, h.tvv ? `TVV ${h.tvv}` : null].filter(Boolean).join(' · ');
   return (
     <span className="block min-w-0">
-      <Link className="ten-ho-so khong-mui block" to={`/hoc-vien/${h.id}`} state={{ ds }}><ToKhop chu={h.ten} tim={tim} /></Link>
+      <Link className="ten-ho-so khong-mui block" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}><ToKhop chu={h.ten} tim={tim} /></Link>
       {phu && <span className="dong2">{phu}</span>}
     </span>
   );
@@ -174,15 +173,17 @@ function OMtGan({ g, mo, onMo }: { g: HangHv; mo: boolean; onMo: () => void }) {
   );
 }
 
-/** Ô một kỹ năng trong dải: nhãn + điểm (✓ / ✗ như Overall). Có điểm thành phần / số câu → bấm mở hộp nhỏ; chỉ có band → không bấm (U04-1). */
+/**
+ * Ô một kỹ năng trong dải: nhãn + điểm (✓ / ✗ như Overall). L, R có số câu → bấm mở hộp nhỏ "29/40 câu"; chỉ có band → không bấm (U04-1).
+ * W1, W2, S: hộp tiêu chí dùng CHUNG `dongTieuChi` của #880 (U03, PTA 03/11: không viết hàm thứ hai) — thêm khi #880 merge.
+ */
 function OKn({ k, g }: { k: (typeof KN5)[number]; g: HangHv }) {
   const m = g.mtGan!;
   const v = m.kn[k];
   const ruot = <><span className="okn-t">{k}</span>{v == null ? <span className="text-faint">–</span> : <ODiem so={chuSo(v)} kq={kqOverall(v, m.kyVong)} kck={g.loTrinh.kck} nhan={k} chiToHut />}</>;
-  const ct = v == null ? null : chuThanhPhan(KN_DAY[k], m.tp?.[k], v);
-  if (!ct) return <span className="okn">{ruot}</span>;
-  const cau = k === 'L' || k === 'R';
-  return <HopNho nutLop="okn" nhan={`${k} ${chuSo(v)} · ${cau ? t('số câu') : t('điểm thành phần')}`} nut={ruot}><span className="tabular-nums">{cau ? ct.replace('câu', t('câu')) : ct}</span></HopNho>;
+  const [cau, tong] = (k === 'L' || k === 'R') ? m.tp?.[k] ?? [] : [];
+  if (v == null || cau == null) return <span className="okn">{ruot}</span>;
+  return <HopNho nutLop="okn" nhan={`${k} ${chuSo(v)} · ${t('số câu')}`} nut={ruot}><span className="tabular-nums">{tong != null ? `${cau}/${tong}` : cau} {t('câu')}</span></HopNho>;
 }
 
 /**

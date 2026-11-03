@@ -3,7 +3,6 @@ export const EN_UI_U04 = {
   'Chưa có Overall': 'No Overall yet',
   'Điểm từng môn MT{n}': 'Skill scores MT{n}',
   'số câu': 'correct answers',
-  'điểm thành phần': 'criteria scores',
   'câu': 'correct',
   'Ý thức · {ten}': 'Conduct · {ten}',
   'Vi phạm chờ': 'Pending violations',
