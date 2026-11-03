@@ -25,4 +25,4 @@ Nền hình: token + thanh trên của `thiet-ke/v8/tong-quan.html` (đã duyệ
 Quyền, API, dữ liệu; tab Đang SOS / Lịch thi / Phân công GV; panel một em; ngăn Xuất; menu ⋯ (N26). Không thêm request (dòng đọc Turso giữ nguyên).
 
 ## Cách làm (03/11 tối)
-Theo bảng ý → mockup  mục 10.1 + kiểm kê 10.1b (góp ý PTA + trả lời chủ SP 03/11 tối); PTA rà mockup theo bảng trước khi đưa chủ SP. Điểm critique cũ (26 → 34/40) chỉ để tham khảo.
+Theo bảng ý → mockup docs/superpowers/specs/2026-11-03-audit-overhaul/14-ra-ux-b.md mục 10.1 + kiểm kê 10.1b (góp ý PTA + trả lời chủ SP 03/11 tối); PTA rà mockup theo bảng trước khi đưa chủ SP. Điểm critique cũ (26 → 34/40) chỉ để tham khảo.
