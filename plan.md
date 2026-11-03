@@ -109,6 +109,7 @@ Kế hoạch các PR OV khác: planning viết **ngay trước khi giao** (theo 
 | Dọn | Xong việc tắt mọi tiến trình, xoá file Vite tạm, gỡ worktree |
 
 ### 1.5. Bẫy đã gặp — đừng lặp lại
+- **Phông khi chụp ảnh cặp từ worktree (AUDIT-BAN-GIAO 03/11):** dev server trong `.claude/worktrees/<tên>` 403 `/@fs/…/node_modules/@fontsource` (node_modules ở thư mục cha) → web hiện phông dự phòng, chữ nhỏ / mảnh (đã dính #856, #869). Sửa: chép `node_modules/@fontsource/{be-vietnam-pro,inter}` vào node_modules của worktree, khởi động lại dev server, kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` TRƯỚC khi chụp. Ghi vào prompt mọi PR giao diện.
 1. File chưa commit bị GitHub Desktop cất vào stash khi đổi nhánh → planning **commit + push ngay**.
 2. PR tài liệu có thể đã merge trước khi đẩy thêm commit → `gh pr view <n> --json state` trước khi đẩy; MERGED thì mở PR mới.
 3. PR xếp chồng merge vào nhánh khác chứ không vào main → luôn mở PR thẳng vào `main`.
