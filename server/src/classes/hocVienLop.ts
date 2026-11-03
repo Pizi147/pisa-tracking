@@ -5,7 +5,7 @@
  * Danh sách lớp đi qua ĐÚNG `listClassSummaries`; phần thêm ở đây: phạm vi "Lớp tôi dạy", GVCN, số Case đang mở, tuần kết thúc khoá,
  * cờ nút theo quyền, và cờ lọc của học viên (Case: cùng `listCases`; SOS: cùng `standingFor`; thiếu thông tin: cùng `missingForStudent`).
  */
-import { db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
 import {
   ENTRY_SKILLS, LUOT_MT_TINH_SQL, LUOT_MT_XONG_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, chiNhanhMacDinh, chuanHoaMaLop, coMocTiepTheo, coMocTiepTheoThuong, demLoc, mondayOfDate, phamViCoThe, phamViMacDinh,
   laVaiQuanLy, kyNangLoc, ketQuaLoc, nhomCaseEm, trangThaiLichThi, type HangHv, type LichThi, type LocHocVien, type PhamVi, type ThemEm, type KetQuaVao,
@@ -327,19 +327,7 @@ export function danhSachHocVienLop(
       /* UI-HV-LOP (XM-2): ⋯ dòng em có "Nhập điểm" chỉ khi người xem còn ô chờ nhập của em — lượt sớm nhất còn nợ (`nhapDiemTheoEm`, cùng nguồn Công việc). */
       ...(nd?.thuTu ? { nhapDiem: { kind: nd.thuTu.kind, attemptNo: nd.thuTu.attempt_no, dot: nd.dot } } : {}) };
   });
-  /*
-   * OV-11g (HL-19, Q11): em Kết thúc học chưa Lưu trữ — hiện mờ ở lớp CUỐI (cùng điều kiện `classRoster(…, kemKetThuc)`), chỉ trong "Tất cả":
-   * không vào chip việc. "Tất cả" của QL = của CX cùng chi nhánh (`chipHocVien` lấy mọi em chưa lưu trữ).
-   */
-  const cuaToi = dangDung === 'cua-toi';
-  for (const h of (conn.prepare(
-    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code FROM enrollments e JOIN students s ON s.id = e.student_id
-      WHERE e.class_id IN (${ph}) AND e.status = 'completed' AND s.status = 'finished' AND s.archived_at IS NULL
-        AND e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id)${cuaToi ? ' AND s.consultant_user_id = ?' : ''}`,
-  ).all(...ids, ...(cuaToi ? [p.userId] : [])) as any[]).filter(khop)) {
-    hocVien.push({ id: h.id as number, classId: h.class_id as number, loc: ['tat-ca'], khung: laFt.get(h.class_id) ? 'ft' : 'thuong', ten: h.full_name, ma: h.student_code ?? '', ketThuc: true });
-  }
-
+  /* U04-3 (chủ SP 03/11 khuya): em Kết thúc học không còn trong danh sách — xem ở hồ sơ lớp tab Học viên · Lưu trữ · Ctrl K (bỏ khối OV-11g, bớt 1 câu). */
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);
   return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru, lopChiXem };
 }
@@ -350,7 +338,7 @@ export function danhSachHocVienLop(
  * `viecHocVienTheoLop` đã chạy cho trang. Thêm: tuần (1 câu) + `luotTheoLoTrinh` (1 câu / lô, chỉ em có Xu hướng).
  */
 function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases: readonly MappedCase[],
-  vl: { hoTro: Map<number, { soPa: number; quaHan: boolean }>; bacYThuc: Map<number, string> }): Map<number, HangHv> {
+  vl: { hoTro: Map<number, { soPa: number; quaHan: boolean }>; bacYThuc: Map<number, string>; yThucHop: Map<number, Omit<NonNullable<HangHv['yThucHop']>, 'baoPh'>> }): Map<number, HangHv> {
   const out = new Map<number, HangHv>();
   if (!hv.length) return out;
   /* Chỉ lộ trình của em có Overall ở lượt ≥ MT1 — mới có Xu hướng (TD3-b: không đọc lượt của em không cần). */
@@ -361,6 +349,15 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
     for (const r of db().prepare(`SELECT code, week_start FROM report_periods WHERE code IN (${ph})`).all(...lo) as any[]) tuanCua.set(r.code, r.week_start);
   });
   const diem = diemCuaLuot(hv.map((h) => standing.get(h.id)?.attemptId).filter((x): x is number => !!x));
+  /* K7: Báo PH của lần xử lý gần nhất (em có bậc) — MỘT câu, chỉ em có chip bậc. */
+  const baoPh = new Map<number, { lan: string; xong: boolean; ngay: string | null }>();
+  theoLoJson(hv.map((h) => h.id as number).filter((id) => vl.yThucHop.has(id)), (json) => {
+    for (const r of db().prepare(`SELECT v.student_id, v.nhan, v.trang_thai,
+        (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngay
+        FROM viec_bao_ph v WHERE v.student_id IN (${DS_JSON}) AND v.trang_thai != 'bo' ORDER BY v.id`).all(json) as any[]) {
+      baoPh.set(r.student_id, { lan: r.nhan, xong: r.trang_thai === 'xong', ngay: r.ngay ?? null });
+    }
+  });
   const soCase = new Map<number, number>();
   for (const c of allCases) if (c.status !== 'done' && c.studentId !== null) soCase.set(c.studentId, (soCase.get(c.studentId) ?? 0) + 1);
   for (const h of hv) {
@@ -368,18 +365,27 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
     const ds = st?.cycleId ? theoCy.get(st.cycleId) : undefined;
     const coLuot = st?.attemptId != null && st.attemptNo != null;
     const truoc = coLuot && st!.overall !== null ? luotTruocCoOverall(ds, st!.attemptNo!) : null;
-    const band = (k: string) => (coLuot ? diem.get(st!.attemptId!)?.find((r) => r.skill === k)?.band ?? null : null);
+    const dong = (k: string) => (coLuot ? diem.get(st!.attemptId!)?.find((r) => r.skill === k) : undefined);
+    const band = (k: string) => dong(k)?.band ?? null;
+    /* U04-1: L, R [số câu, tổng] · W, S [c1–c4] — chỉ ô có thành phần (ô chỉ có band không bấm được). */
+    const tp = (k: string) => { const r = dong(k); if (!r) return undefined;
+      const x = k === 'listening' || k === 'reading' ? [r.raw_score, r.raw_total] : [r.c1, r.c2, r.c3, r.c4];
+      return x.some((v) => v != null) ? x : undefined; };
+    const yh = vl.yThucHop.get(h.id);
     const sos = st?.sosLevel && st.sosLevel > 0 ? st.sosLevel : null;
     out.set(h.id, {
       loTrinh: { mt: h.so_mt_xong ?? 0, soMt: h.so_mt_tong ?? 0,
         target: h.target_score ?? null, kck: !!h.khong_cam_ket },
       mtGan: coLuot ? { mt: st!.attemptNo!, tuan: st!.periodCode ? tuanCua.get(st!.periodCode) ?? null : null, ovr: st!.overall, kyVong: st!.expectation,
-        kn: { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') } } : null,
+        kn: { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') },
+        tp: Object.fromEntries(([['L', 'listening'], ['R', 'reading'], ['W1', 'writing1'], ['W2', 'writing2'], ['S', 'speaking']] as const)
+          .map(([n, k]) => [n, tp(k)]).filter((x) => x[1])) } : null,
       xuHuong: truoc ? { lech: st!.overall! - truoc.ovr, soMt: truoc.mt } : null,
       ke: st?.nextAttemptLabel ? { luot: st.nextAttemptLabel, kyVong: st.nextKyVong ?? null } : null,
       hoTro: { sos, kyNang: sos ? (st?.belowSkills ?? []).map((b) => b.skill) : [], soCase: soCase.get(h.id) ?? 0,
         soPa: vl.hoTro.get(h.id)?.soPa ?? 0, quaHan: vl.hoTro.get(h.id)?.quaHan ?? false },
       yThuc: vl.bacYThuc.get(h.id) ?? null,
+      ...(yh ? { yThucHop: { ...yh, baoPh: baoPh.get(h.id) ?? null } } : {}),
     });
   }
   return out;

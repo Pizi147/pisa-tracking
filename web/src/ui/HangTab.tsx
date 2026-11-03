@@ -25,7 +25,9 @@ export function phimHangTab(e: KeyboardEvent<HTMLElement>) {
   ds[e.key === 'Home' ? 0 : e.key === 'End' ? ds.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + ds.length) % ds.length].focus();
 }
 
-export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh', v8, panelId }: {
+export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, cap = 'chinh', v8, soMo, panelId }: {
+  /** V11 (`thiet-ke/v11/*.html .tabs button b`): số đếm viên mờ (nền bề mặt 2, chữ dim) thay viên xanh "đang". */
+  soMo?: boolean;
   /** TAB-A11Y: id của vùng nội dung (`role="tabpanel"`) mà hàng tab điều khiển → `aria-controls`. Không truyền = trang chưa có vùng riêng. */
   panelId?: string;
   /** V8-HSL (mockup v8 `.tab`): tab trang 15 px, cao 42, chọn đậm 700 — màn đã làm theo v8. */
@@ -57,7 +59,7 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}
             {!!t.so && t.so > 0 && (
-              <span className={`ml-1.5 ${CHIP_TRON} tabular-nums bg-doing-bg text-doing`}>{t.so}{t.donVi ? ` ${t.donVi}` : ''}</span>
+              <span className={soMo ? 'tab-so-mo' : `ml-1.5 ${CHIP_TRON} tabular-nums bg-doing-bg text-doing`}>{t.so}{t.donVi ? ` ${t.donVi}` : ''}</span>
             )}
           </button>
         );
