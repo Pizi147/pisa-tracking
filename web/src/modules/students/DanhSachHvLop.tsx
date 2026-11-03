@@ -1,8 +1,10 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
-import { HangNhom, MuiTenMo, boQuaNutCon } from '../../ui/HangNhom.tsx';
+import { MuiTenMo, boQuaNutCon } from '../../ui/HangNhom.tsx';
+import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -11,17 +13,17 @@ import { ExamPlanText, TargetText } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort } from '../../lib/format.ts';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
-import { ChipLichThi, MiniKn, kqOverall } from './GocLichThi.tsx';
+import { ChipLichThi, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { SO_DONG_VIEC_MAC_DINH, boTenEm, chuPhuHuynh, daysBetween, gopViecTheoMon, monCuaViec, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { boTenEm, chuPhuHuynh, chuThanhPhan, duongHoSoHocVien, shortDate, tuanLich, type EntrySkill, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
 /** Một em của danh sách gọn (`GET /hoc-vien-lop` → `hocVien`, SV-SO3 `hang` + UI-HV-LOP `tvv` / `lich`). */
 export type HvGon = {
-  id: number; classId: number; ten: string; khung: 'ft' | 'thuong'; ketThuc?: true;
+  id: number; classId: number; ten: string; khung: 'ft' | 'thuong';
   hang?: HangHv; tvv?: string | null; lich?: LichThi;
   /** Lượt sớm nhất người xem còn ô chờ nhập của em (máy chủ `nhapDiemTheoEm`) — có thì ⋯ có "Nhập điểm". */
   nhapDiem?: { kind: string; attemptNo: number; dot: string | null };
@@ -40,6 +42,8 @@ export type VaiBang = { em: Map<number, EmVai>; coViec: boolean; onMoEm: (id: nu
 
 const chuSo = (n: number | null | undefined) => (n == null ? null : n.toFixed(1));
 const trong = <span className="text-faint">—</span>;
+const KN5 = ['L', 'R', 'W1', 'W2', 'S'] as const;
+const KN_DAY: Record<(typeof KN5)[number], EntrySkill> = { L: 'listening', R: 'reading', W1: 'writing1', W2: 'writing2', S: 'speaking' };
 
 /** ⋯ CUỐI DÒNG HỌC VIÊN — cùng menu / panel với hồ sơ lớp (`useThaoTacDongHocVien`, quyền theo lớp của em); "Nhập điểm" mở panel lớp đúng lượt còn nợ. */
 function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?: EmVai; onDoi: () => void }) {
@@ -49,109 +53,226 @@ function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?:
   const tt = useThaoTacDongHocVien({ laLopThuong: thuong, quyen: ev ? { ...khong, theoVai: true } : lop?.viewer ?? khong,
     maLop: lop?.code ?? null, classId: lop?.id ?? null, onDone: onDoi });
   const nd = h.nhapDiem && lop ? nhapDiemCua(lop.id, thuong, [{ kind: h.nhapDiem.kind, kindLabel: h.nhapDiem.dot ?? h.nhapDiem.kind, myPending: ['*'], attemptNo: h.nhapDiem.attemptNo }]) : null;
-  const muc = tt.mucCua({ id: h.id, ten: h.ten, dangHoc: !h.ketThuc, nhapDiem: nd, status: ev?.status ?? (h.ketThuc ? 'finished' : 'active'), ft: ev?.ft ?? !thuong, maLop: lop?.code ?? null,
+  const muc = tt.mucCua({ id: h.id, ten: h.ten, dangHoc: true, nhapDiem: nd, status: ev?.status ?? 'active', ft: ev?.ft ?? !thuong, maLop: lop?.code ?? null,
+    xuLyYThuc: !!h.hang?.yThucHop?.canLam,
     ...(ev ? { suaThongTin: ev.viewer.suaThongTin, suaThem: ev.viewer.suaThem, kyThi: !!ev.kyThi } : {}) });
   return <>{muc.length > 0 && <MenuDong muc={muc} nhan={t('Thao tác khác')} />}{createPortal(tt.panels, document.body)}</>;
 }
 
-function TenEm({ h, ev, ds }: { h: HvGon; ev?: EmVai; ds: NguCanhDs }) {
+/** Chữ khớp ô tìm tô hồng (V14) — so không dấu, không phân biệt hoa thường; giữ nguyên chữ gốc. */
+const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+const khopTim = (chu: string, tim?: string) => { const q = boDau(tim?.trim() ?? ''); return q.length >= 2 ? boDau(chu).indexOf(q) : -1; };
+function ToKhop({ chu, tim }: { chu: string; tim?: string }) {
+  const i = khopTim(chu, tim);
+  if (i < 0) return <>{chu}</>;
+  const n = boDau(tim!.trim()).length;
+  return <>{chu.slice(0, i)}<span className="khop-tim">{chu.slice(i, i + n)}</span>{chu.slice(i + n)}</>;
+}
+
+/** Tên em (link hồ sơ, chữ khớp ô tìm tô hồng) + dòng phụ TVV / Tạm dừng (mockup U04 `.dong2`). */
+function TenEm({ h, ev, ds, tim }: { h: HvGon; ev?: EmVai; ds: NguCanhDs; tim?: string }) {
+  const phu = [ev?.status === 'inactive' ? t('Tạm dừng') : null, h.tvv ? `TVV ${h.tvv}` : null].filter(Boolean).join(' · ');
   return (
     <span className="block min-w-0">
-      <Link className="ten-ho-so khong-mui block truncate" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}>{h.ten}</Link>
-      {/* HV-LOP-GON (chủ SP 28/10): bỏ dòng TVV cho đỡ rối (TVV ở hồ sơ em); chỉ còn trạng thái khác "đang học". */}
-      {(h.ketThuc || ev?.status === 'inactive') && (
-        <span className="block truncate text-xs font-normal text-slate-400">
-          {[h.ketThuc && t('Kết thúc học'), ev?.status === 'inactive' && t('Tạm dừng')].filter(Boolean).join(' · ')}
-        </span>
-      )}
+      <Link className="ten-ho-so khong-mui block" to={`/hoc-vien/${h.id}`} state={{ ds }}><ToKhop chu={h.ten} tim={tim} /></Link>
+      {phu && <span className="dong2">{phu}</span>}
     </span>
   );
 }
 
 /**
- * Ô Việc (HV-LOP-VIEC, PANEL-V10 khung `#hvl`): cột 300 px mép phải — tối đa `SO_DONG_VIEC_MAC_DINH` nút, mỗi nút MỘT dòng "Nhập điểm MT3 · L · ⚠ quá 3 ngày"
- * (hạn gộp vào nút; quá hạn = viền + nền đỏ nhạt; `title` = chữ đủ). Việc của người khác (QL / Admin xem) chữ 12 px mờ + tên người giữ — vẫn bấm làm tại chỗ như Công việc.
- * Còn lại → "+n việc" mở panel một em tại chỗ (T9 / Q2: không "›"). QL / Admin (`gopMon`, P11): mỗi môn một dòng (việc gấp nhất của môn); "+n" = mọi việc thật chưa hiện.
- * Việc cấp lớp nằm ở hàng lớp (nơi gọi lọc), không lặp ở từng em.
+ * HỘP NHỎ TẠI CHỖ (U04-1, K7): nút + hộp ngay dưới nút; Esc / bấm ngoài / cuộn đóng, Esc trả focus về nút. Không panel trượt (chủ SP 03/11).
+ * Hộp vẽ qua portal `position: fixed` theo vị trí nút — khung bảng (cuộn ngang, thẻ `overflow-hidden`) không cắt hộp.
  */
-export function OViec({ v, onMo, onMoEm, gopMon }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; onMoEm?: () => void; gopMon?: boolean }) {
+function HopNho({ nut, nhan, nutLop, children, rong }: { nut: ReactNode; nhan: string; nutLop: string; children: ReactNode; rong?: boolean }) {
+  const [cho, setCho] = useState<{ top: number; left: number } | null>(null);
+  const nutRef = useRef<HTMLButtonElement>(null);
+  const hopRef = useRef<HTMLSpanElement>(null);
+  const mo = cho !== null;
+  const qua = useBamNgoai(mo, () => setCho(null), nutRef, hopRef);
+  useEffect(() => {
+    if (!mo) return undefined;
+    const dong = () => setCho(null);
+    const phim = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setCho(null); nutRef.current?.focus(); } };
+    window.addEventListener('scroll', dong, true);
+    window.addEventListener('resize', dong);
+    document.addEventListener('keydown', phim, true);
+    return () => { window.removeEventListener('scroll', dong, true); window.removeEventListener('resize', dong); document.removeEventListener('keydown', phim, true); };
+  }, [mo]);
+  const bat = () => {
+    if (mo) { setCho(null); return; }
+    const r = nutRef.current!.getBoundingClientRect();
+    const rongHop = rong ? 300 : 260;
+    setCho({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - rongHop - 8)) });
+  };
+  return (
+    <>
+      <button ref={nutRef} type="button" className={nutLop} aria-expanded={mo} aria-label={nhan} onClick={bat} {...qua}>{nut}</button>
+      {cho && createPortal(
+        <span ref={hopRef} className={`hop-nho ${rong ? 'hop-nho-rong' : ''}`} role="dialog" aria-label={nhan} style={cho} {...qua}>{children}</span>, document.body)}
+    </>
+  );
+}
+
+/** Một việc của tôi: ô có khung — tên việc (bấm làm tại chỗ) + viên chấm màu + ngày hạn; quá hạn "⚠ 30/10" đỏ (vòng 2 chủ SP 03/11 khuya). */
+function OMotViec({ x, onMo }: { x: ViecEm; onMo: (it: WorkItem) => void }) {
   const { homNay } = useNgayNghiepVu();
+  const nhan = dich(x.it.statusLabel);
+  const tt = x.quaHan ? 'qua' : nhan === t('Đang làm') ? 'dang' : nhan === t('Chờ duyệt') ? 'cho' : 'chua';
+  const ten = { qua: t('Quá hạn'), dang: t('Đang làm'), cho: t('Chờ duyệt'), chua: t('Chưa làm') }[tt];
+  const ngay = x.han ? shortDate(x.han, homNay) : null;
+  return (
+    <span className={`o-viec ${x.quaHan ? 'o-viec-qua' : ''}`}>
+      <button type="button" className="o-viec-ten" onClick={() => onMo(x.it)}>{boTenEm(dich(x.chu), x.it.studentName)}</button>
+      <span className={`vh vh-${tt}`} role="img" aria-label={[ten, ngay ? t('hạn {ngay}', { ngay }) : null].filter(Boolean).join(', ')}>{ngay}</span>
+    </span>
+  );
+}
+
+/**
+ * Ô Việc của tôi (U04-5, chủ SP 03/11 khuya): CHỈ việc của người đang xem (nơi gọi lọc `mine`). Một việc gấp nhất trong ô có khung; còn lại → ô số "+n việc"
+ * mở dải dưới hàng (cùng dải ô Overall — không panel). Việc cấp lớp nằm ở hàng lớp (nơi gọi lọc), không lặp ở từng em.
+ */
+export function OViec({ v, onMo, onMoDai }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; onMoDai: () => void }) {
   if (!v?.length) return trong;
-  const hien = (gopMon ? gopViecTheoMon(v, (x) => monCuaViec(x.it)).map((d) => d.dau) : v).slice(0, SO_DONG_VIEC_MAC_DINH);
-  const con = v.length - hien.length;
-  /* Ô Việc nằm trên dòng của em → bỏ tên em khỏi tên việc, ở mọi vị trí (không lặp). */
-  const chuCua = (x: ViecEm) => boTenEm(dich(x.chu), x.it.studentName);
-  const han = (x: ViecEm) => (!x.han ? null : x.quaHan ? `⚠ ${t('quá {n} ngày', { n: Math.max(1, daysBetween(x.han, homNay)) })}` : t('hạn {ngay}', { ngay: shortDate(x.han, homNay) }));
   return (
-    <span className="grid min-w-0 justify-items-start gap-1 max-sm:gap-1.5">
-      {hien.map((x) => {
-        const nguoi = !x.it.mine && x.it.owner ? x.it.owner.trim().split(/\s+/).at(-1) : null;
-        const chu = [chuCua(x), han(x), nguoi].filter(Boolean).join(' · ');
-        return (
-          <button key={x.it.key} type="button" className={nguoi ? 'viec-khac' : `viec-n${x.quaHan ? ' qua' : ''}`} title={[dich(x.chu), han(x), x.it.owner && !x.it.mine ? x.it.owner : null].filter(Boolean).join(' · ')}
-            onClick={() => onMo(x.it)}>
-            {x.quaHan && <span className="sr-only">{t('Quá hạn')} </span>}<span className="truncate">{chu}</span>
-          </button>
-        );
-      })}
-      {con > 0 && (onMoEm
-        ? <button type="button" className="viec-them" onClick={onMoEm}>{t('+{n} việc', { n: con })}</button>
-        : <span className="text-xs text-dim">{t('+{n} việc', { n: con })}</span>)}
+    <span className="grid min-w-0 justify-items-stretch gap-1">
+      <OMotViec x={v[0]} onMo={onMo} />
+      {v.length > 1 && <button type="button" className="viec-them justify-self-start" onClick={onMoDai}>{t('+{n} việc', { n: v.length - 1 })}</button>}
     </span>
   );
 }
 
+/** Hỗ trợ: chỉ chip SOS + môn (PTA 03/11: Case / PA xem ở dải dưới hàng hoặc hồ sơ — cùng mức hồ sơ lớp U03). */
 function OHoTro({ h }: { h: HangHv['hoTro'] }) {
-  if (!h.sos && !h.soCase) return <span className="text-faint" title={t('Không có Case')}>—</span>;   // HV-LOP-SUA: bớt chữ lặp mỗi dòng
+  return h.sos ? <ChipSos muc={h.sos} kyNang={h.kyNang.map((k) => skillShort(k))} /> : trong;
+}
+
+/** Overall của MT gần nhất (✓ / = / ✗ trên số); có điểm môn → nút mở dải điểm từng môn dưới hàng. */
+function NutOvr({ g, mo, onMo }: { g: HangHv; mo: boolean; onMo: () => void }) {
+  const m = g.mtGan!;
+  const so = m.ovr == null ? <span className="text-sm text-dim">{t('Chưa có Overall')}</span>
+    : <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut />;
+  if (!KN5.some((k) => m.kn[k] != null)) return so;
   return (
-    <span className="block">
-      {h.sos ? <ChipSos muc={h.sos} kyNang={h.kyNang.map((k) => skillShort(k))} /> : null}
-      <span className={`block text-xs ${h.quaHan ? 'font-semibold text-bad' : 'text-faint'}`}>
-        {h.quaHan ? t('PA quá hạn') : t('{c} Case · {p} PA', { c: h.soCase, p: h.soPa })}
-      </span>
-    </span>
+    <button type="button" className="o-ovr" aria-expanded={mo} aria-label={t('Điểm từng môn MT{n}', { n: m.mt })} onClick={onMo}>
+      {so}<span className="mui-o" aria-hidden>{mo ? '▴' : '▾'}</span>
+    </button>
   );
 }
 
-function OMtGan({ g }: { g: HangHv }) {
+/** MT gần nhất: ô Overall + dòng phụ "kỳ vọng 7.5 · MT2 · W4 SEP" (bỏ chữ tắt KV — PTA 03/11). */
+function OMtGan({ g, mo, onMo }: { g: HangHv; mo: boolean; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const m = g.mtGan;
   if (!m) return trong;
   return (
     <span className="block">
-      {/* HV-LOP-GON: Overall nổi (15 / 700, màu kết quả) · kỳ vọng + tuần là chữ phụ mờ 12. */}
-      <span className="flex items-baseline gap-1.5">
-        <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut />
-        <span className="whitespace-nowrap text-xs tabular-nums text-faint">/ KV {chuSo(m.kyVong) ?? '—'} · {m.tuan ? tuanLich(m.tuan, homNay) : `MT${m.mt}`}</span>
-      </span>
-      <MiniKn kn={m.kn} kv={m.kyVong} kck={g.loTrinh.kck} />
+      <NutOvr g={g} mo={mo} onMo={onMo} />
+      <span className="dong2 tabular-nums">{[m.kyVong != null ? t('kỳ vọng {kv}', { kv: chuSo(m.kyVong)! }) : null, `MT${m.mt}`, m.tuan ? tuanLich(m.tuan, homNay) : null].filter(Boolean).join(' · ')}</span>
     </span>
   );
 }
 
+/** Ô một kỹ năng trong dải: nhãn + điểm (✓ / ✗ như Overall). Có điểm thành phần / số câu → bấm mở hộp nhỏ; chỉ có band → không bấm (U04-1). */
+function OKn({ k, g }: { k: (typeof KN5)[number]; g: HangHv }) {
+  const m = g.mtGan!;
+  const v = m.kn[k];
+  const ruot = <><span className="okn-t">{k}</span>{v == null ? <span className="text-faint">–</span> : <ODiem so={chuSo(v)} kq={kqOverall(v, m.kyVong)} kck={g.loTrinh.kck} nhan={k} chiToHut />}</>;
+  const ct = v == null ? null : chuThanhPhan(KN_DAY[k], m.tp?.[k], v);
+  if (!ct) return <span className="okn">{ruot}</span>;
+  const cau = k === 'L' || k === 'R';
+  return <HopNho nutLop="okn" nhan={`${k} ${chuSo(v)} · ${cau ? t('số câu') : t('điểm thành phần')}`} nut={ruot}><span className="tabular-nums">{cau ? ct.replace('câu', t('câu')) : ct}</span></HopNho>;
+}
+
+/**
+ * DẢI DƯỚI HÀNG EM (U04 ý 2 + 25, chủ SP 03/11: rời hàng em, mở dưới hàng, KHÔNG panel trượt): điểm 5 môn của lượt (tiêu đề "MT2 · W4 SEP · kỳ vọng 7.0") ·
+ * Hỗ trợ (Case · PA đang mở) · Việc của tôi (mọi việc, mỗi việc một ô). Dữ liệu đã nạp — không request.
+ */
+function DaiEm({ g, v, onMoViec }: { g: HangHv | undefined; v: ViecEm[] | undefined; onMoViec: (it: WorkItem) => void }) {
+  const { homNay } = useNgayNghiepVu();
+  const m = g?.mtGan;
+  return (
+    <div className="hvl-dai">
+      {m && g && KN5.some((k) => m.kn[k] != null) && (
+        <div className="hvl-dai-k">
+          <span className="hvl-dai-t">{[`MT${m.mt}`, m.tuan ? tuanLich(m.tuan, homNay) : null].filter(Boolean).join(' · ')}{m.kyVong != null && <span className="text-faint"> · {t('kỳ vọng {kv}', { kv: chuSo(m.kyVong)! })}</span>}</span>
+          <span className="hvl-dai-kn">{KN5.map((k) => <OKn key={k} k={k} g={g} />)}</span>
+        </div>
+      )}
+      {g && g.hoTro.soCase > 0 && (
+        <div className="hvl-dai-k"><span className="hvl-dai-t">{t('Hỗ trợ')}</span><span className="text-sm tabular-nums">{t('{c} Case · {p} PA', { c: g.hoTro.soCase, p: g.hoTro.soPa })}</span></div>
+      )}
+      {!!v?.length && (
+        <div className="hvl-dai-k">
+          <span className="hvl-dai-t">{t('Việc của tôi')} · <span className="tabular-nums">{v.length}</span></span>
+          <ul className="hvl-dai-v">{v.map((x) => <li key={x.it.key}><OMotViec x={x} onMo={onMoViec} /></li>)}</ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Ý THỨC (K7 của U10, chủ SP 03/11): chip bậc bấm → hộp nhỏ ngay dưới chip — Cần làm · Vi phạm chờ · Đã tới · Lần này · Báo PH; "Hồ sơ ›" sang tab Ý thức hồ sơ HV;
+ * "Xác nhận xử lý" (người ghi vi phạm được, khi em đang cần xử lý) mở panel Xác nhận như ⋯. Dữ liệu từ trạng thái Ý thức trang đã đọc (+1 câu Báo PH).
+ */
+function OYThuc({ h, g, lop, onDoi }: { h: HvGon; g: HangHv; lop: LopGon | undefined; onDoi: () => void }) {
+  const { homNay } = useNgayNghiepVu();
+  const [xuLy, setXuLy] = useState(false);
+  const y = g.yThucHop;
+  if (!g.yThuc) return trong;
+  if (!y) return <Nhan tone="doing">{dich(g.yThuc)}</Nhan>;
+  const cl = y.canLam;
+  const tieu = t('Ý thức · {ten}', { ten: h.ten });
+  return (
+    <>
+      <HopNho nutLop="chip-bac" nhan={tieu} rong nut={dich(g.yThuc)}>
+        <b className="block text-[14px]">{tieu}</b>
+        <dl className="hop-dl">
+          <dt>{t('Cần làm')}</dt>
+          <dd>{!cl ? '—' : cl.nhom === 'qua_han'
+            ? <span className="vh vh-qua">{cl.quaHanNgay ? t('Quá hạn {n} ngày', { n: cl.quaHanNgay }) : t('Quá hạn')}</span>
+            : <span className="vh vh-dang">{cl.han ? t('hạn {ngay}', { ngay: shortDate(cl.han, homNay) }) : t('Bắt buộc xử lý')}</span>}</dd>
+          <dt>{t('Vi phạm chờ')}</dt><dd className="tabular-nums">{y.viPhamCho}</dd>
+          <dt>{t('Đã tới')}</dt><dd>{dich(g.yThuc)}</dd>
+          <dt>{t('Lần này')}</dt><dd>{dich(y.lanNay)}</dd>
+          {y.baoPh && <><dt>{t('Báo PH')}</dt><dd>{t('lần {lan}', { lan: dich(y.baoPh.lan) })} <span className={`vh ${y.baoPh.xong ? 'vh-xong' : 'vh-chua'}`}>
+            {y.baoPh.xong ? (y.baoPh.ngay ? t('Đã báo {ngay}', { ngay: shortDate(y.baoPh.ngay, homNay) }) : t('Đã báo PH')) : t('Chưa báo')}</span></dd></>}
+        </dl>
+        <span className="hop-chan">
+          <Link className="btn btn-sm" to={duongHoSoHocVien(h.id, { tab: 'y-thuc' })}>{t('Hồ sơ')} ›</Link>
+          {cl && lop?.viewer.coTheGhiViPham && <button type="button" className="btn btn-sm btn-primary" onClick={() => setXuLy(true)}>{t('Xác nhận xử lý')}</button>}
+        </span>
+      </HopNho>
+      {xuLy && createPortal(<XacNhanXuLyPanel studentId={h.id} lop={lop?.code ?? null} onClose={() => setXuLy(false)} onDone={onDoi} />, document.body)}
+    </>
+  );
+}
+
+/*
+ * U04 cân đối cột (chủ SP 03/11 khuya: vừa màn 1280, không cuộn ngang): Học viên 190 · Lộ trình 96 · MT gần nhất 200 · Hỗ trợ 172 (chip "SOS 3 · L, R, W, S" đủ) · Ý thức 100 · Lịch thi 150 ·
+ * Việc của tôi giãn · ⋯ cuối 48. Tổng cố định 956 + Việc ≥ 240 < bề ngang thẻ ở 1280.
+ */
 const COT_HV: CotBang[] = [
-  { key: 'ten', nhan: t('Học viên'), kieu: 'ten' },
-  { key: 'lo', nhan: t('Lộ trình'), kieu: 'chu', rong: 104 },
-  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 300 },
-  { key: 'ho', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 140 },
-  { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 112 },
-  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 164 },
-  { key: 'nut', nhan: '', kieu: 'nut' },
-  /* HV-LOP-VIEC (PANEL-V10 #hvl, T8): Việc 300 px cố định ở mép phải, ⋯ ngay trước; Học viên giãn. */
-  { key: 'viec', nhan: t('Việc'), kieu: 'viec', rong: 300 },
+  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 190 },
+  { key: 'lo', nhan: t('Lộ trình'), kieu: 'chu', rong: 96 },
+  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 200 },
+  { key: 'ho', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 172 },
+  { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 100 },
+  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 150 },
+  { key: 'viec', nhan: t('Việc của tôi'), kieu: 'viec' },
+  { key: 'nut', nhan: '', kieu: 'nut', rong: 48 },
 ];
 /** CX (không có Công việc): cột Việc thành cột Phụ huynh giãn (SĐT bấm gọi). TVV: không cột Phụ huynh (chủ SP 27/10 — SĐT ở thẻ 375 và hồ sơ). */
-const cotHv = (vai?: VaiBang): CotBang[] => (!vai || vai.coViec ? COT_HV : [
-  /* CX giữ bố cục cũ: Học viên 210 · … · Phụ huynh giãn · ⋯ cuối. */
-  ...COT_HV.filter((c) => c.key !== 'viec' && c.key !== 'nut').map((c) => (c.key === 'ten' ? { ...c, rong: 210 } : c)),
-  { key: 'ph', nhan: t('Phụ huynh'), kieu: 'viec' }, COT_HV.find((c) => c.key === 'nut')!,
-]);
+const cotHv = (vai?: VaiBang): CotBang[] => (!vai || vai.coViec ? COT_HV
+  : COT_HV.map((c) => (c.key === 'viec' ? { key: 'ph', nhan: t('Phụ huynh'), kieu: 'viec' } : c)));
 
-/** Ô Lịch thi: chip lịch; TVV / CX thêm nhãn sau thi (bấm = panel một em: nhập KQ / chọn bước tiếp / gia hạn tại chỗ). Em ngoài danh sách lớp (Tạm dừng…) chưa có `lich` → dự kiến thi. */
+/** Ô Lịch thi: chip lịch ("Đã thi 31/10 · chờ KQ" nền lịch nhạt — U04-4); TVV / CX thêm nhãn sau thi (bấm = panel một em). Em ngoài danh sách lớp chưa có `lich` → dự kiến thi. */
 function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) => void }) {
   return (
     <span className="block">
-      {h.lich || !ev ? <ChipLichThi l={h.lich} /> : <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span>}
+      {h.lich || !ev ? <ChipLichThi l={h.lich} them={h.lich?.trangThai === 'da-thi' ? t('chờ KQ') : undefined} /> : <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span>}
       {ev?.sauThi && onMoEm && (
         <button type="button" className="mt-1 block cursor-pointer appearance-none whitespace-normal border-0 bg-transparent p-0 text-left hover:underline" onClick={() => onMoEm(h.id)}>
           <NhanSauThi s={ev.sauThi} gon />
@@ -161,105 +282,129 @@ function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) 
   );
 }
 
-/** Một lớp của danh sách theo lớp (HV-LOP-SUA): `dau` = nội dung hàng lớp (nơi gọi dựng: mã (link hồ sơ) · n HV · GVCN · SOS · việc cấp lớp · ⋯); `hv` chỉ vẽ khi `mo`. */
+/** Một lớp của danh sách theo lớp (HV-LOP-SUA): `dau` = các ô của hàng lớp (nơi gọi dựng, lưới thẳng cột — bài học UX-A); `hv` chỉ vẽ khi `mo`. */
 export type NhomLop = { id: number; nhan: string; dau: ReactNode; mo: boolean; onMo: () => void; hv: HvGon[] };
+type PropsBang = {
+  nhom: NhomLop[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void;
+  onDoi: () => void; vai?: VaiBang;
+  /** Chữ ô tìm (≥ 2 chữ) — tô hồng chữ khớp + nền dòng khớp. */
+  tim?: string;
+};
+
+/** Hàng lớp (mockup U04 `.hl-lop`): ▸ + các ô lưới; bấm cả hàng mở / gập, bấm link / nút con thì để yên (`boQuaNutCon`). */
+function HangLop({ g }: { g: NhomLop }) {
+  return (
+    <div className={`hl-lop ${g.mo ? 'mo-lop' : ''}`} onClick={(e) => boQuaNutCon(e, g.onMo)}>
+      <MuiTenMo mo={g.mo} onMo={g.onMo} nhan={g.nhan} />
+      {g.dau}
+    </div>
+  );
+}
+
+/** Khoá dải đang mở của em (dữ liệu chuyển lớp dở có thể có cùng em ở hai lớp → khoá theo lớp + em). */
+const khoaEm = (h: HvGon) => `${h.classId}:${h.id}`;
+function useDai() {
+  const [dai, setDai] = useState<ReadonlySet<string>>(new Set());
+  return { co: (k: string) => dai.has(k), doi: (k: string) => setDai((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; }) };
+}
 
 /**
- * BẢNG "TẤT CẢ" THEO LỚP (HV-LOP-SUA, mockup đã duyệt `thiet-ke/v5/hoc-vien-lop.html`; chủ SP 27/10 "mặc định danh sách THEO LỚP"): hàng lớp ▾ (`HangNhom`)
- * rồi mỗi em một dòng — Học viên · Lộ trình · MT gần nhất (Overall / KV + 5 kỹ năng) · Hỗ trợ · Ý thức · Lịch thi · Việc · ⋯ (thao tác của em, giữ — `10` mục 8).
- * Bỏ Xu hướng (chủ SP 27/10). Em lớp thường: cột MT để "—" (không có lượt MT).
+ * BẢNG "TẤT CẢ" THEO LỚP (V11 U04, chủ SP duyệt 03/11): hàng lớp rồi — chỉ lớp đang mở — bảng em có tiêu đề cột riêng (B10: lớp gập không có hàng tiêu đề).
+ * Cột: Học viên · Lộ trình · MT gần nhất · Hỗ trợ · Ý thức · Lịch thi · Việc của tôi · ⋯. Bấm ô Overall / "+n việc" → dải dưới hàng em.
  */
-export function BangHvGon({ nhom, lop, viec, gopMon, nguCanh, onMoViec, onMoEm, onDoi, vai }: {
-  nhom: NhomLop[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void;
-  /** "+n việc" → panel một em tại chỗ (mọi vai có Công việc). */
-  onMoEm?: (id: number) => void; onDoi: () => void; vai?: VaiBang;
-}) {
+export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim }: PropsBang) {
+  const dai = useDai();
+  const cot = cotHv(vai);
   const o = (h: HvGon, c: CotBang) => {
     const g = h.hang;
     const ev = vai?.em.get(h.id);
+    const k = khoaEm(h);
     switch (c.key) {
-      case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} />;
+      case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} tim={tim} />;
       case 'lo': return g
-        ? <span className="block"><b className="block font-bold tabular-nums text-slate-100" title={t('MT đã xong / đã tạo')} aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
-            {g.loTrinh.soMt ? `${g.loTrinh.mt}/${g.loTrinh.soMt} MT` : '—'}</b>
-            <span className="block text-xs text-faint">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
+        ? <span className="block"><b className="block font-semibold tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
+            {g.loTrinh.soMt ? `MT ${g.loTrinh.mt}/${g.loTrinh.soMt}` : '—'}</b>
+            <span className="dong2">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-faint">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
-      case 'mt': return g ? <OMtGan g={g} /> : trong;
+      case 'mt': return g ? <OMtGan g={g} mo={dai.co(k)} onMo={() => dai.doi(k)} /> : trong;
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
-      case 'y': return g?.yThuc ? <Nhan tone="doing">{dich(g.yThuc)}</Nhan> : trong;
-      case 'lich': return ev ? <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} /> : <ChipLichThi l={h.lich} />;
-      case 'viec': return <OViec v={viec.get(h.id)} onMo={onMoViec} onMoEm={onMoEm && (() => onMoEm(h.id))} gopMon={gopMon} />;
+      case 'y': return g ? <OYThuc h={h} g={g} lop={lop.get(h.classId)} onDoi={onDoi} /> : trong;
+      case 'lich': return <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} />;
+      case 'viec': return <OViec v={viec.get(h.id)} onMo={onMoViec} onMoDai={() => dai.doi(k)} />;
       case 'ph': return ev ? <span className="block text-sm"><OPhuHuynh l={ev.lienHe} /></span> : trong;
       default: return <MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} />;
     }
   };
-  const cot = cotHv(vai);
-  type Dong = { k: 'lop'; g: NhomLop } | { k: 'hv'; h: HvGon };
-  const dong: Dong[] = nhom.flatMap((g): Dong[] => [{ k: 'lop', g }, ...(g.mo ? g.hv.map((h): Dong => ({ k: 'hv', h })) : [])]);
-  return <Bang ten={t('Học viên & Lớp')} cot={cot} hang={dong} khoa={(d) => (d.k === 'lop' ? `lop:${d.g.id}` : `${d.h.classId}:${d.h.id}`)} khung={false} the375={false} dinh
-    hangRieng={(d) => (d.k === 'lop'
-      ? <HangNhom mo={d.g.mo} onMo={d.g.onMo} nhan={d.g.nhan} tieuDe={d.g.dau} soCotDau={cot.length} />
-      : <tr className={`do-hang ${d.h.ketThuc ? 'opacity-60' : ''} ${d.h.lich?.trangThai === 'da-thi' ? 'hang-da-thi' : ''}`}>{cot.map((c) => <OBang key={c.key} c={c}>{o(d.h, c)}</OBang>)}</tr>)} />;
-}
-
-/** Điện thoại (< 640 px): hàng lớp (▾ + `dau`) rồi mỗi em một thẻ — tên · chip (SOS trước, không thì lịch thi) · ⋯; dòng 2 = việc, không việc thì Target · Overall. */
-export function TheHvGon({ nhom, ...p }: Omit<Parameters<typeof TheHvLop>[0], 'ds'> & { nhom: NhomLop[] }) {
   return (
-    <div>
+    <div className="bang-hv">
       {nhom.map((g) => (
         <section key={g.id} aria-label={g.nhan}>
-          {/* HV-LOP-GON: lớp gập mặc định → cả dải là vùng bấm mở / gập (như hàng lớp 1440); mũi tên đứng cạnh mã lớp, không lơ lửng giữa khối. */}
-          <div className="flex min-h-[44px] cursor-pointer items-start gap-2 border-t px-3 py-2 first:border-t-0" onClick={(e) => boQuaNutCon(e, g.onMo)} style={{ borderColor: 'var(--line)', background: g.mo ? 'var(--hang-lon-bg)' : 'var(--hang-lon-dong-bg)', boxShadow: `inset 3px 0 0 var(${g.mo ? '--hang-lon-vach' : '--hang-lon-dong-vach'})` }}>
-            <span className="mt-[9px] inline-flex"><MuiTenMo mo={g.mo} onMo={g.onMo} nhan={g.nhan} /></span>
-            <div className="min-w-0 flex-1">{g.dau}</div>
-          </div>
-          {g.mo && <TheHvLop ds={g.hv} {...p} />}
+          <HangLop g={g} />
+          {g.mo && g.hv.length > 0 && (
+            <Bang ten={t('Học viên & Lớp')} cot={cot} hang={g.hv} khoa={khoaEm} khung={false} the375={false} dinh
+              hangRieng={(h) => (
+                <>
+                  <tr className={`do-hang ${dai.co(khoaEm(h)) ? 'dang-mo' : ''} ${khopTim(h.ten, tim) >= 0 ? 'hang-khop' : ''}`}>
+                    {cot.map((c) => <OBang key={c.key} c={c}>{o(h, c)}</OBang>)}
+                  </tr>
+                  {dai.co(khoaEm(h)) && <tr className="hang-dai"><td colSpan={cot.length}><DaiEm g={h.hang} v={viec.get(h.id)} onMoViec={onMoViec} /></td></tr>}
+                </>
+              )} />
+          )}
         </section>
       ))}
     </div>
   );
 }
 
-function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onMoEm, onDoi, vai }: {
-  ds: HvGon[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; gopMon?: boolean; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void; onMoEm?: (id: number) => void; onDoi: () => void; vai?: VaiBang;
-}) {
+/** Điện thoại (< 640 px): hàng lớp (▾ + `dau`) rồi mỗi em một thẻ ≤ 4 dòng (B26): tên + ⋯ · TVV · lộ trình · Overall · SOS · Ý thức · Lịch thi · 1 việc. */
+export function TheHvGon({ nhom, ...p }: PropsBang) {
+  const dai = useDai();
   return (
-    <div>
-      {ds.map((h) => {
-        const g = h.hang;
-        const v = viec.get(h.id);
-        const ev = vai?.em.get(h.id);
-        const ph = ev ? chuPhuHuynh(ev.lienHe) : null;
-        return (
-          <article key={`${h.classId}:${h.id}`} className={`space-y-1 border-t px-3 py-2.5 first:border-t-0 ${h.ketThuc ? 'opacity-60' : ''} ${h.lich?.trangThai === 'da-thi' ? 'hang-da-thi' : ''}`} style={{ borderColor: 'var(--line)' }}>
-            <div className="flex items-center gap-2">
-              <Link className="ten-ho-so khong-mui min-w-0 truncate" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}>{h.ten}</Link>
-              {ev?.status === 'inactive' && <span className="shrink-0 text-xs text-slate-400">{t('Tạm dừng')}</span>}
-              <span className="ml-auto shrink-0">{g?.hoTro.sos ? <ChipSos muc={g.hoTro.sos} kyNang={g.hoTro.kyNang.map((k) => skillShort(k))} /> : !h.lich && ev ? <span className="text-xs text-slate-300"><ExamPlanText plan={ev.duKienThi} /></span> : <ChipLichThi l={h.lich} />}</span>
-              <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
-            </div>
-            <div className="text-xs text-slate-400">
-              {v?.length ? <OViec v={v} onMo={onMoViec} onMoEm={onMoEm && (() => onMoEm(h.id))} gopMon={gopMon} />
-                : g?.mtGan ? <span className="inline-flex items-baseline gap-1">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /> · Overall
-                    <ODiem so={chuSo(g.mtGan.ovr)} kq={kqOverall(g.mtGan.ovr, g.mtGan.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut /> MT{g.mtGan.mt}</span>
-                : '—'}
-            </div>
-            {ev?.sauThi && vai && (
-              <button type="button" className="block min-h-[44px] cursor-pointer appearance-none border-0 bg-transparent p-0 text-left" onClick={() => vai.onMoEm(h.id)}>
-                <NhanSauThi s={ev.sauThi} gon />
-              </button>
-            )}
-            {ev && (ph || ev.lienHe.parentPhone) && (
-              <div className="flex min-w-0 items-baseline gap-1.5 text-xs text-slate-400">
-                <span className="shrink-0">{t('Phụ huynh')}</span>
-                {ph && <span className="min-w-0 truncate text-slate-300">{ph}</span>}
-                {ev.lienHe.parentPhone && <a href={`tel:${ev.lienHe.parentPhone.replace(/[^\d+]/g, '')}`} className="inline-flex min-h-[44px] items-center tabular-nums text-slate-300 no-underline">{ev.lienHe.parentPhone}</a>}
-              </div>
-            )}
-          </article>
-        );
-      })}
+    <div className="bang-hv">
+      {nhom.map((g) => (
+        <section key={g.id} aria-label={g.nhan}>
+          <HangLop g={g} />
+          {g.mo && g.hv.map((h) => <TheEm key={khoaEm(h)} h={h} mo={dai.co(khoaEm(h))} onMo={() => dai.doi(khoaEm(h))} {...p} />)}
+        </section>
+      ))}
     </div>
+  );
+}
+
+function TheEm({ h, mo, onMo, lop, viec, nguCanh, onMoViec, onDoi, vai, tim }: Omit<PropsBang, 'nhom'> & { h: HvGon; mo: boolean; onMo: () => void }) {
+  const g = h.hang;
+  const v = viec.get(h.id);
+  const ev = vai?.em.get(h.id);
+  const ph = ev ? chuPhuHuynh(ev.lienHe) : null;
+  const m = g?.mtGan;
+  return (
+    <article className="the-em">
+      <div className="the-em-1">
+        <Link className="ten-ho-so khong-mui min-w-0" to={`/hoc-vien/${h.id}`} state={{ ds: nguCanh }}><ToKhop chu={h.ten} tim={tim} /></Link>
+        <span className="shrink-0"><MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} /></span>
+      </div>
+      <div className="the-em-2">
+        {ev?.status === 'inactive' && <span>{t('Tạm dừng')}</span>}
+        {h.tvv && <span>TVV {h.tvv}</span>}
+        {g && g.loTrinh.soMt > 0 && <span className="tabular-nums">MT {g.loTrinh.mt}/{g.loTrinh.soMt}</span>}
+        {m && g && <span className="inline-flex items-center gap-1"><NutOvr g={g} mo={mo} onMo={onMo} />
+          {m.ovr != null && <span className="tabular-nums">{m.kyVong != null ? `${t('kỳ vọng {kv}', { kv: chuSo(m.kyVong)! })} · ` : ''}MT{m.mt}</span>}</span>}
+      </div>
+      <div className="the-em-3">
+        {g?.hoTro.sos ? <ChipSos muc={g.hoTro.sos} kyNang={g.hoTro.kyNang.map((k) => skillShort(k))} /> : null}
+        {g?.yThuc && <span className="inline-flex items-center gap-1 text-[13px] text-dim">{t('Ý thức')} <OYThuc h={h} g={g} lop={lop.get(h.classId)} onDoi={onDoi} /></span>}
+        <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} />
+      </div>
+      {vai && !vai.coViec ? (ev && (ph || ev.lienHe.parentPhone) && (
+        <div className="flex min-w-0 items-baseline gap-1.5 text-xs text-slate-400">
+          <span className="shrink-0">{t('Phụ huynh')}</span>
+          {ph && <span className="min-w-0 truncate text-slate-300">{ph}</span>}
+          {ev.lienHe.parentPhone && <a href={`tel:${ev.lienHe.parentPhone.replace(/[^\d+]/g, '')}`} className="inline-flex min-h-[44px] items-center tabular-nums text-slate-300 no-underline">{ev.lienHe.parentPhone}</a>}
+        </div>
+      )) : !!v?.length && <OViec v={v} onMo={onMoViec} onMoDai={onMo} />}
+      {mo && <DaiEm g={g} v={v} onMoViec={onMoViec} />}
+    </article>
   );
 }
 

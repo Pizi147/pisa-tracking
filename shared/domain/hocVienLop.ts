@@ -55,12 +55,16 @@ export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolea
  */
 export type HangHv = {
   loTrinh: { mt: number; soMt: number; target: number | null; kck: boolean };
-  mtGan: { mt: number; tuan: string | null; ovr: number | null; kyVong: number | null; kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null> } | null;
+  mtGan: { mt: number; tuan: string | null; ovr: number | null; kyVong: number | null; kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null>;
+    /** U04-1: điểm thành phần của lượt (L, R [số câu, tổng] · W1 W2 S [c1–c4]) — hộp nhỏ ô kỹ năng (`chuThanhPhan`); từ `diemCuaLuot` đã đọc. */
+    tp?: Partial<Record<'L' | 'R' | 'W1' | 'W2' | 'S', (number | null)[]>> } | null;
   xuHuong: { lech: number; soMt: number } | null;
   /** UI-HV-LOP (Đang SOS "→ MT3 6.0"): lượt kế tiếp của lộ trình + kỳ vọng của lượt đó (`standingFor`). */
   ke: { luot: string; kyVong: number | null } | null;
   hoTro: { sos: number | null; kyNang: string[]; soCase: number; soPa: number; quaHan: boolean };
   yThuc: string | null;
+  /** K7 (U10): hộp nhỏ của chip bậc — việc cần làm (quá hạn / bắt buộc + hạn), số vi phạm chờ, bậc lần này, Báo PH của lần gần nhất. */
+  yThucHop?: { canLam: NhanYThucEm | null; viPhamCho: number; lanNay: string; baoPh: { lan: string; xong: boolean; ngay: string | null } | null };
 };
 
 /**

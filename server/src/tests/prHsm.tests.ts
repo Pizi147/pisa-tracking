@@ -29,6 +29,12 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(d.tieuChiNganCua('listening') === null && d.tieuChiCua('reading') === null, 'L/R không có tiêu chí');
   });
 
+  check('U04-1 · chữ hộp điểm thành phần: L/R số câu, W/S tiêu chí → band, không có thì null', () => {
+    assert(d.chuThanhPhan('listening', [29, 40], 6.5) === '29/40 câu', 'L số câu');
+    assert(d.chuThanhPhan('writing1', [6, 6, 6.5, 6], 6) === 'TA 6 · CC 6 · LR 6.5 · GRA 6 → 6.0', 'W1 tiêu chí');
+    assert(d.chuThanhPhan('speaking', [null, null, null, null], 6) === null && d.chuThanhPhan('reading', undefined, 6) === null, 'chỉ band → null');
+  });
+
   check('HSM (1c) · kiemNhanXet: trống → null, > 1000 → lỗi, không phải chữ → lỗi', () => {
     assert(JSON.stringify(d.kiemNhanXet('  ')) === '{"gt":null}' && JSON.stringify(d.kiemNhanXet(null)) === '{"gt":null}', 'trống phải null');
     assert(JSON.stringify(d.kiemNhanXet('  Tốt ')) === '{"gt":"Tốt"}', 'phải cắt khoảng trắng');

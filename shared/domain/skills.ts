@@ -46,3 +46,14 @@ const TIEU_CHI_NGAN = { writing1: ['TA', 'CC', 'LR', 'GRA'], writing2: ['TR', 'C
 export const tieuChiCua = (s: EntrySkill): readonly string[] | null => (s in TIEU_CHI ? TIEU_CHI[s as keyof typeof TIEU_CHI] : null);
 export const tieuChiNganCua = (s: EntrySkill): readonly string[] | null =>
   (s in TIEU_CHI_NGAN ? TIEU_CHI_NGAN[s as keyof typeof TIEU_CHI_NGAN] : null);
+
+/**
+ * U04 / U03 (audit 03/11): chữ hộp nhỏ của ô điểm kỹ năng — L, R "29/40 câu"; W1, W2, S "TA 6 · CC 6 · LR 6.5 · GRA 6 → 6.0" (tên ngắn `tieuChiNganCua`, "→ band" cuối).
+ * `tp` = [số câu, tổng] (L, R) hoặc [c1, c2, c3, c4] (W, S). Không có điểm thành phần → `null` (ô chỉ có band không bấm được).
+ */
+export function chuThanhPhan(s: EntrySkill, tp: readonly (number | null)[] | null | undefined, band: number | null): string | null {
+  if (!tp?.length || tp.every((x) => x == null)) return null;
+  const ten = tieuChiNganCua(s);
+  if (!ten) return tp[0] == null ? null : `${tp[0]}${tp[1] != null ? `/${tp[1]}` : ''} câu`;
+  return `${ten.map((t, i) => `${t} ${tp[i] ?? '–'}`).join(' · ')}${band != null ? ` → ${band.toFixed(1)}` : ''}`;
+}
