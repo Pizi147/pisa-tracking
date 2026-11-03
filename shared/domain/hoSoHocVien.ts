@@ -124,8 +124,6 @@ export type LuotTomTat = {
   skills?: { outcome: string }[] | null;
   /** Chỉ lớp thường: % tổng (chưa làm tròn) — Cuối khoá đủ điểm thì ô ghi `66%` như hộp Kết luận khoá (PR-S5F-a). */
   tyLeTong?: number | null;
-  /** M-14: `false` = MT lịch sử có tuần thi ngoài 4 tuần trước ngày tạo — không phải "hiện trạng". Thiếu = tính. */
-  sinhViec?: boolean;
 };
 export type KetQuaTestGanNhat = {
   attemptId: number; nhan: string; coDiem: number; yeuCau: number;
@@ -151,7 +149,7 @@ export type KetQuaTestGanNhat = {
  */
 export function ketQuaTestGanNhat(attempts: readonly LuotTomTat[], homNay?: string | null): KetQuaTestGanNhat | null {
   const a = [...attempts]
-    .filter((x) => x.status !== 'cancelled' && x.scored > 0 && x.sinhViec !== false && x.kind !== 'mt0')   // PR-MT0: không là kết quả gần nhất
+    .filter((x) => x.status !== 'cancelled' && x.scored > 0 && x.kind !== 'mt0')   // PR-MT0: không là kết quả gần nhất
     .sort((x, y) => moiNhatTruoc({ kind: x.kind, attempt_no: x.attemptNo }, { kind: y.kind, attempt_no: y.attemptNo }))[0];   // lớp thường theo loại
   if (!a) return null;
   const ratio = a.mode === 'ratio';

@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from '../db.ts';
-import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, luotSinhViec, moiNhatTruoc, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo, RATIO_PASS_THRESHOLD } from '../../../shared/domain/index.ts';
-import { ngayTaoLuot } from '../classes/schedule.ts';
+import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, moiNhatTruoc, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo, RATIO_PASS_THRESHOLD } from '../../../shared/domain/index.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, maCtCuaLuot, nguongDatLop, type ProgrammeInfo } from '../normal/regular.ts';
@@ -178,16 +177,9 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
   return out;
 }
 
-/** M-14: lượt này có được làm "hiện trạng" (SOS hiện tại, bỏ quên…) không — MT lịch sử ngoài cửa sổ 4 tuần thì không. */
-export function luotSinhViecRow(a: any, homNay: string): boolean {
-  if (!a.lich_su) return true;   // lượt thường: không cần hỏi ngày nghiệp vụ (tránh một câu mỗi dòng)
-  return luotSinhViec({ lich_su: 1, tuanKetThuc: a.period_end ?? null, created_at: ngayTaoLuot(a.created_at, homNay) });
-}
-
 /** Lọc không cần điểm / lịch kỹ năng (đọc ngay trên dòng lượt). */
 function quaLocNhanh(a: any, kieu: 'valid' | 'due', today: string): boolean {
   if (kieu === 'due') return !!(a.period_start && a.period_start <= today);
-  if (!luotSinhViecRow(a, today)) return false;
   if (a.cy_ft_dang_chay && a.cycle_id !== a.cy_ft_dang_chay) return false;   // OV-11f (PT-3): như `standingFor`
   return !!a._co_diem;   // TD7: không band / điểm thô → scored = 0, như vòng cũ bỏ qua
 }

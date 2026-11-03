@@ -8623,7 +8623,7 @@ const prnLatestValid = (branchCode: string | null) => {
   ).all(...(branchCode ? [branchCode] : [])) as any[];
   const out = new Map<number, { attemptId: number; sos: number | null; complete: boolean }>();
   for (const s of students) {
-    /* PR-MT: "mới nhất" = số MT lớn nhất của lộ trình mới nhất (K5-54); MT lịch sử ngoài cửa sổ 4 tuần không là hiện trạng (M-14). */
+    /* PR-MT: "mới nhất" = số MT lớn nhất của lộ trình mới nhất (K5-54); MT lịch sử (kể cả ngoài cửa sổ 4 tuần) là hiện trạng (UA-19, thay M-14). */
     const a = (conn.prepare(
       `SELECT a.id, a.kind, a.lich_su, a.created_at, pr.week_end FROM assessment_attempts a LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
         WHERE a.student_id = ? AND a.status != 'cancelled'
@@ -8632,9 +8632,7 @@ const prnLatestValid = (branchCode: string | null) => {
           AND (NOT EXISTS (SELECT 1 FROM learning_cycles f WHERE f.student_id = a.student_id AND f.status = 'active' AND f.route IS NOT NULL)
                OR a.cycle_id = (SELECT MAX(f.id) FROM learning_cycles f WHERE f.student_id = a.student_id AND f.status = 'active' AND f.route IS NOT NULL))
         ORDER BY a.cycle_id DESC, a.attempt_no DESC, a.id DESC`,
-    ).all(s.id) as any[]).find((x) => !x.lich_su || domain.luotSinhViec({
-      lich_su: 1, tuanKetThuc: x.week_end, created_at: x.created_at.slice(0, 10) < TODAY ? x.created_at : TODAY,
-    }));
+    ).all(s.id) as any[])[0];
     if (!a) continue;
     if (a.kind === 'mock') {
       const r = (attempts.attemptDetail(P.admin, a.id) as any).result;

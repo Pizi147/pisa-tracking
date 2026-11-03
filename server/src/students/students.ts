@@ -4,7 +4,6 @@ import {
   type LoaiLop, type ProgrammeCode,
   CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_LIEN_HE_TAM_DUNG, TRUONG_LIEN_HE, coONhapLienHe,
 } from '../../../shared/domain/index.ts';
-import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode, loi } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
@@ -122,9 +121,7 @@ export function latestResult(studentId: number) {
         ORDER BY cy.seq DESC, a.attempt_no DESC`,
     )
     .all(studentId) as any[];
-  const homNay = demoToday();
   for (const a of attempts) {
-    if (!luotSinhViecRow(a, homNay)) continue;   // M-14: MT lịch sử ngoài 4 tuần không phải "kết quả gần nhất"
     const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route, [], kckCuaLuot(a));   // OV-11e (Q8)
     if (r.evaluable) {
       return {

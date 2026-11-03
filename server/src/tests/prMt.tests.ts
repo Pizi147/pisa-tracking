@@ -370,14 +370,27 @@ export async function runPrMtTests(t: YThucTestKit) {
   });
   const studentsSvc: any = await import('../students/students.ts');
   const profileSvc: any = await import('../students/profile.ts');
-  check('PR-MT (6) · M-14: MT lịch sử ngoài 4 tuần có SOS 2 KHÔNG làm "SOS hiện tại" — bảng HV lớp, bộ đếm, đầu hồ sơ, kết quả gần nhất; mốc tiếp theo bỏ MT lịch sử', () => {
+  /* UA-19 (chủ SP 03/11, thay M-14): MT lịch sử ngoài cửa sổ VẪN là kết quả hiện tại — hiện Đạt / Chưa đạt + SOS và vào số "Đang SOS",
+     nhưng 0 Case / 0 tín hiệu / 0 Phối hợp (khối H2 trên) / 0 việc / 0 chuông. */
+  check('PR-MT (6) · UA-19: MT lịch sử ngoài 4 tuần có SOS 2 LÀ kết quả hiện tại — bảng HV lớp, "Đang SOS", đầu hồ sơ, kết quả gần nhất; mốc tiếp theo bỏ MT lịch sử', () => {
     const st = standingSvc.standingFor([sH1b]).get(sH1b);
-    assert(st.attemptId === null && st.sosLevel === null, `standing ${JSON.stringify({ a: st.attemptId, sos: st.sosLevel })}`);
-    assert(studentsSvc.latestResult(sH1b) === null, 'latestResult lấy MT lịch sử ngoài cửa sổ');
+    assert(st.attemptId === mt2H1.id && st.sosLevel === 2, `standing ${JSON.stringify({ a: st.attemptId, sos: st.sosLevel })}`);
+    assert(studentsSvc.latestResult(sH1b)?.attemptId === mt2H1.id, `latestResult ${JSON.stringify(studentsSvc.latestResult(sH1b))}`);
     const hs = profileSvc.studentProfile(P.mbManager, sH1b);
-    assert(hs.attempts.find((a: any) => a.id === mt2H1.id)?.sinhViec === false, 'hồ sơ: cờ sinhViec của MT2 lịch sử');
-    assert(d.ketQuaTestGanNhat(hs.attempts, TODAY) === null, 'đầu hồ sơ: "Kết quả Test gần nhất" lấy MT lịch sử ngoài cửa sổ');
+    assert(d.ketQuaTestGanNhat(hs.attempts, TODAY)?.attemptId === mt2H1.id, `đầu hồ sơ: ${JSON.stringify(d.ketQuaTestGanNhat(hs.attempts, TODAY))}`);
     assert(hs.nextCheckpoint === null, `mốc tiếp theo = ${JSON.stringify(hs.nextCheckpoint)}`);
+    assert(metrics.metricSet(P.admin, 'hv-sos-hien-tai', {}).ids.includes(sH1b), '"Đang SOS" phải đếm em có SOS từ MT lịch sử');
+  });
+  check('PR-MT (6) · UA-19: em chỉ có SOS từ MT lịch sử — 0 việc ở Công việc (GVCN, QL), 0 chuông, 0 Case sau khi sửa lại điểm', () => {
+    attemptsSvc.saveScore(P.mbManager, mt2H1.id, 'listening', { rawScore: scoringSvc.LISTENING_BY_RAW.indexOf(4), lyDo: 'Nhập lại cho đúng' });
+    for (const u of [P.coreTeacher, P.mbManager]) {
+      const em = mywork.myWork(u).groups.flatMap((g: any) => g.items).filter((x: any) => x.studentId === sH1b);
+      assert(em.length === 0, `việc của em: ${JSON.stringify(em.map((x: any) => x.title))}`);
+    }
+    const chuong = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE (entity_type = 'assessment_attempt' AND entity_id = ?)
+      OR (entity_type = 'student' AND entity_id = ?)`).get(mt2H1.id, sH1b) as any).n;
+    assert(chuong === 0, `chuông: ${chuong}`);
+    assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(sH1b) as any).n === 0, 'sửa điểm sinh Case');
   });
   check('PR-MT (6) · R11 MT lịch sử: nhập ô cuối hôm nay → chưa khoá; qua Chủ nhật của tuần chứa hôm nay + 7 → khoá (K5-21, K4-20)', () => {
     conn.prepare('UPDATE assessment_scores SET nhap_dau_ngay = ? WHERE attempt_id = ?').run(TODAY, mt2H1.id);
