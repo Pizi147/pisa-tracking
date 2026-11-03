@@ -23,7 +23,7 @@ import { OKhongHoc } from '../../ui/ODiem.tsx';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi,
+  CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, TRAN_CHU, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi,
   chuDoiVang, demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -32,6 +32,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
+import { DemChu } from '../../ui/KhungPanel.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { DauKetQua, MuiTenKyVong, lopKq } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
@@ -369,6 +370,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     /* Rà #410: ô không nhận "-" (lớp đã kết thúc — cờ máy chủ `khongVang`): báo tại hộp, không gửi. */
     if (cell.khongVang && doiDiem && diem.patch?.noShow === true) { setLoi({ cau: dich(cell.khongVang), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
+    /* N35: nhận xét MT ≤ 300 khi đã sửa (thành mô tả Case) — báo tại hộp, không gửi, chữ giữ. */
+    if (doiNx && nx.trim().length > TRAN_CHU.nhanXetMt) { setLoi({ cau: `${t('Nhận xét')}: ${t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.nhanXetMt, n: nx.trim().length })}`, o: 0 }); return; }
     const them: SavePatch = {};
     if (doiNx) them.nhanXet = nx.trim() || null;
     if (doiNhom) them.nhomNguyenNhan = nhom;
@@ -508,9 +511,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         <label className="block">
           <span className="mb-1.5 flex items-baseline justify-between text-xs font-medium text-slate-300">
             <span>{laW ? t('Nhận xét Task {nTask}', { nTask }) : t('Nhận xét')}</span>
-            {nx.length > 800 && <span className={`tabular-nums ${nx.length >= NHAN_XET_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{nx.length}/{NHAN_XET_TOI_DA}</span>}
+            <DemChu n={nx.trim().length} toiDa={TRAN_CHU.nhanXetMt} />
           </span>
-          <textarea className="field w-full text-sm" rows={2} maxLength={NHAN_XET_TOI_DA} value={nx} disabled={busy}
+          <textarea className="field w-full text-sm" rows={2} value={nx} disabled={busy}
             placeholder={viDuNhanXet(cell.skill)} onChange={(e) => setNx(e.target.value)} />
         </label>
       )}

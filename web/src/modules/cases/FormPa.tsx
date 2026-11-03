@@ -5,7 +5,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import {
-  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL,
+  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU,
   coNguoiDay, coSoBuoi, interventionKindsFor, khacNguoi, kiemGhiRoKhac, nguoiMacDinh, nhanNguoiDay, nhatKyPa,
   type GiaTriPa, type KetQuaNhatKy, type LoiTruong, type PaNhatKy,
 } from '@shared/domain/index.ts';
@@ -71,8 +71,8 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
 
   const phuongAn = <>
     {loai}
-    <Truong nhan={t('Nội dung')} batBuoc loi={lf.loiCua(loi, k('noi-dung'))} dem={{ co: v.description.trim().length, can: toiThieu }}>
-      <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, k('noi-dung'))} value={v.description}
+    <Truong nhan={t('Nội dung')} batBuoc loi={lf.loiCua(loi, k('noi-dung'))} dem={{ co: v.description.trim().length, can: toiThieu, toiDa: TRAN_CHU.noiDungPa }}>
+      <textarea className="field w-full" rows={2} {...lf.o(loi, k('noi-dung'))} value={v.description}
         onChange={(e) => dat({ description: e.target.value })} placeholder={GOI_Y_MO_TA_PA} />
     </Truong>
     {coSoBuoi(v.kind) && (

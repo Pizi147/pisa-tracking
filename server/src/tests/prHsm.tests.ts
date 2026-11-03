@@ -107,7 +107,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     /* Không ghi gì (lớp MB FT 101 còn được DL-2 chụp ảnh): L chỉ còn bị chặn theo độ dài, không theo kỹ năng. */
     let cauL = '';
     try { svc.saveScore(QL, e1.aid, 'listening', { nhanXet: 'a'.repeat(1001) }, TODAY); } catch (e: any) { cauL = String(e?.message); }
-    assert(/1000/.test(cauL) && !/Chỉ Writing/.test(cauL), `L (OV-4b: có nhận xét): ${cauL}`);
+    assert(/300/.test(cauL) && !/Chỉ Writing/.test(cauL), `L (OV-4b: có nhận xét): ${cauL}`);   // N35: nhận xét MT ≤ 300
     assert(maLoi(() => svc.saveScore(QL, e1.aid, 'writing1', { gvCham: { performerSelf: true } }, TODAY)) === 400, 'W1');
     assert(maLoi(() => svc.saveScore(QL, e1.aid, 'writing1', { nhanXet: 'a'.repeat(1001) }, TODAY)) === 400, '1001');
     assert(maLoi(() => svc.saveScore(QL, e1.aid, 'speaking', { gvCham: { performerName: 'L' } }, TODAY)) === 400, 'tên 1 ký tự');

@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, soBuoiTu, type LoiTruong, type NguoiChon,
+  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, soBuoiTu, type LoiTruong, type NguoiChon,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -58,6 +58,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const canChung = chon.some((x) => riengCua(x.key).moTa.trim().length < TOI_THIEU);
   const ngan = t('Nội dung cần ít nhất {n} ký tự', { n: TOI_THIEU });
   const oRieng = (x: Em) => `noi-dung-${x.paId}`;
+  const dai = (s: string) => t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.noiDungPa, n: s.trim().length });
   /* OV-13b (mockup §9 "Số buổi *"): PA Tutor quy chế sinh ra chưa có Số buổi — ô chung điền cho em Tutor còn trống (em đã có giữ nguyên). */
   const thieuSoBuoi = (x: Em) => x.pa?.kind === 'tutor' && x.pa.soBuoi == null;
   const canSoBuoi = chon.some(thieuSoBuoi);
@@ -66,6 +67,9 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
     ...(loiSoBuoi ? [{ khoa: 'so-buoi', nhan: t('Số buổi / 2 tuần'), lyDo: loiSoBuoi }] : []),
     ...(canChung && moTa.trim().length < TOI_THIEU ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: moTa.trim() ? ngan : t('Ghi nội dung / hướng dẫn') }] : []),
     ...chon.filter((x) => { const m = riengCua(x.key).moTa.trim(); return m && m.length < TOI_THIEU; }).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: ngan })),
+    /* N35: nội dung PA ≤ 200 — ô chung và ô riêng từng em; chữ giữ trong ô. */
+    ...(moTa.trim().length > TRAN_CHU.noiDungPa ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: dai(moTa) }] : []),
+    ...chon.filter((x) => riengCua(x.key).moTa.trim().length > TRAN_CHU.noiDungPa).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: dai(riengCua(x.key).moTa) })),
   ];
   const daSua = !!moTa.trim() || !!batDau || !!nguoi || !!soBuoi.trim() || Object.values(rieng).some((r) => r.moTa.trim() || r.batDau || r.nguoi);
   const loai = [...new Set(ds.map((x) => x.pa?.kind).filter((k): k is string => !!k))];
@@ -160,8 +164,8 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
         {conLai.length > 0 && (
           <CanLam>
             {tenLoai && <span className="text-[15px] font-bold text-slate-100">{dich(tenLoai)}{it.sos ? <span className="ml-2 text-[13px] font-normal text-slate-400">{t('quy chế SOS {sos}', { sos: it.sos })}</span> : null}</span>}
-            <Truong nhan={t('Nội dung / hướng dẫn')} batBuoc={canChung} loi={lf.loiCua(loi, 'noi-dung')} dem={{ co: moTa.trim().length, can: TOI_THIEU }}>
-              <textarea className="field w-full" rows={2} maxLength={2000} value={moTa} disabled={busy} {...lf.o(loi, 'noi-dung')}
+            <Truong nhan={t('Nội dung / hướng dẫn')} batBuoc={canChung} loi={lf.loiCua(loi, 'noi-dung')} dem={{ co: moTa.trim().length, can: TOI_THIEU, toiDa: TRAN_CHU.noiDungPa }}>
+              <textarea className="field w-full" rows={2} value={moTa} disabled={busy} {...lf.o(loi, 'noi-dung')}
                 onChange={(e) => setMoTa(e.target.value)} placeholder={GOI_Y_MO_TA_PA} />
             </Truong>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -218,8 +222,8 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                               </Truong>
                             )}
                           </div>
-                          <Truong nhan={t('Nội dung riêng')} tuyChon loi={lf.loiCua(loi, oRieng(x))}>
-                            <textarea className="field w-full" rows={2} maxLength={2000} value={r.moTa} disabled={busy} {...lf.o(loi, oRieng(x))}
+                          <Truong nhan={t('Nội dung riêng')} tuyChon loi={lf.loiCua(loi, oRieng(x))} dem={{ co: r.moTa.trim().length, toiDa: TRAN_CHU.noiDungPa }}>
+                            <textarea className="field w-full" rows={2} value={r.moTa} disabled={busy} {...lf.o(loi, oRieng(x))}
                               onChange={(e) => datRieng(x.key, { moTa: e.target.value })} placeholder={t('Trống = nội dung chung')} />
                           </Truong>
                           {onMo && (

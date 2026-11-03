@@ -450,11 +450,11 @@ export async function runPrPaTests(t: YThucTestKit) {
     cases.suaPa(P.admin, ids[0], { performerUserId: gvMoi });
     const ng = ids.map((id) => get('SELECT performer_user_id u, performer_name n FROM case_interventions WHERE id = ?', id));
     assert(ng.every((x) => x.u === gvMoi && x.n === null), `người cả nhóm: ${JSON.stringify(ng)}`);
-    /* Rà cuối M4: Mô tả ngắn tối đa 2000 ký tự — Sửa PA và Thêm PA cùng giới hạn. */
+    /* Rà cuối M4 → N35: Mô tả ngắn (nội dung PA) tối đa 200 ký tự — Sửa PA và Thêm PA cùng giới hạn. */
     const dai = 'x'.repeat(2001);
     const e1 = maLoi(() => cases.suaPa(P.admin, ids[0], { description: dai }));
     const e2 = maLoi(() => cases.recordIntervention(P.lrTeacher, caseThu('N10C'), { kind: 'tutor', description: dai, status: 'started', startedDate: TODAY }));
-    assert(e1.status === 400 && e1.msg.includes('2000') && e2.status === 400 && e2.msg.includes('2000'), `2000: ${JSON.stringify([e1, e2])}`);
+    assert(e1.status === 400 && e1.msg.includes('200 ') && e2.status === 400 && e2.msg.includes('200 '), `200: ${JSON.stringify([e1, e2])}`);
   });
   // ------------------------------------------------------------------ Task 3 · người giữ việc Kết quả (không mồ côi)
   console.log('\nPR-PA · Task 3 (người giữ việc Kết quả)');

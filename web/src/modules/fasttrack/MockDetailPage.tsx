@@ -35,6 +35,7 @@ import {
   ATTEMPT_KIND_SHORT, canNhomNguyenNhan, CHU_THAO_TAC, CHU_THEM_PA, chipSosMt0, docTuanLich, mondayOfDate, nhanLuot, skillShort, soKyVong, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
   type AssessedSkill, type AttemptKind, type TheYeuCauDto, type ThaoTac, type LoiTruong,
   docKnMock, docNguCanhDs, duongDotTest, keBen, vaiXemHocVien, KY_NANG_KE_HOACH, type KyNangKH, khongDuThiTuO, oKyNangTuLich, type KetQuaHuy, trangCha,
+  TRAN_CHU,
 } from '@shared/domain/index.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -636,7 +637,7 @@ function NhanXetKn({ k, attemptId, cells, save, phuTrach }: {
     if (sua(c) && !nhomSua) {
       return (
         <div key={c.skill} className="min-w-0 space-y-2.5">
-          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} giaTri={c.nhanXet ?? null} nenCo={nenCo(c)} onLuu={(v) => save(c.skill, { nhanXet: v }).then((r) => r === true)} />
+          <ONhanXet nhan={nhan} phu={phu(c)} kyNang={c.skill} toiDa={TRAN_CHU.nhanXetMt} giaTri={c.nhanXet ?? null} nenCo={nenCo(c)} onLuu={(v) => save(c.skill, { nhanXet: v }).then((r) => r === true)} />
           {canNhom(c) && <NhomTaiCho skill={c.skill} giaTri={c.nhomNguyenNhan ?? []} onLuu={(v) => save(c.skill, { nhomNguyenNhan: v }).then((r) => r === true)} />}
         </div>
       );
@@ -672,7 +673,7 @@ function NhanXetKn({ k, attemptId, cells, save, phuTrach }: {
   const pt = s.nhanXetPhuTrach ?? null;
   /* GV phụ trách TỰ chấm: nhận xét của họ là nhận xét người chấm — không có ô thứ hai. */
   const nxPt = ptXem ? (
-    <ONhanXet nhan={t('Nhận xét GV phụ trách')} phu={pt?.ten ?? null} giaTri={pt?.chu ?? null} onLuu={(v) => phuTrach!({ nhanXetPhuTrach: v })} />
+    <ONhanXet nhan={t('Nhận xét GV phụ trách')} phu={pt?.ten ?? null} toiDa={TRAN_CHU.nhanXetMt} giaTri={pt?.chu ?? null} onLuu={(v) => phuTrach!({ nhanXetPhuTrach: v })} />
   ) : pt ? (
     <div className="min-w-0">
       <div className="flex items-baseline gap-2 text-xs text-slate-400">

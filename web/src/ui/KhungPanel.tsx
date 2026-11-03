@@ -429,14 +429,21 @@ export function Khoi({ tieuDe, luat, so, children }: { tieuDe: string; luat?: Re
   );
 }
 
+/** N35: bộ đếm `212 / 200` — hiện từ 80 % trần (không rối lúc gõ vài câu), quá trần chữ đỏ + đậm (không chỉ bằng màu: số vượt trần đứng đầu). */
+export function DemChu({ n, toiDa }: { n: number; toiDa: number }) {
+  if (n < toiDa * 0.8) return null;
+  return <span className={`text-xs tabular-nums ${n > toiDa ? 'font-semibold text-bad' : 'font-normal text-slate-500'}`} aria-live="polite">{n} / {toiDa}</span>;
+}
+
 /**
  * Một TRƯỜNG: nhãn ở TRÊN ô, `*` khi bắt buộc, chữ phụ ≤ 1 dòng, `loi` chỉ khi người gọi truyền (sau khi bấm Lưu / rời ô).
- * Có `loi` → ô viền đỏ + lý do dưới ô (YC-12.5.2; người gọi đặt `aria-invalid` lên ô). `dem` = bộ đếm ký tự `8/15` bên phải.
+ * Có `loi` → ô viền đỏ + lý do dưới ô (YC-12.5.2; người gọi đặt `aria-invalid` lên ô). `dem` = bộ đếm ký tự `8/15` bên phải (chưa đủ tối thiểu);
+ * `dem.toiDa` (N35): từ 80 % trần hiện `212 / 200`, quá trần chữ đỏ.
  */
 export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'label', children }: {
   /** OV-13f: ô bắt buộc mà trống vẫn lưu được (Email) — chữ "Thiếu" cam cạnh nhãn. */
   thieu?: boolean;
-  nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can: number };
+  nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can?: number; toiDa?: number };
   as?: 'label' | 'div'; children: ReactNode;
 }) {
   /* Ô ngày / ô chọn người bên trong báo id → nhãn `<label htmlFor>`, không bọc nút lịch (`BaoOTrongNhan`). Thẻ khung chỉ theo props. */
@@ -452,7 +459,8 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'lab
       {tuyChon && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
       {thieu && <span className="ml-1.5 text-xs font-semibold text-late">{t('Thiếu')}</span>}
     </span>
-    {dem && dem.co < dem.can && <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>}
+    {dem?.can && dem.co < dem.can ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>
+      : dem?.toiDa ? <DemChu n={dem.co} toiDa={dem.toiDa} /> : null}
   </>;
   const lopNhan = 'mb-1 flex items-baseline gap-2 text-[12px] font-medium text-slate-200';   // D10: nhãn trường 500 (luật chữ: nhãn 500)
   const noi = useNoiLoi(loi);

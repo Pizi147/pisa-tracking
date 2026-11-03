@@ -3,8 +3,8 @@ import { api, invalidate } from '../../lib/api.ts';
 import { NutChon } from '../../ui/ui.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { useChoHoanTac, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
-import { FOLLOWUP_OUTCOMES, GOI_Y_KET_QUA_PA, ketQuaNhanh, luuRoiTiep, outcomeLabelFor } from '@shared/domain/index.ts';
+import { DemChu, useChoHoanTac, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
+import { FOLLOWUP_OUTCOMES, GOI_Y_KET_QUA_PA, TRAN_CHU, ketQuaNhanh, luuRoiTiep, outcomeLabelFor } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Chữ đã gõ ở dòng ghi nhanh → panel lớn ("Điều chỉnh / Kết thúc…" mang chữ sang, mockup OV-13 §1). `GhiKetQuaPanel` đọc rồi xoá. */
@@ -51,7 +51,8 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, te
   useEffect(() => { nhapKetQua.delete(paId); }, [paId]);
   const thieuMuc = !outcome;
   const thieuNx = note.trim().length < 8;
-  const soThieu = Number(thieuMuc) + Number(thieuNx);
+  const daiNx = note.trim().length > TRAN_CHU.ketQuaPa;   // N35: quá trần → không lưu, chữ giữ trong ô
+  const soThieu = Number(thieuMuc) + Number(thieuNx || daiNx);
   const luu = async (): Promise<boolean> => {
     setDaBam(true);
     if (soThieu) return false;
@@ -81,10 +82,11 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, te
         {daBam && thieuMuc && <span className="mt-1 block text-xs text-late">{t('Chọn một mức')}</span>}
       </div>
       <label className="block">
-        <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span>
-        <textarea className={`field w-full ${daBam && thieuNx ? 'border-late ring-1 ring-late/40' : ''}`} rows={2} value={note} readOnly={busy} aria-invalid={daBam && thieuNx}
+        <span className="mb-1 flex items-baseline gap-2 text-[13px] font-semibold text-slate-300"><span className="flex-1">{t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span><DemChu n={note.trim().length} toiDa={TRAN_CHU.ketQuaPa} /></span>
+        <textarea className={`field w-full ${(daBam && thieuNx) || daiNx ? 'border-late ring-1 ring-late/40' : ''}`} rows={2} value={note} readOnly={busy} aria-invalid={(daBam && thieuNx) || daiNx}
           onChange={(e) => setNote(e.target.value)} placeholder={dich(GOI_Y_KET_QUA_PA)} />
         {daBam && thieuNx && <span className="mt-1 block text-xs text-late">{t('Ghi rõ hơn — ít nhất 8 ký tự')}</span>}
+        {daiNx && <span className="mt-1 block text-xs text-late">{t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.ketQuaPa, n: note.trim().length })}</span>}
       </label>
       {loi && <p role="alert" className="m-0 text-[13px] font-semibold text-bad">⚠ {t('Không lưu được — {loi}', { loi })}</p>}
       <div className="flex flex-wrap items-center gap-2">

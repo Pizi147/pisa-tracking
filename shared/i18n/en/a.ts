@@ -80,6 +80,8 @@ export const EN_A = {
   /* shared/domain/khac, loiForm — lỗi ô */
   'Ghi rõ "Khác" là gì': 'Say what "Other" is',
   'Cần ít nhất {toiThieu} ký tự (đang có {n})': 'At least {toiThieu} characters (now {n})',
+  'Tối đa {toiDa} ký tự (đang có {n})': 'At most {toiDa} characters (now {n})',   // N35
+  'Chưa lưu — tối đa {toiDa} ký tự': 'Not saved — at most {toiDa} characters',   // N35
   'Chưa chọn': 'Not selected',
   'Chưa điền': 'Required',
   'Còn {n} ô cần sửa ↑': (b) => `${b.n} ${Number(b.n) === 1 ? 'field needs' : 'fields need'} fixing ↑`,

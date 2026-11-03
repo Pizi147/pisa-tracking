@@ -18,7 +18,7 @@ import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, TRAN_CHU, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -350,7 +350,7 @@ export function QuickReport({
       /* PR-NEN (T13): phân loại "Khác" → ô Ghi rõ ≥ 3 ký tự ngay dưới (OKhac); Mô tả chỉ còn luật 15 ký tự. */
       ...(laKhac(cua(kn).primaryCode) ? [{ khoa: `${tien}ghi-ro`, nhan: t('Ghi rõ') + s, toiThieu: KHAC_TOI_THIEU }] : []),
       ...(ghiVao(kn) ? [] : [{ khoa: `${tien}ten`, nhan: t('Tên Case') + s, toiThieu: 6 }]),
-      { khoa: `${tien}mo-ta`, nhan: t('Mô tả') + s, toiThieu: 15 },
+      { khoa: `${tien}mo-ta`, nhan: t('Mô tả') + s, toiThieu: 15, toiDa: TRAN_CHU.moTaCase },   // N35
     ];
   };
   const LUAT: LuatTruong[] = [
@@ -372,6 +372,9 @@ export function QuickReport({
   const loi = dsLoi(LUAT, giaTri);
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: t('Đến tuần'), lyDo: t('Không được trước Từ tuần') });
   if (mode === 'backfill' && !bfActions.some((a) => a.description.trim())) loi.push({ khoa: 'pa-0', nhan: t('PA đã áp dụng'), lyDo: t('Chưa có PA nào') });
+  /* N35: PA nhập bù cùng trần nội dung PA (200). */
+  const paDai = mode === 'backfill' ? bfActions.find((a) => a.description.trim().length > TRAN_CHU.noiDungPa) : undefined;
+  if (paDai) loi.push({ khoa: 'pa-0', nhan: t('PA đã áp dụng'), lyDo: t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.noiDungPa, n: paDai.description.trim().length }) });
   /* Tệp chọn sai (loại / quá 4 MB) chặn Lưu — bỏ dòng đó hoặc chọn tệp khác. */
   const tepSai = tep.find((m) => m.loi && !m.daGui);
   if (tepSai) loi.push({ khoa: 'tep', nhan: t('Bằng chứng'), lyDo: tepSai.loi! });
@@ -460,7 +463,7 @@ export function QuickReport({
         </Truong>
       )}
       <Truong nhan={t('Mô tả và dẫn chứng')} batBuoc phu={t('Sai ở đâu, bài hay buổi nào')} loi={loiCua(k('mo-ta'))}
-        dem={{ co: v.summary.trim().length, can: 15 }}>
+        dem={{ co: v.summary.trim().length, can: 15, toiDa: TRAN_CHU.moTaCase }}>
         <textarea className="field w-full" {...o(k('mo-ta'))} rows={3} value={v.summary} onChange={(e) => sua(kn, { summary: e.target.value })}
           placeholder={t('Ví dụ: Progress Test sai 4/5 câu Not Given')} />
       </Truong>

@@ -17,7 +17,7 @@ import {
   canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua, LY_DO_KET_THUC_PA_TOI_THIEU,
   HAN_DUYET_NGAY, hanTheoNgay,
   type NextStep, type RescheduleTarget,
-  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
+  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU, TRAN_CHU, vuotTran,
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -563,7 +563,7 @@ export function reportIssue(p: Principal, input: {
     throw badRequest('Đặt tên cho Case — một câu ngắn nói đúng vấn đề, ví dụ '
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
-  const summary = chuTuDo(input.summary, 'Mô tả', 2000) ?? '';
+  const summary = chuTuDo(input.summary, 'Mô tả', TRAN_CHU.moTaCase) ?? '';   // N35
   if (summary.length < 15) {
     throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
   }
@@ -966,7 +966,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
    * tutor dạy gì, bao nhiêu buổi, đến khi nào. Đó chính là thứ mà một lần cập nhật kết quả
    * cần để so.
    */
-  const moTa = chuTuDo(input.description, 'Mô tả ngắn', 2000) ?? '';   // PR-PA: cùng giới hạn với Sửa PA và ô nhập (2000)
+  const moTa = chuTuDo(input.description, 'Mô tả ngắn', TRAN_CHU.noiDungPa) ?? '';   // N35: cùng trần với Sửa PA, Điều chỉnh, Xác nhận PA và ô nhập
   if (moTa.length < 8) {
     throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
   }
@@ -1321,15 +1321,16 @@ export function suaCase(p: Principal, caseId: number, input: {
     throw badRequest('Nhóm nguyên nhân không hợp lệ.');
   }
   const guiMoTa = (input.primaryCode != null && input.primaryCode !== '') || input.observation !== undefined || nhom !== null;
-  if (typeof input.observation === 'string' && input.observation.trim().length > NHAN_XET_TOI_DA) {
-    throw loi(400, 'Nhận xét tối đa {x} ký tự (đang {length}).', { x: NHAN_XET_TOI_DA, length: input.observation.trim().length });
+  /* N35: mô tả Case MT (`observation`) ≤ 300 — chữ cũ dài gửi lại nguyên văn thì giữ. */
+  if (typeof input.observation === 'string' && vuotTran(input.observation, TRAN_CHU.moTaCase, chinh?.observation)) {
+    throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: input.observation.trim().length });
   }
   const nd = kiemNoiDungCase(topic, ct, {
     primaryCode: nhom?.[0] ?? input.primaryCode ?? (doiKyNang ? null : chinh?.taxonomy_code ?? null),
     observation: input.observation !== undefined ? input.observation : chinh?.observation ?? null,
     urgency: input.urgency ?? c.urgency ?? DEFAULT_URGENCY,
     moTa: input.summary ?? c.summary, tenGiua: input.title ?? c.title ?? tenGiuaCua(c),
-  }, { khongDoiMoTa: st.laMt, boNguyenNhan: st.laMt && !chinh && !guiMoTa });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài
+  }, { moTaCu: c.summary, khongDoiMoTa: st.laMt, boNguyenNhan: st.laMt && !chinh && !guiMoTa });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài
   if (nhom?.slice(1).some((x) => !issuesForTopic(topic, ct).some((i) => i.code === x))) {
     throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ct) });
   }
@@ -1404,7 +1405,8 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
   if (cach === 'dung' && !nx) throw badRequest('Bài chưa có nhận xét chấm chéo — viết mô tả khác.');
   if (cach === 'giu' && !chinh) throw badRequest('Case chưa có mô tả — dùng nhận xét chấm chéo hoặc viết mô tả khác.');
   const moTa = cach === 'viet' ? String(body.moTa ?? '').trim() : '';
-  if (cach === 'viet' && (moTa.length < NHAN_XET_MT_TOI_THIEU || moTa.length > NHAN_XET_TOI_DA)) {
+  if (cach === 'viet' && moTa.length > TRAN_CHU.moTaCase) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: moTa.length });   // N35
+  if (cach === 'viet' && moTa.length < NHAN_XET_MT_TOI_THIEU) {
     throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: NHAN_XET_MT_TOI_THIEU });
   }
   return tx(() => {
@@ -3758,6 +3760,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
    */
   const note = (input.note ?? '').trim();
   if (note.length < 8) throw badRequest('Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.');
+  /* N35: nhận xét kết quả PA ≤ 200 — trừ PA Tutor (ghi chú ghép từ nhận xét từng buổi; Tutor đang hoãn). */
+  if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });
 
   const observedOn = input.observedOn ?? demoToday();
   if (!isIsoDate(observedOn)) throw badRequest('Ngày cập nhật không hợp lệ.');
@@ -4333,6 +4337,7 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   kiemQuyenPa(p, iv, x.c);   // cùng quyền như lúc ghi (đường đảo kiểm qua `updateResult`)
   const note = (vao.note ?? '').trim();
   if (note.length < 8) throw badRequest('Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.');
+  if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa, chinh.note)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });   // N35
   const decisionNote = String(vao.decisionNote ?? '').trim() || null;
   if ((chinh.next_step === 'adjust' || chinh.next_step === 'propose') && !decisionNote) throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');
   if (chinh.next_step === 'ask_manager' && (decisionNote ?? '').length < 8) {
@@ -4527,7 +4532,7 @@ export function suaPa(p: Principal, interventionId: number, input: {
   const oldDesc = (iv.description ?? null) as string | null;
   let description = oldDesc;
   if (typeof input.description === 'string' && input.description.trim() !== (oldDesc ?? '').trim()) {
-    description = chuTuDo(input.description, 'Mô tả ngắn', 2000) ?? '';
+    description = chuTuDo(input.description, 'Mô tả ngắn', TRAN_CHU.noiDungPa) ?? '';   // N35 (chỉ khi chữ đổi)
     if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
   }
   const soBuoi = soBuoiMoi(iv, input.soBuoi, daDayCua(interventionId));

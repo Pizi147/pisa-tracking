@@ -3,13 +3,25 @@ import { t } from '../i18n/index.ts';
 
 /** Nhận xét (OV-4b: mọi bài nhập L/R/W1/W2/S; MT nên có — `thieuNhanXetMt`, chỉ nhắc) + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
 export const NHAN_XET_TOI_DA = 1000;
+/**
+ * N35 (chủ SP 03/11): TRẦN CHỮ GV NHẬP — máy chủ chặn (400), web đếm tại ô. Nhận xét MT (FT) thành mô tả Case (N8) nên cùng trần mô tả.
+ * Chữ cũ đã dài giữ nguyên: chỉ chặn khi chữ MỚI khác chữ cũ mà vẫn vượt (`vuotTran`). Không áp: lớp thường (`NHAN_XET_TOI_DA`), S Ex, Tutor (đang hoãn).
+ */
+export const TRAN_CHU = { moTaCase: 300, noiDungPa: 200, ketQuaPa: 200, nhanXetMt: 300 } as const;
+/** Chữ mới (đã cắt hai đầu) dài hơn `toiDa` VÀ khác chữ cũ → chặn. `cu` lấy lười: chỉ gọi khi chữ mới đã vượt. */
+export function vuotTran(moi: string | null | undefined, toiDa: number, cu?: string | null | (() => string | null | undefined)): boolean {
+  const m = (moi ?? '').trim();
+  if (m.length <= toiDa) return false;
+  const c = typeof cu === 'function' ? cu() : cu;
+  return m !== (c ?? '').trim();
+}
 
-/** `null` = xoá. Trả chuỗi đã cắt (rỗng → null) hoặc câu lỗi. */
-export function kiemNhanXet(s: unknown): { gt: string | null } | { loi: string } {
+/** `null` = xoá. Trả chuỗi đã cắt (rỗng → null) hoặc câu lỗi. N35: `toiDa` riêng (nhận xét MT 300) + `cu` (chữ đang lưu — giữ được nếu không đổi). */
+export function kiemNhanXet(s: unknown, toiDa: number = NHAN_XET_TOI_DA, cu?: () => string | null | undefined): { gt: string | null } | { loi: string } {
   if (s === null) return { gt: null };
   if (typeof s !== 'string') return { loi: t('Nhận xét phải là chữ.') };
   const gon = s.trim();
-  if (gon.length > NHAN_XET_TOI_DA) return { loi: t('Nhận xét tối đa {x} ký tự (đang {length}).', { x: NHAN_XET_TOI_DA, length: gon.length }) };
+  if (vuotTran(gon, toiDa, cu)) return { loi: t('Nhận xét tối đa {x} ký tự (đang {length}).', { x: toiDa, length: gon.length }) };
   return { gt: gon || null };
 }
 
