@@ -580,7 +580,9 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(d.khoiCho({ cho: 'nguyen-nhan', soPa: 0, pa: [] }) === 'Chờ xác nhận Case', 'nguyên nhân (OV-12c: Progress)');
     assert(d.khoiCho({ cho: 'nhan-xet', soPa: 0, pa: [] }) === 'Chờ mô tả Case', 'OV-12c: Case MT chưa có mô tả');
     assert(d.khoiCho({ cho: null, soPa: 0, pa: [] }) === 'Chưa có PA', 'chưa PA');
-    assert(d.khoiCho({ soPa: 1, pa: [] }) === 'Chờ xác nhận PA', 'PA chưa vẽ được');
+    /* U07 (UA-14): cùng chữ với cột trái — một nguồn `chuSoPa`; kèm tên PA chờ khi có. */
+    assert(d.khoiCho({ soPa: 1, pa: [] }) === '1 PA chờ xác nhận' && d.khoiCho({ soPa: 1, pa: [], tenPaCho: 'Học Tutor' }) === '1 PA chờ xác nhận · Học Tutor', 'PA chưa vẽ được');
+    assert(d.chuSoPa({ soPa: 2, pa: [{}] }) === '2 PA · 1 chờ xác nhận' && d.chuSoPa({ soPa: 1, pa: [{}] }) === '1 PA' && d.chuSoPa({ soPa: 0 }) === 'chưa có PA', 'chuSoPa');
     assert(d.khoiCho({ soPa: 1, pa: [{}] }) === null, 'có khối PA');
   });
 
