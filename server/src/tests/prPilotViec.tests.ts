@@ -61,7 +61,8 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
       assert(/<NutVaTiep [^>]*chuTiep=\{t\('Xác nhận · việc tiếp ›'\)\}[^>]*tiep=\{tiep\}/.test(f), `${ten}: thiếu nút "Xác nhận · việc tiếp ›"`);
       const sauGui = f.slice(f.search(/await api\.post/));
       assert(/tiep\.lam\(/.test(sauGui), `${ten}: sang việc kế trước khi máy chủ nhận`);
-      assert(/<DongTiep tiep=\{tiep\} \/>/.test(f) && /<DongTiep tiep=\{tiep\} chan \/>/.test(f), `${ten}: thiếu "Tiếp: …" (V12 ⑥) ở khối Cần làm / chân 375`);
+      /* UI-CONG-VIEC (U01 #6): Xác nhận PA có chân dính một hàng ở mọi cỡ màn — "Tiếp: …" chỉ ở chân. */
+      assert(/<DongTiep tiep=\{tiep\} chan \/>/.test(f) && (ten === 'XacNhanPaPanel' || /<DongTiep tiep=\{tiep\} \/>/.test(f)), `${ten}: thiếu "Tiếp: …" (V12 ⑥) ở khối Cần làm / chân 375`);
       /* HOAN-TAC-XN (thay XM-3): máy chủ đã có đường đảo → dải của việc vừa xác nhận mang Hoàn tác thật (prHoanTacXn HTXN-W2). */
       const xacNhan = sauGui.slice(sauGui.search(/\/xac-nhan/));
       assert(/hoanTac/.test(xacNhan.slice(0, xacNhan.search(/tiep\.lam\(/))), `${ten}: dải thiếu Hoàn tác (đường đảo /hoan-tac-xac-nhan)`);

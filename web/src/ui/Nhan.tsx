@@ -123,15 +123,23 @@ export function ChipSoQuaHan({ n }: { n: number }) {
 }
 /** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn viên xám; luôn có chữ.
  *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Chữ hạn = `nhanHan` "hạn 18/09" (NEN-V5 P7: ngày thật, kể cả hôm nay). */
-export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null }) {
+export function ChipHan({ loai, han, chuThuong = false }: { loai: DeadlineKind; han: string | null;
+  /** UI-CONG-VIEC (dải sự kiện panel, mockup `.fact`): chưa quá hạn → ngày chữ thường "16/09", quá hạn vẫn ⚠ đỏ. */
+  chuThuong?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
-  /* NEN-PANEL (mockup V5 `v5-nen.css .bd-td.sap / .qua`): quá hạn / sắp hạn = viên có ⚠; hạn xa = viên xám không ⚠ (mockup v7 `cong-viec-2.html .td`). */
-  const can = v.tone === 'overdue' || v.ganHan;
-  const lop = v.tone === 'overdue' ? 'bg-late-bg text-late' : v.ganHan ? 'bg-soon-bg text-soon' : 'surface-2 text-dim';
+  const ngay = `${han.slice(8, 10)}/${han.slice(5, 7)}`;
+  if (chuThuong && v.tone !== 'overdue') return <span className="tabular-nums">{ngay}</span>;
+  if (chuThuong) return <span title={v.text} className={`${CHU_HAN} text-late font-bold min-h-[22px] whitespace-normal`}><span aria-hidden>⚠</span>{ngay} · {t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</span>;
+  /* U01 #27 (audit 03/11, mockup `audit-0311/ro.css .han`): hạn CHỈ CHỮ, không nền — quá hạn đỏ đậm + ⚠, sắp hạn vàng đậm + ⚠ (không trùng chip SOS 3
+     nền đỏ đặc — V5); hạn thường chữ thường, hạn xa chữ mờ. Chữ + ⚠ mang nghĩa, màu chỉ phụ. */
+  /* Mockup `.han`: quá hạn đỏ ⚠ · hạn HÔM NAY vàng ⚠ · sắp hạn chữ thường 600 · hạn xa chữ mờ 500. */
+  const homNayHan = han.slice(0, 10) === homNay;
+  const can = v.tone === 'overdue' || homNayHan;
+  const lop = v.tone === 'overdue' ? 'text-late font-bold' : homNayHan ? 'text-soon font-bold' : v.ganHan ? 'text-[color:var(--text)] font-semibold' : 'text-dim font-medium';
   return (
-    <span title={v.text} className={`${CHU_HAN} ${lop} h-[22px] rounded-full px-[9px] text-xs font-semibold`}>
+    <span title={v.text} className={`${CHU_HAN} ${lop} min-h-[22px] text-[13px]`}>
       {can && <span aria-hidden>⚠</span>}
       {v.tone === 'overdue' ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : nhanHan(han, homNay)}
     </span>
