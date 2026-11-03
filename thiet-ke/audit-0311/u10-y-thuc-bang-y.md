@@ -1,4 +1,4 @@
-# U10 · Ý thức + task Báo PH — bảng "ý trong file → chỗ trong mockup" (03/11, TRƯỚC khi vẽ, chờ PTA kiểm)
+# U10 · Ý thức + task Báo PH — bảng "ý trong file → chỗ trong mockup" (03/11 — PTA kiểm bảng · chủ SP DUYỆT mockup 03/11)
 
 Nguồn: `00` = `D:/Download/Pisa tracking web/PISA-Tracking-Claude-Audit-Overhaul-2026-11-03.md` · `12` = `docs/superpowers/specs/2026-11-03-audit-overhaul/12-y-thuc-bao-ph.md` · N34 (plan.md 1.6).
 Ảnh: Ảnh 1 = U10 `y thuc vi pham.jpg`. Kiểu badge / màu / nút: chép `thiet-ke/audit-0311/chung.css` + `thiet-ke/v11/` (đồng bộ U01–U09).
