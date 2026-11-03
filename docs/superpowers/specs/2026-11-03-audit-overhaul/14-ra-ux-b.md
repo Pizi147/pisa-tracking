@@ -174,6 +174,8 @@ Cột cuối = đối chiếu mockup #849 (`thiet-ke/v11/hoc-vien-lop.html` bả
 **Câu hỏi:** Q-a, Q-b đã có câu trả lời (plan.md 4 · "Chủ SP trả lời 03/11 tối"). Góp ý PTA áp ở #4, #7, #20, #25, #29 + bảng 10.1b.
 **Sửa mockup:** #2, #4, #7, #9, #11, #13, #14, #17, #18, #22–#25, #29–#31 + bảng 10.1b vào khu G.
 
+**PTA rà mockup U04 03/11 — ĐẠT, sửa 3 chỗ (đã sửa):** (34) tên việc đồng bộ U01 (`00` mục 21 "Tên thao tác"): "Ghi kết quả PA · Listening" mọi chỗ, cả dải dưới hàng · (35) cột Hỗ trợ bỏ dòng "n Case · n PA" — cùng mức hồ sơ lớp (chủ SP bỏ cột Case · PA ở U03); chip SOS + môn là đủ (U04 ý 2); Case / PA xem ở dải hoặc hồ sơ · (36) bỏ "· PA quá hạn" — cột Việc đã có "⚠ hạn 27/10".
+
 ### 10.1b U04 — kiểm kê thao tác TRƯỚC → SAU (mọi thao tác của màn; khu G mockup chép bảng này)
 | Thao tác | Ở đâu (main 03/11) | Sau | Giữ / bỏ / đổi · vì sao |
 |---|---|---|---|
@@ -197,7 +199,7 @@ Cột cuối = đối chiếu mockup #849 (`thiet-ke/v11/hoc-vien-lop.html` bả
 | Phân trang 10 / 20 / 50 | trên + dưới bảng | chỉ dưới | ĐỔI (bỏ bản lặp) |
 | Chọn nhiều · Sửa cả lớp | **không có ở màn này** (ở Hồ sơ lớp / Lưu trữ) | không đổi | — |
 
-### 10.2 U05 Kế hoạch Test (CHƯA vẽ — chờ PTA duyệt bảng)
+### 10.2 U05 Kế hoạch Test (PTA DUYỆT 03/11, sửa #3 + #24; Q-c, Q-d chờ chủ SP)
 Nguồn: `00` mục 20 U05 (ý 1–6, Nghiệm thu) · mục 12 · mục 21 (dòng chạm màn) · 22.2-4 (Test) · N4 · N9 · N10 · N14 · N15 · N23 · N32 ⑤ (G5) · B22–B24 · ảnh U05 · bài học UX-A (tách trường, bớt chữ liền mạch) · luật PTA 03/11 "không thêm chữ thừa".
 Cột cuối = hiện trạng main 03/11 (đã bấm thử QL Vy, MB FT 105 — đợt 2).
 
@@ -205,7 +207,7 @@ Cột cuối = hiện trạng main 03/11 (đã bấm thử QL Vy, MB FT 105 — 
 |---|---|---|---|---|---|
 | 1 | Giữ ma trận HV × lượt MT; mỗi ô = **tuần / lượt → trạng thái chính → ngoại lệ**; điểm cũ, chi tiết môn mở tại chỗ · U05 ý 1 | Ô MT 3 tầng cố định: dòng 1 tuần "W1 SEP" · dòng 2 trạng thái một chữ (bảng #3) · dòng 3 chỉ khi có ngoại lệ ("S · W2 OCT", "vắng → W2 NOV"). Bấm ô → hộp kỹ năng sẵn có (4 môn, điểm, dời / huỷ / khôi phục) | ĐỔI dáng ô, GIỮ hộp kỹ năng | **Q-c** bỏ hàng chip "L✓ R✓ W✓ S" khỏi ô (chỉ hiện môn có ngoại lệ; đủ 4 môn ở hộp kỹ năng)? Khuyến nghị: bỏ | ô 5 dạng, cao thấp khác nhau (ảnh U05) |
 | 2 | Tách trạng thái xếp lịch khỏi kết quả học thuật; một dấu ✓ không nhiều nghĩa · ý 2 | Dòng 2 trạng thái lịch bằng CHỮ (Chưa xếp · Đã xếp · Đang làm bài · Chờ chấm · Đã huỷ); kết quả học thuật chỉ là điểm "✓ 5.5" / "✗ 5.0" (màu trên số, G12) khi lượt đã có Overall | ĐỔI — B22: nay "L✓" = môn có điểm, "✓ 5.5" = đạt kỳ vọng trong cùng ô | — | TÁI HIỆN (B22) |
-| 3 | Bảng trạng thái ô (Nghiệm thu: phân biệt chưa xếp, đã xếp, đang thi / chờ chấm, hoàn tất, huỷ, vắng) | Chưa xếp: nút "Xếp MT2" (viền đứt) · Đã xếp: "W3 NOV" + "Đã xếp" · Đang làm bài: "W1 NOV · tuần này" · Chờ chấm: "Chờ chấm S" · Hoàn tất: "✓ 5.5" / "✗ 5.0" · Đã huỷ: "Đã huỷ" (chữ mờ) · Vắng lần 1: dòng 3 "vắng → W2 NOV" (N4, `chuDoiVang`) | ĐỔI — một bảng chữ cho mọi ô, không chỉ màu | — | màu + chip, chữ không đủ |
+| 3 | Bảng trạng thái ô (Nghiệm thu: phân biệt chưa xếp, đã xếp, đang thi / chờ chấm, hoàn tất, huỷ, vắng) | Chưa xếp: nút "Xếp MT2" (viền đứt) · Đã xếp: chỉ tuần "W3 NOV" (có tuần = đã xếp — PTA 03/11) · Đang làm bài: "W1 NOV · tuần này" · Chờ chấm: "Chờ chấm S" · Hoàn tất: "✓ 5.5" / "✗ 5.0" · Đã huỷ: "Đã huỷ" (chữ mờ) · Vắng lần 1: dòng 3 "vắng → W2 NOV" (N4, `chuDoiVang`) | ĐỔI — một bảng chữ cho mọi ô, không chỉ màu | — | màu + chip, chữ không đủ |
 | 4 | Môn thi khác tuần: một dòng rõ "W thi bù W1 NOV"; không đổi luật gộp W · ý 3 | Dòng 3 "S · W2 OCT" (chỉ môn lệch tuần); W vẫn gộp W1 + W2 một lịch (luật lịch giữ) | ĐỔI chữ · GIỮ luật | — | hai tuần chồng trong ô (ảnh: "W1 OCT L R W / W3 OCT S") |
 | 5 | Nút tại ô "Xếp MT4" khi là lượt kế; "Thêm lượt Test" cho thao tác khác; giữ bulk + sửa ngoại lệ từng em · ý 4 | Ô lượt kế chưa có lịch: nút "Xếp MT4" · cuối hàng em: "+ MT ▾" (MT kế ngoài mặc định · S Ex — N10, chỉ QL / Admin / QT) — cột có tiêu đề nhìn thấy "Thêm" (B23) · "Xếp nhiều MT…" giữ ở đầu trang | GIỮ hai nút (khác việc) · ĐỔI tiêu đề cột | — | cột "+ MT" không tiêu đề, đọc màn "Trống" (B23) |
 | 6 | Bản xem "Cần xếp / cần xếp lại", đưa tới ô có việc; lịch sử xa thu gọn được · ý 5 · **G5** | Chip **"Chưa có MT kế tiếp · n"** (thay "Cần xếp lại") → chỉ lớp / em chưa có lịch MT kế, ô đó viền nhấn · **lọc theo lớp**: ô tìm gợi ý lớp, chọn thành chip "Lớp: CP FT 130 ✕" | ĐỔI — G5 (N32 ⑤); vắng lần 1 đã tự dời (N4), không còn hàng "cần xếp lại" | — | chỉ chip "Cần xếp lại (n)"; "MT2 chưa xếp 4 em" là chữ xám (B24) |
@@ -226,7 +228,7 @@ Cột cuối = hiện trạng main 03/11 (đã bấm thử QL Vy, MB FT 105 — 
 | 21 | Đủ số MT mặc định thôi nhắc xếp thêm · N14 | Em đã đủ (LT 3 / RF 2): ô sau cuối không nút "Xếp MTn", không vào chip "Chưa có MT kế tiếp"; "+ MT" vẫn có | GIỮ luật | — | KHỚP |
 | 22 | Bulk + lỗi một phần · 22.2-4 · mục 13 | Khung "Xếp nhiều MT…" (ngăn sẵn có): xem trước → lưu → "Đã xếp 14 em · 2 em không xếp được (lý do từng em)" giữ chọn phần lỗi | GIỮ · vẽ trạng thái lỗi một phần | — | CHƯA KIỂM |
 | 23 | Trạng thái hệ thống: tải / rỗng / lỗi / không quyền · mục 21 | Đổi chi nhánh: bảng cũ mờ + "Đang tải…"; lỗi tải lại giữ dữ liệu + giờ; GV không lớp: chữ sẵn có "Bạn không có lớp nào để xem lịch Test" | GIỮ chữ sẵn có | — | KHỚP chữ |
-| 24 | Bộ lọc cùng tên, đang áp, xoá · mục 21 | Dòng "Đang lọc: Chưa có MT kế tiếp · Lớp CP FT 130 · Bỏ lọc"; Fast Track / Lớp thường như HV & Lớp | ĐỔI | — | chưa có tóm tắt lọc |
+| 24 | Bộ lọc cùng tên, đang áp, xoá · mục 21 | Chip đang bật (nền nhấn) + ✕ trên chip là đủ — **không** thêm dòng "Đang lọc …" (PTA 03/11); Fast Track / Lớp thường như HV & Lớp | ĐỔI | — | chưa có ✕ trên chip |
 | 25 | Ghi chú lớp · ghi chú lịch | "+ Ghi chú lớp" cuối bảng lớp (sẵn có) | GIỮ | — | KHỚP |
 
 **Câu hỏi gom cho chủ SP (qua PTA):** **Q-c** bỏ hàng chip "L✓ R✓ W✓ S" khỏi ô MT, ô chỉ còn tuần + trạng thái + môn có ngoại lệ; đủ 4 môn xem ở hộp kỹ năng (bấm ô) — khuyến nghị: bỏ (giảm mở sẵn, không xoá; hết ✓ hai nghĩa) · **Q-d** bỏ chữ "vào muộn" dưới tên em (ô MT không áp dụng ghi "—") — khuyến nghị: bỏ.
@@ -251,20 +253,20 @@ Cột cuối = hiện trạng main 03/11 (đã bấm thử QL Vy, MB FT 105 — 
 | Tên em → hồ sơ HV · mã lớp → hồ sơ lớp | hàng | như nay | GIỮ |
 | GV: xem lớp mình dạy, chỉ xem (N23) | — | như nay | GIỮ |
 
-### 10.3 U06 Lịch Test tuần (CHƯA vẽ — chờ PTA duyệt bảng)
+### 10.3 U06 Lịch Test tuần (PTA DUYỆT 03/11, sửa #1 + #8; Q-e chờ chủ SP)
 Nguồn: `00` mục 20 U06 (ý 1–6, Nghiệm thu) · mục 12 · mục 21 · 22.2-4 · N4 · N7 (S chéo) · N8 / N9 (nhận xét chỉ nhắc, viền vàng MT mới nhất) · N10 (S Ex dòng phụ) · N16 · V12 (sau lưu) · B13, B14, B19–B21 · ảnh U06 · bài học UX-A · luật PTA "không thêm chữ thừa".
 Cột cuối = hiện trạng main 03/11 (bấm thử GV Hà + QL Vy, đợt 2).
 
 | # | Ý (trích ngắn · mục) | Làm gì trong mockup (khu / thành phần, chữ thật) | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP | Hiện trạng |
 |---|---|---|---|---|---|
-| 1 | Nhãn trực tiếp "Bạn quá hạn: 0 bài", "GV khác: 3 bài"; tiêu đề nhóm khớp card và bộ lọc · U06 ý 1 | Dải số đầu: ô "**Bạn** đã chấm 16/41 bài" · "**Bạn** còn 25 bài" · "**Bạn** quá hạn 12 bài" — dòng phụ "GV khác: 23 / 28 bài" giữ; người không phân công (QL xem) bỏ chữ "Bạn", ghi "Cả chi nhánh" | ĐỔI chữ · GIỮ số (đúng mã — B13) | — | ĐÚNG MÃ, dễ đọc sai (B13) |
+| 1 | Nhãn trực tiếp "Bạn quá hạn: 0 bài", "GV khác: 3 bài"; tiêu đề nhóm khớp card và bộ lọc · U06 ý 1 | Dải số đầu có MỘT nhãn nhóm "**Của bạn:**" rồi ba ô "16/41 bài đã chấm" · "25 bài còn chấm" · "12 bài quá hạn" (chữ "Bạn" không lặp — PTA 03/11); dòng phụ "GV khác: 23 / 28 bài" giữ; người không phân công (QL xem) nhãn nhóm "Cả chi nhánh:" | ĐỔI chữ · GIỮ số (đúng mã — B13) | — | ĐÚNG MÃ, dễ đọc sai (B13) |
 | 2 | Nhiệm vụ chấm S: ưu tiên môn cần chấm, HV, hạn, kỳ vọng; môn khác vẫn xem được; chế độ nhập bảng đầy đủ giữ phím / dán · ý 2 | Khối "Quá hạn chấm" + "Test tuần này": cột **môn của bạn** đứng trước, sáng; cột môn GV khác mờ, gom "GV khác: W, S" ở đầu khối (đã có); nút "Cả bảng" mở đủ cột như nay (Tab / Enter / dán giữ) | ĐỔI thứ tự / độ đậm cột · GIỮ bảng nhập | **Q-e** khối nhóm chỉ thiếu một môn (vd chỉ S) mở mặc định chỉ cột môn đó + Kỳ vọng + Overall, nút "Cả bảng" mở đủ? Khuyến nghị: có | mở đủ L / R / W1 / W2 / W / S mọi khối (ảnh) |
 | 3 | Phân biệt ô chưa nhập · chưa tới lịch · không thi · vắng · huỷ · không quyền; viền chấm đơn độc không đủ · ý 3 | Ô của bạn chưa nhập: viền đứt (như nay) · ô GV khác: chữ mờ "GV khác" (không viền) · chưa tới lịch: "W3 NOV" (như nay) · vắng: "Vắng" + dòng "→ W5 OCT" · huỷ: "Đã huỷ" · môn không học: "—" · cột W gộp không nhập: nền chéo nhạt, không viền | ĐỔI — B20 (ô trống mang 3 nghĩa) | — | TÁI HIỆN (B20) |
 | 4 | Header nhóm: đúng lớp / lượt, số bài cần chấm, ai chấm; "Chờ bạn chấm / Chờ GV khác / GV chấm chéo" khớp phân công · ý 4 | Hàng lớp tách trường: ô mã lớp · ô "6 HV · MT3 5 · MT1 1" · ô môn (chip L R W S, môn của bạn đậm) · ô "2/27 bài" · ô "hạn 23/09" · ô trạng thái "Chờ bạn chấm" / "Chờ GV khác" | ĐỔI bố cục (bài học UX-A) · GIỮ chữ trạng thái | — | chuỗi dài "6 HV · MT3 5 · MT1 1 · L R W S · vắng · chờ Quản lý duyệt dời" |
 | 5 | Tránh "Chờ 4 kỹ năng" rồi "4 kỹ năng" bên dưới; lượt tách tuần ghi phần nào tuần đang xem · ý 5 | Cột Kết quả: "Chờ **W, S**" (tên môn còn thiếu, không đếm); bỏ dòng `scopeNote` lặp; GV chỉ chấm L, R mà phần mình xong → "Chờ GV khác" | ĐỔI — B19 (`LuoiFT.tsx:476-481`) | — | TÁI HIỆN (B19) |
 | 6 | Lưu: phản hồi tại ô, cập nhật đúng tổng; "Thu" → "Thu gọn" · ý 6 | Ô vừa lưu "✓" nhỏ 2 s; dải số đầu đổi ngay (16 → 17); nút "Thu gọn" | ĐỔI chữ · GIỮ luồng V12 | — | "Thu" (ảnh) |
 | 7 | Nghiệm thu: GV thấy phần mình mà không xem việc người khác; Tab / Enter, lỗi lưu, chuyển lớp không mất điểm · U06 | Khu GV (Hà, dạy L R): chỉ cột L R sáng; lỗi lưu: ô viền đỏ + "Lưu lại" (như nay); đếm 8 / 15 / 11 bài theo quy ước thật (ô kỹ năng, W1 W2 tính riêng) | GIỮ | — | KHỚP một phần |
-| 8 | "Test tuần này · 5 lớp" mà 6 dòng · B21 | Đầu nhóm "5 lớp · 6 lượt · 0 đã chấm xong" — hoặc đếm dòng: "6 lượt" | ĐỔI — đơn vị khớp dòng | — | TÁI HIỆN (B21) |
+| 8 | "Test tuần này · 5 lớp" mà 6 dòng · B21 | Đầu nhóm "5 lớp · 6 lượt" (bỏ "· 0 đã chấm xong" — PTA 03/11) | ĐỔI — đơn vị khớp dòng | — | TÁI HIỆN (B21) |
 | 9 | Nhận xét MT mới nhất: viền vàng, chỉ nhắc, không chặn · N8 ① / N9 | Ô MT mới nhất thiếu nhận xét: viền vàng (như nay), không chữ dưới ô | GIỮ | — | KHỚP |
 | 10 | S Ex: dòng phụ ở Lịch Test, không vào Overall · N10 | Dòng phụ dưới em "S Ex · W2 OCT" (như nay) | GIỮ | — | KHỚP |
 | 11 | S chấm chéo; người chấm S mặc định · N7 | Đầu khối "GV chấm S: {tên} ▾" (như nay) | GIỮ | — | KHỚP |
