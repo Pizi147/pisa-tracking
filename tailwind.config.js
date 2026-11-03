@@ -8,6 +8,13 @@ const nghia = (n) => ({ DEFAULT: v(n), bg: v(`${n}-bg`), line: v(`${n}-line`) })
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './web/src/**/*.{ts,tsx}'],
+  /*
+   * AUDIT-LOI F02: phủ định JS (`!k`, `!pt`, `!rong`…) trùng tên lớp tự viết ở index.css → Tailwind coi là lớp "important" và chép lại khối CSS đó;
+   * trong `@media` bản chép mất selector (`{ grid-… }` — 14 cảnh báo css-syntax-error khi build). Chặn đúng các chữ này; phép kiểm
+   * `scripts/kiem-css.mjs` (trong `npm run check`) báo chữ mới trùng tên lớp để thêm vào đây.
+   */
+  blocklist: ['!bam', '!bang', '!cham', '!chon', '!ct', '!cu', '!cua', '!doi', '!dong', '!gon', '!h', '!k', '!loi', '!lu', '!moi', '!nhap', '!p', '!pt',
+    '!qua', '!rong', '!so', '!t', '!td', '!th', '!thieu', '!trong', '!tvv'],
   theme: {
     /*
      * NEN-TYPO-MAU (04 mục 2.2): THANG CHỮ 12 · 13 · 14 · 15 · 17 · 22 · 28 — đặt `fontSize` (không extend) để lớp ngoài thang không sinh được.
