@@ -169,6 +169,35 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
 .bang .phu-o { display:block; font:400 12px var(--phong); color:var(--text-faint); margin-top:1px; }
 .mui-mo { display:inline-block; width:16px; color:var(--text-dim); font-weight:400; }
 .ten-hv { font:600 15px var(--phong); color:var(--text) !important; }
+/* 11.4 U08-6: link chữ thường, không gạch chân; hover / focus mới báo bấm được */
+.lk-t, a.ten-hv { color:var(--text); text-decoration:none; cursor:pointer; border-radius:2px; }
+.lk-t:hover, .lk-t:focus-visible, a.ten-hv:hover, a.ten-hv:focus-visible { color:var(--accent) !important; text-decoration:underline; text-underline-offset:3px; }
+.lk-t:focus-visible, a.ten-hv:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.lk-t.mt { font:600 15px var(--phong); }
+.lk-t.lop { color:var(--text-dim); }
+.hover-mau { color:var(--accent) !important; text-decoration:underline; text-underline-offset:3px; }
+/* U08-1: màu ở số Kết quả MT / Tiến bộ (tiêu đề cột vẫn ghi chữ) */
+.m-dat .oso { color:var(--ok) !important; }
+.m-05 .oso { color:var(--soon) !important; }
+.m-10 .oso { color:#f0a04b !important; } [data-theme="light"] .m-10 .oso, .dt .m-10 .oso { color:#b5541f !important; }
+/* màn cảm ứng không hover: gạch chân chấm mờ để biết là link (desktop giữ sạch) — PTA chốt giữ */
+@media (hover:none) { .lk-t, a.ten-hv { text-decoration:underline dotted; text-underline-offset:3px; text-decoration-color:var(--text-faint); } }
+.m-15 .oso { color:#ff6f61 !important; } [data-theme="light"] .m-15 .oso, .dt .m-15 .oso { color:var(--bad) !important; }
+.m-cd .oso { color:var(--text-dim) !important; }
+.tang { color:var(--ok); font-weight:700; } .giam { color:var(--bad); font-weight:700; }
+/* U08-4: badge SOS bấm được → panel Case theo kỹ năng */
+button.sos { font:600 12px var(--phong); cursor:pointer; }
+button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.kn-k { border:1px solid var(--line); border-radius:10px; background:var(--bg); }
+.kn-k > .kn-dau { display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; background:none; border:0; color:var(--text); font:600 15px var(--phong); cursor:pointer; text-align:left; }
+.kn-k > .kn-dau .mo2 { font-weight:500; font-size:13px; }
+.kn-k > .kn-dau .phai2 { margin-left:auto; }
+.kn-than { display:grid; gap:10px; padding:0 14px 12px 38px; font-size:14px; }
+.kn-than .kd { display:grid; grid-template-columns:96px minmax(0,1fr); gap:8px; align-items:baseline; }
+.kn-than .nh { font-size:13px; color:var(--text-faint); }
+.bdv { display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 9px 0 8px; border-radius:999px; border:1px solid color-mix(in srgb, currentColor 65%, transparent); background:var(--muted-bg); color:var(--text-dim); font:600 12px var(--phong); white-space:nowrap; }
+.bdv::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; flex:none; }
+.bdv.dang { background:var(--doing-bg); color:var(--doing); }
 .chip-so { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:22px; padding:0 7px; border-radius:4px; font:600 13px var(--phong-so); border:1px solid; }
 .chip-so.dat { color:var(--ok); border-color:var(--ok-vien); }
 .chip-so.m1 { color:var(--sos1-chu); border-color:var(--sos1); }
@@ -218,7 +247,7 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
 .the-hv .hang-tt.diem { font:500 14px var(--phong-so); color:var(--text); }
 /* panel số (V11) */
 .phu-hop { position:absolute; inset:52px 0 0 0; background:rgb(0 0 0 / .45); z-index:5; }
-.pn { position:absolute; top:64px; right:16px; bottom:16px; width:620px; z-index:6; background:var(--surface); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 24px rgb(0 0 0 / .5); }
+.pn { position:absolute; top:64px; right:16px; bottom:16px; width:720px; z-index:6; background:var(--surface); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 24px rgb(0 0 0 / .5); }
 .dt .pn { inset:0; width:auto; border-radius:0; border:0; top:0; right:0; bottom:0; }
 .pn-dau { padding:10px 20px 14px; border-bottom:1px solid var(--line); display:grid; gap:4px; }
 .dt .pn-dau { padding:6px 16px 12px; }
@@ -249,7 +278,7 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
     <h1>V11 · U08 Phân tích — nâng cấp V8 theo bảng 10.5 (PTA duyệt 03/11)</h1><p class="ghi"><b>V11 chỉ đổi Báo cáo HV (khu V11 ngay dưới) + tiêu đề cột "Kết quả PA đúng hạn" ở Phân tích GV.</b> Các khung V8 khác giữ nguyên (đã duyệt 29/10). Q-f: không thêm thanh tỷ lệ Tăng / Giữ / Giảm (PTA quyết).</p>
     <section style="display:grid;gap:10px;margin:16px 0 28px"><h2 style="font-size:17px">V11 · Báo cáo HV — sau sửa (1440 tối) + panel số / bản In</h2>
       <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap"><figure><figcaption>B1 V11 · Báo cáo HV</figcaption><div class="man toi" data-k="b1" style="height:760px"></div></figure><figure><figcaption>Panel số (chỉ đọc — G8) + bản In</figcaption><div class="man toi" data-k="b1p" style="width:600px;height:320px"></div></figure></div>
-      <div class="ghi"><b>V11 đổi gì (bảng 10.5):</b> ① dải chỉ số chia nhóm "Trong kỳ W1 SEP – W2 SEP" │ "Hiện tại" — bỏ "· trong kỳ" lặp ở từng ô · ② Đạt MT "2/3 HV · 5 chưa đủ dữ liệu" (cùng cách ghi Tổng quan — B01) · ③ Kết quả MT: dòng phụ "8 HV · 3 đủ dữ liệu", % dưới mỗi số tính trên HV đủ dữ liệu, ghi ngay ở tiêu đề phụ (B25) · ④ "So lượt trước" có đơn vị HV (so Overall với lượt trước của chính HV — câu trong ⓘ), "—" = chưa có mốc (B17); câu cách tính chỉ ở ⓘ, không hiện sẵn · ⑤ panel số + bản In ghi đủ phạm vi + mẫu số + ngày dữ liệu · ⑥ Phân tích GV: "Kết quả PA đúng hạn" (B29) · Không thêm thanh tỷ lệ (Q-f). <b>Kiểm kê (10.5b):</b> tab · bộ lọc thời gian / chương trình / chi nhánh · In · bấm số → panel chỉ đọc · ⓘ — GIỮ hết; chỉ đổi chữ / tiêu đề. Không thêm request.</div></section>
+      <div class="ghi"><b>V11 đổi gì (bảng 10.5):</b> ① dải chỉ số chia nhóm "Trong kỳ W1 SEP – W2 SEP" │ "Hiện tại" — bỏ "· trong kỳ" lặp ở từng ô · ② Đạt MT "2/3 HV · 5 chưa đủ dữ liệu" (cùng cách ghi Tổng quan — B01) · ③ Kết quả MT: dòng phụ "8 HV · 3 đủ dữ liệu", % dưới mỗi số tính trên HV đủ dữ liệu, ghi ngay ở tiêu đề phụ (B25) · ④ "So lượt trước" có đơn vị HV (so Overall với lượt trước của chính HV — câu trong ⓘ), "—" = chưa có mốc (B17); câu cách tính chỉ ở ⓘ, không hiện sẵn · ⑤ panel số + bản In ghi đủ phạm vi + mẫu số + ngày dữ liệu · ⑥ Phân tích GV: "Kết quả PA đúng hạn" (B29) · Không thêm thanh tỷ lệ (Q-f). <b>Đợt sửa 03/11 khuya (bảng 11.4):</b> ⑦ Kết quả MT / Tiến bộ / So lượt trước có màu trên số (Đạt xanh · Thiếu 0.5 vàng · Thiếu 1.0 cam · Thiếu ≥ 1.5 đỏ · Chưa đủ xám; ↑ xanh ↓ đỏ), số 0 mờ, tiêu đề cột vẫn ghi chữ · ⑧ panel số rộng 720 px, tên không xuống dòng (A2) · ⑨ A3 bỏ cột "Xử lý"; bấm badge SOS → panel Case chia theo kỹ năng dưới kỳ vọng, khối đầu mở sẵn (khung A3 V11) · "MT2" nổi (15 / 600) + tuần mờ; MT2 → hồ sơ lượt, tên lớp → hồ sơ lớp, tên HV → hồ sơ HV; link chữ thường, hover / focus mới đổi màu + gạch chân · ⑩ A4 bỏ cột "Người chọn"; "Chưa chọn" mờ, không link (bấm tên HV để xử lý). Panel Case: một request khi bấm (một em, một lượt — Cần kiểm ở PR, ≤ 10 câu). <b>Tương phản số (nền thẻ tối / sáng):</b> Đạt 9.7 / 6.5 · Thiếu 0.5 10.3 / 5.9 · Thiếu 1.0 7.9 / 4.9 · Thiếu ≥ 1.5 6.2 / 6.5 (≥ 4.5). Màn cảm ứng (không hover): link có gạch chân chấm mờ (PTA chốt giữ). <b>Kiểm kê (10.5b + 11.4b):</b> tab · bộ lọc thời gian / chương trình / chi nhánh · In · bấm số → panel chỉ đọc · ⓘ — GIỮ hết; chỉ đổi chữ / tiêu đề. Không thêm request.</div></section>
     <p>Mockup chờ chủ SP. Demo chi nhánh Mỹ Đình, dữ liệu đến <b>14/09/2026</b>, khoảng <b>W1 SEP → W2 SEP</b>. Khung 1440 <b>tối</b>, 375 <b>sáng</b>. Chú thích nền vàng viền đứt — không lên web.
       Vẽ chi tiết 3 tab điểm thấp (Test + SOS 26, Kết quả Test 27, Hiệu quả PA 27); 3 tab còn lại chỉ đầu tab. Ghi chú: <code>phan-tich-ghi-chu.md</code>.</p>
     <nav class="muc-mk"><a href="#a">A · 1440 tối</a><a href="#b">B · 3 tab còn lại (đầu tab)</a><a href="#c">C · 375 sáng</a><a href="#d">D · trạng thái</a></nav>
@@ -262,6 +291,7 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
       <figure><figcaption>A1 · Test + SOS · theo tuần</figcaption><div class="man toi" data-k="a1"></div></figure>
       <figure><figcaption>A2 · Test + SOS · bấm số "SOS 2 · 1" → panel đúng tập</figcaption><div class="man toi" data-k="a2"></div></figure>
       <figure><figcaption>A3 · Kết quả Test / Thi · Mock Test</figcaption><div class="man toi" data-k="a3"></div></figure>
+      <figure><figcaption>A3 V11 · bấm "SOS 2" → panel Case theo kỹ năng (khối đầu mở sẵn)</figcaption><div class="man toi" data-k="a3p"></div></figure>
       <figure><figcaption>A4 · Kết quả Test / Thi · Thi thật</figcaption><div class="man toi" data-k="a4" style="height:640px"></div></figure>
       <figure><figcaption>A5 · Hiệu quả PA · lọc một GV</figcaption><div class="man toi" data-k="a5"></div></figure>
     </div>
@@ -392,16 +422,17 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
   ];
   var KQ = { dat: '<span class="kq dat">✓ Đạt</span>', duoi: '<span class="kq duoi">✗ Chưa đạt</span>', thieu: '<span class="kq thieu">– Chưa đủ điểm</span>' };
   var dS = function (x) { return !x ? '<span class="d trong">chưa có</span>' : '<span class="d ' + x[0] + '">' + x[1] + '</span>'; };
-  var sosC = function (s) { return s ? '<span class="sos m' + s[0] + (s[1] ? ' tam' : '') + '">SOS ' + s[0] + (s[1] ? ' tạm' : '') + '</span>' : '<span class="mo2">—</span>'; };
+  var HOVER = false;
+  var sosC = function (s) { return s ? '<button type="button" class="sos m' + s[0] + (s[1] ? ' tam' : '') + '" aria-haspopup="dialog">SOS ' + s[0] + (s[1] ? ' tạm' : '') + '</button>' : '<span class="mo2">—</span>'; };
   function bangKQ() {
     return '<div class="the"><div class="the-dau"><h2>Lượt Mock Test</h2><span class="dem">17 lượt</span><span class="phu">xếp theo lớp → tên</span><span class="phai">' + ICH + '</span></div>'
-      + '<table class="bang"><colgroup><col style="width:170px"><col style="width:104px"><col style="width:126px"><col style="width:64px"><col style="width:68px"><col style="width:68px"><col style="width:68px"><col style="width:68px"><col style="width:76px"><col style="width:136px"><col style="width:96px"><col></colgroup>'
-      + '<thead><tr><th>Học viên</th><th>Lớp</th><th>MT · tuần</th><th data-k="so">OVR</th><th data-k="so">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so">Kỳ vọng</th><th>Kết quả</th><th>SOS</th><th>Xử lý</th></tr></thead><tbody>'
+      + '<table class="bang"><colgroup><col style="width:200px"><col style="width:130px"><col style="width:130px"><col style="width:70px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:72px"><col style="width:86px"><col style="width:150px"><col></colgroup>'
+      + '<thead><tr><th>Học viên</th><th>Lớp</th><th>MT · tuần</th><th data-k="so">OVR</th><th data-k="so">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so">Kỳ vọng</th><th>Kết quả</th><th>SOS</th></tr></thead><tbody>'
       + HV.map(function (r) {
-        return '<tr><td class="ten"><a class="ten-hv" href="#hs">' + r[0] + '</a></td><td class="ten mo">' + r[1] + '</td><td class="ten mo">' + r[2] + '</td>'
+        var mt = r[2].split(' · ');
+        return '<tr><td class="ten"><a class="ten-hv' + (r[0] === 'Đỗ Minh Khôi' && HOVER ? ' hover-mau' : '') + '" href="#hs">' + r[0] + '</a></td><td class="ten"><a class="lk-t lop" href="#lop">' + r[1] + '</a></td><td class="ten" style="white-space:nowrap"><a class="lk-t mt" href="#mt">' + mt[0] + '</a> <span class="mo2" style="font-size:13px">' + mt[1] + '</span></td>'
           + '<td data-k="so"><b>' + (r[3] || '<span class="mo2">—</span>') + '</b></td>' + [r[4], r[5], r[6], r[7]].map(function (x) { return '<td data-k="so">' + dS(x) + '</td>'; }).join('')
-          + '<td data-k="so"><b>' + (r[8] || '—') + '</b></td><td class="ten">' + KQ[r[9]] + '</td><td class="ten">' + sosC(r[10]) + '</td>'
-          + '<td class="ten" style="white-space:normal">' + (r[11] ? '<span>' + r[11] + '</span>' : '') + (r[12] ? '<span class="phu-o">tiếp: ' + r[12] + '</span>' : (r[11] ? '' : '<span class="mo2">—</span>')) + '</td></tr>';
+          + '<td data-k="so"><b>' + (r[8] || '—') + '</b></td><td class="ten">' + KQ[r[9]] + '</td><td class="ten">' + sosC(r[10]) + '</td></tr>';
       }).join('') + '</tbody></table>'
       + '<div class="phan-trang"><span>1–10 / 17 lượt</span><span class="trang-so"><span>‹</span><b>1</b><span>2</span><span>›</span></span><span class="phai">Mỗi trang <span class="doan" style="height:30px"><button aria-pressed="true">10</button><button aria-pressed="false">20</button><button aria-pressed="false">50</button></span></span></div></div>';
   }
@@ -413,19 +444,19 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
     { ten: 'SOS', them: '<span class="dong-sos"><a class="chip-so m3" href="#so">SOS 3 · 2</a><a class="chip-so m2" href="#so">SOS 2 · 4</a><a class="chip-so m1" href="#so">SOS 1 · 3</a></span>', mau: '9 lượt · 4 tạm' }
   ];
   function bangThiThat() {
-    var r = function (ten, ngay, ovr, l, rr, w, s, tg, dat, buoc, nguoi) {
-      return '<tr><td class="ten"><a class="ten-hv" href="#hs">' + ten + '</a></td><td class="ten mo">MB FT 98</td><td class="ten mo">' + ngay + '</td><td data-k="so"><b>' + ovr + '</b></td>'
+    var r = function (ten, ngay, ovr, l, rr, w, s, tg, dat, buoc) {
+      return '<tr><td class="ten"><a class="ten-hv" href="#hs">' + ten + '</a></td><td class="ten"><a class="lk-t lop" href="#lop">MB FT 98</a></td><td class="ten mo">' + ngay + '</td><td data-k="so"><b>' + ovr + '</b></td>'
         + [l, rr, w, s].map(function (x) { return '<td data-k="so">' + x + '</td>'; }).join('') + '<td data-k="so"><b>' + tg + '</b></td><td class="ten">' + (dat ? '<span class="kq dat">✓ Đạt</span>' : '<span class="kq duoi">✗ Chưa đạt</span>') + '</td>'
-        + '<td class="ten">' + buoc + '</td><td class="ten" style="font-size:13px">' + nguoi + '</td></tr>';
+        + '<td class="ten">' + buoc + '</td></tr>';
     };
     return '<div class="the"><div class="the-dau"><h2>Kết quả thi thật</h2><span class="dem">4 lượt</span><span class="phu">IELTS · theo ngày thi</span><span class="phai">' + ICH + '</span></div>'
-      + '<table class="bang"><colgroup><col style="width:180px"><col style="width:110px"><col style="width:100px"><col style="width:70px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:76px"><col style="width:130px"><col><col style="width:170px"></colgroup>'
-      + '<thead><tr><th>Học viên</th><th>Lớp</th><th>Ngày thi</th><th data-k="so">OVR</th><th data-k="so">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so">Target</th><th>Đạt Target</th><th>Bước tiếp</th><th>Người chọn</th></tr></thead><tbody>'
-      + '<tr class="hang-lon"><td class="ten" colspan="12">MB FT 98 <span class="phu-o" style="display:inline;margin-left:6px">4 lượt · 4 HV</span></td></tr>'
+      + '<table class="bang"><colgroup><col style="width:180px"><col style="width:110px"><col style="width:100px"><col style="width:70px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:76px"><col style="width:130px"><col></colgroup>'
+      + '<thead><tr><th>Học viên</th><th>Lớp</th><th>Ngày thi</th><th data-k="so">OVR</th><th data-k="so">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so">Target</th><th>Đạt Target</th><th>Bước tiếp</th></tr></thead><tbody>'
+      + '<tr class="hang-lon"><td class="ten" colspan="11">MB FT 98 <span class="phu-o" style="display:inline;margin-left:6px">4 lượt · 4 HV</span></td></tr>'
       + r('Nguyễn Minh An', '05/09', '7.0', '7.5', '7.0', '6.5', '6.5', '6.5', true, 'Lên lớp IELTS 7.5', 'Phạm Thu Trang<span class="phu-o">07/09</span>')
       + r('Phan Gia Hân', '05/09', '6.5', '7.0', '6.5', '6.0', '6.5', '6.5', true, 'Kết thúc · đạt đầu ra', 'Phạm Thu Trang<span class="phu-o">07/09</span>')
       + r('Đinh Tuấn Kiệt', '06/09', '6.0', '6.5', '6.0', '5.5', '6.0', '6.5', false, 'Học lại FT 6.5', 'Nguyễn Thu Trang<span class="phu-o">08/09</span>')
-      + r('Lê Hoài Nam', '06/09', '6.5', '6.5', '7.0', '6.0', '6.0', '6.5', true, '<span class="mo2">Chưa chọn</span> · <a href="#hs">Hồ sơ HV ›</a>', '<span class="mo2">—</span>')
+      + r('Lê Hoài Nam', '06/09', '6.5', '6.5', '7.0', '6.0', '6.0', '6.5', true, '<span class="mo2">Chưa chọn</span>', '')
       + '</tbody></table></div>';
   }
   /* ---------------- HIỆU QUẢ PA ---------------- */
@@ -469,10 +500,20 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
     a1: function () { return dau(2) + loc({ them: '<span class="o-chon" role="button" aria-label="Xếp theo">Theo tuần</span>', phai: XUAT + MENU }) + chiSo(CS_TS) + bangTS(); },
     a2: function () { return KHUNG.a1() + '</div><div class="phu-hop"></div><div class="pn" role="dialog" aria-label="SOS 2 · W2 SEP"><header class="pn-dau"><div class="pn-h1"><span class="loai">SỐ · TEST + SOS</span><button class="x" aria-label="Đóng">✕</button></div>'
       + '<h2>SOS 2 · W2 SEP</h2><span class="pn-ngu">Mỹ Đình · Fast Track · dữ liệu đến 14/09</span></header><div class="pn-than"><span class="pn-tong"><b>1</b> lượt · 1 HV</span>'
-      + '<table class="bang"><colgroup><col style="width:130px"><col style="width:100px"><col style="width:122px"><col><col><col><col><col></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th>MT</th><th data-k="so">L</th><th data-k="so">R</th><th data-k="so">W1</th><th data-k="so">W2</th><th data-k="so">S</th></tr></thead>'
-      + '<tbody><tr><td class="ten"><a class="ten-hv" href="#hs">Võ Thanh Tùng</a></td><td class="ten mo">MB FT RF 12</td><td class="ten mo">MT2 · W2 SEP</td><td data-k="so"><span class="d x">5.0</span></td><td data-k="so"><span class="d x">5.0</span></td><td data-k="so"><span class="d b">5.5</span></td><td data-k="so"><span class="d b">5.5</span></td><td data-k="so"><span class="d v">6.5</span></td></tr></tbody></table>'
+      + '<table class="bang"><colgroup><col style="width:170px"><col style="width:110px"><col style="width:120px"><col style="width:56px"><col style="width:56px"><col style="width:56px"><col style="width:56px"><col style="width:56px"></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th>MT</th><th data-k="so">L</th><th data-k="so">R</th><th data-k="so">W1</th><th data-k="so">W2</th><th data-k="so">S</th></tr></thead>'
+      + '<tbody><tr><td class="ten" style="white-space:nowrap"><a class="ten-hv" href="#hs">Võ Thanh Tùng</a></td><td class="ten"><a class="lk-t lop" href="#lop">MB FT RF 12</a></td><td class="ten" style="white-space:nowrap"><a class="lk-t mt" href="#mt">MT2</a> <span class="mo2">W2 SEP</span></td><td data-k="so"><span class="d x">5.0</span></td><td data-k="so"><span class="d x">5.0</span></td><td data-k="so"><span class="d b">5.5</span></td><td data-k="so"><span class="d b">5.5</span></td><td data-k="so"><span class="d v">6.5</span></td></tr></tbody></table>'
       + '<div class="cach-tinh"><b>Cách tính</b>Lượt đủ điểm, đúng hai kỹ năng dưới kỳ vọng. Không tính HV KCK.</div></div></div><div>'; },
     a3: function () { return dau(3) + loc({ dau: ['Mock Test', 'Thi thật'], them: '<span class="o-chon" role="button" aria-label="Xếp theo">Theo lớp</span><span class="o-chon" role="button" aria-label="Kết quả">Mọi kết quả</span>', phai: XUAT.replace('Xuất Excel', 'Xuất Excel · 17 lượt') }) + chiSo(CS_KQ) + bangKQ(); },
+    a3p: function () {
+      var kk = function (mo, ten, diem, tom, than) { return '<div class="kn-k"><button class="kn-dau" aria-expanded="' + mo + '"><span aria-hidden="true">' + (mo ? '▾' : '▸') + '</span>' + ten + ' <span class="kq duoi" style="font-size:14px">✗ ' + diem + '</span><span class="mo2">kỳ vọng 6.5</span><span class="phai2">' + tom + '</span></button>' + (mo ? '<div class="kn-than">' + than + '</div>' : '') + '</div>'; };
+      var dong = function (n, v) { return '<div class="kd"><span class="nh">' + n + '</span><span>' + v + '</span></div>'; };
+      return KHUNG.a3() + '</div><div class="phu-hop"></div><div class="pn" role="dialog" aria-label="Case · Đỗ Minh Khôi · MT2"><header class="pn-dau"><div class="pn-h1"><span class="loai">CASE · KẾT QUẢ TEST</span><button class="x" aria-label="Đóng">✕</button></div>'
+        + '<h2><a class="ten-hv" href="#hs" style="font-size:17px">Đỗ Minh Khôi</a> · MT2 · <span class="sos m2">SOS 2</span></h2><span class="pn-ngu"><a class="lk-t lop" href="#lop">MB FT 101</a> · W1 SEP · 2 kỹ năng dưới kỳ vọng</span></header><div class="pn-than" style="gap:10px">'
+        + kk(true, 'Writing', '6.0', '<span class="bdv dang">Đang làm PA</span>',
+            dong('Case', 'MT2 · Writing dưới kỳ vọng — Task 2 lạc đề, thiếu ví dụ') + dong('Phụ trách', 'Cao Khánh Linh · hạn 18/09') + dong('PA', 'Tự học Writing · 2 bài Task 2 / tuần, sửa theo mẫu') + dong('Kết quả PA', '<span class="mo2">–</span>'))
+        + kk(false, 'Speaking', '5.0', '<span class="bdv dang">Đang làm PA</span>')
+        + '</div></div><div>';
+    },
     a4: function () { return dau(3) + loc({ dau: ['Thi thật', 'Mock Test'].reverse(), them: '', phai: XUAT.replace('Xuất Excel', 'Xuất Excel · 4 lượt') }).replace('aria-pressed="true">Mock Test', 'aria-pressed="false">Mock Test').replace('aria-pressed="false">Thi thật', 'aria-pressed="true">Thi thật')
       + chiSo([{ ten: 'Lượt thi', ky: 'trong kỳ', gt: o(4), mau: '4 HV' }, { ten: 'Đạt Target', gt: o(3), don: '75 %' }, { ten: 'Chưa đạt', gt: o(1), don: '25 %' }, { ten: 'Bước tiếp chưa chọn', gt: o(1), mau: 'chọn ở Sau thi (TVV)' }]) + bangThiThat(); },
     a5: function () { return dau(4) + loc({ them: '<span class="chip-loc">GV: Trần Ngọc Hà <span aria-hidden="true">✕</span></span>' }) + chiSo(CS_PA, 4) + bangPA(false); },
@@ -481,12 +522,12 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
       var nhom = '<div style="display:grid;grid-template-columns:minmax(0,4fr) minmax(0,1fr);gap:12px"><div style="display:grid;gap:6px"><span class="mo" style="font-size:13px;font-weight:700">Trong kỳ W1 SEP – W2 SEP</span>' +
         cs([{ ten: 'Đạt MT', gt: o('67 %'), mau: '2/3 HV · <b>5</b> chưa đủ dữ liệu' }, { ten: 'Đạt Target thi thật', gt: '<span class="mo2" style="font-size:17px">– chưa có dữ liệu</span>', mau: 'chưa HV nào có KQ' }, { ten: 'Thi trong kỳ', gt: o(0), mau: 'HV có ngày thi' }, { ten: 'PA cải thiện', gt: o('100 %'), mau: '2/2 PA có kết quả' }]) +
         '</div><div style="display:grid;gap:6px"><span class="mo" style="font-size:13px;font-weight:700">Hiện tại</span>' + cs([{ ten: 'Case có PA', gt: o('16 %'), mau: '7/45 Case' }]) + '</div></div>';
-      var hang = function (l, mau, du, a, cd, so) { return '<tr><td class="ten"><b>' + l + '</b><br><span class="mo2" style="font-size:13px">' + mau + ' HV · ' + du + ' đủ dữ liệu</span></td>' + a.map(function (x) { return '<td data-k="so">' + o(x) + (du ? '<br><span class="mo2" style="font-size:12px">' + Math.round(x / du * 100) + ' %</span>' : '') + '</td>'; }).join('') + '<td data-k="so">' + o(cd) + '</td><td class="ten">' + so + '</td></tr>'; };
-      var kq = '<div class="the"><div class="the-dau"><h2>Kết quả MT</h2><span class="phu">lượt của từng HV trong kỳ · % trên HV đủ dữ liệu</span><span class="phai">' + ICH + '</span></div><table class="bang"><thead><tr><th>Lượt</th><th data-k="so">Đạt Target</th><th data-k="so">Thiếu 0.5</th><th data-k="so">Thiếu 1.0</th><th data-k="so">Thiếu ≥ 1.5</th><th data-k="so">Chưa đủ</th><th>So lượt trước</th></tr></thead><tbody>' +
-        hang('MT1', 8, 3, [1, 1, 1, 0], 5, '<span class="mo2">—</span>') + hang('MT2', 5, 4, [0, 2, 2, 0], 1, '↑ 1 · = 2 · ↓ 0 <span class="mo2">HV</span>') + hang('MT3+', 3, 2, [1, 1, 0, 0], 1, '↑ 0 · = 2 · ↓ 0 <span class="mo2">HV</span>') + '</tbody></table>' +
+      var hang = function (l, mau, du, a, cd, so) { return '<tr><td class="ten"><b>' + l + '</b><br><span class="mo2" style="font-size:13px">' + mau + ' HV · ' + du + ' đủ dữ liệu</span></td>' + a.map(function (x, i) { return '<td data-k="so" class="' + (x ? ['m-dat', 'm-05', 'm-10', 'm-15'][i] : '') + '">' + o(x) + (du ? '<br><span class="mo2" style="font-size:12px">' + Math.round(x / du * 100) + ' %</span>' : '') + '</td>'; }).join('') + '<td data-k="so" class="m-cd">' + o(cd) + '</td><td class="ten" style="padding-right:16px;white-space:nowrap">' + so + '</td></tr>'; };
+      var kq = '<div class="the"><div class="the-dau"><h2>Kết quả MT</h2><span class="phu">lượt của từng HV trong kỳ · % trên HV đủ dữ liệu</span><span class="phai">' + ICH + '</span></div><table class="bang"><thead><tr><th>Lượt</th><th data-k="so">Đạt Target</th><th data-k="so">Thiếu 0.5</th><th data-k="so">Thiếu 1.0</th><th data-k="so">Thiếu ≥ 1.5</th><th data-k="so">Chưa đủ</th><th>So lượt trước · HV</th></tr></thead><tbody>' +
+        hang('MT1', 8, 3, [1, 1, 1, 0], 5, '<span class="mo2">—</span>') + hang('MT2', 5, 4, [0, 2, 1, 1], 1, '<span class="tang">↑ 1</span> · = 2 · <span class="mo2">↓ 0</span>') + hang('MT3+', 3, 2, [1, 1, 0, 0], 1, '<span class="mo2">↑ 0</span> · = 2 · <span class="mo2">↓ 0</span>') + '</tbody></table>' +
         '</div>';
-      var tb = '<div class="the"><div class="the-dau"><h2>Tiến bộ theo kỹ năng</h2><span class="phu">so mốc MT trước</span></div><table class="bang"><thead><tr><th>Kỹ năng</th><th data-k="so">Tăng</th><th data-k="so">Giữ nguyên</th><th data-k="so">Giảm</th></tr></thead><tbody>' +
-        [['L', 6, 2, 4, 0], ['R', 6, 3, 3, 0], ['W1', 5, 2, 2, 1], ['W2', 5, 3, 2, 0], ['S', 6, 1, 3, 2]].map(function (r) { return '<tr><td class="ten"><b>' + r[0] + '</b> <span class="mo2">' + r[1] + ' lượt</span></td>' + [r[2], r[3], r[4]].map(function (x) { return '<td data-k="so">' + o(x) + '<br><span class="mo2" style="font-size:12px">' + Math.round(x / r[1] * 100) + ' %</span></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+      var tb = '<div class="the"><div class="the-dau"><h2>Tiến bộ theo kỹ năng</h2><span class="phu">so mốc MT trước</span></div><table class="bang"><thead><tr><th>Kỹ năng</th><th data-k="so">↑ Tăng</th><th data-k="so">Giữ nguyên</th><th data-k="so">↓ Giảm</th></tr></thead><tbody>' +
+        [['L', 6, 2, 4, 0], ['R', 6, 3, 3, 0], ['W1', 5, 2, 2, 1], ['W2', 5, 3, 2, 0], ['S', 6, 1, 3, 2]].map(function (r) { return '<tr><td class="ten"><b>' + r[0] + '</b> <span class="mo2">' + r[1] + ' lượt</span></td>' + [r[2], r[3], r[4]].map(function (x, i) { return '<td data-k="so" class="' + (x ? ['m-dat', '', 'm-15'][i] : '') + '">' + o(x) + '<br><span class="mo2" style="font-size:12px">' + Math.round(x / r[1] * 100) + ' %</span></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
       return dau(0) + loc({ lop: false, phai: '<button type="button" class="nut">In</button>' }) + nhom + '<div style="display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:12px">' + kq + tb + '</div>';
     },
     b1p: function () {
