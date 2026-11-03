@@ -28,7 +28,7 @@ Mockup sẽ vẽ: `thiet-ke/audit-0311/u10-y-thuc.html` (khung K1–K8 dưới) 
 | 7 | Bốn tầng Vi phạm · Xử lý · Báo PH · Lịch sử, không dùng chung một badge (`00` 6.1) | K1 chi tiết dưới hàng: 3 khối có nhãn (Vi phạm của lần này · Lần xử lý · Báo PH) + K6 Lịch sử | |
 | 8 | Một lần xử lý nhiều vi phạm: thấy quan hệ, không lặp mô tả (`00` 6.1) | K1: khối "Lần xử lý WL 1 · 19/10" liệt kê tên vi phạm (không mô tả) | |
 | 9 | Đầu vùng: em / bậc + một hành động chính; thang không chiếm chỗ (`00` 6.2.1, U10.2) | K1: ô Bậc "Đã tới WL 1 · lần này Report 4 + Meeting"; thang đủ trong "Thang ›" mở tại chỗ | bỏ chuỗi chip mỗi hàng |
-| 10 | Khối cần làm, mô tả đủ nhận diện, động từ rõ; nhiều dòng giống nhau thì nhóm (`00` 6.2.2) | K1: vi phạm chờ "25/10 Homework W4"; trùng tên gộp "Homework W4, W5 · 25/10, 01/11" | |
+| 10 | Khối cần làm, mô tả đủ nhận diện, động từ rõ; nhiều dòng giống nhau thì nhóm (`00` 6.2.2) | K1: vi phạm chờ "25/10 Homework W4"; chỉ gộp khi tên y hệt (dữ liệu Ảnh 1 không có tên trùng: W4 ≠ W5, giữ mỗi dòng một ngày) | sửa sau critique 03/11 |
 | 11 | Mở một dòng: nguồn → lần xử lý → task Báo PH (`00` 6.2.3) | K1 hàng mở: thứ tự 3 khối như #7 | |
 | 12 | Sau thao tác có kết quả tại chỗ + lối xem lại (`00` 6.2.4) | #2 + K5 sau lưu "✓ Đã lưu 14:20 · Việc xong · Sửa" | |
 | 13 | Lịch sử có Đã ghi nhận / Đã xử lý / Đã thu hồi + lọc (`00` 6.2.5, F03) | K6: phân đoạn "Lịch sử (26)" mở được ngay đầu tab, lọc 3 chip có số | thay "Nhật ký … (26)" gập cuối |
