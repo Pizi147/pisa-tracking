@@ -169,7 +169,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     assert(iv, `lượt chốt phải có Case MT Speaking với PA quy chế chờ xác nhận: ${JSON.stringify(all(`SELECT sc.id, sc.topic, sc.status, sc.sos_level, iv.kind, iv.preset, iv.status ivs, iv.confirmed_at FROM sos_cases sc LEFT JOIN case_interventions iv ON iv.case_id = sc.id WHERE sc.attempt_id = ?`, aid))} ${JSON.stringify(one('SELECT status FROM assessment_attempts WHERE id = ?', aid))}`);
     xoaNho();
     const v = viec(gvPT);
-    assert(v.length === 1 && v[0].tieuDe === `Xác nhận Case Speaking · OV13k Em 1 · ${mt}` && v[0].due, `việc Xác nhận Case: ${JSON.stringify(v)}`);
+    assert(v.length === 1 && v[0].tieuDe === `Xác nhận Case · Speaking · OV13k Em 1 · ${mt}` && v[0].due, `việc Xác nhận Case: ${JSON.stringify(v)}`);
     const caseS = one(`SELECT case_id FROM case_interventions WHERE id = ?`, iv.id).case_id;
     await ma(await goi(gvPT, `/cases/${caseS}/xac-nhan-s`, post({ cach: 'dung' })), 200, 'GV phụ trách Xác nhận Case');
     xoaNho();

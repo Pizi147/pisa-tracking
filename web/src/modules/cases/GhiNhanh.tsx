@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { NutChon } from '../../ui/ui.tsx';
@@ -30,7 +31,7 @@ export async function hoanTacNhanh(kq: DaLuuNhanh): Promise<void> {
  * mặc định Giữ nguyên (`ketQuaNhanh`, cùng `POST /interventions/:id/result` với panel). "Điều chỉnh / Kết thúc…" mở panel lớn, chữ mang theo. Trạng
  * thái: Đang lưu (khoá nút) · lỗi (chữ giữ, nút Thử lại) · thiếu ô ("⚠ Còn thiếu n ô"). Lưu xong nơi gọi vẽ `DongDaLuu`.
  */
-export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, tenTiep = null, trongDong = false }: {
+export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, tenTiep = null, trongDong = false, chan }: {
   paId: number; batBuoc?: boolean;
   /** M6 6b-3 (V12 ⑥): "Tiếp: {việc} · {em}" dưới hàng nút. */
   tenTiep?: string | null;
@@ -40,6 +41,11 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, te
   /** Mở panel lớn (Điều chỉnh / Kết thúc) — chữ đã gõ nằm ở `nhapKetQua`. */
   onMoPanel?: () => void;
   trongDong?: boolean;
+  /**
+   * UI-CONG-VIEC (mockup U01 A3, PTA 04/11): form nằm thẳng trong panel (không hộp Cần làm), nhãn 15 / 700, Tiến triển nút 36 px; trạng thái + "Tiếp: …" và
+   * Lưu / Lưu · việc tiếp › vẽ vào CHÂN panel (`createPortal` tới hai ô chân của `KhungPanel`).
+   */
+  chan?: { trai: HTMLElement | null; nut: HTMLElement | null };
 }) {
   const dau = nhapKetQua.get(paId);
   const [outcome, setOutcome] = useNhap(`ghi-nhanh-kq:${paId}`, dau?.outcome ?? '');
@@ -70,6 +76,56 @@ export function GhiNhanh({ paId, batBuoc = false, onDaLuu, onMoPanel, onTiep, te
     } finally { setBusy(false); }
   };
   const idTt = `nhanh-tt-${paId}`;
+  const nutLuu = <>
+    <button type="button" className={`btn min-h-[48px] px-5 font-bold max-sm:w-full max-sm:justify-center sm:min-h-[40px] ${onTiep ? '' : 'btn-primary'}`} disabled={busy} onClick={() => void luu()}>
+      {busy ? t('Đang lưu…') : loi ? t('Thử lại') : t('Lưu')}
+    </button>
+    {onTiep && (
+      <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold max-sm:w-full max-sm:justify-center sm:min-h-[40px]" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>
+        {t('Lưu · việc tiếp ›')}
+      </button>
+    )}
+  </>;
+  const trangThai = loi ? <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được — {loi}', { loi })}</span>
+    : daBam && soThieu ? <span className="font-semibold text-late">⚠ {t('Còn thiếu {n} ô', { n: soThieu })}</span>
+      : onTiep && tenTiep ? <span className="truncate" title={tenTiep}>{t('Tiếp: {x}', { x: tenTiep })}</span> : null;
+  const dieuChinh = onMoPanel && (
+    <NutChu onClick={() => { nhapKetQua.set(paId, { outcome, note }); onMoPanel(); }}>{batBuoc ? t('Điều chỉnh PA…') : t('Điều chỉnh / Kết thúc…')}</NutChu>
+  );
+  if (chan) {
+    return (
+      <div className="flex flex-col gap-5">
+        <div>
+          <span id={idTt} className="mb-2 block text-[15px] font-bold text-[color:var(--text)]">{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span></span>
+          <div className="flex flex-wrap gap-2" role="group" aria-labelledby={idTt} aria-invalid={daBam && thieuMuc}>
+            {FOLLOWUP_OUTCOMES.map((x) => (
+              <button key={x} type="button" aria-pressed={outcome === x} disabled={busy} onClick={() => setOutcome(x)}
+                className={`h-9 rounded-lg border px-3 text-sm max-sm:h-11 ${outcome === x ? 'font-bold text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'font-medium text-[color:var(--text)]'}`}
+                style={outcome === x ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--line-strong)', background: 'var(--bg)' }}>
+                {dich(outcomeLabelFor(x))}
+              </button>
+            ))}
+          </div>
+          {daBam && thieuMuc && <span className="mt-1 block text-xs text-late">{t('Chọn một mức')}</span>}
+        </div>
+        <label className="block">
+          <span className="mb-2 flex items-baseline gap-2 text-[15px] font-bold text-[color:var(--text)]"><span className="flex-1">{t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span></span>
+          <textarea className={`field min-h-[76px] w-full ${(daBam && thieuNx) || daiNx ? 'border-late ring-1 ring-late/40' : ''}`} rows={3} value={note} readOnly={busy} aria-invalid={(daBam && thieuNx) || daiNx}
+            onChange={(e) => setNote(e.target.value)} placeholder={dich(GOI_Y_KET_QUA_PA)} />
+          <span className="mt-1 flex items-start gap-2">
+            <span className="flex-1">
+              {daBam && thieuNx && <span className="block text-xs text-late">{t('Ghi rõ hơn — ít nhất 8 ký tự')}</span>}
+              {daiNx && <span className="block text-xs text-late">{t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.ketQuaPa, n: note.trim().length })}</span>}
+            </span>
+            <DemChu n={note.trim().length} toiDa={TRAN_CHU.ketQuaPa} />
+          </span>
+        </label>
+        {dieuChinh && <div>{dieuChinh}</div>}
+        {chan.trai && trangThai && createPortal(trangThai, chan.trai)}
+        {chan.nut && createPortal(nutLuu, chan.nut)}
+      </div>
+    );
+  }
   return (
     <CanLam trongDong={trongDong}>
       <div>

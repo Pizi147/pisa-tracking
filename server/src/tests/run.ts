@@ -3079,7 +3079,7 @@ check('Kết quả sau hỗ trợ là việc của NGƯỜI THỰC HIỆN; quá 
   const gvItems = reviewOf(gv);
   const mgrItems = reviewOf(mgr);
   assert(gvItems.length > 0, 'Người ghi phương án không thấy việc cập nhật kết quả của mình');
-  assert(gvItems.every((i: any) => i.actionLabel === 'Kết quả PA'), 'Nhãn hành động không đúng');
+  assert(gvItems.every((i: any) => i.actionLabel === 'Ghi kết quả PA'), 'Nhãn hành động không đúng');
   const overdueForManager = mgrItems.filter((i: any) => i.urgency === 'overdue');
   assert(overdueForManager.length === mgrItems.length,
     'Quản lý đang thấy cả việc CHƯA quá hạn của người khác — chỉ quá hạn mới đến tay Quản lý');

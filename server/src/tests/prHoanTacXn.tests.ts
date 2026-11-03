@@ -279,7 +279,7 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     for (const cach of ['dung', 'viet'] as const) {
       const c = caseS(gvCheo);
       const truoc = { nhom: nhom(c.id), nguon: one('SELECT mo_ta_attempt_id m FROM sos_cases WHERE id = ?', c.id).m, viec: viec(c.id, gvPT) };
-      assert(co(c.id) === 1 && /Xác nhận Case Speaking/.test(truoc.viec), `chờ xác nhận: ${truoc.viec}`);
+      assert(co(c.id) === 1 && /Xác nhận Case · Speaking/.test(truoc.viec), `chờ xác nhận: ${truoc.viec}`);
       cases.xacNhanCaseS(gvPT, c.id, cach === 'dung' ? { cach } : { cach, moTa: 'Em ngại nói trước lớp, Part 2 dừng sớm.' });
       assert(co(c.id) === 0 && nhom(c.id) !== truoc.nhom, `${cach}: đã xác nhận`);
       const r = cases.hoanTacXacNhanCaseS(gvPT, c.id);

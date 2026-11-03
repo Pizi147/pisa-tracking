@@ -354,6 +354,8 @@ function urgencyOf(date: string | null, today: string): WorkUrgency {
 
 /** Đuôi tiêu đề: " Reading" hay "" khi Case không có kỹ năng. `ct` = chương trình lớp (FOU "Grammar + Vocabulary"). */
 const duoiKyNang = (topic: string | null | undefined, ct: string | null) => (topic ? ` ${caseTopicLabel(topic, ct)}` : '');
+/** UI-CONG-VIEC (audit 03/11, U01 #15): tên việc "{thao tác} · {kỹ năng}" — kỹ năng tách bằng "·" như mọi trường khác của dòng. */
+const sauCham = (topic: string | null | undefined, ct: string | null) => (topic ? ` · ${caseTopicLabel(topic, ct)}` : '');
 
 /**
  * Nhãn đợt (mockup 17 #13): bài không phải Mock thì gọi đúng tên ("Giữa khoá", "Cuối khoá"), Mock thì "MT{n}" —
@@ -867,9 +869,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: [tenPa, iv.kind === 'bo_tro' && iv.nhom_bo_tro && (monCuaNhom.get(iv.nhom_bo_tro)?.length ?? 0) > 1
         ? `PA chung · ${tenNhomMon(ctCua(iv.eff_class_id), REGULAR_SKILLS.filter((k) => monCuaNhom.get(iv.nhom_bo_tro)!.includes(k)))}` : null,
         mine ? null : 'chưa ghi'].filter(Boolean).join(' — '),
-      tieuDe: tuanCuoi ? `Kết quả cuối · ${tenPa}` : `Kết quả PA${duoiKyNang(iv.topic, ctCua(iv.eff_class_id))}`,
+      tieuDe: tuanCuoi ? `Kết quả cuối · ${tenPa}` : `Ghi kết quả PA${sauCham(iv.topic, ctCua(iv.eff_class_id))}`,
       phu: tuanCuoi ? `Kết quả cuối · ${tenPa}` : duoiKyNang(iv.topic, ctCua(iv.eff_class_id)).trim(),
-      actionLabel: tuanCuoi ? 'Kết quả cuối' : 'Kết quả PA',   // EN-e: một việc một tên — cùng tên nhóm Công việc
+      actionLabel: tuanCuoi ? 'Kết quả cuối' : 'Ghi kết quả PA',   // EN-e: một việc một tên · UI-CONG-VIEC: động từ "Ghi" (tên thao tác đúng nghĩa)
       /* PR-PA (§8): người giữ việc không xem được hồ sơ HV (vd. chủ Case, lớp mới chưa phân công môn) → Ngăn Case đứng riêng. */
       href: mine && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: iv.eff_student_id })
         ? duongCaseRieng(iv.case_id, { paId: iv.id, viec: 'ghi-ket-qua' })
@@ -1030,7 +1032,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: head,
       contextLabel: nhanDot(c.attempt_kind, c.attempt_no),
       count: null,
-      tieuDe: `Thêm PA học thuật${duoiKyNang(c.topic, ctCua(c.eff_class_id))}`, phu: duoiKyNang(c.topic, ctCua(c.eff_class_id)).trim(),
+      tieuDe: `Thêm PA học thuật${sauCham(c.topic, ctCua(c.eff_class_id))}`, phu: duoiKyNang(c.topic, ctCua(c.eff_class_id)).trim(),
       actionLabel: 'Thêm PA',
       href: duongHoSoHocVien(c.eff_student_id, { caseId: c.id, viec: 'them-pa' }),   // OV-11c (TQ-5): mở thẳng Case, chế độ Thêm PA
       /* PR-Dọn (Q10): người làm = người phụ trách Case (cùng `support:{caseId}` ở hồ sơ em); Case chưa ai phụ trách thì để trống. */
@@ -1078,9 +1080,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const mt = `MT${c.attempt_no ?? ''}`;
     const chu = {
       cause: { key: `cause:${c.id}`, ly: `${skillLabel} ${laThuong ? 'chưa đạt' : 'dưới kỳ vọng'}${kck} — chưa xác nhận Case${kck ? ', không hạn' : ''}`,
-        tieuDe: `Xác nhận Case ${skillLabel}${kck} · ${hv}`, nut: 'Xác nhận Case', tt: 'Chờ xác nhận Case' },
+        tieuDe: `Xác nhận Case · ${skillLabel}${kck} · ${hv}`, nut: 'Xác nhận Case', tt: 'Chờ xác nhận Case' },
       ghi_nhan_xet: { key: `ghi_nhan_xet:${c.id}`, ly: `${skillLabel} dưới kỳ vọng${kck} — Case chưa có mô tả`,
-        tieuDe: `Mô tả Case ${skillLabel}${kck} · ${mt} · ${hv}`, nut: 'Mô tả Case', tt: 'Chờ mô tả Case' },
+        tieuDe: `Mô tả Case · ${skillLabel}${kck} · ${mt} · ${hv}`, nut: 'Mô tả Case', tt: 'Chờ mô tả Case' },
       xac_nhan_pa: { key: `xnpa:${c.iv_id}`, ly: `${skillLabel} — PA theo quy chế chưa bắt đầu`,
         tieuDe: `Xác nhận PA · ${skillLabel} · ${hv}`, nut: 'Xác nhận PA', tt: 'Chờ xác nhận PA' },
     }[loai];
@@ -1135,7 +1137,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         attemptId: r.attempt_id, attemptNo: r.attempt_no, caseId: r.case_id, level: r.sos_level ?? null,
         contextLabel: mt, count: null,
         reason: 'Người chấm chéo đã ghi nhận xét Speaking — chọn mô tả Case',
-        tieuDe: `Xác nhận Case Speaking · ${r.full_name} · ${mt}`, phu: 'Speaking',
+        tieuDe: `Xác nhận Case · Speaking · ${r.full_name} · ${mt}`, phu: 'Speaking',
         actionLabel: 'Xác nhận Case', href: duongHoSoHocVien(r.student_id, { caseId: r.case_id }),
         ownerId: chu_, owner: null, mine, due: r.due ?? null, statusLabel: 'Chờ xác nhận Case',
         caseSos: true,

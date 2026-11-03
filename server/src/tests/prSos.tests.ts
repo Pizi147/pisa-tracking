@@ -430,7 +430,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const iv = plansOf(c.id)[0];
     /* OV-12c: Case MT cũ (bài chưa nhận xét) → "Ghi nhận xét Writing Task 2 · MT2 · {HV}"; ghi xong → "Xác nhận PA". */
     const cause = viecCua(P.w2Teacher).find((i) => i.key === `ghi_nhan_xet:${c.id}`);
-    assert(cause && cause.tieuDe === `Mô tả Case Writing Task 2 · MT2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Mô tả Case', JSON.stringify(cause));
+    assert(cause && cause.tieuDe === `Mô tả Case · Writing Task 2 · MT2 · ${st.name}` && cause.due === c.han_xac_nhan && cause.actionLabel === 'Mô tả Case', JSON.stringify(cause));
     /* PR-VAI-b (Q5): `headline.next` → `dauHoSo.viec.cuaBan` — GVBM W2 thấy "Ghi nhận xét W2" là việc của mình. */
     assert(/^Mô tả Case W/.test(profileSvc.studentProfile(P.w2Teacher, st.id).dauHoSo.viec.cuaBan[0]?.chu ?? ''), 'đầu hồ sơ chưa dùng việc tiếp v4');
     nhanXet(P.w2Teacher, c.id, { primaryCode: W2_CODE, urgency: 'attention', moTa: 'Em viết lạc đề ở Task 2, lập luận yếu.' });
