@@ -280,7 +280,7 @@ table.mt tr:last-child td { border-bottom: 0; }
 .kns { display: inline-flex; gap: 1px; flex: none; }
 .omt { padding-left: 6px; padding-right: 6px; } .omt .hg .tu { letter-spacing: -.01em; }
 .knb { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 2px; border-radius: 3px; border: 1px solid transparent; font: 700 11px/1 var(--phong); background: var(--accent-soft); color: var(--text); }
-.knb.tat { background: transparent; color: var(--text-faint); opacity: .3; }
+.knb.tat { background: transparent; color: var(--text-faint); opacity: .45; }
 .knb.cho { background: var(--soon-bg); color: var(--soon); border-color: var(--soon); }
 .knb.qua { background: var(--bad); color: var(--bg); }
 .omt.dang { border-color: var(--doing-line); } .omt.dang .tt2 { color: var(--doing); }
@@ -314,7 +314,7 @@ table.mt tr:last-child td { border-bottom: 0; }
 <main class="trang-ghi">
   <div class="ghi-dau">
     <h1>V11 · U05 Kế hoạch Test — đề xuất theo bảng 10.2 (PTA duyệt 03/11)</h1>
-    <p>Giữ ma trận HV × lượt MT. <b>Đợt sửa 03/11 khuya (bảng 11.2):</b> mỗi ô = <b>một dòng mỗi tuần thi</b> (tuần + badge L R W S: thi tuần đó sáng, không thi mờ hẳn) + dòng trạng thái / điểm; bỏ "· tuần này"; "Chờ chấm" / "⚠ Quá hạn chấm" không lặp tên môn — môn chờ = badge viền vàng, quá hạn = badge nền đỏ đặc (dòng trạng thái có ⚠). Chip "Chưa có MT kế tiếp" thay "Cần xếp lại" (G5). Ô MT không chip môn (chủ SP 03/11 chốt Q-c, Q-d — khu G). Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
+    <p>Giữ ma trận HV × lượt MT. <b>Đợt sửa 03/11 khuya (bảng 11.2):</b> mỗi ô = <b>một dòng mỗi tuần thi</b> (tuần + badge L R W S: thi tuần đó sáng, không thi mờ hẳn) + dòng trạng thái / điểm; bỏ "· tuần này"; "Chờ chấm" / "⚠ Quá hạn chấm" không lặp tên môn — môn chờ = badge viền vàng, quá hạn = badge nền đỏ đặc (dòng trạng thái có ⚠). 375: thẻ em có cùng ô (dòng tuần + badge). <b>Tương phản:</b> badge chờ chữ vàng / nền vàng tối 8.7 : 1 · badge quá hạn chữ nền-trang / nền đỏ 8.9 : 1 · badge mờ (không thi) cố ý thấp, có nhãn đọc "không thi". Chip "Chưa có MT kế tiếp" thay "Cần xếp lại" (G5). Ô MT không chip môn (chủ SP 03/11 chốt Q-c, Q-d — khu G). Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
     <nav class="muc-luc"><a href="#a">A · QL · lớp đang mở</a><a href="#b">B · Lọc Chưa có MT kế tiếp + lớp</a><a href="#c">C · Hộp kỹ năng + xác nhận</a><a href="#d">D · GV chỉ xem</a><a href="#e">E · 375</a><a href="#f">F · 1280 · Xếp nhiều lỗi một phần · rỗng</a><a href="#g">G · Q-c · Q-d (đã chốt)</a><a href="#h">H · Kiểm kê thao tác</a>
       <button type="button" id="doi-theme">Đổi sáng / tối tất cả khung</button></nav>
   </div>
@@ -442,13 +442,13 @@ table.mt tr:last-child td { border-bottom: 0; }
     ['GV: không "Xếp nhiều MT…", không chip "Chưa có MT kế tiếp", không cột "Thêm", không nút "Xếp MTn"; ô mở hộp chỉ xem. GVCN lớp: hộp có "Dời" cho tuần đã qua (N23).', 'Hàng lớp ghi "Chỉ xem" (chip sẵn có).']);
   /* E 375 */
   function theEm(r) { var ke = r[1].filter(Boolean); var xong = ke.filter(function (x) { return x.d; }).pop(); var tiep = r[1].filter(function (x) { return x && (x.k === 'xep' || x.k === 'xep2' || x.k === 'dang' || x.k === 'cho' || x.k === 'tre'); })[0];
-    return '<div class="the-em"><div class="d1"><a class="ten">' + r[0] + '</a></div><div class="d2">' + (xong ? '<span>Gần nhất <span class="kq ' + (xong.k === 'dat' ? 'dat' : 'duoi') + '">' + (xong.k === 'dat' ? '✓ ' : '✗ ') + xong.d.toFixed(1) + '</span> · ' + xong.t + '</span>' : '') + '</div><div class="d3">' + (tiep ? (tiep.k === 'xep' ? '<button class="oxep ke" style="margin:0">Xếp ' + tiep.mt + '</button>' : '<span class="mo" style="font-size:13px">' + (tiep.k === 'dang' ? 'Đang làm bài · ' + tiep.t : tiep.k === 'xep2' ? 'MT kế · ' + tiep.t : (tiep.k === 'tre' ? '⚠ Quá hạn chấm' : 'Chờ chấm') + ' · ' + tiep.t + ' ' + knb(tiep.m, tiep.k === 'tre' ? 'qua' : 'cho') + ' · ' + tiep.t) + '</span>') : '') + '</div></div>'; }
+    return '<div class="the-em"><div class="d1"><a class="ten">' + r[0] + '</a></div><div class="d2">' + (xong ? '<span>Gần nhất <span class="kq ' + (xong.k === 'dat' ? 'dat' : 'duoi') + '">' + (xong.k === 'dat' ? '✓ ' : '✗ ') + xong.d.toFixed(1) + '</span> · ' + xong.t + '</span>' : '') + '</div><div class="d3">' + (tiep ? (tiep.k === 'xep' ? '<button class="oxep ke" style="margin:0">Xếp ' + tiep.mt + '</button>' : '<div class="omt' + ({ dang: ' dang', cho: ' cho', tre: ' tre' }[tiep.k] || '') + '" style="width:100%;min-height:0;cursor:default">' + dongTuan(tiep).join('') + (tiep.k === 'xep2' ? '' : '<span class="tt2">' + (tiep.k === 'dang' ? 'Đang làm bài' : tiep.k === 'tre' ? '⚠ Quá hạn chấm' : 'Chờ chấm') + '</span>') + '</div>') : '') + '</div></div>'; }
   var e375 = '<header class="dau"><h1>Test</h1></header><div class="tabs"><button role="tab" aria-selected="false">Lịch Test tuần</button><button role="tab" aria-selected="true">Kế hoạch Test</button></div>' +
     '<div class="loc"><span class="otim">' + SVG_TIM + 'Tìm lớp, học viên</span><button class="btn">Lọc</button><button class="btn btn-ma" aria-label="Xếp nhiều MT, Xuất…">⋯</button></div>' +
     '<div class="bang-hv">' + hangLop(LOP[1], 1, 1) + EM130.slice(0, 6).map(theEm).join('') + hangLop(LOP[2], 0, 1) + '</div>';
   html += khu('e', 'E · 375 — một lớp → thẻ em (MT gần nhất + việc kế); ma trận đủ từ 768',
     [['375 · sáng · QL', khung(true, 'Lê Ngọc Mai', QL, e375)]],
-    ['375 tra cứu + việc đơn: mỗi em một thẻ ≤ 3 dòng — tên · lượt gần nhất "✗ 6.0 · W2 OCT" · việc kế ("Xếp MT5" / "Đang làm bài · W1 NOV" / "⚠ Quá hạn chấm · W4 OCT" + badge môn). Bấm thẻ → hộp kỹ năng toàn màn.', 'Chip lọc, Chi nhánh, Xuất, Xếp nhiều MT… vào "Lọc" / ⋯.']);
+    ['375 tra cứu + việc đơn: mỗi em một thẻ ≤ 3 dòng — tên · lượt gần nhất "✗ 6.0 · W2 OCT" · việc kế ("Xếp MT5" hoặc ô MT cùng dạng 1440: dòng tuần + badge L R W S + trạng thái). Bấm thẻ → hộp kỹ năng toàn màn.', 'Chip lọc, Chi nhánh, Xuất, Xếp nhiều MT… vào "Lọc" / ⋯.']);
   /* F */
   var nganLoi = '<div class="hop" style="width:520px"><div class="dau-h"><b>Xếp nhiều MT · đã lưu</b><span>CP FT 130 · MT5</span></div><div class="khoi"><span class="kq dat" style="font-size:15px">✓ Đã xếp 5 em · W3 DEC</span><span class="qh">⚠ 2 em không xếp được</span>' +
     '<div class="mon" style="grid-template-columns:minmax(0,1fr) auto"><span>Nguyễn Thị Hoàn Ngân</span><span class="mo" style="font-size:13px">Đang tạm dừng học — không xếp</span></div>' +

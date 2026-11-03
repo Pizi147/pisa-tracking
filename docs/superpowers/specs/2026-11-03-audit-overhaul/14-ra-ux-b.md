@@ -422,3 +422,10 @@ Chủ SP **DUYỆT U09** (không đụng). U04, U05, U06, U08 sửa theo bảng 
 | Xem ai chọn bước tiếp + ngày (A4) | cột "Người chọn" | hồ sơ HV (hành trình) — bấm tên HV | chủ SP |
 | Đi xử lý em chưa chọn bước tiếp (A4) | link "Hồ sơ HV ›" trong ô | bấm tên HV | G8 báo cáo thuần |
 | Mở hồ sơ lượt MT / lớp (A3) | không có | bấm "MT2" / tên lớp | THÊM |
+
+### 11.5 Rà sau khi vẽ (03/11 khuya) — impeccable `critique` (2 agent riêng) + `ui-ux-pro-max`
+- **Điểm critique: 30/40** (mọi heuristic 3). Detector: 0 lỗi console; không chữ < 11 px (trừ mũi tên ▾ ▴ 10 px có sẵn); tràn chỉ ở hộp nổi (đặt tuyệt đối) — dương tính giả; cảnh báo màu / bo góc / font là khung trình bày + khối ghi chú.
+- **Đã sửa theo critique:** U05 375 thẻ em giữ dòng tuần + badge (trước mất "W3 NOV: L W S") · badge mờ 30 % → 45 % (bớt "vô hình") · U06 thêm nút "Tuần này", cột W nền phẳng như web · U08 "Thiếu 1.0" cam tách khỏi "Thiếu 0.5" vàng, "Thiếu ≥ 1.5" đỏ, dữ liệu mẫu có ô ≥ 1.5 · cột "So lượt trước · HV" không chạm mép · bỏ đoạn chữ cuối panel Case (thừa).
+- **Tương phản:** U04 ghi ở khu G (badge 5.7–9.2 : 1, khung 3.4–5.1 : 1) · U05, U08 ghi ở ghi chú đầu trang (≥ 4.5 : 1).
+- **[XM] hỏi PTA:** link chữ thường "hover mới báo" — màn cảm ứng không có hover → mockup thêm **gạch chân chấm mờ chỉ khi `hover: none`** (desktop vẫn sạch). Giữ hay bỏ?
+- **Giữ, ghi để PR biết:** U06 tab "Chấm Test" của GV có ở web (`ChamTestTab.tsx`) · khung GV vẽ "Quá hạn chấm" gập, khung QL vẽ mở (web nhớ mở / gập) · vùng bấm < 44 px ở 375 (nút ▸ 28 px, ô số 22 px) có từ trước, không thuộc đợt này.
