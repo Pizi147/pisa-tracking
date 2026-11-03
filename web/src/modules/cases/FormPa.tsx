@@ -69,24 +69,25 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
       phu={quyChe ? (quyChe.mocChu ? t('Kết thúc theo quy chế: {mocChu}', { mocChu: dich(quyChe.mocChu) }) : undefined) : t('Đổi loại: Kết quả › Thay PA')} />
   );
 
-  const phuongAn = <>
-    {loai}
+  const noiDung = (
     <Truong nhan={t('Nội dung')} batBuoc loi={lf.loiCua(loi, k('noi-dung'))} dem={{ co: v.description.trim().length, can: toiThieu, toiDa: TRAN_CHU.noiDungPa }}>
       <textarea className="field w-full" rows={2} {...lf.o(loi, k('noi-dung'))} value={v.description}
         onChange={(e) => dat({ description: e.target.value })} placeholder={GOI_Y_MO_TA_PA} />
     </Truong>
-    {coSoBuoi(v.kind) && (
-      <Truong nhan={t('Số buổi')} tuyChon={!(batBuoc && v.kind === 'tutor')} batBuoc={batBuoc && v.kind === 'tutor'} loi={lf.loiCua(loi, k('so-buoi'))}
-        phu={daDay > 0 ? t('Đã dạy {daDay} buổi — không nhỏ hơn {daDay}', { daDay }) : t('Có số buổi thì web đếm sau mỗi lần Kết quả')}>
-        <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
-          onChange={(e) => dat({ soBuoi: e.target.value })} placeholder="—" />
-      </Truong>
-    )}
-  </>;
+  );
+  /* UI-CONG-VIEC (mockup U01): bỏ câu "Có số buổi thì web đếm…" — không đổi quyết định; giữ câu chặn khi đã dạy. */
+  const soBuoi = coSoBuoi(v.kind) ? (
+    <Truong nhan={t('Số buổi')} tuyChon={!(batBuoc && v.kind === 'tutor')} batBuoc={batBuoc && v.kind === 'tutor'} loi={lf.loiCua(loi, k('so-buoi'))}
+      phu={daDay > 0 ? t('Đã dạy {daDay} buổi — không nhỏ hơn {daDay}', { daDay }) : undefined}>
+      <input className={`field tabular-nums ${phang ? 'w-full' : 'w-24'}`} inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
+        onChange={(e) => dat({ soBuoi: e.target.value })} placeholder="—" />
+    </Truong>
+  ) : null;
+  const phuongAn = <>{loai}{noiDung}{soBuoi}</>;
 
   const nguoi = coNguoiDay(v.kind) ? (
     <Truong nhan={nhanNguoi} tuyChon as="div" loi={lf.loiCua(loi, k('nguoi'))}
-      phu={nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
+      phu={!phang && nhanNguoi === 'Người dạy' && !v.nguoi ? t('Chưa biết ai dạy thì để trống — ghi ở Kết quả từng tuần') : undefined}>
       {/* key: đổi nhãn (Người dạy ↔ Người thực hiện) thì ô vẽ lại đúng trạng thái trống / có tên. */}
       {/* TU-a (mục 6): PA Tutor — nhóm "Tutor" đầu danh sách (chọn tutor lưu như người ngoài). */}
       <ChonNguoi key={nhanNguoi} nhom="giao_vien" studentId={studentId} cungChiNhanh={v.kind === 'bo_tro'} value={v.nguoi} onChange={(x) => dat({ nguoi: x })}
@@ -98,7 +99,22 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay 
   /* Ô người và Ngày bắt đầu mỗi ô một hàng: chữ phụ dưới Người dạy (mockup a1440) không bị cắt ở nửa cột. */
   const nguoiVaNgay = nguoi || ngay ? <>{nguoi}{ngay}</> : null;
 
-  if (phang) return <div className="space-y-3">{phuongAn}{nguoiVaNgay}{cuoi}</div>;
+  /* UI-CONG-VIEC (mockup U01 A1, PTA 04/11): trong khối con — Số buổi · Người · Bắt đầu MỘT hàng (≥ 640), 375 mỗi ô một hàng. */
+  if (phang) {
+    return (
+      <div className="space-y-4">
+        {loai}{noiDung}
+        {(soBuoi || nguoi || ngay) && (
+          <div className="flex flex-wrap items-start gap-3.5 max-sm:flex-col max-sm:items-stretch">
+            {soBuoi && <div className="w-[140px] max-sm:w-full">{soBuoi}</div>}
+            {nguoi && <div className="min-w-[180px] flex-1">{nguoi}</div>}
+            {ngay && <div className="w-[200px] max-sm:w-full">{ngay}</div>}
+          </div>
+        )}
+        {cuoi}
+      </div>
+    );
+  }
   return <>
     <Khoi tieuDe={t('Phương án')} luat={luat}>{phuongAn}</Khoi>
     {(nguoiVaNgay || cuoi) && <Khoi tieuDe={t('Người và thời gian')}>{nguoiVaNgay}{cuoi}</Khoi>}

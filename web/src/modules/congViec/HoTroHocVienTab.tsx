@@ -6,6 +6,13 @@ import { useSession } from '../../lib/session.tsx';
 import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { COT_VIEC, DaiNhom, DanhSachViec, tenBoEm, viecThat } from './DanhSachViec.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { TheMuc, Trich, TruongDoc } from '../../ui/KhuonViec.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
+import { mucSosTheoNhan } from '../../lib/format.ts';
+import { ketQuaGanNhat } from '../yThuc/CaseSosControls.tsx';
+import type { CaseDetail } from '../cases/CasePanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
@@ -15,7 +22,7 @@ import { LopToiDay } from '../worklist/LopToiDay.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
-import { DauViecCongViec, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
+import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -25,7 +32,7 @@ import { useManHinh } from '../../ui/TheDong.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type NhomViec as MaNhomViec, demViec, laViecChamCheo, shortDate, chiaVachHan,
-  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, demNguoiViec, khopNguoiViec, trongKhoiHomNay, type DemYeuCau, type LocNguoiViec,
+  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, demNguoiViec, khopNguoiViec, trongKhoiHomNay, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -293,8 +300,8 @@ export function HoTroHocVienTab() {
   };
   /* Chip bộ lọc đến từ link (Tổng quan, chuông): mỗi chip có ✕ (C10). */
   const chipLoc: { k: string; nhan: string; bo: () => void }[] = [
-    ...(loc !== 'tat-ca' && loc !== 'qua-han' && loc !== 'den-het-tuan' ? [{ k: 'loc', nhan: LOC_NHANH_LABEL[loc], bo: () => setParam('loc', null) }] : []),
-    ...(nhom || loai ? [{ k: 'nhom', nhan: loai ? TEN_LOAI[loai] ?? NHOM_VIEC_LABEL[nhomViecCua(loai)] : NHOM_VIEC_LABEL[nhom!], bo: () => {
+    ...(loc !== 'tat-ca' && loc !== 'qua-han' && loc !== 'hom-nay' && loc !== 'den-het-tuan' ? [{ k: 'loc', nhan: LOC_NHANH_LABEL[loc], bo: () => setParam('loc', null) }] : []),
+    ...(loai || (nhom && laTvv) ? [{ k: 'nhom', nhan: loai ? TEN_LOAI[loai] ?? NHOM_VIEC_LABEL[nhomViecCua(loai)] : NHOM_VIEC_LABEL[nhom!], bo: () => {
       const next = new URLSearchParams(params); next.delete('nhom'); next.delete('loai'); setParams(next, { replace: true });
     } }] : []),
   ];
@@ -305,6 +312,13 @@ export function HoTroHocVienTab() {
   const theId = session?.nav?.workApprove ? Number(params.get('the')) || null : null;
   const [khuDuyet, setKhuDuyet] = useState<HTMLDivElement | null>(null);
   const [moQuanLy, setMoQuanLy] = useState(false);
+  /* U01 #1: Lọc thêm — số bộ lọc đang bật trong đó (Một GV · khung · chi nhánh khác mặc định); đang bật thì mở sẵn. */
+  const soLocThem = (typeof nguoi === 'number' ? 1 : 0) + (khung !== 'tat-ca' ? 1 : 0) + (params.get('cn') ? 1 : 0);
+  const [moLocThem, setMoLocThem] = useState(soLocThem > 0);
+  const [xemXong, setXemXong] = useState(false);
+  /* ponytail: "xong hôm nay" = việc đã lưu trong phiên này (`giu`), mất khi tải lại trang; cần nhật ký máy chủ nếu chủ SP muốn giữ qua phiên. */
+  const dsXong = useMemo(() => gomNhomViec([...giu.values()].filter((x) => xong.has(x.key)), laTvv), [giu, xong, laTvv]);
+  useEffect(() => { if (!xong.size) setXemXong(false); }, [xong.size]);
   const coVanHanh = !!session?.nav?.workOps && !chiChamDiem;
   const coBaoCao = !!session?.nav?.workReports;
   const cuoiNhom = (key: string) => (key === 'van-hanh' && coVanHanh ? <LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} /> : null);
@@ -331,7 +345,11 @@ export function HoTroHocVienTab() {
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('BÀI THI SPEAKING')
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)]).toLocaleUpperCase('vi')) : '';
   const dauPanel = chon ? {
-    loai: `${khoaPanel ? t('THEO DÕI') : t('VIỆC')} · ${nhanNhom}`, khoa: khoaPanel, dai: noiDai === 'viec' ? daiVuaLuu : undefined,
+    loai: `${khoaPanel ? t('THEO DÕI') : theoDoiChon ? t('LÀM THAY') : t('VIỆC')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
+    dai: noiDai === 'viec' && daiVuaLuu || theoDoiChon ? <>
+      {theoDoiChon && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={() => boChuRoi(() => setLamThay(null))} />}
+      {noiDai === 'viec' ? daiVuaLuu : null}
+    </> : undefined,
     them: emNayCon.length ? (
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[13px] text-slate-400">
         <span>{t('Em này còn:')}</span>
@@ -361,38 +379,61 @@ export function HoTroHocVienTab() {
           {data && !data.scopeEmpty && (
             <span className="text-sm tabular-nums text-slate-400" aria-live="polite">
               {conViec ? <>
-                {!laTvv && <><b className="text-slate-100">{demTong.nhom}</b> {t('nhóm')} · </>}<b className="text-slate-100">{demTong.viec}</b> {t('việc')}
+                <b className="text-slate-100">{demTong.viec}</b> {t('việc')}
                 {demTong.hv > 0 && <> · <b className="text-slate-100">{demTong.hv}</b> {t('HV')}</>}
                 {demTong.bai > 0 && <> · <b className="text-slate-100">{demTong.bai}</b> {t('bài')}</>}
               </> : <><b className="text-slate-100">0</b> {t('việc')}</>}
               {tenCn && <> · {tenCn}</>}
             </span>
           )}
-          {xong.size > 0 && <span className="text-xs tabular-nums text-ok">✓ {t('{n} xong hôm nay', { n: xong.size })}</span>}
-          {/* V8-CV (P2): MỘT "Tất cả" (phạm vi có số) · Một GV ▾ · Mọi khung ▾ (thay nút đoạn FT / Lớp thường) · chi nhánh ▾ · Mọi hạn ▾.
-              375: phạm vi một khối liền hết bề rộng, ô chọn lưới 2 × 2 cao 44 px. */}
-          <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-2 [&>*]:max-sm:min-w-0 [&>*:last-child:nth-child(even)]:max-sm:col-span-2">
+          {/* U01 #7: việc vừa xong trong phiên → chip bấm được, lọc "Đã xong hôm nay" (tìm lại không dò từ đầu). */}
+          {xong.size > 0 && (
+            <button type="button" className="nut-loc text-ok" aria-pressed={xemXong} onClick={() => setXemXong((x) => !x)}>
+              {xemXong ? <>{t('✓ Xong hôm nay · {n}', { n: xong.size })} <span aria-hidden>✕</span></> : t('✓ {n} xong hôm nay', { n: xong.size })}
+            </button>
+          )}
+          {/* U01 #1 (audit 03/11): MỘT hàng — phạm vi (QL) · Mọi hạn ▾ · Loại việc ▾ · Lọc thêm ▾ (Một GV · Mọi khung · Chi nhánh).
+              375: phạm vi một khối liền hết bề rộng, ô chọn lưới 3 cột cao 44 px. */}
+          <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:grid max-sm:w-full max-sm:grid-cols-[1fr_1fr_auto] [&>*]:max-sm:min-w-0">
             {laQuanLy && data && (
               <>
-                {!chiChamDiem && <span className="max-sm:col-span-2 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center [&_button]:max-sm:text-[15px]">
+                {!chiChamDiem && <span className="max-sm:col-span-3 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center [&_button]:max-sm:text-[15px]">
                   <BoLocDoan ariaLabel={t('Việc của ai')} value={typeof nguoi === 'number' ? 'gv' : nguoi}
                     onChange={(k) => { nhoNguoi(uid, k); setParam('nguoi', k); }}
                     muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: hienSoNguoi ? demNguoi[k] : null }))} /></span>}
-                <ChonPhuTrach chiChonGv value={typeof nguoi === 'number' ? nguoi : 'tat-ca'} valueName={tenGvChon}
-                  onChange={(v, name) => { setTenGv(name ?? null); setParam('nguoi', String(v)); }} />
               </>
             )}
-            {haiKhung && <CongTacKhung trang="cong-viec" coTatCa kieu="chon" chuTatCa={t('Mọi khung')} value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />}
-            <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
             {/* Mockup "Mọi hạn ▾" — P7: hạn ghi ngày thật, không "tuần này". */}
-            <ChonDangNut className="max-sm:w-full" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
+            <ChonDangNut className="max-sm:w-full" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'hom-nay' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
               onChange={(e) => setParam('loc', e.target.value === 'tat-ca' ? null : e.target.value)}>
               <option value="tat-ca">{t('Mọi hạn')}</option>
               <option value="qua-han">{t('Quá hạn')} · {demHan['qua-han'] ?? 0}</option>
+              <option value="hom-nay">{t('Hôm nay')} · {demHan['hom-nay'] ?? 0}</option>
               <option value="den-het-tuan">{t('Hạn đến {ngay}', { ngay: shortDate(cuoiTuan, homNay) })} · {demHan['den-het-tuan'] ?? 0}</option>
             </ChonDangNut>
+            {!laTvv && (
+              <ChonDangNut className="max-sm:w-full" aria-label={t('Loại việc')} value={nhom ?? ''}
+                onChange={(e) => { const next = new URLSearchParams(params); next.delete('loai'); if (e.target.value) next.set('nhom', e.target.value); else next.delete('nhom'); setParams(next, { replace: true }); }}>
+                <option value="">{t('Loại việc')}</option>
+                {NHOM_VIEC.map((k) => <option key={k} value={k}>{dich(k === 'van-hanh' && laQuanLy && !chiChamDiem ? t('Việc quản lý') : NHOM_VIEC_LABEL[k])}</option>)}
+              </ChonDangNut>
+            )}
+            <button type="button" className={`btn btn-sm h-8 gap-1.5 pl-3 pr-2.5 text-[13px] font-semibold max-sm:min-h-[44px] max-sm:w-full ${soLocThem ? 'nut-loc-dang' : ''}`}
+              aria-expanded={moLocThem} onClick={() => setMoLocThem((x) => !x)}>
+              {t('Lọc thêm')}{soLocThem ? <span className="tabular-nums">· {soLocThem}</span> : null}
+              <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5" className={moLocThem ? 'rotate-180' : ''}><path d="M1 1l3 3 3-3" /></svg>
+            </button>
           </span>
         </header>
+        {/* U01 #1: "Lọc thêm" mở MỘT hàng ngay dưới (cùng kiểu "Bộ lọc thêm" HV & Lớp) — không popover lồng ô chọn có popover riêng. */}
+        {moLocThem && (
+          <div role="group" aria-label={t('Lọc thêm')} className="flex flex-wrap items-center justify-end gap-2 max-sm:grid max-sm:grid-cols-1">
+            {laQuanLy && data && <ChonPhuTrach chiChonGv value={typeof nguoi === 'number' ? nguoi : 'tat-ca'} valueName={tenGvChon}
+              onChange={(v, name) => { setTenGv(name ?? null); setParam('nguoi', String(v)); }} />}
+            {haiKhung && <CongTacKhung trang="cong-viec" coTatCa kieu="chon" chuTatCa={t('Mọi khung')} value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />}
+            <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
+          </div>
+        )}
         {chipLoc.length > 0 && (
           <div className="flex flex-wrap items-center gap-2" aria-live="polite">
             {chipLoc.map((c) => (
@@ -408,6 +449,12 @@ export function HoTroHocVienTab() {
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       <div className="lg:grid lg:grid-cols-[520px_minmax(0,1fr)] lg:items-start lg:gap-4 xl:grid-cols-[600px_minmax(0,1fr)]">
         <div className={`${anTrenDienThoai} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
+          {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
+          {xemXong && dsXong.length > 0 && (
+            <DanhSachViec moHet nhom={dsXong} dem={new Map(dsXong.map((g) => [g.key as string, g.items]))} homNay={homNay} soHien={10}
+              onOpen={(x) => boChuRoi(() => mo(x))} chon={viec} xong={xong} moTrang={() => false} moCaDong={moCaDong} theoDoi={() => false} />
+          )}
+          {!xemXong && <>
           {/* V8-CV: "Chờ bạn duyệt" — nhóm đầu cột trái, ba tầng như nhóm việc; bấm chữ dòng = panel duyệt bên phải. Ô tích chỉ loại duyệt nhiều được (ⓘ). */}
           {coDuyet && (
             <section id="nhom-cho-duyet" className="card mb-3.5 overflow-clip p-0" aria-label={t('Chờ bạn duyệt')}>
@@ -456,11 +503,13 @@ export function HoTroHocVienTab() {
           )}
           {!!data?.daBoQua?.length && <DaBoQua ds={data.daBoQua} homNay={homNay} onKhoiPhuc={khoiPhuc} />}
           {laGv && data && !data.scopeEmpty && (
-            <div className="mt-4 space-y-4">
-              {session?.nav?.workRequests && <YeuCauCuaToi gon />}
-              <LopToiDay />
+            /* U01 #21 (khung A1): Yêu cầu của tôi · Lớp tôi dạy giữ cuối trang, thành nhóm GẬP SẴN cùng dáng nhóm việc — chỉ tải khi mở (bớt đọc Turso). */
+            <div className="mt-3.5 flex flex-col gap-3.5">
+              {session?.nav?.workRequests && <NhomGap k="yeu-cau" nhan={t('Yêu cầu của tôi')}><YeuCauCuaToi gon /></NhomGap>}
+              <NhomGap k="lop-toi-day" nhan={t('Lớp tôi dạy')}><LopToiDay /></NhomGap>
             </div>
           )}
+          </>}
         </div>
         {/* Cột phải dính khi cuộn danh sách dài (mockup `.khu-panel` sticky). */}
         <div className={`lg:sticky lg:top-3 ${chon || theId ? 'space-y-2' : 'max-lg:hidden'}`}>
@@ -477,8 +526,12 @@ export function HoTroHocVienTab() {
               {/* Điện thoại: danh sách vừa ẩn → focus về nút lùi (máy tính nút ẩn, `autoFocus` không có tác dụng). */}
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => boChuRoi(dong)}>{t('‹ Công việc')}</button>
-              <KhungTaiCho.Provider value>
-                {theoDoiChon && <DaiTheoDoi it={chon} lam={!khoaPanel} onLam={() => setLamThay(chon.key)} />}
+              <KhungTaiCho.Provider value><NhanTruongDam.Provider value>
+                {/* N33 ③ (U01 #5, #11): việc người khác = TÓM TẮT chỉ đọc + "Làm thay"; bấm mới ra form, dải vàng "Bạn đang làm thay … · Thôi, chỉ xem". */}
+                {khoaPanel ? (
+                  <TomTatTheoDoi key={chon.key} it={chon} loai={dauPanel!.loai} them={dauPanel!.them} onDong={dong} onLamThay={() => setLamThay(chon.key)}
+                    onTiep={keTiep ? () => mo(keTiep) : null} tenTiep={viecVuaLuu.ten} />
+                ) : <>
                 <DauViecCongViec.Provider value={dauPanel}>
                   {het && (
                     <HetViecNhom nhom={het.nhom} ke={het.ke} con={het.ke ? thuTu.filter((x) => x.nhom === het.ke!.nhom && x.mine === het.ke!.mine && !xong.has(x.key)).length : 0}
@@ -494,7 +547,8 @@ export function HoTroHocVienTab() {
                     </ViecVuaLuu.Provider>
                   </div>
                 </DauViecCongViec.Provider>
-              </KhungTaiCho.Provider>
+                </>}
+              </NhanTruongDam.Provider></KhungTaiCho.Provider>
             </>
           ) : data && !data.scopeEmpty && (dsNhom.length > 0 || coDuyet) ? (
             /* V8-CV (P2): panel trống cao hết cột, khung viền đứt. */
@@ -545,18 +599,65 @@ function HetViecNhom({ nhom, ke, con, daLuu, dai, tenNhom, onDong, onTiep, onXem
 }
 
 /**
- * CHẾ ĐỘ THEO DÕI (brief 7, mockup `?k=ql`): việc của người khác — thân + chân panel chỉ xem (`DauViecCongViec.khoa`), Lịch sử / link vẫn mở.
- * Máy chủ báo `lamThay` (quyền thật: Case `SOS_EDIT`, điểm `editableSkills`) → "Làm thay" / "Nhập hộ" mở khoá; lưu qua đường thường (lịch sử ghi người làm).
+ * THEO DÕI (N33 ③, U01 #5 · khung A2 / C4): việc của người khác — TÓM TẮT chỉ đọc, không form mờ. Đầu = dải sự kiện (Học viên · Lớp · Mức · Hạn ·
+ * Phụ trách); thân = Việc · Phương án · Tới đâu · Gần nhất (Case đọc một lần — cùng câu form làm thay sẽ đọc); chân = Việc tiếp › + **Làm thay** (nút chính)
+ * khi máy chủ báo `lamThay` (quyền thật: Case `SOS_EDIT`, điểm `editableSkills`), không có quyền → một câu ai làm được.
  */
-function DaiTheoDoi({ it, lam, onLam }: { it: WorkItem & { lamThay?: boolean }; lam: boolean; onLam: () => void }) {
+function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
+  it: WorkItem & { lamThay?: boolean }; loai: string; them?: ReactNode; onDong: () => void; onLamThay: () => void; onTiep: (() => void) | null; tenTiep: string | null;
+}) {
+  const { data } = useApi<CaseDetail>(it.caseId !== null ? `/cases/${it.caseId}` : null, [it.caseId]);
+  const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
+  const iv = it.paId ? (data?.interventions ?? []).find((x: any) => x.id === it.paId) : null;
   const ai = it.owner ?? t('người phụ trách');
   return (
-    <div className="bao-chi-xem flex-wrap" role="status">
-      <span aria-hidden>👁</span>
-      <span className="min-w-0 flex-1">{lam ? t('Đang làm thay {ai}.', { ai }) : t('Việc của {ai} — chỉ theo dõi.', { ai })}</span>
-      {!lam && it.lamThay && (
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={onLam}>{it.group === 'score' ? t('Nhập hộ') : t('Làm thay')}</button>
-      )}
+    <DauViecCongViec.Provider value={{ loai, them }}>
+      <KhungPanel tieuDe={tenBoEm(it)} onDong={onDong}
+        dau={{ loai, dong2: [], su: [
+          [t('Học viên'), it.studentId !== null ? <Link className="no-underline hover:underline" to={`/hoc-vien/${it.studentId}`}>{it.studentName}</Link> : null],
+          [t('Lớp'), it.classCode],
+          [t('Mức'), sos ? <ChipSos muc={sos} tinh /> : null],
+          [it.group === 'ghi_ket_qua_pa' ? t('Hạn ghi KQ') : t('Hạn'), it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} chuThuong /> : null],
+          [t('Phụ trách'), it.owner],
+        ] }}
+        chan={{ huy: null, trai: tenTiep && onTiep ? <span className="truncate text-dim">{t('Tiếp: {x}', { x: tenTiep })}</span> : undefined,
+          phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
+          chinh: it.lamThay ? <button type="button" className="btn btn-primary min-h-[44px] font-bold sm:min-h-[36px]" onClick={onLamThay}>{it.group === 'score' ? t('Nhập hộ') : t('Làm thay')}</button> : undefined }}>
+        <div className="pt-3">
+          <TruongDoc dong={[
+            [t('Việc'), iv ? null : dich(it.reason)],   // PA có thì lý do việc = mô tả PA — không lặp
+            /* Mockup A2: tên PA đậm · thẻ (người · mốc) · nội dung trích vạch trái. */
+            [t('Phương án'), iv ? <>
+              <span className="flex flex-wrap items-center gap-1.5"><b className="font-semibold">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</b>
+                {[iv.performer, iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).map((x: string) => <TheMuc key={x}>{x}</TheMuc>)}</span>
+              {iv.description && <div className="mt-1.5"><Trich>{iv.description}</Trich></div>}
+            </> : null],
+            [t('Tới đâu'), data?.trangThaiV4?.chu ? dich(data.trangThaiV4.chu) : null],
+            [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
+          ]} />
+          {!it.lamThay && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Quản lý làm được việc này.', { ai })}</p>}
+        </div>
+      </KhungPanel>
+    </DauViecCongViec.Provider>
+  );
+}
+
+function NhomGap({ k, nhan, children }: { k: string; nhan: string; children: ReactNode }) {
+  const [mo, setMo] = useState(false);
+  return (
+    <section className="card overflow-clip p-0" aria-label={nhan}>
+      <DaiNhom k={k} nhan={nhan} mo={mo} onMo={() => setMo((x) => !x)} trungTinh />
+      {mo && <div className="p-3 [&>.card]:border-0 [&>.card]:shadow-none">{children}</div>}
+    </section>
+  );
+}
+
+/** U01 #5 / #11 (khung A3): đang LÀM THAY — dải vàng trên panel việc, "Chỉ xem" (mockup "Thôi, chỉ xem" — từ điển S3 không dùng "Thôi") về lại tóm tắt (còn chữ thì hỏi như đổi việc). */
+function DaiLamThay({ ai, onThoi }: { ai: string; onThoi: () => void }) {
+  return (
+    <div className="mb-1 flex flex-wrap items-center gap-2.5 rounded-lg border px-3 py-2 text-sm" role="status" style={{ background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' }}>
+      <b className="font-semibold text-soon">{t('Bạn đang làm thay {ai}.', { ai })}</b>
+      <button type="button" className="link ml-auto min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={onThoi}>{t('Chỉ xem')}</button>
     </div>
   );
 }
