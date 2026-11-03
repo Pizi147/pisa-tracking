@@ -533,7 +533,18 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
             ) : data.scopeEmpty || nhomLop.length === 0 ? (
               <Empty title={data.scopeEmpty ? t('Bạn chưa được cấp phạm vi nào') : q.trim() ? t('Không có học viên nào khớp “{q}”', { q: q.trim() }) : t('Không có học viên nào khớp')}
                 hint={data.scopeEmpty ? t('Tài khoản này chưa có vai trò kèm chi nhánh hoặc phân công lớp nào.') : t('Bỏ bớt từ khoá, đổi chip lọc hoặc đổi phạm vi.')}
-                action={dangLoc ? <button type="button" className="btn btn-sm" onClick={boLoc}>{q.trim() ? t('Bỏ tìm') : t('Bỏ lọc')}</button> : undefined} />
+                action={dangLoc ? (
+                  /* XM-1 (PTA 03/11, mockup khu F): đường đi tiếp — chỉ đổi bộ lọc trên URL, cùng đường danh sách. "Mọi chi nhánh" chỉ khi vai có mục đó. */
+                  <span className="flex flex-wrap justify-center gap-2">
+                    {q.trim() && coThePv.includes('tat-ca') && pv?.dangDung !== 'tat-ca' && (
+                      <button type="button" className="btn btn-sm" onClick={() => setParam({ phamVi: 'tat-ca', cn: null, branchId: null })}>{t('Tìm ở Mọi chi nhánh')}</button>
+                    )}
+                    {q.trim() && khung !== 'tat-ca' && (
+                      <button type="button" className="btn btn-sm" onClick={() => setParam({ khung: null })}>{khung === 'ft' ? t('Tìm ở Lớp thường') : t('Tìm ở Fast Track')}</button>
+                    )}
+                    <button type="button" className="btn btn-sm" onClick={boLoc}>{q.trim() ? t('Bỏ tìm') : t('Bỏ lọc')}</button>
+                  </span>
+                ) : undefined} />
             ) : (
               <>
                 {dienThoai ? <TheHvGon nhom={nhomHien} lop={lop} viec={viecHien} nguCanh={dsHocVien} onMoViec={moViec} onDoi={lamMoi} vai={vaiBang} tim={q} />

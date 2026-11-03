@@ -14,11 +14,11 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | A hộp tiêu chí W1 / W2 / S ("TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5") | chờ `dongTieuChi` của #880 (U03) | — | CHƯA — PTA 03/11: dùng chung một hàm, làm sau khi #880 merge |
 | A 375: Xem + FT/LT một hàng, tìm + Lọc, thẻ em ≤ 4 dòng | `TheHvGon` · `TheEm` | a-mo-lop-375 | KHỚP |
 | A1 1280 | cột cân lại (không cuộn ngang — chủ SP 03/11 khuya, thay "cuộn ngang, ghim tên" của khung) | a1-1280 | KHÁC có lý do (chủ SP) |
-| B ô "Xem" mở | `<select>` gốc trong khung `.o-xem` (optgroup Chi nhánh / Khác) | — | KHÁC: danh sách là của trình duyệt; **không có số HV mỗi mục** (cần câu đọc thêm theo từng chi nhánh — Turso) |
+| B ô "Xem" mở | `<select>` gốc trong khung `.o-xem` (optgroup Chi nhánh / Khác) | — | KHÁC (PTA 03/11 đồng ý): **không số HV mỗi mục** — phải đọc thêm theo chi nhánh (Turso) và G4 / N32 ④ không đặt số ở điều hướng; danh sách mở là của trình duyệt |
 | C tìm tên → lớp tự mở, tô hồng | `ToKhop` · `hang-khop` | — (bấm thử) | KHỚP |
 | D GV | cột "Việc của tôi" chỉ `mine` | d-gv | KHỚP |
 | E TVV | "HV của tôi" ở ô Xem, "n/7 HV của tôi", bỏ chip "Cần chú ý" | e-tvv | KHỚP |
-| F rỗng / đang tải / lỗi / mất quyền | `Empty` (nói đúng từ khoá + "Bỏ tìm") · `dang-tai-lai` · `ErrorState` sẵn có | — | GIỮ thành phần sẵn có; nút "Tìm ở Mọi chi nhánh / Lớp thường" KHÔNG thêm ([XM-1]) |
+| F rỗng / đang tải / lỗi / mất quyền | `Empty` (đúng từ khoá) + "Tìm ở Mọi chi nhánh" (vai có mục đó) · "Tìm ở Lớp thường" (đang lọc một chương trình) · "Bỏ tìm" — chỉ đổi bộ lọc URL · `dang-tai-lai` · `ErrorState` sẵn có | — | KHỚP (XM-1, PTA 03/11) |
 | K7 chip bậc → hộp nhỏ | `OYThuc` + `HopNho` (portal, fixed) | — (bấm thử) | KHỚP |
 | BỎ: dòng mờ em Kết thúc học | máy chủ bỏ khối OV-11g | — | BỎ (U04-3) |
 | BỎ: dòng 5 môn trên hàng em · "Xem thêm n" | `MiniKn` không dùng ở màn này | — | BỎ (ý 2, 3) |
@@ -51,9 +51,8 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 `GET /hoc-vien-lop`: **−1 câu** (bỏ khối em Kết thúc học) **+1 câu** (Báo PH của em có bậc, `viec_bao_ph` theo `student_id IN json_each`, chỉ em có chip bậc) = không đổi số câu; dòng thêm ≤ số em có bậc. Điểm thành phần lấy từ `diemCuaLuot` đã đọc (`SELECT s.*`) — 0 câu.
 `/my-work`: QL / Admin trước gọi `?nguoi=tat-ca` (việc cả chi nhánh), nay `/my-work` (việc của mình) → **ít dòng hơn**.
 
-## [XM] / để sau
-- [XM-1] Khu F "Tìm ở Mọi chi nhánh / Tìm ở Lớp thường" khi tìm không thấy: chưa thêm (giữ "Bỏ tìm"); thêm khi PTA đồng ý.
-- [XM-2] Ô "Xem": không có số HV mỗi mục (cần đọc thêm theo chi nhánh). Giữ `<select>` gốc (bàn phím, 375 tốt).
-- [XM-3] Hàng lớp TVV "3 HV của tôi / 7": số sau "/" = sĩ số lớp (`studentCount`).
-- Hộp tiêu chí W1 / W2 / S: dùng `dongTieuChi` (#880) — commit tiếp sau khi #880 merge (máy chủ đã gửi `tp` c1–c4 trong `hang.mtGan`). Nếu PTA muốn đổi sang `history[].tieuChi` của #880 thì báo.
-- [XM-4] CX: chip Tổng quan vẫn đếm em Kết thúc học chưa lưu trữ (`chipHocVien`), danh sách Học viên & Lớp không còn hiện em đó → số "Tất cả" của CX có thể nhỏ hơn ô Tổng quan. Cần quyết: bỏ em đó khỏi `chipHocVien` luôn (PR máy chủ) hay giữ.
+## Ảnh hưởng ngoài màn (XM-4, PTA 03/11 duyệt)
+`chipHocVien` (`server/src/worklist/hvCuaToi.ts`, dùng chung Tổng quan TVV / CX + danh sách theo vai): `tong` / `tatCa` bỏ em `finished` → **ô Tổng quan TVV / CX "n HV" giảm đúng số em Kết thúc học chưa lưu trữ** (luật chủ SP "em Kết thúc học biến mất khỏi danh sách"). Chip `da-thi` / `cho-buoc-tiep` giữ em đó (việc sau thi). Danh sách theo vai đọc ít dòng hơn. Không thêm câu. Phép kiểm OV11g-2: CX `tong` = số dòng danh sách theo vai.
+
+## Để sau
+- Hộp tiêu chí W1 / W2 / S: dùng `dongTieuChi` (#880) — commit tiếp sau khi #880 merge, chụp lại ảnh có hộp.

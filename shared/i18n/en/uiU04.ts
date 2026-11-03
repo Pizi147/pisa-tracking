@@ -21,4 +21,7 @@ export const EN_UI_U04 = {
   'Không SOS': 'No SOS',
   'SOS mức {m}: {n} HV': 'SOS level {m}: {n} students',
   'HV khớp': 'students match',
+  'Tìm ở Mọi chi nhánh': 'Search all branches',
+  'Tìm ở Lớp thường': 'Search regular classes',
+  'Tìm ở Fast Track': 'Search Fast Track',
 } as const;

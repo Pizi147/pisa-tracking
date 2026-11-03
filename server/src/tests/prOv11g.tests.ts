@@ -14,6 +14,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId, TODAY } = t;
   const hvl: any = await import('../classes/hocVienLop.ts');
   const hvCuaToi: any = await import('../worklist/hvCuaToi.ts');
+  const hvTheoVai: any = await import('../classes/hocVienTheoVai.ts');
   const classes: any = await import('../classes/classes.ts');
   const intake: any = await import('../classes/intake.ts');
   const suaCaLop: any = await import('../classes/suaCaLop.ts');
@@ -107,7 +108,13 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     const ctrlK = students.listStudents(QL, { q: ten });
     assert((ctrlK.rows ?? ctrlK).some((x: any) => x.id === em), 'Ctrl K không ra em kết thúc học');
     /* HL-19 (QL = CX) thay bằng U04-3: chip CX vẫn đếm em (Tổng quan); danh sách Học viên & Lớp của CX bỏ em `finished` ở web (`StudentsPage` › `vaiTrang.them`). */
-    assert(hvCuaToi.chipHocVien(loadPrincipal(idCx), { branchId: mb }).tatCa.includes(em), 'CX không có em');
+    /* XM-4 (PTA 03/11): một số liệu một nguồn — "Tất cả" của CX (ô Tổng quan `soHocVien`) = số dòng danh sách theo vai, không đếm em Kết thúc học. */
+    const pCx = loadPrincipal(idCx);
+    const chipCx = hvCuaToi.chipHocVien(pCx, { branchId: mb });
+    assert(!chipCx.tatCa.includes(em), 'CX vẫn đếm em kết thúc học');
+    const dsCx = hvTheoVai.hocVienTheoVai(pCx, { branchId: mb });
+    assert(chipCx.tong === dsCx.rows.length && hvCuaToi.soHocVien(pCx, { branchId: mb }).tong === dsCx.rows.length,
+      `CX: tong ${chipCx.tong} ≠ dòng danh sách ${dsCx.rows.length}`);
     /* Lưu trữ → rời danh sách; Bỏ lưu trữ (Hoàn tác) → về lại. */
     students.archiveStudent(QL, em);
     assert(!trangQl().hocVien.some((x: any) => x.id === em), 'đã lưu trữ vẫn hiện');
