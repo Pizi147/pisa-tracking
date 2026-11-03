@@ -2,7 +2,7 @@ import { db, theoLo, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
-  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa } from '../../../shared/domain/index.ts';
+  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -186,7 +186,7 @@ export function tenGiuaCua(c: { title?: string | null; topic?: string | null; ca
  */
 export function kiemNoiDungCase(topic: string | null, ct: string | null, input: {
   primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
-}, o: { khongDoiMoTa?: boolean; /** SV-NX-CASE: Case MT chưa mô tả, người sửa không gửi mô tả / nhóm (chỉ đổi tên, mức độ) — không đòi nhóm. */ boNguyenNhan?: boolean } = {}) {
+}, o: { /** N35: mô tả đang lưu — gửi lại nguyên văn chữ cũ dài thì giữ. */ moTaCu?: string | null; khongDoiMoTa?: boolean; /** SV-NX-CASE: Case MT chưa mô tả, người sửa không gửi mô tả / nhóm (chỉ đổi tên, mức độ) — không đòi nhóm. */ boNguyenNhan?: boolean } = {}) {
   const primaryCode = String(input.primaryCode ?? '').trim();
   if (!primaryCode && !o.boNguyenNhan) throw badRequest('Chọn nhóm nguyên nhân.');
   if (primaryCode && (!issueBranchOf(primaryCode) || !issuesForTopic(topic as string, ct).some((i) => i.code === primaryCode))) {
@@ -202,7 +202,7 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
   const moTa = String(input.moTa ?? '').trim();
   /* Hotfix 15/10 (L2): Case MT nguyên nhân từ ô — nhận xét của bài thay Mô tả, không đòi. */
   if (moTa.length < 15 && !(o.khongDoiMoTa && !moTa)) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
-  if (moTa.length > 2000) throw badRequest('Mô tả tối đa 2000 ký tự.');
+  if (vuotTran(moTa, TRAN_CHU.moTaCase, o.moTaCu)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: moTa.length });   // N35
   const tenGiua = String(input.tenGiua ?? '').trim();
   if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
   return { primaryCode, observation, urgency, moTa: moTa || null, tenGiua };
@@ -249,7 +249,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
     observation: input.observation ?? (nhom[0] && laKhac(nhom[0]) ? moTaGui : null),
     urgency: input.urgency ?? c.urgency ?? ((c.sos_level ?? 0) >= 3 ? 'urgent' : 'attention'),
     tenGiua: input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : input.tenGiua,
-  });
+  }, { moTaCu: c.summary });
   const today = demoToday();
   return tx(() => {
     /* HOAN-TAC-XN: chụp trạng thái trước (Case, nhóm đang có, PA cùng nhóm Bổ trợ — `chayPaBoTro` / Sửa PA chạm cả nhóm); cuối giao dịch chỉ giữ PA lần này đổi. */
@@ -489,7 +489,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   }
   const description = input.description.trim();
   if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
-  if (description.length > 2000) throw badRequest('Mô tả PA tối đa 2000 ký tự.');
+  if (vuotTran(description, TRAN_CHU.noiDungPa, iv.description)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả ngắn', toiDa: TRAN_CHU.noiDungPa, n: description.length });   // N35
   /* PR-PA (§8): như Sửa PA — không gửi khoá người = giữ người máy gán. */
   const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
   const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);

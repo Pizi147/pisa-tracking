@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
+  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, ngay, dauTruCuaO, duocHoanTacVang, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
   type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
   type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai,
 } from '../../../shared/domain/index.ts';
@@ -2114,7 +2114,9 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
   if (khoa) throw badRequest(khoa);
   const coNx = body.nhanXetPhuTrach !== undefined, coNhom = body.nhomNguyenNhan !== undefined;
   if (!coNx && !coNhom) throw badRequest('Không có gì để lưu.');
-  const nx = coNx ? kiemNhanXet(body.nhanXetPhuTrach) : null;
+  /* N35: nhận xét MT ≤ 300 (thành mô tả Case); chữ cũ dài gửi lại nguyên văn thì giữ — chỉ đọc chữ cũ khi chữ mới đã vượt. */
+  const nx = coNx ? kiemNhanXet(body.nhanXetPhuTrach, TRAN_CHU.nhanXetMt,
+    () => (conn.prepare(`SELECT nhan_xet_phu_trach AS c FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(attemptId) as any)?.c) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);
   const nhomKiem = coNhom ? kiemNhomNguyenNhan(body.nhomNguyenNhan, 'speaking') : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
@@ -2237,7 +2239,8 @@ export function saveScore(
    */
   const coNhanXet = patch.nhanXet !== undefined, coGvCham = patch.gvCham !== undefined;
   if (coGvCham && skill !== 'speaking') throw badRequest('Chỉ Speaking có GV chấm.');
-  const nx = coNhanXet ? kiemNhanXet(patch.nhanXet) : null;
+  const nx = coNhanXet ? kiemNhanXet(patch.nhanXet, TRAN_CHU.nhanXetMt,   // N35 — như nhận xét GV phụ trách
+    () => (conn.prepare('SELECT comment AS c FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any)?.c) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);
   const nxGt = nx && 'gt' in nx ? nx.gt : undefined;
   /* PR-S4F #10: xoá GV chấm phải gửi `null` rõ — false / 0 / "" là dữ liệu hỏng, không hiểu thành "xoá". */
