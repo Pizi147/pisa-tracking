@@ -111,7 +111,10 @@ export function DsViPhamCho({ ds, homNay, moId, onMo, chiTiet, nhanRieng }: {
                 className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-left text-[15px] font-semibold text-slate-100 appearance-none hover:underline sm:min-h-0">
                 {v.ten}
               </button>
-              <span className="mt-1 flex flex-wrap gap-1.5"><span className={TAG}>{dich(v.categoryLabel)}</span></span>
+              <span className="mt-1 flex flex-wrap gap-1.5">
+                <span className={TAG}>{dich(v.categoryLabel)}</span>
+                {!!v.soTep && <button type="button" className={`${TAG} cursor-pointer appearance-none border-0 hover:text-slate-200`} onClick={() => onMo(v.id)}>{t('{soTep} tệp', { soTep: v.soTep })} ›</button>}
+              </span>
             </span>
             <span className="flex items-center justify-end">{nhanRieng?.(v)}</span>
             {mo && <div className="col-start-2 col-end-4 pt-2">{chiTiet(v)}</div>}

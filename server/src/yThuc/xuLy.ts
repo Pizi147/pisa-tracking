@@ -11,7 +11,7 @@
  * LUAT-5 (luật 5, 21/10): lần xử lý đã lưu KHÔNG xoá — "Thu hồi…" kèm lý do (GVCN gửi QL duyệt, QL làm thẳng) → `thu_hoi` giữ dòng; xử lý không
  * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. Không Hoàn tác sau lưu (02 4.7 B15): bấm nhầm cũng gửi Thu hồi.
  */
-import { db, tx } from '../db.ts';
+import { DS_JSON, db, tx } from '../db.ts';
 import {
   NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL,
   bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
@@ -417,7 +417,7 @@ export type YThucHocVien = {
   daBaoQl: boolean;
   gvcn: string | null;
   phamVi: 'chuoi' | 'tat-ca';
-  viPham: ViolationView[];
+  viPham: (ViolationView & { soTep: number })[];
   macDinh: { tick: number[]; cuHon: number[] };
   dongThoiGian: DongThoiGianYt[];
   /** Dòng chữ cuối (K3 §4f): số vi phạm trong phạm vi, theo nhóm. */
@@ -446,6 +446,10 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
             (SELECT full_name FROM users WHERE id = ?) AS gvcn`,
   ).get(studentId, em.gvcnId ?? 0) as { bao: number; gvcn: string | null };
   const daBaoQl = !!mot.bao;
+  /* UI-3 (mockup K3 "2 tệp ›"): số tệp bằng chứng của các vi phạm đang hiện — một câu theo lô (một em, vài dòng). */
+  const soTep = new Map<number, number>();
+  if (viPham.length) for (const r of db().prepare(`SELECT owner_id, COUNT(*) AS n FROM attachments WHERE owner_type = 'violation' AND owner_id IN (${DS_JSON}) GROUP BY owner_id`)
+    .all(JSON.stringify(viPham.map((v) => v.id))) as { owner_id: number; n: number }[]) soTep.set(r.owner_id, r.n);
   const quaHan = Math.max(0, ...[...em.viPham.values()].map((t) => t.quaHanNgay ?? 0)) || null;
   return {
     studentId, ten: hv.full_name, maHv: hv.student_code, homNay,
@@ -459,7 +463,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     khai: em.khai,
     nhom: em.nhom, han: em.han, hanXem: em.hanXem, soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, quaHanNgay: quaHan,
     deXuat: em.deXuat ? { id: em.deXuat.id, nhan: nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName), status: em.deXuat.status, han: em.deXuat.han, quaHan: em.deXuat.quaHan } : null,
-    daBaoQl, phamVi, viPham,
+    daBaoQl, phamVi, viPham: viPham.map((v) => ({ ...v, soTep: soTep.get(v.id) ?? 0 })),
     /* UI-3 (mockup U10 K3): "Người xử lý" — GVCN lớp em đang học (một câu, chỉ khi có). */
     gvcn: mot.gvcn ?? null,
     macDinh: macDinhTick(viPham.map((v) => ({ id: v.id, t: v.trangThai, occurredOn: v.occurredOn })), homNay),

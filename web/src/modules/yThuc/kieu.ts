@@ -14,6 +14,8 @@ export type ViPhamV4 = {
   ten: string; moTa: string; description: string;
   trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; quaHanNgay: number | null; lyDoQuaHan: 'xu-ly' | 'xem' | null;
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
+  /** UI-3: số tệp bằng chứng (chỉ tab HV — `yThucHocVien`). */
+  soTep?: number;
 };
 
 /** Sau mọi thay đổi vi phạm / lần xử lý: làm mới các danh sách đọc dữ liệu Ý thức. */
