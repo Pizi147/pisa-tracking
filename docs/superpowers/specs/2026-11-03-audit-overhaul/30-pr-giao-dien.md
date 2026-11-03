@@ -9,7 +9,7 @@ Chủ SP 03/11 khuya: duyệt hết mockup U01–U10, "Bắt đầu làm". Mỗi
 | UI-HO-SO-HV | U02 Hồ sơ HV → U07 Hành trình | `audit-0311/u02-ho-so-hv.html` · `u07-hanh-trinh.html` | `13-ra-ux-a.md` |
 | UI-HO-SO-LOP | U03 Hồ sơ lớp → U08 Phân tích | `audit-0311/u03-ho-so-lop.html` · `v11/phan-tich.html` | `13-ra-ux-a.md` · `14-ra-ux-b.md` |
 | UI-HV-TEST | U04 Học viên & Lớp (+ chip bậc Ý thức K7 của U10) → U05 Kế hoạch Test → U06 Lịch Test tuần | `v11/hoc-vien-lop.html` · `ke-hoach-test.html` · `lich-test-tuan.html` · K7 trong `audit-0311/u10-y-thuc.html` | `14-ra-ux-b.md` |
-| AUDIT-Y-THUC (đang chạy) | UI-1 sửa hạn Báo PH → UI-2 tab Ý thức hồ sơ lớp (**sau U03 merge**) → UI-3 tab Ý thức hồ sơ HV (**sau U02 merge**) | `audit-0311/u10-y-thuc.html` | `u10-y-thuc-bang-y.md` |
+| AUDIT-Y-THUC | UI-1 #878 đã merge → UI-2 tab Ý thức hồ sơ lớp (**sau U03 merge**) → UI-3 tab Ý thức hồ sơ HV (**sau U02 merge**; ĐỒNG BỘ với UI-2 — chủ SP 03/11) | `audit-0311/u10-y-thuc.html` | `u10-y-thuc-bang-y.md` |
 
 Ghi riêng: **U04** cân đối lại các cột, vừa màn **1280** không cuộn ngang (chủ SP — không mockup lại). **U05** chữ "Vắng" màu vàng rõ. **U06** màn để XEM ĐIỂM (không số về GV khác). **U03** "Xem chi tiết" kỹ năng = panel phải; dòng tiêu chí "TA 6 · CC 6 · LR 6.5 · GRA 6 → 6.0" dùng chung với U04 (một hàm). **#860** đã merge: MT lịch sử là kết quả hiện tại.
 
