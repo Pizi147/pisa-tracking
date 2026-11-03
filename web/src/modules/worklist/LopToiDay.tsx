@@ -200,8 +200,9 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
     }
     if (c.key === 'dat') return tuMau(tyLeGv(d.ketQua ?? undefined), t('lượt'));
     if (c.key === 'tb') return d.khung === 'ft' ? tuMau(tyLeGv(d.tienBo ?? undefined), t('lượt')) : null;
-    if (c.key === 'bai') return d.baiQuaHan > 0 ? t('quá hạn')
-      : d.baiCho ? (d.hanCham ? t('hạn {ngay}', { ngay: `${d.hanCham.slice(8, 10)}/${d.hanCham.slice(5, 7)}` }) : t('bài')) : null;
+    /* U09 #10 (V13, B07): đơn vị luôn ghi — "bài quá hạn" · "bài · hạn 23/09". */
+    if (c.key === 'bai') return d.baiQuaHan > 0 ? t('bài quá hạn')
+      : d.baiCho ? (d.hanCham ? t('bài · hạn {ngay}', { ngay: `${d.hanCham.slice(8, 10)}/${d.hanCham.slice(5, 7)}` }) : t('bài')) : null;
     return null;
   };
   const oCn = (l: DongCn, c: CotBang): ReactNode => {
@@ -217,7 +218,9 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
     if (c.key === 'case') return o(l.khung, l.classId, 'caseMo', l.caseMo, `${l.code} · ${t('Case đang mở')}`);
     return o(l.khung, l.classId, 'thi-thang-nay', l.thiThangNay, `${l.code} · ${t('HV thi tháng này')}`);
   };
-  const phuCn = (l: DongCn, c: CotBang): ReactNode => (c.key === 'lop' ? [t('{n} HV', { n: l.hocVien }), l.khung === 'ft' ? l.route : null].filter(Boolean).join(' · ') : null);
+  const phuCn = (l: DongCn, c: CotBang): ReactNode => (c.key === 'lop' ? [t('{n} HV', { n: l.hocVien }), l.khung === 'ft' ? l.route : null].filter(Boolean).join(' · ')
+    /* U09 #10: đơn vị dưới số khác 0 — "HV" (Dưới kỳ vọng · Thi tháng này) · "Case". */
+    : c.key === 'duoi' ? (l.duoiKyVong ? t('HV') : null) : c.key === 'case' ? (l.caseMo ? 'Case' : null) : c.key === 'thi' ? (l.thiThangNay ? t('HV') : null) : null);
 
   return luoi(
     <>
