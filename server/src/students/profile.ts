@@ -87,7 +87,8 @@ function cycleLabel(c: any): string {
 /** `kyNang`: dòng `attempt_skills` đã nạp (OV-1c, xét chốt); bỏ trống → `loadSkillRows` (nhớ trong request GET). */
 export function typedResult(attempt: any, pre?: { scores: any[]; skips: AssessedSkill[]; prog: ReturnType<typeof programmeOfClass> },
   kyNang?: Parameters<typeof kyNangXongThieu>[0]) {
-  const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : null;
+  /* LECH-KHONG-LOP (`maCtCuaLuot`): lượt không lớp theo chương trình lộ trình — dòng cần `cy_programme_code` (thiếu = band như cũ). */
+  const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : programmeByCode(attempt.cy_programme_code);
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
@@ -587,6 +588,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       )
       .all(selected.id) as any[]
     : [];
+  for (const a of attemptRows) a.cy_programme_code = selected!.programme_code;   // LECH-KHONG-LOP: mọi lượt thuộc `selected` — `typedResult` chấm lượt không lớp theo lộ trình
 
   const caseByAttempt = new Map<number, any>();
   if (attemptRows.length) {

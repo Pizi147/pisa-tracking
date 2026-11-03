@@ -71,7 +71,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const q = new URLSearchParams({ ct: khung, ...(branchId ? { cn: String(branchId) } : {}), kieu: khoang.kieu, tu: khoang.tu, den: khoang.den });
   const { data, loading, error, reload } = useApi<PhanTichGvKq>(branchId ? `/phan-tich/giao-vien?${q}` : null, [q.toString()]);
   const hang = (data?.hang ?? []).filter((h) => !tim.trim() || boDau(h.ten).includes(boDau(tim.trim())));
-  const pt = usePhanTrang(hang.length, `${q}|${tim}`, 'giáo viên');
+  const pt = usePhanTrang(hang.length, `${q}|${tim}`, t('giáo viên'));
 
   if (!branchId) return <Empty title={t('Chọn một chi nhánh')} hint={t('Bảng giáo viên luôn là một chi nhánh — chọn ở ô chi nhánh đầu trang.')} />;
   const ft = khung === 'ft';
@@ -169,28 +169,28 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
   const q = new URLSearchParams({ cn: String(kq.cn), ct: kq.khung, gv: String(h.id), ...(kq.thang ? { thang: kq.thang } : { tu: kq.tu, den: kq.den }) });
   const { data, loading, error, reload } = useApi<PanelCham>(`/phan-tich/giao-vien/cham-diem?${q}`, [q.toString()]);
   const rows = (data?.rows ?? []).filter((r) => !chiTre || !r.dung);
-  const pt = usePhanTrang(rows.length, `${q}|${chiTre}`, 'bài');
+  const pt = usePhanTrang(rows.length, `${q}|${chiTre}`, t('bài'));
   const khoang = `${tuanLich(kq.tu, homNay)} – ${tuanLich(kq.den, homNay)}`;
   return (
     <KhungPanel tieuDe={`${t('Chấm Test đúng hạn')} · ${h.ten}`} rong="rong" onDong={onDong}
       ngCanh={data ? (
         <span className="text-xs text-slate-400">
-          {kq.khung === 'ft' ? 'Fast Track' : 'Lớp thường'} · {data.tenChiNhanh} · tuần Test <span className="tabular-nums">{khoang}</span> ·{' '}
-          <b className="tabular-nums text-slate-200">{data.n}</b> đúng hạn · <b className="tabular-nums text-slate-200">{data.tre}</b> trễ · <span className="tabular-nums">{data.rows.length}</span> ô
+          {kq.khung === 'ft' ? 'Fast Track' : t('Lớp thường')} · {data.tenChiNhanh} · {t('tuần Test')} <span className="tabular-nums">{khoang}</span> ·{' '}
+          <b className="tabular-nums text-slate-200">{data.n}</b> {t('đúng hạn')} · <b className="tabular-nums text-slate-200">{data.tre}</b> {t('trễ')} · <span className="tabular-nums">{data.rows.length}</span> {t('ô')}
         </span>
       ) : undefined}
       tabs={data ? (
         <BoLocDoan<'tat-ca' | 'tre'> ariaLabel={t('Lọc bài')} value={chiTre ? 'tre' : 'tat-ca'} onChange={(v) => setChiTre(v === 'tre')}
-          muc={[{ key: 'tat-ca', nhan: 'Tất cả', so: data.rows.length }, { key: 'tre', nhan: 'Trễ', so: data.tre }]} />
+          muc={[{ key: 'tat-ca', nhan: t('Tất cả'), so: data.rows.length }, { key: 'tre', nhan: t('Trễ'), so: data.tre }]} />
       ) : undefined}
       chan={{
-        huy: { nhan: 'Đóng', onClick: onDong },
+        huy: { nhan: t('Đóng'), onClick: onDong },
         phu: (
           <span className="text-xs text-slate-400">
-            Không tính: {data?.khongTinhVang ? <><span className="tabular-nums">{data.khongTinhVang}</span> ô vắng đã xác nhận · </> : null}ô chưa tới hạn và chưa nhập.
+            {t('Không tính:')} {data?.khongTinhVang ? <><span className="tabular-nums">{data.khongTinhVang}</span> {t('ô vắng đã xác nhận')} · </> : null}{t('ô chưa tới hạn và chưa nhập.')}
           </span>
         ),
-        chinh: <Link to="/test/lich" className="link text-xs">Mở Lịch Test / Chấm Test ›</Link>,
+        chinh: <Link to="/test/lich" className="link text-xs">{t('Mở Lịch Test / Chấm Test ›')}</Link>,
       }}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <div className="pt-3"><Skeleton rows={6} /></div>
@@ -202,8 +202,8 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
             <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '640px' }}>
               <colgroup><col style={{ width: '20%' }} /><col style={{ width: '23%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '16%' }} /><col style={{ width: '19%' }} /></colgroup>
               <thead><tr className="whitespace-nowrap">
-                <th className="th">Học viên</th><th className="th">Lớp · bài · kỹ năng</th><th className="th">Tuần Test</th>
-                <th className="th text-right">Hạn chấm</th><th className="th text-right">Lần nhập đầu</th><th className="th">Kết quả</th>
+                <th className="th">{t('Học viên')}</th><th className="th">{t('Lớp · bài · kỹ năng')}</th><th className="th">{t('Tuần Test')}</th>
+                <th className="th text-right">{t('Hạn chấm')}</th><th className="th text-right">{t('Lần nhập đầu')}</th><th className="th">{t('Kết quả')}</th>
               </tr></thead>
               <tbody>
                 {pt.cat(rows).map((r) => (
@@ -213,15 +213,15 @@ function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDon
                     <td className="td whitespace-nowrap tabular-nums">{tuanLich(r.tuan, homNay)}</td>
                     <td className="td whitespace-nowrap text-right text-xs tabular-nums">{ngay(r.han, homNay)}</td>
                     <td className="td whitespace-nowrap text-right text-xs tabular-nums">
-                      {r.nhapDau ? ngay(r.nhapDau, homNay) : <span className="text-slate-400">chưa nhập</span>}
-                      {r.sua && <span className="block text-xs text-slate-400">sửa {ngay(r.sua, homNay)}</span>}
+                      {r.nhapDau ? ngay(r.nhapDau, homNay) : <span className="text-slate-400">{t('chưa nhập')}</span>}
+                      {r.sua && <span className="block text-xs text-slate-400">{t('sửa {ngay}', { ngay: ngay(r.sua, homNay) })}</span>}
                     </td>
                     <td className="td">
                       <span className={`inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold ${r.dung ? 'text-ok' : 'text-bad'}`}>
-                        <Dau ok={r.dung} />{r.dung ? 'Đúng hạn' : `Quá hạn · ${r.tre} ngày`}
+                        <Dau ok={r.dung} />{r.dung ? t('Đúng hạn') : t('Quá hạn · {n} ngày', { n: r.tre })}
                       </span>
-                      {!r.dung && !r.nhapDau && <span className="block text-xs text-slate-400">tới hôm nay {ngay(homNay, homNay)}</span>}
-                      {r.dung && r.sua && <span className="block text-xs text-slate-400">lần sửa không tính</span>}
+                      {!r.dung && !r.nhapDau && <span className="block text-xs text-slate-400">{t('tới hôm nay {ngay}', { ngay: ngay(homNay, homNay) })}</span>}
+                      {r.dung && r.sua && <span className="block text-xs text-slate-400">{t('lần sửa không tính')}</span>}
                     </td>
                   </tr>
                 ))}

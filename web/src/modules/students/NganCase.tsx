@@ -431,7 +431,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
           {canDong && ht?.an && ht.dong && (
             <p className="m-0 flex items-center gap-1.5 text-[13px] text-slate-300">
               <span className="text-slate-400"><KhoaNho /></span>
-              <span>{dk ? <>{dich(dk[1])} · <b className="font-semibold text-slate-100">{dk[2]}</b></> : dich(ht.dong)}</span>
+              <span>{dk ? <>{dich(dk[1])} · <b className="font-semibold text-slate-100">{dich(dk[2])}</b></> : dich(ht.dong)}</span>
             </p>
           )}
         </div>

@@ -252,6 +252,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### 03/11 đêm — chủ SP đi ngủ: "cứ thế làm, tự rà tự merge"
 - **Mở (local, worktree riêng):** QUYEN-LH-CN (Opus 5.5 · medium) · SO-LIEU-LOP (Opus 5.5 · high: LECH-KHONG-LOP + HSL-KET-THUC-SO) · HINH-HAN-XA (Opus 5.5 · medium: viên xám hạn xa + cột Trạng thái 150 px) · EN-SOT (Opus 5.5 · medium: dịch EN sót + dọn sổ tay PDF).
 - **Merge:** PR đổi hình tự merge khi ảnh cặp ≥ 90 % KHỚP + đúng luật + check xanh (dưới 90 % giữ sáng) · PR đổi số liệu em thật GIỮ, kèm SQL chỉ đọc cho chủ SP chạy ở Turso · còn lại PTA tự merge như thường.
+- **Kết quả đêm 03/11:** merge #813 bỏ sổ tay PDF (xoá `docs/so-tay/`) · #814 hạn xa = viên xám (`ChipHan`, KHỚP 100 %) · #815 quyền Liên hệ theo chi nhánh em (`vaiVoiEm`) · #818 cột Trạng thái hồ sơ lượt 150 px (KHÁC duy nhất = quyết định chủ SP) · #819–#823 dịch EN sót 5 nhóm (thay luật 26/10 "EN chỉ màn GV").
+- **GIỮ chờ chủ SP chạy SQL (trong mô tả PR):** #816 LECH-KHONG-LOP · #817 HSL-KET-THUC-SO (demo MB FOU 03 "Đạt MT2 1/1" → "Đạt Final Test 0/1"). Ra rỗng / chủ SP đồng ý → PTA merge (merge sau vướng dòng mục 11 plan.md: giữ cả hai).
+- **Chủ SP xem thuật ngữ EN:** Sub-tasks / Follower / Supporting cases (#821) · "Schedule MTs…" (#822).
+- **Để sau (chưa có chủ):** (1) `duocDoiKck(p.roleKeys…)` `cycles.ts:518` xét vai TVV toàn tài khoản (cùng kiểu QUYEN-THEO-CN) · (2) Sửa cả lớp: cột Liên hệ xét chi nhánh lớp, máy chủ chặn theo chi nhánh em (em khác chi nhánh lớp → hiện cột nhưng 403) · (3) mockup `.td.sap.nay` "hạn hôm nay" viền trong 1 px chưa có · (4) `anh-cap.mjs` chụp mockup v7 ở chế độ sáng · (5) lượt không lớp: `O_CHO_TU_SQL` vẫn xét lớp; ngưỡng đạt mặc định 70 % · (6) EN: ghi chú đã lưu DB ("Hệ thống: Vắng — …", "Kết quả tuần: …" ra nửa Anh), mô tả PA quy chế còn Việt, khoá 'tuần' = "in" chặn dịch đơn vị tuần, sheet Excel "Tổng hợp", tab Ý thức lẫn violation/plan với incident/action, thêm tệp vừa dịch vào E-NGUON của `prEn`.
 
 ### 02/11 khuya — chủ SP quyết nhóm chờ (CHƯA làm: chờ chủ SP bảo "bắt đầu làm" mới mở session)
 - **QUYEN-KY-NANG:** GV tự khai kỹ năng ở Hồ sơ cá nhân, kể cả được chấm S chéo — GIỮ như hiện tại, không sửa.
@@ -276,7 +280,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Chờ chủ SP (RA-LOI-WEB, không sửa):** (1) **HSL-KET-THUC-SO:** hồ sơ lớp ĐÃ KẾT THÚC (vd MB FOU 03) đầu trang "Đạt MT2 100 % 1/1" lấy lượt của lớp FT em đang học (standing roster không theo lớp), tab Phân tích ghi 0 HV — sửa là đổi nguồn số · (2) Head tutor có link tới Công việc nhưng vai không có Công việc → về Tổng quan (Tutor hoãn) · (3) `do-khung` hd-chi 375 GV "Công việc › tq-lop ngoài màn" chập chờn khi máy bận.
 - **RA-LOI-WEB đã rà, không thấy lỗi:** data router #785 / #787 — link sâu / F5 9 vai × 1440 / 375 (~760 trang, 0 lỗi console / 4xx / 5xx / màn trắng); chặn rời trang hỏi đúng, không hỏi thừa (gồm ô lưới lớp thường lưu hỏng ở Lịch Test).
 - **Kết thúc đợt (4 session xong):** merge thêm #806 DOC-IT-5 chỉ mục `prDocIt5` (migrate thứ 7) · #808 chữ số Inter cắt 0–9 (phông trang đầu QL −82 KB) · #809 DOC-IT-6 việc TVV của QL theo chi nhánh trong SQL · #810 ô tìm thanh trên không nháy "Không thấy". Tổng: JS trang đầu QL gzip 421 → 249 KB; ước −3 triệu dòng đọc Turso / ngày (đo SQLite, xác nhận bằng ảnh Turso Top Queries 2–3 ngày sau deploy).
-- **Để sau (chưa có chủ):** (1) EN còn sót: Quản trị chưa có từ điển; chữ lẻ "Chương trình", "Không cần theo dõi", "GV chấm quá hạn", "Ghi báo PH"; DemoBar "Toàn bộ dữ liệu là giả…" viết cứng (chỉ bản demo) · (2) `sc.status != 'done'` SCAN `sos_cases` — khi Case đóng nhiều: đổi vế thành `status IN ('open','in_progress')` + chỉ mục một phần khớp · (3) `teacher_assignments` SCAN (`phanCongDangHoatDong`) — chờ log.
+- **Để sau (chưa có chủ):** (1) ~~EN còn sót: Quản trị, chữ lẻ, DemoBar~~ → EN-SOT a–e (03/11) · (2) `sc.status != 'done'` SCAN `sos_cases` — khi Case đóng nhiều: đổi vế thành `status IN ('open','in_progress')` + chỉ mục một phần khớp · (3) `teacher_assignments` SCAN (`phanCongDangHoatDong`) — chờ log.
 
 ### 02/11 đêm — chủ SP đi ngủ, "còn gì nữa chạy tiếp"
 - **Đã mở (local):** TL-HVL · LECH-CACH-CHAM · V8-HSL-2 · DO-KHUNG-DO (Opus 5.5 · medium) · LUU-PC-LO (Sonnet 5.5 · high).
@@ -383,7 +387,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **P8 #595 (26/10 đêm):** PTA rà — 2 lỗi chặn (Case W2 khi chỉ học W2; ô task không học còn đếm trống ở `diemTheoLuot`, `keHoachTest`, chi tiết lượt) + 13 nên sửa / nhỏ + 3 ảnh; tin nhắn sửa chủ SP dán vào session cloud. **Chủ SP chốt quyền đổi môn: QL, TVV, Quản trị, GVCN** (kể cả đóng Case môn bỏ); CX, GV bộ môn không.
 - **PR R1 (kế hoạch `docs/superpowers/plans/2026-10-26-r1-*.md`, prompt cuối mỗi tệp):** **LUU-TIEP** (high) ∥ **EN-1** (medium) ∥ **DICH-2** (high) ∥ **SUA-NHO** (medium) chạy ngay 26/10 ·
   **PHAN-CAP-TEST** chờ chủ SP duyệt mockup M2 `thiet-ke/v7/lich-test-phan-cap.html` + LUU-TIEP merge · **EN-2** sau LUU-TIEP (4 tệp Test sau PHAN-CAP) · KHO-TEP **bỏ** (tệp trên bản chính chỉ là tệp thử).
-- **Quyết định 26/10:** D1–D11 ở thiết kế mục 3 — V12 giữ ("Lưu" ở lại), nhãn "Lưu · bài tiếp ›" / "Lưu · việc tiếp ›" / "Lưu · đóng"; V11 thay khi pilot panel 6b duyệt; tiếng Anh **chỉ màn GV** (EN-3 bỏ);
+- **Quyết định 26/10:** D1–D11 ở thiết kế mục 3 — V12 giữ ("Lưu" ở lại), nhãn "Lưu · bài tiếp ›" / "Lưu · việc tiếp ›" / "Lưu · đóng"; V11 thay khi pilot panel 6b duyệt; tiếng Anh ~~chỉ màn GV (EN-3 bỏ)~~ → **mọi màn** (chủ SP 03/11 đêm: dịch nốt EN sót, gồm Quản trị — thay luật 26/10; EN-SOT);
   sổ tay PDF không chặn. [BÁO] "đạt kỳ vọng chỉ còn Lưu" = trang hồ sơ MT / Lộ trình không có nút tiếp (PTA tái hiện 26/10).
 - **Sau R1:** mục 4 hồ sơ lượt Test (M4), mục 5 hồ sơ HV / chart / góp ý tuần (M5, M5b), mục 6 panel (inventory 6a → pilot 6b M6) — thiết kế mục 6.
 - **Deploy R1 (thay dòng "Deploy V5" dưới):** migrate + tiền kiểm từ `fa7e1811` ở thiết kế mục 5 (8 bước + P13 + P8); migrate đúng ngày deploy (P9a); không chép tệp bằng chứng; dịch AI bật SAU deploy theo `docs/huong-dan/bat-dich-ai.md`.
@@ -780,6 +784,10 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 03/11 | EN-SOT a–e · Opus 5.5 (+4 agent Opus) | Dịch EN mọi màn còn sót (thay luật 26/10 "EN chỉ màn GV"), 5 PR: (a) chữ lẻ + chữ máy chủ + DemoBar · (b) Quản trị · (c) Công việc / Họp QL · (d) Kế hoạch Test · (e) Phân tích. Quét bản build EN 8 vai, 375 không tràn. |
+| 03/11 | #818 HINH-HAN-XA-2 · Opus 5.5 | Cột Trạng thái hồ sơ lượt (FT + lớp thường) 237 / 242 → 150 px; chip dài xuống dòng cân, 0 / 1 394 ô tràn |
+| 03/11 | #814 HINH-HAN-XA-1 · Opus 5.5 | Hạn xa = viên xám theo mockup v7 `.td` ở `ChipHan` chung (mọi danh sách); KHỚP 100 % |
+| 03/11 | LECH-KHONG-LOP · Opus 5.5 | Lượt không lớp chấm theo chương trình lộ trình ở mọi đường (`maCtCuaLuot`): Kết quả gần nhất = SOS / panel = hồ sơ HV = danh sách lượt = nhập điểm (`scoringModeOf`). Đổi số em thật → giữ chờ chủ SP chạy SQL. |
 | 03/11 | HSL-KET-THUC-SO · Opus 5.5 | Hồ sơ lớp ĐÃ KẾT THÚC chỉ tính lượt của chính lớp: Kết quả / SOS / dòng bài bảng HV, đầu trang "Đạt …" và tab Phân tích cùng nguồn (`standingFor(…, lớp)`). Đổi số em thật → giữ chờ chủ SP chạy SQL. |
 | 03/11 | QUYEN-LH-CN · Opus 5.5 | Liên hệ em: vai có quyền xét ở chi nhánh của em (`vaiVoiEm`) — PATCH, Sửa cả lớp, cờ `nhapLienHe` hồ sơ / Sửa cả lớp; QL MB kiêm GVCN CP → 403 ở em CP. Web không đổi (dùng cờ máy chủ). |
 | 03/11 | DON-SO-TAY · Opus 5.5 | Bỏ sổ tay PDF (chủ SP 02/11): xoá `docs/so-tay/` (47 MB: dựng, nội dung, ảnh, 10 PDF), dòng CODE_MAP / PRODUCT / .gitignore; Hướng dẫn web giữ nguyên. |

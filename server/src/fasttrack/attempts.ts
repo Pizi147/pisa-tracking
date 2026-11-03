@@ -40,7 +40,7 @@ import {
 } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
-import { allProgrammes, evaluateRegular, isRatioClass, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
+import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
@@ -757,7 +757,7 @@ export const listAttemptsOrKhiKiem = { bat: false };
 
 const chonLuot = (them = '') => `
   SELECT a.*, ${them} s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
-         cy.route, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
+         cy.route, cy.target_score, cy.khong_cam_ket, cy.programme_code AS cy_programme_code, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
     FROM assessment_attempts a
@@ -835,22 +835,14 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
    * Writing task 1 không tồn tại. Đọc chương trình một lần cho mỗi lớp rồi dùng lại.
    */
   const programmes = allProgrammes();          // đọc một lượt, không phải mỗi lớp một lượt
-  const progOfClass = new Map<number, string | null>();
-  for (const r of rows) {
-    if (r.class_id !== null && !progOfClass.has(r.class_id)) progOfClass.set(r.class_id, r.programme_code ?? null);
-  }
-  const skillsOfClass = (classId: number | null): string[] | null => {
-    if (!classId) return null;
-    const code = progOfClass.get(classId);
-    const prog = code ? programmes.get(code) : null;
-    return prog?.scoringMode === 'ratio' ? prog.skills : null;
-  };
 
   let mapped = rows.map((a) => {
     const scores = bundle.scores.get(a.id) ?? [];
     const skips = bundle.skips.get(a.id) ?? [];
     /* HOTFIX-3: MT0 chấm band dù ở lớp thường (`scoringModeOf`) — không đi nhánh đúng/tổng, nếu không đủ band vẫn là việc "Nhập điểm MT0". */
-    const boLop = a.kind === 'mt0' ? null : skillsOfClass(a.class_id);
+    /* LECH-KHONG-LOP: cùng luật `evaluateAttemptRow` — lớp của lượt, lượt không lớp theo lộ trình. */
+    const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
+    const boLop = a.kind === 'mt0' ? null : chuongTrinhTyLeCuaLuot(ma, () => programmes)?.skills;
     const regularSkills = boLop && [...boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), scores))];   // P13: lượt đã ghi môn gộp cũ giữ L+S / R+W
 
     if (regularSkills) {
@@ -889,7 +881,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
         classId: a.class_id, classCode: a.class_code, branchId: a.branch_id, branchName: a.branch_name,
         /** MH2: mã chương trình lớp — tên môn FOU G+V/P ở danh sách. */
-        programmeCode: a.programme_code ?? null,
+        programmeCode: ma,
         cycleId: a.cycle_id, cycleSeq: a.cycle_seq, route: null,
         attemptNo: a.attempt_no,
         target: null,

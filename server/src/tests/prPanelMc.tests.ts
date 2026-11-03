@@ -12,6 +12,9 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
   const { latestAttempts, studentsInScope } = await import('../worklist/danhGia.ts');
   const { diemTuEval, diemTuStanding, diemTuMock } = await import('../worklist/diemDong.ts');
   const { standingFor } = await import('../students/standing.ts');
+  const { studentProfile } = await import('../students/profile.ts');
+  const { listAttempts } = await import('../fasttrack/attempts.ts');
+  const { scoringModeOf } = await import('../fasttrack/skillSchedule.ts');
   const metrics: any = await import('../worklist/metrics.ts');
   const { chayTrongRequest, soCauSql } = await import('../platform/nguCanhRequest.ts');
 
@@ -93,15 +96,33 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     }
   });
 
-  check('LECH-CACH-CHAM · lượt không lớp: standingFor chấm theo lộ trình như cũ', () => {
+  check('LECH-KHONG-LOP · lượt không lớp chấm theo chương trình của lộ trình ở MỌI đường: Kết quả gần nhất = latestAttempts (✓ / ✗, SOS, số môn) = hồ sơ HV = danh sách lượt', () => {
     const lat = latestAttempts(studentsInScope(P.admin, null), 'valid', TODAY);
-    const ev = [...lat.values()].find((x) => x.chuongTrinh === 'FOU' && x.scored > 0)!;
-    const { class_id } = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(ev.attemptId) as any;
-    conn.prepare('UPDATE assessment_attempts SET class_id = NULL WHERE id = ?').run(ev.attemptId);
-    try {
-      const s = standingFor([ev.studentId]).get(ev.studentId)!;
-      assert(s.attemptId === ev.attemptId && s.mode === 'ratio' && s.chuongTrinh === 'FOU' && s.sosLevel === ev.sosLevel, `em ${ev.studentId}: ${s.attemptId} · ${s.mode} · ${s.chuongTrinh} · SOS ${s.sosLevel}`);
-    } finally { conn.prepare('UPDATE assessment_attempts SET class_id = ? WHERE id = ?').run(class_id, ev.attemptId); }
+    for (const [ct, ten] of [['FOU', 'lộ trình lớp thường (tỷ lệ)'], ['FT', 'lộ trình FT (band)']] as const) {
+      const ev0 = [...lat.values()].find((x) => x.chuongTrinh === ct && x.scored > 0 && Object.values(x.skills).some((k) => k.under))!;
+      assert(ev0, `demo thiếu em ${ten} có môn hụt`);
+      const sid = ev0.studentId;
+      const { class_id } = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(ev0.attemptId) as any;
+      conn.prepare('UPDATE assessment_attempts SET class_id = NULL WHERE id = ?').run(ev0.attemptId);
+      try {
+        const ev = latestAttempts([sid], 'valid', TODAY).get(sid)!;
+        const s = standingFor([sid]).get(sid)!;
+        assert(ev?.attemptId === ev0.attemptId && s.attemptId === ev0.attemptId, `${ten}: lượt ${ev?.attemptId} · standing ${s.attemptId} ≠ ${ev0.attemptId}`);
+        assert((ev.nguong !== undefined) === (ct !== 'FT') && (s.mode === 'ratio') === (ct !== 'FT') && ev.chuongTrinh === s.chuongTrinh,
+          `${ten}: latestAttempts ${ev.nguong === undefined ? 'band' : 'tỷ lệ'} ${ev.chuongTrinh} · standing ${s.mode} ${s.chuongTrinh}`);
+        const a = diemTuEval(ev), b = diemTuStanding(s)!;
+        assert(JSON.stringify(a.kn) === JSON.stringify(b.kn), `${ten}: ${JSON.stringify(a.kn)} ≠ standing ${JSON.stringify(b.kn)}`);
+        assert(s.sosLevel === ev.sosLevel && s.scored === ev.scored && s.required === ev.required, `${ten}: SOS ${s.sosLevel} · ${s.scored}/${s.required} ≠ ${ev.sosLevel} · ${ev.scored}/${ev.required}`);
+        const hs = (studentProfile(P.admin, sid) as any).attempts.find((x: any) => x.id === ev0.attemptId);
+        assert(hs && hs.mode === (ct === 'FT' ? 'ielts' : 'ratio') && hs.sosLevel === ev.sosLevel, `${ten}: hồ sơ HV ${hs?.mode} SOS ${hs?.sosLevel} ≠ ${ev.sosLevel}`);
+        const ds = listAttempts(P.admin, { studentId: sid }).rows.find((x: any) => x.id === ev0.attemptId) as any;
+        assert(ds && (ds.bands === null) === (ct !== 'FT') && ds.sosLevel === ev.sosLevel, `${ten}: danh sách lượt ${ds?.bands === null ? 'tỷ lệ' : 'band'} SOS ${ds?.sosLevel} ≠ ${ev.sosLevel}`);
+        /* Nhập điểm / Case tự sinh / trang lượt (`scoringModeOf`): theo lộ trình, KHÔNG theo loại lượt (trước: Mock → band, loại khác → tỷ lệ). */
+        const row = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(ev0.attemptId) as any;
+        const mong = ct === 'FT' ? 'band' : 'ratio';
+        for (const kind of ['mock', 'progress', 'final']) assert(scoringModeOf({ ...row, kind }) === mong, `${ten}: scoringModeOf ${kind} không lớp = ${scoringModeOf({ ...row, kind })} ≠ ${mong}`);
+      } finally { conn.prepare('UPDATE assessment_attempts SET class_id = ? WHERE id = ?').run(class_id, ev0.attemptId); }
+    }
   });
 
   check('LECH-CACH-CHAM · chưa có lượt có điểm: mode + chương trình vẫn theo lộ trình (khung, số môn của em chưa thi)', () => {

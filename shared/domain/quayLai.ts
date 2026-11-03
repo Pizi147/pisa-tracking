@@ -9,7 +9,7 @@ import { NHOM_VIEC_LABEL, type NhomViec } from './tongQuan.ts';
 import { LOC_NHANH_LABEL, type LocNhanh } from './congViec.ts';
 import { GOC_NHIN_LABEL, GOC_NHIN_MAC_DINH, type GocNhin } from './phanTich.ts';
 import { DUONG_TAB_TEST, TAB_CONG_VIEC_LABEL, tabCongViecTuDuong } from './dieuHuong.ts';
-import { t } from '../i18n/index.ts';
+import { dich, t } from '../i18n/index.ts';
 
 export type BuocVe = { url: string; ten: string; chiTiet?: string; cuon: number };
 export type TenTrang = { ten: string; chiTiet?: string };
@@ -86,7 +86,7 @@ export function trangCha(loai: LoaiHoSo, o: { studentId?: number | null; tenHv?:
     case 'mt': case 'luot': case 'case':
       return o.studentId ? { url: `/hoc-vien/${o.studentId}`, ten: o.tenHv ? t('Hồ sơ {ten}', { ten: o.tenHv }) : TEN_HO_SO['hoc-vien'] } : hvLop;
     case 'gv':
-      if (o.nav?.phanTichGv) return { url: '/phan-tich?goc=giao-vien', ten: t('Phân tích'), chiTiet: GOC_NHIN_LABEL['giao-vien'] };
+      if (o.nav?.phanTichGv) return { url: '/phan-tich?goc=giao-vien', ten: t('Phân tích'), chiTiet: dich(GOC_NHIN_LABEL['giao-vien']) };
       return o.nav?.admin ? { url: '/quan-tri', ten: t('Quản trị') } : { url: '/', ten: t('Tổng quan') };
     case 'nhap-diem': return { url: '/test', ten: t('Test') };
     default: return hvLop;
@@ -113,7 +113,7 @@ export function tenNguon(url: string): TenTrang {
   const hs = loaiHoSo(p);
   if (hs) return { ten: TEN_HO_SO[hs] };
   if (p === '/') return { ten: t('Tổng quan') };
-  if (p === '/phan-tich') return { ten: t('Phân tích'), chiTiet: nhan<GocNhin>(GOC_NHIN_LABEL, q.get('goc')) ?? GOC_NHIN_LABEL[GOC_NHIN_MAC_DINH] };
+  if (p === '/phan-tich') return { ten: t('Phân tích'), chiTiet: dich(nhan<GocNhin>(GOC_NHIN_LABEL, q.get('goc')) ?? GOC_NHIN_LABEL[GOC_NHIN_MAC_DINH]) };
   const cv = /^\/cong-viec(?:\/([^/]+))?$/.exec(p);
   if (cv) {
     const tab = tabCongViecTuDuong(cv[1]);

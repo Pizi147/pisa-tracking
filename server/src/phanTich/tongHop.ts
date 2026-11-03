@@ -78,7 +78,7 @@ export function luotTrongKhoang(where: string, args: readonly unknown[]): any[] 
   return db()
     .prepare(
       `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.cycle_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id,
-              cy.route, cy.khong_cam_ket AS cy_kck, cy.khong_cam_ket AS kck,
+              cy.route, cy.khong_cam_ket AS cy_kck, cy.khong_cam_ket AS kck, cy.programme_code AS cy_programme_code,
               c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
               b.name AS branch_name,
               rp.id AS period_id, rp.week_start, rp.week_end
