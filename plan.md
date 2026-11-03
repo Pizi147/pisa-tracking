@@ -258,6 +258,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### 03/11 chiều — BO-QUA-XEP-MT (chủ SP: "cho phép ignore việc réo tên QL vì chưa xếp đủ MT, nhìn chướng mắt")
 - Việc "Xếp lịch MTn cho {em}" (`moc:` ở `mywork.ts` ~1222, PA quy chế đến MT kế chưa có lịch) + mọi việc khác réo QL vì em chưa xếp MT → thêm **"Bỏ qua"** ngay trên dòng việc (Hoàn tác ngắn, xem lại + khôi phục được, có nhật ký — luật không khoá cứng). Bỏ qua chỉ ẩn VIỆC, không đổi lịch / PA / số đếm "HV chưa có MT tiếp theo". Việc mới (MT kế khác, PA khác) hiện lại. Opus 5.5 · medium. Đổi chữ + nút theo mẫu sẵn có → không cần mockup; PTA tự merge khi rà + check xanh.
 - **Bàn giao:** PTA Plan cũ dừng 03/11; session planning mới nhận từ đây.
+- **Đã merge #826** (check chung 5050/5050): nút "Bỏ qua" trên việc `moc:` (Xếp lịch MTn / Nhập dự kiến thi) + khu "Đã bỏ qua" khôi phục được, nhật ký. **Migrate mới `prBoQuaMoc`** (3 cột NULL) → chờ deploy **8** (+ `prBoQuaMoc`). Lẻ: chú thích JSDoc của `myWork` nằm lệch trên `SQL_MOC` (`mywork.ts` ~401) — dọn khi sửa tệp này lần sau.
 
 ### 03/11 đêm — chủ SP đi ngủ: "cứ thế làm, tự rà tự merge"
 - **Mở (local, worktree riêng):** QUYEN-LH-CN (Opus 5.5 · medium) · SO-LIEU-LOP (Opus 5.5 · high: LECH-KHONG-LOP + HSL-KET-THUC-SO) · HINH-HAN-XA (Opus 5.5 · medium: viên xám hạn xa + cột Trạng thái 150 px) · EN-SOT (Opus 5.5 · medium: dịch EN sót + dọn sổ tay PDF).
