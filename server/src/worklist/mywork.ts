@@ -1261,7 +1261,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
           reason: 'Chưa có Target nên chưa tính được kỳ vọng từng MT',
           tieuDe: 'Điền Target', phu: 'Điền Target', actionLabel: 'Điền Target', href: `/hoc-vien/${h.id}`,
-          ownerId: tatCa ? gvcnLop().get(h.class_id) ?? p.userId : p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có Target',
+          /* BADGE-CUA-TOI (PTA 04/11): một chủ việc ở mọi góc nhìn — GVCN lớp (không có thì người xem); "Của tôi" = badge = ô "Của tôi" của "Tất cả". */
+          ownerId: gvcnLop().get(h.class_id) ?? p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có Target',
         });
       }
     }
@@ -1279,7 +1280,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       /* OV-11e (TE-8): số theo lượt — link mở lượt đầu, số đầu = số hàng ở đó. */
       reason: `Nhập MT cũ · ${l.luot.map((x) => `MT${x.so} · ${x.soEm} em`).join(' · ')} · không tính hạn`,
       tieuDe: 'Nhập điểm MT cũ', actionLabel: 'Nhập điểm', href: l.href,
-      ownerId: tatCa ? gvcnLop().get(l.classId) ?? p.userId : p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',
+      ownerId: gvcnLop().get(l.classId) ?? p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',   // BADGE-CUA-TOI: cùng chủ ở mọi góc (`mine` tính lại theo `ownerId` cuối hàm)
     });
   }
 
