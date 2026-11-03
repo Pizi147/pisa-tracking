@@ -8,7 +8,9 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HienLaiPanel, KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { BoiCanh, ViecVuaLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, TheMuc, TruongDoc, ViecVuaLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
+import { mucSosTheoNhan } from '../../lib/format.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { XemCaseViec, useXem } from '../../lib/quayLai.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -458,6 +460,8 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   const { homNay } = useNgayNghiepVu();
   const [lon, setLon] = useState(false);
   const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
+  const [chanTrai, setChanTrai] = useState<HTMLElement | null>(null);
+  const [chanNut, setChanNut] = useState<HTMLElement | null>(null);
   const { data } = useApi<any>(`/cases/${it.caseId}`, [it.caseId]);
   /* M6 6b-3: "Xem Case" (đầu panel) = view Case kế trong panel việc (`PanelViec`) — thay mở thân Case dưới bối cảnh / "‹ Việc" (nhãn lặp). */
   const xemCase = useContext(XemCaseViec);
@@ -482,14 +486,24 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   if (data && daTruoc.current === undefined) daTruoc.current = (data.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome) ?? null;
   const truoc = daTruoc.current;
   const tenLoai = iv ? dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind) : null;
+  const muc = it.level ? mucSosTheoNhan(it.level.text) : null;
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong} quayLai={xemCase ? { nhan: t('Xem Case'), onClick: xemCase, xem: true } : undefined}
-      dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa ?? 'cap-nhat-pa'} han={it.due} /> : null, em, lop: it.classCode, ngCanh: it.contextLabel })}>
-      <div className="flex flex-col gap-4 pt-3">
-        <BoiCanh dong={[
-          ['Case', data ? <>{dich(tenNganCase(data))}{data.detectedAt ? ` · ${t('mở {ngan}', { ngan: shortDate(data.detectedAt, homNay) })}` : ''}</> : null],
-          [t('Phương án'), iv ? <>{iv.description ? <ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /> : tenLoai}{[iv.performer, iv.mocChu].filter(Boolean).map((x) => ` · ${x}`).join('')}</> : null],
-          [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(truoc.outcome))}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
+    <KhungPanel tieuDe={tenBoEm(it)} onDong={onDong} quayLai={xemCase ? { nhan: t('Xem Case'), onClick: xemCase, xem: true } : undefined}
+      /* UI-CONG-VIEC (mockup U01 A3): đầu = dải sự kiện Học viên · Lớp · Mức · Hạn ghi KQ (+ Phụ trách khi làm thay); chân = Lưu / Lưu · việc tiếp ›. */
+      dau={{ ...dauViec({ em, lop: it.classCode, ngCanh: it.contextLabel }), su: [
+        [t('Học viên'), em ? <Link className="no-underline hover:underline" to={`/hoc-vien/${em.id}`}>{em.ten}</Link> : null],
+        [t('Lớp'), it.classCode],
+        [t('Mức'), muc ? <ChipSos muc={muc} tinh /> : null],
+        [t('Hạn ghi KQ'), it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa ?? 'cap-nhat-pa'} han={it.due} chuThuong /> : null],
+      ] }}
+      chan={daLuu ? undefined : { huy: null, trai: <span ref={setChanTrai} className="contents" />, chinh: <span ref={setChanNut} className="contents" /> }}>
+      <div className="flex flex-col gap-5 pt-3">
+        <TruongDoc dong={[
+          [t('Phương án'), iv ? <>
+            <span className="flex flex-wrap items-center gap-1.5"><b className="font-semibold">{tenLoai}</b>{[iv.performer, iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).map((x) => <TheMuc key={x}>{x}</TheMuc>)}</span>
+            {iv.description && <span className="mt-1 block text-sm text-dim"><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></span>}
+          </> : null],
+          [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold">{dich(outcomeLabelFor(truoc.outcome))}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
         ]} />
         {daLuu ? (
           <div className="flex flex-col gap-2">
@@ -501,7 +515,7 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
             </div>
           </div>
         ) : (
-          <GhiNhanh key={it.paId} paId={it.paId!} batBuoc={!!iv?.batBuoc} onTiep={tiepSauGhi} tenTiep={cv?.ten}
+          <GhiNhanh key={it.paId} paId={it.paId!} batBuoc={!!iv?.batBuoc} onTiep={tiepSauGhi} tenTiep={cv?.ten} chan={{ trai: chanTrai, nut: chanNut }}
             onDaLuu={(kq) => { vuaGhi.current = kq; setDaLuu(kq); onDaLam(); }} onMoPanel={() => setLon(true)} />
         )}
       </div>
