@@ -19,5 +19,4 @@ export const EN_U03_HO_SO_LOP = {
   'Bảng vẫn dùng được.': 'The table still works.',
   'Lưu · kỹ năng tiếp ›': 'Save · next skill ›',
   'Điểm MT{n}': 'MT{n} score',
-  'Phụ trách': 'Owner',
 } satisfies Record<string, Dich>;

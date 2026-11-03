@@ -34,14 +34,14 @@ Dữ liệu web là demo MB FT 101 (14/09/2026, vai GVCN 7) — tên / số khá
 | A1 | Tóm tắt kỹ năng: tên · phụ trách · Hồ sơ HV › · Xem chi tiết / + Case · dòng tiêu chí · Điểm · Case · PA · Kết quả PA | KHỚP | #7, #21; Case · PA: tên Case + tuần mở + PA (loại · đang chạy / chờ xác nhận) |
 | A1 | Bấm ô điểm trên hàng = mở em với kỹ năng đó (W → bài thấp hơn) | KHỚP | #8 |
 | A1 | Rê / focus ô W · S → thẻ tiêu chí; ô chỉ có band không thẻ | KHỚP | #22; cả ô W1 · W2 · S ở Điểm theo lượt |
-| A2 | Panel phải chi tiết kỹ năng (Case · PA · lịch sử kết quả · Ghi kết quả PA bộ đếm 200) | KHÁC | dùng lại panel Case sẵn có (`NganCase`, có tên em ở đầu, bộ đếm N35, mọi thao tác Case cũ). Mockup vẽ panel cạnh bảng không lớp phủ; web panel phủ như mọi panel Case (một kiểu mở) |
+| A2 | Panel Case: đầu "CASE · kỹ năng" · "em · kỹ năng" + chip SOS phải · dải Điểm MTn (✗ số lớn) · Kỳ vọng · Phụ trách · Mở; thân Case bỏ dòng tên / Điểm lặp; Ghi kết quả PA có "● Chưa lưu" + Lưu · "Lưu · kỹ năng tiếp ›" | KHỚP | 04/11: dùng lại panel Case phủ (PTA chấp nhận); thân Case (mục vạch trái, chip nguyên nhân, trích Mô tả, PA + tag) là của #882 (U02 c2 + U03 A2); trạng thái + Đổi người / Sửa GIỮ dưới dải số |
 | A3 | Lưới MT: bỏ "Đủ điểm"; "Chưa xếp lịch" thay "Chờ 0 kỹ năng"; thẻ lượt "n/N có điểm đủ" | KHỚP | #13, N33 ④ — áp cả LuoiThuong · MotKyNang · LuotThuongPage · MockDetailPage |
 | B1 | Thẻ em 375: lưới 5 ô giữ; chạm tên mở cuối thẻ; bảng lượt W gộp (không Kỳ vọng) | KHỚP | #17 |
 | C1 / C4 | Kỹ năng không Case: "Không có Case" + "+ Case" (theo quyền) · chưa có kết quả PA "–" | KHỚP | |
 | C2 | Em chưa có lượt: "Chưa có điểm." + Lượt tới | KHỚP | |
 | C3 | Lỗi tải chi tiết: chỉ trong vùng tóm tắt + Thử lại | KHỚP | lỗi tải Case |
 
-Ước khớp: 23 / 25 dòng KHỚP (92 %).
+Ước khớp: 24 / 25 dòng KHỚP (96 %).
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | Vì sao |
@@ -52,10 +52,11 @@ Dữ liệu web là demo MB FT 101 (14/09/2026, vai GVCN 7) — tên / số khá
 | Cách xem "Cần hỗ trợ" (FT) | có | bỏ | chủ SP 03/11 |
 | Nhập điểm · + Case · ⋯ đầu trang · badge · Việc của tôi · chip lọc · Chọn nhiều + thanh hàng loạt · ⋯ hàng (N26) · Kết quả đầu ra · Thông tin lớp · Điểm Mock Test gập (Dán Excel) · tab Ý thức · Phân tích lớp · MT gần nhất → hồ sơ HV đúng lượt | có | có | GIỮ |
 | + Case cho kỹ năng không có Case | qua ⋯ hàng | thêm nút ở tóm tắt (cùng panel + Case) | mockup C1 |
+| Ghi kết quả PA → sang Case kỹ năng kế của em | đóng, mở lại | "Lưu · kỹ năng tiếp ›" (chỉ khi mở từ hồ sơ lớp và còn Case kỹ năng kế) | mockup A2 chân |
 
 ## [XM] hỏi PTA
 - **Cần hỗ trợ lớp thường:** bảng ý U03 chỉ vẽ FT; lớp thường không có mở rộng kỹ năng nên GIỮ cách xem "Cần hỗ trợ" ở lớp thường. Muốn bỏ cả lớp thường → PR riêng.
-- **Panel A2:** dùng panel Case sẵn có (phủ) thay panel cạnh bảng — giữ một kiểu mở panel Case toàn hệ thống.
+- **Panel A2:** dùng panel Case sẵn có (phủ) — PTA chấp nhận 03/11. Thẻ PA trong thân theo #882 (thẻ), mockup U03 A2 vẽ dòng nhãn – giá trị: PTA quyết giữ một kiểu.
 
 ## Turso
 Mở trang: không đổi (`/roster` thêm 4 tiêu chí từ dòng điểm đã đọc: **+0 câu, +0 dòng**). Mở một em: **0 câu**. Chọn kỹ năng có Case: **1** `/cases/:id` (trước: mở Case dưới hàng gọi `/cases/:id` cho MỌI Case của em; rê ô W/S trước gọi `/attempts/:id` — nay 0).

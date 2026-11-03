@@ -9,7 +9,7 @@ import { fmtBand } from '../../lib/format.ts';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { NhanKq } from '../../ui/Nhan.tsx';
+import { NhanKetPa, NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -49,8 +49,6 @@ const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparen
 /* Mockup U03 `.khoi` / `.muc-h`: khối nền thẻ trong vùng mở rộng, tiêu đề 15/700 có vạch nhấn trái. */
 const KHOI = 'grid min-w-0 content-start [&>*]:min-w-0 gap-2.5 rounded-[10px] border bg-[color:var(--surface)] px-3.5 py-3 max-sm:px-2.5';
 const MUC_H = "m-0 flex items-center gap-2 text-[15px] font-bold text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)] before:content-['']";
-/* Mockup `.ket`: chip tròn Kết quả PA — tiến bộ xanh · một phần vàng · không / kém đỏ · chưa đủ dữ liệu xám. */
-const KET: Record<string, string> = { ok: 'bg-ok-bg text-ok', warn: 'bg-soon-bg text-soon', danger: 'bg-bad-bg text-bad', muted: 'bg-muted-bg text-dim' };
 const TAG = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim [&_b]:font-bold [&_b]:text-slate-100';
 
 /** Lượt hiện của em (P8 — lượt của TỪNG HV): lượt máy chủ kết luận (`standing`, cùng `standingFor` của Học viên & Lớp); chưa có → lượt mới nhất có điểm. */
@@ -475,7 +473,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
           <span className={NH}>{t('Kết quả PA')}</span>
           {kqPa ? (
             <span className="flex flex-wrap items-center gap-1.5">
-              <span className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold ${KET[OUTCOME_TONE[kqPa.outcome] ?? 'muted']}`}>{dich(outcomeLabelFor(kqPa.outcome))}</span>
+              <NhanKetPa tone={OUTCOME_TONE[kqPa.outcome] ?? 'muted'}>{dich(outcomeLabelFor(kqPa.outcome))}</NhanKetPa>
               {kqPa.observedOn && <span className="text-[13px] text-dim">{tuanLich(kqPa.observedOn, homNay)}</span>}
             </span>
           ) : <span className="text-[13px] text-dim">–</span>}

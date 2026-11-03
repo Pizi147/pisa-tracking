@@ -62,6 +62,12 @@ export function NhanLich({ loai, title, children }: { loai: keyof typeof LICH; t
   return <span title={title} className={`inline-flex h-[22px] items-center whitespace-nowrap rounded-[2px] px-2 text-xs font-semibold leading-none tabular-nums ${LICH[loai]}`}>{children}</span>;
 }
 
+/** U03 (mockup `.ket`): chip tròn Kết quả PA không chấm — tiến bộ xanh · một phần / không đổi vàng · kém đỏ · chưa đủ dữ liệu xám (`OUTCOME_TONE`). */
+const KET_PA: Record<string, string> = { ok: 'bg-ok-bg text-ok', warn: 'bg-soon-bg text-soon', danger: 'bg-bad-bg text-bad', muted: 'bg-muted-bg text-dim' };
+export function NhanKetPa({ tone, children }: { tone: string; children: ReactNode }) {
+  return <span className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold ${KET_PA[tone] ?? KET_PA.muted}`}>{children}</span>;
+}
+
 export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'muted';
 
 /** Nhóm 3 (V5): viên nền xám nhạt + chấm màu đầu (`CHAM`); sắp hạn / quá hạn / lỗi: nền nhạt cùng họ (quá hạn luôn kèm ⚠ thay chấm). */
