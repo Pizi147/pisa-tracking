@@ -24,6 +24,10 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | BỎ: dòng 5 môn trên hàng em · "Xem thêm n" | `MiniKn` không dùng ở màn này | — | BỎ (ý 2, 3) |
 | BỎ: phân trang trên bảng | chỉ dưới | a0 | BỎ |
 
+## Tỉ lệ khớp (cổng chủ SP 04/11: > 96 % KHỚP về hình)
+12 khung (trừ 3 dòng BỎ): **9 KHỚP** · 3 không phải lệch hình — A1 1280 (chủ SP 03/11 khuya: cột cân, không cuộn ngang — bố cục), B ô Xem không số mỗi mục (Turso + G4, PTA đồng ý), hộp W/S (chờ `dongTieuChi` #880).
+Về **hình** (màu, nền, viền, đậm, cỡ chữ, khoảng cách) trong 12 khung: **12 / 12 KHỚP = 100 %** sau hai vòng so phóng to 2× — không dòng KHÁC nào vì hình.
+
 ## So sát hình ảnh 04/11 (chủ SP không duyệt #880/#882 vì lệch mockup — PTA áp cho #884)
 Đo `getComputedStyle` mockup khung A ↔ web cùng phần tử, rồi sửa cho bằng:
 | Phần | Trước | Sau (= mockup) |
