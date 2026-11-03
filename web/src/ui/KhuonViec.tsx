@@ -1,9 +1,9 @@
-import { createContext, useEffect, useState, type ReactNode } from 'react';
+import { Fragment, createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { duongHoSoHocVien, mucDiem } from '@shared/domain/index.ts';
 import { lopKq } from './BieuTuong.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { useChoHoanTac } from './KhungPanel.tsx';
+import { NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
 import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
 
 /**
@@ -21,6 +21,38 @@ export function CanLam({ children, trongDong }: { children: ReactNode; /** OV-12
       {children}
     </div>
   );
+}
+
+/**
+ * UI-CONG-VIEC (audit 03/11, mockup `audit-0311/ro.css`): trường TÁCH RÕ, không nền — `.fld` hàng nhãn mờ 13 / giá trị 15, kẻ mảnh giữa hàng
+ * (375: nhãn trên giá trị) · `.muc-h` tiêu đề mục 15 / 700 + vạch nhấn · `.trich` đoạn trích vạch trái, tối đa 3 dòng.
+ */
+export function TruongDoc({ dong }: { dong: [string, ReactNode][] }) {
+  const co = dong.filter(([, v]) => v !== null && v !== undefined && v !== '' && v !== false);
+  if (!co.length) return null;
+  return (
+    <dl className="m-0 grid grid-cols-[8.5rem_minmax(0,1fr)] max-sm:grid-cols-1">
+      {co.map(([n, v], i) => (
+        <Fragment key={n}>
+          <dt className={`py-2.5 text-[13px] font-medium leading-snug text-faint max-sm:pb-0.5 ${i ? 'border-t max-sm:border-0' : ''}`} style={{ borderColor: 'var(--line)' }}>{n}</dt>
+          <dd className={`m-0 min-w-0 py-[9px] text-[15px] leading-normal text-[color:var(--text)] max-sm:pt-0 ${i ? 'border-t max-sm:border-0' : ''}`} style={{ borderColor: 'var(--line)' }}>{v}</dd>
+        </Fragment>
+      ))}
+    </dl>
+  );
+}
+export function MucH({ children }: { children: ReactNode }) {
+  return (
+    <h3 className="m-0 mb-1.5 flex flex-wrap items-center gap-2 text-[15px] font-bold leading-snug text-[color:var(--text)]">
+      <span aria-hidden className="h-[18px] w-[3px] shrink-0 rounded-sm bg-[color:var(--accent)]" />{children}
+    </h3>
+  );
+}
+export const TheMuc = ({ children }: { children: ReactNode }) => (
+  <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{children}</span>
+);
+export function Trich({ children }: { children: ReactNode }) {
+  return <p className="m-0 line-clamp-3 max-w-[80ch] border-l-[3px] py-0.5 pl-3 text-[15px] leading-relaxed text-[color:var(--text)]" style={{ borderColor: 'var(--line-strong)' }}>{children}</p>;
 }
 
 export function BoiCanh({ dong, them }: { dong: [string, ReactNode][]; them?: ReactNode }) {
@@ -111,6 +143,11 @@ export function ChuLuu({ tt, loi, luc, gon }: { tt: TtLuu; loi?: string | null; 
 
 /** Nút chữ (nút phụ v3) — đứng sau nút chính trong khối Cần làm; một nút chính duy nhất nổi. */
 export function NutChu({ children, onClick, mo, disabled, title }: { children: ReactNode; onClick: () => void; mo?: boolean; disabled?: boolean; title?: string }) {
+  /* UI-CONG-VIEC (mockup `.link-nho`): panel việc ở Công việc — chữ nhấn 13 / 600, không đệm, thẳng mép ô trên. */
+  if (useContext(NhanTruongDam)) {
+    return <button type="button" disabled={disabled} onClick={onClick} title={title}
+      className={`link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0 ${mo ? 'text-slate-400' : ''}`}>{children}</button>;
+  }
   return (
     <button type="button" disabled={disabled} onClick={onClick} title={title}
       className={`btn btn-ghost min-h-[44px] font-semibold sm:min-h-[40px] ${mo ? 'text-slate-400' : 'text-[color:var(--accent)]'}`}>{children}</button>

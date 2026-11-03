@@ -340,7 +340,7 @@ export function ChonNguoi({
           {phu && <span className="text-slate-500 text-xs"> · {phu}</span>}
         </span>
         {/* Nhãn ô trỏ vào nút này (htmlFor) — aria-label giữ chữ "Đổi" trong tên đọc, không thành tên ô trơn. */}
-        {!disabled && <button id={oId} type="button" className="btn btn-sm -my-1 h-7 shrink-0 !py-0 max-sm:min-h-0" aria-label={ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : undefined}
+        {!disabled && <button id={oId} type="button" className="link -my-1 shrink-0 appearance-none border-0 bg-transparent px-1 py-0 text-[13px] font-semibold max-sm:min-h-0" aria-label={ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : undefined}
           onClick={(e) => { e.stopPropagation(); setEditing(true); }}>{t('Đổi')}</button>}
       </div>
     );

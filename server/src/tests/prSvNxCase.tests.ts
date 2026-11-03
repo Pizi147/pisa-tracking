@@ -205,7 +205,7 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     assert(!moTa(c.id), `chưa xác nhận mà đã có mô tả: ${JSON.stringify(moTa(c.id))}`);
     const v = viec(gvPT, 'xem_nx_s', c.id);
     const han = one('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h;
-    assert(v.length === 1 && v[0].due === han && han && v[0].tieuDe.startsWith('Xác nhận Case Speaking') && v[0].mine, JSON.stringify(v));
+    assert(v.length === 1 && v[0].due === han && han && v[0].tieuDe.startsWith('Xác nhận Case · Speaking') && v[0].mine, JSON.stringify(v));
     assert(!(mywork.myWork(gvPT).items as any[]).some((x) => x.group === 'ghi_nhan_xet' && x.caseId === c.id), 'trùng việc Ghi nhận xét');
     const ct = cases.caseDetail(gvPT, c.id);
     assert(ct.choXacNhanS?.nhanXet === NX.speaking && ct.choXacNhanS.coTheXacNhan, JSON.stringify(ct.choXacNhanS));
@@ -355,7 +355,7 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     const ct = cases.caseDetail(QL, c.id);
     assert(ct.trangThaiV4.chu === 'Chờ mô tả Case' && ct.viecTiep?.chu === 'Mô tả Case', JSON.stringify({ tt: ct.trangThaiV4, v: ct.viecTiep }));
     const v = viec(gvPT, 'ghi_nhan_xet', c.id);
-    assert(v.length === 1 && v[0].mine && v[0].tieuDe.startsWith('Mô tả Case Speaking') && v[0].actionLabel === 'Mô tả Case' && v[0].statusLabel === 'Chờ mô tả Case',
+    assert(v.length === 1 && v[0].mine && v[0].tieuDe.startsWith('Mô tả Case · Speaking') && v[0].actionLabel === 'Mô tả Case' && v[0].statusLabel === 'Chờ mô tả Case',
       JSON.stringify(v.map((x) => ({ t: x.tieuDe, n: x.actionLabel, s: x.statusLabel, m: x.mine }))));
     assert(!/nhận xét/i.test(`${v[0].tieuDe} ${v[0].reason}`), `việc không được nói "nhận xét": ${v[0].tieuDe} — ${v[0].reason}`);
   }));
