@@ -20,3 +20,7 @@ Nền hình: token + thanh trên của `thiet-ke/v8/tong-quan.html` (đã duyệ
 
 ## Không đổi
 Quyền, API, dữ liệu; tab Đang SOS / Lịch thi / Phân công GV; panel một em; ngăn Xuất; menu ⋯ (N26). Không thêm request (dòng đọc Turso giữ nguyên).
+
+## Critique (agent độc lập, Opus, 03/11)
+Vòng 1 26/40 (P1 × 5) → vòng 2 28/40 (P1 × 1: ⓘ trong tiêu đề cột, trái G9) → vòng 3 **30/40, P0 0 · P1 0**; sau đó sửa nốt P2 (thẻ 375 gọn, nhãn "Ý thức") + P3 (↓ thay gạch chân, ⓘ ở 375).
+Theo cổng (chạm 30 → chỉ cần hết P0 / P1) dừng ở đây. Điểm còn thấp ở Tối giản / Linh hoạt là do màn cố ý giữ bảng dày để so sánh nhiều em.

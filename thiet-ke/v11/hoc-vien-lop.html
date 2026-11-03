@@ -121,7 +121,8 @@ a { color: var(--accent); text-decoration: none; }
 .kq.dat { color: var(--ok); } .kq.duoi { color: var(--bad); } .kq.bang { color: var(--accent); } .kq.chua { color: var(--text-faint); font-weight: 500; }
 .knl { font: 12px var(--phong-so); color: var(--text-faint); white-space: nowrap; letter-spacing: .01em; }
 .knl b { font-weight: 600; color: var(--text-dim); }
-.knl b.d { color: var(--bad); text-decoration: underline; text-underline-offset: 2px; } .knl b.o { color: var(--ok); }
+.knl b.d { color: var(--bad); }
+.knl b.d::after { content: '↓'; font-size: 11px; margin-left: 1px; } .knl b.o { color: var(--ok); }
 
 /* đầu trang + công cụ */
 .dau { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; min-height: 40px; }
@@ -324,9 +325,9 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
     var k = e.kn ? e.kn.slice() : null; if (k) k.kv = e.kv;
     var c = e.ovr === undefined || e.ovr === null ? null : e.ovr >= e.kv ? (e.ovr > e.kv ? 'dat' : 'bang') : 'duoi';
     return '<div class="the-em"><div class="d1"><a class="ten">' + (tim ? e.ten.replace(tim, '<span class="hl">' + tim + '</span>') : e.ten) + '</a><button class="ba-cham" aria-label="Thao tác · ' + e.ten + '">⋯</button></div>' +
-      '<div class="d2">' + (e.tvv ? '<span>TVV ' + e.tvv + '</span>' : '') + '<span class="so">' + e.lt[0] + '/' + e.lt[1] + ' MT · Target ' + e.tg.toFixed(1) + '</span>' + (c ? '<span><span class="kq ' + c + '">' + (c === 'dat' ? '✓' : c === 'bang' ? '=' : '✗') + ' ' + e.ovr.toFixed(1) + '</span> KV ' + e.kv.toFixed(1) + ' · ' + e.mt + '</span>' : '<span class="kq chua">– chưa có Overall</span>') + '</div>' +
+      '<div class="d2">' + (e.tvv ? '<span>TVV ' + e.tvv + '</span>' : '') + '<span class="so">' + e.lt[0] + '/' + e.lt[1] + ' MT</span>' + (c ? '<span><span class="kq ' + c + '">' + (c === 'dat' ? '✓' : c === 'bang' ? '=' : '✗') + ' ' + e.ovr.toFixed(1) + '</span> KV ' + e.kv.toFixed(1) + ' · ' + e.mt + '</span>' : '<span class="kq chua">– chưa có Overall</span>') + '</div>' +
       (k && DUOI && knl(k).indexOf('Dưới') >= 0 ? '<div>' + knl(k) + '</div>' : '') +
-      '<div class="d3">' + (e.sos ? cs(e.sos[0], e.sos[1], e.sos[2]) : '') + (e.ca ? '<span style="font-size:13px" class="mo">' + e.ca + (e.paQh ? ' · <span class="qh">PA quá hạn</span>' : '') + '</span>' : '') + (e.yt ? '<span style="font-size:13px" class="mo">' + e.yt + '</span>' : '') + lichThi(e.lich) + '</div>' +
+      '<div class="d3">' + (e.sos ? cs(e.sos[0], e.sos[1], e.sos[2]) : '') + (e.ca ? '<span style="font-size:13px" class="mo">' + e.ca + (e.paQh ? ' · <span class="qh">PA quá hạn</span>' : '') + '</span>' : '') + (e.yt ? '<span style="font-size:13px" class="mo">· Ý thức <b style="color:var(--text)">' + e.yt + '</b></span>' : '') + lichThi(e.lich) + '</div>' +
       (e.v && e.v.length ? '<div class="viec"><span class="v1"><button class="vt">' + e.v[0][0] + '</button>' + han(e.v[0][1]) + '</span>' + (e.v.length > 1 ? '<button class="oso them">+' + (e.v.length - 1) + ' việc</button>' : '') + '</div>' : '') + '</div>';
   }
   function theLop(l, tim) { if (typeof tim !== 'string') tim = null;
@@ -384,7 +385,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
   function thanhLoc(o) {
     return '<div class="loc"><span class="otim' + (o.tim ? ' co' : '') + '">' + SVG_TIM + (o.tim || 'Tìm học viên, lớp') + (o.tim ? '<span class="x" aria-label="Xoá tìm">✕</span>' : '') + '</span>' +
       (o.chips || [chip('Thi tháng này', 19), chip('Có việc quá hạn', 43), chip('Đã thi · chờ KQ', 7)]).join('') + '<button class="chip">Bộ lọc thêm ▾</button>' +
-      '<button class="ii" aria-label="Cách đọc bảng" title="2/3 MT = MT đã xong / MT đã tạo · KV = kỳ vọng của chính lượt · ✗ / số gạch chân = dưới kỳ vọng · Report / WL = bậc xử lý Ý thức đã thực hiện">ⓘ</button><span class="dem"><b>' + (o.dem ?? '194') + '</b> HV · <b>' + (o.lop ?? 23) + '</b> lớp' + (o.lop === 0 ? '' : ' · <button class="lk">' + (o.moHet ? 'Thu gọn tất cả' : 'Mở tất cả lớp') + '</button>') + '</span></div>' + (o.dangLoc ? '<div class="dang-loc">' + o.dangLoc + '</div>' : '');
+      '<button class="ii" aria-label="Cách đọc bảng" title="2/3 MT = MT đã xong / MT đã tạo · KV = kỳ vọng của chính lượt · ✗ / số có ↓ = dưới kỳ vọng · Report / WL = bậc xử lý Ý thức đã thực hiện">ⓘ</button><span class="dem"><b>' + (o.dem ?? '194') + '</b> HV · <b>' + (o.lop ?? 23) + '</b> lớp' + (o.lop === 0 ? '' : ' · <button class="lk">' + (o.moHet ? 'Thu gọn tất cả' : 'Mở tất cả lớp') + '</button>') + '</span></div>' + (o.dangLoc ? '<div class="dang-loc">' + o.dangLoc + '</div>' : '');
   }
 
   var html = '';
@@ -394,7 +395,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
   var LOP375b = [{ ma: 'CP FT 116', hv: 7, kt: 1, gvcn: 'N. H. Dũng', sos: [0, 0, 5], vl: [['1 bài chờ chấm']], em: E116.slice(0, 3).concat([E116[7]]) }, { ma: 'CP FT 130', hv: 10, gvcn: 'Đ. V. T. Phong', sos: [2, 0, 5], vl: [['3 việc quá hạn', 'do']] }];
   var a375 = '<header class="dau"><h1>Học viên &amp; Lớp</h1></header><div class="loc" style="gap:8px">' + oXem('Cẩm Phả', null) + '<span class="doan" role="group" style="flex:1"><button aria-pressed="true" style="flex:1">FT<b>14</b></button><button aria-pressed="false" style="flex:1">LT<b>9</b></button></span></div>' +
     tabs({}) + '<div class="loc"><span class="otim">' + SVG_TIM + 'Tìm học viên, lớp</span><button class="btn" style="padding:0 12px">Lọc</button><button class="btn btn-ma" aria-label="Xuất, Thêm học viên…">⋯</button></div>' +
-    '<div class="dang-loc"><span><b class="so">194</b> HV · <b class="so">23</b> lớp</span><button class="lk" style="margin-left:auto">Mở tất cả</button></div>' +
+    '<div class="dang-loc"><span><b class="so">194</b> HV · <b class="so">23</b> lớp</span><button class="ii" aria-label="Cách đọc bảng">ⓘ</button><button class="lk" style="margin-left:auto">Mở tất cả</button></div>' +
     '<div class="bang-hv">' + LOP375b.map(theLop).join('') + '<div class="hang-cuoi"><span>1–10 / 23 lớp</span><span class="trang"><button>‹</button><button aria-current="page">1</button><button>2</button><button>›</button></span></div></div>';
   html += khu('a', 'A · QT / QL Cẩm Phả · tab Tất cả — lớp đầu tự mở, các lớp còn lại gập',
     ['tối · QT Đỗ Vũ Tuấn Phong (xem Cẩm Phả)', khung(false, 'Đỗ Vũ Tuấn Phong', VAI_QT, a1440)],
@@ -402,7 +403,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
     ['<b>Đầu trang một hàng</b>: tên trang · ô <b>Xem</b> (G1 — thay hai ô "Chi nhánh") · Fast Track / Lớp thường · bên phải Xuất Excel · + Thêm học viên · ⋯. 375: Xuất + Thêm vào ⋯, chip lọc vào nút <b>Lọc</b> (sheet) → lớp đầu tiên lên trong khung nhìn đầu (nay ~600 px điều khiển — B26).',
      '<b>Hàng lớp</b>: ▸ mã lớp (link hồ sơ lớp) · <b>7 HV · 1 đã kết thúc</b> (B09: sĩ số = em đang học, như Tổng quan / hồ sơ lớp; em kết thúc chờ KQ thi hiện mờ cuối lớp, không cộng) · GVCN · SOS <b>cùng kiểu Tổng quan</b> (chip mức + số HV, mức 0 không vẽ — thay ô vuông "SOS 0 0 5") · việc cấp lớp (bài chờ chấm, ⚠ việc quá hạn luôn hiện).',
      '<b>Tiêu đề cột chỉ nằm trong lớp đang mở</b> (B10) — lớp gập là một hàng tóm tắt, không có hàng tiêu đề treo trên đầu bảng. Cột tên ghim khi cuộn ngang (1280).',
-     '<b>Hàng em</b>: dòng 1 = giá trị chính, dòng 2 = phụ 12–13 px (tên / việc rất dài có thể 3 dòng, không cắt chữ) (TVV · Target · điểm từng môn · Case/PA). MT gần nhất: <b>✗ 7.0</b> KV 7.5 · MT2 · W4 SEP — ghi rõ so kỳ vọng của lượt nào; điểm từng môn dưới, môn dưới kỳ vọng tô đỏ + gạch chân ngay số (không chỉ màu). Một ⓘ "Cách đọc bảng" cạnh bộ đếm (không đặt trong tiêu đề cột — G9).',
+     '<b>Hàng em</b>: dòng 1 = giá trị chính, dòng 2 = phụ 12–13 px (tên / việc rất dài có thể 3 dòng, không cắt chữ) (TVV · Target · điểm từng môn · Case/PA). MT gần nhất: <b>✗ 7.0</b> KV 7.5 · MT2 · W4 SEP — ghi rõ so kỳ vọng của lượt nào; điểm từng môn dưới, môn dưới kỳ vọng tô đỏ + dấu ↓ ngay sau số (không chỉ màu, không gạch chân để khỏi lẫn ô số bấm được — G6). Một ⓘ "Cách đọc bảng" cạnh bộ đếm (không đặt trong tiêu đề cột — G9).',
      '<b>Việc</b>: MỘT việc gấp nhất, chữ đầy đủ (xuống dòng, không "…") + hạn; còn lại ô số "<b>+2 việc</b>" (mở tại chỗ, không "›") mở <b>panel một em</b> ở mục Việc (bấm / Enter / chạm — không phụ thuộc rê chuột). Bỏ "Xem thêm 2" mở dài trong ô.',
      '<b>Chip lọc số 0</b> mờ, không bấm (B11). Tổng "194 HV · 23 lớp" + "Mở tất cả / Thu gọn tất cả" ở cuối hàng lọc; lựa chọn mở / gập nhớ khi quay lại (URL). Phân trang <b>chỉ ở cuối</b> bảng.']);
 
