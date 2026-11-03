@@ -111,7 +111,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   const loc: Loc = locUrl === 'sos' || locUrl === 'thieu' ? locUrl : 'tat-ca';
   /* Em đang mở + kỹ năng đang chọn (null = chưa chọn kỹ năng nào). */
   const [mo, setMo] = useState<{ sid: number; kn: Kn | null } | null>(null);
-  const [ngan2, setNgan2] = useState<{ caseId: number; hv: string } | null>(null);
+  const [ngan2, setNgan2] = useState<{ caseId: number; hv: string; sid: number; kn: Kn } | null>(null);
   const dienThoai = useDienThoai();
   if (roster.error) return <ErrorState message={roster.error.message} hint={roster.error.hint} status={roster.error.status} onRetry={roster.reload} />;
   if (!roster.data) return <div className="card p-4"><Skeleton rows={6} /></div>;
@@ -224,7 +224,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   const lopHang = (r: Hang) => `${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
   const moRong = (r: Hang) => (
     <MoRongEm r={r} kn={mo?.kn ?? null} ca={caseCua.get(r.id) ?? []} ds={ngCanh} classId={classId} coTheBaoCase={quyen.coTheBaoCase}
-      onKn={(kn) => setMo({ sid: r.id, kn })} onChiTiet={(caseId) => setNgan2({ caseId, hv: r.fullName })} onThemCase={() => tt.moCase(r.id, r.fullName)} />
+      onKn={(kn) => setMo({ sid: r.id, kn })} onChiTiet={(caseId, kn) => setNgan2({ caseId, hv: r.fullName, sid: r.id, kn })} onThemCase={() => tt.moCase(r.id, r.fullName)} />
   );
   const hangCua = (r: Hang) => { const coPhuHang = COT.some((c) => !!phuCua(r, c)); return (
     <Fragment key={r.id}>
@@ -266,7 +266,14 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
           : <button type="button" className="btn btn-sm" onClick={() => setLoc('tat-ca')}>{t('Tất cả')} <b className="tabular-nums">{dem['tat-ca']}</b></button> }} />
       {tt.panels}
       {ngan2 && (
-        <NganCase caseId={ngan2.caseId} hocVien={ngan2.hv} lop={maLop} onClose={() => setNgan2(null)} onChanged={xong} />
+        <NganCase caseId={ngan2.caseId} hocVien={ngan2.hv} lop={maLop} onClose={() => setNgan2(null)} onChanged={xong} dauKyNang
+          kyNangTiep={(() => {
+            /* U03 A2 "Lưu · kỹ năng tiếp ›": Case đang mở của kỹ năng kế (L R W1 W2 S) cùng em — tóm tắt dưới hàng đi theo. */
+            const ca = caseCua.get(ngan2.sid) ?? [];
+            const k = KN.slice(KN.indexOf(ngan2.kn) + 1).find((x) => caseKn(ca, x).some((c) => c.id !== ngan2.caseId));
+            const c = k ? caseKn(ca, k).find((x) => x.id !== ngan2.caseId) : null;
+            return k && c ? { ten: NHAN_KN[k], di: () => { setNgan2({ ...ngan2, caseId: c.id, kn: k }); setMo({ sid: ngan2.sid, kn: k }); } } : null;
+          })()} />
       )}
     </section>
   );
@@ -313,7 +320,7 @@ function DongTieuChi({ nhan, d, band }: { nhan: string; d: [string, string][]; b
  */
 function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThemCase }: {
   r: Hang; kn: Kn | null; ca: CaseLop[]; ds: NguCanhDs; classId: number; coTheBaoCase: boolean;
-  onKn: (k: Kn) => void; onChiTiet: (caseId: number) => void; onThemCase: () => void;
+  onKn: (k: Kn) => void; onChiTiet: (caseId: number, kn: Kn) => void; onThemCase: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();
   const ls = r.history as Moc[];
@@ -400,7 +407,7 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThe
  * Hạn ghi tiếp không ghi ở đây — đã ở Việc của tôi / Công việc (chủ SP 03/11 vòng 2). Lỗi tải chỉ trong vùng này + Thử lại.
  */
 function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }: {
-  r: Hang; kn: Kn; ca: CaseLop | null; ds: NguCanhDs; diemDv: number | null; coTheBaoCase: boolean; onChiTiet: (caseId: number) => void; onThemCase: () => void;
+  r: Hang; kn: Kn; ca: CaseLop | null; ds: NguCanhDs; diemDv: number | null; coTheBaoCase: boolean; onChiTiet: (caseId: number, kn: Kn) => void; onThemCase: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();
   const ct = useApi<CaseDetail>(ca ? `/cases/${ca.id}` : null, [ca?.id]);
@@ -419,7 +426,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
         {ca?.ownerName && <span className={TAG} style={{ borderColor: 'var(--line-strong)' }}>{t('phụ trách')} <b>{ca.ownerName}</b></span>}
         <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
           <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(r.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
-          {ca ? <button type="button" className={`${NUT} btn-primary`} onClick={() => onChiTiet(ca.id)}>{t('Xem chi tiết')}</button>
+          {ca ? <button type="button" className={`${NUT} btn-primary`} onClick={() => onChiTiet(ca.id, kn)}>{t('Xem chi tiết')}</button>
             : coTheBaoCase && <button type="button" className={NUT} onClick={onThemCase}>+ Case</button>}
         </span>
       </div>

@@ -1,5 +1,7 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
@@ -8,7 +10,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { caseStatusLabel } from '../../lib/format.ts';
-import { INTERVENTION_KIND_LABEL, chuAiLamDuoc, chuPhuHuynh, ghiNhanhDuoc, laPaMacDinh, maView, toiKyGhi, deadlineView, nhanQuaHan, type DeadlineKind, outcomeLabelFor, tuanLich, viewTuMa } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, duongHoSoHocVien, chuAiLamDuoc, chuPhuHuynh, ghiNhanhDuoc, laPaMacDinh, maView, toiKyGhi, deadlineView, nhanQuaHan, type DeadlineKind, outcomeLabelFor, tuanLich, viewTuMa } from '@shared/domain/index.ts';
 import { XemCaseViec, XemCha, useXem } from '../../lib/quayLai.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type VuaDoiPa, type ViewCase } from '../cases/CasePanel.tsx';
@@ -16,7 +18,7 @@ import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
 import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
 import { DongNguyenNhan, MoTaCasePanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { BoiCanh, KhoiDaLuu, NutChu, ViecVuaLuu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, DiemKq, KhoiDaLuu, NutChu, ViecVuaLuu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
@@ -40,7 +42,11 @@ export function NganCase(p: Parameters<typeof ThanNganCase>[0]) {
   return <ThanNganCase key={p.caseId} {...p} />;
 }
 
-function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, veNguon, onTiep, anViecChinh = false }: {
+function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, veNguon, onTiep, anViecChinh = false, dauKyNang = false, kyNangTiep = null }: {
+  /** U03 A2 (mở từ tóm tắt kỹ năng hồ sơ lớp): đầu "CASE · kỹ năng" · "em · kỹ năng" + chip SOS · dải Điểm · Kỳ vọng · Phụ trách · Mở. */
+  dauKyNang?: boolean;
+  /** U03 A2 chân: Case kỹ năng kế của em — Ghi kết quả có "Lưu · kỹ năng tiếp ›". */
+  kyNangTiep?: { ten: string; di: () => void } | null;
   /** U02 (một việc một chỗ): nút việc tiếp đã ở dòng tóm tắt Case của cột hồ sơ HV — chân Case không lặp (Hoàn thành Case vẫn ở chân). */
   anViecChinh?: boolean;
   /** 6c (#644 XM-4): view Case mở từ panel việc — PA của việc đó không lặp ô ghi nhanh / "Xác nhận PA" / "Kết quả" (việc nằm ngay view dưới, ‹ về). */
@@ -195,6 +201,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
       const tenLoai = dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind);
       return (
         <GhiKetQuaPanel key={iv.id} {...chung} onSaved={xongLuu(t('Ghi kết quả'))} onThemPa={() => setView({ loai: 'them-pa' })}
+          tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); reload(); onChanged?.(); kyNangTiep.di(); } } : undefined} chuTiep={t('Lưu · kỹ năng tiếp ›')}
           em={em} ngCanh={[tenLoai, data.categoryLabel].filter(Boolean).join(' · ')}
           boiCanh={[
             [t('Phương án'), [iv.description || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ')],
@@ -396,7 +403,12 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   return (
     <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai} anDau={trongCot}
       /* 6b-2 (critique): hạn của việc tiếp ở đầu view Case — cùng chip của dòng danh sách, không mất khi mở Case. */
-      dau={dauViec({ em, lop, han: canDong && v?.han && v.loaiHan ? <ChipHan loai={v.loaiHan as DeadlineKind} han={v.han} /> : null })}
+      dau={dauKyNang && !trongCot ? {
+        /* U03 A2 (mockup `.pn-h1 .loai` · `.pn-tieu`): "CASE · WRITING TASK 2" · "Hà Trần Phúc · Writing Task 2" + chip SOS bên phải. */
+        loai: `CASE · ${(data.categoryLabel ?? '').toLocaleUpperCase('vi')}`, dong2: [],
+        tieu: <span>{em ? <Link className="text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(em.id)}>{em.ten}</Link> : null}{data.categoryLabel ? ` · ${data.categoryLabel}` : ''}</span>,
+        han: data.sosLevel ? <ChipSos muc={data.sosLevel} tinh /> : null,
+      } : dauViec({ em, lop, han: canDong && v?.han && v.loaiHan ? <ChipHan loai={v.loaiHan as DeadlineKind} han={v.han} /> : null })}
       chan={trongCot && !themPaDuoc && !nutChinhHien && !nutTiep && !nutCot && !(lf.daBam && chanHoanThanh.length) ? undefined : {
         huy: trongCot ? null : { nhan: t('Đóng'), onClick: onClose },
         phu: <>
@@ -412,6 +424,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
       <div ref={boxRef}>
         {/* PR-PA (§8, mockup pa-dong-bo §9): dải đầu panel — trạng thái MỘT lần (chip) · "mở W2 OCT · X báo" · Sửa / Mở lại cùng hàng. */}
         <div className={trongCot ? 'flex flex-col gap-1.5 empty:hidden' : '-mx-4 flex flex-col gap-1.5 border-b px-4 pb-3 pt-2.5'} style={trongCot ? { borderColor: 'var(--line)' } : { borderColor: 'var(--line)', background: 'rgb(var(--phu-rgb) / 0.035)' }}>
+          {/* U03 A2 (mockup `.facts`): Điểm MTn (✗ số lớn) · Kỳ vọng · Phụ trách · Mở — đứng đầu dải, trước trạng thái + Đổi người / Sửa. */}
+          {dauKyNang && !trongCot && <DaiDiemCase data={data} homNay={homNay} />}
           <div className="flex flex-wrap items-center gap-2">
             {trongCot ? null : data.systemCloseLabel
               ? <Nhan tone="muted" title={dich(data.systemCloseLabel)}>{t('Hệ thống đóng · {ly}', { ly: dich(data.systemCloseLabel) })}</Nhan>
@@ -421,7 +435,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
                   : <NhanTrangThai t={data.trangThaiV4.t} chu={dich(data.trangThaiV4.chu)} />)
                 : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
             {/* U02: trong cột, "Mở" là một trường của khung Case (sau Mô tả — `ThanCase`), không ở dải đầu. */}
-            {!trongCot && <span className="min-w-0 text-[13px] text-slate-400 max-sm:order-last max-sm:basis-full">
+            {!trongCot && !dauKyNang && <span className="min-w-0 text-[13px] text-slate-400 max-sm:order-last max-sm:basis-full">
               {t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
               {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
               {!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
@@ -448,10 +462,30 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
         {data.yeuCauCase && data.viewer.canApprove && (
           <div className="pt-3"><TheYeuCau gon yc={data.yeuCauCase} onXong={() => { reload(); onChanged?.(); }} /></div>
         )}
-        <ThanCase lyDoKhoa={trongCot && canDong && ht?.an && ht.dong ? (dk ? <>{dich(dk[1])} · <b className="font-semibold">{dich(dk[2])}</b></> : dich(ht.dong)) : null} data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec} anNutMoTa={anViecChinh}
+        <ThanCase dauCoDiem={dauKyNang && !trongCot} lyDoKhoa={trongCot && canDong && ht?.an && ht.dong ? (dk ? <>{dich(dk[1])} · <b className="font-semibold">{dich(dk[2])}</b></> : dich(ht.dong)) : null} data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec} anNutMoTa={anViecChinh}
           vuaDoi={vuaDoi} onHoanTac={() => { setVuaDoi(null); reload(); if (chuoi?.caseTiep) chuoi.caseTiep.boXong(); else onChanged?.(); }} />
       </div>
     </KhungPanel>
+  );
+}
+/** U03 A2: dải số đầu panel Case — mốc mở / trượt lại mới nhất có band (cùng mốc `ketQuaGanNhat`); thiếu trường nào bỏ ô đó. */
+function DaiDiemCase({ data, homNay }: { data: CaseDetail; homNay: string | null }) {
+  const m = [...(data.milestones ?? [])].reverse().find((x: any) => (x.kind === 'opened' || x.kind === 'repeat') && x.band != null);
+  const kv = m?.expectation != null ? Number(m.expectation) : null;
+  const o: [string, ReactNode][] = [
+    ...(m ? [[t('Điểm MT{n}', { n: m.attemptNo }), <span className="text-[17px]"><DiemKq diem={Number(m.band)} kyVong={kv} /></span>] as [string, ReactNode]] : []),
+    ...(kv != null ? [[t('Kỳ vọng'), kv.toFixed(1)] as [string, ReactNode]] : []),
+    [t('Phụ trách'), data.owner ?? t('Chưa có')],
+    [t('Mở'), tuanLich(data.detectedAt, homNay)],
+  ];
+  return (
+    <span className="flex basis-full flex-wrap">
+      {o.map(([n, g]) => (
+        <span key={n} className="flex min-w-0 flex-col gap-0.5 whitespace-nowrap border-l px-[18px] py-0.5 first:border-l-0 first:pl-0" style={{ borderColor: 'var(--line)' }}>
+          <span className="text-xs font-medium leading-[1.3] text-faint">{n}</span><b className="text-[15px] font-semibold leading-[1.35] text-slate-100">{g}</b>
+        </span>
+      ))}
+    </span>
   );
 }
 /** Tên view trên nút "‹ {view trước}" (cùng chữ với nút mở view đó). */

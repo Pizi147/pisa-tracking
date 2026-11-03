@@ -165,7 +165,9 @@ export type VuaDoiPa = { paId: number; chu: string; hoanTac?: () => Promise<void
  * Mô tả) → Phương án (Chờ duyệt · xác nhận / Đang theo dõi; Đã kết thúc gập; việc của PA nằm ngay trong thẻ PA; dòng PA mang `data-pa-id` cho Hành trình
  * cuộn tới) → Kết luận → Lịch sử (gập) → Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của nơi gọi.
  */
-export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false, lyDoKhoa = null }: {
+export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false, lyDoKhoa = null, dauCoDiem = false }: {
+  /** U03 A2: đầu panel đã có tên Case + SOS + dải Điểm · Kỳ vọng — thân không lặp dòng tên Case và dòng Điểm. */
+  dauCoDiem?: boolean;
   /** U02 (PTA 04/11): trong cột hồ sơ HV — lý do chưa hoàn thành được (PA quy chế chưa khép) vào ⓘ cạnh "Kết luận". */
   lyDoKhoa?: ReactNode;
   /** U02: nút "Mô tả Case" đã ở dòng tóm tắt Case (cột hồ sơ HV) — trường Mô tả chỉ ghi "Chưa có". */
@@ -219,11 +221,11 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
       {/* U02 (PTA 04/11): trong cột không vẽ link lượt — lượt đã ở chip "MTn ✗ …" dòng tóm tắt, mở lượt bằng "MTn ›" của bảng Mock Test cùng trang. */}
       <DauMuc dau tieuDe="Case" phu={khung ? null : data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
         : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
-        {data.luot && !khung && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
+        {data.luot && !khung && !dauCoDiem && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
         {/* Case A (mockup audit 03/11 `.fld`, U02 c2 + U03 A2): khung trường nhãn trái 13 / 500 mờ | giá trị 15 sáng, mỗi hàng một kẻ; Nguyên nhân = thẻ,
             Mô tả = đoạn trích vạch trái + nguồn 12 mờ dưới. Trong cột hồ sơ HV: Điểm đã ở dòng tóm tắt (chip MTn) — không lặp. "Ghi nhận" → "Mô tả" (N8). */}
         <dl className="fld">
-          {diem && !khung && <><dt>{t('Điểm')}</dt><dd>{diem}</dd></>}
+          {diem && !khung && !dauCoDiem && <><dt>{t('Điểm')}</dt><dd>{diem}</dd></>}
           {(primary || secondary.length > 0) && <>
             {/* N8 (PTA rà #632): Nguyên nhân chỉ ghi NHÓM (chính trước, phụ sau) — câu nhận xét / mô tả nằm ở dòng Mô tả, không lặp. */}
             <dt>{t('Nguyên nhân')}</dt>

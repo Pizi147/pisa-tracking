@@ -14,7 +14,7 @@ const chuKq = (kq: 'vuot' | 'bang' | 'duoi') => (kq === 'duoi' ? t('Dưới kỳ
  * - Một dòng phụ 12 px (`phu`) dưới ô — ưu tiên "thiếu nhận xét" > "vắng lần n" > "n câu" do nơi gọi chọn.
  */
 export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, luu, onBam, onLuuLai, nhan, kyVong }: {
-  /** BANG-EM-GON: `gon` = 15 px chữ thường (500), chỉ số hụt đậm 700 (mockup v10 `.dg-o`) — thay `to` 17 px của bảng hồ sơ lớp. */
+  /** BANG-EM-GON: `gon` = 15 px — U03 (mockup `.da / .dd / .bg`, chủ SP 04/11): mọi số đậm 700 (trước: chỉ số hụt). Chỉ bảng hồ sơ lớp dùng. */
   kieu?: 'doc' | 'sua' | 'ti-le' | 'lon' | 'gon';
   /** Chữ số đã định dạng ("6.5", "17"); null = chưa có. */
   so: string | null;
@@ -42,7 +42,7 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
         <span className={`inline-block min-w-[2ch] whitespace-nowrap text-right text-[15px] font-bold ${mau}`}>{kyHieu}{so}</span>
         <span className={`inline-block min-w-[3ch] text-left text-[13px] font-normal ${deKhac ? 'text-soon' : 'text-faint'}`} title={deKhac ? t('Đề khác') : undefined}>/{tong}</span>
       </>
-    : <span className={`whitespace-nowrap ${kieu === 'lon' ? 'text-[28px] leading-none' : 'text-[15px]'} ${kieu === 'gon' && kqHien !== 'duoi' ? 'font-medium' : 'font-bold'} ${mau}`}>{kyHieu}{so}</span>;
+    : <span className={`whitespace-nowrap ${kieu === 'lon' ? 'text-[28px] leading-none' : 'text-[15px]'} font-bold ${mau}`}>{kyHieu}{so}</span>;
   const dongPhu = (phu || (kck && kq === 'duoi')) && (
     <span className="block text-[12px] leading-4 text-faint" data-phu-odiem="">{phu ?? 'KCK'}</span>
   );

@@ -17,4 +17,7 @@ export const EN_U03_HO_SO_LOP = {
   'chưa bắt đầu': 'not started',
   'Chưa tải được chi tiết Case.': 'Could not load case details.',
   'Bảng vẫn dùng được.': 'The table still works.',
+  'Lưu · kỹ năng tiếp ›': 'Save · next skill ›',
+  'Điểm MT{n}': 'MT{n} score',
+  'Phụ trách': 'Owner',
 } satisfies Record<string, Dich>;
