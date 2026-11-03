@@ -224,9 +224,17 @@ button.okn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px
 .bdv::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); flex: none; }
 .bdv.dang { background: var(--doing-bg); color: var(--doing); } .bdv.dang::before { background: var(--doing); }
 .bdv.qua { background: var(--bad-bg); color: var(--bad); } .bdv.qua::before { content: '⚠'; width: auto; height: auto; background: none; border-radius: 0; font-size: 11px; }
-.viec .v1 { grid-template-columns: minmax(0, 1fr); gap: 4px; justify-items: start; }
+.viec .v1 { grid-template-columns: minmax(0, 1fr); gap: 4px; justify-items: stretch; }
+/* vòng 2 (chủ SP 03/11 khuya): việc = ô có khung chứa TÊN VIỆC + viên nhỏ chỉ chấm màu và NGÀY hạn; quá hạn "⚠ 27/10" đỏ */
+.o-viec { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 6px 5px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); }
+.o-viec.qua { border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+.o-viec .vt { flex: 1; min-width: 0; }
+.vh { display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--muted-bg); color: var(--text-dim); font: 600 12px var(--phong-so); white-space: nowrap; flex: none; }
+.vh::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); flex: none; }
+.vh.dang::before { background: var(--doing); }
+.vh.qua { background: var(--bad-bg); color: var(--bad); } .vh.qua::before { content: '⚠'; width: auto; height: auto; background: none; border-radius: 0; font-size: 11px; }
 .dai-v { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.dai-v li { display: flex; gap: 12px; align-items: center; justify-content: space-between; min-width: 360px; font-size: 14px; }
+.dai-v li { display: block; min-width: 380px; font-size: 14px; }
 .dt .dai-v li { min-width: 0; }
 .tt-lop.luoi { display: grid; grid-template-columns: 112px 100px 250px 290px minmax(0, 1fr); align-items: center; gap: 0 12px; }
 .tt-lop.luoi .viec-lop { justify-self: start; }
@@ -305,11 +313,11 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
   function vien(chu, kieu) { return '<span class="bdv' + (kieu === 'do' ? ' qua' : kieu === 'xanh' ? ' dang' : '') + '">' + chu + '</span>'; }
   function han(h) { if (!h) return ''; var qh = h[0] === '!'; return '<span class="han' + (qh ? ' do' : '') + '">' + (qh ? '⚠ quá hạn ' + Math.round((Date.UTC(2026, 10, 3) - Date.UTC(2026, +h.slice(4, 6) - 1, +h.slice(1, 3))) / 864e5) + ' ngày' : 'hạn ' + h) + '</span>'; }
   function bv(x) {
-    var h = x[1];
-    if (h && h[0] === '!') return '<span class="bdv qua">quá hạn ' + Math.round((Date.UTC(2026, 10, 3) - Date.UTC(2026, +h.slice(4, 6) - 1, +h.slice(1, 3))) / 864e5) + ' ngày</span>';
-    var tt = x[2] || 'chua';
-    return '<span class="bdv ' + tt + '">' + (tt === 'dang' ? 'Đang làm' : 'Chưa làm') + (h ? ' · hạn ' + h : '') + '</span>';
+    var h = x[1], qh = h && h[0] === '!', tt = qh ? 'qua' : (x[2] || 'chua');
+    var ten = qh ? 'quá hạn' : tt === 'dang' ? 'đang làm' : 'chưa làm';
+    return '<span class="vh ' + tt + '" aria-label="' + ten + (h ? ', hạn ' + h.replace('!', '') : '') + '">' + (h ? h.replace('!', '') : '') + '</span>';
   }
+  function oViec(x) { return '<span class="o-viec' + (x[1] && x[1][0] === '!' ? ' qua' : '') + '"><button class="vt">' + x[0] + '</button>' + bv(x) + '</span>'; }
   function knl(k) {
     if (!k) return '';
     var duoi = ['L', 'R', 'W1', 'W2', 'S'].map(function (t, i) { return [t, k[i]]; }).filter(function (x) { return x[1] !== null && x[1] !== undefined && k.kv && x[1] < k.kv; });
@@ -334,7 +342,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
   function viec(v, dt) {
     if (!v || !v.length) return '<span class="trong">—</span>';
     var a = v[0];
-    return '<span class="viec"><span class="v1"><button class="vt">' + a[0] + '</button>' + bv(a) + '</span>' +
+    return '<span class="viec"><span class="v1">' + oViec(a) + '</span>' +
       (v.length > 1 ? '<button class="oso them">+' + (v.length - 1) + ' việc</button>' : '') + '</span>';
   }
   function oKn(t, v, kv, ct, mo) { if (v === null || v === undefined) return '<span class="okn"><span class="t">' + t + '</span><span class="mo3">–</span></span>'; var c = v >= kv ? (v > kv ? 'dat' : 'bang') : 'duoi', d = v >= kv ? (v > kv ? '✓' : '=') : '✗';
@@ -343,7 +351,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
     return '<span class="okn-w"><button class="okn" aria-expanded="' + !!mo + '" aria-label="' + t + ' ' + v.toFixed(1) + ' · ' + (/câu/.test(ct) ? 'số câu' : 'điểm thành phần') + '">' + ruot + '</button>' + (mo ? '<span class="hop-tc" role="dialog" aria-label="' + t + '">' + ct + '</span>' : '') + '</span>'; }
   function dai(e) {
     var diem = e.kn ? '<div class="dai-k"><span class="dai-t">' + e.mt + ' · ' + e.tuan + ' <span class="mo3">· kỳ vọng ' + e.kv.toFixed(1) + '</span></span><span class="dai-kn">' + ['L', 'R', 'W1', 'W2', 'S'].map(function (t, i) { return oKn(t, e.kn[i], e.kv, e.ct && e.ct[i], e.hop === i); }).join('') + '</span></div>' : '';
-    var vc = (e.v || []).length ? '<div class="dai-k"><span class="dai-t">Việc của tôi · ' + e.v.length + '</span><ul class="dai-v">' + e.v.map(function (x) { return '<li><button class="vt">' + x[0] + '</button>' + bv(x) + '</li>'; }).join('') + '</ul></div>' : '';
+    var vc = (e.v || []).length ? '<div class="dai-k"><span class="dai-t">Việc của tôi · ' + e.v.length + '</span><ul class="dai-v">' + e.v.map(function (x) { return '<li>' + oViec(x) + '</li>'; }).join('') + '</ul></div>' : '';
     var ht = e.ca ? '<div class="dai-k"><span class="dai-t">Hỗ trợ</span><span style="font-size:14px">' + e.ca + '</span></div>' : '';
     return '<div class="dai' + (e.hop !== undefined ? ' co-hop' : '') + '">' + diem + ht + vc + '</div>';
   }
@@ -379,7 +387,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
     return '<div class="the-em"><div class="d1"><a class="ten">' + (tim ? e.ten.replace(tim, '<span class="hl">' + tim + '</span>') : e.ten) + '</a><button class="ba-cham" aria-label="Thao tác · ' + e.ten + '">⋯</button></div>' +
       '<div class="d2">' + (e.tvv ? '<span>TVV ' + e.tvv + '</span>' : '') + '<span class="so">MT ' + e.lt[0] + '/' + e.lt[1] + '</span>' + (c ? '<span><button class="o-ovr" aria-expanded="' + !!e.moRong + '"><span class="kq ' + c + '">' + (c === 'dat' ? '✓' : c === 'bang' ? '=' : '✗') + ' ' + e.ovr.toFixed(1) + '</span><span class="mui-o" aria-hidden="true">' + (e.moRong ? '▴' : '▾') + '</span></button> kỳ vọng ' + e.kv.toFixed(1) + ' · ' + e.mt + '</span>' : '<span>Chưa có Overall</span>') + '</div>' +
       '<div class="d3">' + (e.sos ? cs(e.sos[0], e.sos[1], e.sos[2]) : '') + (e.yt ? '<span style="font-size:13px" class="mo">Ý thức <b style="color:var(--text)">' + e.yt + '</b></span>' : '') + lichThi(e.lich) + '</div>' +
-      (e.v && e.v.length ? '<div class="viec"><span class="v1"><button class="vt">' + e.v[0][0] + '</button>' + bv(e.v[0]) + '</span>' + (e.v.length > 1 ? '<button class="oso them">+' + (e.v.length - 1) + ' việc</button>' : '') + '</div>' : '') + (e.moRong ? dai(e) : '') + '</div>';
+      (e.v && e.v.length ? '<div class="viec"><span class="v1">' + oViec(e.v[0]) + '</span>' + (e.v.length > 1 ? '<button class="oso them">+' + (e.v.length - 1) + ' việc</button>' : '') + '</div>' : '') + (e.moRong ? dai(e) : '') + '</div>';
   }
   function theLop(l, tim) { if (typeof tim !== 'string') tim = null;
     var mo = l.em && l.em.length;
@@ -391,7 +399,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
   /* ===== dữ liệu GIẢ (mật độ như ảnh U04, Cẩm Phả) ===== */
   var E116 = [
     { ten: 'Hà Minh Phúc', tvv: 'Thu Hương', lt: [2, 3], tg: 8.0, ovr: 7.0, kv: 7.5, mt: 'MT2', tuan: 'W4 SEP', kn: [7.0, 8.0, 6.5, 6.0, 6.5], sos: [3, 'L, W, S'], ca: '4 Case · 4 PA', yt: 'WL 1', lich: ['dk', 'Dự kiến 02/2027'], vg: [['Ghi kết quả PA · Writing Task 2', '05/11', 'dang']] },
-    { ten: 'Lê Thảo Vy', moRong: 1, hop: 2, ct: ['20/40 câu', '21/40 câu', 'TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5', 'TR 6 · CC 6 · LR 6 · GRA 6 → 6.0', null], tvv: 'Thu Hương', lt: [2, 3], tg: 7.5, ovr: 6.0, kv: 7.0, mt: 'MT2', tuan: 'W4 SEP', kn: [5.5, 5.5, 6.5, 6.0, 6.5], sos: [3, 'L, R, W, S'], ca: '3 Case · 2 PA', paQh: 1, yt: 'WL 1', lich: ['dk', 'Dự kiến 03/2027'], v: [['Duyệt PA · Writing Task 2', '05/11'], ['Dời lịch Test · MT3', '!30/10']], vg: [['Mô tả Case Writing Task 2 · MT2', '!27/10'], ['Ghi kết quả PA · Writing Task 2', '06/11', 'dang']], vt: [['Báo PH sau xử lý vi phạm', '!31/10']] },
+    { ten: 'Lê Thảo Vy', moRong: 1, hop: 2, ct: ['20/40 câu', '21/40 câu', 'TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5', 'TR 6 · CC 6 · LR 6 · GRA 6 → 6.0', null], tvv: 'Thu Hương', lt: [2, 3], tg: 7.5, ovr: 6.0, kv: 7.0, mt: 'MT2', tuan: 'W4 SEP', kn: [5.5, 5.5, 6.5, 6.0, 6.5], sos: [3, 'L, R, W, S'], ca: '3 Case · 2 PA', paQh: 1, yt: 'WL 1', lich: ['dk', 'Dự kiến 03/2027'], v: [['Dời lịch Test · MT3', '!30/10'], ['Duyệt PA · Writing Task 2', '05/11']], vg: [['Mô tả Case Writing Task 2 · MT2', '!27/10'], ['Ghi kết quả PA · Writing Task 2', '06/11', 'dang']], vt: [['Báo PH sau xử lý vi phạm', '!31/10']] },
     { ten: 'Mai Hồng Nhung', lt: [0, 3], tg: 7.5, lich: ['dk', 'Dự kiến 12/2026'], v: [['Chốt tuần MT0', null]] },
     { ten: 'Nguyễn Quốc Trung Anh Khoa', tvv: 'Phan Mai', lt: [3, 4], tg: 8.0, yt: 'Report 1', lich: ['chot', 'Thi 21/11'], vg: [['Nhập điểm Writing Task 2 · MT3', '04/11']] },
     { ten: 'Trần Huyền My', tvv: 'Thu Hương', lt: [3, 3], tg: 7.5, ovr: 6.5, kv: 7.5, mt: 'MT3', tuan: 'W3 OCT', kn: [6.5, 6.5, 6.5, 6.5, 6.5], sos: [3, 'L, R, W, S'], ca: '4 Case · 4 PA', yt: 'WL 1', lich: ['da', 'Đã thi 31/10 · chờ KQ'], vt: [['Cập nhật KQ thi thật', null, 'dang']] },
@@ -453,7 +461,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
     ['<b>Đầu trang một hàng</b>: tên trang · ô <b>Xem</b> (G1) · Fast Track / Lớp thường · phải: Xuất Excel · + Thêm học viên · ⋯. 375: Xuất + Thêm vào ⋯, chip vào nút <b>Lọc</b> → lớp đầu lên trong khung nhìn đầu (B26).',
      '<b>Hàng lớp tách trường</b> (bài học UX-A): ô mã lớp · ô <b>7 HV</b> · ô GVCN · ô SOS (chip mức + số HV, như Tổng quan) · ô chip tình trạng (bấm sang đúng trang, như nay). Thẳng cột giữa các lớp. Sĩ số = em đang học (B09).',
      '<b>Hàng em</b>: Lộ trình "MT 2/3" + Target · MT gần nhất: ô <b>✗ 6.0</b> bấm được + dòng phụ "kỳ vọng 7.0 · MT2 · W4 SEP". <b>Dòng 5 môn rời hàng em</b> (chủ SP 03/11): bấm ô Overall → <b>dải mở ngay dưới hàng</b> (Lê Thảo Vy): L · R · W1 · W2 · S của lượt, màu + ✓ / ✗ trên từng số, và việc của tôi với em. Không panel trượt. <b>Bấm ô kỹ năng</b> có điểm thành phần / số câu → hộp nhỏ ngay dưới ô (W1 đang mở: "TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5", cùng định dạng U03); L, R ghi số câu — CP FT 131 · Ngô Gia Hưng ô L đang mở "30/40 câu". Ô chỉ có band (S của Lê Thảo Vy) không bấm được.',
-     '<b>Việc của tôi</b> (chủ SP 03/11 khuya): cột chỉ việc của người đang xem — QT ở lớp GVCN khác thường trống "—". Một việc gấp nhất + <b>badge khung + chấm</b>: "Chưa làm · hạn 05/11" · "Đang làm · hạn 05/11" · "⚠ quá hạn 4 ngày"; ô số "+1 việc" mở <b>cùng dải dưới hàng</b>. Chip "Có việc quá hạn" = việc của tôi quá hạn. Bỏ "Xem thêm n" mở dài trong ô. Ô một nghĩa giữ "—" (không SOS · chưa vi phạm · không việc). Cột Hỗ trợ chỉ chip SOS + môn — Case / PA xem ở dải dưới hàng hoặc hồ sơ (cùng mức hồ sơ lớp U03); hạn quá chỉ báo ở cột Việc. Tên việc theo U01: "Ghi kết quả PA · Listening".',
+     '<b>Việc của tôi</b> (chủ SP 03/11 khuya): cột chỉ việc của người đang xem — QT ở lớp GVCN khác thường trống "—". Một việc gấp nhất trong <b>ô có khung</b>: tên việc + viên nhỏ <b>chấm màu + ngày hạn</b> "● 05/11" (chấm xám = chưa làm, xanh = đang làm) · quá hạn "⚠ 30/10" đỏ (vòng 2 chủ SP: bỏ chữ "Chưa làm · hạn …"; ngày hạn thay "quá hạn n ngày"; trạng thái đọc bằng nhãn `aria-label`); ô số "+1 việc" mở <b>cùng dải dưới hàng</b>. Chip "Có việc quá hạn" = việc của tôi quá hạn. Bỏ "Xem thêm n" mở dài trong ô. Ô một nghĩa giữ "—" (không SOS · chưa vi phạm · không việc). Cột Hỗ trợ chỉ chip SOS + môn — Case / PA xem ở dải dưới hàng hoặc hồ sơ (cùng mức hồ sơ lớp U03); hạn quá chỉ báo ở cột Việc. Tên việc theo U01: "Ghi kết quả PA · Listening".',
      '<b>Em Kết thúc học không có trong danh sách</b> (chủ SP 03/11 khuya) — xem ở hồ sơ lớp tab Học viên · ⋯ › Lưu trữ · Ctrl K. "Đã thi · chờ KQ" nền xanh lơ nhạt (bớt gắt). Tiêu đề cột chỉ trong lớp đang mở (B10); 1440 không cuộn ngang → tiêu đề dính theo trang.',
      'Chip số 0 mờ, không bấm (B11). Một nút đổi chữ <b>Mở tất cả ↔ Thu gọn tất cả</b> cạnh bộ đếm; lớp đã mở nhớ ở URL. Phân trang chỉ cuối bảng.']);
   var a1280 = dauTrang({ xem: oXem('Cẩm Phả', null) }) + tabs({}) + thanhLoc({ moHet: 0 }) + bangLop([LOP[2]].concat(LOP.slice(3, 6).map(function (l) { var x = Object.assign({}, l); delete x.em; return x; })));

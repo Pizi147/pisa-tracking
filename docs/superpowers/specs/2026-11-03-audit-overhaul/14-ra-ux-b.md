@@ -429,3 +429,10 @@ Chủ SP **DUYỆT U09** (không đụng). U04, U05, U06, U08 sửa theo bảng 
 - **Tương phản:** U04 ghi ở khu G (badge 5.7–9.2 : 1, khung 3.4–5.1 : 1) · U05, U08 ghi ở ghi chú đầu trang (≥ 4.5 : 1).
 - **PTA chốt 03/11: GIỮ** — link chữ thường "hover mới báo" — màn cảm ứng không có hover → mockup thêm **gạch chân chấm mờ chỉ khi `hover: none`** (desktop vẫn sạch).
 - **Giữ, ghi để PR biết:** U06 tab "Chấm Test" của GV có ở web (`ChamTestTab.tsx`) · khung GV vẽ "Quá hạn chấm" gập, khung QL vẽ mở (web nhớ mở / gập) · vùng bấm < 44 px ở 375 (nút ▸ 28 px, ô số 22 px) có từ trước, không thuộc đợt này.
+
+### 11.6 Vòng 2 (chủ SP 03/11 khuya, plan.md #870)
+- **U04:** việc = ô có khung chứa tên việc + viên nhỏ chấm màu + ngày hạn ("● 05/11"; chấm xám chưa làm, xanh đang làm; quá hạn "⚠ 30/10" đỏ, ô viền đỏ nhạt) — bỏ chữ "Chưa làm · hạn …" / "Đang làm"; trạng thái đọc qua `aria-label`. Việc quá hạn lên đầu. Ngày hạn thay cách ghi "quá hạn n ngày" ở cột này (lời mới hơn).
+- **U05:** không vẽ lại — ghi cho PR code: chữ "Vắng" màu vàng rõ (`--soon`).
+- **U06:** bỏ mọi số về GV khác (dải số) · hàng lớp bỏ "6 HV · MT3 5 · MT1 1" (lớp thường giữ tên đợt "Final Test" / "Progress Test") · L R W S hàng lớp kiểu #849: môn của bạn xanh gạch dưới, môn khác chữ thường.
+- **U08:** tab Kết quả Test / Thi xếp theo lớp → giữa hai lớp đường 2 px màu `--hang-lon-vach`; không thêm thanh tên lớp.
+- **Rà ngắn:** 0 lỗi trang, 0 tràn ở phần mới (1440 + 375); detector chỉ còn các cảnh báo cũ của khung trình bày / ghi chú (dương tính giả như 11.5).
