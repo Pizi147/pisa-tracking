@@ -16,7 +16,7 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChonNhom, viDuNhanXet } from '../fasttrack/NhanXet.tsx';
 import { skillShort } from '../../lib/format.ts';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, HOAN_TAC_PA_MS, INTERVENTION_KIND_LABEL, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, HOAN_TAC_PA_MS, INTERVENTION_KIND_LABEL, NHAN_XET_MT_TOI_THIEU, TRAN_CHU,
   dsLoi, duongHoSoHocVien, kiemGhiRoKhac, tenMonNgan, tuanLich, reasonNeedsText,
   datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
   type CaseDismissReason,
@@ -121,7 +121,7 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
   const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
   const lf = useLoiForm();
   const loi = [
-    ...dsLoi([{ khoa: 'nguyen-nhan', nhan: t('Nhóm nguyên nhân'), chon: true }, { khoa: 'mo-ta', nhan: t('Mô tả ngắn'), toiThieu: 15 }],
+    ...dsLoi([{ khoa: 'nguyen-nhan', nhan: t('Nhóm nguyên nhân'), chon: true }, { khoa: 'mo-ta', nhan: t('Mô tả ngắn'), toiThieu: 15, toiDa: TRAN_CHU.moTaCase }],   // N35
       { 'nguyen-nhan': nhom[0] ?? '', 'mo-ta': moTa }),
     ...(sua && v && goc ? loiFormPa(v, { goc }) : []),
   ];
@@ -167,7 +167,7 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
             <div id={lf.oId('nguyen-nhan')} tabIndex={-1}><ChonNhom skill={topic} ct={ct} value={nhom} onChange={setNhom} disabled={busy} nhanId={`nn-${caseId}`} /></div>
             {lf.loiCua(loi, 'nguyen-nhan') && <p className="m-0 mt-1 text-xs text-bad" role="alert">{lf.loiCua(loi, 'nguyen-nhan')}</p>}
           </div>
-          <Truong nhan={t('Mô tả ngắn')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15 }}>
+          <Truong nhan={t('Mô tả ngắn')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15, toiDa: TRAN_CHU.moTaCase }}>
             <textarea className="field w-full" rows={2} {...lf.o(loi, 'mo-ta')} value={moTa} disabled={busy} onChange={(e) => setMoTa(e.target.value)}
               placeholder={t('Ví dụ: Đọc chậm, đoán nghĩa từ mới yếu; bỏ trống 5 câu cuối phần Reading')} />
           </Truong>
@@ -339,7 +339,7 @@ export function MoTaCasePanel({ data, onXong, ...chung }: ChungPanel & { data: C
   const [busy, setBusy] = useState(false);
   const [luc, setLuc] = useState<string | null | undefined>(data.capNhatLuc);
   const lf = useLoiForm();
-  const loi = dsLoi([{ khoa: 'nhan-xet', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }, { khoa: 'nhom', nhan: t('Nhóm nguyên nhân'), chon: true }],
+  const loi = dsLoi([{ khoa: 'nhan-xet', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU, toiDa: TRAN_CHU.moTaCase }, { khoa: 'nhom', nhan: t('Nhóm nguyên nhân'), chon: true }],
     { 'nhan-xet': nx, nhom: nhom[0] ?? '' });
   const luu = async () => {
     lf.bam();
@@ -364,8 +364,8 @@ export function MoTaCasePanel({ data, onXong, ...chung }: ChungPanel & { data: C
       chan={{ v3: true, chinh: nut, daSua: !!(nx.trim() || nhom.length), conThieu: lf.conThieu(loi), dongTren: busy ? <span>{t('Đang lưu…')}</span> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
-          <Truong nhan={t('Mô tả')} batBuoc phu={t('Nguyên nhân của Case — bài không cần nhận xét')} loi={lf.loiCua(loi, 'nhan-xet')} dem={{ co: nx.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
-            <textarea className="field w-full" rows={3} maxLength={NHAN_XET_TOI_DA} {...lf.o(loi, 'nhan-xet')} value={nx} disabled={busy} onChange={(e) => setNx(e.target.value)}
+          <Truong nhan={t('Mô tả')} batBuoc phu={t('Nguyên nhân của Case — bài không cần nhận xét')} loi={lf.loiCua(loi, 'nhan-xet')} dem={{ co: nx.trim().length, can: NHAN_XET_MT_TOI_THIEU, toiDa: TRAN_CHU.moTaCase }}>
+            <textarea className="field w-full" rows={3} {...lf.o(loi, 'nhan-xet')} value={nx} disabled={busy} onChange={(e) => setNx(e.target.value)}
               placeholder={viDuNhanXet(skill)} />
           </Truong>
           <div>
@@ -396,7 +396,7 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
   const xoaNhap = useXoaNhap();
   const [busy, setBusy] = useState(false);
   const lf = useLoiForm();
-  const loi = dsLoi(cach === 'viet' ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }] : [], { 'mo-ta': moTa });
+  const loi = dsLoi(cach === 'viet' ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU, toiDa: TRAN_CHU.moTaCase }] : [], { 'mo-ta': moTa });
   const luu = async () => {
     lf.bam();
     if (loi.length > 0) return;
@@ -437,8 +437,8 @@ export function XacNhanSPanel({ data, onXong, ...chung }: ChungPanel & { data: C
             </div>
           )}
           {cach === 'viet' && (
-            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
-              <textarea className="field w-full" rows={3} maxLength={NHAN_XET_TOI_DA} {...lf.o(loi, 'mo-ta')} value={moTa} disabled={busy} onChange={(e) => setMoTa(e.target.value)}
+            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: NHAN_XET_MT_TOI_THIEU, toiDa: TRAN_CHU.moTaCase }}>
+              <textarea className="field w-full" rows={3} {...lf.o(loi, 'mo-ta')} value={moTa} disabled={busy} onChange={(e) => setMoTa(e.target.value)}
                 placeholder={viDuNhanXet('speaking')} />
             </Truong>
           )}

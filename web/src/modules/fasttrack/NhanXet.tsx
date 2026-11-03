@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CAU_THIEU_NHAN_XET, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA, issueLabel, issuesForTopic } from '@shared/domain/index.ts';
 import { NutChon } from '../../ui/ui.tsx';
+import { DemChu } from '../../ui/KhungPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** OV-14b: chữ gợi ý ô nhận xét đúng kỹ năng — vấn đề HỌC THUẬT, không ý thức / chuyện ngoài bài (LUAT-NX-MT); hồ sơ Mock, hộp chấm, Case MT. */
@@ -21,17 +22,13 @@ export function viDuNhanXet(kyNang: string | null | undefined): string {
   return t('Vấn đề học thuật của kỹ năng — không ghi ý thức, chuyện ngoài bài');
 }
 
-/** Đếm ký tự chỉ hiện khi đã gần trần (> 800) — không làm rối lúc gõ vài câu. */
-function Dem({ n }: { n: number }) {
-  if (n <= 800) return null;
-  return <span className={`tabular-nums ${n >= NHAN_XET_TOI_DA ? 'text-bad' : 'text-slate-500'}`}>{n}/{NHAN_XET_TOI_DA}</span>;
-}
-
 /**
  * Ô nhận xét tại chỗ của hồ sơ Mock: tự cao theo chữ, lưu khi rời ô hoặc Ctrl+Enter, trạng thái lưu nhỏ bên phải nhãn.
  * Lỗi mạng: giữ chữ đã gõ, hiện "Chưa lưu — thử lại" (bấm để gửi lại).
  */
-export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = null }: {
+export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = null, toiDa = NHAN_XET_TOI_DA }: {
+  /** N35: trần ký tự — nhận xét MT (FT) `TRAN_CHU.nhanXetMt` (300); lớp thường giữ `NHAN_XET_TOI_DA`. Quá trần: không gửi, chữ giữ trong ô. */
+  toiDa?: number;
   nhan: string; phu?: string | null; giaTri: string | null; onLuu: (v: string | null) => Promise<boolean>;
   /** OV-14b: kỹ năng của ô — chữ gợi ý đúng kỹ năng (`viDuNhanXet`). */
   kyNang?: string | null;
@@ -39,7 +36,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
   nenCo?: boolean;
 }) {
   const [nhap, setNhap] = useState(giaTri ?? '');
-  const [tt, setTt] = useState<'idle' | 'dang' | 'xong' | 'loi'>('idle');
+  const [tt, setTt] = useState<'idle' | 'dang' | 'xong' | 'loi' | 'dai'>('idle');
   const o = useRef<HTMLTextAreaElement>(null);
   const sua = useRef(false);
   useEffect(() => { if (!sua.current) setNhap(giaTri ?? ''); }, [giaTri]);
@@ -52,6 +49,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
   const luu = async () => {
     if (tt === 'dang') return;
     if (nhap.trim() === (giaTri ?? '').trim()) { sua.current = false; return; }
+    if (nhap.trim().length > toiDa) { setTt('dai'); return; }   // N35 (chữ cũ dài không đổi đã thoát ở dòng trên)
     setTt('dang');
     const ok = await onLuu(nhap.trim() || null);
     setTt(ok ? 'xong' : 'loi');
@@ -64,7 +62,8 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
         <span className="shrink-0 whitespace-nowrap font-medium text-slate-300">{nhan}</span>
         {phu && <span className="min-w-0 truncate text-slate-500" title={phu}>{phu}</span>}
         <span className="ml-auto flex items-baseline gap-2">
-          <Dem n={nhap.length} />
+          <DemChu n={nhap.trim().length} toiDa={toiDa} />
+          {tt === 'dai' && <span className="font-semibold text-bad">{t('Chưa lưu — tối đa {toiDa} ký tự', { toiDa })}</span>}
           {tt === 'dang' && <span className="text-slate-500">{t('Đang lưu…')}</span>}
           {tt === 'xong' && <span className="text-slate-500">{t('Đã lưu')}</span>}
           {tt === 'loi' && (
@@ -73,7 +72,7 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
           )}
         </span>
       </span>
-      <textarea ref={o} className="field mt-1 w-full resize-none text-sm leading-relaxed" rows={2} maxLength={NHAN_XET_TOI_DA}
+      <textarea ref={o} className="field mt-1 w-full resize-none text-sm leading-relaxed" rows={2} aria-invalid={tt === 'dai' || undefined}
         style={nhacNx ? { borderColor: 'rgb(var(--soon-rgb))' } : undefined}
         title={nhacNx ? CAU_THIEU_NHAN_XET['ghi-nhan-xet'] : undefined} aria-description={nhacNx ? CAU_THIEU_NHAN_XET['ghi-nhan-xet'] : undefined}
         value={nhap} placeholder={viDuNhanXet(kyNang)}

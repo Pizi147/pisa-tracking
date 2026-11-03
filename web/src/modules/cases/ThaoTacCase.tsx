@@ -17,7 +17,7 @@ import {
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
   giaTriCuaPa, loiFormPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
-  URGENCY_LEVELS, URGENCY_LABEL, duongDotTest, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan, NHAN_XET_MT_TOI_THIEU, NHAN_XET_TOI_DA,
+  URGENCY_LEVELS, URGENCY_LABEL, duongDotTest, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan, NHAN_XET_MT_TOI_THIEU, TRAN_CHU,
 } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
@@ -378,13 +378,15 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
   /* Case MT chưa có mô tả: chỉ đổi tên / mức độ thì không đòi nhóm + mô tả; gõ một trong hai thì đòi đủ. */
   const doiNguyenNhan = !(laMt && !goc && !primaryCode && !ghiRo.trim());
   const causes = topic ? issuesForTopic(topic, ct) : [];
+  /* N35: mô tả ≤ 300 chỉ khi chữ ĐÃ ĐỔI — mô tả cũ dài vẫn sửa được ô khác (máy chủ cùng luật). */
+  const tranMoTa = (moi: string, cu: string | null | undefined) => (moi.trim() !== (cu ?? '').trim() ? TRAN_CHU.moTaCase : undefined);
   const loi = dsLoi([
     ...(doiNguyenNhan ? [{ khoa: 'phan-loai', nhan: t('Nhóm nguyên nhân'), chon: true }] : []),
-    ...(laMt ? (doiNguyenNhan ? [{ khoa: 'ghi-ro', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU }] : [])
+    ...(laMt ? (doiNguyenNhan ? [{ khoa: 'ghi-ro', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU, toiDa: tranMoTa(ghiRo, goc?.observation) }] : [])
       : laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
     { khoa: 'muc-do', nhan: t('Mức độ'), chon: true },
     { khoa: 'ten', nhan: t('Tên Case'), toiThieu: 3 },
-    ...(coMoTa ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15 }] : []),
+    ...(coMoTa ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15, toiDa: tranMoTa(summary, c.summary) }] : []),
   ], { 'phan-loai': primaryCode, 'ghi-ro': ghiRo, 'muc-do': urgency, ten: title, 'mo-ta': summary });
   const daSua = topic !== (c.topic ?? '') || primaryCode !== (goc?.code ?? '') || ghiRo !== (goc?.observation ?? '')
     || urgency !== (c.urgency ?? '') || title !== (c.viewer.tenSua ?? '') || summary !== (c.summary ?? '');
@@ -460,8 +462,8 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
             </Truong>
             {laMt ? (
               <div className="mt-4">
-              <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'ghi-ro')} dem={{ co: ghiRo.trim().length, can: NHAN_XET_MT_TOI_THIEU }}>
-                <textarea className="field w-full" {...lf.o(loi, 'ghi-ro')} rows={3} maxLength={NHAN_XET_TOI_DA} value={ghiRo} onChange={(e) => setGhiRo(e.target.value)} />
+              <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'ghi-ro')} dem={{ co: ghiRo.trim().length, can: NHAN_XET_MT_TOI_THIEU, toiDa: TRAN_CHU.moTaCase }}>
+                <textarea className="field w-full" {...lf.o(loi, 'ghi-ro')} rows={3} value={ghiRo} onChange={(e) => setGhiRo(e.target.value)} />
                 <div className="mt-1 text-xs text-slate-400">
                   {goc?.moTaTuMt
                     ? (c.attemptId
@@ -487,8 +489,8 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
             <input className="field w-full" {...lf.o(loi, 'ten')} maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
           </Truong>
           {coMoTa && (
-            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: summary.trim().length, can: 15 }}>
-              <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} maxLength={2000} value={summary} onChange={(e) => setSummary(e.target.value)} />
+            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: summary.trim().length, can: 15, toiDa: TRAN_CHU.moTaCase }}>
+              <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} />
             </Truong>
           )}
         </Khoi>

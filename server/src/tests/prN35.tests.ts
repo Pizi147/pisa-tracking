@@ -41,6 +41,11 @@ export async function runPrN35Tests(t: any) {
     assert(!d.vuotTran(chu(200), 200) && d.vuotTran(chu(201), 200), 'biên 200 / 201');
     const cu = chu(250);
     assert(!d.vuotTran(` ${cu} `, 200, cu) && d.vuotTran(cu + 'y', 200, cu), 'chữ cũ dài nguyên văn → giữ; đổi mà vẫn dài → chặn');
+    /* Web dùng cùng luật: ô báo lỗi tại chỗ (kiemTruong.toiDa); form PA chỉ kiểm khi nội dung ĐÃ ĐỔI (Sửa PA cũ dài vẫn sửa ô khác). */
+    assert(d.kiemTruong({ khoa: 'x', nhan: 'x', toiDa: 200 }, chu(200)) === null && /200/.test(d.kiemTruong({ khoa: 'x', nhan: 'x', toiDa: 200 }, chu(201)) ?? ''), 'kiemTruong toiDa');
+    const pa = { ...d.paMoi('teaching_adjust'), description: cu };
+    assert(!d.loiFormPa(pa, { goc: pa }).some((l: any) => l.khoa === 'noi-dung'), 'Sửa PA giữ nội dung cũ 250 → không lỗi');
+    assert(d.loiFormPa({ ...pa, description: cu + 'y' }, { goc: pa }).some((l: any) => l.khoa === 'noi-dung'), 'đổi nội dung mà vẫn dài → lỗi tại ô');
   });
 
   check('N35-1 · Mô tả Case: tạo 300 lưu / 301 → 400; Sửa Case chỉ đổi tên giữ mô tả cũ 400 ký tự; đổi mô tả mà vẫn dài → 400', () => thu(() => {

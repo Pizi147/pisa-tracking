@@ -19,7 +19,7 @@ import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
-  type NguoiChon, type PlanDecision, dsLoi, type LuatTruong,
+  type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, TRAN_CHU,
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
@@ -213,7 +213,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const LUAT: LuatTruong[] = [
     { khoa: 'ket-qua', nhan: t('Tiến triển (2 tuần)'), chon: true },
     /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung (máy chủ nhận nhận xét buổi ghép làm ghi chú). */
-    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: 8 }]),
+    /* N35: nhận xét kết quả ≤ 200 khi chữ ĐÃ ĐỔI (sửa lần ghi cũ dài vẫn sửa được ô khác); PA Tutor ghép theo buổi — không áp. */
+    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: 8, toiDa: progress.trim() !== (sua?.giaTri.note ?? '').trim() ? TRAN_CHU.ketQuaPa : undefined }]),
     ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: t('Quyết định'), chon: true }]),
     ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: t('Lý do chưa đủ dữ liệu'), toiThieu: 1 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? t('Lý do điều chỉnh') : t('Lý do thay'), toiThieu: 1 }] : []),
@@ -411,7 +412,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
           </div>
           {!nhanXetTheoBuoi && (
-            <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8 }}>
+            <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8, toiDa: TRAN_CHU.ketQuaPa }}>
               <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} readOnly={busy} onChange={(e) => setProgress(e.target.value)}
                 placeholder={dich(GOI_Y_KET_QUA_PA)} />
             </Truong>
