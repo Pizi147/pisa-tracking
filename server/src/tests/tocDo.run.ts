@@ -1190,11 +1190,11 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* BADGE-CUA-TOI (04/11): chụp lại 'QL toi' / 'QT toi' — đổi CÓ CHỦ Ý: "Nhập điểm MT cũ" (`lich-su:`) / "Điền Target" (`target:`) góc "toi" nay cùng chủ góc
        "tat-ca" (GVCN lớp) → lớp có GVCN không còn là việc của QL / QT (badge = ô "Của tôi", BCT-1). 9 băm khác giữ. Trước: QL toi e52a0d6a5bb7537d, QT toi 5115a3184a27f3d9 */
     /* UI-3 (N34 ④, 04/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý chỉ chữ việc `yt_xem`: "Ghi nhận n vi phạm mới" →
-       "Xem n vi phạm mới", nút "Ghi nhận" → "Đã xem", hint nhóm. Nguyên nhân lệch đọc từ mã (chỉ ba chữ đó đổi trong `mywork.ts`). Trước: GVCN toi 836db9c7acdd8e39,
+       "Xem n vi phạm mới", nút "Ghi nhận" → "Đã xem", hint nhóm ("Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày"). Nguyên nhân lệch đọc từ mã (chỉ ba chữ đó đổi trong `mywork.ts`). Trước: GVCN toi 836db9c7acdd8e39,
        GVCN_THUONG toi 836db9c7acdd8e39, QL tat-ca 64c53c3e9d2f7f40, QT tat-ca 85e5bab795ebfcb0, QT tat-ca cn 29addc1ddf756b8e, QL gvcn ceb5c556bc540613 */
-    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': 'f8060d5bdbae336b', 'GVBM toi': 'c64a33f25108620d',
-    'GVCN_THUONG toi': 'f8060d5bdbae336b', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'bba187368eb9151f', 'QT tat-ca': 'cb447502ec50d11e',
-    'QT tat-ca cn': 'b7d0c7e8400fb1be', 'QL gvcn': 'cc9da0a5d5f09113', 'GVS toi': 'b4b4e5024a108eca',
+    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '2be21ff1175139a0', 'GVBM toi': 'c64a33f25108620d',
+    'GVCN_THUONG toi': '2be21ff1175139a0', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '931b540bfaeabd05', 'QT tat-ca': '2b0d6d263e73fdb5',
+    'QT tat-ca cn': 'fa5e30885a92bd5c', 'QL gvcn': 'c2f88df2361e1225', 'GVS toi': 'b4b4e5024a108eca',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
