@@ -268,14 +268,23 @@ table.mt th { font-size: 13px; font-weight: 600; color: var(--text-dim); text-al
 table.mt td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 table.mt td.c-ten, table.mt th.c-ten { position: sticky; left: 0; background: var(--surface); z-index: 1; padding-left: 14px; }
 table.mt tr:last-child td { border-bottom: 0; }
-.omt { display: grid; grid-template-rows: 18px 22px 16px; gap: 1px; width: 100%; min-height: 62px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); text-align: left; cursor: pointer; font: inherit; color: var(--text); }
+.omt { display: grid; grid-template-rows: auto; align-content: start; gap: 3px; width: 100%; min-height: 62px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); text-align: left; cursor: pointer; font: inherit; color: var(--text); }
 .omt:hover { border-color: var(--accent-line); }
 .omt .tu { font: 600 13px var(--phong-so); color: var(--text-dim); white-space: nowrap; }
 .omt .tt2 { font-size: 14px; font-weight: 600; white-space: nowrap; }
 .omt .ng { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
 .omt .ng.cam { color: var(--soon); }
+/* 11.2 U05-2: mỗi tuần thi một dòng — tuần + 4 vị trí badge L R W S cố định; thi tuần đó sáng, không thi mờ hẳn */
+.omt .hg { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.omt .hg .tu { font-size: 12px; }
+.kns { display: inline-flex; gap: 1px; flex: none; }
+.omt { padding-left: 6px; padding-right: 6px; } .omt .hg .tu { letter-spacing: -.01em; }
+.knb { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 2px; border-radius: 3px; border: 1px solid transparent; font: 700 11px/1 var(--phong); background: var(--accent-soft); color: var(--text); }
+.knb.tat { background: transparent; color: var(--text-faint); opacity: .3; }
+.knb.cho { background: var(--soon-bg); color: var(--soon); border-color: var(--soon); }
+.knb.qua { background: var(--bad); color: var(--bg); }
 .omt.dang { border-color: var(--doing-line); } .omt.dang .tt2 { color: var(--doing); }
-.omt.cho .tt2 { color: var(--soon); }
+.omt.cho .tt2 { color: var(--soon); } .omt .tt2 { font-size: 13px; }
 .omt.tre { border-color: var(--bad-line); } .omt.tre .tt2 { color: var(--bad); }
 .omt.huy { background: transparent; border-style: dashed; } .omt.huy .tt2 { color: var(--text-faint); font-weight: 500; }
 .omt.ke { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
@@ -305,7 +314,7 @@ table.mt tr:last-child td { border-bottom: 0; }
 <main class="trang-ghi">
   <div class="ghi-dau">
     <h1>V11 · U05 Kế hoạch Test — đề xuất theo bảng 10.2 (PTA duyệt 03/11)</h1>
-    <p>Giữ ma trận HV × lượt MT. Mỗi ô 3 tầng cố định: <b>tuần</b> · <b>trạng thái bằng chữ</b> · <b>ngoại lệ</b> (chỉ khi có). Chip "Chưa có MT kế tiếp" thay "Cần xếp lại" (G5). Ô MT không chip môn (chủ SP 03/11 chốt Q-c, Q-d — khu G). Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
+    <p>Giữ ma trận HV × lượt MT. <b>Đợt sửa 03/11 khuya (bảng 11.2):</b> mỗi ô = <b>một dòng mỗi tuần thi</b> (tuần + badge L R W S: thi tuần đó sáng, không thi mờ hẳn) + dòng trạng thái / điểm; bỏ "· tuần này"; "Chờ chấm" / "⚠ Quá hạn chấm" không lặp tên môn — môn chờ = badge viền vàng, quá hạn = badge nền đỏ đặc (dòng trạng thái có ⚠). Chip "Chưa có MT kế tiếp" thay "Cần xếp lại" (G5). Ô MT không chip môn (chủ SP 03/11 chốt Q-c, Q-d — khu G). Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
     <nav class="muc-luc"><a href="#a">A · QL · lớp đang mở</a><a href="#b">B · Lọc Chưa có MT kế tiếp + lớp</a><a href="#c">C · Hộp kỹ năng + xác nhận</a><a href="#d">D · GV chỉ xem</a><a href="#e">E · 375</a><a href="#f">F · 1280 · Xếp nhiều lỗi một phần · rỗng</a><a href="#g">G · Q-c · Q-d (đã chốt)</a><a href="#h">H · Kiểm kê thao tác</a>
       <button type="button" id="doi-theme">Đổi sáng / tối tất cả khung</button></nav>
   </div>
@@ -345,15 +354,30 @@ table.mt tr:last-child td { border-bottom: 0; }
     if (x.k === 'them') return '<button class="nut-them">+ MT ▾</button>';
     var cls = { dat: '', duoi: '', dang: ' dang', cho: ' cho', tre: ' tre', huy: ' huy', xep2: '' }[x.k] || '';
     var s = x.k === 'dat' ? '<span class="kq dat">✓ ' + x.d.toFixed(1) + '</span>' : x.k === 'duoi' ? '<span class="kq duoi">✗ ' + x.d.toFixed(1) + '</span>' : x.k === 'bang' ? '<span class="kq bang">= ' + x.d.toFixed(1) + '</span>'
-      : x.k === 'dang' ? 'Đang làm bài' : x.k === 'cho' ? 'Chờ chấm ' + x.m : x.k === 'tre' ? '⚠ Chờ chấm ' + x.m : x.k === 'huy' ? 'Đã huỷ' : '';
-    return '<button class="omt' + cls + (x.ke ? ' ke' : '') + '"><span class="tu">' + x.t + (x.k === 'dang' ? ' · tuần này' : '') + '</span><span class="tt2">' + s + '</span><span class="ng' + (x.vang ? ' cam' : '') + '">' + (x.n || '') + '</span></button>';
+      : x.k === 'dang' ? 'Đang làm bài' : x.k === 'cho' ? 'Chờ chấm' : x.k === 'tre' ? '⚠ Quá hạn chấm' : x.k === 'huy' ? 'Đã huỷ' + (x.n ? ' · ' + x.n : '') : '';
+    return '<button class="omt' + cls + (x.ke ? ' ke' : '') + '">' + dongTuan(x).join('') + (s ? '<span class="tt2">' + s + '</span>' : '') + '</button>';
+  }
+  /* U05-2: tách tuần theo ngoại lệ — "L, W, S · W3 NOV" (môn lệch tuần) · "vắng L R W → W2 NOV" (dời vì vắng) */
+  function knb(c, cls) { return '<span class="knb' + (cls ? ' ' + cls : '') + '"' + (cls === 'tat' ? ' aria-label="' + c + ' không thi"' : cls === 'qua' ? ' aria-label="' + c + ' quá hạn chấm"' : cls === 'cho' ? ' aria-label="' + c + ' chờ chấm"' : '') + '>' + c + '</span>'; }
+  function hg(nhan, kn, x) {
+    return '<span class="hg"><span class="tu">' + nhan + '</span><span class="kns">' + 'LRWS'.split('').map(function (c) {
+      if (kn.indexOf(c) < 0 || x.k === 'huy') return knb(c, 'tat');
+      return knb(c, x.m === c ? (x.k === 'tre' ? 'qua' : x.k === 'cho' ? 'cho' : '') : '');
+    }).join('') + '</span></span>';
+  }
+  function dongTuan(x) {
+    var dk = x.dk || 'LRWS', n = x.k === 'huy' ? '' : (x.n || '');
+    if (!n) return [hg(x.t, dk, x)];
+    var vang = /→/.test(n), p = vang ? n.replace(/^vắng /, '').split(' → ') : n.split(' · ');
+    var mon = p[0].replace(/[ ,]/g, ''), con = dk.split('').filter(function (c) { return mon.indexOf(c) < 0; }).join('');
+    return [hg(x.t, con, x), hg((vang ? 'Vắng → ' : '') + p[1], mon, x)];
   }
   var EM130 = [
     ['Bùi Thanh Tú', [{ k: 'dang', t: 'W1 NOV', n: 'L, W, S · W3 NOV' }, { k: 'xep', mt: 'MT2', ke: 1 }, null, null, null]],
     ['Hoàng Trần Ngọc Minh Khuê', [{ k: 'duoi', t: 'W3 SEP', d: 5.5 }, { k: 'duoi', t: 'W2 OCT', d: 5.0 }, { k: 'dang', t: 'W1 NOV' }, { k: 'xep2', t: 'W4 NOV' }, { k: 'xep2', t: 'W3 DEC' }]],
     ['Lê Đức Huy', [{ k: 'dat', t: 'W2 JUL', d: 6.0 }, { k: 'dat', t: 'W2 AUG', d: 6.5 }, { k: 'dat', t: 'W2 SEP', d: 7.0 }, { k: 'duoi', t: 'W2 OCT', d: 6.0 }, { k: 'xep', mt: 'MT5', ke: 1 }]],
     ['Nguyễn Nam Cường', [{ k: 'duoi', t: 'W3 JUN', d: 5.0 }, { k: 'duoi', t: 'W4 JUL', d: 5.0 }, { k: 'duoi', t: 'W4 AUG', d: 4.5 }, { k: 'duoi', t: 'W1 OCT', d: 4.5, n: 'S · W3 OCT' }, { k: 'xep', mt: 'MT5', ke: 1 }]],
-    ['Nguyễn Ngọc Phương Linh', [{ k: 'dat', t: 'W2 SEP', d: 5.5 }, { k: 'duoi', t: 'W2 OCT', d: 5.5 }, { k: 'xep2', t: 'W2 NOV' }, { k: 'xep', mt: 'MT4' }, null]],
+    ['Nguyễn Ngọc Phương Linh', [{ k: 'dat', t: 'W2 SEP', d: 5.5 }, { k: 'duoi', t: 'W2 OCT', d: 5.5 }, { k: 'xep2', t: 'W2 NOV', dk: 'RS' }, { k: 'xep', mt: 'MT4' }, null]],
     ['Nguyễn Thị Hoàn Ngân', [{ k: 'dat', t: 'W4 MAY', d: 6.0 }, { k: 'duoi', t: 'W1 JUL', d: 5.5 }, { k: 'duoi', t: 'W4 AUG', d: 5.5 }, { k: 'tre', t: 'W4 OCT', m: 'S', n: 'vắng L R W → W2 NOV', vang: 1 }, { k: 'xep', mt: 'MT5', ke: 1 }]],
     ['Tống Giang', [{ k: 'dat', t: 'W5 APR', d: 5.5 }, { k: 'duoi', t: 'W1 JUN', d: 5.5 }, { k: 'duoi', t: 'W1 JUL', d: 6.0 }, { k: 'xep', mt: 'MT4', ke: 1 }, null]],
     ['Vũ Như Quốc Khánh', [{ k: 'duoi', t: 'W2 JUN', d: 4.5 }, null, { k: 'duoi', t: 'W4 AUG', d: 5.0 }, { k: 'cho', t: 'W5 OCT', m: 'S', n: 'W · W1 NOV' }, { k: 'xep', mt: 'MT5', ke: 1 }]],
@@ -362,7 +386,7 @@ table.mt tr:last-child td { border-bottom: 0; }
   ];
   function bangMt(em, cot, opt) {
     opt = opt || {};
-    var head = '<colgroup><col style="width:' + (opt.wTen || 220) + 'px">' + cot.map(function () { return '<col style="width:' + (opt.wO || 158) + 'px">'; }).join('') + (opt.them === false ? '' : '<col style="width:110px">') + '<col></colgroup><thead><tr><th class="c-ten">Học viên</th>' + cot.map(function (c) { return '<th>' + c + '</th>'; }).join('') + (opt.them === false ? '' : '<th>Thêm</th>') + '<th></th></tr></thead>';
+    var head = '<colgroup><col style="width:' + (opt.wTen || 220) + 'px">' + cot.map(function () { return '<col style="width:' + (opt.wO || 190) + 'px">'; }).join('') + (opt.them === false ? '' : '<col style="width:110px">') + '<col></colgroup><thead><tr><th class="c-ten">Học viên</th>' + cot.map(function (c) { return '<th>' + c + '</th>'; }).join('') + (opt.them === false ? '' : '<th>Thêm</th>') + '<th></th></tr></thead>';
     return '<div class="cuon"><table class="mt">' + head + '<tbody>' + em.map(function (r) {
       return '<tr><td class="c-ten"><a class="ten">' + r[0] + '</a></td>' + r[1].slice(0, cot.length).map(function (x) { return '<td>' + o(x) + '</td>'; }).join('') + (opt.them === false ? '' : '<td>' + o({ k: 'them' }) + '</td>') + '<td></td></tr>';
     }).join('') + '</tbody></table></div>';
@@ -389,8 +413,8 @@ table.mt tr:last-child td { border-bottom: 0; }
   /* A */
   html += khu('a', 'A · QL Cẩm Phả · Kế hoạch Test — mở CP FT 130 (mọi lớp gập mặc định như nay)',
     [['1440 · tối · QL Lê Ngọc Mai', khung(false, 'Lê Ngọc Mai', QL, dauTest(1) + thanh({ ql: 1 }) + khoiLop(LOP, 'CP FT 130', EM130))]],
-    ['<b>Ô MT 3 tầng cố định</b> (cao bằng nhau): tuần "W2 OCT" · trạng thái chữ ("Đang làm bài", "Chờ chấm S", "⚠ Chờ chấm S", "Đã huỷ", hoặc điểm "✓ 6.5" / "✗ 5.0" khi đã có Overall) · ngoại lệ chỉ khi có ("S · W3 OCT" môn lệch tuần, "vắng L R W → W2 NOV"). Đã xếp = chỉ tuần (không chữ "Đã xếp").',
-     '<b>✓ một nghĩa</b>: chỉ đứng trước điểm (đạt kỳ vọng). Bỏ hàng chip "L✓ R✓ W✓ S" trong ô (theo khuyến nghị Q-c — khu G so sánh). Bấm ô → hộp kỹ năng (khu C) xem đủ 4 môn.',
+    ['<b>Ô MT theo tuần</b> (chủ SP 03/11 khuya): mỗi tuần thi một dòng "W1 NOV  L R W S" — badge môn thi tuần đó sáng, môn khác mờ hẳn (vẫn giữ chỗ để thẳng cột, có nhãn đọc "không thi"). Môn lệch tuần → dòng thứ hai "W3 NOV" (Bùi Thanh Tú); dời vì vắng → dòng "Vắng → W2 NOV" (Nguyễn Thị Hoàn Ngân); lượt chỉ thi một phần → môn không đăng ký mờ (Phương Linh MT3 chỉ R, S).',
+     '<b>Trạng thái gọn</b>: "Đang làm bài" (bỏ "· tuần này" trùng) · "Chờ chấm" — badge môn chờ viền vàng · "⚠ Quá hạn chấm" — badge môn quá hạn nền đỏ đặc + chữ ⚠ ở dòng trạng thái (không chỉ khác màu viền) · điểm "✓ 6.5" / "✗ 5.0". ✓ một nghĩa: chỉ trước điểm. Bấm ô → hộp kỹ năng (khu C).',
      '<b>Lượt kế chưa xếp</b>: nút "Xếp MT5" ngay tại ô, viền nhấn đậm khi là lượt cần xếp tiếp. Cột <b>"Thêm"</b> có tiêu đề (B23): "+ MT ▾" (MT ngoài mặc định · S Ex — N10). "—" = lượt không áp dụng.',
      '<b>Hàng lớp tách trường</b>: mã · HV · GVCN · đợt đang chạy · ô số "Chưa có MT kế tiếp · 7 em" (bấm = bật lọc cho lớp đó). Không còn chuỗi "MT1 đang làm bài · MT1 chưa xếp 1 em · 4 em cần xếp lại".',
      'Đầu trang: chính "Xếp nhiều MT…"; phụ Xuất Excel · Xuất điểm Test. Tên em đủ (xuống dòng), cột tên ghim khi cuộn ngang.']);
@@ -418,13 +442,13 @@ table.mt tr:last-child td { border-bottom: 0; }
     ['GV: không "Xếp nhiều MT…", không chip "Chưa có MT kế tiếp", không cột "Thêm", không nút "Xếp MTn"; ô mở hộp chỉ xem. GVCN lớp: hộp có "Dời" cho tuần đã qua (N23).', 'Hàng lớp ghi "Chỉ xem" (chip sẵn có).']);
   /* E 375 */
   function theEm(r) { var ke = r[1].filter(Boolean); var xong = ke.filter(function (x) { return x.d; }).pop(); var tiep = r[1].filter(function (x) { return x && (x.k === 'xep' || x.k === 'xep2' || x.k === 'dang' || x.k === 'cho' || x.k === 'tre'); })[0];
-    return '<div class="the-em"><div class="d1"><a class="ten">' + r[0] + '</a></div><div class="d2">' + (xong ? '<span>Gần nhất <span class="kq ' + (xong.k === 'dat' ? 'dat' : 'duoi') + '">' + (xong.k === 'dat' ? '✓ ' : '✗ ') + xong.d.toFixed(1) + '</span> · ' + xong.t + '</span>' : '') + '</div><div class="d3">' + (tiep ? (tiep.k === 'xep' ? '<button class="oxep ke" style="margin:0">Xếp ' + tiep.mt + '</button>' : '<span class="mo" style="font-size:13px">' + (tiep.k === 'dang' ? 'Đang làm bài · ' + tiep.t : tiep.k === 'xep2' ? 'MT kế · ' + tiep.t : 'Chờ chấm ' + tiep.m + ' · ' + tiep.t) + '</span>') : '') + '</div></div>'; }
+    return '<div class="the-em"><div class="d1"><a class="ten">' + r[0] + '</a></div><div class="d2">' + (xong ? '<span>Gần nhất <span class="kq ' + (xong.k === 'dat' ? 'dat' : 'duoi') + '">' + (xong.k === 'dat' ? '✓ ' : '✗ ') + xong.d.toFixed(1) + '</span> · ' + xong.t + '</span>' : '') + '</div><div class="d3">' + (tiep ? (tiep.k === 'xep' ? '<button class="oxep ke" style="margin:0">Xếp ' + tiep.mt + '</button>' : '<span class="mo" style="font-size:13px">' + (tiep.k === 'dang' ? 'Đang làm bài · ' + tiep.t : tiep.k === 'xep2' ? 'MT kế · ' + tiep.t : (tiep.k === 'tre' ? '⚠ Quá hạn chấm' : 'Chờ chấm') + ' · ' + tiep.t + ' ' + knb(tiep.m, tiep.k === 'tre' ? 'qua' : 'cho') + ' · ' + tiep.t) + '</span>') : '') + '</div></div>'; }
   var e375 = '<header class="dau"><h1>Test</h1></header><div class="tabs"><button role="tab" aria-selected="false">Lịch Test tuần</button><button role="tab" aria-selected="true">Kế hoạch Test</button></div>' +
     '<div class="loc"><span class="otim">' + SVG_TIM + 'Tìm lớp, học viên</span><button class="btn">Lọc</button><button class="btn btn-ma" aria-label="Xếp nhiều MT, Xuất…">⋯</button></div>' +
     '<div class="bang-hv">' + hangLop(LOP[1], 1, 1) + EM130.slice(0, 6).map(theEm).join('') + hangLop(LOP[2], 0, 1) + '</div>';
   html += khu('e', 'E · 375 — một lớp → thẻ em (MT gần nhất + việc kế); ma trận đủ từ 768',
     [['375 · sáng · QL', khung(true, 'Lê Ngọc Mai', QL, e375)]],
-    ['375 tra cứu + việc đơn: mỗi em một thẻ ≤ 3 dòng — tên · lượt gần nhất "✗ 6.0 · W2 OCT" · việc kế ("Xếp MT5" / "Đang làm bài · W1 NOV" / "Chờ chấm S · W4 OCT"). Bấm thẻ → hộp kỹ năng toàn màn.', 'Chip lọc, Chi nhánh, Xuất, Xếp nhiều MT… vào "Lọc" / ⋯.']);
+    ['375 tra cứu + việc đơn: mỗi em một thẻ ≤ 3 dòng — tên · lượt gần nhất "✗ 6.0 · W2 OCT" · việc kế ("Xếp MT5" / "Đang làm bài · W1 NOV" / "⚠ Quá hạn chấm · W4 OCT" + badge môn). Bấm thẻ → hộp kỹ năng toàn màn.', 'Chip lọc, Chi nhánh, Xuất, Xếp nhiều MT… vào "Lọc" / ⋯.']);
   /* F */
   var nganLoi = '<div class="hop" style="width:520px"><div class="dau-h"><b>Xếp nhiều MT · đã lưu</b><span>CP FT 130 · MT5</span></div><div class="khoi"><span class="kq dat" style="font-size:15px">✓ Đã xếp 5 em · W3 DEC</span><span class="qh">⚠ 2 em không xếp được</span>' +
     '<div class="mon" style="grid-template-columns:minmax(0,1fr) auto"><span>Nguyễn Thị Hoàn Ngân</span><span class="mo" style="font-size:13px">Đang tạm dừng học — không xếp</span></div>' +
