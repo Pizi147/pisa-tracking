@@ -118,10 +118,14 @@ Nâng cấp từ khung đã duyệt (v7 / v8), không làm lại; CSS chung `chu
 | `u03-ho-so-lop.html` | A1 Tổng hợp mở Case · A2 lưới Điểm MT4 · B1 375 thẻ em | ba mốc gọi tên · W1 / W2 có nhãn · Case gọn, PA chữ thường 2 dòng · "Chỉ có MT lịch sử" · UA-Q4 | duyệt + "n/7 có điểm đủ" (đổi chữ thẻ MT) |
 | `u07-hanh-trinh.html` | A1 Tất cả kỹ năng + hộp nổi · B1 375 danh sách sự kiện | hai mốc có tên · tuần lịch chính · trạng thái ở cột nhãn · "1 PA chờ xác nhận" một nguồn · Huỷ ≠ Xong · 375 danh sách | duyệt + 375 mặc định danh sách |
 
+**Cổng chất lượng (critique độc lập, 3 vòng, mỗi vòng agent Opus mới):** vòng 1 U01 34 · U02 28 · U03 27 · U07 28 → vòng 2 33 · 28 · 30 · 29 → vòng 3 **35 · 32 · 33 · 34**, 0 P0; 3 P1 vòng 3 đã sửa (U02 làn Case L sai tuần mở · U07 Reading MT2 dưới kỳ vọng mà không Case · U01 "Kết quả PA" ≠ "Ghi kết quả PA"). Hết số vòng theo luật (chạm 30 → tối đa 2 vòng nữa) — không còn P0 / P1. Lỗi các vòng chủ yếu là số liệu mẫu lệch giữa khung (đã đồng bộ: U02 ↔ U03 cùng em Hà Trần Phúc khớp mọi điểm).
+
+**[XM] chờ chủ SP (UA-02):** badge Công việc của QL = số yêu cầu chờ duyệt mọi chi nhánh (mã SL2) — **lệch DESIGN.md V13** ("badge = việc của chính người xem"). Khuyến nghị: giữ số chờ duyệt (việc QL cần làm nhất) + chữ "chờ duyệt" cạnh số, thấy cả ở 375; sửa V13 cho khớp.
+
 Turso: không đường API mới. U02 giảm đọc (`/cases/:id` chỉ cho Case đang mở). Các sửa chữ UA-14 / UA-15 / UA-17 / UA-18 / UA-19 là PR nhỏ không cần đổi bố cục (sau khi chủ SP duyệt chữ).
 
 ## 7. Để PTA (ngoài phạm vi UX-A)
 - **Máy thử:** cookie phiên `pisa_session` gắn host `localhost`, mọi cổng dùng chung → các session audit chạy song song đăng nhập đè nhau (bị đá về màn Đăng nhập). Cách tránh: mở web bằng `http://<tên>.localhost:<cổng>` (vd `uxa.localhost:5191`). Nên ghi vào plan.md 1.4 "Kỹ thuật dễ vấp".
 - **Hồ sơ lượt** (mục 9 hàng "Hồ sơ lượt MT / lớp thường"): `01` gán UX-A ma trận nhưng không có trong 4 mockup; chưa rà — PTA phân lại hoặc để đợt sau.
-- UA-12 (F06), UA-13 (F07), UA-21 / UA-22 (đo) → AUDIT-LOI.
+- UA-12 (F06), UA-13 (F07), UA-21 / UA-22 (đo) → AUDIT-LOI. **03/11:** AUDIT-LOI mở PR #829 (F06) và #830 (F07: hộp nổi portal, lật, dịch ngang, mở bằng bấm / Tab / Enter **và vẫn mở khi rê** — giữ thao tác cũ, khớp mockup). Khay đáy 375 của U02 / U07 làm ở PR màn U07 sau khi chủ SP duyệt.
 - UA-19: nếu muốn ô MT lịch sử có nhãn "lịch sử" ở hàng lớp, cần cờ `lichSu` đi cùng `scores` của roster (máy chủ đã có trong `history`) — PR nhỏ, không đổi số.
