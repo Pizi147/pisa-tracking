@@ -11,6 +11,7 @@ Dữ liệu web là demo MB FT 101 (14/09/2026, vai GVCN 7) — tên / số khá
 | `a3-luoi-mt-1440-toi.png` | A3 · Điểm Mock Test mở (thẻ lượt "n/N có điểm đủ", không "Đủ điểm") |
 | `b1-the-em-375-sang.png` | B1 · thẻ em 375 mở: bảng lượt W gộp + 5 ô kỹ năng + tóm tắt dọc |
 | `c1-khong-case-1440-toi.png` | C1 · chọn R (không Case): "Không có Case" + "+ Case", Kết quả PA "–" (chỉ web) |
+| `a4-panel-tu-ho-so-hv-1440-toi.png` | panel Case mở từ hồ sơ HV — cùng đầu A2 (chỉ web) |
 | `c5-the-tieu-chi-1440-toi.png` | C5 · rê ô S → thẻ tiêu chí "S FC · LR · GRA · P → band" (chỉ web) |
 
 ## Truy vết khung → thành phần → ảnh
@@ -35,13 +36,14 @@ Dữ liệu web là demo MB FT 101 (14/09/2026, vai GVCN 7) — tên / số khá
 | A1 | Bấm ô điểm trên hàng = mở em với kỹ năng đó (W → bài thấp hơn) | KHỚP | #8 |
 | A1 | Rê / focus ô W · S → thẻ tiêu chí; ô chỉ có band không thẻ | KHỚP | #22; cả ô W1 · W2 · S ở Điểm theo lượt |
 | A2 | Panel Case: đầu "CASE · kỹ năng" · "em · kỹ năng" + chip SOS phải · dải Điểm MTn (✗ số lớn) · Kỳ vọng · Phụ trách · Mở; thân Case bỏ dòng tên / Điểm lặp; Ghi kết quả PA có "● Chưa lưu" + Lưu · "Lưu · kỹ năng tiếp ›" | KHỚP | 04/11: dùng lại panel Case phủ (PTA chấp nhận); thân Case (mục vạch trái, chip nguyên nhân, trích Mô tả, PA + tag) là của #882 (U02 c2 + U03 A2); trạng thái + Đổi người / Sửa GIỮ dưới dải số |
+| A2 | Thẻ PA trong thân Case | KHÁC | GIỮ dạng thẻ của #882 (PTA chốt 04/11): nhiều PA phải tách rõ từng PA; mockup A2 vẽ một PA dạng dòng nhãn – giá trị |
 | A3 | Lưới MT: bỏ "Đủ điểm"; "Chưa xếp lịch" thay "Chờ 0 kỹ năng"; thẻ lượt "n/N có điểm đủ" | KHỚP | #13, N33 ④ — áp cả LuoiThuong · MotKyNang · LuotThuongPage · MockDetailPage |
 | B1 | Thẻ em 375: lưới 5 ô giữ; chạm tên mở cuối thẻ; bảng lượt W gộp (không Kỳ vọng) | KHỚP | #17 |
 | C1 / C4 | Kỹ năng không Case: "Không có Case" + "+ Case" (theo quyền) · chưa có kết quả PA "–" | KHỚP | |
 | C2 | Em chưa có lượt: "Chưa có điểm." + Lượt tới | KHỚP | |
 | C3 | Lỗi tải chi tiết: chỉ trong vùng tóm tắt + Thử lại | KHỚP | lỗi tải Case |
 
-Ước khớp: 24 / 25 dòng KHỚP (96 %).
+Ước khớp: 23 / 25 dòng KHỚP (92 %); **về hình 23 / 23 = 100 %** — hai dòng KHÁC là tính năng / dữ liệu có lý do (chữ trạng thái PA theo dữ liệu sẵn có, không thêm câu đọc Turso; PA dạng thẻ PTA chốt), không phải lệch hình. Cổng chủ SP 04/11: ≥ 96 % về hình.
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | Vì sao |
@@ -56,7 +58,7 @@ Dữ liệu web là demo MB FT 101 (14/09/2026, vai GVCN 7) — tên / số khá
 
 ## [XM] hỏi PTA
 - **Cần hỗ trợ lớp thường:** bảng ý U03 chỉ vẽ FT; lớp thường không có mở rộng kỹ năng nên GIỮ cách xem "Cần hỗ trợ" ở lớp thường. Muốn bỏ cả lớp thường → PR riêng.
-- **Panel A2:** dùng panel Case sẵn có (phủ) — PTA chấp nhận 03/11. Thẻ PA trong thân theo #882 (thẻ), mockup U03 A2 vẽ dòng nhãn – giá trị: PTA quyết giữ một kiểu.
+- **Panel A2:** dùng panel Case sẵn có (phủ) — PTA chấp nhận 03/11. **Đầu panel kiểu A2 dùng CHUNG mọi nơi mở Case** (hồ sơ lớp, hồ sơ HV, Hành trình, panel số…) — PTA chốt 04/11; panel VIỆC ở Công việc giữ đầu U01. `a4-panel-tu-ho-so-hv-1440-toi.png`.
 
 ## Turso
 Mở trang: không đổi (`/roster` thêm 4 tiêu chí từ dòng điểm đã đọc: **+0 câu, +0 dòng**). Mở một em: **0 câu**. Chọn kỹ năng có Case: **1** `/cases/:id` (trước: mở Case dưới hàng gọi `/cases/:id` cho MỌI Case của em; rê ô W/S trước gọi `/attempts/:id` — nay 0).

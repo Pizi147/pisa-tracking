@@ -5,7 +5,7 @@ import { ChipSos } from '../../ui/ChipSos.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
-import { KhungPanel, KhungTrongCot } from '../../ui/KhungPanel.tsx';
+import { DauViecCongViec, KhungPanel, KhungTrongCot } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -42,9 +42,7 @@ export function NganCase(p: Parameters<typeof ThanNganCase>[0]) {
   return <ThanNganCase key={p.caseId} {...p} />;
 }
 
-function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, veNguon, onTiep, anViecChinh = false, dauKyNang = false, kyNangTiep = null }: {
-  /** U03 A2 (mở từ tóm tắt kỹ năng hồ sơ lớp): đầu "CASE · kỹ năng" · "em · kỹ năng" + chip SOS · dải Điểm · Kỳ vọng · Phụ trách · Mở. */
-  dauKyNang?: boolean;
+function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, veNguon, onTiep, anViecChinh = false, kyNangTiep = null }: {
   /** U03 A2 chân: Case kỹ năng kế của em — Ghi kết quả có "Lưu · kỹ năng tiếp ›". */
   kyNangTiep?: { ten: string; di: () => void } | null;
   /** U02 (một việc một chỗ): nút việc tiếp đã ở dòng tóm tắt Case của cột hồ sơ HV — chân Case không lặp (Hoàn thành Case vẫn ở chân). */
@@ -68,6 +66,9 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const { data, error, reload } = useApi<CaseDetail>(`/cases/${caseId}`);
   /* UI-HO-SO-HV-2: trong cột, view việc mở thẳng vẫn nằm trên view Case — lưu xong tự về Case (V20), ‹ về Case. */
   const trongCot = useContext(KhungTrongCot);
+  /* U03 A2 (PTA 04/11 — một khái niệm một kiểu): view Case ở MỌI nơi mở Case có đầu "CASE · kỹ năng" · "em · kỹ năng" + chip SOS · dải
+     Điểm · Kỳ vọng · Phụ trách · Mở. Panel VIỆC của Công việc (`DauViecCongViec`, đầu U01) và khung trong cột hồ sơ HV giữ đầu riêng. */
+  const dauKyNang = !useContext(DauViecCongViec) && !trongCot;
   const v0 = viecBanDau ?? tuViec(viec, paId);
   const xem = useXem({ dau: trongCot && v0 && v0.loai !== 'case' ? ['case', maView(v0)] : [maView(v0 ?? { loai: 'case' })] });
   const maHien = xem.ds[xem.ds.length - 1] ?? 'case';
@@ -441,6 +442,13 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
               {!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
               {` · ${data.owner ? t('phụ trách: {ten}', { ten: data.owner }) : t('Chưa có người phụ trách')}`}
             </span>}
+            {/* U03 A2: Mở / Phụ trách đã ở dải số — còn lại "X báo" · hạn báo kết quả (khi có) cạnh trạng thái, không mất thông tin. */}
+            {!trongCot && dauKyNang && (data.reportedBy || (!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam)) && (
+              <span className="min-w-0 text-[13px] text-slate-400">
+                {[data.reportedBy ? t('{ten} báo', { ten: data.reportedBy }) : null,
+                  !data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) }) : null].filter(Boolean).join(' · ')}
+              </span>
+            )}
             {!trongCot && <span className="flex-1" />}
             {/* R1-NO-CU (D17): QL / GVCN lớp em đổi người phụ trách tại chỗ — hộp một ô ngay dưới dải. U02: trong cột hai nút này ở chân Case. */}
             {!trongCot && nutDoiNguoi}

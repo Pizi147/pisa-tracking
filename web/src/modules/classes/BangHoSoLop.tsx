@@ -264,7 +264,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
           : <button type="button" className="btn btn-sm" onClick={() => setLoc('tat-ca')}>{t('Tất cả')} <b className="tabular-nums">{dem['tat-ca']}</b></button> }} />
       {tt.panels}
       {ngan2 && (
-        <NganCase caseId={ngan2.caseId} hocVien={ngan2.hv} lop={maLop} onClose={() => setNgan2(null)} onChanged={xong} dauKyNang
+        <NganCase caseId={ngan2.caseId} hocVien={ngan2.hv} lop={maLop} onClose={() => setNgan2(null)} onChanged={xong}
           kyNangTiep={(() => {
             /* U03 A2 "Lưu · kỹ năng tiếp ›": Case đang mở của kỹ năng kế (L R W1 W2 S) cùng em — tóm tắt dưới hàng đi theo. */
             const ca = caseCua.get(ngan2.sid) ?? [];
