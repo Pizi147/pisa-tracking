@@ -318,6 +318,8 @@ export type PhieuEm = {
   phieu: { khoa: string; nhan: string }; soMonDaGhi: number; soMon: number;
   tuDien: TuDien | null; tuDienDaChup: boolean;
   mon: PhieuMon[];
+  /** Audit 03/11 (câu 17.4): câu Writing CHUNG ghi trước khi tách W1 · W2 — chỉ đọc để GV tham khảo; W1 · W2 vẫn cần câu riêng. */
+  writingCu: { noiDung: string; nguoiGhi: string | null; ghiLuc: string } | null;
   nhanXetChung: string | null;
   xacNhan: { boi: string | null; luc: string; thay: boolean } | null;
   gvbmChuaBanGiao: string[];

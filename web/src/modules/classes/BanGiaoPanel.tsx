@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, invalidate } from '../../lib/api.ts';
+import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -73,8 +73,10 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   const canNx = !!em && !em.gvcnCung;
   const thieu = canNx && nhap.trim().length < NHAN_XET_TOI_THIEU;
   const dsXn = dto.ds.filter((e) => !e.xacNhan).length;
+  const oNx = useRef(new Map<number, ReturnType<HangLuu['o']>>()).current;
   /* 6c (lỗi 5): nhận xét đã gõ khác bản đã lưu, hoặc ô điền thay đang mở. */
-  const daSuaNx = !!dienThay || dto.ds.some((e) => nhanXet[e.lenhId] !== undefined && nhanXet[e.lenhId].trim() !== (e.nhanXetChung ?? '').trim());
+  const daSuaNx = !!dienThay || dto.ds.some((e) => nhanXet[e.lenhId] !== undefined
+    && (oNx.get(e.lenhId)?.chuaLuu() ?? nhanXet[e.lenhId].trim() !== (e.nhanXetChung ?? '').trim()));
 
   /*
    * PR-B: nhận xét chung lưu NHÁP khi rời ô (chưa xác nhận) — không mất chữ khi đóng panel / đổi em. F01 (audit 03/11): mỗi em một ô xếp lượt
@@ -83,12 +85,12 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   const hang = useHangLuu();
   const chonRef = useRef(chon);
   chonRef.current = em?.lenhId ?? null;
-  const oNx = useRef(new Map<number, ReturnType<HangLuu['o']>>()).current;
   const oCua = (e: PhieuEm) => {
     let o = oNx.get(e.lenhId);
     if (!o) {
       o = hang.o(String(e.lenhId), e.nhanXetChung ?? '',
-        (v) => api.put(`/lenh-chuyen/${e.lenhId}/nhan-xet-nhap`, { nhanXetChung: v ?? '' }).then(() => { invalidate('/lenh-chuyen'); reload(); return null; }, (er: any) => er?.message ?? ''),
+        /* Audit 03/11: không tải lại cả phiếu sau mỗi lần lưu nháp — gom 1,5 s (`invalidateGop`, đọc Turso ít). */
+        (v) => api.put(`/lenh-chuyen/${e.lenhId}/nhan-xet-nhap`, { nhanXetChung: v ?? '' }).then(() => { invalidateGop('/lenh-chuyen'); return null; }, (er: any) => er?.message ?? ''),
         (tt) => { if (chonRef.current === e.lenhId) setNxLuu(tt === 'dang' ? 'luu' : tt === 'xong' ? 'da' : tt === 'loi' ? 'loi' : 'yen'); });
       oNx.set(e.lenhId, o);
     }
@@ -135,7 +137,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
     } catch (er: any) { toast.push('error', er.message); }
   };
 
-  const chuaMon = em ? em.mon.filter((m) => !m.noiDung || m.lamLai) : [];
+  const chuaMon = em ? em.mon.filter((m) => (!m.noiDung || m.lamLai) && !m.cungGv) : [];   // môn "Cùng GV" không chờ (chủ SP 30/10)
   /* Lỗi chủ SP 30/10: số ngày quá hạn bàn giao của từng em (null = chưa quá / đã xác nhận). */
   const quaHan = (e: { hanGvcn: string | null; xacNhan: unknown }) => {
     const v = !e.xacNhan && e.hanGvcn ? deadlineView({ kind: 'viec-van-hanh', due: e.hanGvcn, today: homNay }) : null;
@@ -227,6 +229,12 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
                     </div>
                   </li>
                 ))}
+                {em.writingCu && (
+                  <li className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-3 text-sm">
+                    <span className="font-bold text-slate-500">W</span>
+                    <span className="min-w-0 text-slate-400">{em.writingCu.noiDung} <span className="text-slate-500">— {em.writingCu.nguoiGhi}, {ngay(em.writingCu.ghiLuc, homNay)} · {t('Writing · cũ, trước khi tách W1 / W2')}</span></span>
+                  </li>
+                )}
               </ul>
             </section>
 
@@ -283,7 +291,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
     if (!o) {
       o = hang.o(String(e.lenhId), oMon(e)?.noiDung ?? '',
         (v) => api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon, noiDung: v ?? '' })
-          .then(() => { invalidate('/lenh-chuyen'); invalidate('/my-work'); invalidate('/classes'); reload(); return null; }, (er: any) => er?.message ?? ''),
+          .then(() => { invalidateGop('/lenh-chuyen', '/my-work', '/classes'); return null; }, (er: any) => er?.message ?? ''),
         (tt, lyDo) => {
           setLuu((x) => ({ ...x, [e.lenhId]: tt === 'xong' }));
           setLoi((x) => { const { [e.lenhId]: _, ...con } = x; return tt === 'loi' ? { ...con, [e.lenhId]: lyDo || t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.') } : con; });
@@ -293,7 +301,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
     return o;
   };
   /* Ô có chữ khác bản máy chủ (lưu lỗi / chưa rời ô) → ✕ / Esc hỏi trước khi đóng. */
-  const daSua = dto.ds.some((e) => chu[e.lenhId] !== undefined && chu[e.lenhId].trim() !== (oMon(e)?.noiDung ?? '').trim());
+  const daSua = dto.ds.some((e) => chu[e.lenhId] !== undefined && (oO.get(e.lenhId)?.chuaLuu() ?? chu[e.lenhId].trim() !== (oMon(e)?.noiDung ?? '').trim()));
   const dongHan = () => { onDone(); onClose(); };
   const baoChuaLuu = (n: number) => toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại, hoặc bấm Đóng lần nữa để bỏ.', { n }));
   const dong = dongSauKhiLuu(hang, dongHan, baoChuaLuu);
@@ -345,6 +353,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
                   aria-invalid={!!loi[e.lenhId]} placeholder={t('Viết một câu…')} value={chu[e.lenhId] ?? cu}
                   onChange={(ev) => { setChu((x) => ({ ...x, [e.lenhId]: ev.target.value })); setLuu((x) => ({ ...x, [e.lenhId]: false })); oCua(e).go(ev.target.value); }}
                   onBlur={() => void ghi(e)} />
+                {e.writingCu && !cu && <span className="mt-0.5 block text-xs text-slate-500">{t('Writing · cũ')}: {e.writingCu.noiDung}</span>}
                 {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
                 {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-done">{t('Đã lưu')}</span>}
                 {!khoa && oMon(e)?.lamLai && !luu[e.lenhId] && (

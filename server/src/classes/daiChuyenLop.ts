@@ -1,11 +1,11 @@
-import { boMonCt } from '../normal/regular.ts';
+import { boMonBanGiaoCt } from '../normal/regular.ts';
 import { db } from '../db.ts';
 import { kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan } from '../../../shared/domain/index.ts';
 import { addDays } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { lopXemTam, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { cungGvTuPhanCong, type PhanCongLop } from './banGiao.ts';
+import { MDK_SQL, cungGvTuPhanCong, type PhanCongLop } from './banGiao.ts';
 import type { DaiHocVien, DaiLop } from '../../../shared/domain/index.ts';
 import { mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { lopChoChotLoTrinh } from './lenhChuyen.ts';
@@ -36,6 +36,8 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
        FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'
      UNION ALL SELECT 'ld', l.id, l.lop_dich_id, NULL, NULL, NULL, NULL, NULL, NULL
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy' AND l.xac_nhan_luc IS NULL AND l.lop_dich_id IS NOT NULL
+     UNION ALL SELECT 'mdk', l.id, ${MDK_SQL('l')}, NULL, NULL, NULL, NULL, NULL, NULL
+       FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy' AND l.xac_nhan_luc IS NULL
      UNION ALL SELECT 'ta', ta.class_id, c.programme_code, ta.user_id, ta.skill, ta.is_core, NULL, NULL, NULL
        FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
       WHERE ta.status = 'active' AND (ta.class_id = ? OR ta.class_id IN (SELECT lop_dich_id FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai != 'huy' AND xac_nhan_luc IS NULL))
@@ -53,7 +55,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
      UNION ALL SELECT 'xt', d.khoa, um.full_name, d.nguoi_moi, d.hieu_luc, d.xem_den, NULL, NULL, NULL
        FROM doi_phan_cong d JOIN users um ON um.id = d.nguoi_moi WHERE d.class_id = ? AND d.nguoi_cu = ? AND d.trang_thai = 'da_ap' AND d.xem_den IS NOT NULL
      UNION ALL SELECT 'kqdr', COUNT(DISTINCT substr(e.started_at, 1, 10)), NULL, NULL, NULL, NULL, NULL, NULL, NULL ${EM_KQDR_FT_SQL}`,
-  ).all(classId, classId, classId, classId, classId, classId, classId, classId, addDays(homNay, -14), classId, addDays(homNay, -14), classId, classId, classId, p.userId,
+  ).all(classId, classId, classId, classId, classId, classId, classId, classId, classId, addDays(homNay, -14), classId, addDays(homNay, -14), classId, classId, classId, p.userId,
     classId, addDays(homNay, -KQDR_HIEN_NGAY)) as any[];
   const min = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort()[0] ?? null;
 
@@ -81,12 +83,15 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
   const cuaToi = pcLop.get(classId)!.rows.filter((r) => r.user_id === p.userId);
   const pc = { gvcn: cuaToi.some((r) => !!r.is_core), kyNang: new Set(cuaToi.flatMap((r) => (r.skill ? [r.skill] : []))) };
   const cung = cungGvTuPhanCong(rows.filter((x) => x.k === 'ld').map((r) => ({ id: r.a as number, lop_nguon_id: classId, lop_dich_id: r.b as number })), pcLop);
+  /* Audit 03/11 F05: W1 · W2 riêng; em không học môn (N13) không tính. Lệnh đã xác nhận không có dòng `mdk` — đủ môn như cũ. */
+  const mdk = new Map(rows.filter((r) => r.k === 'mdk').map((r) => [r.a as number, (r.b ?? null) as string | null]));
+  const hoc = (lenhId: number, m: string) => boMonBanGiaoCt(o.ct, mdk.get(lenhId)).includes(m);
   const banGiaoMon = chuaXn.length
-    ? boMonCt(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => {
-      const can = nguon.filter((r) => !cung.get(r.a)?.mon.has(m));
+    ? boMonBanGiaoCt(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => {
+      const can = nguon.filter((r) => hoc(r.a, m) && !cung.get(r.a)?.mon.has(m));
       return {
         mon: m, monNgan: tenMonNgan(o.ct, m), daGhi: can.filter((r) => daGhi.get(m)?.has(r.a)).length, tong: can.length,
-        han: min(chuaXn.filter((r) => !daGhi.get(m)?.has(r.a) && !cung.get(r.a)?.mon.has(m)).map((r) => r.g)),
+        han: min(chuaXn.filter((r) => hoc(r.a, m) && !daGhi.get(m)?.has(r.a) && !cung.get(r.a)?.mon.has(m)).map((r) => r.g)),
       };
     }).filter((x) => x.tong > 0)
     : [];
@@ -151,7 +156,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
   const homNay = demoToday();
   const l = conn.prepare(
     `SELECT l.*, n.code AS nguon, n.programme_code AS ct, d.code AS dich, d.programme_code AS ct_dich, u.full_name AS ra, xn.full_name AS xn_ten,
-            (SELECT GROUP_CONCAT(b.mon) FROM ban_giao_mon b WHERE b.lenh_id = l.id AND b.lam_lai = 0) AS mon_da_ghi,
+            (SELECT GROUP_CONCAT(b.mon) FROM ban_giao_mon b WHERE b.lenh_id = l.id AND b.lam_lai = 0) AS mon_da_ghi, ${MDK_SQL('l')} AS mdk,
             (SELECT json_group_array(json_array(ta.class_id, ta.user_id, ta.skill, ta.is_core)) FROM teacher_assignments ta
               WHERE ta.status = 'active' AND ta.class_id IN (l.lop_nguon_id, l.lop_dich_id)) AS pc_json
        FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id LEFT JOIN classes d ON d.id = l.lop_dich_id
@@ -169,7 +174,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
   for (const [classId, user_id, skill, is_core] of JSON.parse(l.pc_json ?? '[]') as any[][]) pcLop.get(classId)?.rows.push({ user_id, skill, is_core });
   const cung = !l.xac_nhan_luc ? cungGvTuPhanCong([l], pcLop).get(l.id) : undefined;   // cùng câu, không thêm lượt
   const daGhi = new Set<string>([...String(l.mon_da_ghi ?? '').split(',').filter(Boolean), ...(cung?.mon ?? [])]);
-  const mons = boMonCt(l.ct);
+  const mons = boMonBanGiaoCt(l.ct, l.mdk);
   const phieu = l.huong !== 'dung_hoc';
   const qlThay = ra && (!!l.han_gvcn && homNay > l.han_gvcn);   // lớp không GVCN được `daiLop` xử lý ở phía lớp; ở đây chỉ quá hạn
   const nut: DaiHocVien['nut'] = [];
