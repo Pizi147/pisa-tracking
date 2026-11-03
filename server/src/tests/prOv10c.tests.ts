@@ -81,8 +81,9 @@ export async function runPrOv10cTests(t: YThucTestKit) {
     const cx = loadPrincipal(idCx);
     const tatCa = soHocVien(cx);
     assert(tatCa.phamVi === 'tat-ca', `phạm vi: ${tatCa.phamVi}`);
-    const soEm = one(`SELECT COUNT(*) n FROM students WHERE archived_at IS NULL`).n;
-    assert(tatCa.tong === soEm, `CX phải thấy mọi em chưa lưu trữ: ${tatCa.tong} / ${soEm}`);
+    /* XM-4 (PTA 03/11, U04-3): em Kết thúc học không trong danh sách → không đếm ở "Tất cả". */
+    const soEm = one(`SELECT COUNT(*) n FROM students WHERE archived_at IS NULL AND status != 'finished'`).n;
+    assert(tatCa.tong === soEm, `CX phải thấy mọi em chưa lưu trữ, chưa kết thúc học: ${tatCa.tong} / ${soEm}`);
     assert(tatCa.dem.thieu_tt === danhSachHocVienLop(cx, { phamVi: 'tat-ca' }).dem.thieu_tt, 'Thiếu thông tin ≠ chip (tất cả)');
     const motCn = soHocVien(cx, { branchId: cp });
     assert(motCn.phamVi === 'chi-nhanh' && motCn.tong > 0 && motCn.tong < tatCa.tong, `một chi nhánh: ${JSON.stringify(motCn)}`);
