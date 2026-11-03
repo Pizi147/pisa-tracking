@@ -121,7 +121,7 @@ function OMtGan({ g }: { g: HangHv }) {
     <span className="block">
       {/* HV-LOP-GON: Overall nổi (15 / 700, màu kết quả) · kỳ vọng + tuần là chữ phụ mờ 12. */}
       <span className="flex items-baseline gap-1.5">
-        <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut />
+        <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" />
         <span className="whitespace-nowrap text-xs tabular-nums text-faint">/ KV {chuSo(m.kyVong) ?? '—'} · {m.tuan ? tuanLich(m.tuan, homNay) : `MT${m.mt}`}</span>
       </span>
       <MiniKn kn={m.kn} kv={m.kyVong} kck={g.loTrinh.kck} />
@@ -241,7 +241,7 @@ function TheHvLop({ ds, lop, viec, gopMon, nguCanh, onMoViec, onMoEm, onDoi, vai
             <div className="text-xs text-slate-400">
               {v?.length ? <OViec v={v} onMo={onMoViec} onMoEm={onMoEm && (() => onMoEm(h.id))} gopMon={gopMon} />
                 : g?.mtGan ? <span className="inline-flex items-baseline gap-1">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /> · Overall
-                    <ODiem so={chuSo(g.mtGan.ovr)} kq={kqOverall(g.mtGan.ovr, g.mtGan.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut /> MT{g.mtGan.mt}</span>
+                    <ODiem so={chuSo(g.mtGan.ovr)} kq={kqOverall(g.mtGan.ovr, g.mtGan.kyVong)} kck={g.loTrinh.kck} nhan="Overall" /> MT{g.mtGan.mt}</span>
                 : '—'}
             </div>
             {ev?.sauThi && vai && (

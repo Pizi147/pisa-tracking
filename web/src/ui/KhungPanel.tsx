@@ -380,7 +380,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
           </footer>
         )}
         {chan && !chan.v3 && (
-          <footer className={`shrink-0 border-t ${taiCho ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+          /* U02 (mockup `.chan-case`): trong cột — chân không nền riêng, kẻ trên trong lề nội dung, nút về phải. */
+          <footer className={`shrink-0 border-t ${taiCho ? 'chan-dinh-375' : ''} ${trongCot ? 'mx-4 [&>div]:px-0 [&>div]:pb-3' : ''}`} style={{ borderColor: 'var(--line)', background: trongCot ? 'transparent' : 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             {/* RA-UI-1 (mockup `v7/khai-bac-lo.html` #w375): 375 — dòng trạng thái / đếm lên đầu chân, mọi nút chia đều MỘT hàng (Huỷ | Lưu, Lưu không còn nhỏ lệch trái). */}

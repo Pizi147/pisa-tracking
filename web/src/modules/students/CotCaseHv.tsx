@@ -4,7 +4,7 @@ import { xepCase, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { NganCase } from './NganCase.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
-import { IconCanhBao, IconGap } from '../../ui/BieuTuong.tsx';
+import { IconCanhBao, IconGap, lopKq } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -96,8 +96,9 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
           <span className={`col-start-2 flex-wrap items-center gap-1.5 ${moRa ? 'flex' : 'hidden sm:flex'}`}>
             {diem && (
               <span className="the-phu tabular-nums">{`MT${mt}`}
-                <b className={diem.passed === false || (diem.expectation != null && diem.band < diem.expectation) ? 'text-bad' : 'text-ok'}>
-                  {diem.expectation != null && diem.band < diem.expectation ? '✗' : '✓'} {fmtBand(diem.band)}</b>
+                {/* Mockup `.dd / .da`: "✗ " / "✓ " chữ đậm cùng màu số — ba màu kết quả (vượt xanh lá · bằng xanh dương · dưới đỏ). */}
+                <b className={lopKq(diem.passed === false || (diem.expectation != null && diem.band < diem.expectation) ? 'duoi' : diem.expectation != null && diem.band === diem.expectation ? 'bang' : 'vuot')}>
+                  {diem.passed === false || (diem.expectation != null && diem.band < diem.expectation) ? '✗' : '✓'} {fmtBand(diem.band)}</b>
                 {diem.expectation != null && <>/ {fmtBand(diem.expectation)}</>}
               </span>
             )}

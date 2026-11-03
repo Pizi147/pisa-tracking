@@ -32,6 +32,15 @@ ngày demo 14/09, phông Be Vietnam Pro đã kiểm `document.fonts.check` = tru
 
 KHỚP 15 / 16 dòng có trong PR (bỏ dòng 10 chuyển U07) = 94 %.
 
+## Sửa sau khi chủ SP không duyệt (04/11, PTA Plan — "về mặt hình ảnh làm ơn cứ làm giống mockup")
+| # | Ý | Thành phần web | Kết quả | Ảnh |
+|---|---|---|---|---|
+| S1 | ✓ / ✗ = CHỮ "✓ " / "✗ " trong cùng span với số (cùng cỡ, đậm 700, cùng màu), không icon SVG; ba màu vượt xanh lá · bằng xanh dương · dưới đỏ (bỏ `chiToHut`) — sửa GỐC `ODiem` + `DauKetQua` (mọi nơi dùng chung) | `web/src/ui/ODiem.tsx`, `BieuTuong.tsx` | KHỚP (ô to: dấu 17 px ≈ `.od .s small` 16 px — thang chữ không có 16) | a1, a2, b, c |
+| S2 | Case mở: khung trường `.fld` (nhãn 13 / 500 mờ, giá trị 15 sáng, mỗi hàng một kẻ, cột nhãn 8.5rem) | `ThanCase`, `DauMuc`, `.fld` | KHỚP | a1, c |
+| S3 | Nguyên nhân = thẻ viền; Mô tả = đoạn trích vạch trái 3 px (bỏ ngoặc kép), nguồn "theo nhận xét MTn" 12 mờ dưới (U03 A2) | `ThanCase`, `MoTaGon`, `.trich` `.nguon` | KHỚP | a1, c |
+| S4 | PA = thẻ con `.pa-the`: tên 15 / 700 + thẻ (theo quy chế · đến MTn · người dạy: X) + nội dung trích 2 dòng + "Kết quả gần nhất / Kết quả cuối: chip · tuần" (chip `.ket` theo tone kết quả) | `TenPaThe`, `KetQuaGan`, `DongPaGon`, `TheKhoiPa` | KHỚP | c |
+| S5 | Đầu Case: "MTn ✗ số / kỳ vọng" (ba màu) · "PA … · đang chạy" · phụ trách đậm; chân Case không nền riêng, kẻ trên trong lề | `CotCaseHv`, `KhungPanel` (trongCot) | KHỚP | a1, c |
+
 ## KHÁC (PTA Plan trả lời [XM] 03/11)
 1. Chân Case **"Hoàn thành Case"** (mockup "Kết luận Case…") — KHÁC có lý do: một khái niệm một tên (panel, Công việc, Rulebook đều "Hoàn thành Case").
 2. Tiến độ Overall **một dòng W** (mockup W1 / W2) — KHÁC có lý do: bài trên lớp chỉ ghi chung "writing" (SV-BAI-LOP-2), không tách được. Ô điểm MT vẫn W1 / W2.
@@ -50,6 +59,7 @@ KHỚP 15 / 16 dòng có trong PR (bỏ dòng 10 chuyển U07) = 94 %.
 | Nút việc tiếp ở chân từng Case | nút ở dòng tóm tắt (mở thẳng form trong Case); chân giữ Hoàn thành Case | ĐỔI vị trí (dòng 9) |
 | Sửa · Đổi người… ở dải đầu Case | ở chân Case cùng + Thêm PA | ĐỔI vị trí (mockup) |
 | + Thêm PA · Ghi kết quả · Xác nhận PA · Mô tả Case · Mở lại · Lịch sử · Dịch · ⋯ PA | như cũ, trong Case mở | GIỮ |
+| Thẻ PA đang chạy: chip "Đang chạy" + "kết quả gần nhất W3 OCT …" một dòng | tên + thẻ; nội dung trích; "Kết quả gần nhất: chip · tuần" (panel: + ghi chú) | ĐỔI hình (S4) — "đang chạy" đã ở dòng tóm tắt / đầu mục; ⋯ PA · Ghi kết quả · Cập nhật trước hạn · Chọn người dạy · Chi tiết · Nhật ký PA GIỮ |
 | Bằng chứng: khung kéo thả luôn hiện | "chưa có · + Thêm" → bấm mở khung (có bằng chứng: như cũ) | ĐỔI — D7 |
 | Tiến độ ở Overall: danh sách mọi kỹ năng + "+ Ghi tiến độ" | Overall chỉ đọc (gần nhất từng kỹ năng); ghi / sửa / xoá khi chọn kỹ năng | ĐỔI — N33 ② (mất ghi ở Overall: chọn ô kỹ năng là có, ít hơn một bấm) |
 | Mock Test 375: thẻ đủ điểm từng kỹ năng | một dòng MTn › · tuần · OVR · Kết quả; điểm từng kỹ năng ở hồ sơ lượt | ĐỔI — mockup B1 |

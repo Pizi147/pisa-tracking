@@ -651,4 +651,7 @@ export const EN_C = {
   'Các lộ trình': 'Pathways',
   'Chưa có lộ trình nào': 'No pathway yet',
   'Không có Case mở': 'No open case',
+  'người dạy: {ten}': 'teacher: {ten}',
+  'Kết quả cuối:': 'Final result:',
+  'Kết quả gần nhất:': 'Latest result:',
 } satisfies Record<string, Dich>;

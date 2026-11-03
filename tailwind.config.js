@@ -13,7 +13,7 @@ export default {
    * trong `@media` bản chép mất selector (`{ grid-… }` — 14 cảnh báo css-syntax-error khi build). Chặn đúng các chữ này; phép kiểm
    * `scripts/kiem-css.mjs` (trong `npm run check`) báo chữ mới trùng tên lớp để thêm vào đây.
    */
-  blocklist: ['!bam', '!bang', '!cham', '!chon', '!ct', '!cu', '!cua', '!doi', '!dong', '!gon', '!h', '!k', '!loi', '!lu', '!moi', '!nhat', '!nhap', '!p', '!pt',
+  blocklist: ['!bam', '!bang', '!cham', '!chon', '!ct', '!cu', '!cua', '!doi', '!dong', '!gon', '!h', '!k', '!loi', '!lu', '!moi', '!nhat', '!hai', '!nguon', '!nhap', '!p', '!pt',
     '!qua', '!rong', '!so', '!t', '!td', '!th', '!thieu', '!trong', '!tvv'],
   theme: {
     /*

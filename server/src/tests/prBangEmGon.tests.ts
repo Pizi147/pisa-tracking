@@ -24,8 +24,8 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
   const chip = doc('web/src/ui/ChipSos.tsx');
   const css = doc('web/src/index.css');
 
-  check('B1 · ô điểm đạt ✓ màu Overall đạt · hụt ✗ (chiToHut, cỡ gọn 15 px); OKetQua chip SOS nhỏ không kỹ năng; Đạt / Chưa đủ là chữ; OLichThi không còn NhanLich', () => {
-    assert(/<ODiem kieu="gon"[^>]*chiToHut/.test(bang), 'ô điểm bảng em chưa chiToHut + gon');
+  check('B1 · ô điểm đạt ✓ màu Overall đạt · hụt ✗ (cỡ gọn 15 px; ba màu kết quả từ 04/11); OKetQua chip SOS nhỏ không kỹ năng; Đạt / Chưa đủ là chữ; OLichThi không còn NhanLich', () => {
+    assert(/<ODiem kieu="gon" /.test(bang), 'ô điểm bảng em chưa gon');
     assert(odiem.includes("kieu === 'gon' && kqHien !== 'duoi' ? 'font-medium' : 'font-bold'"), 'ODiem thiếu kieu gon 15 px / 500 (hụt 700)');
     const kq = than(bang, 'function OKetQua');
     assert(/<ChipSos [^>]*hienKyNang=\{false\}[^>]*nho/.test(kq), `OKetQua: ${kq}`);

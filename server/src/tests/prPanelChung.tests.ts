@@ -32,10 +32,10 @@ export async function runPrPanelChungTests(t: YThucTestKit) {
     assert(dd.includes('dauDiem(') && dd.includes('nhanDocDiem(') && dd.includes('text-kq-bang') && dd.includes('text-kq-duoi'), 'DongDiem thiếu ký hiệu / màu đạt / hụt như Overall');
   });
 
-  check('C1 · ODiem chiToHut: vượt = bằng (✓ màu Overall đạt); không chiToHut giữ ba mức', () => {
-    const f = than(odiem, 'export function lopODiem');
-    assert(/chiToHut && kq === 'vuot' \? lopKq\('bang'\) : lopKq\(kq\)/.test(f), `lopODiem: ${f}`);
-    assert(odiem.includes('lopODiem(kqHien, chiToHut)'), 'ODiem chưa dùng lopODiem');
+  check('C1 · ODiem (chủ SP 04/11, mockup .da / .dd): ba màu kết quả, "✓ " / "✗ " là CHỮ trong cùng span với số, không chiToHut', () => {
+    assert(odiem.includes('const mau = lopKq(kqHien)') && !/chiToHut|lopODiem/.test(odiem), 'ODiem còn gộp vượt vào bằng');
+    assert(/\{kyHieu\}\{so\}<\/span>/.test(odiem) && odiem.includes("kqHien === 'duoi' ? '✗' : '✓'"), 'ODiem: ✓ / ✗ chưa là chữ trong span số');
+    assert(!/<DauKetQua|Icon(?:Dat|Khong)/.test(odiem), 'ODiem còn icon SVG');
   });
 
   check('C1 · index.css có khối PANEL-V10: lưới 132px repeat(4, 64px), 375 hai hàng, chip .xh', () => {
