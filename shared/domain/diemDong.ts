@@ -24,6 +24,16 @@ export type DiemHv = {
   donVi?: '%';
 };
 
+/**
+ * MỨC KẾT QUẢ một điểm (chủ SP 04/11, mockup audit 03/11 `.da / .dd / .bg`): đạt + cao hơn mốc = vượt (xanh lá) · đạt đúng mốc = bằng (xanh dương) · không đạt = dưới (đỏ);
+ * `dat` null (chưa đủ căn cứ) = null. Một khái niệm một kiểu với `ODiem` — tô qua `lopKq` (web).
+ */
+export function mucDiem(dat: boolean | null, v: number | null, moc: number | null | undefined): 'vuot' | 'bang' | 'duoi' | null {
+  if (dat === null) return null;
+  if (!dat) return 'duoi';
+  return v != null && moc != null && v > moc ? 'vuot' : 'bang';
+}
+
 export function dauDiem(dat: boolean | null): '✓' | '✗' | null {
   return dat === null ? null : dat ? '✓' : '✗';
 }

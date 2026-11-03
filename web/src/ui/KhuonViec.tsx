@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { duongHoSoHocVien } from '@shared/domain/index.ts';
+import { duongHoSoHocVien, mucDiem } from '@shared/domain/index.ts';
+import { lopKq } from './BieuTuong.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useChoHoanTac } from './KhungPanel.tsx';
 import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
@@ -229,5 +230,5 @@ export function DiemKq({ diem, kyVong }: { diem: number; kyVong?: number | null 
   const so = diem.toFixed(1);
   if (kyVong == null) return <span className="tabular-nums">{so}</span>;
   const dat = diem >= kyVong;
-  return <span className={`font-bold tabular-nums ${dat ? 'text-kq-bang' : 'text-kq-duoi'}`}><span aria-hidden>{dat ? '✓ ' : '✗ '}</span>{so}</span>;
+  return <span className={`font-bold tabular-nums ${lopKq(mucDiem(dat, diem, kyVong))}`}><span aria-hidden>{dat ? '✓ ' : '✗ '}</span>{so}</span>;
 }

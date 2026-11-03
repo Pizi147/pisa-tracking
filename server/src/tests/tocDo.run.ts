@@ -1187,7 +1187,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        So JSON ×3 origin/main 6e8ac44 ↔ nhánh, 11 góc, bỏ việc `ban_giao*` + số đếm: TRÙNG hoàn toàn. Việc bàn giao lệch CHỈ ở MB FT 103 (W1 Lê Minh Khoa — lớp
        đích vẫn Khoa → cùng GV, hết việc; W2 Cao Khánh Linh: "Bàn giao môn W" → "W2", GVCN "chờ môn W" → "W2"); lớp thường MB FOU 22 giữ "W".
        Trước: GVBM toi 71283ff70674504b, QL tat-ca cf1b31474244ae4e, QT tat-ca cd79349e0bcf3f62, QT tat-ca cn 7cfbd540beff0e8c */
-    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': 'c64a33f25108620d',
+    /* BADGE-CUA-TOI (04/11): chụp lại 'QL toi' / 'QT toi' — đổi CÓ CHỦ Ý: "Nhập điểm MT cũ" (`lich-su:`) / "Điền Target" (`target:`) góc "toi" nay cùng chủ góc
+       "tat-ca" (GVCN lớp) → lớp có GVCN không còn là việc của QL / QT (badge = ô "Của tôi", BCT-1). 9 băm khác giữ. Trước: QL toi e52a0d6a5bb7537d, QT toi 5115a3184a27f3d9 */
+    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': 'c64a33f25108620d',
     'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '64c53c3e9d2f7f40', 'QT tat-ca': '85e5bab795ebfcb0',
     'QT tat-ca cn': '29addc1ddf756b8e', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': 'b4b4e5024a108eca',
   };

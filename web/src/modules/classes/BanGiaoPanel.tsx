@@ -10,7 +10,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { DsEmBanGiao, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu, type HangLuu } from '../../lib/luuChac.ts';
-import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, deadlineView, ngay, nhanDocDiem, shortDate, tuanLich, type KnDiem, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, mucDiem, deadlineView, ngay, nhanDocDiem, shortDate, tuanLich, type KnDiem, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { lopKq } from '../../ui/BieuTuong.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -393,7 +394,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung
                       if (!kn) return null;
                       return (
                         <span key={x.ma} aria-hidden="true"> · {kn.k}{' '}
-                          {kn.v === null ? '—' : <b className={kn.dat === null ? 'font-semibold text-slate-200' : kn.dat ? 'text-kq-bang' : 'text-kq-duoi'}>{dauDiem(kn.dat) ? `${dauDiem(kn.dat)} ` : ''}{chuDiem(kn.v)}</b>}
+                          {kn.v === null ? '—' : <b className={kn.dat === null ? 'font-semibold text-slate-200' : lopKq(mucDiem(kn.dat, kn.v, e.diemMon!.soVoi?.v))}>{dauDiem(kn.dat) ? `${dauDiem(kn.dat)} ` : ''}{chuDiem(kn.v)}</b>}
                         </span>
                       );
                     })}

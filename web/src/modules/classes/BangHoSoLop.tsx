@@ -138,7 +138,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
     if (k === 'ovr' && h.overall == null && h.khongDuBoMon && h.scoredRequired === h.requiredCount) return <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>;
     const v = k === 'ovr' ? h.overall : k === 'w' ? h.writing ?? null : h.bands?.[BAND[k]] ?? null;
     /* #860: MT nhập lịch sử là kết quả hiện tại — tô ✓ / ✗ như MT thường (chủ SP 03/11). */
-    const o = <ODiem kieu="gon" chiToHut so={v === null ? null : fmtBand(v)} kq={soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
+    const o = <ODiem kieu="gon" so={v === null ? null : fmtBand(v)} kq={soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
     if (k === 'ovr' || k === 'w1' || k === 'w2' || v === null) return o;
     const kn = knCuaO(h, k);
     const chon = mo?.sid === r.id && (k === 'w' ? mo.kn === 'w1' || mo.kn === 'w2' : mo.kn === k);
@@ -319,7 +319,7 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThe
   const ls = r.history as Moc[];
   const dv = ls.length < 3 ? r.dauVao ?? null : null;
   const diemDv = (k: Kn) => dv ? (k === 'w1' || k === 'w2' ? dv.writing : dv[BAND[k] as 'listening' | 'reading' | 'speaking']) : null;
-  const o = (v: number | null | undefined, kv: number | null | undefined) => <ODiem kieu="gon" chiToHut so={v == null ? null : fmtBand(v)} kq={soKyVong(v ?? null, kv ?? null)} />;
+  const o = (v: number | null | undefined, kv: number | null | undefined) => <ODiem kieu="gon" so={v == null ? null : fmtBand(v)} kq={soKyVong(v ?? null, kv ?? null)} />;
   const toi = r.next?.kindLabel ? `${dich(r.next.kindLabel)}${r.next.weekStart ? ` · ${tuanLich(r.next.weekStart, homNay)}` : ''}` : null;
   const dienThoai = useDienThoai();
   const cotLuot: DinhNghiaCot[] = [
@@ -441,7 +441,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
                 {i > 0 && <span aria-hidden className="text-[13px] text-faint">→</span>}
                 <span className={`grid min-w-[52px] justify-items-center gap-px rounded-lg border px-2 py-1 ${i === a.length - 1 ? 'bg-[color:var(--surface-2)] [border-color:var(--line-strong)]' : '[border-color:var(--line)]'}`}>
                   <span className="whitespace-nowrap text-xs font-medium text-faint">{m.nhan}</span>
-                  <b className="text-base font-bold tabular-nums">{m.k === 'dv' ? fmtBand(m.v) : <ODiem kieu="gon" chiToHut so={m.v == null ? null : fmtBand(m.v)} kq={soKyVong(m.v, m.kv)} />}</b>
+                  <b className="text-base font-bold tabular-nums">{m.k === 'dv' ? fmtBand(m.v) : <ODiem kieu="gon" so={m.v == null ? null : fmtBand(m.v)} kq={soKyVong(m.v, m.kv)} />}</b>
                 </span>
               </Fragment>
             ))}
