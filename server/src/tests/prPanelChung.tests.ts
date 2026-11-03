@@ -29,7 +29,7 @@ export async function runPrPanelChungTests(t: YThucTestKit) {
     assert(dd.length > 200, 'thiếu DongDiem');
     assert(!/function DiemDong\b/.test(solieu) && !/<DiemDong\b/.test(solieu), 'còn DiemDong cũ');
     assert(!/[▲▼]/.test(dd), 'DongDiem còn ▲ / ▼');
-    assert(dd.includes('dauDiem(') && dd.includes('nhanDocDiem(') && dd.includes('text-kq-bang') && dd.includes('text-kq-duoi'), 'DongDiem thiếu ký hiệu / màu đạt / hụt như Overall');
+    assert(dd.includes('dauDiem(') && dd.includes('nhanDocDiem(') && dd.includes('lopKq(mucDiem('), 'DongDiem thiếu ký hiệu / ba màu kết quả (mucDiem)');
   });
 
   check('C1 · ODiem (chủ SP 04/11, mockup .da / .dd): ba màu kết quả, "✓ " / "✗ " là CHỮ trong cùng span với số, không chiToHut', () => {

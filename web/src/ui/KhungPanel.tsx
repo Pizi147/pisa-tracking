@@ -369,7 +369,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         {/* AUDIT-LOI F06: luật cuộn theo loại khung. Nổi: thân cuộn riêng, chặn cuộn xuyên xuống nền. Tại chỗ: cuộn riêng khi bị giới hạn cao (lg),
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
-        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 px-4 pb-4 ${trongCot ? '' : taiCho ? 'overflow-y-auto' : 'overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
+        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 px-4 ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
@@ -380,8 +380,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
           </footer>
         )}
         {chan && !chan.v3 && (
-          /* U02 (mockup `.chan-case`): trong cột — chân không nền riêng, kẻ trên trong lề nội dung, nút về phải. */
-          <footer className={`shrink-0 border-t ${taiCho ? 'chan-dinh-375' : ''} ${trongCot ? 'mx-4 [&>div]:px-0 [&>div]:pb-3' : ''}`} style={{ borderColor: 'var(--line)', background: trongCot ? 'transparent' : 'var(--surface)' }}>
+          /* U02 (mockup c2, PTA 04/11): trong cột — chân không nền, không kẻ, không dải trống: nút về phải ngay dưới hàng cuối. */
+          <footer className={`shrink-0 ${trongCot ? 'mx-4 [&>div]:px-0 [&>div]:pb-3 [&>div]:pt-0' : 'border-t'} ${taiCho ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line)', background: trongCot ? 'transparent' : 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             {/* RA-UI-1 (mockup `v7/khai-bac-lo.html` #w375): 375 — dòng trạng thái / đếm lên đầu chân, mọi nút chia đều MỘT hàng (Huỷ | Lưu, Lưu không còn nhỏ lệch trái). */}

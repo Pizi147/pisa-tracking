@@ -165,7 +165,9 @@ export type VuaDoiPa = { paId: number; chu: string; hoanTac?: () => Promise<void
  * Mô tả) → Phương án (Chờ duyệt · xác nhận / Đang theo dõi; Đã kết thúc gập; việc của PA nằm ngay trong thẻ PA; dòng PA mang `data-pa-id` cho Hành trình
  * cuộn tới) → Kết luận → Lịch sử (gập) → Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của nơi gọi.
  */
-export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false }: {
+export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false, lyDoKhoa = null }: {
+  /** U02 (PTA 04/11): trong cột hồ sơ HV — lý do chưa hoàn thành được (PA quy chế chưa khép) vào ⓘ cạnh "Kết luận". */
+  lyDoKhoa?: ReactNode;
   /** U02: nút "Mô tả Case" đã ở dòng tóm tắt Case (cột hồ sơ HV) — trường Mô tả chỉ ghi "Chưa có". */
   anNutMoTa?: boolean;
   /** 6c (#644 XM-4): PA mà việc đang mở (view dưới, panel việc) đã làm — thẻ PA đó không lặp thao tác của việc. */
@@ -214,8 +216,9 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
         </p>
       )}
       {/* VIEW-CASE-LUOT (mockup panel-pilot đầu mục Case): có lượt → đầu mục "Case MT3 · W2 SEP" (link), tên Case (phần giữa + SOS) là dòng đầu ngay dưới; Case tay giữ tên ở đầu mục. */}
-      <DauMuc dau tieuDe="Case" phu={data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
-        : khung ? null : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
+      {/* U02 (PTA 04/11): trong cột không vẽ link lượt — lượt đã ở chip "MTn ✗ …" dòng tóm tắt, mở lượt bằng "MTn ›" của bảng Mock Test cùng trang. */}
+      <DauMuc dau tieuDe="Case" phu={khung ? null : data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
+        : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
         {data.luot && !khung && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
         {/* Case A (mockup audit 03/11 `.fld`, U02 c2 + U03 A2): khung trường nhãn trái 13 / 500 mờ | giá trị 15 sáng, mỗi hàng một kẻ; Nguyên nhân = thẻ,
             Mô tả = đoạn trích vạch trái + nguồn 12 mờ dưới. Trong cột hồ sơ HV: Điểm đã ở dòng tóm tắt (chip MTn) — không lặp. "Ghi nhận" → "Mô tả" (N8). */}
@@ -255,9 +258,9 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
             {data.note && <span className="text-[13px] text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></span>}
           </dd>
           {khung && <>
-            {/* U02 c2: "Mở" = mã tuần (người báo nhỏ mờ bên cạnh); phụ trách đã ở dòng tóm tắt. */}
+            {/* U02 c2: "Mở" = mã tuần; người báo xem ở Lịch sử, phụ trách ở dòng tóm tắt. */}
             <dt>{t('Mở')}</dt>
-            <dd>{tuanLich(data.detectedAt, homNay)}{data.reportedBy && <span className="nguon"> · {t('{ten} báo', { ten: data.reportedBy })}</span>}</dd>
+            <dd>{tuanLich(data.detectedAt, homNay)}</dd>
           </>}
           {context.length > 0 && <>
             <dt>{t('Bối cảnh')}</dt>
@@ -268,8 +271,9 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
         </dl>
       </DauMuc>
 
-      <DauMuc tieuDe={t('Phương án')} dem={dsPa.length || undefined}
-        luat={(
+      {/* U02 c2: trong cột "Phương án" không số, không ⓘ (luật vào ⓘ của Kết luận). */}
+      <DauMuc tieuDe={t('Phương án')} dem={khung ? undefined : dsPa.length || undefined}
+        luat={khung ? undefined : (
           <>
             <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
             {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
@@ -302,13 +306,24 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
               {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
               {data.closedAt && <span className="text-slate-400"> {t('· kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}</span>}
             </p>
+          ) : khung ? (
+            /* U02 c2: "chưa có ⓘ" — lý do khoá + luật PA trong ⓘ cạnh giá trị. */
+            <div className="flex items-center gap-1.5 text-[15px] text-slate-100">{t('chưa có')}
+              <NutLuat>
+                <>
+                  {lyDoKhoa && <p className="m-0">{lyDoKhoa}</p>}
+                  <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
+                  {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
+                </>
+              </NutLuat>
+            </div>
           ) : <p className="m-0 text-sm text-slate-400">{t('Chưa có · ghi khi mọi PA đã khép')}</p>}
         </DauMuc>
       )}
 
       {lichSu.length > 0 && (
         <details className={`group border-t ${khung ? 'py-2.5' : 'mt-[22px] pt-3'}`} style={{ borderColor: 'var(--line)' }}>
-          <summary className={`flex min-h-[44px] cursor-pointer list-none items-center gap-2 sm:min-h-[32px] ${khung ? 'sm:grid sm:grid-cols-[7.5rem_auto_auto] sm:justify-start sm:gap-x-3' : ''}`}>
+          <summary className={`flex min-h-[44px] cursor-pointer list-none items-center gap-2 sm:min-h-[32px] ${khung ? 'sm:grid sm:grid-cols-[8.5rem_auto_auto] sm:justify-start sm:gap-x-0' : ''}`}>
             {khung ? <><span className="text-[13px] font-medium text-slate-400">{t('Lịch sử')}</span><span className="text-[15px] font-semibold text-[color:var(--accent)]">{t('{n} thay đổi', { n: lichSu.length })}</span></>
               : <TieuDeMuc tieuDe={t('Lịch sử')} dem={lichSu.length} />}
             <span aria-hidden className="inline-flex text-slate-400 transition-transform group-open:rotate-90"><MuiTen mo={false} /></span>
@@ -376,7 +391,7 @@ export function DauMuc({ tieuDe, dem, phu, luat, dau = false, children }: {
   if (khung && dau) return <section className="flex flex-col gap-2">{phu && <div className="flex flex-wrap items-center gap-2">{phu}</div>}{children}</section>;
   if (khung) {
     return (
-      <section className="grid gap-x-3 border-t py-2.5 sm:grid-cols-[7.5rem_minmax(0,1fr)]" style={{ borderColor: 'var(--line)' }}>
+      <section className="grid border-t py-2.5 sm:grid-cols-[8.5rem_minmax(0,1fr)]" style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-start gap-1.5 pt-0.5 text-[13px] font-medium text-slate-400">
           {tieuDe}{dem !== undefined && <span className="tabular-nums">({dem})</span>}{luat && <NutLuat>{luat}</NutLuat>}
         </div>

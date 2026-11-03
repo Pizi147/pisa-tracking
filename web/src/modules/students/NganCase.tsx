@@ -436,7 +436,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
             <DoiNguoiPhuTrach caseId={caseId} ownerCu={data.ownerUserId ?? null} ungVien={data.doiChu.ungVien}
               onXong={() => { setDoiNguoi(false); reload(); onChanged?.(); }} onTaiLai={reload} onHuy={() => setDoiNguoi(false)} />
           )}
-          {canDong && ht?.an && ht.dong && (
+          {/* U02 (PTA 04/11): trong cột lý do khoá nằm ở ⓘ cạnh "Kết luận" (`lyDoKhoa`), không thành dòng riêng. */}
+          {canDong && ht?.an && ht.dong && !trongCot && (
             <p className="m-0 flex items-center gap-1.5 text-[13px] text-slate-300">
               <span className="text-slate-400"><KhoaNho /></span>
               <span>{dk ? <>{dich(dk[1])} · <b className="font-semibold text-slate-100">{dich(dk[2])}</b></> : dich(ht.dong)}</span>
@@ -447,7 +448,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
         {data.yeuCauCase && data.viewer.canApprove && (
           <div className="pt-3"><TheYeuCau gon yc={data.yeuCauCase} onXong={() => { reload(); onChanged?.(); }} /></div>
         )}
-        <ThanCase data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec} anNutMoTa={anViecChinh}
+        <ThanCase lyDoKhoa={trongCot && canDong && ht?.an && ht.dong ? (dk ? <>{dich(dk[1])} · <b className="font-semibold">{dich(dk[2])}</b></> : dich(ht.dong)) : null} data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec} anNutMoTa={anViecChinh}
           vuaDoi={vuaDoi} onHoanTac={() => { setVuaDoi(null); reload(); if (chuoi?.caseTiep) chuoi.caseTiep.boXong(); else onChanged?.(); }} />
       </div>
     </KhungPanel>

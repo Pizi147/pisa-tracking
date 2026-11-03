@@ -40,6 +40,8 @@ KHỚP 15 / 16 dòng có trong PR (bỏ dòng 10 chuyển U07) = 94 %.
 | S3 | Nguyên nhân = thẻ viền; Mô tả = đoạn trích vạch trái 3 px (bỏ ngoặc kép), nguồn "theo nhận xét MTn" 12 mờ dưới (U03 A2) | `ThanCase`, `MoTaGon`, `.trich` `.nguon` | KHỚP | a1, c |
 | S4 | PA = thẻ con `.pa-the`: tên 15 / 700 + thẻ (theo quy chế · đến MTn · người dạy: X) + nội dung trích 2 dòng + "Kết quả gần nhất / Kết quả cuối: chip · tuần" (chip `.ket` theo tone kết quả) | `TenPaThe`, `KetQuaGan`, `DongPaGon`, `TheKhoiPa` | KHỚP | c |
 | S5 | Đầu Case: "MTn ✗ số / kỳ vọng" (ba màu) · "PA … · đang chạy" · phụ trách đậm; chân Case không nền riêng, kẻ trên trong lề | `CotCaseHv`, `KhungPanel` (trongCot) | KHỚP | a1, c |
+| S6 | (PTA 04/11) "Mở" chỉ mã tuần · chân Case không dải trống (Sửa ngay dưới hàng cuối) · "Phương án" không số / ⓘ · "Kết luận: chưa có ⓘ" — lý do khoá ("Hoàn thành được sau khi PA theo quy chế kết thúc · mốc") + luật PA trong ⓘ; trong cột không còn dòng khoá + link lượt riêng | `ThanCase` (`lyDoKhoa`), `NganCase`, `KhungPanel` | KHỚP | c |
+| S7 | Ba màu kết quả cùng một kiểu ở `DiemKq`, `DongDiem`, `BanGiaoPanel` (`mucDiem` + `lopKq`) | `shared/domain/diemDong.ts`, `KhuonViec`, `SoLieu`, `BanGiaoPanel` | KHỚP | — (panel) |
 
 ## KHÁC (PTA Plan trả lời [XM] 03/11)
 1. Chân Case **"Hoàn thành Case"** (mockup "Kết luận Case…") — KHÁC có lý do: một khái niệm một tên (panel, Công việc, Rulebook đều "Hoàn thành Case").
@@ -60,6 +62,7 @@ KHỚP 15 / 16 dòng có trong PR (bỏ dòng 10 chuyển U07) = 94 %.
 | Sửa · Đổi người… ở dải đầu Case | ở chân Case cùng + Thêm PA | ĐỔI vị trí (mockup) |
 | + Thêm PA · Ghi kết quả · Xác nhận PA · Mô tả Case · Mở lại · Lịch sử · Dịch · ⋯ PA | như cũ, trong Case mở | GIỮ |
 | Thẻ PA đang chạy: chip "Đang chạy" + "kết quả gần nhất W3 OCT …" một dòng | tên + thẻ; nội dung trích; "Kết quả gần nhất: chip · tuần" (panel: + ghi chú) | ĐỔI hình (S4) — "đang chạy" đã ở dòng tóm tắt / đầu mục; ⋯ PA · Ghi kết quả · Cập nhật trước hạn · Chọn người dạy · Chi tiết · Nhật ký PA GIỮ |
+| Trong cột: dòng 🔒 lý do khoá + link lượt "MT1 · W4 AUG" đầu thân Case | lý do khoá ở ⓘ cạnh "Kết luận: chưa có"; mở lượt bằng "MTn ›" của bảng Mock Test cùng trang | ĐỔI vị trí (S6) — không mất thao tác |
 | Bằng chứng: khung kéo thả luôn hiện | "chưa có · + Thêm" → bấm mở khung (có bằng chứng: như cũ) | ĐỔI — D7 |
 | Tiến độ ở Overall: danh sách mọi kỹ năng + "+ Ghi tiến độ" | Overall chỉ đọc (gần nhất từng kỹ năng); ghi / sửa / xoá khi chọn kỹ năng | ĐỔI — N33 ② (mất ghi ở Overall: chọn ô kỹ năng là có, ít hơn một bấm) |
 | Mock Test 375: thẻ đủ điểm từng kỹ năng | một dòng MTn › · tuần · OVR · Kết quả; điểm từng kỹ năng ở hồ sơ lượt | ĐỔI — mockup B1 |
