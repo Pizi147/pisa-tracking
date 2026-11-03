@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { dungTrucTuan, mondayOfDate, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -71,7 +72,10 @@ export function BieuDoD(o: BieuDoDProps) {
   const khung = useRef<HTMLDivElement>(null);
   const [rong, setRong] = useState(0);
   const [lui, setLui] = useState(0);
-  const [goi, setGoi] = useState<{ x: number; y: number; g: GoiD; re: boolean } | null>(null);
+  /* `el` = dấu đang mở (thẻ <g> đã vẽ) — hộp nhỏ đặt theo khung thật của nó trên màn, không theo toạ độ viewBox. */
+  const [goi, setGoi] = useState<{ el: Element; g: GoiD; re: boolean } | null>(null);
+  const hop = useRef<HTMLDivElement>(null);
+  const [cho, setCho] = useState<{ left: number; top: number } | null>(null);
   /* Rê ra khỏi dấu: chờ 150 ms để chuột kịp vào hộp nhỏ (bấm "Hồ sơ lượt ›"); vào hộp thì giữ. */
   const hen = useRef<ReturnType<typeof setTimeout> | null>(null);
   const boHen = () => { if (hen.current) clearTimeout(hen.current); hen.current = null; };
@@ -87,7 +91,29 @@ export function BieuDoD(o: BieuDoDProps) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  useBamNgoai(!!goi, () => setGoi(null), khung);
+  useBamNgoai(!!goi, () => setGoi(null), khung, hop);
+  /*
+   * AUDIT-LOI F07: hộp vẽ qua portal, `fixed` — khung hành trình (`overflow-hidden`) không cắt được. Đặt dưới dấu, hết chỗ thì lật lên; dịch ngang
+   * cho khỏi tràn mép. Vùng được dùng = vùng nhìn của `<main>` (dưới thanh trên), trừ thanh dưới điện thoại. Cuộn / đổi cỡ → đặt lại; dấu bị gỡ → đóng.
+   */
+  useLayoutEffect(() => {
+    if (!goi) { setCho(null); return undefined; }
+    const dat = () => {
+      const h = hop.current;
+      if (!goi.el.isConnected || !h) { setGoi(null); return; }
+      const r = goi.el.getBoundingClientRect(), vung = khung.current?.closest('main')?.getBoundingClientRect();
+      const tren = Math.max(8, vung?.top ?? 0), duoi = Math.min(window.innerHeight, vung?.bottom ?? Infinity) - (window.innerWidth < 640 ? 64 : 8);
+      const cao = h.offsetHeight, rong_ = h.offsetWidth;
+      const len = r.bottom + 6 + cao > duoi && r.top - 6 - cao >= tren;
+      setCho({ top: len ? r.top - 6 - cao : r.bottom + 6, left: Math.max(8, Math.min(r.left + r.width / 2 - 90, window.innerWidth - rong_ - 8)) });
+    };
+    dat();
+    let khung_ = 0;
+    const lai = () => { cancelAnimationFrame(khung_); khung_ = requestAnimationFrame(dat); };
+    window.addEventListener('scroll', lai, true);
+    window.addEventListener('resize', lai);
+    return () => { cancelAnimationFrame(khung_); window.removeEventListener('scroll', lai, true); window.removeEventListener('resize', lai); };
+  }, [goi]);
   useEffect(() => {
     if (!goi) return undefined;
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setGoi(null); };
@@ -135,12 +161,12 @@ export function BieuDoD(o: BieuDoDProps) {
   const fmt = o.fmt;
 
   /* Rê chuột mở → rời chuột đóng; chạm / Tab mở → giữ tới khi bấm ra ngoài hoặc Esc. */
-  const mo = (x: number, y: number, g: GoiD, re = false) => { boHen(); setGoi({ x, y, g, re }); };
+  const mo = (el: Element, g: GoiD, re = false) => { boHen(); setGoi({ el, g, re }); };
   /** Dấu bấm / Tab được; `hop` = vùng chạm (mặc định 28 px quanh tâm; thanh Case / PA = chính thanh, vòng focus ôm thanh). */
   const dau = (k: string, x: number, y: number, g: GoiD, noi: ReactNode, hop?: { x: number; y: number; w: number; h: number }) => (
     <g key={k} className="diem-d" tabIndex={0} role="button" aria-label={[g.tieu, ...g.dong].join(' · ')} style={{ cursor: 'pointer', outline: 'none' }}
-      onMouseEnter={() => mo(x, y, g, true)} onMouseLeave={dongRe}
-      onFocus={() => mo(x, y, g)} onClick={() => mo(x, y, g)}
+      onMouseEnter={(e) => mo(e.currentTarget, g, true)} onMouseLeave={dongRe}
+      onFocus={(e) => mo(e.currentTarget, g)} onClick={(e) => mo(e.currentTarget, g)}
       onKeyDown={(e) => { if (e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); setGoi(null); if (g.href) navigate(g.href); else g.mo?.(); }}>
       <rect x={hop?.x ?? x - 14} y={hop?.y ?? y - 14} width={hop?.w ?? 28} height={hop?.h ?? 28} fill="transparent" />
       {noi}
@@ -320,22 +346,21 @@ export function BieuDoD(o: BieuDoDProps) {
     });
   });
 
-  /* hộp nhỏ: đặt dưới dấu, kẹp trong khung */
-  const goiX = goi ? Math.min(Math.max(8, goi.x - 90), W - 290) : 0;
   return (
     <div ref={khung} className="relative px-3.5 pb-2.5 pt-1.5">
       <svg viewBox={`0 0 ${W} ${H}`} role="group" aria-label={t('Dòng thời gian {kn}', { kn: o.ten })} className="block h-auto w-full overflow-visible"
         style={{ fontFamily: 'var(--phong-so, inherit)' }}>
         {nen}{ve}
       </svg>
-      {goi && (
-        <div aria-hidden onMouseEnter={boHen} onMouseLeave={dongRe} className="absolute z-20 grid min-w-[180px] max-w-[280px] gap-0.5 rounded-[10px] border px-3 py-2 text-[13px] shadow-xl"
-          style={{ left: goiX + 14, top: goi.y + 32, background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+      {goi && createPortal(
+        <div ref={hop} aria-hidden onMouseEnter={boHen} onMouseLeave={dongRe} className="fixed z-20 grid min-w-[180px] max-w-[280px] gap-0.5 rounded-[10px] border px-3 py-2 text-[13px] shadow-xl"
+          style={{ left: cho?.left ?? 0, top: cho?.top ?? 0, visibility: cho ? undefined : 'hidden', background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
           <b className="text-[14px] text-slate-100">{goi.g.tieu}</b>
           {goi.g.dong.map((d, i) => <span key={i} className={i === goi.g.dong.length - 1 && goi.g.dong.length > 1 && !goi.g.href ? 'text-slate-400' : 'text-slate-300'}>{d}</span>)}
           {goi.g.href && <Link to={goi.g.href} tabIndex={-1} className="link mt-1 text-[13px] font-semibold">{goi.g.chuLink ?? t('Mở hồ sơ lượt ›')}</Link>}
           {goi.g.mo && <button type="button" tabIndex={-1} className="link mt-1 justify-self-start appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold" onClick={() => { setGoi(null); goi.g.mo!(); }}>{goi.g.chuLink ?? t('Mở Case')}</button>}
-        </div>
+        </div>,
+        document.body,
       )}
       {(coTruoc || coSau) && (
         <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
