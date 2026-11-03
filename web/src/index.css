@@ -321,11 +321,12 @@
    * U04 HỌC VIÊN & LỚP (V11 `thiet-ke/v11/hoc-vien-lop.html`, chủ SP duyệt 03/11) — hàng lớp lưới thẳng cột, ô Overall mở dải dưới hàng, việc trong ô có khung,
    * hộp nhỏ tại chỗ (điểm thành phần, Ý thức K7), ô "Xem" (G1), đoạn chọn Fast Track / Lớp thường. Màu chỉ token.
    */
-  .hl-lop { display: grid; grid-template-columns: 16px 112px 128px minmax(0, 230px) minmax(0, 340px) minmax(0, 1fr) 36px; align-items: center; gap: 0 12px;
-    min-height: 52px; padding: 4px 12px; border-top: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
+  .hl-lop { display: grid; grid-template-columns: 28px 112px 100px minmax(0, 250px) minmax(0, 290px) minmax(0, 1fr) 36px; align-items: center; gap: 0 12px;
+    min-height: 52px; padding: 4px 12px 4px 10px; border-top: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
   .bang-hv > section:first-child > .hl-lop { border-top: 0; }
   .hl-lop.mo-lop { box-shadow: inset 3px 0 0 var(--accent); }
   .hl-o { min-width: 0; }
+  .hl-lop > :first-child { justify-self: center; }
   .hl-nut { justify-self: end; }
   @media (max-width: 1439.98px) { .hl-lop { grid-template-columns: 16px 100px 96px minmax(0, 190px) minmax(0, 330px) minmax(0, 1fr) 36px; } }
   @media (max-width: 639.98px) {
@@ -333,7 +334,30 @@
     .hl-lop > .hl-nut { margin-left: auto; }
     .hl-lop > .hl-o:empty { display: none; }
   }
-  .o-so { appearance: none; border: 0; background: none; padding: 0 2px; border-radius: 4px; color: var(--accent); font-weight: 700; font-size: 13px;
+  /* So sát mockup 04/11 (chủ SP: "hình ảnh cứ làm giống mockup"): ⋯ không viền · tiêu đề bảng nền bề mặt cao 36 · ô 9/12 · ô tìm có kính lúp nền --bg · chip lọc. */
+  .ba-cham { display: inline-grid; place-items: center; width: 32px; height: 32px; border: 1px solid transparent; border-radius: 8px; background: none;
+    color: var(--text-dim); font-size: 15px; cursor: pointer; }
+  .ba-cham:hover, .ba-cham[aria-expanded='true'] { border-color: var(--line-strong); }
+  .bang-hv .bang > thead > tr > th { height: 36px; padding: 0 12px; background: var(--surface); border-top: 1px solid var(--line); vertical-align: middle; }
+  .bang-hv .bang > tbody > tr.do-hang > td { padding: 9px 12px; line-height: 1.35; vertical-align: top; }
+  .bang-hv .bang > tbody > tr.hang-dai > td { padding: 10px 12px 12px 24px; }
+  /* mockup `.bdv`: viên có viền cùng tông (!important: đè tiện ích Tailwind `border-transparent` / `bg-…` / `min-h` của `Nhan`, chỉ ở hàng lớp). */
+  .nhan-lop > * { min-height: 22px !important; border-color: color-mix(in srgb, currentColor 65%, transparent) !important; }
+  .nhan-lop > [class*='surface-2'] { background-color: rgb(var(--muted-bg-rgb)) !important; }
+  /* ≥ 1440: cột đúng mockup A (208 · 100 · 300 · 186 · 100 · 172 · Việc giãn · 48); < 1440 giữ cột cân cho 1280 (`COT_HV`, chủ SP 03/11). */
+  @media (min-width: 1440px) {
+    .bang-hv .bang > colgroup > col:nth-child(1) { width: 208px !important; } .bang-hv .bang > colgroup > col:nth-child(2) { width: 100px !important; }
+    .bang-hv .bang > colgroup > col:nth-child(3) { width: 300px !important; } .bang-hv .bang > colgroup > col:nth-child(4) { width: 186px !important; }
+    .bang-hv .bang > colgroup > col:nth-child(6) { width: 172px !important; }
+  }
+  .o-tim { position: relative; display: inline-flex; align-items: center; }
+  .o-tim > svg { position: absolute; left: 10px; color: var(--text-faint); pointer-events: none; }
+  .o-tim > input { padding-left: 34px; background: var(--bg); font-size: 14px; }
+  .loc-hv .nut-loc { border-color: var(--line-strong); background: none; color: var(--text); font-weight: 500; }
+  .loc-hv .nut-loc > b { font-weight: 700; color: var(--accent); }
+  .loc-hv .nut-loc:where([aria-pressed='true'], .nut-loc-dang) { border-color: var(--accent-line); background: var(--accent-soft); font-weight: 700; }
+  .loc-hv .nut-loc-tat, .loc-hv .nut-loc-tat > b { color: var(--text-faint); font-weight: 500; }
+  .o-so { appearance: none; border: 0; background: none; padding: 0 2px; border-radius: 4px; color: var(--accent); font-weight: 700; font-size: 15px;
     font-variant-numeric: tabular-nums; cursor: pointer; box-shadow: inset 0 -1px 0 var(--accent-line); }
   .dong2 { display: block; margin-top: 2px; font-size: 13px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .o-ovr { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 6px; margin-left: -6px; border: 1px solid var(--line); border-radius: 4px;
@@ -374,13 +398,13 @@
   .hop-dl { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 4px 10px; margin: 0; font-size: 13px; }
   .hop-dl dt { color: var(--text-dim); } .hop-dl dd { margin: 0; }
   .hop-chan { display: flex; justify-content: flex-end; gap: 8px; }
-  .chip-bac { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px solid rgb(var(--doing-line-rgb)); border-radius: 4px;
-    background: rgb(var(--doing-bg-rgb)); color: rgb(var(--doing-rgb)); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-  .chip-bac[aria-expanded='true'] { box-shadow: 0 0 0 1px var(--accent); }
+  .chip-bac { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 6px;
+    background: none; color: var(--text); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  .chip-bac[aria-expanded='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
   .o-xem { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 0 0 12px; border: 1px solid var(--line-strong); border-radius: 8px;
     background: var(--surface); font-size: 14px; cursor: pointer; }
   .o-xem-nhan { color: var(--text-faint); font-size: 13px; }
-  .o-xem select { align-self: stretch; min-width: 0; padding: 0 10px 0 0; border: 0; border-radius: 0 8px 8px 0; background: var(--surface); color: var(--text);
+  .o-xem select { field-sizing: content; align-self: stretch; min-width: 0; padding: 0 10px 0 0; border: 0; border-radius: 0 8px 8px 0; background: var(--surface); color: var(--text);
     font-weight: 700; outline: none; cursor: pointer; }
   .o-xem:focus-within { border-color: var(--accent); }
   .doan { display: inline-flex; height: 36px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; }
@@ -396,6 +420,8 @@
   .the-em-3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   @media (max-width: 639.98px) {
     .o-xem, .doan { height: 44px; }
+    .ba-cham { width: 44px; height: 44px; }
+    .hvl-dai-kn { flex-wrap: nowrap; } .hvl-dai-kn > * { flex: 1; min-width: 0; }
     .doan > button { flex: 1; }
     .hvl-dai-v > li { min-width: 0; }
     .hop-nho { white-space: normal; max-width: calc(100vw - 16px); }

@@ -276,9 +276,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     const s = doc('web/src/modules/students/StudentsPage.tsx');
     /* UI-HV-LOP (khu d): ô tìm "Tìm học viên, lớp"; đầu trang Xuất + "+ Thêm học viên" (max-sm:hidden, vào ⋯ ở < 640 px); "+ Lớp mới" trong ⋯. */
     assert(/placeholder=\{t\('Tìm học viên, lớp'\)\}/.test(s), 'placeholder ô tìm');
-    assert(/className="btn btn-sm btn-primary max-sm:hidden"[^]*?>\{t\('\+ Thêm học viên'\)\}</.test(s), 'nút thêm HV ngoài phải max-sm:hidden');
+    assert(/className="btn btn-primary[^"]*max-sm:hidden"[^]*?>\{t\('\+ Thêm học viên'\)\}</.test(s), 'nút thêm HV ngoài phải max-sm:hidden');
     /* U04: mục ⋯ trang dựng sẵn trong `menuTrang` (375 có cả Xuất + Thêm) rồi mới truyền vào MenuDong. */
-    assert(/<MenuDong nhan=\{t\('Thao tác trang'\)\} muc=\{menuTrang\} \/>/.test(s), 'MenuDong Thao tác trang dùng menuTrang');
+    assert(/<MenuDong nhan=\{t\('Thao tác trang'\)\} muc=\{menuTrang\}[^>]*\/>/.test(s), 'MenuDong Thao tác trang dùng menuTrang');
     const mn = s.slice(s.indexOf('const menuTrang: MucMenu[] = ['), s.indexOf('const menuTrang: MucMenu[] = [') + 900);
     assert(/dienThoai && data\?\.coTheThemHocVien/.test(mn) && /nhan: t\('\+ Thêm học viên'\)/.test(mn) && /nhan: t\('\+ Lớp mới'\)/.test(mn), 'mục thêm trong ⋯');
     assert(/keTruoc/.test(mn), 'Lưu trữ cách một đường kẻ khi có mục thêm');

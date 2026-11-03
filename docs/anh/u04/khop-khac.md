@@ -24,6 +24,29 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | BỎ: dòng 5 môn trên hàng em · "Xem thêm n" | `MiniKn` không dùng ở màn này | — | BỎ (ý 2, 3) |
 | BỎ: phân trang trên bảng | chỉ dưới | a0 | BỎ |
 
+## So sát hình ảnh 04/11 (chủ SP không duyệt #880/#882 vì lệch mockup — PTA áp cho #884)
+Đo `getComputedStyle` mockup khung A ↔ web cùng phần tử, rồi sửa cho bằng:
+| Phần | Trước | Sau (= mockup) |
+|---|---|---|
+| Xuất Excel · + Thêm học viên · ⋯ trang | cao 28, chữ 13 | cao 36, chữ 14 đậm 600, bo 8 |
+| Tab Tất cả · Đang SOS… | 14 px, 600 | 15 px, chọn 700, cao 42 (`HangTab v8`) |
+| Ô tìm | 15 px, nền ô nhập, không kính lúp | kính lúp, nền `--bg`, chữ 14 |
+| Chip lọc | "· 1", chữ dim 600, nền bề mặt | số đậm màu nhấn ngay sau chữ, chữ 500, viền `--line-strong`, không nền |
+| Ô "Xem" | rộng theo mục dài nhất (190) | rộng theo mục đang chọn (`field-sizing: content`) |
+| Hàng lớp: lưới cột | 16 · 112 · 128 · 230 · 340 | 28 · 112 · 100 · 250 · 290 (đúng `.tt-lop.luoi`) · 1280 giữ cột cân |
+| Hàng lớp: viên "n bài chờ chấm"… | chỉ chấm + chữ (nền trùng nền hàng) | viên có viền cùng tông, nền xám nhạt (`.bdv`) |
+| Số SOS hàng lớp | 13 px | 15 px đậm, sát chip |
+| ⋯ hàng lớp / hàng em | ô 28 có viền | 32, không viền, rê mới viền (375: 44) |
+| Tiêu đề bảng em | nền bề mặt 2, cao 39 | nền bề mặt, cao 36, vạch trên |
+| Ô bảng em | đệm 6/12 | đệm 9/12, dòng 1.35, canh trên |
+| Cột bảng em ở 1440 | 190 · 96 · 200 · 172 · 100 · 150 | 208 · 100 · 300 · 186 · 100 · 172 (đúng COT mockup); < 1440 giữ cột 1280 |
+| Hàng em đang mở dải | vạch trái + nền nhấn | như hàng thường (mockup không tô) |
+| Chip bậc Ý thức | nền xanh "đang" | viền `--line-strong`, chữ thường, bo 6, cao 24; mở = viền nhấn + nền nhấn nhạt (K7 `.chip-bac`) |
+| Dải 375: 5 ô kỹ năng | S rớt dòng | 5 ô một hàng chia đều |
+| ✓ / ✗ cạnh điểm | — | chỉ qua `ODiem` (#882 sửa gốc), #884 không vẽ riêng |
+
+Còn khác (không phải hình ảnh): chữ chip "Đã thi · chờ kết quả" (mockup "chờ KQ") là nhãn dùng chung `LOC_HOC_VIEN_NHAN` ở Tổng quan · số trên tab nền xanh "đang" của `HangTab` dùng chung mọi trang · ⋯ trang ở 375 vẫn cạnh tiêu đề (vị trí nút = tính năng, giữ).
+
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | Lý do |
 |---|---|---|---|

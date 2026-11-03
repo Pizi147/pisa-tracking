@@ -377,8 +377,11 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     </label>
   );
   const locTim = (
-    <input className="field h-9 w-full text-sm sm:w-[280px] max-sm:min-h-[44px] max-sm:flex-1" aria-label={t('Tìm')} placeholder={t('Tìm học viên, lớp')}
-      value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
+    <span className="o-tim max-sm:flex-1">
+      <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <input className="field h-9 w-full text-sm sm:w-[280px] max-sm:min-h-[44px]" aria-label={t('Tìm')} placeholder={t('Tìm học viên, lớp')}
+        value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
+    </span>
   );
   /* Chọn / lọc một lớp chỉ ở Đang SOS và Lịch thi (chủ SP 27/10) — Tất cả đã chia theo lớp. */
   const locChung = (
@@ -392,8 +395,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   );
   /* Chip lọc (B11, G6 "số 0 không bấm"): số 0 mờ, không bấm — trừ khi đang bật (để còn tắt được). */
   const chipLoc = (key: string, nhan: string, so: number | string, bat: boolean, onBat: () => void, title?: string, tat?: boolean) => (so === 0 && !bat) || tat
-    ? <span key={key} className="nut-loc nut-loc-tat" aria-disabled="true" title={title}>{nhan} · <span className="tabular-nums">{so}</span></span>
-    : <button key={key} type="button" className="nut-loc" title={title} aria-pressed={bat} onClick={onBat}>{nhan} · <span className="tabular-nums">{so}</span></button>;
+    ? <span key={key} className="nut-loc nut-loc-tat" aria-disabled="true" title={title}>{nhan} <b className="tabular-nums">{so}</b></span>
+    : <button key={key} type="button" className="nut-loc" title={title} aria-pressed={bat} onClick={onBat}>{nhan} <b className="tabular-nums">{so}</b></button>;
   /* Chip vai ít gặp (Thiếu thông tin · Chờ chọn bước tiếp) vào Bộ lọc thêm để dải lọc một hàng ở 1440; đang bật (link Tổng quan) thì vẫn hiện ở dải. */
   const CHIP_VAI_PHU = ['thieu_tt', 'cho-buoc-tiep'] as const;
   const laChipPhu = (k: string) => (CHIP_VAI_PHU as readonly string[]).includes(k);
@@ -434,14 +437,14 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         {!dienThoai && oXem}
         {!dienThoai && chonKhung}
         <div className="ml-auto flex items-center gap-2">
-          {!dienThoai && <button type="button" className="btn btn-sm whitespace-nowrap" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>}
-          {!dienThoai && data?.coTheThemHocVien && <button type="button" className="btn btn-sm btn-primary max-sm:hidden" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
-          <MenuDong nhan={t('Thao tác trang')} muc={menuTrang} />
+          {!dienThoai && <button type="button" className="btn h-9 whitespace-nowrap text-sm font-semibold" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>}
+          {!dienThoai && data?.coTheThemHocVien && <button type="button" className="btn btn-primary h-9 text-sm max-sm:hidden" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
+          <MenuDong nhan={t('Thao tác trang')} muc={menuTrang} lopNut="btn h-9 w-9 shrink-0 justify-center !px-0 font-bold max-sm:h-11 max-sm:w-11" />
         </div>
       </div>
       {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:flex-1">{oXem}{chonKhung}</div>}
 
-      <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
+      <HangTab v8 panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
         ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },
@@ -459,7 +462,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         {goc === 'tat-ca' && data && (
           <>
             {/* Thanh lọc (mockup `.loc`): tìm · chip (số 0 mờ) · Bộ lọc thêm · phải: n HV · m lớp · Mở / Thu gọn tất cả. 375: chip vào nút "Lọc" (B26). */}
-            <div className="flex flex-wrap items-center gap-2" data-hd="hvl-goc">
+            <div className="loc-hv flex flex-wrap items-center gap-2" data-hd="hvl-goc">
               {locTim}
               {dienThoai && (
                 <button type="button" className={`btn btn-sm min-h-[44px] ${moLoc || dangLoc ? 'nut-loc-dang' : ''}`} aria-expanded={moLoc} onClick={() => setMoLoc(!moLoc)}>{t('Lọc')}</button>
@@ -658,7 +661,7 @@ function NhanLop({ lop, vai, soViecQuaHan, bo }: { lop: LopTrenTrang; vai: VaiXe
       : null;
   if (!badge.length) return null;
   return (
-    <span className="flex flex-wrap items-center gap-1.5 font-normal">
+    <span className="nhan-lop flex flex-wrap items-center gap-1.5 font-normal">
       {badge.map((x) => { const den = denBadge(x); return <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={den ? () => navigate(den) : undefined}>{x.nhan}</Nhan>; })}
     </span>
   );
@@ -675,7 +678,7 @@ function MenuLop({ lop, dsLop, onThemHocVien }: { lop: LopTrenTrang; dsLop: NguC
   ];
   return (
     <>
-      <MenuDong muc={muc} nhan={t('Thao tác khác')} />
+      <MenuDong muc={muc} nhan={t('Thao tác khác')} lopNut="ba-cham" />
       {nhapDiem && <PanelNhapDiemLop classId={lop.id} classCode={lop.code} onDong={() => setNhapDiem(false)} />}
     </>
   );
@@ -685,9 +688,9 @@ function MenuLop({ lop, dsLop, onThemHocVien }: { lop: LopTrenTrang; dsLop: NguC
 function OSosLop({ sos, onSos }: { sos: number[]; onSos: (muc: number) => void }) {
   if (!sos.some(Boolean)) return <span className="text-[13px] text-dim">{t('Không SOS')}</span>;
   return (
-    <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1 font-normal">
+    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 font-normal">
       {sos.map((n, i) => n > 0 && (
-        <span key={i} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+        <span key={i} className="inline-flex items-center gap-0.5 whitespace-nowrap">
           <span className={`${CHIP_SOS} ${lopSos(i + 1)}`}>SOS {i + 1}</span>
           <button type="button" className="o-so" aria-label={t('SOS mức {m}: {n} HV', { m: i + 1, n })} onClick={() => onSos(i + 1)}>{n}</button>
           <span className="text-[13px] text-dim">HV</span>

@@ -55,7 +55,7 @@ function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?:
   const muc = tt.mucCua({ id: h.id, ten: h.ten, dangHoc: true, nhapDiem: nd, status: ev?.status ?? 'active', ft: ev?.ft ?? !thuong, maLop: lop?.code ?? null,
     xuLyYThuc: !!h.hang?.yThucHop?.canLam,
     ...(ev ? { suaThongTin: ev.viewer.suaThongTin, suaThem: ev.viewer.suaThem, kyThi: !!ev.kyThi } : {}) });
-  return <>{muc.length > 0 && <MenuDong muc={muc} nhan={t('Thao tác khác')} />}{createPortal(tt.panels, document.body)}</>;
+  return <>{muc.length > 0 && <MenuDong muc={muc} nhan={t('Thao tác khác')} lopNut="ba-cham" />}{createPortal(tt.panels, document.body)}</>;
 }
 
 /** Chữ khớp ô tìm tô hồng (V14) — so không dấu, không phân biệt hoa thường; giữ nguyên chữ gốc. */
@@ -345,7 +345,7 @@ export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim 
             <Bang ten={t('Học viên & Lớp')} cot={cot} hang={g.hv} khoa={khoaEm} khung={false} the375={false} dinh
               hangRieng={(h) => (
                 <>
-                  <tr className={`do-hang ${dai.co(khoaEm(h)) ? 'dang-mo' : ''} ${khopTim(h.ten, tim) >= 0 ? 'hang-khop' : ''}`}>
+                  <tr className={`do-hang ${khopTim(h.ten, tim) >= 0 ? 'hang-khop' : ''}`}>
                     {cot.map((c) => <OBang key={c.key} c={c}>{o(h, c)}</OBang>)}
                   </tr>
                   {dai.co(khoaEm(h)) && <tr className="hang-dai"><td colSpan={cot.length}><DaiEm g={h.hang} v={viec.get(h.id)} onMoViec={onMoViec} /></td></tr>}
