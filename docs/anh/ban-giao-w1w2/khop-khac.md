@@ -28,7 +28,7 @@ Mr. Khoa Lê (8) dạy W1 + W2, GVCN Ms. Linh Cao (10); Kiều Thu Trang chỉ h
 | 17 | Nút Đóng ở trái chân (mockup: phải) | KHÁC | luật chân panel chung (S3) — mọi panel |
 | 18 | Cột Kết quả là câu tự điền ("MT2 đạt kỳ vọng"), mockup vẽ điểm ✓ / ✗ từng task | KHÁC | dữ liệu tự điền có sẵn (`tuDien.ketQua`); đổi sang điểm từng task cần máy chủ thêm trường — không làm trong PR này |
 
-KHỚP 15/18 = **83 %** (dưới cổng 90 %): 3 KHÁC trên đều là luật / thành phần dùng chung đã có — **xin chủ SP đồng ý lý do** (Q-5: KHÁC tính khi chủ SP đồng ý) → 18/18.
+KHỚP 15/18 = 83 %; 3 KHÁC trên đều là luật / thành phần dùng chung — **chủ SP đồng ý lý do + duyệt ảnh cặp (03/11)** → 18/18 (Q-5).
 
 ## Thao tác TRƯỚC → SAU
 
