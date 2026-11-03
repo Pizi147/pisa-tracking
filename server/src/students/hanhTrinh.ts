@@ -2,7 +2,7 @@ import { db, theoLo } from '../db.ts';
 import {
   CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseCategoriesFor, caseTitle, chiaChuong, goiYCuoiKhoa, lapLaiQuaLop,
   ASSESSED_SKILLS, tenCaseSos, tenMon, tenMonNgan, tuanHocTai, type CaseCategory, type CaseChuongVao, type LopChuong, type TonePaChuong,
-  mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong, trangThaiCaseV4 } from '../../../shared/domain/index.ts';
+  mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong, trangThaiCaseV4, trangThaiHop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { allProgrammes, maCtCuaLuot } from '../normal/regular.ts';
@@ -131,6 +131,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   const caseRows = conn
     .prepare(
       `SELECT sc.*, a.attempt_no AS attempt_no, a.kind AS attempt_kind, ${CO_THE_KHONG_THEO_DOI('sc')} AS co_the_ktd,
+              (SELECT u.full_name FROM users u WHERE u.id = sc.owner_user_id) AS owner_name,
               (SELECT cy.programme_code FROM learning_cycles cy WHERE cy.id = sc.cycle_id) AS cycle_programme,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.id = sc.cycle_id) AS cycle_route
          FROM sos_cases sc
@@ -287,6 +288,10 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     const moiNhat = [...doneCases].sort((x, y) => String(y.closed_at ?? '').localeCompare(String(x.closed_at ?? '')))[0];
     const vanDe = casesOfSkill.map((c) => {
       const ivs = ivByCase.get(c.id) ?? [];
+      const xong = c.status === 'done';
+      const dong = xong ? (c.closed_at ?? c.outcome_at ?? null) : null;
+      /* U07 (UA-15): huỷ = không cần theo dõi / hệ thống đóng — khác Xong. */
+      const huy = xong && !!(c.dismiss_reason_code || c.system_close_reason);
       /* PR-SOS: PA quy chế "Chờ xác nhận" chưa có ngày bắt đầu (mốc tính lúc xác nhận) — chưa vẽ khối trên trục tuần. */
       const pa = ivs.filter((iv) => iv.started_date ?? iv.planned_date).map((iv) => ({
         id: iv.id, ten: caseInterventionLabel(iv.kind), tu: iv.started_date ?? iv.planned_date, den: iv.completed_date ?? null,
@@ -300,8 +305,16 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
       }));
       return {
         caseId: c.id, ten: tenCaseCua(c), sos: c.sos_level ?? null, attemptNo: c.attempt_no ?? null,   // OV-12c: Progress cũng có nhãn SOS
-        mo: c.detected_at, dong: c.status === 'done' ? (c.closed_at ?? c.outcome_at ?? null) : null,
-        soPa: ivs.length, pa,
+        mo: c.detected_at, dong,
+        soPa: ivs.length, pa, huy,
+        /* U07 #3: trạng thái của TỪNG Case ở cột nhãn trái — cùng `trangThaiHop` (một luật với chip đầu hộp cũ), dữ liệu đã nạp, không thêm câu. */
+        trangThai: trangThaiHop({
+          caseMo: xong ? [] : [{ mo: c.detected_at, soPa: ivs.length, choNguyenNhan: choNguyenNhan.has(c.id), choNhanXet: !!stMo.get(c.id)?.choNhanXet, choDuyet: !!c.co_the_ktd, quaHan: quaHanCua(c) }],
+          coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: dong, huyGanNhat: huy,
+        }, homNay),
+        phuTrach: (c.owner_name ?? null) as string | null,
+        /* U07 (UA-14): tên PA chờ xác nhận (chưa có tuần bắt đầu) — khối chờ "1 PA chờ xác nhận · Học Tutor". */
+        tenPaCho: ivs.find((iv) => !(iv.started_date ?? iv.planned_date)) ? caseInterventionLabel(ivs.find((iv) => !(iv.started_date ?? iv.planned_date))!.kind) : null,
         /* Cột tên hàng PA: "2 phương án · {người}" (mockup 26 bản 1) — người ghi PA mới nhất. */
         nguoi: (ivs.at(-1)?.performer_user_name ?? ivs.at(-1)?.performer_name ?? null) as string | null,
         /* Q18: Case chờ nguyên nhân — khối chờ (viền đứt tím) với chữ đúng. PR-CT2: PA Bổ trợ chạy ngay khi có nguyên nhân. */
