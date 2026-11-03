@@ -124,23 +124,24 @@ export type ViecBaoPhView = {
   /** Q-RL2c: việc NGƯỜI DÙNG đã bỏ, người xem có quyền bỏ, lần xử lý còn, chưa ai đổi tiếp → nút "Khôi phục". */
   khoiPhucDuoc: boolean;
   /** UI-CV-TVV (mockup `tvv.html` khối bối cảnh): lần xử lý GVCN đã lưu — người lưu · giờ lưu · lớp · nội dung (vi phạm + ghi chú GVCN). */
-  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null };
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null;
+    /** UI-1 (mockup U10 K5): vi phạm của lần xử lý, mỗi dòng một (ngày · tên) + ghi chú GVCN riêng — panel tách trường. */
+    viPham: { ngay: string; ten: string }[]; ghiChu: string | null };
   /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
   thuHoiCho: { lyDo: string | null } | null;
 };
 
-/** "Không làm bài tập về nhà (09/09, 10/09, 11/09)" — vi phạm của lần xử lý theo tên, kèm ghi chú GVCN. Một câu. */
-function noiDungXuLy(measureId: number | null, note: string | null): string | null {
-  if (!measureId) return note;
-  const vp = db().prepare(
+/** Vi phạm của lần xử lý (ngày tăng dần) — `noiDung` một câu ("Không làm bài tập về nhà (09/09, 10/09)") + danh sách cho panel tách trường. */
+function viPhamXuLy(measureId: number | null): { ngay: string; ten: string }[] {
+  if (!measureId) return [];
+  return (db().prepare(
     `SELECT COALESCE(NULLIF(x.ten, ''), NULLIF(x.description, ''), x.category) AS ten, x.occurred_on FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id
       WHERE mv.measure_id = ? ORDER BY x.occurred_on, x.id`,
-  ).all(measureId) as any[];
+  ).all(measureId) as any[]).map((r) => ({ ngay: r.occurred_on as string, ten: (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten) }));
+}
+function noiDungXuLy(vp: { ngay: string; ten: string }[], note: string | null): string | null {
   const theoTen = new Map<string, string[]>();
-  for (const r of vp) {
-    const ten = (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten);
-    theoTen.set(ten, [...(theoTen.get(ten) ?? []), `${r.occurred_on.slice(8, 10)}/${r.occurred_on.slice(5, 7)}`]);
-  }
+  for (const r of vp) theoTen.set(r.ten, [...(theoTen.get(r.ten) ?? []), `${r.ngay.slice(8, 10)}/${r.ngay.slice(5, 7)}`]);
   const cau = [...theoTen].map(([ten, ngay]) => `${ten} (${ngay.join(', ')})`).join('; ');
   return [cau, note?.trim()].filter(Boolean).join('. ') || null;
 }
@@ -165,6 +166,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     ? db().prepare(`SELECT ly_do FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(v.measure_id) as { ly_do: string | null } | undefined
     : undefined;
   const nhanTrangThai = nhanTrangThaiBaoPh(v.trang_thai, lan.length > 0);
+  const vp = viPhamXuLy(v.measure_id ?? null);
   return {
     id, measureId: v.measure_id ?? null, studentId: v.student_id, ten: v.full_name, nhan: v.nhan, tieuDe: `Báo PH · ${v.nhan} · ${v.full_name}`,
     han, quaHan: v.trang_thai === 'mo' && han < homNay, trangThai: v.trang_thai, nhanTrangThai,
@@ -175,7 +177,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     lan, lienHe: ghi ? { ten: v.parent_name ?? null, quanHe: v.parent_relation ?? null, sdt: v.parent_phone ?? null } : { ten: null, quanHe: null, sdt: null },
     coTheGhi: v.trang_thai !== 'bo' && xl === 'con' && ghi,
     khoiPhucDuoc: v.trang_thai === 'bo' && xl === 'con' && ghi && laLyDoNguoiDung(v.bo_ly_do) && daoDuocHoacCu(id),
-    boiCanh: { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(v.measure_id ?? null, v.m_note ?? null) },
+    boiCanh: { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
   };
 }
