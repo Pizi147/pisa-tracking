@@ -167,7 +167,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
           {phan === 'phoi-hop' && <span className="text-[13px] text-slate-400">{t('mọi lượt')}</span>}
           {phan === 'vi-pham' && d.coTheKhai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId })}>{t('Khai / sửa cấp bậc')}</button>}
           {phan === 'vi-pham' && !d.coTheKhai && d.canSuaKhai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'khai', studentId, sua: true })}>{t('Khai / sửa cấp bậc')}</button>}
-          {d.canRecord && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Ghi vi phạm')}</button>}
+          {d.canRecord && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px] max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Ghi vi phạm')}</button>}
         </span>
       </div>
 

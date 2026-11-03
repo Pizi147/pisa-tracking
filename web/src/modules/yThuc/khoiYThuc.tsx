@@ -37,16 +37,16 @@ type TomTatVao = Pick<YThucHocVien, 'nhom' | 'han' | 'hanXem' | 'quaHanNgay' | '
 
 /** Ô "Cần làm" của một em: badge + dòng hạn (cùng chữ ở hàng em tab lớp). null = không còn việc. */
 export function CanLamEm({ x, homNay, onXem }: { x: TomTatVao; homNay: string; onXem?: (id: number) => void }) {
-  const han = (h: string | null) => h ? <span className="text-xs tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(h, homNay) })}</span> : null;
-  const o = (bv: ReactNode, phu: ReactNode) => <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">{bv}{phu}</span>;
+  /* Mockup K1 / K3: hạn nằm TRONG badge ("Phải xử lý · hạn 05/11"). */
+  const han = (h: string | null) => h ? ` · ${t('hạn {ngay}', { ngay: ngay(h, homNay) })}` : '';
   if (x.deXuat) {
     const dx = x.deXuat;
-    return o(<BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('QL đã duyệt') : t('Chờ QL duyệt')}</BadgeViec>, han(dx.han));
+    return <BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('QL đã duyệt') : t('Chờ QL duyệt')}{han(dx.han)}</BadgeViec>;
   }
   switch (x.nhom) {
-    case 'qua_han': return o(<BadgeViec tong="qua">{t('Quá hạn {n} ngày', { n: x.quaHanNgay ?? 1 })}</BadgeViec>, han(x.han ?? x.hanXem));
-    case 'bat_buoc': return o(<BadgeViec tong="cho">{t('Phải xử lý')}</BadgeViec>, han(x.han));
-    case 'moi': return o(<BadgeViec tong="xem">{t('Chưa xem')}</BadgeViec>, han(x.hanXem));
+    case 'qua_han': return <BadgeViec tong="qua">{t('Quá hạn {n} ngày', { n: x.quaHanNgay ?? 1 })}{han(x.han ?? x.hanXem)}</BadgeViec>;
+    case 'bat_buoc': return <BadgeViec tong="cho">{t('Phải xử lý')}{han(x.han)}</BadgeViec>;
+    case 'moi': return <BadgeViec tong="xem">{t('Chưa xem')}{han(x.hanXem)}</BadgeViec>;
     default: return <span className="text-slate-500">—</span>;
   }
 }

@@ -28,9 +28,9 @@ Thành phần dùng chung `web/src/modules/yThuc/khoiYThuc.tsx` (BadgeViec · Ca
 | 2 | Dải tóm tắt tách ô, nhãn trên giá trị dưới, kẻ dọc | KHỚP | |
 | 3 | Badge Cần làm: Phải xử lý vàng đặc / Chưa xem xanh viền chấm / Quá hạn đỏ ⚠ | KHỚP | |
 | 4 | Báo PH ghi "lần X" + badge | KHỚP | em seed chưa có Báo PH → "—" |
-| 5 | Danh sách vi phạm: ngày · tên đậm · thẻ · Sửa phải | KHỚP | Sửa cho người ghi / người xử lý (V10) |
+| 5 | Danh sách vi phạm: ngày · tên đậm · thẻ nhóm · Sửa phải | KHỚP | người ghi xem khi mở dòng; "n tệp" mockup — dữ liệu dòng chưa có số tệp (tệp thấy khi mở dòng) |
 | 6 | Hàng nút (Xác nhận xử lý · Đã xem viền · Đề xuất chữ) | KHỚP | |
-| 7 | "Lần trước" + Thang › + Lịch sử của em › | KHỚP (K1) | K3 vai xem không vẽ; giữ vì là lối Xem / Thu hồi lần xử lý |
+| 7 | Không có hàng "Lần trước" (K3) | KHỚP | rà PTA 04/11: bỏ hàng chân; lần cũ xem ở Lịch sử ("Xem" → Thu hồi…); Thang trong ⓘ cạnh "Đã tới"; chỉ hiện dòng khi đang xin thu hồi / QL từ chối |
 | 8 | Lịch sử: lọc có số, phạm vi, bảng 5 cột, trường có nhãn | KHỚP | tab HV bỏ cột Học viên (một em) |
 | 9 | Lịch sử "Đã xử lý": trường Vi phạm (tên từng vi phạm) | KHỚP | máy chủ `dongThoiGian` thêm `tenViPham` từ chính danh sách đã đọc — 0 câu thêm |
 | 10 | Lịch sử "Đã xử lý": trường Báo PH | KHỚP | `baoPh` của lần (gộp vào câu đang có, 2 câu con theo `measure_id` có chỉ mục) — chỉ hiện khi lần đó có việc Báo PH |
@@ -65,3 +65,8 @@ Không mất thao tác nào.
 
 ## [XM] để PTA
 - Không còn.
+
+## Rà PTA 04/11 (#892)
+- "Bậc kế" → "Lần này" (mọi nhóm, như K3) · hạn nằm trong badge ("Chưa xem · hạn 16/09") · bỏ hàng "Lần trước … Thang › Lịch sử của em ›", Thang vào ⓘ cạnh "Đã tới" · dòng vi phạm bỏ "… ghi" và mũi tên · hàng nút theo thứ tự mockup (bắt buộc: Xác nhận xử lý chính · Đề xuất chữ; mới: Đã xem · n viền · Xác nhận xử lý chữ · Đề xuất chữ), ⓘ sát nút · "+ Ghi vi phạm" cao 36 px như mockup · câu tên GVCN gộp vào câu sẵn có (0 câu thêm).
+- **Mockup `u10-y-thuc.html` (#874) có một sửa của session này:** thẻ "Mai Hồng Ngọc · ✓ Đã xem 2 vi phạm" bị chính lần sửa vòng 2 của tôi (đổi thứ tự thẻ K2) đặt nhầm vào khung K3 (hồ sơ HV Lê Thảo Nhi — thẻ của em khác, vô nghĩa ở đó) trước khi chủ SP duyệt. Commit UI-3 chuyển thẻ về đúng chỗ ở K2 (danh sách 375), không đổi gì khác — là sửa lỗi lồng thẻ, không đổi thiết kế.
+- So 2× (Playwright, `deviceScaleFactor: 2`) thẻ Ý thức mockup K3 ↔ web GVBM / GVCN: trùng bố cục, nhãn, badge, khoảng cách.
