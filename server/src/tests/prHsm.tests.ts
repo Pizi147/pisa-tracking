@@ -236,7 +236,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
   check('HSM (6) · hồ sơ HV: bảng Mock Test một cột Kết quả (KetQuaDot), không attemptStatusLabel / "Hồ sơ đợt ›"', () => {
     const hs = docSach('web/src/modules/students/StudentDetailPage.tsx');
     const bang = hs.slice(hs.indexOf('function IeltsAttempts'), hs.indexOf('function RatioAttempts'));
-    assert(bang.length > 100 && !/attemptStatusLabel\(/.test(bang) && !bang.includes('Hồ sơ đợt ›') && /<KetQuaDot/.test(bang), 'IeltsAttempts');
+    assert(bang.length > 100 && !/attemptStatusLabel\(/.test(bang) && !bang.includes('Hồ sơ đợt ›') && /<KetQuaDot|<KetQuaMt/.test(bang), 'IeltsAttempts');   // U02 (UA-Q4): `KetQuaMt` — đạt / SOS gọn, còn lại `KetQuaDot`
     // PR-U12: nhãn tách ra NhanDot, dùng chung với bảng lớp thường
     const nhan = hs.slice(hs.indexOf('function NhanDot'), hs.indexOf('function IeltsAttempts'));
     assert(/doiKyNang/.test(nhan) && /huyPhan/.test(nhan) && /<NhanDot a=\{a\}/.test(bang) && /<Link/.test(bang), 'nhãn dời/huỷ phần, MT là liên kết');

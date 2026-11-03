@@ -40,7 +40,9 @@ export function NganCase(p: Parameters<typeof ThanNganCase>[0]) {
   return <ThanNganCase key={p.caseId} {...p} />;
 }
 
-function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, veNguon, onTiep }: {
+function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, veNguon, onTiep, anViecChinh = false }: {
+  /** U02 (một việc một chỗ): nút việc tiếp đã ở dòng tóm tắt Case của cột hồ sơ HV — chân Case không lặp (Hoàn thành Case vẫn ở chân). */
+  anViecChinh?: boolean;
   /** 6c (#644 XM-4): view Case mở từ panel việc — PA của việc đó không lặp ô ghi nhanh / "Xác nhận PA" / "Kết quả" (việc nằm ngay view dưới, ‹ về). */
   paViec?: number | null;
   caseId: number; paId?: number | null;
@@ -353,6 +355,13 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const themPaDuoc = data.viewer.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam);
   /* OV-14b: nút chính là "Xác nhận PA" → thẻ PA đó trong thân không lặp nút. */
   const paNutChinh = data.viewer.canEdit && canDong && v?.chu.startsWith('Xác nhận PA') && v.paId ? v.paId : null;
+  const nutHoanThanh = ht?.an || !data.viewer.canClose || data.sos?.tam ? undefined   // OV-13a: Case tạm — chờ chốt SOS, chưa là việc
+    : (
+      <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"
+        onClick={() => (chanHoanThanh.length > 0 ? lf.bam() : setView({ loai: 'hoan-thanh' }))}>
+        {t('Hoàn thành Case')}
+      </button>
+    );
   const nutChinh = (() => {
     const nut = (chu: string, lam: () => void, title?: string) => <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" title={title} onClick={lam}>{chu}</button>;
     if (data.choXacNhanS?.coTheXacNhan && canDong) return nut(t('Xác nhận Case'), () => setView({ loai: 'xac-nhan-s' }));
@@ -369,14 +378,13 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
       if (!pa || !toiKyGhi(pa.actionDue, homNay) || ghiNhanhDuoc(pa)) return undefined;
       return nut(v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : t('Kết quả'), () => setView({ loai: 'ghi-ket-qua', paId: v.paId! }), dich(v.chu));  /* tên PA là chữ người dạy gõ (có thể dài) — chỉ để ở tooltip */
     }
-    if (ht?.an || !data.viewer.canClose || data.sos?.tam) return undefined;   // OV-13a: Case tạm — chờ chốt SOS, chưa là việc
-    return (
-      <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0"
-        onClick={() => (chanHoanThanh.length > 0 ? lf.bam() : setView({ loai: 'hoan-thanh' }))}>
-        {t('Hoàn thành Case')}
-      </button>
-    );
+    return nutHoanThanh;
   })();
+  const nutChinhHien = anViecChinh && nutChinh !== nutHoanThanh ? undefined : nutChinh;
+  const nutDoiNguoi = canDong && data.doiChu?.duoc && !doiNguoi
+    ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDoiNguoi(true)}>{t('Đổi người…')}</button> : null;
+  /* U02 (mockup chân Case): trong cột — Sửa · Đổi người… · + Thêm PA · Hoàn thành Case cùng một chân. */
+  const nutCot = trongCot && (nutDau || nutDoiNguoi) ? <>{nutDau}{nutDoiNguoi}</> : null;
   /* M6 6b-2 (Q7): mở từ danh sách "Case chưa chốt PA" — Case vừa xử lý → nút chính "Case tiếp ›" (Case kế bạn làm được, chưa xử lý); hết → một câu. */
   const tiep = chuoi?.caseTiep?.xong ? chuoi.caseTiep : null;
   /* Case còn việc của chính nó (nút chính) → giữ nút đó, "Case tiếp ›" thành nút phụ; hết việc → "Case tiếp ›" là nút chính. */
@@ -386,49 +394,50 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   /* Điều kiện hoàn thành (PA quy chế chưa khép) một dòng có ổ khoá: "Hoàn thành được sau khi PA theo quy chế kết thúc · **mốc**". */
   const dk = canDong && ht?.an && ht.dong ? /^(.*?) \((.*)\)$/.exec(ht.dong) : null;
   return (
-    <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai}
+    <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai} anDau={trongCot}
       /* 6b-2 (critique): hạn của việc tiếp ở đầu view Case — cùng chip của dòng danh sách, không mất khi mở Case. */
       dau={dauViec({ em, lop, han: canDong && v?.han && v.loaiHan ? <ChipHan loai={v.loaiHan as DeadlineKind} han={v.han} /> : null })}
-      chan={trongCot && !themPaDuoc && !nutChinh && !nutTiep && !(lf.daBam && chanHoanThanh.length) ? undefined : {
+      chan={trongCot && !themPaDuoc && !nutChinhHien && !nutTiep && !nutCot && !(lf.daBam && chanHoanThanh.length) ? undefined : {
         huy: trongCot ? null : { nhan: t('Đóng'), onClick: onClose },
         phu: <>
+          {nutCot}
           {themPaDuoc && v?.loaiHan !== 'lap-pa'   // CV-LOI (A1-15): đã là nút chính thì không lặp
             ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'them-pa' })}>{t('+ Thêm PA')}</button>
             : null}
-          {nutChinh ? nutTiep : null}
+          {nutChinhHien ? nutTiep : null}
         </>,
-        chinh: nutChinh ?? nutTiep,
+        chinh: nutChinhHien ?? nutTiep,
         conThieu: lf.daBam && chanHoanThanh.length > 0 ? [{ nhan: t('Hoàn thành Case'), lyDo: dich(chanHoanThanh[0]) }] : undefined,
       }}>
       <div ref={boxRef}>
         {/* PR-PA (§8, mockup pa-dong-bo §9): dải đầu panel — trạng thái MỘT lần (chip) · "mở W2 OCT · X báo" · Sửa / Mở lại cùng hàng. */}
-        <div className="-mx-4 flex flex-col gap-1.5 border-b px-4 pb-3 pt-2.5" style={{ borderColor: 'var(--line)', background: 'rgb(var(--phu-rgb) / 0.035)' }}>
+        <div className={trongCot ? 'flex flex-col gap-1.5 empty:hidden' : '-mx-4 flex flex-col gap-1.5 border-b px-4 pb-3 pt-2.5'} style={trongCot ? { borderColor: 'var(--line)' } : { borderColor: 'var(--line)', background: 'rgb(var(--phu-rgb) / 0.035)' }}>
           <div className="flex flex-wrap items-center gap-2">
-            {data.systemCloseLabel
+            {trongCot ? null : data.systemCloseLabel
               ? <Nhan tone="muted" title={dich(data.systemCloseLabel)}>{t('Hệ thống đóng · {ly}', { ly: dich(data.systemCloseLabel) })}</Nhan>
               : data.trangThaiV4
                 ? (data.tamDungTu && data.trangThaiV4.t === 'qua-han'
                   ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[13px] text-slate-300">{dich(data.trangThaiV4.chu)}</span></>
                   : <NhanTrangThai t={data.trangThaiV4.t} chu={dich(data.trangThaiV4.chu)} />)
                 : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
-            <span className="min-w-0 text-[13px] text-slate-400 max-sm:order-last max-sm:basis-full">
+            {/* U02: trong cột, "Mở" là một trường của khung Case (sau Mô tả — `ThanCase`), không ở dải đầu. */}
+            {!trongCot && <span className="min-w-0 text-[13px] text-slate-400 max-sm:order-last max-sm:basis-full">
               {t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
               {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
               {!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
               {` · ${data.owner ? t('phụ trách: {ten}', { ten: data.owner }) : t('Chưa có người phụ trách')}`}
-            </span>
-            <span className="flex-1" />
-            {/* R1-NO-CU (D17): QL / GVCN lớp em đổi người phụ trách tại chỗ — hộp một ô ngay dưới dải. */}
-            {canDong && data.doiChu?.duoc && !doiNguoi && (
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDoiNguoi(true)}>{t('Đổi người…')}</button>
-            )}
-            {nutDau}
+            </span>}
+            {!trongCot && <span className="flex-1" />}
+            {/* R1-NO-CU (D17): QL / GVCN lớp em đổi người phụ trách tại chỗ — hộp một ô ngay dưới dải. U02: trong cột hai nút này ở chân Case. */}
+            {!trongCot && nutDoiNguoi}
+            {!trongCot && nutDau}
           </div>
           {doiNguoi && canDong && data.doiChu?.duoc && (
             <DoiNguoiPhuTrach caseId={caseId} ownerCu={data.ownerUserId ?? null} ungVien={data.doiChu.ungVien}
               onXong={() => { setDoiNguoi(false); reload(); onChanged?.(); }} onTaiLai={reload} onHuy={() => setDoiNguoi(false)} />
           )}
-          {canDong && ht?.an && ht.dong && (
+          {/* U02 (PTA 04/11): trong cột lý do khoá nằm ở ⓘ cạnh "Kết luận" (`lyDoKhoa`), không thành dòng riêng. */}
+          {canDong && ht?.an && ht.dong && !trongCot && (
             <p className="m-0 flex items-center gap-1.5 text-[13px] text-slate-300">
               <span className="text-slate-400"><KhoaNho /></span>
               <span>{dk ? <>{dich(dk[1])} · <b className="font-semibold text-slate-100">{dich(dk[2])}</b></> : dich(ht.dong)}</span>
@@ -439,7 +448,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
         {data.yeuCauCase && data.viewer.canApprove && (
           <div className="pt-3"><TheYeuCau gon yc={data.yeuCauCase} onXong={() => { reload(); onChanged?.(); }} /></div>
         )}
-        <ThanCase data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec}
+        <ThanCase lyDoKhoa={trongCot && canDong && ht?.an && ht.dong ? (dk ? <>{dich(dk[1])} · <b className="font-semibold">{dich(dk[2])}</b></> : dich(ht.dong)) : null} data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec} anNutMoTa={anViecChinh}
           vuaDoi={vuaDoi} onHoanTac={() => { setVuaDoi(null); reload(); if (chuoi?.caseTiep) chuoi.caseTiep.boXong(); else onChanged?.(); }} />
       </div>
     </KhungPanel>
