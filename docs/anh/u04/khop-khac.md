@@ -44,8 +44,18 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | Chip bậc Ý thức | nền xanh "đang" | viền `--line-strong`, chữ thường, bo 6, cao 24; mở = viền nhấn + nền nhấn nhạt (K7 `.chip-bac`) |
 | Dải 375: 5 ô kỹ năng | S rớt dòng | 5 ô một hàng chia đều |
 | ✓ / ✗ cạnh điểm | — | chỉ qua `ODiem` (#882 sửa gốc), #884 không vẽ riêng |
+| Chip lọc số 0 (vòng 2, chủ SP 04/11) | viền đứt | viền liền như chip khác, chữ + số mờ (`.chip.tat`); nhãn chip "Đã thi · chờ KQ" |
+| Đoạn Fast Track / Lớp thường | hai mục cùng đậm khi xem cả hai | mục chọn nền + vạch + đậm; mục không chọn chữ 500 mờ |
+| Số "n HV" sau chip SOS | vệt bóng + góc bo dưới số | gạch chân mảnh 1 px dưới chữ số |
+| Hàng lớp 375 | mã gạch chân (dính rê chuột khi chụp), GVCN tên đầy đủ | dòng 1 "mã · n HV · T. N. Hà … ⋯", dòng 2 chip SOS + việc, thẳng mép mã; ảnh rời chuột trước khi chụp |
+| ⋯ trang 375 | cạnh tiêu đề | cạnh "Lọc" ở hàng tìm (tab Tất cả); tab khác giữ cạnh tiêu đề |
+| Số trên tab | viên xanh "đang" | viên mờ nền bề mặt 2, chữ dim 12 (`HangTab soMo`, chỉ trang này) |
+| Ô "Xem" | mũi tên gốc của select | "▾" nhỏ mờ như `.oxem::after` |
+| Dòng đếm | "194 HV · 23 lớp  Mở tất cả" | "194 HV · 23 lớp · Mở tất cả" |
+| Chip lịch thi trong bảng | dự kiến chữ xanh lịch 600, chưa có lịch viền liền | dự kiến viền đậm chữ dim 500 · chưa có lịch viền ĐỨT (`.lich.dk / .chua`) |
+| Dải một em | hộp số câu đè hàng dưới | chừa 40 px dưới khi hộp mở (`.dai.co-hop`); ô kỹ năng giữ viền `--line` (đo mockup `.okn`) |
 
-Còn khác (không phải hình ảnh): chữ chip "Đã thi · chờ kết quả" (mockup "chờ KQ") là nhãn dùng chung `LOC_HOC_VIEN_NHAN` ở Tổng quan · số trên tab nền xanh "đang" của `HangTab` dùng chung mọi trang · ⋯ trang ở 375 vẫn cạnh tiêu đề (vị trí nút = tính năng, giữ).
+[XM] Mặc định chương trình: mockup mở trang với Fast Track đã chọn (Lớp thường chỉ hiện số); web mặc định xem CẢ HAI (không mục nào sáng) — đổi mặc định là tính năng, chờ PTA.
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | Lý do |
@@ -53,7 +63,7 @@ Còn khác (không phải hình ảnh): chữ chip "Đã thi · chờ kết qu�
 | + Thêm học viên · + Lớp mới · Lưu trữ | đầu trang / ⋯ | như cũ; 375 Xuất + Thêm vào ⋯ trang | GIỮ · B26 |
 | Xuất Excel · n HV | đầu trang | như cũ | GIỮ |
 | Ô Phạm vi + ô Chi nhánh | hai ô | một ô "Xem" | G1 |
-| Fast Track / Lớp thường | hai nút bật / tắt | đoạn chọn có số, cùng luật bấm | GIỮ luật · đổi hình |
+| Fast Track / Lớp thường | hai nút bật / tắt (cả hai sáng = xem cả hai; bấm một = tắt nó) | đoạn chọn có số: không mục nào sáng = cả hai; bấm một = chỉ chương trình đó; bấm lại = cả hai (như chip lọc) | ĐỔI cách bấm (vòng 2: hai mục cùng sáng trông như lỗi) — cùng ba trạng thái, URL `khung` như cũ |
 | Tab Tất cả · Đang SOS · Lịch thi · Phân công GV | | như cũ | GIỮ |
 | Chip Thi tháng này · Có việc quá hạn · Đã thi · chờ KQ · Bộ lọc thêm · chip vai | | như cũ; số 0 mờ không bấm; TVV bỏ "Cần chú ý"; "Có việc quá hạn" = việc **của tôi** | B11 · chủ SP · [XM] b PTA |
 | Mở / gập một lớp | ▸ / cả hàng | như cũ | GIỮ |
