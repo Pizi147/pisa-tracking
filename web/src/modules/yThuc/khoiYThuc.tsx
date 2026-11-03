@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ngay } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { MuiTenGap } from './NhanViPham.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import type { DongEm, ViPhamV4, YThucHocVien } from './kieu.ts';
 
 /**
@@ -66,14 +67,15 @@ export function BaoPhEm({ b, homNay, onMo }: { b: DongEm['baoPh']; homNay: strin
 }
 
 /** Dải tóm tắt một em (mockup K3 `.facts`): mỗi trường một ô, nhãn trên – giá trị dưới, kẻ dọc giữa các ô. */
-export function TomTatEm({ d, homNay, onBaoPh, onXem }: {
+export function TomTatEm({ d, homNay, onBaoPh, onXem, thang }: {
   d: TomTatVao & Pick<YThucHocVien, 'bacNhan' | 'keTiep' | 'canManage' | 'gvcn'> & { baoPh: DongEm['baoPh'] };
   homNay: string; onBaoPh?: () => void; onXem?: (id: number) => void;
+  /** Thang xử lý đầy đủ — trong ⓘ cạnh "Đã tới" (mockup K3 không vẽ thang trên tab). */
+  thang?: ReactNode;
 }) {
-  const batBuoc = d.nhom === 'bat_buoc' || d.nhom === 'qua_han';
-  const o = (nhan: string, gt: ReactNode) => (
+  const o = (nhan: ReactNode, gt: ReactNode) => (
     <div className="grid min-w-0 content-start gap-1 py-0.5 [@container(min-width:900px)]:border-l [@container(min-width:900px)]:px-[18px] [@container(min-width:900px)]:first:border-l-0 [@container(min-width:900px)]:first:pl-0" style={{ borderColor: 'var(--line)' }}>
-      <span className="whitespace-nowrap text-xs font-medium text-slate-500">{nhan}</span>
+      <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-slate-500">{nhan}</span>
       <span className="text-[15px] font-semibold text-slate-100">{gt}</span>
     </div>
   );
@@ -81,8 +83,8 @@ export function TomTatEm({ d, homNay, onBaoPh, onXem }: {
     <div className="flex flex-wrap gap-x-6 gap-y-3 [@container(min-width:900px)]:gap-x-0">
       {o(t('Cần làm'), <CanLamEm x={d} homNay={homNay} onXem={onXem} />)}
       {!d.canManage && d.gvcn && o(t('Người xử lý'), t('GVCN {ten}', { ten: d.gvcn }))}
-      {o(t('Đã tới'), d.bacNhan ? dich(d.bacNhan) : <span className="font-medium text-slate-400">{t('chưa có')}</span>)}
-      {o(batBuoc ? t('Lần này') : t('Bậc kế'), batBuoc ? dich(d.keTiep.nhan) : <span className="font-medium text-slate-300">{dich(d.keTiep.nhan)}</span>)}
+      {o(<>{t('Đã tới')}{thang && <NutLuat label={t('Thang xử lý vi phạm')}>{thang}</NutLuat>}</>, d.bacNhan ? dich(d.bacNhan) : <span className="font-medium text-slate-400">{t('chưa có')}</span>)}
+      {o(t('Lần này'), dich(d.keTiep.nhan))}
       {o(d.baoPh ? t('Báo PH · lần {nhan}', { nhan: dich(d.baoPh.nhan) }) : t('Báo PH'), <BaoPhEm b={d.baoPh} homNay={homNay} onMo={onBaoPh} />)}
     </div>
   );
@@ -107,12 +109,9 @@ export function DsViPhamCho({ ds, homNay, moId, onMo, chiTiet, nhanRieng }: {
             <span className="min-w-0">
               <button type="button" aria-expanded={mo} onClick={() => onMo(v.id)}
                 className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-left text-[15px] font-semibold text-slate-100 appearance-none hover:underline sm:min-h-0">
-                {v.ten}<span className="text-slate-500"><MuiTenGap mo={mo} /></span>
+                {v.ten}
               </button>
-              <span className="mt-1 flex flex-wrap gap-1.5">
-                <span className={TAG}>{dich(v.categoryLabel)}</span>
-                {v.reportedByName && <span className={TAG}>{t('{ten} ghi', { ten: v.reportedByName })}</span>}
-              </span>
+              <span className="mt-1 flex flex-wrap gap-1.5"><span className={TAG}>{dich(v.categoryLabel)}</span></span>
             </span>
             <span className="flex items-center justify-end">{nhanRieng?.(v)}</span>
             {mo && <div className="col-start-2 col-end-4 pt-2">{chiTiet(v)}</div>}

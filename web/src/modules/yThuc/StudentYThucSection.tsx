@@ -55,7 +55,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const [loc, setLoc] = useState<LocLs>('tat-ca');
   const [nhomVp, setNhomVp] = useState('');
   const [moViPhamId, setMoViPhamId] = useState<number | null>(null);
-  const [moThang, setMoThang] = useState(false);
   const [baoPhMo, setBaoPhMo] = useState(false);
   /* Phản hồi tại chỗ sau "Đã xem" (F03): hàng ở lại, Hoàn tác + Xem lại — không chỉ toast. */
   const [vuaXem, setVuaXem] = useState<{ ids: number[]; luc: string } | null>(null);
@@ -180,23 +179,24 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
         </div>
       ) : doan === 'can-lam' ? (
         <div className="grid gap-3.5 px-4 pb-4 pt-3.5 max-sm:px-3">
-          <TomTatEm d={{ ...d, baoPh: d.hang.baoPh }} homNay={homNay} onBaoPh={() => setBaoPhMo(true)} onXem={(id) => mo({ loai: 'xem', id })} />
+          <TomTatEm d={{ ...d, baoPh: d.hang.baoPh }} homNay={homNay} onBaoPh={() => setBaoPhMo(true)} onXem={(id) => mo({ loai: 'xem', id })}
+            thang={<div className="w-[min(560px,80vw)]"><ThangYThuc d={d} homNay={homNay} /></div>} />
 
           {(nutXuLy || (d.canManage && xemIds.length > 0) || (d.canManage && d.deXuat?.status === 'da_duyet')) && (
-            <div className="flex flex-wrap items-center gap-2">
-              {nutXuLy && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${d.nhom !== 'moi' ? ' btn-primary' : ''}`} onClick={() => mo({ loai: 'xu-ly', studentId })}>{d.nhom !== 'moi' && CUA_TOI}{t('Xác nhận xử lý')}</button>}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               {d.canManage && xemIds.length > 0 && !batBuoc && (
                 <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" style={{ borderColor: 'var(--accent)', color: 'var(--accent)', background: 'transparent' }} disabled={dangGhi}
-                  onClick={() => void daXem(xemIds)}>{d.nhom === 'moi' && CUA_TOI}{dangGhi ? t('Đang lưu…') : t('Đã xem · {n}', { n: xemIds.length })}</button>
+                  onClick={() => void daXem(xemIds)}>{CUA_TOI}{dangGhi ? t('Đang lưu…') : t('Đã xem · {n}', { n: xemIds.length })}</button>
               )}
+              {nutXuLy && (d.nhom !== 'moi'
+                ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'xu-ly', studentId })}>{CUA_TOI}{t('Xác nhận xử lý')}</button>
+                : <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => mo({ loai: 'xu-ly', studentId })}>{t('Xác nhận xử lý')}</button>)}
               {d.canManage && d.deXuat?.status === 'da_duyet' && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'da-thuc-hien', id: d.deXuat!.id })}>{CUA_TOI}{t('Đánh dấu đã thực hiện')}</button>}
               {nutXuLy && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => mo({ loai: 'xu-ly', studentId, cheDo: 'de-xuat' })}>{t('Đề xuất QL duyệt')}</button>}
-              <span className="ml-auto flex items-center gap-1">
-                {batBuoc && <span className="text-[13px] font-semibold text-soon">{t('Không có "Đã xem"')}</span>}
-                <NutLuat label={t('Luật xử lý vi phạm')}>
-                  {t('≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý. Vi phạm lẻ: Đã xem (chưa cần xử lý, không lên bậc) hoặc xử lý nếu nghiêm trọng.')}
-                </NutLuat>
-              </span>
+              {batBuoc && <span className="text-[13px] font-semibold text-soon">{t('Không có "Đã xem"')}</span>}
+              <NutLuat label={t('Luật xử lý vi phạm')}>
+                {t('≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý. Vi phạm lẻ: Đã xem (chưa cần xử lý, không lên bậc) hoặc xử lý nếu nghiêm trọng.')}
+              </NutLuat>
             </div>
           )}
 
@@ -224,20 +224,9 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
               )} />
           )}
 
-          {(d.hang.xuLyGanNhat || d.hang.thuHoi || d.hang.tuChoi) && (
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t pt-3 text-sm" style={{ borderColor: 'var(--line)' }}>
-              <span className="text-xs font-medium text-slate-500">{t('Lần trước')}</span>
-              <LanTruoc x={d.hang} homNay={homNay} onXem={(id) => mo({ loai: 'xem', id })} />
-              <span className="ml-auto flex gap-4">
-                <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" aria-expanded={moThang} onClick={() => setMoThang(!moThang)}>{t('Thang ›')}</button>
-                <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setDoan('lich-su')}>{t('Lịch sử của em ›')}</button>
-              </span>
-            </div>
-          )}
-          {!(d.hang.xuLyGanNhat || d.hang.thuHoi || d.hang.tuChoi) && (
-            <div className="flex justify-end"><button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" aria-expanded={moThang} onClick={() => setMoThang(!moThang)}>{t('Thang ›')}</button></div>
-          )}
-          {moThang && <ThangYThuc d={d} homNay={homNay} />}
+          {/* Mockup K3 không có hàng "Lần trước" (lần cũ ở Lịch sử) — chỉ còn khi đổi việc phải làm: đang xin thu hồi / QL từ chối. */}
+          {(d.hang.thuHoi?.cho || d.hang.tuChoi) && <LanTruoc x={d.hang} homNay={homNay} onXem={(id) => mo({ loai: 'xem', id })} />}
+
         </div>
       ) : (
         <div className="space-y-2 px-4 pb-4 pt-3 max-sm:px-3">

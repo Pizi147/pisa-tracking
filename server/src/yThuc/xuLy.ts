@@ -440,9 +440,12 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
   const canManage = canManageDiscipline(p, studentId);
   const demNhom = new Map<string, number>();
   for (const v of viPham) demNhom.set(v.category, (demNhom.get(v.category) ?? 0) + 1);
-  const daBaoQl = !!db().prepare(
-    `SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_y_thuc' AND doi_tuong_loai = 'hoc_vien_y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`,
-  ).get(studentId);
+  /* Một câu: thẻ Báo QL đang chờ + tên GVCN ("Người xử lý", UI-3 — câu con theo khoá chính). */
+  const mot = db().prepare(
+    `SELECT EXISTS (SELECT 1 FROM yeu_cau_duyet WHERE loai = 'bao_len_y_thuc' AND doi_tuong_loai = 'hoc_vien_y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho') AS bao,
+            (SELECT full_name FROM users WHERE id = ?) AS gvcn`,
+  ).get(studentId, em.gvcnId ?? 0) as { bao: number; gvcn: string | null };
+  const daBaoQl = !!mot.bao;
   const quaHan = Math.max(0, ...[...em.viPham.values()].map((t) => t.quaHanNgay ?? 0)) || null;
   return {
     studentId, ten: hv.full_name, maHv: hv.student_code, homNay,
@@ -458,7 +461,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     deXuat: em.deXuat ? { id: em.deXuat.id, nhan: nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName), status: em.deXuat.status, han: em.deXuat.han, quaHan: em.deXuat.quaHan } : null,
     daBaoQl, phamVi, viPham,
     /* UI-3 (mockup U10 K3): "Người xử lý" — GVCN lớp em đang học (một câu, chỉ khi có). */
-    gvcn: em.gvcnId ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(em.gvcnId) as { full_name: string } | undefined)?.full_name ?? null : null,
+    gvcn: mot.gvcn ?? null,
     macDinh: macDinhTick(viPham.map((v) => ({ id: v.id, t: v.trangThai, occurredOn: v.occurredOn })), homNay),
     dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi' }),
     hang: (({ xuLyGanNhat, tuChoi, thuHoi, baoPh }) => ({ xuLyGanNhat, tuChoi, thuHoi, baoPh }))(hangCuaEm(p, em, hv.full_name, hv.student_code, homNay)),
