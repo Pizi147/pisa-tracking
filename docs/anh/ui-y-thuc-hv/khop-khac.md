@@ -28,7 +28,7 @@ Thành phần dùng chung `web/src/modules/yThuc/khoiYThuc.tsx` (BadgeViec · Ca
 | 2 | Dải tóm tắt tách ô, nhãn trên giá trị dưới, kẻ dọc | KHỚP | |
 | 3 | Badge Cần làm: Phải xử lý vàng đặc / Chưa xem xanh viền chấm / Quá hạn đỏ ⚠ | KHỚP | |
 | 4 | Báo PH ghi "lần X" + badge | KHỚP | em seed chưa có Báo PH → "—" |
-| 5 | Danh sách vi phạm: ngày · tên đậm · thẻ nhóm · Sửa phải | KHỚP | người ghi xem khi mở dòng; "n tệp" mockup — dữ liệu dòng chưa có số tệp (tệp thấy khi mở dòng) |
+| 5 | Danh sách vi phạm: ngày · tên đậm · thẻ nhóm · "n tệp ›" · Sửa phải | KHỚP | người ghi xem khi mở dòng; số tệp một câu đếm theo lô (một em) |
 | 6 | Hàng nút (Xác nhận xử lý · Đã xem viền · Đề xuất chữ) | KHỚP | |
 | 7 | Không có hàng "Lần trước" (K3) | KHỚP | rà PTA 04/11: bỏ hàng chân; lần cũ xem ở Lịch sử ("Xem" → Thu hồi…); Thang trong ⓘ cạnh "Đã tới"; chỉ hiện dòng khi đang xin thu hồi / QL từ chối |
 | 8 | Lịch sử: lọc có số, phạm vi, bảng 5 cột, trường có nhãn | KHỚP | tab HV bỏ cột Học viên (một em) |
@@ -38,7 +38,7 @@ Thành phần dùng chung `web/src/modules/yThuc/khoiYThuc.tsx` (BadgeViec · Ca
 | 12 | Phối hợp: "Học thuật ›" | KHÁC (giữ thao tác) | lối sang tab Học thuật đã có trước — giữ, chữ ngắn |
 | 13 | 375 xếp dọc, nút 44 px | KHỚP | |
 
-KHỚP 12 / 13 = 92 % (#12 giữ thao tác cũ "sang tab Học thuật").
+**Hình: KHỚP 12 / 12 = 100 %.** KHÁC duy nhất (#12) là TÍNH NĂNG giữ thao tác cũ (lối "Học thuật ›"), không phải lệch hình (chủ SP 04/11: > 96 % hình thì merge; KHÁC chỉ cho tính năng / luật có lý do).
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | |
