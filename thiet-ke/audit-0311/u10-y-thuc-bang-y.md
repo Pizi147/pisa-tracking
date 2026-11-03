@@ -12,7 +12,7 @@ Mockup sẽ vẽ: `thiet-ke/audit-0311/u10-y-thuc.html` (khung K1–K8 dưới) 
 | K3 | Hồ sơ HV › tab Ý thức · GVBM | chỉ Ghi vi phạm + xem trạng thái, không nút quản lý |
 | K4 | Hồ sơ lớp › tab Ý thức · QL | Chờ duyệt (Duyệt / Từ chối) · thu hồi chờ duyệt · Đã thu hồi |
 | K5 | Công việc › Báo PH · TVV · 1440 + 375 | hạn mặc định · đã sửa hạn ("Đã chỉnh") · quá hạn · đang sửa hạn (ONgay) · sau lưu kết quả · lịch sử (liên hệ + đổi hạn) · 409 |
-| K6 | Lịch sử (phân đoạn trong tab) | lọc Đã xem · Đã xử lý · Đã thu hồi; dòng vừa thao tác được đánh dấu |
+| K6 | Lịch sử (trong phần Vi phạm) | lọc Đã xem · Đã xử lý · Đã thu hồi; dòng vừa thao tác được đánh dấu |
 | K7 | Học viên & Lớp › chip bậc | hộp nhỏ tại chỗ (không panel trượt): bậc, số vi phạm chờ, hạn, "Hồ sơ ›" |
 | K8 | Phối hợp SOS · GVCN | Meeting CX có hạn + Sửa hạn; Trao đổi gia đình không hạn |
 
@@ -47,7 +47,7 @@ Mockup sẽ vẽ: `thiet-ke/audit-0311/u10-y-thuc.html` (khung K1–K8 dưới) 
 | 26 | U10.6 bắt buộc: giải thích ngắn tại tác vụ | #5 | |
 | 27 | U10.7 "Đã báo PH" gắn lần xử lý; hạn Báo PH riêng (U10-BAOPH-CU) | K1 ô Báo PH: "WL 1 · đã báo 29/10"; vi phạm mới chưa có lần xử lý → không nhập chung | |
 | 28 | U10.8 bằng chứng trống gọn; có tệp hiện số + lối xem (U10-BANG-CHUNG) | K1 vi phạm mở: "+ Tệp / liên kết" một dòng; có tệp "2 tệp ›" | bỏ câu hướng dẫn dài |
-| 29 | U10.9 Phối hợp SOS tách nhóm với kỷ luật; bảng điểm MT xem lại (22.1) | **CHỜ CHỦ SP** (đã hỏi 03/11): đề xuất phân đoạn "Vi phạm \| Phối hợp SOS" trong tab; bảng Điểm Mock Test chuyển sang tab Học viên, tab Ý thức giữ link | không tự bỏ |
+| 29 | U10.9 Phối hợp SOS tách nhóm với kỷ luật; bảng điểm MT xem lại (22.1) | **Chủ SP duyệt 03/11:** tab chia "Vi phạm \| Phối hợp SOS" (trong Vi phạm: "Cần làm \| Lịch sử"); bảng Điểm Mock Test sang tab Học viên, tab Ý thức giữ link "Điểm Mock Test ›" | |
 | 30 | X08 phạm vi "Cả lịch sử" chỉ áp vi phạm (`12`) | K6: nút phạm vi đặt TRONG phân đoạn Vi phạm; Phối hợp SOS ghi "mọi lượt" | |
 | 31 | N34 17.1 ai sửa hạn Báo PH; 17.2 loại việc; PTA: ghi rõ ai thấy Sửa hạn | K5 + K8 + bảng "Ai thấy Sửa hạn" trong mockup (TVV / TVV cùng CN / GVCN / QL: Báo PH có; GVCN / QL: Meeting CX có; TVV Meeting CX không; GVBM không) | |
 | 32 | 17.3 đúng hạn theo hạn hiệu lực; lịch sử giữ hạn gốc (`00` 5.2) | K5 lịch sử: "07/11 → 10/11 · Phan Mai · 04/11 09:12" | |
