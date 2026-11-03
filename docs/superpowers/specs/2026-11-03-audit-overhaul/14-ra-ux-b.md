@@ -196,3 +196,57 @@ Cột cuối = đối chiếu mockup #849 (`thiet-ke/v11/hoc-vien-lop.html` bả
 | Dòng 5 môn L · R · W1 · W2 · S | ô MT gần nhất | bấm ô Overall → dải dưới hàng | ĐỔI (ý 2, chủ SP 03/11) |
 | Phân trang 10 / 20 / 50 | trên + dưới bảng | chỉ dưới | ĐỔI (bỏ bản lặp) |
 | Chọn nhiều · Sửa cả lớp | **không có ở màn này** (ở Hồ sơ lớp / Lưu trữ) | không đổi | — |
+
+### 10.2 U05 Kế hoạch Test (CHƯA vẽ — chờ PTA duyệt bảng)
+Nguồn: `00` mục 20 U05 (ý 1–6, Nghiệm thu) · mục 12 · mục 21 (dòng chạm màn) · 22.2-4 (Test) · N4 · N9 · N10 · N14 · N15 · N23 · N32 ⑤ (G5) · B22–B24 · ảnh U05 · bài học UX-A (tách trường, bớt chữ liền mạch) · luật PTA 03/11 "không thêm chữ thừa".
+Cột cuối = hiện trạng main 03/11 (đã bấm thử QL Vy, MB FT 105 — đợt 2).
+
+| # | Ý (trích ngắn · mục) | Làm gì trong mockup (khu / thành phần, chữ thật) | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP | Hiện trạng |
+|---|---|---|---|---|---|
+| 1 | Giữ ma trận HV × lượt MT; mỗi ô = **tuần / lượt → trạng thái chính → ngoại lệ**; điểm cũ, chi tiết môn mở tại chỗ · U05 ý 1 | Ô MT 3 tầng cố định: dòng 1 tuần "W1 SEP" · dòng 2 trạng thái một chữ (bảng #3) · dòng 3 chỉ khi có ngoại lệ ("S · W2 OCT", "vắng → W2 NOV"). Bấm ô → hộp kỹ năng sẵn có (4 môn, điểm, dời / huỷ / khôi phục) | ĐỔI dáng ô, GIỮ hộp kỹ năng | **Q-c** bỏ hàng chip "L✓ R✓ W✓ S" khỏi ô (chỉ hiện môn có ngoại lệ; đủ 4 môn ở hộp kỹ năng)? Khuyến nghị: bỏ | ô 5 dạng, cao thấp khác nhau (ảnh U05) |
+| 2 | Tách trạng thái xếp lịch khỏi kết quả học thuật; một dấu ✓ không nhiều nghĩa · ý 2 | Dòng 2 trạng thái lịch bằng CHỮ (Chưa xếp · Đã xếp · Đang làm bài · Chờ chấm · Đã huỷ); kết quả học thuật chỉ là điểm "✓ 5.5" / "✗ 5.0" (màu trên số, G12) khi lượt đã có Overall | ĐỔI — B22: nay "L✓" = môn có điểm, "✓ 5.5" = đạt kỳ vọng trong cùng ô | — | TÁI HIỆN (B22) |
+| 3 | Bảng trạng thái ô (Nghiệm thu: phân biệt chưa xếp, đã xếp, đang thi / chờ chấm, hoàn tất, huỷ, vắng) | Chưa xếp: nút "Xếp MT2" (viền đứt) · Đã xếp: "W3 NOV" + "Đã xếp" · Đang làm bài: "W1 NOV · tuần này" · Chờ chấm: "Chờ chấm S" · Hoàn tất: "✓ 5.5" / "✗ 5.0" · Đã huỷ: "Đã huỷ" (chữ mờ) · Vắng lần 1: dòng 3 "vắng → W2 NOV" (N4, `chuDoiVang`) | ĐỔI — một bảng chữ cho mọi ô, không chỉ màu | — | màu + chip, chữ không đủ |
+| 4 | Môn thi khác tuần: một dòng rõ "W thi bù W1 NOV"; không đổi luật gộp W · ý 3 | Dòng 3 "S · W2 OCT" (chỉ môn lệch tuần); W vẫn gộp W1 + W2 một lịch (luật lịch giữ) | ĐỔI chữ · GIỮ luật | — | hai tuần chồng trong ô (ảnh: "W1 OCT L R W / W3 OCT S") |
+| 5 | Nút tại ô "Xếp MT4" khi là lượt kế; "Thêm lượt Test" cho thao tác khác; giữ bulk + sửa ngoại lệ từng em · ý 4 | Ô lượt kế chưa có lịch: nút "Xếp MT4" · cuối hàng em: "+ MT ▾" (MT kế ngoài mặc định · S Ex — N10, chỉ QL / Admin / QT) — cột có tiêu đề nhìn thấy "Thêm" (B23) · "Xếp nhiều MT…" giữ ở đầu trang | GIỮ hai nút (khác việc) · ĐỔI tiêu đề cột | — | cột "+ MT" không tiêu đề, đọc màn "Trống" (B23) |
+| 6 | Bản xem "Cần xếp / cần xếp lại", đưa tới ô có việc; lịch sử xa thu gọn được · ý 5 · **G5** | Chip **"Chưa có MT kế tiếp · n"** (thay "Cần xếp lại") → chỉ lớp / em chưa có lịch MT kế, ô đó viền nhấn · **lọc theo lớp**: ô tìm gợi ý lớp, chọn thành chip "Lớp: CP FT 130 ✕" | ĐỔI — G5 (N32 ⑤); vắng lần 1 đã tự dời (N4), không còn hàng "cần xếp lại" | — | chỉ chip "Cần xếp lại (n)"; "MT2 chưa xếp 4 em" là chữ xám (B24) |
+| 7 | Ghim tên + tiêu đề khi cuộn; MT6+ , tên dài, lớp đông; ô không thành card lớn · ý 6 | Cột Học viên ghim trái (đủ tên, xuống dòng, không "…"); hàng tiêu đề MT1…MTn dính; dữ liệu mẫu có MT6 và 17 HV | ĐỔI — tên cắt "Hoàng Trần Ngọc Mi…" (ảnh) | — | tên cắt (ảnh) |
+| 8 | Nghiệm thu: thao tác cả lượt không nhầm xoá điểm / sửa một môn · U05 | Hộp kỹ năng: hai khối tách — "Cả lượt MT3" (Dời cả lượt · Huỷ cả lượt) và "Từng môn" (L · R · W · S: dời / Vắng / Bỏ khỏi đợt); huỷ cả lượt khi đã có điểm → hộp xác nhận nêu "giữ điểm L, R đã chấm" | GIỮ thao tác · ĐỔI xếp nhóm | — | CHƯA KIỂM (chưa mở hộp kỹ năng đợt 2) |
+| 9 | Đầu lớp: bộ đếm có đơn vị, đúng tập · mục 21 Bộ đếm | Hàng lớp tách trường (bài học UX-A): ô mã lớp · ô "10 HV" · ô GVCN · ô tóm tắt **"MT1 đang làm bài"** · ô **"Chưa có MT kế tiếp · 4 em"** (ô số, bấm = lọc lớp đó) | ĐỔI — nay một chuỗi xám "MT1 đang làm bài · MT1 chưa xếp 1 em · 4 em cần xếp lại" | — | TÁI HIỆN |
+| 10 | Tuần lịch "W1 NOV" ≠ "W1 / W2" Writing · mục 21 Tuần | Ô MT dùng tên môn "W" (gộp) — không ghi "W1 / W2" trong ô; tuần luôn kèm tháng "W1 NOV" | GIỮ luật W gộp | — | KHỚP |
+| 11 | Rỗng và thiếu: chưa xếp / không thi / vắng / huỷ khác nhau, không "—" cho tất cả · mục 21 | "—" chỉ cho lượt không áp dụng (em vào sau MT đó); chưa xếp = nút "Xếp MTn"; huỷ = "Đã huỷ"; vắng = dòng 3 | ĐỔI | **Q-d** bỏ chữ "vào muộn" dưới tên (ô MT không áp dụng đã ghi "—")? Khuyến nghị: bỏ | "vào muộn" dưới nhiều tên (TST-07) |
+| 12 | Một hành động chính / vùng; nút phụ nhóm rõ · mục 12 | Đầu trang: chính "Xếp nhiều MT…" · phụ "Xuất Excel" · "Xuất điểm Test" | GIỮ | — | KHỚP |
+| 13 | Phân cấp 3 tầng; không toàn chữ nhỏ xám · mục 12 | Trang 22 / 700 · hàng lớp nền `surface-2` 15 / 700 · ô: tuần 13 / 600 · trạng thái 14 · ngoại lệ 12 `text-dim` | ĐỔI cỡ chữ trong ô (nay nhiều chip 11–12 px) | — | ô dày ký hiệu nhỏ |
+| 14 | Không giấu dữ kiện trong hover · mục 12 · TST-05 | ⓘ "Luật xếp lịch Test" giữ (giải thích luật, không phải dữ kiện); trạng thái ô bằng chữ, không cần rê | GIỮ ⓘ luật | — | KHỚP một phần |
+| 15 | Bảng desktop so sánh; mobile tra cứu · mục 12 | 375: chọn một lớp → danh sách em, mỗi em một thẻ: tên · MT kế "Xếp MT2" / "Đã xếp W3 NOV" · lượt gần nhất "✓ 5.5 · MT1"; ma trận đủ ở ≥ 768 | ĐỔI 375 | — | CHƯA KIỂM 375 |
+| 16 | Kiểm 1440 / 1280 / 375, sáng / tối, dày / rỗng · mục 12 | 1440 tối + 375 sáng + khung 1280; lớp 17 HV, MT6; rỗng "Không lớp nào chưa có MT kế tiếp" | THÊM khung | — | — |
+| 17 | Trạng thái có chữ ngoài màu · mục 12, 21 | Ô trễ chấm: chữ "Chờ chấm S · trễ" + ⚠ (nay chỉ nền đỏ cả ô) | ĐỔI | — | ô nền đỏ (đợt 2) |
+| 18 | Khoá đổi lịch T6 → CN · N15 | Khi khoá: ô vẫn mở hộp; nút dời / huỷ / xếp mờ + một dòng "Khoá đổi lịch T6 – CN" trong hộp (chữ sẵn có) | GIỮ luật | — | KHỚP (chữ sẵn có) |
+| 19 | GV chỉ xem Kế hoạch Test; GVCN dời MT cũ · N23 | Vai GV: không "Xếp nhiều MT…", không "+ MT", không chip "Chưa có MT kế tiếp"; ô mở hộp chỉ xem; GVCN: hộp có "Dời" cho tuần đã qua | GIỮ quyền | — | KHỚP (chip Chỉ xem) |
+| 20 | Xếp MT nới lỏng: chỉ nhắc "MT2 W sau MT3", không chặn; không xếp tuần đã qua · N9 | Nhắc trong hộp xếp (chữ sẵn có) — ô không thêm chữ | GIỮ | — | KHỚP |
+| 21 | Đủ số MT mặc định thôi nhắc xếp thêm · N14 | Em đã đủ (LT 3 / RF 2): ô sau cuối không nút "Xếp MTn", không vào chip "Chưa có MT kế tiếp"; "+ MT" vẫn có | GIỮ luật | — | KHỚP |
+| 22 | Bulk + lỗi một phần · 22.2-4 · mục 13 | Khung "Xếp nhiều MT…" (ngăn sẵn có): xem trước → lưu → "Đã xếp 14 em · 2 em không xếp được (lý do từng em)" giữ chọn phần lỗi | GIỮ · vẽ trạng thái lỗi một phần | — | CHƯA KIỂM |
+| 23 | Trạng thái hệ thống: tải / rỗng / lỗi / không quyền · mục 21 | Đổi chi nhánh: bảng cũ mờ + "Đang tải…"; lỗi tải lại giữ dữ liệu + giờ; GV không lớp: chữ sẵn có "Bạn không có lớp nào để xem lịch Test" | GIỮ chữ sẵn có | — | KHỚP chữ |
+| 24 | Bộ lọc cùng tên, đang áp, xoá · mục 21 | Dòng "Đang lọc: Chưa có MT kế tiếp · Lớp CP FT 130 · Bỏ lọc"; Fast Track / Lớp thường như HV & Lớp | ĐỔI | — | chưa có tóm tắt lọc |
+| 25 | Ghi chú lớp · ghi chú lịch | "+ Ghi chú lớp" cuối bảng lớp (sẵn có) | GIỮ | — | KHỚP |
+
+**Câu hỏi gom cho chủ SP (qua PTA):** **Q-c** bỏ hàng chip "L✓ R✓ W✓ S" khỏi ô MT, ô chỉ còn tuần + trạng thái + môn có ngoại lệ; đủ 4 môn xem ở hộp kỹ năng (bấm ô) — khuyến nghị: bỏ (giảm mở sẵn, không xoá; hết ✓ hai nghĩa) · **Q-d** bỏ chữ "vào muộn" dưới tên em (ô MT không áp dụng ghi "—") — khuyến nghị: bỏ.
+**Lọc theo lớp (G5):** tôi chọn cách ít điều khiển nhất — ô tìm sẵn có gợi ý lớp, chọn thành chip "Lớp: … ✕" (không thêm ô chọn mới). PTA thấy khác thì sửa dòng #6.
+
+### 10.2b U05 — kiểm kê thao tác TRƯỚC → SAU
+| Thao tác | Ở đâu (main 03/11) | Sau | Giữ / bỏ / đổi · vì sao |
+|---|---|---|---|
+| Fast Track / Lớp thường | đầu bảng | như nay | GIỮ |
+| Chip "Cần xếp lại (n)" | đầu bảng | **bỏ** → chip "Chưa có MT kế tiếp · n" | ĐỔI — G5 (PR kiểm thẻ "Dời lịch Test" + Khôi phục trước khi gỡ) |
+| Chi nhánh ▾ (QT / QL nhiều chi nhánh) | đầu bảng | như nay | GIỮ |
+| Tìm lớp, học viên hoặc email | đầu bảng | như nay + chọn lớp thành chip lọc | GIỮ + G5 lọc theo lớp |
+| ⓘ Luật xếp lịch Test | đầu bảng | như nay | GIỮ |
+| Xuất Excel · Xuất điểm Test | đầu trang | như nay | GIỮ |
+| Xếp nhiều MT… (ngăn xếp hàng loạt: lớp, đợt, em, tuần, xem trước) | đầu trang | như nay + trạng thái lỗi một phần | GIỮ |
+| Mở / gập lớp | hàng lớp | như nay | GIỮ |
+| Bấm ô MT → hộp kỹ năng (tuần từng môn, Dời, Vắng, Bỏ khỏi đợt, Huỷ, Khôi phục, Lịch sử, Mở hồ sơ MT) | ô | như nay, nhóm "Cả lượt" / "Từng môn" | GIỮ · ĐỔI xếp nhóm |
+| Nút "Xếp MTn" tại ô lượt kế | ô | như nay | GIỮ |
+| "+ MT ▾" (MT kế · S Ex) | cuối hàng em | như nay, cột có tiêu đề "Thêm" | GIỮ · sửa B23 |
+| Khôi phục kết quả đã huỷ (QL) | hộp | như nay | GIỮ |
+| + Ghi chú lớp · Lịch sử ghi chú | cuối bảng lớp | như nay | GIỮ |
+| Tên em → hồ sơ HV · mã lớp → hồ sơ lớp | hàng | như nay | GIỮ |
+| GV: xem lớp mình dạy, chỉ xem (N23) | — | như nay | GIỮ |
