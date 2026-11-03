@@ -78,6 +78,13 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
     assert(/<MiniKn kn=\{c\.kn\} kv=\{st\?\.expectation \?\? null\} kck=\{r\.kck\} \/>/.test(goc), 'ChiTietDuoiHang thiếu kck');
   });
 
+  check('U04 [XM] PTA 04/11 · Fast Track / Lớp thường hai trạng thái: luôn một mục chọn, mặc định FT, URL khung + nhớ phiên', () => {
+    const sp = doc('web/src/modules/students/StudentsPage.tsx');
+    assert(/const khung = coHaiKhung \? khungMuon \?\? 'ft' : 'tat-ca';/.test(sp), 'mặc định Fast Track khi có cả hai loại lớp');
+    assert(/aria-pressed=\{khung === k\} onClick=\{\(\) => \{ if \(khung !== k\)/.test(sp), 'bấm mục đang chọn không bỏ chọn (không còn "cả hai")');
+    assert(/khungUrl === 'ft' \|\| khungUrl === 'thuong' \? khungUrl : docKhungDaNho\(\)/.test(sp) && sp.includes('sessionStorage.setItem(KHOA_KHUNG'), 'URL khung trước, rồi lần chọn trong phiên');
+  });
+
   check('H1 · OMtGan: Overall ODiem', () => {
     assert(/<ODiem so=\{chuSo\(m\.ovr\)\}[^>]*nhan="Overall"/.test(ds), 'OMtGan Overall chưa ODiem');
   });

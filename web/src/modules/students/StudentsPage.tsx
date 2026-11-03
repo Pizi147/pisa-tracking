@@ -149,7 +149,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const phamViUrl = params.get('phamVi');
   const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
   const khungUrl = params.get('khung');
-  const khungMuon = khungUrl === 'ft' || khungUrl === 'thuong' ? khungUrl : 'tat-ca';
+  /* PTA chốt [XM] 04/11 (mockup U04): chương trình là HAI trạng thái, luôn một mục chọn — URL `khung` (link cũ "cả hai" → mặc định), không có thì lần chọn trong phiên. */
+  const khungMuon = khungUrl === 'ft' || khungUrl === 'thuong' ? khungUrl : docKhungDaNho();
   const [draftQ, setDraftQ] = useState(q);
   /* + Thêm học viên: false = đóng · null = không lớp mặc định · lớp = mở từ ⋯ hàng lớp / dải lớp (lớp điền sẵn). */
   const [them, setThem] = useState<false | { id: number; code: string } | null>(false);
@@ -258,7 +259,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const soLopTheoKhung = { ft: 0, thuong: 0 };
   for (const c of data?.rows ?? []) soLopTheoKhung[khungCua(c.scoringMode)] += 1;
   const coHaiKhung = soLopTheoKhung.ft > 0 && soLopTheoKhung.thuong > 0;
-  const khung = coHaiKhung ? khungMuon : 'tat-ca';
+  /* Mặc định Fast Track khi phạm vi có lớp FT; chỉ một loại lớp thì xem loại đó (`tat-ca` = không lọc, đoạn chọn ẩn) — GV chỉ dạy lớp thường không gặp trang rỗng. */
+  const khung = coHaiKhung ? khungMuon ?? 'ft' : 'tat-ca';
   const thangNay = homNay.slice(0, 7);
   const thiThangNay = (h: HvGon) => !!h.lich?.ngay && h.lich.ngay.slice(0, 7) === thangNay;   // P4: thi thật trong tháng này (đã chốt / đã thi)
   const coQuaHan = (h: HvGon) => !!viec.get(h.id)?.some((v) => v.quaHan);
@@ -344,7 +346,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const chonKhung = coHaiKhung && (
     <span role="group" aria-label={t('Chương trình')} className="doan">
       {(['ft', 'thuong'] as const).map((k) => (
-        <button key={k} type="button" aria-pressed={khung === k} onClick={() => setParam({ khung: khung === k ? null : k })}>
+        <button key={k} type="button" aria-pressed={khung === k} onClick={() => { if (khung !== k) { nhoKhung(k); setParam({ khung: k }); } }}>
           {k === 'ft' ? (dienThoai ? 'FT' : 'Fast Track') : dienThoai ? 'LT' : t('Lớp thường')}<b className="tabular-nums">{soLopTheoKhung[k]}</b>
         </button>
       ))}
@@ -545,7 +547,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
                       <button type="button" className="btn btn-sm" onClick={() => setParam({ phamVi: 'tat-ca', cn: null, branchId: null })}>{t('Tìm ở Mọi chi nhánh')}</button>
                     )}
                     {q.trim() && khung !== 'tat-ca' && (
-                      <button type="button" className="btn btn-sm" onClick={() => setParam({ khung: null })}>{khung === 'ft' ? t('Tìm ở Lớp thường') : t('Tìm ở Fast Track')}</button>
+                      <button type="button" className="btn btn-sm" onClick={() => { const k = khung === 'ft' ? 'thuong' : 'ft'; nhoKhung(k); setParam({ khung: k }); }}>{khung === 'ft' ? t('Tìm ở Lớp thường') : t('Tìm ở Fast Track')}</button>
                     )}
                     <button type="button" className="btn btn-sm" onClick={boLoc}>{q.trim() ? t('Bỏ tìm') : t('Bỏ lọc')}</button>
                   </span>
@@ -709,6 +711,13 @@ const soEm = (ds: readonly { id: number }[]) => new Set(ds.map((h) => h.id)).siz
  * HÀNG LỚP (V11 U04, bài học UX-A "tách rõ trường"): các ô thẳng cột giữa các lớp — mã lớp (link Hồ sơ lớp) · n HV · GVCN · SOS (lớp FT) · chip tình trạng
  * (bấm = sang đúng trang) · ⋯ lớp. Đang lọc: "3/7 HV khớp"; TVV "HV của tôi": "3 HV của tôi / 7". Lớp ngoài danh sách (em TVV Tạm dừng…) chỉ có mã.
  */
+/** Chương trình đã chọn trong phiên (tab trình duyệt) — mở lại Học viên & Lớp không phải chọn lại. sessionStorage bị chặn → mặc định. */
+const KHOA_KHUNG = 'pisa-hvl-khung';
+function docKhungDaNho(): 'ft' | 'thuong' | null {
+  try { const v = sessionStorage.getItem(KHOA_KHUNG); return v === 'ft' || v === 'thuong' ? v : null; } catch { return null; }
+}
+function nhoKhung(k: 'ft' | 'thuong') { try { sessionStorage.setItem(KHOA_KHUNG, k); } catch { /* bỏ qua */ } }
+
 /** "Nguyễn Hoàng Dũng" → "N. H. Dũng" (hàng lớp 375). */
 const tenNgan = (ten: string) => { const w = ten.trim().split(/\s+/); return w.length < 2 ? ten : `${w.slice(0, -1).map((x) => `${x[0]}.`).join(' ')} ${w[w.length - 1]}`; };
 

@@ -55,7 +55,7 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | Chip lịch thi trong bảng | dự kiến chữ xanh lịch 600, chưa có lịch viền liền | dự kiến viền đậm chữ dim 500 · chưa có lịch viền ĐỨT (`.lich.dk / .chua`) |
 | Dải một em | hộp số câu đè hàng dưới | chừa 40 px dưới khi hộp mở (`.dai.co-hop`); ô kỹ năng giữ viền `--line` (đo mockup `.okn`) |
 
-[XM] Mặc định chương trình: mockup mở trang với Fast Track đã chọn (Lớp thường chỉ hiện số); web mặc định xem CẢ HAI (không mục nào sáng) — đổi mặc định là tính năng, chờ PTA.
+[XM] Mặc định chương trình — PTA chốt 04/11: làm như mockup (hai trạng thái, mặc định Fast Track). Xem bảng Thao tác.
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | Lý do |
@@ -63,7 +63,7 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | + Thêm học viên · + Lớp mới · Lưu trữ | đầu trang / ⋯ | như cũ; 375 Xuất + Thêm vào ⋯ trang | GIỮ · B26 |
 | Xuất Excel · n HV | đầu trang | như cũ | GIỮ |
 | Ô Phạm vi + ô Chi nhánh | hai ô | một ô "Xem" | G1 |
-| Fast Track / Lớp thường | hai nút bật / tắt (cả hai sáng = xem cả hai; bấm một = tắt nó) | đoạn chọn có số: không mục nào sáng = cả hai; bấm một = chỉ chương trình đó; bấm lại = cả hai (như chip lọc) | ĐỔI cách bấm (vòng 2: hai mục cùng sáng trông như lỗi) — cùng ba trạng thái, URL `khung` như cũ |
+| Fast Track / Lớp thường | hai nút bật / tắt, mặc định xem CẢ HAI (cả hai sáng; bấm một = tắt nó) | HAI trạng thái, luôn một mục chọn (như mockup): mặc định Fast Track (phạm vi chỉ có một loại lớp → loại đó, đoạn chọn ẩn như cũ); bấm mục kia = đổi; lần chọn nhớ trong phiên; URL `khung` thắng, link cũ "cả hai" → mặc định; số trên mục không chọn từ dữ liệu đã nạp | ĐỔI — [XM] PTA chốt 04/11 (bỏ "cả hai": khó hiểu). Chip lọc, số tab, Xuất Excel đếm theo chương trình đang chọn |
 | Tab Tất cả · Đang SOS · Lịch thi · Phân công GV | | như cũ | GIỮ |
 | Chip Thi tháng này · Có việc quá hạn · Đã thi · chờ KQ · Bộ lọc thêm · chip vai | | như cũ; số 0 mờ không bấm; TVV bỏ "Cần chú ý"; "Có việc quá hạn" = việc **của tôi** | B11 · chủ SP · [XM] b PTA |
 | Mở / gập một lớp | ▸ / cả hàng | như cũ | GIỮ |
@@ -82,6 +82,7 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 
 ## Turso — mở trang đọc bao nhiêu
 `GET /hoc-vien-lop`: **−1 câu** (bỏ khối em Kết thúc học) **+1 câu** (Báo PH của em có bậc, `viec_bao_ph` theo `student_id IN json_each`, chỉ em có chip bậc) = không đổi số câu; dòng thêm ≤ số em có bậc. Điểm thành phần lấy từ `diemCuaLuot` đã đọc (`SELECT s.*`) — 0 câu.
+Chương trình (FT / LT, [XM] 04/11): **không đổi số câu / dòng** — `/hoc-vien-lop` vẫn đọc mọi lớp trong phạm vi một lần (cần cho số trên mục không chọn và chip đếm), lọc chương trình ở web từ dữ liệu đã nạp; đổi mục không gửi request. Lọc ở máy chủ sẽ phải gửi lại mỗi lần đổi mục và đọc thêm câu đếm — nặng hơn.
 `/my-work`: QL / Admin trước gọi `?nguoi=tat-ca` (việc cả chi nhánh), nay `/my-work` (việc của mình) → **ít dòng hơn**.
 
 ## Ảnh hưởng ngoài màn (XM-4, PTA 03/11 duyệt)
