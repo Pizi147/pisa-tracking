@@ -16,6 +16,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
 import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
 import { Han } from '../../ui/Han.tsx';
+import { DongHan } from '../../ui/DongHan.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { MuiTenGap } from './NhanViPham.tsx';
 
@@ -26,6 +27,8 @@ type CoordAction = {
   removeReasonCode: string | null; removeReasonLabel: string | null; attachmentCount: number;
   /** OV-12h: hạn xác nhận (meeting CX / GĐCN: ngày tạo + 5) — null với việc khác. */
   han?: string | null;
+  /** HAN-BAO-PH (N34 ②): meeting CX — hạn mặc định (tạo + 5) · hạn người dùng chọn (null = mặc định). */
+  hanMacDinh?: string | null; hanChon?: string | null;
   /** Báo phụ huynh qua TVV (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
   noiDung?: string[] | null;
   /** PR-PHH: việc đã xong mà chưa lưu bản chụp (xác nhận trước PR-PHH) — `noiDung` là nội dung hiện tại. */
@@ -195,7 +198,11 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           {laMeetingCx(a.kind) && <span className="block text-xs text-slate-500 mt-0.5">{t('Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt')}</span>}
           {dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{dongPhu}</span>}
           {/* OV-12h: meeting CX còn Cần xử lý — hạn 5 ngày từ lúc tạo, quá hạn ⚠ (cùng `<Han>` mọi nơi). */}
-          {a.status === 'pending' && a.han && <span className="block text-xs mt-0.5"><Han loai="phoi-hop" han={a.han} /></span>}
+          {/* UI-1 (mockup U10 K8): GVCN / QL sửa hạn tại chỗ (máy chủ `suaHanPhoiHop`); người chỉ xem thấy hạn như cũ. */}
+          {a.status === 'pending' && a.han && (canAct && a.hanMacDinh
+            ? <span className="mt-1 block"><DongHan gon han={a.han} hanMacDinh={a.hanMacDinh} hanChon={a.hanChon ?? null} suaDuoc onTaiLai={() => onChanged?.()}
+                onLuu={async (han, hanCu) => { await api.post(`/phoi-hop-sos/${a.id}/han`, { han, hanCu }); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged?.(); }} /></span>
+            : <span className="block text-xs mt-0.5"><Han loai="phoi-hop" han={a.han} /></span>)}
           {a.noiDung && a.noiDung.length > 0 && (
             <details className="mt-1">
               <summary className="cursor-pointer text-xs text-slate-400">{a.status === 'done' ? t('Nội dung đã báo TVV') : t('Nội dung gửi TVV')} ({a.noiDung.length})</summary>
