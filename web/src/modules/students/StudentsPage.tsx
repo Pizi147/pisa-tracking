@@ -281,7 +281,6 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const demDaThi = new Set(goc0.filter((h) => h.loc.includes('da-thi')).map((h) => h.id)).size;
   const demThi = new Set(goc0.filter(thiThangNay).map((h) => h.id)).size;
   const demQh = new Set(goc0.filter(coQuaHan).map((h) => h.id)).size;
-  const soEm = (ds: readonly { id: number }[]) => new Set(ds.map((h) => h.id)).size;
 
   const trongLoc = (classId: number, ft: boolean) => (!chiLop || classId === chiLop) && (khung === 'tat-ca' || (ft ? 'ft' : 'thuong') === khung);
   const sosTat = (sos.data?.rows ?? []).filter((r) => trongLoc(r.classId, r.ft));
@@ -652,6 +651,10 @@ function OSosLop({ sos }: { sos: number[] }) {
   );
 }
 
+/** B09 (AUDIT 03/11): số HV = em đang học, mỗi em một lần. Em "Kết thúc học" chưa lưu trữ (OV-11g) vẫn hiện mờ trong Tất cả nhưng không tính —
+ *  cùng `demLoc` máy chủ (chip Tất cả) và sĩ số lớp ở Tổng quan / Hồ sơ lớp. */
+const soEm = (ds: readonly { id: number; ketThuc?: true }[]) => new Set(ds.filter((h) => !h.ketThuc).map((h) => h.id)).size;
+
 /**
  * HÀNG LỚP của danh sách theo lớp (HV-LOP-SUA, mockup `hoc-vien-lop.html`): mã lớp (link Hồ sơ lớp) · n HV · GVCN · ô SOS (lớp FT) · chip tình trạng
  * (bấm = sang đúng trang) · ⋯ lớp. Không còn việc cấp lớp (chủ SP 28/10). Lớp ngoài danh sách (em TVV Tạm dừng…) chỉ có mã; em chưa xếp lớp: "Chưa xếp lớp".
@@ -666,7 +669,7 @@ function DauLop({ lop, hv, vai, dsLop, onThemHocVien }: {
     <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 py-1">
       {lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui font-bold">{lop.code}</Link>
         : <span>{t('Chưa xếp lớp')}</span>}
-      <span className="text-[13px] font-normal tabular-nums text-dim">{t('{n} HV', { n: new Set(hv.map((h) => h.id)).size })}</span>
+      <span className="text-[13px] font-normal tabular-nums text-dim">{t('{n} HV', { n: soEm(hv) })}</span>
       {day?.gvcn && <span className="text-[13px] font-normal text-dim">{t('GVCN')} <TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></span>}
       {day && day.scoringMode !== 'ratio' && <OSosLop sos={sos} />}
       {/* Quá hạn đã có chip "Có việc quá hạn" của dải lọc. "n bài chờ chấm" → Lịch Test, "chờ duyệt" → Công việc, lộ trình → Hồ sơ lớp. */}
