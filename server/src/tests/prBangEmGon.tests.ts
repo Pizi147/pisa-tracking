@@ -28,7 +28,7 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
     assert(/<ODiem kieu="gon"[^>]*chiToHut/.test(bang), 'ô điểm bảng em chưa chiToHut + gon');
     assert(odiem.includes("kieu === 'gon' && kqHien !== 'duoi' ? 'font-medium' : 'font-bold'"), 'ODiem thiếu kieu gon 15 px / 500 (hụt 700)');
     const kq = than(bang, 'function OKetQua');
-    assert(/<ChipSos [^>]*nho/.test(kq) && !/hienKyNang=\{false\}/.test(kq), `OKetQua: ${kq}`);
+    assert(/<ChipSos /.test(kq) && !/hienKyNang=\{false\}/.test(kq), `OKetQua: ${kq}`);   // U03: chip 22 như mockup `.sos`
     assert(!kq.includes('<NhanKq'), 'OKetQua còn chip NhanKq (Đạt / Chưa đủ phải là chữ)');
     assert(kq.includes("'✓ '") && kq.includes("'– '"), 'OKetQua thiếu ký hiệu ✓ / – trước chữ');
     assert(!than(bang, 'function OLichThi').includes('NhanLich'), 'OLichThi còn chip NhanLich');

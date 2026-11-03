@@ -11,7 +11,7 @@ import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
-import { ErrorState, Outcome, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NganCase } from '../students/NganCase.tsx';
 import { KetLuan, type RosterRow } from '../students/ClassRoster.tsx';
@@ -24,7 +24,7 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, OUTCOME_MARK, OUTCOME_TONE, chipSosTuKetQua, chuDoiVang, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
+  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, OUTCOME_TONE, chipSosTuKetQua, chuDoiVang, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
   lyDoChuaDu, nhanThang, outcomeLabelFor, soKyVong, tuanLich, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -49,6 +49,8 @@ const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparen
 /* Mockup U03 `.khoi` / `.muc-h`: khối nền thẻ trong vùng mở rộng, tiêu đề 15/700 có vạch nhấn trái. */
 const KHOI = 'grid min-w-0 content-start [&>*]:min-w-0 gap-2.5 rounded-[10px] border bg-[color:var(--surface)] px-3.5 py-3 max-sm:px-2.5';
 const MUC_H = "m-0 flex items-center gap-2 text-[15px] font-bold text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)] before:content-['']";
+/* Mockup `.ket`: chip tròn Kết quả PA — tiến bộ xanh · một phần vàng · không / kém đỏ · chưa đủ dữ liệu xám. */
+const KET: Record<string, string> = { ok: 'bg-ok-bg text-ok', warn: 'bg-soon-bg text-soon', danger: 'bg-bad-bg text-bad', muted: 'bg-muted-bg text-dim' };
 const TAG = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim [&_b]:font-bold [&_b]:text-slate-100';
 
 /** Lượt hiện của em (P8 — lượt của TỪNG HV): lượt máy chủ kết luận (`standing`, cùng `standingFor` của Học viên & Lớp); chưa có → lượt mới nhất có điểm. */
@@ -79,7 +81,8 @@ const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
   { key: 'l', nhan: 'L', kieu: 'diem', rong: 76 }, { key: 'r', nhan: 'R', kieu: 'diem', rong: 76 },
   { key: 'w', nhan: 'W', goiY: 'W = (W1 + 2 × W2) / 3', kieu: 'diem', rong: 76 }, { key: 's', nhan: 'S', kieu: 'diem', rong: 76 },
   { key: 'ovr', nhan: 'Overall', kieu: 'diem', rong: 76 },
-  { key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 170 }, { key: 'thi', nhan: t('Ngày thi'), kieu: 'chip', rong: 130 },
+  /* Mockup `.bl td`: mọi ô căn giữa — Kết quả 17 %, Ngày thi 10 % bề rộng bảng. */
+  { key: 'kq', nhan: t('Kết quả'), kieu: 'so', rong: 200 }, { key: 'thi', nhan: t('Ngày thi'), kieu: 'so', rong: 124 },
   ...(theoVai ? [{ key: 'ph', nhan: t('Phụ huynh'), kieu: 'chip' as const, rong: 170 }] : []),
   { key: 'nut', nhan: '', kieu: 'nut' },
 ];
@@ -165,7 +168,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
       case 'target': return <TargetText band={r.cycle?.target} kck={r.cycle?.khongCamKet} />;
       case 'ph': return r.lienHe ? <OPhuHuynh l={r.lienHe} /> : <span className="text-faint">—</span>;
       case 'nut': return <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })} />;
-      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="font-semibold text-slate-100 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
+      case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-100 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
       case 'l': case 'r': case 'w': case 's': case 'ovr': return oDiem(r, h, c.key);
       case 'kq': return <OKetQua r={r} h={h} kq={kq.get(r.id)!} />;
       case 'thi': return <OLichThi l={r.lichThi} homNay={homNay} the={dienThoai} />;
@@ -332,7 +335,7 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThe
         <h3 className={MUC_H}>{t('Điểm theo lượt')}</h3>
         {ls.length || dv ? (
           /* `Bang chat` (BANG-3: một bảng cho cả hệ) — hàng tự vẽ để dòng Đầu vào gộp ô W1 · W2. 375 (mockup B1): W gộp một cột, không Kỳ vọng. */
-          <div className="max-sm:[&_td]:!px-1 max-sm:[&_th]:!px-1"><Bang chat deu khung={false} the375={false} ten={t('Điểm theo lượt')} cot={cotLuot} hang={[...ls.map((h) => ({ h, dv: null })), ...(dv ? [{ h: null, dv }] : [])]}
+          <div className="[&_tbody_tr:last-child>td]:!border-b-0 [&_th]:!bg-transparent [&_th]:!text-xs [&_th]:!text-faint max-sm:[&_td]:!px-1 max-sm:[&_th]:!px-1"><Bang chat deu khung={false} the375={false} ten={t('Điểm theo lượt')} cot={cotLuot} hang={[...ls.map((h) => ({ h, dv: null })), ...(dv ? [{ h: null, dv }] : [])]}
             khoa={(x) => x.h?.id ?? 'dv'} hangRieng={(x) => {
               const c = new Map(cotLuot.map((k) => [k.key, k]));
               if (!x.h) return (
@@ -350,7 +353,7 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThe
                   {cotLuot.map((k) => {
                     if (k.key === 'luot') return (
                       <OBang key={k.key} c={k}>
-                        <Link className="link whitespace-nowrap font-semibold" to={duongDotTest({ id: h.id, kind: h.kind, classId })}>{dich(h.label)}{dienThoai ? '' : ' ›'}</Link>
+                        <Link className={`link whitespace-nowrap ${h.id === ls[0]?.id ? 'font-bold' : 'font-normal'}`} to={duongDotTest({ id: h.id, kind: h.kind, classId })}>{dich(h.label)}{dienThoai ? '' : ' ›'}</Link>
                         {/* Mã tuần như mọi màn (`W2 SEP`) — bỏ năm của mã kỳ. */}
                         {h.periodCode && !dienThoai && <small className="block whitespace-nowrap text-xs font-medium text-faint">{h.periodCode.replace(/ \d{4}$/, '')}</small>}
                       </OBang>
@@ -421,8 +424,11 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
         </span>
       </div>
       {tc && moi && (
-        <div className="rounded-lg bg-[color:var(--surface-2)] px-3 py-2 text-sm font-medium tabular-nums text-dim">
-          <DongTieuChi nhan={dich(moi.label)} d={tc} band={moi.bands?.[s] ?? null} />
+        /* Mockup `.tc`: nhãn mờ / số đậm trắng, các tiêu chí cách 14 px, không dấu "·". */
+        <div className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1 rounded-lg bg-[color:var(--surface-2)] px-3 py-2 text-sm font-medium tabular-nums text-dim [&_b]:font-bold [&_b]:text-slate-100">
+          <span className="mr-0.5 text-[13px] font-bold text-slate-100">{dich(moi.label)}</span>
+          {tc.map(([k, v]) => <span key={k}>{k} <b>{v}</b></span>)}
+          {moi.bands?.[s] != null && <span>→ <b>{fmtBand(moi.bands[s])}</b></span>}
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] max-sm:gap-2.5">
@@ -446,7 +452,8 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
           <span className={NH}>{t('Case · PA')}</span>
           {!ca ? <span className="text-[15px] font-semibold text-dim">{t('Không có Case')}</span> : (
             <>
-              <span className="text-[15px] font-semibold text-slate-100">{dich(ca.title).replace(' - ', ' · ')}</span>
+              {/* Mockup `.ba-cot`: giá trị = nguyên nhân chính (600 15 trắng); chưa tải / không có → tên Case. */}
+              <span className="text-[15px] font-semibold text-slate-100">{dich(ct.data?.issues.find((i: any) => i.role === 'primary')?.label ?? ca.title).replace(' - ', ' · ')}</span>
               <span className="text-[13px] text-dim">{t('Case mở {tuan}', { tuan: tuanLich(ca.detectedAt, homNay) })}</span>
               {ct.error ? null : !ct.data ? <Skeleton rows={1} /> : pa.length ? pa.slice(0, 2).map((iv: any) => (
                 <Fragment key={iv.id}>
@@ -461,7 +468,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
           <span className={NH}>{t('Kết quả PA')}</span>
           {kqPa ? (
             <span className="flex flex-wrap items-center gap-1.5">
-              <Outcome tone={OUTCOME_TONE[kqPa.outcome] ?? 'muted'} mark={OUTCOME_MARK[kqPa.outcome]}>{dich(outcomeLabelFor(kqPa.outcome))}</Outcome>
+              <span className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold ${KET[OUTCOME_TONE[kqPa.outcome] ?? 'muted']}`}>{dich(outcomeLabelFor(kqPa.outcome))}</span>
               {kqPa.observedOn && <span className="text-[13px] text-dim">{tuanLich(kqPa.observedOn, homNay)}</span>}
             </span>
           ) : <span className="text-[13px] text-dim">–</span>}
@@ -481,7 +488,7 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
 function TenEm({ s, mo, onMo }: { s: Hang; mo: boolean; onMo: () => void }) {
   return (
     <button type="button" aria-expanded={mo} aria-controls={`mo-${s.id}`} onClick={onMo}
-      className="max-w-full truncate border-0 bg-transparent p-0 text-left font-semibold text-slate-100 hover:underline">{s.fullName}{mo && <span aria-hidden> ▾</span>}</button>
+      className={`max-w-full truncate border-0 bg-transparent p-0 text-left font-semibold text-slate-100 ${mo ? '' : 'hover:underline'}`}>{s.fullName}{mo && <span aria-hidden> ▾</span>}</button>
   );
 }
 
@@ -491,7 +498,7 @@ function TenEm({ s, mo, onMo }: { s: Hang; mo: boolean; onMo: () => void }) {
  */
 function OKetQua({ r, h, kq }: { r: Hang; h: Moc | null; kq: ReturnType<typeof ketQua> }) {
   /* U03: bỏ cột Case · PA → chip SOS ghi lại kỹ năng hụt ("SOS 3 · L, W, S", mockup). */
-  if (kq === 'sos') return <ChipSos {...chipSosTuKetQua(r.standing ?? null)!} ten={r.fullName} nho />;
+  if (kq === 'sos') return <ChipSos {...chipSosTuKetQua(r.standing ?? null)!} ten={r.fullName} />;
   if (kq === 'dat') return <span className="whitespace-nowrap text-[13px] text-dim"><span aria-hidden>{'✓ '}</span>{t('Đạt')}</span>;
   if (kq === 'thieu') {
     /* Đ4: lý do ngắn ở tooltip + tên đọc màn (không thêm chữ trên màn — P1). */
