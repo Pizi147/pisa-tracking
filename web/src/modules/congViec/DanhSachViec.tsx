@@ -315,7 +315,7 @@ export function ThePhu({ ds }: { ds: readonly string[] }) {
   if (!ds.length) return null;
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1">
-      {ds.map((x, i) => <span key={i} className="inline-flex h-5 max-w-full items-center truncate rounded-md px-1.5 text-xs font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>{x}</span>)}
+      {ds.map((x, i) => <span key={i} className="inline-flex h-5 max-w-full items-center truncate rounded-md px-2 text-xs font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>{x}</span>)}
     </span>
   );
 }

@@ -446,7 +446,9 @@ export function Khoi({ tieuDe, luat, so, children }: { tieuDe: string; luat?: Re
 
 /** N35: bộ đếm `212 / 200` — hiện từ 80 % trần (không rối lúc gõ vài câu), quá trần chữ đỏ + đậm (không chỉ bằng màu: số vượt trần đứng đầu). */
 export function DemChu({ n, toiDa }: { n: number; toiDa: number }) {
-  if (n < toiDa * 0.8) return null;
+  /* UI-CONG-VIEC (mockup U01 `.dem-chu`): panel việc ở Công việc luôn hiện "n / trần"; nơi khác từ 80 % trần. */
+  const luon = useContext(NhanTruongDam);
+  if (!luon && n < toiDa * 0.8) return null;
   return <span className={`text-xs tabular-nums ${n > toiDa ? 'font-semibold text-bad' : 'font-normal text-slate-500'}`} aria-live="polite">{n} / {toiDa}</span>;
 }
 
@@ -475,7 +477,7 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'lab
       {tuyChon && !dam && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
       {thieu && <span className="ml-1.5 text-xs font-semibold text-late">{t('Thiếu')}</span>}
     </span>
-    {dem?.can && dem.co < dem.can ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>
+    {dem?.can && dem.co < dem.can && !(dam && dem.toiDa) ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>
       : dem?.toiDa ? <DemChu n={dem.co} toiDa={dem.toiDa} /> : null}
   </>;
   const lopNhan = dam ? 'mb-2 flex items-baseline gap-2 text-[15px] font-bold leading-snug text-[color:var(--text)]'

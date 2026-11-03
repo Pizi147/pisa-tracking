@@ -29,9 +29,9 @@
 
 ## KHÁC (lý do)
 1. Vạch hạn nhóm Chấm điểm giữ "Quá hạn · Hạn đến {CN} · Hạn sau {CN} ▸" (T14, gập sẵn việc xa) — mockup vẽ "Quá hạn · Hôm nay · Sắp tới". Đổi = đổi luật vạch, không vẽ thêm.
-2. Form PA (`FormPa`, dùng chung hồ sơ HV) giữ Số buổi / Người dạy / Bắt đầu mỗi ô một hàng; mockup xếp ba ô một hàng. Đổi `FormPa` chạm U02 — để PR sau nếu chủ SP muốn.
+2. ~~Form PA ba ô không cùng hàng~~ — đã sửa (PTA 04/11): Số buổi · Người dạy · Bắt đầu MỘT hàng ở mọi form PA trong khối con (hồ sơ HV theo cùng).
 3. Badge QL = `summary.viec` của `/my-work` (số "Của tôi" máy chủ) — demo QL Vy: badge **6**, ô "Của tôi" **5**. Lệch do việc "Nhập điểm MT cũ" / "Điền Target" (`mywork.ts`): góc "toi" gán người xem, góc "tat-ca" gán GVCN lớp → sửa ở PR máy chủ riêng (PTA 04/11).
-4. Panel form khi làm thay (vd Ghi kết quả PA) giữ đầu panel dòng 2 "em · lớp · lượt · Xem Case" (`dauViec`, chung mọi panel việc); dải sự kiện mới chỉ ở panel việc của Case (`dauCase`) và tóm tắt theo dõi.
+4. ~~Panel làm thay giữ đầu dòng 2~~ — đã sửa (PTA 04/11): Ghi kết quả PA có dải sự kiện (+ "Phụ trách" khi làm thay), chân Lưu / Lưu · việc tiếp › ở đáy panel.
 5. "Đã xong hôm nay" = việc lưu trong phiên này (mất khi tải lại trang) — `ponytail:` ghi trong mã; giữ qua phiên cần nhật ký máy chủ.
 6. N35 (Nội dung PA ≤ 200, bộ đếm) là PR máy chủ + web của AUDIT-LOI — form vẫn bộ đếm cũ "0/15" (tối thiểu).
 
@@ -62,3 +62,11 @@
 - QL / QT: **+1 `/my-work`** mỗi lần nạp app cho badge (trần đo 49 câu / ~1 100–1 400 dòng, `tocDoDuong.ts`) — ước ~20 lần mở app / QL / ngày × 10 QL ≈ 0,3 triệu dòng / ngày (< 2 % mốc 15 triệu). Đổi lại bỏ một `/yeu-cau/dem`? Không: nhóm "Chờ bạn duyệt" vẫn cần.
 - Panel theo dõi: một `/cases/:id` (form làm thay đọc lại cùng đường — trước đây form mờ đã đọc khi mở).
 - Yêu cầu của tôi · Lớp tôi dạy gập sẵn → GV **bớt** hai đường đọc mỗi lần mở trang.
+
+## Vòng sửa hình 04/11 (PTA: hình theo mockup SÁT)
+- Khối Case: hàng nhãn mờ / giá trị sáng, kẻ ngăn, không nền; Điểm "✗ 5.0 / kỳ vọng 6.0 · Target 7.0"; Nguyên nhân = chip; Mô tả = trích vạch trái + "Xem Case" ngay dưới (bỏ ở đầu panel).
+- Phương án: tiêu đề mục "Phương án · Học Tutor" + thẻ "theo quy chế" · mốc, không hộp lồng; nhãn ô 15 / 700 (panel Công việc); bỏ "(không bắt buộc)" và câu "Có số buổi thì web đếm…"; "Đổi" trong ô người là chữ nhấn; hai link sát dưới hàng ô; bộ đếm "n / 200" luôn hiện.
+- Đầu panel: Lượt "MT1 · tuần W4 AUG"; hạn chưa quá chữ thường, quá hạn "⚠ 08/09 · quá hạn 6 ngày".
+- Làm thay (A3): Tiến triển nút 36 px như mockup, Nhận xét ô lớn + bộ đếm, "Điều chỉnh PA…" link dưới, chân ở đáy.
+- Danh sách: hạn sắp tới chữ thường (chỉ "hạn hôm nay" vàng ⚠, quá hạn đỏ ⚠), thẻ phụ đệm 8 px.
+- Còn giữ (có lý do): "Chỉ xem" thay "Thôi, chỉ xem" (từ điển S3, PTA đồng ý) · nhóm "Chờ bạn duyệt" của QL mở sẵn (mockup vẽ gập — giữ hành vi cũ vì badge không còn đếm yêu cầu) · "Tới đâu" là một dòng trạng thái (chưa có dữ liệu từng bước như mockup).

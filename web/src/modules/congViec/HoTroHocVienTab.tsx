@@ -7,7 +7,7 @@ import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../..
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { COT_VIEC, DaiNhom, DanhSachViec, tenBoEm, viecThat } from './DanhSachViec.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { BoiCanh } from '../../ui/KhuonViec.tsx';
+import { TheMuc, Trich, TruongDoc } from '../../ui/KhuonViec.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { mucSosTheoNhan } from '../../lib/format.ts';
@@ -617,16 +617,21 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
           [t('Học viên'), it.studentId !== null ? <Link className="no-underline hover:underline" to={`/hoc-vien/${it.studentId}`}>{it.studentName}</Link> : null],
           [t('Lớp'), it.classCode],
           [t('Mức'), sos ? <ChipSos muc={sos} tinh /> : null],
-          [t('Hạn'), it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} /> : null],
+          [it.group === 'ghi_ket_qua_pa' ? t('Hạn ghi KQ') : t('Hạn'), it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} chuThuong /> : null],
           [t('Phụ trách'), it.owner],
         ] }}
         chan={{ huy: null, trai: tenTiep && onTiep ? <span className="truncate text-dim">{t('Tiếp: {x}', { x: tenTiep })}</span> : undefined,
           phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
           chinh: it.lamThay ? <button type="button" className="btn btn-primary min-h-[44px] font-bold sm:min-h-[36px]" onClick={onLamThay}>{it.group === 'score' ? t('Nhập hộ') : t('Làm thay')}</button> : undefined }}>
         <div className="pt-3">
-          <BoiCanh dong={[
+          <TruongDoc dong={[
             [t('Việc'), iv ? null : dich(it.reason)],   // PA có thì lý do việc = mô tả PA — không lặp
-            [t('Phương án'), iv ? [iv.description || dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind), iv.performer, iv.mocChu].filter(Boolean).join(' · ') : null],
+            /* Mockup A2: tên PA đậm · thẻ (người · mốc) · nội dung trích vạch trái. */
+            [t('Phương án'), iv ? <>
+              <span className="flex flex-wrap items-center gap-1.5"><b className="font-semibold">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</b>
+                {[iv.performer, iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).map((x: string) => <TheMuc key={x}>{x}</TheMuc>)}</span>
+              {iv.description && <div className="mt-1.5"><Trich>{iv.description}</Trich></div>}
+            </> : null],
             [t('Tới đâu'), data?.trangThaiV4?.chu ? dich(data.trangThaiV4.chu) : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />

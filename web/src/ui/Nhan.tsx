@@ -129,11 +129,15 @@ export function ChipHan({ loai, han, chuThuong = false }: { loai: DeadlineKind; 
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
-  if (chuThuong && v.tone !== 'overdue') return <span className="tabular-nums">{han.slice(8, 10)}/{han.slice(5, 7)}</span>;
+  const ngay = `${han.slice(8, 10)}/${han.slice(5, 7)}`;
+  if (chuThuong && v.tone !== 'overdue') return <span className="tabular-nums">{ngay}</span>;
+  if (chuThuong) return <span title={v.text} className={`${CHU_HAN} text-late font-bold min-h-[22px] whitespace-normal`}><span aria-hidden>⚠</span>{ngay} · {t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</span>;
   /* U01 #27 (audit 03/11, mockup `audit-0311/ro.css .han`): hạn CHỈ CHỮ, không nền — quá hạn đỏ đậm + ⚠, sắp hạn vàng đậm + ⚠ (không trùng chip SOS 3
      nền đỏ đặc — V5); hạn thường chữ thường, hạn xa chữ mờ. Chữ + ⚠ mang nghĩa, màu chỉ phụ. */
-  const can = v.tone === 'overdue' || v.ganHan;
-  const lop = v.tone === 'overdue' ? 'text-late font-bold' : v.ganHan ? 'text-soon font-bold' : 'text-dim font-medium';
+  /* Mockup `.han`: quá hạn đỏ ⚠ · hạn HÔM NAY vàng ⚠ · sắp hạn chữ thường 600 · hạn xa chữ mờ 500. */
+  const homNayHan = han.slice(0, 10) === homNay;
+  const can = v.tone === 'overdue' || homNayHan;
+  const lop = v.tone === 'overdue' ? 'text-late font-bold' : homNayHan ? 'text-soon font-bold' : v.ganHan ? 'text-[color:var(--text)] font-semibold' : 'text-dim font-medium';
   return (
     <span title={v.text} className={`${CHU_HAN} ${lop} min-h-[22px] text-[13px]`}>
       {can && <span aria-hidden>⚠</span>}
