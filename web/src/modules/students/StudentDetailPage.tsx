@@ -19,7 +19,7 @@ import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
 import { CHU_DA_XONG } from '@shared/domain/index.ts';
-import { DaiChoDuyet, DaiTamDung, DangXuLy, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
+import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCase.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -322,7 +322,6 @@ export default function StudentDetailPage() {
 
       {/* UI-HO-SO-HV: thanh Việc cần làm — chỗ DUY NHẤT có việc; bấm = mở đúng chỗ làm ngay tại trang. */}
       <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
-      {vaiXem && <DangXuLy viec={data.dauHoSo.viec} homNay={homNay} />}
       {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
       {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} onThemPa={(caseId) => setOpenCase({ caseId, viec: 'them-pa' })} />}
 

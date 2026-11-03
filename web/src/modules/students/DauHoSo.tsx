@@ -30,9 +30,6 @@ const dk = (s: string | null | undefined, k?: ChuKhoa | null): string | null => 
 /* EN-SOT: biến chữ máy chủ ghép sẵn ("đến MT2 · Listening", "OVR 7.0 · Đạt Target") dịch theo mẫu như `dich`; tên / mã giữ nguyên. */
 const chuViec = (x: Viec) => dichChu(x.bien ? { ...x, bien: Object.fromEntries(Object.entries(x.bien).map(([k, v]) => [k, typeof v === 'string' ? dich(v) : v])) } : x);
 const nutViec = (x: Viec) => dich(x.nut);
-const vaiViec = (x: Viec) => (x.nguoi.vai ? dich(x.nguoi.vai) : null);
-/** Người không tài khoản ("Quản lý", "Chưa có người phụ trách") là vai — dịch; tên người giữ nguyên. */
-const tenNguoi = (x: Viec) => (x.nguoi.id ? x.nguoi.ten : dich(x.nguoi.ten));
 
 /**
  * DÒNG THÔNG TIN — "em là ai" (UI-HO-SO-HV, khu c `.dau-lop`): nhãn nhỏ xám / giá trị đậm (P2) —
@@ -92,32 +89,6 @@ export function DongLienHe({ l, email, dob, tvv }: { l: LienHe | null | undefine
     <ul aria-label={t('Liên hệ')} className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0">
       {muc.map((m, i) => <li key={i} className="the-phu nhat min-w-0">{m}</li>)}
     </ul>
-  );
-}
-
-/**
- * KHỐI "ĐANG XỬ LÝ" (OV-10b, mockup vai mục 3) — TVV / CX / Admin, chỉ đọc: ai đang làm việc gì với em và hạn — để trả lời phụ huynh không phải hỏi
- * từng người. Cùng nguồn với thanh "Việc của tôi" (`dauHoSo.viec` — luật người làm như Công việc, việc đã xong không có). Không có việc → không vẽ.
- */
-export function DangXuLy({ viec, homNay }: { viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; homNay: string | null }) {
-  /* Người xem có việc với em → thanh "Việc của tôi" đã có "việc của người khác" (gập) — không vẽ hai lần. */
-  const ds = viec?.cuaBan.length ? [] : viec?.nguoiKhac ?? [];
-  if (!ds.length) return null;
-  return (
-    <section aria-label={t('Đang xử lý')} className="rounded-[10px] bg-[color:var(--surface-2)] px-3 py-[9px]">
-      <h2 className="m-0 mb-1 text-[12px] font-bold  text-slate-400">{t('Đang xử lý')}</h2>
-      <ul className="m-0 flex list-none flex-col gap-1 p-0">
-        {ds.map((x) => (
-          <li key={x.key} className="grid grid-cols-1 items-baseline gap-x-3 gap-y-0.5 text-[13px] sm:grid-cols-[minmax(0,1fr)_auto]">
-            <span className="min-w-0 text-slate-200">
-              <b className="font-semibold text-slate-100">{tenNguoi(x)}</b>{x.nguoi.vai && <span className="text-slate-400"> ({vaiViec(x)})</span>}
-              <span className="text-slate-400"> · </span>{chuViec(x)}
-            </span>
-            <span className="sm:text-right"><HanViec x={x} homNay={homNay} /></span>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 
