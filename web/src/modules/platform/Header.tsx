@@ -422,13 +422,13 @@ export function Header() {
               {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
               <Link to="/ho-so-ca-nhan" className="btn w-full justify-center no-underline"
                 onClick={() => setOpenMenu(null)}>{t('Hồ sơ cá nhân')}</Link>
-              {/* Hướng dẫn của màn đang đứng (panel, không chuyển trang); trang Hướng dẫn đầy đủ ở cuối panel. */}
-              <button type="button" className="btn w-full justify-center" onClick={() => { setOpenMenu(null); setMoHd(true); }}>{t('Hướng dẫn')}</button>
-              {/* Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
+              {/* U09 (mockup v11 F): Hồ sơ cá nhân · Hồ sơ giáo viên · Hướng dẫn · Quản trị. Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
               {session?.user && session.roles?.includes('teacher') && (
                 <Link to={`/giao-vien/${session.user.id}`} className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Hồ sơ giáo viên')}</Link>
               )}
+              {/* Hướng dẫn của màn đang đứng (panel, không chuyển trang); trang Hướng dẫn đầy đủ ở cuối panel. */}
+              <button type="button" className="btn w-full justify-center" onClick={() => { setOpenMenu(null); setMoHd(true); }}>{t('Hướng dẫn')}</button>
               {session?.nav?.admin ? (
                 <Link to="/quan-tri" className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>
