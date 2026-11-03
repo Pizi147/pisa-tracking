@@ -27,3 +27,5 @@ Không đổi thao tác. Chỉ thêm thông tin đọc (đọc màn hình: "MT2 
 | GVCN: tên em · nhãn tự điền · "Bàn giao của GVBM" | 15/700 · 13/500 · 13/600 | 15/600 · 14/400 · 12/600 | 15/700 · 13/500 · 13/600 |
 
 Ảnh cặp chụp lại sau sửa: 4 tệp trong thư mục này (GVBM + GVCN, 1440 tối · 375 sáng).
+
+**Lưu ý ảnh cặp (03/11):** các ảnh web chụp trước lúc này (cả #856) dùng PHÔNG DỰ PHÒNG — máy chủ dev chạy trong worktree chặn tệp phông `@fontsource` nằm ở `node_modules` của thư mục cha (403), nên chữ trông nhỏ, mảnh. Web thật (bản build) không bị. Ảnh trong thư mục này đã chụp lại sau khi phông tải đủ (Be Vietnam Pro 16/16, `document.fonts.check` đúng).
