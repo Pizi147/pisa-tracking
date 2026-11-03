@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -8,7 +8,8 @@ import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
-import { DsEmBanGiao, TuDienEm } from './banGiaoChung.tsx';
+import { DsEmBanGiao, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
+import { dongSauKhiLuu, type HangLuu } from '../../lib/luuChac.ts';
 import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, deadlineView, ngay, shortDate, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -73,16 +74,29 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   const thieu = canNx && nhap.trim().length < NHAN_XET_TOI_THIEU;
   const dsXn = dto.ds.filter((e) => !e.xacNhan).length;
   /* 6c (lỗi 5): nhận xét đã gõ khác bản đã lưu, hoặc ô điền thay đang mở. */
-  const daSuaNx = !!dienThay || dto.ds.some((e) => nhanXet[e.lenhId] !== undefined && nhanXet[e.lenhId] !== (e.nhanXetChung ?? ''));
+  const daSuaNx = !!dienThay || dto.ds.some((e) => nhanXet[e.lenhId] !== undefined && nhanXet[e.lenhId].trim() !== (e.nhanXetChung ?? '').trim());
 
-  /* PR-B: nhận xét chung lưu NHÁP khi rời ô (chưa xác nhận) — không mất chữ khi đóng panel / đổi em. */
-  const luuNhapNx = async () => {
-    if (!em || em.xacNhan || !ghi || nhanXet[em.lenhId] === undefined || nhap === (em.nhanXetChung ?? '')) return;
-    setNxLuu('luu');
-    try {
-      await api.put(`/lenh-chuyen/${em.lenhId}/nhan-xet-nhap`, { nhanXetChung: nhap });
-      setNxLuu('da'); invalidate('/lenh-chuyen'); reload();
-    } catch { setNxLuu('loi'); }
+  /*
+   * PR-B: nhận xét chung lưu NHÁP khi rời ô (chưa xác nhận) — không mất chữ khi đóng panel / đổi em. F01 (audit 03/11): mỗi em một ô xếp lượt
+   * (`taoOLuu`) — gõ tiếp khi đang lưu thì phản hồi bản cũ không báo "Đã lưu"; Xác nhận chờ lần lưu nháp đang chạy (máy chủ từ chối nháp sau xác nhận).
+   */
+  const hang = useHangLuu();
+  const chonRef = useRef(chon);
+  chonRef.current = em?.lenhId ?? null;
+  const oNx = useRef(new Map<number, ReturnType<HangLuu['o']>>()).current;
+  const oCua = (e: PhieuEm) => {
+    let o = oNx.get(e.lenhId);
+    if (!o) {
+      o = hang.o(String(e.lenhId), e.nhanXetChung ?? '',
+        (v) => api.put(`/lenh-chuyen/${e.lenhId}/nhan-xet-nhap`, { nhanXetChung: v ?? '' }).then(() => { invalidate('/lenh-chuyen'); reload(); return null; }, (er: any) => er?.message ?? ''),
+        (tt) => { if (chonRef.current === e.lenhId) setNxLuu(tt === 'dang' ? 'luu' : tt === 'xong' ? 'da' : tt === 'loi' ? 'loi' : 'yen'); });
+      oNx.set(e.lenhId, o);
+    }
+    return o;
+  };
+  const luuNhapNx = () => {
+    if (!em || em.xacNhan || !ghi || nhanXet[em.lenhId] === undefined) return;
+    void oCua(em).luu();
   };
 
   const xacNhan = async () => {
@@ -91,6 +105,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
     if (thieu) return;
     setBusy(true);
     try {
+      await hang.xong();
       await api.post(`/lenh-chuyen/${em.lenhId}/xac-nhan`, { nhanXetChung: nhap.trim() });
       invalidate('/lenh-chuyen'); invalidate('/classes'); invalidate('/my-work'); invalidate('/students'); invalidate('/yeu-cau');
       toast.push('ok', t('Đã xác nhận bàn giao {ten}', { ten: em.ten }));
@@ -219,7 +234,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
               loi={daBam && thieu && (ghi || suaPhieu) ? t('Cần ít nhất {n} ký tự', { n: NHAN_XET_TOI_THIEU }) : null}>
               <textarea id="o-nhan-xet" className="field w-full" rows={3} readOnly={docThoi || (!!em.xacNhan && !suaPhieu)} aria-invalid={daBam && thieu && (ghi || suaPhieu)}
                 value={nhap} placeholder={docThoi ? undefined : t('Ví dụ: Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.')}
-                onChange={(e) => { setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value })); setNxLuu('yen'); }} onBlur={() => void luuNhapNx()} />
+                onChange={(e) => { setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value })); oCua(em).go(e.target.value); }} onBlur={luuNhapNx} />
             </Truong>
             {ghi && !em.xacNhan && (nxLuu !== 'yen' || !canNx) && (
               <p className="m-0 -mt-2 text-xs text-slate-500" aria-live="polite">
@@ -248,6 +263,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
 // ==================================================================== G · GVBM
 
 function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung & { mon: string }) {
+  const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const m0 = dto.lop.mon.find((x) => x.ma === mon)!;
   const [chu, setChu] = useState<Record<number, string>>({});
@@ -257,6 +273,30 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
   const daCo = (e: PhieuEm) => (!!oMon(e)?.noiDung && !oMon(e)?.lamLai) || !!oMon(e)?.cungGv;
   const soDaCo = dto.ds.filter(daCo).length;
   const han = useMemo(() => dto.theoMon.find((x) => x.ma === mon)?.han ?? null, [dto, mon]);
+  /* F01 (audit 03/11): mỗi ô một lượt lưu (`taoOLuu`) — gõ tiếp khi đang lưu thì phản hồi bản cũ không báo "Đã lưu"; Đóng chờ lần lưu đang chạy. */
+  const hang = useHangLuu();
+  const chuRef = useRef(chu);
+  chuRef.current = chu;
+  const oO = useRef(new Map<number, ReturnType<HangLuu['o']>>()).current;
+  const oCua = (e: PhieuEm) => {
+    let o = oO.get(e.lenhId);
+    if (!o) {
+      o = hang.o(String(e.lenhId), oMon(e)?.noiDung ?? '',
+        (v) => api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon, noiDung: v ?? '' })
+          .then(() => { invalidate('/lenh-chuyen'); invalidate('/my-work'); invalidate('/classes'); reload(); return null; }, (er: any) => er?.message ?? ''),
+        (tt, lyDo) => {
+          setLuu((x) => ({ ...x, [e.lenhId]: tt === 'xong' }));
+          setLoi((x) => { const { [e.lenhId]: _, ...con } = x; return tt === 'loi' ? { ...con, [e.lenhId]: lyDo || t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.') } : con; });
+        });
+      oO.set(e.lenhId, o);
+    }
+    return o;
+  };
+  /* Ô có chữ khác bản máy chủ (lưu lỗi / chưa rời ô) → ✕ / Esc hỏi trước khi đóng. */
+  const daSua = dto.ds.some((e) => chu[e.lenhId] !== undefined && chu[e.lenhId].trim() !== (oMon(e)?.noiDung ?? '').trim());
+  const dongHan = () => { onDone(); onClose(); };
+  const baoChuaLuu = (n: number) => toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại, hoặc bấm Đóng lần nữa để bỏ.', { n }));
+  const dong = dongSauKhiLuu(hang, dongHan, baoChuaLuu);
 
   useEffect(() => {
     if (lenhId == null) return;
@@ -267,8 +307,9 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
 
   /** `giu`: phiếu cần làm lại (OV-3b) — lưu lại đúng chữ cũ cũng là xác nhận lại. */
   const ghi = async (e: PhieuEm, giu = false) => {
-    const v = (chu[e.lenhId] ?? oMon(e)?.noiDung ?? '').trim();
-    if (!v || (v === (oMon(e)?.noiDung ?? '') && !giu)) return;
+    const v = (chuRef.current[e.lenhId] ?? oMon(e)?.noiDung ?? '').trim();
+    if (!v) return;
+    if (!giu) { void oCua(e).luu(); return; }
     try {
       await api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon, noiDung: v });
       setLoi((x) => { const { [e.lenhId]: _, ...con } = x; return con; });
@@ -279,10 +320,11 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
   };
 
   return (
-    <KhungPanel quayLai={quayLai} rong="rong" tieuDe={t('Bàn giao môn {mon} ({ten})', { mon: m0.ngan, ten: m0.ten })} onDong={() => { onDone(); onClose(); }}
+    <KhungPanel quayLai={quayLai} rong="rong" tieuDe={t('Bàn giao môn {mon} ({ten})', { mon: m0.ngan, ten: m0.ten })} onDong={dong}
       ngCanh={<span className="tabular-nums">{dto.lop.code} · {t('{n} em', { n: dto.tong })}{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · {t('mỗi em một câu')}</span>}
       chan={{
-        huy: { nhan: t('Đóng'), onClick: () => { onDone(); onClose(); } },
+        daSua,
+        huy: { nhan: t('Đóng'), onClick: dongSauKhiLuu(hang, dongHan, baoChuaLuu, true) },
         dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">{t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: soDaCo, b: dto.tong })}</p>,
       }}>
       <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={t('Bàn giao môn {mon}', { mon: m0.ngan })}>
@@ -301,7 +343,7 @@ function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung 
                 {oMon(e)?.cungGv && !cu ? <span className="text-sm text-slate-400">{t('Cùng GV · không cần bàn giao')}</span> : <>
                 <input id={`o-bg-${e.lenhId}`} className="field w-full" maxLength={300} readOnly={khoa} aria-label={t('Bàn giao môn {mon} của {ten}', { mon: m0.ngan, ten: e.ten })}
                   aria-invalid={!!loi[e.lenhId]} placeholder={t('Viết một câu…')} value={chu[e.lenhId] ?? cu}
-                  onChange={(ev) => { setChu((x) => ({ ...x, [e.lenhId]: ev.target.value })); setLuu((x) => ({ ...x, [e.lenhId]: false })); }}
+                  onChange={(ev) => { setChu((x) => ({ ...x, [e.lenhId]: ev.target.value })); setLuu((x) => ({ ...x, [e.lenhId]: false })); oCua(e).go(ev.target.value); }}
                   onBlur={() => void ghi(e)} />
                 {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
                 {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-done">{t('Đã lưu')}</span>}

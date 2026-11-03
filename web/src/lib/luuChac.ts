@@ -55,3 +55,46 @@ export function taoOLuu(daLuu: string, gui: (v: string | null) => Promise<string
     },
   };
 }
+
+/**
+ * F01 (audit 03/11): các ô `taoOLuu` của MỘT phiếu (bàn giao): `xong()` chờ mọi lần lưu đang chạy — kể cả ô vừa gỡ khi đổi em / đóng panel;
+ * `chuaLuu` giữ chữ của ô lưu lỗi theo khoá ô (mở lại ô đó thì chữ còn; Xác nhận phiếu không chạy bằng bản cũ). `doi`: báo nơi dùng vẽ lại.
+ */
+export function taoHangLuu(doi: () => void = () => {}) {
+  const cho = new Set<Promise<unknown>>();
+  const chuaLuu = new Map<string, string>();
+  return {
+    cho,
+    chuaLuu,
+    daBaoDong: false,
+    async xong() { while (cho.size) await Promise.allSettled([...cho]); },
+    /** Một ô của phiếu: như `taoOLuu`, thêm — lần lưu vào `cho`; lưu lỗi thì chữ vào `chuaLuu[khoa]`, lưu được / gõ về bản máy chủ thì bỏ. */
+    o(khoa: string, daLuu: string, gui: (v: string | null) => Promise<string | null>, bao: (tt: TrangThaiO, lyDo: string) => void) {
+      const x = taoOLuu(daLuu, gui, (tt, lyDo) => {
+        const truoc = chuaLuu.has(khoa);
+        if (tt === 'loi') chuaLuu.set(khoa, x.nhap()); else if (!x.chuaLuu()) chuaLuu.delete(khoa);
+        if (truoc !== chuaLuu.has(khoa)) doi();
+        bao(tt, lyDo);
+      });
+      return {
+        ...x,
+        luu: () => { const p = x.luu(); cho.add(p); void p.finally(() => cho.delete(p)); return p; },
+        go: (v: string) => { x.go(v); if (chuaLuu.has(khoa)) chuaLuu.set(khoa, v); },
+      };
+    },
+  };
+}
+export type HangLuu = ReturnType<typeof taoHangLuu>;
+
+/**
+ * Đóng phiếu sau khi lần lưu đang chạy xong; lần đó lỗi thì ở lại (chữ còn trong ô). `nut` (nút Đóng ở chân — không qua hộp hỏi của panel):
+ * còn ô lỗi từ trước thì báo một lần, bấm lần nữa mới đóng. ✕ / Esc / nền: panel đã hỏi "Bỏ chữ, đóng" (`chan.daSua`).
+ */
+export function dongSauKhiLuu(hang: HangLuu, onClose: () => void, baoLoi: (n: number) => void, nut = false) {
+  return async () => {
+    const coCho = hang.cho.size > 0;
+    await hang.xong();
+    if (hang.chuaLuu.size && (coCho || (nut && !hang.daBaoDong))) { hang.daBaoDong = true; baoLoi(hang.chuaLuu.size); return; }
+    onClose();
+  };
+}
