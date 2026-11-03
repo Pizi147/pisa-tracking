@@ -362,25 +362,26 @@ Nguồn: `00` mục 20 U08 (ý 1–6, "Không kết luận sai…", Nghiệm thu
 | Bấm số → panel chỉ đọc đúng tập | ô, bảng | như nay, tiêu đề panel đủ phạm vi | GIỮ · ĐỔI tiêu đề |
 | ⓘ cách tính | ô, bảng | như nay, câu đủ | GIỮ |
 
-## 11. Đợt sửa sau góp ý chủ SP (03/11 khuya — plan.md mục 4, #864) — CHỜ PTA DUYỆT BẢNG rồi mới vẽ
+## 11. Đợt sửa sau góp ý chủ SP (03/11 khuya — plan.md mục 4, #864) — **PTA DUYỆT 03/11** (chốt [XM] U04-5a BỎ · U04-5b ĐỔI · U08-1 đúng Báo cáo HV · U04-1 định dạng như U03 · U05-3 thêm ⚠)
 Chủ SP **DUYỆT U09** (không đụng). U04, U05, U06, U08 sửa theo bảng dưới. Luật kèm: "những gì thừa thì đừng thêm text" · "bản thật cần phải giống" mockup · không thêm request (Turso).
 
 ### 11.1 U04 Học viên & Lớp (skill: impeccable `clarify` + `colorize`)
 | # | Ý chủ SP | Làm gì trong mockup (chữ thật) | Giữ / bỏ / đổi · vì sao |
 |---|---|---|---|
-| U04-1 | Bấm ô điểm kỹ năng → điểm thành phần / số câu | Ô L · R · W1 · W2 · S trong **dải mở dưới hàng em** bấm được → **hộp nhỏ tại chỗ** (dưới ô; Esc / bấm ngoài đóng): L, R "29/40 câu" (`raw_score / raw_total`) · W1 "TA 6.0 · CC 6.5 · LR 6.0 · GRA 6.0" · W2 "TR · CC · LR · GRA" · S "FC · LR · GRA · P" (tên tiêu chí theo `shared/domain/skills.ts`). Ô chỉ có band (không c1–c4 / raw) → **không bấm được** (không thêm câu "chưa có") | THÊM · G6 "ô số = mở tại chỗ". **Dữ liệu:** `diemCuaLuot` (`server/src/fasttrack/attempts.ts:98`) đã `SELECT s.*` → chỉ thêm trường vào `kn` của `hangHvFt`, **0 câu / 0 dòng thêm** |
+| U04-1 | Bấm ô điểm kỹ năng → điểm thành phần / số câu | Ô L · R · W1 · W2 · S trong **dải mở dưới hàng em** bấm được → **hộp nhỏ tại chỗ** (dưới ô; Esc / bấm ngoài đóng): L, R "29/40 câu" (`raw_score / raw_total`) · W1, W2, S **giống hệt U03 (UX-A)**: "TA 6 · CC 6 · LR 6.5 · GRA 6 → 6.0" — tên ngắn theo `tieuChiNganCua` (W2 TR…, S FC · LR · GRA · P), "→ band" cuối; một định dạng mọi màn. Ô chỉ có band → **không bấm được** (không hover, không dòng tiêu chí, không chữ — như U03; PTA đồng ý) | THÊM · G6 "ô số = mở tại chỗ". **Dữ liệu:** `diemCuaLuot` (`server/src/fasttrack/attempts.ts:98`) đã `SELECT s.*` → chỉ thêm trường vào `kn` của `hangHvFt`, **0 câu / 0 dòng thêm** |
 | U04-2 | Việc = badge có khung + chấm tròn đổi màu theo trạng thái, kèm chữ | Dùng lại **`.bd-td` V5** (`thiet-ke/v5/v5-nen.css:208–214`, web `Nhan.tsx`: viên tròn + chấm màu + chữ; ⚠ khi sắp / quá hạn) **+ viền 1 px cùng tông** (khung — chủ SP). Mỗi việc: dòng 1 tên việc (link mở việc) · dòng 2 badge: "● Chưa làm · hạn 05/11" (chấm xám) · "● Đang làm · hạn 05/11" (chấm xanh) · "● Chờ duyệt" (chấm tím nhạt) · "⚠ quá hạn 7 ngày" (đỏ). Trạng thái luôn có chữ / ⚠, không chỉ màu | ĐỔI hình · `colorize`: chữ badge ≥ 4.5 : 1, viền ≥ 3 : 1 trên nền tối + sáng (đo khi vẽ, ghi số vào khu G) |
 | U04-3 | Em Kết thúc học BIẾN MẤT khỏi danh sách | Bỏ dòng mờ + thẻ "Kết thúc học" (**thay #29 cũ**). Hàng lớp "7 HV" giữ. Lối xem có sẵn giữ, không thêm mới: hồ sơ lớp tab Học viên (dòng "Đã kết thúc") · ⋯ trang › Lưu trữ (n) · ô tìm Ctrl K | BỎ · chủ SP. Máy chủ bỏ khối OV-11g (`hocVienLop.ts:330–341`) → **bớt 1 câu** mỗi lần mở. **Cần kiểm ở PR:** em FT kết thúc học chờ KQ thi thật (chưa vào Lưu trữ) vẫn tìm thấy bằng Ctrl K + hồ sơ lớp |
 | U04-4 | Đổi màu "Đã thi · chờ KQ" (đang gắt) | `.lich.da` nền đặc xanh + chữ trắng → **token V5 `.bd-lich`** (nền `--lich-nen` nhạt, chữ `--lich-chu`, không viền). Khác "Thi 15/11" (lịch chốt: viền liền, nền trong) bằng chữ "Đã thi … · chờ KQ" + nền | ĐỔI màu · tương phản: tối #afcee2 / #233a4d, sáng #2e4d64 / #dee9f0 (≥ 7 : 1, đo lại khi vẽ) |
-| U04-5 | Cột việc CHỈ việc của chính người đang xem | Cột "Việc" mọi vai = việc **Của tôi** (cùng nguồn badge Công việc V13); "+n việc" đếm việc của tôi; em không có việc của tôi → "—". **Dải dưới hàng** giữ mục "Việc người khác" (tên việc · người · badge) **chỉ xem** — chi tiết mở khi cần | ĐỔI · chủ SP. **[XM] hỏi PTA:** (a) giữ "Việc người khác" trong dải (khuyến nghị: giữ, không mất thông tin "ai đang làm") hay bỏ hẳn · (b) chip "Có việc quá hạn" đổi theo cùng nguồn (việc của tôi quá hạn) — khuyến nghị: đổi, một số liệu một nguồn |
+| U04-5 | Cột việc CHỈ việc của chính người đang xem | Cột "Việc" mọi vai = việc **Của tôi** (cùng nguồn badge Công việc V13); "+n việc" đếm việc của tôi; em không có việc của tôi → "—". **Dải dưới hàng: BỎ hẳn "Việc người khác"** (PTA chốt [XM] a — chủ SP "CHỈ HIỆN CÔNG VIỆC TƯƠNG ỨNG với GIÁO VIÊN ĐÓ"; ai đang làm gì xem ở hồ sơ HV) · chip **"Có việc quá hạn" = việc của tôi quá hạn** (PTA chốt [XM] b — cùng nguồn cột Việc) | ĐỔI · chủ SP + PTA |
 
 **11.1b U04 — thao tác TRƯỚC → SAU (chỉ phần đổi; bảng 10.1b giữ phần còn lại)**
 
 | Thao tác | Trước (mockup #849 / main) | Sau | Lý do |
 |---|---|---|---|
 | Xem em Kết thúc học trong danh sách lớp | dòng mờ cuối lớp + thẻ | **bỏ khỏi danh sách**; xem ở hồ sơ lớp tab Học viên · Lưu trữ · Ctrl K | chủ SP 03/11 khuya |
-| Xem việc của người khác ở cột Việc | cột liệt kê mọi việc của em | cột chỉ việc của tôi; việc người khác ở dải dưới hàng (chỉ xem, [XM] a) | chủ SP; không mất thông tin |
+| Xem việc của người khác ở cột Việc | cột liệt kê mọi việc của em | cột + dải chỉ việc của tôi; việc người khác xem ở hồ sơ HV | chủ SP "CHỈ HIỆN CÔNG VIỆC TƯƠNG ỨNG với GIÁO VIÊN ĐÓ" |
 | Bấm ô điểm kỹ năng | không bấm được | hộp nhỏ điểm thành phần / số câu | THÊM |
+| Lọc chip "Có việc quá hạn" | em có việc quá hạn của bất kỳ ai | em có việc **của tôi** quá hạn | cùng nguồn cột Việc (PTA) |
 | Mở việc từ cột Việc | bấm tên việc | như cũ (badge chỉ hiện trạng thái) | GIỮ |
 
 ### 11.2 U05 Kế hoạch Test (skill: impeccable `distill`)
@@ -388,7 +389,7 @@ Chủ SP **DUYỆT U09** (không đụng). U04, U05, U06, U08 sửa theo bảng 
 |---|---|---|---|
 | U05-1 | "Tuần này" và "Đang làm bài" trùng — giữ một | Bỏ "· tuần này" ở dòng tuần; giữ **"Đang làm bài"** (là trạng thái; tuần đã ở dòng tuần) | BỎ chữ trùng |
 | U05-2 | Badge kỹ năng từng MT; kỹ năng không thi mờ hẳn — thấy kỹ năng thi ở tuần khác nhau | Ô MT: **mỗi tuần thi một dòng** "W1 NOV" + 4 vị trí badge cố định **L R W S** (`.ky` V5): kỹ năng thi tuần đó sáng, còn lại **mờ hẳn** (vẫn giữ chỗ để cột thẳng). Kỹ năng thi tuần khác → dòng thứ hai "W3 NOV" với badge W S sáng (thay chữ ngoại lệ "L, W, S · W3 NOV"). Dời vì vắng: dòng "Vắng → W2 NOV" + badge. Kỹ năng không đăng ký ở lượt: mờ ở mọi dòng. Dòng cuối = trạng thái / điểm "✓ 6.5" · "✗ 5.5" | ĐỔI · thay quyết định Q-c cũ (lời mới hơn thắng). Badge mờ có `aria-label` "không thi" — không chỉ dựa vào độ mờ |
-| U05-3 | Chờ chấm / quá hạn chấm gọn, ít chữ | Dòng trạng thái chỉ "Chờ chấm" hoặc "⚠ Quá hạn chấm" (bỏ tên môn "S" lặp); **badge kỹ năng đang chờ có viền vàng, quá hạn viền đỏ** → biết môn nào ngay trên badge | ĐỔI · chữ + ⚠ + viền (không chỉ màu) |
+| U05-3 | Chờ chấm / quá hạn chấm gọn, ít chữ | Dòng trạng thái chỉ "Chờ chấm" hoặc "⚠ Quá hạn chấm" (bỏ tên môn "S" lặp); **badge kỹ năng đang chờ có viền vàng; quá hạn = nền đỏ đặc + ⚠ nhỏ** (PTA: một MT có cả hai thì không chỉ khác màu viền) → biết môn nào ngay trên badge | ĐỔI · chữ + ⚠ + nền (không chỉ màu) |
 
 **11.2b U05 — TRƯỚC → SAU:** không bỏ thao tác nào (bấm ô MT → hộp kỹ năng · Xếp MTn · + MT ▾ · lọc · Xếp nhiều giữ như 10.2b). Chỉ đổi chữ: "· tuần này" bỏ · chữ ngoại lệ → dòng tuần + badge · "Chờ chấm S" → "Chờ chấm" + viền badge S.
 
