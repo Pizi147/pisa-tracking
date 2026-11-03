@@ -60,3 +60,8 @@ Mockup sẽ vẽ: `thiet-ke/audit-0311/u10-y-thuc.html` (khung K1–K8 dưới) 
 
 ## Không vẽ (lý do)
 EN (cùng chức năng) · đang tải / lỗi tải (như mọi panel) · lớp thường "Phối hợp" (như FT, đổi chữ) · Khai bậc (giữ panel hiện có).
+
+## Vòng critique (impeccable critique: A rà thiết kế + ui-ux-pro-max, B bộ dò — hai agent riêng)
+- Vòng 1 (03/11): **27/40**, không P0. Sửa 3 P1: K1 đủ 4 nhóm (thêm Chờ QL duyệt, Đã xử lý 7 ngày + hàng vừa Xác nhận xử lý) · hai nhóm khác màu (Bắt buộc nền vàng, badge vàng đặc; Mới badge xanh viền chấm; nút Đã xem viền) · dòng phụ tách nhãn / giá trị. Sửa P2: chữ lặp, dữ liệu K1 / K4 / K5 khớp, nút 375 tràn. Bộ dò B: chữ gợi ý 4.0:1 → đã tô `--text-faint`; vùng chạm 375 → 44 px. Còn lại của B là hộp chú thích mockup (dương tính giả).
+- Vòng 2 (03/11): **31/40**, không P0 / P1. Đã sửa thêm: số đầu nhóm, ngày vi phạm khớp luật bắt buộc (`batBuocTu`: Thứ Hai tuần trước ngày ghi → ngày ghi), K7 dùng Lâm cho khớp K1, khối Lần xử lý chỉ "lần này · hạn" + một dòng lần trước, danh sách K5 tên em dòng 1, thứ tự K2 = K1, "‹ Thu gọn" ở K2b, bỏ chữ lặp (K3, K6, K5f), K5e không tô đỏ ô ngày khi 409, đếm Lịch sử theo dòng (8).
+- Theo luật cổng (chạm 30 → chỉ cần không P0 / P1): dừng ở vòng 2.
