@@ -7,7 +7,6 @@ export const EN_AUDIT_CONG_VIEC = {
   'Loại việc': 'Task type',
   'Lọc thêm': 'More filters',
   'chưa đủ dữ liệu': 'not enough data',
-  'Kết quả PA đúng hạn': 'PA results on time',
   'Bài chấm quá hạn': 'Overdue scoring',
   'bài chấm quá hạn lên đầu': 'overdue scoring first',
   'bài quá hạn': 'overdue',
