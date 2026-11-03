@@ -275,13 +275,13 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
 
       {/* U02 c2: trong cột "Phương án" không số, không ⓘ (luật vào ⓘ của Kết luận). */}
       <DauMuc tieuDe={t('Phương án')} dem={khung ? undefined : dsPa.length || undefined}
-        luat={khung ? undefined : (
+        luat={khung || dauCoDiem ? undefined : (
           <>
             <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
             {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
           </>
         )}>
-        {!data.viewer.canEdit && data.status !== 'done' && (
+        {!data.viewer.canEdit && data.status !== 'done' && !dauCoDiem && (
           <p className="m-0 flex items-start gap-2 text-[13px] leading-relaxed text-slate-300 [text-wrap:pretty]"><span className="mt-0.5 text-slate-400"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
         )}
         {dsPa.length === 0 ? <p className="m-0 text-sm text-slate-400">{t('Chưa có PA.')}</p> : (
@@ -308,8 +308,8 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
               {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
               {data.closedAt && <span className="text-slate-400"> {t('· kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}</span>}
             </p>
-          ) : khung ? (
-            /* U02 c2: "chưa có ⓘ" — lý do khoá + luật PA trong ⓘ cạnh giá trị. */
+          ) : khung || dauCoDiem ? (
+            /* U02 c2 · U03 A2: "chưa có ⓘ" — lý do khoá + luật PA trong ⓘ cạnh giá trị. */
             <div className="flex items-center gap-1.5 text-[15px] text-slate-100">{t('chưa có')}
               <NutLuat>
                 <>
@@ -351,6 +351,10 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
           </span>
         ) : <BangChung ownerType="sos_case" ownerId={data.id} canEdit={data.viewer.canEdit} tieuDe="" onChanged={bc.reload} />}
       </DauMuc>
+      {/* U03 A2 / U02 c2: ai làm được việc của Case — một dòng mờ CUỐI thân Case (không ở đầu mục Phương án). */}
+      {dauCoDiem && !data.viewer.canEdit && data.status !== 'done' && (
+        <p className="m-0 mt-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-400 [text-wrap:pretty]"><span className="mt-0.5"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
+      )}
     </>
   );
 }
