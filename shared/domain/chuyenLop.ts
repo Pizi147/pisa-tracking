@@ -15,6 +15,7 @@ import { shortDate } from './display.ts';
 import { mondayOfDate } from './week.ts';
 import { NGON_NGU, t } from '../i18n/index.ts';
 import { kyHieuLop } from './tenLop.ts';
+import type { DiemHv } from './diemDong.ts';
 import { hienTargetKck, tachKck } from './nhapHocVien.ts';
 
 /**
@@ -320,6 +321,8 @@ export type PhieuEm = {
   mon: PhieuMon[];
   /** Audit 03/11 (câu 17.4): câu Writing CHUNG ghi trước khi tách W1 · W2 — chỉ đọc để GV tham khảo; W1 · W2 vẫn cần câu riêng. */
   writingCu: { noiDung: string; nguoiGhi: string | null; ghiLuc: string } | null;
+  /** Mockup v11 (chủ SP duyệt 03/11): FT, phiếu chưa xác nhận — điểm TỪNG môn bàn giao (W1 · W2 riêng) của lượt mới nhất có điểm, ✓ / ✗ so kỳ vọng của lượt. */
+  diemMon: DiemHv | null;
   nhanXetChung: string | null;
   xacNhan: { boi: string | null; luc: string; thay: boolean } | null;
   gvbmChuaBanGiao: string[];

@@ -7,8 +7,10 @@ import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from 
 import { can, phanCongDaNap, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import type { PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
-import { standingFor, standingLine } from '../students/standing.ts';
+import type { DiemHv, PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
+import { standingFor, standingLine, type Standing } from '../students/standing.ts';
+import { diemCuaLuot } from '../fasttrack/attempts.ts';
+import { diemTuStanding } from '../worklist/diemDong.ts';
 import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { chuCuoiKhoaLo } from '../normal/cuoiKhoa.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
@@ -118,12 +120,13 @@ export const cungGvTheoLo = (lenh: readonly { id: number; lop_nguon_id: number; 
  * PR-S5F-a (T58): dòng "Kết quả" của phiếu. Lớp thường: % Cuối khoá (`chuCuoiKhoaLo` — đọc được cả sau khi em đã chuyển đi); chưa có bài Cuối khoá
  * thì dòng kết quả gần nhất KHÔNG kèm nhãn SOS (lớp thường không dùng mức SOS). FT: dòng kết quả như cũ.
  */
-function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly number[]): Map<number, string> {
+function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly number[], giu?: Map<number, Standing>): Map<number, string> {
   const out = new Map<number, string>();
   const thuong = !!programmeOf(nguon.ct) && programmeOf(nguon.ct) !== 'FT';
   const ck = thuong ? chuCuoiKhoaLo(nguon.id, sids) : new Map<number, string>();
   const con = sids.filter((s) => !ck.has(s));
-  const standing = con.length ? standingFor([...con]) : new Map();
+  const standing = con.length ? standingFor([...con]) : new Map<number, Standing>();
+  for (const [k, v] of standing) giu?.set(k, v);
   for (const sid of sids) {
     const st = standing.get(sid);
     out.set(sid, ck.get(sid) ?? (st ? standingLine(thuong && st.sosLevel ? { ...st, sosLevel: 0 } : st) : 'Chưa có kết quả'));
@@ -132,12 +135,14 @@ function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly n
 }
 
 /** Kết quả gần nhất · Case đang mở + người nhận gợi ý · Ý thức · việc còn dở của MỌI em một lần (không hỏi lại theo em). Mọi lệnh cùng MỘT lớp nguồn. */
-export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number; student_id: number; lop_dich_id: number | null }[]): Map<number, TuDien> {
+export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number; student_id: number; lop_dich_id: number | null }[],
+  /** Nơi gọi cần lại `standing` vừa tính (điểm từng môn của phiếu) — giữ vào đây, không tính lại. */
+  giuStanding?: Map<number, Standing>): Map<number, TuDien> {
   const out = new Map<number, TuDien>();
   if (!ds.length) return out;
   const conn = db();
   const sids = [...new Set(ds.map((l) => l.student_id))];
-  const ketQua = ketQuaTheoLo(nguon, sids);
+  const ketQua = ketQuaTheoLo(nguon, sids, giuStanding);
   const yt = trangThaiYThuc(sids);
   const cases: { id: number; student_id: number; title: string | null; category: string | null; owner: string | null }[] = [];
   theoLo(sids, (lo, ph) => {
@@ -251,7 +256,26 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   }
   const cung = cungGvTheoLo(thay);
   const chuaXacNhan = thay.filter((r) => !r.xac_nhan_luc);
-  const tuDien = tuDienTheoLo({ id: lopId, ct }, chuaXacNhan);
+  const stEm = new Map<number, Standing>();
+  const tuDien = tuDienTheoLo({ id: lopId, ct }, chuaXacNhan, stEm);
+  /*
+   * Cột "Kết quả" của bảng GVBM (mockup v11, chủ SP duyệt 03/11): FT — điểm TỪNG môn (W1 · W2 riêng) của lượt mới nhất có điểm, ✓ / ✗ so kỳ vọng của
+   * chính lượt đó. `standing` đã tính ở phần tự điền; thêm MỘT câu đọc điểm các lượt đó cho cả phiếu. Phiếu đã xác nhận đọc bản chụp → không có.
+   */
+  const luotSt = [...new Set([...stEm.values()].filter((s) => s.mode === 'ielts_band' && s.attemptId).map((s) => s.attemptId as number))];
+  const diemLuot = luotSt.length ? diemCuaLuot(luotSt) : new Map<number, { skill: string; band: number | null }[]>();
+  const diemMonCua = (sid: number, mons: readonly string[]): DiemHv | null => {
+    const st = stEm.get(sid);
+    const goc = st && st.mode === 'ielts_band' ? diemTuStanding(st) : null;
+    if (!st || !goc) return null;
+    const kv = st.expectation;
+    const kn = mons.map((m) => {
+      const v = diemLuot.get(st.attemptId as number)?.find((r) => r.skill === m)?.band ?? null;
+      /* KCK dưới kỳ vọng: không ✗ (OV-9, như dòng điểm). */
+      return { k: tenMonNgan(ct, m), v, dat: v === null || kv === null ? null : v >= kv ? true : st.kckDuoi ? null : false };
+    });
+    return { ...goc, kn };
+  };
   /* PR-S5F-a: phiếu đã chụp vẫn đọc dòng Kết quả MỚI của lớp thường (sửa điểm Cuối khoá sau khi xác nhận) — không giữ chữ cũ. */
   const ketQuaMoi = programmeOf(ct) && programmeOf(ct) !== 'FT' && thay.length > chuaXacNhan.length
     ? ketQuaTheoLo({ id: lopId, ct }, thay.filter((r) => r.xac_nhan_luc).map((r) => r.student_id as number)) : new Map<number, string>();
@@ -279,6 +303,7 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
       phieu: trangThaiPhieu({ soMonDaGhi: daGhi, soMon: mon.length, daXacNhan: !!r.xac_nhan_luc }), soMonDaGhi: daGhi, soMon: mon.length,
       tuDien: chup ? { ...chup.tuDien, ketQua: ketQuaMoi.get(r.student_id) ?? chup.tuDien.ketQua } : tuDien.get(r.id) ?? null, tuDienDaChup: !!chup,
       mon, writingCu: cu ? { noiDung: cu.noi_dung, nguoiGhi: cu.ten_ghi, ghiLuc: cu.ghi_luc } : null, nhanXetChung: r.nhan_xet_chung ?? null,
+      diemMon: chup ? null : diemMonCua(r.student_id, monEm),
       xacNhan: r.xac_nhan_luc ? { boi: r.xn_ten ?? null, luc: r.xac_nhan_luc, thay: !!r.xac_nhan_thay } : null,
       gvbmChuaBanGiao: chup?.gvbmChuaBanGiao ?? mon.filter((m) => (!m.noiDung || m.lamLai) && !m.cungGv).map((m) => m.ngan),
       suaDuoc: false, gvcnCung: !!cung.get(r.id)?.gvcn,
