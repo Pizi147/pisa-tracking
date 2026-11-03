@@ -296,3 +296,69 @@ Cột cuối = hiện trạng main 03/11 (bấm thử GV Hà + QL Vy, đợt 2).
 | GV chấm S ▾ | đầu khối | như nay | GIỮ |
 | Cả bảng (mở đủ cột) | — | THÊM nếu Q-e "có" | THÊM (theo Q-e) |
 | Tên em → hồ sơ · MT cũ chưa nhập → lượt | lưới / cuối trang | như nay | GIỮ |
+
+### 10.4 U09 Tổng quan + menu tài khoản (CHƯA vẽ — chờ PTA duyệt bảng)
+Nguồn: `00` mục 20 U09 (ý 1–6, Nghiệm thu) · mục 12 · mục 21 · 22.1 (bảng tất cả GV · phân công trong menu) · 22.2-5 · N32 ②③④ (G2 G3 G4) · V10 · V11 · V13 · chủ SP 03/11 tối "badge Công việc QL = số việc Của tôi (V13)" · B01–B07, B18, B29 · bài học UX-A · luật PTA "không thêm chữ thừa". Mockup gốc đã duyệt: `thiet-ke/v8/tong-quan.html` (29/10) — nâng cấp trên đó, không vẽ lại từ đầu.
+
+| # | Ý (trích ngắn · mục) | Làm gì trong mockup (khu / thành phần, chữ thật) | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP | Hiện trạng |
+|---|---|---|---|---|---|
+| 1 | Bảng là tất cả GV thì đổi tên; "cần chú ý" thì lọc theo tiêu chí công khai + "Xem tất cả"; không gắn nhãn người vì mẫu nhỏ · U09 ý 1 · 22.1 | Bảng "**Giáo viên · W4 OCT – W5 OCT**" (G2), đủ mọi GV, GV có bài chấm quá hạn lên đầu; không ngưỡng màu | ĐỔI tên + thứ tự · GIỮ đủ (G2 N32 ②) | — | TÁI HIỆN (B03) |
+| 2 | Cột của bảng GV đúng đơn vị | "Kết quả PA đúng hạn" (thay "Việc đúng hạn" — chỉ đếm Ghi kết quả PA) · "Chấm Test đúng hạn" · "Bài chấm quá hạn" (ghi "bài" cả khi 0) | ĐỔI chữ — B04 | — | TÁI HIỆN (B04) |
+| 3 | QL ưu tiên ngoại lệ hành động được (cần duyệt, chưa người làm, quá hạn, Case cần PA); GV / TVV ưu tiên việc của mình · ý 2 · V10 | Giữ bố cục V8: dải chỉ số → trái "Lớp cần chú ý" + "Giáo viên" · phải "Chờ bạn duyệt" + "Điều hướng". GV: "Việc của tôi" + "Kỹ năng tôi dạy" + "Lớp tôi chủ nhiệm" (như nay) | GIỮ V8 (đã duyệt) | — | KHỚP V8 |
+| 4 | Lớp cần chú ý: lý do ngắn + việc tiếp, không nhầm số Case với số HV; mở đúng danh sách · ý 3 | Cột giữ: Đạt MT · SOS hiện tại (chip + số **HV**) · **Case chưa PA** (đơn vị "Case" dưới số) · Thi tháng này (HV); số → panel đúng tập (V11) | ĐỔI đơn vị dưới số | — | "Case chưa PA 31" không đơn vị |
+| 5 | Ô "Đạt MT": tử / mẫu nói rõ, không giấu em chưa đủ dữ liệu · mục 8 · B01 | "**67 %**" · dòng phụ "2/3 HV · **8 chưa đủ dữ liệu**" · "trong kỳ" | ĐỔI chữ — B01 | — | TÁI HIỆN (B01) |
+| 6 | Menu tài khoản giữ phần thường dùng; vai + phân công chi tiết sang "Quyền & phân công" / hồ sơ · ý 4 · 22.1 · **G3** | Menu: tên · vai / phạm vi (một dòng mỗi vai, đổi góc nhìn nếu có) · Hồ sơ cá nhân · Hồ sơ giáo viên · Hướng dẫn · (Quản trị / Bảng quy đổi theo quyền) · Giao diện · Ngôn ngữ · Đăng xuất. **Bỏ khối GVCN + Kỹ năng được phân công** (đã có ở Hồ sơ GV) | CHUYỂN — G3 (N32 ③) | — | TÁI HIỆN (B05) |
+| 7 | Quyền đang có ≠ phạm vi đang xem; đổi góc nhìn không mở quyền · ý 5 | Đầu trang "Tổng quan · **Cẩm Phả** · W1 NOV · kỳ W4 OCT – W5 OCT"; menu "Phạm vi được cấp" một dòng mỗi vai | GIỮ | — | KHỚP |
+| 8 | Badge chuông ≠ badge Công việc; không mọi cảnh báo màu nóng · ý 6 · V13 · chủ SP 03/11 | Badge Công việc = số việc **Của tôi** mọi vai (QL không còn đếm thẻ chờ duyệt mọi chi nhánh — UX-A làm); chuông = tin chưa đọc, khác dáng | ĐỔI (UX-A sở hữu, U09 vẽ cùng số) | — | QL = thẻ duyệt mọi chi nhánh (B18) |
+| 9 | Số lặp trên cùng màn · **G4** | Khối "Điều hướng": chỉ tên đích + "›" (bỏ số) — "Case chưa có PA ›", "Lịch thi ›", "Việc của tôi ›", "Báo cáo ›" | ĐỔI — G4 (N32 ④) | — | TÁI HIỆN (B06) |
+| 10 | Đơn vị luôn ghi · V13 · B07 | GV: "Chờ chấm ⚠ 11 **bài** quá hạn" · "Dưới kỳ vọng 13 **HV**" | ĐỔI chữ | — | TÁI HIỆN (B07) |
+| 11 | Một GV không ngoại lệ không bị xếp vào nhóm khiến tưởng có vấn đề · Nghiệm thu | = #1 (tên "Giáo viên", không "cần chú ý") | ĐỔI | — | — |
+| 12 | Menu dùng được ở cửa sổ thấp / zoom lớn, không mất Đăng xuất / focus · Nghiệm thu | Menu ≤ 1 màn sau #6; Đăng xuất dính đáy (như nay); khung 375 + khung 1440 × 700 cao | GIỮ + kiểm | — | KHỚP (dính đáy) |
+| 13 | Kỳ và thời điểm: "trong kỳ" / "hiện tại" · mục 21 | Ô chỉ số giữ nhãn "trong kỳ" / "hiện tại" (như nay); 31 % ở Tổng quan vs Phân tích = hai kỳ khác (B02) — không thêm chữ | GIỮ | — | ĐÚNG MÃ (B02) |
+| 14 | Dải "Mới dùng PISA TRACKING?" | Giữ (có nút Ẩn) | GIỮ | — | KHỚP |
+| 15 | Phân cấp 3 tầng · mục 12 | Theo V8 (thẻ 17 / 700, số 28 / 700, phụ 12–13) | GIỮ V8 | — | KHỚP |
+| 16 | Trạng thái hệ thống: tải / lỗi / rỗng mỗi khối · mục 21 | Theo V8 khu E (lỗi tải một khối không trắng trang) | GIỮ V8 | — | KHỚP |
+| 17 | 375 · mục 12 | Theo V8 (thẻ lưới, cột phải lên trước) + menu tài khoản 375 sau #6 | GIỮ V8 + vẽ menu | — | — |
+
+### 10.4b U09 — kiểm kê thao tác TRƯỚC → SAU
+| Thao tác | Ở đâu | Sau | Giữ / bỏ / đổi |
+|---|---|---|---|
+| Fast Track / Lớp thường · chi nhánh (QT, CX) | đầu trang | như nay | GIỮ |
+| Bấm số ô chỉ số / bảng → panel đúng tập (V11) | dải, bảng | như nay | GIỮ |
+| Hành chính / Học thuật (bảng GV) | đầu bảng GV | như nay | GIỮ |
+| Tên GV → hồ sơ GV · mã lớp → hồ sơ lớp | bảng | như nay | GIỮ |
+| Chờ bạn duyệt: bấm dòng → panel Duyệt / Từ chối · Hộp duyệt › | cột phải | như nay | GIỮ |
+| Điều hướng: dòng → trang đích | cột phải | như nay, bỏ số | ĐỔI (G4) |
+| Menu: Hồ sơ cá nhân · Hướng dẫn · Hồ sơ GV · Quản trị / Bảng quy đổi · Giao diện · Ngôn ngữ · Đăng xuất · đổi góc nhìn | menu | như nay | GIỮ |
+| Menu: khối GVCN · Kỹ năng được phân công | menu | sang Hồ sơ GV (đã có) | CHUYỂN (G3) |
+| Mới dùng PISA? Xem · Ẩn | đầu trang | như nay | GIỮ |
+
+### 10.5 U08 Phân tích · Báo cáo HV (CHƯA vẽ — chờ PTA duyệt bảng)
+Nguồn: `00` mục 20 U08 (ý 1–6, "Không kết luận sai…", Nghiệm thu) · mục 12 · mục 21 (Kỳ và thời điểm, Bộ đếm, Điểm và chênh lệch, Rỗng và thiếu) · 22.2-5 · G8 (báo cáo thuần) · G10 (Toàn bộ chỉ ở Phân tích) · V9 · V11 (Phân tích giữ chỉ đọc) · B02, B16, B17, B25, B29 · luật PTA "không thêm chữ thừa". Mockup gốc đã duyệt: `thiet-ke/v8/phan-tich.html`.
+
+| # | Ý (trích ngắn · mục) | Làm gì trong mockup (khu / thành phần, chữ thật) | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP | Hiện trạng |
+|---|---|---|---|---|---|
+| 1 | Chỉ số theo kỳ và chỉ số hiện tại thành nhóm dễ phân biệt; đổi khoảng tuần thấy card nào đổi · U08 ý 1 | Dải 5 ô chia hai nhóm có nhãn nhóm: "**Trong kỳ W1 OCT – W5 OCT**" (Đạt MT · Đạt Target thi thật · Thi trong kỳ · PA cải thiện) │ "**Hiện tại**" (Case có PA) — bỏ chữ "· trong kỳ" / "· hiện tại" lặp ở từng ô | ĐỔI xếp nhóm, bớt chữ lặp | — | 5 ô ngang, mỗi ô tự ghi kỳ (ảnh) |
+| 2 | Bảng kết quả: rõ "18 HV · 8 đủ dữ liệu · 10 chưa đủ"; không xoá em chưa đủ · ý 2 | Cột "Lượt": "MT0" + dòng phụ "**18 HV · 8 đủ dữ liệu**"; % dưới mỗi số tính trên 8 — tiêu đề nhóm cột "% trên HV đủ dữ liệu"; cột "Chưa đủ" giữ (bấm → danh sách) | ĐỔI chữ — B16 / B25 | — | TÁI HIỆN (B25) |
+| 3 | Tỷ lệ và số cùng nghĩa; định nghĩa, quy tắc lấy lượt, mẫu số ở chi tiết; MT3+ nêu cách chọn lượt · ý 3 | ⓘ "Kết quả MT" (đã có) ghi: lượt của từng HV trong kỳ · MT3+ = lượt mới nhất từ MT3 trở đi, mỗi HV một lần · mẫu = HV đủ dữ liệu | GIỮ ⓘ (giải thích cách tính — V6) | — | ⓘ có, cần đủ câu |
+| 4 | "So lượt trước" phân biệt tăng / giữ / giảm điểm với cải thiện mức đạt; không có mốc → trạng thái đúng, "—" ≠ 0 · ý 4 · B17 | Cột "So lượt trước · Overall": "↑ 1 · = 2 · ↓ 2 **HV**" (đơn vị); không có lượt trước: "—" (một nghĩa: chưa có mốc) | ĐỔI tiêu đề cột + đơn vị | — | ký hiệu không đơn vị (B17) |
+| 5 | Bấm chỉ số mở đúng tập + mang kỳ / chi nhánh / chương trình; In / xuất ghi phạm vi, thời điểm, mẫu số · ý 5 | Panel số (V11, chỉ đọc — G8) tiêu đề "{chỉ số} · Cẩm Phả · Fast Track · W1 OCT – W5 OCT · 8 HV"; bản In có dòng đầu cùng nội dung | GIỮ panel · ĐỔI tiêu đề | — | CHƯA KIỂM panel |
+| 6 | Thanh tỷ lệ Tăng / Giữ / Giảm để quét, giữ bảng số; không chart lấp chỗ · ý 6 | Bảng "Tiến bộ theo kỹ năng": thêm thanh ngang 3 đoạn mảnh (xanh / xám / đỏ, có chữ số) dưới mỗi hàng; số giữ | THÊM nhỏ (`00` gợi ý "có thể") | **Q-f** thêm thanh tỷ lệ Tăng / Giữ / Giảm? Khuyến nghị: KHÔNG (luật "không thêm" — bảng số đã đủ) | — |
+| 7 | "Không kết luận sai": 31 % Tổng quan vs Phân tích khác kỳ; 14 HV có ngày thi vs 12 có KQ không mâu thuẫn · U08 | Không đổi số; nhóm "Trong kỳ" (#1) cho thấy kỳ ngay trên ô | GIỮ | — | ĐÚNG MÃ (B02) |
+| 8 | Ô "Đạt MT" cùng cách ghi với Tổng quan · mục 21 · B01 | "31 %" · "27/86 HV · 10 chưa đủ dữ liệu" (cùng hàm Tổng quan) | ĐỔI — một cách ghi | — | Tổng quan / Phân tích ghi khác (B01) |
+| 9 | Phân tích GV: "Đúng hạn" trộn bài Test + việc · B29 | Hồ sơ GV / Phân tích GV: tách "Chấm Test đúng hạn 56 % · 39/70 bài" và "Kết quả PA đúng hạn 0 % · 0/1 việc" | ĐỔI — cùng gốc B04 | — | TÁI HIỆN (B29) |
+| 10 | Báo cáo thuần, không lồng việc · G8 | Không nút làm việc trong panel Phân tích (giữ) | GIỮ | — | KHỚP |
+| 11 | Thời gian: Toàn bộ · Chọn khoảng tuần · G10 · V9 | Như nay | GIỮ | — | KHỚP |
+| 12 | Mẫu số 0 → "Chưa có dữ liệu", không 0 % · mục 8 | "– Chưa có dữ liệu" (V8 sẵn có) | GIỮ | — | KHỚP |
+| 13 | 375 · mục 12 | Theo V8 phân tích (thẻ lưới); bảng Kết quả MT thành thẻ mỗi lượt | GIỮ V8 | — | — |
+
+**Câu hỏi gom cho chủ SP (qua PTA):** **Q-f** thêm thanh tỷ lệ Tăng / Giữ / Giảm ở bảng "Tiến bộ theo kỹ năng"? — khuyến nghị KHÔNG (bảng số đã đủ; luật "không thêm").
+
+### 10.5b U08 — kiểm kê thao tác TRƯỚC → SAU
+| Thao tác | Ở đâu | Sau | Giữ / bỏ / đổi |
+|---|---|---|---|
+| Tab Báo cáo HV · Phân tích GV · Test + SOS · Kết quả Test · Hiệu quả PA · Ý thức | đầu trang | như nay | GIỮ |
+| Fast Track / Lớp thường · Toàn bộ / Chọn khoảng tuần · Từ tuần → Đến tuần · Chi nhánh | đầu trang | như nay | GIỮ |
+| In | đầu trang | như nay, dòng đầu ghi phạm vi + mẫu số | GIỮ · ĐỔI nội dung in |
+| Bấm số → panel chỉ đọc đúng tập | ô, bảng | như nay, tiêu đề panel đủ phạm vi | GIỮ · ĐỔI tiêu đề |
+| ⓘ cách tính | ô, bảng | như nay, câu đủ | GIỮ |
