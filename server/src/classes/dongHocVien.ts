@@ -7,7 +7,7 @@
  * riêng rồi gọi `listCases(p, {})` KHÔNG lọc phạm vi gì để lấy Case — quét mọi Case trong hệ thống, chậm hàng chục giây
  * trên Turso. Xem `.superpowers/sdd/2026-09-22-pr-qa-hoc-vien-lop/task-17-planning-fix-report.md`.
  */
-import { ATTEMPT_KIND_SHORT, PERMISSIONS, bacHoacNgoaiThang, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, PERMISSIONS, bacHoacNgoaiThang, nhanLoaiXuLy, soThuTuLuot, nhomCuaLoai, viecTiepCuaEm, type AttemptKind, type CaseViec, type NhanYThucEm, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { DS_JSON, db } from '../db.ts';
 import { activeAt, can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { emCoBaoPhChuaLam } from '../yThuc/phoiHop.ts';
@@ -95,6 +95,8 @@ export function viecHocVienTheoLop(p: Principal, o: {
   theoEm: Map<number, ViecEm>; soChoDuyet: Map<number, number>; soEmQuaHan: Map<number, number>;
   /** SV-SO3 (hàng HV, khu d): PA của các Case đang mở + có việc Case quá hạn · bậc Ý thức (`bacHoacNgoaiThang`) — từ chính các câu đã đọc ở đây. */
   hoTro: Map<number, { soPa: number; quaHan: boolean }>; bacYThuc: Map<number, string>;
+  /** K7 (U10): hộp nhỏ của chip bậc ở Học viên & Lớp — cùng trạng thái Ý thức vừa đọc (không câu thêm). */
+  yThucHop: Map<number, { canLam: NhanYThucEm | null; viPhamCho: number; lanNay: string }>;
   /** TL-HVL: chi tiết Case đang mở đã đọc ở đây — nhãn Bộ lọc thêm dùng lại, không đọc lại. */
   chiTiet: Map<number, CaseChiTiet>;
 } {
@@ -116,11 +118,15 @@ export function viecHocVienTheoLop(p: Principal, o: {
   const lopXemDuoc = emIds.length ? [...o.emTheoLop.keys()].filter((l) => can(p, PERMISSIONS.STUDENT_VIEW, { classId: l })) : [];
   const yThuc = new Map<number, NhanYThucEm>();
   const bacYThuc = new Map<number, string>();
+  const yThucHop = new Map<number, { canLam: NhanYThucEm | null; viPhamCho: number; lanNay: string }>();
   for (const [id, em] of trangThaiYThuc(lopXemDuoc.flatMap((l) => o.emTheoLop.get(l) ?? []))) {
     const n = em.tamDung ? null : nhanNhomEm(em);
     if (n) yThuc.set(id, n);
     const bac = bacHoacNgoaiThang(em.bac, em.xuLy);
-    if (bac) bacYThuc.set(id, bac);
+    if (bac) {
+      bacYThuc.set(id, bac);
+      yThucHop.set(id, { canLam: n, viPhamCho: em.soMoi + em.soBatBuoc, lanNay: nhanLoaiXuLy(em.keTiep.kind) });
+    }
   }
   /* PR-S4F #5: quét trước khi đếm, như mọi đường đọc hộp (K5-17) — không thì badge đếm thiếu thẻ Báo QL mà hộp (quét rồi) có. */
   quetYeuCau(o.homNay);
@@ -155,5 +161,5 @@ export function viecHocVienTheoLop(p: Principal, o: {
     theoEm.set(id, { viec, choDuyet: emChoDuyet.has(id) });
     if (viec.some((v) => v.tone === 'danger')) for (const lop of lops) soEmQuaHan.set(lop, (soEmQuaHan.get(lop) ?? 0) + 1);
   }
-  return { theoEm, soChoDuyet, soEmQuaHan, hoTro, bacYThuc, chiTiet };
+  return { theoEm, soChoDuyet, soEmQuaHan, hoTro, bacYThuc, yThucHop, chiTiet };
 }

@@ -113,7 +113,9 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
     ids.thieu_tt = [...new Set(ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id))];   // UX-1: em học hai lớp một lần, như chip
     for (const h of ds.hocVien) if (h.thieu && !thieu.has(h.id)) thieu.set(h.id, h.thieu);
   }
-  return { phamVi, tong: em.size, ids, tatCa: [...em.keys()], lyDo, standing, thieu };
+  /* U04-3 / XM-4 (PTA 03/11): "Tất cả" = em đang học + tạm dừng — em Kết thúc học (chờ KQ thi thật) không trong danh sách nên không đếm; vẫn ở chip 'da-thi' / 'cho-buoc-tiep'. */
+  const tatCa = [...em.values()].filter((r) => r.status !== 'finished').map((r) => r.id as number);
+  return { phamVi, tong: tatCa.length, ids, tatCa, lyDo, standing, thieu };
 }
 
 export function soHocVien(p: Principal, f: { branchId?: number | null } = {}): SoHocVien {
