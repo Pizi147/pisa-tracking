@@ -458,7 +458,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
    * Reading của MT2 chưa đóng thì vẫn bị gọi là SOS 1. Nay một chỗ tính duy nhất —
    * `standingFor` — dùng chung cho bảng lớp, danh sách học viên và bảng tổng hợp.
    */
-  const standing = standingFor(sids);
+  const standing = standingFor(sids, finished ? classId : undefined);
 
   /* PR-Qa: nhãn cảnh báo Ý thức 5 ngày (YT-8) — MỘT lần cho cả lớp. UI-HO-SO-LOP: "Việc tiếp theo" (`viecTiepCuaEm`) bỏ khỏi /roster — việc của em đọc `/classes/:id/viec-theo-em`. */
   const canhBao = canhBaoTheoHocVien(p, classId);
@@ -486,7 +486,8 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
      * Lịch sử cũ không mất: hồ sơ học viên có bộ chọn lộ trình, và "Toàn bộ hành trình" vẫn
      * mở ra được mọi lớp em từng học.
      */
-    const list = (byStudent.get(s.id) ?? []).filter((a) => !s.cycle_id || a.cycle_id === s.cycle_id);
+    /* HSL-KET-THUC-SO: lớp đã kết thúc — chỉ bài của CHÍNH lớp này (lộ trình đang chạy là của lớp em đang học). */
+    const list = (byStudent.get(s.id) ?? []).filter((a) => finished ? a.class_id === classId : !s.cycle_id || a.cycle_id === s.cycle_id);
     const timeline = list.map((a) => {
       const scores = bundle.scores.get(a.id) ?? [];
       const c = bundle.cases.get(a.id);

@@ -23,6 +23,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
   const diemLuot: any = await import('../cham/diemTheoLuot.ts');
   const luuTru: any = await import('../classes/luuTru.ts');
   const transition: any = await import('../classes/transition.ts');
+  const { phanTichLop } = await import('../classes/phanTichLop.ts');
   const xoaKetThuc: any = await import('../classes/xoaKetThucLop.ts');
   const students: any = await import('../students/students.ts');
   const accounts: any = await import('../platform/accounts.ts');
@@ -195,6 +196,25 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     }
     const lt = luuTru.danhSachLuuTru(QL, { branchId: mb }).lop.map((l: any) => l.code);
     assert(lt.includes('MB FOU 03') && lt.includes('MB BE 08'), `Lưu trữ: ${lt}`);
+  });
+
+  check('HSL-KET-THUC-SO · lớp đã kết thúc chỉ tính lượt của CHÍNH lớp: Kết quả + dòng bài bảng HV và tab Phân tích cùng nguồn', () => {
+    for (const ma of ['MB FOU 03', 'MB BE 08']) {
+      const lop = one('SELECT id FROM classes WHERE code = ?', ma).id as number;
+      const lopCua = (id: number) => one('SELECT class_id FROM assessment_attempts WHERE id = ?', id).class_id as number | null;
+      const ros = classes.classRoster(QL, lop) as any[];
+      const coKq = ros.filter((r) => r.standing?.attemptId);
+      assert(coKq.length > 0, `${ma}: không em nào có kết quả`);
+      for (const r of ros) {
+        if (r.standing?.attemptId) assert(lopCua(r.standing.attemptId) === lop, `${ma} em ${r.id}: Kết quả lấy ${r.standing.attemptLabel} của lớp ${lopCua(r.standing.attemptId)}`);
+        for (const h of r.history) assert(lopCua(h.id) === lop, `${ma} em ${r.id}: dòng bài ${h.label} của lớp ${lopCua(h.id)}`);
+      }
+      const pt = phanTichLop(QL, lop);
+      assert(pt.soHocVien === ros.filter((r) => !r.archived).length, `${ma}: Phân tích ${pt.soHocVien} HV ≠ bảng ${ros.filter((r) => !r.archived).length}`);
+      for (const r of coKq.filter((x) => !x.archived && x.standing.scored >= x.standing.required)) {
+        assert(Object.values(pt.ds).some((x) => x.dat.includes(r.id) || x.chua.includes(r.id)), `${ma} em ${r.id}: có Kết quả, Phân tích không có`);
+      }
+    }
   });
 
   check('OV11g-6 · HL-8 / HL-14 / HL-12 / CA2-4 / CA2-12: badge Admin, "+ Học viên" khi tìm không ra, lớp cùng chi nhánh lên đầu, câu chặn Kết thúc lớp', () => thu(() => {

@@ -7,6 +7,7 @@
  *   Lớp thường 4 môn (L · R · W · S) × Giữa khoá / Cuối khoá. Ô = số HV đạt (từ 70%) / số HV có điểm môn đó.
  *
  * Chỉ học viên ĐANG HỌC lớp này (không lưu trữ), chỉ lộ trình đang chạy. Chưa có điểm KHÁC trượt: không vào mẫu số.
+ * HSL-KET-THUC-SO: lớp ĐÃ KẾT THÚC — em từng học (không lưu trữ), chỉ lượt của CHÍNH lớp đó (cùng nguồn bảng Học viên + đầu trang, `standingFor(…, lớp)`).
  */
 import {
   ATTEMPT_KIND_SHORT, ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, type AttemptKind, type DiemHv, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, categoryOf, tenKyNang, tenMon, tenMonNgan,
@@ -56,13 +57,18 @@ export function phanTichNhieuLop(classIds: readonly number[], diemDot?: DiemDot)
   const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
   const progCua = new Map<number, ProgrammeInfo | null>();
   const hvCua = new Map<number, any[]>();
+  const ketThuc: number[] = [];
   for (const l of lo(classIds)) {
-    for (const r of conn.prepare(`SELECT id, programme_code FROM classes WHERE id IN (${cho(l.length)})`).all(...l) as any[]) progCua.set(r.id, programmeByCode(r.programme_code));
+    for (const r of conn.prepare(`SELECT id, programme_code, status FROM classes WHERE id IN (${cho(l.length)})`).all(...l) as any[]) {
+      progCua.set(r.id, programmeByCode(r.programme_code));
+      if (r.status === 'finished') ketThuc.push(r.id);
+    }
     for (const r of conn.prepare(
-      `SELECT e.class_id, s.id, cy.id AS cycle_id FROM enrollments e
+      `SELECT DISTINCT e.class_id, s.id, IIF(c.status = 'finished', NULL, cy.id) AS cycle_id FROM enrollments e
+         JOIN classes c ON c.id = e.class_id
          JOIN students s ON s.id = e.student_id
-         LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-        WHERE e.class_id IN (${cho(l.length)}) AND e.status = 'active' AND s.archived_at IS NULL`,
+         LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active' AND c.status != 'finished'
+        WHERE e.class_id IN (${cho(l.length)}) AND (e.status = 'active' OR c.status = 'finished') AND s.archived_at IS NULL`,
     ).all(...l) as any[]) hvCua.set(r.class_id, [...(hvCua.get(r.class_id) ?? []), r]);
   }
   const cycleIds = [...new Set([...hvCua.values()].flat().map((h) => h.cycle_id).filter(Boolean))] as number[];
@@ -74,11 +80,21 @@ export function phanTichNhieuLop(classIds: readonly number[], diemDot?: DiemDot)
         WHERE a.cycle_id IN (${cho(l.length)}) AND a.status != 'cancelled'${diemDot ? ` AND a.kind = 'mock' AND a.attempt_no = ?` : ''}`,
     ).all(...l, ...(diemDot ? [diemDot.mt] : [])) as any[]) baiCua.set(a.cycle_id, [...(baiCua.get(a.cycle_id) ?? []), a]);
   }
-  const bundle = loadBundle([...baiCua.values()].flat().map((a) => a.id));
+  const baiLopKt = new Map<number, any[]>();   // HSL-KET-THUC-SO: lượt của chính lớp đã kết thúc
+  for (const l of lo(ketThuc)) {
+    for (const a of conn.prepare(
+      `SELECT a.*, cy.route, cy.khong_cam_ket AS cy_kck, rp.week_start FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.class_id IN (${cho(l.length)}) AND a.status != 'cancelled'${diemDot ? ` AND a.kind = 'mock' AND a.attempt_no = ?` : ''}`,
+    ).all(...l, ...(diemDot ? [diemDot.mt] : [])) as any[]) baiLopKt.set(a.class_id, [...(baiLopKt.get(a.class_id) ?? []), a]);
+  }
+  const bundle = loadBundle([...baiCua.values(), ...baiLopKt.values()].flat().map((a) => a.id));
   for (const id of classIds) {
     const hv = hvCua.get(id) ?? [];
     const loTrinh = new Set<number>(hv.filter((h) => h.cycle_id).map((h) => h.cycle_id));
-    out.set(id, tinhMotLop(progCua.get(id) ?? null, nguongDatLop(id), hv.length, [...loTrinh].flatMap((c) => baiCua.get(c) ?? []), bundle, diemDot));
+    const em = new Set<number>(hv.map((h) => h.id));
+    const bai = baiLopKt.has(id) ? baiLopKt.get(id)!.filter((a) => em.has(a.student_id)) : [...loTrinh].flatMap((c) => baiCua.get(c) ?? []);
+    out.set(id, tinhMotLop(progCua.get(id) ?? null, nguongDatLop(id), hv.length, bai, bundle, diemDot));
   }
   return out;
 }
