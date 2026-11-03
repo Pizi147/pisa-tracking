@@ -78,7 +78,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
   const baoChuaLuu = (n: number) => {
     const k = [...hang.chuaLuu.keys()][0] ?? '';
     if (k === 'chung') setMoChung(true); else if (k) denEm(Number(k.split('|')[0]));
-    toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại, hoặc bấm Đóng lần nữa để bỏ.', { n }));
+    toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại; bấm Đóng lần nữa thì chữ ở ô lỗi sẽ mất.', { n }));
   };
   const dong = dongSauKhiLuu(hang, onClose, baoChuaLuu);
   const xacNhan = async () => {

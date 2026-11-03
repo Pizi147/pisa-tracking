@@ -441,7 +441,9 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
 
 export type ViecBanGiao =
   | { loai: 'gvcn'; userId: number; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null; emIds: number[] }
-  | { loai: 'gvbm'; userId: number; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string; emIds: number[] };
+  | { loai: 'gvbm'; userId: number; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string; emIds: number[];
+      /** Việc gộp W1 · W2 (cùng GV): số em từng task. */
+      tung?: { mon: string; monNgan: string; daGhi: number; n: number }[] };
 
 /**
  * Việc bàn giao của MỘT người: GVCN — MỘT việc mỗi lớp nguồn có lệnh (không `huy`, có phiếu, còn phiếu chưa xác nhận); GVBM — MỘT việc mỗi (lớp,
@@ -527,6 +529,26 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
         emIds: chua.map((l) => l.student_id as number),
       });
     }
+  }
+  return gopViecW(out);
+}
+
+/**
+ * Chủ SP 03/11 (mockup v11 đã duyệt): GV dạy CẢ W1 + W2 của một lớp → MỘT việc "Bàn giao môn W1 · W2" (mở bảng hai cột), không hai việc / hai lần mở.
+ * `mon` = "writing1,writing2" (panel tách theo dấu phẩy); số em giữ riêng từng task ở `tung`.
+ */
+function gopViecW(ds: ViecBanGiao[]): ViecBanGiao[] {
+  const out: ViecBanGiao[] = [];
+  for (const v of ds) {
+    const w = v.loai === 'gvbm' && (v.mon === 'writing1' || v.mon === 'writing2');
+    const cap = w ? out.find((x) => x.loai === 'gvbm' && x.userId === v.userId && x.lopId === v.lopId && (x.mon === 'writing1' || x.mon === 'writing2') && x.mon !== v.mon) : undefined;
+    if (!w || !cap || cap.loai !== 'gvbm' || v.loai !== 'gvbm') { out.push(v); continue; }
+    const [a, b] = cap.mon === 'writing1' ? [cap, v] : [v, cap];
+    Object.assign(cap, {
+      mon: 'writing1,writing2', monNgan: `${a.monNgan} · ${b.monNgan}`, daGhi: a.daGhi + b.daGhi, n: a.n + b.n,
+      han: [a.han, b.han].filter(Boolean).sort()[0] ?? '', emIds: [...new Set([...a.emIds, ...b.emIds])],
+      tung: [a, b].map((x) => ({ mon: x.mon, monNgan: x.monNgan, daGhi: x.daGhi, n: x.n })),
+    });
   }
   return out;
 }
