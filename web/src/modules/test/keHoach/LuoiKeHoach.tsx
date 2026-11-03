@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Empty, Th } from '../../../ui/ui.tsx';
+import { Empty } from '../../../ui/ui.tsx';
 import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/index.ts';
 import { OMt } from '../../../ui/OMt.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
@@ -11,6 +11,9 @@ import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
 import { HopSEx } from './HopSEx.tsx';
 import { Menu } from '../../../ui/Menu.tsx';
+import { ODiem } from '../../../ui/ODiem.tsx';
+import { useDienThoai } from '../../../ui/TheDong.tsx';
+import { kqOverall } from '../../students/GocLichThi.tsx';
 import { fmtBand } from '../../../lib/format.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { MT_TOI_DA, oGon, tuanLich } from '@shared/domain/index.ts';
@@ -22,11 +25,11 @@ import {
 type Cot = { key: string; dot: DotChon; tieu: string; phu: string | null; deXuat: string | null; nhanDeXuat: string | null };
 type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau: KyNangKH | null };
 
-/** Cột tên: 190 (mockup #659), điện thoại 120 — tên dài xuống hai dòng. */
-const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 190;
+/** Cột tên: 220 (mockup V11 U05), điện thoại 120 — tên dài xuống dòng, không cắt. */
+const RONG_TEN = typeof window !== 'undefined' && window.innerWidth < 640 ? 120 : 220;
 /** Chủ SP 22/10 (10 mục 6): cột cuối hàng HV (lớp FT) — các lượt S Ex của em theo tuần + nút "+ MT" (MT kế tiếp · S Ex). Kế hoạch Test chỉ
  *  QL / Admin thấy (`plan.week`), máy chủ kiểm lại khi ghi. */
-const RONG_SEX = 136;
+const RONG_SEX = 110;
 const HANG_GON = 10;
 
 /**
@@ -35,12 +38,12 @@ const HANG_GON = 10;
  * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô FT: chưa có đợt = `OMt` (`MT3 · chưa xếp`),
  * đã có đợt = `ChipDotFT` (chip theo nhóm kỹ năng, PR-OMT C6); ô lớp thường = `ChipKyNang`; bấm ô mở `HopKyNang` neo cạnh ô.
  */
-export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = false, hvChon = null }: {
+export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = false, hvChon = null }: {
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
   /** OV-15c (C18): em vừa chọn ở ô tìm — cuộn tới hàng và đánh dấu hàng. */
   hvChon?: number | null;
-  /** PR-XLMT (chip "Cần xếp lại"): chỉ còn hàng có kỹ năng vắng / phần thi đã huỷ. */
-  chiCanXepLai?: boolean;
+  /** U05 (G5, chip "Chưa có MT kế tiếp"): chỉ còn em chưa có lượt MT nào đang chờ và còn ô "Xếp MTn". */
+  chiChuaCoKe?: boolean;
 }) {
   const [hop, setHop] = useState<Hop | null>(null);
   /** PR-OV4a: ô "Đã huỷ" đang mở hộp Khôi phục (`anchor` giữ để "Xếp MT{n} mới" mở hộp xếp đúng ô). */
@@ -48,6 +51,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   const [hetHang, setHetHang] = useState(false);
   const [sEx, setSEx] = useState<{ hang: HangFT; dong: DongSEx | null } | null>(null);
   const homNay = useNgayNghiepVu().homNay;
+  const dienThoai = useDienThoai();
   /* Chủ SP 28/10: lớp GV dạy mà không xếp được — chỉ xem: ô mở trang lượt (đổi trang), không hộp xếp / + MT / sửa ghi chú. */
   const chiXem = !!data.chiXem;
   const cuon = useRef<HTMLDivElement>(null);
@@ -64,7 +68,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
     }));
   }, [loai, data]);
 
-  const rongDot = loai === 'ft' ? 180 : 250;   // lớp thường: tuần + W4/8 + chữ trạng thái một dòng
+  const rongDot = loai === 'ft' ? 190 : 220;   // mockup V11: ô MT 190; lớp thường thêm W4/8 ở dòng trạng thái   // lớp thường: tuần + W4/8 + chữ trạng thái một dòng
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);
@@ -88,19 +92,75 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
   const canXepLai = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
     && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || o?.trangThai === 'da-huy'));
-  const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiCanXepLai || canXepLai(h));
+  const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
+    && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
+  /* "Chưa có MT kế tiếp" (G5): em không còn lượt MT nào đang chờ (có lịch, chưa xong) — ô "Xếp MTn" của em viền nhấn đậm. */
+  const khongConLuot = (h: HangFT | HangThuong) => loai === 'ft' && !Object.values((h as HangFT).dot).some((d) => d.attemptId !== null && !d.lichSu && !emXongDot(d));
+  const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiChuaCoKe || (chuaXepKeTiep(h) && khongConLuot(h)));
   /* UI-CHAM-TEST (mockup khu a): lớp dài hiện HANG_GON em đầu + "Hiện tất cả n"; đang tìm em / lọc "Cần xếp lại" thì hiện hết. */
   /* KHT-GON (critique): lớp dài thu gọn vẫn hiện MỌI em cần chú ý (cần xếp lại, trễ chấm, MT kế tiếp chưa xếp trong cột đang vẽ) —
      không em nào bị khuất sau "Hiện tất cả". */
-  const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
-    && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
   const canChuY = (h: HangFT | HangThuong) => canXepLai(h) || chuaXepKeTiep(h) || (!!homNay && Object.values((h as HangFT).dot ?? {})
     .some((d) => oGon(d.kn, homNay)?.tt?.loai === 'tre'));
-  const hangs = hetHang || hvChon || chiCanXepLai || tatCa.length <= HANG_GON + 2 ? tatCa
+  const hangs = hetHang || hvChon || chiChuaCoKe || tatCa.length <= HANG_GON + 2 ? tatCa
     : tatCa.filter((h, i) => i < HANG_GON || canChuY(h));
   const o = (h: HangFT | HangThuong, c: Cot): { attemptId: number | null; kn: KnO; lichSu?: boolean; do?: boolean; huy?: number } => dotCuaEm(
     loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot,
   );
+
+  /* U05 khu E (375, lớp FT): mỗi em một thẻ — tên · lượt gần nhất "✗ 6.0 · W2 OCT" · việc kế ("Xếp MTn" hoặc ô MT cùng dạng 1440). Ma trận đủ từ 640. */
+  if (dienThoai && loai === 'ft' && homNay) {
+    const ft = data as LuoiFTData;
+    return (
+      <div>
+        {hangs.map((h0) => {
+          const h = h0 as HangFT;
+          const daXong = ft.cot.map((n) => ({ n, d: h.dot[n] })).filter((x) => x.d?.attemptId != null && x.d.ovr !== undefined && emXongDot(x.d));
+          const gan = daXong[daXong.length - 1];
+          const ganTuan = gan ? Object.values(gan.d!.kn).map((x) => x?.tuan).filter((w): w is string => !!w).sort().pop() : null;
+          const tiep = ft.cot.find((n) => h.dot[n]?.attemptId != null && !h.dot[n]!.lichSu && !emXongDot(h.dot[n]!));
+          const c = tiep != null ? cotMt(tiep) : null;
+          const g = tiep != null ? oGon(h.dot[tiep]!.kn, homNay) : null;
+          const moHop = (el: HTMLElement, cot: Cot) => setHop({ anchor: el, hang: h, cot, kyNangDau: null });
+          return (
+            <div key={h.studentId} id={`kht-hv-${data.classId}-${h.studentId}`} className="the-em">
+              <div className="the-em-1"><Link to={duongHoSoHocVien(h.studentId)} className="ten-ho-so">{h.ten}</Link></div>
+              {gan && (
+                <div className="the-em-2">
+                  {t('Gần nhất')} <ODiem so={fmtBand(gan.d!.ovr!)} kq={gan.d!.kyVong == null ? null : kqOverall(gan.d!.ovr!, gan.d!.kyVong)} nhan={`MT${gan.n}`} />
+                  {ganTuan && <span className="tabular-nums">· {tuanLich(ganTuan)}</span>}
+                </div>
+              )}
+              <div className="the-em-3">
+                {c && g ? (
+                  <ODotGon o={g} kn={h.dot[tiep!]!.kn} nhan={nhanDot(c.dot)} onMo={chiXem ? () => {} : (el) => moHop(el, c)}
+                    href={chiXem && h.dot[tiep!]!.attemptId ? duongDotTest({ id: h.dot[tiep!]!.attemptId!, kind: 'mock', classId: data.classId, studentId: h.studentId }) : null} />
+                ) : chuaXepKeTiep(h) && !chiXem ? (
+                  <NutXepO chu={t('Xếp MT{n}', { n: h.soKeTiep })} ke={khongConLuot(h)} onMo={(el) => moHop(el, cotMt(h.soKeTiep))} />
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+        {hangs.length < tatCa.length && (
+          <div className="border-t px-3 py-2 text-[13px] text-dim" style={{ borderColor: 'var(--line)' }}>
+            {t('+ {n} HV', { n: tatCa.length - hangs.length })} ·{' '}
+            <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0" onClick={() => setHetHang(true)}>{t('Hiện tất cả {n}', { n: tatCa.length })}</button>
+          </div>
+        )}
+        {hop && (() => {
+          const dot = o(hop.hang, hop.cot);
+          return (
+            <HopKyNang key={`${hop.hang.studentId}-${hop.cot.key}`} anchor={hop.anchor}
+              tieuDe={`${nhanDot(hop.cot.dot)} · ${hop.hang.ten}`} tenHv={hop.hang.ten} maLop={data.classCode} ghiChu={hop.hang.ghiChu?.[khoaDot(hop.cot.dot)] ?? null} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
+              dot={hop.cot.dot} attemptId={dot.attemptId} kn={dot.kn} kyNangDau={hop.kyNangDau} lichSu={!!dot.lichSu}
+              deXuat={hop.cot.deXuat} khaiGiang={khaiGiang} tongTuan={tongTuan}
+              onClose={() => setHop(null)} onSaved={onReload} onHienDien={onHienDien} />
+          );
+        })()}
+      </div>
+    );
+  }
 
   return (
     <div ref={cuon} className="overflow-x-auto">
@@ -114,26 +174,25 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         </colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col border-r border-[var(--line)] !bg-[var(--surface)]">{t('Học viên')}</Th>
+            <th scope="col" className="kh-th sticky-col">{t('Học viên')}</th>
             {cots.map((c) => (
-              <Th key={c.key} className="!bg-[var(--surface)]">
+              <th key={c.key} scope="col" className="kh-th">
                 <span className="block">{c.tieu}</span>
-                {c.phu && <span className="block text-[12px] font-normal normal-case tracking-normal text-slate-500">{c.phu}</span>}
-              </Th>
+                {c.phu && <span className="block text-xs font-normal text-faint">{c.phu}</span>}
+              </th>
             ))}
-            {loai === 'ft' && !chiXem && (
-              <Th className="!bg-[var(--surface)]"><span className="sr-only">{t('Lượt thêm')}</span></Th>
-            )}
-            <Th className="!bg-[var(--surface)]"><span className="sr-only">{t('Trống')}</span></Th>
+            {/* B23 (mockup V11): cột "+ MT ▾" có tiêu đề nhìn thấy "Thêm". */}
+            {loai === 'ft' && !chiXem && <th scope="col" className="kh-th">{t('Thêm')}</th>}
+            <th className="kh-th" aria-hidden></th>
           </tr>
         </thead>
         <tbody>
           {hangs.map((h) => (
-            <tr key={h.studentId} id={`kht-hv-${data.classId}-${h.studentId}`} className={`row-hover ${hvChon === h.studentId ? 'row-active' : ''}`}
+            <tr key={h.studentId} id={`kht-hv-${data.classId}-${h.studentId}`} className={`kh-hang ${hvChon === h.studentId ? 'row-active' : ''}`}
               aria-current={hvChon === h.studentId ? 'true' : undefined}>
-              <td className="td sticky-col border-r border-[var(--line)] py-1.5 align-middle">
-                <Link to={duongHoSoHocVien(h.studentId)} className="link block truncate font-medium text-slate-100 max-sm:line-clamp-2 max-sm:min-h-[44px] max-sm:whitespace-normal" title={h.ten}>{h.ten}</Link>
-                {'vaoMuon' in h && h.vaoMuon && <div className="text-xs text-faint">{t('vào muộn')}</div>}
+              {/* Q-d (chủ SP 03/11): bỏ "vào muộn" — lượt không áp dụng đã là "—" trong ô. Tên đủ, xuống dòng (ý 7). */}
+              <td className="kh-td sticky-col">
+                <Link to={duongHoSoHocVien(h.studentId)} className="ten-ho-so">{h.ten}</Link>
               </td>
               {cots.map((c) => {
                 const dot = o(h, c);
@@ -141,7 +200,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                 const trangLuot = chiXem && dot.attemptId !== null ? duongDotTest({ id: dot.attemptId, kind: c.dot.loai === 'ft' ? 'mock' : khoaBaiThuong(c.dot.kind), classId: data.classId, studentId: h.studentId }) : null;
                 const moHop = (el: HTMLElement) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: null });
                 return (
-                  <td key={c.key} className="td !p-[3px] align-middle">
+                  <td key={c.key} className="kh-td">
                     {!homNay ? <span className="block px-2 text-xs text-faint">…</span> : dot.attemptId !== null ? (() => {
                       /* KHT-GON (mockup #659): ô = tuần + kết quả / một chữ; ô kỹ năng, dòng riêng, dòng vắng chỉ khi cần (`oGon`). */
                       const ct = loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null;
@@ -151,7 +210,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                       const kq = loai === 'ft' && d.ovr !== undefined ? { ovr: d.ovr, dat: d.kyVong == null ? null : d.ovr >= d.kyVong, kyVong: d.kyVong ?? null } : null;
                       const tuanChinh = Object.values(dot.kn).map((x) => x?.tuan).filter((w): w is string => !!w).sort()[0] ?? null;
                       return (
-                        <ODotGon o={g} nhan={nhanDot(c.dot)} ketQua={kq} onMo={moHop} href={trangLuot}
+                        <ODotGon o={g} kn={dot.kn} ct={ct} nhan={nhanDot(c.dot)} ketQua={kq} onMo={moHop} href={trangLuot}
                           khoa={loai === 'thuong' ? { khaiGiang, tongTuan, tuan: tuanChinh } : null}
                           chon={hop?.hang.studentId === h.studentId && hop.cot.key === c.key} />
                       );
@@ -161,7 +220,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                         <OHuy onMo={chiXem ? undefined : (el) => setHuy({ attemptId: dot.huy!, anchor: el, hang: h as HangFT, cot: c })} />
                       ) : c.dot.attemptNo === (h as HangFT).soKeTiep ? (
                         /* K4-08: chỉ MT kế tiếp có "Xếp MTn"; MT sau nữa "–" (mockup #659). GV chỉ xem: chữ mờ "chưa xếp". */
-                        <NutXepO chu={t('Xếp MT{n}', { n: c.dot.attemptNo })} title={t('Bấm để xếp {maDot}', { maDot: nhanDot(c.dot) })} onMo={chiXem ? undefined : moHop} />
+                        <NutXepO chu={t('Xếp MT{n}', { n: c.dot.attemptNo })} title={t('Bấm để xếp {maDot}', { maDot: nhanDot(c.dot) })} ke={khongConLuot(h)} onMo={chiXem ? undefined : moHop} />
                       ) : <OTrong title={t('Xếp MT trước rồi mới tới {maDot}', { maDot: nhanDot(c.dot) })} />
                     ) : /^cp\d+$/.test(c.key) ? (
                       /* OV-6b2: Checkpoint tự sinh theo lịch lớp — em không có Checkpoint này (vào sau) thì không có gì để xếp. */
@@ -184,8 +243,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                 );
               })}
               {loai === 'ft' && !chiXem && (
-                <td className="td !px-0 py-1.5 align-middle">
-                  <div className="flex flex-col gap-1 px-2">
+                <td className="kh-td">
+                  <div className="flex flex-col items-start gap-1">
                     {[...((h as HangFT).sEx ?? [])].sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).map((x) => (
                       /* Mockup #659: một dòng khung đứt hồng — "S Ex" · tuần · điểm (chưa chấm: ngày · người thêm ở tooltip). */
                       <button key={x.id} type="button" onClick={() => setSEx({ hang: h as HangFT, dong: x })}
@@ -200,7 +259,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
                   </div>
                 </td>
               )}
-              <td className="td" aria-hidden />
+              <td className="kh-td" aria-hidden />
             </tr>
           ))}
         </tbody>
@@ -216,7 +275,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
           </span>
         )}
         {data.ghiChuLop && <b className="text-slate-300">{t('Ghi chú lớp · {lop}', { lop: data.classCode })}</b>}
-        <div className="ml-auto min-w-0 text-right">
+        <div className="min-w-0 sm:order-first">   {/* mockup V11 `.hang-cuoi`: "+ Ghi chú lớp" sát trái */}
           <GhiChuTaiCho khoa={{ classId: data.classId }} ghiChu={data.ghiChuLop ?? null} onDoi={onReload}
             nhan={t('Ghi chú lớp · {lop}', { lop: data.classCode })} them={t('+ Ghi chú lớp')} chiDoc={chiXem} />
         </div>
@@ -235,7 +294,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiCanXepLai = f
         const dot = o(hop.hang, hop.cot);
         return (
           <HopKyNang key={`${hop.hang.studentId}-${hop.cot.key}`} anchor={hop.anchor}
-            tieuDe={`${hop.hang.ten} · ${nhanDot(hop.cot.dot)}`} tenHv={hop.hang.ten} ghiChu={hop.hang.ghiChu?.[khoaDot(hop.cot.dot)] ?? null} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
+            tieuDe={`${nhanDot(hop.cot.dot)} · ${hop.hang.ten}`} tenHv={hop.hang.ten} maLop={data.classCode} ghiChu={hop.hang.ghiChu?.[khoaDot(hop.cot.dot)] ?? null} loai={loai} classId={data.classId} studentId={hop.hang.studentId}
             dot={hop.cot.dot} attemptId={dot.attemptId} kn={dot.kn} kyNangDau={hop.kyNangDau} lichSu={!!dot.lichSu}
             deXuat={hop.cot.deXuat} khaiGiang={khaiGiang} tongTuan={tongTuan}
             {...(loai === 'thuong' ? { ky: (data as LuoiThuongData).boMon, ct: (data as LuoiThuongData).chuongTrinh } : {})}
@@ -258,7 +317,7 @@ function NutThemLuot({ hang, onMt, onSEx }: { hang: HangFT; onMt: (n: number, el
   const neo = useRef<HTMLSpanElement>(null);
   return (
     <span ref={neo} className="self-start">
-      <Menu label={t('+ MT')} align="right" className="btn btn-sm min-h-[44px] border-dashed sm:min-h-0" items={[
+      <Menu label={t('+ MT')} align="right" className="nut-them" items={[
         ...(hang.soKeTiep <= MT_TOI_DA ? [{ label: t('MT{n} · MT thường', { n: hang.soKeTiep }), onClick: () => onMt(hang.soKeTiep, neo.current!) }] : []),
         { label: t('S Ex · Speaking với chuyên gia'), onClick: onSEx },
       ]} />

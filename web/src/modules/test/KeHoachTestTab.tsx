@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { MenuDong } from '../../ui/MenuDong.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -43,8 +46,14 @@ export function KeHoachTestTab() {
   const [hopMo, setHopMo] = useState(false);
   /* PR-XLMT (M9): ngăn Xếp lịch — khung FT (nhiều lớp) hoặc Lớp thường (một lớp); không cần mở lớp trước. */
   const [xep, setXep] = useState<'ft' | 'thuong' | null>(null);
-  /* PR-XLMT (K4-11, Q7): chip "Cần xếp lại (n)" — chỉ còn lớp / học viên có kỹ năng vắng hoặc phần thi đã huỷ. */
-  const [chiXepLai, setChiXepLai] = useState(false);
+  /* U05 (G5, N32 ⑤): chip "Chưa có MT kế tiếp · n" thay "Cần xếp lại" — vắng lần 1 tự dời (N4) và ô ghi "Vắng · xếp lại S" (vàng); chỉ lớp / em
+     chưa có lượt MT kế tiếp. `lopLoc`: lớp chọn ở ô tìm (hoặc ô số của hàng lớp) → chip "Lớp: … ✕". */
+  const [chiChuaCoKe, setChiChuaCoKe] = useState(false);
+  const [lopLoc, setLopLoc] = useState<number | null>(null);
+  const dienThoai = useDienThoai();
+  /* Đầu trang (mockup U05): Xuất Excel · Xuất điểm Test · Xếp nhiều MT… cạnh tiêu đề "Test" — TestPage chừa chỗ `#test-nut-trang`. */
+  const [choNut, setChoNut] = useState<HTMLElement | null>(null);
+  useEffect(() => { setChoNut(document.getElementById('test-nut-trang')); }, []);
 
   const lopFT = useMemo(() => (data?.lop ?? []).filter((l) => l.loai === 'ft'), [data]);
   const lopThuong = useMemo(() => (data?.lop ?? []).filter((l) => l.loai === 'thuong'), [data]);
@@ -95,13 +104,14 @@ export function KeHoachTestTab() {
   const boTuan = () => { const next = new URLSearchParams(params); next.delete('tuan'); setParams(next, { replace: true }); };
   /* Chủ SP 28/10: GV chỉ xem lớp mình dạy — không có lớp xếp được thì bỏ Cần xếp lại, Xuất, Xếp (máy chủ vẫn chặn ghi). */
   const coXep = (data?.lop ?? []).some((l) => !l.chiXem);
-  const soCanXepLai = coXep ? lopFT.reduce((n, l) => n + (l.canXepLai ?? 0), 0) : 0;
-  const locXepLai = loai === 'ft' && chiXepLai && soCanXepLai > 0;
+  const soChuaCoKe = coXep ? lopFT.reduce((n, l) => n + (l.chiXem ? 0 : l.chuaCoLichTiep), 0) : 0;
+  const locChuaCoKe = loai === 'ft' && chiChuaCoKe && soChuaCoKe > 0;
   /* Chữ ở ô tìm lọc danh sách lớp chỉ khi khớp mã lớp nào đó — gõ tên / email học viên thì danh sách giữ nguyên (chọn em ở gợi ý). */
   const khopMa = chu.trim() ? (loai === 'ft' ? lopFT : lopThuong).filter((l) => chuanHoaMaLop(l.code).includes(chuanHoaMaLop(chu))) : [];
   const danhSach = (loai === 'ft' ? lopFT : lopThuong)
     .filter((l) => !khopMa.length || khopMa.includes(l))
-    .filter((l) => !locXepLai || l.canXepLai > 0)
+    .filter((l) => lopLoc === null || l.id === lopLoc)
+    .filter((l) => !locChuaCoKe || (!l.chiXem && l.chuaCoLichTiep > 0))
     .filter((l) => !lopTrongTuan || lopTrongTuan.has(l.id));
   const toggle = (id: number) => setMoList((m) => (m.includes(id) ? m.filter((x) => x !== id) : [...m, id]));
   /* C18: chọn lớp → mở lớp đó (lớp khung kia thì tự đổi khung, không hỏi); chọn em → mở lớp của em, cuộn tới hàng em. */
@@ -110,10 +120,10 @@ export function KeHoachTestTab() {
     const next = new URLSearchParams(params);
     next.set('loai', loaiLop); next.set('classId', String(id));
     if (hv) next.set('hv', String(hv)); else next.delete('hv');
-    next.delete('tuan'); setChiXepLai(false);
+    next.delete('tuan');
     setParams(next, { replace: true });
   };
-  const chonLop = (l: KetQuaTim['lop'][number]) => { setChu(l.code); moLop(l.id, l.loai, null); };
+  const chonLop = (l: KetQuaTim['lop'][number]) => { setChu(''); setLopLoc(l.id); moLop(l.id, l.loai, null); };
   const chonHv = (h: KetQuaTim['hocVien'][number]) => { setChu(h.ten); moLop(h.classId, h.loai, h.studentId); };
 
   const lopChon = [...moList].reverse().map((id) => data?.lop.find((l) => l.id === id)).find((l) => l && l.loai === loai) ?? null;
@@ -125,109 +135,111 @@ export function KeHoachTestTab() {
 
   return (
     <div className="space-y-3">
-      {/* RA-UI-1 (mockup `v7/ke-hoach-test.html` 375): công tắc · Lọc ▾ · ⓘ MỘT hàng — 375 bỏ chữ "lớp" sau số, ô tìm + nút xuất xuống sau (order). */}
-      <div className="flex flex-wrap items-end gap-x-2 gap-y-2 sm:gap-x-3" data-hd="kht-loc">
-        {/* MH4: công tắc khung đứng ĐẦU hàng lọc (chỉ hiện khi có cả hai khung). */}
-        <CongTacKhung trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
-          onChange={(k) => { if (k !== 'tat-ca') setLoai(k); }} />
+      {/* U05 (mockup V11 `.thanh-cu`): Fast Track / Lớp thường · chip "Chưa có MT kế tiếp" · Chi nhánh · ô tìm · chip "Lớp: … ✕" · ⓘ · phải: n HV.
+          375 (khu E): ô tìm + "Lọc" + ⋯ (Xuất, Xếp nhiều MT…); chip, Chi nhánh trong "Lọc". */}
+      <div className="loc-hv flex flex-wrap items-center gap-2" data-hd="kht-loc">
+        {!dienThoai && <CongTacKhung v8 trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
+          onChange={(k) => { if (k !== 'tat-ca') { setLopLoc(null); setLoai(k); } }} />}
         {tuanXem && (
-          <span className="pb-1">
-            <NutChon nho chon onClick={boTuan} title={t('Bỏ lọc tuần — xem mọi lớp')}>
-              {t('Tuần')} <span className="tabular-nums">{tuanLich(tuanXem.weekStart)}</span> · <span className="tabular-nums">{lopTrongTuan!.size}</span> {t('lớp')}
-            </NutChon>
-          </span>
+          <NutChon nho chon onClick={boTuan} title={t('Bỏ lọc tuần — xem mọi lớp')}>
+            {t('Tuần')} <span className="tabular-nums">{tuanLich(tuanXem.weekStart)}</span> · <span className="tabular-nums">{lopTrongTuan!.size}</span> {t('lớp')}
+          </NutChon>
         )}
         {(() => {
-          /* Cần xếp lại + chi nhánh: 1440 nằm trên hàng; 375 gộp vào "Lọc ▾" (mockup #659). */
-          const xepLai = loai === 'ft' && soCanXepLai > 0 ? (
-            <NutChon nho chon={locXepLai} onClick={() => {
-              const bat = !locXepLai;
-              setChiXepLai(bat);
-              if (bat) setMoList(lopFT.filter((l) => l.canXepLai > 0).map((l) => l.id));
-            }} title={t('Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại')}>
-              {t('Cần xếp lại')} <span className="tabular-nums">({soCanXepLai})</span>
-            </NutChon>
+          const chipKe = loai === 'ft' && soChuaCoKe > 0 ? (
+            <button type="button" className="nut-loc" aria-pressed={locChuaCoKe} onClick={() => {
+              const bat = !locChuaCoKe;
+              setChiChuaCoKe(bat);
+              if (bat) setMoList(lopFT.filter((l) => !l.chiXem && l.chuaCoLichTiep > 0).map((l) => l.id));
+            }} title={t('Em chưa có lượt MT kế tiếp — Quản lý xếp tiếp')}>
+              {t('Chưa có MT kế tiếp')} <b className="tabular-nums">{soChuaCoKe}</b>{locChuaCoKe && <span aria-label={t('Bỏ lọc')}> ✕</span>}
+            </button>
           ) : null;
           const doiCn = (id: number | null) => {
             const next = new URLSearchParams(params);
             next.delete('branchId'); if (id) next.set('cn', String(id)); else next.delete('cn');
-            next.delete('classId');
+            next.delete('classId'); setLopLoc(null);
             setParams(next, { replace: true });
           };
-          return (
+          const nutTrang = coXep ? (
+            <MenuDong nhan={t('Thao tác trang')} lopNut="btn h-11 w-11 shrink-0 justify-center !px-0 font-bold" muc={[
+              { key: 'xep', nhan: loai === 'ft' ? t('Xếp nhiều MT…') : t('Xếp lịch Test…'), tat: !!lyDoTat, onChon: () => setXep(loai) },
+              ...(loai === 'ft' ? [
+                { key: 'xuat', nhan: t('Xuất Excel'), tat: !!lyDoTat || !danhSach.length, onChon: () => setXuat('ke-hoach') },
+                { key: 'diem', nhan: t('Xuất điểm Test'), tat: !!lyDoTat, onChon: () => setXuat('diem') },
+              ] : []),
+            ]} />
+          ) : null;
+          return dienThoai ? (
             <>
-              {xepLai && <span className="hidden pb-1 sm:inline">{xepLai}</span>}
-              {branchCount > 1 && <div className="hidden sm:block"><BranchFilter branchId={branchId} onBranch={doiCn} /></div>}
-              {(xepLai || branchCount > 1) && (
-                <details className="sm:hidden">
-                  <summary className="btn btn-sm min-h-[44px] cursor-pointer list-none">{t('Lọc ▾')}</summary>
-                  <div className="mt-2 flex flex-col items-start gap-2">
-                    {xepLai}
-                    {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
-                  </div>
-                </details>
-              )}
+              <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 flex-1" />
+              <details className="contents">
+                <summary className="btn min-h-[44px] cursor-pointer list-none">{t('Lọc')}</summary>
+                <div className="flex basis-full flex-wrap items-center gap-2">
+                  <CongTacKhung v8 trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
+                    onChange={(k) => { if (k !== 'tat-ca') { setLopLoc(null); setLoai(k); } }} />
+                  {chipKe}
+                  {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
+                </div>
+              </details>
+              {nutTrang}
+            </>
+          ) : (
+            <>
+              {chipKe}
+              {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
+              <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="w-[280px]" />
             </>
           );
         })()}
-        <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 basis-full max-sm:order-1 sm:basis-auto sm:w-72" />
-        <span className="pb-2">
-          <NutLuat label={t('Luật xếp lịch Test')}>
-            {loai === 'ft' ? (
-              <span className="block">
-                {t('Mỗi đợt xếp riêng')} <b>L</b> (Listening), <b>R</b> (Reading), <b>W</b> (Writing), <b>S</b> (Speaking). <b>{t('W = chấm cả W1 và W2')}</b>
-                {' '}{t('— một lịch W đặt cho cả hai.')} {t('Kỹ năng khác tuần trong cùng đợt ghi riêng')} (<b>{t('S riêng · W3 DEC')}</b>).
-              </span>
-            ) : (
-              <span className="block">
-                {t('Mỗi đợt (Progress Test, Final Test) xếp riêng từng môn của chương trình lớp')}
-                {monTheoCt.length ? ': ' : '.'}
-                {monTheoCt.map(([ct, mon], i) => (
-                  <span key={ct}>{i ? ' · ' : ''}<b>{ct}</b> {mon}</span>
-                ))}
-                {monTheoCt.length ? '.' : ''} {t('Môn khác tuần trong cùng đợt ghi riêng.')}
-              </span>
-            )}
-            {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>W5/10</b>).</span>}
-            <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
-          </NutLuat>
-        </span>
-        <span className="flex-1 max-sm:hidden" />
-        {loai === 'ft' && coXep && (
-          /* OV-15c: Xuất Excel Kế hoạch Test 13 cột (C17) theo bộ lọc đang xem + Xuất điểm Test (mockup 6 khung 9). */
-          /* RA-UI-4 (mockup 375, PTA 29/10): 375 "Xuất ▾ · Xếp nhiều MT…" sát trái như mockup; số HV giữ, nhỏ, cuối hàng. */
-          <span className="flex flex-wrap items-center gap-2 max-sm:contents">
-            <span className="text-xs tabular-nums text-slate-400 max-sm:order-3 max-sm:ml-auto max-sm:self-center">{t('{n} học viên', { n: danhSach.reduce((n, l) => n + l.soHv, 0) })}</span>
-            <span className="hidden gap-2 sm:flex">
-              <button type="button" className="btn btn-sm" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
-              <button type="button" className="btn btn-sm" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
-            </span>
-            {/* Mockup #659 (375): hai nút xuất gộp "Xuất ▾". */}
-            {!lyDoTat && (
-              <span className="sm:hidden max-sm:order-2">
-                <Menu label={t('Xuất')} className="btn btn-sm min-h-[44px]" items={[
-                  ...(danhSach.length ? [{ label: t('Xuất Excel'), onClick: () => setXuat('ke-hoach') }] : []),
-                  { label: t('Xuất điểm Test'), onClick: () => setXuat('diem') },
-                ]} />
-              </span>
-            )}
-          </span>
-        )}
-        {coXep && (
-          <button type="button" className="btn btn-primary btn-sm min-h-[44px] max-sm:order-2 sm:min-h-0" disabled={!!lyDoTat} title={lyDoTat}
-            onClick={() => setXep(loai)}>
-            {loai === 'ft' ? t('Xếp nhiều MT…') : t('Xếp lịch Test…')}
+        {lopLoc !== null && (
+          <button type="button" className="nut-loc nut-loc-dang" onClick={() => setLopLoc(null)} aria-label={t('Bỏ lọc lớp')}>
+            {t('Lớp: {ma}', { ma: data.lop.find((l) => l.id === lopLoc)?.code ?? '' })} ✕
           </button>
         )}
+        <NutLuat label={t('Luật xếp lịch Test')}>
+          {loai === 'ft' ? (
+            <span className="block">
+              {t('Mỗi đợt xếp riêng')} <b>L</b> (Listening), <b>R</b> (Reading), <b>W</b> (Writing), <b>S</b> (Speaking). <b>{t('W = chấm cả W1 và W2')}</b>
+              {' '}{t('— một lịch W đặt cho cả hai.')} {t('Kỹ năng khác tuần trong cùng đợt ghi riêng')} (<b>{t('S riêng · W3 DEC')}</b>).
+            </span>
+          ) : (
+            <span className="block">
+              {t('Mỗi đợt (Progress Test, Final Test) xếp riêng từng môn của chương trình lớp')}
+              {monTheoCt.length ? ': ' : '.'}
+              {monTheoCt.map(([ct, mon], i) => (
+                <span key={ct}>{i ? ' · ' : ''}<b>{ct}</b> {mon}</span>
+              ))}
+              {monTheoCt.length ? '.' : ''} {t('Môn khác tuần trong cùng đợt ghi riêng.')}
+            </span>
+          )}
+          {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>W5/10</b>).</span>}
+          <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
+        </NutLuat>
+        <span className="ml-auto text-[13px] text-dim max-sm:basis-full max-sm:text-right">
+          <b className="tabular-nums text-slate-100">{danhSach.reduce((n, l) => n + l.soHv, 0)}</b> HV
+        </span>
       </div>
+      {choNut && !dienThoai && coXep && createPortal(
+        <span className="flex flex-wrap items-center gap-2">
+          {loai === 'ft' && <>
+            <button type="button" className="btn h-9 text-sm font-semibold" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
+            <button type="button" className="btn h-9 text-sm font-semibold" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
+          </>}
+          <button type="button" className="btn btn-primary h-9 text-sm" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXep(loai)}>
+            {loai === 'ft' ? t('Xếp nhiều MT…') : t('Xếp lịch Test…')}
+          </button>
+        </span>, choNut)}
 
       {danhSach.length === 0 ? (
-        <div className="card"><Empty title={chu ? t('Không có lớp nào khớp "{chu}"', { chu }) : t('Không có lớp nào có đợt Test trong tuần này')} /></div>
+        <div className="card"><Empty title={locChuaCoKe ? t('Không lớp nào chưa có MT kế tiếp') : chu ? t('Không có lớp nào khớp "{chu}"', { chu }) : t('Không có lớp nào có đợt Test trong tuần này')}
+          action={locChuaCoKe || lopLoc !== null ? <button type="button" className="btn btn-sm" onClick={() => { setChiChuaCoKe(false); setLopLoc(null); }}>{t('Bỏ lọc')}</button> : undefined} /></div>
       ) : (
-        <div className="space-y-3">
+        <div className="bang-kh">
           {danhSach.map((l) => (
-            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} chiCanXepLai={locXepLai}
-              hvChon={l.id === classIdParam ? hvParam : null} />
+            <LopKeHoach key={l.id} lop={l} mo={moList.includes(l.id)} onToggle={() => toggle(l.id)} onHienDien={setHopMo} chiChuaCoKe={locChuaCoKe}
+              hvChon={l.id === classIdParam ? hvParam : null}
+              onLocLop={() => { setChiChuaCoKe(true); setLopLoc(l.id); setMoList((m) => [...m.filter((x) => x !== l.id), l.id]); }} />
           ))}
         </div>
       )}
@@ -237,7 +249,7 @@ export function KeHoachTestTab() {
           onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
       )}
       {xuat === 'ke-hoach' && (
-        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} chiXepLai={locXepLai} onDong={() => setXuat(null)} />
+        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} chiXepLai={false} onDong={() => setXuat(null)} />
       )}
       {xuat === 'diem' && (
         <NganXuatDiem branchId={branchId} lopFt={lopFT} lopDau={lopChon?.loai === 'ft' ? lopChon.id : null} onDong={() => setXuat(null)} />
