@@ -96,6 +96,13 @@ export function demLocNhanh<T extends MucLocNhanh & { group: string; key: string
   return out;
 }
 
+/**
+ * UI-CONG-VIEC (audit 03/11, U01 #15): tên việc máy chủ ghép "{thao tác} {kỹ năng}" → web vẽ "{thao tác} · {kỹ năng}"; "Kết quả PA" vẽ thành
+ * "Ghi kết quả PA" (tên thao tác đúng nghĩa). Chuỗi máy chủ giữ nguyên (Tổng quan, phép kiểm, EN).
+ */
+export const TACH_TEN_VIEC = /^(Kết quả PA|Thêm PA học thuật|Xác nhận Case|Mô tả Case) (.+)$/;
+export const TEN_VIEC_KQ_PA = t('Kết quả PA');
+
 /** Khung mặc định của bảng Lớp tôi dạy (Q31-1): dạy cả hai → Fast Track; chỉ lớp thường → Lớp thường. */
 export const khungMacDinhGv = (coFt: boolean, coThuong: boolean): 'ft' | 'thuong' => (!coFt && coThuong ? 'thuong' : 'ft');
 /** PR-S6F-b (D7): khung đã nhớ chỉ dùng khi người xem CÓ lớp ở khung đó — không thì về khung mặc định (không bao giờ ra bảng rỗng mất công tắc). */

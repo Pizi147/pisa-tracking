@@ -483,7 +483,7 @@ function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDon
   const truoc = daTruoc.current;
   const tenLoai = iv ? dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind) : null;
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} onDong={onDong} quayLai={xemCase ? { nhan: t('Xem Case'), onClick: xemCase, xem: true } : undefined}
+    <KhungPanel tieuDe={tenBoEm(it)} onDong={onDong} quayLai={xemCase ? { nhan: t('Xem Case'), onClick: xemCase, xem: true } : undefined}
       dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa ?? 'cap-nhat-pa'} han={it.due} /> : null, em, lop: it.classCode, ngCanh: it.contextLabel })}>
       <div className="flex flex-col gap-4 pt-3">
         <BoiCanh dong={[

@@ -127,11 +127,12 @@ export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null 
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
-  /* NEN-PANEL (mockup V5 `v5-nen.css .bd-td.sap / .qua`): quá hạn / sắp hạn = viên có ⚠; hạn xa = viên xám không ⚠ (mockup v7 `cong-viec-2.html .td`). */
+  /* U01 #27 (audit 03/11, mockup `audit-0311/ro.css .han`): hạn CHỈ CHỮ, không nền — quá hạn đỏ đậm + ⚠, sắp hạn vàng đậm + ⚠ (không trùng chip SOS 3
+     nền đỏ đặc — V5); hạn thường chữ thường, hạn xa chữ mờ. Chữ + ⚠ mang nghĩa, màu chỉ phụ. */
   const can = v.tone === 'overdue' || v.ganHan;
-  const lop = v.tone === 'overdue' ? 'bg-late-bg text-late' : v.ganHan ? 'bg-soon-bg text-soon' : 'surface-2 text-dim';
+  const lop = v.tone === 'overdue' ? 'text-late font-bold' : v.ganHan ? 'text-soon font-bold' : 'text-dim font-medium';
   return (
-    <span title={v.text} className={`${CHU_HAN} ${lop} h-[22px] rounded-full px-[9px] text-xs font-semibold`}>
+    <span title={v.text} className={`${CHU_HAN} ${lop} min-h-[22px] text-[13px]`}>
       {can && <span aria-hidden>⚠</span>}
       {v.tone === 'overdue' ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : nhanHan(han, homNay)}
     </span>

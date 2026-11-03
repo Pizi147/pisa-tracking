@@ -13,6 +13,7 @@ import { BoiCanh, CanLam, DiemKq, DongTiep, NhomCoSo, NutChu, NutVaTiep, TrangTh
 import { ONgay } from '../../ui/ONgay.tsx';
 import { FormDoiPa, useDoiPa } from '../cases/DoiPa.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ChonNhom, viDuNhanXet } from '../fasttrack/NhanXet.tsx';
 import { skillShort } from '../../lib/format.ts';
 import {
@@ -68,12 +69,14 @@ export type PaQuyChe = {
 /** Đầu panel v3 cho việc của một Case: chip hạn (chỉ người làm) · tên em (link xem hồ sơ, tách khỏi nút làm) · lớp · ngữ cảnh ("MT2 · Reading"). */
 export function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh: string, lam: boolean) {
   const st = data.student;
+  const han = lam ? <ChipHan loai="xac-minh-sos" han={data.sos?.dueOn ?? data.trangThaiV4?.han ?? null} /> : null;
+  const ten = st ? <Link className="font-bold text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(st.id)}>{st.name}</Link> : null;
+  /* U01 #6 (audit 03/11, mockup `.facts`): đầu panel việc của Case = dải sự kiện Học viên · Lớp · Case · Mức · Hạn (nhãn trên, giá trị dưới). */
+  const muc = data.sosLevel ? <ChipSos muc={data.sosLevel as 1 | 2 | 3} tinh /> : null;
   return {
-    han: lam ? <ChipHan loai="xac-minh-sos" han={data.sos?.dueOn ?? data.trangThaiV4?.han ?? null} /> : null, loai: t('VIỆC'),
-    dong2: [
-      st ? <Link className="font-bold text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(st.id)}>{st.name}</Link> : null,
-      lop ?? null, ngCanh,
-    ],
+    loai: t('VIỆC'),
+    dong2: [ten, lop ?? null, ngCanh],
+    su: [[t('Học viên'), ten], [t('Lớp'), lop ?? null], ['Case', ngCanh.split(' · ').filter((x) => !/^SOS \d/.test(x)).join(' · ')], [t('Mức'), muc], [t('Hạn'), han]] as [string, ReactNode][],
   };
 }
 /** Nguyên nhân Case (chính trước) + nhận xét: "1 Kỹ năng làm bài · 2 Quản lý thời gian — "…"". */
@@ -268,16 +271,29 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
   const tuChoi = pa.doiPa?.trangThai === 'tu_choi' ? pa.doiPa : null;
   const quyChe = [t('quy chế'), data.sosLevel ? `SOS ${data.sosLevel}` : null].filter(Boolean).join(' ');
   return (
-    <KhungPanel tieuDe={t('Xác nhận PA')} {...chung} onDong={chung.onClose}
-      dau={dauCase(data, chung.lop, [`MT${data.tenSos?.mt ?? data.attemptNo ?? ''}`, data.categoryLabel ?? '', data.sosLevel ? `SOS ${data.sosLevel}` : null].filter(Boolean).join(' · '), true)}
-      chan={{ v3: true, chinh: cheDo === 'ktd' ? undefined : cheDo === 'doi' ? nut : <><DongTiep tiep={tiep} chan />{nut}</>, daSua, conThieu: lf.conThieu(loi),
-        dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu(bam === 'tiep')} /> : undefined }}>
+    <KhungPanel tieuDe={t('Xác nhận PA · {kn}', { kn: data.categoryLabel ?? '' })} {...chung} onDong={chung.onClose}
+      dau={dauCase(data, chung.lop, [`MT${data.tenSos?.mt ?? data.attemptNo ?? ''}`, data.categoryLabel ?? ''].filter(Boolean).join(' · '), true)}
+      /* U01 #6 / #23 (audit 03/11, khung A1 · C1): chân dính MỘT hàng — trạng thái lưu / "Tiếp: …" trái · Xác nhận PA (phụ) · Xác nhận · việc tiếp › (chính). */
+      chan={cheDo === 'ktd' ? undefined : { huy: null, daSua, conThieu: lf.conThieu(loi), chinh: nut,
+        trai: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu(bam === 'tiep')} />
+          : cheDo === 'xac-nhan' ? <DongTiep tiep={tiep} chan /> : undefined }}>
       <div className="flex flex-col gap-5 pt-4">
         {tuChoi && (
           <p className="m-0 rounded-lg bg-late-bg px-3 py-2 text-[13px] text-slate-200" role="status">
             <b className="font-semibold text-late">{t('QL từ chối PA khác')}</b>{tuChoi.lyDoTuChoi ? ` · “${tuChoi.lyDoTuChoi}”` : ''}
           </p>
         )}
+        {/* U01 #6 / #28 (audit 03/11): CASE trước (điểm / kỳ vọng · nguyên nhân + mô tả), Phương án (form) sau — đọc vấn đề rồi mới nhập. */}
+        <section className="flex flex-col gap-2" aria-label="Case">
+          <h3 className="m-0 flex items-center gap-2 text-[15px] font-bold text-[color:var(--text)]"><span aria-hidden className="h-[18px] w-[3px] rounded-sm bg-[color:var(--accent)]" />Case</h3>
+          <BoiCanh
+            dong={[[t('Điểm'), ketQuaGanNhat(data)], [t('Nguyên nhân'), <DongNguyenNhan issues={data.issues ?? []} attemptId={data.attemptId} />]]}
+            them={theoLuot.length > 1 ? (
+              <ul className="m-0 list-none space-y-1 p-0">
+                {theoLuot.map((x) => <li key={x.attemptId}><b className="font-semibold text-slate-300">{x.luot}</b>: {x.nhom.map((g) => g.label).join(' · ') || '—'}{x.nhanXet ? <> — “<ChuDich chu={x.nhanXet} nguon={oDich(x.attemptId, data.topic)} />”</> : ''}{x.nhanXetPhuTrach ? <> · {t('Nhận xét GV phụ trách')}: “<ChuDich chu={x.nhanXetPhuTrach} nguon={{ bang: 'assessment_scores', id: x.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' }} />”</> : ''}</li>)}
+              </ul>
+            ) : undefined} />
+        </section>
         <CanLam>
           {cheDo === 'ktd' ? (
             <KhongTheoDoiForm caseId={data.id} onClose={() => setCheDo('xac-nhan')} onDone={() => onXong({ chu: t('Đã gửi Quản lý duyệt'), phu: t('Không cần theo dõi') })} />
@@ -290,7 +306,6 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
               </div>
               <FormDoiPa d={doi} lf={lf} studentId={data.student?.id} chuNgay={t('ngày QL duyệt')} />
               <p className="m-0 text-xs text-slate-400">{t('Nếu gửi: {goc} chờ, chưa chạy · Case "Chờ duyệt đổi PA"', { goc: tenLoai })}</p>
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
             </>
           ) : (
             <>
@@ -304,22 +319,14 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
                     <ONgay kieu="ngay" value={batDau} onChange={setBatDau} toiThieu={homNay} ariaLabel={t('Bắt đầu')} id={lf.oId('bat-dau')} />
                   </Truong>
                 )} />
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span className="flex flex-wrap gap-1.5 max-sm:hidden">{nut}</span>
+              {/* U01 #6: hai lối khác là LINK dưới form (không ngang hàng nút chính). */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <NutChu onClick={() => { setCheDo('doi'); lf.datLai(); }}>{t('Đề xuất PA khác…')}</NutChu>
-                <button type="button" className="btn btn-ghost min-h-[44px] text-slate-400 sm:min-h-0" onClick={() => setCheDo('ktd')}>{t('Không cần theo dõi…')}</button>
+                <NutChu onClick={() => setCheDo('ktd')}>{t('Không cần theo dõi…')}</NutChu>
               </div>
-              <DongTiep tiep={tiep} />
             </>
           )}
         </CanLam>
-        <BoiCanh
-          dong={[[t('Nguyên nhân'), <DongNguyenNhan issues={data.issues ?? []} attemptId={data.attemptId} />], [t('Kết quả gần nhất'), ketQuaGanNhat(data)]]}
-          them={theoLuot.length > 1 ? (
-            <ul className="m-0 list-none space-y-1 p-0">
-              {theoLuot.map((x) => <li key={x.attemptId}><b className="font-semibold text-slate-300">{x.luot}</b>: {x.nhom.map((g) => g.label).join(' · ') || '—'}{x.nhanXet ? <> — “<ChuDich chu={x.nhanXet} nguon={oDich(x.attemptId, data.topic)} />”</> : ''}{x.nhanXetPhuTrach ? <> · {t('Nhận xét GV phụ trách')}: “<ChuDich chu={x.nhanXetPhuTrach} nguon={{ bang: 'assessment_scores', id: x.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' }} />”</> : ''}</li>)}
-            </ul>
-          ) : undefined} />
       </div>
     </KhungPanel>
   );

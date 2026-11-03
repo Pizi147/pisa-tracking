@@ -174,6 +174,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link) · lớp · ngữ cảnh.
    *  Có `dau` thì `hocVien` / `lop` không vẽ ở đầu một dòng cũ. */
   dau?: { han?: ReactNode; dong2: ReactNode[]; loai?: string;
+    /** U01 #6 (audit 03/11, mockup `.facts`): DẢI SỰ KIỆN thay dòng 2 — nhãn nhỏ trên, giá trị đậm dưới (Học viên · Lớp · Lượt · Mức · Hạn · Phụ trách). */
+    su?: [string, ReactNode][];
     /** PANEL-RIENG (XM-1, mockup v10 `.pn-tieu`): nội dung dòng tiêu đề thay chữ `tieuDe` — tên em là link + chip SOS, hay tên số liệu + số + đơn vị + ⓘ. */
     tieu?: ReactNode };
   /** Lớp z — panel mở từ một popover `z-[60]` (hộp xếp lịch `HopKyNang`) cần nằm trên popover đó (PR-LM). */
@@ -336,7 +338,18 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
                 (kể cả khi xuống hàng ở 375) mất dấu, không còn "·" mồ côi đầu dòng. "· Xem Case" không tách dòng.
                 DO-KHUNG-DO: "·" và nội dung là hai cột flex — mục dài tự gãy dòng không lùi vào vùng cắt. */}
             {/* `-ml-1 pl-1`: chừa 4 px cho vòng focus của link đầu dòng (dấu "·" vẫn nằm ngoài vùng cắt). */}
-            {!trongCot && <div className="-ml-1 overflow-x-clip pl-1 text-sm leading-snug text-slate-400">
+            {!trongCot && dau.su && (
+              <dl className="m-0 flex flex-wrap items-start gap-y-2 pt-1">
+                {dau.su.filter(([, v]) => v !== null && v !== undefined && v !== '').map(([n, v]) => (
+                  <div key={n} className="grid min-w-0 gap-0.5 border-l px-[18px] py-0.5 first:border-l-0 first:pl-0 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
+                    <dt className="whitespace-nowrap text-xs font-medium text-faint">{n}</dt>
+                    <dd className="m-0 min-w-0 text-[15px] font-semibold leading-snug text-[color:var(--text)]">{v}</dd>
+                  </div>
+                ))}
+                {nutXem && <div className="grid self-end">{nutXem}</div>}
+              </dl>
+            )}
+            {!trongCot && !dau.su && <div className="-ml-1 overflow-x-clip pl-1 text-sm leading-snug text-slate-400">
               <p className="m-0 -ml-5 flex flex-wrap items-baseline">
                 {[...dau.dong2.filter(Boolean), ...(nutXem ? [nutXem] : [])].map((x, i, ds) => (
                   <span key={i} className={`flex items-baseline ${nutXem && i === ds.length - 1 ? 'whitespace-nowrap' : 'min-w-0'}`}><span aria-hidden className="w-5 flex-none text-center text-slate-500">·</span><span className="min-w-0">{x}</span></span>
