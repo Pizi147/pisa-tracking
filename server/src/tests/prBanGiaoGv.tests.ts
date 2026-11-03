@@ -355,4 +355,21 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     assert(one(`SELECT noi_dung FROM ban_giao_mon WHERE lenh_id = ? AND mon = 'writing'`, id).noi_dung === 'Câu chung sửa', 'sửa câu cũ sau xác nhận');
     void id2;
   }));
+  check('Mockup v11 (chủ SP 03/11) · GV dạy cả W1 + W2 → MỘT việc "W1 · W2" (mon writing1,writing2), số em từng task; Công việc một dòng', () => thu(() => {
+    /* X: W1 + W2 = D · Y: W1 + W2 = C → D cần bàn giao cả hai task. */
+    conn.prepare(`UPDATE teacher_assignments SET user_id = ? WHERE class_id = ? AND skill IN ('writing1', 'writing2') AND status = 'active'`).run(gC, Y);
+    xoaNho();
+    const id = lenh(X, Y, emX[0]);
+    lenh(X, Y, emX[1]);
+    banGiao.ghiMon(loadPrincipal(gD), id, 'writing1', 'W1 ổn');
+    const vD = banGiao.viecBanGiao(gD).filter((v: any) => v.lopId === X);
+    assert(vD.length === 1 && vD[0].mon === 'writing1,writing2' && vD[0].monNgan === 'W1 · W2', JSON.stringify(vD));
+    assert(JSON.stringify(vD[0].tung.map((x: any) => [x.mon, x.daGhi, x.n])) === JSON.stringify([['writing1', 1, 2], ['writing2', 0, 2]]), JSON.stringify(vD[0].tung));
+    const it = myWork(loadPrincipal(gD)).items.filter((i: any) => String(i.key).startsWith(`ban_giao_mon:${X}:`));
+    assert(it.length === 1 && it[0].key === `ban_giao_mon:${X}:writing1,writing2` && it[0].contextLabel === 'GVBM · W1 1/2 em · W2 0/2 em', JSON.stringify(it));
+    /* Một task đã đủ → việc chỉ còn task kia (mở ra vẫn hai cột — panel tự ghép W1 · W2). */
+    banGiao.ghiMon(loadPrincipal(gD), id, 'writing1', 'W1 ổn'); banGiao.ghiMon(loadPrincipal(gD), id + 1, 'writing1', 'W1 khá');
+    const v2 = banGiao.viecBanGiao(gD).filter((v: any) => v.lopId === X);
+    assert(v2.length === 1 && v2[0].mon === 'writing2' && !v2[0].tung, JSON.stringify(v2));
+  }));
 }

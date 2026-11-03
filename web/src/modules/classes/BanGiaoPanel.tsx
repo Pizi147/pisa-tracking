@@ -43,7 +43,7 @@ export function BanGiaoPanel({ classId, mon, lenhId, onClose, onDone, quayLai }:
   /* G: chỉ GVBM (không GVCN, không Quản lý thay) mở kèm môn của mình. */
   const cheDoG = !data.nguoiXem.gvcn && !data.nguoiXem.xacNhan && data.nguoiXem.xemTuNguon && monToi.length > 0;
   return cheDoG
-    ? <BangGvbm dto={data} mon={mon && monToi.includes(mon) ? mon : monToi[0]} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />
+    ? <BangGvbm dto={data} mons={monMo(mon, monToi)} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />
     : <MasterDetail dto={data} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
 }
 
@@ -146,7 +146,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   const quaHanSom = quaHan({ hanGvcn: dto.hanGvcn, xacNhan: null });
 
   return (
-    <KhungPanel quayLai={quayLai} rong="toan" tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
+    <KhungPanel quayLai={quayLai} rong="toan" loai={ghi ? t('VIỆC · BÀN GIAO') : t('BÀN GIAO · ĐỌC')} tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
       ngCanh={<span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · {t('hạn sớm nhất {ngay}', { ngay: shortDate(dto.hanGvcn, homNay) })}{quaHanSom != null && <> · {dto.hanGvcnEm} <QuaHan ngay={quaHanSom} /></>}</>}</span>}
       chan={{
         daSua: daSuaNx,
@@ -209,7 +209,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
                       ) : (
                         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="text-slate-400">{t('Chưa có')}{m.gvbm.length ? ` · ${m.gvbm.join(', ')}` : ''}, <Han loai="viec-van-hanh" han={em.hanGvbm} /></span>
-                          {ghi && <button type="button" className="link border-0 bg-transparent p-0 text-xs" onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: '' })}>{t('Điền thay')}</button>}
+                          {ghi && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={t('Điền thay {mon} · {ten}', { mon: m.ngan, ten: em.ten })} onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: '' })}>{t('Điền thay')}</button>}
                         </span>
                       )}
                       {suaPhieu && (dto.nguoiXem.monGhi.includes(m.ma) || dto.nguoiXem.ql) && !(dienThay?.lenhId === em.lenhId && dienThay.mon === m.ma) && (
@@ -270,100 +270,155 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
 
 // ==================================================================== G · GVBM
 
-function BangGvbm({ dto, mon, lenhId, onClose, onDone, reload, quayLai }: Chung & { mon: string }) {
+/** Ô GVBM được mở cùng: GV dạy cả W1 + W2 → hai cột cùng bảng (chủ SP 03/11, mockup v11 đã duyệt); `mon` có thể là "writing1,writing2". */
+function monMo(mon: string | null | undefined, monToi: readonly string[]): string[] {
+  const xin = (mon ?? '').split(',').filter((m) => monToi.includes(m));
+  const ds = xin.length ? xin : monToi.slice(0, 1);
+  const w = ['writing1', 'writing2'];
+  return ds.some((m) => w.includes(m)) && w.every((m) => monToi.includes(m)) ? [...ds.filter((m) => !w.includes(m)), ...w] : ds;
+}
+
+type TtO = 'idle' | 'go' | 'dang' | 'xong' | 'loi';
+
+function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung & { mons: string[] }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  const m0 = dto.lop.mon.find((x) => x.ma === mon)!;
-  const [chu, setChu] = useState<Record<number, string>>({});
-  const [loi, setLoi] = useState<Record<number, string>>({});
-  const [luu, setLuu] = useState<Record<number, boolean>>({});
-  const oMon = (e: PhieuEm) => e.mon.find((x) => x.ma === mon);
-  const daCo = (e: PhieuEm) => (!!oMon(e)?.noiDung && !oMon(e)?.lamLai) || !!oMon(e)?.cungGv;
-  const soDaCo = dto.ds.filter(daCo).length;
-  const han = useMemo(() => dto.theoMon.find((x) => x.ma === mon)?.han ?? null, [dto, mon]);
+  const hai = mons.length > 1;
+  const mDs = mons.map((m) => dto.lop.mon.find((x) => x.ma === m)!);
+  const k = (e: PhieuEm, m: string) => `${e.lenhId}|${m}`;
+  const [chu, setChu] = useState<Record<string, string>>({});
+  const [tt, setTt] = useState<Record<string, { tt: TtO; loi?: string }>>({});
+  const oMon = (e: PhieuEm, m: string) => e.mon.find((x) => x.ma === m);
+  /* Em không học môn (N13) không có dòng môn đó; "Cùng GV" chưa ai viết → không cần câu. */
+  const can = (e: PhieuEm, m: string) => !!oMon(e, m) && !(oMon(e, m)!.cungGv && !oMon(e, m)!.noiDung);
+  const daCo = (e: PhieuEm, m: string) => (!!oMon(e, m)?.noiDung && !oMon(e, m)?.lamLai) || tt[k(e, m)]?.tt === 'xong';
+  const dem = mons.map((m) => ({ m, can: dto.ds.filter((e) => can(e, m)).length, da: dto.ds.filter((e) => can(e, m) && daCo(e, m)).length }));
+  const han = useMemo(() => mons.map((m) => dto.theoMon.find((x) => x.ma === m)?.han).filter((x): x is string => !!x).sort()[0] ?? null, [dto, mons]);
   /* F01 (audit 03/11): mỗi ô một lượt lưu (`taoOLuu`) — gõ tiếp khi đang lưu thì phản hồi bản cũ không báo "Đã lưu"; Đóng chờ lần lưu đang chạy. */
   const hang = useHangLuu();
   const chuRef = useRef(chu);
   chuRef.current = chu;
-  const oO = useRef(new Map<number, ReturnType<HangLuu['o']>>()).current;
-  const oCua = (e: PhieuEm) => {
-    let o = oO.get(e.lenhId);
+  const oO = useRef(new Map<string, ReturnType<HangLuu['o']>>()).current;
+  const oCua = (e: PhieuEm, m: string) => {
+    let o = oO.get(k(e, m));
     if (!o) {
-      o = hang.o(String(e.lenhId), oMon(e)?.noiDung ?? '',
-        (v) => api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon, noiDung: v ?? '' })
+      o = hang.o(k(e, m), oMon(e, m)?.noiDung ?? '',
+        (v) => api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon: m, noiDung: v ?? '' })
           .then(() => { invalidateGop('/lenh-chuyen', '/my-work', '/classes'); return null; }, (er: any) => er?.message ?? ''),
-        (tt, lyDo) => {
-          setLuu((x) => ({ ...x, [e.lenhId]: tt === 'xong' }));
-          setLoi((x) => { const { [e.lenhId]: _, ...con } = x; return tt === 'loi' ? { ...con, [e.lenhId]: lyDo || t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.') } : con; });
-        });
-      oO.set(e.lenhId, o);
+        (moi, lyDo) => setTt((x) => ({ ...x, [k(e, m)]: moi === 'loi'
+          ? { tt: 'loi', loi: lyDo || t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.') }
+          : { tt: moi === 'idle' && o!.chuaLuu() ? 'go' : moi } })));
+      oO.set(k(e, m), o);
     }
     return o;
   };
   /* Ô có chữ khác bản máy chủ (lưu lỗi / chưa rời ô) → ✕ / Esc hỏi trước khi đóng. */
-  const daSua = dto.ds.some((e) => chu[e.lenhId] !== undefined && (oO.get(e.lenhId)?.chuaLuu() ?? chu[e.lenhId].trim() !== (oMon(e)?.noiDung ?? '').trim()));
+  const daSua = Object.keys(chu).some((kk) => oO.get(kk)?.chuaLuu());
   const dongHan = () => { onDone(); onClose(); };
-  const baoChuaLuu = (n: number) => toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại, hoặc bấm Đóng lần nữa để bỏ.', { n }));
+  const baoChuaLuu = (n: number) => toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại; bấm Đóng lần nữa thì chữ ở ô lỗi sẽ mất.', { n }));
   const dong = dongSauKhiLuu(hang, dongHan, baoChuaLuu);
+  const idO = (lenh: number, m: string) => `o-bg-${lenh}-${m}`;
 
   useEffect(() => {
     if (lenhId == null) return;
-    const el = document.getElementById(`o-bg-${lenhId}`);
+    const el = document.getElementById(idO(lenhId, mons[0]));
     el?.scrollIntoView({ block: 'center' });
     el?.focus();
-  }, [lenhId]);
+  }, [lenhId]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /** `giu`: phiếu cần làm lại (OV-3b) — lưu lại đúng chữ cũ cũng là xác nhận lại. */
-  const ghi = async (e: PhieuEm, giu = false) => {
-    const v = (chuRef.current[e.lenhId] ?? oMon(e)?.noiDung ?? '').trim();
+  const ghi = async (e: PhieuEm, m: string, giu = false) => {
+    const v = (chuRef.current[k(e, m)] ?? oMon(e, m)?.noiDung ?? '').trim();
     if (!v) return;
-    if (!giu) { void oCua(e).luu(); return; }
+    if (!giu) { void oCua(e, m).luu(); return; }
     try {
-      await api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon, noiDung: v });
-      setLoi((x) => { const { [e.lenhId]: _, ...con } = x; return con; });
-      setLuu((x) => ({ ...x, [e.lenhId]: true }));
+      await api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon: m, noiDung: v });
+      setTt((x) => ({ ...x, [k(e, m)]: { tt: 'xong' } }));
       invalidate('/lenh-chuyen'); invalidate('/my-work'); invalidate('/classes');
       reload();
-    } catch (er: any) { setLoi((x) => ({ ...x, [e.lenhId]: er.message })); }
+    } catch (er: any) { setTt((x) => ({ ...x, [k(e, m)]: { tt: 'loi', loi: er.message } })); }
   };
+  /* "Còn … ↑": tới ô còn trống đầu tiên (theo thứ tự em, rồi cột). */
+  const conThieu = dem.filter((x) => x.can > x.da);
+  const denThieu = () => {
+    for (const e of dto.ds) for (const m of mons) if (can(e, m) && !daCo(e, m)) { document.getElementById(idO(e.lenhId, m))?.focus(); return; }
+  };
+  const ngan = (m: string) => dto.lop.mon.find((y) => y.ma === m)?.ngan ?? m;
+  const cot = hai ? 'sm:grid-cols-[12rem_9rem_minmax(0,1fr)_minmax(0,1fr)]' : 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)]';
+  const oTrong = (chuO: string) => (
+    <span className="flex min-h-[44px] items-center rounded-lg border border-dashed px-2.5 text-[13px] text-slate-500 sm:min-h-[40px]" style={{ borderColor: 'var(--line-strong)' }}>{chuO}</span>
+  );
+  const nhanTt: Record<TtO, string> = { idle: '', go: t('● Đang gõ · lưu khi rời ô'), dang: t('Đang lưu…'), xong: t('✓ Đã lưu'), loi: '' };
 
   return (
-    <KhungPanel quayLai={quayLai} rong="rong" tieuDe={t('Bàn giao môn {mon} ({ten})', { mon: m0.ngan, ten: m0.ten })} onDong={dong}
-      ngCanh={<span className="tabular-nums">{dto.lop.code} · {t('{n} em', { n: dto.tong })}{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · {t('mỗi em một câu')}</span>}
+    <KhungPanel quayLai={quayLai} rong={hai ? 'toan' : 'rong'} loai={t('VIỆC · BÀN GIAO')} onDong={dong}
+      tieuDe={hai ? t('Bàn giao môn {mon} · {lop}', { mon: mDs.map((x) => x.ngan).join(' · '), lop: dto.lop.code }) : t('Bàn giao môn {mon} ({ten})', { mon: mDs[0].ngan, ten: mDs[0].ten })}
+      ngCanh={<span className="tabular-nums">{!hai && <>{dto.lop.code} · </>}{t('{n} em', { n: dto.tong })}{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · {hai ? t('mỗi em một câu mỗi task') : t('mỗi em một câu')}</span>}
       chan={{
         daSua,
         huy: { nhan: t('Đóng'), onClick: dongSauKhiLuu(hang, dongHan, baoChuaLuu, true) },
-        dongTren: <p className="m-0 px-4 pt-2 text-right text-xs tabular-nums text-slate-400">{t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: soDaCo, b: dto.tong })}</p>,
+        trai: (
+          <span className="flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
+            <span className="tabular-nums">{hai ? t('Tự lưu khi rời ô') : t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>
+            {conThieu.length > 0 && (
+              <button type="button" className="min-h-[44px] border-0 bg-transparent p-0 text-xs font-semibold text-soon hover:underline sm:min-h-0" onClick={denThieu}>
+                {hai ? t('Còn {ds} ↑', { ds: conThieu.map((x) => t('{mon}: {n} em', { mon: ngan(x.m), n: x.can - x.da })).join(' · ') })
+                  : t('Còn {n} em ↑', { n: conThieu[0].can - conThieu[0].da })}
+              </button>
+            )}
+          </span>
+        ),
       }}>
-      <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={t('Bàn giao môn {mon}', { mon: m0.ngan })}>
-        <div role="row" className="hidden grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)] gap-3 px-3 py-2 text-[12px] font-semibold text-slate-500 sm:grid">
-          <span role="columnheader">{t('Học viên')}</span><span role="columnheader">{t('Kết quả')}</span><span role="columnheader">{t('Thông tin bàn giao')}</span>
+      <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={t('Bàn giao môn {mon}', { mon: mDs.map((x) => x.ngan).join(' · ') })}>
+        <div role="row" className={`hidden gap-3 px-3 py-2 text-[12px] font-semibold text-slate-500 sm:grid ${cot}`}>
+          <span role="columnheader">{t('Học viên')}</span><span role="columnheader">{t('Kết quả')}</span>
+          {hai ? dem.map((x, i) => (
+            <span key={x.m} role="columnheader">{mDs[i].ngan} · {mDs[i].ten} <span className="font-normal tabular-nums">· {t('{a}/{b} em đã có', { a: x.da, b: x.can })}</span></span>
+          )) : <span role="columnheader">{t('Thông tin bàn giao')}</span>}
         </div>
         {dto.ds.map((e) => {
-          const cu = e.mon.find((x) => x.ma === mon)?.noiDung ?? '';
           const khoa = !!e.xacNhan && !e.suaDuoc;   // OV-13h: đã xác nhận vẫn sửa được, cả sau ngày chuyển lớp (khoá chỉ khi lệnh huỷ / không quyền)
           return (
-            <div key={e.lenhId} role="row" className="grid gap-x-3 gap-y-1 px-3 py-2.5 text-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)]">
-              <span role="cell" className="min-w-0 truncate text-slate-100" title={e.ten}>{e.ten}
-                {e.lopDich && <span className="block text-xs text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
+            <div key={e.lenhId} role="row" className={`grid gap-x-3 gap-y-1.5 px-3 py-2.5 text-sm ${cot}`}>
+              <span role="cell" className="min-w-0 truncate font-semibold text-slate-100 sm:font-normal" title={e.ten}>{e.ten}
+                {e.lopDich && <span className="block text-xs font-normal text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
               <span role="cell" className="min-w-0 text-xs text-slate-400">{e.tuDien?.ketQua ? dich(e.tuDien.ketQua) : '—'}</span>
-              <span role="cell" className="min-w-0">
-                {oMon(e)?.cungGv && !cu ? <span className="text-sm text-slate-400">{t('Cùng GV · không cần bàn giao')}</span> : <>
-                <input id={`o-bg-${e.lenhId}`} className="field w-full" maxLength={300} readOnly={khoa} aria-label={t('Bàn giao môn {mon} của {ten}', { mon: m0.ngan, ten: e.ten })}
-                  aria-invalid={!!loi[e.lenhId]} placeholder={t('Viết một câu…')} value={chu[e.lenhId] ?? cu}
-                  onChange={(ev) => { setChu((x) => ({ ...x, [e.lenhId]: ev.target.value })); setLuu((x) => ({ ...x, [e.lenhId]: false })); oCua(e).go(ev.target.value); }}
-                  onBlur={() => void ghi(e)} />
-                {e.writingCu && !cu && <span className="mt-0.5 block text-xs text-slate-500">{t('Writing · cũ')}: {e.writingCu.noiDung}</span>}
-                {loi[e.lenhId] && <span role="alert" className="mt-0.5 block text-xs text-late">{loi[e.lenhId]}</span>}
-                {!loi[e.lenhId] && luu[e.lenhId] && <span className="mt-0.5 block text-xs text-done">{t('Đã lưu')}</span>}
-                {!khoa && oMon(e)?.lamLai && !luu[e.lenhId] && (
-                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    <Nhan tone="soon">{t('Cần làm lại')}</Nhan><span className="text-slate-400">{t('Lộ trình đã đổi — sửa hoặc giữ câu cũ')}</span>
-                    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghi(e, true)}>{t('Giữ và lưu')}</button>
+              {mons.map((m, i) => {
+                const om = oMon(e, m);
+                const cu = om?.noiDung ?? '';
+                const s0 = tt[k(e, m)];
+                return (
+                  <span key={m} role="cell" className="min-w-0">
+                    {hai && <span className="mb-1 flex items-center gap-1.5 text-[13px] font-bold text-slate-400 sm:hidden"><span className="rounded bg-[color:var(--accent-soft)] px-1.5 text-[12px] font-bold text-[color:var(--accent)]">{mDs[i].ngan}</span>{mDs[i].ten}</span>}
+                    {!om ? oTrong(hai ? t('Không học {mon}', { mon: mDs[i].ngan }) : t('Không học {mon} · không cần bàn giao', { mon: mDs[i].ngan }))
+                      : om.cungGv && !cu ? oTrong(t('Cùng GV · không cần bàn giao')) : <>
+                      <input id={idO(e.lenhId, m)} className="field w-full" maxLength={300} readOnly={khoa} autoComplete="off"
+                        aria-label={hai ? `${mDs[i].ngan} · ${e.ten}` : t('Bàn giao môn {mon} của {ten}', { mon: mDs[i].ngan, ten: e.ten })}
+                        aria-invalid={s0?.tt === 'loi'} aria-describedby={s0?.tt === 'loi' ? `${idO(e.lenhId, m)}-loi` : undefined}
+                        placeholder={t('Viết một câu…')} value={chu[k(e, m)] ?? cu}
+                        onChange={(ev) => {
+                          setChu((x) => ({ ...x, [k(e, m)]: ev.target.value }));
+                          oCua(e, m).go(ev.target.value);
+                          setTt((x) => ({ ...x, [k(e, m)]: { tt: x[k(e, m)]?.tt === 'dang' ? 'dang' : 'go' } }));
+                        }}
+                        onBlur={() => void ghi(e, m)} />
+                      {e.writingCu && !cu && (
+                        <span className="mt-0.5 block text-xs text-slate-500">
+                          <b className="font-semibold text-slate-400">{t('Writing · cũ')}:</b> {e.writingCu.noiDung}{e.writingCu.nguoiGhi ? ` — ${e.writingCu.nguoiGhi}, ${ngay(e.writingCu.ghiLuc, homNay)}` : ''}
+                        </span>
+                      )}
+                      {s0?.tt === 'loi' ? <span id={`${idO(e.lenhId, m)}-loi`} role="alert" className="mt-0.5 block text-xs text-late">{s0.loi}</span>
+                        : s0 && nhanTt[s0.tt] && <span aria-live="polite" className={`mt-0.5 block text-xs ${s0.tt === 'xong' ? 'text-done' : s0.tt === 'go' ? 'text-soon' : 'text-slate-400'}`}>{nhanTt[s0.tt]}</span>}
+                      {!khoa && om.lamLai && s0?.tt !== 'xong' && (
+                        <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                          <Nhan tone="soon">{t('Cần làm lại')}</Nhan><span className="text-slate-400">{t('Lộ trình đã đổi — sửa hoặc giữ câu cũ')}</span>
+                          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => void ghi(e, m, true)}>{t('Giữ và lưu')}</button>
+                        </span>
+                      )}
+                    </>}
                   </span>
-                )}
-                </>}
-              </span>
+                );
+              })}
             </div>
           );
         })}

@@ -937,7 +937,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     } else {
       items.push({
         ...chung, key: `ban_giao_mon:${v.lopId}:${v.mon}`, count: v.n - v.daGhi,
-        contextLabel: `GVBM · ${v.daGhi}/${v.n} em`, reason: `${v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
+        contextLabel: `GVBM · ${v.tung ? v.tung.map((x) => `${x.monNgan} ${x.daGhi}/${x.n} em`).join(' · ') : `${v.daGhi}/${v.n} em`}`,
+        reason: v.tung ? v.tung.filter((x) => x.n > x.daGhi).map((x) => `${x.n - x.daGhi} em chưa có câu ${x.monNgan}`).join(' · ') : `${v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
         tieuDe: `Bàn giao môn ${v.monNgan} · ${v.code}`, actionLabel: `Bàn giao môn ${v.monNgan}`,
         href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao&mon=${v.mon}`, statusLabel: 'Chờ bàn giao',
       });
