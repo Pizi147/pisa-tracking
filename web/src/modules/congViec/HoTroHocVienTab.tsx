@@ -22,7 +22,7 @@ import { LopToiDay } from '../worklist/LopToiDay.tsx';
 import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
-import { DauViecCongViec, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
+import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -345,7 +345,7 @@ export function HoTroHocVienTab() {
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('BÀI THI SPEAKING')
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)]).toLocaleUpperCase('vi')) : '';
   const dauPanel = chon ? {
-    loai: `${khoaPanel ? t('THEO DÕI') : theoDoiChon ? t('LÀM THAY') : t('VIỆC')} · ${nhanNhom}`,
+    loai: `${khoaPanel ? t('THEO DÕI') : theoDoiChon ? t('LÀM THAY') : t('VIỆC')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
     dai: noiDai === 'viec' && daiVuaLuu || theoDoiChon ? <>
       {theoDoiChon && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={() => boChuRoi(() => setLamThay(null))} />}
       {noiDai === 'viec' ? daiVuaLuu : null}
@@ -526,7 +526,7 @@ export function HoTroHocVienTab() {
               {/* Điện thoại: danh sách vừa ẩn → focus về nút lùi (máy tính nút ẩn, `autoFocus` không có tác dụng). */}
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => boChuRoi(dong)}>{t('‹ Công việc')}</button>
-              <KhungTaiCho.Provider value>
+              <KhungTaiCho.Provider value><NhanTruongDam.Provider value>
                 {/* N33 ③ (U01 #5, #11): việc người khác = TÓM TẮT chỉ đọc + "Làm thay"; bấm mới ra form, dải vàng "Bạn đang làm thay … · Thôi, chỉ xem". */}
                 {khoaPanel ? (
                   <TomTatTheoDoi key={chon.key} it={chon} loai={dauPanel!.loai} them={dauPanel!.them} onDong={dong} onLamThay={() => setLamThay(chon.key)}
@@ -548,7 +548,7 @@ export function HoTroHocVienTab() {
                   </div>
                 </DauViecCongViec.Provider>
                 </>}
-              </KhungTaiCho.Provider>
+              </NhanTruongDam.Provider></KhungTaiCho.Provider>
             </>
           ) : data && !data.scopeEmpty && (dsNhom.length > 0 || coDuyet) ? (
             /* V8-CV (P2): panel trống cao hết cột, khung viền đứt. */

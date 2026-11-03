@@ -150,7 +150,11 @@ export const KhungTaiCho = createContext(false);
 export const KhungTrongCot = createContext(false);
 /** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …") + dòng "Em này còn" dưới đầu. */
 /** M6 6b-3 `dai`: dải "✓ Đã lưu … · Hoàn tác" của việc vừa làm — đầu thân panel của việc kế (mockup panel-pilot ②b). */
-export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; dai?: ReactNode } | null>(null);
+export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; dai?: ReactNode;
+  /** UI-CONG-VIEC (khung A3): đang làm thay — dải sự kiện thêm "Phụ trách {tên}". */
+  nguoiLam?: string | null } | null>(null);
+/** UI-CONG-VIEC (mockup `.truong > .nhan` 15 / 700): panel việc ở Công việc — nhãn ô nhập đậm, sáng; nơi khác giữ nhãn nhỏ. */
+export const NhanTruongDam = createContext(false);
 /** M6 6b-3: lớp panel đang ẨN (form việc khi đang "Xem Case" trong panel việc) — cần hỏi "Bỏ chữ?" thì hiện lại lớp đó trước (hộp hỏi vẽ trong panel). */
 export const HienLaiPanel = createContext<(() => void) | null>(null);
 /** HV-LOP-VIEC: nơi mở một panel việc THAY nội dung panel của mình (panel một em → PanelViec) cấp "← tên em" cho panel NGOÀI CÙNG bên trong
@@ -339,7 +343,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             {/* `-ml-1 pl-1`: chừa 4 px cho vòng focus của link đầu dòng (dấu "·" vẫn nằm ngoài vùng cắt). */}
             {!trongCot && dau.su && (
               <dl className="m-0 flex flex-wrap items-start gap-y-2 pt-1">
-                {dau.su.filter(([, v]) => v !== null && v !== undefined && v !== '').map(([n, v]) => (
+                {[...dau.su, ...(cvNgoai?.nguoiLam ? [[t('Phụ trách'), cvNgoai.nguoiLam] as [string, ReactNode]] : [])].filter(([, v]) => v !== null && v !== undefined && v !== '').map(([n, v]) => (
                   <div key={n} className="grid min-w-0 gap-0.5 border-l px-[18px] py-0.5 first:border-l-0 first:pl-0 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
                     <dt className="whitespace-nowrap text-xs font-medium text-faint">{n}</dt>
                     <dd className="m-0 min-w-0 text-[15px] font-semibold leading-snug text-[color:var(--text)]">{v}</dd>
@@ -462,18 +466,20 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'lab
   const Vo = as === 'div' || coOTuNhan(children) ? 'div' : 'label';
   /* `as="div"` không có ô để nhãn trỏ vào (nhóm NutChon…) → nhóm mang tên của nhãn, trình đọc màn hình đọc "Mức độ, nhóm". */
   const idNhan = useId();
+  const dam = useContext(NhanTruongDam);   // UI-CONG-VIEC: ô không bắt buộc không ghi "(không bắt buộc)" — ô bắt buộc đã có *
   const troO = Vo === 'div' ? idO : null;
   const nhom = Vo === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>
     <span className="min-w-0 flex-1">
       {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}
-      {tuyChon && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
+      {tuyChon && !dam && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
       {thieu && <span className="ml-1.5 text-xs font-semibold text-late">{t('Thiếu')}</span>}
     </span>
     {dem?.can && dem.co < dem.can ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>
       : dem?.toiDa ? <DemChu n={dem.co} toiDa={dem.toiDa} /> : null}
   </>;
-  const lopNhan = 'mb-1 flex items-baseline gap-2 text-[12px] font-medium text-slate-200';   // D10: nhãn trường 500 (luật chữ: nhãn 500)
+  const lopNhan = dam ? 'mb-2 flex items-baseline gap-2 text-[15px] font-bold leading-snug text-[color:var(--text)]'
+    : 'mb-1 flex items-baseline gap-2 text-[12px] font-medium text-slate-200';   // D10: nhãn trường 500 (luật chữ: nhãn 500)
   const noi = useNoiLoi(loi);
   return (
     <BaoOTrongNhan.Provider value={setIdO}>

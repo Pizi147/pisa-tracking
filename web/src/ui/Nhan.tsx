@@ -123,10 +123,13 @@ export function ChipSoQuaHan({ n }: { n: number }) {
 }
 /** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn viên xám; luôn có chữ.
  *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Chữ hạn = `nhanHan` "hạn 18/09" (NEN-V5 P7: ngày thật, kể cả hôm nay). */
-export function ChipHan({ loai, han }: { loai: DeadlineKind; han: string | null }) {
+export function ChipHan({ loai, han, chuThuong = false }: { loai: DeadlineKind; han: string | null;
+  /** UI-CONG-VIEC (dải sự kiện panel, mockup `.fact`): chưa quá hạn → ngày chữ thường "16/09", quá hạn vẫn ⚠ đỏ. */
+  chuThuong?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
+  if (chuThuong && v.tone !== 'overdue') return <span className="tabular-nums">{han.slice(8, 10)}/{han.slice(5, 7)}</span>;
   /* U01 #27 (audit 03/11, mockup `audit-0311/ro.css .han`): hạn CHỈ CHỮ, không nền — quá hạn đỏ đậm + ⚠, sắp hạn vàng đậm + ⚠ (không trùng chip SOS 3
      nền đỏ đặc — V5); hạn thường chữ thường, hạn xa chữ mờ. Chữ + ⚠ mang nghĩa, màu chỉ phụ. */
   const can = v.tone === 'overdue' || v.ganHan;
