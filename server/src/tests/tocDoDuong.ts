@@ -1111,6 +1111,10 @@ export const TRAN_GHI_LO = {
   dongBoThongBaoQT: 33,   // PR CHUONG-NHE: đo 23 câu, 312 dòng (×3; trước 33 câu, 1 703 dòng) → max(23 + 10, ⌈23 × 1,3⌉)
   /** BO-QUA-XEP-MT: POST /my-work/bo-qua — đọc lại MỘT PA (câu `moc:` + id), kiểm quyền, ghi 3 cột + nhật ký trong một giao dịch. */
   boQuaViec: 20,   // trần đặt trước khi đo — sửa theo số đo
+  /** HAN-BAO-PH (UI-1): POST /y-thuc/bao-ph/:id/han — đọc việc + quyền + Tạm dừng, so-và-đổi `han_chon`, lịch sử, nhật ký, trả `xemViecBaoPh`. */
+  suaHanBaoPh: 22,   // đo 12 câu → max(12 + 10, ⌈12 × 1,3⌉)
+  /** HAN-BAO-PH (UI-1): POST /phoi-hop-sos/:id/han — meeting CX, như trên (trả một việc phối hợp). */
+  suaHanPhoiHop: 22,   // đo 12 câu → max(12 + 10, ⌈12 × 1,3⌉)
   /** POST /notifications/doc-het — một câu UPDATE (S6F-a 10e) + phiên/quyền. PR-Dọn (9d): trần đặt sau khi đo. */
   docHet: 19,   // đo 9 câu → max(9 + 10, ⌈9 × 1,3⌉)
   /** DON-LUONG K42a (rà sâu #742): GET /notifications của người ~500 thông báo (trang đầu đầy) — câu + dòng trả về; dòng quét của lượt 2 in kèm (chỉ loại Cần làm đã đọc cũ hơn trang). */

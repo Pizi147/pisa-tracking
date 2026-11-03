@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { BoiCanh, ChuLuu, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
+import { DongHan } from '../../ui/DongHan.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -11,7 +12,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, daysBetween, kiemGhiRoKhac, luuRoiTiep, reasonNeedsText, shortDate, type KetQuaBaoPh,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, kiemGhiRoKhac, luuRoiTiep, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -24,8 +25,11 @@ type ViecBaoPh = {
   coTheGhi: boolean; nhanXuLy: string | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
   khoiPhucDuoc: boolean;
-  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null };
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null; viPham: { ngay: string; ten: string }[]; ghiChu: string | null };
   thuHoiCho: { lyDo: string | null } | null;
+  /** HAN-BAO-PH (N34): `han` = hạn hiệu lực; mặc định · đã chọn (null) · sửa được · mỗi lần đổi hạn. */
+  hanMacDinh: string; hanChon: string | null; coTheSuaHan: boolean;
+  lichSuHan: { cu: string | null; moi: string; macDinh: boolean; nguoi: string | null; luc: string }[];
 };
 
 /** "14/09 15:30" giờ Việt Nam từ ISO UTC của máy chủ. */
@@ -71,13 +75,11 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
 
   const em = { id: it.studentId!, ten: it.studentName };
   const tieuDe = t('Báo PH · {ten}', { ten: it.studentName });
-  const han = v?.han ?? it.due;
   const xong = v?.trangThai === 'xong' || daLuu?.kq === 'da_bao';
+  /* UI-1 (mockup U10 K5): hạn là trường riêng đầu thân panel (DongHan) — đầu panel chỉ còn em · lớp. */
   const dau = dauViec({
     han: v?.coTheGhi && !bo ? <MenuDong nhan={t('Thao tác phụ')} muc={[{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }]} /> : null,
     em, lop: it.classCode,
-    ngCanh: han ? <><b className="font-semibold text-slate-100">{t('hạn 23:59 {ngay}', { ngay: shortDate(han, hn) })}</b>
-      {' '}({xong ? t('đã xong') : han >= hn ? t('còn {n} ngày', { n: daysBetween(hn, han) }) : t('quá hạn')})</> : null,
   });
   if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!v) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
@@ -131,7 +133,18 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   };
 
   const ph = v.lienHe;
-  const lichSu = [...v.lan].reverse();
+  const suaHan = async (moi: string | null, hanCu: string | null) => {
+    await api.post(`/y-thuc/bao-ph/${v.id}/han`, { han: moi, hanCu });
+    toast.push('ok', t('Đã lưu hạn'));
+    for (const k of KHOA_BAO_PH) invalidate(k);
+    reload(); onDaLam();
+  };
+  /* Lịch sử: lần liên hệ + lần đổi hạn, mới nhất trước. */
+  const lichSu = [
+    ...v.lan.map((l) => ({ luc: l.luc, tieu: l.nhan, nguoi: l.nguoi, phu: [l.ngay !== l.luc.slice(0, 10) ? t('ngày {ngay}', { ngay: shortDate(l.ngay, hn) }) : null, l.ghiChu].filter(Boolean) as string[] })),
+    ...v.lichSuHan.map((h) => ({ luc: h.luc, nguoi: h.nguoi, phu: [] as string[],
+      tieu: h.macDinh ? t('Về hạn mặc định {ngay}', { ngay: shortDate(h.moi, hn) }) : t('Đổi hạn {cu} → {moi}', { cu: h.cu ? shortDate(h.cu, hn) : '—', moi: shortDate(h.moi, hn) }) })),
+  ].sort((a, b) => b.luc.localeCompare(a.luc));
   return (
     <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
       <div className="flex flex-col gap-4 pt-4">
@@ -141,15 +154,22 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
             <span className="text-slate-300">{t('Lần báo PH của bạn vẫn giữ trong lịch sử. Bạn không cần làm gì.')}</span>
           </div>
         )}
+        <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
+        {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[
-          [t('Lần xử lý'), [v.nhan, v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.luuLuc && t('lưu {luc}', { luc: lucVn(v.boiCanh.luuLuc) })].filter(Boolean).join(' · ')],
-          [t('Nội dung GVCN'), v.boiCanh.noiDung && <div className="border-l-2 pl-3 font-normal" style={{ borderColor: 'var(--line-strong)' }}>{v.boiCanh.noiDung}</div>],
-          [t('Phụ huynh'), (ph.ten || ph.sdt) && (
-            <span className="flex flex-wrap items-center gap-2">
-              {ph.ten && <span>{ph.ten}{ph.quanHe ? ` (${ph.quanHe})` : ''}</span>}
-              {ph.sdt && <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>
-                <span aria-hidden>📞</span> {sdtDoc(ph.sdt)}</a>}
-            </span>
+          [t('Lần xử lý'), <b className="font-semibold">{v.nhan}</b>],
+          [t('Người lưu'), v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`],
+          [t('Lúc lưu'), v.boiCanh.luuLuc && <span className="tabular-nums">{lucVn(v.boiCanh.luuLuc)}</span>],
+          [t('Vi phạm'), v.boiCanh.viPham.length > 0 && (
+            <ul className="m-0 list-none space-y-0.5 p-0">
+              {v.boiCanh.viPham.map((x, i) => <li key={i} className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2"><span className="tabular-nums text-slate-400">{shortDate(x.ngay, hn)}</span><span>{x.ten}</span></li>)}
+            </ul>
+          )],
+          [t('Ghi chú GVCN'), v.boiCanh.ghiChu && <span className="font-normal">{v.boiCanh.ghiChu}</span>],
+          [t('Phụ huynh'), ph.ten && `${ph.ten}${ph.quanHe ? ` (${ph.quanHe})` : ''}`],
+          [t('Điện thoại'), ph.sdt && (
+            <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>
+              <span aria-hidden>📞</span> {sdtDoc(ph.sdt)}</a>
           )],
         ]} />
         {bo && <BoViec id={v.id} onDong={() => setBo(false)} onDaBo={() => {
@@ -177,8 +197,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
               {lichSu.map((l, i) => (
                 <li key={i} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3">
                   <span className="tabular-nums text-slate-400">{lucVn(l.luc)}</span>
-                  <span className="min-w-0 break-words text-slate-300"><b className="text-slate-100">{l.nhan}</b>{l.nguoi ? ` · ${l.nguoi}` : ''}
-                    {l.ngay !== l.luc.slice(0, 10) && ` · ${t('ngày {ngay}', { ngay: shortDate(l.ngay, hn) })}`}{l.ghiChu && <><br />{l.ghiChu}</>}</span>
+                  <span className="min-w-0 break-words text-slate-300"><b className="block text-slate-100">{l.tieu}</b>
+                    {l.nguoi && <span className="block text-slate-400">{l.nguoi}</span>}{l.phu.map((x, j) => <span key={j} className="block">{x}</span>)}</span>
                 </li>
               ))}
             </ul>

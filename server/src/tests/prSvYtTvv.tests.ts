@@ -397,6 +397,27 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(bp.lichSuHan('phoi_hop', m).length === 1, 'lịch sử');
   }));
 
+  await checkAsync('HAN-6 · trần câu SQL sửa hạn (Báo PH, Meeting CX); bối cảnh panel tách vi phạm + ghi chú GVCN', () => thu(async () => {
+    const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+    const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+    const ph: any = await import('../yThuc/phoiHop.ts');
+    const tvv = tvvMoi(); const sid = moiEm(tvv); const ids = nVp(sid, 2);
+    xuLy(gvcn, sid, ids);
+    const [v] = viecCua(sid);
+    xoaNho(); let s0 = soCauSql(); const x = bp.suaHanBaoPh(tvv, v.id, { han: addDays(TODAY, 8), hanCu: null }); const n1 = soCauSql() - s0;
+    console.log(`    suaHanBaoPh: ${n1} câu`);
+    assert(n1 <= TRAN_GHI_LO.suaHanBaoPh, `${n1} > ${TRAN_GHI_LO.suaHanBaoPh}`);
+    assert(x.boiCanh.viPham.length === 2 && x.boiCanh.viPham.every((r: any) => r.ngay && r.ten) && x.boiCanh.ghiChu === 'Đã gọi điện và gửi report cho gia đình', JSON.stringify(x.boiCanh));
+    const a = conn.prepare(`SELECT a.id, a.student_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active'
+      JOIN classes c ON c.id = e.class_id WHERE c.code = ? AND COALESCE(a.kind, 'mock') = 'mock' AND a.status != 'cancelled'
+        AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = 'cx_meeting_student') LIMIT 1`).get(LOP) as any;
+    const m = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?,?,'cx_meeting_student',1,'pending',?)`)
+      .run(a.id, a.student_id, `${TODAY}T03:00:00Z`).lastInsertRowid);
+    xoaNho(); s0 = soCauSql(); ph.suaHanPhoiHop(gvcn, m, { han: addDays(TODAY, 9), hanCu: null }); const n2 = soCauSql() - s0;
+    console.log(`    suaHanPhoiHop: ${n2} câu`);
+    assert(n2 <= TRAN_GHI_LO.suaHanPhoiHop, `${n2} > ${TRAN_GHI_LO.suaHanPhoiHop}`);
+  }));
+
   await checkAsync('SVYT-CU · lần xử lý lưu TRƯỚC khi bật (không qua đường lưu) không có việc; xoá học viên xoá cả việc + lịch sử', () => thu(async () => {
     const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
     xuLy(gvcn, sid, [v1]);
