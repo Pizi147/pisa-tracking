@@ -7,7 +7,7 @@ import {
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { coGhiTrongRequest, coNho, layMoc, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
@@ -150,12 +150,16 @@ export function clearScoringModeCache() {
   xoaNhoThamChieu();
 }
 
+const ctLoTrinh = (cycleId: number | null | undefined): string | null => cycleId == null ? null
+  : nho(`ct-lt:${cycleId}`, () => (db().prepare('SELECT programme_code FROM learning_cycles WHERE id = ?').get(cycleId) as any)?.programme_code ?? null);
+
 export function scoringModeOf(
-  attempt: { class_id?: number | null; kind?: string | null; scoring_mode?: string | null },
+  attempt: { class_id?: number | null; kind?: string | null; scoring_mode?: string | null; cycle_id?: number | null },
 ): ScoringMode {
   if (attempt.kind === 'mt0') return 'band';   // PR-MT0: MT0 chấm band dù nằm ở lớp thường
   if (attempt.scoring_mode) return attempt.scoring_mode === 'ratio' ? 'ratio' : 'band';
-  if (!attempt.class_id) return attempt.kind && attempt.kind !== 'mock' ? 'ratio' : 'band';
+  /* LECH-KHONG-LOP (`maCtCuaLuot`): lượt không lớp theo chương trình của LỘ TRÌNH — một câu một dòng, chỉ lượt không lớp (hiếm). */
+  if (!attempt.class_id) return programmeByCode(ctLoTrinh(attempt.cycle_id))?.scoringMode === 'ratio' ? 'ratio' : 'band';
   const so = (layMoc() as MocHeThong | undefined)?.thamChieu ?? null;
   if (coNho() && so != null && !coGhiTrongRequest()) return nhoThamChieu('che-do-lop', docCheDoLop).get(attempt.class_id) ?? 'band';
   if (so != null && so !== soModeByClass) { modeByClass.clear(); soModeByClass = so; }

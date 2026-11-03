@@ -5,7 +5,7 @@ import {
   mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong, trangThaiCaseV4 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
-import { allProgrammes } from '../normal/regular.ts';
+import { allProgrammes, maCtCuaLuot } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
@@ -123,7 +123,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
   });
   const typed = new Map<number, ReturnType<typeof typedResult>>();
   for (const a of attemptRows) {
-    typed.set(a.id, typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: a.class_id ? progOf(a.class_programme) : null },
+    typed.set(a.id, typedResult(a, { scores: scoresByAttempt.get(a.id) ?? [], skips: skipsByAttempt.get(a.id) ?? [], prog: progOf(maCtCuaLuot(a.class_id, a.class_programme, cycles.find((c) => c.id === a.cycle_id)?.programme_code)) },   // LECH-KHONG-LOP
       kyNangByAttempt.get(a.id) ?? []));
   }
 

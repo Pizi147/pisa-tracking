@@ -6,7 +6,7 @@ import {
   ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
 import { entryBandsOf, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
-import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
+import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, maCtCuaLuot, nguongDatLop } from '../normal/regular.ts';
 import { luotSinhViecRow, type SkillEval } from '../worklist/danhGia.ts';
 
 /**
@@ -290,8 +290,8 @@ export function standingFor(studentIds: number[]): Map<number, Standing> {
   const xet = ({ s, cycle }: (typeof cho)[number], a: any, bundle: ReturnType<typeof loadBundle>): boolean => {
     const scores = bundle.scores.get(a.id) ?? [];
     if (!scores.length) return false;   /* chưa có điểm: đi tiếp xuống lượt cũ hơn */
-    /* LECH-CACH-CHAM: cùng luật `evaluateAttemptRow` — chấm theo lớp của lượt; lượt không lớp mới theo lộ trình. */
-    const ct: string | null = a.programme_code ?? cycle.programme_code ?? null;
+    /* LECH-CACH-CHAM + LECH-KHONG-LOP: cùng luật `evaluateAttemptRow` (`maCtCuaLuot`) — chấm theo lớp của lượt; lượt không lớp theo lộ trình. */
+    const ct = maCtCuaLuot(a.class_id, a.programme_code, cycle.programme_code);
     const prog = chuongTrinhTyLeCuaLuot(ct, layCt);
     /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
     const rr = prog ? evaluateRegular(boMonTheoLuot(boMonCua(prog.code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, prog.code, nguongDatLop(a.class_id)) : null;

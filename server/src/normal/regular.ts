@@ -69,6 +69,10 @@ export const cheDoCua = (programmeCode: string | null | undefined): CheDo =>
  * LECH-CACH-CHAM: MỘT luật chọn cách chấm của một lượt — theo chương trình LỚP CỦA LƯỢT (lớp tại thời điểm đánh giá, như `scoringModeOf`), không theo lộ
  * trình. Trả chương trình khi lượt chấm tỷ lệ, `null` = chấm band. `programmes` là hàm: lượt FT không đọc bảng chương trình.
  */
+/** LECH-KHONG-LOP: mã chương trình CHẤM của lượt — chương trình lớp của lượt; lượt KHÔNG lớp theo chương trình của lộ trình. Mọi đường chấm lượt đi qua đây. */
+export const maCtCuaLuot = (classId: number | null | undefined, ctLop: string | null | undefined, ctLoTrinh: string | null | undefined): string | null =>
+  (classId != null ? ctLop : ctLoTrinh) ?? null;
+
 export function chuongTrinhTyLeCuaLuot(ma: string | null | undefined, programmes: () => Map<string, ProgrammeInfo>): ProgrammeInfo | null {
   if (!ma || ma === 'FT') return null;
   const prog = programmes().get(ma);
