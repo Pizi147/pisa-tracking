@@ -10,7 +10,7 @@ Nguồn (CHỈ trên máy chủ SP, không commit): `D:/Download/Pisa tracking w
 | `anh-3-ho-so-hv-nhieu-case.jpg` | bổ sung (giống U02) | Hồ sơ HV Hà Trần Phúc · Overall: 4 Case mở hết, mô tả EN rất dài, "Tiến độ trên lớp" trống cột trái |
 | `anh-4-hanh-trinh-ky-nang.jpg` | bổ sung (giống U07) | Hành trình CP FT 130: "5.0 Giảm 0.5 4.5" không tên mốc; Speaking "1 PA" cạnh "chưa có PA · Chờ xác nhận PA" |
 
-Ảnh U01–U10 của mục 19 (10 tệp) chủ SP **chưa gửi**: session cần thì hỏi chủ SP đúng tên tệp; không giả vờ đã xem, vẫn dùng mô tả trong `00`.
+Ảnh U01–U10 của mục 19 (10 tệp) **đã có** ở `D:/Download/Pisa tracking web/cac trang/` (tên tệp như `00` mục 19.1). DB demo cục bộ cũ thiếu bảng `doi_phan_cong` → `npm run seed` trước khi bấm thử.
 
 ## Hiện trạng để so (`00` mục 2)
 - Ảnh chủ SP chụp bản đang chạy (deploy 30/10 23:40, main `3a38444ad`). Main nay mới hơn nhiều PR (8 migrate chờ deploy) → **tái hiện trên main trước**; lỗi đã hết trên main ghi "đã sửa trên main, chờ deploy".
