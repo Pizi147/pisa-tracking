@@ -195,7 +195,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const daOn = d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30' }, homNay);
     /* PR-VAI-b (Q19): "Xong" nói mã tuần, không dd/mm. */
     assert(daOn?.tone === 'ok' && daOn.chu === `Xong ${d.tuanLich('2026-08-30', homNay)}` && /^Xong W\d [A-Z]{3}$/.test(daOn.chu), `Xong: ${JSON.stringify(daOn)}`);
-    assert(d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30', huyGanNhat: true }, homNay)?.chu === 'Đã huỷ', 'Đã huỷ');
+    assert(d.trangThaiHop({ caseMo: [], coTungCase: true, diemCuoiChuaDat: null, xongGanNhat: '2026-08-30', huyGanNhat: true }, homNay)?.chu === `Huỷ ${d.tuanLich('2026-08-30', homNay)}`, 'Huỷ W5 AUG (UA-15: huỷ ≠ xong)');
     const chuaTungCo = d.trangThaiHop({ caseMo: [], coTungCase: false, diemCuoiChuaDat: null, xongGanNhat: null }, homNay);
     assert(chuaTungCo === null, 'Chưa từng có Case → null (giao diện tự vẽ chữ mờ)');    /* mo 01/08 → 22/09 = 52 ngày = 7.43 tuần → làm tròn lên 8 */
     assert(dangTheoDoi?.chu === 'Đang làm · 8 tuần', `n tuần làm tròn lên: ${dangTheoDoi?.chu}`);
@@ -228,10 +228,10 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
   });
 
   /* PR-VAI-b (Q16): nút đổi giai đoạn bỏ (bấm chương thì trục chuyển giai đoạn) — `nhanGiaiDoan` bỏ; trục ghi "Đang xem {giai đoạn} · từ W.." bằng mã tuần. */
-  check('PR-Qb (1) → VAI-b · nút giai đoạn bỏ: không còn nhanGiaiDoan; trục ghi "Đang xem" giai đoạn bằng mã tuần (W2 JUN – W4 SEP / từ W2 OCT)', () => {
+  check('PR-Qb (1) → VAI-b → U07 · nút giai đoạn bỏ: không còn nhanGiaiDoan; tiêu đề thẻ "Hành trình · Fast Track · lớp" (mockup audit 03/11 — khoảng đã ở trục tuần lịch)', () => {
     assert(!('nhanGiaiDoan' in d), 'nhanGiaiDoan còn ở shared');
     const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/students/HanhTrinh.tsx'), 'utf8');
-    assert(/Đang xem/.test(src) && /tuanLich\(giaiDoanDangXem\.tu, homNay\)/.test(src), 'trục phải ghi giai đoạn đang xem bằng mã tuần');
+    assert(/\[t\('Hành trình'\), giaiDoanDangXem\.loai === 'ft' \? 'Fast Track' : t\('Lớp thường'\), tenLop/.test(src), 'tiêu đề thẻ phải ghi giai đoạn đang xem + lớp');
     assert(d.tuanLich('2026-06-08', '2026-09-22') === 'W2 JUN' && d.tuanLich('2026-10-05', '2026-09-22') === 'W2 OCT', 'mã tuần của khoảng giai đoạn');
   });
 

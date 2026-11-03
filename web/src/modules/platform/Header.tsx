@@ -8,7 +8,6 @@ import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
-import { skillShort } from '../../lib/format.ts';
 import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -160,11 +159,6 @@ export function Header() {
   /* SL1 (chuông N1): hai nhóm Cần làm / Để biết (một Case một dòng). V5 SV-SO1 (brief 7): số trên nút = tin chưa đọc — số việc ở badge Công việc. */
   const chuong = useMemo(() => dongChuong(dsThongBao), [dsThongBao]);
   const unread = chuong.soNut;   // một số cho nút chuông và dòng "n chưa đọc" trong hộp
-  /* OV-11f (TQ-15): chỉ lớp đang mở (`/ref/classes` = lớp đang hoạt động trong phạm vi) — lớp đã kết thúc không còn ở menu tài khoản. */
-  const lopMo = lopRef.data ? new Set(lopRef.data.map((l) => l.id)) : null;
-  const lopDangMo = (a: { classId: number }) => !lopMo || lopMo.has(a.classId);
-  const core = (session?.assignments ?? []).filter((a) => a.isCore && lopDangMo(a));
-  const skills = (session?.assignments ?? []).filter((a) => a.skill && lopDangMo(a));
   /* Chữ cái đầu của TÊN GỌI (chữ cuối của họ tên: "Nguyễn Khánh Vy" → V) cho vòng tròn tài khoản trên điện thoại. */
   const hoTen = session?.user?.fullName ?? '';
   const chuCaiDau = [...(hoTen.trim().split(/\s+/).pop() ?? '')][0]?.toUpperCase() ?? '';
@@ -373,56 +367,43 @@ export function Header() {
         {openMenu === 'account' && (
           /* KHUNG-LOI (B-09): không cao quá màn — cuộn trong menu, "Đăng xuất" dính đáy (trước: trang cuộn, Đăng xuất ra ngoài màn ở 375). */
           <div role="dialog" aria-label={t('Tài khoản {ten}', { ten: hoTen })} className="absolute right-0 mt-1 w-[min(20rem,calc(100vw-2rem))] max-h-[70dvh] sm:max-h-[calc(100dvh-8rem)] overflow-y-auto overscroll-contain card p-3 pb-0 z-40 shadow-2xl">
-            <div className="text-sm font-medium text-slate-100">{session?.user?.fullName}</div>
-            <div className="text-xs text-slate-500 mb-3">{session?.user?.title && dich(session.user.title)}</div>
+            {/* U09 #6 (G3, mockup v11 khu F): tên · vai — khối GVCN + Kỹ năng được phân công đã sang Hồ sơ GV. */}
+            <div className="text-[15px] font-bold text-slate-100">{session?.user?.fullName}</div>
+            <div className="mb-3 text-[13px] text-dim">{session?.user?.title && dich(session.user.title)}</div>
 
             {/* PR-OV2a (mockup overhaul-3 §2): đổi góc nhìn — chỉ vai tài khoản đang nắm; chọn vai gốc = về làm việc bằng mọi vai. */}
             {session?.gocNhin && (
               <div role="group" aria-label={t('Góc nhìn')} className="mb-3 space-y-1">
-                <div className="label">{t('Góc nhìn')}</div>
+                <div className="text-xs text-faint">{t('Góc nhìn')}</div>
                 {session.gocNhin.coThe.map((v) => {
                   const g = session.gocNhin!;
                   const dangO = (g.dangChon ?? g.vaiGoc) === v.role;
                   return (
                     <button key={v.role} type="button" aria-pressed={dangO}
                       onClick={() => { setOpenMenu(null); if (!dangO) void doiGocNhin(v.role === g.vaiGoc ? null : v.role).catch((e) => toast.push('error', e instanceof Error ? e.message : t('Không đổi được góc nhìn.'))); }}
-                      className={`flex w-full min-h-[40px] max-sm:min-h-[44px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-left text-sm ${dangO
-                        ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] text-[color:var(--accent-strong)] font-medium'
-                        : 'border-transparent text-slate-200 bam'}`}>
+                      className={`flex w-full min-h-[36px] max-sm:min-h-[44px] items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left text-sm ${dangO
+                        ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)]'
+                        : 'border-transparent font-medium text-slate-200 bam'}`}>
                       <span className="shrink-0">{dich(v.nhan)}</span>
-                      <span className="min-w-0 truncate text-xs font-normal text-slate-500" title={v.phamVi}>· {v.phamVi}</span>
+                      <span className="min-w-0 truncate text-xs font-normal text-faint" title={v.phamVi}>{v.phamVi}</span>
                     </button>
                   );
                 })}
               </div>
             )}
 
-            <div className="label">{t('Phạm vi được cấp')}</div>
-            <ul className="space-y-1 mb-3 list-none p-0">
-              {/* OV-11b (QT-6): quyền cấp riêng có tên ("Cấp riêng: … · Monbay"), không mã "granted"; mọi grant cấp riêng cùng id -1 → key theo chỉ số. */}
-              {(session?.grants ?? []).map((g, i) => (
-                <li key={i} className="text-xs text-slate-300 flex items-center gap-1 [&>span]:whitespace-normal">
-                  <Info>{nhanPhamVi(g)}</Info>
-                </li>
-              ))}
-            </ul>
-
-            {core.length > 0 && (
+            {/* Một vai (không có Góc nhìn): phạm vi được cấp một dòng mỗi quyền; nhiều vai: phạm vi đã ghi ở từng dòng Góc nhìn. */}
+            {!session?.gocNhin && (
               <>
-                <div className="label">{t('GVCN')}</div>
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {core.map((c) => <Info key={c.classId}>{t('GVCN {lop}', { lop: c.classCode ?? '' })}</Info>)}
-                </div>
-              </>
-            )}
-            {skills.length > 0 && (
-              <>
-                <div className="label">{t('Kỹ năng được phân công')}</div>
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {skills.map((c, i) => (
-                    <Info key={i}>{c.classCode} · {c.nhanMon ? dich(c.nhanMon) : skillShort(c.skill!)}</Info>
+                <div className="text-xs text-faint">{t('Phạm vi được cấp')}</div>
+                <ul className="mb-3 mt-1 list-none space-y-1 p-0">
+                  {/* OV-11b (QT-6): quyền cấp riêng có tên ("Cấp riêng: … · Monbay"), không mã "granted"; mọi grant cấp riêng cùng id -1 → key theo chỉ số. */}
+                  {(session?.grants ?? []).map((g, i) => (
+                    <li key={i} className="flex items-center gap-1 text-xs text-slate-300 [&>span]:whitespace-normal">
+                      <Info>{nhanPhamVi(g)}</Info>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </>
             )}
 
@@ -439,21 +420,21 @@ export function Header() {
                 bỏ tạm (mục 12). Hai địa chỉ cũ vẫn mở được, chỉ không còn nút dẫn tới.
               */}
               {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
-              <Link to="/ho-so-ca-nhan" className="btn btn-sm w-full justify-center no-underline"
+              <Link to="/ho-so-ca-nhan" className="btn w-full justify-center no-underline"
                 onClick={() => setOpenMenu(null)}>{t('Hồ sơ cá nhân')}</Link>
-              {/* Hướng dẫn của màn đang đứng (panel, không chuyển trang); trang Hướng dẫn đầy đủ ở cuối panel. */}
-              <button type="button" className="btn btn-sm w-full justify-center" onClick={() => { setOpenMenu(null); setMoHd(true); }}>{t('Hướng dẫn')}</button>
-              {/* Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
+              {/* U09 (mockup v11 F): Hồ sơ cá nhân · Hồ sơ giáo viên · Hướng dẫn · Quản trị. Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
               {session?.user && session.roles?.includes('teacher') && (
-                <Link to={`/giao-vien/${session.user.id}`} className="btn btn-sm w-full justify-center no-underline"
+                <Link to={`/giao-vien/${session.user.id}`} className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Hồ sơ giáo viên')}</Link>
               )}
+              {/* Hướng dẫn của màn đang đứng (panel, không chuyển trang); trang Hướng dẫn đầy đủ ở cuối panel. */}
+              <button type="button" className="btn w-full justify-center" onClick={() => { setOpenMenu(null); setMoHd(true); }}>{t('Hướng dẫn')}</button>
               {session?.nav?.admin ? (
-                <Link to="/quan-tri" className="btn btn-sm w-full justify-center no-underline"
+                <Link to="/quan-tri" className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>
               ) : session?.nav?.bangQuyDoi && (
                 /* BAND-QUY-DOI: Quản lý xem bảng quy đổi (chỉ đọc) — trang Quản trị chỉ có tab này. */
-                <Link to="/quan-tri?tab=band" className="btn btn-sm w-full justify-center no-underline"
+                <Link to="/quan-tri?tab=band" className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Bảng quy đổi band')}</Link>
               )}
             </div>
@@ -462,7 +443,7 @@ export function Header() {
               <NutNgonNgu kieu="menu" />
             </div>
             <div className="sticky bottom-0 -mx-3 px-3 pb-3 pt-1" style={{ background: 'var(--surface)' }}>
-              <button className="btn btn-sm w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
+              <button className="btn w-full justify-center" onClick={signOut}>{t('Đăng xuất')}</button>
             </div>
           </div>
         )}

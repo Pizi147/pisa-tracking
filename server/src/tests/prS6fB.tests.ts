@@ -159,7 +159,8 @@ async function runTask13(t: YThucTestKit, d: any) {
     assert(d.chuLen({ ft: true, ct: null }, { soBuoi: 4, soTuan: 2, theoMon: true, mon: ['speaking'] }, 'BE') === 'Lên FT + bổ trợ S', d.chuLen({ ft: true, ct: null }, { soBuoi: 4, soTuan: 2, theoMon: true, mon: ['speaking'] }, 'BE'));
     assert(d.chuLen({ ft: false, ct: 'BE' }, null, 'FOU') === 'Lên BE' && d.chuLen(null, null, 'FOU') === 'Lên lớp sau', 'không bổ trợ');
     const hj = doc('web/src/modules/students/HanhTrinh.tsx');
-    assert(!hj.includes("'đợt Test chưa có điểm'") && /'dự kiến'/.test(hj), 'chú giải mục 8');
+    /* U07 (mockup audit 03/11 `.chu-giai`): chú giải 6 mục ở chân thẻ — ghim dự kiến tự nói bằng viền đứt, không mục riêng. */
+    assert(!hj.includes("'đợt Test chưa có điểm'") && /t\('PA chờ xác nhận'\)/.test(hj), 'chú giải mục 8');
     const o = d.oSapToi({ ketLuan: null, sauCuoiKhoa: null, next: { dau: 'MT3', attemptNo: 3, tuan: '2026-10-19', kyVong: 6, soPhan: 4, final: false }, ratio: false, kck: false, bacKe: null, homNay: '2026-09-14', tamDung: true });
     assert(o.gt === 'MT3 · W4 OCT' && o.phu === 'giữ lịch · Quản lý dời nếu cần', JSON.stringify(o));
   });
