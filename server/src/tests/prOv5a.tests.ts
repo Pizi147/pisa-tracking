@@ -74,7 +74,7 @@ export async function runPrOv5aTests(t: YThucTestKit) {
       const cha = (w.dong as any[]).find((y) => y.con?.some((c: any) => c.key === `ghi_nhan_xet:${x.r}`));
       assert(!cha || cha.key.startsWith('gop:ghi_nhan_xet:'), `dòng gộp sai khoá: ${cha?.key}`);
       const it = cha ? cha.con.find((c: any) => c.key === `ghi_nhan_xet:${x.r}`) : (w.dong as any[]).find((y) => y.key === `ghi_nhan_xet:${x.r}`);
-      assert(it && !it.con && it.group === 'ghi_nhan_xet' && it.tieuDe === `Mô tả Case Reading · MT1 · ${x.ten}` && it.luot === 'mt:1' && it.kn === 'reading',
+      assert(it && !it.con && it.group === 'ghi_nhan_xet' && it.tieuDe === `Mô tả Case · Reading · MT1 · ${x.ten}` && it.luot === 'mt:1' && it.kn === 'reading',
         `dòng ${x.ten}: ${JSON.stringify(it && { k: it.key, t: it.tieuDe, l: it.luot, kn: it.kn, con: !!it.con })}`);
     }
     const phang = (w.dong as any[]).flatMap((x) => x.con ?? [x]).map((x) => x.key).sort();

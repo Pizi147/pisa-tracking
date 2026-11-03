@@ -30,7 +30,7 @@
 ## KHÁC (lý do)
 1. Vạch hạn nhóm Chấm điểm giữ "Quá hạn · Hạn đến {CN} · Hạn sau {CN} ▸" (T14, gập sẵn việc xa) — mockup vẽ "Quá hạn · Hôm nay · Sắp tới". Đổi = đổi luật vạch, không vẽ thêm.
 2. Form PA (`FormPa`, dùng chung hồ sơ HV) giữ Số buổi / Người dạy / Bắt đầu mỗi ô một hàng; mockup xếp ba ô một hàng. Đổi `FormPa` chạm U02 — để PR sau nếu chủ SP muốn.
-3. Badge QL = `summary.viec` của `/my-work` (số "Của tôi" máy chủ) — demo QL Vy: badge **6**, ô "Của tôi" **5**. Lệch do việc "Nhập điểm MT cũ" (`lich-su:`, `mywork.ts` ~1272): góc "toi" gán QL, góc "tat-ca" gán GVCN lớp. **[XM]** sửa máy chủ (một chủ việc cho cả hai góc) — PR máy chủ riêng.
+3. Badge QL = `summary.viec` của `/my-work` (số "Của tôi" máy chủ) — demo QL Vy: badge **6**, ô "Của tôi" **5**. Lệch do việc "Nhập điểm MT cũ" / "Điền Target" (`mywork.ts`): góc "toi" gán người xem, góc "tat-ca" gán GVCN lớp → sửa ở PR máy chủ riêng (PTA 04/11).
 4. Panel form khi làm thay (vd Ghi kết quả PA) giữ đầu panel dòng 2 "em · lớp · lượt · Xem Case" (`dauViec`, chung mọi panel việc); dải sự kiện mới chỉ ở panel việc của Case (`dauCase`) và tóm tắt theo dõi.
 5. "Đã xong hôm nay" = việc lưu trong phiên này (mất khi tải lại trang) — `ponytail:` ghi trong mã; giữ qua phiên cần nhật ký máy chủ.
 6. N35 (Nội dung PA ≤ 200, bộ đếm) là PR máy chủ + web của AUDIT-LOI — form vẫn bộ đếm cũ "0/15" (tối thiểu).
@@ -50,7 +50,7 @@
 | Chip "Bình thường" | có | BỎ (chỉ "Gấp") |
 | Hạn quá / sắp | viên nền | chữ + ⚠ không nền (`ChipHan`, mọi màn) |
 | Xem thêm | "n việc" (đếm dòng) | "n dòng" |
-| Tên việc | "Kết quả PA Reading" | "Ghi kết quả PA · Reading" (nút "Ghi kết quả PA") — đổi khi vẽ, chuỗi máy chủ giữ |
+| Tên việc | "Kết quả PA Reading" | "Ghi kết quả PA · Reading" (nút "Ghi kết quả PA"); "Thêm PA học thuật · Reading", "Xác nhận Case · Listening", "Mô tả Case · …" — đổi tận nguồn `mywork.ts` |
 | Theo dõi việc GV khác | dải + form mờ | tóm tắt chỉ đọc + Làm thay (chân, nút chính) → form + dải vàng "Bạn đang làm thay … · Thôi, chỉ xem" |
 | Xác nhận PA | form trước, bối cảnh sau, 4 nút ngang | dải sự kiện → Case → Phương án; chân: Tiếp / trạng thái lưu · Xác nhận PA · Xác nhận · việc tiếp ›; 2 lối khác là link |
 | Sau lưu | dòng mờ "✓ Đã lưu" | + "Xem lại" trên dòng + chip "✓ n xong hôm nay" lọc được |

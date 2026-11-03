@@ -7,7 +7,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
-  CHAM_CHEO, LOAI_HAN_CUA_VIEC, TACH_TEN_VIEC, TEN_VIEC_KQ_PA, chiaVachHan, daysBetween, demViec, laViecChamCheo, shortDate, xepTheoEm, type NhomViecXem,
+  CHAM_CHEO, LOAI_HAN_CUA_VIEC, chiaVachHan, daysBetween, demViec, laViecChamCheo, shortDate, xepTheoEm, type NhomViecXem,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -245,7 +245,7 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi }: ChungDong) {
   const viecCaLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh' || it.group === 'ky_vong_dau_ra';
   /* brief 7: chế độ theo dõi — không động từ; quyền làm thay thật (`lamThay`) mới có nút. */
   /* U01 #4: nút khay dòng gộp "4 em ▾" — số việc đã ở thẻ phụ. */
-  const nut = con ? dich(it.actionLabel.split(' · ')[0]) : laViecChamCheo(it) ? t('Chấm Speaking') : xem ? ((it as { lamThay?: boolean }).lamThay ? (it.group === 'score' ? t('Nhập hộ') : t('Làm thay')) : null) : nhanNut(it.actionLabel);
+  const nut = con ? dich(it.actionLabel.split(' · ')[0]) : laViecChamCheo(it) ? t('Chấm Speaking') : xem ? ((it as { lamThay?: boolean }).lamThay ? (it.group === 'score' ? t('Nhập hộ') : t('Làm thay')) : null) : dich(it.actionLabel);
   /* QL Tất cả / xem GV: người giữ việc đứng dưới hạn (mockup `.h .ai`) — cột "khi nào · ai" thẳng hàng. */
   const nguoi = it.mine ? null : it.owner ?? (it.ownerId === null && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('Chưa có người')) : null);
   return { con, daXong: xong.has(it.key), dangChon: chon === it.key, nut, nguoi, viecCaLop };
@@ -270,7 +270,7 @@ function CotNut({ it, nut, daXong, mo, onBam, nutPhu, luon }: { it: WorkItem; nu
   if (daXong) {
     return (
       <span className="flex max-sm:col-span-full">
-        <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={(e) => { e.stopPropagation(); onBam(); }}>{t('Xem lại')}</button>
+        <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" aria-label={t('Xem lại: {viec}', { viec: tenBoEm(it) })} onClick={(e) => { e.stopPropagation(); onBam(); }}>{t('Xem lại')}</button>
       </span>
     );
   }
@@ -293,17 +293,8 @@ export const tenBoEm = (it: WorkItem) => {
   const vi = it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe;
   return tenViec(vi.split(' · ').filter((x) => !x.startsWith(it.studentName)).join(' · ') || vi);
 };
-/*
- * U01 #15 (audit 03/11): tên thao tác đúng nghĩa, kỹ năng tách bằng "·" — "Kết quả PA Reading" → "Ghi kết quả PA · Reading", "Thêm PA học thuật · Reading".
- * ponytail: đổi chữ khi VẼ (máy chủ, Tổng quan, phép kiểm giữ chuỗi cũ); đổi tận nguồn `mywork.ts` khi màn khác cũng cần tên mới.
- */
-export const tenViec = (vi: string) => {
-  if (vi === TEN_VIEC_KQ_PA) return t('Ghi kết quả PA');
-  const m = TACH_TEN_VIEC.exec(vi);
-  if (!m) return dich(vi);
-  return [m[1] === TEN_VIEC_KQ_PA ? t('Ghi kết quả PA') : dich(m[1]), ...m[2].split(' · ').map((x) => dich(x))].join(' · ');
-};
-export const nhanNut = (a: string) => (a === TEN_VIEC_KQ_PA ? t('Ghi kết quả PA') : dich(a));
+/** U01 #15: tên việc máy chủ đã ghép "{thao tác} · {kỹ năng}" (`mywork.ts sauCham`) — web chỉ dịch. */
+export const tenViec = (vi: string) => vi.split(' · ').map((x) => dich(x)).join(' · ');
 /* U01 #18: chip mức Case báo tay chỉ hiện "Gấp" (tông `danger`, `levelOf`) — "Bình thường" (tông `neutral`) không mang tin. */
 const chipMuc = (it: WorkItem, boSos: boolean) => (!it.level ? null : mucSosTheoNhan(it.level.text)
   ? (boSos ? null : <ChipSos muc={mucSosTheoNhan(it.level.text)!} tinh />) : (it.level.tone as string) !== 'neutral' ? <Level tone={it.level.tone}>{dich(it.level.text)}</Level> : null);

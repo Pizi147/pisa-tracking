@@ -1187,9 +1187,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        So JSON ×3 origin/main 6e8ac44 ↔ nhánh, 11 góc, bỏ việc `ban_giao*` + số đếm: TRÙNG hoàn toàn. Việc bàn giao lệch CHỈ ở MB FT 103 (W1 Lê Minh Khoa — lớp
        đích vẫn Khoa → cùng GV, hết việc; W2 Cao Khánh Linh: "Bàn giao môn W" → "W2", GVCN "chờ môn W" → "W2"); lớp thường MB FOU 22 giữ "W".
        Trước: GVBM toi 71283ff70674504b, QL tat-ca cf1b31474244ae4e, QT tat-ca cd79349e0bcf3f62, QT tat-ca cn 7cfbd540beff0e8c */
-    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': 'c64a33f25108620d',
-    'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '64c53c3e9d2f7f40', 'QT tat-ca': '85e5bab795ebfcb0',
-    'QT tat-ca cn': '29addc1ddf756b8e', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': 'b4b4e5024a108eca',
+    /* UI-CONG-VIEC (04/11, PTA: một tên một nguồn): chụp lại 8 băm — đổi CÓ CHỦ Ý CHỈ ở chữ tên việc trong `mywork.ts`: "Kết quả PA {kn}" → "Ghi kết quả PA · {kn}"
+       (nút "Ghi kết quả PA"), "Thêm PA học thuật {kn}" / "Xác nhận Case {kn}" / "Mô tả Case {kn}" → kỹ năng tách "·". Diff máy chủ chỉ đổi chuỗi; QL / QT toi, ADMIN giữ.
+       Trước: GVCN toi 836db9c7acdd8e39, GVBM toi c64a33f25108620d, GVCN_THUONG toi 836db9c7acdd8e39, QL tat-ca 64c53c3e9d2f7f40, QT tat-ca 85e5bab795ebfcb0,
+       QT tat-ca cn 29addc1ddf756b8e, QL gvcn ceb5c556bc540613, GVS toi b4b4e5024a108eca */
+    'QL toi': 'e52a0d6a5bb7537d', 'QT toi': '5115a3184a27f3d9', 'GVCN toi': '03e3379819323d63', 'GVBM toi': 'f4ed555f1ab51285',
+    'GVCN_THUONG toi': '03e3379819323d63', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'dced32203deb19bb', 'QT tat-ca': '8dcc420b64f4a736',
+    'QT tat-ca cn': 'b279291e75c0e741', 'QL gvcn': '2b323214ee1cfa8e', 'GVS toi': '3183805cc8df091a',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

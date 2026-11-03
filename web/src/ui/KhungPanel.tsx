@@ -149,9 +149,8 @@ export const KhungTaiCho = createContext(false);
  */
 export const KhungTrongCot = createContext(false);
 /** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …") + dòng "Em này còn" dưới đầu. */
-/** `khoa`: chế độ theo dõi — thân + chân panel chỉ xem (`fieldset disabled`), đầu panel (✕, "Em này còn", link hồ sơ) vẫn bấm được. */
 /** M6 6b-3 `dai`: dải "✓ Đã lưu … · Hoàn tác" của việc vừa làm — đầu thân panel của việc kế (mockup panel-pilot ②b). */
-export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; khoa?: boolean; dai?: ReactNode } | null>(null);
+export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; dai?: ReactNode } | null>(null);
 /** M6 6b-3: lớp panel đang ẨN (form việc khi đang "Xem Case" trong panel việc) — cần hỏi "Bỏ chữ?" thì hiện lại lớp đó trước (hộp hỏi vẽ trong panel). */
 export const HienLaiPanel = createContext<(() => void) | null>(null);
 /** HV-LOP-VIEC: nơi mở một panel việc THAY nội dung panel của mình (panel một em → PanelViec) cấp "← tên em" cho panel NGOÀI CÙNG bên trong
@@ -374,7 +373,6 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         {tabs && <div className="shrink-0 border-b px-4" style={{ borderColor: 'var(--line)' }}>{tabs}</div>}
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
         {ngCanh && <div className="shrink-0 truncate px-4 pb-2 pt-2 text-xs text-slate-400 max-sm:whitespace-normal">{ngCanh}</div>}
-        <fieldset disabled={!!cvNgoai?.khoa} className="contents">
         {/* AUDIT-LOI F06: luật cuộn theo loại khung. Nổi: thân cuộn riêng, chặn cuộn xuyên xuống nền. Tại chỗ: cuộn riêng khi bị giới hạn cao (lg),
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
@@ -402,7 +400,6 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             </div>
           </footer>
         )}
-        </fieldset>
         {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => { setHoi(null); hoi.o?.(); }} onBo={boChu} />}
     </>
   );
