@@ -201,7 +201,7 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
           {/* UI-1 (mockup U10 K8): GVCN / QL sửa hạn tại chỗ (máy chủ `suaHanPhoiHop`); người chỉ xem thấy hạn như cũ. */}
           {a.status === 'pending' && a.han && (canAct && a.hanMacDinh
             ? <span className="mt-1 block"><DongHan gon han={a.han} hanMacDinh={a.hanMacDinh} hanChon={a.hanChon ?? null} suaDuoc onTaiLai={() => onChanged?.()}
-                onLuu={async (han, hanCu) => { await api.post(`/phoi-hop-sos/${a.id}/han`, { han, hanCu }); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged?.(); }} /></span>
+                onLuu={async (han, hanCu) => { await api.post(`/phoi-hop-sos/${a.id}/han`, { han, hanCu }); toast.push('ok', t('Đã lưu hạn')); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged?.(); }} /></span>
             : <span className="block text-xs mt-0.5"><Han loai="phoi-hop" han={a.han} /></span>)}
           {a.noiDung && a.noiDung.length > 0 && (
             <details className="mt-1">

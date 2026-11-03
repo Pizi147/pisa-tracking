@@ -135,6 +135,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   const ph = v.lienHe;
   const suaHan = async (moi: string | null, hanCu: string | null) => {
     await api.post(`/y-thuc/bao-ph/${v.id}/han`, { han: moi, hanCu });
+    toast.push('ok', t('Đã lưu hạn'));
     for (const k of KHOA_BAO_PH) invalidate(k);
     reload(); onDaLam();
   };

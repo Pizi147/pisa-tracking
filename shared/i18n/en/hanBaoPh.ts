@@ -3,6 +3,7 @@ import type { Dich } from '../en.ts';
 
 export const EN_HAN_BAO_PH = {
   'Sửa hạn': 'Edit deadline',
+  'Đã lưu hạn': 'Deadline saved',
   'Lưu hạn': 'Save deadline',
   'mặc định': 'default',
   'đã chỉnh · mặc định {ngay}': 'edited · default {ngay}',
