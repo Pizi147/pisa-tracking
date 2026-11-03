@@ -2,12 +2,13 @@
 
 Mockup: `thiet-ke/v11/lich-test-tuan.html` (chủ SP duyệt 03/11). Bảng ý: `docs/superpowers/specs/2026-11-03-audit-overhaul/14-ra-ux-b.md` 10.3 · 10.3b · 11.3;
 `30-pr-giao-dien.md` + PTA 04/11: **màn để XEM ĐIỂM, không số về GV khác**.
-Ảnh cặp (DB demo cục bộ, ngày demo 14/09; phông kiểm `document.fonts.check`), thư mục này: `a-gv-1440-toi.png` (GV Trần Ngọc Hà, vai 7) · `b-ql-1440-toi.png` (QL, vai 2) · `c-375-sang.png`.
+Ảnh cặp (DB demo cục bộ, ngày demo 14/09; phông kiểm `document.fonts.check`), thư mục này: `a-gv-1440-toi.png` (GV Trần Ngọc Hà, vai 7) · `a2-gvbm-1440-toi.png` (GVBM vai 9 — có đoạn Lớp tôi dạy / Tất cả) · `b-ql-1440-toi.png` (QL, vai 2) · `c-375-sang.png`.
 
 ## Truy vết khung → thành phần → ảnh
 | Khung mockup | Thành phần web | Ảnh | Kết quả |
 |---|---|---|---|
-| A thanh tuần NGOÀI thẻ: ‹ W3 SEP › · Tuần này · Tất cả / Fast Track / Lớp thường (đoạn) · Lớp tôi dạy / Tất cả (đoạn) · Xuất Excel · Lịch thi thật › | `LichTestTab` · `CongTacKhung v8` · `.doan` | a | KHỚP |
+| A thanh tuần NGOÀI thẻ: ‹ W3 SEP › · Tuần này · Tất cả / Fast Track / Lớp thường (đoạn) · Xuất Excel · Lịch thi thật › | `LichTestTab` · `CongTacKhung v8` | a | KHỚP |
+| A đoạn "Lớp tôi dạy / Tất cả" (mặc định Lớp tôi dạy) | `nhomPhamVi` `.doan` — hiện khi `coPhamViRong` (máy chủ `canCham.ts`: người có phân công mà phạm vi xem RỘNG hơn lớp mình dạy). GV chỉ được xem đúng lớp mình dạy (vai 7 Trần Ngọc Hà) thì "Tất cả" = "Lớp tôi dạy" → không hiện (cố ý, như trước) | a2 (GVBM Phạm Thu Trang, vai 9) | KHỚP (ảnh a2) |
 | A dải số một thẻ: "Của bạn:" · 16/41 bài đã chấm · 25 bài còn chấm · 12 bài quá hạn (không dòng GV khác) | `DaiSo` (`nhom`) | a | KHỚP |
 | B QL: "Cả chi nhánh:" | `DaiSo` (`coPhan` = false) | b | KHỚP |
 | A nhóm "Quá hạn chấm" vạch đỏ trái · "Test tuần này 4 lớp · 5 lượt" (B21) | `NhomDau` · `tomTatTuan` | a | KHỚP |
@@ -21,7 +22,7 @@ Mockup: `thiet-ke/v11/lich-test-tuan.html` (chủ SP duyệt 03/11). Bảng ý: 
 | C 375 chấm "một kỹ năng một lúc" (`MotKyNang`) | giữ thẻ từng em đủ 5 ô (TheHv) | c | KHÁC có lý do — xem dưới |
 
 ## Tỉ lệ khớp (cổng chủ SP 04/11: > 96 % về hình)
-12 khung: 11 KHỚP · 1 KHÁC có lý do (luồng 375 — tính năng / luật mới hơn). Về **hình** (màu, nền, viền, đậm, cỡ, khoảng cách): **12 / 12 = 100 %**.
+13 khung: 12 KHỚP · 1 KHÁC có lý do (luồng 375 — tính năng / luật mới hơn). Về **hình** (màu, nền, viền, đậm, cỡ, khoảng cách): **13 / 13 = 100 %**.
 
 ## KHÁC có lý do
 - **375 khung C:** mockup vẽ "MB FT 101 · Listening" — chỉ một kỹ năng, mỗi em một ô to, "Lưu · em tiếp ›". Chủ SP 03/11 (11.3 U06-1/U06-2, mới hơn khung C): **Lịch Test tuần để XEM ĐIỂM, hiện hết** → giữ thẻ từng em đủ L R W1 W2 S (đã duyệt UI-LICH-TUAN) + nút "Xem dạng bảng"; một kỹ năng vẫn có ở Điểm theo lớp. Dải số và hàng lớp 375 theo khung C.
