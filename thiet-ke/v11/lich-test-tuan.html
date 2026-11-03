@@ -298,8 +298,8 @@ table.lt td.khac { opacity: .7; }
 <main class="trang-ghi">
   <div class="ghi-dau">
     <h1>V11 · U06 Lịch Test tuần — đề xuất theo bảng 10.3 (PTA duyệt 03/11)</h1>
-    <p>Mục đích: GV nhận ra <b>phần của mình</b> cần chấm mà không đọc việc người khác. Một nhãn "Của bạn:" cho dải số · cột môn của bạn sáng trước · ô trống tách nghĩa · Kết quả "Chờ W, S". Khu D so sánh Q-e (chờ chủ SP). Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
-    <nav class="muc-luc"><a href="#a">A · GV dạy L, R</a><a href="#b">B · QL xem chi nhánh</a><a href="#c">C · 375 một kỹ năng</a><a href="#d">D · Q-e chờ chủ SP</a><a href="#e">E · Kiểm kê thao tác</a>
+    <p>Mục đích: GV nhận ra <b>phần của mình</b> cần chấm mà không đọc việc người khác. Một nhãn "Của bạn:" cho dải số · cột môn của bạn sáng trước · ô trống tách nghĩa · Kết quả "Chờ W, S". Q-e đã chốt (khu D). Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
+    <nav class="muc-luc"><a href="#a">A · GV dạy L, R</a><a href="#b">B · QL xem chi nhánh</a><a href="#c">C · 375 một kỹ năng</a><a href="#d">D · Q-e (đã chốt)</a><a href="#e">E · Kiểm kê thao tác</a>
       <button type="button" id="doi-theme">Đổi sáng / tối tất cả khung</button></nav>
   </div>
   <div id="noi-dung" style="display:grid;gap:40px"></div>
@@ -395,8 +395,8 @@ table.lt td.khac { opacity: .7; }
     '<div class="bang-hv"><div class="nhom-d do"><button class="mui" style="border:0;background:none;color:var(--text)">▾</button><span class="t">Quá hạn chấm</span><span class="phu">4 lớp · 45 bài</span></div>' +
     hangLop({ mo: 1, ma: 'CP FT 137', hv: '2 HV · MT1', mon: [['S', 1]], bai: '0/2', han: '!28/10', tt: 'khac' }) +
     '<div class="phu-khoi"><span>Chỉ còn S · GV chấm chéo</span><span><button class="lk">Cả bảng</button> · GV chấm S: Đỗ Vũ Tuấn Phong ▾</span></div>' + luoi(EMS, ['S'], ['S']) + '</div>';
-  html += khu('b', 'B · QL xem chi nhánh — nhóm chỉ còn thiếu S mở gọn (theo khuyến nghị Q-e)', [['1440 · tối · QL', khung(false, 'Nguyễn Khánh Vy', QL, b)]],
-    ['QL không có phân công → nhãn dải "Cả chi nhánh:" (không "Của bạn").', 'Khối chỉ thiếu S: mặc định chỉ cột S + Kỳ vọng + Overall + Kết quả; "Cả bảng" mở đủ L · R · W1 · W2 · W · S như nay (Tab / Enter / dán giữ) — chờ chủ SP (Q-e, khu D).', 'Hạn quá ghi một cách: "⚠ hạn 28/10" (bỏ "quá hạn 6 ngày" song song).']);
+  html += khu('b', 'B · QL xem chi nhánh — nhóm chỉ còn thiếu S mở gọn (Q-e đã chốt)', [['1440 · tối · QL', khung(false, 'Nguyễn Khánh Vy', QL, b)]],
+    ['QL không có phân công → nhãn dải "Cả chi nhánh:" (không "Của bạn").', 'Khối chỉ thiếu S: mặc định chỉ cột S + Kỳ vọng + Overall + Kết quả; "Cả bảng" mở đủ L · R · W1 · W2 · W · S như nay (Tab / Enter / dán giữ) — chủ SP 03/11 chốt Q-e.', 'Hạn quá ghi một cách: "⚠ hạn 28/10" (bỏ "quá hạn 6 ngày" song song).']);
   /* C 375 */
   var c375 = '<header class="dau"><h1>Test</h1></header>' + daiSo('Của bạn:', [{ g: '16/41', c: 'đã chấm' }, { g: '25', c: 'còn chấm' }, { g: '12', c: 'quá hạn', do: 1 }]) +
     '<div class="bang-hv"><div class="nhom-d"><span>MB FT 101 · Listening</span><span class="phu">còn 5 bài · hạn 23/09</span></div>' +
@@ -406,7 +406,7 @@ table.lt td.khac { opacity: .7; }
     ['Giữ luồng 375 hiện có: chọn lớp + kỹ năng của bạn, em lần lượt, Enter = em tiếp (V12). Dải số "Của bạn:" thu ba ô một hàng.']);
   /* D Q-e */
   var EMQ = [EMS[0]];
-  html += '<section class="khu" id="d"><h2>D · Chờ chủ SP — Q-e: khối chỉ thiếu một môn mở cột nào?</h2><div class="cap"><div class="sau" style="padding:16px;background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;width:1100px"><figcaption>Như nay — mở đủ L · R · W1 · W2 · W · S</figcaption>' + luoi(EMQ, ['S']) + '</div>' +
+  html += '<section class="khu" id="d"><h2>D · Chủ SP chốt 03/11 — Q-e CÓ: khối chỉ thiếu một môn mở gọn + "Cả bảng"</h2><div class="cap"><div class="sau" style="padding:16px;background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;width:1100px"><figcaption>Như nay — mở đủ L · R · W1 · W2 · W · S</figcaption>' + luoi(EMQ, ['S']) + '</div>' +
     '<div class="sau" style="padding:16px;background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;width:640px"><figcaption>Khuyến nghị — chỉ S + Kỳ vọng + Overall, nút "Cả bảng"</figcaption>' + luoi(EMQ, ['S'], ['S']) + '</div></div>' +
     '<div class="ghi"><ul><li>Khuyến nghị: mở gọn (giảm mở sẵn, không xoá; `00` U06 ý 2). "Cả bảng" giữ nhập đủ cột khi cần.</li></ul></div></section>';
   /* E */

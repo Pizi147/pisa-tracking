@@ -199,7 +199,7 @@ Cột cuối = đối chiếu mockup #849 (`thiet-ke/v11/hoc-vien-lop.html` bả
 | Phân trang 10 / 20 / 50 | trên + dưới bảng | chỉ dưới | ĐỔI (bỏ bản lặp) |
 | Chọn nhiều · Sửa cả lớp | **không có ở màn này** (ở Hồ sơ lớp / Lưu trữ) | không đổi | — |
 
-### 10.2 U05 Kế hoạch Test (PTA DUYỆT 03/11, sửa #3 + #24; Q-c, Q-d chờ chủ SP)
+### 10.2 U05 Kế hoạch Test (PTA DUYỆT 03/11, sửa #3 + #24; **chủ SP 03/11: Q-c BỎ chip môn · Q-d BỎ "vào muộn"**)
 Nguồn: `00` mục 20 U05 (ý 1–6, Nghiệm thu) · mục 12 · mục 21 (dòng chạm màn) · 22.2-4 (Test) · N4 · N9 · N10 · N14 · N15 · N23 · N32 ⑤ (G5) · B22–B24 · ảnh U05 · bài học UX-A (tách trường, bớt chữ liền mạch) · luật PTA 03/11 "không thêm chữ thừa".
 Cột cuối = hiện trạng main 03/11 (đã bấm thử QL Vy, MB FT 105 — đợt 2).
 
@@ -253,7 +253,7 @@ Cột cuối = hiện trạng main 03/11 (đã bấm thử QL Vy, MB FT 105 — 
 | Tên em → hồ sơ HV · mã lớp → hồ sơ lớp | hàng | như nay | GIỮ |
 | GV: xem lớp mình dạy, chỉ xem (N23) | — | như nay | GIỮ |
 
-### 10.3 U06 Lịch Test tuần (PTA DUYỆT 03/11, sửa #1 + #8; Q-e chờ chủ SP)
+### 10.3 U06 Lịch Test tuần (PTA DUYỆT 03/11, sửa #1 + #8; **chủ SP 03/11: Q-e CÓ mở gọn một môn + "Cả bảng"**)
 Nguồn: `00` mục 20 U06 (ý 1–6, Nghiệm thu) · mục 12 · mục 21 · 22.2-4 · N4 · N7 (S chéo) · N8 / N9 (nhận xét chỉ nhắc, viền vàng MT mới nhất) · N10 (S Ex dòng phụ) · N16 · V12 (sau lưu) · B13, B14, B19–B21 · ảnh U06 · bài học UX-A · luật PTA "không thêm chữ thừa".
 Cột cuối = hiện trạng main 03/11 (bấm thử GV Hà + QL Vy, đợt 2).
 

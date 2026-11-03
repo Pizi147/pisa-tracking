@@ -305,8 +305,8 @@ table.mt tr:last-child td { border-bottom: 0; }
 <main class="trang-ghi">
   <div class="ghi-dau">
     <h1>V11 · U05 Kế hoạch Test — đề xuất theo bảng 10.2 (PTA duyệt 03/11)</h1>
-    <p>Giữ ma trận HV × lượt MT. Mỗi ô 3 tầng cố định: <b>tuần</b> · <b>trạng thái bằng chữ</b> · <b>ngoại lệ</b> (chỉ khi có). Chip "Chưa có MT kế tiếp" thay "Cần xếp lại" (G5). Ô MT vẽ theo khuyến nghị Q-c (không chip môn) — so sánh ở khu G, chờ chủ SP. Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
-    <nav class="muc-luc"><a href="#a">A · QL · lớp đang mở</a><a href="#b">B · Lọc Chưa có MT kế tiếp + lớp</a><a href="#c">C · Hộp kỹ năng + xác nhận</a><a href="#d">D · GV chỉ xem</a><a href="#e">E · 375</a><a href="#f">F · 1280 · Xếp nhiều lỗi một phần · rỗng</a><a href="#g">G · Q-c · Q-d chờ chủ SP</a><a href="#h">H · Kiểm kê thao tác</a>
+    <p>Giữ ma trận HV × lượt MT. Mỗi ô 3 tầng cố định: <b>tuần</b> · <b>trạng thái bằng chữ</b> · <b>ngoại lệ</b> (chỉ khi có). Chip "Chưa có MT kế tiếp" thay "Cần xếp lại" (G5). Ô MT không chip môn (chủ SP 03/11 chốt Q-c, Q-d — khu G). Dữ liệu GIẢ. 1440 tối · 375 sáng.</p>
+    <nav class="muc-luc"><a href="#a">A · QL · lớp đang mở</a><a href="#b">B · Lọc Chưa có MT kế tiếp + lớp</a><a href="#c">C · Hộp kỹ năng + xác nhận</a><a href="#d">D · GV chỉ xem</a><a href="#e">E · 375</a><a href="#f">F · 1280 · Xếp nhiều lỗi một phần · rỗng</a><a href="#g">G · Q-c · Q-d (đã chốt)</a><a href="#h">H · Kiểm kê thao tác</a>
       <button type="button" id="doi-theme">Đổi sáng / tối tất cả khung</button></nav>
   </div>
   <div id="noi-dung" style="display:grid;gap:40px"></div>
@@ -438,7 +438,7 @@ table.mt tr:last-child td { border-bottom: 0; }
   /* G Q-c, Q-d */
   var oCu = '<button class="omt" style="width:170px;grid-template-rows:18px 18px 18px"><span class="tu">W1 OCT <span class="chip-mon"><span class="co">L✓</span><span class="co">R✓</span><span class="co">W✓</span><span>S</span></span></span><span class="tt2"><span class="kq duoi">✗ 4.5</span></span><span class="ng">W3 OCT <span class="chip-mon"><span class="co">S✓</span></span></span></button>';
   var oMoi = '<div style="width:170px">' + o({ k: 'duoi', t: 'W1 OCT', d: 4.5, n: 'S · W3 OCT' }) + '</div>';
-  html += '<section class="khu" id="g"><h2>G · Chờ chủ SP — Q-c (chip môn trong ô) · Q-d ("vào muộn" dưới tên)</h2><div class="cap"><div class="sau" style="padding:16px;background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;display:flex;gap:24px">' +
+  html += '<section class="khu" id="g"><h2>G · Chủ SP chốt 03/11 — Q-c BỎ chip môn trong ô · Q-d BỎ "vào muộn" (khung trái = như nay, phải = đã chốt)</h2><div class="cap"><div class="sau" style="padding:16px;background:var(--bg);border:1px solid var(--line-strong);border-radius:8px;display:flex;gap:24px">' +
     '<div><figcaption>Q-c · như nay (giữ chip môn)</figcaption>' + oCu + '</div><div><figcaption>Q-c · khuyến nghị (bỏ chip, đủ 4 môn ở hộp)</figcaption>' + oMoi + '</div>' +
     '<div><figcaption>Q-d · như nay</figcaption><div style="width:220px"><a class="ten">Nguyễn Hoàng Nam</a><span class="dong2">vào muộn</span></div></div><div><figcaption>Q-d · khuyến nghị (ô MT0 ghi "—")</figcaption><div style="width:220px"><a class="ten">Nguyễn Hoàng Nam</a></div></div></div></div>' +
     '<div class="ghi"><ul><li>Q-c: bỏ chip — hết ✓ hai nghĩa (✓ môn có điểm vs ✓ đạt kỳ vọng — B22), ô cao đều; giảm mở sẵn, không xoá (4 môn ở hộp kỹ năng). Nếu chủ SP giữ: chip môn đổi dấu thành chấm đặc "●" (đã chấm) để ✓ chỉ còn một nghĩa.</li><li>Q-d: bỏ "vào muộn" — lượt không áp dụng đã là "—" trong ô.</li></ul></div></section>';
