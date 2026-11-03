@@ -9946,6 +9946,9 @@ await runPrChanRoiNhapTests({ check, checkAsync, assert } as any);
 // ==================================================================== BO-QUA-XEP-MT (chủ SP 03/11: QL bỏ qua việc Xếp lịch MT)
 const { runPrBoQuaMocTests } = bocTep('prBoQuaMoc', await import('./prBoQuaMoc.tests.ts'));
 await runPrBoQuaMocTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== MULTER 2.5.0 (AUDIT-LOI, chủ SP 03/11: nâng multer, kiểm đường tải tệp qua HTTP)
+const { runPrMulterTests } = bocTep('prMulter', await import('./prMulter.tests.ts'));
+await runPrMulterTests({ checkAsync, assert, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
