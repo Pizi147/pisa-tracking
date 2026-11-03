@@ -122,7 +122,8 @@ export default function StudentDetailPage() {
   const board = useApi<{ rows: SkillBoardRow[]; tamDungTu?: string | null }>(
     !id ? null : !p.loTrinh && p.dot == null ? `/students/${id}/skill-board`
       : boardCycleId ? `/students/${id}/skill-board?cycleId=${boardCycleId}` : null,
-    [id, boardCycleId],
+    /* AUDIT-LOI (mục 11): không có `boardCycleId` ở đây — đường dẫn đã mang đủ khoá; `boardCycleId` null → id khi hồ sơ về làm gọi lại CÙNG
+       `/students/:id/skill-board` (~52 câu SQL) mỗi lần mở hồ sơ. */
   );
   const skillRows = board.data?.rows ?? null;
   /*
