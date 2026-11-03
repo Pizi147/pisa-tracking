@@ -128,3 +128,71 @@ Không đề xuất bỏ: dải "Mới dùng PISA?" (đã có nút Ẩn), "+ MT"
 - **G4** Tổng quan: bỏ số trong khối Điều hướng (chỉ tên đích + "›"); số giữ ở ô chỉ số.
 - **G5** (đợt 2) Kế hoạch Test: **bỏ chip "Cần xếp lại"** — chủ SP: "vắng theo quy chế 2 lần liên tiếp là huỷ, không 'cần xếp lại'"; chỉ còn MỘT lọc **"Chưa có MT kế tiếp"**; Kế hoạch Test **lọc được theo lớp**.
   Ghi chú cho PR: em vắng lần 1 mà không dời được tuần kế vẫn có thẻ "Dời lịch Test" ở Công việc QL (N4) và phần thi đã huỷ khôi phục qua "Khôi phục" (N4) → bỏ chip không mất đường xử lý; PR kiểm lại hai đường này trước khi gỡ.
+
+## 10. Bảng ý → mockup (chủ SP 03/11 "Dừng, làm lại": lập bảng TRƯỚC, PTA duyệt rồi mới vẽ)
+
+### 10.1 U04 Học viên & Lớp
+Nguồn: `00` mục 20 U04 (ý 1–6, Nghiệm thu) · mục 12 · mục 21 (dòng chạm màn) · mục 22.1 / 22.2 · N32 ①–⑤ · B08–B12, B26, B27 · bài học UX-A ("tách rõ trường thông tin, bớt chữ liền mạch").
+Cột cuối = đối chiếu mockup #849 (`thiet-ke/v11/hoc-vien-lop.html` bản đã đẩy): **KHỚP** · **MỘT PHẦN** · **THIẾU**.
+
+| # | Ý (trích ngắn · mục) | Làm gì trong mockup (khu / thành phần, chữ thật) | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP | #849 |
+|---|---|---|---|---|---|
+| 1 | Giữ bảng làm giao diện chính; ưu tiên cột nhận diện, tình trạng, hành động; bản gọn / chi tiết chỉ "nếu thử nghiệm cho thấy cần" · U04 ý 1 | Bảng nhóm theo lớp; cột: Học viên · Lộ trình · MT gần nhất · Hỗ trợ · Ý thức · Lịch thi · Việc · ⋯ | GIỮ bảng; KHÔNG thêm công tắc bản xem (luật chủ SP ít điều khiển; ý 2 giải bằng panel một em) | — | KHỚP |
+| 2 | Điểm từng môn chỉ ở bản học thuật hoặc khi mở dòng; tra cứu nhanh chỉ kết quả chính + dấu hiệu cần hỗ trợ · U04 ý 2 · 22.1 | Hàng em chỉ còn Overall + kỳ vọng + lượt; chip SOS ghi môn yếu. Bấm ô Overall (ô số) → **dải mở ngay dưới hàng em**: L · R · W1 · W2 · S của lượt đó (màu + ✓ / ✗ trên từng số) | ĐỔI = giảm mở sẵn, không xoá · **chủ SP 03/11: rời hàng em, mở dưới hàng / hộp tại chỗ, KHÔNG panel trượt** | ~~Q-a~~ đã trả lời | THIẾU |
+| 3 | Việc: việc ưu tiên + hạn + tổng còn lại; bấm mở đúng danh sách của em; đọc đủ không cần hover · ý 3 | 1 việc gấp nhất đủ chữ (xuống dòng, không "…") + `ChipHan` "hạn 03/11" / "⚠ hạn 27/10"; ô số "+2 việc" mở panel một em mục Việc | ĐỔI — bỏ "Xem thêm n" mở dài trong ô (B12) | — | KHỚP |
+| 4 | Thu / mở tất cả theo phạm vi, nhớ khi quay lại; tìm tên tự mở nhóm chứa kết quả · ý 4 | **Một nút đổi chữ** "Mở tất cả" ↔ "Thu gọn tất cả" cạnh bộ đếm (lớp trên trang đang xem); lớp đã mở nhớ ở URL; tìm ≥ 2 chữ → chỉ lớp có em khớp, tự mở, tô hồng; mặc định **gập hết** (chủ SP 03/11) | GIỮ + THÊM một nút | — | MỘT PHẦN |
+| 5 | Phân biệt phạm vi với chi nhánh; bộ lọc đang áp có tóm tắt + xoá dễ thấy · ý 5 | Ô "Xem ▾" (G1) · dòng "Đang lọc: Có việc quá hạn · Cẩm Phả · Fast Track — 43 HV ở 12 lớp · Bỏ lọc" cho cả chip và tìm | ĐỔI — G1 (N32 ①) | — | MỘT PHẦN (chỉ vẽ cho tìm tên; chip lọc ở bản chưa đẩy) |
+| 6 | Cột tên đủ nhận diện, ghim khi cuộn ngang; ⋯ là thao tác phụ; hành động chính không giấu hết vào menu · ý 6 | Tên đủ (xuống dòng); ghim cột tên < 1440; hành động chính trên hàng = nút tên việc (làm) · tên em (hồ sơ); ⋯ giữ menu N26 | GIỮ | — | KHỚP |
+| 7 | Nghiệm thu: tìm HV giữa nhiều lớp → mở việc → Quay lại đúng bộ lọc / dòng; đủ tên dài; hiểu số MT không mở nhiều lớp · U04 | Khu C + chú thích Quay lại; **nhãn tự hiểu, không nút "Cách đọc bảng"**: Lộ trình "MT 2/3" (dòng phụ "Target 8.0"); MT gần nhất "✗ 7.0" + dòng phụ "kỳ vọng 7.5 · MT2 · W4 SEP" (bỏ chữ tắt "KV") | ĐỔI · PTA 03/11: không thêm chữ thừa | — | MỘT PHẦN |
+| 8 | Phân cấp 3 tầng trang → khối → trường; không toàn chữ nhỏ xám · mục 12 | Trang: tiêu đề 22 / 700 · khối = hàng lớp nền `surface-2`, mã lớp 15 / 700 · trường: giá trị 15 đậm, nhãn / phụ 13 `text-dim` | GIỮ token V8 | — | MỘT PHẦN (xem #9) |
+| 9 | **Bài học UX-A: tách rõ trường thông tin, bớt chữ liền mạch** | Hàng lớp: mỗi trường một ô thẳng cột với bảng em — [mã lớp] [**7** HV · 1 đã kết thúc] [GVCN Nguyễn Hoàng Dũng] [SOS] [việc lớp]; ô MT gần nhất: **✗ 7.0** to · "KV 7.5" nhãn riêng · "MT2 · W4 SEP" dòng phụ; bỏ chuỗi "a · b · c · d" một dòng | ĐỔI — chuỗi "·" dài là điều chủ SP chê ở UX-A | — | THIẾU (hàng lớp + ô MT còn chữ liền mạch) |
+| 10 | Một hành động chính mỗi vùng; nút phụ nhóm rõ · mục 12 | Đầu trang: chính "+ Thêm học viên" (nền nhấn); "Xuất Excel · n HV", ⋯ phụ | GIỮ | — | KHỚP |
+| 11 | Không giấu dữ kiện quan trọng trong tooltip hover-only · mục 12 | Không ⓘ / title mang nghĩa; việc đủ chữ; hạn ngày thật; dải điểm mở bằng bấm / Enter / chạm | ĐỔI | — | MỘT PHẦN |
+| 12 | Xem hồ sơ ≠ làm việc · mục 12 | Tên em = link hồ sơ (rê: gạch chân, không ↗); tên việc = nút làm việc tại chỗ | GIỮ | — | KHỚP |
+| 13 | Bảng desktop so sánh; mobile tra cứu, không card cao nhiều màn · mục 12 | 375: thẻ em ≤ 4 dòng (tên + ⋯ · TVV · lộ trình · Overall · SOS + Case/PA · Ý thức · Lịch thi · 1 việc); điều khiển gom vào "Lọc" | ĐỔI — B26 | — | MỘT PHẦN (thẻ 6–7 dòng) |
+| 14 | Kiểm 375 / 768 / 1280 / 1440, zoom, sáng / tối, tên dài, dày / rỗng · mục 12 | 1440 + **1280** (cuộn ngang, ghim tên) + 375; nút đổi sáng / tối mọi khung; tên dài "Nguyễn Quốc Trung Anh Khoa"; khu rỗng | THÊM khung 1280 | — | MỘT PHẦN (thiếu 1280) |
+| 15 | Trạng thái có chữ / biểu tượng ngoài màu · mục 12, 21 Màu | ✓ / = / ✗ trước Overall; ⚠ trước hạn quá; chip SOS có chữ mức + môn | GIỮ | — | KHỚP |
+| 16 | Bộ đếm luôn có đơn vị · mục 21 | "7 HV", "3 việc quá hạn", "1 bài chờ chấm", "+2 việc", "194 HV · 23 lớp" | GIỮ | — | KHỚP |
+| 17 | Hạn: ngày rõ, quá hạn theo giờ VN · mục 21 | `ChipHan`: "hạn 03/11" · "⚠ hạn 27/10" (không "quá hạn 7 ngày") | ĐỔI | — | MỘT PHẦN ("⚠ 27/10" thiếu chữ "hạn") |
+| 18 | Tuần ≠ W1 / W2 Writing · mục 21 | Hết nhầm: dòng 5 môn rời hàng em (#2); trong dải dưới hàng có tiêu đề "MT2 · W4 SEP" rồi mới tới L · R · W1 · W2 · S | ĐỔI theo #2 | — | THIẾU |
+| 19 | Điểm: nguồn MT, kỳ vọng so sánh · mục 21, mục 8 | "✗ 7.0 · KV 7.5 · MT2 · W4 SEP" — KV là của chính lượt | GIỮ | — | KHỚP |
+| 20 | Rỗng và thiếu: không dùng "—" cho tất cả · mục 21 | **Giữ "—" ở ô một nghĩa** (Hỗ trợ = không SOS, Ý thức = chưa vi phạm, Việc = không việc); **chỉ dùng chữ ở ô nhiều nghĩa**: MT "Chưa có Overall" (khác "chưa thi"), Lịch thi "Chưa có tháng thi" / "Chưa chốt ngày" | GIỮ "—" · PTA 03/11: không thêm chữ thừa | — | KHỚP |
+| 21 | Bộ lọc cùng tên, đang áp, xoá, quay lại giữ ngữ cảnh · mục 21 | = #5; chip số 0 mờ không bấm (B11) | ĐỔI | — | KHỚP |
+| 22 | Focus / bàn phím: không kích hoạt hàng khi bấm nút con · mục 21 | Hàng lớp bấm cả hàng để mở / gập; ⋯ và mã lớp (link) không mở / gập hàng | GIỮ — ghi chú cho PR | — | THIẾU ghi chú |
+| 23 | Trạng thái hệ thống: tải / rỗng / lỗi / **không quyền** / hết phiên khác nhau · mục 21 | Khu F: rỗng đúng phạm vi · đang tải khi đổi Xem (dữ liệu cũ mờ) · lỗi tải lại giữ dữ liệu cũ + giờ · **mất quyền chi nhánh** (403): bỏ dữ liệu cũ, câu "Bạn không còn quyền xem {chi nhánh}" + về phạm vi mặc định | THÊM khung không quyền | — | MỘT PHẦN (thiếu không quyền) |
+| 24 | EN cùng chức năng, không cắt chữ · mục 21 | Ghi chú: kiểm EN ở PR (nhãn dài nhất "Open all classes on this page") | ghi chú | — | THIẾU ghi chú |
+| 25 | Học viên & Lớp: bản tra cứu gọn + cách đọc đủ học thuật / task · 22.2-3 | **Dải mở dưới hàng em** (thay panel một em ở mockup): điểm 5 môn của lượt (#2) + mọi việc của em (mỗi việc một dòng: tên · hạn · nút làm) — "+2 việc" mở cùng dải này | ĐỔI · chủ SP 03/11 không panel trượt | — | THIẾU |
+| 26 | Ô "Xem" thay hai ô "Chi nhánh" · N32 ① (G1) | Khu B: menu theo vai, số HV mỗi mục | ĐỔI | — | KHỚP |
+| 27 | Mọi lớp gập mặc định · chủ SP 03/11 | Khu A0 mặc định gập hết; khu A ghi "đã bấm mở 2 lớp" | GIỮ như web | — | MỘT PHẦN (bản chưa đẩy) |
+| 28 | TVV / CX giữ "+ Thêm học viên" / tạo lớp · chủ SP 03/11 | Khu E giữ nút | GIỮ | — | KHỚP |
+| 29 | B09 sĩ số = em đang học | Hàng lớp "7 HV" (**bỏ "· 1 đã kết thúc"**); em Kết thúc học: dòng mờ cuối lớp + thẻ "Kết thúc học" (**bỏ câu "Không tính vào sĩ số lớp"**) | SỬA đếm (AUDIT-LOI) · PTA 03/11 bớt chữ | — | MỘT PHẦN |
+| 30 | B10 tiêu đề cột khi mọi lớp gập | Tiêu đề cột chỉ trong lớp đang mở; 1440 không cuộn ngang → tiêu đề dính khi cuộn trang | ĐỔI | — | MỘT PHẦN (sticky hỏng vì bọc cuộn ngang) |
+| 31 | B11 chip số 0 · B27 TVV chip | Chip 0 mờ không bấm; **bỏ chip "Cần chú ý" với TVV** (chủ SP 03/11) | ĐỔI | ~~Q-b~~ đã trả lời | MỘT PHẦN |
+| 32 | SOS một kiểu xuyên màn · mục 21 (đồng bộ Tổng quan V8) | Hàng lớp: chip mức + số HV, mức 0 không vẽ | ĐỔI | — | KHỚP |
+| 33 | Phân trang · B-04 cũ | Chỉ cuối bảng | ĐỔI | — | KHỚP |
+
+**Câu hỏi:** Q-a, Q-b đã có câu trả lời (plan.md 4 · "Chủ SP trả lời 03/11 tối"). Góp ý PTA áp ở #4, #7, #20, #25, #29 + bảng 10.1b.
+**Sửa mockup:** #2, #4, #7, #9, #11, #13, #14, #17, #18, #22–#25, #29–#31 + bảng 10.1b vào khu G.
+
+### 10.1b U04 — kiểm kê thao tác TRƯỚC → SAU (mọi thao tác của màn; khu G mockup chép bảng này)
+| Thao tác | Ở đâu (main 03/11) | Sau | Giữ / bỏ / đổi · vì sao |
+|---|---|---|---|
+| + Thêm học viên | nút chính đầu trang (375: trong ⋯ trang); QL, QT, Admin, TVV, CX | như nay | GIỮ (TVV / CX — chủ SP 03/11) |
+| Xuất Excel · n HV | đầu trang, chọn em trong ngăn Xuất | như nay; số = tập đang lọc | GIỮ |
+| ⋯ trang: + Lớp mới · Lưu trữ (n) | đầu trang | như nay | GIỮ |
+| Ô Phạm vi + ô Chi nhánh | đầu trang | một ô "Xem" | ĐỔI — G1 (N32 ①) |
+| Fast Track / Lớp thường | đầu trang | như nay, đoạn chọn có số | GIỮ |
+| Tab Tất cả · Đang SOS · Lịch thi · Phân công GV | dưới đầu trang | như nay (375 cuộn ngang) | GIỮ |
+| Tìm học viên, lớp | hàng lọc | như nay + lớp có kết quả tự mở | GIỮ + ý 4 |
+| Chip Thi tháng này · Có việc quá hạn · Đã thi · chờ KQ · Bộ lọc thêm | hàng lọc | như nay; số 0 mờ không bấm; TVV bỏ "Cần chú ý"; 375 vào "Lọc" | GIỮ · bỏ một chip TVV (chủ SP) |
+| Mở / gập một lớp | ▸ hàng lớp | như nay + bấm cả hàng | GIỮ |
+| Mở / Thu gọn tất cả | — | một nút đổi chữ | THÊM (ý 4) |
+| Chip hàng lớp (n chờ duyệt · n bài chờ chấm · Test tuần này · n HV chưa chốt lộ trình · việc quá hạn) — bấm sang đúng trang | hàng lớp | như nay | GIỮ |
+| ⋯ lớp: Hồ sơ lớp · Nhập điểm · + Học viên | hàng lớp | như nay | GIỮ |
+| Mã lớp → hồ sơ lớp · tên em → hồ sơ HV | hàng lớp / hàng em | như nay | GIỮ |
+| ⋯ hàng em: + Case · + Ghi vi phạm · Xác nhận xử lý · Nhập điểm │ Sửa thông tin · Chuyển lớp (N26) | hàng em | như nay | GIỮ |
+| Bấm tên việc → làm tại chỗ | cột Việc | như nay | GIỮ |
+| "Xem thêm n" (mở dài trong ô) | cột Việc | ô số "+n việc" mở dải dưới hàng | ĐỔI (ý 3) |
+| Dòng 5 môn L · R · W1 · W2 · S | ô MT gần nhất | bấm ô Overall → dải dưới hàng | ĐỔI (ý 2, chủ SP 03/11) |
+| Phân trang 10 / 20 / 50 | trên + dưới bảng | chỉ dưới | ĐỔI (bỏ bản lặp) |
+| Chọn nhiều · Sửa cả lớp | **không có ở màn này** (ở Hồ sơ lớp / Lưu trữ) | không đổi | — |
