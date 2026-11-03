@@ -636,7 +636,7 @@ export async function runPrHvlDemoTests(t: YThucTestKit) {
     assert(em.cases.some((c: any) => c.tenSos?.mt === 1), 'Case SOS tự tạo mang chip [MT1]');
   });
 
-  check('PR-HVL (10) · demo H2: MB FOU 12 — Hồ Diệu Linh có Case G+V và P; Nguyễn Thảo Vy Final Test đủ điểm hiện "58%" không SOS; H3 Pre FOU 03 "64%"; H4 Đoàn Khánh Chi MT lịch sử → "Chưa có kết quả"', () => {
+  check('PR-HVL (10) · demo H2: MB FOU 12 — Hồ Diệu Linh có Case G+V và P; Nguyễn Thảo Vy Final Test đủ điểm hiện "58%" không SOS; H3 Pre FOU 03 "64%"; H4 Đoàn Khánh Chi MT lịch sử → kết quả MT3 (UA-19)', () => {
     const fou = canHoTro.canHoTroLop(P.admin, LOP_FOU);
     const linh = fou.em.find((e: any) => e.id === idHv('Hồ Diệu Linh'));
     assert(linh, 'H2: Hồ Diệu Linh phải có mặt ở Cần hỗ trợ lớp FOU (Case G+V và P)');
@@ -651,7 +651,8 @@ export async function runPrHvlDemoTests(t: YThucTestKit) {
     const chi = idHv('Đoàn Khánh Chi')!;
     const rr = classesMod.classRoster(P.admin, LOP_FT).find((x: any) => x.id === chi);
     assert(rr && rr.history.length >= 2 && rr.history.every((h: any) => h.lichSu), 'H4: MT1–MT3 phải là MT lịch sử có điểm');
-    eq(d.ketQuaGanNhat(standingMod.standingFor([chi]).get(chi)).dong1, 'Chưa có kết quả', 'H4: chưa có lượt thường có điểm');
+    /* UA-19 (chủ SP 03/11, thay M-14): MT lịch sử LÀ kết quả hiện tại — hiện như MT thường (vẫn không sinh Case / việc, prMt (6)). */
+    eq(d.ketQuaGanNhat(standingMod.standingFor([chi]).get(chi)).dong1, 'MT3 · kỳ vọng 6.5', 'H4: MT lịch sử là kết quả hiện tại');
   });
 
 }
