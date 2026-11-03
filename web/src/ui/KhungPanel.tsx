@@ -469,6 +469,8 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'lab
   /* `as="div"` không có ô để nhãn trỏ vào (nhóm NutChon…) → nhóm mang tên của nhãn, trình đọc màn hình đọc "Mức độ, nhóm". */
   const idNhan = useId();
   const dam = useContext(NhanTruongDam);   // UI-CONG-VIEC: ô không bắt buộc không ghi "(không bắt buộc)" — ô bắt buộc đã có *
+  /* UI-CONG-VIEC (mockup `.dem-chu` "0 / 200"): panel Công việc — ô có trần chỉ hiện bộ đếm trần (tối thiểu vẫn kiểm khi lưu). */
+  if (dam && dem?.toiDa) dem = { co: dem.co, toiDa: dem.toiDa };
   const troO = Vo === 'div' ? idO : null;
   const nhom = Vo === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>
@@ -477,7 +479,7 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'lab
       {tuyChon && !dam && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
       {thieu && <span className="ml-1.5 text-xs font-semibold text-late">{t('Thiếu')}</span>}
     </span>
-    {dem?.can && dem.co < dem.can && !(dam && dem.toiDa) ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>
+    {dem?.can && dem.co < dem.can ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>
       : dem?.toiDa ? <DemChu n={dem.co} toiDa={dem.toiDa} /> : null}
   </>;
   const lopNhan = dam ? 'mb-2 flex items-baseline gap-2 text-[15px] font-bold leading-snug text-[color:var(--text)]'
