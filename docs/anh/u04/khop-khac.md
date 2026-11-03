@@ -10,7 +10,8 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 |---|---|---|---|
 | A0 mặc định gập | `StudentsPage` đầu trang · `HangLop` + `DauLop` (lưới ô) | a0 | KHỚP |
 | A0 lọc bật — lớp gập, "3/7 HV khớp", dòng "Đang lọc … · Bỏ lọc" | `DauLop` (`dangLoc`) · dòng `role=status` | — (bấm thử) | KHỚP |
-| A đã mở 2 lớp: bảng em, dải dưới hàng, hộp L "30 câu" / W1 tiêu chí | `BangHvGon` · `DaiEm` · `OKn` + `HopNho` | a-mo-lop-1440 | KHỚP |
+| A đã mở 2 lớp: bảng em, dải dưới hàng, hộp L "30 câu" | `BangHvGon` · `DaiEm` · `OKn` + `HopNho` | a-mo-lop-1440 | KHỚP |
+| A hộp tiêu chí W1 / W2 / S ("TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5") | chờ `dongTieuChi` của #880 (U03) | — | CHƯA — PTA 03/11: dùng chung một hàm, làm sau khi #880 merge |
 | A 375: Xem + FT/LT một hàng, tìm + Lọc, thẻ em ≤ 4 dòng | `TheHvGon` · `TheEm` | a-mo-lop-375 | KHỚP |
 | A1 1280 | cột cân lại (không cuộn ngang — chủ SP 03/11 khuya, thay "cuộn ngang, ghim tên" của khung) | a1-1280 | KHÁC có lý do (chủ SP) |
 | B ô "Xem" mở | `<select>` gốc trong khung `.o-xem` (optgroup Chi nhánh / Khác) | — | KHÁC: danh sách là của trình duyệt; **không có số HV mỗi mục** (cần câu đọc thêm theo từng chi nhánh — Turso) |
@@ -40,7 +41,7 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | Bấm tên việc → làm tại chỗ | | như cũ (cả trong dải) | GIỮ |
 | "+n việc" | mở panel một em | mở dải dưới hàng | ĐỔI (chủ SP: không panel trượt) |
 | Dòng 5 môn | luôn hiện dưới Overall | bấm ô Overall → dải | ĐỔI (ý 2) |
-| Bấm ô kỹ năng | — | hộp nhỏ số câu / tiêu chí ("TA 6 · CC 6 · LR 6.5 · GRA 6 → 6.0") | THÊM (U04-1) |
+| Bấm ô kỹ năng | — | L, R: hộp nhỏ "29/40 câu"; W1, W2, S: sau #880 (`dongTieuChi`) | THÊM (U04-1) |
 | Bấm chip bậc Ý thức | — | hộp nhỏ K7 (Hồ sơ › · Xác nhận xử lý) | THÊM (K7) |
 | Xem em Kết thúc học | dòng mờ cuối lớp | không trong danh sách; hồ sơ lớp tab Học viên · Lưu trữ · Ctrl K | BỎ (U04-3) |
 | Xem việc người khác ở cột Việc (QL / Admin) | có, gộp theo môn | bỏ — chỉ việc của tôi | U04-5 |
@@ -54,4 +55,5 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 - [XM-1] Khu F "Tìm ở Mọi chi nhánh / Tìm ở Lớp thường" khi tìm không thấy: chưa thêm (giữ "Bỏ tìm"); thêm khi PTA đồng ý.
 - [XM-2] Ô "Xem": không có số HV mỗi mục (cần đọc thêm theo chi nhánh). Giữ `<select>` gốc (bàn phím, 375 tốt).
 - [XM-3] Hàng lớp TVV "3 HV của tôi / 7": số sau "/" = sĩ số lớp (`studentCount`).
-- U03 dùng chung `chuThanhPhan` (`shared/domain/skills.ts`) cho dòng tiêu chí — một hàm (30-pr-giao-dien.md).
+- Hộp tiêu chí W1 / W2 / S: dùng `dongTieuChi` (#880) — commit tiếp sau khi #880 merge (máy chủ đã gửi `tp` c1–c4 trong `hang.mtGan`). Nếu PTA muốn đổi sang `history[].tieuChi` của #880 thì báo.
+- [XM-4] CX: chip Tổng quan vẫn đếm em Kết thúc học chưa lưu trữ (`chipHocVien`), danh sách Học viên & Lớp không còn hiện em đó → số "Tất cả" của CX có thể nhỏ hơn ô Tổng quan. Cần quyết: bỏ em đó khỏi `chipHocVien` luôn (PR máy chủ) hay giữ.
