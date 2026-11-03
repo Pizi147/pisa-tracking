@@ -151,7 +151,7 @@ function OHoTro({ h }: { h: HangHv['hoTro'] }) {
 function NutOvr({ g, mo, onMo }: { g: HangHv; mo: boolean; onMo: () => void }) {
   const m = g.mtGan!;
   const so = m.ovr == null ? <span className="text-sm text-dim">{t('Chưa có Overall')}</span>
-    : <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" chiToHut />;
+    : <ODiem so={chuSo(m.ovr)} kq={kqOverall(m.ovr, m.kyVong)} kck={g.loTrinh.kck} nhan="Overall" />;
   if (!KN5.some((k) => m.kn[k] != null)) return so;
   return (
     <button type="button" className="o-ovr" aria-expanded={mo} aria-label={t('Điểm từng môn MT{n}', { n: m.mt })} onClick={onMo}>
@@ -180,7 +180,7 @@ function OMtGan({ g, mo, onMo }: { g: HangHv; mo: boolean; onMo: () => void }) {
 function OKn({ k, g }: { k: (typeof KN5)[number]; g: HangHv }) {
   const m = g.mtGan!;
   const v = m.kn[k];
-  const ruot = <><span className="okn-t">{k}</span>{v == null ? <span className="text-faint">–</span> : <ODiem so={chuSo(v)} kq={kqOverall(v, m.kyVong)} kck={g.loTrinh.kck} nhan={k} chiToHut />}</>;
+  const ruot = <><span className="okn-t">{k}</span>{v == null ? <span className="text-faint">–</span> : <ODiem so={chuSo(v)} kq={kqOverall(v, m.kyVong)} kck={g.loTrinh.kck} nhan={k} />}</>;
   const [cau, tong] = (k === 'L' || k === 'R') ? m.tp?.[k] ?? [] : [];
   if (v == null || cau == null) return <span className="okn">{ruot}</span>;
   return <HopNho nutLop="okn" nhan={`${k} ${chuSo(v)} · ${t('số câu')}`} nut={ruot}><span className="tabular-nums">{tong != null ? `${cau}/${tong}` : cau} {t('câu')}</span></HopNho>;

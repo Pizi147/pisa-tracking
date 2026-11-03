@@ -1,6 +1,6 @@
 import { Fragment, Suspense, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, mucDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
@@ -8,6 +8,7 @@ import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
 import { phimHangTab } from './HangTab.tsx';
 import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
+import { lopKq } from './BieuTuong.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
@@ -71,7 +72,8 @@ export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: str
   rongLuot?: number }) {
   const pt = d.donVi === '%';
   const so = (v: number) => chuDiem(v, pt);
-  const mau = (dat: boolean | null) => (dat === null ? '' : dat ? 'text-kq-bang' : kck ? '' : 'text-kq-duoi');
+  /* Ba màu kết quả như `ODiem` (chủ SP 04/11): vượt / bằng / dưới so mốc của dòng; KCK hụt không tô. */
+  const mau = (dat: boolean | null, v: number | null) => (dat === false && kck ? '' : lopKq(mucDiem(dat, v, d.soVoi?.v)));
   const ovDat = d.overall != null && d.soVoi ? d.overall >= d.soVoi.v : null;
   return (
     <span className={`dd mt-1${pt ? ' pt' : ''}`} style={{ ...(d.kn.length !== 4 ? { '--so-kn': d.kn.length } : {}), ...(rongLuot ? { '--rong-lu': `${rongLuot}px` } : {}) } as CSSProperties}>
@@ -82,12 +84,12 @@ export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: str
       {d.kn.map((k) => (
         <span key={k.k} role="img" aria-label={nhanDocDiem(k, d.soVoi)} title={k.dat === false ? nhanDocDiem(k, d.soVoi) : undefined}
           className={`k${k.v === null ? ' thieu' : k.dat === false && !kck ? ' h' : ''}${k.cua ? ' cua' : knNhan === k.k ? ' nhan' : ''}`}>
-          <i aria-hidden>{k.k}</i><b aria-hidden className={mau(k.dat)}>{k.v === null ? '—' : `${dauDiem(k.dat) ? `${dauDiem(k.dat)} ` : ''}${so(k.v)}`}</b>
+          <i aria-hidden>{k.k}</i><b aria-hidden className={mau(k.dat, k.v)}>{k.v === null ? '—' : `${dauDiem(k.dat) ? `${dauDiem(k.dat)} ` : ''}${so(k.v)}`}</b>
         </span>
       ))}
       <span className="ov">
         {pt ? t('Tổng') : 'Overall'}
-        {d.overall == null ? <b className="font-medium text-faint">—</b> : <b className={mau(ovDat)}>{ovDat === null ? '' : ovDat ? '✓ ' : '✗ '}{so(d.overall)}</b>}
+        {d.overall == null ? <b className="font-medium text-faint">—</b> : <b className={mau(ovDat, d.overall)}>{ovDat === null ? '' : ovDat ? '✓ ' : '✗ '}{so(d.overall)}</b>}
         {d.soVoi && <span>/ {pt ? t('ngưỡng') : d.soVoi.nhan} {so(d.soVoi.v)}</span>}
       </span>
     </span>

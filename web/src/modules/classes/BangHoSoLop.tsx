@@ -69,7 +69,7 @@ const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
 
 /**
  * BẢNG HỌC VIÊN · LỚP FAST TRACK (V5 `dieu-chinh-cuoi.html` khu b; R4: `Bang` / `ODiem`): chip lọc Tất cả · SOS · Chưa đủ dữ liệu + "Lượt của từng HV · tuần"
- * (P8) · cột MT (lượt của em) · L R W S Overall — BANG-EM-GON (v10 `#be`): điểm gọn 15 px chữ thường, đạt ✓ / hụt ✗ (`chiToHut`), W hiện MỘT lần + dòng phụ
+ * (P8) · cột MT (lượt của em) · L R W S Overall — BANG-EM-GON (v10 `#be`): điểm gọn 15 px chữ thường, vượt / bằng ✓ · hụt ✗ (ba màu kết quả, chủ SP 04/11), W hiện MỘT lần + dòng phụ
  * "W1 · W2" (C18) · bấm W / S → điểm thành phần ngay tại chỗ (popover) · Kết quả: chip SOS nhỏ (SOS thay "Chưa đạt") · "✓ Đạt", ngày thi, mới vào là chữ ·
  * TVV chữ nhỏ dưới tên · Case + PA: bấm mở các Case của em ngay dưới hàng, PA gắn từng
  * Case; thao tác (Ghi KQ PA · Sửa · Lịch sử) mở panel Case của Công việc tại trang (`NganCase`). Việc của em ở thanh Việc cần làm (cột Việc bỏ).
@@ -119,7 +119,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
     if (k === 'w' ? kh.includes('writing1') && kh.includes('writing2') : k !== 'ovr' && kh.includes(BAND[k])) return <OKhongHoc nhan={k.toUpperCase()} />;
     if (k === 'ovr' && h.overall == null && h.khongDuBoMon && h.scoredRequired === h.requiredCount) return <NhanKq kq="thieu">{t('Không đủ bộ môn')}</NhanKq>;
     const v = k === 'ovr' ? h.overall : k === 'w' ? h.writing ?? null : h.bands?.[BAND[k]] ?? null;
-    const o = <ODiem kieu="gon" chiToHut so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
+    const o = <ODiem kieu="gon" so={v === null ? null : fmtBand(v)} kq={h.lichSu ? null : soKyVong(v, h.expectation ?? null)} nhan={k === 'ovr' ? 'Overall' : k.toUpperCase()} kyVong={h.expectation != null ? fmtBand(h.expectation) : undefined} />;
     const kn = k === 's' ? 's' : k === 'w' || k === 'w1' || k === 'w2' ? 'w' : null;
     if (!kn || v === null) return o;
     const dangMo = pop?.sid === r.id && pop.kn === kn;

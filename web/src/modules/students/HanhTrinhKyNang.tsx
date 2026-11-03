@@ -41,7 +41,7 @@ const KN_BAND: Record<string, 'listening' | 'reading' | 'writing' | 'speaking'> 
 /**
  * Ô ĐIỂM TO ĐẦU HỒ SƠ (UI-HO-SO-HV-2, mockup M5 `thiet-ke/v7/ho-so-hv.html`): Overall · L · R · W1 · W2 · S (lớp thường: từng môn) — bấm đổi kỹ năng của
  * Hành trình + Tiến độ + Case & PA (`aria-pressed`). Số từ máy chủ: Overall = lượt "Kết quả gần nhất" (`dauHoSo.o.ketQua`), kỹ năng = hàng bảng kỹ năng
- * (`band`, `trend`, `expectation` của chính lượt). ✓ / ✗ so kỳ vọng của lượt (`soKyVong`). Dòng phụ MỘT mẫu "MT3 6.5 · ▲ 0.5" (`soMoc`); kỹ năng dời do vắng:
+ * (`band`, `expectation` của chính lượt). ✓ / ✗ so kỳ vọng của lượt (`soKyVong`). Dòng phụ MỘT mẫu "MT2 · kỳ vọng 7.5" (U02 dòng 2); kỹ năng dời do vắng:
  * "vắng W3 SEP" (7.4); môn em không còn học (P8): "—" + "không học từ MT4".
  * ĐÃ THI (chủ SP 27/10 — thi thật là kết quả quan trọng nhất, KHÔNG phải luật chặn): ô Thi thật thay ô Overall (màu lịch thi, so Target), bốn ô L · R · W · S
  * ghi "thi thật" ở góc, dòng phụ = MT cuối để so; chờ kết quả → ô "Chờ kết quả", ô kỹ năng giữ điểm MT, góc ghi nguồn.
@@ -61,13 +61,13 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
   const daThi = !ratio && thi && thi !== 'khong' && thi.loai !== 'du-kien' ? thi : null;
   const luot = attempts.filter((x) => x.status !== 'cancelled' && !laMt0(x) && !!x.weekStart).sort((x, y) => x.weekStart!.localeCompare(y.weekStart!) || x.attemptNo - y.attemptNo);
   const a = attempts.find((x) => x.id === ketQuaId) ?? null;
-  const truoc = a ? luot.filter((x) => x.overall !== null && x.attemptNo < a.attemptNo).at(-1) : undefined;
   /* P8: lượt đầu sau lượt cuối có điểm của môn đã bỏ = "không học từ MTn". */
   const khongHocTu = (k: string) => {
     const cuoi = luot.map((x) => x.diemKn?.[k] != null).lastIndexOf(true);
     const dau = luot[cuoi + 1];
     return dau ? t('không học từ {mt}', { mt: tenLuot(dau) }) : t('không học');
   };
+  const nguonKv = (mt: string, kv: number | null | undefined) => (kv != null ? t('{mt} · kỳ vọng {kv}', { mt, kv: fmtBand(kv) }) : mt);
   const lech = (v: number, tg: number) => (v > tg ? `+${fmtBand(v - tg)}` : v < tg ? `−${fmtBand(tg - v)}` : '=');
   const oDau = daThi ? (
     <ODiemTo key="thi" nhan={t('Thi thật IELTS')} goc={daThi.nhan} chon={chon === OVERALL} onClick={() => onChon(OVERALL)} thi
@@ -77,9 +77,10 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
         : <span className="py-1 text-[17px] font-bold text-[color:var(--lich-chu)]">{t('Chờ kết quả')}</span>}
     </ODiemTo>
   ) : !ratio && (
-    <ODiemTo key="ov" nhan="Overall" goc={a ? [tenLuot(a), a.weekStart ? tuanLich(a.weekStart, homNay) : null].filter(Boolean).join(' · ') : undefined} chon={chon === OVERALL} onClick={() => onChon(OVERALL)}
+    /* U02 dòng 2 (PTA: bỏ chênh lệch — đã ở U07): MỘT dòng phụ "MT2 · kỳ vọng 7.5" — nguồn + mốc so. */
+    <ODiemTo key="ov" nhan="Overall" chon={chon === OVERALL} onClick={() => onChon(OVERALL)}
       phu={a?.khongDuBoMon && a.overall == null ? (hep ? t('thiếu môn') : t('không đủ bộ môn'))
-        : a?.overall == null ? t('chưa có điểm') : truoc?.overall != null ? soMoc(tenLuot(truoc), truoc.overall, a.overall) : null}>
+        : a?.overall == null ? t('chưa có điểm') : nguonKv(tenLuot(a), a.expectation)}>
       <ODiem kieu="lon" so={a?.overall != null ? fmtBand(a.overall) : null} kq={soKyVong(a?.overall, a?.expectation)} nhan="Overall" kyVong={a?.expectation != null ? fmtBand(a.expectation) : undefined} />
     </ODiemTo>
   );
@@ -108,12 +109,10 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
         }
         const boMon = !r.ratio && !!mon && !mon.includes(r.category);
         const vang = a?.vangCu?.[r.category] ? chuDoiVang(a.vangCu[r.category], homNay) : null;
-        const cu = r.trend !== null && r.band !== null ? Math.round((r.band - r.trend) * 10) / 10 : null;
         const phu = boMon ? khongHocTu(r.category)
           : r.ratio ? (r.missed === false ? t('đạt') : r.missed === true ? t('chưa đạt') : t('chưa có điểm'))
           : vang ?? (r.band === null ? t('chưa có điểm')
-            : r.trendFrom !== null && cu !== null ? soMoc(`MT${r.trendFrom}`, cu, r.band)
-            : r.bandAttemptNo ? `MT${r.bandAttemptNo}` : null);
+            : r.bandAttemptNo ? nguonKv(`MT${r.bandAttemptNo}`, r.expectation) : null);
         return (
           <ODiemTo key={r.category} nhan={r.short} title={r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu}>
             {r.ratio
@@ -133,7 +132,7 @@ function ODiemTo({ nhan, goc, title, phu, chon, thi = false, onClick, children }
   return (
     <button type="button" aria-pressed={chon} title={title} onClick={onClick}
       className={`flex min-w-0 flex-col items-stretch gap-0.5 rounded-[10px] border px-2.5 py-2.5 text-left max-sm:min-h-[44px] sm:px-3.5 ${chon
-        ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[inset_0_-3px_0_var(--accent)]'
+        ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]'
         : 'border-[color:var(--line)] bg-[color:var(--surface)] hover:border-[color:var(--accent-line)]'}`}
       style={thi && !chon ? { borderColor: 'var(--lich-chu)', background: 'var(--lich-nen)' } : undefined}>
       <span className="flex min-w-0 items-baseline gap-2">
@@ -141,10 +140,8 @@ function ODiemTo({ nhan, goc, title, phu, chon, thi = false, onClick, children }
         {goc && <span className={`ml-auto min-w-0 truncate text-[12px] tabular-nums text-slate-400 ${thi ? '' : 'max-sm:hidden'}`}>{goc}</span>}
       </span>
       <span className="flex">{children}</span>
-      {/* 375: xuống dòng chỉ ở " · " ("MT1 5.0 ·" / "▲ 0.5"), không cắt giữa mốc. */}
-      {phu && <span className="text-[12px] tabular-nums leading-4 text-slate-400 sm:truncate">
-        {phu.split(' · ').map((x, i) => <Fragment key={i}>{i > 0 && ' · '}<span className="whitespace-nowrap">{x}</span></Fragment>)}
-      </span>}
+      {/* U02 B1: một dòng "MT2 · kỳ vọng 7.5" — 375 chữ 11 px, không xuống dòng (cắt "…" + title khi quá hẹp). */}
+      {phu && <span className="truncate whitespace-nowrap text-[12px] tabular-nums leading-4 text-slate-400" title={phu}>{phu}</span>}
     </button>
   );
 }
@@ -299,7 +296,7 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="m-0 text-[15px] font-bold text-slate-100">{t('Hành trình · {kn}', { kn: tenKn })}</h2>
+        <h2 className="m-0 text-[17px] font-bold text-slate-100">{t('Hành trình · {kn}', { kn: tenKn })}</h2>
         <NutLuat label={t('Cách đọc hành trình')}>
           {cy.ratio
             ? t('Chấm = điểm bài của môn (% so tổng), màu theo ngưỡng đạt của lớp · vạch đứt = ngưỡng đạt · cột hồng = tuần này.')

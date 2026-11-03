@@ -103,16 +103,12 @@ export function lopKq(kq: 'vuot' | 'bang' | 'duoi' | null): string {
 }
 
 /**
- * KÝ HIỆU KẾT QUẢ ĐIỂM (OV-15a, C05 + mục 6 chủ SP 19/10): ✓ / ✗ nét trơn 14 px, không vòng tròn — vượt kỳ vọng ✓ · bằng ✓ · dưới ✗ (màu `lopKq`).
- * Không chữ "thiếu / vượt", không "=". "Chưa đủ điểm" chỉ ghi chữ (không ký hiệu) — chỗ gọi tự xử lý `null`.
+ * KÝ HIỆU KẾT QUẢ ĐIỂM (mockup audit 03/11 `.da / .dd::before`, chủ SP 04/11): CHỮ "✓" / "✗" đậm 700, cùng cỡ chữ nơi đặt, màu `lopKq` —
+ * vượt ✓ xanh lá · bằng ✓ xanh dương · dưới ✗ đỏ. Không icon SVG (nổi cao, mảnh, lệch màu số). "Chưa đủ điểm" chỉ ghi chữ — chỗ gọi tự xử lý `null`.
  */
-export function DauKetQua({ kq, size = 14 }: { kq: 'vuot' | 'bang' | 'duoi'; size?: number }) {
+export function DauKetQua({ kq }: { kq: 'vuot' | 'bang' | 'duoi' }) {
   const ten = kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : t('Vượt kỳ vọng');
-  return (
-    <span className={`inline-flex ${lopKq(kq)}`} title={ten}>
-      {kq === 'duoi' ? <IconKhong size={size} /> : <IconDat size={size} />}<span className="sr-only">{ten}</span>
-    </span>
-  );
+  return <span className={`font-bold ${lopKq(kq)}`} title={ten}><span aria-hidden>{kq === 'duoi' ? '✗' : '✓'}</span><span className="sr-only">{ten}</span></span>;
 }
 
 /** ▲ trên / ▼ dưới kỳ vọng cạnh band — chỉ ở chỗ KHÔNG có cột kỳ vọng (hộp nhập điểm lẻ); bằng kỳ vọng: không mũi tên. */
