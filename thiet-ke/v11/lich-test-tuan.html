@@ -274,7 +274,7 @@ tr.khop td, tr.khop td.c-ten { background: color-mix(in srgb, var(--hong) 7%, va
 .hl-lt.mo-lop { box-shadow: inset 3px 0 0 var(--accent); }
 .hl-lt .mui { width: 28px; height: 28px; border: 0; background: none; color: var(--text); font-size: 16px; cursor: pointer; }
 .hl-lt .phu { font-size: 13px; color: var(--text-dim); white-space: nowrap; } .hl-lt .phu b { color: var(--text); }
-.monl { display: inline-flex; gap: 6px; font: 600 13px var(--phong-so); } .monl .cua { color: var(--accent); border-bottom: 2px solid var(--accent); } .monl .khac { color: var(--text-dim); }
+.monl { display: inline-flex; gap: 10px; margin-left: 4px; font: 600 13px var(--phong-so); } .monl .cua { color: var(--accent); border-bottom: 2px solid var(--accent); } .monl .khac { color: var(--text-dim); }
 .hl-lt .ben { justify-self: end; display: inline-flex; gap: 8px; align-items: center; }
 /* 11.3 U06: hàng lớp như web main — một hàng chữ liền (không lưới trường), badge chấm màu */
 .hl-w { display: flex; align-items: center; gap: 14px; min-height: 46px; padding: 0 14px 0 8px; border-top: 1px solid var(--line); background: var(--hang-lon-bg); }
@@ -355,7 +355,7 @@ table.lt td:first-child { text-align: left; padding-left: 14px; }
   function hangLop(l) {
     var tt = l.tt === 'ban' ? '<span class="bdv cho">Chờ bạn chấm</span>' : '<span class="bdv">Chờ GV khác</span>';
     return '<div class="hl-w' + (l.mo ? ' mo-lop' : '') + '"><button class="mui" aria-expanded="' + !!l.mo + '">' + (l.mo ? '▾' : '▸') + '</button><a class="ten ma">' + l.ma + '</a>' +
-      '<span class="dem-mt">' + l.hv + '</span><span class="knl">' + l.mon.join('<span></span>') + '</span>' +
+      (l.dot ? '<span class="dem-mt">' + l.dot + '</span>' : '') + '<span class="monl">' + l.mon.map(function (m) { return '<span class="' + (m[1] ? 'cua' : 'khac') + '">' + m[0] + '</span>'; }).join('') + '</span>' +
       '<span class="bai">' + l.bai + '<small>bài</small></span><span class="hn">hạn ' + l.han + '</span><span class="tt3">' + tt + '</span></div>';
   }
   /* ô: n = nhập (rỗng) · v = điểm · k = GV khác · t = tuần chưa tới · vg = vắng · h = huỷ · x = không học · w = W gộp */
@@ -392,18 +392,18 @@ table.lt td:first-child { text-align: left; padding-left: 14px; }
     { ten: 'Vũ Hải Đăng', mt: 'MT3', o: ['n', 'n', 'k', 'k', 'w', 'h'], kv: 6.0, kq: 'Chờ L, R, W' },
   ];
   var CUA = ['L', 'R'];
-  var a = dau(1) + daiSo('Của bạn:', [{ g: '16/41', c: 'bài đã chấm' }, { g: '25', c: 'bài còn chấm', p: 'GV khác: 23 bài' }, { g: '12', c: 'bài quá hạn', p: 'GV khác: 28 bài', do: 1 }]) +
+  var a = dau(1) + daiSo('Của bạn:', [{ g: '16/41', c: 'bài đã chấm' }, { g: '25', c: 'bài còn chấm' }, { g: '12', c: 'bài quá hạn', do: 1 }]) +
     '<div class="bang-hv"><div class="nhom-d do"><button class="mui" style="border:0;background:none;color:var(--text)">▸</button><span class="t">Quá hạn chấm</span><span class="phu">2 lớp · 12 bài</span></div>' +
     '<div class="nhom-d"><button class="mui" style="border:0;background:none;color:var(--text)">▾</button><span>Test tuần này</span><span class="phu">4 lớp · 5 lượt</span></div>' +
-    hangLop({ mo: 1, ma: 'MB FT 101', hv: '6 HV · <b>MT3</b> 5 · <b>MT1</b> 1', mon: ['L', 'R', 'W', 'S'], bai: '<b>2</b>/27', han: '23/09', tt: 'ban' }) +
+    hangLop({ mo: 1, ma: 'MB FT 101', mon: [['L', 1], ['R', 1], ['W'], ['S']], bai: '<b>2</b>/27', han: '23/09', tt: 'ban' }) +
     '<div class="phu-khoi"><span></span><span>GV chấm S: Nguyễn Khánh Vy ▾</span></div>' + luoi(EM101, CUA) +
-    hangLop({ ma: 'MB Pre FOU 03', hv: '4 HV · <b>Final Test</b>', mon: ['Tổng hợp'], bai: '<b>3</b>/4', han: '23/09', tt: 'ban' }) +
-    hangLop({ ma: 'MB FOU 12', hv: '1 HV · <b>Progress Test</b>', mon: ['L', 'R', 'G+V', 'P'], bai: '<b>0</b>/1', han: '23/09', tt: 'ban' }) +
-    hangLop({ ma: 'MB FOU 22', hv: '6 HV · <b>Final Test</b>', mon: ['L', 'R', 'G+V', 'P'], bai: '<b>19</b>/24', han: '23/09', tt: 'khac' }) +
+    hangLop({ ma: 'MB Pre FOU 03', dot: 'Final Test', mon: [['Tổng hợp', 1]], bai: '<b>3</b>/4', han: '23/09', tt: 'ban' }) +
+    hangLop({ ma: 'MB FOU 12', dot: 'Progress Test', mon: [['L', 1], ['R'], ['G+V'], ['P']], bai: '<b>0</b>/1', han: '23/09', tt: 'ban' }) +
+    hangLop({ ma: 'MB FOU 22', dot: 'Final Test', mon: [['L', 1], ['R'], ['G+V'], ['P']], bai: '<b>19</b>/24', han: '23/09', tt: 'khac' }) +
     '<div class="hang-cuoi"><button class="lk">MT cũ chưa nhập · MB FT 101 · MT1 · 4 em ›</button></div></div>';
   var html = '';
   html += khu('a', 'A · GV Trần Ngọc Hà (dạy L, R) · Lịch Test tuần W3 SEP — format web, hiện điểm môn GV khác', [['1440 · tối · GV', khung(false, 'Trần Ngọc Hà', GV, a)]],
-    ['<b>Như web main</b>: thanh tuần · dải 3 số · nhóm "Quá hạn chấm" / "Test tuần này" · hàng lớp "MB FT 101 · 6 HV · MT3 5 · MT1 1 · L R W S · 2/27 bài · hạn 23/09 · ● Chờ bạn chấm" (một hàng, như nay).',
+    ['<b>Như web main</b>: thanh tuần · dải 3 số · nhóm "Quá hạn chấm" / "Test tuần này" · hàng lớp "MB FT 101 · L R W S · 2/27 bài · hạn 23/09 · ● Chờ bạn chấm" (một hàng). <b>Vòng 2 chủ SP:</b> bỏ mọi số về GV khác ("GV khác: n bài") · bỏ "6 HV · MT3 5 · MT1 1" ở hàng lớp (lớp thường giữ tên đợt "Final Test") · L R W S kiểu #849: môn của bạn xanh gạch dưới, môn khác chữ thường.',
      '<b>Hiện hết điểm</b> (chủ SP): môn GV khác đã có điểm → hiện điểm như ô thường (Lê Quang Huy W1 ✓ 6.5 · W2 ✗ 6.0 · S ✓ 7.0; Phạm Bảo Ngọc W1); chưa có điểm → trống như web. GV chỉ nhập được ô của mình (viền đứt).',
      '<b>Ý hay giữ</b>: dải số có nhãn "Của bạn:" (B13) · Kết quả ghi đúng môn còn chờ "Chờ L, R" / "Chờ W2, S" thay "Chờ 4 kỹ năng" + dòng "1 kỹ năng" (B19). Ô thiếu nhận xét MT mới nhất viền vàng (N8). Ô vừa lưu "✓ đã lưu" (V12).']);
   /* B QL */
@@ -412,7 +412,7 @@ table.lt td:first-child { text-align: left; padding-left: 14px; }
     { ten: 'Đỗ Thế Hưng', mt: 'MT1', o: [[6.0, 6, '23 câu'], [4.5, 6, '14 câu'], [5.5, 6], [4.5, 6], Object.assign([5.0, 6], { w: 1 }), 'n'], kv: 6.0, ovr: '—', kq: '<span class="cs m2 tam">SOS 2 tạm · R, W</span>' },
   ];
   var qhRow = function (r) { return '<tr' + (r.mo ? ' class="mo"' : '') + '><td><a class="ten ma" style="font-weight:700">' + r.ma + '</a></td><td>' + r.dot + '</td><td>' + r.kn + (r.phu ? '<span class="phu2">' + r.phu + '</span>' : '') + '</td><td><b class="so">' + r.con + '</b> bài</td><td><span class="han-qh">hạn ' + r.han + ' <b>⚠ quá hạn ' + r.qh + ' ngày</b></span></td><td>' + r.gv + '</td><td><span class="bdv">Chờ chấm</span></td><td style="text-align:right">' + (r.mo ? '<button class="btn btn-nho">Thu</button>' : '<button class="btn btn-nho btn-chinh">Nhập điểm</button>') + '</td></tr>'; };
-  var b = dau(0) + daiSo('Cả chi nhánh:', [{ g: '0/54', c: 'bài đã chấm' }, { g: '54', c: 'bài còn chấm' }, { g: '3', c: 'bài quá hạn', do: 1, p: '3 bài của GV khác' }]) +
+  var b = dau(0) + daiSo('Cả chi nhánh:', [{ g: '0/54', c: 'bài đã chấm' }, { g: '54', c: 'bài còn chấm' }, { g: '3', c: 'bài quá hạn', do: 1 }]) +
     '<div class="bang-hv"><div class="nhom-d do"><button class="mui" style="border:0;background:none;color:var(--text)">▾</button><span class="t">Quá hạn chấm</span><span class="phu">2 lớp · 3 bài</span></div>' +
     '<table class="bqh"><colgroup><col style="width:150px"><col style="width:130px"><col style="width:150px"><col style="width:80px"><col style="width:230px"><col><col style="width:130px"><col style="width:110px"></colgroup><thead><tr><th>Lớp</th><th>Đợt</th><th>Kỹ năng</th><th>Còn</th><th>Hạn</th><th>GV chấm</th><th></th><th></th></tr></thead><tbody>' +
     qhRow({ mo: 1, ma: 'CP FT 137', dot: 'MT1 · W4 OCT', kn: 'S', con: 2, han: '28/10', qh: 6, gv: 'GV chấm chéo' }) +
