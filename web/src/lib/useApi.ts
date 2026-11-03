@@ -12,14 +12,14 @@ const dangBay = new Map<string, Promise<unknown>>();
  * ~0,3 s; trước đây mỗi lần đổi trang đều hiện khung chờ). Bị xoá cùng lúc với `dangBay`: đổi tài khoản (prefix = null) là xoá sạch, nên không
  * lộ dữ liệu của tài khoản trước; ghi dữ liệu xong thì xoá đúng các đường dẫn bị ảnh hưởng.
  */
-const daXem = new Map<string, unknown>();
+const daXem = new Map<string, { d: unknown; luc: number }>();
 const DA_XEM_TOI_DA = 60;
 /*
- * PR-TD2-c: lúc lưu từng bản vừa xem. Hook MỚI GẮN gặp bản lưu chưa quá MOI_MS thì dùng luôn, không gọi lại máy chủ — bản tải trước
+ * PR-TD2-c: `luc` = lúc lưu bản vừa xem. Hook MỚI GẮN gặp bản lưu chưa quá MOI_MS thì dùng luôn, không gọi lại máy chủ — bản tải trước
  * (`taiTruoc`), `/cases/:id` của trang chuyển tiếp Case, nhiều khối gắn nối nhau cùng đọc một đường. `reload`/`deps` vẫn luôn gọi lại;
- * ghi dữ liệu xong `invalidate` xoá bản lưu nên không dùng nhầm bản cũ.
+ * ghi dữ liệu xong `invalidate` xoá bản lưu nên không dùng nhầm bản cũ. AUDIT-LOI F10: `luc` nằm CHUNG mục với dữ liệu — trước là Map riêng
+ * không bao giờ xoá (mỗi URL tìm / lọc một mục suốt phiên).
  */
-const luc = new Map<string, number>();
 const MOI_MS = 10_000;
 /** Gần như tĩnh — giữ tới khi `invalidate` (đổi tài khoản / ghi trúng tiền tố), không tải lại mỗi lần gắn (PR-TD2-c). */
 const TINH = new Set(['/ref/branches', '/ref/periods']);
@@ -27,11 +27,10 @@ onInvalidate((prefix) => {
   for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
   for (const k of [...daXem.keys()]) if (prefix === null || k.startsWith(prefix)) daXem.delete(k);
 });
-const conMoi = (path: string) => daXem.has(path) && Date.now() - (luc.get(path) ?? 0) < MOI_MS;
+const conMoi = (path: string) => { const x = daXem.get(path); return !!x && Date.now() - x.luc < MOI_MS; };
 function nhoBanXem(path: string, d: unknown) {
   daXem.delete(path);
-  daXem.set(path, d);
-  luc.set(path, Date.now());
+  daXem.set(path, { d, luc: Date.now() });
   if (daXem.size > DA_XEM_TOI_DA) daXem.delete(daXem.keys().next().value as string);
 }
 function getChung<T>(path: string): Promise<T> {
@@ -115,7 +114,7 @@ export function batDauTai<T>(path: string | null, b: {
   // Đổi sang truy vấn khác thì mới bỏ dữ liệu cũ đi.
   if (currentPath.current !== path) {
     xaGop(path);   // W1: còn vô hiệu đang gộp cho đường này → xả trước, không dùng bản lưu cũ
-    const banXem = daXem.get(path) as T | undefined;
+    const banXem = daXem.get(path)?.d as T | undefined;
     /* HV-LOC: trang lọc / tìm theo truy vấn — gỡ dữ liệu làm trang cha hiện khung chờ, gỡ luôn ô đang gõ (mất focus, hỏng bộ gõ). */
     if (banXem === undefined && b.giuCu && coDuLieu.current) b.setCu?.(true);
     else { b.setData(banXem ?? null); b.setCu?.(false); }
@@ -170,7 +169,7 @@ export type ApiState<T> = {
  * khiến bản nháp của người dùng bị mất.
  */
 export function useApi<T>(path: string | null, deps: unknown[] = [], opts: { giuCu?: boolean } = {}): ApiState<T> {
-  const [data, setDataState] = useState<T | null>(() => (path ? (daXem.get(path) as T | undefined) ?? null : null));
+  const [data, setDataState] = useState<T | null>(() => (path ? (daXem.get(path)?.d as T | undefined) ?? null : null));
   const [fetching, setFetching] = useState(!!path);
   const [error, setError] = useState<ApiError | null>(null);
   const [cu, setCu] = useState(false);
