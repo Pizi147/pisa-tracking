@@ -53,6 +53,7 @@ for (let i = 0; i < 5; i++) {   // kéo dài khung nhìn tới khi main hết cu
   await pw.setViewportSize({ width: rong, height: pw.viewportSize().height + thua });
   await pw.waitForTimeout(400);
 }
+await pw.mouse.move(0, 0);   // chuột rời phần tử vừa bấm — ảnh không dính trạng thái rê (gạch chân tên)
 const anhWeb = await pw.screenshot({ fullPage: true });
 
 // Ghép: trang trắng hai cột, nhãn trên mỗi ảnh.

@@ -100,7 +100,7 @@ export async function runPrDhTests(t: YThucTestKit) {
 
   check('PR-DH (2) · Học viên & Lớp: cả hai nhóm có cột "Ngày thi" (V5 C21; ExamPlanText ở bảng và thẻ), 8 cột khớp hàng lớp', () => {
     /* UI-HV-LOP (Q-7): Học viên & Lớp là danh sách gọn (cột Lịch thi — `ChipLichThi`); bảng HV theo lớp đã gỡ khỏi BangHocVienLop. */
-    assert(/<ChipLichThi l=\{h\.lich\} \/>/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'cột Lịch thi');
+    assert(/<ChipLichThi l=\{h\.lich\} them=/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'cột Lịch thi');   // U04-4: "Đã thi … · chờ KQ"
   });
 
   /* PR-OV3a (M2 §3): Tổng hợp lớp thường bỏ cột Dự kiến thi (bàn + điện thoại); Target giữ. */

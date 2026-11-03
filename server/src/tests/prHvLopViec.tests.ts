@@ -24,27 +24,27 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
   const goc = doc('web/src/modules/students/GocLichThi.tsx');
   const trang = doc('web/src/modules/students/StudentsPage.tsx');
 
-  check('H1 · COT_HV: viec là cột cuối, rong 300; nut đứng ngay trước; Học viên giãn (không rong)', () => {
+  /* U04 (mockup V11 duyệt 03/11, chủ SP "vừa 1280"): ⋯ cột cuối, Việc của tôi giãn, các cột khác cố định — thay H1 cũ (Việc 300 mép phải). */
+  check('U04 · COT_HV: Việc của tôi giãn ngay trước ⋯ (cột cuối); cột cố định cộng ≤ 960 (vừa 1280)', () => {
     const m = /const COT_HV: CotBang\[\] = \[([\s\S]*?)\n\];/.exec(ds);
     assert(m, 'thiếu COT_HV');
     const keys = [...m![1].matchAll(/key: '(\w+)'/g)].map((x) => x[1]);
-    assert(keys.at(-1) === 'viec' && keys.at(-2) === 'nut', `thứ tự cột ${keys.join(',')}`);
-    assert(/key: 'viec'[^}]*rong: 300/.test(m![1]), 'Việc phải rong 300');
-    assert(!/key: 'ten'[^}]*rong:/.test(m![1]), 'Học viên phải giãn (không rong)');
+    assert(keys.at(-1) === 'nut' && keys.at(-2) === 'viec', `thứ tự cột ${keys.join(',')}`);
+    assert(!/key: 'viec'[^}]*rong:/.test(m![1]), 'Việc phải giãn');
+    const tong = [...m![1].matchAll(/rong: (\d+)/g)].reduce((n, x) => n + Number(x[1]), 0);
+    assert(tong <= 960, `cột cố định ${tong} px > 960`);
   });
 
-  check('H1 · OViec: tối đa SO_DONG_VIEC_MAC_DINH nút, không còn "Xem thêm" / "Thu gọn"; có nút "+{n} việc" mở panel một em', () => {
+  check('U04 · OViec: một việc trong ô có khung + "+{n} việc" mở dải dưới hàng (không panel), không còn "Xem thêm"', () => {
     const o = than(ds, 'export function OViec');
     assert(o.length > 200, 'thiếu OViec');
     assert(!o.includes("'Xem thêm {n}'") && !o.includes("'Thu gọn'"), 'còn Xem thêm / Thu gọn');
-    assert(o.includes('SO_DONG_VIEC_MAC_DINH') && o.includes("t('+{n} việc'"), 'thiếu "+{n} việc"');
-    assert(/onClick=\{onMoEm\}/.test(o), '"+n việc" phải mở panel một em (onMoEm)');
-    assert(o.includes('viec-n') && o.includes("t('quá {n} ngày'"), 'nút một dòng có "⚠ quá n ngày"');
-    assert(!/function HanViec/.test(ds), 'chip hạn gộp vào nút — bỏ HanViec');
+    assert(o.includes('<OMotViec x={v[0]}') && o.includes("t('+{n} việc'") && /onClick=\{onMoDai\}/.test(o), '"+n việc" phải mở dải (onMoDai)');
+    assert(!/function HanViec/.test(ds), 'bỏ HanViec');
   });
 
-  check('H1 · onMoEm cho mọi vai có Công việc (không chỉ TVV / CX)', () => {
-    assert(/onMoEm=\{moEm\}/.test(trang) && (trang.match(/onMoEm=\{moEm\}/g) ?? []).length >= 2, 'StudentsPage phải truyền onMoEm cho cả bảng và thẻ 375');
+  check('U04-5 · cột Việc chỉ việc của tôi (mọi vai) — cùng nguồn /my-work, không ?nguoi=tat-ca', () => {
+    assert(/if \(!it\.mine\) continue;/.test(trang) && !/nguoi=tat-ca/.test(trang), 'chỉ việc mine');
   });
 
   check('H1 · chuMiniKn: ✗ khi dưới kỳ vọng, ✓ khi đạt, — khi chưa có; KCK dưới không ✗', () => {
@@ -76,6 +76,13 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
 
   check('H1 · MiniKn ở chi tiết dưới hàng Lịch thi truyền kck (em KCK không ✗)', () => {
     assert(/<MiniKn kn=\{c\.kn\} kv=\{st\?\.expectation \?\? null\} kck=\{r\.kck\} \/>/.test(goc), 'ChiTietDuoiHang thiếu kck');
+  });
+
+  check('U04 [XM] PTA 04/11 · Fast Track / Lớp thường hai trạng thái: luôn một mục chọn, mặc định FT, URL khung + nhớ phiên', () => {
+    const sp = doc('web/src/modules/students/StudentsPage.tsx');
+    assert(/const khung = coHaiKhung \? khungMuon \?\? 'ft' : 'tat-ca';/.test(sp), 'mặc định Fast Track khi có cả hai loại lớp');
+    assert(/aria-pressed=\{khung === k\} onClick=\{\(\) => \{ if \(khung !== k\)/.test(sp), 'bấm mục đang chọn không bỏ chọn (không còn "cả hai")');
+    assert(/khungUrl === 'ft' \|\| khungUrl === 'thuong' \? khungUrl : docKhungDaNho\(\)/.test(sp) && sp.includes('sessionStorage.setItem(KHOA_KHUNG'), 'URL khung trước, rồi lần chọn trong phiên');
   });
 
   check('H1 · OMtGan: Overall ODiem', () => {
