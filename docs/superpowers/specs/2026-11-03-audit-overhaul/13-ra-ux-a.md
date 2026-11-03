@@ -124,6 +124,104 @@ Nâng cấp từ khung đã duyệt (v7 / v8), không làm lại; CSS chung `chu
 
 Turso: không đường API mới. U02 giảm đọc (`/cases/:id` chỉ cho Case đang mở). Các sửa chữ UA-14 / UA-15 / UA-17 / UA-18 / UA-19 là PR nhỏ không cần đổi bố cục (sau khi chủ SP duyệt chữ).
 
+## 6c. Bảng ý → mockup (cách làm mới chủ SP 03/11 tối — lập TRƯỚC khi vẽ, PTA duyệt rồi mới vẽ)
+Nguồn viết tắt: `00` = bản audit chủ SP (mục 12 chuẩn chung, 20 từng màn, 21 đồng bộ, 22 tinh giản) · N33 / N35 = plan.md 1.6 · "SP 03/11" = lời chủ SP khi xem mockup vòng 1 · UA-xx = bảng xác minh mục 2. Cột "Hỏi" để trống = không cần hỏi.
+
+### U01 · Công việc (nền: khung v8 đã duyệt N26 — nâng cấp, giữ mọi thao tác)
+
+| # | Ý (trích ngắn · nguồn) | Làm gì trong mockup (khu · thành phần · chữ thật) | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP |
+|---|---|---|---|---|
+| 1 | Trên cùng chỉ phạm vi + lựa chọn thường dùng (`00` 20-U01 #1) — **chủ SP 03/11 (qua PTA):** không thêm chip mới, chỉ thêm "Hôm nay" vào ô hạn | Một hàng: phạm vi `Của tôi · Của GV · Tất cả` (QL) · `Mọi hạn ▾` (Quá hạn · **Hôm nay** · Hạn đến {ngày}) · `Loại việc ▾` · `Lọc thêm ▾` (Một GV, Mọi khung, Chi nhánh) | ĐỔI nhỏ — chủ SP | ĐÃ TRẢ LỜI |
+| 2 | Danh sách – chi tiết cao theo màn; danh sách giữ vị trí; tiêu đề + hành động của việc đang mở luôn thấy; không hộp cuộn lồng (`00` #2, 12 "Cuộn/sticky") | Danh sách cuộn theo trang (không khung cuộn riêng — F06); panel phải **dính**, đầu panel (tên việc + hạn) và chân (nút chính) cố định, thân panel cuộn riêng chỉ khi form dài hơn màn | GIỮ bố cục v8 + chốt luật cuộn | — |
+| 3 | Mỗi hàng: **việc gì → ai / lớp → hạn → ai chịu trách nhiệm**; số bài / HV là phụ có đơn vị; tách SOS khỏi mức khẩn (`00` #3) — **PTA sửa:** ghi rõ "ai / lớp" ở đâu cho từng loại dòng; tuần không nhầm W1 / W2 | **Dòng em:** dòng cha = tên em (link hồ sơ) + lớp + SOS; dòng việc con: ① tên việc (kỹ năng viết đủ "Writing Task 1") ② thẻ phụ `MT1` `tuần W4 AUG` `2 bài` ③ cột hạn ④ người phụ trách + nút. **Dòng gộp:** chính dòng = "Cả lớp {mã}" + tên việc, thẻ `4 em` `8 việc`, cột hạn, người phụ trách. Thứ tự đọc trái → phải đúng việc → ai/lớp → hạn → người. Tuần luôn có chữ "tuần" trước mã | ĐỔI cách trình bày — SP 03/11 "tách rõ trường"; `00` 21 "Tuần" | — |
+| 4 | Nhóm theo loại hoặc theo HV, không trộn kiểu nhóm thiếu tín hiệu; việc khác cùng em = liên kết ngắn, không nhân bản (`00` #4) | Giữ 3 tầng V18: nhóm loại → em / dòng gộp lớp → việc. Dòng gộp có nhãn chữ **"Cả lớp {mã}"** + thẻ `4 em` `8 việc` + **người phụ trách** (UA-03); "+ 1 việc ở Ý thức" giữ dạng link | ĐỔI nhỏ — UA-03, UA-08 | — |
+| 5 | Theo dõi = tóm tắt đọc được + "Làm thay"; bấm mới vào chế độ thao tác (`00` #5, **N33 ③**) | Panel "THEO DÕI": khung trường nhãn trái — Việc · Người làm · Hạn · Tới đâu (bước ✓ / ○) · Gần nhất; chân: **Làm thay** (nút chính) + Việc tiếp ›. Sau Làm thay: dải vàng "Bạn đang làm thay {tên} · Thôi, chỉ xem" + form | ĐỔI — N33 ③ | — |
+| 6 | Form PA: vấn đề, điểm / kỳ vọng, hạn, người phụ trách **trước**; nhập sau; một hành động chính; không nhiều biến thể xác nhận ngang hàng (`00` #6) | Đầu panel = **dải sự kiện** (nhãn trên – giá trị dưới): Học viên · Lớp · Lượt · SOS · Hạn · Phụ trách. Rồi khối "Case" (khung trường: Điểm `✗ 5.0 / kỳ vọng 6.0`, Nguyên nhân thẻ, Mô tả ≤ 3 dòng). Rồi khối "Phương án" (form). Chân: **Xác nhận · việc tiếp ›** (chính) + Xác nhận PA (phụ); "Đề xuất PA khác…", "Không cần theo dõi…" thành link dưới form | ĐỔI thứ tự + tách trường — UA-05, SP 03/11 | — |
+| 7 | Làm xong: kết quả tại chỗ, cập nhật đếm, đường xem việc vừa xong, đi tiếp theo lựa chọn; không mất việc im lặng (`00` #7) | Dòng vừa xong ở nguyên chỗ, mờ + gạch, dưới là "✓ Đã xác nhận PA Tutor · Listening · **Xem lại**"; **Hoàn tác một chỗ** (dải đầu panel việc kế — V20); đầu trang "✓ 1 xong hôm nay" bấm được → lọc **"Đã xong hôm nay"** (tìm lại không dò từ đầu) | GIỮ V12 / V20 + thêm lối tìm lại | — |
+| 8 | Cần kiểm: "4 nhóm" mà 5 tiêu đề (`00` U01) | UA-01: đúng cách đếm. **Bỏ "n nhóm"**, giữ `việc · HV · bài` | BỎ — chủ SP đồng ý 03/11 | ĐÃ TRẢ LỜI |
+| 9 | Cần kiểm: badge 32 vs "Của tôi" 33 (`00` U01) | UA-02 đóng theo **DESIGN V13**: badge QL = số việc "Của tôi", không thêm chữ (chủ SP 03/11: "thừa thì đừng thêm text") | ĐỔI — hết lệch số | ĐÃ TRẢ LỜI |
+| 10 | Nghiệm thu: mở việc **cuối danh sách**, xử lý, quay lại, tìm việc vừa xong không dò lại (`00` U01) | Khung riêng: việc ở cuối nhóm (sau "Xem thêm") được mở → lưu → danh sách giữ vị trí cuộn + dòng vừa xong ở chỗ cũ + "Đã xong hôm nay" | MỚI khung | — |
+| 11 | Nghiệm thu: người theo dõi hiểu ngay đang **xem** hay **làm thay** (`00` U01) | Loại panel đổi chữ: "THEO DÕI" ↔ "LÀM THAY"; dải trạng thái màu khác (xám ↔ vàng) | theo #5 | — |
+| 12 | Nghiệm thu: mobile danh sách → chi tiết → quay lại giữ vị trí, không ép hai cột (`00` U01) | 375: danh sách → panel toàn màn "‹ Công việc" → về đúng dòng (khung B) | GIỮ v8 | — |
+| 13 | Phân cấp 3 tầng trang → khối → trường; không toàn chữ nhỏ xám; nền / viền có mục đích (`00` 12) | Thang chữ: tiêu đề trang 22/700 · dải nhóm 15/700 nền `surface-2` · tên em 15/600 · tên việc 15/600 · thẻ phụ 12/600 · nhãn trường 12 `text-faint` trên giá trị 15/600. Không thêm nền lồng nền | ĐỔI tinh chỉnh — SP 03/11 | — |
+| 14 | Một hành động chính mỗi vùng; nút phụ đủ tương phản; disabled có lý do (`00` 12, 21 "Nút và menu") | Mỗi dòng một nút (động từ đúng việc: Nhập điểm / Thêm PA / Ghi kết quả PA / Xác nhận PA / Làm thay); panel một nút chính | GIỮ + sửa chữ | — |
+| 15 | Tên thao tác đúng nghĩa (`00` 21) | "Kết quả PA Reading" → **"Ghi kết quả PA · Reading"**, nút "Ghi kết quả PA" (không "Kết quả" trần) | ĐỔI chữ | — |
+| 16 | Bộ đếm luôn có đơn vị; nhóm gộp không đếm trùng (`00` 21) | "Xem thêm 10 **dòng**" (UA-06); dòng gộp ghi `n em` `n việc` | ĐỔI chữ | — |
+| 17 | Thông tin thiết yếu không giấu trong tooltip (`00` 12) — **luật chủ SP 03/11:** chữ không đổi quyết định của người dùng thì bỏ | Người phụ trách dòng gộp hiện chữ; bỏ mọi câu giải thích / dòng phụ không giúp làm việc (vd "không tính vào việc của bạn", "Lịch sử ghi tên bạn") | ĐỔI | — |
+| 18 | Chip mức Case báo tay "Bình thường" không mang tin (UA-07) | Chỉ hiện thẻ **"Gấp"** | BỎ — chủ SP đồng ý 03/11 | ĐÃ TRẢ LỜI |
+| 19 | Trạng thái hệ thống: đang tải / rỗng / lỗi / không quyền / việc đã xong mở từ chuông khác nhau (`00` 12, 21; 22.2 #1 "form dài và lỗi lưu") | Khung C: lỗi lưu (giữ chữ, Thử lại) · việc đã xong mở từ chuông (tóm tắt "✓ Đã xong 14/09 · Trần Ngọc Hà" + Xem Case) · không quyền làm thay (một câu ai làm được) · form dài (thân panel cuộn, chân dính) · đang tải | MỚI khung | — |
+| 20 | Kiểm 375 · 1280 · 1440, sáng / tối, tên dài (`00` 12) | Khung 1440 tối, 375 sáng; một dòng tên em dài "Nguyễn Ngọc Phương Anh" + lớp "CP FT RF 01" để thử xuống dòng | thêm dữ liệu thử | — |
+| 21 | Kiểm kê thao tác TRƯỚC → SAU (V5: giữ hết) — PTA thêm | Mockup bảng D liệt kê và vẽ đủ: **Bỏ qua** + khu "Đã bỏ qua" (Khôi phục) (#826) · **Gia hạn** (Bước tiếp) · **+ Giao việc** / nhóm Việc quản lý · Xem thêm · Làm thay · Hoàn tác · Việc tiếp › · Em này còn · Hết việc nhóm · "n em ▾" khay dòng gộp · Chờ bạn duyệt (Duyệt / Từ chối… / Mở ›, tích nhiều) · Lớp tôi dạy · Yêu cầu của tôi | GIỮ hết | — |
+| 22 | `00` 12: tách "xem hồ sơ" với nút làm việc; không panel lồng panel — PTA thêm | Tên em / mã lớp = link hồ sơ (gạch chân khi rê); nút cột phải = làm việc; "Xem Case" trong panel = view kế trong cùng panel (‹ về), không panel thứ hai | GIỮ V19 | — |
+| 23 | `00` 12: trạng thái lưu trong form — PTA thêm | Chân panel: `● Chưa lưu` → `Đang lưu…` (chỉ ở nút đã bấm, form không khoá chữ) → `✓ Đã lưu` / `⚠ Chưa lưu được — Thử lại` (chữ giữ) | ĐỔI hiện | — |
+| 24 | `00` 12: link sâu / F5 `?viec=` mở đúng việc; đóng panel trả đúng dòng + bộ lọc; Tab: danh sách → Enter mở → Esc đóng, focus về dòng — PTA thêm | Chú thích hành vi trên khung A1 / A4 (không vẽ được thao tác bàn phím — ghi luật); dòng có viền focus | GIỮ (đã có) + ghi nghiệm thu | — |
+| 25 | `00` 12: EN không cắt nút ("Confirm · next task") — PTA thêm | Khung C: chân panel tiếng Anh, nút xuống dòng / co chữ không cắt | MỚI khung | — |
+| 26 | `00` 22.2: dữ liệu DÀY như ảnh `cong viec.jpg` (≥ 30 việc, nhiều nhóm, tên dài) + khung RỖNG — PTA thêm | A1 / A2: ≥ 30 việc, 5 nhóm, tên dài ("Nguyễn Ngọc Phương Anh", "CP FT RF 01"); khung C "Không còn việc đang mở" + "Xong hết hôm nay ✓" | MỚI dữ liệu | — |
+| 27 | `00` 21 "Hạn": hạn xử lý / ghi kết quả / Báo PH khác nhau; Báo PH hiện hạn đã sửa (N34); "Màu": đỏ chỉ cho quá hạn, SOS không cùng màu quá hạn — PTA thêm | Cột hạn ghi loại khi khác mặc định: `hạn ghi KQ 10/11`, `hạn Báo PH 20/09 · đã sửa` (TVV, khung C); quá hạn = **chữ đỏ + ⚠, không nền** (DESIGN "Hạn — chỉ chữ") để không trùng chip SOS 3 nền đỏ đặc (V5 khoá màu SOS) | ĐỔI hiện quá hạn | [XM] SOS 3 đỏ đặc (V5) và quá hạn đỏ cùng họ màu — khuyến nghị: quá hạn bỏ nền, chỉ chữ + ⚠ |
+| 28 | `00` 21 "Case / PA": Case trong panel PA cùng dữ liệu + cách ghi với hồ sơ HV (U02) — PTA thêm | Khối "Case" trong panel dùng đúng khung trường U02 (Nguyên nhân thẻ · Mô tả ≤ 3 dòng · Mở) | ĐỒNG BỘ | — |
+| 29 | `00` 9 hàng Công việc: hiện "chờ ai" khi việc chờ người khác — PTA thêm | Dòng / tóm tắt: thẻ `chờ QL duyệt` (vd Case Reading chờ duyệt "không theo dõi"), `chờ GV chấm S` | MỚI thẻ | — |
+| 30 | N30: mỗi dòng cho thấy chính lý do có mặt · N35: Nội dung PA ≤ 200 có bộ đếm — PTA thêm | Dòng phụ = lý do (vd `MT1 dưới kỳ vọng`, `2 bài quá hạn`); ô Nội dung PA `0 / 200`, quá → viền lỗi + "Còn dài hơn 200 ký tự — rút bớt", chữ giữ | MỚI | — |
+
+### U02 · Hồ sơ HV (nền: hồ sơ HV web V5–V8; giữ mọi thao tác)
+
+| # | Ý (trích ngắn · nguồn) | Làm gì trong mockup | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP |
+|---|---|---|---|---|
+| 1 | Đầu hồ sơ: tên, lớp / lộ trình, mục tiêu, mốc thi, người phụ trách; tách liên hệ khỏi học thuật; phụ mở khi cần, không xoá tra cứu (`00` 20-U02 #1) | Dòng 1 tên + `+ Case` `⋯`; dòng 2 **dải sự kiện** nhãn trên – giá trị dưới: Lớp · Lộ trình · Target · Tuần học · Thi thật · GVCN · TVV; dòng 3 liên hệ **thẻ nhỏ mờ** riêng (PH · email · ngày sinh) | ĐỔI cách trình bày — SP 03/11 "tách trường" | — |
+| 2 | Thẻ điểm ghi rõ **nguồn MT + thời điểm**; so **kỳ vọng nào** (`00` #2) — **PTA:** bỏ dòng phụ chênh lệch (đã có ở U07) | Mỗi ô: nhãn kỹ năng · số to ✓ / ✗ · **một** dòng phụ "MT2 · kỳ vọng 7.5". Ô đang chọn viền nhấn; tiêu đề khối dưới ghi đúng kỹ năng | ĐỔI chữ ô | — |
+| 3 | Vùng "Kết quả … PA …" gần thẻ điểm chưa cho thấy kỹ năng / Case nào (`00` U02 quan sát) | Thẻ việc đầu hồ sơ: tên **"Ghi kết quả PA · Writing Task 2"** + thẻ `Kỳ W5 OCT – W1 NOV` `PA Học Tutor` + hạn + nút | ĐỔI chữ + tách trường | — |
+| 4 | Case vùng đủ rộng; **danh sách tóm tắt theo kỹ năng** (vấn đề, trạng thái, người làm, hạn, bước tiếp); mở chi tiết Case đang chọn; giữ mở nhiều (`00` #3; **N33 ①**; 22.1 "Mọi Case mở đầy đủ") | Cột phải "Case & phương án": mỗi Case một **thẻ dòng** — dòng 1: thẻ kỹ năng · tên kỹ năng · SOS · hạn (phải); dòng 2 thẻ: `MT2 ✗ 6.0 / 7.5` · `PA Học Tutor · đang chạy` · `phụ trách {tên}`; nút "Ghi kết quả PA" chỉ khi là việc người xem. Case của người xem mở sẵn; bấm thẻ khác mở thêm; "1 Case đã đóng ▸" gập | ĐỔI — N33 ① | — |
+| 5 | "Tiến độ trên lớp" (`00` #4) vs SP 03/11 hai cột (N33 ② sửa) — **PTA:** Overall mỗi kỹ năng một dòng gọn, không thẻ GV | Cột trái (5/12) cao theo nội dung. Overall: 5 dòng — thẻ kỹ năng · thẻ tuần · nội dung 1–2 dòng (không tên GV); không có thì "Chưa có ghi nhận". Chọn kỹ năng: danh sách tiến độ kỹ năng đó + "+ Ghi tiến độ" | SP 03/11 thắng `00` #4 | — |
+| 6 | Trong Case: **vấn đề → PA đang thực hiện → việc / kết quả gần nhất**; đủ mô tả, lịch sử, bằng chứng nhưng mục chưa có không khung cao (`00` #5; 22.1 "Khung trống lớn") | Case mở: khung trường nhãn trái (Nguyên nhân · Mô tả · Mở) → **thẻ PA** (tên, thẻ `theo quy chế` `đến MT3` `người dạy`, nội dung ≤ 2 dòng, "Kết quả gần nhất" + nhãn kết quả màu) → 3 dòng gọn Kết luận / Lịch sử / Bằng chứng ("chưa có · + Thêm") → chân nút | ĐỔI | — |
+| 7 | Mô tả 2–3 dòng + "Xem đầy đủ" tại chỗ; không cắt dữ liệu lưu; không tự dịch (`00` #6; 21 "Mô tả dài"; **N35**) | Mô tả ≤ 3 dòng + "Xem đầy đủ" · "Dịch" giữ (N19); khung C có ô sửa mô tả với **bộ đếm 300** | ĐỔI | — |
+| 8 | Phân biệt **Ghi kết quả PA · Xem kết quả · Kết luận Case**; không nhiều nút "Kết quả" (`00` #7; 21 "Tên thao tác") | Nút: "Ghi kết quả PA" (thẻ PA / dòng) · "Kết quả gần nhất" là trường chỉ đọc · "Kết luận Case…" ở chân Case | ĐỔI chữ | — |
+| 9 | Một việc một chỗ (UA-11) | Nút "Ghi kết quả PA" ở thẻ dòng Case (vị trí cố định) + thanh việc đầu hồ sơ; thẻ PA trong Case mở **không lặp** nút | ĐỔI | — |
+| 10 | Khung Case không cuộn trang (`00` 1.4, F06) · hộp hành trình bị cắt (F07) | Case nằm thẳng trong trang; hộp hành trình nổi, lật khi gần mép, mở bằng bấm / Enter / rê (AUDIT-LOI #829 #830) | theo PR AUDIT-LOI | — |
+| 11 | Nghiệm thu: 4 Case → nhận ra Case cần mình làm trước không đọc hết (`00` U02) | Thẻ dòng xếp: việc của người xem → quá hạn → hạn gần → còn lại; Case của người xem có nút + mở sẵn | MỚI thứ tự | — |
+| 12 | Nghiệm thu: 1 Case, không Case, nhiều Case cũ, mô tả rất dài đều cân đối (`00` U02) | Khung: A1 4 Case (mô tả EN dài ở Speaking) · C 1 Case · C không Case ("+ Case cho {kỹ năng}") · C nhiều Case đã đóng ("3 Case đã đóng ▸") | MỚI khung | — |
+| 13 | Phân cấp 3 tầng, không toàn chữ nhỏ xám, không chuỗi chữ một kiểu (`00` 12; SP 03/11) | Như U01 #13: tiêu đề khối 17/700 · tên Case 15/600 · thẻ 12/600 · nhãn 12 mờ trên / trái giá trị 15 | ĐỔI | — |
+| 14 | Rỗng ≠ thiếu ≠ chưa tới (`00` 21) | Mock Test: "Chưa tới tuần" (MT3) khác "–" (không thi) khác "Vắng" | GIỮ / chỉnh chữ | — |
+| 15 | Vai: TVV / CX chỉ xem (`00` 12 theo vai) | Khung TVV: "Đang xử lý" (ai làm gì, hạn) giữ; không Case nào mở sẵn; không nút ghi | GIỮ | — |
+| 16 | 375 · sáng | Hai cột xếp dọc: **Case trước, Tiến độ sau** (PTA quyết: việc trước); thẻ Case 2 dòng; hộp hành trình = khay đáy | ĐỔI | ĐÃ QUYẾT (PTA) |
+| 17 | Kiểm kê thao tác TRƯỚC → SAU (V5 giữ hết) — PTA thêm | Bảng D: + Case · ⋯ · Sửa · Đổi người… · + Thêm PA · Ghi kết quả PA · Cập nhật trước hạn · Kết luận · Đính kèm tệp / Thêm liên kết · Dịch · + Ghi tiến độ (sửa / xoá) · Trước / Sau · tab Học thuật · Ý thức & Phối hợp (AUDIT-Y-THUC, chỉ giữ lối vào) · Lộ trình & lớp | GIỮ hết | — |
+| 18 | EN không cắt nút; dữ liệu dày như Ảnh 3 (4 Case, mô tả EN rất dài) — PTA thêm | Khung A4 Speaking mô tả EN dài (3 dòng + Xem đầy đủ + Dịch) · khung A5 EN nút "Record intervention result" xuống dòng không cắt | MỚI khung | — |
+
+### U03 · Hồ sơ lớp (nền: v8 N26; ý chủ SP 03/11 thắng `00` khi khác)
+
+| # | Ý (trích ngắn · nguồn) | Làm gì trong mockup | Giữ / bỏ / đổi · vì sao | Hỏi chủ SP |
+|---|---|---|---|---|
+| 1 | Bỏ hẳn bảng **"Cần hỗ trợ"** (SP 03/11) | Bỏ nút đoạn "Tổng hợp / Cần hỗ trợ"; tab Học viên chỉ một bảng | BỎ — SP 03/11 | — |
+| 2 | Bỏ cột **Case · PA** (SP 03/11) — **PTA quyết:** không thêm chấm góc ô | Không cột; ✗ ở ô điểm đã báo vấn đề; Case xem qua bấm kỹ năng (#7) | BỎ — SP thắng `00` #1 | ĐÃ QUYẾT (PTA) |
+| 3 | Bảng ổn định để so sánh; chỉ in đậm phần giúp quét (`00` #1, #2) | Hàng một dòng: tên 15/600 + TVV 11 · Target · MT · L R W S · Overall · Kết quả · Ngày thi · ⋯; chỉ tên và số đậm | GIỮ | — |
+| 4 | Ô W **không** ghi W1 / W2 (SP 03/11) vs `00` #4 (nhãn W1 / W2) | Ô W chỉ số W; W1 / W2 riêng chỉ ở vùng mở rộng (ô kỹ năng W1, W2) | ĐỔI — SP thắng `00` #4 | — |
+| 5 | MT nhập lịch sử hiện như MT (SP 03/11; UA-19) — **chủ SP trả lời 03/11:** Kết quả Đạt / Chưa đạt theo kỳ vọng của chính lượt + hiện trạng thái SOS, KHÔNG tạo Case / việc | Hàng Lê Minh Khang: `MT2`, điểm tô màu, Kết quả `SOS 2 · L, R` như em khác, không chữ thêm. Máy chủ: AUDIT-LOI (PR riêng) | ĐỔI | ĐÃ TRẢ LỜI |
+| 6 | Bấm một em → **mở rộng** rộng hơn: điểm **1–2 MT trước** (hoặc đầu vào) (SP 03/11) | Vùng dưới hàng, hai khối: trái **"Điểm theo lượt"** bảng nhỏ (MT gần nhất đậm + 2 lượt trước; thiếu thì "Đầu vào") cột L R W1 W2 S OVR Kỳ vọng + thẻ "Lượt tới MT3 · W2 NOV"; phải **5 ô kỹ năng** | MỚI — SP 03/11 | — |
+| 7 | Bấm **một kỹ năng** → tóm tắt ngắn: tiến độ điểm · Case · PA · kết quả hiện tại; "xem kỹ" → panel phải (SP 03/11) | Dưới 5 ô: tóm tắt 3 cột — Điểm (chuỗi lượt, kỳ vọng) · Case · PA · Kết quả hiện tại (nhãn màu). "Xem chi tiết" → panel phải (Case · PA · lịch sử kết quả · Ghi kết quả PA, bộ đếm 200); "Hồ sơ HV ›" | MỚI — SP 03/11 | **[XM]** chủ SP vừa nói ở Học viên & Lớp không muốn panel trượt phải / trái (chỉ mở xuống / hộp tại chỗ) — U03 có giữ panel phải cho "Xem chi tiết"? PTA hỏi lại |
+| 8 | Bấm ô điểm kỹ năng trên hàng = mở em với kỹ năng đó chọn sẵn | Ô điểm bấm được (viền nhấn khi chọn); hồ sơ lượt qua "MT2 ›" trong bảng Điểm theo lượt | ĐỔI | ĐÃ QUYẾT (PTA) |
+| 9 | Giới hạn mô tả Case / PA / kết quả PA (SP 03/11 → **N35**) | Panel phải: ô Ghi kết quả PA có bộ đếm `78 / 200`; mô tả hiện ≤ 3 dòng | MỚI — N35 | — |
+| 10 | Ba khái niệm lượt (`00` #3) — **PTA:** nhãn ngắn, bỏ câu giải thích | Đầu trang "Lượt mới nhất MT4 · W4 OCT" · cột "MT gần nhất" · lưới "Đang nhập MT4"; bỏ "Mỗi em: lượt gần nhất có điểm", "theo lượt gần nhất từng em" | ĐỔI chữ | — |
+| 11 | Giữ nhập điểm nhanh + bảng điểm; đặt ở vùng "Điểm Test" / mở khi làm việc liên quan (`00` #5; đã chốt 20/10 "lưới gập") | "Điểm Mock Test" gập cuối tab Học viên, Nhập điểm mở + cuộn tới (giữ) | GIỮ | — |
+| 12 | Dải "Việc của tôi" chỉ vài việc + xem tất cả; tên dài không làm mất nút / hạn (`00` #6) | 3 thẻ việc + "+n ở Công việc ›"; tên cắt bằng "…" nhưng hạn luôn thấy | GIỮ + chỉnh | — |
+| 13 | Cần kiểm "Đủ điểm" cạnh huỷ / vắng; "Chờ 0 kỹ năng" (`00` U03; **N33 ④**) | Lưới MT4: bỏ "Đủ điểm"; "Chưa xếp lịch"; thẻ lượt "n/8 có điểm đủ" | ĐỔI — N33 ④ | — |
+| 14 | Nghiệm thu: mở Case dài vẫn biết đang ở HV nào, trở lại so sánh nhanh; nhãn đủ / chờ / thiếu / huỷ tương thích (`00` U03) | Vùng mở rộng nằm ngay dưới hàng em (hàng tô nhấn); panel phải ghi tên em ở đầu; bảng bên trái vẫn thấy | theo #6–7 | — |
+| 15 | Mockup: một Case dài, nhiều Case, bảng điểm đúng mốc; so mở gọn vs panel (`00` 22.2 #2) | Khung A1 (mở gọn) + A2 (panel phải) + dữ liệu Speaking EN dài ở panel (≤ 3 dòng + Xem đầy đủ) | MỚI khung | — |
+| 16 | Phân cấp, tách trường (`00` 12; SP 03/11 cho U01 / U02 — áp cùng) | Đầu trang: phân công GV dạng dải sự kiện; số lớp dạng ô nhãn – giá trị | ĐỔI | — |
+| 17 | 375 · trạng thái (`00` 12) | Thẻ em (lưới 5 ô — XM-BE-1) · mở thẻ = điểm theo lượt + 5 ô kỹ năng + tóm tắt dọc · C: kỹ năng không Case, em chưa có lượt, lỗi tải | MỚI khung | — |
+| 18 | Kiểm kê thao tác TRƯỚC → SAU (V5 giữ hết) — PTA thêm | Bảng D: Nhập điểm · + Case · ⋯ lớp · ⋯ hàng (N26: + Case · + Ghi vi phạm · Xác nhận xử lý · Nhập điểm │ Sửa thông tin · Chuyển lớp) · Chọn nhiều / hàng loạt · Dán Excel · tab Ý thức & Phối hợp (AUDIT-Y-THUC, chỉ giữ lối vào) · Phân tích lớp | GIỮ hết | — |
+| 19 | EN — PTA thêm | Khung A4 EN tóm tắt kỹ năng, nút không cắt | MỚI khung | — |
+
+PTA duyệt bảng U02 / U03 có điều kiện (03/11 tối) — đã sửa / thêm dòng theo PTA. Luật chung chủ SP 03/11: chữ không đổi quyết định người dùng thì bỏ.
+
+### Vòng vẽ 2 theo bảng 6c (03/11 tối) — cổng critique
+Mỗi vòng một agent Opus độc lập, chấm từng dòng bảng 6c + Nielsen + ui-ux-pro-max. Mọi khung U01 / U02 dựng từ một nguồn dữ liệu (script trong tệp) để số liệu khớp giữa khung.
+
+| Màn | Vòng 1 | Vòng 2 | Vòng 3 | Còn lại |
+|---|---|---|---|---|
+| U01 Công việc | 29 (7 P1) | 33 (4 P1) | **35** (2 P1) → kiểm lại 34, 2 P1 đã sửa | 0 P0 · 0 P1 |
+| U02 Hồ sơ HV | 29 (3 P1) | 30 (3 P1) | **33** (1 P1 đã sửa) | 0 P0 · 0 P1 |
+| U03 Hồ sơ lớp | 29 (4 P1) | **31** (2 P1) → kiểm lại 33, 1 P1 đã sửa | — | 0 P0 · 0 P1 |
+
+U02 / U03 dừng dưới 35 theo luật "chạm 30 thì tối đa 2 vòng nữa, rồi chỉ cần không P0 / P1". Ảnh chụp: chạy `python -m http.server` thư mục `thiet-ke/` rồi mở `audit-0311/u0x-….html`.
+
 ## 7. Để PTA (ngoài phạm vi UX-A)
 - **Máy thử:** cookie phiên `pisa_session` gắn host `localhost`, mọi cổng dùng chung → các session audit chạy song song đăng nhập đè nhau (bị đá về màn Đăng nhập). Cách tránh: mở web bằng `http://<tên>.localhost:<cổng>` (vd `uxa.localhost:5191`). Nên ghi vào plan.md 1.4 "Kỹ thuật dễ vấp".
 - **Hồ sơ lượt** (mục 9 hàng "Hồ sơ lượt MT / lớp thường"): `01` gán UX-A ma trận nhưng không có trong 4 mockup; chưa rà — PTA phân lại hoặc để đợt sau.
