@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>U02 Hồ sơ HV · audit 03/11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="chung.css">
+<style>
+.o { box-sizing:border-box; }
+.man.dai { height:auto; min-height:880px; }
+.dt.dai { height:auto; min-height:780px; }
+.trang-hs { padding:16px 24px 28px; display:grid; gap:14px; }
+.dt .trang-hs { padding:12px 16px 24px; gap:12px; }
+/* đầu hồ sơ (giữ như web) */
+.hs-1 { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.hs-1 h1 { font-size:22px; font-weight:700; }
+.hs-1 .phai { margin-left:auto; display:flex; gap:8px; }
+.lui { display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim); }
+.nhan-gt { display:flex; flex-wrap:wrap; gap:6px 28px; }
+.nhan-gt div { display:grid; gap:1px; } .nhan-gt span { font-size:13px; color:var(--text-dim); } .nhan-gt b { font-size:15px; font-weight:700; }
+.dt .nhan-gt { gap:8px 18px; }
+.lien-he { font-size:13px; color:var(--text-dim); }
+/* ô điểm */
+.o-diem { display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:10px; }
+.dt .o-diem { grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+.od { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; display:grid; gap:2px; }
+.od.chon { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }
+.od .k { display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim); font-weight:600; }
+.od .s { font:700 28px/1.1 var(--phong-so); } .od .s.duoi { color:var(--bad); } .od .s.dat { color:var(--ok); } .od .s.bang { color:var(--doing); }
+.od .s small { font-size:16px; margin-right:2px; }
+.od .p { font-size:12px; color:var(--text-faint); }
+.dt .od .s { font-size:24px; }
+/* thanh việc */
+.thanh-viec { display:flex; flex-wrap:wrap; gap:10px; }
+.the-viec { flex:0 1 460px; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 12px; display:flex; gap:12px; align-items:center; }
+.the-viec .nd { flex:1; min-width:0; display:grid; gap:2px; font-size:14px; } .the-viec .nd b { font-size:15px; }
+.dt .the-viec { flex-basis:100%; }
+/* tab */
+.tab { display:flex; gap:22px; border-bottom:1px solid var(--line); font-size:15px; }
+.tab span { padding:8px 0; color:var(--text-dim); font-weight:500; } .tab span.dang { color:var(--text); font-weight:700; box-shadow:inset 0 -2px 0 var(--accent); }
+/* thẻ khối */
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.the-dau { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid var(--line); }
+.the-dau h2 { font-size:17px; font-weight:700; }
+.the-dau .phu { font-size:13px; color:var(--text-dim); }
+.the-dau .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+/* bảng MT */
+.bmt { width:100%; border-collapse:collapse; font-size:15px; }
+.bmt th { font:600 13px var(--phong); color:var(--text-dim); text-align:center; padding:8px 10px; border-bottom:1px solid var(--line); }
+.bmt th:first-child, .bmt td:first-child, .bmt th:nth-child(2), .bmt td:nth-child(2) { text-align:left; }
+.bmt td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:center; font-family:var(--phong-so); }
+.bmt tr.thi td { background:var(--surface-2); font-weight:700; }
+.dd { color:var(--bad); font-weight:700; } .dd::before { content:"✗ "; } .da { color:var(--ok); font-weight:700; } .da::before { content:"✓ "; }
+.kq { display:inline-flex; height:22px; align-items:center; padding:0 8px; border-radius:4px; border:1px solid var(--line-strong); font:600 12px var(--phong); white-space:nowrap; }
+/* dải tiến độ (UA-Q2) */
+.dai-td { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 16px; background:var(--surface); border:1px solid var(--line); border-radius:12px; font-size:14px; }
+.dai-td b { font-size:15px; } .dai-td .mo2 { flex:1; min-width:0; } .dai-td .nut { margin-left:auto; }
+.dai-td .ghi-nhan { flex-basis:100%; display:grid; gap:4px; font-size:14px; padding-left:2px; }
+/* danh sách Case tóm tắt (UA-Q1) */
+.ds-case { display:grid; }
+.hang-case { display:grid; grid-template-columns:34px minmax(0,1.6fr) minmax(0,1.3fr) 150px 120px 168px 28px; gap:14px; align-items:center; padding:10px 16px; border-top:1px solid var(--line); cursor:pointer; }
+.hang-case:first-child { border-top:0; }
+.hang-case:hover { background:var(--accent-soft); }
+.hang-case.mo { background:var(--surface-2); box-shadow:inset 3px 0 0 var(--accent); }
+.kn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:24px; border-radius:4px; border:1px solid var(--line-strong); font:700 12px var(--phong-so); color:var(--text); }
+.hang-case .ten { display:grid; gap:2px; min-width:0; } .hang-case .ten b { font-size:15px; font-weight:600; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.hang-case .ten > span { font-size:13px; color:var(--text-dim); }
+.hang-case .tth { font-size:14px; display:grid; gap:2px; justify-items:start; } .hang-case .tth .p { font-size:13px; color:var(--text-dim); }
+.hang-case .ai { font-size:14px; } .hang-case .ai.toi { color:var(--text); font-weight:700; }
+.hang-case .tiep { justify-self:stretch; }
+.hang-case .tiep .nut { width:100%; }
+.hang-case .cho { font-size:13px; color:var(--text-dim); }
+.hang-case .mui { color:var(--text-dim); font-size:13px; text-align:center; }
+.dt .hang-case { grid-template-columns:30px minmax(0,1fr) 18px; row-gap:6px; padding:10px 12px; }
+.dt .hang-case .tth, .dt .hang-case .ai, .dt .hang-case .han, .dt .hang-case .tiep { grid-column:2; }
+.dt .hang-case .dong-phu { grid-column:2; display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; font-size:13px; }
+.chi-tiet { padding:4px 16px 16px 62px; background:var(--surface-2); border-top:1px solid var(--line); display:grid; gap:16px; }
+.dt .chi-tiet { padding:4px 12px 14px; }
+.muc-ct { display:grid; gap:8px; }
+.muc-ct h3 { font:700 15px var(--phong); display:flex; gap:8px; align-items:center; padding-top:12px; }
+.muc-ct h3::before { content:""; width:3px; height:18px; background:var(--accent); border-radius:2px; }
+.muc-ct h3 .dem { font-size:12px; }
+.ct-dl { display:grid; grid-template-columns:7.5rem minmax(0,1fr); gap:6px 14px; font-size:15px; margin:0; align-items:baseline; }
+.ct-dl dt { font-size:13px; color:var(--text-dim); font-weight:500; } .ct-dl dd { margin:0; }
+.dt .ct-dl { grid-template-columns:minmax(0,1fr); gap:0; } .dt .ct-dl dd { margin-bottom:8px; }
+.mo-ta3 { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; line-height:1.5; max-width:86ch; }
+.the-pa { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 14px; align-items:center; }
+.the-pa b { font-size:15px; font-weight:600; }
+.the-pa .p { font-size:13px; color:var(--text-dim); grid-column:1; }
+.the-pa .nut { grid-row:1 / span 4; grid-column:2; }
+.dt .the-pa { grid-template-columns:minmax(0,1fr); } .dt .the-pa .nut { grid-row:auto; grid-column:1; }
+.dong-gon { display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:14px; color:var(--text-dim); padding-top:4px; }
+.dong-gon b { color:var(--text); font-weight:600; font-size:15px; min-width:6.5rem; }
+.chan-case { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:12px; }
+.gap-xong { display:flex; align-items:center; gap:8px; padding:10px 16px; border-top:1px solid var(--line-strong); font:600 14px var(--phong); color:var(--text-dim); }
+.dang-lam { display:inline-flex; align-items:center; gap:5px; height:22px; padding:0 9px; border-radius:999px; background:var(--muted-nen); font:600 12px var(--phong); color:var(--text-dim); }
+.dang-lam::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--doing); }
+.dang-lam.cho::before { background:var(--soon); }
+.xong-chip { color:var(--ok); font:600 13px var(--phong); }
+/* biểu đồ (UA-13 / F07) */
+.bd { position:relative; padding:12px 16px 14px; }
+.bd svg { width:100%; height:230px; display:block; }
+.hop-hanh-trinh { position:absolute; z-index:20; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 10px 28px rgb(0 0 0 / .45); padding:10px 12px; width:280px; display:grid; gap:4px; font-size:14px; }
+.hop-hanh-trinh b { font-size:15px; } .hop-hanh-trinh .p { font-size:13px; color:var(--text-dim); }
+.hop-hanh-trinh .hd { display:flex; gap:12px; padding-top:6px; border-top:1px solid var(--line); margin-top:4px; }
+.hop-hanh-trinh::after { content:""; position:absolute; left:40px; bottom:-7px; width:12px; height:12px; background:var(--surface); border-right:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong); transform:rotate(45deg); }
+.chu-giai { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--text-dim); padding:0 16px 12px; }
+.bang-tt { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
+.bang-tt th, .bang-tt td { border:1px solid #d9deea; padding:6px 10px; text-align:left; vertical-align:top; }
+.bang-tt th { background:#f2f4f9; font-weight:700; }
+.bang-tt td.gi { color:#38674c; font-weight:600; } .bang-tt td.doi { color:#7e5f36; font-weight:600; } .bang-tt td.bo { color:#a63a2d; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>U02 · Hồ sơ HV — Case tóm tắt trước (audit 03/11)</h1>
+    <p>Mockup chờ chủ SP. Em <b>Hà Trần Phúc</b> (CP FT 116, LT2, Target 8.0) — dữ liệu dày như Ảnh 3: 4 Case đang mở + 1 Case đã xong, mô tả Speaking tiếng Anh rất dài.
+      Người xem A1–A3: <b>Đỗ Vũ Tuấn Phong</b> (GV W2 của em). Hôm nay <b>thứ Hai 03/11/2026 · W1 NOV</b>. 1440 <b>tối</b>, 375 <b>sáng</b>. Chú thích vàng — không lên web.
+      Chủ SP đã chốt 03/11: UA-Q1 (Case tóm tắt trước), UA-Q2 (Tiến độ thành dải). Rà: <code>13-ra-ux-a.md</code> UA-09…UA-13, UA-23.</p>
+    <nav class="muc-mk"><a href="#a">A · 1440 tối</a><a href="#b">B · 375 sáng</a><a href="#c">C · trạng thái</a><a href="#d">D · thao tác trước → sau</a></nav>
+  </header>
+
+  <section class="khu" id="a">
+    <h2>A · 1440 tối</h2>
+    <p class="ghi"><span class="so-mk">1</span>đầu hồ sơ, ô điểm, thanh việc, tab, bảng Mock Test <b>giữ như web</b>; nút thanh việc gọi đúng tên "Ghi kết quả PA" (không "Kết quả" trần)
+      · <span class="so-mk">2</span>"Tiến độ trên lớp" thành <b>một dải</b> (UA-Q2)
+      · <span class="so-mk">3</span>khối Case dùng <b>hết bề ngang</b>, đầu khối là <b>bảng tóm tắt</b>: kỹ năng · Case · trạng thái / PA · người làm · hạn · việc tiếp (nút chỉ khi là việc của người xem) — bốn Case đọc trong ~4 dòng
+      · <span class="so-mk">4</span>Case có việc của người xem <b>mở sẵn</b> ngay dưới dòng; Case khác bấm dòng để mở, mở nhiều được (để đối chiếu)
+      · <span class="so-mk">5</span>trong Case: <b>Case → PA đang chạy → việc / kết quả gần nhất</b>; mô tả dài 3 dòng + "Xem đầy đủ" tại chỗ (không cắt dữ liệu lưu, không dịch tự động); Kết luận / Lịch sử / Bằng chứng chưa có = <b>một dòng</b>, mở khi bấm
+      · <span class="so-mk">6</span>Case xong / huỷ gập "1 Case đã xong ▾"
+      · <span class="so-mk">7</span>Case dùng <b>cuộn trang</b> (không khung cuộn riêng — F06 AUDIT-LOI)
+      · <span class="so-mk">8</span>hộp hành trình nổi trên mọi khung, lật lên khi gần đáy, không bị cắt (F07); mở bằng bấm / Enter / chạm, không chỉ rê.</p>
+    <div class="hang-khung">
+
+      <!-- ============ A1 · Overall · đầu trang + Case ============ -->
+      <figure><figcaption>A1 · Overall · GV W2 xem (cả trang, cuộn trang)</figcaption>
+      <div class="man toi dai">
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m">Công việc <span class="so-nav">32</span></span><span class="m">Phân tích</span><span class="phai"><span>Đỗ Vũ Tuấn Phong</span></span></div>
+        <div class="trang-hs">
+          <div class="lui"><span>‹ Học viên &amp; Lớp</span><span>‹ Trước · 1/7 · Lớp CP FT 116 · Sau ›</span></div>
+          <div class="hs-1"><h1>Hà Trần Phúc</h1><span class="phai"><span class="nut nut-nho">+ Case</span><span class="nut nut-nho">⋯</span></span></div>
+          <div class="nhan-gt"><div><span>Lớp</span><b>CP FT 116</b></div><div><span>Lộ trình</span><b>LT2</b></div><div><span>Target</span><b class="so">8.0</b></div><div><span>Khoá học</span><b>tuần học 28</b></div><div><span>Ngày thi</span><b>Dự kiến 02/2027</b></div><div><span>GVCN</span><b>Nguyễn Hoàng Dũng</b></div><div><span>TVV</span><b>Khoa Thị Thanh</b></div></div>
+          <div class="lien-he">Liên hệ · Chưa có liên hệ · hplive1892@gmail.com · Sinh 08/02/2010</div>
+          <div class="o-diem">
+            <div class="od chon"><span class="k">Overall <span class="so">MT2 · W4 SEP</span></span><span class="s duoi so"><small>✗</small>7.0</span><span class="p">MT1 7.0 · –</span></div>
+            <div class="od"><span class="k">L</span><span class="s duoi so"><small>✗</small>7.0</span><span class="p">MT1 7.0 · không đổi</span></div>
+            <div class="od"><span class="k">R</span><span class="s dat so"><small>✓</small>8.0</span><span class="p">MT1 7.5 · tăng 0.5</span></div>
+            <div class="od"><span class="k">W1</span><span class="s duoi so"><small>✗</small>6.5</span><span class="p">MT1 6.5 · không đổi</span></div>
+            <div class="od"><span class="k">W2</span><span class="s duoi so"><small>✗</small>6.0</span><span class="p">MT1 6.5 · giảm 0.5</span></div>
+            <div class="od"><span class="k">S</span><span class="s duoi so"><small>✗</small>6.5</span><span class="p">MT1 6.0 · tăng 0.5</span></div>
+          </div>
+          <div class="thanh-viec"><div class="the-viec"><span class="nd"><b>Ghi kết quả PA · Writing Task 2</b><span class="mo">W5 OCT – W1 NOV · PA Tập trung vào idea flow…</span><span class="td sap" style="justify-self:start">hạn 10/11</span></span><span class="nut nut-chinh nut-nho">Ghi kết quả PA</span></div></div>
+          <div class="tab"><span class="dang">Học thuật</span><span>Ý thức &amp; Phối hợp</span><span>Lộ trình &amp; lớp</span></div>
+          <div class="the">
+            <div class="the-dau"><h2>Mock Test</h2><span class="nut-i">ⓘ</span></div>
+            <table class="bmt"><tr><th>MT</th><th>Lớp lúc đánh giá</th><th>Tuần</th><th>L</th><th>R</th><th>W1</th><th>W2</th><th>S</th><th>OVR</th><th>Kỳ vọng</th><th>Kết quả</th></tr>
+              <tr><td><a href="#">MT1 ›</a></td><td>CP FT 116</td><td>W2 AUG</td><td><span class="da">7.0</span></td><td><span class="da">7.5</span></td><td><span class="dd">6.5</span></td><td><span class="dd">6.5</span></td><td><span class="dd">6.0</span></td><td><span class="da">7.0</span></td><td>7.0</td><td><span class="kq" style="color:var(--ok);border-color:var(--ok-vien)">✓ Đạt kỳ vọng</span></td></tr>
+              <tr><td><a href="#">MT2 ›</a></td><td>CP FT 116</td><td>W4 SEP</td><td><span class="dd">7.0</span></td><td><span class="da">8.0</span></td><td><span class="dd">6.5</span></td><td><span class="dd">6.0</span></td><td><span class="dd">6.5</span></td><td><span class="dd">7.0</span></td><td>7.5</td><td><span class="sos m3">SOS 3 · L, W, S</span></td></tr>
+              <tr><td><a href="#">MT3 ›</a></td><td>CP FT 116</td><td>W2 NOV</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>8.0</td><td><span class="mo2">Chưa tới tuần</span></td></tr>
+              <tr class="thi"><td>Thi thật</td><td>IELTS</td><td>dự kiến 02/2027</td><td colspan="5"></td><td>–</td><td>Target 8.0</td><td>chưa thi</td></tr></table>
+          </div>
+          <div class="dai-td"><b>Tiến độ trên lớp</b><span class="mo2">Chưa có ghi nhận.</span><span class="nut nut-nho">+ Ghi tiến độ</span><span class="tag-mk">2 dải thay cột</span></div>
+          <div class="the">
+            <div class="the-dau"><h2>Case &amp; phương án · Overall</h2><span class="phu">4 Case đang mở · 1 đã đóng</span><span class="phai"><span class="tag-mk">3 tóm tắt trước</span></span></div>
+            <div class="ds-case">
+              <div class="hang-case"><span class="kn">S</span><span class="ten"><b>Case Speaking · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.5 · kỳ vọng 7.5 · trôi chảy / mạch lạc</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor · đang chạy</span></span><span class="ai">Miguel Stichini</span><span class="han"><span class="td sap">hạn 10/11</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+              <div class="hang-case mo"><span class="kn">W2</span><span class="ten"><b>Case Writing Task 2 · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.0 · kỳ vọng 7.5 · đáp ứng yêu cầu đề</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor · chưa có người dạy</span></span><span class="ai toi">Bạn</span><span class="han"><span class="td sap">hạn 10/11</span></span><span class="tiep"><span class="nut nut-chinh nut-nho">Ghi kết quả PA</span></span><span class="mui">▾</span></div>
+              <div class="chi-tiet">
+                <div class="muc-ct"><h3>Case <span class="tag-mk">4 mở sẵn vì là việc của bạn</span></h3>
+                  <dl class="ct-dl"><dt>Điểm</dt><dd><a href="#">MT2 · W4 SEP</a> · W2 <span class="diem-duoi">6.0</span> · kỳ vọng 7.5</dd><dt>Nguyên nhân</dt><dd>1 Đáp ứng yêu cầu đề</dd><dt>Mô tả</dt><dd>Chưa ổn định trong việc bám sát đề, lập luận thiếu chiều sâu.</dd><dt>Mở</dt><dd>W2 OCT · phụ trách Đỗ Vũ Tuấn Phong <span class="nut-i" title="Hoàn thành được sau khi PA theo quy chế kết thúc (đến MT3 · W2 NOV)">ⓘ</span></dd></dl></div>
+                <div class="muc-ct"><h3>Phương án <span class="dem">1</span></h3>
+                  <div class="the-pa"><b>Học Tutor · theo quy chế</b><span class="p">Tập trung vào idea flow, giải thích ý và lập luận logic, gói gọn trong idea.</span><span class="p"><span class="dang-lam cho">Đang chạy</span> · chưa chọn người dạy <a href="#">Chọn</a> · đến MT3</span><span class="p">Kết quả gần nhất W5 OCT: Chưa đủ dữ liệu · ghi tiếp hạn 10/11</span></div></div>
+                <div class="dong-gon"><b>Kết luận</b><span>chưa có — ghi khi mọi PA đã khép</span></div>
+                <div class="dong-gon"><b>Lịch sử</b><a href="#">2 thay đổi ›</a></div>
+                <div class="dong-gon"><b>Bằng chứng</b><span>chưa có</span><button class="link-nho">+ Thêm</button><span class="tag-mk">5 khung trống = 1 dòng</span></div>
+                <div class="chan-case"><span class="nut nut-nho">Sửa</span><span class="nut nut-nho">Đổi người…</span><span class="nut nut-nho">+ Thêm PA</span><span class="nut nut-nho">Kết luận Case…</span></div>
+              </div>
+              <div class="hang-case"><span class="kn">W1</span><span class="ten"><b>Case Writing Task 1 · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.5 · kỳ vọng 7.5 · tổ chức bài / liên kết ý</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor · đang chạy</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"><span class="td qua">quá hạn 3 ngày</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+              <div class="hang-case"><span class="kn">L</span><span class="ten"><b>Case Listening · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 7.0 · kỳ vọng 7.5 · tâm lý, độ tập trung</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor · đang chạy</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"><span class="td qua">quá hạn 3 ngày</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+            </div>
+            <div class="gap-xong">▸ 1 Case đã đóng · Writing Task 1 · MT1 (Huỷ W3 AUG) <span class="tag-mk">6 gập</span></div>
+          </div>
+        </div>
+      </div></figure>
+
+      <!-- ============ A2 · mở thêm Case Speaking để đối chiếu, mô tả dài ============ -->
+      <figure><figcaption>A2 · bấm dòng Speaking → mở thêm (mô tả EN dài 3 dòng) · "Xem đầy đủ" mở tại chỗ</figcaption>
+      <div class="man toi dai">
+        <div class="trang-hs" style="padding-top:20px">
+          <div class="dai-td"><b>Tiến độ trên lớp</b><span class="mo2">2 ghi nhận · gần nhất W5 OCT</span><a href="#">Xem tất cả</a><span class="nut nut-nho">+ Ghi tiến độ</span><span class="tag-mk">biến thể: em đã có ghi nhận</span>
+            <div class="ghi-nhan"><span><b class="so" style="font-size:14px">W5 OCT</b> · W2 · "Viết được dàn ý 3 đoạn, thân bài còn thiếu ví dụ." — Đỗ Vũ Tuấn Phong</span><span><b class="so" style="font-size:14px">W3 OCT</b> · S · "Part 2 nói đủ 2 phút, còn ngập ngừng." — Miguel Stichini</span></div></div>
+          <div class="the">
+            <div class="the-dau"><h2>Case &amp; phương án · Overall</h2><span class="phu">4 Case đang mở · 1 đã đóng</span></div>
+            <div class="ds-case">
+              <div class="hang-case mo"><span class="kn">S</span><span class="ten"><b>Case Speaking · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.5 · kỳ vọng 7.5 · trôi chảy / mạch lạc</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor · đang chạy</span></span><span class="ai">Miguel Stichini</span><span class="han"><span class="td sap">hạn 10/11</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▾</span></div>
+              <div class="chi-tiet">
+                <div class="muc-ct"><h3>Case</h3>
+                  <dl class="ct-dl"><dt>Điểm</dt><dd>MT2 · S <span class="diem-duoi">6.5</span> · kỳ vọng 7.5</dd><dt>Nguyên nhân</dt><dd>1 Trôi chảy / mạch lạc · 2 Từ vựng · 3 Ngữ pháp · 4 Phát âm</dd>
+                    <dt>Mô tả</dt><dd><span class="mo-ta3">"Hà Trần Phúc's mock test result of 6.5, against a target of 7.5, reflects a significant gap between his current performance and the level of linguistic sophistication expected. Inconsistent attendance, insufficient concentration and a lack of sustained commitment have hindered his progress, limiting opportunities for systematic practice and the effective application of feedback. A particular concern is his lack of coherence, as responses are not always logically organised…"</span>
+                      <span style="display:flex;gap:14px;margin-top:4px"><button class="link-nho">Xem đầy đủ</button><button class="link-nho">Dịch</button><span class="ma-chu mo2" style="font-size:13px">theo nhận xét MT2</span></span></dd></dl></div>
+                <div class="muc-ct"><h3>Phương án <span class="dem">1</span></h3>
+                  <div class="the-pa"><b>Học Tutor · theo quy chế</b><span class="p">Coherence, linguistic precision, IELTS Speaking Part 2–3…</span><span class="p"><span class="dang-lam">Đang chạy</span> · Miguel Stichini · đến MT3</span><span class="p">Chưa có kết quả · ghi lần đầu hạn 10/11</span></div></div>
+                <div class="dong-gon"><b>Kết luận</b><span>chưa có</span></div>
+                <div class="dong-gon"><b>Lịch sử</b><a href="#">3 thay đổi ›</a></div>
+                <div class="dong-gon"><b>Bằng chứng</b><span>chưa có</span></div>
+                <p class="mo2" style="font-size:13px">Chỉ Miguel Stichini (phụ trách) hoặc Quản lý làm được việc ở Case này.</p>
+              </div>
+              <div class="hang-case mo"><span class="kn">W2</span><span class="ten"><b>Case Writing Task 2 · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.0 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor</span></span><span class="ai toi">Bạn</span><span class="han"><span class="td sap">hạn 10/11</span></span><span class="tiep"><span class="nut nut-chinh nut-nho">Ghi kết quả PA</span></span><span class="mui">▾</span></div>
+              <div class="chi-tiet"><div class="muc-ct"><h3>Case</h3><dl class="ct-dl"><dt>Điểm</dt><dd>MT2 · W2 <span class="diem-duoi">6.0</span> · kỳ vọng 7.5</dd><dt>Mô tả</dt><dd>Chưa ổn định trong việc bám sát đề, lập luận thiếu chiều sâu.</dd></dl></div><div class="dong-gon"><b>…</b><span>(như A1)</span></div></div>
+              <div class="hang-case"><span class="kn">W1</span><span class="ten"><b>Case Writing Task 1 · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.5 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"><span class="td qua">quá hạn 3 ngày</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+              <div class="hang-case"><span class="kn">L</span><span class="ten"><b>Case Listening · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 7.0 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"><span class="td qua">quá hạn 3 ngày</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+            </div>
+            <div class="gap-xong">▾ 1 Case đã đóng</div>
+            <div class="ds-case"><div class="hang-case" style="opacity:.75"><span class="kn">W1</span><span class="ten"><b>Case Writing Task 1 · MT1</b><span>✗ 6.5 · kỳ vọng 7.0</span></span><span class="tth"><span class="mo2" style="font-weight:600">– Huỷ W3 AUG</span><span class="p">Không cần theo dõi · QL duyệt</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"></span><span class="tiep"></span><span class="mui">▸</span></div></div>
+          </div>
+        </div>
+      </div></figure>
+
+      <!-- ============ A3 · chọn kỹ năng L · biểu đồ + hộp hành trình ============ -->
+      <figure><figcaption>A3 · chọn ô L · biểu đồ hành trình · bấm làn Case → hộp nổi, lật lên khi gần đáy (F07)</figcaption>
+      <div class="man toi">
+        <div class="trang-hs">
+          <div class="o-diem">
+            <div class="od"><span class="k">Overall</span><span class="s duoi so"><small>✗</small>7.0</span><span class="p">MT2 · W4 SEP</span></div>
+            <div class="od chon"><span class="k">L</span><span class="s duoi so"><small>✗</small>7.0</span><span class="p">MT1 7.0 · không đổi</span></div>
+            <div class="od"><span class="k">R</span><span class="s dat so"><small>✓</small>8.0</span><span class="p">MT1 7.5 · tăng 0.5</span></div>
+            <div class="od"><span class="k">W1</span><span class="s duoi so"><small>✗</small>6.5</span><span class="p">MT1 6.5</span></div>
+            <div class="od"><span class="k">W2</span><span class="s duoi so"><small>✗</small>6.0</span><span class="p">MT1 6.5 · giảm 0.5</span></div>
+            <div class="od"><span class="k">S</span><span class="s duoi so"><small>✗</small>6.5</span><span class="p">MT1 6.0 · tăng 0.5</span></div>
+          </div>
+          <div class="tab"><span class="dang">Học thuật</span><span>Ý thức &amp; Phối hợp</span><span>Lộ trình &amp; lớp</span></div>
+          <div class="the">
+            <div class="the-dau"><h2>Hành trình · Listening</h2><span class="phu">MT1 7.0 → MT2 7.0 · không đổi</span><span class="phai"><span class="doan"><button aria-pressed="true">Biểu đồ</button><button>Bảng</button></span></span></div>
+            <div class="bd">
+              <svg viewBox="0 0 1340 230" preserveAspectRatio="none">
+                <g stroke="var(--line)" stroke-width="1"><line x1="40" y1="20" x2="1330" y2="20"/><line x1="40" y1="70" x2="1330" y2="70"/><line x1="40" y1="120" x2="1330" y2="120"/></g>
+                <g fill="var(--text-faint)" font-size="12" font-family="Inter"><text x="4" y="24">7.5</text><text x="4" y="74">7.0</text><text x="4" y="124">6.5</text></g>
+                <line x1="40" y1="20" x2="1330" y2="20" stroke="var(--text-faint)" stroke-dasharray="6 5"/>
+                <polyline points="240,70 640,70" fill="none" stroke="var(--doing)" stroke-width="2"/>
+                <circle cx="240" cy="70" r="6" fill="var(--ok)"/><circle cx="640" cy="70" r="6" fill="var(--bad)"/>
+                <g fill="var(--text-dim)" font-size="12" font-family="Inter"><text x="225" y="150">W2 AUG</text><text x="232" y="166">MT1</text><text x="620" y="150">W4 SEP</text><text x="628" y="166">MT2</text><text x="1000" y="150">W1 NOV</text><text x="1012" y="166">nay</text><text x="1240" y="150">W2 NOV</text><text x="1248" y="166">MT3</text></g>
+                <rect x="754" y="186" width="266" height="22" rx="5" fill="var(--sos3-nen)"/>
+                <text x="764" y="202" fill="#fff" font-size="13" font-weight="600" font-family="Be Vietnam Pro">Case L · MT2 · SOS 3</text>
+                <rect x="811" y="212" width="209" height="16" rx="4" fill="var(--doing-nen)" stroke="var(--doing)"/>
+                <text x="818" y="224" fill="var(--doing)" font-size="11" font-family="Be Vietnam Pro">PA Học Tutor · đang chạy</text>
+              </svg>
+              <div class="hop-hanh-trinh" style="left:690px; top:42px"><b>Case Listening · MT2 · SOS 3</b><span>Listening không đạt · ✗ 7.0 / kỳ vọng 7.5</span><span class="p">mở W2 OCT · phụ trách Nguyễn Hoàng Dũng · 1 PA đang chạy</span><span class="hd"><a href="#">Mở Case ↓</a><a href="#">Hồ sơ MT2 ›</a></span></div>
+            </div>
+            <div class="chu-giai"><span>● vượt / bằng / dưới kỳ vọng</span><span>— — kỳ vọng MT2 7.5 (Target 8.0 ở trên trục)</span><span>▭ làn Case (đậm theo SOS)</span><span>▭ PA</span><span class="tag-mk">8 hộp nổi trên khung, mũi chỉ đúng làn</span></div>
+          </div>
+          <div class="dai-td"><b>Tiến độ trên lớp · Listening</b><span class="mo2">Chưa có ghi nhận.</span><span class="nut nut-nho">+ Ghi tiến độ</span></div>
+          <div class="the"><div class="the-dau"><h2>Case &amp; phương án · Listening</h2><span class="phu">1 Case đang mở</span></div>
+            <div class="ds-case"><div class="hang-case mo"><span class="kn">L</span><span class="ten"><b>Case Listening · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 7.0 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor · đang chạy</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"><span class="td qua">quá hạn 3 ngày</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▾</span></div>
+              <div class="chi-tiet"><div class="muc-ct"><h3>Case <span class="tag-mk">một Case → mở sẵn</span></h3><dl class="ct-dl"><dt>Điểm</dt><dd>MT2 · L <span class="diem-duoi">7.0</span> · kỳ vọng 7.5</dd><dt>Mô tả</dt><dd>"Tập trung chưa cao, tâm lý thấy bài khó là không làm được." — theo nhận xét MT2</dd></dl></div></div></div></div>
+        </div>
+      </div></figure>
+
+      <!-- ============ A4 · TVV ============ -->
+      <figure><figcaption>A4 · TVV Khoa Thị Thanh xem (không có việc với Case → không Case nào mở sẵn)</figcaption>
+      <div class="man toi" style="height:640px">
+        <div class="trang-hs">
+          <div class="hs-1"><h1>Hà Trần Phúc</h1><span class="phai"><span class="nut nut-nho">Sửa thông tin</span><span class="nut nut-nho">Kết quả thi thật</span><span class="nut nut-nho">Lịch sử</span></span></div>
+          <div class="the" style="padding:10px 16px;display:grid;gap:4px;font-size:14px"><b style="font-size:15px">Đang xử lý</b><span>Miguel Stichini · Ghi kết quả PA Speaking · hạn 10/11</span><span>Đỗ Vũ Tuấn Phong · Ghi kết quả PA Writing Task 2 · hạn 10/11</span><span>Nguyễn Hoàng Dũng · Ghi kết quả PA W1, L · <b style="color:var(--bad)">⚠ quá hạn 3 ngày</b></span></div>
+          <div class="dai-td"><b>Tiến độ trên lớp</b><span class="mo2">Chưa có ghi nhận.</span></div>
+          <div class="the"><div class="the-dau"><h2>Case &amp; phương án · Overall</h2><span class="phu">4 Case đang mở · 1 đã đóng</span></div>
+            <div class="ds-case">
+              <div class="hang-case"><span class="kn">S</span><span class="ten"><b>Case Speaking · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.5 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor</span></span><span class="ai">Miguel Stichini</span><span class="han"><span class="td sap">hạn 10/11</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+              <div class="hang-case"><span class="kn">W2</span><span class="ten"><b>Case Writing Task 2 · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.0 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor</span></span><span class="ai">Đỗ Vũ Tuấn Phong</span><span class="han"><span class="td sap">hạn 10/11</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+              <div class="hang-case"><span class="kn">W1</span><span class="ten"><b>Case Writing Task 1 · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 6.5 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"><span class="td qua">quá hạn 3 ngày</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+              <div class="hang-case"><span class="kn">L</span><span class="ten"><b>Case Listening · MT2 <span class="sos m3">SOS 3</span></b><span>✗ 7.0 · kỳ vọng 7.5</span></span><span class="tth"><span class="dang-lam">Đang làm</span><span class="p">PA Học Tutor</span></span><span class="ai">Nguyễn Hoàng Dũng</span><span class="han"><span class="td qua">quá hạn 3 ngày</span></span><span class="tiep cho">chờ ghi kết quả PA</span><span class="mui">▸</span></div>
+            </div><div class="gap-xong">▸ 1 Case đã đóng</div></div>
+        </div>
+      </div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="b">
+    <h2>B · 375 sáng</h2>
+    <p class="ghi">Ô điểm 3 × 2 (giữ XM-BE-1) · dòng Case thành thẻ 3 dòng (Case + SOS · trạng thái + người · hạn + nút) · mở Case ngay dưới thẻ, không panel · hộp hành trình trên 375 = <b>khay đáy</b> (chạm làn → khay, ✕ đóng), không popover chật.</p>
+    <div class="hang-khung">
+      <figure><figcaption>B1 · đầu hồ sơ</figcaption>
+      <div class="dt sang">
+        <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span>🔔</span></span></div>
+        <div class="trang-hs">
+          <div class="hs-1"><h1>Hà Trần Phúc</h1><span class="phai"><span class="nut nut-nho">+ Case</span><span class="nut nut-nho">⋯</span></span></div>
+          <div class="nhan-gt"><div><span>Lớp</span><b>CP FT 116</b></div><div><span>Lộ trình</span><b>LT2</b></div><div><span>Target</span><b>8.0</b></div><div><span>Ngày thi</span><b>Dự kiến 02/2027</b></div><div><span>GVCN</span><b>Nguyễn Hoàng Dũng</b></div></div>
+          <div class="o-diem">
+            <div class="od chon"><span class="k">Overall</span><span class="s duoi so"><small>✗</small>7.0</span><span class="p">MT2</span></div>
+            <div class="od"><span class="k">L</span><span class="s duoi so"><small>✗</small>7.0</span><span class="p">MT2</span></div>
+            <div class="od"><span class="k">R</span><span class="s dat so"><small>✓</small>8.0</span><span class="p">MT2</span></div>
+            <div class="od"><span class="k">W1</span><span class="s duoi so"><small>✗</small>6.5</span><span class="p">MT2</span></div>
+            <div class="od"><span class="k">W2</span><span class="s duoi so"><small>✗</small>6.0</span><span class="p">MT2</span></div>
+            <div class="od"><span class="k">S</span><span class="s duoi so"><small>✗</small>6.5</span><span class="p">MT2</span></div>
+          </div>
+          <div class="thanh-viec"><div class="the-viec"><span class="nd"><b>Ghi kết quả PA · W2</b><span class="td sap" style="justify-self:start">hạn 10/11</span></span><span class="nut nut-chinh nut-nho">Ghi kết quả PA</span></div></div>
+          <div class="tab"><span class="dang">Học thuật</span><span>Ý thức</span><span>Lộ trình</span></div>
+        </div>
+      </div></figure>
+      <figure><figcaption>B2 · danh sách Case · W2 mở sẵn</figcaption>
+      <div class="dt sang dai">
+        <div class="trang-hs">
+          <div class="dai-td"><b>Tiến độ trên lớp</b><span class="mo2">Chưa có.</span><span class="nut nut-nho">+ Ghi</span></div>
+          <div class="the"><div class="the-dau"><h2>Case · Overall</h2><span class="phu">4 mở · 1 đóng</span></div>
+            <div class="ds-case">
+              <div class="hang-case"><span class="kn">S</span><span class="ten"><b>Speaking · MT2 <span class="sos m3">SOS 3</span></b></span><span class="mui">▸</span><span class="dong-phu"><span class="dang-lam">Đang làm</span><span>Miguel Stichini</span><span class="td sap">hạn 10/11</span></span></div>
+              <div class="hang-case mo"><span class="kn">W2</span><span class="ten"><b>Writing Task 2 · MT2 <span class="sos m3">SOS 3</span></b></span><span class="mui">▾</span><span class="dong-phu"><span class="dang-lam">Đang làm</span><span style="font-weight:700">Bạn</span><span class="td sap">hạn 10/11</span><span class="nut nut-chinh nut-nho">Ghi kết quả PA</span></span></div>
+              <div class="chi-tiet"><div class="muc-ct"><h3>Case</h3><dl class="ct-dl"><dt>Điểm</dt><dd>W2 <span class="diem-duoi">6.0</span> · kỳ vọng 7.5</dd><dt>Mô tả</dt><dd><span class="mo-ta3">Chưa ổn định trong việc bám sát đề, lập luận thiếu chiều sâu.</span></dd></dl></div>
+                <div class="muc-ct"><h3>Phương án <span class="dem">1</span></h3><div class="the-pa"><b>Học Tutor</b><span class="p">Đang chạy · đến MT3 · hạn 10/11</span></div></div>
+                <div class="dong-gon"><b>Kết luận</b><span>chưa có</span></div><div class="dong-gon"><b>Bằng chứng</b><button class="link-nho">+ Thêm</button></div>
+                <div class="chan-case"><span class="nut nut-nho">+ Thêm PA</span><span class="nut nut-nho">⋯</span></div></div>
+              <div class="hang-case"><span class="kn">W1</span><span class="ten"><b>Writing Task 1 · MT2 <span class="sos m3">SOS 3</span></b></span><span class="mui">▸</span><span class="dong-phu"><span class="dang-lam">Đang làm</span><span>N. H. Dũng</span><span class="td qua">quá hạn</span></span></div>
+              <div class="hang-case"><span class="kn">L</span><span class="ten"><b>Listening · MT2 <span class="sos m3">SOS 3</span></b></span><span class="mui">▸</span><span class="dong-phu"><span class="dang-lam">Đang làm</span><span>N. H. Dũng</span><span class="td qua">quá hạn</span></span></div>
+            </div><div class="gap-xong">▸ 1 Case đã đóng</div></div>
+        </div>
+      </div></figure>
+      <figure><figcaption>B3 · hành trình L · khay đáy</figcaption>
+      <div class="dt sang">
+        <div class="trang-hs">
+          <div class="the"><div class="the-dau"><h2>Hành trình · L</h2></div>
+            <div class="bd"><svg viewBox="0 0 340 160"><line x1="20" y1="40" x2="330" y2="40" stroke="var(--text-faint)" stroke-dasharray="5 4"/><polyline points="60,80 200,80" fill="none" stroke="var(--doing)" stroke-width="2"/><circle cx="60" cy="80" r="5" fill="var(--ok)"/><circle cx="200" cy="80" r="5" fill="var(--bad)"/><rect x="205" y="120" width="130" height="18" rx="4" fill="var(--sos3-nen)"/><text x="212" y="133" fill="#fff" font-size="11" font-family="Be Vietnam Pro">Case L · SOS 3</text></svg></div></div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line-strong);border-radius:14px 14px 0 0;box-shadow:0 -8px 24px rgb(0 0 0 / .18);padding:14px 16px 18px;display:grid;gap:6px;font-size:14px">
+          <div style="display:flex;align-items:center"><b style="font-size:15px">Case Listening · MT2 · SOS 3</b><button class="x">✕</button></div>
+          <span>Listening không đạt · ✗ 7.0 / kỳ vọng 7.5</span><span class="mo">mở W2 OCT · Nguyễn Hoàng Dũng · 1 PA đang chạy</span>
+          <div style="display:flex;gap:8px;margin-top:6px"><span class="nut" style="flex:1">Mở Case ↓</span><span class="nut" style="flex:1">Hồ sơ MT2 ›</span></div></div>
+      </div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="c">
+    <h2>C · Trạng thái (1440 tối, khối Case)</h2>
+    <p class="ghi">Không Case: một dòng + "+ Case cho {kỹ năng}" (giữ) · đang tải: khung dòng tóm tắt · lỗi tải: chỉ trong khối, nút Thử lại, phần trên giữ · liên kết sâu <code>?case=</code>: Case đó mở + cuộn tới, dòng nhấn 2 s.</p>
+    <div class="hang-khung">
+      <figure><figcaption>C1 · không Case</figcaption><div class="man toi" style="width:680px;height:150px"><div class="trang-hs"><div class="the"><div class="the-dau"><h2>Case &amp; phương án · Reading</h2></div><p style="padding:14px 16px;display:flex;gap:12px;align-items:center" class="mo">Không có Case Reading. <span class="nut nut-nho">+ Case cho Reading</span></p></div></div></div></figure>
+      <figure><figcaption>C2 · đang tải</figcaption><div class="man toi" style="width:680px;height:220px"><div class="trang-hs"><div class="the"><div class="the-dau"><h2>Case &amp; phương án · Overall</h2></div><div style="padding:14px 16px;display:grid;gap:14px"><div class="skel" style="width:90%"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:85%"></div></div></div></div></div></figure>
+      <figure><figcaption>C3 · lỗi tải</figcaption><div class="man toi" style="width:680px;height:200px"><div class="trang-hs"><div class="the"><div class="the-dau"><h2>Case &amp; phương án · Overall</h2></div><div style="padding:14px 16px"><div class="bao-loi"><span>⚠</span><span><b>Chưa tải được Case.</b> Kiểm tra mạng rồi thử lại.</span><span class="nut nut-nho" style="margin-left:auto">Thử lại</span></div></div></div></div></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="d">
+    <h2>D · Thao tác trước → sau</h2>
+    <table class="bang-tt">
+      <tr><th>Thao tác / thành phần</th><th>Trước (main 4e1c0ed83, Ảnh 3)</th><th>Sau</th><th>Giữ / đổi / bỏ</th><th>Vì sao</th></tr>
+      <tr><td>Đầu hồ sơ, + Case, ⋯, Trước / Sau, ô điểm, thanh việc, tab, Mock Test</td><td>như web</td><td>như web; nút thanh việc "Ghi kết quả PA"</td><td class="gi">GIỮ (đổi chữ một nút)</td><td>đã duyệt V5–V8; "Kết quả" trần trùng nghĩa (mục 21)</td></tr>
+      <tr><td>Tiến độ trên lớp</td><td>cột trái 5/12 bề ngang</td><td>dải trên khối Case; 2 ghi nhận gần nhất + Xem tất cả; ghi / sửa / xoá giữ</td><td class="doi">CHUYỂN chỗ — chốt UA-Q2</td><td>UA-10</td></tr>
+      <tr><td>Case &amp; phương án</td><td>mọi Case mở đủ, kể cả Case huỷ / xong</td><td>bảng tóm tắt; Case của người xem mở sẵn; mở nhiều được; xong / huỷ gập</td><td class="doi">GIẢM MỞ SẴN — chốt UA-Q1</td><td>UA-09; F09 bớt request</td></tr>
+      <tr><td>Mô tả Case dài</td><td>hiện đủ đoạn</td><td>3 dòng + Xem đầy đủ + Dịch (giữ N19)</td><td class="doi">ĐỔI cách hiện</td><td>U02 #6; không cắt dữ liệu</td></tr>
+      <tr><td>Kết luận / Lịch sử / Bằng chứng trống</td><td>mỗi phần một khung (bằng chứng có khung kéo thả + câu hướng dẫn)</td><td>một dòng; bấm "+ Thêm" mới ra khung kéo thả / dán</td><td class="doi">GIẢM MỞ SẴN</td><td>U02 #5, 22.1 dòng 6</td></tr>
+      <tr><td>Xác nhận PA trong Case</td><td>nút ở thẻ PA (Case này) hoặc chân Case (Case kia)</td><td>luôn ở cột "việc tiếp" của dòng + thẻ PA của Case mở</td><td class="doi">ĐỔI vị trí cố định</td><td>UA-11</td></tr>
+      <tr><td>Sửa · Đổi người… · + Thêm PA · Kết luận Case · ⋯ PA · Nhật ký PA · Xem Case MT</td><td>có</td><td>có (chân Case mở)</td><td class="gi">GIỮ</td><td>—</td></tr>
+      <tr><td>Hộp hành trình</td><td>trong khung <code>overflow-hidden</code>, bị cắt</td><td>hộp nổi lật / dịch, có Mở Case ↓ · Hồ sơ MT ›; 375 khay đáy</td><td class="doi">ĐỔI (F07, AUDIT-LOI sửa)</td><td>Ảnh 2</td></tr>
+      <tr><td>Cuộn</td><td>trỏ chuột trong Case không cuộn trang</td><td>Case nằm thẳng trong trang, cuộn trang</td><td class="doi">ĐỔI (F06, AUDIT-LOI sửa)</td><td>UA-12</td></tr>
+    </table>
+    <p class="ghi" style="margin-top:10px">Turso: dòng tóm tắt lấy từ dữ liệu bảng kỹ năng đã nạp (`skillRows` có Case · PA · người · hạn); chi tiết <code>/cases/:id</code> chỉ gọi cho Case đang mở → hồ sơ 4 Case từ 4 lần đọc chi tiết xuống 1 (Case của người xem). Cần AUDIT-LOI xác nhận trường đủ cho dòng tóm tắt (nếu thiếu "việc tiếp" thì thêm vào DTO tóm tắt, không thêm request).</p>
+  </section>
+</div>
+</body>
+</html>
