@@ -23,3 +23,4 @@ Công việc 375 (dòng việc như mọi việc, chỉ đổi chữ) · đang t
 
 ## Vòng critique
 - Vòng 1 (03/11): 31/40, không P0. Đã sửa 5 P1 (nhãn ô theo em + task · số đếm một nguồn · câu báo Đóng nói rõ mất chữ · "Còn … ↑" là nút · Điền thay là nút 44 px ở 375) + P2 (hạn thống nhất 19/09, thẻ Cùng GV / câu cũ ở 375, listbox 375, đánh số khu, ✓/✗ ở cột Kết quả, toast sát chân).
+- Vòng 2 (03/11): **35/40**, không P0 / P1. Đã sửa thêm P2: nút "Còn …" cao 44 px ở 375, ô lỗi có aria-invalid + aria-describedby, nhãn "Điền thay W2 · em", toast nằm trong panel, thống nhất gọi "khu".
