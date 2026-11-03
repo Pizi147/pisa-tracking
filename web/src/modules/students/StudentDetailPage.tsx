@@ -193,8 +193,8 @@ export default function StudentDetailPage() {
   const rowsFt = (skillRows ?? []).filter((r) => !r.tuLopTruoc);
   const macDinh = data.dauHoSo?.o?.hocThuat?.dong?.[0]?.category as string | undefined;
   /* UI-CHART-D: `?dot=` (mở đúng lượt) → Overall, vì bảng Mock Test nay nằm ở chỗ chart khi chọn Overall. */
-  const chon: ChonKn = chonTay ?? (cy?.ratio && rowsFt[0] ? (macDinh && rowsFt.some((r) => r.category === macDinh) ? macDinh : rowsFt[0].category)
-    : p.dot != null ? OVERALL : macDinh && rowsFt.some((r) => r.category === macDinh) ? macDinh : OVERALL);
+  /* U02 (mockup A1, PTA 03/11): FT mặc định Overall; lớp thường (không có Overall) giữ môn có Case gấp nhất. */
+  const chon: ChonKn = chonTay ?? (cy?.ratio && rowsFt[0] ? (macDinh && rowsFt.some((r) => r.category === macDinh) ? macDinh : rowsFt[0].category) : OVERALL);
   const hangChon = chon === OVERALL ? null : (skillRows ?? []).find((r) => r.category === chon && !r.tuLopTruoc) ?? null;
   const tenChon = chon === OVERALL ? 'Overall' : hangChon ? dich(hangChon.label) : chon;
   const chonKn = (k: ChonKn) => { setChonTay(k); if (tab !== 'hoc-thuat') setTab('hoc-thuat'); };

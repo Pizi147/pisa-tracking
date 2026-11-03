@@ -2,8 +2,8 @@
 
 Mockup: `thiet-ke/audit-0311/u02-ho-so-hv.html` (bảng ý `13-ra-ux-a.md` 6c, UA-Q1, UA-Q2, UA-Q4, N33 ① ②). Ảnh cặp mockup | web (`scripts/anh-cap.mjs`, DB demo cục bộ,
 ngày demo 14/09, phông Be Vietnam Pro đã kiểm `document.fonts.check` = true):
-- `a1-gv-overall-1440-toi.png` — GVBM Speaking (vai 9) · em Lê Quang Huy (id 3) · bấm Overall · Case của mình mở sẵn
-- `a2-gv-ky-nang-1440-toi.png` — cùng em, mặc định ô kỹ năng có Case gấp nhất (L) · Hành trình + Tiến độ + Case của L
+- `a1-gv-overall-1440-toi.png` — GVBM Speaking (vai 9) · em Lê Quang Huy (id 3) · mặc định Overall · Case của mình mở sẵn
+- `a2-gv-ky-nang-1440-toi.png` — cùng em, bấm ô L · Hành trình + Tiến độ + Case của L
 - `a3-vai-xem-1440-toi.png` — CX (vai 24) · vai xem: nút rời, khối Đang xử lý, không Case nào mở sẵn
 - `b-gv-375-sang.png` — 375: Case trước, Tiến độ sau · bảng Mock Test một dòng mỗi lượt
 - `c-gvcn-nhieu-case-1440-toi.png` — GVCN (vai 7) · Trịnh Bảo Ngọc (id 70) · 4 Case, 2 Case của mình mở sẵn, nút việc ở dòng
@@ -18,8 +18,8 @@ ngày demo 14/09, phông Be Vietnam Pro đã kiểm `document.fonts.check` = tru
 | 3, 8 | Thẻ việc "Ghi kết quả PA · {kỹ năng}" + thẻ Kỳ / PA + hạn + nút "Ghi kết quả PA" | `viecHocVien.ts` + `OViec` | KHỚP | (dữ liệu demo 14/09 chưa tới kỳ ghi — ô việc khác cùng khuôn ở a1, c) |
 | 4, 11 | Case: mỗi Case một dòng tóm tắt (thẻ kỹ năng · tên · SOS · hạn | MT ✗ điểm / kỳ vọng · PA · phụ trách); xếp của mình → quá hạn → còn lại | `CotCaseHv` | KHỚP | a1, c |
 | 4 | Case của người xem mở sẵn; bấm dòng mở / gập, mở nhiều được; "n Case đã đóng" gập | `CotCaseHv` | KHỚP | a1, c |
-| 5 | Tiến độ: Overall chỉ đọc, mỗi kỹ năng một dòng gần nhất / "Chưa có ghi nhận"; chọn kỹ năng → danh sách + "+ Ghi tiến độ" | `TienDoTrenLop` | KHỚP (W gộp — xem [XM] 2) | a1, a2 |
-| 6 | Case mở = một khung trường nhãn trái (Mở · Nguyên nhân · Mô tả · Phương án · Kết luận · Lịch sử · Bằng chứng) + chân nút | `DauMuc` khi `ThanTrongCot`, `NganCase` trong cột | KHỚP (thứ tự "Mở" — [XM] 4) | a1, c |
+| 5 | Tiến độ: Overall chỉ đọc, mỗi kỹ năng một dòng gần nhất / "Chưa có ghi nhận"; chọn kỹ năng → danh sách + "+ Ghi tiến độ" | `TienDoTrenLop` | KHỚP (W gộp — KHÁC 2) | a1, a2 |
+| 6 | Case mở = một khung trường nhãn trái (Mở · Nguyên nhân · Mô tả · Phương án · Kết luận · Lịch sử · Bằng chứng) + chân nút | `DauMuc` khi `ThanTrongCot`, `NganCase` trong cột | KHỚP | a1, c |
 | 7 | Mô tả dài ≤ 3 dòng + "Xem đầy đủ", không cắt dữ liệu; Dịch giữ | `MoTaGon` (`CasePanel`) | KHỚP | — (demo không có mô tả > 180 chữ) |
 | 9 | Một việc một chỗ: nút việc ở dòng tóm tắt; Case mở không lặp (chân giữ Hoàn thành Case) | `anViecChinh`, `anNutMoTa` | KHỚP | c |
 | 13 | Tiêu đề khối 17 / 700 (Mock Test · Hành trình · Tiến độ · Case) | | KHỚP | a1 |
@@ -32,12 +32,12 @@ ngày demo 14/09, phông Be Vietnam Pro đã kiểm `document.fonts.check` = tru
 
 KHỚP 15 / 16 dòng có trong PR (bỏ dòng 10 chuyển U07) = 94 %.
 
-## [XM] — hỏi PTA Plan
-1. Mockup chân Case ghi **"Kết luận Case…"**; web giữ **"Hoàn thành Case"** (tên đang dùng ở panel, Công việc, Rulebook — một khái niệm một tên). Đổi cả hệ thống thì làm PR chữ riêng.
-2. Tiến độ Overall: mockup vẽ W1 / W2 hai dòng; bài trên lớp ghi chung "writing" (SV-BAI-LOP-2) → web một dòng **W**.
-3. Ô điểm mặc định: web giữ luật cũ (kỹ năng có Case gấp nhất, không có thì Overall); mockup A1 vẽ Overall đang chọn.
-4. Trường "Mở" đứng đầu khung Case (dải đầu Ngăn Case), mockup đặt sau Mô tả — giữ để không tách dải đầu dùng chung.
-5. Thẻ việc: chỉ việc "Ghi kết quả PA" đổi tên + thẻ phụ (dòng 3); các việc khác giữ chữ máy chủ cũ.
+## KHÁC (PTA Plan trả lời [XM] 03/11)
+1. Chân Case **"Hoàn thành Case"** (mockup "Kết luận Case…") — KHÁC có lý do: một khái niệm một tên (panel, Công việc, Rulebook đều "Hoàn thành Case").
+2. Tiến độ Overall **một dòng W** (mockup W1 / W2) — KHÁC có lý do: bài trên lớp chỉ ghi chung "writing" (SV-BAI-LOP-2), không tách được. Ô điểm MT vẫn W1 / W2.
+3. ~~Ô mặc định~~ → đã sửa theo mockup: FT mặc định **Overall** (lớp thường không có Overall: giữ môn có Case gấp nhất). Ảnh a1 chụp lại không cần bấm.
+4. ~~Trường "Mở"~~ → đã sửa theo mockup: "Mở" là trường sau Mô tả trong khung Case.
+5. Chỉ việc "Ghi kết quả PA" đổi chữ + thẻ phụ; việc khác giữ chữ cũ (PTA đồng ý).
 
 ## Thao tác TRƯỚC → SAU
 

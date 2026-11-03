@@ -411,7 +411,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
       }}>
       <div ref={boxRef}>
         {/* PR-PA (§8, mockup pa-dong-bo §9): dải đầu panel — trạng thái MỘT lần (chip) · "mở W2 OCT · X báo" · Sửa / Mở lại cùng hàng. */}
-        <div className={trongCot ? 'flex flex-col gap-1.5 border-b pb-2.5 pt-3' : '-mx-4 flex flex-col gap-1.5 border-b px-4 pb-3 pt-2.5'} style={trongCot ? { borderColor: 'var(--line)' } : { borderColor: 'var(--line)', background: 'rgb(var(--phu-rgb) / 0.035)' }}>
+        <div className={trongCot ? 'flex flex-col gap-1.5 empty:hidden' : '-mx-4 flex flex-col gap-1.5 border-b px-4 pb-3 pt-2.5'} style={trongCot ? { borderColor: 'var(--line)' } : { borderColor: 'var(--line)', background: 'rgb(var(--phu-rgb) / 0.035)' }}>
           <div className="flex flex-wrap items-center gap-2">
             {trongCot ? null : data.systemCloseLabel
               ? <Nhan tone="muted" title={dich(data.systemCloseLabel)}>{t('Hệ thống đóng · {ly}', { ly: dich(data.systemCloseLabel) })}</Nhan>
@@ -420,14 +420,13 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
                   ? <><NhanTamDung tu={data.tamDungTu} /><span className="text-[13px] text-slate-300">{dich(data.trangThaiV4.chu)}</span></>
                   : <NhanTrangThai t={data.trangThaiV4.t} chu={dich(data.trangThaiV4.chu)} />)
                 : <Nhan tone={data.status === 'done' ? 'done' : data.status === 'open' ? 'muted' : 'doing'}>{caseStatusLabel(data.status)}</Nhan>}
-            {/* U02 (mockup trường "Mở"): trong cột là một hàng khung trường nhãn trái — tuần mở · người báo · phụ trách. */}
-            {trongCot && <span className="w-[7.5rem] shrink-0 text-[13px] font-medium text-slate-400 max-sm:w-full">{t('Mở')}</span>}
-            <span className={trongCot ? 'min-w-0 flex-1 text-[15px] text-slate-100' : 'min-w-0 text-[13px] text-slate-400 max-sm:order-last max-sm:basis-full'}>
-              {trongCot ? tuanLich(data.detectedAt, homNay) : t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
+            {/* U02: trong cột, "Mở" là một trường của khung Case (sau Mô tả — `ThanCase`), không ở dải đầu. */}
+            {!trongCot && <span className="min-w-0 text-[13px] text-slate-400 max-sm:order-last max-sm:basis-full">
+              {t('mở {tuan}', { tuan: tuanLich(data.detectedAt, homNay) })}{data.reportedBy ? ` · ${t('{ten} báo', { ten: data.reportedBy })}` : ''}
               {/* Hạn báo kết quả cả Case chỉ khi KHÔNG có PA chạy — có PA chạy thì hạn của PA đã nói (B-5, Q2). */}
               {!data.tamDungTu && canDong && !conPaChay && data.followUntil && !data.sos?.tam ? ` · ${t('hạn báo kết quả {ngay}', { ngay: ngan(data.followUntil) })}` : ''}
               {` · ${data.owner ? t('phụ trách: {ten}', { ten: data.owner }) : t('Chưa có người phụ trách')}`}
-            </span>
+            </span>}
             {!trongCot && <span className="flex-1" />}
             {/* R1-NO-CU (D17): QL / GVCN lớp em đổi người phụ trách tại chỗ — hộp một ô ngay dưới dải. U02: trong cột hai nút này ở chân Case. */}
             {!trongCot && nutDoiNguoi}

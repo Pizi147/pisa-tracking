@@ -254,6 +254,12 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
             {data.note && <span className="mt-1 block text-[13px] text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></span>}
             </MoTaGon>
           </dd>
+          {khung && <>
+            <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Mở')}</dt>
+            <dd className="m-0 text-[15px] text-slate-100 max-sm:mb-2">
+              {[tuanLich(data.detectedAt, homNay), data.reportedBy ? t('{ten} báo', { ten: data.reportedBy }) : null, data.owner ? t('phụ trách: {ten}', { ten: data.owner }) : t('Chưa có người phụ trách')].filter(Boolean).join(' · ')}
+            </dd>
+          </>}
           {context.length > 0 && <>
             <dt className="text-[13px] font-medium text-slate-400 sm:pt-0.5">{t('Bối cảnh')}</dt>
             <dd className="m-0 flex flex-wrap items-center gap-1.5">
