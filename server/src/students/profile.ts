@@ -17,7 +17,6 @@ import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByC
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
 import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
-import { luotSinhViecRow } from '../worklist/danhGia.ts';
 import { lichMtCua, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
 /** P7 (N11): `lopHocCua` (tệp của P9, không sửa ở đây) coi Lưu trữ = đã kết thúc; em Tạm dừng nay cũng ở Lưu trữ → Quay lại học + Kết thúc học theo quyền đổi trạng thái (máy chủ vẫn kiểm). */
@@ -619,7 +618,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     }
   }
 
-  const homNayHs = demoToday();
   /* UI-HO-SO-HV (LUAT-NX-MT 7.4): tuần cũ của kỹ năng đã dời do vắng — ô điểm / hành trình ghi "vắng W3 SEP" (`chuDoiVang`). Một câu cho mọi lượt. */
   const vangCu = new Map<number, Record<string, string>>();
   for (const [k, v] of tuanVangCu([...lichCua].filter(([, r]) => r.some((x) => x.absence_move_count > 0)).map(([id]) => id))) {   // chỉ lượt có kỹ năng từng dời — không thêm câu cho em không vắng
@@ -631,8 +629,6 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
       id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su, planSource: a.plan_source ?? null,
-      /* M-14: false = MT lịch sử ngoài 4 tuần — không làm "Kết quả Test gần nhất" (ketQuaTestGanNhat). */
-      sinhViec: luotSinhViecRow(a, homNayHs),
       classCode: a.class_code, periodCode: a.period_code, weekStart: a.week_start ?? null,
       mode: t.mode,
       caseId: c?.id ?? null, caseStatus: c?.status ?? null,

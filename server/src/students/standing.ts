@@ -7,7 +7,7 @@ import {
 import { entryBandsOf, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, maCtCuaLuot, nguongDatLop } from '../normal/regular.ts';
-import { luotSinhViecRow, type SkillEval } from '../worklist/danhGia.ts';
+import { type SkillEval } from '../worklist/danhGia.ts';
 
 /**
  * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI CỦA MỘT HỌC VIÊN — MỘT định nghĩa cho cả hệ thống.
@@ -281,9 +281,10 @@ export function standingFor(studentIds: number[], lopKetThuc?: number): Map<numb
      * được điều gì đó, chỉ là nói kèm chữ TẠM THỜI. Bỏ qua nó để lấy lượt cũ đầy đủ hơn là
      * giấu mất tin mới nhất — và đó chính là tin người đọc đang cần.
      *
-     * M-14: MT lịch sử có tuần thi NGOÀI 4 tuần trước ngày tạo không phải "hiện trạng" (cùng luật `latestAttempts`, danhGia.ts).
+     * UA-19 (chủ SP 03/11, thay M-14): MT lịch sử — kể cả tuần thi ngoài 4 tuần — VẪN là kết quả hiện tại (Đạt / Chưa đạt + SOS, vào số "Đang SOS");
+     * nó chỉ không SINH Case / việc / chuông — cổng đó ở `sos.ts` (`luotSinhViec`), lúc lưu điểm.
      */
-    const ung = list.filter((a) => a._co_diem && luotSinhViecRow(a, homNay)).reverse();
+    const ung = list.filter((a) => a._co_diem).reverse();
     if (ung.length) cho.push({ s, cycle, ratio, ung, k: 0 });
     else if (s.required === 0) s.required = ratio ? boMonCua(cycle.programme_code).length : ASSESSED_SKILLS.length;
   }
