@@ -1,6 +1,7 @@
 /**
  * PHÉP KIỂM OV-14a (audit 17/10) — lưu chắc chắn, không mất chữ:
  *  F01 · ô Góp ý: gõ thêm khi đang lưu → chữ mới không bị ghi đè, lưu tiếp; chỉ "Đã lưu" khi chữ đang có = chữ máy chủ nhận
+ *  F01 audit 03/11 · phiếu bàn giao (`taoHangLuu`): Xác nhận / Đóng chờ mọi lần lưu xếp lượt; ô gỡ rồi lưu lỗi vẫn giữ chữ, chặn xác nhận bằng bản cũ
  *  F03 · lưu Góp ý xong → quên bản vừa xem mọi đường `/classes/{id}/gop-y` (có / không `?tuan=`)
  *  F04 · phản hồi xem trước cũ về sau không đè bản mới
  *  F05 · Sửa cả lớp: dòng đổi email cho nhau vào CÙNG lô; nhóm > lô thì xem trước báo
@@ -60,6 +61,45 @@ export async function runPrOv14aTests(t: YThucTestKit) {
     h.tra('');
     await p2;
     assert(tt[tt.length - 1] === 'loi' && o.chuaLuu() && o.nhap() === 'AB', `lỗi mạng: ${tt} · ${o.nhap()}`);
+  });
+
+  await checkAsync('Audit 03/11 F01 · phiếu bàn giao: A đang lưu, gõ AB, rời ô → xong() chờ tới khi AB lưu (không dừng ở A); "Đã lưu" chỉ với AB', async () => {
+    const gui: { v: string | null; h: ReturnType<typeof hua<string | null>> }[] = [];
+    const tt: string[] = [];
+    const hang = lc.taoHangLuu();
+    const o = hang.o('7|writing1', '', (v: string | null) => { const h = hua<string | null>(); gui.push({ v, h }); return h.p; }, (x: string) => tt.push(x));
+    o.go('A'); void o.luu();
+    o.go('AB'); void o.luu();
+    let daXong = false;
+    const cho = hang.xong().then(() => { daXong = true; });
+    gui[0].h.tra(null);
+    await xong(); await xong();
+    assert(!daXong && !tt.includes('xong'), `xong() / "Đã lưu" sau phản hồi bản A: ${daXong} · ${tt}`);
+    assert(gui.length === 2 && gui[1].v === 'AB', `không lưu tiếp AB: ${JSON.stringify(gui.map((g) => g.v))}`);
+    gui[1].h.tra(null);
+    await cho;
+    assert(tt[tt.length - 1] === 'xong' && hang.chuaLuu.size === 0, `${tt} · chuaLuu ${hang.chuaLuu.size}`);
+  });
+
+  await checkAsync('Audit 03/11 F01 · ô đã gỡ (đổi em / đóng) mà lưu lỗi → chữ giữ theo khoá ô; không đóng / không xác nhận; gõ về bản máy chủ thì bỏ', async () => {
+    let h = hua<string | null>();
+    const hang = lc.taoHangLuu();
+    let o = hang.o('7|writing2', 'cu', () => h.p, () => {});
+    o.go('moi'); void o.luu();
+    let dong = 0; let bao = 0;
+    const dongCho = lc.dongSauKhiLuu(hang, () => { dong++; }, () => { bao++; })();
+    h.tra('');   // lỗi mạng sau khi ô đã gỡ
+    await dongCho;
+    assert(hang.chuaLuu.get('7|writing2') === 'moi' && dong === 0 && bao === 1, `chuaLuu ${JSON.stringify([...hang.chuaLuu])} · đóng ${dong} · báo ${bao}`);
+    /* Nút Đóng ở chân: còn ô lỗi → báo một lần, bấm lần nữa mới đóng. */
+    const nut = lc.dongSauKhiLuu(hang, () => { dong++; }, () => { bao++; }, true);
+    await nut();
+    assert(dong === 1 && bao === 1, `lần 2 (đã báo): đóng ${dong} · báo ${bao}`);
+    /* Mở lại ô (khoá cũ) → gõ về đúng bản máy chủ, rời ô → hết "chưa lưu". */
+    h = hua<string | null>();
+    o = hang.o('7|writing2', 'cu', () => h.p, () => {});
+    o.go('moi'); o.go('cu'); await o.luu();
+    assert(hang.chuaLuu.size === 0, `vẫn giữ ô chưa lưu: ${JSON.stringify([...hang.chuaLuu])}`);
   });
 
   check('OV-14a F01 · chưa gõ gì: bản máy chủ mới thì nhận', () => {

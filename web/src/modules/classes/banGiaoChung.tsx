@@ -3,6 +3,7 @@ import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import type { TuDien } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { taoHangLuu, type HangLuu, type TrangThaiO } from '../../lib/luuChac.ts';
 
 /**
  * KHUNG BÀN GIAO DÙNG CHUNG (PR-B, đặc tả phân công GV mục 2.8): bàn giao chuyển lớp (`BanGiaoPanel`, mẫu F) và bàn giao khi đổi GV
@@ -73,26 +74,53 @@ export function TuDienEm({ tuDien, daChup }: { tuDien: TuDien | null; daChup: bo
   );
 }
 
+/** F01 (audit 03/11): hàng lưu của MỘT phiếu (`taoHangLuu`) — nơi dùng vẽ lại khi có ô lưu lỗi / hết lỗi. */
+export function useHangLuu(): HangLuu {
+  const [, ve] = useState(0);
+  return useState(() => taoHangLuu(() => ve((x) => x + 1)))[0];
+}
+
+const LOI_LUU = () => t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.');
+
 /**
  * MỘT Ô GÓP Ý — lưu khi rời ô: "● Đang gõ · lưu khi rời ô" → "Đang lưu…" → "✓ Đã lưu"; lỗi giữ nguyên chữ + câu lỗi, rời ô lần sau thử lại.
- * `docThoi`: chỉ đọc (chữ + "— người, ngày"). Ô 44 px chữ 16 ở 375 do `.field` chung (index.css OV-14b).
+ * F01: lưu xếp lượt theo ô (`taoOLuu`) — gõ tiếp khi đang lưu thì phản hồi bản cũ KHÔNG báo "Đã lưu" cho chữ mới; rời ô lần nữa lưu tiếp bản mới.
+ * `hang` + `khoa`: ô thuộc phiếu nhiều ô (xem `useHangLuu`). `docThoi`: chỉ đọc (chữ + "— người, ngày"). Ô 44 px chữ 16 ở 375 do `.field` chung (index.css OV-14b).
  */
-export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placeholder, rows = 5, onLuu }: {
+export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placeholder, rows = 5, hang, khoa = '', onLuu }: {
   id?: string; nhan: string; ky?: string; batBuoc: boolean; giaTri: string; docThoi?: boolean; aiGhi?: string | null; placeholder?: string; rows?: number;
+  hang?: HangLuu; khoa?: string;
   onLuu: (chu: string) => Promise<void>;
 }) {
-  const [chu, setChu] = useState(giaTri);
-  const [tt, setTt] = useState<'yen' | 'go' | 'luu' | 'da' | 'loi'>('yen');
-  const [loi, setLoi] = useState<string | null>(null);
-  /* Bản đã lưu đổi (tải lại sau lưu / người khác sửa) → nhận giá trị mới, trừ khi đang gõ dở hoặc lưu lỗi (không mất chữ). Đổi em: nơi gọi đặt `key`. */
-  useEffect(() => { if (tt !== 'go' && tt !== 'loi' && tt !== 'luu') setChu(giaTri); }, [giaTri]); // eslint-disable-line react-hooks/exhaustive-deps
-  useBaoDangSua(tt === 'go' || tt === 'loi');
-  const luu = async () => {
-    if (chu.trim() === giaTri.trim()) { if (tt === 'go') setTt('yen'); return; }
-    if (batBuoc && !chu.trim()) { setTt('loi'); setLoi(t('Viết góp ý cho em này.')); return; }
-    setTt('luu');
-    try { await onLuu(chu.trim()); setTt('da'); setLoi(null); } catch (e: any) { setTt('loi'); setLoi(e?.message ?? t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.')); }
+  const rieng = useHangLuu();
+  const h = hang ?? rieng;
+  const conLai = h.chuaLuu.get(khoa);   // ô này lưu lỗi lúc đã gỡ (đổi em) → mở lại với chữ chưa lưu
+  const [chu, setChu] = useState(conLai ?? giaTri);
+  const [tt, setTt] = useState<TrangThaiO>(conLai !== undefined ? 'loi' : 'idle');
+  const [loi, setLoi] = useState<string | null>(conLai !== undefined ? LOI_LUU() : null);
+  const goiLuu = useRef(onLuu);
+  goiLuu.current = onLuu;
+  const [o] = useState(() => {
+    let san = false;
+    const x = h.o(khoa, giaTri, (v) => goiLuu.current(v ?? '').then(() => null, (e: any) => e?.message ?? ''), (moi, lyDo) => {
+      if (!san) return;
+      setTt(moi);
+      setLoi(moi === 'loi' ? lyDo || LOI_LUU() : null);
+    });
+    if (conLai !== undefined) x.go(conLai);
+    san = true;
+    return x;
+  });
+  /* Bản máy chủ đổi (vừa lưu / tải lại / người khác sửa) → nhận khi chưa gõ dở; đang gõ dở hoặc lưu lỗi thì giữ chữ. Đổi em: nơi gọi đặt `key`. */
+  useEffect(() => { const moi = o.nhanGoc(giaTri); if (moi !== null) setChu(moi); }, [giaTri]); // eslint-disable-line react-hooks/exhaustive-deps
+  const chuaLuu = o.chuaLuu() || (tt === 'loi');
+  useBaoDangSua(tt !== 'dang' && chuaLuu);
+  const go = (v: string) => { setChu(v); o.go(v); };
+  const luu = () => {
+    if (batBuoc && !chu.trim() && o.chuaLuu()) { setTt('loi'); setLoi(t('Viết góp ý cho em này.')); return; }
+    void o.luu();
   };
+  const hienTt = tt === 'dang' ? 'luu' : tt === 'loi' ? 'loi' : chuaLuu ? 'go' : tt === 'xong' ? 'da' : 'yen';
   const nhanEl = (
     <span className="mb-1 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold text-slate-200">
       {ky && <span className="rounded bg-[color:var(--surface-2)] px-1.5 text-[12px] font-bold text-slate-300">{ky}</span>}
@@ -113,13 +141,13 @@ export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placehold
     <label className="block min-w-0">
       {nhanEl}
       <textarea id={id} className="field w-full" rows={rows} value={chu} placeholder={placeholder}
-        aria-invalid={tt === 'loi'} aria-required={batBuoc}
-        onChange={(e) => { setChu(e.target.value); setTt('go'); }} onBlur={() => void luu()} />
+        aria-invalid={hienTt === 'loi'} aria-required={batBuoc}
+        onChange={(e) => go(e.target.value)} onBlur={luu} />
       <span className="mt-0.5 flex items-center justify-between gap-2 text-xs" aria-live="polite">
-        <span className={tt === 'da' ? 'text-done' : tt === 'loi' ? 'text-late' : 'text-slate-500'}>
-          {tt === 'go' ? t('● Đang gõ · lưu khi rời ô') : tt === 'luu' ? t('Đang lưu…') : tt === 'da' ? t('✓ Đã lưu') : tt === 'loi' ? loi : ''}
+        <span className={hienTt === 'da' ? 'text-done' : hienTt === 'loi' ? 'text-late' : 'text-slate-500'}>
+          {hienTt === 'go' ? t('● Đang gõ · lưu khi rời ô') : hienTt === 'luu' ? t('Đang lưu…') : hienTt === 'da' ? t('✓ Đã lưu') : hienTt === 'loi' ? loi : ''}
         </span>
-        {aiGhi && tt !== 'go' && <span className="text-slate-500">— {aiGhi}</span>}
+        {aiGhi && hienTt !== 'go' && <span className="text-slate-500">— {aiGhi}</span>}
       </span>
     </label>
   );

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -8,7 +8,8 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { mondayOfDate, ngay, shortDate, trangThaiEmBg, tuanLich, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
-import { DsEmBanGiao, OGopY, TuDienEm } from './banGiaoChung.tsx';
+import { DsEmBanGiao, OGopY, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
+import { dongSauKhiLuu } from '../../lib/luuChac.ts';
 
 /**
  * BÀN GIAO KHI ĐỔI GV (PR-B, mockup `thiet-ke/v9/phan-cong-gv.html` khu 6 + 9) — panel mẫu F của bàn giao chuyển lớp, nhiều cột:
@@ -68,22 +69,25 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
     ? t('Bàn giao {lop} · {mon} cho {ten}', { lop: dto.lop.code, mon: nhanCotDs, ten: [...new Set(dto.cot.map((c) => c.nguoiMoi.ten))].join(', ') })
     : t('Bàn giao {lop} · {mon} từ {ten}', { lop: dto.lop.code, mon: nhanCotDs, ten: dto.nguoiCu.ten });
 
-  /* Lần lưu-khi-rời-ô đang chạy (bấm Xác nhận làm ô mất focus → lưu ô đó trước, rồi mới kiểm đủ). */
-  const dangLuu = useRef(new Set<Promise<unknown>>());
-  const luuGop = (sid: number, m: string) => (chu: string) => {
-    const p = api.put(`/ban-giao-gv/${dto.id}/gop-y`, { studentId: sid, mon: m, noiDung: chu })
-      .then(() => { setDaLuu((x) => ({ ...x, [`${sid}|${m}`]: chu })); invalidate('/my-work'); });
-    dangLuu.current.add(p);
-    void p.finally(() => dangLuu.current.delete(p)).catch(() => undefined);
-    return p;
+  /* F01: các ô lưu khi rời ô (bấm Xác nhận / Đóng làm ô mất focus → lưu ô đó trước); ô lưu lỗi giữ chữ theo khoá `${studentId}|${mon}` · `chung`. */
+  const hang = useHangLuu();
+  const luuGop = (sid: number, m: string) => (chu: string) => api.put(`/ban-giao-gv/${dto.id}/gop-y`, { studentId: sid, mon: m, noiDung: chu })
+    .then(() => { setDaLuu((x) => ({ ...x, [`${sid}|${m}`]: chu })); invalidate('/my-work'); });
+  const denEm = (sid: number) => { setChon(sid); requestAnimationFrame(() => document.getElementById(`bg-gv-em-${sid}`)?.focus()); };
+  const denThieu = () => { const e = thieu[0]; if (e) denEm(e.id); };
+  const baoChuaLuu = (n: number) => {
+    const k = [...hang.chuaLuu.keys()][0] ?? '';
+    if (k === 'chung') setMoChung(true); else if (k) denEm(Number(k.split('|')[0]));
+    toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại, hoặc bấm Đóng lần nữa để bỏ.', { n }));
   };
-  const denThieu = () => { const e = thieu[0]; if (!e) return; setChon(e.id); requestAnimationFrame(() => document.getElementById(`bg-gv-em-${e.id}`)?.focus()); };
+  const dong = dongSauKhiLuu(hang, onClose, baoChuaLuu);
   const xacNhan = async () => {
-    const coCho = dangLuu.current.size > 0;
-    if (!coCho && thieu.length) { denThieu(); return; }
+    if (!hang.cho.size && !hang.chuaLuu.size && thieu.length) { denThieu(); return; }
     setBusy(true);
     try {
-      await Promise.allSettled([...dangLuu.current]);   // còn thiếu thật → máy chủ trả "Còn n em thiếu góp ý." (toast)
+      await hang.xong();
+      /* Không xác nhận bằng bản cũ khi chữ mới chưa lưu được (F01). Còn thiếu thật → máy chủ trả "Còn n em thiếu góp ý." (toast). */
+      if (hang.chuaLuu.size) { baoChuaLuu(hang.chuaLuu.size); return; }
       await api.post(`/ban-giao-gv/${dto.id}/xac-nhan`, {});
       invalidate('/my-work'); invalidate('/classes');
       toast.push('ok', t('Đã xác nhận bàn giao {lop}', { lop: dto.lop.code }));
@@ -92,7 +96,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
   };
 
   return (
-    <KhungPanel quayLai={quayLai} rong="toan" loai={viet ? t('VIỆC · BÀN GIAO') : t('BÀN GIAO · ĐỌC')} tieuDe={tieuDe} onDong={onClose}
+    <KhungPanel quayLai={quayLai} rong="toan" loai={viet ? t('VIỆC · BÀN GIAO') : t('BÀN GIAO · ĐỌC')} tieuDe={tieuDe} onDong={dong}
       ngCanh={(
         <span className="flex flex-wrap gap-x-3 gap-y-1 tabular-nums">
           <span><b className="text-slate-100">{ds.length}</b> {t('em')}</span>
@@ -103,7 +107,8 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
         </span>
       )}
       chan={{
-        huy: { nhan: t('Đóng'), onClick: onClose },
+        daSua: hang.chuaLuu.size > 0,
+        huy: { nhan: t('Đóng'), onClick: dongSauKhiLuu(hang, onClose, baoChuaLuu, true) },
         trai: docThoi ? <span className="text-xs text-slate-500">{t('Chỉ đọc')}</span> : (
           <span className="flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
             <span>{t('Tự lưu khi rời ô')}</span>
@@ -126,7 +131,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
           </button>
           {moChung && (
             <div className="px-3 pb-3">
-              <OGopY nhan={t('Nhận xét chung cả lớp')} batBuoc={false} giaTri={dto.nhanXetChung ?? ''} docThoi={docThoi} rows={2}
+              <OGopY nhan={t('Nhận xét chung cả lớp')} batBuoc={false} giaTri={dto.nhanXetChung ?? ''} docThoi={docThoi} rows={2} hang={hang} khoa="chung"
                 onLuu={async (chu) => { await api.put(`/ban-giao-gv/${dto.id}/nhan-xet`, { nhanXetChung: chu }); }} />
             </div>
           )}
@@ -160,7 +165,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
                     <OGopY key={`${em.id}|${c.mon}`} nhan={c.ten} ky={c.nhan} batBuoc docThoi={docThoi} giaTri={g?.noiDung ?? ''}
                       aiGhi={g?.nguoiGhi ? `${g.nguoiGhi}${g.ghiLuc ? `, ${ngay(g.ghiLuc, h)}` : ''}${g.dienThay ? ` ${t('(điền thay)')}` : ''}` : null}
                       placeholder={c.mon === 'gvcn' ? t('Tình hình chung, phụ huynh, ý thức…') : undefined}
-                      onLuu={luuGop(em.id, c.mon)} />
+                      hang={hang} khoa={`${em.id}|${c.mon}`} onLuu={luuGop(em.id, c.mon)} />
                   );
                 })}
               </div>
