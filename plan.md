@@ -249,6 +249,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 03/11 tối — AUDIT OVERHAUL (chủ SP gửi prompt rà toàn diện + 4 ảnh)
+- **Nguồn (chỉ trên máy, không commit):** `D:/Download/Pisa tracking web/PISA-Tracking-Claude-Audit-Overhaul-2026-11-03.md` + 4 ảnh `D:/Download/Pisa tracking web/audit-0311-anh/` (Ảnh 1 = Ý thức hồ sơ lớp, Ảnh 2 = hộp hành trình bị cắt + khung Case không cuộn trang, Ảnh 3 hồ sơ HV 4 Case, Ảnh 4 hành trình "5.0 Giảm 0.5 4.5"). Ảnh U01–U10 (mục 19) chưa gửi.
+- **Yêu cầu bắt buộc (mục 1):** (1) rà thông tin mọi panel · (2) làm lại workflow + giao diện Ý thức / vi phạm (Ghi nhận ≠ Xử lý; ghi nhận xong không mất dấu) · (3) GV + TVV sửa được hạn task Báo PH (mặc định nếu không chọn; không trần, không xin duyệt) · (4) hồ sơ HV: khung Case không cuộn trang + hộp hành trình bị cắt · (5) bàn giao tách W1 / W2 (dữ liệu, quyền, hoàn thành, người phụ trách) · (6) rà mọi trang còn lại, đề xuất bỏ bước / chữ thừa (bỏ gì phải hỏi trước).
+- **Đầu ra đợt đầu:** bảng xác minh + đề xuất + kế hoạch + mockup cần duyệt. Không coi là lệnh triển khai hết / merge / deploy; sửa lỗi độc lập (mất chữ, cuộn, CSS) được làm luôn.
+- **Chia 4 session (Opus 5.5 · high):** AUDIT-BAN-GIAO · AUDIT-LOI · AUDIT-Y-THUC · AUDIT-UX — phạm vi + luật chung: `01-chia-session.md`. Chờ chủ SP bảo bắt đầu.
+
 ### 03/11 chiều — BO-QUA-XEP-MT (chủ SP: "cho phép ignore việc réo tên QL vì chưa xếp đủ MT, nhìn chướng mắt")
 - Việc "Xếp lịch MTn cho {em}" (`moc:` ở `mywork.ts` ~1222, PA quy chế đến MT kế chưa có lịch) + mọi việc khác réo QL vì em chưa xếp MT → thêm **"Bỏ qua"** ngay trên dòng việc (Hoàn tác ngắn, xem lại + khôi phục được, có nhật ký — luật không khoá cứng). Bỏ qua chỉ ẩn VIỆC, không đổi lịch / PA / số đếm "HV chưa có MT tiếp theo". Việc mới (MT kế khác, PA khác) hiện lại. Opus 5.5 · medium. Đổi chữ + nút theo mẫu sẵn có → không cần mockup; PTA tự merge khi rà + check xanh.
 - **Bàn giao:** PTA Plan cũ dừng 03/11; session planning mới nhận từ đây.
