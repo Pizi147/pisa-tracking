@@ -11,10 +11,13 @@ export const HAN_BAO_PH_NGAY = 4;
 export const hanBaoPh = (luu: string): string => addDaysIso(ngayTheoGioVN(luu) ?? luu.slice(0, 10), HAN_BAO_PH_NGAY);
 
 /**
+ * HAN-BAO-PH (chủ SP 03/11, 17.1–17.3): `hanChon` (cột `han_chon`, NULL = mặc định) thắng mọi tính toán; mọi nơi (Công việc, hồ sơ, tab lớp, chuông,
+ * Tổng quan TVV "đúng hạn") gọi hàm này với cùng ba tham số.
  * K7 (v4b L2): em Tạm dừng thì việc ẩn, không quá hạn; Quay lại học → hạn mới = ngày quay lại + 4 (không sớm hơn hạn gốc).
  * `khoang` = khoảng Tạm dừng của em (`khoangTamDung`); chỉ khoảng đã kết thúc, bắt đầu không sau hạn gốc, kết thúc từ ngày lưu (= hạn gốc − 4).
  */
-export function hanBaoPhHieuLuc(han: string, khoang: readonly { tu: string; den: string | null }[] = []): string {
+export function hanBaoPhHieuLuc(han: string, khoang: readonly { tu: string; den: string | null }[] = [], hanChon?: string | null): string {
+  if (hanChon) return hanChon;   // HAN-BAO-PH (chủ SP 03/11): hạn người dùng chọn dùng ĐÚNG ngày đó — không trượt theo Tạm dừng
   const taoNgay = addDaysIso(han, -HAN_BAO_PH_NGAY);
   let h = han;
   for (const k of khoang) if (k.den && k.tu <= h && k.den >= taoNgay) h = [h, addDaysIso(k.den, HAN_BAO_PH_NGAY)].sort()[1];

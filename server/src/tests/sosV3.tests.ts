@@ -8,6 +8,7 @@
  * không làm sập cả bộ.
  */
 import { migratePrPhh } from '../migrate/prPhh.ts';
+import { themCotPrHanBaoPh } from '../migrate/prHanBaoPh.ts';
 import { tieuChiThu } from '../seed/tieuChiThu.ts';
 import { boLichTuTao, luotThu, nhanXetCaseThu } from './luotThu.ts';
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -157,7 +158,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · T2 Bảng `sos_coordination_actions` đúng cột §5.1 và có hai chỉ mục tra cứu', () => {
     assert(JSON.stringify(colsOf(conn, 'sos_coordination_actions')) === JSON.stringify([
       'id', 'attempt_id', 'student_id', 'kind', 'custom_name', 'preset', 'status', 'performed_on', 'performed_by', 'performer_name',
-      'note', 'remove_reason_code', 'remove_reason_text', 'removed_by', 'removed_at', 'created_at', 'updated_at', 'noi_dung_luc_bao']),
+      'note', 'remove_reason_code', 'remove_reason_text', 'removed_by', 'removed_at', 'created_at', 'updated_at', 'noi_dung_luc_bao', 'han_chon']),
     `Cột sai: ${colsOf(conn, 'sos_coordination_actions').join(', ')}`);
     const idx = indexesOf(conn, 'sos_coordination_actions');
     assert(idx.includes('idx_sca_attempt') && idx.includes('idx_sca_student'), `Thiếu chỉ mục: ${idx.join(', ')}`);
@@ -218,6 +219,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     migrateMod.migrateSosV3(m, applied);
     assert(applied.length >= 1, 'Phải báo đã làm gì');
     migratePrPhh(m, []);   // PR-PHH thêm cột cuối bảng sau PR-T
+    themCotPrHanBaoPh(m, []);   // HAN-BAO-PH thêm han_chon sau PR-PHH
     assert(colsOf(m, 'case_interventions').includes('preset') && colsOf(m, 'sos_cases').includes('dismiss_reason_text'), 'Thiếu cột sau nâng cấp');
     assert(JSON.stringify(colsOf(m, 'sos_coordination_actions')) === JSON.stringify(colsOf(conn, 'sos_coordination_actions')), 'Bảng nâng cấp phải giống hệt schema.sql');
     assert(indexesOf(m, 'sos_coordination_actions').includes('idx_sca_attempt'), 'Thiếu chỉ mục');

@@ -1979,7 +1979,8 @@ CREATE TABLE sos_coordination_actions (
   remove_reason_code TEXT, remove_reason_text TEXT,
   removed_by INTEGER REFERENCES users(id), removed_at TEXT,
   created_at TEXT NOT NULL, updated_at TEXT,
-  noi_dung_luc_bao TEXT                 -- PR-PHH: JSON mảng 4 chuỗi Báo PH lúc xác nhận (chỉ bao_ph_tvv); NULL = việc cũ/loại khác
+  noi_dung_luc_bao TEXT,                -- PR-PHH: JSON mảng 4 chuỗi Báo PH lúc xác nhận (chỉ bao_ph_tvv); NULL = việc cũ/loại khác
+  han_chon TEXT                         -- HAN-BAO-PH: hạn người dùng chọn của meeting CX (YYYY-MM-DD), NULL = mặc định
 );
 CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
 CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
@@ -2253,7 +2254,8 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   han TEXT NOT NULL,                     -- YYYY-MM-DD: hết 23:59 giờ VN ngày (lưu + 4)
   trang_thai TEXT NOT NULL DEFAULT 'mo',
   bo_ly_do TEXT, bo_ly_do_chu TEXT, bo_boi INTEGER REFERENCES users(id), bo_luc TEXT,
-  tao_luc TEXT NOT NULL
+  tao_luc TEXT NOT NULL,
+  han_chon TEXT                          -- HAN-BAO-PH: hạn người dùng chọn (YYYY-MM-DD), NULL = mặc định; thắng Tạm dừng
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
 -- Mỗi lần TVV ghi (kể cả "Chưa liên hệ được" — việc vẫn mở, hạn giữ) là MỘT dòng; không sửa, không xoá.
@@ -2264,9 +2266,18 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph_lan (
   ngay TEXT NOT NULL,
   ghi_chu TEXT,
   ghi_boi INTEGER REFERENCES users(id),
-  ghi_luc TEXT NOT NULL
+  ghi_luc TEXT NOT NULL,
+  khoa TEXT                              -- X04: khoá gửi của web ("{khoá}:{việc}") — gửi lại sau mất phản hồi không ghi đôi
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_lan ON viec_bao_ph_lan(viec_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_bao_ph_lan_khoa ON viec_bao_ph_lan(khoa);
+-- HAN-BAO-PH (chủ SP 03/11): mỗi lần đổi hạn một dòng — `loai` bao_ph (viec_bao_ph) | phoi_hop (sos_coordination_actions, meeting CX); hạn hiệu lực cũ → mới.
+CREATE TABLE IF NOT EXISTS viec_han_lan (
+  id INTEGER PRIMARY KEY, loai TEXT NOT NULL, viec_id INTEGER NOT NULL, han_cu TEXT, han_moi TEXT NOT NULL,
+  mac_dinh INTEGER NOT NULL DEFAULT 0,   -- 1 = về hạn mặc định
+  boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_viec_han_lan ON viec_han_lan(loai, viec_id);
 
 -- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).
 -- Sửa chữ gốc → khoá khác → bản cũ tự hết dùng. `dich_luot`: mỗi lần gọi OpenAI thật một dòng (trần DICH_TRAN_NGAY / DICH_TRAN_NGUOI). Migrate `prDich` chép y.

@@ -20,6 +20,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
   const lo: any = await import('../yThuc/lo.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
   const bp: any = await import('../yThuc/baoPhTvv.ts');
+  const board: any = await import('../yThuc/board.ts');
   const loaiYc: any = await import('../duyet/loaiYeuCau.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { dongBoThongBaoTuDong } = await import('../platform/thongBaoTuDong.ts');
@@ -296,6 +297,104 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(kq.em.every((x: any) => x.ok), JSON.stringify(kq.em));
     assert(ems.every((sid) => viecCua(sid).length === 1), 'mỗi em một việc');
     assert(viecToi(tvv, ems[0]).length === 1 && viecToi(tvv, ems[1]).length === 1 && viecToi(ql, ems[2]).length === 1, 'người giữ');
+  }));
+
+  // ---------------------------------------------------------------- HAN-BAO-PH (chủ SP 03/11, 17.1–17.3) + X04 + X05
+  check('HAN-1 · hạn chọn thắng mặc định và KHÔNG trượt theo Tạm dừng; meeting CX nhận hạn chọn, việc không hạn thì không', () => {
+    assert(d.hanBaoPhHieuLuc('2026-09-18', [{ tu: '2026-09-15', den: '2026-09-25' }], '2026-09-20') === '2026-09-20', 'chọn thắng Quay lại');
+    assert(d.hanBaoPhHieuLuc('2026-09-18', [], null) === '2026-09-18', 'null = mặc định');
+    assert(d.hanPhoiHop('cx_meeting_family', '2026-09-14T03:00:00Z', '2026-09-30') === '2026-09-30' && d.hanPhoiHop('cx_meeting_family', '2026-09-14T03:00:00Z') === '2026-09-19', 'meeting');
+    assert(d.hanPhoiHop('talk_family', '2026-09-14T03:00:00Z', '2026-09-30') === null, 'việc không hạn giữ không hạn');
+  });
+
+  const suaHan = (p: any, id: number, han: string | null, hanCu: string | null) => bp.suaHanBaoPh(p, id, { han, hanCu });
+  await checkAsync('HAN-2 · TVV / GVCN / QL sửa hạn (GVCN vẫn không ghi kết quả); GVBM, QL chi nhánh khác 403; dùng ĐÚNG ngày chọn ở mọi nơi; về mặc định; ngày đã qua = quá hạn; hanCu cũ → 409; lịch sử', () => thu(() => {
+    const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
+    xuLy(gvcn, sid, [v1]);
+    const [v] = viecCua(sid);
+    const chon = addDays(TODAY, 9);
+    let x = suaHan(tvv, v.id, chon, null);
+    assert(x.han === chon && x.hanChon === chon && x.hanMacDinh === addDays(TODAY, 4) && x.lichSuHan.length === 1 && x.lichSuHan[0].cu === addDays(TODAY, 4) && x.lichSuHan[0].moi === chon, JSON.stringify(x));
+    assert(viecToi(tvv, sid)[0].due === chon, 'Công việc cùng hạn');
+    const lop: any = board.bangYThucLop(gvcn, classId(LOP));
+    const hangEm = [...Object.values(lop.nhom).flat(), ...lop.choBaoPh].find((h: any) => h.studentId === sid) as any;
+    assert(hangEm?.baoPh?.han === chon, 'tab lớp cùng hạn ' + JSON.stringify(hangEm?.baoPh));
+    assert(bp.xemViecBaoPh(gvcn, v.id).coTheSuaHan === true && bp.xemViecBaoPh(gvcn, v.id).coTheGhi === false && ma(() => ghi(gvcn, [v.id], 'da_bao')) === 403, 'GVCN sửa hạn, không ghi');
+    assert(ma(() => suaHan(gvbm, v.id, TODAY, chon)) === 403 && ma(() => suaHan(P.cpManager, v.id, TODAY, chon)) === 403, 'GVBM / QL chi nhánh khác 403');
+    assert(ma(() => suaHan(gvcn, v.id, TODAY, null)) === 409, 'hanCu cũ → 409');
+    assert(ma(() => bp.suaHanBaoPh(tvv, v.id, { han: TODAY })) === 400 && ma(() => suaHan(tvv, v.id, '31/12', chon)) === 400, 'thiếu hanCu / ngày sai');
+    x = suaHan(gvcn, v.id, addDays(TODAY, -1), chon);
+    assert(x.quaHan && viecToi(tvv, sid)[0].urgency === 'overdue', 'ngày đã qua → quá hạn');
+    x = suaHan(ql, v.id, null, addDays(TODAY, -1));
+    assert(x.hanChon === null && x.han === addDays(TODAY, 4) && x.lichSuHan.length === 3 && x.lichSuHan[2].macDinh, 'về mặc định');
+    assert(suaHan(ql, v.id, null, null).lichSuHan.length === 3, 'không đổi → không thêm lịch sử');
+    assert(hang("SELECT 1 FROM audit_logs WHERE action = 'discipline.bao_ph_han' AND entity_id = ?", v.measure_id).length === 3, 'nhật ký');
+  }));
+
+  await checkAsync('HAN-3 · hạn đã chọn không trượt khi Tạm dừng → Quay lại; việc xong / bỏ không sửa hạn (không mở lại)', () => thu(() => {
+    const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
+    xuLy(gvcn, sid, [v1]);
+    const [v] = viecCua(sid);
+    const chon = addDays(TODAY, 2);
+    suaHan(tvv, v.id, chon, null);
+    const now = new Date().toISOString();
+    conn.prepare("INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'pause', ?, 'Tạm dừng', ?)").run(sid, TODAY, now);
+    conn.prepare("INSERT INTO journey_events (student_id, event_type, event_date, title, created_at) VALUES (?, 'resume', ?, 'Quay lại', ?)").run(sid, addDays(TODAY, 3), now);
+    assert(viecToi(tvv, sid)[0]?.due === chon && bp.xemViecBaoPh(tvv, v.id).han === chon, 'giữ đúng ngày chọn');
+    ghi(tvv, [v.id], 'da_bao');
+    assert(ma(() => suaHan(tvv, v.id, TODAY, chon)) === 400 && bp.xemViecBaoPh(tvv, v.id).coTheSuaHan === false && viecCua(sid)[0].trang_thai === 'xong', 'xong: không sửa, không mở lại');
+  }));
+
+  await checkAsync('HAN-4 (17.3) · Tổng quan TVV "đúng hạn" so với hạn hiệu lực — báo sau hạn mặc định nhưng trước hạn chọn = đúng hạn', () => thu(async () => {
+    const tq: any = await import('../worklist/tongQuanV5.ts');
+    const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
+    xuLy(gvcn, sid, [v1]);
+    const [v] = viecCua(sid);
+    const ky = d.khoangMacDinh(TODAY);
+    conn.prepare('UPDATE viec_bao_ph SET han = ?, tao_luc = ? WHERE id = ?').run(addDays(TODAY, -2), `${ky.tu}T03:00:00Z`, v.id);
+    ghi(tvv, [v.id], 'da_bao');
+    assert(tq.tongQuanTvv(tvv).baoPh.dung === 0 && tq.tongQuanTvv(tvv).baoPh.treXong === 1, 'theo mặc định: trễ');
+    conn.prepare('UPDATE viec_bao_ph SET han_chon = ? WHERE id = ?').run(TODAY, v.id);   // đã chọn trước khi báo (việc nay đã xong)
+    assert(tq.tongQuanTvv(tvv).baoPh.dung === 1 && tq.tongQuanTvv(tvv).baoPh.treXong === 0, 'theo hạn chọn: đúng hạn');
+  }));
+
+  await checkAsync('HAN-X04 · gửi lại CÙNG khoá (mất phản hồi) không ghi đôi; khoá khác = lần liên hệ mới', () => thu(() => {
+    const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
+    xuLy(gvcn, sid, [v1]);
+    const [v] = viecCua(sid);
+    ghi(tvv, [v.id], 'chua_lien_he', { khoa: 'k-1' });
+    const lai = ghi(tvv, [v.id], 'chua_lien_he', { khoa: 'k-1' });
+    assert(hang('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ?', v.id).length === 1 && lai.viec[0].lan.length === 1, 'một lần');
+    ghi(tvv, [v.id], 'chua_lien_he', { khoa: 'k-2' });
+    assert(hang('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ?', v.id).length === 2, 'hai lần thật');
+    assert(ma(() => ghi(gvbm, [v.id], 'chua_lien_he', { khoa: 'k-2' })) === 403, 'khoá trùng vẫn kiểm quyền');
+  }));
+
+  await checkAsync('HAN-X05 · QL chi nhánh chỉ thấy việc em chi nhánh mình (lọc trong câu); QL chi nhánh khác không thấy', () => thu(() => {
+    const sid = moiEm(null); const [v1] = nVp(sid, 1);
+    xuLy(gvcn, sid, [v1]);
+    assert(viecToi(ql, sid).length === 1 && viecToi(P.cpManager, sid).length === 0, 'theo chi nhánh');
+  }));
+
+  await checkAsync('HAN-5 (17.2) · Meeting CX/GĐCN: GVCN / QL sửa hạn, Công việc dùng hạn chọn; GVBM 403; việc không hạn → 400', () => thu(async () => {
+    const ph: any = await import('../yThuc/phoiHop.ts');
+    const a = conn.prepare(`SELECT a.id, a.student_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active'
+      JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = a.student_id AND s.status = 'active'
+      WHERE c.code = ? AND COALESCE(a.kind, 'mock') = 'mock' AND a.status != 'cancelled'
+        AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind IN ('cx_meeting_family', 'talk_family')) LIMIT 1`).get(LOP) as any;
+    assert(a, 'có lượt Mock ở lớp thử');
+    const them = (kind: string) => Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?,?,?,1,'pending',?)`)
+      .run(a.id, a.student_id, kind, `${TODAY}T03:00:00Z`).lastInsertRowid);
+    const m = them('cx_meeting_family'); const tf = them('talk_family');
+    const x = ph.suaHanPhoiHop(gvcn, m, { han: '2020-01-01', hanCu: null });
+    assert(x.han === '2020-01-01' && x.hanChon === '2020-01-01' && x.hanMacDinh === addDays(TODAY, 5) && x.quaHan, JSON.stringify(x));
+    xoaNho();
+    const dong = ((myWork(gvcn, {}) as any).items as any[]).find((i) => i.group === 'phoi_hop_sos' && i.key === `phoi_hop_sos:${classId(LOP)}`);
+    assert(dong?.due === '2020-01-01', 'Công việc cùng hạn ' + dong?.due);
+    assert(ma(() => ph.suaHanPhoiHop(gvbm, m, { han: TODAY, hanCu: '2020-01-01' })) === 403, 'GVBM 403');
+    assert(ma(() => ph.suaHanPhoiHop(gvcn, tf, { han: TODAY, hanCu: null })) === 400, 'việc không hạn');
+    assert(ma(() => ph.suaHanPhoiHop(ql, m, { han: TODAY, hanCu: null })) === 409, '409');
+    assert(bp.lichSuHan('phoi_hop', m).length === 1, 'lịch sử');
   }));
 
   await checkAsync('SVYT-CU · lần xử lý lưu TRƯỚC khi bật (không qua đường lưu) không có việc; xoá học viên xoá cả việc + lịch sử', () => thu(async () => {

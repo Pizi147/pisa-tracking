@@ -213,13 +213,13 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
   const khoang = khoangTamDung(ids);
   theoLo(ids, (lo, ph) => {
     for (const r of db().prepare(
-      `SELECT v.id, v.student_id, v.nhan, v.han, v.trang_thai, s.consultant_user_id, m.kind AS m_kind, m.custom_name AS m_custom,
+      `SELECT v.id, v.student_id, v.nhan, v.han, v.han_chon, v.trang_thai, s.consultant_user_id, m.kind AS m_kind, m.custom_name AS m_custom,
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
               (SELECT l.ngay FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao' ORDER BY l.id DESC LIMIT 1) AS ngay_xong
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
         WHERE v.id IN (SELECT MAX(id) FROM viec_bao_ph WHERE student_id IN (${ph}) GROUP BY student_id)`,
     ).all(...lo) as any[]) {
-      const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id]);
+      const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
       out.set(r.student_id, {
         id: r.id, nhan: r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan, han, trangThai: r.trang_thai,
         nhanTrangThai: nhanTrangThaiBaoPh(r.trang_thai, r.so_lan > 0), quaHan: r.trang_thai === 'mo' && han < homNay, ngayXong: r.ngay_xong ?? null,
