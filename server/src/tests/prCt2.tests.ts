@@ -73,7 +73,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
 
   check('CT2-0c · Truong: bộ đếm co/can chỉ hiện khi co < can', () => {
     const khung = fs.readFileSync(path.join(REPO, 'web/src/ui/KhungPanel.tsx'), 'utf8');
-    assert(/\{dem && dem\.co < dem\.can && <span/.test(khung), 'Truong còn hiện bộ đếm khi đã đạt');
+    assert(/\{dem\?\.can && dem\.co < dem\.can \? <span/.test(khung), 'Truong còn hiện bộ đếm khi đã đạt');   // N35: nhánh sau là bộ đếm trần `DemChu`
   });
 
   check('CT2-1 · số buổi bổ trợ theo dải × chương trình; ELE không bổ trợ; coBoTroFinal', () => {

@@ -74,10 +74,10 @@ export async function runPrOv4bTests(t: YThucTestKit) {
     assert(dong(luot, 'reading').raw_score === 16 && dong(luot, 'reading').comment === 'Matching headings', 'điểm + nhận xét một lệnh');
   }));
 
-  check('OV4b-2 · nhận xét > 1000 ký tự → 400; GV môn khác → 403', () => thu(() => {
+  check('OV4b-2 · nhận xét > 300 ký tự (N35) → 400; GV môn khác → 403', () => thu(() => {
     dung(luot);
     const e1 = loi(() => attempts.saveScore(P.lrTeacher, luot, 'listening', { nhanXet: 'x'.repeat(1001) }, TRONG));
-    assert(e1?.status === 400 && /1000/.test(e1.message), `>1000: ${e1?.status} ${e1?.message}`);
+    assert(e1?.status === 400 && /300/.test(e1.message), `>300: ${e1?.status} ${e1?.message}`);
     const e2 = loi(() => attempts.saveScore(P.sTeacher, luot, 'reading', { nhanXet: 'không phải môn của tôi' }, TRONG));
     assert(e2?.status === 403, `GV S nhận xét R: ${e2?.status} ${e2?.message}`);
     assert(!dong(luot, 'reading'), 'không được ghi dòng nào');
