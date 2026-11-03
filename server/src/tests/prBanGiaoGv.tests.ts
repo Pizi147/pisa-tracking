@@ -14,6 +14,7 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
   const pc: any = await import('../classes/phanCongGv.ts');
   const bg: any = await import('../classes/banGiaoGv.ts');
   const banGiao: any = await import('../classes/banGiao.ts');
+  const standing: any = await import('../students/standing.ts');
   const dai: any = await import('../classes/daiChuyenLop.ts');
   const mig: any = await import('../migrate/prBanGiaoGv.ts');
   const { myWork }: any = await import('../worklist/mywork.ts');
@@ -371,5 +372,32 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     banGiao.ghiMon(loadPrincipal(gD), id, 'writing1', 'W1 ổn'); banGiao.ghiMon(loadPrincipal(gD), id + 1, 'writing1', 'W1 khá');
     const v2 = banGiao.viecBanGiao(gD).filter((v: any) => v.lopId === X);
     assert(v2.length === 1 && v2[0].mon === 'writing2' && !v2[0].tung, JSON.stringify(v2));
+  }));
+  check('Mockup v11 · cột Kết quả bảng GVBM: diemMon = lượt mới nhất có điểm, band TỪNG môn (W1 · W2 riêng) như assessment_scores, ✓ / ✗ so kỳ vọng của lượt', () => thu(() => {
+    /* Em demo FT có lượt MT đã chấm W1 + W2 (seed). */
+    const em = one(`SELECT a.student_id, a.id AS aid, e.class_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.status = 'active'
+      JOIN classes c ON c.id = e.class_id AND c.is_fast_track = 1
+      WHERE EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = 'writing1' AND s.band IS NOT NULL)
+        AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = 'writing2' AND s.band IS NOT NULL)
+      ORDER BY a.id LIMIT 1`);
+    assert(em, 'seed không có em FT có điểm W1 + W2');
+    const dich = one(`SELECT id FROM classes WHERE is_fast_track = 1 AND status = 'active' AND id != ? LIMIT 1`, em.class_id).id;
+    const id = lenh(em.class_id, dich, em.student_id);
+    const ph = banGiao.phieuBanGiao(P.mbManager, { lopNguonId: em.class_id });
+    const e = ph.ds.find((x: any) => x.lenhId === id);
+    assert(e.diemMon && e.diemMon.luot && Array.isArray(e.diemMon.kn), JSON.stringify(e.diemMon));
+    const sd = standing.standingFor([em.student_id]).get(em.student_id);
+    const band = (k: string) => one(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = ?`, sd.attemptId, k)?.band ?? null;
+    for (const [k, ma] of [['W1', 'writing1'], ['W2', 'writing2']]) {
+      const kn = e.diemMon.kn.find((x: any) => x.k === k);
+      const v = band(ma);
+      assert(kn && kn.v === v, `${k}: ${JSON.stringify(kn)} ≠ ${v}`);
+      const kv = sd.expectation;
+      assert(kn.dat === (v === null || kv === null ? null : v >= kv ? true : sd.kckDuoi ? null : false), `${k} dat ${kn.dat} (v ${v}, kv ${kv})`);
+    }
+    /* Phiếu đã xác nhận đọc bản chụp → không điểm hiện tại. */
+    conn.prepare(`UPDATE lenh_chuyen_lop SET xac_nhan_luc = ?, xac_nhan_boi = ?, tu_dien = ? WHERE id = ?`).run(NOW, gA, JSON.stringify({ tuDien: e.tuDien, gvbmChuaBanGiao: [] }), id);
+    const ph2 = banGiao.phieuBanGiao(P.mbManager, { lopNguonId: em.class_id });
+    assert(ph2.ds.find((x: any) => x.lenhId === id).diemMon === null, 'phiếu đã xác nhận vẫn có diemMon');
   }));
 }

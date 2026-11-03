@@ -10,7 +10,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { DsEmBanGiao, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu, type HangLuu } from '../../lib/luuChac.ts';
-import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, deadlineView, ngay, shortDate, tuanLich, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, deadlineView, ngay, nhanDocDiem, shortDate, tuanLich, type KnDiem, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -382,7 +382,24 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung
             <div key={e.lenhId} role="row" className={`grid gap-x-3 gap-y-1.5 px-3 py-2.5 text-sm ${cot}`}>
               <span role="cell" className="min-w-0 truncate font-semibold text-slate-100 sm:font-normal" title={e.ten}>{e.ten}
                 {e.lopDich && <span className="block text-xs font-normal text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
-              <span role="cell" className="min-w-0 text-xs text-slate-400">{e.tuDien?.ketQua ? dich(e.tuDien.ketQua) : '—'}</span>
+              <span role="cell" className="min-w-0 text-xs text-slate-400">
+                {/* Mockup v11: FT — lượt mới nhất + điểm từng cột của bảng (W1 · W2 riêng), ✓ / ✗ so kỳ vọng của lượt; không có thì câu tự điền như cũ. */}
+                {e.diemMon ? (
+                  <span className="tabular-nums" aria-label={[e.diemMon.luot, ...mDs.map((x) => e.diemMon!.kn.find((kn) => kn.k === x.ngan))
+                    .filter((kn): kn is KnDiem => !!kn).map((kn) => nhanDocDiem(kn, e.diemMon!.soVoi))].join(' · ')}>
+                    {e.diemMon.luot}{e.diemMon.tam ? ` · ${t('tạm')}` : ''}
+                    {mDs.map((x) => {
+                      const kn = e.diemMon!.kn.find((y) => y.k === x.ngan);
+                      if (!kn) return null;
+                      return (
+                        <span key={x.ma} aria-hidden="true"> · {kn.k}{' '}
+                          {kn.v === null ? '—' : <b className={kn.dat === null ? 'font-semibold text-slate-200' : kn.dat ? 'text-kq-bang' : 'text-kq-duoi'}>{dauDiem(kn.dat) ? `${dauDiem(kn.dat)} ` : ''}{chuDiem(kn.v)}</b>}
+                        </span>
+                      );
+                    })}
+                  </span>
+                ) : e.tuDien?.ketQua ? dich(e.tuDien.ketQua) : '—'}
+              </span>
               {mons.map((m, i) => {
                 const om = oMon(e, m);
                 const cu = om?.noiDung ?? '';
