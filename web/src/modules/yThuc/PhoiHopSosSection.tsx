@@ -112,15 +112,16 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           {!luot.nhanDot && luot.sosLevel !== null
             ? <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />
             : <b className="text-[15px] font-semibold text-slate-100">{mtSos}</b>}
-          {!luot.nhanDot && <span className="inline-flex h-[22px] items-center rounded-md px-2 text-xs font-semibold text-slate-400 surface-2">MT{luot.attemptNo}</span>}
+          {!luot.nhanDot && luot.sosLevel !== null && <span className="inline-flex h-[22px] items-center rounded-md px-2 text-xs font-semibold text-slate-400 surface-2">MT{luot.attemptNo}</span>}
           <span className="ml-auto flex flex-wrap items-center gap-2">
             <BadgeViec tong={luot.summary.complete ? 'xong' : 'dang'}>{t('{label} việc xong', { label: luot.summary.label })}</BadgeViec>
+            {luot.summary.complete && <button type="button" className="link inline-flex min-h-[44px] items-center gap-1 appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" aria-expanded={open} onClick={() => setOpen((v) => !v)}><MuiTenGap mo={open} />{t('Việc')}</button>}
             {onGoAcademic && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={onGoAcademic}>{t('Học thuật ›')}</button>}
             {luot.canAct && !adding && !luot.nhanDot && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAdding(true)}>{t('+ Thêm việc')}</button>}
           </span>
         </div>
         <div className="mt-1">
-          {luot.actions.map((a) => <ActionRow key={a.id} a={a} canAct={luot.canAct} onChanged={onChanged} />)}
+          {open && luot.actions.map((a) => <ActionRow key={a.id} a={a} canAct={luot.canAct} onChanged={onChanged} />)}
           {adding && <div className="mt-2"><AddCoordinationForm attemptId={luot.attemptId} existing={luot.actions.map((a) => a.kind)} onClose={() => setAdding(false)} onChanged={onChanged} /></div>}
         </div>
       </div>
@@ -221,7 +222,7 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
 
   return (
     <div className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-2 [@container(min-width:700px)]:grid-cols-[minmax(0,1fr)_330px_auto]">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-2 [@container(min-width:760px)]:grid-cols-[minmax(0,1fr)_minmax(0,330px)_auto]">
         <span className="col-start-1 row-start-1 min-w-0 break-words">
           <span className="block text-sm font-semibold text-slate-100">{laMeetingCx(a.kind) ? COORDINATION_KIND_LABEL[a.kind as CoordinationKind] : a.name}</span>
           {dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{dongPhu}</span>}
@@ -235,8 +236,8 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
             </details>
           )}
         </span>
-        {hanO && <span className="col-span-2 row-start-2 [@container(min-width:700px)]:col-span-1 [@container(min-width:700px)]:col-start-2 [@container(min-width:700px)]:row-start-1">{hanO}</span>}
-        <span className="col-start-2 row-start-1 flex flex-wrap justify-end gap-1.5 [@container(min-width:700px)]:col-start-3">
+        {hanO && <span className="col-span-2 row-start-2 [@container(min-width:760px)]:col-span-1 [@container(min-width:760px)]:col-start-2 [@container(min-width:760px)]:row-start-1">{hanO}</span>}
+        <span className="col-start-2 row-start-1 flex flex-wrap justify-end gap-1.5 [@container(min-width:760px)]:col-start-3">
           {/* Việc chờ mà người xem làm được: Xác nhận + ⋯ (Bỏ việc…); còn lại là nhãn 6 chữ chung. */}
           {a.status === 'pending' && canAct ? (
             <>

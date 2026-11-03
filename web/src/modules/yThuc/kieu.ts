@@ -25,7 +25,9 @@ export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
-      statusLabel: string; soViPham: number; nguoi: string | null; soTep: number };
+      statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
+      /** UI-3 (mockup K6): tên vi phạm của lần · Báo PH của lần (null = không có việc). */
+      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null };
 
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;

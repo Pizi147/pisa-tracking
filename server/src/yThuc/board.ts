@@ -52,7 +52,8 @@ export type DongThoiGianYt =
       /** PR-LUI-a1: dòng chính = ô `Vi phạm` (ngắn); mô tả đầy đủ chỉ hiện khi mở dòng (`ChiTietViPham`). */
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
-      statusLabel: string; soViPham: number; nguoi: string | null; soTep: number };
+      statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
+      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null };
 
 export type BangYThucLop = {
   classId: number; classCode: string; homNay: string;
@@ -110,7 +111,9 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     return !em || !em.chuoi.length || (cycleId != null && em.chuoi.includes(cycleId));
   };
   const out: DongThoiGianYt[] = [];
+  const tenVp = new Map<number, string>();   // UI-3 (mockup K6): tên vi phạm của mỗi lần xử lý — từ chính danh sách đã đọc, không thêm câu
   for (const v of violationsOfStudents(emIds)) {
+    tenVp.set(v.id, v.ten);
     if (!trongChuoi(v.studentId, v.cycleId)) continue;
     out.push({
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
@@ -119,15 +122,17 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
   const xuLy = emIds.flatMap((sid) => { const em = trang.get(sid); return [...(em?.xuLy ?? []), ...(em?.thuHoi ?? [])].filter((m) => trongChuoi(sid, m.cycleId)).map((m) => ({ sid, m })); });
-  const phu = new Map<number, { nguoi: string | null; soTep: number }>();
+  const phu = new Map<number, { nguoi: string | null; soTep: number; baoPh: { trangThai: string; ngay: string | null } | null }>();
   const mIds = xuLy.map((x) => x.m.id);
   for (let i = 0; i < mIds.length; i += 400) {
     const lo = mIds.slice(i, i + 400);
     for (const r of conn.prepare(
       `SELECT m.id, COALESCE(m.performer_name, pu.full_name) AS nguoi,
-              (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep
+              (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep,
+              (SELECT b.trang_thai FROM viec_bao_ph b WHERE b.measure_id = m.id) AS bp_tt,
+              (SELECT MAX(l.ngay) FROM viec_bao_ph b JOIN viec_bao_ph_lan l ON l.viec_id = b.id WHERE b.measure_id = m.id AND l.ket_qua = 'da_bao') AS bp_ngay
          FROM discipline_measures m LEFT JOIN users pu ON pu.id = m.performed_by WHERE m.id IN (${lo.map(() => '?').join(',')})`,
-    ).all(...lo) as any[]) phu.set(r.id, { nguoi: r.nguoi ?? null, soTep: r.so_tep });
+    ).all(...lo) as any[]) phu.set(r.id, { nguoi: r.nguoi ?? null, soTep: r.so_tep, baoPh: r.bp_tt ? { trangThai: r.bp_tt, ngay: r.bp_ngay ?? null } : null });
   }
   for (const { sid, m } of xuLy) {
     out.push({
@@ -135,6 +140,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       nhan: nhanLoaiXuLy(m.kind, m.customName), kind: m.kind, status: m.status,
       statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status,
       soViPham: m.violationIds.length, nguoi: phu.get(m.id)?.nguoi ?? null, soTep: phu.get(m.id)?.soTep ?? 0,
+      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null,
     });
   }
   out.sort((a, b) => b.ngay.localeCompare(a.ngay) || (a.loai === b.loai ? b.id - a.id : a.loai === 'xu-ly' ? -1 : 1));

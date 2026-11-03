@@ -1189,9 +1189,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        Trước: GVBM toi 71283ff70674504b, QL tat-ca cf1b31474244ae4e, QT tat-ca cd79349e0bcf3f62, QT tat-ca cn 7cfbd540beff0e8c */
     /* BADGE-CUA-TOI (04/11): chụp lại 'QL toi' / 'QT toi' — đổi CÓ CHỦ Ý: "Nhập điểm MT cũ" (`lich-su:`) / "Điền Target" (`target:`) góc "toi" nay cùng chủ góc
        "tat-ca" (GVCN lớp) → lớp có GVCN không còn là việc của QL / QT (badge = ô "Của tôi", BCT-1). 9 băm khác giữ. Trước: QL toi e52a0d6a5bb7537d, QT toi 5115a3184a27f3d9 */
-    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '836db9c7acdd8e39', 'GVBM toi': 'c64a33f25108620d',
-    'GVCN_THUONG toi': '836db9c7acdd8e39', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '64c53c3e9d2f7f40', 'QT tat-ca': '85e5bab795ebfcb0',
-    'QT tat-ca cn': '29addc1ddf756b8e', 'QL gvcn': 'ceb5c556bc540613', 'GVS toi': 'b4b4e5024a108eca',
+    /* UI-3 (N34 ④, 04/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý chỉ chữ việc `yt_xem`: "Ghi nhận n vi phạm mới" →
+       "Xem n vi phạm mới", nút "Ghi nhận" → "Đã xem", hint nhóm. Nguyên nhân lệch đọc từ mã (chỉ ba chữ đó đổi trong `mywork.ts`). Trước: GVCN toi 836db9c7acdd8e39,
+       GVCN_THUONG toi 836db9c7acdd8e39, QL tat-ca 64c53c3e9d2f7f40, QT tat-ca 85e5bab795ebfcb0, QT tat-ca cn 29addc1ddf756b8e, QL gvcn ceb5c556bc540613 */
+    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': 'f8060d5bdbae336b', 'GVBM toi': 'c64a33f25108620d',
+    'GVCN_THUONG toi': 'f8060d5bdbae336b', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'bba187368eb9151f', 'QT tat-ca': 'cb447502ec50d11e',
+    'QT tat-ca cn': 'b7d0c7e8400fb1be', 'QL gvcn': 'cc9da0a5d5f09113', 'GVS toi': 'b4b4e5024a108eca',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

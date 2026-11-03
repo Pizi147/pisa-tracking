@@ -300,7 +300,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   yt_xem: {
     label: 'Xem vi phạm mới',   // N34 ④ (chủ SP 03/11): "Ghi nhận" → "Đã xem"
-    hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (không cần biện pháp) hoặc Xác nhận xử lý trong 5 ngày.',
+    hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.',
   },
   bao_ph_yt: {
     label: 'Báo PH vi phạm',

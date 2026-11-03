@@ -230,7 +230,9 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(/btn btn-sm min-h-\[44px\] sm:min-h-0\$\{xuLyChinh \? ' btn-primary' : ''\}`\} onClick=\{onXuLy\}>\{xuLyChinh && CUA_TOI\}\{t\('Xác nhận xử lý'\)\}</.test(th) && /onClick=\{onDeXuat\}>\{t\('Đề xuất QL duyệt'\)\}</.test(th) && !th.includes('Đề xuất QL duyệt…'), 'ThangYThuc');
     const sotBac = webSrc().filter((x) => x.f.includes('/yThuc/') && /Xác nhận xử lý\$\{|`Xác nhận xử lý ·|Xác nhận xử lý · \$\{/.test(x.s)).map((x) => x.f);
     assert(sotBac.length === 0, sotBac.join(', '));
-    for (const f of ['web/src/modules/yThuc/StudentYThucSection.tsx', 'web/src/modules/yThuc/ClassYThucCard.tsx']) assert(/<ThangYThuc[\s\S]{0,400}onXuLy=/.test(doc(f)), f);
+    assert(/<ThangYThuc[\s\S]{0,400}onXuLy=/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'ClassYThucCard');
+    /* UI-3 (mockup U10 K3): tab HV — Xác nhận xử lý ở hàng nút dưới dải tóm tắt (cả khi mới 1 vi phạm), Thang mở bằng "Thang ›" chỉ để xem. */
+    assert(/mo\(\{ loai: 'xu-ly', studentId \}\)/.test(doc('web/src/modules/yThuc/StudentYThucSection.tsx')), 'StudentYThucSection');
     /* OV-12e (mockup panel v3 §8, chủ SP 14/10): trong panel "Đề xuất QL duyệt" là nút chữ ngay sau nút chính Xác nhận xử lý (khối Cần làm). */
     assert(/cheDo === 'xu-ly' && d\.canManage[\s\S]{0,300}Đề xuất QL duyệt('\)\})?<\/NutChu>/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'panel: Đề xuất là nút chữ sau nút chính');
   });

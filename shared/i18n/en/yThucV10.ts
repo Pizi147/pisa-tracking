@@ -10,7 +10,7 @@ export const EN_Y_THUC_V10 = {
   'Bỏ xem': 'Unmark seen',
   'Đã bỏ xem': 'Unmarked',
   'Không có "Đã xem"': 'No "Seen"',
-  '≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý. Vi phạm lẻ: Đã xem (không cần biện pháp, không lên bậc) hoặc xử lý nếu nghiêm trọng.':
+  '≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý. Vi phạm lẻ: Đã xem (chưa cần xử lý, không lên bậc) hoặc xử lý nếu nghiêm trọng.':
     '≥ 3 violations this week + last week → must be handled. A single violation: Seen (no measure, no step up) or handle it if serious.',
   'Phải xử lý': 'Must handle',
   'Đã báo {ngay}': 'Told {ngay}',
@@ -29,12 +29,15 @@ export const EN_Y_THUC_V10 = {
   'Đang xin thu hồi': 'Withdrawal requested',
   'Ai · lúc nào': 'Who · when',
   'Người ghi': 'Logged by',
+  'đã báo {ngay}': 'told {ngay}',
+  'đã bỏ': 'dropped',
+  'chưa báo': 'not told yet',
   '{label} việc xong': '{label} tasks done',
   'Học thuật ›': 'Academic ›',
   'Chưa có gì trong lịch sử': 'Nothing in history yet',
   /* Việc (Công việc, dải việc hồ sơ HV) — N34 ④. */
   'Xem vi phạm mới': 'Review new incidents',
-  'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (không cần biện pháp) hoặc Xác nhận xử lý trong 5 ngày.': 'Incidents logged by others that you have not seen. Seen (no measure) or Confirm action within 5 days.',
+  'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.': 'Incidents logged by others that you have not seen. Seen (no measure) or Confirm action within 5 days.',
   'Xem {soMoi} vi phạm mới · {ten}': (b) => `Review ${b.soMoi} new incident(s) · ${b.ten}`,
   'Xem {n} vi phạm mới': (b) => `Review ${b.n} new incident(s)`,
 } satisfies Record<string, Dich>;

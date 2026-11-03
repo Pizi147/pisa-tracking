@@ -17,27 +17,31 @@ export type TongBv = 'cho' | 'qua' | 'dang' | 'xong' | 'xem' | 'xam';
 const LOP_BV: Record<TongBv, string> = {
   cho: 'border-soon-line bg-soon-bg text-soon',
   qua: 'border-late-line bg-late-bg text-late',
-  dang: 'border-[color:var(--accent)] text-[color:var(--doing)]',
+  dang: 'border-[color:var(--accent)] text-doing',
   xong: 'border-ok-line text-ok',
-  xem: 'border-dashed border-[color:var(--accent)] text-[color:var(--doing)]',
+  xem: 'border-dashed border-[color:var(--accent)] text-doing',
   xam: 'border-[color:var(--line-strong)] text-slate-500',
 };
 export function BadgeViec({ tong, children, onClick, title }: { tong: TongBv; children: ReactNode; onClick?: () => void; title?: string }) {
-  const dau = tong === 'qua' ? <span aria-hidden className="text-[11px]">⚠</span>
-    : tong === 'xong' ? <span aria-hidden className="text-[11px]">✓</span>
+  /* Badge bấm được (Báo PH, đề xuất): `title` cũng là tên truy cập — nói việc sẽ mở, không chỉ trạng thái. */
+  const dau = tong === 'qua' ? <span aria-hidden className="text-xs">⚠</span>
+    : tong === 'xong' ? <span aria-hidden className="text-xs">✓</span>
     : <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full bg-current" />;
   const lop = `inline-flex h-6 max-w-full items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-semibold ${LOP_BV[tong]}`;
-  if (onClick) return <button type="button" title={title} className={`${lop} cursor-pointer appearance-none hover:brightness-110 max-sm:min-h-[44px]`} onClick={onClick}>{dau}{children}</button>;
+  if (onClick) return <button type="button" title={title} aria-label={title} className={`${lop} cursor-pointer appearance-none hover:brightness-110 max-sm:min-h-[44px]`} onClick={onClick}>{dau}{children} <span aria-hidden>›</span></button>;
   return <span title={title} className={lop}>{dau}{children}</span>;
 }
 
 type TomTatVao = Pick<YThucHocVien, 'nhom' | 'han' | 'hanXem' | 'quaHanNgay' | 'deXuat'>;
 
 /** Ô "Cần làm" của một em: badge + dòng hạn (cùng chữ ở hàng em tab lớp). null = không còn việc. */
-export function CanLamEm({ x, homNay }: { x: TomTatVao; homNay: string }) {
+export function CanLamEm({ x, homNay, onXem }: { x: TomTatVao; homNay: string; onXem?: (id: number) => void }) {
   const han = (h: string | null) => h ? <span className="text-xs tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(h, homNay) })}</span> : null;
   const o = (bv: ReactNode, phu: ReactNode) => <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">{bv}{phu}</span>;
-  if (x.deXuat) return o(<BadgeViec tong="dang">{x.deXuat.status === 'da_duyet' ? t('QL đã duyệt') : t('Chờ QL duyệt')}</BadgeViec>, han(x.deXuat.han));
+  if (x.deXuat) {
+    const dx = x.deXuat;
+    return o(<BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('QL đã duyệt') : t('Chờ QL duyệt')}</BadgeViec>, han(dx.han));
+  }
   switch (x.nhom) {
     case 'qua_han': return o(<BadgeViec tong="qua">{t('Quá hạn {n} ngày', { n: x.quaHanNgay ?? 1 })}</BadgeViec>, han(x.han ?? x.hanXem));
     case 'bat_buoc': return o(<BadgeViec tong="cho">{t('Phải xử lý')}</BadgeViec>, han(x.han));
@@ -52,7 +56,7 @@ export function BaoPhEm({ b, homNay, onMo }: { b: DongEm['baoPh']; homNay: strin
   const mo = b.trangThai === 'mo' && b.coTheGhi ? onMo : undefined;
   const bv = b.trangThai === 'xong' ? <BadgeViec tong="xong">{b.ngayXong ? t('Đã báo {ngay}', { ngay: ngay(b.ngayXong, homNay) }) : t('Đã báo PH')}</BadgeViec>
     : b.trangThai === 'bo' ? <BadgeViec tong="xam">{t('Đã bỏ')}</BadgeViec>
-    : <BadgeViec tong={b.quaHan ? 'qua' : 'cho'} onClick={mo}>{dich(b.nhanTrangThai)}</BadgeViec>;
+    : <BadgeViec tong={b.quaHan ? 'qua' : 'cho'} onClick={mo} title={mo ? t('Ghi kết quả báo PH') : undefined}>{dich(b.nhanTrangThai)}</BadgeViec>;
   return (
     <span className="flex flex-col items-start gap-1">
       <span className="text-xs text-slate-500">{t('Lần')} <b className="font-semibold text-slate-400">{dich(b.nhan)}</b></span>
@@ -62,20 +66,20 @@ export function BaoPhEm({ b, homNay, onMo }: { b: DongEm['baoPh']; homNay: strin
 }
 
 /** Dải tóm tắt một em (mockup K3 `.facts`): mỗi trường một ô, nhãn trên – giá trị dưới, kẻ dọc giữa các ô. */
-export function TomTatEm({ d, homNay, onBaoPh }: {
+export function TomTatEm({ d, homNay, onBaoPh, onXem }: {
   d: TomTatVao & Pick<YThucHocVien, 'bacNhan' | 'keTiep' | 'canManage' | 'gvcn'> & { baoPh: DongEm['baoPh'] };
-  homNay: string; onBaoPh?: () => void;
+  homNay: string; onBaoPh?: () => void; onXem?: (id: number) => void;
 }) {
   const batBuoc = d.nhom === 'bat_buoc' || d.nhom === 'qua_han';
   const o = (nhan: string, gt: ReactNode) => (
-    <div className="grid min-w-0 content-start gap-1 border-l px-[18px] py-0.5 first:border-l-0 first:pl-0 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
+    <div className="grid min-w-0 content-start gap-1 py-0.5 [@container(min-width:900px)]:border-l [@container(min-width:900px)]:px-[18px] [@container(min-width:900px)]:first:border-l-0 [@container(min-width:900px)]:first:pl-0" style={{ borderColor: 'var(--line)' }}>
       <span className="whitespace-nowrap text-xs font-medium text-slate-500">{nhan}</span>
       <span className="text-[15px] font-semibold text-slate-100">{gt}</span>
     </div>
   );
   return (
-    <div className="flex flex-wrap gap-y-3">
-      {o(t('Cần làm'), <CanLamEm x={d} homNay={homNay} />)}
+    <div className="flex flex-wrap gap-x-6 gap-y-3 [@container(min-width:900px)]:gap-x-0">
+      {o(t('Cần làm'), <CanLamEm x={d} homNay={homNay} onXem={onXem} />)}
       {!d.canManage && d.gvcn && o(t('Người xử lý'), t('GVCN {ten}', { ten: d.gvcn }))}
       {o(t('Đã tới'), d.bacNhan ? dich(d.bacNhan) : <span className="font-medium text-slate-400">{t('chưa có')}</span>)}
       {o(batBuoc ? t('Lần này') : t('Bậc kế'), batBuoc ? dich(d.keTiep.nhan) : <span className="font-medium text-slate-300">{dich(d.keTiep.nhan)}</span>)}
@@ -140,45 +144,45 @@ export function LanTruoc({ x, homNay, onXem }: { x: Pick<DongEm, 'xuLyGanNhat' |
  * Nội dung (tên + trường phụ có nhãn) · Ai · lúc nào · thao tác. Vi phạm đã xử lý xem qua "Xem" lần xử lý (Sửa / Thu hồi ở đó).
  * `coTen`: tab lớp (UI-2) thêm cột Học viên. `vuaXem`: dòng vừa "Đã xem" sáng + "vừa xong" (đến từ "Xem lại").
  */
-export type DongLs = { key: string; ngay: string; ten?: string; tong: TongBv; loai: string; tieuDe: ReactNode; truong: [string, ReactNode][];
-  ai: string | null; luc: string | null; vua?: boolean; cuoi?: ReactNode };
+export type DongLs = { key: string; ngay: string; ten?: string; tong: TongBv; loai: string; kieu: 'xem' | 'xu-ly' | 'thu-hoi' | 'khac';
+  tieuDe: ReactNode; truong: [string, ReactNode][]; ai: string | null; luc: string | null; vua?: boolean; cuoi?: ReactNode;
+  /** Dòng "Đã xem" mở tại chỗ (mô tả, bằng chứng, Sửa / Xoá — người ghi vẫn sửa được sau khi GVCN đã xem). */
+  mo?: boolean; onMo?: () => void; chiTiet?: ReactNode };
 export function BangLichSu({ dong, coTen, homNay, rong }: { dong: DongLs[]; coTen?: boolean; homNay: string; rong: ReactNode }) {
   if (!dong.length) return <>{rong}</>;
-  const th = 'border-b px-3 py-2 text-left text-[13px] font-semibold text-slate-400 first:pl-4';
+  /* Lưới (không <table> — BANG-3). Theo KHUNG (container), không theo màn: panel Công việc 480 px dùng bản hẹp — "Ai · lúc nào" xuống dưới nội dung. */
+  /* Lớp viết đủ chữ (Tailwind chỉ sinh CSS cho tên lớp thấy được trong mã). */
+  const cot = coTen ? '[@container(min-width:720px)]:grid-cols-[72px_160px_130px_minmax(0,1fr)_200px_120px]' : '[@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]';
+  const dau = 'text-[13px] font-semibold text-slate-400';
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
-        <thead><tr style={{ borderColor: 'var(--line)' }}>
-          <th className={`${th} w-[72px]`} style={{ borderColor: 'var(--line)' }}>{t('Ngày')}</th>
-          {coTen && <th className={th} style={{ borderColor: 'var(--line)' }}>{t('Học viên')}</th>}
-          <th className={`${th} w-[130px]`} style={{ borderColor: 'var(--line)' }}>{t('Loại')}</th>
-          <th className={th} style={{ borderColor: 'var(--line)' }}>{t('Nội dung')}</th>
-          <th className={`${th} w-[200px] max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>{t('Ai · lúc nào')}</th>
-          <th className={`${th} w-[120px]`} style={{ borderColor: 'var(--line)' }}><span className="sr-only">{t('Thao tác')}</span></th>
-        </tr></thead>
-        <tbody>
-          {dong.map((x) => (
-            <tr key={x.key} className={x.vua ? 'bg-ok-bg' : ''}>
-              <td className="border-b py-2.5 pl-4 pr-3 align-top text-[13px] font-semibold tabular-nums text-slate-400" style={{ borderColor: 'var(--line)' }}>{ngay(x.ngay, homNay)}</td>
-              {coTen && <td className="border-b px-3 py-2.5 align-top font-semibold text-slate-100" style={{ borderColor: 'var(--line)' }}>{x.ten}</td>}
-              <td className="border-b px-3 py-2.5 align-top" style={{ borderColor: 'var(--line)' }}><BadgeViec tong={x.tong}>{x.loai}</BadgeViec></td>
-              <td className="border-b px-3 py-2.5 align-top" style={{ borderColor: 'var(--line)' }}>
-                <span className="font-semibold text-slate-100">{x.tieuDe}</span>
-                {x.vua && <span className="block text-xs font-semibold text-ok">{t('vừa xong')}</span>}
-                {x.truong.length > 0 && (
-                  <dl className="m-0 mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5">
-                    {x.truong.map(([n, g]) => <div key={n} className="contents"><dt className="text-xs font-medium leading-5 text-slate-500">{n}</dt><dd className="m-0 text-[13px] text-slate-300">{g}</dd></div>)}
-                  </dl>
-                )}
-              </td>
-              <td className="border-b px-3 py-2.5 align-top max-sm:hidden" style={{ borderColor: 'var(--line)' }}>
-                <span className="text-slate-200">{x.ai ?? '—'}</span>{x.luc && <span className="block text-xs tabular-nums text-slate-500">{x.luc}</span>}
-              </td>
-              <td className="border-b px-3 py-2.5 text-right align-top" style={{ borderColor: 'var(--line)' }}>{x.cuoi}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div role="list" aria-label={t('Lịch sử')}>
+      <div aria-hidden className={`hidden gap-x-3 border-b px-4 py-2 [@container(min-width:720px)]:grid ${cot}`} style={{ borderColor: 'var(--line)' }}>
+        <span className={dau}>{t('Ngày')}</span>{coTen && <span className={dau}>{t('Học viên')}</span>}<span className={dau}>{t('Loại')}</span>
+        <span className={dau}>{t('Nội dung')}</span><span className={dau}>{t('Ai · lúc nào')}</span><span />
+      </div>
+      {dong.map((x) => (
+        <div key={x.key} role="listitem" className={`grid grid-cols-[56px_minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-b px-4 py-2.5 last:border-b-0 ${cot} ${x.vua ? 'bg-ok-bg' : ''}`} style={{ borderColor: 'var(--line)' }}>
+          <span className="text-[13px] font-semibold tabular-nums text-slate-400">{ngay(x.ngay, homNay)}</span>
+          {coTen && <span className="font-semibold text-slate-100 col-span-2 [@container(min-width:720px)]:col-span-1">{x.ten}</span>}
+          <span className="col-start-2 [@container(min-width:720px)]:col-start-auto"><BadgeViec tong={x.tong}>{x.loai}</BadgeViec></span>
+          <span className="min-w-0 col-span-2 col-start-2 [@container(min-width:720px)]:col-span-1 [@container(min-width:720px)]:col-start-auto">
+            {x.onMo
+              ? <button type="button" aria-expanded={!!x.mo} onClick={x.onMo} className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-left font-semibold text-slate-100 appearance-none hover:underline sm:min-h-0">{x.tieuDe}<span className="text-slate-500"><MuiTenGap mo={!!x.mo} /></span></button>
+              : <span className="font-semibold text-slate-100">{x.tieuDe}</span>}
+            {x.vua && <span className="block text-xs font-semibold text-ok">{t('vừa xong')}</span>}
+            {x.truong.length > 0 && (
+              <dl className="m-0 mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5">
+                {x.truong.map(([n, g]) => <div key={n} className="contents"><dt className="text-xs font-medium leading-5 text-slate-500">{n}</dt><dd className="m-0 text-[13px] text-slate-300">{g}</dd></div>)}
+              </dl>
+            )}
+          </span>
+          <span className="min-w-0 col-span-2 col-start-2 [@container(min-width:720px)]:col-span-1 [@container(min-width:720px)]:col-start-auto">
+            <span className="text-sm text-slate-200">{x.ai ?? '—'}</span>{x.luc && <span className="block text-xs tabular-nums text-slate-500">{x.luc}</span>}
+          </span>
+          <span className="flex items-start justify-end col-start-3 row-start-1 [@container(min-width:720px)]:col-start-auto [@container(min-width:720px)]:row-start-auto">{x.cuoi}</span>
+          {x.mo && x.chiTiet && <div className="col-span-full pt-1">{x.chiTiet}</div>}
+        </div>
+      ))}
     </div>
   );
 }

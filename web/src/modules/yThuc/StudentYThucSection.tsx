@@ -63,7 +63,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const [dangGhiIds, setDangGhiIds] = useState<number[]>([]);
   const dangGhi = dangGhiIds.length > 0;
   const dauRef = useRef<HTMLElement>(null);
-  const { mo, panels } = usePanelYThuc({ onDone: reload });
+  const { mo, panels } = usePanelYThuc({ onDone: () => { setVuaXem(null); reload(); } });
 
   useEffect(() => {
     const moGi = params.get('mo');
@@ -112,7 +112,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     <div className="space-y-2">
       <ChiTietViPham violationId={v.id} onSua={(vv) => mo({ loai: 'sua', v: vv, studentName: d.ten })}
         onDaXoa={() => { setMoViPhamId(null); reload(); }} onMoXuLy={(x) => mo({ loai: 'xem', id: x })} />
-      {coXem(v) && xemIds.length > 1 && (
+      {coXem(v) && xemIds.length > 1 && !batBuoc && (
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangGhi} onClick={() => void daXem([v.id])}>{dangGhiIds.includes(v.id) ? t('Đang lưu…') : t('Đã xem vi phạm này')}</button>
       )}
     </div>
@@ -127,21 +127,30 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
         const xong = x.status === 'done', thuHoi = x.status === 'thu_hoi';
         return {
           key: `x${x.id}`, ngay: x.ngay, tong: xong ? 'xong' : thuHoi ? 'xam' : 'dang', loai: xong ? t('Đã xử lý') : thuHoi ? t('Đã thu hồi') : dich(x.statusLabel),
+          kieu: xong ? 'xu-ly' : thuHoi ? 'thu-hoi' : 'khac',
           tieuDe: dich(x.nhan), ai: x.nguoi, luc: null,
-          truong: [[t('Vi phạm'), t('{soViPham} vi phạm', { soViPham: x.soViPham })], ...(x.soTep ? [[t('Bằng chứng'), t('{soTep} tệp', { soTep: x.soTep })] as [string, string]] : [])],
-          cuoi: <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => mo({ loai: 'xem', id: x.id })}>{t('Xem')}</button>,
+          truong: [
+            [t('Vi phạm'), x.tenViPham.length ? x.tenViPham.join(', ') : t('{soViPham} vi phạm', { soViPham: x.soViPham })],
+            ...(x.baoPh ? [[t('Báo PH'), x.baoPh.trangThai === 'xong' ? (x.baoPh.ngay ? t('đã báo {ngay}', { ngay: ngay(x.baoPh.ngay, homNay) }) : t('Đã báo PH'))
+              : x.baoPh.trangThai === 'bo' ? t('đã bỏ') : t('chưa báo')] as [string, string]] : []),
+            ...(x.soTep ? [[t('Bằng chứng'), t('{soTep} tệp', { soTep: x.soTep })] as [string, string]] : []),
+          ],
+          cuoi: <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={`${t('Xem lần xử lý')} · ${dich(x.nhan)} · ${x.ngay}`} onClick={() => mo({ loai: 'xem', id: x.id })}>{t('Xem')}</button>,
         };
       }
       const v = vpTheoId.get(x.id);
       return {
-        key: `v${x.id}`, ngay: x.ngay, tong: 'xam', loai: t('Đã xem'), tieuDe: x.viPham,
+        key: `v${x.id}`, ngay: x.ngay, tong: 'xam', loai: t('Đã xem'), kieu: 'xem', tieuDe: x.viPham,
+        mo: moViPhamId === x.id, onMo: () => setMoViPhamId((c) => (c === x.id ? null : x.id)),
+        chiTiet: <ChiTietViPham violationId={x.id} onSua={(vv) => mo({ loai: 'sua', v: vv, studentName: d.ten })} onDaXoa={() => { setMoViPhamId(null); reload(); }} onMoXuLy={(id) => mo({ loai: 'xem', id })} />,
         truong: [[t('Nhóm'), dich(x.nhom)], ...(x.nguoiGhi ? [[t('Người ghi'), x.nguoiGhi] as [string, string]] : [])],
         ai: v?.ghiNhanBoiName ?? null, luc: v?.ghiNhanLuc ? lucVn(v.ghiNhanLuc) : null, vua: !!vuaXem?.ids.includes(x.id),
-        cuoi: d.canManage ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangGhi} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button> : null,
+        cuoi: d.canManage ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangGhi} aria-label={`${t('Bỏ xem')} · ${x.viPham}`} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button> : null,
       };
     });
-  const soLs = { 'da-xem': dongLs.filter((x) => x.loai === t('Đã xem')).length, 'da-xu-ly': dongLs.filter((x) => x.tong === 'xong').length, 'thu-hoi': dongLs.filter((x) => x.loai === t('Đã thu hồi')).length };
-  const hienLs = dongLs.filter((x) => loc === 'tat-ca' || (loc === 'da-xem' ? x.loai === t('Đã xem') : loc === 'da-xu-ly' ? x.tong === 'xong' : x.loai === t('Đã thu hồi')));
+  const KIEU_LOC = { 'da-xem': 'xem', 'da-xu-ly': 'xu-ly', 'thu-hoi': 'thu-hoi' } as const;
+  const soLs = { 'da-xem': dongLs.filter((x) => x.kieu === 'xem').length, 'da-xu-ly': dongLs.filter((x) => x.kieu === 'xu-ly').length, 'thu-hoi': dongLs.filter((x) => x.kieu === 'thu-hoi').length };
+  const hienLs = dongLs.filter((x) => loc === 'tat-ca' || x.kieu === KIEU_LOC[loc]);
   const nhanChuoi = d.chuoi.nhan === 'lớp thường' ? t('Lớp thường') : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan });
   const xemLai = () => { setDoan('lich-su'); setLoc('da-xem'); };
 
@@ -171,7 +180,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
         </div>
       ) : doan === 'can-lam' ? (
         <div className="grid gap-3.5 px-4 pb-4 pt-3.5 max-sm:px-3">
-          <TomTatEm d={{ ...d, baoPh: d.hang.baoPh }} homNay={homNay} onBaoPh={() => setBaoPhMo(true)} />
+          <TomTatEm d={{ ...d, baoPh: d.hang.baoPh }} homNay={homNay} onBaoPh={() => setBaoPhMo(true)} onXem={(id) => mo({ loai: 'xem', id })} />
 
           {(nutXuLy || (d.canManage && xemIds.length > 0) || (d.canManage && d.deXuat?.status === 'da_duyet')) && (
             <div className="flex flex-wrap items-center gap-2">
@@ -185,21 +194,21 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
               <span className="ml-auto flex items-center gap-1">
                 {batBuoc && <span className="text-[13px] font-semibold text-soon">{t('Không có "Đã xem"')}</span>}
                 <NutLuat label={t('Luật xử lý vi phạm')}>
-                  {t('≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý. Vi phạm lẻ: Đã xem (không cần biện pháp, không lên bậc) hoặc xử lý nếu nghiêm trọng.')}
+                  {t('≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý. Vi phạm lẻ: Đã xem (chưa cần xử lý, không lên bậc) hoặc xử lý nếu nghiêm trọng.')}
                 </NutLuat>
               </span>
             </div>
           )}
 
-          {vuaXem && (
-            <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-ok-line bg-ok-bg px-3 py-2 text-sm">
+          <div aria-live="polite">{vuaXem && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-ok-line bg-ok-bg px-3 py-2 text-sm">
               <b className="font-semibold text-ok">✓ {t('Đã xem {n} vi phạm · {gio}', { n: vuaXem.ids.length, gio: vuaXem.luc })}</b>
               <span className="ml-auto flex gap-4">
                 <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={dangGhi} onClick={() => void daXem(vuaXem.ids, true)}>{t('Hoàn tác')}</button>
                 <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={xemLai}>{t('Xem lại')}</button>
               </span>
             </div>
-          )}
+          )}</div>
 
           {chuaXong.length === 0 ? (
             <p className="m-0 text-[13px] text-slate-400">{t('Em không có vi phạm nào chưa xong.')}</p>
@@ -209,7 +218,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
               nhanRieng={(v) => (
                 <span className="flex items-center gap-2">
                   {v.trangThai !== ttKhoi && <NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />}
-                  {(d.canManage || v.reportedBy === toi) && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
+                  {(d.canManage || v.reportedBy === toi) && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={`${t('Sửa')} · ${v.ten}`}
                     onClick={() => mo({ loai: 'sua', v: { id: v.id, studentId: v.studentId, category: v.category, skill: v.skill, occurredOn: v.occurredOn, ten: v.ten, moTa: v.moTa }, studentName: d.ten })}>{t('Sửa')}</button>}
                 </span>
               )} />
