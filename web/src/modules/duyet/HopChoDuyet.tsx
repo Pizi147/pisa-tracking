@@ -183,8 +183,8 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
   const baoKetQua = (viec: 'duyet' | 'tu-choi', ok: number, loi: { id: number; loi: string; ma: number }[]) => {
     toast.push(loi.length ? 'error' : 'ok', tomTatKetQuaHangLoat(viec, ok, loi));
     const chiTiet = loi;
-    for (const l of chiTiet.slice(0, 3)) toast.push('error', `${ds.find((x) => x.id === l.id)?.hocVien ?? `Yêu cầu #${l.id}`}: ${l.loi}`);
-    if (chiTiet.length > 3) toast.push('error', `…và ${chiTiet.length - 3} thẻ khác`);
+    for (const l of chiTiet.slice(0, 3)) toast.push('error', `${ds.find((x) => x.id === l.id)?.hocVien ?? t('Yêu cầu #{id}', { id: l.id })}: ${dich(l.loi)}`);
+    if (chiTiet.length > 3) toast.push('error', t('…và {n} thẻ khác', { n: chiTiet.length - 3 }));
   };
   const duyetNhieu = async () => {
     if (busy || !chon.size) return;
@@ -196,7 +196,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
       setChon(new Set());
       xong();
     } catch (e: any) {
-      toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã xong.');
+      toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã xong.'));
       xong();
     } finally { setBusy(false); }
   };
@@ -216,7 +216,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
       setChon(new Set());
       xong();
     } catch (e: any) {
-      toast.push('error', e instanceof ApiError ? e.message : 'Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã xong.');
+      toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối giữa chừng — danh sách đã làm mới để thấy thẻ nào đã xong.'));
       xong();
     } finally { setBusy(false); }
   };
@@ -241,59 +241,59 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
     <div className={gon ? '' : 'space-y-3'}>
       {!gon && <>
       <div className="flex flex-wrap items-end gap-2" data-hd="cd-loc">
-        <BoLocDoan ariaLabel="Trạng thái" value={xem} onChange={(k) => {
+        <BoLocDoan ariaLabel={t('Trạng thái')} value={xem} onChange={(k) => {
           const next = new URLSearchParams(params);
           if (k === 'cho') next.delete('xem'); else next.set('xem', k);
           if (k === 'de-biet') next.delete('phan');
           next.delete('the');
           setParams(next, { replace: true });
         }}
-          muc={[{ key: 'cho', nhan: 'Chờ duyệt', so: xem === 'da-xu-ly' ? null : dem?.['tat-ca'] ?? null },
-            { key: 'de-biet', nhan: 'Báo QL', so: xem === 'da-xu-ly' ? null : data?.demBiet ?? null },
-            { key: 'da-xu-ly', nhan: 'Đã xử lý (30 ngày)' }]} />
+          muc={[{ key: 'cho', nhan: t('Chờ duyệt'), so: xem === 'da-xu-ly' ? null : dem?.['tat-ca'] ?? null },
+            { key: 'de-biet', nhan: t('Báo QL'), so: xem === 'da-xu-ly' ? null : data?.demBiet ?? null },
+            { key: 'da-xu-ly', nhan: t('Đã xử lý (30 ngày)') }]} />
         {/* VIEC-NHO-2 (phương án A): Trạng thái đứng đầu; nhóm Loại GIỮ CHỖ, mờ ở Báo QL — bấm Báo QL thì hàng lọc không nhảy. */}
         <span className="mx-1 hidden h-5 w-px self-center sm:block" style={{ background: 'var(--line)' }} />
-        <BoLocDoan ariaLabel="Loại yêu cầu" value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
-          tat={xem === 'de-biet' ? 'Báo QL không chia loại' : undefined}
-          muc={[{ key: 'tat-ca' as KhoaChip, nhan: 'Tất cả', so: dem?.['tat-ca'] ?? null },
+        <BoLocDoan ariaLabel={t('Loại yêu cầu')} value={phan} onChange={(k) => setParam('phan', k === 'tat-ca' ? null : k)}
+          tat={xem === 'de-biet' ? t('Báo QL không chia loại') : undefined}
+          muc={[{ key: 'tat-ca' as KhoaChip, nhan: t('Tất cả'), so: dem?.['tat-ca'] ?? null },
             ...PHAN_LOAI_CAN_QUYET.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k], so: dem?.[k] ?? null }))]} />
         <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : 'tat-ca')} />
         {quaHan && (
-          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title="Bỏ lọc quá hạn" onClick={() => setParam('qua-han', null)}>
-            Quá hạn · <span className="tabular-nums">{ds.length}</span> ✕
+          <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={t('Bỏ lọc quá hạn')} onClick={() => setParam('qua-han', null)}>
+            {t('Quá hạn')} · <span className="tabular-nums">{ds.length}</span> ✕
           </button>
         )}
         {lopId && (
-          <button type="button" className="btn btn-sm" title="Bỏ lọc lớp" onClick={() => setParam('lop', null)}>
-            Lớp {data?.lopDangLoc?.code ?? lopId} ✕
+          <button type="button" className="btn btn-sm" title={t('Bỏ lọc lớp')} onClick={() => setParam('lop', null)}>
+            {t('Lớp {lop} ✕', { lop: data?.lopDangLoc?.code ?? lopId })}
           </button>
         )}
       </div>
       {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">{t('{n} đề xuất · quá hạn trước → hạn gần nhất', { n: ds.length })}</p>}
-      {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.</p>}
+      {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">{t('Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.')}</p>}
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"
           style={{ borderColor: 'var(--line)' }}>
-          Yêu cầu vừa mở không còn trong danh sách này{xem === 'cho' ? ' — có thể đã được xử lý hoặc tự đóng.' : '.'}
+          {xem === 'cho' ? t('Yêu cầu vừa mở không còn trong danh sách này — có thể đã được xử lý hoặc tự đóng.') : t('Yêu cầu vừa mở không còn trong danh sách này.')}
           {xem === 'cho' && (
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => {
               const next = new URLSearchParams(params); next.set('xem', 'da-xu-ly'); next.delete('phan'); setParams(next, { replace: true });
-            }}>Xem ở Đã xử lý</button>
+            }}>{t('Xem ở Đã xử lý')}</button>
           )}
         </p>
       )}
       </>}
       {loading && (gon ? <div className="px-4 py-3"><Skeleton rows={4} /></div> : <Card><Skeleton rows={6} /></Card>)}
       {data && ds.length === 0 && !gon && (
-        <Card><Empty title={xem === 'cho' ? 'Không có yêu cầu nào đang chờ' : xem === 'de-biet' ? 'Không có thẻ Báo QL'
-          : 'Chưa có yêu cầu nào được xử lý trong 30 ngày'} /></Card>
+        <Card><Empty title={xem === 'cho' ? t('Không có yêu cầu nào đang chờ') : xem === 'de-biet' ? t('Không có thẻ Báo QL')
+          : t('Chưa có yêu cầu nào được xử lý trong 30 ngày')} /></Card>
       )}
       {/* UI-CON-LAI k3 (con-lai.html, chủ SP 24/10): hộp đầy đủ = DANH SÁCH dòng gọn (quá hạn / cũ trước) + PANEL duyệt bên phải (375: toàn màn).
           Bấm dòng = `?the=` (chuông / Quay lại mở đúng thẻ); quyết xong panel đóng, danh sách làm mới. Bản gọn đầu Công việc giữ thẻ tại chỗ. */}
       {ds.length > 0 && !gon && (
         /* Cùng mẫu Chấm Test: ≥ 1024 hai cột, panel TẠI CHỖ (không phủ, danh sách vẫn bấm được); < 1024 bấm dòng → panel thay danh sách. */
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <ul className={`card m-0 list-none overflow-hidden p-0 ${theMo ? 'max-lg:hidden' : ''}`} aria-label="Danh sách yêu cầu">
+          <ul className={`card m-0 list-none overflow-hidden p-0 ${theMo ? 'max-lg:hidden' : ''}`} aria-label={t('Danh sách yêu cầu')}>
             {ds.map((y) => (
               <DongYeuCau key={y.id} yc={y} dang={theTuLink === y.id} onMo={() => { if (theTuLink !== y.id) boChuRoi(() => moThe(y.id)); }}
                 chon={choHangLoat && y.hangLoat && y.trangThai === 'cho' ? {
@@ -306,7 +306,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
             {theMo ? (
               <>
                 <button type="button" className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden"
-                  onClick={() => boChuRoi(() => moThe(null))}>‹ Chờ duyệt</button>
+                  onClick={() => boChuRoi(() => moThe(null))}>{t('‹ Chờ duyệt')}</button>
                 <PanelDuyet key={theMo.id} yc={theMo} tiep={tiepSau(theMo.id)} onDong={() => moThe(null)} onXong={xongPanel} onThemPa={setNgan} />
               </>
             ) : <Card><Empty title={t('Chọn một đề xuất bên trái để xem và quyết')} /></Card>}
@@ -341,35 +341,35 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
         <div className={`sticky bottom-2 z-10 ${gon ? 'mx-3 mb-3' : ''} flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2 shadow-lg`}
           style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <span className="text-sm tabular-nums text-slate-300">
-            Đã chọn {chon.size}{loaiChon ? ` · ${LOAI_YC_META[loaiChon]?.nhan ?? ''}` : ''}
-            {biCatTran && <span className="ml-2 text-[12px] text-slate-400">Tối đa {TRAN_HANG_LOAT} một lần</span>}
+            {t('Đã chọn {n}', { n: chon.size })}{loaiChon ? ` · ${LOAI_YC_META[loaiChon]?.nhan ?? ''}` : ''}
+            {biCatTran && <span className="ml-2 text-[12px] text-slate-400">{t('Tối đa {n} một lần', { n: TRAN_HANG_LOAT })}</span>}
           </span>
           <div className="flex flex-wrap gap-1.5">
             {loaiChon && nHet > chon.size && (
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
-                onClick={() => setChon(chonHet(dsChonHet, loaiChon))}>Chọn hết {nHet}</button>
+                onClick={() => setChon(chonHet(dsChonHet, loaiChon))}>{t('Chọn hết {n}', { n: nHet })}</button>
             )}
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setChon(new Set())} disabled={busy}>Bỏ chọn</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setChon(new Set())} disabled={busy}>{t('Bỏ chọn')}</button>
             {loaiChon && LOAI_YC_META[loaiChon]?.kieuNut === 'duyet-tu-choi' && (
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={lyDoTc !== null} disabled={busy}
-                onClick={() => { setLyDoTc(lyDoTc === null ? '' : null); setTcDaBam(false); }}>Từ chối {chon.size}…</button>
+                onClick={() => { setLyDoTc(lyDoTc === null ? '' : null); setTcDaBam(false); }}>{t('Từ chối {n}…', { n: chon.size })}</button>
             )}
             <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={duyetNhieu} disabled={busy || lyDoTc !== null}>
-              {busy && lyDoTc === null ? 'Đang duyệt…' : `Duyệt ${chon.size} yêu cầu`}
+              {busy && lyDoTc === null ? t('Đang duyệt…') : t('Duyệt {n} yêu cầu', { n: chon.size })}
             </button>
           </div>
           {lyDoTc !== null && (
             <div className="w-full space-y-1.5 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
               <label className="block">
-                <span className="mb-1 block text-[12px] font-bold text-slate-200">Lý do từ chối (người gửi sẽ đọc)<span aria-hidden className="text-bad"> *</span></span>
-                <textarea className="field w-full" rows={2} maxLength={2000} autoFocus aria-label="Lý do từ chối" value={lyDoTc} aria-invalid={tcDaBam && !lyDoTc.trim()}
+                <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Lý do từ chối (người gửi sẽ đọc)')}<span aria-hidden className="text-bad"> *</span></span>
+                <textarea className="field w-full" rows={2} maxLength={2000} autoFocus aria-label={t('Lý do từ chối')} value={lyDoTc} aria-invalid={tcDaBam && !lyDoTc.trim()}
                   onChange={(e) => setLyDoTc(e.target.value)} />
               </label>
-              {tcDaBam && !lyDoTc.trim() && <span className="block text-xs text-late">Chưa điền</span>}
+              {tcDaBam && !lyDoTc.trim() && <span className="block text-xs text-late">{t('Chưa điền')}</span>}
               <div className="flex justify-end gap-1.5">
-                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setLyDoTc(null); setTcDaBam(false); }}>Đóng</button>
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setLyDoTc(null); setTcDaBam(false); }}>{t('Đóng')}</button>
                 <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void tuChoiNhieu()}>
-                  {busy ? 'Đang từ chối…' : `Gửi từ chối ${chon.size}`}
+                  {busy ? t('Đang từ chối…') : t('Gửi từ chối {n}', { n: chon.size })}
                 </button>
               </div>
             </div>

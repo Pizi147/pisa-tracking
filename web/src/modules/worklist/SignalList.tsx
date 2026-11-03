@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type Signal = {
   key: string; kind: string; label: string; count: number;
@@ -13,7 +14,7 @@ type Signal = {
 };
 
 const OWNER_LABEL: Record<Signal['owner'], string> = {
-  manager: 'Quản lý', teacher: 'Giáo viên',
+  manager: t('Quản lý'), teacher: t('Giáo viên'),
 };
 
 /**
@@ -32,34 +33,34 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
   if (periodId) qs.set('periodId', String(periodId));
   const { data, loading, error, reload } = useApi<Signal[]>(`/signals${qs.toString() ? `?${qs}` : ''}`);
 
-  if (error) return <Card title="Việc đang tồn"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
-  if (loading) return <Card title="Việc đang tồn"><Skeleton rows={3} /></Card>;
+  if (error) return <Card title={t('Việc đang tồn')}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
+  if (loading) return <Card title={t('Việc đang tồn')}><Skeleton rows={3} /></Card>;
   if (!data?.length) {
     return (
-      <Card title="Việc đang tồn" bodyClass="p-4">
+      <Card title={t('Việc đang tồn')} bodyClass="p-4">
         <p className="text-sm text-slate-400">
-          Không còn việc nào hệ thống tự nhìn ra được trong phạm vi của bạn.
+          {t('Không còn việc nào hệ thống tự nhìn ra được trong phạm vi của bạn.')}
         </p>
       </Card>
     );
   }
 
   return (
-    <Card title="Việc đang tồn" action={<Info>{data.length} loại việc</Info>} bodyClass="p-0">
+    <Card title={t('Việc đang tồn')} action={<Info>{t('{n} loại việc', { n: data.length })}</Info>} bodyClass="p-0">
       <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
         {data.map((s) => (
           <li key={s.key}>
             {s.metricId ? (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
                 <Task tone={s.tone}><OSo id={s.metricId} giaTri={s.count} phamVi={{ branchId: s.branchId }} /></Task>
-                <span className="text-sm text-slate-200 flex-1 min-w-0">{s.label}</span>
+                <span className="text-sm text-slate-200 flex-1 min-w-0">{dich(s.label)}</span>
                 {s.branchName && <span className="text-xs text-slate-500">{s.branchName}</span>}
                 <Info>{OWNER_LABEL[s.owner]}</Info>
               </div>
             ) : (
             <Link to={s.href} className="no-underline flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 bam">
               <Task tone={s.tone}>{s.count}</Task>
-              <span className="text-sm text-slate-200 flex-1 min-w-0">{s.label}</span>
+              <span className="text-sm text-slate-200 flex-1 min-w-0">{dich(s.label)}</span>
               {s.branchName && <span className="text-xs text-slate-500">{s.branchName}</span>}
               <Info>{OWNER_LABEL[s.owner]}</Info>
             </Link>
@@ -69,9 +70,8 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
       </ul>
       <div className="p-3">
         <SectionNote>
-          Những việc này <strong>tự hết khi dữ liệu nguồn được xử lý</strong> — không có nút đánh dấu đã xong,
-          vì đánh dấu chỉ che một con số vẫn đang đúng. Bấm một dòng để mở đúng những bản ghi tạo nên nó.
-          Việc quản lý đặc thù (liên hệ phụ huynh, tổ chức bổ trợ…) mới cần nhập tay ở phần dưới.
+          {t('Những việc này')} <strong>{t('tự hết khi dữ liệu nguồn được xử lý')}</strong>{' '}
+          {t('— không có nút đánh dấu đã xong, vì đánh dấu chỉ che một con số vẫn đang đúng. Bấm một dòng để mở đúng những bản ghi tạo nên nó. Việc quản lý đặc thù (liên hệ phụ huynh, tổ chức bổ trợ…) mới cần nhập tay ở phần dưới.')}
         </SectionNote>
       </div>
     </Card>

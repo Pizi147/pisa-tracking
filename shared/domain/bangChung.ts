@@ -6,6 +6,7 @@
  * chọn nhiều tệp cùng lúc, hoặc dán một liên kết. Hai hàm dưới đây là luật thuần cho việc đó — dùng
  * chung cho mọi nơi có khối Bằng chứng, không lặp lại ở từng nơi gọi.
  */
+import { t } from '../i18n/index.ts';
 
 /** Đuôi tệp theo MIME của ảnh dán; loại lạ (không phải ảnh Ctrl+V thường gặp) → png. */
 const DUOI_THEO_MIME: Record<string, string> = {
@@ -31,4 +32,4 @@ export function laLienKet(text: string): boolean {
 }
 
 /** Dòng hướng dẫn nhỏ dưới khối Bằng chứng (mockup 09c dòng 41). */
-export const CHU_KHOI_BANG_CHUNG = 'Dán ảnh chụp màn hình (Ctrl + V) · kéo thả · chọn tệp · dán liên kết';
+export const CHU_KHOI_BANG_CHUNG = t('Dán ảnh chụp màn hình (Ctrl + V) · kéo thả · chọn tệp · dán liên kết');

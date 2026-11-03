@@ -50,9 +50,9 @@ export async function runPrViecNho2Tests(t: YThucTestKit) {
   /* ---------------------------------------------------------------- 2. Chờ duyệt: hàng lọc đứng yên */
   check('VN2-2 · Chờ duyệt: nhóm Trạng thái đứng trước nhóm Loại; nhóm Loại không bị gỡ khi ở Báo QL (OV-12h đổi tên tab; mờ, không bấm)', () => {
     const s = doc('web/src/modules/duyet/HopChoDuyet.tsx');
-    const tt = s.indexOf('ariaLabel="Trạng thái"'), loai = s.indexOf('ariaLabel="Loại yêu cầu"');
+    const tt = s.indexOf("ariaLabel={t('Trạng thái')}"), loai = s.indexOf("ariaLabel={t('Loại yêu cầu')}");   // EN-SOT: chữ qua t()
     assert(tt > 0 && loai > tt, 'Trạng thái phải đứng trước Loại');
-    assert(!/xem !== 'de-biet' && \(\s*<BoLocDoan ariaLabel="Loại yêu cầu"/.test(s), 'nhóm Loại vẫn bị gỡ ở Báo QL');
+    assert(!/xem !== 'de-biet' && \(\s*<BoLocDoan ariaLabel=\{t\('Loại yêu cầu'\)\}/.test(s), 'nhóm Loại vẫn bị gỡ ở Báo QL');
     assert(/Báo QL không chia loại/.test(s), 'thiếu chữ rê chuột của nhóm mờ');
   });
 
