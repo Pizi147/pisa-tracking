@@ -26,10 +26,8 @@ export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | nul
           </span>
         ))}
       {khac && (
-        <span className="truncate text-slate-500"
-          title={`${du(khac.kyNang)}${t(': GV khác')}${khac.quaHanNgay !== null ? ` · ${t('⚠ quá hạn {quaHanNgay} ngày', { quaHanNgay: khac.quaHanNgay })}` : ''}`}>
-          {mon(khac.kyNang)}{t(': GV khác')}{khac.quaHanNgay !== null && <> · <b className="font-semibold text-late">{t('⚠ quá hạn {quaHanNgay} ngày', { quaHanNgay: khac.quaHanNgay })}</b></>}
-        </span>
+        /* U06 (PTA 04/11 "không số về GV khác"): chỉ nói môn nào của GV khác, không số ngày quá hạn của họ. */
+        <span className="truncate text-slate-500" title={`${du(khac.kyNang)}${t(': GV khác')}`}>{mon(khac.kyNang)}{t(': GV khác')}</span>
       )}
     </span>
   );
@@ -41,15 +39,20 @@ export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | nul
  */
 function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
   if (chuaLuu > 0) return <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(chuaLuu)}</Nhan>;
+  /* U06 (mockup V11, PTA 04/11 "không số về GV khác"): người có phân công — MỘT badge "Chờ bạn chấm" / "Chờ GV khác"; phần của mình gạch dưới ở ô môn. */
+  if (l.phan && (l.phan.toi || l.phan.khac)) {
+    const { toi, khac } = l.phan;
+    if (toi && toi.con > 0) return <Nhan tone="soon" title={`${toi.kyNang.map((k) => tenMon(l.chuongTrinh, k)).join(', ')} · ${t('của bạn: còn {con} bài', { con: toi.con })}`}>{t('Chờ bạn chấm')}</Nhan>;
+    if (khac && khac.con > 0) return <Nhan tone="muted">{t('Chờ GV khác')}</Nhan>;
+    return <Nhan tone="ok">{t('Đã chấm')}</Nhan>;
+  }
   /* Người không chấm (Quản lý): "Chờ chấm" tách theo tiến độ — đã có bài chấm = Đang chấm, chưa bài nào = Chưa chấm (mockup). */
   const choCham = l.nhan.loai === 'cho-cham';
   return (
     <>
-      {l.phan && (l.phan.toi || l.phan.khac) ? <OPhan phan={l.phan} ct={l.chuongTrinh} quaHan={l.quaHan} /> : (
-        <Nhan tone={choCham && l.daCham > 0 ? 'doing' : TONE_NHAN_LOP[l.nhan.loai]}>
-          {choCham ? (l.daCham > 0 ? t('Đang chấm') : t('Chưa chấm')) : dich(l.nhan.chu)}
-        </Nhan>
-      )}
+      <Nhan tone={choCham && l.daCham > 0 ? 'doing' : TONE_NHAN_LOP[l.nhan.loai]}>
+        {choCham ? (l.daCham > 0 ? t('Đang chấm') : t('Chưa chấm')) : dich(l.nhan.chu)}
+      </Nhan>
     </>
   );
 }
@@ -59,30 +62,29 @@ function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
  * chỉ ghi tên bài. Kỹ năng: bộ môn của lớp, môn không làm bài tuần này mờ (tooltip tên đủ, G-7).
  */
 function LuotLop({ l }: { l: LopLichTest }) {
+  /* U06 (mockup V11): FT chỉ chip môn; lớp thường thêm tên bài ("Final Test"). Môn CỦA BẠN gạch dưới, môn không làm bài tuần này mờ (tooltip tên đủ, G-7). */
   const motBai = l.mode === 'ratio' || l.kind === 'mt0';
+  const cuaToi = new Set(l.phan?.toi?.kyNang ?? []);
   return (
-    <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-slate-400">
-      <span className="tabular-nums">{t('{n} HV', { n: l.soHv })}</span>
-      {l.luot.map((x) => (
-        <span key={x.dot} className="whitespace-nowrap">· <b className="font-semibold text-slate-100">{dich(x.dot)}</b>{motBai ? '' : <span className="tabular-nums"> {x.soHv}</span>}</span>
-      ))}
-      <span aria-hidden>·</span>
-      <span className="inline-flex gap-1">
+    <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-dim">
+      {motBai && l.luot.map((x) => <span key={x.dot} className="whitespace-nowrap text-[15px]">{dich(x.dot)}</span>)}
+      <span className="inline-flex gap-2.5">
         {l.boMon.map((k) => {
           const co = l.kyNangTuan.includes(k);
           const ten = tenMon(l.chuongTrinh, k);
+          const toi = cuaToi.has(k);
           return (
-            <span key={k} title={co ? ten : t('{ten} — không làm bài tuần này', { ten })}
-              className={`inline-flex h-[22px] min-w-[22px] items-center justify-center rounded px-1 text-xs font-bold ${co ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'text-slate-500'}`}>
+            <span key={k} title={!co ? t('{ten} — không làm bài tuần này', { ten }) : toi ? t('{mon} của bạn', { mon: ten }) : ten}
+              className={`text-[13px] font-semibold ${!co ? 'text-faint' : toi ? 'text-[color:var(--accent)] underline decoration-1 underline-offset-[3px]' : 'text-slate-300'}`}>
               {tenMonNgan(l.chuongTrinh, k)}
             </span>
           );
         })}
       </span>
-      {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — chữ nhạt cuối dòng lượt, không phải việc chấm. */}
+      {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — chữ nhạt cuối dòng, không phải việc chấm. */}
       {l.choDuyetDoi > 0 && (
         <span className="whitespace-nowrap text-xs text-muted" title={t('Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời')}>
-          · {l.choDuyetDoi > 1 ? t('{choDuyetDoi} bài ', { choDuyetDoi: l.choDuyetDoi }) : ''}{t('vắng · chờ Quản lý duyệt dời')}
+          {l.choDuyetDoi > 1 ? t('{choDuyetDoi} bài ', { choDuyetDoi: l.choDuyetDoi }) : ''}{t('vắng · chờ Quản lý duyệt dời')}
         </span>
       )}
     </span>
@@ -126,7 +128,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
   /** SV-S-EXPERT: lượt S Ex của tuần — cột S Ex trong lưới FT. */
   sEx: LichTest['sEx'];
 }) {
-  const cot = hep ? [null, 92, 82] : [174, null, ...(coChiNhanh ? [110] : []), 110, 180, 220];   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
+  const cot = hep ? [null, 92, 82] : [174, null, ...(coChiNhanh ? [110] : []), 110, 120, 150];   // U06 (mockup V11): x/y bài · hạn · MỘT badge (bỏ "phần của bạn / GV khác")   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
   const soCot = cot.length;
   /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem — cùng số "… của bạn: còn n bài" ở hàng lớp. */
   const onHet = (l: LopLichTest) => () => {
@@ -156,7 +158,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
                   {coChiNhanh && <td className="truncate px-3 font-normal text-slate-400" title={l.branchName}>{l.branchName}</td>}
                   <td className="px-3 font-normal"><TienDo l={l} /></td>
                   <td className="whitespace-nowrap px-3 font-normal"><HanHang l={l} /></td>
-                  <td className="px-3 font-normal"><NhanLop l={l} chuaLuu={chuaLuu[k]} /></td>
+                  <td className="px-3 font-normal"><span className="nhan-lop inline-flex">{/* mockup V11: badge có viền cùng tông */}<NhanLop l={l} chuaLuu={chuaLuu[k]} /></span></td>
                 </>
               )}
             </HangNhom>

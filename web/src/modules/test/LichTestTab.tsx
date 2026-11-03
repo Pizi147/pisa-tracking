@@ -222,31 +222,28 @@ export function LichTestTab() {
   const khungKhac: Loai | null = loai && dem[loai] === 0 ? (loai === 'ft' ? 'thuong' : 'ft') : null;
   const tenKhung = (k: Loai) => (k === 'ft' ? 'Fast Track' : t('Lớp thường'));
   /* "5 lớp · 2 đã chấm xong" — lớp xong đếm riêng (OV-11e TE-7: người có phân công tính phần của mình). */
-  const xongLop = lopTab.filter((l) => (l.phan ? l.conBaiCuaToi : l.conBai) === 0).length;
-  const tomTatTuan = lopTab.length ? t('{n} lớp · {x} đã chấm xong', { n: new Set(lopTab.map((l) => l.classId)).size, x: xongLop }) : t('Không có Test');
+  /* B21 (U06 #8, mockup V11): đơn vị khớp dòng — "4 lớp · 5 lượt" (một lớp có thể hai lượt / hai bài); bỏ "· n đã chấm xong" (PTA 03/11). */
+  const tomTatTuan = lopTab.length ? t('{n} lớp · {m} lượt', { n: new Set(lopTab.map((l) => l.classId)).size, m: lopTab.length }) : t('Không có Test');
+  /* B13: dải số có MỘT nhãn nhóm — người có phân công "Của bạn:", Quản lý / Quản trị "Cả chi nhánh:". */
+  const coPhan = [...lopTab, ...noTab].some((l) => !!l.phan);
 
   const tuanPicker = (
     <WeekPicker gon periodId={periodParam ?? data.tuan?.id ?? null} onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
   );
   const congTacKhung = (dem.ft > 0 || dem.thuong > 0) && (
-    <CongTacKhung trang="lich-test" kieu="chip" value={loai ?? 'tat-ca'} coTatCa dem={{ ...dem, 'tat-ca': dem.ft + dem.thuong }}
+    <CongTacKhung v8 trang="lich-test" value={loai ?? 'tat-ca'} coTatCa dem={dem}
       onChange={(k) => datThamSo({ loai: k })} />
   );
   const nhomPhamVi = data.coPhamViRong && (
-    <div className="inline-flex overflow-hidden rounded-md border" role="group" aria-label={t('Lớp')}
-      style={{ borderColor: 'var(--line-strong)' }}>
+    /* U06 (mockup V11 `.doan`): đoạn chọn liền như Fast Track / Lớp thường — mục chọn nền + vạch đáy + đậm. */
+    <span className="doan" role="group" aria-label={t('Lớp')}>
       {([['cua-toi', t('Lớp tôi dạy')], ['tat-ca', t('Tất cả')]] as const).map(([k, nhan]) => (
-        <button key={k} type="button" aria-pressed={data.phamVi === k}
-          onClick={() => datThamSo({ phamVi: k })}
-          className={`min-h-[44px] px-3 text-xs font-semibold sm:min-h-8 ${data.phamVi === k
-            ? 'bg-[color:var(--accent-soft)] text-slate-100' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>
-          {nhan}
-        </button>
+        <button key={k} type="button" aria-pressed={data.phamVi === k} onClick={() => datThamSo({ phamVi: k })}>{nhan}</button>
       ))}
-    </div>
+    </span>
   );
   const nutXuat = session?.nav?.xuatMt && (
-    <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoXuat(true)}>{t('Xuất Excel')}</button>
+    <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px]" onClick={() => setMoXuat(true)}>{t('Xuất Excel')}</button>
   );
   /* OV-15f: lối vào Học viên & Lớp › Lịch thi (rà soát thi thật), tháng kế tiếp; mang theo chi nhánh đang lọc. */
   const nutLichThi = session?.nav?.students && (
@@ -258,11 +255,30 @@ export function LichTestTab() {
   const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0) + (loaiParam ? 1 : 0);
   const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong || !!session?.nav?.xuatMt;
 
+  /* PR-MT (K2-32): nhắc — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. U06 (mockup V11): dòng cuối TRONG thẻ nhóm, chữ nhấn. */
+  const nhacMtCu = data && data.nhacLichSu.length > 0 && (
+    <div className="space-y-1 border-t border-[color:var(--line)] px-4 py-2.5">
+      {/* OV-11e (TE-8): mỗi lượt một link → Điểm theo lớp đúng lượt, "Chỉ ô còn trống"; số em = số hàng ở đó. */}
+      {data.nhacLichSu.map((n) => (
+        <p key={n.classId} className="m-0 text-[13px] font-semibold tabular-nums text-[color:var(--accent)]">
+          {t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}
+          {n.luot.map((x) => (
+            <Fragment key={x.so}>
+              {' · '}
+              <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={t('Nhập MT{so} cũ lớp {classCode}', { so: x.so, classCode: n.classCode })}>
+                MT{x.so} · {t('{n} em', { n: x.soEm })} ›
+              </Link>
+            </Fragment>
+          ))}
+        </p>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-3">
-      <div className="card overflow-clip p-0">
-        {/* Thanh tuần — máy tính một hàng (tự xuống dòng < 1024); điện thoại: tuần + chip, phần còn lại gom vào "Lọc". */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] px-3 py-3 sm:px-4">
+      {/* U06 (mockup V11 khu A): thanh tuần ĐỨNG NGOÀI thẻ · dải số một thẻ · các nhóm một thẻ. Điện thoại: tuần + "Lọc". */}
+        <div className="flex flex-wrap items-center gap-2">
           {tuanPicker}
           {!dienThoai && <span className="ml-1 inline-flex flex-wrap items-center gap-2">{congTacKhung}{nhomPhamVi}</span>}
           {!dienThoai && locChiNhanh}
@@ -296,17 +312,18 @@ export function LichTestTab() {
         </div>
 
         {khungKhac && dem[khungKhac] > 0 && !trong ? (
-          <Empty title={t('{khung} · {maTuan} không có Test nào', { khung: tenKhung(loai!), maTuan })}
-            action={<button type="button" className="btn btn-sm" onClick={() => datThamSo({ loai: khungKhac })}>{tenKhung(khungKhac)} · {t('{n} lớp', { n: dem[khungKhac] })} ›</button>} />
+          <div className="card"><Empty title={t('{khung} · {maTuan} không có Test nào', { khung: tenKhung(loai!), maTuan })}
+            action={<button type="button" className="btn btn-sm" onClick={() => datThamSo({ loai: khungKhac })}>{tenKhung(khungKhac)} · {t('{n} lớp', { n: dem[khungKhac] })} ›</button>} /></div>
         ) : trong ? (
-          <Empty title={t('{maTuan} không có Test nào', { maTuan })}
-            hint={session?.nav?.testPlan ? t('Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.') : t('Đổi tuần ở trên để xem tuần khác.')} />
+          <div className="card"><Empty title={t('{maTuan} không có Test nào', { maTuan })}
+            hint={session?.nav?.testPlan ? t('Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.') : t('Đổi tuần ở trên để xem tuần khác.')} /></div>
         ) : (
           <>
             {/* UX-2 (1): ô "bài quá hạn" lấy từ `/cham/lich-test/qua-han`, theo khung đang xem (OV-14b) như hai ô đầu. */}
             <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
-              onBam={bamSo} dangTaiNo={!quaHan} />
+              onBam={bamSo} dangTaiNo={!quaHan} nhom={coPhan ? t('Của bạn:') : t('Cả chi nhánh:')} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
+            <div className="card overflow-clip p-0">
             <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
               dongMo={dongMo && (!loai || loaiCua(dongMo.d) === loai) ? dongMo : null} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu}
               onMoDong={(d, viTri) => {
@@ -325,33 +342,15 @@ export function LichTestTab() {
                   urlClassId={urlClassId} urlKn={urlKn} conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} sEx={data.sEx} />
               </NhomDau>
             </div>
+            {nhacMtCu}
+            </div>
           </>
         )}
-      </div>
       <ConfirmDialog open={!!hoiBo} onClose={() => setHoiBo(null)} title={hoiBo?.title ?? ''} body={hoiBo?.body} danger
         confirmLabel={hoiBo?.nut} closeLabel={t('Ở lại')} onConfirm={() => { hoiBo?.tiep(); setHoiBo(null); }} />
       {moXuat && data.tuan && (
         <NganXuatMt khung={loai ?? 'ft'} chiNhanh={branchId} lop={urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null}
           thoiGianMacDinh={{ kieu: 'tuan', tu: data.tuan.weekStart, den: data.tuan.weekStart }}   /* SL1 (V3B-07 #6): đúng tuần đang xem, không từ đầu tháng */ onDong={() => setMoXuat(false)} />
-      )}
-      {/* PR-MT (K2-32): nhắc MỜ — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. */}
-      {data.nhacLichSu.length > 0 && (
-        <div className="space-y-1 px-1">
-          {/* OV-11e (TE-8): mỗi lượt một link → Điểm theo lớp đúng lượt, "Chỉ ô còn trống"; số em = số hàng ở đó. */}
-          {data.nhacLichSu.map((n) => (
-            <p key={n.classId} className="m-0 text-[13px] text-slate-500 tabular-nums">
-              {t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}
-              {n.luot.map((x) => (
-                <Fragment key={x.so}>
-                  {' · '}
-                  <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={t('Nhập MT{so} cũ lớp {classCode}', { so: x.so, classCode: n.classCode })}>
-                    MT{x.so} · {t('{n} em', { n: x.soEm })}
-                  </Link>
-                </Fragment>
-              ))}
-            </p>
-          ))}
-        </div>
       )}
     </div>
   );
