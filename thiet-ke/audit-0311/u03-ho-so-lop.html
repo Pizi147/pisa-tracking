@@ -27,16 +27,20 @@
 .chip-loc { display:inline-flex; align-items:center; height:30px; padding:0 12px; border-radius:999px; border:1px solid var(--line-strong); font:500 13px var(--phong); }
 .chip-loc.dang { border-color:var(--accent); background:var(--accent-soft); font-weight:700; }
 /* bảng HV — bỏ cột Case · PA; ô kỹ năng có Case đang mở = chấm nhỏ góc */
-.bl { width:100%; border-collapse:collapse; font-size:15px; }
-.bl th { font:600 13px var(--phong); color:var(--text-dim); text-align:center; padding:8px; border-bottom:1px solid var(--line); }
+.bl { width:100%; border-collapse:collapse; font-size:15px; table-layout:fixed; }
+.bl th { font:600 13px var(--phong); color:var(--text-dim); text-align:center; padding:8px 16px; border-bottom:1px solid var(--line); }
 .bl th:first-child, .bl td:first-child { text-align:left; padding-left:16px; }
-.bl td { padding:9px 8px; border-bottom:1px solid var(--line); text-align:center; font-family:var(--phong-so); vertical-align:middle; }
+.bl td { padding:10px 16px; border-bottom:1px solid var(--line); text-align:center; font-family:var(--phong-so); vertical-align:middle; }
 .bl td.ten { font-family:var(--phong); cursor:pointer; } .bl td.ten b { font-weight:600; display:block; } .bl td.ten span { font-size:11px; color:var(--text-faint); }
 .bl tr.mo td { background:var(--surface-2); } .bl tr.mo td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
 .dd { color:var(--bad); font-weight:700; } .dd::before { content:"✗ "; } .da { color:var(--ok); font-weight:700; } .da::before { content:"✓ "; } .bg { color:var(--doing); font-weight:700; } .bg::before { content:"✓ "; }
 .oc-kn { position:relative; display:inline-block; padding:2px 8px; border-radius:6px; cursor:pointer; white-space:nowrap; }
 .oc-kn:hover { background:var(--accent-soft); }
 
+/* #22 tiêu chí W / S: hover ô (1440) = thẻ nhỏ; bấm kỹ năng = dòng đầu tóm tắt */
+.the-tc { position:absolute; top:calc(100% + 6px); left:50%; transform:translateX(-50%); z-index:5; display:grid; gap:4px; padding:8px 12px; background:var(--surface); border:1px solid var(--line-strong); border-radius:8px; box-shadow:0 8px 22px rgba(0,0,0,.35); font:500 13px var(--phong-so); color:var(--text-dim); text-align:left; white-space:nowrap; }
+.the-tc b, .tc b { color:var(--text); font-weight:700; } .the-tc .k, .tc .k { font:700 13px var(--phong); color:var(--text); margin-right:2px; }
+.tc { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; padding:8px 12px; border-radius:8px; background:var(--surface-2); font:500 14px var(--phong-so); color:var(--text-dim); }
 .oc-kn.chon { box-shadow:inset 0 0 0 2px var(--accent); background:var(--accent-soft); }
 .kq { display:inline-flex; height:22px; align-items:center; padding:0 8px; border-radius:4px; border:1px solid var(--line-strong); font:600 12px var(--phong); white-space:nowrap; }
 .lich { display:inline-flex; height:22px; align-items:center; padding:0 7px; border-radius:2px; background:var(--doing-nen); color:var(--doing); font:600 12px var(--phong); white-space:nowrap; }
@@ -83,7 +87,7 @@
 .tab-mt { display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap; }
 .tm { display:grid; gap:1px; padding:6px 12px; border:1px solid var(--line-strong); border-radius:8px; font-size:13px; min-width:96px; } .tm b { font-size:14px; }
 .tm.dang { border-color:var(--accent); background:var(--accent-soft); }
-.ld { width:100%; border-collapse:collapse; font-size:14px; }
+.ld { width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed; }
 .ld th { font:600 13px var(--phong); color:var(--text-dim); padding:8px; border-bottom:1px solid var(--line); text-align:center; }
 .ld th:first-child, .ld td:first-child { text-align:left; padding-left:16px; }
 .ld td { padding:8px; border-bottom:1px solid var(--line); text-align:center; vertical-align:middle; }
@@ -110,9 +114,9 @@
     <p class="ghi"><span class="so-mk">1</span>bảng em: Học viên · Target · MT · L · R · W · S · Overall · Kết quả · Ngày thi · ⋯ — <b>bỏ cột Case · PA</b> (✗ ở ô điểm đã báo vấn đề)
       · <span class="so-mk">2</span>bấm tên em (hoặc một ô điểm) → <b>mở rộng ngay dưới hàng</b>: trái <b>Điểm theo lượt</b> (MT gần nhất + 2 lượt trước / đầu vào), phải <b>5 ô kỹ năng</b>
       · <span class="so-mk">3</span>bấm một kỹ năng → <b>tóm tắt 3 cột ngắn</b>: Điểm (chuỗi lượt) · Case + PA · Kết quả hiện tại (tiến bộ hay không); "Xem chi tiết ›" mở panel phải, "Hồ sơ HV ›" đổi trang
-      · <span class="so-mk">4</span>bấm ô điểm W2 trên hàng = mở em với W2 chọn sẵn (một bấm).</p>
+      · <span class="so-mk">4</span>bấm ô điểm trên hàng = mở em với kỹ năng đó chọn sẵn (ô W → bài W thấp hơn, ở đây W2) · <span class="so-mk">5</span>cột chia đều: 5 cột điểm cùng rộng · <span class="so-mk">6</span>rê chuột ô W / S (cả ô W1 · W2 · S ở Điểm theo lượt) (hoặc focus bàn phím) → thẻ tiêu chí; ô chỉ có Band không thẻ; bấm W / S → dòng tiêu chí đầu tóm tắt · Lê Minh Khang: MT nhập lịch sử — Đạt / SOS như MT thường, không tạo Case.</p>
     <div class="hang-khung">
-      <figure><figcaption>A1 · bấm Hà Trần Phúc → mở rộng · chọn W2</figcaption>
+      <figure><figcaption>A1 · bấm Hà Trần Phúc → mở rộng · chọn W2 (dòng tiêu chí) · rê chuột ô S của Lê Thảo Nhi</figcaption>
       <div class="man toi dai">
         <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m">Công việc <span class="so-nav">32</span></span><span class="phai"><span>Nguyễn Hoàng Dũng</span></span></div>
         <div class="trang-l">
@@ -121,14 +125,14 @@
             <div class="fact"><span>GVCN</span><b>Nguyễn Hoàng Dũng</b></div><div class="fact"><span>L · W1</span><b>Nguyễn Hoàng Dũng</b></div><div class="fact"><span>R</span><b>Trần Thị Thanh Hằng</b></div><div class="fact"><span>S</span><b>Miguel Stichini</b></div><div class="fact"><span>W2</span><b>Đỗ Vũ Tuấn Phong</b></div>
           </div>
           <div class="l-so">
-            <div class="facts"><div class="fact"><span>Lượt mới nhất</span><b>MT4 · W4 OCT</b></div><div class="fact"><span>Đạt MT4</span><b>chưa có</b></div><div class="fact"><span>SOS</span><b>5 HV</b></div></div>
+            <div class="facts"><div class="fact"><span>Lượt mới nhất</span><b>MT4 · W4 OCT</b></div><div class="fact"><span>Đạt MT4</span><b>chưa có</b></div><div class="fact"><span>SOS</span><b>6 HV</b></div></div>
             <span class="phai"><span class="td">1 bài chờ chấm</span><span class="td qua">4 việc quá hạn</span></span></div>
           <div class="viec-toi">Việc của tôi · 5 <span class="vt"><b>Ghi kết quả PA · Writing Task 1 · Hà Trần Phúc</b><span class="td qua">quá hạn 3 ngày</span></span><span class="vt"><b>Ghi kết quả PA · Listening · Hà Trần Phúc</b><span class="td qua">quá hạn 3 ngày</span></span><span class="vt"><b style="max-width:200px;overflow:hidden;text-overflow:ellipsis">Chốt tuần MT · Nguyễn Ngọc Phương Anh</b><span class="td">hạn 06/11</span></span><a href="#">+2 ở Công việc ›</a></div>
           <div class="tab"><span class="dang">Học viên</span><span>Ý thức &amp; Phối hợp</span><span>Phân tích lớp</span></div>
           <div class="the">
-            <div class="cong-cu"><span class="chip-loc dang">Tất cả 8</span><span class="chip-loc">SOS 5</span><span class="chip-loc">Chưa đủ dữ liệu 2</span><span class="phai"><span class="nut nut-nho">Chọn nhiều</span></span></div>
-            <table class="bl">
-              <tr><th style="width:230px">Học viên</th><th>Target</th><th>MT gần nhất</th><th>L</th><th>R</th><th>W</th><th>S</th><th>Overall</th><th>Kết quả</th><th>Ngày thi</th><th></th></tr>
+            <div class="cong-cu"><span class="chip-loc dang">Tất cả 8</span><span class="chip-loc">SOS 6</span><span class="chip-loc">Chưa đủ dữ liệu 2</span><span class="phai"><span class="nut nut-nho">Chọn nhiều</span></span></div>
+            <table class="bl"><colgroup><col style="width:17%"><col style="width:7%"><col style="width:9%"><col span="5" style="width:7.5%"><col style="width:17%"><col style="width:10%"><col style="width:2.5%"></colgroup>
+              <tr><th>Học viên</th><th>Target</th><th>MT gần nhất</th><th>L</th><th>R</th><th>W</th><th>S</th><th>Overall</th><th>Kết quả</th><th>Ngày thi</th><th></th></tr>
               <tr class="mo"><td class="ten"><b>Hà Trần Phúc ▾</b><span>TVV Khoa Thị Thanh</span></td><td>8.0</td><td>MT2</td><td><span class="oc-kn case"><span class="dd">7.0</span></span></td><td><span class="oc-kn"><span class="da">8.0</span></span></td><td><span class="oc-kn case chon"><span class="dd">6.0</span></span></td><td><span class="oc-kn case"><span class="dd">6.5</span></span></td><td><span class="dd">7.0</span></td><td><span class="sos m3">SOS 3 · L, W, S</span></td><td><span class="lich">Dự kiến 02/2027</span></td><td>⋯</td></tr>
               <tr class="mo-hang"><td colspan="11"><div class="mo-rong">
                 <div class="khoi"><p class="muc-h">Điểm theo lượt </p>
@@ -148,16 +152,17 @@
                   </div>
                   <div class="tom-kn">
                     <div class="dau"><h4>Writing Task 2</h4><span class="tags"><span class="tag">phụ trách <b>Đỗ Vũ Tuấn Phong</b></span></span><span class="phai"><span class="nut nut-nho">Hồ sơ HV ›</span><span class="nut nut-nho nut-chinh">Xem chi tiết</span></span></div>
+                    <div class="tc"><span class="k">MT2</span><span>TR <b>6</b></span><span>CC <b>6</b></span><span>LR <b>6.5</b></span><span>GRA <b>5.5</b></span><span>→ <b>6.0</b></span></div>
                     <div class="ba-cot">
                       <div><span class="nh">Điểm</span><div class="chuoi"><span class="m"><span>Đầu vào</span><b>6.0</b></span><span class="mui-c">→</span><span class="m"><span>MT1</span><b class="dd" style="font-size:16px">6.5</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="dd" style="font-size:16px">6.0</b></span></div><span class="ph">kỳ vọng 7.5</span></div>
                       <div><span class="nh">Case · PA</span><span class="gt">Đáp ứng yêu cầu đề</span><span class="ph">Case mở W2 OCT</span><span class="gt" style="margin-top:4px">Học Tutor</span><span class="ph">đang chạy · đến MT3</span></div>
-                      <div><span class="nh">Kết quả PA</span><span><span class="ket cd">Chưa đủ dữ liệu</span></span><span class="ph">lần ghi W5 OCT · ghi tiếp hạn 10/11</span></div>
+                      <div><span class="nh">Kết quả PA</span><span><span class="ket cd">Chưa đủ dữ liệu</span> <span class="ph">W5 OCT</span></span></div>
                     </div>
                   </div>
                 </div>
               </div></td></tr>
-              <tr><td class="ten"><b>Lê Thảo Nhi</b><span>TVV Khoa Thị Thanh</span></td><td>7.5</td><td>MT2</td><td><span class="oc-kn case"><span class="dd">5.5</span></span></td><td><span class="oc-kn case"><span class="dd">5.5</span></span></td><td><span class="oc-kn case"><span class="dd">6.0</span></span></td><td><span class="oc-kn case"><span class="dd">6.5</span></span></td><td><span class="dd">6.0</span></td><td><span class="sos m3">SOS 3 · L, R, W, S</span></td><td><span class="lich">Dự kiến 03/2027</span></td><td>⋯</td></tr>
-              <tr><td class="ten"><b>Lê Minh Khang</b><span>TVV Lê Thu</span></td><td>6.5</td><td>MT2</td><td><span class="oc-kn"><span class="dd">4.5</span></span></td><td><span class="oc-kn"><span class="dd">5.0</span></span></td><td><span class="oc-kn"><span class="da">6.5</span></span></td><td><span class="oc-kn"><span class="da">6.5</span></span></td><td><span class="dd">5.5</span></td><td><span class="sos m2">SOS 2 · L, R</span> <span class="tag-mk">MT nhập lịch sử: Đạt / SOS như MT thường, không tạo Case (chủ SP 03/11)</span></td><td><span class="lich">Dự kiến 01/2027</span></td><td>⋯</td></tr>
+              <tr><td class="ten"><b>Lê Thảo Nhi</b><span>TVV Khoa Thị Thanh</span></td><td>7.5</td><td>MT2</td><td><span class="oc-kn case"><span class="dd">5.5</span></span></td><td><span class="oc-kn case"><span class="dd">5.5</span></span></td><td><span class="oc-kn case"><span class="dd">6.0</span></span></td><td><span class="oc-kn case" style="background:var(--accent-soft)"><span class="dd">6.5</span><span class="the-tc"><span><span class="k">S</span> FC <b>7</b> · LR <b>6.5</b> · GRA <b>6</b> · P <b>6.5</b> → <b>6.5</b></span></span></span></td><td><span class="dd">6.0</span></td><td><span class="sos m3">SOS 3 · L, R, W, S</span></td><td><span class="lich">Dự kiến 03/2027</span></td><td>⋯</td></tr>
+              <tr><td class="ten"><b>Lê Minh Khang</b><span>TVV Lê Thu</span></td><td>6.5</td><td>MT2</td><td><span class="oc-kn"><span class="dd">4.5</span></span></td><td><span class="oc-kn"><span class="dd">5.0</span></span></td><td><span class="oc-kn"><span class="da">6.5</span></span></td><td><span class="oc-kn"><span class="da">6.5</span></span></td><td><span class="dd">5.5</span></td><td><span class="sos m2">SOS 2 · L, R</span></td><td><span class="lich">Dự kiến 01/2027</span></td><td>⋯</td></tr>
               <tr><td class="ten"><b>Mai Hồng Ngọc</b><span>TVV Lê Thu</span></td><td>7.5</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td><span class="kq" style="border-style:dashed">– Chưa đủ dữ liệu</span></td><td><span class="lich">Dự kiến 12/2026</span></td><td>⋯</td></tr>
               <tr><td class="ten"><b>Nguyễn Quốc Trung Anh</b><span>TVV Khoa Thị Thanh</span></td><td>8.0</td><td>MT3</td><td><span class="oc-kn"><span class="bg">7.0</span></span></td><td><span class="oc-kn"><span class="bg">7.0</span></span></td><td><span class="oc-kn"><span class="dd">6.5</span></span></td><td><span class="mo2">–</span></td><td><span class="mo2">–</span></td><td><span class="kq" style="border-style:dashed">– Chưa đủ dữ liệu · thiếu S</span></td><td><span class="lich">Thi 21/11</span></td><td>⋯</td></tr>
               <tr><td class="ten"><b>Trần Huyền Anh</b><span>TVV Lê Thu</span></td><td>7.5</td><td>MT3</td><td><span class="oc-kn case"><span class="dd">6.5</span></span></td><td><span class="oc-kn case"><span class="dd">6.5</span></span></td><td><span class="oc-kn case"><span class="dd">6.5</span></span></td><td><span class="oc-kn case"><span class="dd">6.5</span></span></td><td><span class="dd">6.5</span></td><td><span class="sos m3">SOS 3 · L, R, W, S</span></td><td><span class="lich">Dự kiến 01/2027</span></td><td>⋯</td></tr>
@@ -173,7 +178,7 @@
         <div class="trang-l">
           <div class="co-pn">
             <div class="the" style="opacity:.55">
-              <table class="bl">
+              <table class="bl"><colgroup><col style="width:30%"><col style="width:12%"><col span="5" style="width:11.6%"></colgroup>
                 <tr><th>Học viên</th><th>MT</th><th>L</th><th>R</th><th>W</th><th>S</th><th>Overall</th></tr>
                 <tr class="mo"><td class="ten"><b>Hà Trần Phúc ▾</b></td><td>MT2</td><td><span class="dd">7.0</span></td><td><span class="da">8.0</span></td><td><span class="oc-kn chon"><span class="dd">6.0</span></span></td><td><span class="dd">6.5</span></td><td><span class="dd">7.0</span></td></tr>
                 <tr><td class="ten"><b>Lê Thảo Nhi</b></td><td>MT2</td><td><span class="dd">5.5</span></td><td><span class="dd">5.5</span></td><td><span class="dd">6.0</span></td><td><span class="dd">6.5</span></td><td><span class="dd">6.0</span></td></tr>
@@ -203,9 +208,10 @@
       </div></figure>
 
       <figure><figcaption>A4 · EN — tóm tắt kỹ năng, nút không cắt</figcaption>
-      <div class="man toi" style="width:760px;height:260px"><div class="trang-l"><div class="khoi"><div class="tom-kn" style="border-top:0;padding-top:0"><div class="dau"><h4>Writing Task 2</h4><span class="tags"><span class="tag">owner <b>Đỗ Vũ Tuấn Phong</b></span></span><span class="phai"><span class="nut nut-nho">Student profile ›</span><span class="nut nut-nho nut-chinh">View details</span></span></div>
-        <div class="ba-cot"><div><span class="nh">Scores</span><div class="chuoi"><span class="m"><span>Entry</span><b>6.0</b></span><span class="mui-c">→</span><span class="m"><span>MT1</span><b class="dd" style="font-size:16px">6.5</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="dd" style="font-size:16px">6.0</b></span></div></div>
-        <div><span class="nh">Case · plan</span><span class="gt">Task response</span><span class="ph">Tutoring · running</span></div><div><span class="nh">Plan result</span><span><span class="ket cd">Not enough data</span></span></div></div></div></div></div></div></figure>
+      <div class="man toi" style="width:760px;height:auto;min-height:0"><div class="trang-l"><div class="khoi"><div class="tom-kn" style="border-top:0;padding-top:0"><div class="dau"><h4>Writing Task 2</h4><span class="tags"><span class="tag">owner <b>Đỗ Vũ Tuấn Phong</b></span></span><span class="phai"><span class="nut nut-nho">Student profile ›</span><span class="nut nut-nho nut-chinh">View details</span></span></div>
+        <div class="tc"><span class="k">MT2</span><span>TR <b>6</b></span><span>CC <b>6</b></span><span>LR <b>6.5</b></span><span>GRA <b>5.5</b></span><span>→ <b>6.0</b></span></div>
+        <div class="ba-cot"><div><span class="nh">Scores</span><div class="chuoi"><span class="m"><span>Entry</span><b>6.0</b></span><span class="mui-c">→</span><span class="m"><span>MT1</span><b class="dd" style="font-size:16px">6.5</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="dd" style="font-size:16px">6.0</b></span></div><span class="ph">expected 7.5</span></div>
+        <div><span class="nh">Case · plan</span><span class="gt">Task response</span><span class="ph">Tutoring · running</span></div><div><span class="nh">Plan result</span><span><span class="ket cd">Not enough data</span> <span class="ph">W5 OCT</span></span></div></div></div></div></div></div></figure>
       <figure><figcaption>A5 · panel Speaking — mô tả EN dài: 3 dòng + Xem đầy đủ, chữ thường</figcaption>
       <div class="man toi" style="width:620px;height:520px"><div class="trang-l"><div class="pn-ct">
         <div class="pn-dau"><div class="pn-h1"><span class="loai">CASE · SPEAKING</span><button class="x">✕</button></div><div class="pn-tieu"><h2>Hà Trần Phúc · Speaking</h2><span class="sos m3">SOS 3</span></div>
@@ -217,13 +223,13 @@
         <div class="trang-l">
           <div class="the">
             <div class="luoi-gap"><b>▾ Điểm Mock Test</b><span class="tags"><span class="tag">Đang nhập <b>MT4</b></span></span></div>
-            <div class="tab-mt"><span class="tm"><b>MT1</b>6/8 có điểm đủ</span><span class="tm"><b>MT2</b>6/8 có điểm đủ</span><span class="tm"><b>MT3</b>2/8 có điểm đủ</span><span class="tm dang"><b>MT4</b>0/8 có điểm đủ</span><span class="tm"><b>MT5</b>0/8 có điểm đủ</span></div>
-            <table class="ld">
+            <div class="tab-mt"><span class="tm"><b>MT1</b>6/8 có điểm đủ</span><span class="tm"><b>MT2</b>6/8 có điểm đủ</span><span class="tm"><b>MT3</b>1/8 có điểm đủ</span><span class="tm dang"><b>MT4</b>0/8 có điểm đủ</span><span class="tm"><b>MT5</b>0/8 có điểm đủ</span></div>
+            <table class="ld"><colgroup><col style="width:22%"><col span="5" style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:15%"></colgroup>
               <tr><th>Học viên</th><th>L</th><th>R</th><th>W1</th><th>W2</th><th>S</th><th>Kỳ vọng</th><th>Overall</th><th>Kết quả</th></tr>
               <tr><td class="t"><b>Nguyễn Quốc Trung Anh</b><span>MT4 · W4 OCT</span></td><td><span class="oc">Đã huỷ<small>vắng 2 lần</small></span></td><td><span class="oc">Đã huỷ<small>vắng 2 lần</small></span></td><td><span class="oc">Vắng<small>không dời</small></span></td><td><span class="oc trong">–<small>thi bù W1 NOV</small></span></td><td><span class="oc">Đã huỷ<small>vắng 2 lần</small></span></td><td>8.0</td><td>–</td><td><span class="kq">Chờ 1 kỹ năng · W2</span></td></tr>
-              <tr><td class="t"><b>Trần Huyền Anh</b><span>MT4</span></td><td colspan="5" class="gom">—</td><td>7.5</td><td>–</td><td><span class="kq" style="border-style:dashed">Chưa xếp lịch</span></td></tr>
+              
               <tr><td class="t"><b>Vũ Hoàng Châu Anh</b><span>MT4</span></td><td colspan="5" class="gom">Chưa tới tuần</td><td>7.5</td><td>–</td><td><span class="kq" style="border-style:dashed">W2 DEC</span></td></tr>
-              <tr><td class="t"><b>5 em chưa xếp lịch MT4</b><span>Hà Trần Phúc · Lê Minh Khang · Lê Thảo Nhi · Mai Hồng Ngọc · Vũ Hoàng Thanh Lâm</span></td><td colspan="7" class="gom"></td><td><span class="nut nut-nho">Xếp lịch MT4</span></td></tr>
+              <tr><td class="t"><b>6 em chưa xếp lịch MT4</b><span>Hà Trần Phúc · Lê Minh Khang · Lê Thảo Nhi · Mai Hồng Ngọc · Trần Huyền Anh · Vũ Hoàng Thanh Lâm</span></td><td colspan="7" class="gom"></td><td><span class="nut nut-nho">Xếp lịch MT4</span></td></tr>
             </table>
           </div>
         </div>
@@ -235,7 +241,7 @@
     <h2>B · 375 sáng</h2>
     <p class="ghi">Thẻ em (lưới 5 ô giữ — XM-BE-1); bấm thẻ → mở: điểm theo lượt gọn + 5 ô kỹ năng · bấm kỹ năng → tóm tắt xếp dọc · "Xem chi tiết" = panel toàn màn.</p>
     <div class="hang-khung">
-      <figure><figcaption>B1 · Lê Thảo Nhi mở · chọn R (kết quả: tiến bộ một phần)</figcaption>
+      <figure><figcaption>B1 · Lê Thảo Nhi mở · chạm S → dòng tiêu chí đầu tóm tắt</figcaption>
       <div class="dt sang dai">
         <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span>🔔</span></span></div>
         <div class="trang-l">
@@ -245,13 +251,14 @@
             <table class="bdl"><tr><th>Lượt</th><th>L</th><th>R</th><th>W</th><th>S</th><th>OVR</th></tr>
               <tr class="moi"><td>MT2</td><td><span class="dd">5.5</span></td><td><span class="dd">5.5</span></td><td><span class="dd">6.0</span></td><td><span class="dd">6.5</span></td><td><span class="dd">6.0</span></td></tr>
               <tr><td>MT1</td><td><span class="dd">5.0</span></td><td><span class="dd">5.0</span></td><td><span class="dd">6.0</span></td><td><span class="bg">6.5</span></td><td><span class="dd">5.5</span></td></tr></table>
-            <div class="o-kn"><div class="okn"><span class="t">L</span><span class="s"><span class="dd">5.5</span></span></div><div class="okn chon"><span class="t">R</span><span class="s"><span class="dd">5.5</span></span></div><div class="okn"><span class="t">W1</span><span class="s"><span class="dd">6.0</span></span></div><div class="okn"><span class="t">W2</span><span class="s"><span class="dd">6.0</span></span></div><div class="okn"><span class="t">S</span><span class="s"><span class="dd">6.5</span></span></div></div>
+            <div class="o-kn"><div class="okn"><span class="t">L</span><span class="s"><span class="dd">5.5</span></span></div><div class="okn"><span class="t">R</span><span class="s"><span class="dd">5.5</span></span></div><div class="okn"><span class="t">W1</span><span class="s"><span class="dd">6.0</span></span></div><div class="okn"><span class="t">W2</span><span class="s"><span class="dd">6.0</span></span></div><div class="okn chon"><span class="t">S</span><span class="s"><span class="dd">6.5</span></span></div></div>
             <div class="tom-kn">
-              <div class="dau"><h4>Reading</h4><span class="phai"><span class="nut nut-nho">Hồ sơ HV ›</span><span class="nut nut-nho nut-chinh">Xem chi tiết</span></span></div>
+              <div class="dau"><h4>Speaking</h4><span class="phai"><span class="nut nut-nho">Hồ sơ HV ›</span><span class="nut nut-nho nut-chinh">Xem chi tiết</span></span></div>
+              <div class="tc"><span class="k">MT2</span><span>FC <b>7</b></span><span>LR <b>6.5</b></span><span>GRA <b>6</b></span><span>P <b>6.5</b></span><span>→ <b>6.5</b></span></div>
               <div class="ba-cot">
-                <div><span class="nh">Điểm</span><div class="chuoi"><span class="m"><span>MT1</span><b class="dd" style="font-size:15px">5.0</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="dd" style="font-size:15px">5.5</b></span></div><span class="ph">kỳ vọng 7.0</span></div>
-                <div><span class="nh">Case · PA</span><span class="gt">Từ vựng / tốc độ đọc</span><span class="ph">PA Học Tutor · đang chạy</span></div>
-                <div><span class="nh">Kết quả PA</span><span><span class="ket mp">Tiến bộ một phần</span></span><span class="ph">W4 OCT · Trần Thị Thanh Hằng</span></div>
+                <div><span class="nh">Điểm</span><div class="chuoi"><span class="m"><span>MT1</span><b class="bg" style="font-size:15px">6.5</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="dd" style="font-size:15px">6.5</b></span></div><span class="ph">kỳ vọng 7.0</span></div>
+                <div><span class="nh">Case · PA</span><span class="gt">Độ trôi chảy</span><span class="ph">PA Học Tutor · đang chạy</span></div>
+                <div><span class="nh">Kết quả PA</span><span><span class="ket mp">Tiến bộ một phần</span> <span class="ph">W4 OCT</span></span></div>
               </div>
             </div>
           </div>
@@ -264,10 +271,13 @@
 
   <section class="khu" id="c">
     <h2>C · Trạng thái (1440 tối)</h2>
-    <p class="ghi">Kỹ năng không Case: tóm tắt chỉ Điểm + "Không có Case" + nút "+ Case" (theo quyền) · em chưa có lượt nào: mở rộng chỉ "Chưa có điểm · lượt tới MT1 W2 NOV" · lỗi tải chi tiết: chỉ trong vùng mở rộng + Thử lại.</p>
+    <p class="ghi">Kỹ năng không Case: tóm tắt chỉ Điểm + "Không có Case" + nút "+ Case" (theo quyền) · PA mới chạy: Kết quả PA "–" · ô chỉ có Band: không thẻ, không dòng tiêu chí · em chưa có lượt nào: mở rộng chỉ "Chưa có điểm · lượt tới MT1 W2 NOV" · lỗi tải chi tiết: chỉ trong vùng mở rộng + Thử lại.</p>
     <div class="hang-khung">
       <figure><figcaption>C1 · chọn R (không Case)</figcaption><div class="man toi" style="width:720px;height:200px"><div class="trang-l"><div class="khoi"><div class="tom-kn" style="border-top:0;padding-top:0"><div class="dau"><h4>Reading</h4><span class="phai"><span class="nut nut-nho">+ Case</span></span></div>
-        <div class="ba-cot"><div><span class="nh">Điểm</span><div class="chuoi"><span class="m"><span>MT1</span><b class="da" style="font-size:16px">7.5</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="da" style="font-size:16px">8.0</b></span></div></div><div><span class="nh">Case · PA</span><span class="gt mo">Không có Case</span></div><div><span class="nh">Kết quả PA</span><span class="ph">—</span></div></div></div></div></div></div></figure>
+        <div class="ba-cot"><div><span class="nh">Điểm</span><div class="chuoi"><span class="m"><span>MT1</span><b class="da" style="font-size:16px">7.5</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="da" style="font-size:16px">8.0</b></span></div></div><div><span class="nh">Case · PA</span><span class="gt mo">Không có Case</span></div><div><span class="nh">Kết quả PA</span><span class="ph">–</span></div></div></div></div></div></div></figure>
+      <figure><figcaption>C4 · PA mới chạy, chưa ghi kết quả → "–"</figcaption><div class="man toi" style="width:720px;height:auto;min-height:0"><div class="trang-l"><div class="khoi"><div class="tom-kn" style="border-top:0;padding-top:0"><div class="dau"><h4>Reading</h4><span class="phai"><span class="nut nut-nho">Hồ sơ HV ›</span><span class="nut nut-nho nut-chinh">Xem chi tiết</span></span></div>
+        <div class="ba-cot"><div><span class="nh">Điểm</span><div class="chuoi"><span class="m"><span>MT1</span><b class="bg" style="font-size:16px">7.0</b></span><span class="mui-c">→</span><span class="m moi"><span>MT2</span><b class="dd" style="font-size:16px">7.0</b></span></div><span class="ph">kỳ vọng 7.5</span></div><div><span class="nh">Case · PA</span><span class="gt">Tốc độ đọc</span><span class="ph">PA Học Tutor · đang chạy</span></div><div><span class="nh">Kết quả PA</span><span class="ph">–</span></div></div></div></div></div></div></figure>
+      <figure><figcaption>C5 · rê chuột ô W (hai bài W1 · W2)</figcaption><div class="man toi" style="width:520px;height:170px"><div class="trang-l"><div class="the" style="padding:12px 16px"><div style="display:flex;gap:24px;align-items:center;font:600 15px var(--phong)"><span>Hà Trần Phúc</span><span style="font-family:var(--phong-so)">W <span class="oc-kn" style="background:var(--accent-soft)"><span class="dd">6.0</span><span class="the-tc"><span><span class="k">W1</span> TA <b>7</b> · CC <b>6.5</b> · LR <b>6.5</b> · GRA <b>6</b> → <b>6.5</b></span><span><span class="k">W2</span> TR <b>6</b> · CC <b>6</b> · LR <b>6.5</b> · GRA <b>5.5</b> → <b>6.0</b></span></span></span></span></div></div></div></div></figure>
       <figure><figcaption>C2 · em chưa có lượt</figcaption><div class="man toi" style="width:520px;height:200px"><div class="trang-l"><div class="khoi"><p class="muc-h">Điểm theo lượt</p><p class="mo">Chưa có điểm.</p><div class="tags"><span class="tag">Lượt tới <b>MT1 · W2 NOV</b></span></div></div></div></div></figure>
       <figure><figcaption>C3 · lỗi tải chi tiết</figcaption><div class="man toi" style="width:520px;height:200px"><div class="trang-l"><div class="bao-loi"><span>⚠</span><span><b>Chưa tải được chi tiết em.</b> Bảng vẫn dùng được.</span><span class="nut nut-nho" style="margin-left:auto">Thử lại</span></div></div></div></figure>
     </div>
@@ -283,6 +293,8 @@
       <tr><td>Em chỉ có MT nhập lịch sử</td><td>điểm + "chưa có lượt Test có điểm"</td><td>MT hiện như MT gần nhất, Kết quả bình thường</td><td class="doi">ĐỔI</td><td>ý chủ SP 03/11 (cần PR máy chủ: standing tính cả MT lịch sử — PTA ghi)</td></tr>
       <tr><td>Bấm em</td><td>đổi trang hồ sơ HV (tên = link)</td><td>mở rộng tại chỗ; "Hồ sơ HV ›" trong vùng mở rộng</td><td class="doi">ĐỔI</td><td>ý chủ SP; G4 bảng rộng mở dưới hàng</td></tr>
       <tr><td>Bấm ô điểm kỹ năng</td><td>hộp ô điểm / hồ sơ lượt</td><td>mở em với kỹ năng đó chọn sẵn; hồ sơ lượt qua "MT2 ›" trong bảng Điểm theo lượt</td><td class="doi">ĐỔI</td><td>ý chủ SP</td></tr>
+      <tr><td>Điểm thành phần W / S</td><td>chỉ trong hộp ô điểm / hồ sơ lượt</td><td>rê chuột ô W / S = thẻ tiêu chí; bấm W / S = dòng tiêu chí đầu tóm tắt (375: chạm); ô chỉ có Band không hiện gì thêm</td><td class="doi">THÊM</td><td>ý chủ SP 03/11 vòng 2; dữ liệu đã nạp, +0 câu</td></tr>
+      <tr><td>Ô Kết quả PA (tóm tắt)</td><td>nhãn + "lần ghi … · ghi tiếp hạn …"</td><td>nhãn + tuần; chưa có "–"; hạn ghi tiếp ở Việc của tôi / Công việc</td><td class="doi">ĐỔI</td><td>ý chủ SP 03/11 vòng 2</td></tr>
       <tr><td>Panel chi tiết kỹ năng</td><td>—</td><td>panel phải: Case · PA · lịch sử kết quả · ghi kết quả (bộ đếm 200)</td><td class="doi">MỚI (dùng KhungPanel sẵn có)</td><td>ý chủ SP</td></tr>
       <tr><td>Đầu trang, Nhập điểm, + Case, ⋯, chip, Việc của tôi, tab, chip lọc, Chọn nhiều, ⋯ hàng, lưới Điểm MT gập</td><td>có</td><td>có (thông tin GV / số lớp tách thành ô nhãn – giá trị)</td><td class="gi">GIỮ</td><td>—</td></tr>
       <tr><td>Kiểm kê (V5 giữ hết): Nhập điểm · + Case · ⋯ lớp · ⋯ hàng (N26: + Case · + Ghi vi phạm · Xác nhận xử lý · Nhập điểm │ Sửa thông tin · Chuyển lớp) · Chọn nhiều / hàng loạt · Dán Excel (lưới) · tab Ý thức &amp; Phối hợp (AUDIT-Y-THUC, chỉ giữ lối vào) · Phân tích lớp</td><td>có</td><td>có</td><td class="gi">GIỮ</td><td>PTA</td></tr>

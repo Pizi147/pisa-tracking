@@ -210,7 +210,7 @@ Nguồn viết tắt: `00` = bản audit chủ SP (mục 12 chuẩn chung, 20 t�
 | 19 | EN — PTA thêm | Khung A4 EN tóm tắt kỹ năng, nút không cắt | MỚI khung | — |
 | 20 | Cột **cân đối, giãn đều, thoải mái** — hiện díu ở mấy cột đầu (SP 03/11 vòng 2) | Bảng 1440 trải đủ khung: cột Học viên giữ ~230px (tên + TVV một dòng); 5 cột điểm L R W S Overall **cùng rộng** (~76px, số canh giữa); Target · MT gần nhất · Kết quả · Ngày thi chia phần còn lại; khoảng đệm ngang ô 16px đều. Áp cùng bảng trái A2 (panel), lưới MT4 A3, EN A4. 375 không đổi (thẻ). Chạy `layout` | ĐỔI hình — SP | — |
 | 21 | Ô **Kết quả PA**: bỏ dòng "lần ghi W5 OCT · ghi tiếp hạn 10/11"; có kết quả → chỉ tuần; chưa có (PA mới chạy) → "–" (SP 03/11 vòng 2) | Tóm tắt kỹ năng (A1, A4 EN, B1 375): ô Kết quả PA = nhãn màu + tuần (`Tiến bộ một phần · W5 OCT`) hoặc `–`. Panel phải (A2, A5) giữ lịch sử kết quả (chỗ xem kỹ). Hạn ghi tiếp vẫn ở Việc của tôi / Công việc (không mất thông tin). Chạy `distill` | BỎ chữ — SP | — |
-| 22 | Hover / bấm ô **W hoặc S** → hiện đủ điểm thành phần c1–c4 (SP 03/11 vòng 2) | Ô W, S trên hàng (và ô W1 / W2 / S trong "Điểm theo lượt"): hover (máy tính) hoặc bấm giữ / chạm ⓘ (375) → thẻ nhỏ: W1 `TA 6 · CC 6 · LR 6.5 · GRA 6 → 6.0`, W2 `TR … → …`, S `FC · LR · GRA · P → band`; ô chưa có tiêu chí (nhập Band thẳng) ghi "Nhập Band thẳng". Bấm ô vẫn mở em (#8) — tiêu chí hiện bằng hover / ⓘ, không đổi thao tác bấm. Tên tiêu chí ngắn theo `tieuChiNganCua`. Chạy `clarify`. **Dòng đọc:** máy chủ `/classes/:id/roster` đã đọc `s.*` (gồm c1–c4) qua `diemCuaLuot` — chỉ thêm 4 số vào `history[].bands` trả về: **+0 câu, +0 dòng đọc**, không request mới | MỚI — SP | Bấm ô W/S đang = mở em (#8, PTA đã quyết) → em đề xuất hover + ⓘ cho tiêu chí, bấm giữ nguyên. PTA kiểm |
+| 22 | Hover / bấm ô **W hoặc S** → hiện đủ điểm thành phần c1–c4 (SP 03/11 vòng 2) | **PTA sửa:** không ⓘ. Rê chuột ô W / S (1440, cả ô W1 · W2 · S ở Điểm theo lượt) → thẻ nhỏ `S FC 7 · LR 6.5 · GRA 6 · P 6.5 → 6.5` (W: hai dòng W1, W2). Bấm ô = mở em (#8 giữ) và tóm tắt kỹ năng W / S có **dòng tiêu chí đầu** `MT2 TR 6 · CC 6 · LR 6.5 · GRA 5.5 → 6.0` — 375 chạm là thấy. Ô chỉ có Band (không c1–c4): không thẻ, không dòng tiêu chí, không chữ thêm (PTA 03/11 — đồng bộ U04). Tên ngắn theo `tieuChiNganCua`. Chạy `clarify`. **Dòng đọc:** `/classes/:id/roster` đã đọc `s.*` (gồm c1–c4) qua `diemCuaLuot` — thêm 4 số vào phần trả về: **+0 câu, +0 dòng** | MỚI — SP | ĐÃ QUYẾT (PTA) |
 
 PTA duyệt bảng U02 / U03 có điều kiện (03/11 tối) — đã sửa / thêm dòng theo PTA. Luật chung chủ SP 03/11: chữ không đổi quyết định người dùng thì bỏ.
 
@@ -222,6 +222,7 @@ Mỗi vòng một agent Opus độc lập, chấm từng dòng bảng 6c + Niels
 | U01 Công việc | 29 (7 P1) | 33 (4 P1) | **35** (2 P1) → kiểm lại 34, 2 P1 đã sửa | 0 P0 · 0 P1 |
 | U02 Hồ sơ HV | 29 (3 P1) | 30 (3 P1) | **33** (1 P1 đã sửa) | 0 P0 · 0 P1 |
 | U03 Hồ sơ lớp | 29 (4 P1) | **31** (2 P1) → kiểm lại 33, 1 P1 đã sửa | — | 0 P0 · 0 P1 |
+| U03 vòng 3 (ý #20–22) | **32** (1 P1: số SOS lệch — đã sửa thành 6) | — | — | 0 P0 · 0 P1 |
 
 U02 / U03 dừng dưới 35 theo luật "chạm 30 thì tối đa 2 vòng nữa, rồi chỉ cần không P0 / P1". Ảnh chụp: chạy `python -m http.server` thư mục `thiet-ke/` rồi mở `audit-0311/u0x-….html`.
 
