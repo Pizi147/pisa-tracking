@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { invalidate } from '../../lib/api.ts';
+import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
-import { DaiNhom, DanhSachViec, tenBoEm, viecThat } from './DanhSachViec.tsx';
+import { COT_VIEC, DaiNhom, DanhSachViec, tenBoEm, viecThat } from './DanhSachViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
@@ -35,7 +35,10 @@ type Work = {
   dong: (WorkItem & { lamThay?: boolean })[]; scopeEmpty: boolean; xemNguoiKhac?: boolean;
   /** V5 SV-SO1: xem việc của một GV khác = chế độ theo dõi. */
   chiXem?: boolean;
+  /** BO-QUA-XEP-MT: việc QL đã bỏ qua (chỉ QL / Quản trị; không có = rỗng) — khu "Đã bỏ qua" cuối danh sách, khôi phục được. */
+  daBoQua?: ViecDaBoQua[];
 };
+type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
 
 /** Tên loại việc mở từ Tổng quan bằng `loai=` (dòng "Đang xem"). */
 const TEN_LOAI: Record<string, string> = { ghi_ket_qua_pa: t('Kết quả PA') };
@@ -112,7 +115,18 @@ export function HoTroHocVienTab() {
    */
   const khungUrl = params.get('khung');
   const khungChon: KhungLoc = khungUrl === 'ft' || khungUrl === 'thuong' || khungUrl === 'tat-ca' ? khungUrl : khungDaNho('cong-viec') ?? 'tat-ca';
-  const dsGoc = useMemo(() => data?.dong ?? [], [data]);
+  /* BO-QUA-XEP-MT: việc vừa bấm Bỏ qua ẩn NGAY (trước khi tải lại xong); Hoàn tác bỏ khoá khỏi tập. */
+  const [anTam, setAnTam] = useState<ReadonlySet<string>>(new Set());
+  const dsGoc = useMemo(() => {
+    const ds = data?.dong ?? [];
+    if (!anTam.size) return ds;
+    return ds.flatMap((x) => {
+      if (anTam.has(x.key)) return [];
+      if (!x.con) return [x];
+      const con = x.con.filter((c) => !anTam.has(c.key));
+      return con.length === x.con.length ? [x] : con.length ? [{ ...x, con }] : [];
+    });
+  }, [data, anTam]);
   const demNguoi = useMemo(() => demNguoiViec(dsGoc), [dsGoc]);
   const tatCaViec = useMemo(() => (typeof nguoi === 'number' ? dsGoc : dsGoc.filter((it) => khopNguoiViec(it, nguoi))), [dsGoc, nguoi]);
   /* RA-LUONG-1: số trên công tắc khung đếm VIỆC (`demViec`), cùng đơn vị đầu trang — không đếm dòng gộp. */
@@ -256,6 +270,19 @@ export function HoTroHocVienTab() {
   const [tenGv, setTenGv] = useState<string | null>(null);
   const [giaHan, setGiaHan] = useState<WorkItem | null>(null);
   const [giaoViec, setGiaoViec] = useState(false);
+  /* BO-QUA-XEP-MT: Bỏ qua (ẩn ngay + toast Hoàn tác) · Khôi phục (khu "Đã bỏ qua"). Chỉ ẩn VIỆC — lịch, PA, Case giữ nguyên; máy chủ kiểm quyền. */
+  const doiAnTam = (key: string, an: boolean) => setAnTam((s) => { const n = new Set(s); if (an) n.add(key); else n.delete(key); return n; });
+  const guiBoQua = (key: string, boQua: boolean) => api.post('/my-work/bo-qua', { key, boQua }).then(() => invalidate('/my-work'));
+  const khoiPhuc = (key: string) => guiBoQua(key, false)
+    .then(() => { doiAnTam(key, false); toast.push('ok', t('Đã khôi phục'), { key: `bo-qua-${key}` }); })
+    .catch((e: any) => toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key: `bo-qua-${key}` }));
+  const boQua = (x: WorkItem) => {
+    doiAnTam(x.key, true);
+    if (x.key === viec) dong();
+    guiBoQua(x.key, true)
+      .then(() => toast.hoanTac(t('Đã bỏ qua: {viec}', { viec: dich(x.tieuDe) }), () => { void khoiPhuc(x.key); }, { key: `bo-qua-${x.key}` }))
+      .catch((e: any) => { doiAnTam(x.key, false); toast.push('error', e?.message ?? t('Chưa bỏ qua được — thử lại.')); });
+  };
   const coLoc = loc !== 'tat-ca' || !!nhom || !!loai || typeof nguoi === 'number' || khung !== 'tat-ca';
   const xoaLoc = () => {
     const next = new URLSearchParams(params);
@@ -413,7 +440,12 @@ export function HoTroHocVienTab() {
               theoDoi={theoDoi} cuoiNhom={cuoiNhom} chiDemViec={laTvv} luatNhom={laTvv ? luatNhomTvv : undefined}
               /* RA-LUONG-4: chỉ "Chọn bước tiếp" có hạn để gia hạn (N6; máy chủ `coTheGiaHanSauThi`) — "Cập nhật KQ thi thật" không hạn, Gia hạn sẽ 400. */
               nutPhu={(x) => (!x.con && x.cycleId && x.group === 'buoc_tiep' && !xong.has(x.key) && !theoDoi(x)
-                ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button> : null)} />
+                ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button>
+                /* BO-QUA-XEP-MT: nút phụ cạnh nút việc (cùng mẫu Gia hạn) — chỉ việc máy chủ báo bỏ qua được. */
+                : !x.con && x.boQuaDuoc && !xong.has(x.key) && !theoDoi(x)
+                  ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" aria-label={t('Bỏ qua: {viec}', { viec: dich(x.tieuDe) })}
+                    title={t('Ẩn việc này. Lịch, PA, Case giữ nguyên.')} onClick={() => boQua(x)}>{t('Bỏ qua')}</button>
+                  : null)} />
           )}
           {/* OV-15h1: không có việc Vận hành nào — "Việc quản lý" vẫn là MỘT nhóm gập ở cuối danh sách (Giao việc · Vận hành · Báo cáo đơn vị), không thẻ rời. */}
           {coVanHanh && data && !dsNhom.some((g) => g.key === 'van-hanh') && (
@@ -422,6 +454,7 @@ export function HoTroHocVienTab() {
               {moQuanLy && <div className="px-4 py-1"><LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} /></div>}
             </section>
           )}
+          {!!data?.daBoQua?.length && <DaBoQua ds={data.daBoQua} homNay={homNay} onKhoiPhuc={khoiPhuc} />}
           {laGv && data && !data.scopeEmpty && (
             <div className="mt-4 space-y-4">
               {session?.nav?.workRequests && <YeuCauCuaToi gon />}
@@ -525,6 +558,43 @@ function DaiTheoDoi({ it, lam, onLam }: { it: WorkItem & { lamThay?: boolean }; 
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={onLam}>{it.group === 'score' ? t('Nhập hộ') : t('Làm thay')}</button>
       )}
     </div>
+  );
+}
+
+/**
+ * BO-QUA-XEP-MT: "Đã bỏ qua" — nhóm xám gập sẵn cuối danh sách (dáng `DaiNhom` như "Việc quản lý"): việc · em · lớp · ai bỏ qua, ngày · Khôi phục.
+ * Không đếm vào số việc. Khôi phục = việc hiện lại ở nhóm cũ (cả phạm vi QL).
+ */
+function DaBoQua({ ds, homNay, onKhoiPhuc }: { ds: ViecDaBoQua[]; homNay: string; onKhoiPhuc: (key: string) => Promise<unknown> }) {
+  const [mo, setMo] = useState(false);
+  const [dang, setDang] = useState<string | null>(null);
+  if (!ds.length) return null;
+  return (
+    <section className="card mt-3.5 overflow-clip p-0" aria-label={t('Đã bỏ qua')}>
+      <DaiNhom k="bo-qua" nhan={t('Đã bỏ qua')} chip={t('{n} việc', { n: ds.length })} mo={mo} onMo={() => setMo((x) => !x)} trungTinh
+        luat={<NutLuat label={t('Đã bỏ qua')}>{t('Việc đã bỏ qua không còn nhắc ai trong phạm vi. Lịch, PA, Case giữ nguyên; thiếu mốc khác thì việc mới hiện lại.')}</NutLuat>} />
+      {mo && (
+        <ul className="m-0 list-none p-0">
+          {ds.map((x) => (
+            <li key={x.key} className={`grid min-h-[56px] grid-cols-[minmax(0,1fr)] items-center gap-x-3 gap-y-1 border-t py-2 pl-4 pr-3 first:border-t-0 sm:min-h-[50px] sm:pr-4 ${COT_VIEC}`}
+              style={{ borderColor: 'var(--line)' }}>
+              <span className="grid min-w-0 gap-px">
+                <span className="break-words text-[15px] font-medium leading-snug text-dim">{dich(x.tieuDe)}</span>
+                <span className="break-words text-[13px] leading-snug text-faint">
+                  {[x.classCode, t('Bỏ qua bởi {ai} · {ngay}', { ai: x.boi ?? '—', ngay: shortDate(x.luc, homNay) })].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+              <span className="hidden sm:block" />
+              <span className="flex">
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px] sm:w-full" disabled={dang === x.key}
+                  aria-label={t('Khôi phục: {viec}', { viec: dich(x.tieuDe) })}
+                  onClick={() => { setDang(x.key); void onKhoiPhuc(x.key).finally(() => setDang(null)); }}>{t('Khôi phục')}</button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

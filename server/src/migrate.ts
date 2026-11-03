@@ -66,6 +66,7 @@ import { migratePrSvNxCase, themCotPrSvNxCase } from './migrate/prSvNxCase.ts';
 import { migratePrTd5 } from './migrate/prTd5.ts';
 import { migratePrOv13q, themCotPrOv13q } from './migrate/prOv13q.ts';
 import { themCotPrOv15f } from './migrate/prOv15f.ts';
+import { themCotPrBoQuaMoc } from './migrate/prBoQuaMoc.ts';
 import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrDocIt2 } from './migrate/prDocIt2.ts';
@@ -161,6 +162,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-13q: cột hạn sau thi (learning_cycles.han_sau_thi…) — TRƯỚC mọi bước có thể đọc việc thi thật / bước tiếp (COT_SAU_THI). Chỉ thêm cột. */ buoc(() => themCotPrOv13q(conn, applied));
     /* P8 MON-DANG-KY (N13): cột learning_cycles.mon_dang_ky + attempt_skills.bo_task — TRƯỚC mọi bước đọc dòng lịch / cờ ô chờ (`SELECT_SKILLS`, `O_CHO_TU_SQL` đọc `bo_task`). Chỉ thêm cột. */ buoc(() => migratePrMonDangKy(conn, applied));
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
+    /* BO-QUA-XEP-MT: 3 cột case_interventions.bo_qua_* (Bỏ qua việc Xếp lịch MT) — ĐẦU migrate, chỉ thêm cột NULL (myWork đọc). */ buoc(() => themCotPrBoQuaMoc(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
