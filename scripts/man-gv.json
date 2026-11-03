@@ -166,6 +166,7 @@
  "web/src/modules/yThuc/ThangYThuc.tsx",
  "web/src/modules/yThuc/XacNhanXuLyPanel.tsx",
  "web/src/modules/yThuc/XemXuLyPanel.tsx",
+ "web/src/modules/yThuc/khoiYThuc.tsx",
  "web/src/modules/yThuc/kieu.ts",
  "web/src/modules/yThuc/panelYThuc.tsx"
 ]

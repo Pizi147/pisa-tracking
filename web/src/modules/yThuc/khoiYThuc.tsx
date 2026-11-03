@@ -1,0 +1,184 @@
+import type { ReactNode } from 'react';
+import { ngay } from '@shared/domain/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
+import { MuiTenGap } from './NhanViPham.tsx';
+import type { DongEm, ViPhamV4, YThucHocVien } from './kieu.ts';
+
+/**
+ * KHỐI Ý THỨC DÙNG CHUNG (mockup `thiet-ke/audit-0311/u10-y-thuc.html`, chủ SP duyệt 03/11) — tab Ý thức hồ sơ HV (UI-3) và hồ sơ lớp (UI-2)
+ * dùng CÙNG thành phần (chủ SP 03/11: hai tab đồng bộ — cùng badge, cùng chữ, cùng thao tác; chỉ khác phạm vi một em / cả lớp).
+ */
+
+/** Thẻ meta nhỏ (mockup `.tag.nhat`) thay chuỗi "a · b · c". */
+export const TAG = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-md px-2 text-xs font-semibold text-slate-400 surface-2';
+
+/** Badge việc: khung + chấm theo trạng thái + chữ (mockup `.bv`; chủ SP 03/11 U04). Quá hạn ⚠, xong ✓; Chưa xem = viền chấm. */
+export type TongBv = 'cho' | 'qua' | 'dang' | 'xong' | 'xem' | 'xam';
+const LOP_BV: Record<TongBv, string> = {
+  cho: 'border-soon-line bg-soon-bg text-soon',
+  qua: 'border-late-line bg-late-bg text-late',
+  dang: 'border-[color:var(--accent)] text-[color:var(--doing)]',
+  xong: 'border-ok-line text-ok',
+  xem: 'border-dashed border-[color:var(--accent)] text-[color:var(--doing)]',
+  xam: 'border-[color:var(--line-strong)] text-slate-500',
+};
+export function BadgeViec({ tong, children, onClick, title }: { tong: TongBv; children: ReactNode; onClick?: () => void; title?: string }) {
+  const dau = tong === 'qua' ? <span aria-hidden className="text-[11px]">⚠</span>
+    : tong === 'xong' ? <span aria-hidden className="text-[11px]">✓</span>
+    : <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full bg-current" />;
+  const lop = `inline-flex h-6 max-w-full items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-semibold ${LOP_BV[tong]}`;
+  if (onClick) return <button type="button" title={title} className={`${lop} cursor-pointer appearance-none hover:brightness-110 max-sm:min-h-[44px]`} onClick={onClick}>{dau}{children}</button>;
+  return <span title={title} className={lop}>{dau}{children}</span>;
+}
+
+type TomTatVao = Pick<YThucHocVien, 'nhom' | 'han' | 'hanXem' | 'quaHanNgay' | 'deXuat'>;
+
+/** Ô "Cần làm" của một em: badge + dòng hạn (cùng chữ ở hàng em tab lớp). null = không còn việc. */
+export function CanLamEm({ x, homNay }: { x: TomTatVao; homNay: string }) {
+  const han = (h: string | null) => h ? <span className="text-xs tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(h, homNay) })}</span> : null;
+  const o = (bv: ReactNode, phu: ReactNode) => <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">{bv}{phu}</span>;
+  if (x.deXuat) return o(<BadgeViec tong="dang">{x.deXuat.status === 'da_duyet' ? t('QL đã duyệt') : t('Chờ QL duyệt')}</BadgeViec>, han(x.deXuat.han));
+  switch (x.nhom) {
+    case 'qua_han': return o(<BadgeViec tong="qua">{t('Quá hạn {n} ngày', { n: x.quaHanNgay ?? 1 })}</BadgeViec>, han(x.han ?? x.hanXem));
+    case 'bat_buoc': return o(<BadgeViec tong="cho">{t('Phải xử lý')}</BadgeViec>, han(x.han));
+    case 'moi': return o(<BadgeViec tong="xem">{t('Chưa xem')}</BadgeViec>, han(x.hanXem));
+    default: return <span className="text-slate-500">—</span>;
+  }
+}
+
+/** Ô "Báo PH" — ghi rõ của LẦN xử lý nào (U10.7); bấm được khi người xem ghi kết quả được (TVV / QL). */
+export function BaoPhEm({ b, homNay, onMo }: { b: DongEm['baoPh']; homNay: string; onMo?: () => void }) {
+  if (!b) return <span className="text-slate-500">—</span>;
+  const mo = b.trangThai === 'mo' && b.coTheGhi ? onMo : undefined;
+  const bv = b.trangThai === 'xong' ? <BadgeViec tong="xong">{b.ngayXong ? t('Đã báo {ngay}', { ngay: ngay(b.ngayXong, homNay) }) : t('Đã báo PH')}</BadgeViec>
+    : b.trangThai === 'bo' ? <BadgeViec tong="xam">{t('Đã bỏ')}</BadgeViec>
+    : <BadgeViec tong={b.quaHan ? 'qua' : 'cho'} onClick={mo}>{dich(b.nhanTrangThai)}</BadgeViec>;
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <span className="text-xs text-slate-500">{t('Lần')} <b className="font-semibold text-slate-400">{dich(b.nhan)}</b></span>
+      <span className="flex flex-wrap items-center gap-x-2">{bv}{b.trangThai === 'mo' && <span className="text-xs tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}</span>}</span>
+    </span>
+  );
+}
+
+/** Dải tóm tắt một em (mockup K3 `.facts`): mỗi trường một ô, nhãn trên – giá trị dưới, kẻ dọc giữa các ô. */
+export function TomTatEm({ d, homNay, onBaoPh }: {
+  d: TomTatVao & Pick<YThucHocVien, 'bacNhan' | 'keTiep' | 'canManage' | 'gvcn'> & { baoPh: DongEm['baoPh'] };
+  homNay: string; onBaoPh?: () => void;
+}) {
+  const batBuoc = d.nhom === 'bat_buoc' || d.nhom === 'qua_han';
+  const o = (nhan: string, gt: ReactNode) => (
+    <div className="grid min-w-0 content-start gap-1 border-l px-[18px] py-0.5 first:border-l-0 first:pl-0 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
+      <span className="whitespace-nowrap text-xs font-medium text-slate-500">{nhan}</span>
+      <span className="text-[15px] font-semibold text-slate-100">{gt}</span>
+    </div>
+  );
+  return (
+    <div className="flex flex-wrap gap-y-3">
+      {o(t('Cần làm'), <CanLamEm x={d} homNay={homNay} />)}
+      {!d.canManage && d.gvcn && o(t('Người xử lý'), t('GVCN {ten}', { ten: d.gvcn }))}
+      {o(t('Đã tới'), d.bacNhan ? dich(d.bacNhan) : <span className="font-medium text-slate-400">{t('chưa có')}</span>)}
+      {o(batBuoc ? t('Lần này') : t('Bậc kế'), batBuoc ? dich(d.keTiep.nhan) : <span className="font-medium text-slate-300">{dich(d.keTiep.nhan)}</span>)}
+      {o(d.baoPh ? t('Báo PH · lần {nhan}', { nhan: dich(d.baoPh.nhan) }) : t('Báo PH'), <BaoPhEm b={d.baoPh} homNay={homNay} onMo={onBaoPh} />)}
+    </div>
+  );
+}
+
+/**
+ * Danh sách vi phạm chờ (mockup K1 "Vi phạm của lần này", K3): ngày | tên + thẻ (nhóm · người ghi) | thao tác. Bấm tên → mở tại chỗ (mô tả,
+ * bằng chứng, Sửa / Xoá, Đã xem một vi phạm). Không badge lặp ở từng dòng — trạng thái nói ở ô Cần làm; chỉ in nhãn khi khác trạng thái chung.
+ */
+export function DsViPhamCho({ ds, homNay, moId, onMo, chiTiet, nhanRieng }: {
+  ds: ViPhamV4[]; homNay: string; moId: number | null; onMo: (id: number) => void; chiTiet: (v: ViPhamV4) => ReactNode;
+  /** Nhãn cuối dòng khi vi phạm khác trạng thái chung của em (vd một vi phạm đã trong đề xuất). */
+  nhanRieng?: (v: ViPhamV4) => ReactNode;
+}) {
+  return (
+    <ul className="m-0 list-none p-0">
+      {ds.map((v) => {
+        const mo = moId === v.id;
+        return (
+          <li key={v.id} className="grid grid-cols-[52px_minmax(0,1fr)_auto] items-start gap-x-2.5 border-t py-2.5 first:border-t-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
+            <span className="pt-0.5 text-[13px] font-semibold tabular-nums text-slate-400">{ngay(v.occurredOn, homNay)}</span>
+            <span className="min-w-0">
+              <button type="button" aria-expanded={mo} onClick={() => onMo(v.id)}
+                className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-left text-[15px] font-semibold text-slate-100 appearance-none hover:underline sm:min-h-0">
+                {v.ten}<span className="text-slate-500"><MuiTenGap mo={mo} /></span>
+              </button>
+              <span className="mt-1 flex flex-wrap gap-1.5">
+                <span className={TAG}>{dich(v.categoryLabel)}</span>
+                {v.reportedByName && <span className={TAG}>{t('{ten} ghi', { ten: v.reportedByName })}</span>}
+              </span>
+            </span>
+            <span className="flex items-center justify-end">{nhanRieng?.(v)}</span>
+            {mo && <div className="col-start-2 col-end-4 pt-2">{chiTiet(v)}</div>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
+ * Dòng "Lần trước" (mockup K1 khối Lần xử lý · K3): lần xử lý gần nhất là link mở Xem lần xử lý (nơi Thu hồi…); chỉ thêm chữ khi đổi quyết định —
+ * đang xin thu hồi / đã thu hồi / QL từ chối. Bỏ "Thu hồi được · QL duyệt" (audit U10.2: chip thừa).
+ */
+export function LanTruoc({ x, homNay, onXem }: { x: Pick<DongEm, 'xuLyGanNhat' | 'thuHoi' | 'tuChoi'>; homNay: string; onXem: (id: number) => void }) {
+  const link = (id: number, chu: ReactNode) => (
+    <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-left text-sm font-semibold sm:min-h-0" onClick={() => onXem(id)}>
+      <span className="sr-only">{t('Xem lần xử lý')} </span>{chu} ›
+    </button>
+  );
+  if (x.thuHoi) return <span className="flex flex-wrap items-center gap-2">{link(x.thuHoi.id, dich(x.thuHoi.nhan))}<BadgeViec tong={x.thuHoi.cho ? 'dang' : 'xam'}>{x.thuHoi.cho ? t('Đang xin thu hồi') : t('Đã thu hồi')}</BadgeViec></span>;
+  if (x.tuChoi) return <span className="flex flex-wrap items-center gap-2">{link(x.tuChoi.id, dich(x.tuChoi.nhan))}<BadgeViec tong="qua">{t('QL từ chối')}</BadgeViec></span>;
+  if (x.xuLyGanNhat) return <span className="flex flex-wrap items-center gap-2"><b className="font-semibold text-slate-100">{dich(x.xuLyGanNhat.nhan)}</b><span className="text-[13px] tabular-nums text-slate-400">{ngay(x.xuLyGanNhat.ngay, homNay)}</span>{link(x.xuLyGanNhat.id, t('Xem'))}</span>;
+  return null;
+}
+
+/**
+ * BẢNG LỊCH SỬ (mockup K6): ba loại dòng — Đã xem (vi phạm) · Đã xử lý / Đã thu hồi / đang chờ (lần xử lý) — mỗi dòng: Ngày · Loại (badge) ·
+ * Nội dung (tên + trường phụ có nhãn) · Ai · lúc nào · thao tác. Vi phạm đã xử lý xem qua "Xem" lần xử lý (Sửa / Thu hồi ở đó).
+ * `coTen`: tab lớp (UI-2) thêm cột Học viên. `vuaXem`: dòng vừa "Đã xem" sáng + "vừa xong" (đến từ "Xem lại").
+ */
+export type DongLs = { key: string; ngay: string; ten?: string; tong: TongBv; loai: string; tieuDe: ReactNode; truong: [string, ReactNode][];
+  ai: string | null; luc: string | null; vua?: boolean; cuoi?: ReactNode };
+export function BangLichSu({ dong, coTen, homNay, rong }: { dong: DongLs[]; coTen?: boolean; homNay: string; rong: ReactNode }) {
+  if (!dong.length) return <>{rong}</>;
+  const th = 'border-b px-3 py-2 text-left text-[13px] font-semibold text-slate-400 first:pl-4';
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-sm">
+        <thead><tr style={{ borderColor: 'var(--line)' }}>
+          <th className={`${th} w-[72px]`} style={{ borderColor: 'var(--line)' }}>{t('Ngày')}</th>
+          {coTen && <th className={th} style={{ borderColor: 'var(--line)' }}>{t('Học viên')}</th>}
+          <th className={`${th} w-[130px]`} style={{ borderColor: 'var(--line)' }}>{t('Loại')}</th>
+          <th className={th} style={{ borderColor: 'var(--line)' }}>{t('Nội dung')}</th>
+          <th className={`${th} w-[200px] max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>{t('Ai · lúc nào')}</th>
+          <th className={`${th} w-[120px]`} style={{ borderColor: 'var(--line)' }}><span className="sr-only">{t('Thao tác')}</span></th>
+        </tr></thead>
+        <tbody>
+          {dong.map((x) => (
+            <tr key={x.key} className={x.vua ? 'bg-ok-bg' : ''}>
+              <td className="border-b py-2.5 pl-4 pr-3 align-top text-[13px] font-semibold tabular-nums text-slate-400" style={{ borderColor: 'var(--line)' }}>{ngay(x.ngay, homNay)}</td>
+              {coTen && <td className="border-b px-3 py-2.5 align-top font-semibold text-slate-100" style={{ borderColor: 'var(--line)' }}>{x.ten}</td>}
+              <td className="border-b px-3 py-2.5 align-top" style={{ borderColor: 'var(--line)' }}><BadgeViec tong={x.tong}>{x.loai}</BadgeViec></td>
+              <td className="border-b px-3 py-2.5 align-top" style={{ borderColor: 'var(--line)' }}>
+                <span className="font-semibold text-slate-100">{x.tieuDe}</span>
+                {x.vua && <span className="block text-xs font-semibold text-ok">{t('vừa xong')}</span>}
+                {x.truong.length > 0 && (
+                  <dl className="m-0 mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5">
+                    {x.truong.map(([n, g]) => <div key={n} className="contents"><dt className="text-xs font-medium leading-5 text-slate-500">{n}</dt><dd className="m-0 text-[13px] text-slate-300">{g}</dd></div>)}
+                  </dl>
+                )}
+              </td>
+              <td className="border-b px-3 py-2.5 align-top max-sm:hidden" style={{ borderColor: 'var(--line)' }}>
+                <span className="text-slate-200">{x.ai ?? '—'}</span>{x.luc && <span className="block text-xs tabular-nums text-slate-500">{x.luc}</span>}
+              </td>
+              <td className="border-b px-3 py-2.5 text-right align-top" style={{ borderColor: 'var(--line)' }}>{x.cuoi}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

@@ -37,6 +37,8 @@ export type YThucHocVien = {
   nhom: NhomEm | null; han: string | null; hanXem: string | null; soBatBuoc: number; soMoi: number; quaHanNgay: number | null;
   deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null; quaHan: boolean } | null;
   daBaoQl: boolean;
+  /** UI-3: GVCN lớp em đang học — "Người xử lý" cho người chỉ xem. */
+  gvcn: string | null;
   phamVi: 'chuoi' | 'tat-ca';
   viPham: ViPhamV4[];
   macDinh: { tick: number[]; cuHon: number[] };

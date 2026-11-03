@@ -415,6 +415,7 @@ export type YThucHocVien = {
   deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null; quaHan: boolean } | null;
   /** Đã có thẻ Báo QL đang chờ cho em (thanh cam "đã báo QL"). */
   daBaoQl: boolean;
+  gvcn: string | null;
   phamVi: 'chuoi' | 'tat-ca';
   viPham: ViolationView[];
   macDinh: { tick: number[]; cuHon: number[] };
@@ -456,6 +457,8 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     nhom: em.nhom, han: em.han, hanXem: em.hanXem, soBatBuoc: em.soBatBuoc, soMoi: em.soMoi, quaHanNgay: quaHan,
     deXuat: em.deXuat ? { id: em.deXuat.id, nhan: nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName), status: em.deXuat.status, han: em.deXuat.han, quaHan: em.deXuat.quaHan } : null,
     daBaoQl, phamVi, viPham,
+    /* UI-3 (mockup U10 K3): "Người xử lý" — GVCN lớp em đang học (một câu, chỉ khi có). */
+    gvcn: em.gvcnId ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(em.gvcnId) as { full_name: string } | undefined)?.full_name ?? null : null,
     macDinh: macDinhTick(viPham.map((v) => ({ id: v.id, t: v.trangThai, occurredOn: v.occurredOn })), homNay),
     dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi' }),
     hang: (({ xuLyGanNhat, tuChoi, thuHoi, baoPh }) => ({ xuLyGanNhat, tuChoi, thuHoi, baoPh }))(hangCuaEm(p, em, hv.full_name, hv.student_code, homNay)),

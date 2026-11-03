@@ -299,8 +299,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Em có 3 vi phạm trở lên trong tuần này + tuần trước — phải Xác nhận xử lý trong 5 ngày (tính cả ngày ghi). Quá hạn thì Quản lý được báo.',
   },
   yt_xem: {
-    label: 'Ghi nhận vi phạm mới',
-    hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Ghi nhận (đã xem, không cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.',
+    label: 'Xem vi phạm mới',   // N34 ④ (chủ SP 03/11): "Ghi nhận" → "Đã xem"
+    hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (không cần biện pháp) hoặc Xác nhận xử lý trong 5 ngày.',
   },
   bao_ph_yt: {
     label: 'Báo PH vi phạm',
@@ -1409,7 +1409,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       }
       if (em.soMoi > 0) {
         items.push({ ...chung, key: `yt_xem:${r.id}`, group: 'yt_xem', urgency: urgencyOf(em.hanXem, today),
-          reason: `${em.soMoi} vi phạm chưa xem`, tieuDe: `Ghi nhận ${em.soMoi} vi phạm mới · ${r.ten}`, phu: `${em.soMoi} vi phạm mới`, actionLabel: 'Ghi nhận',
+          reason: `${em.soMoi} vi phạm chưa xem`, tieuDe: `Xem ${em.soMoi} vi phạm mới · ${r.ten}`, phu: `${em.soMoi} vi phạm mới`, actionLabel: 'Đã xem',
           href: duongLop(em.lopId, r.id, '&loc=moi'), due: em.hanXem, statusLabel: 'Mới' });
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
