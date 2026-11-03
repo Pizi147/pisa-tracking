@@ -42,6 +42,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.owner_assign': 'Gán người phụ trách Case',   // SUA-NO-RA (migrate prCvLoi)
   'case.owner_change': 'Đổi người phụ trách Case',   // R1-NO-CU (D17)
   'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh', 'discipline.bao_ph_khoi_phuc': 'Khôi phục việc báo phụ huynh',   // SV-YT-TVV
+  'discipline.bao_ph_han': 'Sửa hạn báo phụ huynh', 'sos_coordination.han': 'Sửa hạn việc phối hợp SOS',   // HAN-BAO-PH
   'ke_hoach.hang_loat': 'Xếp lịch Test hàng loạt',
   'measure.add_violations': 'Gom thêm vi phạm vào lần xử lý', 'measure.confirm': 'Xác nhận đã xử lý vi phạm', 'measure.create': 'Tạo lần xử lý vi phạm',
   'measure.delete': 'Xoá lần xử lý vi phạm', 'measure.edit': 'Sửa lần xử lý vi phạm', 'measure.note': 'Ghi chú lần xử lý vi phạm',

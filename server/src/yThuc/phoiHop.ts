@@ -14,6 +14,7 @@ import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/att
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
+import { docSuaHan, doiHanChon } from './baoPhTvv.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -197,6 +198,8 @@ export type CoordinationAction = {
   attachmentCount: number;
   /** OV-12h: hạn xác nhận (meeting CX / GĐCN: ngày tạo + 5) · quá hạn khi còn Cần xử lý và hôm nay > hạn. Việc khác: null · false. */
   han: string | null; quaHan: boolean;
+  /** HAN-BAO-PH (chủ SP 03/11, 17.2): meeting CX — hạn mặc định (tạo + 5) · hạn người dùng chọn (null = mặc định). Việc khác: null · null. */
+  hanMacDinh: string | null; hanChon: string | null;
   /** PR-LT2a (N3): 4 nội dung Báo phụ huynh qua TVV (chỉ việc `bao_ph_tvv`) — kết quả · môn khó khăn · nguyên nhân · phương án + khả năng học lại. */
   noiDung: string[] | null;
   /** PR-PHH: true khi việc `bao_ph_tvv` đã xong mà chưa lưu bản chụp (xác nhận trước PR này) — `noiDung` là nội dung HIỆN TẠI, không phải nội dung đã báo. */
@@ -222,7 +225,7 @@ export type CoordinationTurn = {
 };
 
 function shapeAction(r: any, attachments: Map<number, number>): CoordinationAction {
-  const han = hanPhoiHop(r.kind, r.created_at);
+  const han = hanPhoiHop(r.kind, r.created_at, r.han_chon);
   return {
     id: r.id, kind: r.kind, kindLabel: COORDINATION_KIND_LABEL[r.kind as CoordinationKind] ?? r.kind,
     customName: r.custom_name ?? null,
@@ -234,6 +237,7 @@ function shapeAction(r: any, attachments: Map<number, number>): CoordinationActi
     removeReasonText: r.remove_reason_text ?? null, removedAt: r.removed_at ?? null,
     attachmentCount: attachments.get(r.id) ?? 0,
     han, quaHan: r.status === 'pending' && han !== null && han < demoToday(),
+    hanMacDinh: hanPhoiHop(r.kind, r.created_at), hanChon: laMeetingCx(r.kind) ? r.han_chon ?? null : null,
     noiDung: null, noiDungLaHienTai: false,
   };
 }
@@ -374,7 +378,7 @@ export function dongPhoiHopLop(classIds: number[]) {
    * thái các việc, lượt đã huỷ không còn là SOS Event — một câu.
    */
   const rows = conn.prepare(
-    `SELECT x.attempt_id, x.status, x.kind, x.created_at, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
+    `SELECT x.attempt_id, x.status, x.kind, x.created_at, x.han_chon, e.class_id AS lop_dang_hoc FROM sos_coordination_actions x
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${ph}) AND e.status = 'active'
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled'
                                  AND COALESCE(a.kind, 'mock') = 'mock'   -- PR-S6F-a Q11: chỉ lượt Mock FT; lớp thường có việc phoi_hop riêng
@@ -384,7 +388,7 @@ export function dongPhoiHopLop(classIds: number[]) {
   for (const r of rows) {
     const l = luot.get(r.attempt_id) ?? luot.set(r.attempt_id, { lop: r.lop_dang_hoc, trangThai: [], han: [] }).get(r.attempt_id)!;
     l.trangThai.push(r.status);
-    const h = r.status === 'pending' ? hanPhoiHop(r.kind, r.created_at) : null;
+    const h = r.status === 'pending' ? hanPhoiHop(r.kind, r.created_at, r.han_chon) : null;
     if (h) l.han.push(h);
   }
   const dem = new Map<number, number>();
@@ -427,6 +431,26 @@ function loadAction(id: number): any {
 
 function viewOf(id: number): CoordinationAction {
   return shapeAction(loadAction(id), countAttachments('sos_coordination_action', [id]));
+}
+
+/**
+ * HAN-BAO-PH (chủ SP 03/11, 17.2): sửa hạn meeting CX / GĐCN đang Cần xử lý — GVCN lớp em + QL (cùng quyền xác nhận). Việc xong / bỏ không sửa
+ * (không mở lại); việc không hạn (P10) không có hạn để sửa. Lịch sử chung bảng `viec_han_lan` (loại `phoi_hop`).
+ */
+export function suaHanPhoiHop(p: Principal, id: number, body: { han?: unknown; hanCu?: unknown }): CoordinationAction {
+  const { han, hanCu } = docSuaHan(body);
+  const r = loadAction(id);
+  requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
+  if (!laMeetingCx(r.kind)) throw badRequest('Việc này không có hạn.');
+  if (r.status !== 'pending') throw badRequest('Việc đã xong hoặc đã bỏ — không sửa hạn.');
+  tx(() => {
+    const cu = hanPhoiHop(r.kind, r.created_at, hanCu), moi = hanPhoiHop(r.kind, r.created_at, han)!;
+    if (doiHanChon({ loai: 'phoi_hop', bang: 'sos_coordination_actions', id, han, hanCu, cuHieuLuc: cu, moiHieuLuc: moi, boi: p.userId })) {
+      writeAudit({ actorUserId: p.userId, action: 'sos_coordination.han', entityType: 'sos_coordination_action', entityId: id, entityLabel: r.kind,
+        before: { han: cu, hanChon: hanCu }, after: { han: moi, hanChon: han } });
+    }
+  });
+  return viewOf(id);
 }
 
 /** P05 — GVCN THÊM một việc bất kỳ trong sáu loại. `Khác` bắt buộc có tên. Khoá (lượt, loại, tên) duy nhất — kể cả việc đã bỏ (không hồi sinh ngầm). */
@@ -596,11 +620,11 @@ function meetingQuaHan(branchIds: number[] | null, classId: number | null) {
   const b = branchSql('c.branch_id', branchIds), cl = classSql('e.class_id', classId);
   const homNay = demoToday();
   const rows = (db().prepare(
-    `SELECT x.attempt_id, x.kind, x.created_at, e.class_id FROM sos_coordination_actions x
+    `SELECT x.attempt_id, x.kind, x.created_at, x.han_chon, e.class_id FROM sos_coordination_actions x
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock'
        JOIN enrollments e ON e.student_id = x.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
       WHERE x.status = 'pending' AND x.kind IN ('cx_meeting_student', 'cx_meeting_family') AND ${b.sql} AND ${cl.sql} ORDER BY x.attempt_id`,
-  ).all(...b.args, ...cl.args) as any[]).map((r) => ({ ...r, han: hanPhoiHop(r.kind, r.created_at) })).filter((r) => r.han && r.han < homNay);
+  ).all(...b.args, ...cl.args) as any[]).map((r) => ({ ...r, han: hanPhoiHop(r.kind, r.created_at, r.han_chon) })).filter((r) => r.han && r.han < homNay);
   const lop = [...new Set(rows.map((r) => r.class_id as number))];
   const gvcn = new Map<number, number[]>();
   theoLo(lop, (lo, ph) => {

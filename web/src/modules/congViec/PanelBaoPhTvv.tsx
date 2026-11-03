@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
@@ -66,6 +66,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   const [dangKp, setDangKp] = useState(false);
   const toast = useToast();
   const lf = useLoiForm();
+  /* X04 (audit 03/11): MỘT khoá cho mỗi ý định ghi — bấm Lưu lại sau lỗi mạng gửi cùng khoá (máy chủ đã lưu thì không ghi đôi); đổi nội dung → khoá mới. */
+  const khoa = useRef<{ nd: string; k: string } | null>(null);
 
   const em = { id: it.studentId!, ten: it.studentName };
   const tieuDe = t('Báo PH · {ten}', { ten: it.studentName });
@@ -88,7 +90,10 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
     if (!kq) return false;
     setTt('dang'); setLoi(null);
     try {
-      await api.post('/y-thuc/bao-ph/ghi', { viecIds: [v.id], ketQua: kq, ngay: ngay || hn, ghiChu: ghiChu.trim() || null });
+      const nd = JSON.stringify([kq, ngay || hn, ghiChu.trim()]);
+      if (khoa.current?.nd !== nd) khoa.current = { nd, k: crypto.randomUUID() };
+      await api.post('/y-thuc/bao-ph/ghi', { viecIds: [v.id], ketQua: kq, ngay: ngay || hn, ghiChu: ghiChu.trim() || null, khoa: khoa.current.k });
+      khoa.current = null;
       xoaNhap(); setTt(null);
       setDaLuu({ kq, luc: gioVnNay(), lan: v.lan.filter((l) => l.ketQua === 'chua_lien_he').length + 1 });
       for (const k of KHOA_BAO_PH) invalidate(k);

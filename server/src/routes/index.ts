@@ -1505,7 +1505,12 @@ api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
 api.post('/y-thuc/bao-ph/ghi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
-  return baoPhSvc.ghiKetQuaBaoPh(principalOf(req), { viecIds: b.viecIds, ketQua: b.ketQua, ngay: b.ngay, ghiChu: b.ghiChu });
+  return baoPhSvc.ghiKetQuaBaoPh(principalOf(req), { viecIds: b.viecIds, ketQua: b.ketQua, ngay: b.ngay, ghiChu: b.ghiChu, khoa: b.khoa });
+}));
+/* HAN-BAO-PH (chủ SP 03/11): sửa hạn { han: YYYY-MM-DD | null (về mặc định), hanCu } — quyền + 409 kiểm trong dịch vụ. */
+api.post('/y-thuc/bao-ph/:id/han', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return baoPhSvc.suaHanBaoPh(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
 }));
 api.post('/y-thuc/bao-ph/:id/bo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2360,6 +2365,11 @@ api.post('/phoi-hop-sos/:id/confirm', requireAuth, wrap((req) => {
 api.post('/phoi-hop-sos/:id/mo-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return phoiHopSvc.moLaiCoordination(principalOf(req), pInt(req, 'id'));
+}));
+/* HAN-BAO-PH (17.2): sửa hạn meeting CX / GĐCN — như `/y-thuc/bao-ph/:id/han`. */
+api.post('/phoi-hop-sos/:id/han', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return phoiHopSvc.suaHanPhoiHop(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
 }));
 api.post('/phoi-hop-sos/:id/remove', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

@@ -122,7 +122,9 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
 export const HAN_MEETING_CX_NGAY = 5;
 export const GHI_CHU_MEETING_TOI_THIEU = 10;
 export const laMeetingCx = (kind: string): boolean => kind === 'cx_meeting_student' || kind === 'cx_meeting_family';
-export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined): string | null => {
+/** HAN-BAO-PH (chủ SP 03/11, 17.2): `hanChon` (cột `han_chon`) thắng hạn mặc định — chỉ việc meeting CX (việc khác không hạn, P10). */
+export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined, hanChon?: string | null): string | null => {
+  if (laMeetingCx(kind) && hanChon) return hanChon;
   const ngay = laMeetingCx(kind) ? ngayTheoGioVN(taoLuc) : null;
   return ngay ? addDaysIso(ngay, HAN_MEETING_CX_NGAY) : null;
 };
