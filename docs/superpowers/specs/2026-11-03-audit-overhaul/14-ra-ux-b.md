@@ -361,3 +361,63 @@ Nguồn: `00` mục 20 U08 (ý 1–6, "Không kết luận sai…", Nghiệm thu
 | In | đầu trang | như nay, dòng đầu ghi phạm vi + mẫu số | GIỮ · ĐỔI nội dung in |
 | Bấm số → panel chỉ đọc đúng tập | ô, bảng | như nay, tiêu đề panel đủ phạm vi | GIỮ · ĐỔI tiêu đề |
 | ⓘ cách tính | ô, bảng | như nay, câu đủ | GIỮ |
+
+## 11. Đợt sửa sau góp ý chủ SP (03/11 khuya — plan.md mục 4, #864) — CHỜ PTA DUYỆT BẢNG rồi mới vẽ
+Chủ SP **DUYỆT U09** (không đụng). U04, U05, U06, U08 sửa theo bảng dưới. Luật kèm: "những gì thừa thì đừng thêm text" · "bản thật cần phải giống" mockup · không thêm request (Turso).
+
+### 11.1 U04 Học viên & Lớp (skill: impeccable `clarify` + `colorize`)
+| # | Ý chủ SP | Làm gì trong mockup (chữ thật) | Giữ / bỏ / đổi · vì sao |
+|---|---|---|---|
+| U04-1 | Bấm ô điểm kỹ năng → điểm thành phần / số câu | Ô L · R · W1 · W2 · S trong **dải mở dưới hàng em** bấm được → **hộp nhỏ tại chỗ** (dưới ô; Esc / bấm ngoài đóng): L, R "29/40 câu" (`raw_score / raw_total`) · W1 "TA 6.0 · CC 6.5 · LR 6.0 · GRA 6.0" · W2 "TR · CC · LR · GRA" · S "FC · LR · GRA · P" (tên tiêu chí theo `shared/domain/skills.ts`). Ô chỉ có band (không c1–c4 / raw) → **không bấm được** (không thêm câu "chưa có") | THÊM · G6 "ô số = mở tại chỗ". **Dữ liệu:** `diemCuaLuot` (`server/src/fasttrack/attempts.ts:98`) đã `SELECT s.*` → chỉ thêm trường vào `kn` của `hangHvFt`, **0 câu / 0 dòng thêm** |
+| U04-2 | Việc = badge có khung + chấm tròn đổi màu theo trạng thái, kèm chữ | Dùng lại **`.bd-td` V5** (`thiet-ke/v5/v5-nen.css:208–214`, web `Nhan.tsx`: viên tròn + chấm màu + chữ; ⚠ khi sắp / quá hạn) **+ viền 1 px cùng tông** (khung — chủ SP). Mỗi việc: dòng 1 tên việc (link mở việc) · dòng 2 badge: "● Chưa làm · hạn 05/11" (chấm xám) · "● Đang làm · hạn 05/11" (chấm xanh) · "● Chờ duyệt" (chấm tím nhạt) · "⚠ quá hạn 7 ngày" (đỏ). Trạng thái luôn có chữ / ⚠, không chỉ màu | ĐỔI hình · `colorize`: chữ badge ≥ 4.5 : 1, viền ≥ 3 : 1 trên nền tối + sáng (đo khi vẽ, ghi số vào khu G) |
+| U04-3 | Em Kết thúc học BIẾN MẤT khỏi danh sách | Bỏ dòng mờ + thẻ "Kết thúc học" (**thay #29 cũ**). Hàng lớp "7 HV" giữ. Lối xem có sẵn giữ, không thêm mới: hồ sơ lớp tab Học viên (dòng "Đã kết thúc") · ⋯ trang › Lưu trữ (n) · ô tìm Ctrl K | BỎ · chủ SP. Máy chủ bỏ khối OV-11g (`hocVienLop.ts:330–341`) → **bớt 1 câu** mỗi lần mở. **Cần kiểm ở PR:** em FT kết thúc học chờ KQ thi thật (chưa vào Lưu trữ) vẫn tìm thấy bằng Ctrl K + hồ sơ lớp |
+| U04-4 | Đổi màu "Đã thi · chờ KQ" (đang gắt) | `.lich.da` nền đặc xanh + chữ trắng → **token V5 `.bd-lich`** (nền `--lich-nen` nhạt, chữ `--lich-chu`, không viền). Khác "Thi 15/11" (lịch chốt: viền liền, nền trong) bằng chữ "Đã thi … · chờ KQ" + nền | ĐỔI màu · tương phản: tối #afcee2 / #233a4d, sáng #2e4d64 / #dee9f0 (≥ 7 : 1, đo lại khi vẽ) |
+| U04-5 | Cột việc CHỈ việc của chính người đang xem | Cột "Việc" mọi vai = việc **Của tôi** (cùng nguồn badge Công việc V13); "+n việc" đếm việc của tôi; em không có việc của tôi → "—". **Dải dưới hàng** giữ mục "Việc người khác" (tên việc · người · badge) **chỉ xem** — chi tiết mở khi cần | ĐỔI · chủ SP. **[XM] hỏi PTA:** (a) giữ "Việc người khác" trong dải (khuyến nghị: giữ, không mất thông tin "ai đang làm") hay bỏ hẳn · (b) chip "Có việc quá hạn" đổi theo cùng nguồn (việc của tôi quá hạn) — khuyến nghị: đổi, một số liệu một nguồn |
+
+**11.1b U04 — thao tác TRƯỚC → SAU (chỉ phần đổi; bảng 10.1b giữ phần còn lại)**
+
+| Thao tác | Trước (mockup #849 / main) | Sau | Lý do |
+|---|---|---|---|
+| Xem em Kết thúc học trong danh sách lớp | dòng mờ cuối lớp + thẻ | **bỏ khỏi danh sách**; xem ở hồ sơ lớp tab Học viên · Lưu trữ · Ctrl K | chủ SP 03/11 khuya |
+| Xem việc của người khác ở cột Việc | cột liệt kê mọi việc của em | cột chỉ việc của tôi; việc người khác ở dải dưới hàng (chỉ xem, [XM] a) | chủ SP; không mất thông tin |
+| Bấm ô điểm kỹ năng | không bấm được | hộp nhỏ điểm thành phần / số câu | THÊM |
+| Mở việc từ cột Việc | bấm tên việc | như cũ (badge chỉ hiện trạng thái) | GIỮ |
+
+### 11.2 U05 Kế hoạch Test (skill: impeccable `distill`)
+| # | Ý chủ SP | Làm gì trong mockup | Giữ / bỏ / đổi · vì sao |
+|---|---|---|---|
+| U05-1 | "Tuần này" và "Đang làm bài" trùng — giữ một | Bỏ "· tuần này" ở dòng tuần; giữ **"Đang làm bài"** (là trạng thái; tuần đã ở dòng tuần) | BỎ chữ trùng |
+| U05-2 | Badge kỹ năng từng MT; kỹ năng không thi mờ hẳn — thấy kỹ năng thi ở tuần khác nhau | Ô MT: **mỗi tuần thi một dòng** "W1 NOV" + 4 vị trí badge cố định **L R W S** (`.ky` V5): kỹ năng thi tuần đó sáng, còn lại **mờ hẳn** (vẫn giữ chỗ để cột thẳng). Kỹ năng thi tuần khác → dòng thứ hai "W3 NOV" với badge W S sáng (thay chữ ngoại lệ "L, W, S · W3 NOV"). Dời vì vắng: dòng "Vắng → W2 NOV" + badge. Kỹ năng không đăng ký ở lượt: mờ ở mọi dòng. Dòng cuối = trạng thái / điểm "✓ 6.5" · "✗ 5.5" | ĐỔI · thay quyết định Q-c cũ (lời mới hơn thắng). Badge mờ có `aria-label` "không thi" — không chỉ dựa vào độ mờ |
+| U05-3 | Chờ chấm / quá hạn chấm gọn, ít chữ | Dòng trạng thái chỉ "Chờ chấm" hoặc "⚠ Quá hạn chấm" (bỏ tên môn "S" lặp); **badge kỹ năng đang chờ có viền vàng, quá hạn viền đỏ** → biết môn nào ngay trên badge | ĐỔI · chữ + ⚠ + viền (không chỉ màu) |
+
+**11.2b U05 — TRƯỚC → SAU:** không bỏ thao tác nào (bấm ô MT → hộp kỹ năng · Xếp MTn · + MT ▾ · lọc · Xếp nhiều giữ như 10.2b). Chỉ đổi chữ: "· tuần này" bỏ · chữ ngoại lệ → dòng tuần + badge · "Chờ chấm S" → "Chờ chấm" + viền badge S.
+
+### 11.3 U06 Lịch Test tuần (skill: so web hiện tại + `critique`)
+| # | Ý chủ SP | Làm gì trong mockup | Giữ / bỏ / đổi · vì sao |
+|---|---|---|---|
+| U06-1 | Màn để XEM ĐIỂM, giữ format cũ là chính | **Vẽ lại theo web main** (ảnh `cac trang/lich test tuan.jpg`): dải 3 số · khối "Quá hạn chấm" (Lớp · Đợt · Kỹ năng · Còn · Hạn · GV chấm · trạng thái · nút) · khối "Test tuần này": hàng lớp (tên · n HV · đếm MT · L R W S · x/y bài · hạn · badge) + lưới mở dưới (ô điểm viền ✓ / ✗, "n câu" dưới L R, cột W gộp nền, Kỳ vọng nền, Overall, Kết quả SOS). **Bỏ các đổi bố cục của #849:** hàng lớp tách trường dạng lưới, ô chữ "GV khác" | GIỮ web · chủ SP |
+| U06-2 | Hiện hết điểm, kể cả kỹ năng GV không dạy | Ô môn GV khác **đã có điểm → hiện điểm** như ô thường (viền liền, ✓ / ✗, "n câu"), chỉ không nhập được; chưa có điểm → ô trống không viền (như web) | ĐỔI · **Cần kiểm ở PR:** `GET /cham/lich-test` với GV có trả điểm môn GV khác không (đã nạp: 0 câu thêm; bị lọc: chỉ bỏ lọc, cùng câu) |
+| U06-3 | Ý hay giữ từ #849 | (a) Kết quả "Chờ L, R" (đúng môn còn thiếu) thay "Chờ 4 kỹ năng" + bỏ dòng phụ "1 kỹ năng" (B19) · (b) dải số có nhãn "Của bạn:" / "Cả chi nhánh:" (B13) · hạn giữ như web "hạn 28/10 ⚠ quá hạn 6 ngày" | GIỮ ý hay, không đổi bố cục |
+
+**11.3b U06 — TRƯỚC → SAU:** không bỏ thao tác (đổi tuần ‹ › · Tuần này · Tất cả / FT / Lớp thường · Lớp tôi dạy / Tất cả · Chi nhánh · Xuất Excel · Lịch thi thật › · Nhập điểm / Thu · GV chấm S ▾ · mở / gập lớp · bấm số dải → panel). Quay về như web; chỉ đổi chữ Kết quả + hiện điểm môn GV khác.
+
+### 11.4 U08 Phân tích (skill: `colorize` + `layout` + `ui-ux-pro-max` cho link hover)
+| # | Ý chủ SP | Làm gì trong mockup | Giữ / bỏ / đổi · vì sao |
+|---|---|---|---|
+| U08-1 | Bảng Phân tích HV có màu ở chỗ hợp lý | Tab **Báo cáo HV** (PTA xác nhận đúng bảng này): Kết quả MT — số "Đạt Target" xanh, "Thiếu 0.5" vàng, "Thiếu 1.0" cam, "Thiếu ≥ 1.5" đỏ, "Chưa đủ" xám; số 0 mờ · Tiến bộ — Tăng xanh ↑, Giảm đỏ ↓, Giữ trung tính · So lượt trước ↑ xanh ↓ đỏ. Tiêu đề cột vẫn ghi chữ (không chỉ màu); dải chỉ số giữ trung tính (không ngưỡng) | ĐỔI màu · token V5 `--ok / --soon / --late / --bad` |
+| U08-2 | A2 (panel SOS) giãn rộng, web thật không díu | Panel 1440 rộng **720 px**; cột Học viên không xuống dòng, cột điểm đều; 375: panel toàn màn, bảng cuộn ngang trong panel, cột tên dính | ĐỔI · ảnh cặp ở PR phải đo tên không xuống dòng |
+| U08-3 | A3 bỏ cột "Xử lý" | Bỏ cột; nội dung (Case · PA · việc tiếp) chuyển vào panel SOS (U08-4) | BỎ · chủ SP |
+| U08-4 | Bấm badge SOS → panel Case theo kỹ năng đang tạch (≤ 5) | Panel chỉ đọc "{tên HV} · MT2 · SOS 2": mỗi kỹ năng dưới kỳ vọng một khối **mở rộng được, khối đầu mở sẵn** (không 5 tab): Case (badge trạng thái V5 · GV phụ trách · hạn) · PA (nội dung · Kết quả PA · tuần); kỹ năng chưa có Case → "Chưa có Case". Tên HV trong panel = link hồ sơ HV | THÊM · G8 chỉ đọc. **Turso:** một request khi bấm (một em, một lượt) — **Cần kiểm ở PR:** dùng lại đường có sẵn (`GET /hoc-vien-lop/em/:id` hoặc Case theo em), ước ≤ 10 câu / ~50 dòng mỗi lần bấm, không nạp sẵn |
+| U08-5 | "MT#" nổi hơn tuần, bấm → hồ sơ MT | Ô "MT · tuần": **"MT2"** 15 / 600 màu chữ chính (link hồ sơ lượt MT) + "W2 SEP" 13 mờ | ĐỔI |
+| U08-6 | Tên lớp → hồ sơ lớp; tên HV → hồ sơ HV; link chữ thường, không gạch chân, hover mới báo | Ba loại link cùng kiểu: màu chữ thường, không gạch chân; **hover + focus-visible:** màu accent + gạch chân + con trỏ tay; vòng focus bàn phím rõ. 375 (không hover): giữ như vậy (cùng quy ước "tên / mã là link" mọi màn — luật bỏ ↗ 28/10) | ĐỔI · `ui-ux-pro-max` rà |
+| U08-7 | A4 bỏ cột "Người chọn" | Bỏ cột | BỎ · chủ SP |
+| U08-8 | A4 chưa chọn bước tiếp → "Chưa chọn", không link, không nút | Ô Bước tiếp: "Chưa chọn" mờ; bỏ "· Hồ sơ HV ›"; muốn xử lý → bấm tên HV | ĐỔI · G8 báo cáo thuần (PTA chọn) |
+
+**11.4b U08 — TRƯỚC → SAU (cột bị bỏ)**
+
+| Thao tác / thông tin | Trước | Sau | Lý do |
+|---|---|---|---|
+| Xem Case · PA · việc tiếp của lượt (A3) | cột "Xử lý" | bấm badge SOS → panel theo kỹ năng | chủ SP; gọn bảng |
+| Xem ai chọn bước tiếp + ngày (A4) | cột "Người chọn" | hồ sơ HV (hành trình) — bấm tên HV | chủ SP |
+| Đi xử lý em chưa chọn bước tiếp (A4) | link "Hồ sơ HV ›" trong ô | bấm tên HV | G8 báo cáo thuần |
+| Mở hồ sơ lượt MT / lớp (A3) | không có | bấm "MT2" / tên lớp | THÊM |
