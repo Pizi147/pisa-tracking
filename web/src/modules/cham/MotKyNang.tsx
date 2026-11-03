@@ -13,13 +13,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  ENTRY_SKILLS, nhanBai, ngay, tenMon, tenMonNgan, tuanLich, type NguoiChon,
+  ENTRY_SKILLS, nhanBai, tenMon, tenMonNgan, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { conThieuFt, dotGvCham, duongDotTest, type NguCanhDs } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
-import { Info, Level } from '../../ui/ui.tsx';
+import { Level } from '../../ui/ui.tsx';
 import {
-  ChoNutDau, KHOA_HOAN_TAT_HINT, ODiemThuong, apDiemVuaLuu, datPhanTram, useSaveScore, type Cell,
+  ChoNutDau, ODiemThuong, apDiemVuaLuu, datPhanTram, useSaveScore, type Cell,
 } from '../fasttrack/ScoreEntry.tsx';
 import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
@@ -114,7 +114,7 @@ function DongHv({ studentId, active, ten, href, ds, phu, phuTitle, phuDo = false
   /** OV-1d: em đã Kết thúc học / Lưu trữ — dòng mờ. */
   mo?: boolean;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
-  /** LUAT-34: nhãn "Đủ điểm" (trạng thái, không khoá) cạnh tên khi đợt/bài của dòng này đã hoàn tất. */
+  /** Nhãn cạnh tên (em ngừng học). N33 ④: bỏ nhãn "Đủ điểm". */
   nhan?: React.ReactNode;
   /** Dòng "Thi W1 OCT" — chỉ hiện ở Điểm theo lớp (`DongThiContext`). */
   thi?: React.ComponentProps<typeof DongThi>['muc'];
@@ -138,12 +138,6 @@ function DongHv({ studentId, active, ten, href, ds, phu, phuTitle, phuDo = false
       {children}
     </li>
   );
-}
-
-/** LUAT-34: nhãn "Đủ điểm" (trạng thái, không khoá) cạnh tên — dùng chung cho dòng FT và dòng lớp thường của `MotKyNang`. */
-function NhanHoanTat({ hoanTat, chuNhatCuoi }: { hoanTat?: boolean; chuNhatCuoi?: string | null }) {
-  if (!hoanTat) return null;
-  return <Info title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Info>;
 }
 
 /* ------------------------------------------------------------------ Lớp Fast Track */
@@ -248,7 +242,7 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, hop, ds
       phu={phu} phuTitle={kv !== null ? t('Kỳ vọng (KV) của lượt này: {fmtBand}', { fmtBand: fmtBand(kv) }) : undefined}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       mo={!!row.ngungHoc}
-      nhan={row.ngungHoc ? <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level> : <NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
+      nhan={row.ngungHoc ? <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level> : undefined}
       thi={row.cells.filter((x) => x.required && x.progress !== 'cancelled')
         .map((x) => ({ nhan: nhanKyNangFt(x.skill), weekStart: x.weekStart ?? null }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
@@ -359,7 +353,6 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id }, k)}
       phu={phu} phuTitle={tenMonO} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
-      nhan={<NhanHoanTat hoanTat={row.hoanTat} chuNhatCuoi={row.chuNhatCuoi} />}
       thi={row.skillSchedule.filter((x) => x.progress !== 'cancelled' && x.progress !== 'skipped')
         .map((x) => ({ nhan: tenMonNgan(sheet.programme.code, x.skill), weekStart: x.weekStart }))}>
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}

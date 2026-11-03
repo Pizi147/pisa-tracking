@@ -6,7 +6,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { PanelViec } from '../congViec/PanelViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { shortDate, viecKeTiep } from '@shared/domain/index.ts';
+import { daysBetween, nhanQuaHan, shortDate, viecKeTiep } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
@@ -61,7 +61,8 @@ function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () =
   const vach = it.urgency === 'overdue' ? 'rgb(var(--bad-rgb))' : it.urgency === 'today' ? 'rgb(var(--soon-line-rgb))' : 'var(--accent)';
   const tieuDe = gonKyNang(dich(it.tieuDe));
   const ten = it.studentId !== null && !tieuDe.includes(it.studentName) ? `${tieuDe} · ${it.studentName}` : tieuDe;
-  const han = it.due ? (it.urgency === 'today' ? t('hạn hôm nay') : t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })) : null;
+  /* U01 / U03 (PTA 03/11): quá hạn mọi màn "⚠ quá hạn n ngày". */
+  const han = it.due ? (it.urgency === 'overdue' && homNay ? nhanQuaHan(Math.max(1, daysBetween(it.due.slice(0, 10), homNay))) : it.urgency === 'today' ? t('hạn hôm nay') : t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })) : null;
   return (
     <button type="button" onClick={onMo} aria-expanded={dangMo} title={`${ten} — ${dich(it.actionLabel)}`}
       className={`flex h-9 min-w-0 items-center gap-2 rounded-lg border border-l-[3px] px-3 text-left max-lg:h-auto max-lg:min-h-[44px] max-lg:flex-wrap max-lg:py-1.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)] hover:bg-[color:var(--nut-hover)]'}`}

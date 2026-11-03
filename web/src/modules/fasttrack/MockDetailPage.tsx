@@ -20,7 +20,7 @@ import { HopThaoTacMt } from './HopThaoTacMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DongThoiGianLuot, dongLuot, type DongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
 import {
-  DeadlinePill, KHOA_HOAN_TAT_HINT, coDiemChinhThuc, lockedByNoShow, useSaveScore, type Cell, type SaveOpts, type SavePatch,
+  DeadlinePill, coDiemChinhThuc, lockedByNoShow, useSaveScore, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
 import { KY_NANG_LON, useODiem, type KyNangLon, type LichKn } from './ODiemLon.tsx';
 import { nguCanhChiTiet, type KetThucHop } from './HopNhapDiem.tsx';
@@ -329,7 +329,6 @@ export default function MockDetailPage() {
                 </dl>
               </NutLuat>
             </span>
-            {coKhoa && !cancelled && <Tag title={KHOA_HOAN_TAT_HINT}>{t('Đủ điểm')}</Tag>}
             {d.lichSu && <Tag>{t('Nhập bù, không tính hạn')}</Tag>}
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5">

@@ -208,8 +208,9 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
       {/* ② nhận diện + nút cố định (PR-OV3a). 375: nút xuống một hàng, chia đều. */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <h1 className="m-0 text-[22px] font-bold leading-[1.3] text-slate-100">{data.code}</h1>
-        <span className="flex flex-wrap items-baseline text-sm text-slate-400 max-sm:basis-full">
-          {meta.map((m, i) => <span key={i} className={`whitespace-nowrap ${i === 3 ? 'max-sm:hidden' : ''}`}>{i > 0 && <span aria-hidden>{' · '}</span>}{m}</span>)}
+        {/* U03 (mockup `.tags .tag.nhat`): chương trình · HV · tuần · khai giảng thành chip nền phụ. */}
+        <span className="flex flex-wrap items-center gap-1.5 max-sm:basis-full">
+          {meta.map((m, i) => <span key={i} className={`inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md bg-[color:var(--surface-2)] px-2 text-xs font-semibold text-dim [&_b]:font-bold ${i === 3 ? 'max-sm:hidden' : ''}`}>{m}</span>)}
         </span>
         <div className="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">
           {data.viewer.canEnterScores && <button type="button" className="btn h-9 justify-center max-sm:h-11" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
@@ -225,28 +226,30 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
 
       {/* ④ số của lớp | badge đổi trang. */}
       <div className="flex min-h-7 flex-wrap items-center gap-x-[26px] gap-y-2">
-        {tomTat?.luot && <So n={t('Lượt gần nhất')} g={tomTat.luot} />}
-        {tomTat?.dat && (
-          <So n={tomTat.dat.nhan} g={(
-            <span className="inline-flex items-baseline gap-1">
-              <span className="tabular-nums text-dat">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %</span>
-              <span className="mr-1 text-[13px] font-medium tabular-nums text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong} HV</span>
-              <NutLuat label={t('Cách tính Đạt')}>{t('Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.')}</NutLuat>
-            </span>
-          )} />
-        )}
-        {tomTat && tomTat.sos.length > 0 && (
-          <So ngang n="SOS" g={(
-            <span className="inline-flex flex-wrap items-center gap-x-3.5 gap-y-1">
-              {tomTat.sos.map(([muc, n]) => (
-                <span key={muc} className="inline-flex items-center gap-1.5 whitespace-nowrap" title={t('SOS {muc}: {n} HV', { muc, n })}>
-                  <span className={`${CHIP_SOS} ${lopSos(muc)}`}>SOS {muc}</span>
-                  <span className="tabular-nums">{n}</span><span className="text-[13px] font-medium text-slate-400">HV</span>
-                </span>
-              ))}
-            </span>
-          )} />
-        )}
+        {/* U03 (mockup `.facts`): Lượt mới nhất · Đạt · SOS là ô nhãn 12 trên – giá trị 15 dưới, vạch ngăn trái. */}
+        <span className="flex flex-wrap items-stretch gap-y-2">
+          {tomTat?.luot && <So n={t('Lượt mới nhất')} g={tomTat.luot} />}
+          {tomTat?.dat && (
+            <So n={tomTat.dat.nhan} g={(
+              <span className="inline-flex items-baseline gap-1">
+                <span className="tabular-nums text-dat">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %</span>
+                <span className="mr-1 text-[13px] font-medium tabular-nums text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong} HV</span>
+                <NutLuat label={t('Cách tính Đạt')}>{t('Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.')}</NutLuat>
+              </span>
+            )} />
+          )}
+          {tomTat && tomTat.sos.length > 0 && (
+            /* Mockup: tổng "n HV"; số theo mức giữ ở chip nhỏ sau (không mất thông tin). */
+            <So n="SOS" g={(
+              <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="tabular-nums">{tomTat.sos.reduce((n, [, x]) => n + x, 0)} HV</span>
+                {tomTat.sos.map(([muc, n]) => (
+                  <span key={muc} className={`${CHIP_SOS} ${lopSos(muc)} tabular-nums`} title={t('SOS {muc}: {n} HV', { muc, n })}>SOS {muc} · {n}</span>
+                ))}
+              </span>
+            )} />
+          )}
+        </span>
         {(bConLai.hien.length > 0 || bConLai.an.length > 0) && (
           <div className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0">
             {bConLai.hien.map(nutBadge)}
@@ -265,13 +268,13 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
   );
 }
 
-/** Ô số hàng ④ (mockup `.ng`): nhãn 13 nhạt + giá trị 15 đậm cùng đường cơ sở. */
-function So({ n, g, ngang }: { n: ReactNode; g: ReactNode; ngang?: boolean }) {
+/** U03 (mockup `.fact`): ô nhãn 12 mờ trên – giá trị 15/600 dưới, vạch ngăn trái 1 px (ô đầu không vạch) — hàng GV và hàng số của lớp. */
+const FACT = 'flex min-w-0 flex-col gap-0.5 whitespace-nowrap border-l px-[18px] py-0.5 first:border-l-0 first:pl-0 max-sm:px-3';
+function So({ n, g }: { n: ReactNode; g: ReactNode }) {
   return (
-    /* 375 (mockup): nhãn trên, giá trị dưới — trừ SOS (một hàng chip). */
-    <span className={`inline-flex items-baseline gap-2 whitespace-nowrap ${ngang ? '' : 'max-sm:flex-col max-sm:items-start max-sm:gap-0'}`}>
-      <span className="text-[13px] font-medium text-slate-400">{n}</span>
-      <span className="text-[15px] font-bold text-slate-100">{g}</span>
+    <span className={FACT} style={{ borderColor: 'var(--line)' }}>
+      <span className="text-xs font-medium leading-[1.3] text-faint">{n}</span>
+      <span className="text-[15px] font-semibold leading-[1.35] text-slate-100">{g}</span>
     </span>
   );
 }
@@ -315,18 +318,19 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
 function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
   const [du, setDu] = useState(false);
   if (!nhom.length) return null;
+  /* U03 (mockup `.facts`): mỗi nhóm một ô — nhãn (GVCN · L · W1 …) trên, tên dưới, vạch ngăn trái. */
   const mot = (g: NhomGiaoVien, i: number, luonHien: boolean) => (
-    <span key={`${g.nhan}-${i}`}
-      className={`items-baseline gap-1 whitespace-nowrap ${luonHien || i < 2 ? 'inline-flex' : i < 5 ? 'hidden sm:inline-flex' : 'hidden'}`}>
-      <abbr className="font-medium text-slate-400 no-underline" title={g.title}>{g.nhan}</abbr>
-      {g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>}
+    <span key={`${g.nhan}-${i}`} style={{ borderColor: 'var(--line)' }}
+      className={`${FACT} ${luonHien || i < 2 ? 'flex' : i < 5 ? 'hidden sm:flex' : 'hidden'}`}>
+      <abbr className="text-xs font-medium leading-[1.3] text-faint no-underline" title={g.title}>{g.nhan}</abbr>
+      <span className="text-[15px] font-semibold leading-[1.35] text-slate-100">{g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>}</span>
     </span>
   );
   return (
     /* V8-HSL hàng ③: 13 px, tên chữ chính đậm vừa (không link xanh to). */
-    <div className="text-[13px] text-slate-400 [&_.ten-ho-so]:font-medium">
+    <div className="text-[13px] text-slate-400 [&_.ten-ho-so]:font-semibold [&_.ten-ho-so]:text-slate-100">
       {/* HL-18: cắt chiều ngang thôi (`overflow-x-clip`) — vùng chạm 44 px của tên GV / "+k" ở 375 không bị cắt theo chiều dọc. */}
-      <div className="flex items-center gap-3.5 overflow-x-clip whitespace-nowrap">
+      <div className="flex items-center gap-x-0 overflow-x-clip whitespace-nowrap [&>button]:ml-3">
         {nhom.map((g, i) => mot(g, i, false))}
         {nhom.length > 2 && (
           <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-[13px] sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
@@ -339,7 +343,7 @@ function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
           </button>
         )}
       </div>
-      {du && <div className="mt-1 flex flex-wrap gap-x-3.5 gap-y-1">{nhom.map((g, i) => mot(g, i, true))}</div>}
+      {du && <div className="mt-1 flex flex-wrap gap-y-1">{nhom.map((g, i) => mot(g, i, true))}</div>}
     </div>
   );
 }

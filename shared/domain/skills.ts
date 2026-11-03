@@ -46,3 +46,12 @@ const TIEU_CHI_NGAN = { writing1: ['TA', 'CC', 'LR', 'GRA'], writing2: ['TR', 'C
 export const tieuChiCua = (s: EntrySkill): readonly string[] | null => (s in TIEU_CHI ? TIEU_CHI[s as keyof typeof TIEU_CHI] : null);
 export const tieuChiNganCua = (s: EntrySkill): readonly string[] | null =>
   (s in TIEU_CHI_NGAN ? TIEU_CHI_NGAN[s as keyof typeof TIEU_CHI_NGAN] : null);
+/**
+ * U03 / U04 (audit 03/11): dòng tiêu chí của MỘT ô W1 · W2 · S — `[['TA', '6'], ['CC', '6.5'], …]`, nơi vẽ ghép "TA 6 · CC 6.5 · … → 6.0".
+ * Ô chỉ có band (không tiêu chí nào) hoặc L / R → null: không thẻ, không dòng, không chữ thêm. Một hàm cho mọi màn.
+ */
+export function dongTieuChi(s: EntrySkill, tc: readonly (number | null)[] | null | undefined): [string, string][] | null {
+  const ten = tieuChiNganCua(s);
+  if (!ten || !tc || tc.every((v) => v === null || v === undefined)) return null;
+  return ten.map((k, i) => [k, tc[i] === null || tc[i] === undefined ? '—' : String(tc[i])]);
+}

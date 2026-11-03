@@ -29,7 +29,7 @@ import { KetQua, oThuong, useLuuThuong, type ThuongSheet } from '../cham/LuoiThu
 import { DauO, VIEN_LOI } from '../cham/LuoiFT.tsx';
 import { NganLichSuBai } from '../cham/NganLichSuBai.tsx';
 import { HopThaoTacMt, THAO_TAC_CO_HOP } from './HopThaoTacMt.tsx';
-import { KHOA_HOAN_TAT_HINT, ODiemThuong, datPhanTram } from './ScoreEntry.tsx';
+import { ODiemThuong, datPhanTram } from './ScoreEntry.tsx';
 import { ONhanXet } from './NhanXet.tsx';
 import { CaseLuotKn } from './CaseLuotKn.tsx';
 import { dongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
@@ -197,7 +197,6 @@ export default function LuotThuongPage() {
                 </dl>
               </NutLuat>
             </span>
-            {r.hoanTat && <Tag title={t('Hết Chủ nhật {ngay}. {x}', { ngay: ngay(r.chuNhatCuoi), x: KHOA_HOAN_TAT_HINT })}>{t('Đủ điểm')}</Tag>}
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5">
             <NhanGt n={t('Lớp lúc Test')} g={<>{d.class.code}{d.lopHienTai && <span className="ml-1 text-xs font-medium text-slate-400">· {t('nay {x}', { x: d.lopHienTai.code })}</span>}</>} />

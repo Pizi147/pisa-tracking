@@ -58,7 +58,7 @@ export function luotMacDinh(ds: TomTatLuot[], homNay: string): string | null {
 
 /** Dòng nhỏ dưới nút lượt: "6/7 đủ điểm" (tuần thi nằm dưới mã từng em — `dongThiHocVien`); không ai có lịch → "chưa ai có lịch". */
 export function dongPhuLuot(l: TomTatLuot): string {
-  return l.coLich ? t('{duDiem}/{coLich} đủ điểm', { duDiem: l.duDiem, coLich: l.coLich }) : t('chưa ai có lịch');
+  return l.coLich ? t('{duDiem}/{coLich} có điểm đủ', { duDiem: l.duDiem, coLich: l.coLich }) : t('chưa ai có lịch');
 }
 
 /**

@@ -68,7 +68,9 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(/<ThanhTruocSau loai="hoc-vien"/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ HV');
     assert(/<ThanhTruocSau loai="lop"/.test(doc('web/src/modules/classes/DauTrangLop.tsx')), 'hồ sơ lớp (DH-4)');
     assert(/to=\{`\/hoc-vien\/\$\{h\.id\}`\} state=\{\{ ds \}\}/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'DanhSachHvLop: link tên em phải mang state.ds');
-    for (const f of ['classes/BangHoSoLop', 'classes/BangDiemLopThuong']) {
+    /* U03: bảng FT hồ sơ lớp — tên em mở rộng tại chỗ; "Hồ sơ HV ›" trong tóm tắt kỹ năng mang danh sách. */
+    assert(/to=\{duongHoSoHocVien\(r\.id\)\} state=\{\{ ds \}\}/.test(doc('web/src/modules/classes/BangHoSoLop.tsx')), 'BangHoSoLop: Hồ sơ HV › phải mang state.ds');
+    for (const f of ['classes/BangDiemLopThuong']) {
       assert(/to=\{`\/hoc-vien\/\$\{s\.id\}`\}[^>]*state=\{\{ ds \}\}/.test(doc(`web/src/modules/${f}.tsx`)), `${f}: link tên em phải mang state.ds`);
     }
     const sp = doc('web/src/modules/students/StudentsPage.tsx');
