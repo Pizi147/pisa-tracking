@@ -206,6 +206,8 @@ tên biến cũ giữ nguyên; bốn nhóm badge thay "5 nghĩa" dưới (V4, V5
 - Hàng nhóm đậm, hàng con nhạt hơn (cỡ theo thang trên).
 - **Độ đậm (MAU-WEB-2 D10, 27/10):** chữ thường 400 · nhãn (ô form, trường panel, nút phụ `btn-sm`, tab / chip lọc / nút đoạn KHÔNG chọn) 500 ·
   mục đang chọn, nút chính, tên đầu dòng (`.ten-ho-so`), đầu cột, badge 600 · tiêu đề trang / khối, số chính (`OSo`), tên lớp hàng nhóm 700 · không dùng 800 (trừ logo).
+  **Nút việc ở dòng Công việc / Chờ bạn duyệt** (Nhập điểm, Nhập hộ, Làm thay, Chấm, Duyệt, Trả lời…, Gia hạn, Bỏ qua — cột nút) **600** như mockup v12 `.nut`
+  (PTA chốt 05/11 #934, [XM] K1); nút `btn-sm` màn khác giữ 500 tới PR màn đó.
   Ô hàng nhóm ghi `font-normal` thì giữ chữ thường (`.hang-lon > :where(td)`).
 - **Số căn giữa** + `tabular-nums` (`td.tabular-nums`, đầu cột số); tên / chữ dài căn trái (C06).
 - Đối tượng trong khối **Cần làm** của panel v3 (tên PA, mức kỷ luật, loại meeting): **15 px đậm 700** (OV-12e, chủ SP 14/10).

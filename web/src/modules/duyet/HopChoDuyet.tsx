@@ -580,11 +580,11 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
       </span>
       <span className="col-start-2 flex flex-wrap items-center gap-x-4 gap-y-1 sm:col-start-auto sm:flex-col sm:items-stretch sm:gap-1" onClick={dungLai}>
         {y.kieuNut === 'duyet-tu-choi' ? (
-          <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:h-auto sm:min-h-[30px] sm:w-full" disabled={dangGui === y.id}
+          <button type="button" className="btn btn-sm min-h-[44px] justify-center font-semibold sm:h-auto sm:min-h-[30px] sm:w-full" disabled={dangGui === y.id}
             title={y.nguoiXinId != null && y.nguoiXinId === toi ? t('Bạn tự gửi · tự duyệt được') : undefined}
             onClick={() => (coBuoc ? onMo(y, 'duyet') : onDuyet(y))}>{dangGui === y.id ? t('Đang lưu…') : coBuoc ? t('Duyệt…') : t('Duyệt')}</button>
         ) : (
-          <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:h-auto sm:min-h-[30px] sm:w-full" onClick={() => onMo(y, 'tra-loi')}>{t('Trả lời…')}</button>
+          <button type="button" className="btn btn-sm min-h-[44px] justify-center font-semibold sm:h-auto sm:min-h-[30px] sm:w-full" onClick={() => onMo(y, 'tra-loi')}>{t('Trả lời…')}</button>
         )}
         <span className="flex items-center gap-x-4 text-[13px] sm:justify-center sm:gap-x-2">
           {y.kieuNut === 'duyet-tu-choi' && (

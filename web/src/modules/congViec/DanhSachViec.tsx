@@ -304,8 +304,8 @@ function CotNut({ it, nut, daXong, mo, onBam, nutPhu, luon }: { it: WorkItem; nu
   return (
     <span className={`${luon || nutPhu ? 'flex' : 'hidden sm:flex'} flex-wrap gap-1.5 max-sm:col-span-full sm:flex-col sm:items-stretch`} onClick={(e) => e.stopPropagation()}>
       {nut && (
-        /* v12 S5: nút một dòng (`nowrap`), thiếu chỗ cắt "…" — chữ đủ ở `title`. */
-        <button type="button" className={`btn btn-sm min-h-[44px] min-w-0 justify-center overflow-hidden text-ellipsis whitespace-nowrap sm:h-[30px] sm:min-h-[30px] sm:w-full sm:px-2 ${luon ? '' : 'max-sm:hidden'}`} onClick={onBam}
+        /* v12 S5: nút một dòng (`nowrap`), thiếu chỗ cắt "…" — chữ đủ ở `title`. K1 (PTA 05/11 #934): chữ 600 như mockup `.nut`. */
+        <button type="button" className={`btn btn-sm min-h-[44px] min-w-0 justify-center overflow-hidden font-semibold text-ellipsis whitespace-nowrap sm:h-[30px] sm:min-h-[30px] sm:w-full sm:px-2 ${luon ? '' : 'max-sm:hidden'}`} onClick={onBam}
           title={nut} aria-expanded={it.con?.length && mo !== undefined ? mo : undefined}>
           {nut}{mo !== undefined && <span aria-hidden className="ml-1">{mo ? '▴' : '▾'}</span>}
         </button>

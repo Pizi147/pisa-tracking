@@ -68,15 +68,15 @@ Dữ liệu thật (bản sao 29/10, đã migrate tới main): badge QL MB 165 �
 | S13d | "Từ chối…" · "Mở ›" hai link 13 px giữa dưới nút | `justify-center gap-x-2` | A2 | KHỚP |
 | S13e | Cột hạn / người / nút thẳng mọi dòng (150 · 118) | `COT_VIEC` sẵn có; `DongDuyet` 136 · 112 → 150 · 118 | A2 | KHỚP |
 | S13f | Nút viền, chữ căn giữa | `justify-center` (trước căn trái) | A1–A3 | KHỚP |
-| K1 | Nút dòng chữ 600 (`.nut` của `chung.css`) | giữ 500 (`index.css .btn-sm` D10 "nút lặp từng dòng không đậm" — mọi màn; S1 giảm đậm) | A1–A3 | **[XM]** — mockup (CSS chung) ≠ luật D10 toàn web; đổi một dòng nếu PTA chốt 600 |
+| K1 | Nút dòng chữ 600 (`.nut`) | PTA chốt 05/11 ([XM] #934): nút việc ở dòng Công việc / Chờ bạn duyệt 600 (cả Gia hạn, Bỏ qua cùng cột); DESIGN D10 thêm ngoại lệ | A1–A3 | KHỚP |
 | K2 | 375: tên nhóm `nowrap` | tên nhóm dài ("Case học thuật", "Ý thức & Phối hợp") XUỐNG DÒNG, số + ⚠ vẫn cùng hàng — 375 chỉ còn ~95 px cho tên; mockup không vẽ hai nhóm này mở ở 375; luật M2 "tên được xuống dòng, không cắt". Màn hẹp thu khe 8 → 6 px, nút ▾ 32 → 24 px để tên tối đa 2 dòng ("Chờ bạn duyệt" có thêm ⓘ) | B1 | KHÁC — có lý do |
 | K3 | A3 / B1: Case, Ý thức, Vận hành vẽ gập | giữ hành vi U01: nhóm mở sẵn (QL 375 gập từ nhóm 3 — SUA-CHAM-LAI Đ1) — v12 không có mục đổi luật gập | A3, B1 | KHÁC — giữ thao tác cũ |
 | K4 | Khung chờ "Chọn một việc ở danh sách." | khi có nhóm Chờ bạn duyệt giữ "…hoặc yêu cầu…" (bấm yêu cầu cũng mở panel) | A2 | KHÁC — chữ đúng ngữ cảnh |
 | — | Thẻ "MT1" ở dòng Nhập điểm | dữ liệu: #922 (N39) đổi nhãn việc chấm Mock thành "W1 JUL" — không có "MT1" | A1–A3 | dữ liệu, không tính |
 | GIỮ | Bố cục danh sách trái + panel phải, nhóm → em → việc, vạch hạn, dòng "Cả lớp" + "n em ▾", nhóm Speaking chấm chéo, vòng chữ đầu, màu, SOS, dải "Mới dùng PISA", "✓ n xong hôm nay", Việc quản lý | không đổi | A1–B1 | GIỮ |
 
-Điểm khớp: 33 dòng — 29 KHỚP / BỎ đúng mockup · 3 KHÁC có lý do (K2 luật M2, K3 giữ thao tác cũ, K4 chữ đúng ngữ cảnh) · 1 [XM] (K1, chờ PTA)
-→ **32 / 33 = 97 %** (≥ 90 %).
+Điểm khớp: 33 dòng — 30 KHỚP / BỎ đúng mockup (gồm K1 sau khi PTA chốt) · 3 KHÁC PTA chấp nhận 05/11 (K2 luật M2, K3 giữ nhóm mở như U01, K4 chữ đúng ngữ cảnh)
+→ **33 / 33** (≥ 90 %).
 
 ## Thao tác TRƯỚC → SAU (không mất thao tác)
 
