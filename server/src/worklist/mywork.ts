@@ -678,10 +678,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   if (lopCheo.size) {
     const ccDongs: BaiChuaCham[] = [];
+    /*
+     * VIEC-SAU-LOGIC ([XM] #926): QL kiêm GV S — bài S quá hạn (cờ ô, như Lịch Test khối 1) ở lớp QL quản lý trước là dòng "GV chấm chéo" đỏ ở
+     * "Tất cả"; nay ở việc này nên việc đỏ quá hạn, hạn = hạn sớm nhất (cùng ở Của tôi / Tất cả). GV S không quản lý / Admin (P12 Q12): giữ không hạn (OV-14c).
+     * Vẫn không đếm (`demDongViec` bỏ chấm chéo, T18).
+     */
+    const hanQua: (string | null)[] = [];
     for (const a of attempts as any[]) {
       if (!lopCheo.has(a.classId)) continue;
+      const quanLy = xemViec === 'het' && (scope.all || scope.classIds.includes(a.classId) || scope.branchIds.includes(a.branchId));
       for (const c of (a.pendingDetail ?? []) as any[]) {
         if (!vaoChamS(a, c)) continue;
+        if (quanLy && c.overdue) hanQua.push(c.deadline ?? null);
         ccDongs.push({
           classId: a.classId, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
@@ -693,7 +701,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (mau) {
       const soBai = ccDongs.length;
       items.push({
-        ...mau, key: KHOA_CHAM_SPEAKING, studentId: null, studentName: '', emIds: undefined, classId: null, classCode: null,
+        ...mau, key: KHOA_CHAM_SPEAKING,
+        ...(hanQua.length ? { urgency: 'overdue' as const, due: hanQua.filter((x): x is string => !!x).sort()[0] ?? null } : {}),
+        studentId: null, studentName: '', emIds: undefined, classId: null, classCode: null,
         /* Dòng phụ: số lớp (tiêu đề đã có số bài). */
         attemptId: null, attemptNo: null, contextLabel: `${new Set(ccDongs.map((x) => x.classId)).size} lớp`, phu: null, luot: undefined, periodId: null, tuanThi: null,
         tieuDe: `${VIEC_CHAM_CHEO} · ${soBai} bài`, reason: `${soBai} bài`, count: soBai, soBai, href: `/cong-viec?viec=${encodeURIComponent(KHOA_CHAM_SPEAKING)}`,
