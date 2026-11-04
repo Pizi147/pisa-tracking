@@ -294,7 +294,9 @@ export const soDongNhatKyPa = (pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[]): n
 
 // ------------------------------------------------------------------ dòng PA ở panel Case (Task 6): nút Kết quả · ⋯ Sửa PA · Xoá PA
 
-type PaDong = { kind: string; status: string; preset?: boolean; confirmedAt?: string | null; approvalState?: string | null; ghiDuoc?: boolean };
+type PaDong = { kind: string; status: string; preset?: boolean; confirmedAt?: string | null; approvalState?: string | null; ghiDuoc?: boolean;
+  /** N37: cờ máy chủ (`cachXoaPa`) — 'ngay' xoá vào Thùng rác · 'xin' gửi QL duyệt (PA theo quy chế) · null không quyền. */
+  xoa?: 'ngay' | 'xin' | null };
 
 /** PA đang chạy — cùng chặn với máy chủ (`chanPaChuaChay`): chưa khép, không chờ Quản lý duyệt, PA quy chế đã xác nhận. */
 export const paDangChay = (pa: PaDong): boolean =>
@@ -302,14 +304,13 @@ export const paDangChay = (pa: PaDong): boolean =>
 
 /**
  * Nút trên dòng PA: `ketQua` (nút Kết quả) và `sua` (⋯ Sửa PA) cùng luật — người xem ghi được Kết quả của PA (`ghiDuoc`) và PA đang chạy.
- * `xoa` (⋯ Xoá PA): Quản lý / Quản trị, Case chưa xong, không phải PA hệ thống sinh (quy chế, Bổ trợ) — luật PR-LUI-a2 cũ.
+ * `xoa` (⋯ Xoá PA, N37): theo cờ máy chủ `pa.xoa` — kể cả PA đã có kết quả, Case đã hoàn thành, PA quy chế (gửi QL duyệt).
  * `ketThuc` (⋯ Kết thúc PA, OV-13a C): PA theo quy chế SOS đang chạy, người xem là GVCN lớp đang học / Quản lý (`coTheKetThucPa` của máy chủ).
  */
-export function nutDongPa(pa: PaDong, xem: { canApprove: boolean; caseXong: boolean; coTheKetThucPa?: boolean }): { ketQua: boolean; sua: boolean; xoa: boolean; ketThuc: boolean } {
+export function nutDongPa(pa: PaDong, xem: { caseXong: boolean; coTheKetThucPa?: boolean }): { ketQua: boolean; sua: boolean; xoa: boolean; ketThuc: boolean } {
   const ghi = !!pa.ghiDuoc && paDangChay(pa);
-  const heThong = !!pa.preset || pa.kind === 'bo_tro' || pa.kind === 'bo_tro_mien_phi';
   return {
-    ketQua: ghi, sua: ghi, xoa: xem.canApprove && !xem.caseXong && !heThong,
+    ketQua: ghi, sua: ghi, xoa: !!pa.xoa,
     ketThuc: !!xem.coTheKetThucPa && !xem.caseXong && !!pa.preset && pa.kind !== 'bo_tro' && pa.kind !== 'bo_tro_mien_phi' && pa.status === 'started' && paDangChay(pa),
   };
 }

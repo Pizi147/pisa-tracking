@@ -132,7 +132,8 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
 
   /* ---------------------------------------------------------------- 6c-2 lỗi 9 (PTA 28/10): hộp xác nhận ngắn = hộp nhỏ, không KhungPanel đè */
   check('6c-2 ③ Xoá PA · Kết thúc PA · Xoá Case · Xoá vi phạm · Thu hồi / Rút xử lý = ConfirmDialog; ô lý do đang gõ → hỏi một lần', () => {
-    const can: [string, number][] = [['cases/MenuXoaPa.tsx', 2], ['cases/ThaoTacCase.tsx', 1], ['yThuc/DeleteViolationConfirm.tsx', 1], ['yThuc/XemXuLyPanel.tsx', 1]];
+    /* N37 (PTA 05/11): Xoá PA không còn hộp hỏi (Hoàn tác + Thùng rác) — MenuXoaPa chỉ còn hộp Kết thúc PA; Xoá Case hỏi khi còn PA (`useXoaCase`). */
+    const can: [string, number][] = [['cases/MenuXoaPa.tsx', 1], ['cases/ThaoTacCase.tsx', 1], ['yThuc/DeleteViolationConfirm.tsx', 1], ['yThuc/XemXuLyPanel.tsx', 1]];
     for (const [f, n] of can) {
       const s = doc(W + f);
       assert((s.match(/<ConfirmDialog /g) ?? []).length === n && !/<KhungPanel[^>]*longTrong/.test(s), `${f}: còn panel đè / thiếu hộp nhỏ`);

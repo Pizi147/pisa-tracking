@@ -9956,6 +9956,9 @@ await runPrN35Tests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== PR-MT-CHAM (N39, chủ SP 05/11: chấm Mock theo tuần + lớp)
 const { runPrMtChamTests } = bocTep('prMtCham', await import('./prMtCham.tests.ts'));
 await runPrMtChamTests({ check, assert, P } as any);
+// ==================================================================== XOA-CASE-PA (N37, chủ SP 05/11: xoá Case / PA thoải mái hơn; PA quy chế / Case SOS → QL duyệt)
+const { runPrXoaCasePaTests } = bocTep('prXoaCasePa', await import('./prXoaCasePa.tests.ts'));
+await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
