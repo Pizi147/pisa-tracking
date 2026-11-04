@@ -3,12 +3,13 @@
  * nhất đã có NGƯỜI chọn tuần (dời tay trước N38 không đặt lại số đếm) → lần vắng về 0, như L5 ("chọn tuần = xếp lại từ đầu"); "-" kế tiếp lại là lần 1.
  * Đúng tập của câu SQL chỉ đọc trong #928 (dời tay `skill_week_set` hoặc Quản lý xếp bài vắng `skill_week_moved_absence` có người ghi).
  * Mỗi kỹ năng một dòng nhật ký lịch; lượt tính lại kết quả (về SOS tạm, Case đã có giữ). Khoá `demo_config` → chạy lặp không làm gì, và không
- * bao giờ đụng dữ liệu sinh sau deploy (dữ liệu mới đã theo L5).
+ * bao giờ đụng dữ liệu sinh sau deploy (dữ liệu mới đã theo L5). DB mới (init / seed) ghi khoá sẵn (`duLieuNen`) — migrate không đổi dòng nào.
  */
 import { nowIso } from '../util.ts';
 import { logSchedule } from '../fasttrack/skillSchedule.ts';
 import { refreshOutcome } from '../fasttrack/attempts.ts';
 import type { Principal } from '../permissions.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 export const KHOA_PR_MT_VANG_RESET = 'pr_mt_vang_reset_da_chay';
 
@@ -20,7 +21,7 @@ export function kyNangDatLaiVang(conn: any): Array<{ id: number; attempt_id: num
      SELECT k.id, k.attempt_id, k.skill, k.absence_move_count
        FROM attempt_skills k
        JOIN assessment_attempts a ON a.id = k.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
-       JOIN students s ON s.id = a.student_id AND s.status = 'active' AND s.archived_at IS NULL
+       JOIN students s ON s.id = a.student_id AND ${HV_DANG_HOC_SQL('s')}
        JOIN chot c ON c.attempt_id = k.attempt_id AND c.skill = k.skill
       WHERE k.required = 1 AND k.sit_status = 'scheduled' AND k.absence_move_count > 0
         AND EXISTS (SELECT 1 FROM attempt_schedule_history h WHERE h.attempt_id = k.attempt_id AND h.field = k.skill AND h.id > c.chot_id
