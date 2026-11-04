@@ -2,7 +2,7 @@
 
 Mockup: `thiet-ke/v11/hoc-vien-lop.html` (chủ SP duyệt 03/11 khuya, vòng 2 #872) · K7 trong `thiet-ke/audit-0311/u10-y-thuc.html`.
 Bảng ý: `docs/superpowers/specs/2026-11-03-audit-overhaul/14-ra-ux-b.md` 10.1 · 10.1b · 11.1 · 11.1b. Ảnh cặp (DB demo cục bộ, ngày demo 14/09), thư mục này:
-`a0-mac-dinh-1440-toi.png` · `a-mo-lop-1440-toi.png` · `a-mo-lop-375-sang.png` · `a1-1280-toi.png` · `d-gv-1440-toi.png` · `e-tvv-1440-toi.png` · `f-hop-w1-1440-toi.png` · `f-hop-w1-375-sang.png` (hộp tiêu chí W1 mở).
+`a0-mac-dinh-1440-toi.png` · `a-mo-lop-1440-toi.png` · `a-mo-lop-375-sang.png` · `a1-1280-toi.png` · `d-gv-1440-toi.png` · `e-tvv-1440-toi.png` · `f-hop-w1-1440-toi.png` · `f-hop-w1-375-sang.png` (ảnh cặp KHUNG NHÌN mockup khu A | web, hộp tiêu chí W1 mở; 375: hộp trải hết dải 5 môn như `.dt .hop-tc`, mép phải 342 / 375 — không cắt).
 Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trước khi chụp.
 
 ## Truy vết khung → thành phần → ảnh

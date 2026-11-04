@@ -84,7 +84,7 @@ function TenEm({ h, ev, ds, tim }: { h: HvGon; ev?: EmVai; ds: NguCanhDs; tim?: 
  * Hộp vẽ qua portal `position: fixed` theo vị trí nút — khung bảng (cuộn ngang, thẻ `overflow-hidden`) không cắt hộp.
  */
 function HopNho({ nut, nhan, nutLop, children, rong }: { nut: ReactNode; nhan: string; nutLop: string; children: ReactNode; rong?: boolean }) {
-  const [cho, setCho] = useState<{ top: number; left: number } | null>(null);
+  const [cho, setCho] = useState<{ top: number; left: number; width?: number } | null>(null);
   const nutRef = useRef<HTMLButtonElement>(null);
   const hopRef = useRef<HTMLSpanElement>(null);
   const mo = cho !== null;
@@ -102,6 +102,9 @@ function HopNho({ nut, nhan, nutLop, children, rong }: { nut: ReactNode; nhan: s
     if (mo) { setCho(null); return; }
     const r = nutRef.current!.getBoundingClientRect();
     const rongHop = rong ? 300 : 260;
+    /* Mockup 375 (`.dt .hop-tc`): hộp ô kỹ năng trải hết dải 5 môn, dưới hàng ô — không lệch theo ô, không chạm mép phải. */
+    const dai = window.innerWidth < 640 ? nutRef.current!.closest('.hvl-dai-kn')?.getBoundingClientRect() : undefined;
+    if (dai) { setCho({ top: r.bottom + 6, left: dai.left, width: dai.width }); return; }
     setCho({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left, window.innerWidth - rongHop - 8)) });
   };
   return (
