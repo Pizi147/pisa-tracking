@@ -5,6 +5,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel } from '../../lib/format.ts';
 import { ChonKyNang } from './ProfilePage.tsx';
@@ -502,16 +503,17 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                 <input className="field w-full" maxLength={100} {...lf.o(loi, 'ho-ten')} value={form.fullName}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
               </Field>
-              <Field label={t('Chức danh')} hint={t('Chỉ để hiển thị, không ảnh hưởng quyền.')}>
-                <input className="field w-full" maxLength={100} value={form.title}
+              {/* SUA-TK-GON (M4): câu không đổi quyết định → `title` ô (Chức danh, Mật khẩu ban đầu); đuôi email giữ — là luật ô. */}
+              <Field label={t('Chức danh')}>
+                <input className="field w-full" maxLength={100} value={form.title} title={t('Chỉ để hiển thị, không ảnh hưởng quyền.')}
                   onChange={(e) => setForm({ ...form, title: e.target.value })} />
               </Field>
               <Field label={t('Email đăng nhập')} required hint={t('Phải có đuôi .pisa@gmail.com.')} loi={lf.loiCua(loi, 'email')}>
                 <input className="field w-full" type="email" {...lf.o(loi, 'email')} value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </Field>
-              <Field label={t('Mật khẩu ban đầu')} required hint={t('Người dùng đổi lại ở hồ sơ cá nhân.')} loi={lf.loiCua(loi, 'mat-khau')}>
-                <input className="field w-full" {...lf.o(loi, 'mat-khau')} value={form.password}
+              <Field label={t('Mật khẩu ban đầu')} required loi={lf.loiCua(loi, 'mat-khau')}>
+                <input className="field w-full" {...lf.o(loi, 'mat-khau')} value={form.password} title={t('Người dùng đổi lại ở hồ sơ cá nhân.')}
                   onChange={(e) => setForm({ ...form, password: e.target.value })} />
               </Field>
               <Field label={t('Số điện thoại')}>
@@ -576,9 +578,13 @@ function AccountDialog({ account, branches, onClose, onDone }: {
           </div>
         </div>
 
-        <Field label={t('Kỹ năng phụ trách được')} hint={t('Năng lực để gợi ý khi phân công — không phải quyền nhập điểm.')}>
+        {/* SUA-TK-GON (M4): "không phải quyền nhập điểm" vào ⓘ cạnh nhãn — không thêm dòng dưới ô. */}
+        <div role="group" aria-label={t('Kỹ năng phụ trách được')}>
+          <div className="label flex items-center gap-1.5">{t('Kỹ năng phụ trách được')}
+            <NutLuat label={t('Kỹ năng phụ trách được')}>{t('Năng lực để gợi ý khi phân công — không phải quyền nhập điểm.')}</NutLuat>
+          </div>
           <ChonKyNang value={kyNang} onToggle={doiKyNang} />
-        </Field>
+        </div>
 
         {editing && (
           <>
@@ -588,8 +594,13 @@ function AccountDialog({ account, branches, onClose, onDone }: {
               lý, nên phải có đường cấp riêng cho một người.
             */}
             <div>
-              <div className="flex items-baseline justify-between gap-2 mb-1">
-                <span className="label m-0">{t('Quyền cấp riêng cho người này')}</span>
+              {/* SUA-TK-GON (M5, M8, M4): cùng tên cột bảng "Quyền cấp riêng"; 375 đầu khối một hàng; đoạn giải thích dài dưới khối → ⓘ. */}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="label m-0 flex items-center gap-1.5">{t('Quyền cấp riêng')}
+                  <NutLuat label={t('Quyền cấp riêng')}>
+                    {t('Quyền ở đây')} <strong>{t('cộng thêm')}</strong> {t('vào quyền của vai trò, không thay thế. Chọn “Toàn hệ thống” là cho phép người này làm việc đó ở mọi chi nhánh, vượt ra ngoài chi nhánh của họ. Quyền Quản trị và quyền tự có theo chủ nhiệm không cấp riêng nên không có trong danh sách.')}
+                  </NutLuat>
+                </span>
                 <span className="text-xs tabular-nums text-slate-500">{chonQuyen.size ? t('{n} quyền', { n: chonQuyen.size }) : t('Chưa cấp riêng quyền nào')}</span>
               </div>
               <div tabIndex={-1} {...lf.o(loi, 'quyen-rieng')}>
@@ -605,23 +616,20 @@ function AccountDialog({ account, branches, onClose, onDone }: {
               {quyenDoi && (
                 <div className="mt-2">
                   <Field label={t('Lý do đổi quyền')} required loi={lf.loiCua(loi, 'ly-do-quyen')}
-                    hint={t('Ghi vào nhật ký để sau này tra lại vì sao người này có quyền đó. {n}/200 ký tự.', { n: lyDoQuyen.length })}>
+                    hint={t('{n}/200 ký tự', { n: lyDoQuyen.length })}>
                     <input className="field w-full" maxLength={200} {...lf.o(loi, 'ly-do-quyen')} value={lyDoQuyen}
+                      title={t('Ghi vào nhật ký để sau này tra lại vì sao người này có quyền đó.')}
                       placeholder={t('Ví dụ: Phụ trách nhập bù điểm khi giáo viên nghỉ, học kỳ này')}
                       onChange={(e) => setLyDoQuyen(e.target.value)} />
                   </Field>
                 </div>
               )}
-              <div className="mt-2">
-                <SectionNote>
-                  {t('Quyền ở đây')} <strong>{t('cộng thêm')}</strong> {t('vào quyền của vai trò, không thay thế. Chọn “Toàn hệ thống” là cho phép người này làm việc đó ở mọi chi nhánh, vượt ra ngoài chi nhánh của họ. Quyền Quản trị và quyền tự có theo chủ nhiệm không cấp riêng nên không có trong danh sách.')}
-                </SectionNote>
-              </div>
             </div>
 
-            <Field label={t('Đặt lại mật khẩu')}
-              hint={t('Hệ thống chưa có luồng quên mật khẩu — đặt lại mật khẩu ở đây. Bỏ trống nếu không đổi.')} loi={lf.loiCua(loi, 'mat-khau-moi')}>
-              <input className="field w-full" {...lf.o(loi, 'mat-khau-moi')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            {/* SUA-TK-GON (M4): "Bỏ trống nếu không đổi" = chữ mờ trong ô; câu giải thích → `title`. */}
+            <Field label={t('Đặt lại mật khẩu')} loi={lf.loiCua(loi, 'mat-khau-moi')}>
+              <input className="field w-full" {...lf.o(loi, 'mat-khau-moi')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                placeholder={t('Bỏ trống nếu không đổi')} title={t('Hệ thống chưa có luồng quên mật khẩu — đặt lại mật khẩu ở đây.')} />
             </Field>
           </>
         )}
