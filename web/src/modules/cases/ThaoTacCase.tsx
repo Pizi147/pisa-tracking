@@ -344,57 +344,43 @@ export type CaseDeSua = {
   sos?: { laMt?: boolean } | null;
   /** SV-NX-CASE: mốc phiên bản (409 khi Case vừa đổi). */
   capNhatLuc?: string | null;
-  viewer: { khoaKyNang?: boolean; xoa?: 'ngay' | 'xin' | null; choXoa?: boolean; tenSua?: string | null };
+  viewer: { khoaKyNang?: boolean; tenSua?: string | null };
 };
 
 /**
- * HỘP XOÁ CASE (N37, chủ SP 05/11) — ⋯ đầu panel Case và chân Sửa Case dùng chung. `xoa` = cờ máy chủ: 'ngay' → hỏi một dòng nêu đúng đối tượng
- * ("Xoá Case và 2 PA"), vào Thùng rác + toast Hoàn tác; 'xin' (Case hệ thống / còn PA theo quy chế) → gửi QL duyệt, lý do tuỳ chọn.
+ * XOÁ CASE (N37, chủ SP 05/11 + PTA 05/11 "đừng phức tạp hoá") — ⋯ đầu panel Case, MỘT chỗ. `xoa` = cờ máy chủ: 'xin' (Case hệ thống / còn PA quy chế, người
+ * không phải QL) → bấm là gửi QL duyệt · 'ngay' → vào Thùng rác + toast Hoàn tác; chỉ Case còn PA mới hỏi một câu "Xoá Case và n PA".
  */
-export function HopXoaCase({ open, onClose, caseId, xoa, tenCase, soPa, soKetQua, onDeleted }: {
-  open: boolean; onClose: () => void; caseId: number; xoa: 'ngay' | 'xin'; tenCase: string; soPa: number; soKetQua: number; onDeleted: () => void;
-}) {
+export function useXoaCase({ caseId, xoa, tenCase, soPa, onDeleted }: { caseId: number; xoa: 'ngay' | 'xin' | null | undefined; tenCase: string; soPa: number; onDeleted: () => void }) {
   const toast = useToast();
+  const [hoi, setHoi] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [lyDo, setLyDo] = useState('');
-  const xin = xoa === 'xin';
   const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
   const gui = async () => {
     setBusy(true);
     try {
-      const r = await api.del<{ thungRacId?: number }>(`/cases/${caseId}`, xin ? { lyDo: lyDo.trim() || null } : undefined);
-      if (xin) { lamMoi(); toast.push('ok', t('Đã gửi QL duyệt xoá Case')); setLyDo(''); onClose(); return; }
-      onDeleted();   // đóng panel TRƯỚC khi làm mới — panel không tải lại Case vừa xoá (404 → "Chưa tải lại được")
+      const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/cases/${caseId}`);
+      setHoi(false);
+      if (r?.choDuyet) { lamMoi(); toast.push('ok', t('Đã gửi QL duyệt xoá Case')); return; }
+      onDeleted();   // đóng panel TRƯỚC khi làm mới — panel không tải lại Case vừa xoá
       lamMoi();
       hoanTacXoa(toast, r?.thungRacId, t('Đã xoá Case · {ten}', { ten: tenCase }), lamMoi);
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }   // lỗi: hộp + chữ đang gõ giữ nguyên
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
   };
-  const kem = [soPa > 0 ? t('{n} PA', { n: soPa }) : null, soKetQua > 0 ? t('{n} kết quả PA', { n: soKetQua }) : null].filter(Boolean).join(' · ');
-  return (
-    <ConfirmDialog open={open} onClose={onClose} onConfirm={() => void gui()} title={xin ? t('Gửi QL duyệt xoá Case?') : t('Xoá Case này?')} danger={!xin} busy={busy} z="z-[60]"
-      confirmLabel={xin ? t('Gửi QL duyệt') : soPa > 0 ? t('Xoá Case và {n} PA', { n: soPa }) : t('Xoá Case')} busyLabel={xin ? t('Đang gửi…') : t('Đang xoá…')} daSua={xin && !!lyDo.trim()}
-      body={<div className="space-y-2">
-        <p className="m-0">{tenCase}{kem ? ` · ${t('xoá cả {kem}', { kem })}` : ''}</p>
-        {xin && <>
-          <p className="m-0 text-[13px] text-slate-400">{t('Case hệ thống hoặc có PA theo quy chế — QL duyệt mới xoá.')}</p>
-          <Truong nhan={t('Lý do')} tuyChon>
-            <textarea className="field w-full" rows={2} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
-          </Truong>
-        </>}
-      </div>} />
-  );
+  return {
+    bam: () => (xoa === 'ngay' && soPa > 0 ? setHoi(true) : void gui()),
+    hop: (
+      <ConfirmDialog open={hoi} onClose={() => setHoi(false)} onConfirm={() => void gui()} title={t('Xoá Case này?')} danger busy={busy} z="z-[60]"
+        confirmLabel={t('Xoá Case và {n} PA', { n: soPa })} busyLabel={t('Đang xoá…')} body={tenCase} />
+    ),
+  };
 }
 
 /**
- * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả (Case MT không có — OV-13a Q1). Chân trái `Xoá Case` (N37: cờ
- * máy chủ `viewer.xoa`, kể cả Case đã có PA / kết quả) → `HopXoaCase`. Luật nội dung kiểm ở máy chủ (`kiemNoiDungCase`).
+ * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả (Case MT không có — OV-13a Q1). Xoá Case: N37 chỉ ở ⋯ đầu panel
+ * Case (`useXoaCase`), không ở chân panel này. Luật nội dung kiểm ở máy chủ (`kiemNoiDungCase`).
  */
-export function SuaCasePanel({ c, tenCase, soPa, soKetQua, hocVien, lop, quayLai, onClose, onSaved, onDeleted }: ChungPanel & {
-  c: CaseDeSua; tenCase: string;
-  /** Số PA / kết quả PA đi theo khi Xoá Case (dòng hỏi). */
-  soPa: number; soKetQua: number;
-  onDeleted: () => void;
-}) {
+export function SuaCasePanel({ c, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & { c: CaseDeSua }) {
   const toast = useToast();
   const ct = c.chuongTrinh ?? null;
   const goc = c.issues.find((i) => i.role === 'primary') ?? null;
@@ -408,7 +394,6 @@ export function SuaCasePanel({ c, tenCase, soPa, soKetQua, hocVien, lop, quayLai
   const [title, setTitle] = useState(c.viewer.tenSua ?? '');
   const [summary, setSummary] = useState(c.summary ?? '');
   const [busy, setBusy] = useState(false);
-  const [hoiXoa, setHoiXoa] = useState(false);
   /* SV-NX-CASE: mốc phiên bản gửi kèm — 409 thì giữ chữ đang gõ, lấy mốc mới để lần Lưu sau ghi đè có chủ ý. */
   const [luc, setLuc] = useState<string | null | undefined>(c.capNhatLuc);
   const lf = useLoiForm();
@@ -454,7 +439,6 @@ export function SuaCasePanel({ c, tenCase, soPa, soKetQua, hocVien, lop, quayLai
         ngCanh={<><span aria-hidden className="text-bad">*</span> {t('= bắt buộc')}</>}
         chan={{
           daSua,
-          xoa: c.viewer.xoa && !c.viewer.choXoa ? { nhan: t('Xoá Case'), onClick: () => setHoiXoa(true) } : undefined,
           conThieu: lf.conThieu(loi),
           chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
         }}>
@@ -516,8 +500,6 @@ export function SuaCasePanel({ c, tenCase, soPa, soKetQua, hocVien, lop, quayLai
           )}
         </Khoi>
       </KhungPanel>
-      {/* 6c-2 (lỗi 9): hộp nhỏ trong panel, không ngăn 480 đè panel. */}
-      {c.viewer.xoa && <HopXoaCase open={hoiXoa} onClose={() => setHoiXoa(false)} caseId={c.id} xoa={c.viewer.xoa} tenCase={tenCase} soPa={soPa} soKetQua={soKetQua} onDeleted={onDeleted} />}
     </>
   );
 }

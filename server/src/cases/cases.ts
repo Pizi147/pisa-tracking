@@ -1306,24 +1306,23 @@ export function cachXoaPa(p: Principal, iv: any, c: any, ghi: boolean): CachXoa 
 /** N37: `cachXoaPa` với `ghi` = quyền ghi Kết quả PA (vai trò hoặc người giữ việc) — xoá PA và Khôi phục PA dùng chung. */
 export const quyenXoaPa = (p: Principal, iv: any, c: any): CachXoa =>
   cachXoaPa(p, iv, c, quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId);
-/** N37: người không phải QL xin xoá (Case hệ thống / PA quy chế) → MỘT thẻ Chờ duyệt; đã có thẻ chờ → 400. Lý do không bắt buộc. */
-function xinXoa(p: Principal, the: { loai: 'xoa_case' | 'xoa_pa'; doiTuongLoai: 'sos_case' | 'intervention'; doiTuongId: number }, c: any,
-  lyDo: unknown, duLieu: Record<string, unknown>) {
-  const ld = chuTuDo(lyDo, 'Lý do', 500);
+/** N37: người không phải QL xin xoá (Case hệ thống / PA quy chế) → MỘT thẻ Chờ duyệt (bấm là gửi, không lý do); đã có thẻ chờ → 400. */
+function xinXoa(p: Principal, the: { doiTuongLoai: 'sos_case' | 'intervention'; doiTuongId: number }, c: any,
+  duLieu: Record<string, unknown>) {
   return tx(() => {
-    const id = taoYeuCau(db(), { ...the, hocVienId: c.eff_student_id, lopId: c.class_id, nguoiXin: p.userId, lyDo: ld, duLieu });
+    const id = taoYeuCau(db(), { loai: 'xin_xoa', ...the, hocVienId: c.eff_student_id, lopId: c.class_id, nguoiXin: p.userId, duLieu });
     if (id === null) throw badRequest('Đã gửi QL duyệt xoá — đang chờ.');
-    writeAudit({ actorUserId: p.userId, action: `${the.loai}.request`, entityType: the.doiTuongLoai === 'sos_case' ? 'sos_case' : 'case_intervention',
-      entityId: the.doiTuongId, entityLabel: String(duLieu.ten ?? ''), after: { yeuCauId: id, lyDo: ld } });
+    writeAudit({ actorUserId: p.userId, action: 'xin_xoa.request', entityType: the.doiTuongLoai === 'sos_case' ? 'sos_case' : 'case_intervention',
+      entityId: the.doiTuongId, entityLabel: String(duLieu.ten ?? ''), after: { yeuCauId: id } });
     return { ok: true as const, choDuyet: true as const, yeuCauId: id };
   });
 }
 /** N37: QL duyệt thẻ xin xoá (trong tx của hộp) — chốt thẻ "Đã duyệt" TRƯỚC khi xoá (xoá tự đóng mọi thẻ chờ của đối tượng), ghi id Thùng rác vào thẻ (Huỷ quyết định = Khôi phục). */
 export function apDungXinXoa(p: Principal, yc: { id: number; loai: string; doi_tuong_loai: string; doi_tuong_id: number; du_lieu: string | null }): void {
   const conn = db();
-  chotYeuCau(conn, { loai: yc.loai as 'xoa_case' | 'xoa_pa', doiTuongLoai: yc.doi_tuong_loai, doiTuongId: yc.doi_tuong_id }, 'duyet', { nguoiDuyet: p.userId });
+  chotYeuCau(conn, { loai: 'xin_xoa', doiTuongLoai: yc.doi_tuong_loai, doiTuongId: yc.doi_tuong_id }, 'duyet', { nguoiDuyet: p.userId });
   let thungRacId: number;
-  if (yc.loai === 'xoa_case') {
+  if (yc.doi_tuong_loai === 'sos_case') {
     const c = loadCase(yc.doi_tuong_id);
     require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được Case.');
     thungRacId = xoaCaseTrongTx(p, c).thungRacId;
@@ -1575,13 +1574,13 @@ const CAU_XOA_CASE: readonly string[] = [
  * XOÁ CASE (PR-LUI-a2; N37 chủ SP 05/11: kể cả Case đã có PA / kết quả, đã hoàn thành) — quyền + cách xoá ở `cachXoaCase` ('xin' → thẻ Chờ duyệt).
  * Xoá hẳn dòng ở mọi bảng trỏ Case; PA + kết quả PA vào Thùng rác CÙNG mục (khôi phục cùng lô); thẻ Chờ duyệt đang chờ tự đóng; nhật ký `case.delete`.
  */
-export function xoaCase(p: Principal, caseId: number, v: { lyDo?: unknown } = {}): { ok: true; thungRacId: number } | ReturnType<typeof xinXoa> {
+export function xoaCase(p: Principal, caseId: number): { ok: true; thungRacId: number } | ReturnType<typeof xinXoa> {
   const c = loadCase(caseId);
   const pa = db().prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
   const cach = cachXoaCase(p, c, pa);
   if (!cach) throw forbidden('Bạn không có quyền xoá Case này.');
   if (cach === 'xin') {
-    return xinXoa(p, { loai: 'xoa_case', doiTuongLoai: 'sos_case', doiTuongId: caseId }, c, v.lyDo, {
+    return xinXoa(p, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, c, {
       ten: caseTitleOf(c), soPa: pa.length,
       soKetQua: (db().prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ? AND intervention_id IS NOT NULL').get(caseId) as any).n,
     });
@@ -1727,7 +1726,7 @@ export function hoanTacKetThucPa(p: Principal, interventionId: number) {
  * XOÁ PA (PR-LUI-a2; N37 chủ SP 05/11) — quyền + cách xoá ở `cachXoaPa` (PA theo quy chế, người không phải QL → thẻ Chờ duyệt), kể cả PA đã ghi kết quả,
  * Case đã hoàn thành. Xoá PA + mọi kết quả tuần + lịch sử điều chỉnh + tệp vào Thùng rác; thẻ Chờ duyệt đang chờ của PA tự đóng. Hết PA → Case về "Mới mở".
  */
-export function xoaPa(p: Principal, interventionId: number, v: { lyDo?: unknown } = {}): { ok: true; caseId: number; thungRacId: number } | ReturnType<typeof xinXoa> {
+export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId: number; thungRacId: number } | ReturnType<typeof xinXoa> {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án');
@@ -1735,7 +1734,7 @@ export function xoaPa(p: Principal, interventionId: number, v: { lyDo?: unknown 
   const cach = quyenXoaPa(p, iv, c);
   if (!cach) throw forbidden('Bạn không có quyền xoá PA này.');
   if (cach === 'xin') {
-    return xinXoa(p, { loai: 'xoa_pa', doiTuongLoai: 'intervention', doiTuongId: interventionId }, c, v.lyDo, {
+    return xinXoa(p, { doiTuongLoai: 'intervention', doiTuongId: interventionId }, c, {
       ten: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind), caseId: c.id, tenCase: caseTitleOf(c),
       soKetQua: (conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE intervention_id = ?').get(interventionId) as any).n,
     });
@@ -2254,7 +2253,7 @@ export function caseDetail(p: Principal, caseId: number) {
       ghiDuoc: ghi,
       /** N37: ⋯ "Xoá PA" — 'ngay' (Thùng rác + Hoàn tác) · 'xin' (PA theo quy chế: gửi QL duyệt) · null; `choXoa` = thẻ xin xoá đang chờ. */
       xoa: cachXoaPa(p, iv, c, ghi),
-      choXoa: theCuaPa.some((y) => y.doiTuongId === iv.id && y.loai === 'xoa_pa' && y.trangThai === 'cho'),
+      choXoa: theCuaPa.some((y) => y.doiTuongId === iv.id && y.loai === 'xin_xoa' && y.trangThai === 'cho'),
       performer: iv.performer_account ?? iv.performer_name ?? null,
       /** Tài khoản người làm hiện tại — panel Điều chỉnh lấy làm giá trị đầu (PR-UX3 Q15); null khi người làm ngoài hệ thống. */
       performerUserId: iv.performer_user_id ?? null,
@@ -2543,7 +2542,7 @@ export function caseDetail(p: Principal, caseId: number) {
       tenSua: suaDuoc ? (c.title ?? tenGiuaCua(c)) as string : null,
       /** N37: ⋯ "Xoá Case" — 'ngay' · 'xin' (Case hệ thống / còn PA quy chế: gửi QL duyệt) · null; `choXoa` = thẻ xin xoá đang chờ. */
       xoa: cachXoaCase(p, c, interventions),
-      choXoa: theCase.some((y) => y.trangThai === 'cho' && y.loai === 'xoa_case'),
+      choXoa: theCase.some((y) => y.trangThai === 'cho' && y.loai === 'xin_xoa'),
       khoaKyNang: c.origin_kind === 'mock' || interventions.length > 0,
     },
   };

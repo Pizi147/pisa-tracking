@@ -836,9 +836,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       };
     },
   },
-  /* ------------------------------------------------------------ N37 · Xin xoá Case hệ thống / PA theo quy chế (chủ SP 05/11) */
-  ...(['xoa_case', 'xoa_pa'] as const).map((loai): DinhNghiaLoai => ({
-    loai,
+  /* ------------------------------------------------------------ N37 · Xin xoá Case SOS / PA theo quy chế (chủ SP 05/11; PTA: MỘT loại) — đối tượng `sos_case` | `intervention` */
+  {
+    loai: 'xin_xoa',
     /* Duyệt = xoá vào Thùng rác (`apDungXinXoa` chốt thẻ trước, ghi id Thùng rác vào thẻ). Từ chối / Rút: chưa đổi gì ở bảng nguồn. */
     khiDuyet: (p, yc) => apDungXinXoa(p, yc),
     khiRut: () => {},
@@ -851,27 +851,28 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           AND khoi_phuc_luc IS NULL AND het_han_luc IS NULL`).all(...ids) as any[]).map((r) => r.id as number) : []);
       return new Set(ds.filter((y) => y.trang_thai !== 'duyet' || con.has(rac.get(y.id)!)).map((y) => y.id));
     },
-    chet: loai === 'xoa_case'
-      ? { sql: 'NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id)', lyDo: 'Case đã xoá' }
-      : { sql: 'NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.id = y.doi_tuong_id)', lyDo: 'PA đã xoá' },
+    chet: {
+      sql: `CASE y.doi_tuong_loai WHEN 'sos_case' THEN NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id)
+             ELSE NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.id = y.doi_tuong_id) END`,
+      lyDo: 'Đã xoá',
+    },
     /* Tên, số PA / kết quả lưu ở `du_lieu` lúc xin — thẻ đã duyệt (đối tượng đã xoá) vẫn đọc được. */
     moTa: (yc, ngu) => {
       const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
         { ten?: string; tenCase?: string; caseId?: number; soPa?: number; soKetQua?: number };
+      const laCase = yc.doi_tuong_loai === 'sos_case';
       const kq = d.soKetQua ? ` và ${d.soKetQua} kết quả PA` : '';
       return {
-        tieuDe: loai === 'xoa_case' ? `Xoá Case · ${d.ten ?? ''}` : `Xoá PA · ${d.ten ?? ''}`,
-        phu: loai === 'xoa_pa' ? d.tenCase ?? null : null,
-        dong: [`${nguoiXin(yc, ngu)} xin ${ngay(yc.tao_luc, ngu)}${yc.ly_do ? `: “${yc.ly_do}”` : ''}`],
-        neuDuyet: loai === 'xoa_case'
-          ? `Case${d.soPa ? `, ${d.soPa} PA` : ''}${kq} vào Thùng rác — khôi phục được trong 30 ngày.`
-          : `PA${kq} vào Thùng rác — khôi phục được trong 30 ngày.`,
+        tieuDe: `${laCase ? 'Xoá Case' : 'Xoá PA'} · ${d.ten ?? ''}`,
+        phu: laCase ? null : d.tenCase ?? null,
+        dong: [`${nguoiXin(yc, ngu)} xin ${ngay(yc.tao_luc, ngu)}`],
+        neuDuyet: `${laCase ? `Case${d.soPa ? `, ${d.soPa} PA` : ''}` : 'PA'}${kq} vào Thùng rác — khôi phục được trong 30 ngày.`,
         mo: yc.trang_thai === 'cho' && yc.hoc_vien_id
-          ? duongHoSoHocVien(yc.hoc_vien_id, loai === 'xoa_case' ? { caseId: yc.doi_tuong_id } : { caseId: d.caseId, paId: yc.doi_tuong_id }) : undefined,
-        duLieu: loai === 'xoa_pa' && d.caseId ? { caseId: d.caseId } : undefined,
+          ? duongHoSoHocVien(yc.hoc_vien_id, laCase ? { caseId: yc.doi_tuong_id } : { caseId: d.caseId, paId: yc.doi_tuong_id }) : undefined,
+        duLieu: !laCase && d.caseId ? { caseId: d.caseId } : undefined,
       };
     },
-  })),
+  },
 ];
 
 export function dinhNghiaCua(loai: string): DinhNghiaLoai | undefined {

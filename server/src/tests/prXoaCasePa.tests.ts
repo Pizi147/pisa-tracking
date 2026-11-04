@@ -45,7 +45,8 @@ export async function runPrXoaCasePaTests(t: any) {
   const anh = () => Object.fromEntries((hang(`SELECT name FROM sqlite_master WHERE type = 'table'`) as any[])
     .filter((x) => !BO.has(x.name)).map((x) => [x.name, JSON.stringify(hang(`SELECT * FROM ${x.name}`).map((r) => JSON.stringify(r)).sort())]));
   const khac = (a: Record<string, string>, b: Record<string, string>) => Object.keys(a).filter((k) => a[k] !== b[k]);
-  const theCho = (loai: string, id: number) => mot(`SELECT * FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_id = ? AND trang_thai = 'cho'`, loai, id);
+  const theCho = (doiTuongLoai: string, id: number) =>
+    mot(`SELECT * FROM yeu_cau_duyet WHERE loai = 'xin_xoa' AND doi_tuong_loai = ? AND doi_tuong_id = ? AND trang_thai = 'cho'`, doiTuongLoai, id);
   const QL = P.mbManager;
 
   check('XCP-1 · GV môn xoá thẳng Case có 2 PA + 3 kết quả → một mục Thùng rác; GV đó Khôi phục → mọi bảng y hệt', () => thu(() => {
@@ -79,7 +80,7 @@ export async function runPrXoaCasePaTests(t: any) {
     assert(r.thungRacId > 0 && !mot('SELECT 1 FROM case_interventions WHERE id = ?', iv), 'GVCN xoá PA');
   }));
 
-  check('XCP-3 · PA theo quy chế: GV → thẻ "Xoá PA" (PA còn, gửi lại 400, Rút được); QL Từ chối giữ PA; QL Duyệt → Thùng rác; Huỷ quyết định = khôi phục', () => thu(() => {
+  check('XCP-3 · PA theo quy chế: GV → thẻ "Xin xoá" (PA còn, gửi lại 400, Rút được); QL Từ chối giữ PA; QL Duyệt → Thùng rác; Huỷ quyết định = khôi phục', () => thu(() => {
     const caseId = taoCase();
     const iv = themPa(caseId);
     ketQua(iv, 'Đúng 15/20 câu điền số tuần này');
@@ -87,24 +88,24 @@ export async function runPrXoaCasePaTests(t: any) {
     conn.prepare('UPDATE case_interventions SET preset = 1, confirmed_by = ?, confirmed_at = ? WHERE id = ?').run(P.lrTeacher.userId, TODAY, iv);
     const pa = (p: any) => cases.caseDetail(p, caseId).interventions.find((i: any) => i.id === iv);
     assert(pa(P.lrTeacher).xoa === 'xin' && pa(QL).xoa === 'ngay', `cờ: GV ${pa(P.lrTeacher).xoa} · QL ${pa(QL).xoa}`);
-    const r = cases.xoaPa(P.lrTeacher, iv, { lyDo: 'Tạo nhầm em' });
+    const r = cases.xoaPa(P.lrTeacher, iv);
     assert(r.choDuyet === true && mot('SELECT 1 FROM case_interventions WHERE id = ?', iv), 'GV xoá thẳng PA quy chế');
     assert(pa(P.lrTeacher).choXoa === true, 'cờ choXoa');
     assert(maLoi(() => cases.xoaPa(P.lrTeacher, iv)) === 400, 'gửi lại lần hai');
-    const the = theCho('xoa_pa', iv);
-    assert(the && the.ly_do === 'Tạo nhầm em' && the.nguoi_xin === P.lrTeacher.userId, JSON.stringify(the));
+    const the = theCho('intervention', iv);
+    assert(the && the.nguoi_xin === P.lrTeacher.userId, JSON.stringify(the));
     const hop = yc.hopChoDuyet(QL, {}).the.find((x: any) => x.id === the.id);
     assert(hop && /^Xoá PA · Tự học Listening/.test(hop.tieuDe) && hop.mo.includes(`pa=${iv}`) && /1 kết quả PA vào Thùng rác/.test(hop.neuDuyet), JSON.stringify(hop));
     /* Rút → thẻ đóng; gửi lại được. */
     yc.rutYeuCau(P.lrTeacher, the.id);
-    assert(!theCho('xoa_pa', iv), 'Rút chưa đóng thẻ');
+    assert(!theCho('intervention', iv), 'Rút chưa đóng thẻ');
     cases.xoaPa(P.lrTeacher, iv);
     /* Từ chối → PA giữ nguyên. */
-    yc.tuChoiYeuCau(QL, theCho('xoa_pa', iv).id, 'PA quy chế còn chạy');
+    yc.tuChoiYeuCau(QL, theCho('intervention', iv).id, 'PA quy chế còn chạy');
     assert(mot('SELECT 1 FROM case_interventions WHERE id = ?', iv), 'Từ chối mà PA mất');
     /* Duyệt → PA + kết quả vào Thùng rác; thẻ "duyet" giữ id Thùng rác. */
     cases.xoaPa(P.lrTeacher, iv);
-    const id = theCho('xoa_pa', iv).id;
+    const id = theCho('intervention', iv).id;
     const truoc = anh();
     yc.duyetYeuCau(QL, id);
     const daDuyet = mot('SELECT trang_thai, du_lieu FROM yeu_cau_duyet WHERE id = ?', id);
@@ -121,7 +122,7 @@ export async function runPrXoaCasePaTests(t: any) {
     assert(lech.length === 0, `Huỷ quyết định lệch bảng: ${lech.join(', ')}`);
   }));
 
-  check('XCP-4 · Case hệ thống (trạng thái SOS) / Case báo tay có PA quy chế: GV → thẻ "Xoá Case"; QL Duyệt → Case + PA vào Thùng rác; QL xoá thẳng', () => thu(() => {
+  check('XCP-4 · Case hệ thống (trạng thái SOS) / Case báo tay có PA quy chế: GV → thẻ "Xin xoá"; QL Duyệt → Case + PA vào Thùng rác; QL xoá thẳng', () => thu(() => {
     const caseId = taoCase();
     themPa(caseId);
     conn.prepare(`UPDATE sos_cases SET origin_kind = 'mock' WHERE id = ?`).run(caseId);   // Case sinh từ kết quả Test (trạng thái SOS)
@@ -129,7 +130,7 @@ export async function runPrXoaCasePaTests(t: any) {
     const r = cases.xoaCase(P.lrTeacher, caseId);
     assert(r.choDuyet === true && mot('SELECT 1 FROM sos_cases WHERE id = ?', caseId), 'GV xoá thẳng Case SOS');
     assert(cases.caseDetail(P.lrTeacher, caseId).viewer.choXoa === true, 'cờ choXoa Case');
-    const the = theCho('xoa_case', caseId);
+    const the = theCho('sos_case', caseId);
     assert(the && JSON.parse(the.du_lieu).soPa === 1, JSON.stringify(the));
     yc.duyetYeuCau(QL, the.id);
     assert(!mot('SELECT 1 FROM sos_cases WHERE id = ?', caseId) && mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', the.id).trang_thai === 'duyet', 'Duyệt');

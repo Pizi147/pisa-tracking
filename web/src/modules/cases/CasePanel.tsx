@@ -480,8 +480,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
         {iv.approvalState === 'approved' && <Nhan tone="done">{t('Đã duyệt')}</Nhan>}
         {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu={t('Bị từ chối')} />}
         <span className="flex-1" />
-        <MenuPa iv={iv} ten={tenPA(iv)} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
-          soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
+        <MenuPa iv={iv} ten={tenPA(iv)} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined} />
       </div>}
       {!anDau && <DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={onDoi} />}
       {/* Dòng gọn (DongPaGon) đã vẽ nội dung — phần "Chi tiết" (`anDau`) không lặp. */}
@@ -605,8 +604,7 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua 
         {hanGhi && !daLuu && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
           : <span className={`text-[13px] tabular-nums ${hanGhi.tone === 'overdue' ? 'font-semibold text-late' : 'text-slate-400'}`}>{hanGhi.quaHan ? `⚠ ${hanGhi.quaHan}` : t('hạn kế {ngay}', { ngay: ngan(iv.actionDue) })}</span>)}
         </div>
-        <MenuPa iv={iv} ten={dichDu(iv.description) || iv.kind} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
-          soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
+        <MenuPa iv={iv} ten={dichDu(iv.description) || iv.kind} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined} />
       </div>
       {thieuNguoi && (
         chonNguoi ? (

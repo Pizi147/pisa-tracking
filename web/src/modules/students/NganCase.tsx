@@ -15,7 +15,7 @@ import { XemCaseViec, XemCha, useXem } from '../../lib/quayLai.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type CaseDetail, type VuaDoiPa, type ViewCase } from '../cases/CasePanel.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from '../cases/CapNhatTuan.tsx';
-import { HoanThanhCasePanel, HopXoaCase, SuaCasePanel, SuaPaPanel, ThemPaPanel } from '../cases/ThaoTacCase.tsx';
+import { HoanThanhCasePanel, SuaCasePanel, SuaPaPanel, ThemPaPanel, useXoaCase } from '../cases/ThaoTacCase.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { DongNguyenNhan, MoTaCasePanel, XacNhanCasePanel, XacNhanPaPanel, XacNhanSPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -80,7 +80,11 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const lf = useLoiForm();
   const toast = useToast();
   const [moLaiBusy, setMoLaiBusy] = useState(false);
-  const [hoiXoa, setHoiXoa] = useState(false);
+  /* N37: ⋯ Xoá Case — tên đủ ("Listening — tên Case") cho câu hỏi / toast; Case còn PA mới hỏi. */
+  const xoaCase = useXoaCase({
+    caseId, xoa: data?.viewer.xoa, soPa: (data?.interventions ?? []).length, onDeleted: () => { onChanged?.(); onClose(); },
+    tenCase: !data ? '' : (() => { const x = data.title ?? tenNganCase(data); const kn = data.categoryLabel; return kn && !x.startsWith(kn) ? `${kn} — ${x}` : x; })(),
+  });
   /* R1-NO-CU: hộp Đổi người phụ trách đang mở ở dải đầu. */
   const [doiNguoi, setDoiNguoi] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -272,9 +276,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   }
   if (view.loai === 'sua' && data.viewer.coTheSua) {
     return (
-      <SuaCasePanel {...chung} c={data} tenCase={(() => { const t = data.title ?? ten; const kn = data.categoryLabel; return kn && !t.startsWith(kn) ? `${kn} — ${t}` : t; })()} onSaved={xong}
-        soPa={(data.interventions ?? []).length} soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId != null).length}
-        onDeleted={() => { onChanged?.(); onClose(); }} />
+      <SuaCasePanel {...chung} c={data} onSaved={xong} />
     );
   }
   if (view.loai === 'hoan-thanh') {
@@ -395,7 +397,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDoiNguoi(true)}>{t('Đổi người…')}</button> : null;
   /* N37 (chủ SP 05/11): ⋯ "Xoá Case" cạnh Sửa / Mở lại — mọi nơi mở Case (hồ sơ HV, hồ sơ lớp, Công việc, Phân tích…) đều qua panel này. Đang chờ QL duyệt → mục mờ. */
   const menuCase = data.viewer.xoa
-    ? <MenuDong luonHien muc={[{ key: 'xoa', nhan: t('Xoá Case'), nguyHiem: true, onChon: () => setHoiXoa(true),
+    ? <MenuDong luonHien muc={[{ key: 'xoa', nhan: t('Xoá Case'), nguyHiem: true, onChon: xoaCase.bam,
         ...(data.viewer.choXoa ? { tat: true, title: t('Đang chờ QL duyệt xoá') } : {}) }]} />
     : null;
   /* U02 (mockup chân Case): trong cột — Sửa · Đổi người… · ⋯ · + Thêm PA · Hoàn thành Case cùng một chân. */
@@ -481,10 +483,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
         <ThanCase dauCoDiem={dauKyNang && !trongCot} lyDoKhoa={(trongCot || dauKyNang) && canDong && ht?.an && ht.dong ? (dk ? <>{dich(dk[1])} · <b className="font-semibold">{dich(dk[2])}</b></> : dich(ht.dong)) : null} data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec} anNutMoTa={anViecChinh}
           vuaDoi={vuaDoi} onHoanTac={() => { setVuaDoi(null); reload(); if (chuoi?.caseTiep) chuoi.caseTiep.boXong(); else onChanged?.(); }} />
       </div>
-      {data.viewer.xoa && <HopXoaCase open={hoiXoa} onClose={() => setHoiXoa(false)} caseId={caseId} xoa={data.viewer.xoa}
-        tenCase={(() => { const x = data.title ?? ten; const kn = data.categoryLabel; return kn && !x.startsWith(kn) ? `${kn} — ${x}` : x; })()}
-        soPa={(data.interventions ?? []).length} soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId != null).length}
-        onDeleted={() => { setHoiXoa(false); onChanged?.(); onClose(); }} />}
+      {xoaCase.hop}
     </KhungPanel>
   );
 }
