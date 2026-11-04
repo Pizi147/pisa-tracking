@@ -13,7 +13,7 @@ import { xoaTepSauGiaoDich } from './attachments.ts';
  * Tệp trong kho giữ `GIU_NGAY` ngày rồi `donThungRac` (cron) xoá hẳn.
  */
 export const GIU_NGAY = 30;
-export type LoaiRac = 'case' | 'pa' | 'vi_pham' | 'tep' | 'hoc_vien';
+export type LoaiRac = 'case' | 'pa' | 'ket_qua_pa' | 'vi_pham' | 'tep' | 'hoc_vien';
 
 type Dong = Record<string, unknown>;
 type Ban =
@@ -56,7 +56,7 @@ function pkCua(conn: any, bang: string): string | null {
 
 /** Liên kết mềm (không FK): cột loại → bảng đích. Giá trị lạ → không ánh xạ. */
 const LOAI_BANG: Record<string, string> = {
-  sos_case: 'sos_cases', case_intervention: 'case_interventions', intervention: 'case_interventions', violation: 'violations',
+  sos_case: 'sos_cases', case_intervention: 'case_interventions', intervention: 'case_interventions', case_followup: 'case_followups', violation: 'violations',
   discipline_measure: 'discipline_measures', sos_coordination_action: 'sos_coordination_actions', assessment_attempt: 'assessment_attempts',
   attempt: 'assessment_attempts', student: 'students', case_signal: 'case_signals', skill_move_requests: 'skill_move_requests', yeu_cau_duyet: 'yeu_cau_duyet',
 };

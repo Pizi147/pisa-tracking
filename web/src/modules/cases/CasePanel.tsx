@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { ThanTrongCot } from '../../ui/KhungPanel.tsx';
-import { MenuPa } from './MenuXoaPa.tsx';
+import { MenuKetQua, MenuPa } from './MenuXoaPa.tsx';
 import { KhoaNho, NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -334,7 +334,10 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
             {lichSu.map((m) => (
               <li key={m.key} className="text-[13px]">
                 <span className="block text-xs tabular-nums text-slate-400">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
-                <span className="flex flex-wrap items-center gap-1.5 text-slate-200">{m.tieuDe}{m.badge}</span>
+                <span className="flex items-start gap-1.5 text-slate-200">
+                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">{m.tieuDe}{m.badge}</span>
+                  {m.xoaKq && <MenuKetQua f={m.xoaKq.f} ten={m.xoaKq.ten} />}
+                </span>
                 {m.than}
                 {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
               </li>
@@ -766,7 +769,8 @@ function DeXuatLai({ iv, studentId, onHuy, onXong }: { iv: any; studentId?: numb
 
 // ==================================================================== lịch sử cập nhật (thu gọn)
 
-type MucLichSu = { key: string; on: string; dot: string | null; dotHref?: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode; suaXemLai?: any };
+type MucLichSu = { key: string; on: string; dot: string | null; dotHref?: string | null; tieuDe: ReactNode; badge: ReactNode; than: ReactNode; suaXemLai?: any;
+  /** VIEC-SAU-LOGIC (N37): dòng Kết quả PA xoá được — ⋯ "Xoá" (`MenuKetQua`). */ xoaKq?: { f: any; ten: string } };
 
 const MILESTONE_TITLE: Record<string, string> = {
   repeat: t('Trượt lại'),
@@ -908,6 +912,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
         </>
       ),
       suaXemLai: !f.nextStep && f.suaDuoc ? f : undefined,
+      xoaKq: f.interventionId && f.xoa ? { f, ten: `${tenPa(f.interventionId) ?? t('Kết quả PA')} · ${ngan(f.observedOn)}` } : undefined,
     });
   }
   out.sort((a, b) => (b.on ?? '').localeCompare(a.on ?? '') || b.key.localeCompare(a.key));

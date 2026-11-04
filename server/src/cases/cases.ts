@@ -4,7 +4,7 @@ import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../no
 import { TIN_HIEU_CASE_DA_XOA } from './signals.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
-  INTERVENTION_STATUS_LABEL,
+  INTERVENTION_STATUS_LABEL, shortDate,
   FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
   ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, DEFAULT_URGENCY,
   isNoPlanCase,
@@ -1308,12 +1308,12 @@ export function cachXoaPa(p: Principal, iv: any, c: any, ghi: boolean): CachXoa 
 export const quyenXoaPa = (p: Principal, iv: any, c: any): CachXoa =>
   cachXoaPa(p, iv, c, quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId);
 /** N37: người không phải QL xin xoá (Case hệ thống / PA quy chế) → MỘT thẻ Chờ duyệt (bấm là gửi, không lý do); đã có thẻ chờ → 400. */
-function xinXoa(p: Principal, the: { doiTuongLoai: 'sos_case' | 'intervention'; doiTuongId: number }, c: any,
+function xinXoa(p: Principal, the: { doiTuongLoai: 'sos_case' | 'intervention' | 'case_followup'; doiTuongId: number }, c: any,
   duLieu: Record<string, unknown>) {
   return tx(() => {
     const id = taoYeuCau(db(), { loai: 'xin_xoa', ...the, hocVienId: c.eff_student_id, lopId: c.class_id, nguoiXin: p.userId, duLieu });
     if (id === null) throw badRequest('Đã gửi QL duyệt xoá — đang chờ.');
-    writeAudit({ actorUserId: p.userId, action: 'xin_xoa.request', entityType: the.doiTuongLoai === 'sos_case' ? 'sos_case' : 'case_intervention',
+    writeAudit({ actorUserId: p.userId, action: 'xin_xoa.request', entityType: the.doiTuongLoai === 'sos_case' ? 'sos_case' : the.doiTuongLoai === 'case_followup' ? 'case_followup' : 'case_intervention',
       entityId: the.doiTuongId, entityLabel: String(duLieu.ten ?? ''), after: { yeuCauId: id } });
     return { ok: true as const, choDuyet: true as const, yeuCauId: id };
   });
@@ -1327,6 +1327,12 @@ export function apDungXinXoa(p: Principal, yc: { id: number; loai: string; doi_t
     const c = loadCase(yc.doi_tuong_id);
     require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được Case.');
     thungRacId = xoaCaseTrongTx(p, c).thungRacId;
+  } else if (yc.doi_tuong_loai === 'case_followup') {
+    const f = conn.prepare('SELECT case_id FROM case_followups WHERE id = ?').get(yc.doi_tuong_id) as any;
+    if (!f) throw notFound('Không tìm thấy kết quả PA.');
+    const c = loadCase(f.case_id);
+    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được kết quả PA.');
+    thungRacId = xoaKetQuaTrongTx(p, yc.doi_tuong_id, c).thungRacId;
   } else {
     const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(yc.doi_tuong_id) as any;
     if (!iv) throw notFound('Không tìm thấy phương án');
@@ -1757,6 +1763,61 @@ function xoaPaTrongTx(p: Principal, iv: any, c: any): { ok: true; caseId: number
   writeAudit({ actorUserId: p.userId, action: 'intervention.delete', entityType: 'case_intervention', entityId: iv.id,
     entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: chup.tep.length }, after: { thungRacId } });
   return { ok: true as const, caseId: iv.case_id as number, thungRacId };
+}
+
+/**
+ * XOÁ MỘT KẾT QUẢ PA (VIEC-SAU-LOGIC, N37 — ⋯ dòng Kết quả ở Lịch sử Case). CÙNG quyền xoá PA (`quyenXoaPa`): PA theo quy chế, người không phải QL → thẻ
+ * Xin xoá. Dòng kết quả (+ buổi Tutor, mốc Hành trình) vào Thùng rác — Hoàn tác / Khôi phục trả lại; dòng Điều chỉnh của lần cũ giữ (bỏ nối). Lần ghi GẦN NHẤT
+ * của PA: PA về như ngay trước lần ghi (cùng hàm với Hoàn tác kết quả) để việc Kết quả kỳ đó hiện lại. Không đảo được hệ quả lớn → 400 nói bước tiếp.
+ */
+export function xoaKetQuaPa(p: Principal, followupId: number): { ok: true; caseId: number; thungRacId: number } | ReturnType<typeof xinXoa> {
+  const conn = db();
+  const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
+  if (!f?.intervention_id) throw notFound('Không tìm thấy kết quả PA.');
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(f.intervention_id) as any;
+  const c = loadCase(f.case_id);
+  const cach = quyenXoaPa(p, iv, c);
+  if (!cach) throw forbidden('Bạn không có quyền xoá kết quả PA này.');
+  if (cach === 'xin') {
+    return xinXoa(p, { doiTuongLoai: 'case_followup', doiTuongId: f.id }, c, { ten: `${tenPaCua(iv)} · ${shortDate(f.observed_on, demoToday())}`, caseId: c.id, paId: iv.id, tenCase: caseTitleOf(c) });
+  }
+  return tx(() => xoaKetQuaTrongTx(p, f.id, c));
+}
+const tenPaCua = (iv: any): string => (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind);
+/** Phần xoá của `xoaKetQuaPa` (trong tx của nơi gọi — `xoaKetQuaPa` hoặc hộp duyệt). Đọc lại dòng trong giao dịch. */
+function xoaKetQuaTrongTx(p: Principal, followupId: number, c: any): { ok: true; caseId: number; thungRacId: number } {
+  const conn = db();
+  const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
+  if (!f) throw notFound('Không tìm thấy kết quả PA.');
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(f.intervention_id) as any;
+  const ganNhat = !conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND id > ? LIMIT 1').get(iv.id, f.id);
+  const daoPa = ganNhat && !!f.next_step && paKhopLanGhi(f.next_step, iv);
+  if (daoPa) {
+    if (c.status === 'done') throw badRequest('Case đã hoàn thành — Mở lại Case trước khi xoá kết quả gần nhất.');
+    if (f.next_step === 'propose') throw badRequest('Lần ghi này đã Thay PA — dùng Sửa kết quả để bỏ Thay PA.');
+    if (f.next_step === 'complete' && iv.closed_reason === 'het_moc' && iv.nhom_bo_tro) throw badRequest('Lần ghi này có Mini Test — dùng Sửa kết quả.');
+    if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND loai IN ('xin_y_kien', 'de_xuat_pa') AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?`).get(iv.id)) {
+      throw badRequest('PA đang chờ QL trả lời — rút thẻ Chờ duyệt trước khi xoá kết quả.');
+    }
+  }
+  const chup = new BoChup(conn);
+  chup.ghiGoc('case_interventions', iv.id);   // khôi phục so lại: id PA có thể đã thuộc PA khác
+  chup.chupSua('sos_cases', 'id = ?', c.id);
+  if (daoPa) {
+    chup.chupSua('case_interventions', 'id = ?', iv.id);
+    traDieuChinh(conn, [f.id]);
+    traPaVeTruocLanGhi(conn, f, iv, nowIso());
+    chup.chay('DELETE FROM case_intervention_revisions WHERE followup_id = ?1', f.id);
+  } else chup.chay('UPDATE case_intervention_revisions SET followup_id = NULL WHERE followup_id = ?1', f.id);
+  chup.chay(`DELETE FROM journey_events WHERE ref_table = 'case_followups' AND ref_id = ?1`, f.id);
+  chup.chay('DELETE FROM case_followups WHERE id = ?1', f.id);
+  dongBoTrangThaiCase(c.id);
+  const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
+  const thungRacId = ghiThungRac(conn, { loai: 'ket_qua_pa', doiTuongId: f.id, nhan: [`Kết quả ${shortDate(f.observed_on, demoToday())}`, tenPaCua(iv), hv].filter(Boolean).join(' · '),
+    hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
+  writeAudit({ actorUserId: p.userId, action: 'case.result.delete', entityType: 'case_intervention', entityId: iv.id, entityLabel: tenPaCua(iv),
+    before: anhLanGhi(f), after: { thungRacId, paVeTruoc: daoPa } });
+  return { ok: true as const, caseId: c.id as number, thungRacId };
 }
 
 /** Gỡ MỘT PA trong giao dịch (Xoá PA · Hoàn tác thêm PA): thẻ Chờ duyệt đang chờ của PA tự đóng, xoá con → cha, Case đồng bộ (hết PA → "Mới mở"). */
@@ -2381,6 +2442,8 @@ export function caseDetail(p: Principal, caseId: number) {
       buoi: buoiCua.get(f.id) ?? [],
       suaDuoc: c.status !== 'done' && (f.observer_user_id === p.userId || quanLyCase)
         && khoaSua(f) !== null && moiNhat.get(khoaSua(f)) === f.id && khopPa(f),
+      /** VIEC-SAU-LOGIC (N37): ⋯ "Xoá" của dòng Kết quả PA — cùng cờ Xoá PA của PA đó ('ngay' · 'xin' · null). Không đọc thêm. */
+      xoa: f.intervention_id ? (interventions.find((iv) => iv.id === f.intervention_id)?.xoa ?? null) : null,
     }));
 
   /* PR-DEPLOY (0b-3): chương trình GỐC của Case (lúc mở) trước, rồi mới tới chương trình lộ trình — Case "G+V" của em đã lên BE vẫn ghi "G+V", bộ nguyên nhân của FOU. */
@@ -4335,17 +4398,10 @@ export function hoanTacKetQua(p: Principal, followupId: number) {
   return caseDetail(p, caseId);
 }
 
-/**
- * ĐẢO hệ quả của một lần ghi Kết quả (dòng chính + dòng chép nhóm) — TRONG giao dịch của `suaKetQua`, sau khi `nguCanhSuaKetQua` đã kiểm. Theo mẫu Huỷ
- * quyết định PA: Điều chỉnh (nội dung PA về bản trước, bỏ dòng lịch sử) · Thay PA (xoá PA mới chưa chạy + thẻ của nó) · Mini Test về "chưa ghi" (Case do
- * nó đóng mở lại) · PA về trạng thái ngay trước lần ghi (đợt, hạn) · bỏ dòng kết quả + mốc Hành trình · trạng thái Case. Thẻ Xin hỗ trợ: nơi gọi xử lý.
- */
-function daoKetQua(conn: any, p: Principal, x: NguCanhSua, khoaTep: string[]): void {
-  const ids = x.dong.map((r) => r.id as number);
-  const ph = ids.map(() => '?').join(',');
-  const now = nowIso();
+/** Điều chỉnh của các lần ghi `ids` → nội dung PA về bản trước (`daoKetQua`, Xoá kết quả PA). */
+function traDieuChinh(conn: any, ids: readonly number[]): void {
   /* Điều chỉnh: chỉ ô chưa ai đổi sau lần ghi (Sửa PA sau đó được giữ). Mọi CASE so với giá trị CŨ của dòng — SQLite đọc dòng trước khi ghi. */
-  for (const r of conn.prepare(`SELECT * FROM case_intervention_revisions WHERE followup_id IN (${ph})`).all(...ids) as any[]) {
+  for (const r of conn.prepare(`SELECT * FROM case_intervention_revisions WHERE followup_id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]) {
     conn.prepare(`UPDATE case_interventions SET
         description = CASE WHEN description IS ? THEN ? ELSE description END,
         performer_user_id = CASE WHEN performer_user_id IS ? AND performer_name IS ? THEN ? ELSE performer_user_id END,
@@ -4357,6 +4413,30 @@ function daoKetQua(conn: any, p: Principal, x: NguCanhSua, khoaTep: string[]): v
       r.new_performer_user_id, r.new_performer_name, r.old_performer_name,
       r.new_followup_due, r.old_followup_due, r.new_so_buoi, r.old_so_buoi, r.intervention_id);
   }
+}
+/** PA về ngay trước lần ghi `r`: Kết thúc / Thay → đang chạy (đợt, hạn không đổi lúc đó); chu kỳ mới → đợt, hạn của chính lần ghi (`daoKetQua`, Xoá kết quả PA). */
+function traPaVeTruocLanGhi(conn: any, r: any, pa: any, now: string): void {
+  if (r.next_step === 'complete' || r.next_step === 'propose') {
+    conn.prepare(`UPDATE case_interventions SET status = 'started', completed_date = NULL, closed_reason = NULL, superseded_by = NULL, updated_at = ? WHERE id = ?`)
+      .run(now, pa.id);
+  } else {
+    // shortcut: ngày mở đợt trước = ngày ghi lần trước (đợt đầu: ngày bắt đầu PA) — PA chạy từ ngày duyệt / xác nhận khác ngày bắt đầu lệch vài ngày, chỉ hiển thị; cần đúng tuyệt đối thì chụp PA vào nhật ký lúc ghi.
+    const truoc = conn.prepare('SELECT observed_on FROM case_followups WHERE intervention_id = ? AND id < ? ORDER BY id DESC LIMIT 1').get(pa.id, r.id) as any;
+    conn.prepare(`UPDATE case_interventions SET status = 'started', cycle_no = ?, action_due = ?, cycle_started_on = ?, updated_at = ? WHERE id = ?`)
+      .run(r.cycle_no ?? 1, r.cycle_due ?? null, truoc?.observed_on ?? pa.started_date ?? null, now, pa.id);
+  }
+}
+
+/**
+ * ĐẢO hệ quả của một lần ghi Kết quả (dòng chính + dòng chép nhóm) — TRONG giao dịch của `suaKetQua`, sau khi `nguCanhSuaKetQua` đã kiểm. Theo mẫu Huỷ
+ * quyết định PA: Điều chỉnh (nội dung PA về bản trước, bỏ dòng lịch sử) · Thay PA (xoá PA mới chưa chạy + thẻ của nó) · Mini Test về "chưa ghi" (Case do
+ * nó đóng mở lại) · PA về trạng thái ngay trước lần ghi (đợt, hạn) · bỏ dòng kết quả + mốc Hành trình · trạng thái Case. Thẻ Xin hỗ trợ: nơi gọi xử lý.
+ */
+function daoKetQua(conn: any, p: Principal, x: NguCanhSua, khoaTep: string[]): void {
+  const ids = x.dong.map((r) => r.id as number);
+  const ph = ids.map(() => '?').join(',');
+  const now = nowIso();
+  traDieuChinh(conn, ids);
   conn.prepare(`DELETE FROM case_intervention_revisions WHERE followup_id IN (${ph})`).run(...ids);
   /* Thay PA: PA mới chưa chạy (đã kiểm) xoá hẳn như Xoá PA; thẻ Đề xuất PA của nó tự đóng, không báo người sửa. */
   if (x.paMoi) {
@@ -4375,19 +4455,7 @@ function daoKetQua(conn: any, p: Principal, x: NguCanhSua, khoaTep: string[]): v
     }
     conn.prepare('UPDATE mini_test SET ty_le = NULL, ngay_lam = NULL, ghi_boi = NULL, ghi_luc = NULL WHERE id = ?').run(x.mt.id);
   }
-  /* PA về ngay trước lần ghi: Kết thúc / Thay → đang chạy (đợt, hạn không đổi lúc đó); chu kỳ mới → đợt, hạn của chính lần ghi. */
-  for (const r of x.dong) {
-    const pa = x.ivs.get(r.intervention_id);
-    if (r.next_step === 'complete' || r.next_step === 'propose') {
-      conn.prepare(`UPDATE case_interventions SET status = 'started', completed_date = NULL, closed_reason = NULL, superseded_by = NULL, updated_at = ? WHERE id = ?`)
-        .run(now, pa.id);
-    } else {
-      // shortcut: ngày mở đợt trước = ngày ghi lần trước (đợt đầu: ngày bắt đầu PA) — PA chạy từ ngày duyệt / xác nhận khác ngày bắt đầu lệch vài ngày, chỉ hiển thị; cần đúng tuyệt đối thì chụp PA vào nhật ký lúc ghi.
-      const truoc = conn.prepare('SELECT observed_on FROM case_followups WHERE intervention_id = ? AND id < ? ORDER BY id DESC LIMIT 1').get(pa.id, r.id) as any;
-      conn.prepare(`UPDATE case_interventions SET status = 'started', cycle_no = ?, action_due = ?, cycle_started_on = ?, updated_at = ? WHERE id = ?`)
-        .run(r.cycle_no ?? 1, r.cycle_due ?? null, truoc?.observed_on ?? pa.started_date ?? null, now, pa.id);
-    }
-  }
+  for (const r of x.dong) traPaVeTruocLanGhi(conn, r, x.ivs.get(r.intervention_id), now);
   conn.prepare(`DELETE FROM journey_events WHERE ref_table = 'case_followups' AND ref_id IN (${ph})`).run(...ids);
   conn.prepare(`DELETE FROM case_followups WHERE id IN (${ph})`).run(...ids);
   dongBoTrangThaiCaseLo([...new Set(x.dong.map((r) => r.case_id as number))]);

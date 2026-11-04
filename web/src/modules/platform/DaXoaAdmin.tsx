@@ -9,12 +9,12 @@ import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 type MucRac = {
-  id: number; loai: 'case' | 'pa' | 'vi_pham' | 'tep' | 'hoc_vien'; nhan: string; hocVienId: number | null;
+  id: number; loai: 'case' | 'pa' | 'ket_qua_pa' | 'vi_pham' | 'tep' | 'hoc_vien'; nhan: string; hocVienId: number | null;
   xoaBoi: string | null; xoaLuc: string; khoiPhucBoi: string | null; khoiPhucLuc: string | null;
   hetHanLuc: string | null; xoaHanLuc: string; khoiPhucDuoc: boolean;
 };
 
-const nhanLoai = (l: MucRac['loai']) => (l === 'case' ? 'Case' : l === 'pa' ? t('PA') : l === 'vi_pham' ? t('Vi phạm') : l === 'hoc_vien' ? t('Học viên') : t('Tệp'));
+const nhanLoai = (l: MucRac['loai']) => (l === 'case' ? 'Case' : l === 'pa' ? t('PA') : l === 'ket_qua_pa' ? t('Kết quả PA') : l === 'vi_pham' ? t('Vi phạm') : l === 'hoc_vien' ? t('Học viên') : t('Tệp'));
 
 /**
  * Q-RL2a THÙNG RÁC — Quản trị › Đã xoá: Case / PA / vi phạm / tệp đã xoá trong 30 ngày (`GET /thung-rac`, máy chủ lọc theo quyền).

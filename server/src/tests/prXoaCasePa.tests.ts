@@ -9,7 +9,8 @@ export async function runPrXoaCasePaTests(t: any) {
   const cases: any = await import('../cases/cases.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
   const kp: any = await import('../platform/khoiPhucRac.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   console.log('\nXOA-CASE-PA (N37) · xoá Case / PA · xin QL duyệt · khôi phục');
 
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -140,5 +141,99 @@ export async function runPrXoaCasePaTests(t: any) {
     conn.prepare('UPDATE case_interventions SET preset = 1 WHERE id = ?').run(iv2);
     assert(cases.caseDetail(P.lrTeacher, c2).viewer.xoa === 'xin', 'Case có PA quy chế');
     assert(cases.xoaCase(QL, c2).thungRacId > 0 && !mot('SELECT 1 FROM sos_cases WHERE id = ?', c2), 'QL xoá thẳng');
+  }));
+
+  /* ------------------------------------------------ VIEC-SAU-LOGIC (N37): xoá MỘT Kết quả PA — cùng quyền Xoá PA, Thùng rác + Khôi phục, nhật ký. */
+  const fuCua = (iv: number) => hang('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id', iv);
+  const paRow = (iv: number) => mot('SELECT status, cycle_no, action_due, description FROM case_interventions WHERE id = ?', iv);
+  const boGioCase = (a: Record<string, string>, b: Record<string, string>) => {
+    const bo = (j: string) => JSON.stringify(JSON.parse(j).map((x: string) => ({ ...JSON.parse(x), updated_at: null })));
+    return khac(a, b).filter((k) => !['sos_cases', 'case_interventions'].includes(k) || bo(a[k]) !== bo(b[k]));
+  };
+
+  check('XCP-5 · GV xoá kết quả CŨ (không phải gần nhất) → chỉ dòng đó mất, PA giữ nguyên; một mục Thùng rác; nhật ký; Khôi phục → mọi bảng y hệt', () => thu(() => {
+    const caseId = taoCase();
+    const iv = themPa(caseId);
+    ketQua(iv, 'Đúng 15/20 câu điền số tuần này'); ketQua(iv, 'Đúng 16/20 câu điền số tuần này'); ketQua(iv, 'Đúng 17/20 câu điền số tuần này');
+    const [, giua] = fuCua(iv);
+    const dt = cases.caseDetail(P.lrTeacher, caseId);
+    assert(dt.followups.filter((f: any) => f.interventionId === iv).every((f: any) => f.xoa === 'ngay'), 'cờ xoa dòng kết quả');
+    const truoc = anh();
+    const paTruoc = JSON.stringify(paRow(iv));
+    const r = cases.xoaKetQuaPa(P.lrTeacher, giua.id);
+    assert(r.thungRacId > 0 && !mot('SELECT 1 FROM case_followups WHERE id = ?', giua.id) && fuCua(iv).length === 2, 'chưa xoá đúng một dòng');
+    assert(JSON.stringify(paRow(iv)) === paTruoc, `PA đổi: ${JSON.stringify(paRow(iv))}`);
+    assert(mot(`SELECT 1 FROM audit_logs WHERE action = 'case.result.delete' AND entity_id = ?`, iv), 'thiếu nhật ký');
+    assert(mot('SELECT loai FROM thung_rac WHERE id = ?', r.thungRacId).loai === 'ket_qua_pa', 'loại thùng rác');
+    kp.khoiPhucRac(P.lrTeacher, r.thungRacId);
+    const lech = boGioCase(truoc, anh());
+    assert(lech.length === 0, `khôi phục lệch bảng: ${lech.join(', ')}`);
+  }));
+
+  check('XCP-6 · xoá kết quả GẦN NHẤT → PA về như trước lần ghi (đợt, hạn); Khôi phục → như trước khi xoá; Case đã hoàn thành → 400 nói Mở lại', () => thu(() => {
+    const caseId = taoCase();
+    const iv = themPa(caseId);
+    ketQua(iv, 'Đúng 15/20 câu điền số tuần này');
+    const truocLan2 = JSON.stringify(paRow(iv));
+    ketQua(iv, 'Đúng 17/20 câu điền số tuần này');
+    assert(JSON.stringify(paRow(iv)) !== truocLan2, 'dữ liệu: lần ghi phải đổi đợt / hạn PA');
+    const cuoi = fuCua(iv).at(-1);
+    const truoc = anh();
+    const r = cases.xoaKetQuaPa(QL, cuoi.id);
+    assert(JSON.stringify(paRow(iv)) === truocLan2, `PA chưa về trước lần ghi: ${JSON.stringify(paRow(iv))} ≠ ${truocLan2}`);
+    kp.khoiPhucRac(QL, r.thungRacId);
+    const lech = boGioCase(truoc, anh());
+    assert(lech.length === 0, `khôi phục lệch bảng: ${lech.join(', ')}`);
+    conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(caseId);
+    assert(maLoi(() => cases.xoaKetQuaPa(QL, cuoi.id)) === 400, 'Case đã hoàn thành mà xoá được kết quả gần nhất');
+    assert(cases.xoaKetQuaPa(QL, fuCua(iv)[0].id).thungRacId > 0, 'kết quả cũ của Case đã hoàn thành phải xoá được');
+  }));
+
+  check('XCP-7 · Quyền xoá / khôi phục kết quả PA: GV môn khác, QL chi nhánh khác 403 (cờ null); GVCN được; Khôi phục: người khác 403, PA đã có lần ghi sau 409', () => thu(() => {
+    const caseId = taoCase();
+    const iv = themPa(caseId);
+    ketQua(iv, 'Đúng 15/20 câu điền số tuần này'); ketQua(iv, 'Đúng 16/20 câu điền số tuần này');
+    const [a, b] = fuCua(iv);
+    for (const ai of [P.w1Teacher, P.cpManager]) assert(maLoi(() => cases.xoaKetQuaPa(ai, a.id)) === 403, `${ai.userId} xoá được`);
+    assert(maLoi(() => cases.xoaKetQuaPa(P.lrTeacher, 999999999)) === 404, 'không có dòng → 404');
+    const cua = (p: any) => cases.caseDetail(p, caseId).followups.find((f: any) => f.id === a.id).xoa;
+    assert(cua(P.w1Teacher) === null && cua(P.coreTeacher) === 'ngay' && cua(QL) === 'ngay', 'cờ xoa theo vai');
+    const r = cases.xoaKetQuaPa(P.coreTeacher, a.id);
+    assert(maLoi(() => kp.khoiPhucRac(P.w1Teacher, r.thungRacId)) === 403, 'GV Writing khôi phục được');
+    const r2 = cases.xoaKetQuaPa(P.lrTeacher, b.id);
+    ketQua(iv, 'Đúng 18/20 câu điền số tuần này');
+    const m409 = maLoi(() => kp.khoiPhucRac(P.lrTeacher, r2.thungRacId));
+    assert(m409 === 409, `khôi phục kết quả gần nhất (PA đã về trước) khi PA đã có lần ghi sau: ${m409}`);
+  }));
+
+  check('XCP-8 · Kết quả của PA theo quy chế: GV → thẻ "Xin xoá" (dòng còn, gửi lại 400); QL Duyệt → Thùng rác; Huỷ quyết định = khôi phục; QL xoá thẳng', () => thu(() => {
+    const caseId = taoCase();
+    const iv = themPa(caseId);
+    ketQua(iv, 'Đúng 15/20 câu điền số tuần này'); ketQua(iv, 'Đúng 16/20 câu điền số tuần này');
+    conn.prepare('UPDATE case_interventions SET preset = 1, confirmed_by = ?, confirmed_at = ? WHERE id = ?').run(P.lrTeacher.userId, TODAY, iv);
+    const [a, b] = fuCua(iv);
+    assert(cases.caseDetail(P.lrTeacher, caseId).followups.find((f: any) => f.id === a.id).xoa === 'xin', 'cờ xin');
+    const r = cases.xoaKetQuaPa(P.lrTeacher, a.id);
+    assert(r.choDuyet === true && mot('SELECT 1 FROM case_followups WHERE id = ?', a.id), 'GV xoá thẳng kết quả PA quy chế');
+    assert(maLoi(() => cases.xoaKetQuaPa(P.lrTeacher, a.id)) === 400, 'gửi lại lần hai');
+    const the = theCho('case_followup', a.id);
+    const hop = yc.hopChoDuyet(QL, {}).the.find((x: any) => x.id === the.id);
+    assert(hop && /^Xoá kết quả PA · Tự học Listening[^·]* · \d\d\/\d\d/.test(hop.tieuDe) && hop.mo.includes(`pa=${iv}`), JSON.stringify(hop));
+    yc.duyetYeuCau(QL, the.id);
+    assert(!mot('SELECT 1 FROM case_followups WHERE id = ?', a.id), 'Duyệt chưa xoá');
+    yc.huyQuyetDinh(QL, the.id);
+    assert(mot('SELECT 1 FROM case_followups WHERE id = ?', a.id), 'Huỷ quyết định chưa khôi phục');
+    assert(cases.xoaKetQuaPa(QL, b.id).thungRacId > 0, 'QL xoá thẳng');
+  }));
+
+  check(`XCP-9 · trần câu SQL: xoá một kết quả PA (gần nhất — PA về trước) ≤ ${TRAN_GHI_LO.xoaKetQuaPa}`, () => thu(() => {
+    const iv = themPa(taoCase());
+    ketQua(iv, 'Đúng 15/20 câu điền số tuần này'); ketQua(iv, 'Đúng 16/20 câu điền số tuần này');
+    xoaNho();
+    const s0 = soCauSql();
+    cases.xoaKetQuaPa(P.lrTeacher, fuCua(iv).at(-1).id);
+    const n = soCauSql() - s0;
+    console.log(`    xoá kết quả PA ${n} câu`);
+    assert(n <= TRAN_GHI_LO.xoaKetQuaPa, `${n} câu`);
   }));
 }

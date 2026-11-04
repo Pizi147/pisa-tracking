@@ -2430,6 +2430,11 @@ api.post('/followups/:id/hoan-tac', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.hoanTacKetQua(principalOf(req), pInt(req, 'id'));
 }));
+/** VIEC-SAU-LOGIC (N37): xoá MỘT kết quả PA — cùng quyền Xoá PA (PA quy chế, người không phải QL → thẻ xin xoá). */
+api.delete('/followups/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.xoaKetQuaPa(principalOf(req), pInt(req, 'id'));
+}));
 /** OV-7b: sửa "Xem lại sau hỗ trợ" lần mới nhất (kết quả quan sát, ghi chú, ngày) — người đã ghi + Quản lý. */
 api.patch('/followups/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

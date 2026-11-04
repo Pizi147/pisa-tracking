@@ -68,3 +68,22 @@ export function MenuPa({ iv, ten, onSua, xoa, ketThuc = false }: { iv: any; ten:
     </>
   );
 }
+
+/**
+ * ⋯ của MỘT dòng Kết quả PA ở Lịch sử Case (VIEC-SAU-LOGIC, N37) — "Xoá" theo cờ máy chủ `f.xoa` (cùng quyền Xoá PA): 'ngay' vào Thùng rác ngay, không hỏi,
+ * toast Hoàn tác; 'xin' = PA theo quy chế, bấm là gửi QL duyệt. Bị chặn (lần ghi gần nhất đã Thay PA, Case đã hoàn thành…) → toast nói lý do + bước tiếp.
+ */
+export function MenuKetQua({ f, ten }: { f: { id: number; xoa: 'ngay' | 'xin' | null }; ten: string }) {
+  const toast = useToast();
+  const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan'); };
+  const xoa = async () => {
+    try {
+      const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/followups/${f.id}`);
+      lamMoi();
+      if (r?.choDuyet) toast.push('ok', t('Đã gửi QL duyệt xoá kết quả PA'));
+      else hoanTacXoa(toast, r?.thungRacId, t('Đã xoá kết quả PA'), lamMoi);
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); }
+  };
+  if (!f.xoa) return null;
+  return <MenuDong nhan={t('Thao tác khác · {ten}', { ten })} muc={[{ key: 'xoa', nhan: t('Xoá kết quả'), nguyHiem: true, onChon: () => { void xoa(); } }]} />;
+}
