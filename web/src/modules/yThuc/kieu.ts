@@ -27,11 +27,11 @@ export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
       /** UI-2 (mockup K6): ai / lúc "Đã xem". */
-      xemBoi: string | null; xemLuc: string | null }
+      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       /** UI-3 (mockup K6): tên vi phạm của lần · Báo PH của lần (null = không có việc). */
-      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null; vpIds: number[] };
+      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null; trongChuoi?: boolean };
 
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
@@ -91,7 +91,6 @@ export type BangYThucLop = {
   /** UI-2 (K4): em chỉ còn lần xử lý đang xin thu hồi. */
   choThuHoi: DongEm[];
   coTheDuyet: boolean;
-  phamVi: 'chuoi' | 'tat-ca';
   gvcn: string | null;
 };
 

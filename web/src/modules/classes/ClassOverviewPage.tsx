@@ -178,7 +178,7 @@ export default function ClassOverviewPage() {
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
       </div>
 
-      {data.viewer.coTheXemDiem && tab !== 'y-thuc' && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
+      {tab !== 'y-thuc' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
       {panelXetLai}
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}

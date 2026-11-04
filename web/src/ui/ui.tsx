@@ -526,8 +526,10 @@ type BoLocDoanProps<K extends string> = {
   tat?: string;
   /** V8-HSL (mockup v8 `.doan`): khối liền cao 36 (375: 44, chia đều), chữ 14, mục chọn đậm + gạch đáy 2 px nhấn, không ✓. */
   v8?: boolean;
+  /** v8: giữ số đếm ở 375 (mặc định ẩn) — UI-2 mockup K2 "Cần làm 6 · Lịch sử 8". */
+  giuSo?: boolean;
 };
-export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, tat, v8 }: BoLocDoanProps<K>) {
+export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, tat, v8, giuSo }: BoLocDoanProps<K>) {
   if (v8) {
     return (
       <div role="group" aria-label={ariaLabel} aria-disabled={tat ? true : undefined} title={tat}
@@ -539,7 +541,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
               className={`inline-flex min-w-0 items-center gap-1.5 whitespace-nowrap px-3 text-sm disabled:pointer-events-none max-sm:flex-1 max-sm:justify-center max-sm:px-1 max-sm:text-[13px] ${i ? 'border-l' : ''} ${
                 chon ? 'bg-[color:var(--accent-soft)] font-bold text-slate-100 shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
               <span className="min-w-0 truncate">{m.nhan}</span>
-              {m.so != null && <span className="text-[12px] font-semibold tabular-nums text-slate-500 max-sm:hidden">{m.so}</span>}
+              {m.so != null && <span className={`text-[12px] font-semibold tabular-nums text-slate-500 ${giuSo ? '' : 'max-sm:hidden'}`}>{m.so}</span>}
             </button>
           );
         })}

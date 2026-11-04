@@ -32,7 +32,7 @@ import { dich, dichChu, t } from '@shared/i18n/index.ts';
  *   Cần làm: bảng 6 cột (Học viên · Vi phạm chờ · Cần làm · Bậc · Báo PH (TVV) · Việc) theo nhóm Bắt buộc xử lý › Mới, chưa xem › Chờ QL duyệt
  *     (đề xuất + xin thu hồi) › Chờ TVV báo PH › Đã xử lý · 7 ngày. Cột Việc MỘT nút chính (+ nút chữ phụ). Chi tiết em mở NGAY dưới hàng:
  *     Vi phạm của lần này · Lần xử lý (Thang ›) · Báo PH. Sau "Đã xem" hàng ở lại (Hoàn tác · Xem lại); sau Xác nhận xử lý hàng sáng xanh.
- *     Khung < 1180 px: mỗi em một thẻ (K2).
+ *     Khung < 1220 px: mỗi em một thẻ (K2).
  *   Lịch sử (K6): lọc Đã xem · Đã xử lý · Đã thu hồi (có số) · phạm vi Lộ trình | Cả lịch sử (X08) · tìm em · nhóm vi phạm.
  *   Phối hợp SOS (K8): mọi lượt, đầu lượt một dòng.
  *
@@ -45,15 +45,27 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const toast = useToast();
   const toi = useSession().session?.user?.id ?? null;
   const [params, setParams] = useSearchParams();
+  /* Phạm vi Lịch sử (X08) lọc tại trình duyệt theo cờ `trongChuoi` — đổi không đọc lại bảng lớp. */
   const [phamVi, setPhamVi] = useState<'chuoi' | 'tat-ca'>('chuoi');
-  const board = useApi<BangYThucLop>(`/classes/${classId}/y-thuc${phamVi === 'chuoi' ? '?pham-vi=chuoi' : ''}`, [classId, phamVi], { giuCu: true });
+  const board = useApi<BangYThucLop>(`/classes/${classId}/y-thuc`, [classId], { giuCu: true });
   const roster = useApi<any[]>(`/classes/${classId}/roster`);
   const [includeDone, setIncludeDone] = useState(false);
   const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/classes/${classId}/phoi-hop-sos${includeDone ? '?includeDone=1' : ''}`, [classId, includeDone]);
-  const [phan, setPhan] = useState<'vi-pham' | 'phoi-hop'>(params.get('sub') === 'phoi-hop' ? 'phoi-hop' : 'vi-pham');
-  const [doan, setDoan] = useState<'can-lam' | 'lich-su'>('can-lam');
+  /* Phân đoạn ghi vào địa chỉ (`sub`, `doan`) — sang hồ sơ em rồi Quay lại về đúng chỗ. */
+  const phan: 'vi-pham' | 'phoi-hop' = params.get('sub') === 'phoi-hop' ? 'phoi-hop' : 'vi-pham';
+  const doan: 'can-lam' | 'lich-su' = params.get('doan') === 'lich-su' ? 'lich-su' : 'can-lam';
+  const doiDoan = (o: { phan?: 'vi-pham' | 'phoi-hop'; doan?: 'can-lam' | 'lich-su' }) => {
+    const q = new URLSearchParams(params);
+    if (o.phan) { if (o.phan === 'phoi-hop') q.set('sub', 'phoi-hop'); else q.delete('sub'); }
+    if (o.doan) { if (o.doan === 'lich-su') q.set('doan', 'lich-su'); else q.delete('doan'); }
+    setParams(q, { replace: true });
+  };
+  const setPhan = (p: 'vi-pham' | 'phoi-hop') => doiDoan({ phan: p });
+  const setDoan = (x: 'can-lam' | 'lich-su') => doiDoan({ doan: x });
   const [loc, setLoc] = useState<LocLs>('tat-ca');
   const [tim, setTim] = useState('');
+  /* "Lịch sử của em ›": lọc đúng một em (theo id, không theo chuỗi tên). */
+  const [lsEm, setLsEm] = useState<{ id: number; ten: string } | null>(null);
   const [moHv, setMoHv] = useState<number | null>(() => Number(params.get('hv')) || null);
   const [moLsId, setMoLsId] = useState<number | null>(null);
   const chonN = useChonNhieu();
@@ -79,13 +91,14 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     onDone: () => { if (dangXuLy.current) setVuaLuu({ sid: dangXuLy.current, luc: gioVnNay() }); lamMoi(); },
     roster: (roster.data ?? []).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null })),
   });
-  const mo = (p: PanelYThuc) => { dangXuLy.current = p?.loai === 'xu-ly' ? p.studentId : null; moPanel(p); };
+  /* Chỉ Xác nhận xử lý (không phải Đề xuất) làm hàng sáng "vừa lưu". */
+  const mo = (p: PanelYThuc) => { dangXuLy.current = p?.loai === 'xu-ly' && p.cheDo !== 'de-xuat' ? p.studentId : null; moPanel(p); };
 
   /* Việc / thông báo: `?hv=` mở sẵn hàng em, `?mo=` mở panel đúng một lần rồi gỡ khỏi địa chỉ (quay lại không mở lại). */
   useEffect(() => {
     const hv = Number(params.get('hv')) || null;
     const moGi = params.get('mo');
-    if (hv) { setMoHv(hv); setPhan('vi-pham'); setDoan('can-lam'); }
+    if (hv) setMoHv(hv);
     if (hv && moGi === 'xu-ly') mo({ loai: 'xu-ly', studentId: hv });
     if (hv && moGi === 'khai') mo({ loai: 'khai', studentId: hv });   // PR-VAI-a (K1-15): việc "Xác nhận cấp bậc vi phạm HV cũ"
     const xl = Number(params.get('xl')) || null;
@@ -102,7 +115,6 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.get('hv'), params.get('mo')]);
-  useEffect(() => { if (params.get('sub') === 'phoi-hop') setPhan('phoi-hop'); }, [params.get('sub')]);
 
   const d = board.data;
   /* Mở từ việc: cuộn tới hàng em khi bảng đã có. */
@@ -123,9 +135,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     return {
       batBuoc: [...gan(d.nhom.qua_han, 'qua_han'), ...gan(d.nhom.bat_buoc, 'bat_buoc')],
       moi: [...gan(d.nhom.moi, 'moi'), ...vua].sort((a, b) => a.x.ten.localeCompare(b.x.ten, 'vi')),
-      choDuyet: [...gan(d.nhom.cho_duyet, 'cho_duyet'), ...gan(d.choThuHoi, 'thu_hoi')],
+      /* K4: xin thu hồi (chờ QL) vào nhóm Chờ QL duyệt — cả em vừa xử lý trong 7 ngày. */
+      choDuyet: [...gan(d.nhom.cho_duyet, 'cho_duyet'), ...gan([...d.nhom.da_xu_ly.filter((x) => x.thuHoi?.cho), ...d.choThuHoi], 'thu_hoi')],
       choBaoPh: gan(d.choBaoPh, 'cho_bao_ph'),
-      daXuLy: d.nhom.da_xu_ly.map((x) => ({ x, k: (x.thuHoi?.cho ? 'thu_hoi' : 'da_xu_ly') as KieuHang })),
+      daXuLy: gan(d.nhom.da_xu_ly.filter((x) => !x.thuHoi?.cho), 'da_xu_ly'),
     };
   }, [d, vuaXem]);
   if (board.error && !d) return <ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} />;
@@ -177,15 +190,15 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     } catch (e: any) { toast.push('error', e.message); }
     finally { setDangGhi(null); }
   };
-  const xemLai = (ids: number[]) => { setPhan('vi-pham'); setDoan('lich-su'); setLoc('da-xem'); setTim(''); setLsVua(ids); };
-  const lichSuEm = (ten: string) => { setPhan('vi-pham'); setDoan('lich-su'); setLoc('tat-ca'); setTim(ten); };
+  const xemLai = (ids: number[]) => { doiDoan({ phan: 'vi-pham', doan: 'lich-su' }); setLoc('da-xem'); setTim(''); setLsEm(null); setLsVua(ids); };
+  const lichSuEm = (x: DongEm) => { doiDoan({ phan: 'vi-pham', doan: 'lich-su' }); setLoc('tat-ca'); setTim(''); setLsEm({ id: x.studentId, ten: x.ten }); };
 
   /* ---------------- Lịch sử (mockup K6) — cùng loại dòng với tab HV ---------------- */
   const moiNhatXong = new Map<number, number>();
   for (const x of d.dongThoiGian) if (x.loai === 'xu-ly' && x.status === 'done' && !moiNhatXong.has(x.studentId)) moiNhatXong.set(x.studentId, x.id);
   const timChu = tim.trim().toLocaleLowerCase('vi');
   const dongLs: DongLs[] = d.dongThoiGian
-    .filter((x) => x.loai === 'xu-ly' || x.trangThai === 'da_ghi_nhan')
+    .filter((x) => (x.loai === 'xu-ly' || x.trangThai === 'da_ghi_nhan') && (phamVi === 'tat-ca' || x.trongChuoi !== false) && (!lsEm || x.studentId === lsEm.id))
     /* Ô "Tìm em" (K6) khớp tên em, tên vi phạm / lần xử lý và tên nhóm — thay ô chọn nhóm của Nhật ký cũ (mockup không vẽ). */
     .filter((x) => !timChu || [x.ten, x.loai === 'vi-pham' ? `${x.viPham} ${dich(x.nhom)}` : dich(x.nhan)].join(' ').toLocaleLowerCase('vi').includes(timChu))
     .map((x): DongLs => {
@@ -224,16 +237,14 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     xuLy: d.dongThoiGian.filter((x) => x.studentId === sid && x.loai === 'xu-ly' && x.status === 'done').length,
     xem: d.dongThoiGian.filter((x) => x.studentId === sid && x.loai === 'vi-pham' && x.trangThai === 'da_ghi_nhan').length,
   });
-  const vpTheoId = new Map(d.dongThoiGian.filter((x) => x.loai === 'vi-pham').map((x) => [x.id, x]));
 
-  const ctx: NguCanh = { homNay, canManage: d.canManage, coTheDuyet: d.coTheDuyet, gvcn: d.gvcn, chonN, dangGhi, vuaLuu, vpTheoId,
-    dongTg: d.dongThoiGian, mo, onDaXem: (x, ids) => void daXem(x, x.studentId, ids), onBaoPh: setBaoPh, onDuyet: setDuyet,
+  const ctx: NguCanh = { homNay, canManage: d.canManage, coTheDuyet: d.coTheDuyet, gvcn: d.gvcn, chonN, dangGhi, vuaLuu, mo, onDaXem: (x, ids) => void daXem(x, x.studentId, ids), onBaoPh: setBaoPh, onDuyet: setDuyet,
     onHoanTac: (sid) => { const v = vuaXem[sid]; if (v) void daXem(null, sid, v.ids, true); }, onXemLai: xemLai };
   const hang = (ds: { x: DongEm; k: KieuHang }[]) => ds.map(({ x, k }) => (
     <HangEm key={`${k}${x.studentId}`} x={x} k={k} c={ctx} vua={vuaXem[x.studentId]}
       mo={moHv === x.studentId && k !== 'vua_xem'} onMo={() => setMoHv((c) => (c === x.studentId ? null : x.studentId))}
       chiTiet={moHv === x.studentId && k !== 'vua_xem' ? (
-        <ChiTietEm x={x} k={k} lanTai={lanTai} c={ctx} dem={demEm(x.studentId)} toi={toi} onLamMoi={lamMoi} onLichSu={() => lichSuEm(x.ten)} />
+        <ChiTietEm x={x} k={k} lanTai={lanTai} c={ctx} dem={demEm(x.studentId)} toi={toi} onLamMoi={lamMoi} onLichSu={() => lichSuEm(x)} />
       ) : null} />
   ));
   const soVp = (ds: { x: DongEm }[]) => ds.reduce((s, { x }) => s + x.viPhamCho.length, 0);
@@ -248,10 +259,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
       <h2 className="sr-only">{t('Ý thức & Phối hợp')}</h2>
       {/* Mockup K1 `.cong-cu`: phân đoạn trái · thao tác phải; 375 (K2): + Ghi vi phạm rộng + ⋯, phân đoạn mỗi cái một hàng. */}
       <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
-        <BoLocDoan v8 ariaLabel={t('Phần')} value={phan} onChange={setPhan}
+        <BoLocDoan v8 giuSo ariaLabel={t('Phần')} value={phan} onChange={setPhan}
           muc={[{ key: 'vi-pham', nhan: t('Vi phạm') }, { key: 'phoi-hop', nhan: tenPhoiHop, so: coord.data?.pendingCount ?? null }]} />
         {phan === 'vi-pham' && (
-          <BoLocDoan v8 ariaLabel={t('Vi phạm')} value={doan} onChange={setDoan}
+          <BoLocDoan v8 giuSo ariaLabel={t('Vi phạm')} value={doan} onChange={setDoan}
             muc={[{ key: 'can-lam', nhan: t('Cần làm'), so: t('{n} HV', { n: soCanLam }) }, { key: 'lich-su', nhan: t('Lịch sử'), so: dongLs.length }]} />
         )}
         {phan === 'vi-pham' && doan === 'lich-su' && (
@@ -272,7 +283,11 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
             <>
               <BoLocDoan v8 ariaLabel={t('Phạm vi')} value={phamVi} onChange={setPhamVi}
                 muc={[{ key: 'chuoi', nhan: thuong ? t('Lớp thường') : t('Lộ trình') }, { key: 'tat-ca', nhan: t('Cả lịch sử') }]} />
-              <input type="search" className="field h-9 w-[200px] py-1 max-sm:h-11 max-sm:w-auto max-sm:flex-1" aria-label={t('Tìm em')} placeholder={t('Tìm em')} value={tim} onChange={(e) => setTim(e.target.value)} />
+              {lsEm ? (
+                <button type="button" className="btn h-9 max-sm:h-11" aria-label={`${t('Bỏ lọc em')} · ${lsEm.ten}`} onClick={() => setLsEm(null)}>{lsEm.ten} ×</button>
+              ) : (
+                <input type="search" className="field h-9 w-[200px] py-1 max-sm:h-11 max-sm:w-auto max-sm:flex-1" aria-label={t('Tìm em')} placeholder={t('Tìm em')} value={tim} onChange={(e) => setTim(e.target.value)} />
+              )}
             </>
           ) : (
             <>
@@ -287,7 +302,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
                     {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
                   </button>
                   <span className="sm:hidden">
-                    <Menu label="⋯" className="btn h-11 min-w-[44px]" items={[
+                    <Menu label="⋯" ariaLabel={t('Thêm thao tác')} className="btn h-11 min-w-[44px]" items={[
+                      ...(onDiemMt ? [{ label: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onClick: onDiemMt }] : []),
                       { label: t('Khai / sửa cấp bậc'), onClick: () => setLoMo({ viec: 'cap-bac', ids: null }) },
                       { label: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onClick: batChon },
                     ]} />
@@ -311,7 +327,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
         <div className="p-4"><Empty title={t('Không em nào cần xử lý Ý thức')} hint={t('Vi phạm mới, việc bắt buộc và đề xuất chờ QL sẽ hiện ở đây.')} /></div>
       ) : (
         <div>
-          <div aria-hidden className={`hidden border-b px-4 py-2 text-[13px] font-semibold text-slate-400 [@container(min-width:1180px)]:grid ${COT}`} style={{ borderColor: 'var(--line)' }}>
+          <div aria-hidden className={`hidden border-b px-4 py-2 text-[13px] font-semibold text-slate-400 [@container(min-width:1220px)]:grid ${COT}`} style={{ borderColor: 'var(--line)' }}>
             <span>{t('Học viên')}</span><span>{t('Vi phạm chờ')}</span><span>{t('Cần làm')}</span><span>{t('Bậc')}</span><span>{t('Báo PH (TVV)')}</span><span>{t('Việc')}</span>
           </div>
           {nhomHang.batBuoc.length > 0 && (
@@ -323,13 +339,13 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
           )}
           {nhomHang.moi.length > 0 && (
             <NhomHang chu={t('Mới, chưa xem')} dem={t('{n} HV · {so} vi phạm', { n: nhomHang.moi.length, so: soVp(nhomHang.moi) })} luat={t('chưa cần xử lý — xem trước hạn')}
-              i={<NutLuat label={t('Đã xem là gì')}>{t('Đã xem: không lên bậc, vẫn tính vào 3 vi phạm / 2 tuần. Vi phạm nghiêm trọng: Xác nhận xử lý ngay.')}</NutLuat>}>
+              i={<NutLuat label={t('Đã xem là gì')}>{t('Đã xem: không lên bậc; vi phạm vẫn nằm trong 3 vi phạm / 2 tuần. Vi phạm nghiêm trọng: Xác nhận xử lý ngay.')}</NutLuat>}>
               {hang(nhomHang.moi)}
             </NhomHang>
           )}
           {nhomHang.choDuyet.length > 0 && (
             <NhomHang chu={t('Chờ QL duyệt')} dem={t('{n} HV', { n: nhomHang.choDuyet.length })}
-              luat={d.coTheDuyet ? t('GVCN đề xuất hoặc xin thu hồi') : t('đã đề xuất — QL quyết')}>{hang(nhomHang.choDuyet)}</NhomHang>
+              luat={d.coTheDuyet ? t('GVCN đề xuất hoặc xin thu hồi') : t('đã gửi QL — QL quyết')}>{hang(nhomHang.choDuyet)}</NhomHang>
           )}
           {nhomHang.choBaoPh.length > 0 && <NhomHang chu={t('Chờ TVV báo PH')} dem={t('{n} HV', { n: nhomHang.choBaoPh.length })} luat={t('việc của TVV')}>{hang(nhomHang.choBaoPh)}</NhomHang>}
           {chonN.bat && chuaKhai.length > 0 && (
@@ -389,14 +405,12 @@ const TT_KHOI: Partial<Record<KieuHang, string>> = { qua_han: 'qua_han', bat_buo
 const cuonToi = (el: Element | null | undefined) =>
   el?.scrollIntoView({ block: 'start', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 
-/** Lưới 6 cột của bảng (mockup K1 `.byt`) — chỉ khi KHUNG ≥ 1180 px; hẹp hơn mỗi em một thẻ (K2). Lớp viết đủ chữ (Tailwind). */
-const COT = '[@container(min-width:1180px)]:grid-cols-[200px_minmax(0,1fr)_190px_250px_200px_176px] [@container(min-width:1180px)]:gap-x-6';
+/** Lưới 6 cột của bảng (mockup K1 `.byt`) — chỉ khi KHUNG ≥ 1220 px; hẹp hơn mỗi em một thẻ (K2). Lớp viết đủ chữ (Tailwind). */
+const COT = '[@container(min-width:1220px)]:grid-cols-[190px_minmax(130px,1fr)_180px_220px_190px_170px] [@container(min-width:1220px)]:gap-x-5';
 
 type NguCanh = {
   homNay: string; canManage: boolean; coTheDuyet: boolean; gvcn: string | null; chonN: ChonNhieu; dangGhi: number | null;
   vuaLuu: { sid: number; luc: string } | null;
-  vpTheoId: Map<number, Extract<BangYThucLop['dongThoiGian'][number], { loai: 'vi-pham' }>>;
-  dongTg: BangYThucLop['dongThoiGian'];
   mo: (p: PanelYThuc) => void; onDaXem: (x: DongEm, ids: number[]) => void; onBaoPh: (x: DongEm) => void;
   onDuyet: (v: { id: number; thuHoi: boolean; moSan: 'duyet' | 'tu-choi' }) => void;
   onHoanTac: (sid: number) => void; onXemLai: (ids: number[]) => void;
@@ -410,7 +424,7 @@ function NhomHang({ chu, dem, luat, i, tong, children }: { chu: string; dem: Rea
         style={{ borderColor: 'var(--line)', background: tong === 'bb' ? undefined : tong === 'gap' ? 'var(--surface)' : 'var(--surface-2)' }}>
         <h3 className={`m-0 text-[15px] font-bold ${tong === 'bb' ? 'text-soon' : 'text-slate-100'}`}>{chu}</h3>
         <span className="text-[13px] font-semibold tabular-nums text-slate-400">{dem}</span>
-        {luat && <span className="text-[13px] text-slate-400 max-sm:basis-full">{luat}</span>}
+        {luat && <span className="text-[13px] text-slate-400">{luat}</span>}
         {i && <span className="-ml-1 self-center">{i}</span>}
       </div>
       {children}
@@ -434,6 +448,8 @@ const DsVpHang = ({ ds, homNay }: { ds: { id: number; ngay: string; ten: string 
 /** Nút cột Việc (mockup `.c-viec`): nút chính rộng cả cột · nút chữ phụ bên dưới. 375: 44 px. */
 const NUT_CHINH = 'btn btn-primary w-full justify-center max-sm:h-11';
 const NUT_VIEN = 'btn w-full justify-center max-sm:h-11';
+/** Nút chữ nhỏ (mockup `.link-nho`): 30 px · 375: 44 px. */
+const NUT_LINK = 'link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]';
 /* Nút chữ phụ rộng đều cột, chữ giữa (mockup `.c-viec .nut { width:100% }` · `.duoi2`). */
 const NUT_CHU = 'link min-h-[30px] flex-1 appearance-none border-0 bg-transparent px-1 text-center text-[13px] font-semibold max-sm:min-h-[44px]';
 
@@ -442,11 +458,8 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
 }) {
   const { homNay } = c;
   const vuaLuu = c.vuaLuu?.sid === x.studentId;
-  /* Vi phạm của hàng: chờ (máy chủ) · xin thu hồi: vi phạm của lần đang xin (tra từ dòng thời gian đã nạp). */
-  const tg = k === 'thu_hoi' && x.thuHoi ? c.dongTg.find((m) => m.loai === 'xu-ly' && m.id === x.thuHoi!.id) : undefined;
-  const dsVp = tg && tg.loai === 'xu-ly'
-    ? tg.vpIds.map((id) => c.vpTheoId.get(id)).filter((v): v is NonNullable<typeof v> => !!v).map((v) => ({ id: v.id, ngay: v.ngay, ten: v.viPham }))
-    : x.viPhamCho;
+  /* Vi phạm của hàng (máy chủ): chờ · đang trong đề xuất · của lần đang xin thu hồi. */
+  const dsVp = x.viPhamCho;
   const idsMoi = x.viPhamCho.filter((v) => v.trangThai === 'moi').map((v) => v.id);
   const batBuoc = k === 'qua_han' || k === 'bat_buoc';
   const dangGhi = c.dangGhi === x.studentId;
@@ -466,6 +479,9 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
       </button>
     );
     phu.push(nutChu('xl', t('Xác nhận xử lý'), () => c.mo({ loai: 'xu-ly', studentId: x.studentId })));
+  } else if (x.baoPh?.coTheGhi && x.baoPh.trangThai === 'mo' && !c.canManage) {
+    /* TVV: việc của mình là Báo PH — đứng trước nút xem đề xuất / thu hồi. */
+    chinh = <button type="button" className={x.baoPh.quaHan ? NUT_CHINH : NUT_VIEN} aria-label={`${t('Ghi kết quả báo PH')} · ${x.ten}`} onClick={() => c.onBaoPh(x)}>{t('Ghi kết quả báo PH')}</button>;
   } else if (k === 'thu_hoi' && x.thuHoi) {
     const id = x.thuHoi.id;
     if (c.coTheDuyet) {
@@ -481,8 +497,6 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
       chinh = <button type="button" className={NUT_CHINH} aria-label={`${t('Duyệt')} · ${x.ten}`} onClick={() => c.onDuyet({ id, thuHoi: false, moSan: 'duyet' })}>{t('Duyệt')}</button>;
       phu.push(nutChu('tc', t('Từ chối…'), () => c.onDuyet({ id, thuHoi: false, moSan: 'tu-choi' })), nutChu('xem', t('Xem'), () => c.mo({ loai: 'xem', id })));
     } else chinh = <button type="button" className={NUT_VIEN} aria-label={`${t('Xem đề xuất')} · ${x.ten}`} onClick={() => c.mo({ loai: 'xem', id })}>{t('Xem đề xuất')}</button>;
-  } else if (x.baoPh?.coTheGhi && !c.canManage) {
-    chinh = <button type="button" className={x.baoPh.quaHan ? NUT_CHINH : NUT_VIEN} aria-label={`${t('Ghi kết quả báo PH')} · ${x.ten}`} onClick={() => c.onBaoPh(x)}>{t('Ghi kết quả báo PH')}</button>;
   } else if (k === 'da_xu_ly' && x.xuLyGanNhat) {
     const id = x.xuLyGanNhat.id;
     chinh = <button type="button" className={NUT_VIEN} aria-label={`${t('Xem lần xử lý')} · ${x.ten}`} onClick={() => c.mo({ loai: 'xem', id })}>{t('Xem lần xử lý')}</button>;
@@ -530,8 +544,12 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
   );
   const nen = mo ? 'bg-[color:var(--accent-soft)]' : k === 'vua_xem' || vuaLuu ? 'bg-ok-bg' : '';
   const daXemChu = vua && <b className="text-sm font-semibold text-ok">✓ {t('Đã xem {n} vi phạm · {gio}', { n: vua.ids.length, gio: vua.luc })}</b>;
-  const hoanTac = vua && <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" disabled={dangGhi} onClick={() => c.onHoanTac(x.studentId)}>{t('Hoàn tác')}</button>;
-  const xemLai = vua && <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" onClick={() => c.onXemLai(vua.ids)}>{t('Xem lại')}</button>;
+  const nutVuaXem = (lop: string) => vua && (
+    <>
+      <button type="button" className={lop} disabled={dangGhi} aria-label={`${t('Hoàn tác')} · ${x.ten}`} onClick={() => c.onHoanTac(x.studentId)}>{t('Hoàn tác')}</button>
+      <button type="button" className={lop} aria-label={`${t('Xem lại')} · ${x.ten}`} onClick={() => c.onXemLai(vua.ids)}>{t('Xem lại')}</button>
+    </>
+  );
 
   /* Thẻ 375 (K2): Bậc một ô · Báo PH một ô (chữ màu), nút rộng cả thẻ. */
   const bac375 = batBuoc ? [t('Bậc · lần này'), dich(x.keTiep.nhan)] : [t('Bậc · đã tới'), x.bacNhan ? dich(x.bacNhan) : t('chưa có')];
@@ -539,12 +557,15 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
   const baoPh375 = !b ? <b className="font-semibold text-slate-500">—</b>
     : b.trangThai === 'xong' ? <b className="font-semibold text-ok">✓ {b.ngayXong ? t('Đã báo {ngay}', { ngay: ngay(b.ngayXong, homNay) }) : t('Đã báo PH')}</b>
     : b.trangThai === 'bo' ? <b className="font-semibold text-slate-500">{t('Đã bỏ')}</b>
-    : <b className={`font-semibold ${b.quaHan ? 'text-late' : 'text-soon'}`}>{dich(b.nhanTrangThai)} · {t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}</b>;
+    : b.coTheGhi ? (
+      <button type="button" className={`inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 text-left font-semibold underline underline-offset-2 ${b.quaHan ? 'text-late' : 'text-soon'}`}
+        aria-label={`${t('Ghi kết quả báo PH')} · ${x.ten}`} onClick={() => c.onBaoPh(x)}>{dich(b.nhanTrangThai)} · {t('hạn {ngay}', { ngay: ngay(b.han, homNay) })} ›</button>
+    ) : <b className={`font-semibold ${b.quaHan ? 'text-late' : 'text-soon'}`}>{dich(b.nhanTrangThai)} · {t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}</b>;
 
   return (
-    <div id={`yt-em-${x.studentId}`} className="scroll-mt-24">
-      {/* ≥ 1180 px: hàng bảng 6 cột */}
-      <div className={`hidden border-b px-4 py-3 [@container(min-width:1180px)]:grid ${COT} ${nen}`}
+    <div id={k === 'vua_xem' ? undefined : `yt-em-${x.studentId}`} className="scroll-mt-24">
+      {/* ≥ 1220 px: hàng bảng 6 cột */}
+      <div className={`hidden border-b px-4 py-3 [@container(min-width:1220px)]:grid ${COT} ${nen}`}
         style={{ borderColor: 'var(--line)', boxShadow: mo ? 'inset 3px 0 0 var(--accent)' : undefined }}>
         <div className="flex min-w-0 items-start gap-2">
           {c.chonN.bat && k !== 'vua_xem' && <OChon chon={c.chonN} id={x.studentId} ten={x.ten} />}
@@ -561,7 +582,7 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
           </>
         )}
         <div className="min-w-0">
-          {k === 'vua_xem' ? <span className="flex gap-3.5">{hoanTac}{xemLai}</span> : (
+          {k === 'vua_xem' ? <span className="flex gap-3.5">{nutVuaXem(NUT_LINK)}</span> : (
             <>
               {chinh}
               {phu.length > 0 && <span className="mt-1 flex gap-2">{phu}</span>}
@@ -569,8 +590,8 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
           )}
         </div>
       </div>
-      {/* < 1180 px: thẻ em (K2) */}
-      <div className={`grid gap-2.5 border-b px-3 py-3 [@container(min-width:1180px)]:hidden ${nen}`} style={{ borderColor: 'var(--line)' }}>
+      {/* < 1220 px: thẻ em (K2) */}
+      <div className={`grid gap-2.5 border-b px-3 py-3 [@container(min-width:1220px)]:hidden ${nen}`} style={{ borderColor: 'var(--line)' }}>
         <div className="flex items-start gap-2">
           {c.chonN.bat && k !== 'vua_xem' && <OChon chon={c.chonN} id={x.studentId} ten={x.ten} />}
           {oTen}
@@ -579,10 +600,7 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
         {k === 'vua_xem' ? (
           <>
             <span role="status">{daXemChu}</span>
-            <span className="grid grid-cols-2 gap-2">
-              <button type="button" className="btn h-11 justify-center" disabled={dangGhi} onClick={() => c.onHoanTac(x.studentId)}>{t('Hoàn tác')}</button>
-              <button type="button" className="btn h-11 justify-center" onClick={() => vua && c.onXemLai(vua.ids)}>{t('Xem lại')}</button>
-            </span>
+            <span className="grid grid-cols-2 gap-2">{nutVuaXem('btn h-11 justify-center')}</span>
           </>
         ) : (
           <>
@@ -675,7 +693,7 @@ function ChiTietEm({ x, k, lanTai, c, dem, toi, onLamMoi, onLichSu }: {
     ...(chuaXong.length && !x.deXuat ? [[t('Lần này'), <span className="text-slate-300">{t('có việc khi lưu xử lý')}</span>] as [string, ReactNode]] : []),
   ];
   return khung(
-    <div className="grid gap-3.5 [@container(min-width:1180px)]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+    <div className="grid gap-3.5 [@container(min-width:1220px)]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
       <Khoi tieuDe={t('Vi phạm của lần này')} dem={chuaXong.length}
         phai={batBuoc && hv.canManage && <><b className="text-[13px] font-semibold text-soon">{t('Không có "Đã xem"')}</b>
           <NutLuat label={t('Vì sao không có Đã xem')}>{t('≥ 3 vi phạm trong tuần này + tuần trước → phải xử lý; "Đã xem" không còn.')}</NutLuat></>}>
@@ -694,12 +712,12 @@ function ChiTietEm({ x, k, lanTai, c, dem, toi, onLamMoi, onLichSu }: {
             <span className={TAG}>{t('Đã xử lý')}&nbsp;<b className="text-slate-200">{dem.xuLy}</b></span>
             <span className={TAG}>{t('Đã xem')}&nbsp;<b className="text-slate-200">{dem.xem}</b></span>
           </span>
-          <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" onClick={onLichSu}>{t('Lịch sử của em ›')}</button>
+          <button type="button" className={NUT_LINK} onClick={onLichSu}>{t('Lịch sử của em ›')}</button>
         </div>
       </Khoi>
       <div className="grid content-start gap-3.5">
         <Khoi tieuDe={t('Lần xử lý')}
-          phai={<button type="button" aria-expanded={thang} className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" onClick={() => setThang((v) => !v)}>{thang ? t('Thang ‹') : t('Thang ›')}</button>}>
+          phai={<button type="button" aria-expanded={thang} className={NUT_LINK} onClick={() => setThang((v) => !v)}>{thang ? t('Thang ‹') : t('Thang ›')}</button>}>
           <Fld ds={lanXuLy} />
           {/* Thang đủ mở tại chỗ (chỉ xem + Khai cấp bậc) — nút xử lý ở cột Việc của hàng (U10.2). */}
           {thang && <ThangYThuc d={hv} homNay={homNay} onKhai={hv.canManage ? () => c.mo({ loai: 'khai', studentId: hv.studentId }) : undefined} />}
@@ -713,7 +731,7 @@ function ChiTietEm({ x, k, lanTai, c, dem, toi, onLamMoi, onLichSu }: {
 }
 
 const LinkXem = ({ onClick }: { onClick: () => void }) => (
-  <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" onClick={onClick}>
+  <button type="button" className={NUT_LINK} onClick={onClick}>
     <span className="sr-only">{t('Xem lần xử lý')} </span>{t('Xem ›')}
   </button>
 );

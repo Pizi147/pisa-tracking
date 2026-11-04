@@ -919,8 +919,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/const coGhiNhan = hv\.canManage &&/.test(s) && /const nut = hv\.canManage &&/.test(s) && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`))
-      && /onKhai=\{hv\.canManage \?/.test(s) && /const cta = canManage &&/.test(s), 'ẩn theo quyền');
+    /* UI-2 (mockup U10 K1 cột Việc, Q-7 viết lại): Đã xem / Xác nhận xử lý / Đề xuất chỉ khi canManage; Khai cấp bậc trong thang theo hv.canManage. */
+    assert(/const coXem = \(v: ViPhamV4\) => hv\.canManage &&/.test(s) && /else if \(c\.canManage && batBuoc && !x\.deXuat\)/.test(s) && /else if \(c\.canManage && k === 'moi' && idsMoi\.length\)/.test(s)
+      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /onKhai=\{hv\.canManage \?/.test(s) && /\{d\.canManage && \(\s*<>/.test(s), 'ẩn theo quyền');
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" — nhãn một chỗ; UI-3 (mockup U10 K8) bỏ chữ phụ thừa, hàng 3 cột tên · hạn · nút', () => {

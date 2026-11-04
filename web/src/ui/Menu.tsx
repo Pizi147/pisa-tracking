@@ -24,8 +24,10 @@ export type MenuItem = {
  * `Esc` hoặc bấm ra ngoài thì đóng. Bàn phím (KHUNG-LOI, V4C-03 — như `MenuDong`): mở → focus mục đầu; ↑/↓/Home/End đi vòng;
  * Esc / Tab đóng và trả focus về nút (Esc không đóng panel chứa menu).
  */
-export function Menu({ label, items, align = 'right', className = 'btn btn-sm btn-ghost' }: {
+export function Menu({ label, items, align = 'right', className = 'btn btn-sm btn-ghost', ariaLabel }: {
   label: string;
+  /** Tên đọc màn hình khi nhãn là ký hiệu ("⋯"). */
+  ariaLabel?: string;
   items: MenuItem[];
   align?: 'left' | 'right';
   className?: string;
@@ -53,7 +55,7 @@ export function Menu({ label, items, align = 'right', className = 'btn btn-sm bt
   if (items.length === 0) return null;
   return (
     <div ref={ref} className="relative inline-block">
-      <button ref={nut} type="button" className={className} aria-haspopup="menu" aria-expanded={open}
+      <button ref={nut} type="button" className={className} aria-haspopup="menu" aria-expanded={open} aria-label={ariaLabel}
         onClick={() => setOpen((o) => !o)}>
         {label} <IconGap mo={open} size={10} />
       </button>

@@ -55,12 +55,12 @@ export type DongThoiGianYt =
       /** PR-LUI-a1: dòng chính = ô `Vi phạm` (ngắn); mô tả đầy đủ chỉ hiện khi mở dòng (`ChiTietViPham`). */
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
       /** UI-2 (mockup K6 "Ai · lúc nào" của dòng Đã xem). */
-      xemBoi: string | null; xemLuc: string | null }
+      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null;
-      /** UI-2 (mockup K4): vi phạm của lần — hàng "Xin thu hồi" tra ngày + tên từ chính dòng thời gian. */
-      vpIds: number[] };
+      /** UI-2 (`danhDauChuoi`): dòng thuộc lộ trình hiện tại của em — tab lớp đổi phạm vi Lộ trình | Cả lịch sử tại trình duyệt, không đọc lại. */
+      trongChuoi?: boolean };
 
 export type BangYThucLop = {
   classId: number; classCode: string; homNay: string;
@@ -73,7 +73,6 @@ export type BangYThucLop = {
   choThuHoi: DongEm[];
   /** UI-2 (mockup K4): người xem duyệt được yêu cầu của lớp (Duyệt / Từ chối tại chỗ). */
   coTheDuyet: boolean;
-  phamVi: 'chuoi' | 'tat-ca';
   /** UI-2 (mockup K4): GVCN của lớp — dòng dưới tên em ở nhóm Chờ QL duyệt (QL biết ai đề xuất / xin thu hồi). */
   gvcn: string | null;
 };
@@ -110,8 +109,9 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
 /**
  * Dòng thời gian trộn (vi phạm + lần xử lý, mới nhất trước) của các em — dùng chung tab lớp (cả lớp) và tab HV (một em).
  * `chiTrongChuoi`: chỉ vi phạm / lần xử lý thuộc chuỗi thang hiện tại của em (phạm vi mặc định của tab HV).
+ * `danhDauChuoi` (UI-2, tab lớp): không lọc — ghi `trongChuoi` từng dòng để trình duyệt đổi phạm vi không cần request mới.
  */
-export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean } = {}): DongThoiGianYt[] {
+export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean; danhDauChuoi?: boolean } = {}): DongThoiGianYt[] {
   if (!emIds.length) return [];
   const conn = db();
   const ten = new Map<number, string>();
@@ -119,11 +119,12 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     const lo = emIds.slice(i, i + 400);
     for (const r of conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) ten.set(r.id, r.full_name);
   }
-  const trongChuoi = (sid: number, cycleId: number | null) => {
-    if (!o.chiTrongChuoi) return true;
+  const laTrongChuoi = (sid: number, cycleId: number | null) => {
     const em = trang.get(sid);
     return !em || !em.chuoi.length || (cycleId != null && em.chuoi.includes(cycleId));
   };
+  const trongChuoi = (sid: number, cycleId: number | null) => !o.chiTrongChuoi || laTrongChuoi(sid, cycleId);
+  const dau = (sid: number, cycleId: number | null) => (o.danhDauChuoi ? { trongChuoi: laTrongChuoi(sid, cycleId) } : {});
   const out: DongThoiGianYt[] = [];
   const tenVp = new Map<number, string>();   // UI-3 (mockup K6): tên vi phạm của mỗi lần xử lý — từ chính danh sách đã đọc, không thêm câu
   for (const v of violationsOfStudents(emIds)) {
@@ -132,7 +133,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     out.push({
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
-      xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc,
+      xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc, ...dau(v.studentId, v.cycleId),
     });
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
@@ -155,15 +156,14 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       nhan: nhanLoaiXuLy(m.kind, m.customName), kind: m.kind, status: m.status,
       statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status,
       soViPham: m.violationIds.length, nguoi: phu.get(m.id)?.nguoi ?? null, soTep: phu.get(m.id)?.soTep ?? 0,
-      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null, vpIds: m.violationIds,
+      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null, ...dau(sid, m.cycleId),
     });
   }
   out.sort((a, b) => b.ngay.localeCompare(a.ngay) || (a.loai === b.loai ? b.id - a.id : a.loai === 'xu-ly' ? -1 : 1));
   return o.gioiHan ? out.slice(0, o.gioiHan) : out;
 }
 
-/** `phamVi` (UI-2, mockup K6 — X08): Lịch sử theo lộ trình hiện tại của từng em (mặc định của tab) hoặc cả lịch sử. Chỉ đổi dòng thời gian. */
-export function bangYThucLop(p: Principal, classId: number, homNay = demoToday(), phamVi: 'chuoi' | 'tat-ca' = 'tat-ca'): BangYThucLop {
+export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()): BangYThucLop {
   const cls = db().prepare('SELECT id, code FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   requireViewClass(p, classId);
@@ -199,7 +199,14 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   }
   /* Vi phạm còn chờ của các em có hàng — một lần đọc (cùng cửa trạng thái với dòng thời gian). */
   const vps = violationsOfStudents([...dongCuaEm.keys()]);
+  /* UI-2 (K4): hàng "Xin thu hồi" (em không còn vi phạm chờ) liệt kê vi phạm của lần đang xin — từ chính danh sách vừa đọc. */
+  const cuaLanXin = new Map<number, Set<number>>();
+  for (const x of dongCuaEm.values()) {
+    const em = trang.get(x.studentId)!;
+    if (x.thuHoi?.cho && (!em.nhom || em.nhom === 'da_xu_ly')) cuaLanXin.set(x.studentId, new Set(em.xuLy.find((m) => m.id === x.thuHoi!.id)?.violationIds ?? []));
+  }
   for (const v of vps.sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id)) {
+    if (cuaLanXin.get(v.studentId)?.has(v.id)) { dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai }); continue; }
     /* UI-2 (mockup K1 / K4): cả vi phạm đang trong đề xuất chờ QL — hàng "Chờ QL duyệt" liệt kê vi phạm của lần. */
     if (v.trangThai === 'moi' || v.trangThai === 'can_xu_ly' || v.trangThai === 'qua_han' || v.trangThai === 'cho_duyet') {
       dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai });
@@ -213,11 +220,11 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
     canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
     nhom,
-    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, chiTrongChuoi: phamVi === 'chuoi' }),
+    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, danhDauChuoi: true }),
     choBaoPh: choBaoPh.sort((a, b) => (a.baoPh?.han ?? '').localeCompare(b.baoPh?.han ?? '') || a.ten.localeCompare(b.ten, 'vi')),
     choThuHoi: choThuHoi.sort((a, b) => a.ten.localeCompare(b.ten, 'vi')),
     coTheDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { classId }),
-    phamVi, gvcn,
+    gvcn,
   };
 }
 

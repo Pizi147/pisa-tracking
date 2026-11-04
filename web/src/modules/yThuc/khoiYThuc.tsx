@@ -157,7 +157,7 @@ export function LanTruoc({ x, homNay, onXem }: { x: Pick<DongEm, 'xuLyGanNhat' |
     </button>
   );
   if (x.thuHoi) return <span className="flex flex-wrap items-center gap-2">{link(x.thuHoi.id, dich(x.thuHoi.nhan))}<BadgeViec tong={x.thuHoi.cho ? 'dang' : 'xam'}>{x.thuHoi.cho ? t('Đang xin thu hồi') : t('Đã thu hồi')}</BadgeViec></span>;
-  if (x.tuChoi) return <span className="flex flex-wrap items-center gap-2">{link(x.tuChoi.id, dich(x.tuChoi.nhan))}<BadgeViec tong="qua">{t('QL từ chối')}</BadgeViec></span>;
+  if (x.tuChoi) return <span className="flex flex-wrap items-center gap-2">{link(x.tuChoi.id, dich(x.tuChoi.nhan))}<BadgeViec tong="qua">{t('QL từ chối · chọn cách khác')}</BadgeViec></span>;
   if (x.xuLyGanNhat) return <span className="flex flex-wrap items-center gap-2"><b className="font-semibold text-slate-100">{dich(x.xuLyGanNhat.nhan)}</b><span className="text-[13px] tabular-nums text-slate-400">{ngay(x.xuLyGanNhat.ngay, homNay)}</span>{link(x.xuLyGanNhat.id, t('Xem'))}</span>;
   return null;
 }
@@ -190,24 +190,40 @@ export type DongLs = { key: string; ngay: string; ten?: ReactNode; tong: TongBv;
   tieuDe: ReactNode; truong: [string, ReactNode][]; ai: string | null; luc: string | null; vua?: boolean; cuoi?: ReactNode;
   /** Dòng "Đã xem" mở tại chỗ (mô tả, bằng chứng, Sửa / Xoá — người ghi vẫn sửa được sau khi GVCN đã xem). */
   mo?: boolean; onMo?: () => void; chiTiet?: ReactNode };
+/* Lớp của BangLichSu theo ngưỡng khung (viết đủ chữ — Tailwind chỉ sinh CSS cho tên lớp thấy được trong mã). */
+const LS_HV = {
+  dau: '[@container(min-width:720px)]:grid [@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]',
+  hang: '[@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]',
+  ten: '[@container(min-width:720px)]:col-span-1', loai: '[@container(min-width:720px)]:col-start-auto',
+  o: '[@container(min-width:720px)]:col-span-1 [@container(min-width:720px)]:col-start-auto',
+  cuoi: '[@container(min-width:720px)]:col-start-auto [@container(min-width:720px)]:row-start-auto',
+};
+const LS_LOP = {
+  dau: '[@container(min-width:900px)]:grid [@container(min-width:900px)]:grid-cols-[90px_200px_130px_minmax(0,1fr)_200px_140px]',
+  hang: '[@container(min-width:900px)]:grid-cols-[90px_200px_130px_minmax(0,1fr)_200px_140px]',
+  ten: '[@container(min-width:900px)]:col-span-1', loai: '[@container(min-width:900px)]:col-start-auto',
+  o: '[@container(min-width:900px)]:col-span-1 [@container(min-width:900px)]:col-start-auto',
+  cuoi: '[@container(min-width:900px)]:col-start-auto [@container(min-width:900px)]:row-start-auto',
+};
 export function BangLichSu({ dong, coTen, homNay, rong }: { dong: DongLs[]; coTen?: boolean; homNay: string; rong: ReactNode }) {
   if (!dong.length) return <>{rong}</>;
   /* Lưới (không <table> — BANG-3). Theo KHUNG (container), không theo màn: panel Công việc 480 px dùng bản hẹp — "Ai · lúc nào" xuống dưới nội dung. */
   /* Lớp viết đủ chữ (Tailwind chỉ sinh CSS cho tên lớp thấy được trong mã). */
-  const cot = coTen ? '[@container(min-width:720px)]:grid-cols-[90px_200px_130px_minmax(0,1fr)_200px_140px]' : '[@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]';
+  /* Có cột Học viên (tab lớp): bảng từ khung 900 px — 6 cột cố định cần ~850 px; tab HV / panel: 720 px. */
+  const L = coTen ? LS_LOP : LS_HV;
   const dau = 'text-[13px] font-semibold text-slate-400';
   return (
     <div role="list" aria-label={t('Lịch sử')}>
-      <div aria-hidden className={`hidden gap-x-3 border-b px-4 py-2 [@container(min-width:720px)]:grid ${cot}`} style={{ borderColor: 'var(--line)' }}>
+      <div aria-hidden className={`hidden gap-x-3 border-b px-4 py-2 ${L.dau}`} style={{ borderColor: 'var(--line)' }}>
         <span className={dau}>{t('Ngày')}</span>{coTen && <span className={dau}>{t('Học viên')}</span>}<span className={dau}>{t('Loại')}</span>
         <span className={dau}>{t('Nội dung')}</span><span className={dau}>{t('Ai · lúc nào')}</span><span />
       </div>
       {dong.map((x) => (
-        <div key={x.key} role="listitem" className={`grid grid-cols-[56px_minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-b px-4 py-2.5 last:border-b-0 ${cot} ${x.vua ? 'bg-ok-bg' : ''}`} style={{ borderColor: 'var(--line)' }}>
+        <div key={x.key} role="listitem" className={`grid grid-cols-[56px_minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-b px-4 py-2.5 last:border-b-0 ${L.hang} ${x.vua ? 'bg-ok-bg' : ''}`} style={{ borderColor: 'var(--line)' }}>
           <span className="text-[13px] font-semibold tabular-nums text-slate-400">{ngay(x.ngay, homNay)}</span>
-          {coTen && <span className="font-semibold text-slate-100 col-span-2 [@container(min-width:720px)]:col-span-1">{x.ten}</span>}
-          <span className="col-start-2 [@container(min-width:720px)]:col-start-auto"><BadgeViec tong={x.tong}>{x.loai}</BadgeViec></span>
-          <span className="min-w-0 col-span-2 col-start-2 [@container(min-width:720px)]:col-span-1 [@container(min-width:720px)]:col-start-auto">
+          {coTen && <span className={`font-semibold text-slate-100 col-span-2 ${L.ten}`}>{x.ten}</span>}
+          <span className={`col-start-2 ${L.loai}`}><BadgeViec tong={x.tong}>{x.loai}</BadgeViec></span>
+          <span className={`min-w-0 col-span-2 col-start-2 ${L.o}`}>
             {x.onMo
               ? <button type="button" aria-expanded={!!x.mo} onClick={x.onMo} className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-left font-semibold text-slate-100 appearance-none hover:underline sm:min-h-0">{x.tieuDe}<span className="text-slate-500"><MuiTenGap mo={!!x.mo} /></span></button>
               : <span className="font-semibold text-slate-100">{x.tieuDe}</span>}
@@ -218,10 +234,10 @@ export function BangLichSu({ dong, coTen, homNay, rong }: { dong: DongLs[]; coTe
               </dl>
             )}
           </span>
-          <span className="min-w-0 col-span-2 col-start-2 [@container(min-width:720px)]:col-span-1 [@container(min-width:720px)]:col-start-auto">
+          <span className={`min-w-0 col-span-2 col-start-2 ${L.o}`}>
             <span className="text-sm text-slate-200">{x.ai ?? '—'}</span>{x.luc && <span className="block text-xs tabular-nums text-slate-500">{x.luc}</span>}
           </span>
-          <span className="flex items-start justify-end col-start-3 row-start-1 [@container(min-width:720px)]:col-start-auto [@container(min-width:720px)]:row-start-auto">{x.cuoi}</span>
+          <span className={`flex items-start justify-end col-start-3 row-start-1 ${L.cuoi}`}>{x.cuoi}</span>
           {x.mo && x.chiTiet && <div className="col-span-full pt-1">{x.chiTiet}</div>}
         </div>
       ))}

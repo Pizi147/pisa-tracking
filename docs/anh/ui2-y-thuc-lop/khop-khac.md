@@ -10,7 +10,7 @@ Dùng chung với tab hồ sơ HV (UI-3, chủ SP 03/11: hai tab đồng bộ): 
 | Khung (mockup) | Thành phần web | Ảnh |
 |---|---|---|
 | K1 thanh công cụ: `Vi phạm \| Phối hợp SOS n` · `Cần làm n HV \| Lịch sử n` · phải `Điểm Mock Test ›` · `+ Ghi vi phạm` · `Khai / sửa cấp bậc` · `Chọn nhiều` | `ClassYThucCard` (`BoLocDoan v8`) | cap-k1 |
-| K1 tiêu đề cột một lần: Học viên · Vi phạm chờ · Cần làm · Bậc · Báo PH (TVV) · Việc | lưới `COT` (khung ≥ 1180 px) | cap-k1 |
+| K1 tiêu đề cột một lần: Học viên · Vi phạm chờ · Cần làm · Bậc · Báo PH (TVV) · Việc | lưới `COT` (khung ≥ 1220 px) | cap-k1 |
 | K1 nhóm: Bắt buộc xử lý (nền vàng, chữ vàng, câu luật + ⓘ) · Mới, chưa xem (câu + ⓘ) · Chờ QL duyệt · Đã xử lý · 7 ngày (nền thẻ) | `NhomHang` | cap-k1 |
 | K1 ô Học viên: tên · TVV · `▾ Chi tiết` / `▴ Thu gọn` | `HangEm` | cap-k1 |
 | K1 ô Vi phạm chờ: ngày · tên (≤ 3, "+n") | `DsVpHang` | cap-k1 |
@@ -21,7 +21,7 @@ Dùng chung với tab hồ sơ HV (UI-3, chủ SP 03/11: hai tab đồng bộ): 
 | K1 hàng mở: nền nhấn + vạch trái; chi tiết 7 : 5 — Vi phạm của lần này (thẻ nhóm · người ghi · tệp, "Không có Đã xem" + ⓘ, Đã xử lý n · Đã xem n · Lịch sử của em ›) · Lần xử lý (Lần này · hạn, Lần trước · Xem ›, Thang ›) · Báo PH (Lần X, Người giữ, Lần này) | `ChiTietEm` · `Khoi` · `Fld` | bấm thử (ảnh trong PR) |
 | K1 hàng vừa "Đã xem": nền xanh, "✓ Đã xem n vi phạm · giờ", Hoàn tác · Xem lại | `HangEm` `vua_xem` | bấm thử |
 | K1 hàng vừa Xác nhận xử lý: nền xanh, "Đã xử lý hh:mm · vừa lưu" | `HangEm` (`vuaLuu`) | bấm thử |
-| K2 375: thẻ em (tên + badge hạn trong badge · vi phạm · Bậc / Báo PH hai ô · nút 44 px rộng thẻ) · `+ Ghi vi phạm` rộng + ⋯ (Khai / sửa cấp bậc · Chọn nhiều) | `HangEm` (khung < 1180) · `Menu` | cap-k2 |
+| K2 375: thẻ em (tên + badge hạn trong badge · vi phạm · Bậc / Báo PH hai ô · nút 44 px rộng thẻ) · `+ Ghi vi phạm` rộng + ⋯ (Điểm Mock Test › · Khai / sửa cấp bậc · Chọn nhiều) · phân đoạn có số | `HangEm` (khung < 1220) · `Menu` | cap-k2 |
 | K4 QL: nhóm Chờ QL duyệt gồm đề xuất + xin thu hồi; dòng "GVCN …"; badge Đề xuất / Xin thu hồi; Duyệt (thu hồi) · Từ chối… · Xem tại chỗ | `HangEm` + `PanelDuyetXuLy` (= `PanelDuyet` của Hộp duyệt) | cap-k4 |
 | K6 Lịch sử: chip lọc Tất cả · Đã xem · Đã xử lý · Đã thu hồi (có số) · Lộ trình \| Cả lịch sử · Tìm em · bảng Ngày · Học viên · Loại · Nội dung (trường có nhãn) · Ai · lúc nào · nút; dòng vừa làm sáng + "vừa xong" | `ChipLoc` · `BangLichSu coTen` | cap-k6 |
 | K8 Phối hợp SOS: mọi lượt · Hiện cả lượt đã xong · đầu lượt một dòng (tên · SOS · MT · n/m việc xong · + Thêm việc) · hàng tên · hạn · Xác nhận ⋯ | `PhoiHopSosSection xanh cot1="hocVien"` | cap-k8 |
@@ -44,7 +44,7 @@ Dùng chung với tab hồ sơ HV (UI-3, chủ SP 03/11: hai tab đồng bộ): 
 | 11 | Hàng vừa Đã xem / vừa lưu | KHỚP | |
 | 12 | 375 thẻ em + ⋯ | KHỚP | thêm `▾ Chi tiết` cuối thẻ (K2a không vẽ lối mở, K2b vẽ thẻ đã mở) |
 | 13 | K4 Chờ QL duyệt: đề xuất + xin thu hồi, GVCN, Duyệt / Từ chối… / Xem | KHỚP | ô Bậc không có "Lý do" / "Sau thu hồi" (lý do đọc trong panel duyệt) |
-| 14 | K6 chip lọc, phạm vi, Tìm em, cột | KHỚP | dòng Đã xem chỉ tên vi phạm (sửa cả tab HV cho đồng bộ) |
+| 14 | K6 chip lọc, phạm vi, Tìm em, cột | KHỚP | dòng Đã xem chỉ tên vi phạm (sửa cả tab HV cho đồng bộ); chip lọc viền riêng (`ChipLoc`, cả tab HV); khung < 900 px bảng xếp dọc |
 | 15 | K8 đầu lượt + hàng việc | KHỚP | |
 | 16 | Bằng chứng trống trong vi phạm mở: một dòng "+ Tệp / liên kết" (U10.8) | KHÁC | `BangChung` dùng chung mọi panel (Case, PA, vi phạm, lần xử lý) — đổi ở đây là đổi toàn web → **[XM] PR riêng** (UI-3 cũng giữ như cũ) |
 
@@ -68,7 +68,8 @@ Dùng chung với tab hồ sơ HV (UI-3, chủ SP 03/11: hai tab đồng bộ): 
 | Rút đề xuất (người gửi) | panel Xem lần xử lý | như cũ — nút hàng "Xem đề xuất" mở panel đó | GIỮ |
 | Báo PH tại chỗ (TVV / QL) | bấm nút / ô | bấm badge Báo PH · TVV: nút "Ghi kết quả báo PH" cột Việc | GIỮ |
 | Nhật ký vi phạm của lớp · lọc nhóm | gập cuối thẻ, ô chọn nhóm | phân đoạn Lịch sử, lọc có số, phạm vi, ô Tìm em (khớp cả tên nhóm / vi phạm) | GIỮ · ĐỔI chỗ |
-| Bấm tên em trong Nhật ký → mở hàng em | Nhật ký | tên em ở Lịch sử là link hồ sơ HV · "Lịch sử của em ›" lọc Lịch sử theo em | ĐỔI |
+| Bấm tên em trong Nhật ký → mở hàng em | Nhật ký | tên em ở Lịch sử là link hồ sơ HV · "Lịch sử của em ›" lọc Lịch sử đúng em đó (nút "tên ×" bỏ lọc) | ĐỔI |
+| Bỏ ghi nhận ngay trong chi tiết em | chi tiết em (mọi vi phạm) | chi tiết em chỉ vi phạm chờ (U10.4); Bỏ xem ở Lịch sử (150 dòng mới nhất của lớp, "Cả lịch sử") · vi phạm cũ hơn: tab Ý thức hồ sơ HV | ĐỔI chỗ |
 | Phối hợp SOS (+ Thêm việc, Xác nhận, Bỏ, Sửa hạn, tệp, Hiện cả lượt đã xong) | dưới vi phạm, khung xanh, "Hiện thêm n HV" | phân đoạn riêng, mọi lượt hiện đủ, lượt xong thu gọn | GIỮ · ĐỔI chỗ (#29) |
 | Điểm Mock Test của lớp | khối dưới mọi tab | ẩn ở tab Ý thức; "Điểm Mock Test ›" mở tab Học viên + khối điểm | GIỮ · ĐỔI chỗ (#29) |
 | Việc / thông báo `?hv= · mo=xu-ly · khai · da-thuc-hien · cap-bac · sub=phoi-hop` | | như cũ (mở hàng em / panel / phân đoạn) | GIỮ |
@@ -76,7 +77,11 @@ Dùng chung với tab hồ sơ HV (UI-3, chủ SP 03/11: hai tab đồng bộ): 
 Không mất thao tác nào.
 
 ## Máy chủ (đọc Turso)
-`GET /classes/:id/y-thuc`: thêm tên TVV + tên GVCN vào câu đọc tên em (JOIN + câu con hằng), "đang xin thu hồi" một câu cho cả lớp (trước: chỉ em có hàng), `daChinh` từ câu Báo PH sẵn có, `xemBoi / xemLuc` + `vpIds` từ dữ liệu đã đọc, `coTheDuyet` (quyền, không đọc DB), `?pham-vi=chuoi` (lọc trong bộ nhớ). Số câu không đổi, dòng đọc không đổi đáng kể (câu thu hồi theo id lần xử lý của cả lớp).
+`GET /classes/:id/y-thuc`: thêm tên TVV + tên GVCN vào câu đọc tên em (JOIN + câu con hằng), "đang xin thu hồi" một câu cho cả lớp (trước: chỉ em có hàng), `daChinh` từ câu Báo PH sẵn có, `xemBoi / xemLuc` + `vpIds` từ dữ liệu đã đọc, `coTheDuyet` (quyền, không đọc DB), dòng thời gian mang cờ `trongChuoi` — đổi Lộ trình | Cả lịch sử lọc ở trình duyệt, KHÔNG đọc lại; hàng xin thu hồi kèm vi phạm của lần đó từ danh sách vừa đọc. Số câu không đổi, dòng đọc không đổi đáng kể (câu thu hồi theo id lần xử lý của cả lớp).
+Số "Đã xử lý n · Đã xem n" ở chi tiết em đếm từ dòng thời gian đã nạp (150 dòng mới nhất của lớp) — lớp rất nhiều vi phạm có thể ít hơn số ở tab HV.
 
 ## [XM] để PTA
 - #16 `BangChung` trống gọn một dòng (U10.8) — thành phần chung toàn web → PR riêng (vào Việc để sau).
+
+## Sau rà (audit 15/20 + web-design-guidelines + ponytail-review, agent riêng)
+- Sửa: em xin thu hồi sau khi đã xử lý (7 ngày) vào nhóm Chờ QL duyệt + đếm Cần làm · bảng Lịch sử có cột Học viên bật từ khung 900 px (không tràn ở 720–900) · lưới 6 cột bật từ 1220 px, cột Vi phạm chờ ≥ 130 px · "Điểm Mock Test ›" vào ⋯ ở 375 · ⋯ có tên đọc màn hình · Báo PH ở 375 bấm được (TVV / QL) · nút Báo PH của TVV đứng trước nút xem đề xuất · Hoàn tác / Xem lại có tên theo em · phân đoạn ghi vào địa chỉ (`sub`, `doan`) — Quay lại về đúng chỗ · đổi phạm vi không đọc lại (cờ `trongChuoi`) · "Lịch sử của em ›" lọc theo id · Đề xuất không làm hàng sáng "vừa lưu" · không trùng `id` hàng · câu nhóm "đã gửi QL — QL quyết" · số đếm phân đoạn hiện ở 375 · ⓘ cùng dòng câu luật · bỏ trường `phamVi`, gom lớp nút chữ.
