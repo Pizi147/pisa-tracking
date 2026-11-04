@@ -419,10 +419,12 @@ export async function runPrHvlTests(t: YThucTestKit) {
     }
   });
 
-  check('PR-HVL (5) · web Cần hỗ trợ: hàng theo kỹ năng (`hangCanHoTro`), mở Ngăn Case tại chỗ, công tắc "Chỉ kỹ năng tôi dạy"; không còn luật một-Case-chính/em', () => {
+  check('PR-HVL (5) · web Case theo kỹ năng (lớp thường, chủ SP 04/11 bỏ cách xem Cần hỗ trợ): mở em → `locCanHoTro` + DongCase + Ngăn Case tại chỗ; không còn luật một-Case-chính/em', () => {
     const b = web('modules/classes/BangCanHoTro.tsx');
-    /* PR-S4F #5: hàng + xếp em đi qua `locCanHoTro` (gọi `hangCanHoTro` rồi `sapEmCanHoTro`). */
-    assert(/locCanHoTro\(/.test(b) && /<NganCase /.test(b) && /Chỉ kỹ năng tôi dạy/.test(b), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ / công tắc');
+    const lt = web('modules/classes/BangDiemLopThuong.tsx');
+    /* PR-S4F #5: hàng theo kỹ năng đi qua `locCanHoTro` (gọi `hangCanHoTro`). */
+    assert(/locCanHoTro\(/.test(lt) && /<DongCase /.test(lt) && /<NganCase /.test(lt) && /\/can-ho-tro/.test(lt), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ');
+    assert(!/BangCanHoTro|can-ho-tro/.test(web('modules/classes/TabHocVienLop.tsx')), 'còn cách xem Cần hỗ trợ');
     assert(!/chonCaseChinh|viecTiepTheoCua|Chưa có PA học thuật|\/cases\?classId=/.test(b), 'còn luật/chữ cũ');
     assert(!/\u{1F512}/u.test(b), 'ổ khoá phải là SVG (KhoaQuyChe), không phải emoji');
     assert(/tenSos/.test(b) && /export function TenCase/.test(web('modules/cases/SkillBoard.tsx')), 'chip [MT1] dùng TenCase của SkillBoard');

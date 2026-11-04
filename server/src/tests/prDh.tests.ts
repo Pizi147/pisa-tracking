@@ -70,9 +70,8 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(/to=\{`\/hoc-vien\/\$\{h\.id\}`\} state=\{\{ ds \}\}/.test(doc('web/src/modules/students/DanhSachHvLop.tsx')), 'DanhSachHvLop: link tên em phải mang state.ds');
     /* U03: bảng FT hồ sơ lớp — tên em mở rộng tại chỗ; "Hồ sơ HV ›" trong tóm tắt kỹ năng mang danh sách. */
     assert(/to=\{duongHoSoHocVien\(r\.id\)\} state=\{\{ ds \}\}/.test(doc('web/src/modules/classes/BangHoSoLop.tsx')), 'BangHoSoLop: Hồ sơ HV › phải mang state.ds');
-    for (const f of ['classes/BangDiemLopThuong']) {
-      assert(/to=\{`\/hoc-vien\/\$\{s\.id\}`\}[^>]*state=\{\{ ds \}\}/.test(doc(`web/src/modules/${f}.tsx`)), `${f}: link tên em phải mang state.ds`);
-    }
+    /* Lớp thường (04/11): cùng mẫu — tên mở rộng tại chỗ, "Hồ sơ HV ›" trong vùng mở mang danh sách. */
+    assert(/to=\{duongHoSoHocVien\(s\.id\)\} state=\{\{ ds \}\}/.test(doc('web/src/modules/classes/BangDiemLopThuong.tsx')), 'BangDiemLopThuong: Hồ sơ HV › phải mang state.ds');
     const sp = doc('web/src/modules/students/StudentsPage.tsx');
     assert(/state=\{\{ ds: dsLop \}\}/.test(sp) && /ds: dsLop/.test(sp), 'link Hồ sơ lớp mang danh sách lớp');
     const t = doc('web/src/ui/ThanhTruocSau.tsx');
