@@ -1274,20 +1274,67 @@ export function huyQuyetDinhPa(p: Principal, interventionId: number) {
 
 /** Ai sửa được Case: người sửa Case (`SOS_EDIT` đúng môn), người tạo Case, GVCN lớp em, Quản lý / Quản trị trong phạm vi (C02 giữ cho PA). */
 function coTheSuaCase(p: Principal, c: any): boolean {
-  if (c.status === 'done') return false;
+  return c.status !== 'done' && nguoiSuaCase(p, c);
+}
+/** `coTheSuaCase` không xét trạng thái — N37: người xoá được Case (cả Case đã hoàn thành). */
+function nguoiSuaCase(p: Principal, c: any): boolean {
   const xem = can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id });
   return can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)) || (xem && c.reported_by === p.userId)
     || can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id });
 }
+/** Case báo tay / nhập bù — còn lại (từ Test / SOS, Kỳ vọng, việc QL giao) là Case hệ thống. */
 const CASE_XOA_DUOC = ['teacher_report', 'backfill'];
-/** Vì sao KHÔNG xoá được Case (null = được). Dùng chung `xoaCase` và cờ `viewer.coTheXoa`. */
-function chanXoaCase(c: any): string | null {
-  if (!CASE_XOA_DUOC.includes(c.origin_kind)) return 'Case từ kết quả Test — dùng "Không cần theo dõi".';
-  if (c.status === 'done') return 'Case đã hoàn thành — Mở lại trước khi xoá.';
-  if (db().prepare('SELECT 1 FROM case_followups WHERE case_id = ? AND intervention_id IS NOT NULL LIMIT 1').get(c.id)) {
-    return 'Case còn PA có kết quả — xoá các PA trước.';
+/** N37: PA theo quy chế (SOS, Bổ trợ máy sinh) — xoá cần QL duyệt. */
+const laPaQuyChe = (iv: any) => !!iv.preset || laBoTro(iv);
+export type CachXoa = 'ngay' | 'xin' | null;
+/**
+ * N37 (chủ SP 05/11) — người xem xoá MỘT Case thế nào: 'ngay' (vào Thùng rác cùng PA + kết quả PA, Hoàn tác / Khôi phục) · 'xin' (thẻ Chờ duyệt,
+ * QL duyệt mới xoá) · null (không quyền). QL / Quản trị trong phạm vi: ngay. Người sửa được Case (GV môn, người tạo, GVCN lớp em): ngay — trừ Case
+ * hệ thống (trạng thái SOS…) hoặc Case còn PA theo quy chế → xin. Không chặn Case đã có PA / đã hoàn thành. Một hàm cho máy chủ, cờ nút và Khôi phục.
+ */
+export function cachXoaCase(p: Principal, c: any, pas: readonly any[]): CachXoa {
+  if (can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id })) return 'ngay';
+  if (!nguoiSuaCase(p, c)) return null;
+  return !CASE_XOA_DUOC.includes(c.origin_kind) || pas.some(laPaQuyChe) ? 'xin' : 'ngay';
+}
+/** N37: như `cachXoaCase` cho MỘT PA — người xoá được Case hoặc ghi được Kết quả PA (`ghi`); PA theo quy chế → xin. */
+export function cachXoaPa(p: Principal, iv: any, c: any, ghi: boolean): CachXoa {
+  if (can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id })) return 'ngay';
+  if (!ghi && !nguoiSuaCase(p, c)) return null;
+  return laPaQuyChe(iv) ? 'xin' : 'ngay';
+}
+/** N37: `cachXoaPa` với `ghi` = quyền ghi Kết quả PA (vai trò hoặc người giữ việc) — xoá PA và Khôi phục PA dùng chung. */
+export const quyenXoaPa = (p: Principal, iv: any, c: any): CachXoa =>
+  cachXoaPa(p, iv, c, quyenPaTheoVaiTro(p, iv, c) || giuCuaCase(c, [iv]).get(iv.id) === p.userId);
+/** N37: người không phải QL xin xoá (Case hệ thống / PA quy chế) → MỘT thẻ Chờ duyệt; đã có thẻ chờ → 400. Lý do không bắt buộc. */
+function xinXoa(p: Principal, the: { loai: 'xoa_case' | 'xoa_pa'; doiTuongLoai: 'sos_case' | 'intervention'; doiTuongId: number }, c: any,
+  lyDo: unknown, duLieu: Record<string, unknown>) {
+  const ld = chuTuDo(lyDo, 'Lý do', 500);
+  return tx(() => {
+    const id = taoYeuCau(db(), { ...the, hocVienId: c.eff_student_id, lopId: c.class_id, nguoiXin: p.userId, lyDo: ld, duLieu });
+    if (id === null) throw badRequest('Đã gửi QL duyệt xoá — đang chờ.');
+    writeAudit({ actorUserId: p.userId, action: `${the.loai}.request`, entityType: the.doiTuongLoai === 'sos_case' ? 'sos_case' : 'case_intervention',
+      entityId: the.doiTuongId, entityLabel: String(duLieu.ten ?? ''), after: { yeuCauId: id, lyDo: ld } });
+    return { ok: true as const, choDuyet: true as const, yeuCauId: id };
+  });
+}
+/** N37: QL duyệt thẻ xin xoá (trong tx của hộp) — chốt thẻ "Đã duyệt" TRƯỚC khi xoá (xoá tự đóng mọi thẻ chờ của đối tượng), ghi id Thùng rác vào thẻ (Huỷ quyết định = Khôi phục). */
+export function apDungXinXoa(p: Principal, yc: { id: number; loai: string; doi_tuong_loai: string; doi_tuong_id: number; du_lieu: string | null }): void {
+  const conn = db();
+  chotYeuCau(conn, { loai: yc.loai as 'xoa_case' | 'xoa_pa', doiTuongLoai: yc.doi_tuong_loai, doiTuongId: yc.doi_tuong_id }, 'duyet', { nguoiDuyet: p.userId });
+  let thungRacId: number;
+  if (yc.loai === 'xoa_case') {
+    const c = loadCase(yc.doi_tuong_id);
+    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được Case.');
+    thungRacId = xoaCaseTrongTx(p, c).thungRacId;
+  } else {
+    const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(yc.doi_tuong_id) as any;
+    if (!iv) throw notFound('Không tìm thấy phương án');
+    const c = loadCase(iv.case_id);
+    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được PA.');
+    thungRacId = xoaPaTrongTx(p, iv, c).thungRacId;
   }
-  return null;
+  conn.prepare('UPDATE yeu_cau_duyet SET du_lieu = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(yc.du_lieu ?? '{}'), thungRacId }), yc.id);
 }
 
 /**
@@ -1525,39 +1572,48 @@ const CAU_XOA_CASE: readonly string[] = [
 ];
 
 /**
- * XOÁ CASE TẠO NHẦM (PR-LUI-a2, mockup mục 19; chủ sản phẩm 06/10 Q6) — chỉ Quản lý / Quản trị, chỉ Case báo tay, chưa PA nào có kết quả. Xoá hẳn
- * dòng ở mọi bảng trỏ Case; PA chưa làm đi theo; thẻ Chờ duyệt đang chờ tự đóng; nhật ký `case.delete` chụp Case + PA. Tệp xoá SAU khi chốt.
+ * XOÁ CASE (PR-LUI-a2; N37 chủ SP 05/11: kể cả Case đã có PA / kết quả, đã hoàn thành) — quyền + cách xoá ở `cachXoaCase` ('xin' → thẻ Chờ duyệt).
+ * Xoá hẳn dòng ở mọi bảng trỏ Case; PA + kết quả PA vào Thùng rác CÙNG mục (khôi phục cùng lô); thẻ Chờ duyệt đang chờ tự đóng; nhật ký `case.delete`.
  */
-export function xoaCase(p: Principal, caseId: number): { ok: true; thungRacId: number } {
-  const conn = db();
+export function xoaCase(p: Principal, caseId: number, v: { lyDo?: unknown } = {}): { ok: true; thungRacId: number } | ReturnType<typeof xinXoa> {
   const c = loadCase(caseId);
-  require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được Case.');
-  const chan = chanXoaCase(c);
-  if (chan) throw badRequest(chan);
+  const pa = db().prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
+  const cach = cachXoaCase(p, c, pa);
+  if (!cach) throw forbidden('Bạn không có quyền xoá Case này.');
+  if (cach === 'xin') {
+    return xinXoa(p, { loai: 'xoa_case', doiTuongLoai: 'sos_case', doiTuongId: caseId }, c, v.lyDo, {
+      ten: caseTitleOf(c), soPa: pa.length,
+      soKetQua: (db().prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ? AND intervention_id IS NOT NULL').get(caseId) as any).n,
+    });
+  }
+  return tx(() => xoaCaseTrongTx(p, c));
+}
+/** Phần xoá của `xoaCase` (trong tx của nơi gọi — `xoaCase` hoặc hộp duyệt). */
+function xoaCaseTrongTx(p: Principal, c: any): { ok: true; thungRacId: number } {
+  const conn = db();
+  const caseId = c.id as number;
   /* Q-RL2a: chụp mọi dòng sắp mất / đổi vào thùng rác cùng giao dịch — Hoàn tác / Khôi phục 30 ngày; tệp trong kho giữ tới khi dọn thùng rác. */
   const chup = new BoChup(conn);
-  return tx(() => {
-    const pa = conn.prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
-    chup.ghiGoc('students', c.student_id ?? c.eff_student_id);   // khôi phục so lại: id em có thể đã thuộc em khác
-    const DK_THE = `trang_thai = 'cho' AND ((doi_tuong_loai = 'sos_case' AND doi_tuong_id = ?1)
-      OR (doi_tuong_loai = 'intervention' AND doi_tuong_id IN (${CASE_I})))`;
-    const the = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE ${DK_THE}`).all(caseId) as any[]).map((r) => `duyet_ket_qua:${r.id}`);
-    chup.chupSua('yeu_cau_duyet', DK_THE, caseId);
-    /* Chuông "Tự đóng: Case đã xoá" gửi người xin — khôi phục gỡ / trả lại (thẻ về Chờ duyệt). */
-    chup.theoDoi('notifications', the.length ? `dedup_key IN (${the.map(() => '?').join(',')})` : '0', the, () => {
-      for (const iv of pa) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', { lyDo: 'Case đã xoá' });
-      chotYeuCau(conn, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { lyDo: 'Case đã xoá' });
-    });
-    for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND ((owner_type = 'sos_case' AND owner_id = ?1)
-        OR (owner_type = 'case_intervention' AND owner_id IN (${CASE_I})))`).all(caseId) as any[]) chup.tep.push(r.url);
-    for (const sql of CAU_XOA_CASE) chup.chay(sql, caseId);
-    const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
-    const thungRacId = ghiThungRac(conn, { loai: 'case', doiTuongId: caseId, nhan: [caseTitleOf(c), hv].filter(Boolean).join(' · '),
-      hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
-    writeAudit({ actorUserId: p.userId, action: 'case.delete', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
-      before: { case: c, pa, soTep: chup.tep.length }, after: { thungRacId } });
-    return { ok: true as const, thungRacId };
+  const pa = conn.prepare('SELECT * FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
+  chup.ghiGoc('students', c.student_id ?? c.eff_student_id);   // khôi phục so lại: id em có thể đã thuộc em khác
+  const DK_THE = `trang_thai = 'cho' AND ((doi_tuong_loai = 'sos_case' AND doi_tuong_id = ?1)
+    OR (doi_tuong_loai = 'intervention' AND doi_tuong_id IN (${CASE_I})))`;
+  const the = (conn.prepare(`SELECT id FROM yeu_cau_duyet WHERE ${DK_THE}`).all(caseId) as any[]).map((r) => `duyet_ket_qua:${r.id}`);
+  chup.chupSua('yeu_cau_duyet', DK_THE, caseId);
+  /* Chuông "Tự đóng: Case đã xoá" gửi người xin — khôi phục gỡ / trả lại (thẻ về Chờ duyệt). */
+  chup.theoDoi('notifications', the.length ? `dedup_key IN (${the.map(() => '?').join(',')})` : '0', the, () => {
+    for (const iv of pa) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: iv.id }, 'tu_dong', { lyDo: 'Case đã xoá' });
+    chotYeuCau(conn, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { lyDo: 'Case đã xoá' });
   });
+  for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND ((owner_type = 'sos_case' AND owner_id = ?1)
+      OR (owner_type = 'case_intervention' AND owner_id IN (${CASE_I})))`).all(caseId) as any[]) chup.tep.push(r.url);
+  for (const sql of CAU_XOA_CASE) chup.chay(sql, caseId);
+  const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
+  const thungRacId = ghiThungRac(conn, { loai: 'case', doiTuongId: caseId, nhan: [caseTitleOf(c), hv].filter(Boolean).join(' · '),
+    hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
+  writeAudit({ actorUserId: p.userId, action: 'case.delete', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf(c),
+    before: { case: c, pa, soTep: chup.tep.length }, after: { thungRacId } });
+  return { ok: true as const, thungRacId };
 }
 
 /**
@@ -1668,30 +1724,36 @@ export function hoanTacKetThucPa(p: Principal, interventionId: number) {
 }
 
 /**
- * XOÁ PA (PR-LUI-a2, chủ sản phẩm 06/10 Q6) — chỉ Quản lý / Quản trị, kể cả PA đã ghi kết quả. Xoá PA + mọi kết quả tuần + lịch sử điều chỉnh + tệp;
- * thẻ Chờ duyệt đang chờ của PA tự đóng; nhật ký chụp PA + mọi kết quả. Hết PA → Case về "Mới mở". PA quy chế / Bổ trợ do hệ thống sinh: không xoá.
+ * XOÁ PA (PR-LUI-a2; N37 chủ SP 05/11) — quyền + cách xoá ở `cachXoaPa` (PA theo quy chế, người không phải QL → thẻ Chờ duyệt), kể cả PA đã ghi kết quả,
+ * Case đã hoàn thành. Xoá PA + mọi kết quả tuần + lịch sử điều chỉnh + tệp vào Thùng rác; thẻ Chờ duyệt đang chờ của PA tự đóng. Hết PA → Case về "Mới mở".
  */
-export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId: number; thungRacId: number } {
+export function xoaPa(p: Principal, interventionId: number, v: { lyDo?: unknown } = {}): { ok: true; caseId: number; thungRacId: number } | ReturnType<typeof xinXoa> {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án');
   const c = loadCase(iv.case_id);
-  require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được PA.');
-  // ponytail: PA quy chế / Bổ trợ (máy sinh, gắn nhóm + Mini Test) chặn xoá — thêm đường riêng nếu chủ sản phẩm cần.
-  if (iv.preset === 1 || (SYSTEM_KINDS as readonly string[]).includes(iv.kind)) throw badRequest('PA do hệ thống tạo — không xoá được.');
-  if (c.status === 'done') throw badRequest('Case đã hoàn thành — Mở lại trước khi xoá PA.');
-  /* Q-RL2a: chụp vào thùng rác cùng giao dịch (kể cả PA đã có kết quả) — tệp trong kho giữ tới khi dọn thùng rác. */
+  const cach = quyenXoaPa(p, iv, c);
+  if (!cach) throw forbidden('Bạn không có quyền xoá PA này.');
+  if (cach === 'xin') {
+    return xinXoa(p, { loai: 'xoa_pa', doiTuongLoai: 'intervention', doiTuongId: interventionId }, c, v.lyDo, {
+      ten: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind), caseId: c.id, tenCase: caseTitleOf(c),
+      soKetQua: (conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE intervention_id = ?').get(interventionId) as any).n,
+    });
+  }
+  return tx(() => xoaPaTrongTx(p, iv, c));
+}
+/** Phần xoá của `xoaPa` (trong tx của nơi gọi — `xoaPa` hoặc hộp duyệt). Tệp trong kho giữ tới khi dọn thùng rác. */
+function xoaPaTrongTx(p: Principal, iv: any, c: any): { ok: true; caseId: number; thungRacId: number } {
+  const conn = db();
   const chup = new BoChup(conn);
-  return tx(() => {
-    const ketQua = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id').all(interventionId) as any[];
-    goPaTrongTx(conn, iv, { lyDo: 'PA đã xoá' }, chup.tep, chup);
-    const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
-    const thungRacId = ghiThungRac(conn, { loai: 'pa', doiTuongId: interventionId, nhan: [iv.description ?? iv.kind, caseTitleOf(c), hv].filter(Boolean).join(' · '),
-      hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
-    writeAudit({ actorUserId: p.userId, action: 'intervention.delete', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: chup.tep.length }, after: { thungRacId } });
-    return { ok: true as const, caseId: iv.case_id as number, thungRacId };
-  });
+  const ketQua = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id').all(iv.id) as any[];
+  goPaTrongTx(conn, iv, { lyDo: 'PA đã xoá' }, chup.tep, chup);
+  const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
+  const thungRacId = ghiThungRac(conn, { loai: 'pa', doiTuongId: iv.id, nhan: [iv.description ?? iv.kind, caseTitleOf(c), hv].filter(Boolean).join(' · '),
+    hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
+  writeAudit({ actorUserId: p.userId, action: 'intervention.delete', entityType: 'case_intervention', entityId: iv.id,
+    entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: chup.tep.length }, after: { thungRacId } });
+  return { ok: true as const, caseId: iv.case_id as number, thungRacId };
 }
 
 /** Gỡ MỘT PA trong giao dịch (Xoá PA · Hoàn tác thêm PA): thẻ Chờ duyệt đang chờ của PA tự đóng, xoá con → cha, Case đồng bộ (hết PA → "Mới mở"). */
@@ -1708,7 +1770,7 @@ function goPaTrongTx(conn: any, iv: any, the: { nguoiDuyet?: number; lyDo: strin
     .all(iv.id) as any[]) khoaTep.push(r.url);
   for (const sql of CAU_XOA_PA) if (chup) chup.chay(sql, iv.id); else conn.prepare(sql).run(iv.id);
   if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(iv.case_id)) dongBoTrangThaiCase(iv.case_id);
-  else conn.prepare(`UPDATE sos_cases SET status = 'open', updated_at = ? WHERE id = ?`).run(nowIso(), iv.case_id);
+  else conn.prepare(`UPDATE sos_cases SET status = 'open', updated_at = ? WHERE id = ? AND status != 'done'`).run(nowIso(), iv.case_id);   // N37: xoá PA của Case đã hoàn thành không mở lại Case
 }
 
 /**
@@ -2147,6 +2209,7 @@ export function caseDetail(p: Principal, caseId: number) {
   const revs = lichSuDieuChinhCuaCase(caseId);
   /* PR-DUYET (Task 5, 9): thẻ hộp Chờ duyệt của mọi PA trong Case — một câu cho cả Case. */
   const theCuaPa = theCuaDoiTuong('intervention', ivCuaCase.map((r) => r.id as number));
+  const theCase = theCuaDoiTuong('sos_case', [caseId]);
   const mtKeCua = mtKeTheoPa(caseId);
   /* PR-PA (§8): PA web tạo — 'ky_vong' = PA Tutor đầu tiên của Case "Kỳ vọng đầu ra…" (Chuyển cấp; `preset 0`, người ghi là Quản lý bấm Lưu);
      'he_thong' = PA quy chế / Bổ trợ / không người ghi; null = PA người tạo tay. */
@@ -2182,13 +2245,16 @@ export function caseDetail(p: Principal, caseId: number) {
         WHERE iv.case_id = ? ORDER BY
           COALESCE(iv.completed_date, iv.started_date, iv.planned_date, iv.created_at), iv.id`,
     )
-    .all(caseId) as any[]).map((iv) => ({
+    .all(caseId) as any[]).map((iv, _i, _a, ghi = giu.get(iv.id) === p.userId || quyenPaTheoVaiTro(p, iv, c)) => ({
       id: iv.id, kind: iv.kind, description: iv.description, status: iv.status,
       /** PR-PA (§8): Số buổi của PA (null = không đếm) và Đã dạy (tổng Số buổi tuần này). */
       soBuoi: (iv.so_buoi ?? null) as number | null,
       daDay: daDayTheoPa.get(iv.id) ?? 0,
       /** PR-PA (§8): người xem ghi được Kết quả của PA này — quyền theo vai trò hoặc là người giữ việc. */
-      ghiDuoc: giu.get(iv.id) === p.userId || quyenPaTheoVaiTro(p, iv, c),
+      ghiDuoc: ghi,
+      /** N37: ⋯ "Xoá PA" — 'ngay' (Thùng rác + Hoàn tác) · 'xin' (PA theo quy chế: gửi QL duyệt) · null; `choXoa` = thẻ xin xoá đang chờ. */
+      xoa: cachXoaPa(p, iv, c, ghi),
+      choXoa: theCuaPa.some((y) => y.doiTuongId === iv.id && y.loai === 'xoa_pa' && y.trangThai === 'cho'),
       performer: iv.performer_account ?? iv.performer_name ?? null,
       /** Tài khoản người làm hiện tại — panel Điều chỉnh lấy làm giá trị đầu (PR-UX3 Q15); null khi người làm ngoài hệ thống. */
       performerUserId: iv.performer_user_id ?? null,
@@ -2426,7 +2492,7 @@ export function caseDetail(p: Principal, caseId: number) {
     /** Trạng thái Case từ SOS (rulebook v3): chờ xác định nguyên nhân, hạn `hanXacNhan` (5 ngày; Gấp / SOS 3: 3), lý do đóng `Không cần theo dõi`. */
     sos: sosSt,
     /** PR-SOS (S4-5): thẻ ĐANG CHỜ ở mức Case ("Không cần theo dõi") — Ngăn Case nhúng `TheYeuCau gon` cho Quản lý. */
-    yeuCauCase: theCuaDoiTuong('sos_case', [caseId]).find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
+    yeuCauCase: theCase.find((y) => y.trangThai === 'cho' && y.loai === 'khong_theo_doi') ?? null,
     /** PR-LT2a (N1, N2): khối PA Bổ trợ Giữa khoá — nhóm, số buổi, chung, môn (PR-CT2: bỏ kế hoạch). `null` = Case không có PA bổ trợ. */
     boTro: boTroCuaCase([caseId]).get(caseId) ?? null,
     /** PR-SOS (T21, §7.3, K3-07): tên Case SOS ba phần · MỘT nhãn trạng thái · MỘT việc tiếp — Ngăn Case chọn nút chính theo đây. */
@@ -2470,17 +2536,14 @@ export function caseDetail(p: Principal, caseId: number) {
       canApprove: quanLyCase,
       /** OV-13a (C): menu ⋯ PA "Kết thúc PA" cho PA theo quy chế đang chạy — GVCN lớp đang học · Quản lý. */
       coTheKetThucPa: quyenKetThuc,
-      /* PR-LUI-a2: Mở lại (Case đã hoàn thành) · Sửa · Xoá Case (QL/QT, Case báo tay chưa có PA ghi kết quả) · Kỹ năng khoá khi đã có PA. */
+      /* PR-LUI-a2: Mở lại (Case đã hoàn thành) · Sửa · Xoá Case (N37: `cachXoaCase`) · Kỹ năng khoá khi đã có PA. */
       coTheMoLai: c.status === 'done' && coTheMoLaiCase(p, c) && !chanMoLai(c),
       coTheSua: suaDuoc && !(sosSt.fromSos && !sosSt.hasCause && !sosSt.laMt),   // SV-NX-CASE: Case MT ghi / sửa mô tả lúc nào cũng được
       /** Ô "Tên Case" của panel Sửa Case: tên riêng, hoặc phần giữa mặc định của Case SOS / Giữa khoá. */
       tenSua: suaDuoc ? (c.title ?? tenGiuaCua(c)) as string : null,
-      ...(() => {
-        /* Có quyền xoá mà còn PA có kết quả → `chanXoa` là câu hướng dẫn ở panel Sửa Case (nút Xoá Case khoá). */
-        const chanXoa = c.status !== 'done' && CASE_XOA_DUOC.includes(c.origin_kind)
-          && can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }) ? chanXoaCase(c) : 'khong';
-        return { coTheXoa: chanXoa === null, chanXoa: chanXoa === 'khong' ? null : chanXoa };
-      })(),
+      /** N37: ⋯ "Xoá Case" — 'ngay' · 'xin' (Case hệ thống / còn PA quy chế: gửi QL duyệt) · null; `choXoa` = thẻ xin xoá đang chờ. */
+      xoa: cachXoaCase(p, c, interventions),
+      choXoa: theCase.some((y) => y.trangThai === 'cho' && y.loai === 'xoa_case'),
       khoaKyNang: c.origin_kind === 'mock' || interventions.length > 0,
     },
   };

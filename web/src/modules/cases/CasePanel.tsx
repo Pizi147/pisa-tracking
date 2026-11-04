@@ -114,7 +114,7 @@ export type CaseDetail = {
   choXacNhanS?: { nhanXet: string | null; nguoiCham: string | null; luot: string; han: string | null; coTheXacNhan: boolean } | null;
   viewer: { canEdit: boolean; canClose: boolean; canApprove: boolean; /** OV-12c: Xác nhận Case Progress (GVCN lớp đang học làm được). */ coTheXacNhanCase?: boolean;
     /** PR-LUI-a2: Mở lại (Case đã hoàn thành, QL/QT) · Sửa Case · Xoá Case / câu chặn · Kỹ năng khoá · tên để sửa. */
-    coTheMoLai?: boolean; coTheSua?: boolean; coTheXoa?: boolean; chanXoa?: string | null; khoaKyNang?: boolean; tenSua?: string | null;
+    coTheMoLai?: boolean; coTheSua?: boolean; xoa?: 'ngay' | 'xin' | null; choXoa?: boolean; khoaKyNang?: boolean; tenSua?: string | null;
     /** OV-13a (C): ⋯ "Kết thúc PA" cho PA theo quy chế đang chạy — GVCN lớp đang học · Quản lý. */
     coTheKetThucPa?: boolean };
 };
@@ -453,7 +453,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
   const khoang = batDau ? chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay)?.replace(/^từ /, '') : ketThuc ? t('đến {tuanLich}', { tuanLich: tuanLich(ketThuc, homNay) }) : null;
   /* Người: "Dạy X" (Tutor, Bổ trợ) · "Thực hiện X" (loại khác) · Tự học không có. Không có ô Người theo dõi (§8). */
   const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? t(' ({recordedBy} nhập hộ)', { recordedBy: iv.recordedBy }) : ''}` : null;
-  const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
+  const nut = nutDongPa(iv, { caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
   const dem = iv.soBuoi != null ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
   const quaHan = hanGhi?.tone === 'overdue';
   /* Chân dòng PA: mỗi phần một cờ, tính một lần; không phần nào thì không vẽ chân. */
@@ -583,7 +583,7 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua 
   const [chonNguoi, setChonNguoi] = useState(false);
   const [loiNguoi, setLoiNguoi] = useState<string | null>(null);
   /* 6c-2 (bấm thử): PA quy chế đang chạy luôn vẽ dòng gọn — thiếu `coTheKetThucPa` / `ketThuc` ở đây thì "Kết thúc PA" không với tới được. */
-  const nut = nutDongPa(iv, { canApprove: data.viewer.canApprove, caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
+  const nut = nutDongPa(iv, { caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
   const fGan = (data.followups ?? []).find((f: any) => f.interventionId === iv.id && f.outcome) ?? null;
   const hanGhi = iv.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
   const toiKy = toiKyGhi(iv.actionDue, homNay);

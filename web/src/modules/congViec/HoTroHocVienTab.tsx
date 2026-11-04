@@ -30,7 +30,7 @@ import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import {
-  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
+  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, duongHoSoHocVien, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type NhomViec as MaNhomViec, demViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, demNguoiViec, khopNguoiViec, trongKhoiHomNay, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
@@ -632,7 +632,9 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
                 {[iv.performer, iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).map((x: string) => <TheMuc key={x}>{x}</TheMuc>)}</span>
               {iv.description && <div className="mt-1.5"><Trich>{dichDu(iv.description)}</Trich></div>}
             </> : null],
-            [t('Tới đâu'), data?.trangThaiV4?.chu ? dich(data.trangThaiV4.chu) : null],
+            /* N37: Case · PA · Kết quả PA một tuyến — "Mở Case ›" sang hồ sơ em, Case mở sẵn ở đúng PA (id sẵn có). */
+            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.studentId !== null && it.caseId !== null && <> · <Link className="font-semibold no-underline hover:underline"
+              to={duongHoSoHocVien(it.studentId, { caseId: it.caseId, paId: it.paId ?? undefined })}>{t('Mở Case ›')}</Link></>}</> : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />
           {!it.lamThay && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Quản lý làm được việc này.', { ai })}</p>}

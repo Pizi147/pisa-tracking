@@ -9953,6 +9953,9 @@ await runPrMulterTests({ checkAsync, assert, conn, P } as any);
 // ==================================================================== N35 (chủ SP 03/11: trần chữ GV nhập — mô tả Case, PA, kết quả PA, nhận xét MT)
 const { runPrN35Tests } = bocTep('prN35', await import('./prN35.tests.ts'));
 await runPrN35Tests({ check, assert, conn, P, TODAY, classId } as any);
+// ==================================================================== XOA-CASE-PA (N37, chủ SP 05/11: xoá Case / PA thoải mái hơn; PA quy chế / Case SOS → QL duyệt)
+const { runPrXoaCasePaTests } = bocTep('prXoaCasePa', await import('./prXoaCasePa.tests.ts'));
+await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

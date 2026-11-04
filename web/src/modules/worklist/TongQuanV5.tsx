@@ -178,7 +178,9 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
       </ul>
       <Link to="/cong-viec/cho-duyet" className="block border-t px-4 py-2.5 text-sm font-semibold text-[color:var(--accent)] no-underline" style={{ borderColor: 'var(--line)' }}>{t('Hộp duyệt ›')}</Link>
       {mo && (
-        <KhungPanel loai={t('DUYỆT')} tieuDe={mo.tieuDe} onDong={() => setMo(null)}>
+        /* N37: thẻ về PA / Case có "Mở ›" sang hồ sơ em (Case mở sẵn) — như hộp Chờ duyệt. */
+        <KhungPanel loai={t('DUYỆT')} tieuDe={mo.tieuDe} onDong={() => setMo(null)}
+          chan={mo.mo ? { phu: <Link to={mo.mo} className="btn min-h-[44px] sm:min-h-[36px]">{t('Mở ›')}</Link> } : undefined}>
           <TheYeuCau yc={mo} gon onXong={() => { setMo(null); onXong(); }} />
         </KhungPanel>
       )}

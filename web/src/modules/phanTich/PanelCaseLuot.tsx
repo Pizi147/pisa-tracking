@@ -17,7 +17,7 @@ export const LINK_CHU = 'rounded-sm text-[color:var(--text)] no-underline hover:
 /**
  * PANEL CASE THEO KỸ NĂNG CỦA MỘT LƯỢT MT (U08-4, mockup V11 `a3p`) — bấm chip SOS ở Kết quả Test › Mock Test. CHỈ ĐỌC (G8): mỗi kỹ năng dưới kỳ vọng
  * một khối mở rộng được, khối đầu mở sẵn — Case (trạng thái · nguyên nhân) · Phụ trách + hạn · PA · Kết quả PA; kỹ năng chưa có Case → "Chưa có Case".
- * Thay cột "Xử lý" (U08-3). Turso: MỘT `GET /hoc-vien-lop/em/:id` khi bấm (đường sẵn có của panel một em), không nạp sẵn.
+ * Thay cột "Xử lý" (U08-3). Turso: MỘT `GET /hoc-vien-lop/em/:id` khi bấm (đường sẵn có của panel một em), không nạp sẵn. N37: "Mở Case ›" (id sẵn có, không đọc thêm).
  */
 export function PanelCaseLuot({ r, onDong }: { r: DongMock; onDong: () => void }) {
   const { homNay } = useNgayNghiepVu();
@@ -63,6 +63,8 @@ export function PanelCaseLuot({ r, onDong }: { r: DongMock; onDong: () => void }
                               {dong(t('Phụ trách'), nguoi ? <>{nguoi}{c.viecTiep?.han ? ` · ${t('hạn {ngay}', { ngay: ngay(c.viecTiep.han, homNay) })}` : ''}</> : <span className="text-faint">—</span>)}
                               {dong('PA', paDang.length ? paDang.map((p) => p.ten).join(' · ') : <span className="text-faint">—</span>)}
                               {dong(t('Kết quả PA'), c.ketQua ? <>{dich(c.ketQua)}{c.ketQuaNgay ? <span className="text-faint"> · {tuanLich(c.ketQuaNgay, homNay)}</span> : null}</> : <span className="text-faint">–</span>)}
+                              {/* N37: Case · PA · Kết quả PA là một tuyến — sang hồ sơ em, Case mở sẵn (xem hết, làm việc). */}
+                              <Link className={`${LINK_CHU} justify-self-start font-semibold`} to={duongHoSoHocVien(r.studentId, { caseId: c.id })}>{t('Mở Case ›')}</Link>
                             </div>
                           );
                         })}

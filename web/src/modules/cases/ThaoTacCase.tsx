@@ -344,17 +344,55 @@ export type CaseDeSua = {
   sos?: { laMt?: boolean } | null;
   /** SV-NX-CASE: mốc phiên bản (409 khi Case vừa đổi). */
   capNhatLuc?: string | null;
-  viewer: { khoaKyNang?: boolean; coTheXoa?: boolean; chanXoa?: string | null; tenSua?: string | null };
+  viewer: { khoaKyNang?: boolean; xoa?: 'ngay' | 'xin' | null; choXoa?: boolean; tenSua?: string | null };
 };
 
 /**
- * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả (Case MT không có — OV-13a Q1). Chân trái `Xoá Case` (Quản lý / Quản trị, Case báo tay chưa có PA
- * ghi kết quả) → hỏi một dòng. Còn PA có kết quả: nút Xoá Case khoá + câu hướng dẫn. Luật nội dung kiểm ở máy chủ (`kiemNoiDungCase`).
+ * HỘP XOÁ CASE (N37, chủ SP 05/11) — ⋯ đầu panel Case và chân Sửa Case dùng chung. `xoa` = cờ máy chủ: 'ngay' → hỏi một dòng nêu đúng đối tượng
+ * ("Xoá Case và 2 PA"), vào Thùng rác + toast Hoàn tác; 'xin' (Case hệ thống / còn PA theo quy chế) → gửi QL duyệt, lý do tuỳ chọn.
  */
-export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, onClose, onSaved, onDeleted }: ChungPanel & {
+export function HopXoaCase({ open, onClose, caseId, xoa, tenCase, soPa, soKetQua, onDeleted }: {
+  open: boolean; onClose: () => void; caseId: number; xoa: 'ngay' | 'xin'; tenCase: string; soPa: number; soKetQua: number; onDeleted: () => void;
+}) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [lyDo, setLyDo] = useState('');
+  const xin = xoa === 'xin';
+  const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
+  const gui = async () => {
+    setBusy(true);
+    try {
+      const r = await api.del<{ thungRacId?: number }>(`/cases/${caseId}`, xin ? { lyDo: lyDo.trim() || null } : undefined);
+      lamMoi();
+      if (xin) { toast.push('ok', t('Đã gửi QL duyệt xoá Case')); setLyDo(''); onClose(); return; }
+      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá Case · {ten}', { ten: tenCase }), lamMoi);
+      onDeleted();
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }   // lỗi: hộp + chữ đang gõ giữ nguyên
+  };
+  const kem = [soPa > 0 ? t('{n} PA', { n: soPa }) : null, soKetQua > 0 ? t('{n} kết quả PA', { n: soKetQua }) : null].filter(Boolean).join(' · ');
+  return (
+    <ConfirmDialog open={open} onClose={onClose} onConfirm={() => void gui()} title={xin ? t('Gửi QL duyệt xoá Case?') : t('Xoá Case này?')} danger={!xin} busy={busy} z="z-[60]"
+      confirmLabel={xin ? t('Gửi QL duyệt') : soPa > 0 ? t('Xoá Case và {n} PA', { n: soPa }) : t('Xoá Case')} busyLabel={xin ? t('Đang gửi…') : t('Đang xoá…')} daSua={xin && !!lyDo.trim()}
+      body={<div className="space-y-2">
+        <p className="m-0">{tenCase}{kem ? ` · ${t('xoá cả {kem}', { kem })}` : ''}</p>
+        {xin && <>
+          <p className="m-0 text-[13px] text-slate-400">{t('Case hệ thống hoặc có PA theo quy chế — QL duyệt mới xoá.')}</p>
+          <Truong nhan={t('Lý do')} tuyChon>
+            <textarea className="field w-full" rows={2} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
+          </Truong>
+        </>}
+      </div>} />
+  );
+}
+
+/**
+ * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả (Case MT không có — OV-13a Q1). Chân trái `Xoá Case` (N37: cờ
+ * máy chủ `viewer.xoa`, kể cả Case đã có PA / kết quả) → `HopXoaCase`. Luật nội dung kiểm ở máy chủ (`kiemNoiDungCase`).
+ */
+export function SuaCasePanel({ c, tenCase, soPa, soKetQua, hocVien, lop, quayLai, onClose, onSaved, onDeleted }: ChungPanel & {
   c: CaseDeSua; tenCase: string;
-  /** Số PA chưa làm sẽ huỷ theo khi Xoá Case (dòng hỏi). */
-  soPaChuaLam: number;
+  /** Số PA / kết quả PA đi theo khi Xoá Case (dòng hỏi). */
+  soPa: number; soKetQua: number;
   onDeleted: () => void;
 }) {
   const toast = useToast();
@@ -409,16 +447,6 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
       toast.push('error', e?.message ?? t('Không lưu được'));
     } finally { setBusy(false); }
   };
-  const xoa = async () => {
-    setBusy(true);
-    try {
-      const r = await api.del<{ thungRacId?: number }>(`/cases/${c.id}`);
-      const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
-      lamMoi();
-      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá Case · {ten}', { ten: tenCase }), lamMoi);
-      onDeleted();
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); setHoiXoa(false); } finally { setBusy(false); }
-  };
 
   return (
     <>
@@ -426,14 +454,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
         ngCanh={<><span aria-hidden className="text-bad">*</span> {t('= bắt buộc')}</>}
         chan={{
           daSua,
-          xoa: c.viewer.coTheXoa ? { nhan: t('Xoá Case'), onClick: () => setHoiXoa(true) } : undefined,
-          /* Còn PA có kết quả: Xoá Case khoá + câu hướng dẫn (mockup mục 20). */
-          phu: c.viewer.chanXoa ? (
-            <span className="flex flex-wrap items-center justify-end gap-2">
-              <span className="text-xs text-bad">{c.viewer.chanXoa}</span>
-              <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled>{t('Xoá Case')}</button>
-            </span>
-          ) : undefined,
+          xoa: c.viewer.xoa && !c.viewer.choXoa ? { nhan: t('Xoá Case'), onClick: () => setHoiXoa(true) } : undefined,
           conThieu: lf.conThieu(loi),
           chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
         }}>
@@ -496,9 +517,7 @@ export function SuaCasePanel({ c, tenCase, soPaChuaLam, hocVien, lop, quayLai, o
         </Khoi>
       </KhungPanel>
       {/* 6c-2 (lỗi 9): hộp nhỏ trong panel, không ngăn 480 đè panel. */}
-      <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} title={t('Xoá Case này?')} danger busy={busy} z="z-[60]"
-        confirmLabel={t('Xoá Case')} busyLabel={t('Đang xoá…')}
-        body={<>{tenCase}{soPaChuaLam > 0 ? t(' · {soPaChuaLam} PA chưa làm sẽ huỷ', { soPaChuaLam }) : ''}</>} />
+      {c.viewer.xoa && <HopXoaCase open={hoiXoa} onClose={() => setHoiXoa(false)} caseId={c.id} xoa={c.viewer.xoa} tenCase={tenCase} soPa={soPa} soKetQua={soKetQua} onDeleted={onDeleted} />}
     </>
   );
 }
