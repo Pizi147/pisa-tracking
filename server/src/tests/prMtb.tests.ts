@@ -434,51 +434,54 @@ export async function runPrMtbTests(t: YThucTestKit) {
   const duoc = (tt: any, moi = false, q: any = QL_TT) => d.menuHopKyNang(tt, q, moi);
   const dsDuoc = (tt: any, moi = false) => duoc(tt, moi).map((m: any) => m.duoc);
 
-  check('MTb (T5) · menuHopKyNang: luôn 5 mục đúng thứ tự, nhãn mockup, viSao ≤ 6 từ khi mờ', () => {
+  /* N38 (PR-MT-VANG, U05 05/11): dòng kỹ năng = 3 nút Dời · Vắng · Bỏ khỏi đợt + ⋯ Dời hạn chấm · Huỷ điểm · Nhật ký. */
+  check('MTb (T5) · N38 · menuHopKyNang: luôn 6 mục đúng thứ tự (3 nút + ⋯), viSao ≤ 6 từ khi mờ', () => {
     for (const tt of ['khong-yeu-cau', 'chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'cho-duyet', 'da-huy', 'lich-su', 'huy-vang']) {
       for (const moi of [false, true]) {
         const m = duoc(tt, moi);
-        assert(JSON.stringify(m.map((x: any) => x.muc)) === '["doi-tuan","doi-han","bao-vang","huy-diem","nhat-ky"]', `${tt}/${moi}: ${JSON.stringify(m)}`);
+        assert(JSON.stringify(m.map((x: any) => x.muc)) === '["doi-tuan","bao-vang","bo-ky-nang","doi-han","huy-diem","nhat-ky"]', `${tt}/${moi}: ${JSON.stringify(m)}`);
         for (const x of m) {
           assert(x.duoc ? x.viSao === null : typeof x.viSao === 'string' && x.viSao.split(/\s+/).length <= 6, `${tt}/${moi}/${x.muc}: ${JSON.stringify(x)}`);
         }
       }
     }
-    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Đổi tuần","Dời hạn chấm","Vắng","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
+    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Dời","Vắng","Bỏ khỏi đợt","Dời hạn chấm","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
+    assert(JSON.stringify(d.NUT_HOP) === '["doi-tuan","bao-vang","bo-ky-nang"]', 'ba nút trên dòng');
   });
 
-  check('MTb (T5) · menuHopKyNang: (a) chưa tới tuần thi — Đổi tuần + Nhật ký sáng, "Dời hạn chấm" MỜ theo luật máy chủ (lệch mockup)', () => {
-    assert(JSON.stringify(dsDuoc('chua-toi-tuan')) === '[true,false,false,false,true]', JSON.stringify(dsDuoc('chua-toi-tuan')));
+  check('MTb (T5) · menuHopKyNang: (a) chưa tới tuần thi — Dời, Bỏ khỏi đợt, Nhật ký sáng; Vắng, Dời hạn chấm mờ theo luật máy chủ', () => {
+    assert(JSON.stringify(dsDuoc('chua-toi-tuan')) === '[true,false,true,false,false,true]', JSON.stringify(dsDuoc('chua-toi-tuan')));
     const m = duoc('chua-toi-tuan');
-    assert(m[1].viSao === 'Chưa tới tuần Test' && m[2].viSao === 'Chưa tới tuần Test' && m[3].viSao === 'Chưa có điểm', JSON.stringify(m));
+    assert(m[1].viSao === 'Chưa tới tuần Test' && m[3].viSao === 'Chưa tới tuần Test' && m[4].viSao === 'Chưa có điểm', JSON.stringify(m));
   });
 
-  check('MTb (T5) · menuHopKyNang: (b) đã có điểm (T20) — Đổi tuần SÁNG cho Quản lý, Huỷ điểm sáng; Dời hạn / Báo vắng mờ "Đã có điểm"', () => {
+  check('MTb (T5) · menuHopKyNang: (b) đã có điểm (T20) — Dời SÁNG cho Quản lý, Huỷ điểm sáng; Vắng / Dời hạn mờ "Đã có điểm"', () => {
     const m = duoc('co-diem');
-    assert(JSON.stringify(m.map((x: any) => x.duoc)) === '[true,false,false,true,true]', JSON.stringify(m));
-    assert(m[1].viSao === 'Đã có điểm' && m[2].viSao === 'Đã có điểm', JSON.stringify(m));
-    assert(!duoc('co-diem', false, { ...QL_TT, quanLy: false, gvcn: true })[0].duoc, 'không phải Quản lý thì Đổi tuần mờ');
+    assert(JSON.stringify(m.map((x: any) => x.duoc)) === '[true,false,true,false,true,true]', JSON.stringify(m));
+    assert(m[1].viSao === 'Đã có điểm' && m[3].viSao === 'Đã có điểm', JSON.stringify(m));
+    assert(!duoc('co-diem', false, { ...QL_TT, quanLy: false, gvcn: true })[0].duoc, 'không phải Quản lý thì Dời mờ');
   });
 
-  check('MTb (T5) · menuHopKyNang: (c) vắng → Đổi tuần = Xếp lại bài vắng; đã huỷ / huỷ vì vắng 2 lần → Khôi phục (chỉ Quản lý)', () => {
-    assert(duoc('vang')[0].duoc && duoc('vang')[0].thay === 'xep-lai', JSON.stringify(duoc('vang')[0]));
-    assert(duoc('da-huy')[0].duoc && duoc('da-huy')[0].thay === 'khoi-phuc', JSON.stringify(duoc('da-huy')[0]));
-    assert(duoc('huy-vang')[0].duoc && duoc('huy-vang')[0].thay === 'khoi-phuc', JSON.stringify(duoc('huy-vang')[0]));
-    assert(!duoc('huy-vang', false, { ...QL_TT, quanLy: false, gvcn: true })[0].duoc, 'GVCN không khôi phục');
-    assert(duoc('dang-thi')[0].thay === undefined && duoc('chua-xep')[0].thay === undefined, 'đổi tuần thường không có thay');
+  check('MTb (T5) · N38 L5: vắng / đã huỷ / huỷ vắng 2 lần / chờ thẻ cũ / bỏ khỏi đợt → Dời sáng (Quản lý); GVCN không; không theo Tuần chung', () => {
+    for (const tt of ['vang', 'da-huy', 'huy-vang', 'cho-duyet', 'khong-yeu-cau']) {
+      assert(duoc(tt)[0].duoc, `${tt}: ${JSON.stringify(duoc(tt)[0])}`);
+      assert(!d.theoTuanChung(tt as any, QL_TT, false), `${tt} không theo Tuần chung`);
+    }
+    assert(!duoc('huy-vang', false, { ...QL_TT, quanLy: false, gvcn: true })[0].duoc, 'GVCN không xếp lại');
+    assert(d.theoTuanChung('dang-thi', QL_TT, false) && d.theoTuanChung('chua-xep', QL_TT, false), 'đổi tuần thường theo Tuần chung');
+    assert(duoc('khong-yeu-cau')[2].viSao === 'Đã bỏ khỏi đợt', JSON.stringify(duoc('khong-yeu-cau')[2]));
   });
 
-  check('MTb (T5) · menuHopKyNang: (d) đợt chưa tạo — chỉ Đổi tuần sáng, còn lại "Đợt chưa tạo"; đang thi: Dời hạn + Báo vắng sáng', () => {
+  check('MTb (T5) · menuHopKyNang: (d) đợt chưa tạo — Dời + Bỏ khỏi đợt sáng, còn lại "Đợt chưa tạo"; đang thi: Vắng + Dời hạn sáng', () => {
     const m = duoc('chua-xep', true);
-    assert(JSON.stringify(m.map((x: any) => x.duoc)) === '[true,false,false,false,false]', JSON.stringify(m));
-    assert(m.slice(1).every((x: any) => x.viSao === 'Đợt chưa tạo'), JSON.stringify(m));
-    assert(JSON.stringify(dsDuoc('dang-thi')) === '[true,true,true,false,true]', JSON.stringify(dsDuoc('dang-thi')));
-    assert(duoc('dang-thi')[3].viSao === 'Chưa có điểm', 'huỷ điểm mờ khi chưa có điểm');
+    assert(JSON.stringify(m.map((x: any) => x.duoc)) === '[true,false,true,false,false,false]', JSON.stringify(m));
+    assert([1, 3, 4, 5].every((i) => m[i].viSao === 'Đợt chưa tạo'), JSON.stringify(m));
+    assert(JSON.stringify(dsDuoc('dang-thi')) === '[true,true,true,true,false,true]', JSON.stringify(dsDuoc('dang-thi')));
+    assert(duoc('dang-thi')[4].viSao === 'Chưa có điểm', 'huỷ điểm mờ khi chưa có điểm');
   });
 
-  check('MTb (T5) · menuHopKyNang: MT cũ chưa điểm — Quản lý vẫn đổi tuần được (giữ PR-LM D3 / T20); chờ duyệt dời thì mờ', () => {
+  check('MTb (T5) · menuHopKyNang: MT cũ chưa điểm — Quản lý vẫn Dời được (giữ PR-LM D3 / T20)', () => {
     assert(duoc('lich-su')[0].duoc, JSON.stringify(duoc('lich-su')[0]));
-    assert(!duoc('cho-duyet')[0].duoc && duoc('cho-duyet')[0].viSao === 'Chờ duyệt', JSON.stringify(duoc('cho-duyet')[0]));
   });
 
   check('MTb (T5) · chipDongKyNang: trễ chấm / chờ chấm / vắng / huỷ / chưa xếp; tuần này, có lịch, xong → không chip', () => {
@@ -563,10 +566,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(!/kiemLyDoThaoTac\('huy-luot'/.test(m) && !/Lý do huỷ \(bắt buộc\)/.test(m), 'CancelDialog: lý do tuỳ chọn (PR-MTGON)');
     /* PR-HOP1: WeekModal bỏ — dời cả đợt đi hộp một đợt `HopKyNang` (chip "Tuần đã qua", Quản lý chọn tuần đã qua). */
     assert(!/WeekModal/.test(m) && /\{t\('Tuần đã qua'\)\}<\/Nhan>/.test(nguon('web/src/modules/test/keHoach/HopKyNang.tsx')), 'WeekModal');
-    const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function AbsenceMoveModal'));
+    const han = m.slice(m.indexOf('function DeadlineModal'), m.indexOf('function TraLoiDeNghiModal'));
     assert(!/<SectionNote>/.test(han), 'DeadlineModal: câu giải thích chuyển vào title');
-    const vang = m.slice(m.indexOf('function AbsenceMoveModal'), m.indexOf('function TraLoiDeNghiModal'));
-    assert(/<Truong nhan=\{t\('Lý do'\)\} tuyChon>/.test(vang), 'AbsenceMoveModal: lý do tuỳ chọn');
+    /* N38 (PR-MT-VANG): bỏ phép kiểm AbsenceMoveModal — hộp "Xếp lại bài vắng" (`/absence-move`) đã gỡ; chọn tuần = Dời (luật mới ở prMtVang MV-5). */
+    assert(!/function AbsenceMoveModal|absence-move/.test(m), 'hồ sơ Mock còn hộp Xếp lại bài vắng');
     const the = nguon('web/src/modules/duyet/TheYeuCau.tsx');
     assert(/o\.loai === 'tu-choi'/.test(the) && /Chưa điền/.test(the), 'từ chối thẻ Xin dời bắt lý do');
   });
@@ -630,16 +633,13 @@ export async function runPrMtbTests(t: YThucTestKit) {
   };
   const soDeNghi = (aid: number) => (conn.prepare(`SELECT COUNT(*) n FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(aid) as any).n as number;
 
-  check('MTb (T3, A6) · máy chủ: kỹ năng huyVang — GVBM / GVCN xin-doi → 403; QL xin-doi → một đề nghị pending; nút theo vai', () => {
+  check('MTb (T3, A6) · N38 L2: kỹ năng huyVang — không thẻ; nút theo vai: Quản lý Dời (xếp lại), GVCN / GVBM không có nút', () => {
     const a = emHuyVang();
     assert((conn.prepare(`SELECT huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.m1) as any)?.huy_vang === 1, 'chưa huyVang');
-    assert(loiCua(() => absence.xinDoi(P.subjectTeacher, a.m1, 'speaking')).status === 403, 'GVBM');
-    assert(loiCua(() => absence.xinDoi(P.coreTeacher, a.m1, 'speaking')).status === 403, 'GVCN');
-    absence.xinDoi(P.mbManager, a.m1, 'speaking', { lyDo: '' });
-    assert(soDeNghi(a.m1) === 1, 'đề nghị');
+    assert(soDeNghi(a.m1) === 0, 'không thẻ');
     const gvcn = { nhapDiem: false, quanLy: false, gvcn: true, laFt: true, dotHoanTat: false };
-    assert(d.thaoTacKyNang('huy-vang', gvcn).chinh === null, 'GVCN không còn Xin dời');
-    assert(d.thaoTacKyNang('huy-vang', { ...gvcn, quanLy: true, gvcn: false }).menu.includes('khong-mock-lai'), 'QL có Không mock lại');
+    assert(d.thaoTacKyNang('huy-vang', gvcn).chinh === null, 'GVCN không có nút');
+    assert(d.thaoTacKyNang('huy-vang', { ...gvcn, quanLy: true, gvcn: false }).chinh === 'doi-lich', 'QL: Dời');
     assert(!d.thaoTacKyNang('huy-vang', { ...gvcn, gvcn: false }).chinh, 'GVBM không có nút chính');
   });
 
@@ -662,10 +662,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/export function rawPatchFrom/.test(cd) && /export function criteriaPatchFrom/.test(cd) && /docONhapLR\(/.test(cd), 'chamDiem.ts');
   });
 
-  check('MTb (T3, T2) · quét nguồn: HopThaoTacMt có khong-mock-lai (không còn xin-doi), bỏ vế "từ lần 2 Quản lý duyệt"; hồ sơ Mock + hàng Lộ trình có "Khôi phục kết quả"', () => {
+  check('MTb (T3, T2) · quét nguồn: N38 — HopThaoTacMt không còn xin-doi / khong-mock-lai / xep-lai; hồ sơ Mock + hàng Lộ trình có "Khôi phục kết quả"', () => {
     const h = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
-    assert(!h.includes("'xin-doi'"), 'còn nút xin-doi');
-    for (const c of ["'khong-mock-lai'", '/khong-mock-lai', 'huyVang']) assert(h.includes(c), `HopThaoTacMt thiếu ${c}`);
+    for (const c of ["'xin-doi'", "'khong-mock-lai'", '/khong-mock-lai', "'xep-lai'", "'dua-lai'"]) assert(!h.includes(c), `HopThaoTacMt còn ${c}`);
     const m = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     assert(m.includes('Khôi phục kết quả') && m.includes('HopKhoiPhucKetQua') && m.includes('ketQuaHuy'), 'MockDetailPage');
     assert(/khoi-phuc-ket-qua/.test(nguon('web/src/modules/test/keHoach/HopKhoiPhucKetQua.tsx')), 'hộp khôi phục gọi đường A6b');
@@ -698,14 +697,15 @@ export async function runPrMtbTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Sau rà độc lập (06/10) — Đợt 1
   console.log('\nPR-MTb · Sau rà độc lập: khôi phục rút đề nghị dời, MT cũ "-", màu ô, câu máy chủ');
 
-  check('MTb sau rà (I1) · Khôi phục kỹ năng huỷ vắng RÚT đề nghị dời đang chờ — quá hạn quét không huỷ lại', () => {
+  check('MTb sau rà (I1) · N38 L5: Dời kỹ năng huỷ vắng RÚT thẻ dời cũ đang chờ — quá hạn quét không huỷ lại', () => {
     const a = emHuyVang();
-    const r = absence.xinDoi(P.mbManager, a.m1, 'speaking', { lyDo: '' });
+    /* Thẻ cũ (trước N38) dựng thẳng — "-" không còn sinh thẻ. */
+    const reqId = Number(conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, to_period_id, requested_on, decide_by, status, created_at)
+      VALUES (?, 'speaking', 3, ?, ?, ?, 'pending', ?)`).run(a.m1, tuan(2).id, TODAY, t.addDays(TODAY, -1), new Date().toISOString()).lastInsertRowid);
     assert(soDeNghi(a.m1) === 1, 'tiền đề: có đề nghị chờ');
-    conn.prepare('UPDATE skill_move_requests SET decide_by = ? WHERE id = ?').run(t.addDays(TODAY, -1), r.requestId);
-    absence.restoreCancelledSkill(QL, a.m1, 'speaking', tuan(2).id);
-    assert(soDeNghi(a.m1) === 0, 'đề nghị còn pending sau khôi phục');
-    assert((conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(r.requestId) as any).status === 'withdrawn', 'phải là withdrawn');
+    skillSch.setSkillWeek(QL, a.m1, 'speaking', tuan(2).id, { force: true });
+    assert(soDeNghi(a.m1) === 0, 'đề nghị còn pending sau khi Dời');
+    assert((conn.prepare('SELECT status FROM skill_move_requests WHERE id = ?').get(reqId) as any).status === 'withdrawn', 'phải là withdrawn');
     absence.sweepExpiredMoves();
     const k = conn.prepare(`SELECT sit_status, huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.m1) as any;
     assert(k.sit_status === 'scheduled' && k.huy_vang === 0, `kỹ năng bị huỷ lại: ${JSON.stringify(k)}`);
@@ -753,7 +753,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const kn = { listening: xong, reading: xong, writing: xong, speaking: { ...xong, trangThai: 'da-xep', khoa: null, khongDuThi: true } };
     const r = d.oMt({ so: 1, attemptId: 1, kn, cu: true }, '2026-10-06');
     assert(r.kieu === 'xong' && r.chu === 'W2 SEP', JSON.stringify(r));
-    assert(/Speaking: .*đã huỷ/.test(r.title), r.title);   // LUAT-34: "-" ở MT cũ (cu) = Đã huỷ
+    assert(/Speaking: .*không dự thi/.test(r.title), r.title);   // N38 L3: "-" ở MT cũ (cu) = Không dự thi
     const lich = { required: true, periodId: 1, weekStart: '2026-09-07', weekEnd: '2026-09-13', sitStatus: 'scheduled', scored: false, pendingMove: null, absenceMoveCount: 0, deadline: null, doiTu: null };
     assert((d as any).oKyNangTuLich(lich, true).khongDuThi === true && !(d as any).oKyNangTuLich(lich).khongDuThi, 'oKyNangTuLich');
     const cell = (assessedSkill: string, state: string | null, band: number | null = null) => ({ assessedSkill, band, rawScore: null, noShow: state ? { state } : null });

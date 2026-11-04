@@ -131,9 +131,8 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: 
   }
   if (vangGoc && c.daChot?.doiSang) return { ...hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
   if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { ...hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
-  if (c.noShow?.state === 'khong-du-thi') return { ...hai(t('Vắng'), t('không dời')), doc: t('Vắng'), kieu: 'chot' };
-  /* LUAT-34: "-" ở MT cũ = Đã huỷ ngay (cả "Không dự thi" cũ ở MT cũ) — bấm ô gỡ "-" / nhập điểm như ô "-" khác. */
-  if (c.noShow?.state === 'da-huy') return { ...hai(t('Đã huỷ'), lyDoHuy({ mtCu: true })!), doc: c.noShow.text, kieu: 'chot' };
+  /* N38 L3: "-" ở MT cũ của kỹ năng (≥ 2 tuần) = Không dự thi — bấm ô gỡ "-" / nhập điểm như ô "-" khác. */
+  if (c.noShow?.state === 'khong-du-thi') return { ...hai(t('Vắng'), t('không dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };
   /* OV-15b (mockup 2 · 6): band trước, số câu là dòng phụ dưới ô (`SoCau`). */
   if (c.rawScore !== null) {

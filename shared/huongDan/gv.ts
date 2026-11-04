@@ -135,7 +135,7 @@ export const HD_GV: HuongDan = {
       chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Mỗi việc có chip hạn ở cuối dòng.' } },
     { id: 'han-vi-pham', ten: 'Hạn Xử lý vi phạm', buoc: ['<b>5 ngày</b> từ ngày ghi nhận, tính cả ngày đầu.', 'Bậc cần QL thì QL duyệt.'] },
     { id: 'han-ql', ten: 'QL trả lời đề xuất', buoc: ['QL trả lời Đề xuất PA / Xin hỗ trợ trong <b>5 ngày</b>, tính cả ngày gửi.'] },
-    { id: 'dau-gach', ten: 'Dấu "-" (vắng)', buoc: ['Trong tuần Test: "-" = vắng, chốt ngay.', 'Nhập bù: "-" = Vắng; MT cũ: "-" = Đã huỷ · vắng MT cũ.', 'Gỡ vắng: xoá "-", lúc nào cũng được.'] },
+    { id: 'dau-gach', ten: 'Dấu "-" (vắng)', buoc: ['Gõ "-" = vắng, chốt ngay: lần 1 dời sang tuần sau tuần Test.', 'MT vắng 2 lần thì huỷ (không thẻ, không nhắc); lớp thường dời tiếp. Tuần Test đã qua 2 tuần: "-" không dời, không tính lần vắng.', 'Chọn tuần cho kỹ năng (Dời) = xếp lại từ đầu. Gỡ vắng: xoá "-", lúc nào cũng được.'] },
     { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Lượt chưa chốt: Case tạm "Chờ chốt SOS" — chưa hạn, chưa việc.', 'Lượt chốt → "Chờ xác nhận PA"; Overall đạt mà chưa xác nhận PA → Case tự xoá.',
       'Bấm <b>chip SOS</b> ở mọi màn: hộp "Vì sao SOS n" — kỹ năng dưới kỳ vọng, điểm từng kỹ năng, lối mở hồ sơ MT.'] },
     { id: 'ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['PA quy chế: GVCN / QL vào <b>⋯ › Kết thúc PA</b>.', 'Lý do bắt buộc, từ <b>10</b> ký tự; nhật ký PA ghi lại.'] },

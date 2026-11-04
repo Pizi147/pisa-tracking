@@ -163,8 +163,11 @@ export async function runPrHsmTests(t: YThucTestKit) {
   });
 
   check('HSM (2g) · dời do vắng lần 1 → skillSchedule.doiTu = tuần cũ; lượt huỷ → huy.ai / huy.lyDo', () => {
-    const kq = absence.requestAbsenceMove(P.coreTeacher, eV.aid, ['speaking'], { today: TODAY });
-    assert(kq.outcomes[0].moveNo === 1, JSON.stringify(kq.outcomes[0]));
+    /* N38: dời do vắng chỉ còn đi "-" / nút Vắng (bỏ `requestAbsenceMove`) — trả bài về chờ thi rồi GVCN bấm Vắng trong tuần thi. */
+    skillSch.setSitStatus(QL, eV.aid, 'speaking', 'scheduled', 'Sửa: để GVCN báo vắng');
+    const kq = absence.baoVang(P.coreTeacher, eV.aid, 'speaking', 'Em vắng buổi Speaking', TODAY);
+    const n = get('SELECT absence_move_count n FROM attempt_skills WHERE attempt_id = ? AND skill = ?', eV.aid, 'speaking').n;
+    assert(kq.daDoi && n === 1, JSON.stringify({ kq, n }));
     const dt = svc.attemptDetail(QL, eV.aid);
     const s = dt.skillSchedule.find((r: any) => r.skill === 'speaking');
     assert(s.doiTu === d.tuanLich(tuanNay, TODAY), `doiTu ${s.doiTu}`);

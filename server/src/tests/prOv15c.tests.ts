@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM OV-15c (kế hoạch 2026-10-19-ov15-overhaul-6-pr.md mục OV-15c) — Kế hoạch Test: Xóa = bỏ tuần, bỏ Huỷ MT trên web, vắng 2 lần
- * Khôi phục → Chưa xếp / Giữ huỷ, tuần kèm năm, tìm lớp / học viên / email, ghi chú lịch thi (bảng mới), Xuất Excel 13 cột + Xuất điểm Test.
+ * chọn tuần = xếp lại (N38 thay Khôi phục → Chưa xếp / Giữ huỷ), tuần kèm năm, tìm lớp / học viên / email, ghi chú lịch thi (bảng mới), Xuất Excel 13 cột + Xuất điểm Test.
  * Gọi QUA HTTP theo vai (QL, Admin, GV) như bản chính; mỗi mục dựng lớp / em riêng; chạy cuối `run.ts`.
  */
 import Database from 'libsql';
@@ -146,19 +146,27 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     });
   });
 
-  await checkAsync('C15-4 · vắng 2 lần: Khôi phục → Chưa xếp (sit scheduled, tuần NULL, huy_vang 0, đề nghị rút); kỹ năng không huỷ vắng → 400; GV 403', async () => {
+  /* N38 L5 thay OV-15c "Khôi phục → Chưa xếp" (đường đã gỡ): Quản lý chọn tuần (Dời) cho kỹ năng huỷ vắng 2 lần = xếp lại từ đầu. */
+  await checkAsync('C15-4 · vắng 2 lần: QL chọn tuần (Dời) → xếp lại từ đầu (sit scheduled, tuần mới, lần vắng 0, huy_vang 0, thẻ cũ rút, nhật ký); GV 403; đường Chưa xếp đã gỡ', async () => {
     const l = lop();
     const a = em(l, 'Nguyễn Hữu Phát', null);
     await voiMayChu(async (goi) => {
       const id = await xep(goi, a.sid, 1, addDays(T2, -7));
-      conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ? AND skill = 'speaking'`).run(id);
-      assert((await goi(GV, `/attempts/${id}/skills/speaking/khoi-phuc-chua-xep`, post({}))).status === 403, 'GV 403');
-      const e = await loi(await goi(QL, `/attempts/${id}/skills/listening/khoi-phuc-chua-xep`, post({})));
-      assert(e.status === 400, JSON.stringify(e));
-      await json(await goi(QL, `/attempts/${id}/skills/speaking/khoi-phuc-chua-xep`, post({})));
-      const k = one(`SELECT sit_status, planned_period_id, huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`, id);
-      assert(k.sit_status === 'scheduled' && k.planned_period_id === null && k.huy_vang === 0, JSON.stringify(k));
-      assert(one(`SELECT 1 AS c FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_part_restored' AND field = 'speaking'`, id), 'có nhật ký');
+      const moi = tuan(addDays(T2, 14));
+      conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1, absence_move_count = 2 WHERE attempt_id = ? AND skill = 'speaking'`).run(id);
+      /* Thẻ "Xin dời" cũ (trước N38) còn chờ — chọn tuần phải rút nó, không để hết hạn quét lại. */
+      const rq = Number(conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
+        VALUES (?, 'speaking', 2, ?, ?, 'Xin dời (thẻ cũ)', ?, ?, 'pending', ?)`).run(id, tuan(addDays(T2, -7)), moi, TODAY, addDays(TODAY, 6), NOW).lastInsertRowid);
+      xoaNho();
+      const body = { attemptId: id, kyNang: [{ skill: 'speaking', periodId: moi }], force: true };
+      assert((await goi(GV, '/ke-hoach-test/dot', post(body))).status === 403, 'GV 403');
+      await json(await goi(QL, '/ke-hoach-test/dot', post(body)));
+      const k = one(`SELECT sit_status, planned_period_id, huy_vang, absence_move_count n FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`, id);
+      assert(k.sit_status === 'scheduled' && k.planned_period_id === moi && k.huy_vang === 0 && k.n === 0, JSON.stringify(k));
+      assert(one('SELECT status FROM skill_move_requests WHERE id = ?', rq).status === 'withdrawn', 'thẻ cũ chưa rút');
+      assert(one(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_week_set' AND field = 'speaking' ORDER BY id DESC`, id)?.reason,
+        'thiếu nhật ký xếp lại');
+      assert((await goi(QL, `/attempts/${id}/skills/speaking/khoi-phuc-chua-xep`, post({}))).status === 404, 'đường Khôi phục → Chưa xếp đã gỡ');
     });
   });
 

@@ -141,7 +141,9 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* CN-1: chụp lại trên DB gốc (prDl trong `DOC_LAP` của run.ts) — băm chỉ phụ thuộc seed, không còn phụ thuộc thứ tự. Đã so JSON `cu` / `moi`
    * chuỗi ↔ gốc: chỉ lệch hàng em do phép kiểm khác tạo (Học Viên Nhập Một…, PRN…, Em Theo Tuần Chung…), điểm / tuần em seed do phép kiểm khác
    * sửa (Lê Quang Huy, Nguyễn Minh An, Trần Thu Hà, Vũ Hải Đăng), mốc giờ ghi và email thử của em tạo (`emailThu` đếm từ số lúc chụp gốc). Trước (chuỗi): tuan 4efea5d316cb9203 · moi 459e593a8e284577 */
-  const ANH_CHUP = { tuan: 'cc83e6fa32c0aa95', moi: 'cd797edcce2c831f' };
+  /* N38 (PR-MT-VANG) chụp lại `moi` (đối chiếu từng trường với mã trước PR): hai ô S "-" ghi muộn ≥ 2 tuần (Hoàng Bảo Ngọc W2 AUG, Trịnh Gia Bảo
+     W4 AUG) nay là Không dự thi (`scheduled`, chữ "Không dự thi · Tuần …") thay vắng chờ QL; Võ Minh Triết (seed: nút Vắng lần 2) có dấu "-" đã chốt. */
+  const ANH_CHUP = { tuan: 'cc83e6fa32c0aa95', moi: '7569e6e2e056032f' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
@@ -532,7 +534,7 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-5 DiemTheoLop: chữ đúng đặc tả, tablist, hỏi khi còn ô đang lưu, nhớ "Chỉ ô còn trống" bọc try/catch', () => {
     const f = doc('web/src/modules/cham/DiemTheoLop.tsx');
     for (const chu of ['Còn ô đang lưu. Đợi lưu xong rồi chuyển?', 'Chưa có lịch {nhan} —', 'xếp ở panel Lộ trình', "{ mo: 'lo-trinh' }", 'Chỉ ô còn trống',
-      'là MT cũ: nhập bù điểm; "-" là Đã huỷ · vắng MT cũ.',   // PR-MTa: "MT cũ"; T23 thay "không nhận dấu".
+      'là MT cũ: nhập bù điểm; "-" là Không dự thi.',   // PR-MTa: "MT cũ"; T23 thay "không nhận dấu"; N38 L3: "Không dự thi" (bỏ "Đã huỷ · vắng MT cũ").
       'Lớp chưa có lượt Test nào. Xếp lịch ở Kế hoạch Test.', 'role="tablist"', 'colSpan', 'onRetry={'])
       assert(f.includes(chu) || doc('web/src/modules/cham/LuoiFT.tsx').includes(chu), `thiếu: ${chu}`);
     assert(/try\s*\{[^}]*localStorage\.getItem/.test(f) && /try\s*\{[^}]*localStorage\.setItem/.test(f), 'localStorage phải bọc try/catch');

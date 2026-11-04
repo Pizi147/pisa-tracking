@@ -519,20 +519,23 @@ export async function runPrMtTests(t: YThucTestKit) {
     }
     assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'attempt.absence_auto_move' AND entity_id = ?`).get(a8.id), 'thiếu nhật ký máy tự dời');
   });
-  // PR-MTa T3 thay K4-28 lần 2: vắng lần 2 → kỹ năng huỷ (vắng 2 lần), không tự tạo đề nghị; GVCN "Xin dời" mới tạo đề nghị chờ QL.
-  check('PR-MT (8) · Lần 2 → huỷ (vắng 2 lần); QL Xin dời → đề nghị chờ QL: hạn hết CN tuần gửi, tuần đích = tuần chưa bắt đầu gần nhất (PR-MTa T3, T42)', () => {
+  // N38 L2 (thay PR-MTa T3 "Xin dời"): vắng lần 2 → kỹ năng huỷ (vắng 2 lần) — không thẻ, không chuông, không việc.
+  check('PR-MT (8) · Lần 2 → huỷ (vắng 2 lần): không đề nghị dời, không chuông Quản lý (N38 L2); chữ thẻ dời cũ giữ (T42)', () => {
     attemptsSvc.saveScore(P.lrTeacher, a8.id, 'listening', { noShow: true }, '2026-09-16');
-    assert(lich('listening').sit_status === 'cancelled', 'vắng lần 2 phải huỷ kỹ năng');
-    absence.xinDoi(P.mbManager, a8.id, 'listening', { today: '2026-09-21' });
-    const r = conn.prepare(`SELECT r.*, p.week_start AS dich FROM skill_move_requests r JOIN report_periods p ON p.id = r.to_period_id
-      WHERE r.attempt_id = ? AND r.skill = 'listening' AND r.status = 'pending'`).get(a8.id) as any;
-    assert(r && r.move_no === 2 && r.requested_by === P.mbManager.userId && r.decide_by === '2026-09-27' && r.dich === '2026-09-28', JSON.stringify(r));
-    assert(lich('listening').sit_status === 'cancelled', 'lịch giữ nguyên tới khi QL duyệt');
-    /* PR-Dọn (Q14): `moTaDoiLan2` (chỉ phép kiểm gọi) đã xoá — gọi thẳng `chuTheDoiLan2`, như thẻ Chờ duyệt. */
-    const mo = absence.chuTheDoiLan2({ skill: r.skill, attemptNo: 1, moveNo: r.move_no, tuanDich: r.dich, homNay: TODAY });
+    const k = conn.prepare(`SELECT sit_status, huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(a8.id) as any;
+    assert(k.sit_status === 'cancelled' && k.huy_vang === 1, `vắng lần 2 phải huỷ kỹ năng: ${JSON.stringify(k)}`);
+    assert(!conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND skill = 'listening'`).get(a8.id), '"-" không sinh đề nghị dời');
+    assert(!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND entity_id = ? AND (kind = 'schedule_move' OR dedup_key LIKE 'huy_vang:%')`)
+      .get(P.mbManager.userId, a8.id), 'huỷ vắng 2 lần không chuông Quản lý');
+    /* PR-Dọn (Q14): `chuTheDoiLan2` — chữ thẻ dời cũ còn trong DB (Chờ duyệt). */
+    const mo = absence.chuTheDoiLan2({ skill: 'listening', attemptNo: 1, moveNo: 2, tuanDich: '2026-09-28', homNay: TODAY });
     assert(mo === 'Dời L · MT1 · lần 2 · Duyệt = L làm bài W1 OCT', mo);
   });
-  check('PR-MT (8) · Hết Chủ nhật mà QL chưa trả lời → đề nghị hết hạn, huỷ phần thi (C09)', () => {
+  check('PR-MT (8) · Thẻ dời CŨ hết Chủ nhật mà QL chưa trả lời → hết hạn (C09); kỹ năng huỷ vắng 2 lần giữ huỷ', () => {
+    /* Thẻ cũ (trước N38) dựng thẳng: "Xin dời" lần 2, hạn Chủ nhật 27/09. */
+    conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
+      VALUES (?, 'listening', 2, ?, ?, 'Xin dời (thẻ cũ)', '2026-09-21', '2026-09-27', 'pending', ?)`)
+      .run(a8.id, week.ensurePeriod('2026-09-14').id, week.ensurePeriod('2026-09-28').id, new Date().toISOString());
     demoCfg.setConfig('demo_date', '2026-09-28');
     try {
       assert(absence.sweepExpiredMoves() >= 1, 'không quét được đề nghị hết hạn');
@@ -540,16 +543,17 @@ export async function runPrMtTests(t: YThucTestKit) {
     const r = conn.prepare(`SELECT status FROM skill_move_requests WHERE attempt_id = ? AND skill = 'listening' ORDER BY id DESC`).get(a8.id) as any;
     assert(r.status === 'expired' && lich('listening').sit_status === 'cancelled', `${r.status} · ${lich('listening').sit_status}`);
   });
-  check('PR-MT (8) · QL đổi tuần một kỹ năng đang vắng = dời do vắng (+1); lần vắng sau là lần 2 → huỷ vắng (K4-12, Q10, PR-MTa T3)', () => {
+  /* N38 L5 thay K4-12 "QL đổi tuần bài vắng = +1": chọn tuần = xếp lại từ đầu — bộ đếm 0; vắng lần sau là lần 1 (dời), không huỷ. */
+  check('PR-MT (8) · QL chọn tuần cho kỹ năng đang vắng = xếp lại từ đầu (bộ đếm 0, N38 L5); vắng sau đó là lần 1 → dời tuần sau tuần thi', () => {
     skillSch.setSitStatus(P.mbManager, a8.id, 'speaking', 'absent', 'Em vắng buổi Speaking');
     skillSch.setSkillWeek(P.mbManager, a8.id, 'speaking', week.ensurePeriod('2026-10-05').id, { force: true });
     const l = lich('speaking');
-    assert(l.sit_status === 'scheduled' && l.lan === 1 && l.tuan === '2026-10-05', JSON.stringify(l));
-    const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_week_moved_absence' AND field = 'speaking'`).get(a8.id) as any;
-    assert(h?.reason === 'Quản lý xếp trực tiếp', JSON.stringify(h));
-    skillSch.setSitStatus(P.mbManager, a8.id, 'speaking', 'absent', 'Em lại vắng');
-    const kq = absence.requestAbsenceMove(P.coreTeacher, a8.id, ['speaking']);
-    assert(kq.outcomes[0].result === 'huy-vang' && kq.outcomes[0].moveNo === 2, JSON.stringify(kq.outcomes[0]));   // PR-MTa T3 thay "lần 2 chờ duyệt"
+    assert(l.sit_status === 'scheduled' && l.lan === 0 && l.tuan === '2026-10-05', JSON.stringify(l));
+    const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_week_set' AND field = 'speaking' ORDER BY id DESC`).get(a8.id) as any;
+    assert(h?.reason === 'Xếp lại từ đầu', JSON.stringify(h));
+    const kq = absence.baoVang(P.coreTeacher, a8.id, 'speaking', 'Em lại vắng', '2026-10-07');
+    const l2 = lich('speaking');
+    assert(kq.daDoi && !kq.huyVang && l2.sit_status === 'scheduled' && l2.lan === 1 && l2.tuan === '2026-10-12', JSON.stringify({ kq, l2 }));
   });
 
   // ---------------------------------------------------------------- khối 9: web — nhãn lịch sử, dòng nhắc, không hạn (T34, K2-32)

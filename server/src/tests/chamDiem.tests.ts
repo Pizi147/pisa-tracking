@@ -261,8 +261,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(demDoi === 0, `absence_move_count giữ 0 sau hai lần "-": ${demDoi}`);
   });
 
-  /* OV-11a (Q1, chủ SP 14/10) thay luật cũ "ghi bù thì dời sang tuần kế của tuần thi" (dời vào tuần đã qua = nợ ảo, TE-6). */
-  check('PR-Rc1 · Q4 Ghi "-" bù — OV-11a Q1: tuần thi ≥ 2 tuần trước = Không dự thi (không dời); tuần trước → tuần sau của tuần hiện tại, ghi lại vô hại', () => {
+  /* N38 mục 3 (thay OV-11a Q1 "tuần sau của tuần hiện tại"): lớp thường "-" dời sang TUẦN NGAY SAU TUẦN THI, như Mock L1; ≥ 2 tuần = Không dự thi. */
+  check('PR-Rc1 · Q4 Ghi "-" bù — N38: tuần thi ≥ 2 tuần trước = Không dự thi (không dời); tuần trước → tuần ngay sau tuần thi; tuần này → tuần sau, ghi lại vô hại', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
     const { attemptId } = taoBaiThuong('2026-09-14');
@@ -270,13 +270,17 @@ export async function runChamDiemTests(t: YThucTestKit) {
     /* Hôm nay 05/10: 14/09 đã qua 3 tuần → Không dự thi, môn đứng yên. */
     const r = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-10-05');
     assert(!r.moved && r.khongDuThi === true && tuanMon(attemptId) === '2026-09-14', `Không dự thi, không dời: ${tuanMon(attemptId)}`);
-    /* Hôm nay 05/10, tuần thi 28/09 (tuần trước) → dời 12/10; ghi lại cùng ngày: tuần mới chưa tới → vô hại. */
+    /* Hôm nay 05/10, tuần thi 28/09 (tuần trước) → dời 05/10 (tuần ngay sau tuần thi — không theo hôm nay). */
     const b = taoBaiThuong('2026-09-28').attemptId;
-    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, b, k, true, '2026-10-05').moved && tuanMon(b) === '2026-10-12', `tuần trước → 12/10: ${tuanMon(b)}`);
-    assert(!regular.reportRegularNoShow(P.normalSubjectTeacher, b, k, true, '2026-10-05').moved && tuanMon(b) === '2026-10-12', 'ghi lại cùng ngày vô hại');
-    const demDoi = (conn.prepare('SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = ?')
-      .get(b, k) as any)?.n;
-    assert(demDoi === 0, `absence_move_count giữ 0: ${demDoi}`);
+    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, b, k, true, '2026-10-05').moved && tuanMon(b) === '2026-10-05', `tuần trước → 05/10: ${tuanMon(b)}`);
+    /* Tuần thi 05/10 (tuần này) → dời 12/10; ghi lại cùng ngày: tuần mới chưa tới → vô hại. */
+    const c = taoBaiThuong('2026-10-05').attemptId;
+    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, c, k, true, '2026-10-05').moved && tuanMon(c) === '2026-10-12', `tuần này → 12/10: ${tuanMon(c)}`);
+    assert(!regular.reportRegularNoShow(P.normalSubjectTeacher, c, k, true, '2026-10-05').moved && tuanMon(c) === '2026-10-12', 'ghi lại cùng ngày vô hại');
+    for (const id of [b, c]) {
+      const demDoi = (conn.prepare('SELECT absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = ?').get(id, k) as any)?.n;
+      assert(demDoi === 0, `absence_move_count giữ 0: ${demDoi}`);
+    }
   });
 
   check('PR-Rc1 · "-" lần đầu trước tuần thi: bị chặn, không ghi gì, lịch giữ nguyên', () => {

@@ -652,6 +652,7 @@ api.post('/ke-hoach-test/dot', requireAuth, wrap((req) => {
   if (!attemptId || !Array.isArray(req.body?.kyNang)) throw badRequest('Thiếu đợt hoặc kỹ năng cần đặt.');
   const kyNang = req.body.kyNang.map((k: any) => ({
     skill: String(k?.skill ?? ''), periodId: toInt(k?.periodId), bo: typeof k?.bo === 'boolean' ? k.bo : undefined,
+    xepLai: k?.xepLai === true,   // N38 L5: Dời chọn đúng tuần đang có = xếp lại từ đầu
   }));
   const p = principalOf(req);
   return keHoachSvc.luuLichKemGhiChu(p, ghiChuKem(req.body?.ghiChu), () => keHoachSvc.luuDot(p, {
@@ -966,22 +967,9 @@ api.post('/attempts/:id/skills/:skill/deadline', requireAuth, wrap((req) => {
 }));
 
 /*
- * VẮNG, DỜI CÓ GIỚI HẠN VÀ KHÔI PHỤC (mục 10.6).
- *
- * Bốn đường, và chúng KHÁC HẲN đường đổi lịch thường ở trên: đổi lịch là quyết định về kế
- * hoạch, còn đây là hệ quả của việc em không có mặt — có bộ đếm, có người duyệt, và có hạn
- * trả lời. Trộn hai đường vào một là mất hẳn bộ đếm.
+ * VẮNG (N38): gõ "-" / nút Vắng đi `saveScore` / `bao-vang`; chọn tuần = xếp lại đi `/ke-hoach-test/dot`. Còn `restore` cho lớp thường (dữ liệu
+ * "đã huỷ" cũ). Gỡ `absence-move`, `khoi-phuc-chua-xep`, `xin-doi`, `khong-mock-lai` — web không còn gọi (Dời thay cả bốn).
  */
-api.post('/attempts/:id/absence-move', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  const skills = Array.isArray(req.body?.skills) ? req.body.skills.map(String) : [];
-  return absenceSvc.requestAbsenceMove(principalOf(req), pInt(req, 'id'), skills, {
-    reason: req.body?.reason ?? null,
-    /* Bấm hai lần hay mạng chập không được thành hai lần dời. */
-    idempotencyKey: req.body?.idempotencyKey ?? null,
-  });
-}));
-
 api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const periodId = toInt(req.body?.periodId);
@@ -991,28 +979,7 @@ api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
   });
 }));
 
-/** OV-15c (mục 6): kỹ năng huỷ vì vắng 2 lần → "Khôi phục → Chưa xếp" (không đặt tuần; Quản lý xếp tự do sau đó). Vai khác 403. */
-api.post('/attempts/:id/skills/:skill/khoi-phuc-chua-xep', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return absenceSvc.restoreCancelledSkill(principalOf(req), pInt(req, 'id'), String(req.params.skill), null, { reason: 'Khôi phục → Chưa xếp' });
-}));
-
-/** PR-MTa (T3): Quản lý "Xin dời" (vai khác 403) kỹ năng đã huỷ vì vắng 2 lần → thẻ Lịch thi ở Chờ duyệt `{ reason?, idempotencyKey? }`. */
-api.post('/attempts/:id/skills/:skill/xin-doi', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return absenceSvc.xinDoi(principalOf(req), pInt(req, 'id'), String(req.params.skill), {
-    lyDo: typeof req.body?.reason === 'string' ? req.body.reason : null,
-    idempotencyKey: typeof req.body?.idempotencyKey === 'string' ? req.body.idempotencyKey : null,
-  });
-}));
-
-/** PR-MTa (T3, Q3): Quản lý chốt "Không mock lại" — kỹ năng bỏ khỏi đợt `{ lyDo? }`. */
-api.post('/attempts/:id/skills/:skill/khong-mock-lai', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return absenceSvc.khongMockLai(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
-}));
-
-/** PR-XLMT (T38, K4-28): Báo vắng FT — ghi "-" mọi ô của kỹ năng + chốt ngay (lần 1 tự dời, lần 2 chờ Quản lý duyệt). */
+/** PR-XLMT (T38, K4-28) · N38: Báo vắng FT — ghi "-" mọi ô của kỹ năng + chốt ngay (lần 1 dời tuần sau tuần thi, lần 2 huỷ, MT cũ Không dự thi). */
 api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);

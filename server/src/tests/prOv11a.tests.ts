@@ -152,12 +152,13 @@ export async function runPrOv11aTests(t: YThucTestKit) {
     return r?.pendingSkills ?? [];
   };
 
-  check('OV11a-4 · TE-6 lớp thường "-": tuần này / tuần trước → dời tuần sau của tuần hiện tại; ≥ 2 tuần trước → Không dự thi, hết việc; gỡ được', () => thu(() => {
+  /* N38 mục 3 (thay Q1 14/10 "tuần sau của tuần hiện tại"): lớp thường "-" dời sang TUẦN NGAY SAU TUẦN THI, như Mock L1. */
+  check('OV11a-4 · TE-6 lớp thường "-": tuần này / tuần trước → dời tuần ngay sau tuần thi (N38); ≥ 2 tuần trước → Không dự thi, hết việc; gỡ được', () => thu(() => {
     for (const n of [0, -1]) {
       const aid = baiThuong(n);
       const r = regular.reportRegularNoShow(QL, aid, 'listening', true, TODAY);
-      assert(r.moved === true && ky(aid, 'listening').planned_period_id === tuan(1).id,
-        `tuần ${n}: phải dời sang tuần sau của tuần hiện tại: ${JSON.stringify({ r: { ...r, result: undefined }, k: ky(aid, 'listening').planned_period_id, mong: tuan(1).id })}`);
+      assert(r.moved === true && ky(aid, 'listening').planned_period_id === tuan(n + 1).id,
+        `tuần ${n}: phải dời sang tuần ngay sau tuần thi: ${JSON.stringify({ r: { ...r, result: undefined }, k: ky(aid, 'listening').planned_period_id, mong: tuan(n + 1).id })}`);
     }
     const aid = baiThuong(-2);
     assert(conViec(aid).includes('listening'), 'tiền đề: môn nợ trước khi ghi "-"');
@@ -182,20 +183,21 @@ export async function runPrOv11aTests(t: YThucTestKit) {
   }));
 
   check('OV11a-5 · hàm thuần: nút Vắng / Không dự thi, câu thông báo, luật "-" lớp thường, chip Ô MT không dự thi', () => {
-    /* LUAT-34: nút luôn "Vắng" — `chuNutVang` bỏ; MT cũ "-" nói "Đã huỷ · vắng MT cũ". */
+    /* LUAT-34: nút luôn "Vắng" — `chuNutVang` bỏ. N38 L3: MT cũ "-" nói "Không dự thi" (bỏ "Đã huỷ · vắng MT cũ"). */
     assert(d.chuNutVang === undefined, 'chuNutVang đã bỏ');
     const ten = 'Kiều Thu Trang';
-    assert(d.cauDaGhiVang('R', ten, { kq: 'huy-cu' }) === 'Đã huỷ · vắng MT cũ · R · Kiều Thu Trang', 'MT cũ');
+    assert(d.cauDaGhiVang('R', ten, { kq: 'khong-du-thi' }) === 'Đã ghi Không dự thi · R · Kiều Thu Trang', d.cauDaGhiVang('R', ten, { kq: 'khong-du-thi' }));
     assert(d.cauDaGhiVang('R', ten, { kq: 'doi', tuanMoi: 'W4 SEP' }) === 'Đã ghi vắng R · Kiều Thu Trang · dời W4 SEP', d.cauDaGhiVang('R', ten, { kq: 'doi', tuanMoi: 'W4 SEP' }));
-    assert(d.cauDaGhiVang('R', ten, { kq: 'huy' }) === 'Đã ghi vắng R · Kiều Thu Trang · huỷ kỹ năng', 'lần 2');
-    assert(d.cauDaGhiVang('R', ten, { kq: 'khong-du-thi' }) === 'Đã ghi Vắng · R · Kiều Thu Trang', 'sau tuần');
-    assert(d.luatVangThuong('2026-09-14', TODAY).tuanMoi === '2026-09-21' && d.luatVangThuong('2026-09-07', TODAY).tuanMoi === '2026-09-21',
-      'tuần này / tuần trước → tuần sau của tuần hiện tại');
+    /* N38 L4: vướng lượt khác vẫn dời — câu nối cảnh báo. */
+    assert(d.cauDaGhiVang('R', ten, { kq: 'doi', tuanMoi: 'W4 SEP', canhBao: 'Sát MT2.' }) === 'Đã ghi vắng R · Kiều Thu Trang · dời W4 SEP · Sát MT2.', 'cảnh báo');
+    assert(d.cauDaGhiVang('R', ten, { kq: 'huy' }) === 'Đã ghi vắng R · Kiều Thu Trang · huỷ (vắng 2 lần)', d.cauDaGhiVang('R', ten, { kq: 'huy' }));
+    assert(d.luatVangThuong('2026-09-14', TODAY).tuanMoi === '2026-09-21' && d.luatVangThuong('2026-09-07', TODAY).tuanMoi === '2026-09-14',
+      'tuần này / tuần trước → tuần ngay sau tuần thi (N38)');
     assert(d.luatVangThuong('2026-08-31', TODAY).khongDuThi === true, '≥ 2 tuần → Không dự thi');
     const kn = (o2: any) => ({ trangThai: 'co-lich', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'scheduled', ...o2 });
     const nhom = d.nhomKyNang({ listening: kn({ trangThai: 'xong' }), reading: kn({ khongDuThi: true }) }, TODAY);
-    assert(nhom.some((g: any) => g.kyNang.includes('reading') && g.viec === 'vắng'), `chip R không dự thi: ${JSON.stringify(nhom)}`);
-    assert(d.chipDongKyNang(kn({ khongDuThi: true }), TODAY)?.chu === 'Vắng', 'dòng R hộp một đợt');
+    assert(nhom.some((g: any) => g.kyNang.includes('reading') && g.viec === 'không dự thi'), `chip R không dự thi: ${JSON.stringify(nhom)}`);
+    assert(d.chipDongKyNang(kn({ khongDuThi: true }), TODAY)?.chu === 'Không dự thi', 'dòng R hộp một đợt');
     const gc = d.gomChip({ listening: kn({ trangThai: 'xong', khongDuThi: true }), reading: kn({ trangThai: 'xong' }) });
     assert(!gc.xong && gc.chip.some((c: any) => c.khongDuThi && c.kyNang.join() === 'listening'), `lớp thường: môn Không dự thi hiện riêng: ${JSON.stringify(gc)}`);
   });

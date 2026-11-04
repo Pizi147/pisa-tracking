@@ -6,8 +6,8 @@ import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
 import { commitIntake } from '../classes/intake.ts';
 import { apDungMotDong } from '../classes/luatLoTrinh.ts';
 import { createAttempt, huyLuot, saveScore } from '../fasttrack/attempts.ts';
-import { decideAbsenceMove, requestAbsenceMove, sweepExpiredMoves } from '../fasttrack/absence.ts';
-import { recomputeCompletionWeek, setSitStatus } from '../fasttrack/skillSchedule.ts';
+import { baoVang, decideAbsenceMove } from '../fasttrack/absence.ts';
+import { recomputeCompletionWeek } from '../fasttrack/skillSchedule.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
 import { emailThu } from './emailThu.ts';
@@ -19,8 +19,8 @@ import { emailThu } from './emailThu.ts';
  *   D2/3 Lê Minh Khang — thêm hôm nay, bắt đầu 17 tuần trước: MT1–MT3 là MT lịch sử; MT2 đã nhập SOS 2 (ngoài 4 tuần → không Case);
  *        MT3 (2 tuần trước, trong cửa sổ) chưa nhập — GVCN Hà nhập thử sẽ ra Case
  *   D4   Trần Hữu Phúc — em FT KHÔNG có lượt nào (dữ liệu trước PR-MT)
- *   D5   bốn em dấu "-": máy tự dời lần 1 (Hồ Ngọc Diệp) · chờ Quản lý duyệt dời lần 2 (Ngô Bảo Châu) · đã duyệt (Lý Thanh Tâm) ·
- *        đề nghị hết hạn tự huỷ phần thi (Võ Minh Triết)
+ *   D5   bốn em dấu "-" (N38): máy tự dời lần 1 sang tuần sau tuần thi (Hồ Ngọc Diệp) · vắng 2 lần → huỷ, không thẻ / chuông (Ngô Bảo Châu,
+ *        Lý Thanh Tâm, Võ Minh Triết)
  *   D6   Phạm Khánh Linh — MT2 "Huỷ cả lượt" rồi tạo lại (cùng số, cùng dòng)
  *   D16  Đinh Gia Huy — MB FT 101 (LT1, có Case Listening) chuyển sang MB FT RF 12: lộ trình RF mới, Case đi theo
  */
@@ -106,13 +106,11 @@ export function buildPrMtDemo(ctx: BuildCtx): { students: number } {
       WHERE a.cycle_id = ? AND r.status = 'pending'`,
   ).get(tam.cycleId) as any;
   if (deNghi) decideAbsenceMove(ql, deNghi.id, { approve: true, note: 'Đồng ý dời — em ốm có giấy' });
-  /* Hết hạn: đề nghị lần 2 gửi thứ Tư tuần trước (hạn hết Chủ nhật tuần đó) mà Quản lý chưa trả lời → hôm nay tự huỷ phần thi (C09). */
+  /* N38 L2: GVCN bấm Vắng lần hai (nút Vắng của hồ sơ Mock) → huỷ ngay, không thẻ, không chuông. */
   const triet = them(ft101, 'Võ Minh Triết', tuan(-7));
   const trietA = luot(triet.cycleId, 1); luotThuong(trietA);
   daDoiLan1(trietA, 'listening', tuan(-2), tuan(-1));
-  setSitStatus(ql, trietA.id, 'listening', 'absent', 'GVCN báo em vắng buổi Listening');
-  requestAbsenceMove(gv(null), trietA.id, ['listening'], { reason: 'Em vắng lần hai', today: addDays(tuan(-1), 2) });
-  sweepExpiredMoves();
+  baoVang(gv(null), trietA.id, 'listening', 'Em vắng lần hai', addDays(tuan(-1), 2));
 
   // ---------------------------------------------------------------- D6 · huỷ cả lượt rồi tạo lại cùng số
   const linh = them(ft101, 'Phạm Khánh Linh', tuan(0));

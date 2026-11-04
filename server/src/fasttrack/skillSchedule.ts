@@ -12,6 +12,7 @@ import { nhoThamChieu, xoaNhoThamChieu, type MocHeThong } from '../platform/mocH
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
 import { rutDeNghiDoi } from './absence.ts';
+import { refreshOutcome } from './attempts.ts';
 import { entrySkillsOf } from './scoring.ts';
 import { classProgress } from '../classes/schedule.ts';
 import {
@@ -499,16 +500,15 @@ export type CompletionWeek = {
  * Nó KHÔNG phải ngày hoàn thành thực tế. Một đợt có thể mang tuần này mà chưa có đủ điểm;
  * giao diện phải nói "tuần kế hoạch hoàn tất", không nói "đã xong tuần đó".
  *
- * Khi còn môn chưa xếp lại hoặc đã huỷ, kế hoạch CHƯA hợp lệ. Lúc đó vẫn giữ tuần muộn
- * nhất trong các môn đã có lịch, để tra lại được lịch trước khi huỷ và để đợt không biến
- * mất khỏi báo cáo — nhưng `valid = false` để màn hình bày ra hàng cần xử lý.
+ * Khi còn môn chưa có tuần, kế hoạch CHƯA hợp lệ (`valid = false`, màn hình bày ra hàng cần xử lý). N38 L2: kỹ năng ĐÃ HUỶ (vắng 2 lần,
+ * thẻ cũ) là đã xong (thiếu) — không chặn. Vẫn giữ tuần muộn nhất trong các môn đã có lịch để đợt không biến mất khỏi báo cáo.
  */
 export function completionWeekOf(rows: SkillRow[]): CompletionWeek {
   const required = rows.filter((r) => r.required);
   if (!required.length) return { periodId: null, valid: false, blocking: [] };
 
   const blocking = required
-    .filter((r) => r.sit_status === 'cancelled' || !r.planned_period_id)
+    .filter((r) => r.sit_status !== 'cancelled' && !r.planned_period_id)
     .map((r) => r.skill);
 
   const dated = required.filter((r) => r.week_start && r.sit_status !== 'cancelled');
@@ -883,6 +883,10 @@ function hasScore(attemptId: number, skill: string): boolean {
  *
  * Phần ĐÃ THI hoặc ĐÃ CÓ ĐIỂM: GV không dời (mục 10.4). Quản lý / Quản trị dời được sang tuần bất kỳ, kể cả tuần cũ hơn —
  * điểm đi theo kỹ năng, không đổi (PR-MTa T20); cờ MT cũ tính lại.
+ *
+ * N38 L5 (Mock / MT0, không phải "-" lớp thường `ghiBuDau`): CHỌN TUẦN = XẾP LẠI TỪ ĐẦU — lần vắng về 0, mọi dấu "-" cũ (cả Không dự thi) xoá,
+ * kỹ năng vắng / huỷ (vắng 2 lần, thẻ cũ) về "đã xếp" tuần đó, thẻ dời cũ đang chờ tự rút (không chặn). Chọn đúng tuần đang có cũng hợp lệ.
+ * Có gì được xếp lại thì đợt tính lại kết quả (như "Khôi phục" cũ: về SOS tạm, Case đã có giữ nguyên).
  */
 export function setSkillWeek(p: Principal, attemptId: number, skill: string, periodId: number, opts: {
   reason?: string | null;
@@ -920,7 +924,8 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   if (!row.required) throw loi(400, 'Kỹ năng {x} không nằm trong phạm vi yêu cầu của đợt này.', { x: tenMon(null, skill) });
 
   if (!period) throw notFound('Không tìm thấy tuần');
-  if (periodId === row.planned_period_id) throw badRequest('Tuần mới trùng tuần hiện tại.');
+  const xepLai = !opts.ghiBuDau && scoringModeOf(attempt) !== 'ratio';   // N38 L5
+  if (periodId === row.planned_period_id && !xepLai) throw badRequest('Tuần mới trùng tuần hiện tại.');
   if (!opts.ghiBuDau) chanCuoiTuan(p, attempt, [row.week_start, period.week_start]);
 
   /*
@@ -959,70 +964,61 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   }
 
   /*
-   * ĐANG CÓ ĐỀ NGHỊ DỜI CHỜ DUYỆT thì không đổi lịch bằng đường thường (mục 10.6).
-   *
-   * Nếu cho phép, sẽ có hai đường cùng đổi một lịch: Quản lý sửa tay ở đây rồi lát nữa lại
-   * duyệt chính đề nghị kia, và em bị dời hai tuần. Trả lời đề nghị đó là cách đúng — nó
-   * vừa đổi lịch vừa ghi lại ai quyết định.
+   * ĐỀ NGHỊ DỜI CŨ ĐANG CHỜ (thẻ trước N38): lớp thường không có; Mock — chọn tuần là quyết định của Quản lý nên thẻ tự rút trong tx dưới (L5),
+   * không còn hai đường cùng đổi một lịch. Đường còn lại (`ghiBuDau`) giữ chặn như cũ.
    */
-  const waiting = db()
-    .prepare(
-      `SELECT id, decide_by FROM skill_move_requests
-        WHERE attempt_id = ? AND skill = ? AND status = 'pending' LIMIT 1`,
-    )
-    .get(attemptId, row.skill) as any;
-  if (waiting) {
-    throw badRequest(
-      `${skill} đang có một đề nghị dời do vắng chờ Quản lý trả lời (hạn ${waiting.decide_by}). `
-      + 'Trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
-    );
+  if (!xepLai) {
+    const waiting = db().prepare(`SELECT id, decide_by FROM skill_move_requests WHERE attempt_id = ? AND skill = ? AND status = 'pending' LIMIT 1`)
+      .get(attemptId, row.skill) as any;
+    if (waiting) {
+      throw badRequest(
+        `${skill} đang có một đề nghị dời do vắng chờ Quản lý trả lời (hạn ${waiting.decide_by}). `
+        + 'Trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
+      );
+    }
+    /* PR-MTGON (MTG-4c): lớp thường — kỹ năng đã huỷ (dữ liệu cũ) đi "Khôi phục và đặt tuần". */
+    if (row.sit_status === 'cancelled') throw loi(400, '{x} đã huỷ — "Khôi phục và đặt tuần" trước.', { x: tenMon(null, skill) });
   }
-
-  /* PR-MTGON (MTG-4c): kỹ năng đã huỷ không đổi tuần lặng lẽ — "Đưa lại vào đợt" (`setSkillScope`) trước. */
-  if (row.sit_status === 'cancelled') throw loi(400, '{x} đã huỷ — "Đưa lại vào đợt" trước rồi mới đặt tuần.', { x: tenMon(null, skill) });
 
   return tx(() => {
     const conn = db();
     const oldCode = row.period_code;
-    /*
-     * K4-12 (PR-MT, Q10): Quản lý đổi tuần một kỹ năng ĐANG VẮNG = MỘT LẦN DỜI DO VẮNG — bộ đếm +1, để lần vắng sau thành lần 2
-     * (chờ duyệt). Không thành đề nghị: Quản lý chính là người duyệt. Kỹ năng chưa vắng thì vẫn là dời CHỦ ĐỘNG (sắp lại lịch học,
-     * tách R/L/W với Speaking) — không tiêu lượt nào.
-     */
-    const vang = row.sit_status === 'absent';
+    const o = entrySkillsOf(row.skill as AssessedSkill);
     conn
       .prepare(
         `UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual',
-                sit_status = CASE WHEN sit_status = 'absent' THEN 'scheduled' ELSE sit_status END,
-                absent_from_no_show = 0, absence_move_count = absence_move_count + ?, updated_at = ?
+                sit_status = CASE WHEN ? = 1 AND sit_status IN ('absent', 'cancelled') THEN 'scheduled' ELSE sit_status END,
+                huy_vang = CASE WHEN ? = 1 THEN 0 ELSE huy_vang END,
+                absent_from_no_show = 0, absence_move_count = CASE WHEN ? = 1 THEN 0 ELSE absence_move_count END, updated_at = ?
           WHERE id = ?`,
       )
-      .run(periodId, vang ? 1 : 0, nowIso(), row.id);
+      .run(periodId, xepLai ? 1 : 0, xepLai ? 1 : 0, xepLai ? 1 : 0, nowIso(), row.id);
     /*
-     * OV-1b (ca thật 08/10): đổi tuần bằng tay = lịch mới — dấu "-" vắng của lịch cũ hết nghĩa, bỏ đi để ô ở tuần mới là ô cần nhập bình
-     * thường (không còn "scheduled ở tuần cũ + '-' đã chốt" → quá hạn giả). "Không dự thi" (`no_show_cu`) giữ. Lớp thường: "-" là chính lần dời.
+     * OV-1b (ca thật 08/10) · N38 L5: đổi tuần bằng tay = lịch mới — mọi dấu "-" của lịch cũ (cả Không dự thi) hết nghĩa, bỏ đi để ô ở tuần mới là
+     * ô cần nhập bình thường. Lớp thường: "-" là chính lần dời (gỡ "-" trả về tuần cũ) — giữ.
      */
-    if (!opts.ghiBuDau && scoringModeOf(attempt) !== 'ratio') {
-      const o = entrySkillsOf(row.skill as AssessedSkill);
-      conn.prepare(
-        `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL
-          WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')}) AND no_show_cu = 0 AND no_show_period_id IS NOT NULL`,
-      ).run(attemptId, ...o);
-    }
+    const xoaDau = xepLai ? conn.prepare(
+      `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL, no_show_cu = 0
+        WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')}) AND no_show_period_id IS NOT NULL`,
+    ).run(attemptId, ...o).changes : 0;
+    if (xepLai) rutDeNghiDoi(attemptId, row.skill);
+    /* N38 L5: có gì được xếp lại (lần vắng, vắng / huỷ, dấu "-" cũ) — ghi lý do nhật ký và tính lại kết quả đợt. */
+    const coXepLai = xepLai && (row.absence_move_count > 0 || row.sit_status === 'absent' || row.sit_status === 'cancelled' || xoaDau > 0);
     logSchedule(attemptId, {
-      action: vang ? 'skill_week_moved_absence' : 'skill_week_set',
-      field: skill, oldValue: oldCode, newValue: period.code,
-      reason: opts.reason ?? (vang ? 'Quản lý xếp trực tiếp' : null), actor: p.userId,
+      action: 'skill_week_set', field: skill, oldValue: oldCode, newValue: period.code,
+      reason: opts.reason ?? (coXepLai ? 'Xếp lại từ đầu' : null), actor: p.userId,
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
     tinhLaiMtCu(attemptId, homNay);
+    if (coXepLai) refreshOutcome(p, attemptId);   // như "Khôi phục" cũ: đợt chờ điểm mới (SOS tạm), Case đã có giữ nguyên
     if (!opts.khiTao && !opts.ghiBuDau && !opts.khongBaoGvcn && scoringModeOf(attempt) === 'ratio') {
       baoGvcnDoiLichThuong(p, attempt, period.week_start, homNay);
     }
     writeAudit({
-      actorUserId: p.userId, action: vang ? 'attempt.absence_move' : 'attempt.skill_week', entityType: 'assessment_attempt',
+      actorUserId: p.userId, action: 'attempt.skill_week', entityType: 'assessment_attempt',
       entityId: attemptId, entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${skill}`,
-      before: { week: oldCode }, after: { week: period.code },
+      before: { week: oldCode, ...(coXepLai ? { sitStatus: row.sit_status, moveCount: row.absence_move_count } : {}) },
+      after: { week: period.code, ...(coXepLai ? { xepLai: true } : {}) },
     });
     return { ok: true, warnings: check.warnings, completionWeek: cw };
   });

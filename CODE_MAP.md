@@ -220,7 +220,7 @@ Dựng **từ hành trình học viên**, viết tay, không sinh ngẫu nhiên.
 | Speaking chấm chéo | `shared/domain/chamDiem.ts` (`laChamCheo`) · `server/src/permissions.ts` (`lopFtChoGvSpeaking`) · `server/src/cham/chamCheo.ts` (`baoChamCheoQuaHan`) |
 | Nhận xét GV phụ trách Speaking | `server/src/fasttrack/attempts.ts` (`gvPhuTrachS`, `luuNhanXetPhuTrach`) |
 | Dấu "-" / vắng: một luật mọi cổng | `shared/domain/vang.ts` (`chuyenVang`, `luatVangThuong`) · `server/src/fasttrack/absence.ts` (`baoVang`, `chotVangNgay`) · `web/src/modules/cham/thongBaoVang.ts` |
-| Xoá "-" = hết vắng · dời do vắng · vắng lần 2 | `server/src/fasttrack/absence.ts` (`goVangDaChot`, `xuLyVangMotKyNang`, `huyVangNoi`, `xinDoi`, `khongMockLai`) |
+| Xoá "-" = hết vắng · dời do vắng · vắng lần 2 (N38: "-" dời tuần sau tuần thi, vắng 2 lần huỷ, chọn tuần = xếp lại) | `server/src/fasttrack/absence.ts` (`goVangDaChot`, `xuLyVangMotKyNang`, `huyVangNoi`, `baoVang`) · `skillSchedule.ts` `setSkillWeek` (L5) · `shared/domain/vang.ts` (`chuyenVang`, `laMtCuKyNang`) |
 | Huỷ lượt / huỷ điểm / khôi phục (`ket_qua_huy`) | `server/src/fasttrack/ketQuaHuy.ts` (`catHuyLuot`, `khoiPhucKetQua`, `khoiPhucDiem`) · `attempts.ts` (`huyLuot`, `reopenAttempt`) · `web/src/modules/test/keHoach/HopKhoiPhucKetQua.tsx` |
 | MT cũ (lịch sử): không nợ, nhắc chưa nhập | `server/src/fasttrack/skillSchedule.ts` → `viewSkill` · `server/src/cham/canCham.ts` → `mtLichSuChuaNhap` |
 | Đợt hoàn tất, ai sửa sau | `server/src/fasttrack/hoanTat.ts` (`dotHoanTat`, `quyenSuaSauHoanTat`) |

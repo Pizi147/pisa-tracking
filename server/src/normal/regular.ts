@@ -768,8 +768,8 @@ export function saveRegularScore(
  * dùng đúng chỗ đó: tuần mới CHƯA TỚI thì ghi lại là vô hại (em chưa có dịp vắng tuần ấy); dời sang tuần sau thì vẫn tính
  * từ TUẦN THI của môn, không từ hôm nay.
  *
- * OV-11a (Q1, chủ SP 14/10 — `luatVangThuong`): tuần thi là tuần này / tuần trước → dời sang TUẦN SAU CỦA TUẦN HIỆN TẠI (không dời vào tuần đã
- * qua); tuần thi cách tuần hiện tại ≥ 2 tuần → Không dự thi (`no_show_cu`: không dời, không tính lần vắng, hết nợ). Gỡ "-" trả như cũ.
+ * OV-11a (Q1 14/10) · N38 mục 3 (`luatVangThuong`): dời sang TUẦN NGAY SAU TUẦN THI (như Mock); tuần thi cách tuần hiện tại ≥ 2 tuần →
+ * Không dự thi (`no_show_cu`: không dời, không tính lần vắng, hết nợ). Vắng bao nhiêu lần cũng không huỷ. Gỡ "-" trả như cũ.
  */
 export function reportRegularNoShow(
   p: Principal, attemptId: number, skill: string, bat: boolean, today: string = demoToday(),

@@ -160,12 +160,18 @@ export async function runPrOv13hTests(t: YThucTestKit) {
   {
     const W = '2026-11-30';
     const x = emFt(W);
-    /* "-" CHƯA dời (vắng chờ QL — mẫu prBv `choQL`): "-" ở tuần thi của L, chốt muộn khi tuần kế đã hết. Luật cũ: GV / GVCN hết thứ Tư sau tuần gốc. */
+    /*
+     * "-" CHƯA dời (vắng chờ QL — mẫu prBv `choQL`). N38: "-" không còn để bài ở trạng thái này (luôn dời / huỷ / Không dự thi) — chỉ còn ở dữ liệu
+     * cũ, nên dựng thẳng: dấu "-" đã chốt ở tuần thi của L, bài `absent` (cờ chốt "-"), một lần chốt trong lịch sử. Luật cũ: GV / GVCN hết thứ Tư sau tuần gốc.
+     */
     const k = one(`SELECT k.id, k.planned_period_id AS p, rp.week_end, rp.code FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id
       WHERE k.attempt_id = ? AND k.skill = 'listening'`, x.aid);
-    const scId = Number(run('INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at) VALUES (?, ?, ?, ?, ?)',
-      x.aid, 'listening', k.p, QL.userId, new Date().toISOString()).lastInsertRowid);
-    absence.settleGroup(conn, x.aid, k.id, 'listening', k.week_end, k.code, [scId], null, 'Vắng (dựng dữ liệu)', addDays(W, 30));
+    const luc = new Date().toISOString();
+    run('INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at) VALUES (?, ?, ?, ?, ?, 1, ?)',
+      x.aid, 'listening', k.p, QL.userId, luc, luc);
+    run(`UPDATE attempt_skills SET sit_status = 'absent', absent_from_no_show = 1, sit_at = ?, sit_note = 'Vắng (dựng dữ liệu)' WHERE id = ?`,
+      `${k.week_end.slice(0, 10)}T16:59:59.000Z`, k.id);
+    skillSchedule.logSchedule(x.aid, { action: 'skill_no_show_settled', field: 'listening', oldValue: 'scheduled', newValue: 'absent', reason: 'Vắng (dựng dữ liệu)', actor: null });
     xoaNho();
     assert(one(`SELECT no_show_settled_at FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, x.aid)?.no_show_settled_at
       && one(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`, x.aid).p === k.p, 'dấu "-" chưa chốt / đã dời');

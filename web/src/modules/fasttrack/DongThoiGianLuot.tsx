@@ -20,7 +20,7 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   lrw_set: { chu: t('Chốt buổi chính'), loai: 'lich' }, speaking_set: { chu: t('Chốt buổi Speaking'), loai: 'lich' },
   deadline_set: { chu: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-han'] }), loai: 'lich' }, deadline_cleared: { chu: t('Bỏ dời hạn chấm cả đợt'), loai: 'lich' },
   skill_deadline_set: { chu: CHU_THAO_TAC['doi-han'], loai: 'lich' }, skill_deadline_cleared: { chu: t('Bỏ dời hạn chấm'), loai: 'lich' },
-  skill_skipped: { chu: CHU_THAO_TAC['bo-ky-nang'], loai: 'huy' }, skill_restored: { chu: CHU_THAO_TAC['dua-lai'], loai: 'lich' },
+  skill_skipped: { chu: CHU_THAO_TAC['bo-ky-nang'], loai: 'huy' }, skill_restored: { chu: t('Đưa lại vào đợt'), loai: 'lich' },   // nhật ký cũ (N38: đưa lại = Dời chọn tuần)
   skill_no_show_settled: { chu: t('{x} / vắng', { x: CHU_THAO_TAC['bao-vang'] }), loai: 'vang' },
   skill_week_moved_absence: { chu: t('Dời do vắng'), loai: 'vang' }, skill_unscheduled: { chu: t('Huỷ lịch (về Chưa xếp lịch)'), loai: 'huy' },
   cancelled: { chu: t('Huỷ lượt'), loai: 'huy' }, skill_part_cancelled: { chu: t('Huỷ phần còn lại'), loai: 'huy' },

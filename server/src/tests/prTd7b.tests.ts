@@ -238,7 +238,7 @@ export async function runPrTd7bTests(t: YThucTestKit) {
   }));
 
 
-  check('TD7b-12 · vắng lần 2 huỷ phần thi, khôi phục phần thi, "Không mock lại"; Mini đổi mốc lớp (setClassProgress); chuyển lớp một em: cờ theo kịp', () => thu(() => {
+  check('TD7b-12 · vắng lần 2 huỷ phần thi, khôi phục phần thi, Bỏ khỏi đợt (N38 L6, thay "Không mock lại"); Mini đổi mốc lớp (setClassProgress); chuyển lớp một em: cờ theo kịp', () => thu(() => {
     const aid = emMoi('MB FT 101', 'Vang2');
     for (const k of ['listening', 'reading']) att.saveScore(QL, aid, k, { rawScore: 39, nhanXet: NX }, TODAY);
     for (const k of ['writing1', 'writing2']) att.saveScore(QL, aid, k, { criteria: S4, nhanXet: NX }, TODAY);
@@ -248,11 +248,11 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     doiCo('vắng lần 2 → huỷ phần thi S', aid, () => att.saveScore(QL, aid, 'speaking', { noShow: true }, tuanSau));
     assert(co(aid) === null, `huỷ phần thi: hết ô chờ, cờ ${co(aid)}`);
     doiCo('khôi phục phần thi S vào tuần này', aid, () => absence.restoreCancelledSkill(QL, aid, 'speaking', week.ensurePeriod(tuanNay).id, {}));
-    doiCo('Không mock lại (bỏ S khỏi đợt)', aid, () => {
-      /* LUAT-34: Khôi phục đặt lại chuỗi — "-" kế tiếp là lần 1 (dời), "-" ở tuần đã dời tới mới huỷ lại. */
+    doiCo('Bỏ khỏi đợt (bỏ S sau khi huỷ vắng lại)', aid, () => {
+      /* LUAT-34: Khôi phục đặt lại chuỗi — "-" kế tiếp là lần 1 (dời), "-" ở tuần đã dời tới mới huỷ lại. N38 L6: "Không mock lại" = Bỏ khỏi đợt. */
       att.saveScore(QL, aid, 'speaking', { noShow: true }, TODAY);
       att.saveScore(QL, aid, 'speaking', { noShow: true }, tuanSau);
-      absence.khongMockLai(QL, aid, 'speaking', 'Em không thi lại');
+      att.setSkillSkip(QL, aid, 'speaking', true, 'Em không thi lại');
     });
     const b = emMoi('MB FT 101', 'ChuyenNha');
     dung('trước chuyển lớp', b);

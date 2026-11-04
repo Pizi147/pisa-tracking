@@ -6,7 +6,7 @@ import { t } from '@shared/i18n/index.ts';
  * kỹ năng, và nút "Vắng" trên điện thoại. LUAT-34 (luật 4 sửa 21/10): Mock có `hoanTac` → nút "Hoàn tác (n)" 10 giây (= gỡ "-"); sau đó
  * vẫn gỡ được bằng xoá "-" trong ô (PR-BV, "Đã bỏ vắng …" ở nơi gọi máy chủ). Lớp thường giữ như cũ (không nút).
  * `khoa` = mã ô (vd `${attemptId}:${skill}`) — cùng ô thì thông báo mới thay cũ, hai ô liền nhau không nuốt nhau.
- * OV-11a (CA3-1): `kq` = hậu quả máy chủ trả (dời W4 SEP · huỷ phần thi · Đã huỷ · vắng MT cũ) — câu nói đúng điều đã xảy ra (`cauDaGhiVang`).
+ * OV-11a (CA3-1): `kq` = hậu quả máy chủ trả (dời W4 SEP · huỷ (vắng 2 lần) · Không dự thi) — câu nói đúng điều đã xảy ra (`cauDaGhiVang`).
  */
 export function thongBaoVang(
   toast: { push: (kind: 'ok', text: string, opts?: { key?: string; ms?: number; demLui?: boolean; hanhDong?: { nhan: string; onBam: () => void } }) => void },
