@@ -633,7 +633,7 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
           {/* PTA #949: ≥ 640 chip loại + tên yêu cầu MỘT hàng — tên cắt "…" (đủ chữ ở title), cột người gửi không ép xuống dòng; 375 vẫn xuống dòng (không có cột người). */}
           <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 sm:flex-nowrap">
             <span className="shrink-0"><ThePhu vien={[dich(yc.nhanPhanLoai)]} ds={[]} /></span>
-            <span className="min-w-0 text-[14px] font-medium leading-snug text-[color:var(--text)] sm:truncate" title={dich(yc.tieuDe)}>{dich(yc.tieuDe)}</span>
+            <span className="min-w-0 text-[14px] font-medium leading-normal text-[color:var(--text)] sm:truncate" title={dich(yc.tieuDe)}>{dich(yc.tieuDe)}</span>
             {yc.phu && <span className="shrink-0"><ThePhu ds={[dich(yc.phu)]} /></span>}
           </span>
           {/* M8: 375 không đủ chỗ cột người — người gửi xem trong panel. */}
