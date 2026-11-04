@@ -47,6 +47,7 @@ Dữ liệu demo 14/09/2026 (W3 SEP). QL Nguyễn Khánh Vy (vai 2), GV cô Tr�
 | T5 | Kết quả "Chờ L, R, W, S" lặp ô trống | M3 | "–" mờ, môn còn thiếu ở `title`; thẻ 375 không vẽ (đọc màn vẫn đọc) | `LuoiFT` |
 | T6 | Thanh lớp: dãy kỹ năng (môn của bạn gạch dưới) · "vắng · chờ Quản lý duyệt dời" · "hạn 23/09" · x/y · viên | chủ SP, M4 | mã lớp · x/y bài · MỘT viên (ô chưa lưu > ⚠ quá hạn của người xem > Đang chấm / Chờ bạn chấm…); phần còn lại ở `title` hàng; tên bài chỉ khi lớp có hai hàng | `HangLop`, `HangNhom` (`title`) |
 | T7 | Số đã chấm "**8**/27" 700 | M1 | chữ sáng 500 — đậm chỉ mã lớp | `HangLop` |
+| T8 | (PTA rà 375, vòng 2) mã lớp bị cắt "MB Pre F…", "MB FOU …"; hai hàng "MB FOU 12" không phân biệt; viên "Chờ bạn chấm" tràn mép | M2 | 375: mã lớp đọc đủ (xuống dòng nếu chật, không cắt); lớp có hai hàng → tên bài chữ nhỏ mờ dưới mã; cột phải xếp chồng "x/y bài" trên · viên dưới | `HangLop` (nhánh `hep`) |
 | GIỮ | Chọn tuần ‹ › · Tuần này · Tất cả / FT / Lớp thường · Xuất Excel · Lịch thi thật › · dải số · nhóm Quá hạn / Test tuần này · lưới chấm (ô điểm, "n câu", "vắng W2 SEP", "Vắng", "W4 SEP" dời, "Đã huỷ · vắng 2 lần", S Ex, GV chấm S ▾, Xem dạng bảng 375) · MT cũ chưa nhập › | — | không đổi | — |
 
 ## Thao tác TRƯỚC → SAU (không mất thao tác)

@@ -110,7 +110,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
 }) {
   const { homNay } = useNgayNghiepVu();
   /* LT-GON: mã lớp · (tên bài khi một lớp có hai hàng) · chi nhánh · x/y bài · một viên — bỏ cột kỹ năng, hạn. */
-  const cot = hep ? [null, 80, 132] : [174, null, ...(coChiNhanh ? [110] : []), 110, 170];
+  const cot = hep ? [null, 132] : [174, null, ...(coChiNhanh ? [110] : []), 110, 170];
   /* Tên bài ("Final Test") chỉ khi cùng lớp có hơn một hàng trong danh sách — để phân biệt hai hàng. */
   const haiHang = new Set(lop.map((x) => x.classId).filter((id, i, a) => a.indexOf(id) !== i));   // U06 (mockup V11): x/y bài · hạn · MỘT badge (bỏ "phần của bạn / GV khác")   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
   const soCot = cot.length;
@@ -130,11 +130,19 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
         return (
           <tbody key={k}>
             <HangNhom mo={mo} onMo={() => onMo(l)} nhan={t('lớp {classCode}', { classCode: l.classCode })} className={mo ? 'dang-mo' : ''} title={goiYHang(l, homNay)}
-              tieuDe={<Link to={`/hoc-vien/lop/${l.classId}`} className="ten-ho-so block truncate text-[15px] font-bold" title={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}>{l.classCode}</Link>}>
+              tieuDe={hep ? (
+                /* LT-GON (PTA rà 375): mã lớp đọc ĐỦ (M2 — tên không cắt, xuống dòng nếu chật); lớp có hai hàng → tên bài chữ nhỏ mờ dưới mã. */
+                <span className="block min-w-0">
+                  <Link to={`/hoc-vien/lop/${l.classId}`} className="ten-ho-so block whitespace-normal break-words text-[15px] font-bold leading-snug" title={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}>{l.classCode}</Link>
+                  {haiHang.has(l.classId) && <span className="block text-xs font-normal text-dim">{l.luot.map((x) => dich(x.dot)).join(', ')}</span>}
+                </span>
+              ) : <Link to={`/hoc-vien/lop/${l.classId}`} className="ten-ho-so block truncate text-[15px] font-bold" title={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}>{l.classCode}</Link>}>
               {hep ? (
                 <>
-                  <td className="px-2 text-right"><TienDo l={l} /></td>
-                  <td className="whitespace-nowrap px-2 font-normal"><VienHang l={l} chuaLuu={chuaLuu[k]} /></td>
+                  {/* LT-GON (PTA rà 375): x/y bài trên, MỘT viên dưới — mã lớp ô trái đủ chỗ, viên không tràn mép. */}
+                  <td className="px-2 py-1.5 text-right font-normal">
+                    <span className="flex flex-col items-end gap-1"><TienDo l={l} /><VienHang l={l} chuaLuu={chuaLuu[k]} /></span>
+                  </td>
                 </>
               ) : (
                 <>
