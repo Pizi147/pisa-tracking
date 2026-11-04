@@ -1193,9 +1193,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        (nút "Ghi kết quả PA"), "Thêm PA học thuật {kn}" / "Xác nhận Case {kn}" / "Mô tả Case {kn}" → kỹ năng tách "·". Diff máy chủ chỉ đổi chuỗi; QL / QT toi, ADMIN giữ.
        Trước: GVCN toi 836db9c7acdd8e39, GVBM toi c64a33f25108620d, GVCN_THUONG toi 836db9c7acdd8e39, QL tat-ca 64c53c3e9d2f7f40, QT tat-ca 85e5bab795ebfcb0,
        QT tat-ca cn 29addc1ddf756b8e, QL gvcn ceb5c556bc540613, GVS toi b4b4e5024a108eca */
-    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '03e3379819323d63', 'GVBM toi': 'f4ed555f1ab51285',
-    'GVCN_THUONG toi': '03e3379819323d63', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': 'dced32203deb19bb', 'QT tat-ca': '8dcc420b64f4a736',
-    'QT tat-ca cn': 'b279291e75c0e741', 'QL gvcn': '2b323214ee1cfa8e', 'GVS toi': '3183805cc8df091a',
+    /* UI-3 (N34 ④, 04/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý chỉ chữ việc `yt_xem`: "Ghi nhận n vi phạm mới" →
+       "Xem n vi phạm mới", nút "Ghi nhận" → "Đã xem", hint nhóm ("Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày"). Nguyên nhân lệch đọc từ mã (chỉ ba chữ đó đổi trong `mywork.ts`). Trước (sau gộp UI-CONG-VIEC): xem dòng trên;
+       chụp lại trên bản gộp main #889 (băm UI-CONG-VIEC: GVCN toi 03e3379819323d63, QL tat-ca dced32203deb19bb, QT tat-ca 8dcc420b64f4a736, QT tat-ca cn b279291e75c0e741, QL gvcn 2b323214ee1cfa8e) */
+    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '8215b08ff50a3871', 'GVBM toi': 'f4ed555f1ab51285',
+    'GVCN_THUONG toi': '8215b08ff50a3871', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '25a69682950fb439', 'QT tat-ca': 'c25cf2159c6d850b',
+    'QT tat-ca cn': 'ab81cd84860daab9', 'QL gvcn': 'fab519b88423e38a', 'GVS toi': '3183805cc8df091a',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

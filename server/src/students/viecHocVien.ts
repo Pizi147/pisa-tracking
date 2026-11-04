@@ -156,8 +156,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* PR-S6F-b (Q5): hai việc Ý thức còn lại của GVCN — cùng khoá, chữ, hạn với `mywork.ts` 5b (`yt_xem`, `yt_thuc_hien`). */
   if (em && !em.tamDung && em.gvcnId) {
     if (em.soMoi > 0) {
-      ds.push({ key: `yt_xem:${sid}`, loai: 'yt-xem', ...kem('Ghi nhận {n} vi phạm mới', { n: em.soMoi }), kyNang: null, caseId: null, paId: null,
-        han: em.hanXem, tone: 'warn', nguoiId: em.gvcnId, nut: 'Ghi nhận', mo: { loai: 'tab', tab: 'y-thuc' } });
+      ds.push({ key: `yt_xem:${sid}`, loai: 'yt-xem', ...kem('Xem {n} vi phạm mới', { n: em.soMoi }), kyNang: null, caseId: null, paId: null,
+        han: em.hanXem, tone: 'warn', nguoiId: em.gvcnId, nut: 'Đã xem', mo: { loai: 'tab', tab: 'y-thuc' } });
     }
     for (const x of em.daDuyet) {
       const nhan = nhanLoaiXuLy(x.kind, x.customName);

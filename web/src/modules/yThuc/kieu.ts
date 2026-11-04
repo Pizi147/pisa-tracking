@@ -14,6 +14,8 @@ export type ViPhamV4 = {
   ten: string; moTa: string; description: string;
   trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; quaHanNgay: number | null; lyDoQuaHan: 'xu-ly' | 'xem' | null;
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
+  /** UI-3: số tệp bằng chứng (chỉ tab HV — `yThucHocVien`). */
+  soTep?: number;
 };
 
 /** Sau mọi thay đổi vi phạm / lần xử lý: làm mới các danh sách đọc dữ liệu Ý thức. */
@@ -25,7 +27,9 @@ export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
-      statusLabel: string; soViPham: number; nguoi: string | null; soTep: number };
+      statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
+      /** UI-3 (mockup K6): tên vi phạm của lần · Báo PH của lần (null = không có việc). */
+      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null };
 
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
@@ -37,6 +41,8 @@ export type YThucHocVien = {
   nhom: NhomEm | null; han: string | null; hanXem: string | null; soBatBuoc: number; soMoi: number; quaHanNgay: number | null;
   deXuat: { id: number; nhan: string; status: 'cho_duyet' | 'da_duyet'; han: string | null; quaHan: boolean } | null;
   daBaoQl: boolean;
+  /** UI-3: GVCN lớp em đang học — "Người xử lý" cho người chỉ xem. */
+  gvcn: string | null;
   phamVi: 'chuoi' | 'tat-ca';
   viPham: ViPhamV4[];
   macDinh: { tick: number[]; cuHon: number[] };

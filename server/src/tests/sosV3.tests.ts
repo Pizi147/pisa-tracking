@@ -1141,9 +1141,9 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(nhom() === null, 'Xoá hết thì không còn nhóm nào');
   });
 
-  check('PR-T · (PR-YT4 §5.4) Trạng thái hiển thị của vi phạm là SÁU nhãn v4 (Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý); không còn `Không còn hiệu lực`, không còn trường hiệu lực trong dữ liệu trả ra', () => {
+  check('PR-T · (PR-YT4 §5.4) Trạng thái hiển thị của vi phạm là SÁU nhãn v4 (Mới · Đã xem — N34 ④ · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý); không còn `Không còn hiệu lực`, không còn trường hiệu lực trong dữ liệu trả ra', () => {
     assert(JSON.stringify(domain.TRANG_THAI_VP) === JSON.stringify(['moi', 'da_ghi_nhan', 'can_xu_ly', 'qua_han', 'cho_duyet', 'da_xu_ly']), `Trạng thái: ${domain.TRANG_THAI_VP}`);
-    assert(Object.values(domain.TRANG_THAI_VP_LABEL).join() === 'Mới,Đã ghi nhận,Cần xử lý,Quá hạn,Chờ QL duyệt,Đã xử lý', 'Nhãn sáu trạng thái');
+    assert(Object.values(domain.TRANG_THAI_VP_LABEL).join() === 'Mới,Đã xem,Cần xử lý,Quá hạn,Chờ QL duyệt,Đã xử lý', 'Nhãn sáu trạng thái');
     const st = makeStudent('V14s'); const v = recordV(P.w1Teacher, st.id);
     const view = (violSvc.listViolations(gvcn, { studentId: st.id }) as any).rows[0];
     for (const k of ['valid', 'invalidReason', 'invalidatedBy', 'invalidatedByName', 'invalidatedAt', 'state']) assert(!(k in view), `Vi phạm còn trường "${k}" của mô hình cũ`);
