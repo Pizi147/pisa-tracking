@@ -45,7 +45,9 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *   `Khôi phục → Chưa xếp` · `Giữ huỷ`. Ô "Ghi chú lịch thi" (C21) lưu cùng nút Lưu. Tuần luôn kèm năm (C20).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm nút Lưu mở ngay.
  */
-export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghiChu, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
+export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maLop = null, ghiChu, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
+  /** U05 (mockup khu C): mã lớp ở góc phải đầu hộp. */
+  maLop?: string | null;
   anchor: HTMLElement; tieuDe: string; loai: 'ft' | 'thuong'; classId: number; studentId: number; dot: DotChon;
   /** OV-15c: tên em cho câu hỏi Xóa ("Xóa lịch MT4 của Đỗ Trọng Tiến?") và ghi chú lịch thi hiện tại của em × đợt (C21). */
   tenHv?: string;
@@ -345,10 +347,10 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
   /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). OV-15c: bỏ "Huỷ MT{n}".
      SUA-NHO-UI U3 (critique 30/10): "Xóa lịch" ít dùng, rời chân hộp (tránh bấm nhầm cạnh Lưu) vào ⋯ — FT + lớp thường; mục mờ, lý do ở `title`. */
   const hoSo = attemptId !== null && dot.loai === 'ft' ? duongDotTest({ id: attemptId, kind: 'mock', classId }, null) : null;
+  /* U05 (mockup khu C): "Lịch sử" · "Mở hồ sơ MT ›" là link ở chân hộp (luôn thấy); ⋯ chỉ còn "Xóa lịch" (ít dùng, xa nút Lưu — U3 30/10). */
+  const moHoSo = hoSo && hoSo !== pathname ? hoSo : null;
   const mucDau = attemptId === null ? [] : [
-    ...(dot.loai === 'ft' ? [{ key: 'nhat-ky', nhan: CHU_MUC_HOP['nhat-ky'], onChon: () => setNhatKy('ca-luot') }] : []),
-    ...(hoSo && hoSo !== pathname ? [{ key: 'ho-so', nhan: t('Mở hồ sơ MT'), onChon: () => { onClose(); navigate(hoSo); } }] : []),
-    { key: 'xoa', nhan: t('Xóa lịch'), nguyHiem: true, keTruoc: dot.loai === 'ft', tat: !!(lyDoXoa || daSua || doiGhi || busy),
+    { key: 'xoa', nhan: t('Xóa lịch'), nguyHiem: true, tat: !!(lyDoXoa || daSua || doiGhi || busy),
       title: lyDoXoa ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined), onChon: () => setHoi(true) },
   ];
   const nutLuu = canhBao.length && !force ? t('Vẫn xếp vào tuần này') : t('Lưu');
@@ -360,25 +362,28 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
       style={{ borderColor: 'var(--line-strong)' }}>
       <div className="flex items-center justify-between gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--line)' }}>
         {/* Đợt đã có → tên là liên kết tới hồ sơ đợt (`duongDotTest`, một đường dẫn ở mọi màn); bấm thì đóng hộp. Đợt mới: chữ. */}
-        <div className="min-w-0 flex-1 text-sm font-bold text-slate-100" title={tieuDe}>
+        <div className="min-w-0 flex-1 text-[17px] font-bold text-slate-100" title={tieuDe}>
           {attemptId !== null
             ? <Link to={duongDotTest({ id: attemptId, kind: dot.loai === 'thuong' ? khoaBaiThuong(dot.kind) : 'mock', classId }, null)} onClick={onClose}
-                className="link flex min-h-[44px] items-center sm:min-h-0"><span className="truncate">{tieuDe}</span></Link>
+                className="ten-ho-so flex min-h-[44px] items-center sm:min-h-0"><span className="truncate">{tieuDe}</span></Link>
             : <span className="block truncate">{tieuDe}</span>}
         </div>
+        {maLop && <span className="shrink-0 text-[13px] text-dim">{maLop}</span>}
         {mucDau.length > 0 && <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: tieuDe })} muc={mucDau} />}
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={() => dongHop.current()} aria-label={t('Đóng')}>✕</button>
       </div>
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
+        {/* U05 (mockup khu C, nghiệm thu): thao tác CẢ LƯỢT tách khỏi thao tác TỪNG MÔN — không nhầm dời / huỷ cả lượt với một môn. */}
         {nhomChung.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[12px] font-bold  text-slate-400">{t('Tuần chung')}</span>
+            <span className="text-[13px] font-semibold text-dim">{t('Cả lượt {dot}', { dot: nhanDot(dot) })} · {t('Tuần chung')}</span>
             <div className="min-w-[220px] flex-1">
               <TuanNho nam d={{ periodId: chung?.periodId ?? null, weekStart: chung?.weekStart ?? null }} goc={homNay} onTuan={datChung} nhanKhoa={nhanChung} />
             </div>
           </div>
         )}
-        <div>
+        <div className={nhomChung.length > 0 ? 'border-t pt-2' : ''} style={{ borderColor: 'var(--line)' }}>
+          <span className="text-[13px] font-semibold text-dim">{t('Từng môn')}</span>
           {ky.map((k) => (
             <DongKyNangHop key={k} k={k} o={kn[k]} khoa={laKhoa(k)} moi={moi} loai={loai} d={rows[k]} ct={ct} homNay={ngayNghiepVu} lichSu={lichSu}
               muc={menuCua(k)} riengTuan={!!rieng[k]} tickDuoc={moi || !(kn[k]?.batBuoc ?? false) || thaoTacKyNang(ttCua(k), quyen).menu.includes('bo-ky-nang')}
@@ -439,6 +444,12 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], ghi
         </div>
       ) : (
         <div className="border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
+          {attemptId !== null && (dot.loai === 'ft' || moHoSo) && (
+            <div className="mb-2 flex items-center justify-between gap-2 text-[13px]">
+              {dot.loai === 'ft' ? <button type="button" className="link appearance-none border-0 bg-transparent p-0 font-semibold max-sm:min-h-[44px]" onClick={() => setNhatKy('ca-luot')}>{CHU_MUC_HOP['nhat-ky']}</button> : <span />}
+              {moHoSo && <button type="button" className="link appearance-none border-0 bg-transparent p-0 font-semibold max-sm:min-h-[44px]" onClick={() => { onClose(); navigate(moHoSo); }}>{t('Mở hồ sơ MT')} ›</button>}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? t('Huỷ thay đổi') : t('Đóng')}</button>
             <span className="flex-1" />

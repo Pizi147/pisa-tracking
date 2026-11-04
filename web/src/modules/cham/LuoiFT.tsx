@@ -441,7 +441,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           </OBang>
         );
       })}
-      {cot.kyVong && <OBang c={cc.kv} className={lich ? 'text-slate-300' : 'font-bold'}>{fmtBand(row.result.expectation)}</OBang>}
+      {cot.kyVong && <OBang c={cc.kv} className="font-bold">{fmtBand(row.result.expectation)}</OBang>}   {/* U06 (mockup V11): Kỳ vọng đậm cả ở Lịch Test tuần */}
       {cot.ovr && (
         <OBang c={cc.ovr}>
           {/* NEN (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
@@ -465,7 +465,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
             /* PR-MT0: chỉ chip SOS hiển thị; đủ điểm mà không SOS → `MT0 ✓` (chủ sản phẩm Q3). */
             row.mt0Sos.length ? row.mt0Sos.map((x) => <Level key={x.skill} tone="danger">{chipSosMt0(x)}</Level>)
               : row.result.complete ? <Level tone="ok">MT0 ✓</Level>
-              : <Level tone="muted">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</Level>
+              : <Level tone="muted">{choMon(row)}</Level>
           ) : (
             /* OV-1c: lượt CHỐT (đủ điểm, hoặc kỹ năng thiếu đã dời / huỷ / Không dự thi) mới có mức SOS — cờ của máy chủ, không suy từ số ô.
                Chưa chốt mà đã có SOS → chip "SOS tạm · a/4" vàng viền đứt (mockup 11/10). */
@@ -475,19 +475,25 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
                 : tuanChuaToi ? <Level tone="muted" title={t('Chưa tới tuần Test')}>{tuanLich(tuanChuaToi)}</Level>
                 /* N33 ④: lượt đã tạo chưa xếp kỹ năng nào → "Chưa xếp lịch" (không "Chờ 0 kỹ năng"). */
                 : row.result.required.length === 0 ? <Level tone="muted">{t('Chưa xếp lịch')}</Level>
-                : <Level tone="muted">{t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</Level>
+                : <Level tone="muted">{choMon(row)}</Level>
           )}
-          {row.result.scopeNote && (
-            <span className="text-xs text-slate-500 truncate max-w-full" title={row.result.scopeDetail ?? row.result.scopeNote}>
-              {row.result.scopeNote}
-            </span>
-          )}
+          {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}
         </div>
       </OBang>}
     </tr>
     {sEx?.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={row.studentName} studentId={row.studentId} cotDs={cotDs} cc={cc} />)}
     </>
   );
+}
+
+/**
+ * B19 (U06 #5, mockup V11): "Chờ L, R" — tên môn CÒN THIẾU (bắt buộc, chưa điểm, chưa huỷ), thứ tự chuẩn; W1 và W2 cùng thiếu gộp "W". Thay "Chờ n kỹ năng".
+ */
+function choMon(row: FtSheet['rows'][number]): string {
+  const thieu = row.cells.filter((c) => c.required && c.progress !== 'cancelled' && c.band === null && c.rawScore === null).map((c) => c.skill);
+  const w = thieu.includes('writing1') && thieu.includes('writing2');
+  const ten = thieu.filter((k) => !(w && k === 'writing2')).map((k) => (w && k === 'writing1' ? 'W' : skillShort(k)));
+  return ten.length ? t('Chờ {mon}', { mon: ten.join(', ') }) : t('Chờ chấm');
 }
 
 /** Chip "S Ex · dd/mm" (thẻ điện thoại) — bấm mở hộp S Ex khi có quyền; có điểm thì ghi điểm. */
@@ -525,7 +531,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     : row.result.kckDuoi ? <ChipDuoiKck />
     : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
     : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
-    : <span className="text-xs text-slate-400">{row.result.required.length === 0 ? t('Chưa xếp lịch') : t('Chờ {x} kỹ năng', { x: row.result.required.length - row.result.scoredRequired })}</span>;
+    : <span className="text-xs text-slate-400">{row.result.required.length === 0 ? t('Chưa xếp lịch') : choMon(row)}</span>;
   return (
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2">{/* DO-KHUNG-DO: thiếu chỗ thì chip xuống dòng, không cắt tên */}

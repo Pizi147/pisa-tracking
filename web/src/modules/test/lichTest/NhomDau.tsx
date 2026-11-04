@@ -10,10 +10,10 @@ export function NhomDau({ id, mo, onMo, tieuDe, phu, qua, rong, children }: {
 }) {
   return (
     <section>
-      <div className={`flex min-h-[44px] items-center gap-2.5 border-b border-[color:var(--line)] bg-[color:var(--surface-2)] px-4 py-2 text-sm font-bold ${rong ? '' : 'cursor-pointer'} ${qua && !rong ? 'text-late' : rong ? 'text-slate-400' : 'text-slate-100'}`}
+      <div className={`flex min-h-[44px] items-center gap-2.5 border-b border-[color:var(--line)] bg-[color:var(--surface-2)] px-4 py-2 text-sm font-bold ${rong ? '' : 'cursor-pointer'} ${qua && !rong ? 'text-late shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]' : rong ? 'text-slate-400' : 'text-slate-100'}`}
         onClick={rong ? undefined : (e) => { if (!(e.target as HTMLElement).closest('a,button')) onMo(); }}>
         {rong ? <span className="h-4 w-4 shrink-0" aria-hidden /> : <MuiTenMo mo={mo} onMo={onMo} nhan={tieuDe} />}
-        <span>{tieuDe}</span>
+        <span className="text-[15px]">{tieuDe}</span>
         {phu && <span className="min-w-0 text-[13px] font-normal text-slate-400">{phu}</span>}
       </div>
       {mo && !rong && <div id={id}>{children}</div>}

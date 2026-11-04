@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../../ui/ui.tsx';
-import { HangNhom } from '../../../ui/HangNhom.tsx';
+import { Link } from 'react-router-dom';
+import { MuiTenMo } from '../../../ui/HangNhom.tsx';
 import { CHIP_TRON } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
@@ -11,12 +12,14 @@ import { kyHieuLop } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
- * MỘT LỚP TRONG KẾ HOẠCH TEST: hàng lớn `HangNhom` (N-2 — `▾/▸ {mã}` · `{chi nhánh} · {n} HV` · bên phải tóm tắt: FT
- * `MT3 đang thi · MT4 chưa xếp 4 em`, lớp thường `đang W8/8`) rồi lưới HV × đợt khi mở. Lưới chỉ được tải khi mở lớp.
- * Lớp thường còn em chưa có bài → nút nhỏ `Xếp cả lớp theo đề xuất`.
+ * MỘT LỚP TRONG KẾ HOẠCH TEST — hàng lớp TÁCH TRƯỜNG (U05, mockup V11 `.hl-kh`, 10.2 #9): ▸ · mã (→ hồ sơ lớp) · n HV · GVCN · đợt đang chạy
+ * ("MT3 đang làm bài" / lớp thường "đang W8/8") · ô số "Chưa có MT kế tiếp · n em" (bấm = lọc lớp đó) hoặc "Chỉ xem"; rồi lưới HV × đợt khi mở
+ * (tải khi mở). Lớp thường còn em chưa có bài → nút nhỏ `Xếp cả lớp theo đề xuất`.
  */
-export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false, hvChon = null }: {
-  lop: LopKH; mo: boolean; onToggle: () => void; onHienDien: (open: boolean) => void; chiCanXepLai?: boolean;
+export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiChuaCoKe = false, hvChon = null, onLocLop }: {
+  lop: LopKH; mo: boolean; onToggle: () => void; onHienDien: (open: boolean) => void; chiChuaCoKe?: boolean;
+  /** Ô số "Chưa có MT kế tiếp · n em" — bật lọc cho lớp này. */
+  onLocLop?: () => void;
   /** OV-15c (C18): em vừa chọn ở ô tìm (thuộc lớp này) — lưới cuộn tới hàng em. */
   hvChon?: number | null;
 }) {
@@ -36,42 +39,38 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiCanXepLai = false
     }
   };
   const nutXep = lop.loai === 'thuong' && lop.hvChuaCoLich > 0 && !lop.chiXem ? (
-    <button type="button" className="btn btn-sm ml-2 min-h-[28px] align-middle font-normal" disabled={busy} onClick={() => void xepCaLop()}
+    <button type="button" className="btn btn-sm min-h-[28px] font-normal" disabled={busy} onClick={(e) => { e.stopPropagation(); void xepCaLop(); }}
       title={t('{n} em chưa có Progress Test / Final Test', { n: lop.hvChuaCoLich })}>
       {busy ? t('Đang tạo…') : t('Xếp cả lớp theo đề xuất')}
     </button>
   ) : null;
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-[var(--surface)]" style={{ borderColor: 'var(--line)' }}>
-      <table className="w-full">
-        <tbody>
-          <HangNhom mo={mo} onMo={onToggle} nhan={t('lớp {ma}', { ma: lop.code })}
-            tieuDe={(
-              <span className="block min-w-0">
-                <span className="flex flex-wrap items-baseline gap-x-2">
-                  <span>{lop.code}</span>
-                  {lop.chiXem && <span className={`${CHIP_TRON} !border-[var(--line-strong)] bg-[var(--surface)] text-dim`}>{t('Chỉ xem')}</span>}
-                  <span className="text-xs font-normal text-slate-400">{[lop.chiNhanh, kyHieuLop(lop.chuongTrinh, null) ?? lop.chuongTrinh].filter(Boolean).join(' · ')}{(lop.chiNhanh || lop.chuongTrinh) && ' · '}{lop.soHv} HV</span>
-                </span>
-                <span className="block text-xs font-normal text-slate-400 sm:hidden">{dich(lop.tomTat)}{nutXep}</span>
-              </span>
-            )}>
-            {/* `.hang-lon > td` đặt chữ đậm 12.5px với độ ưu tiên cao hơn tiện ích Tailwind — chữ phụ phải đặt thẳng vào style. */}
-            <td className="hidden pr-3 text-right text-slate-300 sm:table-cell" style={{ fontWeight: 400, fontSize: 12 }}>{dich(lop.tomTat)}{nutXep}</td>
-          </HangNhom>
-        </tbody>
-      </table>
-      {mo && <NoiDungLop lop={lop} onHienDien={onHienDien} chiCanXepLai={chiCanXepLai} hvChon={hvChon} />}
-    </div>
+    <section aria-label={t('lớp {ma}', { ma: lop.code })}>
+      <div className={`hl-kh ${mo ? 'mo-lop' : ''}`} onClick={onToggle}>
+        <MuiTenMo mo={mo} onMo={onToggle} nhan={t('lớp {ma}', { ma: lop.code })} />
+        <Link to={`/hoc-vien/lop/${lop.id}`} className="ten-ho-so text-[15px] font-bold" onClick={(e) => e.stopPropagation()}>{lop.code}</Link>
+        <span className="hl-kh-phu"><b className="tabular-nums">{lop.soHv}</b> HV</span>
+        <span className="hl-kh-phu">{lop.gvcn ? <>{t('GVCN')} <b>{lop.gvcn}</b></> : lop.chiNhanh}</span>
+        <span className="hl-kh-phu">{lop.dotChay ? dich(lop.dotChay) : lop.loai === 'thuong' ? dich(lop.tomTat) : ''}</span>
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          {lop.chiXem ? <span className={`${CHIP_TRON} !border-[var(--line-strong)] bg-[var(--surface)] text-dim`}>{t('Chỉ xem')}</span>
+            : lop.loai === 'ft' && lop.chuaCoLichTiep > 0 ? (
+              <button type="button" className="o-so" onClick={(e) => { e.stopPropagation(); onLocLop?.(); }}>{t('Chưa có MT kế tiếp · {n} em', { n: lop.chuaCoLichTiep })}</button>
+            ) : null}
+          {nutXep}
+        </span>
+      </div>
+      {mo && <NoiDungLop lop={lop} onHienDien={onHienDien} chiChuaCoKe={chiChuaCoKe} hvChon={hvChon} />}
+    </section>
   );
 }
 
-function NoiDungLop({ lop, onHienDien, chiCanXepLai, hvChon }: { lop: LopKH; onHienDien: (open: boolean) => void; chiCanXepLai: boolean; hvChon: number | null }) {
+function NoiDungLop({ lop, onHienDien, chiChuaCoKe, hvChon }: { lop: LopKH; onHienDien: (open: boolean) => void; chiChuaCoKe: boolean; hvChon: number | null }) {
   const ft = useApi<LuoiFTData>(lop.loai === 'ft' ? `/ke-hoach-test/ft/${lop.id}` : null);
   const th = useApi<LuoiThuongData>(lop.loai === 'thuong' ? `/ke-hoach-test/thuong/${lop.id}` : null);
   const s = lop.loai === 'ft' ? ft : th;
   if (s.error) return <div className="p-3"><ErrorState message={s.error.message} hint={s.error.hint} status={s.error.status} onRetry={s.reload} /></div>;
   if (s.loading || !s.data) return <div className="p-3"><Skeleton rows={4} /></div>;
-  return <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} chiCanXepLai={chiCanXepLai} hvChon={hvChon} />;
+  return <LuoiKeHoach loai={lop.loai} data={s.data} onReload={s.reload} onHienDien={onHienDien} chiChuaCoKe={chiChuaCoKe} hvChon={hvChon} />;
 }
