@@ -103,6 +103,8 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403 },
   },
   { trang: 'Công việc', vai: ['QL'], url: '/my-work?nguoi={gv}' },
+  /* DOC-THUA (05/11): Công việc lọc một chi nhánh — việc "Báo PH qua TVV" lọc chi nhánh trong SQL (trước đọc mọi chi nhánh rồi lọc ở JS). */
+  { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
   /* OV-14c: hàng đợi Chấm Speaking (panel của việc) — GV Speaking: mọi lớp FT chi nhánh; GV khác: rỗng. */
   { trang: 'Công việc', vai: ['GVCN', 'GVBM', 'QL'], url: '/my-work/cham-speaking' },
   /* PR-DUYET: hộp Chờ duyệt (GV 403), Yêu cầu của tôi, số đếm cho badge/dải Tổng quan. */
@@ -532,6 +534,7 @@ export const TRAN: Record<string, number> = {
   'QL /my-work?nguoi=tat-ca': 54,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80) · TL-VIEC: đo 44 (trước 64)
   'QT /my-work?nguoi=tat-ca': 54,   // TD4: đo 69 (trước 76); 16/10 +1 OV-13k +1 OV-13m = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80) · TL-VIEC: đo 44 (trước 64)
   'GVCN /my-work?nguoi=tat-ca': 12,   // TL-NEN: đo 2 (trước 7)
+  'QL /my-work?nguoi=tat-ca&branchId={cn}': 46, 'QT /my-work?nguoi=tat-ca&branchId={cn}': 46,   // DOC-THUA: đo 44 (Báo PH lọc chi nhánh trong SQL — cùng số câu), trần đo + 2
   'QL /my-work?nguoi=7': 48,   // P13 KET-PET +1: dữ liệu demo MB PET 01 tách 4 môn (GV 7 dạy L và S thay L+S) — mã P13 trên dữ liệu main đo 68, trên dữ liệu mới 69; TL-NEN: đo 52 (trước 67) · TL-VIEC: đo 38 (trước 52)
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
   'GVCN /my-work/cham-speaking': 14, 'GVBM /my-work/cham-speaking': 14, 'QL /my-work/cham-speaking': 14,   // TD4: đo 66 (trước 70)
@@ -995,6 +998,7 @@ export const TRAN_DONG: Record<string, number> = {
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
+  'QL /my-work?nguoi=tat-ca&branchId={cn}': 1420, 'QT /my-work?nguoi=tat-ca&branchId={cn}': 1427,   // DOC-THUA: đo QL 1092 · QT 1097 (trước 1093 · 1098 — seed chỉ 1 dòng Báo PH ở chi nhánh khác; DB thật bớt mọi dòng Báo PH chờ của chi nhánh khác)
   'QL /my-work': 1416,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1089 (trước 1147)
   'GVCN /my-work': 1079,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)
   'GVBM /my-work': 1085,   // TD4: đo 847 (trước 2016)   // V5 SV-SO1 sau gộp main: đo 1194 (trần cũ 1102) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 853 (trước 911); TL-VIEC: đo 834 (trước 853)
