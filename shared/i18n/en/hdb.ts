@@ -154,7 +154,7 @@ export const EN_HDB = {
   'Quyền & nhật ký': 'Permissions & log',
   'khi cần': 'when needed',
   'Tab <b>Quyền & nhật ký</b> › <b>Sửa quyền</b>: bật / tắt quyền theo vai, <b>Lưu</b> (có hộp xác nhận).': 'Tab <b>Permissions & log</b> › <b>Edit permissions</b>: turn permissions on / off per role, <b>Save</b> (with a confirmation box).',
-  'Một người cần thêm quyền: <b>Sửa</b> tài khoản › <b>Quyền cấp riêng cho người này</b> + <b>Lý do đổi quyền</b>.': 'One person needs more rights: <b>Edit</b> the account › <b>Individual permissions</b> + <b>Reason for permission change</b>.',
+  'Một người cần thêm quyền: <b>Sửa</b> tài khoản › <b>Quyền cấp riêng</b> + <b>Lý do đổi quyền</b>.': 'One person needs more rights: <b>Edit</b> the account › <b>Individual permissions</b> + <b>Reason for permission change</b>.',
   '<b>Nhật ký thay đổi gần nhất</b>: ai đổi gì, lúc nào.': '<b>Recent changes log</b>: who changed what, when.',
   'Bấm tab <b>Quyền & nhật ký</b>.': 'Click the <b>Permissions & log</b> tab.',
   'Ba tab': 'Three tabs',

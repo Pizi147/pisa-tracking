@@ -41,7 +41,7 @@ export const HD_QT: HuongDan = {
     {
       id: 'qt-quyen', ten: 'Quyền & nhật ký', khi: 'khi cần',
       buoc: ['Tab <b>Quyền & nhật ký</b> › <b>Sửa quyền</b>: bật / tắt quyền theo vai, <b>Lưu</b> (có hộp xác nhận).',
-        'Một người cần thêm quyền: <b>Sửa</b> tài khoản › <b>Quyền cấp riêng cho người này</b> + <b>Lý do đổi quyền</b>.',
+        'Một người cần thêm quyền: <b>Sửa</b> tài khoản › <b>Quyền cấp riêng</b> + <b>Lý do đổi quyền</b>.',
         '<b>Nhật ký thay đổi gần nhất</b>: ai đổi gì, lúc nào.'],
       chi: { hd: 'qt-tab', duong: '/quan-tri', chu: 'Bấm tab <b>Quyền & nhật ký</b>.' },
     },
