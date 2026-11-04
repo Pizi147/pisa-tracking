@@ -1,7 +1,12 @@
 import { ChipXetLaiDong } from './PanelXetLai.tsx';
 import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
+import { Fragment, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { DauDuoi } from '../../ui/Nhan.tsx';
+import { useThamSoUrl } from '../../lib/quayLai.ts';
+import { ODiem } from '../../ui/ODiem.tsx';
+import { NganCase } from '../students/NganCase.tsx';
+import { ChipLoc, KHOI, MUC_H, TenEm } from './BangHoSoLop.tsx';
+import { DongCase, type CanHoTro } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -12,7 +17,7 @@ import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MoiVao } from './DaiChuyenLop.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, khoaBai, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, duongHoSoHocVien, khoaBai, locCanHoTro, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -23,6 +28,8 @@ type LuotThuong = {
 };
 type DongThuong = {
   id: number; studentCode: string; fullName: string; status: string; archived: boolean; moiVao?: boolean; skills: string[] | null;
+  /** Số Case đang mở (roster) — chip lọc "Có Case", không đọc thêm. */
+  openCases: number;
   missing: { key: string; label: string; who: string }[];
   canhBaoYThuc: NhanYThucEm | null;
   /** PR-DH (04/10): Target của lớp thường (PR-NT) — chỉ để theo dõi, không so với điểm. PR-OV3a: bỏ cột Dự kiến thi. */
@@ -42,6 +49,8 @@ const TIEU_DE_LO_TRINH = t('Hướng Quản lý đã chốt (+ bổ trợ nếu 
 
 /** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
 const MOC_MAC_DINH = ['progress', 'final'];
+type Loc = 'tat-ca' | 'chua-dat' | 'case';
+type MoNgan = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa'; em: string };
 
 /**
  * TAB HỌC VIÊN · CHẾ ĐỘ ĐIỂM · LỚP THƯỜNG (đặc tả §3.7, mockup 10b phương án A).
@@ -49,9 +58,14 @@ const MOC_MAC_DINH = ['progress', 'final'];
  * lớp, tên theo chương trình (FOU L R G+V P; Pre FOU một cột Tổng hợp + cột % — MH7). Ô `đúng/tổng`, đỏ nếu chưa đạt (dưới 70%). Chưa có điểm mà đã có lịch thì ghi
  * tuần thi (`W3 SEP`, G-6); chưa có lịch thì gạch. Thiếu điểm KHÁC chưa đạt: không tô đỏ.
  * PR-OV3a (M2 §3, cách xem "Tổng hợp"): bỏ cột Dự kiến thi; cột cuối "Lộ trình tiếp theo" = hướng Quản lý đã chốt, chưa chốt → "Chưa chốt".
+ * Chủ SP 04/11 (theo U03 FT): bỏ cách xem "Cần hỗ trợ" — chip lọc Tất cả · Chưa đạt · Có Case trên thẻ bảng; ô điểm "✓ / ✗ 14/20" (`ODiem` ti-le);
+ * bấm tên → mở ngay dưới hàng: Case đang mở của em (dòng Case cũ của Cần hỗ trợ: trạng thái · PA · việc tiếp → panel Case) + "Hồ sơ HV ›" · "+ Case".
+ * Chi tiết Case chỉ đọc khi mở em đầu tiên (một `/classes/:id/can-ho-tro`, dùng lại cho các em khác).
  */
-export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon, lienTuc = false }: {
+export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon, lienTuc = false, cachXem, nutChon }: {
   classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void;
+  /** Nút đoạn Cách xem (đầu) + "Chọn nhiều" (cuối) trên hàng chip lọc của thẻ bảng — như FT. */
+  cachXem?: ReactNode; nutChon?: ReactNode;
   /** PR-LUI-b: "Chọn nhiều học viên" — bật thì mỗi dòng / thẻ có ô chọn (Quản lý / Quản trị). */
   chon?: ChonNhieu;
   /** Mã chương trình lớp (MH2) và mốc kiểm tra của chương trình (`progress`/`final`). */
@@ -61,24 +75,32 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<DongThuong[]>(`/classes/${classId}/roster`, [classId]);
-  const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, maLop, classId, onDone: () => { reload(); onDoi(); } });
+  const [daMo, setDaMo] = useState(false);
+  const chot = useApi<CanHoTro>(daMo ? `/classes/${classId}/can-ho-tro` : null, [classId, daMo]);
+  const tai = () => { reload(); if (daMo) chot.reload(); onDoi(); };
+  const tt = useThaoTacDongHocVien({ laLopThuong: true, quyen, maLop, classId, onDone: tai });
   const dienThoai = useDienThoai();
+  /* Chip lọc trên URL (`?loc=`) — Quay lại / F5 giữ lọc (như FT). */
+  const [locUrl, setLoc] = useThamSoUrl('loc', 'tat-ca');
+  const loc: Loc = locUrl === 'chua-dat' || locUrl === 'case' ? locUrl : 'tat-ca';
+  const [mo, setMo] = useState<number | null>(null);
+  const [ngan, setNgan] = useState<MoNgan | null>(null);
+  const moTen = (id: number) => { setDaMo(true); setMo(mo === id ? null : id); };
 
   if (error) return <p className="m-0 text-xs text-rose-200">{error.message}</p>;
   if (loading || !data) return <Skeleton rows={4} />;
-  const rows = data.filter((s) => !s.archived);
-  if (!rows.length) return <Empty title={t('Lớp chưa có học viên')} />;
-  const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? t('Lớp {lop}', { lop: maLop }) : t('Lớp') };   // PR-DH: Trước/Sau theo thứ tự bảng
-  const mon = rows[0].skills ?? [];
+  const tatCa = data.filter((s) => !s.archived);
+  if (!tatCa.length) return <Empty title={t('Lớp chưa có học viên')} />;
+  const mon = tatCa[0].skills ?? [];
   /* OV-6b2: lớp liên tục — mỗi Checkpoint đã có một nhóm cột (khoá `checkpoint:n`), 4 Checkpoint gần nhất.
      shortcut: chỉ 4 Checkpoint gần nhất ở Tổng hợp (đủ ở Test › Điểm theo lớp), thêm cuộn / chọn khi chủ SP cần xem cả năm. */
-  const cp = lienTuc ? [...new Set(rows.flatMap((s) => s.timeline.filter((t) => t.kind === 'checkpoint').map((t) => t.attemptNo)))].sort((a, b) => a - b).slice(-4) : [];
+  const cp = lienTuc ? [...new Set(tatCa.flatMap((s) => s.timeline.filter((t) => t.kind === 'checkpoint').map((t) => t.attemptNo)))].sort((a, b) => a - b).slice(-4) : [];
   const BAI = lienTuc ? cp.map((n) => ({ kind: khoaBai('checkpoint', n), nhan: nhanBai(khoaBai('checkpoint', n)) }))
     : (moc?.length ? moc : MOC_MAC_DINH).map((kind) => ({ kind, nhan: ATTEMPT_KIND_SHORT[kind as AttemptKind] ?? kind }));
   const luotCua = (s: DongThuong, kind: string) => s.timeline.find((x) => khoaBai(x.kind, x.attemptNo) === kind) ?? null;
   /** P13 KET-PET: cột môn của một mốc = các môn thực có của các lượt mốc đó (lượt đã ghi môn gộp cũ giữ L+S / R+W) — thứ tự: môn lớp trước. */
   const monCua = (kind: string): string[] => {
-    const co = new Set(rows.flatMap((s) => Object.keys(luotCua(s, kind)?.ratios ?? {})));
+    const co = new Set(tatCa.flatMap((s) => Object.keys(luotCua(s, kind)?.ratios ?? {})));
     return co.size ? [...mon.filter((k) => co.has(k)), ...[...co].filter((k) => !mon.includes(k))] : mon;
   };
   /* MH7: Pre FOU không chia môn — thêm cột % tổng sau cột Tổng hợp của mỗi mốc. K2-12: nhóm Cuối khoá mọi lớp thường có "% tổng"; Checkpoint cũng có. */
@@ -94,17 +116,55 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
     return o && o.score !== null && o.total ? o.score / o.total : null;
   };
 
+  /** Chưa đạt = mốc mới nhất đã có điểm có môn dưới ngưỡng (outcome máy chủ, cùng ô đỏ ✗). */
+  const chuaDat = (s: DongThuong) => {
+    for (const b of [...BAI].reverse()) {
+      const o = Object.values(luotCua(s, b.kind)?.ratios ?? {});
+      if (o.some((x) => x?.score != null)) return o.some((x) => x?.outcome === 'fail');
+    }
+    return false;
+  };
+  const dem: Record<Loc, number> = { 'tat-ca': tatCa.length, 'chua-dat': tatCa.filter(chuaDat).length, case: tatCa.filter((s) => s.openCases > 0).length };
+  const rows = tatCa.filter((s) => loc === 'tat-ca' || (loc === 'case' ? s.openCases > 0 : chuaDat(s)));
+  const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? t('Lớp {lop}', { lop: maLop }) : t('Lớp') };   // PR-DH: Trước/Sau theo thứ tự bảng
+  const thanh = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+      {cachXem}
+      {cachXem && <span aria-hidden className="h-6 w-px bg-[color:var(--line-strong)] max-sm:hidden" />}
+      {(['tat-ca', 'chua-dat', 'case'] as const).map((k) => (
+        <ChipLoc key={k} chon={loc === k} so={dem[k]} onBam={() => { setLoc(k); setMo(null); }}>{k === 'tat-ca' ? t('Tất cả') : k === 'chua-dat' ? t('Chưa đạt') : t('Có Case')}</ChipLoc>
+      ))}
+      {nutChon && <span className="ml-auto max-sm:ml-0">{nutChon}</span>}
+    </div>
+  );
+  const rongLoc = !rows.length && (
+    <div className="flex flex-col items-center gap-2 px-4 py-8 text-sm text-dim">
+      {t('Không có học viên nào')}
+      <button type="button" className="btn btn-sm" onClick={() => setLoc('tat-ca')}>{t('Tất cả')} <b className="tabular-nums">{dem['tat-ca']}</b></button>
+    </div>
+  );
+  const moRong = (s: DongThuong) => (
+    <MoRongThuong s={s} chot={chot} ct={chot.data?.ct ?? chuongTrinh} ds={ds} homNay={homNay} the={dienThoai} chiDoc={!!quyen.theoVai}
+      coTheBaoCase={quyen.coTheBaoCase} onThemCase={() => tt.moCase(s.id, s.fullName)} onMo={(n) => setNgan({ ...n, em: s.fullName })} />
+  );
+  const nganCase = ngan && (
+    <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={ngan.em} lop={maLop} onClose={() => { setNgan(null); tai(); }} onChanged={tai} />
+  );
+  const tenEm = (s: DongThuong) => <TenEm s={s} mo={mo === s.id} onMo={() => moTen(s.id)} />;
+
   /* D2: điện thoại (< 640 px) — mỗi em một thẻ, mỗi MỐC một dòng: "Giữa khoá · L 14/20 · R … · %". */
   if (dienThoai) {
     return (
       <div className="card overflow-hidden">
+        {thanh}{rongLoc}
         {rows.map((s) => (
-          <TheDong key={s.id} className={`${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
+          <Fragment key={s.id}>
+          <TheDong className={`${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
             dau={(
               <>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
                   {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-                  <Link className="ten-ho-so" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
+                  {tenEm(s)}{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
@@ -135,14 +195,19 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
               };
             })).concat([{ nhan: t('Lộ trình tiếp theo'), noiDung: <OLoTrinh lt={s.loTrinhChot ?? null} homNay={homNay} /> }],
               quyen.theoVai ? [{ nhan: t('Phụ huynh'), noiDung: s.lienHe ? <OPhuHuynh l={s.lienHe} /> : <>—</> }] : [])} />
+          {mo === s.id && <div id={`mo-${s.id}`} className="px-3 pb-3">{moRong(s)}</div>}
+          </Fragment>
         ))}
-        {tt.panels}
+        {tt.panels}{nganCase}
       </div>
     );
   }
 
+  const soCot = 1 + (lienTuc ? 0 : 2) + BAI.reduce((n, b) => n + monCua(b.kind).length + cotPhu(b.kind).length, 0) + (quyen.theoVai ? 1 : 0) + 1;
   return (
-    <div className="card table-scroll bang-dinh xl:overflow-clip">
+    <section className="card overflow-clip">
+    {thanh}
+    {rongLoc || <div className="table-scroll bang-dinh xl:overflow-clip">
       <table className="w-full min-w-[1040px] table-fixed text-sm">
         <colgroup>
           <col className="w-[19%]" />{!lienTuc && <col className="w-[6%]" />}
@@ -171,12 +236,13 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         </thead>
         <tbody>
           {rows.map((s) => (
-            <tr key={s.id} className={`row-hover ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
+            <Fragment key={s.id}>
+            <tr className={`row-hover ${mo === s.id ? 'dang-mo' : ''} ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
               {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
               <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
                   {chon?.bat && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-                  <Link className="ten-ho-so truncate" to={`/hoc-vien/${s.id}`} state={{ ds }}>{s.fullName}</Link>{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
+                  {tenEm(s)}{s.moiVao && <MoiVao />}<ChipXetLaiDong sid={s.id} />
                   <MissingBadge items={s.missing} gon />
                   <CanhBaoYThuc cb={s.canhBaoYThuc} />
                 </span>
@@ -203,10 +269,54 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 <MenuDong muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
               </td>
             </tr>
+            {mo === s.id && (
+              <tr className="dang-mo"><td id={`mo-${s.id}`} className="td px-4 py-3" colSpan={soCot}>{moRong(s)}</td></tr>
+            )}
+            </Fragment>
           ))}
         </tbody>
       </table>
-      {tt.panels}
+    </div>}
+    {tt.panels}{nganCase}
+    </section>
+  );
+}
+
+/**
+ * MỞ RỘNG MỘT EM · LỚP THƯỜNG (chủ SP 04/11 — thay cách xem "Cần hỗ trợ"): Case đang mở theo kỹ năng của chương trình (`locCanHoTro`, cùng dòng
+ * `DongCase`: Case · trạng thái · PA đang làm · việc tiếp + hạn → panel Case tại chỗ) · "Hồ sơ HV ›" · "+ Case". Lỗi tải chỉ trong vùng này + Thử lại.
+ */
+function MoRongThuong({ s, chot, ct, ds, homNay, the, chiDoc, coTheBaoCase, onThemCase, onMo }: {
+  s: DongThuong; chot: { data: CanHoTro | null | undefined; error: unknown; reload: () => void }; ct: string | null; ds: NguCanhDs; homNay: string; the: boolean;
+  chiDoc: boolean; coTheBaoCase: boolean; onThemCase: () => void; onMo: (n: Omit<MoNgan, 'em'>) => void;
+}) {
+  const e = chot.data?.em.find((x) => x.id === s.id);
+  const hang = e ? locCanHoTro({ ct, em: [e] }).em[0]?.hang ?? [] : [];
+  const NUT = 'btn h-[30px] justify-center px-2.5 text-[13px] max-sm:h-11 max-sm:flex-1';
+  return (
+    <div className={KHOI} style={{ borderColor: 'var(--line)' }}>
+      <div className="flex flex-wrap items-center gap-2">
+        <h4 className={MUC_H}>{t('Case đang mở')}{e && <span className="font-bold tabular-nums text-dim">{e.cases.length}</span>}</h4>
+        <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
+          <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(s.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
+          {coTheBaoCase && <button type="button" className={`${NUT} btn-primary`} onClick={onThemCase}>+ Case</button>}
+        </span>
+      </div>
+      {chot.error ? (
+        <div role="alert" className="flex flex-wrap items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm bg-bad-bg border-bad-line">
+          <span>{t('Chưa tải được chi tiết Case.')}</span>
+          <button type="button" className="btn btn-sm ml-auto" onClick={chot.reload}>{t('Thử lại')}</button>
+        </div>
+      ) : !chot.data ? <Skeleton rows={2} />
+        : !hang.some((h) => h.kind !== 'rong' && h.cases.length) ? <p className="m-0 text-[13px] text-dim">{t('Không có Case nào đang mở.')}</p>
+        : (
+          <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
+            {hang.flatMap((h) => (h.kind === 'rong' ? [] : h.cases.map((c, i) => (
+              <DongCase key={c.id} h={h} c={c} dau={i === 0} ct={ct} homNay={homNay} the={the} chiDoc={chiDoc}
+                onMo={(viec, paId) => onMo({ caseId: c.id, viec, paId })} />
+            ))))}
+          </div>
+        )}
     </div>
   );
 }
@@ -229,13 +339,8 @@ function OLoTrinh({ lt, homNay }: { lt: LoTrinhChot | null; homNay: string }) {
 
 function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null; homNay: string }) {
   if (o && o.score !== null && o.total !== null) {
-    const truot = o.outcome === 'fail';
-    /* PR-N1 A3: trượt có dấu mảnh ▾ — không chỉ dựa vào màu. */
-    return (
-      <span className={truot ? 'font-semibold text-rose-300' : 'text-slate-100'} title={truot ? t('Chưa đạt') : t('Đạt')}>
-        {truot && <DauDuoi />}{o.score}/{o.total}
-      </span>
-    );
+    /* Chủ SP 04/11 (theo U03): "✓ / ✗ 14/20" — một mẫu ô điểm `ODiem` (dấu + màu, không chỉ màu). */
+    return <ODiem kieu="ti-le" so={String(o.score)} tong={o.total} kq={o.outcome === 'pass' ? 'vuot' : o.outcome === 'fail' ? 'duoi' : null} />;
   }
   if (tuan) {
     /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */

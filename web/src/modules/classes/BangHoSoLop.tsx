@@ -47,8 +47,8 @@ const NHAN_KN: Record<Kn, string> = { l: 'L', r: 'R', w1: 'W1', w2: 'W2', s: 'S'
 const CHIP_CHON = 'font-semibold border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]';
 const CHIP_THUONG = 'font-medium border-[color:var(--line-strong)] bg-transparent text-slate-400 hover:text-slate-100';
 /* Mockup U03 `.khoi` / `.muc-h`: khối nền thẻ trong vùng mở rộng, tiêu đề 15/700 có vạch nhấn trái. */
-const KHOI = 'grid min-w-0 content-start [&>*]:min-w-0 gap-2.5 rounded-[10px] border bg-[color:var(--surface)] px-3.5 py-3 max-sm:px-2.5';
-const MUC_H = "m-0 flex items-center gap-2 text-[15px] font-bold text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)] before:content-['']";
+export const KHOI = 'grid min-w-0 content-start [&>*]:min-w-0 gap-2.5 rounded-[10px] border bg-[color:var(--surface)] px-3.5 py-3 max-sm:px-2.5';
+export const MUC_H = "m-0 flex items-center gap-2 text-[15px] font-bold text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)] before:content-['']";
 const TAG = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim [&_b]:font-bold [&_b]:text-slate-100';
 
 /** Lượt hiện của em (P8 — lượt của TỪNG HV): lượt máy chủ kết luận (`standing`, cùng `standingFor` của Học viên & Lớp); chưa có → lượt mới nhất có điểm. */
@@ -247,10 +247,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
         {cachXem}
         {cachXem && <span aria-hidden className="h-6 w-px bg-[color:var(--line-strong)] max-sm:hidden" />}
         {(['tat-ca', 'sos', 'thieu'] as const).map((k) => (
-          <button key={k} type="button" aria-pressed={loc === k} onClick={() => { setLoc(k); setMo(null); }}
-            className={`relative h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-10 max-sm:after:absolute max-sm:after:inset-x-0 max-sm:after:-inset-y-0.5 max-sm:after:content-[''] ${loc === k ? CHIP_CHON : CHIP_THUONG}`}>
-            {k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? 'SOS' : t('Chưa đủ dữ liệu')} <span className="font-bold tabular-nums">{dem[k]}</span>
-          </button>
+          <ChipLoc key={k} chon={loc === k} so={dem[k]} onBam={() => { setLoc(k); setMo(null); }}>{k === 'tat-ca' ? t('Tất cả') : k === 'sos' ? 'SOS' : t('Chưa đủ dữ liệu')}</ChipLoc>
         ))}
         {nutChon && <span className="ml-auto max-sm:ml-0">{nutChon}</span>}
       </div>
@@ -489,8 +486,18 @@ function TomTatKn({ r, kn, ca, ds, diemDv, coTheBaoCase, onChiTiet, onThemCase }
   );
 }
 
+/** Chip lọc của thẻ bảng hồ sơ lớp (FT · lớp thường): "Tất cả 18" — số đậm. */
+export function ChipLoc({ chon, so, onBam, children }: { chon: boolean; so: number; onBam: () => void; children: ReactNode }) {
+  return (
+    <button type="button" aria-pressed={chon} onClick={onBam}
+      className={`relative h-8 whitespace-nowrap rounded-full border px-3 text-[13px] max-sm:h-10 max-sm:after:absolute max-sm:after:inset-x-0 max-sm:after:-inset-y-0.5 max-sm:after:content-[''] ${chon ? CHIP_CHON : CHIP_THUONG}`}>
+      {children} <span className="font-bold tabular-nums">{so}</span>
+    </button>
+  );
+}
+
 /** U03: bấm tên em = mở / đóng vùng mở rộng ngay dưới hàng (không đổi trang); "Hồ sơ HV ›" trong vùng mở rộng mang `state.ds` (Trước / Sau). */
-function TenEm({ s, mo, onMo }: { s: Hang; mo: boolean; onMo: () => void }) {
+export function TenEm({ s, mo, onMo }: { s: { id: number; fullName: string }; mo: boolean; onMo: () => void }) {
   return (
     <button type="button" aria-expanded={mo} aria-controls={`mo-${s.id}`} onClick={onMo}
       className={`max-w-full truncate border-0 bg-transparent p-0 text-left font-semibold text-slate-100 ${mo ? '' : 'hover:underline'}`}>{s.fullName}{mo && <span aria-hidden> ▾</span>}</button>

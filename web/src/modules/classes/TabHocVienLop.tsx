@@ -6,7 +6,6 @@ import { useApi } from '../../lib/useApi.ts';
 import { NoiDungThongTinLop } from './ThongTinLopPanel.tsx';
 import { BangHoSoLop } from './BangHoSoLop.tsx';
 import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
-import { BangCanHoTro } from './BangCanHoTro.tsx';
 import { BangKqdrLopFt } from './BangKqdrLopFt.tsx';
 import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
@@ -24,16 +23,16 @@ import { t } from '@shared/i18n/index.ts';
  *              ô đúng/tổng (10b phương án A) + cột Lộ trình tiếp theo (hướng Quản lý đã chốt)
  *   (P9b: "Lộ trình tiếp theo" thành trang con Cuối khoá `?xem=cuoi-khoa` của hồ sơ lớp — `?che-do=lo-trinh` cũ chuyển sang đó.)
  *   (Góp ý hàng tuần OV-12g gỡ 24/10 — chủ SP; link cũ `?che-do=gop-y` mở Tổng hợp; dữ liệu cũ: ⋯ › Lịch sử góp ý tuần.)
- *   Cần hỗ trợ học viên có Case mở: vấn đề chính · PA đang chạy · bước tiếp theo + hạn (mockup 06, cho GVCN họp nhanh)
+ *   (Cần hỗ trợ bỏ: FT ở U03 03/11, lớp thường 04/11 — Case xem ở mở rộng dưới hàng em; link cũ của cách xem này mở Tổng hợp.)
  *   Kết quả đầu ra (OV-3c, lớp FT; `?che-do=ket-qua`) KQĐR lớp trước của em vào từ FOU/BE/ELE, chỉ khi còn đợt trong 4 tuần (`dai.kqdrDot`);
  *              hết đợt mà mở URL cũ → cách xem mặc định
  * PR-LUI-b (06/10): Quản lý / Quản trị có nút "Chọn nhiều học viên" ở cách xem Tổng hợp — ô chọn hiện ngay trên danh sách, thanh thao tác dính đáy
  * (Lưu trữ · Kết thúc học · Huỷ chuyển lớp · Bỏ chọn), bấm một việc ra panel xem trước rồi xác nhận.
  */
-export type CheDoHocVien = 'diem' | 'can-ho-tro' | 'ket-qua' | 'thong-tin';
+export type CheDoHocVien = 'diem' | 'ket-qua' | 'thong-tin';
 /** Tên cách xem — cũng là chi tiết của nút "‹ Hồ sơ lớp …" khi đi từ hồ sơ lớp sang hồ sơ khác (PR-OV5b). */
 export const CHE_DO_NHAN: Record<CheDoHocVien, string> = {
-  diem: t('Tổng hợp'), 'can-ho-tro': t('Cần hỗ trợ'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
+  diem: t('Tổng hợp'), 'ket-qua': t('Kết quả đầu ra'), 'thong-tin': t('Thông tin lớp'),
 };
 export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, onThemHocVien }: {
   lop: HoSoLop; cheDo: CheDoHocVien; moChon?: boolean; onCheDo: (m: CheDoHocVien) => void;
@@ -44,13 +43,13 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   const soDot = lop.dai?.kqdrDot ?? 0;
   const { can, session } = useSession();
   /*
-   * OV-10b (mockup vai mục 2, 6): TVV / CX — Tổng hợp (cột Phụ huynh thay Theo dõi) · Lộ trình tiếp theo / KQĐR đã chốt · Cần hỗ trợ (đọc) · Thông tin
+   * OV-10b (mockup vai mục 2, 6): TVV / CX — Tổng hợp (cột Phụ huynh thay Theo dõi) · Lộ trình tiếp theo / KQĐR đã chốt · Thông tin
    * lớp (đọc); Admin — Tổng hợp · Thông tin lớp. QL / GV không đổi.
    */
   const vai = vaiXemHocVien(session?.roles);
   const cacCheDo: CheDoHocVien[] = [
-    /* U03 (chủ SP 03/11): lớp FT bỏ hẳn bảng "Cần hỗ trợ" — Case xem ở mở rộng dưới hàng em (ô kỹ năng → tóm tắt → panel). Lớp thường giữ ([XM] khop-khac). */
-    'diem', ...(vai !== 'admin' && thuong ? ['can-ho-tro' as const] : []),
+    /* U03 (chủ SP 03/11) + lớp thường (04/11): bỏ hẳn bảng "Cần hỗ trợ" — Case xem ở mở rộng dưới hàng em. */
+    'diem',
     ...(soDot && vai !== 'admin' ? ['ket-qua' as const] : []), ...(vai ? ['thong-tin' as const] : []),
   ];
   const cheDo: CheDoHocVien = cacCheDo.includes(cheDoUrl) ? cheDoUrl : 'diem';
@@ -74,7 +73,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
    * V8-HSL (mockup v8, chủ SP duyệt 29/10): Cách xem là nút đoạn liền ĐẦU hàng công cụ của thẻ bảng (Tổng hợp FT: cùng hàng lọc · lượt · Chọn nhiều).
    * "Sửa thông tin" dời sang ⋯ đầu trang › Lớp › Sửa thông tin học viên (cùng panel `SuaCaLopPanel`). Cách xem khác (mockup không vẽ): hàng riêng như cũ.
    */
-  /* Chỉ một cách xem (FT không còn Cần hỗ trợ / chưa có đợt KQĐR) → không vẽ nút đoạn một mục (mockup U03). */
+  /* Chỉ một cách xem (không còn Cần hỗ trợ / chưa có đợt KQĐR) → không vẽ nút đoạn một mục (mockup U03). */
   const cachXem = cacCheDo.length < 2 ? null : (
     <BoLocDoan v8 ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
       muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
@@ -83,7 +82,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
     <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
       className={`btn h-[30px] px-2.5 text-[13px] max-sm:h-11 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{chon.bat ? '✓ ' : ''}{t('Chọn nhiều')}</button>
   ) : null;
-  const trongThe = cheDo === 'diem' && !thuong;
+  const trongThe = cheDo === 'diem';
   return (
     <div className="space-y-2">
       {!trongThe && (cachXem || nutChon) && (
@@ -98,11 +97,9 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
         )
         : cheDo === 'ket-qua'
         ? <BangKqdrLopFt classId={lop.id} />
-        : cheDo === 'can-ho-tro'
-        ? <BangCanHoTro classId={lop.id} maLop={lop.code} laLopThuong={thuong} quyen={quyen} onDoi={onDoi} chuongTrinh={lop.programme?.code ?? null} />
         : thuong
           ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
-              chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} />
+              chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} cachXem={cachXem} nutChon={nutChon} />
           : <BangHoSoLop classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} cachXem={cachXem} nutChon={nutChon} />}
       {coTheChon && (
