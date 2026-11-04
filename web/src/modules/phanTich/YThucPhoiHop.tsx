@@ -190,7 +190,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       <DaiChiSo ds={[
         { ten: t('HV cần chú ý'), ky: t('hôm nay'), gt: <OSo giaTri={d.hvCanChuY.length} nguon={nguon('hv-can-chu-y', 'hv')} tieuDe={t('HV cần chú ý')} vung="chi-so" />, mau: nhom || undefined },
         { ten: t('Vi phạm'), ky: t('trong kỳ'), gt: <OSo giaTri={viPham} nguon={nguon('tong', 'vi-pham')} tieuDe={t('Vi phạm')} vung="chi-so" />, mau: `${nhanSoVoiTruoc(d.soVoiTruoc).chu} ${t('so kỳ trước')}` },
-        { ten: t('Chưa xử lý'), gt: <OSo giaTri={cong('chuaXuLy')} nguon={nguon('tong', 'chua-xu-ly')} tieuDe={t('Chưa xử lý')} vung="chi-so" />, mau: viPham ? t('trên {n} vi phạm', { n: viPham }) : undefined },
+        { ten: t('Chưa xử lý'), gt: <OSo giaTri={cong('chuaXuLy')} nguon={nguon('tong', 'chua-xu-ly')} tieuDe={t('Chưa xử lý')} vung="chi-so" /> },   // PT-GON (M3): "trên n vi phạm" = ô Vi phạm ngay cạnh
         { ten: t('Lớp có vi phạm'), gt: <OSo giaTri={lop.length} nguon={nguon('tong', 'lop')} tieuDe={t('Lớp có vi phạm')} vung="chi-so" />, mau: siSo ? `${hv}/${siSo} HV` : hv ? t('{n} HV', { n: hv }) : undefined },
       ]} />
     );
@@ -214,7 +214,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                 : <><div ref={ptHv.thanh.dauBang} />{dienThoai ? ptHv.cat(data.hvCanChuY).map(theHv) : bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
             </Card>
             <Card bodyClass="p-0">
-              <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} phu={t('xếp theo vi phạm chưa xử lý')} />
+              <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} cachTinh={t('xếp theo vi phạm chưa xử lý')} />   {/* PT-GON (M4): cách xếp vào ⓘ */}
               {data.lop.length === 0 && !data.gom
                 ? <div className="p-4"><Empty title={t('Chưa có vi phạm nào trong {ky}', { ky: nhanKy })} hint={t('Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /></div>
                 : (

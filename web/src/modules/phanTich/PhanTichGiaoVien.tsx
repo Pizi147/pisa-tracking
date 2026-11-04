@@ -107,7 +107,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
 
   return (
     <div className="space-y-3">
-      {/* V8-PT (mockup B2): Gọn | Đầy đủ + Tìm GV lên hàng lọc chung (khe giữa); "n GV · xếp theo tên" cuối hàng — chi nhánh, khoảng đã ở đầu trang / hàng lọc. */}
+      {/* V8-PT (mockup B2): Gọn | Đầy đủ + Tìm GV lên hàng lọc chung (khe giữa) — chi nhánh, khoảng đã ở đầu trang / hàng lọc. */}
       <VaoHangLoc>
         <span role="group" aria-label={t('Bộ cột')} className={DOAN}>
           {([['gon', t('Gọn')], ['day', t('Đầy đủ')]] as const).map(([k, nhan]) => (
@@ -117,11 +117,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
         <input type="search" name="tim-gv" autoComplete="off" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)}
           className="h-9 w-[200px] rounded-lg border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-3 text-sm text-[color:var(--text)] placeholder:text-[color:var(--text-faint)] max-sm:h-11 max-sm:w-full" />
       </VaoHangLoc>
-      {data && (
-        <VaoHangLoc o="phai">
-          <span className="whitespace-nowrap text-[13px] text-[color:var(--text-dim)] max-sm:hidden">{t('{n} GV · xếp theo tên', { n: data.hang.length })}</span>
-        </VaoHangLoc>
-      )}
+      {/* PT-GON (M3): bỏ "n GV · xếp theo tên" cuối hàng lọc — số GV ở chip đầu bảng, "xếp theo tên" ở ⓘ. */}
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : (

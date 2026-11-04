@@ -294,17 +294,15 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const tong = data?.tong ?? {};
   const luot = tong.luot ?? 0;
   const quaHanTong = tong.choDuyetQuaHan ?? 0;
-  const chipSos = (['sos1', 'sos2', 'sos3'] as const).map((k): ReactNode => {
-    const n = tong[k] ?? 0, nhan = `${dich(cotSo(k)?.nhan(ct) ?? k)} · ${n}`;
-    return n > 0
-      ? <span key={k} className={`${CHIP_VUONG} px-1.5 ${MAU_O[k]}`}>{soTong(k, SO_TRONG_CHIP, nhan)}</span>
-      : <span key={k} className="text-xs font-medium text-[color:var(--text-faint)]">{nhan}</span>;
-  });
+  /* PT-GON (M4): mức SOS bằng 0 không thành chip "SOS 3 · 0"; không mức nào → "0". */
+  const chipSos = (['sos1', 'sos2', 'sos3'] as const).filter((k) => (tong[k] ?? 0) > 0).map((k): ReactNode => (
+    <span key={k} className={`${CHIP_VUONG} px-1.5 ${MAU_O[k]}`}>{soTong(k, SO_TRONG_CHIP, `${dich(cotSo(k)?.nhan(ct) ?? k)} · ${tong[k]}`)}</span>
+  ));
   const chiSo: ChiSo[] = !data ? [] : [
-    { ten: laThuong ? t('Bài kiểm tra') : t('Lượt MT'), ky: t('trong kỳ'), gt: soTong('luot'), mau: `${t('{n} HV', { n: data.soHv })} · ${demTheo(theo, data.hang.length)}` },
+    { ten: laThuong ? t('Bài kiểm tra') : t('Lượt MT'), ky: t('trong kỳ'), gt: soTong('luot'), mau: t('{n} HV', { n: data.soHv }) },   // PT-GON (M3): số tuần / lớp đã ở chip đầu bảng
     ...(laThuong ? [] : [
-      { ten: t('Đạt'), gt: soTong('dat'), nho: luot ? `${Math.round(((tong.dat ?? 0) * 100) / luot)} %` : undefined, mau: t('trên {n} lượt', { n: luot }) },
-      { ten: 'SOS', rong2: true, gt: <span className="flex flex-wrap items-center gap-1.5 py-1">{chipSos}</span>,
+      { ten: t('Đạt'), gt: soTong('dat'), nho: luot ? `${Math.round(((tong.dat ?? 0) * 100) / luot)} %` : undefined },   // PT-GON (M3): "trên n lượt" = ô Lượt MT ngay cạnh
+      { ten: 'SOS', rong2: true, gt: chipSos.length ? <span className="flex flex-wrap items-center gap-1.5 py-1">{chipSos}</span> : 0,
         mau: t('{n} lượt', { n: (tong.sos1 ?? 0) + (tong.sos2 ?? 0) + (tong.sos3 ?? 0) }) },
     ]),
     { ten: t('Thiếu điểm'), gt: soTong('chuaDu'), mau: laThuong ? undefined : t('gồm SOS tạm') },
@@ -375,8 +373,8 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
             </div>
           ) : (
             <Card bodyClass="p-0">
-              <DauThe ten={NHAN_XEP[theo]} dem={demTheo(theo, data.hang.length)}
-                phu={`${laThuong ? t('{n} bài', { n: luot }) : t('{n} lượt MT', { n: luot })} · ${CHUONG_TRINH_LABEL[ct]}`} cachTinh={cachTinh} />
+              {/* PT-GON (M3): bỏ dòng phụ "16 lượt MT · Fast Track" — số lượt ở ô chỉ số, chương trình ở hàng lọc. */}
+              <DauThe ten={NHAN_XEP[theo]} dem={demTheo(theo, data.hang.length)} cachTinh={cachTinh} />
               {/* V8-PT: phân trang chỉ dưới bảng (bỏ lặp); neo đầu bảng giữ để lật ở thanh dưới cuộn về đây. */}
               <div ref={pt.thanh.dauBang} />
               <div className="table-scroll bang-dinh bang-dinh-1440">

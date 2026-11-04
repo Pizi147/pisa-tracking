@@ -119,7 +119,7 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
     const x = r.kn[k];
     if (x.band === null) return <span className="whitespace-nowrap text-[13px] font-normal text-faint">{t('chưa có')}</span>;
     const kq = x.dat === false ? 'duoi' : r.kyVong !== null && x.band > r.kyVong ? 'vuot' : 'bang';
-    return <span className={`inline-flex items-center gap-1 font-semibold tabular-nums ${x.dat !== null ? lopKq(kq) : ''}`}>{x.dat !== null && <DauKetQua kq={kq} />}{x.band.toFixed(1)}</span>;
+    return <span className={`inline-flex items-center gap-1 font-medium tabular-nums ${x.dat !== null ? lopKq(kq) : ''}`}>{x.dat !== null && <DauKetQua kq={kq} />}{x.band.toFixed(1)}</span>;
   };
   const ketQua = (r: DongMock) => <NhanKq kq={r.ketQua === 'chua-du' ? 'thieu' : r.ketQua}>{NHAN_KET_QUA_MOCK[r.ketQua]}</NhanKq>;
   /* U08-4: chip SOS là nút mở panel Case theo kỹ năng (chip chỉ vẽ — `tinh`, không lồng nút). */
@@ -135,14 +135,15 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
 
   const tg = data?.tong;
   const soSos = tg ? tg.sos1 + tg.sos2 + tg.sos3 : 0;
-  const chipSos = (m: 1 | 2 | 3, n: number) => (
-    <span key={m} className={`${CHIP_SOS} ${n ? lopSos(m) : 'border border-[color:var(--line)] text-faint'}`}>
-      {n ? <OSo giaTri={n} nhan={`SOS ${m} · ${n}`} className={SO_TRONG_CHIP} nguon={`/phan-tich/ket-qua-thi/o?${query}&o=sos${m}`} tieuDe={`SOS ${m} · ${t('Mock Test')}`} vung="chi-so" /> : `SOS ${m} · 0`}
+  /* PT-GON (M4): mức SOS bằng 0 không thành chip "SOS 1 · 0"; không mức nào → "0". */
+  const chipSos = (m: 1 | 2 | 3, n: number) => (n ? (
+    <span key={m} className={`${CHIP_SOS} ${lopSos(m)}`}>
+      <OSo giaTri={n} nhan={`SOS ${m} · ${n}`} className={SO_TRONG_CHIP} nguon={`/phan-tich/ket-qua-thi/o?${query}&o=sos${m}`} tieuDe={`SOS ${m} · ${t('Mock Test')}`} vung="chi-so" />
     </span>
-  );
+  ) : null);
   const dauThe = (
+    /* PT-GON (M3): bỏ "xếp theo lớp → tên" — ô Xếp theo trên hàng lọc đã nói. */
     <DauThe ten={t('Lượt Mock Test')} dem={t('{n} lượt', { n: rows.length })}
-      phu={xep === 'sos' ? t('xếp theo mức SOS → lớp → tên') : t('xếp theo lớp → tên')}
       cachTinh={<>
         <p className="m-0">{t('Đạt: OVR ≥ kỳ vọng của đợt (MT1 = Target − 1 · MT2 = Target − 0,5 · từ MT3 = Target).')}</p>
         <p className="m-0 mt-1">{t('Chưa đủ điểm: thiếu kỹ năng nên chưa có OVR — không vào tỷ lệ Đạt.')}</p>
@@ -164,7 +165,7 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
         </OChon>
       </VaoHangLoc>
       <VaoHangLoc o="phai">
-        <NutXuat nhan={t('Xuất Excel · {n} lượt', { n: rows.length })} tat={!rows.length} onClick={xuatExcel} />
+        <NutXuat nhan={t('Xuất Excel')} tat={!rows.length} onClick={xuatExcel} />   {/* PT-GON (M3): số lượt ở chip đầu bảng */}
       </VaoHangLoc>
       <div className="space-y-3">
         {tg && (
@@ -173,10 +174,10 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
             { ten: t('Lượt'), ky: t('trong kỳ'), gt: soThe(query, 'luot', tg.luot, `${t('Lượt')} · ${t('Mock Test')}`), mau: t('{n} HV', { n: tg.hv }) },
             { ten: t('Đạt'), gt: soThe(query, 'dat', tg.dat, `${t('Đạt')} · ${t('Mock Test')}`), nho: phanTram(tg.dat, tg.dat + tg.chuaDat) },
             { ten: t('Chưa đạt'), gt: soThe(query, 'chua-dat', tg.chuaDat, `${t('Chưa đạt')} · ${t('Mock Test')}`), nho: phanTram(tg.chuaDat, tg.dat + tg.chuaDat) },
-            { ten: t('Chưa đủ điểm'), gt: soThe(query, 'chua-du', tg.chuaDu, `${t('Chưa đủ điểm')} · ${t('Mock Test')}`), mau: t('không vào tỷ lệ') },
+            { ten: t('Chưa đủ điểm'), gt: soThe(query, 'chua-du', tg.chuaDu, `${t('Chưa đủ điểm')} · ${t('Mock Test')}`) },   // PT-GON (M4): "không vào tỷ lệ" ở ⓘ đầu bảng
             {
               ten: 'SOS', rong2: true,
-              gt: <span className="mt-1.5 flex flex-wrap gap-1.5">{chipSos(3, tg.sos3)}{chipSos(2, tg.sos2)}{chipSos(1, tg.sos1)}</span>,
+              gt: soSos ? <span className="mt-1.5 flex flex-wrap gap-1.5">{chipSos(3, tg.sos3)}{chipSos(2, tg.sos2)}{chipSos(1, tg.sos1)}</span> : 0,
               mau: <>{t('{n} lượt', { n: soSos })}{tg.sosTam ? ` · ${t('{n} tạm', { n: tg.sosTam })}` : ''}</>,
             },
           ]} />
@@ -220,9 +221,9 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
                       <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className={`text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link></td>
                       <td className="td">{oLop(r.lop, r.classId)}</td>
                       <td className="td">{mt(r)}</td>
-                      <td className="td text-center font-bold tabular-nums">{r.ovr === null ? <span className="font-normal text-faint">—</span> : fmtBand(r.ovr)}</td>
+                      <td className="td text-center font-medium tabular-nums">{r.ovr === null ? <span className="font-normal text-faint">—</span> : fmtBand(r.ovr)}</td>
                       {KN_THI.map((k) => <td key={k} className="td text-center">{knO(r, k)}</td>)}
-                      <td className="td text-center font-bold tabular-nums">{fmtBand(r.kyVong)}</td>
+                      <td className="td text-center font-medium tabular-nums">{fmtBand(r.kyVong)}</td>
                       <td className="td">{ketQua(r)}</td>
                       <td className="td">{sos(r)}</td>
                     </tr>
@@ -276,7 +277,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
   const nhom = [...new Set(hien.map((r) => r.lop ?? ''))];
   const tg = data?.tong;
   const dauThe = (
-    <DauThe ten={t('Kết quả thi thật')} dem={t('{n} lượt', { n: rows.length })} phu={t('theo lớp → ngày thi')}
+    <DauThe ten={t('Kết quả thi thật')} dem={t('{n} lượt', { n: rows.length })}   /* PT-GON (M4): bỏ "theo lớp → ngày thi" — hàng nhóm lớp đã cho thấy */
       cachTinh={<>
         <p className="m-0">{t('Đạt Target: OVR ≥ Target, tính lúc nhập kết quả.')}</p>
         <p className="m-0 mt-1">{t('Bước tiếp chọn ở Sau thi (Công việc TVV / hồ sơ HV); ở đây chỉ xem.')}</p>
@@ -285,7 +286,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
   return (
     <>
       <VaoHangLoc o="phai">
-        <NutXuat nhan={t('Xuất Excel · {n} lượt', { n: rows.length })} tat={!rows.length} onClick={xuatExcel} />
+        <NutXuat nhan={t('Xuất Excel')} tat={!rows.length} onClick={xuatExcel} />   {/* PT-GON (M3): số lượt ở chip đầu bảng */}
       </VaoHangLoc>
       <div className="space-y-3">
         {tg && (
@@ -293,7 +294,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
             { ten: t('Lượt thi'), ky: t('trong kỳ'), gt: soThe(query, 'luot', tg.luot, t('Lượt thi')), mau: t('{n} HV', { n: tg.hv }) },
             { ten: t('Đạt Target'), gt: soThe(query, 'dat', tg.dat, t('Đạt Target')), nho: phanTram(tg.dat, tg.dat + tg.chuaDat) },
             { ten: t('Chưa đạt'), gt: soThe(query, 'chua-dat', tg.chuaDat, `${t('Chưa đạt')} · ${t('Thi thật')}`), nho: phanTram(tg.chuaDat, tg.dat + tg.chuaDat) },
-            { ten: t('Bước tiếp chưa chọn'), gt: soThe(query, 'chua-chon', tg.chuaChon, t('Bước tiếp chưa chọn')), mau: t('chọn ở Sau thi (TVV)') },
+            { ten: t('Bước tiếp chưa chọn'), gt: soThe(query, 'chua-chon', tg.chuaChon, t('Bước tiếp chưa chọn')) },   // PT-GON (M4): nơi chọn ở ⓘ đầu bảng
           ]} />
         )}
         <VungBang dau={dauThe} error={error} reload={reload} loading={loading || !data} pt={pt.thanh}
@@ -343,9 +344,9 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                             <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className={`text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link></td>
                             <td className="td">{oLop(r.lop, r.classId)}</td>
                             <td className="td text-dim tabular-nums">{ngay(r.ngayThi, homNay)}</td>
-                            <td className="td text-center font-bold tabular-nums">{fmtBand(r.ovr)}</td>
+                            <td className="td text-center font-medium tabular-nums">{fmtBand(r.ovr)}</td>
                             {[r.l, r.r, r.w, r.s].map((x, i) => <td key={i} className="td text-center tabular-nums">{fmtBand(x)}</td>)}
-                            <td className="td text-center font-bold tabular-nums">{r.target}</td>
+                            <td className="td text-center font-medium tabular-nums">{r.target}</td>
                             <td className="td">{datTarget(r)}</td>
                             <td className="td">{buocTiep(r)}</td>
                           </tr>

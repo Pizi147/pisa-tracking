@@ -20,7 +20,7 @@ export default function PhanTichPage() {
     setParams(next);
   };
   return (
-    <div className="page space-y-4">
+    <div className="page so-gon space-y-4">   {/* PT-GON: `.so-gon` — số bấm được không gạch chân khi không rê, ô số bảng 500 (như Tổng quan, Hồ sơ lớp) */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 print:hidden">
         <div className="flex flex-wrap items-baseline gap-x-3">
           {/* V8-PT (mockup `.dau-trang`): tiêu đề 22 / 700, ngày dữ liệu 13 mờ. */}
