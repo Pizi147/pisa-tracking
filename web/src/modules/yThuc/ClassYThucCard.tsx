@@ -8,7 +8,7 @@ import { Menu } from '../../ui/Menu.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ngay, type NhomEm } from '@shared/domain/index.ts';
+import { ngay, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
 import { usePanelYThuc, type PanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
@@ -238,7 +238,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     xem: d.dongThoiGian.filter((x) => x.studentId === sid && x.loai === 'vi-pham' && x.trangThai === 'da_ghi_nhan').length,
   });
 
-  const ctx: NguCanh = { homNay, canManage: d.canManage, coTheDuyet: d.coTheDuyet, gvcn: d.gvcn, chonN, dangGhi, vuaLuu, mo, onDaXem: (x, ids) => void daXem(x, x.studentId, ids), onBaoPh: setBaoPh, onDuyet: setDuyet,
+  const ctx: NguCanh = { homNay, canManage: d.canManage, coTheDuyet: d.coTheDuyet, gvcn: d.gvcn, tvvChinh: tvvChinhCuaLop((roster.data ?? []).filter((r: any) => !r.archived)), chonN, dangGhi, vuaLuu, mo, onDaXem: (x, ids) => void daXem(x, x.studentId, ids), onBaoPh: setBaoPh, onDuyet: setDuyet,
     onHoanTac: (sid) => { const v = vuaXem[sid]; if (v) void daXem(null, sid, v.ids, true); }, onXemLai: xemLai };
   const hang = (ds: { x: DongEm; k: KieuHang }[]) => ds.map(({ x, k }) => (
     <HangEm key={`${k}${x.studentId}`} x={x} k={k} c={ctx} vua={vuaXem[x.studentId]}
@@ -410,6 +410,8 @@ const COT = '[@container(min-width:1220px)]:grid-cols-[190px_minmax(130px,1fr)_1
 
 type NguCanh = {
   homNay: string; canManage: boolean; coTheDuyet: boolean; gvcn: string | null; chonN: ChonNhieu; dangGhi: number | null;
+  /** HSL-GON (M3): TVV chính của lớp (đầu hồ sơ lớp đã ghi) — hàng em chỉ ghi TVV khác. */
+  tvvChinh: string | null;
   vuaLuu: { sid: number; luc: string } | null;
   mo: (p: PanelYThuc) => void; onDaXem: (x: DongEm, ids: number[]) => void; onBaoPh: (x: DongEm) => void;
   onDuyet: (v: { id: number; thuHoi: boolean; moSan: 'duyet' | 'tu-choi' }) => void;
@@ -422,9 +424,9 @@ function NhomHang({ chu, dem, luat, i, tong, children }: { chu: string; dem: Rea
     <section aria-label={chu}>
       <div className={`flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b px-4 py-2.5 max-sm:px-3 ${tong === 'bb' ? 'bg-soon-bg' : ''}`}
         style={{ borderColor: 'var(--line)', background: tong === 'bb' ? undefined : tong === 'gap' ? 'var(--surface)' : 'var(--surface-2)' }}>
-        <h3 className={`m-0 text-[15px] font-bold ${tong === 'bb' ? 'text-soon' : 'text-slate-100'}`}>{chu}</h3>
-        <span className="text-[13px] font-semibold tabular-nums text-slate-400">{dem}</span>
-        {luat && <span className="text-[13px] text-slate-400">{luat}</span>}
+        <h3 title={luat} className={`m-0 text-[15px] font-bold ${tong === 'bb' ? 'text-soon' : 'text-slate-100'}`}>{chu}</h3>
+        <span className="text-[13px] tabular-nums text-slate-400">{dem}</span>
+        {/* HSL-GON (M4): câu luật nhóm không thành chữ trên hàng — rê chuột tên nhóm (`title`); nhóm có ⓘ giữ ⓘ. */}
         {i && <span className="-ml-1 self-center">{i}</span>}
       </div>
       {children}
@@ -533,7 +535,7 @@ function HangEm({ x, k, c, vua, mo, onMo, chiTiet }: {
       {/* K1: TVV của em · K4 (người duyệt, nhóm Chờ QL duyệt): GVCN — người đề xuất / xin thu hồi. */}
       {c.coTheDuyet && (k === 'cho_duyet' || k === 'thu_hoi') && c.gvcn
         ? <span className="mt-0.5 block text-xs text-slate-500">{t('GVCN {ten}', { ten: c.gvcn })}</span>
-        : x.tvv && <span className="mt-0.5 block text-xs text-slate-500">{t('TVV {ten}', { ten: x.tvv })}</span>}
+        : x.tvv && x.tvv !== c.tvvChinh && <span className="mt-0.5 block text-xs text-slate-500">{t('TVV {ten}', { ten: x.tvv })}</span>}
     </span>
   );
   const nutMo = k !== 'vua_xem' && (

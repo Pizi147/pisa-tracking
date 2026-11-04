@@ -967,12 +967,12 @@
   .tvv { white-space: nowrap; font-size: 11px; font-weight: 400; line-height: 1.35; color: var(--text-faint); }
 }
 
-/* TQ-GON (M1, M10 — chỉ Tổng quan `.tq-v8`, ngoài @layer để thắng tiện ích `underline`): số bấm được (`OSo`, `SoDen`) giữ dáng chữ màu nhấn đậm, gạch chân
+/* TQ-GON + HSL-GON (M1, M10 — Tổng quan `.tq-v8`, hồ sơ lớp `.so-gon`; gạch CHẤM gợi ý (KCK) giữ; ngoài @layer để thắng tiện ích `underline`): số bấm được (`OSo`, `SoDen`) giữ dáng chữ màu nhấn đậm, gạch chân
    chỉ khi rê / focus — hết "số gạch chân khắp nơi". Số nằm giữa câu (dòng phụ `.text-xs` "38 chưa PA") GIỮ gạch chân: chỉ màu không đủ phân biệt
    link trong chữ (WCAG 1.4.1). Panel mở từ số nằm ngoài `.page` (portal) nên không đổi. [XM] áp toàn web: PTA quyết. */
-.tq-v8 .underline:not(.text-xs *):not(:hover, :focus-visible) { text-decoration-line: none; }
+:is(.tq-v8, .so-gon) .underline:not(.text-xs *, .decoration-dotted):not(:hover, :focus-visible) { text-decoration-line: none; }
 /* M1 (một chữ đậm mỗi dòng): ô số trong BẢNG (1440) và dòng phụ ô chỉ số chữ 500 — đậm chỉ tên lớp / GV ở cột đầu, số lớn ô chỉ số; quá hạn (đỏ ⚠) vẫn đậm vì là việc cần làm ngay. Số lớn ô chỉ số giữ 700. */
-.tq-v8 :is(.bang td, .text-xs) .underline:not(.text-bad, .text-late) { font-weight: 500; }
+:is(.tq-v8, .so-gon) :is(.bang td, .text-xs) .underline:not(.text-bad, .text-late) { font-weight: 500; }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */
 @media print {

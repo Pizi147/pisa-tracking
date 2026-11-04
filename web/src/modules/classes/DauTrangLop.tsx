@@ -15,7 +15,7 @@ import { DongChoDoi, type ChoDoiLop } from './TeacherAssignPanel.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import {
-  DUONG_TAB_TEST, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
+  DUONG_TAB_TEST, TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, tvvChinhCuaLop, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
@@ -176,12 +176,14 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
      trang "›" ⑤ Việc của tôi. GIỮ mọi nút / badge / đích (bảng thao tác `thiet-ke/v8/ho-so-lop-ghi-chu.md`). */
   const bConLai = b;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
+  /* HSL-GON (M1, M4): viên chương trình · HV · tuần chữ 500 mờ (không số đậm trong viên); "khai giảng" không thành viên — rê chuột viên tuần (`title`). */
+  const khaiGiang = data.startDate ? t('khai giảng {ngay}', { ngay: `${data.startDate.slice(8, 10)}/${data.startDate.slice(5, 7)}` }) : undefined;
   const meta: ReactNode[] = [
     dich(data.programme?.name ?? data.kind),
-    <><b className="font-semibold tabular-nums text-slate-100">{s?.studentCount ?? 0}</b> HV</>,
+    <><span className="tabular-nums">{s?.studentCount ?? 0}</span> HV</>,
     /* Lớp đã kết thúc: không đếm tuần (tuần học tính tới hôm nay → "tuần 42/8"); dải "Lớp đã kết thúc W…" bên dưới đã nói mốc. */
-    s?.currentWeek && data.status !== 'finished' ? <>{t('tuần {n}', { n: '' }).trim()} <b className="font-semibold tabular-nums text-slate-100">{s.currentWeek}{s.totalWeeks ? `/${s.totalWeeks}` : ''}</b></> : null,
-    data.startDate ? t('khai giảng {ngay}', { ngay: `${data.startDate.slice(8, 10)}/${data.startDate.slice(5, 7)}` }) : null,
+    s?.currentWeek && data.status !== 'finished' ? <span title={khaiGiang}>{t('tuần {n}', { n: '' }).trim()} <span className="tabular-nums">{s.currentWeek}{s.totalWeeks ? `/${s.totalWeeks}` : ''}</span></span>
+      : khaiGiang ?? null,
   ].filter(Boolean);
   const nutBadge = (x: BadgeLop) => {
     const bam = bamBadge(x);
@@ -210,7 +212,7 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
         <h1 className="m-0 text-[22px] font-bold leading-[1.3] text-slate-100">{data.code}</h1>
         {/* U03 (mockup `.tags .tag.nhat`): chương trình · HV · tuần · khai giảng thành chip nền phụ. */}
         <span className="flex flex-wrap items-center gap-1.5 max-sm:basis-full">
-          {meta.map((m, i) => <span key={i} className={`inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md bg-[color:var(--surface-2)] px-2 text-xs font-semibold text-dim [&_b]:font-bold ${i === 3 ? 'max-sm:hidden' : ''}`}>{m}</span>)}
+          {meta.map((m, i) => <span key={i} className="inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md bg-[color:var(--surface-2)] px-2 text-xs font-medium text-dim">{m}</span>)}
         </span>
         <div className="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">
           {data.viewer.canEnterScores && <button type="button" className="btn h-9 justify-center max-sm:h-11" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
@@ -221,7 +223,9 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
       </div>
 
       {/* ③ GVCN + GV bộ môn một dòng 13 px — tên chữ thường (link hồ sơ GV khi được xem), không xanh to. */}
-      <DongGiaoVienBoMon nhom={[...(gvcn ? [{ nhan: t('GVCN'), title: t('Giáo viên chủ nhiệm'), id: gvcn.id, ten: gvcn.name, kyNang: [] }] : []), ...nhom]} />
+      {/* HSL-GON (M3): TVV chính của lớp một lần ở đây — dòng em chỉ ghi TVV khác (`tvvChinhCuaLop`). */}
+      <DongGiaoVienBoMon nhom={[...(gvcn ? [{ nhan: t('GVCN'), title: t('Giáo viên chủ nhiệm'), id: gvcn.id, ten: gvcn.name, kyNang: [] }] : []), ...nhom,
+        ...(tomTat?.tvv ? [{ nhan: 'TVV', title: t('Tư vấn viên chính của lớp'), id: null, ten: tomTat.tvv, kyNang: [], tvv: true }] : [])]} />
       <DongChoDoi cho={data.phanCongCho ?? []} ct={data.programme?.code ?? null} homNay={homNay} />
 
       {/* ④ số của lớp | badge đổi trang. */}
@@ -308,22 +312,22 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT') : t('Đạt Test'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length } : null;
   const homNayTuan = homNay ?? '9999';
   const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
-  return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
+  return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null, tvv: tvvChinhCuaLop(roster.data.filter((r) => !r.archived)) };
 }
 
 /**
  * GV BỘ MÔN MỘT DÒNG KHÔNG XUỐNG HÀNG (06c §1): "L · R Trần Ngọc Hà   W1 Lê Minh Khoa …". Điện thoại hiện 2 nhóm, máy tính 5 nhóm,
  * còn lại "+k" — bấm ra đủ danh sách ngay bên dưới (không popover trong vùng cắt `overflow-x-clip`). Lớp CSS là chuỗi tĩnh.
  */
-function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
+function DongGiaoVienBoMon({ nhom }: { nhom: (NhomGiaoVien & { tvv?: boolean })[] }) {
   const [du, setDu] = useState(false);
   if (!nhom.length) return null;
   /* U03 (mockup `.facts`): mỗi nhóm một ô — nhãn (GVCN · L · W1 …) trên, tên dưới, vạch ngăn trái. */
-  const mot = (g: NhomGiaoVien, i: number, luonHien: boolean) => (
+  const mot = (g: NhomGiaoVien & { tvv?: boolean }, i: number, luonHien: boolean) => (
     <span key={`${g.nhan}-${i}`} style={{ borderColor: 'var(--line)' }}
-      className={`${FACT} ${luonHien || i < 2 ? 'flex' : i < 5 ? 'hidden sm:flex' : 'hidden'}`}>
+      className={`${FACT} ${luonHien || (i < 2 && !g.tvv) ? 'flex' : i < 5 || g.tvv ? 'hidden sm:flex' : 'hidden'}`}>
       <abbr className="text-xs font-medium leading-[1.3] text-faint no-underline" title={g.title}>{g.nhan}</abbr>
-      <span className="text-[15px] font-semibold leading-[1.35] text-slate-100">{g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-amber-200">{g.ten}</span>}</span>
+      <span className="text-[15px] font-semibold leading-[1.35] text-slate-100">{g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : g.tvv ? g.ten : <span className="text-amber-200">{g.ten}</span>}</span>
     </span>
   );
   return (
@@ -331,15 +335,16 @@ function DongGiaoVienBoMon({ nhom }: { nhom: NhomGiaoVien[] }) {
     <div className="text-[13px] text-slate-400 [&_.ten-ho-so]:font-semibold [&_.ten-ho-so]:text-slate-100">
       {/* HL-18: cắt chiều ngang thôi (`overflow-x-clip`) — vùng chạm 44 px của tên GV / "+k" ở 375 không bị cắt theo chiều dọc. */}
       <div className="flex items-center gap-x-0 overflow-x-clip whitespace-nowrap [&>button]:ml-3">
+        {/* HSL-GON: ô TVV chính luôn hiện ở màn rộng (không bị đếm vào "+k" 1440); 375 vào "+k" như nhóm thứ 3 trở đi. */}
         {nhom.map((g, i) => mot(g, i, false))}
         {nhom.length > 2 && (
           <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-[13px] sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
             +{nhom.length - 2}
           </button>
         )}
-        {nhom.length > 5 && (
+        {nhom.filter((g) => !g.tvv).length > 5 && (
           <button type="button" className="link hidden border-0 bg-transparent p-0 text-[13px] sm:inline" onClick={() => setDu((v) => !v)}>
-            +{nhom.length - 5}
+            +{nhom.filter((g) => !g.tvv).length - 5}
           </button>
         )}
       </div>

@@ -23,6 +23,7 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
   const odiem = doc('web/src/ui/ODiem.tsx');
   const chip = doc('web/src/ui/ChipSos.tsx');
   const css = doc('web/src/index.css');
+  const dm: any = await import('../../../shared/domain/index.ts');
 
   check('B1 · ô điểm đạt ✓ màu Overall đạt · hụt ✗ (cỡ gọn 15 px; ba màu kết quả từ 04/11); OKetQua chip SOS (U03: có kỹ năng vì bỏ cột Case · PA); Đạt / Chưa đủ là chữ; OLichThi không còn NhanLich', () => {
     assert(/<ODiem kieu="gon" /.test(bang), 'ô điểm bảng em chưa gon');
@@ -35,8 +36,12 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
     assert(/nho \? `\$\{CHIP\} !h-5 !min-w-0 !px-1\.5`/.test(chip), 'ChipSos thiếu cỡ nhỏ (cao 20, đệm 6)');
   });
 
-  check('B1 · TVV dưới tên (r.tvv, lớp .tvv 11 px mờ); mới vào là chữ (không chip MoiVao)', () => {
-    assert(/r\.tvv && <span className="tvv">TVV \{r\.tvv\}<\/span>/.test(bang), 'thiếu TVV dưới tên');
+  /* HSL-GON (05/11, M3): TVV chính ghi một lần ở đầu hồ sơ lớp; dòng em chỉ ghi TVV KHÁC TVV chính (`tvvRieng`). */
+  check('B1 · TVV dưới tên chỉ khi khác TVV chính của lớp (.tvv 11 px mờ); TVV chính = TVV giữ nhiều em nhất; mới vào là chữ (không chip MoiVao)', () => {
+    assert(/tvvRieng\(r\) && <span className="tvv">TVV \{r\.tvv\}<\/span>/.test(bang) && /const tvvChinh = tvvChinhCuaLop\(tatCa\)/.test(bang), 'thiếu TVV ngoại lệ dưới tên');
+    assert(dm.tvvChinhCuaLop([{ tvv: 'Lê Thu' }, { tvv: 'Phan Mai' }, { tvv: 'Phan Mai' }, { tvv: null }]) === 'Phan Mai', 'TVV chính = nhiều em nhất');
+    assert(dm.tvvChinhCuaLop([]) === null && dm.tvvChinhCuaLop([{ tvv: 'B' }, { tvv: 'A' }]) === 'A', 'TVV chính: rỗng → null, hoà → theo chữ cái');
+    assert(doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'TVV'"), 'đầu hồ sơ lớp thiếu ô TVV chính');
     assert(/\.tvv \{[^}]*font-size: 11px[^}]*color: var\(--text-faint\)/.test(css), 'CSS .tvv 11 px text-faint');
     assert(!bang.includes('<MoiVao'), 'bảng em còn chip MoiVao');
     assert(doc('web/src/modules/students/ClassRoster.tsx').includes('tvv?: string | null'), 'RosterRow thiếu tvv');

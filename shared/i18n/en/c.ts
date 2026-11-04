@@ -147,6 +147,7 @@ export const EN_C = {
   'lớp {lop}': 'class {lop}',
   'GVBM {mon}': 'Subject teacher {mon}',
   'Giáo viên chủ nhiệm': 'Core teacher',
+  'Tư vấn viên chính của lớp': "Class's main consultant",   // HSL-GON (M3): ô TVV đầu hồ sơ lớp
   'Chưa có GVCN': 'No core teacher',
   'Chưa phân công': 'Unassigned',
 

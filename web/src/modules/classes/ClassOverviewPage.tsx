@@ -154,7 +154,7 @@ export default function ClassOverviewPage() {
 
   return (
     <XetLaiCtx.Provider value={ctxXetLai}>
-    <div className="page space-y-4 max-sm:space-y-3">
+    <div className="page so-gon space-y-4 max-sm:space-y-3">   {/* HSL-GON: `.so-gon` — số bấm được không gạch chân khi không rê (như Tổng quan) */}
       <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
