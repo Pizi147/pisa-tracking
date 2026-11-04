@@ -43,6 +43,10 @@ function kiemQuyen(p: Principal, m: MucRac): void {
     if (paDaDao && db().prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND created_at >= ? LIMIT 1').get(iv.id, m.xoa_luc)) {
       throw conflict('PA đã có kết quả ghi sau — không khôi phục được kết quả cũ này.');
     }
+    /* Rà bảo mật #957 (P1): PA đã đổi sau lúc xoá (Sửa PA, Kết thúc, huỷ…) → không ghi đè bằng bản lúc xoá. */
+    if (paDaDao && iv.updated_at > m.xoa_luc) {
+      throw conflict('PA đã thay đổi sau khi xoá kết quả — không khôi phục được; ghi lại kết quả nếu cần.');
+    }
   } else if (m.loai === 'vi_pham') {
     const v = dongGoc(m, 'violations');
     requireViewStudent(p, v.student_id);

@@ -1332,7 +1332,7 @@ export function apDungXinXoa(p: Principal, yc: { id: number; loai: string; doi_t
     if (!f) throw notFound('Không tìm thấy kết quả PA.');
     const c = loadCase(f.case_id);
     require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được kết quả PA.');
-    thungRacId = xoaKetQuaTrongTx(p, yc.doi_tuong_id, c).thungRacId;
+    thungRacId = xoaKetQuaTrongTx(p, yc.doi_tuong_id).thungRacId;
   } else {
     const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(yc.doi_tuong_id) as any;
     if (!iv) throw notFound('Không tìm thấy phương án');
@@ -1781,28 +1781,40 @@ export function xoaKetQuaPa(p: Principal, followupId: number): { ok: true; caseI
   if (cach === 'xin') {
     return xinXoa(p, { doiTuongLoai: 'case_followup', doiTuongId: f.id }, c, { ten: `${tenPaCua(iv)} · ${shortDate(f.observed_on, demoToday())}`, caseId: c.id, paId: iv.id, tenCase: caseTitleOf(c) });
   }
-  return tx(() => xoaKetQuaTrongTx(p, f.id, c));
+  return tx(() => xoaKetQuaTrongTx(p, f.id));
 }
 const tenPaCua = (iv: any): string => (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind);
 /** Phần xoá của `xoaKetQuaPa` (trong tx của nơi gọi — `xoaKetQuaPa` hoặc hộp duyệt). Đọc lại dòng trong giao dịch. */
-function xoaKetQuaTrongTx(p: Principal, followupId: number, c: any): { ok: true; caseId: number; thungRacId: number } {
+function xoaKetQuaTrongTx(p: Principal, followupId: number): { ok: true; caseId: number; thungRacId: number } {
   const conn = db();
   const f = conn.prepare('SELECT * FROM case_followups WHERE id = ?').get(followupId) as any;
   if (!f) throw notFound('Không tìm thấy kết quả PA.');
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(f.intervention_id) as any;
+  /* Rà bảo mật #957 (c): quyền xét lại TRONG giao dịch, theo Case / PA vừa đọc (QL duyệt thẻ: CASE_APPROVE → 'ngay'). */
+  const c = loadCase(f.case_id);
+  if (quyenXoaPa(p, iv, c) !== 'ngay') throw forbidden('Bạn không có quyền xoá kết quả PA này.');
+  /* (b): thẻ đang chờ (Xin hỗ trợ / Đề xuất PA) gắn với CHÍNH lần ghi này — kết quả nào cũng chặn, không chỉ lần gần nhất. */
+  if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND loai IN ('xin_y_kien', 'de_xuat_pa') AND json_extract(du_lieu, '$.followupId') = ?`).get(f.id)) {
+    throw badRequest('Kết quả này đang chờ QL trả lời — rút thẻ Chờ duyệt trước khi xoá.');
+  }
   const ganNhat = !conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND id > ? LIMIT 1').get(iv.id, f.id);
   const daoPa = ganNhat && !!f.next_step && paKhopLanGhi(f.next_step, iv);
   if (daoPa) {
     if (c.status === 'done') throw badRequest('Case đã hoàn thành — Mở lại Case trước khi xoá kết quả gần nhất.');
     if (f.next_step === 'propose') throw badRequest('Lần ghi này đã Thay PA — dùng Sửa kết quả để bỏ Thay PA.');
     if (f.next_step === 'complete' && iv.closed_reason === 'het_moc' && iv.nhom_bo_tro) throw badRequest('Lần ghi này có Mini Test — dùng Sửa kết quả.');
+    /* (a): PA chung của nhóm bổ trợ — lần ghi gần nhất là CHUNG cả nhóm; xoá ở một Case không đảo được các PA cùng nhóm. */
+    if (iv.nhom_bo_tro && conn.prepare('SELECT 1 FROM case_interventions WHERE nhom_bo_tro = ? AND id != ? LIMIT 1').get(iv.nhom_bo_tro, iv.id)) {
+      throw badRequest('Kết quả chung của nhóm bổ trợ — dùng Sửa kết quả để đổi cả nhóm.');
+    }
     if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND loai IN ('xin_y_kien', 'de_xuat_pa') AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?`).get(iv.id)) {
       throw badRequest('PA đang chờ QL trả lời — rút thẻ Chờ duyệt trước khi xoá kết quả.');
     }
   }
   const chup = new BoChup(conn);
   chup.ghiGoc('case_interventions', iv.id);   // khôi phục so lại: id PA có thể đã thuộc PA khác
-  chup.chupSua('sos_cases', 'id = ?', c.id);
+  /* Rà bảo mật #957 (P1): KHÔNG chụp dòng Case — khôi phục tính lại trạng thái (`dongBoTrangThaiCase`), không ghi đè thay đổi sau lúc xoá. Dòng PA chỉ chụp
+     khi đảo (lần gần nhất); khôi phục chặn 409 nếu PA đã đổi sau lúc xoá (`khoiPhucRac`). */
   if (daoPa) {
     chup.chupSua('case_interventions', 'id = ?', iv.id);
     traDieuChinh(conn, [f.id]);

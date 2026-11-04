@@ -226,6 +226,38 @@ export async function runPrXoaCasePaTests(t: any) {
     assert(cases.xoaKetQuaPa(QL, b.id).thungRacId > 0, 'QL xoá thẳng');
   }));
 
+  /* Rà bảo mật #957: khôi phục không ghi đè thay đổi sau lúc xoá; nhóm bổ trợ; thẻ chờ gắn lần ghi. */
+  check('XCP-10 · Khôi phục sau khi Case / PA đã đổi: Case giữ thay đổi mới; PA đã đổi (lần gần nhất đã đảo) → 409, PA giữ nguyên', () => thu(() => {
+    const caseId = taoCase();
+    const iv = themPa(caseId);
+    ketQua(iv, 'Đúng 15/20 câu điền số tuần này'); ketQua(iv, 'Đúng 16/20 câu điền số tuần này');
+    const [a, b] = fuCua(iv);
+    const r1 = cases.xoaKetQuaPa(QL, a.id);
+    conn.prepare(`UPDATE sos_cases SET title = 'Tên sửa sau khi xoá', updated_at = ? WHERE id = ?`).run(new Date(Date.now() + 1000).toISOString(), caseId);
+    kp.khoiPhucRac(QL, r1.thungRacId);
+    assert(mot('SELECT title FROM sos_cases WHERE id = ?', caseId).title === 'Tên sửa sau khi xoá', 'khôi phục ghi đè Case');
+    assert(mot('SELECT 1 FROM case_followups WHERE id = ?', a.id), 'chưa khôi phục kết quả');
+    const r2 = cases.xoaKetQuaPa(QL, b.id);
+    conn.prepare(`UPDATE case_interventions SET description = 'Sửa PA sau khi xoá', updated_at = ? WHERE id = ?`).run(new Date(Date.now() + 1000).toISOString(), iv);
+    const m = maLoi(() => kp.khoiPhucRac(QL, r2.thungRacId));
+    assert(m === 409 && mot('SELECT description FROM case_interventions WHERE id = ?', iv).description === 'Sửa PA sau khi xoá', `PA bị ghi đè / không chặn: ${m}`);
+  }));
+
+  check('XCP-11 · chặn kèm lý do: lần ghi gần nhất chung nhóm bổ trợ (PA cùng nhóm) → 400; kết quả có thẻ Xin hỗ trợ đang chờ (cả khi không phải gần nhất) → 400', () => thu(() => {
+    const caseId = taoCase();
+    const iv1 = themPa(caseId);
+    const iv2 = themPa(caseId);
+    conn.prepare(`UPDATE case_interventions SET nhom_bo_tro = 'xcp-nhom' WHERE id IN (?, ?)`).run(iv1, iv2);
+    ketQua(iv1, 'Đúng 15/20 câu điền số tuần này');
+    assert(maLoi(() => cases.xoaKetQuaPa(QL, fuCua(iv1).at(-1).id)) === 400, 'xoá được kết quả chung nhóm');
+    const iv3 = themPa(taoCase());
+    cases.updateResult(P.lrTeacher, iv3, { decision: 'ask_manager', outcome: 'unchanged', note: 'Vẫn sai 6/20 câu điền số', decisionNote: 'Cần QL xếp thêm buổi tutor', soBuoi: 0 });
+    const f1 = fuCua(iv3).at(-1);
+    assert(mot(`SELECT 1 FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND json_extract(du_lieu, '$.followupId') = ?`, f1.id), 'dữ liệu: thẻ Xin hỗ trợ phải gắn lần ghi');
+    try { ketQua(iv3, 'Đúng 16/20 câu điền số tuần này'); } catch { /* ghi tiếp có thể bị chặn khi đang chờ QL — vẫn kiểm f1 */ }
+    assert(maLoi(() => cases.xoaKetQuaPa(QL, f1.id)) === 400 && mot('SELECT 1 FROM case_followups WHERE id = ?', f1.id), 'xoá được kết quả có thẻ chờ');
+  }));
+
   check(`XCP-9 · trần câu SQL: xoá một kết quả PA (gần nhất — PA về trước) ≤ ${TRAN_GHI_LO.xoaKetQuaPa}`, () => thu(() => {
     const iv = themPa(taoCase());
     ketQua(iv, 'Đúng 15/20 câu điền số tuần này'); ketQua(iv, 'Đúng 16/20 câu điền số tuần này');

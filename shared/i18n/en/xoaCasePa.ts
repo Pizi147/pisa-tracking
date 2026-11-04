@@ -25,5 +25,8 @@ export const EN_XOA_CASE_PA = {
   'PA đang chờ QL trả lời — rút thẻ Chờ duyệt trước khi xoá kết quả.': 'The plan is waiting for a manager reply — withdraw the approval card before deleting the result.',
   'Chỉ Quản lý hoặc người xoá được kết quả PA này mới khôi phục được.': 'Only a manager or someone who can delete this PA result can restore it.',
   'PA đã có kết quả ghi sau — không khôi phục được kết quả cũ này.': 'The plan has a newer result — this old result can no longer be restored.',
+  'PA đã thay đổi sau khi xoá kết quả — không khôi phục được; ghi lại kết quả nếu cần.': 'The plan changed after the result was deleted — it cannot be restored; record the result again if needed.',
+  'Kết quả này đang chờ QL trả lời — rút thẻ Chờ duyệt trước khi xoá.': 'This result is waiting for a manager reply — withdraw the approval card before deleting.',
+  'Kết quả chung của nhóm bổ trợ — dùng Sửa kết quả để đổi cả nhóm.': 'Shared result of a support group — use Edit result to change the whole group.',
   'Xoá Case và {n} PA': (b) => `Delete case and ${soNhieu(b.n, 'plan', 'plans')}`,
 } satisfies Record<string, Dich>;

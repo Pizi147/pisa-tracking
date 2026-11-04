@@ -1104,7 +1104,7 @@ export const TRAN_GHI_LO = {
   nhanXetPhuTrach: 22,   // đo 12 câu → max(12 + 10, ⌈12 × 1,3⌉)
   hoanTacKetQua: 99,   // đo 76 câu → max(76 + 10, ⌈76 × 1,3⌉)
   /** VIEC-SAU-LOGIC: DELETE /followups/:id — xoá MỘT kết quả PA (gần nhất: PA về trước lần ghi) vào Thùng rác + nhật ký; không trả Case. */
-  xoaKetQuaPa: 39,   // đo 29 câu → max(29 + 10, ⌈29 × 1,3⌉)
+  xoaKetQuaPa: 45,   // đo 34 câu (kiểm quyền + thẻ chờ trong giao dịch) → max(34 + 10, ⌈34 × 1,3⌉)
   /** SV-BAI-LOP-2: POST /interventions/:id/hoan-tac-them — gỡ PA vừa thêm (như Xoá PA) + nhật ký, trả Case. */
   hoanTacThemPa: 106,   // đo 81 câu (~40 là `caseDetail` trả về) → max(81 + 10, ⌈81 × 1,3⌉)
   /** HOAN-TAC-XN: POST /interventions/:id/hoan-tac-xac-nhan · /cases/:id/hoan-tac-xac-nhan · /cases/:id/hoan-tac-xac-nhan-s — trả nguyên trạng trước xác nhận + nhật ký, trả Case. */
