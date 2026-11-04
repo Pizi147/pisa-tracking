@@ -855,14 +855,25 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     chet: {
       sql: `CASE y.doi_tuong_loai WHEN 'sos_case' THEN NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id)
+             WHEN 'case_followup' THEN NOT EXISTS (SELECT 1 FROM case_followups cf WHERE cf.id = y.doi_tuong_id)
              ELSE NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.id = y.doi_tuong_id) END`,
       lyDo: 'Đã xoá',
     },
     /* Tên, số PA / kết quả lưu ở `du_lieu` lúc xin — thẻ đã duyệt (đối tượng đã xoá) vẫn đọc được. */
     moTa: (yc, ngu) => {
       const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
-        { ten?: string; tenCase?: string; caseId?: number; soPa?: number; soKetQua?: number };
+        { ten?: string; tenCase?: string; caseId?: number; paId?: number; soPa?: number; soKetQua?: number };
       const laCase = yc.doi_tuong_loai === 'sos_case';
+      /* VIEC-SAU-LOGIC: xin xoá MỘT kết quả PA (PA theo quy chế) — mở đúng Case + PA. */
+      if (yc.doi_tuong_loai === 'case_followup') {
+        return {
+          tieuDe: `Xoá kết quả PA · ${d.ten ?? ''}`, phu: d.tenCase ?? null,
+          dong: [`${nguoiXin(yc, ngu)} xin ${ngay(yc.tao_luc, ngu)}`],
+          neuDuyet: 'Kết quả PA vào Thùng rác — khôi phục được trong 30 ngày.',
+          mo: yc.trang_thai === 'cho' && yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: d.caseId, paId: d.paId }) : undefined,
+          duLieu: d.caseId ? { caseId: d.caseId } : undefined,
+        };
+      }
       const kq = d.soKetQua ? ` và ${d.soKetQua} kết quả PA` : '';
       return {
         tieuDe: `${laCase ? 'Xoá Case' : 'Xoá PA'} · ${d.ten ?? ''}`,

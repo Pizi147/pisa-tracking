@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import { forbidden } from '../util.ts';
+import { conflict, forbidden } from '../util.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { dongBoTrangThaiCase } from '../cases/sosState.ts';
@@ -15,7 +15,7 @@ import { GIU_NGAY, docMucRac, khoiPhucMuc, kiemGoc, type DuLieuRac, type MucRac 
  * của học viên; tệp: quyền gỡ tệp của bản ghi chủ.
  * Danh sách "Đã xoá" (Quản trị) chỉ hiện mục người xem khôi phục được (Quản trị: mọi mục, kể cả đã khôi phục / hết hạn).
  */
-const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students' };
+const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', ket_qua_pa: 'case_followups', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students' };
 const duLieu = (m: MucRac) => JSON.parse(m.du_lieu) as DuLieuRac;
 const dongGoc = (m: MucRac, bang: string) => duLieu(m).ban.find((b) => b.k === 'xoa' && b.bang === bang)?.dong[0] as any;
 
@@ -33,6 +33,20 @@ function kiemQuyen(p: Principal, m: MucRac): void {
   } else if (m.loai === 'pa') {
     const c = loadCase(dongGoc(m, 'case_interventions').case_id);   // Case HIỆN TẠI (đã so dấu — đúng Case lúc xoá)
     if (quyenXoaPa(p, dongGoc(m, 'case_interventions'), c) !== 'ngay') throw forbidden('Chỉ Quản lý hoặc người xoá được PA này mới khôi phục được.');
+  } else if (m.loai === 'ket_qua_pa') {
+    /* VIEC-SAU-LOGIC: như Xoá kết quả PA (`quyenXoaPa` = 'ngay') theo PA HIỆN TẠI; xoá lần GẦN NHẤT (PA đã về trước) mà PA đã ghi lần mới → không khôi phục (PA đã đi tiếp). */
+    const f = dongGoc(m, 'case_followups');
+    const iv = db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(f.intervention_id) as any;
+    if (quyenXoaPa(p, iv, loadCase(iv.case_id)) !== 'ngay') throw forbidden('Chỉ Quản lý hoặc người xoá được kết quả PA này mới khôi phục được.');
+    const paDaDao = duLieu(m).ban.some((b) => b.k === 'sua' && b.bang === 'case_interventions');   // lần xoá đã đưa PA về trước lần ghi
+    /* So theo lúc ghi, không theo id: id đã xoá có thể được lần ghi mới dùng lại (không AUTOINCREMENT). */
+    if (paDaDao && db().prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND created_at >= ? LIMIT 1').get(iv.id, m.xoa_luc)) {
+      throw conflict('PA đã có kết quả ghi sau — không khôi phục được kết quả cũ này.');
+    }
+    /* Rà bảo mật #957 (P1): PA đã đổi sau lúc xoá (Sửa PA, Kết thúc, huỷ…) → không ghi đè bằng bản lúc xoá. */
+    if (paDaDao && iv.updated_at > m.xoa_luc) {
+      throw conflict('PA đã thay đổi sau khi xoá kết quả — không khôi phục được; ghi lại kết quả nếu cần.');
+    }
   } else if (m.loai === 'vi_pham') {
     const v = dongGoc(m, 'violations');
     requireViewStudent(p, v.student_id);
@@ -53,7 +67,8 @@ export function khoiPhucRac(p: Principal, id: number): { ok: true; loai: string;
     kiemQuyen(p, m);
   }
   const moiId = khoiPhucMuc(p.userId, m, BANG_CHINH[m.loai], (conn) => {
-    if (m.loai === 'pa') dongBoTrangThaiCase(dongGoc(m, 'case_interventions').case_id);   // N37: Case đã hoàn thành giữ nguyên (xoá PA không chặn Case xong)
+    if (m.loai === 'pa') dongBoTrangThaiCase(dongGoc(m, 'case_interventions').case_id);
+    if (m.loai === 'ket_qua_pa') dongBoTrangThaiCase(dongGoc(m, 'case_followups').case_id);   // N37: Case đã hoàn thành giữ nguyên (xoá PA không chặn Case xong)
     if (m.loai === 'vi_pham') chotHanXuLy([dongGoc(m, 'violations').student_id]);
   });
   return { ok: true, loai: m.loai, doiTuongId: moiId };

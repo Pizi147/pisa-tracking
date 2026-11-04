@@ -22,7 +22,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case',
   'case.preset.confirm_undo': 'Hoàn tác xác nhận PA', 'case.confirm_undo': 'Hoàn tác xác nhận Case', 'case.xac_nhan_s_undo': 'Hoàn tác xác nhận Case Speaking',   // HOAN-TAC-XN
   'case.dismiss.request': 'Gửi Không cần theo dõi',
-  'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Kết quả PA', 'case.result.edit': 'Sửa kết quả PA', 'case.result.undo': 'Hoàn tác kết quả PA', 'case.plan.doi_pa': 'Đề xuất PA khác', 'case.followup.edit': 'Sửa xem lại', 'intervention.edit': 'Sửa PA',
+  'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Kết quả PA', 'case.result.edit': 'Sửa kết quả PA', 'case.result.undo': 'Hoàn tác kết quả PA', 'case.result.delete': 'Xoá kết quả PA', 'case.plan.doi_pa': 'Đề xuất PA khác', 'case.followup.edit': 'Sửa xem lại', 'intervention.edit': 'Sửa PA',
   'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.xoa_overall_dat': 'Xoá Case vì em đạt lại (chưa có PA xác nhận)', 'case.system_close': 'Hệ thống đóng Case', 'case.system_reopen': 'Mở lại Case hệ thống đã đóng', 'case.mo_lai_xoa_diem': 'Mở lại Case (nhập lại điểm)',
   'case.tam': 'Tạo Case tạm (chờ chốt SOS)', 'case.xoa_tam': 'Xoá Case tạm (trước khi chốt SOS)', 'case.xoa_cho_chot_sos': 'Xoá Case "Chờ chốt SOS" cũ (đổi luật)',
   'class.assign': 'Phân công giáo viên', 'class.assign.hoan_tac': 'Hoàn tác phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp', 'class.reopened': 'Mở lại lớp',
