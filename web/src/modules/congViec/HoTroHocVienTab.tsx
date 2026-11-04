@@ -637,7 +637,8 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
             [t('Tới đâu'), data?.trangThaiV4?.chu ? dich(data.trangThaiV4.chu) : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />
-          {!it.lamThay && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Quản lý làm được việc này.', { ai })}</p>}
+          {/* SUA-LOI-CV: bài chấm chéo không của riêng ai (T18) — không câu "Chỉ … làm được". */}
+          {!it.lamThay && !laViecChamCheo(it) && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Quản lý làm được việc này.', { ai })}</p>}
         </div>
       </KhungPanel>
     </DauViecCongViec.Provider>
