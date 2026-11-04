@@ -172,7 +172,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
             {/* Thẻ chỉ số — cùng số với đầu hai thẻ bảng (tóm tắt máy chủ). "Chưa tính" = ba số "Để số liệu đủ tin" cũ ở chân bảng. */}
             <DaiChiSo ds={[
               { ten: t('PA có kết quả'), ky: t('trong kỳ'), gt: <OSo giaTri={tongPa} nguon={nguon('tong', 'pa')} tieuDe={t('PA có kết quả')} vung="chi-so" />, mau: t('GV thêm {a} · quy chế {b}', { a: data.gvThem.tomTat.paCoKetQua, b: data.quyChe.tomTat.paCoKetQua }) },
-              { ten: t('Có cải thiện'), gt: <OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" />, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined, },   // PT-GON (M4): định nghĩa ở ⓘ đầu bảng
+              { ten: t('Có cải thiện'), gt: <OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" />, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined },   // PT-GON (M4): định nghĩa ở ⓘ đầu bảng
               data.thoiGianThuongMat !== null
                 ? { ten: t('Thời gian thường mất'), gt: data.thoiGianThuongMat, nho: t('{n} tuần', { n: data.thoiGianThuongMat }).replace(String(data.thoiGianThuongMat), '').trim() }   // PT-GON (M4): "trung vị" ở ⓘ đầu bảng
                 : { ten: t('Thời gian thường mất'), gt: <span className="text-[color:var(--text-faint)]">—</span>, mau: t('Ít dữ liệu') },
@@ -202,6 +202,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   <>
                     {cachDoc}
                     <p className="m-0">{t('Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {n} PA, cải thiện từ 70% và cao nhất trong vấn đề.', { n: NGUONG_IT_DU_LIEU })}</p>
+                    {data.gvThem.gom && <p className="m-0">{t('vấn đề khác')}: {t('mỗi vấn đề ≤ 2 PA có kết quả')}</p>}   {/* PT-GON: chạm (375) không có title → câu cũng ở ⓘ */}
                   </>
                 )} />
               {data.gvThem.hang.length === 0 && !data.gvThem.gom
