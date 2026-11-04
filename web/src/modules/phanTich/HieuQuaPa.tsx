@@ -1,12 +1,12 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { CHIP_SOS, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, DaiChiSo, DauThe, NutXemToanBo, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DaiChiSo, DauThe, NutXemToanBo, RongDau, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
@@ -166,7 +166,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
       )}
       {error ? <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
         : loading || !data ? <Card><Skeleton rows={8} /></Card>
-        : data.scopeEmpty ? <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>
+        : data.scopeEmpty ? <Card bodyClass="p-0"><RongDau chu={t('Bạn chưa được cấp phạm vi nào')} /></Card>
         : (
           <>
             {/* Thẻ chỉ số — cùng số với đầu hai thẻ bảng (tóm tắt máy chủ). "Chưa tính" = ba số "Để số liệu đủ tin" cũ ở chân bảng. */}
@@ -206,7 +206,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   </>
                 )} />
               {data.gvThem.hang.length === 0 && !data.gvThem.gom
-                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có PA do giáo viên thêm có kết quả trong {khoang}.', { khoang })}</p><NutXemToanBo /></div>
+                ? <RongDau chu={t('Chưa có PA do giáo viên thêm có kết quả trong {khoang}.', { khoang })} nut={<NutXemToanBo />} />
                 : (
                   <>
                     <div ref={ptGv.thanh.dauBang} />
@@ -246,7 +246,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   </>
                 )} />
               {dongQc.length === 0
-                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có PA theo quy chế có kết quả trong {khoang}.', { khoang })}</p><NutXemToanBo /></div>
+                ? <RongDau chu={t('Chưa có PA theo quy chế có kết quả trong {khoang}.', { khoang })} nut={<NutXemToanBo />} />
                 : (
                   <>
                     <div ref={ptQc.thanh.dauBang} />

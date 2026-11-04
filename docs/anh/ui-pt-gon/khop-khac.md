@@ -19,7 +19,8 @@ U08 (góp ý chủ SP 03/11, `plan.md` mục 4): đã làm hết ở #901 (màu 
 | Test (lớp thường) · QL · 1440 tối | `truoc-sau-test-thuong-ql-1440-toi.png` |
 | Báo cáo HV · 1440 tối | `truoc-sau-bao-cao-ql-1440-toi.png` |
 | Kết quả Test (Mock) · 1440 tối | `truoc-sau-ket-qua-mt-ql-1440-toi.png` |
-| Kết quả Thi thật · 1440 tối (Toàn bộ — demo chưa có lượt) | `truoc-sau-thi-that-ql-1440-toi.png` |
+| Kết quả Thi thật · 1440 tối / 375 sáng (Toàn bộ — demo chưa có lượt thi thật nào nên chỉ thấy khung rỗng) | `truoc-sau-thi-that-ql-1440-toi.png` · `truoc-sau-thi-that-375-sang.png` |
+| Khung rỗng (P21): Test + SOS · TVV (W1–W2 SEP) · Phân tích GV · Quản trị chưa chọn chi nhánh | `truoc-sau-rong-test-sos-tvv-1440-toi.png` · `truoc-sau-rong-gv-qt-1440-toi.png` |
 | Hiệu quả PA · 1440 tối | `truoc-sau-pa-ql-1440-toi.png` |
 | Phân tích GV · 1440 tối | `truoc-sau-gv-ql-1440-toi.png` |
 | Ý thức · 1440 tối | `truoc-sau-y-thuc-ql-1440-toi.png` |
@@ -70,11 +71,13 @@ U08 (góp ý chủ SP 03/11, `plan.md` mục 4): đã làm hết ở #901 (màu 
 | P16 | Hiệu quả PA rỗng: "Chưa có PA … trong W1 + W2 SEP/2026. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn." | M7 | Một câu "Chưa có PA … trong {khoảng}." + nút Xem Toàn bộ (câu mới có EN, `en/ptGon.ts`) | `HieuQuaPa` |
 | P17 | "PA theo quy chế · bắt buộc · không so, không xếp hạng"; "2 vấn đề khác / mỗi vấn đề ≤ 2 PA có kết quả" (2 dòng) | M4, M2 | Câu đầu → ⓘ; "mỗi vấn đề ≤ 2 …" → `title` hàng + ⓘ (cho 375 chạm) | `HieuQuaPa` |
 | P18 | Phân tích GV: "7 GV · xếp theo tên" cuối hàng lọc (lặp chip "7 GV"; "xếp theo tên" có ở ⓘ) | M3 | Bỏ | `PhanTichGiaoVien` |
+| P20 | Thi thật: cột "Lớp" lặp hàng nhóm lớp ngay trên (**PTA quyết XM-1**, cùng kiểu U08 bỏ cột Xử lý / Người chọn) | M3 | Bỏ cột trên màn (bảng 1 100 → 990 px); mã lớp ở hàng nhóm thành link hồ sơ lớp (giữ thao tác của ô Lớp cũ); Xuất Excel giữ cột Lớp; thẻ 375 giữ "lớp · ngày" (thẻ không có hàng nhóm) | `KetQuaThi` |
+| P21 | Khung rỗng căn giữa khung cao + câu phụ ("Kết quả thi thật nhập ở hồ sơ học viên; thử khoảng…", "Thử khoảng thời gian dài hơn.", "Số có khi đã ghi vi phạm — …", "Bảng giáo viên luôn là một chi nhánh — …") | M7 | `RongDau` (một câu ở đầu khung + nút Xem Toàn bộ, cùng dáng khung rỗng Hiệu quả PA) cho mọi khung rỗng của Phân tích: Test + SOS, Kết quả Test (Mock, Thi thật), Báo cáo (Kết quả MT, Tiến bộ), Hiệu quả PA, Ý thức (2 khung), "Chưa được cấp phạm vi", Phân tích GV chưa chọn chi nhánh. `Empty` chung toàn web không đổi; rỗng trong panel giữ | `dungChung`, 6 tab |
 | P19 | Ý thức: "Chưa xử lý 14 · trên 36 vi phạm" (36 = ô Vi phạm cạnh); "Lớp nhiều vi phạm · xếp theo vi phạm chưa xử lý" | M3, M4 | Bỏ "trên n vi phạm"; câu xếp → ⓘ | `YThucPhoiHop` |
 
 **Không sửa (ghi lại):**
-- [XM-1] Thi thật: cột "Lớp" lặp hàng nhóm lớp ngay trên (M3) — bỏ cột là đổi bố cục bảng U08 → để PTA / chủ SP quyết.
-- [XM-2] Thẻ 375 Test + SOS: số 15 / 700 (mockup C1) — luật 500 chỉ áp ô bảng như #937; muốn đồng bộ cả thẻ 375 thì PR cuối đợt (`LOP_OSO`).
+- [XM-1] → PTA quyết bỏ cột (P20). Demo chưa có lượt thi thật nào → bảng có dữ liệu không chụp được; kiểm bằng mã (colgroup 10 cột = th = td, colSpan 10).
+- [XM-2] Thẻ 375 Test + SOS: số 15 / 700 (mockup C1) — PTA đồng ý để PR cuối đợt (`LOP_OSO`).
 - Chip đếm đầu bảng ("2 tuần", "17 lượt", "6 HV") giữ — mẫu `DauThe` dùng chung; panel mở từ số (portal) không đổi.
 - Hồ sơ lớp › Phân tích lớp: số "7/9" 700 → 500 vì luật CSS chung (P2) — đúng ý #941 ("số bảng 500"), trước đây sót vì bảng không mang `.bang`.
 
@@ -85,7 +88,8 @@ U08 (góp ý chủ SP 03/11, `plan.md` mục 4): đã làm hết ở #901 (màu 
 | 6 tab · Chương trình · Toàn bộ / Chọn khoảng tuần · ô tuần · Mọi lớp · chi nhánh | có | có |
 | Test + SOS: Theo tuần / lớp / GV ▾ · Xuất Excel · ⋯ (Cột hiện, Xuất kết quả từng lượt) · mở / gập hàng · bấm mọi số → panel | có | có (chip SOS bằng 0 không còn, vốn không bấm được) |
 | Báo cáo: In · ⓘ · bấm số → panel | có | có |
-| Kết quả Test: Mock / Thi thật · Xếp theo · Mọi kết quả · Xuất Excel · tên → hồ sơ HV · MT → hồ sơ lượt · lớp → hồ sơ lớp · chip SOS → panel Case · phân trang | có | có |
+| Kết quả Test: Mock / Thi thật · Xếp theo · Mọi kết quả · Xuất Excel · tên → hồ sơ HV · MT → hồ sơ lượt · lớp → hồ sơ lớp · chip SOS → panel Case · phân trang | có | có (Thi thật: lớp → hồ sơ lớp ở hàng nhóm thay ô Lớp) |
+| Khung rỗng: Xem Toàn bộ | có | có |
 | Hiệu quả PA: chip GV ✕ · bấm số → panel · mở "n vấn đề khác" · Xem Toàn bộ · ⓘ | có | có |
 | Phân tích GV: Gọn / Đầy đủ · Tìm GV · tên → hồ sơ GV · số → panel | có | có |
 | Ý thức: Xuất Excel · bấm số → panel · mở lớp · tên → hồ sơ | có | có (+ ⓘ "Lớp nhiều vi phạm") |

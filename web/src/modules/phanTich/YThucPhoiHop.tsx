@@ -2,12 +2,12 @@ import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, DaiChiSo, DauThe, MAU_SO_VOI_TRUOC, NutXemToanBo, NutXuat, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DaiChiSo, DauThe, MAU_SO_VOI_TRUOC, NutXemToanBo, NutXuat, RongDau, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
   COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, NHOM_EM_LABEL, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
@@ -203,20 +203,20 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       </VaoHangLoc>
       {error ? <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
         : loading || !data ? <Card><Skeleton rows={6} /></Card>
-        : data.scopeEmpty ? <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>
+        : data.scopeEmpty ? <Card bodyClass="p-0"><RongDau chu={t('Bạn chưa được cấp phạm vi nào')} /></Card>
         : (
           <>
             {chiSo(data)}
             <Card bodyClass="p-0">
               <DauThe ten={t('Học viên cần chú ý')} dem={t('{n} HV', { n: data.hvCanChuY.length })} cachTinh={cachChon} />
               {data.hvCanChuY.length === 0
-                ? <div className="p-4"><Empty title={t('Không có học viên nào cần chú ý trong {ky}', { ky: nhanKy })} hint={t('Thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /></div>
+                ? <RongDau chu={t('Không có học viên nào cần chú ý trong {ky}', { ky: nhanKy })} nut={<NutXemToanBo />} />
                 : <><div ref={ptHv.thanh.dauBang} />{dienThoai ? ptHv.cat(data.hvCanChuY).map(theHv) : bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
             </Card>
             <Card bodyClass="p-0">
               <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} cachTinh={t('xếp theo vi phạm chưa xử lý')} />   {/* PT-GON (M4): cách xếp vào ⓘ */}
               {data.lop.length === 0 && !data.gom
-                ? <div className="p-4"><Empty title={t('Chưa có vi phạm nào trong {ky}', { ky: nhanKy })} hint={t('Số có khi đã ghi vi phạm — thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /></div>
+                ? <RongDau chu={t('Chưa có vi phạm nào trong {ky}', { ky: nhanKy })} nut={<NutXemToanBo />} />
                 : (
                   <>
                   <div ref={ptLop.thanh.dauBang} />

@@ -4,12 +4,12 @@ import { useApi } from '../../lib/useApi.ts';
 import { useTapUrl } from '../../lib/quayLai.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { Card, Empty, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { DaiChiSo, DauThe, DINH_TRAI, NutXemToanBo, NutXuat, OChon, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, type ChiSo } from './dungChung.tsx';
+import { DaiChiSo, DauThe, DINH_TRAI, NutXemToanBo, NutXuat, OChon, RongDau, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, type ChiSo } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { NGON_NGU, dich, t } from '@shared/i18n/index.ts';
@@ -330,9 +330,8 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const tongNhan = `${t('Tổng')} ${demTheo(theo, data?.hang.length ?? 0)}`;
   const coBang = !!data && !data.scopeEmpty && data.hang.length > 0;
   const rong = data && !coBang ? (
-    data.scopeEmpty ? <Empty title={t('Bạn chưa được cấp phạm vi nào')} />
-      : <Empty title={t('Chưa có lượt nào có điểm')} hint={khoang.kieu === 'toan-bo' ? undefined : t('trong {ky}', { ky: nhanKy })}
-          action={<NutXemToanBo />} />
+    data.scopeEmpty ? <RongDau chu={t('Bạn chưa được cấp phạm vi nào')} />
+      : <RongDau chu={khoang.kieu === 'toan-bo' ? t('Chưa có lượt nào có điểm') : `${t('Chưa có lượt nào có điểm')} ${t('trong {ky}', { ky: nhanKy })}`} nut={<NutXemToanBo />} />
   ) : null;
 
   return (

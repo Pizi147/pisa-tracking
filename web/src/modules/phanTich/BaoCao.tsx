@@ -6,7 +6,7 @@ import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { PhanTram, TheoChiNhanh, mauDatMt, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
-import { DaiChiSo, DauThe, NutXemToanBo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DaiChiSo, DauThe, NutXemToanBo, RongDau, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { tuanLich } from '@shared/domain/index.ts';
 import {
@@ -134,8 +134,9 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
     <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<span className="hidden print:inline">{phamVi} · {t('lượt của từng HV trong kỳ · % trên HV đủ dữ liệu')}</span>}>   {/* PT-GON (M4): cách tính ở ⓘ + dòng "n HV · m đủ dữ liệu" của hàng; bản in giữ câu */}
       {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} status={api.error.status} onRetry={api.reload} />
         : !api.data ? <Skeleton rows={5} className="p-4" />
-          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={!api.data.rows.some((h) => h.hv) ? [] : api.data.rows.filter((h) => h.hv || h.luot === 'thi')} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu
-              rong={{ tieuDe: t('Chưa có lượt MT nào trong kỳ'), nut: <NutXemToanBo /> }} />}
+          /* PT-GON (M7): rỗng → một câu ở đầu khung (không qua `Empty` căn giữa của `Bang`). */
+          : !api.data.rows.some((h) => h.hv) ? <RongDau chu={t('Chưa có lượt MT nào trong kỳ')} nut={<NutXemToanBo />} />
+          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={api.data.rows.filter((h) => h.hv || h.luot === 'thi')} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu />}
     </Khoi>
   );
 }
@@ -153,9 +154,10 @@ function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon:
   };
   return (
     <Khoi tieuDe={t('Tiến bộ theo kỹ năng')} phu={t('so mốc MT trước')}>
-      <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu
-        phuCua={(h, c) => (c.key === 'kn' ? null : h.tong ? pt(so(h, c.key), h.tong) : null)} khung={false}
-        rong={{ tieuDe: t('Chưa có lượt nào có mốc MT trước trong kỳ'), nut: <NutXemToanBo /> }} />
+      {!hang.length ? <RongDau chu={t('Chưa có lượt nào có mốc MT trước trong kỳ')} nut={<NutXemToanBo />} /> : (   /* PT-GON (M7) */
+        <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu
+          phuCua={(h, c) => (c.key === 'kn' ? null : h.tong ? pt(so(h, c.key), h.tong) : null)} khung={false} />
+      )}
     </Khoi>
   );
 }

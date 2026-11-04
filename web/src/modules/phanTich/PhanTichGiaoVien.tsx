@@ -15,7 +15,7 @@ import { BoLocDoan, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { LOP_OSO, VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
 import { gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
-import { DOAN, DauThe, VaoHangLoc, doanNut } from './dungChung.tsx';
+import { DOAN, DauThe, RongDau, VaoHangLoc, doanNut } from './dungChung.tsx';
 
 /**
  * PHÂN TÍCH GV (UI-PHAN-TICH, `thiet-ke/v5/phan-tich.html` tab "Phân tích GV"; `10` mục 1 + dòng UI-PHAN-TICH): MỘT bảng, hai nhóm cột Hành chính / Học thuật.
@@ -73,7 +73,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const hang = (data?.hang ?? []).filter((h) => !tim.trim() || boDau(h.ten).includes(boDau(tim.trim())));
   const pt = usePhanTrang(hang.length, `${q}|${tim}`, t('giáo viên'));
 
-  if (!branchId) return <Empty title={t('Chọn một chi nhánh')} hint={t('Bảng giáo viên luôn là một chi nhánh — chọn ở ô chi nhánh đầu trang.')} />;
+  if (!branchId) return <div className="card"><RongDau chu={t('Chọn một chi nhánh')} /></div>;   // PT-GON (M7): một câu ở đầu khung
   const ft = khung === 'ft';
   const day = boCot === 'day';
   const cot = (day ? COT_DAY : COT_GON).filter((c) => ft || !CHI_FT.has(c.key)).map((c) => (!ft && c.key === 'dat' ? { ...c, nhan: t('Đạt Test') } : c));

@@ -3,14 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DauKetQua, lopKq } from '../../ui/BieuTuong.tsx';
 import { CHIP_SOS, NhanKq, lopSos } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang, type ThanhPhanTrang } from '../../ui/PhanTrang.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { DOAN, DaiChiSo, DauThe, NutXemToanBo, NutXuat, OChon, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, doanNut, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DOAN, DaiChiSo, DauThe, NutXemToanBo, RongDau, NutXuat, OChon, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, doanNut, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { duongDotTest } from '@shared/domain/index.ts';
 import { LINK_CHU, PanelCaseLuot } from './PanelCaseLuot.tsx';
 import {
@@ -71,7 +71,7 @@ function VungBang({ dau, error, reload, loading, rong, pt, bang, the }: {
   const dienThoai = useDienThoai();
   if (error) return <Card bodyClass="p-0">{dau}<div className="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div></Card>;
   if (loading) return <Card bodyClass="p-0">{dau}<div className="p-4"><Skeleton rows={8} /></div></Card>;
-  if (rong) return <Card bodyClass="p-0">{dau}<div className="p-4">{rong}</div></Card>;
+  if (rong) return <Card bodyClass="p-0">{dau}{rong}</Card>;
   /* 375 (mockup C2): thẻ từng lượt đứng riêng, không khung bảng; phân trang ngay dưới thẻ cuối. */
   if (dienThoai) return <div className="space-y-2"><div ref={pt.dauBang} />{the}<div className="empty:hidden"><PhanTrang {...pt} duoi /></div></div>;
   return (
@@ -183,7 +183,7 @@ export function BangMock({ pv }: { pv: PhamViPhanTich }) {
           ]} />
         )}
         <VungBang dau={dauThe} error={error} reload={reload} loading={loading || !data} pt={pt.thanh}
-          rong={!rows.length ? <Empty title={t('Không có lượt Mock Test nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} hint={t('Thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /> : null}
+          rong={!rows.length ? <RongDau chu={t('Không có lượt Mock Test nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} nut={<NutXemToanBo />} /> : null}
           the={pt.cat(rows).map((r) => (
             <div key={r.attemptId} className={THE_HV} style={nenThe}>
               <div className="flex items-center gap-2">
@@ -298,7 +298,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
           ]} />
         )}
         <VungBang dau={dauThe} error={error} reload={reload} loading={loading || !data} pt={pt.thanh}
-          rong={!rows.length ? <Empty title={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} hint={t('Kết quả thi thật nhập ở hồ sơ học viên; thử khoảng thời gian dài hơn.')} action={<NutXemToanBo />} /> : null}
+          rong={!rows.length ? <RongDau chu={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} nut={<NutXemToanBo />} /> : null}
           the={hien.map((r) => (
             <div key={r.cycleId} className={THE_HV} style={nenThe}>
               <div className="flex items-center gap-2">
@@ -317,14 +317,15 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
           ))}
           bang={(
             <div className="table-scroll bang-dinh">
-              <table className="w-full" style={{ tableLayout: 'fixed', minWidth: 1100 }}>
+              {/* PT-GON (PTA quyết XM-1, M3): bỏ cột "Lớp" — hàng nhóm đã ghi lớp (Xuất Excel giữ cột Lớp). */}
+              <table className="w-full" style={{ tableLayout: 'fixed', minWidth: 990 }}>
                 <colgroup>
-                  <col style={{ width: 180 }} /><col style={{ width: 110 }} /><col style={{ width: 100 }} /><col style={{ width: 70 }} />
+                  <col style={{ width: 180 }} /><col style={{ width: 100 }} /><col style={{ width: 70 }} />
                   {[0, 1, 2, 3].map((i) => <col key={i} style={{ width: 62 }} />)}
                   <col style={{ width: 76 }} /><col style={{ width: 130 }} /><col />
                 </colgroup>
                 <thead><tr>
-                  <th className="th sticky-col">{t('Học viên')}</th><th className="th">{t('Lớp')}</th><th className="th">{t('Ngày thi')}</th>
+                  <th className="th sticky-col">{t('Học viên')}</th><th className="th">{t('Ngày thi')}</th>
                   <th className="th text-center">OVR</th>
                   {['L', 'R', 'W', 'S'].map((k) => <th key={k} className="th text-center">{k}</th>)}
                   <th className="th text-center">Target</th>
@@ -336,13 +337,13 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                     const cuaLop = rows.filter((r) => (r.lop ?? '') === lop);
                     return (
                       <Fragment key={lop}>
-                        <tr className="hang-lon"><td colSpan={11} className="px-3 py-1.5">
-                          {lop || '—'} <span className="ml-1 text-[13px] font-normal text-dim">{t('{n} lượt · {hv} HV', { n: cuaLop.length, hv: new Set(cuaLop.map((r) => r.studentId)).size })}</span>
+                        <tr className="hang-lon"><td colSpan={10} className="px-3 py-1.5">
+                          {/* Cột Lớp đã bỏ → mã lớp ở hàng nhóm là link hồ sơ lớp (giữ thao tác cũ của ô Lớp). */}
+                          {lop && cuaLop[0]?.classId ? <Link to={`/hoc-vien/lop/${cuaLop[0].classId}`} className={LINK_CHU}>{lop}</Link> : lop || '—'} <span className="ml-1 text-[13px] font-normal text-dim">{t('{n} lượt · {hv} HV', { n: cuaLop.length, hv: new Set(cuaLop.map((r) => r.studentId)).size })}</span>
                         </td></tr>
                         {ds.map((r) => (
                           <tr key={r.cycleId} className="row-hover [&>td]:h-11">
                             <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className={`text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link></td>
-                            <td className="td">{oLop(r.lop, r.classId)}</td>
                             <td className="td text-dim tabular-nums">{ngay(r.ngayThi, homNay)}</td>
                             <td className="td text-center font-medium tabular-nums">{fmtBand(r.ovr)}</td>
                             {[r.l, r.r, r.w, r.s].map((x, i) => <td key={i} className="td text-center tabular-nums">{fmtBand(x)}</td>)}
