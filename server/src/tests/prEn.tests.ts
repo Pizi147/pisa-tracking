@@ -582,12 +582,14 @@ const FILE_DA_DICH = [
     'ClassRoster', 'BangHocVienLop', 'MissingBadge'].map((f) => `web/src/modules/students/${f}.tsx`),
   ...['ClassOverviewPage', 'DauTrangLop', 'TabHocVienLop', 'BangDiemLopThuong', 'BangCanHoTro', 'ClassIssueBoard', 'CanhBaoYThuc', 'PhanTichLopTab',
     'TabTongKetLop', 'DaiChuyenLop', 'BangKqdrLopFt', 'thaoTacDongHocVien'].map((f) => `web/src/modules/classes/${f}.tsx`),
-  /* EN-SOT (#819–#823) + DON-CHU. Chưa vào: `test/keHoach/XepTheoHocVien.tsx` (còn chữ Việt — việc sau). */
+  /* EN-SOT (#819–#823) + DON-CHU + EN-XTHV (cả thư mục keHoach). */
   'shared/domain/bangChung.ts', 'web/src/modules/duyet/HopChoDuyet.tsx', 'web/src/modules/giaoVien/HoSoGiaoVienPage.tsx',
   ...['HieuQuaPa', 'KetQuaThi', 'PhanTichGiaoVien', 'TongHopTestSos', 'YThucPhoiHop'].map((f) => `web/src/modules/phanTich/${f}.tsx`),
   ...['AccountsAdmin', 'AdminPage', 'BangQuyDoiAdmin', 'CapQuyenRieng', 'CatalogAdmin', 'DemoBar', 'XoaTaiKhoanPanel'].map((f) => `web/src/modules/platform/${f}.tsx`),
   'web/src/modules/test/KeHoachTestTab.tsx',
-  ...['LopKeHoach', 'LuoiKeHoach', 'NganXepHangLoat', 'NganXepLichMt'].map((f) => `web/src/modules/test/keHoach/${f}.tsx`),
+  ...['ChipKyNang', 'GhiChuLichThi', 'HopKhoiPhucKetQua', 'HopKyNang', 'HopSEx', 'LopKeHoach', 'LuoiKeHoach', 'NganXepHangLoat', 'NganXepLichMt', 'NganXuatDiem',
+    'NganXuatKeHoach', 'TimKeHoach', 'TimLop', 'TuanNho', 'XepTheoHocVien'].map((f) => `web/src/modules/test/keHoach/${f}.tsx`),
+  'web/src/modules/test/keHoach/kieu.ts', 'web/src/modules/test/keHoach/taiXlsx.ts',
   ...['ChonChuongTrinh', 'ManagerTasks', 'MeetingPage', 'MgmtTasksPage', 'MockTestAdmin', 'SignalList', 'TongQuanV5'].map((f) => `web/src/modules/worklist/${f}.tsx`),
 ];
 
@@ -615,6 +617,10 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/phanTich/TongHopTestSos.tsx', text: /^Tổng hợp$/ },
   { file: 'web/src/modules/platform/BangQuyDoiAdmin.tsx', text: /^(Bảng gốc|Phiên bản \{id\}|Hoàn tác|Khôi phục \{…\})$/ },
   { file: 'web/src/modules/test/keHoach/NganXepLichMt.tsx', text: /^· bỏ lịch$/ },
+  /* EN-XTHV: so với `khoa` máy chủ gửi (không hiện ra); `chuTinhTrang` dựng chữ Việt, chỗ hiện bọc dich() (NganXepHangLoat). */
+  { file: 'web/src/modules/test/keHoach/XepTheoHocVien.tsx', text: /^(đã có điểm|đã làm bài)$/ },
+  { file: 'web/src/modules/test/keHoach/HopKyNang.tsx', text: /^đã có điểm$/ },
+  { file: 'web/src/modules/test/keHoach/kieu.ts', text: /^chưa xếp$/ },
 ];
 
 /**

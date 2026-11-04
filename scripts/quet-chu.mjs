@@ -45,7 +45,7 @@ function ngucCanh(node) {
     if (ts.isCallExpression(p) || ts.isNewExpression(p)) {
       if (p.arguments?.includes(n)) {
         const v = p.expression.getText();
-        if (/^(t|dich|loi|kem)$/.test(v) && p.arguments[0] === n) return null;   // PR-EN: khoá từ điển (chữ Việt có bản Anh); `kem` = khoá máy chủ gửi (EN-c)
+        if (/^(t|tChu|dich|loi|kem)$/.test(v) && p.arguments[0] === n) return null;   // PR-EN: khoá từ điển (chữ Việt có bản Anh); `kem` = khoá máy chủ gửi (EN-c); `tChu` = `t` đổi tên (XepTheoHocVien)
         return v.startsWith('console.') ? null : { vo: v.slice(0, 40) };
       }
     } else if (ts.isPropertyAssignment(p) && p.initializer === n) {
