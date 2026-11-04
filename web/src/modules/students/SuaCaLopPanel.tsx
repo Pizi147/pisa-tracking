@@ -22,8 +22,10 @@ type DongGoc = {
   phone: string | null; parentName: string | null; parentRelation: string | null; parentPhone: string | null;
   /** P8 (N13, N22 ④): môn đăng ký — chỉ lộ trình FT (`laFt`); null = đủ môn. */
   laFt?: boolean; monDangKy?: string[] | null;
+  /** QUYEN-CN: sửa được ô Liên hệ của em này (vai ở chi nhánh EM — máy chủ chặn cùng luật lúc lưu). */
+  nhapLienHe: boolean;
 };
-/** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). */
+/** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). QUYEN-CN: hiện khi có em sửa được; em không sửa được → ô chỉ đọc. */
 /** `chiThongTin` (OV-13i): TVV / CX — cột Tuần bắt đầu khoá (ngoài `CHI_SUA_THONG_TIN`). */
 type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; kyThi?: KyThi | null; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean; coTheDoiMon?: boolean };
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[]; monHoc?: { studentId: number; dong: string[] }[] };
@@ -275,6 +277,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                           const loi = daSuaO
                             ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
                           const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || !!khoaCot(c.key) || (c.key === 'monDangKy' && !r.laFt);
+                          /* QUYEN-CN: ô Liên hệ của em ở chi nhánh mình không có vai sửa liên hệ — chỉ đọc (máy chủ 403 nếu gửi). */
+                          const chiDoc = (TRUONG_LIEN_HE as readonly string[]).includes(c.key) && !r.nhapLienHe ? t('Em thuộc chi nhánh bạn không sửa được liên hệ — báo TVV / Quản lý chi nhánh em') : null;
                           const nhan = `${c.nhan} · ${r.fullName}`;
                           const idLoi = `loi-${r.studentId}-${c.key}`;
                           return (
@@ -302,7 +306,8 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                                     <input className={`field w-full${c.so ? ' text-right tabular-nums' : ''}${c.key === 'email' ? ' placeholder:font-bold placeholder:text-late' : ''}${loi ? ' border-late' : ''}`}
                                       placeholder={c.key === 'email' ? t('Thiếu') : undefined}
                                       value={v} aria-label={nhan} aria-invalid={!!loi || undefined} aria-describedby={loi ? idLoi : undefined}
-                                      disabled={khoaO} title={khoaO ? khoaCot(c.key) ?? t('Em chưa có lộ trình') : undefined}
+                                      disabled={khoaO} readOnly={!!chiDoc} style={chiDoc ? { background: 'var(--o-nhap-tat)' } : undefined}
+                                      title={khoaO ? khoaCot(c.key) ?? t('Em chưa có lộ trình') : chiDoc ?? undefined}
                                       type={c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : 'text'} autoComplete="off"
                                       inputMode={c.key === 'baseline' ? 'decimal' : c.key === 'email' ? 'email' : c.key === 'phone' || c.key === 'parentPhone' ? 'tel' : undefined}
                                       list={c.key === 'parentRelation' ? 'quan-he-goi-y-lop' : undefined}
