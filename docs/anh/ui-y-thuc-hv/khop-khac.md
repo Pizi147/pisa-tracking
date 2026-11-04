@@ -1,68 +1,72 @@
-# UI-Y-THUC-HV — khớp / khác mockup
+# UI-3 · Tab Ý thức & Phối hợp hồ sơ HV — khớp / khác (mockup U10 K3 · K6 · K8, chủ SP duyệt 03/11)
 
-Nguồn: `thiet-ke/v7/ho-so-hv-y-thuc.html` (chủ SP duyệt 28/10, "Duyệt cả bốn"), khung `#w1440` / `#w375`, `?tt=…&vai=…&theme=…`.
-Web: `/hoc-vien/:id?tab=y-thuc` — `StudentYThucSection` (+ `ThangYThuc`, `DuyetThuHoi` / `BaoPh` dùng chung tab lớp, `PhoiHopSosSection xanh`).
-Luật 28/10: hình ảnh sát mockup, tính năng giữ V4.
+Ảnh cặp (trái mockup `thiet-ke/audit-0311/u10-y-thuc.html`, phải web dev `localhost:5831`, dữ liệu seed, `document.fonts.check('600 14px "Be Vietnam Pro"')` = true):
+`cap-k3-gvcn-1440.png` (GVCN, em 1, 1440 tối) · `cap-k3-gvbm-1440.png` (GVBM vai 9) · `cap-375.png` (GVCN, 375 sáng, so K2b) · `cap-k6-1440.png` (Lịch sử) · `cap-k8-1440.png` (Phối hợp SOS, em 58).
+Mockup vẽ bằng dữ liệu CP FT 116; web chụp dữ liệu seed (MB FT 101) — chữ / số khác nhau là do dữ liệu, so bố cục + hình.
 
-Ảnh cặp (trái mockup | phải web): `cap-1440-toi.png` (tt=cho ↔ HV Lê Quang Huy, GVCN), `cap-375.png` (tt=moi, sáng ↔ HV Mạc Tuấn Kiệt),
-`cap-cho-duyet-1440.png` (tt=cho-duyet ↔ HV Lương Gia Bảo, có Báo PH TVV).
+Thành phần dùng chung `web/src/modules/yThuc/khoiYThuc.tsx` (BadgeViec · CanLamEm · BaoPhEm · TomTatEm · DsViPhamCho · LanTruoc · BangLichSu) — UI-2 (tab lớp) dùng lại y hệt (chủ SP 03/11: hai tab đồng bộ).
 
-## Truy vết khung → thành phần
+## Bảng truy vết
+| Khung (mockup) | Thành phần web | Ảnh |
+|---|---|---|
+| K3 phân đoạn `Vi phạm \| Phối hợp SOS n` + `Cần làm n \| Lịch sử n` · `+ Ghi vi phạm` phải | `StudentYThucSection` (`BoLocDoan v8`) | cap-k3-* |
+| K3 dải tóm tắt: Cần làm (badge khung + chấm) · Người xử lý (vai xem) · Đã tới · Lần này / Bậc kế · Báo PH · lần X | `TomTatEm` · `CanLamEm` · `BaoPhEm` | cap-k3-gvcn, cap-k3-gvbm |
+| K3 danh sách vi phạm chờ: ngày · tên · thẻ (nhóm, người ghi) · Sửa | `DsViPhamCho` | cap-k3-* |
+| K1 khối Lần xử lý (một dòng "Lần trước") · Thang › · Lịch sử của em › | `LanTruoc` · `ThangYThuc` (mở bằng "Thang ›") | cap-k3-gvcn |
+| K1 nút: Xác nhận xử lý · Đã xem · n (viền) · Đề xuất QL duyệt (chữ) · "Không có Đã xem" khi bắt buộc | `StudentYThucSection` | cap-k3-gvcn |
+| K1 hàng vừa "Đã xem": ✓ Đã xem n vi phạm · giờ · Hoàn tác · Xem lại | `StudentYThucSection` (`vuaXem`) | (bấm thử) |
+| K6 Lịch sử: lọc Tất cả · Đã xem · Đã xử lý · Đã thu hồi (có số) · phạm vi Lộ trình \| Cả lịch sử · bảng Ngày · Loại · Nội dung (trường có nhãn) · Ai · lúc nào · thao tác | `BangLichSu` | cap-k6-1440 |
+| K8 Phối hợp SOS: đầu lượt một dòng (SOS · MT · n/m việc xong · + Thêm việc) · hàng tên · hạn · Xác nhận ⋯ · "mọi lượt" | `PhoiHopSosSection` `TheSos` (k8) · `ActionRow` | cap-k8-1440 |
+| K2b 375: thẻ mở xếp dọc | cùng thành phần, container query | cap-375 |
+| BỎ: tiêu đề "Ý thức & Phối hợp" (trùng tab) · khối Thang mở sẵn · dòng "Duyệt · thu hồi · Báo PH" hai ô · khối vàng "Vi phạm chưa xong" · Nhật ký gập cuối trang · "Thu hồi được · QL duyệt" · chữ phụ Meeting CX "không phải xử lý vi phạm…" · "Cần xử lý" ở từng việc phối hợp | — | — |
+| GIỮ: mọi thao tác (bảng dưới) | | |
 
-| # | Khung mockup | Web | Kết quả |
+## KHỚP / KHÁC
+| # | Chỗ | KHỚP / KHÁC | Ghi chú |
 |---|---|---|---|
-| H1 | Tiêu đề "Ý thức & Phối hợp" 17 px đậm + "+ Ghi vi phạm" nút chính | `StudentYThucSection` đầu | KHỚP |
-| H2 | Khối Thang `surface-2` viền đậm, bo 10: "Thang xử lý vi phạm · chuỗi" + góc phải Xác nhận / Sửa cấp bậc | `ThangYThuc` (+ `onSuaKhai`) | KHỚP |
-| H3 | Bậc: đã qua ✓ viền xanh lá · lần này viền nhấn đậm nền nhấn nhạt · còn lại viền mảnh; một dòng mờ mép, ≤ 600 px xuống dòng đủ tên | `BacO` + `<ol>` (`@container 600` đo theo chính khối Thang — cả panel Công việc hẹp) | KHỚP |
-| H2b | Đề xuất chờ QL / đã duyệt: chip viền đứt vàng ngay trên thang, bậc kế không còn "lần này" | `ThangYThuc` (`d.deXuat`) | KHỚP |
-| H4 | Xác nhận xử lý (nút chính + chấm hồng; trạng thái chỉ Mới → nút thường) · Đề xuất QL duyệt · ⓘ | `xuLyChinh`, `NutLuat` | KHỚP |
-| H5 | Dòng trạng thái hai ô `Duyệt · thu hồi` \| `Báo PH (TVV)`; 375 xếp dọc | `TrangThaiDong` (ô = `DuyetThuHoi` / `BaoPh` tab lớp) | KHỚP |
-| H6 | Cả hai ô trống → một dòng mờ có nhãn | `TrangThaiDong` nhánh rỗng | KHỚP |
-| H7 | Đề xuất đã duyệt: "Đánh dấu đã thực hiện" nút chính trong ô Duyệt | `TrangThaiDong` | KHỚP |
-| H8 | Báo PH: viên chờ (chấm) / quá hạn (⚠ đỏ) / đã báo (✓) + "Việc của TVV · bậc"; TVV có "Ghi kết quả báo PH" | `BaoPh` + `PanelBaoPhTvv` | KHỚP |
-| H9 | Hai cột 1.35 : 1 (≥ 900 px), hẹp xếp dọc | lưới `@container(min-width:900px)` | KHỚP |
-| H10 | Thẻ "Vi phạm chưa xong" + ⓘ luật + "Ghi nhận tất cả (n)" (≥ 2 Mới, nút chính + chấm) | `NutLuat`, nút lô | KHỚP |
-| H11 | Khối vàng nhạt (quá hạn đỏ nhạt + ⚠), dòng đầu đậm nói hạn + lý do | `KhoiViPham` `bg-soon-bg` / `bg-late-bg` | KHỚP — chữ lý do dùng câu máy chủ đã có "n vi phạm trong tuần này + tuần trước → bắt buộc xử lý" thay "n vi phạm / 2 tuần" (cùng nghĩa, đã dịch EN) |
-| H12 | Dòng vi phạm: ngày · tên ▸ mở tại chỗ (mô tả · Sửa · Xoá) · nhóm + người ghi · Ghi nhận / nhãn khi khác khối | `KhoiViPham` + `ChiTietViPham` | KHỚP |
-| H13 | Em không còn vi phạm chờ: một câu + lần gần nhất | nhánh rỗng | KHỚP |
-| H14 | Thẻ "Phối hợp SOS · học thuật · tách khỏi vi phạm", khung xanh nhạt viền xanh | `PhoiHopSosSection cot1="luot" xanh` | KHỚP |
-| H15 | Nội dung thẻ lượt: "MT2 SOS 2 · R, W · 1/3 · Đang làm" + danh sách việc (Xác nhận · Bỏ ▾) + "+ Thêm việc" · "Hiện cả lượt đã xong" · "Case & PA ở tab Học thuật ›" | `TheSos` V4 | KHÁC [XM] — giữ thẻ lượt V4 (đầu thẻ 3 cột, link "Hỗ trợ học thuật xem ở tab Học thuật", Sửa / Đưa lại Cần xử lý ở việc đã xong) như K15 tab lớp |
-| H16 | Không có lượt: một dòng chữ nhỏ | `PhoiHopSosSection xanh` rỗng | KHỚP |
-| H17 | "▸ Nhật ký · chuỗi (n)" gập; mở sẵn khi em không còn gì chờ; trong: bộ lọc một hàng + nhóm + dòng thời gian + dòng đếm + Xem cả lịch sử | thẻ Nhật ký | KHỚP |
-| H18 | Lỗi tải: câu + Tải lại (không ⚠) | `ErrorState`; Phối hợp `LoiTaiNho` | KHỚP |
-| H19 | Toast "✓ Đã ghi nhận … · Hoàn tác" | `toast.hoanTac` | KHỚP |
-| H20 | QL: "Duyệt" / "Từ chối…" ngay trong ô Duyệt | bấm chữ đề xuất (link gạch chân, nhãn "Xem lần xử lý …") → panel Xem lần xử lý (thẻ yêu cầu có Duyệt / Từ chối) | KHÁC [XM] — một chỗ duyệt (thẻ yêu cầu `duyet/TheYeuCau.tsx` thuộc session khác, không đụng); thêm nút tại chỗ cần PR riêng |
-| H21 | Chấm tab "●" (quá hạn đỏ) ở hàng tab hồ sơ | hàng tab `StudentDetailPage` giữ như cũ | GIỮ — hàng tab hồ sơ ngoài phạm vi PR |
-| H22 | Khung ngoài tab | bỏ `Card` bọc tab (thẻ lồng thẻ) | KHỚP |
+| 1 | Phân đoạn hai tầng + nút phải | KHỚP | |
+| 2 | Dải tóm tắt tách ô, nhãn trên giá trị dưới, kẻ dọc | KHỚP | |
+| 3 | Badge Cần làm: Phải xử lý vàng đặc / Chưa xem xanh viền chấm / Quá hạn đỏ ⚠ | KHỚP | |
+| 4 | Báo PH ghi "lần X" + badge | KHỚP | em seed chưa có Báo PH → "—" |
+| 5 | Danh sách vi phạm: ngày · tên đậm · thẻ nhóm · "n tệp ›" · Sửa phải | KHỚP | người ghi xem khi mở dòng; số tệp một câu đếm theo lô (một em) |
+| 6 | Hàng nút (Xác nhận xử lý · Đã xem viền · Đề xuất chữ) | KHỚP | |
+| 7 | Không có hàng "Lần trước" (K3) | KHỚP | rà PTA 04/11: bỏ hàng chân; lần cũ xem ở Lịch sử ("Xem" → Thu hồi…); Thang trong ⓘ cạnh "Đã tới"; chỉ hiện dòng khi đang xin thu hồi / QL từ chối |
+| 8 | Lịch sử: lọc có số, phạm vi, bảng 5 cột, trường có nhãn | KHỚP | tab HV bỏ cột Học viên (một em) |
+| 9 | Lịch sử "Đã xử lý": trường Vi phạm (tên từng vi phạm) | KHỚP | máy chủ `dongThoiGian` thêm `tenViPham` từ chính danh sách đã đọc — 0 câu thêm |
+| 10 | Lịch sử "Đã xử lý": trường Báo PH | KHỚP | `baoPh` của lần (gộp vào câu đang có, 2 câu con theo `measure_id` có chỉ mục) — chỉ hiện khi lần đó có việc Báo PH |
+| 11 | Phối hợp: đầu lượt một dòng, hàng 3 cột, ⋯ | KHỚP | |
+| 12 | Phối hợp: "Học thuật ›" | KHÁC (giữ thao tác) | lối sang tab Học thuật đã có trước — giữ, chữ ngắn |
+| 13 | 375 xếp dọc, nút 44 px | KHỚP | |
 
-**Đếm:** 22 dòng (trừ H21 GIỮ) — KHỚP 20 · KHÁC [XM] 2 (H15 giữ thao tác V4, H20 một chỗ duyệt). **20/22 = 90,9 %**.
-
-**Ảnh thêm:** `cap-sos-1440.png` (tt=sach ↔ HV có lượt SOS), `web-lop-mo-hang-de-xuat-1440.png` — `ThangYThuc` dùng chung nên phần mở hàng em ở **tab lớp** cũng đổi theo: bậc chip V5, đề xuất trên thang (đề xuất là bậc kế → vẽ tại bậc đó; ngoài thang như WL 3 → nối cuối), bậc kế "· kế tiếp" khi có đề xuất, thang đo theo khối 600 px. Khớp chip `ThangNho` của hàng.
-
-**Panel Công việc (`yt_xem`):** tab tự biết lớp thường từ `chuoi.nhan` (không cần truyền `thuong`) → HV lớp thường thấy "Phối hợp", không chữ SOS.
+**Hình: KHỚP 12 / 12 = 100 %.** KHÁC duy nhất (#12) là TÍNH NĂNG giữ thao tác cũ (lối "Học thuật ›"), không phải lệch hình (chủ SP 04/11: > 96 % hình thì merge; KHÁC chỉ cho tính năng / luật có lý do).
 
 ## Thao tác TRƯỚC → SAU
-
-| Thao tác V4 | Sau PR |
-|---|---|
-| + Ghi vi phạm | giữ, đầu tab |
-| Xác nhận xử lý · Đề xuất QL duyệt (khối Thang) | giữ; + ⓘ giải thích; chấm hồng ở nút chính |
-| Xác nhận cấp bậc vi phạm / Sửa cấp bậc | giữ — Sửa cấp bậc dời vào góc phải khối Thang |
-| Thanh việc: Ghi nhận n | → "Ghi nhận tất cả (n)" ở thẻ Vi phạm + "Ghi nhận" từng dòng; có Hoàn tác |
-| Thanh việc: Đánh dấu đã thực hiện | → ô Duyệt · thu hồi |
-| Ghi nhận / Bỏ ghi nhận ở dòng thời gian | giữ trong Nhật ký |
-| Mở vi phạm → Sửa · Xoá · xem lần xử lý | giữ (ở khối Vi phạm chưa xong và Nhật ký) |
-| Xem lần xử lý → Thu hồi… / Đã thực hiện… | giữ (nút Xem ở Nhật ký + bấm chữ ở ô Duyệt · thu hồi) |
-| Lọc Tất cả / Cần xử lý / Chờ duyệt / Đã xử lý + nhóm | giữ trong Nhật ký |
-| Xem cả lịch sử / Chỉ chuỗi hiện tại | giữ |
-| Tab con "Vi phạm & xử lý · Phối hợp SOS" | → một trang hai cột; `&sub=phoi-hop` cuộn tới khối Phối hợp |
-| Phối hợp: Xác nhận · Bỏ · + Thêm việc · Sửa · Đưa lại Cần xử lý · link tab Học thuật | giữ (thẻ lượt V4) |
-| `?mo=xu-ly`, `?mo=da-thuc-hien&xl=` | giữ |
-| MỚI | Ghi kết quả báo PH tại chỗ (TVV / QL — quyền máy chủ); dòng trạng thái Duyệt · thu hồi \| Báo PH |
+| Thao tác | Trước | Sau | |
+|---|---|---|---|
+| + Ghi vi phạm | đầu tab | phải thanh phân đoạn | GIỮ |
+| Xác nhận / Sửa cấp bậc (khai) | trong khối Thang | nút "Khai / sửa cấp bậc" phải thanh | GIỮ · ĐỔI chỗ |
+| Xác nhận xử lý · Đề xuất QL duyệt | trong khối Thang | hàng nút dưới tóm tắt | GIỮ · ĐỔI chỗ |
+| Ghi nhận (một / tất cả) | "Ghi nhận" ở dòng / "Ghi nhận tất cả" | "Đã xem · n" (tất cả) · "Đã xem vi phạm này" khi mở một vi phạm | GIỮ · ĐỔI chữ (N34 ④) |
+| Bỏ ghi nhận | Nhật ký | "Bỏ xem" ở Lịch sử + Hoàn tác ngay sau "Đã xem" | GIỮ · ĐỔI chữ |
+| Đánh dấu đã thực hiện | dòng trạng thái | hàng nút | GIỮ |
+| Xem lần xử lý (→ Thu hồi…) | ô Duyệt · thu hồi / Nhật ký | "Lần trước … Xem ›" · "Xem" ở Lịch sử | GIỮ |
+| Ghi kết quả Báo PH (TVV / QL) | nút trong ô Báo PH | bấm badge Báo PH | GIỮ |
+| Sửa / Xoá vi phạm, bằng chứng | mở vi phạm | "Sửa" cuối dòng + mở vi phạm (Sửa · Xoá · tệp) | GIỮ |
+| Lọc nhóm vi phạm · Xem cả lịch sử | Nhật ký | Lịch sử (ô nhóm · phạm vi Lộ trình \| Cả lịch sử) | GIỮ |
+| Thang xử lý | luôn mở | "Thang ›" mở tại chỗ | GIỮ |
+| Phối hợp: Xác nhận · Bỏ · Sửa · Đưa lại · Khôi phục · + Thêm việc · Sửa hạn · tệp | thẻ lượt | như cũ trong phân đoạn (Bỏ qua ⋯) | GIỮ |
+| Sang tab Học thuật từ Phối hợp | link dài | "Học thuật ›" | GIỮ |
 
 Không mất thao tác nào.
 
-## Máy chủ
+## Sau rà (audit + web-design-guidelines + ponytail-review, agent riêng)
+- Lịch sử theo KHUNG (container 720 px) — panel Công việc 480 px không cuộn ngang · dòng "Đã xem" mở tại chỗ (mô tả, tệp, Sửa / Xoá — người ghi vẫn sửa được) · badge đề xuất bấm → Xem lần xử lý · badge Báo PH có tên "Ghi kết quả báo PH ›" · nút lặp có `aria-label` theo dòng · lượt Phối hợp đã xong thu gọn (như trước) · "Đã xem" từng vi phạm ẩn khi bắt buộc (máy chủ từ chối) · thanh "Đã xem" trong `aria-live`, tắt khi panel con lưu.
+- BỎ có chủ ý: dòng đếm cuối Nhật ký ("Lộ trình X: n vi phạm · theo nhóm") — số đã ở phân đoạn "Lịch sử n" + lọc nhóm ("thừa thì đừng thêm chữ").
 
-`GET /students/:id/y-thuc` thêm `hang` = `{ xuLyGanNhat, tuChoi, thuHoi, baoPh }` từ `hangCuaEm` (`board.ts`) — cùng hàm, cùng câu với hàng em tab lớp
-(`baoPhMoiNhat`, `danhDauDangXinThuHoi` tách ra dùng chung). Không đổi luật, không đổi schema. Phép kiểm: `prYt4` "UI-Y-THUC-HV: tab HV cùng ô".
+## [XM] để PTA
+- Không còn.
+
+## Rà PTA 04/11 (#892)
+- "Bậc kế" → "Lần này" (mọi nhóm, như K3) · hạn nằm trong badge ("Chưa xem · hạn 16/09") · bỏ hàng "Lần trước … Thang › Lịch sử của em ›", Thang vào ⓘ cạnh "Đã tới" · dòng vi phạm bỏ "… ghi" và mũi tên · hàng nút theo thứ tự mockup (bắt buộc: Xác nhận xử lý chính · Đề xuất chữ; mới: Đã xem · n viền · Xác nhận xử lý chữ · Đề xuất chữ), ⓘ sát nút · "+ Ghi vi phạm" cao 36 px như mockup · câu tên GVCN gộp vào câu sẵn có (0 câu thêm).
+- **Mockup `u10-y-thuc.html` (#874) có một sửa của session này:** thẻ "Mai Hồng Ngọc · ✓ Đã xem 2 vi phạm" bị chính lần sửa vòng 2 của tôi (đổi thứ tự thẻ K2) đặt nhầm vào khung K3 (hồ sơ HV Lê Thảo Nhi — thẻ của em khác, vô nghĩa ở đó) trước khi chủ SP duyệt. Commit UI-3 chuyển thẻ về đúng chỗ ở K2 (danh sách 375), không đổi gì khác — là sửa lỗi lồng thẻ, không đổi thiết kế.
+- So 2× (Playwright, `deviceScaleFactor: 2`) thẻ Ý thức mockup K3 ↔ web GVBM / GVCN: trùng bố cục, nhãn, badge, khoảng cách.

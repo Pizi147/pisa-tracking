@@ -199,7 +199,7 @@ export const HAN_Y_THUC_NGAY = 5;
 export const TRANG_THAI_VP = ['moi', 'da_ghi_nhan', 'can_xu_ly', 'qua_han', 'cho_duyet', 'da_xu_ly'] as const;
 export type TrangThaiVp = (typeof TRANG_THAI_VP)[number];
 export const TRANG_THAI_VP_LABEL: Record<TrangThaiVp, string> = {
-  moi: t('Mới'), da_ghi_nhan: t('Đã ghi nhận'), can_xu_ly: t('Cần xử lý'), qua_han: t('Quá hạn'), cho_duyet: t('Chờ QL duyệt'), da_xu_ly: t('Đã xử lý'),
+  moi: t('Mới'), da_ghi_nhan: t('Đã xem'), can_xu_ly: t('Cần xử lý'), qua_han: t('Quá hạn'), cho_duyet: t('Chờ QL duyệt'), da_xu_ly: t('Đã xử lý'),
 };
 
 export type ViPhamVao = {
@@ -275,7 +275,7 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
   };
   if (batBuoc) return tinh('can_xu_ly', batBuoc, 'xu-ly');
   if (!v.ghiNhanLuc) return tinh('moi', v.reportedOn, 'xem');
-  return { t: 'da_ghi_nhan', nhan: t('Đã ghi nhận'), han: null, quaHanNgay: null, lyDoQuaHan: null };
+  return { t: 'da_ghi_nhan', nhan: t('Đã xem'), han: null, quaHanNgay: null, lyDoQuaHan: null };
 }
 
 /**

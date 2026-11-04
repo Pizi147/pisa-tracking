@@ -749,7 +749,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (6) · "Ghi nhận n vi phạm mới" có hạn ngày ghi + 4; Ghi nhận xong dòng biến mất', () => {
     const sid = hv(); const v = ghiVp(gvbm, sid);
     const it = viec(gvcn, `yt_xem:${sid}`);
-    assert(it && it.due === addDays(TODAY, 4) && /^Ghi nhận 1 vi phạm mới · /.test(it.tieuDe) && it.actionLabel === 'Ghi nhận', JSON.stringify(it));
+    assert(it && it.due === addDays(TODAY, 4) && /^Xem 1 vi phạm mới · /.test(it.tieuDe) && it.actionLabel === 'Đã xem', JSON.stringify(it));
     xuLy.ghiNhan(gvcn, sid, [v]);
     assert(!viec(gvcn, `yt_xem:${sid}`), 'ghi nhận xong');
   });
@@ -923,10 +923,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       && /onKhai=\{hv\.canManage \?/.test(s) && /const cta = canManage &&/.test(s), 'ẩn theo quyền');
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
-  check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" + chữ phụ "không phải xử lý vi phạm, không cần QL duyệt"', () => {
+  check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" — nhãn một chỗ; UI-3 (mockup U10 K8) bỏ chữ phụ thừa, hàng 3 cột tên · hạn · nút', () => {
     const s = docW(`${YT}/PhoiHopSosSection.tsx`);
     /* EN-e: nhãn ở MỘT chỗ — COORDINATION_KIND_LABEL (sos.ts), section dùng lại. */
-    assert(/Meeting CX\/GĐCN \(sau Mock\)/.test(docW('shared/domain/sos.ts')) && /COORDINATION_KIND_LABEL\[a\.kind/.test(s) && /không phải xử lý vi phạm, không cần QL duyệt/.test(s), 'nhãn');
+    assert(/Meeting CX\/GĐCN \(sau Mock\)/.test(docW('shared/domain/sos.ts')) && /COORDINATION_KIND_LABEL\[a\.kind/.test(s) && /không hạn/.test(s), 'nhãn');
   });
   /* UI-Y-THUC-HV (mockup v7): thanh việc thay bằng dòng đầu khối vi phạm + dòng trạng thái; dòng thời gian vào Nhật ký gập. */
   check('UI-Y-THUC-HV · tab HV tự biết lớp thường khi không truyền `thuong` (panel Công việc yt_xem): "Phối hợp" không chữ SOS', () => {
@@ -934,11 +934,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/const thuong = thuongVao \?\? d\.chuoi\.nhan === 'lớp thường'/.test(s) && !/thuong = false/.test(s), 'tự biết lớp thường');
     assert(/<StudentYThucSection studentId=\{it\.studentId!\} \/>/.test(docW('web/src/modules/congViec/PanelViec.tsx')), 'panel Công việc dựa vào mặc định');
   });
-  check('YT4 (10) · Tab HV (v7): thang, dòng trạng thái, khối vi phạm, Nhật ký gập có bộ lọc MỘT hàng, không ô tick, "Xem cả lịch sử", dòng đếm cuối', () => {
+  check('YT4 (10) · Tab HV (UI-3, mockup U10 K3): phân đoạn Vi phạm | Phối hợp + Cần làm | Lịch sử, khối dùng chung, Lịch sử lọc Đã xem / Đã xử lý / Đã thu hồi + phạm vi, không ô tick', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
-    assert(/function TrangThaiDong/.test(s) && /function KhoiViPham/.test(s) && /<ThangYThuc/.test(s) && /Xem cả lịch sử/.test(s) && /demCuoi/.test(s), 'bố cục');
-    assert(/<BoLocDoan/.test(s) && /'Chờ duyệt'/.test(s) && /Cần xử lý/.test(s) && /'Đã xử lý'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'bộ lọc một hàng + không tick');
-    assert(/vach: true/.test(s) && !/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'dòng xử lý vạch trái; hồ sơ không gọi violation-warning');
+    assert(/<TomTatEm/.test(s) && /<DsViPhamCho/.test(s) && /<BangLichSu/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s), 'bố cục');
+    assert(/key: 'vi-pham'/.test(s) && /key: 'phoi-hop'/.test(s) && /key: 'can-lam'/.test(s) && /key: 'lich-su'/.test(s) && /'Đã thu hồi'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'phân đoạn + lọc, không tick');
+    assert(!/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ không gọi violation-warning');
   });
   check('YT4 (10) · Luật v3 đã gỡ khỏi miền chung: không còn chín loại/chuỗi thư/cảnh báo mềm/bốn chip/patch PA', () => {
     for (const k of ['VIOLATION_STATES', 'violationWarning', 'violationAgeLabel', 'MEASURE_KINDS_V3', 'WARNING_CHAIN', 'measureMissing', 'CANH_BAO_NGAY',

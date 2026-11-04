@@ -19,6 +19,7 @@ import { Han } from '../../ui/Han.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { MuiTenGap } from './NhanViPham.tsx';
+import { BadgeViec } from './khoiYThuc.tsx';
 
 type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
@@ -102,6 +103,30 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
     : `MT${luot.attemptNo}${luot.sosLevel !== null ? ` · ${sosLabel(luot.sosLevel)}` : ''}`;
   const kyNang = luot.skillLabels.length > 0 ? luot.skillLabels.join(' + ') : '—';
 
+  const k8 = xanh && cot1 === 'luot';
+  if (k8) {
+    /* UI-3 (mockup U10 K8): phân đoạn Phối hợp SOS hồ sơ HV — đầu lượt một dòng, việc là hàng 3 cột (tên · hạn · nút); không khung xanh. */
+    return (
+      <div className="border-t pt-3 first:border-t-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {!luot.nhanDot && luot.sosLevel !== null
+            ? <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />
+            : <b className="text-[15px] font-semibold text-slate-100">{mtSos}</b>}
+          {!luot.nhanDot && luot.sosLevel !== null && <span className="inline-flex h-[22px] items-center rounded-md px-2 text-xs font-semibold text-slate-400 surface-2">MT{luot.attemptNo}</span>}
+          <span className="ml-auto flex flex-wrap items-center gap-2">
+            <BadgeViec tong={luot.summary.complete ? 'xong' : 'dang'}>{t('{label} việc xong', { label: luot.summary.label })}</BadgeViec>
+            {luot.summary.complete && <button type="button" className="link inline-flex min-h-[44px] items-center gap-1 appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" aria-expanded={open} onClick={() => setOpen((v) => !v)}><MuiTenGap mo={open} />{t('Việc')}</button>}
+            {onGoAcademic && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={onGoAcademic}>{t('Học thuật ›')}</button>}
+            {luot.canAct && !adding && !luot.nhanDot && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setAdding(true)}>{t('+ Thêm việc')}</button>}
+          </span>
+        </div>
+        <div className="mt-1">
+          {open && luot.actions.map((a) => <ActionRow key={a.id} a={a} canAct={luot.canAct} onChanged={onChanged} />)}
+          {adding && <div className="mt-2"><AddCoordinationForm attemptId={luot.attemptId} existing={luot.actions.map((a) => a.kind)} onClose={() => setAdding(false)} onChanged={onChanged} /></div>}
+        </div>
+      </div>
+    );
+  }
   return (
     /* UI-Y-THUC-LOP (`gon`): mỗi em một khung xanh nhạt (mockup `.phoi-hop`) — nhóm học thuật, khác hẳn hàng vi phạm. */
     <div className={gon || xanh ? 'rounded-[10px] border border-doing-line bg-doing-bg' : 'rounded-lg border'} style={gon || xanh ? undefined : { borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
@@ -187,22 +212,20 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
     ? `${fmtDate(a.performedOn)}${a.performerName ? ` · ${a.performerName}` : ''}`
     /* PR-NEN: nhãn cột phải đã nói "Đã huỷ" — dòng phụ chỉ còn lý do, không lặp. */
     : a.status === 'removed' ? (a.removeReasonLabel ?? '')
-    /* Người không có quyền: cột phải đã là nhãn `Cần làm` — không lặp ở dòng phụ (rà soát 22/09). */
-    : canAct ? t('Cần xử lý') : '';
+    /* Việc chờ: nút / nhãn ở cột phải đã nói trạng thái — không lặp "Cần xử lý" (UI-3, "thừa thì đừng thêm chữ"). */
+    : '';
+  /* Cột hạn (mockup K8): meeting CX có hạn (Sửa hạn cho GVCN / QL); việc khác "không hạn" (P10). */
+  const hanO = a.status !== 'pending' ? null : a.han ? (canAct && a.hanMacDinh
+    ? <DongHan gon han={a.han} hanMacDinh={a.hanMacDinh} hanChon={a.hanChon ?? null} suaDuoc onTaiLai={() => onChanged?.()}
+        onLuu={async (han, hanCu) => { await api.post(`/phoi-hop-sos/${a.id}/han`, { han, hanCu }); toast.push('ok', t('Đã lưu hạn')); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged?.(); }} />
+    : <Han loai="phoi-hop" han={a.han} />) : <span className="text-[13px] text-slate-500">{t('không hạn')}</span>;
 
   return (
     <div className="border-t first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-2 items-start">
-        <span className="min-w-0 break-words">
-          <span className="block text-sm text-slate-200">{laMeetingCx(a.kind) ? COORDINATION_KIND_LABEL[a.kind as CoordinationKind] : a.name}</span>
-          {laMeetingCx(a.kind) && <span className="block text-xs text-slate-500 mt-0.5">{t('Việc phối hợp sau Mock — không phải xử lý vi phạm, không cần QL duyệt')}</span>}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-2 [@container(min-width:760px)]:grid-cols-[minmax(0,1fr)_minmax(0,330px)_auto]">
+        <span className="col-start-1 row-start-1 min-w-0 break-words">
+          <span className="block text-sm font-semibold text-slate-100">{laMeetingCx(a.kind) ? COORDINATION_KIND_LABEL[a.kind as CoordinationKind] : a.name}</span>
           {dongPhu && <span className="block text-xs text-slate-500 mt-0.5">{dongPhu}</span>}
-          {/* OV-12h: meeting CX còn Cần xử lý — hạn 5 ngày từ lúc tạo, quá hạn ⚠ (cùng `<Han>` mọi nơi). */}
-          {/* UI-1 (mockup U10 K8): GVCN / QL sửa hạn tại chỗ (máy chủ `suaHanPhoiHop`); người chỉ xem thấy hạn như cũ. */}
-          {a.status === 'pending' && a.han && (canAct && a.hanMacDinh
-            ? <span className="mt-1 block"><DongHan gon han={a.han} hanMacDinh={a.hanMacDinh} hanChon={a.hanChon ?? null} suaDuoc onTaiLai={() => onChanged?.()}
-                onLuu={async (han, hanCu) => { await api.post(`/phoi-hop-sos/${a.id}/han`, { han, hanCu }); toast.push('ok', t('Đã lưu hạn')); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged?.(); }} /></span>
-            : <span className="block text-xs mt-0.5"><Han loai="phoi-hop" han={a.han} /></span>)}
           {a.noiDung && a.noiDung.length > 0 && (
             <details className="mt-1">
               <summary className="cursor-pointer text-xs text-slate-400">{a.status === 'done' ? t('Nội dung đã báo TVV') : t('Nội dung gửi TVV')} ({a.noiDung.length})</summary>
@@ -213,12 +236,13 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
             </details>
           )}
         </span>
-        <span className="flex flex-wrap gap-1.5 justify-end">
-          {/* Việc chờ mà người xem làm được: hai nút đứng chỗ nhãn (dòng phụ đã nói "Cần xử lý"); còn lại là nhãn 6 chữ chung. */}
+        {hanO && <span className="col-span-2 row-start-2 [@container(min-width:760px)]:col-span-1 [@container(min-width:760px)]:col-start-2 [@container(min-width:760px)]:row-start-1">{hanO}</span>}
+        <span className="col-start-2 row-start-1 flex flex-wrap justify-end gap-1.5 [@container(min-width:760px)]:col-start-3">
+          {/* Việc chờ mà người xem làm được: Xác nhận + ⋯ (Bỏ việc…); còn lại là nhãn 6 chữ chung. */}
           {a.status === 'pending' && canAct ? (
             <>
               <button type="button" className="btn btn-sm max-sm:min-h-[44px] btn-primary" onClick={() => setConfirming(!confirming)}>{a.kind === 'bao_ph_tvv' ? t('Đánh dấu đã làm') : t('Xác nhận')}</button>
-              <button type="button" className="btn btn-sm max-sm:min-h-[44px] btn-ghost" onClick={() => setRemoving(!removing)}>{t('Bỏ ▾')}</button>
+              <button type="button" className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px]" aria-label={t('Bỏ việc…')} aria-expanded={removing} onClick={() => setRemoving(!removing)}>⋯</button>
             </>
           ) : <NhanTrangThai t={trangThaiPhoiHop(a.status)} />}
         </span>
