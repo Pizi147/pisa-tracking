@@ -10,7 +10,7 @@ import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { OTarget, OTuanBatDau, type XemChuyenLopData } from '../students/ChuyenLopPanel.tsx';
+import { OResetBac, OTarget, OTuanBatDau, tenBac, type XemChuyenLopData } from '../students/ChuyenLopPanel.tsx';
 import { KHOI_VANG } from './chuyenLopChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
@@ -32,11 +32,12 @@ export type EmXetLai = {
   xetLaiTruoc: { quyetDinh: Quyet; chu: string | null; tuDong: boolean; luc: string; nguoi: string | null } | null;
   coTheNhanXet?: boolean;
   quyetDinh: { id: number; quyetDinh: Quyet; lopDich: string | null; tuan: string | null; luc: string; nguoi: string | null } | null;
+  /** N36: bậc vi phạm hiện tại (chỉ Quản lý; em đang học lớp thường). */ bacYThuc?: number;
 };
 type DuLieu = { lop: { id: number; code: string; ft: boolean }; chiXem: boolean; han: string | null; nguon: { code: string } | null; em: EmXetLai[]; lopHocLai: Record<string, LopMo[]>; lopLen: Record<string, LopMo[]> };
 type LopMo = { id: number; code: string; phu: string; ft?: boolean };
 /** Lựa chọn đang soạn của một em (chưa lưu). `hoiTarget`: Lên FT mà em chưa có Target (xem trước `/chuyen-lop`, như panel Chuyển lớp) → ô Target tại thẻ. */
-type Chon = { quyet: Quyet; lop: number | null; tuan: string; lyDo: string; trangThai: 'inactive' | 'finished'; hoiTarget?: boolean; mucTieu?: string };
+type Chon = { quyet: Quyet; lop: number | null; tuan: string; lyDo: string; trangThai: 'inactive' | 'finished'; hoiTarget?: boolean; mucTieu?: string; resetBac?: boolean };
 /** Kết quả đã lưu trong lần mở panel này (Hoàn tác / Sửa). */
 type DaLuu = { id: number; chu: string; daChuyen: boolean };
 
@@ -121,7 +122,9 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
             const c = chon[e.studentId];
             return { studentId: e.studentId, quyetDinh: c.quyet, toClassId: laChuyen(c.quyet) ? c.lop : null, tuan: laChuyen(c.quyet) ? c.tuan : null,
               lyDo: c.lyDo.trim() || null, trangThai: c.trangThai, suaId: suaId[e.studentId] ?? e.quyetDinh?.id ?? null,
-              mucTieu: laChuyen(c.quyet) && c.hoiTarget ? docOTarget(c.mucTieu ?? '').giaTri : undefined };
+              mucTieu: laChuyen(c.quyet) && c.hoiTarget ? docOTarget(c.mucTieu ?? '').giaTri : undefined,
+              /* N36: chỉ gửi khi Quản lý đã chạm ô — vắng = giữ cờ của lệnh đang chờ. */
+              resetBac: laChuyen(c.quyet) && (e.bacYThuc ?? 0) > 0 ? c.resetBac : undefined };
           }),
         });
         ok.push(...r.ok);
@@ -363,6 +366,10 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
               <OTarget value={chon.mucTieu ?? ''} onChange={(v) => onChon({ ...chon, mucTieu: v })} ariaLabel={t('Target của {ten}', { ten: e.ten })} disabled={busy}
                 oProps={{ 'aria-invalid': laLoi(loi, LOI_TARGET) }} />
             </div>
+          )}
+          {(e.bacYThuc ?? 0) > 0 && (
+            <OResetBac checked={!!chon.resetBac} onChange={(v) => onChon({ ...chon, resetBac: v })} disabled={busy}
+              phu={t('Đang ở {bac}', { bac: tenBac(e.bacYThuc!) })} />
           )}
           <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1.5">
             <span className="text-xs font-bold leading-[34px] text-slate-300">{t('Từ')}</span>

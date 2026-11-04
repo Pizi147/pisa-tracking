@@ -116,6 +116,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   const { default: SqliteDb } = await import('libsql');
   const { migratePrCt } = await import('../migrate/prCt.ts');
   const { migratePrOv3b } = await import('../migrate/prOv3b.ts');
+  const { migratePrBacYThuc } = await import('../migrate/prBacYThuc.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
@@ -140,6 +141,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const m = truocCt();
     migratePrCt(m, []);
     migratePrOv3b(m, []);   // OV-3b: + ban_giao_mon.lam_lai
+    migratePrBacYThuc(m, []);   // N36: + lenh_chuyen_lop.reset_bac
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['lenh_chuyen_lop', 'ban_giao_mon']) {

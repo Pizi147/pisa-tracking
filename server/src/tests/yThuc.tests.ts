@@ -186,11 +186,11 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(the('y_thuc', 'Hà Phương Linh').some((x) => x.trangThai === 'duyet'), 'thẻ đã duyệt');
   });
 
-  check('YT4 (11) · DEMO Q5 + T27: vi phạm GVCN tự ghi là "Đã ghi nhận" (Đỗ Minh Khôi); sang FT là chuỗi thang mới (Trần Hải Kiên: Report 1, 2 ở lớp BE → bậc 0)', () => {
+  check('YT4 (11) · DEMO Q5 + T27: vi phạm GVCN tự ghi là "Đã ghi nhận" (Đỗ Minh Khôi); N36: lớp thường → FT giữ bậc (Trần Hải Kiên: Report 1, 2 ở lớp BE → sang FT vẫn bậc 2, kế WL 1)', () => {
     const k = em('Đỗ Minh Khôi');
     assert(k.vp.length === 2 && k.vp.every((v) => v.t === 'da_ghi_nhan'), JSON.stringify(k.vp));
     const ki = em('Trần Hải Kiên');
-    assert(ki.bac === 0 && ki.ke === 'report_1' && ki.vp.filter((v) => v.t === 'da_xu_ly').length === 4, JSON.stringify(ki));
+    assert(ki.bac === 2 && ki.ke === 'wl_1' && ki.vp.filter((v) => v.t === 'da_xu_ly').length === 4, JSON.stringify(ki));
   });
 
   check('PR-J · DEMO #11 + #12 + #13 + #14 + #15 Case học thuật giữ nguyên: mức Bình thường và mức Gấp; SOS chỉ ghi nhận có LÝ DO; SOS gắn vào case đang mở; GV tạo case trực tiếp không có tín hiệu', () => {

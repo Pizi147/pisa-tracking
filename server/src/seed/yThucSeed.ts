@@ -25,7 +25,7 @@ import { emailThu } from './emailThu.ts';
  *   (k) Mạc Tuấn Kiệt    khai WL 1 → Report 4 + Meeting → Report 5 → bậc kế WL 2
  *   (l) Nguyễn Bảo Trâm  lớp thường HD FOU 05 → HD BE 21, khoá trước có Report 1 → bậc kế Report 2 (một chuỗi — Q-C)
  *   (m) Hà Phương Linh   Meeting CX/GĐCN QL duyệt + Đã thực hiện → Đã xử lý, bậc giữ Report 1 (M-11)
- * Thêm: Đặng Thu Vân (BC, QL nhập hộ + vi phạm Mới quá hạn) · Ngô Hải Yến (CP) · Trần Hải Kiên (HD, sang FT thì chuỗi thang mới).
+ * Thêm: Đặng Thu Vân (BC, QL nhập hộ + vi phạm Mới quá hạn) · Ngô Hải Yến (CP) · Trần Hải Kiên (HD, sang FT vẫn giữ bậc — N36).
  *
  * Vi phạm, lần xử lý thang đã xong và khai bậc GHI THẲNG xuống bảng (cần ngày quá khứ). Đề xuất QL duyệt đi qua CHÍNH hàm dịch vụ
  * (`deXuat` → `guiDeXuat` → `duyetYeuCau` / `tuChoiYeuCau` → `daThucHien`) rồi chỉnh ngày bằng SQL như `duyetSeed.ts`. Chuyển lớp
@@ -293,7 +293,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
     ],
   },
 
-  /* ============================================================ Trần Hải Kiên (HD) — Report 1, 2 ở lớp BE; sang FT là chuỗi thang MỚI (T27) */
+  /* ============================================================ Trần Hải Kiên (HD) — Report 1, 2 ở lớp BE; sang FT vẫn giữ bậc 2 (N36 thay T27 chiều lớp thường → FT) */
   {
     student: 'J09',
     violations: [

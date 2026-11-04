@@ -311,6 +311,7 @@ CREATE TABLE learning_cycles (
   mon_dang_ky TEXT,                   -- P8 (N13): JSON môn đã học ⊂ L R W1 W2 S (chỉ FT); NULL = đủ môn
   programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
+  reset_bac_y_thuc INTEGER NOT NULL DEFAULT 0,  -- N36: 1 = chuỗi đếm thang Ý thức bắt đầu lại ở lộ trình này (Quản lý chọn "Reset bậc vi phạm" lúc chuyển)
   khong_cam_ket INTEGER NOT NULL DEFAULT 0,  -- Q29-1 (PR-KCK) + OV-9: 1 = dấu KCK — Target giữ (có thể trống); dưới kỳ vọng không SOS, chỉ Case nhẹ
 
   /*
@@ -2050,7 +2051,8 @@ CREATE TABLE lenh_chuyen_lop (
   nhan_xet_chung TEXT, tu_dien TEXT,
   xac_nhan_boi INTEGER REFERENCES users(id), xac_nhan_luc TEXT, xac_nhan_thay INTEGER NOT NULL DEFAULT 0,
   tao_luc TEXT NOT NULL, sua_luc TEXT,
-  thu_ngay TEXT   -- PR-S5F-a: ngày thử thi hành gần nhất bị lỗi — lượt quét cùng ngày bỏ qua; Quản lý sửa lệnh thì xoá
+  thu_ngay TEXT,   -- PR-S5F-a: ngày thử thi hành gần nhất bị lỗi — lượt quét cùng ngày bỏ qua; Quản lý sửa lệnh thì xoá
+  reset_bac INTEGER NOT NULL DEFAULT 0   -- N36: 1 = lộ trình mới bắt đầu lại bậc vi phạm (chép sang learning_cycles.reset_bac_y_thuc khi thi hành)
 );
 CREATE UNIQUE INDEX ux_lenh_cho_hv ON lenh_chuyen_lop (student_id) WHERE trang_thai = 'cho';
 CREATE INDEX ix_lenh_den_han ON lenh_chuyen_lop (trang_thai, tuan_bat_dau);

@@ -25,7 +25,8 @@ export type EmYThuc = {
   /** Lộ trình hiện tại + chuỗi đếm thang (Q-C). */
   cycleId: number | null; chuoi: number[]; nhanChuoi: string;
   bac: number; keTiep: ReturnType<typeof bacKeTiep>;
-  khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean } | null;
+  /** `cycleId` = lộ trình dòng khai trỏ tới (sửa / hoàn tác ghi đúng dòng này — N36: chuỗi nối dài thì dòng khai có thể không còn ở đầu chuỗi). */
+  khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean; cycleId: number } | null;
   /** Em đã từng khai ở chuỗi nào chưa (Q8: không hỏi khai lại). */
   tungKhai: boolean;
   /** Số lần xử lý (mọi trạng thái trừ nháp) trong chuỗi hiện tại — khai bậc chỉ khi 0 (Q7, H5). */
@@ -116,15 +117,15 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     if (r.e != null) m.violationIds.push(r.e);
   }
   /* Lộ trình + dòng khai bậc (nếu có) của lộ trình đó — một câu. Khai trỏ lộ trình ĐẦU chuỗi, luôn là lộ trình của chính em. */
-  const lt = new Map<number, { id: number; seq: number; route: string | null; status: string }[]>();
+  const lt = new Map<number, { id: number; seq: number; route: string | null; status: string; resetBac: boolean }[]>();
   const kb = new Map<number, any[]>();
   for (const r of conn.prepare(
-    `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, k.bac, k.thang, k.ghi_chu, k.khai_luc, u.full_name AS boi
+    `SELECT lc.id, lc.student_id, lc.seq, lc.route, lc.status, lc.reset_bac_y_thuc, k.bac, k.thang, k.ghi_chu, k.khai_luc, u.full_name AS boi
        FROM learning_cycles lc LEFT JOIN y_thuc_khai_bac k ON k.chuoi_cycle_id = lc.id AND k.student_id = lc.student_id
        LEFT JOIN users u ON u.id = k.khai_boi
       WHERE lc.student_id IN (${ph})`).all(json) as any[]) {
     const a = lt.get(r.student_id) ?? []; lt.set(r.student_id, a);
-    a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status });
+    a.push({ id: r.id, seq: r.seq, route: r.route ?? null, status: r.status, resetBac: !!r.reset_bac_y_thuc });
     if (r.bac != null) {
       const k = kb.get(r.student_id) ?? []; kb.set(r.student_id, k);
       k.push({ chuoi_cycle_id: r.id, bac: r.bac, thang: r.thang, ghi_chu: r.ghi_chu, khai_luc: r.khai_luc, boi: r.boi });
@@ -170,7 +171,10 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     const trongChuoi = new Set(chuoi);
     /* Em chưa có lộ trình nào (dữ liệu dựng tay): mọi lần xử lý tính vào một chuỗi. */
     const xlChuoi = chuoi.length ? dsXl.filter((m) => m.cycleId != null && trongChuoi.has(m.cycleId)) : dsXl;
-    const khaiRow = (kb.get(sid) ?? []).find((k) => k.chuoi_cycle_id === chuoi[0]) ?? null;
+    /* Khai trỏ lộ trình đầu chuỗi lúc khai. N36: lớp thường → FT nay nối chuỗi — dòng khai ở lộ trình FT (đầu chuỗi theo luật cũ) vẫn tính; nhiều dòng
+       trong một chuỗi (dữ liệu cũ) → dòng ở lộ trình MỚI nhất, đúng bậc em đang thấy trước N36. */
+    const khaiRow = (kb.get(sid) ?? []).filter((k) => trongChuoi.has(k.chuoi_cycle_id))
+      .sort((a, b) => chuoi.indexOf(b.chuoi_cycle_id) - chuoi.indexOf(a.chuoi_cycle_id))[0] ?? null;
     const bac = bacHienTai(xlChuoi.filter((m) => m.status === 'done'), khaiRow?.bac ?? null);
 
     /* PR-S3F #7: V4-9 cho đề xuất bất cứ lúc nào nên có thể hai đề xuất cùng lúc — đã duyệt (sớm nhất) thắng, rồi mới tới chờ duyệt (mới nhất). */
@@ -197,7 +201,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       bac, keTiep: bacKeTiep(bac),
       khai: khaiRow ? {
         bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: khaiRow.khai_luc,
-        coTheSua: xlChuoi.length === 0,
+        coTheSua: xlChuoi.length === 0, cycleId: khaiRow.chuoi_cycle_id,
       } : null,
       tungKhai: (kb.get(sid) ?? []).length > 0,
       soXuLyChuoi: xlChuoi.length,

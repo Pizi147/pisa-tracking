@@ -256,7 +256,7 @@ export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId
     o.hoanTac?.(em);
     if (!ql && em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
-      .run(bac, thang, ghiChu, p.userId, homNay, studentId, em.chuoi[0]);
+      .run(bac, thang, ghiChu, p.userId, homNay, studentId, em.khai.cycleId);
     writeAudit({ actorUserId: p.userId, action: o.hoanTac ? 'discipline.declare_level_undo' : 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
       entityLabel: `${hv.student_code} · ${o.hoanTac ? 'hoàn tác cấp bậc' : 'sửa cấp bậc'}`, before: { bac: em.khai.bac }, after: { bac, thang, ghiChu } });
     return { ok: true as const, bac };

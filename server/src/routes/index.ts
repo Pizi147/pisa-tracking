@@ -2710,7 +2710,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
       lopNguonId: enr.class_id, boiCanh, tuanChung: req.body?.tuan ?? effectiveDate ?? null,
       dongs: [lenhSvc.dongTuBody({
         studentId: sid, huong, toClassId, lyDo: reason,
-        mucTieu: mucTieuGui, ngayThi: ngayThiGui,
+        mucTieu: mucTieuGui, ngayThi: ngayThiGui, resetBac: req.body?.resetBac,   // N36: vắng = giữ cờ của lệnh đang chờ
       })],
     });
     if (r.failed.length) throw badRequest(r.failed[0].message);

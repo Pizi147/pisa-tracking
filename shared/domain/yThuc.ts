@@ -279,17 +279,18 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
 }
 
 /**
- * CHUỖI ĐẾM THANG (T27, Q-C, M-07) — id các lộ trình cùng chuỗi với `hienTai`, theo `seq`.
- * FT (`route` có) = đúng một lộ trình. Lớp thường (`route` null) đếm LIÊN TỤC qua các lộ trình lớp thường liền nhau; chuỗi gãy
- * ở lộ trình FT và SAU lộ trình `abandoned` (nghỉ học rồi quay lại là chuỗi mới).
+ * CHUỖI ĐẾM THANG (T27, Q-C, M-07; N36 chủ SP 05/11) — id các lộ trình cùng chuỗi với `hienTai`, theo `seq`.
+ * Lớp thường (`route` null) đếm LIÊN TỤC qua các lộ trình lớp thường liền nhau, và lớp thường → FT cũng nối tiếp (N36: mặc định GIỮ bậc).
+ * Chuỗi gãy (lộ trình này mở chuỗi mới) khi: lộ trình này có cờ Reset bậc (`resetBac`, Quản lý chọn lúc chuyển) · lộ trình trước là FT
+ * (FT → FT, FT → lớp thường) · lộ trình trước `abandoned` (nghỉ học rồi quay lại).
  */
-export function chuoiThang(cycles: readonly { id: number; seq: number; route: string | null; status: string }[], hienTai: number): number[] {
+export function chuoiThang(cycles: readonly { id: number; seq: number; route: string | null; status: string; resetBac?: boolean }[], hienTai: number): number[] {
   const ds = [...cycles].sort((a, b) => a.seq - b.seq || a.id - b.id);
   let nhom: number[] = [];
   for (let i = 0; i < ds.length; i++) {
     const c = ds[i];
     const truoc = ds[i - 1];
-    if (!truoc || c.route || truoc.route || truoc.status === 'abandoned') {
+    if (!truoc || c.resetBac || truoc.route || truoc.status === 'abandoned') {
       if (nhom.includes(hienTai)) return nhom;
       nhom = [];
     }

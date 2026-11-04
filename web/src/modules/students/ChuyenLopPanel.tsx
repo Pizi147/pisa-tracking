@@ -14,7 +14,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 import {
-  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
+  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, kindCuaBac, nhanLoaiXuLy, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
   mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
 
@@ -23,7 +23,7 @@ type LopDich = {
   tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number;
 };
 type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean; coTheChon?: boolean } };
-type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null; hanGvcn?: string | null };
+type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null; hanGvcn?: string | null; resetBac?: boolean };
 export type XemChuyenLopData = {
   hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null };
   lenh: LenhCho | null; tuanChon: string[]; today: string; tuanFinal?: string | null; boiCanh?: string | null;
@@ -31,6 +31,8 @@ export type XemChuyenLopData = {
   huong: string | null; targetSan: MucTieuLenh | null; khiChuyen: string[]; canhBao: boolean; tuLopThuong: string | null;
   /** Luật lộ trình của lớp đang chọn — `giu` = cùng chương trình, lộ trình + bài dở đi theo em (OV-13l). */
   luat?: { khoa: 'giu' | 'dong-mo' } | null;
+  /** N36: bậc vi phạm hiện tại (em đang ở lộ trình lớp thường; FT = 0). */
+  bacYThuc?: number;
 };
 
 /** Thẻ Đề xuất chuyển lớp đang được duyệt: panel mở điền sẵn, nút chính `Duyệt và quyết định` (mockup 20 — thẻ Chờ duyệt → D). */
@@ -43,6 +45,22 @@ const conThieuChu = (daBam: boolean, loi: readonly LoiTruong[]) => (daBam && loi
   ? [{ nhan: t('Còn thiếu'), lyDo: `${loi.every((l) => l.lyDo === t('Chưa chọn') || l.lyDo === t('Chưa điền')) ? t('Còn thiếu') : t('Cần sửa')}: ${loi.map((l) => l.nhan).join(', ')}` }] : undefined);
 const loiMayChu = (e: any) => e?.message ?? t('Không lưu được — thử lại.');
 const khoiVang = KHOI_VANG;
+
+/** Tên bậc vi phạm (1 = Report 1 …) — chữ dưới ô Reset bậc. */
+export const tenBac = (bac: number) => nhanLoaiXuLy(kindCuaBac(bac));
+
+/**
+ * N36 (chủ SP 05/11): ô "Reset bậc vi phạm" lúc chuyển từ lớp thường sang lộ trình mới (lớp thường / FT) — mặc định TẮT = giữ bậc, chuỗi đếm thang nối tiếp.
+ * Nơi gọi chỉ hiện khi em đang có bậc > 0 và lần chuyển mở lộ trình mới. Cùng kiểu ô tích "Theo luồng chuyển tiếp lộ trình".
+ */
+export function OResetBac({ checked, onChange, phu, disabled }: { checked: boolean; onChange: (v: boolean) => void; phu: string; disabled?: boolean }) {
+  return (
+    <label className="flex min-h-[44px] cursor-pointer items-start gap-2 text-[13px] text-slate-300 sm:min-h-0">
+      <input type="checkbox" className="mt-0.5 h-4 w-4" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span>{t('Reset bậc vi phạm')}<span className="block text-xs text-slate-500">{phu}</span></span>
+    </label>
+  );
+}
 
 /** Target + ô tích KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. OV-9: giá trị chữ "6.5" · "6.5 KCK" · "KCK". */
 export function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {
@@ -121,6 +139,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const [tuan, setTuan] = useState(duyet?.tuan ?? '');
   const [lyDo, setLyDo] = useState(duyet?.lyDo ?? '');
   const [mucTieu, setMucTieu] = useState('');
+  const [resetBac, setResetBac] = useState(false);
   const [dangHuy, setDangHuy] = useState(false);
   const [lyDoHuy, setLyDoHuy] = useState('');
   const lf = useLoiForm();
@@ -144,13 +163,14 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
       /* Lệnh đã tới tuần mà chưa chuyển được: điền sẵn tuần hợp lệ gần nhất (PR-S5F-a) — tuần cũ máy chủ không nhận. */
       setToClassId(l.lopDichId); setTuan(l.tuan >= (xem.data.tuanChon[0] ?? '') ? l.tuan : xem.data.tuanChon[0] ?? ''); setLyDo(l.lyDo ?? '');
       setMucTieu(l.mucTieu == null ? '' : String(l.mucTieu));
+      setResetBac(!!l.resetBac);
     } else if (!duyet?.tuan) setTuan(xem.data.tuanChon[0] ?? '');
     /* OV-13l: GVCN đề xuất "Ngay hôm nay" của một ngày trước → duyệt hôm nay = "Ngay hôm nay" của ngày duyệt (máy chủ cùng luật `tuanDuyet`). */
     else if (duyet.tuan < xem.data.today && mondayOfDate(duyet.tuan) !== duyet.tuan) setTuan(xem.data.today);
   }, [xem.data, daDien, duyet]);
 
   /* Luật I1: "Huỷ thay đổi" thay "Đóng" khi đã sửa. Mốc = giá trị sau khi điền sẵn (lệnh đang có / đề xuất cần duyệt) xong. */
-  const hienTai = JSON.stringify([toClassId, tuan, lyDo, mucTieu]);
+  const hienTai = JSON.stringify([toClassId, tuan, lyDo, mucTieu, resetBac]);
   const goc = useRef<string | null>(null);
   if ((daDien || dx) && goc.current === null) goc.current = hienTai;
   const daSua = goc.current !== null && hienTai !== goc.current;
@@ -169,6 +189,9 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const oTarget = !!xemLop && canHoiTarget(xemLop.hienTai.ft, !!dich?.ft, xemLop.targetSan);
   /* M1: xem trước của lớp vừa chọn chưa về → chưa biết có cần Target → chưa cho gửi. */
   const choXem = !dx && !!toClassId && !xemLop && !xem.error;
+  /* N36: em lớp thường đang có bậc + lớp vừa chọn mở lộ trình mới (`dong-mo`; cùng chương trình giữa khoá thì lộ trình giữ, bậc tự nối tiếp). */
+  const bacNay = nen?.bacYThuc ?? 0;
+  const oReset = !!xemLop && bacNay > 0 && xemLop.luat?.khoa === 'dong-mo';
 
   const LUAT: LuatTruong[] = dx
     ? [{ khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }]   // T7 (PR-MTa): không tối thiểu ký tự
@@ -200,11 +223,11 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         await api.post(`/students/${studentId}/de-xuat-chuyen-lop`, { toClassId: toClassId ?? undefined, tuan: tuan || undefined, lyDo: lyDo.trim() });
         xong(t('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt'));
       } else if (duyet) {
-        await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui } });
+        await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac } });
         if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
       } else {
         /* PR-CL (B1, D15): ra mới hoặc sửa lệnh đang chờ — cùng một đường, máy chủ tính bối cảnh + hướng. */
-        const r = await api.post<{ daChuyen?: number[] }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, ...(chonTheoCk ? { theoCuoiKhoa: theoCk } : {}) });
+        const r = await api.post<{ daChuyen?: number[] }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac, ...(chonTheoCk ? { theoCuoiKhoa: theoCk } : {}) });
         if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã lưu quyết định chuyển lớp'));
       }
     } catch (e: any) { toast.push('error', ngayNay ? `${t('Không lưu được — chưa chuyển')} · ${loiMayChu(e)}` : loiMayChu(e)); } finally { setBusy(false); }
@@ -307,6 +330,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
                 <OTarget value={mucTieu} onChange={setMucTieu} ariaLabel="Target" oProps={lf.o(loi, 'muc-tieu')} />
               </Truong>
             )}
+            {oReset && <OResetBac checked={resetBac} onChange={setResetBac} disabled={busy} phu={t('Đang ở {bac}', { bac: tenBac(bacNay) })} />}
           </Khoi>
 
           {dx ? (
