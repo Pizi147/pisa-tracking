@@ -469,7 +469,7 @@
   .hvl-dai { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 40px; }
   .the-em .hvl-dai { margin: 4px -14px -12px; padding: 10px 14px; gap: 10px; background: var(--surface-2); }
   .hvl-dai-k { display: grid; gap: 6px; }
-  .hvl-dai:has(button.okn[aria-expanded='true']) { padding-bottom: 40px; }   /* mockup `.dai.co-hop`: chừa chỗ hộp số câu dưới ô */
+  .hvl-dai-k:has(button.okn[aria-expanded='true']) { padding-bottom: 40px; }   /* mockup `.dai.co-hop`: chừa chỗ hộp số câu / tiêu chí dưới ô — ở khối 5 môn, để 375 (Hỗ trợ xuống dòng) không bị đè */
   .hvl-dai-t { font-size: 13px; font-weight: 600; color: var(--text-dim); }
   .hvl-dai-kn { display: flex; flex-wrap: wrap; gap: 6px; }
   .hvl-dai-v { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }

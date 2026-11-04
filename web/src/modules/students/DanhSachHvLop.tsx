@@ -17,7 +17,7 @@ import { ChipLichThi, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { boTenEm, chuPhuHuynh, duongHoSoHocVien, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { boTenEm, chuPhuHuynh, dongTieuChi, duongHoSoHocVien, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
@@ -175,15 +175,22 @@ function OMtGan({ g, mo, onMo }: { g: HangHv; mo: boolean; onMo: () => void }) {
 
 /**
  * Ô một kỹ năng trong dải: nhãn + điểm (✓ / ✗ như Overall). L, R có số câu → bấm mở hộp nhỏ "29/40 câu"; chỉ có band → không bấm (U04-1).
- * W1, W2, S: hộp tiêu chí dùng CHUNG `dongTieuChi` của #880 (U03, PTA 03/11: không viết hàm thứ hai) — thêm khi #880 merge.
+ * W1, W2, S có tiêu chí → hộp "TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5" (hàm CHUNG `dongTieuChi` của U03, PTA 03/11: không viết hàm thứ hai).
  */
+const KN_SKILL = { W1: 'writing1', W2: 'writing2', S: 'speaking' } as const;
 function OKn({ k, g }: { k: (typeof KN5)[number]; g: HangHv }) {
   const m = g.mtGan!;
   const v = m.kn[k];
   const ruot = <><span className="okn-t">{k}</span>{v == null ? <span className="text-faint">–</span> : <ODiem so={chuSo(v)} kq={kqOverall(v, m.kyVong)} kck={g.loTrinh.kck} nhan={k} />}</>;
-  const [cau, tong] = (k === 'L' || k === 'R') ? m.tp?.[k] ?? [] : [];
-  if (v == null || cau == null) return <span className="okn">{ruot}</span>;
-  return <HopNho nutLop="okn" nhan={`${k} ${chuSo(v)} · ${t('số câu')}`} nut={ruot}><span className="tabular-nums">{tong != null ? `${cau}/${tong}` : cau} {t('câu')}</span></HopNho>;
+  if (v == null) return <span className="okn">{ruot}</span>;
+  if (k === 'L' || k === 'R') {
+    const [cau, tong] = m.tp?.[k] ?? [];
+    if (cau == null) return <span className="okn">{ruot}</span>;
+    return <HopNho nutLop="okn" nhan={`${k} ${chuSo(v)} · ${t('số câu')}`} nut={ruot}><span className="tabular-nums">{tong != null ? `${cau}/${tong}` : cau} {t('câu')}</span></HopNho>;
+  }
+  const d = dongTieuChi(KN_SKILL[k], m.tp?.[k]);
+  if (!d) return <span className="okn">{ruot}</span>;
+  return <HopNho nutLop="okn" nhan={`${k} ${chuSo(v)} · ${t('điểm thành phần')}`} nut={ruot}><span className="whitespace-nowrap tabular-nums">{d.map(([n, x]) => `${n} ${x}`).join(' · ')} → {chuSo(v)}</span></HopNho>;
 }
 
 /**

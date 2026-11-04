@@ -2,7 +2,7 @@
 
 Mockup: `thiet-ke/v11/hoc-vien-lop.html` (chủ SP duyệt 03/11 khuya, vòng 2 #872) · K7 trong `thiet-ke/audit-0311/u10-y-thuc.html`.
 Bảng ý: `docs/superpowers/specs/2026-11-03-audit-overhaul/14-ra-ux-b.md` 10.1 · 10.1b · 11.1 · 11.1b. Ảnh cặp (DB demo cục bộ, ngày demo 14/09), thư mục này:
-`a0-mac-dinh-1440-toi.png` · `a-mo-lop-1440-toi.png` · `a-mo-lop-375-sang.png` · `a1-1280-toi.png` · `d-gv-1440-toi.png` · `e-tvv-1440-toi.png`.
+`a0-mac-dinh-1440-toi.png` · `a-mo-lop-1440-toi.png` · `a-mo-lop-375-sang.png` · `a1-1280-toi.png` · `d-gv-1440-toi.png` · `e-tvv-1440-toi.png` · `f-hop-w1-1440-toi.png` · `f-hop-w1-375-sang.png` (hộp tiêu chí W1 mở).
 Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trước khi chụp.
 
 ## Truy vết khung → thành phần → ảnh
@@ -11,7 +11,7 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | A0 mặc định gập | `StudentsPage` đầu trang · `HangLop` + `DauLop` (lưới ô) | a0 | KHỚP |
 | A0 lọc bật — lớp gập, "3/7 HV khớp", dòng "Đang lọc … · Bỏ lọc" | `DauLop` (`dangLoc`) · dòng `role=status` | — (bấm thử) | KHỚP |
 | A đã mở 2 lớp: bảng em, dải dưới hàng, hộp L "30 câu" | `BangHvGon` · `DaiEm` · `OKn` + `HopNho` | a-mo-lop-1440 | KHỚP |
-| A hộp tiêu chí W1 / W2 / S ("TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5") | chờ `dongTieuChi` của #880 (U03) | — | CHƯA — PTA 03/11: dùng chung một hàm, làm sau khi #880 merge |
+| A hộp tiêu chí W1 / W2 / S ("TA 6.5 · CC 6.5 · LR 6.5 · GRA 6 → 6.5") | `OKn` + `HopNho` · hàm chung `dongTieuChi` (U03) | f-hop-w1-1440-toi · f-hop-w1-375-sang | KHỚP |
 | A 375: Xem + FT/LT một hàng, tìm + Lọc, thẻ em ≤ 4 dòng | `TheHvGon` · `TheEm` | a-mo-lop-375 | KHỚP |
 | A1 1280 | cột cân lại (không cuộn ngang — chủ SP 03/11 khuya, thay "cuộn ngang, ghim tên" của khung) | a1-1280 | KHÁC có lý do (chủ SP) |
 | B ô "Xem" mở | `<select>` gốc trong khung `.o-xem` (optgroup Chi nhánh / Khác) | — | KHÁC (PTA 03/11 đồng ý): **không số HV mỗi mục** — phải đọc thêm theo chi nhánh (Turso) và G4 / N32 ④ không đặt số ở điều hướng; danh sách mở là của trình duyệt |
@@ -25,7 +25,7 @@ Phông kiểm `document.fonts.check('600 14px "Be Vietnam Pro"') === true` trư�
 | BỎ: phân trang trên bảng | chỉ dưới | a0 | BỎ |
 
 ## Tỉ lệ khớp (cổng chủ SP 04/11: > 96 % KHỚP về hình)
-12 khung (trừ 3 dòng BỎ): **9 KHỚP** · 3 không phải lệch hình — A1 1280 (chủ SP 03/11 khuya: cột cân, không cuộn ngang — bố cục), B ô Xem không số mỗi mục (Turso + G4, PTA đồng ý), hộp W/S (chờ `dongTieuChi` #880).
+12 khung (trừ 3 dòng BỎ): **10 KHỚP** · 2 không phải lệch hình — A1 1280 (chủ SP 03/11 khuya: cột cân, không cuộn ngang — bố cục), B ô Xem không số mỗi mục (Turso + G4, PTA đồng ý).
 Về **hình** (màu, nền, viền, đậm, cỡ chữ, khoảng cách) trong 12 khung: **12 / 12 KHỚP = 100 %** sau hai vòng so phóng to 2× — không dòng KHÁC nào vì hình.
 
 ## So sát hình ảnh 04/11 (chủ SP không duyệt #880/#882 vì lệch mockup — PTA áp cho #884)
@@ -78,7 +78,7 @@ Về **hình** (màu, nền, viền, đậm, cỡ chữ, khoảng cách) trong 1
 | Bấm tên việc → làm tại chỗ | | như cũ (cả trong dải) | GIỮ |
 | "+n việc" | mở panel một em | mở dải dưới hàng | ĐỔI (chủ SP: không panel trượt) |
 | Dòng 5 môn | luôn hiện dưới Overall | bấm ô Overall → dải | ĐỔI (ý 2) |
-| Bấm ô kỹ năng | — | L, R: hộp nhỏ "29/40 câu"; W1, W2, S: sau #880 (`dongTieuChi`) | THÊM (U04-1) |
+| Bấm ô kỹ năng | — | L, R: hộp nhỏ "29/40 câu"; W1, W2, S có tiêu chí: hộp "TA 7 · CC 7 · LR 7 · GRA 7 → 7.0" (`dongTieuChi`); ô chỉ có band không bấm | THÊM (U04-1) |
 | Bấm chip bậc Ý thức | — | hộp nhỏ K7 (Hồ sơ › · Xác nhận xử lý) | THÊM (K7) |
 | Xem em Kết thúc học | dòng mờ cuối lớp | không trong danh sách; hồ sơ lớp tab Học viên · Lưu trữ · Ctrl K | BỎ (U04-3) |
 | Xem việc người khác ở cột Việc (QL / Admin) | có, gộp theo môn | bỏ — chỉ việc của tôi | U04-5 |
@@ -91,6 +91,3 @@ Chương trình (FT / LT, [XM] 04/11): **không đổi số câu / dòng** — `
 
 ## Ảnh hưởng ngoài màn (XM-4, PTA 03/11 duyệt)
 `chipHocVien` (`server/src/worklist/hvCuaToi.ts`, dùng chung Tổng quan TVV / CX + danh sách theo vai): `tong` / `tatCa` bỏ em `finished` → **ô Tổng quan TVV / CX "n HV" giảm đúng số em Kết thúc học chưa lưu trữ** (luật chủ SP "em Kết thúc học biến mất khỏi danh sách"). Chip `da-thi` / `cho-buoc-tiep` giữ em đó (việc sau thi). Danh sách theo vai đọc ít dòng hơn. Không thêm câu. Phép kiểm OV11g-2: CX `tong` = số dòng danh sách theo vai.
-
-## Để sau
-- Hộp tiêu chí W1 / W2 / S: dùng `dongTieuChi` (#880) — commit tiếp sau khi #880 merge, chụp lại ảnh có hộp.
