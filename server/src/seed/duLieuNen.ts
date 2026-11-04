@@ -84,6 +84,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ket_pet_at', now, now);
   /* HOTFIX-3: như trên cho `prOv1b` (dọn "-" cũ) — khoá trước, migrate chỉ ghi khoá trên DB cũ. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ov1b_da_chay', now, now);
+  /* PR-MT-VANG-RESET (N38 L5): DB mới đã theo luật chọn tuần = lần vắng 0 — khoá trước, migrate chỉ đặt lại một lần trên DB cũ. */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_mt_vang_reset_da_chay', now, now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };
