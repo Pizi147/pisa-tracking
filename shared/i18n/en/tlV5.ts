@@ -13,10 +13,10 @@ export const EN_TL_V5 = {
     '<b>Student report</b> · <b>Teacher analysis</b> · <b>Test + SOS</b> · <b>Test / exam results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
   '<b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.':
     '<b>Student report</b> · <b>Test + SOS</b> · <b>Test / exam results</b> · <b>PA effectiveness</b> · <b>Conduct</b>.',
-  '<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.':
-    '<b>From week → To week</b> for every tab (default: last 2 weeks), plus <b>All weeks</b> · <b>Choose weeks</b>; click a number to open a read-only list.',
-  'Mọi chi nhánh; <b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.':
-    'All branches; <b>From week → To week</b> for every tab (default: last 2 weeks), plus <b>All weeks</b> · <b>Choose weeks</b>; click a number to open a read-only list.',
+  '<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.':
+    '<b>From week → To week</b> for every tab (default: last 2 weeks), plus <b>All weeks</b> · <b>Choose weeks</b>; click a number to open its list on this page.',
+  'Mọi chi nhánh; <b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.':
+    'All branches; <b>From week → To week</b> for every tab (default: last 2 weeks), plus <b>All weeks</b> · <b>Choose weeks</b>; click a number to open its list on this page.',
   '<b>Báo cáo HV</b> (mặc định): 5 số như Tổng quan, <b>Kết quả MT</b> (MT0 → MT3+ · Thi thật), <b>Tiến bộ theo kỹ năng</b>; <b>In</b> ra A4 ngang.':
     '<b>Student report</b> (default): the same 5 numbers as Home, <b>MT results</b> (MT0 → MT3+ · Real exam), <b>Progress by skill</b>; <b>Print</b> on landscape A4.',
   '<b>Phân tích GV</b>: một bảng <b>Gọn</b> / <b>Đầy đủ</b> — Hành chính | Học thuật, bấm số mở danh sách.':
@@ -32,7 +32,7 @@ export const EN_TL_V5 = {
   'Bốn số': 'Four numbers',
   'Chọn <b>Chi nhánh</b>; <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · bước tiếp</b>.':
     'Pick a <b>Branch</b>; <b>MT met</b> · <b>Real exam target met</b> · <b>Students at SOS 2–3</b> · <b>Awaiting result · next step</b>.',
-  'Bấm số mở danh sách chỉ đọc.': 'Click a number to open a read-only list.',
+  'Bấm số mở danh sách ngay tại trang.': 'Click a number to open its list on this page.',
   'Bảng: Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa PA; bấm hàng xem một chi nhánh.':
     'Table: MT met · Real exam target met · SOS 2–3 · Cases without PA; click a row to view one branch.',
   // ---------------------------------------------------------------- GV
@@ -58,7 +58,7 @@ export const EN_TL_V5 = {
     'Results are grouped <b>Students · Classes · Teachers</b>, only people you may view; ↑ ↓ Enter to open. Typing "ft101" finds class MB FT 101.',
   'Đầu trang: thanh <b>Việc cần làm</b> của lớp — bấm việc làm ngay tại trang.': 'Page top: the class <b>To do</b> bar — click a task to do it right on the page.',
   'Bảng em: W1 · W2 riêng, bấm điểm W / S xem điểm thành phần; Case + PA mở dưới hàng; <b>⋯</b> ở dòng em: + Ghi vi phạm, + Case, Nhập điểm.':
-    'Student table: W1 · W2 separate, click a W / S score to see its parts; Case + PA open under the row; <b>⋯</b> on a student row: + Log violation, + Case, Enter scores.',
+    'Student table: W1 · W2 separate, click a W / S score to see its parts; Case + PA open under the row; <b>⋯</b> on a student row: + Log incident, + Case, Enter scores.',
   'Cuối trang: <b>Điểm Mock Test của lớp</b> (lớp thường: <b>Điểm Test của lớp</b>). Lớp thường có thêm tab <b>Đánh giá đầu ra</b>.':
     'Page bottom: <b>Class Mock Test scores</b> (regular classes: <b>Class Test scores</b>). Regular classes also have an <b>End-of-course review</b> tab.',
   'Thanh <b>Việc cần làm</b> dưới đầu trang: việc của bạn với em, bấm là mở chỗ làm ngay trên trang.':

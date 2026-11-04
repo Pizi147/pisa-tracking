@@ -42,6 +42,16 @@ export const t = (khoa: Khoa, bien?: Bien): string => dichSang(NGON_NGU, khoa, b
  * nên máy chủ không phải gửi khoá riêng, thông báo đã lưu cũng dịch được. Chưa khớp mẫu nào → chữ Việt (không vỡ).
  */
 export const dich = (vi: string, bien?: Bien): string => (NGON_NGU === 'en' && !bien ? dichTho(vi) : dichSang(NGON_NGU, vi, bien));
+/**
+ * DON-CHU: chữ đã lưu DB có thể là chữ hệ thống sinh (mô tả PA quy chế "Tutor · đến MT2", ghi chú "Vắng — tự dời") hoặc chữ người gõ.
+ * Ở EN chỉ thay khi từ điển dịch được TRỌN câu (không còn chữ có dấu) — chữ người gõ, câu nửa khớp giữ nguyên. Không sửa dữ liệu DB.
+ */
+export const dichDu = (s: string | null | undefined): string => {
+  if (!s) return '';
+  if (NGON_NGU !== 'en') return s;
+  const e = dichTho(s);
+  return RE_DAU.test(e) ? s : e;
+};
 /** Như `dich` nhưng chọn tiếng (phép kiểm). */
 export const dichMau = (nn: NgonNgu, vi: string): string => (nn === 'en' ? dichTho(vi) : dichSang(nn, vi));
 

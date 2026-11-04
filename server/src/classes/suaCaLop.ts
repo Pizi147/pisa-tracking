@@ -5,7 +5,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
 import { voiNguon, writeAudit } from '../platform/audit.ts';
-import { can, require_, vaiTaiChiNhanh, type Ctx, type Principal } from '../permissions.ts';
+import { can, napTruocPhamVi, require_, vaiTaiChiNhanh, vaiVoiEm, type Ctx, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, forbidden, kiemKieuO, loi, loi as loiHttp, notFound, nowIso } from '../util.ts';
 import { chanDoiLienHe, chuanHoaSuaHoSo, dsTvv, kiemTvvCungChiNhanh, updateStudent } from '../students/students.ts';
 import {
@@ -80,9 +80,16 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
   theoLo([...new Set([...loTrinh.values()].map((c) => c.start_period_id).filter((v): v is number => v != null))], (lo, ph) => {
     for (const w of conn.prepare(`SELECT id, week_start FROM report_periods WHERE id IN (${ph})`).all(...lo) as any[]) tuan.set(w.id, w.week_start);
   });
+  /* QUYEN-CN: ô Liên hệ theo CHI NHÁNH EM — cùng luật lúc lưu (`chanDoiLienHe` → `vaiVoiEm`). Em đang học lớp này nên chi nhánh em ⊇ chi nhánh lớp:
+     tài khoản không có vai ở chi nhánh nào khác thì mọi em như lớp, không đọc thêm; có thì nạp chi nhánh cả lớp một câu (`napTruocPhamVi`). */
+  const cnLop = cls.branch_id ?? null;
+  const lhLop = coONhapLienHe(vaiTaiChiNhanh(p, [cnLop]));
+  const theoEm = p.grants.some((g) => g.roleKey !== 'granted' && g.branchId !== null && g.branchId !== cnLop);
+  if (theoEm) napTruocPhamVi([...em.keys()]);
   const rows = [...em.values()].map((s) => {
     const c = loTrinh.get(s.id) ?? null;
     return {
+      nhapLienHe: theoEm ? coONhapLienHe(vaiVoiEm(p, s.id)) : lhLop,
       studentId: s.id as number, fullName: s.full_name as string, dob: (s.dob ?? null) as string | null, email: (s.email ?? null) as string | null,
       consultantUserId: (s.consultant_user_id ?? null) as number | null, consultantName: (s.consultant_name ?? null) as string | null,
       coLoTrinh: !!c,
@@ -108,7 +115,7 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
     /** OV-13i: TVV / CX (không `student.edit`) — panel khoá cột Tuần bắt đầu (ngoài `CHI_SUA_THONG_TIN`). */
     chiThongTin: !can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }),
     /** OV-10b: cột Liên hệ — QL / Quản trị; GVCN không thấy ô nhập (chủ SP 13/10). */
-    nhapLienHe: coONhapLienHe(vaiTaiChiNhanh(p, [cls.branch_id ?? null])),   // QUYEN-THEO-CN: vai ở chi nhánh lớp
+    nhapLienHe: rows.some((r) => r.nhapLienHe),   // QUYEN-CN: cột hiện khi có em sửa được; ô từng em theo `rows[].nhapLienHe`
     /** PR-OV2b: ô chọn TVV — TVV cùng chi nhánh lớp lên trước. */
     tvv: dsTvv(null, cls.branch_id ?? null),
   };

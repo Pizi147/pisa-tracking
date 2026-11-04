@@ -8,7 +8,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, kiemKieuO, notFound, nowIso, loi as loiHttp } from '../util.ts';
-import { can as coQuyen, require_, type Ctx, type Principal } from '../permissions.ts';
+import { can as coQuyen, require_, vaiVoiEm, type Ctx, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, mondayOf, periodById } from '../platform/week.ts';
 import { apLichMacDinh } from '../classes/schedule.ts';
@@ -514,8 +514,8 @@ export const duocDoiTarget = (p: Principal, ctx: Ctx) => coQuyen(p, PERMISSIONS.
 const lienTucKhongKyThi = (c: any) => !c.route && !!programmeByCode(c.programme_code)?.lapMoiTuan && !kyThiCuaChuongTrinh(c.programme_code);
 export function loiDoiTarget(p: Principal, c: any, t: { kck: boolean }): HttpError | null {
   if (lienTucKhongKyThi(c)) return badRequest(CAU_LIEN_TUC.target);
-  /* P13: khoá KET / PET không có KCK — bỏ qua cờ (Target Cambridge). */
-  if (!(!c.route && kyThiCuaChuongTrinh(c.programme_code)) && t.kck !== !!c.khong_cam_ket && !duocDoiKck(p.roleKeys, coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) return forbidden(CHI_DOI_KCK);
+  /* P13: khoá KET / PET không có KCK — bỏ qua cờ (Target Cambridge). QUYEN-CN: vai TVV xét ở CHI NHÁNH CỦA EM (`vaiVoiEm`), chỉ đọc khi thật sự đổi KCK. */
+  if (!(!c.route && kyThiCuaChuongTrinh(c.programme_code)) && t.kck !== !!c.khong_cam_ket && !duocDoiKck(vaiVoiEm(p, c.student_id), coQuyen(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }))) return forbidden(CHI_DOI_KCK);
   return null;
 }
 

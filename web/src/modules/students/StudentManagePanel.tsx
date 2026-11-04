@@ -10,9 +10,8 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, coTheTamDungKetThuc, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop,
-  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, duocDoiKck, docTargetKyThi, type KyThi,
+  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi,
 } from '@shared/domain/index.ts';
-import { useSession } from '../../lib/session.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
@@ -103,6 +102,8 @@ export type ThongTinEm = {
  * `coTheSuaThem` = OV-8b TVV / CX: Target sửa thẳng + Ghi chú.
  */
 export type QuyenSua = { canEdit: boolean; coTheSuaThongTin?: boolean; canEditCycle?: boolean; coTheDeXuatSua?: boolean; coTheSuaThem?: boolean;
+  /** QUYEN-CN: ô tích KCK — máy chủ tính theo vai ở chi nhánh em (`duocDoiKck`). */
+  doiKck?: boolean;
   /** OV-10b: ô Liên hệ — QL, Quản trị, TVV, CX, Admin; GV không thấy (chủ SP 13/10). */
   nhapLienHe?: boolean };
 
@@ -265,7 +266,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
   /* OV-11e → OV-11d (Q8 chủ SP chốt): ô tích KCK chỉ QL / Quản trị / TVV; GVCN, CX, Admin chỉ đọc (máy chủ `reviseTarget` + đề xuất cũng chặn). */
-  const oKck = duocDoiKck(useSession().session?.roles, !!quyen.canEditCycle);
+  const oKck = !!quyen.doiKck;   // QUYEN-CN: theo chi nhánh em (trước: mọi vai của tài khoản)
   /* OV-11d (HV-1): đề xuất Target đang chờ duyệt — GVCN không gửi trùng; người gửi Sửa đề xuất ngay tại đây (thay nội dung panel). */
   const dx = student.deXuatTarget ?? null;
   const [suaDx, setSuaDx] = useState(false);

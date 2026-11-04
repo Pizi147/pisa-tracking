@@ -7,9 +7,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { MON_CHON, MON_GOP, MT_TOI_DA, dsLoi, kyHieuLop, oPhanCong, skillShort, thuTuKyHieu, type LoiTruong } from '@shared/domain/index.ts';
 import { PhanDoan } from '../classes/ClassCreatePanel.tsx';
-import { NGON_NGU, t } from '@shared/i18n/index.ts';
-/** Đơn vị sau ô số. Khoá 'tuần' của từ điển là chữ nối ('in') — không dùng lại được. */
-const DON_VI_TUAN = NGON_NGU === 'en' ? 'weeks' : 'tuần';
+import { t } from '@shared/i18n/index.ts';
 
 type RouteRow = { code: string; name: string; note: string | null; seq: number; status: string; inUse: number; lichMt: number[]; lopDangChay: number };
 type Programme = {
@@ -327,7 +325,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
                 <span className="flex items-center gap-2">
                   <input inputMode="numeric" aria-label={t('Số tuần')} className={oSo} {...lf.o(loi, 'so-tuan')} value={f.soTuan}
                     onChange={(e) => doi({ soTuan: e.target.value, final: f.final === f.soTuan ? e.target.value : f.final })} />
-                  <span className="text-slate-400">{DON_VI_TUAN}</span>
+                  <span className="text-slate-400">{t('tuần')}</span>
                 </span>
               )}
             </span>
@@ -339,7 +337,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
               <input inputMode="numeric" className={oSo} {...lf.o(loi, 'so-tuan')} value={f.soTuan}
                 /* Final đang = số tuần thì đi theo số tuần mới (10 → 12 thì Final cũng 12). */
                 onChange={(e) => doi({ soTuan: e.target.value, final: f.final === f.soTuan ? e.target.value : f.final })} />
-              <span className="text-slate-400">{DON_VI_TUAN}</span>
+              <span className="text-slate-400">{t('tuần')}</span>
             </span>
           </Field>
         ) : !suaMon && ct?.lapMoiTuan ? (
@@ -383,7 +381,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
                 <span className="text-slate-200">Checkpoint</span><span className="text-slate-400">{t('mỗi')}</span>
                 <input inputMode="numeric" aria-label={t('Checkpoint mỗi bao nhiêu tuần')} className="field w-16 tabular-nums" {...lf.o(loi, 'moc')}
                   value={f.lap} onChange={(e) => doi({ lap: e.target.value })} />
-                <span className="text-slate-400">{DON_VI_TUAN}</span>
+                <span className="text-slate-400">{t('tuần')}</span>
               </span>
             ) : (
               <span className="flex flex-wrap items-center gap-x-3 gap-y-2">

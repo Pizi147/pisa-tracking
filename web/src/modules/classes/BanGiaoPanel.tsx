@@ -48,6 +48,19 @@ export function BanGiaoPanel({ classId, mon, lenhId, onClose, onDone, quayLai }:
     : <MasterDetail dto={data} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
 }
 
+/*
+ * DOC-THUA (05/11): tự lưu một ô KHÔNG tải lại phiếu đang mở (chữ + trạng thái ô đã ở tại chỗ) — chỉ đánh dấu; phiếu (`/lenh-chuyen`)
+ * làm mới một lần khi panel đóng. Lưu xong sau khi panel đã đóng → làm mới ngay.
+ */
+function useLamMoiPhieuKhiDong() {
+  const r = useRef({ song: true, doi: false });
+  useEffect(() => {
+    r.current.song = true;
+    return () => { r.current.song = false; if (r.current.doi) { r.current.doi = false; invalidate('/lenh-chuyen'); } };
+  }, []);
+  return () => { if (r.current.song) r.current.doi = true; else invalidate('/lenh-chuyen'); };
+}
+
 type Chung = { dto: PhieuBanGiaoDto; lenhId: number | null; onClose: () => void; onDone: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void } };
 
 // ==================================================================== F · GVCN
@@ -84,14 +97,15 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
    * (`taoOLuu`) — gõ tiếp khi đang lưu thì phản hồi bản cũ không báo "Đã lưu"; Xác nhận chờ lần lưu nháp đang chạy (máy chủ từ chối nháp sau xác nhận).
    */
   const hang = useHangLuu();
+  const daDoiPhieu = useLamMoiPhieuKhiDong();
   const chonRef = useRef(chon);
   chonRef.current = em?.lenhId ?? null;
   const oCua = (e: PhieuEm) => {
     let o = oNx.get(e.lenhId);
     if (!o) {
       o = hang.o(String(e.lenhId), e.nhanXetChung ?? '',
-        /* Audit 03/11: không tải lại cả phiếu sau mỗi lần lưu nháp — gom 1,5 s (`invalidateGop`, đọc Turso ít). */
-        (v) => api.put(`/lenh-chuyen/${e.lenhId}/nhan-xet-nhap`, { nhanXetChung: v ?? '' }).then(() => { invalidateGop('/lenh-chuyen'); return null; }, (er: any) => er?.message ?? ''),
+        /* DOC-THUA: lưu nháp không tải lại phiếu đang mở — làm mới khi đóng panel. */
+        (v) => api.put(`/lenh-chuyen/${e.lenhId}/nhan-xet-nhap`, { nhanXetChung: v ?? '' }).then(() => { daDoiPhieu(); return null; }, (er: any) => er?.message ?? ''),
         (tt) => { if (chonRef.current === e.lenhId) setNxLuu(tt === 'dang' ? 'luu' : tt === 'xong' ? 'da' : tt === 'loi' ? 'loi' : 'yen'); });
       oNx.set(e.lenhId, o);
     }
@@ -297,6 +311,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung
   const han = useMemo(() => mons.map((m) => dto.theoMon.find((x) => x.ma === m)?.han).filter((x): x is string => !!x).sort()[0] ?? null, [dto, mons]);
   /* F01 (audit 03/11): mỗi ô một lượt lưu (`taoOLuu`) — gõ tiếp khi đang lưu thì phản hồi bản cũ không báo "Đã lưu"; Đóng chờ lần lưu đang chạy. */
   const hang = useHangLuu();
+  const daDoiPhieu = useLamMoiPhieuKhiDong();
   const chuRef = useRef(chu);
   chuRef.current = chu;
   const oO = useRef(new Map<string, ReturnType<HangLuu['o']>>()).current;
@@ -305,7 +320,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung
     if (!o) {
       o = hang.o(k(e, m), oMon(e, m)?.noiDung ?? '',
         (v) => api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon: m, noiDung: v ?? '' })
-          .then(() => { invalidateGop('/lenh-chuyen', '/my-work', '/classes'); return null; }, (er: any) => er?.message ?? ''),
+          .then(() => { daDoiPhieu(); invalidateGop('/my-work', '/classes'); return null; }, (er: any) => er?.message ?? ''),
         (moi, lyDo) => setTt((x) => ({ ...x, [k(e, m)]: moi === 'loi'
           ? { tt: 'loi', loi: lyDo || t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.') }
           : { tt: moi === 'idle' && o!.chuaLuu() ? 'go' : moi } })));

@@ -23,7 +23,7 @@ import {
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
-import { dich, t } from '@shared/i18n/index.ts';
+import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 /**
  * GHI KẾT QUẢ CỦA MỘT PA — khuôn panel v3 (OV-12e, mockup `mockup-ov12-panel-v3-2026-10-14.html` §5): đầu "Kết quả PA · W1–W2 SEP" (EN-e: tên việc ở Công việc) + chip hạn / em (link) ·
@@ -303,7 +303,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const tuanGhi = nhanTuanGhiKetQua(pa.actionDue ?? null, homNay).tieuDe;
   const tenLoai = dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind);
   /* PR-PA (§7): PA có Số buổi → "Học Tutor · 10 buổi"; còn lại giữ nội dung PA. */
-  const tenPa = coDem ? t('{tenLoai} · {soBuoi} buổi', { tenLoai, soBuoi: pa.soBuoi }) : pa.description || tenLoai;
+  const tenPa = coDem ? t('{tenLoai} · {soBuoi} buổi', { tenLoai, soBuoi: pa.soBuoi }) : dichDu(pa.description) || tenLoai;
 
   /* Khối đếm (mockup §7): hai ô cùng hàng khi PA có Số buổi; PA không Số buổi chỉ có Người dạy (không bắt buộc). */
   const oBuoi = coO && (
