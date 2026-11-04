@@ -24,7 +24,8 @@ Bảng ý: `14-ra-ux-b.md` mục 11.4 (U08-1 … U08-8) + 10.5 #1. Luật chung 
 | B16/B25 | Phụ đề "· % trên HV đủ dữ liệu"; dòng phụ "8 HV · 3 đủ dữ liệu" | KHỚP | |
 | B1 | Bảng 1.75 : 1 | KHỚP | |
 | B1 | Hàng MT0 · Thi thật trong Kết quả MT | KHÁC (dữ liệu) | GIỮ — hàng có sẵn (V4), mockup chỉ vẽ MT1–MT3+ |
-| U08-2 | Panel SOS 720 px, mỗi lượt có điểm L R W S + Overall / KV | KHỚP về rộng + điểm | KHÁC dáng: dùng `DongDiem` chung của MỌI panel số (một mẫu dòng điểm), không bảng riêng chỉ cho panel này. Tên không xuống dòng |
+| U08-2 | Panel SOS 720 px: "SỐ · TEST + SOS" · "SOS 2 · W2 SEP" (ô Tổng → "· 2 tuần") · "chi nhánh · Fast Track · dữ liệu đến" · "n lượt · m HV" · bảng Học viên · Lớp · MT · L R W1 W2 S (`ODiem` ✓ / ✗) · Cách tính | KHỚP | PTA chốt 05/11 làm bảng (`BangLuotPanel`, `Bang` sẵn có); panel số khác giữ `DongDiem` |
+| U08-4 | Chip trạng thái Case viền + chấm trên nền "đang làm" | KHỚP | `NhanVien` (ui/Nhan) |
 | U08-3 | Bỏ cột "Xử lý" | KHỚP | nội dung → panel U08-4; Xuất Excel GIỮ cột Case / PA · Việc tiếp |
 | U08-4 | Chip SOS = nút → panel "CASE · KẾT QUẢ TEST", "{tên} · MT2 · SOS 2", "lớp · tuần · n kỹ năng dưới kỳ vọng"; mỗi kỹ năng dưới kỳ vọng một khối mở rộng, khối đầu mở sẵn: Case · Phụ trách + hạn · PA · Kết quả PA; không Case → "Chưa có Case" | KHỚP | chỉ đọc (G8); tên HV, lớp là link |
 | U08-5 | "MT2" 15 / 600 màu chữ (hồ sơ lượt) + "W1 SEP" 13 mờ | KHỚP | |
@@ -33,7 +34,7 @@ Bảng ý: `14-ra-ux-b.md` mục 11.4 (U08-1 … U08-8) + 10.5 #1. Luật chung 
 | U08-8 | Chưa chọn = "Chưa chọn" mờ, bỏ "· Hồ sơ HV ›" | KHỚP | xử lý → bấm tên HV |
 | A3 | "Chưa đủ điểm" ghi "không vào tỷ lệ" (mockup 47 %), Đạt / Chưa đạt % trên lượt có kết quả | KHÁC (luật số) | GIỮ cách tính đã chốt (`ketQuaThi.ts`) |
 
-Về hình: 15 / 16 dòng KHỚP (94 %) — dòng KHÁC hình duy nhất là panel A2 dùng mẫu dòng điểm chung (có lý do: một mẫu cho mọi panel số). Hai dòng KHÁC còn lại là dữ liệu / luật số.
+Về hình: 17 / 17 dòng hình KHỚP. Hai dòng KHÁC là dữ liệu / luật số (hàng Thi thật giữ; % Chưa đủ điểm theo luật đã chốt). PTA 05/11: Thiếu 1.0 cam (token `kq-thieu10`), hàng 52 px, ẩn hàng 0 HV, khung điểm ở panel Case.
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | Vì sao |
@@ -49,7 +50,7 @@ Về hình: 15 / 16 dòng KHỚP (94 %) — dòng KHÁC hình duy nhất là pan
 ## Turso
 - Mở trang: **+0**.
 - Bấm chip SOS (Kết quả Test): **1** `GET /hoc-vien-lop/em/:id` (đường sẵn có của panel một em; một em).
-- Mở panel số Test + SOS (FT, cột theo lượt): thêm điểm lượt — 1 câu lượt theo id + điểm / lịch của chính các lượt đó (`mockTrongKhoang` với `luot` sẵn, không Case); chỉ khi MỞ panel.
+- Mở panel số Test + SOS (FT, cột theo lượt): thêm điểm lượt — 1 câu lượt theo id + điểm / lịch của chính các lượt đó (`mockTrongKhoang` với `luot` sẵn, không Case) + 1 câu tên chi nhánh; chỉ khi MỞ panel.
 
 ## Chú thích `ponytail:`
 Không có.

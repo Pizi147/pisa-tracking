@@ -12,4 +12,5 @@ export const EN_UI_U08 = {
   '{n} kỹ năng dưới kỳ vọng': '{n} skills below expectation',
   'Chưa có Case': 'No case yet',
   'Chưa có kỹ năng dưới kỳ vọng.': 'No skill below expectation.',
+  'SỐ · TEST + SOS': 'NUMBER · TEST + SOS',
 } satisfies Record<string, Dich>;

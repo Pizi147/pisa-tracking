@@ -78,6 +78,11 @@ const NHAN: Record<ToneNhan, string> = {
   doing: `bg-[color:var(--surface-2)] text-doing ${CHAM}`, muted: `bg-[color:var(--surface-2)] text-dim ${CHAM} before:!bg-slate-600`,
 };
 
+/** U08-4 (mockup V11 `.bdv.dang`): chip trạng thái Case viền + chấm trên nền "đang làm" (panel Case theo kỹ năng); `xong` = xám. */
+export function NhanVien({ xong, children }: { xong?: boolean; children: ReactNode }) {
+  return <span className={`${CHIP_TRON} ${CHAM} !border-[color-mix(in_srgb,currentColor_65%,transparent)] ${xong ? 'bg-muted-bg text-dim' : 'bg-[rgb(var(--doing-bg-rgb))] text-doing'}`}>{children}</span>;
+}
+
 /** Bảng trạng thái → tone ở shared (PR-GVb U01) — re-export để chỗ gọi cũ (`KhoiNo`) không đổi import. */
 export { TONE_TRANG_THAI };
 

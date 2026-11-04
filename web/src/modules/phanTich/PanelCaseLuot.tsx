@@ -4,14 +4,13 @@ import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { NhanVien } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { CaseTomTat } from '../students/BangSos.tsx';
 import { KN_THI, NHAN_NHOM_XU_LY, duongHoSoHocVien, ngay, tuanLich, type DongMock } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 const TEN_KN: Record<(typeof KN_THI)[number], string> = { listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking' };
-const TONE_NHOM = { 'cho-duyet': 'muted', 'dang-xu-ly': 'doing', xong: 'done' } as const;
 /** Link chữ thường (U08-6): màu chữ, không gạch; rê / focus bàn phím → accent + gạch chân + vòng focus. */
 export const LINK_CHU = 'rounded-sm text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline hover:underline-offset-[3px] focus-visible:text-[color:var(--accent)] focus-visible:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]';
 
@@ -51,7 +50,7 @@ export function PanelCaseLuot({ r, onDong }: { r: DongMock; onDong: () => void }
                       <span aria-hidden>{m ? '▾' : '▸'}</span>{TEN_KN[k]}
                       <span className="inline-flex h-[22px] items-center rounded border border-bad-line px-2 text-sm font-semibold text-bad tabular-nums">✗ {r.kn[k].band?.toFixed(1)}</span>
                       {r.kyVong != null && <span className="text-[13px] font-medium text-faint">{t('kỳ vọng {kv}', { kv: r.kyVong.toFixed(1) })}</span>}
-                      <span className="ml-auto">{cs.length ? <Nhan tone={TONE_NHOM[cs[0].nhom]}>{t(NHAN_NHOM_XU_LY[cs[0].nhom])}</Nhan> : <span className="text-[13px] font-medium text-faint">{t('Chưa có Case')}</span>}</span>
+                      <span className="ml-auto">{cs.length ? <NhanVien xong={cs[0].nhom === 'xong'}>{t(NHAN_NHOM_XU_LY[cs[0].nhom])}</NhanVien> : <span className="text-[13px] font-medium text-faint">{t('Chưa có Case')}</span>}</span>
                     </button>
                     {m && (
                       <div className="grid gap-2.5 pb-3 pl-[38px] pr-3.5 text-sm">
