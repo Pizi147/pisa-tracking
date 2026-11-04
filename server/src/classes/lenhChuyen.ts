@@ -33,6 +33,7 @@ import { quetDoiDenHan } from './phanCongGv.ts';
 export type DongLenhVao = {
   studentId: number; huong: HuongLenh; toClassId?: number | null; tuan?: string | null;
   mucTieu?: MucTieuLenh | null; ngayThi?: string | null; lyDo?: string | null; ngayXemLai?: string | null;
+  /** N36: Quản lý chọn "Reset bậc vi phạm" — lộ trình mới mở chuỗi đếm thang mới (mặc định giữ bậc). */ resetBac?: boolean;
 };
 export type BoiCanhLenh = 'cuoi-khoa' | 'giua-khoa';
 
@@ -100,7 +101,7 @@ export function raLenh(p: Principal, v: {
     const daCo = new Map<number, any>();
     theoLo(dongs.map((d) => d.studentId), (lo, ph) => {
       for (const r of conn.prepare(
-        `SELECT student_id, lop_nguon_id, lop_dich_id, tuan_bat_dau, huong FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
+        `SELECT student_id, lop_nguon_id, lop_dich_id, tuan_bat_dau, huong, reset_bac FROM lenh_chuyen_lop WHERE trang_thai = 'cho' AND student_id IN (${ph})`,
       ).all(...lo) as any[]) daCo.set(r.student_id, r);
     });
     /* Lớp chuyển đến đọc THEO LÔ: đang hoạt động, khác lớp nguồn. */
@@ -189,6 +190,7 @@ export function raLenh(p: Principal, v: {
         d.studentId, v.lopNguonId, lopDich?.id ?? null, d.huong, v.boiCanh, tuan, mt?.target ?? null, mt?.kck ? 1 : 0,
         d.ngayThi ?? null, d.huong === 'bao_luu' ? d.ngayXemLai ?? null : null, (d.lyDo ?? '').trim() || null, khac ? 1 : 0,
         p.userId, homNay, v.tuYeuCauId ?? null, 'cho', han?.gvbm ?? null, han?.gvcn ?? null, nowIso(), nowIso(),
+        /* N36: không gửi cờ (panel không hiện ô) → giữ cờ của lệnh đang chờ. */ (d.resetBac ?? !!cu?.reset_bac) ? 1 : 0,
       ]);
     }
 
@@ -208,7 +210,7 @@ export function raLenh(p: Principal, v: {
     if (hang.length) {
       chenNhieuDong(
         `INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi,
-           ngay_xem_lai, ly_do, khac_goi_y, nguoi_ra_lenh, ngay_ra_lenh, tu_yeu_cau_id, trang_thai, han_gvbm, han_gvcn, tao_luc, sua_luc)`,
+           ngay_xem_lai, ly_do, khac_goi_y, nguoi_ra_lenh, ngay_ra_lenh, tu_yeu_cau_id, trang_thai, han_gvbm, han_gvcn, tao_luc, sua_luc, reset_bac)`,
         hang,
         ` ON CONFLICT (student_id) WHERE trang_thai = 'cho' DO UPDATE SET
            lop_dich_id = excluded.lop_dich_id, huong = excluded.huong, boi_canh = excluded.boi_canh, tuan_bat_dau = excluded.tuan_bat_dau,
@@ -217,7 +219,7 @@ export function raLenh(p: Principal, v: {
            nguoi_ra_lenh = excluded.nguoi_ra_lenh, tu_yeu_cau_id = COALESCE(excluded.tu_yeu_cau_id, lenh_chuyen_lop.tu_yeu_cau_id),
            han_gvbm = CASE WHEN excluded.han_gvbm IS NULL THEN NULL ELSE COALESCE(lenh_chuyen_lop.han_gvbm, excluded.han_gvbm) END,
            han_gvcn = CASE WHEN excluded.han_gvcn IS NULL THEN NULL ELSE COALESCE(lenh_chuyen_lop.han_gvcn, excluded.han_gvcn) END,
-           loi = NULL, thu_ngay = NULL, sua_luc = excluded.sua_luc`,
+           loi = NULL, thu_ngay = NULL, sua_luc = excluded.sua_luc, reset_bac = excluded.reset_bac`,
       );
       const moi = hang.length - daSua.size;
       const theoHuong: Record<string, number> = {};
@@ -347,7 +349,7 @@ export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void
     studentId: l.student_id, huong: (v.huong ?? l.huong) as HuongLenh, toClassId: v.toClassId !== undefined ? v.toClassId : l.lop_dich_id,
     tuan: v.tuan ?? l.tuan_bat_dau, mucTieu: v.mucTieu !== undefined ? v.mucTieu : ghepMucTieu(l.muc_tieu, l.khong_cam_ket),
     ngayThi: v.ngayThi !== undefined ? v.ngayThi : l.ngay_thi, lyDo: v.lyDo !== undefined ? v.lyDo : l.ly_do,
-    ngayXemLai: v.ngayXemLai !== undefined ? v.ngayXemLai : l.ngay_xem_lai,
+    ngayXemLai: v.ngayXemLai !== undefined ? v.ngayXemLai : l.ngay_xem_lai, resetBac: v.resetBac !== undefined ? v.resetBac : !!l.reset_bac,
   };
   const r = raLenh(p, { lopNguonId: l.lop_nguon_id, boiCanh: l.boi_canh, tuanChung: null, dongs: [gop] });
   if (r.failed.length) throw badRequest(r.failed[0].message);
@@ -546,7 +548,7 @@ export function dongTuBody(x: any): DongLenhVao {
   return {
     studentId: Number(x?.studentId), huong: String(x?.huong ?? '') as HuongLenh, toClassId: x?.toClassId ? Number(x.toClassId) : null,
     tuan: x?.tuan ?? null, mucTieu: soHoacKck(x?.mucTieu), ngayThi: x?.ngayThi ?? x?.thangThi ?? null,
-    lyDo: x?.lyDo ?? null, ngayXemLai: x?.ngayXemLai ?? null,
+    lyDo: x?.lyDo ?? null, ngayXemLai: x?.ngayXemLai ?? null, resetBac: typeof x?.resetBac === 'boolean' ? x.resetBac : undefined,
   };
 }
 
@@ -561,7 +563,7 @@ export function boiCanhTheoLop(lopId: number): BoiCanhLenh {
 export function suaTuBody(b: any): Partial<DongLenhVao> {
   const d = dongTuBody(b ?? {});
   const v: Record<string, unknown> = {};
-  for (const k of ['huong', 'toClassId', 'tuan', 'mucTieu', 'ngayThi', 'lyDo', 'ngayXemLai'] as const) if (b && k in b) v[k] = d[k];
+  for (const k of ['huong', 'toClassId', 'tuan', 'mucTieu', 'ngayThi', 'lyDo', 'ngayXemLai', 'resetBac'] as const) if (b && k in b) v[k] = d[k];
   return v as Partial<DongLenhVao>;
 }
 
@@ -728,6 +730,7 @@ function thiHanhCuoiKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
     fromClassId: g.lop_nguon_id, effectiveDate: g.tuan_bat_dau,
     dongs: con.map((l) => ({
       studentId: l.student_id, huong: l.huong, toClassId: l.lop_dich_id, mucTieu: soTuKck(l), thangThi: l.ngay_thi, lyDo: l.ly_do, ngayXemLai: l.ngay_xem_lai,
+      resetBac: !!l.reset_bac,
     })),
   }, { daDuyet: true });
   const hong = new Set<number>(r.failed.map((f: any) => f.studentId));
@@ -773,7 +776,7 @@ function thiHanhGiuaKhoa(p: Principal, g: any, con: any[]): { id: number; loi: s
           if (!lopDichHopLe(l.lop_dich_id, g.lop_nguon_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');
           apDungMotDong(p, {
             sid: l.student_id, toClassId: l.lop_dich_id, ngay: g.tuan_bat_dau, lyDo: l.ly_do, mucTieu: soTuKck(l), thangThi: l.ngay_thi,
-            nguoiNhan, boiCanh: 'giua-khoa',
+            nguoiNhan, boiCanh: 'giua-khoa', resetBac: !!l.reset_bac,
           });
         });
         xong.push(l);
@@ -917,7 +920,7 @@ function tuanDuyet(tuan: string | null): string | null {
 
 /** `khiDuyet` của thẻ Đề xuất chuyển lớp: `duLieu` là ô của panel D do Quản lý sửa (lớp chuyển đến, tuần, Target…) → RA LỆNH (`tu_yeu_cau_id`). */
 export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_id: number | null; ly_do: string | null }, duLieu: unknown): void {
-  const d = (duLieu ?? {}) as { lopDichId?: unknown; tuan?: unknown; lyDo?: unknown; mucTieu?: unknown; ngayThi?: unknown };
+  const d = (duLieu ?? {}) as { lopDichId?: unknown; tuan?: unknown; lyDo?: unknown; mucTieu?: unknown; ngayThi?: unknown; resetBac?: unknown };
   if (!yc.hoc_vien_id) throw badRequest('Thẻ không có học viên.');
   const conn = db();
   const enr = conn.prepare(
@@ -939,7 +942,7 @@ export function apDungDeXuatChuyenLop(p: Principal, yc: { id: number; hoc_vien_i
     dongs: [{
       studentId: yc.hoc_vien_id, huong, toClassId: lopDich,
       tuan: tuanDuyet(typeof d.tuan === 'string' ? d.tuan : null), mucTieu: soHoacKck(d.mucTieu), ngayThi: typeof d.ngayThi === 'string' ? d.ngayThi : null,
-      lyDo: typeof d.lyDo === 'string' && d.lyDo.trim() ? d.lyDo : yc.ly_do,
+      lyDo: typeof d.lyDo === 'string' && d.lyDo.trim() ? d.lyDo : yc.ly_do, resetBac: typeof d.resetBac === 'boolean' ? d.resetBac : undefined,
     }],
   });
   if (r.failed.length) throw badRequest(r.failed[0].message);

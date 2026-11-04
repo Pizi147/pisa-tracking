@@ -84,7 +84,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const c = [{ id: 1, seq: 1, route: null, status: 'completed' }, { id: 2, seq: 2, route: null, status: 'completed' }, { id: 3, seq: 3, route: null, status: 'active' }];
     assert(d.chuoiThang(c, 3).join() === '1,2,3', d.chuoiThang(c, 3).join());
   });
-  check('YT4 (1) · chuoiThang: FT một lộ trình; FT rồi FOU → chuỗi FOU riêng', () => {
+  check('YT4 (1) · chuoiThang: FT → lớp thường và FT → FT gãy chuỗi (giữ như cũ — N36 chỉ đổi chiều lớp thường → FT)', () => {
     const c = [{ id: 1, seq: 1, route: 'LT1', status: 'completed' }, { id: 2, seq: 2, route: null, status: 'active' }];
     assert(d.chuoiThang(c, 2).join() === '2' && d.chuoiThang(c, 1).join() === '1', 'FT gãy chuỗi');
     const ft = [{ id: 5, seq: 1, route: 'LT1', status: 'completed' }, { id: 6, seq: 2, route: 'LT2', status: 'active' }];
@@ -93,6 +93,21 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (1) · chuoiThang: nghỉ học (abandoned) rồi quay lại → chuỗi mới', () => {
     const c = [{ id: 1, seq: 1, route: null, status: 'abandoned' }, { id: 2, seq: 2, route: null, status: 'active' }];
     assert(d.chuoiThang(c, 2).join() === '2' && d.chuoiThang(c, 1).join() === '1', d.chuoiThang(c, 2).join());
+  });
+  /* N36 (chủ SP 05/11): lớp thường → lớp thường / FT mặc định GIỮ bậc; chỉ gãy khi lộ trình mới có cờ Reset bậc. */
+  check('N36 · chuoiThang: lớp thường → FT nối tiếp (giữ bậc); FT rồi về lớp thường gãy', () => {
+    const c = [{ id: 1, seq: 1, route: null, status: 'completed' }, { id: 2, seq: 2, route: null, status: 'completed' }, { id: 3, seq: 3, route: 'LT1', status: 'completed' },
+      { id: 4, seq: 4, route: null, status: 'active' }];
+    assert(d.chuoiThang(c, 3).join() === '1,2,3' && d.chuoiThang(c, 2).join() === '1,2,3', d.chuoiThang(c, 3).join());
+    assert(d.chuoiThang(c, 4).join() === '4', `FT → lớp thường gãy: ${d.chuoiThang(c, 4).join()}`);
+  });
+  check('N36 · chuoiThang: cờ Reset bậc gãy chuỗi ở chính lộ trình có cờ — LT → FT và LT → LT', () => {
+    const ft = [{ id: 1, seq: 1, route: null, status: 'completed' }, { id: 2, seq: 2, route: 'LT1', status: 'active', resetBac: true }];
+    assert(d.chuoiThang(ft, 2).join() === '2' && d.chuoiThang(ft, 1).join() === '1', d.chuoiThang(ft, 2).join());
+    const lt = [{ id: 1, seq: 1, route: null, status: 'completed' }, { id: 2, seq: 2, route: null, status: 'completed', resetBac: true }, { id: 3, seq: 3, route: null, status: 'active' }];
+    assert(d.chuoiThang(lt, 3).join() === '2,3' && d.chuoiThang(lt, 1).join() === '1', d.chuoiThang(lt, 3).join());
+    const bo = [{ id: 1, seq: 1, route: null, status: 'abandoned' }, { id: 2, seq: 2, route: 'LT1', status: 'active' }];
+    assert(d.chuoiThang(bo, 2).join() === '2', 'sau nghỉ học (abandoned) vẫn gãy');
   });
   check('YT4 (1) · bậc: max(lần xử lý xong, khai); ngoài thang không đẩy; bậc kế không bao giờ hết', () => {
     assert(d.bacHienTai([{ kind: 'report_1' }, { kind: 'meeting_cx' }], 2) === 2, 'khai thắng');
@@ -532,7 +547,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     viol.deleteViolation(gvcn, v);
     assert(em(sid).bac === 1 && xuLy.xemXuLy(gvcn, m.id).viPham.length === 0, 'bậc giữ');
   });
-  check('YT4 (4) · Chuỗi thang (Q-C): lớp thường FOU → BE giữ bậc (Report 1 → kế Report 2); sang FT về Report 1', () => {
+  check('YT4 (4) · Chuỗi thang (Q-C, N36): lớp thường FOU → BE giữ bậc; sang FT vẫn giữ (Report 1 → kế Report 2); FT có cờ Reset bậc → về Report 1', () => {
     const sid = hv();
     const cy = (conn.prepare('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq').get(sid) as any).id as number;
     conn.prepare(`UPDATE learning_cycles SET route = NULL, programme_code = 'FOU', status = 'completed', seq = 1 WHERE id = ?`).run(cy);
@@ -546,9 +561,17 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(e.chuoi.join() === `${cy},${be}` && e.bac === 1 && e.keTiep.kind === 'report_2' && e.nhanChuoi === 'lớp thường', JSON.stringify({ c: e.chuoi, b: e.bac }));
     conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ?`).run(be);
     banChup.ghiBanChup(conn, [be], { lyDo: 'sua_tay', ngay: TODAY });
-    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 3, 'LT1', '2026-09-07', 'active', ?)`).run(sid, new Date().toISOString());
+    const ft = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 3, 'LT1', '2026-09-07', 'active', ?)`).run(sid, new Date().toISOString()).lastInsertRowid);
     const f = em(sid);
-    assert(f.bac === 0 && f.keTiep.kind === 'report_1' && f.nhanChuoi === 'LT1', JSON.stringify({ c: f.chuoi, b: f.bac }));
+    assert(f.chuoi.join() === `${cy},${be},${ft}` && f.bac === 1 && f.keTiep.kind === 'report_2' && f.nhanChuoi === 'LT1', JSON.stringify({ c: f.chuoi, b: f.bac }));
+    conn.prepare('UPDATE learning_cycles SET reset_bac_y_thuc = 1 WHERE id = ?').run(ft);
+    const g = em(sid);
+    assert(g.chuoi.join() === `${ft}` && g.bac === 0 && g.keTiep.kind === 'report_1', JSON.stringify({ c: g.chuoi, b: g.bac }));
+    /* N36: bậc khai ở lộ trình FT (đầu chuỗi theo luật cũ) vẫn tính khi chuỗi nối dài về lớp thường — không còn ở đầu chuỗi. */
+    conn.prepare(`INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, ghi_chu, khai_boi, khai_luc) VALUES (?, ?, 3, 'Khai ở FT', ?, ?)`).run(sid, ft, gvcn.userId, TODAY);
+    conn.prepare('UPDATE learning_cycles SET reset_bac_y_thuc = 0 WHERE id = ?').run(ft);
+    const h = em(sid);
+    assert(h.chuoi.join() === `${cy},${be},${ft}` && h.bac === 3 && h.khai?.cycleId === ft, JSON.stringify({ c: h.chuoi, b: h.bac, k: h.khai }));
   });
   check('YT4 (4) · WL 3 đã thực hiện là ngoài thang: không đẩy bậc, vẫn Xác nhận xử lý được ở bậc kế (Report 1)', () => {
     const sid = hv();

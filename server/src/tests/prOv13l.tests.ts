@@ -279,4 +279,73 @@ export async function runPrOv13lTests(t: YThucTestKit) {
       });
     } finally { may.close(); }
   });
+
+  // ------------------------------------------------------------------ N36 (chủ SP 05/11): bậc vi phạm khi chuyển lộ trình — mặc định giữ, Reset bậc khi Quản lý chọn
+  const yt: any = await import('../yThuc/trangThai.ts');
+  const luat: any = await import('../classes/luatLoTrinh.ts');
+  const report1 = (sid: number, cyc: number) => conn.prepare(
+    `INSERT INTO discipline_measures (student_id, cycle_id, kind, status, performed_on, note, created_at, created_by) VALUES (?, ?, 'report_1', 'done', ?, 'N36', ?, ?)`,
+  ).run(sid, cyc, addDays(TODAY, -3), NOW, QL.userId);
+  const bac = (sid: number) => yt.trangThaiYThuc([sid]).get(sid).bac as number;
+  await checkAsync('N36-1 · Cuối khoá Lên lớp "Ngay hôm nay": dòng có Reset bậc → khoá mới reset_bac_y_thuc = 1, bậc về 0; dòng không tích → giữ bậc (Report 1)', async () => {
+    const fou = lop('FOU', 10), be = lop('BE', 1);
+    const a1 = em(fou, { ma: 'FOU' }), a2 = em(fou, { ma: 'FOU' });
+    report1(a1.sid, a1.cyc); report1(a2.sid, a2.cyc);
+    const r = await voiNgay(THU5, () => lenh.raLenh(QL, { lopNguonId: fou, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [
+      lenh.dongTuBody({ studentId: a1.sid, huong: 'len_lop', toClassId: be, tuan: THU5, lyDo: 'Lên lớp', resetBac: true }),
+      lenh.dongTuBody({ studentId: a2.sid, huong: 'len_lop', toClassId: be, tuan: THU5, lyDo: 'Lên lớp' })] }));
+    assert(r.failed.length === 0 && r.daChuyen.length === 2, JSON.stringify(r));
+    const k1 = khoa(a1.sid), k2 = khoa(a2.sid);
+    assert(k1.id !== a1.cyc && k1.reset_bac_y_thuc === 1 && k2.reset_bac_y_thuc === 0, JSON.stringify([k1, k2]));
+    assert(bac(a1.sid) === 0 && bac(a2.sid) === 1, `bậc ${bac(a1.sid)} / ${bac(a2.sid)}`);
+  });
+  await checkAsync('N36-2 · Giữa khoá lớp thường → FT: mặc định giữ bậc; Reset bậc ghi vào lệnh, sửa lệnh không gửi cờ thì giữ, Sửa (PATCH) đổi được; thi hành → lộ trình FT gãy chuỗi', async () => {
+    const fou = lop('FOU', 3), ft = lop('FT', 2);
+    const b = em(fou, { ma: 'FOU' }), c = em(fou, { ma: 'FOU' });
+    report1(b.sid, b.cyc); report1(c.sid, c.cyc);
+    const tuanSau = addDays(T2, 7);
+    await voiNgay(THU5, async () => {
+      ra(fou, 'giua-khoa', { studentId: b.sid, huong: 'fast_track', toClassId: ft, tuan: tuanSau, mucTieu: 6, resetBac: true });
+      assert(lenhCua(b.sid).reset_bac === 1, 'lệnh có cờ');
+      ra(fou, 'giua-khoa', { studentId: b.sid, huong: 'fast_track', toClassId: ft, tuan: tuanSau, mucTieu: 6 });
+      assert(lenhCua(b.sid).reset_bac === 1, 'sửa lệnh không gửi cờ → giữ cờ');
+      lenh.suaLenh(QL, lenhCua(b.sid).id, lenh.suaTuBody({ resetBac: false }));
+      assert(lenhCua(b.sid).reset_bac === 0, 'PATCH resetBac false');
+      lenh.suaLenh(QL, lenhCua(b.sid).id, lenh.suaTuBody({ resetBac: true }));
+      const r = ra(fou, 'giua-khoa', { studentId: b.sid, huong: 'fast_track', toClassId: ft, tuan: THU5, mucTieu: 6 });
+      const r2 = ra(fou, 'giua-khoa', { studentId: c.sid, huong: 'fast_track', toClassId: ft, tuan: THU5, mucTieu: 6 });
+      assert(r.daChuyen.includes(b.sid) && r2.daChuyen.includes(c.sid), JSON.stringify([r, r2]));
+    });
+    const kb = khoa(b.sid), kc = khoa(c.sid);
+    assert(kb.route === 'LT1' && kb.reset_bac_y_thuc === 1 && kc.route === 'LT1' && kc.reset_bac_y_thuc === 0, JSON.stringify([kb, kc]));
+    assert(bac(b.sid) === 0, `Reset bậc → 0: ${bac(b.sid)}`);
+    assert(bac(c.sid) === 1 && yt.trangThaiYThuc([c.sid]).get(c.sid).chuoi.join() === `${c.cyc},${kc.id}`, 'lớp thường → FT giữ bậc, chuỗi nối tiếp');
+  });
+  check('N36-3 · ô Reset bậc chỉ có dữ liệu khi cần: xem trước Chuyển lớp trả bacYThuc > 0 cho em lớp thường có bậc; em chưa bậc / em FT = 0', () => {
+    const fou = lop('FOU', 3), ftLop = lop('FT', 3);
+    const coBac = em(fou, { ma: 'FOU' }), chuaBac = em(fou, { ma: 'FOU' }), ftEm = em(ftLop, { ft: true });
+    report1(coBac.sid, coBac.cyc); report1(ftEm.sid, ftEm.cyc);
+    const x = (sid: number) => luat.xemChuyenLop(QL, sid, null).bacYThuc;
+    assert(x(coBac.sid) === 1 && x(chuaBac.sid) === 0 && x(ftEm.sid) === 0, `${x(coBac.sid)} ${x(chuaBac.sid)} ${x(ftEm.sid)}`);
+  });
+  await checkAsync('N36-4 · HTTP POST /students/:id/transfer mang resetBac → lệnh có cờ; gửi lại không có resetBac → giữ cờ', async () => {
+    const fou = lop('FOU', 3), ft = lop('FT', 2);
+    const e = em(fou, { ma: 'FOU' });
+    const may = createApp().listen(0);
+    const cong = (may.address() as any).port as number;
+    const goi = async (body: unknown) => {
+      const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: QL.userId }) });
+      const cookie = (s.headers.get('set-cookie') ?? '').split(';')[0];
+      return fetch(`http://127.0.0.1:${cong}/api/students/${e.sid}/transfer`, { method: 'POST', headers: { 'content-type': 'application/json', cookie }, body: JSON.stringify(body) });
+    };
+    try {
+      await voiNgay(THU5, async () => {
+        const than = { toClassId: ft, tuan: addDays(T2, 7), lyDo: 'Lên FT', mucTieu: 6 };
+        const r = await goi({ ...than, resetBac: true });
+        assert(r.status === 200 && lenhCua(e.sid).reset_bac === 1, `${r.status} ${await r.text()}`);
+        const r2 = await goi(than);
+        assert(r2.status === 200 && lenhCua(e.sid).reset_bac === 1, 'vắng resetBac → giữ cờ');
+      });
+    } finally { may.close(); }
+  });
 }

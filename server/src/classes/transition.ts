@@ -18,6 +18,7 @@ import { cuoiKhoaTheoHocVien, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL, khoangTamDung } from '../students/tamDung.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
+import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /**
  * CHUYỂN TIẾP KHI MỘT LỚP HỌC HẾT CHƯƠNG TRÌNH — mục 6.1, đặc tả §3.9.2 (PR-LT thay khung cũ).
@@ -232,6 +233,8 @@ export function transitionPlan(p: Principal, classId: number) {
   } : null;
 
   const mt0Em = ft ? new Map() : mt0TheoHocVien(students.map((s) => s.id as number));
+  /* N36: +3 câu (đã nhớ theo request) — chỉ khi Quản lý ra lệnh được ở lớp thường. */
+  const bacEm = new Map(!ft && raLenhDuoc ? [...trangThaiYThuc(students.map((s: any) => s.id as number))].map(([id, e]) => [id, e.bac]) : []);
   return {
     from: {
       id: cls.id, code: cls.code, branchId: cls.branch_id, branchCode: cls.branch_code,
@@ -253,6 +256,8 @@ export function transitionPlan(p: Principal, classId: number) {
     tuanChon: raLenhDuoc ? tuanChonDuoc(demoToday()) : [],
     students: students.map((s) => ({
       id: s.id, studentCode: s.student_code, fullName: s.full_name,
+      /** N36: bậc vi phạm hiện tại (chỉ lớp thường, người ra lệnh được) — có em > 0 thì chân trang hiện ô chung "Reset bậc vi phạm". */
+      bacYThuc: bacEm.get(s.id) ?? 0,
       cycleId: s.cycle_id ?? null, target: s.target_score ?? null,
       /** PR-LCb: Target khoá là KCK — panel Lộ trình tiếp theo coi như đã có Target (không hỏi lại, §7). */
       kck: !!s.khong_cam_ket,
@@ -300,6 +305,7 @@ export function transitionPlan(p: Principal, classId: number) {
 export type TransitionDong = {
   studentId: number; huong?: Huong | null; toClassId?: number | null;
   mucTieu?: number | null; thangThi?: string | null; lyDo?: string | null; ngayXemLai?: string | null; luuY?: string | null;
+  /** N36: lộ trình mới mở chuỗi đếm thang Ý thức mới (từ lệnh `reset_bac`). */ resetBac?: boolean;
 };
 export type TransitionInput = {
   fromClassId: number;
@@ -407,7 +413,7 @@ export function applyTransition(p: Principal, input: TransitionInput, o?: { daDu
 
       const huong = dg.huong as Huong;
       if (huong === 'len_lop' || huong === 'hoc_lai' || huong === 'fast_track') {
-        okChuyenLop.push({ sid: dg.studentId, huong, toClassId: toClassId!, toClass: toClass!, mucTieu: dg.mucTieu ?? null, thangThi: dg.thangThi ?? null });
+        okChuyenLop.push({ sid: dg.studentId, huong, toClassId: toClassId!, toClass: toClass!, mucTieu: dg.mucTieu ?? null, thangThi: dg.thangThi ?? null, resetBac: !!dg.resetBac });
         doneList.push({ studentId: dg.studentId, toClassId: toClassId! });
       } else if (huong === 'bao_luu') {
         okBaoLuu.push({ sid: dg.studentId, lyDo: dg.lyDo! });

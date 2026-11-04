@@ -293,6 +293,8 @@ export function moLoTrinhMoi(p: Principal, o: {
   target?: number | null; kck?: boolean; thangThi?: string | null;
   /** P7 (N12): Lộ trình mới sau thi — mã lộ trình chọn ở panel (có thể khác lớp: LT2 ở lớp LT1, Khác), tên "Khác", Bỏ Target; KHÔNG chép ngày thi (E1); đầu vào = KQ thi thật (E3). */
   sauThi?: LoTrinhMoiSauThi | null;
+  /** N36: Quản lý chọn "Reset bậc vi phạm" lúc chuyển — lộ trình mới mở chuỗi đếm thang mới. */
+  resetBac?: boolean;
 }): { moiId: number; route: string | null } {
   const conn = db();
   const seq = ((conn.prepare('SELECT MAX(seq) n FROM learning_cycles WHERE student_id = ?').get(o.sid) as any)?.n ?? 0) + 1;
@@ -313,8 +315,8 @@ export function moLoTrinhMoi(p: Principal, o: {
     .prepare(
       `INSERT INTO learning_cycles (student_id, seq, route, route_ten, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
                                     baseline_score, baseline_listening, baseline_reading, baseline_writing, baseline_speaking, baseline_attempt_id, baseline_source, baseline_note,
-                                    start_period_id, started_at, status, created_at, mon_dang_ky)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)`,
+                                    start_period_id, started_at, status, created_at, mon_dang_ky, reset_bac_y_thuc)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?, ?)`,
     )
     .run(o.sid, seq, route, route === ROUTE_KHAC ? st?.routeTen ?? null : null, o.denLop.ma,
       boTg ? null : o.target ?? (giuTarget ? cu?.target_score ?? null : null),
@@ -323,7 +325,7 @@ export function moLoTrinhMoi(p: Principal, o: {
       giuThi ? cu?.exam_date ?? null : null, giuThi ? cu?.exam_period_id ?? null : null,
       dv && !dv.attemptId ? dv.score : null, dv?.l ?? null, dv?.r ?? null, dv?.w ?? null, dv?.s ?? null, dv?.attemptId ?? null,
       dv ? 'previous_cycle' : null, dv?.nguon ?? null,
-      startPeriodId, o.ngay, nowIso(), o.denLop.ft ? st?.monDangKy ?? null : null).lastInsertRowid);   // P8: chỉ FT
+      startPeriodId, o.ngay, nowIso(), o.denLop.ft ? st?.monDangKy ?? null : null, o.resetBac ? 1 : 0).lastInsertRowid);   // P8: chỉ FT
   if (o.denLop.ft) taoMtMacDinh(moiId, { actorUserId: p.userId });   // M1: vào lớp FT / đổi LT ↔ RF = lộ trình mới có lịch MT mặc định
   else taoBaiThuongMacDinh([moiId], p.userId, o.ngay);               // PR-LT2a M1b: sang lớp thường = tự có bài Progress / Final Test (OV-13l: bài tuần này vẫn có)
   return { moiId, route };
@@ -340,6 +342,8 @@ export type DongApDung = {
   /** caseId → userId người nhận (Q14). */
   nguoiNhan?: Record<number, number> | null;
   boiCanh: 'giua-khoa' | 'cuoi-khoa';
+  /** N36: lộ trình mới (nếu mở) bắt đầu lại bậc vi phạm — từ lệnh `reset_bac`. */
+  resetBac?: boolean;
 };
 
 /**
@@ -440,7 +444,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     const { moiId } = moLoTrinhMoi(p, {
       sid: d.sid, ngay: d.ngay, toClass, tuLop, denLop, cuCycle: curCycle ?? cuoiCycle, thangThi: d.thangThi,
       target: mtLenh ?? (veThuong ? curCycle.target_score ?? null : null), kck: veThuong && mtLenh == null && !!curCycle.khong_cam_ket,
-      sauThi: loTrinhMoi,
+      sauThi: loTrinhMoi, resetBac: d.resetBac,
     });
     tg = doiTg(curCycle ?? cuoiCycle, conn.prepare('SELECT target_score, khong_cam_ket FROM learning_cycles WHERE id = ?').get(moiId) as any);
     /* PR-MT0 (T5b): từ lớp thường — sang FT thì MT0 thành mốc đầu vào lộ trình mới; hướng khác thì MT0 chưa điểm huỷ. */
@@ -629,13 +633,16 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     tuanFinal: (pr?.finalWeekStart ?? null) as string | null,
     /** Em FT có ghi danh ngay trước ở lớp thường → mã lớp đó ("tuần 1 · từ CP ELE 30"). */
     tuLopThuong: truoc && !truoc.is_fast_track ? (truoc.code as string) : null,
+    /** N36: bậc vi phạm hiện tại khi em đang ở lộ trình lớp thường — > 0 thì panel hiện ô "Reset bậc vi phạm". FT: 0 (sau FT chuỗi luôn gãy). */
+    bacYThuc: ft || cyc?.route ? 0 : trangThaiYThuc([sid], homNay).get(sid)?.bac ?? 0,
     /** PR-CT: lệnh đang chờ của em (nếu có) — panel mở ở chế độ sửa + Huỷ quyết định. */
     lenh: (() => {
-      const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi, han_gvcn FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
+      const l = conn.prepare(`SELECT id, huong, lop_dich_id, tuan_bat_dau, muc_tieu, khong_cam_ket, ngay_thi, ly_do, loi, han_gvcn, reset_bac FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any;
       return l ? {
         id: l.id as number, huong: l.huong as string, lopDichId: (l.lop_dich_id ?? null) as number | null, tuan: l.tuan_bat_dau as string,
         mucTieu: ghepMucTieu(l.muc_tieu, l.khong_cam_ket), ngayThi: (l.ngay_thi ?? null) as string | null,
         lyDo: (l.ly_do ?? null) as string | null, loi: (l.loi ?? null) as string | null, hanGvcn: (l.han_gvcn ?? null) as string | null,
+        resetBac: !!l.reset_bac,
       } : null;
     })(),
     tuanChon: tuanChonDuoc(homNay),
@@ -650,6 +657,7 @@ export type DongCaLop = {
   toClassId: number; toClass: { ma: ProgrammeCode | null; ft: boolean; branchId: number; code: string; route?: string | null };
   mucTieu?: number | null;
   thangThi?: string | null;
+  /** N36: lộ trình mới mở chuỗi đếm thang Ý thức mới. */ resetBac?: boolean;
 };
 
 /**
@@ -768,15 +776,15 @@ export function apDungCaLop(p: Principal, o: {
         d.sid, (seqOf.get(d.sid) ?? 0) + 1, d.toClass.ft ? (d.toClass.route ?? 'LT1') : null, d.toClass.ma,
         mucTieu ?? cu?.target_score ?? null, mucTieu == null && cu?.khong_cam_ket ? 1 : 0,
         giuThi ? thiCu.exam_month ?? null : d.thangThi ?? null, giuThi ? thiCu.exam_date ?? null : null, giuThi ? thiCu.exam_period_id ?? null : null,
-        d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, 'active', now,
+        d.toClass.ft ? ftPeriodId : (startPeriodOf.get(d.toClassId) ?? null), o.ngay, 'active', now, d.resetBac ? 1 : 0,
       ];
     });
     /* OV-13o: Target / KCK lộ trình mới so với khoá cũ — cho nhật ký Chuyển lớp từng em (cột 5, 6 của dòng chèn). */
     o.dongs.forEach((d, i) => tgMoi.set(d.sid, doiTg(khoaCu.get(d.sid), { target_score: params[i][4] as number | null, khong_cam_ket: params[i][5] as number })));
-    /* 13 cột/em: `chenNhieuDong` tự chia lô theo trần tham số. */
+    /* 14 cột/em: `chenNhieuDong` tự chia lô theo trần tham số. */
     chenNhieuDong(
       `INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, khong_cam_ket, exam_month, exam_date, exam_period_id,
-                                    start_period_id, started_at, status, created_at)`, params);
+                                    start_period_id, started_at, status, created_at, reset_bac_y_thuc)`, params);
     /* M1: em sang FT có lịch MT mặc định. INSERT nhiều dòng không trả id → đọc lại MỘT câu; tạo lượt theo lô (PR-TOC). */
     const ftSids = o.dongs.filter((d) => d.toClass.ft).map((d) => d.sid);
     if (ftSids.length) {

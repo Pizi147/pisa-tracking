@@ -16,6 +16,7 @@ import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
 import { KHOI_VANG, NutHomNay, OTuan, guiTheoLo } from './chuyenLopChung.tsx';
 import { ChipXetLaiDong, XetLaiCtx } from './PanelXetLai.tsx';
+import { OResetBac } from '../students/ChuyenLopPanel.tsx';
 import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, canLopDich, chuDaiKetQua,
@@ -33,6 +34,7 @@ type Nhap = { huong: HuongLenh; lopDichId: number | null; tuan: string | null; m
 type KetLuanKv = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null };
 type Em = {
   id: number; fullName: string; target: number | null; kck: boolean;
+  /** N36: bậc vi phạm hiện tại (0 = chưa bậc; chỉ Quản lý nhận). */ bacYThuc?: number;
   cuoiKhoa: { tyLe: number | null; scored: number; required: number; nguong: number | null; mon: { skill: string; ratio: number | null }[]; goiY: GoiYCuoiKhoa | null } | null;
   progress: { tuan: string | null; scored: number; required: number; monTruot: string[]; tyLe: number | null } | null;
   lenh: Lenh | null; nhap?: Nhap | null; nhanXet: string | null; nhanXetLuc: string | null;
@@ -90,6 +92,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const loc = (['chua-chot', 'con-ban-giao', 'xet-lai'].includes(locUrl) || (locUrl === 'loi' && Object.keys(loi).length) ? locUrl : '') as '' | 'chua-chot' | 'con-ban-giao' | 'loi' | 'xet-lai';
   const [ketQua, setKetQua] = useState<{ ok: number; loi: number } | null>(null);
   const [busy, setBusy] = useState(false);
+  /* N36: một ô chung "Reset bậc vi phạm" cho lần chốt — mặc định tắt (giữ bậc, chuỗi đếm thang nối tiếp). */
+  const [resetBac, setResetBac] = useState(false);
   const [tienDo, setTienDo] = useState<[number, number] | null>(null);
   const [hoiNgay, setHoiNgay] = useState<{ ten: string[]; chiEm?: number[] } | null>(null);
   const [tam, setTam] = useState(false);
@@ -239,6 +243,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       const lenh = nhom.filter((r) => r.lenh).map((r) => ({
         studentId: r.e.id, huong: huongLenh(r.x), toClassId: canLopDich(huongLenh(r.x)!) ? r.x.lop : null, tuan: r.x.tuan || null,
         mucTieu: mucTieuCua(r.e, r.x), ngayXemLai: r.x.huong === 'dung' && r.x.quayLai ? r.x.xemLai || null : null, lyDo: r.x.lyDo.trim() || null,
+        /* Không tích → không gửi: máy chủ giữ cờ của lệnh đang chờ (đặt ở Chuyển lớp một em). */
+        ...(resetBac && soBac ? { resetBac: true } : {}),
       }));
       const kq = lenh.length
         ? await guiTheoLo(`/classes/${classId}/transition`, null, ngay.length ? LO_CHUYEN_NGAY_THUONG : lenh.length, setTienDo, lenh)
@@ -536,6 +542,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     return { dong1, dong2 };
   })();
   const soLoi = Object.keys(loi).length;
+  /* N36: em có bậc > 0 sẽ mở lộ trình mới (Lên lớp / Học lại / Lên FT) ở lần chốt này → hiện ô chung. */
+  const soBac = guiDuoc.filter((r) => r.lenh && (r.e.bacYThuc ?? 0) > 0 && ['len_lop', 'hoc_lai', 'fast_track'].includes(huongLenh(r.x) ?? '')).length;
 
   const chan = laQl ? (
     soLoi && ketQua ? (
@@ -549,6 +557,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         <span className="min-w-0 flex-1 text-[13px] text-slate-300">
           <span className="block"><b className="text-slate-100">{t('Khi chốt:')}</b> {tomTat.dong1}</span>
           {tomTat.dong2 && <span className="block text-slate-400">{tomTat.dong2}</span>}
+          {soBac > 0 && <OResetBac checked={resetBac} onChange={setResetBac} disabled={busy} phu={t('{n} em đang có bậc', { n: soBac })} />}
         </span>
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={luuNhap}>{t('Lưu nháp')}</button>
         <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !guiDuoc.length} onClick={() => chot()}>

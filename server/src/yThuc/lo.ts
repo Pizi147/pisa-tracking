@@ -240,7 +240,7 @@ export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang
  * không xoá được bậc người khác đã khai / bậc khai từ trước (rà KHAI-BAC-LO, bảo mật).
  */
 function chiLanCuaMinh(p: Principal, sid: number, em: EmYThuc, homNay: string) {
-  const r = db().prepare('SELECT khai_boi, khai_luc, sua_boi, sua_luc FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').get(sid, em.chuoi[0]) as any;
+  const r = db().prepare('SELECT khai_boi, khai_luc, sua_boi, sua_luc FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').get(sid, em.khai?.cycleId ?? em.chuoi[0]) as any;
   const boi = r?.sua_boi ?? r?.khai_boi, luc = r?.sua_luc ?? r?.khai_luc;
   if (!r || boi !== p.userId || luc !== homNay) throw badRequest('Chỉ hoàn tác được lần lưu của chính bạn trong hôm nay.');
 }
@@ -269,7 +269,7 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
         if (!lai.khai || lai.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
         chiLanCuaMinh(p, sid, lai, c.homNay);
         if (!c.laQl && lai.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
-        db().prepare('DELETE FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').run(sid, lai.chuoi[0]);
+        db().prepare('DELETE FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').run(sid, lai.khai.cycleId);
         writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_undo', entityType: 'student', entityId: sid,
           entityLabel: `${hv.student_code} · hoàn tác cấp bậc`, before: { bac: sau }, after: null });
       });

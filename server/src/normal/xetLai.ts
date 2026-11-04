@@ -14,6 +14,7 @@ import { huyLenh, khoiPhucLenh as khoiPhucLenhHuy, raLenh, soHoacKck, thongBaoSa
 import { hoanTacKetThuc, hoanTacTamDung, setStudentStatus } from '../students/students.ts';
 import { dongBoCheTaiFinal, tyLeTongLo } from './cuoiKhoa.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
+import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /**
  * XÉT LẠI LỘ TRÌNH (P9a, N21) — MỘT CỬA phía máy chủ: tập em (`tapXetLai`, cùng hàm cho việc QL, GET panel, quét hết hạn), quyết định theo lô
@@ -254,7 +255,10 @@ export function xemXetLai(p: Principal, classId: number, studentId: number | nul
   const tap = ql || gvcn
     ? tinhTapXetLai(today, studentId ? { chiEm: studentId } : { lop: classId }).filter((e) => e.lopHienTai.id === classId && (!!e.quyetDinh || e.han >= today))
     : [];
-  const em: EmXetLai[] = ql ? tap : tap.filter((e) => e.daChot.lopDichId === classId).map((e) => ({
+  /* N36: Quản lý — bậc vi phạm của em đang học lớp thường (ô "Reset bậc vi phạm" khi Học lại / Lên). +3 câu, chỉ khi có em lớp thường. */
+  const lt = ql ? tap.filter((e) => !e.lopHienTai.ft).map((e) => e.studentId) : [];
+  const yt = lt.length ? trangThaiYThuc(lt, today) : null;
+  const em: (EmXetLai & { bacYThuc?: number })[] = ql ? tap.map((e) => ({ ...e, bacYThuc: yt?.get(e.studentId)?.bac ?? 0 })) : tap.filter((e) => e.daChot.lopDichId === classId).map((e) => ({
     ...e, goiY: null, phuHuynh: null, banGiaoGvcnCu: null, daChot: { ...e.daChot, lyDo: null }, coTheNhanXet: true,
   }));
   const lopHocLai: Record<string, { id: number; code: string; phu: string }[]> = {};
@@ -280,6 +284,7 @@ export function xemXetLai(p: Principal, classId: number, studentId: number | nul
 export type MucXetLai = {
   studentId: number; quyetDinh: QuyetXetLai; toClassId?: number | null; tuan?: string | null; lyDo?: string | null; trangThai?: 'inactive' | 'finished'; suaId?: number | null;
   /** Lên FT (dòng (c)) mà em chưa có Target — ô Target / KCK tại thẻ (`canHoiTarget`). */ mucTieu?: MucTieuLenh | null;
+  /** N36: Quản lý tích "Reset bậc vi phạm" — vắng = giữ cờ của lệnh đang chờ. */ resetBac?: boolean;
 };
 export const LO_XET_LAI = 10;   // một lời gọi ≤ 10 em (web chia lô — Học lại một em ~70–125 câu khi "Ngay hôm nay")
 
@@ -296,7 +301,7 @@ function docMuc(x: any): MucXetLai {
   return {
     studentId: sid, quyetDinh: x.quyetDinh, toClassId: so(x.toClassId, 'Lớp'), tuan: x.tuan ?? null,
     lyDo: chuTuDo(x.lyDo, 'Lý do', 2000) ?? null, trangThai: x.trangThai === 'finished' ? 'finished' : 'inactive',
-    suaId: so(x.suaId, 'Quyết định cần sửa'), mucTieu: soHoacKck(x.mucTieu),
+    suaId: so(x.suaId, 'Quyết định cần sửa'), mucTieu: soHoacKck(x.mucTieu), resetBac: typeof x.resetBac === 'boolean' ? x.resetBac : undefined,
   };
 }
 
@@ -356,7 +361,7 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
     const cho = conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(e.studentId) as any;
     const anh = cho ? chupLenh(cho.id) : null;
     const nhan = len ? `Lên ${dich.is_fast_track ? 'FT' : kyHieuLop(ke, null) ?? ke ?? ''}` : `Học lại ${kyHieuLop(e.lopNguon.ct, null) ?? e.lopNguon.ct ?? ''}`;
-    const r = raLenh(p, { lopNguonId: enr.class_id, boiCanh, tuanChung: null, dongs: [{ studentId: e.studentId, huong, toClassId: dich.id, tuan: it.tuan, mucTieu: it.mucTieu ?? null, lyDo: it.lyDo || `Xét lại lộ trình: ${nhan}` }] });
+    const r = raLenh(p, { lopNguonId: enr.class_id, boiCanh, tuanChung: null, dongs: [{ studentId: e.studentId, huong, toClassId: dich.id, tuan: it.tuan, mucTieu: it.mucTieu ?? null, lyDo: it.lyDo || `Xét lại lộ trình: ${nhan}`, resetBac: it.resetBac }] });
     if (r.failed.length) throw badRequest(r.failed[0].message);
     /* `lenhSau` = dòng lệnh ngay sau lần sửa này: Hoàn tác chỉ khi lệnh chưa bị đổi tiếp (ở Chuyển lớp…). */
     if (anh) cot.lenhCu = JSON.stringify({ ...anh, jeSau: maxId('journey_events'), lenhSau: conn.prepare('SELECT * FROM lenh_chuyen_lop WHERE id = ?').get(cho.id) });
