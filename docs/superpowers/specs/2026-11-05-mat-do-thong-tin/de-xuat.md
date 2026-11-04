@@ -1,7 +1,7 @@
 # Mật độ thông tin — đề xuất (THIET-KE-GON, 05/11)
 
 **Trạng thái: ĐỀ XUẤT, chưa phải luật.** Chủ SP duyệt mockup `thiet-ke/v12/cong-viec.html` trước. Duyệt xong thì
-mới chép các luật M1–M8 vào `DESIGN.md` và làm lần lượt các màn ở mục 3.
+mới chép các luật M1–M10 vào `DESIGN.md` và làm lần lượt các màn ở mục 3.
 
 ## 0. Bối cảnh, việc đã bỏ
 
@@ -29,10 +29,12 @@ mới chép các luật M1–M8 vào `DESIGN.md` và làm lần lượt các mà
 | M6 | **Đúng phạm vi.** Khối của người xem (Chờ bạn duyệt) không hiện khi đang xem việc của người khác. | S6 |
 | M7 | **Chữ chờ, chữ rỗng ở đầu khung.** Không căn giữa một khung cao theo trang dài. Một câu, không câu phụ. | S7 |
 | M8 | **375: đầu khối một hàng.** Số đếm cùng hàng với tên. Bỏ số phụ thứ hai (như "39 bài") nếu không vừa. | S8 |
+| M9 | **Ranh giới hai bậc bằng đường kẻ, không bằng nền xen kẽ** (nền đã mang nghĩa: dải nhóm, dòng đang chọn, dòng đang rê). Bậc 1 nằm giữa hai đơn vị (hai em, hai dòng "Cả lớp", vạch hạn): 1 px `--o-vien`, hết bề ngang (tối 3,8 : 1, sáng 3,5 : 1). Bậc 2 nằm giữa hai mục trong cùng một đơn vị: 1 px `--line`, bắt đầu từ chữ (không chạm mép trái). | S12 |
+| M10 | **Mỗi loại thông tin một dáng cố định, nhận ra không cần đọc.** Tên là chữ sáng. Lượt, tuần, số là chip nền nhạt góc 6. Hạn là **viên tròn theo mức** (quá hạn đỏ ⚠, hôm nay vàng ⚠, còn hạn xám), khác chip SOS vuông có viền. Người là chữ mờ kèm biểu tượng người. Nút có viền. Cùng một loại thì cùng cột ở mọi dòng. Không ghép nhiều trường thành một chuỗi "a · b · c". | S13 |
 
 Không thuộc đề xuất (giữ như đã duyệt): bố cục, thứ tự, màu, phông, vòng chữ đầu, nét cây, viên SOS, nút, panel.
 
-## 2. Công việc — sửa S1–S10 (+ S11 luật đếm ở mục 2b) (mockup `thiet-ke/v12/cong-viec.html`)
+## 2. Công việc — sửa S1–S13 (S11 luật đếm ở mục 2b) (mockup `thiet-ke/v12/cong-viec.html`)
 
 | # | Hiện trạng (main + ảnh chủ SP) | Sửa |
 |---|---|---|
@@ -46,6 +48,8 @@ Không thuộc đề xuất (giữ như đã duyệt): bố cục, thứ tự, m
 | S8 | 375: dải nhóm xuống hai hàng | Đưa về một hàng, ẩn số phụ |
 | S9 | Vừa "Chưa có hạn" vừa "không hạn" | Chỉ dùng "không hạn" |
 | S10 | Vạch "Quá hạn · 7 việc · 12 bài" lặp số đã có ở dải nhóm | Vạch đang mở chỉ ghi tên ("Quá hạn", "Hạn đến 20/09"). Vạch đang gập giữ số ("Hạn sau 20/09 · 9 việc ▸"). |
+| S12 | Chủ SP xem v12 (05/11): "cần làm rõ hơn đường kẻ… giữa các việc". Kẻ giữa hai em mờ (`--line-strong`, tối 1,9 : 1); giữa hai việc của cùng em không có kẻ. | Kẻ hai bậc (M9): giữa hai em dùng `--o-vien` 3,8 : 1; giữa hai việc của cùng em dùng `--line`, bắt đầu từ tên việc. |
+| S13 | "…và trường thông tin": hạn và người là chữ trơn; Chờ bạn duyệt gộp loại · người · lượt thành một chuỗi | Theo M10: hạn thành viên theo mức; người kèm biểu tượng; loại và lượt thành chip; người đề xuất chuyển về cột người. |
 
 - **Thao tác:** giữ hết. Không đổi chỗ nút nào. "Nếu duyệt" vẫn xem được: khi rê chuột, hoặc bấm dòng để mở panel duyệt.
 - **Dòng đọc Turso:** không đổi, vì cùng dữ liệu `/my-work`, không thêm request.
@@ -112,7 +116,7 @@ Chủ SP 05/11: "số lượng Công việc, bộ đếm đang đếm gắt quá
 - **Đậm:** tỉ lệ phần tử chữ có độ đậm ≥ 600.
 - **Nút / ô:** số nút và ô chọn ở màn đầu.
 
-| Hạng | Màn | Từ | Đậm | Nút / ô | Bệnh chính (sửa nhỏ theo M1–M8) |
+| Hạng | Màn | Từ | Đậm | Nút / ô | Bệnh chính (sửa nhỏ theo M1–M10) |
 |---|---|---|---|---|---|
 | 1 | **Công việc** (mọi vai) | 262–283 | 51–77 % | 18–29 | Trang dài 2 500–4 300 px, các lỗi S1–S10. **Mockup v12.** |
 | 2 | **Tổng quan** (QL, GV) | 346 | 48 % | 32 | Mỗi ô chỉ số có 2–3 dòng phụ ("2/3 HV · 8 chưa đủ dữ liệu / trong kỳ / hiện tại"). Số gạch chân khắp nơi. "Chờ bạn duyệt" mỗi dòng 2 dòng. "Điều hướng" có câu phụ. Có dải "Mới dùng". |
@@ -126,5 +130,5 @@ Chủ SP 05/11: "số lượng Công việc, bộ đếm đang đếm gắt quá
 
 **Cách làm sau khi chủ SP duyệt v12:**
 - Mỗi màn một PR nhỏ, theo thứ tự hạng ở bảng trên.
-- Mỗi PR có ảnh trước | sau và chỉ sửa theo M1–M8.
+- Mỗi PR có ảnh trước | sau và chỉ sửa theo M1–M10.
 - Màn nào cần đổi bố cục thì dừng, hỏi chủ SP trước.
