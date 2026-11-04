@@ -142,8 +142,9 @@ export async function runPrDlTests(t: YThucTestKit) {
    * chuỗi ↔ gốc: chỉ lệch hàng em do phép kiểm khác tạo (Học Viên Nhập Một…, PRN…, Em Theo Tuần Chung…), điểm / tuần em seed do phép kiểm khác
    * sửa (Lê Quang Huy, Nguyễn Minh An, Trần Thu Hà, Vũ Hải Đăng), mốc giờ ghi và email thử của em tạo (`emailThu` đếm từ số lúc chụp gốc). Trước (chuỗi): tuan 4efea5d316cb9203 · moi 459e593a8e284577 */
   /* N38 (PR-MT-VANG) chụp lại `moi` (đối chiếu từng trường với mã trước PR): hai ô S "-" ghi muộn ≥ 2 tuần (Hoàng Bảo Ngọc W2 AUG, Trịnh Gia Bảo
-     W4 AUG) nay là Không dự thi (`scheduled`, chữ "Không dự thi · Tuần …") thay vắng chờ QL; Võ Minh Triết (seed: nút Vắng lần 2) có dấu "-" đã chốt. */
-  const ANH_CHUP = { tuan: 'cc83e6fa32c0aa95', moi: '7569e6e2e056032f' };
+     W4 AUG) nay là Không dự thi (`scheduled`, chữ "Không dự thi · Tuần …") thay vắng chờ QL; Võ Minh Triết (seed: nút Vắng lần 2) có dấu "-" đã chốt.
+     Rồi ô huỷ vắng 2 lần bỏ câu "Quản lý đã đổi kết luận…" (`noShowNote`) — đo lại: chỉ đổi đúng điều đó (trước: moi 7569e6e2e056032f). */
+  const ANH_CHUP = { tuan: 'cc83e6fa32c0aa95', moi: '2bde7d28eb00cb47' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
