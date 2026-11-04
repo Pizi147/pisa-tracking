@@ -230,7 +230,8 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(/btn btn-sm min-h-\[44px\] sm:min-h-0\$\{xuLyChinh \? ' btn-primary' : ''\}`\} onClick=\{onXuLy\}>\{xuLyChinh && CUA_TOI\}\{t\('Xác nhận xử lý'\)\}</.test(th) && /onClick=\{onDeXuat\}>\{t\('Đề xuất QL duyệt'\)\}</.test(th) && !th.includes('Đề xuất QL duyệt…'), 'ThangYThuc');
     const sotBac = webSrc().filter((x) => x.f.includes('/yThuc/') && /Xác nhận xử lý\$\{|`Xác nhận xử lý ·|Xác nhận xử lý · \$\{/.test(x.s)).map((x) => x.f);
     assert(sotBac.length === 0, sotBac.join(', '));
-    assert(/<ThangYThuc[\s\S]{0,400}onXuLy=/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'ClassYThucCard');
+    /* UI-2 (mockup U10 K1): tab lớp — Xác nhận xử lý ở cột Việc của hàng (bắt buộc: nút chính; mới, cả khi 1 vi phạm: nút chữ dưới "Đã xem"). Q-7: gỡ kiểm chuỗi bố cục cũ. */
+    assert((doc('web/src/modules/yThuc/ClassYThucCard.tsx').match(/c\.mo\(\{ loai: 'xu-ly', studentId: x\.studentId \}\)/g) ?? []).length >= 2, 'ClassYThucCard');
     /* UI-3 (mockup U10 K3): tab HV — Xác nhận xử lý ở hàng nút dưới dải tóm tắt (cả khi mới 1 vi phạm), Thang mở bằng "Thang ›" chỉ để xem. */
     assert(/mo\(\{ loai: 'xu-ly', studentId \}\)/.test(doc('web/src/modules/yThuc/StudentYThucSection.tsx')), 'StudentYThucSection');
     /* OV-12e (mockup panel v3 §8, chủ SP 14/10): trong panel "Đề xuất QL duyệt" là nút chữ ngay sau nút chính Xác nhận xử lý (khối Cần làm). */

@@ -25,11 +25,13 @@ export type BacThangDong = { kind: string; nhan: string; trangThai: 'qua' | 'kha
 
 export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
-      viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
+      viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
+      /** UI-2 (mockup K6): ai / lúc "Đã xem". */
+      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       /** UI-3 (mockup K6): tên vi phạm của lần · Báo PH của lần (null = không có việc). */
-      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null };
+      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null; trongChuoi?: boolean };
 
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
@@ -76,7 +78,9 @@ export type DongEm = {
   /** UI-Y-THUC-LOP — khớp `DongEm` ở `server/src/yThuc/board.ts`. */
   viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp }[];
   thuHoi: { id: number; nhan: string; cho: boolean } | null;
-  baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean } | null;
+  baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean; daChinh: boolean } | null;
+  /** UI-2: TVV của em (chỉ bảng lớp). */
+  tvv: string | null;
 };
 
 export type BangYThucLop = {
@@ -84,6 +88,10 @@ export type BangYThucLop = {
   nhom: Record<NhomEm, DongEm[]>;
   dongThoiGian: DongThoiGianYt[];
   choBaoPh: DongEm[];
+  /** UI-2 (K4): em chỉ còn lần xử lý đang xin thu hồi. */
+  choThuHoi: DongEm[];
+  coTheDuyet: boolean;
+  gvcn: string | null;
 };
 
 /** Làm mới mọi dữ liệu Ý thức sau một thao tác ghi (tab lớp, tab HV, việc, hộp, số liệu). */

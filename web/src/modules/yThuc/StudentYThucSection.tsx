@@ -13,7 +13,7 @@ import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
 import { NhanViPham } from './NhanViPham.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
-import { BangLichSu, DsViPhamCho, LanTruoc, TomTatEm, type DongLs } from './khoiYThuc.tsx';
+import { BangLichSu, ChipLoc, DsViPhamCho, LanTruoc, TomTatEm, type DongLs } from './khoiYThuc.tsx';
 import { PanelBaoPhTvv, gioVnNay, lucVn } from '../congViec/PanelBaoPhTvv.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type YThucHocVien } from './kieu.ts';
@@ -142,7 +142,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
         key: `v${x.id}`, ngay: x.ngay, tong: 'xam', loai: t('Đã xem'), kieu: 'xem', tieuDe: x.viPham,
         mo: moViPhamId === x.id, onMo: () => setMoViPhamId((c) => (c === x.id ? null : x.id)),
         chiTiet: <ChiTietViPham violationId={x.id} onSua={(vv) => mo({ loai: 'sua', v: vv, studentName: d.ten })} onDaXoa={() => { setMoViPhamId(null); reload(); }} onMoXuLy={(id) => mo({ loai: 'xem', id })} />,
-        truong: [[t('Nhóm'), dich(x.nhom)], ...(x.nguoiGhi ? [[t('Người ghi'), x.nguoiGhi] as [string, string]] : [])],
+        truong: [],   // K6: dòng Đã xem chỉ tên vi phạm — nhóm, người ghi xem khi mở dòng
         ai: v?.ghiNhanBoiName ?? null, luc: v?.ghiNhanLuc ? lucVn(v.ghiNhanLuc) : null, vua: !!vuaXem?.ids.includes(x.id),
         cuoi: d.canManage ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangGhi} aria-label={`${t('Bỏ xem')} · ${x.viPham}`} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button> : null,
       };
@@ -231,7 +231,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
       ) : (
         <div className="space-y-2 px-4 pb-4 pt-3 max-sm:px-3">
           <div className="flex flex-wrap items-center gap-2">
-            <BoLocDoan ariaLabel={t('Lọc lịch sử')} value={loc} onChange={(k) => setLoc(k)}
+            <ChipLoc ariaLabel={t('Lọc lịch sử')} value={loc} onChange={(k) => setLoc(k)}
               muc={[{ key: 'tat-ca', nhan: t('Tất cả'), so: dongLs.length }, { key: 'da-xem', nhan: t('Đã xem'), so: soLs['da-xem'] },
                 { key: 'da-xu-ly', nhan: t('Đã xử lý'), so: soLs['da-xu-ly'] }, { key: 'thu-hoi', nhan: t('Đã thu hồi'), so: soLs['thu-hoi'] }]} />
             <span className="ml-auto flex flex-wrap items-center gap-2">

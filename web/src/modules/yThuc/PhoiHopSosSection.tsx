@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -103,12 +104,14 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
     : `MT${luot.attemptNo}${luot.sosLevel !== null ? ` · ${sosLabel(luot.sosLevel)}` : ''}`;
   const kyNang = luot.skillLabels.length > 0 ? luot.skillLabels.join(' + ') : '—';
 
-  const k8 = xanh && cot1 === 'luot';
-  if (k8) {
-    /* UI-3 (mockup U10 K8): phân đoạn Phối hợp SOS hồ sơ HV — đầu lượt một dòng, việc là hàng 3 cột (tên · hạn · nút); không khung xanh. */
+  if (xanh) {
+    /* UI-3 / UI-2 (mockup U10 K8): phân đoạn Phối hợp SOS hồ sơ HV và hồ sơ lớp — đầu lượt một dòng (lớp: tên em trước), việc là hàng 3 cột (tên · hạn · nút). */
     return (
       <div className="border-t pt-3 first:border-t-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-2.5">
+          {cot1 === 'hocVien' && (
+            <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
+          )}
           {!luot.nhanDot && luot.sosLevel !== null
             ? <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />
             : <b className="text-[15px] font-semibold text-slate-100">{mtSos}</b>}

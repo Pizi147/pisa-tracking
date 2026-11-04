@@ -44,16 +44,23 @@ export type DongEm = {
    */
   viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp }[];
   thuHoi: { id: number; nhan: string; cho: boolean } | null;
-  baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean } | null;
+  /** UI-2: `daChinh` = hạn đã sửa (mockup K1 "hạn 10/11 · đã chỉnh"). */
+  baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean; daChinh: boolean } | null;
+  /** UI-2 (mockup K1): TVV của em dưới tên — chỉ `bangYThucLop` điền (cùng câu đọc tên em). */
+  tvv: string | null;
 };
 
 export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
       /** PR-LUI-a1: dòng chính = ô `Vi phạm` (ngắn); mô tả đầy đủ chỉ hiện khi mở dòng (`ChiTietViPham`). */
-      viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null }
+      viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
+      /** UI-2 (mockup K6 "Ai · lúc nào" của dòng Đã xem). */
+      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
-      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null };
+      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null;
+      /** UI-2 (`danhDauChuoi`): dòng thuộc lộ trình hiện tại của em — tab lớp đổi phạm vi Lộ trình | Cả lịch sử tại trình duyệt, không đọc lại. */
+      trongChuoi?: boolean };
 
 export type BangYThucLop = {
   classId: number; classCode: string; homNay: string;
@@ -62,6 +69,12 @@ export type BangYThucLop = {
   dongThoiGian: DongThoiGianYt[];
   /** UI-Y-THUC-LOP: em không còn việc Ý thức nào (nhóm rỗng) nhưng TVV chưa báo PH xong — hàng "Chờ TVV báo PH". */
   choBaoPh: DongEm[];
+  /** UI-2 (mockup K4): em không còn việc Ý thức nào nhưng có lần xử lý đang xin thu hồi (chờ QL) — vào nhóm "Chờ QL duyệt". */
+  choThuHoi: DongEm[];
+  /** UI-2 (mockup K4): người xem duyệt được yêu cầu của lớp (Duyệt / Từ chối tại chỗ). */
+  coTheDuyet: boolean;
+  /** UI-2 (mockup K4): GVCN của lớp — dòng dưới tên em ở nhóm Chờ QL duyệt (QL biết ai đề xuất / xin thu hồi). */
+  gvcn: string | null;
 };
 
 const DONG_THOI_GIAN_TOI_DA = 150;
@@ -86,7 +99,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
     deXuat: em.deXuat ? { id: em.deXuat.id, nhan: nhanLoaiXuLy(em.deXuat.kind, em.deXuat.customName), status: em.deXuat.status, han: em.deXuat.han } : null,
     xuLyGanNhat: xong ? { id: xong.id, nhan: nhanLoaiXuLy(xong.kind, xong.customName), ngay: xong.performedOn! } : null,
     tuChoi: tuChoi ? { id: tuChoi.id, nhan: nhanLoaiXuLy(tuChoi.kind, tuChoi.customName) } : null,
-    viPhamCho: [],
+    viPhamCho: [], tvv: null,
     thuHoi: thuHoi && (!xong || (thuHoi.quyetLuc ?? thuHoi.createdAt).slice(0, 10) >= xong.performedOn!)
       ? { id: thuHoi.id, nhan: nhanLoaiXuLy(thuHoi.kind, thuHoi.customName), cho: false } : null,
     baoPh: null,
@@ -96,8 +109,9 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
 /**
  * Dòng thời gian trộn (vi phạm + lần xử lý, mới nhất trước) của các em — dùng chung tab lớp (cả lớp) và tab HV (một em).
  * `chiTrongChuoi`: chỉ vi phạm / lần xử lý thuộc chuỗi thang hiện tại của em (phạm vi mặc định của tab HV).
+ * `danhDauChuoi` (UI-2, tab lớp): không lọc — ghi `trongChuoi` từng dòng để trình duyệt đổi phạm vi không cần request mới.
  */
-export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean } = {}): DongThoiGianYt[] {
+export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean; danhDauChuoi?: boolean } = {}): DongThoiGianYt[] {
   if (!emIds.length) return [];
   const conn = db();
   const ten = new Map<number, string>();
@@ -105,11 +119,12 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     const lo = emIds.slice(i, i + 400);
     for (const r of conn.prepare(`SELECT id, full_name FROM students WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) ten.set(r.id, r.full_name);
   }
-  const trongChuoi = (sid: number, cycleId: number | null) => {
-    if (!o.chiTrongChuoi) return true;
+  const laTrongChuoi = (sid: number, cycleId: number | null) => {
     const em = trang.get(sid);
     return !em || !em.chuoi.length || (cycleId != null && em.chuoi.includes(cycleId));
   };
+  const trongChuoi = (sid: number, cycleId: number | null) => !o.chiTrongChuoi || laTrongChuoi(sid, cycleId);
+  const dau = (sid: number, cycleId: number | null) => (o.danhDauChuoi ? { trongChuoi: laTrongChuoi(sid, cycleId) } : {});
   const out: DongThoiGianYt[] = [];
   const tenVp = new Map<number, string>();   // UI-3 (mockup K6): tên vi phạm của mỗi lần xử lý — từ chính danh sách đã đọc, không thêm câu
   for (const v of violationsOfStudents(emIds)) {
@@ -118,6 +133,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     out.push({
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
+      xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc, ...dau(v.studentId, v.cycleId),
     });
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
@@ -140,7 +156,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       nhan: nhanLoaiXuLy(m.kind, m.customName), kind: m.kind, status: m.status,
       statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status,
       soViPham: m.violationIds.length, nguoi: phu.get(m.id)?.nguoi ?? null, soTep: phu.get(m.id)?.soTep ?? 0,
-      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null,
+      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null, ...dau(sid, m.cycleId),
     });
   }
   out.sort((a, b) => b.ngay.localeCompare(a.ngay) || (a.loai === b.loai ? b.id - a.id : a.loai === 'xu-ly' ? -1 : 1));
@@ -153,33 +169,49 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   requireViewClass(p, classId);
   const ids = emCuaLop(classId);
   const trang = trangThaiYThuc(ids, homNay);
-  const info = new Map<number, { ten: string; ma: string }>();
+  const info = new Map<number, { ten: string; ma: string; tvv: string | null }>();
+  /* Em đang học ở lớp cùng GVCN — tên GVCN đi kèm câu đọc tên em (câu con hằng, không thêm câu). */
+  const gvcnId = ids.length ? trang.get(ids[0])?.gvcnId ?? 0 : 0;
+  let gvcn: string | null = null;
   for (let i = 0; i < ids.length; i += 400) {
     const lo = ids.slice(i, i + 400);
-    for (const r of db().prepare(`SELECT id, full_name, student_code FROM students WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) {
-      info.set(r.id, { ten: r.full_name, ma: r.student_code });
+    for (const r of db().prepare(
+      `SELECT s.id, s.full_name, s.student_code, u.full_name AS tvv, (SELECT full_name FROM users WHERE id = ?) AS gvcn
+         FROM students s LEFT JOIN users u ON u.id = s.consultant_user_id WHERE s.id IN (${lo.map(() => '?').join(',')})`,
+    ).all(gvcnId, ...lo) as any[]) {
+      info.set(r.id, { ten: r.full_name, ma: r.student_code, tvv: r.tvv ?? null });
+      gvcn = r.gvcn ?? null;
     }
   }
   const nhom = Object.fromEntries(NHOM_EM.map((k) => [k, [] as DongEm[]])) as Record<NhomEm, DongEm[]>;
   const baoPh = baoPhMoiNhat(p, ids, homNay);
   const choBaoPh: DongEm[] = [];
+  const choThuHoi: DongEm[] = [];
   const dongCuaEm = new Map<number, DongEm>();
-  for (const id of ids) {
-    const em = trang.get(id)!;
-    const bp = baoPh.get(id) ?? null;
-    if (!em.nhom && bp?.trangThai !== 'mo') continue;
-    const dong = { ...dongEm(em, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: bp };
-    dongCuaEm.set(id, dong);
-    (em.nhom ? nhom[em.nhom] : choBaoPh).push(dong);
+  /* Hàng dựng trong bộ nhớ cho mọi em; "đang xin thu hồi" đọc MỘT câu cho cả lớp (UI-2: em chỉ còn việc thu hồi chờ QL vẫn có hàng — K4). */
+  const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null }));
+  danhDauDangXinThuHoi(tatCa);
+  for (const dong of tatCa) {
+    const em = trang.get(dong.studentId)!;
+    if (!em.nhom && dong.baoPh?.trangThai !== 'mo' && !dong.thuHoi?.cho) continue;
+    dongCuaEm.set(dong.studentId, dong);
+    (em.nhom ? nhom[em.nhom] : dong.baoPh?.trangThai === 'mo' ? choBaoPh : choThuHoi).push(dong);
   }
   /* Vi phạm còn chờ của các em có hàng — một lần đọc (cùng cửa trạng thái với dòng thời gian). */
   const vps = violationsOfStudents([...dongCuaEm.keys()]);
+  /* UI-2 (K4): hàng "Xin thu hồi" (em không còn vi phạm chờ) liệt kê vi phạm của lần đang xin — từ chính danh sách vừa đọc. */
+  const cuaLanXin = new Map<number, Set<number>>();
+  for (const x of dongCuaEm.values()) {
+    const em = trang.get(x.studentId)!;
+    if (x.thuHoi?.cho && (!em.nhom || em.nhom === 'da_xu_ly')) cuaLanXin.set(x.studentId, new Set(em.xuLy.find((m) => m.id === x.thuHoi!.id)?.violationIds ?? []));
+  }
   for (const v of vps.sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id)) {
-    if (v.trangThai === 'moi' || v.trangThai === 'can_xu_ly' || v.trangThai === 'qua_han') {
+    if (cuaLanXin.get(v.studentId)?.has(v.id)) { dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai }); continue; }
+    /* UI-2 (mockup K1 / K4): cả vi phạm đang trong đề xuất chờ QL — hàng "Chờ QL duyệt" liệt kê vi phạm của lần. */
+    if (v.trangThai === 'moi' || v.trangThai === 'can_xu_ly' || v.trangThai === 'qua_han' || v.trangThai === 'cho_duyet') {
       dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai });
     }
   }
-  danhDauDangXinThuHoi([...dongCuaEm.values()]);
   const theoHan = (a: DongEm, b: DongEm) => (a.han ?? a.hanXem ?? a.deXuat?.han ?? '9').localeCompare(b.han ?? b.hanXem ?? b.deXuat?.han ?? '9')
     || a.ten.localeCompare(b.ten, 'vi');
   for (const k of NHOM_EM) nhom[k].sort(k === 'da_xu_ly' ? (a, b) => (b.xuLyGanNhat?.ngay ?? '').localeCompare(a.xuLyGanNhat?.ngay ?? '') : theoHan);
@@ -188,8 +220,11 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
     canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
     nhom,
-    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA }),
+    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, danhDauChuoi: true }),
     choBaoPh: choBaoPh.sort((a, b) => (a.baoPh?.han ?? '').localeCompare(b.baoPh?.han ?? '') || a.ten.localeCompare(b.ten, 'vi')),
+    choThuHoi: choThuHoi.sort((a, b) => a.ten.localeCompare(b.ten, 'vi')),
+    coTheDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { classId }),
+    gvcn,
   };
 }
 
@@ -230,6 +265,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
         id: r.id, nhan: r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan, han, trangThai: r.trang_thai,
         nhanTrangThai: nhanTrangThaiBaoPh(r.trang_thai, r.so_lan > 0), quaHan: r.trang_thai === 'mo' && han < homNay, ngayXong: r.ngay_xong ?? null,
         coTheGhi: r.trang_thai === 'mo' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
+        daChinh: r.han_chon != null,
       });
     }
   });
