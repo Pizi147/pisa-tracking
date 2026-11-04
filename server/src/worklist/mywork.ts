@@ -811,9 +811,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN assessment_attempts a ON a.id = x.attempt_id
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
-        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' ORDER BY x.id`,
+        WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending'${f.branchId ? ' AND c.branch_id = ?' : ''} ORDER BY x.id`,   /* DOC-THUA: chi nhánh lọc trong SQL như X05 */
     )
-    .all() as any[];
+    .all(...(f.branchId ? [f.branchId] : [])) as any[];
   const luotCuoiBaoPh = baoPh.filter((r) => r.attempt_kind === 'final').map((r) => r.attempt_id as number);
   henTyLe(luotCuoiBaoPh);   // gộp với tỷ lệ Xét lại (mục 2d') — một lần đọc
   const miniTest = !co('mini_test') ? [] : conn
@@ -1153,7 +1153,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const phanTramCuoi = new Map<number, string>();
   for (const [id, t] of tyLeTongLo(luotCuoiBaoPh)) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
   for (const r of baoPh) {
-    if (f.branchId && r.branch_id !== f.branchId) continue;
     const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
     const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
     const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
