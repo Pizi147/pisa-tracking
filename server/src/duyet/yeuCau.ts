@@ -5,7 +5,7 @@
  * `chotYeuCau` (idempotent — `WHERE trang_thai = 'cho'`, lần hai trả 0, không ném, không báo lần hai). Luật riêng của từng loại
  * nằm ở `loaiYeuCau.ts` (giao kèo). Thẻ "chết" đóng bằng QUÉT KHI ĐỌC (Q2), không có tiến trình nền.
  */
-import { db, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
@@ -17,7 +17,7 @@ import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDa
 import {
   PERMISSIONS, LOAI_NGUOI_XIN_SUA, LOAI_YC_META, LY_DO_RUT, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, demHop, duongHoSoHocVien, hanDuyetMacDinh, laPhanLoai, laTuDuyet,
   nhanHanhDongNhatKy, nhomCuaLoai, sapThe,
-  type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto,
+  type DemYeuCau, type LoaiYcMeta, type LoaiYeuCau, type PhanLoai, type TheYeuCauDto, type VaiNguoiXin,
 } from '../../../shared/domain/index.ts';
 import { DINH_NGHIA_LOAI, dinhNghiaCua, type NguCanhThe, type YeuCauRow } from './loaiYeuCau.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
@@ -276,11 +276,35 @@ function napNguCanh(conn: any, rows: YeuCauRow[], homNay: string): NguCanhThe {
     const cua = rows.filter((r) => r.loai === d.loai);
     if (cua.length && d.nap) for (const [k, v] of d.nap(conn, cua)) them.set(k, v);
   }
+  /* [XM] #939: tên + VAI người gửi đối với EM / lớp của thẻ trong cùng câu đọc tên người (UNION tên người duyệt — số câu như cũ):
+     GVCN / GVBM lớp em đang học (hoặc lớp của thẻ), TVV của em, QL chi nhánh thẻ. */
+  const nguoi = new Map<number, string>(), vaiXin = new Map<number, string>();
+  const xin = rows.filter((r) => r.nguoi_xin != null);
+  const duyet = [...new Set(rows.map((r: any) => r.nguoi_duyet).filter((x): x is number => x != null))];
+  if (xin.length || duyet.length) {
+    for (const r of conn.prepare(
+      `WITH j AS (SELECT json_extract(value, '$[0]') AS yc, json_extract(value, '$[1]') AS u, json_extract(value, '$[2]') AS hv,
+                         json_extract(value, '$[3]') AS lop, json_extract(value, '$[4]') AS cn FROM json_each(?)),
+            ta AS (SELECT j.yc, ta.is_core, ta.skill FROM j JOIN teacher_assignments ta ON ta.user_id = j.u AND ta.status = 'active'
+                    AND (ta.class_id = j.lop OR ta.class_id IN (SELECT e.class_id FROM enrollments e WHERE e.student_id = j.hv AND e.status = 'active')))
+       SELECT j.yc AS yc, j.u AS id, us.full_name AS ten, CASE
+         WHEN EXISTS (SELECT 1 FROM ta WHERE ta.yc = j.yc AND ta.is_core = 1) THEN 'GVCN'
+         WHEN EXISTS (SELECT 1 FROM ta WHERE ta.yc = j.yc AND ta.skill IS NOT NULL) THEN 'GVBM'
+         WHEN s.consultant_user_id = j.u THEN 'TVV'
+         WHEN EXISTS (SELECT 1 FROM user_roles ur JOIN roles ro ON ro.id = ur.role_id WHERE ur.user_id = j.u AND ur.status = 'active'
+                       AND ro.key = 'manager' AND (ur.branch_id IS NULL OR ur.branch_id = COALESCE(j.cn, s.branch_id))) THEN 'QL'
+       END AS vai
+       FROM j JOIN users us ON us.id = j.u LEFT JOIN students s ON s.id = j.hv
+       UNION ALL SELECT NULL, id, full_name, NULL FROM users WHERE id IN (${DS_JSON})`,
+    ).all(JSON.stringify(xin.map((r: any) => [r.id, r.nguoi_xin, r.hoc_vien_id, r.lop_id, r.chi_nhanh_id])), JSON.stringify(duyet)) as any[]) {
+      nguoi.set(r.id, r.ten);
+      if (r.vai) vaiXin.set(r.yc, r.vai);
+    }
+  }
   return {
-    homNay, them,
+    homNay, them, nguoi, vaiXin,
     hocVien: map('SELECT id, full_name AS ten FROM students WHERE id IN (?)', rows.map((r) => r.hoc_vien_id)),
     lop: map('SELECT id, code AS ten FROM classes WHERE id IN (?)', rows.map((r) => r.lop_id)),
-    nguoi: map('SELECT id, full_name AS ten FROM users WHERE id IN (?)', rows.flatMap((r: any) => [r.nguoi_xin, r.nguoi_duyet])),
   };
 }
 
@@ -297,7 +321,7 @@ function theRa(r: any, ngu: NguCanhThe): TheYeuCauDto {
     mo: mt.mo ?? (r.hoc_vien_id ? duongHoSoHocVien(r.hoc_vien_id) : null),
     hocVienId: r.hoc_vien_id, hocVien: ngu.hocVien.get(r.hoc_vien_id) ?? null,
     lopId: r.lop_id, lop: ngu.lop.get(r.lop_id) ?? null,
-    nguoiXinId: r.nguoi_xin, nguoiXin: r.nguoi_xin == null ? null : ngu.nguoi.get(r.nguoi_xin) ?? null,
+    nguoiXinId: r.nguoi_xin, nguoiXin: r.nguoi_xin == null ? null : ngu.nguoi.get(r.nguoi_xin) ?? null, vaiNguoiXin: (ngu.vaiXin?.get(r.id) as VaiNguoiXin | undefined) ?? null,
     nguoiDuyet: r.nguoi_duyet == null ? null : ngu.nguoi.get(r.nguoi_duyet) ?? null,
     lyDo: r.ly_do, lyDoTuChoi: r.ly_do_tu_choi, traLoi: r.tra_loi, lyDoDong: r.ly_do_dong,
     hanDuyet: r.han_duyet, trangThai: r.trang_thai, tuDuyet: !!r.tu_duyet, taoLuc: r.tao_luc, xuLyLuc: r.xu_ly_luc,

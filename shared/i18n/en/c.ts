@@ -20,6 +20,8 @@ export const EN_C = {
   'Xem': 'View',
   'Học lại': 'Re-enrol',
   'TVV': 'Counsellor',
+  'GVBM': 'Subject teacher',
+  'QL': 'Manager',
   'Em': 'Student',
   'PH': 'Parent',
   'Sinh': 'Born',

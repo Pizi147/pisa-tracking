@@ -573,7 +573,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
         {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
-        {y.nguoiXin && <NguoiGiu ten={y.nguoiXin} />}
+        {y.nguoiXin && <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />}
       </span>
       <span className="col-start-2 flex flex-wrap items-center gap-x-4 gap-y-1 sm:col-start-auto sm:flex-col sm:items-stretch sm:gap-1" onClick={dungLai}>
         {y.kieuNut === 'duyet-tu-choi' ? (
@@ -630,13 +630,14 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
             : <span className="flex shrink-0 items-center gap-1.5"><NhanTrangThai t={tt.t} />{yc.xuLyLuc && <span className="text-[12px] text-dim">{ngan(yc.xuLyLuc)}</span>}</span>}
         </span>
         <span className="flex min-w-0 items-center justify-between gap-2">
-          <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <ThePhu vien={[dich(yc.nhanPhanLoai)]} ds={[]} />
-            <span className="min-w-0 text-[14px] font-medium leading-snug text-[color:var(--text)]">{dich(yc.tieuDe)}</span>
-            {yc.phu && <ThePhu ds={[dich(yc.phu)]} />}
+          {/* PTA #949: ≥ 640 chip loại + tên yêu cầu MỘT hàng — tên cắt "…" (đủ chữ ở title), cột người gửi không ép xuống dòng; 375 vẫn xuống dòng (không có cột người). */}
+          <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 sm:flex-nowrap">
+            <span className="shrink-0"><ThePhu vien={[dich(yc.nhanPhanLoai)]} ds={[]} /></span>
+            <span className="min-w-0 text-[14px] font-medium leading-normal text-[color:var(--text)] sm:truncate" title={dich(yc.tieuDe)}>{dich(yc.tieuDe)}</span>
+            {yc.phu && <span className="shrink-0"><ThePhu ds={[dich(yc.phu)]} /></span>}
           </span>
           {/* M8: 375 không đủ chỗ cột người — người gửi xem trong panel. */}
-          {yc.nguoiXin && <span className="max-w-[40%] shrink-0 max-sm:hidden"><NguoiGiu ten={yc.nguoiXin} /></span>}
+          {yc.nguoiXin && <span className="max-w-[40%] shrink-0 max-sm:hidden"><NguoiGiu ten={yc.nguoiXin} vai={yc.vaiNguoiXin} /></span>}
         </span>
       </button>
     </li>

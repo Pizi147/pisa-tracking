@@ -173,7 +173,7 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
               * TQ-GON (M1, M4, M10 — cùng dáng Chờ bạn duyệt ở Công việc v12): MỘT dòng = loại (chip viền) · tên em (đậm duy nhất) · hạn (viên theo mức).
               * Lớp · lượt · người gửi không thành dòng thứ hai: rê chuột (`title`) hoặc bấm dòng → panel duyệt đủ chữ.
               */}
-            <button type="button" onClick={() => setMo(y)} title={[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ') || undefined}
+            <button type="button" onClick={() => setMo(y)} title={[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.vaiNguoiXin ? `${y.nguoiXin} (${t(y.vaiNguoiXin)})` : y.nguoiXin })].filter(Boolean).join(' · ') || undefined}
               className={`bam flex min-h-[44px] w-full items-center gap-x-2 px-4 py-2 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
               <span className="h-5 max-w-[50%] shrink-0 truncate rounded-md border px-1.5 text-xs font-medium leading-[18px] text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dich(y.nhanLoai)}</span>
               <span className="min-w-0 flex-1 text-sm font-semibold text-slate-100">{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>

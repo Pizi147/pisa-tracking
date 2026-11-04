@@ -167,6 +167,8 @@ export function sapThe<T extends { hanDuyet: string | null; taoLuc: string }>(ds
 }
 
 /** QL tự gửi rồi tự duyệt (Q-D). Người xin `null` = hệ thống (Báo QL) → không bao giờ là tự duyệt. */
+export type VaiNguoiXin = 'GVCN' | 'GVBM' | 'TVV' | 'QL';
+
 export function laTuDuyet(nguoiXin: number | null, nguoiDuyet: number): boolean {
   return nguoiXin !== null && nguoiXin === nguoiDuyet;
 }
@@ -215,6 +217,8 @@ export type TheYeuCauDto = {
   nguoiXinId: number | null;
   /** `null` = hệ thống (Báo QL). */
   nguoiXin: string | null;
+  /** [XM] #939: vai người gửi với em / lớp của thẻ (máy chủ gắn trong câu đọc tên). */
+  vaiNguoiXin: VaiNguoiXin | null;
   nguoiDuyet: string | null;
   lyDo: string | null;
   lyDoTuChoi: string | null;

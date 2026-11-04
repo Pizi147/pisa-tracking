@@ -128,6 +128,15 @@ export async function runPrDuyetTests(t: YThucTestKit) {
         assert(loi && !/[a-z]+_[a-z]+|request[.]/.test(loi), `câu lỗi lộ mã: ${loi}`);
       }
     });
+    check('[XM] #939 · vai người gửi với em: GVCN lớp em → GVCN, QL chi nhánh → QL; thẻ đã duyệt vẫn có tên người duyệt', () => {
+      const a = tao(), b = tao({ nguoiXin: P.mbManager.userId });
+      const hop = yc.hopChoDuyet(P.mbManager).the;
+      const v = (id: number) => hop.find((x: any) => x.id === id)?.vaiNguoiXin;
+      assert(v(a) === 'GVCN' && v(b) === 'QL', `${v(a)} ${v(b)}`);
+      yc.duyetYeuCau(P.mbManager, a);
+      const da = yc.yeuCauCuaToi(P.coreTeacher).the.find((x: any) => x.id === a);
+      assert(da?.nguoiDuyet && da.vaiNguoiXin === 'GVCN' && da.nguoiXin, JSON.stringify(da));
+    });
     check('DUYET (3) · QL tự gửi rồi tự duyệt → tu_duyet = 1, Quản trị nhận một thông báo, QL không tự báo mình', () => {
       const id = tao({ nguoiXin: P.mbManager.userId });
       const r = yc.duyetYeuCau(P.mbManager, id);

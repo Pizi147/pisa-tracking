@@ -279,13 +279,16 @@ function CotHan({ it, daXong, nguoi }: { it: WorkItem; daXong: boolean; nguoi: s
 }
 
 /** v12 S13: NGƯỜI = chữ thường mờ (S1: 400) + biểu tượng người — nhận ra không cần đọc, khác tên việc / chip / hạn. */
-export function NguoiGiu({ ten }: { ten: string }) {
+export function NguoiGiu({ ten, vai }: { ten: string; vai?: string | null }) {
+  const nhanVai = vai ? dich(vai) : null;
   return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-[5px] pl-0.5 text-[13px] font-normal text-dim" title={ten}>
+    <span className="inline-flex min-w-0 max-w-full items-center gap-[5px] pl-0.5 text-[13px] font-normal text-dim" title={nhanVai ? `${ten} · ${nhanVai}` : ten}>
       <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 shrink-0 fill-none stroke-[color:var(--text-faint)]" strokeWidth={1.5}>
         <circle cx="6" cy="4" r="2.2" /><path d="M1.8 11c.5-2.3 2.1-3.5 4.2-3.5s3.7 1.2 4.2 3.5" />
       </svg>
       <span className="truncate">{ten}</span>
+      {/* [XM] #939: vai người gửi với em (máy chủ gắn) — chữ mờ hơn tên, không đậm, cùng hàng (M10). */}
+      {nhanVai && <span className="shrink-0 text-faint">{nhanVai}</span>}
     </span>
   );
 }
