@@ -31,6 +31,7 @@
 .viec .n { min-width:0; }
 .cho-ai { display:inline-flex; height:20px; align-items:center; padding:0 7px; border-radius:6px; border:1px dashed var(--line-strong); font:600 12px var(--phong); color:var(--text-dim); }
 .bao-chi-xem { flex:none; }
+.tt .so-nav.do { background:#7a2b26; color:#ffe1dc; }   /* V13: đỏ khi có việc quá hạn */
 
 /* ===== S1 · độ đậm: chỉ tên em đậm (600); tên việc 500 (DESIGN V18); thẻ phụ, người, hạn thường = chữ thường mờ ===== */
 .viec .t1 { font-weight:500; }
@@ -65,9 +66,9 @@
 <body>
 <div class="trang">
   <header class="dau-mk">
-    <h1>v12 · Công việc — GIỮ bố cục cũ, sửa nhỏ (S1–S10)</h1>
-    <p>Chủ SP 05/11: "cải thiện cái cũ thôi". Bố cục, nhóm, thứ tự, màu, nút, panel <b>giữ nguyên</b> như web hiện tại (U01 đã duyệt). Chỉ đổi: độ đậm chữ, bỏ chữ thừa, không lặp tên GV, nút / thẻ không xuống dòng. Mọi thao tác giữ (bảng C). Demo Monbay, hôm nay <b>14/09/2026 · W3 SEP</b>. 1440 tối · 375 sáng. Trái = ảnh chụp web hiện tại (main), phải = sau khi sửa.</p>
-    <nav class="muc-mk"><a href="#a">A · 1440 trước | sau</a><a href="#b">B · 375 trước | sau</a><a href="#c">C · danh sách sửa</a></nav>
+    <h1>v12 · Công việc — GIỮ bố cục cũ, sửa nhỏ (S1–S11)</h1>
+    <p>Chủ SP 05/11: "cải thiện cái cũ thôi". Bố cục, nhóm, thứ tự, màu, nút, panel <b>giữ nguyên</b> như web hiện tại (U01 đã duyệt). Chỉ đổi: độ đậm chữ, bỏ chữ thừa, không lặp tên GV, nút / thẻ không xuống dòng, <b>luật đếm nhỏ lại (S11, bảng D)</b>. Mọi thao tác giữ (bảng C). Demo Monbay, hôm nay <b>14/09/2026 · W3 SEP</b>. 1440 tối · 375 sáng. Trái = ảnh chụp web hiện tại (main), phải = sau khi sửa.</p>
+    <nav class="muc-mk"><a href="#a">A · 1440 trước | sau</a><a href="#b">B · 375 trước | sau</a><a href="#d">D · số đếm trước → sau</a><a href="#c">C · danh sách sửa</a></nav>
   </header>
 
   <section class="khu" id="a">
@@ -97,6 +98,28 @@
     </div>
   </section>
 
+  <section class="khu" id="d">
+    <h2>D · Số đếm trước → sau (S11 · dữ liệu demo 14/09, đo từ <code>/my-work</code>)</h2>
+    <p class="ghi">Luật mới: <b>một dòng việc = 1</b> (dòng gộp "Cả lớp" = 1, không nhân kỹ năng × em). Badge chỉ đếm việc <b>của tôi cần làm ngay</b> (quá hạn + hạn hôm nay), 0 thì không hiện số, đỏ khi có quá hạn. Số bài / số em chỉ còn ở thẻ phụ trong dòng ("4 bài", "4 em").</p>
+    <table class="bang-tt">
+      <tr><th>Chỗ</th><th>Trước</th><th>Sau</th></tr>
+      <tr><td>Badge Công việc · GV cô Hà</td><td>56</td><td><b>9</b> (đỏ — 9 dòng quá hạn, 0 hạn hôm nay)</td></tr>
+      <tr><td>Badge Công việc · QL Vy</td><td>5</td><td><b>không số</b> (5 dòng của Vy, chưa dòng nào quá hạn / hôm nay)</td></tr>
+      <tr><td>Đầu trang · GV cô Hà</td><td>56 việc · 49 HV · 39 bài</td><td>— (bỏ)</td></tr>
+      <tr><td>Đầu trang · QL Tất cả</td><td>147 việc · 80 HV · 89 bài</td><td>— (bỏ)</td></tr>
+      <tr><td>Ô phạm vi · QL</td><td>Của tôi 5 · Của GV 142 · Tất cả 147</td><td>Của tôi · Của GV · Tất cả (Của tôi có số khi &gt; 0 = badge)</td></tr>
+      <tr><td>Chấm điểm · cô Hà</td><td>18 việc · 39 bài · ⚠ 7 quá hạn</td><td><b>7 việc · ⚠ 4 quá hạn</b></td></tr>
+      <tr><td>Case học thuật · cô Hà</td><td>27 việc · 20 HV · ⚠ 3</td><td><b>16 việc · ⚠ 3</b></td></tr>
+      <tr><td>Ý thức &amp; Phối hợp · cô Hà</td><td>6 việc · 6 HV · ⚠ 2</td><td><b>2 việc · ⚠ 2</b></td></tr>
+      <tr><td>Vận hành · cô Hà</td><td>5 việc</td><td><b>2 việc</b></td></tr>
+      <tr><td>Chấm điểm · QL Tất cả</td><td>46 việc · 89 bài · ⚠ 17</td><td><b>26 việc · ⚠ 14</b></td></tr>
+      <tr><td>Case học thuật · QL Tất cả</td><td>67 việc · 34 HV · ⚠ 5</td><td><b>39 việc · ⚠ 5</b></td></tr>
+      <tr><td>Speaking chấm chéo · QL</td><td>18 bài</td><td>⚠ 2 quá hạn (không số việc — T03: không phải việc của ai)</td></tr>
+      <tr><td>Chờ bạn duyệt · QL</td><td>12 yêu cầu · ⚠ 1</td><td>giữ (một dòng = một yêu cầu)</td></tr>
+      <tr><td>Vạch hạn</td><td>Quá hạn · 7 việc · 12 bài</td><td>Quá hạn (vạch gập "Hạn sau 20/09 · 2 việc ▸")</td></tr>
+    </table>
+    <p class="ghi" style="margin-top:10px"><b>So sánh, chọn một:</b> ① <b>(khuyến nghị)</b> badge = dòng của tôi quá hạn + hôm nay → cô Hà 9, QL 0: số nhỏ, đúng "việc phải làm bây giờ". ② badge = mọi dòng của tôi → cô Hà 27: vẫn lớn, không nói việc nào gấp. ③ badge chỉ quá hạn → 9: việc hạn hôm nay không được nhắc kịp. Đổi ở máy chủ: <code>server/src/worklist/mywork.ts</code> <code>demSo</code> thêm số dòng cần làm ngay; badge <code>web/src/App.tsx</code> <code>SoCho</code>; DESIGN V13 (#886). Không thêm câu SQL / dòng đọc Turso.</p>
+  </section>
   <section class="khu" id="c">
     <h2>C · Danh sách sửa (chỉ những chỗ này đổi)</h2>
     <table class="bang-tt" id="bang-s"></table>
@@ -139,15 +162,16 @@
     return '<section class="nhom' + (g.gap ? ' gap' : '') + '"><div class="dai-nhom" style="' + (g.xam ? 'border-left-color:var(--line-strong)' : '') + '"><span class="bam-nhom">' + icon(g.ten) + e(g.ten) + '</span><span class="sau-ten">' + g.dem.map(function (d, i) { return d[0] === '!' ? '<span class="bao-qua">⚠ ' + e(d.slice(1)) + '</span>' : i === 0 ? '<span class="dem">' + e(d) + '</span>' : '<span class="phu-d">' + e(d) + '</span>'; }).join('') + '</span><button class="mui">' + (g.gap ? '▸' : '▾') + '</button></div>' +
       (g.gap ? '' : body + (g.them ? '<div class="cuoi-nhom"><button class="nut nut-nho">Xem thêm ' + g.them + ' dòng</button></div>' : '') + (g.cuoi ? '<div class="cuoi-nhom">' + g.cuoi + '</div>' : '')) + '</section>';
   }
-  var thanh = function (ten, badge) { return '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m dang">Công việc <span class="so-nav">' + badge + '</span></span><span class="m">Phân tích</span><span class="phai"><span>' + e(ten) + '</span></span></div>'; };
-  var doan = function (k) { return '<span class="doan"><button' + (k === 'toi' ? ' aria-pressed="true"' : '') + '>Của tôi <span class="so">5</span></button><button' + (k === 'gv' ? ' aria-pressed="true"' : '') + '>Của GV <span class="so">142</span></button><button' + (k === 'tat' ? ' aria-pressed="true"' : '') + '>Tất cả <span class="so">147</span></button></span>'; };
+  var thanh = function (ten, badge) { return '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m dang">Công việc' + (badge ? ' <span class="so-nav do" title="' + badge + ' việc cần làm ngay (quá hạn + hạn hôm nay)">' + badge + '</span>' : '') + '</span><span class="m">Phân tích</span><span class="phai"><span>' + e(ten) + '</span></span></div>'; };
+  /* S11: ô phạm vi không số; "Của tôi" chỉ có số khi có việc cần làm ngay (= badge) — QL Vy demo: 0 nên không số */
+  var doan = function (k, toi) { return '<span class="doan"><button' + (k === 'toi' ? ' aria-pressed="true"' : '') + '>Của tôi' + (toi ? ' <span class="so">' + toi + '</span>' : '') + '</button><button' + (k === 'gv' ? ' aria-pressed="true"' : '') + '>Của GV</button><button' + (k === 'tat' ? ' aria-pressed="true"' : '') + '>Tất cả</button></span>'; };
   var loc = function (pv, them) { return '<span class="phai">' + (pv || '') + '<span class="o-chon">Mọi hạn</span><span class="o-chon">Loại việc</span><span class="o-chon' + (them ? ' dang-loc' : '') + '">Lọc thêm' + (them ? ' · 1' : '') + '</span></span>'; };
-  var dauTrang = function (dem, phai) { return '<div class="loc-1"><h1>Công việc</h1><span class="dem-tong">' + dem + '</span>' + phai + '</div>'; };
+  var dauTrang = function (dem, phai) { return '<div class="loc-1"><h1>Công việc</h1>' + phai + '</div>'; };   /* S11: bỏ "n việc · n HV · n bài" */
   var bocuc = function (trai) { return '<div class="bo-cuc"><div class="cot-ds">' + trai + '</div><div class="cot-pn"><div class="cho-chon">Chọn một việc ở danh sách.</div></div></div>'; };
 
   /* ===== dữ liệu: cô Hà; ai = '' → không ghi người (S3) ===== */
   function chamHa(ai, nut) {
-    return { ten: 'Chấm điểm', dem: ['18 việc', '39 bài', '!7 quá hạn'], vach: [
+    return { ten: 'Chấm điểm', dem: ['7 việc', '!4 quá hạn'], vach: [
       { t: 'Quá hạn', ds: [
         { gop: 4, lop: 'MB FT 101', ten: 'Nhập điểm Listening, Reading', tags: ['MT1', 'tuần W1 JUL', '4 bài'], han: ['qua', 'quá hạn 68 ngày'], ai: ai, nut: nut },
         { em: 'Hà Gia Bình', lop: 'MB FT 101', ds: [['Nhập điểm Listening, Reading', ['MT1', 'tuần W4 JUL', '2 bài'], ['qua', 'quá hạn 47 ngày'], ai, nut]] },
@@ -155,23 +179,25 @@
         { gop: 5, lop: 'MB FT 101', ten: 'Nhập điểm Listening, Reading', tags: ['MT1', 'tuần W1 SEP', '5 bài'], han: ['qua', 'quá hạn 5 ngày'], ai: ai, nut: nut }] },
       { t: 'Hạn đến 20/09', ds: [
         { em: 'Hồ Thu Trang', lop: 'MB BE 03', ds: [['Nhập điểm Listening, Reading', ['Progress Test', 'tuần W2 SEP', '2 bài'], ['sap', 'hạn 16/09'], ai, nut]] }] },
-      { t: 'Hạn sau 20/09 · 9 việc · 25 bài  ▸' }] };
+      { t: 'Hạn sau 20/09 · 2 việc  ▸' }] };
   }
   function caseHa(nut) {
     var n = function (x) { return nut || x; };
-    return { ten: 'Case học thuật', dem: ['27 việc', '20 HV', '!3 quá hạn'], ds: [
+    return { ten: 'Case học thuật', dem: ['16 việc', '!3 quá hạn'], ds: [
       { em: 'Dương Ngọc Ánh', lop: 'MB FOU 12', sos: 3, ds: [['Thêm PA học thuật · Reading', ['Progress Test'], ['qua', 'quá hạn 18 ngày'], '', n('Thêm PA')]] },
       { em: 'Lý Minh Châu', lop: 'MB FT 101', sos: 1, ds: [['Ghi kết quả PA · Reading', ['MT2'], ['qua', 'quá hạn 6 ngày'], '', n('Ghi kết quả PA')]] },
       { em: 'Phan Khánh Linh', lop: 'MB FOU 15', sos: 1, ds: [['Xác nhận Case · Listening', ['Progress Test'], ['qua', 'quá hạn 2 ngày'], '', n('Xác nhận Case')]] },
       { em: 'Vương Bảo Ngọc', lop: 'MB ELE 02', ds: [['Ghi Mini Test', ['Bổ trợ miễn phí'], ['sap', 'hạn 15/09'], '', n('Ghi Mini Test')]] },
       { gop: 8, lop: 'MB FT 101', ten: 'Mô tả Case', tags: ['MT2', 'tuần W3 AUG', '4 em'], han: ['sap', 'hạn 16/09'], ai: '', nut: '4 em ▾' },
-      { em: 'Vũ Ngọc Lan', lop: 'MB FT 101', sos: 3, ds: [['Xác nhận PA · Listening', ['MT2', 'PA theo quy chế'], ['sap', 'hạn 16/09'], '', n('Xác nhận PA')], ['Xác nhận PA · Reading', ['MT2'], ['sap', 'hạn 16/09'], '', '', { cho: 'chờ QL duyệt' }]] }], them: 8 };
+      { em: 'Vũ Ngọc Lan', lop: 'MB FT 101', sos: 3, ds: [['Xác nhận PA · Listening', ['MT2', 'PA theo quy chế'], ['sap', 'hạn 16/09'], '', n('Xác nhận PA')], ['Xác nhận PA · Reading', ['MT2'], ['sap', 'hạn 16/09'], '', '', { cho: 'chờ QL duyệt' }]] }], them: 9 };
   }
-  var ytGap = { ten: 'Ý thức & Phối hợp', dem: ['6 việc', '6 HV', '!2 quá hạn'], gap: 1 };
+  var ytGap = { ten: 'Ý thức & Phối hợp', dem: ['2 việc', '!2 quá hạn'], gap: 1 };
+  var caseGap = { ten: 'Case học thuật', dem: ['16 việc', '!3 quá hạn'], gap: 1 };
+  var vhGap = { ten: 'Vận hành', dem: ['2 việc'], gap: 1 };
 
   var K = {};
   /* A1 · QL xem một GV — không khối duyệt (S6), không tên người ở dòng (S3) */
-  K.a1 = thanh('Nguyễn Khánh Vy', 5) + '<div class="noi-dung">' + dauTrang('<b>56</b> việc · <b>49</b> HV · <b>39</b> bài', '') +
+  K.a1 = thanh('Nguyễn Khánh Vy', 0) + '<div class="noi-dung">' + dauTrang('<b>56</b> việc · <b>49</b> HV · <b>39</b> bài', '') +
     '<div class="bao-chi-xem"><span aria-hidden="true">👁</span><span>Đang xem việc của <b>Trần Ngọc Hà</b> — chế độ theo dõi.</span></div>' +
     '<div class="cot-ds">' + [chamHa('', 'Nhập hộ'), caseHa('Làm thay')].map(nhom).join('') + '</div></div>';
 
@@ -181,27 +207,27 @@
     { em: 'Lương Gia Bảo', lop: 'MB FT 101', ds: [['Đề xuất WL 3', null, ['sap', 'hạn 15/09'], '', 'Duyệt', { meta: 'Ý thức · Trần Ngọc Hà · 3 vi phạm', phu: 'Từ chối… · Mở ›', title: 'Nếu duyệt: GVCN ghi "Đã thực hiện" trong 5 ngày' }]] },
     { em: 'Vũ Ngọc Lan', lop: 'MB FT 101', sos: 3, ds: [['Không cần theo dõi · Reading', null, ['sap', 'hạn 18/09'], '', 'Duyệt', { tich: 1, meta: 'Học thuật · Trần Ngọc Hà · 14/09', phu: 'Từ chối… · Mở ›', title: 'Nếu duyệt: Case và PA theo quy chế huỷ — không tính thất bại' }]] }],
     cuoi: '<button class="nut nut-nho">Xem thêm 9 yêu cầu</button><a href="#">Mở hộp duyệt ›</a>' };
-  var chamTc = { ten: 'Chấm điểm', dem: ['46 việc', '89 bài', '!17 quá hạn'], vach: [
+  var chamTc = { ten: 'Chấm điểm', dem: ['26 việc', '!14 quá hạn'], vach: [
     { t: 'Quá hạn', ds: [
       { gop: 4, lop: 'MB FT 101', ten: 'Nhập điểm Listening, Reading', tags: ['MT1', 'tuần W1 JUL', '4 bài'], han: ['qua', 'quá hạn 68 ngày'], ai: 'Trần Ngọc Hà', nut: 'Nhập hộ' },
       { gop: 2, lop: 'MB FT 101', ten: 'Nhập điểm Writing Task 1', tags: ['MT1', 'tuần W1 JUL', '2 bài'], han: ['qua', 'quá hạn 68 ngày'], ai: 'Lê Minh Khoa', nut: 'Nhập hộ' },
       { em: 'Hà Gia Bình', lop: 'MB FT 101', ds: [
         ['Nhập điểm Listening, Reading', ['MT1', 'tuần W4 JUL', '2 bài'], ['qua', 'quá hạn 47 ngày'], 'Trần Ngọc Hà', 'Nhập hộ'],
         ['Nhập điểm Writing Task 1', ['MT1', 'tuần W4 JUL', '1 bài'], ['qua', 'quá hạn 47 ngày'], 'Lê Minh Khoa', 'Nhập hộ']] },
-      { em: 'Âu Nhật Nam', lop: 'MB FOU 12', ds: [['Nhập điểm Reading', ['Progress Test', 'tuần W3 AUG', '1 bài'], ['qua', 'quá hạn 19 ngày'], 'Trần Ngọc Hà', 'Nhập hộ']] }] }], them: 4 };
-  K.a2 = thanh('Nguyễn Khánh Vy', 5) + '<div class="noi-dung">' + dauTrang('<b>147</b> việc · <b>80</b> HV · <b>89</b> bài', loc(doan('tat'))) +
+      { em: 'Âu Nhật Nam', lop: 'MB FOU 12', ds: [['Nhập điểm Reading', ['Progress Test', 'tuần W3 AUG', '1 bài'], ['qua', 'quá hạn 19 ngày'], 'Trần Ngọc Hà', 'Nhập hộ']] }] }], them: 9 };
+  K.a2 = thanh('Nguyễn Khánh Vy', 0) + '<div class="noi-dung">' + dauTrang('<b>147</b> việc · <b>80</b> HV · <b>89</b> bài', loc(doan('tat'))) +
     bocuc([duyet, chamTc].map(nhom).join('')) + '</div>';
 
   /* A3 · GV cô Hà — Speaking chấm chéo giữ nhóm riêng (cũ), nút "Chấm" một dòng (S5) */
-  var cheo = { ten: 'Speaking chấm chéo', xam: 1, dem: ['13 bài'], ds: [
+  var cheo = { ten: 'Speaking chấm chéo', xam: 1, dem: ['!1 quá hạn'], ds: [
     { gop: 4, lop: 'MB FT 105', ten: 'Nhập điểm Speaking', tags: ['MT1', 'tuần W1 SEP', '4 bài'], han: ['qua', 'quá hạn 5 ngày'], ai: '', nut: 'Chấm' },
     { em: 'Tạ Thu Quỳnh', lop: 'MB FT 102', ds: [['Nhập điểm Speaking', ['MT2', 'tuần W3 SEP', '1 bài'], ['sap', 'hạn 23/09'], '', 'Chấm']] }] };
-  K.a3 = thanh('Trần Ngọc Hà', 56) + '<div class="noi-dung">' + dauTrang('<b>56</b> việc · <b>49</b> HV · <b>39</b> bài', loc('')) +
-    bocuc([chamHa('', 'Nhập điểm'), cheo, ytGap].map(nhom).join('')) + '</div>';
+  K.a3 = thanh('Trần Ngọc Hà', 9) + '<div class="noi-dung">' + dauTrang('<b>56</b> việc · <b>49</b> HV · <b>39</b> bài', loc('')) +
+    bocuc([chamHa('', 'Nhập điểm'), cheo, caseGap, ytGap, vhGap].map(nhom).join('')) + '</div>';
 
   /* B1 · 375 GV */
-  K.b1 = '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span>🔔</span><span>☰</span></span></div><div class="noi-dung"><div class="loc-1"><h1>Công việc</h1><span class="dem-tong"><b>56</b> việc · <b>39</b> bài</span>' + loc('') + '</div>' +
-    [chamHa('', 'Nhập điểm'), { ten: 'Case học thuật', dem: ['27 việc', '!3 quá hạn'], gap: 1 }, { ten: 'Ý thức & Phối hợp', dem: ['6 việc', '!2 quá hạn'], gap: 1 }].map(nhom).join('') + '</div>';
+  K.b1 = '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span>🔔</span><span>☰</span></span></div><div class="noi-dung"><div class="loc-1"><h1>Công việc</h1>' + loc('') + '</div>' +
+    [chamHa('', 'Nhập điểm'), caseGap, ytGap].map(nhom).join('') + '</div>';
 
   document.querySelectorAll('[data-k]').forEach(function (el) { el.innerHTML = K[el.getAttribute('data-k')] || ''; });
 
@@ -217,6 +243,7 @@
     ['S8', '375: dải nhóm xuống 2 hàng.', 'Số cùng hàng tên nhóm.', 'doi', 'ĐỔI'],
     ['S9', '"Chưa có hạn" và "không hạn" — hai tên một thứ.', 'Một tên: "không hạn".', 'doi', 'ĐỔI chữ'],
     ['S10', 'Vạch hạn "Quá hạn · 7 việc · 12 bài" lặp số đã có ở dải nhóm ("18 việc · 39 bài · ⚠ 7 quá hạn").', 'Vạch mở chỉ ghi tên: "Quá hạn", "Hạn đến 20/09". Vạch gập giữ số ("Hạn sau 20/09 · 9 việc · 25 bài ▸") vì cần biết bên trong có gì.', 'bo', 'BỎ lặp'],
+    ['S11', 'Số đếm "gắt" (chủ SP 05/11: "nhìn toàn mấy trăm mấy chục ai mà muốn làm?"): badge = mọi việc của tôi tính theo kỹ năng × em (GV cô Hà 56); đầu trang "56 việc · 49 HV · 39 bài"; ô phạm vi "Của GV 142 · Tất cả 147"; đầu nhóm "18 việc · 39 bài".', '<b>Đếm theo DÒNG việc</b> (dòng gộp "Cả lớp" = 1). Badge = dòng <b>của tôi</b> quá hạn + hạn hôm nay (0 → không số; đỏ khi có quá hạn). Bỏ tổng đầu trang. Ô phạm vi không số (Của tôi chỉ có số khi > 0, cùng số badge). Đầu nhóm "n việc · ⚠ n quá hạn" theo dòng. Số bài / em chỉ ở thẻ phụ của dòng. Bảng D.', 'doi', 'ĐỔI luật đếm — chờ chủ SP'],
     ['GIỮ', 'Bố cục danh sách trái + panel phải · nhóm → học viên → việc · vạch hạn · dòng "Cả lớp" + "n em ▾" · nhóm Speaking chấm chéo · vòng chữ đầu · màu · mọi nút (Nhập hộ, Làm thay, Duyệt, Từ chối…, Mở ›, tích nhiều, Bỏ qua, Gia hạn, Xem thêm, + Giao việc…) · panel việc U01 · bộ lọc.', '—', 'gi', 'GIỮ']
   ];
   document.getElementById('bang-s').innerHTML = '<tr><th>#</th><th>Hiện trạng (web main + ảnh chủ SP 05/11)</th><th>Sửa</th><th>Loại</th></tr>' +

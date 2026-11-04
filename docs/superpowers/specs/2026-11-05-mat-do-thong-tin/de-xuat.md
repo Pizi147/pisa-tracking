@@ -32,7 +32,7 @@ mới chép các luật M1–M8 vào `DESIGN.md` và làm lần lượt các mà
 
 Không thuộc đề xuất (giữ như đã duyệt): bố cục, thứ tự, màu, phông, vòng chữ đầu, nét cây, viên SOS, nút, panel.
 
-## 2. Công việc — sửa S1–S10 (mockup `thiet-ke/v12/cong-viec.html`)
+## 2. Công việc — sửa S1–S10 (+ S11 luật đếm ở mục 2b) (mockup `thiet-ke/v12/cong-viec.html`)
 
 | # | Hiện trạng (main + ảnh chủ SP) | Sửa |
 |---|---|---|
@@ -50,6 +50,60 @@ Không thuộc đề xuất (giữ như đã duyệt): bố cục, thứ tự, m
 - **Thao tác:** giữ hết. Không đổi chỗ nút nào. "Nếu duyệt" vẫn xem được: khi rê chuột, hoặc bấm dòng để mở panel duyệt.
 - **Dòng đọc Turso:** không đổi, vì cùng dữ liệu `/my-work`, không thêm request.
 - **Mã sẽ chạm:** `web/src/modules/congViec/DanhSachViec.tsx` (độ đậm, thẻ phụ, `+ n việc`, `Chưa có hạn`, nhãn nút) và `HoTroHocVienTab.tsx` (khung chờ, "Xong hết hôm nay", khối duyệt theo góc nhìn). Một PR, không cần migrate.
+
+## 2b. Luật đếm Công việc — S11 (PTA đề xuất theo chủ SP 05/11, khuyến nghị ①)
+
+Chủ SP 05/11: "số lượng Công việc, bộ đếm đang đếm gắt quá, nhìn toàn mấy trăm mấy chục ai mà muốn làm?"
+
+**Luật đếm (đề xuất, chờ chủ SP):**
+1. **Một dòng việc = 1.**
+   - Dòng gộp "Cả lớp" tính là 1. Không nhân kỹ năng × em.
+   - Thay luật SV-SO1 (`demViec`: một dòng Nhập điểm đếm bằng số kỹ năng).
+2. **Badge "Công việc"** = số dòng **của tôi** đang quá hạn hoặc hạn hôm nay.
+   - 0 thì không hiện số.
+   - Có việc quá hạn thì badge đỏ.
+   - Thay DESIGN V13 (#886: badge = mọi việc "Của tôi").
+3. **Ô phạm vi không có số.** Riêng "Của tôi" có số khi > 0, và đó cũng là số của badge (cùng một hàm).
+4. **Đầu trang:** bỏ "n việc · n HV · n bài".
+5. **Đầu nhóm:** "n việc · ⚠ n quá hạn", đếm theo dòng.
+   - Speaking chấm chéo chỉ ghi "⚠ n quá hạn", vì T03: đây không phải việc của ai.
+   - Chờ bạn duyệt giữ "n yêu cầu".
+6. **Số bài, số em** chỉ hiện trong thẻ phụ của dòng ("4 bài", "4 em").
+
+**Số trên dữ liệu demo 14/09 (đo `/my-work`):**
+
+| Chỗ | Trước | Sau |
+|---|---|---|
+| Badge · GV cô Hà | 56 | **9** (đỏ) |
+| Badge · QL Vy | 5 | không số |
+| Đầu trang · GV / QL Tất cả | 56 việc · 49 HV · 39 bài / 147 việc · 80 HV · 89 bài | bỏ |
+| Ô phạm vi · QL | Của tôi 5 · Của GV 142 · Tất cả 147 | không số |
+| Chấm điểm · cô Hà | 18 việc · 39 bài · ⚠ 7 | **7 việc · ⚠ 4** |
+| Case · cô Hà | 27 việc · 20 HV · ⚠ 3 | **16 việc · ⚠ 3** |
+| Chấm điểm · QL Tất cả | 46 việc · 89 bài · ⚠ 17 | **26 việc · ⚠ 14** |
+| Case · QL Tất cả | 67 việc · 34 HV · ⚠ 5 | **39 việc · ⚠ 5** |
+
+**So sánh các cách đếm badge** (chọn ①):
+
+| Cách | Badge cô Hà | Nhận xét |
+|---|---|---|
+| ① Dòng của tôi quá hạn + hôm nay | 9 | Số nhỏ, đúng là việc phải làm ngay |
+| ② Mọi dòng của tôi | 27 | Vẫn lớn, không cho biết việc nào gấp |
+| ③ Chỉ dòng quá hạn | 9 | Việc hạn hôm nay không được nhắc kịp |
+
+**Nơi đổi khi làm PR code:**
+- **Máy chủ:** `server/src/worklist/mywork.ts` › `demSo` thêm `canLamNgay` = `dong.filter(mine && (overdue || today)).length`. Chỉ tính lại trên dữ liệu đã nạp: không thêm câu SQL, không thêm dòng đọc Turso.
+- **Badge:** `web/src/App.tsx` › `SoCho` đọc `summary.canLamNgay` thay cho `summary.viec`; ẩn khi bằng 0.
+- **Công việc:**
+  - `web/src/modules/congViec/HoTroHocVienTab.tsx`: bỏ `demTong` ở đầu trang; số ô phạm vi đặt null, trừ Của tôi = `canLamNgay`.
+  - `web/src/modules/congViec/DanhSachViec.tsx`: chip nhóm đếm số dòng thay cho `demViec(viecThat(goc)).viec`; quá hạn đếm theo dòng; bỏ "n bài", "n HV".
+- **Nơi khác cũng ghi "n việc" bằng `demViec`, phải đổi theo cho cùng một số:**
+  - `classes/DauTrangLop.tsx`, `classes/ThanhViecLop.tsx`, `server/src/classes/viecTheoEm.ts`;
+  - hồ sơ GV (`server/src/giaoVien/hoSo.ts`, `shared/domain/hoSoGiaoVien.ts`);
+  - Tổng quan `viecQuaHan` (`TongQuanV5.tsx`).
+  - Cách làm khuyến nghị: thêm một hàm đếm dòng chung, mọi nơi gọi hàm đó.
+- **Văn bản luật:** cập nhật `DESIGN.md` V13 và ghi SV-SO1 → thay ở `plan.md` 1.6. Đây là đổi luật hiển thị, cần chủ SP chốt.
+- **Phép kiểm:** sửa các phép kiểm đếm SV-SO1 / T17 (`prVaiA`, `prS6fB`…).
 
 ## 3. Màn cùng bệnh — xếp theo mức ngợp (đo màn đầu 1440, QL Monbay, dữ liệu demo)
 
