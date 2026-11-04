@@ -573,7 +573,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
 
   if (nguoi === 'tat-ca') {
     if (!phamViXemViec(p)) throw forbidden('Bạn chỉ xem được việc của mình.');
-    return nheMyWork(myWork(p, { branchId, nguoi: 'tat-ca' }));
+    return nheMyWork(myWork(p, { branchId, nguoi: 'tat-ca', tachCuaToi: true }));   // SUA-LOI-CV: web lọc Của tôi tại máy — có việc Chấm Speaking
   }
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 

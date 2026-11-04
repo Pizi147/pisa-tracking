@@ -305,11 +305,13 @@ export function HoTroHocVienTab() {
       const next = new URLSearchParams(params); next.delete('nhom'); next.delete('loai'); setParams(next, { replace: true });
     } }] : []),
   ];
-  /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ bên dưới đọc); chưa chọn chi nhánh = mọi chi nhánh như badge menu. */
-  const demDuyet = useApi<DemYeuCau>(session?.nav?.workApprove ? `/yeu-cau/dem${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId]).data;
+  /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ bên dưới đọc); chưa chọn chi nhánh = mọi chi nhánh như badge menu.
+     SUA-LOI-CV (chủ SP 05/11): đang xem việc MỘT GV (theo dõi) thì không có khối này — yêu cầu là của người xem, không của GV đó. */
+  const xemMotGv = typeof nguoi === 'number';
+  const demDuyet = useApi<DemYeuCau>(session?.nav?.workApprove && !xemMotGv ? `/yeu-cau/dem${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId, xemMotGv]).data;
   const [moDuyet, setMoDuyet] = useState(true);
   /* V8-CV: panel duyệt (`?the=`, mở từ nhóm Chờ bạn duyệt) đứng ở cột phải như panel việc — `HopChoDuyet` vẽ vào ô này. */
-  const theId = session?.nav?.workApprove ? Number(params.get('the')) || null : null;
+  const theId = session?.nav?.workApprove && !xemMotGv ? Number(params.get('the')) || null : null;
   const [khuDuyet, setKhuDuyet] = useState<HTMLDivElement | null>(null);
   const [moQuanLy, setMoQuanLy] = useState(false);
   /* U01 #1: Lọc thêm — số bộ lọc đang bật trong đó (Một GV · khung · chi nhánh khác mặc định); đang bật thì mở sẵn. */
@@ -366,7 +368,7 @@ export function HoTroHocVienTab() {
   const tenNhom = (k: string) => dich(dsNhomXem.find((g) => g.key === k)?.label ?? '');
   const anTrenDienThoai = chon || theId ? 'max-lg:hidden' : '';
   /* V8-CV (P1): "Chờ bạn duyệt" là nhóm ĐẦU cột trái (không full width trước lưới); còn hiện khi panel duyệt đang mở dù đã hết yêu cầu (thẻ kết quả). */
-  const coDuyet = !!demDuyet?.cho || !!theId;
+  const coDuyet = !xemMotGv && (!!demDuyet?.cho || !!theId);
   /* Đang tải / lỗi / hết việc: không số ở ô phạm vi (không nơi nào báo chờ khi đã hết). */
   const hienSoNguoi = !!data && !error && typeof nguoi !== 'number' && conViec;
   return (

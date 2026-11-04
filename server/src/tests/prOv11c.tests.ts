@@ -75,7 +75,8 @@ export async function runPrOv11cTests(t: YThucTestKit) {
     for (const gv of gvs) {
       const a = new Set(items.filter((it) => it.ownerId === gv && it.group !== 'mgmt').map((it) => it.key));
       xoaNho();
-      const b = new Set((mywork.viecCuaNguoi(P.mbManager, gv).items as any[]).filter((it) => it.ownerId === gv && it.group !== 'mgmt').map((it) => it.key));
+      /* SUA-LOI-CV: "Của một GV" có thêm hàng đợi Chấm Speaking của GV Speaking (theo dõi) — không là việc GV giữ (T18), "Tất cả" để dòng theo lớp. */
+      const b = new Set((mywork.viecCuaNguoi(P.mbManager, gv).items as any[]).filter((it) => it.ownerId === gv && it.group !== 'mgmt' && !d.laViecChamCheo(it)).map((it) => it.key));
       const thieu = [...b].filter((k) => !a.has(k)), thua = [...a].filter((k) => !b.has(k));
       assert(!thieu.length && !thua.length, `GV ${gv}: Của GV thiếu ${thieu.slice(0, 5).join(', ')} · thừa ${thua.slice(0, 5).join(', ')}`);
       if ([...a].some((k) => k.startsWith('ban_giao'))) coBanGiao = true;
