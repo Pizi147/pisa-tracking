@@ -165,7 +165,9 @@ export type VuaDoiPa = { paId: number; chu: string; hoanTac?: () => Promise<void
  * Mô tả) → Phương án (Chờ duyệt · xác nhận / Đang theo dõi; Đã kết thúc gập; việc của PA nằm ngay trong thẻ PA; dòng PA mang `data-pa-id` cho Hành trình
  * cuộn tới) → Kết luận → Lịch sử (gập) → Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của nơi gọi.
  */
-export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false, lyDoKhoa = null }: {
+export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false, lyDoKhoa = null, dauCoDiem = false }: {
+  /** U03 A2: đầu panel đã có tên Case + SOS + dải Điểm · Kỳ vọng — thân không lặp dòng tên Case và dòng Điểm. */
+  dauCoDiem?: boolean;
   /** U02 (PTA 04/11): trong cột hồ sơ HV — lý do chưa hoàn thành được (PA quy chế chưa khép) vào ⓘ cạnh "Kết luận". */
   lyDoKhoa?: ReactNode;
   /** U02: nút "Mô tả Case" đã ở dòng tóm tắt Case (cột hồ sơ HV) — trường Mô tả chỉ ghi "Chưa có". */
@@ -219,11 +221,11 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
       {/* U02 (PTA 04/11): trong cột không vẽ link lượt — lượt đã ở chip "MTn ✗ …" dòng tóm tắt, mở lượt bằng "MTn ›" của bảng Mock Test cùng trang. */}
       <DauMuc dau tieuDe="Case" phu={khung ? null : data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
         : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
-        {data.luot && !khung && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
+        {data.luot && !khung && !dauCoDiem && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
         {/* Case A (mockup audit 03/11 `.fld`, U02 c2 + U03 A2): khung trường nhãn trái 13 / 500 mờ | giá trị 15 sáng, mỗi hàng một kẻ; Nguyên nhân = thẻ,
             Mô tả = đoạn trích vạch trái + nguồn 12 mờ dưới. Trong cột hồ sơ HV: Điểm đã ở dòng tóm tắt (chip MTn) — không lặp. "Ghi nhận" → "Mô tả" (N8). */}
         <dl className="fld">
-          {diem && !khung && <><dt>{t('Điểm')}</dt><dd>{diem}</dd></>}
+          {diem && !khung && !dauCoDiem && <><dt>{t('Điểm')}</dt><dd>{diem}</dd></>}
           {(primary || secondary.length > 0) && <>
             {/* N8 (PTA rà #632): Nguyên nhân chỉ ghi NHÓM (chính trước, phụ sau) — câu nhận xét / mô tả nằm ở dòng Mô tả, không lặp. */}
             <dt>{t('Nguyên nhân')}</dt>
@@ -273,13 +275,13 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
 
       {/* U02 c2: trong cột "Phương án" không số, không ⓘ (luật vào ⓘ của Kết luận). */}
       <DauMuc tieuDe={t('Phương án')} dem={khung ? undefined : dsPa.length || undefined}
-        luat={khung ? undefined : (
+        luat={khung || dauCoDiem ? undefined : (
           <>
             <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
             {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
           </>
         )}>
-        {!data.viewer.canEdit && data.status !== 'done' && (
+        {!data.viewer.canEdit && data.status !== 'done' && !dauCoDiem && (
           <p className="m-0 flex items-start gap-2 text-[13px] leading-relaxed text-slate-300 [text-wrap:pretty]"><span className="mt-0.5 text-slate-400"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
         )}
         {dsPa.length === 0 ? <p className="m-0 text-sm text-slate-400">{t('Chưa có PA.')}</p> : (
@@ -306,8 +308,8 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
               {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
               {data.closedAt && <span className="text-slate-400"> {t('· kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}</span>}
             </p>
-          ) : khung ? (
-            /* U02 c2: "chưa có ⓘ" — lý do khoá + luật PA trong ⓘ cạnh giá trị. */
+          ) : khung || dauCoDiem ? (
+            /* U02 c2 · U03 A2: "chưa có ⓘ" — lý do khoá + luật PA trong ⓘ cạnh giá trị. */
             <div className="flex items-center gap-1.5 text-[15px] text-slate-100">{t('chưa có')}
               <NutLuat>
                 <>
@@ -349,6 +351,10 @@ export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null
           </span>
         ) : <BangChung ownerType="sos_case" ownerId={data.id} canEdit={data.viewer.canEdit} tieuDe="" onChanged={bc.reload} />}
       </DauMuc>
+      {/* U03 A2 / U02 c2: ai làm được việc của Case — một dòng mờ CUỐI thân Case (không ở đầu mục Phương án). */}
+      {dauCoDiem && !data.viewer.canEdit && data.status !== 'done' && (
+        <p className="m-0 mt-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-400 [text-wrap:pretty]"><span className="mt-0.5"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
+      )}
     </>
   );
 }

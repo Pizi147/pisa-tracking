@@ -567,6 +567,9 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
          * cần đúng con số người dạy đã gõ vào từng ô.
          */
         bands: Object.fromEntries(scores.map((x: any) => [x.skill, x.band ?? null])),
+        /* U03 (audit 03/11): 4 tiêu chí W1 · W2 · S (thẻ tiêu chí khi rê ô W / S) — cùng dòng điểm đã đọc, +0 câu. Ô chỉ có band → không có khoá. */
+        tieuChi: Object.fromEntries(scores.filter((x: any) => [x.c1, x.c2, x.c3, x.c4].some((v) => v !== null && v !== undefined))
+          .map((x: any) => [x.skill, [x.c1 ?? null, x.c2 ?? null, x.c3 ?? null, x.c4 ?? null]])),
         ratios: null,
         passedCount: null, failedCount: result.failedCount,
         sosLevel: result.sosLevel, evaluable: result.evaluable,
@@ -632,6 +635,7 @@ export function classRoster(p: Principal, classId: number, q?: string, kemKetThu
         expectation: t.expectation, writing: t.writing,
         khongHoc: ((t as any).khongHoc ?? []) as string[], khongDuBoMon: !!(t as any).khongDuBoMon,
         bands: (t as any).bands ?? null,
+        tieuChi: ((t as any).tieuChi ?? null) as Record<string, (number | null)[]> | null,
         ratios: (t as any).ratios ?? null,
         /** Kỹ năng đã dời do vắng → mã tuần cũ (`chuDoiVang` ở web). */
         vangCu: vangCu.get(t.id) ?? null,

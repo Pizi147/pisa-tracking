@@ -63,7 +63,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
   classId?: number | null;
   /** Mã lớp hiện ở đầu các ngăn mở từ dòng học viên (`Tên HV · MB FOU 12`). */
   maLop?: string | null;
-}): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode } {
+}): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode; moCase: (id: number, ten: string) => void } {
   const navigate = useNavigate();
   const [mo, setMo] = useState<{
     viec: 'case' | 'vi-pham' | 'xu-ly-y-thuc' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai' | 'nhap-diem'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
@@ -115,5 +115,6 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
       {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm viec={mo.quanLy} studentId={mo.id} studentName={mo.ten} lop={mo.lop ?? maLop} onClose={() => setMo(null)} onDone={xong} />}
     </>
   );
-  return { mucCua, panels };
+  /* U03: "+ Case" ở tóm tắt kỹ năng (kỹ năng chưa có Case) — cùng panel + Case của ⋯ dòng. */
+  return { mucCua, panels, moCase: (id, ten) => setMo({ viec: 'case', id, ten }) };
 }

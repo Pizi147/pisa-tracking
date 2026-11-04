@@ -495,12 +495,12 @@ export async function runPrDlTests(t: YThucTestKit) {
     });
   } finally { may.close(); }
 
-  check('DL-5 dòng phụ nút lượt: "5/8 đủ điểm" (không tuần); không ai có lịch → "chưa ai có lịch"', () => {
+  check('DL-5 dòng phụ nút lượt: "5/8 có điểm đủ" (không tuần, U03); không ai có lịch → "chưa ai có lịch"', () => {
     const l = (tuanStart: string | null, duDiem: number, coLich: number) =>
       ({ ma: 'mt:2', nhan: 'MT2', tuanStart, lichSu: false, duDiem, coLich, oTrong: 0 });
-    assert(d.dongPhuLuot(l('2026-07-13', 5, 8)) === '5/8 đủ điểm', d.dongPhuLuot(l('2026-07-13', 5, 8)));
+    assert(d.dongPhuLuot(l('2026-07-13', 5, 8)) === '5/8 có điểm đủ', d.dongPhuLuot(l('2026-07-13', 5, 8)));
     assert(d.dongPhuLuot(l('2026-07-13', 0, 0)) === 'chưa ai có lịch', 'không ai có lịch');
-    assert(d.dongPhuLuot(l(null, 2, 3)) === '2/3 đủ điểm', 'tuần NULL');
+    assert(d.dongPhuLuot(l(null, 2, 3)) === '2/3 có điểm đủ', 'tuần NULL');
     const m = (nhan: string, weekStart: string | null) => ({ nhan, weekStart });
     assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-09-28')]) === 'W1 OCT', 'cùng tuần');
     assert(d.dongThiHocVien([m('L', '2026-09-28'), m('R', '2026-09-28'), m('S', '2026-10-05')]) === 'W1 OCT · S W2 OCT', 'lệch kỹ năng');

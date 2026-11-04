@@ -49,7 +49,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
    */
   const vai = vaiXemHocVien(session?.roles);
   const cacCheDo: CheDoHocVien[] = [
-    'diem', ...(vai !== 'admin' ? ['can-ho-tro' as const] : []),
+    /* U03 (chủ SP 03/11): lớp FT bỏ hẳn bảng "Cần hỗ trợ" — Case xem ở mở rộng dưới hàng em (ô kỹ năng → tóm tắt → panel). Lớp thường giữ ([XM] khop-khac). */
+    'diem', ...(vai !== 'admin' && thuong ? ['can-ho-tro' as const] : []),
     ...(soDot && vai !== 'admin' ? ['ket-qua' as const] : []), ...(vai ? ['thong-tin' as const] : []),
   ];
   const cheDo: CheDoHocVien = cacCheDo.includes(cheDoUrl) ? cheDoUrl : 'diem';
@@ -73,7 +74,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
    * V8-HSL (mockup v8, chủ SP duyệt 29/10): Cách xem là nút đoạn liền ĐẦU hàng công cụ của thẻ bảng (Tổng hợp FT: cùng hàng lọc · lượt · Chọn nhiều).
    * "Sửa thông tin" dời sang ⋯ đầu trang › Lớp › Sửa thông tin học viên (cùng panel `SuaCaLopPanel`). Cách xem khác (mockup không vẽ): hàng riêng như cũ.
    */
-  const cachXem = (
+  /* Chỉ một cách xem (FT không còn Cần hỗ trợ / chưa có đợt KQĐR) → không vẽ nút đoạn một mục (mockup U03). */
+  const cachXem = cacCheDo.length < 2 ? null : (
     <BoLocDoan v8 ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
       muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
   );
@@ -84,7 +86,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   const trongThe = cheDo === 'diem' && !thuong;
   return (
     <div className="space-y-2">
-      {!trongThe && (
+      {!trongThe && (cachXem || nutChon) && (
         <div className="flex flex-wrap items-center justify-between gap-2">{cachXem}{nutChon}</div>
       )}
       {cheDo === 'thong-tin'

@@ -7,7 +7,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { BoiCanh, CanLam, NutChu, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, NutChu, NutVaTiep, TrangThaiLuu, dauViec, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -89,7 +89,9 @@ const DA_LUU: Record<PlanDecision, string> = {
   ask_manager: t('Đã gửi Quản lý — PA vẫn chạy'),
 };
 
-export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa }: {
+export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep }: {
+  /** U03 (mockup A2 chân): "Lưu · kỹ năng tiếp ›" — lưu xong sang Case kỹ năng kế của em (nơi mở quyết việc kế). */
+  tiep?: TiepViec; chuTiep?: string;
   pa: PaCanCapNhat; hocVien?: string | null; lop?: string | null;
   /** OV-12e: đầu panel v3 — em (link hồ sơ) · ngữ cảnh ("Tăng cường bài tập · L"); Bối cảnh ≤ 3 dòng (Nguyên nhân · Kết quả kỳ trước). */
   em?: { id: number; ten: string } | null; ngCanh?: string | null; boiCanh?: [string, ReactNode][];
@@ -251,8 +253,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
 
-  const luu = async () => {
+  const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
+  const luu = async (diTiep = false) => {
     lf.bam();
+    setBam(diTiep ? 'tiep' : 'luu');
     if (thieu.length > 0 || (!decision && !lanCuoi)) return;
     setBusy(true);
     setLoiLuu(null);
@@ -281,7 +285,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       /* OV-13b: ở lại panel — "✓ Đã lưu · {quyết định}" + kết quả · hạn kế; Hoàn tác (ghi mới) = bỏ lần ghi này, chữ trả về form. */
       const f = sua ? null : (ct?.followups ?? []).find((x: any) => x.interventionId === pa.id) ?? null;
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;
-      onSaved({
+      (diTiep && tiep ? tiep.lam : onSaved)({
         chu: sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Quản lý duyệt đổi PA') : DA_LUU[decision as PlanDecision],
         phu: [dich(outcomeLabelFor(outcome)), hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
         hoanTac: f ? async () => {
@@ -377,7 +381,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   };
 
   const nhanNut = busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : deXuat ? t('Lưu kết quả · gửi QL duyệt') : dich(NUT_LUU_KET_QUA[decision || 'keep']);
-  const nut = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luu}>{nhanNut}</button>;
+  const nut = tiep && !sua
+    ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tiep={tiep} bam={bam} luu={(x) => void luu(x)} />
+    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>{nhanNut}</button>;
   const daSua = !!(outcome || progress.trim() || buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep') || doi.daSua);
   const tieuDe = sua ? (lanCuoi ? t('Sửa kết quả cuối') : t('Sửa kết quả')) : lanCuoi ? t('Kết quả cuối') : tuanGhi.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');   // mã tuần không tách dòng
 

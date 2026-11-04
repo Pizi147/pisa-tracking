@@ -566,9 +566,9 @@ export async function runPrHvlTests(t: YThucTestKit) {
   });
 
   check('PR-HVL (8) · web: bảng điểm FT bỏ Gọn/Đầy đủ, có nhánh MT lịch sử xám + nhãn, cột Theo dõi là ViecTiep bấm được; Lộ trình tiếp theo có Kết quả gần nhất, câu "Chỉ là dự định" hiện thẳng; Chuyển tiếp báo lỗi sau khi sửa/bấm', () => {
-    /* UI-HO-SO-LOP (Q-7): bảng FT mới `BangHoSoLop` — bỏ vế cột Theo dõi (việc ở thanh Việc cần làm); MT lịch sử không so kỳ vọng. */
+    /* UI-HO-SO-LOP (Q-7): bảng FT mới `BangHoSoLop` — bỏ vế cột Theo dõi (việc ở thanh Việc cần làm). U03 (#860, chủ SP 03/11): MT lịch sử là kết quả hiện tại — tô ✓ / ✗ như MT thường. */
     const r = web('modules/classes/BangHoSoLop.tsx');
-    assert(!/Gọn|Đầy đủ/.test(r) && /h\.lichSu \? null/.test(r), 'BangHoSoLop');  // PR-MTb T2 thay ChipLichSu → NhanCu
+    assert(!/Gọn|Đầy đủ/.test(r) && !/h\.lichSu \? null/.test(r), 'BangHoSoLop');  // PR-MTb T2 thay ChipLichSu → NhanCu
     /* P9b: TransitionPanel (FT) và BangLoTrinhTiep đã gỡ — trang Cuối khoá: cột "Kết quả đầu ra" theo Final, lỗi giữ tại dòng (R5.3). */
     const ck = web('modules/classes/CuoiKhoaLop.tsx');
     assert(/t\('Kết quả đầu ra'\)/.test(ck) && /loi\[e\.id\]/.test(ck), 'CuoiKhoaLop: cột Kết quả đầu ra + lỗi tại dòng');

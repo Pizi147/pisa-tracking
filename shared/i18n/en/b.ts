@@ -899,7 +899,7 @@ const EN_B_WEB = {
   'Dời từ {doiTu} sang {tuan} (vắng lần {x}).': 'Moved from {doiTu} to {tuan} (absence {x}).',
   'Làm bù tuần này (lần {x})': 'Makeup this week (time {x})',
   'vắng · dời sang {tuan} · lần {x}': 'absent · moved to {tuan} · time {x}',
-  '{duDiem}/{coLich} đủ điểm': '{duDiem}/{coLich} complete',
+  '{duDiem}/{coLich} có điểm đủ': '{duDiem}/{coLich} fully scored',
   'chưa ai có lịch': 'nobody scheduled',
   'Bấm "Lưu lại" ở ô đó': 'Click "Save again" in that cell',
   'Bấm "Lưu" trong hộp lý do': 'Click "Save" in the reason box',

@@ -32,6 +32,8 @@ type HistoryRow = {
   /** Writing tổng của mốc (SOS xét cột này). */
   writing: number | null;
   bands: Record<string, number | null> | null;
+  /** U03: 4 tiêu chí của ô W1 · W2 · S đã chấm theo tiêu chí (`dongTieuChi`); ô chỉ có band không có khoá. */
+  tieuChi?: Record<string, (number | null)[]> | null;
   /** Rà #119: MT lịch sử (tuần thi trước khi lượt được tạo) — điểm thật nhưng không phải hiện trạng: ô xám, nhãn "lịch sử". */
   lichSu?: boolean;
   /** UI-HO-SO-LOP: kỹ năng (listening|reading|writing|speaking) đã dời do vắng → mã tuần cũ — dòng "vắng W3 SEP" (`chuDoiVang`). */

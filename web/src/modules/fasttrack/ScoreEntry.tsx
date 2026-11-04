@@ -126,8 +126,6 @@ export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawSco
 export const lockedByNoShow = (cell: Cell) => (cell.noShow?.state === 'khong-du-thi' && cell.sitStatus === 'absent')
   || cell.noShow?.state === 'cho-ql-hieu-chinh';
 
-/** LUAT-34 (L3): "Đủ điểm" chỉ là trạng thái — GV đúng ô vẫn sửa được (thay câu khoá R11). */
-export const KHOA_HOAN_TAT_HINT = t('Mọi kỹ năng đã có điểm hoặc "-" — vẫn sửa được.');
 /** Lớp đã kết thúc: chỉ Quản lý sửa điểm (Q-B1 ①) — cùng câu máy chủ `kiemLopKetThuc`. */
 export const KHOA_KET_THUC_HINT = t('Lớp đã kết thúc — chỉ Quản lý sửa được điểm.');
 /** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */

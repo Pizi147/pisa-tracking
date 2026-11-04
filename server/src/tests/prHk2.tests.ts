@@ -385,11 +385,11 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     /* Điện thoại (MotKyNang): tên xuống dòng, chip dưới tên. */
     const mk = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{ten\}>/.exec(doc('web/src/modules/cham/MotKyNang.tsx'));
     assert(mk && /break-words/.test(mk[2]) && !/(^|\s)flex(\s|$)/.test(mk[1]), `MotKyNang: khối tên em (${mk?.[1]} · ${mk?.[2]})`);
-    /* BANG-1 (04 mục 6.2): lưới máy tính — hàng một dòng chính: tên cắt "…" + title, chip "Đủ điểm" đứng SAU tên cùng dòng. */
+    /* BANG-1 (04 mục 6.2): lưới máy tính — hàng một dòng chính: tên cắt "…" + title. N33 ④ (03/11): bỏ chip "Đủ điểm" sau tên. */
     for (const f of ['LuoiFT', 'LuoiThuong']) {
       const s = doc(`web/src/modules/cham/${f}.tsx`);
-      const m = /<Link className="([^"]*)" to=\{[^\n]*?title=\{row\.studentName\}>\{row\.studentName\}<\/Link>\s*\{row\.hoanTat && <Info/.exec(s);
-      assert(m, `${f}: không thấy khối tên em + chip Đủ điểm sau tên`);
+      const m = /<Link className="([^"]*)" to=\{[^\n]*?title=\{row\.studentName\}>\{row\.studentName\}<\/Link>/.exec(s);
+      assert(m && !s.includes("t('Đủ điểm')"), `${f}: không thấy khối tên em / còn chip Đủ điểm`);
       assert(/(^|\s)truncate(\s|$)/.test(m![1]), `${f}: tên em chưa cắt "…" (${m![1]})`);
     }
   });
