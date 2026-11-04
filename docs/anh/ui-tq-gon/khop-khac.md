@@ -54,9 +54,12 @@ Gạch chân còn 1 (QL): "38 chưa PA" nằm giữa câu ở dòng phụ ô Cas
 | TQ12 | 375 Lớp tôi chủ nhiệm: lớp thường có hàng "SOS hiện tại" trống | M4 | Bỏ hàng nhãn khi ô không áp dụng (1440 giữ "—") | `HaiKhoiGv`, `Bang` (hàng riêng ô null → không vẽ) |
 | GIỮ | Bố cục v11: đầu trang, dải 4 / 3 ô, bảng trái, cột phải 360, 375 thẻ lưới, SOS một kiểu, công tắc FT / Lớp thường, Hành chính / Học thuật, ⓘ, panel số (V11), rỗng / lỗi | — | không đổi | — |
 
-**Không sửa (ghi lại để PTA quyết):**
-- [XM-1] Bỏ gạch chân số chỉ áp ở Tổng quan (`.tq-v8`) — như K1 #934 (một màn một PR). Màn khác vẫn gạch chân tới PR màn đó; nếu PTA muốn một dáng toàn web, dời quy tắc sang `LOP_OSO` (một dòng) và ghi DESIGN G6.
-- [XM-2] Tổng quan QL đếm "12" hai lần (ô Chờ duyệt + đầu khối Chờ bạn duyệt) — M3 nhưng ô là bố cục v11 đã duyệt; giữ.
+**[XM] — PTA chốt 05/11:**
+- [XM-1] Bỏ gạch chân số GIỮ trong phạm vi Tổng quan (`.tq-v8`) ở PR này; mỗi màn sau áp khi tới lượt (chủ SP duyệt ảnh từng màn). Việc để sau: dời quy tắc vào `LOP_OSO` + ghi DESIGN G6 khi xong các màn.
+- [XM-2] Tổng quan QL đếm "12" hai lần (ô Chờ duyệt + đầu khối Chờ bạn duyệt) — GIỮ (bố cục v11).
+- [XM-3] Chờ bạn duyệt: tuổi yêu cầu → viên hạn duyệt như Công việc v12, ngày gửi trong panel — ĐỒNG Ý.
+
+**Không sửa:**
 - Số trong bảng 375 (thẻ lưới `luoi-g` 17 / 700) giữ như mockup v11 `.luoi-so .g` — M1 chỉ áp bảng 1440.
 - Bảng "Theo chi nhánh" (QT / CX): tên chi nhánh 600 + số — đã gọn sau TQ3 / TQ4, không sửa thêm.
 
