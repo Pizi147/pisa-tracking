@@ -1,12 +1,12 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { CHIP_SOS, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DINH_TRAI, DaiChiSo, DauThe, NutXemToanBo, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DINH_TRAI, DaiChiSo, DauThe, NutXemToanBo, RongDau, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
 import {
@@ -166,26 +166,30 @@ export function HieuQuaPa(props: PhamViPhanTich) {
       )}
       {error ? <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
         : loading || !data ? <Card><Skeleton rows={8} /></Card>
-        : data.scopeEmpty ? <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>
+        : data.scopeEmpty ? <Card bodyClass="p-0"><RongDau chu={t('Bạn chưa được cấp phạm vi nào')} /></Card>
         : (
           <>
             {/* Thẻ chỉ số — cùng số với đầu hai thẻ bảng (tóm tắt máy chủ). "Chưa tính" = ba số "Để số liệu đủ tin" cũ ở chân bảng. */}
             <DaiChiSo ds={[
               { ten: t('PA có kết quả'), ky: t('trong kỳ'), gt: <OSo giaTri={tongPa} nguon={nguon('tong', 'pa')} tieuDe={t('PA có kết quả')} vung="chi-so" />, mau: t('GV thêm {a} · quy chế {b}', { a: data.gvThem.tomTat.paCoKetQua, b: data.quyChe.tomTat.paCoKetQua }) },
-              { ten: t('Có cải thiện'), gt: <OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" />, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined, mau: t('tiến bộ rõ + một phần') },
+              { ten: t('Có cải thiện'), gt: <OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" />, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined },   // PT-GON (M4): định nghĩa ở ⓘ đầu bảng
               data.thoiGianThuongMat !== null
-                ? { ten: t('Thời gian thường mất'), gt: data.thoiGianThuongMat, nho: t('{n} tuần', { n: data.thoiGianThuongMat }).replace(String(data.thoiGianThuongMat), '').trim(), mau: t('trung vị · PA có cải thiện') }
+                ? { ten: t('Thời gian thường mất'), gt: data.thoiGianThuongMat, nho: t('{n} tuần', { n: data.thoiGianThuongMat }).replace(String(data.thoiGianThuongMat), '').trim() }   // PT-GON (M4): "trung vị" ở ⓘ đầu bảng
                 : { ten: t('Thời gian thường mất'), gt: <span className="text-[color:var(--text-faint)]">—</span>, mau: t('Ít dữ liệu') },
               {
                 ten: t('Chưa tính'),
                 gt: (
+                  /* PT-GON (M4): dòng bằng 0 không hiện; cả ba bằng 0 → "0". */
+                  data.chuaGhiKetQua + data.caseChuaPhanLoai + data.chuaRoNguon === 0 ? 0 : (
                   <span className="mt-1 grid w-full gap-1 text-[13px] font-normal leading-normal text-[color:var(--text-dim)] [font-family:inherit]">
-                    {chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', t('PA chưa có kết quả'), t('Không tính vào bảng hiệu quả tới khi có kết quả'))}
-                    {chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', t('Case chưa chọn nhóm nguyên nhân'))}
-                    <span title={t('PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào')}>
-                      {chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', t('PA chưa rõ nơi học lúc làm PA'))}
-                    </span>
-                  </span>
+                    {data.chuaGhiKetQua > 0 && chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', t('PA chưa có kết quả'), t('Không tính vào bảng hiệu quả tới khi có kết quả'))}
+                    {data.caseChuaPhanLoai > 0 && chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', t('Case chưa chọn nhóm nguyên nhân'))}
+                    {data.chuaRoNguon > 0 && (
+                      <span title={t('PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào')}>
+                        {chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', t('PA chưa rõ nơi học lúc làm PA'))}
+                      </span>
+                    )}
+                  </span>)
                 ),
               },
             ]} />
@@ -198,10 +202,11 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                   <>
                     {cachDoc}
                     <p className="m-0">{t('Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {n} PA, cải thiện từ 70% và cao nhất trong vấn đề.', { n: NGUONG_IT_DU_LIEU })}</p>
+                    {data.gvThem.gom && <p className="m-0">{t('vấn đề khác')}: {t('mỗi vấn đề ≤ 2 PA có kết quả')}</p>}   {/* PT-GON: chạm (375) không có title → câu cũng ở ⓘ */}
                   </>
                 )} />
               {data.gvThem.hang.length === 0 && !data.gvThem.gom
-                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có PA do giáo viên thêm có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.', { khoang })}</p><NutXemToanBo /></div>
+                ? <RongDau chu={t('Chưa có PA do giáo viên thêm có kết quả trong {khoang}.', { khoang })} nut={<NutXemToanBo />} />
                 : (
                   <>
                     <div ref={ptGv.thanh.dauBang} />
@@ -214,10 +219,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                             <Fragment>
                               <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('vấn đề khác')} soCotDau={6} className={HANG_LON}
                                 tieuDe={(
-                                  <span className="block min-w-0">
-                                    <span className="block truncate">{t('{n} vấn đề khác', { n: data.gvThem.gom.soVanDe })}</span>
-                                    <span className="block text-xs font-normal text-[color:var(--text-faint)]">{t('mỗi vấn đề ≤ 2 PA có kết quả')}</span>
-                                  </span>
+                                  <span className="block min-w-0 truncate" title={t('mỗi vấn đề ≤ 2 PA có kết quả')}>{t('{n} vấn đề khác', { n: data.gvThem.gom.soVanDe })}</span>   /* PT-GON (M4): câu giải thích khi rê */
                                 )} />
                               {mo.has('gom') && data.gvThem.gom.hang.map((d) => (
                                 <HangCon key={d.khoa} className={HANG_CON}><td className="td">{tenDong(d)}</td>{oSo(d, d.nhan, true)}</HangCon>
@@ -234,15 +236,17 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
             {/* ---------------------------------------------------------------- 2. PA theo quy chế */}
             <Card bodyClass="p-0">
-              <DauThe ten={t('PA theo quy chế')} dem={t('{n} PA', { n: data.quyChe.tomTat.paCoKetQua })} phu={t('bắt buộc · không so, không xếp hạng')}
+              <DauThe ten={t('PA theo quy chế')} dem={t('{n} PA', { n: data.quyChe.tomTat.paCoKetQua })}
                 cachTinh={(
                   <>
+                    {/* PT-GON (M4): "bắt buộc · không so, không xếp hạng" từ dòng phụ đầu thẻ vào ⓘ. */}
+                    <p className="m-0">{t('bắt buộc · không so, không xếp hạng')}</p>
                     {cachDoc}
                     {props.ct === 'ft' && <p className="m-0">{t('Xếp theo mức SOS hiện tại của Case: Case trượt lại thì PA cũ hiện ở hàng mức mới.')}</p>}
                   </>
                 )} />
               {dongQc.length === 0
-                ? <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"><p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có PA theo quy chế có kết quả trong {khoang}. Số có khi PA kết thúc có kết quả — thử khoảng thời gian dài hơn.', { khoang })}</p><NutXemToanBo /></div>
+                ? <RongDau chu={t('Chưa có PA theo quy chế có kết quả trong {khoang}.', { khoang })} nut={<NutXemToanBo />} />
                 : (
                   <>
                     <div ref={ptQc.thanh.dauBang} />

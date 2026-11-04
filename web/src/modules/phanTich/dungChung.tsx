@@ -69,6 +69,15 @@ export function OChon({ className = '', dangLoc = false, children, ...p }: Selec
 /** V8-PT: số trong chip Đạt / SOS không gạch chân, mang màu chip (chip đã là ô bấm — mockup `.chip-so`). */
 export const SO_TRONG_CHIP = '!no-underline !text-inherit !font-semibold';
 
+/** PT-GON (M7): khung rỗng của Phân tích — MỘT câu ở đầu khung (không căn giữa khung cao, không câu phụ) + nút (Xem Toàn bộ). */
+export function RongDau({ chu, nut }: { chu: string; nut?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+      <p className="m-0 text-sm text-[color:var(--text-dim)]">{chu}</p>{nut}
+    </div>
+  );
+}
+
 /** V8-PT (D2): rỗng → một bấm sang "Toàn bộ" (cùng tham số khoảng chung với ô Thời gian); đang Toàn bộ thì không vẽ. */
 export function NutXemToanBo() {
   const [params, setParams] = useSearchParams();

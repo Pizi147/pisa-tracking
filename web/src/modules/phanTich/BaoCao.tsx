@@ -6,7 +6,7 @@ import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { PhanTram, TheoChiNhanh, mauDatMt, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
-import { DaiChiSo, DauThe, NutXemToanBo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DaiChiSo, DauThe, NutXemToanBo, RongDau, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { tuanLich } from '@shared/domain/index.ts';
 import {
@@ -61,7 +61,9 @@ export function BaoCao(pv: PhamViPhanTich) {
   /* U08 #1 (mockup V11 B1): hai nhóm có nhãn — "Trong kỳ …" (Đạt MT · Đạt Target thi thật · Thi trong kỳ · PA cải thiện) │ "Hiện tại" (Case có PA);
      bỏ chữ "· trong kỳ" / "· hiện tại" lặp ở từng ô. */
   const [tuK, denK] = [tuanLich(pv.khoang.tu), tuanLich(pv.khoang.den)];
-  const nhanKy = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : t('Trong kỳ {ky}', { ky: tuK === denK ? tuK : `${tuK} – ${denK}` });
+  /* PT-GON (M3): khoảng tuần đã ở hàng lọc → màn chỉ ghi "Trong kỳ"; bản in (hàng lọc ẩn) vẫn ghi đủ khoảng. */
+  const nhanKy = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ')
+    : <><span className="print:hidden">{t('Trong kỳ')}</span><span className="hidden print:inline">{t('Trong kỳ {ky}', { ky: tuK === denK ? tuK : `${tuK} – ${denK}` })}</span></>;
   const nguon = (o: string) => `/phan-tich/bao-cao/o?${q}&o=${encodeURIComponent(o)}`;
   const nguonCase = `/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong&chuY=1&${q}`;
   const chonCn = (id: number) => { const n = new URLSearchParams(params); n.set('cn', String(id)); setParams(n); };
@@ -80,7 +82,7 @@ export function BaoCao(pv: PhamViPhanTich) {
               gt: ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt, mau: ft ? mauDatMt(d.datMt) : t('chỉ Fast Track') },
             { ten: t('Đạt Target thi thật'),
               gt: !ft ? chiFt : d.thiThat?.mau ? <span className="tabular-nums">{Math.round((100 * d.thiThat.dat) / d.thiThat.mau)} %</span>
-                : <span className="text-[17px] font-medium text-faint">{t('– chưa có dữ liệu')}</span>,
+                : chiFt,   // PT-GON (M3): "chưa HV nào có KQ" ở dòng dưới đã nói
               mau: ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track') },
             { ten: t('Thi trong kỳ'), gt: <OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />, mau: t('HV có ngày thi') },
             { ten: <>{t('PA cải thiện')} <NutLuat label={t('PA cải thiện')}>{t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}</NutLuat></>,
@@ -116,7 +118,7 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
       if (!s.tang && !s.bang && !s.giam) return <span className="text-slate-500">—</span>;
       return (
         <span className="whitespace-nowrap tabular-nums" aria-label={t('Tăng {a} · giữ {b} · giảm {c}', { a: s.tang, b: s.bang, c: s.giam })}>
-          <span className={s.tang ? 'font-bold text-ok' : 'text-faint'}>↑ {s.tang}</span> · <span className="text-slate-300">= {s.bang}</span> · <span className={s.giam ? 'font-bold text-bad' : 'text-faint'}>↓ {s.giam}</span>
+          <span className={s.tang ? 'text-ok' : 'text-faint'}>↑ {s.tang}</span> · <span className="text-slate-300">= {s.bang}</span> · <span className={s.giam ? 'text-bad' : 'text-faint'}>↓ {s.giam}</span>
         </span>
       );
     }
@@ -129,11 +131,12 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
     : c.key === 'truoc' || c.key === 'chua-du' ? null : pt(h.dem[c.key as keyof DongKqMt['dem']], h.mau));
   return (
     /* V8-PT: "FT · chi nhánh" trùng hàng lọc / đầu trang → chỉ hiện khi in (hàng lọc ẩn trên giấy). */
-    <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<><span className="hidden print:inline">{phamVi} · </span>{t('lượt của từng HV trong kỳ · % trên HV đủ dữ liệu')}</>}>
+    <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<span className="hidden print:inline">{phamVi} · {t('lượt của từng HV trong kỳ · % trên HV đủ dữ liệu')}</span>}>   {/* PT-GON (M4): cách tính ở ⓘ + dòng "n HV · m đủ dữ liệu" của hàng; bản in giữ câu */}
       {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} status={api.error.status} onRetry={api.reload} />
         : !api.data ? <Skeleton rows={5} className="p-4" />
-          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={!api.data.rows.some((h) => h.hv) ? [] : api.data.rows.filter((h) => h.hv || h.luot === 'thi')} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu
-              rong={{ tieuDe: t('Chưa có lượt MT nào trong kỳ'), nut: <NutXemToanBo /> }} />}
+          /* PT-GON (M7): rỗng → một câu ở đầu khung (không qua `Empty` căn giữa của `Bang`). */
+          : !api.data.rows.some((h) => h.hv) ? <RongDau chu={t('Chưa có lượt MT nào trong kỳ')} nut={<NutXemToanBo />} />
+          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={api.data.rows.filter((h) => h.hv || h.luot === 'thi')} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu />}
     </Khoi>
   );
 }
@@ -151,9 +154,10 @@ function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon:
   };
   return (
     <Khoi tieuDe={t('Tiến bộ theo kỹ năng')} phu={t('so mốc MT trước')}>
-      <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu
-        phuCua={(h, c) => (c.key === 'kn' ? null : h.tong ? pt(so(h, c.key), h.tong) : null)} khung={false}
-        rong={{ tieuDe: t('Chưa có lượt nào có mốc MT trước trong kỳ'), nut: <NutXemToanBo /> }} />
+      {!hang.length ? <RongDau chu={t('Chưa có lượt nào có mốc MT trước trong kỳ')} nut={<NutXemToanBo />} /> : (   /* PT-GON (M7) */
+        <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu
+          phuCua={(h, c) => (c.key === 'kn' ? null : h.tong ? pt(so(h, c.key), h.tong) : null)} khung={false} />
+      )}
     </Khoi>
   );
 }

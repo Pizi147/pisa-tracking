@@ -971,8 +971,8 @@
    chỉ khi rê / focus — hết "số gạch chân khắp nơi". Số nằm giữa câu (dòng phụ `.text-xs` "38 chưa PA") GIỮ gạch chân: chỉ màu không đủ phân biệt
    link trong chữ (WCAG 1.4.1). Panel mở từ số nằm ngoài `.page` (portal) nên không đổi. [XM] áp toàn web: PTA quyết. */
 :is(.tq-v8, .so-gon) .underline:not(.text-xs *, .decoration-dotted):not(:hover, :focus-visible) { text-decoration-line: none; }
-/* M1 (một chữ đậm mỗi dòng): ô số trong BẢNG (1440) và dòng phụ ô chỉ số chữ 500 — đậm chỉ tên lớp / GV ở cột đầu, số lớn ô chỉ số; quá hạn (đỏ ⚠) vẫn đậm vì là việc cần làm ngay. Số lớn ô chỉ số giữ 700. */
-:is(.tq-v8, .so-gon) :is(.bang td, .text-xs) .underline:not(.text-bad, .text-late) { font-weight: 500; }
+/* M1 (một chữ đậm mỗi dòng): ô số trong BẢNG (1440, mọi `td` — PT-GON: bảng Phân tích / Phân tích lớp không mang `.bang`) và dòng phụ ô chỉ số chữ 500 — đậm chỉ tên lớp / GV ở cột đầu, số lớn ô chỉ số; quá hạn (đỏ ⚠) vẫn đậm vì là việc cần làm ngay. Số lớn ô chỉ số giữ 700; gạch chấm gợi ý (KCK) giữ dáng riêng. */
+:is(.tq-v8, .so-gon) :is(td, .text-xs) .underline:not(.text-bad, .text-late, .decoration-dotted) { font-weight: 500; }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */
 @media print {
