@@ -50,7 +50,7 @@ Công việc › nhóm "Chờ bạn duyệt" (`CayDuyet` / `DongDuyet`) đã the
 | CD11 | "Chọn một đề xuất bên trái để xem và quyết" (đề xuất ≠ yêu cầu) | M5 | "Chọn một yêu cầu ở danh sách." | `HopChoDuyet` + EN |
 | GIỮ | Tab Chờ duyệt · Báo QL · Đã xử lý · lọc loại · chi nhánh · quá hạn · lớp; danh sách trái + panel phải (375 toàn màn); panel: loại · tên · em · lớp · SOS · hạn · lý do · "Sau khi duyệt" · Mở › · chân dính Tiếp / Từ chối… / Duyệt · Lịch sử · n; thanh chọn nhiều; Công việc nhóm Chờ bạn duyệt; Tổng quan Chờ bạn duyệt | — | không đổi | — |
 
-**Chưa làm — [XM] hỏi PTA:** "tên người không có **vai**" hiểu theo nghĩa vai trò (GVCN / GVBM / TVV) cần máy chủ gắn thêm vai người gửi so với lớp của em
+**[XM] — PTA chốt 05/11: ĐỂ SAU (Việc để sau, cần máy chủ gắn vai).** "tên người không có **vai**" hiểu theo nghĩa vai trò (GVCN / GVBM / TVV) cần máy chủ gắn thêm vai người gửi so với lớp của em
 (đổi `yeuCau.ts` + có thể thêm câu đọc) — ngoài PR giao diện này. PR này làm theo M10: người = chữ mờ + biểu tượng người (như Công việc v12).
 
 ## Thao tác TRƯỚC → SAU (không mất thao tác)
