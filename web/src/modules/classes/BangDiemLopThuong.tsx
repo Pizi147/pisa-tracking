@@ -292,14 +292,14 @@ function MoRongThuong({ s, chot, ct, ds, homNay, the, chiDoc, coTheBaoCase, onTh
 }) {
   const e = chot.data?.em.find((x) => x.id === s.id);
   const hang = e ? locCanHoTro({ ct, em: [e] }).em[0]?.hang ?? [] : [];
-  const NUT = 'btn h-[30px] px-2.5 text-[13px] max-sm:h-11 max-sm:flex-1';
+  const NUT = 'btn h-[30px] justify-center px-2.5 text-[13px] max-sm:h-11 max-sm:flex-1';
   return (
     <div className={KHOI} style={{ borderColor: 'var(--line)' }}>
       <div className="flex flex-wrap items-center gap-2">
         <h4 className={MUC_H}>{t('Case đang mở')}{e && <span className="font-bold tabular-nums text-dim">{e.cases.length}</span>}</h4>
         <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
           <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(s.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
-          {coTheBaoCase && <button type="button" className={NUT} onClick={onThemCase}>+ Case</button>}
+          {coTheBaoCase && <button type="button" className={`${NUT} btn-primary`} onClick={onThemCase}>+ Case</button>}
         </span>
       </div>
       {chot.error ? (

@@ -1,6 +1,5 @@
 import { NhanTrangThai } from '../../ui/ui.tsx';
 import { ViecTiep } from '../../ui/ViecTiep.tsx';
-import { TheDong } from '../../ui/TheDong.tsx';
 import { KhoaQuyChe, TenCase } from '../cases/SkillBoard.tsx';
 import { viecTiepCuaEm, type HangKyNang, type ViecTiepCase } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -32,7 +31,7 @@ export const LUOI_DOC = 'md:grid md:grid-cols-[3.5rem_minmax(0,1.5fr)_minmax(0,1
 /** Một dòng Case trong hàng kỹ năng: Kỹ năng (chỉ dòng đầu) · Case · Phương án đang làm · Việc tiếp + hạn. OV-12d: dùng lại ở hồ sơ MT. */
 export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = false }: {
   h: HangKyNang<CaseCua>; c: CaseCua; dau: boolean; ct: string | null; homNay: string; chiDoc?: boolean;
-  /** Điện thoại (D2): mỗi Case của hàng kỹ năng là một `TheDong` (mockup M4 "trên điện thoại"). */
+  /** Điện thoại: mỗi Case xếp dọc full rộng (PTA #900, thẻ con B1 U03). */
   the?: boolean;
   onMo: (viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa', paId?: number) => void;
 }) {
@@ -54,24 +53,20 @@ export function DongCase({ h, c, dau, ct, homNay, onMo, the = false, chiDoc = fa
   const cauViec = viec ? <ViecTiep v={viec} onBam={() => onMo(loai, d?.paId)} /> : <span className="text-slate-500">—</span>;
   const lap = c.lapTu ? <span className="text-slate-400">{t('lặp từ MT{n}', { n: c.lapTu })}</span> : null;
   if (the) {
+    /* 375 (PTA #900, theo thẻ con B1 U03): xếp dọc full rộng — kỹ năng · tên Case + trạng thái một dòng, rồi PA, rồi việc tiếp · hạn. */
     return (
-      <TheDong
-        dau={(
-          <span className="block min-w-0">
-            <span className="text-xs font-semibold text-slate-300" title={h.tenDu}>{h.nhan}</span>{' · '}
-            <button type="button" className="link cursor-pointer border-0 bg-transparent p-0 text-left text-xs font-semibold" title={c.tieuDe}
-              onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
-            {(c.nguyenNhan || c.moTu) && <span className="block text-[12px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
-          </span>
-        )}
-        dong={[
-          { nhan: t('Trạng thái'), noiDung: (
-            <span className="flex flex-wrap items-center gap-x-1.5"><NhanTrangThai t={c.trangThai.t} title={dich(c.trangThai.chu)} />
-              {c.banGiaoTu && <span className="text-slate-500" title={t('Case bàn giao')}>{t('từ {lop}', { lop: c.banGiaoTu })}</span>}{lap}</span>
-          ) },
-          { nhan: 'PA', noiDung: <span className="text-[12px]">{cacPa}</span> },
-          ...(chiDoc ? [] : [{ nhan: t('Việc tiếp'), noiDung: cauViec }]),
-        ]} />
+      <div className="grid gap-1 py-2.5" data-case-id={c.id}>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px]">
+          <span className="font-semibold text-slate-300" title={h.tenDu}>{h.nhan}</span>
+          <button type="button" className="link min-w-0 cursor-pointer border-0 bg-transparent p-0 text-left font-semibold" title={c.tieuDe}
+            onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
+          <NhanTrangThai t={c.trangThai.t} title={dich(c.trangThai.chu)} />
+          {c.banGiaoTu && <span className="text-xs text-slate-500" title={t('Case bàn giao')}>{t('từ {lop}', { lop: c.banGiaoTu })}</span>}{lap}
+        </div>
+        {(c.nguyenNhan || c.moTu) && <span className="text-[12px] text-slate-500">{[c.nguyenNhan && dich(c.nguyenNhan), c.moTu && dich(c.moTu)].filter(Boolean).join(' · ')}</span>}
+        {dangLam.length > 0 && <span className="text-[13px] leading-snug">{cacPa}</span>}
+        {!chiDoc && viec && <span className="text-[13px]">{cauViec}</span>}
+      </div>
     );
   }
   return (

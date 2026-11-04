@@ -582,9 +582,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const td = web('ui/TheDong.tsx');
     assert(/export function TheDong/.test(td) && /export function useDienThoai/.test(td) && /max-width: 639px/.test(td) && /tabular-nums/.test(td), 'TheDong.tsx');
     /* RA-UI-8: bảng FT hồ sơ lớp (`BangHoSoLop`) ở 375 = thẻ của `Bang` (không TheDong) — không còn trong danh sách này. */
-    for (const f of ['modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {   // UI-HV-LOP: BangHocVienLop không còn bảng
-      assert(/<TheDong\b/.test(web(f)), `${f} chưa dùng TheDong`);
-    }
+    /* #900: dòng Case (BangCanHoTro) ở 375 xếp dọc full rộng (PTA, thẻ con B1 U03) — không lưới nhãn | giá trị của TheDong. */
+    assert(/<TheDong\b/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'BangDiemLopThuong chưa dùng TheDong');
     /* UI-HV-LOP (Q-7): Học viên & Lớp ở điện thoại = mỗi em một thẻ (`TheHvGon`), không còn thẻ lớp gập. */
     assert(/useDienThoai\(\)/.test(web('modules/students/StudentsPage.tsx')) && /<TheHvGon\b/.test(web('modules/students/StudentsPage.tsx')), 'StudentsPage phải có nhánh thẻ ở điện thoại');
     assert(/<Bang /.test(web('modules/classes/BangHoSoLop.tsx')) && /sticky-col/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'cột tên dính (640–1023 px) — Bang dính cột tên');
