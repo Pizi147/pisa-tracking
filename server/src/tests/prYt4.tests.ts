@@ -563,7 +563,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     banChup.ghiBanChup(conn, [be], { lyDo: 'sua_tay', ngay: TODAY });
     const ft = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 3, 'LT1', '2026-09-07', 'active', ?)`).run(sid, new Date().toISOString()).lastInsertRowid);
     const f = em(sid);
-    assert(f.chuoi.join() === `${cy},${be},${ft}` && f.bac === 1 && f.keTiep.kind === 'report_2' && f.nhanChuoi === 'LT1', JSON.stringify({ c: f.chuoi, b: f.bac }));
+    assert(f.chuoi.join() === `${cy},${be},${ft}` && f.bac === 1 && f.keTiep.kind === 'report_2' && f.nhanChuoi === 'lớp thường → LT1', JSON.stringify({ c: f.chuoi, b: f.bac }));
     conn.prepare('UPDATE learning_cycles SET reset_bac_y_thuc = 1 WHERE id = ?').run(ft);
     const g = em(sid);
     assert(g.chuoi.join() === `${ft}` && g.bac === 0 && g.keTiep.kind === 'report_1', JSON.stringify({ c: g.chuoi, b: g.bac }));

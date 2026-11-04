@@ -702,6 +702,16 @@
     color: var(--dieu-huong-nen); font-size: 12px; font-weight: 700; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 2px var(--dieu-huong-nen); }
   .link { color: var(--accent); text-decoration: none; }
+  /* = mockup audit-0311 `.link-nho` / `.bc` (U10.8): link hành động nhỏ + khối Bằng chứng dùng chung (BangChung, TepCho) — một dòng, không khung. */
+  .link-nho { appearance: none; border: 0; background: none; padding: 0; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .link-nho:hover { text-decoration: underline; }
+  .bc { font-size: 13px; color: var(--text-dim); border-radius: 6px; }
+  .bc[data-keo] { outline: 2px dashed var(--accent); outline-offset: 4px; }
+  .bc-nh { width: 72px; flex-shrink: 0; font-size: 12px; font-weight: 500; color: var(--text-faint); }
+  .bc-mo { font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+  .bc-go { appearance: none; border: 0; background: none; padding: 0; font-size: 12px; color: var(--text-faint); cursor: pointer; }
+  .bc-go:hover { color: rgb(var(--bad-rgb)); }
+  @media (max-width: 639px) { .bc .link-nho, .bc .bc-go { min-height: 44px; } }
   /* D4 bổ sung (= mockup V5 `.ten-ho-so`): tên đối tượng mở hồ sơ — màu chữ thường, chỉ rê mới xanh + gạch; không "↗" (BO-MUI-TEN, chủ SP 28/10), không tô xanh như link khắp bảng. */
   .ten-ho-so { color: var(--text); font-weight: 600; text-decoration: none; }
   /* Phụ đề trong tiêu đề khối (`Card`: "· W4 AUG – W3 SEP", "· 8 lớp") = 13 / 400 như mockup, không theo cỡ 17 của tiêu đề. */

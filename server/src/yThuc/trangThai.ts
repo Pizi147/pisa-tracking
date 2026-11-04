@@ -197,7 +197,9 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
 
     out.set(sid, {
       studentId: sid, lopId: g.lopId, gvcnId: g.gvcn, tamDung: g.tamDung,
-      cycleId: hienTai?.id ?? null, chuoi, nhanChuoi: route ?? 'lớp thường',
+      cycleId: hienTai?.id ?? null, chuoi,
+      /* N36: chuỗi lớp thường → FT (FT luôn đứng cuối chuỗi — chuoiThang cắt sau lộ trình FT) ghi cả hai đầu. */
+      nhanChuoi: !route ? 'lớp thường' : chuoi.length > 1 ? `lớp thường → ${route}` : route,
       bac, keTiep: bacKeTiep(bac),
       khai: khaiRow ? {
         bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: khaiRow.khai_luc,
