@@ -6,7 +6,7 @@ import {
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
-  coONhapLienHe, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+  coONhapLienHe, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -1065,6 +1065,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         nhapLienHe: coONhapLienHe(vaiVoiEm(p, studentId)) && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId })),
         /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */
         canEditCycle: can(p, PERMISSIONS.CYCLE_EDIT, { studentId }),
+        /** QUYEN-CN: ô tích KCK — cùng luật máy chủ (`loiDoiTarget`): QL / Quản trị hoặc vai TVV ở CHI NHÁNH EM. */
+        doiKck: duocDoiKck(vaiVoiEm(p, studentId), can(p, PERMISSIONS.CYCLE_EDIT, { studentId })),
         /* OV-8b: TVV / CX — Target sửa thẳng (có lý do), Ghi chú, Kết quả thi thật (`student.edit_more`). */
         coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }),
         /* OV-11d (HV-2): cùng hàm máy chủ `guiDeXuatSua` — GV có phân công ở lớp em đang học; Admin / TVV / CX / QL không có nút. */
