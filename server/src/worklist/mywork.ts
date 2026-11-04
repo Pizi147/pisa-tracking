@@ -463,7 +463,9 @@ export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
  */
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
-  /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[] } = {}) {
+  /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[];
+  /** SUA-LOI-CV: việc Chấm Speaking chỉ tính lớp FT ở các chi nhánh này (QL xem việc GV — phạm vi người xem); null / không truyền = mọi chi nhánh. */ cnCheo?: readonly number[] | null;
+  /** SUA-LOI-CV: "Tất cả" của trang Công việc — web tách Của tôi / Của GV tại máy, nên dựng cả việc Chấm Speaking của người xem. Nơi khác giữ như cũ. */ tachCuaToi?: boolean } = {}) {
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
@@ -506,8 +508,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /*
    * OV-13g (Q7): GV Speaking chấm S Mock chéo lớp FT cùng chi nhánh (`lopFtChoGvSpeaking`) — đọc các lớp đó trong CÙNG lần `listAttempts`
    * (`phamViCham`, như Lịch Test), không thêm lô. `managed` để `pendingDetail` có ô S Mock (không là việc của ai — T18).
+   * SUA-LOI-CV (chủ SP 05/11): "Tất cả" của trang Công việc (`tachCuaToi`) — web của QL đọc `nguoi=tat-ca` rồi lọc "Của tôi" tại máy, nên QL kiêm
+   * GV Speaking cần việc Chấm Speaking ở đây. "Tất cả" ở nơi khác (hồ sơ lớp, Tổng quan Admin) giữ dòng chấm chéo theo lớp như cũ.
    */
-  const lopCheo = new Set<number>(!tatCa && co('score') ? lopFtChoGvSpeaking(p, today) : []);
+  const lopCheo = new Set<number>(co('score') && (!tatCa || f.tachCuaToi)
+    ? lopFtChoGvSpeaking(p, today).filter((id) => !f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1)) : []);
+  const tuanHomNay = mondayOfDate(today);
+  /** Ô S Mock vào việc Chấm Speaking của người xem: lớp `lopCheo`, từ thứ Hai tuần thi (`canChamCheo`). */
+  const vaoChamS = (a: any, c: any) => lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay);
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
     branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true,
     ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
@@ -669,12 +677,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * (`/my-work/cham-speaking`, `baiChamSpeaking` — cùng tập bài) liệt kê từng em. Không đổi luật ai chấm.
    */
   if (lopCheo.size) {
-    const tuanHomNay = mondayOfDate(today);
     const ccDongs: BaiChuaCham[] = [];
     for (const a of attempts as any[]) {
       if (!lopCheo.has(a.classId)) continue;
       for (const c of (a.pendingDetail ?? []) as any[]) {
-        if (!canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay)) continue;
+        if (!vaoChamS(a, c)) continue;
         ccDongs.push({
           classId: a.classId, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
@@ -712,7 +719,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       });
     }
     for (const a of attempts as any[]) {
+      /* SUA-LOI-CV: lớp chỉ vào nhờ chấm S chéo (`phamViCham`, ngoài phạm vi quản lý) — không thành việc của GV khác. */
+      if (!scope.all && !scope.classIds.includes(a.classId) && !scope.branchIds.includes(a.branchId)) continue;
       for (const c of (a.pendingDetail ?? []) as any[]) {
+        /* SUA-LOI-CV: bài đã ở việc Chấm Speaking của người xem ("Của tôi") — không lặp ở "Của GV" (Tất cả = Của tôi + Của GV). */
+        if (vaoChamS(a, c)) continue;
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
         const cheo = laChamCheo(a.kind, c.skill);
         const ownerId = a.classId && !cheo ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
@@ -1609,21 +1620,24 @@ function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined
 export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | null) {
   const xemViec = phamViXemViec(p);
   if (!xemViec) throw forbidden('Bạn chỉ xem được việc của mình.');
-  phamViHoSoGv(p, nguoi);
+  const pv = phamViHoSoGv(p, nguoi);
   const x = loadPrincipal(nguoi);
-  /* PR-OV2a: Admin chỉ thấy nhóm Chấm điểm của GV. */
-  const w = myWork(x, { branchId, ...(xemViec === 'cham-diem' ? { chiNhom: new Set<WorkGroupKey>(['score']) } : {}) }) as any;
+  /* PR-OV2a: Admin chỉ thấy nhóm Chấm điểm của GV. SUA-LOI-CV: việc Chấm Speaking của GV chỉ tính lớp FT chi nhánh người xem quản lý. */
+  const w = myWork(x, { branchId, cnCheo: pv.branchIds, ...(xemViec === 'cham-diem' ? { chiNhom: new Set<WorkGroupKey>(['score']) } : {}) }) as any;
   napTruocPhamVi(w.items.map((it: any) => it.studentId));   // `can()` từng dòng bên dưới đọc bộ nhớ, không N+1
   /*
    * OV-11c (PT-7): việc Vận hành giao cho GV (không gắn lớp) được tính — người xem đã qua `phamViHoSoGv` (GV thuộc chi nhánh mình); hồ sơ GV và
    * "Của một GV" cùng số. Dòng khác: theo phạm vi lớp / em của người xem.
    */
-  /* OV-13g: Speaking chấm chéo không là việc của GV (T18) — không vào "Của một GV" / hồ sơ GV. */
-  const loc = (w.items as WorkItem[]).filter((it) => !laViecChamCheo(it));
+  /*
+   * SUA-LOI-CV (chủ SP 05/11, thay "không vào Của một GV" của OV-13g): xem việc GV = theo dõi đúng cái GV đó thấy — có việc "Chấm Speaking · n bài"
+   * (không hạn, không đếm vào số việc — `demViec` bỏ chấm chéo, T18). Dòng chấm chéo theo lớp chỉ có ở "Tất cả" của QL, không ở đây.
+   */
+  const loc = (w.items as WorkItem[]).filter((it) => !laViecChamCheo(it) || it.key === KHOA_CHAM_SPEAKING);
   const lt = lamThayCua(p, loc);
   const cuaGv = new Set(loc.filter((it) => it.mine).map((it) => it.key));   // `mine` gốc (của GV đó) — bị ghi đè `false` bên dưới
   const items = loc
-    .filter((it: any) => (it.group === 'mgmt' && it.classId === null && it.studentId === null)
+    .filter((it: any) => (it.group === 'mgmt' && it.classId === null && it.studentId === null) || it.key === KHOA_CHAM_SPEAKING
       || ((it.classId !== null || it.studentId !== null) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId })))
     .map((it: any) => ({
       ...it,

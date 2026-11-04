@@ -245,7 +245,7 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi }: ChungDong) {
   const viecCaLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh' || it.group === 'ky_vong_dau_ra';
   /* brief 7: chế độ theo dõi — không động từ; quyền làm thay thật (`lamThay`) mới có nút. */
   /* U01 #4: nút khay dòng gộp "4 em ▾" — số việc đã ở thẻ phụ. */
-  const nut = con ? dich(it.actionLabel.split(' · ')[0]) : laViecChamCheo(it) ? t('Chấm Speaking') : xem ? ((it as { lamThay?: boolean }).lamThay ? (it.group === 'score' ? t('Nhập hộ') : t('Làm thay')) : null) : dich(it.actionLabel);
+  const nut = con ? dich(it.actionLabel.split(' · ')[0]) : laViecChamCheo(it) && !xem ? t('Chấm Speaking') : xem ? ((it as { lamThay?: boolean }).lamThay ? (it.group === 'score' ? t('Nhập hộ') : t('Làm thay')) : null) : dich(it.actionLabel);
   /* QL Tất cả / xem GV: người giữ việc đứng dưới hạn (mockup `.h .ai`) — cột "khi nào · ai" thẳng hàng. */
   const nguoi = it.mine ? null : it.owner ?? (it.ownerId === null && !viecCaLop ? (dich(it.statusLabel) === CHAM_CHEO ? CHAM_CHEO : t('Chưa có người')) : null);
   return { con, daXong: xong.has(it.key), dangChon: chon === it.key, nut, nguoi, viecCaLop };

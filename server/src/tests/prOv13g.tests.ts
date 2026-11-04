@@ -75,11 +75,12 @@ export async function runPrOv13gTests(t: YThucTestKit) {
     assert((sau.length ? baiCua(sau[0]) : 0) === truoc - 1, `${truoc} → ${sau.length ? baiCua(sau[0]) : 0}`);
   }));
 
-  check('OV13g-4 · không đổi luật ai chấm: QL "Tất cả" giữ dòng chấm chéo theo lớp (u0); "Của một GV" không tính dòng chấm chéo', () => {
+  /* SUA-LOI-CV (chủ SP 05/11, thay "Của một GV không tính" của OV-13g): QL xem GV Speaking thấy đúng việc "Chấm Speaking" GV đó thấy — không dòng theo lớp. */
+  check('OV13g-4 · không đổi luật ai chấm: QL "Tất cả" giữ dòng chấm chéo theo lớp (u0); "Của một GV" chỉ có việc Chấm Speaking của GV đó', () => {
     const ql = mywork.myWork(P.mbManager, { nguoi: 'tat-ca' }).dong as any[];
     assert(ql.every((x) => !laCc(x) || x.ownerId === null) && !ql.some((x) => x.tieuDe.startsWith('Speaking chấm chéo'))
       && ql.some((x) => (x.con ?? [x]).some((c: any) => c.key.endsWith('|u0|cc'))), 'QL: dòng chấm chéo u0 như cũ (theo lớp, không người giữ)');
-    const gv = mywork.viecCuaNguoi(P.mbManager, P.sTeacher.userId).items as any[];
-    assert(!gv.some(laCc), 'Của một GV: không có việc chấm chéo');
+    const gv = (mywork.viecCuaNguoi(P.mbManager, P.sTeacher.userId).items as any[]).filter(laCc);
+    assert(gv.length === 1 && gv[0].key === d.KHOA_CHAM_SPEAKING, `Của một GV: ${gv.map((x) => x.key)}`);
   });
 }
