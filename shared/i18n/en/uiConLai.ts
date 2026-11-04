@@ -20,5 +20,5 @@ export const EN_UI_CON_LAI = {
   '{n} đề xuất · quá hạn trước → hạn gần nhất': '{n} requests · overdue first → nearest deadline',
   'Sau khi duyệt:': 'After approval:',
   'VIỆC · DUYỆT': 'TASK · APPROVE',
-  'Chọn một đề xuất bên trái để xem và quyết': 'Pick a request on the left to review and decide',
+  'Chọn một yêu cầu ở danh sách.': 'Pick a request from the list.',
 } as const;

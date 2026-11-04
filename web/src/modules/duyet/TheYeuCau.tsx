@@ -5,6 +5,8 @@ import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhanTrangThai, NutChon } from '../../ui/ui.tsx';
+import { ChipHan } from '../../ui/Nhan.tsx';
+import { ThePhu } from '../congViec/DanhSachViec.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -201,7 +203,6 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   }
 
   const hanV = yc.hanDuyet ? deadlineView({ kind: 'duyet', due: yc.hanDuyet, today: homNay }) : null;
-  const tang1 = !hanV ? null : hanV.tone === 'overdue' ? t('Quá hạn · {daysOverdue} ngày', { daysOverdue: hanV.daysOverdue }) : hanV.homNay ? t('Hạn hôm nay') : hanV.con ? hanV.con[0].toUpperCase() + hanV.con.slice(1) : null;
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
   /* LUAT-5: thẻ Thu hồi — ô Sửa là "Lý do" (không tối thiểu ký tự, như Từ chối). */
   const thuHoi = yc.loai === 'thu_hoi_y_thuc';
@@ -214,11 +215,10 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     : suaKtd ? (!lyDoKtd ? t('Chọn một lý do') : reasonNeedsText(lyDoKtd) ? kiemGhiRoKhac(chu) : null)
     : !chu.trim() ? t('Chưa điền')   // T7 (PR-MTa): không tối thiểu ký tự
     : o.loai === 'sua' && !thuHoi && chu.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : null;
-  const moTaPhu = [!gon && yc.hocVien, !gon && yc.lop, yc.phu].filter(Boolean).join(' · ');
   /* DUYET-QL: ở chân panel thứ tự như mockup (Từ chối… · Duyệt chính bên phải); thẻ tự vẽ giữ Duyệt trước. */
   const btnChan = chanEl !== undefined ? 'btn min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0';
   const nutDuyet = (
-    <button key="d" type="button" className={`${btnChan} btn-primary`} disabled={busy || !!o}
+    <button key="d" type="button" className={`${btnChan} btn-primary`} disabled={busy || !!o} title={yc.neuDuyet && !panel ? t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) }) : undefined}
       aria-expanded={o?.loai === 'tuan' || o?.loai === 'ghi-chu'}
       onClick={(e) => duyet(e.currentTarget)}>{busy && !o ? t('Đang lưu…') : duyetCoBuoc ? t('Duyệt…') : t('Duyệt')}</button>
   );
@@ -258,17 +258,20 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                   onChange={(e) => chon.onChange(e.target.checked)} aria-label={t('Chọn: {tieuDe}', { tieuDe: dich(yc.tieuDe) })} />
               </label>
             )}
-            {!gon && (
-              /* PR-HK1 H4: chip nền nhạt, không viền — viền xám làm nhãn trông như nút thao tác. */
-              <span className="w-24 shrink-0 truncate rounded bg-muted-bg px-1.5 py-0.5 text-center text-[12px] font-semibold text-muted">{dich(yc.nhanPhanLoai)}</span>
-            )}
-            <p className="m-0 min-w-0 text-sm leading-snug">
-              <b className="font-semibold text-slate-100">{dich(yc.tieuDe)}</b>
-              {moTaPhu && <span className="text-slate-400"> · {dich(moTaPhu)}</span>}
+            {/*
+              * CD-GON (M1, M10 — cùng dáng dòng yêu cầu ở Công việc v12 / Tổng quan #937; thay PR-HK1 H4): loại = chip VIỀN (chữ 12 / 500 mờ, không nền —
+              * khác chip SOS, khác nút) · tên em 600 (đậm duy nhất, khi thẻ không nằm trong hồ sơ em) · tên yêu cầu 500 · lớp / lượt = chip nhạt — không chuỗi "a · b · c".
+              */}
+            <p className="m-0 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-snug">
+              {!gon && <ThePhu vien={[dich(yc.nhanPhanLoai)]} ds={[]} />}
+              {!gon && yc.hocVien && <b className="font-semibold text-[color:var(--text)]">{yc.hocVien}</b>}
+              <span className="font-medium text-[color:var(--text)]">{dich(yc.tieuDe)}</span>
+              <ThePhu ds={[!gon ? yc.lop : null, yc.phu ? dich(yc.phu) : null].filter((x): x is string => !!x)} />
             </p>
           </div>}
-          <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${gon || panel ? '' : 'sm:pl-[6.5rem]'}`}>
-            <div ref={khungDong} className={panel ? 'rounded-lg bg-[color:var(--surface-2)] px-3 py-2.5' : moHet ? '' : 'line-clamp-2'}>
+          {/* CD-GON (M4): thẻ ngoài panel — lý do MỘT dòng + "Xem thêm" cùng hàng (mở: đủ lý do + "Nếu duyệt", "Thu gọn" cuối). */}
+          <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${panel ? '' : 'flex flex-wrap items-start gap-x-2'}`}>
+            <div ref={khungDong} className={panel ? 'rounded-lg bg-[color:var(--surface-2)] px-3 py-2.5' : moHet ? 'basis-full' : 'line-clamp-1 min-w-0'}>
               {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{dich(d)}</p>)}
               {/* DUYET-QL: điểm lượt làm em vào SOS (`diemHv` máy chủ đã gắn — 0 câu thêm), cùng mẫu dòng điểm mọi panel. */}
               {panel && yc.diemHv && (
@@ -277,8 +280,9 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                 </dl>
               )}
             </div>
-            {(biCat || moHet) && !panel && (
-              <button type="button" className="mt-0.5 min-h-[44px] text-[12px] text-[color:var(--accent-strong)] hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
+            {/* CD-GON (M4): "Nếu duyệt" lặp ý tiêu đề → mở bằng "Xem thêm" (và `title` nút Duyệt); panel vẫn có khối "Sau khi duyệt". */}
+            {(biCat || moHet || (!!yc.neuDuyet && cho)) && !panel && (
+              <button type="button" className="order-last shrink-0 min-h-[44px] text-[12px] text-[color:var(--accent-strong)] hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
                 aria-expanded={moHet}>{moHet ? t('Thu gọn') : t('Xem thêm')}</button>
             )}
             {yc.neuDuyet && cho && (panel ? (
@@ -287,19 +291,15 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                 <b className="block font-semibold" style={{ color: 'rgb(var(--soon-rgb))' }}>{t('Sau khi duyệt:')}</b>
                 <span className="text-slate-200">{dich(yc.neuDuyet)}</span>
               </div>
-            ) : <p className="m-0 mt-1 text-[12px] text-slate-400">{t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) })}</p>)}
-            {!cho && <KetQua yc={yc} ngan={ngan} />}
+            ) : moHet && <p className="m-0 mt-1 basis-full text-[12px] text-slate-400">{t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) })}</p>)}
+            {!cho && <div className="basis-full"><KetQua yc={yc} ngan={ngan} /></div>}
           </div>
         </div>
 
         <div className={`flex flex-col gap-1.5 ${panel ? 'items-end border-t pt-3 text-right' : 'sm:items-end sm:text-right'}`} style={panel ? { borderColor: 'var(--line)' } : undefined}>
           {cho ? (
-            tang1 && !panel && (
-              <div className="tabular-nums">
-                <div className={`text-sm font-bold ${hanV!.tone === 'overdue' ? 'text-late' : hanV!.ganHan ? 'text-soon' : 'text-slate-100'}`}>{tang1}</div>
-                <div className="text-[12px] text-slate-400">{hanV!.han}</div>
-              </div>
-            )
+            /* CD-GON (M10): hạn = MỘT viên theo mức (quá hạn đỏ ⚠ · hôm nay vàng ⚠ · còn hạn xám) như dòng Công việc — thay hai hàng "Quá hạn · 1 ngày" / "hạn 13/09". */
+            yc.hanDuyet && !panel && <div><ChipHan vien loai="duyet" han={yc.hanDuyet} /></div>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
               <NhanTrangThai t={tt.t} />
