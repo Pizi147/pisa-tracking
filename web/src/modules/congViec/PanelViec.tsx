@@ -159,7 +159,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
     case 'score':
       /* R1-LUU-TIEP: mọi việc chấm có "Việc tiếp ›" ở chân panel + trong hộp nhập điểm khi hết phần người xem. */
       if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
-      if (!laViecChamCheo(it) && (it.con || it.periodId)) return <PanelNhapDiemTuan key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
+      /* N39 (chủ SP 05/11): việc chấm có tuần thi — kể cả Speaking chấm chéo — mở lưới TUẦN + LỚP, chỉ em có bài tuần đó; không mở bảng cả lớp theo đợt MT. */
+      if (it.con || it.periodId) return <PanelNhapDiemTuan key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       return <PanelNhapDiem key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'ban_giao':
       /* PR-B: bàn giao khi đổi GV — `ban_giao_gv:{id}`. */
@@ -344,6 +345,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
                 <div className="luoi-trong-panel px-2 pb-2">
                   <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
                     hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
+                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'}
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
                     datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
                 </div>

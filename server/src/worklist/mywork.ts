@@ -631,7 +631,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         studentName: where, emIds: only ? undefined : [...students.keys()],
         classId: first.classId, classCode: first.classCode,
         attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
-        contextLabel: first.weekStart ? `${luotCua} ${tuanLich(first.weekStart)}` : luotCua,
+        /* N39 (chủ SP 05/11): Mock theo tuần + lớp — dòng con chỉ ghi tuần ("Speaking · W3 OCT · 2 bài"), bỏ danh sách "MT1, MT4". */
+        contextLabel: !first.weekStart ? luotCua : (first.kind ?? 'mock') === 'mock' ? tuanLich(first.weekStart) : `${luotCua} ${tuanLich(first.weekStart)}`,
         count: students.size,
         reason: skills,
         tieuDe: `Nhập điểm ${skills}`, phu: skills,

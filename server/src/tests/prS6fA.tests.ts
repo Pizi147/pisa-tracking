@@ -229,14 +229,14 @@ export async function runPrS6fATests(t: YThucTestKit) {
   /* PR-Dọn (Q9): Việc nhập điểm dùng CÙNG luật Nợ điểm (bỏ lớp đã kết thúc) — phép kiểm không còn tự lọc "lớp đang hoạt động". */
   check('S6F-a (3e) · HAI ĐƯỜNG: (lớp, đợt) của việc nhập điểm "Quá hạn" của GV = (lớp, đợt) có ô Nợ điểm quá hạn của GV (mọi lớp)', () => {
     const g = gvL();
-    /* OV-13c: một việc = (lớp, tuần thi), dòng phụ "MT1, MT3 W1 SEP" — so theo (lớp, bài). */
+    /* OV-13c: một việc = (lớp, tuần thi); N39 (PR-MT-CHAM): dòng phụ Mock chỉ còn tuần, không "MT1, MT3" — so theo (lớp, em). */
     const viec = new Set((mw.myWork(g).groups as any[]).flatMap((x) => x.items).flatMap((it: any) => it.con ?? [it])
       .filter((it: any) => it.group === 'score' && it.mine && it.urgency === 'overdue')
-      .flatMap((it: any) => String(it.contextLabel).replace(/ W\d [A-Z]{3}( \d{4})?$/, '').split(', ').map((l) => `${it.classId}|${l}`)));
-    const luot = new Map((conn.prepare(`SELECT id, class_id, attempt_no, kind FROM assessment_attempts`).all() as any[]).map((a) => [a.id, a]));
+      .flatMap((it: any) => (d.emCuaViec(it) ?? []).map((em: number) => `${it.classId}|${em}`)));
+    const luot = new Map((conn.prepare(`SELECT id, class_id, student_id FROM assessment_attempts`).all() as any[]).map((a) => [a.id, a]));
     const no = new Set((debt.scoreDebtCells(P.admin, TODAY, null) as any[]).filter((x) => x.overdue && x.userId === g.userId).map((x) => {
       const a = luot.get(x.attemptId);
-      return `${a.class_id}|${a.kind && a.kind !== 'mock' ? d.ATTEMPT_KIND_SHORT[a.kind] : `MT${a.attempt_no}`}`;
+      return `${a.class_id}|${a.student_id}`;
     }));
     const lech = [...viec].filter((k) => !no.has(k)).concat([...no].filter((k) => !viec.has(k)));
     assert(no.size > 0 && lech.length === 0, `Việc ${viec.size} · Nợ ${no.size} · lệch: ${lech.join(' ; ')}`);
