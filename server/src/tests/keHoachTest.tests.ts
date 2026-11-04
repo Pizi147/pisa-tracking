@@ -86,8 +86,8 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
 
   check('T9 · Kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không dùng target hiện tại của lộ trình', () => {
     /*
-     * PHẢI khớp đúng cách `standingFor` chọn lượt (standing.ts:207: lượt MỚI NHẤT — attempt_no lớn nhất — có BẤT KỲ
-     * dòng nào ở `assessment_scores`, kể cả dòng chỉ mang dấu "-" chưa có band) và đúng lộ trình ĐANG CHẠY của em
+     * PHẢI khớp đúng cách `standingFor` chọn lượt (lượt MỚI NHẤT — attempt_no lớn nhất — có ÍT NHẤT MỘT kỹ năng đủ điểm: S2 bỏ qua ứng viên
+     * chỉ mang dấu "-" — N38 làm loại lượt này phổ biến hơn: vắng 2 lần huỷ, không điểm) và đúng lộ trình ĐANG CHẠY của em
      * (`status = 'active'`, standing.ts:148) — chọn sai lượt/lộ trình thì so hai bên ra khác nhau vì lý do khác,
      * không phải vì T9.
      */
@@ -96,11 +96,11 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
          FROM assessment_attempts a
         WHERE a.class_id = ? AND a.status != 'cancelled' AND a.target_at_attempt IS NOT NULL
           AND EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.id = a.cycle_id AND lc.status = 'active')
-          AND EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id)
+          AND EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.band IS NOT NULL AND sc.skill IN ('listening', 'reading', 'speaking'))
           AND a.attempt_no = (
             SELECT MAX(a2.attempt_no) FROM assessment_attempts a2
              WHERE a2.cycle_id = a.cycle_id AND a2.status != 'cancelled'
-               AND EXISTS (SELECT 1 FROM assessment_scores sc2 WHERE sc2.attempt_id = a2.id)
+               AND EXISTS (SELECT 1 FROM assessment_scores sc2 WHERE sc2.attempt_id = a2.id AND sc2.band IS NOT NULL AND sc2.skill IN ('listening', 'reading', 'speaking'))
           )
         LIMIT 1`,
     ).get(mbClass) as any;

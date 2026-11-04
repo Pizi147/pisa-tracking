@@ -49,7 +49,7 @@ export async function runPrSeedUxTests(t: { check: (n: string, fn: () => void) =
     const dong = (b.dong ?? b.rows ?? b) as any[];
     assert(Array.isArray(dong) && dong.filter((r) => (r.so?.buoi ?? r.buoi ?? 0) > 0).length >= 6, 'ít hơn 6 tutor có buổi');
   });
-  check('SU-7 MT cũ có "-" → Đã huỷ · vắng MT cũ; vi phạm có / chưa báo PH; lớp thường đủ điểm', () => {
+  check('SU-7 MT cũ có "-" → Không dự thi (N38); vi phạm có / chưa báo PH; lớp thường đủ điểm', () => {
     assert(one(`SELECT 1 FROM assessment_scores WHERE no_show_cu = 1`), 'không có "-" MT cũ');
     assert(one(`SELECT 1 FROM viec_bao_ph WHERE trang_thai = 'xong'`) && one(`SELECT 1 FROM viec_bao_ph WHERE trang_thai = 'mo'`), 'thiếu lần xử lý có / chưa báo PH');
     const du = one(`SELECT COUNT(*) n FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.code = 'HD FOU 06' AND a.kind = 'progress'

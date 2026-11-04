@@ -177,20 +177,19 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     attemptsSvc.setSkillSkip(P.mbManager, m2.id, 'reading', false);
   });
 
-  // PR-MTa T3 thay K4-28 lần 2: vắng lần 2 → kỹ năng huỷ (vắng 2 lần), không tự tạo đề nghị; GVCN "Xin dời" mới ra thẻ Lịch thi.
-  check('PR-XLMT (2) · Báo vắng (GVCN): lần 1 máy tự dời tuần kế tiếp; lần 2 huỷ, Xin dời → đề nghị + thẻ Lịch thi (PR-MTa T3)', () => {
+  // N38 L2 (thay PR-MTa T3 "Xin dời"): vắng lần 2 → kỹ năng huỷ (vắng 2 lần) — không đề nghị, không thẻ Lịch thi.
+  check('PR-XLMT (2) · Báo vắng (GVCN): lần 1 máy tự dời tuần sau tuần thi; lần 2 huỷ — không đề nghị, không thẻ (N38 L2)', () => {
     const r1 = absence.baoVang(P.coreTeacher, m1.id, 'speaking', 'Em ốm cả tuần', TODAY);
-    assert(r1.daDoi && !r1.choDuyet && r1.tuanMoi === t.addDays(tuanNay, 7), JSON.stringify(r1));
+    assert(r1.daDoi && !r1.huyVang && r1.tuanMoi === t.addDays(tuanNay, 7), JSON.stringify(r1));
     const l = lich(m1.id, 'speaking');
     assert(l.sit_status === 'scheduled' && l.lan === 1, JSON.stringify(l));
     const h = conn.prepare(`SELECT reason FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_no_show_settled' AND field = 'speaking'`).get(m1.id) as any;
     assert(/Báo vắng: Em ốm cả tuần/.test(h?.reason ?? ''), JSON.stringify(h));
     const r2 = absence.baoVang(P.coreTeacher, m1.id, 'speaking', 'Em vẫn còn ốm', t.addDays(tuanNay, 8));
-    assert(!r2.daDoi && !r2.choDuyet && r2.huyVang, JSON.stringify(r2));
-    absence.xinDoi(P.mbManager, m1.id, 'speaking', { lyDo: 'Em vẫn còn ốm', today: t.addDays(tuanNay, 8) });
-    const yc = conn.prepare(`SELECT 1 FROM yeu_cau_duyet y JOIN skill_move_requests r ON r.id = y.doi_tuong_id
-      WHERE r.attempt_id = ? AND r.skill = 'speaking' AND r.status = 'pending'`).get(m1.id);
-    assert(yc, 'thiếu thẻ Lịch thi cho đề nghị lần 2');
+    assert(!r2.daDoi && r2.huyVang && lich(m1.id, 'speaking').sit_status === 'cancelled', JSON.stringify(r2));
+    const yc = conn.prepare(`SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = ? AND r.skill = 'speaking'`).get(m1.id)
+      ?? conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'lich_thi' AND hoc_vien_id = (SELECT student_id FROM assessment_attempts WHERE id = ?)`).get(m1.id);
+    assert(!yc, 'vắng lần 2 không sinh đề nghị / thẻ Lịch thi');
   });
 
   // PR-MTa T7: Báo vắng — lý do tuỳ chọn (bỏ nhánh "lý do ngắn"); chữ "MT lịch sử" → "MT cũ".
@@ -276,9 +275,12 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     const a = luotCua(sA)[0].id;
     datTuan(a, tuan(0).id);
     absence.baoVang(P.mbManager, a, 'speaking', 'Em ốm cả tuần', TODAY);
-    /* PR-MTa T3: vắng lần 2 huỷ kỹ năng; đề nghị chờ duyệt dựng qua "Xin dời". */
+    /* N38 L2: vắng lần 2 huỷ kỹ năng = đã xong (thiếu), không "cần xếp lại". Đề nghị chờ duyệt chỉ còn là thẻ CŨ (trước N38) — dựng thẳng. */
     absence.baoVang(P.mbManager, a, 'speaking', 'Em vẫn còn ốm', t.addDays(tuanNay, 8));
-    absence.xinDoi(P.mbManager, a, 'speaking', { today: t.addDays(tuanNay, 8) });
+    assert(dem() === n0, `huỷ vắng 2 lần không phải "cần xếp lại": ${dem()} ≠ ${n0}`);
+    conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
+      VALUES (?, 'speaking', 2, ?, ?, 'Xin dời (thẻ cũ)', ?, ?, 'pending', ?)`)
+      .run(a, tuan(1).id, tuan(3).id, t.addDays(tuanNay, 8), t.addDays(tuanNay, 13), new Date().toISOString());
     assert(dem() === n0, `chờ duyệt không phải "cần xếp lại": ${dem()} ≠ ${n0}`);
     const sB = them('MB FT 102', 'XLMT Em Vắng Huỷ');
     const b = luotCua(sB)[0].id;

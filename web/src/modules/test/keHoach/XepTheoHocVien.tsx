@@ -34,7 +34,7 @@ const suaDuoc = (o: OKyNang | undefined): o is OKyNang =>
 const doiThat = (o: OKyNang | undefined, t: Tuan | undefined) => !!t && (!o || t.periodId !== o.periodId || o.sit === 'cancelled');
 const coLichTiep = (h: Hang) => Object.values(h.dot).some((o) => o.trangThaiDot === 'planned' && Object.values(o.kn).some((k) => !!k?.tuan));
 /** Cùng luật "Cần xếp lại" của lưới Kế hoạch Test (`LuoiKeHoach`). */
-const canXepLai = (h: Hang) => Object.values(h.dot).some((d) => !d.lichSu && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || o?.trangThai === 'da-huy'));
+const canXepLai = (h: Hang) => Object.values(h.dot).some((d) => !d.lichSu && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || (o?.trangThai === 'da-huy' && !o.huyVang)));   // N38 L2
 const minTuan = (ds: (string | null | undefined)[]) => ds.filter((x): x is string => !!x).map((x) => x.slice(0, 10)).sort()[0] ?? null;
 
 /** Một hàng của bảng một em: lượt có sẵn (từ `bang`) hoặc lượt mới trong nháp. */

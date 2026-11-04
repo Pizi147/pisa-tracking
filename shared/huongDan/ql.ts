@@ -100,10 +100,10 @@ export const HD_QL: HuongDan = {
       muc: [
         { id: 'ql-kh-xep', ten: 'Xếp lịch nhiều lớp', buoc: ['Chọn <b>Fast Track</b> hoặc <b>Lớp thường</b>; chip <b>Cần xếp lại</b> chỉ lớp có em cần xếp.', '<b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường).'],
           chi: { hd: 'kht-loc', duong: '/test/ke-hoach', chu: 'Lọc và xếp lịch nhiều lớp ở hàng này.' } },
-        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm chip kỹ năng ở dòng lớp: chọn tuần, <b>Lưu</b>.', '<b>⋯</b>: <b>Dời lịch Test</b> · <b>Dời hạn chấm</b> · <b>Bỏ khỏi đợt</b> · <b>Huỷ điểm</b> · <b>Trả lời đề nghị dời</b> · <b>Không mock lại</b>.'] },
+        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm ô MT: mỗi môn có <b>Dời</b> · <b>Vắng</b> · <b>Bỏ khỏi đợt</b>, rồi <b>Lưu</b>.', '<b>Dời</b> = chọn tuần = xếp lại từ đầu — cả môn vắng, huỷ vắng 2 lần, bỏ khỏi đợt; chọn đúng tuần cũ cũng được.', '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b> · <b>Nhật ký</b>.'] },
         { id: 'ql-kh-luat', ten: 'Luật xếp lịch', buoc: ['Link <b>Luật xếp lịch Test</b> trên hàng lọc.'] },
         { id: 'ql-kh-tim', ten: 'Tìm lớp, học viên', buoc: ['Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>.', 'Chọn em: lớp mở, hàng em được đánh dấu.'] },
-        { id: 'ql-kh-xoa', ten: 'Xóa lịch một đợt', buoc: ['Bấm ô MT, ⋯ đầu hộp › <b>Xóa lịch</b> → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.', 'Đã có điểm / đã làm bài: mục mờ. Kỹ năng huỷ vì vắng 2 lần: <b>Khôi phục → Chưa xếp</b> hoặc <b>Giữ huỷ</b>.'] },
+        { id: 'ql-kh-xoa', ten: 'Xóa lịch một đợt', buoc: ['Bấm ô MT, ⋯ đầu hộp › <b>Xóa lịch</b> → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.', 'Đã có điểm / đã làm bài: mục mờ.'] },
         { id: 'ql-kh-ghi-chu', ten: 'Ghi chú lịch Test', buoc: ['Ô <b>Ghi chú lịch Test</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).', '<b>+ Ghi chú lớp</b> dưới bảng. Chỉ là ghi chú, không dời lịch.'] },
         { id: 'ql-kh-xuat', ten: 'Xuất Excel', buoc: ['<b>Xuất Excel</b>: Kế hoạch Test 13 cột theo bộ lọc đang xem (tuần kèm năm, <b>W4 AUG/2026</b>).', '<b>Xuất điểm Test</b>: <b>Điểm + nhận xét</b> / <b>Chỉ điểm</b>; theo tuần, theo lớp (nhiều MT) hoặc lớp + khoảng tuần.'] },
       ],
@@ -134,7 +134,7 @@ export const HD_QL: HuongDan = {
   ],
   luat: [
     ...luatGv('han-cham', 'han-xac-nhan', 'han-ket-qua', 'han-vi-pham', 'dau-gach', 'sos-case', 'nhan-xet'),
-    { id: 'ql-han-duyet', ten: 'Hạn trả lời thẻ', buoc: ['<b>5 ngày</b> tính cả ngày gửi.', '<b>Dời lịch Test lần 2</b>: hết Chủ nhật tuần gửi; quá hạn thì kỹ năng bị huỷ.', '<b>Báo QL</b>: không hạn, tự đóng khi việc gốc xong.'] },
+    { id: 'ql-han-duyet', ten: 'Hạn trả lời thẻ', buoc: ['<b>5 ngày</b> tính cả ngày gửi.', '<b>Dời lịch Test</b> (thẻ cũ, trước 05/11 — "-" nay không tạo thẻ): hết Chủ nhật tuần gửi; quá hạn thì kỹ năng bị huỷ.', '<b>Báo QL</b>: không hạn, tự đóng khi việc gốc xong.'] },
     { id: 'ql-tu-choi', ten: 'Từ chối', buoc: ['Lý do bắt buộc; người gửi đọc được.', 'Từ chối đề xuất PA: việc cũ của GV quay lại kèm lý do.', 'Từ chối Ý thức: vi phạm về <b>Cần xử lý</b>, bậc giữ nguyên.'] },
     { id: 'ql-de-xuat-pa', ten: 'Đề xuất PA khác', buoc: ['GV gửi khi Xác nhận PA hoặc khi PA đang chạy; Case "Chờ duyệt đổi PA".', 'Duyệt: PA mới chạy từ ngày duyệt.', '<b>Xin ý kiến</b>: chỉ trả lời, PA vẫn chạy; câu trả lời ghi vào lịch sử em.'] },
     { id: 'ql-tu-duyet', ten: 'QL tự gửi', buoc: ['Thẻ bạn tự gửi: "Bạn tự gửi · tự duyệt được".', 'Có nhật ký, báo Quản trị.'] },

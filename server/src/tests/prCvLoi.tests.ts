@@ -100,14 +100,14 @@ export async function runPrCvLoiTests(t: YThucTestKit) {
     assert(!dongCua(P.mbManager, c.id).some((x: any) => x.group === 'no_owner'), 'QL hết dòng Phân công');
   }));
 
-  check('K4 "Xếp lại bài vắng" chỉ hiện khi máy chủ cho đổi lịch (GVCN FT không; GVCN lớp thường, QL có)', () => {
+  check('K4 · N38: bài vắng (dữ liệu cũ) → "Dời lịch" chỉ hiện khi máy chủ cho đổi lịch (GVCN FT không; GVCN lớp thường, QL có)', () => {
     for (const [ten, p, code] of [['GVCN FT', P.coreTeacher, 'MB FT 101'], ['GVCN lớp thường', P.normalCoreTeacher, 'MB FOU 12'], ['QL', P.mbManager, 'MB FT 101']] as const) {
       const lop = classId(code);
       const sid = one(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' LIMIT 1`, lop).student_id;
       const ctx = { classId: lop, studentId: sid };
       const laFt = !!one('SELECT is_fast_track f FROM classes WHERE id = ?', lop).f;
       const nut = dm.thaoTacKyNang('vang', { nhapDiem: false, quanLy: perm.can(p, dm.PERMISSIONS.PLAN_WEEK, ctx), gvcn: perm.isCoreTeacherOf(p, lop),
-        laFt, dotHoanTat: false }).chinh === 'xep-lai';
+        laFt, dotHoanTat: false }).chinh === 'doi-lich';
       assert(!nut || lich.canMoveSkillSchedule(p, ctx), `${ten}: nút hiện mà máy chủ 403`);
       assert(nut === (ten !== 'GVCN FT'), `${ten}: nút ${nut ? 'có' : 'không'}`);
     }

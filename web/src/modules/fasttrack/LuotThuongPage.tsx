@@ -339,7 +339,7 @@ function conLaiThuong(d: ChiTiet, homNay: string, theCase: Map<number, CaseCard>
     if (cell.diem !== null || s.khongDuThi) continue;
     if (s.progress === 'absent') {
       const chinh = thaoTac(k).chinh;
-      cua(CHU_THAO_TAC['xep-lai'], chinh === 'xep-lai' ? '[data-chinh]' : null);
+      cua(CHU_THAO_TAC['doi-lich'], chinh === 'doi-lich' ? '[data-chinh]' : null);   // N38 L5: bài vắng (dữ liệu cũ) → Dời
     } else if (trong) cua(CHU_THAO_TAC['nhap-diem'], 'input');
     else if (s.progress === 'due' || s.progress === 'sat') cua(t('Chờ điểm'), null, tenNguoiLam(d.nguoiLam, [k]));
     else if (s.progress === 'upcoming' && s.noShow && s.weekStart) cua(t('Làm bài {tuan}', { tuan: tuanLich(s.weekStart, homNay) }), null, tenNguoiLam(d.nguoiLam, [k]));

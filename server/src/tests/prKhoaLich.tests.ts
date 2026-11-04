@@ -121,7 +121,7 @@ export async function runPrKhoaLichTests(t: any) {
       JSON.stringify(r.dong.map((x: any) => [x.hanhDong, x.loi])));
   }));
 
-  check('KHL-3 · T6 ngoại lệ: "-" ở MT tuần này dời theo luật vắng; duyệt thẻ dời; khôi phục phần thi vắng; Không mock lại; lớp thường', () => thu((doiNgay) => {
+  check('KHL-3 · T6 ngoại lệ: "-" ở MT tuần này dời theo luật vắng; duyệt thẻ dời; khôi phục phần thi vắng; từ chối thẻ cũ = Không mock lại; lớp thường', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.nay);
     doiNgay();
     const e1 = loi(() => svc.saveScore(P.lrTeacher, m1, 'listening', { noShow: true }, T6));
@@ -136,9 +136,14 @@ export async function runPrKhoaLichTests(t: any) {
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ? AND skill = 'reading'`).run(m1);
     const e3 = loi(() => absence.restoreCancelledSkill(QL, m1, 'reading', pid(W.sau)));
     assert(e3 === null, `khôi phục: ${e3}`);
-    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled' WHERE attempt_id = ? AND skill = 'writing'`).run(m1);
-    const e4 = loi(() => absence.khongMockLai(QL, m1, 'writing', null));
-    assert(e4 === null, `Không mock lại: ${e4}`);
+    /* N38: nút "Không mock lại" đã gỡ — ngoại lệ T6 còn ở đường từ chối thẻ dời cũ của kỹ năng huỷ vắng 2 lần (`khongMockLaiNoi` → bỏ khỏi đợt). */
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ? AND skill = 'writing'`).run(m1);
+    conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, requested_on, decide_by, status, created_at)
+      VALUES (?, 'writing', 2, ?, ?, ?, ?, 'pending', ?)`).run(m1, pid(W.nay), pid(W.sau), T6, '2026-09-20', T6);
+    const yc2 = get(`SELECT id FROM skill_move_requests WHERE attempt_id = ? AND skill = 'writing' AND status = 'pending'`, m1).id;
+    const e4 = loi(() => absence.decideAbsenceMove(QL, yc2, { approve: false, note: 'Không mock lại' }));
+    const w = get(`SELECT required FROM attempt_skills WHERE attempt_id = ? AND skill = 'writing'`, m1);
+    assert(e4 === null && w.required === 0, `từ chối thẻ cũ = Không mock lại: ${e4} ${JSON.stringify(w)}`);
     assert(loi(() => ss.chanCuoiTuan(QL, { kind: 'progress' }, [W.nay])) === null, 'lớp thường không khoá');
     assert(loi(() => ss.chanCuoiTuan(QL, { kind: 'mt0' }, [W.nay])) === L, 'MT0 khoá');
   }));

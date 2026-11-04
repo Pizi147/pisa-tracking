@@ -86,20 +86,19 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     assert(ky(a, 'writing').planned_period_id === W1 && ky(a, 'writing').absence_move_count === 1, `W1 + W2 "-": ${JSON.stringify(ky(a, 'writing'))}`);
   }));
 
-  /* LUAT-34 (luật 4 sửa 21/10) thay OV-1b "nhập bù = Không dự thi": "-" ghi muộn ở MT hiện tại chốt như trong tuần (dời tuần kế của lịch còn thi
-   * được); MT cũ "-" = Đã huỷ ngay (dấu `no_show_cu`, không dời, không đếm). Bảng đủ T01–T31 ở `mtTrangThai.tests.ts`. */
-  check('OV1b-2 → LUAT-34 · "-" ghi muộn (tuần kế còn chạy) dời tuần kế, đếm 1; MT cũ "-" = Đã huỷ ngay, không dời, không đếm', () => thu(() => {
+  /* LUAT-34 → N38: "-" ghi muộn chốt như trong tuần (dời tuần ngay sau tuần thi); MT cũ CỦA KỸ NĂNG (tuần thi cách ≥ 2 tuần) "-" = Không dự thi
+   * (dấu `no_show_cu`, không dời, không đếm). Bảng đủ T01–T31 ở `mtTrangThai.tests.ts`. */
+  check('OV1b-2 → N38 · "-" ghi muộn tuần kế dời tuần ngay sau tuần thi, đếm 1; tuần thi cách ≥ 2 tuần "-" = Không dự thi, không dời, không đếm', () => thu(() => {
     const a = luot[1];
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     const k = ky(a, 'listening');
     assert(k.planned_period_id === W1 && k.absence_move_count === 1 && k.sit_status === 'scheduled', `ghi muộn phải dời: ${JSON.stringify(k)}`);
     assert(dau(a, 'listening').no_show_cu === 0, 'không còn Không dự thi');
-    conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(a);
-    xoaNho();
-    attempts.saveScore(QL, a, 'reading', { noShow: true }, TRONG);
-    assert(ky(a, 'reading').planned_period_id === W && ky(a, 'reading').absence_move_count === 0 && dau(a, 'reading').no_show_cu === 1, 'MT cũ "-" = Đã huỷ');
-    assert(o(a, 'reading', W, TRONG).noShow?.state === 'da-huy', 'ô MT cũ hiện Đã huỷ');
+    const cu = '2026-11-16';   // thứ Hai W+2: tuần thi của Reading cách 2 tuần → MT cũ của kỹ năng
+    attempts.saveScore(QL, a, 'reading', { noShow: true }, cu);
+    assert(ky(a, 'reading').planned_period_id === W && ky(a, 'reading').absence_move_count === 0 && dau(a, 'reading').no_show_cu === 1, 'MT cũ "-" = Không dự thi');
+    assert(o(a, 'reading', W, cu).noShow?.state === 'khong-du-thi', 'ô MT cũ hiện Không dự thi');
   }));
 
   check('OV1b-3 · ca Phượng: "-" vào ô `sat` (điểm đã xoá) vẫn có tác dụng — trong tuần dời, ghi muộn cũng chốt (LUAT-34), không ô trống', () => thu(() => {

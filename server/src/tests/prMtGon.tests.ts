@@ -136,13 +136,13 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(au.n >= 1, 'thiếu nhật ký xoá điểm');
   });
 
-  check('MTG-2d · kỹ năng "cancelled" (dữ liệu cũ, kể cả MT cũ): menu có "Đưa lại vào đợt"; đưa lại → chờ thi, tuần không hợp lệ thì Chưa xếp', () => {
+  check('MTG-2d · N38 · kỹ năng "cancelled" (dữ liệu cũ, kể cả MT cũ) / bỏ khỏi đợt: nút chính Dời (chọn tuần = xếp lại); bỏ / đưa lại vẫn qua `setSkillScope`', () => {
     const tt = d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-01-05', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: true, homNay: TODAY });
     assert(tt === 'da-huy', tt);
     const q = { nhapDiem: true, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false };
-    assert(d.thaoTacKyNang('da-huy', q).chinh === 'dua-lai', JSON.stringify(d.thaoTacKyNang('da-huy', q)));
-    assert(d.thaoTacKyNang('khong-yeu-cau', q).chinh === 'dua-lai', 'khong-yeu-cau');
-    assert(d.CHU_THAO_TAC['dua-lai'] === 'Đưa lại vào đợt' && d.CHU_THAO_TAC['bo-ky-nang'] === 'Bỏ khỏi đợt', 'chữ');
+    assert(d.thaoTacKyNang('da-huy', q).chinh === 'doi-lich', JSON.stringify(d.thaoTacKyNang('da-huy', q)));
+    assert(d.thaoTacKyNang('khong-yeu-cau', q).chinh === 'doi-lich', 'khong-yeu-cau');
+    assert(!('dua-lai' in d.CHU_THAO_TAC) && d.CHU_THAO_TAC['bo-ky-nang'] === 'Bỏ khỏi đợt', 'chữ');
     for (const s of ['chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'lich-su'] as const) {
       assert(d.thaoTacKyNang(s, q).menu.includes('bo-ky-nang'), `thiếu Huỷ kỹ năng ở ${s}`);
       assert(!d.thaoTacKyNang(s, { ...q, quanLy: false }).menu.includes('bo-ky-nang'), `GV có Huỷ kỹ năng ở ${s}`);
@@ -249,12 +249,12 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(kn(b.m2, 'speaking').sit_status === 'scheduled' && kn(b.m2, 'speaking').planned_period_id === tuan(4).id, JSON.stringify(kn(b.m2, 'speaking')));
   });
 
-  check('MTG-4c · setSkillWeek thẳng trên kỹ năng "cancelled" → 400 rõ, không đổi tuần', () => {
+  check('MTG-4c · N38 L5: setSkillWeek thẳng trên kỹ năng "cancelled" (Mock) → xếp lại tuần đó, "đã xếp"', () => {
     const a = emMoi();
-    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled' WHERE attempt_id = ? AND skill = 'speaking'`).run(a.m2);
-    const e = loiCua(() => skillSch.setSkillWeek(QL, a.m2, 'speaking', tuan(5).id, {}));
-    assert(e.status === 400 && /Đưa lại vào đợt/.test(e.message), `${e.status} ${e.message}`);
-    assert(kn(a.m2, 'speaking').planned_period_id === tuan(4).id, 'tuần đổi lặng lẽ');
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1, absence_move_count = 2 WHERE attempt_id = ? AND skill = 'speaking'`).run(a.m2);
+    skillSch.setSkillWeek(QL, a.m2, 'speaking', tuan(5).id, { force: true });
+    const k = kn(a.m2, 'speaking');
+    assert(k.sit_status === 'scheduled' && k.planned_period_id === tuan(5).id && k.huy_vang === 0 && k.absence_move_count === 0, JSON.stringify(k));
   });
 
   // ---------------------------------------------------------------- Rà planning PR #282

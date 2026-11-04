@@ -52,7 +52,7 @@ const troCham = (o: OKyNang, homNay: string) => !!o.hanCham && homNay > ngayCua(
 /** Tooltip một kỹ năng: `Listening: W3 SEP · xong`. */
 function dongKn(ct: string | null | undefined, k: KyNangKH, o: OKyNang, loai: Loai, homNay: string, cu: boolean): string {
   const tt: Record<Loai, string | null> = {
-    xong: 'xong', 'khong-yeu-cau': t('không yêu cầu'), 'khong-du-thi': cu ? t('đã huỷ') : t('vắng'), 'tuan-nay': t('tuần này'), 'co-lich': null, 'chua-lich': null,
+    xong: 'xong', 'khong-yeu-cau': t('không yêu cầu'), 'khong-du-thi': t('không dự thi'), 'tuan-nay': t('tuần này'), 'co-lich': null, 'chua-lich': null,
     'da-huy': `${o.huyVang ? t('huỷ (vắng 2 lần)') : t('đã huỷ')}${o.choDuyet ? t(' · chờ Quản lý duyệt') : ''}`,   // đề nghị dời đang chờ (I1)
     vang: o.choDuyet ? t('chờ Quản lý duyệt') : t('vắng'),
     // Hạn chấm là hạn cụ thể → được hiện ngày (luật thời gian trên màn); null (MT cũ, không hạn) thì không ghi.
@@ -163,7 +163,7 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
       : tre ? ['tre-cham', t('trễ')] : x.loai === 'het-tuan' ? [cu ? 'cho-cham-cu' : 'cho-cham', t('chờ')]
       : x.loai === 'vang' ? ['con-viec', t('vắng')] : x.loai === 'da-huy' ? ['con-viec', [t('huỷ'), lyDoHuy(x.o)].filter(Boolean).join(' · ')]
       : x.loai === 'tuan-nay' ? ['dang-thi', null] : x.loai === 'co-lich' ? ['co-lich', null]
-      : x.loai === 'khong-du-thi' ? ['chua-lich', cu ? `${t('đã huỷ')} · ${lyDoHuy({ mtCu: true })}` : t('vắng')] : ['chua-lich', null];   // LUAT-34: MT cũ "-" = Đã huỷ
+      : x.loai === 'khong-du-thi' ? ['chua-lich', t('không dự thi')] : ['chua-lich', null];   // N38 L3: MT cũ "-" = Không dự thi
     const tuan = x.o.tuan ? tuanLich(x.o.tuan, homNay) : null;
     const tt = (viec ? chuCham(viec) : null) ?? ({ xong: t('xong'), 'dang-thi': t('đang làm bài'), 'co-lich': t('có lịch') } as Partial<Record<KieuOMt, string>>)[kieu] ?? null;
     return { kyNang: xs.map((y) => y.k), ten: ten(xs), kieu, tuan, viec, title: dong(xs), doc: [ten(xs), tt, tuan ?? t('chưa xếp')].filter(Boolean).join(', ') };
@@ -176,7 +176,7 @@ export function nhomKyNang(kn: OMtVao['kn'], homNay: string, ct?: string | null,
  */
 export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null, cu = false): { chu: string; tone: 'bad' | 'soon' | 'muted' } | null {
   if (!o.batBuoc) return null;
-  if (o.khongDuThi) return { chu: cu ? `${t('Đã huỷ')} · ${lyDoHuy({ mtCu: true })}` : t('Vắng'), tone: 'muted' };   // LUAT-34: MT cũ = Đã huỷ · OV-11a (CA3-5): dòng kỹ năng hộp một đợt "W2 SEP · Không dự thi"
+  if (o.khongDuThi) return { chu: t('Không dự thi'), tone: 'muted' };   // N38 L3 · OV-11a (CA3-5): dòng kỹ năng hộp một đợt "W2 SEP · Không dự thi"
   // Ô MT cần một khe kỹ năng; dùng `listening` làm khe tạm cho đúng MỘT kỹ năng này.
   const r = oMt({ so: 0, attemptId: 0, kn: { listening: o }, cu }, homNay, ct);
   switch (r.kieu) {
@@ -259,10 +259,12 @@ export function oGon(kn: OMtVao['kn'], homNay: string, ct?: string | null): OGon
   type X = (typeof ds)[number];
   const ten = (xs: readonly X[]) => xs.map((x) => tenMonNgan(ct, x.k)).join(' ');
   const ma = (w: string) => tuanLich(w);
-  const daXong = (x: X) => x.loai === 'xong' || x.loai === 'khong-du-thi';
+  /* N38 L2: huỷ vắng 2 lần = đã xong (thiếu) — không "xếp lại", không nằm ở dòng tuần; chỉ ghi "huỷ S · vắng 2 lần" ở dòng vắng. */
+  const huyV = req.filter((x) => x.loai === 'da-huy' && !!x.o.huyVang);
+  const daXong = (x: X) => x.loai === 'xong' || x.loai === 'khong-du-thi' || huyV.includes(x);
   const xong = req.every(daXong);
-  const vangNay = req.filter((x) => x.loai === 'vang' || x.loai === 'da-huy');   // đang vắng / phần thi huỷ — chờ xếp lại
-  const thi = req.filter((x) => !vangNay.includes(x) && x.loai !== 'khong-du-thi');
+  const vangNay = req.filter((x) => (x.loai === 'vang' || x.loai === 'da-huy') && !huyV.includes(x));   // vắng chờ thẻ cũ / huỷ cũ — chờ xếp lại
+  const thi = req.filter((x) => !vangNay.includes(x) && !huyV.includes(x) && x.loai !== 'khong-du-thi');
 
   /* Dòng theo tuần thi của từng môn (môn chưa có tuần → một dòng "chưa xếp"). */
   const theoTuan = new Map<string, X[]>();
@@ -289,7 +291,8 @@ export function oGon(kn: OMtVao['kn'], homNay: string, ct?: string | null): OGon
   const ngayVang = (x: X) => (x.o.doiTu ? (/^\d{4}-\d{2}-\d{2}/.test(x.o.doiTu) ? x.o.doiTu : docTuanLich(x.o.doiTu, homNay)) : vangNay.includes(x) ? x.o.tuan : null);
   const nhomVang = new Map<string, X[]>();
   for (const x of req) { const w = ngayVang(x); if (w) nhomVang.set(ngayCua(w), [...(nhomVang.get(ngayCua(w)) ?? []), x]); }
-  const vang = [...nhomVang].sort((a, b) => a[0].localeCompare(b[0])).map(([w, xs]) => t('vắng {x} · {tuan}', { x: ten(xs), tuan: ma(w) })).join(' · ');
+  const vang = [...[...nhomVang].sort((a, b) => a[0].localeCompare(b[0])).map(([w, xs]) => t('vắng {x} · {tuan}', { x: ten(xs), tuan: ma(w) })),
+    ...(huyV.length ? [t('huỷ {x} · vắng 2 lần', { x: ten(huyV) })] : [])].join(' · ');
 
   const boMon = ds.filter((x) => x.loai === 'khong-yeu-cau');
   const tuongLai = dong.length === 1 && dong[0].tt?.loai === 'xep' && !req.some(daXong);

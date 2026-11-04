@@ -82,8 +82,8 @@ export async function runPrLmTests(t: YThucTestKit) {
     /* OV-15h2 (ý 7): hộp Huỷ MT{n} (`HopHuyMt.tsx`) đã bỏ — Huỷ = Xóa từ OV-15c. */
     assert(!/<Modal\b/.test(md), 'MockDetailPage còn Modal');
     assert(!/from '..\/..\/ui\/Drawer.tsx'/.test(tt) && !/<Modal\b/.test(tt), 'HopThaoTacMt còn Modal');
-    /* PR-HOP1: WeekModal (một KhungPanel) bỏ → còn 3: hạn chấm, vắng, trả lời đề nghị. */
-    assert((md.match(/<KhungPanel\b/g) ?? []).length >= 3 && /<KhungPanel\b/.test(tt), 'thiếu KhungPanel');
+    /* PR-HOP1: WeekModal (một KhungPanel) bỏ. N38 (PR-MT-VANG): hộp "Xếp lại bài vắng" (AbsenceMoveModal) bỏ → còn 2: hạn chấm, trả lời đề nghị. */
+    assert((md.match(/<KhungPanel\b/g) ?? []).length >= 2 && /<KhungPanel\b/.test(tt), 'thiếu KhungPanel');
     for (const [ten, src] of [['MockDetailPage', md], ['HopThaoTacMt', tt]]) {
       assert(!/>Huỷ</.test(src), `${ten}: nút "Huỷ" trần`);
       assert(/\bdaSua: daSua\b/.test(src), `${ten}: chân S3 Đóng / Huỷ thay đổi (chan.daSua, PR-SL I1)`);

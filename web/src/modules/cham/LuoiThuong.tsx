@@ -55,7 +55,7 @@ type SkillSchedule = {
   nhanXetDuoc?: boolean;
   /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ. */
   khongVang?: string | null;
-  /** CV-LOI (V4B H15): máy chủ cho đổi lịch môn này — nút "Xếp lại bài vắng". */
+  /** CV-LOI (V4B H15): máy chủ cho đổi lịch môn này — nút "Dời lịch". */
   doiLich?: boolean;
   /** HSL-MAY-CHU: người nhập điểm môn này (null = chưa có điểm). */
   nguoiNhap?: string | null;
@@ -91,7 +91,7 @@ export type ThuongSheet = {
   monNgan?: Record<string, string>;
   editableSkills: string[];
   canPlan: boolean;
-  /** PR-XLMT: người xem là GVCN của lớp (menu ⋯ ô: Báo vắng, Xếp lại bài vắng). */
+  /** PR-XLMT: người xem là GVCN của lớp (menu ⋯ ô: Vắng, Dời lịch). */
   laGvcn?: boolean;
   passThreshold: number;
   rows: Row[];

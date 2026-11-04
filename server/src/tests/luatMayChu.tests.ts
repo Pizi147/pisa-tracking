@@ -202,14 +202,18 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
   check('S13 · GV báo lại "-" cùng tuần sau khi Quản lý đã đổi kết luận: không chốt lại, dấu không hiện lại, ô có MỘT dòng giải thích', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     /*
-     * OV-1b: "-" trong tuần nay chốt ngay và tự dời; bài "vắng chờ Quản lý" chỉ còn khi lần dời bị chặn hoặc chốt muộn (dữ liệu cũ, migrate).
-     * Dựng đúng trạng thái đó: dấu "-" W3 SEP rồi chốt MUỘN (28/09, tuần kế tiếp W4 SEP đã hết) → chuyển Quản lý, bài còn "vắng".
+     * N38: "-" không còn để bài "vắng chờ Quản lý" (luôn dời / huỷ / Không dự thi) — trạng thái đó chỉ còn ở dữ liệu cũ (thẻ dời trước N38).
+     * Dựng thẳng như máy cũ: dấu "-" W3 SEP đã chốt, bài `absent` (cờ chốt "-"), một lần chốt trong lịch sử, thẻ dời đang chờ Quản lý.
      */
     const kL = conn.prepare(`SELECT k.id, rp.week_end, rp.code FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id
       WHERE k.attempt_id = ? AND k.skill = 'listening'`).get(hv.attemptId) as any;
-    const scId = Number(conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at) VALUES (?, 'listening', ?, ?, ?)`)
-      .run(hv.attemptId, hv.periodId, P.lrTeacher.userId, '2026-09-16T03:00:00.000Z').lastInsertRowid);
-    absence.settleGroup(conn, hv.attemptId, kL.id, 'listening', kL.week_end, kL.code, [scId], null, 'Không dự thi (dựng)', '2026-09-28');
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_settled_at) VALUES (?, 'listening', ?, ?, ?, ?)`)
+      .run(hv.attemptId, hv.periodId, P.lrTeacher.userId, '2026-09-16T03:00:00.000Z', '2026-09-28T03:00:00.000Z');
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent', absent_from_no_show = 1, sit_at = ?, sit_note = 'Không dự thi (dựng)' WHERE id = ?`)
+      .run(`${kL.week_end.slice(0, 10)}T16:59:59.000Z`, kL.id);
+    skillSchedule.logSchedule(hv.attemptId, { action: 'skill_no_show_settled', field: 'listening', oldValue: 'scheduled', newValue: 'absent', reason: 'dựng', actor: null });
+    conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
+      VALUES (?, 'listening', 1, ?, ?, 'Vắng (thẻ cũ)', '2026-09-28', '2026-10-04', 'pending', ?)`).run(hv.attemptId, hv.periodId, week.ensurePeriod('2026-10-05').id, NOW);
     assert(settledCount(hv.attemptId, 'listening') === 1, 'Tiền đề: phải chốt đúng một lần');
     skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'listening', 'scheduled', 'Quản lý sửa: em có làm bài');
     assert(!conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(hv.attemptId),

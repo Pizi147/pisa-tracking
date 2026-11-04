@@ -24,7 +24,7 @@ import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
-  baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, laQuanTriGoc, loadSkillRows, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
+  baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, laQuanTriGoc, loadSkillRows, scoringModeOf, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
 } from '../fasttrack/skillSchedule.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
@@ -535,13 +535,14 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
 
 // ---------------------------------------------------------------- kiểm + lưu một đợt, từng kỹ năng
 
-type YeuCauKyNang = { skill: KyNangKH; periodId: number };
+/** `xepLai` (N38 L5): Dời chọn ĐÚNG tuần đang có — vẫn là xếp lại từ đầu (không "giữ nguyên"). */
+type YeuCauKyNang = { skill: KyNangKH; periodId: number; xepLai?: boolean };
 
 /**
  * Kiểm từng kỹ năng của một đợt đã có — KHÔNG ghi. `duaLai` = kỹ năng đang bị bỏ mà lần lưu này đưa lại (bỏ qua "không thi").
  * `pre` (PR-XLMT): dữ liệu đã đọc theo lô (hàng loạt nhiều em) — không đọc lại. `canLyDo` luôn false (G17, T7 — giữ trường cho web cũ).
  * Tuần đích đã qua không chặn: mọi nơi gọi đều đã đòi PLAN_WEEK (T4 — Quản lý xếp được tuần đã qua).
- * Dời vượt lượt sau: LUAT-NX-MT không chặn giữa các MT (chỉ MT0 trước MT1). Kỹ năng đã huỷ phần thi được chọn tuần = "đưa lại" + đặt tuần (luật 5).
+ * Dời vượt lượt sau: LUAT-NX-MT không chặn giữa các MT (chỉ MT0 trước MT1). Kỹ năng đã huỷ được chọn tuần = xếp lại từ đầu (N38 L5).
  * `pre.choHuyLich` (chỉ hộp một đợt): đổi tuần được kể cả kỹ năng đã có điểm / đã thi — điểm đi theo (D3 MT cũ, PR-MTa T20 mọi lượt).
  */
 function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new Set(),
@@ -577,7 +578,7 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     }
     const khoa = khoaCua(cheDo, row, scores);
     if (khoa && khoa !== 'đã huỷ' && !pre.choHuyLich) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: khoa }); continue; }
-    if (row.planned_period_id === k.periodId && row.sit_status !== 'cancelled' && row.required) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
+    if (row.planned_period_id === k.periodId && row.sit_status !== 'cancelled' && row.required && !k.xepLai) { bai.push({ skill: k.skill, tu, den: tu, ghiChu: 'giu', cau: null }); continue; }
     doi.push({ i: bai.length, k, row, pr });
     bai.push({ skill: k.skill, tu, den: pr.week_start, ghiChu: 'doi', cau: null });
   }
@@ -623,7 +624,7 @@ export function kiemDot(p: Principal, i: { attemptId: number; kyNang: YeuCauKyNa
 
 /** Lưu MỘT ĐỢT (hộp chip bấm Lưu một lần): kiểm hết rồi mới ghi, một `tx` — chặn một kỹ năng thì cả lần lưu không đổi gì. */
 export function luuDot(p: Principal, i: {
-  attemptId: number; kyNang: Array<{ skill: KyNangKH; periodId?: number | null; bo?: boolean }>;
+  attemptId: number; kyNang: Array<{ skill: KyNangKH; periodId?: number | null; bo?: boolean; xepLai?: boolean }>;
   lyDoBo?: string | null; force?: boolean; reason?: string | null;
   /** Lượt vừa tạo trong cùng lần xếp (`xepMoiThuong`) — đặt tuần, không phải dời (K4-15). */
   khiTao?: boolean;
@@ -646,6 +647,7 @@ export function luuDot(p: Principal, i: {
   if (cb.length && !i.force) throw badRequest(`${[...new Set(cb.map((b) => b.cau))].join(' ')} ${CAU_XAC_NHAN}`);
 
   const rows = (loadSkillRows([i.attemptId]).get(i.attemptId) ?? []) as any[];
+  const thuong = scoringModeOf(a) === 'ratio';
   return tx(() => {
     for (const k of i.kyNang) {            // bo=true: đang bắt buộc → bỏ; bo=false: đang bỏ → đưa lại
       const r = rows.find((x) => x.skill === k.skill);
@@ -654,10 +656,11 @@ export function luuDot(p: Principal, i: {
     const doi = kiem.bai.filter((b) => b.ghiChu === 'doi' || b.ghiChu === 'canh-bao');
     for (const b of doi) {
       const periodId = datTuan.find((k) => k.skill === b.skill)!.periodId;
-      /* PR-MTGON (luật 5): kỹ năng đã huỷ phần thi / đã bỏ khỏi đợt (vòng `bo` ở trên đã đưa lại) → đưa lại rồi đặt tuần (đè). */
+      /* N38 L5, L6: Mock — kỹ năng đã huỷ / vắng / bỏ khỏi đợt (vòng `bo` ở trên đã đưa lại) → `setSkillWeek` xếp lại từ đầu, kể cả đúng tuần cũ.
+         Lớp thường giữ PR-MTGON luật 5: "đã huỷ" (dữ liệu cũ) đưa lại rồi đặt tuần; đưa lại vào đúng tuần cũ thì thôi. */
       const r0 = rows.find((r) => r.skill === b.skill);
-      if (r0?.sit_status === 'cancelled' || !r0?.required) {
-        if (r0?.sit_status === 'cancelled') setSkillSkip(p, i.attemptId, b.skill, false);
+      if (thuong && r0?.sit_status === 'cancelled') {
+        setSkillSkip(p, i.attemptId, b.skill, false);
         if (loadSkillRows([i.attemptId]).get(i.attemptId)!.find((r: any) => r.skill === b.skill)?.planned_period_id === periodId) continue;
       }
       setSkillWeek(p, i.attemptId, b.skill, periodId, { reason: i.reason ?? null, force: true, khiTao: i.khiTao, khongBaoGvcn: i.khongBaoGvcn });
@@ -1457,7 +1460,7 @@ function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
            JOIN assessment_attempts a ON a.id = k.attempt_id AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
            JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
-          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status IN ('absent', 'cancelled')
+          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status IN ('absent', 'cancelled') AND k.huy_vang = 0   -- N38 L2: huỷ vắng 2 lần = đã xong
             AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.skill = k.skill AND r.status = 'pending')`,
       )
       .all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, new Set()).get(r.class_id)!).add(r.student_id);

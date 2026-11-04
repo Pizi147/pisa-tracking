@@ -18,6 +18,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
   const tutors: any = await import('../tutors/trang.ts');
   const week: any = await import('../platform/week.ts');
   const permissions: any = await import('../permissions.ts');
+  const yeuCau: any = await import('../duyet/yeuCau.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nLUAT-34 · bảng chuyển trạng thái Mock Test T01–T31 + chuyenVang + Luật 3');
@@ -73,6 +74,25 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     for (const s of ['listening', 'reading']) attempts.saveScore(QL, aid, s, { rawScore: 30 }, TRONG);
     for (const s of ['writing1', 'writing2', 'speaking']) attempts.saveScore(QL, aid, s, { criteria: [6, 6, 6, 6] }, TRONG);
   };
+  /**
+   * S6 "vắng chờ Quản lý" = THẺ "DỜI LỊCH TEST" CŨ (trước N38 — "-" không còn sinh trạng thái này). Dựng thẳng như máy cũ: dấu "-" ở tuần thi đã chốt,
+   * kỹ năng `absent` (cờ chốt "-"), một lần chốt trong lịch sử, đề nghị dời lần (bộ đếm + 1) tới `den` đang chờ + thẻ Lịch thi. Chỉ kỹ năng một ô (L/R/S).
+   */
+  const s6 = (aid: number, s: string, den = W2) => {
+    const k = ky(aid, s);
+    const luc = new Date().toISOString();
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at) VALUES (?,?,?,?,?,1,?)`)
+      .run(aid, s, k.planned_period_id, gvL.userId, luc, luc);
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent', absent_from_no_show = 1, sit_at = ?, sit_note = 'Vắng (thẻ cũ)' WHERE id = ?`).run(luc, k.id);
+    skillSchedule.logSchedule(aid, { action: 'skill_no_show_settled', field: s, oldValue: 'scheduled', newValue: 'absent', reason: 'Vắng (thẻ cũ)', actor: null });
+    const x = one('SELECT student_id, class_id FROM assessment_attempts WHERE id = ?', aid);
+    const id = Number(conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
+      VALUES (?,?,?,?,?, 'Vắng (thẻ cũ)', ?, '2026-11-22', 'pending', ?)`).run(aid, s, k.absence_move_count + 1, k.planned_period_id, den, QUA, luc).lastInsertRowid);
+    yeuCau.taoYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: id, hocVienId: x.student_id, lopId: x.class_id, nguoiXin: null,
+      lyDo: 'Vắng (thẻ cũ)', hanDuyet: '2026-11-22' });
+    xoaNho();
+    return id;
+  };
   /** Đẩy lần ghi "-" về quá khứ (> 10 s) — qua cửa sổ Hoàn tác. */
   const quaHoanTac = (aid: number, s: string) => conn.prepare(`UPDATE assessment_scores SET no_show_at = '2026-01-01T00:00:00.000Z' WHERE attempt_id = ? AND skill = ?`).run(aid, s);
 
@@ -82,25 +102,28 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
 
   // ---------------------------------------------------------------- hàm thuần
 
-  check('LUAT34-CV · chuyenVang: 12 ca ngày (CN 23:59 / T2 00:00, tuần kế còn chạy / hết hẳn, MT cũ 2 / 3 tuần, vướng, MT0) + ca 21/10', () => {
-    const cv = (x: Partial<{ lan: number; tuanThi: string; homNay: string; mtCu: boolean; vuong: boolean }>) =>
-      dm.chuyenVang({ lan: 0, tuanThi: WS, homNay: TRONG, mtCu: false, vuong: false, ...x });
+  /* N38 (PR-MT-VANG): `chuyenVang({ lan, tuanThi, homNay })` — tuần đích = tuần ngay sau TUẦN THI (không theo hôm nay); MT cũ CỦA KỸ NĂNG (tuần thi
+     cách ≥ 2 tuần) → Không dự thi; lần ≥ 1 → huỷ. Không còn "thẻ QL" / vướng (máy chủ vẫn dời, chỉ cảnh báo — L4). */
+  check('LUAT34-CV · chuyenVang (N38): 13 ca ngày (CN 23:59 / T2 00:00, ghi muộn tuần kế, T2 W+2 = MT cũ, MT cũ 2 / 3 tuần, lần 2) + laMtCuKyNang', () => {
+    const cv = (x: Partial<{ lan: number; tuanThi: string; homNay: string }>) => dm.chuyenVang({ lan: 0, tuanThi: WS, homNay: TRONG, ...x });
     const ca: Array<[string, any, string, string | null]> = [
       ['1 trong tuần thi', {}, 'doi', '2026-11-09'],
       ['2 CN tuần thi 23:59', { homNay: '2026-11-08' }, 'doi', '2026-11-09'],
       ['3 T2 tuần kế 00:00 (ghi muộn)', { homNay: '2026-11-09' }, 'doi', '2026-11-09'],
-      ['4 giữa tuần kế', { homNay: BU }, 'doi', '2026-11-09'],
-      ['5 CN tuần kế (còn thi được)', { homNay: '2026-11-15' }, 'doi', '2026-11-09'],
-      ['6 T2 sau tuần kế (hết hẳn)', { homNay: '2026-11-16' }, 'the-ql', null],
-      ['7 vướng MT sau', { vuong: true }, 'the-ql', null],
-      ['8 MT0 vượt hạn chót (vướng)', { vuong: true, homNay: '2026-11-08' }, 'the-ql', null],
-      ['9 MT cũ cách 2 tuần', { mtCu: true, tuanThi: '2026-10-19' }, 'huy', null],
-      ['10 MT cũ cách 3 tuần', { mtCu: true, tuanThi: '2026-10-12' }, 'huy', null],
+      ['4 giữa tuần kế — vẫn tuần sau tuần thi, không W+2', { homNay: BU }, 'doi', '2026-11-09'],
+      ['5 CN tuần kế', { homNay: '2026-11-15' }, 'doi', '2026-11-09'],
+      ['6 T2 W+2 (tuần thi cách 2 tuần) → MT cũ', { homNay: '2026-11-16' }, 'khong-du-thi', null],
+      ['7 giữa W+2', { homNay: QUA }, 'khong-du-thi', null],
+      ['8 tuần thi ghi ngày giữa tuần', { tuanThi: '2026-11-05' }, 'doi', '2026-11-09'],
+      ['9 MT cũ cách 2 tuần', { tuanThi: '2026-10-19' }, 'khong-du-thi', null],
+      ['10 MT cũ cách 3 tuần', { tuanThi: '2026-10-12' }, 'khong-du-thi', null],
       ['11 lần 2 (tuần đã dời tới)', { lan: 1, tuanThi: '2026-11-09', homNay: BU }, 'huy', null],
       ['12 lần 2 ghi muộn', { lan: 1, tuanThi: '2026-11-09', homNay: QUA }, 'huy', null],
-      ['21/10 sau Khôi phục (chuỗi đặt lại)', { lan: 0 }, 'doi', '2026-11-09'],
-      ['21/10 sau QL duyệt thêm (+1)', { lan: 1 }, 'huy', null],
+      ['13 lần 2 nhưng MT cũ của kỹ năng → Không dự thi', { lan: 1, homNay: '2026-11-16' }, 'khong-du-thi', null],
+      ['21/10 sau chọn tuần (chuỗi đặt lại)', { lan: 0 }, 'doi', '2026-11-09'],
+      ['21/10 sau QL duyệt thẻ cũ (+1)', { lan: 1 }, 'huy', null],
     ];
+    assert(!dm.laMtCuKyNang(WS, '2026-11-15') && dm.laMtCuKyNang(WS, '2026-11-16') && dm.laMtCuKyNang('2026-11-05', '2026-11-16'), 'laMtCuKyNang: thứ Hai + 14 ≤ thứ Hai hôm nay');
     for (const [ten, vao, kq, tuan] of ca) {
       const r = cv(vao);
       assert(r.kq === kq && (r.tuanDich ?? null) === tuan, `ca ${ten}: ${JSON.stringify(r)}`);
@@ -123,13 +146,13 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(ky(a, 'listening').planned_period_id === W0, 'QL xếp được tuần đã qua');
   }));
 
-  check('T02 · S3 → tuần mới: Dời lịch (QL) — đếm giữ, không thẻ', () => thu(() => {
+  check('T02 · S3 → tuần mới: Dời lịch (QL) = xếp lại từ đầu — đếm về 0 (N38 L5), không thẻ', () => thu(() => {
     const a = luot[0];
     dung(a);
     conn.prepare(`UPDATE attempt_skills SET absence_move_count = 1 WHERE attempt_id = ? AND skill = 'reading'`).run(a);
     skillSchedule.setSkillWeek(QL, a, 'reading', W1, { today: TRONG, force: true });
     const k = ky(a, 'reading');
-    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && !choDuyet(a).length, JSON.stringify(k));
+    assert(k.planned_period_id === W1 && k.absence_move_count === 0 && !choDuyet(a).length, JSON.stringify(k));
   }));
 
   check('T03 · S2 → S3: tới T2 tuần thi', () => {
@@ -137,7 +160,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(tt(TRONG) === 'chua-toi-tuan' && tt('2026-11-09') === 'dang-thi', `${tt(TRONG)} / ${tt('2026-11-09')}`);
   });
 
-  check('T04 · S3 → S8 / S9: "-" trong tuần thi — lần 1 máy dời + chuông GVCN; lần 2 (tuần đã dời tới) huỷ + chuông QL', () => thu(() => {
+  check('T04 · S3 → S8 / S9: "-" trong tuần thi — lần 1 máy dời + chuông GVCN; lần 2 (tuần đã dời tới) huỷ, không chuông, không thẻ (N38 L2)', () => thu(() => {
     const a = luot[0];
     dung(a);
     const r = attempts.saveScore(QL, a, 'listening', { noShow: true }, TRONG);   // QL gõ: GVCN (cũng dạy L ở bộ demo) nhận chuông
@@ -147,38 +170,43 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     k = ky(a, 'listening');
     assert(k.sit_status === 'cancelled' && k.huy_vang === 1, `lần 2: ${JSON.stringify(k)}`);
-    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 1, 'chuông QL vắng 2 lần');
+    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 0 && !choDuyet(a).length, 'vắng 2 lần: không chuông QL, không thẻ');
   }));
 
-  check('T05 · SỬA: "-" ghi sau tuần thi (MT hiện tại) — tuần kế của lịch còn thi được → dời; hết hẳn → thẻ QL; không còn Không dự thi', () => thu(() => {
+  check('T05 · N38: "-" ghi sau tuần thi — tuần thi cách 1 tuần → dời tuần ngay sau tuần thi (L1); cách ≥ 2 tuần → Không dự thi (L3); không thẻ (L4)', () => thu(() => {
     const a = luot[0];
     dung(a);
     const sos0 = soCase();
     const r = attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     const k = ky(a, 'listening');
-    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && k.sit_status === 'scheduled', `ghi muộn tuần kế còn chạy phải dời W+1: ${JSON.stringify(k)}`);
+    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && k.sit_status === 'scheduled', `ghi muộn tuần kế phải dời W+1: ${JSON.stringify(k)}`);
     assert(dau(a, 'listening').no_show_cu === 0 && r.vang?.kq === 'doi', `không phải Không dự thi: ${JSON.stringify(r.vang)}`);
     const r2 = attempts.saveScore(QL, a, 'reading', { noShow: true }, QUA);
     const k2 = ky(a, 'reading');
-    assert(k2.sit_status === 'absent' && k2.planned_period_id === W && choDuyet(a).some((q) => q.skill === 'reading'), `tuần kế hết hẳn → thẻ QL: ${JSON.stringify(k2)}`);
-    assert(r2.vang?.kq === 'cho-ql' && dau(a, 'reading').no_show_cu === 0, `kq: ${JSON.stringify(r2.vang)}`);
+    assert(k2.sit_status === 'scheduled' && k2.planned_period_id === W && k2.absence_move_count === 0 && !choDuyet(a).length,
+      `tuần thi cách 2 tuần → Không dự thi, không thẻ: ${JSON.stringify(k2)}`);
+    assert(r2.vang?.kq === 'khong-du-thi' && dau(a, 'reading').no_show_cu === 1, `kq: ${JSON.stringify(r2.vang)}`);
     assert(soCase() >= sos0, 'Case không mất');
   }));
 
-  check('T06 · SỬA: "-" ở MT cũ → Đã huỷ ngay (S13): không dời, không thẻ, chuông QL "để biết", không Case', () => thu(() => {
-    const a = luot[1];
+  check('T06 · N38 L3: "-" ở MT cũ của kỹ năng → Không dự thi (S13): không dời, không thẻ, không chuông, không Case; lượt lich_su ở tuần gần → dời như L1', () => thu(() => {
+    const [a, , c] = luot;
     dung(a, { lichSu: true });
     const sos0 = soCase();
-    const r = attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
+    const r = attempts.saveScore(gvL, a, 'listening', { noShow: true }, QUA);
     const k = ky(a, 'listening');
     assert(dau(a, 'listening').no_show_cu === 1 && k.planned_period_id === W && k.absence_move_count === 0 && !choDuyet(a).length, `S13: ${JSON.stringify(k)}`);
-    assert(r.vang?.kq === 'huy-cu', `kq phải huy-cu: ${JSON.stringify(r.vang)}`);
-    assert(o(a, 'listening', W, TRONG)?.noShow?.state === 'da-huy', `ô hiện "Đã huỷ": ${JSON.stringify(o(a, 'listening', W, TRONG)?.noShow)}`);
-    assert(chuong(QL, `huy_vang_cu:${a}:listening`) === 1, 'chuông QL để biết');
+    assert(r.vang?.kq === 'khong-du-thi', `kq phải khong-du-thi: ${JSON.stringify(r.vang)}`);
+    assert(o(a, 'listening', W, QUA)?.noShow?.state === 'khong-du-thi', `ô hiện "Không dự thi": ${JSON.stringify(o(a, 'listening', W, QUA)?.noShow)}`);
+    assert(chuong(QL, `huy_vang_cu:${a}:listening`) === 0 && chuong(QL, `huy_vang:${a}:%`) === 0, 'không chuông QL');
     assert(soCase() === sos0, 'không tạo Case');
+    /* MT cũ theo KỸ NĂNG, không theo cờ lượt: lượt lich_su mà tuần thi của L mới cách 0 tuần → "-" dời tuần sau tuần thi. */
+    dung(c, { lichSu: true });
+    const r3 = attempts.saveScore(gvL, c, 'listening', { noShow: true }, TRONG);
+    assert(r3.vang?.kq === 'doi' && ky(c, 'listening').planned_period_id === W1 && ky(c, 'listening').absence_move_count === 1, `lich_su tuần gần: ${JSON.stringify(r3.vang)}`);
   }));
 
-  check('T07 · SỬA: Writing — MT hiện tại task kia có điểm → dời cả W (điểm đi theo); MT cũ một task "-" → chỉ ô đó Đã huỷ, giữ điểm task kia', () => thu(() => {
+  check('T07 · SỬA: Writing — MT hiện tại task kia có điểm → dời cả W (điểm đi theo); MT cũ một task "-" → chỉ ô đó Không dự thi, giữ điểm task kia', () => thu(() => {
     const [a, b, c] = luot;
     dung(a);
     attempts.saveScore(gvW1, a, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
@@ -192,11 +220,12 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     k = ky(b, 'writing');
     assert(k.planned_period_id === W1 && k.absence_move_count === 1, `W2 "-" rồi W1 điểm → dời: ${JSON.stringify(k)}`);
     dung(c, { lichSu: true });
-    attempts.saveScore(gvW1, c, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
-    attempts.saveScore(gvW2, c, 'writing2', { noShow: true }, TRONG);
-    assert(dau(c, 'writing2').no_show_cu === 1 && dau(c, 'writing1').band === 6 && ky(c, 'writing').sit_status !== 'cancelled', 'MT cũ: chỉ W2 huỷ');
-    const c2 = o(c, 'writing2', W, TRONG);
-    assert(c2?.noShow?.state === 'da-huy' && !c2?.overdue, `W2 MT cũ: ${JSON.stringify(c2?.noShow)}`);
+    attempts.saveScore(gvW1, c, 'writing1', { criteria: [6, 6, 6, 6] }, QUA);   // N38 L3: MT cũ = tuần thi của W cách ≥ 2 tuần
+    attempts.saveScore(gvW2, c, 'writing2', { noShow: true }, QUA);
+    assert(dau(c, 'writing2').no_show_cu === 1 && dau(c, 'writing1').band === 6 && ky(c, 'writing').sit_status !== 'cancelled'
+      && ky(c, 'writing').planned_period_id === W, 'MT cũ: chỉ W2 Không dự thi, W không dời');
+    const c2 = o(c, 'writing2', W, QUA);
+    assert(c2?.noShow?.state === 'khong-du-thi' && !c2?.overdue, `W2 MT cũ: ${JSON.stringify(c2?.noShow)}`);
   }));
 
   check('T08 · S3/S8 → S5: Nhập điểm (đã tới tuần); "-" cũ hết hiệu lực', () => thu(() => {
@@ -209,7 +238,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(dau(a, 'reading').band !== null && dau(a, 'reading').no_show_period_id === null, 'S8 → S5');
   }));
 
-  check('T09 · Gỡ "-": S8 trả như trước · S9 Hoàn tác 10 s người vừa gõ, sau đó chỉ QL · SỬA S13: người có quyền sửa ô gỡ + nhật ký + chuông QL', () => thu(() => {
+  check('T09 · Gỡ "-": S8 trả như trước · S9 Hoàn tác 10 s người vừa gõ, sau đó chỉ QL · S13 (Không dự thi): người có quyền sửa ô gỡ + nhật ký, không chuông (N38)', () => thu(() => {
     const [a, b, c] = luot;
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
@@ -219,26 +248,27 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     assert(ky(a, 'listening').sit_status === 'cancelled', 'tiền đề S9');
-    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 1, 'tiền đề: chuông QL vắng 2 lần');
+    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 0, 'N38 L2: vắng 2 lần không chuông QL');
     attempts.saveScore(gvL, a, 'listening', { noShow: false }, BU);   // Hoàn tác ngay
     k = ky(a, 'listening');
     assert(k.sit_status === 'scheduled' && k.planned_period_id === W1 && k.absence_move_count === 1, `S9 Hoàn tác về S8: ${JSON.stringify(k)}`);
-    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 0, 'Hoàn tác vắng 2 lần rút chuông QL');
+    assert(chuong(QL, `huy_vang:${a}:listening:%`) === 0, 'Hoàn tác không sinh chuông');
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     quaHoanTac(a, 'listening');
     const e = loi(() => attempts.saveScore(gvL, a, 'listening', { noShow: false }, BU));
     assert(e?.status === 403, `S9 sau 10 s GV gỡ: ${e?.status} ${e?.message}`);
     /* S13 */
     dung(b, { lichSu: true });
-    attempts.saveScore(gvL, b, 'listening', { noShow: true }, TRONG);
+    attempts.saveScore(gvL, b, 'listening', { noShow: true }, QUA);   // N38 L3: tuần thi cách 2 tuần → Không dự thi
+    assert(dau(b, 'listening').no_show_cu === 1, 'tiền đề S13');
     quaHoanTac(b, 'listening');
-    attempts.saveScore(gvL, b, 'listening', { noShow: false }, TRONG);
+    attempts.saveScore(gvL, b, 'listening', { noShow: false }, QUA);
     assert(dau(b, 'listening').no_show_period_id === null && dau(b, 'listening').no_show_cu === 0, 'S13 gỡ → như trước khi gõ');
     assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.no_show_cleared' AND entity_id = ?`, b).n >= 1, 'nhật ký gỡ');
-    assert(chuong(QL, `go_huy_cu:${b}:listening:%`) === 1, 'chuông QL để biết khi gỡ S13');
+    assert(chuong(QL, `go_huy_cu:${b}:listening:%`) === 0, 'N38: gỡ Không dự thi không chuông QL');
     dung(c, { lichSu: true });
-    attempts.saveScore(gvL, c, 'listening', { noShow: true }, TRONG);
-    attempts.saveScore(gvL, c, 'listening', { noShow: false }, TRONG);   // Hoàn tác trong 10 s
+    attempts.saveScore(gvL, c, 'listening', { noShow: true }, QUA);
+    attempts.saveScore(gvL, c, 'listening', { noShow: false }, QUA);   // Hoàn tác trong 10 s
     assert(chuong(QL, `huy_vang_cu:${c}:listening`) === 0 && chuong(QL, `go_huy_cu:${c}:listening:%`) === 0, 'Hoàn tác: rút chuông, không chuông mới');
     /* Rà #503 (1): W1 có điểm từ trước + W2 "-" nhầm → cả W dời; Hoàn tác trả W về tuần cũ, đếm 0. */
     const d = luot[3];
@@ -251,10 +281,10 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(k.planned_period_id === W && k.absence_move_count === 0 && dau(d, 'writing1').band === 6, `Hoàn tác W2 "-": ${JSON.stringify(k)}`);
   }));
 
-  check('T10 · S6 → S8: QL Duyệt thẻ (+1 lần) — vắng tiếp ở tuần đích → huỷ', () => thu(() => {
+  check('T10 · S6 (thẻ cũ) → S8: QL Duyệt thẻ (+1 lần) — vắng tiếp ở tuần đích → huỷ', () => thu(() => {
     const a = luot[0];
     dung(a);
-    attempts.saveScore(gvL, a, 'listening', { noShow: true }, QUA);
+    s6(a, 'listening');
     const req = choDuyet(a)[0];
     assert(req && ky(a, 'listening').sit_status === 'absent', 'tiền đề S6');
     absence.decideAbsenceMove(QL, req.id, { approve: true });
@@ -265,10 +295,10 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(ky(a, 'listening').sit_status === 'cancelled', 'vắng tiếp → huỷ');
   }));
 
-  check('T11 · S6 → S10: QL Từ chối (lý do bắt buộc)', () => thu(() => {
+  check('T11 · S6 (thẻ cũ) → S10: QL Từ chối (lý do bắt buộc)', () => thu(() => {
     const a = luot[0];
     dung(a);
-    attempts.saveScore(gvL, a, 'listening', { noShow: true }, QUA);
+    s6(a, 'listening');
     const req = choDuyet(a)[0];
     assert(loi(() => absence.decideAbsenceMove(QL, req.id, { approve: false }))?.status === 400, 'thiếu lý do → 400');
     absence.decideAbsenceMove(QL, req.id, { approve: false, note: 'Em nghỉ dài' });
@@ -276,68 +306,64 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(k.sit_status === 'cancelled' && !k.huy_vang, JSON.stringify(k));
   }));
 
-  check('T12 · S6 → S10: thẻ hết hạn', () => thu(() => {
+  check('T12 · S6 (thẻ cũ) → S10: thẻ hết hạn', () => thu(() => {
     const a = luot[0];
     dung(a);
-    attempts.saveScore(gvL, a, 'listening', { noShow: true }, QUA);
+    s6(a, 'listening');
     conn.prepare(`UPDATE skill_move_requests SET decide_by = '2000-01-01' WHERE attempt_id = ?`).run(a);
     absence.sweepExpiredMoves();
     assert(ky(a, 'listening').sit_status === 'cancelled' && !choDuyet(a).length, 'hết hạn → huỷ');
   }));
 
-  check('T13 · S7 → S8: Xếp lại (QL) +1 · nút chỉ hiện cho vai máy chủ cho (sửa H15: GVCN FT)', () => thu(() => {
+  check('T13 · S7 → S3: Dời (QL) = xếp lại từ đầu, đếm 0 (N38 L5) · nút chỉ hiện cho vai máy chủ cho (sửa H15: GVCN FT không)', () => thu(() => {
     const a = luot[0];
     dung(a);
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = 'listening'`).run(a);
     xoaNho();
     const nut = dm.thaoTacKyNang('vang', { nhapDiem: false, quanLy: false, gvcn: true, laFt: true, dotHoanTat: false });
-    assert(nut.chinh === null, `GVCN FT không thấy "Xếp lại bài vắng": ${JSON.stringify(nut)}`);
+    assert(nut.chinh === null, `GVCN FT không thấy "Dời lịch": ${JSON.stringify(nut)}`);
+    assert(dm.thaoTacKyNang('vang', { nhapDiem: false, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false }).chinh === 'doi-lich', 'QL: Dời lịch');
     assert(loi(() => skillSchedule.setSkillWeek(gvcn, a, 'listening', W1, { today: TRONG, force: true }))?.status === 403, 'máy chủ 403 GVCN');
     skillSchedule.setSkillWeek(QL, a, 'listening', W1, { today: TRONG, force: true });
     const k = ky(a, 'listening');
-    assert(k.sit_status === 'scheduled' && k.absence_move_count === 1 && k.planned_period_id === W1, JSON.stringify(k));
+    assert(k.sit_status === 'scheduled' && k.absence_move_count === 0 && k.planned_period_id === W1, JSON.stringify(k));
   }));
 
-  check('T14–15 · SỬA: QL Khôi phục [Đặt tuần ▾ / Chưa xếp] — chuỗi đặt lại (được dời lại), nhận cả S13', () => thu(() => {
+  /* N38 L5 thay "Khôi phục [Đặt tuần ▾ / Chưa xếp]": QL chọn tuần (Dời) = xếp lại từ đầu; `restoreCancelledSkill` (đặt tuần) còn cho dữ liệu cũ. */
+  check('T14–15 · N38 L5: QL chọn tuần (Dời) cho S9 / S13 → xếp lại từ đầu (chuỗi đặt lại, được dời lại); Khôi phục đặt tuần vẫn đặt lại chuỗi', () => thu(() => {
     const [a, b, c] = luot;
     const s9 = (x: number) => { dung(x); attempts.saveScore(gvL, x, 'listening', { noShow: true }, TRONG); attempts.saveScore(gvL, x, 'listening', { noShow: true }, BU); };
     s9(a);
-    absence.restoreCancelledSkill(QL, a, 'listening', null);
+    skillSchedule.setSkillWeek(QL, a, 'listening', W2, { today: BU, force: true });
     let k = ky(a, 'listening');
-    assert(k.planned_period_id === null && k.sit_status === 'scheduled' && k.absence_move_count === 0, `Khôi phục → Chưa xếp: ${JSON.stringify(k)}`);
+    assert(k.planned_period_id === W2 && k.sit_status === 'scheduled' && k.absence_move_count === 0 && k.huy_vang === 0, `Dời kỹ năng huỷ vắng 2 lần: ${JSON.stringify(k)}`);
     s9(b);
     absence.restoreCancelledSkill(QL, b, 'listening', W2);
     attempts.saveScore(gvL, b, 'listening', { noShow: true }, QUA);
     k = ky(b, 'listening');
     assert(k.sit_status === 'scheduled' && k.planned_period_id === W3 && k.absence_move_count === 1, `sau Khôi phục "-" lại dời: ${JSON.stringify(k)}`);
     dung(c, { lichSu: true });
-    attempts.saveScore(gvL, c, 'listening', { noShow: true }, TRONG);
-    assert(loi(() => absence.restoreCancelledSkill(gvL, c, 'listening', W))?.status === 403, 'GV không Khôi phục');
-    absence.restoreCancelledSkill(QL, c, 'listening', W);
-    assert(dau(c, 'listening').no_show_cu === 0 && dau(c, 'listening').no_show_period_id === null && ky(c, 'listening').absence_move_count === 0, 'S13 Khôi phục');
+    attempts.saveScore(gvL, c, 'listening', { noShow: true }, QUA);   // S13 = Không dự thi (tuần thi cách 2 tuần)
+    assert(dau(c, 'listening').no_show_cu === 1, 'tiền đề S13');
+    assert(loi(() => skillSchedule.setSkillWeek(gvS, c, 'listening', W, { today: QUA, force: true }))?.status === 403, 'GV không dời');
+    skillSchedule.setSkillWeek(QL, c, 'listening', W, { today: QUA, force: true });   // đúng tuần đang có cũng là xếp lại
+    assert(dau(c, 'listening').no_show_cu === 0 && dau(c, 'listening').no_show_period_id === null && ky(c, 'listening').absence_move_count === 0, 'S13 chọn tuần → xoá dấu');
   }));
 
-  check('T16 · S9 / S13 → S12: Giữ huỷ (= Không mock lại)', () => thu(() => {
+  check('T16 · S9 / S13 → S12: Bỏ khỏi đợt (N38 L6 thay "Giữ huỷ / Không mock lại")', () => thu(() => {
     const [a, b] = luot;
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
-    absence.khongMockLai(QL, a, 'listening');
+    attempts.setSkillSkip(QL, a, 'listening', true);
     assert(ky(a, 'listening').required === 0, 'S9 → S12');
     dung(b, { lichSu: true });
-    attempts.saveScore(gvL, b, 'listening', { noShow: true }, TRONG);
-    absence.khongMockLai(QL, b, 'listening');
+    attempts.saveScore(gvL, b, 'listening', { noShow: true }, QUA);
+    attempts.setSkillSkip(QL, b, 'listening', true);
     assert(ky(b, 'listening').required === 0, 'S13 → S12');
   }));
 
-  check('T17 · S9 → S6: "Xin dời" (route còn — khớp)', () => thu(() => {
-    const a = luot[0];
-    dung(a);
-    attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
-    attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
-    absence.xinDoi(QL, a, 'listening', { today: BU });
-    assert(choDuyet(a).length === 1, 'có thẻ chờ');
-  }));
+  /* N38 (PR-MT-VANG): bỏ T17 — "Xin dời" đã gỡ (hàm + route): vắng 2 lần là huỷ, muốn xếp lại thì chọn tuần; luật mới ở prMtVang MV-2, MV-5c */
 
   check('T18 · SỬA: Bỏ khỏi đợt có điểm → CẤT điểm (không xoá), nhận xét giữ', () => thu(() => {
     const a = luot[0];
@@ -459,10 +485,10 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     skillSchedule.setSkillWeek(QL, truoc.id, 'listening', W3, { today: TRONG, force: true });   // không ném = không chặn
   }));
 
-  check('T27 · mọi xếp / dời (cả QL duyệt thẻ dời do vắng) → cờ MT cũ tính lại', () => thu(() => {
+  check('T27 · mọi xếp / dời (cả QL duyệt thẻ dời cũ do vắng) → cờ MT cũ tính lại', () => thu(() => {
     const a = luot[0];
     dung(a);
-    attempts.saveScore(gvL, a, 'listening', { noShow: true }, QUA);
+    s6(a, 'listening');
     absence.decideAbsenceMove(QL, choDuyet(a)[0].id, { approve: true });
     assert(one('SELECT lich_su FROM assessment_attempts WHERE id = ?', a).lich_su === 0, 'tuần mới → không MT cũ');
   }));
@@ -487,7 +513,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(loi(() => attempts.saveScore(gvL, a, 'listening', { rawScore: 31 }, TRONG))?.status === 403, 'GV 403');
   }));
 
-  check('T30 · S11 (dữ liệu cũ "Không dự thi"): MT hiện tại giữ chữ cũ, gỡ được; MT cũ hiện "Đã huỷ", QL Khôi phục được', () => thu(() => {
+  check('T30 · S11 (dữ liệu cũ "Không dự thi" / "Đã huỷ · vắng MT cũ"): mọi lượt hiện "Không dự thi" (N38 L3), gỡ được; QL chọn tuần (Dời) xoá dấu', () => thu(() => {
     const [a, b] = luot;
     const cu = (x: number) => conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at, no_show_cu)
       VALUES (?, 'listening', ?, ?, '2026-01-01T00:00:00.000Z', 1, '2026-01-01T00:00:00.000Z', 1)`).run(x, W, gvL.userId);
@@ -500,9 +526,9 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     dung(b, { lichSu: true });
     cu(b);
     xoaNho();
-    assert(o(b, 'listening', W, QUA)?.noShow?.state === 'da-huy', 'MT cũ: hiện Đã huỷ');
-    absence.restoreCancelledSkill(QL, b, 'listening', W);
-    assert(dau(b, 'listening').no_show_cu === 0, 'QL Khôi phục ô cũ');
+    assert(o(b, 'listening', W, QUA)?.noShow?.state === 'khong-du-thi', 'MT cũ: hiện Không dự thi');
+    skillSchedule.setSkillWeek(QL, b, 'listening', W, { today: QUA, force: true });
+    assert(dau(b, 'listening').no_show_cu === 0 && dau(b, 'listening').no_show_period_id === null, 'QL chọn tuần xoá dấu ô cũ (L5)');
   }));
 
   check('T31 · đếm theo tuần: gõ lại / sửa "-" trong cùng tuần không tính thêm; lần 2 chỉ ở tuần đã dời tới (chốt lúc lưu, như hiện nay)', () => thu(() => {

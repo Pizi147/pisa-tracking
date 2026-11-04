@@ -91,7 +91,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   const khaiGiang = loai === 'thuong' ? (data as LuoiThuongData).khaiGiang : null;
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
   const canXepLai = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
-    && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || o?.trangThai === 'da-huy'));
+    && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || (o?.trangThai === 'da-huy' && !o.huyVang)));   // N38 L2: huỷ vắng 2 lần = đã xong
   const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
     && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
   /* "Chưa có MT kế tiếp" (G5): em không còn lượt MT nào đang chờ (có lịch, chưa xong) — ô "Xếp MTn" của em viền nhấn đậm. */
