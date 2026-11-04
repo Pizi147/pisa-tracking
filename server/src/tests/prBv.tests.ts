@@ -220,6 +220,50 @@ export async function runPrBvTests(t: YThucTestKit) {
     assert(ds.length === 1 && paCua(c.id).find((x) => x.id === iv.id)!.status === 'started', JSON.stringify(paCua(c.id)));
   });
 
+  /* VIEC-SAU-LOGIC ([XM] #923, N37): người dùng XOÁ Case SOS → nhập / sửa / xoá rồi nhập lại điểm CÙNG lượt + kỹ năng không sinh lại; lượt mới vẫn sinh. */
+  const cases: any = await import('../cases/cases.ts');
+  const kp: any = await import('../platform/khoiPhucRac.ts');
+  check('BV C7 · xoá Case SOS (QL) → sửa điểm, sửa thành đạt rồi trượt lại, xoá điểm rồi nhập lại cùng MT1 L → KHÔNG sinh lại; có nhật ký', () => {
+    const a = emMoiChot();
+    for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
+    const [c] = caseL(a.sid);
+    cases.xoaCase(QL, c.id);
+    assert(get(`SELECT 1 FROM audit_logs WHERE action = 'case.delete' AND entity_id = ?`, c.id), 'thiếu nhật ký xoá');
+    for (const band of [5.5, 8.5, 5, null, 5]) {
+      nhapFt(QL, a.m1, 'listening', band);
+      assert(caseL(a.sid).length === 0, `sinh lại Case sau khi nhập ${band}: ${JSON.stringify(caseL(a.sid).map((x) => [x.id, x.status]))}`);
+    }
+    /* Kỹ năng khác của cùng lượt vẫn như thường. */
+    assert(caseL(a.sid, 'reading').length === 1, 'Case R của lượt phải còn');
+  });
+
+  check('BV C8 · xoá Case SOS MT1 L rồi MT2 L trượt → Case MỚI như thường', () => {
+    const a = emMoiChot();
+    for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
+    cases.xoaCase(QL, caseL(a.sid)[0].id);
+    const cn2 = t.addDays(tuan(4).weekStart, 6);
+    for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m2, k, 5, cn2);
+    const ds = caseL(a.sid);
+    assert(ds.length === 1 && ds[0].status !== 'done' && ds[0].attempt_id === a.m2, JSON.stringify(ds.map((x) => [x.id, x.status, x.attempt_id])));
+  });
+
+  check('BV C9 · xoá Case rồi Khôi phục → Case cũ về, sửa điểm không thêm Case thứ hai; lớp thường Progress xoá Case cũng không sinh lại', () => {
+    const a = emMoiChot();
+    for (const k of ['listening', 'reading', 'speaking']) nhapFt(QL, a.m1, k, 5);
+    const [c] = caseL(a.sid);
+    kp.khoiPhucRac(QL, cases.xoaCase(QL, c.id).thungRacId);
+    nhapFt(QL, a.m1, 'listening', 5.5);
+    const ds = caseL(a.sid);
+    assert(ds.length === 1 && ds[0].id === c.id, JSON.stringify(ds.map((x) => [x.id, x.status])));
+    const b = baiThuong(0);
+    nhapThuong(P.admin, b.aid, { listening: 10, reading: 18, writing: 18, speaking: 18 });
+    cases.xoaCase(QL, caseL(b.sid)[0].id);
+    nhapThuong(P.admin, b.aid, { listening: 9 });
+    nhapThuong(P.admin, b.aid, { listening: null });
+    nhapThuong(P.admin, b.aid, { listening: 10 });
+    assert(caseL(b.sid).length === 0, 'Progress: sinh lại Case đã xoá');
+  });
+
   /* Thi lại (xoá để thi lại) rồi trượt → Case MỚI: phép kiểm cũ S3F (1) "Thi lại L" giữ nguyên, canh luật này. */
 
   // ------------------------------------------------------------------ V · xoá "-" đã chốt ở Mock (Task 4)

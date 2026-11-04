@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays, nowIso } from '../util.ts';
 import { type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
-import { caseDongDoXoaSql, raiseSignal, labelOf } from './signals.ts';
+import { TIN_HIEU_CASE_DA_XOA, caseDongDoXoaSql, raiseSignal, labelOf, tinHieuDaCoCase } from './signals.ts';
 import { failingEntrySkills, type AttemptResult, type EntryBands } from '../fasttrack/scoring.ts';
 import { resultOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { laLopKetThuc } from '../fasttrack/hoanTat.ts';
@@ -451,7 +451,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
      * lượt này: chạy lặp (lưu lại điểm, nhập kỹ năng khác, chấm lại) không được đảo quyết định của GVBM. Case chỉ được tạo lại khi tín hiệu được MỞ LẠI
      * (bị thu hồi rồi trượt lại — `raiseSignal` xoá `case_id`), hoặc ở MỘT LƯỢT SAU (tín hiệu của lượt đó là dòng khác).
      */
-    const alreadyLinked = signal.status === 'linked' && signal.case_id != null;
+    const alreadyLinked = tinHieuDaCoCase(signal);   // VIEC-SAU-LOGIC: kể cả Case đã bị người dùng xoá
     /* OV-13a: Case tạm của chính lượt này → lượt vừa chốt dưới kỳ vọng: thành Case thật ("Chờ xác nhận PA", hạn từ hôm nay). */
     if (open?.tam && autoCases) { chotCaseTam(p.userId, open, attempt, result.sosLevel, kck); open.tam = 0; }
     if (!open && autoCases && !alreadyLinked) {
@@ -459,7 +459,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
         attempt, category, skill, sosLevel: result.sosLevel, detectedAt, band, expectation: result.expectation, signalId: signal.id, kck,
       });
       openHere.push(open);
-    } else if (open) {
+    } else if (open && !(alreadyLinked && signal.case_id == null)) {   // Case của lượt này đã xoá: không ghi lượt này vào Case khác
       /*
        * TÍN HIỆU ĐÃ NỐI VÀO CHÍNH CASE NÀY (chạy lặp: lưu lại điểm, nhập thêm kỹ năng khác, chấm lại) thì KHÔNG ghi thêm mốc "Trượt lại" — lượt
        * này vừa mở hoặc đã được ghi vào Case rồi. Chỉ mức SOS của cả lượt là có thể đổi, và chỉ khi Case còn đang theo lượt này.
@@ -711,7 +711,8 @@ export function keHoachCaseTam(attempt: { id: number; student_id: number; cycle_
     .filter((c) => !muon.includes(c.topic)).map((c) => c.id as number);
   const mo = new Set((conn.prepare(`SELECT id, category FROM sos_cases WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`)
     .all(attempt.student_id, attempt.cycle_id ?? 0) as any[]).filter((c) => !xoa.includes(c.id)).map((c) => c.category as string));
-  const noi = new Set((conn.prepare(`SELECT skill FROM case_signals WHERE attempt_id = ? AND status = 'linked' AND case_id IS NOT NULL`).all(attempt.id) as any[])
+  const noi = new Set((conn.prepare(`SELECT skill FROM case_signals WHERE attempt_id = ? AND status = 'linked' AND (case_id IS NOT NULL OR resolution_note = ?)`)
+    .all(attempt.id, TIN_HIEU_CASE_DA_XOA) as any[])
     .map((r) => r.skill as string));
   return { tao: muon.filter((s) => !mo.has(categoryOf(s) as string) && !noi.has(s)), xoa };
 }

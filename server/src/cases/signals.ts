@@ -47,6 +47,15 @@ export type SignalRow = {
   dedup_key: string | null;
 };
 
+/**
+ * VIEC-SAU-LOGIC ([XM] #923, N37): người dùng XOÁ Case → tín hiệu của Case (mỗi lượt × kỹ năng) giữ dấu này ở `resolution_note` (vẫn `linked`, `case_id` NULL).
+ * Nhập / sửa / xoá rồi nhập lại điểm CÙNG lượt + kỹ năng không sinh lại Case; lượt mới = tín hiệu mới → sinh như thường. Khôi phục Case trả lại tín hiệu cũ.
+ */
+export const TIN_HIEU_CASE_DA_XOA = 'Case đã xoá — nhập lại điểm lượt này không sinh lại Case.';
+/** Tín hiệu đã có Case (đang nối) hoặc Case của nó đã bị người dùng xoá → không tạo Case mới cho chính lượt + kỹ năng này. */
+export const tinHieuDaCoCase = (sg: { status: string; case_id: number | null; resolution_note?: string | null }): boolean =>
+  sg.status === 'linked' && (sg.case_id != null || sg.resolution_note === TIN_HIEU_CASE_DA_XOA);
+
 /** Khoá chống trùng: một đợt × một ô nhập điểm = ĐÚNG MỘT tín hiệu, mãi mãi. */
 export function signalKey(attemptId: number, skill: string | null): string {
   return `mt:${attemptId}:${skill ?? ''}`;

@@ -1,6 +1,7 @@
 import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
+import { TIN_HIEU_CASE_DA_XOA } from './signals.ts';
 import {
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
   INTERVENTION_STATUS_LABEL,
@@ -1606,6 +1607,9 @@ function xoaCaseTrongTx(p: Principal, c: any): { ok: true; thungRacId: number } 
   });
   for (const r of conn.prepare(`SELECT url FROM attachments WHERE kind = 'file' AND ((owner_type = 'sos_case' AND owner_id = ?1)
       OR (owner_type = 'case_intervention' AND owner_id IN (${CASE_I})))`).all(caseId) as any[]) chup.tep.push(r.url);
+  /* VIEC-SAU-LOGIC ([XM] #923): tín hiệu của Case giữ dấu "Case đã xoá" — nhập lại điểm cùng lượt + kỹ năng không sinh lại (Khôi phục trả lại dòng cũ). */
+  chup.chupSua('case_signals', 'case_id = ?', caseId);
+  conn.prepare('UPDATE case_signals SET resolution_note = ?, updated_at = ? WHERE case_id = ?').run(TIN_HIEU_CASE_DA_XOA, nowIso(), caseId);
   for (const sql of CAU_XOA_CASE) chup.chay(sql, caseId);
   const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
   const thungRacId = ghiThungRac(conn, { loai: 'case', doiTuongId: caseId, nhan: [caseTitleOf(c), hv].filter(Boolean).join(' · '),

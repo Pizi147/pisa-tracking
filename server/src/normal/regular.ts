@@ -3,7 +3,7 @@ import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
-import { raiseSignal, reconcileCorrectedSignals } from '../cases/signals.ts';
+import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import {
   ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
   categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich,
@@ -1054,6 +1054,7 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
       actorUserId: p.userId, studentId: a.student_id, cycleId: a.cycle_id ?? null, attemptId: a.id, classId: a.class_id ?? null,
       skill, category, sosLevel: null, detectedOn: detectedAt, silent: true,
     });
+    if (tinHieuDaCoCase(signal) && signal.case_id == null) continue;   // VIEC-SAU-LOGIC: Case của lượt + môn này đã bị xoá — không sinh lại / không nối
     if (existing) {
       if (signal.status === 'linked' && signal.case_id === existing.id) continue;   // chạy lặp: lượt này đã ghi vào Case
       addMilestone({
@@ -1068,7 +1069,7 @@ function taoCaseGiuaKhoa(p: Principal, a: any, r: RegularResult) {
         conn.prepare(`UPDATE case_signals SET status = 'linked', case_id = ?, resolved_by = ?, resolved_at = ?, resolution_note = ?, updated_at = ? WHERE id = ?`)
           .run(existing.id, p.userId, nowIso(), 'Nối vào Case đang mở của môn này — cùng một vấn đề, thêm một bằng chứng.', nowIso(), signal.id);
       }
-    } else if (!(signal.status === 'linked' && signal.case_id != null)) {
+    } else if (!tinHieuDaCoCase(signal)) {
       open.push(taoCaseTuDong(p, {
         attempt: a, category, skill, sosLevel: muc, detectedAt, band: null, expectation: null, signalId: signal.id, pa: 'bo_tro',
         kck: kckCuaLuot(a),   // OV-9: em KCK — Case nhẹ, không PA Bổ trợ, không hạn
