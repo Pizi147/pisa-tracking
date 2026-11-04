@@ -16,11 +16,12 @@ export function DaiMoiDung() {
   const toast = useToast();
   if (!chuaXem || !coNoiDung || an) return null;
   return (
-    <div className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-2.5 text-sm text-slate-300" style={{ borderColor: 'var(--accent-line)' }}>
-      <span className="min-w-0 flex-1 basis-[16rem]"><b className="font-semibold text-slate-100">{t('Mới dùng PISA TRACKING?')}</b>{' '}{t('Xem 5 việc hằng tuần của bạn (3 phút)')}</span>
-      <span className="flex gap-2 max-sm:w-full [&>button]:max-sm:flex-1 [&>button]:max-sm:justify-center">
-        <button type="button" className="btn btn-primary btn-sm" onClick={() => navigate('/huong-dan')}>{t('Xem')}</button>
-        <button type="button" className="btn btn-sm btn-ghost" onClick={async () => {
+    /* TQ-GON (M8): MỘT hàng cả ở 375 — chữ + Xem · Ẩn cùng hàng; câu phụ "Xem 5 việc…" chỉ ở màn rộng (375 rê / đọc màn vẫn có qua `title`). */
+    <div className="card flex items-center gap-x-3 px-3.5 py-2 text-sm text-slate-300" style={{ borderColor: 'var(--accent-line)' }} title={t('Xem 5 việc hằng tuần của bạn (3 phút)')}>
+      <span className="min-w-0 flex-1"><b className="font-semibold text-slate-100">{t('Mới dùng PISA TRACKING?')}</b><span className="max-sm:hidden">{' '}{t('Xem 5 việc hằng tuần của bạn (3 phút)')}</span></span>
+      <span className="flex shrink-0 gap-2">
+        <button type="button" className="btn btn-primary btn-sm max-sm:min-h-[44px]" onClick={() => navigate('/huong-dan')}>{t('Xem')}</button>
+        <button type="button" className="btn btn-sm btn-ghost max-sm:min-h-[44px]" onClick={async () => {
           setAn(true);
           if (!(await ghi())) { setAn(false); toast.push('error', t('Không lưu được — thử lại.')); }
         }}>{t('Ẩn')}</button>

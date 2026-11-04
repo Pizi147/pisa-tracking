@@ -24,14 +24,14 @@ export const EN_TL_V5 = {
   // ---------------------------------------------------------------- CX
   'Xem Tổng quan mỗi sáng': 'Check Home every morning',
   '<b>Tổng quan</b>: chọn <b>Chi nhánh</b> (mặc định tất cả).': '<b>Home</b>: pick a <b>Branch</b> (default: all).',
-  'Bốn số: <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · bước tiếp</b>; bấm số mở danh sách.':
-    'Four numbers: <b>MT met</b> · <b>Real exam target met</b> · <b>Students at SOS 2–3</b> · <b>Awaiting result · next step</b>; click a number to open the list.',
+  'Bốn số: <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · Lộ trình tiếp</b>; bấm số mở danh sách.':
+    'Four numbers: <b>MT met</b> · <b>Real exam target met</b> · <b>Students at SOS 2–3</b> · <b>Awaiting result · Next path</b>; click a number to open the list.',
   'Dưới: bảng <b>Theo chi nhánh</b> (bấm hàng xem một chi nhánh) hoặc <b>Lớp cần chú ý</b> khi đã chọn chi nhánh.':
     'Below: the <b>By branch</b> table (click a row to view one branch), or <b>Classes needing attention</b> once a branch is picked.',
   'Bấm một số để xem danh sách tạo nên nó.': 'Click a number to see the list behind it.',
   'Bốn số': 'Four numbers',
-  'Chọn <b>Chi nhánh</b>; <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · bước tiếp</b>.':
-    'Pick a <b>Branch</b>; <b>MT met</b> · <b>Real exam target met</b> · <b>Students at SOS 2–3</b> · <b>Awaiting result · next step</b>.',
+  'Chọn <b>Chi nhánh</b>; <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · Lộ trình tiếp</b>.':
+    'Pick a <b>Branch</b>; <b>MT met</b> · <b>Real exam target met</b> · <b>Students at SOS 2–3</b> · <b>Awaiting result · Next path</b>.',
   'Bấm số mở danh sách ngay tại trang.': 'Click a number to open its list on this page.',
   'Bảng: Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa PA; bấm hàng xem một chi nhánh.':
     'Table: MT met · Real exam target met · SOS 2–3 · Cases without PA; click a row to view one branch.',

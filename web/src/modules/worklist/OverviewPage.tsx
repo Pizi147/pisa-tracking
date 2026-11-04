@@ -36,6 +36,9 @@ export default function OverviewPage() {
     : !nav?.analysis ? (nav?.work ? 'gv' : nav?.students ? 'khac' : 'ht')
       : laVaiQuanLy(session?.roles) ? 'ql' : nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
   const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
+  /* TQ-GON (M3): kỳ số liệu GV / TVV ghi MỘT lần ở đầu trang như QL (L6) — cùng GET khối bên dưới đang gọi (`useApi` gộp), không thêm request. */
+  const kyGv = useApi<{ chiSo: { tu: string; den: string } }>(vai === 'gv' || vai === 'ht' ? '/tong-quan/lop-toi-day/hai-khoi' : null, [vai]).data?.chiSo;
+  const kyTvv = useApi<{ ky: { tu: string; den: string } }>(vai === 'tvv' ? '/tong-quan/tvv' : null, [vai]).data?.ky;
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
   const congTac = <CongTacKhung v8 trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
@@ -48,8 +51,8 @@ export default function OverviewPage() {
     </div>
   );
 
-  if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />);
-  if (vai === 'gv' || vai === 'ht') return trang(session?.user?.fullName ?? '', <TongQuanGvV5 lopToiDay={(phai) => <HaiKhoiGv phai={phai} />} />);
+  if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />, undefined, kyTvv);
+  if (vai === 'gv' || vai === 'ht') return trang(session?.user?.fullName ?? '', <TongQuanGvV5 lopToiDay={(phai) => <HaiKhoiGv phai={phai} />} />, undefined, kyGv && { tu: kyGv.tu, den: kyGv.den });
   if (vai === 'admin') {
     return trang(t('Mock Test'), <TongQuanAdminV5 cn={branchId} mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }
