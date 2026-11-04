@@ -70,8 +70,10 @@ export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | 
  */
 export function LuoiChamLop({
   data, kind, kn = null, hv = null, onReload, gon = false, tuanDangXem = null, chiAttempt = null, datConTro = true, thanhTren,
-  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet, onMotKyNang,
+  onSoOChuaLuu, hangMo, anNutTao, chiCot = null, nutCaLop = true, anKetQua = false, sEx, onHet, onMotKyNang, anCotMt = false,
 }: {
+  /** LT-GON: ẩn cột MT của lưới FT (lượt đã ghi dưới tên em — `DongThi`). */
+  anCotMt?: boolean;
   data: Cham; kind: string | null; kn?: string | null; hv?: number | null; onReload: () => void;
   gon?: boolean; tuanDangXem?: string | null; chiAttempt?: ReadonlySet<number> | null; datConTro?: boolean;
   /** Chữ nhỏ ở hàng trên lưới, cùng hàng với nút "Xem dạng bảng" (Lịch Test: "Mở lưới đầy đủ ›"). */
@@ -160,7 +162,7 @@ export function LuoiChamLop({
     <>
       {tungKyNang && laFt && ft && <MotKyNang mode="ielts_band" data={ft} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} tuanDangXem={tuanDangXem} onHet={onHet} />}
       {tungKyNang && !laFt && thuong && <MotKyNang mode="ratio" data={thuong} onReload={onReload} kn={kn} hv={hv} anNutTao={anNutTao} tuanDangXem={tuanDangXem} />}
-      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} anKetQua={anKetQua} sEx={sEx} the={theHv} onHet={onHet} />}
+      {!tungKyNang && laFt && ft && <LuoiFT data={ft} onReload={onReload} kn={kn} hv={hv} gon={gon} tuanDangXem={tuanDangXem} hangMo={hangMo} chiCot={cotHien} anKetQua={anKetQua} sEx={sEx} the={theHv} onHet={onHet} anCotMt={anCotMt} />}
       {!tungKyNang && !laFt && thuong && <LuoiThuong data={thuong} onReload={onReload} kn={kn} hv={hv} tuanDangXem={tuanDangXem} anNutTao={anNutTao} />}
     </>
   );

@@ -100,7 +100,9 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, anCotMt = false }: {
+  /** LT-GON: không cột MT — lượt ghi dưới tên em (`DongThi`, khối Quá hạn chấm gộp theo lớp). */
+  anCotMt?: boolean;
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
@@ -123,7 +125,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const hien = (s: string) => !chiCot || chiCot.some((k) => khopKn(s, k));
   const cot = {
     /* UI-LICH-TUAN: lưới theo tuần (Lịch tuần, panel việc) luôn ghi MT của từng em — không giả định cả lớp cùng MT. */
-    mt: !gon || !!tuanDangXem || new Set(data.rows.map((r) => r.attemptNo)).size > 1,
+    mt: !anCotMt && (!gon || !!tuanDangXem || new Set(data.rows.map((r) => r.attemptNo)).size > 1),
     trangThai: !gon,
     han: !gon,
     /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */

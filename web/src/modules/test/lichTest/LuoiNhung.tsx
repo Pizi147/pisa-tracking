@@ -6,6 +6,7 @@ import { ErrorState, Skeleton } from '../../../ui/ui.tsx';
 import { LuoiChamLop, duongCham, type Cham } from '../../cham/LuoiChamLop.tsx';
 import type { SExTuan } from '../../cham/LuoiFT.tsx';
 import type { OnHet } from '../../cham/phienCham.ts';
+import { DongThiContext } from '../../cham/DongThi.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -15,7 +16,7 @@ import { t } from '@shared/i18n/index.ts';
  * Lưu một ô → tải lại lưới NÀY và báo `onDaLuu` (Lịch Test gộp 1,5 s rồi mới tải lại dải số — Q14).
  * "Mở lưới đầy đủ ›" (G6: "›" = đổi trang; → Lịch tuần lọc lớp): chỉ khi lưới nằm ngoài Lịch tuần (panel việc); trong Lịch (`coLinkRieng`) không lặp.
  */
-export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet, emCoBaiTuan = false }: {
+export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet, emCoBaiTuan = false, luotDuoiTen = false }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
   chiAttempt?: ReadonlySet<number> | null; kn?: string | null; hrefDayDu: string; datConTro: boolean;
   onDaLuu: () => void; coLinkRieng?: boolean; onSoOChuaLuu?: (n: number) => void;
@@ -29,6 +30,8 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
   onHet?: OnHet;
   /** N39 (panel việc chấm Mock): thêm mọi em có bài tuần `tuanDangXem` ở cột của việc — cả bài đã chấm, để sửa; không hiện cả lớp. */
   emCoBaiTuan?: boolean;
+  /** LT-GON (khối Quá hạn chấm một hàng một lớp): lưới gộp nhiều MT / tuần — "MT3 · W1 SEP" là chữ phụ dưới tên em (`DongThi`), không cột MT riêng. */
+  luotDuoiTen?: boolean;
 }) {
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
   const chiAttempt = useMemo(() => {
@@ -49,9 +52,11 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <Skeleton rows={4} />
         : (
-          <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}
-            gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link}
-            onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} sEx={sEx} onHet={onHet} />
+          <DongThiContext.Provider value={luotDuoiTen}>
+            <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}
+              gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link}
+              onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} sEx={sEx} onHet={onHet} anCotMt={luotDuoiTen} />
+          </DongThiContext.Provider>
         )}
     </div>
   );

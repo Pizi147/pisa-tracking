@@ -1,4 +1,4 @@
-import type { LoaiNhanLop, PhamViLichTest } from '@shared/domain/index.ts';
+import type { LoaiNhanLop, LuoiNoLop, PhamViLichTest } from '@shared/domain/index.ts';
 import type { ToneNhan } from '../../../ui/Nhan.tsx';
 import type { DongSEx } from '../keHoach/kieu.ts';
 
@@ -23,6 +23,8 @@ export type DongNo = {
   /** OV-11e (TE-7): phần của người có phân công như khối 2; `null` với Quản lý / Quản trị. `quaHan` khi có `phan` = ô của chính họ. */
   phan: PhanCuaBan | null;
 };
+/** LT-GON: một hàng khối Quá hạn = một lớp (`gopNoTheoLop`) — `luoi` là các lưới mở dưới hàng, `soDong` số dòng nợ đã gộp. */
+export type DongNoLop = DongNo & { luoi: LuoiNoLop[]; soDong: number };
 /** OV-1b (3.5) "Phần của bạn" (kỹ năng L R W S; W1 + W2 cùng người gộp "W"). */
 export type PhanCuaBan = {
   toi: { kyNang: string[]; con: number } | null;
