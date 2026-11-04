@@ -38,7 +38,9 @@ export async function runPrQuTests(t: YThucTestKit) {
       const m = d.MO_TA_QUYEN[k];
       assert(m, `thiếu mô tả ${k}`);
       assert(nhom.has(m.nhom), `${k} nhóm lạ`);
-      assert(m.moTa.trim().length > 5 && /[.]$/.test(m.moTa.trim()), `${k} mô tả phải là một câu`);
+      /* MO-TA-QUYEN-GON (PTA 05/11): mô tả chỉ khi thêm nghĩa so với tên; có thì là một câu, KHÔNG lặp tên quyền. */
+      assert(!m.moTa || (m.moTa.trim().length > 5 && /[.]$/.test(m.moTa.trim())), `${k} mô tả phải là một câu`);
+      assert(!m.moTa || m.moTa.trim().replace(/[.]$/, '') !== d.PERMISSION_LABEL[k], `${k} mô tả lặp tên`);
       assert(d.PERMISSION_LABEL[k], `thiếu nhãn ${k}`);
     }
     assert(Object.keys(d.MO_TA_QUYEN).length === Object.values(d.PERMISSIONS).length, 'mô tả thừa quyền không tồn tại');
