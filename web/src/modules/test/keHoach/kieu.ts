@@ -9,6 +9,8 @@ export type KnO = Partial<Record<KyNangKH, OKyNang>>;
 export type LopKH = {
   id: number; code: string; loai: 'ft' | 'thuong'; chiNhanh: string; chuongTrinh: string | null; soHv: number;
   chuaCoLichTiep: number; hvChuaCoLich: number; tomTat: string;
+  /** U05 (mockup V11 hàng lớp tách trường): GVCN · đợt đang chạy ("MT3 đang làm bài" / "MT1 đã xong"; lớp thường = tiến độ khoá). */
+  gvcn?: string | null; dotChay?: string | null;
   /** PR-XLMT (Q7): số em lớp FT cần Quản lý xếp lại (vắng chưa có đề nghị + phần thi đã huỷ). */
   canXepLai: number;
   /** Chủ SP 28/10: lớp GV dạy mà không xếp được (không `plan.week`) — chỉ xem. */

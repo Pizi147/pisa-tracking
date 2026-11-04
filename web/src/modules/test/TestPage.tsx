@@ -42,7 +42,11 @@ export default function TestPage() {
 
   return (
     <div className="page space-y-4">
-      <h1 className="text-xl font-bold text-slate-100 m-0">{t('Test')}</h1>
+      {/* U05 (mockup V11): nút của tab đứng cùng hàng tiêu đề — tab gắn vào `#test-nut-trang` bằng portal. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="m-0 text-[22px] font-bold text-slate-100">{t('Test')}</h1>
+        <span id="test-nut-trang" className="ml-auto" />
+      </div>
       {tabs.length > 1 && (
         <HangTab panelId="test-vung" ariaLabel={t('Test')} value={lopCu ? 'lich' : tab} onChange={go}
           tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k], ...(k === 'cham' && viec.data ? { so: viecChamCuaToi(viec.data.dong).length, donVi: t('việc') } : {}) }))} />

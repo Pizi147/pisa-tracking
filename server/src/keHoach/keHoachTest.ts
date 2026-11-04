@@ -77,7 +77,9 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
   const rows = conn
     .prepare(
       `SELECT c.id, c.code, c.branch_id, pg.scoring_mode AS mode, br.name AS chi_nhanh,
-              (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv
+              (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') AS so_hv,
+              (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id   -- U05: ô GVCN của hàng lớp (cùng câu, như lopTrongPhamVi)
+                WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id DESC LIMIT 1) AS gvcn
          FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code
          LEFT JOIN branches br ON br.id = c.branch_id
         WHERE ${where}
@@ -150,6 +152,13 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
   }
   /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. */
   const canXepLai = new Map([...emCanXepLai(ftClassIds)].map(([lop, em]) => [lop, em.size]));
+  /* U05 (mockup V11 hàng lớp): ô đợt đang chạy — "MTn đang làm bài", không thì MT cao nhất đã xong "MTn đã xong"; từ lượt đã đọc (0 câu). */
+  const dotChay = (classId: number): string | null => {
+    const dang = (luotCuaLop.get(classId) ?? []).filter((l) => l.status === 'planned' && l.coTuan).map((l) => l.no);
+    if (dang.length) return `MT${Math.min(...dang)} đang làm bài`;
+    const xong = (hvCuaLop.get(classId) ?? []).flatMap((hv) => (luotLoTrinh.get(`${classId}:${hv}`) ?? []).filter((x) => x.status === 'done').map((x) => x.attempt_no));
+    return xong.length ? `MT${Math.max(...xong)} đã xong` : null;
+  };
   const tomTatFT = (classId: number): string => {
     const hvLop = hvCuaLop.get(classId) ?? [];
     const dsCua = (hv: number) => luotLoTrinh.get(`${classId}:${hv}`) ?? [];
@@ -205,6 +214,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         hvChuaCoLich: hvChuaCoLich.get(r.id) ?? 0,
         canXepLai: canXepLai.get(r.id) ?? 0,
         tomTat: loai === 'ft' ? tomTatFT(r.id) : tomTatThuong(r.id),
+        gvcn: (r.gvcn ?? null) as string | null,
+        dotChay: loai === 'ft' ? dotChay(r.id) : tomTatThuong(r.id),
         chiXem: chiXemLop(p, r.id),
       };
     }),
