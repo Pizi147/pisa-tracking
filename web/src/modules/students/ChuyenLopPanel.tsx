@@ -22,7 +22,7 @@ type LopDich = {
   id: number; code: string; chiNhanhId: number; branchCode: string | null; ma: string | null; ft: boolean; route: string | null;
   tenChuongTrinh: string | null; tuan: string | null; gvcn: string | null; siSo?: number;
 };
-type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean; coTheChon?: boolean } };
+type LopDichData = { lop: LopDich[]; nguon: { ft: boolean; tuCuoiKhoa: boolean; coTheChon?: boolean; ma?: string | null; /** N36: chỉ khi hỏi `bac=1` (form Đề xuất). */ bacYThuc?: number } };
 type LenhCho = { id: number; huong: string; lopDichId: number | null; tuan: string; mucTieu: MucTieuLenh | null; lyDo: string | null; loi: string | null; hanGvcn?: string | null; resetBac?: boolean };
 export type XemChuyenLopData = {
   hienTai: { lop: { id: number; code: string }; ma: string | null; ft: boolean; chiNhanhId: number; route: string | null; tuanHoc: { tuan: number | null; tong: number | null; dangDung: boolean } | null };
@@ -36,7 +36,7 @@ export type XemChuyenLopData = {
 };
 
 /** Thẻ Đề xuất chuyển lớp đang được duyệt: panel mở điền sẵn, nút chính `Duyệt và quyết định` (mockup 20 — thẻ Chờ duyệt → D). */
-export type DuyetDeXuat = { id: number; lopDichId: number | null; tuan: string | null; lyDo: string | null };
+export type DuyetDeXuat = { id: number; lopDichId: number | null; tuan: string | null; lyDo: string | null; /** N36: lựa chọn "Reset bậc vi phạm" của GVCN. */ resetBac?: boolean };
 
 /** Ô gõ tên lớp: gợi ý "mã lớp · FT LT1 · CP · 9 em" (GVCN đề xuất: không sĩ số — máy chủ không trả `siSo`). */
 const dsLopDich = (lop: readonly LopDich[]): LopChon[] => lop.map((l) => ({ id: l.id, ma: l.code, phu: phuLopDich(l, 'siSo' in l) }));
@@ -51,6 +51,7 @@ export const tenBac = (bac: number) => nhanLoaiXuLy(kindCuaBac(bac));
 
 /**
  * N36 (chủ SP 05/11): ô "Reset bậc vi phạm" lúc chuyển từ lớp thường sang lộ trình mới (lớp thường / FT) — mặc định TẮT = giữ bậc, chuỗi đếm thang nối tiếp.
+ * GVCN chọn (Đề xuất chuyển lớp) hoặc Quản lý (ra lệnh / duyệt — thấy sẵn lựa chọn của GVCN, đổi được).
  * Nơi gọi chỉ hiện khi em đang có bậc > 0 và lần chuyển mở lộ trình mới. Cùng kiểu ô tích "Theo luồng chuyển tiếp lộ trình".
  */
 export function OResetBac({ checked, onChange, phu, disabled }: { checked: boolean; onChange: (v: boolean) => void; phu: string; disabled?: boolean }) {
@@ -131,7 +132,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   /* Q4 (chủ SP 29/10): tuần trước Final → hết tuần Final, Quản lý chọn có "theo luồng chuyển tiếp lộ trình" (Test đi kèm) hay không — mặc định có. */
   const [theoCk, setTheoCk] = useState(true);
   const thamTheo = `theoCuoiKhoa=${theoCk ? 1 : 0}`;
-  const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}&${thamTheo}`, [studentId, theoCk]);
+  const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}&${thamTheo}${dx ? '&bac=1' : ''}`, [studentId, theoCk]);
   const [toClassId, setToClassId] = useState<number | null>(duyet?.lopDichId ?? null);
   /* GVCN không có quyền xem luật ra lệnh (403) — chỉ Quản lý gọi đường xem trước. */
   const xem = useApi<XemChuyenLopData>(dx ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}&${thamTheo}` : `/students/${studentId}/chuyen-lop?${thamTheo}`), [studentId, toClassId, dx, theoCk]);
@@ -139,7 +140,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const [tuan, setTuan] = useState(duyet?.tuan ?? '');
   const [lyDo, setLyDo] = useState(duyet?.lyDo ?? '');
   const [mucTieu, setMucTieu] = useState('');
-  const [resetBac, setResetBac] = useState(false);
+  const [resetBac, setResetBac] = useState(!!duyet?.resetBac);
   const [dangHuy, setDangHuy] = useState(false);
   const [lyDoHuy, setLyDoHuy] = useState('');
   const lf = useLoiForm();
@@ -190,8 +191,10 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   /* M1: xem trước của lớp vừa chọn chưa về → chưa biết có cần Target → chưa cho gửi. */
   const choXem = !dx && !!toClassId && !xemLop && !xem.error;
   /* N36: em lớp thường đang có bậc + lớp vừa chọn mở lộ trình mới (`dong-mo`; cùng chương trình giữa khoá thì lộ trình giữ, bậc tự nối tiếp). */
-  const bacNay = nen?.bacYThuc ?? 0;
-  const oReset = !!xemLop && bacNay > 0 && xemLop.luat?.khoa === 'dong-mo';
+  const bacNay = (dx ? lopDich.data?.nguon.bacYThuc : nen?.bacYThuc) ?? 0;
+  /* Đề xuất (GVCN không có xem trước): lớp chưa chọn cũng hiện; lớp chọn cùng chương trình giữa khoá (lộ trình giữ) thì ẩn — như `dong-mo`. */
+  const nguonLd = lopDich.data?.nguon;
+  const oReset = bacNay > 0 && (dx ? !dich || dich.ft || dich.ma !== (nguonLd?.ma ?? null) || !!nguonLd?.tuCuoiKhoa : !!xemLop && xemLop.luat?.khoa === 'dong-mo');
 
   const LUAT: LuatTruong[] = dx
     ? [{ khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }]   // T7 (PR-MTa): không tối thiểu ký tự
@@ -217,10 +220,10 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     try {
       if (dx && duyet) {
         /* OV-7a: người gửi sửa thẻ Đề xuất còn chờ — cùng form, điền sẵn. */
-        await api.put(`/yeu-cau/${duyet.id}`, { toClassId: toClassId ?? null, tuan: tuan || null, lyDo: lyDo.trim() });
+        await api.put(`/yeu-cau/${duyet.id}`, { toClassId: toClassId ?? null, tuan: tuan || null, lyDo: lyDo.trim(), resetBac: oReset && resetBac });
         xong(t('Đã lưu đề xuất'));
       } else if (dx) {
-        await api.post(`/students/${studentId}/de-xuat-chuyen-lop`, { toClassId: toClassId ?? undefined, tuan: tuan || undefined, lyDo: lyDo.trim() });
+        await api.post(`/students/${studentId}/de-xuat-chuyen-lop`, { toClassId: toClassId ?? undefined, tuan: tuan || undefined, lyDo: lyDo.trim(), resetBac: oReset && resetBac });
         xong(t('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt'));
       } else if (duyet) {
         await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac } });

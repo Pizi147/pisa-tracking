@@ -311,7 +311,7 @@ CREATE TABLE learning_cycles (
   mon_dang_ky TEXT,                   -- P8 (N13): JSON môn đã học ⊂ L R W1 W2 S (chỉ FT); NULL = đủ môn
   programme_code TEXT REFERENCES programmes(code),
   target_score REAL,                  -- điểm cam kết của CHÍNH lộ trình này
-  reset_bac_y_thuc INTEGER NOT NULL DEFAULT 0,  -- N36: 1 = chuỗi đếm thang Ý thức bắt đầu lại ở lộ trình này (Quản lý chọn "Reset bậc vi phạm" lúc chuyển)
+  reset_bac_y_thuc INTEGER NOT NULL DEFAULT 0,  -- N36: 1 = chuỗi đếm thang Ý thức bắt đầu lại ở lộ trình này (GVCN chọn khi đề xuất hoặc Quản lý khi ra lệnh / duyệt: "Reset bậc vi phạm" lúc chuyển)
   khong_cam_ket INTEGER NOT NULL DEFAULT 0,  -- Q29-1 (PR-KCK) + OV-9: 1 = dấu KCK — Target giữ (có thể trống); dưới kỳ vọng không SOS, chỉ Case nhẹ
 
   /*

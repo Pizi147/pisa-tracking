@@ -101,7 +101,7 @@ export function huongChuyenMotEm(
  * chương trình kế tiếp (vị từ `kiemDongChuyenTiep` của `raLenh`); giữa khoá / nguồn FT: mọi lớp đang hoạt động. Sĩ số chỉ cho người ra quyết định
  * (`class.edit` ở lớp em đang học) — GVCN đề xuất không thấy số học viên lớp khác.
  */
-export function lopDichChoChuyen(p: Principal, sid: number, theo?: boolean | null) {
+export function lopDichChoChuyen(p: Principal, sid: number, theo?: boolean | null, /** N36: form Đề xuất (GVCN không gọi được xem trước) cần bậc cho ô Reset bậc. */ bac = false) {
   const enr = lopHienTaiCua(sid);
   if (!enr) throw badRequest('Học viên không đang học lớp nào.');
   /* PR-CT: danh sách lớp là dữ liệu chỉ đọc, không lộ học viên — GVCN cần nó để chọn "Lớp chuyển đến" khi Đề xuất chuyển lớp. Ra lệnh vẫn chỉ Quản lý (`raLenh`). */
@@ -112,7 +112,9 @@ export function lopDichChoChuyen(p: Principal, sid: number, theo?: boolean | nul
   const lop = !tuCuoiKhoa ? ds.lop : ds.lop.filter((c) => !kiemDongChuyenTiep({
     huong: huongMotEm({ ft: false, ma: maTu }, c, true) as 'len_lop' | 'hoc_lai' | 'fast_track', toClassId: c.id, toClass: { ma: c.ma, ft: c.ft }, mucTieu: 5,
   }, { maTu }));
-  return { ...ds, lop, nguon: { ft: !!enr.is_fast_track, tuCuoiKhoa, coTheChon } };
+  /* N36: +3 câu, chỉ khi form Đề xuất hỏi (`bac`) và em đang ở lớp thường. */
+  const bacYThuc = bac && !enr.is_fast_track && !enr.route ? trangThaiYThuc([sid]).get(sid)?.bac ?? 0 : 0;
+  return { ...ds, lop, nguon: { ft: !!enr.is_fast_track, tuCuoiKhoa, coTheChon, ma: maTu, bacYThuc } };
 }
 
 /** Lớp ĐANG hoạt động để chọn làm lớp chuyển đến (trừ lớp `boQuaLopId`) + chi nhánh — dùng chung Chuyển lớp và Học lại sang lớp mới (PR-LUI-b). */
@@ -293,7 +295,7 @@ export function moLoTrinhMoi(p: Principal, o: {
   target?: number | null; kck?: boolean; thangThi?: string | null;
   /** P7 (N12): Lộ trình mới sau thi — mã lộ trình chọn ở panel (có thể khác lớp: LT2 ở lớp LT1, Khác), tên "Khác", Bỏ Target; KHÔNG chép ngày thi (E1); đầu vào = KQ thi thật (E3). */
   sauThi?: LoTrinhMoiSauThi | null;
-  /** N36: Quản lý chọn "Reset bậc vi phạm" lúc chuyển — lộ trình mới mở chuỗi đếm thang mới. */
+  /** N36: "Reset bậc vi phạm" lúc chuyển — GVCN chọn (đề xuất) hoặc Quản lý (ra lệnh / duyệt) — lộ trình mới mở chuỗi đếm thang mới. */
   resetBac?: boolean;
 }): { moiId: number; route: string | null } {
   const conn = db();

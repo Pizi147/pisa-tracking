@@ -383,12 +383,12 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       )}
       {moPanelSua && yc.hocVienId != null && yc.loai === 'de_xuat_chuyen_lop' && (
         <ChuyenLopPanel open cheDo="de-xuat" studentId={yc.hocVienId} studentName={yc.hocVien ?? undefined} lop={yc.lop}
-          duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo }}
+          duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo, resetBac: yc.duLieu?.resetBac === true }}
           onClose={() => setMoPanelSua(false)} onDone={() => onXong(yc.id)} />
       )}
       {moChuyenLop && yc.hocVienId != null && (
         <ChuyenLopPanel open cheDo="lenh" studentId={yc.hocVienId} studentName={yc.hocVien ?? undefined} lop={yc.lop}
-          duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo }}
+          duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo, resetBac: yc.duLieu?.resetBac === true }}
           onClose={() => setMoChuyenLop(false)} onDone={() => onXong(yc.id, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }))} />
       )}
     </article>

@@ -284,7 +284,7 @@ export function xemXetLai(p: Principal, classId: number, studentId: number | nul
 export type MucXetLai = {
   studentId: number; quyetDinh: QuyetXetLai; toClassId?: number | null; tuan?: string | null; lyDo?: string | null; trangThai?: 'inactive' | 'finished'; suaId?: number | null;
   /** Lên FT (dòng (c)) mà em chưa có Target — ô Target / KCK tại thẻ (`canHoiTarget`). */ mucTieu?: MucTieuLenh | null;
-  /** N36: Quản lý tích "Reset bậc vi phạm" — vắng = giữ cờ của lệnh đang chờ. */ resetBac?: boolean;
+  /** N36: Quản lý (ra lệnh) tích "Reset bậc vi phạm" — vắng = giữ cờ của lệnh đang chờ. */ resetBac?: boolean;
 };
 export const LO_XET_LAI = 10;   // một lời gọi ≤ 10 em (web chia lô — Học lại một em ~70–125 câu khi "Ngay hôm nay")
 
