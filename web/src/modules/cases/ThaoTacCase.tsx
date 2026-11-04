@@ -363,10 +363,10 @@ export function HopXoaCase({ open, onClose, caseId, xoa, tenCase, soPa, soKetQua
     setBusy(true);
     try {
       const r = await api.del<{ thungRacId?: number }>(`/cases/${caseId}`, xin ? { lyDo: lyDo.trim() || null } : undefined);
+      if (xin) { lamMoi(); toast.push('ok', t('Đã gửi QL duyệt xoá Case')); setLyDo(''); onClose(); return; }
+      onDeleted();   // đóng panel TRƯỚC khi làm mới — panel không tải lại Case vừa xoá (404 → "Chưa tải lại được")
       lamMoi();
-      if (xin) { toast.push('ok', t('Đã gửi QL duyệt xoá Case')); setLyDo(''); onClose(); return; }
       hoanTacXoa(toast, r?.thungRacId, t('Đã xoá Case · {ten}', { ten: tenCase }), lamMoi);
-      onDeleted();
     } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }   // lỗi: hộp + chữ đang gõ giữ nguyên
   };
   const kem = [soPa > 0 ? t('{n} PA', { n: soPa }) : null, soKetQua > 0 ? t('{n} kết quả PA', { n: soKetQua }) : null].filter(Boolean).join(' · ');

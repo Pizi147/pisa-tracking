@@ -161,7 +161,7 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
               <span className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-slate-100">
                 <NhanLoai loai="Case" />
                 <button type="button" title={t('Mở Case')} onClick={(e) => { e.stopPropagation(); moCase(x.caseId); }}
-                  className="inline-flex min-w-0 flex-wrap items-center gap-1.5 rounded border-0 bg-transparent p-0 text-left font-semibold text-slate-100 hover:underline"><TenCaseChuong ten={x.ten} /></button>
+                  className="inline-flex min-w-0 flex-wrap items-center gap-1.5 rounded border-0 bg-transparent p-0 text-left font-semibold text-slate-100 hover:underline max-sm:min-h-[44px]"><TenCaseChuong ten={x.ten} /></button>
                 {x.xongO && <span className="text-[12px] font-medium text-slate-400">{t('xong ở {dot}', { dot: dich(x.xongO) })}</span>}
               </span>
               {x.pa.length > 0 && (

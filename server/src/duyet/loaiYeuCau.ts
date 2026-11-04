@@ -858,7 +858,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     moTa: (yc, ngu) => {
       const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
         { ten?: string; tenCase?: string; caseId?: number; soPa?: number; soKetQua?: number };
-      const kq = d.soKetQua ? ` · ${d.soKetQua} kết quả PA` : '';
+      const kq = d.soKetQua ? ` và ${d.soKetQua} kết quả PA` : '';
       return {
         tieuDe: loai === 'xoa_case' ? `Xoá Case · ${d.ten ?? ''}` : `Xoá PA · ${d.ten ?? ''}`,
         phu: loai === 'xoa_pa' ? d.tenCase ?? null : null,

@@ -481,7 +481,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
         <ThanCase dauCoDiem={dauKyNang && !trongCot} lyDoKhoa={(trongCot || dauKyNang) && canDong && ht?.an && ht.dong ? (dk ? <>{dich(dk[1])} · <b className="font-semibold">{dich(dk[2])}</b></> : dich(ht.dong)) : null} data={data} onViec={setView} onDoi={() => { reload(); onChanged?.(); }} paNutChinh={paNutChinh} paViec={paViec} anNutMoTa={anViecChinh}
           vuaDoi={vuaDoi} onHoanTac={() => { setVuaDoi(null); reload(); if (chuoi?.caseTiep) chuoi.caseTiep.boXong(); else onChanged?.(); }} />
       </div>
-      {data.viewer.xoa && <HopXoaCase open={hoiXoa} onClose={() => setHoiXoa(false)} caseId={caseId} xoa={data.viewer.xoa} tenCase={ten}
+      {data.viewer.xoa && <HopXoaCase open={hoiXoa} onClose={() => setHoiXoa(false)} caseId={caseId} xoa={data.viewer.xoa}
+        tenCase={(() => { const x = data.title ?? ten; const kn = data.categoryLabel; return kn && !x.startsWith(kn) ? `${kn} — ${x}` : x; })()}
         soPa={(data.interventions ?? []).length} soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId != null).length}
         onDeleted={() => { setHoiXoa(false); onChanged?.(); onClose(); }} />}
     </KhungPanel>

@@ -64,7 +64,7 @@ export function PanelCaseLuot({ r, onDong }: { r: DongMock; onDong: () => void }
                               {dong('PA', paDang.length ? paDang.map((p) => p.ten).join(' · ') : <span className="text-faint">—</span>)}
                               {dong(t('Kết quả PA'), c.ketQua ? <>{dich(c.ketQua)}{c.ketQuaNgay ? <span className="text-faint"> · {tuanLich(c.ketQuaNgay, homNay)}</span> : null}</> : <span className="text-faint">–</span>)}
                               {/* N37: Case · PA · Kết quả PA là một tuyến — sang hồ sơ em, Case mở sẵn (xem hết, làm việc). */}
-                              <Link className={`${LINK_CHU} justify-self-start font-semibold`} to={duongHoSoHocVien(r.studentId, { caseId: c.id })}>{t('Mở Case ›')}</Link>
+                              {dong('', <Link className={`${LINK_CHU} inline-flex items-center font-semibold max-sm:min-h-[44px]`} to={duongHoSoHocVien(r.studentId, { caseId: c.id })}>{t('Mở Case ›')}</Link>)}
                             </div>
                           );
                         })}

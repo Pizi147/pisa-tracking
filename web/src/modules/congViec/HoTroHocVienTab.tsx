@@ -633,7 +633,7 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
               {iv.description && <div className="mt-1.5"><Trich>{dichDu(iv.description)}</Trich></div>}
             </> : null],
             /* N37: Case · PA · Kết quả PA một tuyến — "Mở Case ›" sang hồ sơ em, Case mở sẵn ở đúng PA (id sẵn có). */
-            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.studentId !== null && it.caseId !== null && <> · <Link className="font-semibold no-underline hover:underline"
+            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.studentId !== null && it.caseId !== null && <> · <Link className="inline-flex items-center font-semibold no-underline hover:underline max-sm:min-h-[44px]"
               to={duongHoSoHocVien(it.studentId, { caseId: it.caseId, paId: it.paId ?? undefined })}>{t('Mở Case ›')}</Link></>}</> : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />
