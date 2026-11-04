@@ -433,7 +433,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const nutMenuTrang = <MenuDong nhan={t('Thao tác trang')} muc={menuTrang} lopNut="btn h-9 w-9 shrink-0 justify-center !px-0 font-bold max-sm:h-11 max-sm:w-11" />;
 
   return (
-    <div className="page so-gon space-y-3">   {/* HVL-GON: `.so-gon` — số bấm được không gạch chân khi không rê (như Tổng quan, Hồ sơ lớp, Phân tích) */}
+    <div className="page space-y-3">
       {/* Đầu trang một hàng (mockup U04): tên · Xem · Fast Track / Lớp thường · phải: Xuất Excel · + Thêm học viên · ⋯. 375: Xuất + Thêm vào ⋯ (B26). */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="m-0 mr-1 text-[22px] font-bold text-slate-100">{t('Học viên & Lớp')}</h1>
@@ -695,7 +695,7 @@ function OSosLop({ sos, onSos }: { sos: number[]; onSos: (muc: number) => void }
       {sos.map((n, i) => n > 0 && (
         <span key={i} className="inline-flex items-center gap-0.5 whitespace-nowrap">
           <span className={`${CHIP_SOS} ${lopSos(i + 1)}`}>SOS {i + 1}</span>
-          <button type="button" className="o-so" aria-label={t('SOS mức {m}: {n} HV', { m: i + 1, n })} onClick={() => onSos(i + 1)}>{n}</button>
+          <button type="button" className="o-so so-bam" aria-label={t('SOS mức {m}: {n} HV', { m: i + 1, n })} onClick={() => onSos(i + 1)}>{n}</button>
           <span className="text-[13px] text-dim">HV</span>
         </span>
       ))}

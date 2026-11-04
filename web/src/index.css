@@ -967,15 +967,12 @@
   .tvv { white-space: nowrap; font-size: 11px; font-weight: 400; line-height: 1.35; color: var(--text-faint); }
 }
 
-/* TQ-GON + HSL-GON (M1, M10 — Tổng quan `.tq-v8`, hồ sơ lớp `.so-gon`; gạch CHẤM gợi ý (KCK) giữ; ngoài @layer để thắng tiện ích `underline`): số bấm được (`OSo`, `SoDen`) giữ dáng chữ màu nhấn đậm, gạch chân
-   chỉ khi rê / focus — hết "số gạch chân khắp nơi". Số nằm giữa câu (dòng phụ `.text-xs` "38 chưa PA") GIỮ gạch chân: chỉ màu không đủ phân biệt
-   link trong chữ (WCAG 1.4.1). Panel mở từ số nằm ngoài `.page` (portal) nên không đổi. [XM] áp toàn web: PTA quyết. */
-:is(.tq-v8, .so-gon) .underline:not(.text-xs *, .decoration-dotted):not(:hover, :focus-visible) { text-decoration-line: none; }
-/* HVL-GON: ô số `.o-so` (gạch chân riêng, không qua `.underline` — Học viên & Lớp "SOS 1 · 4 HV") cùng luật: gạch khi rê / focus, chữ 500 (đậm chỉ mã lớp). */
-:is(.tq-v8, .so-gon) .o-so:not(:hover, :focus-visible) { text-decoration-line: none; }
-:is(.tq-v8, .so-gon) .o-so { font-weight: 500; }
-/* M1 (một chữ đậm mỗi dòng): ô số trong BẢNG (1440, mọi `td` — PT-GON: bảng Phân tích / Phân tích lớp không mang `.bang`) và dòng phụ ô chỉ số chữ 500 — đậm chỉ tên lớp / GV ở cột đầu, số lớn ô chỉ số; quá hạn (đỏ ⚠) vẫn đậm vì là việc cần làm ngay. Số lớn ô chỉ số giữ 700; gạch chấm gợi ý (KCK) giữ dáng riêng. */
-:is(.tq-v8, .so-gon) :is(td, .text-xs) .underline:not(.text-bad, .text-late, .decoration-dotted) { font-weight: 500; }
+/* SO-GON (DESIGN G6, luật mật độ M1 + M10 — chủ SP 05/11, toàn web): số bấm được (`LOP_OSO` → `OSo`, `SoDen`, ô chỉ số; ô `.o-so.so-bam`) mang lớp
+   đánh dấu `.so-bam`: màu nhấn, gạch chân CHỈ khi rê / focus — hết "số gạch chân khắp nơi". Ngoài @layer để thắng tiện ích `underline`.
+   Giữ gạch: số nằm giữa câu (dòng phụ `.text-xs` "38 chưa PA" — chỉ màu không đủ phân biệt link trong chữ, WCAG 1.4.1) và gạch CHẤM gợi ý (KCK).
+   Chữ 500 khi số nằm trong ô bảng / dòng phụ / ô `.o-so` — đậm chỉ tên ở cột đầu, số lớn ô chỉ số 700; quá hạn (đỏ ⚠) vẫn đậm vì là việc cần làm ngay. */
+.so-bam:not(.text-xs *, .decoration-dotted):not(:hover, :focus-visible) { text-decoration-line: none; }
+:is(td, .text-xs) .so-bam:not(.text-bad, .text-late, .decoration-dotted), .o-so.so-bam { font-weight: 500; }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */
 @media print {
