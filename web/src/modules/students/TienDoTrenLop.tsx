@@ -88,6 +88,8 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
       {tomTat ? (
         error ? <div className="px-4 py-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
           : !data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
+          /* HSHV-GON (M4, M7): chưa kỹ năng nào có ghi nhận → MỘT dòng ở đầu khung, không 4 dòng "Chưa có ghi nhận" lặp. */
+          : !knTomTat.some((k) => ds.some((x) => x.skill === k)) ? <p className="m-0 px-4 py-3 text-[14px] text-slate-400">{t('Chưa có ghi nhận')}</p>
           : (
             <ul className="m-0 list-none p-0">
               {knTomTat.map((k) => {

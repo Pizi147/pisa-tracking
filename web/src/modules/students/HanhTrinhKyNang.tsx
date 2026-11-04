@@ -112,9 +112,10 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
         const phu = boMon ? khongHocTu(r.category)
           : r.ratio ? (r.missed === false ? t('đạt') : r.missed === true ? t('chưa đạt') : t('chưa có điểm'))
           : r.band === null ? t('chưa có điểm')
-            : r.bandAttemptNo ? nguonKv(`MT${r.bandAttemptNo}`, r.expectation) : null;
+            /* HSHV-GON (M3, M2): "MT2" thay "MT2 · kỳ vọng 5.5" ở cả 6 thẻ (kỳ vọng đã ở cột Kỳ vọng bảng Mock Test, ✓ / ✗ đã so) — kỳ vọng ở `title`; 375 hết cắt "kỳ vọn…". */
+            : r.bandAttemptNo ? `MT${r.bandAttemptNo}` : null;
         return (
-          <ODiemTo key={r.category} nhan={r.short} title={r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu}>
+          <ODiemTo key={r.category} nhan={r.short} title={!boMon && !r.ratio && r.band !== null && r.bandAttemptNo ? `${r.label} · ${nguonKv(`MT${r.bandAttemptNo}`, r.expectation)}` : r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu}>
             {r.ratio
               ? <ODiem kieu="lon" so={r.score !== null ? String(r.score) : null} kq={r.missed === null ? null : r.missed ? 'duoi' : 'vuot'} nhan={r.short} phu={r.total ? `/ ${r.total}` : undefined} />
               : <ODiem kieu="lon" so={!boMon && r.band !== null ? fmtBand(r.band) : null} kq={boMon ? null : soKyVong(r.band, r.expectation)} kck={r.kck} nhan={r.short} kyVong={r.expectation != null ? fmtBand(r.expectation) : undefined} />}

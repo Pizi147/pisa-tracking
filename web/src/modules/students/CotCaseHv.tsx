@@ -3,6 +3,7 @@ import { KhungTrongCot } from '../../ui/KhungPanel.tsx';
 import { xepCase, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { NganCase } from './NganCase.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { NguoiGiu } from '../congViec/DanhSachViec.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
 import { IconCanhBao, IconGap, lopKq } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -104,7 +105,8 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
             )}
             {pa ? <span className="the-phu min-w-0"><span className="truncate">{`PA ${pa.name}`}</span> · {dich(pa.statusLabel).toLowerCase()}</span>
               : !dong(c) && <span className="the-phu">{t('Chưa có PA')}</span>}
-            {c.nguoiLam?.ten && !dong(c) && <span className="the-phu nhat">{t('phụ trách:')} <b>{c.nguoiLam.id && c.nguoiLam.id === toi ? t('Bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)}</b></span>}
+            {/* HSHV-GON (M10, M1): người phụ trách = chữ mờ + biểu tượng người (như Công việc) — không chip "phụ trách: **tên**" đậm; "phụ trách" ở `title`. */}
+            {c.nguoiLam?.ten && !dong(c) && <span title={t('phụ trách:')}><NguoiGiu ten={c.nguoiLam.id && c.nguoiLam.id === toi ? t('Bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)} /></span>}
           </span>
         </div>
         {moRa && (
