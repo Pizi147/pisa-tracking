@@ -10,7 +10,7 @@ import { Skeleton } from '../../ui/ui.tsx';
 import { BieuDoD, ChuGiaiD, kqSo, type CaseD, type DiemD, type ThiD } from './BieuDoD.tsx';
 import type { SkillBoardRow } from '../cases/SkillBoard.tsx';
 import {
-  chuDoiVang, duongDotTest, mondayOfDate, ngay, soKyVong, tenBaiThuong, tuanLich,
+  duongDotTest, mondayOfDate, ngay, soKyVong, tenBaiThuong, tuanLich,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -108,11 +108,11 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
           );
         }
         const boMon = !r.ratio && !!mon && !mon.includes(r.category);
-        const vang = a?.vangCu?.[r.category] ? chuDoiVang(a.vangCu[r.category], homNay) : null;
+        /* HSL-GON (chủ SP 05/11): không ghi "vắng W2 SEP" dưới điểm — ghi chú lịch chỉ ở màn Test; kỹ năng chưa điểm ghi "chưa có điểm". */
         const phu = boMon ? khongHocTu(r.category)
           : r.ratio ? (r.missed === false ? t('đạt') : r.missed === true ? t('chưa đạt') : t('chưa có điểm'))
-          : vang ?? (r.band === null ? t('chưa có điểm')
-            : r.bandAttemptNo ? nguonKv(`MT${r.bandAttemptNo}`, r.expectation) : null);
+          : r.band === null ? t('chưa có điểm')
+            : r.bandAttemptNo ? nguonKv(`MT${r.bandAttemptNo}`, r.expectation) : null;
         return (
           <ODiemTo key={r.category} nhan={r.short} title={r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu}>
             {r.ratio
@@ -216,9 +216,8 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten, onMoCase }: 
     else {
       /* Vắng (dời / đang vắng) khác chưa có điểm (việc nhập còn nợ) — hai dấu, hai chữ. */
       const vang = !!a.vangCu?.[kn] || !!a.doiKyNang?.includes(kyNangDot(kn));
-      /* Cùng chữ "dời S" của bảng Mock Test (`NhanDot`), kèm tuần vắng cũ khi có (LUAT-NX-MT 7.4). */
-      const doi = t('dời {mon}', { mon: row?.short ?? tenKn });
-      const chu = !hocKn ? t('không học') : a.vangCu?.[kn] ? `${doi} · ${chuDoiVang(a.vangCu[kn], homNay)}` : vang ? doi : t('chưa có điểm');
+      /* HSL-GON (chủ SP 05/11): dấu vắng giữ hình riêng trên biểu đồ, nhưng chữ không ghi "dời S · vắng W2 SEP" — ghi chú lịch chỉ ở màn Test. */
+      const chu = !hocKn ? t('không học') : t('chưa có điểm');
       diem.push({ khoa: `a${a.id}`, ten: tenL, tuan, v: null, kv, loai: !hocKn ? 'khong' : vang ? 'vang' : 'thieu', chu, a,
         goi: { tieu: `${tenL} · ${tuanLich(tuan)}`, dong: [`${tenKn}: ${chu}`], href, chuLink: t('Hồ sơ lượt {mt} ›', { mt: tenL }) } });
     }

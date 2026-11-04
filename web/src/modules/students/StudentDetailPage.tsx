@@ -34,7 +34,7 @@ import {
   attemptStatusLabel, fmtBand, skillLabel, sosTone, studentStatusLabel,
 } from '../../lib/format.ts';
 import {
-  HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMon, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
+  HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
   nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, trangCha, vaiXemHocVien, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
@@ -486,11 +486,7 @@ function NhanDot({ a, ct = null }: {
 }) {
   const nhan = [
     ...(a.status === 'cancelled' ? [{ chu: t('đã huỷ'), title: t('Lượt này đã huỷ.') }] : []),
-    ...(a.huyPhan ? [{ chu: t('huỷ phần'), title: t('Có kỹ năng bị huỷ.') }] : []),
-    ...(a.doiKyNang?.length ? [{
-      chu: t('dời {mon}', { mon: a.doiKyNang.map((k) => tenMonNgan(ct, k)).join(' ') }),
-      title: t('Dời do vắng: {mon}.', { mon: a.doiKyNang.map((k) => tenMon(ct, k)).join(', ') }),
-    }] : []),
+    /* HSL-GON (chủ SP 05/11): "huỷ phần" / "dời S" là ghi chú lịch — chỉ ở màn Test (hồ sơ MT, Lịch Test); hồ sơ HV giữ "đã huỷ" (trạng thái cả lượt). */
   ];
   const toiDa = a.lichSu ? 1 : 2;
   return (
@@ -626,8 +622,8 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
             <span className="whitespace-nowrap"><Link to={attemptHref(a)} className="link inline-flex min-h-[44px] items-center font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} /></span>
             <span className="min-w-0 tabular-nums text-slate-200">
               {a.weekStart ? tuanLich(a.weekStart, homNay) : t('Chưa có tuần')}
-              {' · '}{chuaToi(a) ? <span className="text-slate-400">{t('Chưa tới tuần')}</span>
-                : <>OVR {a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}</>}
+              {/* HSL-GON (chủ SP 05/11): lượt chưa tới tuần → chỉ "–" (tuần đã ghi ngay trước), không chữ "Chưa tới tuần". */}
+              {' · '}OVR {a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}
             </span>
             <span className="justify-self-end">{chuaToi(a) ? null : <KetQuaMt a={a} gon />}</span>
           </div>
@@ -677,7 +673,8 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
                 <td className="td whitespace-nowrap">
                   {a.weekStart ? tuanLich(a.weekStart, homNay) : <Info pending>{t('Chưa có tuần')}</Info>}
                 </td>
-                {chuaToi(a) ? <td colSpan={6} className="td"><span className="block text-center text-slate-400">{t('Chưa tới tuần')}</span></td> : <>
+                {/* HSL-GON (chủ SP 05/11): lượt chưa tới tuần → ô điểm "–" như mọi ô chưa điểm (cột Tuần đã nói), không ô gộp "Chưa tới tuần". */}
+                {chuaToi(a) ? [...KN_MOCK, 'ovr'].map((k) => <td key={k} className={so}>{fmtBand(null)}</td>) : <>
                   {KN_MOCK.map((k) => (
                     <td key={k} className={so}>{diemKyNang(a, k)}</td>
                   ))}
