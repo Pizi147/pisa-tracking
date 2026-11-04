@@ -333,7 +333,7 @@ export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim 
     switch (c.key) {
       case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} tim={tim} />;
       case 'lo': return g
-        ? <span className="block"><b className="block font-semibold tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
+        ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
             {g.loTrinh.soMt ? `MT ${g.loTrinh.mt}/${g.loTrinh.soMt}` : '—'}</b>
             <span className="dong2">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-faint">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
