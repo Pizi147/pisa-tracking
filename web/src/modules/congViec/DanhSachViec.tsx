@@ -163,7 +163,7 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false 
 }) {
   return (
     /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · ⚠ quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2). */
-    <h2 className={`sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug ${mo ? 'border-b' : ''}`}
+    <h2 className={`sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
       style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
       <button type="button" aria-expanded={mo} onClick={onMo}
         className="flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left">
@@ -175,7 +175,7 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false 
       {luat}
       {phu && <span className="flex shrink-0 items-center gap-x-2.5 whitespace-nowrap text-[13px] empty:hidden">{phu}</span>}
       <button type="button" tabIndex={-1} aria-hidden onClick={onMo}
-        className="ml-auto h-8 w-8 shrink-0 appearance-none rounded-md border-0 bg-transparent text-[13px] font-normal text-dim hover:bg-[color:var(--accent-soft)]">
+        className="ml-auto h-8 w-8 shrink-0 appearance-none rounded-md border-0 bg-transparent text-[13px] font-normal text-dim hover:bg-[color:var(--accent-soft)] max-sm:w-6">
         {mo ? '▾' : '▸'}
       </button>
     </h2>

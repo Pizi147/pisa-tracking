@@ -12,6 +12,7 @@ Dữ liệu demo 14/09/2026 (QL Nguyễn Khánh Vy = vai 2, GV cô Trần Ngọc
 | A2 · 1440 tối · QL Tất cả (`[data-k="a2"]`) | `/cong-viec?nguoi=tat-ca` vai 2 | `cap-a2-ql-tat-ca-1440-toi.png` |
 | A3 · 1440 tối · GV cô Hà (`[data-k="a3"]`) | `/cong-viec` vai 7 | `cap-a3-gv-1440-toi.png` |
 | B1 · 375 sáng · GV cô Hà (`[data-k="b1"]`, khung cao 780 cắt sau nhóm Chấm điểm) | `/cong-viec` vai 7 | `cap-b1-gv-375-sang.png` |
+| (mockup không vẽ) 375 sáng · QL Tất cả — so cùng khung B1 | `/cong-viec?nguoi=tat-ca` vai 2 | `cap-b1-ql-tat-ca-375-sang.png` |
 
 ## Số đếm (bảng D của mockup) — mockup → web
 
@@ -68,7 +69,7 @@ Dữ liệu thật (bản sao 29/10, đã migrate tới main): badge QL MB 165 �
 | S13e | Cột hạn / người / nút thẳng mọi dòng (150 · 118) | `COT_VIEC` sẵn có; `DongDuyet` 136 · 112 → 150 · 118 | A2 | KHỚP |
 | S13f | Nút viền, chữ căn giữa | `justify-center` (trước căn trái) | A1–A3 | KHỚP |
 | K1 | Nút dòng chữ 600 (`.nut` của `chung.css`) | giữ 500 (`index.css .btn-sm` D10 "nút lặp từng dòng không đậm" — mọi màn; S1 giảm đậm) | A1–A3 | **[XM]** — mockup (CSS chung) ≠ luật D10 toàn web; đổi một dòng nếu PTA chốt 600 |
-| K2 | 375: tên nhóm `nowrap` | tên nhóm dài ("Case học thuật", "Ý thức & Phối hợp") XUỐNG DÒNG, số + ⚠ vẫn cùng hàng — 375 chỉ còn ~95 px cho tên; mockup không vẽ hai nhóm này mở ở 375; luật M2 "tên được xuống dòng, không cắt" | B1 | KHÁC — có lý do |
+| K2 | 375: tên nhóm `nowrap` | tên nhóm dài ("Case học thuật", "Ý thức & Phối hợp") XUỐNG DÒNG, số + ⚠ vẫn cùng hàng — 375 chỉ còn ~95 px cho tên; mockup không vẽ hai nhóm này mở ở 375; luật M2 "tên được xuống dòng, không cắt". Màn hẹp thu khe 8 → 6 px, nút ▾ 32 → 24 px để tên tối đa 2 dòng ("Chờ bạn duyệt" có thêm ⓘ) | B1 | KHÁC — có lý do |
 | K3 | A3 / B1: Case, Ý thức, Vận hành vẽ gập | giữ hành vi U01: nhóm mở sẵn (QL 375 gập từ nhóm 3 — SUA-CHAM-LAI Đ1) — v12 không có mục đổi luật gập | A3, B1 | KHÁC — giữ thao tác cũ |
 | K4 | Khung chờ "Chọn một việc ở danh sách." | khi có nhóm Chờ bạn duyệt giữ "…hoặc yêu cầu…" (bấm yêu cầu cũng mở panel) | A2 | KHÁC — chữ đúng ngữ cảnh |
 | — | Thẻ "MT1" ở dòng Nhập điểm | dữ liệu: #922 (N39) đổi nhãn việc chấm Mock thành "W1 JUL" — không có "MT1" | A1–A3 | dữ liệu, không tính |
