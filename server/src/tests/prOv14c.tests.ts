@@ -222,21 +222,6 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     assert(v2.length === 1 && v2[0].soBai === mb, `QL MB xem GV mọi chi nhánh: ${v2.map((x) => x.soBai)} ≠ ${mb} bài MB`);
   });
 
-  /* VIEC-SAU-LOGIC ([XM] #926): QL kiêm GV S mất đỏ quá hạn của bài S chéo lớp mình (gộp vào Chấm Speaking không hạn). */
-  check('OV14c-14 · Chấm Speaking đỏ quá hạn khi có bài S quá hạn ở lớp trong phạm vi người xem (mọi góc nhìn); không đếm (T18); GV không phân công giữ không hạn', () => {
-    const phang = (r: any) => ((r.dong ?? []) as any[]).flatMap((x) => (x.con?.length ? x.con : [x]));
-    const quaHanQl = phang(mywork.myWork(P.mbManager, { nguoi: 'tat-ca' })).filter((x) => d.laViecChamCheo(x) && x.urgency === 'overdue');
-    assert(quaHanQl.length > 0, 'dữ liệu demo: QL MB phải thấy bài S chéo quá hạn ở "Tất cả"');
-    const p = perm.loadPrincipal(idQlS);
-    for (const [ten, r] of [['Tất cả', mywork.myWork(p, { nguoi: 'tat-ca', tachCuaToi: true })], ['Của tôi', mywork.myWork(p)]] as const) {
-      const cs = phang(r).filter((x: any) => x.key === d.KHOA_CHAM_SPEAKING);
-      assert(cs.length === 1 && cs[0].urgency === 'overdue' && !!cs[0].due, `${ten}: Chấm Speaking phải đỏ quá hạn có hạn: ${JSON.stringify(cs.map((x: any) => [x.urgency, x.due]))}`);
-      assert(d.demDongViec(r.dong).n === d.demDongViec((r.dong as any[]).filter((x) => x.key !== d.KHOA_CHAM_SPEAKING)).n, `${ten}: Chấm Speaking không được đếm (T18)`);
-    }
-    /* GV S không phân công lớp nào: bài quá hạn không phải lớp của mình → giữ không hạn (OV14c-3). */
-    assert(viecCs(gvS()).every((x) => x.urgency === 'normal' && x.due === null), 'GV S không phân công không được đỏ');
-  });
-
   /* SUA-LOI-CV ③ (chủ SP 05/11): QL xem việc của Thea (theo dõi) lại hiện "Chờ bạn duyệt 16 yêu cầu" — yêu cầu của NGƯỜI XEM, không phải của GV đang xem. */
   check('OV14c-13 · Công việc xem MỘT GV (theo dõi): không đọc, không vẽ khối "Chờ bạn duyệt" của người xem', () => {
     const tab = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx');

@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhanTrangThai, NutChon } from '../../ui/ui.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { ThePhu } from '../congViec/DanhSachViec.tsx';
+import { NguoiGiu, ThePhu } from '../congViec/DanhSachViec.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -267,6 +267,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               {!gon && yc.hocVien && <b className="font-semibold text-[color:var(--text)]">{yc.hocVien}</b>}
               <span className="font-medium text-[color:var(--text)]">{dich(yc.tieuDe)}</span>
               <ThePhu ds={[!gon ? yc.lop : null, yc.phu ? dich(yc.phu) : null].filter((x): x is string => !!x)} />
+              {/* [XM] #939: người gửi + vai với em (hồ sơ HV, Case, panel) — cùng hàng, chữ mờ; thẻ mình gửi không cần. */}
+              {cho && yc.nguoiXin && yc.nguoiXinId !== session?.user?.id && <NguoiGiu ten={yc.nguoiXin} vai={yc.vaiNguoiXin} />}
             </p>
           </div>}
           {/* CD-GON (M4): thẻ ngoài panel — lý do MỘT dòng + "Xem thêm" cùng hàng (mở: đủ lý do + "Nếu duyệt", "Thu gọn" cuối). */}

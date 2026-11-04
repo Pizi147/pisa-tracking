@@ -68,6 +68,8 @@ export type NguCanhThe = {
   hocVien: Map<number, string>;
   lop: Map<number, string>;
   nguoi: Map<number, string>;
+  /** [XM] #939: vai người gửi với em / lớp của thẻ (theo id yêu cầu). */
+  vaiXin?: Map<number, string>;
   them: Map<number, any>;
 };
 

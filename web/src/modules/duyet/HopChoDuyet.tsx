@@ -573,7 +573,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
         {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
-        {y.nguoiXin && <NguoiGiu ten={y.nguoiXin} />}
+        {y.nguoiXin && <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />}
       </span>
       <span className="col-start-2 flex flex-wrap items-center gap-x-4 gap-y-1 sm:col-start-auto sm:flex-col sm:items-stretch sm:gap-1" onClick={dungLai}>
         {y.kieuNut === 'duyet-tu-choi' ? (
@@ -636,7 +636,7 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
             {yc.phu && <ThePhu ds={[dich(yc.phu)]} />}
           </span>
           {/* M8: 375 không đủ chỗ cột người — người gửi xem trong panel. */}
-          {yc.nguoiXin && <span className="max-w-[40%] shrink-0 max-sm:hidden"><NguoiGiu ten={yc.nguoiXin} /></span>}
+          {yc.nguoiXin && <span className="max-w-[40%] shrink-0 max-sm:hidden"><NguoiGiu ten={yc.nguoiXin} vai={yc.vaiNguoiXin} /></span>}
         </span>
       </button>
     </li>
