@@ -1196,9 +1196,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* UI-3 (N34 ④, 04/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý chỉ chữ việc `yt_xem`: "Ghi nhận n vi phạm mới" →
        "Xem n vi phạm mới", nút "Ghi nhận" → "Đã xem", hint nhóm ("Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày"). Nguyên nhân lệch đọc từ mã (chỉ ba chữ đó đổi trong `mywork.ts`). Trước (sau gộp UI-CONG-VIEC): xem dòng trên;
        chụp lại trên bản gộp main #889 (băm UI-CONG-VIEC: GVCN toi 03e3379819323d63, QL tat-ca dced32203deb19bb, QT tat-ca 8dcc420b64f4a736, QT tat-ca cn b279291e75c0e741, QL gvcn 2b323214ee1cfa8e) */
-    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '8215b08ff50a3871', 'GVBM toi': 'f4ed555f1ab51285',
-    'GVCN_THUONG toi': '8215b08ff50a3871', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '25a69682950fb439', 'QT tat-ca': 'c25cf2159c6d850b',
-    'QT tat-ca cn': 'ab81cd84860daab9', 'QL gvcn': 'fab519b88423e38a', 'GVS toi': '3183805cc8df091a',
+    /* PR-MT-CHAM (N39, 05/11): chụp lại 7 băm (QL / QT toi, ADMIN, GVS giữ) — đổi CÓ CHỦ Ý chỉ `contextLabel` việc chấm Mock: "MT1, MT4 W3 OCT" → "W3 OCT".
+       Đã kiểm: trả `mywork.ts` về origin/main (nhãn cũ) trên nhánh → TD4-a đạt với băm cũ. Trước: GVCN toi 8215b08ff50a3871, GVBM toi f4ed555f1ab51285,
+       GVCN_THUONG toi 8215b08ff50a3871, QL tat-ca 25a69682950fb439, QT tat-ca c25cf2159c6d850b, QT tat-ca cn ab81cd84860daab9, QL gvcn fab519b88423e38a */
+    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '9d92644a93b70d7c', 'GVBM toi': 'e089af060bbfcf23',
+    'GVCN_THUONG toi': '9d92644a93b70d7c', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '68eb7bf00d5d3794', 'QT tat-ca': '5a8f912d0266aeb4',
+    'QT tat-ca cn': '699c581b1c85ef3a', 'QL gvcn': 'd72da0f9c7bf9628', 'GVS toi': '3183805cc8df091a',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

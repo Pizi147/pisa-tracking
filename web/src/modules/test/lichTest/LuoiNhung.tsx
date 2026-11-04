@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { attemptCuaEm } from '@shared/domain/index.ts';
+import { attemptCoBaiTuan, attemptCuaEm } from '@shared/domain/index.ts';
 import { useApi } from '../../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../../ui/ui.tsx';
 import { LuoiChamLop, duongCham, type Cham } from '../../cham/LuoiChamLop.tsx';
@@ -15,7 +15,7 @@ import { t } from '@shared/i18n/index.ts';
  * Lưu một ô → tải lại lưới NÀY và báo `onDaLuu` (Lịch Test gộp 1,5 s rồi mới tải lại dải số — Q14).
  * "Mở lưới đầy đủ ›" (G6: "›" = đổi trang; → Lịch tuần lọc lớp): chỉ khi lưới nằm ngoài Lịch tuần (panel việc); trong Lịch (`coLinkRieng`) không lặp.
  */
-export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet }: {
+export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet, emCoBaiTuan = false }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
   chiAttempt?: ReadonlySet<number> | null; kn?: string | null; hrefDayDu: string; datConTro: boolean;
   onDaLuu: () => void; coLinkRieng?: boolean; onSoOChuaLuu?: (n: number) => void;
@@ -27,10 +27,16 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
   sEx?: SExTuan;
   /** R1-LUU-TIEP: hết bài của người xem → "Lớp tiếp" / "Việc tiếp" (nơi gọi chọn). */
   onHet?: OnHet;
+  /** N39 (panel việc chấm Mock): thêm mọi em có bài tuần `tuanDangXem` ở cột của việc — cả bài đã chấm, để sửa; không hiện cả lớp. */
+  emCoBaiTuan?: boolean;
 }) {
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
-  const chiAttempt = useMemo(() => chiAttemptVao ?? (chiHv && data ? attemptCuaEm(data.ft?.rows ?? data.thuong?.rows ?? [], chiHv) : null),
-    [chiAttemptVao, chiHv, data]);
+  const chiAttempt = useMemo(() => {
+    if (chiAttemptVao) return chiAttemptVao;
+    const theoEm = chiHv && data ? attemptCuaEm(data.ft?.rows ?? data.thuong?.rows ?? [], chiHv) : null;
+    if (!emCoBaiTuan || !data?.ft || !tuanDangXem) return theoEm;
+    return new Set([...(theoEm ?? []), ...attemptCoBaiTuan(data.ft.rows, tuanDangXem, chiCot)]);
+  }, [chiAttemptVao, chiHv, data, emCoBaiTuan, tuanDangXem, chiCot]);
   /* UI-LICH-TUAN: Lịch tuần chính là lưới đầy đủ (`/nhap-diem/*` chuyển về đây) — không lặp link; panel việc vẫn có. */
   const link = coLinkRieng ? null : (
     <Link to={hrefDayDu} className="inline-flex min-h-[32px] max-sm:min-h-10 items-center px-2 text-xs text-slate-400 no-underline hover:text-slate-100"
