@@ -419,10 +419,12 @@ export async function runPrHvlTests(t: YThucTestKit) {
     }
   });
 
-  check('PR-HVL (5) · web Cần hỗ trợ: hàng theo kỹ năng (`hangCanHoTro`), mở Ngăn Case tại chỗ, công tắc "Chỉ kỹ năng tôi dạy"; không còn luật một-Case-chính/em', () => {
+  check('PR-HVL (5) · web Case theo kỹ năng (lớp thường, chủ SP 04/11 bỏ cách xem Cần hỗ trợ): mở em → `locCanHoTro` + DongCase + Ngăn Case tại chỗ; không còn luật một-Case-chính/em', () => {
     const b = web('modules/classes/BangCanHoTro.tsx');
-    /* PR-S4F #5: hàng + xếp em đi qua `locCanHoTro` (gọi `hangCanHoTro` rồi `sapEmCanHoTro`). */
-    assert(/locCanHoTro\(/.test(b) && /<NganCase /.test(b) && /Chỉ kỹ năng tôi dạy/.test(b), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ / công tắc');
+    const lt = web('modules/classes/BangDiemLopThuong.tsx');
+    /* PR-S4F #5: hàng theo kỹ năng đi qua `locCanHoTro` (gọi `hangCanHoTro`). */
+    assert(/locCanHoTro\(/.test(lt) && /<DongCase /.test(lt) && /<NganCase /.test(lt) && /\/can-ho-tro/.test(lt), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ');
+    assert(!/BangCanHoTro|can-ho-tro/.test(web('modules/classes/TabHocVienLop.tsx')), 'còn cách xem Cần hỗ trợ');
     assert(!/chonCaseChinh|viecTiepTheoCua|Chưa có PA học thuật|\/cases\?classId=/.test(b), 'còn luật/chữ cũ');
     assert(!/\u{1F512}/u.test(b), 'ổ khoá phải là SVG (KhoaQuyChe), không phải emoji');
     assert(/tenSos/.test(b) && /export function TenCase/.test(web('modules/cases/SkillBoard.tsx')), 'chip [MT1] dùng TenCase của SkillBoard');
@@ -580,9 +582,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const td = web('ui/TheDong.tsx');
     assert(/export function TheDong/.test(td) && /export function useDienThoai/.test(td) && /max-width: 639px/.test(td) && /tabular-nums/.test(td), 'TheDong.tsx');
     /* RA-UI-8: bảng FT hồ sơ lớp (`BangHoSoLop`) ở 375 = thẻ của `Bang` (không TheDong) — không còn trong danh sách này. */
-    for (const f of ['modules/classes/BangDiemLopThuong.tsx', 'modules/classes/BangCanHoTro.tsx']) {   // UI-HV-LOP: BangHocVienLop không còn bảng
-      assert(/<TheDong\b/.test(web(f)), `${f} chưa dùng TheDong`);
-    }
+    /* #900: dòng Case (BangCanHoTro) ở 375 xếp dọc full rộng (PTA, thẻ con B1 U03) — không lưới nhãn | giá trị của TheDong. */
+    assert(/<TheDong\b/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'BangDiemLopThuong chưa dùng TheDong');
     /* UI-HV-LOP (Q-7): Học viên & Lớp ở điện thoại = mỗi em một thẻ (`TheHvGon`), không còn thẻ lớp gập. */
     assert(/useDienThoai\(\)/.test(web('modules/students/StudentsPage.tsx')) && /<TheHvGon\b/.test(web('modules/students/StudentsPage.tsx')), 'StudentsPage phải có nhánh thẻ ở điện thoại');
     assert(/<Bang /.test(web('modules/classes/BangHoSoLop.tsx')) && /sticky-col/.test(web('modules/classes/BangDiemLopThuong.tsx')), 'cột tên dính (640–1023 px) — Bang dính cột tên');
