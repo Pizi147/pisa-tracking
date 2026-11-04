@@ -150,7 +150,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const KIEU_LOC = { 'da-xem': 'xem', 'da-xu-ly': 'xu-ly', 'thu-hoi': 'thu-hoi' } as const;
   const soLs = { 'da-xem': dongLs.filter((x) => x.kieu === 'xem').length, 'da-xu-ly': dongLs.filter((x) => x.kieu === 'xu-ly').length, 'thu-hoi': dongLs.filter((x) => x.kieu === 'thu-hoi').length };
   const hienLs = dongLs.filter((x) => loc === 'tat-ca' || x.kieu === KIEU_LOC[loc]);
-  const nhanChuoi = d.chuoi.nhan === 'lớp thường' ? t('Lớp thường') : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan });
+  const nhanChuoi = d.chuoi.nhan.startsWith('lớp thường') ? d.chuoi.nhan.replace('lớp thường', t('Lớp thường')) : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan });
   const xemLai = () => { setDoan('lich-su'); setLoc('da-xem'); };
 
   return (

@@ -380,8 +380,6 @@ export const EN_A = {
   'Không lưu được liên kết — thử lại.': 'Could not save the link — try again.',
   'Không gỡ được — thử lại.': 'Could not remove — try again.',
   'Bằng chứng — dán ảnh, kéo thả tệp': 'Evidence — paste an image or drop files',
-  '+ Đính kèm tệp': '+ Attach file',
-  '+ Thêm liên kết': '+ Add link',
   '{o} — chọn tệp': '{o} — choose files',
   'Không tải được danh sách bằng chứng.': 'Could not load evidence.',
   'Tải lại': 'Reload',

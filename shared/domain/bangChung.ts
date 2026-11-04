@@ -31,5 +31,5 @@ export function laLienKet(text: string): boolean {
   return /^https?:\/\/\S+$/.test(t);
 }
 
-/** Dòng hướng dẫn nhỏ dưới khối Bằng chứng (mockup 09c dòng 41). */
-export const CHU_KHOI_BANG_CHUNG = t('Dán ảnh chụp màn hình (Ctrl + V) · kéo thả · chọn tệp · dán liên kết');
+/** Gợi ý nhỏ cùng dòng với "+ Tệp · + Liên kết" khi khối trống (U10.8) — chỉ hai cách không có nút. */
+export const CHU_KHOI_BANG_CHUNG = t('Dán ảnh (Ctrl + V) · kéo thả tệp');

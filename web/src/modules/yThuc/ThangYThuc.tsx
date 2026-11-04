@@ -36,7 +36,7 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
   /** Việc chính lúc này là Xác nhận xử lý (nút chính). false khi chỉ còn vi phạm Mới — việc chính là Ghi nhận. */
   xuLyChinh?: boolean;
 }) {
-  const nhanChuoi = d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan;
+  const nhanChuoi = d.chuoi.nhan.replace('lớp thường', t('lớp thường'));
   const khaiTitle = d.khai ? t('xác nhận {ngay}{x}{x2}', { ngay: ngay(d.khai.luc, homNay), x: d.khai.boi ? ` · ${d.khai.boi}` : '', x2: d.khai.ghiChu ? ` — ${d.khai.ghiChu}` : '' }) : undefined;
   /* UX-G G5: không có vi phạm nào chưa xử lý xong thì không có gì để xác nhận / đề xuất — ẩn cả hai nút (≥ 1 vi phạm là hiện, quyết định 02/10). */
   const coViPhamMo = d.viPham.some((v) => v.trangThai !== 'da_xu_ly');

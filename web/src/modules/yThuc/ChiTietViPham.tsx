@@ -61,10 +61,8 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
           <p className="m-0 whitespace-pre-wrap break-words">{d.moTa}</p>
         </div>
       )}
-      <div>
-        <p className="text-xs text-slate-500 m-0 mb-1">{t('Bằng chứng')}</p>
-        <BangChung ownerType="violation" ownerId={d.id} canEdit={d.canEdit} tieuDe="" onChanged={reload} />
-      </div>
+      {/* U10.8: nhãn cùng dòng với "+ Tệp · + Liên kết" (mockup `.bc`). */}
+      <BangChung ownerType="violation" ownerId={d.id} canEdit={d.canEdit} onChanged={reload} />
 
       <div>
         <p className="text-xs text-slate-500 m-0 mb-1">{t('Lần xử lý')}</p>
