@@ -22,7 +22,7 @@ const ACCEPT = ATTACHMENT_EXTENSIONS.map((e) => `.${e}`).join(',');
  * KHỐI "BẰNG CHỨNG" DÙNG CHUNG (PR-N N6, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md §4.5) — một khối cho mọi chỗ cần tệp hoặc
  * liên kết: Case học thuật, phương án, và (PR-J) vi phạm, biện pháp xử lý.
  *
- *   + Đính kèm tệp   |   + Thêm liên kết   →   danh sách: tên đọc được · người tải · ngày
+ *   + Tệp   ·   + Liên kết   →   danh sách: tên đọc được · người tải · ngày
  *
  * BA LUẬT (đặc tả §4.5):
  *   1. LỖI TẢI TỆP KHÔNG LÀM MẤT NỘI DUNG ĐANG NHẬP. Khối này chỉ giữ trạng thái CỦA MÌNH và tải tệp bằng một request
@@ -36,7 +36,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
   ownerId: number;
   /** Được thêm/gỡ không (máy chủ vẫn kiểm lại). */
   canEdit: boolean;
-  /** Rỗng = KHÔNG vẽ dòng tiêu đề (nơi cha đã có nhãn "Bằng chứng (n)" — PR-HV). */
+  /** Nhãn 72px đầu dòng (U10.8 — dòng tệp thụt cùng cột với nút). Rỗng = không nhãn (nơi cha đã có nhãn "Bằng chứng (n)" — PR-HV). */
   tieuDe?: string;
   /** Gọi sau khi thêm/gỡ thành công — nơi cha cập nhật số đếm của mình (PR-HV). */
   onChanged?: () => void;
@@ -174,10 +174,12 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
 
   const rows = data?.rows ?? [];
 
+  /* U10.8 (mockup audit-0311 `.bc`): một dòng, không khung — [nhãn 72px] + Tệp · + Liên kết; trống thì thêm gợi ý dán ảnh cùng dòng. */
+  const trong = !!data && rows.length === 0 && uploads.length === 0;
   return (
     <div
-      className={`rounded-lg border px-2.5 py-2${canEdit ? ' border-dashed' : ''}`}
-      style={{ borderColor: isDragging ? 'var(--line-strong)' : 'var(--line)' }}
+      className="bc"
+      data-keo={isDragging || undefined}
       data-bang-chung={`${ownerType}:${ownerId}`}
       tabIndex={0}
       aria-label={t('Bằng chứng — dán ảnh, kéo thả tệp')}
@@ -186,20 +188,18 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {tieuDe ? (
-          <span className="text-[12px]  text-slate-500">
-            {tieuDe}{rows.length > 0 && <> · {rows.length}</>}
-          </span>
-        ) : <span />}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {tieuDe && <span className="bc-nh">{tieuDe}</span>}
         {canEdit && (
-          <span className="flex flex-wrap items-center gap-1.5">
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>{t('+ Đính kèm tệp')}</button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setLinkOpen((o) => !o)} aria-expanded={linkOpen}>{t('+ Thêm liên kết')}</button>
+          <>
+            <button type="button" className="link-nho" onClick={() => fileRef.current?.click()}>{t('+ Tệp')}</button>
+            <button type="button" className="link-nho" onClick={() => setLinkOpen((o) => !o)} aria-expanded={linkOpen}>{t('+ Liên kết')}</button>
             <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={t('{o} — chọn tệp', { o: tieuDe || t('Bằng chứng') })}
               onChange={(e) => pick(e.target.files)} />
-          </span>
+          </>
         )}
+        {trong && !linkOpen && <span className={canEdit ? 'bc-mo' : ''}>{canEdit ? CHU_KHOI_BANG_CHUNG : t('Chưa có bằng chứng nào.')}</span>}
+        {loading && !data && <span className="bc-mo">{t('Đang tải…')}</span>}
       </div>
 
       {error && (
@@ -207,30 +207,23 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
           {t('Không tải được danh sách bằng chứng.')} <button type="button" className="link appearance-none bg-transparent border-0 p-0 cursor-pointer" onClick={reload}>{t('Tải lại')}</button>
         </p>
       )}
-      {loading && !data && <p className="text-xs text-slate-500 m-0 mt-1.5">{t('Đang tải…')}</p>}
-      {data && rows.length === 0 && uploads.length === 0 && !linkOpen && (
-        <p className="text-xs text-slate-500 m-0 mt-1.5">
-          {canEdit ? CHU_KHOI_BANG_CHUNG : t('Chưa có bằng chứng nào.')}
-        </p>
-      )}
 
-      <ul className="list-none p-0 m-0 mt-1.5 space-y-1">
+      {(rows.length > 0 || uploads.length > 0) && <ul className={`list-none p-0 m-0 mt-1.5 space-y-1${tieuDe ? ' sm:pl-[84px]' : ''}`}>
         {rows.map((r) => (
-          <li key={r.id} className="text-xs text-slate-300">
-            <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
-              <span aria-hidden>{r.kind === 'file' ? '📎' : '🔗'}</span>
+          <li key={r.id}>
+            <span className="inline-flex flex-wrap items-baseline gap-x-2">
               {r.kind === 'link'
-                ? <a className="link" href={r.href} target="_blank" rel="noopener noreferrer">{r.displayName}</a>
-                : <a className="link" href={r.href} download>{r.displayName}</a>}
-              <span className="text-slate-500">
+                ? <a className="link break-all" href={r.href} target="_blank" rel="noopener noreferrer">{r.displayName}</a>
+                : <a className="link break-all" href={r.href} download>{r.displayName}</a>}
+              <span className="bc-mo">
                 {[r.kind === 'file' ? fmtSize(r.sizeBytes) : t('liên kết'), r.uploadedByName, fmtDate(r.createdAt)].filter(Boolean).join(' · ')}
               </span>
               {canEdit && confirmId !== r.id && (
-                <button type="button" className="appearance-none bg-transparent border-0 p-0 cursor-pointer text-slate-500 hover:text-bad"
+                <button type="button" className="bc-go"
                   onClick={() => { setConfirmId(r.id); setRowError(null); }} aria-label={t('Gỡ {ten}', { ten: r.displayName })}>{t('Gỡ')}</button>
               )}
               {confirmId === r.id && (
-                <span className="inline-flex items-center gap-1.5 text-soon">
+                <span className="inline-flex flex-wrap items-center gap-1.5 text-soon">
                   {t('Gỡ “{ten}”? Việc này được ghi lại.', { ten: r.displayName })}
                   <button type="button" className="btn btn-sm btn-danger" onClick={() => void remove(r.id)}>{t('Gỡ')}</button>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={() => setConfirmId(null)}>{t('Không')}</button>
@@ -243,15 +236,14 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
 
         {/* MỖI LẦN TẢI MỘT DÒNG RIÊNG: đang tải / bị lỗi + Thử lại. Lỗi nằm ở ĐÂY, không ở đầu trang, không ở form. */}
         {uploads.map((u) => (
-          <li key={u.key} className="text-xs" data-upload-state={u.state}>
-            <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
-              <span aria-hidden>📎</span>
-              <span className="text-slate-300">{u.file.name}</span>
-              <span className="text-slate-500">{fmtSize(u.file.size)}</span>
-              {u.state === 'uploading' && <span className="text-doing">{t('Đang tải…')}</span>}
+          <li key={u.key} data-upload-state={u.state}>
+            <span className="inline-flex flex-wrap items-baseline gap-x-2">
+              <span className="break-all">{u.file.name}</span>
+              <span className="bc-mo">{fmtSize(u.file.size)}</span>
+              {u.state === 'uploading' && <span className="text-xs text-doing" role="status">{t('Đang tải…')}</span>}
               {u.state === 'error' && (
                 <>
-                  <span className="text-bad" role="alert">{u.message}</span>
+                  <span className="text-xs text-bad" role="alert">{u.message}</span>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={() => void send(u.key, u.file)}>{t('Thử lại')}</button>
                   <button type="button" className="btn btn-sm btn-ghost" onClick={() => setUploads((l) => l.filter((x) => x.key !== u.key))}>{t('Bỏ')}</button>
                 </>
@@ -259,7 +251,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
             </span>
           </li>
         ))}
-      </ul>
+      </ul>}
 
       {canEdit && linkOpen && (
         <div className="mt-2 grid gap-1.5 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto] items-end">

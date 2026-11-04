@@ -4,6 +4,7 @@
  * (DL-0, chủ sản phẩm 04/10: attempt_no lớp thường đánh theo lộ trình từng em, không dùng chung cả lớp).
  */
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
+import { awaitingScore, type SkillProgress } from './fasttrack.ts';
 import { chuOChuaLuu } from './chamDiem.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
@@ -131,4 +132,16 @@ export function emCuaViec(v: { studentId?: number | null; emIds?: readonly numbe
 export function attemptCuaEm(rows: readonly { studentId: number; attemptId: number }[], em: readonly number[] | null): Set<number> {
   const co = em ? new Set(em) : null;
   return new Set(rows.filter((r) => !co || co.has(r.studentId)).map((r) => r.attemptId));
+}
+
+/**
+ * N39 (chủ SP 05/11, PR-MT-CHAM): panel việc chấm Mock theo tuần + lớp — lượt có bài ở tuần `tuan` trong cột của việc (`kns`; `writing` khớp W1/W2),
+ * cả bài đã chấm (để sửa). Em không thi tuần đó không vào panel ("chấm cho 2 em mà hiện cả lớp").
+ */
+export function attemptCoBaiTuan(rows: readonly { attemptId: number; cells: readonly { skill: string; weekStart?: string | null; band: number | null; progress: string }[] }[],
+  tuan: string, kns: readonly string[] | null): Set<number> {
+  const cot = (s: string) => !kns || kns.some((k) => s === k || (k === 'writing' && s.startsWith('writing')));
+  /* "Có bài" = đã có điểm hoặc đang chờ điểm (due / sat) — ô nhập bù lịch sử chưa điểm, chưa tới lịch, vắng, huỷ không tính. */
+  const coBai = (c: { band: number | null; progress: string }) => c.band !== null || awaitingScore(c.progress as SkillProgress);
+  return new Set(rows.filter((r) => r.cells.some((c) => c.weekStart === tuan && cot(c.skill) && coBai(c))).map((r) => r.attemptId));
 }

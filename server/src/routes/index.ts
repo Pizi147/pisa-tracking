@@ -573,7 +573,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
 
   if (nguoi === 'tat-ca') {
     if (!phamViXemViec(p)) throw forbidden('Bạn chỉ xem được việc của mình.');
-    return nheMyWork(myWork(p, { branchId, nguoi: 'tat-ca' }));
+    return nheMyWork(myWork(p, { branchId, nguoi: 'tat-ca', tachCuaToi: true }));   // SUA-LOI-CV: web lọc Của tôi tại máy — có việc Chấm Speaking
   }
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
@@ -2478,7 +2478,7 @@ api.post('/cases/:id/hoan-tac-xac-nhan-s', requireAuth, wrap((req) => {
 }));
 api.delete('/cases/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.xoaCase(principalOf(req), pInt(req, 'id'));
+  return caseSvc.xoaCase(principalOf(req), pInt(req, 'id'));   // N37: Case hệ thống → thẻ xin xoá
 }));
 /** OV-13a (C): GVCN / Quản lý kết thúc sớm PA theo quy chế đang chạy — lý do ≥ 10 ký tự; quyền kiểm ở máy chủ (`ketThucPaQuyChe`). */
 api.post('/interventions/:id/ket-thuc', requireAuth, wrap((req) => {
@@ -2492,7 +2492,7 @@ api.post('/interventions/:id/hoan-tac-ket-thuc', requireAuth, wrap((req) => {
 }));
 api.delete('/interventions/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return caseSvc.xoaPa(principalOf(req), pInt(req, 'id'));
+  return caseSvc.xoaPa(principalOf(req), pInt(req, 'id'));   // N37: PA quy chế → thẻ xin xoá
 }));
 /** SV-BAI-LOP-2: Hoàn tác Thêm PA — người vừa thêm, trong 10 s (+5 s mạng), PA chưa có kết quả / QL chưa trả lời; trả Case. */
 api.post('/interventions/:id/hoan-tac-them', requireAuth, wrap((req) => {

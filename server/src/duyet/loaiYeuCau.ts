@@ -13,7 +13,8 @@ import {
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
-import { caseTitleOf, huyQuyetDinhPa, respondToPlan } from '../cases/cases.ts';
+import { apDungXinXoa, caseTitleOf, huyQuyetDinhPa, respondToPlan } from '../cases/cases.ts';
+import { khoiPhucRac } from '../platform/khoiPhucRac.ts';
 import { apDungDoiPa, doiPaHuyDuoc, duLieuDoiPa, rutDoiPa, tenLoaiPa } from '../cases/doiPa.ts';
 import { apDungKhongTheoDoi, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
@@ -832,6 +833,43 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         neuDuyet: `Lần xử lý thành "Đã thu hồi" — bậc về ${bacVe}, ${d.soViPham ?? 0} vi phạm về chưa xử lý.${x?.bao_tt === 'xong' ? ' Cần thì nhờ TVV báo lại PH — hệ thống không tự tạo việc.' : ''}`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
         duLieu: { bacVe: d.bacVe ?? 0, soViPham: d.soViPham ?? 0 },
+      };
+    },
+  },
+  /* ------------------------------------------------------------ N37 · Xin xoá Case SOS / PA theo quy chế (chủ SP 05/11; PTA: MỘT loại) — đối tượng `sos_case` | `intervention` */
+  {
+    loai: 'xin_xoa',
+    /* Duyệt = xoá vào Thùng rác (`apDungXinXoa` chốt thẻ trước, ghi id Thùng rác vào thẻ). Từ chối / Rút: chưa đổi gì ở bảng nguồn. */
+    khiDuyet: (p, yc) => apDungXinXoa(p, yc),
+    khiRut: () => {},
+    /* Huỷ quyết định Duyệt = Khôi phục mục Thùng rác (cùng quyền / chặn của Khôi phục); Từ chối: thẻ về chờ, không gì để đảo. */
+    khiHuy: (p, yc) => { if (yc.trang_thai === 'duyet') khoiPhucRac(p, Number(JSON.parse(yc.du_lieu ?? '{}').thungRacId)); },
+    huyDuoc: (conn, ds) => {
+      const rac = new Map(ds.map((y) => [y.id, Number(JSON.parse(y.du_lieu ?? '{}').thungRacId) || 0]));
+      const ids = [...rac.values()].filter(Boolean);
+      const con = new Set(ids.length ? (conn.prepare(`SELECT id FROM thung_rac WHERE id IN (${ids.map(() => '?').join(',')})
+          AND khoi_phuc_luc IS NULL AND het_han_luc IS NULL`).all(...ids) as any[]).map((r) => r.id as number) : []);
+      return new Set(ds.filter((y) => y.trang_thai !== 'duyet' || con.has(rac.get(y.id)!)).map((y) => y.id));
+    },
+    chet: {
+      sql: `CASE y.doi_tuong_loai WHEN 'sos_case' THEN NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id)
+             ELSE NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.id = y.doi_tuong_id) END`,
+      lyDo: 'Đã xoá',
+    },
+    /* Tên, số PA / kết quả lưu ở `du_lieu` lúc xin — thẻ đã duyệt (đối tượng đã xoá) vẫn đọc được. */
+    moTa: (yc, ngu) => {
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
+        { ten?: string; tenCase?: string; caseId?: number; soPa?: number; soKetQua?: number };
+      const laCase = yc.doi_tuong_loai === 'sos_case';
+      const kq = d.soKetQua ? ` và ${d.soKetQua} kết quả PA` : '';
+      return {
+        tieuDe: `${laCase ? 'Xoá Case' : 'Xoá PA'} · ${d.ten ?? ''}`,
+        phu: laCase ? null : d.tenCase ?? null,
+        dong: [`${nguoiXin(yc, ngu)} xin ${ngay(yc.tao_luc, ngu)}`],
+        neuDuyet: `${laCase ? `Case${d.soPa ? `, ${d.soPa} PA` : ''}` : 'PA'}${kq} vào Thùng rác — khôi phục được trong 30 ngày.`,
+        mo: yc.trang_thai === 'cho' && yc.hoc_vien_id
+          ? duongHoSoHocVien(yc.hoc_vien_id, laCase ? { caseId: yc.doi_tuong_id } : { caseId: d.caseId, paId: yc.doi_tuong_id }) : undefined,
+        duLieu: !laCase && d.caseId ? { caseId: d.caseId } : undefined,
       };
     },
   },

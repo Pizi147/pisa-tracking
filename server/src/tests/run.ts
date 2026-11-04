@@ -9780,6 +9780,12 @@ await runPrMulterTests({ checkAsync, assert, conn, P } as any);
 // ==================================================================== N35 (chủ SP 03/11: trần chữ GV nhập — mô tả Case, PA, kết quả PA, nhận xét MT)
 const { runPrN35Tests } = bocTep('prN35', await import('./prN35.tests.ts'));
 await runPrN35Tests({ check, assert, conn, P, TODAY, classId } as any);
+// ==================================================================== PR-MT-CHAM (N39, chủ SP 05/11: chấm Mock theo tuần + lớp)
+const { runPrMtChamTests } = bocTep('prMtCham', await import('./prMtCham.tests.ts'));
+await runPrMtChamTests({ check, assert, P } as any);
+// ==================================================================== XOA-CASE-PA (N37, chủ SP 05/11: xoá Case / PA thoải mái hơn; PA quy chế / Case SOS → QL duyệt)
+const { runPrXoaCasePaTests } = bocTep('prXoaCasePa', await import('./prXoaCasePa.tests.ts'));
+await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== PR-MT-VANG (N38: "-" dời tuần sau tuần thi · vắng 2 lần huỷ · chọn tuần = xếp lại)
 const { runPrMtVangTests } = bocTep('prMtVang', await import('./prMtVang.tests.ts'));
 await runPrMtVangTests({ check, assert, conn, P, classId } as any);

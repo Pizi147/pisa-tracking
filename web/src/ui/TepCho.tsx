@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ApiError, api } from '../lib/api.ts';
-import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, LO_GHI_VI_PHAM, chiaLo, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
+import { ATTACHMENT_EXTENSIONS, ATTACHMENT_MAX_BYTES, CHU_KHOI_BANG_CHUNG, LO_GHI_VI_PHAM, chiaLo, laLienKet, tenAnhDan } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -78,8 +78,7 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
 
   return (
     <div
-      className="rounded-lg border border-dashed px-2.5 py-2" tabIndex={0} aria-label={t('Bằng chứng — dán ảnh, kéo thả tệp')} data-tep-cho
-      style={{ borderColor: keo ? 'var(--line-strong)' : 'var(--line)' }}
+      className="bc" data-keo={keo || undefined} tabIndex={0} aria-label={t('Bằng chứng — dán ảnh, kéo thả tệp')} data-tep-cho
       onPaste={onPaste}
       onDragOver={(e) => { if (khoa) return; e.preventDefault(); setKeo(true); }}
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setKeo(false); }}
@@ -88,16 +87,15 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
       {value.length > 0 && (
         <ul className="m-0 list-none space-y-1.5 p-0">
           {value.map((m) => (
-            <li key={m.key} className="text-xs text-slate-300" data-tep-state={m.xong ? 'xong' : m.loi ? 'loi' : 'cho'}>
-              <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
-                <span aria-hidden>{m.kind === 'file' ? '📎' : '🔗'}</span>
+            <li key={m.key} data-tep-state={m.xong ? 'xong' : m.loi ? 'loi' : 'cho'}>
+              <span className="inline-flex flex-wrap items-baseline gap-x-2">
                 <span className="min-w-0 break-all">{tenHienThi(m)}</span>
-                <span className="text-slate-500">{m.kind === 'file' ? fmtSize(m.file.size) : tenMien(m.url)}</span>
-                {m.xong && <span className="text-ok">{t('Đã tải')}</span>}
-                {m.loi && <span className="text-bad" role="alert">{m.loi}</span>}
+                <span className="bc-mo">{m.kind === 'file' ? fmtSize(m.file.size) : tenMien(m.url)}</span>
+                {m.xong && <span className="text-xs text-ok">{t('Đã tải')}</span>}
+                {m.loi && <span className="text-xs text-bad" role="alert">{m.loi}</span>}
                 {m.loi && m.daGui && onThuLai && <button type="button" className="btn btn-sm btn-ghost" onClick={onThuLai}>{t('Thử lại')}</button>}
                 {!khoa && !m.xong && (
-                  <button type="button" className="appearance-none cursor-pointer border-0 bg-transparent p-0 text-slate-500 hover:text-bad max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={t('Bỏ {ten}', { ten: tenHienThi(m) })} onClick={() => bo(m.key)}>✕</button>
+                  <button type="button" className="bc-go max-sm:grid max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:place-items-center" aria-label={t('Bỏ {ten}', { ten: tenHienThi(m) })} onClick={() => bo(m.key)}>✕</button>
                 )}
               </span>
             </li>
@@ -106,10 +104,11 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
       )}
 
       {!khoa && (
-        <div className={`flex flex-wrap items-center gap-1.5${value.length ? ' mt-2' : ''}`}>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => fileRef.current?.click()}>{t('+ Đính kèm tệp')}</button>
-          <button type="button" className="btn btn-sm btn-ghost" aria-expanded={linkOpen} onClick={() => setLinkOpen((o) => !o)}>{t('+ Thêm liên kết')}</button>
+        <div className={`flex flex-wrap items-center gap-x-3 gap-y-1${value.length ? ' mt-1.5' : ''}`}>
+          <button type="button" className="link-nho" onClick={() => fileRef.current?.click()}>{t('+ Tệp')}</button>
+          <button type="button" className="link-nho" aria-expanded={linkOpen} onClick={() => setLinkOpen((o) => !o)}>{t('+ Liên kết')}</button>
           <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={t('{o} — chọn tệp', { o: t('Bằng chứng') })} onChange={(e) => them(e.target.files)} />
+          {!value.length && !linkOpen && <span className="bc-mo">{CHU_KHOI_BANG_CHUNG}</span>}
         </div>
       )}
 

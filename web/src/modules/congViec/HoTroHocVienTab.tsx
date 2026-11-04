@@ -30,7 +30,7 @@ import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import {
-  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
+  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, duongHoSoHocVien, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type NhomViec as MaNhomViec, demViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, demNguoiViec, khopNguoiViec, trongKhoiHomNay, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
@@ -305,11 +305,13 @@ export function HoTroHocVienTab() {
       const next = new URLSearchParams(params); next.delete('nhom'); next.delete('loai'); setParams(next, { replace: true });
     } }] : []),
   ];
-  /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ bên dưới đọc); chưa chọn chi nhánh = mọi chi nhánh như badge menu. */
-  const demDuyet = useApi<DemYeuCau>(session?.nav?.workApprove ? `/yeu-cau/dem${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId]).data;
+  /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ bên dưới đọc); chưa chọn chi nhánh = mọi chi nhánh như badge menu.
+     SUA-LOI-CV (chủ SP 05/11): đang xem việc MỘT GV (theo dõi) thì không có khối này — yêu cầu là của người xem, không của GV đó. */
+  const xemMotGv = typeof nguoi === 'number';
+  const demDuyet = useApi<DemYeuCau>(session?.nav?.workApprove && !xemMotGv ? `/yeu-cau/dem${branchId ? `?branchId=${branchId}` : ''}` : null, [branchId, xemMotGv]).data;
   const [moDuyet, setMoDuyet] = useState(true);
   /* V8-CV: panel duyệt (`?the=`, mở từ nhóm Chờ bạn duyệt) đứng ở cột phải như panel việc — `HopChoDuyet` vẽ vào ô này. */
-  const theId = session?.nav?.workApprove ? Number(params.get('the')) || null : null;
+  const theId = session?.nav?.workApprove && !xemMotGv ? Number(params.get('the')) || null : null;
   const [khuDuyet, setKhuDuyet] = useState<HTMLDivElement | null>(null);
   const [moQuanLy, setMoQuanLy] = useState(false);
   /* U01 #1: Lọc thêm — số bộ lọc đang bật trong đó (Một GV · khung · chi nhánh khác mặc định); đang bật thì mở sẵn. */
@@ -366,7 +368,7 @@ export function HoTroHocVienTab() {
   const tenNhom = (k: string) => dich(dsNhomXem.find((g) => g.key === k)?.label ?? '');
   const anTrenDienThoai = chon || theId ? 'max-lg:hidden' : '';
   /* V8-CV (P1): "Chờ bạn duyệt" là nhóm ĐẦU cột trái (không full width trước lưới); còn hiện khi panel duyệt đang mở dù đã hết yêu cầu (thẻ kết quả). */
-  const coDuyet = !!demDuyet?.cho || !!theId;
+  const coDuyet = !xemMotGv && (!!demDuyet?.cho || !!theId);
   /* Đang tải / lỗi / hết việc: không số ở ô phạm vi (không nơi nào báo chờ khi đã hết). */
   const hienSoNguoi = !!data && !error && typeof nguoi !== 'number' && conViec;
   return (
@@ -632,10 +634,13 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
                 {[iv.performer, iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).map((x: string) => <TheMuc key={x}>{x}</TheMuc>)}</span>
               {iv.description && <div className="mt-1.5"><Trich>{dichDu(iv.description)}</Trich></div>}
             </> : null],
-            [t('Tới đâu'), data?.trangThaiV4?.chu ? dich(data.trangThaiV4.chu) : null],
+            /* N37: Case · PA · Kết quả PA một tuyến — "Mở Case ›" sang hồ sơ em, Case mở sẵn ở đúng PA (id sẵn có). */
+            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.studentId !== null && it.caseId !== null && <> · <Link className="inline-flex items-center font-semibold no-underline hover:underline max-sm:min-h-[44px]"
+              to={duongHoSoHocVien(it.studentId, { caseId: it.caseId, paId: it.paId ?? undefined })}>{t('Mở Case ›')}</Link></>}</> : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />
-          {!it.lamThay && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Quản lý làm được việc này.', { ai })}</p>}
+          {/* SUA-LOI-CV: bài chấm chéo không của riêng ai (T18) — không câu "Chỉ … làm được". */}
+          {!it.lamThay && !laViecChamCheo(it) && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Quản lý làm được việc này.', { ai })}</p>}
         </div>
       </KhungPanel>
     </DauViecCongViec.Provider>

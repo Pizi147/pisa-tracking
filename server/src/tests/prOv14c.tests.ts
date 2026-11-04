@@ -6,6 +6,7 @@
  *  · GV không có kỹ năng S không thấy; Quản trị › Tài khoản có cờ `chamSpeaking` cùng hàm.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { docSach } from './panelUx3.tests.ts';
 
 /** Trần câu SQL của `GET /my-work/cham-speaking` cho GV Speaking (đo 14 câu 18/10 trên bộ demo, 25 em) — max(đo + 10, ⌈đo × 1,3⌉). */
 export const TRAN_CHAM_SPEAKING = 24;
@@ -176,5 +177,59 @@ export async function runPrOv14cTests(t: YThucTestKit) {
       const b = await goi(idS, `/classes/${lopNgoai}/diem-theo-luot/mt:1`);
       assert(b.status === 403, `bảng chấm lớp chi nhánh khác phải 403: ${b.status}`);
     } finally { may.close(); }
+  });
+
+  /*
+   * SUA-LOI-CV (chủ SP 05/11 "LẠI LỖI"): ① QL kiêm GV Speaking — web đọc Công việc bằng `nguoi=tat-ca` rồi lọc "Của tôi" tại máy, chế độ đó bỏ `lopCheo`
+   * nên "Của tôi" không có việc Chấm Speaking; ② QL xem "Của GV" của GV Speaking (theo dõi) không thấy việc đó (OV-13g lọc bỏ).
+   */
+  const idQlS = tao([{ role: 'manager', branches: ['MB'] }, { role: 'teacher', branches: ['MB'] }], ['speaking']);
+  const idS2 = tao([{ role: 'teacher', branches: (conn.prepare('SELECT code FROM branches').all() as any[]).map((r) => r.code) }], ['speaking']);
+  const baiCc = (items: any[]) => items.filter((x) => d.laViecChamCheo(x)).reduce((n, x) => n + (x.soBai ?? 0), 0);
+
+  await checkAsync('OV14c-11 · QL kiêm GV Speaking, GET /my-work?nguoi=tat-ca (web lọc Của tôi tại máy): có việc Chấm Speaking của mình = hàng đợi; bài S chéo không đếm hai lần', async () => {
+    const p = perm.loadPrincipal(idQlS);
+    const q = svc.baiChamSpeaking(p, TODAY);
+    assert(q.soBai > 0, 'dữ liệu demo: phải có bài S chờ chấm lớp FT MB');
+    const may = createApp().listen(0);
+    try {
+      const cong = (may.address() as any).port as number;
+      const viec = async (uid: number) => {
+        const res = await fetch(`http://127.0.0.1:${cong}/api/my-work?nguoi=tat-ca`, { headers: { cookie: `pisa_demo_session=${createSession(uid)}` } });
+        return (((await res.json()) as any).dong as any[]).flatMap((x) => (x.con?.length ? x.con : [x]));
+      };
+      const items = await viec(idQlS);
+      const toi = items.filter((x) => x.key === d.KHOA_CHAM_SPEAKING);
+      assert(toi.length === 1 && toi[0].soBai === q.soBai && d.khopNguoiViec(toi[0], 'toi') && !d.khopNguoiViec(toi[0], 'gv'),
+        `Của tôi phải có MỘT việc Chấm Speaking ${q.soBai} bài: ${JSON.stringify(toi.map((x) => [x.mine, x.soBai]))}`);
+      const lop = new Set<number>(perm.lopFtChoGvSpeaking(p, TODAY));
+      assert(!items.some((x) => d.laViecChamCheo(x) && x.key !== d.KHOA_CHAM_SPEAKING && lop.has(x.classId)), 'bài S chéo lớp mình chấm còn ở Của GV (hai lần)');
+      /* "Tất cả": cùng số bài S chéo như QL MB không chấm S — chỉ chia lại Của tôi / Của GV. */
+      const ql = baiCc(await viec(P.mbManager.userId));
+      assert(baiCc(items) === ql, `Tất cả: ${baiCc(items)} bài S chéo ≠ QL MB ${ql}`);
+    } finally { may.close(); }
+  });
+
+  check('OV14c-12 · QL xem "Của GV" của GV Speaking (theo dõi): có việc Chấm Speaking của GV đó, chỉ lớp chi nhánh người xem; không làm thay', () => {
+    const v = (mywork.viecCuaNguoi(P.mbManager, idS).dong as any[]).filter((x) => x.key === d.KHOA_CHAM_SPEAKING);
+    const n = svc.baiChamSpeaking(gvS(), TODAY).soBai;
+    assert(v.length === 1 && v[0].soBai === n && !v[0].mine && !v[0].lamThay, `GV S MB: ${JSON.stringify(v.map((x) => [x.soBai, x.mine, x.lamThay]))} / ${n}`);
+    /* GV Speaking mọi chi nhánh, QL chỉ MB → chỉ bài lớp FT MB. */
+    const q2 = svc.baiChamSpeaking(perm.loadPrincipal(idS2), TODAY);
+    const mb = q2.rows.filter((r: any) => r.cho && ftMb.has(r.classId)).length;
+    assert(mb > 0 && mb < q2.soBai, `dữ liệu demo: cần bài S chờ chấm ở MB (${mb}) và chi nhánh khác (${q2.soBai - mb})`);
+    const v2 = (mywork.viecCuaNguoi(P.mbManager, idS2).dong as any[]).filter((x) => x.key === d.KHOA_CHAM_SPEAKING);
+    assert(v2.length === 1 && v2[0].soBai === mb, `QL MB xem GV mọi chi nhánh: ${v2.map((x) => x.soBai)} ≠ ${mb} bài MB`);
+  });
+
+  /* SUA-LOI-CV ③ (chủ SP 05/11): QL xem việc của Thea (theo dõi) lại hiện "Chờ bạn duyệt 16 yêu cầu" — yêu cầu của NGƯỜI XEM, không phải của GV đang xem. */
+  check('OV14c-13 · Công việc xem MỘT GV (theo dõi): không đọc, không vẽ khối "Chờ bạn duyệt" của người xem', () => {
+    const tab = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx');
+    const dem = tab.split('\n').find((l) => l.includes("'/yeu-cau/dem") || l.includes('`/yeu-cau/dem')) ?? '';
+    assert(/xemMotGv/.test(dem), `vẫn đọc /yeu-cau/dem khi xem một GV: ${dem.trim()}`);
+    assert(/const coDuyet = !xemMotGv && /.test(tab), 'khối Chờ bạn duyệt vẫn hiện khi xem một GV');
+    assert(/const theId = [^\n]*!xemMotGv/.test(tab), 'panel duyệt (?the=) vẫn mở khi xem một GV');
+    /* Việc Chấm Speaking của GV đang xem (OV14c-12) là dòng theo dõi — không nút động từ (brief 7). */
+    assert(/laViecChamCheo\(it\) && !xem \? t\('Chấm Speaking'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo ở chế độ theo dõi còn nút "Chấm Speaking"');
   });
 }

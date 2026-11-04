@@ -4,7 +4,6 @@ export const EN_SOT_LE = {
   'Ghi báo PH': 'Log parent call',
   'Hoàn thành được sau khi PA theo quy chế kết thúc': 'Can close after the rule-based PA ends',
   'Lịch MT mặc định': 'Default MT schedule',
-  'Dán ảnh chụp màn hình (Ctrl + V) · kéo thả · chọn tệp · dán liên kết': 'Paste a screenshot (Ctrl + V) · drag and drop · choose a file · paste a link',
   'Không có giáo viên nào chấm quá hạn.': 'No teacher is overdue on marking.',
   'Đang tải (skeleton)': 'Loading (skeleton)',
   'Không có dữ liệu': 'No data',

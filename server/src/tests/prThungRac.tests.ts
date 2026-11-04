@@ -111,10 +111,11 @@ export async function runPrThungRacTests(t: YThucTestKit) {
     assert(/đã có dữ liệu mới trùng/.test(chuLoi(() => kp.khoiPhucRac(QL, r2.thungRacId))), 'Case trùng kỹ năng phải 409');
   }));
 
-  check('TR-5 · Quyền như thao tác gốc: GV không khôi phục Case / PA (403), không thấy mục ở Đã xoá; QL thấy + khôi phục được; Quản trị thấy mọi mục', () => thu(() => {
+  check('TR-5 · Quyền như thao tác gốc (N37: người xoá thẳng được): GV môn khác không khôi phục Case (403), không thấy mục ở Đã xoá; GV môn + QL thấy, khôi phục được; Quản trị thấy mọi mục', () => thu(() => {
     const r = cases.xoaCase(QL, taoCase(moiEm()));
-    assert(maLoi(() => kp.khoiPhucRac(P.lrTeacher, r.thungRacId)) === 403, 'GV khôi phục Case');
-    assert(!kp.danhSachRac(P.lrTeacher).some((x: any) => x.id === r.thungRacId), 'GV thấy mục Case');
+    assert(maLoi(() => kp.khoiPhucRac(P.w1Teacher, r.thungRacId)) === 403, 'GV Writing khôi phục Case Listening');
+    assert(!kp.danhSachRac(P.w1Teacher).some((x: any) => x.id === r.thungRacId), 'GV Writing thấy mục Case');
+    assert(kp.danhSachRac(P.lrTeacher).find((x: any) => x.id === r.thungRacId)?.khoiPhucDuoc === true, 'GV Listening (xoá thẳng được) không khôi phục được');
     const ql = kp.danhSachRac(QL).find((x: any) => x.id === r.thungRacId);
     assert(ql?.khoiPhucDuoc === true && ql.loai === 'case', `QL: ${JSON.stringify(ql)}`);
     assert(kp.danhSachRac(P.admin).some((x: any) => x.id === r.thungRacId), 'Quản trị không thấy');
@@ -211,14 +212,14 @@ export async function runPrThungRacTests(t: YThucTestKit) {
     } finally { conn.exec('ROLLBACK'); if (url) await kho().xoa(url).catch(() => {}); }
   });
 
-  check('TR-13 · Khôi phục PA khi Case đã Hoàn thành → 409 "Mở lại Case" (cùng chặn của Xoá PA), không đổi gì', () => thu(() => {
+  check('TR-13 · N37: Khôi phục PA khi Case đã Hoàn thành → được (xoá PA không chặn Case xong), Case giữ "Hoàn thành"', () => thu(() => {
     const c = taoCase(moiEm());
     const iv1 = themPa(c);
     const iv2 = themPa(c, { description: 'Tự học Listening — nghe chép thêm buổi tối' });
     const r = cases.xoaPa(QL, iv2);
     dongCase(c, iv1);
-    assert(/Mở lại Case/.test(chuLoi(() => kp.khoiPhucRac(QL, r.thungRacId))), 'phải chặn Case đã hoàn thành');
-    assert(!mot('SELECT 1 FROM case_interventions WHERE id = ?', iv2), 'PA đã về dù bị chặn');
+    kp.khoiPhucRac(QL, r.thungRacId);
+    assert(mot('SELECT 1 FROM case_interventions WHERE id = ?', iv2) && mot('SELECT status FROM sos_cases WHERE id = ?', c).status === 'done', 'PA chưa về hoặc Case mở lại');
   }));
 
   check('TR-14 · Dòng cần trả (sửa) không còn → 409 nói rõ, không khôi phục nửa chừng (UPDATE … changes = 0)', () => thu(() => {

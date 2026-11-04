@@ -1,9 +1,9 @@
 import { db } from '../db.ts';
-import { conflict, forbidden } from '../util.ts';
+import { forbidden } from '../util.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { dongBoTrangThaiCase } from '../cases/sosState.ts';
-import { loadCase } from '../cases/cases.ts';
+import { cachXoaCase, loadCase, quyenXoaPa } from '../cases/cases.ts';
 import { EDIT_VIOLATION_MESSAGE, canEditViolation, requireViewStudent } from '../yThuc/access.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { ownerAccess } from './attachments.ts';
@@ -11,7 +11,8 @@ import { GIU_NGAY, docMucRac, khoiPhucMuc, kiemGoc, type DuLieuRac, type MucRac 
 
 /**
  * Q-RL2a — quyền + đồng bộ khi KHÔI PHỤC một mục thùng rác. Quyền như thao tác GỐC, xét theo bản ghi cha HIỆN TẠI (đã so dấu nhận diện — `kiemGoc`):
- * Case: Quản lý của học viên; PA: Quản lý trong phạm vi Case; vi phạm: người ghi · GVCN · Quản lý của học viên; tệp: quyền gỡ tệp của bản ghi chủ.
+ * Case / PA: người xoá thẳng được (N37 `cachXoaCase` / `quyenXoaPa` = 'ngay' — Case hệ thống, PA quy chế: chỉ QL); vi phạm: người ghi · GVCN · Quản lý
+ * của học viên; tệp: quyền gỡ tệp của bản ghi chủ.
  * Danh sách "Đã xoá" (Quản trị) chỉ hiện mục người xem khôi phục được (Quản trị: mọi mục, kể cả đã khôi phục / hết hạn).
  */
 const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students' };
@@ -23,10 +24,15 @@ function kiemQuyen(p: Principal, m: MucRac): void {
     /* Q-RL2b: như Xoá học viên (`CYCLE_EDIT` — Quản lý của em / Quản trị); em đã không còn nên xét theo lớp cuối / chi nhánh lúc xoá. */
     require_(p, PERMISSIONS.CYCLE_EDIT, m.class_id ? { classId: m.class_id } : { branchId: m.branch_id }, 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới khôi phục được học viên.');
   } else if (m.loai === 'case') {
-    require_(p, PERMISSIONS.CASE_APPROVE, { studentId: dongGoc(m, 'sos_cases').student_id }, 'Chỉ Quản lý khôi phục được Case.');
+    /* Case đã xoá: lớp lúc xoá (`m.class_id`), em + kỹ năng + nguồn từ bản chụp; PA của Case trong cùng mục. */
+    const sc = dongGoc(m, 'sos_cases');
+    const pas = duLieu(m).ban.filter((b) => b.k === 'xoa' && b.bang === 'case_interventions').flatMap((b) => b.dong);
+    if (cachXoaCase(p, { ...sc, eff_student_id: sc.student_id ?? m.hoc_vien_id, class_id: m.class_id }, pas) !== 'ngay') {
+      throw forbidden('Chỉ Quản lý hoặc người xoá được Case này mới khôi phục được.');
+    }
   } else if (m.loai === 'pa') {
     const c = loadCase(dongGoc(m, 'case_interventions').case_id);   // Case HIỆN TẠI (đã so dấu — đúng Case lúc xoá)
-    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý khôi phục được PA.');
+    if (quyenXoaPa(p, dongGoc(m, 'case_interventions'), c) !== 'ngay') throw forbidden('Chỉ Quản lý hoặc người xoá được PA này mới khôi phục được.');
   } else if (m.loai === 'vi_pham') {
     const v = dongGoc(m, 'violations');
     requireViewStudent(p, v.student_id);
@@ -45,17 +51,9 @@ export function khoiPhucRac(p: Principal, id: number): { ok: true; loai: string;
   if (!m.het_han_luc && !m.khoi_phuc_luc) {
     kiemGoc(db(), duLieu(m));   // trước quyền: quyền xét theo bản ghi cha — phải đúng bản ghi lúc xoá
     kiemQuyen(p, m);
-    if (m.loai === 'pa') {
-      if (loadCase(dongGoc(m, 'case_interventions').case_id).status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi khôi phục PA.');   // cùng chặn của Xoá PA
-    }
   }
   const moiId = khoiPhucMuc(p.userId, m, BANG_CHINH[m.loai], (conn) => {
-    if (m.loai === 'pa') {
-      /* Kiểm lại TRONG giao dịch (Case vừa Đóng chen giữa) — ném thì cả lượt khôi phục lui. */
-      const caseId = dongGoc(m, 'case_interventions').case_id;
-      if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any)?.status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi khôi phục PA.');
-      dongBoTrangThaiCase(caseId);
-    }
+    if (m.loai === 'pa') dongBoTrangThaiCase(dongGoc(m, 'case_interventions').case_id);   // N37: Case đã hoàn thành giữ nguyên (xoá PA không chặn Case xong)
     if (m.loai === 'vi_pham') chotHanXuLy([dongGoc(m, 'violations').student_id]);
   });
   return { ok: true, loai: m.loai, doiTuongId: moiId };
