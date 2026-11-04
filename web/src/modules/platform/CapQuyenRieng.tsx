@@ -83,7 +83,7 @@ export function CapQuyenRieng({ value, chon, onChange, branches, macDinh, vai }:
                         <input type="checkbox" className="mt-1" checked={daChon} disabled={!!cam} onChange={() => tick(k)} />
                         <span className="min-w-0">
                           <span className="block text-sm text-slate-100">{dich(PERMISSION_LABEL[k] ?? k)}</span>
-                          <span className="block text-xs text-slate-400">{dich(mt.moTa)}</span>
+                          {mt.moTa && <span className="block text-xs text-slate-400">{dich(mt.moTa)}</span>}
                           {mt.phamVi && <span className="block text-xs text-slate-500">{dich(mt.phamVi)}</span>}
                         </span>
                       </label>

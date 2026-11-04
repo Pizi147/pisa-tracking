@@ -185,7 +185,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
   if (mt.error) return <Card title={t('Quyền theo vai trò')}><ErrorState message={mt.error.message} hint={mt.error.hint} status={mt.error.status} onRetry={mt.reload} /></Card>;
   if (!d) return <Card title={t('Quyền theo vai trò')}><Skeleton rows={8} /></Card>;
 
-  const moTa = MO_TA_QUYEN as Record<string, { nhom: string; moTa: string; phamVi?: string } | undefined>;
+  const moTa = MO_TA_QUYEN as Record<string, { nhom: string; moTa?: string; phamVi?: string } | undefined>;
   const nhom = [
     ...NHOM_QUYEN.map((g) => ({ key: g.key as string, ten: dich(g.ten), quyen: d.quyen.filter((q) => moTa[q.key]?.nhom === g.key) })),
     { key: 'khac', ten: t('Chưa xếp nhóm'), quyen: d.quyen.filter((q) => !moTa[q.key]) },
@@ -250,7 +250,7 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
     return (
       <>
         <span className="block text-slate-100">{q.ten}</span>
-        {m && <span className="block text-xs text-slate-400">{dich(m.moTa)}</span>}
+        {m?.moTa && <span className="block text-xs text-slate-400">{dich(m.moTa)}</span>}
         {m?.phamVi && <span className="block text-xs text-slate-500">{dich(m.phamVi)}</span>}
         {ds.map((k) => (
           <span key={k.lyDo} className="mt-0.5 flex items-start gap-1 text-xs text-slate-400">
