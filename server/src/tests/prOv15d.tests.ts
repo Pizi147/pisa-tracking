@@ -91,18 +91,15 @@ export async function runPrOv15dTests(t: YThucTestKit) {
     assert(nav.navOf(P.admin).overview, 'Admin giữ Tổng quan');
   });
 
-  check('OV15d-6 · lọc người Công việc: Của tôi + Của GV = Tất cả (một danh sách, cùng hàm đếm)', () => {
-    const ds = [{ key: 'a', group: 'cause', studentId: 1, mine: true }, { key: 'b', group: 'cause', studentId: 2, mine: false, ownerId: 5 },
-      { key: 'c', group: 'cause', studentId: 3, mine: false, ownerId: null }] as any[];
-    const dem = d.demNguoiViec(ds);
-    assert(dem.toi === 1 && dem.gv === 2 && dem['tat-ca'] === 3, JSON.stringify(dem));
-    /* RA-LUONG-1: dòng gộp đếm từng việc con, Nhập điểm đếm theo kỹ năng — cùng đơn vị "n việc" đầu trang (`demViec`). */
-    const gop = [{ key: 'g', group: 'ghi_nhan_xet', studentId: null, mine: false, ownerId: 5, con: [
-      { key: 'g1', group: 'ghi_nhan_xet', studentId: 1, mine: false }, { key: 'g2', group: 'ghi_nhan_xet', studentId: 2, mine: false }] },
-      { key: 's', group: 'score', studentId: null, mine: true, kns: ['listening', 'reading'] }] as any[];
-    const dem2 = d.demNguoiViec(gop);
-    assert(dem2.toi === 2 && dem2.gv === 2 && dem2['tat-ca'] === d.demViec(gop.flatMap((x: any) => x.con ?? [x])).viec, `RA-LUONG-1 đếm việc: ${JSON.stringify(dem2)}`);
-    assert(d.khopNguoiViec(ds[0], 'toi') && !d.khopNguoiViec(ds[0], 'gv') && d.khopNguoiViec(ds[1], 'gv') && d.khopNguoiViec(ds[2], 'tat-ca'), 'khớp');
+  check('OV15d-6 → S11 (UI-CV-V12) · lọc người Công việc: chỉ ô "Của tôi" có số = dòng của tôi quá hạn + hôm nay (soCuaToi); dòng "Cả lớp" = 1', () => {
+    const ds = [{ key: 'a', group: 'cause', studentId: 1, mine: true, urgency: 'overdue' }, { key: 'a2', group: 'cause', studentId: 4, mine: true, urgency: 'normal' },
+      { key: 'b', group: 'cause', studentId: 2, mine: false, ownerId: 5, urgency: 'overdue' }, { key: 'c', group: 'cause', studentId: 3, mine: false, ownerId: null, urgency: 'today' }] as any[];
+    assert(d.soCuaToi(ds) === 1, `Của tôi: ${d.soCuaToi(ds)}`);
+    const gop = [{ key: 'g', group: 'ghi_nhan_xet', studentId: null, mine: true, ownerId: 5, urgency: 'today', con: [
+      { key: 'g1', group: 'ghi_nhan_xet', studentId: 1, mine: true, urgency: 'today' }, { key: 'g2', group: 'ghi_nhan_xet', studentId: 2, mine: true, urgency: 'normal' }] },
+      { key: 's', group: 'score', studentId: null, mine: true, urgency: 'overdue', kns: ['listening', 'reading'] }] as any[];
+    assert(d.soCuaToi(gop) === 2, `dòng gộp "Cả lớp" = 1, Nhập điểm L + R = 1: ${d.soCuaToi(gop)}`);
+    assert(d.khopNguoiViec(ds[0], 'toi') && !d.khopNguoiViec(ds[0], 'gv') && d.khopNguoiViec(ds[2], 'gv') && d.khopNguoiViec(ds[3], 'tat-ca'), 'khớp');
   });
 
   const tq: any = await import('../worklist/tongQuan.ts');

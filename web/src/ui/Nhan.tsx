@@ -134,15 +134,27 @@ export function ChipSoQuaHan({ n }: { n: number }) {
 }
 /** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn viên xám; luôn có chữ.
  *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Chữ hạn = `nhanHan` "hạn 18/09" (NEN-V5 P7: ngày thật, kể cả hôm nay). */
-export function ChipHan({ loai, han, chuThuong = false }: { loai: DeadlineKind; han: string | null;
+export function ChipHan({ loai, han, chuThuong = false, vien = false }: { loai: DeadlineKind; han: string | null;
   /** UI-CONG-VIEC (dải sự kiện panel, mockup `.fact`): chưa quá hạn → ngày chữ thường "16/09", quá hạn vẫn ⚠ đỏ. */
-  chuThuong?: boolean }) {
+  chuThuong?: boolean;
+  /** v12 S13 (dòng Công việc / Chờ bạn duyệt, mockup `.han-v`): VIÊN tròn theo mức — quá hạn nền đỏ ⚠ · hôm nay nền vàng viền ⚠ · còn hạn nền xám. */
+  vien?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
   const ngay = `${han.slice(8, 10)}/${han.slice(5, 7)}`;
   if (chuThuong && v.tone !== 'overdue') return <span className="tabular-nums">{ngay}</span>;
   if (chuThuong) return <span title={v.text} className={`${CHU_HAN} text-late font-bold min-h-[22px] whitespace-normal`}><span aria-hidden>⚠</span>{ngay} · {t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</span>;
+  if (vien) {
+    const muc = v.tone === 'overdue' ? 'bg-late-bg text-late font-semibold' : han.slice(0, 10) === homNay
+      ? 'bg-soon-bg text-soon font-semibold shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]' : 'bg-[rgb(var(--muted-bg-rgb))] text-dim font-medium';
+    return (
+      <span title={v.text} className={`inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-[9px] text-xs tabular-nums ${muc}`}>
+        {(v.tone === 'overdue' || han.slice(0, 10) === homNay) && <span aria-hidden>⚠</span>}
+        {v.tone === 'overdue' ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : nhanHan(han, homNay)}
+      </span>
+    );
+  }
   /* U01 #27 (audit 03/11, mockup `audit-0311/ro.css .han`): hạn CHỈ CHỮ, không nền — quá hạn đỏ đậm + ⚠, sắp hạn vàng đậm + ⚠ (không trùng chip SOS 3
      nền đỏ đặc — V5); hạn thường chữ thường, hạn xa chữ mờ. Chữ + ⚠ mang nghĩa, màu chỉ phụ. */
   /* Mockup `.han`: quá hạn đỏ ⚠ · hạn HÔM NAY vàng ⚠ · sắp hạn chữ thường 600 · hạn xa chữ mờ 500. */

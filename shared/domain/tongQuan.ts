@@ -50,25 +50,19 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
 
 /**
- * V5 SV-SO1 (brief 7, T01–T03, T17) — ĐƠN VỊ ĐẾM của Công việc, đếm trên việc THẬT (`items`, trước gộp dòng) nên gập nhóm / phân trang không đổi số.
- *  · việc = một loại × một đối tượng × một kỹ năng: dòng Nhập điểm (một lớp · một tuần thi) = số kỹ năng của nó (T01: Case R ≠ Case W);
- *  · bài = kỹ năng × em chưa có điểm (`soBai`) của các việc Nhập điểm; · nhóm = nhóm hiển thị (`nhomViecCua`) có việc; · hv = em khác nhau.
- * Bài Speaking chấm chéo (`laViecChamCheo`) không là việc / nợ của ai (R2, `scoreDebt.ts`) → không vào số nào ở đây.
+ * S11 (chủ SP 05/11, mockup `thiet-ke/v12/cong-viec.html` bảng D — thay SV-SO1 "Nhập điểm = số kỹ năng"): ĐƠN VỊ ĐẾM = MỘT DÒNG VIỆC NHÌN THẤY.
+ * Nhận DÒNG hiển thị (`dong` sau `gopViecTheoLop`, chưa mở `con`): dòng gộp "Cả lớp" = 1 (không nhân kỹ năng × em); dòng gộp mà mọi việc là của MỘT em
+ * được vẽ thành từng việc dưới tên em (`xepTheoEm`) nên đếm từng việc. Bài Speaking chấm chéo không là việc của ai (T03) → không đếm.
+ * MỌI số việc (badge, Công việc, Tổng quan, hồ sơ GV / lớp) đi qua hàm này — cùng số mọi nơi. `canLamNgay` = quá hạn + hạn hôm nay (badge, ô "Của tôi").
  */
-export type DemViec = { viec: number; bai: number; nhom: number; hv: number };
-export function demViec(items: readonly { key: string; group: string; studentId: number | null; emIds?: number[]; kns?: string[]; soBai?: number }[]): DemViec {
-  let viec = 0, bai = 0;
-  const nhom = new Set<NhomViec>(), hv = new Set<number>();
-  for (const it of items) {
-    if (laViecChamCheo(it)) continue;
-    const cham = it.group === 'score';
-    viec += cham ? Math.max(1, it.kns?.length ?? 1) : 1;
-    if (cham) bai += it.soBai ?? 0;
-    nhom.add(nhomViecCua(it.group));
-    if (it.studentId !== null) hv.add(it.studentId);
-    for (const id of it.emIds ?? []) hv.add(id);
-  }
-  return { viec, bai, nhom: nhom.size, hv: hv.size };
+export type DongDem = { key: string; studentId: number | null; urgency: string; con?: readonly DongDem[] | null };
+export const dongNhinThay = <T extends DongDem>(ds: readonly T[]): T[] =>
+  ds.flatMap((d) => (d.con?.length && d.con.every((c) => c.studentId !== null && c.studentId === d.con![0].studentId) ? (d.con as T[]) : [d]));
+export type DemDongViec = { n: number; quaHan: number; homNay: number; canLamNgay: number };
+export function demDongViec(ds: readonly DongDem[]): DemDongViec {
+  const la = dongNhinThay(ds).filter((x) => !laViecChamCheo(x));
+  const quaHan = la.filter((x) => x.urgency === 'overdue').length, homNay = la.filter((x) => x.urgency === 'today').length;
+  return { n: la.length, quaHan, homNay, canLamNgay: quaHan + homNay };
 }
 
 /** Loại hạn của từng loại việc — để dòng việc hiện hạn qua `<Han>` (G-10). Loại không có ở đây: hạn là ngày trơn. */

@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM V5 · SV-SO1 (máy chủ số của Công việc — `08-ke-hoach-trien-khai.md` mục 6, 10; brief 7, 8.1):
- *  · đơn vị đếm `/my-work`: việc (loại × đối tượng × kỹ năng) · bài · nhóm, đếm trên việc thật trước gộp (T01, T02, T17);
+ *  · đơn vị đếm `/my-work`: S11 (UI-CV-V12, chủ SP 05/11, thay "việc = loại × đối tượng × kỹ năng") — MỘT DÒNG VIỆC = 1 (`demDongViec`);
  *  · Speaking chấm chéo không là việc / nợ của ai (T03, R2 — giữ `scoreDebt.ts`);
  *  · không gợi ý MT4 ở Kế hoạch Test (T04, C20);
  *  · xem việc người khác = theo dõi (`chiXem`) + `lamThay` theo quyền; chuông = tin chưa đọc.
@@ -27,23 +27,24 @@ export async function runPrSvSo1Tests(t: YThucTestKit) {
   };
   console.log('\nV5 · SV-SO1 — đơn vị đếm Công việc, S chéo không nợ, không gợi ý MT4, chế độ theo dõi, chuông = tin');
 
-  check('SVSO1 (T01, T03) · demViec: Case R + Case W cùng em = 2 việc 1 HV; Nhập điểm L, R × 18 em = 2 việc 36 bài; Chấm Speaking chéo không vào số nào', () => {
-    const ca = (k: string, topic: string) => ({ key: `cause:${k}`, group: 'cause', studentId: 7, kn: topic });
-    const cham = { key: 'score:1|mock|p9|u5', group: 'score', studentId: null, emIds: Array.from({ length: 18 }, (_, i) => 100 + i), kns: ['listening', 'reading'], soBai: 36 };
-    const cheo = { key: d.KHOA_CHAM_SPEAKING, group: 'score', studentId: null, kns: ['speaking'], soBai: 40 };
-    const r = d.demViec([ca('1', 'reading'), ca('2', 'writing'), cham, cheo]);
-    assert(r.viec === 4 && r.bai === 36 && r.nhom === 2 && r.hv === 19, JSON.stringify(r));
-    assert(JSON.stringify(d.demViec([cheo])) === JSON.stringify({ viec: 0, bai: 0, nhom: 0, hv: 0 }), 'Speaking chấm chéo phải 0 việc');
+  check('S11 (UI-CV-V12, T03) · demDongViec: một dòng = 1 — Case R + Case W cùng em = 2; dòng "Cả lớp" Nhập điểm L, R × 18 em = 1 (không nhân kỹ năng × em); dòng gộp của MỘT em = từng việc; chấm chéo 0', () => {
+    const ca = (k: string, u = 'normal') => ({ key: `cause:${k}`, group: 'cause', studentId: 7, urgency: u });
+    const con = Array.from({ length: 18 }, (_, i) => ({ key: `score:${i}`, group: 'score', studentId: 100 + i, urgency: i ? 'normal' : 'overdue' }));
+    const caLop = { key: 'gop:score:1:u5', group: 'score', studentId: null, urgency: 'overdue', kns: ['listening', 'reading'], soBai: 36, con };
+    const motEm = { key: 'gop:xac_nhan_pa:1:u5', group: 'xac_nhan_pa', studentId: null, urgency: 'today', con: [{ key: 'x:1', studentId: 9, urgency: 'today' }, { key: 'x:2', studentId: 9, urgency: 'normal' }] };
+    const cheo = { key: d.KHOA_CHAM_SPEAKING, group: 'score', studentId: null, urgency: 'overdue', kns: ['speaking'], soBai: 40 };
+    const r = d.demDongViec([ca('1', 'overdue'), ca('2'), caLop, motEm, cheo]);
+    assert(r.n === 5 && r.quaHan === 2 && r.homNay === 1 && r.canLamNgay === 3, JSON.stringify(r));
+    assert(JSON.stringify(d.demDongViec([cheo])) === JSON.stringify({ n: 0, quaHan: 0, homNay: 0, canLamNgay: 0 }), 'Speaking chấm chéo phải 0 việc');
   });
 
-  check('SVSO1 (T02, T17) · /my-work GV: số việc / bài đếm trên việc thật (trước gộp), chỉ bài của chính GV; summary dòng vẫn = số dòng', () => {
+  check('S11 (UI-CV-V12) · /my-work GV: viec / viecQuaHan / canLamNgay = demDongViec trên DÒNG của chính GV; chỉ bài của chính GV; summary dòng vẫn = số dòng', () => {
     for (const p of [P.lrTeacher, P.w1Teacher, P.sTeacher, P.coreTeacher]) {
       xoaNho();
       const w = mw.myWork(p, {});
-      const dem = d.demViec(w.items.filter((i: any) => i.mine));   // UI-CON-LAI (nợ #528): chỉ việc của chính GV
-      for (const k of ['viec', 'bai', 'nhom', 'hv'] as const) assert(w.summary[k] === dem[k], `${k}: ${w.summary[k]} ≠ ${dem[k]}`);
+      const dem = d.demDongViec(w.dong.filter((i: any) => i.mine));   // UI-CON-LAI (nợ #528): chỉ việc của chính GV
+      assert(w.summary.viec === dem.n && w.summary.viecQuaHan === dem.quaHan && w.summary.canLamNgay === dem.canLamNgay, `${JSON.stringify(w.summary)} ≠ ${JSON.stringify(dem)}`);
       assert(w.summary.total === w.dong.length, 'total = số dòng hiển thị');
-      assert(w.summary.viecQuaHan === mw.demSo(w.dong, w.items).viecQuaHan, 'viecQuaHan');
       const cuaNguoiKhac = w.items.filter((i: any) => i.group === 'score' && !d.laViecChamCheo(i) && i.ownerId !== p.userId);
       assert(!cuaNguoiKhac.length, `GV thấy bài của người khác: ${cuaNguoiKhac.map((i: any) => i.key)}`);
     }

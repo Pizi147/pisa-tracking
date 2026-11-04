@@ -15,7 +15,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCase.tsx';
 import { useSession } from '../../lib/session.tsx';
-import { IconNhom, NET_CAY, chuDau } from '../congViec/DanhSachViec.tsx';
+import { BAC_1, IconNhom, KeBac2, NET_CAY, NguoiGiu, ThePhu, chuDau } from '../congViec/DanhSachViec.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
   LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat,
@@ -483,8 +483,9 @@ function LichSuYeuCau({ id, n }: { id: number; n: number }) {
 
 /**
  * V8-CV (mockup `thiet-ke/v8/cong-viec-ql.html` A1–A2, 375 B1): "Chờ bạn duyệt" đầu Công việc — ba tầng như danh sách việc: khối em (chữ đầu ·
- * tên = link hồ sơ · lớp) → dòng yêu cầu [tên 15 · loại · người gửi · ngày / "Nếu duyệt" một dòng | hạn 136 | Duyệt + Từ chối… · Mở ›]; yêu cầu
- * không gắn em (dời lịch cả lớp…) là dòng có ô biểu tượng. Bấm chữ dòng = panel duyệt bên phải (một kiểu mở với dòng việc).
+ * tên = link hồ sơ · lớp) → dòng yêu cầu [tên 15 · thẻ phụ | hạn 150 + người gửi | Duyệt + Từ chối… · Mở ›]; yêu cầu không gắn em (dời lịch cả lớp…)
+ * là dòng có ô biểu tượng. Bấm chữ dòng = panel duyệt bên phải (một kiểu mở với dòng việc). v12: kẻ hai bậc như dòng việc (S12); "Nếu duyệt" ở `title`
+ * và panel duyệt, không thành dòng (S4).
  */
 function CayDuyet({ ds, ...dong }: { ds: (TheYeuCauDto & { giu?: { chu: string; huy: boolean } })[] } & ChungDongDuyet) {
   const khoi: TheYeuCauDto[][] = [];
@@ -498,7 +499,7 @@ function CayDuyet({ ds, ...dong }: { ds: (TheYeuCauDto & { giu?: { chu: string; 
   return (
     <ul className="m-0 list-none p-0" aria-label={t('Yêu cầu chờ duyệt')}>
       {khoi.map((k) => (
-        <li key={k[0].id} className="border-t first:border-t-0" style={{ borderColor: 'var(--line-strong)' }}>
+        <li key={k[0].id} className="border-t first:border-t-0" style={BAC_1}>
           {k[0].hocVienId == null ? <DongDuyet y={k[0]} {...dong} /> : (
             <div className="pb-1.5 pt-3">
               <div className="flex min-h-[30px] items-center gap-2.5 px-4 pb-1 max-sm:px-3">
@@ -512,7 +513,7 @@ function CayDuyet({ ds, ...dong }: { ds: (TheYeuCauDto & { giu?: { chu: string; 
                   {k[0].sos && <ChipSos muc={k[0].sos.muc} kyNang={k[0].sos.kyNang} tam={k[0].sos.tam} dot={k[0].diemHv?.luot} ten={k[0].hocVien} />}
                 </span>
               </div>
-              <ul className="m-0 list-none p-0">{k.map((y) => <li key={y.id} className={NET_CAY}><DongDuyet y={y} em {...dong} /></li>)}</ul>
+              <ul className="m-0 list-none p-0">{k.map((y, i) => <li key={y.id} className={NET_CAY}>{i > 0 && <KeBac2 />}<DongDuyet y={y} em {...dong} /></li>)}</ul>
             </div>
           )}
         </li>
@@ -544,13 +545,14 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
   );
   const o = chon(y);
   const coBuoc = y.loai === 'lich_thi' || !!y.duLieu?.canGhiChu || !!y.duLieu?.moPanelChuyenLop;
-  const phu = (em ? [dich(y.nhanPhanLoai), y.nguoiXin, y.phu ? dich(y.phu) : ngan(y.taoLuc)]
-    : [y.lop, y.nguoiXin ? t('{ai} gửi', { ai: y.nguoiXin }) : null, y.phu ? dich(y.phu) : null]).filter(Boolean).join(' · ');
-  const neuDuyet = y.neuDuyet ? t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(y.neuDuyet) }) : null;
+  /* v12 S13: mỗi trường một dáng — loại = chip VIỀN, lượt / ngày gửi / lớp = chip nền nhạt (không ghép "a · b · c"), người gửi về cột người. */
+  const phu = (em ? [y.phu ? dich(y.phu) : ngan(y.taoLuc)] : [y.lop, y.phu ? dich(y.phu) : null]).filter((x): x is string => !!x);
+  /* v12 S4: "Nếu duyệt: …" không thành dòng (lặp tiêu đề, bị cắt) — xem khi rê chuột (`title`) hoặc bấm dòng mở panel duyệt. */
+  const neuDuyet = y.neuDuyet ? t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(y.neuDuyet) }) : undefined;
   const dungLai = (e: { stopPropagation: () => void }) => e.stopPropagation();
   return (
-    <div data-hd="cd-dong" onClick={() => onMo(y)}
-      className={`grid min-h-[56px] cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 py-2 pr-3 sm:grid-cols-[auto_minmax(0,1fr)_136px_112px] sm:pr-4 ${
+    <div data-hd="cd-dong" onClick={() => onMo(y)} title={neuDuyet}
+      className={`grid min-h-[56px] cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 py-2 pr-3 sm:grid-cols-[auto_minmax(0,1fr)_150px_118px] sm:pr-4 ${
         em ? 'pl-[40px] sm:pl-[44px]' : 'pl-3 sm:pl-4'} ${dang === y.id ? 'row-active' : 'bam'}`}>
       {em ? (
         <span className="relative mt-2.5 inline-flex w-5 justify-center self-start" onClick={dungLai}>
@@ -568,20 +570,23 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
       )}
       <button type="button" onClick={(e) => { e.stopPropagation(); onMo(y); }} aria-current={dang === y.id ? 'true' : undefined}
         className="grid min-w-0 scroll-mt-14 appearance-none gap-px border-0 bg-transparent p-0 text-left">
-        <span className={`text-[15px] leading-snug text-[color:var(--text)] ${em ? 'font-medium' : 'font-semibold'}`}>{dich(y.tieuDe)}</span>
-        {phu && <span className="min-w-0 break-words text-[13px] leading-snug text-dim">{phu}</span>}
-        {neuDuyet && <span className="min-w-0 truncate text-[13px] leading-normal text-dim max-sm:whitespace-normal" title={neuDuyet}>{neuDuyet}</span>}
+        {/* v12 S1: tên yêu cầu 500 — chỉ tên em đậm. */}
+        <span className="text-[15px] font-medium leading-snug text-[color:var(--text)]">{dich(y.tieuDe)}</span>
+        <ThePhu vien={em && y.nhanPhanLoai ? [dich(y.nhanPhanLoai)] : []} ds={phu} />
       </button>
-      <span className="col-start-2 sm:col-start-auto">{y.hanDuyet && <ChipHan loai="duyet" han={y.hanDuyet} />}</span>
+      <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
+        {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
+        {y.nguoiXin && <NguoiGiu ten={y.nguoiXin} />}
+      </span>
       <span className="col-start-2 flex flex-wrap items-center gap-x-4 gap-y-1 sm:col-start-auto sm:flex-col sm:items-stretch sm:gap-1" onClick={dungLai}>
         {y.kieuNut === 'duyet-tu-choi' ? (
-          <button type="button" className="btn btn-sm min-h-[44px] sm:h-auto sm:min-h-[30px] sm:w-full" disabled={dangGui === y.id}
+          <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:h-auto sm:min-h-[30px] sm:w-full" disabled={dangGui === y.id}
             title={y.nguoiXinId != null && y.nguoiXinId === toi ? t('Bạn tự gửi · tự duyệt được') : undefined}
             onClick={() => (coBuoc ? onMo(y, 'duyet') : onDuyet(y))}>{dangGui === y.id ? t('Đang lưu…') : coBuoc ? t('Duyệt…') : t('Duyệt')}</button>
         ) : (
-          <button type="button" className="btn btn-sm min-h-[44px] sm:h-auto sm:min-h-[30px] sm:w-full" onClick={() => onMo(y, 'tra-loi')}>{t('Trả lời…')}</button>
+          <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:h-auto sm:min-h-[30px] sm:w-full" onClick={() => onMo(y, 'tra-loi')}>{t('Trả lời…')}</button>
         )}
-        <span className="flex items-center gap-x-4 text-[13px] sm:justify-between sm:px-1">
+        <span className="flex items-center gap-x-4 text-[13px] sm:justify-center sm:gap-x-2">
           {y.kieuNut === 'duyet-tu-choi' && (
             <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => onMo(y, 'tu-choi')}>{t('Từ chối…')}</button>
           )}

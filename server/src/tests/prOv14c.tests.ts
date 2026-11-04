@@ -230,6 +230,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     assert(/const coDuyet = !xemMotGv && /.test(tab), 'khối Chờ bạn duyệt vẫn hiện khi xem một GV');
     assert(/const theId = [^\n]*!xemMotGv/.test(tab), 'panel duyệt (?the=) vẫn mở khi xem một GV');
     /* Việc Chấm Speaking của GV đang xem (OV14c-12) là dòng theo dõi — không nút động từ (brief 7). */
-    assert(/laViecChamCheo\(it\) && !xem \? t\('Chấm Speaking'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo ở chế độ theo dõi còn nút "Chấm Speaking"');
+    /* UI-CV-V12 S5: nút một dòng — "Chấm" (tên nhóm "Speaking chấm chéo" đã nói). */
+    assert(/laViecChamCheo\(it\) && !xem \? t\('Chấm'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo (không theo dõi) còn nút "Chấm"');
   });
 }

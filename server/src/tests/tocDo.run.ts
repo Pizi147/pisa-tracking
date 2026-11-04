@@ -1217,7 +1217,8 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* 22/10 V5 SV-SO1: thêm `summary.viec/bai/nhom/hv/viecQuaHan`, `lamThay` (xem người khác), `chiXem` — băm bỏ các trường đó. Chụp lại GVCN / GVBM / GVCN_THUONG
        "Của tôi", QL / QT "Tất cả", QL gvcn, GVS — đổi CÓ CHỦ Ý (chủ SP 22/10): ô có band thiếu nhận xét bắt buộc thành việc Nhập điểm (bài / hạn / quá hạn).
        Chụp lại sau gộp main (MAIN-DO / SEED-UX): QL / QT / ADMIN "Của tôi" giữ băm main (không có việc Nhập điểm); 8 góc còn lại = main + luật trên. */
-    const MOI = new Set(['viec', 'bai', 'nhom', 'hv', 'viecQuaHan']);
+    /* UI-CV-V12 (S11, 05/11): `summary` thêm `canLamNgay`, bỏ `bai` / `nhom` / `hv` — chỉ trường summary đổi, băm bỏ (không chụp lại). */
+    const MOI = new Set(['viec', 'bai', 'nhom', 'hv', 'viecQuaHan', 'canLamNgay']);
     /* UI-CON-LAI (nợ #528): việc Nhập điểm thêm `knsQuaHan` (kỹ năng thật sự quá hạn — chỉ đổi `summary.viecQuaHan`, đã bỏ ở trên); băm bỏ trường đó. */
     const bo = (k: string, v: any) => (k === 'kns' || k === 'knsQuaHan' || k === 'lamThay' || k === 'chiXem' ? undefined
       : k === 'summary' && v ? Object.fromEntries(Object.entries(v).filter(([x]) => !MOI.has(x))) : v);

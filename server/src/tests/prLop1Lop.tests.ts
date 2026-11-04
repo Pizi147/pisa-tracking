@@ -13,7 +13,7 @@ export async function runPrLop1LopTests(t: any) {
   const { loadPrincipal, laGvSpeaking, lopFtChoGvSpeaking } = await import('../permissions.ts');
   const { phamViXemViec } = await import('../worklist/xemViec.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
-  const { demViec, laVaiQuanLy, vaiXemHocVien } = await import('../../../shared/domain/index.ts');
+  const { demDongViec, gopViecTheoLop, laVaiQuanLy, vaiXemHocVien } = await import('../../../shared/domain/index.ts');
   const { soDongSql, chayTrongRequest, xoaNho, demHienTai } = await import('../platform/nguCanhRequest.ts');
   const { addDays } = await import('../util.ts');
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -85,13 +85,13 @@ export async function runPrLop1LopTests(t: any) {
     console.log(`    (QL lớp 3: lượt ${moi.luot} ← ${du.luot}, dòng ${moi.dong} ← ${du.dong}; lớp ${nho.l.id}: lượt ${nho.m.luot} ← ${nho.d.luot})`);
   });
 
-  /** Công thức badge web cũ (`DauTrangLop.tsx` trước PR): QL `/my-work?nguoi=tat-ca&branchId`; GV `/my-work` + `mine`. */
+  /** Công thức badge web cũ (`DauTrangLop.tsx` trước PR): QL `/my-work?nguoi=tat-ca&branchId`; GV `/my-work` + `mine`. S11 (UI-CV-V12): đếm DÒNG (`demDongViec`). */
   const badgeCu = (p: any, lop: { id: number; branch_id: number | null }) => {
     const ql = laVaiQuanLy(p.roleKeys), chiCuaToi = !ql && vaiXemHocVien(p.roleKeys) === null;
     xoaNho();
     const w: any = chayTrongRequest('GET', () => ql ? myWork(p, { branchId: lop.branch_id, nguoi: 'tat-ca' }) : myWork(p, {}));
-    return demViec((w.dong ?? []).flatMap((x: any) => (x.con?.length ? x.con : [x]))
-      .filter((it: any) => (!chiCuaToi || it.mine) && it.urgency === 'overdue' && it.classId === lop.id)).viec;
+    return demDongViec(gopViecTheoLop((w.items ?? [])
+      .filter((it: any) => (!chiCuaToi || it.mine) && it.urgency === 'overdue' && it.classId === lop.id), String) as any).n;
   };
 
   check('L2 · soQuaHanLop = số badge cũ — mọi lớp active × QL, QT, GVCN, GVBM, GVCN_THUONG; có lớp > 0', () => {

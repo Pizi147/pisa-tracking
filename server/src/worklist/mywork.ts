@@ -9,7 +9,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demViec, nhomViecCua, type ConGop } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -469,7 +469,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
-  if (scope.none && !lopFtChoGvSpeaking(p, today).length) return { summary: demSo([], []), groups: [], scopeEmpty: true, xemNguoiKhac: false };
+  if (scope.none && !lopFtChoGvSpeaking(p, today).length) return { summary: demSo([]), groups: [], scopeEmpty: true, xemNguoiKhac: false };
   /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
   const xemViec = phamViXemViec(p);
   if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>(['score']) };
@@ -1565,10 +1565,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     return 0;
   });
 
-  /* PR-GOP (§5): dòng hiển thị — một lớp × một loại việc; `items` giữ từng việc (hồ sơ GV). V5 SV-SO1: số việc / bài / nhóm đếm trên `items` (`demSo`). */
+  /* PR-GOP (§5): dòng hiển thị — một lớp × một loại việc; `items` giữ từng việc (hồ sơ GV). S11: số việc đếm DÒNG (`demSo`). */
   const dong = dungDong(flat);
   return {
-    summary: demSo(dong, flat),
+    summary: demSo(dong),
     items: flat,
     dong,
     groups,
@@ -1587,20 +1587,21 @@ export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label 
 const dungDong = (items: WorkItem[]): WorkItem[] => gopViecTheoLop(items, nhanNhomViec) as WorkItem[];
 
 /**
- * `total` / `overdue` / `today` / `mine` = DÒNG hiển thị (sau gộp). V5 SV-SO1: `viec` · `bai` · `nhom` · `hv` (`demViec`, trên việc thật, trước gộp — T17)
- * và `viecQuaHan` = việc quá hạn trong số đó — badge Công việc đọc `viec`, không đọc số dòng.
+ * `total` / `overdue` / `today` / `mine` = DÒNG hiển thị (sau gộp). S11 (chủ SP 05/11, thay SV-SO1): `viec` = số DÒNG việc của người đó (`demDongViec`,
+ * dòng gộp "Cả lớp" = 1) · `viecQuaHan` = dòng quá hạn · `canLamNgay` = quá hạn + hạn hôm nay = BADGE Công việc và ô "Của tôi" (web `soCuaToi` = cùng `demDongViec`).
  */
-export const demSo = (dong: WorkItem[], items: WorkItem[], cuaToi: (i: WorkItem) => boolean = (i) => i.mine) => {
-  /* Nợ #528: số việc = việc CỦA người đó (`mine`) — không đếm việc người khác giữ / chưa ai giữ (vd "Thêm PA" Case người khác). */
-  const minh = items.filter(cuaToi);
+export const demSo = (dong: WorkItem[], cuaToi: (i: WorkItem) => boolean = (i) => i.mine) => {
+  /* Nợ #528: số việc = việc CỦA người đó — không đếm việc người khác giữ / chưa ai giữ (vd "Thêm PA" Case người khác). Dòng gộp cùng một người giữ việc. */
+  const cua = (d: WorkItem) => cuaToi(d) || !!d.con?.some(cuaToi);
+  const minh = demDongViec(dong.filter(cua));
   return {
     total: dong.length,
     overdue: dong.filter((i) => i.urgency === 'overdue').length,
     today: dong.filter((i) => i.urgency === 'today').length,
     mine: dong.filter((i) => i.mine).length,
-    ...demViec(minh),
-    /* Nhập điểm: chỉ kỹ năng thật sự quá hạn của dòng (`knsQuaHan`), không cả dòng. */
-    viecQuaHan: demViec(minh.filter((i) => i.urgency === 'overdue').map((i) => (i.group === 'score' ? { ...i, kns: i.knsQuaHan } : i))).viec,
+    viec: minh.n,
+    viecQuaHan: minh.quaHan,
+    canLamNgay: minh.canLamNgay,
   };
 };
 
@@ -1631,7 +1632,7 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
    */
   /*
    * SUA-LOI-CV (chủ SP 05/11, thay "không vào Của một GV" của OV-13g): xem việc GV = theo dõi đúng cái GV đó thấy — có việc "Chấm Speaking · n bài"
-   * (không hạn, không đếm vào số việc — `demViec` bỏ chấm chéo, T18). Dòng chấm chéo theo lớp chỉ có ở "Tất cả" của QL, không ở đây.
+   * (không hạn, không đếm vào số việc — `demDongViec` bỏ chấm chéo, T18). Dòng chấm chéo theo lớp chỉ có ở "Tất cả" của QL, không ở đây.
    */
   const loc = (w.items as WorkItem[]).filter((it) => !laViecChamCheo(it) || it.key === KHOA_CHAM_SPEAKING);
   const lt = lamThayCua(p, loc);
@@ -1657,7 +1658,7 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
     }));
   const dong = dungDong(items);
   /* V5 SV-SO1 (brief 7): xem việc người khác = chế độ theo dõi (`chiXem`); dòng nào người xem làm thay được thì `lamThay` (quyền máy chủ thật). */
-  return { summary: { ...demSo(dong, items, (i) => cuaGv.has(i.key)), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true };
+  return { summary: { ...demSo(dong, (i) => cuaGv.has(i.key)), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true };
 }
 
 /**
