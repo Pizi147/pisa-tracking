@@ -77,6 +77,5 @@ export const EN_Y_THUC_V10 = {
   'đã chỉnh': 'edited',
   'đã gửi QL — QL quyết': 'sent to manager — manager decides',
   'Bỏ lọc em': 'Clear student filter',
-  'Thêm thao tác': 'More actions',
   '≥ 3 vi phạm trong tuần này + tuần trước → phải xử lý; "Đã xem" không còn.': '≥ 3 incidents this week + last week → action required; "Seen" is not available.',
 } satisfies Record<string, Dich>;

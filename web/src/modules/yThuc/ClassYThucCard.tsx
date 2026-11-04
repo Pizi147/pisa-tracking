@@ -302,7 +302,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
                     {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
                   </button>
                   <span className="sm:hidden">
-                    <Menu label="⋯" ariaLabel={t('Thêm thao tác')} className="btn h-11 min-w-[44px]" items={[
+                    <Menu label="⋯" ariaLabel={t('Thao tác khác')} className="btn h-11 min-w-[44px]" items={[
                       ...(onDiemMt ? [{ label: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onClick: onDiemMt }] : []),
                       { label: t('Khai / sửa cấp bậc'), onClick: () => setLoMo({ viec: 'cap-bac', ids: null }) },
                       { label: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onClick: batChon },
