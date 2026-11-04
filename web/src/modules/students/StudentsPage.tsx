@@ -423,7 +423,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const chuDangLoc = [q.trim() ? `“${q.trim()}”` : null, lopDangLoc?.code ?? null, locThiThang ? t('Thi tháng này') : null, locQuaHan ? t('Có việc quá hạn') : null,
     locDaThi ? LOC_HOC_VIEN_NHAN['da-thi'].nhan : null, chipVai ? CHIP_VAI_NHAN[chipVai].nhan : null, ...chuLocThem].filter(Boolean).join(' · ');
   const menuTrang: MucMenu[] = [
-    ...(dienThoai ? [{ key: 'xuat', nhan: t('Xuất Excel · {n} HV', { n: idsXuat.length }), tat: !idsXuat.length, onChon: () => setXuat(true) }] : []),
+    ...(dienThoai ? [{ key: 'xuat', nhan: t('Xuất Excel'), tat: !idsXuat.length, onChon: () => setXuat(true) }] : []),
     ...(dienThoai && data?.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: t('+ Thêm học viên'), onChon: () => setThem(null) }] : []),
     ...(data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: t('+ Lớp mới'), keTruoc: dienThoai, onChon: () => setTaoLop(true) }] : []),
     /* TVV / CX: không có Lưu trữ (bảng V4 của vai không có — giữ quyền như cũ). */
@@ -433,14 +433,14 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const nutMenuTrang = <MenuDong nhan={t('Thao tác trang')} muc={menuTrang} lopNut="btn h-9 w-9 shrink-0 justify-center !px-0 font-bold max-sm:h-11 max-sm:w-11" />;
 
   return (
-    <div className="page space-y-3">
+    <div className="page so-gon space-y-3">   {/* HVL-GON: `.so-gon` — số bấm được không gạch chân khi không rê (như Tổng quan, Hồ sơ lớp, Phân tích) */}
       {/* Đầu trang một hàng (mockup U04): tên · Xem · Fast Track / Lớp thường · phải: Xuất Excel · + Thêm học viên · ⋯. 375: Xuất + Thêm vào ⋯ (B26). */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="m-0 mr-1 text-[22px] font-bold text-slate-100">{t('Học viên & Lớp')}</h1>
         {!dienThoai && oXem}
         {!dienThoai && chonKhung}
         <div className="ml-auto flex items-center gap-2">
-          {!dienThoai && <button type="button" className="btn h-9 whitespace-nowrap text-sm font-semibold" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel · {n} HV', { n: idsXuat.length })}</button>}
+          {!dienThoai && <button type="button" className="btn h-9 whitespace-nowrap text-sm font-semibold" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel')}</button>}
           {!dienThoai && data?.coTheThemHocVien && <button type="button" className="btn btn-primary h-9 text-sm max-sm:hidden" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
           {!(dienThoai && goc === 'tat-ca') && nutMenuTrang}
         </div>
@@ -484,10 +484,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
                   {t('Bộ lọc thêm')} ▾{soLocThem ? <span className="tabular-nums font-medium">{soLocThem}</span> : null}
                 </button>
               </>}
-              <span className="ml-auto inline-flex items-center gap-1 whitespace-nowrap text-[13px] text-dim max-sm:ml-0 max-sm:w-full max-sm:justify-between">
-                <span><b className="tabular-nums text-slate-100">{soEm(hvLoc)}</b> HV · <b className="tabular-nums text-slate-100">{nhomLop.filter((g) => g.id > 0).length}</b> {t('lớp')}{nutMoHet && <span className="max-sm:hidden"> ·</span>}</span>
-                {nutMoHet}
-              </span>
+              {/* HVL-GON (M3): bỏ "51 HV · 6 lớp" — chưa lọc = số ở tab Tất cả / Fast Track; đang lọc = dòng "Đang lọc … n HV ở m lớp" ngay dưới. */}
+              <span className="ml-auto inline-flex items-center whitespace-nowrap text-[13px] max-sm:w-full max-sm:justify-end">{nutMoHet}</span>
             </div>
             {dangLoc && (
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-dim" role="status">
@@ -584,7 +582,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
               : (
                 <>
-                  {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} /></div>}
+                  {/* HVL-GON (M3): phân trang chỉ cuối bảng như Tất cả (B-04) — neo đầu bảng giữ để lật ở thanh dưới cuộn về đây. */}
+                  <div ref={pt.thanh.dauBang} />
                   <BangSosGon rows={pt.cat(sosRows)} hang={hangTheoEm} nguCanh={dsHocVien}
                     onMo={(r: DongSos) => setPanelEm({ id: r.studentId, caseMo: r.cases.find((c) => !c.done)?.id ?? null })} />
                   {sosRows.length > pt.thanh.co && <div className="px-3"><PhanTrang {...pt.thanh} duoi /></div>}
@@ -690,7 +689,7 @@ function MenuLop({ lop, dsLop, onThemHocVien }: { lop: LopTrenTrang; dsLop: NguC
 
 /** Ô SOS của hàng lớp (MAU-MUC, giống Tổng quan V8): mỗi mức có em = chip "SOS n" + ô số HV (bấm → Đang SOS của lớp, đúng mức); mức 0 không vẽ; không em nào → "Không SOS". */
 function OSosLop({ sos, onSos }: { sos: number[]; onSos: (muc: number) => void }) {
-  if (!sos.some(Boolean)) return <span className="text-[13px] text-dim">{t('Không SOS')}</span>;
+  if (!sos.some(Boolean)) return null;   // HVL-GON (M4): ô trống thay "Không SOS" ở mọi lớp không SOS
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 font-normal">
       {sos.map((n, i) => n > 0 && (
@@ -733,12 +732,12 @@ function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi }: 
       <span className="hl-o">{lop ? <Link to={`/hoc-vien/lop/${lop.id}`} state={{ ds: dsLop }} className="ten-ho-so khong-mui text-[15px] font-bold">{lop.code}</Link>
         : <span>{t('Chưa xếp lớp')}</span>}</span>
       <span className="hl-o text-[13px] text-dim">
-        <b className="tabular-nums font-semibold text-slate-100">{n}</b>{day && (dangLoc || cuaToi) ? <span className="tabular-nums">/{day.studentCount}</span> : null} {dangLoc ? t('HV khớp') : cuaToi ? t('HV của tôi') : 'HV'}
+        <span className="tabular-nums font-medium text-slate-100">{n}</span>{day && (dangLoc || cuaToi) ? <span className="tabular-nums">/{day.studentCount}</span> : null} {dangLoc ? t('HV khớp') : cuaToi ? t('HV của tôi') : 'HV'}
       </span>
       <span className="hl-o text-[13px] text-dim">{day?.gvcn && <>
-        <span className="max-sm:hidden">{t('GVCN')} <b className="font-semibold text-slate-100"><TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></b></span>
+        <span className="max-sm:hidden [&_.ten-ho-so]:font-normal">{t('GVCN')} <TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></span>   {/* HVL-GON (M1): tên người 400, đậm chỉ mã lớp */}
         {/* 375 (mockup): "7 HV · N. H. Dũng" — họ, đệm viết tắt. */}
-        <span className="sm:hidden">· <TenGiaoVien id={day.gvcn.id} ten={tenNgan(day.gvcn.name)} /></span>
+        <span className="sm:hidden [&_.ten-ho-so]:font-normal">· <TenGiaoVien id={day.gvcn.id} ten={tenNgan(day.gvcn.name)} /></span>
       </>}</span>
       <span className="hl-o">{day && day.scoringMode !== 'ratio' && <OSosLop sos={sos} onSos={onSos} />}</span>
       {/* Quá hạn đã có chip "Có việc quá hạn" của dải lọc. "n bài chờ chấm" → Lịch Test, "chờ duyệt" → Công việc, lộ trình → Hồ sơ lớp. */}
