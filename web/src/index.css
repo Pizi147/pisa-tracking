@@ -78,6 +78,7 @@
     --da-thi-bg-rgb: 22 35 46;
     /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
     --kq-vuot-rgb: 148 209 174;  --kq-bang-rgb: 156 189 231;  --kq-duoi-rgb: 232 154 140;
+    --kq-thieu10-rgb: 240 160 75;   /* U08-1: "Thiếu 1.0" cam (mockup V11 `.m-10`) — giữa vàng 0.5 và đỏ ≥ 1.5 */
 
     /* Tên cũ giữ làm bí danh để chỗ đang dùng không vỡ. */
     --ok: rgb(var(--ok-rgb));
@@ -139,6 +140,7 @@
     --sos2-nen: #f6d8b8;  --sos3-nen: #862e27;  --sos3-vien: #862e27;  --sos3-tren: #ffffff;
     --da-thi-bg-rgb: 240 245 248;
     --kq-vuot-rgb: 56 103 76;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 166 58 45;
+    --kq-thieu10-rgb: 181 84 31;
 
     --hang-lon-bg: #f2f4f9;       --hang-lon-vach: #8690ab;
     --hang-lon-dong-bg: #f8f9fc;  --hang-lon-dong-vach: #b0b8cd;

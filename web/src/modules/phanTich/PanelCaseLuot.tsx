@@ -49,7 +49,7 @@ export function PanelCaseLuot({ r, onDong }: { r: DongMock; onDong: () => void }
                     <button type="button" aria-expanded={m} onClick={() => doi(k)}
                       className="flex min-h-[44px] w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-3.5 py-2.5 text-left text-[15px] font-semibold text-slate-100">
                       <span aria-hidden>{m ? '▾' : '▸'}</span>{TEN_KN[k]}
-                      <span className="text-sm font-bold text-kq-duoi tabular-nums">✗ {r.kn[k].band?.toFixed(1)}</span>
+                      <span className="inline-flex h-[22px] items-center rounded border border-bad-line px-2 text-sm font-semibold text-bad tabular-nums">✗ {r.kn[k].band?.toFixed(1)}</span>
                       {r.kyVong != null && <span className="text-[13px] font-medium text-faint">{t('kỳ vọng {kv}', { kv: r.kyVong.toFixed(1) })}</span>}
                       <span className="ml-auto">{cs.length ? <Nhan tone={TONE_NHOM[cs[0].nhom]}>{t(NHAN_NHOM_XU_LY[cs[0].nhom])}</Nhan> : <span className="text-[13px] font-medium text-faint">{t('Chưa có Case')}</span>}</span>
                     </button>

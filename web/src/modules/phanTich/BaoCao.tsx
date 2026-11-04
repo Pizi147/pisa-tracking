@@ -5,7 +5,6 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTram, TheoChiNhanh, mauDatMt, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
 import { DaiChiSo, DauThe, NutXemToanBo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -32,7 +31,7 @@ const COT_TB: readonly CotBang[] = [
 ];
 const pt = (n: number, mau: number) => (mau ? `${Math.round((100 * n) / mau)} %` : null);
 /** U08-1 (mockup V11 `.m-dat / .m-05 / .m-10 / .m-15 / .m-cd`): màu số theo mức — tiêu đề cột vẫn ghi chữ; số 0 mờ (OSo tự xám). */
-const MAU_KQ_MT: Record<string, string> = { dat: 'text-ok', 'thieu-0.5': 'text-soon', 'thieu-1.0': 'text-late', 'thieu-1.5': 'text-bad', 'chua-du': 'text-dim' };
+const MAU_KQ_MT: Record<string, string> = { dat: 'text-ok', 'thieu-0.5': 'text-soon', 'thieu-1.0': 'text-kq-thieu10', 'thieu-1.5': 'text-bad', 'chua-du': 'text-dim' };
 /** Nhãn nhóm của dải chỉ số (mockup V11 B1): "Trong kỳ W1 SEP – W2 SEP" │ "Hiện tại". */
 const NHOM = 'text-[13px] font-bold text-dim';
 
@@ -71,7 +70,8 @@ export function BaoCao(pv: PhamViPhanTich) {
 
   return (
     <div className="bao-cao space-y-3">
-      <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } }'}</style>
+      {/* U08 (mockup V11 `.bang td` 6px 10px · line-height 1.35): hàng hai bảng gọn như mockup. */}
+      <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } } .bao-cao .bang > tbody > tr > td, .bao-cao .bang > tbody > tr:has([data-phu-odiem]:not(:empty)) > td { height: 52px; padding: 6px 10px; line-height: 1.35; }'}</style>
       <div data-hd="tq-tom-tat" className="grid gap-3 min-[1100px]:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] print:grid-cols-[minmax(0,4fr)_minmax(0,1fr)]">
         <div className="grid content-start gap-1.5">
           <span className={NHOM}>{nhanKy}</span>
@@ -108,7 +108,6 @@ export function BaoCao(pv: PhamViPhanTich) {
 
 /** Kết quả MT (`10` mục 5): hàng MT0 → MT3+ + Thi thật, theo lượt của từng HV trong kỳ; Overall so Target đầu ra của em. Số bấm → panel em của ô. */
 function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; error: any; reload: () => void }; nguon: (o: string) => string; phamVi: string }) {
-  const dienThoai = useDienThoai();
   const luat = t('So điểm Overall của lượt với Target đầu ra của chính em (không phải kỳ vọng MT). Mỗi HV tính ở lượt MT của mình trong kỳ. Bấm số để xem danh sách HV.');
   const oCua = (h: DongKqMt, c: CotBang): ReactNode => {
     if (c.key === 'luot') return <b className="text-slate-100">{NHAN_LUOT_KQ_MT[h.luot]}</b>;
@@ -133,7 +132,7 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
     <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<><span className="hidden print:inline">{phamVi} · </span>{t('lượt của từng HV trong kỳ · % trên HV đủ dữ liệu')}</>}>
       {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} status={api.error.status} onRetry={api.reload} />
         : !api.data ? <Skeleton rows={5} className="p-4" />
-          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={!api.data.rows.some((h) => h.hv) ? [] : dienThoai ? api.data.rows.filter((h) => h.hv || h.luot === 'thi') : api.data.rows} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu
+          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={!api.data.rows.some((h) => h.hv) ? [] : api.data.rows.filter((h) => h.hv || h.luot === 'thi')} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu
               rong={{ tieuDe: t('Chưa có lượt MT nào trong kỳ'), nut: <NutXemToanBo /> }} />}
     </Khoi>
   );
