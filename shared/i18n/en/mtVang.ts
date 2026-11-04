@@ -35,4 +35,5 @@ export const EN_MT_VANG = {
   '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Nhật ký</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.':
     '<b>⋯</b>: <b>Cancel score</b> · <b>Log</b>; items marked "Managers only" — ask a manager.',
   'Đã có điểm / đã làm bài: mục mờ.': 'Already scored / taken: dimmed.',
+  'Lần vắng về 0': 'Absence count reset to 0',
 } satisfies Record<string, Dich>;

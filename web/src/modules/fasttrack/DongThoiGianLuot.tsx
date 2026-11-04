@@ -26,6 +26,7 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   cancelled: { chu: t('Huỷ lượt'), loai: 'huy' }, skill_part_cancelled: { chu: t('Huỷ phần còn lại'), loai: 'huy' },
   skill_cancelled_absence: { chu: t('Huỷ do vắng 2 lần'), loai: 'huy' }, skill_part_restored: { chu: CHU_THAO_TAC['khoi-phuc'], loai: 'lich' }, reopened: { chu: t('Khôi phục'), loai: 'lich' },
   skill_absence_undone: { chu: t('Bỏ vắng'), loai: 'vang' },   // PR-BV: xoá "-" đã chốt
+  skill_absence_reset: { chu: t('Lần vắng về 0'), loai: 'vang' },   // N38 L5: migrate PR-MT-VANG-RESET (đã chọn tuần sau lần vắng)
   skill_sit_status: { chu: t('Trạng thái làm bài'), loai: 'lich' }, completion_week: { chu: t('Tuần dự kiến hoàn tất'), loai: 'lich' },
 };
 const SIT: Record<string, string> = { scheduled: t('Theo lịch'), sat: t('Đã làm bài'), absent: t('Vắng'), cancelled: t('Đã huỷ'), required: t('Trong đợt'), skipped: t('Đã bỏ khỏi đợt') };

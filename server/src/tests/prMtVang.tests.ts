@@ -58,6 +58,7 @@ export async function runPrMtVangTests(t: YThucTestKit) {
   const kh: any = await import('../keHoach/keHoachTest.ts');
   const week: any = await import('../platform/week.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const loadMigrate = await import('../migrate/prMtVangReset.ts');
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
     try { return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
@@ -218,6 +219,39 @@ export async function runPrMtVangTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { noShow: false }, TRONG);
     const k = ky(a, 'listening');
     assert(k.planned_period_id === W && k.absence_move_count === 0 && k.sit_status === 'scheduled', JSON.stringify(k));
+  }));
+
+  check('MV-9 · migrate PR-MT-VANG-RESET: dời tay sau lần vắng (trước N38) → lần vắng 0 + nhật ký; chạy lần 2 không đổi; hàng khác giữ; khoá chặn lần sau', () => thu(() => {
+    const mg: any = loadMigrate;
+    const a = luot[0];
+    dung(a);
+    const lich = (k: string, action: string) => conn.prepare(`INSERT INTO attempt_schedule_history (attempt_id, action, field, actor_user_id, created_at)
+      VALUES (?, ?, ?, ?, ?)`).run(a, action, k, QL.userId, new Date().toISOString());
+    lich('writing', 'skill_week_set');   // W: dời tay TRƯỚC lần vắng → không thuộc tập
+    for (const k of ['listening', 'reading', 'writing', 'speaking']) absence.baoVang(QL, a, k, null, TRONG);
+    /* L: dời tay SAU lần vắng như dữ liệu thật trước N38 (số đếm còn 1) · S: Quản lý xếp bài vắng (K4-12) · R: chỉ máy dời → giữ. */
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'listening'`).run(W2, a);
+    lich('listening', 'skill_week_set');
+    lich('speaking', 'skill_week_moved_absence');
+    xoaNho();
+    assert(['listening', 'reading', 'writing', 'speaking'].every((k) => ky(a, k).absence_move_count === 1), 'tiền đề: mọi kỹ năng vắng lần 1');
+    const n = mg.datLaiVangSauDoiTay(conn);
+    const dem = (k: string) => ky(a, k).absence_move_count;
+    assert(n >= 2 && dem('listening') === 0 && dem('speaking') === 0 && dem('reading') === 1 && dem('writing') === 1,
+      `n ${n} · L ${dem('listening')} S ${dem('speaking')} R ${dem('reading')} W ${dem('writing')}`);
+    assert(ky(a, 'listening').planned_period_id === W2 && ky(a, 'listening').sit_status === 'scheduled', 'lịch giữ nguyên');
+    const nk = one(`SELECT * FROM attempt_schedule_history WHERE attempt_id = ? AND field = 'listening' AND action = 'skill_absence_reset'`, a);
+    assert(nk && nk.old_value === '1' && nk.new_value === '0' && nk.actor_user_id === null, `nhật ký: ${JSON.stringify(nk)}`);
+    assert(mg.datLaiVangSauDoiTay(conn) === 0, 'lần 2 không còn hàng nào');
+    assert(dem('reading') === 1 && dem('writing') === 1, 'hàng khác giữ');
+    /* Khoá: lần migrate đầu ghi khoá; dữ liệu khớp dựng lại sau đó không bị đụng (dữ liệu mới đã theo L5). */
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(mg.KHOA_PR_MT_VANG_RESET);
+    mg.migratePrMtVangReset(conn, []);
+    assert(!!one('SELECT 1 FROM demo_config WHERE key = ?', mg.KHOA_PR_MT_VANG_RESET), 'ghi khoá');
+    conn.prepare(`UPDATE attempt_skills SET absence_move_count = 1 WHERE attempt_id = ? AND skill = 'listening'`).run(a);
+    const ap: string[] = [];
+    mg.migratePrMtVangReset(conn, ap);
+    assert(dem('listening') === 1 && !ap.length, 'có khoá thì không làm gì');
   }));
 
   check('MV-8 · emCanXepLai / tóm tắt: kỹ năng huỷ vắng 2 lần không thành "cần xếp lại"', () => thu(() => {
