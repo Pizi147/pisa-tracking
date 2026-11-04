@@ -33,35 +33,53 @@ export function BadgeViec({ tong, children, onClick, title }: { tong: TongBv; ch
   return <span title={title} className={lop}>{dau}{children}</span>;
 }
 
-type TomTatVao = Pick<YThucHocVien, 'nhom' | 'han' | 'hanXem' | 'quaHanNgay' | 'deXuat'>;
+type TomTatVao = Pick<YThucHocVien, 'nhom' | 'han' | 'hanXem' | 'quaHanNgay'> & { deXuat: Pick<NonNullable<YThucHocVien['deXuat']>, 'id' | 'nhan' | 'status' | 'han'> | null };
 
-/** Ô "Cần làm" của một em: badge + dòng hạn (cùng chữ ở hàng em tab lớp). null = không còn việc. */
-export function CanLamEm({ x, homNay, onXem }: { x: TomTatVao; homNay: string; onXem?: (id: number) => void }) {
-  /* Mockup K1 / K3: hạn nằm TRONG badge ("Phải xử lý · hạn 05/11"). */
-  const han = (h: string | null) => h ? ` · ${t('hạn {ngay}', { ngay: ngay(h, homNay) })}` : '';
+const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den}T00:00:00Z`) - Date.parse(`${tu}T00:00:00Z`)) / 86_400_000);
+
+/**
+ * Ô "Cần làm" của một em: badge + hạn (cùng chữ ở hàng em tab lớp). null = không còn việc.
+ * Mặc định hạn nằm TRONG badge ("Phải xử lý · hạn 05/11" — K2 / K3); `hanDuoi` (bảng lớp 1440, K1): badge rồi dòng hạn nhỏ bên dưới.
+ */
+export function CanLamEm({ x, homNay, onXem, hanDuoi = false, laQl = false }: {
+  x: TomTatVao; homNay: string; onXem?: (id: number) => void; hanDuoi?: boolean;
+  /** K4: người duyệt thấy "Đề xuất" (việc của mình), người gửi thấy "Chờ QL duyệt". */
+  laQl?: boolean;
+}) {
+  const o = (bv: ReactNode, h: string | null, duoi?: string | null) => hanDuoi
+    ? <span className="flex flex-col items-start gap-1.5">{bv}{(duoi ?? h) && <span className="text-xs tabular-nums text-slate-500">{duoi ?? t('hạn {ngay}', { ngay: ngay(h!, homNay) })}</span>}</span>
+    : bv;
+  const han = (h: string | null) => !hanDuoi && h ? ` · ${t('hạn {ngay}', { ngay: ngay(h, homNay) })}` : '';
   if (x.deXuat) {
     const dx = x.deXuat;
-    return <BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('QL đã duyệt') : t('Chờ QL duyệt')}{han(dx.han)}</BadgeViec>;
+    return o(<BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('QL đã duyệt') : laQl ? t('Đề xuất') : t('Chờ QL duyệt')}{han(dx.han)}</BadgeViec>,
+      dx.han, dx.han ? (dx.status === 'da_duyet' ? t('thực hiện trước {ngay}', { ngay: ngay(dx.han, homNay) }) : t('duyệt trước {ngay}', { ngay: ngay(dx.han, homNay) })) : null);
   }
   switch (x.nhom) {
-    case 'qua_han': return <BadgeViec tong="qua">{t('Quá hạn {n} ngày', { n: x.quaHanNgay ?? 1 })}{han(x.han ?? x.hanXem)}</BadgeViec>;
-    case 'bat_buoc': return <BadgeViec tong="cho">{t('Phải xử lý')}{han(x.han)}</BadgeViec>;
-    case 'moi': return <BadgeViec tong="xem">{t('Chưa xem')}{han(x.hanXem)}</BadgeViec>;
+    case 'qua_han': return o(<BadgeViec tong="qua">{t('Quá hạn {n} ngày', { n: x.quaHanNgay ?? 1 })}{han(x.han ?? x.hanXem)}</BadgeViec>, x.han ?? x.hanXem);
+    case 'bat_buoc': {
+      const con = x.han ? ngayCach(homNay, x.han) : null;
+      return o(<BadgeViec tong="cho">{t('Phải xử lý')}{han(x.han)}</BadgeViec>, x.han,
+        x.han && con != null && con > 0 ? `${t('hạn {ngay}', { ngay: ngay(x.han, homNay) })} · ${t('còn {n} ngày', { n: con })}` : null);
+    }
+    case 'moi': return o(<BadgeViec tong="xem">{t('Chưa xem')}{han(x.hanXem)}</BadgeViec>, x.hanXem);
     default: return <span className="text-slate-500">—</span>;
   }
 }
 
-/** Ô "Báo PH" — ghi rõ của LẦN xử lý nào (U10.7); bấm được khi người xem ghi kết quả được (TVV / QL). */
-export function BaoPhEm({ b, homNay, onMo }: { b: DongEm['baoPh']; homNay: string; onMo?: () => void }) {
+/** Ô "Báo PH" — ghi rõ của LẦN xử lý nào (U10.7); bấm được khi người xem ghi kết quả được (TVV / QL). `coLan={false}`: nhãn ô đã nói lần (K3). */
+export function BaoPhEm({ b, homNay, onMo, coLan = true }: { b: DongEm['baoPh']; homNay: string; onMo?: () => void; coLan?: boolean }) {
   if (!b) return <span className="text-slate-500">—</span>;
   const mo = b.trangThai === 'mo' && b.coTheGhi ? onMo : undefined;
   const bv = b.trangThai === 'xong' ? <BadgeViec tong="xong">{b.ngayXong ? t('Đã báo {ngay}', { ngay: ngay(b.ngayXong, homNay) }) : t('Đã báo PH')}</BadgeViec>
     : b.trangThai === 'bo' ? <BadgeViec tong="xam">{t('Đã bỏ')}</BadgeViec>
     : <BadgeViec tong={b.quaHan ? 'qua' : 'cho'} onClick={mo} title={mo ? t('Ghi kết quả báo PH') : undefined}>{dich(b.nhanTrangThai)}</BadgeViec>;
   return (
-    <span className="flex flex-col items-start gap-1">
-      <span className="text-xs text-slate-500">{t('Lần')} <b className="font-semibold text-slate-400">{dich(b.nhan)}</b></span>
-      <span className="flex flex-wrap items-center gap-x-2">{bv}{b.trangThai === 'mo' && <span className="text-xs tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}</span>}</span>
+    /* Mockup K1 `.bph`: lần · badge · hạn — ba dòng (hạn đã sửa ghi "đã chỉnh"). */
+    <span className="flex flex-col items-start gap-[5px]">
+      {coLan && <span className="text-xs font-medium text-slate-500">{t('Lần')} <b className="font-semibold text-slate-400">{dich(b.nhan)}</b></span>}
+      {bv}
+      {b.trangThai === 'mo' && <span className="text-xs tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}{b.daChinh ? ` · ${t('đã chỉnh')}` : ''}</span>}
     </span>
   );
 }
@@ -85,7 +103,7 @@ export function TomTatEm({ d, homNay, onBaoPh, onXem, thang }: {
       {!d.canManage && d.gvcn && o(t('Người xử lý'), t('GVCN {ten}', { ten: d.gvcn }))}
       {o(<>{t('Đã tới')}{thang && <NutLuat label={t('Thang xử lý vi phạm')}>{thang}</NutLuat>}</>, d.bacNhan ? dich(d.bacNhan) : <span className="font-medium text-slate-400">{t('chưa có')}</span>)}
       {o(t('Lần này'), dich(d.keTiep.nhan))}
-      {o(d.baoPh ? t('Báo PH · lần {nhan}', { nhan: dich(d.baoPh.nhan) }) : t('Báo PH'), <BaoPhEm b={d.baoPh} homNay={homNay} onMo={onBaoPh} />)}
+      {o(d.baoPh ? t('Báo PH · lần {nhan}', { nhan: dich(d.baoPh.nhan) }) : t('Báo PH'), <BaoPhEm b={d.baoPh} homNay={homNay} onMo={onBaoPh} coLan={false} />)}
     </div>
   );
 }
@@ -94,8 +112,10 @@ export function TomTatEm({ d, homNay, onBaoPh, onXem, thang }: {
  * Danh sách vi phạm chờ (mockup K1 "Vi phạm của lần này", K3): ngày | tên + thẻ (nhóm · người ghi) | thao tác. Bấm tên → mở tại chỗ (mô tả,
  * bằng chứng, Sửa / Xoá, Đã xem một vi phạm). Không badge lặp ở từng dòng — trạng thái nói ở ô Cần làm; chỉ in nhãn khi khác trạng thái chung.
  */
-export function DsViPhamCho({ ds, homNay, moId, onMo, chiTiet, nhanRieng }: {
+export function DsViPhamCho({ ds, homNay, moId, onMo, chiTiet, nhanRieng, nguoiGhi = false }: {
   ds: ViPhamV4[]; homNay: string; moId: number | null; onMo: (id: number) => void; chiTiet: (v: ViPhamV4) => ReactNode;
+  /** Tab lớp (mockup K1): thẻ "… ghi" — cả lớp nhiều người ghi; tab HV (K3) không in. */
+  nguoiGhi?: boolean;
   /** Nhãn cuối dòng khi vi phạm khác trạng thái chung của em (vd một vi phạm đã trong đề xuất). */
   nhanRieng?: (v: ViPhamV4) => ReactNode;
 }) {
@@ -113,6 +133,7 @@ export function DsViPhamCho({ ds, homNay, moId, onMo, chiTiet, nhanRieng }: {
               </button>
               <span className="mt-1 flex flex-wrap gap-1.5">
                 <span className={TAG}>{dich(v.categoryLabel)}</span>
+                {nguoiGhi && v.reportedByName && <span className={TAG}>{t('{ten} ghi', { ten: v.reportedByName })}</span>}
                 {!!v.soTep && <button type="button" className={`${TAG} cursor-pointer appearance-none border-0 hover:text-slate-200`} onClick={() => onMo(v.id)}>{t('{soTep} tệp', { soTep: v.soTep })} ›</button>}
               </span>
             </span>
@@ -141,12 +162,31 @@ export function LanTruoc({ x, homNay, onXem }: { x: Pick<DongEm, 'xuLyGanNhat' |
   return null;
 }
 
+/** Chip lọc Lịch sử (mockup `.lua`): mỗi mục một nút viền riêng, có số; mục chọn viền nhấn + nền nhấn nhạt. */
+export function ChipLoc<K extends string>({ muc, value, onChange, ariaLabel }: { muc: { key: K; nhan: string; so: number }[]; value: K; onChange: (k: K) => void; ariaLabel: string }) {
+  return (
+    <div role="group" aria-label={ariaLabel} className="flex flex-wrap gap-2">
+      {muc.map((m) => {
+        const chon = m.key === value;
+        return (
+          <button key={m.key} type="button" aria-pressed={chon} onClick={() => onChange(m.key)}
+            className={`inline-flex h-9 items-center gap-1 whitespace-nowrap rounded-lg border px-3 text-sm max-sm:h-11 ${chon
+              ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-bold text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]'
+              : 'border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] font-medium text-slate-100'}`}>
+            {m.nhan} <span className="tabular-nums">{m.so}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * BẢNG LỊCH SỬ (mockup K6): ba loại dòng — Đã xem (vi phạm) · Đã xử lý / Đã thu hồi / đang chờ (lần xử lý) — mỗi dòng: Ngày · Loại (badge) ·
  * Nội dung (tên + trường phụ có nhãn) · Ai · lúc nào · thao tác. Vi phạm đã xử lý xem qua "Xem" lần xử lý (Sửa / Thu hồi ở đó).
  * `coTen`: tab lớp (UI-2) thêm cột Học viên. `vuaXem`: dòng vừa "Đã xem" sáng + "vừa xong" (đến từ "Xem lại").
  */
-export type DongLs = { key: string; ngay: string; ten?: string; tong: TongBv; loai: string; kieu: 'xem' | 'xu-ly' | 'thu-hoi' | 'khac';
+export type DongLs = { key: string; ngay: string; ten?: ReactNode; tong: TongBv; loai: string; kieu: 'xem' | 'xu-ly' | 'thu-hoi' | 'khac';
   tieuDe: ReactNode; truong: [string, ReactNode][]; ai: string | null; luc: string | null; vua?: boolean; cuoi?: ReactNode;
   /** Dòng "Đã xem" mở tại chỗ (mô tả, bằng chứng, Sửa / Xoá — người ghi vẫn sửa được sau khi GVCN đã xem). */
   mo?: boolean; onMo?: () => void; chiTiet?: ReactNode };
@@ -154,7 +194,7 @@ export function BangLichSu({ dong, coTen, homNay, rong }: { dong: DongLs[]; coTe
   if (!dong.length) return <>{rong}</>;
   /* Lưới (không <table> — BANG-3). Theo KHUNG (container), không theo màn: panel Công việc 480 px dùng bản hẹp — "Ai · lúc nào" xuống dưới nội dung. */
   /* Lớp viết đủ chữ (Tailwind chỉ sinh CSS cho tên lớp thấy được trong mã). */
-  const cot = coTen ? '[@container(min-width:720px)]:grid-cols-[72px_160px_130px_minmax(0,1fr)_200px_120px]' : '[@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]';
+  const cot = coTen ? '[@container(min-width:720px)]:grid-cols-[90px_200px_130px_minmax(0,1fr)_200px_140px]' : '[@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]';
   const dau = 'text-[13px] font-semibold text-slate-400';
   return (
     <div role="list" aria-label={t('Lịch sử')}>

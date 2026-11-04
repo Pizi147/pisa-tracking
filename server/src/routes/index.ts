@@ -1327,7 +1327,7 @@ api.get('/students/:id/y-thuc', requireAuth, wrap((req) => {
 /** Tab Ý thức của lớp — hai khung (M6): em theo nhóm + dòng thời gian cả lớp. Một request cho cả tab. */
 api.get('/classes/:id/y-thuc', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return bangYThucLop(principalOf(req), pInt(req, 'id'));
+  return bangYThucLop(principalOf(req), pInt(req, 'id'), undefined, qStr(req, 'pham-vi') === 'chuoi' ? 'chuoi' : 'tat-ca');
 }));
 /** OV-13d: chọn nhiều ở tab Ý thức lớp — mọi em đang học + em nào làm được hành động nào (lý do khi không). */
 api.get('/classes/:id/y-thuc/lo', requireAuth, wrap((req) => {

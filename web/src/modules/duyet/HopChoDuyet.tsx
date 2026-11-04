@@ -406,8 +406,8 @@ type MoSan = 'duyet' | 'tu-choi' | 'tra-loi';
 /** PANEL DUYỆT (UI-CON-LAI k3, V8-CV) — một khuôn cho Hộp duyệt và Công việc: loại · tên · em · lớp · chip hạn, thân là thẻ ở dạng panel.
  *  DUYET-QL (mockup v10 #cv): thân cuộn, CHÂN DÍNH "Tiếp: {yêu cầu kế}" · Từ chối… · Duyệt (nút của thẻ vẽ vào chân qua portal); đầu có chip SOS;
  *  "Lịch sử · n" gập cuối thân. `xong` = vừa quyết ở panel: khối "✓ … · Hoàn tác", chân "✓ Đã lưu · Yêu cầu tiếp ›". */
-function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: {
-  yc: TheYeuCauDto; moSan?: MoSan; tiep?: TheYeuCauDto | null; onDong: () => void; onXong: (id: number, chu?: string, huy?: boolean) => void; onThemPa: (caseId: number) => void;
+export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: {
+  yc: TheYeuCauDto; moSan?: MoSan; tiep?: TheYeuCauDto | null; onDong: () => void; onXong: (id: number, chu?: string, huy?: boolean) => void; onThemPa?: (caseId: number) => void;
   xong?: { chu: string; onHoanTac?: () => void; onTiep: (y: TheYeuCauDto) => void };
 }) {
   const [chanEl, setChanEl] = useState<HTMLElement | null>(null);
