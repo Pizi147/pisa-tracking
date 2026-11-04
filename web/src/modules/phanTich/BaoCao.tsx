@@ -5,10 +5,10 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
-import { PhanTram, TheoChiNhanh, ptChu, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
+import { PhanTram, TheoChiNhanh, mauDatMt, tuMau, type TongQuanV5Data } from '../worklist/TongQuanV5.tsx';
 import { DaiChiSo, DauThe, NutXemToanBo, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { tuanLich } from '@shared/domain/index.ts';
 import {
   COT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, rateView, tenMonNgan,
   type BaoCaoKq, type DongKqMt, type KetQuaMtKq,
@@ -23,13 +23,17 @@ import {
 const COT_KQ: readonly CotBang[] = [
   { key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 120 },
   ...COT_KQ_MT.map((c): CotBang => ({ key: c, nhan: NHAN_COT_KQ_MT[c], kieu: 'so', rong: 100 })),
-  { key: 'truoc', nhan: t('So lượt trước'), kieu: 'chu', rong: 160 },
+  { key: 'truoc', nhan: t('So lượt trước · HV'), kieu: 'chu', rong: 160 },
 ];
 const COT_TB: readonly CotBang[] = [
   { key: 'kn', nhan: t('Kỹ năng'), kieu: 'ten', rong: 64 },
-  { key: 'tang', nhan: t('Tăng'), kieu: 'so', rong: 80 }, { key: 'giu', nhan: t('Giữ nguyên'), kieu: 'so', rong: 92 }, { key: 'giam', nhan: t('Giảm'), kieu: 'so', rong: 80 },
+  { key: 'tang', nhan: `↑ ${t('Tăng')}`, kieu: 'so', rong: 80 }, { key: 'giu', nhan: t('Giữ nguyên'), kieu: 'so', rong: 92 }, { key: 'giam', nhan: `↓ ${t('Giảm')}`, kieu: 'so', rong: 80 },
 ];
 const pt = (n: number, mau: number) => (mau ? `${Math.round((100 * n) / mau)} %` : null);
+/** U08-1 (mockup V11 `.m-dat / .m-05 / .m-10 / .m-15 / .m-cd`): màu số theo mức — tiêu đề cột vẫn ghi chữ; số 0 mờ (OSo tự xám). */
+const MAU_KQ_MT: Record<string, string> = { dat: 'text-ok', 'thieu-0.5': 'text-soon', 'thieu-1.0': 'text-kq-thieu10', 'thieu-1.5': 'text-bad', 'chua-du': 'text-dim' };
+/** Nhãn nhóm của dải chỉ số (mockup V11 B1): "Trong kỳ W1 SEP – W2 SEP" │ "Hiện tại". */
+const NHOM = 'text-[13px] font-bold text-dim';
 
 /** V8-PT: thẻ bảng (`.the`) — đầu thẻ `DauThe` (tên 15 / 700 · phụ 13 · ⓘ Cách tính bên phải). */
 function Khoi({ tieuDe, phu, luat, children }: { tieuDe: string; phu?: ReactNode; luat?: ReactNode; children: ReactNode }) {
@@ -54,8 +58,10 @@ export function BaoCao(pv: PhamViPhanTich) {
   if (tq.error) return <ErrorState message={tq.error.message} hint={tq.error.hint} status={tq.error.status} onRetry={tq.reload} />;
   if (!tq.data) return <Skeleton rows={8} />;
   const d = tq.data, b = tq.data.baoCao;
-  /* RA-UI-5: khoảng tuần đã ghi ở bộ lọc ngay trên — ô chỉ số ghi "trong kỳ" như Tổng quan, không lặp "W1 SEP – W2 SEP" ở 4 ô. */
-  const ky = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : t('trong kỳ');
+  /* U08 #1 (mockup V11 B1): hai nhóm có nhãn — "Trong kỳ …" (Đạt MT · Đạt Target thi thật · Thi trong kỳ · PA cải thiện) │ "Hiện tại" (Case có PA);
+     bỏ chữ "· trong kỳ" / "· hiện tại" lặp ở từng ô. */
+  const [tuK, denK] = [tuanLich(pv.khoang.tu), tuanLich(pv.khoang.den)];
+  const nhanKy = pv.khoang.kieu === 'toan-bo' ? t('Toàn bộ') : t('Trong kỳ {ky}', { ky: tuK === denK ? tuK : `${tuK} – ${denK}` });
   const nguon = (o: string) => `/phan-tich/bao-cao/o?${q}&o=${encodeURIComponent(o)}`;
   const nguonCase = `/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong&chuY=1&${q}`;
   const chonCn = (id: number) => { const n = new URLSearchParams(params); n.set('cn', String(id)); setParams(n); };
@@ -64,24 +70,34 @@ export function BaoCao(pv: PhamViPhanTich) {
 
   return (
     <div className="bao-cao space-y-3">
-      <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } }'}</style>
-      {/* V8-PT (mockup B1): dải thẻ chỉ số chung — "tên · trong kỳ", không lặp khoảng tuần (đã ở hàng lọc); ⓘ luật giữ, đứng sau "trong kỳ". */}
-      <div data-hd="tq-tom-tat">
-        <DaiChiSo ds={[
-          { ten: t('Đạt MT'), ky: <>{ky} <NutLuat label={t('Đạt MT')}>{t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}</NutLuat></>,
-            gt: ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt, mau: ft ? tuMau(d.datMt, t('HV')) : t('chỉ Fast Track') },
-          { ten: t('Đạt Target thi thật'), ky, gt: ft ? ptChu(d.thiThat) : chiFt,
-            mau: ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track') },
-          { ten: t('Thi trong kỳ'), gt: <OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />, mau: t('HV có ngày thi') },
-          { ten: t('Case có PA'), ky: t('hiện tại'), gt: <PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={nguonCase} tieuDe={t('Case đang mở')} />,
-            mau: d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null },
-          { ten: t('PA cải thiện'), ky: <>{ky} <NutLuat label={t('PA cải thiện')}>{t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}</NutLuat></>,
-            gt: <PhanTram x={pa} nguon={nguon('pa-co-ket-qua')} tieuDe={t('PA có kết quả trong kỳ')} />, mau: tuMau(pa, t('PA có kết quả')), rong2: true },
-        ]} />
+      {/* U08 (mockup V11 `.bang td` 6px 10px · line-height 1.35): hàng hai bảng gọn như mockup. */}
+      <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } } .bao-cao .bang > tbody > tr > td, .bao-cao .bang > tbody > tr:has([data-phu-odiem]:not(:empty)) > td { height: 52px; padding: 6px 10px; line-height: 1.35; }'}</style>
+      <div data-hd="tq-tom-tat" className="grid gap-3 min-[1100px]:grid-cols-[minmax(0,4fr)_minmax(0,1fr)] print:grid-cols-[minmax(0,4fr)_minmax(0,1fr)]">
+        <div className="grid content-start gap-1.5">
+          <span className={NHOM}>{nhanKy}</span>
+          <DaiChiSo ds={[
+            { ten: <>{t('Đạt MT')} <NutLuat label={t('Đạt MT')}>{t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}</NutLuat></>,
+              gt: ft ? <PhanTram x={d.datMt} nguon={nguon('dat-mt')} tieuDe={t('Đạt MT')} /> : chiFt, mau: ft ? mauDatMt(d.datMt) : t('chỉ Fast Track') },
+            { ten: t('Đạt Target thi thật'),
+              gt: !ft ? chiFt : d.thiThat?.mau ? <span className="tabular-nums">{Math.round((100 * d.thiThat.dat) / d.thiThat.mau)} %</span>
+                : <span className="text-[17px] font-medium text-faint">{t('– chưa có dữ liệu')}</span>,
+              mau: ft ? (d.thiThat?.mau ? tuMau(d.thiThat, t('HV có KQ')) : t('chưa HV nào có KQ')) : t('chỉ Fast Track') },
+            { ten: t('Thi trong kỳ'), gt: <OSo giaTri={d.thiThangNay} tieuDe={t('Thi trong kỳ')} nguon={nguon('thi-dot-nay')} />, mau: t('HV có ngày thi') },
+            { ten: <>{t('PA cải thiện')} <NutLuat label={t('PA cải thiện')}>{t('PA có kết quả trong kỳ mà GV đánh giá cải thiện (gồm một phần).')}</NutLuat></>,
+              gt: <PhanTram x={pa} nguon={nguon('pa-co-ket-qua')} tieuDe={t('PA có kết quả trong kỳ')} />, mau: tuMau(pa, t('PA có kết quả')) },
+          ]} />
+        </div>
+        <div className="grid content-start gap-1.5">
+          <span className={NHOM}>{t('Hiện tại')}</span>
+          <DaiChiSo ds={[
+            { ten: t('Case có PA'), gt: <PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={nguonCase} tieuDe={t('Case đang mở')} />,
+              mau: d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null, rong2: true },
+          ]} />
+        </div>
       </div>
 
       {d.chiNhanh ? <TheoChiNhanh d={d} baoCao onChiNhanh={chonCn} /> : ft && (
-        <div className="grid items-stretch gap-3 min-[1100px]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] print:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="grid items-stretch gap-3 min-[1100px]:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] print:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
           <KetQuaMt api={kq} nguon={nguon} phamVi={`FT ${d.tenChiNhanh ?? ''}`.trim()} />
           {b.tienBo && <TienBo hang={b.tienBo} nguon={nguon} />}
         </div>
@@ -92,7 +108,6 @@ export function BaoCao(pv: PhamViPhanTich) {
 
 /** Kết quả MT (`10` mục 5): hàng MT0 → MT3+ + Thi thật, theo lượt của từng HV trong kỳ; Overall so Target đầu ra của em. Số bấm → panel em của ô. */
 function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; error: any; reload: () => void }; nguon: (o: string) => string; phamVi: string }) {
-  const dienThoai = useDienThoai();
   const luat = t('So điểm Overall của lượt với Target đầu ra của chính em (không phải kỳ vọng MT). Mỗi HV tính ở lượt MT của mình trong kỳ. Bấm số để xem danh sách HV.');
   const oCua = (h: DongKqMt, c: CotBang): ReactNode => {
     if (c.key === 'luot') return <b className="text-slate-100">{NHAN_LUOT_KQ_MT[h.luot]}</b>;
@@ -101,22 +116,23 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
       if (!s.tang && !s.bang && !s.giam) return <span className="text-slate-500">—</span>;
       return (
         <span className="whitespace-nowrap tabular-nums" aria-label={t('Tăng {a} · giữ {b} · giảm {c}', { a: s.tang, b: s.bang, c: s.giam })}>
-          <span className="text-ok">↑ {s.tang}</span> · <span className="text-slate-300">= {s.bang}</span> · <span className="text-bad">↓ {s.giam}</span>
+          <span className={s.tang ? 'font-bold text-ok' : 'text-faint'}>↑ {s.tang}</span> · <span className="text-slate-300">= {s.bang}</span> · <span className={s.giam ? 'font-bold text-bad' : 'text-faint'}>↓ {s.giam}</span>
         </span>
       );
     }
     if (!h.hv || (c.key !== 'chua-du' && !h.mau)) return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
     const n = h.dem[c.key as keyof DongKqMt['dem']];
-    return <OSo giaTri={n} tieuDe={`${NHAN_LUOT_KQ_MT[h.luot]} · ${c.nhan}`} nguon={nguon(`kq-mt:${h.luot}:${c.key}`)} />;
+    return <OSo giaTri={n} tieuDe={`${NHAN_LUOT_KQ_MT[h.luot]} · ${c.nhan}`} nguon={nguon(`kq-mt:${h.luot}:${c.key}`)} className={n ? MAU_KQ_MT[c.key] : ''} />;
   };
-  const phuCua = (h: DongKqMt, c: CotBang) => (c.key === 'luot' ? (h.luot === 'thi' ? t('{n} HV có KQ', { n: h.hv }) : t('{n} HV', { n: h.hv }))
+  /* B16 / B25: % tính trên HV đủ dữ liệu — ghi rõ ở dòng phụ của hàng ("8 HV · 3 đủ dữ liệu") và phụ đề thẻ. */
+  const phuCua = (h: DongKqMt, c: CotBang) => (c.key === 'luot' ? (h.luot === 'thi' ? t('{n} HV có KQ', { n: h.hv }) : h.hv ? t('{n} HV · {m} đủ dữ liệu', { n: h.hv, m: h.mau }) : t('{n} HV', { n: h.hv }))
     : c.key === 'truoc' || c.key === 'chua-du' ? null : pt(h.dem[c.key as keyof DongKqMt['dem']], h.mau));
   return (
     /* V8-PT: "FT · chi nhánh" trùng hàng lọc / đầu trang → chỉ hiện khi in (hàng lọc ẩn trên giấy). */
-    <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<><span className="hidden print:inline">{phamVi} · </span>{t('lượt của từng HV trong kỳ')}</>}>
+    <Khoi tieuDe={t('Kết quả MT')} luat={luat} phu={<><span className="hidden print:inline">{phamVi} · </span>{t('lượt của từng HV trong kỳ · % trên HV đủ dữ liệu')}</>}>
       {api.error ? <ErrorState message={api.error.message} hint={api.error.hint} status={api.error.status} onRetry={api.reload} />
         : !api.data ? <Skeleton rows={5} className="p-4" />
-          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={!api.data.rows.some((h) => h.hv) ? [] : dienThoai ? api.data.rows.filter((h) => h.hv || h.luot === 'thi') : api.data.rows} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu
+          : <Bang ten={t('Kết quả MT')} cot={COT_KQ} hang={!api.data.rows.some((h) => h.hv) ? [] : api.data.rows.filter((h) => h.hv || h.luot === 'thi')} khoa={(h) => h.luot} oCua={oCua} phuCua={phuCua} khung={false} deu
               rong={{ tieuDe: t('Chưa có lượt MT nào trong kỳ'), nut: <NutXemToanBo /> }} />}
     </Khoi>
   );
@@ -127,16 +143,16 @@ function TienBo({ hang, nguon }: { hang: NonNullable<BaoCaoKq['tienBo']>; nguon:
   type H = (typeof hang)[number];
   const so = (h: H, k: string) => (k === 'tang' ? h.tang : k === 'giam' ? h.giam : h.tong - h.tang - h.giam);
   const oCua = (h: H, c: CotBang): ReactNode => {
-    if (c.key === 'kn') return <span className="inline-block min-w-[32px] rounded border px-1.5 text-center text-xs font-bold text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{tenMonNgan(null, h.skill)}</span>;
+    if (c.key === 'kn') return <span className="whitespace-nowrap"><b className="text-slate-100">{tenMonNgan(null, h.skill)}</b> <span className="text-[13px] font-normal text-faint">{t('{n} lượt', { n: h.tong })}</span></span>;
     if (rateView(so(h, c.key), h.tong).kind !== 'value') return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
     /* Ô mở đúng các lượt của ô (`:tang|giu|giam`) — số = dòng panel. */
     return <OSo giaTri={so(h, c.key)} nhan={String(so(h, c.key))} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
-      className={c.key === 'tang' ? 'text-ok' : c.key === 'giam' ? 'text-bad' : ''} />;
+      className={!so(h, c.key) ? '' : c.key === 'tang' ? 'text-ok' : c.key === 'giam' ? 'text-bad' : ''} />;
   };
   return (
     <Khoi tieuDe={t('Tiến bộ theo kỹ năng')} phu={t('so mốc MT trước')}>
       <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu
-        phuCua={(h, c) => (c.key === 'kn' ? t('{n} lượt', { n: h.tong }) : h.tong ? pt(so(h, c.key), h.tong) : null)} khung={false}
+        phuCua={(h, c) => (c.key === 'kn' ? null : h.tong ? pt(so(h, c.key), h.tong) : null)} khung={false}
         rong={{ tieuDe: t('Chưa có lượt nào có mốc MT trước trong kỳ'), nut: <NutXemToanBo /> }} />
     </Khoi>
   );

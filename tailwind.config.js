@@ -33,7 +33,7 @@ export default {
       boxShadow: { lg: 'var(--bong-noi)', xl: 'var(--bong-noi)', '2xl': 'var(--bong-noi)' },
       colors: {
         // NEN-TYPO-MAU: kết quả điểm — chỉ tô chính con số / ký hiệu ✓ ✗ (`text-kq-vuot`), không nền.
-        'kq-vuot': v('kq-vuot'), 'kq-bang': v('kq-bang'), 'kq-duoi': v('kq-duoi'),
+        'kq-vuot': v('kq-vuot'), 'kq-bang': v('kq-bang'), 'kq-duoi': v('kq-duoi'), 'kq-thieu10': v('kq-thieu10'),
         ok: nghia('ok'), bad: nghia('bad'), late: nghia('late'), soon: nghia('soon'),
         doing: nghia('doing'), done: nghia('done'), muted: nghia('muted'),
         dat: nghia('dat'),

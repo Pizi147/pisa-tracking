@@ -179,7 +179,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     const v = row.o[col.khoa] ?? 0;
     if (v <= 0) return <span className="tabular-nums font-medium text-faint">0</span>;
     const nguon = `/phan-tich/tong-hop/o?${query}&khoa=${encodeURIComponent(row.khoa)}&cot=${encodeURIComponent(col.khoa)}`;
-    return <OSo giaTri={v} nguon={nguon} vung={vung} className={lop} nhan={nhan} tieuDe={`${col.nhomCon ? `${dich(NHAN_NHOM_CON[col.nhomCon])} · ` : ''}${dich(col.nhan(ct))} · ${row.nhan}`} />;
+    return <OSo giaTri={v} nguon={nguon} vung={vung} className={lop} nhan={nhan} tieuDe={`${col.nhomCon ? `${dich(NHAN_NHOM_CON[col.nhomCon])} · ` : ''}${dich(col.nhan(ct))} · ${row.khoa === 'tong' && data ? demTheo(theo, data.hang.length) : row.nhan}`} />;   /* U08-2: ô Tổng → "SOS 2 · 2 tuần" */
   };
   const oCell = (row: DongTongHop, col: CotTongHop) => {
     if (oKhongApDung(col, row.coDot)) return <span className="text-faint" title={t('Dòng này không có bài loại này')}>—</span>;

@@ -96,7 +96,7 @@ export function SosDem({ muc, o }: { muc: readonly number[]; o: (i: number, n: n
 }
 export const tuMau = (x: TyLeV5 | null, donVi: string) => (x && x.mau ? `${x.dat}/${x.mau} ${donVi}` : null);
 /** U09 #5 (B01, mockup v11): Đạt MT "26/36 HV · 8 chưa đủ dữ liệu" — không giấu em ngoài mẫu. */
-const mauDatMt = (x: (TyLeV5 & { chuaDu: number }) | null) => (!x ? null : <>
+export const mauDatMt = (x: (TyLeV5 & { chuaDu: number }) | null) => (!x ? null : <>
   {x.mau ? `${x.dat}/${x.mau} ${t('HV')}` : null}{x.mau && x.chuaDu ? ' · ' : null}{x.chuaDu ? <><b className="font-semibold text-dim">{x.chuaDu}</b> {t('chưa đủ dữ liệu')}</> : null}
 </>);
 

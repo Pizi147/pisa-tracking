@@ -9,11 +9,12 @@ import { badRequest, forbidden } from '../util.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
-import { entryBandsOf, loadBundle, type AttemptBundle } from '../fasttrack/attempts.ts';
+import { entryBandsOf, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
 import { expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
 import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
 import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { mockTrongKhoang } from './ketQuaThi.ts';
 import { CASE_THAT, XU_LY_COT_SQL, xuLyCuaDong } from '../cases/sosState.ts';
 
 /**
@@ -317,7 +318,7 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
 export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: string }):
-  { n: number; tieuDe: string; rows: MetricRow[] } {
+  { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: boolean; cachTinh?: string | null; chiNhanh?: string | null } {
   const cotDef = (cotSoLieu(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
   if (!cotDef) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const r = tinh(p, f);
@@ -335,6 +336,48 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
   return {
     n: ids.length,
     tieuDe: `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`,
-    rows: rowsFor(cotDef.donVi, ids),
+    rows: ganDiemLuot(p, cotDef.donVi, f.ct, rowsFor(cotDef.donVi, ids)),
+    /* U08-2: đầu panel bảng lượt — tên chi nhánh (web ghép "· Fast Track · dữ liệu đến dd/mm") + khối Cách tính (chữ gợi ý của cột, web dịch). */
+    ...(cotDef.donVi === 'dot-test' && f.ct === 'ft' ? {
+      bangLuot: true, cachTinh: cotDef.goiY ?? null,
+      chiNhanh: f.branchId ? (db().prepare('SELECT name FROM branches WHERE id = ?').get(f.branchId) as any)?.name ?? null : null,
+    } : {}),
   };
+}
+
+/** U08-2: một ô điểm của bảng lượt — band + so kỳ vọng của lượt (`resultOf`, cùng bộ máy chấm). */
+export type ODiemLuot = { v: number; kq: 'vuot' | 'bang' | 'duoi' | null } | null;
+export type DongLuotDiem = { studentId: number; ten: string; classId: number | null; lop: string; mt: number; tuan: string; kn: Record<'l' | 'r' | 'w1' | 'w2' | 's', ODiemLuot> };
+const KN_BANG = { l: 'listening', r: 'reading', w1: 'writing1', w2: 'writing2', s: 'speaking' } as const;
+
+/**
+ * U08-2 (mockup V11 A2, PTA chốt 05/11 làm BẢNG): dòng LƯỢT của panel Test + SOS (FT) kèm điểm L R W1 W2 S của CHÍNH lượt — panel 720 vẽ bảng
+ * Học viên · Lớp · MT · L R W1 W2 S. Chỉ chạy khi MỞ panel: một câu lượt theo id + điểm / lịch của các lượt đó (`mockTrongKhoang` với `luot` sẵn,
+ * không nạp Case; `loadBundle` dùng lại điểm đã nhớ trong request).
+ */
+function ganDiemLuot(p: Principal, donVi: string, ct: ChuongTrinh, rows: MetricRow[]): MetricRow[] {
+  if (donVi !== 'dot-test' || ct !== 'ft' || !rows.length) return rows;
+  const ph = rows.map(() => '?').join(',');
+  const luot = luotTrongKhoang(`a.id IN (${ph})`, rows.map((r) => r.id));
+  const mock = new Map(mockTrongKhoang(p, { tu: '', den: '' }, { luot, boCase: true }).map((d) => [d.attemptId, d]));
+  const bundle = loadBundle(luot.filter((a) => mock.has(a.id)).map((a) => a.id), { boCase: true });
+  const theoId = new Map(luot.map((a) => [a.id as number, a]));
+  return rows.map((r) => {
+    const d = mock.get(r.id), a = theoId.get(r.id);
+    if (!d || !a) return r;
+    const kq = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
+    const bands = entryBandsOf(bundle.scores.get(a.id) ?? []);
+    /* Kỹ năng: kết luận của bộ máy chấm (`verdicts`); W1 · W2 (verdict gộp W) so thẳng band với kỳ vọng của lượt — cùng luật cột "Dưới kỳ vọng · W1 / W2". */
+    const o = (k: string): ODiemLuot => {
+      const v = kq.verdicts.find((x) => x.skill === k);
+      const band = v ? v.band : bands[k as keyof typeof bands] ?? null;
+      if (band === null || band === undefined) return null;
+      const exp = kq.expectation;
+      if (v) return { v: band, kq: v.passed === false ? 'duoi' : v.passed === null ? null : exp !== null && band > exp ? 'vuot' : 'bang' };
+      return { v: band, kq: exp === null ? null : band < exp ? 'duoi' : band > exp ? 'vuot' : 'bang' };
+    };
+    const luotDiem: DongLuotDiem = { studentId: d.studentId, ten: d.ten, classId: d.classId, lop: d.lop, mt: d.mt, tuan: d.tuan,
+      kn: { l: o(KN_BANG.l), r: o(KN_BANG.r), w1: o(KN_BANG.w1), w2: o(KN_BANG.w2), s: o(KN_BANG.s) } };
+    return { ...r, luotDiem } as MetricRow;
+  });
 }
