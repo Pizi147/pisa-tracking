@@ -12,7 +12,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiChiSo, DauThe, DINH_TRAI, NutXemToanBo, NutXuat, OChon, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, type ChiSo } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { dich, t } from '@shared/i18n/index.ts';
+import { NGON_NGU, dich, t } from '@shared/i18n/index.ts';
 import {
   CHUONG_TRINH_LABEL, GOI_Y_XU_LY, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU,
   NHAN_NHOM_CON, bangXuatTongHop, cotSoLieu, cotTheoDuLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhanKhoang, nhomCotLabel, nhomCotNhanNgan, oKhongApDung,
@@ -96,7 +96,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   qs.set('theo', theo);
   const query = qs.toString();
   const { data, loading, error, reload } = useApi<TongHopKetQua>(`/phan-tich/tong-hop?${query}`, [query]);
-  const pt = usePhanTrang(data?.hang.length ?? 0, query, THEO_DONG_DANH_TU[theo]);
+  const pt = usePhanTrang(data?.hang.length ?? 0, query, dich(THEO_DONG_DANH_TU[theo]));
 
   useEffect(() => {
     if (!data || data.theo !== theo || daMoSan.current === theo) return;
@@ -166,7 +166,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     const aoa = bangXuatTongHop(data, cotHien, moTa);
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Tổng hợp');
+    XLSX.utils.book_append_sheet(wb, ws, NGON_NGU === 'en' ? 'Summary' : 'Tổng hợp');   // khoá 'Tổng hợp' = Integrated (tên kỹ năng)
     const ten = ngay(demoDate).split('/').join('-');
     XLSX.writeFile(wb, `${ct === 'thuong' ? 'tong-hop-test' : 'tong-hop-test-sos'}-${ten}.xlsx`);   // D8: lớp thường không chữ SOS
   }

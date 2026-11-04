@@ -16,7 +16,7 @@ export const HD_QL: HuongDan = {
   viec: [
     {
       id: 'ql-sang', ten: 'Tổng quan + Chờ duyệt mỗi sáng', khi: 'mỗi ngày',
-      buoc: ['Mở <b>Tổng quan</b>: dải chỉ số — bấm số mở danh sách chỉ đọc.',
+      buoc: ['Mở <b>Tổng quan</b>: dải chỉ số — bấm số mở danh sách ngay tại trang.',
         '<b>Chờ bạn duyệt</b> (cột phải): bấm dòng mở panel <b>Duyệt / Từ chối</b>; <b>Hộp duyệt ›</b> xem hết.',
         'Menu <b>Công việc</b>: một danh sách, <b>Chờ bạn duyệt</b> ở đầu; số trên menu = thẻ cần bạn quyết.'],
       chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' },
@@ -57,7 +57,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Đạt MT</b> · <b>Case có PA</b> · <b>Chờ duyệt</b> · <b>Thi tháng này</b>.', 'Bấm số mở danh sách chỉ đọc; thống kê theo kỳ ở <b>Phân tích</b>.'],
+        { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Đạt MT</b> · <b>Case có PA</b> · <b>Chờ duyệt</b> · <b>Thi tháng này</b>.', 'Bấm số mở danh sách ngay tại trang; thống kê theo kỳ ở <b>Phân tích</b>.'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
         { id: 'ql-tq-can-xu-ly', ten: 'Chờ bạn duyệt · Điều hướng', buoc: ['<b>Chờ bạn duyệt</b>: bấm dòng mở panel duyệt; <b>Hộp duyệt ›</b> xem hết.', '<b>Điều hướng</b>: link sang danh sách đã lọc, Công việc, Lịch thi, Báo cáo.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' } },
@@ -69,7 +69,7 @@ export const HD_QL: HuongDan = {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
       muc: [{ id: 'ql-pt-goc', ten: 'Sáu tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Phân tích GV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', '<b>Báo cáo HV</b> (mặc định): 5 số như Tổng quan, <b>Kết quả MT</b> (MT0 → MT3+ · Thi thật), <b>Tiến bộ theo kỹ năng</b>; <b>In</b> ra A4 ngang.', '<b>Phân tích GV</b>: một bảng <b>Gọn</b> / <b>Đầy đủ</b> — Hành chính | Học thuật, bấm số mở danh sách.'],
         chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
-      { id: 'ql-pt-thoi-gian', ten: 'Khoảng thời gian', buoc: ['<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.', 'Bảng dài: 10 dòng một trang, chọn 20 / 50 ở đầu hoặc cuối bảng.'],
+      { id: 'ql-pt-thoi-gian', ten: 'Khoảng thời gian', buoc: ['<b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.', 'Bảng dài: 10 dòng một trang, chọn 20 / 50 ở đầu hoặc cuối bảng.'],
         chi: { hd: 'pt-thoi-gian', duong: '/phan-tich', chu: 'Đổi khoảng cho mọi tab ở đây.' } }],
     },
     themMan('hoc-vien',

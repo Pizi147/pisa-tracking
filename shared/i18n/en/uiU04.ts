@@ -6,7 +6,7 @@ export const EN_UI_U04 = {
   'điểm thành phần': 'criteria scores',
   'câu': 'correct',
   'Ý thức · {ten}': 'Conduct · {ten}',
-  'Vi phạm chờ': 'Pending violations',
+  'Vi phạm chờ': 'Pending incidents',
   'Đã tới': 'Reached',
   'Lần này': 'This time',
   'lần {lan}': 'for {lan}',

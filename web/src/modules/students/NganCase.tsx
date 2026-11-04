@@ -23,7 +23,7 @@ import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { KhoaNho } from '../cases/FormPa.tsx';
 import { DoiNguoiPhuTrach } from '../cases/DoiNguoiPhuTrach.tsx';
-import { dich, t } from '@shared/i18n/index.ts';
+import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 export type { ViewCase };
 
@@ -205,7 +205,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
           tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); reload(); onChanged?.(); kyNangTiep.di(); } } : undefined} chuTiep={t('Lưu · kỹ năng tiếp ›')}
           em={em} ngCanh={[tenLoai, data.categoryLabel].filter(Boolean).join(' · ')}
           boiCanh={[
-            [t('Phương án'), [iv.description || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ')],
+            [t('Phương án'), [dichDu(iv.description) || tenLoai, iv.performer, iv.mocChu].filter(Boolean).join(' · ')],
             [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(truoc.outcome))}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
             nguyenNhan,
           ]}

@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { canDich } from '@shared/domain/index.ts';
-import { NGON_NGU, t } from '@shared/i18n/index.ts';
+import { NGON_NGU, dichDu, t } from '@shared/i18n/index.ts';
 import { api } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 
@@ -38,7 +38,9 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
   const khoaHienTai = useRef(khoa);
   useEffect(() => { khoaHienTai.current = khoa; setXemDich(false); setDang(false); setLoi(null); }, [khoa]);
 
-  if (!nguon || !session?.dichBat || !canDich(goc, NGON_NGU)) return anGoc ? null : <>{goc}</>;
+  /* DON-CHU: chữ hệ thống sinh đã lưu (mô tả PA quy chế…) từ điển dịch trọn câu → in bản dịch, không cần nút Dịch. */
+  const tuDien = dichDu(goc);
+  if (tuDien !== goc || !nguon || !session?.dichBat || !canDich(goc, NGON_NGU)) return anGoc ? null : <>{tuDien}</>;
   const ban = daDich.get(khoa);
 
   const goi = async () => {

@@ -311,9 +311,12 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   );
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   /* AUDIT-LOI (PTA 03/11): nút Đóng / Huỷ ở chân gọi đúng `onDong` (mặc định, hoặc nơi gọi truyền lại chính hàm đó) → đi đường `dong` như ✕ / Esc:
-     đang có chữ thì hộp "Bỏ chữ, đóng". Nơi gọi tự truyền hàm khác (vd `dongSauKhiLuu` của bàn giao) tự lo, giữ nguyên. */
+     đang có chữ thì hộp "Bỏ chữ, đóng". DON-CHU: gọi đúng hàm của ‹ Quay lại (vd Sửa công việc: Huỷ = về việc) → đi đường `veLai` như ‹.
+     Nơi gọi tự truyền hàm khác (vd `dongSauKhiLuu` của bàn giao — chờ lưu xong, báo ô chưa lưu) tự lo, giữ nguyên. */
   const huyGoc = chan?.huy === null ? null : chan?.huy ?? { onClick: onDong };
-  const huy = huyGoc && huyGoc.onClick === onDong ? { ...huyGoc, onClick: dong } : huyGoc;
+  const huy = !huyGoc ? huyGoc
+    : huyGoc.onClick === onDong ? { ...huyGoc, onClick: dong }
+    : lui && huyGoc.onClick === lui.onClick ? { ...huyGoc, onClick: veLai } : huyGoc;
   useGiuFocus(khung, !taiCho);
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới

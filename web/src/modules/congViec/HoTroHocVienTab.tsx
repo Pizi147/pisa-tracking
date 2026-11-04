@@ -34,7 +34,7 @@ import {
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type NhomViec as MaNhomViec, demViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, demNguoiViec, khopNguoiViec, trongKhoiHomNay, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
-import { dich, t } from '@shared/i18n/index.ts';
+import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 type Work = {
   summary: { total: number; overdue: number; today: number; mine: number };
@@ -630,7 +630,7 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
             [t('Phương án'), iv ? <>
               <span className="flex flex-wrap items-center gap-1.5"><b className="font-semibold">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</b>
                 {[iv.performer, iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).map((x: string) => <TheMuc key={x}>{x}</TheMuc>)}</span>
-              {iv.description && <div className="mt-1.5"><Trich>{iv.description}</Trich></div>}
+              {iv.description && <div className="mt-1.5"><Trich>{dichDu(iv.description)}</Trich></div>}
             </> : null],
             [t('Tới đâu'), data?.trangThaiV4?.chu ? dich(data.trangThaiV4.chu) : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
