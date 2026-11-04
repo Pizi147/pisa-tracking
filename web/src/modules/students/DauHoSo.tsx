@@ -210,9 +210,10 @@ export function DaiChoDuyet({ studentId, homNay, onDoi, onThemPa }: {
     <section aria-label={t('Yêu cầu chờ bạn duyệt')} className="rounded-[10px] bg-muted-bg">
       <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
         className="flex w-full flex-wrap items-center gap-x-2.5 gap-y-1 border-0 bg-transparent px-3 py-[9px] text-left text-[13px] text-slate-100">
-        <span className="whitespace-nowrap text-[12px] font-bold  text-muted">{t('Chờ duyệt')}</span>
-        <span><b className="font-semibold">{t('{n} yêu cầu chờ bạn duyệt', { n: ds.length })}</b>
-          {quaHan > 0 && <span className="font-semibold text-bad"> · {t('{n} quá hạn', { n: quaHan })}</span>}</span>
+        {/* CD-GON (M3, M5): "Chờ duyệt" + "n yêu cầu chờ bạn duyệt" nói hai lần → một tên "Chờ bạn duyệt" (như Công việc) + số + ⚠ quá hạn. */}
+        <span className="whitespace-nowrap text-[13px] font-semibold text-slate-100">{t('Chờ bạn duyệt')}</span>
+        <span className="text-dim">{t('{n} yêu cầu', { n: ds.length })}
+          {quaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: quaHan })}</span>}</span>
         <span className="text-muted"><IconGap mo={mo} /></span>
       </button>
       {mo && (

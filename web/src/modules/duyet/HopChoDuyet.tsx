@@ -121,8 +121,6 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
   const nHet = loaiChon ? chonHet(dsChonHet, loaiChon).size : 0;
   const biCatTran = !!loaiChon && ds.filter((x) => x.loai === loaiChon && x.hangLoat && x.trangThai === 'cho').length > TRAN_HANG_LOAT;
   const choHangLoat = xem === 'cho';
-  /* Gợi ý một lần: có ≥ 2 thẻ cùng loại hàng loạt mà chưa chọn gì. */
-  const coCapHangLoat = choHangLoat && !chon.size && ds.some((a, i) => a.hangLoat && ds.some((b, j) => j !== i && b.loai === a.loai));
   const [ngan, setNgan] = useState<number | null>(null);
   /* V8-CV: nút của dòng mở panel với ô sẵn (Duyệt… / Từ chối… / Trả lời…); quyết xong ở panel → thẻ kết quả "✓ … · Yêu cầu tiếp ›" (V12). */
   const [moSan, setMoSan] = useState<{ id: number; o: MoSan } | null>(null);
@@ -269,8 +267,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
           </button>
         )}
       </div>
-      {xem !== 'da-xu-ly' && ds.length > 1 && <p className="m-0 text-[12px] text-slate-400">{t('{n} đề xuất · quá hạn trước → hạn gần nhất', { n: ds.length })}</p>}
-      {coCapHangLoat && <p className="m-0 text-[12px] text-slate-400">{t('Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.')}</p>}
+      {/* CD-GON (M3, M4): bỏ '12 đề xuất · quá hạn trước → hạn gần nhất' (số đã ở ô Chờ duyệt, thứ tự tự thấy) và câu hướng dẫn ô tích (vào title ô tích). */}
       {theLac && (
         <p role="status" className="m-0 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-slate-300"
           style={{ borderColor: 'var(--line)' }}>
@@ -309,7 +306,7 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
                   onClick={() => boChuRoi(() => moThe(null))}>{t('‹ Chờ duyệt')}</button>
                 <PanelDuyet key={theMo.id} yc={theMo} tiep={tiepSau(theMo.id)} onDong={() => moThe(null)} onXong={xongPanel} onThemPa={setNgan} />
               </>
-            ) : <Card><Empty title={t('Chọn một đề xuất bên trái để xem và quyết')} /></Card>}
+            ) : <Card><Empty title={t('Chọn một yêu cầu ở danh sách.')} /></Card>}
           </div>
         </div>
       )}
@@ -597,39 +594,50 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
   );
 }
 
-/** UI-CON-LAI k3: MỘT dòng gọn của Hộp duyệt — loại · hạn (chữ, không chỉ màu) / việc · em · lớp / dòng đầu của lý do. Bấm = mở panel duyệt. */
+/** UI-CON-LAI k3 → CD-GON: MỘT dòng gọn của Hộp duyệt (hai hàng: em · lớp · hạn / loại · yêu cầu · lượt · người). Bấm = mở panel duyệt. */
 function DongYeuCau({ yc, dang, onMo, chon }: {
   yc: TheYeuCauDto; dang: boolean; onMo: () => void; chon: { checked: boolean; onChange: (v: boolean) => void } | null;
 }) {
   const { ngan } = useNgayNghiepVu();
   const cho = yc.trangThai === 'cho';
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
-  const tieuDeDu = [dich(yc.tieuDe), yc.hocVien, yc.lop].filter(Boolean).join(' · ');
-  /* CV-CHO-DUYET-375 (mockup V5 `con-lai.html` §3 `.the-duyet`, luật hình ảnh 28/10): đệm 12 / 16, nhãn loại 12 / 700 mờ (không IN HOA — luật K-CHU-3), chip hạn `ChipHan` (mẫu V7 cong-viec-2)
-     (badge tiến độ `.bd-td`) bên phải, tiêu đề 14 / 700 cả tên em · lớp, dòng phụ 12 mờ; cách dòng 4 px. */
+  /*
+   * CD-GON (M1, M3, M4, M10 — cùng dáng dòng yêu cầu ở Công việc v12 / Tổng quan #937): HAI hàng thay ba.
+   *   ① tên em 15 / 600 (đậm duy nhất) · lớp 13 mờ · bên phải hạn = viên theo mức (đã xử lý: nhãn trạng thái + ngày)
+   *   ② loại = chip VIỀN · tên yêu cầu 14 / 500 · lượt = chip nhạt · người gửi = chữ mờ + biểu tượng người
+   * Dòng lý do ("X đề xuất 14/09: …") không thành hàng — rê chuột (`title`) hoặc bấm dòng → panel đọc đủ. Không ghép "việc · em · lớp".
+   */
+  const ten = yc.hocVien ?? yc.lop;
   return (
-    <li className={`flex items-start gap-2 border-b px-4 py-3 last:border-b-0 ${dang ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : 'bam'}`}
+    <li className={`flex items-start gap-2 border-b px-4 py-2.5 last:border-b-0 ${dang ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : 'bam'}`}
       style={{ borderColor: 'var(--line)' }}>
       {chon && (
-        <label className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
+        <label title={t('Đánh dấu ô ở thẻ để duyệt nhiều cùng loại.')} className="relative mt-1 inline-flex shrink-0 cursor-pointer max-sm:after:absolute max-sm:after:left-1/2 max-sm:after:top-1/2 max-sm:after:h-11 max-sm:after:w-11 max-sm:after:-translate-x-1/2 max-sm:after:-translate-y-1/2 max-sm:after:content-['']">
           <input type="checkbox" className="h-4 w-4 accent-[color:var(--accent)]" checked={chon.checked}
             onChange={(e) => chon.onChange(e.target.checked)} aria-label={t('Chọn: {tieuDe}', { tieuDe: dich(yc.tieuDe) })} />
         </label>
       )}
-      <button type="button" className="min-h-[44px] min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left sm:min-h-0" aria-current={dang || undefined} onClick={onMo}>
+      {/* M10: dòng không có ô tích vẫn giữ rãnh 16 px — tên em mọi dòng thẳng một cột. */}
+      {!chon && <span aria-hidden className="w-4 shrink-0" />}
+      <button type="button" className="grid min-h-[44px] min-w-0 flex-1 cursor-pointer gap-1 border-0 bg-transparent p-0 text-left sm:min-h-0" aria-current={dang || undefined} onClick={onMo}
+        title={yc.dong.map((d) => dich(d)).join('\n') || undefined}>
         <span className="flex min-h-[22px] items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-[12px] font-bold text-slate-400">{dich(yc.nhanPhanLoai)}</span>
-          {cho ? <span className="shrink-0"><ChipHan loai="duyet" han={yc.hanDuyet} /></span>
-            : <span className="flex shrink-0 items-center gap-1.5"><NhanTrangThai t={tt.t} />{yc.xuLyLuc && <span className="text-[12px] text-slate-400">{ngan(yc.xuLyLuc)}</span>}</span>}
+          <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+            {ten && <b className="text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</b>}
+            {yc.hocVien && yc.lop && <span className="whitespace-nowrap text-[13px] text-dim">{yc.lop}</span>}
+          </span>
+          {cho ? <ChipHan vien loai="duyet" han={yc.hanDuyet} />
+            : <span className="flex shrink-0 items-center gap-1.5"><NhanTrangThai t={tt.t} />{yc.xuLyLuc && <span className="text-[12px] text-dim">{ngan(yc.xuLyLuc)}</span>}</span>}
         </span>
-        {/* Điện thoại: xuống dòng (như #647 / #649), không cắt; từ `sm` một dòng `truncate` + `title` đủ chữ. Mã lớp không ngắt giữa ("MB FT 101"),
-            "·" dính chữ trước (không đứng đầu dòng); tên em dài vẫn xuống dòng, không tràn khung. */}
-        <b className="mt-1 block break-words text-sm font-bold text-slate-100 sm:truncate" title={tieuDeDu}>
-          {dich(yc.tieuDe)}{[yc.hocVien, yc.lop].filter(Boolean).map((x, i) => (
-            <span key={i}>{'\u00a0· '}<span className={x === yc.lop ? 'whitespace-nowrap' : undefined}>{x}</span></span>
-          ))}
-        </b>
-        {yc.dong[0] && <span className="mt-1 block break-words text-[12px] text-slate-400 sm:truncate" title={dich(yc.dong[0])}>{dich(yc.dong[0])}</span>}
+        <span className="flex min-w-0 items-center justify-between gap-2">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <ThePhu vien={[dich(yc.nhanPhanLoai)]} ds={[]} />
+            <span className="min-w-0 text-[14px] font-medium leading-snug text-[color:var(--text)]">{dich(yc.tieuDe)}</span>
+            {yc.phu && <ThePhu ds={[dich(yc.phu)]} />}
+          </span>
+          {/* M8: 375 không đủ chỗ cột người — người gửi xem trong panel. */}
+          {yc.nguoiXin && <span className="max-w-[40%] shrink-0 max-sm:hidden"><NguoiGiu ten={yc.nguoiXin} /></span>}
+        </span>
       </button>
     </li>
   );
