@@ -17,7 +17,7 @@ import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MoiVao } from './DaiChuyenLop.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, duongHoSoHocVien, khoaBai, locCanHoTro, mondayOfDate, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, duongHoSoHocVien, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -184,7 +184,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                     {(lu?.ratios ? Object.keys(lu.ratios) : mon).map((k) => (   /* P13: môn của chính lượt */
                       <span key={k} className="whitespace-nowrap">
                         <abbr className="text-slate-500 no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr>{' '}
-                        <ODiemThuong o={lu?.ratios?.[k] ?? null} tuan={lu?.tuanMon?.[k] ?? null} homNay={homNay} />
+                        <ODiemThuong o={lu?.ratios?.[k] ?? null} />
                       </span>
                     ))}
                     {cotPhu(b.kind).includes('%') && (
@@ -255,7 +255,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
                 return [
                   ...monCua(b.kind).map((k) => (
                     <td key={`${b.kind}-${k}`} className="td text-center tabular-nums">
-                      <ODiemThuong o={lu?.ratios?.[k] ?? null} tuan={lu?.tuanMon?.[k] ?? null} homNay={homNay} />
+                      <ODiemThuong o={lu?.ratios?.[k] ?? null} />
                     </td>
                   )),
                   ...(cotPhu(b.kind).includes('%') ? [(
@@ -337,16 +337,11 @@ function OLoTrinh({ lt, homNay }: { lt: LoTrinhChot | null; homNay: string }) {
   );
 }
 
-function ODiemThuong({ o, tuan, homNay }: { o: ODiem | null; tuan: string | null; homNay: string }) {
+function ODiemThuong({ o }: { o: ODiem | null }) {
   if (o && o.score !== null && o.total !== null) {
     /* Chủ SP 04/11 (theo U03): "✓ / ✗ 14/20" — một mẫu ô điểm `ODiem` (dấu + màu, không chỉ màu). */
     return <ODiem kieu="ti-le" so={String(o.score)} tong={o.total} kq={o.outcome === 'pass' ? 'vuot' : o.outcome === 'fail' ? 'duoi' : null} />;
   }
-  if (tuan) {
-    /* Tuần thi đã QUA mà vẫn chưa có điểm là một dạng quá hạn nhập điểm — khác với tuần chưa tới lịch. */
-    const daQua = tuan < mondayOfDate(homNay);
-    if (daQua) return <span className="text-xs text-amber-200" title={t('Tuần Test đã qua nhưng chưa nhập điểm')}>{t('Chưa có điểm')}</span>;
-    return <span className="text-xs text-slate-500" title={t('Tuần Test môn này')}>{tuanLich(tuan, homNay)}</span>;
-  }
+  /* HSL-GON (chủ SP 05/11): chưa có điểm → "–" (không ghi tuần Test / "Chưa có điểm" trong ô) — lịch Test và bài chưa nhập chỉ ở màn Test / Công việc. */
   return <span className="text-faint">–</span>;   // audit P3-1: "–" = không có, ≥ 4.5:1
 }

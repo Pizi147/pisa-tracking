@@ -248,7 +248,15 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(bang.length > 100 && !/attemptStatusLabel\(/.test(bang) && !bang.includes('Hồ sơ đợt ›') && /<KetQuaDot|<KetQuaMt/.test(bang), 'IeltsAttempts');   // U02 (UA-Q4): `KetQuaMt` — đạt / SOS gọn, còn lại `KetQuaDot`
     // PR-U12: nhãn tách ra NhanDot, dùng chung với bảng lớp thường
     const nhan = hs.slice(hs.indexOf('function NhanDot'), hs.indexOf('function IeltsAttempts'));
-    assert(/doiKyNang/.test(nhan) && /huyPhan/.test(nhan) && /<NhanDot a=\{a\}/.test(bang) && /<Link/.test(bang), 'nhãn dời/huỷ phần, MT là liên kết');
+    /* HSL-GON (chủ SP 05/11): ghi chú lịch ("dời S", "huỷ phần", "vắng W2 SEP", "Chưa tới tuần") chỉ ở màn Test — hồ sơ HV giữ "đã huỷ" (trạng thái cả lượt). */
+    assert(!/a\.doiKyNang|a\.huyPhan/.test(nhan) && /cancelled/.test(nhan) && /<NhanDot a=\{a\}/.test(bang) && /<Link/.test(bang), 'hồ sơ HV: không nhãn dời / huỷ phần; giữ đã huỷ; MT là liên kết');
+    assert(!hs.includes("t('Chưa tới tuần')"), 'hồ sơ HV còn ô "Chưa tới tuần"');
+    const hanhTrinh = docSach('web/src/modules/students/HanhTrinhKyNang.tsx');
+    assert(!hanhTrinh.includes('chuDoiVang') && !hanhTrinh.includes("t('dời {mon}'"), 'Hành trình / thẻ kỹ năng còn ghi chú vắng / dời');
+    for (const f of ['web/src/modules/classes/BangHoSoLop.tsx', 'web/src/modules/classes/BangDiemLopThuong.tsx']) {
+      const s = docSach(f);
+      assert(!s.includes('chuDoiVang') && !s.includes("t('Tuần Test môn này')") && !s.includes("t('Chưa có điểm')}</span>"), `${f}: ô điểm hồ sơ lớp còn ghi chú lịch`);
+    }
   });
 
   // ------------------------------------------------------------------ khối 7: GV Speaking chấm S chéo lớp FT cùng chi nhánh (chủ sản phẩm 30/09)

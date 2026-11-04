@@ -759,3 +759,13 @@ export function demQuaHan(ds: readonly { quaHan: boolean; studentId: number | nu
   const q = ds.filter((v) => v.quaHan && (classId == null || v.classId === classId));
   return { viec: q.length, em: new Set(q.flatMap((v) => (v.studentId !== null ? [v.studentId] : []))).size };
 }
+
+/**
+ * HSL-GON (M3, chủ SP 05/11 — "TVV Lê Thu lặp gần mọi dòng em"): TVV CHÍNH của lớp = TVV giữ nhiều em nhất (hoà → tên đứng trước theo bảng chữ cái).
+ * Đầu hồ sơ lớp ghi một lần "TVV {chính}"; dòng em chỉ ghi TVV khi KHÁC TVV chính (ngoại lệ). Lớp chưa em nào có TVV → null.
+ */
+export function tvvChinhCuaLop(ds: readonly { tvv?: string | null }[]): string | null {
+  const dem = new Map<string, number>();
+  for (const r of ds) if (r.tvv) dem.set(r.tvv, (dem.get(r.tvv) ?? 0) + 1);
+  return [...dem].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'vi'))[0]?.[0] ?? null;
+}
