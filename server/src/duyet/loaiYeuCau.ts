@@ -585,7 +585,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiDuyet: (p, yc, v) => { apDungDeXuatChuyenLop(p, yc, v.duLieu); },
     khiSua: (p, yc, v) => {
       const k = kiemDeXuatChuyenLop(p, yc.hoc_vien_id!, v);
-      return { lyDo: k.lyDo, duLieu: { lopDichId: k.toClassId, tuan: k.tuan } };
+      return { lyDo: k.lyDo, duLieu: { lopDichId: k.toClassId, tuan: k.tuan, resetBac: k.resetBac } };
     },
     khiRut: () => {},
     /* Q-RL2c: Từ chối chỉ đổi thẻ (Duyệt = ra lệnh — có đường huỷ lệnh riêng). */
@@ -603,14 +603,14 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       ).all(...ids) as any[]).map((r) => [r.id as number, r]));
     },
     moTa: (yc, ngu) => {
-      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as { lopDichId?: number | null; tuan?: string | null };
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as { lopDichId?: number | null; tuan?: string | null; resetBac?: boolean };
       const lop = ngu.them.get(yc.id)?.lop as string | undefined;
       return {
         tieuDe: `Đề xuất chuyển lớp · ${lop ?? 'chưa chọn lớp'}${d.tuan ? ` · từ ${tuanLich(d.tuan, ngu.homNay)}` : ''}`,
         dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
         neuDuyet: 'Mở panel quyết định chuyển lớp — sửa được lớp, tuần.',
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
-        duLieu: { moPanelChuyenLop: true, lopDichId: d.lopDichId ?? null, tuan: d.tuan ?? null },
+        duLieu: { moPanelChuyenLop: true, lopDichId: d.lopDichId ?? null, tuan: d.tuan ?? null, resetBac: d.resetBac === true },
       };
     },
   },

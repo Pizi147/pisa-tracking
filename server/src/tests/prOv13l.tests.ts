@@ -348,4 +348,26 @@ export async function runPrOv13lTests(t: YThucTestKit) {
       });
     } finally { may.close(); }
   });
+  await checkAsync('N36-5 · GVCN đề xuất chuyển lớp có ô Reset bậc: form hỏi bac=1 mới có bậc; lưu duLieu.resetBac (gửi + sửa thẻ); QL duyệt thấy sẵn, đổi được → lệnh theo lựa chọn lúc duyệt', async () => {
+    const yc: any = await import('../duyet/yeuCau.ts');
+    const fou = lop('FOU', 3), ft = lop('FT', 2);
+    const gv = loadPrincipal(ganGvcn(fou, 3));
+    const a = em(fou, { ma: 'FOU' }), b = em(fou, { ma: 'FOU' });
+    report1(a.sid, a.cyc); report1(b.sid, b.cyc);
+    assert(luat.lopDichChoChuyen(gv, a.sid, null, true).nguon.bacYThuc === 1 && luat.lopDichChoChuyen(gv, a.sid, null).nguon.bacYThuc === 0, 'bậc chỉ khi hỏi bac=1');
+    const tuanSau = addDays(T2, 7);
+    const duLieu = (id: number) => JSON.parse(get('SELECT du_lieu FROM yeu_cau_duyet WHERE id = ?', id).du_lieu);
+    await voiNgay(THU5, async () => {
+      const ra = lenh.guiDeXuatChuyenLop(gv, a.sid, { toClassId: ft, tuan: tuanSau, lyDo: 'PH xin lên FT', resetBac: true });
+      assert(duLieu(ra.id).resetBac === true, JSON.stringify(duLieu(ra.id)));
+      yc.suaYeuCau(gv, ra.id, { toClassId: ft, tuan: tuanSau, lyDo: 'PH xin lên FT', resetBac: false });
+      assert(duLieu(ra.id).resetBac === false, 'người gửi sửa thẻ đổi được');
+      yc.suaYeuCau(gv, ra.id, { toClassId: ft, tuan: tuanSau, lyDo: 'PH xin lên FT', resetBac: true });
+      yc.duyetYeuCau(QL, ra.id, { duLieu: { lopDichId: ft, tuan: tuanSau, lyDo: 'PH xin lên FT', mucTieu: 6, resetBac: true } });
+      assert(lenhCua(a.sid).reset_bac === 1, 'QL giữ lựa chọn GVCN');
+      const rb = lenh.guiDeXuatChuyenLop(gv, b.sid, { toClassId: ft, tuan: tuanSau, lyDo: 'PH xin lên FT', resetBac: true });
+      yc.duyetYeuCau(QL, rb.id, { duLieu: { lopDichId: ft, tuan: tuanSau, lyDo: 'PH xin lên FT', mucTieu: 6, resetBac: false } });
+      assert(lenhCua(b.sid).reset_bac === 0, 'QL bỏ tích khi duyệt');
+    });
+  });
 }

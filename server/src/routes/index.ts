@@ -1915,7 +1915,7 @@ api.post('/students/:id/de-xuat-sua', requireAuth, wrap((req) => {
 api.post('/students/:id/de-xuat-chuyen-lop', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = (req.body ?? {}) as Record<string, any>;
-  return lenhSvc.guiDeXuatChuyenLop(principalOf(req), pInt(req, 'id'), { toClassId: b.toClassId ? Number(b.toClassId) : null, tuan: typeof b.tuan === 'string' ? b.tuan : null, lyDo: b.lyDo });
+  return lenhSvc.guiDeXuatChuyenLop(principalOf(req), pInt(req, 'id'), { toClassId: b.toClassId ? Number(b.toClassId) : null, tuan: typeof b.tuan === 'string' ? b.tuan : null, lyDo: b.lyDo, resetBac: b.resetBac });
 }));
 
 /** Đổi Target: có hiệu lực từ ngày ghi trở đi, KHÔNG chấm lại các lượt đã chốt. */
@@ -2733,7 +2733,7 @@ const coTheoCuoiKhoa = (v: unknown): boolean | undefined => (v === true || v ===
 api.get('/chuyen-lop/lop-dich', requireAuth, wrap((req) => {
   const sid = qInt(req, 'studentId');
   if (!sid) throw badRequest('Cần studentId.');
-  return luatLoTrinhSvc.lopDichChoChuyen(principalOf(req), sid, coTheoCuoiKhoa(qStr(req, 'theoCuoiKhoa')));
+  return luatLoTrinhSvc.lopDichChoChuyen(principalOf(req), sid, coTheoCuoiKhoa(qStr(req, 'theoCuoiKhoa')), qStr(req, 'bac') === '1');
 }));
 
 /** Case đang mở + luật áp dụng khi đã chọn lớp chuyển đến (Q13, Q14). */

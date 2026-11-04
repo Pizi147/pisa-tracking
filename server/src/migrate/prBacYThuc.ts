@@ -1,6 +1,6 @@
 /**
  * BAC-Y-THUC (N36, chủ SP 05/11) — CHỈ THÊM hai cột cờ "Reset bậc vi phạm" (mặc định 0 = giữ bậc, chuỗi đếm thang nối tiếp):
- *   · `lenh_chuyen_lop.reset_bac` — Quản lý tích lúc ra / sửa quyết định chuyển lớp (lệnh có thể thi hành nhiều tuần sau);
+ *   · `lenh_chuyen_lop.reset_bac` — GVCN chọn (đề xuất) hoặc Quản lý (ra lệnh / duyệt) lúc ra / sửa quyết định chuyển lớp (lệnh có thể thi hành nhiều tuần sau);
  *   · `learning_cycles.reset_bac_y_thuc` — lộ trình MỚI nhận cờ của lệnh lúc thi hành; `chuoiThang` gãy chuỗi ở lộ trình có cờ.
  * Dữ liệu cũ giữ 0; chạy lặp không làm gì; khớp `schema.sql`.
  */

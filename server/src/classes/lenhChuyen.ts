@@ -33,7 +33,7 @@ import { quetDoiDenHan } from './phanCongGv.ts';
 export type DongLenhVao = {
   studentId: number; huong: HuongLenh; toClassId?: number | null; tuan?: string | null;
   mucTieu?: MucTieuLenh | null; ngayThi?: string | null; lyDo?: string | null; ngayXemLai?: string | null;
-  /** N36: Quản lý chọn "Reset bậc vi phạm" — lộ trình mới mở chuỗi đếm thang mới (mặc định giữ bậc). */ resetBac?: boolean;
+  /** N36: "Reset bậc vi phạm" — GVCN chọn (đề xuất) hoặc Quản lý (ra lệnh / duyệt) — lộ trình mới mở chuỗi đếm thang mới (mặc định giữ bậc). */ resetBac?: boolean;
 };
 export type BoiCanhLenh = 'cuoi-khoa' | 'giua-khoa';
 
@@ -878,22 +878,22 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
  * GVCN lớp em đang học gửi "Đề xuất chuyển lớp…" (Q14): thẻ Thông tin HV, 5 ngày. Lớp muốn tới và tuần là TUỲ CHỌN (Quản lý sửa được trước khi duyệt).
  * Quản lý duyệt = ra lệnh (`apDungDeXuatChuyenLop` chạy trong tx của hộp).
  */
-export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: number | null; tuan?: string | null; lyDo?: unknown }) {
+export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: number | null; tuan?: string | null; lyDo?: unknown; resetBac?: unknown }) {
   const conn = db();
-  const { hv, enr, lyDo, toClassId, tuan } = kiemDeXuatChuyenLop(p, sid, v);
+  const { hv, enr, lyDo, toClassId, tuan, resetBac } = kiemDeXuatChuyenLop(p, sid, v);
   return tx(() => {
     const id = taoYeuCau(conn, {
       loai: 'de_xuat_chuyen_lop', doiTuongLoai: 'student:chuyen-lop', doiTuongId: sid, hocVienId: sid, lopId: enr.class_id,
-      nguoiXin: p.userId, lyDo, duLieu: { lopDichId: toClassId, tuan },
+      nguoiXin: p.userId, lyDo, duLieu: { lopDichId: toClassId, tuan, resetBac },
     });
     if (id === null) throw badRequest('Đã có một đề xuất chuyển lớp của em đang chờ Quản lý.');
-    writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: `Đề xuất chuyển lớp · ${hv.full_name}`, after: { toClassId, tuan, lyDo } });
+    writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: `Đề xuất chuyển lớp · ${hv.full_name}`, after: { toClassId, tuan, lyDo, resetBac } });
     return { ok: true, id };
   });
 }
 
 /** Kiểm đề xuất chuyển lớp — dùng chung lúc gửi và lúc người gửi Sửa thẻ còn chờ (OV-7a): cùng quyền, cùng luật lớp / tuần / lý do. */
-export function kiemDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: unknown; tuan?: unknown; lyDo?: unknown }) {
+export function kiemDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: unknown; tuan?: unknown; lyDo?: unknown; resetBac?: unknown }) {
   const conn = db();
   const hv = conn.prepare('SELECT id, full_name, status, archived_at FROM students WHERE id = ?').get(sid) as any;
   if (!hv) throw notFound('Không tìm thấy học viên');
@@ -909,7 +909,8 @@ export function kiemDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: 
   if (tuan && !tuanHopLe(tuan, demoToday())) throw badRequest('Từ tuần phải là hôm nay hoặc Thứ Hai từ tuần sau trở đi.');
   /* Lệnh CHƯA chuyển được (có lỗi) không chặn đề xuất — Quản lý duyệt thì chính lệnh đó được sửa theo đề xuất (cùng lớp nguồn). */
   if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' AND loi IS NULL`).get(sid)) throw badRequest('Em đã có quyết định chuyển lớp đang chờ.');
-  return { hv, enr, lyDo, toClassId, tuan };
+  /* N36: GVCN chọn "Reset bậc vi phạm" — Quản lý duyệt thấy sẵn, đổi được (`apDungDeXuatChuyenLop` đọc `duLieu.resetBac`). */
+  return { hv, enr, lyDo, toClassId, tuan, resetBac: v.resetBac === true };
 }
 
 /** OV-13l: đề xuất "Ngay hôm nay" (ngày không phải Thứ Hai) mà QL duyệt ngày sau → "Ngay hôm nay" của ngày duyệt, không báo lỗi tuần. */
