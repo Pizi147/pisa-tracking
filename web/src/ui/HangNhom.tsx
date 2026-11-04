@@ -31,13 +31,15 @@ export function boQuaNutCon(e: MouseEvent<HTMLElement>, lam: () => void) {
 }
 
 /** Hàng lớn của bảng: `<tr>`; ô đầu = mũi tên + tiêu đề, `children` là các `<td>` còn lại. */
-export function HangNhom({ mo, onMo, nhan, tieuDe, children, className = '', soCotDau = 1 }: {
+export function HangNhom({ mo, onMo, nhan, tieuDe, children, className = '', soCotDau = 1, title }: {
   mo: boolean; onMo: () => void; nhan: string; tieuDe: ReactNode; children?: ReactNode; className?: string;
+  /** LT-GON: chữ rê chuột cả hàng (thông tin bỏ khỏi dải, vd đợt · kỹ năng · hạn của hàng lớp Lịch Test). */
+  title?: string;
   /** Ô đầu trải mấy cột (tiêu đề dài chiếm nhiều cột đầu). */
   soCotDau?: number;
 }) {
   return (
-    <tr className={`hang-lon cursor-pointer ${mo ? '' : 'dong'} ${className}`} onClick={(e) => boQuaNutCon(e, onMo)}>
+    <tr title={title} className={`hang-lon cursor-pointer ${mo ? '' : 'dong'} ${className}`} onClick={(e) => boQuaNutCon(e, onMo)}>
       <td className="px-3" colSpan={soCotDau}>
         <span className="flex min-w-0 items-center gap-2">
           <MuiTenMo mo={mo} onMo={onMo} nhan={nhan} />

@@ -244,6 +244,8 @@ const EN_B_WEB = {
   'Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời': 'Absence reschedule request (2nd time on) waiting for a manager',
   '{choDuyetDoi} bài ': (b) => `${so(b.choDuyetDoi, 'paper', 'papers')} `,
   'vắng · chờ Quản lý duyệt dời': 'absent · awaiting manager approval to move',
+  'của bạn': 'yours',   // LT-GON: title hàng lớp Lịch Test
+  '{n} bài vắng chờ Quản lý duyệt dời': '{n} absent test(s) awaiting manager approval to move',
   '{ten} — không làm bài tuần này': '{ten} — no test this week',
   'Đã chấm {daCham} trong {tong} bài': 'Marked {daCham} of {tong} papers',
   'Đợt': 'Round',

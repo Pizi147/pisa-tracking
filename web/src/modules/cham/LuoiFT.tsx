@@ -100,7 +100,9 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, anCotMt = false }: {
+  /** LT-GON: không cột MT — lượt ghi dưới tên em (`DongThi`, khối Quá hạn chấm gộp theo lớp). */
+  anCotMt?: boolean;
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
@@ -123,7 +125,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const hien = (s: string) => !chiCot || chiCot.some((k) => khopKn(s, k));
   const cot = {
     /* UI-LICH-TUAN: lưới theo tuần (Lịch tuần, panel việc) luôn ghi MT của từng em — không giả định cả lớp cùng MT. */
-    mt: !gon || !!tuanDangXem || new Set(data.rows.map((r) => r.attemptNo)).size > 1,
+    mt: !anCotMt && (!gon || !!tuanDangXem || new Set(data.rows.map((r) => r.attemptNo)).size > 1),
     trangThai: !gon,
     han: !gon,
     /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */
@@ -475,7 +477,8 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
                 : tuanChuaToi ? <Level tone="muted" title={t('Chưa tới tuần Test')}>{tuanLich(tuanChuaToi)}</Level>
                 /* N33 ④: lượt đã tạo chưa xếp kỹ năng nào → "Chưa xếp lịch" (không "Chờ 0 kỹ năng"). */
                 : row.result.required.length === 0 ? <Level tone="muted">{t('Chưa xếp lịch')}</Level>
-                : <Level tone="muted">{choMon(row)}</Level>
+                /* LT-GON (M3): "Chờ L, R, W, S" lặp đúng các ô trống bên trái → Kết quả chưa có ghi "–", tên môn còn thiếu ở `title`. */
+                : <span className="text-faint" title={choMon(row)}>–</span>
           )}
           {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}
         </div>
@@ -531,7 +534,8 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     : row.result.kckDuoi ? <ChipDuoiKck />
     : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
     : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
-    : <span className="text-xs text-slate-400">{row.result.required.length === 0 ? t('Chưa xếp lịch') : choMon(row)}</span>;
+    /* LT-GON (M3): thẻ 375 — "Chờ L, R…" lặp ô trống ngay dưới → không vẽ (trình đọc màn vẫn đọc tên môn còn thiếu); "Chưa xếp lịch" giữ. */
+    : row.result.required.length === 0 ? <span className="text-xs text-slate-400">{t('Chưa xếp lịch')}</span> : <span className="sr-only">{choMon(row)}</span>;
   return (
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2">{/* DO-KHUNG-DO: thiếu chỗ thì chip xuống dòng, không cắt tên */}

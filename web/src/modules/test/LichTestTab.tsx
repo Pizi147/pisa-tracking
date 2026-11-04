@@ -12,8 +12,8 @@ import { CongTacKhung, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
 import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
-import { chuOChuaLuu, conTrongLichTest, khungLichTestMacDinh, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
-import { khoaHang, type DongNo, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
+import { CHAM_CHEO, chuOChuaLuu, conTrongLichTest, gopNoTheoLop, khungLichTestMacDinh, tuanLich, thangKeTiep } from '@shared/domain/index.ts';
+import { khoaHang, type DongNoLop, type LichTest, type LopLichTest } from './lichTest/kieu.ts';
 import { DaiSo, type OSo } from './lichTest/DaiSo.tsx';
 import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
@@ -95,7 +95,7 @@ export function LichTestTab() {
   const [moXuat, setMoXuat] = useState(false);
   /* RA-UI-3: hỏi bỏ ô chưa lưu bằng hộp chung (`ConfirmDialog`), không dùng hộp gốc `window.confirm` của trình duyệt. */
   const [hoiBo, setHoiBo] = useState<{ title: string; body: string; nut: string; tiep: () => void } | null>(null);
-  const [dongMo, setDongMo] = useState<{ d: DongNo; viTri: number; conTro: boolean } | null>(null);
+  const [dongMo, setDongMo] = useState<{ d: DongNoLop; viTri: number; conTro: boolean } | null>(null);
   /* Số ô lưu hỏng theo hàng lớp / dòng khối 1 (PR-UX1) — badge của hàng nói "n ô chưa lưu" tới khi hết. */
   const [chuaLuu, setChuaLuu] = useState<Record<string, number>>({});
   const baoChuaLuu = useCallback((khoa: string, n: number) => setChuaLuu((x) => {
@@ -119,13 +119,15 @@ export function LichTestTab() {
     setNho(docMo(nguoiId, data.tuan.id));
     const khoi = { k1: false, k3: true };
     const khopKn = (k: string) => !!urlKn && (k === urlKn || (urlKn === 'writing' && k.startsWith('writing')));
-    const noCuaLop = urlClassId ? data.no.filter((d) => d.classId === urlClassId) : [];
+    /* LT-GON: khối Quá hạn một hàng một lớp — tự mở theo đường dẫn mở hàng LỚP (đã gộp). */
+    const noGop = gopNoTheoLop(data.no, CHAM_CHEO);
+    const noCuaLop = urlClassId ? noGop.filter((d) => d.classId === urlClassId) : [];
     const hang3 = urlClassId ? data.lop.filter((l) => l.classId === urlClassId) : [];
     const noDau = noCuaLop.find((d) => d.kyNang.some(khopKn))
       ?? (urlKn && hang3.length ? undefined : noCuaLop.find((d) => d.cuaToi) ?? (hang3.length ? undefined : noCuaLop[0]));
     let ep: string[] = [];
     if (noDau) {
-      setDongMo({ d: noDau, viTri: data.no.indexOf(noDau), conTro: true });
+      setDongMo({ d: noDau, viTri: noGop.indexOf(noDau), conTro: true });
       khoi.k1 = true;
     } else {
       setDongMo(null);
@@ -181,7 +183,8 @@ export function LichTestTab() {
     return khungLichTestMacDinh({ param: loaiParam, theoLop: theoLop ? loaiCua(theoLop) : null, coBai, dem, phamViHai: phamViCoHaiKhung() });
   }, [data, dem, tatCaHang, loaiParam, urlClassId]);
   const theoKhung = <T extends { mode: LopLichTest['mode']; kind?: string | null }>(ds: T[]) => ds.filter((x) => !loai || loaiCua(x) === loai);
-  const noTab = theoKhung(data?.no ?? []);
+  /* LT-GON (chủ SP 05/11): khối "Quá hạn chấm" MỘT HÀNG MỘT LỚP — gộp mọi đợt / MT / bài của lớp từ dữ liệu đã nạp (không thêm request). */
+  const noTab = gopNoTheoLop(theoKhung(data?.no ?? []), CHAM_CHEO);
   const lopTab = theoKhung(data?.lop ?? []);
   /* Thu một khối là bỏ lưới đang mở trong đó — còn ô chưa lưu thì hỏi trước (Q14). */
   const thuKhoi = (k: 'k1' | 'k3') => {

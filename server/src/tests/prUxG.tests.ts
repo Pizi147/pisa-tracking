@@ -47,9 +47,10 @@ export async function runPrUxGTests(t: YThucTestKit) {
     /* PR-GVb U01: bảng chuyển sang shared (`trangThai.ts`) để badge lớp cùng đọc; Nhan.tsx re-export. */
     assert(/export const TONE_TRANG_THAI\b/.test(doc('shared/domain/trangThai.ts')) && /export \{ TONE_TRANG_THAI \}/.test(doc('web/src/ui/Nhan.tsx')),
       'thiếu TONE_TRANG_THAI ở shared/domain/trangThai.ts hoặc re-export ở Nhan.tsx');
+    /* LT-GON (chủ SP 05/11): khối "Quá hạn chấm" một hàng một lớp — không nhãn trạng thái (chỉ số bài · viên quá hạn · người chưa chấm · nút).
+       Nhãn chờ chấm còn ở hàng lớp "Test tuần này" (`HangLop` NhanLop — tra `TONE_NHAN_LOP`); KhoiNo không còn nhãn tự đặt màu. */
     const s = doc('web/src/modules/test/lichTest/KhoiNo.tsx');
-    const dong = s.split('\n').filter((l) => /Chờ bạn chấm|Chờ GV khác|Chờ chấm/.test(l));
-    assert(dong.length === 2, `KhoiNo: ${dong.length} dòng nhãn chờ chấm (mong 2)`);
+    const dong = s.split('\n').filter((l) => /t\('(Chờ bạn chấm|Chờ GV khác|Chờ chấm)'\)/.test(l));
     for (const l of dong) assert(/TONE_TRANG_THAI\['cho-cham'\]/.test(l), `nhãn chờ chấm chưa tra bảng: ${l.trim()}`);
   });
   check('G2b · badge "n chờ duyệt" ở hộp lớp / đầu hồ sơ lớp mang tone chờ (OV-15a: xám `muted`), không phải xanh dương (đang chạy)', () => {

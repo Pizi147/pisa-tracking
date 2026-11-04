@@ -71,6 +71,26 @@ export async function runPrOv15bTests(t: YThucTestKit) {
     assert(f({ theoLop: 'thuong', coBai: { ft: 3, thuong: 0 } }) === 'thuong', 'lớp trên đường dẫn → khung của lớp đó');
   });
 
+  /* LT-GON (chủ SP 05/11): khối "Quá hạn chấm" một hàng một lớp — `gopNoTheoLop` gộp từ dữ liệu đã nạp. */
+  check('LT-GON · gopNoTheoLop: một hàng một lớp — cộng bài, hạn cũ nhất, hợp người chưa chấm ("GV chấm chéo" cuối), hợp lượt; FT một lưới, lớp thường mỗi bài một lưới', () => {
+    const dong = (o: any) => ({ key: 'x', classId: 1, mode: 'ielts_band', kind: 'mock', attemptNo: 1, dotLabel: 'MT1', periodId: 1, weekStart: '2026-07-06',
+      kyNang: ['listening'], kyNangLabel: 'L', conBai: 1, soHv: 1, attemptIds: [10], han: '2026-07-12', quaHan: true, luiLich: null,
+      cuaToi: false, duocCham: true, coDayLop: false, gvNo: ['A'], phan: null, ...o });
+    const g = d.gopNoTheoLop([
+      dong({ conBai: 10, attemptIds: [10, 11], han: '2026-07-12', gvNo: ['GV chấm chéo', 'B'] }),
+      dong({ attemptNo: 2, dotLabel: 'MT2', conBai: 5, attemptIds: [11, 12], han: '2026-07-08', kyNang: ['speaking'], kyNangLabel: 'S', gvNo: ['A'] }),
+      dong({ classId: 2, mode: 'ratio', kind: 'progress', dotLabel: 'Progress Test', attemptIds: [20] }),
+      dong({ classId: 2, mode: 'ratio', kind: 'final', dotLabel: 'Final Test', attemptIds: [21] }),
+    ], 'GV chấm chéo');
+    assert(g.length === 2 && g[0].classId === 1 && g[0].key === 'lop:1', `số hàng / thứ tự: ${g.map((x: any) => x.key)}`);
+    assert(g[0].conBai === 15 && g[0].han === '2026-07-08' && g[0].quaHan && g[0].soDong === 2, `cộng bài / hạn cũ nhất: ${JSON.stringify(g[0])}`);
+    assert(JSON.stringify(g[0].attemptIds) === '[10,11,12]' && JSON.stringify(g[0].gvNo) === '["B","A","GV chấm chéo"]', `lượt / người: ${g[0].attemptIds} ${g[0].gvNo}`);
+    assert(g[0].luoi.length === 1 && g[0].luoi[0].kind === null && g[1].luoi.map((l: any) => l.kind).join() === 'progress,final'
+      && g[1].luoi.map((l: any) => l.nhan).join() === 'Progress Test,Final Test', `lưới: ${JSON.stringify([g[0].luoi, g[1].luoi])}`);
+    const p = d.gopNoTheoLop([dong({ phan: { toi: { kyNang: ['listening'], con: 2 }, khac: null } }), dong({ phan: { toi: { kyNang: ['reading'], con: 3 }, khac: { kyNang: ['speaking'], con: 1, quaHanNgay: 4 } } })], 'GV chấm chéo')[0];
+    assert(p.phan.toi.con === 5 && p.phan.toi.kyNang.join() === 'listening,reading' && p.phan.khac.quaHanNgay === 4, `phần của bạn: ${JSON.stringify(p.phan)}`);
+  });
+
   /* ---------------------------------------------------------------- 2 · Dán từ Excel — R1-BO-DAN-EXCEL (chủ SP 26/10): web bỏ, API lô giữ */
   check('OV15b-2 · web không còn "Dán từ Excel" điểm (ngoài Tutor và Thêm học viên — nhập danh sách, không phải điểm)', () => {
     const goc = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../web/src');
