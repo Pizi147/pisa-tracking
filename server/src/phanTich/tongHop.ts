@@ -14,6 +14,8 @@ import { expectationFor, failingEntrySkills } from '../fasttrack/scoring.ts';
 import { allProgrammes, type ProgrammeInfo } from '../normal/regular.ts';
 import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { diemTuMock } from '../worklist/diemDong.ts';
+import { mockTrongKhoang } from './ketQuaThi.ts';
 import { CASE_THAT, XU_LY_COT_SQL, xuLyCuaDong } from '../cases/sosState.ts';
 
 /**
@@ -335,6 +337,18 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
   return {
     n: ids.length,
     tieuDe: `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`,
-    rows: rowsFor(cotDef.donVi, ids),
+    rows: ganDiemLuot(p, cotDef.donVi, f.ct, rowsFor(cotDef.donVi, ids)),
   };
+}
+
+/**
+ * U08-2 (mockup V11 A2): dòng LƯỢT của panel Test + SOS (FT) kèm điểm L R W1 W2 S của CHÍNH lượt (`diemTuMock`, cùng ô Kết quả Test) — panel rộng 720
+ * vẽ bảng điểm. Chỉ chạy khi MỞ panel: một câu lượt theo id + điểm / lịch của các lượt đó (`mockTrongKhoang` với `luot` truyền sẵn, không nạp Case).
+ */
+function ganDiemLuot(p: Principal, donVi: string, ct: ChuongTrinh, rows: MetricRow[]): MetricRow[] {
+  if (donVi !== 'dot-test' || ct !== 'ft' || !rows.length) return rows;
+  const ph = rows.map(() => '?').join(',');
+  const luot = luotTrongKhoang(`a.id IN (${ph})`, rows.map((r) => r.id));
+  const diem = new Map(mockTrongKhoang(p, { tu: '', den: '' }, { luot, boCase: true }).map((d) => [d.attemptId, diemTuMock(d)]));
+  return rows.map((r) => (diem.has(r.id) ? { ...r, diemHv: diem.get(r.id) } : r));
 }
