@@ -75,7 +75,7 @@ function LuotLop({ l }: { l: LopLichTest }) {
           const toi = cuaToi.has(k);
           return (
             <span key={k} title={!co ? t('{ten} — không làm bài tuần này', { ten }) : toi ? t('{mon} của bạn', { mon: ten }) : ten}
-              className={`text-[13px] font-semibold ${!co ? 'text-faint' : toi ? 'text-[color:var(--accent)] underline decoration-1 underline-offset-[3px]' : 'text-slate-300'}`}>
+              className={`text-[13px] font-medium ${!co ? 'text-faint' : toi ? 'text-[color:var(--accent)] underline decoration-1 underline-offset-[3px]' : 'text-slate-300'}`}>
               {tenMonNgan(l.chuongTrinh, k)}
             </span>
           );
@@ -84,7 +84,8 @@ function LuotLop({ l }: { l: LopLichTest }) {
       {/* PR-MT (YC-13.1): bài vắng tuần này đang chờ Quản lý duyệt dời lần 2 — chữ nhạt cuối dòng, không phải việc chấm. */}
       {l.choDuyetDoi > 0 && (
         <span className="whitespace-nowrap text-xs text-muted" title={t('Đề nghị dời do vắng (từ lần 2) đang chờ Quản lý trả lời')}>
-          {l.choDuyetDoi > 1 ? t('{choDuyetDoi} bài ', { choDuyetDoi: l.choDuyetDoi }) : ''}{t('vắng · chờ Quản lý duyệt dời')}
+          {/* LT-GON (M4, M5): "chờ duyệt dời" — "vắng", "Quản lý" nằm ở `title` (màn Test giữ ghi chú, chỉ gọn chữ). */}
+          {l.choDuyetDoi > 1 ? t('{choDuyetDoi} bài ', { choDuyetDoi: l.choDuyetDoi }) : ''}{t('chờ duyệt dời')}
         </span>
       )}
     </span>
@@ -93,7 +94,8 @@ function LuotLop({ l }: { l: LopLichTest }) {
 
 const TienDo = ({ l }: { l: LopLichTest }) => (
   <span className="whitespace-nowrap tabular-nums text-slate-400" title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })}>
-    <b className="font-bold text-slate-100">{l.daCham}</b>/{l.tong} {t('bài')}
+    {/* LT-GON (M1): một chữ đậm mỗi hàng lớp = mã lớp — số đã chấm chữ sáng 500, không đậm. */}
+    <span className="font-medium text-slate-100">{l.daCham}</span>/{l.tong} {t('bài')}
   </span>
 );
 

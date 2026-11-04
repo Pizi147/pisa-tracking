@@ -1,7 +1,7 @@
 import { Fragment, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { NhomDau } from './NhomDau.tsx';
-import { Nhan, TONE_TRANG_THAI } from '../../../ui/Nhan.tsx';
+import { ChipHan, Nhan, TONE_TRANG_THAI } from '../../../ui/Nhan.tsx';
 import { Han } from '../../../ui/Han.tsx';
 import { CHAM_CHEO, chuOChuaLuu, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
 import type { DongNo } from './kieu.ts';
@@ -40,7 +40,8 @@ function NhanDong({ d, xong, chuaLuu = 0 }: { d: DongNo; xong: boolean; chuaLuu?
   if (xong) return <Nhan tone="done">{t('Đã chấm')}{' '}<span className="font-normal" aria-hidden>✓</span></Nhan>;
   if (d.phan && (d.phan.toi || d.phan.khac)) return <OPhan phan={d.phan} ct={d.chuongTrinh} quaHan={false} />;
   if (d.cuaToi) return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{t('Chờ bạn chấm')}</Nhan>;
-  return <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{d.coDayLop ? t('Chờ GV khác') : t('Chờ chấm')}</Nhan>;
+  /* LT-GON (M3): "Chờ chấm" (người không chấm — QL) giống mọi dòng của khối "Quá hạn chấm" (tên khối đã nói) → không vẽ; "Chờ GV khác" giữ (khác "Chờ bạn chấm"). */
+  return d.coDayLop ? <Nhan tone={TONE_TRANG_THAI['cho-cham']}>{t('Chờ GV khác')}</Nhan> : null;
 }
 
 /** GV chấm (T17): tên GV còn nợ; Speaking Mock chưa ai nhập = "GV chấm chéo" chữ tím (T18, Q3). Xuống dòng, không cắt. */
@@ -51,7 +52,7 @@ function GvCham({ gv }: { gv: string[] }) {
       {gv.map((t, i) => (
         <Fragment key={t}>
           {i > 0 && ', '}
-          {dich(t) === CHAM_CHEO ? <span className="whitespace-nowrap font-semibold text-muted">{CHAM_CHEO}</span> : dich(t)}
+          {dich(t) === CHAM_CHEO ? <span className="whitespace-nowrap text-muted">{CHAM_CHEO}</span> : dich(t)}
         </Fragment>
       ))}
     </>
@@ -167,15 +168,18 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, homNay, onDaLuu, k
                     ) : (
                       <>
                         <td className="td truncate"><Link to={`/hoc-vien/lop/${d.classId}`} className="ten-ho-so" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link></td>
-                        {/* OV-11e (CA3-11): Đợt xuống dòng, không cắt. */}
-                        <td className="td py-1.5 leading-[1.35] text-slate-300">{dotTuan(d, homNay)}</td>
-                        {/* Kỹ năng xuống dòng, không cắt "W…" (rà #218). */}
-                        <td className="td py-1.5 leading-[1.35] text-slate-300 [overflow-wrap:anywhere]" title={k.goiY}>
-                          {dich(k.chu)}
+                        {/* LT-GON (M2): Đợt xuống dòng ở ranh "·" — không bẻ giữa "W2 AUG" / "Progress Test" (OV-11e: không cắt). */}
+                        <td className="td py-1.5 leading-[1.35] text-slate-300">
+                          {d.weekStart ? <><span className="whitespace-nowrap">{dich(d.dotLabel)}</span> · <span className="whitespace-nowrap">{tuanLich(d.weekStart, homNay)}</span></> : dich(d.dotLabel)}
+                        </td>
+                        {/* LT-GON (M2, M10): kỹ năng viết như hàng lớp ("L R W1 W2 S", không dấu phẩy) — một hàng; tên đủ ở `title`. */}
+                        <td className="td truncate py-1.5 text-slate-300" title={k.goiY}>
+                          {dich(k.chu).split(', ').join(' ')}
                           {k.phu && <span className="block truncate text-xs leading-4 text-slate-500">{dich(k.phu)}</span>}
                         </td>
                         <td className="td text-right tabular-nums text-slate-200">{xong ? 0 : conCua(d)} <span className="text-xs text-slate-500">{t('bài')}</span></td>
-                        <td className="td whitespace-nowrap">{xong ? <span className="text-slate-500">—</span> : <Han loai="nhap-diem" han={d.han} boTinHieu={!!d.phan && !d.quaHan} />}</td>
+                        {/* LT-GON (M10): hạn = MỘT viên theo mức ("⚠ quá hạn 68 ngày", rê chuột thấy ngày hạn) như dòng Công việc; phần của người xem chưa quá hạn → chữ hạn trung tính như cũ. */}
+                        <td className="td whitespace-nowrap">{xong ? <span className="text-slate-500">—</span> : d.phan && !d.quaHan ? <Han loai="nhap-diem" han={d.han} boTinHieu /> : <ChipHan vien loai="nhap-diem" han={d.han} />}</td>
                         <td className="td py-1.5 text-xs leading-[1.35] text-slate-300"><GvCham gv={d.gvNo} /></td>
                         <td className="td"><NhanDong d={d} xong={xong} chuaLuu={chuaLuu[`no:${d.key}`]} /></td>
                         <td className="td text-right">{nut}</td>
