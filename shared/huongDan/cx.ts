@@ -13,7 +13,7 @@ export const HD_CX: HuongDan = {
     {
       id: 'cx-sang', ten: 'Xem Tổng quan mỗi sáng', khi: 'mỗi ngày',
       buoc: ['<b>Tổng quan</b>: chọn <b>Chi nhánh</b> (mặc định tất cả).',
-        'Bốn số: <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · bước tiếp</b>; bấm số mở danh sách.',
+        'Bốn số: <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · Lộ trình tiếp</b>; bấm số mở danh sách.',
         'Dưới: bảng <b>Theo chi nhánh</b> (bấm hàng xem một chi nhánh) hoặc <b>Lớp cần chú ý</b> khi đã chọn chi nhánh.'],
       chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' },
     },
@@ -44,7 +44,7 @@ export const HD_CX: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'cx-tq-o', ten: 'Bốn số', buoc: ['Chọn <b>Chi nhánh</b>; <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · bước tiếp</b>.', 'Bấm số mở danh sách ngay tại trang.'],
+        { id: 'cx-tq-o', ten: 'Bốn số', buoc: ['Chọn <b>Chi nhánh</b>; <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · Lộ trình tiếp</b>.', 'Bấm số mở danh sách ngay tại trang.'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
         { id: 'cx-tq-so', ten: 'Theo chi nhánh', buoc: ['Bảng: Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa PA; bấm hàng xem một chi nhánh.'] },
       ],

@@ -8,7 +8,7 @@ import { Card, ErrorState, OChiSo, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { LOP_OSO, VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
-import { CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
+import { ChipHan, CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -53,12 +53,13 @@ export function DauTrangTq({ phamVi, ben, ky }: { phamVi: ReactNode; ben?: React
   );
 }
 
-/** Ô chỉ số V5: tên (+ "?") · giá trị · mẫu số · kỳ xem. */
+/**
+ * Ô chỉ số V5: tên (+ ⓘ) · giá trị · MỘT dòng phụ (đơn vị / mẫu số). TQ-GON (M3, M4): kỳ xem ("trong kỳ" · "hiện tại" · khoảng tuần) không thành dòng —
+ * đầu trang đã ghi kỳ một lần; rê chuột tên ô thấy (`title`).
+ */
 export function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: ReactNode; mau?: ReactNode; ky?: string; luat?: ReactNode }) {
   return (
-    <OChiSo className="max-sm:p-3" ten={<span className="inline-flex items-center gap-1.5">{ten}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau}>
-      {ky && <div className="text-xs text-slate-500">{ky}</div>}
-    </OChiSo>
+    <OChiSo className="max-sm:p-3" ten={<span className="inline-flex items-center gap-1.5" title={ky}>{ten}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau} />
   );
 }
 export const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">{children}</div>;
@@ -97,7 +98,7 @@ export function SosDem({ muc, o }: { muc: readonly number[]; o: (i: number, n: n
 export const tuMau = (x: TyLeV5 | null, donVi: string) => (x && x.mau ? `${x.dat}/${x.mau} ${donVi}` : null);
 /** U09 #5 (B01, mockup v11): Đạt MT "26/36 HV · 8 chưa đủ dữ liệu" — không giấu em ngoài mẫu. */
 export const mauDatMt = (x: (TyLeV5 & { chuaDu: number }) | null) => (!x ? null : <>
-  {x.mau ? `${x.dat}/${x.mau} ${t('HV')}` : null}{x.mau && x.chuaDu ? ' · ' : null}{x.chuaDu ? <><b className="font-semibold text-dim">{x.chuaDu}</b> {t('chưa đủ dữ liệu')}</> : null}
+  {x.mau ? `${x.dat}/${x.mau} ${t('HV')}` : null}{x.mau && x.chuaDu ? ' · ' : null}{x.chuaDu ? <>{x.chuaDu} {t('chưa đủ dữ liệu')}</> : null}
 </>);
 
 /** Bố cục B: trái (tình hình) · phải 360 (Chờ duyệt / Điều hướng); < 1280 một cột, cột phải lên trước (V8: bảng trái cần ~860 px — cột SOS 340). */
@@ -110,17 +111,19 @@ function BoCuc({ trai, phai }: { trai: ReactNode; phai: ReactNode }) {
   );
 }
 
-/** "Điều hướng" (chủ SP 23/10, trước là "Đi tiếp"): mỗi dòng một link đổi trang (›) — số đậm ở đầu, dòng phụ nói đích. */
-export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: string; t1: ReactNode; t2?: ReactNode }[]; tieuDe?: string }) {
+/**
+ * "Điều hướng" (chủ SP 23/10, trước là "Đi tiếp"): mỗi dòng một link đổi trang (›). TQ-GON (M4): MỘT dòng — tên đích đủ nói nơi đến, không câu phụ
+ * "Học viên & Lớp · lọc …" (rê chuột vẫn thấy qua `title`).
+ */
+export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: string; t1: string; t2?: string }[]; tieuDe?: string }) {
   return (
     <Card title={tieuDe} bodyClass="p-0">
       <ul className="m-0 list-none p-0">
         {dong.map((d, i) => (
           <li key={i} className="border-t" style={{ borderColor: 'var(--line)' }}>
-            <Link to={d.to} className="bam grid min-h-[44px] grid-cols-[minmax(0,1fr)_auto] gap-x-2.5 gap-y-0.5 px-4 py-2.5 leading-[1.45] text-slate-100 no-underline">
+            <Link to={d.to} title={d.t2} className="bam flex min-h-[44px] items-center justify-between gap-x-2.5 px-4 py-2.5 leading-[1.45] text-slate-100 no-underline">
               <span className="text-sm font-medium">{d.t1}</span>
-              <span aria-hidden className="row-span-2 self-center text-[15px] font-bold text-[color:var(--accent)]">›</span>
-              {d.t2 && <span className="text-xs text-slate-500">{d.t2}</span>}
+              <span aria-hidden className="text-[15px] font-bold text-[color:var(--accent)]">›</span>
             </Link>
           </li>
         ))}
@@ -148,6 +151,11 @@ export function CongTac<K extends string>({ value, onChange, muc, v8 }: { value:
 export const kyChu = (k: { tu: string; den: string }) => `${tuanLich(k.tu)} – ${tuanLich(k.den)}`;
 const kyQ = (d: TongQuanV5Data) => `&kieu=tuy-chon&tu=${d.ky.tu}&den=${d.ky.den}`;
 const qBc = (d: TongQuanV5Data, them = '') => `/phan-tich/bao-cao/o?${thamSoTq(d.branchId, d.ct)}${kyQ(d)}${them}`;
+/** Ô "Thi tháng này" (QL, QT): TQ-GON (M4) — định nghĩa "HV có ngày thi đã chốt" vào ⓘ, dòng phụ chỉ đơn vị. */
+const LUAT_THI = t('HV có ngày thi thật đã chốt trong tháng này.');
+const ChiSoThi = ({ d }: { d: TongQuanV5Data }) => (
+  <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} luat={LUAT_THI} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi tháng này')} nguon={qBc(d, '&o=thi-thang-nay')} />} mau={t('HV')} />
+);
 const qCn = (d: TongQuanV5Data, cot: string, khoa: string) => `/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${khoa}&chuY=1&${thamSoTq(d.branchId, d.ct)}`;
 
 /* ───────────── Chờ bạn duyệt (dòng gọn → panel duyệt, C04) ───────────── */
@@ -156,22 +164,20 @@ type Hop = { the: TheYeuCauDto[]; homNay: string };
 function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
   const [mo, setMo] = useState<TheYeuCauDto | null>(null);
   if (!hop.the.length) return null;
-  const cho = (y: TheYeuCauDto) => {
-    if (y.hanDuyet && y.hanDuyet.slice(0, 10) < hop.homNay) return <span className="font-bold text-bad">⚠ {t('quá hạn')}</span>;
-    const n = Math.round((Date.parse(hop.homNay) - Date.parse(y.taoLuc.slice(0, 10))) / 86_400_000);
-    return n <= 0 ? t('hôm nay') : t('{n} ngày', { n });
-  };
   return (
-    <Card title={<>{t('Chờ bạn duyệt')} <span className="ml-1.5 font-normal text-slate-500">{t('{n} đề xuất', { n: hop.the.length })}</span></>} bodyClass="p-0">
+    <Card title={<>{t('Chờ bạn duyệt')} <span className="ml-1.5 font-normal text-slate-500">{t('{n} yêu cầu', { n: hop.the.length })}</span></>} bodyClass="p-0">
       <ul data-hd="tq-can-xu-ly" className="m-0 list-none p-0">
         {hop.the.slice(0, 5).map((y) => (
           <li key={y.id} className="border-t" style={{ borderColor: 'var(--line)' }}>
-            {/* V8: dòng không cắt chữ (xuống dòng). */}
-            <button type="button" onClick={() => setMo(y)}
-              className={`bam grid min-h-[44px] w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2.5 gap-y-0.5 px-4 py-2.5 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              <span className="text-sm font-medium text-slate-100">{dich(y.nhanLoai)}{y.hocVien && <> · <b className="font-bold">{y.hocVien}</b></>}</span>
-              <span className="self-start whitespace-nowrap pt-0.5 text-xs text-slate-400">{cho(y)}</span>
-              <span className="text-xs text-slate-500">{[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ')}</span>
+            {/*
+              * TQ-GON (M1, M4, M10 — cùng dáng Chờ bạn duyệt ở Công việc v12): MỘT dòng = loại (chip viền) · tên em (đậm duy nhất) · hạn (viên theo mức).
+              * Lớp · lượt · người gửi không thành dòng thứ hai: rê chuột (`title`) hoặc bấm dòng → panel duyệt đủ chữ.
+              */}
+            <button type="button" onClick={() => setMo(y)} title={[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.nguoiXin })].filter(Boolean).join(' · ') || undefined}
+              className={`bam flex min-h-[44px] w-full items-center gap-x-2 px-4 py-2 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
+              <span className="h-5 max-w-[50%] shrink-0 truncate rounded-md border px-1.5 text-xs font-medium leading-[18px] text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dich(y.nhanLoai)}</span>
+              <span className="min-w-0 flex-1 text-sm font-semibold text-slate-100">{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
+              {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
             </button>
           </li>
         ))}
@@ -179,7 +185,8 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
       <Link to="/cong-viec/cho-duyet" className="block border-t px-4 py-2.5 text-sm font-semibold text-[color:var(--accent)] no-underline" style={{ borderColor: 'var(--line)' }}>{t('Hộp duyệt ›')}</Link>
       {mo && (
         /* N37: thẻ về PA / Case có "Mở ›" sang hồ sơ em (Case mở sẵn) — như hộp Chờ duyệt. */
-        <KhungPanel loai={t('DUYỆT')} tieuDe={mo.tieuDe} onDong={() => setMo(null)}
+        /* TQ-GON: dòng chỉ còn tên em → đầu panel ghi em · lớp (lớp không còn ở dòng). */
+        <KhungPanel loai={t('DUYỆT')} tieuDe={mo.tieuDe} hocVien={mo.hocVien} lop={mo.lop} onDong={() => setMo(null)}
           chan={mo.mo ? { phu: <Link to={mo.mo} className="btn min-h-[44px] sm:min-h-[36px]">{t('Mở ›')}</Link> } : undefined}>
           <TheYeuCau yc={mo} gon onXong={() => { setMo(null); onXong(); }} />
         </KhungPanel>
@@ -216,8 +223,8 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
   };
   const phuCua = (l: DongLop, c: CotBang) => (c.key === 'lop' ? [t('{n} HV', { n: l.hv }), l.gvcn].filter(Boolean).join(' · ')
     : c.key === 'dat' ? tuMau(l.datMt, t('HV'))
-      /* U09 #4 (mockup v11): đơn vị dưới số khác 0 — "Case" (Case chưa PA) · "HV" (Thi tháng này). */
-      : c.key === 'case' ? (l.caseChuaPa ? 'Case' : null) : c.key === 'thi' ? (l.thiThangNay ? t('HV') : null) : null);
+      /* U09 #4 (mockup v11): đơn vị dưới số khác 0 — "HV" (Thi tháng này). TQ-GON (M3): cột "Case chưa PA" tiêu đề đã có đơn vị → không lặp "Case" mỗi dòng. */
+      : c.key === 'thi' ? (l.thiThangNay ? t('HV') : null) : null);
   return (
     <Card bodyClass="p-0" title={t('Lớp cần chú ý')}>
       <div data-hd="tq-lop-chu-y">
@@ -273,12 +280,14 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
     const nguon = c.key === 'pa' ? `/giao-vien/${h.id}/o?cot=case-mo&cn=${d.branchId}&ct=${d.ct}` : `/phan-tich/giao-vien/o?gv=${h.id}&cot=${COT[c.key]}&${q}`;
     return <PhanTram gon x={giaTri(h, c)} nguon={nguon} tieuDe={c.key === 'pa' ? `${t('Case đang mở')} · ${h.ten}` : `${c.nhan} · ${h.ten}`} />;
   };
-  const phuCua = (h: HangGv, c: CotBang) => (c.key === 'gv' ? phuGv(h) : c.key === 'tre' ? t('bài') : tuMau(giaTri(h, c), DV[c.key]));
-  /* G2 (N32 ②, U09 #1): "Giáo viên · {kỳ}" — đủ mọi GV, GV có bài chấm quá hạn lên đầu (nhiều trước); không ngưỡng, không nhãn người. */
+  /* TQ-GON (M3): cột "Bài chấm quá hạn" tiêu đề đã có đơn vị → không lặp "bài" dưới mỗi số. */
+  const phuCua = (h: HangGv, c: CotBang) => (c.key === 'gv' ? phuGv(h) : c.key === 'tre' ? null : tuMau(giaTri(h, c), DV[c.key]));
+  /* G2 (N32 ②, U09 #1): đủ mọi GV, GV có bài chấm quá hạn lên đầu (nhiều trước); không ngưỡng, không nhãn người. TQ-GON (M3, M4): đầu thẻ chỉ "Giáo viên" —
+     kỳ đã ở đầu trang, thứ tự tự thấy (rê chuột tên thẻ vẫn đọc được). */
   const hang = pt.data ? [...pt.data.hang].sort((a, b) => (tre.get(b.id) ?? 0) - (tre.get(a.id) ?? 0)) : [];
   return (
     <Card bodyClass="p-0"
-      title={<span className="inline-flex flex-wrap items-baseline gap-x-2">{t('Giáo viên')}<span className="text-[13px] font-normal text-faint">{[kyChu(d.ky), ht ? null : t('bài chấm quá hạn lên đầu')].filter(Boolean).join(' · ')}</span></span>}
+      title={<span title={[kyChu(d.ky), ht ? null : t('bài chấm quá hạn lên đầu')].filter(Boolean).join(' · ')}>{t('Giáo viên')}</span>}
       action={<CongTac v8 value={ht ? 'ht' : 'hc'} onChange={(k) => setLoai(k)} muc={[['hc', t('Hành chính')], ['ht', t('Học thuật')]]} />}>
       {pt.error ? <ErrorState message={pt.error.message} hint={pt.error.hint} status={pt.error.status} onRetry={pt.reload} />
         : !pt.data ? <Skeleton rows={3} className="p-4" />
@@ -305,8 +314,9 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
         <ChiSo ten={t('Case có PA')} ky={t('hiện tại')}
           giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} />}
           mau={d.casePa.mo ? <>{d.casePa.coPa}/{d.casePa.mo} Case · <OSo giaTri={d.casePa.chuaPa} tieuDe={t('Case chưa chốt PA')} nguon={qCn(d, 'caseChuaChot', 'tong')} /> {t('chưa PA')}</> : null} />
-        {duyet && <ChiSo ten={t('Chờ duyệt')} ky={t('hiện tại')} giaTri={choN} mau={<>{t('đề xuất')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
-        <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi tháng này')} nguon={qBc(d, '&o=thi-thang-nay')} />} mau={t('HV có ngày thi đã chốt')} />
+        {/* TQ-GON (M5): "yêu cầu" — cùng tên với Chờ bạn duyệt ở Công việc / Hộp duyệt. */}
+        {duyet && <ChiSo ten={t('Chờ duyệt')} ky={t('hiện tại')} giaTri={choN} mau={<>{t('yêu cầu')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
+        <ChiSoThi d={d} />
       </DaiChiSo>
       <BoCuc
         trai={<><LopCanChuY d={d} />{session?.nav?.phanTichGv && d.branchId && <GvCanChuY d={d} />}</>}
@@ -384,7 +394,7 @@ export function TongQuanQtV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
         <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} />}
           mau={d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null} />
         <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ptChu(d.thiThat)} mau={tuMau(d.thiThat, t('HV'))} />
-        <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi tháng này')} nguon={qBc(d, '&o=thi-thang-nay')} />} mau={t('HV có ngày thi đã chốt')} />
+        <ChiSoThi d={d} />
       </DaiChiSo>
       <BoCuc trai={<TheoChiNhanh d={d} onChiNhanh={onChiNhanh} />}
         phai={<DiTiep dong={[
@@ -412,10 +422,11 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
           mau={ft ? mauDatMt(d.datMt) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ft ? ptChu(d.thiThat) : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.thiThat, t('HV')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('HV SOS 2–3')} ky={t('hiện tại')} giaTri={<b className="tabular-nums">{sos23}</b>} />
-        <ChiSo ten={t('Chờ KQ · bước tiếp')} ky={t('hiện tại')}
+        <ChiSo ten={t('HV SOS 2–3')} ky={t('hiện tại')} giaTri={<b className="tabular-nums">{sos23}</b>} mau={t('HV')} />
+        {/* TQ-GON (M5): cùng tên ô với TVV "Chờ KQ · Lộ trình tiếp"; (M3) dòng phụ chỉ đơn vị — tên ô đã nói hai số là gì. */}
+        <ChiSo ten={t('Chờ KQ · Lộ trình tiếp')} ky={t('hiện tại')}
           giaTri={hv.data ? <span className="inline-flex items-baseline gap-2"><SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} /><Cham /><SoDen n={hv.data.dem['cho-buoc-tiep']} to={den('cho-buoc-tiep')} /></span> : '…'}
-          mau={t('HV chờ KQ · chưa chốt bước tiếp')} />
+          mau={t('HV')} />
       </DaiChiSo>
       <BoCuc trai={d.chiNhanh ? <TheoChiNhanh d={d} cx onChiNhanh={onChiNhanh} /> : <LopCanChuY d={d} />}
         phai={<DiTiep dong={[
@@ -447,10 +458,11 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => Re
     <>
       <DaiChiSo>
         {/* Head tutor chưa có Công việc (không `workSupport`) → không ô Việc. */}
+        {/* TQ-GON (M4, V13): dòng phụ = đơn vị (+ ⚠ quá hạn khi có) — bỏ "không việc nào quá hạn", "Case tôi phụ trách" (trang của tôi đã nói). */}
         {session?.nav?.workSupport && <ChiSo ten={t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
-          mau={viec?.viecQuaHan ? <span className="font-semibold text-bad">⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span> : t('không việc nào quá hạn')} />}
+          mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />}
         <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} />}
-          mau={t('Case tôi phụ trách')} />
+          mau="Case" />
         <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs?.ketQua), t('lượt Test'))} />
         <ChiSo ten={t('Tiến bộ')} ky={ky} giaTri={o(cs?.tienBo, 'tien-bo', t('HV tiến bộ'))} mau={tuMau(tyLeGv(cs?.tienBo), t('lượt'))} />
       </DaiChiSo>
@@ -480,11 +492,12 @@ export function TongQuanTvvV5() {
       <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:first-child]:col-span-2">
         <ChiSo ten={t('Báo PH đúng hạn')} ky={kyChu(d.ky)} luat={t('Việc Báo PH đã báo trước hạn / việc Báo PH phát sinh trong kỳ.')}
           giaTri={<PhanTram x={{ dat: d.baoPh.dung, mau: d.baoPh.tong }} nguon="/tong-quan/tvv/o?o=bao-ph" tieuDe={t('Báo PH đúng hạn')} />}
-          mau={d.baoPh.tong ? <>{d.baoPh.dung}/{d.baoPh.tong} {t('việc')}{d.baoPh.treXong > 0 && <> · {t('xong trễ {n}', { n: d.baoPh.treXong })}</>}</> : t('chưa việc nào phát sinh trong kỳ')} />
-        <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} giaTri={<SoDen n={d.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" />} mau={t('HV có ngày thi đã chốt')} />
+          mau={d.baoPh.tong ? <>{d.baoPh.dung}/{d.baoPh.tong} {t('việc')}{d.baoPh.treXong > 0 && <> · {t('xong trễ {n}', { n: d.baoPh.treXong })}</>}</> : null} />
+        {/* TQ-GON (M3, M4): định nghĩa vào ⓘ, dòng phụ chỉ đơn vị; không lặp lại hai số đã hiện ("0 chờ KQ · 1 chưa chốt…"). */}
+        <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} luat={LUAT_THI} giaTri={<SoDen n={d.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" />} mau={t('HV')} />
         <ChiSo ten={t('Chờ KQ · Lộ trình tiếp')} ky={t('hiện tại')}
           giaTri={<span className="inline-flex items-baseline gap-2"><SoDen n={choKq} to={den('da-thi')} /><Cham /><SoDen n={buoc} to={den('cho-buoc-tiep')} /></span>}
-          mau={t('{a} chờ KQ · {b} chưa chốt bước tiếp', { a: choKq, b: buoc })} />
+          mau={t('HV')} />
       </div>
       <BoCuc
         trai={<DiTiep tieuDe={t('Thi thật')} dong={[

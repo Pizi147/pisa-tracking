@@ -93,7 +93,8 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
             ))}
           </div>
         )}
-        {rieng.map((c) => <div key={c.key} className="grid gap-1"><span className="text-[13px] font-medium text-slate-400">{c.nhan}</span><div className="min-w-0">{o(h, c.key)}</div></div>)}
+        {/* TQ-GON (M4): ô null (không áp dụng, vd SOS lớp thường) → không vẽ hàng nhãn trống. */}
+        {rieng.map((c) => { const v = o(h, c.key); return v == null ? null : <div key={c.key} className="grid gap-1"><span className="text-[13px] font-medium text-slate-400">{c.nhan}</span><div className="min-w-0">{v}</div></div>; })}
       </>;
     };
     than = hang.map((h) => (

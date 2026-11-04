@@ -18,6 +18,8 @@ export const EN_UI_TONG_QUAN = {
   "HV chờ KQ · chưa chốt bước tiếp": "awaiting result · next step not set",
   "HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. Ngoài mẫu: HV chưa đủ dữ liệu.": "Students with an MT finalised in the period, Overall vs the attempt expectation. Excluded: students without enough data.",
   "HV có ngày thi đã chốt": "students with a set exam date",
+  "HV có ngày thi thật đã chốt trong tháng này.": "Students with a confirmed real exam date this month.",
+  "yêu cầu": "requests",
   "HV của tôi · lọc \"Chờ chọn bước tiếp\"": "My students · filter \"Awaiting next step\"",
   "HV của tôi · lọc \"Thi tháng này\"": "My students · filter \"Exam this month\"",
   "HV của tôi · lọc \"Đã thi · chờ kết quả\"": "My students · filter \"Sat · awaiting result\"",
