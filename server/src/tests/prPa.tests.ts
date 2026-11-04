@@ -642,18 +642,17 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(sau.performer_user_id === null && sau.performer_name === null, `xoá người: ${JSON.stringify(sau)}`);
     assert(revCua(iv).length === 2, 'mỗi lần Điều chỉnh một nhật ký');
   });
-  check('PA18 · dòng PA (Task 6): nút Kết quả + ⋯ Sửa PA chỉ khi ghi được và PA đang chạy (cùng chặn máy chủ); Xoá PA cho QL, không PA hệ thống', () => {
+  check('PA18 · dòng PA (Task 6): nút Kết quả + ⋯ Sửa PA chỉ khi ghi được và PA đang chạy (cùng chặn máy chủ); Xoá PA theo cờ máy chủ (N37)', () => {
     const chay = { kind: 'tutor', status: 'started', preset: false, confirmedAt: null, approvalState: null, ghiDuoc: true };
-    const xem = { canApprove: false, caseXong: false };
+    const xem = { caseXong: false };
     const n = (o: Record<string, unknown>, x: Record<string, unknown> = {}) => d.nutDongPa({ ...chay, ...o }, { ...xem, ...x });
     assert(JSON.stringify(n({})) === '{"ketQua":true,"sua":true,"xoa":false,"ketThuc":false}', JSON.stringify(n({})));
     assert(!n({ ghiDuoc: false }).sua && !n({ ghiDuoc: false }).ketQua, 'không ghi được → không Sửa PA / Kết quả');
     for (const o of [{ status: 'completed' }, { status: 'cancelled' }, { approvalState: 'pending' }, { preset: true, confirmedAt: null, status: 'planned' }])
       assert(!n(o).sua && !n(o).ketQua, `PA chưa chạy / đã khép: ${JSON.stringify(o)}`);
     assert(n({ preset: true, confirmedAt: '2026-10-01', status: 'planned' }).sua, 'PA quy chế đã xác nhận → Sửa PA');
-    assert(n({}, { canApprove: true }).xoa && !n({}, { canApprove: true, caseXong: true }).xoa, 'Xoá PA: QL, Case chưa xong');
-    for (const o of [{ preset: true, confirmedAt: '2026-10-01' }, { kind: 'bo_tro' }, { kind: 'bo_tro_mien_phi' }])
-      assert(!n(o, { canApprove: true }).xoa, `PA hệ thống sinh không xoá: ${JSON.stringify(o)}`);
+    /* N37: Xoá PA theo cờ máy chủ `xoa` ('ngay' | 'xin') — kể cả Case đã hoàn thành, PA quy chế (gửi QL duyệt). */
+    assert(n({ xoa: 'ngay' }, { caseXong: true }).xoa && n({ xoa: 'xin', preset: true }).xoa && !n({ xoa: null }).xoa, 'Xoá PA theo cờ xoa');
     /* Máy chủ chặn đúng những PA web ẩn nút: PA kết thúc → Sửa PA 400. */
     const { c, iv } = tutor10('DONG');
     cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 3, nguoiDay: { performerUserId: GV_L } });

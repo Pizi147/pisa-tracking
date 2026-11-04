@@ -10,24 +10,24 @@ import { t } from '@shared/i18n/index.ts';
 
 /**
  * Nút ⋯ của dòng PA (PR-PA §8, mockup pa-dong-bo §8): `Sửa PA` (người ghi được Kết quả, PA đang chạy) · `Kết thúc PA` (OV-13a C: PA theo quy chế đang chạy,
- * GVCN lớp đang học / Quản lý — hộp nhỏ, Lý do ≥ 10 ký tự; Q-RL2c: toast Hoàn tác + `Mở lại PA` ở PA đã kết thúc sớm khi `iv.coTheHoanTacKetThuc`) · `Xoá PA` (Quản lý / Quản trị) — luật ở `nutDongPa` (shared). Xoá hỏi một dòng (mẫu
- * `DeleteViolationConfirm`). Không mục nào thì không vẽ nút.
+ * GVCN lớp đang học / Quản lý — hộp nhỏ, Lý do ≥ 10 ký tự; Q-RL2c: toast Hoàn tác + `Mở lại PA` ở PA đã kết thúc sớm khi `iv.coTheHoanTacKetThuc`) · `Xoá PA` (N37: cờ máy chủ
+ * `iv.xoa` — 'ngay' vào Thùng rác ngay, không hỏi, toast Hoàn tác; 'xin' = PA theo quy chế, bấm là gửi QL duyệt; đang chờ → mục mờ). Không mục nào thì không vẽ nút.
  */
-export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv: any; ten: string; soKetQua: number; onSua?: () => void; xoa: boolean; ketThuc?: boolean }) {
+export function MenuPa({ iv, ten, onSua, xoa, ketThuc = false }: { iv: any; ten: string; onSua?: () => void; xoa: boolean; ketThuc?: boolean }) {
   const toast = useToast();
-  const [hoi, setHoi] = useState<'xoa' | 'ket-thuc' | null>(null);
+  const [hoi, setHoi] = useState<'ket-thuc' | null>(null);
   const [lyDo, setLyDo] = useState('');
   const [thu, setThu] = useState(false);
   const [busy, setBusy] = useState(false);
   const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan'); };
+  /* N37 (PTA 05/11): không hộp hỏi — xoá dựa Hoàn tác + Thùng rác; PA quy chế (người không phải QL) bấm là gửi QL duyệt. */
   const xoaPa = async () => {
-    setBusy(true);
     try {
-      const r = await api.del<{ thungRacId?: number }>(`/interventions/${iv.id}`);
+      const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/interventions/${iv.id}`);
       lamMoi();
-      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá PA'), lamMoi);
-      setHoi(null);
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
+      if (r?.choDuyet) toast.push('ok', t('Đã gửi QL duyệt xoá PA'));
+      else hoanTacXoa(toast, r?.thungRacId, t('Đã xoá PA'), lamMoi);
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); }
   };
   const ngan = lyDo.trim().length < LY_DO_KET_THUC_PA_TOI_THIEU;
   /* Q-RL2c (N24 ②): đảo Kết thúc PA — toast Hoàn tác 5 s và ⋯ "Mở lại PA" về sau (máy chủ kiểm quyền + chưa ai đổi gì sau đó). */
@@ -51,15 +51,12 @@ export function MenuPa({ iv, ten, soKetQua, onSua, xoa, ketThuc = false }: { iv:
     ...(onSua ? [{ key: 'sua', nhan: t('Sửa PA'), onChon: onSua }] : []),
     ...(ketThuc ? [{ key: 'ket-thuc', nhan: t('Kết thúc PA'), onChon: () => setHoi('ket-thuc') }] : []),
     ...(iv.coTheHoanTacKetThuc ? [{ key: 'mo-lai', nhan: t('Mở lại PA'), onChon: () => { void moLaiPa(); } }] : []),
-    ...(xoa ? [{ key: 'xoa', nhan: t('Xoá PA'), nguyHiem: true, onChon: () => setHoi('xoa') }] : []),
+    ...(xoa ? [{ key: 'xoa', nhan: t('Xoá PA'), nguyHiem: true, onChon: () => { void xoaPa(); },
+      ...(iv.choXoa ? { tat: true, title: t('Đang chờ QL duyệt xoá') } : {}) }] : []),
   ];
   return (
     <>
       <MenuDong muc={muc} />
-      {/* 6c-2 (lỗi 9): hộp xác nhận = hộp nhỏ giữa màn (mẫu `.hop-hoi`), không ngăn 480 đè panel. Nêu đúng PA + số kết quả bị xoá. */}
-      <ConfirmDialog open={hoi === 'xoa'} onClose={() => setHoi(null)} onConfirm={() => void xoaPa()} title={t('Xoá PA này?')} danger busy={busy} z="z-[60]"
-        confirmLabel={t('Xoá PA')} busyLabel={t('Đang xoá…')}
-        body={<>{ten}{soKetQua > 0 ? t(' · {soKetQua} kết quả tuần sẽ xoá', { soKetQua }) : ''}</>} />
       <ConfirmDialog open={hoi === 'ket-thuc'} onClose={() => setHoi(null)} onConfirm={() => void ketThucPa()} title={t('Kết thúc PA này?')} busy={busy} z="z-[60]"
         confirmLabel={t('Kết thúc PA')} busyLabel={t('Đang lưu…')} daSua={!!lyDo.trim()}
         body={<div className="space-y-2">

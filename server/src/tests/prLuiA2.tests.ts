@@ -309,14 +309,15 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
   const cotTro = () => (hang(`SELECT name FROM sqlite_master WHERE type = 'table'`) as any[]).flatMap((tb) =>
     hang(`SELECT name FROM pragma_table_info(?)`, tb.name).filter((c) => /(^|_)case_id$|^intervention_id$|^superseded_by$/.test(c.name))
       .map((c) => ({ bang: tb.name as string, cot: c.name as string })));
-  check('LUIa2-14 · Xoá Case báo tay: không còn dòng trỏ Case / PA ở mọi bảng; thẻ chờ đóng tu_dong; nhật ký chụp; chặn GV, Case từ Test, PA có kết quả', () => thu(() => {
+  check('LUIa2-14 · Xoá Case báo tay: không còn dòng trỏ Case / PA ở mọi bảng; thẻ chờ đóng tu_dong; nhật ký chụp; N37: GV môn xoá thẳng, GV khác 403, Case có PA có kết quả xoá được', () => thu(() => {
     const caseId = taoCase(moiEm());
     const ivId = deXuat(caseId);
     att.addLink(P.lrTeacher, { ownerType: 'sos_case', ownerId: caseId, url: 'https://example.com/a' });
     att.addLink(P.lrTeacher, { ownerType: 'case_intervention', ownerId: ivId, url: 'https://example.com/b' });
     const the = theCuaPa(ivId).id as number;
-    assert(maLoi(() => cases.xoaCase(P.coreTeacher, caseId)) === 403 && maLoi(() => cases.xoaCase(P.lrTeacher, caseId)) === 403, 'GV xoá được');
-    assert(cases.caseDetail(QL, caseId).viewer.coTheXoa === true && cases.caseDetail(P.lrTeacher, caseId).viewer.coTheXoa === false, 'cờ coTheXoa');
+    /* N37 (chủ SP 05/11): người sửa được Case xoá thẳng; GV môn khác của lớp không. */
+    assert(maLoi(() => cases.xoaCase(P.w1Teacher, caseId)) === 403, 'GV Writing xoá được Case Listening');
+    assert(cases.caseDetail(QL, caseId).viewer.xoa === 'ngay' && cases.caseDetail(P.lrTeacher, caseId).viewer.xoa === 'ngay', 'cờ xoa');
     const n0 = soCauSql();
     cases.xoaCase(QL, caseId);
     const cau = soCauSql() - n0;
@@ -336,21 +337,15 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assert(theDa && theDa.mo === '' && theDa.dong.includes('PA đã xoá'), `rà #229: thẻ của PA đã xoá không có Mở: ${JSON.stringify(theDa?.mo)}`);
     const nk = mot(`SELECT before_json FROM audit_logs WHERE action = 'case.delete' AND entity_id = ?`, caseId);
     assert(nk && JSON.parse(nk.before_json).pa.length === 1 && JSON.parse(nk.before_json).case.id === caseId, 'nhật ký');
-    /* Case từ Test → dùng "Không cần theo dõi". */
-    const mock = mot(`SELECT id FROM sos_cases WHERE origin_kind = 'mock' AND status != 'done' LIMIT 1`);
-    if (mock) assert(chuLoi(() => cases.xoaCase(P.admin, mock.id)) === 'Case từ kết quả Test — dùng "Không cần theo dõi".', 'Case mock');
-    /* Còn PA có kết quả → chặn (Q6); xoá PA đó trước thì xoá Case được. */
+    /* N37: còn PA có kết quả → vẫn xoá thẳng; PA + kết quả đi cùng. */
     const c2 = taoCase(moiEm());
     const iv2 = themPa(c2);
     ketQua(iv2);
-    assert(chuLoi(() => cases.xoaCase(QL, c2)) === 'Case còn PA có kết quả — xoá các PA trước.', 'còn PA có kết quả');
-    assert(cases.caseDetail(QL, c2).viewer.chanXoa === 'Case còn PA có kết quả — xoá các PA trước.' && cases.caseDetail(QL, c2).viewer.coTheXoa === false, 'chanXoa');
-    cases.xoaPa(QL, iv2);
     cases.xoaCase(QL, c2);
-    assert(!mot('SELECT 1 FROM sos_cases WHERE id = ?', c2), 'xoá sau khi xoá PA');
+    assert(!mot('SELECT 1 FROM sos_cases WHERE id = ?', c2) && !mot('SELECT 1 FROM case_followups WHERE intervention_id = ?', iv2), 'xoá Case có PA có kết quả');
   }));
 
-  check('LUIa2-16 · Xoá PA (2 kết quả tuần): xoá PA + kết quả + lịch sử điều chỉnh; nhật ký chụp; việc / Phân tích tính lại; hết PA → Mới mở; GV 403; PA chờ duyệt xoá được', () => thu(() => {
+  check('LUIa2-16 · Xoá PA (2 kết quả tuần): xoá PA + kết quả + lịch sử điều chỉnh; nhật ký chụp; việc / Phân tích tính lại; hết PA → Mới mở; N37: GV ghi được xoá thẳng, Case đã hoàn thành giữ; PA chờ duyệt xoá được', () => thu(() => {
     const sid = moiEm();
     const caseId = taoCase(sid);
     const ivId = themPa(caseId);
@@ -364,9 +359,11 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     const viec = () => (mywork.myWork(P.lrTeacher, {}).items ?? []).filter((i: any) => i.group === 'ghi_ket_qua_pa' && i.caseId === caseId).length;
     const v0 = viec();
     assert(v0 === 1, `chưa có dòng Ghi kết quả PA: ${v0}`);
-    assert(maLoi(() => cases.xoaPa(P.lrTeacher, ivId)) === 403, 'GV');
+    assert(maLoi(() => cases.xoaPa(P.w1Teacher, ivId)) === 403, 'GV Writing xoá được PA Listening');
+    assert(cases.caseDetail(P.lrTeacher, caseId).interventions.find((i: any) => i.id === ivId).xoa === 'ngay', 'GV môn: xoá thẳng');
     const cXong = taoCase(moiEm()); const ivXong = themPa(cXong); dongCase(cXong, ivXong);
-    assert(chuLoi(() => cases.xoaPa(QL, ivXong)) === 'Case đã hoàn thành — Mở lại trước khi xoá PA.', 'Case đã hoàn thành');
+    cases.xoaPa(QL, ivXong);   // N37: Case đã hoàn thành — xoá PA không mở lại Case
+    assert(mot('SELECT status FROM sos_cases WHERE id = ?', cXong).status === 'done', 'xoá PA mở lại Case đã hoàn thành');
     cases.xoaPa(QL, ivId);
     assert(!mot('SELECT 1 FROM case_interventions WHERE id = ?', ivId), 'PA còn');
     assert(hang('SELECT 1 FROM case_followups WHERE intervention_id = ?', ivId).length === 0, 'kết quả còn');

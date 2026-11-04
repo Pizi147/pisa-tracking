@@ -85,6 +85,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const tuDuyetDuoc = coNut && yc.kieuNut === 'duyet-tu-choi' && yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id;
   /* OV-7a: người gửi Sửa / Rút thẻ còn chờ; Quản lý sửa câu trả lời đã gửi. Máy chủ kiểm lại quyền. */
   const nguoiGuiSua = cho && yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id && LOAI_NGUOI_XIN_SUA.includes(yc.loai);
+  /* N37: thẻ xin xoá Case / PA — người gửi chỉ Rút (lý do tuỳ chọn, không có gì để sửa). */
+  const chiRut = cho && yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id && yc.loai === 'xin_xoa';
   const suaTraLoiDuoc = yc.trangThai === 'da_tra_loi' && !laNguoiXin && laVaiQuanLy(session?.roles);
   const [moPanelSua, setMoPanelSua] = useState(false);
   const [lyDoKtd, setLyDoKtd] = useState<string>('');
@@ -305,10 +307,10 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
             </div>
           )}
           {laNguoiXin && cho && <div><NhanTrangThai t="cho-duyet" /></div>}
-          {nguoiGuiSua && (
+          {(nguoiGuiSua || chiRut) && (
             <div className="flex flex-wrap gap-1.5 sm:justify-end">
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'sua' || moPanelSua}
-                onClick={(e) => moSua(e.currentTarget)}>{t('Sửa…')}</button>
+              {nguoiGuiSua && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} aria-expanded={o?.loai === 'sua' || moPanelSua}
+                onClick={(e) => moSua(e.currentTarget)}>{t('Sửa…')}</button>}
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !!o} onClick={(e) => rut(e.currentTarget)}>
                 {busy && !o ? t('Đang rút…') : t('Rút')}</button>
             </div>

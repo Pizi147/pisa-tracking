@@ -1,5 +1,5 @@
 import { Fragment, useState, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SCORE_CHIP, type ScoreTone } from '../../ui/ui.tsx';
 import { CHIP_TRON, CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -115,6 +115,9 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
 /** Một thẻ chương (desktop; điện thoại dùng cho chương đang học). */
 function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon: (c: ChuongWeb) => void }) {
   const navigate = useNavigate();
+  /* N37: Case · PA một tuyến — bấm tên Case mở Case tại chỗ (hồ sơ HV đọc `?case=`, giữ tab đang xem). */
+  const [params, setParams] = useSearchParams();
+  const moCase = (caseId: number) => { const n = new URLSearchParams(params); n.set('case', String(caseId)); setParams(n, { replace: true }); };
   const duoi = duoiCua(c);
   return (
     <article aria-label={`${c.code}${c.dangHoc ? `, ${t('đang học')}` : ''}`} onClick={() => onChon(c)}
@@ -156,7 +159,9 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
           {c.caseDong.map((x) => (
             <div key={x.caseId} className="flex flex-col gap-1">
               <span className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-slate-100">
-                <NhanLoai loai="Case" /><TenCaseChuong ten={x.ten} />
+                <NhanLoai loai="Case" />
+                <button type="button" title={t('Mở Case')} onClick={(e) => { e.stopPropagation(); moCase(x.caseId); }}
+                  className="inline-flex min-w-0 flex-wrap items-center gap-1.5 rounded border-0 bg-transparent p-0 text-left font-semibold text-slate-100 hover:underline max-sm:min-h-[44px]"><TenCaseChuong ten={x.ten} /></button>
                 {x.xongO && <span className="text-[12px] font-medium text-slate-400">{t('xong ở {dot}', { dot: dich(x.xongO) })}</span>}
               </span>
               {x.pa.length > 0 && (

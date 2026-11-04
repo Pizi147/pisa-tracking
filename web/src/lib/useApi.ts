@@ -140,7 +140,8 @@ export function batDauTai<T>(path: string | null, b: {
       b.setError(loi);
       b.setFetching(false);
       if (loi.status === 401) ngheHetPhien.forEach((f) => f());
-      else if (coDuLieu.current) {
+      /* N37: 404 khi tải lại nền = đối tượng vừa bị xoá (Case / PA…) — nơi cha tải lại sẽ gỡ khối; "Thử lại" chỉ 404 lần nữa nên không báo. */
+      else if (coDuLieu.current && loi.status !== 404) {
         loiNen.add(reload);
         ngheLoi.forEach((f) => f());
       }

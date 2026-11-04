@@ -286,7 +286,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | Nhật ký PA | `web/src/modules/cases/FormPa.tsx` → `NhatKyPa` · `server/src/cases/planRevisions.ts` |
 | Đề xuất đổi PA · dòng Xin ý kiến | `web/src/modules/cases/{DoiPa,DongXinYKien}.tsx` · `server/src/cases/doiPa.ts` (`deXuatDoiPa`, `apDungDoiPa`) |
 | Cần bổ sung đánh giá · chi tiết theo thành phần kỹ năng | `web/src/modules/cases/{NeedsEvaluation,ChiTietKyNang}.tsx` |
-| Mở lại, sửa, xoá Case; xoá / kết thúc PA | `server/src/cases/cases.ts` (`moLaiCase`, `suaCase`, `xoaCase`, `xoaPa`, `ketThucPaQuyChe`) · `web/src/modules/cases/MenuXoaPa.tsx` (`MenuPa`) |
+| Mở lại, sửa, xoá Case; xoá / kết thúc PA | `server/src/cases/cases.ts` (`moLaiCase`, `suaCase`, `xoaCase`, `xoaPa`, `ketThucPaQuyChe`; N37 quyền xoá `cachXoaCase` / `cachXoaPa`, xin QL duyệt `xinXoa` → thẻ `xoa_case` / `xoa_pa` ở `duyet/loaiYeuCau.ts`) · `web/src/modules/cases/MenuXoaPa.tsx` (`MenuPa`) · `ThaoTacCase.tsx` (`HopXoaCase` — ⋯ đầu `NganCase` + chân Sửa Case) |
 | PA Bổ trợ · PA đại diện nhóm Bổ trợ | `server/src/cases/boTro.ts` · `shared/domain/daiDienBoTro.ts` |
 | Buổi Tutor trong kết quả PA | `web/src/modules/cases/BuoiTutorO.tsx` · `server/src/cases/cases.ts` (`ghiBuoiTutor`) · `server/src/tutors/chon.ts` |
 | Hệ thống tự đóng Case | `server/src/cases/systemClose.ts` (`closeCasesBySystem`, `closeCasesOnProgrammeSwitch`) |
