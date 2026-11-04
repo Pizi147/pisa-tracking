@@ -44,12 +44,12 @@ export const HD_CX: HuongDan = {
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       muc: [
-        { id: 'cx-tq-o', ten: 'Bốn số', buoc: ['Chọn <b>Chi nhánh</b>; <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · bước tiếp</b>.', 'Bấm số mở danh sách chỉ đọc.'],
+        { id: 'cx-tq-o', ten: 'Bốn số', buoc: ['Chọn <b>Chi nhánh</b>; <b>Đạt MT</b> · <b>Đạt Target thi thật</b> · <b>HV SOS 2–3</b> · <b>Chờ KQ · bước tiếp</b>.', 'Bấm số mở danh sách ngay tại trang.'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
         { id: 'cx-tq-so', ten: 'Theo chi nhánh', buoc: ['Bảng: Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa PA; bấm hàng xem một chi nhánh.'] },
       ],
     },
-    { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Mọi chi nhánh; <b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách chỉ đọc.'],
+    { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Mọi chi nhánh; <b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.'],
       chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }] },
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: ['/hoc-vien'],

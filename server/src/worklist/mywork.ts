@@ -402,10 +402,6 @@ function napCaseMo(): any[] {
 }
 
 /**
- * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
- * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
- */
-/**
  * PR-SOS (K3-14, Q8): PA theo quy chế đang chạy mà CHƯA CÓ MỐC — nguồn việc `moc:` (một câu cho cả phạm vi). BO-QUA-XEP-MT: kèm cột bỏ qua + tên
  * người bỏ qua (JOIN, không thêm câu). `boQuaViec` đọc lại đúng một PA bằng câu này + `AND iv.id = ?`.
  */
@@ -462,6 +458,10 @@ export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
   return { ok: true };
 }
 
+/**
+ * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
+ * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
+ */
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
   /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[] } = {}) {
   const today = demoToday();

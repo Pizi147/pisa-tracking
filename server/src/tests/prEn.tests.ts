@@ -542,6 +542,16 @@ export async function runPrEnTests(t: any) {
     assert(i18n.dichMau('en', 'Nguyễn Văn A') === 'Nguyễn Văn A', 'tên người không dịch');
     assert(i18n.dichMau('vi', 'quá hạn 3 ngày') === 'quá hạn 3 ngày', 'VI giữ nguyên');
   });
+
+  check('DON-CHU · tiền tố chữ máy chủ ghép từ dữ liệu ("Hệ thống: …", "Kết quả tuần: …") + đơn vị "tuần" / "Lịch" dịch đúng', () => {
+    const d = (s: string) => i18n.dichMau('en', s);
+    for (const [vi, en] of [
+      ['Hệ thống: Vắng — dấu "-" trong tuần Test · đề nghị W2 OCT', 'System: Absent — "-" in the test week · requested W2 OCT'],
+      ['Kết quả tuần: Tiến bộ rõ', 'Weekly result: Clear progress'],
+      ['tuần', 'weeks'], ['Lịch', 'Schedule'], ['Tutor · đến lúc thi', 'Tutor · until the exam'],
+    ]) assert(d(vi) === en, `"${vi}" → "${d(vi)}"`);
+    assert(d('Kết quả tuần: Tiến bộ rõ — em tự gõ') === 'Weekly result: Clear progress — em tự gõ', 'chữ người gõ giữ nguyên');
+  });
 }
 
 /**
@@ -572,6 +582,13 @@ const FILE_DA_DICH = [
     'ClassRoster', 'BangHocVienLop', 'MissingBadge'].map((f) => `web/src/modules/students/${f}.tsx`),
   ...['ClassOverviewPage', 'DauTrangLop', 'TabHocVienLop', 'BangDiemLopThuong', 'BangCanHoTro', 'ClassIssueBoard', 'CanhBaoYThuc', 'PhanTichLopTab',
     'TabTongKetLop', 'DaiChuyenLop', 'BangKqdrLopFt', 'thaoTacDongHocVien'].map((f) => `web/src/modules/classes/${f}.tsx`),
+  /* EN-SOT (#819–#823) + DON-CHU. Chưa vào: `test/keHoach/XepTheoHocVien.tsx` (còn chữ Việt — việc sau). */
+  'shared/domain/bangChung.ts', 'web/src/modules/duyet/HopChoDuyet.tsx', 'web/src/modules/giaoVien/HoSoGiaoVienPage.tsx',
+  ...['HieuQuaPa', 'KetQuaThi', 'PhanTichGiaoVien', 'TongHopTestSos', 'YThucPhoiHop'].map((f) => `web/src/modules/phanTich/${f}.tsx`),
+  ...['AccountsAdmin', 'AdminPage', 'BangQuyDoiAdmin', 'CapQuyenRieng', 'CatalogAdmin', 'DemoBar', 'XoaTaiKhoanPanel'].map((f) => `web/src/modules/platform/${f}.tsx`),
+  'web/src/modules/test/KeHoachTestTab.tsx',
+  ...['LopKeHoach', 'LuoiKeHoach', 'NganXepHangLoat', 'NganXepLichMt'].map((f) => `web/src/modules/test/keHoach/${f}.tsx`),
+  ...['ChonChuongTrinh', 'ManagerTasks', 'MeetingPage', 'MgmtTasksPage', 'MockTestAdmin', 'SignalList', 'TongQuanV5'].map((f) => `web/src/modules/worklist/${f}.tsx`),
 ];
 
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */
@@ -594,6 +611,10 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },
   { file: 'shared/domain/congViec.ts', text: /^Kỹ năng$/ },   // P11: so với nhãn máy chủ gửi khi Case chưa có môn (`monCuaViec`) — không hiện ra
+  /* EN-SOT + DON-CHU: tên sheet bản Việt (EN là "Summary"); ghi chú phiên bản lưu DB; so với chữ máy chủ gửi. */
+  { file: 'web/src/modules/phanTich/TongHopTestSos.tsx', text: /^Tổng hợp$/ },
+  { file: 'web/src/modules/platform/BangQuyDoiAdmin.tsx', text: /^(Bảng gốc|Phiên bản \{id\}|Hoàn tác|Khôi phục \{…\})$/ },
+  { file: 'web/src/modules/test/keHoach/NganXepLichMt.tsx', text: /^· bỏ lịch$/ },
 ];
 
 /**

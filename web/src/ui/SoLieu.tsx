@@ -14,7 +14,7 @@ import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
 import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { NutLuat } from './NutLuat.tsx';
-import { dich, t } from '@shared/i18n/index.ts';
+import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { lazyTai } from '../lib/taiLaiManh.ts';
 
 /**
@@ -363,7 +363,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                 {v.loai === 'xac-nhan-pa' && v.pa ? (
                   <div className="flex flex-col gap-1">
                     <span className="text-[15px] font-bold text-slate-100">{dich(INTERVENTION_KIND_LABEL[v.pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.pa.kind)}</span>
-                    {v.pa.description && <span className="text-sm text-slate-200">{v.pa.description}</span>}
+                    {v.pa.description && <span className="text-sm text-slate-200">{dichDu(v.pa.description)}</span>}
                     <span className="text-[13px] text-slate-400">{[v.pa.performer, v.pa.mocChu].filter(Boolean).join(' · ')}</span>
                   </div>
                 ) : r.title && r.title !== r.ngCanh ? <span className="text-sm text-slate-200">{r.title}</span> : null}

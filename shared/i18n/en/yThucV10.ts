@@ -11,7 +11,7 @@ export const EN_Y_THUC_V10 = {
   'Đã bỏ xem': 'Unmarked',
   'Không có "Đã xem"': 'No "Seen"',
   '≥ 3 vi phạm trong tuần này + tuần trước → bắt buộc xử lý. Vi phạm lẻ: Đã xem (chưa cần xử lý, không lên bậc) hoặc xử lý nếu nghiêm trọng.':
-    '≥ 3 violations this week + last week → must be handled. A single violation: Seen (no measure, no step up) or handle it if serious.',
+    '≥ 3 incidents this week + last week → must be handled. A single incident: Seen (no action, no step up) or handle it if serious.',
   'Phải xử lý': 'Must handle',
   'Đã báo {ngay}': 'Told {ngay}',
   'Lần': 'Round',
@@ -34,7 +34,7 @@ export const EN_Y_THUC_V10 = {
   'Chưa có gì trong lịch sử': 'Nothing in history yet',
   /* Việc (Công việc, dải việc hồ sơ HV) — N34 ④. */
   'Xem vi phạm mới': 'Review new incidents',
-  'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.': 'Incidents logged by others that you have not seen. Seen (no measure) or Confirm action within 5 days.',
+  'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.': 'Incidents logged by others that you have not seen. Seen (no action needed yet) or Confirm action within 5 days.',
   'Xem {soMoi} vi phạm mới · {ten}': (b) => `Review ${b.soMoi} new incident(s) · ${b.ten}`,
   'Xem {n} vi phạm mới': (b) => `Review ${b.n} new incident(s)`,
   /* UI-2 — tab Ý thức hồ sơ lớp (mockup U10 K1 · K2 · K4 · K6). */

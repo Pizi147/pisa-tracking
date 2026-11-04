@@ -90,10 +90,11 @@ export function NutGvCham({ value, onChange, lon = false, hang = false, goiY = G
   const ten = value?.kieu === 'toi' ? session?.user?.fullName ?? t('Tôi') : tenNgan(value);
   const cut = ten ? ten.lastIndexOf(' ') + 1 : 0;   // từ cuối dính mũi tên: mũi tên không rơi xuống dòng riêng
   const dau = ten ? ten.slice(0, cut) : '', cuoi = ten ? ten.slice(cut) : <span className="text-slate-500">{t('chưa chọn')}</span>;
+  const dong = () => setMo(false);   // DON-CHU: một hàm cho ✕ và "Xong" — nút chân đi chung đường hỏi của KhungPanel
   const panel = mo && (
     /* I4 (PR-SL): khung panel chung. Chọn là lưu ngay (nhớ trên máy) → chân chỉ có "Xong". Mở được từ trong panel khác → `longTrong`. */
-    <KhungPanel tieuDe={t('GV chấm Speaking')} longTrong z="z-[60]" onDong={() => setMo(false)}
-      chan={{ huy: { nhan: 'Xong', onClick: () => setMo(false) } }}>
+    <KhungPanel tieuDe={t('GV chấm Speaking')} longTrong z="z-[60]" onDong={dong}
+      chan={{ huy: { nhan: t('Xong'), onClick: dong } }}>
       <div className="space-y-2 pt-3">
         <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="nhan_vien" choNgoai ariaLabel={t('GV chấm Speaking')} />
         <p className="m-0 text-xs text-slate-400">{goiY}</p>

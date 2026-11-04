@@ -30,7 +30,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ketQuaGanNhat } from '../yThuc/CaseSosControls.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
-import { dich, t } from '@shared/i18n/index.ts';
+import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 
 /**
@@ -443,7 +443,7 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
   const chuaChay = !!iv.chuaChay;
   const hanGhi = iv.actionDue && dangChay ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
   const all: any[] = data.interventions ?? [];
-  const tenPA = (x: any) => x.description || INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] || x.kind;
+  const tenPA = (x: any) => dichDu(x.description) || INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] || x.kind;
   /* OV-13b: `superseded_by` khi PA gốc CHƯA khép = đề xuất đổi PA còn chờ — chưa "được thay"; chỉ nói sau khi QL duyệt (gốc khép). */
   const thayBang = iv.supersededBy && iv.closedReason ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
   const thayCho = all.find((x) => x.supersededBy === iv.id && x.closedReason) ?? null;
@@ -605,7 +605,7 @@ function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua 
         {hanGhi && !daLuu && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
           : <span className={`text-[13px] tabular-nums ${hanGhi.tone === 'overdue' ? 'font-semibold text-late' : 'text-slate-400'}`}>{hanGhi.quaHan ? `⚠ ${hanGhi.quaHan}` : t('hạn kế {ngay}', { ngay: ngan(iv.actionDue) })}</span>)}
         </div>
-        <MenuPa iv={iv} ten={iv.description || iv.kind} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
+        <MenuPa iv={iv} ten={dichDu(iv.description) || iv.kind} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined}
           soKetQua={(data.followups ?? []).filter((f: any) => f.interventionId === iv.id).length} />
       </div>
       {thieuNguoi && (
@@ -869,7 +869,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
   }
   const tenPa = (id: number | null) => {
     const iv = (data.interventions ?? []).find((x: any) => x.id === id);
-    return iv ? (iv.description || INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] || iv.kind) : null;
+    return iv ? (dichDu(iv.description) || INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] || iv.kind) : null;
   };
   for (const f of data.followups ?? []) {
     const tre = f.late ? soNgayGiua(f.cycleDue, f.observedOn) : null;
