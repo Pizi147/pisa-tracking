@@ -34,8 +34,8 @@ const theoLo = <T>(ds: readonly T[]) => Array.from({ length: Math.ceil(ds.length
  * Cùng nguồn (`dong`) với Công việc nên số ở ô = số dòng khi bấm.
  */
 export function viecCuaGv(p: Principal, gvId: number): { nhom: NhomViec; n: number; quaHan: number }[] {
-  /* CHAM-LAI: đếm VIỆC như đầu trang Công việc (`demViec` trên việc thật — mở `con` của dòng gộp), không đếm dòng. */
-  const dong = ((p.userId === gvId ? myWork(p).dong : viecCuaNguoi(p, gvId).dong) ?? []).flatMap((x) => (x.con?.length ? x.con : [x]));
+  /* S11 (chủ SP 05/11): đếm DÒNG việc như đầu nhóm Công việc (`demDongViec` trên `dong`, dòng gộp "Cả lớp" = 1). */
+  const dong = (p.userId === gvId ? myWork(p).dong : viecCuaNguoi(p, gvId).dong) ?? [];
   /* OV-11c (PT-7): chỉ ô nhóm người xem được xem — Admin chỉ Chấm điểm (không bày ô "0" của nhóm mình không thấy). */
   const chiChamDiem = p.userId !== gvId && phamViXemViec(p) === 'cham-diem';
   return demViecTheoNhom(dong).filter((x) => !chiChamDiem || x.nhom === 'cham-diem');

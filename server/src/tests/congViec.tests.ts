@@ -261,7 +261,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(a['qua-han'] === 1 && a['tuan-nay'] === 1, `Số theo Loại việc "score" sai: ${JSON.stringify(a)}`);
   });
 
-  check('RA-LUONG-1 · demLocNhanh đếm VIỆC như demViec (dòng gộp = việc con, Nhập điểm = số kỹ năng), không đếm dòng', () => {
+  check('RA-LUONG-1 → S11 (UI-CV-V12) · demLocNhanh đếm DÒNG như demDongViec (dòng gộp "Cả lớp" = 1, Nhập điểm L + R = 1)', () => {
     const items = [
       { key: 's1', studentId: null, group: 'score', urgency: 'overdue', due: '2026-09-09', kns: ['listening', 'reading'] },
       { key: 'g', studentId: null, group: 'ghi_nhan_xet', urgency: 'overdue', due: '2026-09-10', con: [
@@ -271,8 +271,8 @@ export async function runCongViecTests(t: YThucTestKit) {
       ] },
     ];
     const d = domain.demLocNhanh(items as any, 'tat-ca', homNay);
-    const quaHanTheoDemViec = domain.demViec(items.flatMap((x: any) => x.con ?? [x]).filter((x: any) => x.urgency === 'overdue') as any).viec;
-    assert(d['qua-han'] === 4 && d['qua-han'] === quaHanTheoDemViec, `Quá hạn phải = 2 kỹ năng + 2 em = 4 (demViec ${quaHanTheoDemViec}), được ${d['qua-han']}`);
+    const quaHan = domain.demDongViec(items.filter((x: any) => x.urgency === 'overdue') as any).n;
+    assert(d['qua-han'] === 2 && d['qua-han'] === quaHan, `Quá hạn phải = 2 dòng (demDongViec ${quaHan}), được ${d['qua-han']}`);
   });
 
   check('PR-Ra · thamSoNguoi: "toi"/"tat-ca" giữ nguyên, số hợp lệ → number, chuỗi lạ/rỗng/thiếu → null', () => {

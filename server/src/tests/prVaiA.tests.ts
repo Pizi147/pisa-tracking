@@ -521,12 +521,12 @@ export async function runPrVaiATests(t: YThucTestKit) {
 
   // ================================================================== Task 9 · điện thoại + badge
   /* PR-S6F-b (D14): `/my-work/dem` bỏ — App đọc `summary.overdue` của `/my-work` (sửa kỳ vọng, giữ phép kiểm). */
-  check('VAI-a (9b) → S6F-b D14 · badge GV = myWork(p).summary.viec (V5 SV-SO1, trước: overdue) đọc từ /my-work; App đọc cho GV, số đỏ cả thanh trên và thanh dưới', () => {
+  check('VAI-a (9b) → S6F-b D14 → S11 · badge GV = myWork(p).summary.canLamNgay (UI-CV-V12: dòng quá hạn + hôm nay) đọc từ /my-work; App đọc cho GV, số đỏ cả thanh trên và thanh dưới', () => {
     const src = fs.readFileSync(pathM.join(REPO, 'server/src/routes/index.ts'), 'utf8');
     assert(!src.includes("api.get('/my-work/dem'"), 'route /my-work/dem đã bỏ');
-    for (const gv of [P.coreTeacher, P.subjectTeacher]) assert(Number.isInteger((mywork.myWork(gv) as any).summary.viec), 'summary.viec');
+    for (const gv of [P.coreTeacher, P.subjectTeacher]) assert(Number.isInteger((mywork.myWork(gv) as any).summary.canLamNgay), 'summary.canLamNgay');
     const app = fs.readFileSync(pathM.join(REPO, 'web/src/App.tsx'), 'utf8');
-    assert(/'\/my-work'/.test(app) && /summary\?\.viec\b/.test(app) && /<NavItem[^>]*so=\{so\}/.test(app) && /<NutDay[^>]*so=\{so\}/.test(app) && /quá hạn/.test(app), 'badge GV ở hai thanh');
+    assert(/'\/my-work'/.test(app) && /summary\?\.canLamNgay\b/.test(app) && /<NavItem[^>]*so=\{so\}/.test(app) && /<NutDay[^>]*so=\{so\}/.test(app) && /quá hạn/.test(app), 'badge GV ở hai thanh');
   });
 
   // ================================================================== Task 10 · chuông

@@ -73,8 +73,8 @@ const ThanhPhanDemo = import.meta.env.DEV ? lazyTai(() => import('./modules/dev/
  * Mục đang sáng tính theo khu vực của đường dẫn (`khuVucCuaDuong`), nên màn nhập điểm vẫn sáng mục Test.
  */
 /**
- * SỐ CẠNH MỤC "CÔNG VIỆC" — mọi vai (DESIGN V13; UI-CONG-VIEC: chủ SP 03/11 bỏ số thẻ chờ duyệt của Quản lý): số VIỆC của chính mình đang mở
- * (`/my-work` → `summary.viec` = ô "Của tôi", đơn vị việc — không phải dòng, không phải bài), đỏ khi có việc quá hạn (`summary.viecQuaHan`).
+ * SỐ CẠNH MỤC "CÔNG VIỆC" — mọi vai (S11 chủ SP 05/11, thay DESIGN V13 #886; chủ SP 03/11 bỏ số thẻ chờ duyệt của Quản lý): số DÒNG việc của chính mình
+ * CẦN LÀM NGAY — quá hạn + hạn hôm nay (`/my-work` → `summary.canLamNgay` = ô "Của tôi"); 0 → không số; đỏ khi có dòng quá hạn (`summary.viecQuaHan`).
  * Thanh trên và thanh dưới cùng một số. Yêu cầu chờ duyệt có số ở nhóm "Chờ bạn duyệt" của trang.
  */
 type SoBadge = { n: number; quaHan: boolean; sr: string } | null;
@@ -252,9 +252,9 @@ export default function App() {
    * Q16: giáo viên đọc MỘT lần (deps rỗng) — tự tải lại khi `/my-work` bị làm mới (`invalidate` theo tiền tố). D14: chính `/my-work` (Tổng quan,
    * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần).
    */
-  const viecGv = useApi<{ summary: { viec: number; viecQuaHan: number } }>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, []).data;
-  const gv = viecGv ? { viec: viecGv.summary?.viec ?? 0, quaHan: viecGv.summary?.viecQuaHan ?? 0 } : null;
-  const so: SoBadge = gv?.viec ? { n: gv.viec, quaHan: gv.quaHan > 0, sr: t('{n} việc', { n: gv.viec }) + (gv.quaHan ? t(', {n} quá hạn', { n: gv.quaHan }) : '') } : null;
+  const viecGv = useApi<{ summary: { canLamNgay: number; viecQuaHan: number } }>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, []).data;
+  const gv = viecGv ? { n: viecGv.summary?.canLamNgay ?? 0, quaHan: viecGv.summary?.viecQuaHan ?? 0 } : null;
+  const so: SoBadge = gv?.n ? { n: gv.n, quaHan: gv.quaHan > 0, sr: t('{n} việc cần làm ngay', { n: gv.n }) + (gv.quaHan ? t(', {n} quá hạn', { n: gv.quaHan }) : '') } : null;
 
   const daDangNhap = !!session?.authenticated;
   useEffect(() => {

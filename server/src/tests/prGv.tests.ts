@@ -3,7 +3,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 import { can } from '../permissions.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { COT_O_GV, demViecTheoNhom, duongViecCuaGv, laCotOGv } from '../../../shared/domain/hoSoGiaoVien.ts';
-import { demViec } from '../../../shared/domain/tongQuan.ts';
+import { demDongViec } from '../../../shared/domain/tongQuan.ts';
 
 export async function runPrGvTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, classId, TODAY, addDays } = t;
@@ -25,9 +25,9 @@ export async function runPrGvTests(t: YThucTestKit) {
     assert(JSON.stringify(r.map((x) => x.nhom)) === JSON.stringify(['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh']), 'thứ tự NHOM_VIEC');
     assert(JSON.stringify(r.map((x) => [x.n, x.quaHan])) === JSON.stringify([[1, 1], [1, 0], [1, 0], [1, 1]]), 'n / quá hạn từng nhóm');
     assert(demViecTheoNhom([]).length === 4, 'rỗng vẫn đủ 4 dòng');
-    /* CHAM-LAI: cùng đơn vị "việc" với Công việc — Nhập điểm L + R = 2 việc; S chấm chéo (`|cc`) không là việc. */
+    /* S11 (UI-CV-V12): cùng đơn vị với Công việc — MỘT dòng = 1 (Nhập điểm L + R = 1 việc); S chấm chéo (`|cc`) không là việc. */
     const c = demViecTheoNhom([v('e', 'score', 'overdue', ['listening', 'reading']), v('f|cc', 'score', 'normal', ['speaking'])]);
-    assert(c[0].n === 2 && c[0].quaHan === 2, `đơn vị việc: ${JSON.stringify(c[0])}`);
+    assert(c[0].n === 1 && c[0].quaHan === 1, `đơn vị dòng: ${JSON.stringify(c[0])}`);
   });
 
   check('PR-GV (1) · duongViecCuaGv: QL có nguoi=id, tự xem có nguoi=toi, GV không có nguoi; có khung=tat-ca', () => {
@@ -103,9 +103,9 @@ export async function runPrGvTests(t: YThucTestKit) {
     try { assertThrows(() => viecCuaNguoi(P.cpManager, chiMb), /chi nhánh bạn quản lý/, 'QL CP xem GV chỉ ở MB → 403'); } finally { don(chiMb); }
   });
 
-  check('PR-GV (2) · số = số VIỆC như đầu trang Công việc (CHAM-LAI): tổng 4 nhóm của viecCuaGv = demViec trên việc thật của /my-work?nguoi=, chính mình = myWork', () => {
+  check('PR-GV (2) · số = số việc như đầu nhóm Công việc (S11: demDongViec trên DÒNG): tổng 4 nhóm của viecCuaGv = demDongViec(/my-work?nguoi=), chính mình = myWork', () => {
     const gv = gvcn('MB FT 101');
-    const viec = (w: any) => demViec((w.dong ?? []).flatMap((x: any) => (x.con?.length ? x.con : [x]))).viec;
+    const viec = (w: any) => demDongViec(w.dong ?? []).n;
     const ql = viecCuaGv(P.mbManager, gv);
     const so = viec(viecCuaNguoi(P.mbManager, gv));
     assert(ql.length === 4 && ql.reduce((a, x) => a + x.n, 0) === so, `tổng nhóm ${ql.reduce((a, x) => a + x.n, 0)} = ${so} việc`);

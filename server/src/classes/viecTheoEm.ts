@@ -5,11 +5,11 @@
  * Nguồn: QL / Admin = "Tất cả trong phạm vi" (`phamViXemViec`); GV = CHỈ việc của mình (`mine` — P11 VIEC-DUNG-VAI, chủ SP 24/10 mục 6.1);
  * vai không có khu Công việc (TVV / CX) chỉ nhóm việc của TVV của chính mình — như Tổng quan TVV.
  */
-import { PERMISSIONS, demViec, laVaiQuanLy, vaiXemHocVien, type ViecTiepTheo } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, demDongViec, gopViecTheoLop, laVaiQuanLy, vaiXemHocVien, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { myWork, NHOM_VIEC_TVV, type WorkItem } from '../worklist/mywork.ts';
+import { myWork, nhanNhomViec, NHOM_VIEC_TVV, type WorkItem } from '../worklist/mywork.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { listCases } from '../cases/cases.ts';
 import { programmeOfClass } from '../normal/regular.ts';
@@ -27,7 +27,7 @@ export const viecLopDayDuKhiKiem = { bat: false };
  * UI-HO-SO-LOP: `cuaToi` = thanh "Việc cần làm" đầu hồ sơ lớp — việc CỦA NGƯỜI XEM ở lớp này (việc của em + việc cấp lớp như Chấm MTn), cùng thứ tự.
  * LOP-1-LOP: `myWork` chỉ đọc lượt của lớp (`classIds`) — việc từ lượt mang `classId` của lượt, lượt `class_id NULL` đã bị `chiDangHoc` loại, nên
  * `cuaLop` không mất việc nào; mọi khối khác của `myWork` y như cũ. `chiToi` (`?chi=toi`, web chỉ đọc `cuaToi`) → `theoEm = {}`.
- * `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp — đúng công thức web cũ (`demViec` việc quá hạn gắn lớp, trên `items` của `myWork` trước lọc;
+ * `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp — dòng việc quá hạn gắn lớp (`demDongViec`, S11), trên `items` của `myWork` trước lọc;
  * GV chỉ `mine`); vai không có badge `qua-han` (TVV / CX / Admin — `badgeHienTheoVai`) → `null`.
  */
 export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: boolean } = {}):
@@ -49,7 +49,8 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
   else if (phamViXemViec(p)) w = itemsCua(myWork(p, { ...f, nguoi: 'tat-ca' }));
   /* P11 VIEC-DUNG-VAI: GV chỉ việc CỦA MÌNH — việc của GV khác xem ở Công việc › Của một GV (quyền không đổi). Không còn nạp `/my-work` từng GV dạy lớp. */
   else w = itemsCua(myWork(p, f)).filter((it) => it.mine);
-  const soQuaHanLop = coBadge ? demViec(w.filter((it) => it.urgency === 'overdue' && it.classId === classId && (ql || it.mine))).viec : null;
+  /* S11 (chủ SP 05/11): đếm DÒNG việc như Công việc (`demDongViec` trên dòng gộp của chính các việc đó — "Cả lớp" = 1). */
+  const soQuaHanLop = coBadge ? demDongViec(gopViecTheoLop(w.filter((it) => it.urgency === 'overdue' && it.classId === classId && (ql || it.mine)), nhanNhomViec)).n : null;
   if (!em.size) return { theoEm, cuaToi: [], soQuaHanLop };
   const items = w.filter(cuaLop), lopToi = w.filter(capLop);
   /* `sort` ổn định: trong mỗi phần giữ thứ tự của Công việc (quá hạn → hôm nay → hạn sớm). */

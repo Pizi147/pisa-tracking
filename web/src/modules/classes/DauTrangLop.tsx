@@ -105,7 +105,7 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
   const s = data.summary;
   const gvcn = data.coreTeachers[0] ?? null;
   const tomTat = useTomTatLop(data, homNay);
-  /* OV-13b · LOP-1-LOP: badge "n việc quá hạn" = `soQuaHanLop` của viec-theo-em (cùng danh sách việc `myWork` với Công việc, cùng `demViec`; GV chỉ việc
+  /* OV-13b · LOP-1-LOP: badge "n việc quá hạn" = `soQuaHanLop` của viec-theo-em (cùng danh sách việc `myWork` với Công việc, cùng `demDongViec` — S11 đếm dòng; GV chỉ việc
      của mình) — cùng đường ThanhViecLop nên một GET; QL / QT thôi đọc `/my-work?nguoi=tat-ca` cả chi nhánh (GV vẫn có `/my-work` của khung App). */
   const viec = useApi<ViecLop>(duongViecLop(data.id), [data.id]);
   const soViecQuaHan = viec.data?.soQuaHanLop ?? 0;

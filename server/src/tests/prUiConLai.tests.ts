@@ -1,6 +1,6 @@
 /**
- * PHÉP KIỂM V5 · UI-CON-LAI (nợ #528 — `08` bảng nợ): badge "việc của tôi" (`/my-work` → `summary.viec`) không đếm việc `mine:false`
- * (vd "Thêm PA" Case người khác phụ trách); `viecQuaHan` chỉ đếm kỹ năng THẬT SỰ quá hạn của dòng Nhập điểm (`knsQuaHan`).
+ * PHÉP KIỂM V5 · UI-CON-LAI (nợ #528 — `08` bảng nợ): số "việc của tôi" (`/my-work` → `summary`) không đếm việc `mine:false`
+ * (vd "Thêm PA" Case người khác phụ trách). S11 (UI-CV-V12): một dòng = 1 — dòng Nhập điểm nhiều kỹ năng là MỘT việc (thay `knsQuaHan` đếm kỹ năng).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,20 +19,20 @@ export async function runPrUiConLaiTests(t: any) {
 
   check('UICL-1 (#528) · demSo: việc mine:false (Thêm PA Case người khác) không vào viec / viecQuaHan', () => {
     const ds = [viec({ key: 'cause:1' }), viec({ key: 'support:2', group: 'no_plan', mine: false, urgency: 'overdue' })];
-    const s = mw.demSo(ds, ds);
-    assert(s.viec === 1 && s.viecQuaHan === 0, JSON.stringify(s));
+    const s = mw.demSo(ds);
+    assert(s.viec === 1 && s.viecQuaHan === 0 && s.canLamNgay === 0, JSON.stringify(s));
   });
 
-  check('UICL-2 (#528) · demSo: dòng Nhập điểm L + R quá hạn chỉ ở L → viec 2, viecQuaHan 1 (không đếm R chưa quá hạn)', () => {
+  check('UICL-2 → S11 (UI-CV-V12) · demSo: dòng Nhập điểm L + R quá hạn = MỘT việc → viec 1, viecQuaHan 1, canLamNgay 1 (không nhân kỹ năng)', () => {
     const ds = [viec({ key: 'score:1', group: 'score', studentId: null, urgency: 'overdue', kns: ['listening', 'reading'], knsQuaHan: ['listening'], soBai: 4 })];
-    const s = mw.demSo(ds, ds);
-    assert(s.viec === 2 && s.viecQuaHan === 1, JSON.stringify(s));
+    const s = mw.demSo(ds);
+    assert(s.viec === 1 && s.viecQuaHan === 1 && s.canLamNgay === 1, JSON.stringify(s));
   });
 
-  check('UICL-3 (#528) · /my-work GV seed: summary.viec = số việc mine; mọi dòng Nhập điểm quá hạn có knsQuaHan ⊆ kns, không rỗng', () => {
+  check('UICL-3 (#528) · /my-work GV seed: summary.viec = số DÒNG mine (S11); mọi dòng Nhập điểm quá hạn có knsQuaHan ⊆ kns, không rỗng', () => {
     for (const p of [P.lrTeacher, P.w1Teacher, P.sTeacher, P.coreTeacher]) {
       const w = mw.myWork(p, {});
-      const s = mw.demSo([], w.items.filter((i: any) => i.mine), () => true);
+      const s = mw.demSo(w.dong.filter((i: any) => i.mine), () => true);
       assert(w.summary.viec === s.viec, `${p.userId}: ${w.summary.viec} ≠ ${s.viec}`);
       for (const i of w.items.filter((x: any) => x.group === 'score' && x.urgency === 'overdue')) {
         assert(i.knsQuaHan?.length && i.knsQuaHan.every((k: string) => i.kns.includes(k)), `${i.key}: ${JSON.stringify(i.knsQuaHan)}`);
