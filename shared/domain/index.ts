@@ -108,3 +108,4 @@ export * from './monDangKy.ts';
 export * from './kyThi.ts';
 export * from './baiKeTiep.ts';
 export * from './diemDong.ts';
+export * from './bangLuot.ts';
