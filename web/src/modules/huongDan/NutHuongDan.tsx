@@ -53,7 +53,7 @@ export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
         <h2 className="m-0 whitespace-nowrap text-[17px] font-bold text-slate-100">{t('Hướng dẫn')}</h2>
         {coXemVaiKhac(cuaToi) && VAI_CO_NOI_DUNG.length > 1 ? (
           /* Một ô vừa nói vai đang xem vừa đổi được (ghi chú v14 mục 4). */
-          <select className="field h-[30px] w-auto py-0 pl-2.5 pr-7 text-[13px] max-sm:h-11 max-sm:text-[15px]" aria-label={t('Xem vai khác')} title={t('Xem vai khác')}
+          <select className="field o-chon-vai h-[30px] w-auto py-0 pl-2.5 pr-7 text-[13px] max-sm:h-11 max-sm:text-[15px]" aria-label={t('Xem vai khác')} title={t('Xem vai khác')}
             value={vai} onChange={(e) => { setVai(e.target.value as VaiHd); setQ(''); }}>
             {VAI_CO_NOI_DUNG.map((v) => <option key={v} value={v}>{t('Vai: {vai}', { vai: TEN_VAI_HD[v] })}</option>)}
           </select>
