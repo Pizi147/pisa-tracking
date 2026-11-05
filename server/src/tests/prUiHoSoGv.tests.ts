@@ -30,9 +30,9 @@ export async function runPrUiHoSoGvTests(t: any) {
     let loi = '';
     try { pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', loc: 'x' }); } catch (e: any) { loi = e.message; }
     assert(/Lọc phải/.test(loi), 'loc lạ → 400');
-    /* Vượt Target: Overall > Target, tập con của Đạt; ô = panel `loc=vuot`. */
+    /* 2F: Exceed = điểm kỹ năng GV dạy (ô `cua`) > Target overall, tập con của Pass; ô = panel `loc=vuot`. */
     const vuot = pt.oChiSoHoSoGv(P.admin, thi.gv, { ...ky, cot: 'thi-that', loc: 'vuot' });
-    assert(vuot.n === cs.thiThatVuot && vuot.rows.every((r: any) => r.ketQua === 'dat' && r.diemHv.overall > r.soVoi.v), JSON.stringify({ n: vuot.n, o: cs.thiThatVuot }));
+    assert(vuot.n === cs.thiThatVuot && vuot.rows.every((r: any) => r.ketQua === 'dat' && r.diemHv.kn.find((k: any) => k.cua).v > r.soVoi.v), JSON.stringify({ n: vuot.n, o: cs.thiThatVuot }));
     /* Theo kỹ năng: mỗi kỹ năng = panel `thi-that-ky:<kỹ năng>` (số đạt / số dòng). */
     assert(cs.thiThatTheoKyNang.length >= 1, 'có ít nhất một kỹ năng thi thật');
     for (const k of cs.thiThatTheoKyNang) {
