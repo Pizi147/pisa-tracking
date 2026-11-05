@@ -137,8 +137,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
 
   /* Thẻ 375: một khối mỗi nhóm (lớp thường: theo nhóm con; Bài + Thiếu điểm chung khối Kết quả). */
   const nhomThe: { nhan: string; cols: CotTongHop[] }[] = [];
+  /* PT-LOP-THUONG (mockup v13 Bm): thẻ lớp thường — số Bài ở đầu thẻ ("14 bài · 3 lớp"), Thiếu điểm khối riêng cuối thẻ. */
+  const cotLuot = cols.find((c) => c.khoa === 'luot');
   for (const c of cols) {
-    const nhan = laThuong && c.nhom === 'ket-qua' && !c.nhomCon ? dich(nhomCotNhanNgan('ket-qua', ct)) : nhanNhom(c);
+    if (laThuong && c.khoa === 'luot') continue;
+    const nhan = laThuong && c.khoa === 'chuaDu' ? dich(c.nhan(ct)) : laThuong && c.nhom === 'ket-qua' && !c.nhomCon ? dich(nhomCotNhanNgan('ket-qua', ct)) : nhanNhom(c);
     const g = nhomThe.find((x) => x.nhan === nhan);
     if (g) g.cols.push(c); else nhomThe.push({ nhan, cols: [c] });
   }
@@ -274,9 +277,10 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       <article key={row.khoa} className={THE}>
         <div className={DAU_THE}>
           <span className="min-w-0">{row.nhan}{row.phu && <span className="ml-1.5 text-[13px] font-normal text-[color:var(--text-faint)]">{row.phu}</span>}</span>
+          {laThuong && cotLuot && <span className="ml-auto whitespace-nowrap text-[13px] font-normal text-[color:var(--text-dim)]"><span className="text-[15px] font-bold">{soBam(row, cotLuot)}</span> {t('bài')}</span>}
           {!!row.con?.length && (
             <button type="button" aria-expanded={mo} aria-label={`${row.nhan} — ${NHAN_MO_CON[theo]}`} onClick={() => toggleOpen(row.khoa)}
-              className="-my-2 ml-auto inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-medium text-[color:var(--accent)]">
+              className={`-my-2 ${laThuong ? 'ml-1' : 'ml-auto'} inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-medium text-[color:var(--accent)]`}>
               {theo === 'lop' ? t('{n} đợt', { n: row.con.length }) : t('{n} lớp', { n: row.con.length })}<span aria-hidden>{mo ? '▴' : '▾'}</span>
             </button>
           )}
@@ -358,14 +362,14 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     {error ? <Card bodyClass="p-0"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
       : loading || !data ? (
         <div className="space-y-3">
-          <DaiChiSo ds={SKEL_SO} />
+          <DaiChiSo ds={SKEL_SO} cot={5} />
           <Card bodyClass="p-4"><Skeleton rows={dienThoai ? 4 : 8} /></Card>
         </div>
       )
       : !coBang ? <Card bodyClass="p-0">{rong}</Card>
       : (
         <div className="space-y-3">
-          <DaiChiSo ds={chiSo} />
+          <DaiChiSo ds={chiSo} cot={5} />
           {dienThoai ? (
             <div className="space-y-3">
               <div ref={pt.thanh.dauBang} />

@@ -200,9 +200,10 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const cotB = (hang: HB[]): DinhNghiaCot[] => {
     const mon = [...new Set(hang.flatMap((h) => Object.keys(h.mon)))];
     return [
-      { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 170 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 100 },
-      ...(coBai ? [{ key: 'bai', nhan: t('Bài'), kieu: 'chu', rong: 120 } as DinhNghiaCot] : []),
-      ...mon.map((m): DinhNghiaCot => ({ key: `mon:${m}`, nhan: m, kieu: 'diem-ti-le', rong: 88 })),
+      /* Panel 820: tên 150 · lớp 96 · bài 124 · 4 môn × 76 · Tổng 80 = 754 (vừa thân 788, không cuộn ngang). */
+      { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 150 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 },
+      ...(coBai ? [{ key: 'bai', nhan: t('Bài'), kieu: 'chu', rong: 124 } as DinhNghiaCot] : []),
+      ...mon.map((m): DinhNghiaCot => ({ key: `mon:${m}`, nhan: m, kieu: 'diem-ti-le', rong: 76 })),
       ...(hang.some((h) => h.tong !== null) ? [{ key: 'tong', nhan: t('Tổng'), kieu: 'diem', rong: 80, tach: true } as DinhNghiaCot] : []),
     ];
   };
