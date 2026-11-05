@@ -13,7 +13,9 @@ import { t } from '@shared/i18n/index.ts';
 const CAN_XU_LY = t('Cần xử lý');
 
 /** `donVi` (SL2): chữ sau số trên chip ("7 em") — số không đứng trơ khi tab không nói đơn vị. */
-export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; donVi?: string; canhBao?: boolean };
+export type HangTabMuc<K extends string> = { key: K; label: string; so?: number | null; donVi?: string; canhBao?: boolean;
+  /** BAO-CAO-PH (mockup v15 t1, e1): chip nhẹ sau nhãn — "Tháng 11 · hạn 30/11"; `xau` = quá hạn (đỏ; nơi gọi đặt ký hiệu cảnh báo trong `chu` — không chỉ màu). */
+  chip?: { chu: string; xau?: boolean } | null };
 
 /** TAB-A11Y: ← → Home End chuyển FOCUS giữa các tab (WAI-ARIA tablist, kích hoạt bằng Enter / Space như nút thường). Dùng cho mọi `role="tablist"`. */
 export function phimHangTab(e: KeyboardEvent<HTMLElement>) {
@@ -58,6 +60,9 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, ca
             } ${active ? `border-[color:var(--accent)] ${v8 ? 'font-bold' : 'font-semibold'} text-slate-100` : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             {t.label}
             {t.canhBao && <span className="ml-1 text-soon" role="img" aria-label={CAN_XU_LY} title={CAN_XU_LY}>●</span>}
+            {t.chip && (
+              <span className={`ml-1.5 ${CHIP_TRON} !font-medium tabular-nums ${t.chip.xau ? 'bg-late-bg text-late' : 'surface-2 text-slate-400'}`}>{t.chip.chu}</span>
+            )}
             {!!t.so && t.so > 0 && (
               <span className={soMo ? 'tab-so-mo' : `ml-1.5 ${CHIP_TRON} tabular-nums bg-doing-bg text-doing`}>{t.so}{t.donVi ? ` ${t.donVi}` : ''}</span>
             )}

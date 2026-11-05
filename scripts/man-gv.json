@@ -44,6 +44,7 @@
  "web/src/modules/classes/LuoiTaoLop.tsx",
  "web/src/modules/classes/PanelXetLai.tsx",
  "web/src/modules/classes/PhanTichLopTab.tsx",
+ "web/src/modules/classes/TabBaoCaoPh.tsx",
  "web/src/modules/classes/TabHocVienLop.tsx",
  "web/src/modules/classes/TabTongKetLop.tsx",
  "web/src/modules/classes/TeacherAssignPanel.tsx",

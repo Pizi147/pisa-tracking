@@ -735,17 +735,18 @@ export function duongHoSoGiaoVien(
 // ---------------------------------------------------------------- tab hồ sơ lớp (§3.7)
 
 /** PR-TK: `tong-ket` chỉ có khi lớp ĐÃ KẾT THÚC (đứng đầu, mặc định) — `tabHienCuaLop`. */
-export const TAB_HO_SO_LOP = ['tong-ket', 'hoc-vien', 'y-thuc', 'phan-tich'] as const;
+export const TAB_HO_SO_LOP = ['tong-ket', 'hoc-vien', 'y-thuc', 'phan-tich', 'bao-cao-ph'] as const;
 export type TabHoSoLop = (typeof TAB_HO_SO_LOP)[number];
 export const TAB_HO_SO_LOP_NHAN: Record<TabHoSoLop, string> = {
-  'tong-ket': t('Tổng kết'), 'hoc-vien': t('Học viên'), 'y-thuc': t('Ý thức & Phối hợp'), 'phan-tich': t('Phân tích lớp'),
+  'tong-ket': t('Tổng kết'), 'hoc-vien': t('Học viên'), 'y-thuc': t('Ý thức & Phối hợp'), 'phan-tich': t('Phân tích lớp'), 'bao-cao-ph': t('Báo cáo PH'),
 };
-/** Tab hiện của hồ sơ lớp: lớp đã kết thúc có thêm "Tổng kết". */
-export const tabHienCuaLop = (daKetThuc: boolean): readonly TabHoSoLop[] => TAB_HO_SO_LOP.filter((k) => k !== 'tong-ket' || daKetThuc);
+/** Tab hiện của hồ sơ lớp: lớp đã kết thúc có thêm "Tổng kết"; BAO-CAO-PH: "Báo cáo PH" cạnh Phân tích lớp khi chương trình có mẫu + người xem có quyền (`coBaoCaoPh`). */
+export const tabHienCuaLop = (daKetThuc: boolean, coBaoCaoPh = false): readonly TabHoSoLop[] =>
+  TAB_HO_SO_LOP.filter((k) => (k !== 'tong-ket' || daKetThuc) && (k !== 'bao-cao-ph' || coBaoCaoPh));
 /** Tab mở mặc định: lớp đã kết thúc → "Tổng kết", còn lại "Học viên". Tab lạ / không hiện với lớp này → mặc định. */
-export function tabMacDinhLop(s: string | null | undefined, daKetThuc: boolean): TabHoSoLop {
+export function tabMacDinhLop(s: string | null | undefined, daKetThuc: boolean, coBaoCaoPh = false): TabHoSoLop {
   const t = (TAB_HO_SO_LOP as readonly string[]).includes(s ?? '') ? (s as TabHoSoLop) : null;
-  return t && tabHienCuaLop(daKetThuc).includes(t) ? t : daKetThuc ? 'tong-ket' : 'hoc-vien';
+  return t && tabHienCuaLop(daKetThuc, coBaoCaoPh).includes(t) ? t : daKetThuc ? 'tong-ket' : 'hoc-vien';
 }
 export function tabHoSoLop(s: string | null | undefined): TabHoSoLop {
   return (TAB_HO_SO_LOP as readonly string[]).includes(s ?? '') ? (s as TabHoSoLop) : 'hoc-vien';

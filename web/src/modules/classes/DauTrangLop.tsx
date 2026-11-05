@@ -46,6 +46,8 @@ export type HoSoLop = {
   /** Lớp thường ở Cuối khoá / hết khoá: số em có đủ điểm bài Cuối khoá (null ở chặng khác). */
   cuoiKhoa: { du: number; tong: number; canQl?: number } | null;
   canhBaoYThuc: number;
+  /** BAO-CAO-PH: có tab "Báo cáo PH" (chương trình có mẫu + người xem có quyền) + chip đợt đang mở / vừa quá hạn. */
+  baoCaoPh?: { coTab: true; dot: string | null; nhan: string | null; han: string | null; quaHan: number } | null;
   /** P3: lớp có góp ý hàng tuần cũ → ⋯ › Lịch sử góp ý tuần. */
   coGopY?: boolean;
   /** PR-D: lịch đổi phân công đang chờ (hàng GV + Thông tin lớp › Phân công). */

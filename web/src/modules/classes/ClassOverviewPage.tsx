@@ -23,6 +23,7 @@ import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
+import { TabBaoCaoPh } from './TabBaoCaoPh.tsx';
 import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
@@ -131,9 +132,12 @@ export default function ClassOverviewPage() {
   /* PR-TK: lớp đã kết thúc có thêm tab "Tổng kết" — đứng đầu và là tab mở mặc định (tab khác phải ghi rõ trên URL). */
   const daKetThuc = data.status === 'finished';
   const thuong = data.programme?.scoringMode === 'ratio';
-  const tab: TabHoSoLop = tabMacDinhLop(params.get('tab'), daKetThuc);
-  const tabMacDinh = tabMacDinhLop(null, daKetThuc);
-  const dsTab = tabHienCuaLop(daKetThuc);
+  const bc = data.baoCaoPh ?? null;
+  const tab: TabHoSoLop = tabMacDinhLop(params.get('tab'), daKetThuc, !!bc);
+  const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc);
+  const dsTab = tabHienCuaLop(daKetThuc, !!bc);
+  /* BAO-CAO-PH (mockup t0, e1): chip nhẹ trên tab — đợt đang mở "Tháng 11 · hạn 30/11", vừa quá hạn mà lớp chưa đủ "⚠ … · quá hạn 2 ngày". Không chuông, không việc. */
+  const chipBc = bc?.nhan ? { chu: bc.quaHan ? `⚠ ${t('{dot} · quá hạn {n} ngày', { dot: bc.nhan, n: bc.quaHan })}` : t('{dot} · hạn {ngay}', { dot: bc.nhan, ngay: ngay(bc.han, homNay) }), xau: bc.quaHan > 0 } : null;
   const dong = () => setViec(null);
   const bgLenh = Number(params.get('ban-giao')) || 0;
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */
@@ -160,8 +164,8 @@ export default function ClassOverviewPage() {
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
       <HangTab v8 panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
-        onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null })}
-        tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0 }))} />
+        onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null, dot: null })}
+        tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0, chip: k === 'bao-cao-ph' ? chipBc : null }))} />
 
       <div id="ho-so-lop-vung" role="tabpanel" aria-label={TAB_HO_SO_LOP_NHAN[tab]} className="space-y-4 max-sm:space-y-3 empty:hidden">
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
@@ -177,9 +181,10 @@ export default function ClassOverviewPage() {
         } : undefined} />
       )}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
+      {tab === 'bao-cao-ph' && <TabBaoCaoPh lopId={data.id} ct={data.programme?.code ?? data.kind} dot={params.get('dot')} onDot={(ma) => doiThamSo({ dot: ma })} />}
       </div>
 
-      {tab !== 'y-thuc' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
+      {tab !== 'y-thuc' && tab !== 'bao-cao-ph' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}
 
       {panelXetLai}
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}

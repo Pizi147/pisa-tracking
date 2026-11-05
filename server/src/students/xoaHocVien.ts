@@ -32,6 +32,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'yeu_cau_duyet', 'y_thuc_khai_bac', 'mini_test', 'lenh_chuyen_lop', 'ban_giao_mon', 'ket_qua_huy',
   'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi', 'gop_y_tuan', 'ghi_chu_lich_thi', 'bai_tren_lop', 'viec_bao_ph', 'viec_bao_ph_lan', 's_expert', 'danh_gia_dau_ra', 'xet_lai_lo_trinh',
   'ban_giao_gv_em',   // PR-B: góp ý bàn giao đổi GV của em
+  'bao_cao_ph',   // BAO-CAO-PH: báo cáo gửi phụ huynh của em
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -141,6 +142,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'bai_tren_lop', sql: 'DELETE FROM bai_tren_lop WHERE student_id = ?1' },   // SV-BAI-LOP
   { bang: 's_expert', sql: 'DELETE FROM s_expert WHERE student_id = ?1' },   // SV-S-EXPERT
   { bang: 'danh_gia_dau_ra', sql: 'DELETE FROM danh_gia_dau_ra WHERE student_id = ?1' },   // UI-HO-SO-LOP
+  { bang: 'bao_cao_ph', sql: 'DELETE FROM bao_cao_ph WHERE student_id = ?1' },   // BAO-CAO-PH
   { bang: 'ghi_chu_lich_thi', sql: `DELETE FROM ghi_chu_lich_thi WHERE student_id = ?1 OR cycle_id IN (${Y})` },   // OV-15c
   { bang: 'enrollments', sql: 'DELETE FROM enrollments WHERE student_id = ?1' },
   { bang: 'learning_cycles', sql: 'DELETE FROM learning_cycles WHERE student_id = ?1' },

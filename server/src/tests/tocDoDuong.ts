@@ -161,6 +161,11 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/viec-theo-em?chi=toi' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board?category=listening' },
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/phan-tich-lop' },
+  /* BAO-CAO-PH: tab Báo cáo PH (một lớp × một đợt) + panel một phần (em + bản ghi đợt này / đợt trước + điểm gốc một câu). */
+  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'ADMIN', 'TVV'], url: '/classes/{lopFT}/bao-cao-ph', maChuDich: { TVV: 403 } },   // TVV mẫu ở chi nhánh khác lớp
+  { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/bao-cao-ph/phan?phan=listening' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph/phan?phan=writing' },
   /* PR-HVL (7): panel Tuần khai giảng — thêm `coGiuaKhoa` và `tomTatMt` (một câu). */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/progress' },
   /* PR-HVL (6): danh sách sau một số ở bảng vấn đề / hiệu quả PA — tính lại bằng chính `issueBoard`. */
@@ -404,6 +409,10 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* BAO-CAO-PH: tab + panel một phần — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 06/11: FT tab 5 · panel 5; lớp thường (FOU, tính đợt từ tiến độ lớp) 7 · 7. */
+  'QL /classes/3/bao-cao-ph': 15, 'GVCN /classes/3/bao-cao-ph': 15, 'GVBM /classes/3/bao-cao-ph': 15, 'GVCN_THUONG /classes/3/bao-cao-ph': 15, 'QT /classes/3/bao-cao-ph': 15, 'ADMIN /classes/3/bao-cao-ph': 15,
+  'QL /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVBM /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN_THUONG /classes/3/bao-cao-ph/phan?phan=listening': 15, 'QT /classes/3/bao-cao-ph/phan?phan=listening': 15,
+  'QL /classes/6/bao-cao-ph': 17, 'QL /classes/6/bao-cao-ph/phan?phan=writing': 17, 'QT /classes/6/bao-cao-ph': 17, 'QT /classes/6/bao-cao-ph/phan?phan=writing': 17, 'GVCN_THUONG /classes/6/bao-cao-ph': 17, 'GVCN_THUONG /classes/6/bao-cao-ph/phan?phan=writing': 17,
   /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — trần = max(đo + 10, ⌈đo × 1,3⌉). */
   'QL /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 20, 'QT /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 20, 'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 24,   // PT-VP-PA: đo 10 · 10 · 15 · 14
   'QL /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QT /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QL /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 23, 'QT /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 23,   // PT-LOP-THUONG: đo 12 · 12 · 13 · 13
@@ -995,6 +1004,10 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* BAO-CAO-PH: trần = max(đo + 50, ⌈đo × 1,3⌉), đo 06/11 (MB FT 101 33 em, chưa có bản ghi): tab 38 · panel 52; FOU 12 (7 em): 15 · 11. Bản ghi đầy đủ: + em × phần (tab) / + 2 × em (panel). */
+  'QL /classes/3/bao-cao-ph': 88, 'GVCN /classes/3/bao-cao-ph': 88, 'GVBM /classes/3/bao-cao-ph': 88, 'GVCN_THUONG /classes/3/bao-cao-ph': 88, 'QT /classes/3/bao-cao-ph': 88, 'ADMIN /classes/3/bao-cao-ph': 88,
+  'QL /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVCN /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVBM /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVCN_THUONG /classes/3/bao-cao-ph/phan?phan=listening': 102, 'QT /classes/3/bao-cao-ph/phan?phan=listening': 102,
+  'QL /classes/6/bao-cao-ph': 65, 'QL /classes/6/bao-cao-ph/phan?phan=writing': 61, 'QT /classes/6/bao-cao-ph': 65, 'QT /classes/6/bao-cao-ph/phan?phan=writing': 61, 'GVCN_THUONG /classes/6/bao-cao-ph': 65, 'GVCN_THUONG /classes/6/bao-cao-ph/phan?phan=writing': 61,
   /* DOC-PT (05/11): Phân tích GV — trước chưa có trần dòng (đo 2 219 · 2 167 · 1 972 · 1 920 · 2 572 · 2 520). */
   'QL /phan-tich/giao-vien?cn=1&ct=ft': 2021, 'QT /phan-tich/giao-vien?cn=1&ct=ft': 1953,   // đo 1554 · 1502
   'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 1727, 'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 1659,   // đo 1328 · 1276
