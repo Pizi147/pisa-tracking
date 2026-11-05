@@ -33,7 +33,7 @@ export async function runPrHdTests(t: any) {
   };
   /* HD-b: thêm Phân tích (tab Tổng quan) và Quản trị (menu Tài khoản) khi vai có. */
   const duongNav = (nav: any): string[] => [
-    ...(nav.analysis ? ['/phan-tich'] : []), ...(nav.admin ? ['/quan-tri'] : []),
+    ...(nav.analysis ? ['/phan-tich'] : []), ...(nav.admin || nav.bangQuyDoi ? ['/quan-tri'] : []),   // HD-V2b: QL vào /quan-tri bằng menu Tài khoản › Đã xoá (App.tsx: admin || bangQuyDoi)
     ...dh.khuVucHienThi(nav).map((k: any) => k.to),
     ...dh.tabTestHienThi(nav).map((k: string) => dh.DUONG_TAB_TEST[k]),
     ...dh.tabCongViecHienThi(nav).map((k: string) => dh.DUONG_TAB_CONG_VIEC[k]),
@@ -92,7 +92,7 @@ export async function runPrHdTests(t: any) {
     };
     quet(path.join(ROOT, 'web/src'));
     /* (đường, data-hd, vai thấy): "Lớp tôi dạy" ở Công việc chỉ GV (`laGv`, HoTroHocVienTab); Tổng quan QT mặc định Tất cả chi nhánh (bảng Theo chi nhánh). */
-    const CHI_VAI: [string, string, string[]][] = [['/cong-viec', 'tq-lop-toi-day', ['gv']], ['/', 'tq-can-xu-ly', ['ql']], ['/', 'tq-lop-chu-y', ['ql']]];
+    const CHI_VAI: [string, string, string[]][] = [['/cong-viec', 'tq-lop-toi-day', ['gv']], ['/', 'tq-can-xu-ly', ['ql']], ['/', 'tq-lop-chu-y', ['ql']], ['/', 'tq-gv-tre', ['ql']]];
     const loi: string[] = [];
     for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) {
       for (const m of hd.moiMuc(h)) {
@@ -221,6 +221,37 @@ export async function runPrHdTests(t: any) {
     assert(c.viec.length === 0 && c.vaiKhac.some((v: any) => v.cua === 'việc của Quản trị'), 'xoá tài khoản → việc của Quản trị');
     const z = hd.timHd(gv, 'zzqq', chu);
     assert(z.viec.length + z.muc.length + z.vaiKhac.length === 0, 'chữ lạ');
+  });
+
+  check('HD-VAI-B · QL, QT, Admin đã chuyển sang `lam`; lối chính đúng bảng đã đối chiếu (ghi chú v14); QT = QL + Quản trị; tìm "duyệt", "đổi lớp", "xoá tài khoản"', () => {
+    const { ql, qt, admin, gv } = hd.HUONG_DAN;
+    for (const [vai, h] of [['ql', ql], ['qt', qt], ['admin', admin]] as [string, any][]) assert(h.lam?.length && h.viec.length === 0 && h.tuan?.length, `${vai} chưa chuyển sang HD-V2`);
+    const LOI: Record<string, Record<string, string>> = {
+      ql: { duyet: 'cong-viec', 'nhap-ho': 'tong-quan', 'case-lam-thay': 'cong-viec', 'xep-lich': 'ke-hoach', 'xem-lich-test': 'lich-test', 'khoi-phuc': 'quan-tri', 'chuyen-lop': 'ho-so-hv', 'xem-case': 'ho-so-hv', 'case-hoan-thanh': 'p-case', 'phan-tich': 'phan-tich' },
+      admin: { 'nhap-ho': 'cong-viec', 'xep-lich': 'ke-hoach', 'xem-lich-test': 'lich-test' },
+    };
+    for (const [vai, bang] of Object.entries(LOI)) for (const [id, man] of Object.entries(bang)) {
+      const v = hd.HUONG_DAN[vai].lam.find((x: any) => x.id === id);
+      assert(v?.loiChinh.man === man, `${vai} ${id}: lối chính phải là ${man} (${v?.loiChinh.man})`);
+    }
+    /* QT = QL + Quản trị: đủ việc của QL, thêm việc hệ thống; không chép (cùng đối tượng việc). */
+    const idQt = new Set(qt.lam.map((v: any) => v.id));
+    for (const v of ql.lam) assert(idQt.has(v.id), `QT thiếu việc QL "${v.id}"`);
+    for (const id of ['dang-ky', 'tai-khoan', 'quyen', 'chuong-trinh', 'xoa-lop', 'xoa-hv']) assert(idQt.has(id) && !ql.lam.some((v: any) => v.id === id), `việc Quản trị "${id}"`);
+    assert(qt.lam.find((v: any) => v.id === 'duyet') === ql.lam.find((v: any) => v.id === 'duyet'), 'QT dùng lại việc của QL, không chép');
+    /* Tổng quan QT mặc định "Tất cả chi nhánh": không "Chỉ cho tôi" tới khối chỉ hiện khi chọn một chi nhánh. */
+    assert(!qt.lam.find((v: any) => v.id === 'nhap-ho').loiChinh.chi, 'QT: Nhập hộ ở Tổng quan không Chỉ cho tôi');
+    /* Admin không có việc của QL / GV; GV không có việc Khôi phục. */
+    for (const id of ['duyet', 'khoi-phuc', 'case-lam-thay']) assert(!admin.lam.some((v: any) => v.id === id), `Admin không có "${id}"`);
+    assert(!admin.man.some((m: any) => m.panel === 'ngan-case') && !gv.lam.some((v: any) => v.id === 'khoi-phuc'), 'Admin không panel Case; GV không Khôi phục');
+    const chu = (k: string) => k;
+    assert(hd.timHd(ql, 'duyet', chu).viec.some((v: any) => v.id === 'duyet'), 'QL tìm "duyet"');
+    assert(hd.timHd(ql, 'doi lop', chu).viec.some((v: any) => v.id === 'chuyen-lop'), 'QL tìm "doi lop" ra Chuyển lớp');
+    const xoa = (h: any) => hd.timHd(h, 'xoa tai khoan', chu);
+    assert(xoa(ql).vaiKhac.some((v: any) => v.cua === 'việc của Quản trị'), 'QL: xoá tài khoản là việc của Quản trị');
+    assert(xoa(qt).viec.some((v: any) => v.id === 'tai-khoan'), 'QT: xoá tài khoản là việc của mình');
+    /* Bước 2–4 mỗi việc, mọi màn của QT có "Việc làm ở đây" (HD-MOT) — QT có thêm màn Quản trị hệ thống đủ ba tab. */
+    assert(hd.manTheoId(qt, 'quan-tri').ten === 'Quản trị hệ thống' && hd.manTheoId(ql, 'quan-tri').ten === 'Đã xoá', 'màn /quan-tri: QL chỉ Đã xoá, QT đủ ba tab');
   });
 
   await checkAsync('HD-CO · /demo/session có laGvcn / coS theo phân công còn hiệu lực (0 câu thêm — cùng principal)', async () => {
