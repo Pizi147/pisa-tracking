@@ -9472,6 +9472,9 @@ await runPrLtSvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== CV-LOI (Case không chủ tự gán · một dòng Phân công · Xếp lại bài vắng theo quyền · hạn Mini Test)
 const { runPrCvLoiTests } = bocTep('prCvLoi', await import('./prCvLoi.tests.ts'));
 await runPrCvLoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== QUYEN-RIENG (GV có quyền cấp riêng score.override vẫn đủ việc ở ba góc nhìn Công việc)
+const { runPrQuyenRiengTests } = bocTep('prQuyenRieng', await import('./prQuyenRieng.tests.ts'));
+await runPrQuyenRiengTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== TD7b (cờ "còn ô chờ điểm" o_cho_tu: đúng ở mọi đường ghi, đầu ra trùng khít) — CUỐI: soi cả trạng thái các phép kiểm trước để lại
 const { runPrTd7bTests } = bocTep('prTd7b', await import('./prTd7b.tests.ts'));
 await runPrTd7bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9795,6 +9798,9 @@ await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== PR-MT-VANG (N38: "-" dời tuần sau tuần thi · vắng 2 lần huỷ · chọn tuần = xếp lại)
 const { runPrMtVangTests } = bocTep('prMtVang', await import('./prMtVang.tests.ts'));
 await runPrMtVangTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== PR-4 THI-THAT (chủ SP 05/11: tab Thi thật, luật mới thay C10 — một hàm `thongKeThiThat`)
+const { runPrThiThatTkTests } = bocTep('prThiThatTk', await import('./prThiThatTk.tests.ts'));
+await runPrThiThatTkTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
 // ==================================================================== PR-6 MAU-THONG-NHAT (chủ SP 05/11: đỏ không đạt · xanh dương đạt · xanh lá vượt)
 const { runPrMauKqTests } = bocTep('prMauKq', await import('./prMauKq.tests.ts'));
 await runPrMauKqTests({ check, assert } as any);

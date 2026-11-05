@@ -127,7 +127,8 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
     assert(!/export function SoLieu\(/.test(doc('web/src/ui/SoLieu.tsx')), 'ô số SoLieu còn');
     assert(!/NutMoDanhSach/.test(doc(W + 'phanTich/dungChung.tsx')), 'NutMoDanhSach còn');
     assert(!fs.existsSync(path.join(ROOT, W + 'giaoVien/BangGiaoVienChiNhanh.tsx')), 'BangGiaoVienChiNhanh còn');
-    assert(/export function BangMock\(\{ pv \}: \{ pv: PhamViPhanTich \}\)/.test(doc(W + 'phanTich/KetQuaThi.tsx')), 'BangMock còn tham số chết');
+    /* THI-THAT (05/11): tab Thi thật bỏ hẳn phần Mock — `BangMock` không còn (Excel Mock ở ⋯ Test + SOS, `xuatMock.ts`). */
+    assert(!/function BangMock/.test(doc(W + 'phanTich/KetQuaThi.tsx')), 'BangMock còn');
   });
 
   /* ---------------------------------------------------------------- 6c-2 lỗi 9 (PTA 28/10): hộp xác nhận ngắn = hộp nhỏ, không KhungPanel đè */

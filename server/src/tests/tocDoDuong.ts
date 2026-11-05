@@ -350,6 +350,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&o=bai-qua-han' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  /* PR-4 THI-THAT: tab Thi thật — danh sách + Tổng · Từng kỹ năng · Theo GV (QL / QT / CX; TVV không chạy 2 câu Theo GV); panel ô chỉ khi bấm. */
+  { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN', 'TVV', 'CX'], url: '/phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV'], url: '/phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { TVV: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=ghi-pa' },
   /* PT-PANEL (PR-1, 05/11): panel BẢNG có điểm — chỉ khi MỞ; dòng lượt + điểm theo lô (`dongLuotDiemCua`). */
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening' },
@@ -948,6 +952,10 @@ export const TRAN: Record<string, number> = {
   'GVCN /phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20': 14,   // đo 4
   'QL /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 15,   // đo 5
   'QT /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 15,   // đo 5
+  /* PR-4 THI-THAT: tab Thi thật (danh sách + thống kê; Theo GV +1 câu phân công, ghi danh nhớ chung với lớp lúc thi) · panel ô — trần = max(đo+10, ⌈đo×1,3⌉), đo 05/11. */
+  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 18, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7 · 8 · 7
+  'QL /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6 · 6
+  'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 29,   // đo 19
   'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 27,   // đo 17
   /* V8-PT-2: panel thẻ chỉ số (chỉ khi MỞ, gồm ~4 câu đăng nhập) — max(đo+10, ⌈đo×1,3⌉). */
@@ -980,6 +988,9 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11 (bộ demo ít thi thật: QL 12 · QT / CX 22 · TVV 14 dòng). Ước bản chính 2 tháng ~1 000 dòng (ghi chú v13 mục 4). */
+  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,
+  'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 72,
   'QL /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 914, 'QT /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 1349, 'QL /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 688, 'QT /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 688,   // PT-LOP-THUONG: đo 703 · 1 037 · 529 · 529 — max(đo + 50, ⌈đo × 1,3⌉)
   /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — max(đo + 50, ⌈đo × 1,3⌉); phần thêm (lượt theo id + điểm) ≈ +4 dòng so panel cũ (đo dat-mt 911 → 915). */
   'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 1085, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 1893,
