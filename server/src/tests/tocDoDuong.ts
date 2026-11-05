@@ -1209,6 +1209,10 @@ export const TRAN_GHI_LO = {
   danExcelMotDong: 314,   // đo 241 câu (×3, QL, 5 ô có nhận xét; ~48 câu / ô = `saveScore` như PUT một ô) → max(241 + 10, ⌈241 × 1,3⌉)
   /** OV-15h2: POST /regular/scores/lo — Dán từ Excel lớp thường, MỘT dòng 4 môn × (điểm + nhận xét); mỗi lệnh một `saveRegularScore`. */
   danExcelThuongMotDong: 383,   // đo 294 câu (QL, FOU 12, 4 môn × điểm + nhận xét = 8 lệnh; ~37 câu / lệnh như PUT một ô) → max(294 + 10, ⌈294 × 1,3⌉)
+  /** PHEP-DO-LO: huỷ `LO_HANG_LOAT_EM` (8) quyết định chuyển lớp một lần (`huyNhieuLenh`, lô web gửi), cuộn lại sau đo. */
+  huyNhieuLenh8: 127,   // đo 97 câu, 58 dòng (1 lệnh 14 câu — ~12 / lệnh, mỗi lệnh một giao dịch) → max(97 + 10, ⌈97 × 1,3⌉)
+  /** PHEP-DO-LO: `ganChuCaseThieu` cho mọi em có Case mở (tối đa 500) nhiều lớp, mọi Case mở chưa chủ (`suggestCaseOwner`), cuộn lại sau đo. */
+  ganChuCase500Em: 786,   // ×3: 174 em có Case mở (≤ 500), 19 lớp, 291 Case → đo 604 câu, 399 dòng (trước gom phân công theo lớp: 874 câu, 1 864 dòng; còn lại 2 câu GHI / Case) → max(604 + 10, ⌈604 × 1,3⌉)
   luuSuaCaLopMotLo: 119,   // một lô 8 em đổi họ tên: đo 91 câu → ⌈91×1,3⌉ = 119 (30 em một lần cũ: 289 câu, 7–14 s trên Turso). ponytail: lô cố định 8 em theo số em, không theo số câu — em đổi nhiều ô (tuần bắt đầu dời MT, Target) nặng hơn ~3 lần; lưới chặn cuối: dừng trước 10 s mỗi dòng (503, lô đó cuộn lại); chia lô theo ước lượng câu nếu hay gặp 503
 };
 

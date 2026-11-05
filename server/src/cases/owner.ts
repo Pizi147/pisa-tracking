@@ -78,8 +78,11 @@ export function ganChuCaseThieu(o: {
   if (theoEm) doiChuTheoLopMoi(tatCa.filter((r) => r.owner_user_id !== null && r.lop_hien_tai !== null), o);
   const rows = tatCa.filter((r) => r.owner_user_id === null);
   let n = 0;
+  /* PHEP-DO-LO: phân công đọc MỘT lần mỗi lớp (trước: một câu mỗi Case — lô 500 em nhiều lớp N+1). Cùng luật `suggestCaseOwner`. */
+  const pc = new Map<number, PhanCong[]>();
   for (const r of rows) {
-    const chu = suggestCaseOwner({ classId: r.class_id ?? null, category: r.category ?? null });
+    if (r.class_id && !pc.has(r.class_id)) pc.set(r.class_id, phanCongLop(r.class_id));
+    const chu = r.class_id ? chonChuCase(pc.get(r.class_id)!, r.category ?? null)?.user_id ?? null : null;
     if (chu === null) continue;
     /* Chỉ ghi lịch sử khi thật sự gán (người khác vừa gán cùng lúc → 0 dòng đổi, không lịch sử giả). */
     if (conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ? AND owner_user_id IS NULL').run(chu, o.luc, r.id).changes !== 1) continue;
