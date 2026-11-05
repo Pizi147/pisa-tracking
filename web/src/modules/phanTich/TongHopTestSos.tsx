@@ -204,9 +204,13 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   /* PR-HK2 (Q1) → V8-PT: "Xuất Excel" thành nút riêng cuối hàng lọc; ⋯ giữ Cột hiện + Xuất kết quả từng lượt. 375: ⋯ gánh cả Xuất bảng này (mockup C1 chỉ có ⋯). */
   const khongXuat = !data || data.hang.length === 0 || !demoDate;
   const lyDoKhongXuat = khongXuat ? t('Chưa có dữ liệu để xuất') : undefined;
+  const nhomCo = NHOM_MAC_DINH.filter((n) => allCols.some((c) => c.nhom === n));
   const mucMenu: MucMenu[] = [
-    { key: 'cot-hien', nhan: t('Cột hiện'), tieuDe: true, onChon: () => {} },
-    ...NHOM_MAC_DINH.map((n) => ({ key: n, nhan: dich(nhomCotNhanNgan(n, ct)), chon: cotHien.has(n), onChon: () => toggleCotHien(n) })),
+    /* PT-LOP-THUONG: lớp thường chỉ còn nhóm Kết quả → không mục "Cột hiện" (một nhóm, tắt là trống bảng). */
+    ...(nhomCo.length > 1 ? [
+      { key: 'cot-hien', nhan: t('Cột hiện'), tieuDe: true, onChon: () => {} },
+      ...nhomCo.map((n) => ({ key: n, nhan: dich(nhomCotNhanNgan(n, ct)), chon: cotHien.has(n), onChon: () => toggleCotHien(n) })),
+    ] : []),
     ...(dienThoai ? [{ key: 'xuat', nhan: t('⤓ Xuất bảng này'), keTruoc: true, onChon: xuatExcel, tat: khongXuat, title: lyDoKhongXuat }] : []),
     ...(session?.nav?.xuatMt ? [{ key: 'xuat-mt', nhan: t('Xuất kết quả từng lượt'), keTruoc: !dienThoai, onChon: () => setMoXuat(true) }] : []),
   ];

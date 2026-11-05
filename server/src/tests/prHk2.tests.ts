@@ -180,7 +180,9 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   check('C13 · một cột hvCase "HV - Case" thay hvCoCase + case; máy chủ giữ hai nguồn; Excel giữ hai cột riêng; ô web có hai OSo riêng', () => {
-    for (const ct of ['ft', 'thuong'] as const) {
+    /* PT-LOP-THUONG: lớp thường bỏ nhóm Xử lý trên màn — chỉ còn ở Excel (`cotExcel`). */
+    assert(['hvCoCase', 'case'].every((k) => d.cotExcel('thuong').some((c: any) => c.khoa === k)), 'Excel lớp thường giữ hai cột');
+    for (const ct of ['ft'] as const) {
       const khoa = d.cotTongHopFor(ct).map((c: any) => c.khoa);
       assert(khoa.includes('hvCase') && !khoa.includes('hvCoCase') && !khoa.includes('case'), `${ct}: ${khoa.join()}`);
       assert(d.cotTongHopFor(ct).find((c: any) => c.khoa === 'hvCase').nhan(ct) === 'HV - Case', 'nhãn');

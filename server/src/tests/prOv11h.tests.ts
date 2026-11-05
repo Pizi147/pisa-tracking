@@ -59,13 +59,12 @@ export async function runPrOv11hTests(t: YThucTestKit) {
     assert(x.dem.luot >= 2 && x.dauDong.some((s: string) => /Checkpoint 1/.test(s)), `xuất từng lượt lớp PET: ${JSON.stringify(x.dem)} ${x.dauDong}`);
 
     const th = tongHop.tongHop(P.mbManager, { ct: 'thuong', soTuan: 26, classId: pet.id, theo: 'lop' });
+    /* PT-LOP-THUONG (XM-2, 05/11): bài Checkpoint không vào Bài kiểm tra / Thiếu điểm; chỉ nhóm Checkpoint của Excel. */
     const h = th.hang[0];
-    assert(h && h.o['luot'] === 2, `Tổng hợp lớp PET: ${JSON.stringify(h?.o)}`);
-    assert(['gk-dat', 'gk-1', 'gk-2'].every((k) => !h.o[k]), `PET còn xếp dưới Progress Test: ${JSON.stringify(h.o)}`);
-    assert(['cp-dat', 'cp-1', 'cp-2', 'chuaDu'].reduce((s, k) => s + (h.o[k] ?? 0), 0) === 2, `Σ Checkpoint + Thiếu điểm ≠ Bài: ${JSON.stringify(h.o)}`);
+    assert(!h || ((h.o['luot'] ?? 0) === 0 && !h.o['chuaDu']), `Tổng hợp lớp PET: ${JSON.stringify(h?.o)}`);
+    assert(!h || ['gk-dat', 'gk-1', 'gk-2'].every((k) => !h.o[k]), `PET còn xếp dưới Progress Test: ${JSON.stringify(h?.o)}`);
+    assert(['cp-dat', 'cp-1', 'cp-2'].reduce((s, k) => s + (th.tong[k] ?? 0), 0) <= 2, `Checkpoint quá số bài: ${JSON.stringify(th.tong)}`);
     assert(d.NHAN_NHOM_CON.checkpoint === 'Checkpoint (theo môn)', d.NHAN_NHOM_CON.checkpoint);
-    const ds = tongHop.oTongHop(P.mbManager, { ct: 'thuong', soTuan: 26, classId: pet.id, theo: 'lop', khoa: `lop:${pet.id}`, cot: 'luot' });
-    assert(ds.rows.length === 2 && ds.rows.every((r: any) => /^Checkpoint 1 · /.test(r.title)), `danh sách: ${ds.rows.map((r: any) => r.title)}`);
   }));
 
   check('OV11h-2 · PET / KET: hạng mục = 4 môn L · R · W · S (P13), bảng kỹ năng hồ sơ HV có điểm Checkpoint; id bài cũ không đổi', () => thu(() => {
@@ -86,7 +85,7 @@ export async function runPrOv11hTests(t: YThucTestKit) {
     /* PT-9: Fast Track (lớp thường không chữ SOS — T58). */
     const cd = d.cotTongHopFor('ft').find((c: any) => c.khoa === 'chuaDu');
     assert(/SOS tạm \(chưa chốt\)/.test(cd.goiY), cd.goiY);
-    const o = tongHop.oTongHop(P.mbManager, { ct: 'thuong', soTuan: 26, classId: pet.id, theo: 'lop', khoa: `lop:${pet.id}`, cot: 'luot' });
+    const o = tongHop.oTongHop(P.mbManager, { ct: 'thuong', soTuan: 26, classId: pet.id, theo: 'lop', khoa: 'tong', cot: 'luot' });
     assert(/^\d+ bài — /.test(o.tieuDe), o.tieuDe);
     const gvId = P.coreTeacher.userId;
     for (const k of ['cx', 'consultant']) assert(loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId)) === 'Hồ sơ giáo viên dành cho Quản lý.', `${k}: ${loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId))}`);
