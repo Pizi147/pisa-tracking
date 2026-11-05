@@ -9621,6 +9621,9 @@ await runPrKetPetTests({ check, assert, conn, P, TODAY, classId, addDays } as an
 // ==================================================================== THI-LAI-1-KN (chủ SP 05/11: thi lại một kỹ năng — điểm lần trước thay vào)
 const { runPrThiLaiTests } = bocTep('prThiLai', await import('./prThiLai.tests.ts'));
 await runPrThiLaiTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== BAO-CAO-PH (chủ SP 05–06/11: báo cáo gửi phụ huynh — đợt, quyền, em đủ)
+const { runPrBaoCaoPhTests } = bocTep('prBaoCaoPh', await import('./prBaoCaoPh.tests.ts'));
+await runPrBaoCaoPhTests({ check, assert, assertThrows, conn, P, TODAY, classId } as any);
 // ==================================================================== R1-LUU-TIEP (chọn bài còn thiếu kế tiếp)
 const { runR1LuuTiepTests } = bocTep('r1LuuTiep', await import('./r1LuuTiep.tests.ts'));
 await runR1LuuTiepTests({ check, assert });

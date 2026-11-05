@@ -22,6 +22,7 @@ import { caseMoTheoEm, standingFor, standingLine } from '../students/standing.ts
 import { allProgrammes, evaluateRegular, nguongDatLop, programmeOfClass } from '../normal/regular.ts';
 import { cuoiKhoaTheoHocVien, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { tomTatLuotCuaLop } from '../cham/diemTheoLuot.ts';
+import { chipBaoCaoPh } from './baoCaoPh.ts';
 import { classProgressMany, lichMtCua, missingForClasses, missingForStudent, mocKetKhoa, type TienDoMoc } from './schedule.ts';
 import { canhBaoTheoHocVien, nhapDiemTheoEm, soEmCanXuLyYThuc, viecHocVienTheoLop } from './dongHocVien.ts';
 import { tiepTheoTheoHocVien } from './loTrinhTiep.ts';
@@ -889,6 +890,8 @@ function classOverviewThat(p: Principal, classId: number) {
     canhBaoYThuc: soEmCanXuLyYThuc(p, classId),
     /** P3 (PTA Plan 25/10): Góp ý hàng tuần gỡ khỏi giao diện — ⋯ › Lịch sử góp ý tuần chỉ hiện khi lớp có góp ý cũ. */
     coGopY: choVaGopY.some((r) => r.gy === 1),
+    /** BAO-CAO-PH: tab "Báo cáo PH" + chip đợt (null = chương trình chưa có mẫu / người xem không có quyền) — tính từ lịch, đọc bảng báo cáo chỉ 7 ngày sau hạn. */
+    baoCaoPh: chipBaoCaoPh(p, classId),
     /*
      * LỚP ĐÃ KẾT THÚC → CHẾ ĐỘ CHỈ XEM (Q22): mọi cờ thao tác `false`, không nút nào hiện,
      * không nhánh nào ở web đoán riêng — kể cả với Quản trị hệ thống (QT). Lớp đã đóng thì

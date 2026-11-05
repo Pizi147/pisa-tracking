@@ -67,6 +67,7 @@ import * as lenhSvc from '../classes/lenhChuyen.ts';
 import * as phanCongGvSvc from '../classes/phanCongGv.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as banGiaoGvSvc from '../classes/banGiaoGv.ts';
+import * as baoCaoPhSvc from '../classes/baoCaoPh.ts';
 import * as dichSvc from '../dich/dich.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
@@ -1110,6 +1111,20 @@ api.get('/classes/:classId/diem-theo-luot', requireAuth, wrap((req) => {
 api.get('/classes/:classId/diem-theo-luot/:luot', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return diemTheoLuotSvc.bangTheoLuot(principalOf(req), pInt(req, 'classId'), String(req.params.luot));
+}));
+
+/** BAO-CAO-PH: tab Báo cáo PH của hồ sơ lớp — bảng em × phần (một lớp × một đợt), panel một phần, lưu một (đợt, em, phần). */
+api.get('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baoCaoPhSvc.trangBaoCaoPh(principalOf(req), pInt(req, 'classId'), typeof req.query.dot === 'string' ? req.query.dot : null);
+}));
+api.get('/classes/:classId/bao-cao-ph/phan', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return baoCaoPhSvc.phanBaoCaoPh(principalOf(req), pInt(req, 'classId'), typeof req.query.dot === 'string' ? req.query.dot : null, String(req.query.phan ?? ''));
+}));
+api.put('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return baoCaoPhSvc.luuBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
 }));
 
 /** PR-DL — trang Test › Điểm theo lớp: lớp người xem được xem, kèm số ô trống. */

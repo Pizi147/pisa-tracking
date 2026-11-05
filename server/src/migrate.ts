@@ -76,6 +76,7 @@ import { migratePrBacYThuc } from './migrate/prBacYThuc.ts';
 import { migratePrMtVangReset } from './migrate/prMtVangReset.ts';
 import { migratePrNghiHocLuuTru } from './migrate/prNghiHocLuuTru.ts';
 import { migratePrThiLai } from './migrate/prThiLai.ts';
+import { migratePrBaoCaoPh } from './migrate/prBaoCaoPh.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
 import { migratePrOv15d } from './migrate/prOv15d.ts';
 import { migratePrOv15e } from './migrate/prOv15e.ts';
@@ -447,6 +448,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* PR-MT-VANG-RESET (N38 L5): kỹ năng Mock dời tay sau lần vắng (trước N38) — lần vắng về 0, nhật ký + tính lại kết quả (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrMtVangReset(conn, applied));
     /* NGHI-HOC-LUU-TRU (chủ SP 05/11): em Kết thúc học chưa Lưu trữ (ngoại lệ cũ FT chờ KQ) → Lưu trữ từ ngày kết thúc + nhật ký (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrNghiHocLuuTru(conn, applied));
     /* THI-LAI-1-KN (chủ SP 05/11): learning_cycles.thi_that_lay_lai — kỹ năng KQ thi thật lấy điểm lần trước (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrThiLai(conn, applied));
+    /* BAO-CAO-PH (chủ SP 05–06/11): bảng bao_cao_ph — báo cáo gửi phụ huynh theo (đợt, em, phần) (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBaoCaoPh(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

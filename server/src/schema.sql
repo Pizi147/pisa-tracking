@@ -2432,3 +2432,20 @@ CREATE TRIGGER tg_tc_programme_checkpoints_del AFTER DELETE ON programme_checkpo
 CREATE TRIGGER tg_tc_demo_config_ins AFTER INSERT ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_demo_config_upd AFTER UPDATE ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_demo_config_del AFTER DELETE ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+
+/* BAO-CAO-PH (chủ SP 05–06/11): báo cáo gửi phụ huynh — MỘT dòng mỗi (đợt, em, phần). Đợt tính từ lịch lớp ('thang:2026-11' · 'progress:2026-11-16' · 'final:…'),
+ * phần = kỹ năng phân công ('chung' = GVCN). `muc` JSON {tiêu chí: mức}, `dat_san` JSON [tiêu chí còn mức đặt sẵn theo đợt trước], `diem_sua` = điểm GV sửa tay
+ * (NULL = điểm sống theo điểm gốc), `du` = em đủ phần này (tính khi lưu). `class_id` = lớp lúc viết. Lịch sử ở audit_logs ('bao_cao_ph.luu'). migrate/prBaoCaoPh.ts. */
+CREATE TABLE bao_cao_ph (
+  id INTEGER PRIMARY KEY,
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  dot TEXT NOT NULL,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  phan TEXT NOT NULL,
+  muc TEXT, dat_san TEXT, chu TEXT, diem_sua REAL,
+  du INTEGER NOT NULL DEFAULT 0,
+  sua_boi INTEGER REFERENCES users(id),
+  sua_luc TEXT NOT NULL,
+  UNIQUE (dot, student_id, phan)
+);
+CREATE INDEX idx_bcph_lop_dot ON bao_cao_ph(class_id, dot);
