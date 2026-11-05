@@ -113,7 +113,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
             const nhap = data.phan.filter((p) => e.o[p.khoa] === 'nhap');
             const nutPhan = (p: PhanCot) => (
               <button key={p.khoa} type="button" onClick={() => mo_(p, e.id)} aria-label={nhanO(e, p, e.o[p.khoa])}
-                className={`inline-flex min-h-[32px] appearance-none items-center border-0 bg-transparent px-0.5 font-bold ${p.cuaToi ? 'text-[color:var(--accent)] underline' : 'text-slate-100'}`}>{p.ngan}</button>
+                className={`inline-flex min-h-[32px] appearance-none items-center border-0 bg-transparent px-0.5 font-bold ${p.cuaToi ? 'text-[color:var(--accent)] hover:underline' : 'text-slate-100'}`}>{p.ngan}</button>
             );
             return (
               <li key={e.id} className="py-2">
@@ -140,7 +140,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
       {congCu}
       <div className="table-scroll">
         <table className="bang-bc min-w-[720px]">
-          <colgroup><col className="w-[220px]" />{data.phan.map((p) => <col key={p.khoa} />)}{data.xuat && <col className="w-[72px]" />}</colgroup>
+          <colgroup><col className="w-[300px]" />{data.phan.map((p) => <col key={p.khoa} />)}{data.xuat && <col className="w-[72px]" />}</colgroup>
           <thead>
             <tr>
               <th scope="col">{t('Học viên')}</th>
@@ -266,13 +266,14 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
   const chan = xong || !em ? { huy: { nhan: t('Đóng'), onClick: dongPanel } } : {
     huy: null, daSua: chuaLuu, tuHoi: false,
     trai: <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400">{t('Tự lưu khi rời ô')}{tt && <ChuLuu tt={tt} loi={b?.loi} luc={gio} gon />}</span>,
+    dongTren: keTiep && dt ? <span className="block px-4 text-[13px] text-slate-400">{t('Tiếp:')} <b className="text-slate-100">{keTiep.ten}</b></span> : undefined,
     phu: keTiep && !dt ? <span className="text-[13px] text-slate-400">{t('Tiếp:')} <b className="text-slate-100">{keTiep.ten}</b></span> : undefined,
     chinh: <button type="button" className="btn btn-primary min-h-[44px] font-semibold max-sm:w-full sm:min-h-0" onClick={() => void luuTiep()}>
       {b?.tt === 'dang' ? t('Đang lưu…') : t('Lưu · em tiếp ›')}</button>,
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} loai={t('BÁO CÁO PH · VIẾT')} rong="bang" onDong={dongPanel}
+    <KhungPanel tieuDe={tieuDe} loai={t('BÁO CÁO PH · VIẾT')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
       dau={{ dong2: ngCanh ?? [] }} chan={chan}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />

@@ -1005,7 +1005,7 @@
   .bang-bc th small { display: block; font-size: 12px; font-weight: 500; color: var(--text-faint); }
   .bang-bc th small.chua { color: var(--text-dim); font-weight: 600; }
   .bang-bc :is(th, td):first-child { text-align: left; padding-left: 4px; }
-  .bang-bc td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: center; height: 40px; }
+  .bang-bc td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: center; height: 48px; }
   .bang-bc tbody tr:hover td { background: var(--accent-soft); }
   .bang-bc tfoot td { border-bottom: 0; border-top: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; color: var(--text-dim); height: 36px; font-variant-numeric: tabular-nums; }
 }
