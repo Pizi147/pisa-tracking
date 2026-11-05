@@ -329,6 +329,16 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
     - (C) Tab "Thi thật" thay "Kết quả Test" (bỏ phần Mock Test + 3 thao tác của nó). Thống kê Exceed / Đạt / Fail tổng + từng kỹ năng + theo GV — mọi GV từng dạy, trọng số tuần. **Thay luật C10 ở cả Phân tích GV + hồ sơ GV**, một hàm. GV block: QL, QT, CX.
     - (D) Nút "Mở tất cả lớp / Thu gọn" ở Kế hoạch Test + Lịch Test tuần cho QL + QT.
     - Tiếp: session THIET-KE-PT-TT vẽ mockup, chủ SP duyệt.
+  - **Chủ SP 05/11 duyệt mockup v13 (#973):** "Mockup ok đó, nhưng nên nhớ là có những cái tính năng đã có vẫn phải giữ nhé, vì mockup có vẻ như không làm đúng như hiện trạng web hiện tại ở phần background" · "color code cần thống nhất … (chẳng hạn như Hồ sơ GV) … đỏ - không đạt, xanh dương - vừa đạt, xanh lá - exceed" · "không cần mockup lại … sửa lại plan và code đi".
+    - Thêm: "Ở phần tổng quan, sửa lại panel HV tiến bộ giống giao diện như panel đang làm plan này" · "điều hướng GV sang phần công việc, bấm vào box thông tin công việc của tôi nhảy sang đó luôn".
+    - Kế hoạch `docs/superpowers/plans/2026-11-05-phan-tich-thi-that.md`, 6 PR:
+      - PT-PANEL-FT (+ HV tiến bộ Tổng quan);
+      - PT-LOP-THUONG;
+      - PT-VP-PA;
+      - THI-THAT (thay C10, SQL);
+      - MO-TAT-CA (+ ô Việc của tôi → Công việc);
+      - MAU-THONG-NHAT.
+    - Ba session: PT-PANEL · THI-THAT · MAU-MO.
 - **U10 Ý thức + task Báo PH DUYỆT (chủ SP 03/11 khuya, "Đồng ý cả ba")** — mockup `thiet-ke/audit-0311/u10-y-thuc.html` (#874). PR giao diện AUDIT-Y-THUC: **UI-1** sửa hạn Báo PH (K5 + Meeting CX K8) — **#878 đã merge** (chủ SP duyệt ảnh cặp; KHÁC: hạn xa viên xám theo #814, nền BoiCanh chung) · UI-2 tab Ý thức hồ sơ lớp · UI-3 tab Ý thức hồ sơ HV (**chủ SP 03/11: phải ĐỒNG BỘ với tab Ý thức hồ sơ lớp** — cùng phân đoạn "Vi phạm | Phối hợp SOS", cùng hàng / badge / thao tác / chữ, cùng thành phần; chỉ khác phạm vi một em) · UI-4 chip bậc HV & Lớp gộp vào PR giao diện U04.
 - **#860 UA-19 đã merge (03/11 khuya, chủ SP "Merge"):** MT lịch sử là kết quả hiện tại + đếm "Đang SOS", không Case / việc / chuông. SQL bản chính: **37 em đổi**, 25 em trước ghi "chưa có lượt" (đa số MT nhập bù 03–12/10, BC FT 50, CP FT 130…). Không migrate. **Việc để sau:** MT lịch sử ngoài cửa sổ mà Đạt không ghi mốc "đã đạt" vào Case đang mở của MT cũ (sos.ts thoát trước) → hồ sơ "Đạt" mà Case cũ vẫn mở — hiếm, có từ trước.
 - **Chủ SP 03/11 khuya — duyệt + góp ý mockup audit:** **DUYỆT U01, U02, U09** (+ U07 đã duyệt) — "làm tốt hơn nhiều, màu sắc và các nút nổi bật dễ nhìn… **bản thật cần phải giống**" · **dùng skill hợp lý ở mọi việc liên quan** · U03 "Xem chi tiết" kỹ năng: giữ lời chủ SP — panel phải. PR giao diện màn đã duyệt chờ chủ SP "bắt đầu làm". Góp ý sửa (session thêm dòng vào bảng ý → mockup trước, PTA kiểm rồi mới vẽ):
