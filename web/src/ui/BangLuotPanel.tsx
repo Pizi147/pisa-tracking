@@ -251,8 +251,9 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const tatVl = loc.flatMap((r) => (r.viPhamLop ? [{ ...r.viPhamLop, id: r.id }] : []));
   type HV = (typeof tatV)[number]; type HVe = (typeof tatVe)[number]; type HVl = (typeof tatVl)[number];
   const cotV: DinhNghiaCot[] = [
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 150 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 90 }, { key: 'ngay', nhan: t('Ngày'), kieu: 'chu', rong: 64 },
-    { key: 'vp', nhan: t('Vi phạm'), kieu: 'chu', linhHoat: true }, { key: 'nguoi', nhan: t('Người ghi'), kieu: 'chu', rong: 110 }, { key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 150 },
+    /* Panel 820, ô 14 (`day`): 140 + 96 + 70 + Vi phạm (phần còn lại ≈ 222) + 120 + 140. */
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 }, { key: 'ngay', nhan: t('Ngày'), kieu: 'chu', rong: 70 },
+    { key: 'vp', nhan: t('Vi phạm'), kieu: 'chu', linhHoat: true }, { key: 'nguoi', nhan: t('Người ghi'), kieu: 'chu', rong: 120 }, { key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 140 },
   ];
   const oV = (h: HV, c: DinhNghiaCot): ReactNode => {
     if (c.key === 'ten') return lkHv(h.studentId, h.ten);
@@ -300,12 +301,12 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const nghiaVu = tatP.some((h) => h.dot !== undefined);
   const MAU_KQ: Record<string, string> = { ok: 'text-ok', warn: 'text-soon', danger: 'text-bad', muted: 'text-faint' };
   const cotP: DinhNghiaCot[] = [
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 150 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 90 }, { key: 'case', nhan: 'Case', kieu: 'chu', rong: 70 },
+    /* Panel 820, ô 14 (`day`). Tuần bắt đầu PA = dòng phụ dưới Lớp ("từ W3 JUL"). Nghĩa vụ (Phân tích GV, một GV): bỏ cột Người phụ trách — luôn là chính GV đang xem. */
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 }, { key: 'case', nhan: 'Case', kieu: 'chu', rong: 60 },
     { key: 'pa', nhan: 'PA', kieu: 'chu', linhHoat: true },
     ...(nghiaVu
-      ? [{ key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 64 }, { key: 'ghi', nhan: t('Ngày ghi'), kieu: 'chu', rong: 80 }, { key: 'dung', nhan: t('Đúng hạn'), kieu: 'chu', rong: 100 }] as DinhNghiaCot[]
-      : [{ key: 'bd', nhan: t('Bắt đầu'), kieu: 'chu', rong: 90 }, { key: 'kq', nhan: t('Kết quả'), kieu: 'chu', rong: 150 }] as DinhNghiaCot[]),
-    { key: 'nguoi', nhan: t('Người phụ trách'), kieu: 'chu', rong: 130 },
+      ? [{ key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 70 }, { key: 'ghi', nhan: t('Ngày ghi'), kieu: 'chu', rong: 86 }, { key: 'dung', nhan: t('Đúng hạn'), kieu: 'chu', rong: 124 }] as DinhNghiaCot[]
+      : [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chu', rong: 164 }, { key: 'nguoi', nhan: t('Người phụ trách'), kieu: 'chu', rong: 140 }] as DinhNghiaCot[]),
   ];
   const oP = (h: HP, c: DinhNghiaCot): ReactNode => {
     if (c.key === 'ten') return lkHv(h.studentId, h.ten);
@@ -359,10 +360,10 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
               )}
               <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {dem.replace(/^\d+\s*/, '')}</span>
               <PhanTrang {...pt.thanh} />
-              {vpk ? (tatVl.length ? <Bang deu ten={tieuDe} cot={cotVl} hang={pt.cat(tatVl)} khoa={(h) => h.id} oCua={oVl} khung={false} />
-                : tatVe.length ? <Bang deu ten={tieuDe} cot={cotVe} hang={pt.cat(tatVe)} khoa={(h) => h.id} oCua={oVe} khung={false} />
-                : <Bang deu ten={tieuDe} cot={cotV} hang={pt.cat(tatV)} khoa={(h) => h.id} oCua={oV} phuCua={(h, c) => (c.key === 'vp' && h.moTa ? h.moTa : null)} khung={false} theRieng={theV} />)
-              : pak ? <Bang deu ten={tieuDe} cot={cotP} hang={pt.cat(tatP)} khoa={(h) => h.id} oCua={oP} khung={false} theRieng={theP} />
+              {vpk ? (tatVl.length ? <Bang deu day ten={tieuDe} cot={cotVl} hang={pt.cat(tatVl)} khoa={(h) => h.id} oCua={oVl} khung={false} />
+                : tatVe.length ? <Bang deu day ten={tieuDe} cot={cotVe} hang={pt.cat(tatVe)} khoa={(h) => h.id} oCua={oVe} khung={false} />
+                : <Bang deu day ten={tieuDe} cot={cotV} hang={pt.cat(tatV)} khoa={(h) => h.id} oCua={oV} phuCua={(h, c) => (c.key === 'vp' && h.moTa ? h.moTa : null)} khung={false} theRieng={theV} />)
+              : pak ? <Bang deu day ten={tieuDe} cot={cotP} hang={pt.cat(tatP)} khoa={(h) => h.id} oCua={oP} phuCua={(h, c) => (c.key === 'pa' && h.moTa ? h.moTa : c.key === 'lop' && h.batDau && !nghiaVu ? t('từ {tuan}', { tuan: tuanLich(h.batDau, homNay) }) : null)} khung={false} theRieng={theP} />
               : bt ? nhomB.map((g) => (
                 /* A3: tên chương trình (khi panel có hơn một) trên mỗi bảng. */
                 <section key={g.ct} className="grid gap-1.5" aria-label={g.ct}>

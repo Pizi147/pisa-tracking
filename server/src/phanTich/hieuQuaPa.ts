@@ -303,7 +303,7 @@ function napPa(ivIds: readonly number[]): Map<number, DongPa> {
       out.set(r.id, {
         id: r.id, studentId: r.student_id, ten: r.full_name ?? '', classId: r.lop_id ?? null, lop: r.lop ?? '', caseId: r.case_id,
         kyNang: cat ? CASE_CATEGORY_SHORT[cat] ?? cat : null, loaiPa: INTERVENTION_KIND_LABEL[r.kind as InterventionKind] ?? (r.description || r.kind),
-        batDau: r.bat_dau ? String(r.bat_dau).slice(0, 10) : null, ketQua: kq, nguoiPhuTrach: r.nguoi ?? null,
+        batDau: r.bat_dau ? String(r.bat_dau).slice(0, 10) : null, ketQua: kq, nguoiPhuTrach: r.nguoi ?? null, moTa: r.description || null,
       });
     }
   }

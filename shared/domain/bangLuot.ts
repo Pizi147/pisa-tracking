@@ -53,5 +53,7 @@ export type DongViPhamLop = { classId: number | null; lop: string; gvcn: string 
 export type DongPa = {
   id: number; studentId: number; ten: string; classId: number | null; lop: string; caseId: number; kyNang: string | null; loaiPa: string;
   batDau: string | null; ketQua: string | null; nguoiPhuTrach: string | null;
+  /** Mô tả PA do GV ghi (dòng phụ dưới loại PA). */
+  moTa?: string | null;
   dot?: number; han?: string | null; ngayGhi?: string | null; dungHan?: boolean; treNgay?: number | null;
 };
