@@ -663,7 +663,8 @@ export async function runPrCtTests(t: YThucTestKit) {
     bg.xacNhanBanGiao(gCu, l1.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
     for (const u of [GV[3].userId, GV[4].userId]) {
       const c = chuong(u, l1.id);
-      assert(c.length === 1 && c[0].duong === d.duongHoSoHocVien(e1, { banGiao: l1.id }), `GV ${u} lớp mới: ${JSON.stringify(c)}`);
+      /* BAN-GIAO-2: lệnh còn chờ (GV lớp mới chưa xem được hồ sơ em) → trang lớp mới, phiếu mở sẵn; đã chuyển → hồ sơ HV (dưới). */
+      assert(c.length === 1 && c[0].duong === `/hoc-vien/lop/${dichB}?ban-giao=${l1.id}`, `GV ${u} lớp mới: ${JSON.stringify(c)}`);
     }
     assert(d.duongHoSoHocVien(e1, { banGiao: l1.id }) === `/hoc-vien/${e1}?ban-giao=${l1.id}` && d.docThamSoHoSo((k: string) => (k === 'ban-giao' ? String(l1.id) : null)).banGiao === l1.id, 'tham số ?ban-giao=');
     bg.suaBanGiao(gCu, l1.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát qua Zalo.');
@@ -672,7 +673,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     chay(THU_HAI);
     assert(lenhCua(e2).trang_thai === 'da_chuyen' && chuong(GV[4].userId, l2.id).length === 0, 'đã chuyển, chưa xác nhận: chưa chuông');
     bg.xacNhanBanGiao(gCu, l2.id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
-    assert(chuong(GV[4].userId, l2.id).length === 1 && chuong(GV[3].userId, l2.id).length === 1, 'xác nhận sau khi chuyển: chuông GV lớp mới');
+    assert(chuong(GV[4].userId, l2.id).length === 1 && chuong(GV[3].userId, l2.id)[0]?.duong === d.duongHoSoHocVien(e2, { banGiao: l2.id }), 'xác nhận sau khi chuyển: chuông GV lớp mới, mở hồ sơ HV');
     await voiMayChu(async (goi) => {
       const doc = await goi(GV[4].userId, `/lenh-chuyen/${l1.id}/ban-giao`);
       const cu = await goi(GV[4].userId, `/classes/${nguonB}/overview`);
@@ -685,6 +686,58 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(!/viec=ban-giao/.test(doc('web/src/modules/students/ChuongLop.tsx')), 'ChuongLop: còn sang trang lớp cũ');
     assert(/k === 'doc-ban-giao'/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage: doc-ban-giao chưa mở tại chỗ');
     assert(doc('web/src/modules/classes/BanGiaoPanel.tsx').includes('`/lenh-chuyen/${docLenh}/ban-giao`'), 'BanGiaoPanel: chưa đọc theo lệnh');
+  });
+  /* BAN-GIAO-2 (chủ SP 05/11 "GV nhập rồi không xem được vì là lớp khác, GV lớp mới không xem được vì là của lớp cũ"): phía VIẾT + chỗ xem lâu dài. */
+  await checkAsync('CT (5d3) · em đã chuyển: GV lớp cũ (GVCN, GVBM) vẫn mở / sửa phiếu từ trang lớp cũ (dải "Đã chuyển", cả sau khi lớp kết thúc); lớp mới dải "Đã nhận" 14 ngày; chuông khi lệnh còn chờ dẫn trang lớp mới', async () => {
+    const daiM: any = await import('../classes/daiChuyenLop.ts');
+    const prM: any = await import('../classes/schedule.ts');
+    const nguonB = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    const dichB = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+    ganGv(nguonB, GV[0].userId, null, true); ganGv(nguonB, GV[1].userId, 'listening', false);
+    ganGv(dichB, GV[3].userId, null, true);
+    const [e1, e2] = [hocVien(nguonB, 'FOU', false).sid, hocVien(nguonB, 'FOU', false).sid];
+    ra(P.mbManager, nguonB, 'cuoi-khoa', [dongCua(e1, 'len_lop', dichB), dongCua(e2, 'len_lop', dichB)]);
+    const [l1, l2] = [lenhCua(e1), lenhCua(e2)];
+    const gCn = loadPrincipal(GV[0].userId), gBm = loadPrincipal(GV[1].userId), gMoi = loadPrincipal(GV[3].userId);
+    const dl = (who: any, lop: number) => daiM.daiLop(who, lop, { pr: prM.classProgress(lop), ft: false, ct: lop === nguonB ? 'FOU' : 'BE' });
+    /* Lệnh còn chờ: GV lớp mới chưa xem được hồ sơ em (ngoài phạm vi) → chuông "Đã có bàn giao" dẫn trang lớp mới, mở sẵn phiếu. */
+    bg.ghiMon(gBm, l1.id, 'listening', 'Nghe ổn, cần luyện dạng bản đồ.');
+    bg.xacNhanBanGiao(gCn, l1.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
+    const c1 = get(`SELECT duong FROM notifications WHERE user_id = ? AND dedup_key = ?`, GV[3].userId, `ban_giao:${l1.id}`);
+    assert(c1?.duong === `/hoc-vien/lop/${dichB}?ban-giao=${l1.id}`, `chuông khi lệnh chờ: ${JSON.stringify(c1)}`);
+    assert(dl(gMoi, dichB).sapNhan?.n === 2 && dl(gMoi, dichB).daNhan === null, 'lệnh chờ: lớp mới "Sắp nhận"');
+    chay(THU_HAI);
+    bg.xacNhanBanGiao(gCn, l2.id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
+    assert(get(`SELECT duong FROM notifications WHERE user_id = ? AND dedup_key = ?`, GV[3].userId, `ban_giao:${l2.id}`)?.duong === d.duongHoSoHocVien(e2, { banGiao: l2.id }), 'đã chuyển: chuông dẫn hồ sơ HV');
+    /* Đã chuyển + đủ xác nhận: lớp cũ vẫn có dải "Đã chuyển" (GVCN, GVBM), lớp mới "Đã nhận". */
+    for (const [ai, who] of [['GVCN', gCn], ['GVBM', gBm]] as const) {
+      const x = dl(who, nguonB);
+      assert(x.banGiao === null && x.daChuyen?.tong === 2 && x.daChuyen.daXacNhan === 2, `${ai} lớp cũ: ${JSON.stringify(x.daChuyen)}`);
+    }
+    const moi = dl(gMoi, dichB);
+    assert(moi.sapNhan === null && moi.daNhan?.n === 2 && moi.daNhan.tuLop[0].id === nguonB && moi.daNhan.daXacNhan === 2, `lớp mới: ${JSON.stringify(moi.daNhan)}`);
+    /* Lớp cũ kết thúc: người viết vẫn mở phiếu cả lớp và sửa câu của mình (OV-13h: sửa mọi lúc); GV lớp mới đọc được, không ghi được. */
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(TODAY, nguonB);
+    await voiMayChu(async (goi) => {
+      const bm = await goi(GV[1].userId, `/lenh-chuyen/ban-giao?lop=${nguonB}`);
+      const sua = await goi(GV[1].userId, `/lenh-chuyen/${l2.id}/ban-giao-mon`, { method: 'PUT', body: JSON.stringify({ mon: 'listening', noiDung: 'Nghe được, cần nhanh hơn.' }) });
+      const ov = await goi(GV[1].userId, `/classes/${nguonB}/overview`);
+      const moiDoc = await goi(GV[3].userId, `/lenh-chuyen/ban-giao?lop=${nguonB}`);
+      const moiGhi = await goi(GV[3].userId, `/lenh-chuyen/${l2.id}/ban-giao-mon`, { method: 'PUT', body: JSON.stringify({ mon: 'listening', noiDung: 'x' }) });
+      assert(bm.status === 200 && sua.status === 200 && ov.status === 200 && moiDoc.status === 200 && moiGhi.status === 403,
+        `GVBM cũ đọc ${bm.status} sửa ${sua.status} trang lớp ${ov.status} · GV mới đọc ${moiDoc.status} ghi ${moiGhi.status}`);
+    });
+    assert(dl(gBm, nguonB).daChuyen?.tong === 2, 'lớp kết thúc vẫn có dải Đã chuyển');
+    /* Hết 14 ngày sau tuần chuyển: hết dải hai phía (như dải hồ sơ HV). */
+    setConfig('demo_date', t.addDays(THU_HAI, 15));
+    try { assert(dl(gBm, nguonB).daChuyen === null && dl(gMoi, dichB).daNhan === null, 'sau 14 ngày hết dải'); } finally { setConfig('demo_date', TODAY); }
+    /* Web: dải hai phía + trang lớp mở panel đọc theo lệnh (`?ban-giao=`). */
+    const fs = await import('node:fs'), path = await import('node:path'), { fileURLToPath } = await import('node:url');
+    const goc = path.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+    const doc = (f: string) => fs.readFileSync(path.join(goc, f), 'utf8');
+    const daiWeb = doc('web/src/modules/classes/DaiChuyenLop.tsx');
+    assert(/dai\.daChuyen/.test(daiWeb) && /dai\.daNhan/.test(daiWeb), 'DaiChuyenLop: thiếu dải Đã chuyển / Đã nhận');
+    assert(/docLenh=\{/.test(doc('web/src/modules/classes/ClassOverviewPage.tsx')), 'ClassOverviewPage: chưa mở panel theo lệnh (?ban-giao=)');
   });
   check('CT (5e) · Pre FOU: chỉ một ô "Tổng hợp" — GVBM (kỹ năng) không ghi được, GVCN ghi được', () => {
     const pre = lopMoi({ kind: 'PREFOU', tuanHienTai: 5 });
