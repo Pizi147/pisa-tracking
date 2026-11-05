@@ -1000,14 +1000,8 @@
   .o-bc.chua.doc { box-shadow: none; color: var(--text-faint); }
   .o-bc.nhap { color: rgb(var(--soon-rgb)); font-size: 12px; font-weight: 500; }
   .o-bc.nhap.cua { box-shadow: inset 0 0 0 1px rgb(var(--soon-line-rgb)); }
-  .bang-bc { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 15px; }
-  .bang-bc th { font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--text-dim); padding: 8px 6px; border-bottom: 1px solid var(--line-strong); text-align: center; vertical-align: bottom; }
-  .bang-bc th small { display: block; font-size: 12px; font-weight: 500; color: var(--text-faint); }
-  .bang-bc th small.chua { color: var(--text-dim); font-weight: 600; }
-  .bang-bc :is(th, td):first-child { text-align: left; padding-left: 4px; }
-  .bang-bc td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: center; height: 48px; }
-  .bang-bc tbody tr:hover td { background: var(--accent-soft); }
-  .bang-bc tfoot td { border-bottom: 0; border-top: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; color: var(--text-dim); height: 36px; font-variant-numeric: tabular-nums; }
+  .bang-bc .bang .bang-chu-thich { display: block; font-weight: 500; }
+  .bang-bc .bang tr.hang-du td { border-top: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 }
 
 @media print {

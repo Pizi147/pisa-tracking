@@ -137,7 +137,7 @@ export default function ClassOverviewPage() {
   const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc);
   const dsTab = tabHienCuaLop(daKetThuc, !!bc);
   /* BAO-CAO-PH (mockup t0, e1): chip nhẹ trên tab — đợt đang mở "Tháng 11 · hạn 30/11", vừa quá hạn mà lớp chưa đủ "⚠ … · quá hạn 2 ngày". Không chuông, không việc. */
-  const chipBc = bc?.nhan ? { chu: bc.quaHan ? t('{dot} · quá hạn {n} ngày', { dot: bc.nhan, n: bc.quaHan }) : t('{dot} · hạn {ngay}', { dot: bc.nhan, ngay: ngay(bc.han, homNay) }), xau: bc.quaHan > 0 } : null;
+  const chipBc = bc?.nhan ? { chu: bc.quaHan ? `⚠ ${t('{dot} · quá hạn {n} ngày', { dot: bc.nhan, n: bc.quaHan })}` : t('{dot} · hạn {ngay}', { dot: bc.nhan, ngay: ngay(bc.han, homNay) }), xau: bc.quaHan > 0 } : null;
   const dong = () => setViec(null);
   const bgLenh = Number(params.get('ban-giao')) || 0;
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */

@@ -37,7 +37,6 @@ export const EN_BAO_CAO_PH = {
   'Em trước': 'Previous student',
   'Em {n}': 'Student {n}',
   'Em sau': 'Next student',
-  'Đã xong phần của bạn': 'Your section is done',
   '{so} em đủ': '{so} students complete',
   'Phần tiếp: {phan} ›': 'Next section: {phan} ›',
   'Tiêu chí': 'Criteria',
@@ -49,4 +48,5 @@ export const EN_BAO_CAO_PH = {
   'Viết hộ': 'Write on behalf',
   '{n} tiêu chí chưa chọn': '{n} criteria not chosen',
   'Lần sửa cuối': 'Last edited',
+  'Viết báo cáo PH': 'Wrote parent report',
 } satisfies Record<string, Dich>;

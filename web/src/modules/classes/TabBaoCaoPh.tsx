@@ -4,10 +4,12 @@ import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { taoHangLuu, dongSauKhiLuu, type TrangThaiO } from '../../lib/luuChac.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { ChonDangNut } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
@@ -138,49 +140,36 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
   return (
     <section className="card p-4" aria-label={`${t('Báo cáo PH')} · ${dotHien.nhan}`}>
       {congCu}
-      <div className="table-scroll">
-        <table className="bang-bc min-w-[720px]">
-          <colgroup><col className="w-[300px]" />{data.phan.map((p) => <col key={p.khoa} />)}{data.xuat && <col className="w-[72px]" />}</colgroup>
-          <thead>
-            <tr>
-              <th scope="col">{t('Học viên')}</th>
-              {data.phan.map((p) => (
-                <th key={p.khoa} scope="col" title={p.ten}>
-                  {p.ngan}<small className={!p.cuaToi && !p.gv.length ? 'chua' : undefined}>{tenGv(p)}</small>
-                </th>
-              ))}
-              {data.xuat && <th scope="col"><span className="sr-only">{t('Xuất')}</span></th>}
+      {/* BANG-3: bảng chung `Bang` (thẻ 375 riêng ở trên). Đầu cột hai dòng: mã phần + GV (`.bang-bc .bang-chu-thich` xuống dòng). */}
+      <div className="bang-bc">
+        <Bang ten={`${t('Báo cáo PH')} · ${dotHien.nhan}`} khung={false} the375={false} deu khoa={(e) => e.id} hang={em}
+          cot={[
+            { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 300 },
+            ...data.phan.map((p): CotBang => ({ key: p.khoa, nhan: p.ngan, phu: tenGv(p), kieu: 'so', rong: 120, goiY: p.ten })),
+            ...(data.xuat ? [{ key: 'xuat', nhan: t('Xuất'), kieu: 'nut', rong: 72 } as CotBang] : []),
+          ]}
+          oCua={(e, c) => {
+            if (c.key === 'ten') return <span className="font-semibold text-slate-100">{e.ten}</span>;
+            if (c.key === 'xuat') {
+              return <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-medium text-slate-500" disabled
+                aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} title={t('Xuất Excel có ở bản kế tiếp')}>{t('Xuất')}</button>;
+            }
+            const p = data.phan.find((x) => x.khoa === c.key)!;
+            const o = e.o[p.khoa];
+            return (
+              <button type="button" aria-label={nhanO(e, p, o)} onClick={() => mo_(p, e.id)}
+                className={`o-bc ${o === 'du' ? 'du' : o === 'nhap' ? `nhap${p.cuaToi ? ' cua' : ''}` : `chua${p.cuaToi || data.vietHo ? '' : ' doc'}`}`}>
+                {o === 'du' ? '✓' : o === 'nhap' ? t('nháp') : '–'}
+              </button>
+            );
+          }}
+          cuoi={(
+            <tr className="hang-du">
+              <td className="td" data-kieu="ten">{t('Đủ')}</td>
+              {data.phan.map((p) => <td key={p.khoa} className="td" data-kieu="so">{em.filter((e) => e.o[p.khoa] === 'du').length}/{em.length}</td>)}
+              {data.xuat && <td className="td" data-kieu="nut" />}
             </tr>
-          </thead>
-          <tbody>
-            {em.map((e) => (
-              <tr key={e.id}>
-                <td className="text-[15px] font-semibold text-slate-100">{e.ten}</td>
-                {data.phan.map((p) => {
-                  const o = e.o[p.khoa];
-                  const vietDuoc = p.cuaToi || data.vietHo;
-                  return (
-                    <td key={p.khoa}>
-                      <button type="button" aria-label={nhanO(e, p, o)} onClick={() => mo_(p, e.id)}
-                        className={`o-bc ${o === 'du' ? 'du' : o === 'nhap' ? `nhap${p.cuaToi ? ' cua' : ''}` : `chua${vietDuoc ? '' : ' doc'}`}`}>
-                        {o === 'du' ? '✓' : o === 'nhap' ? t('nháp') : '–'}
-                      </button>
-                    </td>
-                  );
-                })}
-                {data.xuat && <td className="text-right"><button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-medium text-slate-500" disabled
-                  aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} title={t('Xuất Excel có ở bản kế tiếp')}>{t('Xuất')}</button></td>}
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td>{t('Đủ')}</td>
-              {data.phan.map((p) => <td key={p.khoa}>{em.filter((e) => e.o[p.khoa] === 'du').length}/{em.length}</td>)}
-              {data.xuat && <td />}
-            </tr>
-          </tfoot>
-        </table>
+          )} />
       </div>
       {panel}
     </section>
@@ -324,7 +313,7 @@ function HetEm({ lopMa, phan, dotNhan, so, phanTiep, onPhanTiep, onDong }: {
   const tiep = phanTiep.find((p) => p.thieu.length) ?? phanTiep[0];
   return (
     <div className="py-2">
-      <h3 className="m-0 text-[17px] font-bold text-slate-100">{t('Đã xong phần của bạn')}</h3>
+      <h3 className="m-0 text-[17px] font-bold text-slate-100">{t('Xong phần của bạn')}</h3>
       <p className="m-0 mt-1 text-sm text-slate-400">{lopMa} · {phan.khoa === 'chung' ? t('Nhận xét chung') : phan.ten} · {dotNhan}: {t('{so} em đủ', { so })}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         {tiep && <button type="button" className="btn btn-primary min-h-[44px] font-semibold sm:min-h-0" onClick={() => onPhanTiep(tiep.khoa, tiep.thieu[0] ?? 0)}>
@@ -345,8 +334,7 @@ function FormEm({ em, phan, form, dotTruoc, homNay, du, nhap, onDoi, onRoiChu }:
     <div className="min-w-0 sm:px-6 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
         <h3 className="m-0 flex-1 text-[17px] font-bold text-slate-100">{em.ten}</h3>
-        {du ? <span className="rounded-full surface-2 px-2.5 py-0.5 text-[12px] font-semibold text-slate-300">✓ {t('Đủ')}</span>
-          : nhap ? <span className="rounded-full bg-soon-bg px-2.5 py-0.5 text-[12px] font-semibold text-soon"><span aria-hidden>● </span>{t('Nháp')}</span> : null}
+        {du ? <Nhan tone="done">{t('Đủ')}</Nhan> : nhap ? <Nhan tone="soon">{t('Nháp')}</Nhan> : null}
       </div>
       {phan.coDiem && <DongDiem goc={em.goc} diemSua={form.diemSua} homNay={homNay} onDoi={(v) => onDoi((f) => ({ ...f, diemSua: v }), true)} />}
       {phan.nhom.map((n, gi) => {
@@ -389,7 +377,7 @@ function HangThang({ ten, muc, san, dotTruoc, onChon }: { ten: string; muc: MucB
   const id = useRef(`tc-${Math.random().toString(36).slice(2)}`).current;
   return (
     <div className="grid items-center gap-x-3.5 gap-y-2 border-t py-2 first-of-type:border-t-0 sm:grid-cols-[minmax(0,1fr)_auto]" style={{ borderColor: 'var(--line)' }}>
-      <span id={id} className="text-sm leading-[1.45] text-slate-100">{!muc && <span aria-hidden className="mr-1.5 align-[2px] text-[10px] text-soon">●</span>}{ten}</span>
+      <span id={id} className="text-sm leading-[1.45] text-slate-100">{!muc && <span aria-hidden className="mr-1.5 align-[2px] text-[12px] leading-none text-soon">●</span>}{ten}</span>
       <span ref={ref} role="radiogroup" aria-labelledby={id} onKeyDown={phim} className={`thang-bc${muc ? '' : ' trong'}`}>
         {MUC_BC.map((m, k) => {
           const on = muc === m;
