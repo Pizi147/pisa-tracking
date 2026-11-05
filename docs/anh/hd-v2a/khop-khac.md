@@ -37,7 +37,7 @@ Phông: `document.fonts.check('600 15px "Be Vietnam Pro"')` = true ở mọi ả
 | Thao tác | Trước | Sau |
 |---|---|---|
 | Mở hướng dẫn của màn | Tài khoản › Hướng dẫn | Nút **?** trên thanh (mọi trang, 375 44 px) |
-| Biết chưa mở lần nào | dải "Mới dùng PISA TRACKING?" ở Tổng quan | giữ dải + chấm trên "?" |
+| Biết chưa mở lần nào | dải "Mới dùng PISA TRACKING?" (Xem · Ẩn) ở Tổng quan, Công việc | chấm trên "?" (PTA chốt 05/11 — bỏ dải, mockup F1 không có); mở "?" là hết chấm |
 | Mở khi đang làm Case / Nhập điểm | mở panel Hướng dẫn đóng panel đang làm (`khoPanelChung`) | mở chồng, panel đang làm và chữ đang gõ còn nguyên; Esc / ✕ chỉ đóng hướng dẫn |
 | Xem việc của màn | danh sách mục của màn | 3 khối Bạn đang ở · Việc làm ở đây · Không làm ở đây |
 | Tìm | lọc bỏ dấu | lọc bỏ dấu + từ đồng nghĩa + việc vai khác |
@@ -46,8 +46,8 @@ Phông: `document.fonts.check('600 15px "Be Vietnam Pro"')` = true ở mọi ả
 | QL / QT xem vai khác | ô chọn ở trang | ô "Vai: …" trên đầu panel + trang |
 | Trang /huong-dan, In | có | giữ (GV: phần đầu là Tôi muốn…; PR c làm lại theo 3 tab) |
 
-Không mất thao tác nào.
+Không mất thao tác nào (dải Mới dùng bỏ theo PTA chốt: việc nó làm — báo chưa mở, dẫn tới hướng dẫn — nay là chấm + nút "?").
 
 ## 4. [XM] / để sau
-- Dải "Mới dùng PISA TRACKING?" giữ (đặc tả không nói bỏ) — PTA quyết có bỏ khi đã có chấm trên "?".
+- ~~Dải "Mới dùng PISA TRACKING?"~~ — PTA chốt 05/11: BỎ (chấm trên "?" thay). Đã gỡ dải, phép UIC-1 đổi thành "đã bỏ", chữ EN gỡ; cờ `daXemHuongDan` giữ cho chấm.
 - Màn GV `/phan-tich`: GV mẫu không có quyền; mục "màn chưa có hướng dẫn riêng" chỉ thấy ở vai có Phân tích.

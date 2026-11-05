@@ -5,7 +5,7 @@
  *   HD-VIEC mỗi vai đúng 5 việc hằng tuần (chủ SP 15/10).
  *   HD-CHI  mỗi "Chỉ cho tôi" trỏ `data-hd` có thật trong mã web (quét nguồn) và mở trang có mục — đổi / xoá phần tử → đỏ;
  *           không trỏ phần tử màn đó không dựng cho vai (bảng CHI_VAI).
- *   HD-NHO  dải "Mới dùng PISA?" nhớ theo tài khoản: PATCH /me/profile { daXemHuongDan: true } → /demo/session; giá trị lạ → 400;
+ *   HD-NHO  "đã mở Hướng dẫn" nhớ theo tài khoản (chấm trên nút "?"): PATCH /me/profile { daXemHuongDan: true } → /demo/session; giá trị lạ → 400;
  *           migrate prHd chạy lặp được.
  */
 import fs from 'node:fs';
@@ -21,7 +21,7 @@ export async function runPrHdTests(t: any) {
   const { navOf } = await import('../platform/nav.ts');
   const { migratePrHd } = await import('../migrate/prHd.ts');
   const { createApp } = await import('../app.ts');
-  console.log('\nHD-a · Hướng dẫn trên web · mục theo màn · Chỉ cho tôi · nhớ dải Mới dùng');
+  console.log('\nHD-a · Hướng dẫn trên web · mục theo màn · Chỉ cho tôi · nhớ đã mở (chấm "?")');
 
   /* Vai có hướng dẫn → tài khoản mẫu để dựng thanh điều hướng thật (`navOf`). Thêm vai thì thêm tài khoản ở đây. */
   const { loadPrincipal } = await import('../permissions.ts');
