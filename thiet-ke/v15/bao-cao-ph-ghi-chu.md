@@ -110,11 +110,11 @@ Lời chủ SP: "Không cần tạo hẳn task báo cáo PH đâu, tự chủ đ
 
 **Truy vết khung bản 1 → bản 2:** a1 → t1 + t2 · a4 → BỎ · d1 (gập) → BỎ · d2 (mở) → d1 (tab, QL) · d5 → d5 (tab rỗng) · e1 → e1 (tab FOU) · g2 (Công việc 375) → BỎ, g2 = tab 375 · g3 → g2 · mới: k1, g3 (Admin Công việc 1440 / 375) · GIỮ: a2 (đổi nút), a3, a5, c1, d3, d4, e2, e3, f1, f2, g1.
 
-**Đề xuất nhỏ (PTA xem):** dòng Admin có nút **Xuất lớp** tải file ngay (đỡ một lần đổi trang); bấm tên dòng mới sang tab. Muốn đúng chữ đặc tả ("bấm → tab") thì đổi nút thành link "Báo cáo PH ›".
+**PTA chốt 05/11:** dòng Admin (lớp đủ) có nút **Xuất lớp** tải file ngay; bấm tên dòng → tab.
 
 **Turso bản 2:** bỏ câu đếm chip khối gập (L18) — chip trên tab chỉ cần hạn đợt (tính từ lịch, không đọc bảng báo cáo). Tab đọc khi mở (một lớp × một đợt, ≤ ~120 dòng). Việc Admin: một câu theo chi nhánh lấy lớp × đợt đủ trong 7 ngày (đếm đủ khi lưu ô cuối của lớp, không quét cả chi nhánh mỗi lần mở Công việc — builder ghi trần ở `tocDoDuong.ts`).
 - 375 (bản 2): lối viết là hàng **Phần của bạn** ("Viết Chung · 9/12", "Viết L · 4/12") trên danh sách thẻ em → panel toàn màn g1 (đổi em bằng ‹ ›); phần của GV tô nhấn trong "Thiếu …". Ô "nháp" phần của mình có viền vàng như ô thiếu.
 - Mọi panel viết: dòng loại **BÁO CÁO PH · VIẾT**; panel đọc: **BÁO CÁO PH · ĐỌC**.
-- Việc Admin: dòng **đủ** có nút Xuất lớp; dòng **thiếu n em** chỉ có link "Báo cáo PH ›" (không xuất bản thiếu từ Công việc). **[XM — PTA quyết]** sau khi xuất có hiện "đã xuất {giờ}" (lấy nhật ký xuất sẵn có) trên dòng không — khác "đã gửi PH" (đặc tả: không làm); mockup chưa vẽ.
+- Việc Admin: dòng **đủ** có nút Xuất lớp; dòng **thiếu n em** chỉ có link "Báo cáo PH ›" (không xuất bản thiếu từ Công việc). Sau khi xuất **không** hiện "đã xuất" (PTA chốt 05/11 — đặc tả mục 2 không làm đánh dấu gửi).
 - Việc Admin ở 375: chạm cả dòng → tab Báo cáo PH của lớp (như mọi dòng Công việc 375, ẩn nút); Xuất lớp bấm trong tab.
 - **Critique bản 2:** 34/40 (1 P1: 375 không có lối viết → đã thêm hàng "Phần của bạn") → lượt xác nhận **35/40, không P0 / P1**. Kiểm máy: phông tải đủ, không chữ < 12 px, không tương phản dưới ngưỡng, 375 không nút < 44 px, không tên bị cắt, không lỗi console. Ảnh chụp lại: `anh/t0 t1 t2 … k1 g1–g3` (bỏ ảnh a1, a4, d2 của bản 1).
