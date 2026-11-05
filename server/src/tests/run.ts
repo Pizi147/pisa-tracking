@@ -9760,6 +9760,9 @@ await runPrTlNapBaiTests({ check, assert, conn, P } as any);
 
 const { runV8Pt2Tests } = bocTep('v8Pt2', await import('./v8Pt2.tests.ts'));
 await runV8Pt2Tests({ check, assert, conn, P } as any);
+// ==================================================================== PT-PANEL (2026-11-05: ô số Phân tích → panel bảng có điểm)
+const { runPrPtPanelTests } = bocTep('prPtPanel', await import('./prPtPanel.tests.ts'));
+await runPrPtPanelTests({ check, assert, conn, P } as any);
 // ==================================================================== TL-VIEC (myWork nạp chung một lần mỗi request — so bản chụp gốc)
 const { runPrTlViecTests } = bocTep('prTlViec', await import('./prTlViec.tests.ts'));
 await runPrTlViecTests({ check, checkAsync, assert, P } as any);

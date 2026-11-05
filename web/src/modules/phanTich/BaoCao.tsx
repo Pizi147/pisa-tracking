@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { lopKq } from '../../ui/BieuTuong.tsx';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -31,7 +32,8 @@ const COT_TB: readonly CotBang[] = [
 ];
 const pt = (n: number, mau: number) => (mau ? `${Math.round((100 * n) / mau)} %` : null);
 /** U08-1 (mockup V11 `.m-dat / .m-05 / .m-10 / .m-15 / .m-cd`): màu số theo mức — tiêu đề cột vẫn ghi chữ; số 0 mờ (OSo tự xám). */
-const MAU_KQ_MT: Record<string, string> = { dat: 'text-ok', 'thieu-0.5': 'text-soon', 'thieu-1.0': 'text-kq-thieu10', 'thieu-1.5': 'text-bad', 'chua-du': 'text-dim' };
+/* Luật màu (chủ SP 05/11): Đạt Target (không biết vượt) = xanh dương — `lopKq('bang')`; xanh lá chỉ cho vượt. */
+const MAU_KQ_MT: Record<string, string> = { dat: lopKq('bang'), 'thieu-0.5': 'text-soon', 'thieu-1.0': 'text-kq-thieu10', 'thieu-1.5': 'text-bad', 'chua-du': 'text-dim' };
 /** Nhãn nhóm của dải chỉ số (mockup V11 B1): "Trong kỳ W1 SEP – W2 SEP" │ "Hiện tại". */
 const NHOM = 'text-[13px] font-bold text-dim';
 

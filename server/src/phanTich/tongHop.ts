@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
 import {
+  KN_LUOT_BANG, KN_LUOT_CUA, NHAN_KN_LUOT, soSanhDiem, type DongLuotDiem, type ODiemLuot,
   LEGACY_REGULAR_SKILL_MAP, nhanDonVi, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, khoaDot,
   nhanDot, soSanhLop, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
@@ -140,7 +141,14 @@ export function phanLoaiCacLuot(attempts: readonly any[]): Map<number, LuotPhanL
 }
 
 type CoDot = { giua: boolean; cuoi: boolean; checkpoint: boolean };
-type DongRaw = { khoa: string; nhan: string; phu?: string; tuanNay?: boolean; tap: Tap; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
+/** PT-PANEL: ô đếm HV (`kn:*`, `hvCoCase`) → lượt làm em vào ô, mới nhất (tuần, rồi id) — panel bảng hiện điểm CHÍNH lượt đó. */
+type LuotEm = Map<string, Map<number, { id: number; tuan: string }>>;
+type DongRaw = { khoa: string; nhan: string; phu?: string; tuanNay?: boolean; tap: Tap; luotEm: LuotEm; sortKey: readonly unknown[]; con: Map<string, DongRaw>; coDot: CoDot };
+function ganLuotEm(m: LuotEm, khoa: string, em: number, a: { id: number; week_start: string }) {
+  const x = m.get(khoa) ?? m.set(khoa, new Map()).get(khoa)!;
+  const cu = x.get(em);
+  if (!cu || a.week_start > cu.tuan || (a.week_start === cu.tuan && a.id > cu.id)) x.set(em, { id: a.id, tuan: a.week_start });
+}
 const coDotMoi = (): CoDot => ({ giua: false, cuoi: false, checkpoint: false });
 
 /** OV-15e (C29): `tu`/`den` (ngày, bộ chọn thời gian chung) thắng `soTuan` — tuần thi có Thứ Hai trong [Thứ Hai của `tu`, Thứ Hai của `den`]. */
@@ -206,16 +214,17 @@ function tinh(p: Principal, f: FilterTongHop) {
   const dongOf = (a: any): { cha: DongRaw; con: DongRaw } => {
     const par = chaCua(a);
     let cha = hangMap.get(par.khoa);
-    if (!cha) { cha = { khoa: par.khoa, nhan: par.nhan, phu: par.phu, tuanNay: par.tuanNay, tap: new Map(), sortKey: par.sortKey, con: new Map(), coDot: coDotMoi() }; hangMap.set(par.khoa, cha); }
+    if (!cha) { cha = { khoa: par.khoa, nhan: par.nhan, phu: par.phu, tuanNay: par.tuanNay, tap: new Map(), luotEm: new Map(), sortKey: par.sortKey, con: new Map(), coDot: coDotMoi() }; hangMap.set(par.khoa, cha); }
     const chi = conCua(a);
     const khoaChi = `${par.khoa}|${chi.khoa}`;
     let con = cha.con.get(khoaChi);
-    if (!con) { con = { khoa: khoaChi, nhan: chi.nhan, tap: new Map(), sortKey: chi.sortKey, con: new Map(), coDot: coDotMoi() }; cha.con.set(khoaChi, con); }
+    if (!con) { con = { khoa: khoaChi, nhan: chi.nhan, tap: new Map(), luotEm: new Map(), sortKey: chi.sortKey, con: new Map(), coDot: coDotMoi() }; cha.con.set(khoaChi, con); }
     dongCua.set(a.id, { cha: par.khoa, con: khoaChi });
     return { cha, con };
   };
 
   const tongTap: Tap = new Map();
+  const tongLuotEm: LuotEm = new Map();
   const tongCoDot = coDotMoi();
   const laThuong = f.ct === 'thuong';
   const cuoiDaDem: number[] = [];   // bài Final Test đã vào bảng → Mini Test gắn đúng dòng của nó
@@ -227,13 +236,17 @@ function tinh(p: Principal, f: FilterTongHop) {
     if (laThuong && a.kind === 'final') cuoiDaDem.push(a.id);
     for (const tap of [cha.tap, con.tap, tongTap]) { them(tap, 'luot', a.id); them(tap, pl.loai, a.id); }
     them(tongTap, 'hvLuot', a.student_id);   // V8-PT-2: "16 HV" ở thẻ Lượt MT — cùng tập lượt, +0 câu
-    for (const kn of pl.kyNangDuoi) for (const tap of [cha.tap, con.tap, tongTap]) them(tap, `kn:${kn}`, a.student_id);
+    for (const kn of pl.kyNangDuoi) {
+      for (const tap of [cha.tap, con.tap, tongTap]) them(tap, `kn:${kn}`, a.student_id);
+      for (const m of [cha.luotEm, con.luotEm, tongLuotEm]) ganLuotEm(m, `kn:${kn}`, a.student_id, a);
+    }
   }
 
   /*
    * CASE VÀO DÒNG CỦA LƯỢT SINH RA NÓ — một câu (lô 400), như `weekly.ts`, nhưng khoá bằng `a.id` thay
    * `planned_period_id` vì Tổng hợp còn xếp theo lớp/đợt/chi nhánh, không chỉ theo tuần.
    */
+  const theoIdLuot = new Map(attempts.map((a) => [a.id as number, a]));
   for (let i = 0; i < attempts.length; i += 400) {
     const chunk = attempts.slice(i, i + 400).map((a) => a.id);
     if (!chunk.length) continue;
@@ -247,6 +260,8 @@ function tinh(p: Principal, f: FilterTongHop) {
       const cha = hangMap.get(dong.cha)!, con = cha.con.get(dong.con)!;
       /* OV-12d: nhóm Xử lý theo MỘT luật với Tổng quan (`xuLyCuaDong`) — tình trạng HÔM NAY (Q18); xong / huỷ chỉ nằm trong tổng HV - Case. */
       const x = xuLyCuaDong(r, today);
+      const a = theoIdLuot.get(r.attempt_id);
+      if (r.student_id && a) for (const m of [cha.luotEm, con.luotEm, tongLuotEm]) ganLuotEm(m, 'hvCoCase', r.student_id, a);
       for (const tap of [cha.tap, con.tap, tongTap]) {
         them(tap, 'case', r.id);
         if (r.student_id) them(tap, 'hvCoCase', r.student_id);
@@ -278,7 +293,7 @@ function tinh(p: Principal, f: FilterTongHop) {
   }
 
   const scopeEmpty = !scope.all && scope.branchIds.length === 0 && scope.classIds.length === 0;
-  return { theo: f.theo, ct: f.ct, hang, tongTap, tongCoDot: laThuong ? tongCoDot : undefined, scopeEmpty };
+  return { theo: f.theo, ct: f.ct, hang, tongTap, tongLuotEm, tongCoDot: laThuong ? tongCoDot : undefined, scopeEmpty };
 }
 
 const soCuaTap = (tap: Tap, cols: readonly string[]): Record<string, number> =>
@@ -316,68 +331,92 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
   return { theo: r.theo, ct: r.ct, cot: cols, hang: r.hang.map(gon), tong: soCuaTap(r.tongTap, oCols), soHv: r.tongTap.get('hvLuot')?.size ?? 0, tongCoDot: r.tongCoDot, scopeEmpty: r.scopeEmpty };
 }
 
+/** Chữ ngắn của cột kỹ năng đang xét (cột tô nền ở panel bảng) — khoá `kn:<kỹ năng>`. */
+
+/** Tên chi nhánh cho đầu panel bảng (web ghép "· Fast Track · dữ liệu đến dd/mm"). */
+export const tenChiNhanh = (branchId: number | null | undefined): string | null =>
+  branchId ? (db().prepare('SELECT name FROM branches WHERE id = ?').get(branchId) as any)?.name ?? null : null;
+
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
 export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: string }):
-  { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: boolean; cachTinh?: string | null; chiNhanh?: string | null } {
+  { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: boolean; kieu?: 'luot'; knNhan?: string | null; cachTinh?: string | null; chiNhanh?: string | null } {
   const cotDef = (cotSoLieu(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
   if (!cotDef) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const r = tinh(p, f);
-  let tap: Tap | null = null; let nhanDong = '';
-  if (f.khoa === 'tong') { tap = r.tongTap; nhanDong = 'Tổng'; }
+  let tap: Tap | null = null; let luotEm: LuotEm | null = null; let nhanDong = '';
+  if (f.khoa === 'tong') { tap = r.tongTap; luotEm = r.tongLuotEm; nhanDong = 'Tổng'; }
   else {
     for (const h of r.hang) {
-      if (h.khoa === f.khoa) { tap = h.tap; nhanDong = h.nhan; break; }
+      if (h.khoa === f.khoa) { tap = h.tap; luotEm = h.luotEm; nhanDong = h.nhan; break; }
       const con = ((h as any).conSorted as DongRaw[] | undefined)?.find((c) => c.khoa === f.khoa);
-      if (con) { tap = con.tap; nhanDong = `${h.nhan} · ${con.nhan}`; break; }
+      if (con) { tap = con.tap; luotEm = con.luotEm; nhanDong = `${h.nhan} · ${con.nhan}`; break; }
     }
   }
   if (!tap) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
   const ids = [...(tap.get(f.cot) ?? new Set<number>())].sort((a, b) => a - b);
+  const tieuDe = `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`;
+  const rows = rowsFor(cotDef.donVi, ids);
+  /* PT-PANEL (PR-1): mọi ô FT không phải Case → panel BẢNG có điểm. Ô lượt: chính lượt; ô đếm HV: lượt làm em vào ô (`luotEm`). */
+  if (f.ct !== 'ft' || cotDef.donVi === 'case') return { n: ids.length, tieuDe, rows };
+  const em = luotEm?.get(f.cot);
+  const luotCua = (id: number) => (cotDef.donVi === 'dot-test' ? id : em?.get(id)?.id ?? null);
   return {
-    n: ids.length,
-    tieuDe: `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`,
-    rows: ganDiemLuot(p, cotDef.donVi, f.ct, rowsFor(cotDef.donVi, ids)),
-    /* U08-2: đầu panel bảng lượt — tên chi nhánh (web ghép "· Fast Track · dữ liệu đến dd/mm") + khối Cách tính (chữ gợi ý của cột, web dịch). */
-    ...(cotDef.donVi === 'dot-test' && f.ct === 'ft' ? {
-      bangLuot: true, cachTinh: cotDef.goiY ?? null,
-      chiNhanh: f.branchId ? (db().prepare('SELECT name FROM branches WHERE id = ?').get(f.branchId) as any)?.name ?? null : null,
-    } : {}),
+    n: ids.length, tieuDe, rows: ganLuotDiem(p, rows, luotCua),
+    bangLuot: true, kieu: 'luot', knNhan: f.cot.startsWith('kn:') ? (KN_LUOT_CUA[f.cot.slice(3)] ? NHAN_KN_LUOT[KN_LUOT_CUA[f.cot.slice(3)]] : null) : null,
+    cachTinh: cotDef.goiY ?? null, chiNhanh: tenChiNhanh(f.branchId),
   };
 }
 
-/** U08-2: một ô điểm của bảng lượt — band + so kỳ vọng của lượt (`resultOf`, cùng bộ máy chấm). */
-export type ODiemLuot = { v: number; kq: 'vuot' | 'bang' | 'duoi' | null } | null;
-export type DongLuotDiem = { studentId: number; ten: string; classId: number | null; lop: string; mt: number; tuan: string; kn: Record<'l' | 'r' | 'w1' | 'w2' | 's', ODiemLuot> };
-const KN_BANG = { l: 'listening', r: 'reading', w1: 'writing1', w2: 'writing2', s: 'speaking' } as const;
-
 /**
- * U08-2 (mockup V11 A2, PTA chốt 05/11 làm BẢNG): dòng LƯỢT của panel Test + SOS (FT) kèm điểm L R W1 W2 S của CHÍNH lượt — panel 720 vẽ bảng
- * Học viên · Lớp · MT · L R W1 W2 S. Chỉ chạy khi MỞ panel: một câu lượt theo id + điểm / lịch của các lượt đó (`mockTrongKhoang` với `luot` sẵn,
- * không nạp Case; `loadBundle` dùng lại điểm đã nhớ trong request).
+ * PT-PANEL (PR-1, mockup v13 A1): dòng bảng của MỌI lượt FT — L R W1 W2 S + OVR + kỳ vọng của CHÍNH lượt. Một hàm cho Test + SOS, Báo cáo HV, Phân tích GV.
+ * Chỉ chạy khi MỞ panel: một câu lượt theo id + điểm / lịch các lượt đó (`mockTrongKhoang` với `luot` sẵn, không nạp Case; `loadBundle` nhớ trong request)
+ * + tên em của lượt không có band (hiếm: chỉ số câu). Mọi id đều có dòng — số trên ô = số dòng.
  */
-function ganDiemLuot(p: Principal, donVi: string, ct: ChuongTrinh, rows: MetricRow[]): MetricRow[] {
-  if (donVi !== 'dot-test' || ct !== 'ft' || !rows.length) return rows;
-  const ph = rows.map(() => '?').join(',');
-  const luot = luotTrongKhoang(`a.id IN (${ph})`, rows.map((r) => r.id));
+export function dongLuotDiemCua(p: Principal, attemptIds: readonly number[]): Map<number, DongLuotDiem> {
+  const out = new Map<number, DongLuotDiem>();
+  const uniq = [...new Set(attemptIds)];
+  if (!uniq.length) return out;
+  const luot = luotTrongKhoang(`a.id IN (${uniq.map(() => '?').join(',')})`, uniq);
   const mock = new Map(mockTrongKhoang(p, { tu: '', den: '' }, { luot, boCase: true }).map((d) => [d.attemptId, d]));
-  const bundle = loadBundle(luot.filter((a) => mock.has(a.id)).map((a) => a.id), { boCase: true });
-  const theoId = new Map(luot.map((a) => [a.id as number, a]));
-  return rows.map((r) => {
-    const d = mock.get(r.id), a = theoId.get(r.id);
-    if (!d || !a) return r;
-    const kq = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
-    const bands = entryBandsOf(bundle.scores.get(a.id) ?? []);
+  const bundle = loadBundle(luot.map((a) => a.id), { boCase: true });
+  const thieu = [...new Set(luot.filter((a) => !mock.has(a.id)).map((a) => a.student_id as number))];
+  const ten = new Map<number, string>(thieu.length
+    ? (db().prepare(`SELECT id, full_name FROM students WHERE id IN (${thieu.map(() => '?').join(',')})`).all(...thieu) as any[]).map((s) => [s.id, s.full_name])
+    : []);
+  for (const a of luot) {
+    const d = mock.get(a.id);
+    const scores = bundle.scores.get(a.id) ?? [];
+    const kq = resultOf(a, scores, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
+    const bands = entryBandsOf(scores);
+    const kv = kq.expectation;
     /* Kỹ năng: kết luận của bộ máy chấm (`verdicts`); W1 · W2 (verdict gộp W) so thẳng band với kỳ vọng của lượt — cùng luật cột "Dưới kỳ vọng · W1 / W2". */
     const o = (k: string): ODiemLuot => {
       const v = kq.verdicts.find((x) => x.skill === k);
       const band = v ? v.band : bands[k as keyof typeof bands] ?? null;
       if (band === null || band === undefined) return null;
-      const exp = kq.expectation;
-      if (v) return { v: band, kq: v.passed === false ? 'duoi' : v.passed === null ? null : exp !== null && band > exp ? 'vuot' : 'bang' };
-      return { v: band, kq: exp === null ? null : band < exp ? 'duoi' : band > exp ? 'vuot' : 'bang' };
+      const sc = scores.find((x) => x.skill === k);
+      const tc = sc && [sc.c1, sc.c2, sc.c3, sc.c4].some((x) => x !== null && x !== undefined) ? [sc.c1, sc.c2, sc.c3, sc.c4] : null;
+      const raw: [number, number] | null = sc && sc.raw_score !== null && sc.raw_score !== undefined && sc.raw_total ? [sc.raw_score, sc.raw_total] : null;
+      const ket = v ? (v.passed === false ? 'duoi' : v.passed === null ? null : kv !== null && band > kv ? 'vuot' : 'bang') : soSanhDiem(band, kv);
+      return { v: band, kq: ket, ...(tc ? { tc } : {}), ...(raw ? { raw } : {}) };
     };
-    const luotDiem: DongLuotDiem = { studentId: d.studentId, ten: d.ten, classId: d.classId, lop: d.lop, mt: d.mt, tuan: d.tuan,
-      kn: { l: o(KN_BANG.l), r: o(KN_BANG.r), w1: o(KN_BANG.w1), w2: o(KN_BANG.w2), s: o(KN_BANG.s) } };
-    return { ...r, luotDiem } as MetricRow;
+    const ovr = d?.ovr ?? kq.overall ?? null;
+    out.set(a.id, {
+      attemptId: a.id, studentId: a.student_id, ten: d?.ten ?? ten.get(a.student_id) ?? '', classId: a.class_id ?? null, lop: a.class_code ?? '',
+      mt: a.attempt_no, tuan: a.week_start,
+      kn: { l: o(KN_LUOT_BANG.l), r: o(KN_LUOT_BANG.r), w1: o(KN_LUOT_BANG.w1), w2: o(KN_LUOT_BANG.w2), s: o(KN_LUOT_BANG.s) },
+      ovr: ovr === null ? null : { v: ovr, kq: soSanhDiem(ovr, kv) }, kyVong: kv,
+    });
+  }
+  return out;
+}
+
+/** Gắn `luotDiem` (lượt `luotCua(row.id)`) vào dòng; `them` thêm trường riêng của nơi gọi (vd `knCua`). */
+export function ganLuotDiem(p: Principal, rows: MetricRow[], luotCua: (id: number) => number | null, them?: (row: MetricRow) => Partial<DongLuotDiem>): MetricRow[] {
+  const ld = dongLuotDiemCua(p, rows.map((r) => luotCua(r.id)).filter((x): x is number => x !== null));
+  return rows.map((r) => {
+    const id = luotCua(r.id);
+    const d = id === null ? undefined : ld.get(id);
+    return d ? ({ ...r, luotDiem: { ...d, ...them?.(r) } } as MetricRow) : r;
   });
 }

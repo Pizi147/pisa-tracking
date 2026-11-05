@@ -16,11 +16,11 @@ import { coKhoa, nho } from '../platform/nguCanhRequest.ts';
 import { mondayOf } from '../platform/week.ts';
 import { metricSet, overdueScoreBai, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { phamViPhanTich } from './phamVi.ts';
-import { luotTrongKhoang } from './tongHop.ts';
+import { ganLuotDiem, luotTrongKhoang, tenChiNhanh } from './tongHop.ts';
 import { ketQuaThiThatKq, luotMockKhoang, mockTrongKhoang } from './ketQuaThi.ts';
 import { diemCuaLuot, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
-import { tienBoTheoKyNang } from './giaoVien.ts';
+import { ganTangGiam, kieuBang, tienBoTheoKyNang } from './giaoVien.ts';
 import { diemTuEval, diemTuMock } from '../worklist/diemDong.ts';
 import { evaluateAttemptRow } from '../worklist/danhGia.ts';
 import { allProgrammes } from '../normal/regular.ts';
@@ -108,7 +108,7 @@ const luotMtLui = (p: Principal, f: LocBaoCao): any[] => nho(khoaLuotMt(p, f), (
  * Tập theo em nên tổng nhiều chi nhánh / lớp = Σ tử / Σ mẫu (T20). Lượt huỷ không vào (`luotMockKhoang`).
  * shortcut: nhìn lùi `LUI_TUAN_CHOT` tuần; điểm không có `nhap_dau_ngay` (dữ liệu cũ) lấy Chủ nhật tuần thi.
  */
-export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: Set<number>; chuaDu: Set<number>; luot: Map<number, DongMock> } {
+export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: Set<number>; chuaDu: Set<number>; luot: Map<number, DongMock>; luotChuaDu: Map<number, DongMock> } {
   const tuDau = mondayOf(f.tu), cuoi = addDaysIso(mondayOf(f.den), 6);
   const dong = mockTrongKhoang(p, { branchId: f.branchId, tu: addDaysIso(tuDau, -7 * LUI_TUAN_CHOT), den: f.den }, { luot: luotMtLui(p, f).filter((a) => a.kind === 'mock'), boCase: true });
   /* Ngày chốt từ điểm đã nạp (`diemCuaLuot`), không thêm câu. */
@@ -120,8 +120,17 @@ export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: S
   }
   const moiNhat = new Map<number, { d: DongMock; ngay: string }>();
   const chuaDu = new Set<number>();
+  /* PT-PANEL: lượt "chưa đủ" mới nhất trong kỳ của em — dòng panel "Chưa đủ dữ liệu". */
+  const luotChuaDu = new Map<number, DongMock>();
   for (const d of dong) {
-    if (d.ketQua === 'chua-du') { if (d.tuan >= tuDau && d.tuan <= f.den) chuaDu.add(d.studentId); continue; }
+    if (d.ketQua === 'chua-du') {
+      if (d.tuan >= tuDau && d.tuan <= f.den) {
+        chuaDu.add(d.studentId);
+        const cu = luotChuaDu.get(d.studentId);
+        if (!cu || d.tuan > cu.tuan || (d.tuan === cu.tuan && d.attemptId > cu.attemptId)) luotChuaDu.set(d.studentId, d);
+      }
+      continue;
+    }
     const ngay = chot.get(d.attemptId) ?? addDaysIso(d.tuan, 6);
     if (ngay < tuDau || ngay > cuoi) continue;
     const cu = moiNhat.get(d.studentId);
@@ -129,7 +138,7 @@ export function tapDatMt(p: Principal, f: LocBaoCao): { dat: Set<number>; mau: S
   }
   const dat = new Set([...moiNhat].filter(([, x]) => x.d.ketQua === 'dat').map(([s]) => s));
   for (const s of moiNhat.keys()) chuaDu.delete(s);
-  return { dat, mau: new Set(moiNhat.keys()), chuaDu, luot: new Map([...moiNhat].map(([s, x]) => [s, x.d])) };
+  return { dat, mau: new Set(moiNhat.keys()), chuaDu, luot: new Map([...moiNhat].map(([s, x]) => [s, x.d])), luotChuaDu };
 }
 
 /**
@@ -159,7 +168,7 @@ export function tapThiThangNayLop(p: Principal, f: { branchId?: number | null; c
 }
 
 /** PANEL-MC: `diem` — dòng điểm của CHÍNH lượt / lần thi làm em vào ô (MT: `diemTuMock`; thi thật: bốn band so Target), 0 câu. */
-type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: number | null; lop: string; nhan: string; diem: DiemHv };
+type EmKqMt = { cot: CotKqMt; ovr: number | null; target: number | null; truoc: number | null; lop: string; nhan: string; diem: DiemHv; /** PT-PANEL: lượt MT của ô (hàng Thi: không). */ attemptId?: number };
 
 /**
  * KẾT QUẢ MT (SV-SO3, `10` mục 5) — hàng → em → kết quả. MT: lượt MT0 (lớp thường hoặc FT) / MT lớp FT có tuần thi trong kỳ, đã có ít nhất một band
@@ -207,7 +216,7 @@ export function tapKqMt(p: Principal, f: LocBaoCao): Map<LuotKqMt, Map<number, E
     out.set(l, new Map([...m].map(([s, d]) => {
       const tg = cua.get(d.attemptId)!.target_at_attempt;
       const target = tg === null || tg === undefined ? null : Number(tg);
-      return [s, { cot: cotKqMt(d.ovr, target), ovr: d.ovr, target, truoc: d.ovr === null ? null : truoc(cycleCua(d), d.mt), lop: d.lop, nhan: `MT${d.mt} · ${tuanLich(d.tuan)}`, diem: diemTuMock(d) }];
+      return [s, { cot: cotKqMt(d.ovr, target), ovr: d.ovr, target, truoc: d.ovr === null ? null : truoc(cycleCua(d), d.mt), lop: d.lop, nhan: `MT${d.mt} · ${tuanLich(d.tuan)}`, diem: diemTuMock(d), attemptId: d.attemptId }];
     })));
   }
   out.set('thi', new Map([...thi].map(([s, r]) => {
@@ -337,7 +346,11 @@ function diemLuotThuong(daCham: Set<number>, cua: Map<number, any>): Map<number,
  * Danh sách của MỘT số trong kỳ — `o`: `hv-da-thi` · `bai-da-cham` · `bai-qua-han` · `gv:<id>` (0 = chưa phân công) · `sos:<lớp | tong>:<1|2|3>`.
  * Tính lại bằng chính `tinh()` nên số = số dòng.
  */
-export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number; tieuDe: string; rows: MetricRow[] } {
+/** PT-PANEL: đầu panel bảng — kiểu + chi nhánh (+ cột kỹ năng tô nền). */
+const dauBang = (f: LocBaoCao, rows: MetricRow[], cachTinh: string | null, knNhan?: string) =>
+  ({ ...kieuBang(rows, cachTinh), ...(knNhan ? { knNhan } : {}), chiNhanh: tenChiNhanh(f.branchId) });
+
+export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number; tieuDe: string; rows: MetricRow[]; chiNhanh?: string | null } {
   const kq = /^kq-mt:(mt0|mt1|mt2|mt3\+|thi):(dat|thieu-0\.5|thieu-1\.0|thieu-1\.5|chua-du)$/.exec(f.o);
   if (kq) {
     /* Panel chỉ đọc Kết quả MT (C22): em của ô — lớp · lượt · Overall · Target · so lượt trước. */
@@ -353,7 +366,10 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
       return { ...row, sub: [e.lop, e.nhan, e.ovr === null ? t('chưa đủ điểm') : `Overall ${so(e.ovr)}`, e.target === null ? null : `Target ${so(e.target)}`,
         lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · ') };
     });
-    return { n: ids.length, tieuDe: `${NHAN_LUOT_KQ_MT[l]} · ${NHAN_COT_KQ_MT[cot]} = ${ids.length} HV`, rows };
+    /* PT-PANEL (PR-1): hàng MT → bảng lượt (lượt của ô). Hàng Thi giữ panel cũ tới PR-4 (THI-THAT). */
+    const bang = l === 'thi' ? rows : ganLuotDiem(p, rows, (s) => em.get(s)?.attemptId ?? null);
+    return { n: ids.length, tieuDe: `${NHAN_LUOT_KQ_MT[l]} · ${NHAN_COT_KQ_MT[cot]} = ${ids.length} HV`, rows: bang,
+      ...(l === 'thi' ? {} : dauBang(f, bang, 'Lượt MT mới nhất của HV trong kỳ (cùng hàng). Cột Kỳ vọng = kỳ vọng của lượt; Đạt Target = Overall đạt Target lúc thi.')) };
   }
   const r = tinh(p, f);
   const ra = (donVi: 'hoc-vien' | 'bai', ids: Iterable<number>, tieuDe: string, diem?: Map<number, DiemHv>) => {
@@ -372,14 +388,20 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const d0 = tapDatMt(p, f);
     const cuaLop = (s: number) => !f.classId || d0.luot.get(s)?.classId === f.classId;
     const d = f.classId ? { ...d0, mau: new Set([...d0.mau].filter(cuaLop)), dat: new Set([...d0.dat].filter(cuaLop)) } : d0;
-    if (f.o === 'dat-mt-chua-du') return ra('hoc-vien', d.chuaDu, t('chưa đủ dữ liệu (ngoài mẫu Đạt MT)'));
+    if (f.o === 'dat-mt-chua-du') {
+      const x = ra('hoc-vien', d.chuaDu, t('chưa đủ dữ liệu (ngoài mẫu Đạt MT)'));
+      const bang = ganLuotDiem(p, x.rows, (s) => d.luotChuaDu.get(s)?.attemptId ?? null);
+      return { ...x, rows: bang, ...dauBang(f, bang, 'HV có lượt MT trong kỳ nhưng chưa đủ điểm để có Overall — ngoài mẫu Đạt MT. Bảng hiện lượt mới nhất.') };
+    }
     const ids = [...d.mau].sort((a, b) => Number(d.dat.has(a)) - Number(d.dat.has(b)) || a - b);
     /* PANEL-MC (5b ý 4): dòng điểm = CHÍNH lượt MT trong kỳ đã dùng tính % (`d.luot`, 0 câu) — thay `diemCase` Overall cũ; `sub` còn lớp · lượt · tuần. */
     const rows = rowsFor('hoc-vien', ids, undefined, p, false, new Map(ids.map((s) => [s, diemTuMock(d.luot.get(s)!)]))).map((row) => {
       const x = d.luot.get(row.id)!;
       return { ...row, sub: [x.lop, `MT${x.mt} · ${tuanLich(x.tuan)}`].join(' · '), ketQua: d.dat.has(row.id) ? 'dat' as const : 'chua' as const };   // PANEL-CHUNG: tab Chưa đạt · Đạt (mockup p2)
     });
-    return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows };
+    const bang = ganLuotDiem(p, rows, (s) => d.luot.get(s)?.attemptId ?? null);
+    return { n: ids.length, tieuDe: t('Đạt MT · {pt} % = {dat}/{mau} HV', { pt: d.mau.size ? Math.round((100 * d.dat.size) / d.mau.size) : 0, dat: d.dat.size, mau: d.mau.size }), rows: bang,
+      ...dauBang(f, bang, 'Mỗi HV lấy lượt MT mới nhất chốt điểm trong kỳ. Đạt khi Overall đạt kỳ vọng của lượt đó.') };
   }
   if (f.o === 'thi-thang-nay' || f.o === 'thi-dot-nay') {
     /* `thi-dot-nay` (Báo cáo HV): ngày thi trong khoảng đang xem — cùng hàm. */
@@ -412,7 +434,9 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const ids = [...(x?.tong ?? [])].filter((id) => chiHang < 0 || hang(id) === chiHang).sort((a, b) => hang(b) - hang(a) || a - b);   // giảm trước
     const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, [t('Tăng'), t('Giữ nguyên'), t('Giảm')][hang(row.id)]].filter(Boolean).join(' · '),
       xuHuong: { huong: (['tang', 'giu', 'giam'] as const)[hang(row.id)], ...x?.doi.get(row.id) } }));
-    return { n: ids.length, tieuDe: t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows };
+    const bang = ganTangGiam(p, rows, x?.doi ?? new Map());
+    return { n: ids.length, tieuDe: t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows: bang,
+      ...dauBang(f, bang, 'Điểm kỹ năng ở lượt MT so lượt MT liền trước có điểm kỹ năng đó của chính HV. Ô "Sau" ✓ / ✗ so kỳ vọng của lượt đó.', tenMonNgan(null, tb[1])) };
   }
   if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã làm bài', r.mk ? diemTrongKy(() => true) : diemLuotThuong(r.daCham, r.cua));
   if (f.o === 'bai-da-cham') return ra('bai', r.daCham, 'đã chấm');
