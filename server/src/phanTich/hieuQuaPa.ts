@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
 import {
+  CASE_CATEGORY_SHORT, NGUONG_MINI_TEST, addDaysIso, categoryOf, type CaseCategory, type DongPa,
   INTERVENTION_KIND_LABEL, NGUONG_IT_DU_LIEU, NHAN_HO_KY_NANG, hoKyNang, issueBranchOf, issueLabel, loiKhoangTuan, mondayOfDate, nenDung,
   tuDauKhoang, tuanTrungVi,
   type ChuongTrinh, type DongHieuQuaPa, type HieuQuaPaKetQua, type HoKyNang, type InterventionKind,
@@ -8,7 +9,7 @@ import { addDays, badRequest, HttpError } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { planOutcomes, planOutcomesUnattributed } from '../cases/effectiveness.ts';
-import { rowsFor, PA_CHUA_CO_KET_QUA, type MetricRow } from '../worklist/metrics.ts';
+import { parseObligation, rowsFor, PA_CHUA_CO_KET_QUA, type MetricRow } from '../worklist/metrics.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { phamViPhanTich } from './phamVi.ts';
 
@@ -239,7 +240,7 @@ export function hieuQuaPa(p: Principal, f: FilterHieuQuaPa): HieuQuaPaKetQua {
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`. `dong` = khoá hàng; `cot` = `pa` | `cai-thien` | `hv`; hoặc `dong` đặc biệt. */
 export function oHieuQuaPa(p: Principal, f: FilterHieuQuaPa & { dong: string; cot: string }):
-  { n: number; tieuDe: string; rows: MetricRow[] } {
+  { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: true; kieu?: 'pa' } {
   const r = tinh(p, f);
   const sx = (xs: Iterable<number>) => [...xs].sort((a, b) => a - b);
   if (f.dong === 'chua-ghi-ket-qua') {
@@ -252,7 +253,7 @@ export function oHieuQuaPa(p: Principal, f: FilterHieuQuaPa & { dong: string; co
   }
   if (f.dong === 'chua-ro-nguon') {
     const ids = sx(r.chuaRoNguonIds);
-    return { n: ids.length, tieuDe: `${ids.length} PA chưa rõ nơi học lúc làm PA`, rows: rowsFor('phuong-an', ids) };
+    return { n: ids.length, tieuDe: `${ids.length} PA chưa rõ nơi học lúc làm PA`, ...bangPa(dongPa(ids)) };
   }
   /* V8-PT-2: `dong=tong` = thẻ chỉ số PA có kết quả · Có cải thiện. */
   const t = f.dong === 'tong' ? paCaHaiBang(r) : r.tap.get(f.dong);
@@ -261,9 +262,96 @@ export function oHieuQuaPa(p: Principal, f: FilterHieuQuaPa & { dong: string; co
   const [cha] = f.dong.split('|');
   const nhan = f.dong === 'tong' ? 'Hiệu quả PA' : cha === f.dong ? r.nhan.get(f.dong)! : `${r.nhan.get(cha)} · ${r.nhan.get(f.dong)}`;
   if (f.cot === 'hv') {
-    const ids = sx(new Set(t.map((x) => x.studentId)));
-    return { n: ids.length, tieuDe: `${nhan} · ${ids.length} học viên`, rows: rowsFor('hoc-vien', ids) };
+    /* PT-VP-PA (P-PA gộp theo em): một dòng một em — PA có kết quả GẦN NHẤT của em trong ô (cùng tập với số). */
+    const moi = new Map<number, (typeof t)[number]>();
+    for (const x of t) { const cu = moi.get(x.studentId); if (!cu || x.day > cu.day || (x.day === cu.day && x.id > cu.id)) moi.set(x.studentId, x); }
+    const ids = sx(moi.keys());
+    const pa = new Map(dongPa(ids.map((s) => moi.get(s)!.id)).map((r: any) => [r.pa.studentId as number, r]));
+    return { n: ids.length, tieuDe: `${nhan} · ${ids.length} học viên`, ...bangPa(ids.map((s) => ({ ...pa.get(s)!, id: s }))) };
   }
   const ids = sx(t.filter((x) => f.cot === 'pa' || x.group === 'success').map((x) => x.id));
-  return { n: ids.length, tieuDe: `${nhan} · ${ids.length} PA${f.cot === 'cai-thien' ? ' có cải thiện' : ''}`, rows: rowsFor('phuong-an', ids) };
+  return { n: ids.length, tieuDe: `${nhan} · ${ids.length} PA${f.cot === 'cai-thien' ? ' có cải thiện' : ''}`, ...bangPa(dongPa(ids)) };
+}
+
+/** PT-VP-PA: đầu panel bảng PA khi có dòng. */
+export const bangPa = (rows: MetricRow[]) => ({ rows, ...(rows.length ? { bangLuot: true as const, kieu: 'pa' as const } : {}) });
+
+/** Lớp hiện tại của em (ghi danh còn hiệu lực mới nhất), không có thì lớp của lượt sinh Case — cùng cách `rowsFor('phuong-an')`. */
+const PA_SQL = `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.nhom_bo_tro, COALESCE(iv.started_date, iv.planned_date) AS bat_dau, iv.action_due,
+        sc.student_id, s.full_name, sc.category, sc.topic, COALESCE(ou.full_name, pu.full_name, NULLIF(iv.performer_name, '')) AS nguoi,
+        (SELECT fu.outcome FROM case_followups fu WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS kq,
+        mt.ty_le AS mini, lc.id AS lop_id, lc.code AS lop
+   FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+   LEFT JOIN students s ON s.id = sc.student_id
+   LEFT JOIN users pu ON pu.id = iv.performer_user_id
+   LEFT JOIN users ou ON ou.id = sc.owner_user_id
+   LEFT JOIN mini_test mt ON mt.nhom_bo_tro = iv.nhom_bo_tro AND mt.student_id = sc.student_id
+   LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+   LEFT JOIN enrollments cur ON cur.id = (SELECT e.id FROM enrollments e WHERE e.student_id = sc.student_id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)
+   LEFT JOIN classes lc ON lc.id = COALESCE(cur.class_id, a.class_id)
+  WHERE iv.id IN `;
+
+function napPa(ivIds: readonly number[]): Map<number, DongPa> {
+  const out = new Map<number, DongPa>();
+  const ds = [...new Set(ivIds)];
+  for (let i = 0; i < ds.length; i += 400) {
+    const lo = ds.slice(i, i + 400);
+    for (const r of db().prepare(`${PA_SQL}(${lo.map(() => '?').join(',')})`).all(...lo) as any[]) {
+      /* Kết quả cuối — cùng luật `planOutcomes`: PA bổ trợ sau Cuối khoá (`mt:`) chưa có kết quả tuần thì Mini Test quyết. */
+      const kq = r.kq ?? (typeof r.nhom_bo_tro === 'string' && r.nhom_bo_tro.startsWith('mt:') && r.mini != null ? (r.mini >= NGUONG_MINI_TEST ? 'improved' : 'unchanged') : null);
+      const cat = (r.category ?? categoryOf(r.topic)) as CaseCategory | null;
+      out.set(r.id, {
+        id: r.id, studentId: r.student_id, ten: r.full_name ?? '', classId: r.lop_id ?? null, lop: r.lop ?? '', caseId: r.case_id,
+        kyNang: cat ? CASE_CATEGORY_SHORT[cat] ?? cat : null, loaiPa: INTERVENTION_KIND_LABEL[r.kind as InterventionKind] ?? (r.description || r.kind),
+        batDau: r.bat_dau ? String(r.bat_dau).slice(0, 10) : null, ketQua: kq, nguoiPhuTrach: r.nguoi ?? null, moTa: r.description || null,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * PT-VP-PA (mockup v13 P-PA): dòng PA — Học viên · Lớp · Case (kỹ năng) · PA · Bắt đầu · Kết quả · Người phụ trách. Một câu theo lô, chỉ khi mở panel.
+ * Thứ tự giữ như `ids` nơi gọi.
+ */
+export function dongPa(ids: readonly number[]): MetricRow[] {
+  const pa = napPa(ids);
+  return ids.filter((id) => pa.has(id)).map((id) => {
+    const x = pa.get(id)!;
+    return { id, title: x.ten, sub: '', href: `/hoc-vien/${x.studentId}`, pa: x } as MetricRow;
+  });
+}
+
+/**
+ * PT-VP-PA: dòng NGHĨA VỤ ghi kết quả PA (Phân tích GV "Việc đúng hạn", "Kết quả PA đúng hạn") — dòng PA + đợt · hạn (hạn đợt + 14 ngày × kỳ ghi bù) · ngày ghi đầu ·
+ * đúng hạn / trễ n ngày. `dung` = tập đúng hạn của CHÍNH chỉ số (`dung-han-cap-nhat`).
+ */
+export function dongNghiaVu(ids: readonly number[], dung: ReadonlySet<number>, homNay: string): MetricRow[] {
+  const ob = new Map(ids.map((id) => [id, parseObligation(id)]));
+  const ivIds = [...new Set([...ob.values()].map((o) => o.interventionId))];
+  const pa = napPa(ivIds);
+  const ghi = new Map<string, { due: string | null; ghi: string | null }>();
+  for (let i = 0; i < ivIds.length; i += 400) {
+    const lo = ivIds.slice(i, i + 400);
+    for (const r of db().prepare(
+      `SELECT intervention_id AS iv, cycle_no AS cycle, MIN(cycle_due) AS due, MIN(observed_on) AS ghi FROM case_followups
+        WHERE intervention_id IN (${lo.map(() => '?').join(',')}) AND cycle_no IS NOT NULL GROUP BY intervention_id, cycle_no`,
+    ).all(...lo) as any[]) ghi.set(`${r.iv}|${r.cycle}`, { due: r.due ?? null, ghi: r.ghi ? String(r.ghi).slice(0, 10) : null });
+  }
+  const due = new Map<number, string | null>();
+  for (let i = 0; i < ivIds.length; i += 400) {
+    const lo = ivIds.slice(i, i + 400);
+    for (const r of db().prepare(`SELECT id, action_due FROM case_interventions WHERE id IN (${lo.map(() => '?').join(',')})`).all(...lo) as any[]) due.set(r.id, r.action_due ?? null);
+  }
+  const ngayCach = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+  return ids.filter((id) => pa.has(ob.get(id)!.interventionId)).map((id) => {
+    const o = ob.get(id)!;
+    const g = ghi.get(`${o.interventionId}|${o.cycle}`);
+    const goc = g?.due ?? due.get(o.interventionId) ?? null;
+    const han = goc ? addDaysIso(String(goc).slice(0, 10), 14 * o.k) : null;
+    const ok = dung.has(id);
+    const x: DongPa = { ...pa.get(o.interventionId)!, id, dot: o.cycle, han, ngayGhi: g?.ghi ?? null, dungHan: ok,
+      treNgay: ok || !han ? null : Math.max(0, ngayCach(han, g?.ghi ?? homNay)) };
+    return { id, title: x.ten, sub: '', href: `/hoc-vien/${x.studentId}`, pa: x } as MetricRow;
+  });
 }

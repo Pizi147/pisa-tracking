@@ -20,4 +20,9 @@ export const EN_PT_PANEL = {
   'đạt từ {n} % mỗi môn': (b) => `pass from ${b.n} % per subject`,
   'Mỗi dòng là một môn GV phụ trách (viền nhấn) ở một bài Progress Test / Final Test. Môn đạt khi tỷ lệ đúng từ ngưỡng của lớp.':
     'Each row is one subject the teacher owns (outlined) in a Progress / Final Test. A subject passes when its correct ratio reaches the class threshold.',
+  'mới nhất trước': 'newest first',
+  'Trễ {n} ngày': (b) => `${b.n} days late`,
+  'SỐ · Ý THỨC': 'NUMBER · CONDUCT',
+  'SỐ · HIỆU QUẢ PA': 'NUMBER · PLAN EFFECTIVENESS',
+  'Đợt {n}': (b) => `Round ${b.n}`,
 } satisfies Record<string, Dich>;
