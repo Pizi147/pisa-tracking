@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { KhungPanel } from './KhungPanel.tsx';
@@ -39,13 +39,14 @@ function chuChiTiet(kn: KnLuot, o: ODiemLuot): string | null {
 }
 
 /**
- * Ô điểm bấm được (mockup v13 A1 `.o-d` / `.hop-tc`): ô có tiêu chí / số câu là `button aria-expanded`; bấm mở hộp nhỏ ngay dưới ô (portal, không bị khung cuộn
+ * Ô điểm bấm được (mockup v13 A1 — điện thoại: vùng bấm nới ra ≥ 44 px bằng `::after`, không đổi bố cục) `.o-d` / `.hop-tc`): ô có tiêu chí / số câu là `button aria-expanded`; bấm mở hộp nhỏ ngay dưới ô (portal, không bị khung cuộn
  * của bảng cắt). Esc / bấm ra ngoài / cuộn → đóng; Esc không đóng panel (`preventDefault`). Ô chỉ có band → chỉ số, không nút.
  */
 function ODiemO({ kn, o, nhan }: { kn: KnLuot; o: ODiemLuot; nhan: string }) {
   const [cho, setCho] = useState<CSSProperties | null>(null);
   const nut = useRef<HTMLButtonElement>(null);
   const hop = useRef<HTMLSpanElement>(null);
+  const idHop = useId();
   useEffect(() => {
     if (!cho) return;
     const ngoai = (e: Event) => { if (!nut.current?.contains(e.target as Node) && !hop.current?.contains(e.target as Node)) setCho(null); };
@@ -64,13 +65,13 @@ function ODiemO({ kn, o, nhan }: { kn: KnLuot; o: ODiemLuot; nhan: string }) {
   };
   return (
     <>
-      <button ref={nut} type="button" aria-expanded={!!cho} aria-label={`${nhan} ${fmtBand(o!.v)} · ${o!.raw && !o!.tc ? t('số câu') : t('điểm thành phần')}`}
+      <button ref={nut} type="button" aria-expanded={!!cho} aria-controls={cho ? idHop : undefined} aria-label={`${nhan} ${fmtBand(o!.v)} · ${o!.raw && !o!.tc ? t('số câu') : t('điểm thành phần')}`}
         onClick={mo} onKeyDown={(e) => { if (e.key === 'Escape' && cho) { e.preventDefault(); setCho(null); } }}
-        className="-mx-1.5 -my-0.5 cursor-pointer appearance-none rounded-md border border-transparent bg-transparent px-1.5 py-0.5 hover:border-[color:var(--line-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] aria-expanded:border-[color:var(--accent)] aria-expanded:bg-[color:var(--surface)] aria-expanded:shadow-[0_0_0_1px_var(--accent)]">
+        className="relative -mx-1.5 -my-0.5 cursor-pointer appearance-none after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[''] sm:after:hidden rounded-md border border-transparent bg-transparent px-1.5 py-0.5 hover:border-[color:var(--line-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] aria-expanded:border-[color:var(--accent)] aria-expanded:bg-[color:var(--surface)] aria-expanded:shadow-[0_0_0_1px_var(--accent)]">
         {diem}
       </button>
       {cho && createPortal(
-        <span ref={hop} role="dialog" aria-label={nhan} style={cho}
+        <span ref={hop} id={idHop} role="dialog" aria-label={nhan} style={cho}
           className="fixed z-[60] max-w-[320px] whitespace-nowrap rounded-lg border bg-[color:var(--surface)] px-3 py-2 text-left text-[13px] font-semibold tabular-nums text-[color:var(--text)] shadow-xl [border-color:var(--line-strong)]">
           {chu}
         </span>,
