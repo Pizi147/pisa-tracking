@@ -37,6 +37,7 @@ Quét: `text-ok|text-dat|bg-ok-bg|border-ok|text-kq-*|lopKq|'vuot'|Nhan tone="ok
 | 23 | Panel Case · điểm so kỳ vọng (`CasePanel.tsx`) | vượt / bằng / dưới | ≥ kỳ vọng xanh lá | vượt xanh lá · bằng xanh dương · dưới đỏ |
 | 24 | Lưới lớp thường · chip kết quả (`LuoiThuong.tsx` `Level`) | Đạt | xanh lá | xanh dương |
 | 25 | Ngăn tổng kết HV · Thi thật / Đạt Target (`NganTongKet.tsx`) · Tóm tắt lưu trữ (`TomTatLuuTru.tsx`) | Đạt Target | xanh lá | xanh dương |
+| 26 | Bảng hồ sơ lớp FT · cột Kết quả "✓ Đạt" (`BangHoSoLop.tsx`) | Đạt (không SOS) | xám (U03) | xanh dương (luật 05/11 mới hơn U03) |
 
 Giữ nguyên (không phải Đạt / Chưa đạt): Ngăn tổng kết dải "60–69 %", "50–59 %" vàng (mức giữa); chip SOS (họ màu SOS); "Học lại" vàng ở Tổng kết lớp thường;
 PA "Tiến bộ" xanh lá (`Outcome ok`, kết quả PA không chấm theo kỳ vọng — chủ SP chưa nêu).

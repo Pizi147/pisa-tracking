@@ -65,6 +65,12 @@ export async function runPrMauKqTests(t: YThucTestKit) {
     assert(/kq === 'dat' \? t\('Đạt'\)/.test(doc('web/src/ui/ODiem.tsx')), 'ODiem chữ Đạt');
   });
 
+  check('MK-8 · panel số liệu (vd HV tiến bộ): chữ Đạt / Chưa đạt trong dòng tô màu ở MỌI kiểu dòng', () => {
+    const s = doc('web/src/ui/SoLieu.tsx');
+    assert((s.match(/r\.sub\.split\(' · '\)[^\n]*toKetLuan\(x, r\.vuot\)/g) ?? []).length === 2, 'hai chỗ vẽ sub đều qua toKetLuan');
+    assert(/lopKq\(x === 'Chưa đạt' \? 'duoi' : vuot \? 'vuot' : 'dat'\)/.test(s), 'màu theo lopKq');
+  });
+
   check('MK-7 · số tỉ lệ trung tính: ô "Đạt …%" đầu trang lớp không tô màu', () => {
     assert(!/text-dat\b/.test(doc('web/src/modules/classes/DauTrangLop.tsx')), 'DauTrangLop');
   });
