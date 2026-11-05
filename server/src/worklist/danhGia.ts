@@ -265,8 +265,10 @@ const sortIds = (ids: Iterable<number>) => [...ids].sort((x, y) => x - y);
  * `hv-sos-hien-tai` — em có SOS ở ĐỢT MỚI NHẤT HỢP LỆ (không MAX toàn lịch sử). Tạm thời và kết quả cuối tách
  * riêng nhưng đều là "SOS hiện tại": tập chung = hợp của hai tập.
  */
-export function hvSosHienTai(p: Principal, branchId: number | null, today: string) {
-  const latest = latestAttempts(studentsInScope(p, branchId), 'valid', today);
+export function hvSosHienTai(p: Principal, branchId: number | null, today: string, chiEm?: ReadonlySet<number>) {
+  const hv = studentsInScope(p, branchId);
+  /* DOC-PT: `chiEm` — chỉ đánh giá các em này (trong phạm vi). Lượt mới nhất tính riêng từng em nên kết quả của mỗi em không đổi. */
+  const latest = latestAttempts(chiEm ? hv.filter((s) => chiEm.has(s)) : hv, 'valid', today);
   const tamThoi: number[] = [], ketQuaCuoi: number[] = [];
   for (const [sid, ev] of latest) {
     if ((ev.sosLevel ?? 0) <= 0) continue;

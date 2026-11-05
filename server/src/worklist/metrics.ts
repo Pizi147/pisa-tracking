@@ -735,6 +735,15 @@ export function metricSet(
   return r.chiTiet ? { ...r, hanCu: r.ids.flatMap((x) => r.chiTiet!.get(x)?.han ?? []).sort()[0] ?? null } : r;
 }
 
+/**
+ * DOC-PT: `hv-sos-hien-tai` của chi nhánh + khung, CHỈ xét các em `chiEm` (Phân tích GV: em ở lớp đang dạy) — cùng phạm vi (`resolveScope`), cùng luật,
+ * cùng bộ lọc khung với `metricSet`, nên với mọi em trong `chiEm` kết quả như chỉ số đủ; không đánh giá lượt của em ngoài bảng.
+ */
+export function hvSosHienTaiTrong(p: Principal, branchId: number, program: ChuongTrinh, chiEm: ReadonlySet<number>): Set<number> {
+  if (resolveScope(p, branchId).empty) return new Set();
+  return new Set(locTheoChuongTrinh('hoc-vien', hvSosHienTai(p, branchId, demoToday(), chiEm).ids, program));
+}
+
 function locKhung(id: string, r: MetricResult, program: ChuongTrinh | null): MetricResult {
   /* PR-Pb2-a (Q2, K1-18): Ý thức + Phối hợp SOS là khối GỘP — bỏ qua khung ở đúng một chỗ này. */
   const ct = CHI_SO_GOP.has(id) ? null : program;
