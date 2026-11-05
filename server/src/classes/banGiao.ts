@@ -1,7 +1,7 @@
 import { boMonBanGiaoCt, boMonCt } from '../normal/regular.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
-  NHAN_XET_TOI_THIEU, PERMISSIONS, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
+  NHAN_XET_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, phanCongDaNap, type Principal } from '../permissions.ts';
@@ -15,7 +15,6 @@ import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { chuCuoiKhoaLo } from '../normal/cuoiKhoa.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { nguoiNhanGoiY } from './luatLoTrinh.ts';
-import { nguoiNhanCuaLop } from './lenhChuyen.ts';
 import { mocNghiepVu } from '../duyet/yeuCau.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 
@@ -410,18 +409,27 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   });
 }
 
-/** Hành trình + chuông lớp chuyển đến (khoá `ban_giao:{lệnh}` — lưu lại không báo lại người đã nhận, chỉ người mới của lớp đích). */
+/**
+ * Hành trình + chuông lớp chuyển đến (khoá `ban_giao:{lệnh}` — lưu lại không báo lại người đã nhận, chỉ người mới của lớp đích).
+ * BAN-GIAO-NHAN (chủ SP 05/11): người nhận = GVCN + GVBM các môn em học ở lớp mới (một câu); chuông mở hồ sơ HV, panel đọc bàn giao mở sẵn.
+ */
 function baoBanGiao(p: Principal, l: any, nx: string) {
   addJourney({
     studentId: l.student_id, eventType: 'handover', eventDate: demoToday(), title: `Bàn giao từ ${l.nguon_code}`,
     detail: nx, refTable: 'lenh_chuyen_lop', refId: l.id, createdBy: p.userId, dedupKey: `ban_giao:${l.id}`,
   });
   if (!l.lop_dich_id) return;
-  for (const userId of nguoiNhanCuaLop([l.lop_dich_id]).get(l.lop_dich_id) ?? []) {
+  const gv = db().prepare(
+    `SELECT ta.user_id, ta.is_core, ta.skill, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+      WHERE ta.class_id = ? AND ta.status = 'active'`,
+  ).all(l.lop_dich_id) as { user_id: number; is_core: number; skill: string | null; ct: string | null }[];
+  const hoc = boMonBanGiaoCt(gv[0]?.ct ?? null, l.mdk);   // môn em học ở lớp mới (N13), dạng kỹ năng GV (FT: W1 · W2)
+  const nhan = new Set(gv.filter((r) => r.is_core || (!!r.skill && hoc.includes(r.skill))).map((r) => r.user_id));
+  for (const userId of nhan) {
     if (userId === p.userId) continue;
     notify({
       userId, kind: 'ban_giao', title: `Đã có bàn giao · ${l.full_name}`, body: `Từ ${l.nguon_code}`,
-      entityType: 'student', entityId: l.student_id, dedupKey: `ban_giao:${l.id}`, duong: `/hoc-vien/lop/${l.lop_dich_id}`,
+      entityType: 'student', entityId: l.student_id, dedupKey: `ban_giao:${l.id}`, duong: duongHoSoHocVien(l.student_id, { banGiao: l.id }),
     });
   }
 }

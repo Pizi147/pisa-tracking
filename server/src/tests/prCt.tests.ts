@@ -648,6 +648,44 @@ export async function runPrCtTests(t: YThucTestKit) {
     const daChuyenChuaXacNhan = lenhCua(em5[2]);
     assert(bg.phieuBanGiao(gvDich, { lenhId: daChuyenChuaXacNhan.id }).ds.length === 1, 'em đã chuyển mà chưa xác nhận: GV lớp chuyển đến đọc được');
   });
+  /* BAN-GIAO-NHAN (chủ SP 05/11 "GV lớp mới không nhận được bàn giao"): nút Đọc bàn giao từng đưa sang trang LỚP CŨ (403 với GV lớp mới), chuông chỉ GVCN. */
+  await checkAsync('CT (5d2) · GV lớp mới (vai GV, không dạy lớp cũ) đọc bàn giao ngay trên hồ sơ HV; chuông tới MỌI GV lớp mới (GVCN + GVBM), không trùng, mở hồ sơ HV', async () => {
+    const nguonB = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
+    const dichB = lopMoi({ kind: 'BE', tuanHienTai: 1 });
+    ganGv(nguonB, GV[0].userId, null, true);
+    ganGv(dichB, GV[3].userId, null, true);
+    ganGv(dichB, GV[4].userId, 'listening', false);   // GVBM lớp mới, không dạy lớp cũ
+    const [e1, e2] = [hocVien(nguonB, 'FOU', false).sid, hocVien(nguonB, 'FOU', false).sid];
+    ra(P.mbManager, nguonB, 'cuoi-khoa', [dongCua(e1, 'len_lop', dichB), dongCua(e2, 'len_lop', dichB)]);
+    const [l1, l2] = [lenhCua(e1), lenhCua(e2)];
+    const gCu = loadPrincipal(GV[0].userId);
+    const chuong = (u: number, l: number) => all(`SELECT duong FROM notifications WHERE user_id = ? AND dedup_key = ?`, u, `ban_giao:${l}`);
+    bg.xacNhanBanGiao(gCu, l1.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
+    for (const u of [GV[3].userId, GV[4].userId]) {
+      const c = chuong(u, l1.id);
+      assert(c.length === 1 && c[0].duong === d.duongHoSoHocVien(e1, { banGiao: l1.id }), `GV ${u} lớp mới: ${JSON.stringify(c)}`);
+    }
+    assert(d.duongHoSoHocVien(e1, { banGiao: l1.id }) === `/hoc-vien/${e1}?ban-giao=${l1.id}` && d.docThamSoHoSo((k: string) => (k === 'ban-giao' ? String(l1.id) : null)).banGiao === l1.id, 'tham số ?ban-giao=');
+    bg.suaBanGiao(gCu, l1.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát qua Zalo.');
+    assert(chuong(GV[4].userId, l1.id).length === 1, 'sửa phiếu không gửi chuông trùng');
+    /* Lệnh thi hành khi phiếu chưa xác nhận: chưa chuông; GVCN cũ xác nhận sau → chuông. */
+    chay(THU_HAI);
+    assert(lenhCua(e2).trang_thai === 'da_chuyen' && chuong(GV[4].userId, l2.id).length === 0, 'đã chuyển, chưa xác nhận: chưa chuông');
+    bg.xacNhanBanGiao(gCu, l2.id, 'Em học đều, cần nhắc nộp bài đúng hạn.');
+    assert(chuong(GV[4].userId, l2.id).length === 1 && chuong(GV[3].userId, l2.id).length === 1, 'xác nhận sau khi chuyển: chuông GV lớp mới');
+    await voiMayChu(async (goi) => {
+      const doc = await goi(GV[4].userId, `/lenh-chuyen/${l1.id}/ban-giao`);
+      const cu = await goi(GV[4].userId, `/classes/${nguonB}/overview`);
+      assert(doc.status === 200 && cu.status === 403, `đọc theo lệnh ${doc.status}, trang lớp cũ ${cu.status}`);
+    });
+    /* Web: hai nút "Đọc bàn giao" (dải hồ sơ HV, thẻ chương Hành trình) mở panel tại chỗ theo lệnh — không sang trang lớp cũ. */
+    const fs = await import('node:fs'), path = await import('node:path'), { fileURLToPath } = await import('node:url');
+    const goc = path.resolve(fileURLToPath(new URL('../../../../', import.meta.url)));
+    const doc = (f: string) => fs.readFileSync(path.join(goc, f), 'utf8');
+    assert(!/viec=ban-giao/.test(doc('web/src/modules/students/ChuongLop.tsx')), 'ChuongLop: còn sang trang lớp cũ');
+    assert(/k === 'doc-ban-giao'/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage: doc-ban-giao chưa mở tại chỗ');
+    assert(doc('web/src/modules/classes/BanGiaoPanel.tsx').includes('`/lenh-chuyen/${docLenh}/ban-giao`'), 'BanGiaoPanel: chưa đọc theo lệnh');
+  });
   check('CT (5e) · Pre FOU: chỉ một ô "Tổng hợp" — GVBM (kỹ năng) không ghi được, GVCN ghi được', () => {
     const pre = lopMoi({ kind: 'PREFOU', tuanHienTai: 5 });
     const fou = lopMoi({ kind: 'FOU', tuanHienTai: 1 });
