@@ -12,7 +12,8 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
   const { latestAttempts, studentsInScope } = await import('../worklist/danhGia.ts');
   const { diemTuEval, diemTuStanding, diemTuMock } = await import('../worklist/diemDong.ts');
   const { standingFor } = await import('../students/standing.ts');
-  const { studentProfile } = await import('../students/profile.ts');
+  const { studentProfile, typedResult } = await import('../students/profile.ts');
+  const { O_CHO_TU_SQL } = await import('../fasttrack/conOCho.ts');
   const { listAttempts } = await import('../fasttrack/attempts.ts');
   const { scoringModeOf } = await import('../fasttrack/skillSchedule.ts');
   const metrics: any = await import('../worklist/metrics.ts');
@@ -122,6 +123,32 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
         const mong = ct === 'FT' ? 'band' : 'ratio';
         for (const kind of ['mock', 'progress', 'final']) assert(scoringModeOf({ ...row, kind }) === mong, `${ten}: scoringModeOf ${kind} không lớp = ${scoringModeOf({ ...row, kind })} ≠ ${mong}`);
       } finally { conn.prepare('UPDATE assessment_attempts SET class_id = ? WHERE id = ?').run(class_id, ev0.attemptId); }
+    }
+  });
+
+  check('LUOT-KHONG-LOP-2 · lượt không lớp lộ trình lớp thường: cờ ô chờ chấm tỷ lệ (như khi có lớp) + ngưỡng đạt của chương trình lộ trình', () => {
+    const coCho = (id: number) => (conn.prepare(`SELECT ${O_CHO_TU_SQL} v FROM assessment_attempts a WHERE a.id = ?`).get(id) as any).v;
+    /* Lượt gần nhất FOU đủ điểm tỷ lệ, chưa có band: chấm tỷ lệ = hết ô chờ; chấm band (lỗi cũ) = còn L R W1 W2 S chờ. */
+    const ev0 = [...latestAttempts(studentsInScope(P.admin, null), 'valid', TODAY).values()]
+      .find((x) => x.chuongTrinh === 'FOU' && x.required > 0 && x.scored === x.required)!;
+    assert(ev0, 'demo thiếu em FOU đủ điểm');
+    const r = conn.prepare(`SELECT a.id, a.class_id, cy.programme_code ct FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id WHERE a.id = ?`).get(ev0.attemptId) as any;
+    assert(r.ct === 'FOU', `lộ trình ${r.ct}`);
+    const sid = ev0.studentId, coLop = coCho(r.id);
+    const nguongCu = (conn.prepare(`SELECT nguong_dat n FROM programmes WHERE code = 'FOU'`).get() as any).n;
+    conn.prepare('UPDATE assessment_attempts SET class_id = NULL WHERE id = ?').run(r.id);
+    conn.prepare(`UPDATE programmes SET nguong_dat = 0.9 WHERE code = 'FOU'`).run();
+    try {
+      assert(coCho(r.id) === coLop, `cờ ô chờ không lớp ${coCho(r.id)} ≠ có lớp ${coLop}`);
+      const ev = latestAttempts([sid], 'valid', TODAY).get(sid)!;
+      const s = standingFor([sid]).get(sid)!;
+      const hs = typedResult({ ...(conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(r.id) as any), cy_programme_code: r.ct });
+      assert(ev.attemptId === r.id && ev.nguong === 0.9, `latestAttempts lượt ${ev.attemptId} ngưỡng ${ev.nguong} ≠ 0.9`);
+      assert(s.attemptId === r.id && s.nguong === 0.9, `standingFor lượt ${s.attemptId} ngưỡng ${s.nguong} ≠ 0.9`);
+      assert(hs.mode === 'ratio' && hs.ratio!.passThreshold === 0.9, `hồ sơ HV ngưỡng ${hs.ratio?.passThreshold} ≠ 0.9`);
+    } finally {
+      conn.prepare('UPDATE assessment_attempts SET class_id = ? WHERE id = ?').run(r.class_id, r.id);
+      conn.prepare(`UPDATE programmes SET nguong_dat = ? WHERE code = 'FOU'`).run(nguongCu);
     }
   });
 

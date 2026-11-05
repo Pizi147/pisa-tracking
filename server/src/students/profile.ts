@@ -91,7 +91,7 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
-    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(kyNang ?? lichGopCua([attempt.id]).get(attempt.id), rows)), rows, prog.code, nguongDatLop(attempt.class_id));   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(kyNang ?? lichGopCua([attempt.id]).get(attempt.id), rows)), rows, prog.code, nguongDatLop(attempt.class_id, prog.code));   // P13: bộ môn theo lượt
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const scores = pre?.scores ?? scoresOf(attempt.id);

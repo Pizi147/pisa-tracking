@@ -5,7 +5,7 @@ import { O_FT_XONG_SQL } from '../../../shared/domain/index.ts';
  * TD7b — CỜ "CÒN Ô CHỜ ĐIỂM" của lượt: `assessment_attempts.o_cho_tu`.
  *
  * = `week_start` SỚM NHẤT trong các ô đang chờ điểm của lượt; NULL = lượt không còn ô nào chờ. Ô chờ = ô của bộ kỹ năng chưa có điểm
- * (lớp chấm tỷ lệ: môn của chương trình, có điểm = `raw_score`; còn lại — FT, MT0 mọi lớp, lượt không lớp: L R W1 W2 S, có điểm = `band`
+ * (chương trình chấm tỷ lệ — lớp của lượt, lượt không lớp theo lộ trình (`maCtCuaLuot`): môn của chương trình, có điểm = `raw_score`; còn lại — FT, MT0: L R W1 W2 S, có điểm = `band`
  * — `O_FT_XONG_SQL`; LUAT-NX-MT: thiếu nhận xét chỉ nhắc, không giữ ô chờ;
  * dấu "-" vẫn là chưa có điểm, vì dời "-" phải còn hiện) VÀ có thể đang chờ: dòng lịch của môn `required = 1`, không huỷ / vắng, có tuần;
  * thiếu dòng lịch của môn → dự phòng của `skillScheduleOf` (bắt buộc, tuần của lượt).
@@ -25,11 +25,15 @@ const TUAN_O = (mon: string, o?: string) => `COALESCE(
     CASE WHEN NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = ${mon})
          THEN (SELECT pr.week_start FROM report_periods pr WHERE pr.id = a.planned_period_id) END)`;
 
+/** LUOT-KHONG-LOP-2: chương trình CHẤM của lượt — cùng luật `maCtCuaLuot` (lớp của lượt; lượt không lớp theo chương trình lộ trình). */
+const MA_CT_LUOT = `(CASE WHEN a.class_id IS NOT NULL THEN (SELECT c.programme_code FROM classes c WHERE c.id = a.class_id)
+  ELSE (SELECT cy.programme_code FROM learning_cycles cy WHERE cy.id = a.cycle_id) END)`;
+
 /** Biểu thức tính cờ cho dòng `a` của `assessment_attempts` (dùng trong UPDATE … AS a / SELECT … AS a). */
 export const O_CHO_TU_SQL = `(CASE
-  WHEN a.kind != 'mt0' AND (SELECT pg.scoring_mode FROM programmes pg JOIN classes c ON c.programme_code = pg.code WHERE c.id = a.class_id) = 'ratio'
+  WHEN a.kind != 'mt0' AND (SELECT pg.scoring_mode FROM programmes pg WHERE pg.code = ${MA_CT_LUOT}) = 'ratio'
   THEN (SELECT MIN(${TUAN_O('ps.skill')}) FROM programme_skills ps
-         WHERE ps.programme_code = (SELECT c.programme_code FROM classes c WHERE c.id = a.class_id)
+         WHERE ps.programme_code = ${MA_CT_LUOT}
            AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = ps.skill AND sc.raw_score IS NOT NULL))
   ELSE (SELECT MIN(${TUAN_O('e.kn', 'e.o')}) FROM (
           SELECT 'listening' AS o, 'listening' AS kn UNION ALL SELECT 'reading', 'reading' UNION ALL SELECT 'writing1', 'writing'

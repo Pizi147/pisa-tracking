@@ -297,7 +297,7 @@ export function standingFor(studentIds: number[], lopKetThuc?: number): Map<numb
     const ct = maCtCuaLuot(a.class_id, a.programme_code, cycle.programme_code);
     const prog = chuongTrinhTyLeCuaLuot(ct, layCt);
     /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
-    const rr = prog ? evaluateRegular(boMonTheoLuot(boMonCua(prog.code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, prog.code, nguongDatLop(a.class_id)) : null;
+    const rr = prog ? evaluateRegular(boMonTheoLuot(boMonCua(prog.code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, prog.code, nguongDatLop(a.class_id, prog.code)) : null;
     const skips = prog ? [] : bundle.skips.get(a.id) ?? [];
     const ri = prog ? null : evaluateAttempt(
       /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ

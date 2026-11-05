@@ -62,7 +62,7 @@ function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>, lich: M
   for (const a of [...attempts].reverse()) {
     const rows = scores.get(a.id) ?? [];
     if (a.status === 'cancelled' || !rows.some((r) => r.band !== null || r.raw_score !== null)) continue;
-    const nguong = nguongDatLop(a.class_id);
+    const nguong = nguongDatLop(a.class_id, nc.maCt);
     const t = tinhLuot({ ...nc, nguong }, a, a.target_at_attempt ?? null, rows, [], false, lich.get(a.id));
     if (laFt) {
       return { chinh: `MT${a.attempt_no} · ${t.overall !== null ? t.overall.toFixed(1) : '—'}`, tone: t.sos && t.sos > 0 ? 'soon' : 'ok', phu: t.sos && t.sos > 0 ? `SOS ${t.sos}` : undefined };

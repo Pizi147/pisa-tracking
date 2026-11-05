@@ -294,9 +294,13 @@ export const nguongDatKhacMacDinh = (): Map<number, number> => nhoThamChieu('ngu
   (db().prepare(`SELECT id, nguong_dat FROM classes WHERE nguong_dat IS NOT NULL AND nguong_dat != ?`).all(RATIO_PASS_THRESHOLD) as any[])
     .map((r) => [r.id as number, r.nguong_dat as number])));
 
-/** OV-6b1: ngưỡng đạt của lớp (bản chụp `classes.nguong_dat` lúc tạo lớp); không có lớp / thiếu → 70 %. Vòng lặp nhiều lượt: lấy Map một lần. */
-export function nguongDatLop(classId: number | null | undefined, ds: Map<number, number> = nguongDatKhacMacDinh()): number {
-  return (classId && ds.get(classId)) || RATIO_PASS_THRESHOLD;
+/**
+ * OV-6b1: ngưỡng đạt của lượt — lớp: bản chụp `classes.nguong_dat` lúc tạo lớp. LUOT-KHONG-LOP-2: lượt KHÔNG lớp → ngưỡng của chương trình chấm
+ * (`maCt` = `maCtCuaLuot`, chương trình lộ trình). Thiếu → 70 %. Vòng lặp nhiều lượt: lấy Map một lần.
+ */
+export function nguongDatLop(classId: number | null | undefined, maCt?: string | null, ds: Map<number, number> = nguongDatKhacMacDinh()): number {
+  if (classId) return ds.get(classId) || RATIO_PASS_THRESHOLD;
+  return (maCt && allProgrammes().get(maCt)?.nguongDat) || RATIO_PASS_THRESHOLD;
 }
 
 // ---------------------------------------------------------------- lên lịch
