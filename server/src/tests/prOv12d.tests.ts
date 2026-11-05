@@ -38,10 +38,12 @@ export async function runPrOv12dTests(t: YThucTestKit) {
   });
 
   check('OV12d (2) · nhóm Xử lý chỉ còn HV - Case · Chờ duyệt · Đang xử lý (FT + lớp thường); số liệu thô HV có Case · Case · Chờ duyệt · Đang xử lý', () => {
+    /* PT-LOP-THUONG (05/11): lớp thường không còn nhóm Xử lý trên màn; số liệu thô vẫn ở Excel (`cotExcel`). */
+    assert(!dm.cotTongHopFor('thuong').some((c: any) => c.nhom === 'xu-ly'), 'lớp thường: màn còn nhóm Xử lý');
     for (const ct of ['ft', 'thuong'] as const) {
-      const xl = dm.cotTongHopFor(ct).filter((c: any) => c.nhom === 'xu-ly');
+      const xl = dm.cotTongHopFor('ft').filter((c: any) => c.nhom === 'xu-ly');
       assert(xl.map((c: any) => c.nhan(ct)).join(' · ') === 'HV - Case · Chưa chốt PA · Đang xử lý', `[${ct}] ${xl.map((c: any) => c.nhan(ct)).join(' · ')}`);
-      const so = dm.cotSoLieu(ct).filter((c: any) => c.nhom === 'xu-ly').map((c: any) => c.khoa).join();
+      const so = dm.cotExcel(ct).filter((c: any) => c.nhom === 'xu-ly').map((c: any) => c.khoa).join();
       assert(so === 'hvCoCase,case,choDuyet,dangLam', `[${ct}] ${so}`);
     }
   });

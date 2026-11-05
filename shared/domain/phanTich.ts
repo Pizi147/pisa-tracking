@@ -192,7 +192,7 @@ const COT_LUOT: CotTongHop = {
 };
 const COT_LUOT_THUONG: CotTongHop = {
   ...COT_LUOT,
-  goiY: 'Số bài đã chấm ít nhất một môn trong khoảng đang xem. Các cột Progress Test, Final Test, Checkpoint và Thiếu điểm cộng lại đúng bằng cột này. Không tính học viên KCK.',
+  goiY: 'Số bài Progress Test, Final Test đã chấm ít nhất một môn trong khoảng đang xem (không tính Checkpoint). Các cột Progress Test, Final Test và Thiếu điểm cộng lại đúng bằng cột này. Không tính học viên KCK.',
 };
 const COT_KET_QUA: CotTongHop[] = [
   { khoa: 'dat', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Đạt', goiY: 'Đủ điểm mọi kỹ năng, không kỹ năng nào dưới kỳ vọng.' },
@@ -219,14 +219,19 @@ const COT_KET_QUA_THUONG: CotTongHop[] = [
   { khoa: 'cp-dat', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Checkpoint đủ điểm, mọi môn đạt.' },
   { khoa: 'cp-1', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => '1 môn trượt', goiY: 'Bài Checkpoint đủ điểm, đúng một môn chưa đạt.' },
   { khoa: 'cp-2', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => '≥ 2 môn trượt', goiY: 'Bài Checkpoint đủ điểm, từ hai môn chưa đạt.' },
-  { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Thiếu điểm', goiY: 'Bài chưa nhập đủ điểm các môn — chưa xếp vào cột Progress Test, Final Test hay Checkpoint.' },
+  { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Thiếu điểm', goiY: 'Bài Progress Test, Final Test chưa nhập đủ điểm các môn — chưa xếp vào cột Progress Test hay Final Test.' },
   { khoa: 'mini-dat', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Đạt', goiY: 'Học viên làm Mini Test sau bổ trợ (từ bài Final Test của dòng này) đạt từ 70% — đếm học viên.' },
   { khoa: 'mini-truot', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Trượt', goiY: 'Học viên làm Mini Test sau bổ trợ dưới 70% — đếm học viên.' },
 ];
 /** Cột Kết quả cộng lại đúng bằng cột Bài/Lượt (theo khung) — Mini Test đếm học viên nên đứng ngoài. */
 export function cotKetQuaCong(ct: ChuongTrinh): string[] {
-  return (ct === 'thuong' ? COT_KET_QUA_THUONG : COT_KET_QUA).filter((c) => c.nhomCon !== 'mini').map((c) => c.khoa);
+  return (ct === 'thuong' ? COT_KET_QUA_THUONG_MAN : COT_KET_QUA).map((c) => c.khoa);
 }
+/**
+ * PT-LOP-THUONG (đặc tả 2B, PTA XM-2 05/11): màn Test + SOS lớp thường bỏ Checkpoint, Mini Test, Xử lý — Bài kiểm tra = Progress Test + Final Test + Thiếu điểm
+ * (bài Checkpoint không vào Bài, không vào Thiếu điểm). Excel giữ đủ cột cũ (`cotExcel`).
+ */
+const COT_KET_QUA_THUONG_MAN = COT_KET_QUA_THUONG.filter((c) => c.nhomCon !== 'checkpoint' && c.nhomCon !== 'mini');
 /** Ô không áp dụng (dòng không có bài loại đó) → web và Excel ghi "—" thay vì 0. */
 export function oKhongApDung(c: CotTongHop, coDot: CoDot | undefined): boolean {
   if (!coDot || !c.nhomCon) return false;
@@ -280,12 +285,17 @@ export function cotKyNangFor(ct: ChuongTrinh): CotTongHop[] {
 /** Toàn bộ cột của bảng Tổng hợp, đúng thứ tự hiển thị: Lượt + Kết quả · Dưới kỳ vọng theo kỹ năng · Xử lý. */
 export function cotTongHopFor(ct: ChuongTrinh): CotTongHop[] {
   return ct === 'thuong'
-    ? [COT_LUOT_THUONG, ...COT_KET_QUA_THUONG, ...COT_XU_LY]
+    ? [COT_LUOT_THUONG, ...COT_KET_QUA_THUONG_MAN]
     : [COT_LUOT, ...COT_KET_QUA, ...cotKyNangFor(ct), ...COT_XU_LY];
 }
+const tachGop = (cs: readonly CotTongHop[]) => cs.flatMap((c) => (c.gop ? [COT_HV_CO_CASE, COT_CASE] : [c]));
 /** Cột SỐ LIỆU thật (máy chủ giữ tập ID, Excel xuất, nguồn mở danh sách): như `cotTongHopFor` nhưng cột ghép tách lại thành hai. */
 export function cotSoLieu(ct: ChuongTrinh): CotTongHop[] {
-  return cotTongHopFor(ct).flatMap((c) => (c.gop ? [COT_HV_CO_CASE, COT_CASE] : [c]));
+  return tachGop(cotTongHopFor(ct));
+}
+/** Cột Excel + máy chủ giữ tập (PT-LOP-THUONG): lớp thường còn Checkpoint, Mini Test, Xử lý như trước 05/11; FT = `cotSoLieu`. */
+export function cotExcel(ct: ChuongTrinh): CotTongHop[] {
+  return ct === 'thuong' ? tachGop([COT_LUOT_THUONG, ...COT_KET_QUA_THUONG, ...COT_XU_LY]) : cotSoLieu(ct);
 }
 
 // ------------------------------------------------------------------ màu ô kết quả (N-1b, Q23)
@@ -497,7 +507,7 @@ export type YThucPhanTichKetQua = {
 export function bangXuatTongHop(
   kq: TongHopKetQua, cotHien: ReadonlySet<NhomCot>, moTaBoLoc: string,
 ): (string | number)[][] {
-  const cols = cotTheoDuLieu(cotSoLieu(kq.ct), kq.tongCoDot).filter((c) => cotHien.has(c.nhom));   // số liệu thô: HV có Case và Case là hai cột riêng (ô web ghép "HV - Case")
+  const cols = cotTheoDuLieu(cotExcel(kq.ct), kq.tongCoDot).filter((c) => cotHien.has(c.nhom));   // PT-LOP-THUONG: Excel lớp thường giữ đủ cột cũ (`cotExcel`)   // số liệu thô: HV có Case và Case là hai cột riêng (ô web ghép "HV - Case")
   const out: (string | number)[][] = [];
   out.push([`${nhanGocNhin('tong-hop', kq.ct)} · ${moTaBoLoc}`]);
   out.push([]);

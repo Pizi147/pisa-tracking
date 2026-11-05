@@ -95,7 +95,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   if (classId) qs.set('lop', String(classId));
   qs.set('theo', theo);
   const query = qs.toString();
-  const { data, loading, error, reload } = useApi<TongHopKetQua>(`/phan-tich/tong-hop?${query}`, [query]);
+  const { data: goc, loading, error, reload } = useApi<TongHopKetQua>(`/phan-tich/tong-hop?${query}`, [query]);
+  /* PT-LOP-THUONG: dòng chỉ có bài Checkpoint (Bài = 0) chỉ để Excel giữ nhóm Checkpoint — màn không vẽ. */
+  const coBai = (h: DongTongHop) => (h.o.luot ?? 0) > 0;
+  const data = goc && goc.ct === 'thuong'
+    ? { ...goc, hang: goc.hang.filter(coBai).map((h) => (h.con ? { ...h, con: h.con.filter(coBai) } : h)) } : goc;
   const pt = usePhanTrang(data?.hang.length ?? 0, query, dich(THEO_DONG_DANH_TU[theo]));
 
   useEffect(() => {
@@ -133,8 +137,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
 
   /* Thẻ 375: một khối mỗi nhóm (lớp thường: theo nhóm con; Bài + Thiếu điểm chung khối Kết quả). */
   const nhomThe: { nhan: string; cols: CotTongHop[] }[] = [];
+  /* PT-LOP-THUONG (mockup v13 Bm): thẻ lớp thường — số Bài ở đầu thẻ ("14 bài · 3 lớp"), Thiếu điểm khối riêng cuối thẻ. */
+  const cotLuot = cols.find((c) => c.khoa === 'luot');
   for (const c of cols) {
-    const nhan = laThuong && c.nhom === 'ket-qua' && !c.nhomCon ? dich(nhomCotNhanNgan('ket-qua', ct)) : nhanNhom(c);
+    if (laThuong && c.khoa === 'luot') continue;
+    const nhan = laThuong && c.khoa === 'chuaDu' ? dich(c.nhan(ct)) : laThuong && c.nhom === 'ket-qua' && !c.nhomCon ? dich(nhomCotNhanNgan('ket-qua', ct)) : nhanNhom(c);
     const g = nhomThe.find((x) => x.nhan === nhan);
     if (g) g.cols.push(c); else nhomThe.push({ nhan, cols: [c] });
   }
@@ -163,7 +170,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       branchName ?? t('Tất cả chi nhánh'), CHUONG_TRINH_LABEL[ct], nhanKy,
       className, t('dữ liệu đến {ngay}', { ngay: ngay(demoDate) }),
     ].filter(Boolean).join(' · ');
-    const aoa = bangXuatTongHop(data, cotHien, moTa);
+    const aoa = bangXuatTongHop(goc!, cotHien, moTa);   // Excel: dữ liệu đủ (kể cả dòng chỉ Checkpoint)
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, NGON_NGU === 'en' ? 'Summary' : 'Tổng hợp');   // khoá 'Tổng hợp' = Integrated (tên kỹ năng)
@@ -204,9 +211,13 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   /* PR-HK2 (Q1) → V8-PT: "Xuất Excel" thành nút riêng cuối hàng lọc; ⋯ giữ Cột hiện + Xuất kết quả từng lượt. 375: ⋯ gánh cả Xuất bảng này (mockup C1 chỉ có ⋯). */
   const khongXuat = !data || data.hang.length === 0 || !demoDate;
   const lyDoKhongXuat = khongXuat ? t('Chưa có dữ liệu để xuất') : undefined;
+  const nhomCo = NHOM_MAC_DINH.filter((n) => allCols.some((c) => c.nhom === n));
   const mucMenu: MucMenu[] = [
-    { key: 'cot-hien', nhan: t('Cột hiện'), tieuDe: true, onChon: () => {} },
-    ...NHOM_MAC_DINH.map((n) => ({ key: n, nhan: dich(nhomCotNhanNgan(n, ct)), chon: cotHien.has(n), onChon: () => toggleCotHien(n) })),
+    /* PT-LOP-THUONG: lớp thường chỉ còn nhóm Kết quả → không mục "Cột hiện" (một nhóm, tắt là trống bảng). */
+    ...(nhomCo.length > 1 ? [
+      { key: 'cot-hien', nhan: t('Cột hiện'), tieuDe: true, onChon: () => {} },
+      ...nhomCo.map((n) => ({ key: n, nhan: dich(nhomCotNhanNgan(n, ct)), chon: cotHien.has(n), onChon: () => toggleCotHien(n) })),
+    ] : []),
     ...(dienThoai ? [{ key: 'xuat', nhan: t('⤓ Xuất bảng này'), keTruoc: true, onChon: xuatExcel, tat: khongXuat, title: lyDoKhongXuat }] : []),
     ...(session?.nav?.xuatMt ? [{ key: 'xuat-mt', nhan: t('Xuất kết quả từng lượt'), keTruoc: !dienThoai, onChon: () => setMoXuat(true) }] : []),
   ];
@@ -266,9 +277,10 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       <article key={row.khoa} className={THE}>
         <div className={DAU_THE}>
           <span className="min-w-0">{row.nhan}{row.phu && <span className="ml-1.5 text-[13px] font-normal text-[color:var(--text-faint)]">{row.phu}</span>}</span>
+          {laThuong && cotLuot && <span className="ml-auto whitespace-nowrap text-[13px] font-normal text-[color:var(--text-dim)]"><span className="text-[15px] font-bold">{soBam(row, cotLuot)}</span> {t('bài')}</span>}
           {!!row.con?.length && (
             <button type="button" aria-expanded={mo} aria-label={`${row.nhan} — ${NHAN_MO_CON[theo]}`} onClick={() => toggleOpen(row.khoa)}
-              className="-my-2 ml-auto inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-medium text-[color:var(--accent)]">
+              className={`-my-2 ${laThuong ? 'ml-1' : 'ml-auto'} inline-flex min-h-[44px] shrink-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-medium text-[color:var(--accent)]`}>
               {theo === 'lop' ? t('{n} đợt', { n: row.con.length }) : t('{n} lớp', { n: row.con.length })}<span aria-hidden>{mo ? '▴' : '▾'}</span>
             </button>
           )}
@@ -306,10 +318,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
         mau: t('{n} lượt', { n: (tong.sos1 ?? 0) + (tong.sos2 ?? 0) + (tong.sos3 ?? 0) }) },
     ]),
     { ten: t('Thiếu điểm'), gt: soTong('chuaDu'), mau: laThuong ? undefined : t('gồm SOS tạm') },
-    { ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet'),
-      nho: quaHanTong > 0 ? <>⚠ {t('{n} quá hạn', { n: quaHanTong })}</> : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) },
+    /* PT-LOP-THUONG (mockup v13 B): lớp thường bỏ thẻ "Chưa chốt PA" — PA xem ở tab Hiệu quả PA. */
+    ...(laThuong ? [] : [{ ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet'),
+      nho: quaHanTong > 0 ? <>⚠ {t('{n} quá hạn', { n: quaHanTong })}</> : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) }]),
   ];
-  const SKEL_SO = Array.from({ length: laThuong ? 3 : 5 }, (): ChiSo => ({
+  const SKEL_SO = Array.from({ length: laThuong ? 2 : 5 }, (): ChiSo => ({
     ten: <span className="skel inline-block h-3 w-1/2 align-middle" />, gt: <span className="skel mt-1.5 inline-block h-6 w-2/5" />,
   }));
 
@@ -323,7 +336,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       {kn[0]?.goiY && (
         <div><dt className="inline font-semibold text-slate-200">{dich(nhomCotLabel('ky-nang', ct))}: </dt><dd className="m-0 inline">{dich(kn[0].goiY.slice(kn[0].goiY.indexOf('—') + 2))}</dd></div>
       )}
-      <div><dt className="inline font-semibold text-slate-200">{t('Xử lý')}: </dt><dd className="m-0 inline">{GOI_Y_XU_LY}</dd></div>
+      {!laThuong && <div><dt className="inline font-semibold text-slate-200">{t('Xử lý')}: </dt><dd className="m-0 inline">{GOI_Y_XU_LY}</dd></div>}
     </dl>
   );
 
@@ -349,14 +362,14 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     {error ? <Card bodyClass="p-0"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
       : loading || !data ? (
         <div className="space-y-3">
-          <DaiChiSo ds={SKEL_SO} />
+          <DaiChiSo ds={SKEL_SO} cot={5} />
           <Card bodyClass="p-4"><Skeleton rows={dienThoai ? 4 : 8} /></Card>
         </div>
       )
       : !coBang ? <Card bodyClass="p-0">{rong}</Card>
       : (
         <div className="space-y-3">
-          <DaiChiSo ds={chiSo} />
+          <DaiChiSo ds={chiSo} cot={5} />
           {dienThoai ? (
             <div className="space-y-3">
               <div ref={pt.thanh.dauBang} />

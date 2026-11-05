@@ -17,4 +17,7 @@ export const EN_PT_PANEL = {
     'Students with an MT in the period but not enough scores for an Overall — outside the MT pass base. The table shows the latest MT.',
   'Mỗi HV lấy lượt MT mới nhất chốt điểm trong kỳ. Đạt khi Overall đạt kỳ vọng của lượt đó.':
     'Each student’s latest MT finalised in the period. Passed when Overall meets that MT’s expectation.',
+  'đạt từ {n} % mỗi môn': (b) => `pass from ${b.n} % per subject`,
+  'Mỗi dòng là một môn GV phụ trách (viền nhấn) ở một bài Progress Test / Final Test. Môn đạt khi tỷ lệ đúng từ ngưỡng của lớp.':
+    'Each row is one subject the teacher owns (outlined) in a Progress / Final Test. A subject passes when its correct ratio reaches the class threshold.',
 } satisfies Record<string, Dich>;
