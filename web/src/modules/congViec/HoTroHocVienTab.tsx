@@ -26,6 +26,7 @@ import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
 import { DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
+import { NutXuatLopBc } from '../classes/TabBaoCaoPh.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import {
@@ -201,8 +202,9 @@ export function HoTroHocVienTab() {
     return ds.map((g) => ({ ...g, items: [...g.items].sort((a, b) => vt(a) - vt(b)) }));
   }, [hienThi, cuoiItems, khung, loai, loc, nhom, homNay, chon, khoaLoc, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* OV-15d: QL — nhóm Vận hành là "Việc quản lý" (Vận hành · Báo cáo đơn vị · Chốt lộ trình / Bàn giao), cuối danh sách, gập sẵn. */
-  const dsNhomXem = useMemo(() => (laQuanLy && !chiChamDiem
-    ? dsNhom.map((g) => (g.key === 'van-hanh' ? { ...g, label: t('Việc quản lý'), moSan: false } : g)) : dsNhom), [dsNhom, laQuanLy, chiChamDiem]);
+  /* BAO-CAO-PH b (mockup k1): Admin cũng có nhóm "Việc quản lý" (việc Xuất báo cáo PH) — mở sẵn, không gập như QL. */
+  const dsNhomXem = useMemo(() => (laQuanLy
+    ? dsNhom.map((g) => (g.key === 'van-hanh' ? { ...g, label: t('Việc quản lý'), moSan: chiChamDiem } : g)) : dsNhom), [dsNhom, laQuanLy, chiChamDiem]);
   /* Đang lọc thì kết quả đã ít — mở hết luôn, không bắt bấm thêm một lần gập/mở nữa. */
   const moHet = loc !== 'tat-ca' || !!nhom;
 
@@ -405,7 +407,7 @@ export function HoTroHocVienTab() {
               <ChonDangNut className="max-sm:w-full" aria-label={t('Loại việc')} value={nhom ?? ''}
                 onChange={(e) => { const next = new URLSearchParams(params); next.delete('loai'); if (e.target.value) next.set('nhom', e.target.value); else next.delete('nhom'); setParams(next, { replace: true }); }}>
                 <option value="">{t('Loại việc')}</option>
-                {NHOM_VIEC.map((k) => <option key={k} value={k}>{dich(k === 'van-hanh' && laQuanLy && !chiChamDiem ? t('Việc quản lý') : NHOM_VIEC_LABEL[k])}</option>)}
+                {NHOM_VIEC.map((k) => <option key={k} value={k}>{dich(k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : NHOM_VIEC_LABEL[k])}</option>)}
               </ChonDangNut>
             )}
             <button type="button" className={`btn btn-sm h-8 gap-1.5 pl-3 pr-2.5 text-[13px] font-semibold max-sm:min-h-[44px] max-sm:w-full ${soLocThem ? 'nut-loc-dang' : ''}`}
@@ -476,7 +478,10 @@ export function HoTroHocVienTab() {
                 : !x.con && x.boQuaDuoc && !xong.has(x.key) && !theoDoi(x)
                   ? <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[28px]" aria-label={t('Bỏ qua: {viec}', { viec: dich(x.tieuDe) })}
                     title={t('Ẩn việc này. Lịch, PA, Case giữ nguyên.')} onClick={() => boQua(x)}>{t('Bỏ qua')}</button>
-                  : null)} />
+                  /* BAO-CAO-PH b: lớp đã đủ — Xuất lớp tải file ngay (dòng thiếu em: nút việc "Báo cáo PH ›" mở tab). */
+                  : x.group === 'xuat_bc_ph' && !x.due && x.classId
+                    ? <NutXuatLopBc lopId={x.classId} dot={x.key.split(':').slice(2).join(':')} />
+                    : null)} />
           )}
           {/* OV-15h1: không có việc Vận hành nào — "Việc quản lý" vẫn là MỘT nhóm gập ở cuối danh sách (Giao việc · Vận hành · Báo cáo đơn vị), không thẻ rời. */}
           {coVanHanh && data && !dsNhom.some((g) => g.key === 'van-hanh') && (

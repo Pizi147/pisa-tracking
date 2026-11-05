@@ -68,6 +68,7 @@ import * as phanCongGvSvc from '../classes/phanCongGv.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as banGiaoGvSvc from '../classes/banGiaoGv.ts';
 import * as baoCaoPhSvc from '../classes/baoCaoPh.ts';
+import * as xuatBaoCaoPhSvc from '../classes/xuatBaoCaoPh.ts';
 import * as dichSvc from '../dich/dich.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
@@ -1122,6 +1123,9 @@ api.get('/classes/:classId/bao-cao-ph/phan', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return baoCaoPhSvc.phanBaoCaoPh(principalOf(req), pInt(req, 'classId'), typeof req.query.dot === 'string' ? req.query.dot : null, String(req.query.phan ?? ''));
 }));
+/** BAO-CAO-PH b: Excel một lớp (`em` vắng) hoặc một em — QL, Admin, TVV. */
+api.get('/classes/:classId/bao-cao-ph/xuat', requireAuth, wrap((req) => xuatBaoCaoPhSvc.xuatLopBaoCaoPh(principalOf(req), pInt(req, 'classId'),
+  typeof req.query.dot === 'string' ? req.query.dot : null, toInt(req.query.em))));
 api.put('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return baoCaoPhSvc.luuBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
@@ -1634,6 +1638,8 @@ api.put('/hoc-vien-lop/lich-thi/:cycleId', requireAuth, wrap((req) => {
   return lichThiSvc.luuLichThi(principalOf(req), pInt(req, 'cycleId'), req.body ?? {});
 }));
 /** OV-15f (C31): Xuất Excel danh sách học viên — nhận chính danh sách em web đang hiện (kế thừa bộ lọc), kiểm quyền xem từng em. `xemTruoc` không ghi nhật ký. */
+/** BAO-CAO-PH b: Học viên & Lớp › Xuất Excel › mẫu Báo cáo PH — tập em đang hiện, chọn tháng; `xemTruoc` chỉ đếm. */
+api.post('/hoc-vien-lop/xuat-bao-cao-ph', requireAuth, wrap((req) => xuatBaoCaoPhSvc.xuatBaoCaoPhNhieu(principalOf(req), req.body ?? {})));
 api.post('/hoc-vien-lop/xuat', requireAuth, wrap((req) => xuatDsSvc.xuatDanhSach(principalOf(req), {
   ids: Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter((n: number) => Number.isInteger(n) && n > 0) : [],
   mau: req.body?.mau, cot: req.body?.cot, boLoc: req.body?.boLoc, pham: req.body?.pham, xemTruoc: !!req.body?.xemTruoc, sos: req.body?.sos,

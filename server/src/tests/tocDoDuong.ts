@@ -165,6 +165,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'ADMIN', 'TVV'], url: '/classes/{lopFT}/bao-cao-ph', maChuDich: { TVV: 403 } },   // TVV mẫu ở chi nhánh khác lớp
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/bao-cao-ph/phan?phan=listening' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph' },
+  /* BAO-CAO-PH b: Excel một lớp (GV không xuất → 403). */
+  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT', 'ADMIN', 'GVCN'], url: '/classes/{lopFT}/bao-cao-ph/xuat', maChuDich: { GVCN: 403 } },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph/phan?phan=writing' },
   /* PR-HVL (7): panel Tuần khai giảng — thêm `coGiuaKhoa` và `tomTatMt` (một câu). */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/progress' },
@@ -409,6 +411,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* BAO-CAO-PH b: Excel một lớp (MB FT 101 33 em: em + bản ghi + GV + điểm gốc 5 kỹ năng) — max(đo + 10, ⌈đo × 1,3⌉), đo 06/11 QL / QT / Admin 12 · GVCN 403 2. */
+  'QL /classes/3/bao-cao-ph/xuat': 22, 'QT /classes/3/bao-cao-ph/xuat': 22, 'ADMIN /classes/3/bao-cao-ph/xuat': 22, 'GVCN /classes/3/bao-cao-ph/xuat': 12,
   /* BAO-CAO-PH: tab + panel một phần — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 06/11: FT tab 5 · panel 5; lớp thường (FOU, tính đợt từ tiến độ lớp) 7 · 7. */
   'QL /classes/3/bao-cao-ph': 15, 'GVCN /classes/3/bao-cao-ph': 15, 'GVBM /classes/3/bao-cao-ph': 15, 'GVCN_THUONG /classes/3/bao-cao-ph': 15, 'QT /classes/3/bao-cao-ph': 15, 'ADMIN /classes/3/bao-cao-ph': 15,
   'QL /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVBM /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN_THUONG /classes/3/bao-cao-ph/phan?phan=listening': 15, 'QT /classes/3/bao-cao-ph/phan?phan=listening': 15,
@@ -1004,6 +1008,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* BAO-CAO-PH b: Excel một lớp — max(đo + 50, ⌈đo × 1,3⌉), đo 06/11 139 dòng (chưa có bản ghi; đủ bản ghi + 198). */
+  'QL /classes/3/bao-cao-ph/xuat': 189, 'QT /classes/3/bao-cao-ph/xuat': 189, 'ADMIN /classes/3/bao-cao-ph/xuat': 189, 'GVCN /classes/3/bao-cao-ph/xuat': 51,
   /* BAO-CAO-PH: trần = max(đo + 50, ⌈đo × 1,3⌉), đo 06/11 (MB FT 101 33 em, chưa có bản ghi): tab 38 · panel 52; FOU 12 (7 em): 15 · 11. Bản ghi đầy đủ: + em × phần (tab) / + 2 × em (panel). */
   'QL /classes/3/bao-cao-ph': 88, 'GVCN /classes/3/bao-cao-ph': 88, 'GVBM /classes/3/bao-cao-ph': 88, 'GVCN_THUONG /classes/3/bao-cao-ph': 88, 'QT /classes/3/bao-cao-ph': 88, 'ADMIN /classes/3/bao-cao-ph': 88,
   'QL /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVCN /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVBM /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVCN_THUONG /classes/3/bao-cao-ph/phan?phan=listening': 102, 'QT /classes/3/bao-cao-ph/phan?phan=listening': 102,

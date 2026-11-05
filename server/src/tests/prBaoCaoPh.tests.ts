@@ -6,6 +6,8 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   const { check, assert, assertThrows, conn, P, TODAY, classId } = t;
   const d: any = await import('../../../shared/domain/index.ts');
   const bc: any = await import('../classes/baoCaoPh.ts');
+  const xbc: any = await import('../classes/xuatBaoCaoPh.ts');
+  const mw: any = await import('../worklist/mywork.ts');
   const { loadPrincipal }: any = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nBAO-CAO-PH — báo cáo gửi phụ huynh: đợt, quyền, em đủ, điểm sửa tay');
@@ -100,5 +102,57 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assertThrows(() => bc.luuBaoCaoPh(P.mbManager, lop, { dot: moi.ma, phan: 'listening', studentId: sid, muc: {}, chu: '', diemSua: 6.3 }), /./, 'band lẻ');
     const pn = bc.phanBaoCaoPh(P.mbManager, lop, moi.ma, 'listening').em.find((e: any) => e.id === sid);
     assert(pn.banGhi.diemSua === 6.5 && pn.mucTruoc?.c1 === 'tot' && pn.sua?.luc, JSON.stringify(pn));
+  }));
+
+  /* ------------------------------------------------------------ PR b: Excel 3 mức + việc Admin */
+  const admin = nguoi('office_admin', 'MB');
+  const viet = (lopId: number, dot: string, em: { id: number }[], phan: { khoa: string }[]) => {
+    const TC: Record<string, number> = { chung: 7, writing: 5 };
+    const ks = (k: string) => (k === 'chung' ? ['i1', 'i2', 'i3', 'ii1', 'ii2', 'ii3', 'ii4'] : Array.from({ length: TC[k] ?? 4 }, (_, i) => `c${i + 1}`));
+    for (const e of em) for (const p of phan) {
+      bc.luuBaoCaoPh(P.mbManager, lopId, { dot, phan: p.khoa, studentId: e.id, muc: Object.fromEntries(ks(p.khoa).map((k) => [k, 'kha'])), chu: 'Ổn' });
+    }
+  };
+
+  check('BC-8 · Excel một lớp đúng mẫu CP FT 131 (hàng 1 tên em; GVCN → Nhận xét chung → 7 tiêu chí; mỗi kỹ năng GV → Điểm → Đề xuất → tiêu chí; "Khá (Sound)"); một em = một cột; GV không xuất', () => thu(() => {
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, null);
+    viet(lop, tr.dot, tr.em.slice(0, 1), tr.phan);
+    const r = xbc.xuatLopBaoCaoPh(P.mbManager, lop, tr.dot, null);
+    const a = r.sheets[0].aoa;
+    assert(r.sheets.length === 1 && r.sheets[0].ten === 'MB FT 101' && a[0].length === tr.em.length + 1, `${r.sheets[0].ten} ${a[0].length}`);
+    assert(a.length === 1 + 9 + 5 * 7, `số hàng ${a.length}`);
+    assert(a[1][0] === 'Giáo viên chủ nhiệm (Core teacher):' && a[2][0] === 'Nhận xét chung (General comment):' && a[3][1] === 'Khá (Sound)', JSON.stringify(a.slice(1, 4)));
+    assert(a[10][0] === 'Giáo viên nghe (Listening Teacher) :' && a[11][0] === 'Điểm:\nScore:' && a[12][0] === 'Đề xuất cải thiện (Suggestion):', JSON.stringify(a.slice(10, 13).map((x: any) => x[0])));
+    const motEm = xbc.xuatLopBaoCaoPh(P.mbManager, lop, tr.dot, tr.em[0].id).sheets[0].aoa;
+    assert(motEm[0].length === 2 && motEm[0][1] === tr.em[0].ten, 'một em một cột');
+    assertThrows(() => xbc.xuatLopBaoCaoPh(P.lrTeacher, lop, tr.dot, null), /./, 'GV không xuất');
+    if (admin) assert(xbc.xuatLopBaoCaoPh(admin, lop, tr.dot, null).sheets.length === 1, 'Admin xuất được');
+  }));
+
+  check('BC-9 · Xuất chi nhánh theo tháng: lớp FT đợt tháng đó, lớp không có đợt vào "khongDot"; xem trước chỉ đếm; tên sheet không trùng', () => thu(() => {
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, null);
+    const thang = tr.dot.slice(6);
+    const ids = (conn.prepare(`SELECT DISTINCT e.student_id id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' AND e.status = 'active'`).all() as any[]).map((r) => r.id);
+    const xem = xbc.xuatBaoCaoPhNhieu(P.mbManager, { ids, thang, xemTruoc: true });
+    assert(xem.ft.lop >= 1 && xem.tong === xem.ft.hocVien + xem.thuong.hocVien && Array.isArray(xem.khongDot), JSON.stringify(xem));
+    const r = xbc.xuatBaoCaoPhNhieu(P.mbManager, { ids, thang });
+    const ten = r.sheets.map((x: any) => x.ten);
+    assert(ten.includes('MB FT 101') && new Set(ten.map((x: string) => x.toLowerCase())).size === ten.length && ten.every((x: string) => x.length <= 31), ten.join('|'));
+    assert(r.dem.lop === r.sheets.length && r.dem.hocVien === xem.tong, JSON.stringify(r.dem));
+    assertThrows(() => xbc.xuatBaoCaoPhNhieu(P.mbManager, { ids, thang: '2026-13' }), /./, 'tháng sai');
+  }));
+
+  check('BC-10 · Việc Admin "Xuất báo cáo PH": lớp đủ mọi em mọi phần → một việc (đủ, không hạn); QL không nhận', () => thu(() => {
+    if (!admin) return;
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, null);
+    const truoc = xbc.viecXuatBaoCaoPh(admin, null).filter((v: any) => v.classId === lop && v.dot === tr.dot);
+    assert(!truoc.length || truoc[0].thieu > 0, 'chưa đủ thì không có việc đủ');
+    viet(lop, tr.dot, tr.em, tr.phan);
+    const v = xbc.viecXuatBaoCaoPh(admin, null).find((x: any) => x.classId === lop && x.dot === tr.dot);
+    assert(v && v.thieu === 0 && v.duLuc && v.soEm === tr.em.length, JSON.stringify(v));
+    xoaNho();
+    const items = mw.myWork(admin, {}).dong ?? [];
+    assert(items.some((x: any) => x.group === 'xuat_bc_ph' && x.classId === lop && !x.due), 'dòng ở Công việc Admin');
+    assert(!xbc.viecXuatBaoCaoPh(P.mbManager, null).length, 'QL không nhận');
   }));
 }

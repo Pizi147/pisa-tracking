@@ -46,7 +46,9 @@ await pw.goto(`${BASE}/${duong.replace(/^\//, '')}`, { waitUntil: 'networkidle' 
 await pw.waitForTimeout(600);
 // DUYET-QL: BAM="Duyệt|Lịch sử" — bấm lần lượt các nút (tên đúng như trình đọc màn hình đọc, khớp đầu chữ) trước khi chụp — trạng thái sau thao tác.
 for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
-  await pw.getByRole('button', { name: new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) }).last().click();
+  const tenRe = new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+  const nut = pw.getByRole('button', { name: tenRe });
+  await ((await nut.count()) ? nut : pw.getByRole('radio', { name: tenRe })).last().click();   // BAO-CAO-PH: lựa chọn dạng radio (ngăn Xuất › Mẫu)
   await pw.waitForTimeout(900);
 }
 for (let i = 0; i < 5; i++) {   // kéo dài khung nhìn tới khi main hết cuộn (bảng nạp thêm khi cao lên)

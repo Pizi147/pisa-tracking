@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { api } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { taiXlsx, type SheetXuat } from '../test/keHoach/taiXlsx.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { taoHangLuu, dongSauKhiLuu, type TrangThaiO } from '../../lib/luuChac.ts';
@@ -16,7 +18,7 @@ import {
   MUC_BC, boPhanBc, chuBc, kqDiemBc, loiDiemSua, nhanMucBc, nhanOChu, ngay, phanDu, tieuChiPhan, tuanLich,
   type BanGhiBc, type DiemGocBc, type MucBc, type PhanBc,
 } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type OBc = 'du' | 'nhap' | null;
 type PhanCot = { khoa: string; ngan: string; ten: string; gv: { id: number; ten: string }[]; cuaToi: boolean };
@@ -46,13 +48,25 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
   const [them, setThem] = useState(false);
   const dt = useDienThoai();
   const bo = useMemo(() => boPhanBc(ct), [ct]);
+  const toast = useToast();
+  /* Xuất Excel (PR b): `null` = không đang xuất · 0 = cả lớp · id em. File = ảnh lúc bấm; không đánh dấu "đã xuất". */
+  const [dangXuat, setDangXuat] = useState<number | null>(null);
+  const xuat = async (emId: number | null) => {
+    if (dangXuat !== null || !data?.dot) return;
+    setDangXuat(emId ?? 0);
+    try {
+      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBaoCaoPh(lopId, data.dot, emId) }));
+    } catch (e: any) {
+      toast.push('error', e?.message ?? t('Chưa tạo được file.'));
+    } finally { setDangXuat(null); }
+  };
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data || !bo) return <Skeleton rows={6} />;
   if (!data.dot) {
     return (
       <section className="card px-4 py-6 text-center">
         <h2 className="m-0 text-[17px] font-bold text-slate-100">{t('Chưa có đợt')}</h2>
-        {data.dotDau && <p className="m-0 mt-1 text-sm text-slate-400">{t('Đợt đầu: {dot}', { dot: data.dotDau })}</p>}
+        {data.dotDau && <p className="m-0 mt-1 text-sm text-slate-400">{t('Đợt đầu: {dot}', { dot: dich(data.dotDau) })}</p>}
       </section>
     );
   }
@@ -66,12 +80,12 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
   const congCu = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
       <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot} onChange={(ev) => onDot(ev.target.value === data.dsDot[0]?.ma ? null : ev.target.value)}>
-        {data.dsDot.map((d) => <option key={d.ma} value={d.ma}>{d.nhan}</option>)}
+        {data.dsDot.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}
       </ChonDangNut>
       <span className="text-[15px] text-slate-300"><b className="tabular-nums text-slate-100">{soDu}/{em.length}</b> {t('em đủ')}</span>
       <span className="flex-1" />
-      {/* PR b làm tệp Excel — PR a chỉ giữ chỗ. */}
-      {data.xuat && <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled title={t('Xuất Excel có ở bản kế tiếp')}>{t('Xuất lớp')}</button>}
+      {data.xuat && <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null)}>
+        {dangXuat === 0 ? t('Đang tạo file…') : t('Xuất lớp')}</button>}
     </div>
   );
 
@@ -138,11 +152,11 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
   }
 
   return (
-    <section className="card p-4" aria-label={`${t('Báo cáo PH')} · ${dotHien.nhan}`}>
+    <section className="card p-4" aria-label={`${t('Báo cáo PH')} · ${dich(dotHien.nhan)}`}>
       {congCu}
       {/* BANG-3: bảng chung `Bang` (thẻ 375 riêng ở trên). Đầu cột hai dòng: mã phần + GV (`.bang-bc .bang-chu-thich` xuống dòng). */}
       <div className="bang-bc">
-        <Bang ten={`${t('Báo cáo PH')} · ${dotHien.nhan}`} khung={false} the375={false} deu khoa={(e) => e.id} hang={em}
+        <Bang ten={`${t('Báo cáo PH')} · ${dich(dotHien.nhan)}`} khung={false} the375={false} deu khoa={(e) => e.id} hang={em}
           cot={[
             { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 300 },
             ...data.phan.map((p): CotBang => ({ key: p.khoa, nhan: p.ngan, phu: tenGv(p), kieu: 'so', rong: 120, goiY: p.ten })),
@@ -151,8 +165,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
           oCua={(e, c) => {
             if (c.key === 'ten') return <span className="font-semibold text-slate-100">{e.ten}</span>;
             if (c.key === 'xuat') {
-              return <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-medium text-slate-500" disabled
-                aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} title={t('Xuất Excel có ở bản kế tiếp')}>{t('Xuất')}</button>;
+              return <button type="button" className="link-nho min-h-[44px] font-medium sm:min-h-0" disabled={dangXuat !== null}
+                aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} onClick={() => void xuat(e.id)}>{dangXuat === e.id ? t('Đang tạo…') : t('Xuất')}</button>;
             }
             const p = data.phan.find((x) => x.khoa === c.key)!;
             const o = e.o[p.khoa];
@@ -173,6 +187,29 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
       </div>
       {panel}
     </section>
+  );
+}
+
+/** Tải Excel báo cáo PH một lớp (`emId` null) / một em — trả tên tệp. Dùng ở tab và việc Admin ở Công việc. */
+export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | null): Promise<string> {
+  const r = await api.get<{ sheets: SheetXuat[]; tenTep: string }>(`/classes/${lopId}/bao-cao-ph/xuat?dot=${encodeURIComponent(dot)}${emId ? `&em=${emId}` : ''}`);
+  await taiXlsx(r.sheets, r.tenTep);
+  return r.tenTep;
+}
+
+/** Việc Admin (Công việc) "Xuất báo cáo PH" của lớp đã đủ: nút Xuất lớp tải ngay (PTA chốt 05/11) — không chuyển trang, không dấu "đã xuất". */
+export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  return (
+    /* 375 (mockup g3): ẩn — chạm cả dòng mở tab Báo cáo PH, Xuất lớp bấm trong tab. */
+    <button type="button" className="btn btn-sm min-h-[44px] font-semibold max-sm:hidden sm:min-h-[30px]" disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBaoCaoPh(lopId, dot, null) })); }
+        catch (e: any) { toast.push('error', e?.message ?? t('Chưa tạo được file.')); }
+        finally { setBusy(false); }
+      }}>{busy ? t('Đang tạo file…') : t('Xuất lớp')}</button>
   );
 }
 
@@ -229,7 +266,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
   const ds = data?.em ?? [];
   const duCua = (e: EmPhan) => phanDu(phan, ban.current.get(e.id)?.daLuu ?? e.banGhi);
   const soDu = ds.filter(duCua).length;
-  const ngCanh = data && [data.dot.nhan, <span key="du"><b className="text-slate-100">{soDu}/{ds.length}</b> {t('em đủ')}</span>, t('hạn {ngay}', { ngay: ngay(data.dot.han, homNay) })];
+  const ngCanh = data && [dich(data.dot.nhan), <span key="du"><b className="text-slate-100">{soDu}/{ds.length}</b> {t('em đủ')}</span>, t('hạn {ngay}', { ngay: ngay(data.dot.han, homNay) })];
   const em = ds.find((e) => e.id === chon) ?? ds[0];
   const b = em ? lay(em) : null;
   const i = em ? ds.indexOf(em) : -1;
@@ -267,7 +304,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : !em ? <p className="m-0 text-sm text-slate-400">{t('Đợt này không có học viên.')}</p>
-        : xong ? <HetEm lopMa={lopMa} phan={phan} dotNhan={data.dot.nhan} so={`${soDu}/${ds.length}`} phanTiep={phanTiep} onPhanTiep={onPhanTiep} onDong={dongPanel} />
+        : xong ? <HetEm lopMa={lopMa} phan={phan} dotNhan={dich(data.dot.nhan)} so={`${soDu}/${ds.length}`} phanTiep={phanTiep} onPhanTiep={onPhanTiep} onDong={dongPanel} />
         : (
           <div className="grid gap-0 sm:grid-cols-[200px_minmax(0,1fr)] sm:-mx-4 sm:-my-3">
             {dt ? (
@@ -298,7 +335,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
                 })}
               </ul>
             )}
-            <FormEm key={em.id} em={em} phan={phan} form={b!.form} dotTruoc={data.dotTruoc} homNay={homNay} du={duCua(em)} nhap={!!em.banGhi || !!b!.luc || b!.o.chuaLuu()}
+            <FormEm key={em.id} em={em} phan={phan} form={b!.form} dotTruoc={data.dotTruoc && dich(data.dotTruoc)} homNay={homNay} du={duCua(em)} nhap={!!em.banGhi || !!b!.luc || b!.o.chuaLuu()}
               onDoi={doiForm} onRoiChu={() => void b!.o.luu()} />
           </div>
         )}
@@ -454,7 +491,7 @@ function PanelDocBc({ lopId, lopMa, dot, phan, gv, emId, vietHo, onVietHo, onDon
   );
   return (
     <KhungPanel tieuDe={em ? `${em.ten} · ${ten}` : ten} loai={t('BÁO CÁO PH · ĐỌC')} onDong={onDong}
-      dau={{ dong2: [lopMa, data?.dot.nhan ?? '', gv.map((g) => g.ten).join(', ') || t('Chưa phân công')] }}
+      dau={{ dong2: [lopMa, data ? dich(data.dot.nhan) : '', gv.map((g) => g.ten).join(', ') || t('Chưa phân công')] }}
       chan={{ huy: { nhan: t('Đóng'), onClick: onDong }, chinh: vietHo && em ? <button type="button" className="btn btn-primary min-h-[44px] font-semibold sm:min-h-0" onClick={onVietHo}>{t('Viết hộ')}</button> : undefined }}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={4} />
