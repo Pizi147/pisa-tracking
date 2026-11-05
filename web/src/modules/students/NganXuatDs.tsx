@@ -103,7 +103,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
           {busy ? t('Đang tạo file…') : t('Xuất {n} HV', { n: dsId.length })}</button>,
       }}>
       <p className="m-0 pt-3 text-sm text-slate-300">{t('Theo bộ lọc: {boLoc}', { boLoc })} · <b className="tabular-nums text-slate-100">{t('{n} HV', { n: ids.length })}</b></p>
-      {!mauMacDinh && (
+      {/* Mẫu luôn có — "Danh sách" giữ mẫu theo góc trang (`mauMacDinh`) như cũ. */ (
         <Khoi tieuDe={t('Mẫu')}>
           <div role="radiogroup" aria-label={t('Mẫu')} className="flex flex-wrap gap-2">
             <Chon dang={loai === 'ds'} onChon={() => { setLoai('ds'); setXong(null); setLoi(null); }} nhan={t('Danh sách')} />

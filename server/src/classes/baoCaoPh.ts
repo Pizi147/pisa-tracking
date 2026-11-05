@@ -46,11 +46,12 @@ export function quyenBc(p: Principal, c: Pick<Lop, 'id' | 'branch_id'>, homNay =
 }
 
 /** Lịch lớp → mọi đợt + bộ phần. Chương trình chưa có mẫu (PET, KET, Pre FOU) → null (không có tab). */
-export function dotCuaLop(c: Lop, homNay = demoToday()): { bo: readonly PhanBc[]; ds: DotBc[]; dau: DotBc | null } | null {
+/** `tienDo`: tiến độ lớp đã đọc theo lô (`classProgressMany`) — nơi đọc nhiều lớp truyền vào, không đọc từng lớp. */
+export function dotCuaLop(c: Lop, homNay = demoToday(), tienDo?: Map<number, { progressWeekStart: string | null; finalWeekStart: string | null; startWeekStart: string | null }>): { bo: readonly PhanBc[]; ds: DotBc[]; dau: DotBc | null } | null {
   const bo = boPhanBc(c.programme_code ?? c.kind);
   if (!bo) return null;
   const ft = (c.programme_code ?? '') === 'FT' || !!c.is_fast_track;
-  const pr = ft ? null : classProgressMany([c.id]).get(c.id) ?? null;
+  const pr = ft ? null : (tienDo ?? classProgressMany([c.id])).get(c.id) ?? null;
   return { bo, ...dsDotLop({ ft, batDau: ft ? (c.start_date ?? pr?.startWeekStart ?? c.created_at).slice(0, 10) : null,
     progress: pr?.progressWeekStart ?? null, final: pr?.finalWeekStart ?? null }, homNay) };
 }

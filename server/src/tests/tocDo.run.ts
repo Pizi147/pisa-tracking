@@ -1212,8 +1212,10 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* PR-MT-CHAM (N39, 05/11): chụp lại 7 băm (QL / QT toi, ADMIN, GVS giữ) — đổi CÓ CHỦ Ý chỉ `contextLabel` việc chấm Mock: "MT1, MT4 W3 OCT" → "W3 OCT".
        Đã kiểm: trả `mywork.ts` về origin/main (nhãn cũ) trên nhánh → TD4-a đạt với băm cũ. Trước: GVCN toi 8215b08ff50a3871, GVBM toi f4ed555f1ab51285,
        GVCN_THUONG toi 8215b08ff50a3871, QL tat-ca 25a69682950fb439, QT tat-ca c25cf2159c6d850b, QT tat-ca cn ab81cd84860daab9, QL gvcn fab519b88423e38a */
+    /* BAO-CAO-PH b (06/11): chụp lại 'ADMIN toi' — đổi CÓ CHỦ Ý: Admin có việc mới "Xuất báo cáo PH" (nhóm Việc quản lý — đợt quá hạn chưa đủ / lớp đủ 7 ngày);
+       10 băm khác giữ (QL không nhận việc này). Trước: ADMIN toi 4ed1fc3fa34653f2 */
     'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '9d92644a93b70d7c', 'GVBM toi': 'e089af060bbfcf23',
-    'GVCN_THUONG toi': '9d92644a93b70d7c', 'ADMIN toi': '4ed1fc3fa34653f2', 'QL tat-ca': '68eb7bf00d5d3794', 'QT tat-ca': '5a8f912d0266aeb4',
+    'GVCN_THUONG toi': '9d92644a93b70d7c', 'ADMIN toi': 'ddb1ac7c6032790f', 'QL tat-ca': '68eb7bf00d5d3794', 'QT tat-ca': '5a8f912d0266aeb4',
     'QT tat-ca cn': '699c581b1c85ef3a', 'QL gvcn': 'd72da0f9c7bf9628', 'GVS toi': '3183805cc8df091a',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

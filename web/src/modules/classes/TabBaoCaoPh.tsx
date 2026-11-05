@@ -202,7 +202,8 @@ export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   return (
-    <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[30px]" disabled={busy}
+    /* 375 (mockup g3): ẩn — chạm cả dòng mở tab Báo cáo PH, Xuất lớp bấm trong tab. */
+    <button type="button" className="btn btn-sm min-h-[44px] font-semibold max-sm:hidden sm:min-h-[30px]" disabled={busy}
       onClick={async () => {
         setBusy(true);
         try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBaoCaoPh(lopId, dot, null) })); }

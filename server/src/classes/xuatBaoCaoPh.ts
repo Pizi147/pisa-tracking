@@ -12,6 +12,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { diemGoc, dotCuaLop, quyenBc, type LopBc } from './baoCaoPh.ts';
+import { classProgressMany } from './schedule.ts';
 import {
   boPhanBc, chuMucExcel, chuDiem, nhanDotBc, soNgayQuaHan, type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
 } from '../../../shared/domain/index.ts';
@@ -224,10 +225,11 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
   if (!cn.size) return [];
   const homNay = demoToday();
   const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
-  for (const c of lopDayDu().values() as Iterable<LopBc>) {
-    if (c.status !== 'active' || !(cn.has(null) || cn.has(c.branch_id)) || (branchId != null && c.branch_id !== branchId)) continue;
-    if (!boPhanBc(c.programme_code ?? c.kind)) continue;
-    const dl = dotCuaLop(c, homNay);
+  const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => c.status === 'active' && (cn.has(null) || cn.has(c.branch_id))
+    && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
+  const tienDo = classProgressMany(lop.filter((c) => (c.programme_code ?? '') !== 'FT' && !c.is_fast_track).map((c) => c.id));   // một lô cho mọi lớp thường
+  for (const c of lop) {
+    const dl = dotCuaLop(c, homNay, tienDo);
     /* Đợt quá hạn tới 30 ngày vẫn đọc: lớp viết đủ muộn (sau hạn + 7) vẫn có 7 ngày việc "đủ". */
     for (const d of dl?.ds.slice(0, 2) ?? []) if (soNgayQuaHan(d, homNay) <= 30 && dl) cap.push({ c, d, bo: dl.bo });
   }
