@@ -133,7 +133,7 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const oL = (h: HL, c: DinhNghiaCot): ReactNode => {
     if (c.key === 'ten') return lkHv(h.studentId, h.ten);
     if (c.key === 'lop') return lkLop(h.classId, h.lop);
-    if (c.key === 'mt') return <span className="whitespace-nowrap">{lkMt(h.attemptId, h.mt)} <span className="text-[13px] text-faint">{tuanLich(h.tuan, homNay)}</span></span>;
+    if (c.key === 'mt') return lkMt(h.attemptId, h.mt);   // mã tuần ở dòng phụ dưới MTn (`phuL`) — đọc đủ "W4 AUG", không cắt "…" (PTA rà #976)
     if (c.key === 'ovr') return <ODiem so={h.ovr ? fmtBand(h.ovr.v) : null} kq={h.ovr?.kq ?? null} nhan="OVR" />;
     if (c.key === 'kv') return kv(h.kyVong);
     return oDiemL(h, c.key as KnLuot);
@@ -144,7 +144,7 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
       <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}
         <span className="ml-auto whitespace-nowrap text-[13px] text-dim">{t('Kỳ vọng')} <b className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{h.kyVong === null ? '—' : fmtBand(h.kyVong)}</b></span>
       </div>
-      <div className="flex flex-wrap gap-x-3 text-[14px]">{lkLop(h.classId, h.lop)}{oL(h, cotL[2])}</div>
+      <div className="flex flex-wrap gap-x-3 text-[14px]">{lkLop(h.classId, h.lop)}<span className="whitespace-nowrap">{lkMt(h.attemptId, h.mt)} <span className="text-[13px] text-faint">{tuanLich(h.tuan, homNay)}</span></span></div>
       <div className="mt-1 grid grid-cols-6 gap-x-1.5">
         {[...KN, 'ovr' as const].map((k) => (
           <span key={k} className={`grid gap-0.5 ${NHAN_KN_LUOT[k as KnLuot] === knNhan ? '-mx-1 -my-0.5 rounded-md bg-[color:var(--accent-soft)] px-1 py-0.5' : ''}`}>
@@ -214,7 +214,7 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
               <PhanTrang {...pt.thanh} />
               {tg
                 ? <Bang deu ten={tieuDe} cot={cotT} hang={hangT} khoa={(h) => h.id} oCua={oT} khung={false} theRieng={theT} />
-                : <Bang deu day ten={tieuDe} cot={cotL} hang={hangL} khoa={(h) => h.id} oCua={oL} khung={false} theRieng={theL} />}
+                : <Bang deu day ten={tieuDe} cot={cotL} hang={hangL} khoa={(h) => h.id} oCua={oL} phuCua={(h, c) => (c.key === 'mt' ? tuanLich(h.tuan, homNay) : null)} khung={false} theRieng={theL} />}
               <PhanTrang {...pt.thanh} duoi />
               {data.cachTinh && (
                 <div className="grid gap-1 border-t pt-3 text-sm" style={{ borderColor: 'var(--line)' }}><b className="text-slate-100">{t('Cách tính')}</b><span className="text-dim">{dich(data.cachTinh)}</span></div>

@@ -9,7 +9,7 @@
 |---|---|---|---|
 | A1 | panel 820, đầu "SỐ · TEST + SOS" · tiêu đề ô · "chi nhánh · Fast Track · dữ liệu đến" | cap-a1 | KHỚP |
 | A1 | "n lượt · m HV" | cap-a1 | KHỚP |
-| A1 | Học viên · Lớp · MT (+ tuần) · L R W1 W2 S · OVR (vạch trái) · Kỳ vọng | cap-a1 | KHỚP |
+| A1 | Học viên · Lớp · MT (+ tuần) · L R W1 W2 S · OVR (vạch trái) · Kỳ vọng | cap-a1 | KHỚP — mã tuần ở dòng phụ dưới MTn (đọc đủ "W4 AUG", không "…"; PTA rà #976) |
 | A1 | ô ✓ / ✗ trước số, màu vượt xanh lá · bằng xanh dương · dưới đỏ | cap-a1 | KHỚP (`ODiem`) |
 | A1 | ô có tiêu chí / số câu bấm → hộp "FC 5 · LR 5 · GRA 5 · P 5 → 5.0" dưới ô, viền nhấn khi mở | cap-a1 | KHỚP |
 | A1 | ô chỉ có band: không bấm | — | KHỚP |
