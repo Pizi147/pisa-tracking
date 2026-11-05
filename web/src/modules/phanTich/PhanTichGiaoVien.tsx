@@ -23,7 +23,7 @@ import { DOAN, DauThe, RongDau, VaoHangLoc, doanNut } from './dungChung.tsx';
  * CHỈ ĐỌC đúng tập (C22): `/phan-tich/giao-vien/o` (cùng hàm ô), Quá hạn = Trễ chấm Tổng quan, Case có PA = hồ sơ GV — cùng nguồn Tổng quan › GV cần chú ý.
  * Chấm Test đúng hạn giữ panel Chấm điểm V4 (lọc Trễ). "Xử lý vi phạm" bỏ (10, 22/10). < 640 px: thẻ (Bang).
  */
-type TyLe = { dat: number; mau: number };
+type TyLe = { dat: number; mau: number; pt?: number };
 /* V8-PT (mockup B2): đầu nhóm chữ thường, như mọi đầu cột. */
 const HC = t('Hành chính'), HT = t('Học thuật');
 /*
@@ -60,7 +60,8 @@ function OPt({ x, nguon, tieuDe, onBam }: { x: TyLe | null; nguon?: string; tieu
         className={`${VUNG_BAM_SO} ${LOP_OSO}`}>{v.percent} %</button>
     );
   }
-  return <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguon!} tieuDe={tieuDe} />;
+  /* Thi thật (2F): số to = % theo tuần dạy (`pt`); n/m dòng phụ = mục em × kỹ năng (= số dòng panel). */
+  return <OSo giaTri={x.mau} nhan={`${x.pt ?? v.percent} %`} nguon={nguon!} tieuDe={tieuDe} />;
 }
 
 export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | null; ct: ChuongTrinh; khoang: KhoangNgay }) {
@@ -87,7 +88,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const NGUON: Record<string, (h: HangPtGv) => string> = {
     viec: (h) => nguonO(h, 'viec-dung-han'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
     casePa: (h) => `/giao-vien/${h.id}/o?cot=case-mo&${ctQ}`, pa: (h) => nguonO(h, 'pa-hieu-qua'),
-    /* Pass Target: panel của hồ sơ GV (cùng `thiThatCuaGv`, một dòng một lần thi) — 6C-NHO: chỉ chi nhánh đang chọn (`cn`), số dòng = ô. */
+    /* Pass Target (2F): panel của hồ sơ GV (cùng `mucThiTheoGv`, một dòng một mục em × kỹ năng) — 6C-NHO: chỉ chi nhánh đang chọn (`cn`), số dòng = ô. */
     tt: (h) => `/giao-vien/${h.id}/chi-so/o?cot=thi-that&cn=${branchId}&tu=${data?.tu ?? ''}&den=${data?.den ?? ''}`,
   };
   const oCua = (h: HangPtGv, c: CotBang): ReactNode => {

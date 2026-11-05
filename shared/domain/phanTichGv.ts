@@ -24,7 +24,7 @@ export type HangPtGv = {
   viecDungHan: OPtGv;
   /** Chỉ Fast Track. */
   paHieuQua?: OPtGv;
-  /** UI-PHAN-TICH (FT): `datMt` = Đạt kỳ vọng Test (chỉ lượt Test, đơn vị lượt Test, panel `cot=dat-mt`) · `thiThat` = Pass Target theo LẦN THI (cùng hồ sơ GV `thiThatCuaGv`, panel hồ sơ GV `cot=thi-that`). */
+  /** UI-PHAN-TICH (FT): `datMt` = Đạt kỳ vọng Test (chỉ lượt Test, đơn vị lượt Test, panel `cot=dat-mt`) · `thiThat` = Pass Target thi thật (2F: mục em × kỹ năng GV từng dạy, `pt` % theo tuần dạy — cùng hồ sơ GV `mucThiTheoGv`, panel hồ sơ GV `cot=thi-that`). */
   datMt?: OPtGv; thiThat?: OPtGv;
   /** HV đang SOS (hiện tại) ở lớp GV đang dạy; panel `cot=hv-chu-y`. */
   hvChuY: number;
@@ -55,7 +55,7 @@ export type ChiSoHoSoGv = {
    * `theoBai` tách theo bài (MT3 10 · MT2 2). `ketQua` = Σ các kỹ năng (lượt kỹ năng, cùng `ketQuaTheoLop`) · `tienBo` chỉ FT. Panel `ket-qua-lop:<lớp>` · `tien-bo-lop:<lớp>`.
    */
   hocThuatTheoLop: { classId: number; ma: string; khung: KhungPtGv; khai: string | null; xong: boolean; kyNang: string[]; luot: number; theoBai: { bai: string; n: number }[]; ketQua: OPtGv; tienBo: OPtGv; thiThat: OPtGv }[];
-  /** UI-HO-SO-GV: Đạt Target thi thật — HV (một lần thi) có ngày thi thật trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi; `na` khi không dạy FT. Panel `thi-that[-lop:<lớp>]`. */
+  /** Thi thật (2F, thay C10): mục em × kỹ năng GV từng dạy, kỹ năng so Target overall, `pt` % theo tuần dạy; `na` khi không dạy FT. Panel `thi-that[-lop:<lớp>]`. */
   thiThat: OPtGv;
   /** Thi thật theo kỹ năng GV phụ trách (chỉ kỹ năng có lần thi). Panel `thi-that-ky:<kỹ năng>` (+ `loc=dat|chua`). */
   thiThatTheoKyNang: { skill: string; nhan: string; o: OPtGv; vuot: number }[];

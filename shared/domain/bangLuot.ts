@@ -25,3 +25,14 @@ export const KN_LUOT_BANG: Record<KnLuot, string> = { l: 'listening', r: 'readin
 export const KN_LUOT_CUA: Record<string, KnLuot> = { listening: 'l', reading: 'r', writing1: 'w1', writing2: 'w2', speaking: 's' };
 export const NHAN_KN_LUOT: Record<KnLuot, string> = { l: 'L', r: 'R', w1: 'W1', w2: 'W2', s: 'S' };
 export const soSanhDiem = (v: number, kv: number | null): KqDiem => (kv === null ? null : v < kv ? 'duoi' : v > kv ? 'vuot' : 'bang');
+
+/**
+ * THI-THAT (PR-4, mockup v13 C2 / C3): một lần thi thật. Ô so Target overall (`soSanhDiem`); KCK → kq null. `layLai`: kỹ năng lấy KQ lần trước (thi lại
+ * một kỹ năng) — ô mờ "↺". `tuan` (P-GV): tuần GV dạy kỹ năng đó cho em / tổng tuần em học kỹ năng đó.
+ */
+export type KnThiBang = 'l' | 'r' | 'w' | 's';
+export type DongThiThatBang = {
+  cycleId: number; studentId: number; ten: string; classId: number | null; lop: string; ngay: string | null;
+  kn: Record<KnThiBang, ODiemLuot>; ovr: ODiemLuot; target: number | null; kck: boolean; layLai: KnThiBang[];
+  tuan?: { day: number; tong: number };
+};

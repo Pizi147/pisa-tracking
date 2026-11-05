@@ -4,6 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { useTapUrl } from '../../lib/quayLai.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { xuatExcelMock } from './xuatMock.ts';
 import { Card, ErrorState, SCORE_CHIP, Skeleton, Th } from '../../ui/ui.tsx';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
@@ -62,6 +64,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const nhanKy = nhanKhoang(khoang).chinh;
   const { session } = useSession();
   const demoDate = useNgayNghiepVu().homNay || null;
+  const toast = useToast();
   const dienThoai = useDienThoai();
   const [params, setParams] = useSearchParams();
   const theo: TheoDong = (THEO_DONG as readonly string[]).includes(params.get('theo') ?? '') ? (params.get('theo') as TheoDong) : 'tuan';
@@ -208,7 +211,10 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     { key: 'cot-hien', nhan: t('Cột hiện'), tieuDe: true, onChon: () => {} },
     ...NHOM_MAC_DINH.map((n) => ({ key: n, nhan: dich(nhomCotNhanNgan(n, ct)), chon: cotHien.has(n), onChon: () => toggleCotHien(n) })),
     ...(dienThoai ? [{ key: 'xuat', nhan: t('⤓ Xuất bảng này'), keTruoc: true, onChon: xuatExcel, tat: khongXuat, title: lyDoKhongXuat }] : []),
-    ...(session?.nav?.xuatMt ? [{ key: 'xuat-mt', nhan: t('Xuất kết quả từng lượt'), keTruoc: !dienThoai, onChon: () => setMoXuat(true) }] : []),
+    /* THI-THAT (XM-3): Excel Mock Test của tab "Kết quả Test" cũ về đây — vai có `xuatMt` mở hộp xuất đầy đủ; vai khác (từng thấy nút cũ) xuất tệp như nút cũ. */
+    ...(session?.nav?.xuatMt ? [{ key: 'xuat-mt', nhan: t('Xuất kết quả từng lượt'), keTruoc: !dienThoai, onChon: () => setMoXuat(true) }]
+      : !laThuong && demoDate ? [{ key: 'xuat-mt', nhan: t('Xuất kết quả từng lượt'), keTruoc: !dienThoai,
+        onChon: () => { xuatExcelMock({ branchId, ct, khoang, classId }, demoDate).catch((e: Error) => toast.push('error', e.message || t('Không xuất được tệp.'))); } }] : []),
   ];
 
   const oSo = (row: DongTongHop) => cols.map((c) => <td key={c.khoa} className={`whitespace-nowrap px-2.5 text-center tabular-nums ${dauNhom.has(c.khoa) ? KE_TRAI : ''}`}>{oCell(row, c)}</td>);

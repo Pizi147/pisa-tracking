@@ -4,7 +4,7 @@
  * Theo GV chỉ vai có `analysis.view_teacher` hoặc CX (2E) — chặn ở máy chủ. Tuần dạy đọc theo `student_id` / `class_id` của tập (2 câu), không cả chi nhánh.
  */
 import {
-  PERMISSIONS, coMucThi, type MucGv, type OPtGv, kyNangThiLanNay, mucThi, thongKeThiThat, type DoanDay, type KetQuaThiThatKq, type KnDay, type KnThiThat, type ThongKeThiThat,
+  PERMISSIONS, coMucThi, soSanhDiem, type DongThiThatBang, type MucGv, type OPtGv, kyNangThiLanNay, mucThi, thongKeThiThat, type DoanDay, type KetQuaThiThatKq, type ThongKeThiThatWeb, type KnDay, type KnThiThat, type ThongKeThiThat,
 } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { db, theoLo } from '../db.ts';
@@ -13,6 +13,7 @@ import { addDays, badRequest, forbidden } from '../util.ts';
 import { mondayOf } from '../platform/week.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { ghiDanhCuaEm } from './lopLucThi.ts';
+import { tenChiNhanh } from './tongHop.ts';
 import { thiThatTrongKhoang, tongThiThat, type LocKetQuaThi, type ThiThatTho } from './ketQuaThi.ts';
 
 /** 2E: khối Theo GV — QL, Quản trị (`analysis.view_teacher`), CX. TVV / GV không. */
@@ -65,9 +66,7 @@ export function tuanDay(ds: readonly ThiThatTho[]): { day: Map<number, DoanDay[]
   return { day, ten };
 }
 
-/** Dòng Theo GV gửi web: không kèm `ds` (panel đọc riêng khi bấm). */
-export type DongGvThiWeb = Omit<ThongKeThiThat['gv'][number], 'ds'> & { ten: string };
-export type ThiThatTabKq = KetQuaThiThatKq & { thongKe: Omit<ThongKeThiThat, 'gv'> & { gv: DongGvThiWeb[] | null } };
+export type ThiThatTabKq = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb };
 
 /** GET /phan-tich/thi-that — danh sách (như `ket-qua-thi?loai=thi-that`) + thống kê. ≤ 6 câu: thi thật · lớp lúc thi (2) · lớp · ghi danh (chung) · phân công. */
 export function thiThatTab(p: Principal, f: LocKetQuaThi): ThiThatTabKq {
@@ -81,14 +80,6 @@ export function thiThatTab(p: Principal, f: LocKetQuaThi): ThiThatTabKq {
   };
 }
 
-/** Dòng panel P-TT / P-GV: em · lớp · ngày thi · L R W S · OVR · Target (+ tuần dạy / tổng ở P-GV). */
-export type DongPanelTt = {
-  cycleId: number; studentId: number; ten: string; classId: number | null; lop: string | null; ngay: string | null;
-  l: number | null; r: number | null; w: number | null; s: number | null; ovr: number | null; target: number | null; kck: boolean;
-  /** Kỹ năng thi lần này khi thi lại (ô khác lấy lại, mờ "↺"). */
-  thiLai: KnThiThat[] | null;
-  tuan?: { day: number; tong: number };
-};
 const NHAN_MUC = { hv: 'HV', exceed: 'Exceed', dat: 'Đạt', fail: 'Fail' } as const;
 const NHAN_KN: Record<KnDay | KnThiThat, string> = { l: 'L', r: 'R', w: 'W', w1: 'W1', w2: 'W2', s: 'S' };
 
@@ -96,18 +87,26 @@ const NHAN_KN: Record<KnDay | KnThiThat, string> = { l: 'L', r: 'R', w: 'W', w1:
  * GET /phan-tich/thi-that/o — panel một ô. `o`: `tong:<thi|exceed|dat|fail|khong-thi>` · `kn:<l|r|w|s>:<hv|exceed|dat|fail>` ·
  * `gv:<userId>:<l|r|w1|w2|s>:<hv|exceed|dat|fail>` (chỉ vai Theo GV — 403). Lọc CHÍNH tập sinh ra số.
  */
-export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): { n: number; tieuDe: string; rows: DongPanelTt[]; bangLuot: true; kieu: 'thi-that'; knNhan: string | null } {
+export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): {
+  n: number; tieuDe: string; rows: { id: number; thiThat: DongThiThatBang }[]; bangLuot: true; kieu: 'thi-that'; knNhan: string | null; cachTinh: string; chiNhanh: string | null; dem: string | null;
+} {
   const m = /^(?:tong:(thi|exceed|dat|fail|khong-thi)|kn:([lrws]):(hv|exceed|dat|fail)|gv:(\d+):(l|r|w1|w2|s):(hv|exceed|dat|fail))$/.exec(f.o);
   if (!m) throw badRequest('Số này không có trong Thi thật — có thể bộ lọc vừa đổi.');
   if (m[4] && !coTheoGv(p)) throw forbidden('Theo GV dành cho Quản lý, Quản trị và CX.');
   const ds = thiThatTrongKhoang(p, f, { boQuyen: true });
-  const dong = (x: ThiThatTho, tuan?: DongPanelTt['tuan']): DongPanelTt => ({
-    cycleId: x.kq.cycleId, studentId: x.kq.studentId, ten: x.dong.ten, classId: x.dong.classId, lop: x.dong.lop, ngay: x.dong.ngayThi,
-    l: x.kq.l, r: x.kq.r, w: x.kq.w, s: x.kq.s, ovr: x.kq.ovr, target: x.kq.target, kck: x.kq.kck, thiLai: x.kq.thiLai, ...(tuan ? { tuan } : {}),
-  });
-  let rows: DongPanelTt[];
+  const dong = (x: ThiThatTho, tuan?: DongThiThatBang['tuan']): DongThiThatBang => {
+    const { kq } = x;
+    const kqCua = (v: number | null) => (v === null ? null : { v, kq: kq.kck ? null : soSanhDiem(v, kq.target) });
+    return {
+      cycleId: kq.cycleId, studentId: kq.studentId, ten: x.dong.ten, classId: x.dong.classId, lop: x.dong.lop ?? '', ngay: x.dong.ngayThi,
+      kn: { l: kqCua(kq.l), r: kqCua(kq.r), w: kqCua(kq.w), s: kqCua(kq.s) }, ovr: kqCua(kq.ovr), target: kq.target, kck: kq.kck,
+      layLai: kq.thiLai ? (['l', 'r', 'w', 's'] as const).filter((k) => !kq.thiLai!.includes(k)) : [], ...(tuan ? { tuan } : {}),
+    };
+  };
+  let rows: DongThiThatBang[];
   let nhan: string;
   let knNhan: string | null = null;
+  let dem: string | null = null;
   if (m[1]) {
     const o = m[1];
     rows = ds.filter((x) => (o === 'khong-thi' ? x.kq.khongThi : o === 'thi' ? !x.kq.khongThi : coMucThi(x.kq) && x.kq.ovr !== null && mucThi(x.kq.ovr, x.kq.target!) === o)).map((x) => dong(x));
@@ -122,10 +121,15 @@ export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): { n: nu
     const g = thongKeThiThat(ds.map((x) => x.kq), tuanDay(ds).day).gv.find((x) => x.userId === user && x.kn === kn);
     const theoId = new Map(ds.map((x) => [x.kq.cycleId, x]));
     rows = (g?.ds ?? []).filter((x) => m[6] === 'hv' || x.muc === m[6]).map((x) => dong(theoId.get(x.cycleId)!, { day: x.tuan, tong: x.tongTuan }));
+    /* C3: "6 / 11 HV Fail · 55 % theo tuần dạy" — số HV của nhóm / HV của dòng GV, % trọng số (số trên ô). */
+    if (g && m[6] !== 'hv') dem = t('{a} / {b} HV {nhan} · {pt} % theo tuần dạy', { a: rows.length, b: g.hv, nhan: NHAN_MUC[m[6] as 'fail'], pt: g[m[6] as 'fail'] });
     nhan = `${NHAN_MUC[m[6] as 'hv']} · ${NHAN_KN[kn]}`;
     knNhan = NHAN_KN[kn];
   }
-  return { n: rows.length, tieuDe: t('{nhan} · {n} HV', { nhan, n: rows.length }), rows, bangLuot: true, kieu: 'thi-that', knNhan };
+  const cachTinh = m[4] ? 'Mỗi HV tính theo tỉ lệ tuần GV dạy (cột Tuần dạy). Kỹ năng so Target overall.'
+    : m[2] ? 'Điểm kỹ năng so Target overall. Thi lại một kỹ năng: chỉ kỹ năng thi lần này. Không tính HV KCK.'
+      : 'OVR so Target: trên = Exceed · bằng = Đạt · dưới = Fail. HV KCK không vào %.';
+  return { n: rows.length, tieuDe: t('{nhan} · {n} HV', { nhan, n: rows.length }), rows: rows.map((r, i) => ({ id: i + 1, thiThat: r })), bangLuot: true, kieu: 'thi-that', knNhan, cachTinh, chiNhanh: tenChiNhanh(f.branchId), dem };
 }
 
 /** Kỹ năng dạy → khoá kỹ năng của Phân tích GV / hồ sơ GV (`COT_KET_QUA_GV.ft`). */

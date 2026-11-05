@@ -25,7 +25,8 @@ export type DoanDay = { userId: number; kn: KnDay; tuan: number };
 /** Một mục của dòng GV: em (lộ trình) · mức · band · tuần GV dạy / tổng tuần em học kỹ năng · trọng số. */
 export type MucGv = { cycleId: number; muc: MucThi; band: number; tuan: number; tongTuan: number; w: number };
 export type DemMuc = { exceed: number; dat: number; fail: number };
-export type DongGvThi = { userId: number; kn: KnDay; hv: number; tuan: number; tb: number | null; ds: MucGv[] } & DemMuc;
+/** `exceed` · `dat` · `fail` = % theo trọng số; `so` = số HV từng nhóm (= số dòng panel). */
+export type DongGvThi = { userId: number; kn: KnDay; hv: number; tuan: number; tb: number | null; ds: MucGv[]; so: DemMuc } & DemMuc;
 export type ThongKeThiThat = {
   tong: { thi: number; khongThi: number; kck: number } & DemMuc;
   kyNang: Record<KnThiThat, { hv: number; tb: number | null } & DemMuc>;
@@ -75,7 +76,7 @@ export function thongKeThiThat(kq: readonly KqThi[], day: ReadonlyMap<number, re
   const tl = (ds: MucGv[], m: MucThi) => ds.filter((x) => x.muc === m).reduce((a, x) => a + x.w, 0);
   const sw = (ds: MucGv[]) => ds.reduce((a, x) => a + x.w, 0);
   const gv: DongGvThi[] = [...theoGv.values()].map(({ userId, kn, ds }) => ({
-    userId, kn, hv: ds.length, tuan: ds.reduce((a, x) => a + x.tuan, 0), tb: mot(ds.reduce((a, x) => a + x.w * x.band, 0) / sw(ds)), ds,
+    userId, kn, hv: ds.length, tuan: ds.reduce((a, x) => a + x.tuan, 0), tb: mot(ds.reduce((a, x) => a + x.w * x.band, 0) / sw(ds)), ds, so: dem(ds.map((x) => x.muc)),
     exceed: pt(tl(ds, 'exceed'), sw(ds)), dat: pt(tl(ds, 'dat'), sw(ds)), fail: pt(tl(ds, 'fail'), sw(ds)),
   }));
   /* GV có Fail (trọng số, mọi kỹ năng) cao nhất trước; trong một GV: L R W1 W2 S. */
@@ -87,3 +88,7 @@ export function thongKeThiThat(kq: readonly KqThi[], day: ReadonlyMap<number, re
   gv.sort((a, b) => failGv.get(b.userId)! - failGv.get(a.userId)! || a.userId - b.userId || KN_DAY.indexOf(a.kn) - KN_DAY.indexOf(b.kn));
   return { tong, kyNang, gv };
 }
+
+/** GET /phan-tich/thi-that — `thongKe.gv` không kèm `ds` (panel đọc riêng khi bấm); null = vai không xem Theo GV (TVV, GV — 2E). */
+export type DongGvThiWeb = Omit<DongGvThi, 'ds'> & { ten: string };
+export type ThongKeThiThatWeb = Omit<ThongKeThiThat, 'gv'> & { gv: DongGvThiWeb[] | null };

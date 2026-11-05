@@ -107,7 +107,8 @@ export async function runPrThiThatTkTests(t: any) {
     assert(moi && moi.tuan === 8 && moi.fail === 100, `GV W1 8 tuần, Fail 100 %: ${JSON.stringify(w1)}`);
     assert(cu && cu.tuan === 4, `GV cũ 4 tuần: ${JSON.stringify(cu)}`);
     const o = tk.oThiThat(P.mbManager, { ...f, o: `gv:${P.w1Teacher.userId}:w1:fail` });
-    assert(o.n === 1 && o.rows[0].cycleId === cy && o.rows[0].tuan.day === 8 && o.rows[0].tuan.tong === 12, `panel P-GV 8/12: ${JSON.stringify(o.rows)}`);
+    const r0 = o.rows[0]?.thiThat;
+    assert(o.n === 1 && r0.cycleId === cy && r0.tuan.day === 8 && r0.tuan.tong === 12 && r0.kn.w.kq === 'duoi' && r0.ovr.kq === 'bang', `panel P-GV 8/12: ${JSON.stringify(o.rows)}`);
     assert(o.kieu === 'thi-that' && o.knNhan === 'W1', 'kiểu thi-that, cột W1 tô nền');
   }));
 
