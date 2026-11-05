@@ -43,6 +43,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { DiemKq } from '../../ui/KhuonViec.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
+import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import { DaiXetLai } from '../classes/PanelXetLai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -310,6 +311,8 @@ export default function StudentDetailPage() {
         onLam={(k) => {
           if (k === 'huy-lenh') { setViecQuanLy('chuyen-lop'); return; }
           const d = data.dai;
+          /* BAN-GIAO-NHAN (chủ SP 05/11): đọc phiếu tại hồ sơ — trang lớp cũ 403 với GV lớp mới không dạy lớp cũ. */
+          if (k === 'doc-ban-giao') { const n = new URLSearchParams(params); n.set('ban-giao', String(d.lenhId)); setParams(n, { replace: true }); return; }
           navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);
         }} />
 
@@ -456,6 +459,7 @@ export default function StudentDetailPage() {
         <HopGiaHan x={{ cycleId: data.sauThi.cycleId, han: data.sauThi.han, daGiaHan: data.sauThi.daGiaHan }} hocVien={data.fullName} lop={lopTruocSau?.code ?? null}
           onClose={() => setGiaHan(false)} onDone={reload} />
       )}
+      {p.banGiao != null && <BanGiaoPanel docLenh={p.banGiao} onClose={() => xoaThamSo('ban-giao')} onDone={() => {}} />}
       {p.tongKet != null && <NganTongKet cycleId={p.tongKet} onClose={() => xoaThamSo('tong-ket')} onDoi={reload} />}
       {(p.buocTiep != null || quayLaiBt) && (
         <PanelBuocTiep cycleId={p.buocTiep ?? bt!.cycleId} hocVien={{ id: data.id, ten: data.fullName }} lop={lopTruocSau?.code ?? null}

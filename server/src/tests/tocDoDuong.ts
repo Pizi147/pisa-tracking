@@ -148,6 +148,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp · Phân công GV', vai: ['QL', 'QT', 'CX', 'GVCN', 'GVBM', 'TVV'], url: '/hoc-vien-lop/phan-cong?branchId={cn}', maChuDich: { GVCN: 403, GVBM: 403, TVV: 403 } },
   /* PR-B: phiếu bàn giao khi đổi GV (MB FT 101, đã xác nhận, chưa chụp — đường tự điền sống, nặng nhất) — số câu không theo số em. */
   { trang: 'Bàn giao đổi GV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/ban-giao-gv/{bgGv}' },
+  /* BAN-GIAO-NHAN (05/11): một phiếu chuyển lớp đã xác nhận, đọc theo lệnh — panel tại hồ sơ HV (dải Đã chuyển, thẻ chương, chuông của GV lớp mới). */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT'], url: '/lenh-chuyen/{lenhBg}/ban-giao' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/ids' },   // PR-TD2-b: Trước/Sau của hồ sơ lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru?branchId={cn}' },
 
@@ -417,6 +419,7 @@ export const TRAN: Record<string, number> = {
   'QT /admin/accounts': 21,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
   'QL /ban-giao-gv/1': 31, 'QT /ban-giao-gv/1': 30, 'GVCN /ban-giao-gv/1': 31, 'GVBM /ban-giao-gv/1': 30,
+  'QL /lenh-chuyen/{lenhBg}/ban-giao': 23, 'QT /lenh-chuyen/{lenhBg}/ban-giao': 23,   // BAN-GIAO-NHAN 05/11: đo 13 → max(n+10, ⌈n×1,3⌉)
   /* PR-B BAN-GIAO-GV: /my-work + viec-theo-em +1 câu (việc bàn giao khi đổi GV — một câu cho mọi việc; phân công lớp đích "Cùng GV" đi cùng câu lệnh sẵn có). */
   /* PC-GV-A: góc Phân công GV cả chi nhánh — trần = max(đo+10, ⌈đo×1,3⌉), đo 30/10 (QL · QT · CX 16 · GV / TVV 403: 4). */
   'QL /hoc-vien-lop/phan-cong?branchId=1': 26, 'QT /hoc-vien-lop/phan-cong?branchId=1': 26, 'CX /hoc-vien-lop/phan-cong?branchId=1': 26,
@@ -1036,6 +1039,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /lich-su?loai=yeu-cau&id={ycPa}': 54,   // PANEL-MC: đo 4
   /* PR-B: phiếu bàn giao đổi GV 33 em (tự điền sống: kết quả, Case, Ý thức theo lô) — đo 30/10 QL 661 · QT 627 · GVCN 661 · GVBM 627 → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /ban-giao-gv/1': 860, 'QT /ban-giao-gv/1': 816, 'GVCN /ban-giao-gv/1': 860, 'GVBM /ban-giao-gv/1': 816,
+  'QL /lenh-chuyen/{lenhBg}/ban-giao': 60, 'QT /lenh-chuyen/{lenhBg}/ban-giao': 60,   // BAN-GIAO-NHAN 05/11: đo 27 dòng, nhân dữ liệu vẫn 27
   /* PC-GV-A: góc Phân công GV — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (235 dòng: lớp + phân công + ứng viên chi nhánh). */
   'QL /hoc-vien-lop/phan-cong?branchId=1': 306, 'QT /hoc-vien-lop/phan-cong?branchId=1': 306, 'CX /hoc-vien-lop/phan-cong?branchId=1': 306,
   /* HSL-MAY-CHU: trần = max(đo+50, ⌈đo×1,3⌉), đo 27/10 (100 · 64 · 100 dòng). */

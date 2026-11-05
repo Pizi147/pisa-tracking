@@ -175,6 +175,10 @@ const LUOT_THUONG = (conn.prepare(`SELECT id FROM assessment_attempts WHERE clas
 /** PR-TK: lớp ĐÃ KẾT THÚC có bản chụp (lớp cũ của em có lộ trình đóng) — đường `/classes/{lopKetThuc}/tong-ket`. Bộ demo chưa có lớp kết thúc → đặt lớp cũ đó `finished`. */
 const LOP_KET_THUC = (conn.prepare('SELECT class_id AS id FROM ban_chup_lo_trinh WHERE cycle_id = ? AND class_id IS NOT NULL').get(LO_TRINH_DONG) as any)?.id as number;
 assert(LOP_KET_THUC, 'Bản chụp mẫu thiếu lớp');
+/** BAN-GIAO-NHAN: phiếu chuyển lớp ĐÃ XÁC NHẬN của chi nhánh mẫu — `/lenh-chuyen/{lenhBg}/ban-giao`. */
+const LENH_BG = (conn.prepare(`SELECT l.id FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id
+   WHERE c.branch_id = ? AND l.xac_nhan_luc IS NOT NULL AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY l.id LIMIT 1`).get(CN) as any)?.id as number;
+assert(LENH_BG, 'Seed thiếu phiếu bàn giao đã xác nhận ở chi nhánh MB');
 conn.prepare(`UPDATE classes SET status = 'finished', finished_at = COALESCE(finished_at, ?) WHERE id = ?`).run(new Date().toISOString().slice(0, 10), LOP_KET_THUC);
 const KASE = (
   conn
@@ -243,6 +247,7 @@ function urlFor(mau: string): string {
     .replace('{paTutor}', String(PA_TUTOR))
     .replace('{ycPa}', String(YC_PA))
     .replace('{bgGv}', String(BG_GV))
+    .replace('{lenhBg}', String(LENH_BG))
     .replace('{cn}', String(CN))
     .replace('{gv}', String(USER.GVCN));
 }

@@ -23,13 +23,15 @@ import { dich, t } from '@shared/i18n/index.ts';
  *   kiểm ≥ 15 ký tự). Chủ SP 30/10: môn ở lớp mới vẫn đúng GV cũ dạy → "Cùng GV · không cần bàn giao"; GVCN cùng người → nhận xét chung tuỳ chọn.
  *   Đọc: GV / Quản lý lớp mới, hoặc bất kỳ ai không ghi được — cùng bố cục F, chỉ đọc, hiện "Xác nhận bởi …".
  * Lối vào: Công việc › việc Bàn giao · hồ sơ lớp › dải Bàn giao / Sắp nhận · hồ sơ học viên › dải Sắp chuyển (mở thẳng em đó — `lenhId`).
+ * BAN-GIAO-NHAN (chủ SP 05/11): `docLenh` — hồ sơ HV (dải Đã chuyển, thẻ chương, chuông) đọc MỘT phiếu theo lệnh, chỉ đọc, không cần quyền xem lớp cũ.
  */
-export function BanGiaoPanel({ classId, mon, lenhId, onClose, onDone, quayLai }: {
-  classId: number; mon?: string | null; lenhId?: number | null; onClose: () => void; onDone: () => void;
+export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, quayLai }: {
+  classId?: number; docLenh?: number; mon?: string | null; lenhId?: number | null; onClose: () => void; onDone: () => void;
   /** OV-15h1: mở thay panel Lộ trình ở Tổng quan — "‹ Lộ trình" về lại panel đó. */
   quayLai?: { nhan: string; onClick: () => void };
 }) {
-  const { data, loading, error, reload } = useApi<PhieuBanGiaoDto>(`/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}`, [classId, mon]);
+  const { data, loading, error, reload } = useApi<PhieuBanGiaoDto>(
+    docLenh ? `/lenh-chuyen/${docLenh}/ban-giao` : `/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}`, [docLenh, classId, mon]);
   if (error) {
     return (
       <KhungPanel quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
@@ -42,10 +44,10 @@ export function BanGiaoPanel({ classId, mon, lenhId, onClose, onDone, quayLai }:
   }
   const monToi = data.nguoiXem.monGhi;
   /* G: chỉ GVBM (không GVCN, không Quản lý thay) mở kèm môn của mình. */
-  const cheDoG = !data.nguoiXem.gvcn && !data.nguoiXem.xacNhan && data.nguoiXem.xemTuNguon && monToi.length > 0;
+  const cheDoG = !docLenh && !data.nguoiXem.gvcn && !data.nguoiXem.xacNhan && data.nguoiXem.xemTuNguon && monToi.length > 0;
   return cheDoG
     ? <BangGvbm dto={data} mons={monMo(mon, monToi)} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />
-    : <MasterDetail dto={data} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
+    : <MasterDetail dto={data} lenhId={docLenh ?? lenhId ?? null} chiDoc={!!docLenh} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
 }
 
 /*
@@ -61,11 +63,11 @@ function useLamMoiPhieuKhiDong() {
   return () => { if (r.current.song) r.current.doi = true; else invalidate('/lenh-chuyen'); };
 }
 
-type Chung = { dto: PhieuBanGiaoDto; lenhId: number | null; onClose: () => void; onDone: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void } };
+type Chung = { dto: PhieuBanGiaoDto; lenhId: number | null; chiDoc?: boolean; onClose: () => void; onDone: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void } };
 
 // ==================================================================== F · GVCN
 
-function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) {
+function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }: Chung) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const [chon, setChon] = useState<number | null>(lenhId ?? dto.ds.find((e) => !e.xacNhan)?.lenhId ?? dto.ds[0]?.lenhId ?? null);
@@ -77,7 +79,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
   /* OV-7a: phiếu đã xác nhận — "Sửa" mở lại ô nhận xét + câu từng môn (tới ngày thi hành lệnh; sau đó chỉ Quản lý). */
   const [dangSua, setDangSua] = useState(false);
   const [nxLuu, setNxLuu] = useState<'yen' | 'luu' | 'da' | 'loi'>('yen');
-  const ghi = dto.nguoiXem.xemTuNguon && dto.nguoiXem.xacNhan;   // được viết nhận xét + xác nhận (GVCN, hoặc Quản lý thay)
+  const ghi = !chiDoc && dto.nguoiXem.xemTuNguon && dto.nguoiXem.xacNhan;   // được viết nhận xét + xác nhận (GVCN, hoặc Quản lý thay)
   const suaPhieu = !!em?.xacNhan && dangSua;
   const docThoi = !ghi && !suaPhieu;
 
@@ -162,7 +164,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
 
   return (
     <KhungPanel quayLai={quayLai} rong="vua" loai={ghi ? t('VIỆC · BÀN GIAO') : t('BÀN GIAO · ĐỌC')} tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
-      ngCanh={<span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · {t('hạn sớm nhất {ngay}', { ngay: shortDate(dto.hanGvcn, homNay) })}{quaHanSom != null && <> · {dto.hanGvcnEm} <QuaHan ngay={quaHanSom} /></>}</>}</span>}
+      ngCanh={chiDoc ? undefined : <span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · {t('hạn sớm nhất {ngay}', { ngay: shortDate(dto.hanGvcn, homNay) })}{quaHanSom != null && <> · {dto.hanGvcnEm} <QuaHan ngay={quaHanSom} /></>}</>}</span>}
       chan={{
         daSua: daSuaNx,
         huy: suaPhieu
@@ -175,7 +177,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || (canNx && !nhap.trim())} title={canNx && !nhap.trim() ? t('Viết nhận xét chung trước khi xác nhận') : undefined}>{dich(CHU_CHUYEN_LOP.banGiao)}</button>
         ) : suaPhieu ? (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuSua} disabled={busy}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
-        ) : em?.xacNhan && em.suaDuoc && (ghi || dto.nguoiXem.ql) ? (
+        ) : !chiDoc && em?.xacNhan && em.suaDuoc && (ghi || dto.nguoiXem.ql) ? (
           <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>{t('Sửa')}</button>
         ) : undefined,
         conThieu: daBam && thieu && em && (ghi || suaPhieu) ? [{ nhan: t('Nhận xét chung'), oId: 'o-nhan-xet' }] : undefined,
@@ -183,15 +185,15 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
       }}>
       {dto.ds.length === 0 && <p className="mt-3 text-sm text-slate-400">{t('Không có em nào cần bàn giao.')}</p>}
       {em && (
-        <div className="grid gap-4 pt-3 md:grid-cols-[280px_minmax(0,1fr)]">
-          <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={dto.ds.map((e) => ({ ...e, id: e.lenhId }))} chon={em.lenhId} onChon={setChon}
+        <div className={`grid gap-4 pt-3 ${chiDoc ? '' : 'md:grid-cols-[280px_minmax(0,1fr)]'}`}>
+          {!chiDoc && <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={dto.ds.map((e) => ({ ...e, id: e.lenhId }))} chon={em.lenhId} onChon={setChon}
             trangThai={(e) => ({ khoa: e.phieu.khoa === 'da-xac-nhan' ? 'du' : e.phieu.khoa === 'mon' ? 'thieu' : 'muted', nhan: dich(e.phieu.nhan) })}
             phu={(e) => (
               <>
                 <span className="min-w-0 truncate">{e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `${t('Tạm dừng học (bảo lưu)')}${e.ngayXemLai ? ` · ${t('xem lại {tuan}', { tuan: tuanLich(e.ngayXemLai, homNay) })}` : ''}` : tuanLich(e.tuan, homNay)}</span>
                 {quaHan(e) != null && <QuaHan ngay={quaHan(e)} />}
               </>
-            )} />
+            )} />}
 
           <div className="min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -278,7 +280,7 @@ function MasterDetail({ dto, lenhId, onClose, onDone, reload, quayLai }: Chung) 
           </div>
         </div>
       )}
-      {dsXn === 0 && dto.ds.length > 0 && <p className="mt-4 text-xs text-slate-400">{t('Đã xác nhận đủ {n} em.', { n: dto.tong })}</p>}
+      {!chiDoc && dsXn === 0 && dto.ds.length > 0 && <p className="mt-4 text-xs text-slate-400">{t('Đã xác nhận đủ {n} em.', { n: dto.tong })}</p>}
     </KhungPanel>
   );
 }

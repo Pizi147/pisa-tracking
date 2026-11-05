@@ -1,5 +1,5 @@
 import { Fragment, useState, type ReactNode } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { SCORE_CHIP, type ScoreTone } from '../../ui/ui.tsx';
 import { CHIP_TRON, CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -114,7 +114,6 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
 
 /** Một thẻ chương (desktop; điện thoại dùng cho chương đang học). */
 function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon: (c: ChuongWeb) => void }) {
-  const navigate = useNavigate();
   /* N37: Case · PA một tuyến — bấm tên Case mở Case tại chỗ (hồ sơ HV đọc `?case=`, giữ tab đang xem). */
   const [params, setParams] = useSearchParams();
   const moCase = (caseId: number) => { const n = new URLSearchParams(params); n.set('case', String(caseId)); setParams(n, { replace: true }); };
@@ -190,7 +189,8 @@ function TheChuong({ c, homNay, onChon }: { c: ChuongWeb; homNay: string; onChon
             {c.ra.docBanGiao && (
               <button type="button" className="btn btn-sm mt-1 self-start" onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/hoc-vien/lop/${c.ra!.docBanGiao!.lopNguonId}?viec=ban-giao&lenh=${c.ra!.docBanGiao!.lenhId}`);
+                /* BAN-GIAO-NHAN: panel đọc tại hồ sơ (`?ban-giao=`) — trang lớp cũ 403 với GV lớp mới. */
+                const n = new URLSearchParams(params); n.set('ban-giao', String(c.ra!.docBanGiao!.lenhId)); setParams(n, { replace: true });
               }}>{t('Đọc bàn giao')}</button>
             )}
           </>
