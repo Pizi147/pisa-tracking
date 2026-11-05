@@ -102,7 +102,8 @@ export async function runPrOv11eTests(t: YThucTestKit) {
 
   check('OV11e-2b · link `?trong=cu` (Công việc + Lịch Test) đi hết đường: TestPage → PanelNhapDiemLop → DiemTheoLop locBanDau', () => {
     const f = (p: string) => readFileSync(new URL(`../../../../web/src/${p}`, import.meta.url), 'utf8');
-    assert(/params\.get\('trong'\)/.test(f('modules/test/TestPage.tsx')) && /<PanelNhapDiemLop[^>]*loc=/.test(f('modules/test/TestPage.tsx')), 'TestPage phải đọc ?trong= và truyền loc cho panel');
+    assert(d.locTuThamSoTrong('cu') === 'cu' && d.locTuThamSoTrong('1') === 'trong' && d.locTuThamSoTrong('') === 'trong' && d.locTuThamSoTrong(null) === undefined, 'locTuThamSoTrong: cu → cu, có tham số → trong, không có → không lọc');
+    assert(/<PanelNhapDiemLop[^>]*loc=\{locTuThamSoTrong\(params\.get\('trong'\)\)\}/.test(f('modules/test/TestPage.tsx')), 'TestPage phải truyền locTuThamSoTrong(?trong=) cho panel');
     assert(/locBanDau=\{loc/.test(f('modules/cham/PanelNhapDiemLop.tsx')), 'PanelNhapDiemLop phải truyền locBanDau cho DiemTheoLop');
   });
 
