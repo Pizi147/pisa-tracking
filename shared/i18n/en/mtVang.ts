@@ -3,6 +3,7 @@ import type { Dich } from '../en.ts';
 
 export const EN_MT_VANG = {
   'Dời': 'Move',
+  'Đã huỷ · vắng': 'Cancelled · absent',
   'không dự thi': 'did not sit',
   'Không dự thi · Tuần {x}': 'Did not sit · Week {x}',
   'Đã ghi Không dự thi · {mon}{em}': 'Recorded did not sit · {mon}{em}',

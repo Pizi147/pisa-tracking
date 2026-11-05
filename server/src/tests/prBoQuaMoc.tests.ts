@@ -93,4 +93,20 @@ export async function runPrBoQuaMocTests(t: { check: any; assert: any; conn: any
     xoaNho(); s0 = soCauSql(); mywork.myWork(QL, { nguoi: 'tat-ca' }); const moSau = soCauSql() - s0;
     assert(moSau <= moTruoc, `mở Công việc thêm câu: ${moTruoc} → ${moSau}`);
   }));
+
+  /* MT-HUY-XONG (chủ SP 05/11 "hủy là hủy thôi"): MT kế đã huỷ hết (vắng / ngoài phạm vi) không phải mốc, không bắt xếp lại CHÍNH nó — việc nói MT sau. */
+  check('BQ-6 · MT kế huỷ hết (cũ: ngoài phạm vi không tuần · N38: huỷ vắng có tuần) → không việc "Xếp lịch MT" (không bắt QL xếp lại)', () => thu(() => {
+    const { key, id, mt } = dung();
+    const iv = one(`SELECT a.cycle_id, a.attempt_no FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id = ?`, id);
+    const ke = one(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?`, iv.cycle_id, iv.attempt_no + 1);
+    assert(ke, 'bộ thử thiếu lượt MT kế');
+    const tuanCuoi = one(`SELECT id FROM report_periods ORDER BY week_start DESC LIMIT 1`).id;
+    /* Bản 30/10: 4 kỹ năng ngoài phạm vi, lượt không tuần · luật N38: 4 kỹ năng huỷ vắng, tuần giữ trên dòng. */
+    for (const [ten, tuan, sua] of [['ngoài phạm vi, không tuần', null, `required = 0, huy_vang = 1`], ['huỷ vắng, có tuần', tuanCuoi, `required = 1, sit_status = 'cancelled', huy_vang = 1`]] as const) {
+      conn.prepare(`UPDATE assessment_attempts SET status = 'planned', planned_period_id = ? WHERE id = ?`).run(tuan, ke.id);
+      conn.prepare(`UPDATE attempt_skills SET ${sua}, planned_period_id = ? WHERE attempt_id = ?`).run(tuan, ke.id);
+      const it = (viec().items as any[]).find((x) => x.key === key);
+      assert(!it, `${ten}: còn việc "${it?.tieuDe}" (${mt})`);
+    }
+  }));
 }

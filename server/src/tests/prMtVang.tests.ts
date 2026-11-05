@@ -262,4 +262,23 @@ export async function runPrMtVangTests(t: YThucTestKit) {
     vang(a, 'listening', TRONG); vang(a, 'listening', BU);
     assert(ky(a, 'listening').huy_vang === 1 && dem() === truoc, `cần xếp lại ${truoc} → ${dem()}`);
   }));
+
+  /* MT-HUY-XONG (chủ SP 05/11 "hủy là hủy thôi"): đợt mọi kỹ năng đã huỷ / ngoài phạm vi = đợt KẾT THÚC — không chặn, không coi là lịch. */
+  check('MV-10 · đợt huỷ hết: không "Chưa có kế hoạch hợp lệ" (cả dữ liệu cũ required=0); không đếm vào "HV chưa có MT tiếp theo"', () => thu(() => {
+    const a = luot[0];
+    dung(a);
+    /* Dữ liệu cũ (bản 30/10, "Không mock lại"): 4 kỹ năng ngoài phạm vi sau vắng. */
+    conn.prepare(`UPDATE attempt_skills SET required = 0, huy_vang = 1 WHERE attempt_id = ?`).run(a);
+    xoaNho();
+    const cw = ss.completionWeekOf(ss.ensureSkillRows(a));
+    assert(cw.valid && !cw.blocking.length, `đợt ngoài phạm vi hết vẫn bị chặn: ${JSON.stringify(cw)}`);
+    /* "HV chưa có MT tiếp theo" không đếm em vì đợt huỷ hết (chủ SP: không nhắc QL xếp lại) — bằng số khi đợt còn lịch như thường. */
+    dung(a);
+    const chua = () => { xoaNho(); return kh.danhSachLop(QL, {}).lop.find((l: any) => l.id === lop).chuaCoLichTiep as number; };
+    const kyVong = chua();
+    conn.prepare(`UPDATE attempt_skills SET required = 0, huy_vang = 1, planned_period_id = NULL WHERE attempt_id = ?`).run(a);
+    ss.recomputeCompletionWeek(a, null);
+    assert(one('SELECT planned_period_id p FROM assessment_attempts WHERE id = ?', a).p === null, 'tiền đề: dữ liệu cũ, lượt không tuần');
+    assert(chua() === kyVong, `dữ liệu cũ: HV chưa có MT tiếp theo ${chua()} ≠ ${kyVong}`);
+  }));
 }

@@ -9,7 +9,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -416,7 +416,10 @@ const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_i
          LEFT JOIN classes cc ON cc.id = cur.class_id
          LEFT JOIN users ub ON ub.id = iv.bo_qua_boi
         WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
-          AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}`;
+          AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
+          /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc QL xếp lại; QL vẫn tự xếp được. */
+          AND NOT EXISTS (SELECT 1 FROM assessment_attempts nx WHERE nx.cycle_id = a.cycle_id AND nx.attempt_no > a.attempt_no
+                            AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')})`;
 
 /** Chữ của việc `moc:` + `dau` = mốc đang thiếu (`mt{n}` | `thi`) — bỏ qua ghi mốc này; mốc khác thì việc hiện lại. */
 function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name: string | null }) {
