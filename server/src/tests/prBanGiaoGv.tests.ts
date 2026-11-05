@@ -153,6 +153,18 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     pc.hoanTacLuu(QL, { dao: h.dao });
     assert(viecCua(X)[0].trang_thai === 'mo' && cotCua(viecCua(X)[0].id)[0].trang_thai === 'mo', 'mở lại');
   }));
+  check('Sửa nhỏ 05/11 · hộp Chờ đổi: dòng chờ mang việc bàn giao a/b em đã viết + hạn (gộp vào câu lịch chờ, không có việc → không đọc thêm)', () => thu(() => {
+    luu(X, { listening: gB }, { hieuLuc: { loai: 'tuan', tuanId: T14 } });
+    const v = viecCua(X)[0];
+    bg.ghiGopYGv(loadPrincipal(gA), v.id, { studentId: emX[0], mon: 'listening', noiDung: 'Nghe tốt' });
+    xoaNho();
+    const choX = () => pc.trangPhanCongGv(QL, MB).lop.find((l: any) => l.id === X).cho;
+    const c = choX();
+    assert(c.length === 1 && c[0].banGiao?.id === v.id && c[0].banGiao.du === 1 && c[0].banGiao.tong === 2 && c[0].banGiao.han === v.han, JSON.stringify(c));
+    pc.huyCho(QL, c.map((x: any) => x.id));
+    xoaNho();
+    assert(choX().length === 0, 'huỷ lịch đổi → hết dòng chờ');
+  }));
   check('B1 · Hoàn tác lần lưu: việc vừa tạo mất; đã có góp ý → 409, không đảo gì', () => thu(() => {
     const r = luu(X, { listening: gB });
     pc.hoanTacLuu(QL, { lo: r.lo });

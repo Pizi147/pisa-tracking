@@ -37,6 +37,9 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
     assert(/useApi<[^>]*>\(mo \? `\/lich-su\?loai=yeu-cau&id=\$\{id\}` : null/.test(ls), `Lịch sử phải tải khi mở: ${ls.slice(0, 300)}`);
     assert(/if \(!n\) return null/.test(ls) && ls.includes('aria-expanded={mo}'), 'Lịch sử thiếu ẩn khi 0 / aria-expanded');
     assert(/<LichSuYeuCau id=\{yc\.id\} n=\{yc\.soLichSu/.test(hop), 'PanelDuyet chưa vẽ Lịch sử');
+    /* Sửa nhỏ 05/11: quyết xong → n theo số máy chủ trả kèm; danh sách đang mở tải lại khi n đổi. */
+    assert(the.includes('onXong(yc.id, xongChu, huyDuoc, kq?.soLichSu)') && hop.includes('soLichSu != null ? { ...y, soLichSu } : y'), 'panel kết quả chưa cộng Lịch sử');
+    assert(ls.includes(': null, [mo, id, n]);'), 'danh sách đang mở chưa tải lại khi n đổi');
   });
 
   check('D1 · chip SOS ở Chờ bạn duyệt (y.sos) + đầu panel; dòng Điểm ở bối cảnh dùng DongDiem', () => {

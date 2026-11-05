@@ -37,7 +37,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   yc: TheYeuCauDto;
   /** Sau khi thẻ đã được quyết (hoặc phát hiện đã bị người khác xử lý) — nơi gọi làm mới danh sách. `chu` = câu kết quả (chỉ khi chính người dùng vừa quyết).
    *  `huy` = máy chủ báo quyết định vừa rồi còn Huỷ được (Q-RL2c: cờ `coTheHuy` trả về sau Duyệt / Từ chối). */
-  onXong: (id: number, chu?: string, huy?: boolean) => void;
+  onXong: (id: number, chu?: string, huy?: boolean, soLichSu?: number) => void;
   /** Bản gọn (Ngăn Case): không lặp học viên/lớp, không nút Mở. */
   gon?: boolean;
   /** Yêu cầu của tôi: không có nút quyết định. */
@@ -133,7 +133,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (busy) return;
     setBusy(true); setLoiMay(null);
     try {
-      const kq = put ? await api.put<{ coTheHuy?: boolean }>(duongDan, than) : await api.post<{ coTheHuy?: boolean }>(duongDan, than);
+      const kq = put ? await api.put<{ coTheHuy?: boolean; soLichSu?: number }>(duongDan, than) : await api.post<{ coTheHuy?: boolean; soLichSu?: number }>(duongDan, than);
       invalidate('/yeu-cau'); invalidate('/my-work'); invalidate('/cases'); invalidate('/tong-quan');
       /* UI-CON-LAI k3: quyết định CỦA CHÍNH MÌNH vừa bấm → Hoàn tác 5 s (đường "Huỷ quyết định" sẵn có — máy chủ kiểm lại quyền + trong ngày).
          Q-RL2c: theo cờ `coTheHuy` máy chủ trả về sau Duyệt / Từ chối (không danh sách loại cứng ở web). Sau 5 s: "Huỷ quyết định" ở Đã xử lý. */
@@ -142,7 +142,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       else toast.push('ok', xongChu);
       setO(null);
       if (o) traFocus();
-      onXong(yc.id, xongChu, huyDuoc);
+      onXong(yc.id, xongChu, huyDuoc, kq?.soLichSu);
     } catch (e: any) {
       /* Người khác đã xử lý / thẻ tự đóng: nói rõ rồi làm mới — không để người dùng bấm lại vào một thẻ đã chết. */
       if (e?.status === 400 && /đã được xử lý/.test(e.message ?? '')) { toast.push('error', e.message); onXong(yc.id); return; }

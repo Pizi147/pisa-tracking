@@ -140,12 +140,13 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
     boChuRoi(() => { setMoSan(o ? { id: y.id, o } : null); setVuaXong(null); moThe(y.id); });
   };
   /* Quyết ở panel: Công việc giữ panel thành thẻ kết quả; hộp đầy đủ đóng panel như cũ. Bị người khác xử lý trước (không `chu`) → đóng. */
-  const xongPanel = (id: number, chu?: string, huy?: boolean) => {
+  const xongPanel = (id: number, chu?: string, huy?: boolean, soLichSu?: number) => {
     if (gon && chu) {
       const i = ds.findIndex((x) => x.id === id);
       const tiep = [...ds.slice(i + 1), ...ds.slice(0, Math.max(i, 0))].find((x) => x.trangThai === 'cho')?.id ?? null;
       const y = ds[i];
-      if (y) { setVuaXong({ id, yc: y, chu, huy: !!huy, tiep }); giuCho(y, chu, !!huy); }
+      /* "Lịch sử · n" của panel kết quả: số máy chủ trả kèm quyết định (đã gồm dòng vừa ghi) — không gọi lại. */
+      if (y) { setVuaXong({ id, yc: soLichSu != null ? { ...y, soLichSu } : y, chu, huy: !!huy, tiep }); giuCho(y, chu, !!huy); }
     } else moThe(null);
     xong();
   };
@@ -404,7 +405,7 @@ type MoSan = 'duyet' | 'tu-choi' | 'tra-loi';
  *  DUYET-QL (mockup v10 #cv): thân cuộn, CHÂN DÍNH "Tiếp: {yêu cầu kế}" · Từ chối… · Duyệt (nút của thẻ vẽ vào chân qua portal); đầu có chip SOS;
  *  "Lịch sử · n" gập cuối thân. `xong` = vừa quyết ở panel: khối "✓ … · Hoàn tác", chân "✓ Đã lưu · Yêu cầu tiếp ›". */
 export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: {
-  yc: TheYeuCauDto; moSan?: MoSan; tiep?: TheYeuCauDto | null; onDong: () => void; onXong: (id: number, chu?: string, huy?: boolean) => void; onThemPa?: (caseId: number) => void;
+  yc: TheYeuCauDto; moSan?: MoSan; tiep?: TheYeuCauDto | null; onDong: () => void; onXong: (id: number, chu?: string, huy?: boolean, soLichSu?: number) => void; onThemPa?: (caseId: number) => void;
   xong?: { chu: string; onHoanTac?: () => void; onTiep: (y: TheYeuCauDto) => void };
 }) {
   const [chanEl, setChanEl] = useState<HTMLElement | null>(null);
@@ -454,10 +455,11 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
   );
 }
 
-/** DUYET-QL: "Lịch sử · n ▸" gập cuối thân panel duyệt — bấm mở tại chỗ, CHỈ khi mở mới gọi `/lich-su?loai=yeu-cau` (≤ 3 câu, ≤ 50 dòng). */
+/** DUYET-QL: "Lịch sử · n ▸" gập cuối thân panel duyệt — bấm mở tại chỗ, CHỈ khi mở mới gọi `/lich-su?loai=yeu-cau` (≤ 3 câu, ≤ 50 dòng).
+ *  `n` đổi (quyết xong — số máy chủ trả kèm) mà danh sách đang mở → tải lại đúng phần lịch sử; đang gập thì không gọi gì. */
 function LichSuYeuCau({ id, n }: { id: number; n: number }) {
   const [mo, setMo] = useState(false);
-  const { data, loading, error, reload } = useApi<{ dong: { luc: string; nguoi: string | null; chu: string }[] }>(mo ? `/lich-su?loai=yeu-cau&id=${id}` : null, [mo, id]);
+  const { data, loading, error, reload } = useApi<{ dong: { luc: string; nguoi: string | null; chu: string }[] }>(mo ? `/lich-su?loai=yeu-cau&id=${id}` : null, [mo, id, n]);
   if (!n) return null;
   return (
     <div className="mt-4 grid gap-2 border-t pt-3" style={{ borderColor: 'var(--line)' }}>

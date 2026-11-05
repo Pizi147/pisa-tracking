@@ -20,7 +20,7 @@ import { allProgrammes, programmeByCode, programmeOfClass } from '../normal/regu
 import { classProgressMany } from './schedule.ts';
 import { boCotPhu, caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi, docViecLo, type ViecLop } from '../cases/owner.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, monGopConCanMany, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
-import { doiMocViecTheoDoi, docBanGiaoLo, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi } from './banGiaoGv.ts';
+import { doiMocViecTheoDoi, docBanGiaoLo, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi, viecBanGiaoGv } from './banGiaoGv.ts';
 
 export type LuuLopVao = { classId: number; slots: TeacherSlot[]; phienBan?: string; banGiao?: Record<string, boolean> };
 /** `viec` = số việc bàn giao mới (PR-B). */
@@ -520,8 +520,20 @@ export function trangPhanCongGv(p: Principal, branchId: number | null): TrangPha
     return m;
   };
   const ta = theoLop(conn.prepare(`SELECT id, class_id, user_id, skill, is_core FROM teacher_assignments WHERE status = 'active' AND class_id IN (${LOP})`).all(cn) as any[], (r) => r);
-  const cho = theoLop(conn.prepare(`SELECT id, class_id, khoa, nguoi_cu, nguoi_moi, hieu_luc, loi FROM doi_phan_cong WHERE trang_thai = 'cho' AND class_id IN (${LOP}) ORDER BY id`).all(cn) as any[],
-    (r): DoiChoPc => ({ id: r.id, khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi, hieuLuc: r.hieu_luc, loi: r.loi }));
+  /* Hộp Chờ đổi: việc bàn giao đang mở của dòng chờ (cột `ban_giao_gv_mon.doi_id`) — gộp vào câu lịch chờ; tiến độ a/b em chỉ đọc khi có việc. */
+  const choRows = conn.prepare(
+    `SELECT d.id, d.class_id, d.khoa, d.nguoi_cu, d.nguoi_moi, d.hieu_luc, d.loi,
+            (SELECT m.ban_giao_id FROM ban_giao_gv_mon m JOIN ban_giao_gv b ON b.id = m.ban_giao_id
+              WHERE m.doi_id = d.id AND m.trang_thai = 'mo' AND b.trang_thai = 'mo' LIMIT 1) AS bg
+       FROM doi_phan_cong d WHERE d.trang_thai = 'cho' AND d.class_id IN (${LOP}) ORDER BY d.id`,
+  ).all(cn) as any[];
+  const bgIds = [...new Set(choRows.map((r) => r.bg as number | null).filter((x): x is number => x != null))];
+  const bg = new Map(bgIds.length ? viecBanGiaoGv(null, null, bgIds).map((v) => [v.id, v] as const) : []);
+  const cho = theoLop(choRows, (r): DoiChoPc => {
+    const v = r.bg != null ? bg.get(r.bg) : undefined;
+    return { id: r.id, khoa: r.khoa, nguoiCu: r.nguoi_cu, nguoiMoi: r.nguoi_moi, hieuLuc: r.hieu_luc, loi: r.loi,
+      banGiao: v ? { id: v.id, du: v.du, tong: v.tong, han: v.han } : null };
+  });
   const tienDo = classProgressMany(lopRows.map((l) => l.id as number));
   const ungVien = teacherCandidatesBranch(cn);
   const laUngVien = new Set(ungVien.map((u) => u.id as number));

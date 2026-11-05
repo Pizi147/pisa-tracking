@@ -135,4 +135,7 @@ export const EN_PHAN_CONG_GV = {
   "⚠ đã nghỉ": "⚠ left",
   "{n} lớp FT nữa": "{n} more FT classes",
   "{n} lớp nữa": "{n} more classes",
+  /* Hộp Chờ đổi: tiến độ việc bàn giao */
+  "Việc bàn giao của {gv}:": "{gv}'s handover task:",
+  "đã viết": "written",
 };

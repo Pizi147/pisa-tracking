@@ -74,7 +74,7 @@ export async function runPrUiConLaiTests(t: any) {
     assert(/<CayDuyet ds=\{(dsHien|dsCay)\}/.test(h) && /createPortal\(/.test(h) && /\bkhuPanel,\r?\n/.test(h), 'bản gọn = cây + panel vào cột phải');
     assert(/onDuyet\(y\)/.test(h) && /onMo\(y, 'tu-choi'\)/.test(h) && /onMo\(y, 'tra-loi'\)/.test(h) && /t\('Mở ›'\)/.test(h), 'thao tác của dòng');
     assert(/huy-quyet-dinh/.test(h) && /t\('Yêu cầu tiếp ›'\)/.test(h) && /if \(gon && id\) \{ next\.delete\('viec'\)/.test(h), 'Hoàn tác · Yêu cầu tiếp · bỏ panel việc');
-    assert(/moSan === 'tu-choi' \|\| moSan === 'tra-loi'/.test(the) && /onXong\(yc\.id, xongChu(, huyDuoc)?\)/.test(the), 'panel mở sẵn ô + câu kết quả');
+    assert(/moSan === 'tu-choi' \|\| moSan === 'tra-loi'/.test(the) && /onXong\(yc\.id, xongChu(, huyDuoc(, kq\?\.soLichSu)?)?\)/.test(the), 'panel mở sẵn ô + câu kết quả');
     const iTrai = cv.indexOf('{coDuyet && ('), iDs = cv.indexOf('<DanhSachViec nhom=');
     assert(iTrai > 0 && iTrai < iDs && cv.indexOf('lg:grid lg:grid-cols-[520px') < iTrai, 'Chờ bạn duyệt trong cột trái, trước nhóm việc');
     assert(!/chờ bạn duyệt', \{ n: demDuyet/.test(cv) && /kieu="chon" chuTatCa=\{t\('Mọi khung'\)\}/.test(cv) && /next\.delete\('the'\);/.test(cv), 'bỏ chữ trùng đầu trang · Mọi khung · mở việc bỏ panel duyệt');

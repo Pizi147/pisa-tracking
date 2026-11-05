@@ -304,17 +304,18 @@ export type ViecBanGiaoGv = { id: number; userId: number | null; lopId: number; 
 
 /**
  * Việc bàn giao đổi GV đang mở: của MỘT người (`nguoi_lam = userId`, kèm việc không người viết — nơi gọi lọc QL bằng `can`), hoặc mọi người
- * (`userId` null). Ba câu cho mọi việc: việc × cột · em đang học các lớp · góp ý đã có.
+ * (`userId` null); `ids` = chỉ các việc này (hộp Chờ đổi). Ba câu cho mọi việc: việc × cột · em đang học các lớp · góp ý đã có.
  */
-export function viecBanGiaoGv(userId: number | null, branchId?: number | null): ViecBanGiaoGv[] {
+export function viecBanGiaoGv(userId: number | null, branchId?: number | null, ids?: readonly number[]): ViecBanGiaoGv[] {
   const conn = db();
-  const dk = [`b.trang_thai = 'mo'`, ...(userId !== null ? ['(b.nguoi_lam = ? OR b.nguoi_lam IS NULL)'] : []), ...(branchId ? ['c.branch_id = ?'] : [])];
+  const dk = [`b.trang_thai = 'mo'`, ...(userId !== null ? ['(b.nguoi_lam = ? OR b.nguoi_lam IS NULL)'] : []), ...(branchId ? ['c.branch_id = ?'] : []),
+    ...(ids ? [`b.id IN (${DS_JSON})`] : [])];
   const rows = conn.prepare(
     `SELECT b.id, b.class_id, b.nguoi_lam, b.han, c.code, c.programme_code AS ct, m.mon, u.full_name AS moi
        FROM ban_giao_gv b JOIN classes c ON c.id = b.class_id
        JOIN ban_giao_gv_mon m ON m.ban_giao_id = b.id AND m.trang_thai = 'mo' JOIN users u ON u.id = m.nguoi_moi
       WHERE ${dk.join(' AND ')} ORDER BY b.han, b.id, m.mon = 'gvcn', m.id`,
-  ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined)) as any[];
+  ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined), ...(ids ? [JSON.stringify(ids)] : [])) as any[];
   if (!rows.length) return [];
   const viec = new Map<number, { r: any; cot: string[]; moi: string[] }>();
   for (const r of rows) {
