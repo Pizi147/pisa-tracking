@@ -1306,13 +1306,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       items.push({
         key: `xuat-bc-ph:${v.classId}:${v.dot}`, group: 'xuat_bc_ph', urgency: v.thieu ? 'overdue' : 'normal',
         studentId: null, studentName: `Lớp ${v.code}`, classId: v.classId, classCode: v.code, attemptId: null, attemptNo: null, caseId: null, level: null,
-        reason: v.thieu ? `Đợt ${v.nhanDot} đã quá hạn, còn thiếu ${v.thieu} em` : `Lớp đã đủ báo cáo PH · ${v.nhanDot}`,
+        reason: v.thieu ? `Đợt đã quá hạn, còn thiếu ${v.thieu} em` : 'Lớp đã đủ báo cáo PH',   // EN theo mẫu từ điển (biến không chứa "·")
         actionLabel: v.thieu ? 'Báo cáo PH ›' : '', tieuDe: 'Xuất báo cáo PH',
         href: `/hoc-vien/lop/${v.classId}?tab=bao-cao-ph&dot=${encodeURIComponent(v.dot)}`,
         ownerId: p.userId, owner: p.fullName, mine: true, due: v.thieu ? v.han : null,
         statusLabel: v.thieu ? `thiếu ${v.thieu} em` : `đủ ${v.duLuc!.slice(8, 10)}/${v.duLuc!.slice(5, 7)}`,
         /* Thẻ phụ (mockup k1): đợt · "thiếu n em" / "n/n em đủ" — web tách mã tuần thành thẻ "tuần W3 SEP" như mọi việc (U01 #3). */
-        contextLabel: `${v.nhanDot} · ${v.thieu ? `thiếu ${v.thieu} em` : `${v.soEm}/${v.soEm} em đủ`}`, count: null,
+        contextLabel: `${v.nhanDot} · ${v.thieu ? `thiếu ${v.thieu} em` : `${v.soEm}/${v.soEm} em đủ`}`, count: null,   // EN: 'thiếu {n} em' · '{du}/{tong} em đủ' · 'Tháng {m}'
       });
     }
   }

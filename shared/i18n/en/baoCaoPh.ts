@@ -63,4 +63,11 @@ export const EN_BAO_CAO_PH = {
   'Lớp không có đợt': 'Classes without a round',
   '{l} lớp': '{l} classes',
   'Em đủ mọi phần': 'Students with every section',
+  'thiếu {n} em': '{n} students missing',
+  'đủ {ngay}': 'complete {ngay}',
+  '{du}/{tong} em đủ': '{du}/{tong} students complete',
+  'Đợt đã quá hạn, còn thiếu {n} em': 'Round is overdue, {n} students still missing',
+  'Lớp đã đủ báo cáo PH': 'Class parent report is complete',
+  'Báo cáo PH ›': 'Parent report ›',
+  'Lớp đã viết đủ báo cáo phụ huynh của đợt — xuất Excel gửi phụ huynh. Đợt quá hạn mà còn thiếu em cũng hiện để biết lớp kẹt. Tự rời sau 7 ngày.': 'The class has finished the parent report for this round — export the Excel file for parents. Overdue rounds with missing students also show, so you know which class is stuck. Leaves the list after 7 days.',
 } satisfies Record<string, Dich>;
