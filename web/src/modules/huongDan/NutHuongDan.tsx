@@ -62,7 +62,7 @@ export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
       <label className="relative block">
         <svg aria-hidden viewBox="0 0 16 16" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" fill="none" stroke="var(--text-faint)" strokeWidth="1.5" strokeLinecap="round">
           <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
-        <input type="search" className="field pl-[34px] pr-10 [&::-webkit-search-cancel-button]:hidden" value={q} onChange={(e) => setQ(e.target.value)}
+        <input type="search" autoComplete="off" className="field pl-[34px] pr-10 [&::-webkit-search-cancel-button]:hidden" value={q} onChange={(e) => setQ(e.target.value)}
           placeholder={t('Tìm trong hướng dẫn')} aria-label={t('Tìm trong hướng dẫn')} />
         {q && <button type="button" className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md border-0 bg-transparent text-[15px] text-slate-400 sm:right-1 sm:h-8 sm:w-8"
           aria-label={t('Xoá chữ tìm')} onClick={() => setQ('')}>✕</button>}
@@ -178,7 +178,7 @@ function DongViec({ muc, viec, kieu, tat = false, moSan = false, ctx }: { muc: M
     <div className={mo ? 'bg-[color:var(--surface-2)]' : ''} data-muc={muc.id}>
       <button type="button" aria-expanded={mo} aria-controls={id} onClick={() => setMo(!mo)}
         className="grid min-h-[44px] w-full cursor-pointer appearance-none grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2 border-0 bg-transparent px-3 py-[9px] text-left text-slate-100 hover:bg-[color:var(--accent-soft)]">
-        <svg aria-hidden viewBox="0 0 16 16" className={`mt-[3px] h-4 w-4 transition-transform duration-150 ${mo ? '' : '-rotate-90'}`} fill="none" stroke="var(--text-faint)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
+        <svg aria-hidden viewBox="0 0 16 16" className={`mt-[3px] h-4 w-4 transition-transform duration-150 motion-reduce:transition-none ${mo ? '' : '-rotate-90'}`} fill="none" stroke="var(--text-faint)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
         <span className="grid min-w-0 gap-px">
           <b className="text-[15px] font-semibold leading-snug">{ctx.q ? <ToKhop chu={t(muc.ten)} q={ctx.q} /> : t(muc.ten)}</b>
           {nho && !mo && <small className="text-[13px] leading-snug text-slate-500">{nho}</small>}
@@ -223,13 +223,15 @@ function TabManNay({ hd, manNen, manPanel, pathname, ctx }: { hd: HuongDan; manN
   const dsNen = manNen ? viecOManNay(hd, manNen.id) : [];
   if (manPanel) {
     const dsPanel = viecOManNay(hd, manPanel.id);
+    const coRoi = new Set(dsPanel.map((d) => d.viec?.id).filter(Boolean));
+    const nen = dsNen.filter((d) => !d.viec || !coRoi.has(d.viec.id));   // việc đã có ở panel không lặp ở màn nền
     return (
       <>
         <BanDangO man={manPanel} tren={manNen ? t(manNen.ten) : undefined} ctx={ctx} />
         <KhoiHd ten={t('Việc làm ở đây')}>
           <div className="flex flex-col gap-3">
             {dsPanel.length > 0 && <Nhom ten={t(manPanel.ten)}><DsViec>{dsPanel.map((d, i) => <DongCuaDong key={d.muc.id} d={d} i={i} ctx={ctx} />)}</DsViec></Nhom>}
-            {manNen && dsNen.length > 0 && <Nhom ten={t(manNen.ten)}><DsViec>{dsNen.map((d) => <DongCuaDong key={d.muc.id} d={d} i={1} ctx={ctx} />)}</DsViec></Nhom>}
+            {manNen && nen.length > 0 && <Nhom ten={t(manNen.ten)}><DsViec>{nen.map((d) => <DongCuaDong key={d.muc.id} d={d} i={1} ctx={ctx} />)}</DsViec></Nhom>}
           </div>
         </KhoiHd>
         <KhongLam man={manPanel} ctx={ctx} />

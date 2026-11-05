@@ -111,6 +111,8 @@ export function viecOManNay(hd: HuongDan, manId: string): DongHd[] {
   const rieng = new Map(man.muc.filter((m) => m.viec).map((m) => [m.viec!, m]));
   const cuaViec = (hd.lam ?? []).filter((v) => v.loiChinh.man === manId || v.loiTat?.includes(manId))
     .map((v): DongHd => ({ viec: v, tat: v.loiChinh.man !== manId, muc: { ...mucCuaViec(v), ...rieng.get(v.id) } }));
+  /* Panel (Case đang mở): việc làm NGAY trong panel lên trước, lối tắt sau (mockup v14 B). Màn: giữ thứ tự `lam` (mockup A). */
+  if (man.panel) cuaViec.sort((x, y) => Number(x.tat) - Number(y.tat));
   return [...cuaViec, ...man.muc.filter((m) => !m.viec).map((muc): DongHd => ({ muc, tat: false }))];
 }
 
