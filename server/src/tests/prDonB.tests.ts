@@ -137,7 +137,8 @@ export async function runPrDonBTests(t: YThucTestKit) {
     assert(/contains\(e\.relatedTarget/.test(doc('web/src/ui/BangChung.tsx')), 'onDragLeave');
   });
   check('Dọn-b (14c) · Dn7: ghi nhận xét W/S → lịch sử lượt có dòng kind "nhan_xet" (trước → sau rút gọn 80 ký tự); web có loại "Nhận xét"', () => {
-    const a = get(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.kind = 'mock' AND a.status != 'cancelled' AND c.code = 'MB FT 101' ORDER BY a.id DESC LIMIT 1`);
+    const a = get(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN students s ON s.id = a.student_id AND s.archived_at IS NULL
+      WHERE a.kind = 'mock' AND a.status != 'cancelled' AND c.code = 'MB FT 101' ORDER BY a.id DESC LIMIT 1`);   // em Lưu trữ khoá điểm
     assert(a, 'seed thiếu lượt Mock');
     const dai = 'Bài viết ổn định, ý rõ. '.repeat(10);
     attempts.saveScore(P.admin, a.id, 'writing2', { nhanXet: dai });

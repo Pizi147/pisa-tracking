@@ -9807,6 +9807,9 @@ await runPrMauKqTests({ check, assert } as any);
 // ==================================================================== PR-5 MO-TAT-CA (chủ SP 05/11: nút Mở tất cả lớp + ô Việc của tôi → Công việc)
 const { runPrMoTatCaTests } = bocTep('prMoTatCa', await import('./prMoTatCa.tests.ts'));
 await runPrMoTatCaTests({ check, assert, P } as any);
+// ==================================================================== NGHI-HOC-LUU-TRU (chủ SP 05/11: nghỉ học luôn vào Lưu trữ, không hiện ở mọi nơi làm việc)
+const { runPrNghiHocLuuTruTests } = bocTep('prNghiHocLuuTru', await import('./prNghiHocLuuTru.tests.ts'));
+await runPrNghiHocLuuTruTests({ check, assert, conn, P, TODAY, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

@@ -76,11 +76,10 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
   const tenCua = (id: number) => ds.find((e) => e.id === id)?.ten ?? nhieuXem?.rows.find((r) => r.studentId === id)?.ten ?? `#${id}`;
   const nguCanh = [lop, ds.map((e) => tenCua(e.id)).join(', ')].filter(Boolean).join(' · ');
 
-  /* Câu báo do máy chủ trả (`thongBao`, một em) — em FT còn lộ trình chạy kết thúc học thì CHƯA vào Lưu trữ. Hàng loạt: câu theo "Khi lưu, web sẽ" của máy chủ. */
-  const coChoThi = (nhieuXem?.tong.tomTat ?? []).some((d) => d.includes('chờ KQ thi thật'));
+  /* Câu báo do máy chủ trả (`thongBao`, một em); hàng loạt: câu chung. Kết thúc học luôn vào Lưu trữ (NGHI-HOC-LUU-TRU). */
   const hoanTac = (ids: number[], ten: string, thongBao?: string | null) => toast.hoanTac(
     thongBao ? `${ten}: ${dich(thongBao)}`
-      : ketThuc ? (coChoThi ? t('{ten} đã kết thúc học — em FT chờ KQ thi thật rồi vào Lưu trữ', { ten }) : t('{ten} đã vào Lưu trữ · Kết thúc học', { ten }))
+      : ketThuc ? t('{ten} đã vào Lưu trữ · Kết thúc học', { ten })
         : t('{ten} đã vào Lưu trữ · Tạm dừng', { ten }),
     async () => {
       /* Một em Tạm dừng: đường riêng (TVV / CX có `student.edit_more` hoàn tác được); hàng loạt giữ quyền `cycle.edit`. */

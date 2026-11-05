@@ -56,8 +56,6 @@ export const EN_P7_SV_LO_TRINH = {
   'Đưa em vào Lưu trữ · Kết thúc học': 'Move to Archive · End study',
   'Đưa em vào Lưu trữ · Tạm dừng': 'Move to Archive · Pause',
   '{n} vi phạm Ý thức đang chờ xử lý — dừng hạn, Quay lại học thì tính lại': '{n} pending Conduct incidents — deadlines pause, recalculated on Return to study',
-  '{ten} đã kết thúc học — em FT chờ KQ thi thật rồi vào Lưu trữ': '{ten} ended study — FT students wait for the real exam result, then go to Archive',
   'Đã vào Lưu trữ · Tạm dừng': 'Moved to Archive · Paused',
   'Đã vào Lưu trữ · Kết thúc học': 'Moved to Archive · Ended study',
-  'Đã kết thúc học — chờ KQ thi thật rồi chọn Bước tiếp, vào Lưu trữ sau': 'Ended study — waiting for the real exam result, then choose Next step; moves to Archive later',
 };

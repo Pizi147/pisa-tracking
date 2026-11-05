@@ -225,7 +225,6 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
   check('SV-6b · trang Lưu trữ: em tạm dừng có nhãn "Tạm dừng · Có thể quay lại" + lớp giữ chỗ; em kết thúc "Kết thúc học"; một cờ Quay lại học', () => thu(() => {
     const L = lop(); const a = em(L); const b = em(L);
     students.setStudentStatus(QL, a.sid, 'inactive', TODAY);
-    conn.prepare(`UPDATE learning_cycles SET status = 'completed' WHERE id = ?`).run(b.cy);   // lộ trình FT đang chạy → Kết thúc học chờ KQ thi thật, chưa lưu trữ (TK-L)
     students.setStudentStatus(QL, b.sid, 'finished', TODAY, 'Thôi');
     const r = luuTru.danhSachLuuTru(QL, {});
     const ra = r.hocVien.find((x: any) => x.id === a.sid); const rb = r.hocVien.find((x: any) => x.id === b.sid);
@@ -396,10 +395,10 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(hs(a.sid).status === 'inactive' && hs(a.sid).archived_at === ngayDung, `Hoàn tác: ${JSON.stringify({ s: hs(a.sid).status, a: hs(a.sid).archived_at })}`);
   }));
 
-  check('SV-15 · (rà 6, 7, 8) câu báo theo trạng thái thật (em FT còn lộ trình chạy → chưa Lưu trữ); xem trước Lộ trình mới: lớp ngoài phạm vi 403, tuần sai 400; xem trước Tạm dừng chỉ đếm Case của em được tính', () => thu(() => {
+  check('SV-15 · (rà 6, 7, 8) câu báo theo trạng thái thật (NGHI-HOC-LUU-TRU: em FT còn lộ trình chạy cũng vào Lưu trữ); xem trước Lộ trình mới: lớp ngoài phạm vi 403, tuần sai 400; xem trước Tạm dừng chỉ đếm Case của em được tính', () => thu(() => {
     const L = lop(); const a = em(L);
     const r = thv.doiTrangThai(QL, a.sid, { status: 'finished', date: TODAY, reason: 'Thôi' });
-    assert(!r.archived_at && /chờ KQ thi thật/.test(r.thongBao), `TK-L: ${r.thongBao}`);
+    assert(r.archived_at === TODAY && r.thongBao === 'Đã vào Lưu trữ · Kết thúc học', `NGHI-HOC-LUU-TRU: ${r.thongBao}`);
     const b = em(L);
     assert(thv.doiTrangThai(QL, b.sid, { status: 'inactive', date: TODAY }).thongBao === 'Đã vào Lưu trữ · Tạm dừng', 'tạm dừng');
     const x = emThiXong(lop());

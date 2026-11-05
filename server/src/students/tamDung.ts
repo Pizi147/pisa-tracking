@@ -34,6 +34,9 @@ export const CO_KET_QUA_THI_SQL = (c: string) => `(${c}.thi_that_khong_thi = 1 O
  *  là kế hoạch (`LUA_CHON_SAU_THI`: ket_thuc / tam_dung / lo_trinh_moi). Bước tiếp cũ học tiếp (`hoc_tiep`, `hoc_lai`) giữ MT. Không tự đóng lộ trình, không huỷ lượt. `cy` bí danh `learning_cycles`. */
 export const DA_THI_THAT_SQL = (cy: string) =>
   `(${cy}.route IS NOT NULL AND ${CO_KET_QUA_THI_SQL(cy)} AND (${cy}.buoc_tiep IS NULL OR ${cy}.buoc_tiep IN (${LUA_CHON_SAU_THI.map((x) => `'${x}'`).join(', ')})))`;
+/** NGHI-HOC-LUU-TRU (chủ SP 05/11): lượt vào tệp Excel — lượt CHƯA THI (planned, chưa có điểm) chỉ của em đang học (như màn Kế hoạch Test);
+ *  lượt đã thi luôn giữ (lịch sử thật). Một nguồn cho Xuất điểm Test và Xuất kết quả Test. `a` bí danh `assessment_attempts`, `s` bí danh `students`. */
+export const LUOT_XUAT_SQL = (a: string, s: string) => `(${a}.status != 'planned' OR ${CO_DIEM_SQL(a)} OR (${HV_DANG_HOC_SQL(s)}))`;
 /** Phần "còn là kế hoạch" của `LUOT_HIEN_TAI_SQL`: lượt chưa làm (planned, chưa có điểm) của lộ trình đã thi thật thì không còn — MT đã làm giữ. */
 export const LUOT_CON_KE_HOACH_SQL = (a: string) =>
   `(${a}.status != 'planned' OR NOT EXISTS (SELECT 1 FROM learning_cycles cyt WHERE cyt.id = ${a}.cycle_id AND ${DA_THI_THAT_SQL('cyt')}) OR ${CO_DIEM_SQL(a)})`;

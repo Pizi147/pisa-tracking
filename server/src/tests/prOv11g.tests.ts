@@ -2,7 +2,7 @@
  * PHÉP KIỂM PR-OV11g — Học viên & Lớp · hồ sơ lớp (đặc tả rà soát 14/10 mục 3: Q3, Q4, Q11):
  *   (1) Q3/HL-2: em thiếu ngày sinh hoặc email vào "Thiếu thông tin" — chip Học viên & Lớp = ô Tổng quan TVV / CX (cùng hàm);
  *       Thêm HV / Sửa cả lớp thiếu ngày sinh, email → lưu được (gõ sai dạng vẫn lỗi);
- *   (2) Q11/HL-19: em Kết thúc học chưa Lưu trữ có trong `/hoc-vien-lop` (chỉ "Tất cả") + roster `kemKetThuc` ở lớp cuối; không vào chip việc;
+ *   (2) Q11/HL-19 → NGHI-HOC-LUU-TRU: em Kết thúc học vào Lưu trữ ngay — không ở `/hoc-vien-lop`, roster, chip; Ctrl K vẫn ra (cờ `archived`);
  *   (3) Q4/HL-10: GV ghi điểm lớp `finished` → 403 (lớp thường + FT), QL → 200 + nhật ký; bảng điểm GV chỉ đọc;
  *   (4) HL-4: đầu hồ sơ lớp "Final Test a/b" = `duDiem / coLich` của khối điểm; (5) HL-1: seed lớp 1, 2 `finished`, Lưu trữ có 2 lớp;
  *   (6) HL-8 / HL-14 / HL-12 / CA2-4 / CA2-12: badge Admin, "+ Học viên" khi tìm không ra, lớp cùng chi nhánh lên đầu, câu chặn Kết thúc lớp.
@@ -89,24 +89,22 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     assert(one('SELECT full_name FROM students WHERE id = ?', em).full_name === `${ten} X`, 'Sửa cả lớp không lưu');
   }));
 
-  check('OV11g-2 · U04-3: em Kết thúc học chưa Lưu trữ — KHÔNG trong /hoc-vien-lop; roster kemKetThuc (hồ sơ lớp) + Ctrl K vẫn ra em', () => thu(() => {
+  check('OV11g-2 · U04-3 → NGHI-HOC-LUU-TRU: em Kết thúc học (vào Lưu trữ) — KHÔNG trong /hoc-vien-lop, roster, chip CX; Ctrl K vẫn ra em (cờ archived)', () => thu(() => {
     /* Em chỉ một dòng lớp (bộ kiểm trước có thể để lại em nhiều dòng) — lớp cuối = MB FT 101. */
     const em = emDangHoc(FT101).find((id) => one('SELECT COUNT(*) n FROM enrollments WHERE student_id = ?', id).n === 1)!;
     students.setStudentStatus(QL, em, 'finished', TODAY);
-    run('UPDATE students SET archived_at = NULL WHERE id = ?', em);   // em FT chờ kết quả thi thật (OV-8a) — chưa lưu trữ
+    assert(one('SELECT archived_at FROM students WHERE id = ?', em).archived_at === TODAY, 'Kết thúc học chưa vào Lưu trữ');
     xoaNho();
     const tr = trangQl();
     const h = tr.hocVien.find((x: any) => x.id === em);
-    /* U04-3 (chủ SP 03/11 khuya): em Kết thúc học KHÔNG còn trong danh sách Học viên & Lớp — xem ở hồ sơ lớp (roster kemKetThuc) · Lưu trữ · Ctrl K. */
+    /* U04-3 (chủ SP 03/11 khuya): em Kết thúc học KHÔNG còn trong danh sách Học viên & Lớp — xem ở Lưu trữ · Ctrl K. */
     assert(!h, `em kết thúc học còn trong /hoc-vien-lop: ${JSON.stringify(h)}`);
-    const ro = classes.classRoster(QL, FT101, undefined, true).find((r: any) => r.id === em);
-    assert(ro?.status === 'finished', 'roster kemKetThuc thiếu em');
-    assert(!classes.classRoster(QL, FT101).some((r: any) => r.id === em), 'roster thường (bảng khác của lớp) có em kết thúc học');
+    assert(!classes.classRoster(QL, FT101).some((r: any) => r.id === em), 'roster của lớp có em kết thúc học');
     const ten = one('SELECT full_name FROM students WHERE id = ?', em).full_name;
     assert(!hvl.danhSachHocVienLop(QL, { phamVi: 'chi-nhanh', branchId: mb, q: ten }).hocVien.some((x: any) => x.id === em), 'tìm trong danh sách vẫn ra em kết thúc học');
-    /* Lối xem còn lại: Ctrl K (`/students?q=` — `listStudents`) vẫn ra em chờ KQ thi thật. */
+    /* Lối xem còn lại: Ctrl K (`/students?q=` — `listStudents`) vẫn ra em, gắn cờ Lưu trữ. */
     const ctrlK = students.listStudents(QL, { q: ten });
-    assert((ctrlK.rows ?? ctrlK).some((x: any) => x.id === em), 'Ctrl K không ra em kết thúc học');
+    assert((ctrlK.rows ?? ctrlK).some((x: any) => x.id === em && x.archived), 'Ctrl K không ra em kết thúc học (cờ archived)');
     /* HL-19 (QL = CX) thay bằng U04-3: chip CX vẫn đếm em (Tổng quan); danh sách Học viên & Lớp của CX bỏ em `finished` ở web (`StudentsPage` › `vaiTrang.them`). */
     /* XM-4 (PTA 03/11): một số liệu một nguồn — "Tất cả" của CX (ô Tổng quan `soHocVien`) = số dòng danh sách theo vai, không đếm em Kết thúc học. */
     const pCx = loadPrincipal(idCx);
@@ -115,9 +113,6 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     const dsCx = hvTheoVai.hocVienTheoVai(pCx, { branchId: mb });
     assert(chipCx.tong === dsCx.rows.length && hvCuaToi.soHocVien(pCx, { branchId: mb }).tong === dsCx.rows.length,
       `CX: tong ${chipCx.tong} ≠ dòng danh sách ${dsCx.rows.length}`);
-    /* Lưu trữ → rời danh sách; Bỏ lưu trữ (Hoàn tác) → về lại. */
-    students.archiveStudent(QL, em);
-    assert(!trangQl().hocVien.some((x: any) => x.id === em), 'đã lưu trữ vẫn hiện');
   }));
 
   /* OV-13h (chủ SP 15/10): GV đúng môn vẫn NHẬP ô chưa có điểm — chỉ ô đã có điểm khoá với GV (qua HTTP: prOv13h). */

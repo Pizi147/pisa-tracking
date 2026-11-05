@@ -36,13 +36,12 @@ export async function runPrTlHvlTests(t: any) {
         for (const branchId of chiNhanh) out[`hvl:${uid}:chi-nhanh:${branchId ?? '-'}:${+them}`] = motTrongRequest(() => danhSachHocVienLop(p, { phamVi: 'chi-nhanh', branchId, them }));
       }
     }
-    /* Cả lớp đã kết thúc (nhánh `finished` của hai hàm) + `kemKetThuc` của Học viên & Lớp. */
+    /* Cả lớp đã kết thúc (nhánh `finished` của hai hàm). */
     for (const lop of ids('SELECT id FROM classes ORDER BY id')) {
       for (const uid of hoSoLop) {
         const p = loadPrincipal(uid);
         out[`overview:${uid}:${lop}`] = motTrongRequest(() => classOverview(p, lop));
         out[`roster:${uid}:${lop}`] = motTrongRequest(() => classRoster(p, lop));
-        out[`rosterKt:${uid}:${lop}`] = motTrongRequest(() => classRoster(p, lop, undefined, true));
       }
     }
     return out;

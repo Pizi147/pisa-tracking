@@ -97,6 +97,7 @@ export function thongBaoCua(userId: number) {
             WHERE n.user_id = ? ${trong}
          ) x
          LEFT JOIN students s ON s.id = x.student_id
+        WHERE s.status IS NOT 'finished'   -- NGHI-HOC-LUU-TRU (chủ SP 05/11): em đã nghỉ học không hiện ở chuông; Học lại thì hiện lại
         ${duoi}`;
   const rows = db().prepare(cau('', `ORDER BY (x.read_at IS NULL) DESC, x.id DESC LIMIT ${THONG_BAO_TOI_DA}`)).all(userId) as any[];
   /*
@@ -108,7 +109,7 @@ export function thongBaoCua(userId: number) {
     const moc = daDoc.length ? Math.min(...daDoc) : Number.MAX_SAFE_INTEGER;
     rows.push(...db().prepare(cau(
       `AND n.read_at IS NOT NULL AND n.id < ? AND (n.kind IN (${KIND_CAN_LAM.map((k) => `'${k}'`).join(', ')}) OR n.entity_type = 'case_signal')`,
-      `WHERE x.con_viec = 1 ORDER BY x.id DESC LIMIT ${CAN_LAM_DA_DOC_THEM}`,
+      `AND x.con_viec = 1 ORDER BY x.id DESC LIMIT ${CAN_LAM_DA_DOC_THEM}`,
     )).all(userId, moc) as any[]);
   }
   /* SL1 (N1): hạn của dòng — lưu sẵn (tự động, Case giao) → hạn thẻ duyệt → hạn việc tiếp của Case (`xuLyCaseMany`, một câu mỗi lô). */

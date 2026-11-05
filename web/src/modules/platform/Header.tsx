@@ -18,7 +18,7 @@ import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ToKhop } from '../../ui/ToKhop.tsx';
 
-type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null; openCase?: { sos_level: number } | null };
+type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null; archived?: boolean; openCase?: { sos_level: number } | null };
 type GvHit = { id: number; fullName: string };
 
 /** Phím mở ô tìm: "/" (ngoài ô nhập) hoặc Ctrl / ⌘ K. */
@@ -163,7 +163,8 @@ export function Header() {
           <span className="flex min-w-0 items-center gap-2">
             <span className="min-w-0 truncate font-semibold text-slate-100"><ToKhop chu={h.fullName} q={q} /></span>
             {h.openCase?.sos_level ? <ChipSos muc={h.openCase.sos_level} hienKyNang={false} tinh /> : null}
-            {h.classCode && <span className="ml-auto shrink-0 text-xs text-slate-500">{h.classCode}</span>}
+            {/* NGHI-HOC-LUU-TRU: em Lưu trữ xếp cuối (máy chủ), ghi chữ "Lưu trữ" thay mã lớp — vẫn mở hồ sơ. */}
+            {(h.archived || h.classCode) && <span className="ml-auto shrink-0 text-xs text-slate-500">{h.archived ? t('Lưu trữ') : h.classCode}</span>}
           </span>
         </button>
       </li>

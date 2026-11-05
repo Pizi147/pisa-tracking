@@ -96,15 +96,18 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
     ['Ngô Bảo Châu', false], ['Lý Thanh Tâm', false], ['Phạm Khánh Linh', false], ['Kiều Thảo Nhi', false],
   ];
   for (const [ten, dat] of BU_MT2) {
-    const a = conn.prepare(`SELECT a.id, a.target_at_attempt AS t FROM assessment_attempts a JOIN students s ON s.id = a.student_id
+    const a = conn.prepare(`SELECT a.id, a.target_at_attempt AS t, s.id AS sid, s.archived_at FROM assessment_attempts a JOIN students s ON s.id = a.student_id
                              WHERE s.full_name = ? AND a.attempt_no = 2 AND a.kind = 'mock' AND a.status != 'cancelled'`).get(ten) as any;
     if (!a?.t) continue;
     conn.prepare('UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?').run(w3Aug, a.id);
     conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(w3Aug, a.id);
     const b = a.t - 0.5 - (dat ? 0 : 0.5);
+    /* NGHI-HOC-LUU-TRU: Ngô Thanh Tùng đã Kết thúc học ở bộ Duyệt (chạy trước) nên đã ở Lưu trữ — điểm MT2 tháng 8 có TRƯỚC ngày kết thúc: mở Lưu trữ tạm để ghi rồi trả lại. */
+    if (a.archived_at) conn.prepare('UPDATE students SET archived_at = NULL WHERE id = ?').run(a.sid);
     saveScore(admin, a.id, 'listening', { rawScore: LISTENING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
     saveScore(admin, a.id, 'reading', { rawScore: READING_BY_RAW.indexOf(b), resultDate: '2026-08-21' });
     for (const k of ['writing1', 'writing2', 'speaking']) saveScore(admin, a.id, k, { criteria: tieuChiThu(b), resultDate: '2026-08-22' });
+    if (a.archived_at) conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(a.archived_at, a.sid);
   }
 
   // ---------------------------------------------------------------- U5 · HD FT 306 (lớp mới, GV mới)
