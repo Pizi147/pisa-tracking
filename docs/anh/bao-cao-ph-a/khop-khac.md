@@ -23,7 +23,7 @@ Dữ liệu web: bộ demo (MB FT 101 · 33 em, MB FOU 12 · 7 em), ngày demo 2
 | 1 | Tab thứ 4 "Báo cáo PH" sau Phân tích lớp + chip nhẹ "Tháng 11 · hạn 30/11" (t0, t1) | `TAB_HO_SO_LOP` + `HangTab.chip` (12 px, nền bề mặt 2, chữ mờ) | KHỚP |
 | 2 | Chip quá hạn đỏ "⚠ Progress · W3 NOV · quá hạn 2 ngày" (e1) | `chip.xau` — nền / chữ `late`, có ⚠ (không chỉ màu); chỉ khi đợt mới nhất quá hạn ≤ 7 ngày và lớp chưa đủ | KHỚP |
 | 3 | Hàng công cụ ngoài bảng: ô chọn đợt · "3/12 em đủ" · Xuất lớp (QL / Admin / TVV) | `ChonDangNut` + số đậm + nút Xuất lớp (GV không có nút) | KHỚP |
-| 4 | Bảng: Học viên · phần · cột Xuất; đầu cột hai dòng mã + tên GV / "Bạn" / "Chưa phân công" (G9: chỉ chữ) | `.bang-bc`, `th small` | KHỚP |
+| 4 | Bảng: Học viên · phần · cột Xuất; đầu cột hai dòng mã + tên GV / "Bạn" / "Chưa phân công" (G9: chỉ chữ) | bảng chung `Bang` (luật BANG-3), `phu` = tên GV xuống dòng (`.bang-bc .bang-chu-thich`) | KHỚP — đầu cột theo `Bang` chung (nền đầu cột, cột cuối ghi "Xuất" cho trình đọc màn); hàng 44 px của `Bang` |
 | 5 | Ô: ✓ mờ · "nháp" vàng · "–" có viền khi người xem viết được (GV phần mình; QL mọi phần), không viền khi chỉ đọc | `.o-bc du / nhap(.cua) / chua(.doc)`; `aria-label` "{em} · {phần} · Đủ / Nháp / Chưa viết" | KHỚP |
 | 6 | Dòng chân "Đủ" n/N mỗi cột | `tfoot` | KHỚP |
 | 7 | d5 "Chưa có đợt · Đợt đầu: …"; chương trình chưa có mẫu → không có tab | `dotDau` (máy chủ) · `baoCaoPh = null` → không tab | KHỚP |
