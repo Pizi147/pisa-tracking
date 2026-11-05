@@ -57,7 +57,8 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     const fm = kt ? (v: number | null | undefined) => (v == null ? '' : String(v)) : fmt;
     const layLai = kt ? [] : layLaiBanDau(c);   // THI-LAI-1-KN: kỹ năng em không học → điểm KQ thi thật lần trước
     const f = { ngay: c.thi_that_ngay ?? '', ...diemBanDau(c, layLai, fm), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '', layLai };
-    setForm(f); setGoc(JSON.stringify(f));
+    /* Ô vừa tự lấy điểm lần trước chưa lưu → tính là "đã sửa" (đóng thì hỏi), không trông như đã xong. */
+    setForm(f); setGoc(JSON.stringify(layLai.length && !c.thi_that_lay_lai ? { ...f, ...diemBanDau(c, [], fm), layLai: [] } : f));
   }
   if (lichSu) {
     return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[studentName, lop]} quayLai={{ nhan: t('Kết quả thi thật'), onClick: () => setLichSu(false) }} onClose={onClose} />;

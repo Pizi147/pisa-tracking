@@ -9,12 +9,11 @@ export type KyNangThi = 'l' | 'r' | 'w' | 's';
 export const KY_NANG_THI: readonly KyNangThi[] = ['l', 'r', 'w', 's'];
 type ThiTruoc = Record<KyNangThi, number> & { ngay: string | null };
 
-/** Mở form: danh sách đang lưu; chưa có điểm nào → kỹ năng em KHÔNG học (môn đăng ký) tự lấy điểm lần trước; đủ môn → không tự lấy. */
+/** Mở form: danh sách đang lưu; không có thì ô TRỐNG của kỹ năng em KHÔNG học (môn đăng ký) tự lấy điểm lần trước; đủ môn → không tự lấy. */
 export function layLaiBanDau(c: any): KyNangThi[] {
   const luu = docLayLai(c.thi_that_lay_lai);
   if (luu) return luu.kn;
-  const chuaCo = !c.thi_that_khong_thi && KY_NANG_THI.every((k) => c[`thi_that_${k}`] == null);
-  return chuaCo && c.thiTruoc ? kyNangLayLai(c.mon_dang_ky) : [];
+  return c.thiTruoc && !c.thi_that_khong_thi ? kyNangLayLai(c.mon_dang_ky).filter((k) => c[`thi_that_${k}`] == null) : [];
 }
 /** Chữ của 4 ô lúc mở form: điểm đang lưu, không có thì điểm lần trước của ô lấy lại. */
 export function diemBanDau(c: any, layLai: KyNangThi[], fmt: (v: number | null | undefined) => string): Record<KyNangThi, string> {
