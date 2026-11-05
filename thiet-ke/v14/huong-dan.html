@@ -225,7 +225,8 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
     <div class="cap">
       <figure><figcaption>C · 1440 tối</figcaption><div class="man toi" data-k="c1"></div></figure>
       <figure><figcaption>C · 375 sáng</figcaption><div class="dt sang" data-k="c1m"></div></figure>
-      <figure><figcaption>C2 · 375 tối · không có việc của bạn khớp → chỉ việc vai khác</figcaption><div class="dt toi" data-k="c2m"></div></figure>
+      <figure><figcaption>C2 · 375 tối · "đổi lớp" khớp từ đồng nghĩa → Đề xuất chuyển lớp + việc vai khác</figcaption><div class="dt toi" data-k="c2m"></div></figure>
+      <figure><figcaption>C3 · 375 sáng · không có việc của bạn khớp</figcaption><div class="dt sang" data-k="c3m"></div></figure>
     </div>
   </section>
 
@@ -423,9 +424,15 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
       { ten: 'Làm cả lớp một lần' }
     ])) + khongLam([['Xếp, dời lịch MT', 'việc của QL', 1], ['Duyệt yêu cầu', 'việc của QL', 1]]);
 
-  /* C2: không có việc CỦA VAI NÀY khớp → vẫn chỉ đúng chỗ: việc vai khác (chữ nhạt, không link) + từ đồng nghĩa (đổi lớp → Chuyển lớp) */
-  var thanC2 = '<div class="rong-tim"><p>Không có việc của bạn khớp “<b>đổi lớp</b>”.</p></div>' +
-    '<div><h3 class="nhom-hd">Việc của vai khác</h3><div class="khong-lam vai-khac"><div><span>Chuyển lớp một em</span><span class="cua-ai">việc của QL</span></div></div></div>' +
+  /* C2: "đổi lớp" khớp qua từ đồng nghĩa → việc GVCN "Đề xuất chuyển lớp" (ChuyenLopPanel cheDo="de-xuat", ⋯ hồ sơ HV / ⋯ dòng em hồ sơ lớp)
+     + việc vai khác (chữ nhạt, không link). Khớp qua từ đồng nghĩa: không tô hồng. */
+  var vaiKhac = function (ten, ai) { return '<div><h3 class="nhom-hd">Việc của vai khác</h3><div class="khong-lam vai-khac"><div><span>' + e(ten) + '</span><span class="cua-ai">' + e(ai) + '</span></div></div></div>'; };
+  var thanC2 = '<p class="dem-kq">1 việc khớp</p><div class="ds-nhom">' + nhomViec('Học viên và lớp', [
+      { ten: 'Đề xuất chuyển lớp', vai: 'Chỉ GVCN', mo: 1, chinh: 'Hồ sơ HV › ⋯ › Đề xuất chuyển lớp…',
+        buoc: ['Ở hồ sơ em, bấm **⋯ › Đề xuất chuyển lớp…**', 'Chọn **Lớp chuyển đến**, **Tuần bắt đầu**, ghi **Lý do**.', '**Gửi đề xuất**: QL duyệt trong 5 ngày.'],
+        tat: 'Hồ sơ lớp › ⋯ dòng em — mở cùng chỗ.' }]) + vaiKhac('Duyệt / chuyển lớp', 'việc của QL') + '</div>';
+  /* C3: thật sự không có việc của vai này → một câu + việc vai khác + về danh sách đủ */
+  var thanC3 = '<div class="rong-tim"><p>Không có việc của bạn khớp “<b>xoá tài khoản</b>”.</p></div>' + vaiKhac('Xoá tài khoản', 'việc của Quản trị') +
     '<div><button class="nut nut-nho">Xem mọi việc của bạn</button></div>';
   var K = {};
   K.a1 = thanh({ vai: 'gv', dang: 'Test', badge: 9, ten: 'Trần Ngọc Hà', mo: 1, tin: 2 }) + lichTest() + panel({ vai: 'Giáo viên', tab: 0, than: thanA });
@@ -437,6 +444,7 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
   K.c1 = thanh({ vai: 'gv', dang: 'Test', badge: 9, ten: 'Trần Ngọc Hà', mo: 1, tin: 2 }) + lichTest() + panel({ vai: 'Giáo viên', tab: 1, q: 'nhập điểm', than: thanC });
   K.c1m = thanh({ dt: 1, mo: 1, tin: 2 }) + panel({ vai: 'Giáo viên', tab: 1, q: 'nhập điểm', than: thanC });
   K.c2m = thanh({ dt: 1, mo: 1, tin: 2 }) + panel({ vai: 'Giáo viên', tab: 1, q: 'đổi lớp', than: thanC2 });
+  K.c3m = thanh({ dt: 1, mo: 1, tin: 2 }) + panel({ vai: 'Giáo viên', tab: 1, q: 'xoá tài khoản', than: thanC3 });
   K.d1 = thanh({ vai: 'tvv', dang: 'Học viên & Lớp', ten: 'Phạm Thu Trang', mo: 1 }) + '<div class="noi-dung"><div class="dau-trang"><h1>Học viên &amp; Lớp</h1></div><div class="the"><div class="than-t">' + [92, 80, 88, 70, 84, 76].map(function (w) { return '<div class="skel" style="width:' + w + '%"></div>'; }).join('') + '</div></div></div>' +
     panel({ vai: 'Tư vấn viên', tab: 2, than: thanD });
   K.d1m = thanh({ dt: 1, mo: 1 }) + panel({ vai: 'Tư vấn viên', tab: 2, than: thanD });

@@ -93,6 +93,7 @@ Trạng thái mockup: **A** GV · Lịch Test tuần · Màn này · **B** QL ·
 3. **[XM-2] Tuần của tôi MỞ TẠI CHỖ:** nhóm theo nhịp (Mỗi sáng · Khi có · Khi gia đình báo · Trước khi em thi · Sau khi em thi), mỗi việc một dòng gập / mở như Tôi muốn… (mở ra: Lối chính + bước); bỏ mũi tên nhảy tab. Lý do: xử lý tại chỗ + một danh sách một kiểu mở. (Thay đặc tả 3.5 — PTA sửa đặc tả.)
 4. **[XM-3]** "Không làm ở đây" không lặp đích đã có ở Sau — A bỏ dòng "Xác nhận Case, PA · ghi kết quả", thay "Xem điểm cả lớp qua các lượt → Hồ sơ lớp ›".
 5. **P2:** giữ ô **Lối chính** một dáng ở cả 3 tab (thay "dòng nhạt" đặc tả 3.3) — đồng ý.
+6. **C2 sửa nội dung (PTA rà lần 2):** GVCN CÓ việc **Đề xuất chuyển lớp** (#914) — gõ "đổi lớp" ra việc đó (nhãn Chỉ GVCN; Lối chính **Hồ sơ HV › ⋯ › Đề xuất chuyển lớp…**, lối tắt Hồ sơ lớp › ⋯ dòng em — tra `ChuyenLopPanel` `cheDo="de-xuat"`, `shared/domain/hocVienLop.ts`; bước theo nhãn form: Lớp chuyển đến · Tuần bắt đầu · Lý do · **Gửi đề xuất**) + "Việc của vai khác": **Duyệt / chuyển lớp — việc của QL**. Trạng thái không khớp chuyển sang **C3** "xoá tài khoản" → "Xoá tài khoản — việc của Quản trị" (nút có thật ở `AccountsAdmin`).
 
 ## 4b. [XM] đã gửi PTA (trả lời ở 3b)
 - **[XM-1] Tìm theo từ đồng nghĩa và việc vai khác** (C2): gõ "đổi lớp" ra "Chuyển lớp một em — việc của QL". Đặc tả 3.2 chỉ giữ `locHd` (bỏ dấu). Muốn có: thêm trường `tuKhac` cho mỗi việc + đọc cả việc của vai khác (chỉ tên + "việc của …", không bước). Chữ khớp qua từ đồng nghĩa KHÔNG tô hồng. Không thì C2 chỉ còn câu "Không có việc nào khớp" + Xem mọi việc.
@@ -113,4 +114,4 @@ F3: QL Vy không dạy lớp nên menu không có "Hồ sơ giáo viên"; QL có
 
 ## 5. Ảnh (thiet-ke/v14/anh/)
 Chụp bằng Chrome headless từ chính tệp mockup (`huong-dan.html?k={khung}&n={toi|sang}`), phông Be Vietnam Pro đã nạp (`document.fonts.check('600 15px "Be Vietnam Pro"', 'ợ')` = true).
-A1 `a1-1440-toi` · `a1-375-sang` · A2 `a2-1440-toi` · B `b-1440-toi` · `b-375-sang` · C `c-1440-toi` · `c-375-sang` · C2 `c2-375-toi` · D `d-1440-toi` · `d-375-sang` · E `e-1440-toi` · `e-1440-sang` · F0 `f0-1440-toi` · `f0-1440-sang` · F `f1-375-sang` · `f2-375-toi` · `f3-375-sang`.
+A1 `a1-1440-toi` · `a1-375-sang` · A2 `a2-1440-toi` · B `b-1440-toi` · `b-375-sang` · C `c-1440-toi` · `c-375-sang` · C2 `c2-375-toi` · C3 `c3-375-sang` · D `d-1440-toi` · `d-375-sang` · E `e-1440-toi` · `e-1440-sang` · F0 `f0-1440-toi` · `f0-1440-sang` · F `f1-375-sang` · `f2-375-toi` · `f3-375-sang`.
