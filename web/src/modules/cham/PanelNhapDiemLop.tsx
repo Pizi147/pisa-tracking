@@ -8,8 +8,10 @@ import { t } from '@shared/i18n/index.ts';
  * NHẬP ĐIỂM MỘT LỚP TẠI CHỖ (OV-15b mục 5, C16; mockup 2 khung 4) — thay tab Test › Điểm theo lớp. Mở từ ⋯ hàng lớp (Học viên & Lớp),
  * nút Nhập điểm của hồ sơ lớp, và link cũ `/test/diem-lop?lop=`. Chọn lượt / môn trong panel (`DiemTheoLop chonMon`); cùng lưới, cùng luật lưu.
  */
-export function PanelNhapDiemLop({ classId, classCode, luot, onDong, quayLai }: {
+export function PanelNhapDiemLop({ classId, classCode, luot, loc, onDong, quayLai }: {
   classId: number; classCode?: string | null; luot?: string | null; onDong: () => void;
+  /** Link `?trong=` / `?trong=cu`: bật sẵn "Chỉ ô còn trống" (+ chỉ hàng MT cũ). */
+  loc?: 'trong' | 'cu';
   /** Mở thay panel việc (Công việc) — "‹ Việc" về lại việc. */
   quayLai?: { nhan: string; onClick: () => void };
 }) {
@@ -23,7 +25,7 @@ export function PanelNhapDiemLop({ classId, classCode, luot, onDong, quayLai }: 
   return (
     <KhungPanel hd="nhap-diem" tieuDe={classCode ? t('Nhập điểm · {lop}', { lop: classCode }) : t('Nhập điểm')} dau={dau} rong="toan" quayLai={quayLai} onDong={onDong}>
       <div className="pt-3">
-        <DiemTheoLop classId={classId} gon chonMon luotBanDau={luot ?? undefined} />
+        <DiemTheoLop classId={classId} gon chonMon luotBanDau={luot ?? undefined} locBanDau={loc} />
       </div>
     </KhungPanel>
   );

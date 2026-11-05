@@ -10,6 +10,7 @@
  *   (9) Q8 quyền: CX không đổi dấu KCK (403), TVV / QL được. (5b) thẻ "cho" trùng thì Khôi phục bỏ qua; (6) thêm: hồ sơ HV cùng dấu, giữ dấu khi còn điểm.
  * Mỗi ca cuộn lại (`thu`).
  */
+import { readFileSync } from 'node:fs';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrOv11eTests(t: YThucTestKit) {
@@ -98,6 +99,12 @@ export async function runPrOv11eTests(t: YThucTestKit) {
       assert(l.soEm === new Set(hang.map((r: any) => r.studentId)).size, `MT${l.so}: ${l.soEm} em ≠ ${hang.length} hàng lọc`);
     }
   }));
+
+  check('OV11e-2b · link `?trong=cu` (Công việc + Lịch Test) đi hết đường: TestPage → PanelNhapDiemLop → DiemTheoLop locBanDau', () => {
+    const f = (p: string) => readFileSync(new URL(`../../../../web/src/${p}`, import.meta.url), 'utf8');
+    assert(/params\.get\('trong'\)/.test(f('modules/test/TestPage.tsx')) && /<PanelNhapDiemLop[^>]*loc=/.test(f('modules/test/TestPage.tsx')), 'TestPage phải đọc ?trong= và truyền loc cho panel');
+    assert(/locBanDau=\{loc/.test(f('modules/cham/PanelNhapDiemLop.tsx')), 'PanelNhapDiemLop phải truyền locBanDau cho DiemTheoLop');
+  });
 
   check('OV11e-3 · TE-10: Điểm theo lớp "trống" không đếm ô chưa tới tuần thi (T19)', () => thu(() => {
     const a = one(`SELECT id, attempt_no FROM assessment_attempts WHERE class_id = ? AND kind = 'mock' AND status != 'cancelled' AND lich_su = 0 ORDER BY attempt_no DESC, id LIMIT 1`, FT101);
