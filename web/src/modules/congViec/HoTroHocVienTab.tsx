@@ -472,16 +472,16 @@ export function HoTroHocVienTab() {
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} cuoiNhom={cuoiNhom} luatNhom={laTvv ? luatNhomTvv : undefined} nguoiAn={xemMotGv ? nguoi : null}
               /* RA-LUONG-4: chỉ "Chọn bước tiếp" có hạn để gia hạn (N6; máy chủ `coTheGiaHanSauThi`) — "Cập nhật KQ thi thật" không hạn, Gia hạn sẽ 400. */
-              nutPhu={(x) => (x.group === 'xuat_bc_ph' && !x.due && x.classId
-                /* BAO-CAO-PH b: lớp đã đủ — Xuất lớp tải file ngay (dòng thiếu em: nút việc "Báo cáo PH ›" mở tab). */
-                ? <NutXuatLopBc lopId={x.classId} dot={x.key.split(':').slice(2).join(':')} />
-                : !x.con && x.cycleId && x.group === 'buoc_tiep' && !xong.has(x.key) && !theoDoi(x)
+              nutPhu={(x) => (!x.con && x.cycleId && x.group === 'buoc_tiep' && !xong.has(x.key) && !theoDoi(x)
                 ? <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[28px]" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button>
                 /* BO-QUA-XEP-MT: nút phụ cạnh nút việc (cùng mẫu Gia hạn) — chỉ việc máy chủ báo bỏ qua được. */
                 : !x.con && x.boQuaDuoc && !xong.has(x.key) && !theoDoi(x)
                   ? <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[28px]" aria-label={t('Bỏ qua: {viec}', { viec: dich(x.tieuDe) })}
                     title={t('Ẩn việc này. Lịch, PA, Case giữ nguyên.')} onClick={() => boQua(x)}>{t('Bỏ qua')}</button>
-                  : null)} />
+                  /* BAO-CAO-PH b: lớp đã đủ — Xuất lớp tải file ngay (dòng thiếu em: nút việc "Báo cáo PH ›" mở tab). */
+                  : x.group === 'xuat_bc_ph' && !x.due && x.classId
+                    ? <NutXuatLopBc lopId={x.classId} dot={x.key.split(':').slice(2).join(':')} />
+                    : null)} />
           )}
           {/* OV-15h1: không có việc Vận hành nào — "Việc quản lý" vẫn là MỘT nhóm gập ở cuối danh sách (Giao việc · Vận hành · Báo cáo đơn vị), không thẻ rời. */}
           {coVanHanh && data && !dsNhom.some((g) => g.key === 'van-hanh') && (

@@ -107,8 +107,10 @@ export async function runPrOv10cTests(t: YThucTestKit) {
     const today = demoToday();
     const tuan = highlights(ad, { branchId: mb, program: 'ft' }).weeks[0];
     assert(r.tuan === tuan.weekStart && r.luotTuanNay.so === tuan.ft.mockStudents && r.luotTuanNay.soLop === tuan.ft.mockClasses.length, 'Lượt MT ≠ Kế hoạch Test');
-    const w = myWork(ad, { branchId: mb, nguoi: 'tat-ca' }) as any;
-    assert(w.dong.every((d: any) => d.group === 'score'), 'Admin chỉ có Chấm điểm');
+    const w0 = myWork(ad, { branchId: mb, nguoi: 'tat-ca' }) as any;
+    /* BAO-CAO-PH b: Admin có thêm việc "Xuất báo cáo PH" (Việc quản lý) — không vào số Ô chưa nhập; so số trên các dòng Chấm điểm. */
+    assert(w0.dong.every((d: any) => d.group === 'score' || d.group === 'xuat_bc_ph'), 'Admin chỉ có Chấm điểm + Xuất báo cáo PH');
+    const w = { ...w0, dong: w0.dong.filter((d: any) => d.group === 'score') };
     assert(r.oChuaNhap.so === demPhamVi(w.dong, true).so, `Ô chưa nhập ${r.oChuaNhap.so} ≠ Công việc`);
     /* OV-11c (TE-4): lọc Quá hạn chỉ đếm bài quá hạn (việc con khớp lọc). */
     assert(r.oChuaNhap.quaHan === demPhamVi(w.dong.filter((d: any) => khopLocNhanh(d, 'qua-han', today)), true, { loc: 'qua-han', homNay: today }).so, 'Quá hạn ≠ Công việc lọc Quá hạn');
