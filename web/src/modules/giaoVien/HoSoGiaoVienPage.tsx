@@ -193,7 +193,7 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
       d?.thiThat.k === 'na' ? <span className="text-slate-500">—</span> : <span className="inline-flex flex-wrap items-baseline gap-x-2"><span className="whitespace-nowrap">{o(d?.thiThat, 'thi-that', t('Kết quả thi thật'))}</span>{thi && <span className="whitespace-nowrap text-xs font-medium text-slate-400">Pass Target</span>}</span>,
       thi ? <BaThi cot="thi-that" fail={thi.tong - thi.dung} pass={thi.dung} exceed={d!.thiThatVuot} nguonCua={nguonCs} ten={t('Kết quả thi thật')} />
         : d?.thiThat.k === 'na' ? t('Không dạy lớp Fast Track') : t('Thi thật trong kỳ'),
-      t('HV có ngày thi thật (IELTS) trong kỳ, GV dạy kỹ năng ở lớp cuối trước ngày thi. Pass = Overall đạt Target · Fail = chưa đạt · Exceed = Overall cao hơn Target.')),
+      t('Thi thật (IELTS) trong kỳ: mỗi HV × kỹ năng GV từng dạy em (W1 / W2 riêng), điểm kỹ năng so Target overall. Pass = bằng hoặc trên Target · Fail = dưới · Exceed = trên Target. % to tính theo tuần GV dạy em.')),
   ];
   return (
     <section aria-label={t('Chỉ số')} className="card overflow-clip">

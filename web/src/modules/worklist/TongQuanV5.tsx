@@ -20,7 +20,8 @@ import { dich, t } from '@shared/i18n/index.ts';
  * TỔNG QUAN V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B "Tình hình trái · Điều hướng phải"). Không ô nhập trên trang (C04): số gạch chân
  * = panel chỉ đọc (cùng hàm Phân tích), "›" = đổi trang, "?" = giải thích. Mỗi vai một hàm vẽ; dữ liệu QL / QT / CX từ MỘT GET `/tong-quan/v5`.
  */
-export type TyLeV5 = { dat: number; mau: number };
+/** `pt` (thi thật GV, 2F): % theo tuần dạy — thay `dat / mau` khi có. */
+export type TyLeV5 = { dat: number; mau: number; pt?: number };
 type DongLop = { id: number; khoa: string; ma: string; hv: number; gvcn: string | null; datMt: TyLeV5 | null; sos: [number, number, number]; caseChuaPa: number; thiThangNay: number };
 type DongCn = { id: number; khoa: string; ten: string; datMt: TyLeV5 | null; casePa: { coPa: number; mo: number }; thiThat: TyLeV5 | null; thiThangNay: number; sos23: number; caseChuaPa: number };
 type GvTre = { khoa: number; ten: string; bai: number };
@@ -70,7 +71,7 @@ export function PhanTram({ x, nguon, tieuDe, gon, vung }: { x: TyLeV5 | null; ng
   const v = rateView(x.dat, x.mau);
   if (v.kind !== 'value') return gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')} aria-label={t('Chưa có dữ liệu')}>—</span>
     : <ChuaCoDl />;
-  return <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguon} tieuDe={tieuDe} vung={vung} />;
+  return <OSo giaTri={x.mau} nhan={`${x.pt ?? v.percent} %`} nguon={nguon} tieuDe={tieuDe} vung={vung} />;
 }
 /** V8-TQ (mockup `.chua-dl`): "– Chưa có dữ liệu" là viên viền đứt — cùng dáng "Chưa đủ dữ liệu", không chữ đậm trơn. */
 export const ChuaCoDl = () => (
@@ -244,7 +245,7 @@ const COT_GV_HT: readonly CotBang[] = [
   { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 180 },
   { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 120 }, { key: 'pa', nhan: t('Case có PA'), kieu: 'phan-tram', rong: 150 },
 ];
-export const tyLeGv = (o: OPtGv | undefined): TyLeV5 | null => (!o || o.k === 'na' ? null : o.k === 'rong' ? { dat: 0, mau: 0 } : { dat: o.dung, mau: o.tong });
+export const tyLeGv = (o: OPtGv | undefined): TyLeV5 | null => (!o || o.k === 'na' ? null : o.k === 'rong' ? { dat: 0, mau: 0 } : { dat: o.dung, mau: o.tong, ...(o.pt != null ? { pt: o.pt } : {}) });
 export const gopKq = (kq: Record<string, OPtGv>): TyLeV5 | null => {
   const so = Object.values(kq).filter((o): o is Extract<OPtGv, { k: 'so' }> => o.k === 'so');
   if (!so.length) return Object.values(kq).some((o) => o.k === 'rong') ? { dat: 0, mau: 0 } : null;

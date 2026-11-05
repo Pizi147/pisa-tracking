@@ -8,7 +8,7 @@
 import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
 import {
   KN_THI, NHAN_SAU_THI, docLayLai, kyNangThiLai, kyNangDaBo, boMonDaBo, PERMISSIONS, chuTargetKck, ketQuaMock, tuanLich, xepDongMock,
-  type DongMock, type DongThiThat, type KetQuaMock, type KetQuaMockKq, type KetQuaThiThatKq, type LoaiThi, type LuaChonSauThi, type XepMock,
+  type DongMock, type DongThiThat, type KqThi, type KetQuaMock, type KetQuaMockKq, type KetQuaThiThatKq, type LoaiThi, type LuaChonSauThi, type XepMock,
 } from '../../../shared/domain/index.ts';
 import { t as tl } from '../../../shared/i18n/index.ts';
 import { badRequest, forbidden } from '../util.ts';
@@ -149,19 +149,24 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
  * (`thi_that_ngay` NULL) → ngày thi dự kiến (`exam_date`). Hai vế OR, mỗi vế một chỉ mục một phần (`idx_cycle_thi_that_ngay`, `idx_cycle_khong_thi`).
  */
 export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s,
-            c.thi_that_khong_thi, c.thi_that_lay_lai, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
+            c.thi_that_khong_thi, c.thi_that_lay_lai, substr(c.started_at, 1, 10) AS bat_dau, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
       WHERE c.route IS NOT NULL
         AND ((c.thi_that_ngay BETWEEN ? AND ? AND c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
           OR (c.thi_that_khong_thi = 1 AND c.exam_date BETWEEN ? AND ?))`;
 
+/** Một lộ trình có kết quả thi thật: dòng danh sách + dữ liệu của `thongKeThiThat` (`KqThi`) + ngày bắt đầu lộ trình (tuần dạy, Theo GV). */
+export type ThiThatTho = { dong: DongThiThat; kq: KqThi; batDau: string | null };
+
 /**
  * Thi thật: lộ trình FT có kết quả (đủ 4 kỹ năng / Không thi) với ngày thi trong khoảng; lớp = lớp LÚC THI (`lopLucThiThat`, P12); Target = Target lúc
- * nhập KQ (`thi_that_target`, NULL → hiện tại). Phạm vi: lớp trong `classScopeSql` của quyền Phân tích.
- * ponytail: `coQuyenBuocTiep` hỏi quyền theo từng em — bảng thi thật một khoảng chỉ vài chục hàng. `boQuyen` (Kết quả MT chỉ đếm): không hỏi, `coTheChon` false.
+ * nhập KQ (`thi_that_target`, NULL → hiện tại). Phạm vi: lớp trong `classScopeSql` của quyền Phân tích. Danh sách, thẻ, Từng kỹ năng, Theo GV và panel
+ * cùng tập này (số = số dòng).
+ * ponytail: `coQuyenBuocTiep` hỏi quyền theo từng em — bảng thi thật một khoảng chỉ vài chục hàng. `boQuyen` (chỉ đếm / panel): không hỏi, `coTheChon` false.
  */
-export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi, o: { boQuyen?: boolean } = {}): KetQuaThiThatKq {
-  const scope = phamVi(p);
+export function thiThatTrongKhoang(p: Principal | null, f: LocKetQuaThi, o: { boQuyen?: boolean } = {}): ThiThatTho[] {
+  /* `p` null: Phân tích GV / hồ sơ GV đã kiểm quyền phần giáo viên (`nguCanhPtGv`, `phamViHoSoGv`) — đọc theo chi nhánh của ngữ cảnh. */
+  const scope = p ? phamVi(p) : { all: true, branchIds: [] as number[], classIds: [] as number[] };
   const conn = db();
   const ds = conn.prepare(SQL_THI_THAT).all(f.tu, f.den, f.tu, f.den) as any[];
   /* P12 (E7): lớp LÚC THI — cùng luật Phân tích GV (`lopLucThiThat`). */
@@ -170,33 +175,46 @@ export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi, o: { boQuyen?: bo
   theoLo([...new Set(lopCua.values())], (lo, ph) => {
     for (const r of conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) lop.set(r.id, { code: r.code, branch: r.branch_id });
   });
-  const rows: DongThiThat[] = ds.filter((c) => {
+  return ds.filter((c) => {
     const l = lopCua.get(c.id);
     const x = l ? lop.get(l) : undefined;
     if (!x) return false;
     if (f.branchId && x.branch !== f.branchId) return false;
     if (f.classId && l !== f.classId) return false;
     return scope.all || scope.branchIds.includes(x.branch) || scope.classIds.includes(l!);
-  }).map((c) => {
+  }).map((c): ThiThatTho => {
     const l = lopCua.get(c.id)!;
     const g = JSON.parse(c.buoc_tiep_json ?? '{}');
     const chon = (c.buoc_tiep ?? null) as LuaChonSauThi | null;
+    const ll = docLayLai(c.thi_that_lay_lai);
+    const thiLai = ll ? kyNangThiLai(ll) : null;
+    const target = c.target_score == null ? null : Number(c.target_score);
     return {
-      cycleId: c.id, studentId: c.student_id, ten: c.ten, classId: l, lop: lop.get(l)!.code, ngayThi: c.ngay_thi ?? null, khongThi: !!c.thi_that_khong_thi,
-      ovr: c.outcome_score ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
-      thiLai: ((ll) => (ll ? kyNangThiLai(ll).map((k) => k.toUpperCase()) : null))(docLayLai(c.thi_that_lay_lai)),
-      target: chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket),   // một chữ số lẻ như OVR: 6 → "6.0"
-      dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
-      buocTiep: chon, buocTiepChu: chon ? NHAN_SAU_THI[chon] : null, buocTiepPhu: g.lopMoiCode ? `lớp ${g.lopMoiCode}` : null,
-      nguoiChon: chon ? c.nguoi_chon ?? null : null, ngayChon: chon ? c.buoc_tiep_luc ?? null : null,
-      coTheChon: !o.boQuyen && coQuyenBuocTiep(p, c.student_id),
+      batDau: c.bat_dau ?? null,
+      kq: {
+        studentId: c.student_id, cycleId: c.id, classIdCuoi: l, ngay: c.ngay_thi ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
+        ovr: c.outcome_score ?? null, target: target === null || Number.isNaN(target) ? null : target, kck: !!c.khong_cam_ket, khongThi: !!c.thi_that_khong_thi, thiLai,
+      },
+      dong: {
+        cycleId: c.id, studentId: c.student_id, ten: c.ten, classId: l, lop: lop.get(l)!.code, ngayThi: c.ngay_thi ?? null, khongThi: !!c.thi_that_khong_thi,
+        ovr: c.outcome_score ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
+        thiLai: thiLai ? thiLai.map((k) => k.toUpperCase()) : null,
+        target: chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket),   // một chữ số lẻ như OVR: 6 → "6.0"
+        dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
+        buocTiep: chon, buocTiepChu: chon ? NHAN_SAU_THI[chon] : null, buocTiepPhu: g.lopMoiCode ? `lớp ${g.lopMoiCode}` : null,
+        nguoiChon: chon ? c.nguoi_chon ?? null : null, ngayChon: chon ? c.buoc_tiep_luc ?? null : null,
+        coTheChon: !o.boQuyen && !!p && coQuyenBuocTiep(p, c.student_id),
+      },
     };
-  }).sort((a, b) => (a.lop ?? '').localeCompare(b.lop ?? '', 'vi', { numeric: true }) || (a.ngayThi ?? '').localeCompare(b.ngayThi ?? '') || a.ten.localeCompare(b.ten, 'vi'));
-  return {
-    loai: 'thi-that', tu: f.tu, den: f.den, rows,
-    tong: {
-      luot: rows.length, hv: new Set(rows.map((r) => r.studentId)).size, dat: rows.filter((r) => r.dat === true).length,
-      chuaDat: rows.filter((r) => r.dat === false).length, chuaChon: rows.filter((r) => !r.buocTiep).length,
-    },
-  };
+  }).sort((a, b) => (a.dong.lop ?? '').localeCompare(b.dong.lop ?? '', 'vi', { numeric: true }) || (a.dong.ngayThi ?? '').localeCompare(b.dong.ngayThi ?? '') || a.dong.ten.localeCompare(b.dong.ten, 'vi'));
+}
+
+export const tongThiThat = (rows: readonly DongThiThat[]): KetQuaThiThatKq['tong'] => ({
+  luot: rows.length, hv: new Set(rows.map((r) => r.studentId)).size, dat: rows.filter((r) => r.dat === true).length,
+  chuaDat: rows.filter((r) => r.dat === false).length, chuaChon: rows.filter((r) => !r.buocTiep).length,
+});
+
+export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi, o: { boQuyen?: boolean } = {}): KetQuaThiThatKq {
+  const rows = thiThatTrongKhoang(p, f, o).map((x) => x.dong);
+  return { loai: 'thi-that', tu: f.tu, den: f.den, rows, tong: tongThiThat(rows) };
 }

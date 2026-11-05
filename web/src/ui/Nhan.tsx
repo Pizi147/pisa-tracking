@@ -42,7 +42,8 @@ export function lopSos(muc: number, tam?: boolean): string {
 export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center justify-center whitespace-nowrap rounded px-2 text-xs font-semibold leading-none tabular-nums';
 
 /** Nhóm 1 — KẾT QUẢ HỌC TẬP: Đạt ✓ · Chưa đạt ✗ · Chưa đủ dữ liệu – (viền đứt). Ký hiệu đứng đầu, không chỉ màu. */
-const KQ: Record<'dat' | 'chua-dat' | 'thieu', { lop: string; dau: string }> = {
+const KQ: Record<'vuot' | 'dat' | 'chua-dat' | 'thieu', { lop: string; dau: string }> = {
+  vuot: { lop: 'text-kq-vuot border-ok-line', dau: '✓' },   // THI-THAT: Exceed (vượt Target) xanh lá
   dat: { lop: 'text-kq-bang border-doing-line', dau: '✓' },   // MAU-THONG-NHAT: Đạt (không biết vượt) xanh dương
   'chua-dat': { lop: 'text-bad border-bad-line', dau: '✗' },
   thieu: { lop: 'text-faint border-dashed border-[color:var(--thieu-vien)]', dau: '–' },

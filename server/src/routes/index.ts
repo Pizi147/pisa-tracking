@@ -118,6 +118,7 @@ import * as yThucPhanTichSvc from '../phanTich/yThucPhanTich.ts';
 import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
 import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
+import * as thiThatTkSvc from '../phanTich/thiThatThongKe.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
 import { NHOM_VIEC_TVV, boQuaViec, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
@@ -885,6 +886,15 @@ api.get('/phan-tich/ket-qua-thi', requireAuth, wrap((req) => {
   return ketQuaThiSvc.ketQuaMockKq(principalOf(req), {
     ...f, xep: qStr(req, 'xep') === 'sos' ? 'sos' : 'lop', kq: kq === 'dat' || kq === 'chua-dat' || kq === 'chua-du' ? kq : null,
   });
+}));
+/* PR-4 THI-THAT: tab Thi thật — danh sách + Exceed / Đạt / Fail (Tổng · Từng kỹ năng · Theo GV cho QL / QT / CX) · panel ô số (`o`, xem `oThiThat`). */
+api.get('/phan-tich/thi-that', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return thiThatTkSvc.thiThatTab(principalOf(req), filterBaoCaoOf(req));
+}));
+api.get('/phan-tich/thi-that/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return thiThatTkSvc.oThiThat(principalOf(req), { ...filterBaoCaoOf(req), o: qStr(req, 'o') ?? '' });
 }));
 /* V8-PT-2: panel thẻ chỉ số Kết quả Test — `o` = luot · dat · chua-dat · chua-du · sos1-3 (Mock) | luot · dat · chua-dat · chua-chon (Thi thật). */
 api.get('/phan-tich/ket-qua-thi/o', requireAuth, wrap((req) => {
