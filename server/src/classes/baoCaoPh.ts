@@ -21,6 +21,7 @@ import {
 const VAI_XEM = ['manager', 'system_admin', 'office_admin', 'consultant'];
 const VAI_VIET_HO = ['manager', 'system_admin'];
 
+export type LopBc = Lop;
 type Lop = { id: number; code: string; branch_id: number; programme_code: string | null; kind: string; is_fast_track: number; start_date: string | null;
   created_at: string; nguong_dat: number | null; status: string };
 

@@ -46,6 +46,7 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
   chot_len_ft: 'van-hanh',   // PR-MT0 → PR-LCb: Chốt lộ trình
   xet_lai_lo_trinh: 'van-hanh',   // PR-CL: Xét lại lộ trình
+  xuat_bc_ph: 'van-hanh',   // BAO-CAO-PH b: Admin xuất báo cáo PH
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
 

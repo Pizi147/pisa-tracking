@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { api } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { taiXlsx, type SheetXuat } from '../test/keHoach/taiXlsx.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { taoHangLuu, dongSauKhiLuu, type TrangThaiO } from '../../lib/luuChac.ts';
@@ -46,6 +48,18 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
   const [them, setThem] = useState(false);
   const dt = useDienThoai();
   const bo = useMemo(() => boPhanBc(ct), [ct]);
+  const toast = useToast();
+  /* Xuất Excel (PR b): `null` = không đang xuất · 0 = cả lớp · id em. File = ảnh lúc bấm; không đánh dấu "đã xuất". */
+  const [dangXuat, setDangXuat] = useState<number | null>(null);
+  const xuat = async (emId: number | null) => {
+    if (dangXuat !== null || !data?.dot) return;
+    setDangXuat(emId ?? 0);
+    try {
+      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBaoCaoPh(lopId, data.dot, emId) }));
+    } catch (e: any) {
+      toast.push('error', e?.message ?? t('Chưa tạo được file.'));
+    } finally { setDangXuat(null); }
+  };
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data || !bo) return <Skeleton rows={6} />;
   if (!data.dot) {
@@ -70,8 +84,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
       </ChonDangNut>
       <span className="text-[15px] text-slate-300"><b className="tabular-nums text-slate-100">{soDu}/{em.length}</b> {t('em đủ')}</span>
       <span className="flex-1" />
-      {/* PR b làm tệp Excel — PR a chỉ giữ chỗ. */}
-      {data.xuat && <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled title={t('Xuất Excel có ở bản kế tiếp')}>{t('Xuất lớp')}</button>}
+      {data.xuat && <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null)}>
+        {dangXuat === 0 ? t('Đang tạo file…') : t('Xuất lớp')}</button>}
     </div>
   );
 
@@ -151,8 +165,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
           oCua={(e, c) => {
             if (c.key === 'ten') return <span className="font-semibold text-slate-100">{e.ten}</span>;
             if (c.key === 'xuat') {
-              return <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-medium text-slate-500" disabled
-                aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} title={t('Xuất Excel có ở bản kế tiếp')}>{t('Xuất')}</button>;
+              return <button type="button" className="link-nho min-h-[44px] font-medium sm:min-h-0" disabled={dangXuat !== null}
+                aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} onClick={() => void xuat(e.id)}>{dangXuat === e.id ? t('Đang tạo…') : t('Xuất')}</button>;
             }
             const p = data.phan.find((x) => x.khoa === c.key)!;
             const o = e.o[p.khoa];
@@ -173,6 +187,28 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
       </div>
       {panel}
     </section>
+  );
+}
+
+/** Tải Excel báo cáo PH một lớp (`emId` null) / một em — trả tên tệp. Dùng ở tab và việc Admin ở Công việc. */
+export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | null): Promise<string> {
+  const r = await api.get<{ sheets: SheetXuat[]; tenTep: string }>(`/classes/${lopId}/bao-cao-ph/xuat?dot=${encodeURIComponent(dot)}${emId ? `&em=${emId}` : ''}`);
+  await taiXlsx(r.sheets, r.tenTep);
+  return r.tenTep;
+}
+
+/** Việc Admin (Công việc) "Xuất báo cáo PH" của lớp đã đủ: nút Xuất lớp tải ngay (PTA chốt 05/11) — không chuyển trang, không dấu "đã xuất". */
+export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[30px]" disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBaoCaoPh(lopId, dot, null) })); }
+        catch (e: any) { toast.push('error', e?.message ?? t('Chưa tạo được file.')); }
+        finally { setBusy(false); }
+      }}>{busy ? t('Đang tạo file…') : t('Xuất lớp')}</button>
   );
 }
 

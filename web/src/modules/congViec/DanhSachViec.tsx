@@ -272,6 +272,8 @@ function CotHan({ it, daXong, nguoi }: { it: WorkItem; daXong: boolean; nguoi: s
     <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] sm:grid sm:justify-items-start">
       {daXong ? <span className="font-semibold text-dim">{t('✓ Đã lưu')}</span>
         : it.due ? <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
+        /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
+        : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
         : laViecChamCheo(it) ? null : <span className="text-faint">{t('không hạn')}</span>}
       {!daXong && nguoi && <NguoiGiu ten={nguoi} />}
     </span>

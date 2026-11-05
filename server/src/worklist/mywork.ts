@@ -19,6 +19,7 @@ import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
+import { viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
@@ -182,7 +183,9 @@ export type WorkGroupKey =
   /* SV-TVV-VIEC (Q-D4 ①): TVV bổ sung 4 trường hồ sơ còn thiếu — một dòng tổng, không hạn. */
   | 'bo_sung_ho_so'
   /* SV-YT-TVV (luật 1–2): TVV của em (không có → QL chi nhánh) báo PH sau mỗi lần lưu xử lý vi phạm — hạn ngày lưu + 4. */
-  | 'bao_ph_yt';
+  | 'bao_ph_yt'
+  /* BAO-CAO-PH b: Admin xuất báo cáo PH của lớp đã đủ (7 ngày) / đợt quá hạn chưa đủ (7 ngày từ hạn). QL không nhận. */
+  | 'xuat_bc_ph';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -313,6 +316,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   ban_giao: {
     label: 'Bàn giao',
     hint: 'Lớp có quyết định chuyển lớp: GVBM ghi một câu mỗi em cho môn mình (2 ngày), GVCN gom lại, viết nhận xét chung rồi GVCN xác nhận bàn giao (3 ngày, tính cả ngày ra quyết định). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.',
+  },
+  xuat_bc_ph: {
+    label: 'Xuất báo cáo PH',
+    hint: 'Lớp đã viết đủ báo cáo phụ huynh của đợt — xuất Excel gửi phụ huynh. Đợt quá hạn mà còn thiếu em cũng hiện để biết lớp kẹt. Tự rời sau 7 ngày.',
   },
   mgmt: {
     label: 'Việc được giao',
@@ -475,7 +482,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (scope.none && !lopFtChoGvSpeaking(p, today).length) return { summary: demSo([]), groups: [], scopeEmpty: true, xemNguoiKhac: false };
   /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
   const xemViec = phamViXemViec(p);
-  if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>(['score']) };
+  if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>([...(f.chiNhom ?? ['score', 'xuat_bc_ph'])].filter((g) => g === 'score' || g === 'xuat_bc_ph')) };
 
   const conn = db();
   quetYeuCau(today);   // PR-DUYET (K5-17): thẻ chết tự đóng, Báo QL tự tạo — một lần mỗi request
@@ -1293,6 +1300,22 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   /* SV-TVV-VIEC: hai việc không hạn của TVV (em chưa có TVV → QL chi nhánh) — Chốt ngày thi · Bổ sung hồ sơ thiếu (một dòng tổng). */
+  /* BAO-CAO-PH b: việc Admin "Xuất báo cáo PH" — chỉ vai Admin ở chi nhánh lớp (QL không nhận, đặc tả §12). Đủ: nút Xuất lớp (web); thiếu: link tab. */
+  if (co('xuat_bc_ph')) {
+    for (const v of viecXuatBaoCaoPh(p, f.branchId ?? null)) {
+      items.push({
+        key: `xuat-bc-ph:${v.classId}:${v.dot}`, group: 'xuat_bc_ph', urgency: v.thieu ? 'overdue' : 'normal',
+        studentId: null, studentName: `Lớp ${v.code}`, classId: v.classId, classCode: v.code, attemptId: null, attemptNo: null, caseId: null, level: null,
+        reason: v.thieu ? `Đợt ${v.nhanDot} đã quá hạn, còn thiếu ${v.thieu} em` : `Lớp đã đủ báo cáo PH · ${v.nhanDot}`,
+        actionLabel: v.thieu ? 'Báo cáo PH ›' : '', tieuDe: 'Xuất báo cáo PH',
+        href: `/hoc-vien/lop/${v.classId}?tab=bao-cao-ph&dot=${encodeURIComponent(v.dot)}`,
+        ownerId: p.userId, owner: p.fullName, mine: true, due: v.thieu ? v.han : null,
+        statusLabel: v.thieu ? `thiếu ${v.thieu} em` : `đủ ${v.duLuc!.slice(8, 10)}/${v.duLuc!.slice(5, 7)}`,
+        /* Thẻ phụ (mockup k1): đợt · "thiếu n em" / "n/n em đủ" — web tách mã tuần thành thẻ "tuần W3 SEP" như mọi việc (U01 #3). */
+        contextLabel: `${v.nhanDot} · ${v.thieu ? `thiếu ${v.thieu} em` : `${v.soEm}/${v.soEm} em đủ`}`, count: null,
+      });
+    }
+  }
   items.push(...viecHoSoTvv(p, { today, tatCa, branchId: f.branchId ?? null, chot: co('missing_data'), boSung: co('bo_sung_ho_so') }));
 
   /* K2-32: MT CŨ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
