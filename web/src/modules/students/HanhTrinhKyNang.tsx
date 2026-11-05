@@ -10,7 +10,7 @@ import { Skeleton } from '../../ui/ui.tsx';
 import { BieuDoD, ChuGiaiD, kqSo, type CaseD, type DiemD, type ThiD } from './BieuDoD.tsx';
 import type { SkillBoardRow } from '../cases/SkillBoard.tsx';
 import {
-  duongDotTest, mondayOfDate, ngay, soKyVong, tenBaiThuong, tuanLich,
+  duongDotTest, kyNangThiLai, mondayOfDate, ngay, soKyVong, tenBaiThuong, tuanLich, type LayLaiThi,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -70,7 +70,7 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
   const nguonKv = (mt: string, kv: number | null | undefined) => (kv != null ? t('{mt} · kỳ vọng {kv}', { mt, kv: fmtBand(kv) }) : mt);
   const lech = (v: number, tg: number) => (v > tg ? `+${fmtBand(v - tg)}` : v < tg ? `−${fmtBand(tg - v)}` : '=');
   const oDau = daThi ? (
-    <ODiemTo key="thi" nhan={t('Thi thật IELTS')} goc={daThi.nhan} chon={chon === OVERALL} onClick={() => onChon(OVERALL)} thi
+    <ODiemTo key="thi" nhan={t('Thi thật IELTS')} goc={daThi.layLai ? `${daThi.nhan} · ${t('thi lại {kn}', { kn: kyNangThiLai(daThi.layLai).map((k) => k.toUpperCase()).join(' · ') })}` : daThi.nhan} chon={chon === OVERALL} onClick={() => onChon(OVERALL)} thi
       phu={daThi.loai === 'kq' && daThi.diem.ovr != null && daThi.target != null ? `Target ${fmtBand(daThi.target)} · ${lech(daThi.diem.ovr, daThi.target)}` : null}>
       {daThi.loai === 'kq'
         ? <ODiem kieu="lon" so={daThi.diem.ovr != null ? fmtBand(daThi.diem.ovr) : null} kq={soKyVong(daThi.diem.ovr, daThi.target)} nhan={t('Thi thật')} kyVong={daThi.target != null ? `Target ${fmtBand(daThi.target)}` : undefined} />
@@ -99,8 +99,9 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
           const v = daThi!.diem[KN_THI[r.category]] ?? null;
           const mt = [...luot].reverse().find((x) => x.bands?.[kb] != null);
           const laW = kb === 'writing';
+          const cu = chuLanTruoc(daThi!, KN_THI[r.category]);
           return (
-            <ODiemTo key={r.category} nhan={laW ? 'W' : r.short} title={laW ? 'Writing' : r.label} goc={t('thi thật')}
+            <ODiemTo key={r.category} nhan={laW ? 'W' : r.short} title={`${laW ? 'Writing' : r.label}${cu ? ` · ${cu}` : ''}`} goc={cu ? t('lần trước') : t('thi thật')}
               chon={laW ? chon.startsWith('writing') : chon === r.category} onClick={() => onChon(laW && chon.startsWith('writing') ? chon : r.category)}
               phu={mt && v != null ? soMoc(tenLuot(mt), mt.bands![kb]!, v) : null}>
               <ODiem kieu="lon" so={v != null ? fmtBand(v) : null} kq={soKyVong(v, daThi!.target)} nhan={laW ? 'W' : r.short} kyVong={daThi!.target != null ? `Target ${fmtBand(daThi!.target)}` : undefined} />
@@ -158,7 +159,9 @@ export type LoTrinhD = {
   ratio: boolean; target: number | null; monDangKy?: string[] | null;
   targetRevisions: { oldTarget: number | null; newTarget: number | null; effectiveFrom: string }[];
   examPlan?: { confidence: string; weekStart: string | null; month: string | null; label: string } | null;
-  thiThat?: { ngay: string | null; l: number | null; r: number | null; w: number | null; s: number | null; ovr: number | null; target: number | null; khongThi: boolean } | null;
+  thiThat?: { ngay: string | null; l: number | null; r: number | null; w: number | null; s: number | null; ovr: number | null; target: number | null; khongThi: boolean;
+    /** THI-LAI-1-KN: kỹ năng lấy điểm KQ thi thật lần trước (em chỉ thi lại kỹ năng còn lại). */
+    layLai?: LayLaiThi | null } | null;
 };
 /** Một dòng của chart / Bảng: lượt (có điểm · vắng · không học · sắp tới), S Ex, hay Thi thật. */
 type DongKn = DiemD & { a?: LuotD; nhanXet?: string | null };
@@ -169,14 +172,17 @@ const pm = (d: number) => (d > 0 ? `+${d.toFixed(1)}` : d < 0 ? `−${(-d).toFix
 
 /** Thi thật của lộ trình FT, một nguồn cho chart D, Bảng kỹ năng và hàng Thi thật bảng Mock Test: đã nhập (kết quả / chờ) → ngày thi; chưa nhập → kế hoạch
  * thi (tuần; tuần đã qua = đã thi chờ kết quả · tháng → khối tháng). `khong` = em không thi. */
-export type ThiThatD = { loai: 'kq' | 'cho' | 'du-kien'; tuan: string | null; thang: string | null; nhan: string; diem: Record<'l' | 'r' | 'w' | 's' | 'ovr', number | null>; target: number | null };
+export type ThiThatD = { loai: 'kq' | 'cho' | 'du-kien'; tuan: string | null; thang: string | null; nhan: string; diem: Record<'l' | 'r' | 'w' | 's' | 'ovr', number | null>; target: number | null; layLai?: LayLaiThi | null };
+/** THI-LAI-1-KN: "điểm lần trước · W2 SEP" khi kỹ năng `k` lấy điểm KQ thi thật lần trước; không thì null. */
+export const chuLanTruoc = (th: ThiThatD, k: 'l' | 'r' | 'w' | 's'): string | null =>
+  th.layLai?.kn.includes(k) ? [t('điểm lần trước'), th.layLai.ngay ? tuanLich(th.layLai.ngay) : null].filter(Boolean).join(' · ') : null;
 export function thiThatCua(cy: LoTrinhD, homNay: string): ThiThatD | 'khong' | null {
   const tt = cy.thiThat, ke = cy.examPlan, target = tt?.target ?? cy.target;
   const trong = { l: null, r: null, w: null, s: null, ovr: null };
   if (tt?.khongThi) return 'khong';
   if (tt?.ngay) {
     const diem = { l: tt.l, r: tt.r, w: tt.w, s: tt.s, ovr: tt.ovr };
-    return { loai: Object.values(diem).some((v) => v != null) ? 'kq' : 'cho', tuan: mondayOfDate(tt.ngay), thang: null, nhan: ngay(tt.ngay, homNay), diem, target };
+    return { loai: Object.values(diem).some((v) => v != null) ? 'kq' : 'cho', tuan: mondayOfDate(tt.ngay), thang: null, nhan: ngay(tt.ngay, homNay), diem, target, layLai: tt.layLai ?? null };
   }
   if (ke?.confidence === 'week' && ke.weekStart) return { loai: ke.weekStart <= mondayOfDate(homNay) ? 'cho' : 'du-kien', tuan: ke.weekStart, thang: null, nhan: ke.label, diem: trong, target };
   if (ke?.confidence === 'month' && ke.month) return { loai: 'du-kien', tuan: null, thang: ke.month, nhan: ke.label, diem: trong, target };
@@ -254,7 +260,7 @@ function duLieuKn({ kn, row, attempts, cy, sEx, homNay, tenKn, ten, onMoCase }: 
     thi = { tuan: th.tuan, thang: th.thang, v, cho: th.loai !== 'du-kien' && v == null, target: th.target,
       goi: th.loai === 'du-kien'
         ? { tieu: t('Thi thật · dự kiến {thang}', { thang: th.nhan }), dong: [th.thang ? t('chưa chốt ngày · Target {v}', { v: fmtBand(th.target) }) : `Target ${fmtBand(th.target)}`, t('mốc cuối của lộ trình')] }
-        : { tieu: t('Thi thật IELTS · {ngay}', { ngay: th.nhan }), dong: v != null ? [`${tenKn} ${fmtBand(v)} · Target ${fmtBand(th.target)}`, t('kết quả cuối của lộ trình')] : [t('đã thi · chờ kết quả')] } };
+        : { tieu: t('Thi thật IELTS · {ngay}', { ngay: th.nhan }), dong: v != null ? [`${tenKn} ${fmtBand(v)} · Target ${fmtBand(th.target)}`, chuLanTruoc(th, KN_THI[kn]) ?? t('kết quả cuối của lộ trình')] : [t('đã thi · chờ kết quả')] } };
   }
   /* Trục dọc: FT theo band (bước 0.5, rộng ≥ 2) · lớp thường theo % (bước 20, tới 100). */
   const so = [...diem.flatMap((d) => [d.v, d.kv]), ...sex.map((x) => x.v), ...(target ?? []).map((g) => g.v), thi?.v ?? null, nguong != null ? nguong * 100 : null].filter((v): v is number => v != null);
@@ -371,7 +377,7 @@ function BangKn({ kn, d, cy, homNay, hep }: { kn: string; d: ReturnType<typeof d
       tuan: th && th !== 'khong' ? (th.loai === 'du-kien' ? t('dự kiến {thang}', { thang: th.nhan }) : th.nhan) : '',
       band: v != null ? <span style={{ color: k ? `rgb(var(--kq-${k}-rgb))` : undefined }}>{k === 'duoi' ? '✗ ' : k ? '✓ ' : ''}{fmtBand(v)}</span> : gach,
       kv: tg != null ? `Target ${fmtBand(tg)}` : gach, pm: d2 == null ? gach : <span className={d2 < 0 ? 'text-bad' : d2 > 0 ? 'text-ok' : ''}>{pm(d2)}</span>,
-      gc: v != null ? (kn.startsWith('writing') ? t('W gộp') : null) : d.thi.cho ? t('chờ kết quả') : t('chưa thi'),
+      gc: v != null ? ((th && th !== 'khong' ? chuLanTruoc(th, KN_THI[kn]) : null) ?? (kn.startsWith('writing') ? t('W gộp') : null)) : d.thi.cho ? t('chờ kết quả') : t('chưa thi'),
     };
   }
   /* 375: bốn cột vừa 343 px (không cuộn ngang); 1440: số hẹp, Ghi chú lấy phần còn lại. */

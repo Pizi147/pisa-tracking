@@ -7,7 +7,7 @@
  */
 import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
 import {
-  KN_THI, NHAN_SAU_THI, kyNangDaBo, boMonDaBo, PERMISSIONS, chuTargetKck, ketQuaMock, tuanLich, xepDongMock,
+  KN_THI, NHAN_SAU_THI, docLayLai, kyNangThiLai, kyNangDaBo, boMonDaBo, PERMISSIONS, chuTargetKck, ketQuaMock, tuanLich, xepDongMock,
   type DongMock, type DongThiThat, type KetQuaMock, type KetQuaMockKq, type KetQuaThiThatKq, type LoaiThi, type LuaChonSauThi, type XepMock,
 } from '../../../shared/domain/index.ts';
 import { t as tl } from '../../../shared/i18n/index.ts';
@@ -149,7 +149,7 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
  * (`thi_that_ngay` NULL) → ngày thi dự kiến (`exam_date`). Hai vế OR, mỗi vế một chỉ mục một phần (`idx_cycle_thi_that_ngay`, `idx_cycle_khong_thi`).
  */
 export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s,
-            c.thi_that_khong_thi, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
+            c.thi_that_khong_thi, c.thi_that_lay_lai, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
       WHERE c.route IS NOT NULL
         AND ((c.thi_that_ngay BETWEEN ? AND ? AND c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
@@ -184,6 +184,7 @@ export function ketQuaThiThatKq(p: Principal, f: LocKetQuaThi, o: { boQuyen?: bo
     return {
       cycleId: c.id, studentId: c.student_id, ten: c.ten, classId: l, lop: lop.get(l)!.code, ngayThi: c.ngay_thi ?? null, khongThi: !!c.thi_that_khong_thi,
       ovr: c.outcome_score ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
+      thiLai: ((ll) => (ll ? kyNangThiLai(ll).map((k) => k.toUpperCase()) : null))(docLayLai(c.thi_that_lay_lai)),
       target: chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket),   // một chữ số lẻ như OVR: 6 → "6.0"
       dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
       buocTiep: chon, buocTiepChu: chon ? NHAN_SAU_THI[chon] : null, buocTiepPhu: g.lopMoiCode ? `lớp ${g.lopMoiCode}` : null,
