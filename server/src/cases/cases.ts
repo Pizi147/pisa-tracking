@@ -3151,7 +3151,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     if (!cat) continue;
     if (ratio && (r.raw_score === null || r.raw_total === null)) continue;
     if (!ratio && r.band === null) continue;
-    const rr = ratio ? ratioResult(r.raw_score, r.raw_total, nguongDatLop(r.class_id)) : null;
+    const rr = ratio ? ratioResult(r.raw_score, r.raw_total, nguongDatLop(r.class_id, cycle?.programme_code)) : null;
     const list = byCategory.get(cat) ?? [];
     list.push({
       attemptNo: r.attempt_no, attemptId: r.attempt_id,

@@ -76,7 +76,7 @@ export function evaluateAttemptRow(
   const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
   const prog = chuongTrinhTyLeCuaLuot(ma, () => programmes);
   if (prog) {
-    const nguong = 'lop_nguong_dat' in a ? a.lop_nguong_dat || RATIO_PASS_THRESHOLD : nguongDatLop(a.class_id);   // cùng luật `nguongDatLop` (thiếu → 70 %)
+    const nguong = a.class_id && 'lop_nguong_dat' in a ? a.lop_nguong_dat || RATIO_PASS_THRESHOLD : nguongDatLop(a.class_id, prog.code);   // cùng luật `nguongDatLop` (thiếu → 70 %)
     const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguong);   // P13: bộ môn theo lượt
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {

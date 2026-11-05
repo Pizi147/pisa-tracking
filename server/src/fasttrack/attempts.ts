@@ -847,7 +847,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     const regularSkills = boLop && [...boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), scores))];   // P13: lượt đã ghi môn gộp cũ giữ L+S / R+W
 
     if (regularSkills) {
-      const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id));
+      const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma));
       const editable = a.class_id ? editableSkills(p, a.class_id, regularSkills) : [];
       /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
       const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];

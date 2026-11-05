@@ -183,7 +183,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     const maCt = c.programme_code ?? (laFt ? null : luot.map((a) => lopTheoId.get(a.class_id)?.programme_code).find(Boolean) ?? null);
     const ct = ctCua(maCt);
     const mon: string[] = laFt ? [...ASSESSED_SKILLS] : [...(ct?.skills ?? [])];
-    const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon, maCt: ct?.code ?? maCt, nguong: nguongDatLop(lopId, nguongKhac), kck: !!c.khong_cam_ket };
+    const nc: NguCanhLuot = { laFt, route: c.route ?? null, mon, maCt: ct?.code ?? maCt, nguong: nguongDatLop(lopId, ct?.code ?? maCt, nguongKhac), kck: !!c.khong_cam_ket };
     const gvcn = gvcnCua(lopId, o.ngay);
 
     // điểm đầu vào: nhập tay, hoặc bài đánh giá làm căn cứ
@@ -263,7 +263,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
     if (!bc) continue;
     const cu = conn.prepare('SELECT * FROM ban_chup_luot WHERE ban_chup_id = ? AND attempt_id = ?').all(bc.id, a.id) as any[];
     if (!cu.length || cu[0].trang_thai === 'cancelled') continue;   // PR-VN5: lượt vừa huỷ vẫn ghi một lần để bản chụp thành `cancelled`
-    const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null, nguong: nguongDatLop(bc.class_id), kck: !!bc.khong_cam_ket };
+    const nc: NguCanhLuot = { laFt: !!bc.route, route: bc.route ?? null, mon: JSON.parse(bc.mon_json ?? '[]'), maCt: bc.programme_code ?? null, nguong: nguongDatLop(bc.class_id, bc.programme_code), kck: !!bc.khong_cam_ket };
     const rows = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[];
     const boQua = cu.filter((r) => r.bo_qua === 1 && (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang)).map((r) => r.ky_nang as string);
     const t = tinhLuot(nc, a, cu[0].target_luc_thi ?? null, rows, boQua, false,
