@@ -3,7 +3,12 @@
  * điểm cũ giữ band khi đổi bảng, điểm mới theo bảng mới · phiên bản + Hoàn tác / khôi phục + chặn ghi đè · migrate v1 + v2 (Listening IDP).
  * Mỗi phép kiểm cuộn lại (`thu`).
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 export async function runPrBandQuyDoiTests(t: YThucTestKit) {
   const { check, assert, conn, P, classId } = t;
@@ -13,6 +18,7 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
   const bqd: any = await import('../platform/bangQuyDoi.ts');
   const m: any = await import('../migrate/prBandQuyDoi.ts');
   const { navOf } = await import('../platform/nav.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nBAND-QUY-DOI · bảng quy đổi band ở DB, Quản trị sửa, điểm cũ giữ band');
@@ -137,4 +143,15 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     attempts.saveScore(P.lrTeacher, luot, 'listening', { rawTotal: 40 }, TRONG);   // ghi chỉ tổng số câu (không gửi số câu đúng)
     assert(bandL() === 6, `ô cũ band NULL → tính lại khi ghi tổng, có ${bandL()}`);
   }));
+
+  /* DA-XOA-MENU (chủ SP 05/11): mục "Đã xoá" ở menu Tài khoản — hiện theo đúng cờ của route /quan-tri (QT, QL), mở thẳng tab da-xoa. */
+  check('BQD-7 · menu Tài khoản có "Đã xoá" cho QT / QL, không cho GV / TVV / CX; mở /quan-tri?tab=da-xoa', () => {
+    const theoVai = (vai: string) => loadPrincipal(one(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? LIMIT 1`, vai).id);
+    const thay = (p: any) => { const n = navOf(p); return !!(n.admin || n.bangQuyDoi); };
+    assert(thay(P.admin) && thay(P.mbManager), 'QT, QL thấy');
+    for (const p of [P.lrTeacher, theoVai('consultant'), theoVai('cx')]) assert(!thay(p), 'GV / TVV / CX không thấy');
+    const hd = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/Header.tsx'), 'utf8');
+    assert(/\(session\?\.nav\?\.admin \|\| session\?\.nav\?\.bangQuyDoi\) && \(\s*<Link to="\/quan-tri\?tab=da-xoa"[\s\S]{0,200}t\('Đã xoá'\)/.test(hd), 'Header: mục Đã xoá theo cờ admin || bangQuyDoi, mở tab da-xoa');
+    assert(hd.indexOf("t('Đã xoá')") > hd.indexOf("t('Hướng dẫn')"), 'đứng ngay sau Hướng dẫn');
+  });
 }

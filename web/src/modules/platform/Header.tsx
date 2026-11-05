@@ -429,6 +429,11 @@ export function Header() {
               )}
               {/* Hướng dẫn của màn đang đứng (panel, không chuyển trang); trang Hướng dẫn đầy đủ ở cuối panel. */}
               <button type="button" className="btn w-full justify-center" onClick={() => { setOpenMenu(null); setMoHd(true); }}>{t('Hướng dẫn')}</button>
+              {/* DA-XOA-MENU (chủ SP 05/11): lối thẳng tới thùng rác — cùng cờ với route /quan-tri (QT, QL); lối cũ (tab Đã xoá) giữ. */}
+              {(session?.nav?.admin || session?.nav?.bangQuyDoi) && (
+                <Link to="/quan-tri?tab=da-xoa" className="btn w-full justify-center no-underline"
+                  onClick={() => setOpenMenu(null)}>{t('Đã xoá')}</Link>
+              )}
               {session?.nav?.admin ? (
                 <Link to="/quan-tri" className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>
