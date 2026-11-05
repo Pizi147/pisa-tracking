@@ -195,6 +195,26 @@ export function LichTestTab() {
     if (n > 0) { setHoiBo({ title: t('Thu khối này?'), body: t('Còn {chuOChuaLuu}. Thu khối này thì mất các giá trị đó — vẫn thu?', { chuOChuaLuu: chuOChuaLuu(n) }), nut: t('Bỏ, thu khối'), tiep: thu }); return; }
     thu();
   };
+  /* MO-TAT-CA (2D, mockup v13 D2): "Mở tất cả lớp" ↔ "Thu gọn tất cả" — các lớp của khung đang xem, nhớ như mở tay (theo tuần); chỉ QL / QT.
+     Thu khi còn ô chưa lưu thì hỏi trước như thu khối (Q14). */
+  const moHetLop = lopTab.length > 0 && moKhoi.k3 && lopTab.every(moCua);
+  const doiMoHet = () => {
+    const ve = !moHetLop;
+    const lam = () => {
+      const moi = { ...nho, ...Object.fromEntries(lopTab.map((l) => [khoaHang(l), ve])) };
+      setNho(moi);
+      if (tuanId) ghiMo(nguoiId, tuanId, moi);
+      setEpMo(new Set());
+      if (ve) setMoKhoi((m) => ({ ...m, k3: true }));
+    };
+    const n = ve ? 0 : lopTab.reduce((s, l) => s + (chuaLuu[khoaHang(l)] ?? 0), 0);
+    if (n > 0) { setHoiBo({ title: t('Thu gọn tất cả?'), body: t('Còn {chuOChuaLuu}. Thu gọn thì mất các giá trị đó — vẫn thu?', { chuOChuaLuu: chuOChuaLuu(n) }), nut: t('Bỏ, thu gọn'), tiep: lam }); return; }
+    lam();
+  };
+  const nutMoHet = !!session?.nav?.testPlan && lopTab.length > 0 && (
+    <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" aria-pressed={moHetLop}
+      onClick={doiMoHet}>{moHetLop ? t('Thu gọn tất cả') : t('Mở tất cả lớp')}</button>
+  );
 
   /*
    * UX-2 (1): ô "Quá hạn chấm" = Tổng quan "Bài quá hạn" (mọi ô có cờ quá hạn, cả ô tuần trước) — đường riêng, không theo tuần.
@@ -286,6 +306,7 @@ export function LichTestTab() {
           {!dienThoai && <span className="ml-1 inline-flex flex-wrap items-center gap-2">{congTacKhung}{nhomPhamVi}</span>}
           {!dienThoai && locChiNhanh}
           <span className="ml-auto inline-flex items-center gap-3">
+            {nutMoHet}
             {!dienThoai && nutXuat}
             {nutLichThi}
             {dienThoai && (coGiTrongLoc || !!congTacKhung) && (
