@@ -268,8 +268,12 @@ export type DaiLop = {
   loTrinh: { hanChot: string | null; tong: number; daChot: number; do: boolean } | null;
   banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
   banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
+  /** BAN-GIAO-2: lệnh đã chuyển ≤ 14 ngày, phiếu xác nhận đủ (dải Bàn giao đã hết) — người viết vẫn mở / sửa phiếu. */
+  daChuyen: { daXacNhan: number; tong: number } | null;
   /** Phía lớp ĐÍCH (H). */
   sapNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
+  /** BAN-GIAO-2: em đã vào lớp ≤ 14 ngày (cùng cửa sổ dải hồ sơ HV) — GV lớp mới đọc bàn giao. */
+  daNhan: { n: number; tuLop: { id: number; code: string }[]; tuan: string; daXacNhan: number } | null;
   /** PR-S5F-a: lệnh của lớp thường (nguồn) đã tới tuần mà CHƯA chuyển được — chỉ Quản lý thấy, sửa ở trang Cuối khoá. */
   chuaChuyenDuoc: { n: number; loi: string } | null;
   /** OV-3c: lớp FT — số đợt em vào từ FOU/BE/ELE còn trong 4 tuần (cách xem "Kết quả đầu ra"); 0 = ẩn. */

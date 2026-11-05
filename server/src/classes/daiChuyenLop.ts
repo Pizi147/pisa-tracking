@@ -29,7 +29,8 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
     `SELECT 'nguon' AS k, l.id AS a, l.huong AS b, l.trang_thai AS c, l.tuan_bat_dau AS d, l.xac_nhan_luc AS e, l.han_gvcn AS f, l.han_gvbm AS g, l.loi AS h
        FROM lenh_chuyen_lop l WHERE l.lop_nguon_id = ? AND l.trang_thai != 'huy'
      UNION ALL SELECT 'dich', l.lop_nguon_id, n.code, l.trang_thai, l.tuan_bat_dau, l.xac_nhan_luc, NULL, NULL, NULL
-       FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id WHERE l.lop_dich_id = ? AND l.trang_thai = 'cho'
+       FROM lenh_chuyen_lop l JOIN classes n ON n.id = l.lop_nguon_id
+      WHERE l.lop_dich_id = ? AND (l.trang_thai = 'cho' OR (l.trang_thai = 'da_chuyen' AND l.tuan_bat_dau >= ?))
      UNION ALL SELECT 'mon', b.lenh_id, b.mon, NULL, NULL, NULL, NULL, NULL, NULL
        FROM ban_giao_mon b WHERE b.lam_lai = 0 AND b.lenh_id IN (SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ?)
      UNION ALL SELECT 'gvcn', COUNT(*), NULL, NULL, NULL, NULL, NULL, NULL, NULL
@@ -55,7 +56,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
      UNION ALL SELECT 'xt', d.khoa, um.full_name, d.nguoi_moi, d.hieu_luc, d.xem_den, NULL, NULL, NULL
        FROM doi_phan_cong d JOIN users um ON um.id = d.nguoi_moi WHERE d.class_id = ? AND d.nguoi_cu = ? AND d.trang_thai = 'da_ap' AND d.xem_den IS NOT NULL
      UNION ALL SELECT 'kqdr', COUNT(DISTINCT substr(e.started_at, 1, 10)), NULL, NULL, NULL, NULL, NULL, NULL, NULL ${EM_KQDR_FT_SQL}`,
-  ).all(classId, classId, classId, classId, classId, classId, classId, classId, classId, addDays(homNay, -14), classId, addDays(homNay, -14), classId, classId, classId, p.userId,
+  ).all(classId, classId, addDays(homNay, -14), classId, classId, classId, classId, classId, classId, classId, addDays(homNay, -14), classId, addDays(homNay, -14), classId, classId, classId, p.userId,
     classId, addDays(homNay, -KQDR_HIEN_NGAY)) as any[];
   const min = (xs: (string | null)[]) => xs.filter((x): x is string => !!x).sort()[0] ?? null;
 
@@ -97,12 +98,16 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
     : [];
   const { banGiaoGv, xemTam } = daiBanGiaoGv(p, classId, o.ct, rows, ra, homNay);
 
-  const dich = rows.filter((r) => r.k === 'dich');
-  const sapNhan = dich.length
+  const nhom = (dich: any[]) => dich.length
     ? {
       n: dich.length, tuLop: [...new Map(dich.map((r) => [r.a as number, { id: r.a as number, code: r.b as string }])).values()],
       tuan: min(dich.map((r) => r.d))!, daXacNhan: dich.filter((r) => !!r.e).length,
     } : null;
+  const sapNhan = nhom(rows.filter((r) => r.k === 'dich' && r.c === 'cho'));
+  const daNhan = nhom(rows.filter((r) => r.k === 'dich' && r.c === 'da_chuyen'));
+  /* BAN-GIAO-2: lớp nguồn — lệnh đã chuyển ≤ 14 ngày khi dải Bàn giao đã hết (xác nhận đủ): người viết vẫn có chỗ mở / sửa phiếu. */
+  const daDi = banGiao ? [] : nguon.filter((r) => r.c === 'da_chuyen' && r.d >= addDays(homNay, -14));
+  const daChuyen = daDi.length ? { daXacNhan: daDi.filter((r) => !!r.e).length, tong: daDi.length } : null;
 
   /* OV-3b: thanh nhắc "Lộ trình tiếp theo" (Quản lý, lớp thường) — CÙNG hàm với việc QL "Chốt lộ trình" (N20: từ thứ Hai tuần trước Final, còn em chưa chốt). */
   const den = o.pr?.finalWeekStart ? homNay >= mocLoTrinh(o.pr.finalWeekStart).nhacTu : mocKetKhoa(o.pr, homNay).hetKhoa;   // lọc rẻ trước khi đếm
@@ -113,7 +118,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
   const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
   /* OV-3c: số đợt "Kết quả đầu ra" lớp FT còn trong 4 tuần — 0 thì web ẩn cách xem (Admin luôn 0, máy chủ chặn đường đọc). */
   const kqdrDot = laChiAdmin(p) ? 0 : rows.find((r) => r.k === 'kqdr')?.a ?? 0;   // đường đọc kiểm `attempt.view`; ở đây không gọi `can()` (thêm câu tra chi nhánh)
-  return { loTrinh, banGiao, kqdrDot, banGiaoMon, sapNhan, chuaChuyenDuoc, banGiaoGv, xemTam, viewer: { coTheRaLenh: ra, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
+  return { loTrinh, banGiao, daChuyen, kqdrDot, banGiaoMon, sapNhan, daNhan, chuaChuyenDuoc, banGiaoGv, xemTam, viewer: { coTheRaLenh: ra, laGvcn: pc.gvcn, xacNhanDuoc: pc.gvcn || qlThay } };
 }
 
 /**

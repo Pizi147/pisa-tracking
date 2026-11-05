@@ -496,6 +496,7 @@ export const EN_C = {
   'GVCN đang bàn giao': 'Core teacher handing over',
   'Ghi bàn giao': 'Write handover',
   'Sắp nhận': 'Incoming',
+  'Đã nhận': 'Received',
   'từ {lop} vào lớp từ {tuan} · bàn giao {a}/{b} đã xác nhận': 'from {lop}, joining {tuan} · handover {a}/{b} confirmed',
   'Đọc bàn giao': 'Read handover',
   'Chưa chọn lớp chuyển đến': 'No target class yet',

@@ -135,6 +135,7 @@ export default function ClassOverviewPage() {
   const tabMacDinh = tabMacDinhLop(null, daKetThuc);
   const dsTab = tabHienCuaLop(daKetThuc);
   const dong = () => setViec(null);
+  const bgLenh = Number(params.get('ban-giao')) || 0;
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */
   const moViec = (v: ViecDauTrang) => {
     if (v === 'lo-trinh-ca-lop' || v === 'chuyen-tiep') { if (thuong) doiThamSo({ tab: null, 'che-do': null, xem: 'cuoi-khoa' }, true); }   // push: ‹ về đúng hồ sơ lớp
@@ -184,6 +185,8 @@ export default function ClassOverviewPage() {
       {viec === 'lich-su' && <LichSuThayDoi loai="lop" id={data.id} dong2={[data.code]} onClose={dong} />}
       {viec === 'lich-su-gop-y' && <LichSuThayDoi loai="gop-y" id={data.id} dong2={[t('Góp ý hàng tuần'), data.code]} onClose={dong} />}
       {viec === 'ban-giao' && <BanGiaoPanel classId={bg.lop ?? data.id} mon={bg.mon} lenhId={bg.lenhId} onClose={dong} onDone={xong} />}
+      {/* BAN-GIAO-2: chuông "Đã có bàn giao" khi em chưa vào lớp (GV lớp mới chưa xem được hồ sơ em) — đọc phiếu theo lệnh tại trang lớp. */}
+      {bgLenh > 0 && <BanGiaoPanel docLenh={bgLenh} onClose={() => doiThamSo({ 'ban-giao': null })} onDone={() => {}} />}
       {bgGv !== null && <BanGiaoGvPanel id={bgGv} onClose={() => setBgGv(null)} onDone={xong} />}
       {(viec === 'thong-tin' || viec === 'phan-cong') && (
         <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong}

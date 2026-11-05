@@ -411,7 +411,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
 
 /**
  * Hành trình + chuông lớp chuyển đến (khoá `ban_giao:{lệnh}` — lưu lại không báo lại người đã nhận, chỉ người mới của lớp đích).
- * BAN-GIAO-NHAN (chủ SP 05/11): người nhận = GVCN + GVBM các môn em học ở lớp mới (một câu); chuông mở hồ sơ HV, panel đọc bàn giao mở sẵn.
+ * BAN-GIAO-NHAN (chủ SP 05/11): người nhận = GVCN + GVBM các môn em học ở lớp mới (một câu); chuông mở hồ sơ HV (lệnh còn chờ: trang lớp mới), panel đọc bàn giao mở sẵn.
  */
 function baoBanGiao(p: Principal, l: any, nx: string) {
   addJourney({
@@ -429,7 +429,9 @@ function baoBanGiao(p: Principal, l: any, nx: string) {
     if (userId === p.userId) continue;
     notify({
       userId, kind: 'ban_giao', title: `Đã có bàn giao · ${l.full_name}`, body: `Từ ${l.nguon_code}`,
-      entityType: 'student', entityId: l.student_id, dedupKey: `ban_giao:${l.id}`, duong: duongHoSoHocVien(l.student_id, { banGiao: l.id }),
+      entityType: 'student', entityId: l.student_id, dedupKey: `ban_giao:${l.id}`,
+      /* BAN-GIAO-2: lệnh còn chờ → GV lớp mới chưa xem được hồ sơ em → trang lớp mới, phiếu mở sẵn. */
+      duong: l.trang_thai === 'da_chuyen' ? duongHoSoHocVien(l.student_id, { banGiao: l.id }) : `/hoc-vien/lop/${l.lop_dich_id}?ban-giao=${l.id}`,
     });
   }
 }

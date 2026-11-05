@@ -58,6 +58,12 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, onBanGiaoGv
           {t('GVCN đang bàn giao')} · <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: dai.banGiao.daXacNhan, b: dai.banGiao.tong })}</b> {t('đã xác nhận')}{dai.banGiao.hanGvcn && <> · <Han loai="viec-van-hanh" han={dai.banGiao.hanGvcn} /></>}
         </Dai>
       )}
+      {/* BAN-GIAO-2: em đã chuyển, phiếu xác nhận đủ — người viết (GVCN, GVBM) và Quản lý vẫn mở / sửa phiếu 14 ngày (như dải hồ sơ HV). */}
+      {dai.daChuyen && (
+        <Dai nhan={t('Đã chuyển')} nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({})}>{t('Mở phiếu')}</button>}>
+          <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: dai.daChuyen.daXacNhan, b: dai.daChuyen.tong })}</b> {t('đã xác nhận')}
+        </Dai>
+      )}
       {dai.banGiaoMon.map((m) => (
         <Dai key={m.mon} nhan={t('Bàn giao môn {mon}', { mon: m.monNgan })} nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ mon: m.mon })}>{t('Ghi bàn giao')}</button>}>
           <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: m.daGhi, b: m.tong })}</b>{m.han && <> · <Han loai="viec-van-hanh" han={m.han} /></>}
@@ -68,6 +74,17 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, onBanGiaoGv
         <Dai nhan={t('Sắp nhận')}
           nut={dai.sapNhan.daXacNhan > 0 ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ lop: dai.sapNhan!.tuLop[0].id })}>{t('Xem')}</button> : undefined}>
           <b className="tabular-nums text-slate-100">{t('{n} em', { n: dai.sapNhan.n })}</b> {t('từ {lop} vào lớp từ {tuan} · bàn giao {a}/{b} đã xác nhận', { lop: dai.sapNhan.tuLop.map((l) => l.code).join(', '), tuan: tuanLich(dai.sapNhan.tuan, h), a: dai.sapNhan.daXacNhan, b: dai.sapNhan.n })}
+        </Dai>
+      )}
+      {/* BAN-GIAO-2: em đã vào lớp ≤ 14 ngày — GV lớp mới đọc bàn giao (mỗi lớp cũ một nút; thường chỉ một). */}
+      {dai.daNhan && (
+        <Dai nhan={t('Đã nhận')}
+          nut={<>{dai.daNhan.tuLop.map((l) => (
+            <button key={l.id} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ lop: l.id })}>
+              {dai.daNhan!.tuLop.length > 1 ? `${t('Đọc bàn giao')} · ${l.code}` : t('Đọc bàn giao')}
+            </button>
+          ))}</>}>
+          <b className="tabular-nums text-slate-100">{t('{n} em', { n: dai.daNhan.n })}</b> {t('từ {lop} vào lớp từ {tuan} · bàn giao {a}/{b} đã xác nhận', { lop: dai.daNhan.tuLop.map((l) => l.code).join(', '), tuan: tuanLich(dai.daNhan.tuan, h), a: dai.daNhan.daXacNhan, b: dai.daNhan.n })}
         </Dai>
       )}
     </div>
