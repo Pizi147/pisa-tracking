@@ -4,7 +4,7 @@ import { KhungPanel, panelHdTren } from '../../ui/KhungPanel.tsx';
 import { phimHangTab } from '../../ui/HangTab.tsx';
 import { ToKhop } from '../../ui/ToKhop.tsx';
 import { ChuDam } from '../../ui/ui.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 import {
   HUONG_DAN, TEN_VAI_HD, VAI_CO_NOI_DUNG, coXemVaiKhac, locVai, manCuaDuong, manCuaPanel, manTheoId, mucCuaViec, timHd, viecOManNay,
@@ -57,7 +57,7 @@ export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
             value={vai} onChange={(e) => { setVai(e.target.value as VaiHd); setQ(''); }}>
             {VAI_CO_NOI_DUNG.map((v) => <option key={v} value={v}>{t('Vai: {vai}', { vai: TEN_VAI_HD[v] })}</option>)}
           </select>
-        ) : <Nhan tone="muted">{TEN_VAI_HD[vai]}</Nhan>}
+        ) : <span className={`${CHIP_TRON} px-2.5 text-slate-400`} style={{ background: 'var(--surface-2)' }}>{TEN_VAI_HD[vai]}</span>}
         <button type="button" className="btn btn-sm btn-ghost ml-auto min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]" onClick={onDong} aria-label={t('Đóng')}>✕</button>
       </div>
       <label className="relative block">
