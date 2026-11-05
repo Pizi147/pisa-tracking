@@ -350,6 +350,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&o=bai-qua-han' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  /* PR-4 THI-THAT: tab Thi thật — danh sách + Tổng · Từng kỹ năng · Theo GV (QL / QT / CX; TVV không chạy 2 câu Theo GV); panel ô chỉ khi bấm. */
+  { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN', 'TVV', 'CX'], url: '/phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV'], url: '/phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { TVV: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=ghi-pa' },
   /* V8-PT-2: panel thẻ chỉ số — chỉ gọi khi MỞ (0 câu khi vẽ); đường vẽ `/phan-tich/*` giữ trần cũ. */
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi/o?loai=mock&o=dat&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
