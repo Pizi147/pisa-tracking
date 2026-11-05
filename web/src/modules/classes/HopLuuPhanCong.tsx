@@ -303,7 +303,7 @@ export function HopChoDoi({ code, cho, nhanO, ten, neoEl, tamDuoi, onDong, onXon
         {/* Mockup v9 khu 5: "Việc bàn giao của A: a/b em đã viết · hạn" — một dòng mỗi việc (các cặp cùng GV cũ chung một việc). */}
         {[...new Map(cho.filter((c) => c.banGiao).map((c) => [c.banGiao!.id, c] as const)).values()].map((c) => (
           <div key={c.banGiao!.id} className="pc-ket-bg">
-            <span>{t('Việc bàn giao của {gv}:', { gv: ten(c.nguoiCu) })} <b>{t('{a}/{b} em', { a: c.banGiao!.du, b: c.banGiao!.tong })}</b> {t('đã viết')} · <span className="pc-han">{t('hạn {ngay}', { ngay: ngay(c.banGiao!.han, hn) })}</span></span>
+            <span>{t('Việc bàn giao của {gv}:', { gv: ten(c.nguoiCu) })} <b>{t('{a}/{b} em', { a: c.banGiao!.du, b: c.banGiao!.tong })}</b> {t('đã viết')} <span className="whitespace-nowrap">· <span className="pc-han">{t('hạn {ngay}', { ngay: ngay(c.banGiao!.han, hn) })}</span></span></span>
           </div>
         ))}
         {doiMoc && <ChonHieuLuc loai={loai} tuan={tuan} homNay={hn} onLoai={setLoai} onTuan={setTuan} />}
