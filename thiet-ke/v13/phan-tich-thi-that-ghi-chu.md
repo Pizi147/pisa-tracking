@@ -197,3 +197,8 @@ Cả tab ~5 câu, ~1 000 dòng với khoảng 2 tháng. **Cảnh báo:** "Toàn 
 Dừng sau vòng 3 theo luật 28/10 (chạm 30 → tối đa 2 vòng nữa; xong chỉ cần không P0 / P1). P1 cuối đã sửa và tự kiểm trên ảnh C3. Giữ như v11 đã duyệt: dấu ✓ / ✗ (✓ xanh lá vượt · ✓ xanh dương bằng), ẩn ô chi nhánh ở 375, mờ mép hàng tab 375, hộp điểm thành phần đè dòng dưới (dáng U03).
 
 **Ảnh:** `anh/*-1440-toi.jpg` và `anh/*-375-sang.jpg` (18 khung). Mở `phan-tich-thi-that.html`, nút "Đổi sáng / tối" để xem 1440 sáng.
+
+## 7. PTA rà #973 (05/11) — sửa 2 mục hình
+
+- Số bấm được: chữ màu nhấn, **chỉ gạch chân khi rê / focus** (DESIGN G6, #956 `so-bam`). Toàn mockup; giữ một ô đang rê (C1 · Theo GV · Cao Khánh Linh W1 Fail 80 %). Kiểm máy: còn đúng 1 phần tử gạch chân.
+- Panel C3: đầu "6 / 11 HV Fail · 55 % theo tuần dạy"; Cách tính một câu "Mỗi HV tính theo tỉ lệ tuần GV dạy (cột Tuần dạy)". Số thập phân dùng dấu chấm ở mọi nơi.

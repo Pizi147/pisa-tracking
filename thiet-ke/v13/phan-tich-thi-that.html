@@ -63,10 +63,10 @@ figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; backgroun
 .man, .dt { position:relative; overflow:hidden; background:var(--bg); border-radius:6px; display:flex; flex-direction:column; }
 .man { width:1408px; height:880px; }
 .dt { width:375px; height:780px; }
-:where(.toi, .sang) a { color:var(--accent); text-decoration:none; }
-:where(.toi, .sang) button { font:inherit; color:inherit; }
-:where(.toi, .sang) :is(h1, h2, h3) { margin:0; line-height:1.3; }
-:where(.toi, .sang) p { margin:0; }
+:where(.man, .dt) a { color:var(--accent); text-decoration:none; }
+:where(.man, .dt) button { font:inherit; color:inherit; }
+:where(.man, .dt) :is(h1, h2, h3) { margin:0; line-height:1.3; }
+:where(.man, .dt) p { margin:0; }
 .so, .bang td { font-family:var(--phong-so); font-variant-numeric:tabular-nums; }
 .tt { flex:none; height:52px; background:var(--dh-nen); display:flex; align-items:center; gap:2px; padding:0 16px; color:var(--dh-chu); font-size:14px; }
 .tt .logo { display:inline-flex; align-items:baseline; gap:6px; margin-right:18px; }
@@ -340,6 +340,9 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
 .the-hv .lk-t.lop { font-size:13px; }
 .dt .luoi > span > b { font-size:14px; }
 .co-hop { padding-bottom:46px !important; }
+.man .oso, .dt .oso { text-decoration:none !important; }
+.man .oso:hover, .man .oso:focus-visible, .dt .oso:hover, .dt .oso:focus-visible, .oso.dang-re { text-decoration:underline !important; text-decoration-thickness:1px !important; text-underline-offset:3px; }
+.oso:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
 .pn-than.cuon { overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line-strong) transparent; }
 .menu-noi { z-index:6; min-width:240px; padding:6px; border-radius:10px; background:var(--surface); border:1px solid var(--line-strong); box-shadow:0 8px 24px rgb(0 0 0 / .4); display:grid; }
 .menu-noi button { appearance:none; border:0; background:none; text-align:left; display:flex; align-items:center; gap:8px; height:36px; padding:0 10px; border-radius:6px; font:500 14px var(--phong); color:var(--text); cursor:pointer; }
@@ -771,14 +774,14 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
         + '<div class="the-dong"><div class="dau">W5 OCT <span class="mo2" style="font-weight:400;font-size:13px">26/10–01/11</span><span class="phai"><span style="color:var(--text)">' + o(9) + ' bài</span> ▸</span></div></div>'
         + '<div class="the-dong"><div class="dau">W4 OCT <span class="mo2" style="font-weight:400;font-size:13px">19/10–25/10</span><span class="phai"><span style="color:var(--text)">' + o(11) + ' bài</span> ▸</span></div></div>';
     },
-    c1: function () { return tabThi(true); },
+    c1: function () { return tabThi(true).replace('<a class="oso c-x" href="#so">80 %', '<a class="oso c-x dang-re" href="#so" title="đang rê">80 %'); },
     c2: function () {
       return tabThi(true) + panel(pnDau('SỐ · THI THẬT', 'Fail · W', 'Cẩm Phả · thi 01/09 – 05/11 · W so Target overall')
         + '<div class="pn-than"><span class="pn-tong"><b>15</b> HV</span>' + bangTT(FAILW, 'W') + '<div class="cach-tinh" style="margin-top:24px"><b>Cách tính</b>W thi thật dưới Target overall. Thi lại chỉ W: tính W lần này, L R S lấy lại (↺) không tính. Không tính KCK.</div></div>', true, 'Fail · W');
     },
     c3: function () {
       return tabThi(true) + panel(pnDau('SỐ · THI THẬT · THEO GV', 'Đỗ Vũ Tuấn Phong · W1 · Fail', 'Cẩm Phả · thi 01/09 – 05/11 · W1 tính nửa W')
-        + '<div class="pn-than"><span class="pn-tong"><b>6</b> HV · tỉ lệ 4,0 / 7,3 · <b>55 %</b></span>' + bangTT(GVW1, 'W', true) + '<div class="cach-tinh"><b>Cách tính</b>Tỉ lệ mỗi HV = tuần GV dạy W1 ÷ tuần HV học W1 trong lộ trình, tính đến ngày thi (cột Tuần dạy). % Fail = tổng tỉ lệ HV Fail ÷ tổng tỉ lệ 11 HV GV đã dạy (4,0 ÷ 7,3).</div></div>', true, 'Đỗ Vũ Tuấn Phong · W1');
+        + '<div class="pn-than"><span class="pn-tong"><b>6</b> / 11 HV Fail · 55 % theo tuần dạy</span>' + bangTT(GVW1, 'W', true) + '<div class="cach-tinh"><b>Cách tính</b>Mỗi HV tính theo tỉ lệ tuần GV dạy (cột Tuần dạy).</div></div>', true, 'Đỗ Vũ Tuấn Phong · W1');
     },
     c7: function () {
       return nenTS().replace(MENU, MENU.replace('nut nut-vuong', 'nut nut-vuong dang-mo')) + '</div><div class="menu-noi" role="menu" style="position:absolute;top:220px;right:24px"><button role="menuitem">Cột hiện…</button><button role="menuitem" class="ke">' + IC.xuat + 'Xuất kết quả từng lượt</button></div><div>';
