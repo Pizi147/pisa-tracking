@@ -322,6 +322,46 @@ export function addMilestone(input: {
  * Case đã ĐÓNG mà trượt lại cũng chỉ ra tín hiệu: mở Case mới nối vào Case cũ là một quyết
  * định có chủ đích của người dạy, không phải phản xạ của máy.
  */
+/**
+ * HẠNG MỤC ĐÃ ĐẠT LẦN NÀY: ghi mốc "đã đạt kỳ vọng" và hạ mức, nhưng KHÔNG tự đóng case.
+ *
+ * Một lần đạt chưa chứng minh vấn đề đã hết, và đóng hộ người ta thì mất luôn cơ hội ghi
+ * lại phương án nào đã ăn thua. Người có thẩm quyền chốt kết quả, máy chỉ đưa tin.
+ * Trả các Case đang mở cùng lộ trình (nơi gọi dùng tiếp cho môn dưới kỳ vọng).
+ * `chiCaseMtCu`: chỉ Case đang theo một MT SỐ NHỎ HƠN lượt này (MT lịch sử nhập bù không ghi "đạt" vào Case của MT mới hơn).
+ */
+function ghiMocDaDat(p: Principal, attempt: any, result: AttemptResult, failing: readonly string[], entry: EntryBands, detectedAt: string, chiCaseMtCu = false): any[] {
+  const conn = db();
+  const mtCu = chiCaseMtCu ? new Set((conn.prepare('SELECT id FROM assessment_attempts WHERE cycle_id = ? AND attempt_no < ?')
+    .all(attempt.cycle_id ?? 0, attempt.attempt_no) as any[]).map((r) => r.id as number)) : null;
+  const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
+  const boMon = boMonDaBo(result.boQua);   // D7: Case môn đã bỏ còn mở không xét "đã đạt" — bài môn đó không còn là căn cứ
+  const openHere = conn
+    .prepare(
+      `SELECT * FROM sos_cases
+        WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`,
+    )
+    .all(attempt.student_id, attempt.cycle_id ?? 0) as any[];
+  for (const c of openHere) {
+    if (!c.category || failingCats.has(c.category) || boMon.has(c.category) || (mtCu && !mtCu.has(c.attempt_id))) continue;
+    const cat = c.category as CaseCategory;
+    const band = entry[cat as EntrySkill] ?? null;
+    if (band === null || result.expectation === null) continue;
+    addMilestone({
+      caseId: c.id, kind: 'passed', attemptId: attempt.id, attemptNo: attempt.attempt_no,
+      band, expectation: result.expectation, sosLevel: result.sosLevel,
+      occurredOn: detectedAt, createdBy: p.userId,
+      dedupKey: `mt:${attempt.id}:${c.id}:passed`,
+    });
+    paSangKetQuaCuoi([c.id], detectedAt, p.userId);   // OV-13a (A): kỹ năng đạt ở lượt sau → PA quy chế sang "Kết quả cuối"
+    if (c.sos_level !== 0) {
+      conn.prepare('UPDATE sos_cases SET sos_level = 0, updated_at = ? WHERE id = ?').run(nowIso(), c.id);
+      recordChange(c.id, 'sos_level', String(c.sos_level), '0', p.userId);
+    }
+  }
+  return openHere;
+}
+
 export function raiseSignalsForResult(p: Principal, attempt: any, result: AttemptResult) {
   /* OV-9: em KCK dưới kỳ vọng không có mức SOS (`sosLevel` null) nhưng vẫn mở Case nhẹ — `kck` đi suốt hàm. */
   const kck = result.kckDuoi;
@@ -341,18 +381,26 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    * lượt. Chặn ĐÚNG MỘT CHỖ ở đầu hàm — không để tín hiệu `pending` rơi vào nhánh "silent" bên dưới.
    */
   const lichSu = !!attempt.lich_su;
-  if (lichSu) {
-    const tuanKetThuc = attempt.planned_period_id
+  const ngoaiCuaSo = lichSu && !luotSinhViec({
+    lich_su: 1, created_at: ngayTaoLuot(attempt.created_at),
+    tuanKetThuc: attempt.planned_period_id
       ? (conn.prepare('SELECT week_end FROM report_periods WHERE id = ?').get(attempt.planned_period_id) as any)?.week_end ?? null
-      : null;
-    if (!luotSinhViec({ lich_su: 1, tuanKetThuc, created_at: ngayTaoLuot(attempt.created_at) })) return null;
-  }
+      : null,
+  });
   const rows = conn
     .prepare('SELECT skill, band FROM assessment_scores WHERE attempt_id = ?')
     .all(attempt.id) as any[];
   const entry: EntryBands = {};
   for (const r of rows) entry[r.skill as EntrySkill] = r.band;
   const failing = failingEntrySkills(result.expectation, entry, result.boQua);   // D7: trừ môn đã bỏ (`boMonDaBo` trong danh sách bỏ của lượt)
+  /*
+   * MT-LS-DAT-CASE (Việc để sau #860): MT lịch sử NGOÀI cửa sổ vẫn ghi mốc "đã đạt" vào Case đang mở của MT CŨ HƠN (như MT thường — Mock FT chỉ khi
+   * lượt đã chốt), nhưng KHÔNG gì khác: không tín hiệu / Case / PA / Phối hợp / chuông mới (UA-19).
+   */
+  if (ngoaiCuaSo) {
+    if (result.chot || !isFastTrackMock(attempt, scoringModeOf(attempt))) ghiMocDaDat(p, attempt, result, failing, entry, demoToday(), true);
+    return null;
+  }
 
   /*
    * NGÀY PHÁT HIỆN = thứ Hai của TUẦN THI. Đây là ngày NGHIỆP VỤ của kết quả.
@@ -379,37 +427,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
    */
   if (isFastTrackMock(attempt, scoringModeOf(attempt))) syncSosCoordination(attempt, kck ? 0 : result.sosLevel);   // OV-9: KCK = không Phối hợp
 
-  /*
-   * HẠNG MỤC ĐÃ ĐẠT LẦN NÀY: ghi mốc "đã đạt kỳ vọng" và hạ mức, nhưng KHÔNG tự đóng case.
-   *
-   * Một lần đạt chưa chứng minh vấn đề đã hết, và đóng hộ người ta thì mất luôn cơ hội ghi
-   * lại phương án nào đã ăn thua. Người có thẩm quyền chốt kết quả, máy chỉ đưa tin.
-   */
-  const failingCats = new Set(failing.map((sk) => categoryOf(sk)).filter(Boolean) as string[]);
-  const boMon = boMonDaBo(result.boQua);   // D7: Case môn đã bỏ còn mở không xét "đã đạt" — bài môn đó không còn là căn cứ
-  const openHere = conn
-    .prepare(
-      `SELECT * FROM sos_cases
-        WHERE student_id = ? AND COALESCE(cycle_id, 0) = ? AND status != 'done'`,
-    )
-    .all(attempt.student_id, attempt.cycle_id ?? 0) as any[];
-  for (const c of openHere) {
-    if (!c.category || failingCats.has(c.category) || boMon.has(c.category)) continue;
-    const cat = c.category as CaseCategory;
-    const band = entry[cat as EntrySkill] ?? null;
-    if (band === null || result.expectation === null) continue;
-    addMilestone({
-      caseId: c.id, kind: 'passed', attemptId: attempt.id, attemptNo: attempt.attempt_no,
-      band, expectation: result.expectation, sosLevel: result.sosLevel,
-      occurredOn: detectedAt, createdBy: p.userId,
-      dedupKey: `mt:${attempt.id}:${c.id}:passed`,
-    });
-    paSangKetQuaCuoi([c.id], detectedAt, p.userId);   // OV-13a (A): kỹ năng đạt ở lượt sau → PA quy chế sang "Kết quả cuối"
-    if (c.sos_level !== 0) {
-      conn.prepare('UPDATE sos_cases SET sos_level = 0, updated_at = ? WHERE id = ?').run(nowIso(), c.id);
-      recordChange(c.id, 'sos_level', String(c.sos_level), '0', p.userId);
-    }
-  }
+  const openHere = ghiMocDaDat(p, attempt, result, failing, entry, detectedAt);
 
   /* OV-1c: còn kỹ năng dưới kỳ vọng mà mức 0 = Overall ≥ kỳ vọng → xoá SOS của chính lượt này. */
   if (result.sosLevel === 0 && failing.length) xoaSosOverallDat(p.userId, attempt, result, failing);

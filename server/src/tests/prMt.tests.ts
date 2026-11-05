@@ -392,6 +392,32 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(chuong === 0, `chuông: ${chuong}`);
     assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(sH1b) as any).n === 0, 'sửa điểm sinh Case');
   });
+  /* MT-LS-DAT-CASE (Việc để sau #860): MT lịch sử ngoài cửa sổ mà Đạt VẪN ghi mốc "đã đạt" vào Case đang mở cùng em + kỹ năng (như MT thường) —
+     không Case / tín hiệu / Phối hợp / chuông mới (UA-19 giữ). */
+  check('PR-MT (6) · MT-LS-DAT-CASE: MT3 lịch sử ngoài 4 tuần Đạt → mốc "đã đạt" vào Case Listening đang theo MT2, mức về 0; MT1 (cũ hơn Case) không ghi; 0 Case / tín hiệu / Phối hợp / chuông mới', () => {
+    const [mt1, , mt3] = luotCua(sH1b);
+    assert(mt3.no === 3 && mt3.lich_su === 1 && !d.luotSinhViec({ lich_su: 1, tuanKetThuc: addDays(mt3.tuan, 6), created_at: TODAY }), `MT3 phải ngoài cửa sổ: ${JSON.stringify(mt3)}`);
+    const cid = Number(conn.prepare(`INSERT INTO sos_cases (attempt_id, student_id, cycle_id, category, topic, status, sos_level, created_at) VALUES (?, ?, ?, 'listening', 'listening', 'open', 2, ?)`)
+      .run(mt2H1.id, sH1b, mt3.cycle_id, TODAY).lastInsertRowid);
+    const moc = (a: number) => (conn.prepare(`SELECT COUNT(*) n FROM case_milestones WHERE case_id = ? AND kind = 'passed' AND attempt_id = ?`).get(cid, a) as any).n;
+    try {
+      nhap(mt1, { l: 8, r: 8, w: 8, s: 8 });
+      assert(moc(mt1.id) === 0, 'MT1 cũ hơn Case (MT2) mà ghi "đã đạt"');
+      const r = nhap(mt3, { l: 8, r: 8, w: 8, s: 8 });
+      assert(r.sosLevel === 0, `SOS ${r.sosLevel}`);
+      assert(moc(mt3.id) === 1, `mốc "đã đạt" của MT3: ${moc(mt3.id)}`);
+      assert((conn.prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(cid) as any).sos_level === 0, 'mức Case chưa về 0');
+      const n = (sql: string) => (conn.prepare(sql).get(mt3.id) as any).n;
+      assert(n('SELECT COUNT(*) n FROM case_signals WHERE attempt_id = ?') === 0, 'có tín hiệu');
+      assert(n('SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ?') === 0, 'có Phối hợp');
+      assert(n(`SELECT COUNT(*) n FROM notifications WHERE entity_type = 'assessment_attempt' AND entity_id = ?`) === 0, 'có chuông');
+      assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?').get(sH1b) as any).n === 1, 'sinh Case mới');
+    } finally {
+      conn.prepare('DELETE FROM case_milestones WHERE case_id = ?').run(cid);
+      conn.prepare('DELETE FROM sos_case_history WHERE case_id = ?').run(cid);
+      conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(cid);
+    }
+  });
   check('PR-MT (6) · R11 MT lịch sử: nhập ô cuối hôm nay → chưa khoá; qua Chủ nhật của tuần chứa hôm nay + 7 → khoá (K5-21, K4-20)', () => {
     conn.prepare('UPDATE assessment_scores SET nhap_dau_ngay = ? WHERE attempt_id = ?').run(TODAY, mt2H1.id);
     const cn = addDays(d.mondayOfDate(addDays(TODAY, 7)), 6);
