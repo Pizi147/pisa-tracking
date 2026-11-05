@@ -24,7 +24,7 @@ export function TomTatLuuTru({ studentId, target, kck, ketThuc }: { studentId: n
       {o(t('Lộ trình gần nhất'), [dich(g.ten), g.lop].filter(Boolean).join(' · '))}
       {tg && o('Target', tg)}
       {bt?.ngayThi && o(t('Thi thật'), ngay(bt.ngayThi, homNay))}
-      {bt ? <Nhan tone={bt.ketLuan === 'reached' ? 'ok' : bt.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(bt.daXong)}</Nhan>
+      {bt ? <Nhan tone={bt.ketLuan === 'reached' ? 'doing' : bt.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(bt.daXong)}</Nhan>
         : g.ketQua && <Nhan tone={g.ketQua.tone}>{chuKetQuaGon(g.ketQua)}</Nhan>}
       {ketThuc && o(t('Kết thúc'), ngay(ketThuc, homNay))}
     </div>

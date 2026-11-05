@@ -9760,6 +9760,9 @@ await runPrTlNapBaiTests({ check, assert, conn, P } as any);
 
 const { runV8Pt2Tests } = bocTep('v8Pt2', await import('./v8Pt2.tests.ts'));
 await runV8Pt2Tests({ check, assert, conn, P } as any);
+// ==================================================================== PT-PANEL (2026-11-05: ô số Phân tích → panel bảng có điểm)
+const { runPrPtPanelTests } = bocTep('prPtPanel', await import('./prPtPanel.tests.ts'));
+await runPrPtPanelTests({ check, assert, conn, P } as any);
 // ==================================================================== TL-VIEC (myWork nạp chung một lần mỗi request — so bản chụp gốc)
 const { runPrTlViecTests } = bocTep('prTlViec', await import('./prTlViec.tests.ts'));
 await runPrTlViecTests({ check, checkAsync, assert, P } as any);
@@ -9795,6 +9798,12 @@ await runPrMtVangTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== PR-4 THI-THAT (chủ SP 05/11: tab Thi thật, luật mới thay C10 — một hàm `thongKeThiThat`)
 const { runPrThiThatTkTests } = bocTep('prThiThatTk', await import('./prThiThatTk.tests.ts'));
 await runPrThiThatTkTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== PR-6 MAU-THONG-NHAT (chủ SP 05/11: đỏ không đạt · xanh dương đạt · xanh lá vượt)
+const { runPrMauKqTests } = bocTep('prMauKq', await import('./prMauKq.tests.ts'));
+await runPrMauKqTests({ check, assert } as any);
+// ==================================================================== PR-5 MO-TAT-CA (chủ SP 05/11: nút Mở tất cả lớp + ô Việc của tôi → Công việc)
+const { runPrMoTatCaTests } = bocTep('prMoTatCa', await import('./prMoTatCa.tests.ts'));
+await runPrMoTatCaTests({ check, assert, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

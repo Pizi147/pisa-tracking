@@ -355,6 +355,15 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV'], url: '/phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { TVV: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=ghi-pa' },
+  /* PT-PANEL (PR-1, 05/11): panel BẢNG có điểm — chỉ khi MỞ; dòng lượt + điểm theo lô (`dongLuotDiemCua`). */
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening' },
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot' },
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&branchId={cn}&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang' },
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt' },
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&tu=2026-03-02&den=2026-09-14&cot=tien-bo' },
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&tu=2026-03-02&den=2026-09-14&cot=dat-mt' },
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=hv-chu-y' },
+  { trang: 'Phân tích · panel bảng', vai: MOI_VAI, url: '/giao-vien/{gv}/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14', maChuDich: { GVBM: 403 } },
   /* V8-PT-2: panel thẻ chỉ số — chỉ gọi khi MỞ (0 câu khi vẽ); đường vẽ `/phan-tich/*` giữ trần cũ. */
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi/o?loai=mock&o=dat&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi/o?loai=thi-that&o=luot&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
@@ -387,6 +396,15 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — trần = max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 22, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 22,   // PT-PANEL: đo 12
+  'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 21, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 21,   // PT-PANEL: đo 11
+  'QL /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 38, 'QT /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 38,   // PT-PANEL: đo 28
+  'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt': 28, 'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt': 28,   // PT-PANEL: đo 18
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 25,   // PT-PANEL: đo 15
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 25,   // PT-PANEL: đo 15
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 25,   // PT-PANEL: đo 15
+  'QL /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 31, 'GVCN /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 29, 'GVBM /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 29, 'QT /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 30,   // PT-PANEL: đo 21 · 19 · 4 (403) · 19 · 20
   /* SUA-NHO-QUYEN: Quản trị › Tài khoản — đo 30/10 trước 138 câu (4 câu × tài khoản) → sau 11; trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/accounts': 21,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
@@ -969,6 +987,15 @@ export const TRAN_DONG: Record<string, number> = {
   /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11 (bộ demo ít thi thật: QL 12 · QT / CX 22 · TVV 14 dòng). Ước bản chính 2 tháng ~1 000 dòng (ghi chú v13 mục 4). */
   'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,
   'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 72,
+  /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — max(đo + 50, ⌈đo × 1,3⌉); phần thêm (lượt theo id + điểm) ≈ +4 dòng so panel cũ (đo dat-mt 911 → 915). */
+  'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 1085, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 1893,
+  'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 1161, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 2104,
+  'QL /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 2075, 'QT /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 2075,
+  'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt': 1566, 'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt': 2885,
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 1091, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 1091,
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 894, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 894,
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 1676, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 1676,
+  'QL /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 1186, 'GVCN /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 1183, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 1183, 'QT /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 1185,
   'QL /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,   // V8-HSL-2: đo 276 (một đợt)
   'GVCN /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
   'GVBM /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,

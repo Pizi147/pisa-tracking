@@ -151,6 +151,9 @@ function Doan({ ds }: { ds: ReactNode[] }) {
     <Fragment key={i}>{i > 0 && <><span aria-hidden className="mx-1.5 text-slate-500">·</span><span className="sr-only">, </span><wbr /></>}<span className="whitespace-nowrap">{x}</span></Fragment>
   ))}</>;
 }
+/** MAU-THONG-NHAT (chủ SP 05/11): đoạn kết luận trong `sub` theo màu kết quả — Đạt xanh dương (dòng `vuot`: xanh lá), Chưa đạt đỏ. */
+const toKetLuan = (x: string, vuot?: boolean): ReactNode => (x === 'Đạt' || x === 'Chưa đạt'
+  ? <span className={`font-semibold ${lopKq(x === 'Chưa đạt' ? 'duoi' : vuot ? 'vuot' : 'dat')}`}>{t(x)}</span> : x);
 /** 6c-2 (critique vòng 3): MỘT cách ghi "điểm so kỳ vọng" cho mọi dòng panel số — "[nhãn] ✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0" (✓ / ✗ + màu `DiemKq`). */
 const doanDiem = (d: NonNullable<DongSoLieu['diemCase']>): ReactNode[] => [
   <>{d.nhan && <>{d.nhan} </>}<DiemKq diem={d.so} kyVong={d.kyVong} /></>,
@@ -407,7 +410,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     const xh = r.xuHuong ? chuXuHuong(r.xuHuong) : null;
     const phu: ReactNode[] = [
       ngCanh && (r.em ? <Link to={r.href} className="text-[color:var(--accent)] no-underline hover:underline">{ngCanh}</Link> : ngCanh),
-      ...r.sub.split(' · ').filter((x) => x && !daCo.has(x)),
+      ...r.sub.split(' · ').filter((x) => x && !daCo.has(x)).map((x) => toKetLuan(x, r.vuot)),
       v && !v.lam && dich(v.chu), r.tinhTrang && dich(r.tinhTrang),
       han && <HanDong han={han} loai={r.viec?.loaiHan} />,
       r.nguoi && r.nguoiId !== toi && r.nguoi,
@@ -474,7 +477,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           {r.diemCase && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={doanDiem(r.diemCase)} /></span>}
           {r.ngCanh
             ? <span className="text-[13px] leading-snug text-slate-400"><Doan ds={dong2.filter((x) => x !== r.title)} /></span>
-            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ')} /></span>}
+            : r.sub && <span className="text-[13px] leading-snug text-slate-400"><Doan ds={r.sub.split(' · ').map((x) => toKetLuan(x, r.vuot))} /></span>}
           {(v || r.tinhTrang || conNguoi || hanRieng) && (
             <span className="text-[13px] leading-snug text-slate-300">
               <Doan ds={[v && dich(v.chu), r.tinhTrang && dich(r.tinhTrang), conNguoi && r.nguoi, hanRieng && <HanDong han={hanRieng} loai={r.viec?.loaiHan} />]} />

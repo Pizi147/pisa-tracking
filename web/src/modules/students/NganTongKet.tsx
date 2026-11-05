@@ -62,12 +62,12 @@ const Lon = ({ children, em }: { children: ReactNode; em?: string }) => (
 function nhanLuot(l: Luot, ft: boolean): { tone: ToneNhan; chu: string; phu?: string } | null {
   if (l.trangThai === 'cancelled') return null;
   if (ft) {
-    if (l.ketQua === 'dat') return { tone: 'ok', chu: t('Đạt') };
+    if (l.ketQua === 'dat') return { tone: 'doing', chu: t('Đạt') };
     if (l.ketQua === 'chua_dat') return { tone: 'soon', chu: `SOS ${l.sos} · ${l.kyNang.filter((k) => k.dat === false && k.k.length > 2 && !k.k.endsWith('1') && !k.k.endsWith('2')).map((k) => dich(k.nhan)).join(', ')}` };
     return null;
   }
   const dat = l.kyNang.filter((k) => k.dat === true).length;
-  if (l.kind === 'final' && l.tyLe !== null) return { tone: dat === l.kyNang.length ? 'ok' : 'soon', chu: `${Math.round(l.tyLe * 100)}%` };
+  if (l.kind === 'final' && l.tyLe !== null) return { tone: dat === l.kyNang.length ? 'doing' : 'bad', chu: `${Math.round(l.tyLe * 100)}%` };
   if (!l.kyNang.some((k) => k.diem !== null)) return null;
   const hong = l.kyNang.filter((k) => k.dat === false).map((k) => dich(k.nhan));
   return { tone: hong.length ? 'soon' : 'ok', chu: t('{a}/{b} môn đạt', { a: dat, b: l.kyNang.length }), phu: hong.length ? t('Không đạt: {ds}', { ds: hong.join(', ') }) : undefined };
@@ -104,7 +104,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                     </>
                   ) : (
                     <td className="px-3">{huy ? <span className="text-slate-500">—</span> : l.kyNang.map((k) => (
-                      <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[12px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
+                      <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[12px] font-semibold tabular-nums ${k.dat === false ? 'bg-bad-bg text-kq-duoi' : k.dat ? 'bg-doing-bg text-kq-bang' : 'bg-muted-bg text-slate-500'}`}>
                         {dich(k.nhan)} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
                       </span>
                     ))}</td>
@@ -136,7 +136,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                     <dt className="text-slate-500">{t('Kỳ vọng')}</dt><dd className="m-0 tabular-nums">{b1(l.kyVong)}</dd>
                   </dl>
                 : <div className="mt-1.5">{l.kyNang.map((k) => (
-                    <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[12px] font-semibold tabular-nums ${k.dat === false ? 'bg-soon-bg text-soon' : k.dat ? 'bg-ok-bg text-ok' : 'bg-muted-bg text-slate-500'}`}>
+                    <span key={k.k} className={`mr-1 inline-flex rounded px-1.5 text-[12px] font-semibold tabular-nums ${k.dat === false ? 'bg-bad-bg text-kq-duoi' : k.dat ? 'bg-doing-bg text-kq-bang' : 'bg-muted-bg text-slate-500'}`}>
                       {dich(k.nhan)} {k.diem ?? '—'}{k.tong ? `/${k.tong}` : ''}
                     </span>))}</div>)}
             </li>
@@ -208,7 +208,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                     <O nho={`${t('Thi thật')}${kq.ngay ? ` · ${ngay(kq.ngay, homNay)}` : ''}`}>
                       <Lon em="OVR">{b1(kq.ovr)}</Lon>
                       <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}</div>
-                      {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'ok' : kq.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(kq.nhan)}</Nhan></div>}
+                      {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'doing' : kq.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(kq.nhan)}</Nhan></div>}
                     </O>
                   ) : kq.khongCoThi ? (
                     <O nho={t('Thi thật')} cho><div className="text-sm font-semibold text-slate-500">—</div></O>
@@ -230,7 +230,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                       {data.thiThatKyThi
                         ? <><Lon>{data.thiThatKyThi.khongThi ? t('Không thi') : data.thiThatKyThi.tong}</Lon>
                           {!data.thiThatKyThi.khongThi && <div className="mt-0.5 text-xs tabular-nums text-slate-400">{chuGradeKyThi(data.thiThatKyThi)}</div>}
-                          {!data.thiThatKyThi.khongThi && data.thiThatKyThi.dat !== null && <div className="mt-1.5"><Nhan tone={data.thiThatKyThi.dat ? 'ok' : 'bad'}>{data.thiThatKyThi.dat ? t('Đạt Target') : t('Chưa đạt Target')}</Nhan></div>}</>
+                          {!data.thiThatKyThi.khongThi && data.thiThatKyThi.dat !== null && <div className="mt-1.5"><Nhan tone={data.thiThatKyThi.dat ? 'doing' : 'bad'}>{data.thiThatKyThi.dat ? t('Đạt Target') : t('Chưa đạt Target')}</Nhan></div>}</>
                         : <div className="text-sm font-semibold text-slate-400">{t('Chờ kết quả thi thật')}</div>}
                     </O>
                   ) : kq.tyLe === null

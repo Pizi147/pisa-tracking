@@ -340,7 +340,7 @@ function OLoTrinh({ lt, homNay }: { lt: LoTrinhChot | null; homNay: string }) {
 function ODiemThuong({ o }: { o: ODiem | null }) {
   if (o && o.score !== null && o.total !== null) {
     /* Chủ SP 04/11 (theo U03): "✓ / ✗ 14/20" — một mẫu ô điểm `ODiem` (dấu + màu, không chỉ màu). */
-    return <ODiem kieu="ti-le" so={String(o.score)} tong={o.total} kq={o.outcome === 'pass' ? 'vuot' : o.outcome === 'fail' ? 'duoi' : null} />;
+    return <ODiem kieu="ti-le" so={String(o.score)} tong={o.total} kq={o.outcome === 'pass' ? 'dat' : o.outcome === 'fail' ? 'duoi' : null} />;
   }
   /* HSL-GON (chủ SP 05/11): chưa có điểm → "–" (không ghi tuần Test / "Chưa có điểm" trong ô) — lịch Test và bài chưa nhập chỉ ở màn Test / Công việc. */
   return <span className="text-faint">–</span>;   // audit P3-1: "–" = không có, ≥ 4.5:1

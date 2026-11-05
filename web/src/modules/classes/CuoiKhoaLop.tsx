@@ -329,7 +329,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const dat = g.dai === 'dat';
     return (
       <span className="block">
-        <span className={`font-bold tabular-nums ${dat ? 'text-ok' : 'text-late'}`}>{dat ? '✓' : '✗'} {Math.round(c.tyLe * 100)} %</span>{' '}
+        <span className={`font-bold tabular-nums ${dat ? 'text-kq-bang' : 'text-kq-duoi'}`}>{dat ? '✓' : '✗'} {Math.round(c.tyLe * 100)} %</span>{' '}
         <span className="text-[13px] font-semibold text-slate-100">{chuDaiKetQua(g)}</span>
         <span className="mt-0.5 block text-[12px] tabular-nums text-slate-500">{mon}</span>
       </span>
@@ -366,7 +366,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         <span><b className="text-slate-200">{ten}</b> · MT0 {k!.mt0 ? <b className="tabular-nums">{b1(k!.mt0.overall)}</b> : t('thiếu band')}</span>
         {k!.bands && <span className="tabular-nums text-slate-500">{REGULAR_SKILLS.map((s) => `${NGAN[s]} ${k!.bands![s] === null ? '—' : b1(k!.bands![s]!)}`).join(' · ')}</span>}
         <span className="flex gap-1" role="group" aria-label={t('Kỳ vọng · {ten}', { ten: e.fullName })}>
-          <button type="button" aria-pressed={kv?.dat === true} className={`${nut} ${kv?.dat === true ? 'border-ok text-ok' : ''}`} onClick={() => dat(true)}>{t('Đạt')}</button>
+          <button type="button" aria-pressed={kv?.dat === true} className={`${nut} ${kv?.dat === true ? 'border-doing text-kq-bang' : ''}`} onClick={() => dat(true)}>{t('Đạt')}</button>
           <button type="button" aria-pressed={kv?.dat === false} className={`${nut} ${kv?.dat === false ? 'border-late text-late' : ''}`} onClick={() => dat(false)}>{t('Không đạt')}</button>
         </span>
         {!kv && goiDat !== null && <span className="text-slate-500">{t('máy gợi ý: {kq}', { kq: goiDat ? t('Đạt') : t('Không đạt') })}</span>}
@@ -595,7 +595,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       {tatCaFt && d.coTheChotKq && (
         <span className="flex flex-wrap items-center gap-1.5 text-[12px] font-semibold text-slate-400">{t('Kỳ vọng FT')}
           {[true, false].map((v) => (
-            <button key={String(v)} type="button" aria-pressed={ap.kv?.dat === v} className={`btn btn-sm min-h-[44px] sm:min-h-0 ${ap.kv?.dat === v ? (v ? 'border-ok text-ok' : 'border-late text-late') : ''}`}
+            <button key={String(v)} type="button" aria-pressed={ap.kv?.dat === v} className={`btn btn-sm min-h-[44px] sm:min-h-0 ${ap.kv?.dat === v ? (v ? 'border-doing text-kq-bang' : 'border-late text-late') : ''}`}
               onClick={() => setAp({ ...ap, kv: { dat: v, nn: v ? null : ap.kv?.nn ?? 'trung_tam' } })}>{v ? t('Đạt') : t('Không đạt')}</button>
           ))}
           {ap.kv && !ap.kv.dat && (['trung_tam', 'hoc_sinh'] as const).map((n) => (

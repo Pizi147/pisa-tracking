@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { lopKq } from './BieuTuong.tsx';
+import { lopKq, type KqDiem } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
-type Kq = 'vuot' | 'bang' | 'duoi' | null;
-const chuKq = (kq: 'vuot' | 'bang' | 'duoi') => (kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : t('Vượt kỳ vọng'));
+type Kq = KqDiem | null;
+const chuKq = (kq: KqDiem) => (kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : kq === 'dat' ? t('Đạt') : t('Vượt kỳ vọng'));
 
 /**
  * Ô ĐIỂM MỘT MẪU (BANG-0, 04 mục 7) — thay 7+ dáng ô điểm (BANG-1 chuyển 29 nơi). Tô CHÍNH con số + chữ "✓ " / "✗ " đứng TRƯỚC trong CÙNG span

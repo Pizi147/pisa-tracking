@@ -97,9 +97,12 @@ export function IconSang(p: P) {
 /**
  * MÀU KẾT QUẢ ĐIỂM — MỘT CHỖ (NEN-TYPO-MAU, 04 mục 5.1): tô chính con số + ký hiệu bằng 3 token `--kq-*`; `null` (chưa đủ điểm, không kỳ
  * vọng, KCK dưới kỳ vọng…) = trung tính (chỗ gọi giữ màu chữ thường). Phép kiểm `prNenTypoMau` K-MAU-3.
+ * MAU-THONG-NHAT (chủ SP 05/11): đỏ = không đạt · xanh dương = vừa đạt · xanh lá = vượt. `dat` = chỉ biết Đạt (không biết vượt — lớp thường
+ * pass / fail, "✓ Đạt" không SOS, Đạt Target) → xanh dương như `bang`. Phép kiểm `prMauKq`.
  */
-export function lopKq(kq: 'vuot' | 'bang' | 'duoi' | null): string {
-  return kq === 'duoi' ? 'text-kq-duoi' : kq === 'bang' ? 'text-kq-bang' : kq === 'vuot' ? 'text-kq-vuot' : '';
+export type KqDiem = 'vuot' | 'bang' | 'dat' | 'duoi';
+export function lopKq(kq: KqDiem | null): string {
+  return kq === 'duoi' ? 'text-kq-duoi' : kq === 'bang' || kq === 'dat' ? 'text-kq-bang' : kq === 'vuot' ? 'text-kq-vuot' : '';
 }
 
 /**
