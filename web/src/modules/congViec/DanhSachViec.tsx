@@ -439,7 +439,8 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
               {caLop && <><b className="font-semibold">{t('Cả lớp {lop}', { lop: it.classCode! })}</b> · </>}{tenViec(tenGoc)}
             </span>
             {chipMuc(it, false)}
-            {dong.moTrang(it) && !con && <span aria-label={t('mở trang')} className="text-[13px] font-normal text-[color:var(--accent)]">›</span>}
+            {/* BAO-CAO-PH b (mockup k1): việc Xuất báo cáo PH đã có nút "Báo cáo PH ›" / Xuất lớp — tên không thêm "›". */}
+            {dong.moTrang(it) && !con && it.group !== 'xuat_bc_ph' && <span aria-label={t('mở trang')} className="text-[13px] font-normal text-[color:var(--accent)]">›</span>}
           </span>
           <ThePhu ds={doiTuong} />
         </button>
