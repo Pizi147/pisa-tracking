@@ -482,7 +482,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         );
       })}
       {laCp && (
-        <OBang c={cc.pt} className={`font-bold ${row.chip ? (row.chip.dat ? 'text-kq-vuot' : 'text-kq-duoi') : 'text-slate-500'}`}>
+        <OBang c={cc.pt} className={`font-bold ${row.chip ? (row.chip.dat ? 'text-kq-bang' : 'text-kq-duoi') : 'text-slate-500'}`}>
           {row.result.tyLeTong != null ? `${Math.round(row.result.tyLeTong * 100)}%` : '—'}
         </OBang>
       )}
@@ -545,7 +545,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
     : truot ? 'danger' : r.complete ? 'ok' : 'muted';
   const chinh = row.chip
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
-    ? <Level tone={row.chip.dat ? 'ok' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
+    ? <Level tone={row.chip.dat ? 'info' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
     ? <span className="px-2 text-xs text-slate-500">{kq.chinh}</span>   /* chữ thường trong cột chip lùi 8 px như chữ trong chip (index.css `th[data-kieu="chip"]`) */
     : (

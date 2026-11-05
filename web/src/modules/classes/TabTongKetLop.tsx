@@ -21,12 +21,13 @@ type TongKetLop = {
 };
 
 const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v.toFixed(1));
-const toneDai = (d: string | null | undefined): ToneNhan => (d === 'dat' ? 'ok' : d ? 'soon' : 'muted');
+/* MAU-THONG-NHAT (chủ SP 05/11): Đạt xanh dương · chưa đạt đỏ (trước: vàng). */
+const toneDai = (d: string | null | undefined): ToneNhan => (d === 'dat' ? 'doing' : d ? 'bad' : 'muted');
 
 /** Kết quả thi thật của một em FT: máy so OVR với Target lúc đóng (đã tính ở bản chụp). */
 function ketQuaThi(d: Dong): { tone: ToneNhan; chu: string } | null {
   if (d.roiSom || d.huongKhoa === 'chuyen_lop') return null;   // em chuyển lớp (đóng-mở): không đi thi
-  if (d.ketLuan === 'reached') return { tone: 'ok', chu: t('Đạt Target') };
+  if (d.ketLuan === 'reached') return { tone: 'doing', chu: t('Đạt Target') };
   if (d.ketLuan === 'not_reached') return { tone: 'bad', chu: t('Chưa đạt Target') };   // OV-15a: `late` chỉ cho quá hạn
   if (d.thiThat?.ovr != null) return null;   // có Overall (kết quả cũ) mà kết luận chưa rõ: không nhãn "Chờ"
   return { tone: 'muted', chu: d.thiThat?.khongThi ? t('Không thi') : t('Chờ kết quả thi thật') };
@@ -36,7 +37,7 @@ const Gach = <span className="text-slate-500">—</span>;
 
 function Giua({ g }: { g: Dong['giuaKhoa'] }) {
   if (!g) return Gach;
-  return g.huy ? <Nhan tone="done">{t('đã huỷ')}</Nhan> : <Nhan tone={g.dat === g.tong ? 'ok' : 'soon'}>{t('{a}/{b} môn', { a: g.dat, b: g.tong })}</Nhan>;
+  return g.huy ? <Nhan tone="done">{t('đã huỷ')}</Nhan> : <Nhan tone={g.dat === g.tong ? 'doing' : 'bad'}>{t('{a}/{b} môn', { a: g.dat, b: g.tong })}</Nhan>;
 }
 function Cuoi({ c }: { c: Dong['cuoiKhoa'] }) {
   if (!c) return Gach;
@@ -44,10 +45,10 @@ function Cuoi({ c }: { c: Dong['cuoiKhoa'] }) {
   return c.tyLe === null ? Gach : <Nhan tone={toneDai(c.dai)}>{`${Math.round(c.tyLe * 100)}%`}</Nhan>;
 }
 
-const So = ({ nhan, v, tone }: { nhan: string; v: number | undefined; tone?: 'ok' | 'warn' }) => (
+const So = ({ nhan, v, tone }: { nhan: string; v: number | undefined; tone?: 'dat' | 'chua' | 'warn' }) => (
   <div className="min-w-[120px] rounded-[10px] border px-3 py-1.5 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2.5" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
     <small className="block text-xs text-slate-500">{nhan}</small>
-    <strong className={`text-xl font-bold tabular-nums max-sm:text-base ${v && tone === 'ok' ? 'text-ok' : v && tone === 'warn' ? 'text-soon' : 'text-slate-100'}`}>{v ?? 0}</strong>
+    <strong className={`text-xl font-bold tabular-nums max-sm:text-base ${v && tone === 'dat' ? 'text-kq-bang' : v && tone === 'chua' ? 'text-kq-duoi' : v && tone === 'warn' ? 'text-soon' : 'text-slate-100'}`}>{v ?? 0}</strong>
   </div>
 );
 
@@ -72,8 +73,8 @@ export function TabTongKetLop({ classId }: { classId: number }) {
       <div className="flex flex-wrap gap-2">
         {ft ? (
           <>
-            <So nhan={t('Học viên')} v={data.dai.hocVien} /><So nhan={t('Đạt Target')} v={data.dai.datTarget} tone="ok" />
-            <So nhan={t('Chưa đạt')} v={data.dai.chuaDat} tone="warn" /><So nhan={t('Chờ kết quả')} v={data.dai.choKetQua} />
+            <So nhan={t('Học viên')} v={data.dai.hocVien} /><So nhan={t('Đạt Target')} v={data.dai.datTarget} tone="dat" />
+            <So nhan={t('Chưa đạt')} v={data.dai.chuaDat} tone="chua" /><So nhan={t('Chờ kết quả')} v={data.dai.choKetQua} />
           </>
         ) : (
           <>

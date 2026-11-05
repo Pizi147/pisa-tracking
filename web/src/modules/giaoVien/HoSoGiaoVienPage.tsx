@@ -20,6 +20,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CongTac, PhanTram, tuMau, tyLeGv, type TyLeV5 } from '../worklist/TongQuanV5.tsx';
 import { TenCase } from '../cases/SkillBoard.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { lopKq } from '../../ui/BieuTuong.tsx';
 
 /**
  * HỒ SƠ GIÁO VIÊN V5 (UI-HO-SO-GV — `thiet-ke/v5/dieu-chinh-cuoi.html` khu e + `ho-so-gv.html` phương án C). Đầu gọn (tên · Vai · Kỹ năng · GVCN) +
@@ -148,7 +149,8 @@ type ApiCs = { data: ChiSoHoSoGv | null; loading: boolean; error: { message: str
 // ------------------------------------------------------------------ dải chỉ số (một thẻ, các ô ngăn bằng vạch — khung khu e)
 
 /** Kết quả thi thật (IELTS): ▼ Fail · ▲ Pass · ★ Exceed — màu theo kết quả + ký hiệu (không chỉ màu); số bấm → panel đúng nhóm. */
-const MAU_THI = { chua: 'text-bad', dat: 'text-ok', vuot: 'text-[color:var(--accent)]' } as const;
+/* MAU-THONG-NHAT (chủ SP 05/11): Fail đỏ · Pass xanh dương · Exceed xanh lá (`lopKq`; trước: Pass xanh lá · Exceed xanh dương — ngược). */
+const MAU_THI = { chua: lopKq('duoi'), dat: lopKq('bang'), vuot: lopKq('vuot') } as const;
 function BaThi({ cot, fail, pass, exceed, nguonCua, ten, motDong, gon }: {
   cot: string; fail: number; pass: number; exceed: number; nguonCua: (cot: string, loc: string) => string; ten: string;
   /** Ô bảng: chỉ ký hiệu + số (chữ ở tiêu đề cột; trình đọc màn vẫn đọc chữ). */

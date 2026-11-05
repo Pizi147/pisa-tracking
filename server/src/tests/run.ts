@@ -9792,6 +9792,9 @@ await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== PR-MT-VANG (N38: "-" dời tuần sau tuần thi · vắng 2 lần huỷ · chọn tuần = xếp lại)
 const { runPrMtVangTests } = bocTep('prMtVang', await import('./prMtVang.tests.ts'));
 await runPrMtVangTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== PR-6 MAU-THONG-NHAT (chủ SP 05/11: đỏ không đạt · xanh dương đạt · xanh lá vượt)
+const { runPrMauKqTests } = bocTep('prMauKq', await import('./prMauKq.tests.ts'));
+await runPrMauKqTests({ check, assert } as any);
 // ==================================================================== PR-5 MO-TAT-CA (chủ SP 05/11: nút Mở tất cả lớp + ô Việc của tôi → Công việc)
 const { runPrMoTatCaTests } = bocTep('prMoTatCa', await import('./prMoTatCa.tests.ts'));
 await runPrMoTatCaTests({ check, assert, P } as any);

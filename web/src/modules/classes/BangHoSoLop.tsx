@@ -504,7 +504,8 @@ export function TenEm({ s, mo, onMo }: { s: { id: number; fullName: string }; mo
 function OKetQua({ r, h, kq }: { r: Hang; h: Moc | null; kq: ReturnType<typeof ketQua> }) {
   /* U03: bỏ cột Case · PA → chip SOS ghi lại kỹ năng hụt ("SOS 3 · L, W, S", mockup). */
   if (kq === 'sos') return <ChipSos {...chipSosTuKetQua(r.standing ?? null)!} ten={r.fullName} />;
-  if (kq === 'dat') return <span className="whitespace-nowrap text-[13px] text-dim"><span aria-hidden>{'✓ '}</span>{t('Đạt')}</span>;
+  /* MAU-THONG-NHAT (chủ SP 05/11, mới hơn U03 xám): Đạt (không biết vượt) xanh dương. */
+  if (kq === 'dat') return <span className="whitespace-nowrap text-[13px] font-semibold text-kq-bang"><span aria-hidden>{'✓ '}</span>{t('Đạt')}</span>;
   if (kq === 'thieu') {
     /* Đ4: lý do ngắn ở tooltip + tên đọc màn (không thêm chữ trên màn — P1). */
     const ly = lyDoChuaDu(r.standing ?? null);

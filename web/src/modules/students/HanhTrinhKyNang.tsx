@@ -118,7 +118,7 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
         return (
           <ODiemTo key={r.category} nhan={r.short} title={!boMon && !r.ratio && r.band !== null && r.bandAttemptNo ? `${r.label} · ${nguonKv(`MT${r.bandAttemptNo}`, r.expectation)}` : r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu}>
             {r.ratio
-              ? <ODiem kieu="lon" so={r.score !== null ? String(r.score) : null} kq={r.missed === null ? null : r.missed ? 'duoi' : 'vuot'} nhan={r.short} phu={r.total ? `/ ${r.total}` : undefined} />
+              ? <ODiem kieu="lon" so={r.score !== null ? String(r.score) : null} kq={r.missed === null ? null : r.missed ? 'duoi' : 'dat'} nhan={r.short} phu={r.total ? `/ ${r.total}` : undefined} />
               : <ODiem kieu="lon" so={!boMon && r.band !== null ? fmtBand(r.band) : null} kq={boMon ? null : soKyVong(r.band, r.expectation)} kck={r.kck} nhan={r.short} kyVong={r.expectation != null ? fmtBand(r.expectation) : undefined} />}
           </ODiemTo>
         );

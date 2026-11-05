@@ -761,7 +761,7 @@ export function ODiemThuong({
             </>
           ) : (
             <ODiem kieu="ti-le" so={String(cell.diem)} tong={cell.tong ?? undefined} tongCot={tongCot ?? undefined} nhan={tenMon}
-              kq={cell.ketQua === 'pass' ? 'vuot' : cell.ketQua === 'fail' ? 'duoi' : null} />
+              kq={cell.ketQua === 'pass' ? 'dat' : cell.ketQua === 'fail' ? 'duoi' : null} />
           )}
         </span>
       );
@@ -795,7 +795,7 @@ export function ODiemThuong({
     return (
       <span className="inline-flex flex-col items-center justify-center" title={title}>
         <span className="inline-flex items-center justify-center gap-1">
-          <input ref={inputRef} readOnly className={`${oSo} cursor-pointer font-bold ${cell.ketQua === 'fail' ? 'text-kq-duoi' : cell.ketQua === 'pass' ? 'text-kq-vuot' : ''}`}
+          <input ref={inputRef} readOnly className={`${oSo} cursor-pointer font-bold ${cell.ketQua === 'fail' ? 'text-kq-duoi' : cell.ketQua === 'pass' ? 'text-kq-bang' : ''}`}
             value={String(cell.diem)} aria-label={t('{tenMon} — số câu đúng (đã có điểm, bấm để sửa)', { tenMon })}
             onClick={() => mo(String(cell.diem))}
             onKeyDown={(e) => {

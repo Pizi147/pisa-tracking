@@ -557,7 +557,7 @@ function GhiChuLoTrinh({ cy, homNay }: { cy: any; homNay: string | null }) {
  */
 function KetQuaMt({ a, gon = false }: { a: any; /** 375: "✓ Đạt", chip SOS không kèm kỹ năng. */ gon?: boolean }) {
   const du = a.scored >= a.required && a.evaluable && !a.kckDuoi;
-  if (du && a.sosLevel === 0) return gon ? <span className="inline-flex items-center whitespace-nowrap rounded border border-[color:rgb(var(--ok-line-rgb))] px-2 py-0.5 text-xs font-semibold text-ok">✓ {t('Đạt')}</span>
+  if (du && a.sosLevel === 0) return gon ? <span className="inline-flex items-center whitespace-nowrap rounded border border-doing-line px-2 py-0.5 text-xs font-semibold text-kq-bang">✓ {t('Đạt')}</span>
     : <KetQuaDot phan="overall" coDiem={a.scored} yeuCau={a.required} dat sos={0} chot={a.chot} />;
   if (du && gon && a.sosLevel > 0) return <ChipSos muc={a.sosLevel} dot={`MT${a.attemptNo}`} hienKyNang={false} />;
   if (du && a.sosLevel > 0 && a.expectation != null) {
@@ -574,8 +574,8 @@ function KetQuaThi({ th }: { th: ThiThatD | 'khong' }) {
   if (th.loai === 'du-kien') return <span className="text-slate-400">{t('chưa thi')}</span>;
   const { ovr } = th.diem, tg = th.target;
   if (ovr == null || tg == null) return null;
-  return ovr >= tg ? <span className="font-bold text-ok">✓ {t('Đạt Target')}</span>
-    : <span className="font-bold text-bad">✗ {t('Chưa đạt Target')} · −{fmtBand(tg - ovr)}</span>;
+  return ovr >= tg ? <span className="font-bold text-kq-bang">✓ {t('Đạt Target')}</span>
+    : <span className="font-bold text-kq-duoi">✗ {t('Chưa đạt Target')} · −{fmtBand(tg - ovr)}</span>;
 }
 
 /** Chữ cái kỹ năng ở dòng Điểm của thẻ điện thoại (cùng chữ với đầu cột bảng). */
@@ -722,7 +722,7 @@ function RatioAttempts({ attempts, dotId, homNay, onOpen, ct = null }: {
   const chipMon = (a: any) => (
     <span className="flex flex-wrap gap-1">
       {(a.skills ?? []).map((s: any) => (
-        <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'ok' : 'warn'}
+        <Outcome key={s.skill} tone={s.outcome === 'missing' ? 'muted' : s.outcome === 'pass' ? 'dat' : 'danger'}
           title={dich(s.label)}>
           {tenMonNgan(ct, s.skill)} {s.score !== null ? `${s.score}/${s.total}` : '—'}
         </Outcome>
@@ -819,7 +819,7 @@ function KetQuaThuongO({ a, ct }: { a: any; ct: string | null }) {
   return (
     <>
       <span className="inline-flex flex-wrap items-center gap-1">
-        <Level tone={a.sosLevel === null ? (kq.dat ? 'ok' : 'muted') : sosTone(a.sosLevel)}>{dich(kq.chinh)}</Level>
+        <Level tone={a.sosLevel === null ? (kq.dat ? 'info' : 'muted') : sosTone(a.sosLevel)}>{dich(kq.chinh)}</Level>
         {a.kind !== 'final' && !khongChiaMon && a.sosLevel > 0 && <ChipSos muc={a.sosLevel} thuong dot="Progress Test" ten={null} kyNang={(a.skills ?? []).filter((s: any) => s.outcome === 'fail').map((s: any) => tenMonNgan(ct, s.skill))} />}
       </span>
       {kq.phu && <div className="text-xs text-slate-400">{dich(kq.phu)}</div>}

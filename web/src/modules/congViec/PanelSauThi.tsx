@@ -159,7 +159,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
               <div className="max-sm:col-span-4">
                 <span className="mb-1.5 block text-xs font-semibold text-slate-400">Overall</span>
                 <span className="flex h-10 items-center justify-center rounded-lg text-sm font-bold tabular-nums" style={{ background: 'var(--surface-2)' }} aria-label={t('Overall tự tính')}>
-                  {kq?.ovr != null ? <span className={kq.ketLuan === 'reached' ? 'text-dat' : kq.ketLuan === 'not_reached' ? 'text-bad' : 'text-slate-100'}>{kq.ketLuan === 'reached' ? '✓ ' : ''}{kq.ovr.toFixed(1)}</span> : '–'}
+                  {kq?.ovr != null ? <span className={kq.ketLuan === 'reached' ? 'text-kq-bang' : kq.ketLuan === 'not_reached' ? 'text-bad' : 'text-slate-100'}>{kq.ketLuan === 'reached' ? '✓ ' : ''}{kq.ovr.toFixed(1)}</span> : '–'}
                 </span>
               </div>
             </div>
