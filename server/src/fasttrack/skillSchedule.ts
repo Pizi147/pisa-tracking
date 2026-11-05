@@ -505,7 +505,8 @@ export type CompletionWeek = {
  */
 export function completionWeekOf(rows: SkillRow[]): CompletionWeek {
   const required = rows.filter((r) => r.required);
-  if (!required.length) return { periodId: null, valid: false, blocking: [] };
+  /* MT-HUY-XONG (chủ SP 05/11 "hủy là hủy thôi"): không còn kỹ năng bắt buộc (mọi kỹ năng ngoài phạm vi, kể cả dữ liệu cũ "Không mock lại") = đợt kết thúc, không chặn. */
+  if (!required.length) return { periodId: null, valid: true, blocking: [] };
 
   const blocking = required
     .filter((r) => r.sit_status !== 'cancelled' && !r.planned_period_id)

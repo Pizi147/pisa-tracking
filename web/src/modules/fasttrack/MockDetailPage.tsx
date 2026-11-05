@@ -236,6 +236,9 @@ export default function MockDetailPage() {
   /* PR-MTGON: mọi kỹ năng FT đã huỷ / bỏ khỏi đợt → "Dời lịch thi cả đợt" không còn gì để dời; hiện "Đưa lại cả 4 kỹ năng". */
   const kn4 = d.skillSchedule.filter((r) => (KY_NANG_KE_HOACH as readonly string[]).includes(r.skill));
   const huyHet = kn4.length > 0 && kn4.every((r) => !r.required || r.sitStatus === 'cancelled');
+  /* MT-HUY-XONG (chủ SP 05/11 "hủy là hủy thôi"): đợt huỷ hết chưa có điểm = đợt đã kết thúc — Overall ghi gọn, không "Số liệu không hợp lệ". */
+  const dotHuyHet = huyHet && d.result.scoredRequired === 0;
+  const huyDoVang = kn4.some((r) => r.huyVang || r.sitStatus === 'absent');
   const duaLaiCaLuot = async () => {
     try {
       await api.post(`/attempts/${d.id}/dua-lai-ca-luot`);
@@ -372,7 +375,7 @@ export default function MockDetailPage() {
         <div className="flex min-w-0 flex-col gap-1 sm:pt-4">
           <span className="flex flex-wrap items-center gap-1.5">
             {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". PR-MT0: MT0 không có kỳ vọng — `MT0 ✓` / chip SOS. */}
-            {cancelled ? <NhanKq kq="thieu">{t('Đã huỷ')}</NhanKq> : ketQuaMt0 ?? (d.mt0 ? d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)
+            {cancelled || dotHuyHet ? <NhanKq kq="thieu">{!cancelled && huyDoVang ? t('Đã huỷ · vắng') : t('Đã huỷ')}</NhanKq> : ketQuaMt0 ?? (d.mt0 ? d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)
               : <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
                 sos={d.result.sosLevel ?? null} chot={d.result.chot} kckDuoi={d.result.kckDuoi} />)}
             {d.deadlineOverride && (
