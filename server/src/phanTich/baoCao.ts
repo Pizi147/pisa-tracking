@@ -17,6 +17,7 @@ import { mondayOf } from '../platform/week.ts';
 import { metricSet, overdueScoreBai, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { phamViPhanTich } from './phamVi.ts';
 import { ganLuotDiem, luotTrongKhoang, tenChiNhanh } from './tongHop.ts';
+import { bangPa, dongPa } from './hieuQuaPa.ts';
 import { ketQuaThiThatKq, luotMockKhoang, mockTrongKhoang } from './ketQuaThi.ts';
 import { diemCuaLuot, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
@@ -417,9 +418,8 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const r = metricSet(p, 'pa-co-ket-qua', { branchId: f.branchId ?? null, program: f.ct, from: f.tu, to: f.den });
     const cai = new Set(r.numeratorIds ?? []);
     const ids = [...r.ids].sort((a, b) => Number(cai.has(a)) - Number(cai.has(b)) || a - b);
-    const rows = rowsFor('phuong-an', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, cai.has(row.id) ? t('Cải thiện') : t('Chưa cải thiện')].filter(Boolean).join(' · '),
-      xuHuong: { huong: cai.has(row.id) ? 'cai-thien' as const : 'chua-cai-thien' as const } }));
-    return { n: ids.length, tieuDe: t('PA cải thiện · {a}/{b} PA', { a: cai.size, b: ids.length }), rows };
+    /* PT-VP-PA (P-PA): bảng PA đủ cột — kết quả, loại PA, người phụ trách; chưa cải thiện lên đầu. */
+    return { n: ids.length, tieuDe: t('PA cải thiện · {a}/{b} PA', { a: cai.size, b: ids.length }), ...bangPa(dongPa(ids)), chiNhanh: tenChiNhanh(f.branchId) };
   }
   const tb = /^tien-bo:(\w+)(?::(tang|giu|giam))?$/.exec(f.o);
   if (tb) {

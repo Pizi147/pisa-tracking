@@ -1,11 +1,11 @@
 import { db } from '../db.ts';
 import {
-  XU_LY_STATUS_LABEL, bacHoacNgoaiThang, khoaLoaiXuLy, nhanLoaiXuLy, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL,
-  type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type ViolationCategory, type YThucPhanTichKetQua,
+  XU_LY_STATUS_LABEL, bacHoacNgoaiThang, khoaLoaiXuLy, nhanLoaiXuLy, tachTenMoTa, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL,
+  type DongViPham, type DongViPhamEm, type DongViPhamLop, type ChuongTrinh, type DongHvCanChuY, type DongLopViPham, type ViolationCategory, type YThucPhanTichKetQua,
 } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
 import type { Principal } from '../permissions.ts';
-import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import type { MetricRow } from '../worklist/metrics.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from '../yThuc/thongKe.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -138,7 +138,7 @@ function tinh(p: Principal, f: FilterYThuc) {
   }
   hvRows.sort((a, c) => THU_TU_NHOM[a.nhom] - THU_TU_NHOM[c.nhom] || c.chuaXuLy - a.chuaXuLy || c.viPham - a.viPham || a.ten.localeCompare(c.ten));
 
-  return { hvRows, hvTap, lopMuc, conMuc, maLop, siSo, gvcn, bienPhapTheoLoai, scopeEmpty: scope.branchIds !== null && scope.branchIds.length === 0 };
+  return { hvRows, hvTap, lopMuc, conMuc, maLop, siSo, gvcn, bienPhapTheoLoai, trangVp, lopCuaHv, tenHv, scopeEmpty: scope.branchIds !== null && scope.branchIds.length === 0 };
 }
 
 type Tinh = ReturnType<typeof tinh>;
@@ -177,26 +177,33 @@ export function yThucPhanTich(p: Principal, f: FilterYThuc): YThucPhanTichKetQua
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`. `dong` = `hv:<id>` | `lop:<id>` | `lop:<id>|<nhóm>` | `gom`; `cot` = `vi-pham` | `chua-xu-ly` | `hv-co-vi-pham` (lớp). */
 export function oYThucPhanTich(p: Principal, f: FilterYThuc & { dong: string; cot: string }):
-  { n: number; tieuDe: string; rows: MetricRow[] } {
+  { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: true; kieu?: 'vi-pham' } {
   const r = tinh(p, f);
+  /* PT-VP-PA (mockup v13 A4, P-VP): mọi ô → panel bảng; vi phạm · theo em · theo lớp (không dòng nào chỉ có tên). */
+  const ra = (n: number, tieuDe: string, rows: MetricRow[]) => ({ n, tieuDe, rows, ...(rows.length ? { bangLuot: true as const, kieu: 'vi-pham' as const } : {}) });
+  const vp = (ids: number[]) => dongViPham(r, ids);
+  const em = (ids: number[], vpCua?: (sid: number) => { vp: number[]; chua: number[] }) => dongViPhamEm(r, ids, vpCua);
   /* V8-PT-2: thẻ chỉ số — `hv-can-chu-y` = danh sách HV; `tong` = mọi lớp có vi phạm (cả nhóm "lớp khác"). */
   if (f.dong === 'hv-can-chu-y') {
     const ids = r.hvRows.map((x) => x.studentId);
-    return { n: ids.length, tieuDe: `${ids.length} HV cần chú ý`, rows: rowsFor('hoc-vien', ids) };
+    return ra(ids.length, `${ids.length} HV cần chú ý`, em(ids));
   }
   if (f.dong === 'tong' && f.cot === 'lop') {
-    const k = [...r.lopMuc].filter(([, m]) => m.vp.size > 0).map(([id]) => id).sort((a, b) => a - b);
-    const rows = rowsFor('lop', k.filter((id) => id > 0));
-    if (k.includes(0)) rows.push({ id: 0, title: 'Không rõ lớp', sub: '', href: '/phan-tich?goc=y-thuc' });
-    return { n: k.length, tieuDe: `${k.length} lớp có vi phạm`, rows };
+    const k = [...r.lopMuc].filter(([, m]) => m.vp.size > 0).map(([id]) => id)
+      .sort((a, b) => r.lopMuc.get(b)!.chua.size - r.lopMuc.get(a)!.chua.size || r.lopMuc.get(b)!.vp.size - r.lopMuc.get(a)!.vp.size || a - b);
+    return ra(k.length, `${k.length} lớp có vi phạm`, k.map((id) => {
+      const d = dongLop(r, id);
+      const viPhamLop: DongViPhamLop = { classId: d.classId, lop: d.nhan, gvcn: d.gvcn, hvViPham: d.hvCoViPham, siSo: d.siSo, viPham: d.viPham, chuaXuLy: d.chuaXuLy };
+      return { id, title: d.nhan, sub: '', href: id ? `/hoc-vien/lop/${id}` : '/phan-tich?goc=y-thuc', viPhamLop } as MetricRow;
+    }));
   }
   if (f.dong.startsWith('hv:')) {
     const id = Number(f.dong.slice(3));
     const t = r.hvTap.get(id);
     if (!t) throw badRequest('Học viên này không có trong danh sách — có thể bộ lọc vừa đổi.');
     const ten = r.hvRows.find((x) => x.studentId === id)!.ten;
-    if (f.cot === 'vi-pham') return { n: t.vpKy.length, tieuDe: `${ten} · ${t.vpKy.length} vi phạm`, rows: rowsFor('vi-pham', [...t.vpKy].sort((a, b) => a - b)) };
-    if (f.cot === 'chua-xu-ly') return { n: t.chua.length, tieuDe: `${ten} · ${t.chua.length} vi phạm chưa xử lý`, rows: rowsFor('vi-pham', [...t.chua].sort((a, b) => a - b)) };
+    if (f.cot === 'vi-pham') return ra(t.vpKy.length, `${ten} · ${t.vpKy.length} vi phạm`, vp(t.vpKy));
+    if (f.cot === 'chua-xu-ly') return ra(t.chua.length, `${ten} · ${t.chua.length} vi phạm chưa xử lý`, vp(t.chua));
     throw badRequest(`Cột "${f.cot}" không hợp lệ.`);
   }
   let mucs: Muc[]; let nhan: string;
@@ -214,8 +221,61 @@ export function oYThucPhanTich(p: Principal, f: FilterYThuc & { dong: string; co
     nhan = `${r.maLop.get(Number(k)) ?? 'Không rõ lớp'}${cat ? ` · ${VIOLATION_CATEGORY_LABEL[cat as ViolationCategory] ?? cat}` : ''}`;
   } else throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
   const hop = (chon: (m: Muc) => Set<number>) => [...new Set(mucs.flatMap((m) => [...chon(m)]))].sort((a, b) => a - b);
-  if (f.cot === 'vi-pham') { const ids = hop((m) => m.vp); return { n: ids.length, tieuDe: `${nhan} · ${ids.length} vi phạm`, rows: rowsFor('vi-pham', ids) }; }
-  if (f.cot === 'chua-xu-ly') { const ids = hop((m) => m.chua); return { n: ids.length, tieuDe: `${nhan} · ${ids.length} vi phạm chưa xử lý`, rows: rowsFor('vi-pham', ids) }; }
-  if (f.cot === 'hv-co-vi-pham') { const ids = hop((m) => m.hv); return { n: ids.length, tieuDe: `${nhan} · ${ids.length} HV có vi phạm`, rows: rowsFor('hoc-vien', ids) }; }
+  if (f.cot === 'vi-pham') { const ids = hop((m) => m.vp); return ra(ids.length, `${nhan} · ${ids.length} vi phạm`, vp(ids)); }
+  if (f.cot === 'chua-xu-ly') { const ids = hop((m) => m.chua); return ra(ids.length, `${nhan} · ${ids.length} vi phạm chưa xử lý`, vp(ids)); }
+  if (f.cot === 'hv-co-vi-pham') {
+    /* Đếm vi phạm / chưa xử lý của em TRONG CHÍNH ô (lớp · nhóm · tổng) — cùng tập với số ô. */
+    const ids = hop((m) => m.hv), vpO = new Set(hop((m) => m.vp)), chuaO = new Set(hop((m) => m.chua));
+    const cua = (sid: number) => {
+      const ds = r.trangVp.get(sid)?.dsViPham.map((v) => v.id) ?? [];
+      return { vp: ds.filter((x) => vpO.has(x)), chua: ds.filter((x) => chuaO.has(x)) };
+    };
+    return ra(ids.length, `${nhan} · ${ids.length} HV có vi phạm`, em(ids, cua));
+  }
   throw badRequest(`Cột "${f.cot}" không hợp lệ.`);
+}
+
+/**
+ * PT-VP-PA (P-VP): dòng của các vi phạm — Học viên · Lớp · Ngày · Nhóm · Mô tả · Người ghi · Trạng thái (cửa trạng thái Ý thức đã nạp trong `tinh`).
+ * Một câu theo lô (vi phạm + tên em + lớp + người ghi). Xếp mới nhất trước.
+ */
+function dongViPham(r: Tinh, ids: readonly number[]): MetricRow[] {
+  const by = new Map<number, any>();
+  for (const lo of chunks([...ids])) {
+    for (const v of db().prepare(
+      `SELECT v.id, v.student_id, v.class_id, v.category, v.occurred_on, v.ten, v.description, s.full_name, c.code AS lop, u.full_name AS nguoi
+         FROM violations v JOIN students s ON s.id = v.student_id LEFT JOIN classes c ON c.id = v.class_id LEFT JOIN users u ON u.id = v.reported_by
+        WHERE v.id IN (${marks(lo.length)})`,
+    ).all(...lo) as any[]) by.set(v.id, v);
+  }
+  return [...ids].filter((id) => by.has(id)).map((id) => {
+    const v = by.get(id)!;
+    const tt = r.trangVp.get(v.student_id)?.viPham.get(id);
+    const tm = tachTenMoTa(v.ten, v.description, v.category);
+    const viPham: DongViPham = {
+      id, studentId: v.student_id, ten: v.full_name, classId: v.class_id ?? null, lop: v.lop ?? '', ngay: String(v.occurred_on).slice(0, 10),
+      nhom: VIOLATION_CATEGORY_LABEL[v.category as ViolationCategory] ?? v.category, moTa: [tm.ten, tm.moTa].filter(Boolean).join(' — '),
+      nguoiGhi: v.nguoi ?? null, trangThai: tt?.nhan ?? '—', trangThaiT: tt?.t ?? null,
+    };
+    return { id, title: v.full_name, sub: '', href: `/hoc-vien/${v.student_id}`, viPham } as MetricRow;
+  }).sort((a: any, b: any) => b.viPham.ngay.localeCompare(a.viPham.ngay) || a.id - b.id);
+}
+
+/** PT-VP-PA (P-VP theo em): một dòng một em — Học viên · Lớp · Vi phạm · Chưa xử lý · Bậc hiện tại · Lần xử lý gần nhất (cùng cột "Học viên cần chú ý"). */
+function dongViPhamEm(r: Tinh, ids: readonly number[], vpCua?: (sid: number) => { vp: number[]; chua: number[] }): MetricRow[] {
+  const thieu = ids.filter((s) => !r.tenHv.has(s));
+  const ten = new Map(r.tenHv);
+  for (const lo of chunks(thieu)) for (const x of db().prepare(`SELECT id, full_name FROM students WHERE id IN (${marks(lo.length)})`).all(...lo) as any[]) ten.set(x.id, x.full_name);
+  return ids.map((sid) => {
+    const h = r.hvRows.find((x) => x.studentId === sid);
+    const em = r.trangVp.get(sid);
+    const dem = vpCua ? vpCua(sid) : { vp: r.hvTap.get(sid)?.vpKy ?? [], chua: r.hvTap.get(sid)?.chua ?? [] };
+    const gan = em?.xuLy.filter((m) => m.status === 'done' && m.performedOn).sort((a, c) => (c.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0] ?? null;
+    const viPhamEm: DongViPhamEm = {
+      studentId: sid, ten: ten.get(sid) ?? `#${sid}`, lop: r.lopCuaHv.get(sid) ?? null, viPham: dem.vp.length, chuaXuLy: dem.chua.length,
+      bac: h?.bac ?? (em ? bacHoacNgoaiThang(em.bac, em.xuLy) : null),
+      lanXuLy: gan ? `${nhanLoaiXuLy(gan.kind, gan.customName)} · ${gan.performedOn!.slice(8, 10)}/${gan.performedOn!.slice(5, 7)}` : null,
+    };
+    return { id: sid, title: viPhamEm.ten, sub: '', href: `/hoc-vien/${sid}`, viPhamEm } as MetricRow;
+  }).sort((a: any, b: any) => b.viPhamEm.chuaXuLy - a.viPhamEm.chuaXuLy || b.viPhamEm.viPham - a.viPhamEm.viPham || a.viPhamEm.ten.localeCompare(b.viPhamEm.ten, 'vi'));
 }

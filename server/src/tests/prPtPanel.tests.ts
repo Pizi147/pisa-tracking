@@ -210,4 +210,74 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
     assert(r.bangLuot && r.kieu === 'bai-thuong' && r.rows.length === r.n && r.n === tong(h), `GV thường: ${r.kieu} ${r.rows.length} / ${r.n} / ${tong(h)}`);
     assert(r.rows.every((row: any) => row.baiThuong?.monCua?.length), 'dòng phải nêu môn GV phụ trách (monCua)');
   });
+
+  /* ================= PR-3 PT-VP-PA ================= */
+  const { yThucPhanTich, oYThucPhanTich } = await import('../phanTich/yThucPhanTich.ts');
+  const { hieuQuaPa, oHieuQuaPa } = await import('../phanTich/hieuQuaPa.ts');
+  const fy = { branchId: null, ct: null, from: '2026-03-02', to: '2026-09-14' };
+  const fp = { branchId: null, ct: 'ft' as const, soTuan: 26, tu: TU, den: DEN };
+  const coDong = (r: any, ten: string, khoa: string[]) => {
+    assert(r.rows.length === r.n, `${ten}: ${r.rows.length} ≠ ${r.n}`);
+    assert(r.rows.every((row: any) => khoa.some((k) => row[k])), `${ten}: còn dòng chỉ có tên ${JSON.stringify(r.rows.find((row: any) => !khoa.some((k) => row[k])))}`);
+  };
+
+  check('PT-VP-PA · thẻ "Lớp có vi phạm" → dòng lớp đủ cột (GVCN, HV có vi phạm / sĩ số, vi phạm, chưa xử lý)', () => {
+    const r: any = req(() => oYThucPhanTich(P.admin, { ...fy, dong: 'tong', cot: 'lop' }));
+    assert(r.n > 0 && r.bangLuot && r.kieu === 'vi-pham', `kiểu ${r.kieu}, n ${r.n}`);
+    coDong(r, 'tong × lop', ['viPhamLop']);
+    assert(r.rows.every((row: any) => row.viPhamLop.viPham > 0 && 'gvcn' in row.viPhamLop && 'siSo' in row.viPhamLop && row.viPhamLop.hvViPham > 0), 'dòng lớp thiếu cột');
+  });
+
+  check('PT-VP-PA · mọi ô Ý thức (Tổng, mỗi lớp + nhóm, HV cần chú ý): dòng đủ thông tin, số = dòng', () => {
+    const y: any = req(() => yThucPhanTich(P.admin, fy));
+    const dong = [{ khoa: 'tong' }, ...y.lop.slice(0, 3).flatMap((l: any) => [{ khoa: l.khoa }, ...(l.con ?? []).slice(0, 1).map((c: any) => ({ khoa: c.khoa }))]), ...(y.gom ? [{ khoa: 'gom' }] : [])];
+    let so = 0;
+    for (const d of dong) for (const cot of ['vi-pham', 'chua-xu-ly', 'hv-co-vi-pham']) {
+      const r: any = req(() => oYThucPhanTich(P.admin, { ...fy, dong: d.khoa, cot }));
+      if (!r.n) continue;
+      coDong(r, `${d.khoa} × ${cot}`, cot === 'hv-co-vi-pham' ? ['viPhamEm'] : ['viPham']);
+      if (cot !== 'hv-co-vi-pham') assert(r.rows.every((row: any) => row.viPham.ngay && row.viPham.nhom && row.viPham.trangThai), `${cot}: thiếu ngày / nhóm / trạng thái`);
+      so++;
+    }
+    for (const h of y.hvCanChuY.slice(0, 2)) for (const cot of ['vi-pham', 'chua-xu-ly']) {
+      const r: any = req(() => oYThucPhanTich(P.admin, { ...fy, dong: `hv:${h.studentId}`, cot }));
+      if (r.n) { coDong(r, `hv × ${cot}`, ['viPham']); so++; }
+    }
+    if (y.hvCanChuY.length) coDong(req(() => oYThucPhanTich(P.admin, { ...fy, dong: 'hv-can-chu-y', cot: 'hv' })), 'hv-can-chu-y', ['viPhamEm']);
+    assert(so >= 4, `quá ít ô Ý thức có số (${so})`);
+  });
+
+  check('PT-VP-PA · mọi ô Hiệu quả PA + Báo cáo HV "PA cải thiện": dòng PA có loại · kết quả · người, số = dòng; "PA chưa có kết quả" giữ việc Ghi kết quả', () => {
+    const h: any = req(() => hieuQuaPa(P.admin, fp));
+    let so = 0;
+    for (const d of ['tong', ...h.gvThem.hang.slice(0, 2).map((x: any) => x.khoa), ...h.quyChe.hang.slice(0, 2).map((x: any) => x.khoa)]) {
+      for (const cot of ['pa', 'cai-thien', 'hv']) {
+        const r: any = req(() => oHieuQuaPa(P.admin, { ...fp, dong: d, cot }));
+        if (!r.n) continue;
+        assert(r.bangLuot && r.kieu === 'pa', `${d} × ${cot}: kiểu ${r.kieu}`);
+        coDong(r, `${d} × ${cot}`, ['pa']);
+        assert(r.rows.every((row: any) => row.pa.loaiPa && 'ketQua' in row.pa && 'nguoiPhuTrach' in row.pa && row.pa.lop !== undefined), `${d} × ${cot}: dòng PA thiếu cột`);
+        if (cot !== 'hv') assert(r.rows.every((row: any) => row.pa.ketQua), `${d} × ${cot}: PA có kết quả phải có ketQua`);
+        so++;
+      }
+    }
+    assert(so >= 3, `quá ít ô Hiệu quả PA có số (${so})`);
+    const chua: any = req(() => oHieuQuaPa(P.admin, { ...fp, dong: 'chua-ghi-ket-qua', cot: 'pa' }));
+    assert(!chua.n || (chua.rows.some((row: any) => row.viec) && !chua.bangLuot), 'PA chưa có kết quả phải giữ việc Ghi kết quả (XM-4)');
+    const bc: any = req(() => oBaoCao(P.admin, { ct: 'ft', branchId: 1, tu: TU, den: DEN, o: 'pa-co-ket-qua' }));
+    if (bc.n) { assert(bc.kieu === 'pa', `Báo cáo PA cải thiện: ${bc.kieu}`); coDong(bc, 'pa-co-ket-qua', ['pa']); assert(bc.rows.every((row: any) => row.pa.ketQua), 'PA cải thiện thiếu ketQua'); }
+  });
+
+  check('PT-VP-PA · Phân tích GV · Việc đúng hạn + PA hiệu quả: dòng PA (+ hạn, ngày ghi, đúng hạn), số = dòng', () => {
+    let so = 0;
+    for (const x of gvKq.hang.slice(0, 7)) for (const cot of ['viec-dung-han', 'pa-hieu-qua']) {
+      const r: any = req(() => oChiSoGv(P.admin, { ...fg, gv: x.id, cot }));
+      if (!r.n) continue;
+      assert(r.kieu === 'pa', `${cot}: kiểu ${r.kieu}`);
+      coDong(r, `GV ${x.id} × ${cot}`, ['pa']);
+      if (cot === 'viec-dung-han') assert(r.rows.every((row: any) => row.pa.han && typeof row.pa.dungHan === 'boolean'), 'việc đúng hạn thiếu hạn / đúng hạn');
+      so++;
+    }
+    assert(so >= 1, 'demo phải có ít nhất một ô PA của GV');
+  });
 }

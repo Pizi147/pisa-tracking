@@ -309,9 +309,10 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     assert(so > 0, 'demo phải có mục tiến bộ');
   });
 
-  check('M3 · PA cải thiện: xuHuong cai-thien / chua-cai-thien khớp sub', () => {
-    const p = bc.oBaoCao(P.mbManager, { branchId: null, ct: 'ft', ...ky, o: 'pa-co-ket-qua' });
-    for (const r of p.rows) assert(r.xuHuong?.huong === (r.sub.endsWith('Chưa cải thiện') ? 'chua-cai-thien' : 'cai-thien'), `PA ${r.id}: ${r.sub} · ${r.xuHuong?.huong}`);
+  check('M3 · PA cải thiện: bảng PA (PT-VP-PA) — mỗi dòng có kết quả cuối của PA', () => {
+    const p: any = bc.oBaoCao(P.mbManager, { branchId: null, ct: 'ft', ...ky, o: 'pa-co-ket-qua' });
+    assert(!p.n || p.kieu === 'pa', `kiểu ${p.kieu}`);
+    for (const r of p.rows) assert(r.pa?.ketQua, `PA ${r.id}: ${JSON.stringify(r.pa)}`);
   });
 
   await t.checkAsync('M3 · PA chưa có kết quả (Hiệu quả PA): mỗi dòng kèm việc Ghi kết quả — lam theo ghiDuocPaMany (QT được; người thực hiện được); câu ≤ trước + 3', async () => {

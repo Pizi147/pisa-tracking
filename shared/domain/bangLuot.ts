@@ -36,3 +36,22 @@ export type DongBaiThuong = {
   attemptId: number; studentId: number; ten: string; classId: number | null; lop: string; chuongTrinh: string;
   bai: string; nhanBai: string; tuan: string; mon: Record<string, ODiemMon>; tong: number | null; datTong: boolean | null; monCua?: string[];
 };
+
+/** PT-VP-PA (mockup v13 A4): một vi phạm — trạng thái = nhãn cửa trạng thái Ý thức (`TrangThaiViPhamKq.nhan`), `trangThaiT` để tô viên. */
+export type DongViPham = {
+  id: number; studentId: number; ten: string; classId: number | null; lop: string; ngay: string; nhom: string; moTa: string;
+  nguoiGhi: string | null; trangThai: string; trangThaiT: string | null;
+};
+/** Ô đếm HV của Ý thức: một dòng một em (cùng cột bảng "Học viên cần chú ý"). `bac` = nhãn bậc hiện tại (dịch ở web). */
+export type DongViPhamEm = { studentId: number; ten: string; lop: string | null; viPham: number; chuaXuLy: number; bac: string | null; lanXuLy: string | null };
+/** Ô đếm lớp của Ý thức ("Lớp có vi phạm"). */
+export type DongViPhamLop = { classId: number | null; lop: string; gvcn: string | null; hvViPham: number; siSo: number | null; viPham: number; chuaXuLy: number };
+/**
+ * PT-VP-PA: một PA (hoặc một nghĩa vụ ghi kết quả của PA — `dot`, `han`, `ngayGhi`, `dungHan`, `treNgay`). `ketQua` = mã kết quả cuối
+ * (`improved` · `partial` · `unchanged` · `worse` · `insufficient`) hoặc null = chờ kết quả.
+ */
+export type DongPa = {
+  id: number; studentId: number; ten: string; classId: number | null; lop: string; caseId: number; kyNang: string | null; loaiPa: string;
+  batDau: string | null; ketQua: string | null; nguoiPhuTrach: string | null;
+  dot?: number; han?: string | null; ngayGhi?: string | null; dungHan?: boolean; treNgay?: number | null;
+};

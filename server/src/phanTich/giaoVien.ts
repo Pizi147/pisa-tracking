@@ -22,7 +22,7 @@ import { metricSet, parseObligation, rowsFor, type MetricRow } from '../worklist
 import { assessedSkillOf, expectationFor } from '../fasttrack/scoring.ts';
 import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts';
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
-import { paCoKetQua } from './hieuQuaPa.ts';
+import { dongNghiaVu, dongPa, paCoKetQua } from './hieuQuaPa.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { lopLucThiThat } from './lopLucThi.ts';
@@ -461,9 +461,10 @@ export function ganTangGiam(p: Principal, rows: MetricRow[], doi: DoiTb): Metric
 }
 
 /** PT-PANEL: trường đầu panel bảng khi MỌI dòng có `luotDiem` / `tangGiam` (dòng thiếu → panel cũ, không lệch số = dòng). */
-export function kieuBang(rows: readonly MetricRow[], cachTinh?: string | null): { bangLuot?: true; kieu?: 'luot' | 'tang-giam' | 'bai-thuong'; cachTinh?: string | null; nguong?: number | null } {
+export function kieuBang(rows: readonly MetricRow[], cachTinh?: string | null): { bangLuot?: true; kieu?: 'luot' | 'tang-giam' | 'bai-thuong' | 'pa'; cachTinh?: string | null; nguong?: number | null } {
   if (!rows.length) return {};
-  const kieu = rows.every((r: any) => r.tangGiam) ? 'tang-giam' : rows.every((r: any) => r.luotDiem) ? 'luot' : rows.every((r: any) => r.baiThuong) ? 'bai-thuong' : null;
+  const kieu = rows.every((r: any) => r.tangGiam) ? 'tang-giam' : rows.every((r: any) => r.luotDiem) ? 'luot' : rows.every((r: any) => r.baiThuong) ? 'bai-thuong'
+    : rows.every((r: any) => r.pa) ? 'pa' : null;
   if (!kieu) return {};
   return { bangLuot: true, kieu, cachTinh: cachTinh ?? null,
     ...(kieu === 'bai-thuong' ? { nguong: nguongCua(new Map(rows.map((r: any) => [r.id, r.baiThuong]))) } : {}) };
@@ -794,10 +795,10 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
   if (cot === 'viec-dung-han') {
     /* 05 #8: các tập việc có hạn (nay: Kết quả PA; SV-TVV thêm Báo PH), mỗi tập trễ trước — rồi xếp chung trễ trước. */
     return ra(t('Việc đúng hạn'), 'việc', [
-      ...dongTheoTap(tapGhiKetQuaPa(pTap, c).tap.get(gv), (ids) => rowsFor('nghia-vu', ids, 'dung-han-cap-nhat', p), t('Kết quả PA')),
+      ...((x) => dongTheoTap(x, (ids) => dongNghiaVu(ids, new Set(x?.dung ?? []), c.homNay), t('Kết quả PA')))(tapGhiKetQuaPa(pTap, c).tap.get(gv)),
     ].sort((a, b) => Number(a.dung) - Number(b.dung)));
   }
-  if (cot === 'ghi-pa') return ra(t('Kết quả PA đúng hạn'), '', dongTheoTap(tapGhiKetQuaPa(pTap, c).tap.get(gv), (ids) => rowsFor('nghia-vu', ids, 'dung-han-cap-nhat', p)));
+  if (cot === 'ghi-pa') { const x = tapGhiKetQuaPa(pTap, c).tap.get(gv); return ra(t('Kết quả PA đúng hạn'), '', dongTheoTap(x, (ids) => dongNghiaVu(ids, new Set(x?.dung ?? []), c.homNay))); }
   if (cot === 'hv-chu-y') {
     const sos = sosHienTai(p, c);
     const ids = [...hvCuaGv(dangDay(c), gv)].filter((s) => sos.has(s)).sort((a, b) => a - b);
@@ -806,7 +807,7 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
     const moi = c.khung === 'ft' ? luotMoiCoDiem(ids) : null;
     return ra(t('HV cần chú ý'), '', (moi ? ganLuotDiem(p, rows, (s) => moi.get(s) ?? null) : rows).map((row) => ({ dung: true, row })));
   }
-  if (cot === 'pa-hieu-qua') return ra(t('PA hiệu quả'), '', dongTheoTap(tapPaHieuQua(c).get(gv), (ids) => rowsFor('phuong-an', ids, undefined, p)));
+  if (cot === 'pa-hieu-qua') return ra(t('PA hiệu quả'), '', dongTheoTap(tapPaHieuQua(c).get(gv), (ids) => dongPa(ids)));
   throw badRequest(`Cột "${cot}" không có trong bảng.`);
 }
 
