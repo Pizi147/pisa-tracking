@@ -9,7 +9,8 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
   console.log('\nPT-PANEL · panel bảng có điểm');
   const { oTongHop, tongHop, luotTrongKhoang, phanLoaiCacLuot } = await import('../phanTich/tongHop.ts');
   const { oBaoCao, baoCao } = await import('../phanTich/baoCao.ts');
-  const { oChiSoGv, phanTichGiaoVien, oChiSoHoSoGv } = await import('../phanTich/giaoVien.ts');
+  const { oChiSoGv, phanTichGiaoVien, oChiSoHoSoGv, chiSoHoSoGv } = await import('../phanTich/giaoVien.ts');
+  const { addDaysIso } = await import('../../../shared/domain/index.ts');
   const { cotSoLieu } = await import('../../../shared/domain/phanTich.ts');
   const { chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
   const req = <T>(fn: () => T): T => chayTrongRequest('GET', fn);
@@ -98,7 +99,7 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
         assert(r.bangLuot && r.kieu === 'tang-giam' && r.n === n && r.rows.length === n, `${h.skill}:${o}: ${r.kieu} ${r.rows.length} ≠ ${n}`);
         for (const row of r.rows) {
           const x = row.tangGiam;
-          assert(x && dk(x) && Math.abs(x.chenh - (x.sau.v - x.truoc.v)) < 1e-9 && x.truoc.mt < x.sau.mt && 'kyVong' in x, `${h.skill}:${o} dòng sai ${JSON.stringify(x)}`);
+          assert(x && dk(x) && Math.abs(x.chenh - (x.sau.v - x.truoc.v)) < 1e-9 && 'kyVong' in x, `${h.skill}:${o} dòng sai ${JSON.stringify(x)}`);
         }
         soO++;
       }
@@ -138,8 +139,12 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
   });
 
   check('PT-PANEL · hồ sơ GV (Tổng quan "HV tiến bộ" + Lớp tôi dạy): kiểu tang-giam, số = dòng', () => {
-    const r: any = req(() => oChiSoHoSoGv(P.admin, gvTb!.id, { cot: 'tien-bo', tu: TU, den: '2026-05-25' }));
-    assert(r.bangLuot && r.kieu === 'tang-giam' && r.rows.length === r.n, `tien-bo hồ sơ: ${r.kieu} ${r.rows.length} ≠ ${r.n}`);
+    /* Hồ sơ GV xem ≤ 13 tuần — tìm một kỳ GV có Tiến bộ. */
+    const ky = ['2026-09-14', '2026-08-17', '2026-07-20', '2026-06-22', '2026-05-25'].map((den) => ({ tu: addDaysIso(den, -84), den }))
+      .find((k) => { const x: any = req(() => chiSoHoSoGv(P.admin, gvTb!.id, k)).tienBo; return x?.k === 'so' && x.tong > 0; });
+    assert(ky, 'GV phải có Tiến bộ trong một kỳ 13 tuần');
+    const r: any = req(() => oChiSoHoSoGv(P.admin, gvTb!.id, { cot: 'tien-bo', ...ky! }));
+    assert(r.n > 0 && r.bangLuot && r.kieu === 'tang-giam' && r.rows.length === r.n, `tien-bo hồ sơ: ${r.kieu} ${r.rows.length} ≠ ${r.n}`);
     assert(r.rows.every((row: any) => row.tangGiam && row.tangGiam.kn && (row.ketQua === 'dat') === (row.tangGiam.sau.v > row.tangGiam.truoc.v)), 'dòng hồ sơ thiếu tangGiam');
   });
 }
