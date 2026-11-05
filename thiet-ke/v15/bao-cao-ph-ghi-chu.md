@@ -76,7 +76,7 @@ Dữ liệu demo Monbay (tên mẫu, không tên thật trong `CP FT 131.xlsx` /
 - Lỗi lưu: chân "⚠ Chưa lưu được" màu `bad` (khác "Nháp" vàng); bấm lại "Lưu · em tiếp ›" = thử lưu rồi ở lại em đó (V12 ②). "Đang lưu…" chỉ ở nút đã bấm (V12 ⑨).
 - Ô sửa điểm: FT band 0–9 bước 0.5; lớp thường 0 → tổng; sai thì viền đỏ + chữ lỗi, con trỏ ở lại ô, không lưu.
 - Khối Hồ sơ lớp: chương trình chưa có mẫu (PET, KET, PREFOU) → không vẽ khối; có mẫu mà chưa tới đợt đầu → chip "Chưa có đợt · {đợt tới}".
-- **[Đề xuất — PTA chốt]** Phần **Chưa phân công**: một dòng ở Công việc của QL ("Của GV" / "Tất cả"), chip "Chưa phân công", nút Viết hộ — như việc "Chưa có người phụ trách" của Case (`no_owner`). Không ai bị giao (đặc tả §10 giữ nguyên); chỉ để QL thấy chỗ kẹt mà không phải mở từng hồ sơ lớp. Vẽ ở khung a4.
+- **Phần Chưa phân công (PTA Plan đồng ý 05/11)**: một dòng ở Công việc của QL ("Của GV" / "Tất cả"), chip "Chưa phân công", nút Viết hộ — như việc "Chưa có người phụ trách" của Case (`no_owner`). Không ai bị giao (đặc tả §10 giữ nguyên); chỉ để QL thấy chỗ kẹt mà không phải mở từng hồ sơ lớp. Vẽ ở khung a4.
 - a11y cho builder: mỗi nhóm radio `aria-labelledby` = tên tiêu chí; ô bảng `aria-label` "{em} · {phần} · Đủ / Nháp / Chưa viết"; ⓘ ở ngăn Xuất là nút mở popover (G6), không chỉ `title`.
 - Chưa vẽ (dáng sẵn có, builder theo mẫu): danh sách thả chọn em ở 375 (✓ đủ / nháp như danh sách 1440) · panel đọc em ở 375 (toàn màn, như d3) · GV xem hồ sơ lớp (phần của mình: Viết; phần khác: chỉ đọc) · TVV panel đọc không có Viết hộ.
 - Bấm "Lưu · em tiếp ›" khi em chưa đủ: vẫn lưu nháp và sang em còn thiếu kế tiếp, không chặn. Hàng tiêu chí còn trống có chấm vàng + viền nhóm vàng (cùng tín hiệu "ô thiếu" của bảng Hồ sơ lớp).
@@ -87,3 +87,4 @@ Dữ liệu demo Monbay (tên mẫu, không tên thật trong `CP FT 131.xlsx` /
 - `impeccable critique` (A rà thiết kế + B detector / đo trình duyệt, hai agent riêng mỗi vòng): **29 → 32 → 32 → 36/40**; vòng cuối **không P0 / P1**. P2 / P3 vòng cuối đã sửa (số Tháng 10, số việc QL, "Báo cáo PH" không ngắt dòng, aria nút Xuất / ô điểm).
 - Detector: chỉ còn dương tính giả (chú thích mockup, vạch "Đang chọn" G14, badge đỏ v12, phông đã khoá). Đo trình duyệt (gốc · sáng · tối, 19 khung): phông Be Vietnam Pro + Inter tải đủ, không chữ < 12 px, không tương phản dưới ngưỡng, 375 không nút < 44 px, không lỗi console.
 - Ảnh: `anh/<khung>-1440-toi.png`, `anh/<khung>-375-sang.png`, `anh/toan-trang.png`. Bản sáng 1440 / tối 375: nút "Tất cả sáng / Tất cả tối" đầu trang.
+- Tên GV / em / mã lớp **không cắt "…"** (luật chủ SP): đầu cột tên GV xuống tối đa 2 dòng; hàng chọn em 375 xuống dòng khi tên dài.
