@@ -8,7 +8,7 @@
  *
  * Quyền: MỌI hàm ở đây gọi `require_(PLAN_WEEK, { classId })` TRƯỚC khi đọc gì của lớp/em (QL chi nhánh khác → 403).
  */
-import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import {
   CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
@@ -1546,7 +1546,7 @@ export function xuatDiemTest(p: Principal, f: BoLocXuatDiem, luc = nowIso()) {
       `SELECT a.id, a.kind, a.class_id, a.student_id, a.cycle_id, a.attempt_no, a.target_at_attempt, a.kck_at_attempt,
               st.full_name, st.email, cy.route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a
          JOIN students st ON st.id = a.student_id JOIN learning_cycles cy ON cy.id = a.cycle_id
-        WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled'
+        WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND ${LUOT_XUAT_SQL('a', 'st')}
           ${f.mt ? 'AND a.attempt_no BETWEEN ? AND ?' : ''}
           ${f.tuan ? `AND a.id IN (SELECT ask.attempt_id FROM attempt_skills ask JOIN report_periods r ON r.id = ask.planned_period_id
                                     WHERE ask.required = 1 AND r.week_start BETWEEN ? AND ?)` : ''}`).all(...lo, ...(f.mt ?? []), ...(f.tuan ?? [])) as any[]);

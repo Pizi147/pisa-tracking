@@ -257,6 +257,10 @@ export async function runPrTkTests(t: YThucTestKit) {
     const luot = get(`SELECT a.id FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) AND EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = 'speaking' AND k.required = 1 AND k.sit_status = 'scheduled') ORDER BY a.attempt_no DESC LIMIT 1`, fx.id, NGAY);
     attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [null, null, null, null] });   // thiếu S
     studentsSvc.setStudentStatus(P.admin, fx.student_id, 'finished', NGAY, 'Nghỉ học');
+    /* NGHI-HOC-LUU-TRU: Kết thúc học = Lưu trữ → điểm khoá như mọi em Lưu trữ; Bỏ lưu trữ (API cũ) rồi nhập bù để kiểm bản chụp cập nhật. */
+    let khoa = 0; try { attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [7, 7, 7, 7] }); } catch (e: any) { khoa = e.status; }
+    assert(khoa === 400, 'em Lưu trữ: nhập điểm phải 400');
+    studentsSvc.unarchiveStudent(P.admin, fx.student_id);
     const dongS = () => get(`SELECT * FROM ban_chup_luot WHERE ban_chup_id = (SELECT MAX(id) FROM ban_chup_lo_trinh WHERE cycle_id = ?) AND attempt_id = ? AND ky_nang = 'speaking'`, fx.id, luot.id);
     const truoc = dongS();
     assert(truoc.diem === null && truoc.overall === null, 'tiền đề: S trống lúc đóng');
@@ -342,45 +346,43 @@ export async function runPrTkTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ TK-L · Kết thúc học chưa lưu trữ khi FT còn "Chờ kết quả thi thật"
   const luuTruSvc: any = await import('../classes/luuTru.ts');
   const trongLuuTru = (sid: number) => (luuTruSvc.danhSachLuuTru(P.admin, {}) as any).hocVien?.some?.((h: any) => h.id === sid) ?? null;
-  /* OV-8a (chủ SP 13/10): có kết quả KHÔNG tự Lưu trữ nữa — em chờ Quản lý chọn Bước tiếp; Lưu trữ khi QL chọn "Kết thúc" (prOv8a.tests.ts). */
-  await checkAsync('TK-L · (1) FT chưa có kết quả → Kết thúc học: lộ trình đóng, có bản chụp, CHƯA lưu trữ; (2) nhập đủ 4 kỹ năng → vẫn chưa (OV-8a: chờ QL chọn Bước tiếp); (4) thiếu S thì chưa', () => thu(() => {
+  /* NGHI-HOC-LUU-TRU (chủ SP 05/11, thay TK-L / OV-8a): Kết thúc học LUÔN vào Lưu trữ ngay; KQ thi thật vẫn nhập được sau (OV-13h). */
+  await checkAsync('TK-L · (1) FT chưa có kết quả → Kết thúc học: lộ trình đóng, có bản chụp, vào Lưu trữ ngay; (2)(4) KQ thi thật (thiếu S, đủ 4) vẫn nhập được, em ở lại Lưu trữ', () => thu(() => {
     const ft = taoLop('FT', true);
     const a = taoHV(ft, 'FT', true, 6.5);
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
     studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ học');
-    assert(hoSo(a.sid).status === 'finished' && hoSo(a.sid).archived_at === null && trangThai(a.cy) === 'abandoned' && banChup(a.cy).length === 1, JSON.stringify(hoSo(a.sid)));
-    assert(trongLuuTru(a.sid) === false, 'chưa ở Lưu trữ');
+    assert(hoSo(a.sid).status === 'finished' && hoSo(a.sid).archived_at === NGAY && trangThai(a.cy) === 'abandoned' && banChup(a.cy).length === 1, JSON.stringify(hoSo(a.sid)));
+    assert(trongLuuTru(a.sid) === true, 'vào Lưu trữ');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { ...NHAP4, s: null });
-    assert(hoSo(a.sid).archived_at === null, 'thiếu S: chưa lưu trữ');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { s: 6.5 });
-    assert(hoSo(a.sid).archived_at === null, `đủ 4: ${hoSo(a.sid).archived_at}`);
-    assert(trongLuuTru(a.sid) === false && !get(`SELECT 1 x FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.archive'`, a.sid), 'không vào Lưu trữ, không nhật ký student.archive');
+    assert(em(a.cy).outcome_score === 6.5 && hoSo(a.sid).archived_at === NGAY, `đủ 4: ${em(a.cy).outcome_score} · ${hoSo(a.sid).archived_at}`);
   }));
-  await checkAsync('TK-L · (3) "Không thi" → chưa lưu trữ; (5) FT đã có kết quả trước → chưa lưu trữ (OV-8a: chờ QL chọn Bước tiếp); (6) lớp thường → lưu trữ ngay', () => thu(() => {
+  await checkAsync('TK-L · (3) "Không thi" nhập được khi đã Lưu trữ; (5) FT đã có kết quả trước → Lưu trữ ngay; (6) lớp thường → Lưu trữ ngay', () => thu(() => {
     const ft = taoLop('FT', true);
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
     const a = taoHV(ft, 'FT', true, 6.5);
     studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, { khongThi: true });
-    assert(hoSo(a.sid).archived_at === null, 'Không thi → chờ QL chọn');
+    assert(hoSo(a.sid).archived_at === NGAY && em(a.cy).thi_that_khong_thi === 1, 'Không thi');
     const b = taoHV(ft, 'FT', true, 6.5);
     thiThatSvc.datKetQuaThiThat(gvcn, b.cy, NHAP4);
     studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
-    assert(hoSo(b.sid).archived_at === null, 'đã có kết quả → chờ QL chọn');
+    assert(hoSo(b.sid).archived_at === NGAY, 'đã có kết quả → Lưu trữ');
     const c = taoHV(taoLop('FOU', false), 'FOU', false);
     studentsSvc.setStudentStatus(P.admin, c.sid, 'finished', NGAY, 'Nghỉ');
     assert(hoSo(c.sid).archived_at === NGAY, 'lớp thường → lưu trữ ngay');
   }));
-  await checkAsync('TK-L · (7) kết thúc học NHIỀU em trộn FT chờ + FT có kết quả + lớp thường: mỗi em đúng luật; (8) Hoàn tác về đúng trạng thái trước', () => thu(() => {
+  await checkAsync('TK-L · (7) kết thúc học NHIỀU em trộn FT chờ + FT có kết quả + lớp thường: cả ba vào Lưu trữ; (8) Hoàn tác về đúng trạng thái trước', () => thu(() => {
     const ft = taoLop('FT', true); const th = taoLop('FOU', false);
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
     const cho = taoHV(ft, 'FT', true, 6.5); const co = taoHV(ft, 'FT', true, 6.5); const thuong = taoHV(th, 'FOU', false);
     thiThatSvc.datKetQuaThiThat(gvcn, co.cy, NHAP4);
     const r = hangLoat.chay(P.admin, { viec: 'ket-thuc', studentIds: [cho.sid, co.sid, thuong.sid], date: NGAY, lyDo: 'Nghỉ học' }) as any;
     assert(r.ok.length === 3, JSON.stringify(r));
-    assert(hoSo(cho.sid).archived_at === null && hoSo(co.sid).archived_at === null && hoSo(thuong.sid).archived_at === NGAY, 'mỗi em đúng luật (OV-8a: FT có kết quả chờ QL chọn)');
+    assert([cho, co, thuong].every((x) => hoSo(x.sid).archived_at === NGAY), 'cả ba vào Lưu trữ');
     studentsSvc.hoanTacKetThuc(P.admin, cho.sid);
-    assert(hoSo(cho.sid).status === 'active' && hoSo(cho.sid).archived_at === null && trangThai(cho.cy) === 'active', 'Hoàn tác (em chưa bị lưu trữ)');
+    assert(hoSo(cho.sid).status === 'active' && hoSo(cho.sid).archived_at === null && trangThai(cho.cy) === 'active', 'Hoàn tác: ra khỏi Lưu trữ');
     studentsSvc.hoanTacKetThuc(P.admin, co.sid);
     assert(hoSo(co.sid).status === 'active' && hoSo(co.sid).archived_at === null, 'Hoàn tác (em FT có kết quả): trả về học');
     const ql = loadPrincipal(P.mbManager.userId);
@@ -541,7 +543,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     studentsSvc.transferStudent(P.admin, b.sid, ft2, NGAY, 'Đổi lịch học', { noNote: true });
     assert(viecThi(P.mbManager, b.sid).length <= 1, 'FT → FT: không nhắc trùng');
   }));
-  await checkAsync('TK-rà I2 · kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả: không nhắc, Kết thúc học chờ QL chọn Bước tiếp (OV-8a), ngăn Tổng kết không "chờ"', () => thu(() => {
+  await checkAsync('TK-rà I2 · kết quả CŨ (chỉ Overall / kết luận chọn tay) là đã có kết quả: không nhắc, Kết thúc học vào Lưu trữ (NGHI-HOC-LUU-TRU), Tổng kết có Bước tiếp + gợi ý, không "chờ"', () => thu(() => {
     const ft = taoLop('FT', true);
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
     const a = taoHV(ft, 'FT', true, 6.5); const b = taoHV(ft, 'FT', true, 6.5);
@@ -550,7 +552,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     cyclesSvc.setOutcome(P.admin, b.cy, { outcome: 'not_reached', score: null });     // chỉ kết luận
     assert(viecThi(P.mbManager, a.sid).length === 0 && viecThi(P.mbManager, b.sid).length === 0, 'kết quả cũ: không nhắc');
     studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ'); studentsSvc.setStudentStatus(P.admin, b.sid, 'finished', NGAY, 'Nghỉ');
-    assert(hoSo(a.sid).archived_at === null && hoSo(b.sid).archived_at === null, 'kết thúc học: chờ QL chọn Bước tiếp');
+    assert(hoSo(a.sid).archived_at === NGAY && hoSo(b.sid).archived_at === NGAY, 'kết thúc học: vào Lưu trữ');
     const bt = tongKetSvc.tongKetLoTrinh(P.admin, a.cy).buocTiep;
     assert(bt?.goiY === 'dung' && tongKetSvc.tongKetLoTrinh(P.admin, b.cy).buocTiep?.goiY === 'lo_trinh_moi', 'kết quả cũ cũng có mục Bước tiếp + gợi ý (P7: 2 hướng)');
     const ra = tongKetSvc.tongKetLoTrinh(P.admin, a.cy).ketQua; const rb = tongKetSvc.tongKetLoTrinh(P.admin, b.cy).ketQua;

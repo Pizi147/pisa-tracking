@@ -162,6 +162,7 @@ export async function runPrOv15gTests(t: YThucTestKit) {
 
     await checkAsync('OV15g-9 · Ô điểm FT: nhận xét dài + GV chấm S → mục đủ chữ nhận xét và "GV chấm: … → …"', async () => {
       const luot = one(`SELECT a.id FROM assessment_attempts a JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = 'speaking' AND s.band IS NOT NULL
+                         JOIN students st ON st.id = a.student_id AND st.archived_at IS NULL   -- em Lưu trữ khoá điểm
                          WHERE a.class_id = ? AND a.status != 'cancelled' ORDER BY a.id DESC LIMIT 1`, lop).id as number;
       const nx = 'Phát âm rõ, trả lời đủ ý Part 2 nhưng còn ngập ngừng khi chuyển ý; Part 3 cần thêm ví dụ thực tế và mở rộng câu trả lời hơn nữa nhé.';
       await ghi(QL, `/attempts/${luot}/scores/speaking`, 'PUT', { nhanXet: nx, gvCham: { performerName: 'GV Ngoài OV15g' } });

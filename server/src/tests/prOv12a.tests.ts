@@ -190,7 +190,7 @@ export async function runPrOv12aTests(t: any) {
     const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, 'LT1', 'FT', 6.5, ?, 'active', ?)`)
       .run(sid, t.TODAY, now).lastInsertRowid);
     conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(TVV.userId, sid);   // SV-TVV-VIEC: TVV của em giữ việc Bước tiếp
-    students.setStudentStatus(P.admin, sid, 'finished', t.TODAY, 'Hết khoá');
+    /* NGHI-HOC-LUU-TRU: em đang học (lộ trình chạy) có KQ thi thật — em đã Kết thúc học vào Lưu trữ, không còn việc Bước tiếp. */
     thiThat.datKetQuaThiThat(TVV, cy, { ngayThi: t.TODAY, l: 7, r: 6.5, w: 6, s: 6.5 });   // OV-8b: TVV nhập kết quả thi thật
     return { sid, cy };
   };
@@ -198,7 +198,7 @@ export async function runPrOv12aTests(t: any) {
   check('OV12a-6 · TVV chọn / bỏ Bước tiếp cả 3 hướng (200); hồ sơ có việc "Chọn bước tiếp sau thi"; TVV chi nhánh khác / CX / GV / Admin 403', () => thu(() => {
     const lop = taoLopFt(); const lt2 = taoLopFt('LT2');
     const a = emCoKetQua(lop);
-    assert(tongKet.tongKetLoTrinh(TVV, a.cy).buocTiep.coTheChon === true && tongKet.tongKetLoTrinh(CX, a.cy).buocTiep.coTheChon === false, 'cờ coTheChon');
+    assert(buocTiep.trangThaiBuocTiep(TVV, a.cy).coTheChon === true && buocTiep.trangThaiBuocTiep(CX, a.cy).coTheChon === false, 'cờ coTheChon');
     const viec = profile.studentProfile(TVV, a.sid).dauHoSo.viec.cuaBan;
     assert(viec.some((v: any) => v.loai === 'buoc-tiep' && v.key === `buoc_tiep:${a.cy}` && v.mo?.href?.includes(`buoc-tiep=${a.cy}`)), JSON.stringify(viec));   // OV-13m: panel Bước tiếp
     for (const [ten, p] of [['TVV CP', TVV_CP], ['CX', CX], ['GV', P.coreTeacher], ['Admin', ADMIN]] as const) {
@@ -212,12 +212,12 @@ export async function runPrOv12aTests(t: any) {
     buocTiep.chonBuocTiep(TVV, a.cy, { chon: 'hoc_lai' });
     assert(hs(a.sid).status === 'active' && all(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, a.sid).map((r) => r.class_id).join() === String(lop), 'Học lại về lớp cũ');
     buocTiep.boChonBuocTiep(TVV, a.cy);
-    assert(hs(a.sid).status === 'finished', 'bỏ Học lại');
+    assert(hs(a.sid).status === 'active', 'bỏ Học lại');
     assert(students.lopChoHocLai(TVV, a.sid).lop.some((l: any) => l.id === lt2), 'TVV đọc được lớp cho Học tiếp');
     buocTiep.chonBuocTiep(TVV, a.cy, { chon: 'hoc_tiep', lopMoiId: lt2 });
     assert(all(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, a.sid).map((r) => r.class_id).join() === String(lt2), 'Học tiếp LT2');
     buocTiep.boChonBuocTiep(TVV, a.cy);
-    assert(hs(a.sid).status === 'finished', 'bỏ Học tiếp');
+    assert(hs(a.sid).status === 'active', 'bỏ Học tiếp');
   }));
   check('OV12a-7 · bổ trợ miễn phí: ghi trước ngày Mini Test = Kết quả thường (không đòi Mini Test), hạn giữ 29/09; từ ngày Mini Test = Kết quả cuối + Mini Test', () => thu(() => {
     ngay('2026-09-14');

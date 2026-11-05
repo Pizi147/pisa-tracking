@@ -336,7 +336,7 @@ export function rosterIds(p: Principal, classId: number) {
   return hocVienCuaLop(p, classId).students.map((s) => ({ id: s.id as number, fullName: s.full_name as string, archived: !!s.archived_at }));
 }
 
-function hocVienCuaLop(p: Principal, classId: number, q?: string, kemKetThuc = false) {
+function hocVienCuaLop(p: Principal, classId: number, q?: string) {
   require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   const conn = db();
   const cls = (coNho() ? lopDayDu().get(classId) : conn.prepare('SELECT status, lich_mt, route FROM classes WHERE id = ?').get(classId)) as any;   // TL-HVL: GET đọc bảng lớp đã nhớ
@@ -358,13 +358,9 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string, kemKetThuc = f
                LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
                LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
               WHERE e.class_id = ?`;
-  /* OV-11g (HL-19, Q11): Học viên & Lớp — em Kết thúc học chưa Lưu trữ vẫn hiện (mờ) ở lớp CUỐI của em, để QL Lưu trữ / Học lại; bảng khác của lớp giữ em đang học. */
   sql += finished
     ? ` AND e.id IN (SELECT MAX(id) FROM enrollments WHERE class_id = ? GROUP BY student_id)`
-    : kemKetThuc
-      ? ` AND (e.status = 'active' OR (e.status = 'completed' AND s.status = 'finished' AND s.archived_at IS NULL
-            AND e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id)))`
-      : ` AND e.status = 'active'`;
+    : ` AND e.status = 'active'`;
   if (finished) params.push(classId);
   if (q?.trim()) {
     sql += ' AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)';
@@ -378,8 +374,8 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string, kemKetThuc = f
  * Danh sách học viên của một lớp — chỉ nạp khi người dùng mở rộng lớp đó.
  * Mỗi em kèm tiến trình MT gọn để không phải mở chi tiết mới biết đang ở đâu.
  */
-export function classRoster(p: Principal, classId: number, q?: string, kemKetThuc = false) {
-  const { conn, finished, students, lop } = hocVienCuaLop(p, classId, q, kemKetThuc);
+export function classRoster(p: Principal, classId: number, q?: string) {
+  const { conn, finished, students, lop } = hocVienCuaLop(p, classId, q);
   if (!students.length) return [];
   const sids = students.map((s) => s.id);
   const ph = DS_JSON, json = JSON.stringify(sids);   // S5: một tham số JSON

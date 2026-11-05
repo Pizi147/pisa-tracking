@@ -33,8 +33,8 @@ export async function runPrOv8aTests(t: YThucTestKit) {
       .run(userId, clsId, new Date().toISOString());
     return loadPrincipal(userId);
   };
-  /** Em FT (LT1, Target 6.5) ở `clsId`, đã Kết thúc học (lộ trình đóng, chờ kết quả). */
-  const emDaKetThuc = (clsId: number, target: number | null = 6.5) => {
+  /** Em FT (LT1, Target 6.5) ở `clsId` đang học, lộ trình chạy, chờ kết quả thi thật. */
+  const emChoThi = (clsId: number, target: number | null = 6.5) => {
     seq += 1;
     const now = new Date().toISOString();
     const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
@@ -42,8 +42,13 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, clsId, NGAY, now);
     const cy = Number(conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, programme_code, target_score, started_at, status, created_at) VALUES (?, 1, 'LT1', 'FT', ?, ?, 'active', ?)`)
       .run(sid, target, NGAY, now).lastInsertRowid);
-    studentsSvc.setStudentStatus(P.admin, sid, 'finished', NGAY, 'Hết khoá');
     return { sid, cy };
+  };
+  /** Như `emChoThi` rồi Kết thúc học (lộ trình đóng) — NGHI-HOC-LUU-TRU: em vào Lưu trữ ngay, không còn việc Bước tiếp. */
+  const emDaKetThuc = (clsId: number, target: number | null = 6.5) => {
+    const x = emChoThi(clsId, target);
+    studentsSvc.setStudentStatus(P.admin, x.sid, 'finished', NGAY, 'Hết khoá');
+    return x;
   };
   const hoSo = (sid: number) => get('SELECT status, archived_at FROM students WHERE id = ?', sid);
   const loTrinh = (cy: number) => get('SELECT * FROM learning_cycles WHERE id = ?', cy);
@@ -65,17 +70,17 @@ export async function runPrOv8aTests(t: YThucTestKit) {
   await checkAsync('OV8a-1 · nhập kết quả → em KHÔNG tự Lưu trữ, việc QL "Chọn bước tiếp sau thi" (hạn +7, Vận hành); GVCN không có việc; Tổng kết có mục Bước tiếp + gợi ý', () => thu(() => {
     const lop = taoLop();
     const gvcn = ganGvcn(lop, P.normalCoreTeacher.userId);
-    const a = emDaKetThuc(lop);
+    const a = emChoThi(lop);
     assert(viecBt(QL, a.sid).length === 0, 'chưa có kết quả → chưa có việc');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
-    assert(hoSo(a.sid).archived_at === null && hoSo(a.sid).status === 'finished', `không tự lưu trữ: ${JSON.stringify(hoSo(a.sid))}`);
+    assert(hoSo(a.sid).archived_at === null && hoSo(a.sid).status === 'active', `không tự lưu trữ: ${JSON.stringify(hoSo(a.sid))}`);
     const v = viecBt(QL, a.sid);
     assert(v.length === 1 && v[0].due === addDays(NGAY, 7) && v[0].tieuDe === 'Chọn bước tiếp' && v[0].mine && v[0].key === `buoc_tiep:${a.cy}`, JSON.stringify(v));
     assert(v[0].href.includes(`buoc-tiep=${a.cy}`) && d.nhomViecCua('buoc_tiep') === 'van-hanh', v[0].href);   // OV-13m: mở panel Bước tiếp
     assert(viecBt(gvcn, a.sid).length === 0, 'GVCN không có việc');
-    const bt = tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep;
+    const bt = buocTiepSvc.trangThaiBuocTiep(QL, a.cy);   // em đang học: panel Bước tiếp (Tổng kết chỉ khi lộ trình đóng)
     assert(bt && bt.chon === null && bt.goiY === 'dung' && bt.coTheChon === true, JSON.stringify(bt));
-    assert(tongKetSvc.tongKetLoTrinh(gvcn, a.cy).buocTiep.coTheChon === false, 'GVCN chỉ xem');
+    assert(buocTiepSvc.trangThaiBuocTiep(gvcn, a.cy).coTheChon === false, 'GVCN chỉ xem');
     /* Việc quá hạn (đỏ, không chặn) khi qua 7 ngày: dời ngày nhập kết quả về trước. OV-13q: hạn tính từ ngày thi — dời cả ngày thi. */
     conn.prepare(`UPDATE journey_events SET event_date = ? WHERE cycle_id = ? AND event_type = 'cycle_outcome'`).run(addDays(NGAY, -10), a.cy);
     conn.prepare('UPDATE learning_cycles SET ended_at = ?, thi_that_ngay = ? WHERE id = ?').run(addDays(NGAY, -10), addDays(NGAY, -10), a.cy);
@@ -84,7 +89,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
 
   await checkAsync('OV8a-2 · QL Kết thúc → lộ trình đóng + Lưu trữ + việc hết + mốc Hành trình; Hoàn tác → ra khỏi Lưu trữ, việc quay lại', () => thu(() => {
     const lop = taoLop();
-    const a = emDaKetThuc(lop);
+    const a = emChoThi(lop);
     thiThatSvc.datKetQuaThiThat(P.admin, a.cy, NHAP4);
     chon(QL, a.cy, { chon: 'ket_thuc' });
     assert(hoSo(a.sid).archived_at === NGAY && loTrinh(a.cy).status !== 'active' && loTrinh(a.cy).buoc_tiep === 'ket_thuc', JSON.stringify([hoSo(a.sid), loTrinh(a.cy).buoc_tiep]));
@@ -152,7 +157,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
   await checkAsync('OV8a-6 · GVCN / TVV chi nhánh khác / GVBM gọi chọn bước tiếp → 403 (OV-12a: TVV cùng chi nhánh chọn được — OV12a-6); lộ trình chưa có kết quả → 400', () => thu(() => {
     const lop = taoLop();
     const gvcn = ganGvcn(lop, P.normalCoreTeacher.userId);
-    const a = emDaKetThuc(lop);
+    const a = emChoThi(lop);
     assert(maLoi(() => chon(QL, a.cy, { chon: 'ket_thuc' })) === 400, 'chưa có kết quả → 400');
     thiThatSvc.datKetQuaThiThat(gvcn, a.cy, NHAP4);
     const tvvId = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.status = 'active' AND ur.branch_id != ? ORDER BY ur.user_id LIMIT 1`, MB)?.id;
@@ -165,11 +170,11 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     assert(hoSo(a.sid).archived_at === null && loTrinh(a.cy).buoc_tiep === null, 'không đổi gì');
   }));
 
-  await checkAsync('OV8a-7 · Không thi → việc + gợi ý Học lại; Kết thúc học em FT đã có kết quả → không Lưu trữ, có việc; nhiều em cùng lớp → mỗi em một dòng (UI-CV-TVV)', () => thu(() => {
+  await checkAsync('OV8a-7 · Không thi → việc + gợi ý Học lại; nhiều em cùng lớp → mỗi em một dòng (UI-CV-TVV); NGHI-HOC-LUU-TRU: Kết thúc học em FT đã có kết quả → Lưu trữ, hết việc', () => thu(() => {
     const lop = taoLop();
-    const a = emDaKetThuc(lop);
+    const a = emChoThi(lop);
     thiThatSvc.datKetQuaThiThat(P.admin, a.cy, { khongThi: true });
-    assert(hoSo(a.sid).archived_at === null && viecBt(QL, a.sid).length === 1 && tongKetSvc.tongKetLoTrinh(QL, a.cy).buocTiep.goiY === 'lo_trinh_moi', 'Không thi');
+    assert(hoSo(a.sid).archived_at === null && viecBt(QL, a.sid).length === 1 && buocTiepSvc.trangThaiBuocTiep(QL, a.cy).goiY === 'lo_trinh_moi', 'Không thi');
     /* có kết quả khi em còn học → Kết thúc học: chưa Lưu trữ, việc hiện */
     seq += 1;
     const now = new Date().toISOString();
@@ -180,11 +185,11 @@ export async function runPrOv8aTests(t: YThucTestKit) {
       .run(sid, NGAY, now).lastInsertRowid);
     thiThatSvc.datKetQuaThiThat(P.admin, cy, NHAP4);
     assert(viecBt(QL, sid).length === 1, 'OV-13m: lộ trình còn chạy, đã có kết quả → có việc ngay');
-    studentsSvc.setStudentStatus(P.admin, sid, 'finished', NGAY, 'Hết khoá');
-    assert(hoSo(sid).archived_at === null && viecBt(QL, sid).length === 1, 'Kết thúc học: chờ QL chọn');
     const dong = ((myWork.myWork(QL, {}) as any).dong as any[]).filter((x: any) => x.group === 'buoc_tiep' && x.classId === lop);
     /* UI-CV-TVV (mockup `tvv.html`): Chọn bước tiếp không gộp lớp — mỗi em một dòng, một panel Sau thi. */
     assert(dong.length === 2 && dong.every((x: any) => !x.con), JSON.stringify(dong.map((x: any) => [x.key, x.con?.length])));
+    studentsSvc.setStudentStatus(P.admin, sid, 'finished', NGAY, 'Hết khoá');
+    assert(hoSo(sid).archived_at === NGAY && viecBt(QL, sid).length === 0, 'Kết thúc học (nghỉ học): Lưu trữ, hết việc');
   }));
 
   await checkAsync('OV8a-8 · migrate prOv8a thêm cột, chạy lặp không đổi gì', () => thu(async () => {

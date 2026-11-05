@@ -13,6 +13,7 @@ import { demHienTai } from '../platform/nguCanhRequest.ts';
 import { loadBundle, resultOf, type AttemptBundle, type ScoreRow } from '../fasttrack/attempts.ts';
 import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
 import { luotKck } from '../worklist/danhGia.ts';
+import { LUOT_XUAT_SQL } from '../students/tamDung.ts';
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). Lọc + quyền + tính dòng ở ĐÂY; bộ cột và dựng mảng hai chiều ở
@@ -180,7 +181,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
   const cs = manhPhamVi(v);
   const tg = manhThoiGian(f);
   const dk: [string, (string | number)[]][] = [
-    [`a.status != 'cancelled'`, []], [f.khung === 'ft' ? `a.kind = 'mock'` : `a.kind IN ('progress','final','checkpoint')`, []], [cs.sql, cs.params], [tg.sql, tg.params],
+    [`a.status != 'cancelled'`, []], [LUOT_XUAT_SQL('a', 'st'), []], [f.khung === 'ft' ? `a.kind = 'mock'` : `a.kind IN ('progress','final','checkpoint')`, []], [cs.sql, cs.params], [tg.sql, tg.params],
   ];
   if (f.chiNhanh.length) dk.push([`c.branch_id IN (${dauHoi(f.chiNhanh.length)})`, f.chiNhanh]);
   if (f.lop.length) dk.push([`c.id IN (${dauHoi(f.lop.length)})`, f.lop]);

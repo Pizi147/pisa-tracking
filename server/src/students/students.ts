@@ -46,7 +46,6 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
   const where = [
     `EXISTS (SELECT 1 FROM enrollments e JOIN classes c ON c.id = e.class_id
               WHERE e.student_id = s.id AND ${cs.sql})`,
-    "s.status != 'archived'",
   ];
   const params: unknown[] = [...cs.params];
   if (f.q) {
@@ -64,7 +63,8 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
     params.push(f.classId);
   }
 
-  const rows = conn.prepare(`SELECT s.* FROM students s WHERE ${where.join(' AND ')} ORDER BY s.full_name`).all(...params) as any[];
+  /* NGHI-HOC-LUU-TRU: em Lưu trữ (nghỉ học, tạm dừng) vẫn tìm ra để mở hồ sơ, xếp CUỐI + cờ `archived` (web ghi "Lưu trữ"). */
+  const rows = conn.prepare(`SELECT s.* FROM students s WHERE ${where.join(' AND ')} ORDER BY s.archived_at IS NOT NULL, s.full_name`).all(...params) as any[];
   const mapped = rows.map((s) => {
     const cur = conn
       .prepare(
@@ -90,7 +90,7 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
       )
       .get(s.id) as any;
     return {
-      id: s.id, studentCode: s.student_code, fullName: s.full_name, email: s.email ?? null, status: s.status,
+      id: s.id, studentCode: s.student_code, fullName: s.full_name, email: s.email ?? null, status: s.status, archived: !!s.archived_at,
       cycleId: cycle?.id ?? null, route: cycle?.route ?? null,
       target: cycle?.target_score ?? null, examPlan: examPlanOf(cycle),
       classId: cur?.id ?? null, classCode: cur?.code ?? null, branchName: cur?.branch_name ?? null,
@@ -253,10 +253,6 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   return { newClassCode: r.toClassCode, endKind: r.luat?.endKind ?? null };
 }
 
-/** TK-L / OV-8a: em đang học có lộ trình FT đang chạy → Kết thúc học CHƯA lưu trữ (chờ KQ thi thật rồi chọn Bước tiếp). Một nguồn cho `setStudentStatus` và "Khi lưu, web sẽ". */
-export const choThiThatKhiKetThuc = (conn: any, studentId: number): boolean =>
-  !!conn.prepare(`SELECT 1 FROM learning_cycles WHERE student_id = ? AND status = 'active' AND route IS NOT NULL`).get(studentId);
-
 /**
  * Trạng thái học viên chỉ có ba: active đang học · inactive tạm dừng · finished dừng hẳn.
  * Lưu trữ (archive) là cách ẩn khỏi danh sách, KHÔNG phải trạng thái thứ tư, và không đóng gì.
@@ -303,12 +299,10 @@ export function setStudentStatus(
     }
   }
 
-  /* PR-XOA §2: thôi học (finished) tự vào Lưu trữ từ ngày hiệu lực. P7 (N11): tạm dừng cũng vào Lưu trữ; quay lại học thì ra khỏi Lưu trữ. */
-  let archivedAt: string | null = status === 'active' ? null : status === 'finished' && s.status === 'inactive' ? s.archived_at ?? date : date;
+  /* PR-XOA §2: thôi học (finished) tự vào Lưu trữ từ ngày hiệu lực. P7 (N11): tạm dừng cũng vào Lưu trữ; quay lại học thì ra khỏi Lưu trữ.
+     NGHI-HOC-LUU-TRU (chủ SP 05/11, thay PR-TK / OV-8a): em FT có lộ trình chạy cũng vào Lưu trữ ngay — KQ thi thật nhập sau ở hồ sơ (OV-13h). */
+  const archivedAt: string | null = status === 'active' ? null : status === 'finished' && s.status === 'inactive' ? s.archived_at ?? date : date;
   return tx(() => {
-    /* PR-TK (TK-L) → OV-8a: Kết thúc học (từ đang học) đóng lộ trình FT thì CHƯA lưu trữ — chờ kết quả thi thật rồi Quản lý chọn Bước tiếp (Kết thúc = Lưu trữ, `buocTiep.ts`).
-       Em đang tạm dừng (đã ở Lưu trữ) kết thúc thì ở lại Lưu trữ. Cùng luật `choThiThatKhiKetThuc` — "Khi lưu, web sẽ" đọc đúng hàm này. */
-    if (status === 'finished' && s.status === 'active' && choThiThatKhiKetThuc(conn, studentId)) archivedAt = null;
     /* PR-LUI-b: nhớ ĐÚNG những ghi danh / lộ trình lần Kết thúc học này đóng (+ Case / tín hiệu, bên dưới) — Học lại và Hoàn tác chỉ đụng chúng, không đụng cái đã đóng từ trước. */
     const dongBoiLanNay = status === 'finished' ? {
       ghiDanhDong: (conn.prepare(`SELECT id, status AS truoc FROM enrollments WHERE student_id = ? AND status IN ('active','paused')`).all(studentId) as any[]).map((r) => ({ id: r.id as number, truoc: r.truoc as string })),
@@ -550,7 +544,7 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
       conn.prepare(`UPDATE learning_cycles SET status = 'abandoned', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(b.finishedAt, studentId);
     }
     ghiBanChup(conn, dongLai, { lyDo: 'ket_thuc', ngay: b.finishedAt ?? demoToday() });
-    conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = ?, branch_id = ? WHERE id = ?').run('finished', b.finishedAt, b.archivedAt, b.branchId ?? s.branch_id, studentId);
+    conn.prepare('UPDATE students SET status = ?, finished_at = ?, archived_at = ?, branch_id = ? WHERE id = ?').run('finished', b.finishedAt, b.archivedAt ?? b.finishedAt ?? demoToday(), b.branchId ?? s.branch_id, studentId);   // NGHI-HOC-LUU-TRU: kết thúc = Lưu trữ (nhật ký cũ của em FT chờ KQ có archivedAt null)
     for (const l of (a.lopMoLai ?? []) as { id: number; finishedAt: string | null }[]) {
       const conHoc = conn.prepare(`SELECT 1 FROM enrollments WHERE class_id = ? AND status = 'active'`).get(l.id);
       if (conHoc) continue;   // còn em đang học (kể cả em khác cũng vừa Học lại vào lớp) → lớp ở lại hoạt động

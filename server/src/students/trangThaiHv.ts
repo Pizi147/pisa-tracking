@@ -1,6 +1,6 @@
 /**
  * P7 SV-LO-TRINH (plan.md 1.6 N11, N22 ⑤) — "Tạm dừng/ Kết thúc học" và "Quay lại học", phần không nằm trong hàm một em sẵn có:
- *  · `tomTatTrangThai` — khối "Khi lưu, web sẽ" (một em / hàng loạt), đọc CÙNG luật lúc thi hành (`choThiThatKhiKetThuc`, Case mở như `closeCasesBySystem`);
+ *  · `tomTatTrangThai` — khối "Khi lưu, web sẽ" (một em / hàng loạt), đọc CÙNG luật lúc thi hành (Case mở như `closeCasesBySystem`);
  *  · `chanLenhCho` — em đang có quyết định chuyển lớp chờ thì không Tạm dừng / Kết thúc học (nói đúng câu + bước tiếp);
  *  · `thongTinQuayLai` / `quayLaiHoc` — Quay lại học từ Lưu trữ: lớp cũ còn chạy → một bấm; lớp cũ đã kết thúc → chọn lớp (gợi ý cùng chương trình, cùng chi nhánh);
  *    lộ trình đã đóng (tạm dừng sau thi) / em kết thúc có KQ thi thật → panel Lộ trình mới; em kết thúc giữa khoá → đường Học lại sẵn có.
@@ -29,18 +29,16 @@ export const cauLenhCho = (tuanBatDau: string): string =>
  */
 export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): { dong: string[]; soCase: number; soPa: number } {
   const conn = db();
-  const em: { id: number; status: string; lop: string | null; loTrinh: string | null; choThi: boolean }[] = [];
+  const em: { id: number; status: string; lop: string | null; loTrinh: string | null }[] = [];
   theoLo([...ids], (lo, ph) => {
     for (const r of conn.prepare(
       `SELECT s.id, s.status,
               (SELECT c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1) AS lop,
               (SELECT cy.route FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.seq DESC LIMIT 1) AS route,
-              (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.seq DESC LIMIT 1) AS route_ten,
-              -- cùng điều kiện choThiThatKhiKetThuc, đọc trong câu của cả lô
-              EXISTS (SELECT 1 FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' AND cy.route IS NOT NULL) AS cho_thi
+              (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.seq DESC LIMIT 1) AS route_ten
          FROM students s WHERE s.id IN (${ph}) AND s.status != 'finished'`,
     ).all(...lo) as any[]) {
-      em.push({ id: r.id, status: r.status, lop: r.lop ?? null, loTrinh: tenRoute(r), choThi: ketThuc && r.status === 'active' && !!r.cho_thi });
+      em.push({ id: r.id, status: r.status, lop: r.lop ?? null, loTrinh: tenRoute(r) });
     }
   });
   /* Chỉ em thực sự đổi: tạm dừng = em đang học; kết thúc = em chưa kết thúc. */
@@ -55,7 +53,7 @@ export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): { don
   return { dong: dongTomTat(em, ketThuc, soCase, soPa), soCase, soPa };
 }
 
-function dongTomTat(em: { status: string; lop: string | null; loTrinh: string | null; choThi: boolean }[], ketThuc: boolean, soCase: number, soPa: number): string[] {
+function dongTomTat(em: { status: string; lop: string | null; loTrinh: string | null }[], ketThuc: boolean, soCase: number, soPa: number): string[] {
   if (!em.length) return [];
   const ten = (n: number) => (n === 1 && em.length === 1 ? 'em' : `${n} em`);
   const mot = em.length === 1 ? em[0] : null;
@@ -67,11 +65,8 @@ function dongTomTat(em: { status: string; lop: string | null; loTrinh: string | 
       ...(soCase ? [`${soCase} Case dừng hạn`] : []),
     ];
   }
-  const luu = em.filter((e) => !e.choThi).length;
-  const cho = em.length - luu;
   return [
-    ...(luu ? [`Đưa ${ten(luu)} vào Lưu trữ · Kết thúc học`] : []),
-    ...(cho ? [`${ten(cho)} FT chờ KQ thi thật rồi chọn Bước tiếp — vào Lưu trữ sau`] : []),
+    `Đưa ${ten(em.length)} vào Lưu trữ · Kết thúc học`,
     mot ? `Rời ${mot.lop ?? '—'}${mot.loTrinh ? ` · kết thúc lộ trình ${mot.loTrinh}` : ''}` : 'Rời lớp · kết thúc lộ trình',
     ...(soCase ? [`Đóng ${soCase} Case${soPa ? ` · huỷ ${soPa} PA đang chạy` : ''}`] : []),
   ];
@@ -83,11 +78,11 @@ export function xemTruocTrangThai(p: Principal, studentId: number, ketThuc: bool
   return { dong: tomTatTrangThai([studentId], ketThuc).dong, chan: chanLenhCho(studentId) };
 }
 
-/** Câu báo sau khi lưu, đọc trạng thái THẬT của em (em FT còn lộ trình chạy kết thúc học thì chưa vào Lưu trữ — TK-L). Web hiện đúng câu này. */
+/** Câu báo sau khi lưu, đọc trạng thái THẬT của em. Web hiện đúng câu này. */
 export function thongBaoTrangThai(s: { status: string; archived_at: string | null } | null | undefined): string | null {
   if (!s) return null;
   if (s.status === 'inactive') return 'Đã vào Lưu trữ · Tạm dừng';
-  if (s.status === 'finished') return s.archived_at ? 'Đã vào Lưu trữ · Kết thúc học' : 'Đã kết thúc học — chờ KQ thi thật rồi chọn Bước tiếp, vào Lưu trữ sau';
+  if (s.status === 'finished') return 'Đã vào Lưu trữ · Kết thúc học';   // NGHI-HOC-LUU-TRU: Kết thúc học luôn vào Lưu trữ
   return null;
 }
 
