@@ -4,7 +4,7 @@
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
 import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
-import { PERMISSIONS, canNamGan, diemThiHopLe, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, canNamGan, diemThiHopLe, docLayLai, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, lopDayDu, type Principal } from '../permissions.ts';
@@ -16,7 +16,21 @@ import { thiThatCuaCycle } from './banChup.ts';
 
 const DIEM = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof DIEM)[number], number | null>;
-export type NhapThiThat = { ngayThi?: string | null; l?: unknown; r?: unknown; w?: unknown; s?: unknown; khongThi?: boolean; ghiChu?: unknown };
+/** `layLai` (THI-LAI-1-KN): kỹ năng người nhập lấy điểm KQ thi thật lần trước (em chỉ thi lại kỹ năng khác); không gửi = giữ danh sách đang lưu. */
+export type NhapThiThat = { ngayThi?: string | null; l?: unknown; r?: unknown; w?: unknown; s?: unknown; khongThi?: boolean; ghiChu?: unknown; layLai?: unknown };
+
+/**
+ * THI-LAI-1-KN (chủ SP 05/11): KQ thi thật LẦN TRƯỚC của em — lộ trình FT gần nhất trước lộ trình này (theo `seq`) có đủ 4 kỹ năng. Một câu, chỉ mục `idx_cycle_student`.
+ * Em chỉ thi lại một / vài kỹ năng → kỹ năng còn lại lấy từ đây (ô form tự điền / một bấm), overall + Đạt Target tính như thường.
+ */
+export type ThiTruoc = { cycleId: number; l: number; r: number; w: number; s: number; ngay: string | null };
+export function thiTruocCua(c: { route?: string | null; student_id: number; seq: number }): ThiTruoc | null {
+  if (!c.route) return null;
+  const r = db().prepare(`SELECT id, thi_that_l AS l, thi_that_r AS r, thi_that_w AS w, thi_that_s AS s, thi_that_ngay AS ngay FROM learning_cycles
+     WHERE student_id = ? AND seq < ? AND route IS NOT NULL AND thi_that_khong_thi = 0
+       AND thi_that_l IS NOT NULL AND thi_that_r IS NOT NULL AND thi_that_w IS NOT NULL AND thi_that_s IS NOT NULL ORDER BY seq DESC LIMIT 1`).get(c.student_id, c.seq) as any;
+  return r ? { cycleId: r.id, l: r.l, r: r.r, w: r.w, s: r.s, ngay: r.ngay ?? null } : null;
+}
 
 /** Lớp CUỐI của lộ trình: bản chụp mới nhất → lượt có lớp mới nhất → ghi danh mới nhất. */
 export function lopCuoiCuaLoTrinh(cycleId: number): number | null {
@@ -85,6 +99,13 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   const ghiChu = input.ghiChu === undefined ? c.outcome_note ?? null : chuTuDo(input.ghiChu, 'Ghi chú', 1000);
   /* "Không thi" bỏ qua điểm: không giữ điểm gõ dở cạnh một lộ trình không thi. */
   const ghi: Diem = khongThi ? { l: null, r: null, w: null, s: null } : moi;
+  /* THI-LAI-1-KN: chỉ giữ kỹ năng có điểm ĐÚNG bằng lần trước — ô lấy lại bị sửa = em đã thi lại kỹ năng đó. */
+  if (input.layLai !== undefined && input.layLai !== null
+    && (!Array.isArray(input.layLai) || input.layLai.some((k) => !(DIEM as readonly unknown[]).includes(k)))) throw badRequest('Kỹ năng lấy điểm lần trước không hợp lệ.');
+  const dsLay = input.layLai !== undefined ? ((input.layLai ?? []) as string[]) : docLayLai(c.thi_that_lay_lai)?.kn ?? [];
+  const truoc = !khongThi && dsLay.length ? thiTruocCua(c) : null;
+  const lay = truoc ? DIEM.filter((k) => dsLay.includes(k) && ghi[k] === truoc[k]) : [];
+  const layLaiJson = lay.length ? JSON.stringify({ kn: lay, ngay: truoc!.ngay }) : null;
   const kq = kt ? { ketLuan: null, ovr: null } : thiThatCuaCycle({
     laFt: true, target: c.target_score ?? null, khongCamKet: !!c.khong_cam_ket, ...ghi, khongThi, outcome: null, outcomeScore: null,
   });
@@ -93,8 +114,8 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   return tx(() => {
     conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = ?, thi_that_l = ?, thi_that_r = ?, thi_that_w = ?, thi_that_s = ?, thi_that_khong_thi = ?,
         thi_that_nhap_boi = ?, thi_that_nhap_luc = ?, outcome = ?, outcome_attempt_id = NULL, outcome_score = ?, outcome_note = ?,
-        thi_that_target = ? WHERE id = ?`)   // P12: Target lúc nhập — đổi Target sau không đổi báo cáo thi thật đã qua
-      .run(ngayLuu, ghi.l, ghi.r, ghi.w, ghi.s, khongThi ? 1 : 0, p.userId, nowIso(), kq.ketLuan, kq.ovr, ghiChu, c.target_score ?? null, cycleId);
+        thi_that_target = ?, thi_that_lay_lai = ? WHERE id = ?`)   // P12: Target lúc nhập — đổi Target sau không đổi báo cáo thi thật đã qua
+      .run(ngayLuu, ghi.l, ghi.r, ghi.w, ghi.s, khongThi ? 1 : 0, p.userId, nowIso(), kq.ketLuan, kq.ovr, ghiChu, c.target_score ?? null, layLaiJson, cycleId);
     /* Lộ trình đã đóng → bản chụp MỚI NHẤT theo kết quả mới; so với Target TRONG bản chụp (Target lúc đóng), không phải Target hiện tại. */
     const bc = conn.prepare('SELECT * FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1').get(cycleId) as any;
     if (!kt && c.status !== 'active' && bc) {
@@ -106,12 +127,13 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
     const tom = (d: Diem, kt: boolean, ovr: number | null) => (kt ? 'Không thi' : `L ${d.l ?? '—'} · R ${d.r ?? '—'} · W ${d.w ?? '—'} · S ${d.s ?? '—'}${ovr !== null ? ` · OVR ${ovr}` : ''}`);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'cycle_outcome', eventDate: homNay, title: 'Kết quả thi thật',
-      detail: `${tom(cu, !!c.thi_that_khong_thi, c.outcome_score ?? null)} → ${tom(ghi, khongThi, kq.ovr)}`,
+      detail: `${tom(cu, !!c.thi_that_khong_thi, c.outcome_score ?? null)} → ${tom(ghi, khongThi, kq.ovr)}${lay.length ? ` · ${lay.map((k) => k.toUpperCase()).join(' ')}: điểm lần trước` : ''}`,
       refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
     });
     /* OV-15g: kèm ghi chú; lưu lại nguyên giá trị thì không ghi nhật ký (Lịch sử thay đổi không có mục rỗng). */
-    const truocNk = { ...cu, ngayThi: c.thi_that_ngay ?? null, khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? null, ovr: c.outcome_score ?? null, ketLuan: c.outcome ?? null };
-    const sauNk = { ...ghi, ngayThi: ngayLuu, khongThi, ghiChu };
+    const truocNk = { ...cu, ngayThi: c.thi_that_ngay ?? null, khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? null,
+      layLai: docLayLai(c.thi_that_lay_lai)?.kn.join(' ') ?? null, ovr: c.outcome_score ?? null, ketLuan: c.outcome ?? null };
+    const sauNk = { ...ghi, ngayThi: ngayLuu, khongThi, ghiChu, layLai: lay.join(' ') || null };
     if (Object.keys(sauNk).some((k) => (sauNk as any)[k] !== (truocNk as any)[k])) {   // ovr / kết luận suy từ điểm — không tự thành lần đổi
       writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
         before: truocNk, after: { ...sauNk, ovr: kq.ovr, ketLuan: kq.ketLuan, ...(kt ? { kyThi: kt.ma } : {}) } });

@@ -387,6 +387,7 @@ CREATE TABLE learning_cycles (
   thi_that_ngay TEXT, thi_that_l REAL, thi_that_r REAL, thi_that_w REAL, thi_that_s REAL,
   thi_that_khong_thi INTEGER NOT NULL DEFAULT 0, thi_that_nhap_boi INTEGER, thi_that_nhap_luc TEXT,
   thi_that_target REAL,   -- P12: Target lúc nhập / sửa KQ thi thật (NULL = dữ liệu trước migrate → đọc Target hiện tại)
+  thi_that_lay_lai TEXT,  -- THI-LAI-1-KN: JSON { kn: ['l','r','s'], ngay } — kỹ năng lấy điểm KQ thi thật lần trước (em chỉ thi lại kỹ năng còn lại); NULL = thi đủ
   -- OV-8a: BƯỚC TIẾP SAU THI do QL chọn (ket_thuc | hoc_tiep | hoc_lai), ngày nghiệp vụ, người chọn, dữ liệu hoàn tác (JSON).
   buoc_tiep TEXT, buoc_tiep_luc TEXT, buoc_tiep_boi INTEGER, buoc_tiep_json TEXT,
   -- OV-13m: lựa chọn thêm tam_dung | lo_trinh_moi (ket_thuc = Thôi học); Thứ Hai "Hẹn bắt đầu" lộ trình mới (NULL = không hẹn / đã bắt đầu).

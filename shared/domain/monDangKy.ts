@@ -72,3 +72,9 @@ export const boMonDaBo = (skipped: readonly string[]): Set<string> =>
   new Set(skipped.filter(laDauBoMon).map((k) => k.slice(DAU_BO_MON.length)));
 /** Kỹ năng đánh giá đã bỏ: Writing chỉ khi bỏ cả hai task. */
 export const kyNangDaBo = (bo: ReadonlySet<string>, skill: string) => (skill === 'writing' ? bo.has('writing1') && bo.has('writing2') : bo.has(skill));
+
+/** THI-LAI-1-KN: ô kết quả thi thật (l · r · w · s) tự lấy điểm lần trước = kỹ năng KHÔNG học (`kyNangKhongHoc`); đủ môn → []. */
+const O_THI = { listening: 'l', reading: 'r', writing: 'w', speaking: 's' } as const;
+export function kyNangLayLai(mon: MonVao): ('l' | 'r' | 'w' | 's')[] {
+  return kyNangKhongHoc(mon).map((k) => O_THI[k as keyof typeof O_THI]);
+}

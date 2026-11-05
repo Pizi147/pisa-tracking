@@ -9615,6 +9615,9 @@ await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
 // ==================================================================== P13 KET-PET (thang Cambridge, Target + thi thật KET / PET, Checkpoint 4 môn)
 const { runPrKetPetTests } = bocTep('prKetPet', await import('./prKetPet.tests.ts'));
 await runPrKetPetTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== THI-LAI-1-KN (chủ SP 05/11: thi lại một kỹ năng — điểm lần trước thay vào)
+const { runPrThiLaiTests } = bocTep('prThiLai', await import('./prThiLai.tests.ts'));
+await runPrThiLaiTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== R1-LUU-TIEP (chọn bài còn thiếu kế tiếp)
 const { runR1LuuTiepTests } = bocTep('r1LuuTiep', await import('./r1LuuTiep.tests.ts'));
 await runR1LuuTiepTests({ check, assert });

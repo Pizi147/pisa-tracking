@@ -44,6 +44,8 @@ export type KetQuaMockKq = { loai: 'mock'; tu: string; den: string; tong: TongMo
 export type DongThiThat = {
   cycleId: number; studentId: number; ten: string; classId: number | null; lop: string | null; ngayThi: string | null; khongThi: boolean;
   ovr: number | null; l: number | null; r: number | null; w: number | null; s: number | null; target: string;
+  /** THI-LAI-1-KN: kỹ năng em thi lại lần này ("W"), các kỹ năng khác lấy KQ lần trước; null = thi đủ. */
+  thiLai: string[] | null;
   /** true Đạt Target · false Chưa đạt · null không thi / không có Target. */
   dat: boolean | null;
   buocTiep: string | null; buocTiepChu: string | null; buocTiepPhu: string | null; nguoiChon: string | null; ngayChon: string | null;

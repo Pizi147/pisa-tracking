@@ -1793,7 +1793,8 @@ api.get('/cycles/:id', requireAuth, wrap((req) => {
   if (!c) throw notFound('Không tìm thấy lộ trình');
   require_(principalOf(req), PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id },
     'Học viên này nằm ngoài phạm vi bạn được xem.');
-  return c;
+  /* THI-LAI-1-KN: KQ thi thật lần trước (đủ 4 kỹ năng) — form Kết quả thi thật lấy điểm kỹ năng em không thi lại. Một câu, chỉ lộ trình FT. */
+  return c.route ? { ...c, thiTruoc: thiThatSvc.thiTruocCua(c) } : c;
 }));
 
 api.patch('/cycles/:id', requireAuth, wrap((req) => {

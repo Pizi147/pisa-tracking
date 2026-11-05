@@ -85,6 +85,18 @@ export function ketQuaThiThat(o: DiemThi, target: number | null): KetQuaThiThat 
   return ovr >= target ? { ovr, ketLuan: 'reached', nhan: 'Đạt Target' } : { ovr, ketLuan: 'not_reached', nhan: 'Chưa đạt Target' };
 }
 
+/** THI-LAI-1-KN: `learning_cycles.thi_that_lay_lai` = { kn: kỹ năng lấy điểm KQ thi thật lần trước, ngay: ngày thi lần đó }; NULL / hỏng = thi đủ. */
+export type LayLaiThi = { kn: ('l' | 'r' | 'w' | 's')[]; ngay: string | null };
+export function docLayLai(v: unknown): LayLaiThi | null {
+  if (!v) return null;
+  try {
+    const o = typeof v === 'string' ? JSON.parse(v) : v;
+    return Array.isArray(o?.kn) && o.kn.length ? { kn: o.kn, ngay: o.ngay ?? null } : null;
+  } catch { return null; }
+}
+/** Kỹ năng em thi lại lần này (không lấy từ lần trước) — "thi lại W". */
+export const kyNangThiLai = (ll: LayLaiThi): ('l' | 'r' | 'w' | 's')[] => (['l', 'r', 'w', 's'] as const).filter((k) => !ll.kn.includes(k));
+
 /** TK-L: lộ trình FT còn chờ kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") → "Kết thúc học" chưa lưu trữ. */
 export function canChoThiThat(c: { laFt: boolean; cu?: boolean } & DiemThi): boolean {
   return c.laFt && !c.cu && !c.khongThi && [c.l, c.r, c.w, c.s].some((d) => d === null);

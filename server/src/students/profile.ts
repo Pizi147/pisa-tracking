@@ -6,7 +6,7 @@ import {
   caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
   bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
   type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
-  coONhapLienHe, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+  coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -986,6 +986,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
           ? {
             ngay: selected.thi_that_ngay ?? null, l: selected.thi_that_l ?? null, r: selected.thi_that_r ?? null, w: selected.thi_that_w ?? null, s: selected.thi_that_s ?? null,
             khongThi: !!selected.thi_that_khong_thi, target: selected.thi_that_target ?? target,
+            layLai: docLayLai(selected.thi_that_lay_lai),   // THI-LAI-1-KN: kỹ năng lấy điểm lần trước (+ ngày thi lần đó)
             ovr: thiThatCuaCycle({ laFt: true, target, khongCamKet: !!selected.khong_cam_ket, l: selected.thi_that_l ?? null, r: selected.thi_that_r ?? null, w: selected.thi_that_w ?? null,
               s: selected.thi_that_s ?? null, khongThi: !!selected.thi_that_khong_thi, outcome: selected.outcome ?? null, outcomeScore: selected.outcome_score ?? null }).ovr,
           }
