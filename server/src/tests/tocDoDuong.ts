@@ -966,9 +966,9 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
-  /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11. */
-  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999,
-  'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'QL /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999,
+  /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11 (bộ demo ít thi thật: QL 12 · QT / CX 22 · TVV 14 dòng). Ước bản chính 2 tháng ~1 000 dòng (ghi chú v13 mục 4). */
+  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,
+  'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 72,
   'QL /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,   // V8-HSL-2: đo 276 (một đợt)
   'GVCN /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
   'GVBM /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
