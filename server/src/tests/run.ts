@@ -9792,6 +9792,9 @@ await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== PR-MT-VANG (N38: "-" dời tuần sau tuần thi · vắng 2 lần huỷ · chọn tuần = xếp lại)
 const { runPrMtVangTests } = bocTep('prMtVang', await import('./prMtVang.tests.ts'));
 await runPrMtVangTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== PR-4 THI-THAT (chủ SP 05/11: tab Thi thật, luật mới thay C10 — một hàm `thongKeThiThat`)
+const { runPrThiThatTkTests } = bocTep('prThiThatTk', await import('./prThiThatTk.tests.ts'));
+await runPrThiThatTkTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

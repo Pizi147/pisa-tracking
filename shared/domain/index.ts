@@ -101,6 +101,7 @@ export * from './khungLichTest.ts';
 export * from './khoangThoiGian.ts';
 export * from './phanTrang.ts';
 export * from './ketQuaThi.ts';
+export * from './thiThatThongKe.ts';
 export * from './baoCaoPhanTich.ts';
 export * from './locThem.ts';
 export * from './doanNgonNgu.ts';
