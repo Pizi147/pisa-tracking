@@ -176,7 +176,7 @@
 .dt .bbc col.c-ten { width:36%; } .dt .o-bc.nhap::before { content:"✎"; font:500 15px var(--phong); } .dt .bbc tfoot td { font-size:12px; }
 .dt .o-bc { height:44px; } .dt .bbc td { height:48px; padding-top:2px; padding-bottom:2px; }
 .dt .link-nho { min-height:44px; display:inline-flex; align-items:center; }
-.dt .khoi-gap .nut, .dt .cong-cu-bc .nut { height:44px; } .dt .dai-nhom .mui { width:44px; height:44px; } .dt .bbc .o-bc { min-width:0; width:100%; }
+.dt .khoi-gap .nut, .dt .cong-cu-bc .nut, .dt .the .nut { height:44px; } .dt .dai-nhom .mui { width:44px; height:44px; } .dt .bbc .o-bc { min-width:0; width:100%; }
 .the-em { list-style:none; margin:0; padding:0; display:grid; }
 .the-em li { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; border-top:1px solid var(--line); }
 .the-em li:first-child { border-top:0; }
@@ -193,6 +193,20 @@
 .ds-dot li[aria-selected="true"] { background:var(--accent-soft); font-weight:700; }
 .ds-dot li span { font-size:12px; color:var(--text-faint); font-weight:500; }
 .neo-dot { position:relative; display:inline-block; }
+.tab-l > span { display:inline-flex; align-items:center; gap:6px; }
+.o-bc.chua.doc { box-shadow:none; color:var(--text-faint); }
+.tab-l > span.dang .chip-m { font-weight:600; }
+.dt .tab-l { overflow-x:auto; white-space:nowrap; gap:18px; scrollbar-width:none; } .dt .tab-l > span { flex:none; }
+.bbc th.cua small { color:var(--accent); font-weight:700; }
+.an-chu { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+.the.rong { padding:28px 16px; }
+.ngan.rong-720 { width:760px; }
+.ngan.rong-720 .pn { border-radius:0; border:0; }
+.phan-ban { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.phan-ban > span { flex-basis:100%; font:500 13px var(--phong); color:var(--text-faint); }
+.phan-ban .nut { flex:1; }
+.cua-t { color:var(--accent); font-weight:700; }
+.o-bc.nhap.cua { box-shadow:inset 0 0 0 1px var(--soon-vien); }
 /* phần đọc mockup */
 .bang-tt { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
 .bang-tt th, .bang-tt td { border:1px solid #d9deea; padding:6px 10px; text-align:left; vertical-align:top; }
@@ -206,58 +220,67 @@
 <body>
 <div class="trang">
   <header class="dau-mk">
-    <h1>v15 · Báo cáo PH — GV viết ở Công việc · theo dõi ở Hồ sơ lớp · xuất ở Học viên &amp; Lớp</h1>
-    <p>Đặc tả <code>2026-11-05-bao-cao-ph/de-xuat.md</code> (PTA duyệt bảng ý → mockup 05/11). Demo Monbay, hôm nay <b>thứ Ba 24/11/2026 · W4 NOV</b> — đợt Tháng 11 của lớp FT đang mở (20 → 30/11). GV cô <b>Trần Ngọc Hà</b> (GVCN + Listening MB FT 131, Listening MB FT 128, Writing MB FOU 12) · QL <b>Nguyễn Khánh Vy</b>. Tên học viên là tên mẫu.</p>
-    <nav class="muc-mk"><a href="#a">1–2 · Công việc + panel viết</a><a href="#c">3 · Nhận xét chung</a><a href="#d">4 · Hồ sơ lớp FT</a><a href="#e">5 · Lớp thường FOU</a><a href="#f">6 · Xuất Excel</a><a href="#g">7 · 375</a><a href="#h">Thao tác</a>
+    <h1>v15 · Báo cáo PH — tab "Báo cáo PH" ở Hồ sơ lớp · Admin một việc "Xuất" ở Công việc · xuất ở Học viên &amp; Lớp</h1>
+    <p>Đặc tả <code>2026-11-05-bao-cao-ph/de-xuat.md</code> (PTA duyệt bảng ý → mockup 05/11; <b>bản 2 theo chủ SP 05/11 — đặc tả mục 12</b>: GV không có việc ở Công việc, tự viết ở tab; Admin nhận việc "Xuất báo cáo PH" khi lớp đủ, 7 ngày). Demo Monbay, hôm nay <b>thứ Ba 24/11/2026 · W4 NOV</b> — đợt Tháng 11 của lớp FT đang mở (20 → 30/11). GV cô <b>Trần Ngọc Hà</b> (GVCN + Listening MB FT 131, Listening MB FT 128, Writing MB FOU 12) · QL <b>Nguyễn Khánh Vy</b> · Admin <b>Lương Thu Thảo</b>. Tên học viên là tên mẫu.</p>
+    <nav class="muc-mk"><a href="#a">1–2 · Tab Báo cáo PH (GV) + panel viết</a><a href="#c">3 · Nhận xét chung</a><a href="#d">4 · Tab (QL) · Xuất lớp</a><a href="#k">Admin · Công việc</a><a href="#e">5 · Lớp thường FOU</a><a href="#f">6 · Xuất Excel</a><a href="#g">7 · 375</a><a href="#h">Thao tác</a>
       <span class="cong-tac" role="group" aria-label="Chế độ khung"><button type="button" data-che="goc" aria-pressed="true">Như ghi</button><button type="button" data-che="toi">Tất cả tối</button><button type="button" data-che="sang">Tất cả sáng</button></span></nav>
   </header>
 
   <section class="khu" id="a">
-    <h2>1 · 2 — Công việc của GV (1440 tối): nhóm "Báo cáo PH" + panel viết một em (MB FT 131 · Listening)</h2>
-    <p class="ghi"><span class="so-mk">1</span>nhóm thứ 5 <b>Báo cáo PH</b>, cuối danh sách (QL: trước "Việc quản lý"); một dòng = đợt × lớp × phần của tôi, dáng dòng gộp lớp v12; đếm S11 (một dòng = 1)
-      · <span class="so-mk">2</span>bấm dòng → panel tại chỗ cột phải: trái 12 em (✓ đủ · nháp), phải form một em · Điểm tự điền từ <b>MT4 · W3 NOV</b> (Mock gần nhất có điểm trong tháng), "Sửa" mở ô tại chỗ
-      · tiêu chí <b>viền đứt = đặt sẵn như Tháng 10</b>, bấm mức khác → viền liền (dòng 2 đã đổi) · ô chữ luôn trống mỗi đợt · tự lưu khi rời ô · Tab qua các hàng, phím 1–4 chọn mức (aria-keyshortcuts, không chữ trên màn).</p>
-    <div class="man toi dai" data-k="a1"></div>
+    <h2>1 · 2 — GV cô Hà: Hồ sơ lớp MB FT 131 › tab "Báo cáo PH" (1440 tối) — không có việc ở Công việc</h2>
+    <p class="ghi"><span class="so-mk">1</span>tab <b>Báo cáo PH</b> đứng sau "Phân tích lớp", mang chip nhẹ đợt đang mở <b>"Tháng 11 · hạn 30/11"</b> — không chuông, không việc, không badge
+      · bảng em × phần; cột của chính GV ghi <b>"Bạn"</b> dưới tên phần (Chung · L) — ô thiếu có viền là chỗ bấm viết; ô phần khác bấm = panel đọc · GV không có nút Xuất (quyền xuất: QL · Admin · TVV)
+      · <span class="so-mk">2</span>bấm ô L của Lê Bảo Ngọc → panel viết (KhungPanel 720) giữ nguyên nội dung bản 1: danh sách em, Điểm tự điền + Sửa, tiêu chí đặt sẵn viền đứt, tự lưu, <b>Lưu · em tiếp ›</b>.</p>
+    <div class="man toi dai" data-k="t1"></div>
+    <figure style="margin:14px 0 0"><figcaption>Vào hồ sơ lớp (tab Học viên mặc định): chip nhẹ nằm cạnh tên tab — tín hiệu duy nhất cho GV</figcaption><div class="man toi" style="height:auto" data-k="t0"></div></figure>
+  </section>
+
+  <section class="khu">
+    <h2>2 — Bấm ô L · Lê Bảo Ngọc → panel viết mở ngay trên tab (1440 tối)</h2>
+    <div class="man toi phu-trang" style="height:900px" data-k="t2"></div>
   </section>
 
   <section class="khu">
     <h2>2b — Trạng thái khác của panel viết (1440 tối)</h2>
     <div class="hang-khung">
-      <figure><figcaption>Hết em · sau "Lưu · em tiếp ›" ở em cuối</figcaption><div class="man toi" style="width:744px;height:300px" data-k="a2"></div></figure>
+      <figure><figcaption>Hết em · phần tiếp của GV ở lớp này, rồi lớp khác</figcaption><div class="man toi" style="width:744px;height:300px" data-k="a2"></div></figure>
       <figure><figcaption>Bấm "Sửa" điểm → ô tại chỗ (Enter lưu · Esc huỷ) · nhập sai</figcaption><div class="man toi" style="width:620px;height:auto" data-k="a5"></div></figure>
-      <figure><figcaption>QL · Của GV / Tất cả → Viết hộ</figcaption><div class="man toi" style="width:600px;height:auto" data-k="a4"></div></figure>
       <figure><figcaption>Lỗi lưu · chữ vẫn giữ, nút ở lại</figcaption><div class="man toi" style="width:620px;height:auto" data-k="a3"></div></figure>
     </div>
   </section>
 
   <section class="khu" id="c">
-    <h2>3 — GVCN phần Nhận xét chung (1440 tối, panel cột phải)</h2>
-    <p class="ghi">Không ô Điểm. Hai đầu mục như mẫu NORMAL: <b>Trách nhiệm học tập</b> (3) · <b>Thái độ học tập</b> (4). Em "đủ" = 7 mức + Nhận xét chung không trống.</p>
+    <h2>3 — GVCN phần Nhận xét chung (bấm ô Chung trên tab)</h2>
+    <p class="ghi">Không ô Điểm. Hai đầu mục như mẫu NORMAL: <b>Trách nhiệm học tập</b> (3) · <b>Thái độ học tập</b> (4), rồi ô Nhận xét chung. Em "đủ" = 7 mức (đặt sẵn tính là có) + Nhận xét chung không trống.</p>
     <div class="man toi" style="width:760px;height:auto" data-k="c1"></div>
   </section>
 
   <section class="khu" id="d">
-    <h2>4 — Hồ sơ lớp MB FT 131 (QL xem, 1440 tối): khối "Báo cáo PH" gập ở cuối, ngay dưới khối Điểm</h2>
-    <p class="ghi">Cùng dáng khối <b>Điểm Mock Test của lớp</b> (gập sẵn, nhớ trạng thái, MỘT chip). Không dải đầu trang, không tab mới. Việc của GV ở lớp đã tự lên "Việc của tôi" đầu hồ sơ (cùng nguồn my-work). Turso: chip đọc một câu đếm (≤ ~70 dòng), bảng chỉ đọc khi mở khối.</p>
+    <h2>4 — QL xem tab "Báo cáo PH" của MB FT 131 (1440 tối): chọn đợt · Xuất lớp · Xuất (một em)</h2>
+    <p class="ghi">Thay khối gập cuối trang (bản 1). Ô chọn đợt + "Xuất lớp" ở hàng công cụ NGOÀI bảng (G9). Hàng cuối "Đủ" theo phần. Bấm ô → panel đọc; QL thấy <b>Viết hộ</b>. Turso: tab chỉ đọc khi mở (một lớp × một đợt); chip trên tab dùng hạn của đợt (không đếm, không thêm câu).</p>
     <div class="man toi dai" data-k="d1"></div>
   </section>
 
   <section class="khu">
-    <h2>4b — Khối mở: chọn đợt · em × phần · Xuất lớp / Xuất (một em) · bấm ô → panel đọc</h2>
-    <p class="ghi">Ô chọn đợt + "Xuất lớp" ở hàng công cụ NGOÀI bảng (G9). Đầu cột: phần + GV phụ trách (chỉ chữ). Hàng cuối "Đủ" theo từng phần — QL thấy ngay phần nào chậm. Bấm ô → panel đọc phần đó; QL thấy <b>Viết hộ</b>, GV của phần thấy <b>Viết</b>.</p>
+    <h2>4b — Panel đọc · chọn đợt · chưa có đợt</h2>
     <div class="hang-khung">
-      <figure><figcaption>Khối mở · Tháng 11</figcaption><div class="man toi" style="width:860px;height:auto" data-k="d2"></div></figure>
-      <figure><figcaption>Ô chọn đợt mở · FT (tháng) · lớp thường (Progress / Final)</figcaption><div class="man toi" style="width:560px;height:auto" data-k="d4"></div></figure>
-      <figure><figcaption>Lớp chưa tới đợt đầu (MB BE 07) · chương trình chưa có mẫu (PET, KET, PREFOU): không vẽ khối</figcaption><div class="man toi" style="width:560px;height:auto" data-k="d5"></div></figure>
       <figure><figcaption>Bấm ô W2 · Phạm Gia Huy → panel đọc (QL)</figcaption><div class="man toi" style="width:480px;height:auto" data-k="d3"></div></figure>
+      <figure><figcaption>Ô chọn đợt mở · FT (tháng) · lớp thường (Progress / Final)</figcaption><div class="man toi" style="width:560px;height:auto" data-k="d4"></div></figure>
+      <figure><figcaption>Lớp chưa tới đợt đầu (MB BE 07) — chương trình chưa có mẫu (PET, KET, PREFOU): không có tab</figcaption><div class="man toi" style="width:720px;height:auto" data-k="d5"></div></figure>
     </div>
   </section>
 
+  <section class="khu" id="k">
+    <h2>Admin — Công việc: MỘT việc "Xuất báo cáo PH" mỗi lớp × đợt (1440 tối)</h2>
+    <p class="ghi">Hiện khi lớp <b>đủ</b> (mọi em đủ mọi phần), tự rời sau <b>7 ngày</b>; viên xám "đủ 23/11" = ngày lớp đủ. Đợt quá hạn mà chưa đủ: hiện từ ngày hạn, ghi <b>"thiếu n em"</b>, cũng 7 ngày (PTA quyết). Dòng đủ: nút <b>Xuất lớp</b> tải file ngay; dòng thiếu: link <b>Báo cáo PH ›</b> sang tab (không xuất bản thiếu từ đây). Bấm tên dòng → tab. 375: chạm dòng → tab (không nút, như mọi dòng 375). Nằm ở nhóm có sẵn "Việc quản lý" (không thêm nhóm). QL không nhận việc này.</p>
+    <div class="man toi" style="height:auto" data-k="k1"></div>
+  </section>
+
   <section class="khu" id="e">
-    <h2>5 — Lớp thường MB FOU 12 · đợt Progress · W3 NOV (1440 tối)</h2>
-    <p class="ghi">FOU: <b>L · R · W · P</b> (chủ SP 05/11). W = GV + điểm ô G+V, Excel "PREP – Writing task", 5 tiêu chí PREP (chủ SP đồng ý 05/11). P chưa có tiêu chí: Điểm + Đề xuất. R chưa có GV → "Chưa phân công" (không ai bị giao, QL viết hộ). Đợt đã quá hạn: chip đỏ ở dòng gập, vẫn sửa được.</p>
+    <h2>5 — Lớp thường MB FOU 12 · tab Báo cáo PH · đợt Progress · W3 NOV (1440 tối, QL)</h2>
+    <p class="ghi">FOU: <b>L · R · W · P</b> (chủ SP 05/11). W = GV + điểm ô G+V, Excel "PREP – Writing task", 5 tiêu chí PREP (chủ SP đồng ý 05/11). P chưa có tiêu chí: Điểm + Đề xuất. R chưa có GV → "Chưa phân công" (không ai bị giao, QL viết hộ). Đợt đã quá hạn: chip trên tab đỏ "quá hạn 2 ngày", vẫn sửa được.</p>
     <div class="hang-khung">
-      <figure><figcaption>Khối mở · Progress · W3 NOV</figcaption><div class="man toi" style="width:720px;height:auto" data-k="e1"></div></figure>
+      <figure><figcaption>Tab · Progress · W3 NOV</figcaption><div class="man toi" style="width:760px;height:auto" data-k="e1"></div></figure>
       <figure><figcaption>Panel P · không tiêu chí</figcaption><div class="man toi" style="width:640px;height:auto" data-k="e2"></div></figure>
     </div>
     <div class="hang-khung" style="margin-top:16px">
@@ -275,12 +298,12 @@
   </section>
 
   <section class="khu" id="g">
-    <h2>7 — 375 sáng: panel viết toàn màn · Công việc · khối Hồ sơ lớp</h2>
-    <p class="ghi">Danh sách em thu thành hàng "‹ Em 5 · Lê Bảo Ngọc ›" (chạm giữa = chọn em). Hồ sơ lớp &lt; 640 px: mỗi em một thẻ "Thiếu L · S" (ô thiếu là chỗ mắt dừng), chạm thẻ → panel đọc em. Nhãn tiêu chí trên, 4 nút thang dưới cao 44. Ô điểm đã sửa: "đã sửa · gốc 6.5" + Về điểm gốc.</p>
+    <h2>7 — 375 sáng: panel viết toàn màn · tab Báo cáo PH · Admin Công việc</h2>
+    <p class="ghi">Panel mở từ tab: "‹ MB FT 131" về đúng tab. Danh sách em thu thành hàng "‹ Em 5 · Lê Bảo Ngọc · Nháp ›". Tab ở 375: hàng tab cuộn ngang, tab đang chọn hiện đủ. Bảng &lt; 640 px → mỗi em một thẻ "Thiếu L · S" (phần của bạn tô nhấn); lối viết ở 375 = hàng <b>Phần của bạn</b> "Viết Chung · 9/12" · "Viết L · 4/12" → panel g1.</p>
     <div class="hang-khung">
       <figure><figcaption>Panel viết · điểm đã sửa</figcaption><div class="dt sang dai" data-k="g1"></div></figure>
-      <figure><figcaption>Công việc · nhóm Báo cáo PH</figcaption><div class="dt sang dai" data-k="g2"></div></figure>
-      <figure><figcaption>Hồ sơ lớp · khối mở</figcaption><div class="dt sang dai" data-k="g3"></div></figure>
+      <figure><figcaption>Tab Báo cáo PH (GV)</figcaption><div class="dt sang dai" data-k="g2"></div></figure>
+      <figure><figcaption>Admin · Công việc</figcaption><div class="dt sang dai" data-k="g3"></div></figure>
     </div>
   </section>
 
@@ -358,8 +381,8 @@
   var tags = function (a) { return '<span class="the-phu">' + a.map(function (t) { return '<span class="tag nhat">' + e(t) + '</span>'; }).join('') + '</span>'; };
   function dongLop(k, dau) {
     return '<div class="khoi' + (dau ? ' dau-tien' : '') + '"><div class="viec dt-lop' + (k.chon ? ' chon' : '') + '"><span class="av vuong" title="Cả lớp"><svg class="ic" viewBox="0 0 16 16"><path d="M2 3h12v10H2zM2 7h12M6 3v10"/></svg></span>' +
-      '<span class="tv"><span class="t1"><span><span class="lop-gop">Cả lớp ' + e(k.lop) + '</span> · ' + e(k.ten).replace('Báo cáo PH', 'Báo&nbsp;cáo&nbsp;PH') + '</span></span>' + tags(k.tags) + '</span>' +
-      '<span class="h">' + han(k.han) + (k.ai ? '<span class="ai">' + e(k.ai) + '</span>' : '') + (k.cho ? '<span class="cho-ai">' + e(k.cho) + '</span>' : '') + '</span><span class="n"><span class="nut nut-nho">' + e(k.nut || 'Viết') + '</span></span></div></div>';
+      '<span class="tv"><span class="t1"><span><span class="lop-gop">Cả lớp ' + e(k.lop) + '</span> · ' + e(k.ten).replace(/([Bb])áo cáo PH/, '$1áo&nbsp;cáo&nbsp;PH') + '</span></span>' + tags(k.tags) + '</span>' +
+      '<span class="h">' + han(k.han) + (k.ai ? '<span class="ai">' + e(k.ai) + '</span>' : '') + (k.cho ? '<span class="cho-ai">' + e(k.cho) + '</span>' : '') + '</span><span class="n">' + (k.lk ? '<a class="link-nho" href="#" style="align-self:center;margin:auto">' + e(k.lk) + '</a>' : '<span class="nut nut-nho">' + e(k.nut || 'Viết') + '</span>') + '</span></div></div>';
   }
   function nhom(g) {
     return '<section class="nhom' + (g.gap ? ' gap' : '') + '"><div class="dai-nhom"><span class="bam-nhom">' + icon(g.ten) + e(g.ten) + '</span><span class="sau-ten">' +
@@ -453,13 +476,14 @@
       rows.map(function (r) { var s = r[1].replace(/ /g, ''); return '<tr><td class="ten">' + e(r[0]) + '</td>' + cot.map(function (_, j) { return '<td>' + oBc(s[j]) + '</td>'; }).join('') + (dt ? '' : '<td class="xe"><button class="link-nho" aria-label="Xuất báo cáo ' + e(r[0]) + '">Xuất</button></td>') + '</tr>'; }).join('') +
       '</tbody><tfoot><tr><td>' + (dt ? 'Đủ /' + goc.length : 'Đủ') + '</td>' + dem.map(function (n) { return '<td>' + n + (dt ? '' : '/' + goc.length) + '</td>'; }).join('') + (dt ? '' : '<td></td>') + '</tr></tfoot></table>';
   }
-  function theEm(cot, rows) {
+  function theEm(cot, rows, khongXuat, cua) {
+    var ten = function (k, j) { return cua && cua.indexOf(j) >= 0 ? '<b class="cua-t">' + k[0] + '</b>' : k[0]; };
     return '<ul class="the-em">' + rows.map(function (r) {
       var c = r[1].replace(/ /g, ''), thieu = [], nhap = [];
-      cot.forEach(function (k, j) { if (c[j] === 'c') thieu.push(k[0]); if (c[j] === 'n') nhap.push(k[0]); });
+      cot.forEach(function (k, j) { if (c[j] === 'c') thieu.push(ten(k, j)); if (c[j] === 'n') nhap.push(ten(k, j)); });
       var phu = !thieu.length && !nhap.length ? '<span>✓ đủ</span>'
         : (thieu.length ? '<span class="thieu">Thiếu <em>' + thieu.join(' · ') + '</em></span>' : '') + (nhap.length ? '<span class="nh">Nháp ' + nhap.join(' · ') + '</span>' : '');
-      return '<li><button class="mo-em"><b>' + e(r[0]) + '</b>' + phu + '</button><button class="link-nho" style="color:var(--text-dim)">Xuất</button></li>';
+      return '<li><button class="mo-em"><b>' + e(r[0]) + '</b>' + phu + '</button>' + (khongXuat ? '' : '<button class="link-nho" style="color:var(--text-dim)">Xuất</button>') + '</li>';
     }).join('') + '</ul>';
   }
   function tomBc(cot, rows) {
@@ -527,15 +551,56 @@
     khoiGap('Điểm Mock Test của lớp', '<span class="chip-m">MT4 còn 3 ô trống</span>') +
     khoiGap('Báo cáo PH', '<span class="chip-m">Tháng 11 · 3/12 em đủ · hạn 30/11</span>', 1, congCu('Tháng 11', '3/12') + theEm(COT_FT, BC.slice(0, 8)) + '<button class="nut nut-nho" style="justify-self:start">Xem thêm 4 em</button>' + tomBc(COT_FT, BC)) + '</div>';
 
+  /* ===== BẢN 2 (đặc tả §12): tab "Báo cáo PH" ở Hồ sơ lớp; GV không có việc; Admin một việc "Xuất báo cáo PH" ===== */
+  var chipTab = function (t, qua) { return '<span class="chip-m' + (qua ? ' qua' : '') + '">' + t + '</span>'; };
+  var tabBar = function (chip) { return '<div class="tab-l"><span>Học viên</span><span>Ý thức &amp; Phối hợp</span><span>Phân tích lớp</span><span class="dang">Báo cáo PH' + (chip || '') + '</span></div>'; };
+  var dauFt = '<div class="l1"><h1>MB FT 131</h1><span class="tags"><span class="tag nhat">Fast Track</span><span class="tag nhat"><b>12</b>&nbsp;HV</span><span class="tag nhat">tuần <b>19</b></span><span class="tag nhat">khai giảng 20/07</span></span><span class="phai"><span class="nut">Nhập điểm</span><span class="nut">+ Case</span><span class="nut">⋯</span></span></div>' + gvHang;
+  var chipFt = chipTab('Tháng 11 · hạn 30/11');
+  K.t0 = '<div class="trang-l">' + dauFt + '<div class="tab-l"><span class="dang">Học viên</span><span>Ý thức &amp; Phối hợp</span><span>Phân tích lớp</span><span>Báo cáo PH' + chipFt + '</span></div></div>';
+  function bang2(cot, rows, o) {
+    o = o || {};
+    var laCua = function (j) { return o.cua && o.cua.indexOf(j) >= 0; };
+    var dem = cot.map(function (_, j) { return rows.filter(function (r) { return r[1].replace(/ /g, '')[j] === 'd'; }).length; });
+    return '<table class="bbc"><colgroup><col style="width:20%">' + cot.map(function () { return '<col>'; }).join('') + (o.xuat ? '<col style="width:7%">' : '') + '</colgroup><thead><tr><th>Học viên</th>' +
+      cot.map(function (c, j) { return '<th' + (laCua(j) ? ' class="cua"' : '') + '>' + c[0] + '<small' + (c[1] === 'Chưa phân công' ? ' class="chua"' : '') + '>' + e(laCua(j) ? 'Bạn' : c[1]) + '</small></th>'; }).join('') +
+      (o.xuat ? '<th><span class="an-chu">Xuất</span></th>' : '') + '</tr></thead><tbody>' +
+      rows.map(function (r) { var c = r[1].replace(/ /g, ''); return '<tr><td class="ten">' + e(r[0]) + '</td>' + cot.map(function (_, j) { return '<td>' + (o.cua && !laCua(j) && c[j] === 'c' ? oBc(c[j]).replace('o-bc chua', 'o-bc chua doc') : laCua(j) && c[j] === 'n' ? oBc(c[j]).replace('o-bc nhap', 'o-bc nhap cua') : oBc(c[j])) + '</td>'; }).join('') + (o.xuat ? '<td class="xe"><button class="link-nho" aria-label="Xuất báo cáo ' + e(r[0]) + '">Xuất</button></td>' : '') + '</tr>'; }).join('') +
+      '</tbody><tfoot><tr><td>Đủ</td>' + dem.map(function (n) { return '<td>' + n + '/' + rows.length + '</td>'; }).join('') + (o.xuat ? '<td></td>' : '') + '</tr></tfoot></table>';
+  }
+  var congCu2 = function (dot, dem, xuat) { return '<div class="cong-cu-bc"><span class="o-chon">' + dot + '</span><span class="dem-d"><b>' + dem + '</b> em đủ</span>' + (xuat ? '<span class="phai"><button class="nut nut-nho">Xuất lớp</button></span>' : '') + '</div>'; };
+  var trangLop = function (ten, chip, than) { return thanh('Học viên &amp; Lớp', ten, 0) + '<div class="trang-l">' + dauFt + tabBar(chip) + '<div class="the" style="padding:14px 16px;display:grid;gap:10px">' + than + '</div></div>'; };
+  K.t1 = trangLop('Trần Ngọc Hà', chipFt, congCu2('Tháng 11', '3/12', 0) + bang2(COT_FT, BC, { cua: [0, 1] }));
+  K.t2 = trangLop('Trần Ngọc Hà', chipFt, congCu2('Tháng 11', '3/12', 0) + bang2(COT_FT, BC, { cua: [0, 1] })) + '<div class="nen-mo"></div><div class="ngan rong-720">' + pnL + '</div>';
+  K.d1 = trangLop('Nguyễn Khánh Vy', chipFt, congCu2('Tháng 11', '3/12', 1) + bang2(COT_FT, BC, { xuat: 1 }));
+  K.d5 = '<div style="padding:16px;display:grid;gap:14px">' + tabBar('') + '<div class="the rong"><span class="tieu">Chưa có đợt</span><span>Đợt đầu: Progress · W2 DEC</span></div></div>';
+  K.e1 = '<div style="padding:16px;display:grid;gap:14px">' + tabBar(chipTab('Progress · W3 NOV · quá hạn 2 ngày', 1)) + '<div class="the" style="padding:14px 16px;display:grid;gap:10px">' + congCu2('Progress · W3 NOV', '0/9', 1) + bang2(COT_FOU, BC_FOU, { xuat: 1 }) + '</div></div>';
+  /* Admin · Công việc */
+  var vqlAdmin = { ten: 'Vận hành', dem: ['3 việc', '!1 quá hạn'], vach: [
+    { t: 'Quá hạn', ds: [{ lop: 'MB FOU 12', ten: 'Xuất báo cáo PH', tags: ['Progress · W3 NOV', 'thiếu 9 em'], han: ['qua', 'quá hạn 2 ngày'], lk: 'Báo cáo PH ›' }] },
+    { t: 'Đủ · xuất gửi PH', ds: [
+      { lop: 'MB FT 125', ten: 'Xuất báo cáo PH', tags: ['Tháng 11', '10/10 em đủ'], han: ['xa', 'đủ 23/11'], nut: 'Xuất lớp' },
+      { lop: 'MB BE 03', ten: 'Xuất báo cáo PH', tags: ['Progress · W3 NOV', '8/8 em đủ'], han: ['xa', 'đủ 21/11'], nut: 'Xuất lớp' }] }] };
+  var nhomVql = function () { return nhom(vqlAdmin).replace('Vận hành</span>', 'Việc quản lý</span>'); };
+  K.k1 = thanh('Công việc', 'Lương Thu Thảo', 0) + '<div class="noi-dung"><div class="loc-1"><h1>Công việc</h1>' + loc + '</div><div class="bo-cuc"><div class="cot-ds">' +
+    nhom({ ten: 'Chấm điểm', dem: ['2 việc'], gap: 1 }) + nhomVql() + '</div><div class="cot-pn"><div class="cho-chon">Chọn một việc ở danh sách.</div></div></div></div>';
+  K.g2 = thanhDt + '<div class="trang-l"><div class="l1"><h1>MB FT 131</h1><span class="tags"><span class="tag nhat">Fast Track</span><span class="tag nhat"><b>12</b>&nbsp;HV</span></span></div>' + tabBar(chipFt) +
+    '<div class="the" style="padding:12px;display:grid;gap:10px">' + congCu2('Tháng 11', '3/12', 0) + '<div class="phan-ban"><span>Phần của bạn</span><button class="nut">Viết Chung · 9/12</button><button class="nut">Viết L · 4/12</button></div>' + theEm(COT_FT, BC.slice(0, 8), 1, [0, 1]) + '<button class="nut nut-nho" style="justify-self:start">Xem thêm 4 em</button>' + tomBc(COT_FT, BC) + '</div></div>';
+  K.g3 = thanhDt + '<div class="noi-dung"><div class="loc-1"><h1>Công việc</h1></div>' + nhomVql() + '</div>';
+  /* panel mở từ tab (không phải việc): dòng loại "BÁO CÁO PH", ‹ về tab */
+  Object.keys(K).forEach(function (k) { K[k] = K[k].replace(/VIỆC · BÁO CÁO PH/g, 'BÁO CÁO PH · VIẾT'); });
+  K.g1 = K.g1.replace('‹ Công việc', '‹ MB FT 131');
+  K.a2 = K.a2.replace('<button class="nut nut-chinh">Lớp tiếp: MB FT 128 ›</button><button class="nut">Việc tiếp ›</button>', '<button class="nut nut-chinh">Phần tiếp: Nhận xét chung ›</button><button class="nut">Lớp tiếp: MB FT 128 ›</button>');
+
   document.querySelectorAll('[data-k]').forEach(function (el) { el.innerHTML = K[el.getAttribute('data-k')] || ''; });
+  document.fonts.ready.then(function () { document.querySelectorAll('.dt .tab-l').forEach(function (t) { t.scrollLeft = t.scrollWidth; }); });
 
   /* thao tác */
   var T = [
-    ['Công việc', '—', 'Nhóm <b>Báo cáo PH</b>; dòng "Cả lớp {mã} · Báo cáo PH · {phần}" + nút <b>Viết</b>; QL ở Của GV / Tất cả: <b>Viết hộ</b>', 'moi', 'MỚI'],
-    ['Panel viết', '—', 'Chọn em · Điểm tự điền + Sửa / Về điểm gốc · 4 nút thang mỗi tiêu chí (Tab, phím 1–4) · Đề xuất cải thiện · tự lưu khi rời ô · <b>Lưu · em tiếp ›</b> · hết em: Việc tiếp › · lỗi: Thử lại, giữ chữ', 'moi', 'MỚI'],
-    ['Hồ sơ lớp', 'Khối Điểm Mock Test gập', 'GIỮ khối Điểm; thêm khối <b>Báo cáo PH</b> gập dưới nó: chọn đợt · Xuất lớp · Xuất (một em) · bấm ô → panel đọc → Viết / Viết hộ', 'moi', 'MỚI · GIỮ cũ'],
-    ['Xuất Excel', 'Phạm vi · Cột · Xuất n HV (mẫu theo góc trang)', 'Thêm khối <b>Mẫu</b>: Danh sách (y cũ) · Báo cáo PH (Phạm vi · Tháng · Xuất n HV)', 'doi', 'THÊM, giữ cũ'],
-    ['Thanh "Việc của tôi" đầu hồ sơ lớp', 'Việc của người xem ở lớp', 'Tự có dòng Báo cáo PH (cùng nguồn my-work) — không đổi mã', 'gi', 'GIỮ'],
+    ['Hồ sơ lớp', 'Tab Học viên · Ý thức & Phối hợp · Phân tích lớp', 'Thêm tab <b>Báo cáo PH</b> sau Phân tích lớp (chip đợt đang mở): chọn đợt · bảng em × phần · bấm ô → viết (phần của mình) / đọc · QL Viết hộ · QL / Admin / TVV Xuất lớp, Xuất (một em)', 'moi', 'MỚI'],
+    ['Panel viết', '—', 'Mở từ ô của tab: chọn em · Điểm tự điền + Sửa / Về điểm gốc · 4 nút thang (Tab, phím 1–4) · ô chữ · tự lưu · <b>Lưu · em tiếp ›</b> · hết em: Phần tiếp / Lớp tiếp · lỗi: Thử lại, giữ chữ', 'moi', 'MỚI'],
+    ['Công việc GV', 'Không đổi', '<b>Không</b> thêm việc Báo cáo PH (chủ SP 05/11)', 'gi', 'GIỮ'],
+    ['Công việc Admin', '—', 'Một việc <b>Xuất báo cáo PH · {lớp} · {đợt}</b> khi lớp đủ (hoặc quá hạn chưa đủ: "thiếu n em"), 7 ngày, nhóm Việc quản lý có sẵn · Xuất lớp · bấm tên → tab', 'moi', 'MỚI'],
+    ['Xuất Excel (HV & Lớp)', 'Phạm vi · Cột · Xuất n HV (mẫu theo góc trang)', 'Thêm khối <b>Mẫu</b>: Danh sách (y cũ) · Báo cáo PH (Phạm vi · Tháng · Xuất n HV)', 'doi', 'THÊM, giữ cũ'],
     ['Mọi thao tác khác', 'Nhập điểm · + Case · ⋯ · lọc · Gia hạn · Nhập hộ…', 'Không đổi', 'gi', 'GIỮ']
   ];
   document.getElementById('bang-tt').innerHTML = '<tr><th>Chỗ</th><th>Trước</th><th>Sau</th><th>Loại</th></tr>' + T.map(function (r) { return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td class="' + r[3] + '">' + r[4] + '</td></tr>'; }).join('');

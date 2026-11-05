@@ -5,6 +5,8 @@ Dữ liệu demo Monbay (tên mẫu, không tên thật trong `CP FT 131.xlsx` /
 
 ✓ = khớp mã / đặc tả · ✎ = lệch, mockup làm theo cột "Mockup" · ? = cần PTA chốt (khuyến nghị ghi sẵn).
 
+> **Bản 2 (chủ SP xem #1022, 05/11 — đặc tả mục 12) THẮNG các dòng về Công việc GV và khối gập Hồ sơ lớp dưới đây — xem mục 7.**
+
 ## 1. Bảng ý → mockup
 
 | # | Ý (đặc tả) | Mã main / mẫu sẵn có | Mockup | |
@@ -54,8 +56,8 @@ Dữ liệu demo Monbay (tên mẫu, không tên thật trong `CP FT 131.xlsx` /
 
 | Chỗ | Câu | Dòng (ước) |
 |---|---|---|
-| Hồ sơ lớp, khối gập (chip "3/12 em đủ") | 1 câu đếm theo lớp × đợt đang mở / gần nhất | ≤ ~70 (FT 12 em × 6 phần) |
-| Hồ sơ lớp, mở khối | 1–2 câu: phần × em của một lớp × một đợt + tên GV phân công | ≤ ~120 |
+| ~~Hồ sơ lớp, khối gập~~ (bản 2 bỏ) — chip trên tab chỉ dùng hạn đợt | 0 | 0 |
+| Hồ sơ lớp, mở tab Báo cáo PH | 1–2 câu: phần × em của một lớp × một đợt + tên GV phân công | ≤ ~120 |
 | Panel viết (một lớp × một phần × một đợt) | danh sách em + bản ghi phần đó + điểm gốc + mức đợt trước | ≤ ~60 |
 | Lưu một ô | 1 ghi, không tải lại cả lớp | 1 |
 | Xuất chi nhánh | theo lô từng lớp (như Xuất Excel hiện có) | ~ số em × số phần |
@@ -69,14 +71,14 @@ Dữ liệu demo Monbay (tên mẫu, không tên thật trong `CP FT 131.xlsx` /
 - Ngăn Xuất mẫu Báo cáo PH: dòng "Không có đợt" có ⓘ nêu tên lớp; nút "Xuất n HV" = HV của lớp có đợt.
 - Hàng thang = nhóm radio (`role="radio"` + `aria-checked`, roving tabindex): Tab đi một bước mỗi hàng tiêu chí, ← → / phím 1–4 đổi mức; mức đặt sẵn có `aria-description="như Tháng 10"`.
 - Màu: ✓ "đủ" trung tính (`text-faint`), ô thiếu có viền (chỗ mắt dừng), "nháp" vàng `soon`; xanh lá / xanh dương / đỏ chỉ cho điểm (G12, chủ SP).
-- Tên dòng việc giữ "Cả lớp {mã} · Báo cáo PH · {phần}": dòng còn lên thanh "Việc của tôi" ở hồ sơ lớp, nơi không có tên nhóm.
-- Hết em: "Đã xong phần của bạn" + **Lớp tiếp: {mã} ›** (phần cùng loại ở lớp khác) · Việc tiếp › · Đóng (V12 ⑦).
+- ~~Tên dòng việc giữ "Cả lớp {mã} · Báo cáo PH · {phần}": dòng còn lên thanh "Việc của tôi" ở hồ sơ lớp, nơi không có tên nhóm.~~ **(bản 2 bỏ — GV không có việc)**
+- Hết em (bản 2): "Đã xong phần của bạn" + **Phần tiếp: {phần khác của GV ở lớp} ›** · Lớp tiếp: {mã} › · Đóng.
 - **Em "đủ"**: mức đặt sẵn như đợt trước TÍNH là đã có mức — GV không phải bấm lại; em đủ khi mọi tiêu chí có mức (đặt sẵn hoặc chọn) + ô chữ không trống.
 - Thứ tự trong panel mọi phần: Điểm → tiêu chí → ô chữ (Đề xuất cải thiện / Nhận xét chung) → Lưu · em tiếp ›. File Excel vẫn theo thứ tự mẫu.
 - Lỗi lưu: chân "⚠ Chưa lưu được" màu `bad` (khác "Nháp" vàng); bấm lại "Lưu · em tiếp ›" = thử lưu rồi ở lại em đó (V12 ②). "Đang lưu…" chỉ ở nút đã bấm (V12 ⑨).
 - Ô sửa điểm: FT band 0–9 bước 0.5; lớp thường 0 → tổng; sai thì viền đỏ + chữ lỗi, con trỏ ở lại ô, không lưu.
-- Khối Hồ sơ lớp: chương trình chưa có mẫu (PET, KET, PREFOU) → không vẽ khối; có mẫu mà chưa tới đợt đầu → chip "Chưa có đợt · {đợt tới}".
-- **Phần Chưa phân công (PTA Plan đồng ý 05/11)**: một dòng ở Công việc của QL ("Của GV" / "Tất cả"), chip "Chưa phân công", nút Viết hộ — như việc "Chưa có người phụ trách" của Case (`no_owner`). Không ai bị giao (đặc tả §10 giữ nguyên); chỉ để QL thấy chỗ kẹt mà không phải mở từng hồ sơ lớp. Vẽ ở khung a4.
+- Khối Hồ sơ lớp: chương trình chưa có mẫu (PET, KET, PREFOU) → không vẽ khối; có mẫu mà chưa tới đợt đầu → tab ghi "Chưa có đợt · Đợt đầu: {đợt}" (bản 2).
+- ~~**Phần Chưa phân công (PTA Plan đồng ý 05/11)**: một dòng ở Công việc của QL ("Của GV" / "Tất cả"), chip "Chưa phân công", nút Viết hộ — như việc "Chưa có người phụ trách" của Case (`no_owner`). Không ai bị giao (đặc tả §10 giữ nguyên); chỉ để QL thấy chỗ kẹt mà không phải mở từng hồ sơ lớp. Vẽ ở khung a4.~~ **(bản 2 bỏ — đặc tả §12: QL viết hộ từ tab)**
 - a11y cho builder: mỗi nhóm radio `aria-labelledby` = tên tiêu chí; ô bảng `aria-label` "{em} · {phần} · Đủ / Nháp / Chưa viết"; ⓘ ở ngăn Xuất là nút mở popover (G6), không chỉ `title`.
 - Chưa vẽ (dáng sẵn có, builder theo mẫu): danh sách thả chọn em ở 375 (✓ đủ / nháp như danh sách 1440) · panel đọc em ở 375 (toàn màn, như d3) · GV xem hồ sơ lớp (phần của mình: Viết; phần khác: chỉ đọc) · TVV panel đọc không có Viết hộ.
 - Bấm "Lưu · em tiếp ›" khi em chưa đủ: vẫn lưu nháp và sang em còn thiếu kế tiếp, không chặn. Hàng tiêu chí còn trống có chấm vàng + viền nhóm vàng (cùng tín hiệu "ô thiếu" của bảng Hồ sơ lớp).
@@ -88,3 +90,31 @@ Dữ liệu demo Monbay (tên mẫu, không tên thật trong `CP FT 131.xlsx` /
 - Detector: chỉ còn dương tính giả (chú thích mockup, vạch "Đang chọn" G14, badge đỏ v12, phông đã khoá). Đo trình duyệt (gốc · sáng · tối, 19 khung): phông Be Vietnam Pro + Inter tải đủ, không chữ < 12 px, không tương phản dưới ngưỡng, 375 không nút < 44 px, không lỗi console.
 - Ảnh: `anh/<khung>-1440-toi.png`, `anh/<khung>-375-sang.png`, `anh/toan-trang.png`. Bản sáng 1440 / tối 375: nút "Tất cả sáng / Tất cả tối" đầu trang.
 - Tên GV / em / mã lớp **không cắt "…"** (luật chủ SP): đầu cột tên GV xuống tối đa 2 dòng; hàng chọn em 375 xuống dòng khi tên dài.
+
+## 7. Bản 2 — chủ SP 05/11 (đặc tả mục 12)
+
+Lời chủ SP: "Không cần tạo hẳn task báo cáo PH đâu, tự chủ động làm thôi, có báo CV cho admin thôi là được, tồn tại trong phần CV trong khoảng 1 tuần để biết là đã xong và cần xuất báo cáo gửi đi. Ngoài ra, chắc là nên để thành 1 tab bên cạnh phân tích lớp nhé".
+
+| Ý (đặc tả §12) | Bản 1 | Bản 2 (mockup) | Khung |
+|---|---|---|---|
+| GV không có việc ở Công việc | nhóm "Báo cáo PH" (a1, g2 cũ) | **BỎ** nhóm, dòng, badge. Công việc GV không đổi | — |
+| GV tự vào Hồ sơ lớp › tab "Báo cáo PH" cạnh "Phân tích lớp" | khối gập cuối trang | **Tab thứ 4** sau Phân tích lớp; chip nhẹ đợt đang mở "Tháng 11 · hạn 30/11" (quá hạn: chip đỏ "quá hạn 2 ngày"); không chuông | t1, e1, g2 |
+| Bấm ô phần của mình → panel viết | bấm dòng Công việc | Đầu cột phần của GV ghi **"Bạn"**; ô thiếu phần của mình có viền (bấm = viết); ô thiếu phần người khác không viền (bấm = đọc). Panel GIỮ nội dung bản 1, dòng loại "BÁO CÁO PH · VIẾT", 375 "‹ MB FT 131" về tab | t2, c1, a2, a3, a5, g1 |
+| Hết em | Lớp tiếp · Việc tiếp | **Phần tiếp: {phần khác của GV ở lớp} ›** · Lớp tiếp: {mã} › · Đóng | a2 |
+| GV không xuất | — | Tab của GV không có Xuất lớp / Xuất (quyền: QL · Admin · TVV) | t1, g2 |
+| QL / Admin / TVV xem + xuất ở tab | khối mở | Tab: chọn đợt · "3/12 em đủ" · **Xuất lớp** · cột Xuất (một em) · QL Viết hộ ở panel đọc | d1, d3, d4, e1 |
+| Admin một việc ở Công việc khi lớp đủ, 7 ngày | — | Dòng "Cả lớp {mã} · Xuất báo cáo PH" ở nhóm có sẵn **Việc quản lý** (không thêm nhóm, không đổi `NHOM_VIEC`), chip đợt + "n/n em đủ", viên xám "đủ 23/11" (ngày lớp đủ); nút **Xuất lớp** tải file ngay, bấm tên → tab | k1, g3 |
+| Quá hạn chưa đủ (PTA quyết) | — | Cùng dòng, từ ngày hạn, chip "thiếu n em" + viên "⚠ quá hạn n ngày", 7 ngày | k1 |
+| QL không nhận việc; bỏ dòng "Chưa phân công" (a4) | a4 | **BỎ** a4. QL viết hộ từ tab (panel đọc → Viết hộ) | d3 |
+| Chương trình chưa có mẫu / chưa tới đợt | chip "Chưa có đợt" ở khối | Chưa có mẫu (PET, KET, PREFOU): **không có tab**. Có mẫu, chưa tới đợt: tab hiện "Chưa có đợt · Đợt đầu: Progress · W2 DEC" | d5 |
+
+**Truy vết khung bản 1 → bản 2:** a1 → t1 + t2 · a4 → BỎ · d1 (gập) → BỎ · d2 (mở) → d1 (tab, QL) · d5 → d5 (tab rỗng) · e1 → e1 (tab FOU) · g2 (Công việc 375) → BỎ, g2 = tab 375 · g3 → g2 · mới: k1, g3 (Admin Công việc 1440 / 375) · GIỮ: a2 (đổi nút), a3, a5, c1, d3, d4, e2, e3, f1, f2, g1.
+
+**Đề xuất nhỏ (PTA xem):** dòng Admin có nút **Xuất lớp** tải file ngay (đỡ một lần đổi trang); bấm tên dòng mới sang tab. Muốn đúng chữ đặc tả ("bấm → tab") thì đổi nút thành link "Báo cáo PH ›".
+
+**Turso bản 2:** bỏ câu đếm chip khối gập (L18) — chip trên tab chỉ cần hạn đợt (tính từ lịch, không đọc bảng báo cáo). Tab đọc khi mở (một lớp × một đợt, ≤ ~120 dòng). Việc Admin: một câu theo chi nhánh lấy lớp × đợt đủ trong 7 ngày (đếm đủ khi lưu ô cuối của lớp, không quét cả chi nhánh mỗi lần mở Công việc — builder ghi trần ở `tocDoDuong.ts`).
+- 375 (bản 2): lối viết là hàng **Phần của bạn** ("Viết Chung · 9/12", "Viết L · 4/12") trên danh sách thẻ em → panel toàn màn g1 (đổi em bằng ‹ ›); phần của GV tô nhấn trong "Thiếu …". Ô "nháp" phần của mình có viền vàng như ô thiếu.
+- Mọi panel viết: dòng loại **BÁO CÁO PH · VIẾT**; panel đọc: **BÁO CÁO PH · ĐỌC**.
+- Việc Admin: dòng **đủ** có nút Xuất lớp; dòng **thiếu n em** chỉ có link "Báo cáo PH ›" (không xuất bản thiếu từ Công việc). **[XM — PTA quyết]** sau khi xuất có hiện "đã xuất {giờ}" (lấy nhật ký xuất sẵn có) trên dòng không — khác "đã gửi PH" (đặc tả: không làm); mockup chưa vẽ.
+- Việc Admin ở 375: chạm cả dòng → tab Báo cáo PH của lớp (như mọi dòng Công việc 375, ẩn nút); Xuất lớp bấm trong tab.
+- **Critique bản 2:** 34/40 (1 P1: 375 không có lối viết → đã thêm hàng "Phần của bạn") → lượt xác nhận **35/40, không P0 / P1**. Kiểm máy: phông tải đủ, không chữ < 12 px, không tương phản dưới ngưỡng, 375 không nút < 44 px, không tên bị cắt, không lỗi console. Ảnh chụp lại: `anh/t0 t1 t2 … k1 g1–g3` (bỏ ảnh a1, a4, d2 của bản 1).
