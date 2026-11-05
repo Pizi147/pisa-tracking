@@ -22,7 +22,7 @@ for (const suffix of ['', '-wal', '-shm']) {
 /* PHẢI đặt TRƯỚC khi import db.ts (và mọi mã import db.ts): lộ chỗ sửa nhầm giá trị nhớ dùng chung trong request. */
 process.env.PISA_DONG_BANG_NHO = '1';
 
-const { db, closeDb } = await import('../db.ts');
+const { db, closeDb, THAM_SO_TOI_DA } = await import('../db.ts');
 const { runSeed } = await import('../seed/seed.ts');
 const { createApp } = await import('../app.ts');
 const { createSession } = await import('../auth.ts');
@@ -31,7 +31,7 @@ const {
 } = await import('../platform/nguCanhRequest.ts');
 const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
 const accounts = await import('../platform/accounts.ts');
-const { PERMISSIONS, LO_LUU_SUA_CA_LOP } = await import('../../../shared/domain/index.ts');
+const { PERMISSIONS, LO_LUU_SUA_CA_LOP, LO_HANG_LOAT_EM } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
@@ -935,6 +935,14 @@ await checkAsync('PR-TD Task5(2) · sau khi nhân dữ liệu ×3, mọi (đư�
   }
 });
 
+/* PHEP-DO-LO (plan.md ghi chú OV-3c 12/10): danh sách `IN` theo lô 900 tham số (`theoLo`) — số lượt ×3 vượt bội 900 thì đường đọc mọi lượt thêm
+   một câu. Ghi số lượt ×3 + chỗ trống tới mốc lô kế để biết bộ demo còn thêm được bao nhiêu lượt; Task5(2) ở trên là chốt chặn thật. */
+check(`PHEP-DO-LO · bộ demo ×3: số lượt so với lô ${THAM_SO_TOI_DA} tham số`, () => {
+  const n = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts').get() as any).n as number;
+  const moc = Math.ceil(n / THAM_SO_TOI_DA) * THAM_SO_TOI_DA;
+  console.log(`      (đo: ${n} lượt ×3 = ${Math.ceil(n / THAM_SO_TOI_DA)} lô, còn ${moc - n} lượt ×3 ≈ ${Math.floor((moc - n) / 3)} lượt seed trước lô kế)`);
+});
+
 /* TD2-a: dòng tăng theo dữ liệu là đúng (×3 học viên) — đọc lặp thì vượt. Trần sau nhân = 3 × trần gốc. */
 check('TD2-a · sau khi nhân dữ liệu ×3, mọi (đường × vai) trong TRAN_DONG ≤ 3 × trần dòng', () => {
   const sai: string[] = [];
@@ -1610,6 +1618,53 @@ await checkAsync(`PR-TOC · Quyết định chuyển lớp cả lớp thường 
   assert(r.status === 200 && r.json.ok?.length === sids.length && !r.json.failed?.length, `Ra lệnh phải thành công: ${r.status} ${JSON.stringify(r.json).slice(0, 300)}`);
   console.log(`      (đo: ${sids.length} em, ${r.n} câu)`);
   assert(r.n <= TRAN_GHI_LO.raLenhCaLop, `${r.n} câu > trần ${TRAN_GHI_LO.raLenhCaLop}`);
+});
+
+/** PHEP-DO-LO: đo câu + dòng của `fn` trong một giao dịch cuộn lại (không để dấu cho phép đo sau). */
+function doCuonLai(fn: () => void) {
+  let n = 0, dong = 0;
+  conn.exec('BEGIN IMMEDIATE');
+  try {
+    chayTrongRequest('POST', () => {
+      const truoc = soCauSql(), dongTruoc = soDongSql();
+      fn();
+      n = soCauSql() - truoc; dong = soDongSql() - dongTruoc;
+    });
+  } finally { conn.exec('ROLLBACK'); }
+  return { n, dong };
+}
+
+await checkAsync(`PHEP-DO-LO · Huỷ ${LO_HANG_LOAT_EM} quyết định chuyển lớp một lần (huyNhieuLenh) ≤ ${TRAN_GHI_LO.huyNhieuLenh8} câu SQL`, async () => {
+  const { huyNhieuLenh } = await import('../classes/lenhChuyen.ts');
+  const ids = (conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho' ORDER BY id`).all(LOP_THUONG) as any[]).map((x) => x.id);
+  assert(ids.length >= LO_HANG_LOAT_EM, `Cần ${LO_HANG_LOAT_EM} lệnh chờ từ phép đo trước: ${ids.length}`);
+  const P = loadPrincipal(USER.QL);
+  let kq: any;
+  const mot = doCuonLai(() => huyNhieuLenh(P, ids.slice(0, 1), 'đo'));
+  const lo = doCuonLai(() => { kq = huyNhieuLenh(P, ids.slice(0, LO_HANG_LOAT_EM), 'đo'); });
+  assert(kq.ok.length === LO_HANG_LOAT_EM && !kq.failed.length, `Huỷ đủ lô: ${JSON.stringify(kq)}`);
+  console.log(`      (đo: 1 lệnh ${mot.n} câu ${mot.dong} dòng · ${LO_HANG_LOAT_EM} lệnh ${lo.n} câu ${lo.dong} dòng)`);
+  assert(lo.n <= TRAN_GHI_LO.huyNhieuLenh8, `${lo.n} câu > trần ${TRAN_GHI_LO.huyNhieuLenh8}`);
+});
+
+await checkAsync(`PHEP-DO-LO · Gán chủ Case chưa người phụ trách của mọi em có Case mở (≤ 500, nhiều lớp) (ganChuCaseThieu → suggestCaseOwner) ≤ ${TRAN_GHI_LO.ganChuCase500Em} câu SQL`, async () => {
+  const { ganChuCaseThieu } = await import('../cases/owner.ts');
+  const sids = (conn.prepare(
+    `SELECT DISTINCT COALESCE(sc.student_id, a.student_id) AS id FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.status != 'done' AND sc.tam = 0 ORDER BY 1 LIMIT 500`).all() as any[]).map((x) => x.id);
+  const ph = sids.map(() => '?').join(',');
+  let soCase = 0, soGan = 0, soLop = 0;
+  const r = doCuonLai(() => {
+    soCase = conn.prepare(`UPDATE sos_cases SET owner_user_id = NULL WHERE status != 'done' AND tam = 0 AND (student_id IN (${ph})
+      OR attempt_id IN (SELECT id FROM assessment_attempts WHERE student_id IN (${ph})))`).run(...sids, ...sids).changes;
+    soLop = (conn.prepare(`SELECT COUNT(DISTINCT class_id) n FROM enrollments WHERE status = 'active' AND student_id IN (${ph})`).get(...sids) as any).n;
+    soGan = ganChuCaseThieu({ studentIds: sids, actorId: USER.QL, luc: new Date().toISOString() });
+  });
+  assert(soGan > 0, `Phải gán được chủ: ${soGan}/${soCase}`);
+  /* 2 câu chuẩn bị (UPDATE, đếm lớp) nằm trong r — trừ ra. */
+  const n = r.n - 2;
+  console.log(`      (đo: ${sids.length} em, ${soLop} lớp, ${soCase} Case, gán ${soGan} — ${n} câu, ${r.dong} dòng)`);
+  assert(n <= TRAN_GHI_LO.ganChuCase500Em, `${n} câu > trần ${TRAN_GHI_LO.ganChuCase500Em}`);
 });
 
 await checkAsync(`PR-TOC · THI HÀNH quyết định chuyển lớp cả lớp thường sang FT (thiHanhLenhDenHan, PR-CT) ≤ ${TRAN_GHI_LO.chuyenCaLopSangFT} câu SQL, mỗi em có lịch MT mặc định`, async () => {
