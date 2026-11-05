@@ -14,6 +14,11 @@ export const EN_UI_U04 = {
   'chờ KQ': 'awaiting result',
   'Thu gọn tất cả': 'Collapse all',
   'Mở tất cả': 'Open all classes on this page',
+  /* MO-TAT-CA (05/11): Kế hoạch Test · Lịch Test tuần. */
+  'Mở tất cả lớp': 'Expand all classes',
+  'Thu gọn tất cả?': 'Collapse all?',
+  'Còn {chuOChuaLuu}. Thu gọn thì mất các giá trị đó — vẫn thu?': '{chuOChuaLuu} left. Collapsing discards them — collapse anyway?',
+  'Bỏ, thu gọn': 'Discard, collapse',
   'Đang tìm': 'Searching',
   'Đang lọc': 'Filtering',
   '{n} HV ở {m} lớp': '{n} students in {m} classes',

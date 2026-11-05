@@ -9795,6 +9795,9 @@ await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== PR-MT-VANG (N38: "-" dời tuần sau tuần thi · vắng 2 lần huỷ · chọn tuần = xếp lại)
 const { runPrMtVangTests } = bocTep('prMtVang', await import('./prMtVang.tests.ts'));
 await runPrMtVangTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== PR-5 MO-TAT-CA (chủ SP 05/11: nút Mở tất cả lớp + ô Việc của tôi → Công việc)
+const { runPrMoTatCaTests } = bocTep('prMoTatCa', await import('./prMoTatCa.tests.ts'));
+await runPrMoTatCaTests({ check, assert, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
