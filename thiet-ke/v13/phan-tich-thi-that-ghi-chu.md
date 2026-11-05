@@ -144,3 +144,56 @@ Câu hỏi đã gửi PTA (giữ để tra): **XM-1** cột Kết quả danh sá
 | Tab Thi thật — Theo GV (QL / QT / CX) | mở tab | +2 (`teacher_assignments` của các lớp đó · `enrollments` của các em đó) | ~300 + ~600 |
 
 Cả tab ~5 câu, ~1 000 dòng với khoảng 2 tháng. **Cảnh báo:** "Toàn bộ" cả năm có thể ~500 kết quả → Theo GV ~2 500 dòng (> 2 000). Đề xuất: Theo GV đọc đúng `class_id` của em trong tập (không đọc cả chi nhánh), và đường có trần ở `tocDoDuong.ts`. Vai TVV / GV không chạy 2 câu Theo GV.
+
+## 5. Tự rà mockup theo bảng ý (mở `phan-tich-thi-that.html`, 05/11)
+
+| Ý | Đạt? | Ở đâu |
+|---|---|---|
+| 2A-1 panel bảng có điểm | ✓ | A1 (FT, ô "SOS 3 · W5 OCT" đúng ảnh chủ SP) · A1m · A3 (lớp thường, môn theo chương trình) |
+| 2A-2 hộp c1–c4 / số câu tại chỗ | ✓ | A1 ô W1 Lê Minh Thư · A1m ô L "17/40 câu" · C2 ô W Đinh Tuấn Kiệt |
+| 2A-3 cột Kỳ vọng / Target cạnh điểm | ✓ | A1, A1m (góc phải thẻ), A2, C2, C3 |
+| 2A-4 Tăng / Giữ / Giảm: trước → sau · chênh · mục tiêu | ✓ | A2 |
+| 2A-5 tô nền cột kỹ năng đang xét | ✓ | A1m (L) · C2 (W) · C3 (W) |
+| 2A-6 kiểm kê ô số | ✓ | mục 2 |
+| 2A-7 chỉ đọc, link chữ thường | ✓ | mọi panel; A1 dòng 3 vẽ trạng thái rê |
+| 2B bỏ Checkpoint · Mini Test · Xử lý | ✓ | B, Bm (bỏ cả thẻ "Chưa chốt PA" của khung lớp thường) |
+| 2C-1 tab "Thi thật", bỏ Mock, chỗ mới Excel MT | ✓ | C1 hàng tab · C7 (⋯ Test + SOS) |
+| 2C-2 danh sách giữ | ✓ (đổi nhỏ, xem dưới) | C1 thẻ cuối |
+| 2C-3 bộ lọc chi nhánh · ngày thi · lớp | ✓ | C1 |
+| 2C-4 Tổng Exceed / Đạt / Fail + % · Không thi riêng | ✓ | C1 thẻ chỉ số (5 + 9 + 9 = 23 có Target) |
+| 2C-5 Từng kỹ năng so Target overall + điểm TB | ✓ | C1 (L 21 · R 21 · W 23 · S 21) |
+| 2C-6, 2C-7 Theo GV, trọng số tuần | ✓ | C1 · C3 |
+| 2C-8 panel ô số | ✓ | C2 "Fail · W" đủ 15 dòng |
+| 2C-9 panel GV cột "tuần dạy / tổng · %" | ✓ | C3 |
+| 2C-10 thi lại một kỹ năng | ✓ | C1 Trần Khánh Vy · C2 Lý Thanh Mai (↺) |
+| 2D nút Mở tất cả lớp ↔ Thu gọn tất cả | ✓ | D1, D1b (mở đủ 7 em CP FT 116), D2, D3 |
+| 2E-1 panel vi phạm đủ thông tin | ✓ | A4 (cuộn trong panel, 36 dòng) |
+| 2E-2 TVV / GV không có Theo GV | ✓ | C5 |
+| 2E-3 W1 / W2 tách task | ✓ | C1 dòng W1, W2 · C3 "W1 tính nửa W" |
+| 2E-4 KCK không vào % | ✓ | C1 thẻ Em thi "trừ 1 KCK khi tính %" · dòng Hồ Đức Thịnh |
+| 2F-1 một hàm cho 3 nơi | ghi cho PR | chỉ tab Thi thật có bố cục mới; Phân tích GV, hồ sơ GV đổi số, không đổi khung |
+| 2F-2 bỏ 3 thao tác Mock | ✓ | mục 3 |
+
+**Quyết định thêm khi vẽ (sau critique vòng 1):**
+- Danh sách thi thật đổi thứ tự cột thành **L R W S · OVR · Target**, cùng thứ tự mọi panel (một loại một chỗ). Trước đây OVR đứng trước L.
+- Theo GV xếp **GV có Fail cao nhất trước**; trong một GV, kỹ năng theo thứ tự L R W1 W2 S. Ô % không kèm "n em" (% có trọng số, số em thật ở panel).
+- M1: chỉ tên em / tên GV đậm. OVR, Điểm TB chữ thường.
+- Panel bảng điểm rộng 820; ô điểm 14 (thang lưới điểm G13).
+
+**Cho PR code (`web-design-guidelines` + detector):**
+- Ô ngày dùng `ONgay` (ô gõ + nút lịch, có nhãn). Ô chọn dùng `OChon` (`select` thật).
+- Panel mở và lớp mở ghi lên URL như nay (`?panel=`, `mo`).
+- Ô số trong bảng dày giữ vùng bấm `VUNG_BAM_SO` của `OSo`. Ô điểm bấm được là `button`, có `aria-expanded`; hộp đóng bằng Esc hoặc bấm ra ngoài.
+- Detector: 22 cảnh báo mức advisory, không có lỗi. Các cảnh báo là màu / phông / bo góc lệch DESIGN.md, nằm ở phần chú thích mockup. Logo "PISA" 3,1 : 1 là chữ thương hiệu cỡ lớn, giữ như cũ.
+
+## 6. Cổng chất lượng (impeccable `critique`, A + B hai agent độc lập)
+
+| Vòng | Điểm | P0 / P1 | Đã sửa |
+|---|---|---|---|
+| 1 | 28/40 | P1 × 2 | Số trên ô ≠ số dòng panel (C2 vẽ đủ 15 dòng; A4 cuộn trong panel; D1b mở đủ 7 HV) · bỏ "n em" cạnh % trọng số · OVR cùng một chỗ ở danh sách và panel · Theo GV xếp Fail cao trước · chỉ tên đậm (M1) · bỏ chuỗi "·" ở thẻ 375 |
+| 2 | 30/40 | không | dữ liệu panel khớp danh sách · cùng thứ tự GV ở 375 · số câu đúng thang IELTS · "Chưa có MT kế tiếp · 4 em" khớp 4 dòng · đầu cột MT khi mở lớp |
+| 3 | 30/40 | P1 × 1 | % panel GV đối chiếu được ("tỉ lệ 4,0 / 7,3 · 55 %" + Cách tính) · một tên "HV" trong tab Thi thật · thi thật chỉ có band → ô không mở hộp c1–c4 |
+
+Dừng sau vòng 3 theo luật 28/10 (chạm 30 → tối đa 2 vòng nữa; xong chỉ cần không P0 / P1). P1 cuối đã sửa và tự kiểm trên ảnh C3. Giữ như v11 đã duyệt: dấu ✓ / ✗ (✓ xanh lá vượt · ✓ xanh dương bằng), ẩn ô chi nhánh ở 375, mờ mép hàng tab 375, hộp điểm thành phần đè dòng dưới (dáng U03).
+
+**Ảnh:** `anh/*-1440-toi.jpg` và `anh/*-375-sang.jpg` (18 khung). Mở `phan-tich-thi-that.html`, nút "Đổi sáng / tối" để xem 1440 sáng.

@@ -324,6 +324,7 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
 .hl .mo { white-space:nowrap; }
 .hl .phai { margin-left:auto; }
 .hl-em { display:grid; grid-template-columns:220px repeat(4, 150px); align-items:center; min-height:44px; padding:0 16px 0 44px; border-bottom:1px solid var(--line); font-size:14px; background:var(--surface); }
+.hl-em.hl-th { min-height:32px; font:600 13px var(--phong); color:var(--text-dim); background:var(--surface-2); }
 .hl-em .mt-o { font:500 14px var(--phong-so); color:var(--text-dim); }
 .dt .hl { flex-wrap:wrap; padding:10px 12px; gap:4px 10px; }
 .dt .hl .phai { margin-left:0; }
@@ -362,7 +363,7 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
     <h2>A · Mọi ô số → panel BẢNG có điểm (2A, 2E)</h2>
     <div class="ghi"><ul>
       <li><b>A1</b> ô "SOS 3 · W5 OCT" (đúng ảnh chủ SP) → bảng lượt FT: Học viên · Lớp · MT · L R W1 W2 S · <b>OVR</b> · <b>Kỳ vọng</b>. Ô ✓ / ✗ trước số (G12). Ô có điểm thành phần bấm được → hộp tại chỗ dáng U03: W1 của Lê Minh Thư đang mở.</li>
-      <li><b>A1m</b> 375: ô "Dưới kỳ vọng · L" → cột L tô nền (lý do em vào ô), ô L đang mở "19/40 câu". Bảng nhiều cột → thẻ mỗi em (như v11 C4).</li>
+      <li><b>A1m</b> 375: ô "Dưới kỳ vọng · L" → cột L tô nền (lý do em vào ô), ô L đang mở "17/40 câu". Bảng nhiều cột → thẻ mỗi em (như v11 C4).</li>
       <li><b>A2</b> Tăng / Giữ / Giảm: điểm kỹ năng trước → sau, Chênh, Kỳ vọng. <b>A3</b> lớp thường: môn theo chương trình (Beginner L R W S · Foundation L R G+V P), "✗ 15/25", ngưỡng 70 % ghi một lần ở đầu panel (M3). <b>A4</b> vi phạm: em · lớp · ngày · nhóm + mô tả · người ghi · trạng thái — không bảng điểm (2E).</li>
       <li>Panel chỉ đọc (G8). Tên em, MTn, mã lớp là link chữ thường; rê mới đổi màu (A1 dòng 3 đang rê). Panel bảng điểm rộng 780 (thêm OVR, Kỳ vọng).</li>
     </ul></div>
@@ -392,7 +393,7 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
     <div class="ghi"><ul>
       <li><b>Bộ lọc:</b> chi nhánh (đầu trang, như cũ) · Thời gian Toàn bộ | Chọn khoảng theo <b>ngày thi</b> (G10: thi thật giữ ngày) · lớp. Bỏ ô đoạn Mock / Thi thật. Chỉ IELTS.</li>
       <li><b>Tổng:</b> Em thi · Exceed · Đạt · Fail (số + %, % trên em có Target) · Không thi (đếm riêng). KCK không vào % (ghi ở thẻ Em thi).</li>
-      <li><b>Từng kỹ năng:</b> điểm kỹ năng so <b>Target overall</b>; thi lại một kỹ năng chỉ đếm kỹ năng thi lần này (W có 23 em, L R S 21). <b>Theo GV</b> (QL, QT, CX): mỗi GV × kỹ năng một dòng; % tính theo tuần dạy, dòng phụ = số em thật (bấm % → đúng các em đó); W1 / W2 mỗi task ½ W. Kẻ bậc 1 giữa hai GV, bậc 2 giữa hai kỹ năng (M9).</li>
+      <li><b>Từng kỹ năng:</b> điểm kỹ năng so <b>Target overall</b>; thi lại một kỹ năng chỉ đếm kỹ năng thi lần này (W có 23 em, L R S 21). <b>Theo GV</b> (QL, QT, CX): mỗi GV × kỹ năng một dòng; % tính theo tuần dạy (tỉ lệ từng HV ở panel C3), GV Fail cao trước; W1 / W2 mỗi task nửa W. Thi thật chỉ có band → ô điểm không mở hộp c1–c4. Kẻ bậc 1 giữa hai GV, bậc 2 giữa hai kỹ năng (M9).</li>
       <li><b>Danh sách</b> giữ như cũ; cột Kết quả đổi Exceed / Đạt / Fail (PTA XM-1). Ô lấy lại khi thi lại mờ "↺" (Trần Khánh Vy). Không thanh tỷ lệ — bảng số + % (chủ SP muốn bảng đơn giản).</li>
     </ul></div>
     <div class="hang-khung">
@@ -480,9 +481,9 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
   /* ================= A1 · bảng lượt FT ================= */
   var KN5 = ['L', 'R', 'W1', 'W2', 'S'];
   var SOS3 = [
-    { ten: 'Phạm Gia Bảo', lop: 'CP FT 131', mt: 'MT2', kv: '5.5', ovr: ['x', '5.0'], kn: [['x', '5.0', '19/40 câu'], ['x', '4.5', '16/40 câu'], ['x', '5.0', 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['b', '5.5', 'TR 5.5 · CC 5.5 · LR 5.5 · GRA 5 → 5.5'], ['x', '4.5', 'FC 4.5 · LR 4.5 · GRA 4.5 · P 5 → 4.5']] },
-    { ten: 'Lê Minh Thư', lop: 'CP FT 131', mt: 'MT2', kv: '6.0', ovr: ['x', '5.5'], mo: 2, kn: [['x', '5.5', '21/40 câu'], ['x', '5.5', '20/40 câu'], ['x', '5.5', 'TA 5.5 · CC 5.5 · LR 5 · GRA 5.5 → 5.5'], ['x', '5.0', 'TR 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['v', '6.5', 'FC 6.5 · LR 6.5 · GRA 6 · P 6.5 → 6.5']] },
-    { ten: 'Trịnh Quốc Huy', lop: 'CP FT 137', mt: 'MT1', kv: '5.5', ovr: ['x', '5.0'], hv: true, kn: [['v', '6.0', '25/40 câu'], ['x', '5.0', '18/40 câu'], ['x', '5.0', 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['x', '4.5', 'TR 4.5 · CC 4.5 · LR 5 · GRA 4.5 → 4.5'], ['x', '5.0', null]] }
+    { ten: 'Phạm Gia Bảo', lop: 'CP FT 131', mt: 'MT2', kv: '5.5', ovr: ['x', '5.0'], kn: [['x', '5.0', '17/40 câu'], ['x', '4.5', '11/40 câu'], ['x', '5.0', 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['b', '5.5', 'TR 5.5 · CC 5.5 · LR 5.5 · GRA 5 → 5.5'], ['x', '4.5', 'FC 4.5 · LR 4.5 · GRA 4.5 · P 5 → 4.5']] },
+    { ten: 'Lê Minh Thư', lop: 'CP FT 131', mt: 'MT2', kv: '6.0', ovr: ['x', '5.5'], mo: 2, kn: [['x', '5.5', '20/40 câu'], ['x', '5.5', '16/40 câu'], ['x', '5.5', 'TA 5.5 · CC 5.5 · LR 5 · GRA 5.5 → 5.5'], ['x', '5.0', 'TR 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['v', '6.5', 'FC 6.5 · LR 6.5 · GRA 6 · P 6.5 → 6.5']] },
+    { ten: 'Trịnh Quốc Huy', lop: 'CP FT 137', mt: 'MT1', kv: '5.5', ovr: ['x', '5.0'], hv: true, kn: [['v', '6.0', '24/40 câu'], ['x', '5.0', '14/40 câu'], ['x', '5.0', 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['x', '4.5', 'TR 4.5 · CC 4.5 · LR 5 · GRA 4.5 → 4.5'], ['x', '5.0', null]] }
   ];
   function bangLuotFT(ds, xet) {
     var cols = '<colgroup><col style="width:150px"><col style="width:92px"><col style="width:106px">' + KN5.map(function () { return '<col style="width:58px">'; }).join('') + '<col style="width:62px"><col style="width:72px"></colgroup>';
@@ -593,7 +594,7 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
   var KN4 = [['L', 21, 6, 7, 8, '6.0'], ['R', 21, 4, 7, 10, '5.7'], ['W', 23, 1, 7, 15, '5.4'], ['S', 21, 3, 9, 9, '5.8']];
   function csThi(hep) {
     return chiSo([
-      { ten: 'Em thi', ky: 'trong khoảng', gt: o(TONG.thi), mau: 'trừ 1 KCK khi tính %', rong: hep },
+      { ten: 'HV thi', ky: 'trong khoảng', gt: o(TONG.thi), mau: 'trừ 1 KCK khi tính %', rong: hep },
       { ten: 'Exceed', gt: o(TONG.e, 'c-v'), don: pc(TONG.e, TONG.coT), mau: 'OVR trên Target' },
       { ten: 'Đạt', gt: o(TONG.dat), don: pc(TONG.dat, TONG.coT), mau: 'OVR bằng Target' },
       { ten: 'Fail', gt: o(TONG.f, 'c-x'), don: pc(TONG.f, TONG.coT), mau: 'OVR dưới Target' },
@@ -603,15 +604,15 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
   function bangKN(hep) {
     var oo = function (n, cls, mau) { return '<td data-k="so" class="so-2">' + o(n, cls) + (n ? '<span class="pct">' + pc(n, mau) + '</span>' : '') + '</td>'; };
     return '<div class="the"><div class="the-dau"><h2>Từng kỹ năng</h2>' + (hep ? '' : '<span class="phu">so Target overall</span>') + '<span class="phai">' + ICH + '</span></div><table class="bang' + (hep ? ' hep' : '') + '"><colgroup><col style="width:' + (hep ? '40px' : '72px') + '"><col style="width:' + (hep ? '44px' : '70px') + '"><col><col><col><col style="width:' + (hep ? '48px' : '90px') + '"></colgroup>'
-      + '<thead><tr><th>' + (hep ? 'KN' : 'Kỹ năng') + '</th><th data-k="so">Em</th><th data-k="so">Exceed</th><th data-k="so">Đạt</th><th data-k="so">Fail</th><th data-k="so">' + (hep ? 'TB' : 'Điểm TB') + '</th></tr></thead><tbody>'
+      + '<thead><tr><th>' + (hep ? 'KN' : 'Kỹ năng') + '</th><th data-k="so">HV</th><th data-k="so">Exceed</th><th data-k="so">Đạt</th><th data-k="so">Fail</th><th data-k="so">' + (hep ? 'TB' : 'Điểm TB') + '</th></tr></thead><tbody>'
       + KN4.map(function (r) { return '<tr><td class="ten"><b>' + r[0] + '</b></td><td data-k="so">' + o(r[1]) + '</td>' + oo(r[2], 'c-v', r[1]) + oo(r[3], '', r[1]) + oo(r[4], 'c-x', r[1]) + '<td data-k="so">' + r[5] + '</td></tr>'; }).join('')
       + '</tbody></table></div>';
   }
   var GV = [
-    ['Cao Khánh Linh', [['W1', 6, 22, '5.2', [0, 0], [20, 1], [80, 5]], ['W2', 10, 52, '5.3', [0, 0], [31, 3], [69, 7]]]],
-    ['Đỗ Vũ Tuấn Phong', [['W1', 11, 70, '5.4', [9, 1], [36, 4], [55, 6]], ['W2', 8, 46, '5.5', [6, 1], [30, 2], [64, 5]]]],
+    ['Cao Khánh Linh', [['W1', 12, 40, '5.2', [0, 0], [20, 2], [80, 10]], ['W2', 10, 52, '5.3', [0, 0], [31, 3], [69, 7]]]],
+    ['Đỗ Vũ Tuấn Phong', [['W1', 11, 70, '5.4', [9, 1], [36, 4], [55, 6]], ['W2', 13, 70, '5.5', [6, 1], [30, 4], [64, 8]]]],
     ['Việt Linh Nguyễn', [['L', 8, 40, '5.9', [26, 2], [30, 3], [44, 3]], ['R', 8, 40, '5.6', [18, 1], [28, 2], [54, 5]]]],
-    ['Nguyễn Hoàng Dũng', [['L', 9, 72, '6.1', [30, 3], [38, 3], [32, 3]], ['R', 9, 72, '5.8', [20, 2], [35, 3], [45, 4]]]],
+    ['Nguyễn Hoàng Dũng', [['L', 9, 72, '6.1', [30, 3], [38, 3], [32, 3]], ['R', 13, 96, '5.8', [20, 3], [35, 4], [45, 6]]]],
     ['Anna Lee', [['S', 9, 36, '5.7', [10, 1], [45, 4], [45, 4]]]],
     ['Lưu Nhã Uyên', [['S', 12, 88, '5.9', [18, 2], [42, 5], [40, 5]]]],
     ['Trần Ngọc Hà', [['L', 5, 18, '6.2', [40, 2], [35, 2], [25, 1]]]]
@@ -626,11 +627,11 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
       }).join('');
     }).join('');
     return '<div class="the"><div class="the-dau"><h2>Theo GV</h2><span class="dem">7 GV</span><span class="phu">% theo tuần dạy, Fail cao trước</span><span class="phai">' + ICH + '</span></div><table class="bang"><colgroup><col style="width:190px"><col style="width:74px"><col style="width:58px"><col style="width:86px"><col style="width:84px"><col><col><col></colgroup>'
-      + '<thead><tr><th>Giáo viên</th><th>Kỹ năng</th><th data-k="so">Em</th><th data-k="so">Tuần dạy</th><th data-k="so">Điểm TB</th><th data-k="so">Exceed</th><th data-k="so">Đạt</th><th data-k="so">Fail</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      + '<thead><tr><th>Giáo viên</th><th>Kỹ năng</th><th data-k="so">HV</th><th data-k="so">Tuần dạy</th><th data-k="so">Điểm TB</th><th data-k="so">Exceed</th><th data-k="so">Đạt</th><th data-k="so">Fail</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
   var KQT = { v: '<span class="kq vuot">✓ Exceed</span>', b: '<span class="kq ngang">✓ Đạt</span>', x: '<span class="kq duoi">✗ Fail</span>', k: '<span class="kq khong">Không thi</span>', kck: '<span class="mo2">—</span>' };
   var DS = [
-    ['CP FT 98', '8 em', [
+    ['CP FT 98', '8 HV', [
       ['Nguyễn Minh An', '12/09', ['v', '7.0'], ['7.5', '7.0', '6.0', '6.5'], '6.5', 'v', 'Lên FT 7.5'],
       ['Phan Gia Hân', '12/09', ['b', '6.5'], ['7.0', '6.5', '6.0', '6.5'], '6.5', 'b', 'Kết thúc · đạt đầu ra'],
       ['Đinh Tuấn Kiệt', '19/09', ['x', '5.5'], ['6.0', '5.5', '5.0', '5.5'], '6.0', 'x', 'Học lại FT 6.0'],
@@ -639,7 +640,7 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
       ['Hồ Đức Thịnh', '03/10', ['', '5.0'], ['5.0', '5.5', '4.5', '5.0'], 'KCK', 'kck', 'Học lại FT 5.5'],
       ['Mạc Thu Trang', '', null, null, '6.0', 'k', null],
       ['Vũ Nhật Quang', '03/10', ['v', '5.5'], ['5.5', '5.5', '5.0', '5.5'], '5.0', 'v', 'Lên FT 6.0']]],
-    ['CP FT 104', '9 em', [
+    ['CP FT 104', '9 HV', [
       ['Bùi Thảo Nhi', '17/10', ['x', '6.0'], ['6.0', '6.0', '5.5', '6.0'], '6.5', 'x', 'Học lại FT 6.5'],
       ['Cao Minh Đức', '17/10', ['v', '6.5'], ['7.0', '6.5', '6.0', '6.5'], '6.0', 'v', 'Lên FT 7.0']]]
   ];
@@ -653,9 +654,9 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
             + '<td data-k="so" class="mo">' + r[4] + '</td><td class="ten">' + KQT[r[5]] + (r[7] ? '<span class="phu-o">thi lại W</span>' : '') + '</td><td class="ten">' + (r[6] || '<span class="mo2">Chưa chọn</span>') + '</td></tr>';
         }).join('');
     }).join('');
-    return '<div class="the"><div class="the-dau"><h2>Kết quả thi thật</h2><span class="dem">26 em</span><span class="phu">theo lớp → ngày thi</span><span class="phai">' + ICH + '</span></div><table class="bang"><colgroup><col style="width:220px"><col style="width:100px"><col style="width:80px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:80px"><col style="width:150px"><col></colgroup>'
+    return '<div class="the"><div class="the-dau"><h2>Kết quả thi thật</h2><span class="dem">26 HV</span><span class="phu">theo lớp → ngày thi</span><span class="phai">' + ICH + '</span></div><table class="bang"><colgroup><col style="width:220px"><col style="width:100px"><col style="width:80px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:80px"><col style="width:150px"><col></colgroup>'
       + '<thead><tr><th>Học viên</th><th>Ngày thi</th><th data-k="so" class="ke-trai">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so" class="ke-trai">OVR</th><th data-k="so">Target</th><th>Kết quả</th><th>Bước tiếp</th></tr></thead><tbody>' + rows + '</tbody></table>'
-      + '<div class="phan-trang"><span>1–10 / 26 em</span><span class="trang-so"><span>‹</span><b>1</b><span>2</span><span>3</span><span>›</span></span><span class="phai">Mỗi trang <span class="doan" style="height:30px"><button aria-pressed="true">10</button><button aria-pressed="false">20</button><button aria-pressed="false">50</button></span></span></div></div>';
+      + '<div class="phan-trang"><span>1–10 / 26 HV</span><span class="trang-so"><span>‹</span><b>1</b><span>2</span><span>3</span><span>›</span></span><span class="phai">Mỗi trang <span class="doan" style="height:30px"><button aria-pressed="true">10</button><button aria-pressed="false">20</button><button aria-pressed="false">50</button></span></span></div></div>';
   }
   function tabThi(ql) {
     return dau(3) + loc({ ct: false, ngay: true, phai: XUAT }) + csThi()
@@ -674,7 +675,7 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
   }
   function kqCls(t, v) { var a = parseFloat(v), b = parseFloat(t); return a > b ? 'v' : a === b ? 'b' : 'x'; }
   var FAILW = [
-    ['Đinh Tuấn Kiệt', 'CP FT 98', '19/09', ['6.0', '5.5', '5.0', '5.5'], '5.5', '6.0', null, 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0', true],
+    ['Đinh Tuấn Kiệt', 'CP FT 98', '19/09', ['6.0', '5.5', '5.0', '5.5'], '5.5', '6.0'],
     ['Lê Hoài Nam', 'CP FT 98', '19/09', ['6.5', '6.0', '5.5', '6.0'], '6.0', '6.0'],
     ['Nguyễn Minh An', 'CP FT 98', '12/09', ['7.5', '7.0', '6.0', '6.5'], '7.0', '6.5'],
     ['Phan Gia Hân', 'CP FT 98', '12/09', ['7.0', '6.5', '6.0', '6.5'], '6.5', '6.5'],
@@ -685,7 +686,7 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
     ['Trương Gia Huy', 'CP FT 104', '17/10', ['6.0', '5.5', '5.0', '5.5'], '5.5', '6.0'],
     ['Phùng Thị Ngân', 'CP FT 104', '17/10', ['5.5', '6.0', '5.0', '5.5'], '5.5', '5.5'],
     ['Lâm Quốc Bảo', 'CP FT 104', '24/10', ['6.5', '6.0', '5.5', '6.0'], '6.0', '6.0'],
-    ['Quách Minh Tâm', 'CP FT 98', '03/10', ['6.0', '6.0', '5.5', '6.0'], '6.0', '6.0'],
+    ['Quách Minh Tâm', 'CP FT 110', '24/10', ['6.0', '6.0', '5.5', '6.0'], '6.0', '6.0'],
     ['Đoàn Thu Uyên', 'CP FT 110', '24/10', ['5.5', '5.5', '5.0', '5.0'], '5.5', '5.5'],
     ['Mai Hoàng Long', 'CP FT 110', '24/10', ['6.0', '5.0', '4.5', '5.5'], '5.5', '6.0'],
     ['Tô Bảo Anh', 'CP FT 110', '31/10', ['5.0', '5.0', '4.5', '5.0'], '5.0', '5.0']
@@ -707,23 +708,23 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
   }
   var DUOIL = [SOS3[0], SOS3[1],
     { ten: 'Ngô Thảo Linh', lop: 'CP FT 136', mt: 'MT2', kv: '6.0', ovr: ['b', '6.0'], kn: [['x', '5.5', '22/40 câu'], ['v', '6.5'], ['b', '6.0'], ['b', '6.0'], ['b', '6.0']] },
-    { ten: 'Đặng Quang Vinh', lop: 'CP FT 138', mt: 'MT3', kv: '6.5', ovr: ['b', '6.5'], kn: [['x', '6.0', '27/40 câu'], ['b', '6.5'], ['b', '6.5'], ['x', '6.0'], ['v', '7.0']] }];
+    { ten: 'Đặng Quang Vinh', lop: 'CP FT 138', mt: 'MT3', kv: '6.5', ovr: ['b', '6.5'], kn: [['x', '6.0', '25/40 câu'], ['b', '6.5'], ['b', '6.5'], ['x', '6.0'], ['v', '7.0']] }];
 
   function theGV375(g) {
     return '<div class="the-dong"><div class="dau"><span class="ten-gv" style="font-size:15px">' + g[0] + '</span></div>' + g[1].map(function (k) {
-      return '<div class="phan"><div class="nhan">' + k[0] + '</div><div class="luoi" style="--n:6"><span><i>Em</i><b>' + o(k[1]) + '</b></span><span><i>Tuần</i><b class="mo">' + k[2] + '</b></span><span><i>TB</i><b>' + k[3] + '</b></span><span><i>Exceed</i><b>' + oPct(k[4], 'c-v').replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span><span><i>Đạt</i><b>' + oPct(k[5]).replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span><span><i>Fail</i><b>' + oPct(k[6], 'c-x').replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span></div></div>';
+      return '<div class="phan"><div class="nhan">' + k[0] + '</div><div class="luoi" style="--n:6"><span><i>HV</i><b>' + o(k[1]) + '</b></span><span><i>Tuần</i><b class="mo">' + k[2] + '</b></span><span><i>TB</i><b>' + k[3] + '</b></span><span><i>Exceed</i><b>' + oPct(k[4], 'c-v').replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span><span><i>Đạt</i><b>' + oPct(k[5]).replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span><span><i>Fail</i><b>' + oPct(k[6], 'c-x').replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span></div></div>';
     }).join('') + '</div>';
   }
   function theThi(r, lop) {
     var dd = r[3] ? ['L', 'R', 'W', 'S'].map(function (k, i) { var lay = r[7] && k !== r[7]; return '<span>' + k + ' ' + (lay ? '<span class="lay">' + r[3][i] + '</span>' : kqDiem(r[4], r[3][i])) + '</span>'; }).join('') : '';
-    return '<div class="the-hv"><div class="h1">' + lkHv(r[0]) + KQT[r[5]] + '</div><div class="hang-tt"><span>' + lkLop(lop) + '</span><span>' + (r[1] ? 'thi ' + r[1] : 'không thi') + '</span><span>OVR <b style="color:var(--text)">' + (r[2] ? r[2][1] : '—') + '</b></span><span>Target ' + r[4] + '</span></div>' + (dd ? '<div class="hang-tt diem">' + dd + '</div>' : '') + '</div>';
+    return '<div class="the-hv"><div class="h1">' + lkHv(r[0]) + (r[7] ? '<span class="mo2" style="font-size:12px;margin-left:auto">thi lại W</span>' : '') + KQT[r[5]].replace('class="kq', 'style="' + (r[7] ? 'margin-left:8px' : '') + '" class="kq') + '</div><div class="hang-tt"><span>' + lkLop(lop) + '</span><span>' + (r[1] ? 'thi ' + r[1] : 'không thi') + '</span><span>OVR <b style="color:var(--text)">' + (r[2] ? r[2][1] : '—') + '</b></span><span>Target ' + r[4] + '</span></div>' + (dd ? '<div class="hang-tt diem">' + dd + '</div>' : '') + '</div>';
   }
   function thi375(ql) {
     var csHep = csThi(true);
     return dau(3, true) + loc({ ct: false, ngay: true, phaiHep: '<button type="button" class="nut nut-vuong" aria-label="Xuất Excel" title="Xuất Excel">' + IC.xuat + '</button>' }, true)
       + csHep + bangKN(true)
-      + (ql ? '<div class="the-dau" style="padding:4px 0 0;border:0"><h2>Theo GV</h2><span class="dem">7 GV</span><span class="phu">% theo tuần dạy</span><span class="phai">' + ICH + '</span></div>' + theGV375(GV[1]) + theGV375(GV[0]) + theGV375(GV[2]) + '<button type="button" class="nut" style="width:100%">Xem 4 GV còn lại</button>' : '')
-      + '<div class="the-dau" style="padding:4px 0 0;border:0"><h2>Kết quả thi thật</h2><span class="dem">26 em</span></div>' + theThi(DS[0][2][0], 'CP FT 98') + theThi(DS[0][2][4], 'CP FT 98') + theThi(DS[0][2][2], 'CP FT 98');
+      + (ql ? '<div class="the-dau" style="padding:4px 0 0;border:0"><h2>Theo GV</h2><span class="dem">7 GV</span><span class="phu">Fail cao trước</span><span class="phai">' + ICH + '</span></div>' + theGV375(GV[0]) + theGV375(GV[1]) + theGV375(GV[2]) + '<button type="button" class="nut" style="width:100%">Xem 4 GV còn lại</button>' : '')
+      + '<div class="the-dau" style="padding:4px 0 0;border:0"><h2>Kết quả thi thật</h2><span class="dem">26 HV</span></div>' + theThi(DS[0][2][0], 'CP FT 98') + theThi(DS[0][2][4], 'CP FT 98') + theThi(DS[0][2][2], 'CP FT 98');
   }
 
   /* ================= D · Test ================= */
@@ -773,11 +774,11 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
     c1: function () { return tabThi(true); },
     c2: function () {
       return tabThi(true) + panel(pnDau('SỐ · THI THẬT', 'Fail · W', 'Cẩm Phả · thi 01/09 – 05/11 · W so Target overall')
-        + '<div class="pn-than"><span class="pn-tong"><b>15</b> em</span>' + bangTT(FAILW, 'W') + '<div class="cach-tinh" style="margin-top:24px"><b>Cách tính</b>W thi thật dưới Target overall. Thi lại chỉ W: tính W lần này, L R S lấy lại (↺) không tính. Không tính KCK.</div></div>', true, 'Fail · W');
+        + '<div class="pn-than"><span class="pn-tong"><b>15</b> HV</span>' + bangTT(FAILW, 'W') + '<div class="cach-tinh" style="margin-top:24px"><b>Cách tính</b>W thi thật dưới Target overall. Thi lại chỉ W: tính W lần này, L R S lấy lại (↺) không tính. Không tính KCK.</div></div>', true, 'Fail · W');
     },
     c3: function () {
       return tabThi(true) + panel(pnDau('SỐ · THI THẬT · THEO GV', 'Đỗ Vũ Tuấn Phong · W1 · Fail', 'Cẩm Phả · thi 01/09 – 05/11 · W1 tính nửa W')
-        + '<div class="pn-than"><span class="pn-tong"><b>6</b> em · 55 % theo tuần dạy</span>' + bangTT(GVW1, 'W', true) + '<div class="cach-tinh"><b>Cách tính</b>Tuần dạy = tuần GV dạy W1 cho em ÷ tuần em học W1 trong lộ trình, tính đến ngày thi. % của dòng GV cộng theo tuần dạy, không đếm mỗi em bằng nhau.</div></div>', true, 'Đỗ Vũ Tuấn Phong · W1');
+        + '<div class="pn-than"><span class="pn-tong"><b>6</b> HV · tỉ lệ 4,0 / 7,3 · <b>55 %</b></span>' + bangTT(GVW1, 'W', true) + '<div class="cach-tinh"><b>Cách tính</b>Tỉ lệ mỗi HV = tuần GV dạy W1 ÷ tuần HV học W1 trong lộ trình, tính đến ngày thi (cột Tuần dạy). % Fail = tổng tỉ lệ HV Fail ÷ tổng tỉ lệ 11 HV GV đã dạy (4,0 ÷ 7,3).</div></div>', true, 'Đỗ Vũ Tuấn Phong · W1');
     },
     c7: function () {
       return nenTS().replace(MENU, MENU.replace('nut nut-vuong', 'nut nut-vuong dang-mo')) + '</div><div class="menu-noi" role="menu" style="position:absolute;top:220px;right:24px"><button role="menuitem">Cột hiện…</button><button role="menuitem" class="ke">' + IC.xuat + 'Xuất kết quả từng lượt</button></div><div>';
@@ -787,9 +788,9 @@ button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline
     c6: function () { return dau(3, true) + loc({ ct: false, ngay: true, phaiHep: '<button type="button" class="nut nut-vuong" aria-label="Xuất Excel" disabled>' + IC.xuat + '</button>' }, true).replace('01/09/2026', '02/11/2026') + '<div class="the"><div class="rong-dau" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 16px"><span class="mo" style="font-size:14px">Chưa có kết quả thi thật trong 02/11 – 05/11.</span><button type="button" class="nut nut-nho">Xem Toàn bộ</button></div></div>'; },
     d1: function () { return dauTest(1) + locTest(false) + '<div class="ds-lop">' + LOP.map(function (l) { return hangLop(l, false); }).join('') + '</div>'; },
     d1b: function () {
-      return dauTest(1) + locTest(true) + '<div class="ds-lop">' + hangLop(LOP[0], true)
-        + emMo('Bùi Thảo Vy', ['MT1 ✓ W2 OCT', 'MT2 · W2 NOV', '—', '—']) + emMo('Đặng Thu Hà', ['MT1 ✓ W2 OCT', 'Chưa xếp lịch', '—', '—']) + emMo('Đinh Gia Huy', ['MT1 · W1 NOV', '—', '—', '—']) + emMo('Đỗ Minh Khôi', ['MT1 ✓ W2 OCT', 'Chưa xếp lịch', '—', '—']) + emMo('Hồ Gia Hân', ['MT1 · W1 NOV', '—', '—', '—']) + emMo('Lương Bảo Anh', ['MT1 ✓ W2 OCT', 'MT2 · W2 NOV', '—', '—']) + emMo('Tạ Minh Quân', ['MT1 · W1 NOV', '—', '—', '—'])
-        + hangLop(LOP[1], true) + emMo('Vũ Hà My', ['MT1 ✓ W1 SEP', 'MT2 ✓ W5 SEP', 'MT3 · W1 NOV', '—']) + '</div>';
+      return dauTest(1) + locTest(true) + '<div class="ds-lop">' + hangLop(LOP[0], true) + '<div class="hl-em hl-th"><span>Học viên</span><span>MT1</span><span>MT2</span><span>MT3</span><span>MT4</span></div>'
+        + emMo('Bùi Thảo Vy', ['✓ W2 OCT', 'W2 NOV', '—', '—']) + emMo('Đặng Thu Hà', ['✓ W2 OCT', 'Chưa xếp lịch', '—', '—']) + emMo('Đinh Gia Huy', ['W1 NOV', '—', '—', '—']) + emMo('Đỗ Minh Khôi', ['✓ W2 OCT', 'Chưa xếp lịch', '—', '—']) + emMo('Hồ Gia Hân', ['✓ W2 OCT', 'Chưa xếp lịch', '—', '—']) + emMo('Lương Bảo Anh', ['✓ W2 OCT', 'W2 NOV', '—', '—']) + emMo('Tạ Minh Quân', ['✓ W2 OCT', 'Chưa xếp lịch', '—', '—'])
+        + hangLop(LOP[1], true) + emMo('Vũ Hà My', ['✓ W1 SEP', '✓ W5 SEP', 'W1 NOV', '—']) + '</div>';
     },
     d2: function () { return dauTest(0) + locTest(false, false, true) + '<div class="ds-lop">' + LOP.slice(0, 5).map(function (l) { return '<div class="hl"><span class="mui-mo">▸</span><span class="ma">' + l[0] + '</span><span class="mo"><b class="so" style="color:var(--text)">' + (l[1] * 2) + '</b> bài</span><span class="mo">' + (l[1] - 1) + ' đã có điểm</span></div>'; }).join('') + '</div>'; },
     d3: function () { return dauTest(1, true) + locTest(false, true) + '<div class="ds-lop">' + LOP.slice(0, 5).map(function (l) { return hangLop(l, false, true); }).join('') + '</div>'; }
