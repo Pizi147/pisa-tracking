@@ -148,14 +148,14 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
 
   if (error) {
     return (
-      <KhungPanel tieuDe="Case" hocVien={hocVien} lop={lop} onDong={onClose}>
+      <KhungPanel hd="case" tieuDe="Case" hocVien={hocVien} lop={lop} onDong={onClose}>
         <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
       </KhungPanel>
     );
   }
   if (!data) {
     return (
-      <KhungPanel tieuDe="Case" hocVien={hocVien} lop={lop} onDong={onClose}>
+      <KhungPanel hd="case" tieuDe="Case" hocVien={hocVien} lop={lop} onDong={onClose}>
         <div className="pt-3"><Skeleton rows={6} /></div>
       </KhungPanel>
     );
@@ -188,7 +188,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
         : quayLai && !quayLai.xem ? <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={quayLai.onClick}>‹ {quayLai.nhan}</button>
           : <button type="button" className="btn btn-primary min-h-[48px] px-5 font-bold sm:min-h-[40px]" onClick={onClose}>{t('Đóng')}</button>;
     return (
-      <KhungPanel tieuDe={daLuu.tieuDe} hocVien={hv} lop={lop} onDong={onClose} dau={dauViec({ em: data.student ? { id: data.student.id, ten: data.student.name } : null, lop, ngCanh: data.categoryLabel })}>
+      <KhungPanel hd="case" tieuDe={daLuu.tieuDe} hocVien={hv} lop={lop} onDong={onClose} dau={dauViec({ em: data.student ? { id: data.student.id, ten: data.student.name } : null, lop, ngCanh: data.categoryLabel })}>
         <KhoiDaLuu x={daLuu} luc={daLuu.luc} nutChinh={nut}
           /* 6b-3: trong panel việc "Xem Case" là view kế — ‹ về lại khối "✓ Đã lưu" này. */
           phu={<NutChu onClick={() => { if (xemCaseViec) xemCaseViec(); else { setDaLuu(null); veCase(); } }}>{t('Xem Case')}</NutChu>}
@@ -260,7 +260,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   if (view.loai === 'them-pa' && !data.viewer.canEdit) {
     /* Không quyền (mở thẳng `viec=them-pa`, hoặc quyền vừa đổi): không form, không 403 trống — MỘT câu "ai làm được" (khu K ⑤). */
     return (
-      <KhungPanel tieuDe={t('Thêm PA')} hocVien={hv} lop={lop} quayLai={quayLai} onDong={onClose} dau={dauViec({ em, lop })}>
+      <KhungPanel hd="case" tieuDe={t('Thêm PA')} hocVien={hv} lop={lop} quayLai={quayLai} onDong={onClose} dau={dauViec({ em, lop })}>
         <p className="m-0 mt-4 flex items-start gap-2 text-sm leading-relaxed text-slate-200 [text-wrap:pretty]"><span className="mt-0.5 text-slate-400"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
       </KhungPanel>
     );
@@ -299,7 +299,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     const ph = data.student?.phuHuynh ?? null;
     const laTvvCx = vai.includes('consultant') || vai.includes('cx');
     return (
-      <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai} dau={dauViec({ em, lop })} loai={null}>
+      <KhungPanel hd="case" tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai} dau={dauViec({ em, lop })} loai={null}>
         <div ref={boxRef} className="flex flex-col gap-5 pt-4">
           <p className="m-0 text-sm leading-relaxed text-slate-200">
             <b className="font-bold">{data.trangThaiV4?.chu ?? caseStatusLabel(data.status)}</b>
@@ -411,7 +411,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   /* Điều kiện hoàn thành (PA quy chế chưa khép) một dòng có ổ khoá: "Hoàn thành được sau khi PA theo quy chế kết thúc · **mốc**". */
   const dk = canDong && ht?.an && ht.dong ? /^(.*?) \((.*)\)$/.exec(ht.dong) : null;
   return (
-    <KhungPanel tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai} anDau={trongCot}
+    <KhungPanel hd="case" tieuDe={ten} hocVien={hv} lop={lop} onDong={onClose} quayLai={quayLai} anDau={trongCot}
       /* 6b-2 (critique): hạn của việc tiếp ở đầu view Case — cùng chip của dòng danh sách, không mất khi mở Case. */
       dau={dauKyNang && !trongCot ? {
         /* U03 A2 (mockup `.pn-h1 .loai` · `.pn-tieu`): "CASE · WRITING TASK 2" · "Hà Trần Phúc · Writing Task 2" + chip SOS bên phải. */

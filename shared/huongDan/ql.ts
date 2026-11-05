@@ -3,9 +3,10 @@
  * rồi chỉ ghi phần hơn GV (chủ SP: QL quản lý lớp / luật). Nhãn nút đối chiếu màn thật trên main 16/10 (sau OV-13a…n, HOTFIX-3).
  */
 import { HD_GV } from './gv.ts';
+import { MAN_GV_CU } from './gvCu.ts';
 import type { HuongDan, ManHd, MucHd } from './kieu.ts';
 
-const manGv = (id: string) => HD_GV.man.find((m) => m.id === id)!;
+const manGv = (id: string) => MAN_GV_CU.find((m) => m.id === id)!;
 /** Màn trùng GV: giữ mục của GV, thêm mục QL. */
 const themMan = (id: string, ...muc: MucHd[]): ManHd => ({ ...manGv(id), muc: [...manGv(id).muc, ...muc] });
 /** Mục GV mà QL không thấy trên màn (HD-CHI: "Lớp tôi dạy", "Yêu cầu bị từ chối" chỉ dựng cho GV ở cuối Công việc). */

@@ -1,12 +1,12 @@
 /**
  * HD-b — Hướng dẫn CX: như TVV nhưng toàn hệ thống, Tổng quan V5 (4 số + Theo chi nhánh); không chọn Bước tiếp (chỉ xem). Hồ sơ lớp / em, Luật dùng lại của TVV.
  */
-import { HD_GV } from './gv.ts';
+import { MAN_GV_CU } from './gvCu.ts';
 import { HD_TVV, LUAT_TVV, MAN_HO_SO_TVV } from './tvv.ts';
 import type { HuongDan } from './kieu.ts';
 
-const hvTim = HD_GV.man.find((m) => m.id === 'hoc-vien')!.muc.find((m) => m.id === 'hv-tim')!;
-const hvLichThi = HD_GV.man.find((m) => m.id === 'hoc-vien')!.muc.find((m) => m.id === 'hv-lich-thi')!;
+const hvTim = MAN_GV_CU.find((m) => m.id === 'hoc-vien')!.muc.find((m) => m.id === 'hv-tim')!;
+const hvLichThi = MAN_GV_CU.find((m) => m.id === 'hoc-vien')!.muc.find((m) => m.id === 'hv-lich-thi')!;
 
 export const HD_CX: HuongDan = {
   viec: [

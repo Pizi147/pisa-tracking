@@ -9,11 +9,15 @@ import { useGiuFocus } from './giuFocus.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { XemCha } from '../lib/quayLai.ts';
 import { t } from '@shared/i18n/index.ts';
+import type { PanelHd } from '@shared/huongDan/kieu.ts';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
 /** Panel đang mở, mở sau ở cuối — Esc chỉ đóng panel cuối (panel vẽ qua portal nên không còn lồng nhau trong DOM). */
 const nganPanel: string[] = [];
+/** HD-V2 (đặc tả 8 + 9.2): panel làm việc đang mở có mục Hướng dẫn riêng (`hd`) — mở sau ở cuối; "?" đọc panel trên cùng lúc bấm. */
+const panelHd: { hd: PanelHd }[] = [];
+export const panelHdTren = (): PanelHd | null => panelHd[panelHd.length - 1]?.hd ?? null;
 /**
  * PR-EN: panel đang sửa dở (`chan.daSua` hoặc còn nháp) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ.
  * NEN-PANEL (T16): mỗi panel ghi kèm cách HỎI của nó (hộp "Bỏ chữ đang gõ?" vẽ trong panel) — `boChuRoi` dùng khi đổi việc.
@@ -171,7 +175,7 @@ export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; x
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, onDong, children }: {
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
   anDau?: boolean; hocVien?: string | null; lop?: string | null;
@@ -216,6 +220,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   };
   /** 6c (lỗi 5): như `chan.daSua` cho panel KHÔNG có chân (form + nút lưu nằm trong thân). */
   daSua?: boolean;
+  /** HD-V2: panel Case / Nhập điểm — bấm "?" khi panel này mở thì tab Màn này đưa mục của panel lên trước (kể cả panel trong cột hồ sơ). */
+  hd?: PanelHd;
   onDong: () => void; children: ReactNode;
 }) {
   const id = useId();
@@ -249,6 +255,13 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   /* Bấm đúp "Bỏ chữ, …": lần hai còn đọc `hoi` cũ (chưa vẽ lại) → đóng / quay lại / rời trang hai lần. Mỗi hộp chạy một lần. */
   const daTra = useRef<typeof hoi>(null);
   const boChu = () => { const h = hoi; if (!h || daTra.current === h) return; daTra.current = h; setHoi(null); daBo.current = true; nhap?.xoa(); h.tiep(); };
+
+  useEffect(() => {
+    if (!hd) return undefined;
+    const o = { hd };
+    panelHd.push(o);
+    return () => { panelHd.splice(panelHd.indexOf(o), 1); };
+  }, [hd]);
 
   useEffect(() => {
     if (longTrong || taiCho) return undefined;

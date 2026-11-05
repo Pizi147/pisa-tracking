@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { can, classScopeSql, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
@@ -238,6 +238,9 @@ api.get('/demo/session', wrap((req) => {
     ngonNgu: p.ngonNgu ?? null,
     /* HD-a: dải "Mới dùng PISA?" ở Tổng quan chỉ hiện khi false. */
     daXemHuongDan: !!p.daXemHuongDan,
+    /* HD-V2 (đặc tả 9.3): phần "Chỉ GVCN" / "GV Speaking" của Hướng dẫn — tính từ principal đã nạp, 0 câu thêm. */
+    laGvcn: p.assignments.some((a) => a.isCore && activeAt(a, demoToday())),
+    coS: laGvSpeaking(p) || p.assignments.some((a) => a.skill === 'speaking' && activeAt(a, demoToday())),
     /* P14 DICH (N19): nút "Dịch" chỉ hiện khi máy chủ có khoá và không tắt — cờ đi theo phiên, không thêm lời gọi. */
     dichBat: cauHinhDich().bat,
     roles: p.roleKeys,

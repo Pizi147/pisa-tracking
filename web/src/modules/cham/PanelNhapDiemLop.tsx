@@ -21,7 +21,7 @@ export function PanelNhapDiemLop({ classId, classCode, luot, onDong, quayLai }: 
     ),
   });
   return (
-    <KhungPanel tieuDe={classCode ? t('Nhập điểm · {lop}', { lop: classCode }) : t('Nhập điểm')} dau={dau} rong="toan" quayLai={quayLai} onDong={onDong}>
+    <KhungPanel hd="nhap-diem" tieuDe={classCode ? t('Nhập điểm · {lop}', { lop: classCode }) : t('Nhập điểm')} dau={dau} rong="toan" quayLai={quayLai} onDong={onDong}>
       <div className="pt-3">
         <DiemTheoLop classId={classId} gon chonMon luotBanDau={luot ?? undefined} />
       </div>

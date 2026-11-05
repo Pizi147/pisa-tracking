@@ -27,6 +27,8 @@ export type Session = {
   ngonNgu?: string | null;
   /** HD-a: đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA TRACKING?" — nhớ theo tài khoản. */
   daXemHuongDan?: boolean;
+  /** HD-V2: GV chủ nhiệm ít nhất một lớp · GV Speaking (phần riêng của Hướng dẫn). */
+  laGvcn?: boolean; coS?: boolean;
   roles?: string[];
   roleLabels?: string[];
   grants?: Grant[];
