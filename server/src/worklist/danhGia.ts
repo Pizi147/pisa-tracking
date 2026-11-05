@@ -114,9 +114,12 @@ export const luotKck = (a: any) => (a.kind ?? 'mock') === 'mock' && kckCuaLuot(a
  * PR-TD: nhớ trong request GET theo (người xem, chi nhánh) — gọi lặp lại ở `hvSosHienTai`/`hvDuoiKyVongMon`/
  * `doPhuDanhGia` (mỗi cái một chỉ số của Tổng quan, ~12 lượt gọi `metricSet` mỗi request) với CÙNG `branchId`.
  */
-export function studentsInScope(p: Principal, branchId: number | null): number[] {
+export function studentsInScope(p: Principal, branchIdHoi: number | null): number[] {
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  /* DOC-PT: phạm vi đúng MỘT chi nhánh (không lớp lẻ) — "cả phạm vi" và "chi nhánh đó" là cùng tập dòng (`c.branch_id IN (b)` ∧ `c.branch_id = b`) → một khoá
+     nhớ: Báo cáo (chi nhánh trống) kèm Tổng quan (chi nhánh đã suy ra) khỏi đọc lại. */
+  const branchId = branchIdHoi ?? (!scope.all && !scope.none && scope.branchIds.length === 1 && !scope.classIds.length ? scope.branchIds[0] : null);
   return nho(`hv-pv:${p.userId}:${branchId}`, () => {
-    const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
     if (scope.none) return [];
     const cs = classScopeSql(scope);
     const where = [cs.sql, `e.status = 'active'`, 's.archived_at IS NULL'];
