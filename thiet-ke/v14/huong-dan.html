@@ -145,8 +145,6 @@
 .o-loi-chinh .cung { flex-basis:100%; font-size:13px; color:var(--text-dim); }
 .dt .o-loi-chinh .phai-l a { min-height:44px; padding:0 4px; }
 .luong.mot { grid-template-columns:1fr; }
-.tuan > button { position:relative; padding-right:36px !important; }
-.tuan .mui-t { position:absolute; right:12px; top:50%; translate:0 -50%; width:16px; height:16px; fill:none; stroke:var(--text-faint); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
 .rong-tim { display:grid; gap:12px; justify-items:start; font-size:15px; color:var(--text-dim); }
 .khong-lam.vai-khac { border:1px solid var(--line); border-radius:10px; padding:0 12px; }
 .khong-lam.vai-khac > div { padding:10px 0; }
@@ -179,17 +177,6 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
 .ds-nhom { display:grid; gap:16px; }
 .dem-kq { font:500 13px var(--phong); color:var(--text-dim); }
 .ghi-rong { font-size:14px; color:var(--text-dim); }
-.tuan { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
-.tuan > button { appearance:none; width:100%; border:0; background:none; display:grid; grid-template-columns:116px minmax(0,1fr); gap:10px; align-items:start; padding:10px 12px; border-top:1px solid var(--line); text-align:left; cursor:pointer; font:inherit; color:var(--text); }
-.tuan > button:first-child { border-top:0; }
-.tuan > button.cung-nhip { border-top-color:transparent; padding-top:2px; }
-.tuan > button:hover { background:var(--accent-soft); }
-.tuan .nhip { font:500 13px/1.5 var(--phong); color:var(--text-faint); }
-.tuan .viec-t { display:grid; gap:1px; }
-.tuan .viec-t b { font:500 15px/1.4 var(--phong); }
-.tuan .viec-t small { font-size:13px; color:var(--text-faint); }
-.dt .tuan > button { grid-template-columns:minmax(0,1fr); gap:2px; }
-.dt .tuan > button.cung-nhip .nhip { display:none; }
 
 /* menu Tài khoản 375 */
 .menu-tk { position:absolute; left:8px; right:8px; top:56px; z-index:30; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 32px rgb(0 0 0 / .25); padding:12px; display:grid; gap:8px; }
@@ -243,7 +230,7 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
   </section>
 
   <section class="khu" id="d">
-    <h2>D · TVV Phạm Thu Trang, tab Tuần của tôi (bấm dòng → mở đúng việc ở Tôi muốn…)</h2>
+    <h2>D · TVV Phạm Thu Trang, tab Tuần của tôi (nhóm theo nhịp, bấm dòng mở ngay tại chỗ)</h2>
     <div class="cap">
       <figure><figcaption>D · 1440 tối</figcaption><div class="man toi" data-k="d1"></div></figure>
       <figure><figcaption>D · 375 sáng</figcaption><div class="dt sang" data-k="d1m"></div></figure>
@@ -259,8 +246,12 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
   </section>
 
   <section class="khu" id="f">
-    <h2>F · 375 — chấm trên "?" khi chưa mở lần nào · panel toàn màn · menu Tài khoản không còn "Hướng dẫn"</h2>
+    <h2>F · nút "?" trên thanh — chấm khi chưa mở lần nào · panel toàn màn · menu Tài khoản không còn "Hướng dẫn"</h2>
     <div class="cap">
+      <figure><figcaption>F0 · 1440 tối · panel đóng, "?" cạnh chuông, chấm = chưa mở lần nào</figcaption><div class="man toi" data-k="f0"></div></figure>
+      <figure><figcaption>F0 · 1440 sáng</figcaption><div class="man sang" data-k="f0"></div></figure>
+    </div>
+    <div class="cap" style="margin-top:16px">
       <figure><figcaption>F1 · sáng · chưa mở lần nào</figcaption><div class="dt sang" data-k="f1"></div></figure>
       <figure><figcaption>F2 · tối · đã mở (hết chấm)</figcaption><div class="dt toi" data-k="f2"></div></figure>
       <figure><figcaption>F3 · sáng · QL · menu Tài khoản: "Đã xoá" thay chỗ "Hướng dẫn"</figcaption><div class="dt sang" data-k="f3"></div></figure>
@@ -386,7 +377,7 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
       { ten: 'Nhập điểm MT cũ', vai: 'Chỉ GVCN', nho: 'Công việc › Nhập điểm MT cũ' },
       { ten: 'Xem bài quá hạn chấm' }
     ])) +
-    khongLam([['Xếp, dời lịch MT', 'việc của QL', 1], ['Xác nhận Case, PA · ghi kết quả', 'Công việc › Case học thuật']]);
+    khongLam([['Xếp, dời lịch MT', 'việc của QL', 1], ['Xem điểm cả lớp qua các lượt', 'Hồ sơ lớp']]);
 
   /* B · QL, Case đang mở trên Hồ sơ HV */
   var thanB = dangO({ ten: 'Case đang mở', tren: 'trên Hồ sơ học viên', cau: 'Một Case của em: PA, kết quả, người phụ trách.' }) +
@@ -410,9 +401,14 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
     ]) + '</div>';
 
   /* D · TVV Tuần của tôi */
-  var TUAN = [['Mỗi sáng', 'Xem việc của bạn', 'Công việc'], ['', 'Xem em thi tháng này', 'Tổng quan'], ['Khi có', 'Báo PH vi phạm', 'Công việc › Báo PH · hạn 5 ngày'], ['', 'Bổ sung hồ sơ thiếu', 'Công việc › Bổ sung hồ sơ'], ['', 'Sửa thông tin, Target', 'Hồ sơ HV › Sửa thông tin'],
-    ['Khi gia đình báo', 'Tạm dừng/ Kết thúc học', 'Hồ sơ HV › ⋯ › Tạm dừng/ Kết thúc học'], ['Trước khi em thi', 'Chốt ngày thi', 'Công việc › Chốt ngày thi'], ['Sau khi em thi', 'Cập nhật kết quả thi thật', 'Công việc › Sau thi'], ['', 'Chọn bước tiếp', 'Công việc › Sau thi · hạn 7 ngày']];
-  var thanD = '<div class="tuan">' + TUAN.map(function (r) { return '<button class="' + (r[0] ? '' : 'cung-nhip') + '"><span class="nhip">' + e(r[0]) + '</span><span class="viec-t"><b>' + e(r[1]) + '</b><small>' + e(r[2]) + '</small></span>' + svg('<path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/>', 'mui-t') + '</button>'; }).join('') + '</div>';
+  var thanD = '<div class="ds-nhom">' +
+    nhomViec('Mỗi sáng', [{ ten: 'Xem việc của bạn', nho: 'Công việc' }, { ten: 'Xem em thi tháng này', nho: 'Tổng quan' }]) +
+    nhomViec('Khi có', [{ ten: 'Báo PH vi phạm', mo: 1, chinh: 'Công việc › Báo PH', buoc: ['Bấm dòng em ở nhóm **Báo PH**; hạn 5 ngày.', 'Chọn **Đã báo PH** hoặc **Chưa liên hệ được**, ghi chú.', '**Lưu · việc tiếp ›**.'] }, { ten: 'Bổ sung hồ sơ thiếu', nho: 'Công việc › Bổ sung hồ sơ' }, { ten: 'Sửa thông tin, Target', nho: 'Hồ sơ HV › Sửa thông tin' }]) +
+    nhomViec('Khi gia đình báo', [{ ten: 'Tạm dừng/ Kết thúc học', nho: 'Hồ sơ HV › ⋯ › Tạm dừng/ Kết thúc học' }]) +
+    nhomViec('Trước khi em thi', [{ ten: 'Chốt ngày thi', nho: 'Công việc › Chốt ngày thi' }]) +
+    nhomViec('Sau khi em thi', [
+      { ten: 'Cập nhật kết quả thi thật', nho: 'Công việc › Sau thi' },
+      { ten: 'Chọn bước tiếp', nho: 'Công việc › Sau thi · hạn 7 ngày' }]) + '</div>';
 
   /* E · GV, màn chưa có mục — Tôi muốn… đủ */
   var thanE = dangO({ ten: 'Phân tích', cau: 'Màn này chưa có hướng dẫn riêng.' }) + '<div class="ds-nhom">' +
@@ -445,6 +441,7 @@ mark { background:var(--hong-nen); color:var(--hong-chu); border-radius:3px; pad
     panel({ vai: 'Tư vấn viên', tab: 2, than: thanD });
   K.d1m = thanh({ dt: 1, mo: 1 }) + panel({ vai: 'Tư vấn viên', tab: 2, than: thanD });
   K.e1 = thanh({ vai: 'gv', dang: 'Phân tích', badge: 9, ten: 'Trần Ngọc Hà', mo: 1, tin: 2 }) + phanTich() + panel({ vai: 'Giáo viên', tab: 1, than: thanE });
+  K.f0 = thanh({ vai: 'gv', dang: 'Test', badge: 9, ten: 'Trần Ngọc Hà', cham: 1, tin: 2 }) + lichTest();
   K.f1 = thanh({ dt: 1, cham: 1, tin: 2 }) + congViec375();
   K.f2 = thanh({ dt: 1, mo: 1, tin: 2 }) + panel({ vai: 'Giáo viên', tab: 0, than: thanF });
   K.f3 = thanh({ dt: 1, tin: 4 }) + congViec375() +

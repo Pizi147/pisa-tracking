@@ -78,7 +78,7 @@ Trạng thái mockup: **A** GV · Lịch Test tuần · Màn này · **B** QL ·
 - Dòng gập ở Tôi muốn… có chữ nhạt dưới tên = **lối chính** (biết "ở đâu" không cần mở). Mở ra: ô **Lối chính** + **Đi tới ›** (đổi trang) · bước · **Lối tắt** · **Chỉ cho tôi**.
 - Màn lối tắt (vd Lịch Test tuần): việc mở có dòng nhạt "Lối chính: Công việc › Nhập điểm ›. Ở đây mở cùng ô điểm." — sinh từ `loiTat` (đặc tả 9.5).
 - Đang gõ ô tìm: hàng tab giữ nguyên, thân panel thành một danh sách việc khớp (gộp cả 3 tab, bỏ trùng), có nhóm, chữ khớp tô hồng (như ô tìm thanh trên — V14), đầu danh sách "n việc khớp". Xoá chữ (✕ trong ô) → về tab đang chọn.
-- Tuần của tôi: mỗi dòng = nhịp (chữ nhạt, chỉ ghi ở dòng đầu nhịp) · tên việc · chữ nhạt nơi làm; không bước (không lặp). Bấm dòng → tab Tôi muốn…, mở đúng việc đó.
+- Tuần của tôi (bản 3b): nhóm theo nhịp, dòng gập có chữ nhạt = lối chính; bấm dòng mở ngay tại chỗ (Lối chính + bước), như Tôi muốn….
 - QL / QT: ô chọn "**Vai: Quản lý** ▾" thay chip vai (một ô vừa nói vai đang xem vừa đổi được — "Xem vai khác" là tên đọc màn hình). Vai khác: chip vai chỉ đọc.
 - Nhãn "Chỉ GVCN" / "GV Speaking": thẻ viền đứt nhỏ cuối dòng (khác thẻ lượt nền nhạt); chỉ hiện khi đúng vai (đặc tả 3.6) hoặc QL xem vai GV.
 - Chấm trên "?": chấm trắng 8 px viền màu thanh (cùng họ chấm chuông — trắng trên nền xanh), không hồng (hồng chỉ để nhận diện, V2).
@@ -87,7 +87,14 @@ Trạng thái mockup: **A** GV · Lịch Test tuần · Màn này · **B** QL ·
 - Dòng nhạt dưới tên việc khi gập = **luôn là đường lối chính** (không tiền tố), ở cả 3 tab. Việc chỉ làm ở chính màn này (vd Đổi người phụ trách trong Case) thì không có dòng nhạt.
 - Tìm không ra việc của vai này → vẫn chỉ chỗ: nhóm "Việc của vai khác" (chữ nhạt "việc của QL", không link) + nút **Xem mọi việc của bạn** (về Tôi muốn… đủ). Thật sự không có gì thì chỉ câu + nút.
 
-## 4b. [XM] cho PTA (đề xuất, chưa có trong đặc tả)
+## 3b. PTA chốt sau rà ảnh #999 (05/11)
+1. **Thêm F0** (1440 tối + sáng): panel đóng, thanh trên có **"?"** cạnh chuông, có chấm (chưa mở lần nào) — yêu cầu chính của chủ SP phải thấy rõ ở 1440.
+2. **[XM-1] đồng ý:** tìm theo từ đồng nghĩa (mỗi việc khai vài từ: "đổi lớp" ↔ Chuyển lớp, "sửa điểm"…) + việc của vai khác hiện trong kết quả tìm, một dòng "Chuyển lớp — việc của QL". PTA thêm vào đặc tả.
+3. **[XM-2] Tuần của tôi MỞ TẠI CHỖ:** nhóm theo nhịp (Mỗi sáng · Khi có · Khi gia đình báo · Trước khi em thi · Sau khi em thi), mỗi việc một dòng gập / mở như Tôi muốn… (mở ra: Lối chính + bước); bỏ mũi tên nhảy tab. Lý do: xử lý tại chỗ + một danh sách một kiểu mở. (Thay đặc tả 3.5 — PTA sửa đặc tả.)
+4. **[XM-3]** "Không làm ở đây" không lặp đích đã có ở Sau — A bỏ dòng "Xác nhận Case, PA · ghi kết quả", thay "Xem điểm cả lớp qua các lượt → Hồ sơ lớp ›".
+5. **P2:** giữ ô **Lối chính** một dáng ở cả 3 tab (thay "dòng nhạt" đặc tả 3.3) — đồng ý.
+
+## 4b. [XM] đã gửi PTA (trả lời ở 3b)
 - **[XM-1] Tìm theo từ đồng nghĩa và việc vai khác** (C2): gõ "đổi lớp" ra "Chuyển lớp một em — việc của QL". Đặc tả 3.2 chỉ giữ `locHd` (bỏ dấu). Muốn có: thêm trường `tuKhac` cho mỗi việc + đọc cả việc của vai khác (chỉ tên + "việc của …", không bước). Chữ khớp qua từ đồng nghĩa KHÔNG tô hồng. Không thì C2 chỉ còn câu "Không có việc nào khớp" + Xem mọi việc.
 - **[XM-2] Tuần của tôi** giữ đúng đặc tả 3.5 (bấm dòng → tab Tôi muốn…, mở đúng việc). Bản rà critique đề xuất cho dòng gập / mở tại chỗ (chỉ ô Lối chính) cho cùng kiểu với hai tab kia, đỡ một bước — PTA xem.
 - **[XM-3]** Sau của Lịch Test tuần ("Công việc › Case học thuật") trùng đích với dòng "Xác nhận Case, PA · ghi kết quả" ở Không làm ở đây — giữ cả hai theo PTA chốt; bỏ một nếu PTA thấy thừa.
@@ -100,10 +107,10 @@ Trạng thái mockup: **A** GV · Lịch Test tuần · Màn này · **B** QL ·
 | 3 | 30/40 | P1 2 | "Tạm dừng/ Kết thúc học" (N11, đúng nút web; trước ghi sai "Tạm dừng / Thôi học") · thêm việc TVV **Chốt ngày thi** (N6) · dòng nhạt = luôn đường lối chính |
 | 4 | **32/40** | **0 · 0** | QL: "Công việc › **Của GV** › Case học thuật" (Công việc QL mặc định Của tôi) · nhãn vai viền liền |
 
-Cổng (luật 28/10): đã chạm 30, sau đó không còn P0 / P1 → dừng. Detector (B) vòng 2–3: chỉ còn phát hiện đúng hệ thiết kế (vạch trái 3 px, khung không đệm, Inter cho chữ số, bóng hộp nổi).
+Cổng (luật 28/10): đã chạm 30, sau đó không còn P0 / P1 → dừng. Sửa 3b sau đó chỉ đổi theo chốt PTA (không chấm lại). Detector (B) vòng 2–3: chỉ còn phát hiện đúng hệ thiết kế (vạch trái 3 px, khung không đệm, Inter cho chữ số, bóng hộp nổi).
 P2 / P3 còn lại (không sửa, ghi để PTA biết): ô Lối chính ở màn lối tắt nặng hơn "dòng nhạt" đặc tả 3.3 (giữ ô để một dáng ở cả 3 tab — vòng 1 rà đòi thống nhất; PTA chọn) · ở 1440 nền mờ che trạng thái nút "?" (đúng `KhungPanel`) · chữ "ô điểm" là từ trong nhà · Speaking chấm chéo ở F1 có "⚠ 1 quá hạn" — giữ như web hiện tại (`DanhSachViec`, v12).
 F3: QL Vy không dạy lớp nên menu không có "Hồ sơ giáo viên"; QL có dạy thì có, như web.
 
 ## 5. Ảnh (thiet-ke/v14/anh/)
 Chụp bằng Chrome headless từ chính tệp mockup (`huong-dan.html?k={khung}&n={toi|sang}`), phông Be Vietnam Pro đã nạp (`document.fonts.check('600 15px "Be Vietnam Pro"', 'ợ')` = true).
-A1 `a1-1440-toi` · `a1-375-sang` · A2 `a2-1440-toi` · B `b-1440-toi` · `b-375-sang` · C `c-1440-toi` · `c-375-sang` · C2 `c2-375-toi` · D `d-1440-toi` · `d-375-sang` · E `e-1440-toi` · `e-1440-sang` · F `f1-375-sang` · `f2-375-toi` · `f3-375-sang`.
+A1 `a1-1440-toi` · `a1-375-sang` · A2 `a2-1440-toi` · B `b-1440-toi` · `b-375-sang` · C `c-1440-toi` · `c-375-sang` · C2 `c2-375-toi` · D `d-1440-toi` · `d-375-sang` · E `e-1440-toi` · `e-1440-sang` · F0 `f0-1440-toi` · `f0-1440-sang` · F `f1-375-sang` · `f2-375-toi` · `f3-375-sang`.
