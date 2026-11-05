@@ -141,3 +141,13 @@ QT = QL + Quản trị. Head tutor: Tổng quan, Hồ sơ cá nhân (như hiện
 6. **`data-hd`:** được thêm thuộc tính `data-hd` vào thành phần khác (không đổi hình) cho Chỉ cho tôi.
 7. **Vai → đường:** dùng `server/src/platform/nav.ts` (HD-NAV đang dùng) + quyền hiện có; thiếu thì builder tự thêm bảng nhỏ trong phép kiểm.
 8. **Cổng mockup:** chủ SP duyệt mockup (khung + ví dụ nội dung GV, QL, TVV) trước mọi PR HD-V2. Sau đó PR (a) chạy được; nội dung vai khác ở PR sau theo cùng khung, không cần mockup lại.
+
+## 10. Chốt sau mockup #999 (PTA 05/11, chủ SP xem khi duyệt ảnh)
+1. **Case ở Hồ sơ HV** mở trong cột "Case & phương án" (không phải panel nổi): "?" mở chồng như mọi panel, Case còn nguyên; tab Màn này gọi là "Case đang mở", mục Case lên trước.
+2. **Tìm:** mỗi việc khai vài từ đồng nghĩa ("đổi lớp" → Chuyển lớp, "sửa điểm"…); việc của vai khác hiện trong kết quả tìm một dòng "Chuyển lớp — việc của QL".
+3. **Tuần của tôi:** bấm dòng mở tại chỗ (Lối chính + bước), không nhảy sang tab Tôi muốn….
+4. **Không làm ở đây** không lặp đích đã có ở Trước / Sau.
+5. **Lối chính** là một ô cùng dáng ở cả 3 tab (thay "dòng nhạt" mục 3.3).
+6. **QL khôi phục thứ đã xoá:** lối chính "Tài khoản › Đã xoá" (chủ SP 05/11 đồng ý đưa lên menu — PR DA-XOA-MENU); lối tắt Bảng quy đổi band › tab Đã xoá; ngay sau xoá: Hoàn tác.
+7. Nhãn đúng mã main: nhóm "Speaking chấm chéo", khối "Case & phương án", nút "+ Case cho {kỹ năng}", "Ghi Mini Test", tab "Lộ trình & lớp"; GVCN bỏ lối tắt "Chọn người phụ trách" (việc chưa có chủ, GVCN chưa chắc thấy).
+
