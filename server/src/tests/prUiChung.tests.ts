@@ -73,7 +73,7 @@ export async function runPrUiChungTests(t: any) {
 
   check('UIC-4 · bảng dài có đầu cột dính; không bảng `bang-dinh` nào rộng hơn khung 1280 (1238 px)', () => {
     assert(/khung=\{false\} dinh /.test(doc('web/src/modules/classes/BangHoSoLop.tsx')), 'hồ sơ lớp FT: bảng học viên `dinh`');
-    assert((doc('web/src/modules/phanTich/KetQuaThi.tsx').match(/table-scroll bang-dinh"/g) ?? []).length === 2, 'Kết quả Test: Mock + Thi thật');
+    assert((doc('web/src/modules/phanTich/KetQuaThi.tsx').match(/table-scroll bang-dinh"/g) ?? []).length === 1, 'Thi thật: danh sách (THI-THAT bỏ bảng Mock)');
     assert(doc('web/src/modules/phanTich/YThucPhoiHop.tsx').includes('table-scroll bang-dinh"'), 'Ý thức: danh sách HV');
     /* `.bang-dinh` bỏ khung cuộn từ 1280 — bảng rộng hơn khung thì làm <main> trượt ngang (luật index.css). */
     const quet = (thu: string): string[] => fs.readdirSync(path.join(REPO, thu), { withFileTypes: true })

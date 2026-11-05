@@ -11,7 +11,6 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { DaiChiSo, DauThe, NutXemToanBo, RongDau, NutXuat, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
-import { LINK_CHU } from './PanelCaseLuot.tsx';
 import {
   mucThi, ngay, nhanKhoang, soSanhDiem,
   type DongGvThiWeb, type DongThiThat, type KetQuaThiThatKq, type KnThiThat, type MucThi, type ThongKeThiThatWeb,
@@ -23,6 +22,8 @@ import {
  * (một hàm với Phân tích GV, hồ sơ GV): Tổng · Từng kỹ năng (so Target overall) · Theo GV (QL / QT / CX — máy chủ trả null cho vai khác).
  * Mọi số bấm → panel bảng `/phan-tich/thi-that/o` (kiểu 'thi-that', số = số dòng). Màu: Exceed xanh lá · Đạt xanh dương · Fail đỏ (`lopKq`).
  */
+/** Link chữ thường (U08-6): rê / focus mới báo. */
+const LINK_CHU = 'rounded-sm text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline hover:underline-offset-[3px] focus-visible:text-[color:var(--accent)] focus-visible:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]';
 type TabThiThat = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb };
 const KN4: readonly KnThiThat[] = ['l', 'r', 'w', 's'];
 const MUC: readonly MucThi[] = ['exceed', 'dat', 'fail'];
@@ -240,7 +241,7 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
   const diem = (r: DongThiThat, k: KnThiThat | 'ovr') => {
     const v = k === 'ovr' ? r.ovr : r[k];
     if (v === null) return <span className="text-faint">—</span>;
-    if (k !== 'ovr' && r.thiLai && !r.thiLai.includes(k.toUpperCase())) return <span className="tabular-nums text-faint" title={t('lấy từ lần thi trước')}><span aria-hidden>↺ </span>{fmtBand(v)}</span>;
+    if (k !== 'ovr' && r.thiLai && !r.thiLai.includes(k.toUpperCase())) return <span className="tabular-nums text-faint" title={t('lấy từ lần thi trước')}><span aria-hidden>↺ </span><span className="sr-only">{t('lấy từ lần thi trước')} </span>{fmtBand(v)}</span>;
     const tg = targetCua(r);
     return <ODiem so={fmtBand(v)} kq={tg.kck || Number.isNaN(tg.v) ? null : soSanhDiem(v, tg.v)} nhan={k === 'ovr' ? 'OVR' : NHAN_KN[k]} />;
   };

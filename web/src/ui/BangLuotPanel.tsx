@@ -210,7 +210,7 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   ];
   const oDiemH = (h: HH, k: KnThiBang | 'ovr') => {
     const o = k === 'ovr' ? h.ovr : h.kn[k];
-    if (k !== 'ovr' && h.layLai.includes(k) && o) return <span className="whitespace-nowrap tabular-nums text-faint" title={t('lấy từ lần thi trước')}><span aria-hidden>↺ </span>{fmtBand(o.v)}</span>;
+    if (k !== 'ovr' && h.layLai.includes(k) && o) return <span className="whitespace-nowrap tabular-nums text-faint" title={t('lấy từ lần thi trước')}><span aria-hidden>↺ </span><span className="sr-only">{t('lấy từ lần thi trước')} </span>{fmtBand(o.v)}</span>;
     return <ODiem so={o ? fmtBand(o.v) : null} kq={o?.kq ?? null} nhan={k === 'ovr' ? 'OVR' : k.toUpperCase()} />;
   };
   const tuanH = (h: HH) => (h.tuan ? <span className="whitespace-nowrap tabular-nums text-dim">{h.tuan.day}/{h.tuan.tong} · {h.tuan.tong ? Math.round((100 * h.tuan.day) / h.tuan.tong) : 0} %</span> : null);
