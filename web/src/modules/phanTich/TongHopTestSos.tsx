@@ -95,7 +95,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   if (classId) qs.set('lop', String(classId));
   qs.set('theo', theo);
   const query = qs.toString();
-  const { data, loading, error, reload } = useApi<TongHopKetQua>(`/phan-tich/tong-hop?${query}`, [query]);
+  const { data: goc, loading, error, reload } = useApi<TongHopKetQua>(`/phan-tich/tong-hop?${query}`, [query]);
+  /* PT-LOP-THUONG: dòng chỉ có bài Checkpoint (Bài = 0) chỉ để Excel giữ nhóm Checkpoint — màn không vẽ. */
+  const coBai = (h: DongTongHop) => (h.o.luot ?? 0) > 0;
+  const data = goc && goc.ct === 'thuong'
+    ? { ...goc, hang: goc.hang.filter(coBai).map((h) => (h.con ? { ...h, con: h.con.filter(coBai) } : h)) } : goc;
   const pt = usePhanTrang(data?.hang.length ?? 0, query, dich(THEO_DONG_DANH_TU[theo]));
 
   useEffect(() => {
@@ -163,7 +167,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       branchName ?? t('Tất cả chi nhánh'), CHUONG_TRINH_LABEL[ct], nhanKy,
       className, t('dữ liệu đến {ngay}', { ngay: ngay(demoDate) }),
     ].filter(Boolean).join(' · ');
-    const aoa = bangXuatTongHop(data, cotHien, moTa);
+    const aoa = bangXuatTongHop(goc!, cotHien, moTa);   // Excel: dữ liệu đủ (kể cả dòng chỉ Checkpoint)
     const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, NGON_NGU === 'en' ? 'Summary' : 'Tổng hợp');   // khoá 'Tổng hợp' = Integrated (tên kỹ năng)
@@ -310,10 +314,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
         mau: t('{n} lượt', { n: (tong.sos1 ?? 0) + (tong.sos2 ?? 0) + (tong.sos3 ?? 0) }) },
     ]),
     { ten: t('Thiếu điểm'), gt: soTong('chuaDu'), mau: laThuong ? undefined : t('gồm SOS tạm') },
-    { ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet'),
-      nho: quaHanTong > 0 ? <>⚠ {t('{n} quá hạn', { n: quaHanTong })}</> : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) },
+    /* PT-LOP-THUONG (mockup v13 B): lớp thường bỏ thẻ "Chưa chốt PA" — PA xem ở tab Hiệu quả PA. */
+    ...(laThuong ? [] : [{ ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet'),
+      nho: quaHanTong > 0 ? <>⚠ {t('{n} quá hạn', { n: quaHanTong })}</> : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) }]),
   ];
-  const SKEL_SO = Array.from({ length: laThuong ? 3 : 5 }, (): ChiSo => ({
+  const SKEL_SO = Array.from({ length: laThuong ? 2 : 5 }, (): ChiSo => ({
     ten: <span className="skel inline-block h-3 w-1/2 align-middle" />, gt: <span className="skel mt-1.5 inline-block h-6 w-2/5" />,
   }));
 
@@ -327,7 +332,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       {kn[0]?.goiY && (
         <div><dt className="inline font-semibold text-slate-200">{dich(nhomCotLabel('ky-nang', ct))}: </dt><dd className="m-0 inline">{dich(kn[0].goiY.slice(kn[0].goiY.indexOf('—') + 2))}</dd></div>
       )}
-      <div><dt className="inline font-semibold text-slate-200">{t('Xử lý')}: </dt><dd className="m-0 inline">{GOI_Y_XU_LY}</dd></div>
+      {!laThuong && <div><dt className="inline font-semibold text-slate-200">{t('Xử lý')}: </dt><dd className="m-0 inline">{GOI_Y_XU_LY}</dd></div>}
     </dl>
   );
 
