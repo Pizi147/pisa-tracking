@@ -254,6 +254,12 @@ export async function runPrHdTests(t: any) {
     assert(hd.manTheoId(qt, 'quan-tri').ten === 'Quản trị hệ thống' && hd.manTheoId(ql, 'quan-tri').ten === 'Đã xoá', 'màn /quan-tri: QL chỉ Đã xoá, QT đủ ba tab');
   });
 
+  check('HD-V2 · tiêu đề phần của trang luôn có h2 trên màn hình (sr-only, in vẫn thấy); ô "Vai: …" của panel là viên gọn `o-chon-vai`', () => {
+    assert(/<h2 className="[^"]*sr-only print:not-sr-only/.test(fs.readFileSync(path.join(ROOT, 'web/src/modules/huongDan/HuongDanPage.tsx'), 'utf8')), 'h2 phần phải sr-only (không hidden)');
+    assert(/<select className="field o-chon-vai /.test(fs.readFileSync(path.join(ROOT, 'web/src/modules/huongDan/NutHuongDan.tsx'), 'utf8')), 'select Vai phải dùng o-chon-vai');
+    assert(/\.o-chon-vai \{[^}]*appearance: none/.test(fs.readFileSync(path.join(ROOT, 'web/src/index.css'), 'utf8')), 'thiếu .o-chon-vai trong index.css');
+  });
+
   await checkAsync('HD-VAI-C · TVV, CX, Head tutor đã chuyển sang `lam`; lối chính khớp mã main (nhóm Công việc TVV, nút đầu Hồ sơ HV); CX không Công việc; gvCu.ts đã xoá; tìm "bao phu huynh", "doi lop"', async () => {
     const { tvv, cx, ht } = hd.HUONG_DAN;
     for (const [vai, h] of [['tvv', tvv], ['cx', cx], ['ht', ht]] as [string, any][]) assert(h.lam?.length && h.viec.length === 0 && h.tuan?.length, `${vai} chưa chuyển sang HD-V2`);

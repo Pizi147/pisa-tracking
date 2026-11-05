@@ -145,3 +145,6 @@ export function attemptCoBaiTuan(rows: readonly { attemptId: number; cells: read
   const coBai = (c: { band: number | null; progress: string }) => c.band !== null || awaitingScore(c.progress as SkillProgress);
   return new Set(rows.filter((r) => r.cells.some((c) => c.weekStart === tuan && cot(c.skill) && coBai(c))).map((r) => r.attemptId));
 }
+
+/** Link `?trong=` của Điểm theo lớp (Công việc "MT cũ", Lịch Test): `cu` → "Chỉ ô còn trống" + hàng MT cũ; có tham số khác → chỉ ô còn trống; không có → không lọc sẵn. */
+export const locTuThamSoTrong = (trong: string | null): 'trong' | 'cu' | undefined => (trong === 'cu' ? 'cu' : trong === null ? undefined : 'trong');

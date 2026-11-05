@@ -117,7 +117,7 @@ export default function HuongDanPage() {
           )}
           {PHAN.map((p) => (
             <section key={p} aria-label={TEN_PHAN[p]} className={`flex-col gap-3 ${!tim && p === phan ? 'flex' : 'hidden print:flex'}`}>
-              <h2 className="m-0 hidden text-base font-semibold print:block">{TEN_PHAN[p]}</h2>
+              <h2 className="m-0 text-base font-semibold sr-only print:not-sr-only">{TEN_PHAN[p]}</h2>
               {than[p]}
             </section>
           ))}
