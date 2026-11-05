@@ -394,6 +394,18 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
     assert(!/SCAN (a|audit_logs)\b(?! USING)/.test(ke), `audit_logs bị quét cả bảng: ${ke}`);
   });
 
+  check('Sửa nhỏ 05/11 · soLichSuYeuCau = số trên thẻ; sau Từ chối tăng và khớp /lich-su (panel cộng tại chỗ, không gọi lại)', () => {
+    const the = yc.hopChoDuyet(P.admin, { xem: 'cho', boiCanh: true }).the;
+    const x = the.find((y: any) => y.soLichSu > 0 && y.soLichSu < 45) ?? the[0];
+    assert(yc.soLichSuYeuCau(x.id) === x.soLichSu, `${yc.soLichSuYeuCau(x.id)} ≠ ${x.soLichSu}`);
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      yc.tuChoiYeuCau(P.admin, x.id, 'Thử đếm lịch sử');
+      const n = yc.soLichSuYeuCau(x.id);
+      assert(n > x.soLichSu && n === yc.lichSuYeuCau(P.admin, x.id).dong.length, `sau Từ chối ${x.soLichSu} → ${n}`);
+    } finally { conn.exec('ROLLBACK'); }
+  });
+
 
   /* ---------------------------------------------------------------- rà sâu PTA (30/10) */
   const kqt: any = await import('../phanTich/ketQuaThi.ts');

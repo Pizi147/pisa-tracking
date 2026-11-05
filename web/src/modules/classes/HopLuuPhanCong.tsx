@@ -300,6 +300,12 @@ export function HopChoDoi({ code, cho, nhanO, ten, neoEl, tamDuoi, onDong, onXon
             </div>
           ))}
         </div>
+        {/* Mockup v9 khu 5: "Việc bàn giao của A: a/b em đã viết · hạn" — một dòng mỗi việc (các cặp cùng GV cũ chung một việc). */}
+        {[...new Map(cho.filter((c) => c.banGiao).map((c) => [c.banGiao!.id, c] as const)).values()].map((c) => (
+          <div key={c.banGiao!.id} className="pc-ket-bg">
+            <span>{t('Việc bàn giao của {gv}:', { gv: ten(c.nguoiCu) })} <b>{t('{a}/{b} em', { a: c.banGiao!.du, b: c.banGiao!.tong })}</b> {t('đã viết')} · <span className="pc-han">{t('hạn {ngay}', { ngay: ngay(c.banGiao!.han, hn) })}</span></span>
+          </div>
+        ))}
         {doiMoc && <ChonHieuLuc loai={loai} tuan={tuan} homNay={hn} onLoai={setLoai} onTuan={setTuan} />}
         <div className="pc-chu-xem"><span>{t('Huỷ lịch đổi = huỷ cả việc bàn giao; phần đã viết giữ ở lịch sử lớp, Hoàn tác được.')}</span></div>
         {loi && <p className="m-0 text-sm text-late" role="alert">{loi}</p>}

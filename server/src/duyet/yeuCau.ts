@@ -408,6 +408,9 @@ const DK_NHAT_KY = `(a.entity_type = 'yeu_cau_duyet' AND a.entity_id = y.id)
   OR (a.entity_type = ${ENTITY_SQL} AND a.entity_id = y.doi_tuong_id)
   OR (y.doi_tuong_loai = 'intervention' AND a.entity_type = 'sos_case' AND a.entity_id = (SELECT iv.case_id FROM case_interventions iv WHERE iv.id = y.doi_tuong_id))`;
 const NOI_NHAT_KY = `JOIN audit_logs a ON ${DK_NHAT_KY}`;
+/** Số "Lịch sử · n" của MỘT thẻ (cùng điều kiện `DK_NHAT_KY`) — trả kèm kết quả Duyệt / Từ chối / Trả lời để panel cộng dòng vừa ghi, không gọi lại. */
+export const soLichSuYeuCau = (id: number): number =>
+  Number((db().prepare(`SELECT (SELECT COUNT(*) FROM audit_logs a WHERE ${DK_NHAT_KY}) AS n FROM yeu_cau_duyet y WHERE y.id = ?`).get(id) as any)?.n ?? 0);
 
 /**
  * Thẻ Chờ duyệt: chip SOS + dòng điểm — MỘT `latestAttempts` cho mọi em của các thẻ (CÙNG hàm chỉ số "SOS hiện tại"; lượt + lịch kỹ năng + điểm theo lô,

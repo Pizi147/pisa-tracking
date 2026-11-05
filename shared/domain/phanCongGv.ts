@@ -89,7 +89,9 @@ export function nguoiVietBanGiao(o: { cuNghi: boolean; nguoiCu: number; gvcn: nu
 }
 
 export type HieuLucVao = { loai: 'hom-nay' } | { loai: 'tuan'; tuanId: number };
-export type DoiChoPc = { id: number; khoa: string; nguoiCu: number | null; nguoiMoi: number | null; hieuLuc: string; loi: string | null };
+/** `banGiao`: việc bàn giao đang mở của dòng chờ — `du`/`tong` em đã viết đủ (chỉ góc Phân công GV gắn; nơi khác bỏ trống). */
+export type DoiChoPc = { id: number; khoa: string; nguoiCu: number | null; nguoiMoi: number | null; hieuLuc: string; loi: string | null;
+  banGiao?: { id: number; du: number; tong: number; han: string } | null };
 export type LopPc = {
   id: number; code: string; ct: string | null; ft: boolean; route: string | null; soHv: number; tuan: { n: number; tong: number } | null;
   kyNang: string[]; slots: SlotPhanCong[]; phienBan: string; cho: DoiChoPc[];

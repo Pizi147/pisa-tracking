@@ -2375,18 +2375,22 @@ api.post('/yeu-cau/:id/huy-quyet-dinh', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return yeuCauSvc.huyQuyetDinh(principalOf(req), pInt(req, 'id'));
 }));
+/* Kèm `soLichSu` (một câu đếm) — panel duyệt cộng "Lịch sử · n" tại chỗ sau khi quyết. */
 api.post('/yeu-cau/:id/duyet', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = (req.body ?? {}) as Record<string, any>;
-  return yeuCauSvc.duyetYeuCau(principalOf(req), pInt(req, 'id'), { ghiChu: typeof b.ghiChu === 'string' ? b.ghiChu : null, duLieu: b.duLieu });
+  const id = pInt(req, 'id');
+  return { ...yeuCauSvc.duyetYeuCau(principalOf(req), id, { ghiChu: typeof b.ghiChu === 'string' ? b.ghiChu : null, duLieu: b.duLieu }), soLichSu: yeuCauSvc.soLichSuYeuCau(id) };
 }));
 api.post('/yeu-cau/:id/tu-choi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return yeuCauSvc.tuChoiYeuCau(principalOf(req), pInt(req, 'id'), (req.body ?? {}).lyDo);
+  const id = pInt(req, 'id');
+  return { ...yeuCauSvc.tuChoiYeuCau(principalOf(req), id, (req.body ?? {}).lyDo), soLichSu: yeuCauSvc.soLichSuYeuCau(id) };
 }));
 api.post('/yeu-cau/:id/tra-loi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return yeuCauSvc.traLoiYeuCau(principalOf(req), pInt(req, 'id'), (req.body ?? {}).traLoi);
+  const id = pInt(req, 'id');
+  return { ...yeuCauSvc.traLoiYeuCau(principalOf(req), id, (req.body ?? {}).traLoi), soLichSu: yeuCauSvc.soLichSuYeuCau(id) };
 }));
 /* OV-7a: QL sửa câu trả lời Xin ý kiến · người gửi Sửa / Rút thẻ còn chờ (Đề xuất sửa, chuyển lớp, Không cần theo dõi, Ý thức). */
 api.post('/yeu-cau/:id/sua-tra-loi', requireAuth, wrap((req) => {
