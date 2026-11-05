@@ -339,7 +339,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
       - MO-TAT-CA (+ ô Việc của tôi → Công việc);
       - MAU-THONG-NHAT.
     - Ba session: PT-PANEL · THI-THAT · MAU-MO.
-    - Đã merge: #975 MO-TAT-CA · #977 MAU-THONG-NHAT · #976 PT-PANEL-FT. #978 THI-THAT (SQL bản 29/10: 10 / 23 GV đổi % Pass thi thật, vd 38 % → 0 %, 0 % → 30 %) chờ chủ SP đồng ý số trước merge.
+    - Đã merge: #975 MO-TAT-CA · #977 MAU-THONG-NHAT · #976 PT-PANEL-FT. #978 THI-THAT (SQL bản 29/10: 10 / 23 GV đổi % Pass thi thật, vd 38 % → 0 %, 0 % → 30 %) chờ chủ SP đồng ý số trước merge. **Chủ SP 05/11:** "Trường hợp như Thea nếu như đạt ovr thì vẫn tính là đạt nhé, nhưng cũng đồng thời có số liệu dưới target ở kỹ năng nhé" → Theo GV: OVR < Target = Fail; OVR ≥ Target: kỹ năng > Target = Exceed, còn lại = Đạt; thêm cột "KN dưới Target" riêng; Từng kỹ năng giữ so kỹ năng với Target.
   - **Chủ SP 05/11 chiều (2 ảnh bản chính Cẩm Phả):**
     - (1) "Rõ là có việc quá hạn, nhưng tại sao GV này lại không hiện lên ở phần Công việc? GV vừa báo với tôi xong." Ảnh: hồ sơ HV có "Kết quả PA Listening quá hạn 2 ngày" của GVCN CP FT 116. Công việc "Của GV" chỉ có Chấm điểm + Việc quản lý 0.
     - (2) "các việc có báo cáo vi phạm của HV thì cũng cần đưa vào CV, tất nhiên 1 báo cáo chưa phải xử lý thì chưa có hạn nhưng vẫn là CV phải làm, và tất nhiên là nếu PHẢI xử lý vi phạm thì chắc chắn là cần phải có công việc ở đây". Mã đã có "Xem vi phạm mới" (không hạn) + "Xử lý vi phạm" (5 ngày) — nghi cùng lỗi (1).
