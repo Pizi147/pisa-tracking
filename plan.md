@@ -338,6 +338,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
       - THI-THAT (thay C10, SQL);
       - MO-TAT-CA (+ ô Việc của tôi → Công việc);
       - MAU-THONG-NHAT.
+  - **Chủ SP 05/11 tối: "Còn gì làm nốt mà tiếp đi, merge gì merge nốt đi"** → không còn PR mở. Session **PHEP-DO-LO** (Opus · medium, B Sonnet · high): phép đo lô `suggestCaseOwner` 500, `huyNhieuLenh`, trần lô 900, xét gỡ miễn `PT-BANG` · **RA-LOI-TEST-2** (Opus · medium, B Sonnet · high): rà dán Excel + đổi tài khoản giữa chừng trên main. DOC-SOS-CHI-MUC vẫn chờ log bản chính; KET-PET-THI-THAT giữ. PTA rà + check chung + tự merge.
     - Ba session: PT-PANEL · THI-THAT · MAU-MO.
     - Đã merge: #975 MO-TAT-CA · #977 MAU-THONG-NHAT · #976 PT-PANEL-FT. #978 THI-THAT (SQL bản 29/10: 10 / 23 GV đổi % Pass thi thật, vd 38 % → 0 %, 0 % → 30 %) chờ chủ SP đồng ý số trước merge. **Chủ SP 05/11:** "Trường hợp như Thea nếu như đạt ovr thì vẫn tính là đạt nhé, nhưng cũng đồng thời có số liệu dưới target ở kỹ năng nhé" → Theo GV: OVR < Target = Fail; OVR ≥ Target: kỹ năng > Target = Exceed, còn lại = Đạt; thêm cột "KN dưới Target" riêng; Từng kỹ năng giữ so kỹ năng với Target.
   - **Chủ SP 05/11 chiều (2 ảnh bản chính Cẩm Phả):**
