@@ -23,3 +23,5 @@ data/*.bak
 
 .agents/
 web-design-guidelines.zip
+
+.claude/settings.local.json
