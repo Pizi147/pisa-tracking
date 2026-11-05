@@ -114,9 +114,12 @@ export const luotKck = (a: any) => (a.kind ?? 'mock') === 'mock' && kckCuaLuot(a
  * PR-TD: nhớ trong request GET theo (người xem, chi nhánh) — gọi lặp lại ở `hvSosHienTai`/`hvDuoiKyVongMon`/
  * `doPhuDanhGia` (mỗi cái một chỉ số của Tổng quan, ~12 lượt gọi `metricSet` mỗi request) với CÙNG `branchId`.
  */
-export function studentsInScope(p: Principal, branchId: number | null): number[] {
+export function studentsInScope(p: Principal, branchIdHoi: number | null): number[] {
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  /* DOC-PT: phạm vi đúng MỘT chi nhánh (không lớp lẻ) — "cả phạm vi" và "chi nhánh đó" là cùng tập dòng (`c.branch_id IN (b)` ∧ `c.branch_id = b`) → một khoá
+     nhớ: Báo cáo (chi nhánh trống) kèm Tổng quan (chi nhánh đã suy ra) khỏi đọc lại. */
+  const branchId = branchIdHoi ?? (!scope.all && !scope.none && scope.branchIds.length === 1 && !scope.classIds.length ? scope.branchIds[0] : null);
   return nho(`hv-pv:${p.userId}:${branchId}`, () => {
-    const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
     if (scope.none) return [];
     const cs = classScopeSql(scope);
     const where = [cs.sql, `e.status = 'active'`, 's.archived_at IS NULL'];
@@ -265,8 +268,10 @@ const sortIds = (ids: Iterable<number>) => [...ids].sort((x, y) => x - y);
  * `hv-sos-hien-tai` — em có SOS ở ĐỢT MỚI NHẤT HỢP LỆ (không MAX toàn lịch sử). Tạm thời và kết quả cuối tách
  * riêng nhưng đều là "SOS hiện tại": tập chung = hợp của hai tập.
  */
-export function hvSosHienTai(p: Principal, branchId: number | null, today: string) {
-  const latest = latestAttempts(studentsInScope(p, branchId), 'valid', today);
+export function hvSosHienTai(p: Principal, branchId: number | null, today: string, chiEm?: ReadonlySet<number>) {
+  const hv = studentsInScope(p, branchId);
+  /* DOC-PT: `chiEm` — chỉ đánh giá các em này (trong phạm vi). Lượt mới nhất tính riêng từng em nên kết quả của mỗi em không đổi. */
+  const latest = latestAttempts(chiEm ? hv.filter((s) => chiEm.has(s)) : hv, 'valid', today);
   const tamThoi: number[] = [], ketQuaCuoi: number[] = [];
   for (const [sid, ev] of latest) {
     if ((ev.sosLevel ?? 0) <= 0) continue;

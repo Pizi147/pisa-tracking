@@ -18,7 +18,7 @@ import { BUSINESS_TZ, addDays, badRequest, forbidden, notFound } from '../util.t
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { allProgrammes, nguongDatLop } from '../normal/regular.ts';
 import { danhGiaMon } from '../classes/phanTichLop.ts';
-import { metricSet, parseObligation, rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { hvSosHienTaiTrong, metricSet, parseObligation, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { assessedSkillOf, expectationFor } from '../fasttrack/scoring.ts';
 import { tuanLich as tuanLichNgan } from '../../../shared/domain/hienThiNgay.ts';
 import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
@@ -492,9 +492,9 @@ const hvCuaGv = (d: ReturnType<typeof dangDay>, gv: number) => new Set([...(d.lo
 
 /**
  * UI-PHAN-TICH "HV cần chú ý" (tự quyết, ghi khop-khac): HV ĐANG SOS (chỉ số `hv-sos-hien-tai` — cùng số "Đang SOS" của Tổng quan) ở lớp GV đang dạy.
- * Số hiện tại, không theo kỳ. Bảng + panel gọi chung.
+ * Số hiện tại, không theo kỳ. Bảng + panel gọi chung. DOC-PT: chỉ đánh giá em `hv` (em ở lớp đang dạy) — số của từng em như chỉ số đủ.
  */
-const sosHienTai = (p: Principal, c: NguCanhPtGv) => new Set(metricSet(p, 'hv-sos-hien-tai', { branchId: c.cn, program: c.khung }).ids);
+const sosHienTai = (p: Principal, c: NguCanhPtGv, hv: ReadonlySet<number>) => hvSosHienTaiTrong(p, c.cn, c.khung, hv);
 
 export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   const c = nguCanhPtGv(p, f);
@@ -519,7 +519,7 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   /* Case có PA = CHÍNH `caseCoPaTheoGv` của Tổng quan. */
   const casePa = caseCoPaTheoGv(p, c.cn, c.khung);
   const day = dangDay(c);
-  const sos = sosHienTai(p, c);
+  const sos = sosHienTai(p, c, new Set([...day.hvLop.values()].flatMap((s) => [...s])));
 
   const hang: HangPtGv[] = [];
   for (const [id, ten] of nguoi) {
@@ -752,8 +752,9 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
   }
   if (cot === 'ghi-pa') { const x = tapGhiKetQuaPa(pTap, c).tap.get(gv); return ra(t('Kết quả PA đúng hạn'), '', dongTheoTap(x, (ids) => dongNghiaVu(ids, new Set(x?.dung ?? []), c.homNay))); }
   if (cot === 'hv-chu-y') {
-    const sos = sosHienTai(p, c);
-    const ids = [...hvCuaGv(dangDay(c), gv)].filter((s) => sos.has(s)).sort((a, b) => a - b);
+    const hv = hvCuaGv(dangDay(c), gv);
+    const sos = sosHienTai(p, c, hv);
+    const ids = [...hv].filter((s) => sos.has(s)).sort((a, b) => a - b);
     const rows = rowsFor('hoc-vien', ids, undefined, p);
     /* PT-PANEL (PR-1): FT — bảng lượt của lượt Mock có điểm GẦN NHẤT của em (lượt làm em đang SOS); kỹ năng ✗ là lý do. */
     const moi = c.khung === 'ft' ? luotMoiCoDiem(ids) : null;

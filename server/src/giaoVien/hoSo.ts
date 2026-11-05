@@ -115,7 +115,10 @@ export function caseMoCuaGv(p: Principal, gvId: number, branchIds: number[] | nu
 /** UI-TONG-QUAN (XM-2): Case đang mở theo người phụ trách ở chi nhánh `cn` — CÙNG luật bảng GV chi nhánh / panel `/giao-vien/:id/o?cot=case-mo&cn=&ct=`. */
 export function caseMoTheoChu(p: Principal, cn: number, ct: ChuongTrinh | null): Map<number, number[]> {
   const m = new Map<number, number[]>();
-  for (const c of caseGvTuRows(listCases(p, { branchId: cn }).rows.filter((c) => c.ownerUserId !== null), [cn], ct)) (m.get(c.chu) ?? m.set(c.chu, []).get(c.chu)!).push(c.id);
+  /* DOC-PT: chỉ cần id theo người — không dựng `chiTietCaseMo` (5 câu đọc). Chi tiết có mục cho MỌI Case có em (dòng `sos_cases` luôn có) nên tập = tập của `caseGvTuRows`. */
+  for (const c of locCaseMoGv(listCases(p, { branchId: cn }).rows.filter((c) => c.ownerUserId !== null), [cn], ct)) {
+    if (c.studentId !== null) (m.get(c.ownerUserId!) ?? m.set(c.ownerUserId!, []).get(c.ownerUserId!)!).push(c.id);
+  }
   return m;
 }
 /**
@@ -127,10 +130,11 @@ export function caseCoPaTheoGv(p: Principal, cn: number, ct: ChuongTrinh): Map<n
   return new Map([...caseMoTheoChu(p, cn, ct)].map(([gv, ids]) => [gv, { mo: ids.length, coPa: ids.filter((id) => !chua.has(id)).length }]));
 }
 /** Cùng luật lọc cho hồ sơ một GV và bảng chi nhánh (số ở bảng = số ở hồ sơ): Case chưa xong, chi nhánh gốc ∈ `branchIds`, khung `ct`. */
+const locCaseMoGv = (mapped: readonly MappedCase[], branchIds: number[] | null, ct: ChuongTrinh | null) => mapped.filter((c) => c.state !== 'done'
+  && (branchIds === null || branchIds.includes((c.homeBranchId ?? c.branchId) as number))
+  && locKhung(ct, c.classKind === 'ft' ? 'ft' : 'thuong'));
 function caseGvTuRows(mapped: readonly MappedCase[], branchIds: number[] | null, ct: ChuongTrinh | null): (CaseGv & { chu: number })[] {
-  const rows = mapped.filter((c) => c.state !== 'done'
-    && (branchIds === null || branchIds.includes((c.homeBranchId ?? c.branchId) as number))
-    && locKhung(ct, c.classKind === 'ft' ? 'ft' : 'thuong'));
+  const rows = locCaseMoGv(mapped, branchIds, ct);
   const chiTiet = chiTietCaseMo(rows);
   const out: (CaseGv & { chu: number })[] = [];
   for (const c of rows) {

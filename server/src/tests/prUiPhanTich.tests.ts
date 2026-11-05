@@ -86,6 +86,35 @@ export async function runPrUiPhanTichTests(t: any) {
     assert(r.hang.length > 0, 'bộ demo phải có GV');
   });
 
+  const m: any = await import('../worklist/metrics.ts');
+  const dg: any = await import('../worklist/danhGia.ts');
+  const hs: any = await import('../giaoVien/hoSo.ts');
+  const { listCases } = await import('../cases/cases.ts');
+  const { chiTietCaseMo } = await import('../cases/caseLop.ts');
+  /* DOC-PT: hai đường đọc ít hơn của Phân tích GV phải cho CÙNG tập với đường đủ cũ. */
+  check('DOC-PT · HV cần chú ý trên tập em = chỉ số hv-sos-hien-tai đủ ∩ tập; Case có PA theo người = đường chi tiết Case cũ', () => {
+    const cn = v5.tongQuanV5(P.mbManager, { branchId: null, ct: 'ft' }).branchId;
+    const em = dg.studentsInScope(P.mbManager, cn) as number[];
+    for (const ct of ['ft', 'thuong']) {
+      const du = new Set(m.metricSet(P.mbManager, 'hv-sos-hien-tai', { branchId: cn, program: ct }).ids);
+      assert(du.size > 0 || ct === 'thuong', 'bộ demo phải có em SOS FT');
+      for (const tap of [em, em.filter((_, i) => i % 2), em.slice(0, 7)]) {
+        const con = [...m.hvSosHienTaiTrong(P.mbManager, cn, ct, new Set(tap))].sort((a: number, b: number) => a - b).join();
+        const mong = tap.filter((s) => du.has(s)).sort((a, b) => a - b).join();
+        assert(con === mong, `${ct} · ${tap.length} em: ${con} ≠ ${mong}`);
+      }
+      const rows = listCases(P.mbManager, { branchId: cn }).rows.filter((c: any) => c.ownerUserId !== null && c.state !== 'done'
+        && (c.homeBranchId ?? c.branchId) === cn && (c.classKind === 'ft' ? 'ft' : 'thuong') === ct);
+      const chiTiet = chiTietCaseMo(rows);
+      const cu = new Map<number, number[]>();
+      for (const c of rows) if (chiTiet.has(c.id)) cu.set(c.ownerUserId!, [...(cu.get(c.ownerUserId!) ?? []), c.id]);
+      const moi = hs.caseMoTheoChu(P.mbManager, cn, ct) as Map<number, number[]>;
+      const chuoi = (x: Map<number, number[]>) => JSON.stringify([...x].map(([g, ids]) => [g, [...ids].sort((a, b) => a - b)]).sort((a: any, b: any) => a[0] - b[0]));
+      assert(chuoi(moi) === chuoi(cu), `${ct} · Case theo người: ${chuoi(moi)} ≠ ${chuoi(cu)}`);
+      assert(cu.size > 0 || ct === 'thuong', 'bộ demo phải có Case FT có người phụ trách');
+    }
+  });
+
   check('UI-PHAN-TICH · P9: "Toàn bộ" đọc từ URL, nhãn "Toàn bộ"; khoảng > 52 tuần không còn lỗi', () => {
     const tb = d.khoangTuUrl({ get: (x: string) => (x === 'kieu' ? 'toan-bo' : null) }, homNay);
     assert(tb.kieu === 'toan-bo' && tb.tu === d.TU_TOAN_BO && tb.den === d.addDaysIso(d.mondayOfDate(homNay), 6), JSON.stringify(tb));
