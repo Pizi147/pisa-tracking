@@ -358,6 +358,9 @@ export const DUONG_DO: MucDo[] = [
   /* PT-PANEL (PR-1, 05/11): panel BẢNG có điểm — chỉ khi MỞ; dòng lượt + điểm theo lô (`dongLuotDiemCua`). */
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening' },
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot' },
+  /* PT-LOP-THUONG (PR-2): panel bài lớp thường + Đạt Test GV lớp thường. */
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot' },
+  { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=thuong&gv={gv}&tu=2026-03-02&den=2026-09-14&cot=ket-qua' },
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&branchId={cn}&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang' },
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-mt' },
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&tu=2026-03-02&den=2026-09-14&cot=tien-bo' },
@@ -397,6 +400,7 @@ export const DUONG_DO: MucDo[] = [
  */
 export const TRAN: Record<string, number> = {
   /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — trần = max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QT /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 22, 'QL /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 23, 'QT /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 23,   // PT-LOP-THUONG: đo 12 · 12 · 13 · 13
   'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 22, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 22,   // PT-PANEL: đo 12
   'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 21, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 21,   // PT-PANEL: đo 11
   'QL /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 38, 'QT /phan-tich/bao-cao/o?ct=ft&branchId=1&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=tien-bo:writing1:tang': 38,   // PT-PANEL: đo 28
@@ -987,6 +991,7 @@ export const TRAN_DONG: Record<string, number> = {
   /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11 (bộ demo ít thi thật: QL 12 · QT / CX 22 · TVV 14 dòng). Ước bản chính 2 tháng ~1 000 dòng (ghi chú v13 mục 4). */
   'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,
   'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 72,
+  'QL /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 914, 'QT /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 1349, 'QL /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 688, 'QT /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 688,   // PT-LOP-THUONG: đo 703 · 1 037 · 529 · 529 — max(đo + 50, ⌈đo × 1,3⌉)
   /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — max(đo + 50, ⌈đo × 1,3⌉); phần thêm (lượt theo id + điểm) ≈ +4 dòng so panel cũ (đo dat-mt 911 → 915). */
   'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 1085, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening': 1893,
   'QL /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 1161, 'QT /phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 2104,

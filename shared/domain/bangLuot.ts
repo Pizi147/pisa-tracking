@@ -36,3 +36,14 @@ export type DongThiThatBang = {
   kn: Record<KnThiBang, ODiemLuot>; ovr: ODiemLuot; target: number | null; kck: boolean; layLai: KnThiBang[];
   tuan?: { day: number; tong: number };
 };
+
+/** PT-LOP-THUONG (mockup v13 A3): ô một môn của bài lớp thường — câu đúng / tổng, đạt theo ngưỡng của lớp (null = môn bỏ / chưa đủ căn cứ). null = chưa có điểm. */
+export type ODiemMon = { dung: number; tong: number; dat: boolean | null } | null;
+/**
+ * Một bài lớp thường (Progress Test / Final Test). `mon` theo thứ tự môn của chương trình, khoá = tên ngắn ("L", "G+V"). `tong` = % tổng (chỉ Final Test).
+ * `monCua` (Phân tích GV): môn GV phụ trách ở dòng — viền nhấn.
+ */
+export type DongBaiThuong = {
+  attemptId: number; studentId: number; ten: string; classId: number | null; lop: string; chuongTrinh: string;
+  bai: string; nhanBai: string; tuan: string; mon: Record<string, ODiemMon>; tong: number | null; datTong: boolean | null; monCua?: string[];
+};

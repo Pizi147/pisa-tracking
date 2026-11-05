@@ -401,8 +401,10 @@ export async function runPrPb2aTests(t: YThucTestKit) {
     const ft = d.cotTongHopFor('ft').map((c: any) => c.khoa).filter((k: string) => !k.startsWith('kn:'));
     assert(ft.join() === 'luot,dat,sos1,sos2,sos3,chuaDu,hvCase,choDuyet,dangLam', ft.join());
     const tc = d.cotTongHopFor('thuong');
-    assert(tc.map((c: any) => c.khoa).join() === 'luot,gk-dat,gk-1,gk-2,ck-duoi50,ck-50,ck-60,ck-dat,cp-dat,cp-1,cp-2,chuaDu,mini-dat,mini-truot,hvCase,choDuyet,dangLam',
-      tc.map((c: any) => c.khoa).join());
+    /* PT-LOP-THUONG (đặc tả 2B, 05/11): màn bỏ Checkpoint, Mini Test, Xử lý; Excel giữ (`cotExcel`). */
+    assert(tc.map((c: any) => c.khoa).join() === 'luot,gk-dat,gk-1,gk-2,ck-duoi50,ck-50,ck-60,ck-dat,chuaDu', tc.map((c: any) => c.khoa).join());
+    const ex = d.cotExcel('thuong').map((c: any) => c.khoa).join();
+    assert(ex === 'luot,gk-dat,gk-1,gk-2,ck-duoi50,ck-50,ck-60,ck-dat,cp-dat,cp-1,cp-2,chuaDu,mini-dat,mini-truot,hvCoCase,case,choDuyet,dangLam', ex);
     assert(!tc.some((c: any) => /SOS/.test(c.nhan('thuong') + c.goiY)), 'không chữ SOS');
   });
 

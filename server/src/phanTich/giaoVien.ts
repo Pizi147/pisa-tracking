@@ -27,7 +27,7 @@ import { khoangTamDung } from '../students/tamDung.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
 import { t } from '../../../shared/i18n/index.ts';
-import { dongLuotDiemCua, ganLuotDiem } from './tongHop.ts';
+import { dongBaiThuongCua, dongLuotDiemCua, ganLuotDiem, nguongCua } from './tongHop.ts';
 import { KN_LUOT_CUA, NHAN_KN_LUOT, tachBaiId, type DongTangGiam } from '../../../shared/domain/index.ts';
 
 const LO = 400;
@@ -425,10 +425,12 @@ export function ganTangGiam(p: Principal, rows: MetricRow[], doi: DoiTb): Metric
 }
 
 /** PT-PANEL: trường đầu panel bảng khi MỌI dòng có `luotDiem` / `tangGiam` (dòng thiếu → panel cũ, không lệch số = dòng). */
-export function kieuBang(rows: readonly MetricRow[], cachTinh?: string | null): { bangLuot?: true; kieu?: 'luot' | 'tang-giam'; cachTinh?: string | null } {
+export function kieuBang(rows: readonly MetricRow[], cachTinh?: string | null): { bangLuot?: true; kieu?: 'luot' | 'tang-giam' | 'bai-thuong'; cachTinh?: string | null; nguong?: number | null } {
   if (!rows.length) return {};
-  const kieu = rows.every((r: any) => r.tangGiam) ? 'tang-giam' : rows.every((r: any) => r.luotDiem) ? 'luot' : null;
-  return kieu ? { bangLuot: true, kieu, cachTinh: cachTinh ?? null } : {};
+  const kieu = rows.every((r: any) => r.tangGiam) ? 'tang-giam' : rows.every((r: any) => r.luotDiem) ? 'luot' : rows.every((r: any) => r.baiThuong) ? 'bai-thuong' : null;
+  if (!kieu) return {};
+  return { bangLuot: true, kieu, cachTinh: cachTinh ?? null,
+    ...(kieu === 'bai-thuong' ? { nguong: nguongCua(new Map(rows.map((r: any) => [r.id, r.baiThuong]))) } : {}) };
 }
 
 // ------------------------------------------------------------------ cột 2 · Ghi kết quả PA (mục = nghĩa vụ cập nhật)
@@ -631,6 +633,7 @@ const CACH_TINH_GV: Record<string, string> = {
   'tien-bo': 'Điểm kỹ năng ở lượt MT so lượt MT liền trước có điểm kỹ năng đó của chính HV. Ô "Sau" ✓ / ✗ so kỳ vọng của lượt đó.',
   'dat-mt': 'Lượt Test đạt khi Overall đạt kỳ vọng của lượt (mọi kỹ năng tính Đạt); Overall chưa đạt thì xét từng kỹ năng. Cột tô nền là kỹ năng GV phụ trách.',
   'hv-chu-y': 'HV đang SOS ở lớp GV đang dạy; bảng hiện lượt Mock có điểm gần nhất của HV.',
+  'ket-qua': 'Mỗi dòng là một môn GV phụ trách (viền nhấn) ở một bài Progress Test / Final Test. Môn đạt khi tỷ lệ đúng từ ngưỡng của lớp.',
 };
 export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string }): { n: number; tieuDe: string; rows: MetricRow[]; chiNhanh?: string } {
   const c = nguCanhPtGv(p, f);
@@ -718,6 +721,14 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
     if (c.khung === 'ft' && kq?.[1] === 'dat-mt') {
       return ra(nhan, 'lượt Test', gan(ganLuotDiem(p, dong.map((d) => d.row), (id) => o.get(id)?.attemptId || null,
         (r) => ({ knCua: [KN_LUOT_CUA[o.get(r.id)!.skill]].filter(Boolean) }))));
+    }
+    /* PT-LOP-THUONG (PR-2): lớp thường — bảng bài theo môn của chương trình, môn GV phụ trách viền nhấn (`monCua`). */
+    if (c.khung === 'thuong' && kq) {
+      const bai = dongBaiThuongCua(dong.map((d) => o.get(d.row.id)?.attemptId ?? 0).filter(Boolean));
+      return ra(nhan, 'lượt Test', gan(dong.map((d) => {
+        const x = o.get(d.row.id), b = x ? bai.get(x.attemptId) : undefined;
+        return b ? ({ ...d.row, baiThuong: { ...b, monCua: [tenMonNgan(c.lop.get(x!.classId)?.ct ?? null, x!.skill)] } } as MetricRow) : d.row;
+      })));
     }
     return ra(nhan, 'lượt Test', dong);
   }

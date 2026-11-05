@@ -12,14 +12,16 @@ import { fmtBand } from '../lib/format.ts';
 import type { ApiError } from '../lib/api.ts';
 import {
   KN_LUOT_BANG, NHAN_KN_LUOT, dongTieuChi, duongDotTest, duongHoSoHocVien, ngay, tuanLich,
-  type DinhNghiaCot, type DongLuotDiem, type DongTangGiam, type DongThiThatBang, type KnThiBang, type EntrySkill, type KieuBangLuot, type KnLuot, type ODiemLuot,
+  type DinhNghiaCot, type DongBaiThuong, type DongLuotDiem, type DongTangGiam, type DongThiThatBang, type KnThiBang, type EntrySkill, type KieuBangLuot, type KnLuot, type ODiemLuot,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 export type { DongLuotDiem, DongTangGiam, ODiemLuot } from '@shared/domain/index.ts';
-type DongBang = { id: number; luotDiem?: DongLuotDiem; tangGiam?: DongTangGiam; thiThat?: DongThiThatBang; ketQua?: 'dat' | 'chua' };
+type DongBang = { id: number; luotDiem?: DongLuotDiem; tangGiam?: DongTangGiam; baiThuong?: DongBaiThuong; thiThat?: DongThiThatBang; ketQua?: 'dat' | 'chua' };
 export type DuLieuBangLuot = {
   n: number; rows: DongBang[]; bangLuot?: boolean; kieu?: KieuBangLuot; knNhan?: string | null; cachTinh?: string | null;
+  /** `bai-thuong`: ngưỡng đạt chung (%) — đầu panel "đạt từ 70 % mỗi môn"; null = các lớp khác ngưỡng. */
+  nguong?: number | null;
   /** Có khoá mà null = mọi chi nhánh; KHÔNG có khoá (hồ sơ GV, Tổng quan) = không ghi chi nhánh. */
   chiNhanh?: string | null;
   /** THI-THAT (C3): dòng đếm do máy chủ ghi ("6 / 11 HV Fail · 55 % theo tuần dạy") thay "n HV". */
@@ -107,6 +109,7 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const { homNay } = useNgayNghiepVu();
   const tg = data?.kieu === 'tang-giam';
   const tt = data?.kieu === 'thi-that';
+  const bt = data?.kieu === 'bai-thuong';
   const knNhan = data?.knNhan ?? null;
   const goc = data?.rows ?? [];
   const soChua = goc.filter((r) => r.ketQua === 'chua').length, soDat = goc.filter((r) => r.ketQua === 'dat').length;
@@ -238,10 +241,58 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
     </div>
   );
 
-  const soDong = tt ? tatH.length : tg ? tatT.length : tatL.length;
-  const soHv = new Set((tt ? tatH : tg ? tatT : tatL).map((h) => h.studentId)).size;
-  const dem = (tg || tt) && soDong === soHv ? t('{n} HV', { n: soHv }) : `${t('{n} lượt', { n: soDong })} · ${t('{n} HV', { n: soHv })}`;
-  const dong2 = [data && 'chiNhanh' in data ? data.chiNhanh ?? t('Tất cả chi nhánh') : null, tt ? t('Thi thật') : 'Fast Track',
+  /* ---------- kiểu 'bai-thuong' (PT-LOP-THUONG, mockup v13 A3) ---------- */
+  const tatB = loc.flatMap((r) => (r.baiThuong ? [{ id: r.id, ...r.baiThuong }] : []));
+  type HB = (typeof tatB)[number];
+  /* Mỗi chương trình một bảng (môn khác nhau: BE / ELE L R W S · FOU L R G+V P) — thứ tự xuất hiện. */
+  const nhomB = [...new Set(pt.cat(tatB).map((h) => h.chuongTrinh))].map((ct) => ({ ct, hang: pt.cat(tatB).filter((h) => h.chuongTrinh === ct) }));
+  const coBai = new Set(tatB.map((h) => `${h.nhanBai}|${h.tuan}`)).size > 1;   // bài / tuần khác nhau (ô Bài kiểm tra, ô Tổng) → cột Bài
+  const cotB = (hang: HB[]): DinhNghiaCot[] => {
+    const mon = [...new Set(hang.flatMap((h) => Object.keys(h.mon)))];
+    return [
+      /* Panel 820: tên 150 · lớp 96 · bài 124 · 4 môn × 76 · Tổng 80 = 754 (vừa thân 788, không cuộn ngang). */
+      { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 150 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 },
+      ...(coBai ? [{ key: 'bai', nhan: t('Bài'), kieu: 'chu', rong: 124 } as DinhNghiaCot] : []),
+      ...mon.map((m): DinhNghiaCot => ({ key: `mon:${m}`, nhan: m, kieu: 'diem-ti-le', rong: 76 })),
+      ...(hang.some((h) => h.tong !== null) ? [{ key: 'tong', nhan: t('Tổng'), kieu: 'diem', rong: 80, tach: true } as DinhNghiaCot] : []),
+    ];
+  };
+  /** Tổng phổ biến của cột môn — mẫu số khác = "đề khác" (vàng), như lưới điểm. */
+  const tongCot = (hang: HB[], m: string) => {
+    const dem = new Map<number, number>();
+    for (const h of hang) { const o = h.mon[m]; if (o) dem.set(o.tong, (dem.get(o.tong) ?? 0) + 1); }
+    return [...dem].sort((a, b) => b[1] - a[1])[0]?.[0];
+  };
+  const oB = (hang: HB[]) => (h: HB, c: DinhNghiaCot): ReactNode => {
+    if (c.key === 'ten') return lkHv(h.studentId, h.ten);
+    if (c.key === 'lop') return lkLop(h.classId, h.lop);
+    if (c.key === 'bai') return <span className="whitespace-nowrap"><Link className={`font-semibold ${LINK}`} to={duongDotTest({ id: h.attemptId, kind: h.bai })}>{dich(h.nhanBai)}</Link></span>;
+    if (c.key === 'tong') return h.tong === null ? <span className="text-faint">—</span> : <ODiem so={`${h.tong} %`} kq={h.datTong === null ? null : h.datTong ? 'bang' : 'duoi'} nhan={t('Tổng')} />;
+    const m = c.key.slice(4), o = h.mon[m];
+    const d = <ODiem kieu="ti-le" so={o ? String(o.dung) : null} tong={o?.tong} tongCot={tongCot(hang, m)} kq={!o || o.dat === null ? null : o.dat ? 'bang' : 'duoi'} nhan={m} />;
+    return h.monCua?.includes(m) ? <span className={CUA}>{d}</span> : d;
+  };
+  const theB = (hang: HB[]) => (h: HB) => (
+    <div className="grid gap-1.5">
+      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}
+        {h.tong !== null && <span className="ml-auto whitespace-nowrap text-[13px] text-dim">{t('Tổng')} {oB(hang)(h, { key: 'tong', nhan: '', kieu: 'diem' })}</span>}
+      </div>
+      <div className="flex flex-wrap gap-x-3 text-[14px]">{lkLop(h.classId, h.lop)}<span className="whitespace-nowrap">{dich(h.nhanBai)} <span className="text-[13px] text-faint">{tuanLich(h.tuan, homNay)}</span></span></div>
+      <div className="mt-1 grid grid-cols-4 gap-x-1.5">
+        {Object.keys(h.mon).map((m) => (
+          <span key={m} className="grid gap-0.5"><span className="text-[13px] font-medium text-slate-400">{m}</span>{oB(hang)(h, { key: `mon:${m}`, nhan: m, kieu: 'diem-ti-le' })}</span>
+        ))}
+      </div>
+    </div>
+  );
+
+  const tat = tt ? tatH : bt ? tatB : tg ? tatT : tatL;
+  const soDong = tat.length;
+  const soHv = new Set(tat.map((h) => h.studentId)).size;
+  const dem = (tg || tt) && soDong === soHv ? t('{n} HV', { n: soHv })
+    : `${bt ? t('{n} bài', { n: soDong }) : t('{n} lượt', { n: soDong })} · ${t('{n} HV', { n: soHv })}`;
+  const dong2 = [data && 'chiNhanh' in data ? data.chiNhanh ?? t('Tất cả chi nhánh') : null, tt ? t('Thi thật') : bt ? t('Lớp thường') : 'Fast Track',
+    bt && data?.nguong != null ? t('đạt từ {n} % mỗi môn', { n: data.nguong }) : null,
     tg ? t('so mốc MT trước') : t('dữ liệu đến {ngay}', { ngay: ngay(homNay).slice(0, 5) }), tt && /^W[12]$/.test(knNhan ?? '') ? t('{kn} tính nửa W', { kn: knNhan! }) : null].filter(Boolean).join(' · ');
   return (
     <KhungPanel tieuDe={tieuDe} rong="bang" onDong={onDong} loai={loai} dau={{ dong2: [dong2] }} chan={{ huy: { nhan: t('Đóng'), onClick: onDong } }}>
@@ -264,7 +315,15 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
               <PhanTrang {...pt.thanh} />
               {tt
                 ? <Bang deu day ten={tieuDe} cot={cotH} hang={hangH} khoa={(h) => h.id} oCua={oH} khung={false} theRieng={theH} />
-                : tg
+                : bt ? nhomB.map((g) => (
+                /* A3: tên chương trình (khi panel có hơn một) trên mỗi bảng. */
+                <section key={g.ct} className="grid gap-1.5" aria-label={g.ct}>
+                  {nhomB.length > 1 && <h3 className="m-0 text-[14px] font-semibold text-dim">{dich(g.ct)}</h3>}
+                  <Bang deu day ten={`${tieuDe} · ${g.ct}`} cot={cotB(g.hang)} hang={g.hang} khoa={(h) => h.id} oCua={oB(g.hang)}
+                    phuCua={(h, c) => (c.key === 'bai' ? tuanLich(h.tuan, homNay) : null)} khung={false} theRieng={theB(g.hang)} />
+                </section>
+              ))
+              : tg
                 ? <Bang deu ten={tieuDe} cot={cotT} hang={hangT} khoa={(h) => h.id} oCua={oT} khung={false} theRieng={theT} />
                 : <Bang deu day ten={tieuDe} cot={cotL} hang={hangL} khoa={(h) => h.id} oCua={oL} phuCua={(h, c) => (c.key === 'mt' ? tuanLich(h.tuan, homNay) : null)} khung={false} theRieng={theL} />}
               <PhanTrang {...pt.thanh} duoi />

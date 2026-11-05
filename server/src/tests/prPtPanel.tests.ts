@@ -147,4 +147,67 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
     assert(r.n > 0 && r.bangLuot && r.kieu === 'tang-giam' && r.rows.length === r.n, `tien-bo hồ sơ: ${r.kieu} ${r.rows.length} ≠ ${r.n}`);
     assert(r.rows.every((row: any) => row.tangGiam && row.tangGiam.kn && (row.ketQua === 'dat') === (row.tangGiam.sau.v > row.tangGiam.truoc.v)), 'dòng hồ sơ thiếu tangGiam');
   });
+
+  /* ================= PR-2 PT-LOP-THUONG ================= */
+  const { cotExcel, bangXuatTongHop } = await import('../../../shared/domain/phanTich.ts');
+  const ft2 = { ...f, ct: 'thuong' as const };
+  const th = req(() => tongHop(P.admin, ft2));
+
+  check('PT-LOP-THUONG · cột màn lớp thường bỏ Checkpoint, Mini Test, Xử lý; Excel giữ', () => {
+    const k = cotSoLieu('thuong').map((c) => c.khoa);
+    assert(!k.some((x) => x.startsWith('cp-') || x.startsWith('mini-')), `còn cột Checkpoint / Mini: ${k.join(',')}`);
+    assert(!cotSoLieu('thuong').some((c) => c.nhom === 'xu-ly'), 'còn nhóm Xử lý');
+    const e = cotExcel('thuong').map((c) => c.khoa);
+    assert(['cp-dat', 'mini-dat', 'choDuyet', 'hvCoCase'].every((x) => e.includes(x)), `Excel thiếu cột cũ: ${e.join(',')}`);
+    assert(cotSoLieu('ft').map((c) => c.khoa).join() === cotExcel('ft').map((c) => c.khoa).join(), 'FT không đổi');
+  });
+
+  check('PT-LOP-THUONG · Bài kiểm tra = Progress + Final + Thiếu điểm (không Checkpoint)', () => {
+    const t0 = th.tong;
+    const cong = ['gk-dat', 'gk-1', 'gk-2', 'ck-duoi50', 'ck-50', 'ck-60', 'ck-dat', 'chuaDu'].reduce((n, k) => n + (t0[k] ?? 0), 0);
+    assert(t0.luot > 0 && t0.luot === cong, `Bài ${t0.luot} ≠ Σ ${cong}`);
+  });
+
+  check('PT-LOP-THUONG · Excel lớp thường còn nhóm Mini Test + Xử lý', () => {
+    const x = bangXuatTongHop(th, new Set(['ket-qua', 'ky-nang', 'xu-ly'] as const), 'kiểm');
+    const dau = x[2].join('|');
+    assert(dau.includes('Mini Test') && dau.includes('Xử lý'), `đầu Excel: ${dau}`);
+  });
+
+  check('PT-LOP-THUONG · mọi ô lớp thường (Tổng + 2 hàng + 1 hàng con): bảng bài có điểm, n === rows.length, không bài Checkpoint', () => {
+    const hang = [{ khoa: 'tong', o: th.tong }, ...th.hang.slice(0, 2).flatMap((h: any) => [h, ...(h.con ?? []).slice(0, 1)])];
+    let so = 0;
+    for (const c of cotSoLieu('thuong')) {
+      for (const h of hang) {
+        const n = h.o[c.khoa] ?? 0;
+        if (!n) continue;
+        const r: any = req(() => oTongHop(P.admin, { ...ft2, khoa: h.khoa, cot: c.khoa }));
+        assert(r.bangLuot && r.kieu === 'bai-thuong' && r.rows.length === n && r.n === n, `${h.khoa} × ${c.khoa}: ${r.kieu} ${r.rows.length} ≠ ${n}`);
+        for (const row of r.rows) {
+          const b = row.baiThuong;
+          assert(b && b.bai !== 'checkpoint' && Object.keys(b.mon).length > 0 && b.chuongTrinh, `${c.khoa}: dòng ${row.id} sai ${JSON.stringify(b)}`);
+          for (const o of Object.values(b.mon) as any[]) assert(o === null || (o.dung <= o.tong && o.tong > 0), `ô môn sai ${JSON.stringify(o)}`);
+        }
+        so++;
+      }
+    }
+    assert(so >= 4, `quá ít ô lớp thường có số (${so})`);
+  });
+
+  check('PT-LOP-THUONG · đường cũ cot=cp-dat / mini-dat / choDuyet (lớp thường) vẫn mở panel cũ, không lỗi', () => {
+    for (const cot of ['cp-dat', 'mini-dat', 'choDuyet']) {
+      const r: any = req(() => oTongHop(P.admin, { ...ft2, khoa: 'tong', cot }));
+      assert(r.rows.length === r.n, `${cot}: ${r.n} / ${r.rows.length}`);
+    }
+  });
+
+  check('PT-LOP-THUONG · Phân tích GV · Đạt Test (lớp thường): bảng bài, số = dòng', () => {
+    const g: any = req(() => phanTichGiaoVien(P.admin, { ...fg, ct: 'thuong' as const }));
+    const tong = (h: any) => Object.values(h.ketQua ?? {}).reduce((n: number, o: any) => n + (o?.k === 'so' ? o.tong : 0), 0);
+    const h = g.hang.find((x: any) => tong(x) > 0);
+    assert(h, 'demo phải có GV lớp thường có Đạt Test');
+    const r: any = req(() => oChiSoGv(P.admin, { ...fg, ct: 'thuong' as const, gv: h.id, cot: 'ket-qua' }));
+    assert(r.bangLuot && r.kieu === 'bai-thuong' && r.rows.length === r.n && r.n === tong(h), `GV thường: ${r.kieu} ${r.rows.length} / ${r.n} / ${tong(h)}`);
+    assert(r.rows.every((row: any) => row.baiThuong?.monCua?.length), 'dòng phải nêu môn GV phụ trách (monCua)');
+  });
 }

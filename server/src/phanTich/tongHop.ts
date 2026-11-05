@@ -1,10 +1,10 @@
 import { db } from '../db.ts';
 import {
-  KN_LUOT_BANG, KN_LUOT_CUA, NHAN_KN_LUOT, soSanhDiem, type DongLuotDiem, type ODiemLuot,
+  KN_LUOT_BANG, KN_LUOT_CUA, NHAN_KN_LUOT, khoaBai, nhanBai, soSanhDiem, tenMonNgan, type DongBaiThuong, type DongLuotDiem, type ODiemLuot,
   LEGACY_REGULAR_SKILL_MAP, nhanDonVi, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, khoaDot,
   nhanDot, soSanhLop, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
-import { cotSoLieu, cotTongHopFor } from '../../../shared/domain/phanTich.ts';
+import { cotExcel, cotTongHopFor } from '../../../shared/domain/phanTich.ts';
 import { ngay, tuanLich } from '../../../shared/domain/hienThiNgay.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
@@ -64,7 +64,8 @@ function them(tap: Tap, khoa: string, id: number | null | undefined) {
   s.add(id);
 }
 function coDuLieu(tap: Tap): boolean {
-  return (tap.get('luot')?.size ?? 0) > 0 || (tap.get('case')?.size ?? 0) > 0;
+  /* PT-LOP-THUONG: dòng chỉ có bài Checkpoint (lớp PET / KET) vẫn giữ cho Excel; màn lớp thường ẩn dòng Bài = 0. */
+  return (tap.get('luot')?.size ?? 0) > 0 || (tap.get('case')?.size ?? 0) > 0 || ['cp-dat', 'cp-1', 'cp-2'].some((k) => (tap.get(k)?.size ?? 0) > 0);
 }
 function cmpKey(a: readonly unknown[], b: readonly unknown[]): number {
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
@@ -234,6 +235,8 @@ function tinh(p: Principal, f: FilterTongHop) {
     const pl = phanLoai.get(a.id);
     if (!pl) continue;   // chưa chấm · Q29-1: em KCK ngoài mẫu số
     if (laThuong && a.kind === 'final') cuoiDaDem.push(a.id);
+    /* PT-LOP-THUONG (XM-2): bài Checkpoint chỉ vào nhóm Checkpoint của Excel — không vào Bài kiểm tra, Thiếu điểm, số HV. */
+    if (laThuong && a.kind === 'checkpoint') { if (pl.loai.startsWith('cp-')) for (const tap of [cha.tap, con.tap, tongTap]) them(tap, pl.loai, a.id); continue; }
     for (const tap of [cha.tap, con.tap, tongTap]) { them(tap, 'luot', a.id); them(tap, pl.loai, a.id); }
     them(tongTap, 'hvLuot', a.student_id);   // V8-PT-2: "16 HV" ở thẻ Lượt MT — cùng tập lượt, +0 câu
     for (const kn of pl.kyNangDuoi) {
@@ -323,7 +326,7 @@ export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
   const r = tinh(p, f);
   /* OV-12d: `choDuyetQuaHan` đi kèm (⚠ n của cột Chờ duyệt), không phải cột riêng. */
   const cols = cotTongHopFor(r.ct).map((c) => c.khoa);
-  const oCols = [...cotSoLieu(r.ct).map((c) => c.khoa), 'choDuyetQuaHan'];   // cột ghép "HV - Case" mang hai số: hvCoCase và case
+  const oCols = [...cotExcel(r.ct).map((c) => c.khoa), 'choDuyetQuaHan'];   // PT-LOP-THUONG: tính cả cột Excel cũ (Checkpoint, Mini Test, Xử lý)   // cột ghép "HV - Case" mang hai số: hvCoCase và case
   const gon = (d: DongRaw): DongTongHop => ({
     khoa: d.khoa, nhan: d.nhan, phu: d.phu, ...(d.tuanNay !== undefined ? { tuanNay: d.tuanNay } : {}), o: soCuaTap(d.tap, oCols), ...(r.ct === 'thuong' ? { coDot: d.coDot } : {}),
     con: (d as any).conSorted?.length ? (d as any).conSorted.map(gon) : undefined,
@@ -339,8 +342,9 @@ export const tenChiNhanh = (branchId: number | null | undefined): string | null 
 
 /** Danh sách của MỘT ô — tính lại bằng chính `tinh`, nên danh sách luôn đúng bằng con số (G-10). */
 export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: string }):
-  { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: boolean; kieu?: 'luot'; knNhan?: string | null; cachTinh?: string | null; chiNhanh?: string | null } {
-  const cotDef = (cotSoLieu(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
+  { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: boolean; kieu?: 'luot' | 'bai-thuong'; knNhan?: string | null; nguong?: number | null; cachTinh?: string | null; chiNhanh?: string | null } {
+  /* PT-LOP-THUONG: tra cả cột Excel cũ (Checkpoint, Mini Test, Xử lý lớp thường) — đường / link cũ vẫn mở panel cũ, không lỗi. */
+  const cotDef = (cotExcel(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
   if (!cotDef) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const r = tinh(p, f);
   let tap: Tap | null = null; let luotEm: LuotEm | null = null; let nhanDong = '';
@@ -356,8 +360,16 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
   const ids = [...(tap.get(f.cot) ?? new Set<number>())].sort((a, b) => a - b);
   const tieuDe = `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`;
   const rows = rowsFor(cotDef.donVi, ids);
+  if (cotDef.donVi === 'case') return { n: ids.length, tieuDe, rows };
+  /* PT-LOP-THUONG (PR-2, mockup v13 A3): ô lớp thường (đều là ô bài) → bảng bài có điểm theo môn của chương trình. */
+  if (f.ct === 'thuong' && cotDef.donVi === 'dot-test') {
+    const bai = dongBaiThuongCua(ids);
+    const bang = rows.map((r) => (bai.has(r.id) ? ({ ...r, baiThuong: bai.get(r.id) } as MetricRow) : r));
+    return { n: ids.length, tieuDe, rows: bang, ...(bang.every((r: any) => r.baiThuong) ? { bangLuot: true, kieu: 'bai-thuong' as const } : {}),
+      nguong: nguongCua(bai), cachTinh: cotDef.goiY ?? null, chiNhanh: tenChiNhanh(f.branchId) };
+  }
+  if (f.ct === 'thuong') return { n: ids.length, tieuDe, rows };   // Mini Test (đếm HV, chỉ còn ở Excel): panel cũ
   /* PT-PANEL (PR-1): mọi ô FT không phải Case → panel BẢNG có điểm. Ô lượt: chính lượt; ô đếm HV: lượt làm em vào ô (`luotEm`). */
-  if (f.ct !== 'ft' || cotDef.donVi === 'case') return { n: ids.length, tieuDe, rows };
   const em = luotEm?.get(f.cot);
   const luotCua = (id: number) => (cotDef.donVi === 'dot-test' ? id : em?.get(id)?.id ?? null);
   return {
@@ -419,4 +431,46 @@ export function ganLuotDiem(p: Principal, rows: MetricRow[], luotCua: (id: numbe
     const d = id === null ? undefined : ld.get(id);
     return d ? ({ ...r, luotDiem: { ...d, ...them?.(r) } } as MetricRow) : r;
   });
+}
+
+/** Ngưỡng đạt chung của các bài (đầu panel "đạt từ 70 % mỗi môn"); nhiều ngưỡng → null (web không ghi). */
+export const nguongCua = (bai: Map<number, DongBaiThuong & { nguong?: number }>): number | null => {
+  const ds = new Set([...bai.values()].map((b) => b.nguong ?? null));
+  const [x] = ds;
+  return ds.size === 1 && x != null ? Math.round(x * 100) : null;
+};
+
+/**
+ * PT-LOP-THUONG (PR-2, mockup v13 A3): dòng bảng của MỌI bài lớp thường — môn theo chương trình "câu đúng / tổng" + đạt theo ngưỡng của lớp (CÙNG
+ * `evaluateAttemptRow` sinh ra số ở ô), % tổng của Final Test. Chỉ chạy khi mở panel: một câu lượt theo id + điểm (`loadBundle`) + tên em.
+ */
+export function dongBaiThuongCua(attemptIds: readonly number[]): Map<number, DongBaiThuong & { nguong?: number }> {
+  const out = new Map<number, DongBaiThuong & { nguong?: number }>();
+  const uniq = [...new Set(attemptIds)];
+  if (!uniq.length) return out;
+  const luot = luotTrongKhoang(`a.id IN (${uniq.map(() => '?').join(',')})`, uniq);
+  const bundle = loadBundle(luot.map((a) => a.id), { boCase: true });
+  const programmes = allProgrammes();
+  const em = [...new Set(luot.map((a) => a.student_id as number))];
+  const ten = new Map<number, string>((db().prepare(`SELECT id, full_name FROM students WHERE id IN (${em.map(() => '?').join(',')})`).all(...em) as any[]).map((s) => [s.id, s.full_name]));
+  for (const a of luot) {
+    const ev = evaluateAttemptRow(a, bundle, programmes);
+    const scores = bundle.scores.get(a.id) ?? [];
+    const ma = a.programme_code ?? a.cy_programme_code ?? null;
+    const khoa = Object.keys(ev.skills).length ? Object.keys(ev.skills) : [...new Set(scores.map((x) => x.skill as string))];
+    const mon: DongBaiThuong['mon'] = {};
+    for (const k of khoa) {
+      const sc = scores.find((x) => (LEGACY_REGULAR_SKILL_MAP[x.skill] ?? x.skill) === k);
+      const sk = ev.skills[k];
+      mon[tenMonNgan(ma, k)] = sc && sc.raw_score !== null && sc.raw_score !== undefined && sc.raw_total
+        ? { dung: sc.raw_score, tong: sc.raw_total, dat: !sk || sk.bo || !sk.evaluable ? null : !sk.under } : null;
+    }
+    const tl = a.kind === 'final' && ev.tyLeTong != null ? ev.tyLeTong : null;
+    out.set(a.id, {
+      attemptId: a.id, studentId: a.student_id, ten: ten.get(a.student_id) ?? '', classId: a.class_id ?? null, lop: a.class_code ?? '',
+      chuongTrinh: (ma && programmes.get(ma)?.name) || ma || '', bai: a.kind, nhanBai: nhanBai(khoaBai(a.kind, a.attempt_no)), tuan: a.week_start,
+      mon, tong: tl === null ? null : Math.round(tl * 1000) / 10, datTong: tl === null || ev.nguong === undefined ? null : tl >= ev.nguong, nguong: ev.nguong,
+    });
+  }
+  return out;
 }
