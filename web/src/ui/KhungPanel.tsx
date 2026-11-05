@@ -220,7 +220,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   };
   /** 6c (lỗi 5): như `chan.daSua` cho panel KHÔNG có chân (form + nút lưu nằm trong thân). */
   daSua?: boolean;
-  /** HD-V2: panel Case / Nhập điểm — bấm "?" khi panel này mở thì tab Màn này đưa mục của panel lên trước (kể cả panel trong cột hồ sơ). */
+  /** HD-V2: panel Case (`ngan-case`) / Nhập điểm — bấm "?" khi panel này mở thì tab Màn này đưa mục của panel lên trước (kể cả panel trong cột hồ sơ). */
   hd?: PanelHd;
   onDong: () => void; children: ReactNode;
 }) {

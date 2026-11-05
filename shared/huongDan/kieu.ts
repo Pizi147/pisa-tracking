@@ -25,7 +25,7 @@ export type ManHd = {
   khongLam?: { ten: Khoa; den?: DichHd; cua?: Khoa }[];
   panel?: PanelHd;
 };
-export type PanelHd = 'case' | 'nhap-diem';
+export type PanelHd = 'ngan-case' | 'nhap-diem';
 export type TuHd = { ten: Khoa; nghia: Khoa };
 
 /** Nhóm cố định của Tôi muốn… (đặc tả 3.4) — nhóm trống ẩn. */

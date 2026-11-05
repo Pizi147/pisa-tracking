@@ -53,19 +53,19 @@ export const HD_GV: HuongDan = {
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
       loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'mở cùng form Case.',
       buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b>.', 'Ghi mô tả, lưu.'],
-      tuKhac: ['thêm case', 'mở case', 'new case'],
+      tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },
     {
       id: 'case-hoan-thanh', ten: 'Hoàn thành, mở lại, xoá Case', nhom: 'case',
       loiChinh: { man: 'p-case', chu: 'Trong Case' },
       buoc: ['<b>Hoàn thành Case</b>: chọn hướng xử lý, ghi kết luận.', 'Case đã xong: bấm <b>Mở lại</b>.', '<b>⋯ › Xoá Case</b>; xoá nhầm: <b>Hoàn tác</b> trong 5 giây.'],
-      tuKhac: ['đóng case', 'kết thúc case', 'close case', 'delete'],
+      tuKhac: ['đóng Case', 'kết thúc Case', 'close Case', 'delete'],
     },
     {
       id: 'doi-chu-case', ten: 'Đổi người phụ trách Case', nhom: 'case', chiGvcn: true,
       loiChinh: { man: 'p-case', chu: 'Trong Case › Đổi người…' },
       buoc: ['Mở Case, bấm <b>Đổi người…</b> ở dải đầu.', 'Chọn GV dạy kỹ năng của Case hoặc GVCN → <b>Lưu · đóng</b>.'],
-      tuKhac: ['phụ trách', 'giao case', 'owner'],
+      tuKhac: ['phụ trách', 'giao Case', 'owner'],
     },
     /* ---------------------------------------------------------------- Học viên và lớp */
     {
@@ -73,7 +73,7 @@ export const HD_GV: HuongDan = {
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › Case & phương án' },
       loiTat: ['hoc-vien'], cung: 'mở cùng Case.',
       buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>.', 'Bấm ô kỹ năng; khối <b>Case & phương án</b> hiện Case của kỹ năng đó.', 'Bấm Case để mở ngay trong cột.'],
-      tuKhac: ['lịch sử case', 'case history'],
+      tuKhac: ['lịch sử Case', 'Case history'],
     },
     {
       id: 'vi-pham', ten: 'Ghi vi phạm', nhom: 'hv',
@@ -93,7 +93,7 @@ export const HD_GV: HuongDan = {
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Ghi Mini Test', duong: CV },
       loiTat: ['ho-so-hv'], cung: 'mở cùng ô Mini Test.',
       buoc: ['Mở <b>Công việc</b>, bấm dòng <b>Ghi Mini Test</b>.', 'Gõ điểm Mini Test của em, rồi lưu.'],
-      tuKhac: ['mini test', 'cuối khoá'],
+      tuKhac: ['mini test', 'kết luận khoá'],
     },
     {
       id: 'thi-that', ten: 'Ghi kết quả thi thật', nhom: 'hv', chiGvcn: true,
@@ -275,7 +275,7 @@ export const HD_GV: HuongDan = {
     },
     /* ---------------------------------------------------------------- panel đang mở (`KhungPanel hd=…`, đặc tả 8 + 10.1) */
     {
-      id: 'p-case', ten: 'Case đang mở', duong: [], panel: 'case',
+      id: 'p-case', ten: 'Case đang mở', duong: [], panel: 'ngan-case',
       dangO: { cau: 'Một Case của em: PA, kết quả, người phụ trách.' },
       khongLam: [{ ten: 'Duyệt đề xuất PA', cua: 'việc của QL' }, { ten: 'Khôi phục Case đã xoá', cua: 'việc của QL' }],
       muc: [],

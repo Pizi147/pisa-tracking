@@ -4,6 +4,7 @@ import { KhungPanel, panelHdTren } from '../../ui/KhungPanel.tsx';
 import { phimHangTab } from '../../ui/HangTab.tsx';
 import { ToKhop } from '../../ui/ToKhop.tsx';
 import { ChuDam } from '../../ui/ui.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
 import {
   HUONG_DAN, TEN_VAI_HD, VAI_CO_NOI_DUNG, coXemVaiKhac, locVai, manCuaDuong, manCuaPanel, manTheoId, mucCuaViec, timHd, viecOManNay,
@@ -56,7 +57,7 @@ export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
             value={vai} onChange={(e) => { setVai(e.target.value as VaiHd); setQ(''); }}>
             {VAI_CO_NOI_DUNG.map((v) => <option key={v} value={v}>{t('Vai: {vai}', { vai: TEN_VAI_HD[v] })}</option>)}
           </select>
-        ) : <span className="inline-flex h-[22px] items-center whitespace-nowrap rounded-full px-2.5 text-xs font-semibold text-slate-400" style={{ background: 'var(--surface-2)' }}>{TEN_VAI_HD[vai]}</span>}
+        ) : <Nhan tone="muted">{TEN_VAI_HD[vai]}</Nhan>}
         <button type="button" className="btn btn-sm btn-ghost ml-auto min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]" onClick={onDong} aria-label={t('Đóng')}>✕</button>
       </div>
       <label className="relative block">
@@ -195,9 +196,10 @@ function DongViec({ muc, viec, kieu, tat = false, moSan = false, ctx }: { muc: M
               {kieu === 'man' && <span className="basis-full text-[13px] text-slate-400">{t('Ở đây {cung}', { cung: t(viec.cung ?? 'mở cùng chỗ.') })}</span>}
             </div>
           )}
+          {/* Vòng số bước (như `Khoi` của KhungPanel) — không phải chip. */}
           <ol className="m-0 grid list-none gap-1.5 p-0 [counter-reset:b]">
             {muc.buoc.map((b) => (
-              <li key={b} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2 text-sm leading-normal text-slate-300 [counter-increment:b] before:mt-px before:h-5 before:w-5 before:rounded-full before:bg-doing-bg before:text-center before:text-xs before:font-bold before:leading-5 before:text-doing before:content-[counter(b)] [&_strong]:font-semibold [&_strong]:text-slate-100">
+              <li key={b} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2 text-sm leading-normal text-slate-300 [counter-increment:b] before:mt-px before:h-5 before:w-5 before:rounded-[50%] before:bg-doing-bg before:text-center before:text-xs before:font-bold before:leading-5 before:text-doing before:content-[counter(b)] [&_strong]:font-semibold [&_strong]:text-slate-100">
                 <span><ChuDam chu={t(b)} /></span>
               </li>
             ))}
