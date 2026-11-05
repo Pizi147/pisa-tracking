@@ -596,6 +596,7 @@ const FILE_DA_DICH = [
 /** Chuỗi so khớp dữ liệu (không hiện ra) — giữ Việt có chủ đích. */
 const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp$/ },   // R1-EN-2: so với nhãn việc cả lớp máy chủ gửi, không hiện ra
+  { file: 'web/src/ui/SoLieu.tsx', text: /^(Đạt|Chưa đạt)$/ },   // MAU-THONG-NHAT: so với đoạn `sub` máy chủ gửi để tô màu; chỗ hiện bọc t()
   { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{n\}: \{x\}$/ },   // R1-EN-2: ghi chú lưu máy chủ (dữ liệu), web hiện qua dich()
   { file: 'web/src/modules/platform/WelcomePage.tsx', text: /^(Hoàn tất|Nguyễn Khánh Vy|Trần Ngọc Hà)$/ },   // chữ in ra của lệnh seed; tên tài khoản demo (dữ liệu)
   { file: 'web/src/ui/NutNgonNgu.tsx', text: /^(Tiếng Việt|Ngôn ngữ \/ Language)$/ },                          // nút ghi bằng chính tiếng của nó
