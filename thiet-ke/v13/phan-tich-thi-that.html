@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>V13 · Phân tích — panel điểm, Thi thật</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* V13 · Phân tích — panel có điểm (2A), Test lớp thường gọn (2B), tab Thi thật (2C), mở hết lớp (2D). Đặc tả `docs/superpowers/specs/2026-11-05-phan-tich-thi-that/de-xuat.md`.
+   Token + thành phần = `v11/phan-tich.html` (U08 đã duyệt), chép nguyên khối dưới. Khung TỐI mặc định; 375 và nút "Đổi sáng / tối" dùng [data-theme="light"].
+   Nền vàng viền đứt = chú thích mockup, không lên web. Dữ liệu giả: Cẩm Phả, IELTS 4.0–7.5, Target 5.0–6.5. */
+.man, .dt {
+  --bg:#050a16; --surface:#111c33; --surface-2:#172440; --line:#22324f; --line-strong:#33496f;
+  --accent:#9cbde7; --accent-strong:#bdd3ef; --accent-soft:#192b46; --accent-ink:#060c1a;
+  --hong:#f57aae; --dh-nen:#0a1a3a; --dh-chu:#c3d2ec;
+  --text:#e7edf7; --text-dim:rgb(183 194 216); --text-faint:rgb(154 168 194);
+  --ok:rgb(148 209 174); --ok-nen:rgb(30 50 43); --ok-vien:rgb(73 117 92);
+  --bad:rgb(232 154 140); --bad-nen:rgb(52 28 29); --bad-vien:rgb(126 72 65);
+  --soon:rgb(228 199 132); --soon-nen:rgb(48 42 26); --soon-vien:rgb(118 102 63);
+  --doing:rgb(156 189 231); --doing-nen:rgb(25 43 70); --muted-nen:rgb(22 34 58);
+  --o-nen:#0b1427; --o-vien:#66789f; --phu-hop:rgb(0 0 0 / .55);
+  --sos1:rgb(204 185 109); --sos1-chu:rgb(217 201 129); --sos2:rgb(154 102 51); --sos2-chu:rgb(243 199 156); --sos2-nen:#5a320f;
+  --sos3-nen:#a33d2d; --sos3-vien:#c45a47; --sos3-tren:#fff;
+  --hang-lon-bg:#172440; --hang-lon-vach:#66789f; --hang-con-bg:#0a1325; --hang-con-chu:#b8c4dc;
+  --phong:'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif; --phong-so:'Inter','Be Vietnam Pro',system-ui,sans-serif;
+  color-scheme: dark; color: var(--text); font: 15px/1.45 var(--phong);
+}
+[data-theme="light"] .man, [data-theme="light"] .dt, .dt[data-theme="light"] {
+  --bg:#f3f5f9; --surface:#fff; --surface-2:#f2f4f9; --line:#d9deea; --line-strong:#b0b8cd;
+  --accent:#273c8f; --accent-strong:#1f3077; --accent-soft:#eef1fa; --accent-ink:#fff;
+  --hong:#f25a98; --dh-nen:#273c8f; --dh-chu:#dce2f4;
+  --text:#141a2b; --text-dim:rgb(74 83 108); --text-faint:rgb(95 105 132);
+  --ok:rgb(56 103 76); --ok-nen:rgb(231 243 236); --ok-vien:rgb(124 178 147);
+  --bad:rgb(166 58 45); --bad-nen:rgb(251 237 235); --bad-vien:rgb(222 156 148);
+  --soon:rgb(126 95 54); --soon-nen:rgb(251 244 225); --soon-vien:rgb(203 173 110);
+  --doing:rgb(58 80 166); --doing-nen:rgb(238 241 250); --muted-nen:rgb(242 244 249);
+  --o-nen:#fff; --o-vien:#7f8aa6; --phu-hop:rgb(17 26 66 / .45);
+  --sos1:rgb(155 126 71); --sos1-chu:rgb(113 92 50); --sos2:rgb(185 119 63); --sos2-chu:rgb(124 67 22); --sos2-nen:#f6d8b8;
+  --sos3-nen:#862e27; --sos3-vien:#862e27; --sos3-tren:#fff;
+  --hang-lon-bg:#f2f4f9; --hang-lon-vach:#8690ab; --hang-con-bg:#fbfcfe; --hang-con-chu:#353d54;
+  color-scheme: light;
+}
+
+/* ---- phần đọc mockup ---- */
+body { margin:0; background:#e4e8ef; color:#141a2b; font:15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; }
+::selection { background:#9cbde7; color:#060c1a; }
+.trang { padding:20px 24px 56px; display:grid; gap:32px; }
+.dau-mk h1 { font-size:22px; margin:0 0 6px; }
+.dau-mk p { margin:0 0 6px; color:#4a536c; max-width:120ch; }
+.muc-mk { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; align-items:center; }
+.muc-mk a, .muc-mk button { font:600 13px 'Be Vietnam Pro',sans-serif; padding:5px 10px; border-radius:6px; border:1px solid #b0b8cd; background:#fff; color:#141a2b; text-decoration:none; cursor:pointer; }
+.khu > h2 { font-size:17px; margin:0 0 10px; }
+.ghi { background:#fffbea; color:#4a3a06; border:1px dashed #d9a93a; border-radius:8px; padding:8px 12px; font-size:13px; margin:0 0 10px; max-width:150ch; }
+.ghi ul { margin:0; padding-left:18px; display:grid; gap:2px; }
+.hang-khung { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
+.hang-khung > figure { margin:0; display:grid; gap:6px; }
+figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; background:#fffbea; border:1px dashed #d9a93a; border-radius:6px; padding:3px 8px; justify-self:start; }
+
+/* ---- chép nguyên từ v11/phan-tich.html dòng 65–274 ---- */
+/* ================= GIAO DIỆN WEB (mô phỏng) ================= */
+.man, .dt { position:relative; overflow:hidden; background:var(--bg); border-radius:6px; display:flex; flex-direction:column; }
+.man { width:1408px; height:880px; }
+.dt { width:375px; height:780px; }
+:where(.toi, .sang) a { color:var(--accent); text-decoration:none; }
+:where(.toi, .sang) button { font:inherit; color:inherit; }
+:where(.toi, .sang) :is(h1, h2, h3) { margin:0; line-height:1.3; }
+:where(.toi, .sang) p { margin:0; }
+.so, .bang td { font-family:var(--phong-so); font-variant-numeric:tabular-nums; }
+.tt { flex:none; height:52px; background:var(--dh-nen); display:flex; align-items:center; gap:2px; padding:0 16px; color:var(--dh-chu); font-size:14px; }
+.tt .logo { display:inline-flex; align-items:baseline; gap:6px; margin-right:18px; }
+.tt .logo b { color:var(--hong); font-size:22px; font-weight:800; letter-spacing:.02em; }
+.tt .logo span { color:#fff; font-size:12px; letter-spacing:.24em; }
+.tt .m { padding:0 12px; height:52px; display:inline-flex; align-items:center; gap:6px; border-bottom:3px solid transparent; white-space:nowrap; }
+.tt .m.dang { color:#fff; font-weight:700; border-bottom-color:var(--hong); }
+.tt .so-nav { min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#fff; color:#0a1a3a; font:700 12px/20px var(--phong-so); text-align:center; }
+.tt .phai { margin-left:auto; display:inline-flex; gap:14px; align-items:center; font-size:13px; }
+.dt .tt { padding:0 8px; } .dt .tt .logo { margin-right:6px; } .dt .tt .logo span { display:none; } .dt .tt .m { padding:0 8px; font-size:13px; }
+.ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+
+.noi-dung { flex:1; min-height:0; padding:16px 24px 0; display:flex; flex-direction:column; gap:14px; overflow:hidden; }
+.dt .noi-dung { padding:12px 16px 0; gap:12px; }
+.dau-trang { display:flex; align-items:center; gap:8px 14px; flex-wrap:wrap; }
+.dau-trang h1 { font-size:22px; font-weight:700; }
+.dau-trang .ngay { font-size:13px; color:var(--text-faint); }
+.dau-trang .phai { margin-left:auto; display:flex; gap:8px; }
+/* hàng tab */
+.tab-hang { display:flex; gap:4px; border-bottom:1px solid var(--line); flex:none; }
+.tab-hang button { appearance:none; border:0; background:none; padding:0 12px; height:42px; font:500 15px var(--phong); color:var(--text-dim); border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; white-space:nowrap; }
+.tab-hang button[aria-selected="true"] { color:var(--text); font-weight:700; border-bottom-color:var(--accent); }
+.dt .tab-hang { overflow-x:auto; scrollbar-width:none; gap:0; margin:0 -16px; padding:0 16px; -webkit-mask-image:linear-gradient(90deg,#000 85%,transparent); mask-image:linear-gradient(90deg,#000 85%,transparent); }
+.dt .tab-hang button { padding:0 10px; height:44px; font-size:14px; }
+/* hàng lọc: MỘT hàng, mọi ô cao 36 */
+.hang-loc { display:flex; flex-wrap:nowrap; align-items:center; gap:8px; flex:none; }
+.hang-loc .phai { margin-left:auto; display:flex; gap:8px; }
+.hang-loc .mui-ten { color:var(--text-faint); font-size:14px; }
+.dt .hang-loc { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.dt .hang-loc > .rong-het { grid-column:1 / -1; }
+.dt .hang-loc .phai { margin:0; }
+.cap-tuan { display:flex; align-items:center; gap:6px; }
+.dt .cap-tuan { grid-column:1 / -1; }
+.dt .cap-tuan .o-tuan { flex:1; }
+.doan { display:inline-flex; height:36px; border:1px solid var(--o-vien); border-radius:8px; overflow:hidden; flex:none; }
+.doan button { appearance:none; border:0; background:var(--o-nen); padding:0 12px; font:500 14px var(--phong); color:var(--text-dim); cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+.doan button + button { border-left:1px solid var(--o-vien); }
+.doan button[aria-pressed="true"] { background:var(--accent-soft); color:var(--text); font-weight:700; box-shadow:inset 0 -2px 0 var(--accent); }
+.doan .so { font-size:12px; color:var(--text-faint); }
+.dt .doan { height:44px; width:100%; } .dt .doan button { flex:1; justify-content:center; font-size:15px; padding:0 6px; }
+.o-chon { appearance:none; height:36px; padding:0 30px 0 12px; border-radius:8px; border:1px solid var(--o-vien); background:var(--o-nen) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f8aa6' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 11px center; color:var(--text); font:500 14px var(--phong); display:inline-flex; align-items:center; white-space:nowrap; flex:none; }
+.o-chon.dang-loc { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); font-weight:700; }
+.o-tuan { height:36px; display:inline-flex; align-items:center; justify-content:space-between; gap:10px; padding:0 8px 0 12px; border:1px solid var(--o-vien); border-radius:8px; background:var(--o-nen); font:500 14px var(--phong-so); color:var(--text); min-width:118px; }
+.o-tuan .ic { color:var(--text-dim); }
+.dt .o-chon, .dt .o-tuan { height:44px; font-size:16px; }
+.o-tim { height:36px; width:200px; border:1px solid var(--o-vien); border-radius:8px; background:var(--o-nen); color:var(--text-faint); font:400 14px var(--phong); display:inline-flex; align-items:center; padding:0 12px; }
+.nut { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:36px; padding:0 14px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text); font:600 14px var(--phong); cursor:pointer; white-space:nowrap; flex:none; }
+.nut-nho { height:30px; padding:0 10px; font-size:13px; }
+.nut-vuong { width:36px; padding:0; }
+.dt .nut { height:44px; } .dt .nut-vuong { width:44px; }
+.nut-i { appearance:none; border:0; background:none; color:var(--text-dim); font:400 17px/1 var(--phong); width:28px; height:28px; border-radius:6px; cursor:help; flex:none; }
+.chip-loc { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border-radius:999px; border:1px solid var(--accent); background:var(--accent-soft); color:var(--text); font:600 13px var(--phong); white-space:nowrap; }
+
+/* thẻ chỉ số */
+.dai-chi-so { display:grid; grid-template-columns:repeat(var(--cot,5), minmax(0,1fr)); gap:12px; flex:none; }
+.dt .dai-chi-so { grid-template-columns:1fr 1fr; gap:8px; }
+.chi-so { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 16px 14px; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.dt .chi-so { padding:10px 12px 12px; }
+.chi-so.rong-2 { grid-column:span 2; }
+.chi-so .ten { font:500 13px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.dt .chi-so .ten { white-space:normal; }
+.dt .chi-so .ten i { display:block; }
+.dt .chi-so .ten .cham { display:none; }
+.dt .bang .phu-o { white-space:normal; }
+.chi-so .ten i { font-style:normal; color:var(--text-faint); font-weight:400; }
+.chi-so .gt { font:700 28px/1.2 var(--phong-so); color:var(--text); display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.chi-so .gt small { font:500 13px var(--phong); color:var(--text-dim); }
+.chi-so .mau { font-size:12px; color:var(--text-faint); white-space:nowrap; }
+.chi-so .dong-sos .chip-so { font-size:12px; padding:0 6px; }
+.chi-so .dong-sos { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+.chi-so .ba-dong { display:grid; gap:4px; margin-top:4px; font-size:13px; color:var(--text-dim); }
+.chi-so .ba-dong b { font:700 15px var(--phong-so); color:var(--text); margin-right:4px; }
+.oso { color:var(--accent) !important; font-weight:700; text-decoration:underline !important; text-decoration-thickness:1px !important; text-underline-offset:3px; cursor:pointer; }
+.oso-0 { color:var(--text-faint); font-weight:500; }
+
+/* thẻ bảng */
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; min-height:0; display:flex; flex-direction:column; overflow:hidden; flex:none; }
+.the-dau { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid var(--line); }
+.the-dau h2 { font:700 15px var(--phong); }
+.the-dau .phu { font-size:13px; color:var(--text-dim); }
+.the-dau .phai { margin-left:auto; }
+.dem { display:inline-flex; align-items:center; height:22px; padding:0 7px; border-radius:4px; border:1px solid var(--line-strong); background:var(--surface); font:600 12px var(--phong); color:var(--text); white-space:nowrap; }
+.bang { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; font-size:15px; }
+.bang th { font:600 13px var(--phong); color:var(--text-dim); text-align:left; background:var(--surface-2); padding:0 10px; height:36px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.bang thead tr:first-child th { height:30px; }
+.bang th.nhom-cot { text-align:center; color:var(--text); }
+.bang td { height:44px; padding:6px 10px; border-bottom:1px solid var(--line); vertical-align:middle; line-height:1.35; white-space:nowrap; }
+.bang [data-k="so"] { text-align:center; }
+.bang .ke-trai { border-left:1px solid var(--line-strong); }
+.bang tr.hang-lon td { background:var(--hang-lon-bg); font-weight:700; font-size:14px; }
+.bang tr.phang td { background:transparent; box-shadow:none !important; }
+.bang tr.hang-lon td:first-child { box-shadow:inset 3px 0 0 var(--hang-lon-vach); }
+.bang tr.hang-con td { background:var(--hang-con-bg); color:var(--hang-con-chu); height:38px; font-size:14px; }
+.bang tr.hang-con td:first-child { padding-left:38px; font-family:var(--phong); }
+.bang tr.tong td { font-weight:700; border-top:1px solid var(--line-strong); border-bottom:0; }
+.bang td.ten { font-family:var(--phong); }
+.bang .phu-o { display:block; font:400 12px var(--phong); color:var(--text-faint); margin-top:1px; }
+.mui-mo { display:inline-block; width:16px; color:var(--text-dim); font-weight:400; }
+.ten-hv { font:600 15px var(--phong); color:var(--text) !important; }
+/* 11.4 U08-6: link chữ thường, không gạch chân; hover / focus mới báo bấm được */
+.lk-t, a.ten-hv { color:var(--text); text-decoration:none; cursor:pointer; border-radius:2px; }
+.lk-t:hover, .lk-t:focus-visible, a.ten-hv:hover, a.ten-hv:focus-visible { color:var(--accent) !important; text-decoration:underline; text-underline-offset:3px; }
+.lk-t:focus-visible, a.ten-hv:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.lk-t.mt { font:600 15px var(--phong); }
+/* vòng 2 (chủ SP): xếp theo lớp → giữa hai lớp một đường phân cách dày, rõ màu; không thêm thanh tên lớp */
+.bang tr.doi-lop td { border-top:2px solid var(--hang-lon-vach); }
+.lk-t.lop { color:var(--text-dim); }
+.hover-mau { color:var(--accent) !important; text-decoration:underline; text-underline-offset:3px; }
+/* U08-1: màu ở số Kết quả MT / Tiến bộ (tiêu đề cột vẫn ghi chữ) */
+.m-dat .oso { color:var(--ok) !important; }
+.m-05 .oso { color:var(--soon) !important; }
+.m-10 .oso { color:#f0a04b !important; } [data-theme="light"] .m-10 .oso, .dt .m-10 .oso { color:#b5541f !important; }
+/* màn cảm ứng không hover: gạch chân chấm mờ để biết là link (desktop giữ sạch) — PTA chốt giữ */
+@media (hover:none) { .lk-t, a.ten-hv { text-decoration:underline dotted; text-underline-offset:3px; text-decoration-color:var(--text-faint); } }
+.m-15 .oso { color:#ff6f61 !important; } [data-theme="light"] .m-15 .oso, .dt .m-15 .oso { color:var(--bad) !important; }
+.m-cd .oso { color:var(--text-dim) !important; }
+.tang { color:var(--ok); font-weight:700; } .giam { color:var(--bad); font-weight:700; }
+/* U08-4: badge SOS bấm được → panel Case theo kỹ năng */
+button.sos { font:600 12px var(--phong); cursor:pointer; }
+button.sos:hover { filter:brightness(1.15); } button.sos:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.kn-k { border:1px solid var(--line); border-radius:10px; background:var(--bg); }
+.kn-k > .kn-dau { display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; background:none; border:0; color:var(--text); font:600 15px var(--phong); cursor:pointer; text-align:left; }
+.kn-k > .kn-dau .mo2 { font-weight:500; font-size:13px; }
+.kn-k > .kn-dau .phai2 { margin-left:auto; }
+.kn-than { display:grid; gap:10px; padding:0 14px 12px 38px; font-size:14px; }
+.kn-than .kd { display:grid; grid-template-columns:96px minmax(0,1fr); gap:8px; align-items:baseline; }
+.kn-than .nh { font-size:13px; color:var(--text-faint); }
+.bdv { display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 9px 0 8px; border-radius:999px; border:1px solid color-mix(in srgb, currentColor 65%, transparent); background:var(--muted-bg); color:var(--text-dim); font:600 12px var(--phong); white-space:nowrap; }
+.bdv::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; flex:none; }
+.bdv.dang { background:var(--doing-bg); color:var(--doing); }
+.chip-so { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:22px; padding:0 7px; border-radius:4px; font:600 13px var(--phong-so); border:1px solid; }
+.chip-so.dat { color:var(--ok); border-color:var(--ok-vien); }
+.chip-so.m1 { color:var(--sos1-chu); border-color:var(--sos1); }
+.chip-so.m2 { color:var(--sos2-chu); background:var(--sos2-nen); border-color:var(--sos2); }
+.chip-so.m3 { color:var(--sos3-tren); background:var(--sos3-nen); border-color:var(--sos3-vien); }
+.sos { display:inline-flex; align-items:center; height:22px; padding:0 7px; border-radius:4px; font:600 12px var(--phong); white-space:nowrap; border:1px solid; }
+.sos.m1 { color:var(--sos1-chu); border-color:var(--sos1); }
+.sos.m2 { color:var(--sos2-chu); background:var(--sos2-nen); border-color:var(--sos2); }
+.sos.m3 { color:var(--sos3-tren); background:var(--sos3-nen); border-color:var(--sos3-vien); }
+.sos.tam { border-style:dashed; }
+.kq { display:inline-flex; align-items:center; gap:4px; height:22px; padding:0 8px; border-radius:4px; border:1px solid; font:600 12px var(--phong); white-space:nowrap; }
+.kq.dat { color:var(--ok); border-color:var(--ok-vien); } .kq.duoi { color:var(--bad); border-color:var(--bad-vien); } .kq.thieu { color:var(--text-faint); border-color:var(--o-vien); border-style:dashed; }
+.nhan-td { display:inline-flex; align-items:center; gap:5px; height:22px; padding:0 9px; border-radius:999px; background:var(--muted-nen); color:var(--text-dim); font:600 12px var(--phong); white-space:nowrap; }
+.nhan-td::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+.nhan-td.ok { color:var(--ok); }
+.nhan-td.qua { color:var(--bad); background:var(--bad-nen); } .nhan-td.qua::before { content:"⚠"; width:auto; height:auto; background:none; font-size:12px; } .nhan-td.soon { color:var(--soon); background:var(--soon-nen); }
+.d { font-weight:600; } .d.v { color:var(--ok); } .d.b { color:var(--accent); } .d.x { color:var(--bad); }
+.d.v::before, .d.b::before { content:"✓ "; } .d.x::before { content:"✗ "; }
+.d.trong { color:var(--text-faint); font-weight:400; font-family:var(--phong); font-size:13px; }
+.mo { color:var(--text-dim); } .mo2 { color:var(--text-faint); }
+.canh-bao { color:var(--bad); font-weight:700; margin-left:4px; }
+.thanh-tl { display:inline-flex; align-items:center; gap:8px; }
+.thanh-tl .vach { width:64px; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; border:1px solid var(--line); }
+.thanh-tl .vach i { display:block; height:100%; background:var(--ok); }
+.nhan-goi { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:999px; font:600 12px var(--phong); white-space:nowrap; background:var(--ok-nen); color:var(--ok); }
+.nhan-goi.it { background:var(--muted-nen); color:var(--text-dim); }
+.phan-trang { display:flex; align-items:center; gap:10px; padding:8px 14px; font:500 13px var(--phong); color:var(--text-dim); border-top:1px solid var(--line); }
+.phan-trang .trang-so { display:inline-flex; gap:2px; }
+.phan-trang .trang-so b, .phan-trang .trang-so span { min-width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; }
+.phan-trang .trang-so b { border:1px solid var(--accent); color:var(--text); }
+.phan-trang .phai { margin-left:auto; display:inline-flex; gap:6px; align-items:center; }
+/* thẻ dòng (375) */
+.the-dong { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; flex:none; }
+.the-dong .dau { display:flex; align-items:center; gap:8px; padding:10px 12px; background:var(--hang-lon-bg); font-weight:700; }
+.the-dong .dau .phai { margin-left:auto; display:flex; gap:6px; align-items:center; font:500 13px var(--phong); color:var(--accent); }
+.the-dong .phan { padding:8px 12px 10px; border-top:1px solid var(--line); }
+.the-dong .phan > .nhan { font:600 12px var(--phong); color:var(--text-faint); margin-bottom:4px; }
+.luoi { display:grid; grid-template-columns:repeat(var(--n,3), minmax(0,1fr)); gap:6px 8px; }
+.luoi > span { display:grid; gap:1px; }
+.luoi > span > i { font:500 12px var(--phong); color:var(--text-dim); font-style:normal; white-space:nowrap; }
+.luoi > span > b { font:700 15px var(--phong-so); }
+.the-hv { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:grid; gap:4px; flex:none; }
+.the-hv .h1 { display:flex; align-items:center; gap:8px; }
+.the-hv .h1 .sos, .the-hv .h1 .kq { margin-left:auto; }
+.the-hv .h1 .kq + .sos { margin-left:0; }
+.the-hv .hang-tt { font-size:13px; color:var(--text-dim); display:flex; flex-wrap:wrap; gap:4px 12px; }
+.the-hv .hang-tt.diem { font:500 14px var(--phong-so); color:var(--text); }
+/* panel số (V11) */
+.phu-hop { position:absolute; inset:52px 0 0 0; background:rgb(0 0 0 / .45); z-index:5; }
+.pn { position:absolute; top:64px; right:16px; bottom:16px; width:720px; z-index:6; background:var(--surface); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 24px rgb(0 0 0 / .5); }
+.dt .pn { inset:0; width:auto; border-radius:0; border:0; top:0; right:0; bottom:0; }
+.pn-dau { padding:10px 20px 14px; border-bottom:1px solid var(--line); display:grid; gap:4px; }
+.dt .pn-dau { padding:6px 16px 12px; }
+.pn-h1 { display:flex; align-items:center; gap:8px; min-height:36px; }
+.loai { display:flex; align-items:center; gap:6px; font:700 12px/1.4 var(--phong); letter-spacing:.06em; color:var(--text-faint); }
+.loai::before { content:""; width:14px; height:3px; border-radius:2px; background:var(--hong); }
+.x { margin-left:auto; appearance:none; border:0; background:transparent; color:var(--text-dim); width:36px; height:36px; border-radius:8px; font-size:17px; }
+.dt .x { width:44px; height:44px; }
+.quay { appearance:none; border:0; background:none; color:var(--accent); font:600 14px var(--phong); padding:6px 0; min-height:44px; display:inline-flex; gap:4px; align-items:center; }
+.pn h2 { font-size:17px; font-weight:700; }
+.pn-ngu { font-size:14px; color:var(--text-dim); }
+.pn-than { flex:1; min-height:0; overflow:hidden; padding:14px 20px; display:grid; gap:12px; align-content:start; }
+.dt .pn-than { padding:12px 16px; }
+.pn-tong { font-size:15px; } .pn-tong b { font:700 17px var(--phong-so); }
+.cach-tinh { border-top:1px solid var(--line); padding-top:10px; font-size:14px; color:var(--text-dim); }
+.cach-tinh b { color:var(--text); display:block; font-size:13px; margin-bottom:2px; }
+/* trạng thái */
+.skel { height:14px; border-radius:6px; background:linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); }
+.rong { text-align:center; padding:28px 16px; color:var(--text-dim); display:grid; gap:8px; justify-items:center; }
+.rong .tieu { color:var(--text); font-weight:600; font-size:17px; }
+.bao-loi { display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:8px; background:var(--bad-nen); border:1px solid var(--bad-vien); font-size:14px; color:var(--text); }
+.bao-loi b { color:var(--bad); }
+
+/* ================= V13 — phần thêm ================= */
+.man, .dt { background:var(--bg); }
+.man.dai, .dt.dai { height:auto; }
+.man.dai .noi-dung, .dt.dai .noi-dung { overflow:visible; padding-bottom:20px; }
+.pn.pn-rong { width:820px; }
+.pn .bang td[data-k="so"] { font-size:14px; }
+.pn .bang td { padding:6px 8px; } .pn .bang th { padding:0 8px; }
+.pn h3 { font:600 14px var(--phong); color:var(--text-dim); margin:4px 0 -4px; }
+/* 2A-2: ô điểm có điểm thành phần / số câu = bấm được → hộp tại chỗ (dáng U03 / U04-1: không dấu hiệu sẵn, rê → viền, đang mở → viền nhấn) */
+.o-w { position:relative; display:inline-block; }
+.o-d { appearance:none; border:1px solid transparent; background:none; border-radius:6px; padding:2px 5px; margin:-3px -6px; cursor:pointer; font:inherit; color:inherit; }
+.o-d:hover { border-color:var(--line-strong); }
+.o-d[aria-expanded="true"] { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:var(--surface); }
+.o-d:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.hop-tc { position:absolute; top:calc(100% + 8px); left:-6px; z-index:8; white-space:nowrap; padding:8px 12px; border-radius:8px; background:var(--surface); border:1px solid var(--line-strong); box-shadow:0 8px 24px rgb(0 0 0 / .5); font:600 13px var(--phong-so); color:var(--text); text-align:left; }
+.hop-tc.phai { left:auto; right:-6px; }
+/* 2A-5: cột kỹ năng đang xét — nền nhấn cả cột */
+.bang th.xet, .bang td.xet { background:var(--accent-soft); }
+.bang th.xet { color:var(--text); }
+.luoi > span.xet { background:var(--accent-soft); border-radius:6px; margin:-3px -4px; padding:3px 4px; }
+/* 2C-10: kỹ năng lấy lại khi thi lại một kỹ năng — mờ + ↺ (không chỉ màu) */
+.lay { color:var(--text-faint); font-weight:400; }
+.lay::before { content:"↺ "; font-size:12px; }
+/* XM-1: Exceed · Đạt · Fail cùng màu ô ✓ / ✗ (vượt xanh lá · bằng xanh dương · dưới đỏ) */
+.kq.vuot { color:var(--ok); border-color:var(--ok-vien); }
+.kq.ngang { color:var(--accent); border-color:color-mix(in srgb, var(--accent) 55%, transparent); }
+.kq.khong { color:var(--text-faint); border-color:var(--o-vien); border-style:dashed; }
+.c-v .oso, .c-v.oso { color:var(--ok) !important; } .c-x .oso, .c-x.oso { color:var(--bad) !important; }
+.chi-so .gt.c-v { color:var(--ok); } .chi-so .gt.c-x { color:var(--bad); }
+.pct { display:block; font:400 12px var(--phong-so); color:var(--text-faint); margin-top:1px; }
+.bang td.so-2 { line-height:1.2; }
+/* M9: Theo GV — kẻ bậc 1 giữa hai GV (--o-vien, hết bề ngang), bậc 2 giữa hai kỹ năng cùng GV (--line, từ cột Kỹ năng) */
+.bang tr.gv-giua td:first-child { border-bottom-color:transparent; }
+.bang tr.gv-cuoi td { border-bottom-color:var(--o-vien); }
+.bang tr:last-child td { border-bottom:0; }
+.ten-gv { font:600 15px var(--phong); color:var(--text); }
+.nhan-td.dang { color:var(--doing); background:var(--doing-nen); }
+.nhan-td.ok { background:var(--ok-nen); }
+.cat { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lk { appearance:none; background:none; border:0; color:var(--accent); font:600 13px var(--phong); cursor:pointer; padding:0; white-space:nowrap; }
+.lk:hover { text-decoration:underline; text-underline-offset:3px; }
+.lk:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
+.dt .lk { min-height:44px; }
+.dem-trang { font:500 13px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.dem-trang b { font:600 13px var(--phong-so); color:var(--text); }
+/* Test (khu D): hàng lớp gập / mở — dáng hàng lớn của bảng */
+.ds-lop { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; flex:none; }
+.hl { display:flex; align-items:center; gap:10px 14px; min-height:48px; padding:0 16px; border-bottom:1px solid var(--line); background:var(--hang-lon-bg); font-size:14px; }
+.hl:last-child { border-bottom:0; }
+.hl .mui-mo { color:var(--text-dim); }
+.hl .ma { font:700 15px var(--phong); color:var(--text); }
+.hl .mo { white-space:nowrap; }
+.hl .phai { margin-left:auto; }
+.hl-em { display:grid; grid-template-columns:220px repeat(4, 150px); align-items:center; min-height:44px; padding:0 16px 0 44px; border-bottom:1px solid var(--line); font-size:14px; background:var(--surface); }
+.hl-em .mt-o { font:500 14px var(--phong-so); color:var(--text-dim); }
+.dt .hl { flex-wrap:wrap; padding:10px 12px; gap:4px 10px; }
+.dt .hl .phai { margin-left:0; }
+.chip-dk { display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border-radius:999px; border:1px solid var(--o-vien); background:var(--o-nen); font:500 13px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.chip-dk b { font:600 13px var(--phong-so); color:var(--text); }
+.ii { width:28px; height:28px; border:0; background:none; color:var(--text-dim); font-size:15px; cursor:help; flex:none; }
+.nut-chinh { background:#22406c; border-color:#4d72a8; color:#eaf1fb; }
+[data-theme="light"] .nut-chinh, .dt[data-theme="light"] .nut-chinh { background:#273c8f; border-color:#273c8f; color:#fff; }
+/* 375 — Từng kỹ năng giữ bảng: thu đệm */
+.dt .bang.hep td, .dt .bang.hep th { padding-left:6px; padding-right:6px; }
+.dt .bang.hep td { font-size:14px; height:48px; }
+.the-hv .h1 .kq { margin-left:auto; }
+.the-hv .lk-t.lop { font-size:13px; }
+.dt .luoi > span > b { font-size:14px; }
+.co-hop { padding-bottom:46px !important; }
+.pn-than.cuon { overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--line-strong) transparent; }
+.menu-noi { z-index:6; min-width:240px; padding:6px; border-radius:10px; background:var(--surface); border:1px solid var(--line-strong); box-shadow:0 8px 24px rgb(0 0 0 / .4); display:grid; }
+.menu-noi button { appearance:none; border:0; background:none; text-align:left; display:flex; align-items:center; gap:8px; height:36px; padding:0 10px; border-radius:6px; font:500 14px var(--phong); color:var(--text); cursor:pointer; }
+.menu-noi button:hover, .menu-noi button.ke { background:var(--accent-soft); }
+.nut.dang-mo { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.l-diem > span > b { white-space:nowrap; font-size:14px !important; }
+.kv-goc { margin-left:auto; font:500 13px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.kv-goc b { font:600 14px var(--phong-so); color:var(--text); }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>V13 · Phân tích — panel có điểm · Test lớp thường gọn · tab Thi thật · mở hết lớp</h1>
+    <p>Chờ chủ SP duyệt. Đặc tả <code>2026-11-05-phan-tich-thi-that/de-xuat.md</code> (2A–2F); bảng ý → khung và kiểm kê ô số ở <code>phan-tich-thi-that-ghi-chu.md</code> (PTA duyệt 05/11).
+      Nền = U08 v11 đã duyệt, chỉ đổi phần đặc tả nói. Dữ liệu giả Cẩm Phả, đến <b>05/11/2026</b>. Khung 1440 <b>tối</b>, 375 <b>sáng</b>.</p>
+    <nav class="muc-mk"><a href="#a">A · panel có điểm</a><a href="#b">B · Test lớp thường</a><a href="#c">C · Thi thật</a><a href="#d">D · Mở tất cả lớp</a><button type="button" id="doi-theme">Đổi sáng / tối</button></nav>
+  </header>
+
+  <section class="khu" id="a">
+    <h2>A · Mọi ô số → panel BẢNG có điểm (2A, 2E)</h2>
+    <div class="ghi"><ul>
+      <li><b>A1</b> ô "SOS 3 · W5 OCT" (đúng ảnh chủ SP) → bảng lượt FT: Học viên · Lớp · MT · L R W1 W2 S · <b>OVR</b> · <b>Kỳ vọng</b>. Ô ✓ / ✗ trước số (G12). Ô có điểm thành phần bấm được → hộp tại chỗ dáng U03: W1 của Lê Minh Thư đang mở.</li>
+      <li><b>A1m</b> 375: ô "Dưới kỳ vọng · L" → cột L tô nền (lý do em vào ô), ô L đang mở "19/40 câu". Bảng nhiều cột → thẻ mỗi em (như v11 C4).</li>
+      <li><b>A2</b> Tăng / Giữ / Giảm: điểm kỹ năng trước → sau, Chênh, Kỳ vọng. <b>A3</b> lớp thường: môn theo chương trình (Beginner L R W S · Foundation L R G+V P), "✗ 15/25", ngưỡng 70 % ghi một lần ở đầu panel (M3). <b>A4</b> vi phạm: em · lớp · ngày · nhóm + mô tả · người ghi · trạng thái — không bảng điểm (2E).</li>
+      <li>Panel chỉ đọc (G8). Tên em, MTn, mã lớp là link chữ thường; rê mới đổi màu (A1 dòng 3 đang rê). Panel bảng điểm rộng 780 (thêm OVR, Kỳ vọng).</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure><figcaption>A1 · Test + SOS FT · bấm "SOS 3 · W5 OCT" · ô W1 mở c1–c4</figcaption><div class="man" data-k="a1"></div></figure>
+      <figure><figcaption>A1m · 375 · "Dưới kỳ vọng · L" · ô L mở số câu</figcaption><div class="dt" data-theme="light" data-k="a1m"></div></figure>
+      <figure><figcaption>A2 · Báo cáo HV · Tiến bộ · bấm "Tăng" của W1</figcaption><div class="man" data-k="a2"></div></figure>
+      <figure><figcaption>A3 · Test + SOS lớp thường · bấm "1 môn trượt · W3 OCT"</figcaption><div class="man" data-k="a3"></div></figure>
+      <figure><figcaption>A4 · Ý thức · bấm thẻ "Vi phạm"</figcaption><div class="man" data-k="a4"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="b">
+    <h2>B · Test + SOS · Lớp thường gọn (2B)</h2>
+    <div class="ghi"><ul>
+      <li>Bỏ Checkpoint, Mini Test, Xử lý (cả thẻ "Chưa chốt PA" của khung này — không còn cột). Giữ Bài kiểm tra · Progress Test · Final Test · Thiếu điểm. Bài = Progress + Final + Thiếu điểm (PTA XM-2).</li>
+      <li>"—" = tuần không có bài loại đó (như nay). Xuất Excel, ⋯ Cột hiện giữ; tệp Excel giữ cột như cũ.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure><figcaption>B · 1440 tối</figcaption><div class="man" data-k="b" style="height:640px"></div></figure>
+      <figure><figcaption>Bm · 375 sáng</figcaption><div class="dt" data-theme="light" data-k="bm"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="c">
+    <h2>C · Tab "Thi thật" thay "Kết quả Test / Thi" (2C, 2E, 2F)</h2>
+    <div class="ghi"><ul>
+      <li><b>Bộ lọc:</b> chi nhánh (đầu trang, như cũ) · Thời gian Toàn bộ | Chọn khoảng theo <b>ngày thi</b> (G10: thi thật giữ ngày) · lớp. Bỏ ô đoạn Mock / Thi thật. Chỉ IELTS.</li>
+      <li><b>Tổng:</b> Em thi · Exceed · Đạt · Fail (số + %, % trên em có Target) · Không thi (đếm riêng). KCK không vào % (ghi ở thẻ Em thi).</li>
+      <li><b>Từng kỹ năng:</b> điểm kỹ năng so <b>Target overall</b>; thi lại một kỹ năng chỉ đếm kỹ năng thi lần này (W có 23 em, L R S 21). <b>Theo GV</b> (QL, QT, CX): mỗi GV × kỹ năng một dòng; % tính theo tuần dạy, dòng phụ = số em thật (bấm % → đúng các em đó); W1 / W2 mỗi task ½ W. Kẻ bậc 1 giữa hai GV, bậc 2 giữa hai kỹ năng (M9).</li>
+      <li><b>Danh sách</b> giữ như cũ; cột Kết quả đổi Exceed / Đạt / Fail (PTA XM-1). Ô lấy lại khi thi lại mờ "↺" (Trần Khánh Vy). Không thanh tỷ lệ — bảng số + % (chủ SP muốn bảng đơn giản).</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure><figcaption>C1 · QL · 1440 tối · có dữ liệu</figcaption><div class="man dai" data-k="c1"></div></figure>
+      <figure><figcaption>C2 · bấm "Fail" của W → panel bảng (cột W tô nền)</figcaption><div class="man" data-k="c2" style="height:1240px"></div></figure>
+      <figure><figcaption>C3 · bấm "55 %" Fail của dòng Đỗ Vũ Tuấn Phong · W1 → panel GV</figcaption><div class="man" data-k="c3"></div></figure>
+      <figure><figcaption>C4 · QL · 375 sáng</figcaption><div class="dt dai" data-theme="light" data-k="c4"></div></figure>
+      <figure><figcaption>C5 · GV / TVV · 375 — không có khối Theo GV</figcaption><div class="dt dai" data-theme="light" data-k="c5"></div></figure>
+      <figure><figcaption>C7 · Excel Mock Test chuyển về ⋯ của Test + SOS (PTA XM-3)</figcaption><div class="man" data-k="c7" style="height:360px"></div></figure>
+      <figure><figcaption>C6 · rỗng · 375</figcaption><div class="dt" data-theme="light" data-k="c6" style="height:520px"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="d">
+    <h2>D · "Mở tất cả lớp" ↔ "Thu gọn tất cả" — Kế hoạch Test, Lịch Test tuần (2D)</h2>
+    <div class="ghi"><ul>
+      <li>Mẫu nút có sẵn ở Học viên &amp; Lớp (U04 #4): nút chữ 13 / 600 màu nhấn, ngay sau bộ đếm, cuối hàng lọc. Một nút đổi chữ. Mặc định mọi lớp gập (như nay). Chỉ QL, Quản trị thấy; GV không có nút.</li>
+      <li>Lớp đã mở nhớ trên URL như U04 — Quay lại về đúng chỗ. Không thêm request (lớp mở dùng dữ liệu đã nạp của trang).</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure><figcaption>D1 · Kế hoạch Test · QL · mọi lớp gập</figcaption><div class="man" data-k="d1" style="height:520px"></div></figure>
+      <figure><figcaption>D1b · bấm "Mở tất cả lớp" → nút thành "Thu gọn tất cả"</figcaption><div class="man" data-k="d1b" style="height:760px"></div></figure>
+      <figure><figcaption>D2 · Lịch Test tuần · QL</figcaption><div class="man" data-k="d2" style="height:460px"></div></figure>
+      <figure><figcaption>D3 · Kế hoạch Test · 375 sáng</figcaption><div class="dt" data-theme="light" data-k="d3" style="height:600px"></div></figure>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var svg = function (d) { return '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true">' + d + '</svg>'; };
+  var IC = { lich: svg('<rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>'),
+    chuong: svg('<path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3z"/><path d="M6.5 14a1.5 1.5 0 0 0 3 0"/>'), tim: svg('<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>'),
+    xuat: svg('<path d="M8 2.5v8M4.5 7.5L8 11l3.5-3.5M3 13.5h10"/>') };
+  var TAB = ['Báo cáo HV', 'Phân tích GV', 'Test + SOS', 'Thi thật', 'Hiệu quả PA', 'Ý thức'];
+  var o = function (n, cls) { return n === 0 || n === '0' ? '<span class="oso-0">0</span>' : '<a class="oso' + (cls ? ' ' + cls : '') + '" href="#so">' + n + '</a>'; };
+  var pc = function (a, b) { return Math.round(a / b * 100) + ' %'; };
+  var ICH = '<button type="button" class="nut-i" title="Cách tính" aria-label="Cách tính">ⓘ</button>';
+  var XUAT = '<button type="button" class="nut">' + IC.xuat + 'Xuất Excel</button>';
+  var MENU = '<button type="button" class="nut nut-vuong" aria-label="Cột hiện · Xuất kết quả từng lượt" title="Cột hiện · Xuất kết quả từng lượt">⋯</button>';
+
+  function nav(hep, menu, nguoi) {
+    var M = ['Tổng quan', 'Học viên &amp; Lớp', 'Test', 'Công việc', 'Phân tích'];
+    menu = menu === undefined ? 4 : menu;
+    return '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>'
+      + (hep ? '' : M.map(function (m, i) { return '<span class="m' + (i === menu ? ' dang' : '') + '">' + m + (i === 3 ? '<span class="so-nav">5</span>' : '') + '</span>'; }).join(''))
+      + '<span class="phai">' + '<span>' + IC.tim + '</span><span>' + IC.chuong + '</span>' + (hep ? '' : '<span>' + (nguoi || 'Nguyễn Thu Trang · QL') + '</span>') + '</span></div>';
+  }
+  function dau(tab, hep) {
+    return '<header class="dau-trang"><h1>Phân tích</h1><span class="ngay">Dữ liệu đến 05/11/2026</span>' + (hep ? '' : '<span class="phai"><span class="o-chon" role="button" aria-label="Chi nhánh">Cẩm Phả</span></span>') + '</header>'
+      + '<div class="tab-hang" role="tablist">' + TAB.map(function (t, i) { return '<button type="button" role="tab" aria-selected="' + (i === tab) + '">' + t + '</button>'; }).join('') + '</div>';
+  }
+  /* hàng lọc: c.ct = 0 FT / 1 lớp thường / false không có · c.ngay = thời gian theo ngày thi · c.them · c.phai */
+  function loc(c, hep) {
+    var tu = c.ngay ? '01/09/2026' : 'W3 OCT', den = c.ngay ? '05/11/2026' : 'W1 NOV';
+    var thoiGian = '<span class="doan' + (hep ? ' rong-het' : '') + '" role="group" aria-label="Thời gian"><button type="button" aria-pressed="false">Toàn bộ</button><button type="button" aria-pressed="true">' + (c.ngay ? 'Chọn khoảng' : 'Chọn khoảng tuần') + '</button></span>'
+      + '<span class="cap-tuan"><span class="o-tuan" aria-label="Từ">' + tu + ' ' + IC.lich + '</span><span class="mui-ten" aria-hidden="true">→</span><span class="o-tuan" aria-label="Đến">' + den + ' ' + IC.lich + '</span></span>';
+    var dauO = c.ct === false ? '' : '<span class="doan' + (hep ? ' rong-het' : '') + '" role="group" aria-label="Khung">' + ['Fast Track', 'Lớp thường'].map(function (x, i) { return '<button type="button" aria-pressed="' + (i === (c.ct || 0)) + '">' + x + '</button>'; }).join('') + '</span>';
+    var lop = c.lop === false ? '' : '<span class="o-chon" role="button" aria-label="Lớp">Mọi lớp</span>';
+    if (hep) return '<div class="hang-loc">' + dauO + thoiGian + '<span class="rong-het" style="display:flex;gap:8px">' + lop.replace('class="o-chon"', 'class="o-chon" style="flex:1"') + (c.phaiHep || '') + '</span></div>';
+    return '<div class="hang-loc">' + dauO + thoiGian + lop + (c.them || '') + (c.phai ? '<span class="phai">' + c.phai + '</span>' : '') + '</div>';
+  }
+  function chiSo(ds, cot) {
+    return '<div class="dai-chi-so" style="--cot:' + (cot || ds.length) + '">' + ds.map(function (x) {
+      return '<div class="chi-so' + (x.rong ? ' rong-2' : '') + '"><span class="ten">' + x.ten + (x.ky ? ' <i><span class="cham">· </span>' + x.ky + '</i>' : '') + '</span>' + (x.gt != null ? '<span class="gt' + (x.cls ? ' ' + x.cls : '') + '">' + x.gt + (x.don ? '<small>' + x.don + '</small>' : '') + '</span>' : '') + (x.them || '') + (x.mau ? '<span class="mau">' + x.mau + '</span>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  /* ---- ô điểm ---- kq: v vượt · b bằng · x dưới */
+  var d = function (kq, v) { return v == null ? '<span class="mo2">—</span>' : '<span class="d ' + kq + '">' + v + '</span>'; };
+  function od(kq, v, ct, mo, phai) {
+    if (!ct) return d(kq, v);
+    return '<span class="o-w"><button type="button" class="o-d" aria-expanded="' + !!mo + '" aria-label="' + v + ' · ' + (/câu/.test(ct) ? 'số câu' : 'điểm thành phần') + '">' + d(kq, v) + '</button>'
+      + (mo ? '<span class="hop-tc' + (phai ? ' phai' : '') + '" role="dialog">' + ct + '</span>' : '') + '</span>';
+  }
+  function pnDau(loai, h2, ngu, hep) {
+    return '<header class="pn-dau"><div class="pn-h1">' + (hep ? '<button class="quay"><span aria-hidden="true">‹</span>Phân tích</button>' : '<span class="loai">' + loai + '</span>') + '<button class="x" aria-label="Đóng">✕</button></div>'
+      + (hep ? '<span class="loai">' + loai + '</span>' : '') + '<h2>' + h2 + '</h2><span class="pn-ngu">' + ngu + '</span></header>';
+  }
+  function panel(ruot, rong, ten) { return '</div><div class="phu-hop"></div><div class="pn' + (rong ? ' pn-rong' : '') + '" role="dialog" aria-label="' + ten + '">' + ruot + '</div><div>'; }
+  var lkHv = function (t, hv) { return '<a class="ten-hv' + (hv ? ' hover-mau' : '') + '" href="#hs">' + t + '</a>'; };
+  var lkLop = function (t) { return '<a class="lk-t lop" href="#lop">' + t + '</a>'; };
+  var lkMt = function (t, tuan) { return '<a class="lk-t mt" href="#mt">' + t + '</a>' + (tuan ? ' <span class="mo2" style="font-size:13px">' + tuan + '</span>' : ''); };
+
+  /* ================= A1 · bảng lượt FT ================= */
+  var KN5 = ['L', 'R', 'W1', 'W2', 'S'];
+  var SOS3 = [
+    { ten: 'Phạm Gia Bảo', lop: 'CP FT 131', mt: 'MT2', kv: '5.5', ovr: ['x', '5.0'], kn: [['x', '5.0', '19/40 câu'], ['x', '4.5', '16/40 câu'], ['x', '5.0', 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['b', '5.5', 'TR 5.5 · CC 5.5 · LR 5.5 · GRA 5 → 5.5'], ['x', '4.5', 'FC 4.5 · LR 4.5 · GRA 4.5 · P 5 → 4.5']] },
+    { ten: 'Lê Minh Thư', lop: 'CP FT 131', mt: 'MT2', kv: '6.0', ovr: ['x', '5.5'], mo: 2, kn: [['x', '5.5', '21/40 câu'], ['x', '5.5', '20/40 câu'], ['x', '5.5', 'TA 5.5 · CC 5.5 · LR 5 · GRA 5.5 → 5.5'], ['x', '5.0', 'TR 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['v', '6.5', 'FC 6.5 · LR 6.5 · GRA 6 · P 6.5 → 6.5']] },
+    { ten: 'Trịnh Quốc Huy', lop: 'CP FT 137', mt: 'MT1', kv: '5.5', ovr: ['x', '5.0'], hv: true, kn: [['v', '6.0', '25/40 câu'], ['x', '5.0', '18/40 câu'], ['x', '5.0', 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0'], ['x', '4.5', 'TR 4.5 · CC 4.5 · LR 5 · GRA 4.5 → 4.5'], ['x', '5.0', null]] }
+  ];
+  function bangLuotFT(ds, xet) {
+    var cols = '<colgroup><col style="width:150px"><col style="width:92px"><col style="width:106px">' + KN5.map(function () { return '<col style="width:58px">'; }).join('') + '<col style="width:62px"><col style="width:72px"></colgroup>';
+    return '<table class="bang">' + cols + '<thead><tr><th>Học viên</th><th>Lớp</th><th>MT</th>' + KN5.map(function (k) { return '<th data-k="so"' + (k === xet ? ' class="xet"' : '') + '>' + k + '</th>'; }).join('') + '<th data-k="so" class="ke-trai">OVR</th><th data-k="so">Kỳ vọng</th></tr></thead><tbody>'
+      + ds.map(function (r) {
+        return '<tr><td class="ten">' + lkHv(r.ten, r.hv) + '</td><td class="ten">' + lkLop(r.lop) + '</td><td class="ten">' + lkMt(r.mt, 'W5 OCT') + '</td>'
+          + r.kn.map(function (x, i) { return '<td data-k="so"' + (KN5[i] === xet ? ' class="xet"' : '') + '>' + od(x[0], x[1], x[2], r.mo === i, i >= 3) + '</td>'; }).join('')
+          + '<td data-k="so" class="ke-trai">' + d(r.ovr[0], r.ovr[1]) + '</td><td data-k="so" class="mo">' + r.kv + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  /* nền Test + SOS FT (rút gọn từ v11 A1) */
+  var TS = [['W1 NOV', '02/11–08/11', 8, 3, 2, 1, 0, 2], ['W5 OCT', '26/10–01/11', 11, 4, 2, 1, 3, 1], ['W4 OCT', '19/10–25/10', 9, 4, 3, 1, 0, 1], ['W3 OCT', '12/10–18/10', 10, 5, 2, 2, 1, 0]];
+  function nenTS() {
+    var cs = function (cls, n) { return n === 0 ? '<span class="oso-0">0</span>' : '<a class="chip-so ' + cls + '" href="#so">' + n + '</a>'; };
+    return dau(2) + loc({ them: '<span class="o-chon" role="button" aria-label="Xếp theo">Theo tuần</span>', phai: XUAT + MENU })
+      + chiSo([{ ten: 'Lượt MT', ky: 'trong kỳ', gt: o(38), mau: '31 HV' }, { ten: 'Đạt', gt: o(16), don: '42 %' }, { ten: 'SOS', them: '<span class="dong-sos"><a class="chip-so m1" href="#so">SOS 1 · 9</a><a class="chip-so m2" href="#so">SOS 2 · 5</a><a class="chip-so m3" href="#so">SOS 3 · 4</a></span>', mau: '18 lượt' }, { ten: 'Thiếu điểm', gt: o(4), mau: 'gồm SOS tạm' }, { ten: 'Chưa chốt PA', ky: 'hôm nay', gt: o(5), mau: 'trên 14 Case' }])
+      + '<div class="the"><div class="the-dau"><h2>Theo tuần</h2><span class="dem">4 tuần</span><span class="phai">' + ICH + '</span></div><table class="bang"><colgroup><col style="width:220px"><col><col><col><col><col><col></colgroup>'
+      + '<thead><tr><th>Tuần</th><th data-k="so">Lượt MT</th><th data-k="so">Đạt</th><th data-k="so">SOS 1</th><th data-k="so">SOS 2</th><th data-k="so">SOS 3</th><th data-k="so">Thiếu điểm</th></tr></thead><tbody>'
+      + TS.map(function (r) { return '<tr class="hang-lon"><td class="ten"><span class="mui-mo">▸</span>' + r[0] + ' <span class="phu-o" style="display:inline;margin-left:6px">' + r[1] + '</span></td><td data-k="so">' + o(r[2]) + '</td><td data-k="so">' + cs('dat', r[3]) + '</td><td data-k="so">' + cs('m1', r[4]) + '</td><td data-k="so">' + cs('m2', r[5]) + '</td><td data-k="so">' + cs('m3', r[6]) + '</td><td data-k="so">' + o(r[7]) + '</td></tr>'; }).join('')
+      + '</tbody></table></div>';
+  }
+
+  /* ================= A2 · Tăng / Giữ / Giảm ================= */
+  function nenBaoCao() {
+    var hang = function (l, mau, du, a, cd) { return '<tr><td class="ten"><b>' + l + '</b><span class="phu-o">' + mau + ' HV · ' + du + ' đủ dữ liệu</span></td>' + a.map(function (x, i) { return '<td data-k="so" class="so-2 ' + (x ? ['m-dat', 'm-05', 'm-10', 'm-15'][i] : '') + '">' + o(x) + '<span class="pct">' + Math.round(x / du * 100) + ' %</span></td>'; }).join('') + '<td data-k="so" class="m-cd">' + o(cd) + '</td></tr>'; };
+    var kq = '<div class="the"><div class="the-dau"><h2>Kết quả MT</h2><span class="phu">% trên HV đủ dữ liệu</span><span class="phai">' + ICH + '</span></div><table class="bang"><thead><tr><th>Lượt</th><th data-k="so">Đạt Target</th><th data-k="so">Thiếu 0.5</th><th data-k="so">Thiếu 1.0</th><th data-k="so">Thiếu ≥ 1.5</th><th data-k="so">Chưa đủ</th></tr></thead><tbody>'
+      + hang('MT1', 14, 12, [4, 4, 3, 1], 2) + hang('MT2', 11, 10, [3, 4, 2, 1], 1) + hang('MT3+', 6, 6, [3, 2, 1, 0], 0) + '</tbody></table></div>';
+    var tb = '<div class="the"><div class="the-dau"><h2>Tiến bộ theo kỹ năng</h2><span class="phu">so mốc MT trước</span></div><table class="bang"><thead><tr><th>Kỹ năng</th><th data-k="so">↑ Tăng</th><th data-k="so">Giữ nguyên</th><th data-k="so">↓ Giảm</th></tr></thead><tbody>'
+      + [['L', 14, 6, 5, 3], ['R', 14, 5, 6, 3], ['W1', 14, 5, 6, 3], ['W2', 14, 4, 7, 3], ['S', 14, 6, 6, 2]].map(function (r) { return '<tr><td class="ten"><b>' + r[0] + '</b> <span class="mo2">' + r[1] + ' lượt</span></td>' + [r[2], r[3], r[4]].map(function (x, i) { return '<td data-k="so" class="so-2 ' + (x ? ['m-dat', '', 'm-15'][i] : '') + '">' + o(x) + '<span class="pct">' + Math.round(x / r[1] * 100) + ' %</span></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+    return dau(0) + loc({ lop: false, phai: '<button type="button" class="nut">In</button>' })
+      + chiSo([{ ten: 'Đạt MT', ky: 'trong kỳ', gt: o('36 %'), mau: '10/28 HV · 3 chưa đủ dữ liệu' }, { ten: 'Đạt Target thi thật', gt: o('61 %'), mau: '14/23 HV có Target' }, { ten: 'Thi trong kỳ', gt: o(24), mau: 'HV có kết quả' }, { ten: 'PA cải thiện', gt: o('71 %'), mau: '10/14 PA có kết quả' }, { ten: 'Case có PA', ky: 'hiện tại', gt: o('64 %'), mau: '9/14 Case' }])
+      + '<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px">' + kq + tb + '</div>';
+  }
+  function pnTang() {
+    var r = function (ten, lop, t1, v1, t2, k2, v2, ch, kv) { return '<tr><td class="ten">' + lkHv(ten) + '</td><td class="ten">' + lkLop(lop) + '</td><td class="ten">' + '<a class="lk-t lop" href="#mt">' + t1 + '</a> <span class="so" style="margin-left:4px;font-weight:600">' + v1 + '</span></td><td class="ten"><a class="lk-t lop" href="#mt">' + t2 + '</a> <span style="margin-left:4px">' + d(k2, v2) + '</span></td><td data-k="so"><span class="tang">' + ch + '</span></td><td data-k="so" class="mo">' + kv + '</td></tr>'; };
+    return pnDau('SỐ · BÁO CÁO HV', 'Tiến bộ W1 · ↑ Tăng', 'Cẩm Phả · Fast Track · W3 OCT – W1 NOV · so mốc MT trước')
+      + '<div class="pn-than"><span class="pn-tong"><b>5</b> HV</span><table class="bang"><colgroup><col style="width:170px"><col style="width:100px"><col style="width:120px"><col style="width:130px"><col style="width:80px"><col style="width:80px"></colgroup>'
+      + '<thead><tr><th>Học viên</th><th>Lớp</th><th>Trước</th><th>Sau</th><th data-k="so">Chênh</th><th data-k="so">Kỳ vọng</th></tr></thead><tbody>'
+      + r('Vũ Hà My', 'CP FT 130', 'MT1', '5.0', 'MT2', 'b', '5.5', '+0.5', '5.5') + r('Bùi Đức Anh', 'CP FT 130', 'MT2', '5.5', 'MT3', 'x', '6.0', '+0.5', '6.5')
+      + r('Hoàng Khánh Ly', 'CP FT 131', 'MT1', '4.5', 'MT2', 'x', '5.0', '+0.5', '5.5') + r('Phan Nhật Minh', 'CP FT 137', 'MT1', '5.5', 'MT2', 'v', '6.5', '+1.0', '6.0')
+      + r('Đỗ Bảo Châu', 'CP FT 138', 'MT2', '6.0', 'MT3', 'b', '6.5', '+0.5', '6.5') + '</tbody></table>'
+      + '<div class="cach-tinh"><b>Cách tính</b>W1 của lượt MT gần nhất trong khoảng so lượt MT liền trước của chính em. Ô "Sau" ✓ / ✗ so kỳ vọng của lượt đó.</div></div>';
+  }
+
+  /* ================= A3 · lớp thường ================= */
+  var LT = [['W1 NOV', '02/11–08/11', 14, 5, 2, 1, 0, 1, 1, 2, 2, [['CP BE 21', 6, 3, 1, 1, '—', '—', '—', '—', 1], ['CP ELE 08', 5, '—', '—', '—', 0, 1, 1, 2, 1], ['CP FOU 14', 3, 2, 1, 0, '—', '—', '—', '—', 0]]],
+    ['W5 OCT', '26/10–01/11', 9, 4, 2, 0, 1, 0, 1, 1, 0], ['W4 OCT', '19/10–25/10', 11, 6, 3, 1, '—', '—', '—', '—', 1], ['W3 OCT', '12/10–18/10', 12, 6, 4, 2, '—', '—', '—', '—', 0]];
+  var LT_TONG = ['Tổng 4 tuần', '', 46, 21, 11, 4, 1, 1, 2, 3, 3];
+  function oLT(v, ke) { return '<td data-k="so"' + (ke ? ' class="ke-trai"' : '') + '>' + (v === '—' ? '<span class="mo2">—</span>' : o(v)) + '</td>'; }
+  function dongLT(r, con) {
+    var ten = con ? r[0] : '<span class="mui-mo">' + (r[11] ? '▾' : r[1] ? '▸' : '') + '</span>' + r[0] + (r[1] ? ' <span class="phu-o" style="display:inline;margin-left:6px">' + r[1] + '</span>' : '');
+    var v = con ? r.slice(1) : r.slice(2, 11);
+    return '<tr class="' + (con ? 'hang-con' : r[1] ? 'hang-lon' : 'tong') + '"><td class="ten">' + ten + '</td>' + v.map(function (x, i) { return oLT(x, i === 1 || i === 4 || i === 8); }).join('') + '</tr>';
+  }
+  function bangLT() {
+    return '<div class="the"><div class="the-dau"><h2>Theo tuần</h2><span class="dem">4 tuần</span><span class="phai">' + ICH + '</span></div><table class="bang"><colgroup><col style="width:220px"><col style="width:120px">' + '<col>'.repeat(8) + '</colgroup>'
+      + '<thead><tr><th rowspan="2" style="vertical-align:bottom">Tuần</th><th rowspan="2" data-k="so" style="vertical-align:bottom">Bài kiểm tra</th><th class="nhom-cot ke-trai" colspan="3">Progress Test</th><th class="nhom-cot ke-trai" colspan="4">Final Test</th><th rowspan="2" data-k="so" class="ke-trai" style="vertical-align:bottom">Thiếu điểm</th></tr>'
+      + '<tr><th data-k="so" class="ke-trai">Đạt hết</th><th data-k="so">1 môn trượt</th><th data-k="so">≥ 2 môn trượt</th><th data-k="so" class="ke-trai">Dưới 50%</th><th data-k="so">50–59%</th><th data-k="so">60–69%</th><th data-k="so">Từ 70%</th></tr></thead><tbody>'
+      + LT.map(function (r) { return dongLT(r) + (r[11] ? r[11].map(function (c) { return dongLT(c, true); }).join('') : ''); }).join('') + dongLT(LT_TONG) + '</tbody></table></div>';
+  }
+  function nenLT() {
+    return dau(2) + loc({ ct: 1, them: '<span class="o-chon" role="button" aria-label="Xếp theo">Theo tuần</span>', phai: XUAT + MENU.replace(/Cột hiện · Xuất kết quả từng lượt/g, 'Cột hiện') })
+      + chiSo([{ ten: 'Bài kiểm tra', ky: 'trong kỳ', gt: o(46), mau: '31 HV' }, { ten: 'Thiếu điểm', gt: o(3) }], 5) + bangLT();
+  }
+  function pnLT() {
+    var c = function (k, v) { return '<td data-k="so">' + d(k, v) + '</td>'; };
+    var bang = function (mon, ds) {
+      return '<table class="bang"><colgroup><col style="width:200px"><col style="width:120px">' + '<col>'.repeat(4) + '</colgroup><thead><tr><th>Học viên</th><th>Lớp</th>' + mon.map(function (m) { return '<th data-k="so">' + m + '</th>'; }).join('') + '</tr></thead><tbody>'
+        + ds.map(function (r) { return '<tr><td class="ten">' + lkHv(r[0]) + '</td><td class="ten">' + lkLop(r[1]) + '</td>' + r[2].map(function (x) { return c(x[0], x[1]); }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+    };
+    return pnDau('SỐ · TEST + SOS', 'Progress Test · 1 môn trượt · W3 OCT', 'Cẩm Phả · Lớp thường · đạt từ 70 % mỗi môn · dữ liệu đến 05/11')
+      + '<div class="pn-than"><span class="pn-tong"><b>4</b> bài · 4 HV</span><h3>Beginner</h3>'
+      + bang(['L', 'R', 'W', 'S'], [['Nguyễn Hải Đăng', 'CP BE 21', [['v', '20/25'], ['x', '15/25'], ['v', '15/20'], ['v', '16/20']]], ['Lý Thu Hà', 'CP BE 21', [['v', '19/25'], ['v', '18/25'], ['x', '12/20'], ['v', '15/20']]], ['Mai Anh Tuấn', 'CP BE 21', [['x', '16/25'], ['v', '21/25'], ['v', '14/20'], ['v', '17/20']]]])
+      + '<h3>Foundation</h3>' + bang(['L', 'R', 'G+V', 'P'], [['Trần Bảo Ngọc', 'CP FOU 14', [['v', '19/25'], ['v', '20/25'], ['x', '18/30'], ['v', '15/20']]]])
+      + '<div class="cach-tinh"><b>Cách tính</b>Bài Progress Test đủ điểm, đúng một môn dưới 70 %.</div></div>';
+  }
+
+  /* ================= A4 · vi phạm ================= */
+  function nenYThuc() {
+    return dau(5) + loc({ ct: false, phai: XUAT }) + chiSo([{ ten: 'HV cần chú ý', ky: 'hôm nay', gt: o(5), mau: '2 bắt buộc xử lý · 1 chờ QL' }, { ten: 'Vi phạm', ky: 'trong kỳ', gt: o(36), mau: '↑ 8 so kỳ trước' }, { ten: 'Chưa xử lý', gt: o(14) }, { ten: 'Lớp có vi phạm', gt: o(6), mau: '14/96 HV' }], 4)
+      + '<div class="the"><div class="the-dau"><h2>Học viên cần chú ý</h2><span class="dem">5 HV</span><span class="phai">' + ICH + '</span></div><table class="bang"><thead><tr><th>Học viên</th><th>Lớp</th><th>Trạng thái</th><th>Bậc hiện tại</th><th>Bậc kế</th><th data-k="so">Vi phạm</th><th data-k="so">Chưa xử lý</th></tr></thead><tbody>'
+      + '<tr><td class="ten">' + lkHv('Phạm Bảo Ngọc') + '</td><td class="ten mo">CP FT 116</td><td class="ten"><span class="nhan-td soon">Bắt buộc xử lý</span></td><td class="ten">Report 1</td><td class="ten">Report 2</td><td data-k="so">' + o(4) + '</td><td data-k="so">' + o(2) + '</td></tr>'
+      + '<tr><td class="ten">' + lkHv('Lê Quang Huy') + '</td><td class="ten mo">CP FT 116</td><td class="ten"><span class="nhan-td soon">Bắt buộc xử lý</span></td><td class="ten mo">Chưa xử lý lần nào</td><td class="ten">Report 1</td><td data-k="so">' + o(3) + '</td><td data-k="so">' + o(3) + '</td></tr></tbody></table></div>';
+  }
+  function pnViPham() {
+    var TT = { cho: '<span class="nhan-td">Chưa xử lý</span>', dang: '<span class="nhan-td dang">Đang chuẩn bị xử lý</span>', xong: '<span class="nhan-td ok">Đã xử lý</span>' };
+    var r = function (ten, lop, ngay, nhom, mt, ai, tt, bp) { return '<tr><td class="ten">' + lkHv(ten) + '</td><td class="ten">' + lkLop(lop) + '</td><td class="mo">' + ngay + '</td><td class="ten"><span class="cat">' + nhom + '</span><span class="phu-o cat" title="' + mt + '">' + mt + '</span></td><td class="ten mo"><span class="cat">' + ai + '</span></td><td class="ten">' + TT[tt] + (bp ? '<span class="phu-o">' + bp + '</span>' : '') + '</td></tr>'; };
+    return pnDau('SỐ · Ý THỨC', 'Vi phạm · W3 OCT – W1 NOV', 'Cẩm Phả · mới nhất trước · dữ liệu đến 05/11')
+      + '<div class="pn-than cuon"><span class="pn-tong"><b>36</b> vi phạm · 14 HV</span><table class="bang"><colgroup><col style="width:150px"><col style="width:86px"><col style="width:58px"><col style="width:206px"><col style="width:120px"><col style="width:160px"></colgroup>'
+      + '<thead><tr><th>Học viên</th><th>Lớp</th><th>Ngày</th><th>Vi phạm</th><th>Người ghi</th><th>Trạng thái</th></tr></thead><tbody>'
+      + r('Phạm Bảo Ngọc', 'CP FT 116', '04/11', 'BTVN', 'Không nộp bài Writing Task 2', 'Hoàng Dũng', 'cho')
+      + r('Lê Quang Huy', 'CP FT 116', '03/11', 'Chuyên cần', 'Vào lớp muộn 20 phút', 'Nhã Uyên', 'cho')
+      + r('Lương Gia Bảo', 'CP FT 130', '31/10', 'Thái độ / hành vi', 'Dùng điện thoại khi làm bài', 'Tuấn Phong', 'dang', 'Report 2')
+      + r('Vũ Thanh Tùng', 'CP FT 137', '29/10', 'Kỷ luật lớp học', 'Nói chuyện riêng, nhắc ba lần', 'Việt Linh', 'xong', 'WL 1 · 30/10')
+      + r('Phạm Bảo Ngọc', 'CP FT 116', '28/10', 'BTVN', 'Thiếu bài Reading Practice 4', 'Hoàng Dũng', 'xong', 'Report 1 · 30/10')
+      + r('Trần Minh Khang', 'CP FT 138', '27/10', 'Chuyên cần', 'Nghỉ không báo trước', 'Việt Linh', 'xong', 'WL 1 · 28/10')
+      + r('Đặng Thu Phương', 'CP BE 21', '26/10', 'BTVN', 'Không làm bài nghe về nhà', 'Anna Lee', 'cho')
+      + r('Ngô Hải Yến', 'CP FT 131', '24/10', 'Chuyên cần', 'Về sớm 30 phút không xin phép', 'Tuấn Phong', 'xong', 'WL 1 · 25/10')
+      + r('Lê Quang Huy', 'CP FT 116', '23/10', 'BTVN', 'Thiếu hai bài Listening', 'Hoàng Dũng', 'cho')
+      + r('Đinh Bảo Long', 'CP FT 137', '22/10', 'Khác', 'Mang đồ ăn vào phòng thi thử', 'Việt Linh', 'dang', 'Report 1')
+      + r('Phạm Bảo Ngọc', 'CP FT 116', '21/10', 'BTVN', 'Chép bài Writing của bạn', 'Hoàng Dũng', 'xong', 'Report 1 · 30/10')
+      + r('Trần Minh Khang', 'CP FT 138', '20/10', 'Chuyên cần', 'Vào lớp muộn 15 phút', 'Việt Linh', 'xong', 'WL 1 · 28/10')
+      + '</tbody></table></div>';
+  }
+
+  /* ================= C · Thi thật ================= */
+  var TONG = { thi: 24, coT: 23, e: 5, dat: 9, f: 9, khong: 2 };
+  var KN4 = [['L', 21, 6, 7, 8, '6.0'], ['R', 21, 4, 7, 10, '5.7'], ['W', 23, 1, 7, 15, '5.4'], ['S', 21, 3, 9, 9, '5.8']];
+  function csThi(hep) {
+    return chiSo([
+      { ten: 'Em thi', ky: 'trong khoảng', gt: o(TONG.thi), mau: 'trừ 1 KCK khi tính %', rong: hep },
+      { ten: 'Exceed', gt: o(TONG.e, 'c-v'), don: pc(TONG.e, TONG.coT), mau: 'OVR trên Target' },
+      { ten: 'Đạt', gt: o(TONG.dat), don: pc(TONG.dat, TONG.coT), mau: 'OVR bằng Target' },
+      { ten: 'Fail', gt: o(TONG.f, 'c-x'), don: pc(TONG.f, TONG.coT), mau: 'OVR dưới Target' },
+      { ten: 'Không thi', gt: o(TONG.khong), mau: 'không vào %' }
+    ]);
+  }
+  function bangKN(hep) {
+    var oo = function (n, cls, mau) { return '<td data-k="so" class="so-2">' + o(n, cls) + (n ? '<span class="pct">' + pc(n, mau) + '</span>' : '') + '</td>'; };
+    return '<div class="the"><div class="the-dau"><h2>Từng kỹ năng</h2>' + (hep ? '' : '<span class="phu">so Target overall</span>') + '<span class="phai">' + ICH + '</span></div><table class="bang' + (hep ? ' hep' : '') + '"><colgroup><col style="width:' + (hep ? '40px' : '72px') + '"><col style="width:' + (hep ? '44px' : '70px') + '"><col><col><col><col style="width:' + (hep ? '48px' : '90px') + '"></colgroup>'
+      + '<thead><tr><th>' + (hep ? 'KN' : 'Kỹ năng') + '</th><th data-k="so">Em</th><th data-k="so">Exceed</th><th data-k="so">Đạt</th><th data-k="so">Fail</th><th data-k="so">' + (hep ? 'TB' : 'Điểm TB') + '</th></tr></thead><tbody>'
+      + KN4.map(function (r) { return '<tr><td class="ten"><b>' + r[0] + '</b></td><td data-k="so">' + o(r[1]) + '</td>' + oo(r[2], 'c-v', r[1]) + oo(r[3], '', r[1]) + oo(r[4], 'c-x', r[1]) + '<td data-k="so">' + r[5] + '</td></tr>'; }).join('')
+      + '</tbody></table></div>';
+  }
+  var GV = [
+    ['Cao Khánh Linh', [['W1', 6, 22, '5.2', [0, 0], [20, 1], [80, 5]], ['W2', 10, 52, '5.3', [0, 0], [31, 3], [69, 7]]]],
+    ['Đỗ Vũ Tuấn Phong', [['W1', 11, 70, '5.4', [9, 1], [36, 4], [55, 6]], ['W2', 8, 46, '5.5', [6, 1], [30, 2], [64, 5]]]],
+    ['Việt Linh Nguyễn', [['L', 8, 40, '5.9', [26, 2], [30, 3], [44, 3]], ['R', 8, 40, '5.6', [18, 1], [28, 2], [54, 5]]]],
+    ['Nguyễn Hoàng Dũng', [['L', 9, 72, '6.1', [30, 3], [38, 3], [32, 3]], ['R', 9, 72, '5.8', [20, 2], [35, 3], [45, 4]]]],
+    ['Anna Lee', [['S', 9, 36, '5.7', [10, 1], [45, 4], [45, 4]]]],
+    ['Lưu Nhã Uyên', [['S', 12, 88, '5.9', [18, 2], [42, 5], [40, 5]]]],
+    ['Trần Ngọc Hà', [['L', 5, 18, '6.2', [40, 2], [35, 2], [25, 1]]]]
+  ];
+  function oPct(x, cls) { return x[1] === 0 ? '<span class="oso-0">0 %</span>' : '<a class="oso' + (cls ? ' ' + cls : '') + '" href="#so">' + x[0] + ' %</a>'; }
+  function bangGV() {
+    var rows = GV.map(function (g) {
+      return g[1].map(function (k, i) {
+        var cls = i < g[1].length - 1 ? 'gv-giua' : 'gv-cuoi';
+        return '<tr class="' + cls + '"><td class="ten">' + (i === 0 ? '<span class="ten-gv">' + g[0] + '</span>' : '') + '</td><td class="ten">' + k[0] + '</td><td data-k="so">' + o(k[1]) + '</td><td data-k="so" class="mo">' + k[2] + '</td><td data-k="so">' + k[3] + '</td>'
+          + '<td data-k="so" class="so-2">' + oPct(k[4], 'c-v') + '</td><td data-k="so" class="so-2">' + oPct(k[5]) + '</td><td data-k="so" class="so-2">' + oPct(k[6], 'c-x') + '</td></tr>';
+      }).join('');
+    }).join('');
+    return '<div class="the"><div class="the-dau"><h2>Theo GV</h2><span class="dem">7 GV</span><span class="phu">% theo tuần dạy, Fail cao trước</span><span class="phai">' + ICH + '</span></div><table class="bang"><colgroup><col style="width:190px"><col style="width:74px"><col style="width:58px"><col style="width:86px"><col style="width:84px"><col><col><col></colgroup>'
+      + '<thead><tr><th>Giáo viên</th><th>Kỹ năng</th><th data-k="so">Em</th><th data-k="so">Tuần dạy</th><th data-k="so">Điểm TB</th><th data-k="so">Exceed</th><th data-k="so">Đạt</th><th data-k="so">Fail</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+  var KQT = { v: '<span class="kq vuot">✓ Exceed</span>', b: '<span class="kq ngang">✓ Đạt</span>', x: '<span class="kq duoi">✗ Fail</span>', k: '<span class="kq khong">Không thi</span>', kck: '<span class="mo2">—</span>' };
+  var DS = [
+    ['CP FT 98', '8 em', [
+      ['Nguyễn Minh An', '12/09', ['v', '7.0'], ['7.5', '7.0', '6.0', '6.5'], '6.5', 'v', 'Lên FT 7.5'],
+      ['Phan Gia Hân', '12/09', ['b', '6.5'], ['7.0', '6.5', '6.0', '6.5'], '6.5', 'b', 'Kết thúc · đạt đầu ra'],
+      ['Đinh Tuấn Kiệt', '19/09', ['x', '5.5'], ['6.0', '5.5', '5.0', '5.5'], '6.0', 'x', 'Học lại FT 6.0'],
+      ['Lê Hoài Nam', '19/09', ['b', '6.0'], ['6.5', '6.0', '5.5', '6.0'], '6.0', 'b', null],
+      ['Trần Khánh Vy', '26/09', ['b', '5.5'], ['6.0', '5.5', '5.5', '5.5'], '5.5', 'b', 'Kết thúc · đạt đầu ra', 'W'],
+      ['Hồ Đức Thịnh', '03/10', ['', '5.0'], ['5.0', '5.5', '4.5', '5.0'], 'KCK', 'kck', 'Học lại FT 5.5'],
+      ['Mạc Thu Trang', '', null, null, '6.0', 'k', null],
+      ['Vũ Nhật Quang', '03/10', ['v', '5.5'], ['5.5', '5.5', '5.0', '5.5'], '5.0', 'v', 'Lên FT 6.0']]],
+    ['CP FT 104', '9 em', [
+      ['Bùi Thảo Nhi', '17/10', ['x', '6.0'], ['6.0', '6.0', '5.5', '6.0'], '6.5', 'x', 'Học lại FT 6.5'],
+      ['Cao Minh Đức', '17/10', ['v', '6.5'], ['7.0', '6.5', '6.0', '6.5'], '6.0', 'v', 'Lên FT 7.0']]]
+  ];
+  function kqDiem(t, v) { var a = parseFloat(v), b = parseFloat(t); if (isNaN(b)) return '<span class="so">' + v + '</span>'; return d(a > b ? 'v' : a === b ? 'b' : 'x', v); }
+  function bangDS() {
+    var rows = DS.map(function (g) {
+      return '<tr class="hang-lon"><td class="ten" colspan="10">' + lkLop(g[0]).replace('lk-t lop', 'lk-t') + ' <span class="phu-o" style="display:inline;margin-left:6px">' + g[1] + '</span></td></tr>'
+        + g[2].map(function (r) {
+          var diem = r[3] ? r[3].map(function (v, i) { var lay = r[7] && ['L', 'R', 'W', 'S'][i] !== r[7]; return '<td data-k="so"' + (i === 0 ? ' class="ke-trai"' : '') + '>' + (lay ? '<span class="lay" title="lấy từ lần thi trước">' + v + '</span>' : kqDiem(r[4], v)) + '</td>'; }).join('') : '<td data-k="so" class="ke-trai"><span class="mo2">—</span></td>' + '<td data-k="so"><span class="mo2">—</span></td>'.repeat(3);
+          return '<tr><td class="ten">' + lkHv(r[0]) + '</td><td class="mo">' + (r[1] || '<span class="mo2">—</span>') + '</td>' + diem + '<td data-k="so" class="ke-trai">' + (r[2] ? (r[2][0] ? d(r[2][0], r[2][1]) : '<span class="so">' + r[2][1] + '</span>') : '<span class="mo2">—</span>') + '</td>'
+            + '<td data-k="so" class="mo">' + r[4] + '</td><td class="ten">' + KQT[r[5]] + (r[7] ? '<span class="phu-o">thi lại W</span>' : '') + '</td><td class="ten">' + (r[6] || '<span class="mo2">Chưa chọn</span>') + '</td></tr>';
+        }).join('');
+    }).join('');
+    return '<div class="the"><div class="the-dau"><h2>Kết quả thi thật</h2><span class="dem">26 em</span><span class="phu">theo lớp → ngày thi</span><span class="phai">' + ICH + '</span></div><table class="bang"><colgroup><col style="width:220px"><col style="width:100px"><col style="width:80px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:70px"><col style="width:80px"><col style="width:150px"><col></colgroup>'
+      + '<thead><tr><th>Học viên</th><th>Ngày thi</th><th data-k="so" class="ke-trai">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so" class="ke-trai">OVR</th><th data-k="so">Target</th><th>Kết quả</th><th>Bước tiếp</th></tr></thead><tbody>' + rows + '</tbody></table>'
+      + '<div class="phan-trang"><span>1–10 / 26 em</span><span class="trang-so"><span>‹</span><b>1</b><span>2</span><span>3</span><span>›</span></span><span class="phai">Mỗi trang <span class="doan" style="height:30px"><button aria-pressed="true">10</button><button aria-pressed="false">20</button><button aria-pressed="false">50</button></span></span></div></div>';
+  }
+  function tabThi(ql) {
+    return dau(3) + loc({ ct: false, ngay: true, phai: XUAT }) + csThi()
+      + (ql ? '<div style="display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:12px;align-items:start">' + bangKN() + bangGV() + '</div>' : bangKN()) + bangDS();
+  }
+  /* panel P-TT / P-GV */
+  function bangTT(ds, xet, tuan) {
+    var K = ['L', 'R', 'W', 'S'];
+    return '<table class="bang"><colgroup><col style="width:' + (tuan ? 140 : 170) + 'px"><col style="width:90px"><col style="width:76px">' + K.map(function () { return '<col style="width:58px">'; }).join('') + '<col style="width:62px"><col style="width:66px">' + (tuan ? '<col style="width:116px">' : '') + '</colgroup>'
+      + '<thead><tr><th>Học viên</th><th>Lớp</th><th>Ngày thi</th>' + K.map(function (k) { return '<th data-k="so"' + (k === xet ? ' class="xet"' : '') + '>' + k + '</th>'; }).join('') + '<th data-k="so" class="ke-trai">OVR</th><th data-k="so">Target</th>' + (tuan ? '<th data-k="so">Tuần dạy</th>' : '') + '</tr></thead><tbody>'
+      + ds.map(function (r) {
+        return '<tr><td class="ten">' + lkHv(r[0]) + '</td><td class="ten">' + lkLop(r[1]) + '</td><td class="mo">' + r[2] + '</td>'
+          + r[3].map(function (v, i) { var lay = r[6] && K[i] !== r[6]; return '<td data-k="so"' + (K[i] === xet ? ' class="xet"' : '') + '>' + (lay ? '<span class="lay" title="lấy từ lần thi trước">' + v + '</span>' : (K[i] === 'W' && r[7] ? od(null, v, r[7], r[8]) .replace('class="d null"', 'class="d ' + kqCls(r[5], v) + '"') : kqDiem(r[5], v))) + '</td>'; }).join('')
+          + '<td data-k="so" class="ke-trai">' + kqDiem(r[5], r[4]) + '</td><td data-k="so" class="mo">' + r[5] + '</td>' + (tuan ? '<td data-k="so" class="mo" style="white-space:nowrap">' + r[9] + '</td>' : '') + '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+  function kqCls(t, v) { var a = parseFloat(v), b = parseFloat(t); return a > b ? 'v' : a === b ? 'b' : 'x'; }
+  var FAILW = [
+    ['Đinh Tuấn Kiệt', 'CP FT 98', '19/09', ['6.0', '5.5', '5.0', '5.5'], '5.5', '6.0', null, 'TA 5 · CC 5 · LR 5 · GRA 5 → 5.0', true],
+    ['Lê Hoài Nam', 'CP FT 98', '19/09', ['6.5', '6.0', '5.5', '6.0'], '6.0', '6.0'],
+    ['Nguyễn Minh An', 'CP FT 98', '12/09', ['7.5', '7.0', '6.0', '6.5'], '7.0', '6.5'],
+    ['Phan Gia Hân', 'CP FT 98', '12/09', ['7.0', '6.5', '6.0', '6.5'], '6.5', '6.5'],
+    ['Bùi Thảo Nhi', 'CP FT 104', '17/10', ['6.0', '6.0', '5.5', '6.0'], '6.0', '6.5'],
+    ['Ngô Văn Tiến', 'CP FT 104', '17/10', ['5.5', '5.5', '5.0', '5.5'], '5.5', '5.5'],
+    ['Hoàng Gia Linh', 'CP FT 110', '24/10', ['5.5', '5.0', '4.5', '5.0'], '5.0', '5.5'],
+    ['Lý Thanh Mai', 'CP FT 110', '31/10', ['6.0', '5.5', '5.0', '5.5'], '5.5', '5.5', 'W'],
+    ['Trương Gia Huy', 'CP FT 104', '17/10', ['6.0', '5.5', '5.0', '5.5'], '5.5', '6.0'],
+    ['Phùng Thị Ngân', 'CP FT 104', '17/10', ['5.5', '6.0', '5.0', '5.5'], '5.5', '5.5'],
+    ['Lâm Quốc Bảo', 'CP FT 104', '24/10', ['6.5', '6.0', '5.5', '6.0'], '6.0', '6.0'],
+    ['Quách Minh Tâm', 'CP FT 98', '03/10', ['6.0', '6.0', '5.5', '6.0'], '6.0', '6.0'],
+    ['Đoàn Thu Uyên', 'CP FT 110', '24/10', ['5.5', '5.5', '5.0', '5.0'], '5.5', '5.5'],
+    ['Mai Hoàng Long', 'CP FT 110', '24/10', ['6.0', '5.0', '4.5', '5.5'], '5.5', '6.0'],
+    ['Tô Bảo Anh', 'CP FT 110', '31/10', ['5.0', '5.0', '4.5', '5.0'], '5.0', '5.0']
+  ];
+  var GVW1 = [
+    ['Đinh Tuấn Kiệt', 'CP FT 98', '19/09', ['6.0', '5.5', '5.0', '5.5'], '5.5', '6.0', null, null, false, '12/12 · 100 %'],
+    ['Lê Hoài Nam', 'CP FT 98', '19/09', ['6.5', '6.0', '5.5', '6.0'], '6.0', '6.0', null, null, false, '12/12 · 100 %'],
+    ['Nguyễn Minh An', 'CP FT 98', '12/09', ['7.5', '7.0', '6.0', '6.5'], '7.0', '6.5', null, null, false, '8/12 · 67 %'],
+    ['Phan Gia Hân', 'CP FT 98', '12/09', ['7.0', '6.5', '6.0', '6.5'], '6.5', '6.5', null, null, false, '8/12 · 67 %'],
+    ['Bùi Thảo Nhi', 'CP FT 104', '17/10', ['6.0', '6.0', '5.5', '6.0'], '6.0', '6.5', null, null, false, '4/10 · 40 %'],
+    ['Hoàng Gia Linh', 'CP FT 110', '24/10', ['5.5', '5.0', '4.5', '5.0'], '5.0', '5.5', null, null, false, '3/12 · 25 %']
+  ];
+
+  /* ================= 375 ================= */
+  function theFT(r, xet, moL) {
+    var o7 = r.kn.map(function (x, i) { var k = KN5[i]; return '<span' + (k === xet ? ' class="xet"' : '') + '><i>' + k + '</i><b>' + (k === 'L' && moL ? od(x[0], x[1], x[2], true) : d(x[0], x[1])) + '</b></span>'; }).join('')
+      + '<span><i>OVR</i><b>' + d(r.ovr[0], r.ovr[1]) + '</b></span>';
+    return '<div class="the-hv' + (moL ? ' co-hop' : '') + '"><div class="h1">' + lkHv(r.ten) + '<span class="kv-goc">Kỳ vọng <b>' + r.kv + '</b></span></div><div class="hang-tt"><span>' + lkLop(r.lop) + '</span><span>' + lkMt(r.mt, 'W5 OCT') + '</span></div><div class="luoi l-diem" style="--n:6;margin-top:4px">' + o7 + '</div></div>';
+  }
+  var DUOIL = [SOS3[0], SOS3[1],
+    { ten: 'Ngô Thảo Linh', lop: 'CP FT 136', mt: 'MT2', kv: '6.0', ovr: ['b', '6.0'], kn: [['x', '5.5', '22/40 câu'], ['v', '6.5'], ['b', '6.0'], ['b', '6.0'], ['b', '6.0']] },
+    { ten: 'Đặng Quang Vinh', lop: 'CP FT 138', mt: 'MT3', kv: '6.5', ovr: ['b', '6.5'], kn: [['x', '6.0', '27/40 câu'], ['b', '6.5'], ['b', '6.5'], ['x', '6.0'], ['v', '7.0']] }];
+
+  function theGV375(g) {
+    return '<div class="the-dong"><div class="dau"><span class="ten-gv" style="font-size:15px">' + g[0] + '</span></div>' + g[1].map(function (k) {
+      return '<div class="phan"><div class="nhan">' + k[0] + '</div><div class="luoi" style="--n:6"><span><i>Em</i><b>' + o(k[1]) + '</b></span><span><i>Tuần</i><b class="mo">' + k[2] + '</b></span><span><i>TB</i><b>' + k[3] + '</b></span><span><i>Exceed</i><b>' + oPct(k[4], 'c-v').replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span><span><i>Đạt</i><b>' + oPct(k[5]).replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span><span><i>Fail</i><b>' + oPct(k[6], 'c-x').replace(/<span class="pct">[^<]*<\/span>/, '') + '</b></span></div></div>';
+    }).join('') + '</div>';
+  }
+  function theThi(r, lop) {
+    var dd = r[3] ? ['L', 'R', 'W', 'S'].map(function (k, i) { var lay = r[7] && k !== r[7]; return '<span>' + k + ' ' + (lay ? '<span class="lay">' + r[3][i] + '</span>' : kqDiem(r[4], r[3][i])) + '</span>'; }).join('') : '';
+    return '<div class="the-hv"><div class="h1">' + lkHv(r[0]) + KQT[r[5]] + '</div><div class="hang-tt"><span>' + lkLop(lop) + '</span><span>' + (r[1] ? 'thi ' + r[1] : 'không thi') + '</span><span>OVR <b style="color:var(--text)">' + (r[2] ? r[2][1] : '—') + '</b></span><span>Target ' + r[4] + '</span></div>' + (dd ? '<div class="hang-tt diem">' + dd + '</div>' : '') + '</div>';
+  }
+  function thi375(ql) {
+    var csHep = csThi(true);
+    return dau(3, true) + loc({ ct: false, ngay: true, phaiHep: '<button type="button" class="nut nut-vuong" aria-label="Xuất Excel" title="Xuất Excel">' + IC.xuat + '</button>' }, true)
+      + csHep + bangKN(true)
+      + (ql ? '<div class="the-dau" style="padding:4px 0 0;border:0"><h2>Theo GV</h2><span class="dem">7 GV</span><span class="phu">% theo tuần dạy</span><span class="phai">' + ICH + '</span></div>' + theGV375(GV[1]) + theGV375(GV[0]) + theGV375(GV[2]) + '<button type="button" class="nut" style="width:100%">Xem 4 GV còn lại</button>' : '')
+      + '<div class="the-dau" style="padding:4px 0 0;border:0"><h2>Kết quả thi thật</h2><span class="dem">26 em</span></div>' + theThi(DS[0][2][0], 'CP FT 98') + theThi(DS[0][2][4], 'CP FT 98') + theThi(DS[0][2][2], 'CP FT 98');
+  }
+
+  /* ================= D · Test ================= */
+  function dauTest(tab, hep) {
+    return '<header class="dau-trang"><h1>Test</h1>' + (hep ? '' : '<span class="phai"><button type="button" class="nut">Xuất Excel</button><button type="button" class="nut">Xuất điểm Test</button><button type="button" class="nut nut-chinh">Xếp nhiều MT…</button></span>') + '</header>'
+      + '<div class="tab-hang" role="tablist"><button type="button" role="tab" aria-selected="' + (tab === 0) + '">Lịch Test tuần</button><button type="button" role="tab" aria-selected="' + (tab === 1) + '">Kế hoạch Test</button></div>';
+  }
+  var LOP = [['CP FT 116', 7, 'Nguyễn Hoàng Dũng', 'MT1 đang làm bài', 4], ['CP FT 130', 10, 'Đỗ Vũ Tuấn Phong', 'MT3 đang làm bài', 7], ['CP FT 131', 6, 'Đỗ Vũ Tuấn Phong', 'MT2 đang làm bài', 3], ['CP FT 133', 1, 'Nguyễn Hoàng Dũng', 'MT1 đã xong', 0],
+    ['CP FT 136', 7, 'Lưu Nhã Uyên', 'MT2 đang làm bài', 2], ['CP FT 137', 14, 'Nguyễn Hoàng Dũng', 'MT1 đang làm bài', 7], ['CP FT 138', 12, 'Việt Linh Nguyễn', 'MT2 đang làm bài', 8]];
+  function hangLop(l, mo, hep) {
+    return '<div class="hl"><span class="mui-mo">' + (mo ? '▾' : '▸') + '</span><span class="ma">' + l[0] + '</span><span class="mo"><b class="so" style="color:var(--text)">' + l[1] + '</b> HV</span>' + (hep ? '' : '<span class="mo">GVCN ' + l[2] + '</span>') + '<span class="mo">' + l[3] + '</span>'
+      + (l[4] ? '<span class="phai"><a class="oso" href="#so">Chưa có MT kế tiếp · ' + l[4] + ' em</a></span>' : '') + '</div>';
+  }
+  function emMo(ten, a) { return '<div class="hl-em"><a class="ten-hv" href="#hs">' + ten + '</a>' + a.map(function (x) { return '<span class="mt-o">' + x + '</span>'; }).join('') + '</div>'; }
+  function locTest(moHet, hep, lich) {
+    var nut = '<button type="button" class="lk" aria-pressed="' + moHet + '">' + (moHet ? 'Thu gọn tất cả' : 'Mở tất cả lớp') + '</button>';
+    var dem = lich ? '<span class="dem-trang"><b>7</b> lớp · <b>96</b> bài</span>' : '<span class="dem-trang"><b>57</b> HV · <b>7</b> lớp</span>';
+    var doan = '<span class="doan' + (hep ? ' rong-het' : '') + '" role="group"><button aria-pressed="true">Fast Track <span class="so">7</span></button><button aria-pressed="false">Lớp thường <span class="so">9</span></button></span>';
+    if (hep) return '<div class="hang-loc">' + doan + '<span class="chip-dk rong-het" style="justify-self:start">Chưa có MT kế tiếp <b>31</b></span><span class="o-tim rong-het" style="width:auto">' + IC.tim + '&nbsp; Tìm lớp, học viên…</span><span class="rong-het" style="display:flex;align-items:center;gap:12px">' + dem + '<span style="margin-left:auto">' + nut + '</span></span></div>';
+    return '<div class="hang-loc">' + (lich ? '<span class="o-tuan" aria-label="Tuần">W1 NOV ' + IC.lich + '</span>' : '') + doan + (lich ? '' : '<span class="chip-dk">Chưa có MT kế tiếp <b>31</b></span>') + '<span class="o-tim">' + IC.tim + '&nbsp; Tìm lớp, học viên…</span><button class="ii" aria-label="Luật xếp lịch">ⓘ</button><span class="phai" style="align-items:center;gap:14px">' + dem + nut + '</span></div>';
+  }
+
+  /* ================= KHUNG ================= */
+  var KHUNG = {
+    a1: function () {
+      return nenTS() + panel(pnDau('SỐ · TEST + SOS', 'SOS 3 · W5 OCT', 'Cẩm Phả · Fast Track · dữ liệu đến 05/11')
+        + '<div class="pn-than"><span class="pn-tong"><b>3</b> lượt · 3 HV</span>' + bangLuotFT(SOS3) + '<div class="cach-tinh" style="margin-top:30px"><b>Cách tính</b>Lượt đủ điểm, từ ba kỹ năng dưới kỳ vọng. Không tính HV KCK.</div></div>', true, 'SOS 3 · W5 OCT');
+    },
+    a1m: function () {
+      return dau(2, true) + '</div><div class="pn" role="dialog" aria-label="Dưới kỳ vọng · L · W5 OCT">' + pnDau('SỐ · TEST + SOS', 'Dưới kỳ vọng · L · W5 OCT', 'Cẩm Phả · Fast Track · dữ liệu đến 05/11', true)
+        + '<div class="pn-than"><span class="pn-tong"><b>4</b> HV</span>' + theFT(DUOIL[0], 'L', true) + theFT(DUOIL[1], 'L') + theFT(DUOIL[2], 'L') + theFT(DUOIL[3], 'L') + '</div></div><div>';
+    },
+    a2: function () { return nenBaoCao() + panel(pnTang(), true, 'Tiến bộ W1 · Tăng'); },
+    a3: function () { return nenLT() + panel(pnLT(), false, 'Progress Test · 1 môn trượt'); },
+    a4: function () { return nenYThuc() + panel(pnViPham(), true, 'Vi phạm'); },
+    b: function () { return nenLT(); },
+    bm: function () {
+      var luoi = function (n, ds) { return '<div class="luoi" style="--n:' + n + '">' + ds.map(function (x) { return '<span><i>' + x[0] + '</i><b>' + x[1] + '</b></span>'; }).join('') + '</div>'; };
+      return dau(2, true) + loc({ ct: 1, phaiHep: MENU }, true) + chiSo([{ ten: 'Bài kiểm tra', ky: 'trong kỳ', gt: o(46), mau: '31 HV' }, { ten: 'Thiếu điểm', gt: o(3) }])
+        + '<div class="the-dong"><div class="dau">W1 NOV <span class="mo2" style="font-weight:400;font-size:13px">02/11–08/11</span><span class="phai"><span style="color:var(--text)">' + o(14) + ' bài</span> · 3 lớp ▾</span></div>'
+        + '<div class="phan"><div class="nhan">Progress Test</div>' + luoi(3, [['Đạt hết', o(5)], ['1 môn trượt', o(2)], ['≥ 2 môn trượt', o(1)]]) + '</div>'
+        + '<div class="phan"><div class="nhan">Final Test</div>' + luoi(4, [['Dưới 50%', o(0)], ['50–59%', o(1)], ['60–69%', o(1)], ['Từ 70%', o(2)]]) + '</div>'
+        + '<div class="phan">' + luoi(3, [['Thiếu điểm', o(2)]]) + '</div></div>'
+        + '<div class="the-dong"><div class="dau">W5 OCT <span class="mo2" style="font-weight:400;font-size:13px">26/10–01/11</span><span class="phai"><span style="color:var(--text)">' + o(9) + ' bài</span> ▸</span></div></div>'
+        + '<div class="the-dong"><div class="dau">W4 OCT <span class="mo2" style="font-weight:400;font-size:13px">19/10–25/10</span><span class="phai"><span style="color:var(--text)">' + o(11) + ' bài</span> ▸</span></div></div>';
+    },
+    c1: function () { return tabThi(true); },
+    c2: function () {
+      return tabThi(true) + panel(pnDau('SỐ · THI THẬT', 'Fail · W', 'Cẩm Phả · thi 01/09 – 05/11 · W so Target overall')
+        + '<div class="pn-than"><span class="pn-tong"><b>15</b> em</span>' + bangTT(FAILW, 'W') + '<div class="cach-tinh" style="margin-top:24px"><b>Cách tính</b>W thi thật dưới Target overall. Thi lại chỉ W: tính W lần này, L R S lấy lại (↺) không tính. Không tính KCK.</div></div>', true, 'Fail · W');
+    },
+    c3: function () {
+      return tabThi(true) + panel(pnDau('SỐ · THI THẬT · THEO GV', 'Đỗ Vũ Tuấn Phong · W1 · Fail', 'Cẩm Phả · thi 01/09 – 05/11 · W1 tính nửa W')
+        + '<div class="pn-than"><span class="pn-tong"><b>6</b> em · 55 % theo tuần dạy</span>' + bangTT(GVW1, 'W', true) + '<div class="cach-tinh"><b>Cách tính</b>Tuần dạy = tuần GV dạy W1 cho em ÷ tuần em học W1 trong lộ trình, tính đến ngày thi. % của dòng GV cộng theo tuần dạy, không đếm mỗi em bằng nhau.</div></div>', true, 'Đỗ Vũ Tuấn Phong · W1');
+    },
+    c7: function () {
+      return nenTS().replace(MENU, MENU.replace('nut nut-vuong', 'nut nut-vuong dang-mo')) + '</div><div class="menu-noi" role="menu" style="position:absolute;top:220px;right:24px"><button role="menuitem">Cột hiện…</button><button role="menuitem" class="ke">' + IC.xuat + 'Xuất kết quả từng lượt</button></div><div>';
+    },
+    c4: function () { return thi375(true); },
+    c5: function () { return thi375(false); },
+    c6: function () { return dau(3, true) + loc({ ct: false, ngay: true, phaiHep: '<button type="button" class="nut nut-vuong" aria-label="Xuất Excel" disabled>' + IC.xuat + '</button>' }, true).replace('01/09/2026', '02/11/2026') + '<div class="the"><div class="rong-dau" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 16px"><span class="mo" style="font-size:14px">Chưa có kết quả thi thật trong 02/11 – 05/11.</span><button type="button" class="nut nut-nho">Xem Toàn bộ</button></div></div>'; },
+    d1: function () { return dauTest(1) + locTest(false) + '<div class="ds-lop">' + LOP.map(function (l) { return hangLop(l, false); }).join('') + '</div>'; },
+    d1b: function () {
+      return dauTest(1) + locTest(true) + '<div class="ds-lop">' + hangLop(LOP[0], true)
+        + emMo('Bùi Thảo Vy', ['MT1 ✓ W2 OCT', 'MT2 · W2 NOV', '—', '—']) + emMo('Đặng Thu Hà', ['MT1 ✓ W2 OCT', 'Chưa xếp lịch', '—', '—']) + emMo('Đinh Gia Huy', ['MT1 · W1 NOV', '—', '—', '—']) + emMo('Đỗ Minh Khôi', ['MT1 ✓ W2 OCT', 'Chưa xếp lịch', '—', '—']) + emMo('Hồ Gia Hân', ['MT1 · W1 NOV', '—', '—', '—']) + emMo('Lương Bảo Anh', ['MT1 ✓ W2 OCT', 'MT2 · W2 NOV', '—', '—']) + emMo('Tạ Minh Quân', ['MT1 · W1 NOV', '—', '—', '—'])
+        + hangLop(LOP[1], true) + emMo('Vũ Hà My', ['MT1 ✓ W1 SEP', 'MT2 ✓ W5 SEP', 'MT3 · W1 NOV', '—']) + '</div>';
+    },
+    d2: function () { return dauTest(0) + locTest(false, false, true) + '<div class="ds-lop">' + LOP.slice(0, 5).map(function (l) { return '<div class="hl"><span class="mui-mo">▸</span><span class="ma">' + l[0] + '</span><span class="mo"><b class="so" style="color:var(--text)">' + (l[1] * 2) + '</b> bài</span><span class="mo">' + (l[1] - 1) + ' đã có điểm</span></div>'; }).join('') + '</div>'; },
+    d3: function () { return dauTest(1, true) + locTest(false, true) + '<div class="ds-lop">' + LOP.slice(0, 5).map(function (l) { return hangLop(l, false, true); }).join('') + '</div>'; }
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-k]'), function (el) {
+    var hep = el.classList.contains('dt'), k = el.getAttribute('data-k');
+    var menu = /^d/.test(k) ? 2 : 4, nguoi = k === 'c5' ? 'Nguyễn Hoàng Dũng · GV' : null;
+    el.innerHTML = nav(hep, menu, nguoi) + '<div class="noi-dung">' + KHUNG[k]() + '</div>';
+    var th = el.querySelector('.tab-hang'), ts = th && th.querySelector('[aria-selected="true"]');
+    if (hep && th && ts) th.scrollLeft = Math.max(0, ts.offsetLeft - th.offsetLeft - 60);
+  });
+  document.getElementById('doi-theme').addEventListener('click', function () {
+    var h = document.documentElement; if (h.getAttribute('data-theme') === 'light') h.removeAttribute('data-theme'); else h.setAttribute('data-theme', 'light');
+  });
+})();
+</script>
+</body>
+</html>

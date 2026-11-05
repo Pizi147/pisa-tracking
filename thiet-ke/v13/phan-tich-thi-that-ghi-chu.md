@@ -4,7 +4,7 @@
 Khung nền: `thiet-ke/v11/phan-tich.html` (U08 đã duyệt) · `v11/ke-hoach-test.html` · `v11/lich-test-tuan.html` · panel `web/src/ui/BangLuotPanel.tsx` (#901).
 Mật độ: M1–M10 (`docs/superpowers/specs/2026-11-05-mat-do-thong-tin/de-xuat.md`). Mockup: `thiet-ke/v13/phan-tich-thi-that.html`.
 
-**Trạng thái:** bước 1. Bảng dưới gửi PTA Plan duyệt trước khi vẽ.
+**Trạng thái:** PTA duyệt bảng 05/11 (fc6168d) → vẽ.
 
 ## 0. Brief (impeccable `shape`, tự rà — không hỏi chủ SP)
 
@@ -121,7 +121,7 @@ Giữ nguyên, không đổi: panel Case (`diemCase` + trạng thái + người 
 | Tab "Kết quả Test / Thi" | tên cũ | "Thi thật" | ĐỔI tên |
 | Ô đoạn Mock Test \| Thi thật | đầu hàng lọc | bỏ | BỎ (một loại) |
 | Lọc "Mọi kết quả", Xếp theo SOS, chip SOS → panel Case | phần Mock | bỏ | BỎ (2F: Test + SOS đã chia mức SOS; Case xem ở hồ sơ qua tên em) |
-| Xuất Excel · n lượt (Mock) | cuối hàng lọc phần Mock | Test + SOS ⋯ "Xuất kết quả từng lượt" (đã có) | ĐỔI chỗ — **[XM-3]** vai không có quyền `xuatMt` mất Excel MT |
+| Xuất Excel · n lượt (Mock) | cuối hàng lọc phần Mock | Test + SOS (FT) ⋯ "Xuất kết quả từng lượt" — hiện cho vai có `xuatMt` **và** vai từng thấy nút cũ (PTA XM-3) | ĐỔI chỗ, không vai nào mất |
 | Xuất Excel (Thi thật) | cuối hàng lọc | như cũ | GIỮ |
 | Bộ lọc chi nhánh · thời gian · lớp | có | có; thời gian theo ngày thi | GIỮ |
 | Test lớp thường: ô Checkpoint, Mini Test, Xử lý | bảng | bỏ cột; Excel giữ cột | BỎ trên màn (2B) |
@@ -129,7 +129,9 @@ Giữ nguyên, không đổi: panel Case (`diemCase` + trạng thái + người 
 | Kế hoạch Test, Lịch Test tuần: mở từng lớp | có | có | GIỮ |
 | "Mở tất cả lớp" ↔ "Thu gọn tất cả" | không có | QL, QT | THÊM (2D) |
 
-**[XM]** chờ PTA: **XM-1** cột Kết quả danh sách thi thật đổi "✓ Đạt / ✗ Chưa đạt" → Exceed / Đạt / Fail (một tên một thứ) · **XM-2** bỏ Checkpoint thì "Bài kiểm tra" có còn đếm bài Checkpoint (PET / KET)? Đề xuất: không đếm, để Bài = Progress + Final + Thiếu điểm cộng đúng · **XM-3** Excel MT như trên · **XM-4** nút Ghi kết quả trong panel Hiệu quả PA trái G8 — đề xuất giữ (đã có, không bớt thao tác) · **XM-5** "Thi trong kỳ" (Báo cáo HV) đổi sang P-TT nghĩa là chỉ em ĐÃ có kết quả; em có ngày thi chưa có kết quả ghi "Chưa có kết quả" ở ô điểm.
+**PTA chốt 05/11:** XM-1 đồng ý (Exceed xanh lá · Đạt xanh dương · Fail đỏ, cùng màu ô ✓ / ✗) · XM-2 đồng ý (Bài = Progress + Final + Thiếu điểm) · **XM-3 đổi chỗ, không ai mất:** mục ⋯ "Xuất kết quả từng lượt" ở Test + SOS (FT) hiện cho **hợp hai tập vai**: vai có `xuatMt` (như nay, tệp đầy đủ) **và** mọi vai từng thấy nút Excel Mock cũ (tệp = đúng dữ liệu nút cũ). Một nhãn, một chỗ · XM-4 giữ nút Ghi kết quả · XM-5 đồng ý · Theo GV đọc theo `class_id` của em trong tập, có trần ở `tocDoDuong` (ghi cho PR code).
+
+Câu hỏi đã gửi PTA (giữ để tra): **XM-1** cột Kết quả danh sách thi thật đổi "✓ Đạt / ✗ Chưa đạt" → Exceed / Đạt / Fail (một tên một thứ) · **XM-2** bỏ Checkpoint thì "Bài kiểm tra" có còn đếm bài Checkpoint (PET / KET)? Đề xuất: không đếm, để Bài = Progress + Final + Thiếu điểm cộng đúng · **XM-3** Excel MT như trên · **XM-4** nút Ghi kết quả trong panel Hiệu quả PA trái G8 — đề xuất giữ (đã có, không bớt thao tác) · **XM-5** "Thi trong kỳ" (Báo cáo HV) đổi sang P-TT nghĩa là chỉ em ĐÃ có kết quả; em có ngày thi chưa có kết quả ghi "Chưa có kết quả" ở ô điểm.
 
 ## 4. Dòng đọc Turso (ước, chi nhánh Cẩm Phả ~200 HV)
 
