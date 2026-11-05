@@ -980,6 +980,36 @@
 :is(td, .text-xs) .so-bam:not(.text-bad, .text-late, .decoration-dotted), .o-so.so-bam { font-weight: 500; }
 
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */
+/* BAO-CAO-PH (mockup v15 `.thang`, `.o-bc`, `.bbc`): hàng nút thang 4 mức · ô bảng em × phần · bảng. Màu = token sẵn có (ô sửa, nút chính, soon). */
+@layer components {
+  .thang-bc { display: inline-flex; height: 34px; overflow: hidden; border: 1px solid var(--o-sua-vien); border-radius: 8px; }
+  .thang-bc > button { appearance: none; border: 0; background: var(--o-sua-nen); min-width: 70px; padding: 0 10px; font-size: 13px; font-weight: 500;
+    color: var(--text-dim); cursor: pointer; white-space: nowrap; }
+  .thang-bc > button + button { border-left: 1px solid var(--o-sua-vien); }
+  .thang-bc > button:hover { background: var(--accent-soft); color: var(--text); }
+  .thang-bc > button[aria-checked="true"] { background: var(--nut-chinh-nen, var(--accent)); color: var(--nut-chinh-chu, var(--accent-ink)); font-weight: 700; }
+  .thang-bc > button[aria-checked="true"].san { background: transparent; color: var(--text); font-weight: 600; border: 1.5px dashed var(--accent); border-radius: 7px; }
+  .thang-bc > button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; position: relative; z-index: 1; }
+  .thang-bc.trong { border-color: rgb(var(--soon-line-rgb)); }
+  @media (max-width: 639px) { .thang-bc { display: flex; height: 44px; width: 100%; } .thang-bc > button { flex: 1; min-width: 0; padding: 0 4px; font-size: 14px; } }
+  .o-bc { appearance: none; border: 0; background: none; min-width: 40px; height: 32px; padding: 0 6px; border-radius: 6px; font-size: 15px; font-weight: 700;
+    cursor: pointer; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+  .o-bc:hover { background: var(--accent-soft); color: var(--text); }
+  .o-bc.du { font-weight: 500; }
+  .o-bc.chua { color: var(--text); box-shadow: inset 0 0 0 1px var(--o-sua-vien); }
+  .o-bc.chua.doc { box-shadow: none; color: var(--text-faint); }
+  .o-bc.nhap { color: rgb(var(--soon-rgb)); font-size: 12px; font-weight: 500; }
+  .o-bc.nhap.cua { box-shadow: inset 0 0 0 1px rgb(var(--soon-line-rgb)); }
+  .bang-bc { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 15px; }
+  .bang-bc th { font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--text-dim); padding: 8px 6px; border-bottom: 1px solid var(--line-strong); text-align: center; vertical-align: bottom; }
+  .bang-bc th small { display: block; font-size: 12px; font-weight: 500; color: var(--text-faint); }
+  .bang-bc th small.chua { color: var(--text-dim); font-weight: 600; }
+  .bang-bc :is(th, td):first-child { text-align: left; padding-left: 4px; }
+  .bang-bc td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: center; height: 40px; }
+  .bang-bc tbody tr:hover td { background: var(--accent-soft); }
+  .bang-bc tfoot td { border-bottom: 0; border-top: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; color: var(--text-dim); height: 36px; font-variant-numeric: tabular-nums; }
+}
+
 @media print {
   html, body, #root { height: auto !important; overflow: visible !important; background: Canvas !important; }
   .hd-in, .hd-in * { color: CanvasText !important; background: transparent !important; box-shadow: none !important; }
