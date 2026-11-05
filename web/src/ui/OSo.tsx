@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { BangLuotPanel } from './BangLuotPanel.tsx';
+import { BangLuotPanel, loaiBangLuot, type DuLieuBangLuot } from './BangLuotPanel.tsx';
 import { METRIC_UNIT_LABEL, khoaSoLieu, metricById, tenMonNgan, type ChiSo } from '@shared/domain/index.ts';
 import { useMoSoLieu } from '../lib/quayLai.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -56,11 +56,11 @@ export function OSo(props: Props) {
 }
 
 export function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string; tieuDe: string; open: boolean; onClose: () => void }) {
-  const { data, loading, error, reload } = useApi<{ n: number; tieuDe: string; unit?: ChiSo['donVi']; rows: DongSoLieu[]; bangLuot?: boolean; cachTinh?: string | null; chiNhanh?: string | null }>(open ? nguon : null, [nguon, open]);
+  const { data, loading, error, reload } = useApi<{ n: number; tieuDe: string; unit?: ChiSo['donVi']; rows: DongSoLieu[] } & Omit<DuLieuBangLuot, 'n' | 'rows'>>(open ? nguon : null, [nguon, open]);
   if (!open) return null;
-  /* U08-2: panel số Test + SOS (FT) theo lượt → bảng điểm L R W1 W2 S (mockup V11 A2). */
+  /* PT-PANEL (mockup v13 A1 / A2): máy chủ trả `bangLuot` → panel BẢNG có điểm (lượt / Tăng · Giữ · Giảm). */
   if (data?.bangLuot) {
-    return <BangLuotPanel tieuDe={tieuDe} data={data} loading={loading} error={error} reload={reload} onDong={onClose} />;
+    return <BangLuotPanel tieuDe={tieuDe} loai={loaiBangLuot(nguon)} data={data as DuLieuBangLuot} loading={loading} error={error} reload={reload} onDong={onClose} />;
   }
   /* OV-12e: cùng panel mở rộng dòng với ô số trong sổ (`NganDanhSach`). M6 6b-1 (bảng kê 0.2): tiêu đề = chữ nơi gọi (kèm ngữ cảnh: chi nhánh, lớp)
      — không đổi sang tiêu đề máy chủ khi tải xong (đầu panel không nhảy, không mất ngữ cảnh). */
