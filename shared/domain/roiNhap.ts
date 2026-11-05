@@ -41,6 +41,14 @@ export function taoKhoRoiNhap() {
   };
 }
 
+/** Trả lời bộ chặn MỘT lần cho mỗi lần bị giữ: bấm đúp "Bỏ…, rời đi" / "Ở lại" — lần hai gọi blocker đã đi, router ném
+ *  "Invalid blocker state transition: unblocked -> proceeding" (RA-LOI-TEST 05/11). */
+export function motLanTraLoi(di?: () => void, o?: () => void): { di: () => void; o: () => void } {
+  let xong = false;
+  const mot = (f?: () => void) => () => { if (xong) return; xong = true; f?.(); };
+  return { di: mot(di), o: mot(o) };
+}
+
 const q = (u: Url) => new URLSearchParams(u.search);
 /** Trang con Cuối khoá lớp thường (`?xem=cuoi-khoa`): bỏ / thêm `?em=` vẫn ở trong; đổi trang hay về hồ sơ lớp là rời. */
 export function conTrongCuoiKhoa(tu: Url, den: Url): boolean {

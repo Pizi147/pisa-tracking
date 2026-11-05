@@ -246,7 +246,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   /* CHAN-ROI-NHAP-2: đã trả lời "Bỏ chữ" ở hộp này → việc vừa bấm (đóng, sang việc khác, rời trang) không bị bộ chặn gốc hỏi lần hai. */
   const daBo = useRef(false);
   const dong = () => { if (daSuaRef.current) setHoi({ nut: t('Bỏ chữ, đóng'), tiep: () => dongRef.current() }); else dongRef.current(); };
-  const boChu = () => { const h = hoi; setHoi(null); daBo.current = true; nhap?.xoa(); h?.tiep(); };
+  /* Bấm đúp "Bỏ chữ, …": lần hai còn đọc `hoi` cũ (chưa vẽ lại) → đóng / quay lại / rời trang hai lần. Mỗi hộp chạy một lần. */
+  const daTra = useRef<typeof hoi>(null);
+  const boChu = () => { const h = hoi; if (!h || daTra.current === h) return; daTra.current = h; setHoi(null); daBo.current = true; nhap?.xoa(); h.tiep(); };
 
   useEffect(() => {
     if (longTrong || taiCho) return undefined;

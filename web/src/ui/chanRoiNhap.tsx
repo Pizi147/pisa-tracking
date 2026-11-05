@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useBlocker, useLocation, type BlockerFunction } from 'react-router-dom';
-import { taoKhoRoiNhap, type KieuDi, type NguonNhap } from '@shared/domain/index.ts';
+import { motLanTraLoi, taoKhoRoiNhap, type KieuDi, type NguonNhap } from '@shared/domain/index.ts';
 import { HopBoChu } from './Drawer.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -64,10 +64,12 @@ export function ChanRoiNhapGoc() {
     if (!p) { daGoi.current = null; return; }
     if (daGoi.current === p) return;
     daGoi.current = p;
-    if (p === n) p.hoi!(() => giu.proceed?.(), () => giu.reset?.());
+    if (p === n) { const tra = motLanTraLoi(giu.proceed, giu.reset); p.hoi!(tra.di, tra.o); }
     else p.hoi!(() => khoRoiNhap.tra(true), () => khoRoiNhap.tra(false));
   }, [n, xin, giu]);
-  const hop = n && !n.hoi ? { moTa: n.moTa, di: () => giu.proceed?.(), o: () => giu.reset?.() }
+  /* Một lần trả lời cho mỗi lần bị giữ (bấm đúp không gọi blocker hai lần) — giữ theo `viTri` để không tạo lại mỗi lần vẽ. */
+  const traGiu = useMemo(() => motLanTraLoi(giu.proceed, giu.reset), [viTri]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const hop = n && !n.hoi ? { moTa: n.moTa, di: traGiu.di, o: traGiu.o }
     : xin && !xin.hoi ? { moTa: xin.moTa, di: () => khoRoiNhap.tra(true), o: () => khoRoiNhap.tra(false) } : null;
   if (!hop) return null;
   return <HopBoChu tieuDe={t('Bỏ nháp chưa lưu?')} than={hop.moTa} nut={t('Bỏ nháp, rời đi')} onO={hop.o} onBo={hop.di} />;

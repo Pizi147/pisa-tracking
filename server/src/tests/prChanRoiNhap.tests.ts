@@ -163,4 +163,26 @@ export async function runPrChanRoiNhapTests(t: YThucTestKit) {
     const hook = doc('web/src/ui/chanRoiNhap.tsx');
     assert((hook.match(/useBlocker\(/g) ?? []).length === 1, 'một useBlocker cả app');
   });
+  /* RA-LOI-TEST (05/11): bấm đúp "Bỏ chữ, rời đi" → proceed lần hai trên blocker đã đi → router ném "Invalid blocker state transition: unblocked -> proceeding". */
+  await checkAsync('CRN-8 bấm đúp trả lời bộ chặn: router chỉ nhận một lần, không ném lỗi', async () => {
+    const { createMemoryRouter } = await import('react-router-dom');
+    const router = createMemoryRouter([{ path: '*', element: null }], { initialEntries: ['/mock-test/1'] });
+    router.getBlocker('k', () => true);
+    await router.navigate('/hoc-vien/22');
+    const b = router.state.blockers.get('k')!;   // đối tượng cũ hộp đang giữ (closure lúc vẽ)
+    assert(b.state === 'blocked', 'bị giữ');
+    const tra = d.motLanTraLoi(b.proceed, b.reset);
+    tra.di();
+    await new Promise((r) => setTimeout(r, 0));
+    let nem: unknown = null;
+    try { tra.di(); tra.o(); } catch (e) { nem = e; }
+    assert(nem === null, `lần bấm thứ hai không được ném: ${nem}`);
+    assert(router.state.location.pathname === '/hoc-vien/22', 'đi tới đúng đích một lần');
+    router.dispose();
+  });
+  check('CRN-8 nguồn: bộ chặn gốc và hộp Bỏ chữ của panel trả lời một lần', () => {
+    const hook = doc('web/src/ui/chanRoiNhap.tsx');
+    assert(!/giu\.proceed\?\.\(\)|giu\.reset\?\.\(\)/.test(hook), 'proceed / reset đi qua motLanTraLoi');
+    assert(/const boChu = \(\) => \{[^}]*daTra\.current === h/.test(doc('web/src/ui/KhungPanel.tsx')), 'boChu chỉ chạy một lần cho mỗi hộp');
+  });
 }
