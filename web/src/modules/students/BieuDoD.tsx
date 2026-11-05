@@ -55,9 +55,9 @@ const MAU_THANH_SOS: Record<number, [string, string, string]> = {
   2: ['var(--sos2-nen)', 'rgb(var(--sos2-rgb))', 'rgb(var(--sos2-chu-rgb))'],
   3: ['var(--sos3-nen)', 'var(--sos3-vien)', 'var(--sos3-tren)'],
 };
-const MAU_KQ = { vuot: 'rgb(var(--kq-vuot-rgb))', bang: 'rgb(var(--kq-bang-rgb))', duoi: 'rgb(var(--kq-duoi-rgb))' } as const;
-/** ✓ / ✗ so kỳ vọng của lượt (vượt · bằng · dưới); `dat` = lớp thường so ngưỡng đạt: bằng ngưỡng là đạt (`ratioResult`), chỉ hai màu. */
-export const kqSo = (v: number | null, kv: number | null, dat = false) => (v == null || kv == null ? null : dat ? (v >= kv - 1e-9 ? 'vuot' : 'duoi')
+const MAU_KQ = { vuot: 'rgb(var(--kq-vuot-rgb))', bang: 'rgb(var(--kq-bang-rgb))', dat: 'rgb(var(--kq-bang-rgb))', duoi: 'rgb(var(--kq-duoi-rgb))' } as const;
+/** ✓ / ✗ so kỳ vọng của lượt (vượt · bằng · dưới); `dat` = lớp thường so ngưỡng đạt: bằng ngưỡng là đạt (`ratioResult`), chỉ hai màu (Đạt xanh dương — MAU-THONG-NHAT). */
+export const kqSo = (v: number | null, kv: number | null, dat = false) => (v == null || kv == null ? null : dat ? (v >= kv - 1e-9 ? 'dat' : 'duoi')
   : v > kv + 1e-9 ? 'vuot' : v < kv - 1e-9 ? 'duoi' : 'bang');
 const PHONG = 'var(--phong, inherit)';
 

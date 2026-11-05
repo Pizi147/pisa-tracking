@@ -407,7 +407,9 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     const xh = r.xuHuong ? chuXuHuong(r.xuHuong) : null;
     const phu: ReactNode[] = [
       ngCanh && (r.em ? <Link to={r.href} className="text-[color:var(--accent)] no-underline hover:underline">{ngCanh}</Link> : ngCanh),
-      ...r.sub.split(' · ').filter((x) => x && !daCo.has(x)),
+      /* MAU-THONG-NHAT (chủ SP 05/11): chữ kết luận trong `sub` theo màu kết quả — Đạt xanh dương (vượt: xanh lá), Chưa đạt đỏ. */
+      ...r.sub.split(' · ').filter((x) => x && !daCo.has(x)).map((x) => (x === 'Đạt' || x === 'Chưa đạt'
+        ? <span className={`font-semibold ${lopKq(x === 'Chưa đạt' ? 'duoi' : r.vuot ? 'vuot' : 'dat')}`}>{t(x)}</span> : x)),
       v && !v.lam && dich(v.chu), r.tinhTrang && dich(r.tinhTrang),
       han && <HanDong han={han} loai={r.viec?.loaiHan} />,
       r.nguoi && r.nguoiId !== toi && r.nguoi,

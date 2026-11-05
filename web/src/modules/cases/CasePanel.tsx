@@ -859,7 +859,7 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
       badge: (
         <>
           {m.band !== null && m.band !== undefined && (
-            <Outcome tone={m.expectation !== null && m.band < m.expectation ? 'danger' : 'ok'}>
+            <Outcome tone={m.expectation === null ? 'dat' : m.band < m.expectation ? 'danger' : m.band > m.expectation ? 'ok' : 'dat'}>
               {fmtBand(m.band)}{m.expectation !== null ? t(' · kỳ vọng {fmtBand}', { fmtBand: fmtBand(m.expectation) }) : ''}
             </Outcome>
           )}

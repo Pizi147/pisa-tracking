@@ -9792,6 +9792,9 @@ await runPrXoaCasePaTests({ check, assert, conn, P, TODAY, classId } as any);
 // ==================================================================== PR-MT-VANG (N38: "-" dời tuần sau tuần thi · vắng 2 lần huỷ · chọn tuần = xếp lại)
 const { runPrMtVangTests } = bocTep('prMtVang', await import('./prMtVang.tests.ts'));
 await runPrMtVangTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== PR-6 MAU-THONG-NHAT (chủ SP 05/11: đỏ không đạt · xanh dương đạt · xanh lá vượt)
+const { runPrMauKqTests } = bocTep('prMauKq', await import('./prMauKq.tests.ts'));
+await runPrMauKqTests({ check, assert } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

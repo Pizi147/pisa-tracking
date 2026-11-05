@@ -18,7 +18,7 @@ import { DongLanTruoc, diemBanDau, layLaiBanDau, type KyNangThi } from './diemLa
 
 const KY_NANG = ['l', 'r', 'w', 's'] as const;
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
-const toneKq = (n: string) => (n === 'Đạt Target' ? 'ok' : n === 'Chưa đạt Target' ? 'bad' : 'muted') as 'ok' | 'bad' | 'muted';
+const toneKq = (n: string) => (n === 'Đạt Target' ? 'doing' : n === 'Chưa đạt Target' ? 'bad' : 'muted') as 'doing' | 'bad' | 'muted';
 
 /** Nhãn "Dự kiến thi" từ cột lộ trình: ngày → dd/mm; tháng → SEP 2026; chưa có → null. */
 function nhanThi(c: any, homNay: string | null): string | null {
@@ -157,7 +157,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
               <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-300">
                 {/* P13: Grade + CEFR tính từ Overall (không lưu) — "Grade B · B1". */}
                 <span className="tabular-nums">{chuGradeKyThi(kqKt)}</span>
-                {kqKt.dat !== null && <Nhan tone={kqKt.dat ? 'ok' : 'bad'}>{kqKt.dat ? t('Đạt Target') : t('Chưa đạt Target')}</Nhan>}
+                {kqKt.dat !== null && <Nhan tone={kqKt.dat ? 'doing' : 'bad'}>{kqKt.dat ? t('Đạt Target') : t('Chưa đạt Target')}</Nhan>}
               </div>
             )}
           </>

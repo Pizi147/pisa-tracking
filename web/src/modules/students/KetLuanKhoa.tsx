@@ -202,7 +202,7 @@ function MiniTestDaGhi({ mt }: { mt: MiniTestEm & { tyLe: number } }) {
         <span className="font-semibold text-slate-100">Mini Test</span>
         <span className="font-bold tabular-nums text-slate-100">{Math.round(mt.tyLe * 100)}%</span>
         <span className="text-xs tabular-nums text-slate-400">{mt.ngayLam ? ngay(mt.ngayLam, homNay) : ''}</span>
-        <Level tone={dat ? 'ok' : 'warn'}>{dat ? t('Đạt') : t('Chưa đạt — đã báo QL')}</Level>
+        <Level tone={dat ? 'info' : 'danger'}>{dat ? t('Đạt') : t('Chưa đạt — đã báo QL')}</Level>
         {mt.coTheSua && !sua && (
           <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0"
             onClick={() => { setLoi(null); setSua({ pt: String(Math.round(mt.tyLe * 100)), ngay: mt.ngayLam ?? homNay }); }}>{t('Sửa')}</button>

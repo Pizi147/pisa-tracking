@@ -52,7 +52,8 @@ export const SCORE_CHIP: Record<ScoreTone, string> = {
   /* NEN-V5 (badge nhóm 1): viền màu nghĩa trên nền thẻ — cùng họ với SOS (C23). */
   rose: 'bg-[color:var(--surface)] text-bad border-bad-line',
   sky: 'bg-[color:var(--surface)] text-doing border-doing-line',
-  emerald: 'bg-[color:var(--surface)] text-dat border-dat-line',
+  /* MAU-THONG-NHAT (chủ SP 05/11): `emerald` = Đạt (không SOS, không biết vượt) → xanh dương `--kq-bang`; tên khoá giữ cho chỗ gọi cũ. */
+  emerald: 'bg-[color:var(--surface)] text-kq-bang border-doing-line',
   slate: 'bg-[color:var(--surface)] text-muted border-muted-line',
   sos1: lopSos(1),
   sos2: lopSos(2),
@@ -61,7 +62,7 @@ export const SCORE_CHIP: Record<ScoreTone, string> = {
 };
 /** Chữ trơn cùng họ màu — cho dòng phụ ngắn cạnh số điểm (không phải chip). */
 export const SCORE_TEXT: Record<ScoreTone, string> = {
-  rose: 'text-bad', sky: 'text-doing', emerald: 'text-dat', slate: 'text-faint',
+  rose: 'text-bad', sky: 'text-doing', emerald: 'text-kq-bang', slate: 'text-faint',
   sos1: 'text-sos1-chu', sos2: 'text-sos2-chu', sos3: 'text-sos3-chu', tam: 'text-muted',
 };
 
@@ -229,12 +230,14 @@ export function Alert({ tone = 'danger', children, title, quaHan }: {
  */
 const OUTCOME_CLASS: Record<string, string> = {
   ok: 'bg-[color:var(--surface)] text-ok border-ok-line',
+  /* MAU-THONG-NHAT (chủ SP 05/11): Đạt / bằng kỳ vọng (không vượt) — xanh dương `--kq-bang`. */
+  dat: 'bg-[color:var(--surface)] text-kq-bang border-doing-line',
   warn: 'bg-[color:var(--surface)] text-soon border-soon-line',
   danger: 'bg-[color:var(--surface)] text-bad border-bad-line',
   muted: 'bg-transparent text-dim border-muted-line',
 };
 export function Outcome({ tone, mark, children, title }: {
-  tone: 'ok' | 'warn' | 'danger' | 'muted'; mark?: string; children: ReactNode; title?: string;
+  tone: 'ok' | 'dat' | 'warn' | 'danger' | 'muted'; mark?: string; children: ReactNode; title?: string;
 }) {
   return (
     <span title={title}

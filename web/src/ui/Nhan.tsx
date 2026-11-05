@@ -43,7 +43,7 @@ export const CHIP_SOS = 'inline-flex h-[22px] min-w-[30px] shrink-0 items-center
 
 /** Nhóm 1 — KẾT QUẢ HỌC TẬP: Đạt ✓ · Chưa đạt ✗ · Chưa đủ dữ liệu – (viền đứt). Ký hiệu đứng đầu, không chỉ màu. */
 const KQ: Record<'dat' | 'chua-dat' | 'thieu', { lop: string; dau: string }> = {
-  dat: { lop: 'text-dat border-dat-line', dau: '✓' },
+  dat: { lop: 'text-kq-bang border-doing-line', dau: '✓' },   // MAU-THONG-NHAT: Đạt (không biết vượt) xanh dương
   'chua-dat': { lop: 'text-bad border-bad-line', dau: '✗' },
   thieu: { lop: 'text-faint border-dashed border-[color:var(--thieu-vien)]', dau: '–' },
 };

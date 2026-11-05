@@ -285,7 +285,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
 function SosLuot({ row, tam }: { row: FtSheet['rows'][number]; tam?: boolean }) {
   const muc = row.result.sosLevel as number;
   /* BANG-1 (mockup 6 khung 3): đạt = chữ "✓ Đạt" màu vượt, không chip nền (04 mục 5.2). */
-  if (muc <= 0) return <span className="font-semibold text-kq-vuot" title={sosLabel(muc)}>✓ {t('Đạt')}</span>;
+  if (muc <= 0) return <span className="font-semibold text-kq-bang" title={sosLabel(muc)}>✓ {t('Đạt')}</span>;
   const dot = `MT${row.attemptNo}`;
   const { kyNang, soLieu } = soLieuSos(row.result, dot);
   return <ChipSos muc={muc} tam={tam} kyNang={kyNang} dot={dot} ten={row.studentName} soLieu={soLieu}

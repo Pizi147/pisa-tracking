@@ -47,7 +47,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
   const oKq = (e: Em) => {
     const k = e.kqdr;
     if (!k) return <Nhan tone="muted" title={t('Quản lý chưa chốt Kết quả đầu ra')}>{t('Chưa chốt')}</Nhan>;
-    if (k.dat) return <Nhan tone="ok">{t('Đạt')}</Nhan>;
+    if (k.dat) return <Nhan tone="doing">{t('Đạt')}</Nhan>;
     return <Nhan tone="bad">{`${t('Không đạt')} · ${k.nguyenNhan === 'hoc_sinh' ? t('Học viên') : t('Trung tâm')}${k.mon.length ? ` · ${k.mon.map((m) => NGAN[m] ?? m).join(' ')}` : ''}`}</Nhan>;
   };
   const oCase = (e: Em) => (e.case.length ? (
@@ -63,7 +63,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
     ? <span className="whitespace-pre-line break-words text-[13px] text-slate-300">{e.banGiao}</span>
     : <span className="text-xs text-slate-500">{t('Chưa bàn giao')}</span>);
   const oFinal = (e: Em) => (e.final === null ? <span className="text-slate-500">—</span>
-    : <Nhan tone={e.finalDat ? 'ok' : 'soon'}>{`${Math.round(e.final * 100)}%`}</Nhan>);
+    : <Nhan tone={e.finalDat ? 'doing' : 'bad'}>{`${Math.round(e.final * 100)}%`}</Nhan>);
   const tenEm = (e: Em) => <Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
   const dongDot = (d: Bang['dot'][number]) => (
     <span className="flex flex-wrap items-baseline gap-x-2 text-xs text-slate-400">

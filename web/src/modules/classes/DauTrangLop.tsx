@@ -236,7 +236,7 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
           {tomTat?.dat && (
             <So n={tomTat.dat.nhan} g={(
               <span className="inline-flex items-baseline gap-1">
-                <span className="tabular-nums text-dat">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %</span>
+                <span className="tabular-nums">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %</span>
                 <span className="mr-1 text-[13px] font-medium tabular-nums text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong} HV</span>
                 <NutLuat label={t('Cách tính Đạt')}>{t('Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.')}</NutLuat>
               </span>
