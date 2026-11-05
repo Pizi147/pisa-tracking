@@ -15,6 +15,7 @@ import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, s
 import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from '../students/PanelLoTrinhMoi.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { LuaChonRadio, gioVnNay } from './PanelBaoPhTvv.tsx';
+import { DongLanTruoc, diemBanDau, layLaiBanDau, type KyNangThi } from '../students/diemLanTruoc.tsx';
 
 const KN = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof KN)[number], string>;
@@ -39,6 +40,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   const bt = useApi<TrangThaiBuocTiep>(`/cycles/${cycleId}/buoc-tiep`, [cycleId]);
   const c = cy.data;
   const [diem, setDiem] = useState<Diem | null>(null);
+  const [layLai, setLayLai] = useState<KyNangThi[]>([]);   // THI-LAI-1-KN: ô lấy điểm KQ thi thật lần trước
   const [suaDiem, setSuaDiem] = useState(false);
   const [ttDiem, setTtDiem] = useState<TtLuu | null>(null);
   const [loiDiem, setLoiDiem] = useState<string | null>(null);
@@ -55,7 +57,8 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   const tieuDe = t('Sau thi · {ten}', { ten: em.ten });
   const coKq = !!c && (!!c.thi_that_khong_thi || KN.every((k) => c[`thi_that_${k}`] !== null && c[`thi_that_${k}`] !== undefined));
   /* Nạp điểm đang lưu MỘT lần — tải lại nền không xoá chữ đang gõ. */
-  if (c && !diem) setDiem({ l: so(c.thi_that_l), r: so(c.thi_that_r), w: so(c.thi_that_w), s: so(c.thi_that_s) });
+  const napDiem = (c: any) => { const ll = layLaiBanDau(c); setLayLai(ll); setDiem(diemBanDau(c, ll, so)); };
+  if (c && !diem) napDiem(c);
   const ngayThi = c?.thi_that_ngay ?? (c?.exam_date && /^\d{4}-\d{2}-\d{2}$/.test(c.exam_date) ? c.exam_date : null);
   const target: number | null = c?.target_score ?? null;
   const dau = dauViec({
@@ -92,8 +95,10 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   const luuDiem = () => {
     lfD.bam();
     if (loiD.length) return;
-    void guiDiem({ khongThi: false, ngayThi, l: Number(diem.l), r: Number(diem.r), w: Number(diem.w), s: Number(diem.s), ghiChu: c.outcome_note ?? '' });
+    void guiDiem({ khongThi: false, ngayThi, l: Number(diem.l), r: Number(diem.r), w: Number(diem.w), s: Number(diem.s), ghiChu: c.outcome_note ?? '', layLai });
   };
+  const trong = moDiem && c.thiTruoc ? KN.filter((k) => diem[k].trim() === '') : [];
+  const layTrong = () => { setDiem({ ...diem, ...Object.fromEntries(trong.map((k) => [k, so(c.thiTruoc[k])])) }); setLayLai([...layLai, ...trong]); };
 
   /* ② Bước tiếp */
   const daChonTruoc = !!b.chon;
@@ -148,7 +153,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
               {KN.map((k) => (
                 <Truong key={k} nhan={k.toUpperCase()} loi={moDiem ? lfD.loiCua(loiD, `diem-${k}`) : null}>
                   <input className="field w-full text-center tabular-nums" inputMode="decimal" autoComplete="off" aria-label={t('Điểm {kn}', { kn: k.toUpperCase() })} readOnly={!moDiem}
-                    {...(moDiem ? lfD.o(loiD, `diem-${k}`) : {})} value={diem[k]} onChange={(e) => { setDiem({ ...diem, [k]: e.target.value }); if (ttDiem === 'loi') setTtDiem(null); }} />
+                    {...(moDiem ? lfD.o(loiD, `diem-${k}`) : {})} value={diem[k]} onChange={(e) => { setDiem({ ...diem, [k]: e.target.value }); setLayLai(layLai.filter((x) => x !== k)); if (ttDiem === 'loi') setTtDiem(null); }} />
                 </Truong>
               ))}
               <div className="max-sm:col-span-4">
@@ -159,6 +164,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
               </div>
             </div>
           )}
+          {!(c.thi_that_khong_thi && !moDiem) && <DongLanTruoc truoc={c.thiTruoc} layLai={layLai} trong={trong} onLay={layTrong} />}
           <div className="flex flex-wrap items-center gap-2">
             {!moDiem && kq && (kq.ketLuan === 'reached' ? <NhanKq kq="dat">{t('Đạt Target {tg}', { tg: target!.toFixed(1) })}</NhanKq>
               : kq.ketLuan === 'not_reached' ? <NhanKq kq="chua-dat">{t('Chưa đạt Target {tg}', { tg: target!.toFixed(1) })}</NhanKq> : null)}
@@ -168,7 +174,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
             {moDiem ? (
               <>
                 {!coKq && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang'} onClick={() => void guiDiem({ khongThi: true, ghiChu: c.outcome_note ?? '' })}>{t('Không thi')}</button>}
-                {suaDiem && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { setSuaDiem(false); setDiem({ l: so(c.thi_that_l), r: so(c.thi_that_r), w: so(c.thi_that_w), s: so(c.thi_that_s) }); }}>{t('Huỷ sửa')}</button>}
+                {suaDiem && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { setSuaDiem(false); napDiem(c); }}>{t('Huỷ sửa')}</button>}
                 <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang'} onClick={luuDiem}>{t('Lưu điểm')}</button>
               </>
             ) : !daChonTruoc && !daChot && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaDiem(true)}>{t('Sửa điểm')}</button>}

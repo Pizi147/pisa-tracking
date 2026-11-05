@@ -14,6 +14,7 @@ import { laBand } from './StudentPlanPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan } from './HopGiaHan.tsx';
+import { DongLanTruoc, diemBanDau, layLaiBanDau, type KyNangThi } from './diemLanTruoc.tsx';
 
 const KY_NANG = ['l', 'r', 'w', 's'] as const;
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
@@ -41,7 +42,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   /* OV-13q: "Đã thi … · hạn …" + Gia hạn (cùng `trangThaiSauThi` với dòng việc). */
   const sauThi = useApi<{ giaiDoan: string; ngayThi: string | null; han: string | null; daGiaHan: boolean; coTheGiaHan: boolean }>(`/cycles/${cycleId}/han-sau-thi`, [cycleId]);
   const [giaHan, setGiaHan] = useState(false);
-  const [form, setForm] = useState<{ ngay: string; l: string; r: string; w: string; s: string; khongThi: boolean; ghiChu: string } | null>(null);
+  const [form, setForm] = useState<{ ngay: string; l: string; r: string; w: string; s: string; khongThi: boolean; ghiChu: string; layLai: KyNangThi[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [goc, setGoc] = useState<string | null>(null);
   /* OV-13m: lưu xong → panel đổi TẠI CHỖ thành "Bước tiếp" (kết quả còn một dòng "✓ … · Sửa"); Sửa → về form, chữ đã lưu giữ nguyên. */
@@ -54,7 +55,8 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   /* Nạp giá trị đang lưu MỘT LẦN — tải lại nền không được xoá điều người dùng đang gõ. */
   if (c && !form) {
     const fm = kt ? (v: number | null | undefined) => (v == null ? '' : String(v)) : fmt;
-    const f = { ngay: c.thi_that_ngay ?? '', l: fm(c.thi_that_l), r: fm(c.thi_that_r), w: fm(c.thi_that_w), s: fm(c.thi_that_s), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '' };
+    const layLai = kt ? [] : layLaiBanDau(c);   // THI-LAI-1-KN: kỹ năng em không học → điểm KQ thi thật lần trước
+    const f = { ngay: c.thi_that_ngay ?? '', ...diemBanDau(c, layLai, fm), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '', layLai };
     setForm(f); setGoc(JSON.stringify(f));
   }
   if (lichSu) {
@@ -81,6 +83,10 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   const kq = loiDiem || kt ? null : ketQuaThiThat({ ...diem, khongThi: form.khongThi }, target);
   const kqKt = !loiDiem && kt ? ketQuaKyThi(kt, { thi_that_l: diem.l, thi_that_r: diem.r, thi_that_w: diem.w, thi_that_s: diem.s, thi_that_khong_thi: form.khongThi, target_score: target }) : null;
   const dat = (k: keyof typeof form, v: string | boolean) => setForm({ ...form, [k]: v });
+  /* Ô lấy lại bị gõ = em đã thi lại kỹ năng đó. */
+  const datDiem = (k: KyNangThi, v: string) => setForm({ ...form, [k]: v, layLai: form.layLai.filter((x) => x !== k) });
+  const trong = c.thiTruoc ? KY_NANG.filter((k) => form[k].trim() === '') : [];
+  const layTrong = () => setForm({ ...form, ...Object.fromEntries(trong.map((k) => [k, fmt(c.thiTruoc[k])])), layLai: [...form.layLai, ...trong] });
 
   const luu = async () => {
     lf.bam();
@@ -89,7 +95,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     try {
       await api.put(`/cycles/${cycleId}/outcome`, form.khongThi
         ? { khongThi: true, ghiChu: form.ghiChu }
-        : { khongThi: false, ngayThi: form.ngay || null, ...diem, ghiChu: form.ghiChu });
+        : { khongThi: false, ngayThi: form.ngay || null, ...diem, ghiChu: form.ghiChu, layLai: form.layLai });
       invalidate('/students'); invalidate('/lo-trinh'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/work'); invalidate('/my-work'); invalidate('/cycles');
       const kqMoi = form.khongThi || KY_NANG.every((k) => form[k].trim() !== '');
       setGoc(JSON.stringify(form));
@@ -133,7 +139,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
               {KY_NANG.map((k) => (
                 <Truong key={k} nhan={k.toUpperCase()} loi={lf.loiCua(loi, `diem-${k}`)}>
                   <input className="field w-full tabular-nums" inputMode={kt ? 'numeric' : 'decimal'} {...lf.o(loi, `diem-${k}`)} value={form[k]}
-                    onChange={(e) => dat(k, e.target.value)} />
+                    onChange={(e) => datDiem(k, e.target.value)} />
                 </Truong>
               ))}
               <div className="col-span-4 sm:col-span-1">
@@ -144,6 +150,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
                 </strong>
               </div>
             </div>
+            {!kt && <DongLanTruoc truoc={c.thiTruoc} layLai={form.layLai} trong={trong} onLay={layTrong} />}
             {kq && kq.nhan !== 'Chờ kết quả thi thật' && <div><Nhan tone={toneKq(kq.nhan)}>{dich(kq.nhan)}</Nhan></div>}
             {kqKt && !kqKt.khongThi && (
               <div className="flex flex-wrap items-center gap-2 text-[13px] text-slate-300">

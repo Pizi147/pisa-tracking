@@ -40,6 +40,8 @@ const THE_HV = 'grid gap-1 rounded-xl border px-3 py-2.5';
 const oLop = (lopMa: string | null, classId: number | null) => (lopMa && classId
   ? <Link to={`/hoc-vien/lop/${classId}`} className={`${LINK_CHU} !text-dim`}>{lopMa}</Link> : <span className="text-dim">{lopMa ?? '—'}</span>);
 const nenThe = { background: 'var(--surface)', borderColor: 'var(--line)' };
+/** THI-LAI-1-KN: "thi lại W" — kỹ năng em thi lại, kỹ năng khác lấy KQ thi thật lần trước. */
+const thiLai = (kn: string[]) => t('thi lại {kn}', { kn: kn.join(' · ') });
 
 export function KetQuaThi(props: PhamViPhanTich) {
   const [params, setParams] = useSearchParams();
@@ -253,7 +255,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
     const aoa: (string | number)[][] = [
       [[t('Kết quả Test / Thi'), t('Thi thật'), nhanKhoang(pv.khoang).chinh, t('dữ liệu đến {ngay}', { ngay: ngay(homNay) })].join(' · ')], [],
       [t('Học viên'), t('Lớp'), t('Ngày thi'), 'OVR', 'L', 'R', 'W', 'S', 'Target', t('Đạt Target'), t('Bước tiếp'), t('Người chọn'), t('Ngày chọn')],
-      ...rows.map((r) => [r.ten, r.lop ?? '', r.khongThi ? t('Không thi') : ngay(r.ngayThi, homNay), fmtBand(r.ovr), fmtBand(r.l), fmtBand(r.r), fmtBand(r.w), fmtBand(r.s), r.target,
+      ...rows.map((r) => [r.ten, r.lop ?? '', r.khongThi ? t('Không thi') : `${ngay(r.ngayThi, homNay)}${r.thiLai ? ` · ${thiLai(r.thiLai)}` : ''}`, fmtBand(r.ovr), fmtBand(r.l), fmtBand(r.r), fmtBand(r.w), fmtBand(r.s), r.target,
         r.dat === null ? '' : r.dat ? t('Đạt') : t('Chưa đạt'), r.buocTiepChu != null ? dich(r.buocTiepChu) : t('Chưa chọn'), r.nguoiChon ?? '', r.ngayChon ? ngay(r.ngayChon, homNay) : '']),
     ];
     const wb = XLSX.utils.book_new();
@@ -306,7 +308,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                 <span className="ml-auto shrink-0">{datTarget(r)}</span>
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-dim">
-                <span>{oLop(r.lop, r.classId)} · {ngay(r.ngayThi, homNay)}</span>
+                <span>{oLop(r.lop, r.classId)} · {ngay(r.ngayThi, homNay)}{r.thiLai && ` · ${thiLai(r.thiLai)}`}</span>
                 <span className="tabular-nums">OVR <b className="text-[color:var(--text)]">{fmtBand(r.ovr)}</b> · Target {r.target}</span>
               </div>
               <div className="flex flex-wrap gap-x-3 text-sm font-medium tabular-nums">
@@ -344,7 +346,7 @@ function BangThiThat({ pv }: { pv: PhamViPhanTich }) {
                         {ds.map((r) => (
                           <tr key={r.cycleId} className="row-hover [&>td]:h-11">
                             <td className="td sticky-col"><Link to={`/hoc-vien/${r.studentId}`} className={`text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link></td>
-                            <td className="td text-dim tabular-nums">{ngay(r.ngayThi, homNay)}</td>
+                            <td className="td text-dim tabular-nums">{ngay(r.ngayThi, homNay)}{r.thiLai && <span className="block text-xs">{thiLai(r.thiLai)}</span>}</td>
                             <td className="td text-center font-medium tabular-nums">{fmtBand(r.ovr)}</td>
                             {[r.l, r.r, r.w, r.s].map((x, i) => <td key={i} className="td text-center tabular-nums">{fmtBand(x)}</td>)}
                             <td className="td text-center font-medium tabular-nums">{r.target}</td>
