@@ -92,3 +92,9 @@ Tên bảng / cột, cách tính đợt từ lịch lượt thường, chia PR (
 - **P chưa có tiêu chí trong mẫu:** phần P có Điểm + Đề xuất cải thiện, chưa có tiêu chí thang tới khi chủ SP gửi *(PTA quyết, thêm sau không sửa màn)*. GV phần P = GV phân công kỹ năng P (FOU: kỹ năng P sẵn có); không có thì "Chưa phân công", QL viết hộ.
 - Đợt đầu: FT, FOU, BE, ELE (PREFOU, PET/KET sau khi có mẫu) — PTA đề xuất, chủ SP chưa phản đối.
 
+## 12. Chủ SP xem mockup #1022 (05/11) — THAY mục 5.1, 5.2
+- "Không cần tạo hẳn task báo cáo PH đâu, tự chủ động làm thôi, có báo CV cho admin thôi là được, tồn tại trong phần CV trong khoảng 1 tuần để biết là đã xong và cần xuất báo cáo gửi đi. Ngoài ra, chắc là nên để thành 1 tab bên cạnh phân tích lớp nhé"
+- **GV: KHÔNG có việc ở Công việc.** GV tự vào Hồ sơ lớp › tab **"Báo cáo PH"** (cạnh "Phân tích lớp") để viết; bấm ô phần của mình ở bảng em × phần → panel viết (như mockup a1 / c1, mở từ tab). Đợt đang mở hiện chip nhẹ trên tab (vd "Tháng 11 · hạn 30/11") — không chuông, không việc.
+- **Admin: một việc ở Công việc** "Xuất báo cáo PH · {lớp} · {đợt}" xuất hiện khi lớp **đủ** (mọi em đủ mọi phần), tự rời Công việc sau **7 ngày**; bấm → tab Báo cáo PH của lớp (nút Xuất lớp). *(PTA quyết: đợt quá hạn mà chưa đủ thì việc vẫn hiện từ ngày hạn, ghi "thiếu n em", cũng 7 ngày — để Admin biết lớp kẹt.)* QL không nhận việc này (xem ở tab); dòng "Chưa phân công" của QL (a4) bỏ.
+- Tab thay khối gập cuối trang (mục 5.2): nội dung tab = chọn đợt + bảng em × phần + Xuất em / Xuất lớp như mockup d2.
+
