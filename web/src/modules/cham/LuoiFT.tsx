@@ -443,7 +443,8 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           </OBang>
         );
       })}
-      {cot.kyVong && <OBang c={cc.kv} className="font-bold">{fmtBand(row.result.expectation)}</OBang>}   {/* U06 (mockup V11): Kỳ vọng đậm cả ở Lịch Test tuần */}
+      {/* U06 (mockup V11): Kỳ vọng đậm cả ở Lịch Test tuần. Chú thích nằm dòng riêng: khoảng trắng giữa hai {} trong <tr> là nút chữ (validateDOMNesting). */}
+      {cot.kyVong && <OBang c={cc.kv} className="font-bold">{fmtBand(row.result.expectation)}</OBang>}
       {cot.ovr && (
         <OBang c={cc.ovr}>
           {/* NEN (04 mục 5.2): Overall so kỳ vọng của lượt, cùng luật tô với kỹ năng. */}
