@@ -367,8 +367,6 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
   };
 }
 
-const KN_BANG = KN_LUOT_BANG;
-
 /**
  * PT-PANEL (PR-1, mockup v13 A1): dòng bảng của MỌI lượt FT — L R W1 W2 S + OVR + kỳ vọng của CHÍNH lượt. Một hàm cho Test + SOS, Báo cáo HV, Phân tích GV.
  * Chỉ chạy khi MỞ panel: một câu lượt theo id + điểm / lịch các lượt đó (`mockTrongKhoang` với `luot` sẵn, không nạp Case; `loadBundle` nhớ trong request)
@@ -406,7 +404,7 @@ export function dongLuotDiemCua(p: Principal, attemptIds: readonly number[]): Ma
     out.set(a.id, {
       attemptId: a.id, studentId: a.student_id, ten: d?.ten ?? ten.get(a.student_id) ?? '', classId: a.class_id ?? null, lop: a.class_code ?? '',
       mt: a.attempt_no, tuan: a.week_start,
-      kn: { l: o(KN_BANG.l), r: o(KN_BANG.r), w1: o(KN_BANG.w1), w2: o(KN_BANG.w2), s: o(KN_BANG.s) },
+      kn: { l: o(KN_LUOT_BANG.l), r: o(KN_LUOT_BANG.r), w1: o(KN_LUOT_BANG.w1), w2: o(KN_LUOT_BANG.w2), s: o(KN_LUOT_BANG.s) },
       ovr: ovr === null ? null : { v: ovr, kq: soSanhDiem(ovr, kv) }, kyVong: kv,
     });
   }
