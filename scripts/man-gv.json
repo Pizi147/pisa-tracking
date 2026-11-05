@@ -121,6 +121,7 @@
  "web/src/modules/students/XemTruocHangLoatPanel.tsx",
  "web/src/modules/students/XoaHocVienPanel.tsx",
  "web/src/modules/students/chonNhieuHocVien.tsx",
+ "web/src/modules/students/diemLanTruoc.tsx",
  "web/src/modules/students/hangLoatEm.ts",
  "web/src/modules/students/phanCongGv/BangLopPc.tsx",
  "web/src/modules/students/phanCongGv/OGv.tsx",
