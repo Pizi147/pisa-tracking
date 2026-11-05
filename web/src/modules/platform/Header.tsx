@@ -7,6 +7,7 @@ import { Info, LoiTaiNho } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
+import { useDaXemHd } from '../huongDan/MucHuongDan.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { Han } from '../../ui/Han.tsx';
@@ -15,21 +16,10 @@ import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { boDau } from '@shared/huongDan/index.ts';
+import { ToKhop } from '../../ui/ToKhop.tsx';
 
 type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null; openCase?: { sos_level: number } | null };
 type GvHit = { id: number; fullName: string };
-
-/** UI-CON-LAI k1: tô chữ khớp (không dấu, không hoa thường) bằng màu hồng nhận diện — chuỗi dựng sẵn NFC nên mỗi ký tự bỏ dấu vẫn là một ký tự. */
-function ToKhop({ chu, q }: { chu: string; q: string }) {
-  const kim = boDau(q.trim()).toLowerCase();
-  const ky = [...chu];
-  const rom = ky.map((c) => boDau(c).toLowerCase()).join('');
-  /* Chuỗi NFD (dấu tách rời) làm lệch vị trí → không tô, vẫn hiện tên. */
-  const i = kim && rom.length === ky.length ? rom.indexOf(kim) : -1;
-  if (i < 0) return <>{chu}</>;
-  return <>{ky.slice(0, i).join('')}<mark className="tim-khop">{ky.slice(i, i + kim.length).join('')}</mark>{ky.slice(i + kim.length).join('')}</>;
-}
 
 /** Phím mở ô tìm: "/" (ngoài ô nhập) hoặc Ctrl / ⌘ K. */
 const laPhimTim = (e: KeyboardEvent) => {
@@ -51,6 +41,7 @@ export function Header() {
   const [openMenu, setOpenMenu] = useState<null | 'account' | 'notif'>(null);
   /** OV-15a (C11): panel Hướng dẫn của màn đang đứng — mở từ menu Tài khoản, sống ngoài menu (menu đóng khi bấm). */
   const [moHd, setMoHd] = useState(false);
+  const { chuaXem: chuaXemHd } = useDaXemHd();
   const [hits, setHits] = useState<SearchHit[]>([]);
   /** UI-CON-LAI k1: nhóm Giáo viên — chỉ vai xem được hồ sơ GV người khác (máy chủ lọc lại theo `phamViHoSoGv`). */
   const [gvs, setGvs] = useState<GvHit[]>([]);
@@ -275,6 +266,14 @@ export function Header() {
         <div className="relative w-52 lg:w-64 shrink" data-hd="tim-hv">{oTimVaKetQua}</div>
       )}
 
+      {/* HD-V2 (đặc tả 3.1, mockup v14 F0): "?" cạnh chuông, mọi trang mọi vai — chấm trắng tới lần mở đầu (không tự mở, không phím tắt). */}
+      <button type="button" data-hd="nut-hd" title={t('Hướng dẫn')} aria-label={chuaXemHd ? t('Hướng dẫn, chưa mở lần nào') : t('Hướng dẫn')} aria-expanded={moHd}
+        onClick={() => { setOpenMenu(null); setMoTimDt(false); setMoHd(true); }}
+        className="btn btn-sm relative min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent sm:min-h-[36px] sm:min-w-[36px] aria-expanded:bg-white/15">
+        <span aria-hidden className="grid h-[22px] w-[22px] place-items-center rounded-full border-[1.5px] border-current text-[13px] font-bold leading-none">?</span>
+        {chuaXemHd && <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full sm:right-1.5 sm:top-1.5" style={{ background: 'var(--dieu-huong-chu-mo)', boxShadow: '0 0 0 2px var(--dieu-huong-nen)' }} />}
+      </button>
+
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent sm:min-h-[36px] sm:min-w-[36px]"
           onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
@@ -356,7 +355,7 @@ export function Header() {
         )}
       </div>
 
-      {/* OV-15a (C11, mockup OV-14 1 §2a): thanh trên chỉ còn Tìm · Thông báo · Tài khoản — Hướng dẫn, Giao diện, Ngôn ngữ ở menu Tài khoản. */}
+      {/* OV-15a (C11): Giao diện, Ngôn ngữ ở menu Tài khoản. HD-V2 thay C11 cho Hướng dẫn: nút "?" trên thanh, menu không còn mục Hướng dẫn. */}
       <div className="relative">
         <button ref={nutTaiKhoan} data-hd="tai-khoan" className="btn btn-sm max-sm:min-h-[44px] max-sm:min-w-[44px] max-sm:justify-center max-sm:border-0 max-sm:bg-transparent" onClick={() => { setOpenMenu(openMenu === 'account' ? null : 'account'); setMoTimDt(false); }}
           aria-label={t('Tài khoản {ten}', { ten: hoTen })} aria-expanded={openMenu === 'account'}>
@@ -422,13 +421,11 @@ export function Header() {
               {/* Hồ sơ cá nhân (mục 7.2) — ai cũng có, nên đứng trước lối vào quản trị. */}
               <Link to="/ho-so-ca-nhan" className="btn w-full justify-center no-underline"
                 onClick={() => setOpenMenu(null)}>{t('Hồ sơ cá nhân')}</Link>
-              {/* U09 (mockup v11 F): Hồ sơ cá nhân · Hồ sơ giáo viên · Hướng dẫn · Quản trị. Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
+              {/* U09 (mockup v11 F): Hồ sơ cá nhân · Hồ sơ giáo viên · Quản trị (HD-V2: Hướng dẫn lên nút "?"). Hồ sơ giáo viên (PR-GV, G-12) — chỉ người có vai Giáo viên; không thuộc bốn khu vực. */}
               {session?.user && session.roles?.includes('teacher') && (
                 <Link to={`/giao-vien/${session.user.id}`} className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Hồ sơ giáo viên')}</Link>
               )}
-              {/* Hướng dẫn của màn đang đứng (panel, không chuyển trang); trang Hướng dẫn đầy đủ ở cuối panel. */}
-              <button type="button" className="btn w-full justify-center" onClick={() => { setOpenMenu(null); setMoHd(true); }}>{t('Hướng dẫn')}</button>
               {/* DA-XOA-MENU (chủ SP 05/11): lối thẳng tới thùng rác — cùng cờ với route /quan-tri (QT, QL); lối cũ (tab Đã xoá) giữ. */}
               {(session?.nav?.admin || session?.nav?.bangQuyDoi) && (
                 <Link to="/quan-tri?tab=da-xoa" className="btn w-full justify-center no-underline"

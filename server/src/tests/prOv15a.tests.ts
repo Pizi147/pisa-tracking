@@ -137,10 +137,13 @@ export async function runPrOv15aTests(t: YThucTestKit) {
     assert(html.includes(d.CHE_DO_KHOA) && /prefers-color-scheme: light/.test(html), 'index.html: chưa chọn → theo prefers-color-scheme');
   });
 
-  check('OV15a · 7: thanh trên gọn — Giao diện, Ngôn ngữ, Hướng dẫn nằm trong menu tài khoản (không còn trên thanh)', () => {
+  /* HD-V2 (chủ SP 05/11, đặc tả 3.1) thay C11 cho Hướng dẫn: nút "?" trên thanh, trước nút tài khoản; Giao diện, Ngôn ngữ vẫn trong menu. */
+  check('OV15a · 7: thanh trên gọn — Giao diện, Ngôn ngữ nằm trong menu tài khoản; Hướng dẫn là nút "?" trên thanh (HD-V2)', () => {
     const hd = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/Header.tsx'), 'utf8');
     const tk = hd.indexOf('ref={nutTaiKhoan}');
-    for (const x of ['<CongTacGiaoDien', '<NutNgonNgu', "t('Hướng dẫn')"]) {
+    const nutHd = hd.indexOf('data-hd="nut-hd"');
+    assert(nutHd > 0 && nutHd < tk, 'nút "?" phải nằm trên thanh, trước nút tài khoản');
+    for (const x of ['<CongTacGiaoDien', '<NutNgonNgu']) {
       const i = hd.indexOf(x);
       assert(i > tk, `${x} phải nằm trong menu tài khoản (sau nút tài khoản)`);
     }

@@ -3,11 +3,12 @@
  * khôi phục lượt, không đổi Target / lộ trình, Case / Ý thức chỉ xem (seed/data.ts `office_admin`). Màn Test trùng GV lấy mục của GV.
  */
 import { HD_GV } from './gv.ts';
+import { MAN_GV_CU } from './gvCu.ts';
 import { MAN_HO_SO_TVV } from './tvv.ts';
 import { luatGv } from './ql.ts';
 import type { HuongDan, MucHd } from './kieu.ts';
 
-const manGv = (id: string) => HD_GV.man.find((m) => m.id === id)!;
+const manGv = (id: string) => MAN_GV_CU.find((m) => m.id === id)!;
 const mucGv = (man: string, id: string): MucHd => manGv(man).muc.find((m) => m.id === id)!;
 
 export const HD_ADMIN: HuongDan = {

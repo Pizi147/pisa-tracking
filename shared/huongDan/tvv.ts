@@ -3,9 +3,10 @@
  * (bảng V5, UI-HV-LOP-TVV) lọc nhóm em. Học thuật (điểm, Case, PA) chỉ xem; thông tin em, Target, Tạm dừng / Thôi học, kết quả thi thật, Bước tiếp sửa được.
  */
 import { HD_GV } from './gv.ts';
+import { MAN_GV_CU } from './gvCu.ts';
 import type { HuongDan, ManHd, MucHd } from './kieu.ts';
 
-const mucGv = (man: string, id: string): MucHd => HD_GV.man.find((m) => m.id === man)!.muc.find((m) => m.id === id)!;
+const mucGv = (man: string, id: string): MucHd => MAN_GV_CU.find((m) => m.id === man)!.muc.find((m) => m.id === id)!;
 
 /** Màn chung TVV / CX (CX lấy lại, đổi Tổng quan + Học viên & Lớp). */
 export const MAN_HO_SO_TVV: ManHd[] = [

@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM P3 UI-CHUNG (chủ SP 24/10 — đặc tả `2026-10-24-cai-tien-da-chot-design.md` R6.2, R6.3a, R6.4a, R6.4b). Đọc nguồn khi không kiểm được hành vi.
- *   UIC-1  "Mới dùng PISA TRACKING?" (bỏ "Mới dùng PISA?") + khoá EN
+ *   UIC-1  dải "Mới dùng PISA TRACKING?" đã bỏ (HD-V2: chấm trên nút "?")
  *   UIC-2  bỏ Góp ý hàng tuần khỏi giao diện; route, bảng `gop_y_tuan`, Lịch sử góp ý giữ
  */
 import fs from 'node:fs';
@@ -17,13 +17,12 @@ export async function runPrUiChungTests(t: any) {
   const dbMod: any = await import('../db.ts');
   const { P } = t;
   console.log('\nP3 UI-CHUNG');
-  check('UIC-1 · dải Tổng quan ghi "Mới dùng PISA TRACKING?", khoá EN "New to PISA TRACKING?"', () => {
-    const dai = doc('web/src/modules/huongDan/DaiMoiDung.tsx');
-    assert(!dai.includes("'Mới dùng PISA?'"), 'còn chữ cũ');
-    assert(dai.includes("t('Mới dùng PISA TRACKING?')"), 'thiếu chữ mới');
+  /* HD-V2 (PTA chốt 05/11, rà #1003): dải "Mới dùng PISA TRACKING?" BỎ — chấm trên nút "?" thay nó (mockup v14 F1). */
+  check('UIC-1 · dải "Mới dùng PISA TRACKING?" đã bỏ khỏi Tổng quan, Công việc; chữ EN gỡ theo', () => {
+    assert(!fs.existsSync(path.join(REPO, 'web/src/modules/huongDan/DaiMoiDung.tsx')), 'còn tệp DaiMoiDung');
+    for (const f of ['web/src/modules/worklist/OverviewPage.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx']) assert(!doc(f).includes('DaiMoiDung'), `${f} còn dải`);
     const en = doc('shared/i18n/en/hd.ts');
-    assert(en.includes("'Mới dùng PISA TRACKING?': 'New to PISA TRACKING?'"), 'thiếu khoá EN');
-    assert(!en.includes("'Mới dùng PISA?'"), 'khoá EN cũ còn');
+    assert(!en.includes("'Mới dùng PISA TRACKING?'") && !en.includes("'Mới dùng PISA?'"), 'khoá EN của dải còn');
   });
 
   check('UIC-2 · Góp ý hàng tuần gỡ khỏi giao diện (link cũ ?che-do=gop-y → Tổng hợp), dữ liệu + Lịch sử góp ý giữ', () => {

@@ -6,7 +6,6 @@ import { useApi } from '../../lib/useApi.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { LichSapToi } from './Highlights.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import {
@@ -46,7 +45,6 @@ export default function OverviewPage() {
   const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
     <div className="page tq-v8 space-y-4">
       <DauTrangTq phamVi={phamVi} ben={ben} ky={ky} />
-      <DaiMoiDung />
       {than}
     </div>
   );

@@ -25,8 +25,10 @@ export type Session = {
   user?: { id: number; code: string; fullName: string; title: string | null };
   /** PR-EN: ngôn ngữ của tài khoản ('vi' | 'en'; null = chưa chọn). */
   ngonNgu?: string | null;
-  /** HD-a: đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA TRACKING?" — nhớ theo tài khoản. */
+  /** HD-a: đã mở Hướng dẫn — nhớ theo tài khoản (HD-V2: chấm trên nút "?"). */
   daXemHuongDan?: boolean;
+  /** HD-V2: GV chủ nhiệm ít nhất một lớp · GV Speaking (phần riêng của Hướng dẫn). */
+  laGvcn?: boolean; coS?: boolean;
   roles?: string[];
   roleLabels?: string[];
   grants?: Grant[];

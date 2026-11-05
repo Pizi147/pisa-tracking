@@ -19,7 +19,6 @@ import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopToiDay } from '../worklist/LopToiDay.tsx';
-import { DaiMoiDung } from '../huongDan/DaiMoiDung.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
@@ -372,7 +371,6 @@ export function HoTroHocVienTab() {
   return (
     <div className="space-y-3">
       <div className={`space-y-2.5 ${anTrenDienThoai}`}>
-        {laGv && <DaiMoiDung />}
         {/* v12 S11: tiêu đề trái (bỏ "n việc · n HV · n bài" — số ở đầu nhóm) — bộ lọc phải. KHUNG-LOI (A1-07): tiêu đề = tên menu.
             TVV một chi nhánh vẫn có tên chi nhánh (UI-CV-TVV). */}
         <header className="flex flex-wrap items-center gap-x-3.5 gap-y-2" data-hd="cv-loc-them">

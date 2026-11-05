@@ -68,7 +68,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
     ketThuc: phien.het ? { phamVi: t('Chấm Speaking'), daLuu: phien.soDaLuu(), nut: onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null } : null,
   };
   return (
-    <KhungPanel tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}
+    <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}
       chan={onTiep ? { huy: null, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>

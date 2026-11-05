@@ -75,7 +75,6 @@
  "web/src/modules/fasttrack/ODiemLon.tsx",
  "web/src/modules/fasttrack/ScoreEntry.tsx",
  "web/src/modules/giaoVien/HoSoGiaoVienPage.tsx",
- "web/src/modules/huongDan/DaiMoiDung.tsx",
  "web/src/modules/huongDan/HuongDanPage.tsx",
  "web/src/modules/huongDan/MucHuongDan.tsx",
  "web/src/modules/huongDan/chiChoToi.tsx",
