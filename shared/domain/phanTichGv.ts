@@ -9,7 +9,8 @@ import { mondayOfDate, owningMonthOf } from './week.ts';
 export type KhungPtGv = 'ft' | 'thuong';
 export const khungPtGvTuThamSo = (s: string | null | undefined): KhungPtGv => (s === 'thuong' ? 'thuong' : 'ft');
 
-export type OPtGv = { k: 'na' } | { k: 'rong' } | { k: 'so'; dung: number; tong: number };
+/** `pt` (thi thật, 2F): % theo tuần dạy — số to dùng `pt` thay dung / tong. */
+export type OPtGv = { k: 'na' } | { k: 'rong' } | { k: 'so'; dung: number; tong: number; pt?: number };
 export type HangPtGv = {
   id: number; ten: string;
   /** "R · W1 · W2 · GVCN MB FT 103" (mockup 25). */
@@ -102,7 +103,7 @@ export const phanTramGv = (dung: number, tong: number) => Math.round((100 * dung
 export function chuOPtGv(o: OPtGv): { so: string | null; phu: string } {
   if (o.k === 'na') return { so: null, phu: '—' };
   if (o.k === 'rong') return { so: null, phu: 'Chưa có dữ liệu' };
-  return { so: `${o.dung}/${o.tong}`, phu: `${phanTramGv(o.dung, o.tong)}%` };
+  return { so: `${o.dung}/${o.tong}`, phu: `${o.pt ?? phanTramGv(o.dung, o.tong)}%` };
 }
 
 /** Ô từ tập (dung ⊆ tong) + có áp dụng không. */

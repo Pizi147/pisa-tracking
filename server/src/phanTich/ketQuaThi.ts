@@ -164,8 +164,9 @@ export type ThiThatTho = { dong: DongThiThat; kq: KqThi; batDau: string | null }
  * cùng tập này (số = số dòng).
  * ponytail: `coQuyenBuocTiep` hỏi quyền theo từng em — bảng thi thật một khoảng chỉ vài chục hàng. `boQuyen` (chỉ đếm / panel): không hỏi, `coTheChon` false.
  */
-export function thiThatTrongKhoang(p: Principal, f: LocKetQuaThi, o: { boQuyen?: boolean } = {}): ThiThatTho[] {
-  const scope = phamVi(p);
+export function thiThatTrongKhoang(p: Principal | null, f: LocKetQuaThi, o: { boQuyen?: boolean } = {}): ThiThatTho[] {
+  /* `p` null: Phân tích GV / hồ sơ GV đã kiểm quyền phần giáo viên (`nguCanhPtGv`, `phamViHoSoGv`) — đọc theo chi nhánh của ngữ cảnh. */
+  const scope = p ? phamVi(p) : { all: true, branchIds: [] as number[], classIds: [] as number[] };
   const conn = db();
   const ds = conn.prepare(SQL_THI_THAT).all(f.tu, f.den, f.tu, f.den) as any[];
   /* P12 (E7): lớp LÚC THI — cùng luật Phân tích GV (`lopLucThiThat`). */
@@ -202,7 +203,7 @@ export function thiThatTrongKhoang(p: Principal, f: LocKetQuaThi, o: { boQuyen?:
         dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
         buocTiep: chon, buocTiepChu: chon ? NHAN_SAU_THI[chon] : null, buocTiepPhu: g.lopMoiCode ? `lớp ${g.lopMoiCode}` : null,
         nguoiChon: chon ? c.nguoi_chon ?? null : null, ngayChon: chon ? c.buoc_tiep_luc ?? null : null,
-        coTheChon: !o.boQuyen && coQuyenBuocTiep(p, c.student_id),
+        coTheChon: !o.boQuyen && !!p && coQuyenBuocTiep(p, c.student_id),
       },
     };
   }).sort((a, b) => (a.dong.lop ?? '').localeCompare(b.dong.lop ?? '', 'vi', { numeric: true }) || (a.dong.ngayThi ?? '').localeCompare(b.dong.ngayThi ?? '') || a.dong.ten.localeCompare(b.dong.ten, 'vi'));

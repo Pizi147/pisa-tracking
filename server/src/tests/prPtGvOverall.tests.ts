@@ -58,11 +58,9 @@ export async function runPrPtGvOverallTests(t: YThucTestKit) {
     return null;
   };
 
-  let gvR: number | null = null;   // người dạy R của MB FT 101 tuần này (từ T06) — thi thật cùng ngày phải gán cùng người
   check('V5GV (T06) · MT1 Overall 6.0 ≥ kỳ vọng 5.5, R 5.0 → R tính Đạt cho GV R; panel vẫn ghi "R 5.0"', () => thu(() => {
     const e = mt1({ listening: 6.5, reading: 5.0, writing1: 6.5, writing2: 6.5, speaking: 6.5 });
     const r = ketQuaEm(e.sid, 'reading');
-    gvR = r?.gv ?? null;
     assert(r?.kq === 'Đạt', JSON.stringify(r));
     assert(r!.sub.includes('R 5.0') && r!.sub.includes('Overall 6.0'), r!.sub);
   }));
@@ -75,20 +73,21 @@ export async function runPrPtGvOverallTests(t: YThucTestKit) {
     const e = mt1({ listening: 4.0, reading: 7.0 });
     assert(ketQuaEm(e.sid, 'reading') === null && ketQuaEm(e.sid, 'listening') === null, 'không vào mẫu');
   }));
-  check('V5GV (thi thật) · Overall 6.5 = Target → R 5.5 Đạt; Overall 6.0 < Target → R 5.5 Chưa đạt, L 7.0 Đạt; gán GV dạy kỹ năng ở lớp lúc thi', () => thu(() => {
-    const thi = (o: number, kq: string, l: number, r: number, w: number, s: number) => {
-      const e = emMoi();
-      boLichTuTao(conn, e.cy);
-      conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = ?, thi_that_l = ?, thi_that_r = ?, thi_that_w = ?, thi_that_s = ?, outcome_score = ?, outcome = ? WHERE id = ?`)
-        .run(D, l, r, w, s, o, kq, e.cy);
-      return e;
+  /* 2F (chủ SP 05/11) thay C10: thi thật KHÔNG còn ở cột Kết quả Test; mỗi kỹ năng so Target overall (OVR đạt không kéo kỹ năng thành Đạt), mọi GV từng dạy. */
+  check('THI-THAT 2F · OVR 6.5 = Target nhưng R 5.5 → R Fail cho GV R; L 7.0 → Exceed; W → cả GV W2; không vào cột Kết quả Test', () => thu(() => {
+    const e = emMoi();
+    boLichTuTao(conn, e.cy);
+    conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = ?, thi_that_l = 7.0, thi_that_r = 5.5, thi_that_w = 6.5, thi_that_s = 7.0, outcome_score = 6.5, outcome = 'reached' WHERE id = ?`).run(D, e.cy);
+    assert(ketQuaEm(e.sid, 'reading') === null, 'thi thật không vào cột Kết quả Test');
+    const dong = (skill: string) => {
+      xoaNho();
+      const gv = get(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND skill = ? AND status = 'active' ORDER BY id DESC LIMIT 1`, MB_FT, skill)?.user_id;
+      return pt.oChiSoHoSoGv(P.admin, gv, { tu: tuanNay, den: tuanNay, cot: `thi-that-ky:${skill}` }).rows.find((x: any) => x.href === `/hoc-vien/${e.sid}`);
     };
-    const dat = thi(6.5, 'reached', 7.0, 5.5, 6.5, 7.0);
-    const chua = thi(6.0, 'not_reached', 7.0, 5.5, 5.5, 6.0);
-    const r1 = ketQuaEm(dat.sid, 'reading');
-    assert(r1?.kq === 'Đạt' && r1.sub.includes('Thi thật') && r1.gv === gvR, JSON.stringify({ r1, gvR }));
-    assert(ketQuaEm(chua.sid, 'reading')?.kq === 'Chưa đạt' && ketQuaEm(chua.sid, 'listening')?.kq === 'Đạt', 'chưa đạt Target');
-    assert(ketQuaEm(chua.sid, 'writing2')?.kq === 'Chưa đạt', 'W thi thật tính cho GV W2');
+    assert(dong('reading')?.ketQua === 'chua', `R 5.5 < 6.5 → Fail: ${JSON.stringify(dong('reading'))}`);
+    const l = dong('listening');
+    assert(l?.ketQua === 'dat' && l.vuot === true, `L 7.0 > 6.5 → Exceed: ${JSON.stringify(l)}`);
+    assert(dong('writing2')?.ketQua === 'dat', 'W thi thật tính cho GV W2');
   }));
   /* 10 (22/10): bỏ chữ "mẫu nhỏ" ở Phân tích GV — mẫu < 5 vẫn ghi %. */
   check('V5GV (T19, C08) · mẫu 0 → "Chưa có dữ liệu"; mẫu < 5 vẫn ghi % (không "mẫu nhỏ"); không còn hàm màu ngưỡng', () => {

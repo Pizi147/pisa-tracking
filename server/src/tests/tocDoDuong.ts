@@ -930,6 +930,10 @@ export const TRAN: Record<string, number> = {
   'GVCN /phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20': 14,   // đo 4
   'QL /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 15,   // đo 5
   'QT /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 15,   // đo 5
+  /* PR-4 THI-THAT: tab Thi thật (danh sách + thống kê; Theo GV +1 câu phân công, ghi danh nhớ chung với lớp lúc thi) · panel ô — trần = max(đo+10, ⌈đo×1,3⌉), đo 05/11. */
+  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 18, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7 · 8 · 7
+  'QL /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6 · 6
+  'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 29,   // đo 19
   'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 27,   // đo 17
   /* V8-PT-2: panel thẻ chỉ số (chỉ khi MỞ, gồm ~4 câu đăng nhập) — max(đo+10, ⌈đo×1,3⌉). */
@@ -962,6 +966,9 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11. */
+  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999,
+  'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999, 'QL /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 9999,
   'QL /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,   // V8-HSL-2: đo 276 (một đợt)
   'GVCN /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
   'GVBM /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,

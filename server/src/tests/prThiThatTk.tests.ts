@@ -75,6 +75,7 @@ export async function runPrThiThatTkTests(t: any) {
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const tk: any = await import('../phanTich/thiThatThongKe.ts');
+  const giaoVien: any = await import('../phanTich/giaoVien.ts');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const vai = (k: string) => loadPrincipal(one(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? AND ur.status = 'active' ORDER BY ur.user_id LIMIT 1`, k).id);
   const MB = one(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
@@ -136,5 +137,23 @@ export async function runPrThiThatTkTests(t: any) {
     }
     assert(r.thongKe.tong.thi >= 1 && r.thongKe.gv.length >= 1, 'có dữ liệu');
     assert(!sai.length, sai.join(' · '));
+  }));
+
+  check('THI-THAT 2F · Phân tích GV = hồ sơ GV = tab Thi thật cho cùng GV (một hàm); % số to theo tuần dạy', () => thu(() => {
+    const { f } = dung();
+    const gv = P.w1Teacher.userId;
+    const ky = { tu: d.mondayOfDate(f.tu), den: d.mondayOfDate(f.den) };
+    const pt = giaoVien;
+    const h = pt.phanTichGiaoVien(P.admin, { cn: MB, ct: 'ft', ...ky }).hang.find((x: any) => x.id === gv);
+    const hs = pt.chiSoHoSoGv(P.admin, gv, ky);
+    const tab = tk.thiThatTab(P.admin, { branchId: MB, tu: ky.tu, den: d.addDaysIso(ky.den, 6) }).thongKe.gv.filter((g: any) => g.userId === gv);
+    const tong = tab.reduce((a: number, g: any) => a + g.hv, 0);
+    assert(h?.thiThat?.k === 'so' && h.thiThat.tong === tong && hs.thiThat.tong === tong, `mục: PT GV ${JSON.stringify(h?.thiThat)} · hồ sơ ${JSON.stringify(hs.thiThat)} · tab ${tong}`);
+    assert(JSON.stringify(h.thiThat) === JSON.stringify(hs.thiThat), 'Phân tích GV ≠ hồ sơ GV');
+    const w1 = hs.thiThatTheoKyNang.find((x: any) => x.skill === 'writing1');
+    const g = tab.find((x: any) => x.kn === 'w1');
+    assert(w1 && g && w1.o.tong === g.hv && w1.o.pt === 100 - g.fail, `W1: hồ sơ ${JSON.stringify(w1)} · tab ${JSON.stringify(g)}`);
+    /* GV cũ (dạy 4 tuần đầu, phân công đã kết thúc) vẫn có mục ở tab — "mọi GV từng dạy". */
+    assert(tk.thiThatTab(P.admin, { branchId: MB, tu: ky.tu, den: d.addDaysIso(ky.den, 6) }).thongKe.gv.some((x: any) => x.userId === P.lrTeacher.userId && x.kn === 'w1'), 'GV cũ có mục');
   }));
 }

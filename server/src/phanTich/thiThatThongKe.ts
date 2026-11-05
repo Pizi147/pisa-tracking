@@ -4,13 +4,14 @@
  * Theo GV chỉ vai có `analysis.view_teacher` hoặc CX (2E) — chặn ở máy chủ. Tuần dạy đọc theo `student_id` / `class_id` của tập (2 câu), không cả chi nhánh.
  */
 import {
-  PERMISSIONS, coMucThi, kyNangThiLanNay, mucThi, thongKeThiThat, type DoanDay, type KetQuaThiThatKq, type KnDay, type KnThiThat, type ThongKeThiThat,
+  PERMISSIONS, coMucThi, type MucGv, type OPtGv, kyNangThiLanNay, mucThi, thongKeThiThat, type DoanDay, type KetQuaThiThatKq, type KnDay, type KnThiThat, type ThongKeThiThat,
 } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { db, theoLo } from '../db.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
 import { mondayOf } from '../platform/week.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { ghiDanhCuaEm } from './lopLucThi.ts';
 import { thiThatTrongKhoang, tongThiThat, type LocKetQuaThi, type ThiThatTho } from './ketQuaThi.ts';
 
@@ -126,3 +127,30 @@ export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): { n: nu
   }
   return { n: rows.length, tieuDe: t('{nhan} · {n} HV', { nhan, n: rows.length }), rows, bangLuot: true, kieu: 'thi-that', knNhan };
 }
+
+/** Kỹ năng dạy → khoá kỹ năng của Phân tích GV / hồ sơ GV (`COT_KET_QUA_GV.ft`). */
+export const SKILL_KN: Record<KnDay, string> = { l: 'listening', r: 'reading', w1: 'writing1', w2: 'writing2', s: 'speaking' };
+/** Một mục thi thật gán cho MỘT GV: em × kỹ năng GV dạy (W1 / W2 riêng), mức so Target overall, trọng số tuần. */
+export type MucThiGv = MucGv & { kn: KnDay; x: ThiThatTho };
+
+/**
+ * 2F (thay C10): thi thật của MỘT chi nhánh (lớp lúc thi thuộc chi nhánh, khoảng ngày thi [tu, den]) → mục của từng GV — CÙNG `thongKeThiThat` với tab
+ * Thi thật. Không kiểm quyền (Phân tích GV / hồ sơ GV đã kiểm phần giáo viên). Nhớ theo request: bảng + hồ sơ cùng chi nhánh đọc một lần.
+ */
+export function mucThiTheoGv(cn: number, tu: string, den: string): Map<number, MucThiGv[]> {
+  return nho(`thi-that-gv:${cn}:${tu}:${den}`, () => {
+    const ds = thiThatTrongKhoang(null, { branchId: cn, tu, den }, { boQuyen: true });
+    const theoId = new Map(ds.map((x) => [x.kq.cycleId, x]));
+    const out = new Map<number, MucThiGv[]>();
+    for (const g of thongKeThiThat(ds.map((x) => x.kq), tuanDay(ds).day).gv)
+      for (const m of g.ds) (out.get(g.userId) ?? out.set(g.userId, []).get(g.userId)!).push({ ...m, kn: g.kn, x: theoId.get(m.cycleId)! });
+    return out;
+  });
+}
+/** Ô GV: mục Đạt Target trở lên (Exceed + Đạt) / mọi mục; `pt` = % theo tuần dạy (số to). */
+export const oThiGv = (ds: readonly MucGv[]): OPtGv => {
+  if (!ds.length) return { k: 'rong' };
+  const sw = ds.reduce((a, m) => a + m.w, 0);
+  const qua = ds.filter((m) => m.muc !== 'fail');
+  return { k: 'so', dung: qua.length, tong: ds.length, pt: Math.round((100 * qua.reduce((a, m) => a + m.w, 0)) / sw) };
+};

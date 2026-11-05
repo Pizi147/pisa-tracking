@@ -113,7 +113,7 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     assert(gv, 'lớp cũ có GV L');
     xoaNho();
     const ma = get('SELECT code FROM classes WHERE id = ?', cu).code;
-    const p = pt.oChiSoGv(P.admin, { ...k, gv, cot: 'thi-that' });
+    const p = pt.oChiSoHoSoGv(P.admin, gv, { tu: k.tu, den: k.den, cot: 'thi-that', cn: k.cn });   // 2F: panel thi thật của GV = hồ sơ GV
     assert(p.rows.some((r: any) => r.lop === ma), `Phân tích GV: thi thật không ở lớp cũ ${ma}: ${JSON.stringify(p.rows.map((r: any) => r.lop))}`);
     /* Kết thúc lớp cũ TRƯỚC ngày thi, vào lớp mới SAU ngày thi, lộ trình không có MT → lớp cũ (ghi danh muộn nhất trước ngày thi). */
     const truoc = d.addDaysIso(c.ngay, -2);
