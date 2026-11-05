@@ -46,8 +46,8 @@ export async function runPrThiThatTkTests(t: any) {
     assert(g && g.hv === 2 && g.tuan === 12, `GV 10 · L: 2 em (em tổng 0 không vào), 12 tuần: ${JSON.stringify(g)}`);
     const m = g.ds.find((x: any) => x.cycleId === a.cycleId);
     assert(Math.abs(m.w - 0.67) < 0.01 && m.tuan === 8 && m.tongTuan === 12, `trọng số 8/12: ${JSON.stringify(m)}`);
-    /* fail 0.67 · exceed 1 → fail 40 %, exceed 60 % */
-    assert(g.fail === 40 && g.exceed === 60 && g.dat === 0, `% trọng số: ${JSON.stringify(g)}`);
+    /* Chủ SP 05/11: OVR 6 = Target → không Fail; a (L 5.5) Đạt + dưới Target 0.67 · b (L 6.5) Exceed 1 → Đạt 40 %, Exceed 60 %, KN dưới Target 40 %. */
+    assert(g.fail === 0 && g.exceed === 60 && g.dat === 40 && g.duoi === 40 && g.so.duoi === 1, `% trọng số: ${JSON.stringify(g)}`);
     assert(!r.gv.some((x: any) => x.ds.some((m: any) => m.cycleId === c.cycleId)), 'em tổng tuần 0 không vào gv');
   });
 
@@ -58,15 +58,23 @@ export async function runPrThiThatTkTests(t: any) {
       [k.cycleId, [{ userId: 3, kn: 'l', tuan: 6 }]],
     ]);
     const r = d.thongKeThiThat([a, k], day);
-    assert(r.gv.some((x: any) => x.userId === 1 && x.kn === 'w1' && x.fail === 100), 'W1 có mục fail');
+    assert(r.gv.some((x: any) => x.userId === 1 && x.kn === 'w1' && x.dat === 100 && x.duoi === 100), 'W1: OVR đạt → Đạt, W 5 → KN dưới Target');
     assert(r.gv.some((x: any) => x.userId === 2 && x.kn === 'w2'), 'W2 có mục');
     assert(!r.gv.some((x: any) => x.userId === 3), 'L lấy lại + KCK: GV L không có mục');
   });
 
+  check('THI-THAT · Theo GV theo OVR (chủ SP 05/11): OVR đạt + kỹ năng dưới Target → Đạt + KN dưới; OVR trượt + kỹ năng trên Target → Fail', () => {
+    assert(d.mucThiGv(6, 5.5, 6) === 'dat' && d.mucThiGv(6.5, 7, 6) === 'exceed' && d.mucThiGv(5.5, 7, 6) === 'fail', 'mucThiGv');
+    const a = kq({ ovr: 6.5, r: 5.5, target: 6 }), b = kq({ ovr: 5.5, r: 7, target: 6 });
+    const day = new Map<number, unknown[]>([[a.cycleId, [{ userId: 1, kn: 'r', tuan: 1 }]], [b.cycleId, [{ userId: 1, kn: 'r', tuan: 1 }]]]);
+    const g = d.thongKeThiThat([a, b], day).gv[0];
+    assert(g.so.dat === 1 && g.so.fail === 1 && g.so.exceed === 0 && g.so.duoi === 1 && g.duoi === 50, JSON.stringify(g));
+  });
+
   check('THI-THAT · GV xếp Fail cao trước, trong GV theo L R W1 W2 S', () => {
-    const a = kq({ l: 5, r: 7, s: 5, target: 6 });
-    const day = new Map<number, unknown[]>([[a.cycleId, [{ userId: 1, kn: 's', tuan: 1 }, { userId: 1, kn: 'r', tuan: 1 }, { userId: 2, kn: 'l', tuan: 1 }]]]);
-    const r = d.thongKeThiThat([a], day);
+    const a = kq({ ovr: 6.5, r: 7, s: 5, target: 6 }), b = kq({ ovr: 5.5, l: 5, target: 6 });
+    const day = new Map<number, unknown[]>([[a.cycleId, [{ userId: 1, kn: 's', tuan: 1 }, { userId: 1, kn: 'r', tuan: 1 }]], [b.cycleId, [{ userId: 2, kn: 'l', tuan: 1 }]]]);
+    const r = d.thongKeThiThat([a, b], day);
     assert(r.gv.map((x: any) => `${x.userId}${x.kn}`).join(',') === '2l,1r,1s', `thứ tự: ${r.gv.map((x: any) => `${x.userId}${x.kn}`)}`);
   });
 
@@ -104,9 +112,9 @@ export async function runPrThiThatTkTests(t: any) {
     const r = tk.thiThatTab(P.mbManager, f);
     const w1 = r.thongKe.gv.filter((g: any) => g.kn === 'w1');
     const moi = w1.find((g: any) => g.userId === P.w1Teacher.userId), cu = w1.find((g: any) => g.userId === P.lrTeacher.userId);
-    assert(moi && moi.tuan === 8 && moi.fail === 100, `GV W1 8 tuần, Fail 100 %: ${JSON.stringify(w1)}`);
+    assert(moi && moi.tuan === 8 && moi.dat === 100 && moi.duoi === 100, `GV W1 8 tuần, OVR = Target → Đạt 100 %, W 5.5 → KN dưới Target 100 %: ${JSON.stringify(w1)}`);
     assert(cu && cu.tuan === 4, `GV cũ 4 tuần: ${JSON.stringify(cu)}`);
-    const o = tk.oThiThat(P.mbManager, { ...f, o: `gv:${P.w1Teacher.userId}:w1:fail` });
+    const o = tk.oThiThat(P.mbManager, { ...f, o: `gv:${P.w1Teacher.userId}:w1:duoi` });
     const r0 = o.rows[0]?.thiThat;
     assert(o.n === 1 && r0.cycleId === cy && r0.tuan.day === 8 && r0.tuan.tong === 12 && r0.kn.w.kq === 'duoi' && r0.ovr.kq === 'bang', `panel P-GV 8/12: ${JSON.stringify(o.rows)}`);
     assert(o.kieu === 'thi-that' && o.knNhan === 'W1', 'kiểu thi-that, cột W1 tô nền');
@@ -132,7 +140,7 @@ export async function runPrThiThatTkTests(t: any) {
     for (const m of ['exceed', 'dat', 'fail']) so(`tong:${m}`, r.thongKe.tong[m]);
     for (const k of ['l', 'r', 'w', 's']) for (const m of ['hv', 'exceed', 'dat', 'fail']) so(`kn:${k}:${m}`, r.thongKe.kyNang[k][m]);
     for (const g of r.thongKe.gv) {
-      so(`gv:${g.userId}:${g.kn}:hv`, g.hv);
+      so(`gv:${g.userId}:${g.kn}:hv`, g.hv); so(`gv:${g.userId}:${g.kn}:duoi`, g.so.duoi);
       const c = ['exceed', 'dat', 'fail'].reduce((a, m) => a + n(`gv:${g.userId}:${g.kn}:${m}`), 0);
       if (c !== g.hv) sai.push(`gv ${g.userId} ${g.kn}: E+Đ+F ${c} ≠ ${g.hv}`);
     }

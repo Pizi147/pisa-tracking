@@ -6,7 +6,7 @@ export const EN_THI_THAT = {
   '{nhan} · {n} HV': (b) => `${b.nhan} · ${b.n} ${Number(b.n) === 1 ? 'student' : 'students'}`,
   'tuần dạy {a}/{b}': 'taught {a}/{b} weeks',
   '{nhan} · {ai} · {dung}/{tong} lượt kỹ năng': '{nhan} · {ai} · {dung}/{tong} skill results',
-  'Mỗi HV tính theo tỉ lệ tuần GV dạy (cột Tuần dạy). Kỹ năng so Target overall.': 'Each student counts by the share of weeks this teacher taught (Weeks taught column). Skills are compared with the overall Target.',
+  'Mỗi HV tính theo tỉ lệ tuần GV dạy (cột Tuần dạy). OVR dưới Target → Fail; OVR đạt: kỹ năng trên Target → Exceed, còn lại → Đạt. KN dưới Target: điểm kỹ năng dưới Target, kể cả em OVR đạt.': 'Each student counts by the share of weeks this teacher taught (Weeks taught column). OVR below Target → Fail; OVR met: skill above Target → Exceed, otherwise → Pass. Skill below Target: skill band below Target, even when OVR is met.',
   'Điểm kỹ năng so Target overall. Thi lại một kỹ năng: chỉ kỹ năng thi lần này. Không tính HV KCK.': 'Skill band compared with the overall Target. Resit of one skill: only the skill sat this time. KCK students not counted.',
   'OVR so Target: trên = Exceed · bằng = Đạt · dưới = Fail. HV KCK không vào %.': 'OVR vs Target: above = Exceed · equal = Pass · below = Fail. KCK students are left out of %.',
   'trong khoảng': "in range",
@@ -37,4 +37,8 @@ export const EN_THI_THAT = {
   '{a} / {b} HV {nhan} · {pt} % theo tuần dạy': '{a} / {b} students {nhan} · {pt} % by weeks taught',
   'SỐ · THI THẬT · THEO GV': 'NUMBER · REAL EXAM · BY TEACHER',
   '{kn} tính nửa W': '{kn} counts as half of W',
+  'dưới Target': 'below Target',
+  'KN dưới Target': 'Skill below Target',
+  'OVR dưới Target → Fail; OVR đạt: kỹ năng GV dạy trên Target → Exceed, còn lại → Đạt. KN dưới Target: điểm kỹ năng dưới Target, kể cả HV OVR đạt (cột riêng, không cộng vào Exceed · Đạt · Fail).': 'OVR below Target → Fail; OVR met: skill this teacher taught above Target → Exceed, otherwise → Pass. Skill below Target: skill band below Target, even when OVR is met (separate column, not part of Exceed · Pass · Fail).',
+  'KN dưới': 'Skill below',
 } satisfies Record<string, Dich>;

@@ -10,6 +10,7 @@ Mockup: `thiet-ke/v13/phan-tich-thi-that.html`. Ảnh cặp mockup | web: `truoc
 | C1 | 5 thẻ: HV thi · Exceed · Đạt · Fail (số + %) · Không thi | `KetQuaThi.tsx` `DaiChiSo` | sau-c1 | KHỚP |
 | C1 | Từng kỹ năng (KN · HV · Exceed · Đạt · Fail · Điểm TB, % mờ dưới) | `BangKyNang` | sau-c1 | KHỚP |
 | C1 | Theo GV (GV × kỹ năng, Fail cao trước, tên GV dòng đầu, kẻ giữa GV) | `BangGv` | sau-c1 | KHỚP — chiều cao dòng giữ 44 px như bảng web (mockup ~56 px do lưới giãn) |
+| C1 | **Chủ SP 05/11 (sau #978):** Theo GV theo OVR (OVR < Target → Fail; OVR đạt: kỹ năng > Target → Exceed, còn lại Đạt) + cột riêng **KN dưới Target** (% tuần dạy, chữ đỏ, kẻ tách) | `mucThiGv`, `BangGv`, `TheGv` | sau-c1 · sau-c3 · sau-c4 | THÊM (ngoài mockup, theo lời chủ SP) |
 | C1 | Danh sách: L R W S · OVR · Target · Kết quả (Exceed / Đạt / Fail) · Bước tiếp | `DanhSach` | sau-c1 | KHỚP — giữ nhóm lớp, phân trang, Bước tiếp chỉ đọc |
 | C1 | Hàng lọc (thời gian, lớp), Xuất Excel | nền cũ | sau-c1 | GIỮ nền web (chủ SP 05/11: phần nền giữ web) — ô "Toàn bộ \| Chọn khoảng tuần" giữ, không đổi sang ô ngày |
 | C2 | Panel P-TT (cột kỹ năng đang xét tô nền) | `BangLuotPanel` kiểu `'thi-that'` | sau-c2 | KHỚP — khung panel cạnh phải như P-FT (#976) |
@@ -32,7 +33,8 @@ Mockup: `thiet-ke/v13/phan-tich-thi-that.html`. Ảnh cặp mockup | web: `truoc
 | Lọc thời gian · lớp · chi nhánh | có | có | GIỮ |
 | Phân trang 10 / 20 / 50 | có | có | GIỮ |
 | Tên em / mã lớp → hồ sơ | có | có (cả panel) | GIỮ |
-| Phân tích GV · hồ sơ GV "Kết quả thi thật" | % Pass Target theo lần thi, GV lớp cuối (C10) | % theo tuần dạy; n/m = mục em × kỹ năng GV từng dạy; panel một dòng một mục | ĐỔI SỐ, giữ bố cục (2F) |
+| Phân tích GV · hồ sơ GV "Kết quả thi thật" | % Pass Target theo lần thi, GV lớp cuối (C10) | % theo tuần dạy; n/m = mục em × kỹ năng GV từng dạy; Pass theo OVR (chủ SP 05/11); panel một dòng một mục, kỹ năng dưới Target ghi "(dưới Target)" | ĐỔI SỐ, giữ bố cục (2F) |
+| Bấm % "KN dưới Target" (Theo GV) | không có | panel em có điểm kỹ năng đó < Target (kể cả OVR đạt) | THÊM (chủ SP 05/11) |
 
 ## [XM] gửi PTA
 

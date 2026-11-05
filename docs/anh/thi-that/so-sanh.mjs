@@ -22,12 +22,12 @@ SELECT g.u, us.full_name ten, k.branch_id cn, COUNT(DISTINCT g.id) tong, COUNT(D
 FROM gv g JOIN users us ON us.id=g.u JOIN classes k ON k.id=g.lop WHERE g.u IS NOT NULL GROUP BY g.u, k.branch_id ORDER BY k.branch_id, us.full_name`);
 const cn = q(`SELECT DISTINCT branch_id id FROM classes WHERE is_fast_track = 1`).map((r) => r.id);
 const moi = new Map();
-for (const c of cn) for (const [u, ds] of mucThiTheoGv(c, '2000-01-01', '2100-12-31')) moi.set(`${u}:${c}`, oThiGv(ds));
+for (const c of cn) for (const [u, ds] of mucThiTheoGv(c, '2000-01-01', '2100-12-31')) moi.set(`${u}:${c}`, { ...oThiGv(ds), duoi: Math.round(100 * ds.filter((m) => m.duoi).reduce((x, m) => x + m.w, 0) / ds.reduce((x, m) => x + m.w, 0)) });
 const ten = new Map(q(`SELECT id, full_name FROM users`).map((r) => [r.id, r.full_name]));
 const ma = new Map(q(`SELECT id, code FROM branches`).map((r) => [r.id, r.code]));
 const khoa = new Set([...cu.map((r) => `${r.u}:${r.cn}`), ...moi.keys()]);
 const dong = [...khoa].map((k) => { const [u, c] = k.split(':').map(Number); const a = cu.find((r) => r.u === u && r.cn === c); const b = moi.get(k);
-  return { cn: ma.get(c), gv: ten.get(u), truoc: a ? `${a.dung}/${a.tong} lần thi · ${Math.round(100 * a.dung / a.tong)} %` : '—', sau: b?.k === 'so' ? `${b.dung}/${b.tong} mục · ${b.pt} % (tuần dạy)` : '—' }; })
+  return { cn: ma.get(c), gv: process.env.CO_TEN ? ten.get(u) : `GV #${u}`, /* repo: chỉ mã GV (dữ liệu thật); CO_TEN=1 khi cần bảng có tên gửi riêng */ truoc: a ? `${a.dung}/${a.tong} lần thi · ${Math.round(100 * a.dung / a.tong)} %` : '—', sau: b?.k === 'so' ? `${b.dung}/${b.tong} mục · ${b.pt} %` : '—', duoi: b?.k === 'so' ? `${b.duoi} %` : '—', doi: !a || !b || b.k !== 'so' || Math.round(100 * a.dung / a.tong) !== b.pt }; })
   .sort((x, y) => (x.cn + x.gv).localeCompare(y.cn + y.gv, 'vi'));
-console.log('\n| Chi nhánh | GV | Trước (C10: Pass Target theo lần thi) | Sau (2F: mục em × kỹ năng, % theo tuần dạy) |\n|---|---|---|---|');
-for (const r of dong) console.log(`| ${r.cn} | ${r.gv} | ${r.truoc} | ${r.sau} |`);
+console.log('\n| Chi nhánh | GV | Trước (C10: Pass theo lần thi) | Sau (Pass theo OVR · mục em × kỹ năng · % tuần dạy) | KN dưới Target (% tuần dạy) | % Pass |\n|---|---|---|---|---|---|');
+for (const r of dong) console.log(`| ${r.cn} | ${r.gv} | ${r.truoc} | ${r.sau} | ${r.duoi} | ${r.doi ? 'đổi' : ''} |`);
