@@ -92,7 +92,7 @@ export default function HuongDanPage() {
             )}
             <button type="button" className="btn btn-sm print:hidden" onClick={() => window.print()}>{t('In')}</button>
           </div>
-          <input type="search" className="field print:hidden" value={q} onChange={(e) => setQ(e.target.value)}
+          <input type="search" name="tim-huong-dan" autoComplete="off" className="field print:hidden" value={q} onChange={(e) => setQ(e.target.value)}
             placeholder={t('Tìm: "kết quả PA", "SOS", "hạn"…')} aria-label={t('Tìm trong hướng dẫn')} />
           {/* 375: các phần thành hàng chip cuộn ngang (mockup `.hd-tab`). */}
           <div role="group" aria-label={t('Phần hướng dẫn')} className="flex gap-1.5 overflow-x-auto pr-8 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:hidden print:hidden">
