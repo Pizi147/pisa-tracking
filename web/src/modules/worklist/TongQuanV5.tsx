@@ -459,8 +459,11 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => Re
       <DaiChiSo>
         {/* Head tutor chưa có Công việc (không `workSupport`) → không ô Việc. */}
         {/* TQ-GON (M4, V13): dòng phụ = đơn vị (+ ⚠ quá hạn khi có) — bỏ "không việc nào quá hạn", "Case tôi phụ trách" (trang của tôi đã nói). */}
-        {session?.nav?.workSupport && <ChiSo ten={t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
-          mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />}
+        {/* MO-TAT-CA (chủ SP 05/11): cả ô là link sang Công việc góc Của tôi ("›" = đổi trang) — số quá hạn trong ô cũng dẫn tới đó. */}
+        {session?.nav?.workSupport && ((o) => (session.nav.work
+          ? <Link to="/cong-viec" className="block h-full rounded-xl no-underline hover:[&>.card]:border-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]">{o}</Link>
+          : o))(<ChiSo ten={session.nav.work ? `${t('Việc của tôi')} ›` : t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
+          mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />)}
         <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} />}
           mau="Case" />
         <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs?.ketQua), t('lượt Test'))} />

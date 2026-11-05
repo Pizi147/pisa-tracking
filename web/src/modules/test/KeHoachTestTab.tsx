@@ -29,7 +29,7 @@ import { t } from '@shared/i18n/index.ts';
  */
 export function KeHoachTestTab() {
   const [params, setParams] = useSearchParams();
-  const { branchCount } = useSession();
+  const { branchCount, session } = useSession();
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const macDinh = useChiNhanhMacDinh();
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
@@ -126,6 +126,12 @@ export function KeHoachTestTab() {
   const chonLop = (l: KetQuaTim['lop'][number]) => { setChu(''); setLopLoc(l.id); moLop(l.id, l.loai, null); };
   const chonHv = (h: KetQuaTim['hocVien'][number]) => { setChu(h.ten); moLop(h.classId, h.loai, h.studentId); };
 
+  /* MO-TAT-CA (2D, mockup v13 D1): một nút "Mở tất cả lớp" ↔ "Thu gọn tất cả" — lớp đang hiện trong khung; chỉ QL / QT (`testPlan`). Mặc định vẫn gập. */
+  const moHet = danhSach.length > 0 && danhSach.every((l) => moList.includes(l.id));
+  const nutMoHet = !!session?.nav?.testPlan && danhSach.length > 0 && (
+    <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" aria-pressed={moHet}
+      onClick={() => setMoList((m) => [...m.filter((id) => !danhSach.some((l) => l.id === id)), ...(moHet ? [] : danhSach.map((l) => l.id))])}>{moHet ? t('Thu gọn tất cả') : t('Mở tất cả lớp')}</button>
+  );
   const lopChon = [...moList].reverse().map((id) => data?.lop.find((l) => l.id === id)).find((l) => l && l.loai === loai) ?? null;
   const lyDoTat = hopMo ? t('Đóng hộp kỹ năng trước') : undefined;
 
@@ -216,8 +222,9 @@ export function KeHoachTestTab() {
           {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>W5/10</b>).</span>}
           <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
         </NutLuat>
-        <span className="ml-auto text-[13px] text-dim max-sm:basis-full max-sm:text-right">
-          <b className="tabular-nums text-slate-100">{danhSach.reduce((n, l) => n + l.soHv, 0)}</b> HV
+        <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:basis-full max-sm:justify-end">
+          <span><b className="tabular-nums text-slate-100">{danhSach.reduce((n, l) => n + l.soHv, 0)}</b> HV</span>
+          {nutMoHet}
         </span>
       </div>
       {choNut && !dienThoai && coXep && createPortal(
