@@ -254,6 +254,42 @@ export async function runPrHdTests(t: any) {
     assert(hd.manTheoId(qt, 'quan-tri').ten === 'Quản trị hệ thống' && hd.manTheoId(ql, 'quan-tri').ten === 'Đã xoá', 'màn /quan-tri: QL chỉ Đã xoá, QT đủ ba tab');
   });
 
+  await checkAsync('HD-VAI-C · TVV, CX, Head tutor đã chuyển sang `lam`; lối chính khớp mã main (nhóm Công việc TVV, nút đầu Hồ sơ HV); CX không Công việc; gvCu.ts đã xoá; tìm "bao phu huynh", "doi lop"', async () => {
+    const { tvv, cx, ht } = hd.HUONG_DAN;
+    for (const [vai, h] of [['tvv', tvv], ['cx', cx], ['ht', ht]] as [string, any][]) assert(h.lam?.length && h.viec.length === 0 && h.tuan?.length, `${vai} chưa chuyển sang HD-V2`);
+    assert(!fs.existsSync(path.join(ROOT, 'shared/huongDan/gvCu.ts')), 'gvCu.ts còn');
+    /* Nhãn đúng mã main: nhóm Công việc của TVV (`NHOM_CV_TVV_LABEL`), nút đầu Hồ sơ HV của TVV / CX (`NHAN_VIEC_QUAN_LY`, không phải ⋯ — `vaiXemHocVien`). */
+    const { NHOM_CV_TVV_LABEL } = await import('../../../shared/domain/tongQuan.ts');
+    const { NHAN_VIEC_QUAN_LY } = await import('../../../shared/domain/quanLyHocVien.ts');
+    const nhom = Object.values(NHOM_CV_TVV_LABEL) as string[];
+    const nut = Object.values(NHAN_VIEC_QUAN_LY) as string[];
+    const LOI: Record<string, Record<string, string>> = {
+      tvv: { 'xem-viec': 'cong-viec', 'bao-ph': 'cong-viec', 'chot-ngay-thi': 'cong-viec', 'thi-that': 'cong-viec', 'buoc-tiep': 'cong-viec', 'bo-sung': 'cong-viec', 'sua-hv': 'ho-so-hv', 'tam-dung': 'ho-so-hv', 'xem-case': 'ho-so-hv', 'xem-thi-thang': 'tong-quan', 'loc-hv': 'hoc-vien', 'phan-tich': 'phan-tich' },
+      cx: { 'thi-that': 'ho-so-hv', 'sua-hv': 'ho-so-hv', 'tam-dung': 'ho-so-hv', 'xem-so': 'tong-quan', 'loc-hv': 'hoc-vien' },
+      ht: { 'xem-tong-quan': 'tong-quan', 'sua-ho-so': 'ho-so-ca-nhan' },
+    };
+    for (const [vai, bang] of Object.entries(LOI)) for (const [id, man] of Object.entries(bang)) {
+      const v = hd.HUONG_DAN[vai].lam.find((x: any) => x.id === id);
+      assert(v?.loiChinh.man === man, `${vai} ${id}: lối chính phải là ${man} (${v?.loiChinh.man})`);
+    }
+    for (const [vai, h] of [['tvv', tvv], ['cx', cx]] as [string, any][]) for (const v of h.lam) {
+      const [dau, cuoi] = v.loiChinh.chu.split(' › ');
+      if (dau === 'Công việc' && cuoi) assert(nhom.includes(cuoi), `${vai} ${v.id}: nhóm Công việc "${cuoi}" không có ở NHOM_CV_TVV_LABEL`);
+      if (dau === 'Hồ sơ HV' && cuoi && !cuoi.includes('&')) assert(nut.includes(cuoi) || cuoi === 'Ý thức & Phối hợp', `${vai} ${v.id}: nút "${cuoi}" không có ở NHAN_VIEC_QUAN_LY`);
+    }
+    /* CX không có Công việc: không màn, không lối chính nào ở đó; chọn bước tiếp là việc của QL / TVV. */
+    assert(!cx.man.some((m: any) => m.id === 'cong-viec') && cx.lam.every((v: any) => v.loiChinh.man !== 'cong-viec' && !(v.loiTat ?? []).includes('cong-viec')), 'CX có Công việc');
+    assert(!cx.lam.some((v: any) => v.id === 'buoc-tiep') && cx.vaiKhac.some((v: any) => v.ten === 'Chọn bước tiếp sau thi'), 'CX không chọn Bước tiếp');
+    /* Head tutor chỉ Tổng quan, Hồ sơ cá nhân, Hướng dẫn (AN-TUTOR). */
+    assert(ht.man.map((m: any) => m.id).join() === 'tong-quan,ho-so-ca-nhan,huong-dan', `HT màn: ${ht.man.map((m: any) => m.id)}`);
+    const chu = (k: string) => k;
+    assert(hd.timHd(tvv, 'bao phu huynh', chu).viec.some((v: any) => v.id === 'bao-ph'), 'TVV tìm "bao phu huynh"');
+    assert(hd.timHd(tvv, 'doi lop', chu).vaiKhac.some((v: any) => v.cua === 'việc của QL'), 'TVV: đổi lớp là việc của QL');
+    assert(hd.timHd(cx, 'ket qua thi that', chu).viec.some((v: any) => v.id === 'thi-that'), 'CX tìm "ket qua thi that"');
+    /* Trang /huong-dan dùng chung dữ liệu: mọi vai có màn Hướng dẫn riêng ("Xem vai khác" cho QL / QT đọc được cả 7 vai). */
+    for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) assert(hd.manCuaDuong(h, '/huong-dan')?.id === 'huong-dan', `${vai}: thiếu màn Hướng dẫn`);
+  });
+
   await checkAsync('HD-CO · /demo/session có laGvcn / coS theo phân công còn hiệu lực (0 câu thêm — cùng principal)', async () => {
     const may = createApp().listen(0);
     const cong = (may.address() as any).port as number;

@@ -98,30 +98,31 @@ export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
   );
 }
 
-type Ctx = { hd: HuongDan; q: string; onChi: (c: ChiChoToi) => void; onDong: () => void };
+/** `inDuoc`: trang Hướng dẫn — thân mỗi việc luôn có trong cây (ẩn khi gập), để in cả trang (`print:`). */
+export type Ctx = { hd: HuongDan; q: string; onChi: (c: ChiChoToi) => void; onDong: () => void; inDuoc?: boolean };
 
 /* ---------------------------------------------------------------- khối dùng chung */
 
 const H3 = 'm-0 flex items-center gap-2 text-[15px] font-bold leading-tight text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)]';
-function KhoiHd({ ten, children }: { ten: string; children: ReactNode }) {
+export function KhoiHd({ ten, children }: { ten: string; children: ReactNode }) {
   return <section className="flex flex-col gap-2"><h3 className={H3}>{ten}</h3>{children}</section>;
 }
-function Nhom({ ten, children }: { ten: string; children: ReactNode }) {
+export function Nhom({ ten, children }: { ten: string; children: ReactNode }) {
   return <div><h4 className="m-0 mb-1.5 ml-0.5 text-[13px] font-semibold text-slate-400">{ten}</h4>{children}</div>;
 }
-const DsViec = ({ children }: { children: ReactNode }) => (
+export const DsViec = ({ children }: { children: ReactNode }) => (
   <div className="overflow-hidden rounded-[10px] border [&>*+*]:border-t" style={{ borderColor: 'var(--line)' }}>{children}</div>
 );
 
 /** Khối 1 · Bạn đang ở: tên màn + một câu + Trước / Sau (bấm được, đổi trang). Panel đang mở: "trên {màn nền}", không Trước / Sau. */
-function BanDangO({ man, tenRieng, tren, ctx }: { man: ManHd | null; tenRieng?: string | null; tren?: string; ctx: Ctx }) {
+export function BanDangO({ man, tenRieng, tren, trang = false, ctx }: { man: ManHd | null; tenRieng?: string | null; tren?: string; /** trang Hướng dẫn: chỉ tên màn, không chữ "Bạn đang ở" */ trang?: boolean; ctx: Ctx }) {
   const ten = man ? t(man.ten) : tenRieng;
   const d = man?.dangO;
   const luong = d && [d.truoc && { nhan: t('Trước'), ...d.truoc }, d.sau && { nhan: t('Sau'), ...d.sau }].filter(Boolean) as { nhan: string; chu: Khoa; duong: string }[] | undefined;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <span className="text-[13px] font-medium text-slate-500">{t('Bạn đang ở')}</span>
+        {!trang && <span className="text-[13px] font-medium text-slate-500">{t('Bạn đang ở')}</span>}
         {ten && <h3 className="m-0 text-[17px] font-bold text-slate-100">{ten}</h3>}
         {tren && <span className="text-[13px] font-medium text-slate-400">{t('trên {man}', { man: tren })}</span>}
       </div>
@@ -141,7 +142,7 @@ function BanDangO({ man, tenRieng, tren, ctx }: { man: ManHd | null; tenRieng?: 
 }
 
 /** Khối 3 · Không làm ở đây: đích đúng chỗ (link) hoặc chữ nhạt "việc của QL". */
-function KhongLam({ man, ctx }: { man: ManHd; ctx: Ctx }) {
+export function KhongLam({ man, ctx }: { man: ManHd; ctx: Ctx }) {
   if (!man.khongLam?.length) return null;
   return (
     <KhoiHd ten={t('Không làm ở đây')}>
@@ -186,8 +187,8 @@ function DongViec({ muc, viec, kieu, tat = false, moSan = false, ctx }: { muc: M
         </span>
         {nhan ? <span className="mt-px whitespace-nowrap rounded-md border px-1.5 py-px text-xs font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>{nhan}</span> : <span />}
       </button>
-      {mo && (
-        <div id={id} className="grid gap-2.5 pb-3 pl-9 pr-3.5">
+      {(mo || ctx.inDuoc) && (
+        <div id={id} className={`gap-2.5 pb-3 pl-9 pr-3.5 ${mo ? 'grid' : 'hidden print:grid'}`}>
           {coO && viec && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
               <span className="basis-full text-xs font-medium text-slate-500">{t('Lối chính')}</span>
@@ -250,6 +251,24 @@ function TabManNay({ hd, manNen, manPanel, pathname, ctx }: { hd: HuongDan; manN
   );
 }
 
+/** Trang Hướng dẫn · Theo màn: mọi màn của vai (Bạn đang ở · Việc làm ở đây · Không làm ở đây), cùng khối với tab Màn này của panel. */
+export function TheoMan({ hd, ctx }: { hd: HuongDan; ctx: Ctx }) {
+  return (
+    <div className="grid gap-7">
+      {hd.man.filter((m) => !m.panel).map((m) => {
+        const ds = viecOManNay(hd, m.id);
+        return (
+          <section key={m.id} aria-label={t(m.ten)} className="grid gap-[18px] break-inside-avoid-page">
+            <BanDangO man={m} trang ctx={ctx} />
+            {ds.length > 0 && <KhoiHd ten={t('Việc làm ở đây')}><DsViec>{ds.map((d) => <DongViec key={d.muc.id} muc={d.muc} viec={d.viec} kieu="man" tat={d.tat} ctx={ctx} />)}</DsViec></KhoiHd>}
+            <KhongLam man={m} ctx={ctx} />
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Tôi muốn…: việc theo nhóm cố định, nhóm trống ẩn. Màn chưa có mục riêng: dòng "Bạn đang ở" trên đầu (mockup E). Vai chưa chuyển: việc hằng tuần cũ. */
 function TabToiMuon({ hd, manNen, pathname, ctx }: { hd: HuongDan; manNen: ManHd | null; pathname: string; ctx: Ctx }) {
   return (
@@ -259,7 +278,7 @@ function TabToiMuon({ hd, manNen, pathname, ctx }: { hd: HuongDan; manNen: ManHd
     </>
   );
 }
-function DsNhom({ viec, ctx, moDau = false }: { viec: ViecHd[]; ctx: Ctx; moDau?: boolean }) {
+export function DsNhom({ viec, ctx, moDau = false }: { viec: ViecHd[]; ctx: Ctx; moDau?: boolean }) {
   return (
     <div className="grid gap-4">
       {NHOM.map((n) => {
@@ -271,7 +290,7 @@ function DsNhom({ viec, ctx, moDau = false }: { viec: ViecHd[]; ctx: Ctx; moDau?
 }
 
 /** Tuần của tôi: nhóm theo nhịp, mỗi việc gập / mở TẠI CHỖ (Lối chính + bước — 10.3). Vai chưa chuyển: việc hằng tuần cũ, "khi" là nhịp. */
-function TabTuan({ hd, ctx }: { hd: HuongDan; ctx: Ctx }) {
+export function TabTuan({ hd, ctx }: { hd: HuongDan; ctx: Ctx }) {
   if (!hd.lam || !hd.tuan) return <DsViec>{hd.viec.map((m) => <DongViec key={m.id} muc={m} kieu="lam" ctx={ctx} />)}</DsViec>;
   return (
     <div className="grid gap-4">
@@ -285,7 +304,7 @@ function TabTuan({ hd, ctx }: { hd: HuongDan; ctx: Ctx }) {
 }
 
 /** Đang gõ ô tìm: một danh sách (gộp ba tab, bỏ trùng), có nhóm; việc vai khác một dòng "… — việc của QL"; không có gì của mình → câu + Xem mọi việc. */
-function KetQuaTim({ kq, q, ctx, onXemHet }: { kq: { viec: ViecHd[]; muc: MucHd[]; vaiKhac: ViecVaiKhac[] }; q: string; ctx: Ctx; onXemHet: () => void }) {
+export function KetQuaTim({ kq, q, ctx, onXemHet }: { kq: { viec: ViecHd[]; muc: MucHd[]; vaiKhac: ViecVaiKhac[] }; q: string; ctx: Ctx; onXemHet: () => void }) {
   const n = kq.viec.length + kq.muc.length;
   return (
     <>
