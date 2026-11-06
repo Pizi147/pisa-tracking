@@ -82,7 +82,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     assert(ds.length === 1, `phải MỘT việc Chấm Speaking (${ds.length})`);
     const v = ds[0];
     assert(v.tieuDe === `${d.VIEC_CHAM_CHEO} · ${q.soBai} bài` && v.soBai === q.soBai, `số bài Công việc ≠ hàng đợi: ${v.tieuDe} / ${q.soBai}`);
-    assert(v.urgency === 'normal' && v.due === null, 'không hạn / quá hạn (T18)');
+    assert(v.urgency === 'overdue' ? !!v.due : v.due === null, 'quá hạn thì có hạn, không thì không hạn (T18, 06/11)');
     assert(d.laViecChamCheo(v) && v.group === 'score', 'khoá chấm chéo');
     /* Không còn dòng gộp "theo tuần" cũ của OV-13g cho GV này. */
     assert(!(mywork.myWork(p).dong as any[]).some((x) => d.laViecChamCheo(x) && x.key !== d.KHOA_CHAM_SPEAKING), 'còn dòng chấm chéo cũ');
@@ -116,7 +116,8 @@ export async function runPrOv14cTests(t: YThucTestKit) {
 
   check('OV14c-5 · GV không có kỹ năng S: không hàng đợi, không việc Chấm Speaking, không nhập S Mock lớp FT không dạy', () => {
     for (const p of [perm.loadPrincipal(idW), P.lrTeacher, P.w1Teacher]) {
-      assert(!svc.baiChamSpeaking(p, TODAY).rows.length && !viecCs(p).length, `${p.fullName} thấy Chấm Speaking`);
+      /* T18 (06/11): GVCN lớp FT chỉ thấy bài S QUÁ HẠN của lớp mình. */
+      assert(svc.baiChamSpeaking(p, TODAY).rows.every((r: any) => r.cell.overdue) && (viecCs(p).length === 0 || perm.lopFtGvcn(p, TODAY).length > 0), `${p.fullName} thấy Chấm Speaking`);
     }
     const r = svc.baiChamSpeaking(gvS(), TODAY).rows.find((x: any) => x.cho);
     thu(() => assertThrows(() => svc.saveScore(perm.loadPrincipal(idW), r.attemptId, 'speaking', { criteria: [6, 6, 6, 6] }, TODAY), /./, 'GV Writing nhập S'));
@@ -233,8 +234,8 @@ export async function runPrOv14cTests(t: YThucTestKit) {
       assert(cs.length === 1 && cs[0].urgency === 'overdue' && !!cs[0].due, `${ten}: Chấm Speaking phải đỏ quá hạn có hạn: ${JSON.stringify(cs.map((x: any) => [x.urgency, x.due]))}`);
       assert(d.demDongViec(r.dong).n === d.demDongViec((r.dong as any[]).filter((x) => x.key !== d.KHOA_CHAM_SPEAKING)).n, `${ten}: Chấm Speaking không được đếm (T18)`);
     }
-    /* GV S không phân công lớp nào: bài quá hạn không phải lớp của mình → giữ không hạn (OV14c-3). */
-    assert(viecCs(gvS()).every((x) => x.urgency === 'normal' && x.due === null), 'GV S không phân công không được đỏ');
+    /* T18 (06/11): GV S chấm chéo (không phân công) cũng thấy "quá hạn" khi có bài S quá hạn ở lớp trong phạm vi chấm. */
+    assert(viecCs(gvS()).every((x) => x.urgency === 'overdue' ? !!x.due : x.due === null), 'GV S: quá hạn thì có hạn');
   });
 
   /* SUA-LOI-CV ③ (chủ SP 05/11): QL xem việc của Thea (theo dõi) lại hiện "Chờ bạn duyệt 16 yêu cầu" — yêu cầu của NGƯỜI XEM, không phải của GV đang xem. */

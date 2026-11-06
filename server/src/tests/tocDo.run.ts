@@ -1198,6 +1198,7 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  */
 await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước TD4 — 6 vai × Của tôi / Tất cả / Của một GV / lọc chi nhánh', async () => {
   const { myWork, viecCuaNguoi } = await import('../worklist/mywork.ts');
+  /* T18 (chủ SP 06/11): chụp lại GVCN toi · GVCN_THUONG toi · QL gvcn · GVS toi — đổi CÓ CHỦ Ý: việc "Chấm Speaking" ghi `urgency: overdue` + `due` khi có bài S chấm chéo quá hạn (GV S) và GVCN lớp FT có thêm việc đó. Trước: GVCN toi 9d92644a93b70d7c, QL gvcn d72da0f9c7bf9628, GVS toi 3183805cc8df091a. */
   /* PR-B (30/10): chụp lại GVBM toi · QL / QT tat-ca · QT tat-ca cn · GVS toi — đổi CÓ CHỦ Ý (luật chủ SP 30/10 "Cùng GV · không cần bàn giao"): seed kịch bản 6
      MB FOU 23 → lớp đích cùng GV mọi môn, nên mất các việc "Bàn giao môn …" của GVBM và chữ "chờ môn …" ở việc GVCN. So JSON origin/main ↔ nhánh: lệch CHỈ các dòng đó. */
   const ANH: Record<string, string> = {
@@ -1258,9 +1259,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* BAO-CAO-PH b (06/11): chụp lại 'ADMIN toi' — đổi CÓ CHỦ Ý: Admin có việc mới "Xuất báo cáo PH" (nhóm Việc quản lý — đợt quá hạn chưa đủ / lớp đủ 7 ngày);
        10 băm khác giữ (QL không nhận việc này). Trước: ADMIN toi 4ed1fc3fa34653f2; chụp lại lần hai sau khi `reason` của việc bỏ tên đợt
        (EN theo mẫu từ điển) — chỉ chữ đó đổi (ddb1ac7c6032790f → 4c6c4dd6a797d681). */
-    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '9d92644a93b70d7c', 'GVBM toi': 'e089af060bbfcf23',
-    'GVCN_THUONG toi': '9d92644a93b70d7c', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '68eb7bf00d5d3794', 'QT tat-ca': '5a8f912d0266aeb4',
-    'QT tat-ca cn': '699c581b1c85ef3a', 'QL gvcn': 'd72da0f9c7bf9628', 'GVS toi': '3183805cc8df091a',
+    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': 'f343db0526d3c367', 'GVBM toi': 'e089af060bbfcf23',
+    'GVCN_THUONG toi': 'f343db0526d3c367', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '68eb7bf00d5d3794', 'QT tat-ca': '5a8f912d0266aeb4',
+    'QT tat-ca cn': '699c581b1c85ef3a', 'QL gvcn': '840bfb4a2833e9e6', 'GVS toi': '8925006102baff97',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

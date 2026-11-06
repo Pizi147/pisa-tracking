@@ -13,9 +13,9 @@ import { KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, addDaysIso, mondayOfDate, soSanh
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `GET /my-work/cham-speaking` — chỉ trường cần để gom theo lớp × lượt × tuần (`PanelChamSpeaking` đọc đủ). */
-type BaiS = { classId: number; classCode: string; attemptNo: number; weekStart: string | null; cho: boolean };
+type BaiS = { classId: number; classCode: string; attemptNo: number; weekStart: string | null; cho: boolean; cell: { overdue?: boolean; deadline?: string | null } };
 /** Một dòng Speaking chấm chéo: lớp × MT (tuần làm bài sớm nhất – muộn nhất của các bài chờ). */
-type NhomS = { key: string; classId: number; classCode: string; attemptNo: number; tu: string | null; den: string | null; soBai: number };
+type NhomS = { key: string; classId: number; classCode: string; attemptNo: number; tu: string | null; den: string | null; soBai: number; /** T18 (06/11): hạn sớm nhất của bài quá hạn — chỉ GHI "quá hạn", không vào số quá hạn. */ han: string | null };
 
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const phang = (ds: readonly WorkItem[]) => ds.flatMap((x) => (x.con?.length ? x.con : [x]));
@@ -49,7 +49,8 @@ export function ChamTestTab() {
     for (const r of sp.data?.rows ?? []) {
       if (!r.cho) continue;
       const k = `s:${r.classId}|${r.attemptNo}`;
-      const g = s.get(k) ?? s.set(k, { key: k, classId: r.classId, classCode: r.classCode, attemptNo: r.attemptNo, tu: r.weekStart, den: r.weekStart, soBai: 0 }).get(k)!;
+      const g = s.get(k) ?? s.set(k, { key: k, classId: r.classId, classCode: r.classCode, attemptNo: r.attemptNo, tu: r.weekStart, den: r.weekStart, soBai: 0, han: null }).get(k)!;
+      if (r.cell.overdue && r.cell.deadline && (!g.han || r.cell.deadline < g.han)) g.han = r.cell.deadline;
       g.soBai += 1;
       if (r.weekStart && (!g.tu || r.weekStart < g.tu)) g.tu = r.weekStart;
       if (r.weekStart && (!g.den || r.weekStart > g.den)) g.den = r.weekStart;
@@ -206,7 +207,7 @@ function DongCham({ x, homNay, chon, xong, onMo }: { x: WorkItem | NhomS; homNay
         </span>
         <span className="row-span-2 flex flex-col items-end gap-1 max-sm:col-span-2 max-sm:row-span-1 max-sm:row-start-3 max-sm:flex-row max-sm:items-center max-sm:justify-between">
           <span className="text-[13px] tabular-nums text-slate-300">{xong ? <span className="font-semibold text-ok">✓ {t('Xong')}</span> : t('{soBai} bài', { soBai: x.soBai ?? 0 })}</span>
-          {!cheo && !xong && <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={w.due} />}
+          {!xong && <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={cheo ? s.han : w.due} />}
         </span>
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-400 max-sm:col-span-2">
           {cheo ? (

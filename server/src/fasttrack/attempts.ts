@@ -11,7 +11,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopFtGvcn, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -2648,7 +2648,10 @@ const TUAN_S_SQL = `COALESCE((SELECT kp.week_start FROM attempt_skills k JOIN re
  * Ô = đúng ô của bảng FT (`skillCells` + R11 `dotHoanTatMany`) — hộp chấm dùng lại, ghi qua `saveScore` như mọi nơi.
  */
 export function baiChamSpeaking(p: Principal, today = demoToday()) {
-  const lop = lopFtChoGvSpeaking(p, today);
+  const lopS = lopFtChoGvSpeaking(p, today);
+  /* T18 (chủ SP 06/11): GVCN (không là GV Speaking) chỉ thấy bài QUÁ HẠN của lớp mình — ghi "quá hạn", không phải việc của họ. */
+  const lopCn = lopFtGvcn(p, today).filter((id) => !lopS.includes(id));
+  const lop = [...lopS, ...lopCn];
   if (!lop.length) return { rows: [] as any[], soBai: 0 };
   const tuanNay = mondayOfDate(today);
   const tuanTruoc = mondayOfDate(addDaysIso(tuanNay, -7));
@@ -2673,6 +2676,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday()) {
     if (!cell?.required) return [];
     const cho = pendingSkillsOf(pendingInputOf(cells), 'managed').includes('speaking') && canChamCheo(true, cell.weekStart, tuanNay);
     if (!cho && cell.band === null) return [];
+    if (lopCn.includes(a.class_id) && !(cho && cell.overdue)) return [];
     return [{
       attemptId: a.id as number, studentId: a.student_id as number, studentName: a.full_name as string, studentEmail: (a.student_email ?? null) as string | null,
       classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
