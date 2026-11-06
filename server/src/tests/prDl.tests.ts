@@ -15,11 +15,11 @@ export async function runPrDlTests(t: YThucTestKit) {
   console.log('\nPR-DL · Điểm theo lớp');
 
   check('DL-1 mã lượt đọc/viết hai chiều; sai dạng → null (lớp thường không có số lượt)', () => {
-    for (const s of ['mt:1', 'mt:12', 'thuong:progress', 'thuong:final']) {
+    for (const s of ['mt:1', 'mt:12', 'mt:0', 'thuong:progress', 'thuong:final']) {   // `mt:0` = MT0 em mang sang lớp FT (MT0-THEO-EM, chủ SP 06/11)
       const m = d.docMaLuot(s);
       assert(m !== null && d.vietMaLuot(m) === s, `${s} → ${JSON.stringify(m)}`);
     }
-    for (const s of ['', 'mt:0', 'mt:-1', 'mt:x', 'thuong:mid', 'thuong:final:1', 'mt:01', 'mt:2;drop', 'mt:1.5', 'MT:1', ' mt:1'])
+    for (const s of ['', 'cp:0', 'mt:00', 'mt:-1', 'mt:x', 'thuong:mid', 'thuong:final:1', 'mt:01', 'mt:2;drop', 'mt:1.5', 'MT:1', ' mt:1'])
       assert(d.docMaLuot(s) === null, `"${s}" phải là null`);
   });
 

@@ -194,13 +194,18 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
               <td className="kh-td sticky-col">
                 <Link to={duongHoSoHocVien(h.studentId)} className="ten-ho-so">{h.ten}</Link>
               </td>
-              {cots.map((c) => {
+              {cots.map((c, ci) => {
                 const dot = o(h, c);
                 /* GV chỉ xem: ô là link tới trang lượt (đổi trang) — Ctrl / chuột giữa mở tab mới. */
                 const trangLuot = chiXem && dot.attemptId !== null ? duongDotTest({ id: dot.attemptId, kind: c.dot.loai === 'ft' ? 'mock' : khoaBaiThuong(c.dot.kind), classId: data.classId, studentId: h.studentId }) : null;
                 const moHop = (el: HTMLElement) => setHop({ anchor: el, hang: h, cot: c, kyNangDau: null });
                 return (
                   <td key={c.key} className="kh-td">
+                    {/* MT0-THEO-EM (chủ SP 06/11): MT0 em mang từ lớp thường — chỉ xem, đứng trước MT1; bấm mở hồ sơ Mock (dời / nhập theo lớp cũ). */}
+                    {loai === 'ft' && ci === 0 && (h as HangFT).mt0 && homNay && (() => {
+                      const m = (h as HangFT).mt0!;
+                      return <div className="px-2 pb-1"><OMt v={{ so: 0, attemptId: m.attemptId, kn: m.kn, cu: false, khongDung: m.khongDung }} homNay={homNay} href={duongDotTest({ id: m.attemptId, kind: 'mt0' })} /></div>;
+                    })()}
                     {!homNay ? <span className="block px-2 text-xs text-faint">…</span> : dot.attemptId !== null ? (() => {
                       /* KHT-GON (mockup #659): ô = tuần + kết quả / một chữ; ô kỹ năng, dòng riêng, dòng vắng chỉ khi cần (`oGon`). */
                       const ct = loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null;

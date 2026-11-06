@@ -20,6 +20,7 @@ import { oNhapHoc } from '../fasttrack/scoring.ts';
 import { cheDoCua, type CheDo } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { chamSheet } from './canCham.ts';
+import { MT0_THEO_EM_SQL } from '../fasttrack/mt0.ts';
 
 /** Tra lớp rồi kiểm quyền — TRƯỚC mọi truy vấn dữ liệu HV. */
 function lopDuocXem(p: Principal, classId: number): CheDo {
@@ -40,22 +41,26 @@ type Gom = TomTatLuot & { classId: number; thuTu: number };
 function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<number, string>): Map<number, TomTatLuot[]> {
   const conn = db();
   const thuHai = mondayOfDate(today);
-  /* Mỗi attempt: lượt của nó + số ô trống `n`. */
-  const luotCua = new Map<number, { g: Gom; ft: boolean; n: number; thieu: number }>();
+  /* Mỗi attempt: lượt của nó (theo từng lớp — MT0-THEO-EM: một MT0 có thể ở cả lớp thường cũ lẫn lớp FT) + số ô trống `n`. */
+  const luotCua = new Map<number, { g: Gom; ft: boolean; n: number; thieu: number; theoEm: boolean }[]>();
   const gom = new Map<string, Gom>();
+  /* Lượt gắn lớp + MT0 em mang sang lớp FT (`MT0_THEO_EM_SQL`, chủ SP 06/11) — hai vế cùng tham số lớp. */
+  const LL = (ph: string) => `WITH ll(id, lop) AS (SELECT id, class_id FROM assessment_attempts WHERE class_id IN (${ph}) UNION ${MT0_THEO_EM_SQL(ph)})`;
   theoLo(classIds, (lo, ph) => {
     for (const a of conn.prepare(
-      `SELECT a.id, a.class_id, a.kind, a.attempt_no, a.lich_su, CASE WHEN s.status = 'inactive' THEN NULL ELSE s.archived_at END AS archived_at, rp.week_start, c.programme_code
-         FROM assessment_attempts a
-         JOIN classes c ON c.id = a.class_id
+      `${LL(ph)}
+       SELECT a.id, ll.lop AS class_id, a.class_id != ll.lop AS theo_em, a.kind, a.attempt_no, a.lich_su, CASE WHEN s.status = 'inactive' THEN NULL ELSE s.archived_at END AS archived_at, rp.week_start, c.programme_code
+         FROM ll JOIN assessment_attempts a ON a.id = ll.id
+         JOIN classes c ON c.id = ll.lop
          JOIN students s ON s.id = a.student_id
          LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'
+        WHERE a.status != 'cancelled'
           AND (c.status = 'finished' OR ${LUOT_HIEN_TAI_SQL('a', 's', true)})`,   // lỗi chủ SP 28/10: cùng tập hàng bảng điểm lớp (lớp đã kết thúc giữ lịch sử)
-    ).all(...lo) as any[]) {
+    ).all(...lo, ...lo) as any[]) {
       const ft = cheDoCua(a.programme_code) === 'ielts_band';
       let m: MaLuot;
       if (ft && a.kind === 'mock' && a.attempt_no) m = { loai: 'mt', so: a.attempt_no };
+      else if (ft && a.kind === 'mt0') m = { loai: 'mt', so: 0 };   // MT0-THEO-EM: lượt `mt:0` của lớp FT, đứng đầu
       /* PR-OV1a: MT0 của lớp thường là lượt `thuong:mt0` (bảng band, ô nhập W1 + W2). */
       else if (!ft && (a.kind === 'progress' || a.kind === 'final' || a.kind === 'mt0') && a.archived_at === null) m = { loai: 'thuong', kind: a.kind };
       else if (!ft && a.kind === 'checkpoint' && a.attempt_no && a.archived_at === null) m = { loai: 'cp', so: a.attempt_no };   // OV-6b2
@@ -70,36 +75,39 @@ function tomTatLop(classIds: number[], today: string, quaHan?: ReadonlyMap<numbe
       /* Lượt "lịch sử" chỉ khi MỌI attempt không huỷ của lượt là lịch sử (chủ sản phẩm 05/10); lượt lẫn đánh dấu theo từng em. */
       if (!a.lich_su) g.lichSu = false;
       if (a.week_start && (g.tuanStart === null || a.week_start < g.tuanStart)) g.tuanStart = a.week_start;
-      luotCua.set(a.id, { g, ft: ft || a.kind === 'mt0', n: 0, thieu: 0 });
+      luotCua.set(a.id, [...(luotCua.get(a.id) ?? []), { g, ft: ft || a.kind === 'mt0', n: 0, thieu: 0, theoEm: !!a.theo_em }]);
     }
     const diem = new Map<string, any>();
     for (const sc of conn.prepare(
-      `SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
+      `${LL(ph)}
+       SELECT sc.attempt_id, sc.skill, sc.band, sc.raw_score, sc.no_show_period_id, CASE WHEN ${O_FT_XONG_SQL('sc', 'a')} THEN 1 ELSE 0 END AS band_xong
          FROM assessment_scores sc
-         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.class_id IN (${ph}) AND a.status != 'cancelled'`,
-    ).all(...lo) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
+         JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE a.id IN (SELECT id FROM ll) AND a.status != 'cancelled'`,
+    ).all(...lo, ...lo) as any[]) diem.set(`${sc.attempt_id}|${sc.skill}`, sc);
     for (const k of conn.prepare(
-      `SELECT k.attempt_id, k.skill, k.planned_period_id, k.bo_task, rp.week_start FROM attempt_skills k
+      `${LL(ph)}
+       SELECT k.attempt_id, k.skill, k.planned_period_id, k.bo_task, rp.week_start FROM attempt_skills k
          JOIN assessment_attempts a ON a.id = k.attempt_id
          LEFT JOIN report_periods rp ON rp.id = k.planned_period_id
-        WHERE a.class_id IN (${ph}) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`,
-    ).all(...lo) as any[]) {
-      const l = luotCua.get(k.attempt_id);
-      if (!l) continue;
-      /* OV-11e (T19): ô chưa tới tuần thi / chưa xếp tuần không là ô TRỐNG — nhưng vẫn là chưa đủ điểm (`thieu`). */
-      const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;
-      for (const nhap of l.ft ? oNhapHoc(k.skill as AssessedSkill, k.bo_task) : [k.skill as string]) {   // P8: task Writing không học không là ô trống
-        const sc = diem.get(`${k.attempt_id}|${nhap}`);
-        const coDiem = sc && (sc.band !== null || sc.raw_score !== null
-          || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
-        /* "Đủ điểm" (`thieu`) = có band (`O_FT_XONG_SQL`, cùng luật `oXongCua`; LUAT-NX-MT: thiếu nhận xét chỉ nhắc); "ô TRỐNG" (`n`, chip / bộ lọc lưới
-           `oTrongLuotFt`) là ô chưa có gì. */
-        if (!coDiem || (sc.band !== null && !sc.band_xong)) l.thieu += 1;
-        if (!coDiem && daToi) l.n += 1;
+        WHERE a.id IN (SELECT id FROM ll) AND a.status != 'cancelled' AND k.required = 1 AND k.sit_status != 'cancelled'`,
+    ).all(...lo, ...lo) as any[]) {
+      for (const l of luotCua.get(k.attempt_id) ?? []) {
+        /* OV-11e (T19): ô chưa tới tuần thi / chưa xếp tuần không là ô TRỐNG — nhưng vẫn là chưa đủ điểm (`thieu`). */
+        const daToi = !!k.week_start && String(k.week_start).slice(0, 10) <= thuHai;
+        for (const nhap of l.ft ? oNhapHoc(k.skill as AssessedSkill, k.bo_task) : [k.skill as string]) {   // P8: task Writing không học không là ô trống
+          const sc = diem.get(`${k.attempt_id}|${nhap}`);
+          const coDiem = sc && (sc.band !== null || sc.raw_score !== null
+            || (sc.no_show_period_id !== null && sc.no_show_period_id === k.planned_period_id));
+          /* "Đủ điểm" (`thieu`) = có band (`O_FT_XONG_SQL`, cùng luật `oXongCua`; LUAT-NX-MT: thiếu nhận xét chỉ nhắc); "ô TRỐNG" (`n`, chip / bộ lọc lưới
+             `oTrongLuotFt`) là ô chưa có gì. */
+          if (!coDiem || (sc.band !== null && !sc.band_xong)) l.thieu += 1;
+          /* MT0-THEO-EM: MT0 hiện ở lớp FT không là ô trống / việc của lớp FT (chấm, hạn vẫn ở lớp thường cũ). */
+          if (!coDiem && daToi && !l.theoEm) l.n += 1;
+        }
       }
     }
   });
-  for (const [id, { g, n, thieu }] of luotCua) {
+  for (const [id, ds] of luotCua) for (const { g, n, thieu } of ds) {
     g.oTrong += n;
     const h = quaHan?.get(id);
     if (h && (!g.quaHan || h < g.quaHan)) g.quaHan = h;
@@ -136,9 +144,9 @@ export function bangTheoLuot(p: Principal, classId: number, ma: string, today: s
   if (!m || (m.loai === 'mt') !== (mode === 'ielts_band')) throw badRequest('Mã lượt không hợp lệ');
   const luot = tomTatLop([classId], today).get(classId)!.find((l) => l.ma === ma);
   if (!luot) throw notFound('Lớp chưa có lượt này');
-  const sheet = chamSheet(p, classId, m.loai === 'mt' ? { attemptNo: m.so } : m.loai === 'cp' ? { kind: 'checkpoint', attemptNo: m.so } : { kind: m.kind }, today);
+  const sheet = chamSheet(p, classId, m.loai === 'mt' ? (m.so ? { attemptNo: m.so } : { kind: 'mt0' }) : m.loai === 'cp' ? { kind: 'checkpoint', attemptNo: m.so } : { kind: m.kind }, today);
   /* Lớp thường không có hàng mờ: em vào sau bài đó không có bài (DL-0). */
-  const chuaCoLich = m.loai === 'mt'
+  const chuaCoLich = m.loai === 'mt' && m.so   // MT0 chỉ của em lên từ lớp thường — không hàng mờ "chưa có lịch"
     ? (db().prepare(
       `SELECT DISTINCT s.id AS studentId, s.full_name AS fullName, s.student_code AS studentCode
          FROM enrollments e JOIN students s ON s.id = e.student_id AND ${HV_DANG_HOC_SQL('s')}

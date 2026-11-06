@@ -451,7 +451,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ MT0-4b/c · sau khi nối FT: MT0 muộn nhất tuần 2 FT, luôn trước MT1; không ở Xếp lịch MT
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
-  check('MT0-4b/c · sau nối FT: MT0 tới tuần 3 FT → 400; MT1 về tuần ≤ MT0 → 400 "trước MT1"; lưới / Xếp lịch MT không có MT0; đợt 0 → 400', () => {
+  check('MT0-4b/c · sau nối FT: MT0 tới tuần 3 FT → 400; MT1 về tuần ≤ MT0 → 400 "trước MT1"; lưới chỉ ô MT0 chỉ xem, Xếp lịch MT không có MT0; đợt 0 → 400', () => {
     const l = taoLop('BE', 10, 1, 6);
     const sid = l.sids[0];
     loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
@@ -467,8 +467,10 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     x = loi(() => skillSch.setSkillWeek(QL, mt1, 'reading', week.ensurePeriod(tuanKn(m).split(',')[0]).id));
     assert(x?.status === 400 && /trước MT1/.test(x.message), `MT1 một kỹ năng về tuần MT0: ${x?.message}`);
     attempts.setPlanningWeek(QL, m, tuanSo(batDau, 1));   // tuần 2 FT: được
-    const luoi = JSON.stringify(keHoach.luoiFT(QL, FT101));
-    assert(!luoi.includes(`"attemptId":${m},`) && !luoi.includes(`"id":${m},`), 'lưới FT không có MT0');
+    /* MT0-THEO-EM (chủ SP 06/11): MT0 chỉ ở ô chỉ xem `mt0` của hàng — không vào cột / ô MT của lưới. */
+    const hangEm = keHoach.luoiFT(QL, FT101).hang.find((h: any) => h.studentId === sid);
+    const luoi = JSON.stringify(hangEm.dot);
+    assert(hangEm.mt0?.attemptId === m && !luoi.includes(`"attemptId":${m},`) && !luoi.includes(`"id":${m},`), 'lưới FT: MT0 chỉ ở ô chỉ xem');
     x = loi(() => keHoach.xepHangLoat(QL, { classId: FT101, attemptNo: 0, studentIds: [sid], tuan: { listening: tuanSo(batDau, 8) }, xemTruoc: true }));
     assert(x?.status === 400, `đợt 0: ${x?.status} ${x?.message}`);
     const moi = keHoach.xepHangLoat(QL, { classId: FT101, attemptNo: 'moi', studentIds: [sid], tuan: { listening: tuanSo(batDau, 20) }, xemTruoc: true });
