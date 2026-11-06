@@ -468,14 +468,14 @@
   tr.hang-dai > td { padding: 10px 12px 12px 24px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
   tr.hang-khop > td { background: color-mix(in srgb, var(--hong) 7%, var(--surface)); }
   .khop-tim { color: var(--hong); font-weight: 700; }
-  .hvl-dai { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 40px; }
+  /* SUA-HVL-0611 (chủ SP 06/11 ý 5): dải dưới hàng em dàn ĐỀU hết bề ngang hàng — mockup v11 `.dai` xếp trái, chừa trống nửa phải; khối không còn chỗ thì xuống dòng (≥ 320 px / cột). */
+  .hvl-dai { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; gap: 12px 40px; }
   .the-em .hvl-dai { margin: 4px -14px -12px; padding: 10px 14px; gap: 10px; background: var(--surface-2); }
   .hvl-dai-k { display: grid; gap: 6px; }
   .hvl-dai-k:has(button.okn[aria-expanded='true']) { padding-bottom: 40px; }   /* mockup `.dai.co-hop`: chừa chỗ hộp số câu / tiêu chí dưới ô — ở khối 5 môn, để 375 (Hỗ trợ xuống dòng) không bị đè */
   .hvl-dai-t { font-size: 13px; font-weight: 600; color: var(--text-dim); }
   .hvl-dai-kn { display: flex; flex-wrap: wrap; gap: 6px; }
   .hvl-dai-v { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
-  .hvl-dai-v > li { min-width: 380px; }
   .okn { display: inline-grid; justify-items: center; min-width: 56px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: inherit; }
   .okn-t { font-size: 12px; font-weight: 600; color: var(--text-faint); }
   button.okn { cursor: pointer; }
@@ -514,7 +514,6 @@
     .ba-cham { width: 44px; height: 44px; }
     .hvl-dai-kn { flex-wrap: nowrap; } .hvl-dai-kn > * { flex: 1; min-width: 0; }
     .doan > button { flex: 1; }
-    .hvl-dai-v > li { min-width: 0; }
     .hop-nho { white-space: normal; max-width: calc(100vw - 16px); }
   }
 
@@ -757,7 +756,7 @@
   .pc-bang .table-scroll { overflow: visible; }
   .pc-bang .bang { min-width: 0 !important; }
   .pc-bang .bang col:not(:first-child) { width: auto !important; }
-  .pc-bang.co-luu .bang col:last-child { width: 120px !important; }
+  .pc-bang.co-luu .bang col:last-child { width: 140px !important; }   /* SUA-HVL-0611: 120 → 140 — "Huỷ sửa" + "Lưu" (121 px) + lề không tràn trái đè ô GVCN (mockup vẽ "Huỷ" ngắn; phép kiểm prS3Chu cấm "Huỷ" trần) */
   /* Chủ SP 31/10: GVCN rộng cố định + cột nút luôn có → cột GVCN thẳng hàng giữa mọi nhóm, cột môn chia đều phần còn lại. */
   .pc-bang.co-luu .bang col:nth-last-child(2), .pc-bang:not(.co-luu) .bang col:last-child { width: 184px !important; }
   .pc-bang .bang > thead > tr > th { height: 34px; padding: 0 16px; font-size: 13px; font-weight: 600; color: var(--text-dim); border-top: 1px solid var(--line); vertical-align: middle; }
@@ -778,7 +777,8 @@
   .pc-nhan-nhap { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: rgb(var(--soon-rgb)); white-space: nowrap; }
   .pc-nhan-nhap::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .pc-nhan-cho { font-size: 12px; font-weight: 600; color: rgb(var(--doing-rgb)); white-space: nowrap; }
-  .pc-hang-nut { display: flex; gap: 6px; justify-content: flex-end; align-items: center; padding-right: 8px; }
+  /* SUA-HVL-0611: nút dòng "Huỷ sửa" + "Lưu" không xuống dòng / không co — vừa cột nút 140 px, không tràn đè ô GVCN. */
+  .pc-hang-nut { display: flex; gap: 4px; justify-content: flex-end; align-items: center; padding-right: 4px; white-space: nowrap; }
   .pc-phu-luu { font-size: 12px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
   .pc-loi-hang > td { background: rgb(var(--bad-bg-rgb)) !important; height: auto !important; padding: 8px 16px 8px 28px !important; }
   .pc-loi-hang .bao { display: flex; align-items: center; gap: 10px; font-size: 14px; white-space: normal; }
@@ -886,17 +886,20 @@
   .pc-rong .tieu { font-size: 15px; font-weight: 600; color: var(--text); }
 
   /* hộp nổi neo (hộp Lưu, Chờ đổi, danh sách chọn) — thang 2; < 640 tấm dưới có nền che */
-  .pc-hop { position: absolute; z-index: 60; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px; text-align: left; font-size: 14px;
-    max-height: calc(100vh - 32px); overflow: auto; overscroll-behavior: contain; outline: none; }
-  .pc-hop-duoi { position: fixed; left: 0; right: 0; bottom: 0; width: auto; border-radius: 16px 16px 0 0; max-height: 85vh; }
+  /* SUA-HVL-0611: `fixed` + cả hộp trong màn (vùng cuộn trang là <main>, không phải window); đầu / chân ghim, THÂN cuộn bên trong. */
+  .pc-hop { position: fixed; z-index: 60; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px; text-align: left; font-size: 14px;
+    max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); display: flex; flex-direction: column; overflow: hidden; overscroll-behavior: contain; outline: none; }
+  .pc-hop-duoi { left: 0; right: 0; bottom: 0; width: auto; border-radius: 16px 16px 0 0; max-height: 85vh; max-height: 85dvh; }
   .pc-che { position: fixed; inset: 0; z-index: 59; }
-  .pc-hop.pc-chon { padding: 8px; }
+  .pc-hop.pc-chon { padding: 8px; display: block; overflow: auto; }
   .pc-hop.pc-chon [role="listbox"] { border: 0; background: transparent; max-height: 320px; }
-  .pc-hop-dau { padding: 14px 18px 10px; border-bottom: 1px solid var(--line); display: grid; gap: 2px; }
+  .pc-hop-dau { position: relative; flex: none; padding: 14px 52px 10px 18px; border-bottom: 1px solid var(--line); display: grid; gap: 2px; }
   .pc-hop-dau h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text); }
   .pc-hop-dau .ng { font-size: 13px; color: var(--text-dim); }
-  .pc-hop-than { padding: 14px 18px; display: grid; gap: 14px; }
-  .pc-hop-chan { padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+  .pc-hop-x { position: absolute; top: 8px; right: 10px; min-width: 32px; min-height: 32px; justify-content: center; }
+  @media (max-width: 639px) { .pc-hop-x { min-width: 44px; min-height: 44px; top: 4px; right: 6px; } }
+  .pc-hop-than { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 14px 18px; display: grid; gap: 14px; align-content: start; }
+  .pc-hop-chan { flex: none; padding: 12px 18px; border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
   .pc-hop-duoi .pc-hop-chan .btn { flex: 1; min-height: 44px; justify-content: center; }
   .pc-hop .nhan-t { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-dim); }
   .pc-hieu-luc { display: flex; flex-wrap: wrap; gap: 8px; }
