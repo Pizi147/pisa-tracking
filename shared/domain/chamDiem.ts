@@ -251,9 +251,9 @@ export function rawPatchFrom(text: string, cell: OCoDau): PatchDiem | null {
  * cho ĐÚNG BÀI NÀY: không ghi các tiêu chí thành 0, không xoá bài khác. Xoá sạch bốn ô của bài đang có dấu '-' là GỠ dấu;
  * xoá sạch bốn ô của bài có điểm là xoá điểm như cũ.
  *
- * T10: `bandText` có chữ → chỉ nhận khi bốn tiêu chí đều trống (`{ band }`, xem trước = band); band cùng tiêu chí → lỗi
- * "Điền band hoặc tiêu chí" (máy chủ trả 400 trường hợp này).
- * OV-4c: `bandThang` (= `duocNhapBandThang`) false → lượt thường: `bandText` không bao giờ thành lệnh (`LOI_BAND_TU_TINH`); mặc định false.
+ * T10 + BAND-THANG (chủ SP 06/11 khuya, thay OV-4c): W1 / W2 / S ở MỌI lượt nhập MỘT trong hai kiểu — đủ 4 tiêu chí (Band tự tính) HOẶC chỉ ô Band.
+ * `bandText` có chữ → chỉ nhận khi bốn tiêu chí đều trống (`{ band }`, xem trước = band); band cùng tiêu chí → `LOI_MOT_KIEU` (máy chủ 400 cùng câu,
+ * cùng hàm `caHaiKieu`).
  *
  * `patch: null` = có ô không hợp lệ (không phải số, không phải đúng một "-", ví dụ "--"): KHÔNG gửi gì — trước đây ô
  * đó thành NaN rồi thành `null` trên máy chủ, tức là xoá tiêu chí mà không ai định xoá. `loi` = câu nói vì sao.
@@ -263,21 +263,21 @@ export const LOI_TIEU_CHI = t('Mỗi tiêu chí là số nguyên 0–9, hoặc "
 export const LOI_TIEU_CHI_NGUYEN = t('Tiêu chí là số nguyên 0–9 (ví dụ 6 7 6 7).');
 export const kiemTieuChi = (v: number | null): string | null =>
   v === null || (Number.isInteger(v) && v >= 0 && v <= 9) ? null : LOI_TIEU_CHI_NGUYEN;
-export const LOI_BAND_HOAC_TIEU_CHI = t('Điền band hoặc tiêu chí');
-/** OV-4c: Band W1 / W2 / S ở lượt thường tự tính từ bốn tiêu chí; nhập thẳng chỉ MT cũ + MT0 (một ô Band). Một hàm cho web và máy chủ. */
-export const duocNhapBandThang = (a: { lichSu: boolean; mt0?: boolean }): boolean => a.lichSu || !!a.mt0;
-export const LOI_BAND_TU_TINH = t('Writing / Speaking: nhập 4 tiêu chí — Band tự tính. Band nhập thẳng chỉ cho MT cũ.');
-export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = '', bandThang = false): {
+/** BAND-THANG: W1 / W2 / S — hoặc 4 tiêu chí hoặc Band, không cả hai. Web đỏ ô + chữ nhỏ, máy chủ 400, cùng câu. */
+export const LOI_MOT_KIEU = t('Chỉ chọn một kiểu: 4 tiêu chí hoặc Band');
+/** Có chữ / số ở Band VÀ ở ít nhất một tiêu chí ("-" cũng là chữ). Một hàm cho web (chữ gõ) và máy chủ (số). */
+export const caHaiKieu = (tieuChi: readonly unknown[], band: unknown): boolean =>
+  band != null && String(band).trim() !== '' && tieuChi.some((v) => v != null && String(v).trim() !== '');
+export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = ''): {
   dash: boolean; preview: number | null; patch: PatchDiem | null; loi: string | null;
 } {
+  if (caHaiKieu(vals, bandText)) return { dash: vals.some((v) => v.trim() === '-'), preview: null, patch: null, loi: LOI_MOT_KIEU };
   const hong = vals.some((v) => { const t = v.trim(); return t !== '' && t !== '-' && !Number.isFinite(Number(t)); });
   if (hong) return { dash: false, preview: null, patch: null, loi: LOI_TIEU_CHI };
   const dash = vals.some((v) => v.trim() === '-');
   const allEmpty = vals.every((v) => v.trim() === '');
   const bt = bandText.trim();
   if (bt) {
-    if (!bandThang) return { dash, preview: null, patch: null, loi: LOI_BAND_TU_TINH };
-    if (!allEmpty) return { dash, preview: null, patch: null, loi: LOI_BAND_HOAC_TIEU_CHI };
     const m = /^[bB]?(\d+(?:\.\d+)?)$/.exec(bt);
     const band = m ? Number(m[1]) : NaN;
     const loi = kiemBand(band);
