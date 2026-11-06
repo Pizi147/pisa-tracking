@@ -16,7 +16,7 @@ export type VeDongPc = {
 
 /**
  * BẢNG LỚP 1440 (mockup v9 khu 1): dải nhóm "Fast Track · n lớp" / "Lớp thường · n lớp" → nhóm con theo chương trình (tiêu đề cột riêng) → dòng lớp.
- * Cột Lớp 200 px · GVCN 184 px · cột nút dòng 120 px ở MỌI nhóm (trừ chỉ xem) → GVCN thẳng hàng giữa các nhóm (chủ SP 31/10) · cột môn chia đều phần còn lại.
+ * Cột Lớp 200 px · GVCN 184 px · cột nút dòng 140 px ở MỌI nhóm (trừ chỉ xem) → GVCN thẳng hàng giữa các nhóm (chủ SP 31/10) · cột môn chia đều phần còn lại.
  * GVCN luôn cột cuối, nền `surface-2` cả cột + vạch nhấn trái (`data-tinh`, chủ SP 30/10). `tong` = số lớp của cả chi nhánh theo nhóm (dòng lọc
  * không đổi số nhóm — mockup). Phím ← ↑ → ↓ đi giữa ô (`data-o`), Enter / Space mở, Ctrl + Enter lưu dòng.
  */
@@ -36,7 +36,7 @@ export function BangLopPc({ lop, tong, chiXem, ve, duoiThe }: {
       { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 200 },
       ...Array.from({ length: soMon }, (_, i): CotBang => ({ key: `m${i}`, nhan: mau[i]?.nhan ?? '', kieu: 'chu', goiY: mau[i] ? tenMon(ds[0].ct, mau[i]!.khoa) : undefined })),
       { key: 'gvcn', nhan: t('GVCN'), kieu: 'chu', tinh: true },
-      ...(coLuu ? [{ key: 'luu', nhan: '', kieu: 'nut', rong: 120 } as CotBang] : []),
+      ...(coLuu ? [{ key: 'luu', nhan: '', kieu: 'nut', rong: 140 } as CotBang] : []),
     ];
     return (
       <div className={`pc-bang ${coLuu ? 'co-luu' : ''}`}>
