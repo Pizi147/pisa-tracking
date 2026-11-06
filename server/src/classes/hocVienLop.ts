@@ -136,6 +136,42 @@ function tachSoLuot(hv: any[]): void {
   }
 }
 
+/** Ô còn thiếu của một dòng em (`docHocVien`) — chip / cờ "Thiếu thông tin". */
+const thieuCua = (h: any, ft: boolean) => missingForStudent({
+  cycle: h.cycle_id
+    ? { start_period_id: h.start_period_id, exam_month: h.exam_month, target_score: h.target_score, khong_cam_ket: h.khong_cam_ket,
+        baseline: h.baseline_attempt_id !== null || h.baseline_score !== null }
+    : null,
+  student: { dob: h.dob, email: h.email },
+  isFastTrack: ft,
+  hasNextMilestone: h.status !== 'active' ? undefined
+    : ft
+      ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, soMt: lichMtCua({ lich_mt: h.lop_lich_mt, route: h.lop_route }, h.route).length, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
+      : coMocTiepTheoThuong({ soLuotKeHoach: h.so_luot_ke_hoach, coCuoiKhoa: !!h.co_cuoi_khoa }),
+});
+
+/** Em đang học (ghi danh active, chưa lưu trữ) của các lớp `ids` — MỘT câu; dùng chung `danhSachHocVienLop` và cờ Thiếu thông tin (`thieuThongTinHocVien`). */
+function docHocVien(ids: readonly number[], f: { cuaToi?: number; chuaTvv?: boolean }): any[] {
+  const ph = ids.map(() => '?').join(',');
+  const thu2 = mondayOfDate(demoToday());   // tuần này — mốc kế tiếp (SO_LUOT_SQL dùng hai lần)
+  const hv = db().prepare(
+    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.email, s.status,
+            cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
+            cy.route, cy.exam_period_id, cy.exam_date, cy.thi_that_ngay, erp.week_start AS exam_week_start, erp.code AS exam_week_code, tv.full_name AS tvv,
+            c.lich_mt AS lop_lich_mt, c.route AS lop_route,
+            ${hocVienLopCuKhiKiem.soLuot ?? SO_LUOT_SQL}
+       FROM enrollments e
+       JOIN classes c ON c.id = e.class_id
+       JOIN students s ON s.id = e.student_id
+       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+       LEFT JOIN report_periods erp ON erp.id = cy.exam_period_id
+       LEFT JOIN users tv ON tv.id = s.consultant_user_id
+      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${f.cuaToi ? ' AND s.consultant_user_id = ?' : ''}${f.chuaTvv ? ' AND s.consultant_user_id IS NULL' : ''}`,
+  ).all(...(hocVienLopCuKhiKiem.soLuot ? [thu2] : [thu2, thu2]), ...ids, ...(f.cuaToi ? [f.cuaToi] : [])) as any[];
+  if (!hocVienLopCuKhiKiem.soLuot) tachSoLuot(hv);
+  return hv;
+}
+
 export function danhSachHocVienLop(
   p: Principal, f: { branchId?: number | null; q?: string | null; phamVi?: string | null; cnNho?: number | null; them?: boolean; chuaTvv?: boolean } = {},
 ): TrangHocVienLop {
@@ -190,22 +226,7 @@ export function danhSachHocVienLop(
    * HIỆN TẠI của từng em, dùng lại để gom Case về đúng lớp em đang học, thay vì tự viết thêm một
    * câu SQL enrollment→class riêng (như hàm dựng riêng cũ ở `dongHocVien.ts` từng làm).
    */
-  const thu2 = mondayOfDate(demoToday());   // tuần này — mốc kế tiếp (SO_LUOT_SQL dùng hai lần)
-  const hv = conn.prepare(
-    `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, s.dob, s.email, s.status,
-            cy.id AS cycle_id, cy.start_period_id, cy.exam_month, cy.target_score, cy.khong_cam_ket, cy.baseline_attempt_id, cy.baseline_score,
-            cy.route, cy.exam_period_id, cy.exam_date, cy.thi_that_ngay, erp.week_start AS exam_week_start, erp.code AS exam_week_code, tv.full_name AS tvv,
-            c.lich_mt AS lop_lich_mt, c.route AS lop_route,
-            ${hocVienLopCuKhiKiem.soLuot ?? SO_LUOT_SQL}
-       FROM enrollments e
-       JOIN classes c ON c.id = e.class_id
-       JOIN students s ON s.id = e.student_id
-       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
-       LEFT JOIN report_periods erp ON erp.id = cy.exam_period_id
-       LEFT JOIN users tv ON tv.id = s.consultant_user_id
-      WHERE e.class_id IN (${ph}) AND e.status = 'active' AND s.archived_at IS NULL${dangDung === 'cua-toi' ? ' AND s.consultant_user_id = ?' : ''}${f.chuaTvv ? ' AND s.consultant_user_id IS NULL' : ''}`,
-  ).all(...(hocVienLopCuKhiKiem.soLuot ? [thu2] : [thu2, thu2]), ...ids, ...(dangDung === 'cua-toi' ? [p.userId] : [])) as any[];
-  if (!hocVienLopCuKhiKiem.soLuot) tachSoLuot(hv);
+  const hv = docHocVien(ids, { cuaToi: dangDung === 'cua-toi' ? p.userId : undefined, chuaTvv: f.chuaTvv });
   const lopCuaHv = new Map<number, number>(hv.map((h) => [h.id as number, h.class_id as number]));
 
   /*
@@ -304,18 +325,7 @@ export function danhSachHocVienLop(
     /* PR-S4F #4: cùng điều kiện với `soEmQuaHan` (viecHocVienTheoLop) — badge "n HV quá hạn việc" = số dòng khi bấm. */
     if (v?.viec.some((x) => x.tone === 'danger')) loc.push('qua-han');
     if (v?.choDuyet) loc.push('cho-duyet');
-    const thieu = missingForStudent({
-      cycle: h.cycle_id
-        ? { start_period_id: h.start_period_id, exam_month: h.exam_month, target_score: h.target_score, khong_cam_ket: h.khong_cam_ket,
-            baseline: h.baseline_attempt_id !== null || h.baseline_score !== null }
-        : null,
-      student: { dob: h.dob, email: h.email },
-      isFastTrack: !!laFt.get(h.class_id),
-      hasNextMilestone: h.status !== 'active' ? undefined
-        : laFt.get(h.class_id)
-          ? coMocTiepTheo({ coMoc: h.so_moc_ke_tiep > 0, soMt: lichMtCua({ lich_mt: h.lop_lich_mt, route: h.lop_route }, h.route).length, mtCuoi: h.mt_cuoi, coNgayThi: !!(h.exam_month || h.exam_period_id) })
-          : coMocTiepTheoThuong({ soLuotKeHoach: h.so_luot_ke_hoach, coCuoiKhoa: !!h.co_cuoi_khoa }),
-    });
+    const thieu = thieuCua(h, ft);
     if (thieu.length) loc.push('thieu_tt');
     if (daThi.has(h.id)) loc.push('da-thi');
     /* OV-12f: tên + mã + ô thiếu — dòng "Thiếu thông tin" / "Chờ duyệt" của góc Cần làm (em không có việc ở Công việc vẫn có tên). */
@@ -330,6 +340,23 @@ export function danhSachHocVienLop(
   /* U04-3 (chủ SP 03/11 khuya): em Kết thúc học không còn trong danh sách — xem ở hồ sơ lớp tab Học viên · Lưu trữ · Ctrl K (bỏ khối OV-11g, bớt 1 câu). */
   const coTheThemHocVien = themTheoPhamVi ?? rows.some((r) => r.viewer.coTheThemHocVien);
   return { rows, scopeEmpty: false, phamVi, dem: demLoc(hocVien, 'tat-ca'), hocVien, coTheTaoLop, coTheThemHocVien, demLuuTru, lopChiXem };
+}
+
+/**
+ * GIAM-DOC-0611: CHỈ cờ "Thiếu thông tin" của từng em (chip TVV / CX — `chipHocVien`), không dựng cả trang Học viên & Lớp (Case, việc, điểm, lưu trữ…).
+ * Cùng phạm vi (`phamViTrang`), cùng tập lớp (`lopTrongPhamVi` = hàng của `listClassSummaries` khi không tìm), cùng câu em (`docHocVien`), cùng `thieuCua`
+ * → cùng kết quả với `danhSachHocVienLop(p, f).hocVien` (thứ tự dòng, em học hai lớp hai dòng). Chỉ trả dòng có ô thiếu.
+ */
+export function thieuThongTinHocVien(p: Principal, f: { branchId?: number | null; phamVi?: string | null }): { id: number; thieu: string[] }[] {
+  const { dangDung, chiNhanh, phanCong, lopCuaToi } = phamViTrang(p, f, demoToday());
+  const lopToi = new Set(phanCong.map((a) => a.classId));
+  const lops = (lopTrongPhamVi(p, chiNhanh ?? undefined) ?? [])
+    .filter((c) => (dangDung === 'toi' ? lopToi.has(c.id) : dangDung === 'cua-toi' ? lopCuaToi.has(c.id) : true));
+  if (!lops.length) return [];
+  const laFt = new Map(lops.map((c) => [c.id as number, c.programme_code === 'FT']));
+  return docHocVien(lops.map((c) => c.id as number), { cuaToi: dangDung === 'cua-toi' ? p.userId : undefined })
+    .map((h) => ({ id: h.id as number, thieu: thieuCua(h, !!laFt.get(h.class_id)).map((m) => m.label) }))
+    .filter((h) => h.thieu.length);
 }
 
 /**

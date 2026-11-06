@@ -37,6 +37,7 @@ const { standingFor } = await import('../students/standing.ts');   // RA-DOC-061
 const { chiSoHoSoGv } = await import('../phanTich/giaoVien.ts');   // RA-DOC-0611
 const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');   // RA-DOC-0611b
 const { muonTuViec, viecMuon } = await import('../platform/thongBaoTuDong.ts');   // RA-DOC-0611b
+const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
@@ -654,6 +655,20 @@ check('RA-DOC-0611b · /my-work mọi tài khoản: tập cha Case theo lớp (G
   assert(!sai.length, sai.slice(0, 10).join(' | '));
 });
 
+check('GIAM-DOC-0611 · cờ Thiếu thông tin (chip TVV / CX) = cờ của danh sách Học viên & Lớp — mọi tài khoản × phạm vi × chi nhánh', () => {
+  const sai: string[] = [];
+  for (const uid of TOAN_BO_TK) {
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const phamVi of ['cua-toi', 'chi-nhanh', 'tat-ca', null]) for (const branchId of [null, CN]) {
+      const [cu, moi] = chayTrongRequest('GET', () => [
+        JSON.stringify(danhSachHocVienLop(p, { phamVi, branchId }).hocVien.filter((h) => h.thieu).map((h) => ({ id: h.id, thieu: h.thieu }))),
+        JSON.stringify(thieuThongTinHocVien(p, { phamVi, branchId }))]);
+      if (cu !== moi) sai.push(`${uid} ${phamVi} ${branchId}`);
+    }
+  }
+  assert(!sai.length, sai.slice(0, 10).join(' | '));
+});
+
 check('PR-TD Task3(4) · trong một kho GET, gọi listCases(p, {}) hai lần cùng bộ lọc → lần hai 0 câu SQL', () => {
   const p = PRINCIPAL_CUA.get(USER.QT)!;
   chayTrongRequest('GET', () => {
@@ -1120,7 +1135,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
   doQuet.ghi = ghi;
   process.env.PISA_DO_QUET = '1';   // TL-NEN: câu "thẻ Báo lên Ý thức" nằm trong lượt quét — đo khi quét chạy
   try {
-    for (const [vai, url] of [['CX', '/tong-quan/hoc-vien'], ['GVCN', '/my-work'], ['QL', '/classes/{lopFT}/diem-theo-luot/mt:2'], ['TVV', '/hoc-vien-lop/theo-vai']] as [Vai, string][]) {
+    /* GIAM-DOC-0611: chip TVV / CX không dựng cả danh sách Học viên & Lớp nữa → câu "Báo PH chưa làm" (`viecHocVienTheoLop`) bắt ở `QL /hoc-vien-lop`. */
+    for (const [vai, url] of [['CX', '/tong-quan/hoc-vien'], ['GVCN', '/my-work'], ['QL', '/classes/{lopFT}/diem-theo-luot/mt:2'], ['TVV', '/hoc-vien-lop/theo-vai'], ['QL', '/hoc-vien-lop']] as [Vai, string][]) {
       assert((await doSql(vai, 'GET', urlFor(url))).status === 200, `${vai} ${url} không 200`);
     }
   } finally {

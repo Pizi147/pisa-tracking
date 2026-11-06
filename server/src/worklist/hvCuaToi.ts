@@ -6,7 +6,7 @@
  *  · `can-chu-y` — em đang học có SOS (MT gần nhất), Case mở trong 14 ngày, Ý thức trong 14 ngày, hoặc đang chờ QL chọn bước tiếp sau thi.
  *  · Tạm dừng — em Tạm dừng học. · Sắp thi — dự kiến thi từ hôm nay tới 6 tuần tới (OV-13q: ngày thi đã qua → không còn "sắp").
  *  · Đã thi · chờ kết quả (OV-13q) — cùng tập với việc GVCN / góc Cần làm TVV (`loTrinhChoKetQuaThi`). · Chờ chọn bước tiếp — cùng tập với việc QL / TVV (`choBuocTiep`).
- *  · Thiếu thông tin — chính cờ `thieu_tt` của danh sách Học viên & Lớp (`danhSachHocVienLop`), chip đó đã có sẵn.
+ *  · Thiếu thông tin — chính cờ `thieu_tt` của danh sách Học viên & Lớp (`thieuThongTinHocVien`: cùng phạm vi, câu em, hàm cờ với `danhSachHocVienLop`).
  * Câu đọc không theo danh sách id (Turso ≤ 900 tham số): Case / Ý thức đọc khoảng 14 ngày rồi lọc theo tập em.
  */
 import { CASE_THAT } from '../cases/sosState.ts';
@@ -17,7 +17,7 @@ import { addDays } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
 import { standingFor } from '../students/standing.ts';
-import { danhSachHocVienLop } from '../classes/hocVienLop.ts';
+import { thieuThongTinHocVien } from '../classes/hocVienLop.ts';
 import { choBuocTiep } from '../loTrinh/buocTiep.ts';
 import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
 
@@ -106,12 +106,12 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   }
   ids['can-chu-y'] = [...lyDo.keys()];
 
-  /* Thiếu thông tin: đúng cờ của danh sách Học viên & Lớp (cùng phạm vi trang đó mở ra). */
+  /* Thiếu thông tin: đúng cờ của danh sách Học viên & Lớp (cùng phạm vi trang đó mở ra) — GIAM-DOC-0611: chỉ tính cờ, không dựng cả danh sách. */
   const thieu = new Map<number, string[]>();
   if (dangHoc.length) {
-    const ds = danhSachHocVienLop(p, { phamVi, branchId: phamVi === 'chi-nhanh' ? f.branchId : null });
-    ids.thieu_tt = [...new Set(ds.hocVien.filter((h) => h.loc.includes('thieu_tt')).map((h) => h.id))];   // UX-1: em học hai lớp một lần, như chip
-    for (const h of ds.hocVien) if (h.thieu && !thieu.has(h.id)) thieu.set(h.id, h.thieu);
+    const ds = thieuThongTinHocVien(p, { phamVi, branchId: phamVi === 'chi-nhanh' ? f.branchId : null });
+    ids.thieu_tt = [...new Set(ds.map((h) => h.id))];   // UX-1: em học hai lớp một lần, như chip
+    for (const h of ds) if (!thieu.has(h.id)) thieu.set(h.id, h.thieu);
   }
   /* U04-3 / XM-4 (PTA 03/11): "Tất cả" = em đang học + tạm dừng — em Kết thúc học (chờ KQ thi thật) không trong danh sách nên không đếm; vẫn ở chip 'da-thi' / 'cho-buoc-tiep'. */
   const tatCa = [...em.values()].filter((r) => r.status !== 'finished').map((r) => r.id as number);
