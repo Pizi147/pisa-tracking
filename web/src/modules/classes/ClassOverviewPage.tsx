@@ -184,7 +184,7 @@ export default function ClassOverviewPage() {
       )}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
       {tab === 'bao-cao-ph' && <TabBaoCaoPh lopId={data.id} ct={data.programme?.code ?? data.kind} dot={params.get('dot')} onDot={(ma) => doiThamSo({ dot: ma })}
-        onDuHet={(ma, du) => setBcDu((x) => (du ? ma : x === ma ? null : x))} />}
+        onDuHet={(ma, du) => setBcDu((x) => (du ? ma : x === ma ? null : x))} onDoiDot={() => { invalidate('/classes'); reload(); }} />}
       </div>
 
       {tab !== 'y-thuc' && tab !== 'bao-cao-ph' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}

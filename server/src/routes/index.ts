@@ -69,6 +69,7 @@ import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as banGiaoGvSvc from '../classes/banGiaoGv.ts';
 import * as baoCaoPhSvc from '../classes/baoCaoPh.ts';
 import * as xuatBaoCaoPhSvc from '../classes/xuatBaoCaoPh.ts';
+import { doiDotBaoCaoPh } from '../classes/dotBaoCaoPh.ts';
 import * as dichSvc from '../dich/dich.ts';
 import * as loTrinhTiepSvc from '../classes/loTrinhTiep.ts';
 import * as cuoiKhoaSvc from '../normal/cuoiKhoa.ts';
@@ -1139,6 +1140,9 @@ api.get('/classes/:classId/bao-cao-ph/phan', requireAuth, wrap((req) => {
 /** BAO-CAO-PH b: Excel một lớp (`em` vắng) hoặc một em — QL, Admin, TVV. */
 api.get('/classes/:classId/bao-cao-ph/xuat', requireAuth, wrap((req) => xuatBaoCaoPhSvc.xuatLopBaoCaoPh(principalOf(req), pInt(req, 'classId'),
   typeof req.query.dot === 'string' ? req.query.dot : null, toInt(req.query.em))));
+/** BC-DOT-QL: QL / Quản trị / Admin bỏ hoặc thêm đợt Báo cáo PH (một lớp hoặc nhiều lớp cùng chi nhánh); Hoàn tác = khôi phục / xoá. */
+api.get('/bao-cao-ph/lop', requireAuth, wrap((req) => ({ rows: baoCaoPhSvc.lopChoQuyetDot(principalOf(req), qInt(req, 'branchId') ?? 0) })));
+api.post('/bao-cao-ph/dot', requireAuth, wrap((req) => doiDotBaoCaoPh(principalOf(req), req.body ?? {})));
 api.put('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return baoCaoPhSvc.luuBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});

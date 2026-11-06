@@ -664,6 +664,8 @@ function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final'
 function doiViecTheoMoc(classId: number, kind: 'progress' | 'final', tuCu: string, sangMoi: string, tuanFinalMoi: string | null) {
   const conn = db();
   conn.prepare('UPDATE OR IGNORE bao_cao_ph SET dot = ? WHERE class_id = ? AND dot = ?').run(`${kind}:${sangMoi}`, classId, `${kind}:${tuCu}`);
+  /* BC-DOT-QL: đợt QL / Admin đã bỏ đi theo tuần thi mới (không thì đợt mới "sống lại"). */
+  conn.prepare("UPDATE OR IGNORE bao_cao_ph_dot SET ma = ? WHERE class_id = ? AND loai = 'bo' AND ma = ?").run(`${kind}:${sangMoi}`, classId, `${kind}:${tuCu}`);
   if (kind !== 'final') return;
   for (const l of conn.prepare(
     `SELECT id, ngay_ra_lenh FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho' AND boi_canh = 'cuoi-khoa' AND han_gvcn IS NOT NULL AND xac_nhan_luc IS NULL`,

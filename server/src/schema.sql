@@ -2451,3 +2451,19 @@ CREATE TABLE bao_cao_ph (
   UNIQUE (dot, student_id, phan)
 );
 CREATE INDEX idx_bcph_lop_dot ON bao_cao_ph(class_id, dot);
+
+/* BC-DOT-QL (chủ SP 06/11): QL / Admin quyết đợt Báo cáo PH của TỪNG LỚP — `loai='bo'`: bỏ đợt đã tính (`ma` = mã đợt, vd 'thang:2026-11'; xoá dòng = khôi phục);
+ * `loai='them'`: đợt bất chợt (`ma` NULL, mã đợt = 'them:' || id; `ten` tuỳ chọn, `mo` / `han` ngày ISO; `xoa_luc` = xoá mềm, bài đã viết ở bao_cao_ph giữ nguyên).
+ * `dsDotLop` gộp đợt tính + đợt thêm − đợt bỏ. Lịch sử ở audit_logs ('bao_cao_ph.dot_*'). migrate/prBaoCaoPhDot.ts. */
+CREATE TABLE bao_cao_ph_dot (
+  id INTEGER PRIMARY KEY,
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  ma TEXT,
+  loai TEXT NOT NULL CHECK (loai IN ('bo', 'them')),
+  ten TEXT, mo TEXT, han TEXT,
+  nguoi INTEGER REFERENCES users(id),
+  luc TEXT NOT NULL,
+  xoa_luc TEXT,
+  UNIQUE (class_id, ma)
+);
+CREATE INDEX idx_bcph_dot_lop ON bao_cao_ph_dot(class_id);

@@ -124,9 +124,14 @@ export function phanDu(p: PhanBc, b: Pick<BanGhiBc, 'muc' | 'chu'> | null | unde
 
 // ---------------------------------------------------------------- đợt
 
-export type LoaiDotBc = 'thang' | 'progress' | 'final';
-/** `ma`: 'thang:2026-11' · 'progress:2026-11-16' · 'final:2026-12-07' (thứ Hai tuần thi). `mo` / `han`: ngày ISO (hạn = cuối ngày đó, giờ VN). */
-export type DotBc = { ma: string; loai: LoaiDotBc; mo: string; han: string };
+export type LoaiDotBc = 'thang' | 'progress' | 'final' | 'them';
+/**
+ * `ma`: 'thang:2026-11' · 'progress:2026-11-16' · 'final:2026-12-07' (thứ Hai tuần thi) · 'them:12' (đợt QL / Admin thêm bất chợt, BC-DOT-QL).
+ * `mo` / `han`: ngày ISO (hạn = cuối ngày đó, giờ VN). `ten`: tên ngắn của đợt 'them' (trống → "Đợt {mã tuần}").
+ */
+export type DotBc = { ma: string; loai: LoaiDotBc; mo: string; han: string; ten?: string | null };
+/** Quyết định của QL / Admin cho MỘT lớp (bảng `bao_cao_ph_dot`): `bo` = mã đợt tính không cần báo cáo; `them` = đợt thêm (chưa xoá). */
+export type TuyChinhDot = { bo: ReadonlySet<string>; them: readonly DotBc[] };
 
 const pad = (n: number) => String(n).padStart(2, '0');
 /** Đợt tháng FT (chủ SP 05/11): mở ngày 20, hạn ngày 30; tháng 2 hạn ngày 28 (cả năm nhuận). */
@@ -144,8 +149,9 @@ export function docMaDot(ma: string): DotBc | null {
   return w ? dotTuan(w[1] as 'progress' | 'final', w[2]) : null;
 }
 
-/** "Tháng 11" (khác năm hôm nay: "Tháng 11/2025") · "Progress · W3 NOV" · "Final · W2 DEC". */
-export function nhanDotBc(d: Pick<DotBc, 'loai' | 'mo'>, homNay: string): string {
+/** "Tháng 11" (khác năm hôm nay: "Tháng 11/2025") · "Progress · W3 NOV" · "Final · W2 DEC" · đợt thêm: tên QL đặt hoặc "Đợt W3 NOV". */
+export function nhanDotBc(d: Pick<DotBc, 'loai' | 'mo'> & { ten?: string | null }, homNay: string): string {
+  if (d.loai === 'them') return d.ten?.trim() || t('Đợt {tuan}', { tuan: tuanLich(d.mo, homNay) });
   if (d.loai === 'thang') {
     const [y, m] = d.mo.split('-').map(Number);
     return y === Number(homNay.slice(0, 4)) ? t('Tháng {m}', { m }) : t('Tháng {m}/{y}', { m, y });
@@ -160,7 +166,19 @@ export type LichLopBc = { ft: boolean; batDau: string | null; progress: string |
  * MỌI đợt của lớp (tính khi đọc, không lưu — đặc tả §10: dời tuần thi thì đợt dời theo), MỚI NHẤT TRƯỚC, kèm đợt đầu chưa mở.
  * FT: mỗi tháng từ tháng có hạn ≥ ngày khai giảng tới tháng đã mở gần nhất (tối đa 12 tháng gần nhất). Lớp thường: Progress, Final đã tới thứ Hai.
  */
-export function dsDotLop(l: LichLopBc, homNay: string): { ds: DotBc[]; dau: DotBc | null } {
+export function dsDotLop(l: LichLopBc, homNay: string, tc?: TuyChinhDot): { ds: DotBc[]; dau: DotBc | null; daBo: DotBc[] } {
+  const r = dsDotTinh(l, homNay);
+  if (!tc || (!tc.bo.size && !tc.them.length)) return { ...r, daBo: [] };
+  /* BC-DOT-QL: đợt tính + đợt thêm (đã tới ngày mở) − đợt QL / Admin bỏ; mới nhất trước. `daBo` = đợt bỏ (để khôi phục). */
+  const tatCa = [...r.ds, ...tc.them.filter((d) => d.mo <= homNay)];
+  const theoMo = (a: DotBc, b: DotBc) => b.mo.localeCompare(a.mo);
+  const ds = tatCa.filter((d) => !tc.bo.has(d.ma)).sort(theoMo);
+  const daBo = tatCa.filter((d) => tc.bo.has(d.ma)).sort(theoMo);
+  return { ds, dau: ds.length || daBo.length ? null : r.dau, daBo };
+}
+
+/** Đợt TÍNH từ lịch lớp (chưa qua quyết định của QL / Admin). */
+function dsDotTinh(l: LichLopBc, homNay: string): { ds: DotBc[]; dau: DotBc | null } {
   if (l.ft) {
     let y = Number(homNay.slice(0, 4)), m = Number(homNay.slice(5, 7));
     if (homNay < dotThang(y, m).mo) { m -= 1; if (!m) { m = 12; y -= 1; } }

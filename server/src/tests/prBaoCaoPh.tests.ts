@@ -172,6 +172,131 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(sh && sh.aoa[0].includes(em.ten), 'file tháng: em nằm ở sheet lớp cũ — ' + r.sheets.map((x: any) => `${x.ten}:${x.aoa[0].slice(1).join('/')}`).join(' | '));
   }));
 
+  const dq: any = await import('../classes/dotBaoCaoPh.ts');
+  check('BC-13 · BC-DOT-QL: QL / Admin bỏ đợt → mất chip, việc Admin, Excel tháng; bài giữ nguyên; khôi phục hiện lại; GV / TVV 403; nhiều lớp', () => thu(() => {
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, null);
+    const dot0 = tr.dot;
+    assert(tr.quyetDot === true && tr.dsBo.length === 0 && tr.lop.ft === true, JSON.stringify([tr.quyetDot, tr.dsBo]));
+    viet(lop, dot0, tr.em, tr.phan);
+    const soBai = () => (conn.prepare('SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND class_id = ?').get(dot0, lop) as any).n;
+    const truoc = soBai();
+    assert(truoc > 0, 'đã có bài');
+    const admin_ = nguoi('office_admin', 'MB');
+    if (admin_) assert(xbc.viecXuatBaoCaoPh(admin_, null).some((v: any) => v.classId === lop && v.dot === dot0), 'trước khi bỏ: có việc Admin');
+    const ids = tr.em.map((e: any) => e.id);
+    const thang = dot0.slice(6);
+    const sheetCoLop = () => xbc.xuatBaoCaoPhNhieu(P.mbManager, { ids, thang, xemTruoc: true }).khongDot.includes(tr.lop.ma);
+    assert(!sheetCoLop(), 'trước khi bỏ: lớp có đợt trong Excel tháng');
+
+    /* quyền: GV, TVV không bỏ / thêm; QL chi nhánh khác không */
+    const tvv = nguoi('consultant', 'MB');
+    for (const x of [P.lrTeacher, P.coreTeacher, tvv, P.cpManager]) {
+      if (!x) continue;
+      assertThrows(() => dq.doiDotBaoCaoPh(x, { viec: 'bo', classIds: [lop], ma: dot0 }), /./, 'không quyền bỏ đợt');
+      assertThrows(() => dq.doiDotBaoCaoPh(x, { viec: 'them', classIds: [lop], mo: TODAY, han: TODAY }), /./, 'không quyền thêm đợt');
+    }
+    assert(bc.trangBaoCaoPh(P.lrTeacher, lop, null).quyetDot === false, 'GV không thấy nút');
+
+    const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'bo', classIds: [lop], ma: dot0 });
+    assert(r.lopDoi.join() === String(lop), JSON.stringify(r));
+    xoaNho();
+    const sau = bc.trangBaoCaoPh(P.mbManager, lop, null);
+    assert(!sau.dsDot.some((x: any) => x.ma === dot0) && sau.dsBo.some((x: any) => x.ma === dot0), 'đợt chuyển sang dsBo');
+    const xemBo = bc.trangBaoCaoPh(P.mbManager, lop, dot0);
+    assert(xemBo.dot === null && xemBo.daBo?.ma === dot0 && !xemBo.em.length, 'chọn đợt bỏ → thẻ Không báo cáo');
+    assert(bc.trangBaoCaoPh(P.lrTeacher, lop, null).dsBo.length === 0, 'GV không thấy đợt bỏ');
+    assertThrows(() => bc.trangBaoCaoPh(P.lrTeacher, lop, dot0), /./, 'GV chọn đợt bỏ → không có đợt');
+    assertThrows(() => bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: dot0, phan: 'listening', studentId: ids[0], muc: {}, chu: 'x' }), /./, 'không viết vào đợt đã bỏ');
+    const chip = bc.chipBaoCaoPh(P.mbManager, lop);
+    assert(!chip || chip.dot !== dot0, 'chip không còn đợt đã bỏ');
+    if (admin_) assert(!xbc.viecXuatBaoCaoPh(admin_, null).some((v: any) => v.classId === lop && v.dot === dot0), 'sau khi bỏ: không việc Admin');
+    assert(sheetCoLop(), 'sau khi bỏ: lớp vào khongDot, không vào Excel tháng');
+    assert(soBai() === truoc, 'bài đã viết giữ nguyên');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'bo', classIds: [lop], ma: 'them:1' }), /./, 'đợt thêm dùng Xoá, không dùng Bỏ');
+
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'khoi-phuc', classIds: [lop], ma: dot0 });
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, null).dsDot.some((x: any) => x.ma === dot0) && soBai() === truoc, 'khôi phục: đợt hiện lại, bài còn');
+    if (admin_) assert(xbc.viecXuatBaoCaoPh(admin_, null).some((v: any) => v.classId === lop && v.dot === dot0), 'khôi phục: việc Admin trở lại');
+    if (admin_) assert(dq.doiDotBaoCaoPh(admin_, { viec: 'bo', classIds: [lop], ma: dot0 }).lopDoi.length === 1, 'Admin bỏ được');
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'khoi-phuc', classIds: [lop], ma: dot0 });
+
+    /* nhiều lớp: lớp FT thứ hai cùng chi nhánh; lớp khác chi nhánh bị chặn */
+    const lop2 = classId('MB FT 102');
+    const nhieu = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'bo', classIds: [lop, lop2], ma: dot0 });
+    assert(nhieu.lopDoi.includes(lop) && nhieu.lopDoi.length + nhieu.boQua === 2, JSON.stringify(nhieu));
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'bo', classIds: [lop, classId('CP FT 130')], ma: dot0 }), /./, 'khác chi nhánh');
+  }));
+
+  check('BC-14 · BC-DOT-QL: thêm đợt bất chợt — GV viết được, điểm gốc theo lượt gần nhất trước hạn, chip / Excel như đợt thường; xoá mềm + khôi phục; lớp thường cũng thêm / bỏ được', () => thu(() => {
+    const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt thử', mo: TODAY, han: d.addDaysIso(TODAY, 6) });
+    const ma = r.ma[0].ma;
+    assert(/^them:\d+$/.test(ma) && r.dotIds.length === 1, JSON.stringify(r));
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    assert(tr.dot === ma && tr.dsDot.find((x: any) => x.ma === ma)?.nhan === 'Đợt thử' && tr.dsDot.find((x: any) => x.ma === ma)?.them === true && tr.em.length > 0, JSON.stringify(tr.dsDot));
+    const sid = tr.em[0].id;
+    const w = bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: sid, muc: { c1: 'tot', c2: 'tot', c3: 'kha', c4: 'kha' }, chu: 'Đợt bất chợt' });
+    assert(w.du === true, 'GV viết được đợt thêm');
+    const ph = bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening');
+    assert(ph.ft === true && ph.dot.ma === ma, 'điểm gốc đợt thêm FT theo band');
+    /* Điểm gốc: câu hợp lệ cho đợt thêm, FT (Mock) và lớp thường (Progress / Final của lớp), lượt có tuần ≤ hạn */
+    const dotThem = { ma, loai: 'them', mo: TODAY, han: d.addDaysIso(TODAY, 6) };
+    const c0 = conn.prepare('SELECT * FROM classes WHERE id = ?').get(lop);
+    for (const [, g] of bc.diemGoc(c0, dotThem, 'listening', tr.em.map((e: any) => e.id))) assert(/^MT\d+$/.test(g.luot) && g.tong === null, 'FT: lượt Mock');
+    const lt = conn.prepare("SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' AND c.status = 'active' AND c.programme_code IN ('BE','ELE') ORDER BY c.id").get() as any;
+    if (lt) {
+      const ct = conn.prepare('SELECT * FROM classes WHERE id = ?').get(lt.id);
+      const ids = (conn.prepare("SELECT student_id id FROM enrollments WHERE class_id = ? AND status = 'active'").all(lt.id) as any[]).map((x) => x.id);
+      for (const [, g] of bc.diemGoc(ct, { ...dotThem, ma: 'them:0' }, 'listening', ids)) assert(['Progress', 'Final'].includes(g.luot) && g.tong != null, 'lớp thường: Progress / Final có tổng');
+      /* lớp thường: bỏ + thêm */
+      const tt = bc.trangBaoCaoPh(P.mbManager, lt.id, null);
+      if (tt.dot) {
+        dq.doiDotBaoCaoPh(P.mbManager, { viec: 'bo', classIds: [lt.id], ma: tt.dot });
+        xoaNho();
+        assert(!bc.trangBaoCaoPh(P.mbManager, lt.id, null).dsDot.some((x: any) => x.ma === tt.dot), 'lớp thường: đợt Progress / Final bỏ được');
+      }
+      const them2 = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lt.id], mo: TODAY, han: TODAY });
+      xoaNho();
+      assert(bc.trangBaoCaoPh(P.mbManager, lt.id, them2.ma[0].ma).dot === them2.ma[0].ma, 'lớp thường: đợt thêm có tab');
+    }
+    /* việc Admin + Excel nhận đợt thêm như đợt thường */
+    const admin_ = nguoi('office_admin', 'MB');
+    viet(lop, ma, tr.em, tr.phan);
+    if (admin_) assert(xbc.viecXuatBaoCaoPh(admin_, null).some((v: any) => v.classId === lop && v.dot === ma), 'đợt thêm đủ → việc Admin');
+    const x = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null);
+    assert(x.sheets.length === 1 && x.sheets[0].aoa[0].length === tr.em.length + 1, 'Excel một lớp theo đợt thêm');
+    /* kiểm dữ liệu vào */
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, 3), han: d.addDaysIso(TODAY, 9) }), /./, 'mở trong tương lai');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: TODAY, han: d.addDaysIso(TODAY, -1) }), /./, 'hạn trước ngày mở');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [], mo: TODAY, han: TODAY }), /./, 'chưa chọn lớp');
+
+    /* xoá mềm: đợt mất, bài còn; hoàn xoá: hiện lại */
+    const soBai = () => (conn.prepare('SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ?').get(ma) as any).n;
+    const truoc = soBai();
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'xoa', dotIds: r.dotIds });
+    xoaNho();
+    assert(!bc.trangBaoCaoPh(P.mbManager, lop, null).dsDot.some((e: any) => e.ma === ma) && soBai() === truoc && truoc > 0, 'xoá mềm: đợt mất, bài còn');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.lrTeacher, { viec: 'hoan-xoa', dotIds: r.dotIds }), /./, 'GV không khôi phục');
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'hoan-xoa', dotIds: r.dotIds });
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, null).dsDot.some((e: any) => e.ma === ma), 'hoàn xoá: đợt hiện lại');
+    /* nhật ký */
+    const acts = (conn.prepare("SELECT DISTINCT action FROM audit_logs WHERE action LIKE 'bao_cao_ph.dot_%'").all() as any[]).map((a) => a.action);
+    assert(['bao_cao_ph.dot_them', 'bao_cao_ph.dot_xoa', 'bao_cao_ph.dot_hoan_xoa'].every((a) => acts.includes(a)), acts.join());
+  }));
+
+  check('BC-15 · BC-DOT-QL: dsDotLop gộp đợt tính + đợt thêm − đợt bỏ; đợt chưa tới ngày mở không hiện', () => {
+    const l = { ft: true, batDau: '2026-09-01', progress: null, final: null };
+    const them = { ma: 'them:9', loai: 'them', mo: '2026-11-05', han: '2026-11-12', ten: null };
+    const a = d.dsDotLop(l, '2026-11-24', { bo: new Set(['thang:2026-10']), them: [them, { ...them, ma: 'them:10', mo: '2026-12-01', han: '2026-12-05' }] });
+    assert(a.ds.map((x: any) => x.ma).join() === 'thang:2026-11,them:9,thang:2026-09', a.ds.map((x: any) => x.ma).join());
+    assert(a.daBo.map((x: any) => x.ma).join() === 'thang:2026-10' && a.dau === null, 'daBo / dau');
+    assert(d.nhanDotBc(them, '2026-11-24').startsWith('Đợt ') && d.nhanDotBc({ ...them, ten: 'Kiểm tra giữa kỳ' }, '2026-11-24') === 'Kiểm tra giữa kỳ', d.nhanDotBc(them, '2026-11-24'));
+    const b = d.dsDotLop(l, '2026-11-24');
+    assert(b.ds.length === 3 && b.daBo.length === 0, 'không tuỳ chỉnh = như cũ');
+  });
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -180,7 +305,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   check('BC-11 · RA-LOI-0611: lưu xong quên bản vừa xem; "Sửa" điểm theo loại đợt; hết em thiếu → thẻ Xong; chip quá hạn tại chỗ; ✕ không nuốt cú bấm; ?dot= cũ về mặc định; mẫu Xuất theo vai', () => {
     const tab = doc('web/src/modules/classes/TabBaoCaoPh.tsx');
     assert(/moi\.daLuu = f;[\s\S]{0,300}quenBanXem\(`\/classes\/\$\{lopId\}\/bao-cao-ph`\)/.test(tab), 'lưu xong phải quên bản vừa xem (mở lại panel dựng form từ bản cũ → ghi đè chữ)');
-    assert(tab.includes('const coTheSua = thang || tong != null;') && tab.includes("thang={dot.startsWith('thang:')}"), 'lớp thường chưa có điểm gốc: không có nút Sửa');
+    assert(tab.includes('const coTheSua = thang || tong != null;') && tab.includes('thang={data.ft}'), 'lớp thường chưa có điểm gốc: không có nút Sửa');
     assert(tab.includes('if (keTiep) setChon(keTiep.id); else setXong(true);'), 'hết em thiếu khác → thẻ Xong (PTA 06/11: không đứng im)');
     const lop_ = doc('web/src/modules/classes/ClassOverviewPage.tsx');
     assert(tab.includes('onDuHet(data.dot,') && lop_.includes('!(bc.quaHan && bcDu === bc.dot)'), 'chip quá hạn tắt tại chỗ khi tab thấy đủ (không thêm request)');
