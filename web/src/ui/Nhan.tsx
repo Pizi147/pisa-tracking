@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { deadlineView, nhanHan, nhanQuaHan, TONE_TRANG_THAI, type DeadlineKind } from '@shared/domain/index.ts';
+import { deadlineView, nhanHan, nhanQuaHan, TONE_TRANG_THAI, type BadgeTab, type DeadlineKind } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { IconKhong } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -171,3 +171,21 @@ export function ChipHan({ loai, han, chuThuong = false, vien = false }: { loai: 
 export const ChipKy = ({ k }: { k: string }) => (
   <span className="inline-flex h-5 min-w-6 items-center justify-center rounded bg-[color:var(--accent-soft)] px-1.5 text-xs font-bold tabular-nums text-[color:var(--accent)]">{k}</span>
 );
+
+/**
+ * CV-TAB (chủ SP 06/11, mockup `thiet-ke/v17-nhap/` `.bd`): badge tab Công việc — CHỈ số + màu, một badge / tab theo trạng thái gấp nhất: đỏ = số việc quá hạn ·
+ * vàng = số việc gần hạn · trắng = tổng. Chữ đủ cho trình đọc màn + rê chuột (màu không mang nghĩa một mình).
+ */
+const MAU_BADGE_TAB: Record<BadgeTab['mau'], string> = {
+  do: 'bg-late-bg text-late border-[rgb(var(--late-line-rgb))]',
+  vang: 'bg-soon-bg text-soon border-[rgb(var(--soon-line-rgb))]',
+  trang: 'bg-[rgb(var(--muted-bg-rgb))] text-dim border-[color:var(--line-strong)]',
+};
+export const chuBadgeTab = (b: BadgeTab) => (b.mau === 'do' ? t('{n} việc quá hạn', { n: b.so }) : b.mau === 'vang' ? t('{n} việc gần hạn', { n: b.so }) : t('{n} việc', { n: b.so }));
+export function BadgeTabSo({ b }: { b: BadgeTab }) {
+  return (
+    <span title={chuBadgeTab(b)} className={`inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full border px-1.5 text-xs font-bold tabular-nums ${MAU_BADGE_TAB[b.mau]}`}>
+      <span aria-hidden>{b.so}</span><span className="sr-only">{chuBadgeTab(b)}</span>
+    </span>
+  );
+}

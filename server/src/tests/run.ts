@@ -9834,6 +9834,9 @@ await runPrTatCpTests({ check, assert, conn, P, TODAY, addDays, classId } as any
 // ==================================================================== RESET-HAN-CASE (chủ SP 06/11 khuya: việc tuyến Case quá hạn → hạn hôm nay + 7, hoàn tác được)
 const { runPrResetHanCaseTests } = bocTep('prResetHanCase', await import('./prResetHanCase.tests.ts'));
 await runPrResetHanCaseTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== CV-TAB (chủ SP 06/11: Công việc chia tab hạng mục, badge số + màu)
+const { runPrCvTabTests } = bocTep('prCvTab', await import('./prCvTab.tests.ts'));
+await runPrCvTabTests({ check, assert, P, TODAY } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

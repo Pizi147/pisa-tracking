@@ -5,7 +5,7 @@
  * chương trình đang chọn, 4 nhóm việc của GV, thứ tự dòng Cần xử lý, luật chọn Điểm đáng chú ý.
  * Không có con số nào được tính ở đây — số luôn đến từ `metricSet` (hợp đồng số liệu luật 1).
  */
-import { kyGhiKetQua, type DeadlineKind } from './display.ts';
+import { deadlineView, kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
 import { KHOA_CHAM_SPEAKING, laViecChamCheo } from './gopViec.ts';
 
@@ -112,6 +112,82 @@ export function gomNhomViec<T extends ViecGom>(items: T[], tvv = false): NhomVie
     };
   }).filter((g) => g.n > 0);
 }
+
+// ------------------------------------------------------------------ CV-TAB (chủ SP 06/11, mockup `thiet-ke/v17-nhap/`): Công việc chia TAB theo hạng mục
+/**
+ * Tab = nhóm việc sẵn có (`NHOM_VIEC` / TVV `NHOM_CV_TVV`), thứ tự cố định; bài Speaking chấm chéo (T03, không là việc của ai) là tab riêng
+ * "Bài thi Speaking" ngay sau Chấm điểm. Web thêm tab "Chờ bạn duyệt" (thẻ duyệt, không phải dòng việc) ở đầu.
+ */
+export const TAB_CV = ['cham-diem', 'cham-cheo', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] as const;
+export const tabCuaViec = (it: { group: string; key: string }, tvv = false): string =>
+  (tvv ? nhomViecTvvCua(it.group) : laViecChamCheo(it) ? 'cham-cheo' : nhomViecCua(it.group));
+export const nhanTabCv = (k: string, tvv = false): string =>
+  (k === 'cham-cheo' ? t('Bài thi Speaking') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
+
+/**
+ * MỤC trong tab (chủ SP 06/11 "mô tả case, phương án, kết quả…"): "Quá hạn" trên cùng, rồi mục theo LOẠI VIỆC, thứ tự `MUC_CV`; mục rỗng ẩn.
+ * Chấm điểm chia theo loại bài (`kind` của việc Nhập điểm). Loại lạ → "Khác" (không bao giờ mất việc).
+ */
+const MUC_CV = [
+  ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Speaking chấm chéo')],
+  ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['phoi-hop', t('Phối hợp SOS')], ['bao-ph', t('Báo PH')], ['phan-cong', t('Phân công')],
+  ['xu-ly', t('Xử lý vi phạm')], ['xem-vp', t('Xem vi phạm')], ['da-th', t('Ghi đã thực hiện')], ['cap-bac', t('Xác nhận cấp bậc')],
+  ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['thieu', t('Thiếu dữ liệu')],
+  ['bo-sung', t('Bổ sung hồ sơ')], ['giao', t('Việc được giao')], ['bc-ph', t('Báo cáo PH')], ['khac', t('Khác')],
+] as const;
+type MaMuc = (typeof MUC_CV)[number][0];
+const MUC_CUA_LOAI: Record<string, MaMuc> = {
+  cause: 'mo-ta', ghi_nhan_xet: 'mo-ta', xem_nx_s: 'mo-ta',
+  no_plan: 'pa', xac_nhan_pa: 'pa', do_plan: 'pa', mini_test: 'pa',
+  ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop: 'bao-ph', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
+  yt_xu_ly: 'xu-ly', yt_xem: 'xem-vp', yt_thuc_hien: 'da-th', khai_bac: 'cap-bac',
+  ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
+  missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph',
+};
+/** Mã mục của một việc (`MUC_CV`). */
+export function mucCuaViec(it: { group: string; key: string; kind?: string | null }, tvv = false): MaMuc {
+  if (laViecChamCheo(it)) return 'cham-cheo';
+  if (it.group === 'score') return it.kind === 'progress' || it.kind === 'final' ? 'pf' : it.kind === 'checkpoint' ? 'cp' : 'mock';
+  if (tvv && it.group === 'missing_data') return 'chot-ngay';   // việc `missing_data` của TVV chỉ có Chốt ngày thi
+  return MUC_CUA_LOAI[it.group] ?? 'khac';
+}
+
+/**
+ * Dòng NHÌN THẤY của một tab (cùng luật `xepTheoEm` / `dongNhinThay`): dòng gộp mà mọi việc là của MỘT em tách thành từng việc, trừ dòng làm cả dòng
+ * (`caDong`: Xác nhận PA cùng lúc, Nhập điểm theo tuần). Số trên badge / đầu mục đếm đúng các dòng này.
+ */
+export function dongTab<T extends { studentId: number | null; con?: readonly T[] | null }>(ds: readonly T[], caDong: (it: T) => boolean = () => false): T[] {
+  return ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? [...it.con] : [it]));
+}
+export type MucTab<T> = { key: string; label: string; items: T[]; quaHan: boolean };
+/** Chia dòng của một tab: "Quá hạn" (mọi dòng quá hạn, hạn sớm trước) rồi mục theo loại việc (thứ tự `MUC_CV`, trong mục: hôm nay trước, hạn sớm trước). */
+export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false): MucTab<T>[] {
+  const w = (u: ViecGom['urgency']) => (u === 'today' ? 0 : 1);
+  const xep = (a: T, b: T) => Number(b.key === KHOA_CHAM_SPEAKING) - Number(a.key === KHOA_CHAM_SPEAKING) || w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999');
+  const qua = dong.filter((x) => x.urgency === 'overdue').sort(xep);
+  const out: MucTab<T>[] = qua.length ? [{ key: 'qua-han', label: t('Quá hạn'), items: qua, quaHan: true }] : [];
+  for (const [m, nhan] of MUC_CV) {
+    const ds = dong.filter((x) => x.urgency !== 'overdue' && mucCuaViec(x, tvv) === m).sort(xep);
+    if (ds.length) out.push({ key: m, label: nhan, items: ds, quaHan: false });
+  }
+  return out;
+}
+
+/**
+ * BADGE TAB (chủ SP 06/11: chỉ số + màu, một badge / tab theo trạng thái gấp nhất): đỏ = số dòng quá hạn · vàng = số dòng gần hạn · trắng = tổng.
+ * Gần hạn = MỐC SẴN CÓ `deadlineView().ganHan` (còn ≤ `HAN_GAN_NGAY` = 3 ngày, gồm hôm nay — chip hạn vàng mọi nơi; mockup ghi "hôm nay – 2 ngày").
+ * Nhận dòng nhìn thấy (`dongTab`); chỉ đếm dữ liệu đã nạp, không gọi máy chủ.
+ */
+export type BadgeTab = { mau: 'do' | 'vang' | 'trang'; so: number; n: number; quaHan: number; ganHan: number };
+export function badgeTab(dong: readonly { group: string; urgency: string; due: string | null }[], homNay: string): BadgeTab {
+  const quaHan = dong.filter((x) => x.urgency === 'overdue').length;
+  const ganHan = dong.filter((x) => x.urgency !== 'overdue' && !!x.due
+    && deadlineView({ kind: LOAI_HAN_CUA_VIEC[x.group] ?? 'viec-van-hanh', due: x.due, today: homNay }).ganHan).length;
+  const n = dong.length;
+  return quaHan ? { mau: 'do', so: quaHan, n, quaHan, ganHan } : ganHan ? { mau: 'vang', so: ganHan, n, quaHan, ganHan } : { mau: 'trang', so: n, n, quaHan, ganHan };
+}
+/** Mở trang (chưa chọn tab): tab đầu tiên có việc quá hạn, không có thì tab đầu. */
+export const tabMacDinh = (ds: readonly { key: string; badge: BadgeTab | null }[]): string | null => (ds.find((x) => (x.badge?.quaHan ?? 0) > 0) ?? ds[0])?.key ?? null;
 
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =

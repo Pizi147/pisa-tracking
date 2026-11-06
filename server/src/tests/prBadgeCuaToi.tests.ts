@@ -46,6 +46,7 @@ export async function runPrBadgeCuaToiTests(t: { check: any; assert: any; P: any
     const doc = (f: string) => fs.readFileSync(f, 'utf8');
     assert(/summary\?\.canLamNgay/.test(doc('web/src/App.tsx')), 'badge App đọc summary.canLamNgay');
     assert(/soCuaToi\(dsGoc\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /k === 'toi' && hienSoToi \? soToi : null/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'ô Của tôi = soCuaToi, Của GV / Tất cả không số');
-    assert(/const so = demDongViec\(goc\)/.test(doc('web/src/modules/congViec/DanhSachViec.tsx')), 'đầu nhóm đếm demDongViec');
+    /* CV-TAB: đầu trang đếm demDongViec(items); badge tab đếm dòng nhìn thấy (badgeTab ∘ dongTab — CVT-2 so tổng với demDongViec). */
+    assert(/demDongViec\(items\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /badgeTab\(dongCuaTab\(items, k\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'đầu nhóm đếm demDongViec');
   });
 }
