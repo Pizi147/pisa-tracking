@@ -2848,11 +2848,11 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   if (!pv.all && !f.classId && !f.studentId && !f.studentIds?.length && !f.ownerUserId && !tapChaTheoLopKhiKiem.tat) {
     const lop = [...new Set([...p.assignments.map((a) => a.classId), ...(p.xemTam ?? []).map((x) => x.classId)])];
     const ph = lop.map(() => '?').join(',');
-    where.push(`sc.id IN (${lop.length ? `SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
-                          UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
-                          UNION ` : ''}${pv.branchIds.length ? `SELECT x.id FROM students s2 JOIN sos_cases x ON x.student_id = s2.id WHERE s2.branch_id IN (${DS_JSON})
-                          UNION SELECT x.id FROM students s2 JOIN sos_cases x ON x.student_id = s2.id WHERE s2.branch_id IS NULL
-                          UNION ` : ''}SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`);
+    where.push(`sc.id IN (${lop.length ? `SELECT x.id AS id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
+                          UNION SELECT x.id AS id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
+                          UNION ` : ''}${pv.branchIds.length ? `SELECT x.id AS id FROM students s2 JOIN sos_cases x ON x.student_id = s2.id WHERE s2.branch_id IN (${DS_JSON})
+                          UNION SELECT x.id AS id FROM students s2 JOIN sos_cases x ON x.student_id = s2.id WHERE s2.branch_id IS NULL
+                          UNION ` : ''}SELECT x.id AS id FROM sos_cases x WHERE x.student_id IS NULL)`);
     params.push(...lop, ...lop, ...(pv.branchIds.length ? [JSON.stringify(pv.branchIds)] : []));
   }
 
