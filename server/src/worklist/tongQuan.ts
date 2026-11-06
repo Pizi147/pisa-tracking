@@ -252,7 +252,11 @@ export function diemChuY(p: Principal, f: { branchId?: number | null; ct: Chuong
  * chính người xem ở lớp đó — `noDiemCuaGv` (cùng hàm cột "Chưa nhập / Bài quá hạn" hồ sơ GV), bấm số ra cùng tập.
  */
 type TapLop = { duoiKyVong: number[]; sos: number[]; sos1: number[]; sos2: number[]; sos3: number[]; caseMo: number[]; baiCho: number[]; baiQuaHan: number[]; han: string | null };
-function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
+/**
+ * GIAM-DOC-TQGV (PTA 07/11 phương án A): `chiKhiChuNhiem` — khung không có lớp chủ nhiệm nào thì bỏ Dưới kỳ vọng · SOS · Case (Tổng quan GV chỉ hiện
+ * các số này ở hàng chủ nhiệm; V4 `lopToiDay` vẫn tính đủ mọi lớp).
+ */
+function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong', chiKhiChuNhiem = false) {
   const today = demoToday();
   const conn = db();
   const cua = new Map<number, { core: boolean; skills: string[] }>();
@@ -279,7 +283,7 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
     const r = metricSet(p, metricId, { program: ct });
     for (const [id, l] of lopCuaTap(r.unit, r.ids)) if (l.classId && tap.has(l.classId)) tap.get(l.classId)![cot].push(id);
   };
-  if (trong.length) {
+  if (trong.length && (!chiKhiChuNhiem || trong.some((l) => cua.get(l.id)?.core))) {
     chia('hv-duoi-ky-vong-mon', 'duoiKyVong');
     if (ct === 'ft') {
       chia('hv-sos-hien-tai', 'sos');
@@ -290,6 +294,8 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
       }
     }
     chia('case-mo', 'caseMo');
+  }
+  if (trong.length) {
     /* SUA-CHAM-LAI L4: chỉ bài của chính GV — S chấm chéo không là nợ (T02–T03), cùng luật Công việc / Chấm Test "Của tôi". */
     for (const o of noDiemCuaGv(p, p.userId, today, trong.map((l) => ({ id: l.id as number, branchId: (l.branch_id ?? null) as number | null })))) {
       const x = tap.get(o.classId)!;
@@ -303,8 +309,8 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
   return { cua, trong, tap, coFt, coThuong, soFt, soThuong, today };
 }
 
-export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }) {
-  const { cua, trong, tap, coFt, coThuong, today } = tinhLopToiDay(p, f.ct);
+export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }, chiKhiChuNhiem = false) {
+  const { cua, trong, tap, coFt, coThuong, today } = tinhLopToiDay(p, f.ct, chiKhiChuNhiem);
   const conn = db();
   /* Test kế tiếp — FT: lượt mốc kế tiếp sớm nhất của lớp (`MOC_KE_TIEP_SQL`); lớp thường: mốc Giữa/Cuối khoá kế tiếp của lớp. */
   const keTiep = new Map<number, string>();
@@ -363,8 +369,9 @@ function thiThangNayCuaGv(p: Principal, ct: 'ft' | 'thuong') {
  */
 export function lopToiDayHaiKhoi(p: Principal) {
   /* Lớp thường chỉ đọc khi GV có lớp thường (`coThuong` của lần đọc FT) — GV chỉ dạy FT không tốn thêm câu. */
-  const ft = lopToiDay(p, { ct: 'ft' });
-  const hang = [...ft.rows.map((r) => ({ ...r, khung: 'ft' as const })), ...(ft.coThuong ? lopToiDay(p, { ct: 'thuong' }).rows.map((r) => ({ ...r, khung: 'thuong' as const })) : [])];
+  /* GIAM-DOC-TQGV: khung không có lớp chủ nhiệm → không tính Dưới kỳ vọng · SOS · Case (chỉ hàng chủ nhiệm đọc). */
+  const ft = lopToiDay(p, { ct: 'ft' }, true);
+  const hang = [...ft.rows.map((r) => ({ ...r, khung: 'ft' as const })), ...(ft.coThuong ? lopToiDay(p, { ct: 'thuong' }, true).rows.map((r) => ({ ...r, khung: 'thuong' as const })) : [])];
   /* Lớp chỉ GVCN (không kỹ năng) mà còn bài chờ chấm của tôi vẫn vào khối dạy — không giấu bài. */
   const day = hang.filter((r) => r.kyNang.length || r.baiCho);
   /* S1: MỘT lần `chiSoHoSoGv` cho cả trang — thẻ "Đạt kỳ vọng Test" / "Tiến bộ" đầu trang đọc `chiSo` ở đây (trước gọi thêm `/giao-vien/:id/chi-so`, tính lại y hệt). */
