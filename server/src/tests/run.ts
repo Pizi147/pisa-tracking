@@ -9110,6 +9110,8 @@ await runPrLt3Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-MT0 (lượt Mock số 0 cho em lớp thường lên FT)
 const { runPrMt0Tests } = bocTep('prMt0', await import('./prMt0.tests.ts'));
 await runPrMt0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+const { runPrMt0EmTests } = bocTep('prMt0Em', await import('./prMt0Em.tests.ts'));
+await runPrMt0EmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-BV (xoá "-" trả lại như cũ + đường lui điểm) — trước PR-TK (PR-TK luôn cuối)
 const { runPrBvTests } = bocTep('prBv', await import('./prBv.tests.ts'));
 await runPrBvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });

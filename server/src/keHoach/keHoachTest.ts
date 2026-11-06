@@ -317,6 +317,16 @@ export type DotFT = {
   ovr?: number; kyVong?: number | null;
 };
 
+/** Ô MT0 (chỉ xem, mở hồ sơ Mock) của Kế hoạch Test — lớp thường cạnh Final, lớp FT trước MT1 (MT0-THEO-EM). */
+function oMt0(a: any, bundle: ReturnType<typeof loadBundle>, skillRows: Map<number, unknown[]>, homNay: string, khongDung: boolean) {
+  const scores = bundle.scores.get(a.id) ?? [];
+  const kn: Partial<Record<KyNangKH, OKyNang>> = {};
+  for (const r of (skillRows.get(a.id) ?? []) as any[]) {
+    kn[r.skill as KyNangKH] = oKyNangCua('ft', a, r, scores, false, null, { choDuyet: false, lichSu: false, homNay, attemptOverride: a.deadline_override ?? null, mt0: true });
+  }
+  return { attemptId: a.id as number, kn, khongDung };
+}
+
 export function luoiFT(p: Principal, classId: number, today: string = demoToday()) {
   const conn = db();
   requireXem(p, classId);
@@ -335,19 +345,22 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   const studentIds = students.map((s) => s.id);
 
   /* Q12 (PR-XLMT): lượt theo LỘ TRÌNH ĐANG CHẠY của em, không theo lớp — em chuyển lớp FT giữ lộ trình vẫn thấy MT cũ. */
-  const attempts = studentIds.length
+  let attempts = studentIds.length
     ? (conn
         .prepare(
           `SELECT a.*, cy.route AS route, cy.khong_cam_ket AS cy_kck   -- V5 SV-SO1 / UI-CHAM-TEST: kỳ vọng + Overall (\`resultOf\`) không hỏi lộ trình lẻ từng lượt
              FROM assessment_attempts a
              JOIN learning_cycles cy ON cy.id = a.cycle_id AND cy.status = 'active'
-            WHERE a.kind = 'mock' AND a.student_id IN (${phOf(studentIds.length)}) AND ${LUOT_CON_KE_HOACH_SQL('a')}   -- PTA 28/10: MT chưa làm sau thi thật không còn là kế hoạch
+            WHERE a.kind IN ('mock', 'mt0') AND a.student_id IN (${phOf(studentIds.length)}) AND ${LUOT_CON_KE_HOACH_SQL('a')}   -- PTA 28/10: MT chưa làm sau thi thật không còn là kế hoạch
             ORDER BY a.attempt_no`,
         )
         .all(...studentIds) as any[])
     : [];
+  /* MT0-THEO-EM (chủ SP 06/11): MT0 đã nối vào lộ trình FT của em — ô MT0 chỉ xem trước MT1 (dời / nhập ở hồ sơ Mock, T5b); không vào cột / xếp lịch. */
+  const mt0s = attempts.filter((a) => a.kind === 'mt0' && a.status !== 'cancelled');
+  attempts = attempts.filter((a) => a.kind === 'mock');
 
-  const attemptIds = attempts.map((a) => a.id);
+  const attemptIds = [...attempts, ...mt0s].map((a) => a.id);
   const skillRows = loadSkillRows(attemptIds);
   const bundle = loadBundle(attemptIds);
   const choDuyet = pendingMovesFor(attemptIds);
@@ -393,6 +406,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   const soCot = soCotMt(lichMtCua(cls, cls.route).length, attempts.filter((a) => a.status !== 'cancelled').map((a) => a.attempt_no as number));
   const cot = Array.from({ length: soCot }, (_, i) => i + 1);
 
+  const mt0Cua = new Map(mt0s.map((a) => [a.student_id as number, oMt0(a, bundle, skillRows, today, false)]));
   const hang = students.map((s) => {
     const dot: Record<number, DotFT> = {};
     const mine = attemptsByStudent.get(s.id) ?? [];
@@ -435,6 +449,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
       vaoMuon: laVaoMuon(s.started_at ?? null, cls.start_date ?? null), dot,
       /* K4-08: chỉ ô MT kế tiếp có "+ xếp" (Q11) — tính trên cả lộ trình của em (Q12). */
       soKeTiep: soKeTiepCua.get(s.id)!,
+      mt0: mt0Cua.get(s.id) ?? null,
     };
   });
 
@@ -888,14 +903,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
   if (progress.mocLap) kinds.splice(0, kinds.length, ...soCp.map((n) => `cp${n}`));
   const homNay = demoToday();
   const ttMt0 = mt0TheoHocVien(mt0s.map((a) => a.student_id as number));
-  const mt0Cua = new Map(mt0s.map((a) => {
-    const scores = bundle.scores.get(a.id) ?? [];
-    const kn: Partial<Record<KyNangKH, OKyNang>> = {};
-    for (const r of (skillRows.get(a.id) ?? []) as any[]) {
-      kn[r.skill as KyNangKH] = oKyNangCua('ft', a, r, scores, false, null, { choDuyet: false, lichSu: false, homNay, attemptOverride: a.deadline_override ?? null, mt0: true });
-    }
-    return [a.student_id as number, { attemptId: a.id as number, kn, khongDung: ttMt0.get(a.student_id)?.trangThai === 'khong_dung' }];
-  }));
+  const mt0Cua = new Map(mt0s.map((a) => [a.student_id as number, oMt0(a, bundle, skillRows, homNay, ttMt0.get(a.student_id)?.trangThai === 'khong_dung')]));
   const hang = students.map((s) => {
     const dot: Record<string, DotThuong> = {};
     for (const kind of kinds) {

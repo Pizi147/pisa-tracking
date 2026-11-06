@@ -1,6 +1,6 @@
 /**
  * ĐIỂM THEO LỚP (PR-DL) — luật thuần cho mã lượt ở tham số `luot`.
- * FT: `mt:<n>` (attempt_no). Lớp thường: `thuong:progress` | `thuong:final` | `thuong:mt0` (PR-OV1a) — chỉ theo `kind`, không số lượt
+ * FT: `mt:<n>` (attempt_no); `mt:0` = MT0 em mang từ lớp thường (chủ SP 06/11). Lớp thường: `thuong:progress` | `thuong:final` | `thuong:mt0` (PR-OV1a) — chỉ theo `kind`, không số lượt
  * (DL-0, chủ sản phẩm 04/10: attempt_no lớp thường đánh theo lộ trình từng em, không dùng chung cả lớp).
  */
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
@@ -13,10 +13,11 @@ import { t } from '../i18n/index.ts';
 /** OV-6b2: `cp:<n>` = Checkpoint n của lớp liên tục (số Checkpoint là chung cả lớp: tuần học n × mỗi-n-tuần). */
 export type MaLuot = { loai: 'mt'; so: number } | { loai: 'thuong'; kind: 'progress' | 'final' | 'mt0' } | { loai: 'cp'; so: number };
 
-/** Sai dạng → null (máy chủ trả 400). Số MT dương, không số 0 đầu. */
+/** Sai dạng → null (máy chủ trả 400). Số MT dương (riêng `mt:0`), không số 0 đầu. */
 export function docMaLuot(s: string): MaLuot | null {
   const mt = /^(mt|cp):([1-9]\d{0,5})$/.exec(s);
   if (mt) return { loai: mt[1] as 'mt' | 'cp', so: Number(mt[2]) };
+  if (s === 'mt:0') return { loai: 'mt', so: 0 };   // MT0-THEO-EM (chủ SP 06/11): MT0 em mang sang lớp FT
   if (s === 'thuong:progress' || s === 'thuong:final' || s === 'thuong:mt0') return { loai: 'thuong', kind: s.slice(7) as 'progress' | 'final' | 'mt0' };
   return null;
 }
