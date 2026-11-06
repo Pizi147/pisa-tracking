@@ -18,7 +18,7 @@ import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, NEXT_STEP_LABEL, NHAN_XET_MT_TOI_THIEU, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
-  chuAiLamDuoc, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, giaTriCuaPa, issuesForTopic, laKhac, laPaMacDinh, loiFormPa, nhanNguoiDay, nutDongPa, outcomeLabelFor,
+  chuAiLamDuoc, chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, giaTriCuaPa, issuesForTopic, laKhac, laPaMacDinh, loiFormPa, nhanNguoiDay, nutDongPa, outcomeLabelFor,
   tenMon, thanSuaPa, toiKyGhi, tuanLich,
   type GiaTriPa, type TrangThai,
 } from '@shared/domain/index.ts';
@@ -33,6 +33,7 @@ import { XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '
 import { GhiKetQuaPanel, SuaKetQuaPanel } from './CapNhatTuan.tsx';
 import { HoanThanhCasePanel, ThemPaPanel } from './ThaoTacCase.tsx';
 import { ChonNhom } from '../fasttrack/NhanXet.tsx';
+import { OKhac } from '../../ui/OKhac.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { BaoLuuCase, DaDoi, DaiDaXoa, GiaTriSua, LyDoChan, NutXoa, OGoTuLuu, gioLuu } from './TaiCho.tsx';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
@@ -386,7 +387,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
       <div className="muc !pt-2">
         {lichSu.length > 0 && (
           <details className="group">
-            <summary className="dong-gap cursor-pointer list-none"><span>{t('Lịch sử · {n}', { n: lichSu.length })}</span>
+            <summary className="dong-gap cursor-pointer list-none"><span>{t('Lịch sử')} · {lichSu.length}</span>
               <span className="phai link-nho">{t('Xem')} <span aria-hidden className="inline-flex transition-transform group-open:rotate-90"><MuiTen mo={false} /></span></span></summary>
             <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
@@ -404,7 +405,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
           </details>
         )}
         <div className="border-t pt-1" style={{ borderColor: lichSu.length ? 'var(--line)' : 'transparent' }}>
-          <BangChung ownerType="sos_case" ownerId={data.id} canEdit={vw.canEdit} tieuDe={t('Bằng chứng{x}', { x: bc.data?.rows.length ? ` · ${bc.data.rows.length}` : ' · chưa có' })} onChanged={bc.reload} />
+          <BangChung ownerType="sos_case" ownerId={data.id} canEdit={vw.canEdit} tieuDe={`${t('Bằng chứng')} · ${bc.data?.rows.length || t('chưa có')}`} onChanged={bc.reload} />
         </div>
       </div>
       <XoaCase data={data} toi={toi} onXong={lamMoi} onDaXoa={onDaXoaCase} />
@@ -414,7 +415,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
 
 /** Lý do ngắn cạnh nút từ câu chặn của máy chủ (`closeBlockers`) — không tính lại luật. */
 function lyDoNgan(x: string): string {
-  if (x.startsWith('Case chưa có phương án')) return t('cần ít nhất 1 PA');
+  if (/^Case chưa có phương án/.test(x)) return t('cần ít nhất 1 PA');
   const a = /^(\d+) phương án đang chờ Quản lý duyệt/.exec(x);
   if (a) return t('{n} PA chờ QL duyệt', { n: a[1] });
   const b = /^(\d+) phương án chưa cập nhật kết quả cuối/.exec(x);
@@ -499,10 +500,7 @@ function NguyenNhan({ data, sua, nhap, onDoi }: { data: CaseDetail; sua: boolean
         <div className="w-full basis-full"><div className="flex flex-col gap-2 rounded-[10px] border p-3 sm:max-w-[420px]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <span className="text-xs font-semibold text-faint">{t('{kn} · chọn một hoặc nhiều (chọn trước = chính)', { kn: data.categoryLabel ?? '' })}</span>
           <ChonNhom skill={data.topic ?? ''} ct={data.chuongTrinh ?? null} value={v} onChange={(x) => { setV(x); if (!(!laMt && x[0] && laKhac(x[0]))) void luu(x, ghiRo); }} />
-          {canGhiRo && (
-            <input className="field w-full" aria-label={t('Ghi rõ nguyên nhân khác')} value={ghiRo} placeholder={t('Ví dụ: Chưa quen dạng bài mới')}
-              onChange={(e) => setGhiRo(e.target.value)} onBlur={() => void luu(v, ghiRo)} />
-          )}
+          <OKhac hien={canGhiRo} value={ghiRo} onChange={setGhiRo} goiY={t('Ví dụ: Chưa quen dạng bài mới')} onBlur={() => void luu(v, ghiRo)} />
           {canGhiRo && ghiRo.trim().length < KHAC_TOI_THIEU && <span className="text-[13px] text-soon">{t('Ghi rõ ít nhất {n} ký tự để lưu', { n: KHAC_TOI_THIEU })}</span>}
           {loi && <span role="alert" className="text-[13px] text-bad">⚠ {loi}</span>}
           <span className="flex justify-end"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { if (canGhiRo) void luu(v, ghiRo); setMoHop(false); }}>{t('Xong')}</button></span>
@@ -634,7 +632,7 @@ function XoaCase({ data, toi, onXong, onDaXoa }: { data: CaseDetail; toi: number
         <div className="hoi-xoa" role="alertdialog" aria-label={t('Xoá Case')}>
           <span>{t('Xoá Case')} <b>{tenCase}</b> {t('và')} <b>{t('{n} PA', { n: pas.length })}</b> ({pas.map((x: any) => dichDu(x.description) || dich(INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? x.kind)).join(', ')})? {t('Vào Thùng rác, khôi phục được.')}</span>
           <span className="hang">
-            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setHoi(false)}>{t('Thôi')}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setHoi(false)}>{t('Đóng')}</button>
             <button type="button" className="btn btn-sm nut-do min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui()}>{busy ? t('Đang xoá…') : t('Xoá Case + {n} PA', { n: pas.length })}</button>
           </span>
         </div>
@@ -737,7 +735,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     coNguoiDay(iv.kind) ? (iv.performer ? `${nhanNguoiDay(iv.kind) === 'Người dạy' ? t('người dạy') : t('thực hiện')} ${iv.performer}` : t('chưa chọn người dạy')) : null,
     dem ? t('{da}/{tong} buổi', { da: dem.da, tong: dem.tong }) : null,
     fGan ? t('KQ {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) }) : null,
-    !dangChay && iv.completedDate ? t('khép {tuan}', { tuan: tuanLich(iv.completedDate, homNay) }) : null].filter(Boolean).join(' · ');
+    !dangChay && iv.startedDate && iv.completedDate ? chuKhoangPa({ startedOn: iv.startedDate, completedOn: iv.completedDate }, homNay) : null].filter(Boolean).join(' · ');
 
   /* Trạng thái = nút làm việc khi tới việc của người xem; còn lại viên xám + chấm màu (V4 ③). */
   const vien = (chu: string, cham: string) => <span className="tt-pa" style={{ ['--cham' as any]: cham }}>{chu}</span>;
@@ -837,7 +835,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
       </>}
       <dt>{t('Bắt đầu')}</dt>
       <dd>{coKetQua || !nut.sua
-        ? <><span className="tabular-nums">{iv.startedDate ? `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}` : '—'}</span>{coKetQua && nut.sua && <span className="text-[13px] text-faint">{t('đã có kết quả — không đổi')}</span>}</>
+        ? <><span className="tabular-nums">{iv.startedDate ? (iv.completedDate ? chuKhoangPa({ startedOn: iv.startedDate, completedOn: iv.completedDate }, homNay) : `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}`) : '—'}</span>{coKetQua && nut.sua && <span className="text-[13px] text-faint">{t('đã có kết quả — không đổi')}</span>}</>
         : tt('batDau')
           ? <ONgay kieu="ngay" value={iv.startedDate ?? ''} ariaLabel={t('Bắt đầu')} onChange={(x) => { if (x && x !== iv.startedDate) void luuNgay(() => luuTruong({}, x)); }} />
           : <GiaTriSua kieu="go" nhan={t('Đổi ngày bắt đầu')} onClick={() => setSua('batDau')}><span className="tabular-nums">{iv.startedDate ? `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}` : t('Chưa đặt')}</span></GiaTriSua>}</dd>
@@ -953,7 +951,7 @@ function KetThucSom({ iv, onThoi, onXong }: { iv: any; onThoi: () => void; onXon
         <textarea className="field w-full" rows={2} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
       </Truong>
       <div className="flex flex-wrap justify-end gap-2">
-        <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onThoi}>{t('Thôi')}</button>
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onThoi}>{t('Đóng')}</button>
         <button type="button" className="btn nut-do min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void ketThuc()}>{busy ? t('Đang lưu…') : t('Kết thúc PA')}</button>
       </div>
     </div>

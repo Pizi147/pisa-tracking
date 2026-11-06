@@ -629,7 +629,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
  * Không vào: `cases/CapNhatTuan.tsx` (Ghi kết quả PA — đợt b dịch). `cases/TheKyNang.tsx`: phần còn sót sau EN-b dịch ở đợt d.
  */
 const FILE_DA_DICH_D = [
-  ...['CaseBoardPage', 'CasePanel', 'ChiTietKyNang', 'DongXinYKien', 'FormPa', 'MenuXoaPa', 'NeedsEvaluation', 'QuickReport', 'SkillBoard', 'ThaoTacCase', 'TheKyNang']
+  ...['CaseBoardPage', 'CasePanel', 'ChiTietKyNang', 'DongXinYKien', 'FormPa', 'TaiCho', 'NeedsEvaluation', 'QuickReport', 'SkillBoard', 'ThaoTacCase', 'TheKyNang']
     .map((f) => `web/src/modules/cases/${f}.tsx`),
   ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/yThuc')).filter((f) => /\.tsx?$/.test(f)).map((f) => `web/src/modules/yThuc/${f}`),
   'web/src/modules/students/NganCase.tsx',

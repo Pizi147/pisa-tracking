@@ -12,6 +12,7 @@ import { useSession } from '../../lib/session.tsx';
 import { ThanCase, tenNganCase, type BaoThanCase, type CaseDetail, type DichCase, type ViewCase } from '../cases/CasePanel.tsx';
 import { BaoLuuCase, DaiDaXoa, GiaTriSua, gioLuu, type TtLuuCase } from '../cases/TaiCho.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
+import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -108,7 +109,9 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const dau = {
     loai: dauCv ? undefined : canDong ? t('CASE HỌC THUẬT') : t('CASE HỌC THUẬT · ĐÃ XONG'),
     tieu,
-    han: canDong && v?.han && v.loaiHan ? <ChipHan loai={v.loaiHan as DeadlineKind} han={v.han} /> : null,
+    /* Em Tạm dừng: hạn quá thành nhãn Tạm dừng (S6F-b) — không báo quá hạn khi em không học. */
+    han: !canDong || !v?.han || !v.loaiHan ? null
+      : data.tamDungTu && data.trangThaiV4?.t === 'qua-han' ? <NhanTamDung tu={data.tamDungTu} /> : <ChipHan loai={v.loaiHan as DeadlineKind} han={v.han} />,
     dong2: [
       em ? <Link className="font-semibold text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(em.id)}>{em.ten}</Link> : hocVien ?? null,
       lop ?? null,
@@ -121,11 +124,11 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const tiepCase = chuoi?.caseTiep?.xong ? chuoi.caseTiep : null;
   const trai = formMo ? <span className="tt-luu nhap">● {t('{form} chưa lưu · nháp giữ trên máy', { form: formMo })}</span>
     : luu?.tt === 'dang' ? <span className="tt-luu dang">{t('Đang lưu…')}</span>
-    : luu?.tt === 'loi' ? <span className="tt-luu loi">⚠ {t('Chưa lưu được')}</span>
-    : luu?.tt === 'da' ? <span className="tt-luu da">✓ {t('Đã lưu {luc}', { luc: luu.luc ?? '' })}</span>
+    : luu?.tt === 'loi' ? <span className="tt-luu loi">⚠ {t('Không lưu được')}</span>
+    : luu?.tt === 'da' ? <span className="tt-luu da">✓ {t('Đã lưu')} {luu.luc}</span>
     : canDong && (vw.canEdit || vw.coTheSua) ? <span className="text-faint">{t('Tự lưu')}</span> : null;
   const nutTiep = onTiep
-    ? <button type="button" className={`btn ${formMo ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={() => { if (daLuu && cv) cv.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
+    ? <button type="button" className={`btn ${formMo ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={() => { if (daLuu) cv?.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
     : tiepCase?.di ? <button type="button" className={`btn ${formMo ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={tiepCase.di}>{t('Case tiếp ›')}</button>
     : tiepCase ? <span className="text-[13px] text-slate-400">{t('Hết Case chờ trong danh sách')}</span> : null;
   const chan = trongCot ? undefined : {
@@ -207,7 +210,7 @@ function SuaTenCase({ data, onDoi, onDong }: { data: CaseDetail; onDoi: (d: Case
       </dl>
       {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
       <span className="flex justify-end gap-2">
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={onDong}>{t('Thôi')}</button>
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={onDong}>{t('Đóng')}</button>
         <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xong()}>{busy ? t('Đang lưu…') : t('Xong')}</button>
       </span>
     </div>

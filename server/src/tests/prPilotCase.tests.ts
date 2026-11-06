@@ -65,7 +65,9 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
 
   check('6b-2 · Q1: Thêm PA / Ghi kết quả mở từ Case → lưu xong tự về Case, viền PA vừa đổi + Hoàn tác (đường /hoan-tac-them)', () => {
     const ng = docSach('web/src/modules/students/NganCase.tsx');
-    assert(/vuaDoi/.test(ng) && /xem\.ds\[xem\.ds\.length - 2\] === 'case'/.test(ng), 'Ngăn Case không về Case sau khi lưu');
+    /* CASE-PA-UI (v16): form trong thẻ — lưu xong thẻ gập, viền nhấn + Hoàn tác (`xongForm` → `setVuaDoi`). */
+    const cpQ = docSach('web/src/modules/cases/CasePanel.tsx');
+    assert(/ThanCase/.test(ng) && /const xongForm = [\s\S]{0,240}setVuaDoi\(/.test(cpQ), 'Ngăn Case không về Case sau khi lưu');
     const tp = docSach('web/src/modules/cases/ThaoTacCase.tsx');
     assert(/\/hoan-tac-them/.test(tp) && /paId/.test(tp), 'Thêm PA không đưa Hoàn tác máy chủ + id PA mới');
     const cp = docSach('web/src/modules/cases/CasePanel.tsx');
@@ -74,15 +76,16 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
 
   check('6b-2 · Case A: đầu mục Case · Phương án · Kết luận · Lịch sử; không còn "Vấn đề" / "Ghi nhận"; nhãn Mô tả; câu ai làm được', () => {
     const cp = docSach('web/src/modules/cases/CasePanel.tsx');
-    const than = cp.slice(cp.indexOf('export function ThanCase'), cp.indexOf('function TheKhoiPa'));
-    for (const x of ['tieuDe="Case"', "t('Phương án')", "t('Kết luận')", "t('Lịch sử')", "t('Mô tả')"]) assert(than.includes(x), `thiếu ${x}`);
+    const than = cp.slice(cp.indexOf('export function ThanCase'), cp.indexOf('function ThePa'));
+    for (const x of ['<p className="muc-h">Case</p>', "t('Phương án')", "t('Kết luận')", "t('Lịch sử')", "t('Mô tả')"]) assert(than.includes(x), `thiếu ${x}`);
     assert(!/t\('Vấn đề'\)|Ghi nhận/.test(than), 'còn "Vấn đề" / "Ghi nhận"');
     /* PTA rà #632 (N8): Nguyên nhân chỉ nhóm; Mô tả = câu của nguyên nhân chính (cùng nguồn #626) — không "Chưa có" khi đã có câu. */
     /* Chủ SP 04/11 (mockup audit 03/11 `.tag`): Nguyên nhân = thẻ từng nhóm. */
     assert(!/<DongNguyenNhan/.test(than) && /className="the-phu">\{dich\(x\.label\)\}/.test(than), 'Nguyên nhân còn kèm câu nhận xét / chưa là thẻ');
-    assert(/primary\?\.observation \?/.test(than) && /moTaTuMt/.test(than) && /loai: 'ghi-nhan-xet'/.test(than), 'Mô tả không đọc observation / thiếu nút Mô tả Case');
-    assert(/export function DauMuc/.test(cp), 'đầu mục chưa là component dùng chung');
-    assert(/chuAiLamDuoc/.test(cp) && /chuAiLamDuoc/.test(docSach('web/src/modules/students/NganCase.tsx')), 'chưa có câu "ai làm được"');
+    /* CASE-PA-UI (v16): Mô tả = quan sát của nhóm chính (Case MT) / tóm tắt; trống = ô trông như ô nhập, gõ là lưu (không nút "Mô tả Case"). */
+    assert(/chinh\?\.observation/.test(than) && /moTaTuMt/.test(than) && /className=\{`o-trong/.test(than), 'Mô tả không đọc observation / thiếu ô Mô tả');
+    /* CASE-PA-UI (v16 k3): câu "ai làm được" ở thân Case (`bao-chi-xem`) — mọi lối vào cùng thân. */
+    assert(/chuAiLamDuoc\(data\.owner\)/.test(than), 'chưa có câu "ai làm được"');
     assert(typeof d.chuAiLamDuoc === 'function' && d.chuAiLamDuoc('Lê Minh Khoa').includes('Lê Minh Khoa') && d.chuAiLamDuoc(null).includes('Quản lý'), 'câu ai làm được');
   });
 

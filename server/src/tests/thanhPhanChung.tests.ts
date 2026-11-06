@@ -184,7 +184,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   });
 
   check('NEN (6) · YC-8: mọi form có mục "Khác" đi qua OKhac; không còn luật "Khác ≥ 30 ký tự" trên web', () => {
-    const ds = ['web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx', 'web/src/modules/cases/ThaoTacCase.tsx',
+    const ds = ['web/src/modules/cases/QuickReport.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx', 'web/src/modules/cases/CasePanel.tsx' /* CASE-PA-UI: Nguyên nhân sửa tại chỗ */,
       'web/src/modules/cases/FormPa.tsx' /* PR-PA: Thêm / Thay PA dùng FormPa */, 'web/src/modules/yThuc/PhoiHopSosSection.tsx', /* PR-LUI-a1: Ghi vi phạm bỏ ô Ghi rõ */
       /* PR-YT4: "Khác" của Đề xuất QL duyệt */ 'web/src/modules/yThuc/XacNhanXuLyPanel.tsx'];   // PR-CT: ChuyenLopPanel không còn mục "Khác" — lý do là một ô chữ tự do
     for (const f of ds) assert(/<OKhac\b/.test(doc(f)), `${f} chưa dùng OKhac`);
@@ -215,7 +215,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/buocDanhSach\(/.test(doc('web/src/modules/congViec/ChonPhuTrach.tsx')), 'menu ChonPhuTrach chưa đi bằng mũi tên');
     assert(/<ChonNguoi/.test(doc('web/src/modules/yThuc/PhoiHopSosSection.tsx')), 'Phối hợp SOS chưa có ô người thực hiện');
     /* PR-Dọn (Q14): StudentsPage dùng NhanTrangThai chỉ trong WorkQueue (đã xoá — web không gọi) → bỏ khỏi danh sách. */
-    for (const f of ['web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/students/NganCase.tsx'])   // PR-Pb2-a: CaseBoardPage không còn danh sách
+    for (const f of ['web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/students/CotCaseHv.tsx' /* CASE-PA-UI: trạng thái Case ở dòng tóm tắt; PA = viên `.tt-pa` (v16) */])   // PR-Pb2-a: CaseBoardPage không còn danh sách
       assert(/<NhanTrangThai\b/.test(doc(f)) && !/<Status kind/.test(doc(f)), `${f} chưa dùng NhanTrangThai`);
   });
 
@@ -252,7 +252,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   check('NEN (R2) · form có useLoiForm: Ghi rõ là một dòng luật, ô ngày bắt buộc nhận id/onBlur; khung Truong/Field không đổi thẻ; nhãn ChonNguoi có đích', () => {
     const m = 'web/src/modules/';
-    for (const f of ['cases/QuickReport.tsx', 'cases/ThaoTacCase.tsx', 'cases/FormPa.tsx',
+    for (const f of ['cases/QuickReport.tsx' /* CASE-PA-UI: Sửa Case (Ghi rõ) gỡ khỏi ThaoTacCase — Nguyên nhân dùng OKhac */, 'cases/FormPa.tsx',
       'yThuc/XacNhanXuLyPanel.tsx']) {
       /* PR-PA: luật của form PA (gồm Ghi rõ) ở shared/domain/paDongBo.ts (`loiFormPa`). */
       const s = doc(m + f) + (f === 'cases/FormPa.tsx' ? doc('shared/domain/paDongBo.ts') : '');

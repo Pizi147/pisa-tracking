@@ -279,7 +279,7 @@ export async function runPrXoaCasePaTests(t: any) {
     const the = pa(P.lrTeacher).theXoa;
     assert(the && the.loai === 'xin_xoa' && the.nguoiXinId === P.lrTeacher.userId && the.trangThai === 'cho', JSON.stringify(the));
     assert(pa(QL).theXoa?.id === the.id, 'QL không thấy thẻ');
-    assert(maLoi(() => yc.rutYeuCau(P.coreTeacher, the.id)) === 403, 'GV khác rút được');
+    assert(maLoi(() => yc.rutYeuCau(P.w1Teacher, the.id)) === 403, 'GV khác rút được');
     yc.rutYeuCau(P.lrTeacher, the.id);
     assert(pa(P.lrTeacher).theXoa === null && pa(P.lrTeacher).choXoa === false && mot('SELECT 1 FROM case_interventions WHERE id = ?', iv), 'Rút lại chưa đóng thẻ / mất PA');
     /* Case SOS: cùng đường. */

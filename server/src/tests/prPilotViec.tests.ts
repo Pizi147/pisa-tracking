@@ -45,9 +45,8 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
 
   check('6b-3 · Ngăn Case trong Công việc: view việc đầu chuỗi có "Xem Case" (vào view kế), không "‹ {Case}" thay view; lưu xong về Case bằng thay view', () => {
     const ng = docSach('web/src/modules/students/NganCase.tsx');
-    assert(/useContext\(XemCaseViec\)/.test(ng), 'Ngăn Case không đọc XemCaseViec');
-    assert(/nhan: t\('Xem Case'\), onClick: xemCaseViec, xem: true/.test(ng), 'view việc đầu chuỗi không có "Xem Case"');
-    assert(/if \(quayLai\?\.xem\) veCase\(\)/.test(ng), 'lưu xong (xong) đi "Xem Case" — chồng Case lên view việc');
+    /* CASE-PA-UI (v16): panel Case không còn view việc riêng — luôn thấy Case, việc nằm trong thân; "Xem Case" của panel việc chỉ còn cho việc không phải Case. */
+    assert(!/XemCaseViec/.test(ng) && /<ThanCase /.test(ng), 'Ngăn Case còn view việc riêng');
     const kp = docSach('web/src/ui/KhungPanel.tsx');
     assert(/quayLai\?\.xem/.test(kp) && /const lui = quayLai && !quayLai\.xem/.test(kp), 'khung vẽ "Xem Case" thành nút ‹');
     assert(/HienLaiPanel/.test(kp), 'panel việc đang ẩn hỏi "Bỏ chữ?" mà không hiện lại');

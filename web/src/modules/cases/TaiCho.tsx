@@ -115,12 +115,12 @@ export function OGoTuLuu({ dau, toiThieu, toiDa, nhan, mot = false, placeholder,
       )}
       <div className="duoi-o" aria-live="polite">
         {tt === 'dang' ? <span className="tt-luu dang">{t('Đang lưu…')}</span>
-          : tt === 'loi' ? <><span className="tt-luu loi">⚠ {t('Chưa lưu được — {loi}. Chữ vẫn giữ.', { loi: loi ?? '' })}</span>
+          : tt === 'loi' ? <><span className="tt-luu loi">⚠ {t('Không lưu được — {loi}. Chữ vẫn giữ.', { loi: loi ?? '' })}</span>
             <button type="button" className="link-nho" onClick={() => void gui()}>{t('Thử lại')}</button></>
           : dai ? <span className="tt-luu loi">⚠ {t('Dài quá {toiDa} — rút bớt {n} ký tự để lưu', { toiDa, n: n - toiDa })}</span>
           : chuaLuu && n > 0 && ngan ? <span className="tt-luu nhap">{t('Cần ít nhất {n} ký tự để lưu', { n: toiThieu })}</span>
           : chuaLuu && chan ? <span className="tt-luu nhap">{chan}</span>
-          : tt === 'da' && !chuaLuu ? <span className="tt-luu da">✓ {t('Đã lưu {luc}', { luc: luc ?? '' })}</span>
+          : tt === 'da' && !chuaLuu ? <span className="tt-luu da">✓ {t('Đã lưu')} {luc}</span>
           : <span>{goiY ?? t('Tự lưu khi ngừng gõ')}</span>}
         <span className="max-sm:hidden">{t('Esc: bỏ thay đổi')}</span>
         <span className={`dem-chu ${dai ? 'qua' : n > toiDa * 0.9 ? 'gan' : ''}`}>{n} / {toiDa}</span>
