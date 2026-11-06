@@ -401,7 +401,8 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const nhanTabViec = (k: TabViecHan | 'da-lam') => (k === 'da-lam' ? (laBai ? t('Đã nhập') : t('Đã làm')) : k === 'cham' ? t('Quá hạn chưa chấm') : dich(TAB_VIEC_HAN_LABEL[k]));
   const cotVc: DinhNghiaCot[] = [
     { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 100 },
+    /* RA-GD-0711: Lớp 100 → 120 — "MB FT RF 12", "MB Pre FOU 03" không còn "MB FT RF…" (cột Việc / Bài linh hoạt nhường chỗ). */
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 120 },
     { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 76 }, { key: 'tt', nhan: t('Đúng hạn'), kieu: 'chu', rong: 176 },
   ];
   /* Chủ SP 06/11: MỘT chữ "Quá hạn" (bỏ "Trễ") — việc mở và việc làm sau hạn cùng nhãn; dòng phụ "đã làm / nhập dd/mm" phân biệt. */
