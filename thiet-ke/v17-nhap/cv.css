@@ -35,13 +35,45 @@ body { margin:0; background:#0b0f19; font-family:'Be Vietnam Pro', system-ui, sa
 .tab.dang { color:var(--text); border-bottom-color:var(--accent); }
 .bd { display:inline-flex; align-items:center; gap:3px; height:22px; min-width:24px; justify-content:center; padding:0 7px; border-radius:999px; font:700 12px Inter,'Be Vietnam Pro',sans-serif; font-variant-numeric:tabular-nums; }
 .bd.do { background:var(--bad-nen); color:var(--bad); border:1px solid var(--bad-vien); }
-.bd.do::before { content:"⚠"; font-size:11px; }
 .bd.vang { background:var(--soon-nen); color:var(--soon); border:1px solid var(--soon-vien); }
-.bd.vang::before { content:"◷"; font-size:12px; }
 .bd.trang { background:var(--muted-nen); color:var(--text-dim); border:1px solid var(--line-strong); }
-.tong { color:var(--text-faint); font-weight:500; font-size:12px; }
-/* thân */
-.than { display:grid; grid-template-columns:minmax(0,1fr) 520px; gap:16px; padding:14px 20px 20px; }
+.bd { height:22px; min-width:22px; padding:0 6px; }
+/* thân: danh sách 640 · panel phần còn lại (cân đối, chữ không xuống dòng / "…") */
+.than { display:grid; grid-template-columns:640px minmax(0,1fr); gap:16px; padding:14px 20px 20px; align-items:start; }
+.muc { padding:9px 16px; font-weight:700; font-size:13px; color:var(--text); background:var(--surface-2); border-top:1px solid var(--line); display:flex; gap:8px; align-items:center; }
+.muc .n { color:var(--text-faint); font-weight:600; }
+.muc.qua { color:var(--bad); }
+.ds .muc:first-child { border-top:0; }
+.viec .t1, .viec .t2 { white-space:nowrap; }
+.viec.chon-dang { box-shadow:inset 3px 0 0 var(--accent); background:var(--accent-soft); }
+/* panel việc */
+.pv { background:var(--surface); border:1px solid var(--line); border-radius:10px; display:flex; flex-direction:column; min-height:560px; }
+.pv-dau { padding:16px 20px 14px; border-bottom:1px solid var(--line); }
+.pv-loai { font:700 12px 'Be Vietnam Pro'; letter-spacing:.6px; color:var(--text-faint); text-transform:uppercase; }
+.pv-tieu { display:flex; align-items:center; gap:12px; margin-top:4px; }
+.pv-tieu h2 { margin:0; font-size:20px; font-weight:700; }
+.pv-tieu .x { margin-left:auto; color:var(--text-dim); font-size:18px; }
+.chip-qua { display:inline-flex; height:24px; align-items:center; padding:0 9px; border-radius:999px; background:var(--bad-nen); color:var(--bad); border:1px solid var(--bad-vien); font-weight:700; font-size:12px; white-space:nowrap; }
+.facts { display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px; font-size:14px; }
+.facts span { color:var(--text-dim); } .facts b { color:var(--text); font-weight:600; }
+.pv-than { padding:16px 20px; display:grid; gap:14px; flex:1; align-content:start; }
+.nhan { font-weight:600; font-size:13px; color:var(--text-dim); margin-bottom:6px; }
+.o-nhap { border:1px solid var(--line-strong); border-radius:8px; padding:9px 12px; background:var(--bg); min-height:40px; color:var(--text); }
+.o-nhap.lon { min-height:96px; color:var(--text-faint); }
+.dem { text-align:right; font-size:12px; color:var(--text-faint); margin-top:4px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chips span { padding:6px 12px; border:1px solid var(--line-strong); border-radius:999px; font-weight:600; font-size:13px; white-space:nowrap; }
+.chips span.dang { background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent); }
+.dai-diem { display:flex; flex-wrap:wrap; gap:8px 18px; padding:10px 12px; border-radius:8px; background:var(--surface-2); font-size:14px; }
+.dai-diem b { font-family:Inter; } .dai-diem .xau { color:var(--bad); font-weight:700; }
+.pv-chan { padding:12px 20px; border-top:1px solid var(--line); display:flex; gap:8px; align-items:center; }
+.pv-chan .tt { color:var(--text-faint); font-size:13px; }
+.pv-chan .nut-chinh { margin-left:auto; padding:8px 14px; border-radius:8px; background:var(--accent); color:#060c1a; font-weight:700; font-size:14px; white-space:nowrap; }
+.pv-chan .nut { padding:8px 14px; font-size:14px; }
+table.luoi { width:100%; border-collapse:collapse; font-size:14px; }
+.luoi th { text-align:left; font-weight:600; font-size:12px; color:var(--text-faint); padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.luoi td { padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.luoi td.o { width:74px; } .luoi .oo { border:1px solid var(--line-strong); border-radius:6px; height:32px; display:flex; align-items:center; justify-content:center; background:var(--bg); font-family:Inter; }
 .ds { background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
 .nhom-han { padding:9px 16px; font-weight:600; font-size:13px; color:var(--text-dim); background:var(--surface-2); border-top:1px solid var(--line); }
 .nhom-han:first-child { border-top:0; }
@@ -51,7 +83,7 @@ body { margin:0; background:#0b0f19; font-family:'Be Vietnam Pro', system-ui, sa
 .viec .t1 { font-weight:600; } .viec .t2 { color:var(--text-dim); font-size:13px; margin-top:2px; }
 .cn { display:inline-flex; height:18px; align-items:center; padding:0 6px; margin-left:6px; border-radius:5px; border:1px solid var(--line-strong); font:600 11px 'Be Vietnam Pro'; color:var(--text-dim); vertical-align:2px; }
 .han { font-weight:600; font-size:13px; } .han.qua { color:var(--bad); } .han.qua::before { content:"⚠ "; }
-.han.gan { color:var(--soon); } .han.gan::before { content:"◷ "; } .han.xa { color:var(--text-dim); }
+.han.gan { color:var(--soon); } .han.gan::before { content:"⚠ "; } .han.xa { color:var(--text-dim); }
 .ai { color:var(--text-dim); font-size:13px; margin-top:2px; }
 .nut { display:inline-flex; justify-content:center; padding:7px 10px; border:1px solid var(--line-strong); border-radius:8px; font-weight:600; font-size:13px; }
 .pn { background:var(--surface); border:1px solid var(--line); border-radius:10px; min-height:420px; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--text-dim); }
@@ -72,3 +104,6 @@ body { margin:0; background:#0b0f19; font-family:'Be Vietnam Pro', system-ui, sa
 .mk { background:#fff8d6; color:#3b3000; border:1px dashed #b49a2c; border-radius:8px; padding:10px 14px; font:13px/1.5 'Be Vietnam Pro'; }
 .mk b { color:#000; }
 .m375 .seg span { padding:7px 6px; text-align:center; font-size:12px; }
+.than .viec { grid-template-columns:minmax(0,1fr) 132px 104px; }
+.m375 .than .viec { grid-template-columns:minmax(0,1fr) auto; }
+.m375 .viec .t1, .m375 .viec .t2 { white-space:normal; }
