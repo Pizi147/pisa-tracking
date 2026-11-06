@@ -465,7 +465,8 @@
    * (`.o-kh`: dòng tuần + badge L R W S cố định, dòng trạng thái chữ), nút "Xếp MTn" (`.o-xep`), cột "Thêm" (`.nut-them`). Màu chỉ token.
    */
   .bang-kh { overflow: clip; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-  .hl-kh { display: grid; grid-template-columns: 28px 112px 70px 230px 220px minmax(0, 1fr); align-items: center; gap: 0 12px; min-height: 52px;
+  /* RA-GD-0711: mã lớp 112 → 128 ("MB Pre FOU 03" một dòng), GVCN 230 → 214 — các cột sau giữ nguyên vị trí. */
+  .hl-kh { display: grid; grid-template-columns: 28px 128px 70px 214px 220px minmax(0, 1fr); align-items: center; gap: 0 12px; min-height: 52px;
     padding: 0 12px 0 10px; border-top: 1px solid var(--line); background: var(--surface-2); cursor: pointer; }
   .bang-kh > section:first-child > .hl-kh { border-top: 0; }
   .hl-kh > :first-child { justify-self: center; }
