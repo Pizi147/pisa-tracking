@@ -85,6 +85,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
   luôn bật đều tốn token ở mọi phiên.
 
 ## Dòng đọc Turso (chủ SP 30/10 — gói Free, mốc 500 triệu dòng / tháng, giữ < 450 triệu ≈ < 15 triệu / ngày)
+- **Chủ SP 06/11: LUÔN tối ưu dòng đọc + tốc độ khi viết code** (mọi PR, không chờ ai nhắc): đọc đúng phạm vi, không câu lặp / quét cả bảng, không request thừa; đo trước → sau trong mô tả PR.
 - Mọi kế hoạch, mockup, code, rà PR: luôn hỏi "việc này đọc bao nhiêu dòng / bao nhiêu câu mỗi lần mở trang?". Chọn cách đọc ít nhất:
   đọc đúng phạm vi cần (một lớp, một em, một kỳ) — không đọc cả chi nhánh rồi lọc; không gọi lại cùng dữ liệu hai lần trong một trang;
   sau khi lưu chỉ tải lại phần vừa đổi; số liệu hiển thị dùng dữ liệu đã nạp, không thêm request.
