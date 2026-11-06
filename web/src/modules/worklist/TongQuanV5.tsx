@@ -174,8 +174,9 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
               */}
             <button type="button" onClick={() => setMo(y)} title={[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.vaiNguoiXin ? `${y.nguoiXin} (${t(y.vaiNguoiXin)})` : y.nguoiXin })].filter(Boolean).join(' · ') || undefined}
               className={`bam flex min-h-[44px] w-full items-center gap-x-2 px-4 py-2 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              <span className="h-5 max-w-[50%] shrink-0 truncate rounded-md border px-1.5 text-xs font-medium leading-[18px] text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dich(y.nhanLoai)}</span>
-              <span className="min-w-0 flex-1 text-sm font-semibold text-slate-100">{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
+              {/* RA-GD-0711c: tên em giữ một dòng (không "Lương Gia / Bảo") — thiếu chỗ thì CHỮ CHIP loại xuống dòng trong chip (không cắt "…"). */}
+              <span className="min-w-[4.5rem] max-w-[50%] shrink rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dich(y.nhanLoai)}</span>
+              <span className={`${y.hocVien ? 'flex-[1_0_auto] whitespace-nowrap' : 'min-w-0 flex-1'} text-sm font-semibold text-slate-100`}>{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
               {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
             </button>
           </li>
@@ -235,8 +236,9 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
 }
 
 const COT_GV_HC: readonly CotBang[] = [
-  /* U09 #2 (B04): đúng đơn vị — "Việc đúng hạn" chỉ đếm Ghi kết quả PA; "Quá hạn" là bài chấm Test. */
-  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'viec', nhan: t('Kết quả PA đúng hạn'), kieu: 'phan-tram', rong: 180 },
+  /* U09 #2 (B04): "Quá hạn" là bài chấm Test. RA-GD-0711c: "Kết quả PA đúng hạn" → "Việc đúng hạn" — cùng `viecDungHan` + panel `viec-dung-han`
+     với Phân tích GV (DEM-QUA-HAN #1114: Kết quả PA + việc Công việc còn mở đã quá hạn), một khái niệm một tên. */
+  { key: 'gv', nhan: t('GV'), kieu: 'ten' }, { key: 'viec', nhan: t('Việc đúng hạn'), kieu: 'phan-tram', rong: 180 },
   { key: 'diem', nhan: t('Chấm Test đúng hạn'), kieu: 'phan-tram', rong: 180 }, { key: 'tre', nhan: t('Bài chấm quá hạn'), kieu: 'so', rong: 160 },
 ];
 const COT_GV_HT: readonly CotBang[] = [

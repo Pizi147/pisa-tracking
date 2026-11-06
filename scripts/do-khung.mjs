@@ -80,7 +80,8 @@ const KICH_BAN = [
   ['cv-ho-tro', 2, '/cong-viec'], ['cv-cho-duyet', 2, '/cong-viec/cho-duyet'], ['cv-van-hanh', 2, '/cong-viec/van-hanh'],
   ['cv-bao-cao', 2, '/cong-viec/bao-cao'], ['cv-gv', 7, '/cong-viec'],
   // DUYET-QL: panel duyệt Công việc QL — chân dính + Lịch sử mở (thẻ demo 6: Không cần theo dõi · W, SOS 2).
-  ['cv-duyet-panel', 2, '/cong-viec?the=6', async (p) => { await p.getByRole('button', { name: /^(Lịch sử|History) ·/ }).first().click(); await p.waitForTimeout(800); }],
+  /* RA-GD-0711c: thẻ id 6 không còn trong Chờ duyệt của QL sau seed mới — mở dòng đầu (CV-TAB: tab Chờ bạn duyệt là tab đầu của QL). */
+  ['cv-duyet-panel', 2, '/cong-viec', async (p) => { await p.locator('[data-hd=cd-dong] button').first().click(); await p.waitForTimeout(800); await p.getByRole('button', { name: /^(Lịch sử|History) ·/ }).first().click(); await p.waitForTimeout(800); }],
   /* UI-CV-TVV: Công việc của TVV (23) — danh sách + panel Báo PH, panel Sau thi. */
   ['cv-tvv', 23, '/cong-viec'], ['cv-tvv-bao-ph', 23, '/cong-viec?viec=bao-ph%3A10'], ['cv-tvv-sau-thi', 23, '/cong-viec?viec=buoc_tiep%3A23'],
   ['lop-ft', 7, '/hoc-vien/lop/3?tab=hoc-vien'], ['lop-ft-phan-tich', 7, '/hoc-vien/lop/3?tab=phan-tich'],
@@ -108,7 +109,8 @@ const KICH_BAN = [
     /* 375: lưới một môn (L) đã đủ điểm — mở ô đã có điểm (cùng hộp). */
     await p.locator('#noi-dung button[aria-label$=": Nhập"], #noi-dung button[aria-label$=": Enter"], #noi-dung button[aria-label*=" câu, band "]').first().click(); await p.waitForTimeout(500);
   }],
-  ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('button', { name: /^(Kết quả PA|PA result)/ }).first().click(); await p.waitForTimeout(800); }],
+  /* RA-GD-0711c: CV-TAB — việc Ghi kết quả PA nằm ở tab "Case học thuật", nút "Ghi kết quả PA". */
+  ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('tab', { name: /^(Case học thuật|Academic case)/ }).first().click(); await p.waitForTimeout(600); await p.getByRole('button', { name: /^(Ghi kết quả PA|Record PA result)/ }).first().click(); await p.waitForTimeout(800); }],
   ['gv-ho-so', 7, '/giao-vien/7'],
   // UI-HO-SO-GV: QL xem GV nhiều lớp + GVCN; Quản trị xem GV có thi thật trong kỳ (bảng Theo kỹ năng, cột Thi thật).
   ['gv-ho-so-ql', 2, '/giao-vien/8'], ['gv-ho-so-thi', 1, '/giao-vien/16?tu=2026-08-10'],
@@ -123,8 +125,12 @@ const KICH_BAN = [
   // Panel: chỉ đo nút tràn / chữ cắt — panel tự cuộn trong thân là đúng thiết kế.
   ['panel-pa', 7, '/hoc-thuat/case/5', async (p) => {
     // 375: Ngăn Case tự mở đè trang — bấm "Ghi kết quả" trong ngăn.
+    // RA-GD-0711c: CASE-PA-UI v16 — PA là thẻ mở tại chỗ ("Mở PA …"), ô Kết quả PA nằm trong thẻ; nút cũ còn thì bấm tiếp.
     const ngan = p.locator('[role=dialog]');
-    await ((await ngan.count()) ? ngan : p).getByRole('button', { name: /^(Cập nhật trước hạn|Ghi kết quả|Update early|Log result)/ }).first().click(); await p.waitForTimeout(500); await p.getByRole('button', { name: /Tiến bộ một phần|Some progress/ }).first().click().catch(() => {}); }],
+    const goc = (await ngan.count()) ? ngan : p;
+    await goc.getByRole('button', { name: /^(Mở PA|Open plan)/ }).first().click(); await p.waitForTimeout(500);
+    await goc.getByRole('button', { name: /^(Cập nhật trước hạn|Ghi kết quả|Update early|Log result)/ }).first().click({ timeout: 1500 }).catch(() => {}); await p.waitForTimeout(300);
+    await p.getByRole('button', { name: /Tiến bộ một phần|Some progress/ }).first().click({ timeout: 1500 }).catch(() => {}); }],
   ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
   ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm|Log incident/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   /* "Sửa thông tin" nay trong ⋯ đầu hồ sơ lớp. */
@@ -352,7 +358,7 @@ for (const [w, h] of [[1440, 900], [375, 812], [1366, 768], [1280, 800]]) for (c
       loi = await p.evaluate(doTrang);
       if (BO_QUA_CAT.some((k) => tenKb.includes(k))) loi = loi.filter((l) => !l.startsWith('c '));
       // Panel tại chỗ của Công việc (máy tính) tự cuộn thân — thiết kế OV-5a, bản Việt cũng vậy; không phải cuộn lồng của trang.
-      if (tenKb === 'gv-ket-qua-pa') loi = loi.filter((l) => !l.startsWith('b '));
+      if (tenKb === 'gv-ket-qua-pa' || tenKb.startsWith('cv-tvv-')) loi = loi.filter((l) => !l.startsWith('b '));   // RA-GD-0711c: panel TVV (Báo PH, Sau thi) cùng khung
       if (NN === 'en' && GOC_V[tenKb]) loi = [...loi, ...await p.evaluate(chuVietSot, [DU_LIEU, GOC_V[tenKb], BO_V[tenKb] ?? null])];
       [loi, chuMien] = locMien('do-khung', nhan, loi);
     }
