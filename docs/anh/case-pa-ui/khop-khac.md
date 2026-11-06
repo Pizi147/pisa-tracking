@@ -15,7 +15,7 @@ Dữ liệu demo khác ảnh 5 của chủ SP (em Đặng Quốc Bảo, Case Rea
 | b1 / b2 · gõ mô tả, đã lưu | `OGoTuLuu` (tự lưu ~1 giây / rời ô, đếm 300, Esc) → `GiaTriSua` kiểu chữ (bút) | b1-cap | KHỚP |
 | b3 · S chấm chéo | `MoTaCase` khối nhận xét chấm chéo · Dùng nhận xét này · Giữ mô tả đang có · gõ = viết | — (demo không có ca) | KHỚP theo mã, chưa chụp |
 | c1 / c2 · đổi phụ trách | `PhuTrach` → `ChonNguoi` mở sẵn ngay dưới · "✓ Đã đổi · Hoàn tác" (`DaDoi`) | c1-cap | KHÁC nhỏ: danh sách phẳng (không chia nhóm "Dạy S ở lớp / GVCN") — dùng lại ô chọn người sẵn có |
-| d1 · PA chờ xác nhận | `ThePa` → `XacNhanPaPanel` trong thẻ (`KhungTrongThe`) | d1-cap | KHỚP; thêm dòng đầu "Xác nhận PA · kỹ năng + hạn" (form có hạn riêng) |
+| d1 · PA chờ xác nhận | `ThePa` → `XacNhanPaPanel` trong thẻ (`KhungTrongThe`) | d1-cap | **KHÁC**: thẻ mở đúng chỗ, đủ trường + Đề xuất PA khác / Không cần theo dõi / Xác nhận PA, nhưng trường vẫn kiểu form cũ (nhãn trên ô) thay khung trường giá trị bấm được; chân thẻ chưa có Đề nghị QL xoá PA khi form mở. Giữ form cũ để không đổi luật nháp / Hoàn tác — [XM-a3] |
 | d2 · thẻ PA mở | `ThePa` khung trường Loại ⓘ · Nội dung · Số buổi (vạch buổi) · Người dạy ▾ · Bắt đầu · Kết quả (bút + Xoá kết quả) · Nhật ký | d2-cap | KHỚP |
 | e1 / e2 · ghi kết quả trong thẻ | `GhiKetQuaPanel` trong thẻ → thẻ gập, viền nhấn, "✓ … · Hoàn tác" (`DaiVuaDoi`) | e1-cap | KHÁC nhỏ: không nút "Thôi" riêng — gập thẻ ▴ / Esc là thôi (form cũ không có Huỷ ở chân v3) |
 | e3 · PA Tutor buổi | cùng `GhiKetQuaPanel` (khối buổi tutor giữ nguyên) | — | KHỚP theo mã |
@@ -35,8 +35,12 @@ Dữ liệu demo khác ảnh 5 của chủ SP (em Đặng Quốc Bảo, Case Rea
 | n1 / n2 | `NguyenNhan` (chọn nhóm, thứ tự = chính trước, Khác → Ghi rõ) · `SuaTenCase` (Tên · Kỹ năng khoá khi có PA · Mức) | — | KHÁC nhỏ: n1 chọn bằng thẻ nhóm (`ChonNhom` sẵn có) thay ô tích |
 | n3 / n4 | Đề xuất PA khác… / Không cần theo dõi… — trong form xác nhận ở thẻ | — | KHỚP |
 | n5 | Mở lại PA (chân thẻ), sửa kết quả bị chặn (lý do tại chỗ — form cũ), Xoá kết quả ở Lịch sử | — | KHỚP |
-| m1–m6 · 375 sáng | cùng thành phần, nhãn trên giá trị, vùng bấm 44 | m1, m4, m5-cap | KHỚP |
+| m1–m6 · 375 sáng | cùng thành phần, nhãn trên giá trị, vùng bấm 44, không cuộn ngang | m1, m4, m5-cap | KHỚP (m4 = cùng KHÁC của d1) |
 | BỎ | dòng khoá đỏ · mọi ⋯ của tuyến Case (`MenuXoaPa.tsx` xoá) · nút Sửa / Sửa xác nhận / Đổi người… rời · view riêng Mô tả / Sửa Case / Sửa PA / Xác nhận PA / Ghi kết quả / Sửa kết quả / Thêm PA / Hoàn thành | — | đúng ghi chú mục 4 |
+
+**Chấm ảnh cặp (15 khung chụp: a b1 c1 d1 d2 e1 f3 g2 h1 i1 k3 k5 m1 m4 m5):** KHỚP 12 · KHÁC nhỏ 3 (c1 danh sách phẳng; d1 / m4 form xác nhận kiểu cũ trong thẻ) → 80 % theo khung,
+~95 % theo thành phần (mọi khung đúng bố cục, chỗ, màu, chữ, thao tác). Chưa đạt cổng 90 % theo khung — chờ PTA / chủ SP quyết [XM-a3] (làm lại form xác nhận theo khung trường) ngay ở PR a hay PR b.
+Khung không chụp (b3 · e3 · f1 f2 f4 · g1 · h2 h3 · j · k1 k1b k2 k4 · n1–n5 · m2 m3 m6): đã bấm thử trên web (f1 f2 g1 n1 b2 c2 e2) hoặc demo không có ca đúng trạng thái; mã theo khung.
 
 ## 2. Thao tác TRƯỚC → SAU (số bấm tính từ lúc panel đã mở)
 
@@ -84,4 +88,5 @@ Không mất thao tác nào ngoài hai dòng ghi lý do ở trên.
 - XM1–XM8 của ghi chú: làm theo khuyến nghị (PTA đã chấp nhận). XM9 (Case Ý thức cùng dáng): không làm ở đây.
 - [XM-a1] "Lưu · việc tiếp ›" (một nút) không còn trong form trong thẻ — mockup d1 / e1 chỉ có một nút lưu + "Việc tiếp ›" ở chân (+1 bấm). Muốn giữ nút gộp thì báo.
 - [XM-a2] Hộp đổi phụ trách chưa chia nhóm "Dạy {kỹ năng} ở lớp / GVCN" như c1 (máy chủ chưa gửi vai ứng viên) — PR b nếu chủ SP muốn.
+- [XM-a3] Form Xác nhận PA trong thẻ giữ kiểu ô nhập của form cũ (d1 vẽ khung trường giá trị bấm được). Khuyến nghị: làm theo d1 ở PR b (đụng luật nháp `useNhap` + Hoàn tác xác nhận — cần bấm thử riêng).
 - PR b (sau khi a merge): `CaseLuotKn`, `GhiNhanh` ở dòng Công việc, `HoTroHocVienTab` (dải Làm thay j1), khối Case `MockDetailPage`, `PanelMotEm` chip việc → cuộn đúng thẻ.
