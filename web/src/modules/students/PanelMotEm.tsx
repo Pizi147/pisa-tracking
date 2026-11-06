@@ -9,7 +9,7 @@ import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam } from '../../ui/KhuonViec.tsx';
 import { skillShort } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { NganCase } from './NganCase.tsx';
+import { NganCase } from './NganCaseLuoi.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { lamTaiCho } from '../congViec/lamTaiCho.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';

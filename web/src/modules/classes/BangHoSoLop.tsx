@@ -13,7 +13,7 @@ import { NhanKetPa, NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { KetLuan, type RosterRow } from '../students/ClassRoster.tsx';
 import { OChon, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { MissingBadge } from '../students/MissingBadge.tsx';

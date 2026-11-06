@@ -46,7 +46,7 @@ import type { GhiChuLich, KnO } from '../test/keHoach/kieu.ts';
 import { khoiPhucMt, xoaMt } from '../test/keHoach/xoaMt.ts';
 import { TenCase, type CaseCard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import type { CaseCua } from '../classes/BangCanHoTro.tsx';
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';

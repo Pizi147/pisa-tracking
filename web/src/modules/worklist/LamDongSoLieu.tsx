@@ -1,4 +1,4 @@
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { PanelNhapDiem } from '../congViec/PanelViec.tsx';
 import { NganViecVanHanh } from './MgmtTasksPage.tsx';
 import { useXem } from '../../lib/quayLai.ts';

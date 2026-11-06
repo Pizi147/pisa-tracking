@@ -23,7 +23,7 @@ import { useManHinh } from '../../ui/TheDong.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { TenCase, type CaseCard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { KetQua, oThuong, useLuuThuong, type ThuongSheet } from '../cham/LuoiThuong.tsx';
 import { DauO, VIEN_LOI } from '../cham/LuoiFT.tsx';

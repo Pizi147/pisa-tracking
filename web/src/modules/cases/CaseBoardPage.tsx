@@ -3,7 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { docThamSoHoSo, duongHoSoHocVien } from '@shared/domain/index.ts';
 import { useChongVe, useVe } from '../../lib/quayLai.ts';
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**

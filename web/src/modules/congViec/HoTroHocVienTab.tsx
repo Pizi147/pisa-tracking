@@ -25,7 +25,7 @@ import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } f
 import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { PanelViec } from './PanelViecLuoi.tsx';
 import { lamTaiCho, moCaDong } from './lamTaiCho.ts';
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
