@@ -236,8 +236,9 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
   const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt bỏ không thành việc, không tính "thiếu n em"; đợt thêm như đợt thường
   for (const c of lop) {
     const dl = dotCuaLop(c, homNay, tienDo, tuyChinh);
-    /* Đợt quá hạn tới 30 ngày vẫn đọc: lớp viết đủ muộn (sau hạn + 7) vẫn có 7 ngày việc "đủ". */
-    for (const d of dl?.ds.slice(0, 2) ?? []) if (soNgayQuaHan(d, homNay) <= 30 && dl) cap.push({ c, d, bo: dl.bo });
+    /* Đợt quá hạn tới 30 ngày vẫn đọc: lớp viết đủ muộn (sau hạn + 7) vẫn có 7 ngày việc "đủ". RA-LOI-0711e: lọc theo cửa sổ, không lấy "2 đợt mới
+       nhất" — đợt QL thêm (BC-DOT-QL) mở sau đợt tháng từng đẩy đợt tháng ra khỏi 2 đợt đầu, mất việc của nó. */
+    for (const d of dl?.ds ?? []) if (soNgayQuaHan(d, homNay) <= 30 && dl) cap.push({ c, d, bo: dl.bo });
   }
   if (!cap.length) return [];
   const emDot = emTheoLo(cap, homNay);

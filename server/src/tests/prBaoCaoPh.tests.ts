@@ -297,6 +297,17 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(b.ds.length === 3 && b.daBo.length === 0, 'không tuỳ chỉnh = như cũ');
   });
 
+  check('BC-16 · RA-LOI-0711e: thêm 2 đợt bất chợt (mở sau đợt tháng) không làm mất việc Admin "Xuất báo cáo PH" của đợt tháng còn trong 30 ngày', () => thu(() => {
+    const admin_ = nguoi('office_admin', 'MB');
+    assert(!!admin_, 'seed thiếu Admin MB');
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, null), dot0 = tr.dot;
+    viet(lop, dot0, tr.em, tr.phan);   // lớp đủ hôm nay → việc "đủ" (7 ngày)
+    const co = () => { xoaNho(); return xbc.viecXuatBaoCaoPh(admin_, null).some((v: any) => v.classId === lop && v.dot === dot0); };
+    assert(dot0 && !dot0.startsWith('them:') && co(), `tiền đề: đợt tháng ${dot0} có việc Admin`);
+    for (const n of [2, 1]) dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, -n), han: d.addDaysIso(TODAY, -n) });
+    assert(co(), `đợt tháng ${dot0} (≤ 30 ngày sau hạn) phải còn việc Admin sau khi thêm 2 đợt`);
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
