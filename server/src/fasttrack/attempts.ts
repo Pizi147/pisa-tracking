@@ -14,6 +14,7 @@ import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopFtGvcn, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
+import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
@@ -937,7 +938,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         caseId: c?.id ?? null,
         caseLevel: c?.sos_level ?? null,
         caseFollowUp: c?.followUp ?? null,
-        canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
+        canPlanWeek: choSuaLichTest(p, { classId: a.class_id }),
         activeSkillCount: regularSkills.length,
       };
     }
@@ -1023,7 +1024,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
       caseId: bundle.cases.get(a.id)?.id ?? null,
       caseLevel: bundle.cases.get(a.id)?.sos_level ?? null,
       caseFollowUp: bundle.cases.get(a.id)?.followUp ?? null,
-      canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
+      canPlanWeek: choSuaLichTest(p, { classId: a.class_id }),
       activeSkillCount: active.length,
     };
   });
@@ -1292,10 +1293,10 @@ export function attemptDetail(p: Principal, attemptId: number) {
      */
     scoreHistory: scoreHistoryOf(attemptId),
     viewer: {
-      canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }),
+      canPlanWeek: choSuaLichTest(p, { classId: a.class_id }),
       /** PR-XLMT (T38): GVCN của lớp — Báo vắng / Xếp lại bài vắng theo bảng thao tác `thaoTacKyNang`. */
       laGvcn: !!a.class_id && isCoreTeacherOf(p, a.class_id),
-      canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
+      canCancel: choHuyKhoiPhucLichTest(p, { classId: a.class_id }),
       /* OV-15i2: bỏ `huyLuot` (hệ quả huỷ) — web không còn hộp huỷ đọc nó (OV-15c: Mock / MT0 Xóa = về Chưa xếp); `heQuaHuyLuot` vẫn dùng khi huỷ. */
       /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
       canHandleAbsence: canRequestAbsence(p, a),
@@ -1366,7 +1367,7 @@ export function createAttempt(p: Principal, input: {
     .prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`)
     .get(student.id) as any;
   const classId = enr?.class_id ?? null;
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId, studentId: student.id },
+  requireSuaLichTest(p, { classId, studentId: student.id },
     'Chỉ Quản lý mới lập được kế hoạch tuần MT.');
 
   const cycle = input.cycleId ? cycleById(input.cycleId) : currentCycle(student.id);
@@ -1375,7 +1376,7 @@ export function createAttempt(p: Principal, input: {
   if (cycle.student_id !== student.id) throw badRequest('Lộ trình không thuộc học viên này.');
   const period = conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(input.periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần kế hoạch');
-  chanCuoiTuan(p, { kind: 'mock' }, [period.week_start]);
+  chanCuoiTuan(p, { kind: 'mock', class_id: classId, student_id: student.id }, [period.week_start]);
 
   /*
    * ĐÁNH SỐ LIỀN MẠCH — MỘT CHỐT cho mọi đường tạo lượt (POST /attempts, bulk-plan, Kế hoạch Test xếp mới / hàng loạt; K4-08, T36).
@@ -1478,7 +1479,7 @@ function loadAttempt(attemptId: number) {
 export function setPlanningWeek(p: Principal, attemptId: number, periodId: number, reason?: string,
   opts: { force?: boolean } = {}) {
   const a = loadAttempt(attemptId);
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id },
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id },
     'Chỉ Quản lý mới chốt được tuần kế hoạch.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ. Mở lại trước khi đổi tuần.');
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
@@ -1725,7 +1726,9 @@ const HUY_MT_DA_BO = ['mock', 'mt0'];
 
 export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null; quaWeb?: boolean }) {
   const a = loadAttempt(attemptId);
-  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
+  if (!choHuyKhoiPhucLichTest(p, { classId: a.class_id, studentId: a.student_id })) {
+    require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
+  }
   if (input.quaWeb && HUY_MT_DA_BO.includes(a.kind)) {
     throw loi(400, 'Không còn huỷ MT{attempt_no} — dùng Xóa ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.', { attempt_no: a.attempt_no });
   }
@@ -1827,7 +1830,9 @@ export function chanKhoiPhucThuong(a: any, nhan: string): string | null {
  */
 export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: number | null } = {}) {
   const truoc = loadAttempt(attemptId);
-  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
+  if (!choHuyKhoiPhucLichTest(p, { classId: truoc.class_id, studentId: truoc.student_id })) {
+    require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
+  }
   /* LUOT-KHOI-PHUC: lượt lớp thường (Progress / Final / Checkpoint) đi cùng đường — tên theo bài, chặn riêng (`chanKhoiPhucThuong`). */
   const thuong = LOAI_THUONG.includes(truoc.kind);
   const nhan = thuong ? nhanBai(khoaBai(truoc.kind, truoc.attempt_no)) : `MT${truoc.attempt_no}`;

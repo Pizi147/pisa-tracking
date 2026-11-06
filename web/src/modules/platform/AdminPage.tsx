@@ -10,6 +10,7 @@ import { api } from '../../lib/api.ts';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
+import { MoSuaLichTest } from './MoSuaLichTest.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -99,6 +100,8 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
           </div>
         ))}
       </div>
+
+      <MoSuaLichTest />
 
       {/* Sửa quyền xong thì tải lại cả tổng quan: nhật ký cuối trang có dòng mới. */}
       <QuyenTheoVai onDaLuu={onDone} />

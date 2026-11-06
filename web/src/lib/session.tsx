@@ -52,6 +52,8 @@ export type Session = {
   khungPhamVi?: { ft: boolean; thuong: boolean };
   /** P14 DICH (N19): máy chủ có khoá dịch và không tắt — hiện nút "Dịch" cạnh chữ GV nhập. */
   dichBat?: boolean;
+  /** Mở sửa lịch Test (chủ SP 06/11): công tắc Quản trị đang BẬT — người sửa được lịch Test bỏ chip khoá cuối tuần (máy chủ vẫn kiểm). */
+  moSuaLichTest?: boolean;
 };
 
 export type GocNhin = {
