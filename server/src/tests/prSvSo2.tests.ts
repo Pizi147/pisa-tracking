@@ -131,11 +131,15 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
       assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong === (h.ghiKetQuaPa.tong ?? 0) + ds.length && h.viecDungHan.dung === (h.ghiKetQuaPa.dung ?? 0),
         `mẫu phải gồm ${ds.length} việc mở, tử không đổi: ${JSON.stringify(h.viecDungHan)}`);
       const p = pt.oChiSoGv(P.mbManager, { ...ky, gv, cot: 'viec-dung-han' });
-      /* Panel cùng kiểu bảng nghĩa vụ ('pa'): dòng việc mở = chưa ghi, không đúng hạn, trễ n ngày. */
-      assert(p.n === h.viecDungHan.tong && p.kieu === 'pa'
-        && p.rows.filter((r: any) => r.id < 0 && r.pa.ngayGhi === null && r.pa.dungHan === false && r.pa.treNgay > 0).length === ds.length, JSON.stringify(p.rows));
+      /* DEM-QUA-HAN b: panel dòng việc ('viec') — việc mở = chính dòng Công việc (href, tab theo loại việc), đứng đầu. */
+      assert(p.n === h.viecDungHan.tong && p.kieu === 'viec', JSON.stringify(p).slice(0, 300));
+      const moP = p.rows.filter((r: any) => r.id < 0).map((r: any) => r.dongViec);
+      assert(moP.length === ds.length && moP.every((v: any) => v.mo && v.ngayXong === null && v.treNgay > 0 && ds.some((it: any) => it.href === v.href && d.tabViecHanCua(it.group) === v.tab)), JSON.stringify(moP));
+      assert(p.rows.findIndex((r: any) => !r.dongViec.mo) === -1 || p.rows.slice(p.rows.findIndex((r: any) => !r.dongViec.mo)).every((r: any) => !r.dongViec.mo), 'việc mở phải đứng đầu panel');
+      const hsP = pt.oChiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den, cot: 'viec-dung-han' });
+      assert(hsP.kieu === 'viec' && hsP.rows.every((r: any) => r.dongViec), 'hồ sơ GV: panel Việc đúng hạn cùng kiểu dòng việc');
       const hs = pt.chiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den }).viecDungHan;
-      assert(pt.oChiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den, cot: 'viec-dung-han' }).n === hs.tong, 'panel hồ sơ ≠ ô hồ sơ');
+      assert(hsP.n === hs.tong, 'panel hồ sơ ≠ ô hồ sơ');
       assert(hs.tong >= h.viecDungHan.tong, 'hồ sơ GV phải có việc mở của bảng');
     }
     /* Việc hạn trước kỳ không vào kỳ này. */

@@ -268,16 +268,25 @@ export async function runPrPtPanelTests(t: YThucTestKit & { P: any }) {
     if (bc.n) { assert(bc.kieu === 'pa', `Báo cáo PA cải thiện: ${bc.kieu}`); coDong(bc, 'pa-co-ket-qua', ['pa']); assert(bc.rows.every((row: any) => row.pa.ketQua), 'PA cải thiện thiếu ketQua'); }
   });
 
-  check('PT-VP-PA · Phân tích GV · Việc đúng hạn + PA hiệu quả: dòng PA (+ hạn, ngày ghi, đúng hạn), số = dòng', () => {
+  check('PT-VP-PA · Phân tích GV · PA hiệu quả: dòng PA; Việc đúng hạn + Chấm Test đúng hạn: dòng việc (DEM-QUA-HAN b) — số = dòng', () => {
     let so = 0;
-    for (const x of gvKq.hang.slice(0, 7)) for (const cot of ['viec-dung-han', 'pa-hieu-qua']) {
+    for (const x of gvKq.hang.slice(0, 7)) for (const cot of ['viec-dung-han', 'cham-diem', 'pa-hieu-qua']) {
       const r: any = req(() => oChiSoGv(P.admin, { ...fg, gv: x.id, cot }));
       if (!r.n) continue;
-      assert(r.kieu === 'pa', `${cot}: kiểu ${r.kieu}`);
-      coDong(r, `GV ${x.id} × ${cot}`, ['pa']);
-      if (cot === 'viec-dung-han') assert(r.rows.every((row: any) => row.pa.han && typeof row.pa.dungHan === 'boolean'), 'việc đúng hạn thiếu hạn / đúng hạn');
+      const viec = cot !== 'pa-hieu-qua';
+      assert(r.kieu === (viec ? 'viec' : 'pa'), `${cot}: kiểu ${r.kieu}`);
+      coDong(r, `GV ${x.id} × ${cot}`, [viec ? 'dongViec' : 'pa']);
+      if (viec) {
+        const ds = r.rows.map((row: any) => row.dongViec);
+        assert(ds.every((v: any) => v.ten && v.href && v.han && typeof v.dung === 'boolean' && (cot === 'cham-diem') === (v.tab === 'cham')), `${cot}: dòng việc thiếu trường / sai tab ${JSON.stringify(ds[0])}`);
+        /* Đang quá hạn (còn mở) đứng đầu; đã làm: trễ trước đúng hạn. */
+        const hang = ds.map((v: any) => (v.mo ? 0 : v.dung ? 2 : 1));
+        assert(hang.every((h: number, i: number) => !i || hang[i - 1] <= h), `${cot}: thứ tự ${hang.join('')}`);
+        assert(ds.every((v: any) => !v.mo || (!v.ngayXong && !v.dung && v.treNgay > 0)), `${cot}: việc mở phải chưa làm, trễ n ngày`);
+        if (cot === 'cham-diem') assert(ds.every((v: any) => /^\/(mock-test|luot-test|hoc-vien)\//.test(v.href)), `cham-diem: href ${ds[0].href}`);
+      }
       so++;
     }
-    assert(so >= 1, 'demo phải có ít nhất một ô PA của GV');
+    assert(so >= 2, 'demo phải có ô Việc / Chấm Test của GV');
   });
 }

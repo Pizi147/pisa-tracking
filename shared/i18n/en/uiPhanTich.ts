@@ -46,4 +46,11 @@ export const EN_UI_PHAN_TICH = {
   "Chưa cải thiện": "Not improved",
   "Cải thiện": "Improved",
   "PA cải thiện · {a}/{b} PA": "Plans improved · {a}/{b} plans",
+  /* DEM-QUA-HAN b: panel Việc đúng hạn / Chấm Test đúng hạn. */
+  "Case – PA – Kết quả": "Case – Plan – Result",
+  "đã làm {ngay}": "done {ngay}",
+  "nhập {ngay}": "entered {ngay}",
+  "{n} đang quá hạn": "{n} overdue",
+  "Đã làm": "Done",
+  "Quá hạn chưa chấm": "Overdue, not marked",
 };
