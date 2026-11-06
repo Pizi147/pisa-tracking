@@ -1104,13 +1104,15 @@ export function baoGvcnDoiLichThuongLop(p: Principal, classId: number, kind: str
 export function setSkillScope(
   p: Principal, attemptId: number, skill: string, required: boolean, reason?: string | null,
   /** `khiTao`, `khongMockLai`: nơi gọi cũ — không còn chặn gì riêng. `monDangKy`: P8 đổi môn — nơi gọi đã kiểm quyền Sửa thông tin (`apMonDangKy`). */
-  /** `daKiemQuyen`: Xoá / Khôi phục cả MT (`xoaLuot`, `duaLaiCaLuot`) đã kiểm quyền sửa lịch Test. */
-  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string; monDangKy?: boolean; daKiemQuyen?: boolean } = {},
+  /** `daKiemQuyen`: Xoá / Khôi phục cả MT (`xoaLuot`, `duaLaiCaLuot`) đã kiểm quyền sửa lịch Test.
+   *  `giuHuy`: Khôi phục MT đã xoá — môn đã huỷ (vắng 2 lần) TRƯỚC khi xoá về đúng trạng thái huỷ, không thành "chưa thi" (RA-LOI-0711c). */
+  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string; monDangKy?: boolean; daKiemQuyen?: boolean; giuHuy?: boolean } = {},
 ) {
   const { attempt, row } = loadOne(attemptId, skill);
   if (!_opts.monDangKy && !_opts.daKiemQuyen) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
     'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
-  const duaLaiHuy = required && row.sit_status === 'cancelled';
+  const giuHuy = required && !!_opts.giuHuy && row.sit_status === 'cancelled';
+  const duaLaiHuy = required && row.sit_status === 'cancelled' && !giuHuy;
   if (!!row.required === required && !duaLaiHuy) return { ok: true, unchanged: true };
   if (!_opts.khongMockLai) chanCuoiTuan(p, attempt, [row.week_start]);   // "Không mock lại" là ngoại lệ N15
 
@@ -1123,7 +1125,7 @@ export function setSkillScope(
     if (hasScore(attemptId, row.skill)) throw new HttpError(409, 'Kỹ năng đã có điểm — Xoá cả điểm?');
   }
   /* Đưa lại: tuần đang giữ vướng thứ tự đợt → Chưa xếp (kiểm như dời một kỹ năng). */
-  const boTuan = required && !!row.week_start && (
+  const boTuan = required && !giuHuy && !!row.week_start && (
     !!kiemVuot(attemptId, tuanCuoiSauKhiDoi(ensureSkillRows(attemptId), new Map([[row.skill, row.week_start]]))!, row.week_start).chan
     || checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: row.week_start }).blockers.length > 0);
 
@@ -1137,7 +1139,7 @@ export function setSkillScope(
           WHERE id = ?`,
       )
       .run(required ? 1 : 0, required ? null : reason?.trim() || null,
-           p.userId, nowIso(), nowIso(), required ? 1 : 0, required ? 1 : 0, boTuan ? 1 : 0, row.id);
+           p.userId, nowIso(), nowIso(), required && !giuHuy ? 1 : 0, required && !giuHuy ? 1 : 0, boTuan ? 1 : 0, row.id);
     /* Giữ bảng cũ đồng bộ để dữ liệu và nhật ký đã trỏ vào nó không nói ngược lại. */
     if (required) {
       db().prepare('DELETE FROM attempt_skill_skips WHERE attempt_id = ? AND skill = ?').run(attemptId, skill);
