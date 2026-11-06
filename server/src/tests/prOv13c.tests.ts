@@ -64,6 +64,22 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     assert(ccGop.length === 1 && d.laViecChamCheo(ccGop[0]), `RA-LUONG-1: dòng gộp chấm chéo phải là việc chấm chéo: ${ccGop.map((x: any) => x.key)}`);
   });
 
+  check('OV13c-3b · chủ SP 07/11 (mục 8): dòng tuần nhiều lớp ở 2 chi nhánh (`cn` null) — dải CN chỉ lớp + bài CN đó (dựng lại tiêu đề / số); CN không có lớp nào → không dòng', () => {
+    const s = (o: Record<string, unknown>) => v({ key: 'score:10|mock|p1|u7', group: 'score', studentId: null, studentName: 'Lớp CP FT 139', caseSos: undefined, sos: undefined,
+      tieuDe: 'Nhập điểm Reading', phu: 'Reading', contextLabel: 'MT3 W2 SEP', soBai: 4, count: 4, cn: 1, ...o });
+    const g = d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, classCode: 'HD FT 1', soBai: 5, cn: 2 }),
+      s({ key: 'score:12|mock|p1|u7', classId: 12, classCode: 'HD FT 2', soBai: 3, cn: 2 })], nhan);
+    assert(g.length === 1 && g[0].cn === null && g[0].tieuDe === 'Nhập điểm · W2 SEP · 12 bài', `Tất cả: ${JSON.stringify(g.map((x: any) => [x.tieuDe, x.cn]))}`);
+    const b = d.dongTheoChiNhanh(g, 2);
+    assert(b.length === 1 && b[0].key === g[0].key && b[0].tieuDe === 'Nhập điểm · W2 SEP · 8 bài' && b[0].contextLabel === '2 lớp'
+      && b[0].con.length === 2 && b[0].con.every((c: any) => c.cn === 2), `CN 2: ${JSON.stringify(b.map((x: any) => [x.tieuDe, x.contextLabel, x.con?.length]))}`);
+    const a = d.dongTheoChiNhanh(g, 1);
+    assert(a.length === 1 && a[0].key === 'score:10|mock|p1|u7' && a[0].soBai === 4, `CN 1 (một lớp → việc lẻ): ${JSON.stringify(a.map((x: any) => [x.key, x.soBai]))}`);
+    assert(d.dongTheoChiNhanh(g, 3).length === 0, 'CN không có lớp: còn dòng');
+    const le = s({ key: 'mgmt:1', group: 'mgmt', classId: null, cn: null, tuanThi: null });
+    assert(d.dongTheoChiNhanh([le], 2)[0] === le, 'việc không gắn lớp / không có con: giữ nguyên');
+  });
+
   check('OV13c-4 · /my-work: Nhập điểm theo tuần thi (khoá có tuần, tuần trong dòng phụ); Case SOS FT cùng tuần + SOS → một dòng, số em trên dòng = số em trong dòng', () => thu(() => {
     const w = mywork.myWork(P.mbManager, { nguoi: 'tat-ca' });
     const phang = (w.dong as any[]).flatMap((x) => x.con ?? [x]);

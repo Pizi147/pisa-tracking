@@ -34,7 +34,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
-  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, type DemYeuCau, type LocNguoiViec,
+  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
@@ -150,13 +150,15 @@ export function HoTroHocVienTab() {
   const cnLoc = cnUrl != null && (data?.chiNhanh ?? []).some((b) => b.id === cnUrl) ? cnUrl : null;
   /* Nguồn đang xem (người · chi nhánh) — một điều kiện cho danh sách và dòng giữ chỗ vừa xong. */
   const trongNguon = (it: WorkItem) => (typeof nguoi === 'number' || khopNguoiViec(it, nguoi))
-    /* ponytail: việc không gắn lớp / dòng tuần nhiều chi nhánh (`cn` null) hiện ở mọi chi nhánh (như khung — không bao giờ giấu việc); tổng các ô CN có thể > "Tất cả". */
+    /* Việc không gắn lớp (`cn` null) hiện ở mọi chi nhánh (như khung — không bao giờ giấu việc). */
     && (cnLoc == null || it.cn == null || it.cn === cnLoc);
-  const tatCaViec = useMemo(() => dsGoc.filter(trongNguon), [dsGoc, nguoi, cnLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* Chủ SP 07/11 (mục 8): dòng tuần nhiều lớp ở > 1 chi nhánh — dải một CN chỉ còn lớp + em CN đó (dựng lại từ dữ liệu đã nạp); "Tất cả" như cũ. */
+  const theoCn = (ds: WorkItem[], cn: number | null) => (cn == null ? ds : dongTheoChiNhanh(ds, cn));
+  const tatCaViec = useMemo(() => theoCn(dsGoc, cnLoc).filter(trongNguon), [dsGoc, nguoi, cnLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const dsCn = laGvThuong ? data?.chiNhanh ?? [] : [];
   const maCn = useMemo(() => new Map(dsCn.map((b) => [b.id, b.code])), [dsCn]);
   /* RA-LOI-0711i: số trên dải chi nhánh = cùng bộ lọc với số đầu trang (người · khung · loại việc), chỉ khác chi nhánh — "Tất cả" = số đầu trang. */
-  const demCn = (id: number | null) => demDongViec(theoKhung(dsGoc.filter((it) => (typeof nguoi === 'number' || khopNguoiViec(it, nguoi))
+  const demCn = (id: number | null) => demDongViec(theoKhung(theoCn(dsGoc, id).filter((it) => (typeof nguoi === 'number' || khopNguoiViec(it, nguoi))
     && (id == null || it.cn == null || it.cn === id)))).n;
   /* S11: số trên công tắc khung đếm DÒNG (`demDongViec`), cùng đơn vị đầu nhóm. */
   const demKhung = useMemo(() => ({
