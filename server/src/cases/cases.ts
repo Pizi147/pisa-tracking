@@ -1,4 +1,4 @@
-import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
 import { TIN_HIEU_CASE_DA_XOA } from './signals.ts';
@@ -2838,14 +2838,22 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
    * có lớp quyền (`LOP_CUA_CASE`, hoặc mọi lớp em từng ghi danh khi lớp quyền trống) thuộc các lớp đó — qua ghi danh (mọi trạng thái) của em, hoặc lượt của
    * lớp; Case chưa gắn em giữ hết. `can()` vẫn lọc như cũ → kết quả không đổi. Lọc người phụ trách đã đi chỉ mục `idx_case_owner` (hẹp hơn) — bỏ qua.
    */
+  /*
+   * GIAM-DOC-0611h ([XM-B], Turso câu #3 — 3,8 K dòng / lần × 2,2 K lần): người xem có quyền THEO CHI NHÁNH (QL / Admin / CX / TVV một chi nhánh, không grant toàn hệ
+   * thống) cũng đọc MỌI Case cả hệ thống rồi lọc. Grant chi nhánh B phủ Case khi MỌI chi nhánh của ngữ cảnh = B (`grantCovers`), mà chi nhánh của em LUÔN gồm
+   * `students.branch_id` (`branchesOfStudent`) → Case của em có `branch_id` ngoài các B không bao giờ lọt. Tập cha = Case của em thuộc các B (hoặc em chưa có chi nhánh,
+   * `idx_student_branch`) ∪ phần lớp có phân công / chỉ xem như trên (grant vai Giáo viên) ∪ Case chưa gắn em. `can()` vẫn lọc như cũ.
+   */
   const pv = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (!pv.all && !pv.branchIds.length && !f.classId && !f.studentId && !f.studentIds?.length && !f.ownerUserId && !tapChaTheoLopKhiKiem.tat) {
+  if (!pv.all && !f.classId && !f.studentId && !f.studentIds?.length && !f.ownerUserId && !tapChaTheoLopKhiKiem.tat) {
     const lop = [...new Set([...p.assignments.map((a) => a.classId), ...(p.xemTam ?? []).map((x) => x.classId)])];
     const ph = lop.map(() => '?').join(',');
-    where.push(`sc.id IN (SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
+    where.push(`sc.id IN (${lop.length ? `SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
                           UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
-                          UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`);
-    params.push(...lop, ...lop);
+                          UNION ` : ''}${pv.branchIds.length ? `SELECT x.id FROM students s2 JOIN sos_cases x ON x.student_id = s2.id WHERE s2.branch_id IN (${DS_JSON})
+                          UNION SELECT x.id FROM students s2 JOIN sos_cases x ON x.student_id = s2.id WHERE s2.branch_id IS NULL
+                          UNION ` : ''}SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`);
+    params.push(...lop, ...lop, ...(pv.branchIds.length ? [JSON.stringify(pv.branchIds)] : []));
   }
 
   const rows = conn

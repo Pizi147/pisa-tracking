@@ -109,6 +109,7 @@ import { migrateDonLuong } from './migrate/donLuong.ts';
 import { migratePrBanGiaoGv } from './migrate/prBanGiaoGv.ts';
 import { migratePrTlNen } from './migrate/prTlNen.ts';
 import { migratePrTlNapBai } from './migrate/prTlNapBai.ts';
+import { migratePrGiamDoc0611h } from './migrate/prGiamDoc0611h.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -455,6 +456,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* BC-DOT-QL (chủ SP 06/11): bảng bao_cao_ph_dot — QL / Admin bỏ / thêm đợt Báo cáo PH theo lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBaoCaoPhDot(conn, applied));
     /* MT0-THEO-EM (chủ SP 06/11): chỉ mục một phần idx_attempt_mt0 — lớp FT hiện MT0 của em (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrMt0Em(conn, applied));
     /* GIAM-DOC-0611: chỉ mục một phần idx_sca_cho — việc Báo PH qua TVV đang chờ thôi quét cả sos_coordination_actions (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611(conn, applied));
+    /* GIAM-DOC-0611h: chỉ mục idx_student_branch — Case theo chi nhánh của em (listCases quyền chi nhánh) thôi quét cả students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611h(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
