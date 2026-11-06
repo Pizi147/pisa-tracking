@@ -2,7 +2,7 @@ import { db, theoLo, tx } from '../db.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
-  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran } from '../../../shared/domain/index.ts';
+  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -340,7 +340,7 @@ export function keHoachMocQuyChe(theo: { caseIds?: readonly number[]; studentId?
   const chon = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, cy.exam_month, cy.exam_date,
          ep.code AS exam_week_code, ep.week_start AS exam_week_start,
          (SELECT p.week_start FROM assessment_attempts nx LEFT JOIN report_periods p ON p.id = nx.planned_period_id
-           WHERE nx.cycle_id = src.cycle_id AND nx.attempt_no > src.attempt_no AND nx.status != 'cancelled'
+           WHERE nx.cycle_id = src.cycle_id AND nx.attempt_no > src.attempt_no AND nx.status != 'cancelled' AND NOT ${LUOT_DA_XOA_SQL('nx')}   -- chủ SP 07/11: MT đã xoá = chưa xếp
            ORDER BY nx.attempt_no LIMIT 1) AS tuan_mt_ke,
          (SELECT p.week_start FROM assessment_attempts l JOIN report_periods p ON p.id = l.planned_period_id
            WHERE l.cycle_id = sc.cycle_id AND l.kind = 'mock' AND l.status != 'cancelled'

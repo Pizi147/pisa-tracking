@@ -184,6 +184,18 @@ export function mocKeTiep<T extends { status: string; lich_su: number; weekStart
 /** OV-1b: lượt có dòng kỹ năng mà KHÔNG còn kỹ năng bắt buộc nào chưa huỷ (mọi phần thi đã huỷ / bỏ khỏi đợt) — 1/0. */
 export const LUOT_HUY_HET_SQL = (a: string) => `(EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id)
   AND NOT EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id AND hk.required = 1 AND hk.sit_status != 'cancelled'))`;
+/**
+ * Chủ SP 07/11: MT ĐÃ XOÁ (Xoá MT / xoá từng môn tới hết — ô "Đã xoá") = như CHƯA XẾP: không tính "đã có MT", vẫn nhắc xếp MT kế.
+ * Khác huỷ hết (MT-HUY-XONG — huỷ vắng, cả dữ liệu cũ "ngoài phạm vi" `huy_vang = 1`): không còn môn bắt buộc VÀ có môn ra khỏi đợt không vì vắng.
+ * Web dùng cùng luật (`dotDaXoa`).
+ */
+export const LUOT_DA_XOA_SQL = (a: string) => `(NOT EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id AND hk.required = 1)
+  AND EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id AND hk.huy_vang = 0))`;
+/** Cùng luật `LUOT_DA_XOA_SQL` trên ô lưới Kế hoạch Test (`kn` của một đợt). */
+export const dotDaXoa = (kn: Readonly<Record<string, { batBuoc: boolean; huyVang?: boolean } | undefined>>): boolean => {
+  const ds = Object.values(kn).filter((o) => !!o);
+  return ds.every((o) => !o!.batBuoc) && ds.some((o) => !o!.huyVang);
+};
 /** Cùng luật `mocKeTiep` cho câu đếm theo lô (không N+1). Tham số `?` = thứ Hai của tuần này. */
 export const MOC_KE_TIEP_SQL = (a: string, rp: string) =>
   `${a}.status = 'planned' AND ${a}.lich_su = 0 AND NOT ${LUOT_HUY_HET_SQL(a)} AND ${rp}.week_start >= ?`;
