@@ -56,6 +56,20 @@ export async function runPrNgayXongTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT mo_ta_luc FROM sos_cases WHERE id = ?').get(caseId) as any).mo_ta_luc === null, 'mất mô tả → mo_ta_luc NULL');
   }));
 
+  check('XM-VIEC b · Bàn giao đổi GV xong đúng hạn: vào tử + mẫu của người làm; xong sau hạn: chỉ mẫu', () => thu(() => {
+    const it = viecMo('no_plan');   // một GV có hàng ở bảng FT + lớp FT của chi nhánh
+    const truoc = so(o(it.ownerId));
+    const gvBg = (han: string, xong: string) => conn.prepare(`INSERT INTO ban_giao_gv (class_id, nguoi_cu, nguoi_lam, hieu_luc, han, trang_thai, tao_luc, tao_boi, xong_luc, xong_boi)
+      VALUES (?, ?, ?, ?, ?, 'xong', ?, ?, ?, ?)`).run(it.classId, it.ownerId, it.ownerId, han, han, `${han}T03:00:00.000Z`, it.ownerId, `${xong}T03:00:00.000Z`, it.ownerId);
+    gvBg(addDays(TODAY, -3), addDays(TODAY, -4));
+    const dung = so(o(it.ownerId));
+    assert(dung.dung === truoc.dung + 1 && dung.tong >= truoc.tong + 1, `đúng hạn: ${JSON.stringify(truoc)} → ${JSON.stringify(dung)}`);
+    conn.prepare('DELETE FROM ban_giao_gv WHERE class_id = ? AND nguoi_lam = ? AND xong_luc IS NOT NULL').run(it.classId, it.ownerId);
+    gvBg(addDays(TODAY, -5), addDays(TODAY, -1));
+    const tre = so(o(it.ownerId));
+    assert(tre.dung === truoc.dung && tre.tong >= truoc.tong + 1, `trễ: ${JSON.stringify(truoc)} → ${JSON.stringify(tre)}`);
+  }));
+
   check('XM-VIEC b · migrate prNgayXong0711 chạy lại an toàn; dữ liệu cũ không có ngày xong giữ NULL', () => thu(() => {
     const ap: string[] = [];
     migratePrNgayXong0711(conn, ap);

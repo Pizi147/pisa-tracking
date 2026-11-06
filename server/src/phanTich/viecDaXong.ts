@@ -26,9 +26,9 @@ type Ky = { cn: number; khung: 'ft' | 'thuong'; tu: string; cuoi: string; homNay
 
 /** Lớp em đang học (ghi danh active mới nhất), không thì lớp của lượt — như `napPa` / Công việc. `hv` = cột em. */
 const lopEm = (hv: string, luot: string) => `COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = ${hv} AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), ${luot})`;
-/** Người có phân công ở lớp (GVCN `is_core` hoặc môn) hiệu lực tại ngày. */
+/** Người có phân công ở lớp (GVCN `is_core` hoặc môn — Writing FT do GV W1 / W2 giữ, như `kyNangPhuTrach`) hiệu lực tại ngày. */
 const gvLop = (lop: string, ngay: string, mon: string | null) => `(SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = ${lop} AND ta.status IN ('active', 'ended')
-  AND ${mon ? `ta.skill = ${mon}` : 'ta.is_core = 1'} AND ta.effective_from <= ${ngay} AND (ta.effective_to IS NULL OR ta.effective_to >= ${ngay}) ORDER BY ta.id DESC LIMIT 1)`;
+  AND ${mon ? `(ta.skill = ${mon} OR (${mon} = 'writing' AND ta.skill IN ('writing1', 'writing2')))` : 'ta.is_core = 1'} AND ta.effective_from <= ${ngay} AND (ta.effective_to IS NULL OR ta.effective_to >= ${ngay}) ORDER BY ta.id DESC LIMIT 1)`;
 
 /** Việc đã xong có hạn trong kỳ của MỘT chi nhánh, theo người giữ việc. `kemKhongLop`: lấy việc không gắn lớp (như `viecQuaHanMo`). */
 export function viecDaXong(c: Ky, kemKhongLop = true): Map<number, ViecXong[]> {
