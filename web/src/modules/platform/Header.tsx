@@ -61,7 +61,15 @@ export function Header() {
   const nutThongBao = useRef<HTMLButtonElement>(null);
   const nutTaiKhoan = useRef<HTMLButtonElement>(null);
   const idDs = useId();
-  const notifications = useApi<any[]>('/notifications');
+  /* RA-DOC-0611b: tab mở nền (ẩn) không tải chuông (mỗi lần tải có thể đồng bộ việc ở máy chủ) — tải lần đầu khi tab hiện; đang dùng thì như cũ. */
+  const [tabDaHien, setTabDaHien] = useState(() => !document.hidden);
+  useEffect(() => {
+    if (tabDaHien) return undefined;
+    const khiHien = () => { if (!document.hidden) setTabDaHien(true); };
+    document.addEventListener('visibilitychange', khiHien);
+    return () => document.removeEventListener('visibilitychange', khiHien);
+  }, [tabDaHien]);
+  const notifications = useApi<any[]>(tabDaHien ? '/notifications' : null);
   const { homNay, nhan } = useNgayNghiepVu();
   const timGv = !!session?.nav?.analysis;
   const timDu = q.trim().length >= 2;

@@ -391,8 +391,15 @@ const CHUA_CO_NGUOI = `(sc.owner_user_id IS NULL AND sc.tam = 0 AND ${HV_DANG_HO
  * `la_no_plan` (Thêm PA) · `la_cause` (Xác nhận / Mô tả Case) · `chua_co_nguoi` (`caseChuaCoNguoi`, kèm `cn_du` + hai cột thiếu người). `current_class_id` + `attempt_class_id` cho `ctxSuaCaseNhieu`.
  * Một dòng mỗi (Case, ghi danh `active`) như các câu cũ — `la_no_plan` tự gom theo Case (cũ `GROUP BY sc.id`).
  */
-function napCaseMo(): any[] {
-  return nho('case-mo', () => db().prepare(
+/*
+ * RA-DOC-0611b: `lop` (≠ null) = người xem CHỈ có quyền theo lớp (`lopChiQuyenGv`) — trước đọc MỌI Case mở cả hệ thống (SCAN `sos_cases`) rồi các khối
+ * dưới bỏ gần hết. Dòng của người đó chỉ lọt qua `can(SOS_EDIT, { classId: lớp lượt ?? lớp đang học, studentId })` / `laGvcnLopDangHoc` — tức lớp của lượt
+ * hoặc một lớp em từng ghi danh có phân công của họ — nên lọc trước TẬP CHA đó trong SQL (như DOC-IT-3 `caseTrongPhamVi`); mọi kiểm quyền dưới giữ nguyên.
+ */
+function napCaseMo(lop: readonly number[] | null = null): any[] {
+  if (lop && !lop.length) return [];
+  const ph = (lop ?? []).map(() => '?').join(',');
+  return nho(lop ? `case-mo:${lop.join(',')}` : 'case-mo', () => db().prepare(
     `SELECT sc.*, ${COT_CASE}, a.class_id AS attempt_class_id,
             COALESCE(ac.branch_id, cc.branch_id, s.branch_id) AS cn_du,
             (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS iv_count,
@@ -404,8 +411,25 @@ function napCaseMo(): any[] {
             ${CHUA_CO_NGUOI} AS chua_co_nguoi,
             CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GV_MON} END AS thieu_gv_mon,
             CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GVCN} END AS thieu_gvcn
-       FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done' ORDER BY sc.id`,
-  ).all() as any[]);
+       FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done'${!lop ? '' : `
+        AND sc.id IN (SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
+                      UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
+                      UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`} ORDER BY sc.id`,
+  ).all(...(lop ? [...lop, ...lop] : [])) as any[]);
+}
+
+/**
+ * RA-DOC-0611b: lớp có phân công (mọi ngày — tập cha của `activeAt`) khi các dòng Case mở của người xem CHỈ có thể đến qua quyền theo lớp: không grant nào
+ * có `case.approve` / `class.assign` (Thêm PA của QL, việc Case chưa có người), và `sos.edit` chỉ qua vai Giáo viên (`teacherAllows` → `hasAssignment`).
+ * Không thì null (đọc như cũ). Theo quyền thật của grant (Quản trị sửa được quyền vai), không theo tên vai.
+ */
+/** RA-DOC-0611b: phép kiểm bật → đọc như trước (không tập cha) để so JSON. */
+export const caseMoTapChaKhiKiem = { tat: false };
+function lopChiQuyenGv(p: Principal): number[] | null {
+  if (caseMoTapChaKhiKiem.tat) return null;
+  const rong = p.grants.some((g) => g.permissions.has(PERMISSIONS.CASE_APPROVE) || g.permissions.has(PERMISSIONS.CLASS_ASSIGN)
+    || (g.permissions.has(PERMISSIONS.SOS_EDIT) && g.roleKey !== 'teacher'));
+  return rong ? null : [...new Set(p.assignments.map((a) => a.classId))].sort((a, b) => a - b);
 }
 
 /**
@@ -803,7 +827,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * TL-VIEC · PHA ĐỌC: mọi nguồn dòng việc đọc TRƯỚC (đoạn này không có ghi; đọc lại Mốc PA quy chế ở mục riêng sau `dienMocQuyChe`), rồi MỘT lần nạp phạm vi em / chủ Case /
    * tỷ lệ cho cả tập; pha DỰNG phía dưới giữ nguyên thứ tự `items.push`.
    */
-  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo() : [];
+  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo(tatCa ? null : lopChiQuyenGv(p)) : [];
   /* Một dòng mỗi Case (em hai ghi danh `active` có hai dòng ở `caseMo`). */
   const caseRows = !co('no_plan') ? [] : [...new Map(caseMo.filter((c) => c.la_no_plan).map((c) => [c.id, c])).values()];
   /* RA-LUONG-8 (N8 ④): Case tạm (em KCK, lượt chưa chốt) không sinh việc "Mô tả Case" — cùng `CASE_THAT` như mọi câu đếm. */

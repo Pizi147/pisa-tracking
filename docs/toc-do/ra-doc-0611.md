@@ -75,3 +75,28 @@ Mọi đường khác: số câu, dòng, bước VM không đổi.
 5. `scripts/chup-api.mjs` cũ (thiếu vai / chỗ thay) — thay bằng `PISA_IN_JSON` của `tocDo.run`; xoá hoặc sửa script là việc riêng.
 
 Không index mới → **không có migrate cần chạy khi deploy.**
+
+## RA-DOC-0611b (PTA quyết [XM-1], [XM-2])
+
+1. **`napCaseMo` lọc tập cha trong SQL** (`mywork.ts`, `lopChiQuyenGv`): người xem CHỈ có quyền theo lớp — không grant nào có `case.approve` / `class.assign`,
+   `sos.edit` chỉ qua vai Giáo viên (theo quyền thật của grant, không theo tên vai) — thì mọi dòng Case mở lọt qua các khối dưới (`coTheThemPa`, `dongCase`:
+   `can(SOS_EDIT, { classId: lớp lượt ?? lớp đang học, studentId })` / GVCN lớp đang học; `caseChuaCoNguoi` cần `class.assign` / `case.approve`) đều có lớp của lượt
+   hoặc một lớp em từng ghi danh nằm trong phân công của họ. Đọc trước tập cha đó (giống DOC-IT-3 `caseTrongPhamVi`), mọi kiểm quyền phía dưới giữ nguyên. "Tất cả"
+   (QL) và người có quyền rộng đọc như cũ. Phép kiểm `RA-DOC-0611b`: `myWork` của MỌI tài khoản (55) giống hệt khi tắt lọc.
+2. **Chuông đồng bộ từ `/my-work`**: `GET /my-work` của chính người đó (không lọc chi nhánh) tới chu kỳ 5 phút → đồng bộ thông báo tự động từ CHÍNH danh sách việc vừa
+   tính (`muonTuViec`), ghi mốc SAU khi xong; `/notifications` trong 5 phút bỏ lượt. `/notifications` chạy song song thấy mốc cũ thì tự đồng bộ như trước — không
+   bao giờ đọc bản cũ hơn hiện nay. Phép kiểm: thông báo từ `/my-work` đủ = `viecMuon` cho MỌI tài khoản. Web: tab mở nền (`document.hidden`) không tải chuông tới khi hiện.
+
+| vai × đường / việc | câu ×1 | dòng ×1 | dòng trả ×3 | bước VM ×3 | quét cả bảng ×3 |
+|---|---|---|---|---|---|
+| GVCN · GVCN_THUONG `/my-work` | 33 = | 852 → 789 | 1 738 → 1 531 | 190 k → 167 k | 1 519 → 1 193 (hết SCAN `sos_cases`) |
+| GVBM `/my-work` | 32 = | 855 → 798 | 1 771 → 1 590 | 189 k → 171 k | 1 531 → 1 205 |
+| GV `/classes/{lop}/viec-theo-em?chi=toi` · `/giao-vien/{gv}/viec` | = | −58 đến −64 | −182 đến −208 | −18 k đến −23 k | −326 |
+| QL · QT xem việc GV (`/my-work?nguoi={gv}`, `/giao-vien/{gv}/viec`) | +1 | −43 | −151 | −20 k | −326 |
+| Đồng bộ chuông (×3) GVCN · QL · QT | 26 → 4 · 19 → 3 · 19 → 3 | | 1 059 → 162 · 228 → 6 · 237 → 8 | | |
+
+JSON: 717 / 717 đường giống hệt, trừ `/notifications` của 5 vai chỉ khác `id` tự tăng của dòng thông báo (đồng bộ nay chạy ở `/my-work` — thứ tự chèn giữa các
+người đổi); nội dung + thứ tự giống hệt. QL xem việc GV +1 câu: `lamThayCua` đọc ngữ cảnh Case theo id (Case mở của GV không còn trong bộ nhớ chung).
+
+**Ước / ngày (cận dưới):** `/my-work` GV ~530 dòng / lần × ~700 lần (mỗi lần mở app có badge + Tổng quan + Công việc) ≈ 0,37 triệu; chuông GV ~900 dòng / lần đồng bộ ×
+~400 lần ≈ 0,36 triệu → **~0,7 triệu dòng / ngày (~22 triệu / tháng)**; phần SCAN `sos_cases` tăng theo số Case đã đóng nên lợi tăng dần.
