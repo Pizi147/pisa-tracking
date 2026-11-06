@@ -24,7 +24,7 @@ Gốc = origin/main 9f1f32337.
 | CSS | 32,5 KB | 32,5 KB |
 
 - Đổi: `TheYeuCau` → `lazyTai` cho `ChuyenLopPanel`, `DeXuatSuaPanel`; `OSo` → `lazyTai` cho `BangLuotPanel` (nhãn `loaiBangLuot` tính trong mảnh);
-  `Header` → `lazyTai` cho `PanelHuongDanManNay`; `boDau` dời sang `shared/huongDan/kieu.ts` (index re-export); `useDaXemHd` sang `huongDan/daXemHd.ts`.
+  `Header` → `lazyTai` cho `PanelHuongDanManNay`; `boDau` dời sang `shared/huongDan/kieu.ts`; `useDaXemHd` sang `huongDan/daXemHd.ts`.
 - Không đổi hình / chữ / thao tác. Panel mở lần đầu: mảnh thường đã có sẵn (NAP_SAN nạp ngầm các trang dùng chung mảnh) → mở ngay; nếu chưa có,
   khung trống tới khi mảnh tải xong (vài chục ms), như `PanelGvTre` đã làm.
 - Bấm thử bản build: nút "?" mở Hướng dẫn đúng vai · ô tìm "quang huy" tô chữ khớp · thẻ "Đề xuất chuyển lớp" → Duyệt… mở panel Chuyển lớp ·
