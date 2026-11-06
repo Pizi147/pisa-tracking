@@ -38,6 +38,7 @@ const { chiSoHoSoGv } = await import('../phanTich/giaoVien.ts');   // RA-DOC-061
 const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');   // RA-DOC-0611b
 const { muonTuViec, viecMuon } = await import('../platform/thongBaoTuDong.ts');   // RA-DOC-0611b
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
+const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');   // GIAM-DOC-0611f
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
@@ -664,6 +665,19 @@ check('GIAM-DOC-0611 · cờ Thiếu thông tin (chip TVV / CX) = cờ của dan
         JSON.stringify(danhSachHocVienLop(p, { phamVi, branchId }).hocVien.filter((h) => h.thieu).map((h) => ({ id: h.id, thieu: h.thieu }))),
         JSON.stringify(thieuThongTinHocVien(p, { phamVi, branchId }))]);
       if (cu !== moi) sai.push(`${uid} ${phamVi} ${branchId}`);
+    }
+  }
+  assert(!sai.length, sai.slice(0, 10).join(' | '));
+});
+
+check('GIAM-DOC-0611f · mtLichSuChuaNhap không truyền lớp (tập cha GVCN ∪ chi nhánh plan.week) = truyền mọi lớp — mọi tài khoản × chi nhánh', () => {
+  const moiLop = (conn.prepare('SELECT id FROM classes').all() as any[]).map((r) => r.id as number);
+  const sai: string[] = [];
+  for (const uid of TOAN_BO_TK) {
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const branchId of [null, CN]) {
+      const [moi, cu] = chayTrongRequest('GET', () => [JSON.stringify(mtLichSuChuaNhap(p, { branchId })), JSON.stringify(mtLichSuChuaNhap(p, { classIds: moiLop, branchId }))]);
+      if (moi !== cu) sai.push(`${uid} ${branchId}`);
     }
   }
   assert(!sai.length, sai.slice(0, 10).join(' | '));
