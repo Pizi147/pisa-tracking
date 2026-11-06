@@ -468,10 +468,12 @@ export function tapGhiKetQuaPa(p: Principal, c: NguCanhPtGv): { tap: Tap; khongN
  * Ý thức trừ "Xử lý vi phạm" (chủ SP 06/11: chỉ việc xử lý BẮT BUỘC của GVCN — ≥ 3 vi phạm, hạn 5 ngày — vào; "Xem vi phạm mới" chỉ ghi nhận ở Công việc;
  * "Đã thực hiện" chờ PTA) · Thiếu dữ liệu (không hạn) · Chấm Speaking chéo (T18 — nằm ở `score`) · việc chưa ai giữ.
  * ponytail: các loại này khi ĐÃ XONG chưa có ngày xong để so hạn → chưa vào tử (chỉ Kết quả PA có); thêm khi có cột ngày xong.
+ * RA-LOI-0711h (giảm đọc, số y hệt): chỉ nhóm CÓ THỂ ra dòng quá hạn có hạn + người giữ thật. Bỏ (không bao giờ qua bộ lọc dưới): Chốt / Xét lại lộ trình ·
+ * Kỳ vọng · Case chưa có người (luôn `ownerId: null`) · Giao việc (QL xem được bảng → không dựng; nếu dựng thì người giữ là QL giả `-cn`) · Xuất BC PH
+ * (chỉ Admin → rỗng với QL) · Báo PH qua TVV, Khai bậc, Thi thật, Bổ sung hồ sơ (luôn `due: null`).
  */
 const VIEC_CO_HAN: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>([
-  'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'no_plan', 'bao_ph_yt', 'khai_bac', 'chot_len_ft',
-  'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'bo_sung_ho_so', 'xuat_bc_ph', 'yt_xu_ly',
+  'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop_sos', 'mini_test', 'no_plan', 'bao_ph_yt', 'buoc_tiep', 'ban_giao', 'yt_xu_ly',
 ]);
 /**
  * Người giữ việc theo Công việc "Tất cả" của QUẢN LÝ chi nhánh (vai `manager` ở `cn`, không là người cụ thể) — bảng, panel bảng và hồ sơ GV (GV tự xem,
