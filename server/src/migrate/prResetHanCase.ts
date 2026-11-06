@@ -30,7 +30,7 @@ type Loai = keyof typeof COT;
 
 /** Cột mới (chạy MỖI lần, lặp không đổi) — gọi trước mọi câu đọc `sc.han_them_pa`. */
 export function themCotHanThemPa(conn: any, applied: string[]) {
-  if ((conn.prepare(`SELECT 1 FROM pragma_table_info('sos_cases') WHERE name = 'han_them_pa'`).get())) return;
+  if (conn.prepare(`SELECT 1 FROM pragma_table_info('sos_cases') WHERE name = 'han_them_pa'`).get()) return;
   conn.exec('ALTER TABLE sos_cases ADD COLUMN han_them_pa TEXT');
   applied.push('RESET-HAN-CASE: thêm cột sos_cases.han_them_pa (hạn Thêm PA đã đặt lại; NULL = công thức).');
 }
