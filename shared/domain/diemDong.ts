@@ -65,3 +65,41 @@ export function chuMiniKn(v: number | null, kv: number | null, kck?: boolean): s
   if (v === null) return '—';
   return [dauDiem(datKv(v, kv, kck)), v.toFixed(1)].filter(Boolean).join(' ');
 }
+
+/**
+ * THẺ KẾT QUẢ SOS (chủ SP 06/11, Phối hợp SOS): một thẻ nhỏ cạnh tên việc — lượt · Overall so kỳ vọng · kỹ năng trượt ("MT2 · ✗ 5.5 / 6.0 · trượt L, W").
+ * MỘT kiểu dữ liệu + MỘT hàm chữ cho Công việc, hồ sơ lớp, hồ sơ HV. Máy chủ dựng từ kết quả lượt đã nạp (`theSosTuKetQua`, 0 câu SQL thêm);
+ * ✓ / ✗ và ba màu dùng lại `dauDiem` / `mucDiem` / `ODiem` — không kiểu mới.
+ */
+export type TheSosLuot = {
+  /** "MT2" · "Giữa khoá" · "Cuối khoá" — cùng nhãn lượt của thẻ Phối hợp. */
+  luot: string;
+  /** FT: band Overall (đủ bốn kỹ năng, null nếu chưa đủ) · lớp thường: % tổng (đủ môn). */
+  ovr: number | null;
+  /** FT: kỳ vọng của lượt · lớp thường: ngưỡng đạt (%). */
+  moc: number | null;
+  pt?: true;
+  /** Kỹ năng dưới kỳ vọng / ngưỡng của CHÍNH lượt — chữ ngắn ("L", "W"). */
+  truot: string[];
+  /** Lượt chưa chốt — kết luận còn đổi được. */
+  tam: boolean;
+};
+
+/** Thẻ + em của một lượt — payload của dòng việc Phối hợp SOS (`WorkItem.theSos`). */
+export type TheSosEm = { attemptId: number; studentId: number; studentName: string; the: TheSosLuot };
+
+/** ✓ khi Overall ≥ kỳ vọng · ✗ khi dưới · null khi chưa đủ căn cứ (như `ovDat` của `DongDiem`). */
+export const datTheSos = (th: TheSosLuot): boolean | null => (th.ovr == null || th.moc == null ? null : th.ovr >= th.moc);
+
+/** "trượt L, W" — null khi không kỹ năng nào trượt. */
+export const chuTruotSos = (th: TheSosLuot): string | null => (th.truot.length ? t('trượt {kn}', { kn: th.truot.join(', ') }) : null);
+
+/** Chữ cho trình đọc màn hình / rê chuột — cùng ý với `nhanDocDiem`: "MT2, Overall ✗ 5.5, dưới kỳ vọng 6.0, trượt L, W". */
+export function nhanDocTheSos(th: TheSosLuot): string {
+  const pt = !!th.pt;
+  const dat = datTheSos(th);
+  const goc = th.ovr == null ? th.luot : `${th.luot}, ${[pt ? t('Tổng') : 'Overall', dauDiem(dat), chuDiem(th.ovr, pt)].filter(Boolean).join(' ')}`;
+  const so = th.moc == null ? '' : chuDiem(th.moc, pt);
+  const dich = dat !== false || th.moc == null ? goc : pt ? t('{goc}, dưới ngưỡng {moc}', { goc, moc: so }) : t('{goc}, dưới kỳ vọng {moc}', { goc, moc: so });
+  return [dich, chuTruotSos(th)].filter(Boolean).join(', ');
+}
