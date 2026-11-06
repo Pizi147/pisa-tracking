@@ -1160,6 +1160,7 @@
   .lt-ghi:hover > span { color: var(--text); }
   .lt-ghi-them { appearance: none; padding: 4px 0; border: 0; background: none; font-size: 13px; font-weight: 500; color: var(--text-faint); cursor: text; opacity: 0; }
   tr.lt-h:hover .lt-ghi-them, tr.lt-h:focus-within .lt-ghi-them, .lt-ghi-them:focus-visible { opacity: 1; }
+  @media (hover: none) { .lt-ghi-them { opacity: 1; } }   /* máy tính bảng cảm ứng: không có rê chuột */
   .lt-ghi-nh { font-weight: 500; color: var(--text-faint); }
   .lt-the .lt-ghi { min-height: 44px; margin: 0; padding: 0; }
   .lt-the .lt-ghi > span { white-space: normal; }
@@ -1181,6 +1182,7 @@
   .lt-mo-ct:hover { background: var(--surface-2); color: var(--text); }
   .lt-mo-ct svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s ease-out; }
   .lt-mo-ct[aria-expanded='true'] svg { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) { .lt-mo-ct svg { transition: none; } }
 
   /* hộp làm tại chỗ: MỘT hàng, nhãn bên trái ô, mọi ô / nút cao 36 */
   .lt-hop { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-left: 192px; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); }
