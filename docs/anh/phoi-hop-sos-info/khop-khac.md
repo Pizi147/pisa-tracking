@@ -27,7 +27,7 @@ Dữ liệu demo 14/09: tài khoản GV Lâm Quang Vinh (GVCN MB FT 105, em Đo�
 | # | Trước | Sau | Lý do |
 |---|---|---|---|
 | 1 | Chip "SOS 2 · W1, S" + "MT2" riêng | Chip "SOS 2" (hộp giải thích vẫn đếm kỹ năng) + thẻ "MT2 ✗ 5.5 / 6.0 trượt W, S" | kỹ năng trượt chỉ ghi MỘT chỗ; thẻ đếm theo kết quả lượt (W = Writing chung), chip theo tín hiệu (W1 / W2) — nhãn có thể khác ở W |
-| 2 | Lớp thường dòng phụ "Giữa khoá · 2/4 môn đạt · …" | thẻ "Giữa khoá ✗ 43 % / 70 % trượt G, V" | luật "một hàm một số": % tổng so ngưỡng lớp như DongDiem; "n/m môn đạt" vẫn ở dòng đầu thẻ của hồ sơ HV (`mtSos`) |
+| 2 | Lớp thường dòng phụ "Giữa khoá · 2/4 môn đạt · …" | thẻ "Giữa khoá ✗ 43 % / 70 % trượt G, V" + "2/4 môn đạt" giữ cạnh thẻ | luật "một hàm một số": % tổng so ngưỡng lớp như DongDiem; chữ "n/m môn đạt" (`nhanKetQuaThuong`) giữ nguyên cạnh thẻ |
 | 3 | Dòng việc cả lớp chỉ ghi "n lượt" | + thẻ từng em (≤ 3) | yêu cầu chủ SP; lớp có nhiều lượt: "+n lượt nữa" |
 
 ## Thao tác TRƯỚC → SAU

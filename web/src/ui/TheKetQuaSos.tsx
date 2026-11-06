@@ -9,27 +9,26 @@ import { t } from '@shared/i18n/index.ts';
  * `ten` = tên em đứng trước (dòng việc cả lớp); `anLuot` = dòng liền trên đã ghi lượt.
  */
 export function TheKetQuaSos({ th, ten, anLuot = false }: { th: TheSosLuot; ten?: string; anLuot?: boolean }) {
-  const pt = !!th.pt;
   const truot = chuTruotSos(th);
+  const luot = !anLuot && <span className="inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium text-dim" style={{ background: 'var(--surface-2)' }}>{th.luot}</span>;
+  const chiTiet = (
+    <>
+      {th.ovr != null && <Diem th={th} pt={!!th.pt} />}
+      {truot && <span className="whitespace-nowrap font-medium text-dim">{truot}</span>}
+      {th.tam && <span className="text-faint" title={t('Lượt chưa chốt điểm')}>{t('tạm')}</span>}
+    </>
+  );
   /* Có tên em (dòng việc, cột hẹp): HAI dòng cố định — "tên · lượt" rồi "điểm · trượt"; không tên (thẻ Phối hợp): một hàng, thiếu chỗ thì ngắt giữa các khối. */
-  const khoi = ten ? 'flex flex-wrap items-baseline gap-x-1.5' : 'contents';
+  const hang = 'flex flex-wrap items-baseline gap-x-1.5';
   return (
     <span role="img" aria-label={[ten, nhanDocTheSos(th)].filter(Boolean).join(' — ')} data-the-sos=""
-      className={`inline-flex min-w-0 ${ten ? 'flex-col gap-y-0.5' : 'flex-wrap items-baseline gap-x-1.5 gap-y-0.5'} text-[13px] leading-snug`}>
-      <span aria-hidden className={khoi}>
-        {ten && <b className="font-semibold text-slate-100">{ten}</b>}
-        {!anLuot && <span className="inline-flex h-5 items-center rounded-md px-1.5 text-xs font-medium text-dim" style={{ background: 'var(--surface-2)' }}>{th.luot}</span>}
-        {!ten && th.ovr != null && <Diem th={th} pt={pt} />}
-        {!ten && truot && <span className="whitespace-nowrap font-medium text-dim">{truot}</span>}
-        {!ten && th.tam && <span className="text-faint" title={t('Lượt chưa chốt điểm')}>{t('tạm')}</span>}
-      </span>
-      {ten && (
-        <span aria-hidden className="flex flex-wrap items-baseline gap-x-1.5">
-          {th.ovr != null && <Diem th={th} pt={pt} />}
-          {truot && <span className="whitespace-nowrap font-medium text-dim">{truot}</span>}
-          {th.tam && <span className="text-faint" title={t('Lượt chưa chốt điểm')}>{t('tạm')}</span>}
-        </span>
-      )}
+      className={`inline-flex min-w-0 ${ten ? 'flex-col gap-y-0.5' : `${hang} gap-y-0.5`} text-[13px] leading-snug`}>
+      {ten ? (
+        <>
+          <span aria-hidden className={hang}><b className="font-semibold text-slate-100">{ten}</b>{luot}</span>
+          <span aria-hidden className={hang}>{chiTiet}</span>
+        </>
+      ) : <span aria-hidden className="contents">{luot}{chiTiet}</span>}
     </span>
   );
 }

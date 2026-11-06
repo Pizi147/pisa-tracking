@@ -117,6 +117,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           {/* PHOI-HOP-SOS-INFO: chip chỉ "SOS n" (kỹ năng trượt nằm trong thẻ kết quả bên cạnh — một chỗ, không lặp). */}
           {!luot.nhanDot && luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
           <TheKetQuaSos th={luot.the} />
+          {luot.nhanDot && luot.ketQua && <span className="text-[13px] text-dim">{luot.ketQua.chinh}</span>}
           <span className="ml-auto flex flex-wrap items-center gap-2">
             <BadgeViec tong={luot.summary.complete ? 'xong' : 'dang'}>{t('{label} việc xong', { label: luot.summary.label })}</BadgeViec>
             {luot.summary.complete && <button type="button" className="link inline-flex min-h-[44px] items-center gap-1 appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" aria-expanded={open} onClick={() => setOpen((v) => !v)}><MuiTenGap mo={open} />{t('Việc')}</button>}
@@ -147,7 +148,8 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
             </span>
           ) : (
             /* PHOI-HOP-SOS-INFO: dòng phụ = thẻ kết quả (hồ sơ HV: dòng trên đã ghi lượt). */
-            <span className="mt-0.5 block"><TheKetQuaSos th={luot.the} anLuot={cot1 === 'luot'} /></span>
+            <span className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5"><TheKetQuaSos th={luot.the} anLuot={cot1 === 'luot'} />
+              {cot1 === 'hocVien' && luot.nhanDot && luot.ketQua && <span className="text-[13px] text-dim">{luot.ketQua.chinh}</span>}</span>
           )}
         </div>
         <div className="min-w-0">
