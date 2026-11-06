@@ -477,7 +477,8 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
                 /* N33 ④: lượt đã tạo chưa xếp kỹ năng nào → "Chưa xếp lịch" (không "Chờ 0 kỹ năng"). */
                 : row.result.required.length === 0 ? <Level tone="muted">{t('Chưa xếp lịch')}</Level>
                 /* LT-GON (M3): "Chờ L, R, W, S" lặp đúng các ô trống bên trái → Kết quả chưa có ghi "–", tên môn còn thiếu ở `title`. */
-                : <span className="text-faint" title={choMon(row)}>–</span>
+                /* RA-GD-0711c: chữ thường trong cột chip lùi 8 px (`px-2`) như chữ trong chip — thẳng tiêu đề "Kết quả" (index.css `th[data-kieu=chip]`). */
+                : <span className="px-2 text-faint" title={choMon(row)}>–</span>
           )}
           {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}
         </div>

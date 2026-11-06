@@ -658,12 +658,38 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
      đang chờ (ưu tiên thấp hơn) thì React tính lại từ state gốc mãi → "Maximum update depth" → trang lỗi khi gõ ô L/R. */
   const dat = () => {
     if (dienThoai || !box.current) return;
-    const r = anchor.getBoundingClientRect();
-    const rong = box.current.offsetWidth, cao = box.current.offsetHeight;
+    const b = box.current;
+    /* RA-GD-0711c: hộp nằm TRONG vùng nội dung — mép trên = mép trên <main> (dưới thanh trên), không đè ô tìm / tài khoản.
+       Dưới đủ chỗ → dưới; trên đủ → trên; không bên nào đủ (ô ở giữa màn thấp) → cuộn khung chứa ô vừa đủ để hộp nằm dưới (hoặc trên);
+       không cuộn được nữa mới thu hộp vừa chỗ + tự cuộn. */
+    const cuon = b.scrollTop;   // đo lại mỗi lần vẽ (gõ phím) — giữ chỗ cuộn trong hộp
+    b.style.maxHeight = '';
+    b.style.overflowY = '';
+    const rong = b.offsetWidth, cao = b.offsetHeight;
+    const tren = Math.max(8, (document.getElementById('noi-dung')?.getBoundingClientRect().top ?? 0) + 4), day = window.innerHeight - 8;
+    let r = anchor.getBoundingClientRect();
+    if (cao > day - (r.bottom + 4) && cao > r.top - 4 - tren) {
+      let m = anchor.parentElement;
+      while (m && !(m.scrollHeight > m.clientHeight && /auto|scroll/.test(getComputedStyle(m).overflowY))) m = m.parentElement;
+      const xuong = r.bottom + 4 + cao - day, len = tren - (r.top - 4 - cao);
+      if (m && xuong <= m.scrollHeight - m.clientHeight - m.scrollTop) m.scrollTop += xuong;
+      else if (m && len <= m.scrollTop) m.scrollTop -= len;
+      r = anchor.getBoundingClientRect();
+    }
+    const choDuoi = day - (r.bottom + 4), choTren = r.top - 4 - tren;
     const left = Math.min(Math.max(8, r.left), window.innerWidth - rong - 8);
-    const top = r.bottom + 4 + cao > window.innerHeight - 8 ? Math.max(8, r.top - cao - 4) : r.bottom + 4;
-    box.current.style.top = `${top}px`;
-    box.current.style.left = `${left}px`;
+    let top: number;
+    if (cao <= choDuoi) top = r.bottom + 4;
+    else if (cao <= choTren) top = r.top - 4 - cao;
+    else {
+      const duoi = choDuoi >= choTren;
+      b.style.maxHeight = `${Math.max(160, duoi ? choDuoi : choTren)}px`;
+      b.style.overflowY = 'auto';
+      top = duoi ? r.bottom + 4 : tren;
+      b.scrollTop = cuon;
+    }
+    b.style.top = `${top}px`;
+    b.style.left = `${left}px`;
   };
   /* CA3-7: ô lên giữa vùng cuộn — hộp em kế neo dưới, ô vừa lưu phía trên vẫn thấy. */
   useLayoutEffect(() => { if (!dienThoai) anchor.scrollIntoView({ block: 'center', inline: 'nearest' }); }, []);   // eslint-disable-line react-hooks/exhaustive-deps

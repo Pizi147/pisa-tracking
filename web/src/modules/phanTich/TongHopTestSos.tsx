@@ -229,11 +229,12 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   ];
 
   const oSo = (row: DongTongHop) => cols.map((c) => <td key={c.khoa} className={`whitespace-nowrap px-2.5 text-center tabular-nums ${dauNhom.has(c.khoa) ? KE_TRAI : ''}`}>{oCell(row, c)}</td>);
-  /** Hàng lớn: tên + dòng phụ (khoảng ngày của tuần) cùng một dòng, chữ phụ mờ (mockup `.phu-o` inline). */
+  /** Hàng lớn: tên + dòng phụ (khoảng ngày của tuần) cùng một dòng, chữ phụ mờ (mockup `.phu-o` inline).
+   *  RA-GD-0711c: thiếu chỗ thì phần phụ xuống dòng nguyên khối — không cắt "14/09–20/09 · tuần…". */
   const tenDong = (row: DongTongHop) => (
-    <span className="block min-w-0 truncate">
+    <span className="block min-w-0 [overflow-wrap:anywhere]">
       {row.nhan}
-      {row.phu && <span className="ml-1.5 text-xs font-normal text-[color:var(--text-faint)]" title={row.phu}>{row.phu}</span>}
+      {row.phu && <>{' '}<span className="inline-block whitespace-nowrap text-xs font-normal text-[color:var(--text-faint)]" title={row.phu}>{row.phu}</span></>}
     </span>
   );
 
