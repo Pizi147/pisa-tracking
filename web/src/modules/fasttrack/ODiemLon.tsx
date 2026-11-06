@@ -149,7 +149,8 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
     const nhapBoi = bai.filter((c) => c.enteredByName).map((c) => t('{skillLabel}: nhập bởi {enteredByName}', { skillLabel: skillLabel(c.skill), enteredByName: c.enteredByName })).join('\n');
     const kq = band !== null && v && v.passed !== null ? soKyVong(band, result.expectation) ?? (v.passed ? 'bang' : 'duoi') : null;
     /* Ô gọn chưa có điểm: một chữ ngắn (Vắng · Không học · Đã huỷ) — câu trạng thái + hạn đã ở cột Trạng thái của bảng. */
-    const chuRong = !gon ? '—' : !l?.required ? t('Không học') 
+    /* Chủ SP 06/11: kỹ năng ngoài đợt mà em vẫn học = "Đã xoá" (Khôi phục ở dòng); "Không học" chỉ cho môn đăng ký (`khongHoc`). */
+    const chuRong = !gon ? '—' : !l?.required ? (bai.some((c) => c.khongHoc) ? t('Không học') : t('Đã xoá'))
       : l.sitStatus === 'absent' ? t('Vắng') : '—';
     const so = (
       /* NEN-TYPO-MAU: ✓ / ✗ đứng TRƯỚC số, số tô cùng màu kết quả (`lopKq`). */

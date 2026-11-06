@@ -97,6 +97,27 @@ export function NutXepO({ chu, title, ke = false, onMo }: { chu: string; title?:
 /** Ô không có gì để làm (MT sau MT kế tiếp, Checkpoint em không có) — mockup `.okhong` "—". */
 export const OTrong = ({ title }: { title?: string }) => <span className="o-kh-khong" title={title}>—</span>;
 
+/**
+ * Ô MT ĐÃ XOÁ (chủ SP 06/11 "đừng để nó xóa ẩn hẳn đi"): khung đứt mờ "Đã xoá" — bấm mở hộp như mọi ô (Dời từng môn, ⋯ Khôi phục MT) — và
+ * "Khôi phục" bấm ngay dưới ô. GV chỉ xem: ô là link trang lượt, không Khôi phục.
+ */
+export function ODaXoa({ nhan, onMo, href, onKhoiPhuc, busy = false }: {
+  nhan: string; onMo: (el: HTMLElement) => void; href?: string | null; onKhoiPhuc?: () => void; busy?: boolean;
+}) {
+  const noi = <span className="o-kh-tt text-faint">{t('Đã xoá')}</span>;
+  const doc = t('{dot}, đã xoá', { dot: nhan });
+  return (
+    <div className="flex flex-col items-start">
+      {href ? <Link to={href} aria-label={doc} title={doc} className="o-kh o-kh-huy no-underline">{noi}</Link>
+        : <button type="button" onClick={(e) => onMo(e.currentTarget)} aria-label={doc} title={doc} className="o-kh o-kh-huy">{noi}</button>}
+      {onKhoiPhuc && (
+        <button type="button" className="link appearance-none border-0 bg-transparent px-2 pt-1 text-xs font-semibold max-sm:min-h-[44px]" disabled={busy}
+          aria-label={t('Khôi phục {dot}', { dot: nhan })} onClick={onKhoiPhuc}>{busy ? t('Đang khôi phục…') : t('Khôi phục')}</button>
+      )}
+    </div>
+  );
+}
+
 /** Ô đợt chỉ còn lượt đã huỷ: khung đứt "Đã huỷ" (mockup `.omt.huy`); bấm mở hộp Khôi phục (QL). */
 export function OHuy({ onMo }: { onMo?: (el: HTMLElement) => void }) {
   const noi = <span className="o-kh-tt text-faint">{t('Đã huỷ')}</span>;

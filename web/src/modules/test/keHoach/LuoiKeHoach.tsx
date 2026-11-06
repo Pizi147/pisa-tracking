@@ -5,7 +5,9 @@ import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/in
 import { OMt } from '../../../ui/OMt.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { fmtDateTime } from '../../../lib/format.ts';
-import { NutXepO, ODotGon, OHuy, OTrong } from './ChipKyNang.tsx';
+import { NutXepO, ODaXoa, ODotGon, OHuy, OTrong } from './ChipKyNang.tsx';
+import { khoiPhucMt } from './xoaMt.ts';
+import { useToast } from '../../../ui/Toast.tsx';
 import { HopKyNang } from './HopKyNang.tsx';
 import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
@@ -50,6 +52,13 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   const [huy, setHuy] = useState<{ attemptId: number; anchor: HTMLElement; hang: HangFT; cot: Cot } | null>(null);
   const [hetHang, setHetHang] = useState(false);
   const [sEx, setSEx] = useState<{ hang: HangFT; dong: DongSEx | null } | null>(null);
+  /** Ô "Đã xoá" đang Khôi phục (chống bấm đúp). */
+  const [dangKhoiPhuc, setDangKhoiPhuc] = useState<number | null>(null);
+  const toast = useToast();
+  const khoiPhucO = (id: number, nhan: string, tenHv: string) => {
+    setDangKhoiPhuc(id);
+    void khoiPhucMt(toast, { attemptId: id, nhan, tenHv, onXong: onReload }).finally(() => setDangKhoiPhuc(null));
+  };
   const homNay = useNgayNghiepVu().homNay;
   const dienThoai = useDienThoai();
   /* Chủ SP 28/10: lớp GV dạy mà không xếp được — chỉ xem: ô mở trang lượt (đổi trang), không hộp xếp / + MT / sửa ghi chú. */
@@ -135,7 +144,15 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                 {c && g ? (
                   <ODotGon o={g} kn={h.dot[tiep!]!.kn} nhan={nhanDot(c.dot)} onMo={chiXem ? () => {} : (el) => moHop(el, c)}
                     href={chiXem && h.dot[tiep!]!.attemptId ? duongDotTest({ id: h.dot[tiep!]!.attemptId!, kind: 'mock', classId: data.classId, studentId: h.studentId }) : null} />
-                ) : chuaXepKeTiep(h) && !chiXem ? (
+                ) : c && tiep != null ? (() => {
+                  /* Chủ SP 06/11: MT kế tiếp đã xoá — "Đã xoá" + Khôi phục như 1440, không biến mất. */
+                  const id = h.dot[tiep]!.attemptId!;
+                  return (
+                    <ODaXoa nhan={nhanDot(c.dot)} onMo={(el) => moHop(el, c)} busy={dangKhoiPhuc === id}
+                      href={chiXem ? duongDotTest({ id, kind: 'mock', classId: data.classId, studentId: h.studentId }) : null}
+                      onKhoiPhuc={chiXem ? undefined : () => khoiPhucO(id, nhanDot(c.dot), h.ten)} />
+                  );
+                })() : chuaXepKeTiep(h) && !chiXem ? (
                   <NutXepO chu={t('Xếp MT{n}', { n: h.soKeTiep })} ke={khongConLuot(h)} onMo={(el) => moHop(el, cotMt(h.soKeTiep))} />
                 ) : null}
               </div>
@@ -210,6 +227,14 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                       /* KHT-GON (mockup #659): ô = tuần + kết quả / một chữ; ô kỹ năng, dòng riêng, dòng vắng chỉ khi cần (`oGon`). */
                       const ct = loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null;
                       const g = oGon(dot.kn, homNay, ct);
+                      /* Chủ SP 06/11: MT đã xoá (mọi kỹ năng ra khỏi đợt) — ô mờ "Đã xoá" + Khôi phục, không ẩn thành "—". */
+                      if (!g && loai === 'ft' && dot.attemptId !== null) {
+                        const id = dot.attemptId;
+                        return (
+                          <ODaXoa nhan={nhanDot(c.dot)} onMo={moHop} href={trangLuot} busy={dangKhoiPhuc === id}
+                            onKhoiPhuc={chiXem ? undefined : () => khoiPhucO(id, nhanDot(c.dot), h.ten)} />
+                        );
+                      }
                       if (!g) return <OTrong title={t('Đợt này không có kỹ năng nào')} />;
                       const d = dot as DotFT;
                       const kq = loai === 'ft' && d.ovr !== undefined ? { ovr: d.ovr, dat: d.kyVong == null ? null : d.ovr >= d.kyVong, kyVong: d.kyVong ?? null } : null;

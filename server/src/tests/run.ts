@@ -1309,7 +1309,7 @@ check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì 409 hỏi X
     .get(classId('CP FT 110')) as any;
   const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assertThrows(() => attempts.setSkillSkip(P.cpManager, xong.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking'),
-    /đã có điểm — Xoá điểm và bỏ khỏi đợt\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
+    /đã có điểm — Xoá cả điểm\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
   const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assert(afterScores === beforeScores, 'Đánh dấu không mock đã xoá điểm đã có');
   /* PR-XLMT: phần "tính lại mẫu số" giữ nguyên, chuyển sang một đợt CHƯA TỚI tuần thi, Speaking chưa có điểm. */
@@ -9605,6 +9605,8 @@ await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as 
 // ==================================================================== MO-SUA-LICH-TEST (công tắc Quản trị mở sửa lịch Test cho GVCN / Admin / QL, bỏ khoá N15)
 const { runPrMoSuaLichTestTests } = bocTep('prMoSuaLichTest', await import('./prMoSuaLichTest.tests.ts'));
 await runPrMoSuaLichTestTests({ check, assert, conn, P, classId } as any);
+const { runXoaMtTests } = bocTep('xoaMt', await import('./xoaMt.tests.ts'));
+await runXoaMtTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)
 const { runPrXetLaiTests } = bocTep('prXetLai', await import('./prXetLai.tests.ts'));
 await runPrXetLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

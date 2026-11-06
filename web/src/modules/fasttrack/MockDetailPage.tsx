@@ -42,7 +42,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
-import type { KnO } from '../test/keHoach/kieu.ts';
+import type { GhiChuLich, KnO } from '../test/keHoach/kieu.ts';
+import { khoiPhucMt, xoaMt } from '../test/keHoach/xoaMt.ts';
 import { TenCase, type CaseCard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import type { CaseCua } from '../classes/BangCanHoTro.tsx';
 import { NganCase } from '../students/NganCase.tsx';
@@ -163,7 +164,8 @@ export default function MockDetailPage() {
   /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
   const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);
   /* PR-HOP1: dời lịch (cả đợt hoặc một kỹ năng) = hộp một đợt `HopKyNang` như Kế hoạch Test — một đường lưu `/ke-hoach-test/dot`. */
-  const [hopLich, setHopLich] = useState<{ anchor: HTMLElement; k: KyNangKH | null } | null>(null);
+  const [hopLich, setHopLich] = useState<{ anchor: HTMLElement; k: KyNangKH | null; ghiChu?: GhiChuLich | null } | null>(null);
+  const [dangXoa, setDangXoa] = useState(false);
   const nutChinhLich = useRef<HTMLSpanElement>(null);
   const [deadlineOpen, setDeadlineOpen] = useState(false);
   const [khoiPhucOpen, setKhoiPhucOpen] = useState(false);
@@ -246,14 +248,29 @@ export default function MockDetailPage() {
       reload(); toast.push('ok', t('Đã đưa lại các kỹ năng vào MT{attemptNo}', { attemptNo: d.attemptNo }));
     } catch (e: any) { toast.push('error', e.message); }
   };
+  /* Chủ SP 06/11: MT đã xoá (mọi kỹ năng ra khỏi đợt) — dải "Đã xoá" + Khôi phục đầu trang; ⋯ "Xoá MT{n}" cùng đường Kế hoạch Test (`xoaMt`). */
+  const daXoa = d.kind === 'mock' && !cancelled && kn4.length > 0 && kn4.every((r) => !r.required);
+  const lanXoa = daXoa ? d.history.find((h) => h.action === 'skill_skipped') ?? null : null;
+  const mtNay = { attemptId: d.id, nhan: `MT${d.attemptNo}`, tenHv: d.student.name, onXong: reload };
+  const lyDoXoa = d.result.scoredRequired > 0 || d.cells.some(coDiemO) ? t('Đã có điểm — không xoá được')
+    : kn4.some((r) => r.required && r.sitStatus === 'sat') ? t('Đã làm bài — không xoá được') : null;
+  const xoa = () => { if (dangXoa) return; setDangXoa(true); void xoaMt(toast, mtNay).finally(() => setDangXoa(false)); };
+  const khoiPhuc = () => { if (dangXoa) return; setDangXoa(true); void khoiPhucMt(toast, mtNay).finally(() => setDangXoa(false)); };
+  /* PR-HOP1 + chủ SP 06/11: hộp một đợt như Kế hoạch Test, kèm ô "Ghi chú lịch Test" (đọc ghi chú hiện tại khi mở — một câu, chỉ lúc bấm). */
+  const moHopLich = (anchor: HTMLElement, k: KyNangKH | null) => {
+    if (d.kind !== 'mock' || d.classId === null) { setHopLich({ anchor, k }); return; }
+    void api.get<{ dong: GhiChuLich[] }>(`/ke-hoach-test/ghi-chu/lich-su?classId=${d.classId}&studentId=${d.student.id}&dot=mt${d.attemptNo}`)
+      .then((r) => (r.dong[0]?.noiDung ? r.dong[0] : null), () => undefined)
+      .then((ghiChu) => setHopLich({ anchor, k, ghiChu }));
+  };
   const headerItems: MenuItem[] = [
-    ...(d.viewer.canSkipSkill && !cancelled && huyHet ? [{
+    ...(d.viewer.canSkipSkill && !cancelled && huyHet && !daXoa ? [{
       label: t('Đưa lại cả 4 kỹ năng'), onClick: () => void duaLaiCaLuot(),
       hint: t('Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch'),
     }] : []),
     /* RA-LUONG-3 (plan mục 4 HOP1): lượt không gắn lớp không mở được hộp lịch (`HopKyNang` cần lớp) — không bày mục bấm mà không ra gì. */
     ...(d.viewer.canPlanWeek && !cancelled && !huyHet && d.classId !== null ? [{
-      label: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-lich'] }), onClick: () => { if (nutChinhLich.current) setHopLich({ anchor: nutChinhLich.current, k: null }); },
+      label: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-lich'] }), onClick: () => { if (nutChinhLich.current) moHopLich(nutChinhLich.current, null); },
       hint: t('Mọi kỹ năng còn dời được sang một tuần'),
     }] : []),
     ...(d.viewer.canOverrideDeadline && !cancelled && !d.lichSu ? [{
@@ -267,6 +284,11 @@ export default function MockDetailPage() {
     /* PR-OV4a: số MT đã xếp lại mà còn bản huỷ cũ → hộp nói rõ cách khôi phục (huỷ MT mới trước). */
     ...(d.viewer.canCancel && !cancelled && d.khoiPhuc.ban.length ? [{
       label: t('Khôi phục MT{attemptNo} cũ', { attemptNo: d.attemptNo }), onClick: () => setKhoiPhucLuot(true),
+    }] : []),
+    /* Chủ SP 06/11: "Xoá MT{n}" cuối menu, vạch đỏ — bị chặn thì vẫn hiện, dòng phụ nói lý do (máy chủ trả cùng câu). */
+    ...(d.viewer.canPlanWeek && d.kind === 'mock' && !cancelled && !huyHet && d.classId !== null ? [{
+      label: t('Xoá MT{attemptNo}', { attemptNo: d.attemptNo }), onClick: xoa, danger: true, keTruoc: 'do' as const,
+      hint: lyDoXoa ?? t('Ô vẫn hiện "Đã xoá", khôi phục được ngay'),
     }] : []),
   ];
   const coKhoa = d.cells.some((c) => c.khoa);
@@ -303,6 +325,18 @@ export default function MockDetailPage() {
           {d.viewer.canCancel ? (
             <button type="button" className="btn btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" onClick={() => setKhoiPhucLuot(true)}>{t('Khôi phục MT{attemptNo}', { attemptNo: d.attemptNo })}</button>
           ) : <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Quản lý khôi phục được lượt đã huỷ.')}</span>}
+        </div>
+      )}
+
+      {/* Chủ SP 06/11: MT đã xoá — dải mảnh như "Đã huỷ": ai · ngày + Khôi phục bấm ngay (người sửa được lịch Test). */}
+      {daXoa && (
+        <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-dashed px-3 py-2 text-sm"
+          style={{ borderColor: 'var(--line-strong)' }}>
+          <span className="font-semibold text-slate-100">{t('Đã xoá')}</span>
+          {lanXoa && <span className="min-w-0 break-words text-slate-400">{[lanXoa.actorName, fmtDate(lanXoa.createdAt)].filter(Boolean).join(' · ')}</span>}
+          {d.viewer.canPlanWeek ? (
+            <button type="button" className="btn btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" disabled={dangXoa} onClick={khoiPhuc}>{dangXoa ? t('Đang khôi phục…') : t('Khôi phục MT{attemptNo}', { attemptNo: d.attemptNo })}</button>
+          ) : <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Quản lý khôi phục được MT đã xoá.')}</span>}
         </div>
       )}
 
@@ -375,7 +409,7 @@ export default function MockDetailPage() {
         <div className="flex min-w-0 flex-col gap-1 sm:pt-4">
           <span className="flex flex-wrap items-center gap-1.5">
             {/* Rà #119: `sosLevel` (chặn trần 3) — `failedCount` 4 môn từng ra "SOS 4". PR-MT0: MT0 không có kỳ vọng — `MT0 ✓` / chip SOS. */}
-            {cancelled || dotHuyHet ? <NhanKq kq="thieu">{!cancelled && huyDoVang ? t('Đã huỷ · vắng') : t('Đã huỷ')}</NhanKq> : ketQuaMt0 ?? (d.mt0 ? d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)
+            {cancelled || dotHuyHet ? <NhanKq kq="thieu">{daXoa ? t('Đã xoá') : !cancelled && huyDoVang ? t('Đã huỷ · vắng') : t('Đã huỷ')}</NhanKq> : ketQuaMt0 ?? (d.mt0 ? d.mt0.sos.map((x) => <Nhan key={x.skill} tone="bad">{chipSosMt0(x)}</Nhan>)
               : <KetQuaDot coDiem={d.result.scoredRequired} yeuCau={d.result.required.length} dat={passed}
                 sos={d.result.sosLevel ?? null} chot={d.result.chot} kckDuoi={d.result.kckDuoi} />)}
             {d.deadlineOverride && (
@@ -390,7 +424,7 @@ export default function MockDetailPage() {
 
       {/* ④ BẢNG KỸ NĂNG — một dòng một kỹ năng; bấm dòng mở vùng Nhận xét | Case & phương án + Lịch sử kỹ năng ngay dưới. */}
       <BangKetQuaLuot d={d} homNay={homNay} chiDoc={chiDoc} moKn={moKn} onMoKn={(k) => setMoKn((x) => (x === k ? null : k))}
-        moO={moO} onMoO={setMoO} save={save} onDone={reload} onDoiLich={(anchor, k) => setHopLich({ anchor, k })}
+        moO={moO} onMoO={setMoO} save={save} onDone={reload} onDoiLich={moHopLich}
         emTiep={emSau !== null ? (k) => navigate(duongDotTest({ id: emSau }, k), { state: { ds: dsLuot }, replace: true }) : null} ve={veMt}
         vungCase={(k) => {
           const cs = (d.caseLuot ?? []).filter((c) => kyNangCase(c.topic) === k);
@@ -431,6 +465,7 @@ export default function MockDetailPage() {
       {hopLich && d.classId !== null && (
         <HopKyNang anchor={hopLich.anchor} tieuDe={`${d.student.name} · MT${d.attemptNo}`} loai="ft" classId={d.classId} studentId={d.student.id}
           dot={{ loai: 'ft', attemptNo: d.attemptNo }} attemptId={d.id} kn={knHop(d)} kyNangDau={hopLich.k} doiTuanDau={hopLich.k !== null} lichSu={d.lichSu}
+          {...(hopLich.ghiChu !== undefined ? { ghiChu: hopLich.ghiChu } : {})}
           onClose={() => setHopLich(null)} onSaved={reload} onHienDien={() => {}} />
       )}
       {deadlineOpen && <DeadlineModal onClose={() => setDeadlineOpen(false)} detail={d} onDone={reload} />}
@@ -722,7 +757,8 @@ function thaoTacDong(d: Detail, k: string, homNay: string) {
     const tat = cancelled ? { chinh: null, menu: [] as ThaoTac[] }
       : thaoTacKyNang(tt, { nhapDiem: c.canEdit, quanLy: d.viewer.canPlanWeek, gvcn: d.viewer.laGvcn, laFt: true, dotHoanTat: !!c.khoa, quaTuan: tuanDaQua(r.weekStart, homNay),
           huy: d.viewer.canSkipSkill, han: d.viewer.canOverrideDeadline, diemHuy: !!c.diemHuy });
-    const chinh0 = ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
+    /* Môn em không học (môn đăng ký) — không có "Khôi phục" (đổi ở Sửa thông tin). */
+    const chinh0 = c.khongHoc && tat.chinh === 'khoi-phuc-kn' ? null : ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
     const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
     const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem' || x === 'khoi-phuc-diem');
@@ -805,6 +841,17 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
       onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
   };
+  /* Chủ SP 06/11: môn đã xoá → "Khôi phục" một bấm (tuần cũ giữ; vướng thứ tự đợt thì về Chưa xếp — máy chủ). */
+  const khoiPhucKn = async (skill: string) => {
+    try {
+      if (dangKhoiPhuc.current) return;
+      dangKhoiPhuc.current = true;
+      await api.post(`/attempts/${d.id}/skills/${skill}/skip`, { skipped: false });
+      for (const k of ['/attempts', '/ke-hoach-test', '/cham', '/cycles']) invalidate(k);
+      toast.push('ok', t('Đã khôi phục {x}', { x: skillLabel(skill) }));
+      onDone();
+    } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
+  };
   const cancelled = d.status === 'cancelled';
   const { o, hop: hopDiem } = useODiem({
     cells: d.cells, lich: d.skillSchedule as LichKn[], result: d.result, lichSu: d.lichSu, homNay, mo: moO, onMo: onMoO, save,
@@ -822,6 +869,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
     const chay = (t: ThaoTac, c: Cell) => {
       if (laDiem(t)) onMoO(c.skill);
       else if (t === 'khoi-phuc-diem') void khoiPhuc(c.skill);
+      else if (t === 'khoi-phuc-kn') void khoiPhucKn(r.skill);
       else if (t === 'tra-loi-de-nghi') setDecideFor(r);
       else if ((t === 'doi-lich' || t === 'dat-lich') && d.classId !== null) onDoiLich(document.getElementById(`kn-${k}`)!, r.skill as KyNangKH);
       else setHop({ t, r, c });
@@ -872,7 +920,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
                   : prog === 'due' || prog === 'sat' ? 'doing' : 'waiting'}>
                   {nhanTT}
                 </Status>
-              ) : <Status kind="idle"><span title={r.scopeReason ?? undefined}>{t('Ngoài phạm vi')}</span></Status>}
+              ) : <Status kind="idle"><span title={r.scopeReason ?? undefined}>{c0.khongHoc ? t('Không học') : t('Đã xoá')}</span></Status>}
               {/* Đã có điểm thì chip trạng thái đã nói đủ; hạn chỉ còn nghĩa khi bài còn nợ. MT lịch sử không có hạn (T34). */}
               {r.required && prog !== 'scored' && !khongDuThi && !huy && r.sitStatus !== 'absent' && !r.pendingMove && !d.lichSu && <div><DeadlinePill cell={oThieu} mo={!cells.some((c) => c.required && c.canEdit)} /></div>}
               {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
