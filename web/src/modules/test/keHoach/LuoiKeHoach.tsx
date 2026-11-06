@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty } from '../../../ui/ui.tsx';
 import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/index.ts';
@@ -12,6 +12,7 @@ import { HopKyNang } from './HopKyNang.tsx';
 import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
 import { HopSEx } from './HopSEx.tsx';
+import { HangSEx } from './HangSEx.tsx';
 import { Menu } from '../../../ui/Menu.tsx';
 import { ODiem } from '../../../ui/ODiem.tsx';
 import { useDienThoai } from '../../../ui/TheDong.tsx';
@@ -156,6 +157,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                   <NutXepO chu={t('Xếp MT{n}', { n: h.soKeTiep })} ke={khongConLuot(h)} onMo={(el) => moHop(el, cotMt(h.soKeTiep))} />
                 ) : null}
               </div>
+              {/* Chủ SP 06/11: hàng S Ex mảnh dưới ô MT (375). */}
+              <HangSEx ds={h.sEx ?? []} onMo={(x) => setSEx({ hang: h, dong: x })} onThem={chiXem ? undefined : () => setSEx({ hang: h, dong: null })} />
             </div>
           );
         })}
@@ -175,6 +178,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
               onClose={() => setHop(null)} onSaved={onReload} onHienDien={onHienDien} />
           );
         })()}
+        {sEx && <HopSEx studentId={sEx.hang.studentId} ten={sEx.hang.ten} dong={sEx.dong} onDong={() => setSEx(null)} onXong={onReload} />}
       </div>
     );
   }
@@ -205,7 +209,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
         </thead>
         <tbody>
           {hangs.map((h) => (
-            <tr key={h.studentId} id={`kht-hv-${data.classId}-${h.studentId}`} className={`kh-hang ${hvChon === h.studentId ? 'row-active' : ''}`}
+            <Fragment key={h.studentId}>
+            <tr id={`kht-hv-${data.classId}-${h.studentId}`} className={`kh-hang ${loai === 'ft' ? 'kh-hang-co-sex' : ''} ${hvChon === h.studentId ? 'row-active' : ''}`}
               aria-current={hvChon === h.studentId ? 'true' : undefined}>
               {/* Q-d (chủ SP 03/11): bỏ "vào muộn" — lượt không áp dụng đã là "—" trong ô. Tên đủ, xuống dòng (ý 7). */}
               <td className="kh-td sticky-col">
@@ -275,15 +280,6 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
               {loai === 'ft' && !chiXem && (
                 <td className="kh-td">
                   <div className="flex flex-col items-start gap-1">
-                    {[...((h as HangFT).sEx ?? [])].sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).map((x) => (
-                      /* Mockup #659: một dòng khung đứt hồng — "S Ex" · tuần · điểm (chưa chấm: ngày · người thêm ở tooltip). */
-                      <button key={x.id} type="button" onClick={() => setSEx({ hang: h as HangFT, dong: x })}
-                        className="inline-flex h-[26px] items-baseline gap-1.5 self-start whitespace-nowrap rounded-md border border-dashed border-[var(--hong)] bg-transparent px-2 pt-[4px] text-xs text-slate-100 max-sm:min-h-[44px]"
-                        title={[x.ngay && `${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, x.themBoi && t('{ai} thêm', { ai: x.themBoi }), x.nguoiCham && t('{ai} chấm', { ai: x.nguoiCham }), x.nhanXet].filter(Boolean).join('\n')}>
-                        <b className="font-semibold text-[var(--hong-chu)]">{t('S Ex')}</b>
-                        <span className="tabular-nums">{tuanLich(x.tuan)} · {x.diem !== null ? fmtBand(x.diem) : t('chờ chấm')}</span>
-                      </button>
-                    ))}
                     <NutThemLuot hang={h as HangFT} onMt={(n, el) => setHop({ anchor: el, hang: h, cot: cotMt(n), kyNangDau: null })}
                       onSEx={() => setSEx({ hang: h as HangFT, dong: null })} />
                   </div>
@@ -291,6 +287,17 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
               )}
               <td className="kh-td" aria-hidden />
             </tr>
+            {/* Chủ SP 06/11: hàng S Ex mảnh ngay dưới hàng MT (thay chip S Ex ở cột "Thêm"); mọi người thấy, chỉ người sửa lịch Test xếp. */}
+            {loai === 'ft' && (
+              <tr className={`kh-hang-sex ${hvChon === h.studentId ? 'row-active' : ''}`}>
+                <td className="kh-td sticky-col" aria-hidden />
+                <td className="kh-td" colSpan={cots.length + (chiXem ? 0 : 1) + 1}>
+                  <HangSEx ds={(h as HangFT).sEx ?? []} onMo={(x) => setSEx({ hang: h as HangFT, dong: x })}
+                    onThem={chiXem ? undefined : () => setSEx({ hang: h as HangFT, dong: null })} />
+                </td>
+              </tr>
+            )}
+            </Fragment>
           ))}
         </tbody>
       </table>

@@ -496,6 +496,18 @@
   .kh-th.sticky-col, .kh-td.sticky-col { padding-left: 14px; }
   .kh-td.sticky-col .ten-ho-so { font-size: 15px; line-height: 1.35; }
   .kh-hang:last-child > .kh-td { border-bottom: 0; }
+  /* Chủ SP 06/11: hàng S Ex mảnh (~26 px) dính dưới hàng MT — bỏ vạch giữa hai hàng, vạch dưới hàng S Ex. */
+  .kh-hang-co-sex > .kh-td { border-bottom: 0; }
+  .kh-hang-sex > .kh-td { padding-top: 0; padding-bottom: 5px; }
+  .kh-hang-sex:last-child > .kh-td { border-bottom: 0; }
+  .hang-sex { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; line-height: 1; }
+  .hang-sex-nhan { font-weight: 600; color: var(--hong-chu); margin-right: 2px; }
+  .hang-sex-o { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px dashed var(--hong); border-radius: 6px;
+    background: transparent; color: var(--text); font-size: 12px; white-space: nowrap; }
+  button.hang-sex-o { cursor: pointer; }
+  button.hang-sex-o:hover { background: var(--surface-2); }
+  .hang-sex-trong { border-color: var(--line-strong); color: var(--text-dim); }
+  @media (max-width: 639px) { button.hang-sex-o { min-height: 44px; } }
   .o-kh { display: grid; align-content: start; gap: 3px; width: 100%; min-height: 62px; padding: 6px; border: 1px solid var(--line); border-radius: 6px;
     background: var(--bg); color: var(--text); text-align: left; cursor: pointer; }
   .o-kh:hover { border-color: var(--accent-line); }
