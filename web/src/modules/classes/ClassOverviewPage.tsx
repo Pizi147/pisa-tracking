@@ -59,6 +59,8 @@ export default function ClassOverviewPage() {
   /* PR-B: panel bàn giao khi đổi GV đang mở (id việc). */
   const [bgGv, setBgGv] = useState<number | null>(null);
   const [caseFor, setCaseFor] = useState(0);
+  /* RA-LOI-0611 (PTA 06/11): đợt mà tab Báo cáo PH vừa thấy đủ mọi em mọi phần — chip "quá hạn" của đợt đó tắt tại chỗ, không tải lại /overview. */
+  const [bcDu, setBcDu] = useState<string | null>(null);
   /*
    * PR-TD2-c: tab Học viên (mặc định của lớp đang chạy) cần roster + danh sách lượt điểm — bắt đầu tải CÙNG LÚC với `/overview`
    * thay vì chờ nó xong mới gắn bảng (bớt một tầng chờ). Khối con dùng lại bản tải trước (`useApi`: dangBay / bản vừa xem).
@@ -137,7 +139,7 @@ export default function ClassOverviewPage() {
   const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc);
   const dsTab = tabHienCuaLop(daKetThuc, !!bc);
   /* BAO-CAO-PH (mockup t0, e1): chip nhẹ trên tab — đợt đang mở "Tháng 11 · hạn 30/11", vừa quá hạn mà lớp chưa đủ "⚠ … · quá hạn 2 ngày". Không chuông, không việc. */
-  const chipBc = bc?.nhan ? { chu: bc.quaHan ? `⚠ ${t('{dot} · quá hạn {n} ngày', { dot: dich(bc.nhan), n: bc.quaHan })}` : t('{dot} · hạn {ngay}', { dot: dich(bc.nhan), ngay: ngay(bc.han, homNay) }), xau: bc.quaHan > 0 } : null;
+  const chipBc = bc?.nhan && !(bc.quaHan && bcDu === bc.dot) ? { chu: bc.quaHan ? `⚠ ${t('{dot} · quá hạn {n} ngày', { dot: dich(bc.nhan), n: bc.quaHan })}` : t('{dot} · hạn {ngay}', { dot: dich(bc.nhan), ngay: ngay(bc.han, homNay) }), xau: bc.quaHan > 0 } : null;
   const dong = () => setViec(null);
   const bgLenh = Number(params.get('ban-giao')) || 0;
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */
@@ -181,7 +183,8 @@ export default function ClassOverviewPage() {
         } : undefined} />
       )}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
-      {tab === 'bao-cao-ph' && <TabBaoCaoPh lopId={data.id} ct={data.programme?.code ?? data.kind} dot={params.get('dot')} onDot={(ma) => doiThamSo({ dot: ma })} />}
+      {tab === 'bao-cao-ph' && <TabBaoCaoPh lopId={data.id} ct={data.programme?.code ?? data.kind} dot={params.get('dot')} onDot={(ma) => doiThamSo({ dot: ma })}
+        onDuHet={(ma, du) => setBcDu((x) => (du ? ma : x === ma ? null : x))} />}
       </div>
 
       {tab !== 'y-thuc' && tab !== 'bao-cao-ph' && data.viewer.coTheXemDiem && <KhoiDiemLop key={data.id} classId={data.id} thuong={thuong} mo={moDiem} onDoi={() => setMoDiem((m) => !m)} />}

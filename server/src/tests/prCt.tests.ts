@@ -655,6 +655,12 @@ export async function runPrCtTests(t: YThucTestKit) {
     ganGv(nguonB, GV[0].userId, null, true);
     ganGv(dichB, GV[3].userId, null, true);
     ganGv(dichB, GV[4].userId, 'listening', false);   // GVBM lớp mới, không dạy lớp cũ
+    /* RA-LOI-0611: phân công CHƯA hiệu lực (lịch đổi GV tương lai) và ĐÃ HẾT (effective_to qua) — không nhận chuông. */
+    const pcNgay = (u: number, tu: string, den: string | null) => conn.prepare(
+      `INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, effective_to, status, created_at) VALUES (?,?, 'listening', 0, ?, ?, 'active', ?)`,
+    ).run(u, dichB, tu, den, new Date().toISOString());
+    pcNgay(GV[1].userId, d.addDaysIso(TODAY, 7), null);
+    pcNgay(GV[2].userId, '2026-01-01', d.addDaysIso(TODAY, -1));
     const [e1, e2] = [hocVien(nguonB, 'FOU', false).sid, hocVien(nguonB, 'FOU', false).sid];
     ra(P.mbManager, nguonB, 'cuoi-khoa', [dongCua(e1, 'len_lop', dichB), dongCua(e2, 'len_lop', dichB)]);
     const [l1, l2] = [lenhCua(e1), lenhCua(e2)];
@@ -667,6 +673,7 @@ export async function runPrCtTests(t: YThucTestKit) {
       assert(c.length === 1 && c[0].duong === `/hoc-vien/lop/${dichB}?ban-giao=${l1.id}`, `GV ${u} lớp mới: ${JSON.stringify(c)}`);
     }
     assert(d.duongHoSoHocVien(e1, { banGiao: l1.id }) === `/hoc-vien/${e1}?ban-giao=${l1.id}` && d.docThamSoHoSo((k: string) => (k === 'ban-giao' ? String(l1.id) : null)).banGiao === l1.id, 'tham số ?ban-giao=');
+    assert(!chuong(GV[1].userId, l1.id).length && !chuong(GV[2].userId, l1.id).length, 'phân công chưa / hết hiệu lực không nhận chuông bàn giao');
     bg.suaBanGiao(gCu, l1.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát qua Zalo.');
     assert(chuong(GV[4].userId, l1.id).length === 1, 'sửa phiếu không gửi chuông trùng');
     /* Lệnh thi hành khi phiếu chưa xác nhận: chưa chuông; GVCN cũ xác nhận sau → chuông. */

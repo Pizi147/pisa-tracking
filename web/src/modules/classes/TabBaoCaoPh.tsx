@@ -38,13 +38,21 @@ const emDuHet = (o: Record<string, OBc>, ds: readonly PhanCot[]) => ds.every((p)
  * Ô phần của mình (GV) / mọi ô (QL viết hộ) có viền khi còn thiếu; bấm ô phần của mình → panel viết; ô khác → panel đọc (QL: Viết hộ).
  * Đợt nằm trên URL (`?dot=`) — Quay lại về đúng đợt. Mở tab = một lớp × một đợt (đặc tả §7). Lưu trong panel cập nhật ô tại chỗ, không tải lại bảng.
  */
-export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: string | null; dot: string | null; onDot: (ma: string | null) => void }) {
+export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet }: {
+  lopId: number; ct: string | null; dot: string | null; onDot: (ma: string | null) => void;
+  /** RA-LOI-0611 (PTA 06/11): đợt đang xem đủ mọi em mọi phần? — tính từ bảng đã nạp + ô vừa lưu, không thêm request (chip "quá hạn" trên tab tắt tại chỗ). */
+  onDuHet?: (dot: string, du: boolean) => void;
+}) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<TrangBc>(duongTrang(lopId, dot), [lopId, dot]);
   const [mo, setMo] = useState<Mo | null>(null);
   /* Lưu trong panel → ô bảng đổi tại chỗ (khoá `em:phần`). */
   const [doi, setDoi] = useState<Record<string, OBc>>({});
   useEffect(() => setDoi({}), [data]);
+  useEffect(() => {
+    if (!data?.dot || !onDuHet) return;
+    onDuHet(data.dot, data.em.length > 0 && data.em.every((e) => data.phan.every((p) => (doi[`${e.id}:${p.khoa}`] ?? e.o[p.khoa]) === 'du')));
+  }, [data, doi]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [them, setThem] = useState(false);
   const dt = useDienThoai();
   const bo = useMemo(() => boPhanBc(ct), [ct]);
@@ -296,8 +304,8 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
     if (!b) return;
     await b.o.luu();
     if (b.tt === 'loi') return;   // V12 ②: lỗi → ở lại em này, chữ còn
-    /* RA-LOI-0611: "Xong phần của bạn" chỉ khi em này cũng đủ — còn nháp thì ở lại em này (đã lưu nháp). */
-    if (keTiep) setChon(keTiep.id); else if (em && duCua(em)) setXong(true);
+    /* Hết em thiếu khác → thẻ "Xong phần của bạn" (Phần tiếp › · Đóng; dòng đếm "n/N em đủ" nói thật số còn thiếu) — PTA 06/11: không đứng im. */
+    if (keTiep) setChon(keTiep.id); else setXong(true);
   };
   const tt: TtLuu | null = !b ? null : b.tt === 'dang' ? 'dang' : b.tt === 'loi' ? 'loi' : b.o.chuaLuu() ? 'nhap' : b.luc ? 'da' : null;
   const gio = b?.luc ? new Date(b.luc).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }) : null;
