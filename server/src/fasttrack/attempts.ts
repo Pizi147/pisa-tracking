@@ -2390,7 +2390,9 @@ export function saveScore(
     let band: number | null = existing?.band ?? null;
 
     /* T10 (PR-MTa): band trực tiếp — bậc 0.5 trong 0..9; không gửi cùng số câu / tiêu chí có giá trị. */
-    const coBand = patch.band !== undefined;
+    /* RA-LOI-0711g: `band: null` (ô Band trống) kèm tiêu chí có số = chỉ tiêu chí — không đi nhánh band (từng xoá trắng cả ô mà trả 200). */
+    const bandTrongKemTieuChi = patch.band === null && Array.isArray(patch.criteria) && patch.criteria.some((v: unknown) => v != null && v !== '');
+    const coBand = patch.band !== undefined && !bandTrongKemTieuChi;
     if (coBand && patch.band !== null) { const loi = kiemBand(patch.band); if (loi) throw badRequest(loi); }
     if (coBand && isRawSkill(skill) && patch.rawScore !== undefined) throw badRequest('Nhập số câu hoặc band, không cả hai.');
     /* BAND-THANG (thay OV-4c): W1 / W2 / S ở mọi lượt — 4 tiêu chí (Band tự tính) HOẶC chỉ Band, không cả hai (cùng hàm + câu với web). */

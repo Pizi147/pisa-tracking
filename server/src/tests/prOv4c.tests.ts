@@ -113,6 +113,10 @@ export async function runPrOv4cTests(t: YThucTestKit) {
     attempts.saveScore(QL, aid, 'writing1', { band: null });
     r = diem('writing1');
     assert(r.band === null && r.c1 === null, `band: null: ${JSON.stringify(r)}`);
+    /* RA-LOI-0711g: `band: null` (trống) kèm tiêu chí có số = chỉ tiêu chí — lưu tiêu chí, không xoá trắng ô (API / lô). */
+    attempts.saveScore(QL, aid, 'writing1', { band: null, criteria: [6, 6, 6, 6] });
+    r = diem('writing1');
+    assert(r.band === 6 && r.c1 === 6 && r.c4 === 6, `band: null + tiêu chí phải lưu tiêu chí: ${JSON.stringify(r)}`);
     attempts.saveScore(QL, aid, 'speaking', { band: 7 });
     attempts.saveScore(QL, aid, 'speaking', { criteria: [null, null, null, null] });
     assert(diem('speaking').band === null, 'tiêu chí toàn null xoá band');
