@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { Suspense, useEffect, useId, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
@@ -6,8 +6,8 @@ import { api } from '../../lib/api.ts';
 import { Info, LoiTaiNho } from '../../ui/ui.tsx';
 import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
-import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
-import { useDaXemHd } from '../huongDan/MucHuongDan.tsx';
+import { lazyTai } from '../../lib/taiLaiManh.ts';
+import { useDaXemHd } from '../huongDan/daXemHd.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { Han } from '../../ui/Han.tsx';
@@ -20,6 +20,9 @@ import { ToKhop } from '../../ui/ToKhop.tsx';
 
 type SearchHit = { id: number; fullName: string; email: string | null; classCode: string | null; archived?: boolean; openCase?: { sos_level: number } | null };
 type GvHit = { id: number; fullName: string };
+
+/* TAI-NHANH-0611: nội dung Hướng dẫn (~90 KB chữ mọi vai) chỉ tải khi bấm nút "?" — không nằm trong gói chính. */
+const PanelHuongDanManNay = lazyTai(() => import('../huongDan/NutHuongDan.tsx').then((m) => ({ default: m.PanelHuongDanManNay })));
 
 /** Phím mở ô tìm: "/" (ngoài ô nhập) hoặc Ctrl / ⌘ K. */
 const laPhimTim = (e: KeyboardEvent) => {
@@ -459,7 +462,7 @@ export function Header() {
           </div>
         )}
       </div>
-      {moHd && <PanelHuongDanManNay onDong={() => setMoHd(false)} />}
+      {moHd && <Suspense fallback={null}><PanelHuongDanManNay onDong={() => setMoHd(false)} /></Suspense>}
     </div>
   );
 }

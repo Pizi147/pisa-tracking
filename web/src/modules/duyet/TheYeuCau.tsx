@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { Suspense, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
@@ -17,9 +17,12 @@ import {
   type TheYeuCauDto, type TruongDeXuat,
   kyThiCuaChuongTrinh,
 } from '@shared/domain/index.ts';
-import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
-import { DeXuatSuaPanel } from './DeXuatSuaPanel.tsx';
+import { lazyTai } from '../../lib/taiLaiManh.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+
+/* TAI-NHANH-0611: hai panel chỉ mở khi bấm — Tổng quan (thẻ Chờ duyệt) không kéo Chuyển lớp + Tạo lớp vào lần tải đầu. */
+const ChuyenLopPanel = lazyTai(() => import('../students/ChuyenLopPanel.tsx').then((m) => ({ default: m.ChuyenLopPanel })));
+const DeXuatSuaPanel = lazyTai(() => import('./DeXuatSuaPanel.tsx').then((m) => ({ default: m.DeXuatSuaPanel })));
 
 /**
  * MỘT THẺ YÊU CẦU (PR-DUYET, mockup M8, đặc tả §7.6) — MỘT khuôn cho hộp Chờ duyệt, Yêu cầu của tôi, Ngăn Case (`gon`) và hồ sơ HV
@@ -379,6 +382,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       )}
       {chanEl && createPortal(o ? nutO : nutQuyet, chanEl)}
       {!o && loiMay && <p role="alert" className="m-0 mt-2 text-[12px] text-late">{loiMay}</p>}
+      <Suspense fallback={null}>
       {moPanelSua && yc.hocVienId != null && yc.loai === 'sua_thong_tin' && (
         <DeXuatSuaPanel studentId={yc.hocVienId} studentName={yc.hocVien ?? ''} lop={yc.lop}
           hienTai={{ kyThi: kyThiCuaChuongTrinh(yc.duLieu?.kyThi as string | undefined) }}
@@ -395,6 +399,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           duyet={{ id: yc.id, lopDichId: (yc.duLieu?.lopDichId as number | null) ?? null, tuan: (yc.duLieu?.tuan as string | null) ?? null, lyDo: yc.lyDo, resetBac: yc.duLieu?.resetBac === true }}
           onClose={() => setMoChuyenLop(false)} onDone={() => onXong(yc.id, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }))} />
       )}
+      </Suspense>
     </article>
   );
 }

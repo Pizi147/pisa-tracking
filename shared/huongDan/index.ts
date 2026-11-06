@@ -10,7 +10,7 @@ import { HD_TVV } from './tvv.ts';
 import { HD_CX } from './cx.ts';
 import { HD_ADMIN } from './admin.ts';
 import { HD_HT } from './headTutor.ts';
-import type { HuongDan, ManHd, MucHd, TuHd, VaiHd, ViecHd, ViecVaiKhac } from './kieu.ts';
+import { boDau, type HuongDan, type ManHd, type MucHd, type TuHd, type VaiHd, type ViecHd, type ViecVaiKhac } from './kieu.ts';
 
 export type { ChiChoToi, DichHd, HuongDan, ManHd, MucHd, NhomHd, PanelHd, PhanHd, TuHd, VaiHd, ViecHd, ViecVaiKhac } from './kieu.ts';
 
@@ -48,8 +48,6 @@ export function manCuaDuong(hd: HuongDan, pathname: string): ManHd | null {
 /** Mọi mục có bước (Việc hằng tuần + Theo màn + Luật và hạn). */
 export const moiMuc = (hd: HuongDan): MucHd[] => [...hd.viec, ...(hd.lam ?? []).map(mucCuaViec), ...hd.man.flatMap((m) => m.muc), ...hd.luat];
 
-/** Bỏ dấu: "han" tìm ra "hạn", "de xuat" ra "Đề xuất". */
-export const boDau = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
 const tuCua = (s: string) => s.replace(/<\/?b>/g, '').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
 /**
