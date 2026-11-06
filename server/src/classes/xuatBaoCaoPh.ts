@@ -11,7 +11,7 @@ import { lopDayDu, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { diemGoc, dotCuaLop, quyenBc, type LopBc } from './baoCaoPh.ts';
+import { diemGoc, docTuyChinhDot, dotCuaLop, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
 import { classProgressMany } from './schedule.ts';
 import {
   boPhanBc, chuMucExcel, chuDiem, nhanDotBc, soNgayQuaHan, type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
@@ -170,8 +170,9 @@ function viecTheoThang(p: Principal, ids: readonly number[], thang: string) {
     .sort((a, b) => a.code.localeCompare(b.code));
   const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
   const khongDot: string[] = [];
+  const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt QL / Admin bỏ hoặc thêm — một câu cho cả lô lớp
   for (const c of lop) {
-    const dl = dotCuaLop(c, homNay);
+    const dl = dotCuaLop(c, homNay, undefined, tuyChinh);
     if (!dl) { khongDot.push(c.code); continue; }
     const ds = dl.ds.filter((d) => (d.loai === 'thang' ? d.mo.slice(0, 7) === thang : d.han.slice(0, 7) === thang));
     if (!ds.length) khongDot.push(c.code);
@@ -194,7 +195,7 @@ export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: u
   const ids = Array.isArray(body.ids) ? body.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0) : [];
   const { viec, khongDot, homNay } = viecTheoThang(p, ids, String(body.thang ?? ''));
   const demLop = (ft: boolean) => {
-    const v = viec.filter((x) => (x.d.loai === 'thang') === ft);
+    const v = viec.filter((x) => lopFt(x.c) === ft);
     return { lop: new Set(v.map((x) => x.c.id)).size, hocVien: new Set(v.flatMap((x) => x.em.map((e) => e.id))).size };
   };
   const tong = new Set(viec.flatMap((x) => x.em.map((e) => e.id))).size;
@@ -231,9 +232,10 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
   const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
   const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => c.status === 'active' && (cn.has(null) || cn.has(c.branch_id))
     && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
-  const tienDo = classProgressMany(lop.filter((c) => (c.programme_code ?? '') !== 'FT' && !c.is_fast_track).map((c) => c.id));   // một lô cho mọi lớp thường
+  const tienDo = classProgressMany(lop.filter((c) => !lopFt(c)).map((c) => c.id));   // một lô cho mọi lớp thường
+  const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt bỏ không thành việc, không tính "thiếu n em"; đợt thêm như đợt thường
   for (const c of lop) {
-    const dl = dotCuaLop(c, homNay, tienDo);
+    const dl = dotCuaLop(c, homNay, tienDo, tuyChinh);
     /* Đợt quá hạn tới 30 ngày vẫn đọc: lớp viết đủ muộn (sau hạn + 7) vẫn có 7 ngày việc "đủ". */
     for (const d of dl?.ds.slice(0, 2) ?? []) if (soNgayQuaHan(d, homNay) <= 30 && dl) cap.push({ c, d, bo: dl.bo });
   }

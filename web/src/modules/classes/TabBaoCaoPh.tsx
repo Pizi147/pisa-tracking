@@ -11,6 +11,7 @@ import { ChonDangNut } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
+import { HopDotBaoCaoPh, guiDotBc, lamMoiBaoCaoPh } from './HopDotBaoCaoPh.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -23,11 +24,13 @@ import { dich, t } from '@shared/i18n/index.ts';
 type OBc = 'du' | 'nhap' | null;
 type PhanCot = { khoa: string; ngan: string; ten: string; gv: { id: number; ten: string }[]; cuaToi: boolean };
 export type TrangBc = {
-  lop: { id: number; ma: string }; dsDot: { ma: string; nhan: string; mo: string; han: string }[]; dot: string | null; dotDau: string | null;
+  lop: { id: number; ma: string; cn: number; ft: boolean }; dsDot: { ma: string; nhan: string; mo: string; han: string; them: boolean }[]; dot: string | null; dotDau: string | null;
+  /** BC-DOT-QL: đợt đã bỏ (chỉ QL / Admin) · đợt bỏ đang xem · được bỏ / thêm đợt. */
+  dsBo: { ma: string; nhan: string }[]; daBo: { ma: string; nhan: string } | null; quyetDot: boolean;
   phan: PhanCot[]; em: { id: number; ten: string; o: Record<string, OBc> }[]; vietHo: boolean; xuat: boolean;
 };
 type EmPhan = { id: number; ten: string; banGhi: BanGhiBc | null; du: boolean; mucTruoc: Record<string, MucBc> | null; goc: DiemGocBc | null; sua: { ten: string | null; luc: string } | null };
-type DuLieuPhan = { lop: { id: number; ma: string }; dot: { ma: string; nhan: string; han: string }; dotTruoc: string | null; phan: string; viet: boolean; vietHo: boolean; em: EmPhan[] };
+type DuLieuPhan = { lop: { id: number; ma: string }; dot: { ma: string; nhan: string; han: string }; dotTruoc: string | null; phan: string; viet: boolean; vietHo: boolean; ft: boolean; em: EmPhan[] };
 type Mo = { phan: string; em: number; kieu: 'viet' | 'doc' };
 
 const duongTrang = (lopId: number, dot: string | null) => `/classes/${lopId}/bao-cao-ph${dot ? `?dot=${encodeURIComponent(dot)}` : ''}`;
@@ -38,8 +41,10 @@ const emDuHet = (o: Record<string, OBc>, ds: readonly PhanCot[]) => ds.every((p)
  * Ô phần của mình (GV) / mọi ô (QL viết hộ) có viền khi còn thiếu; bấm ô phần của mình → panel viết; ô khác → panel đọc (QL: Viết hộ).
  * Đợt nằm trên URL (`?dot=`) — Quay lại về đúng đợt. Mở tab = một lớp × một đợt (đặc tả §7). Lưu trong panel cập nhật ô tại chỗ, không tải lại bảng.
  */
-export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet }: {
+export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   lopId: number; ct: string | null; dot: string | null; onDot: (ma: string | null) => void;
+  /** BC-DOT-QL: đợt vừa bỏ / thêm / khôi phục — chip trên tab (ở trang lớp) đọc lại. */
+  onDoiDot?: () => void;
   /** RA-LOI-0611 (PTA 06/11): đợt đang xem đủ mọi em mọi phần? — tính từ bảng đã nạp + ô vừa lưu, không thêm request (chip "quá hạn" trên tab tắt tại chỗ). */
   onDuHet?: (dot: string, du: boolean) => void;
 }) {
@@ -54,6 +59,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet }: {
     onDuHet(data.dot, data.em.length > 0 && data.em.every((e) => data.phan.every((p) => (doi[`${e.id}:${p.khoa}`] ?? e.o[p.khoa]) === 'du')));
   }, [data, doi]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [them, setThem] = useState(false);
+  const [hop, setHop] = useState<'bo' | 'them' | null>(null);
   const dt = useDienThoai();
   const bo = useMemo(() => boPhanBc(ct), [ct]);
   const toast = useToast();
@@ -72,32 +78,79 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet }: {
   useEffect(() => { if (error?.status === 404 && dot) onDot(null); }, [error, dot]);   // eslint-disable-line react-hooks/exhaustive-deps
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data || !bo) return <Skeleton rows={6} />;
-  if (!data.dot) {
-    return (
-      <section className="card px-4 py-6 text-center">
-        <h2 className="m-0 text-[17px] font-bold text-slate-100">{t('Chưa có đợt')}</h2>
-        {data.dotDau && <p className="m-0 mt-1 text-sm text-slate-400">{t('Đợt đầu: {dot}', { dot: dich(data.dotDau) })}</p>}
-      </section>
-    );
-  }
   const em = data.em.map((e) => ({ ...e, o: { ...e.o, ...Object.fromEntries(data.phan.flatMap((p) => (`${e.id}:${p.khoa}` in doi ? [[p.khoa, doi[`${e.id}:${p.khoa}`]]] : []))) } }));
   const soDu = em.filter((e) => emDuHet(e.o, data.phan)).length;
-  const dotHien = data.dsDot.find((d) => d.ma === data.dot)!;
+  const dotHien = data.dsDot.find((d) => d.ma === data.dot);
   const mo_ = (phan: PhanCot, emId: number) => setMo({ phan: phan.khoa, em: emId, kieu: phan.cuaToi ? 'viet' : 'doc' });
   const tenGv = (p: PhanCot) => (p.cuaToi ? t('Bạn') : p.gv.length ? p.gv.map((g) => g.ten).join(', ') : t('Chưa phân công'));
   const nhanO = (e: { ten: string }, p: PhanCot, o: OBc) => `${e.ten} · ${p.ngan} · ${o === 'du' ? t('Đủ') : o === 'nhap' ? t('Nháp') : t('Chưa viết')}`;
 
+  /* BC-DOT-QL: QL / Quản trị / Admin bỏ đợt (hoặc xoá đợt thêm) · thêm đợt bất chợt · khôi phục đợt bỏ. Mọi việc có Hoàn tác (toast). */
+  const sauDoi = (ma?: string | null) => { onDoiDot?.(); if (ma !== undefined && ma !== dot) onDot(ma); else reload(); };
+  const loiToast = (e: any) => toast.push('error', e?.message ?? t('Không lưu được'));
+  const khoiPhuc = async () => {
+    const d = data.daBo!;
+    try {
+      await guiDotBc({ viec: 'khoi-phuc', classIds: [lopId], ma: d.ma }); lamMoiBaoCaoPh();
+      toast.hoanTac(t('Đã khôi phục đợt {dot}', { dot: dich(d.nhan) }), async () => {
+        try { await guiDotBc({ viec: 'bo', classIds: [lopId], ma: d.ma }); lamMoiBaoCaoPh(); toast.push('ok', t('Đã hoàn tác')); sauDoi(null); } catch (e) { loiToast(e); }
+      }, { key: `bc-dot:${lopId}` });
+      sauDoi(d.ma);
+    } catch (e) { loiToast(e); }
+  };
+  const xoaDotThem = async () => {
+    if (!dotHien) return;
+    const ids = [Number(dotHien.ma.slice(5))];
+    try {
+      await guiDotBc({ viec: 'xoa', dotIds: ids }); lamMoiBaoCaoPh();
+      toast.hoanTac(t('Đã xoá đợt {dot}', { dot: dich(dotHien.nhan) }), async () => {
+        try { await guiDotBc({ viec: 'hoan-xoa', dotIds: ids }); lamMoiBaoCaoPh(); toast.push('ok', t('Đã hoàn tác')); sauDoi(dotHien.ma); } catch (e) { loiToast(e); }
+      }, { key: `bc-dot:${lopId}` });
+      sauDoi(null);
+    } catch (e) { loiToast(e); }
+  };
+  const nutDot = 'btn btn-sm min-h-[44px] font-semibold sm:min-h-0';
   const congCu = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
-      <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot} onChange={(ev) => onDot(ev.target.value === data.dsDot[0]?.ma ? null : ev.target.value)}>
+      <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot ?? data.daBo?.ma ?? ''} onChange={(ev) => onDot(ev.target.value === data.dsDot[0]?.ma ? null : ev.target.value)}>
+        {!data.dot && !data.daBo && <option value="">—</option>}
         {data.dsDot.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}
+        {data.dsBo.length > 0 && <optgroup label={t('Không báo cáo')}>{data.dsBo.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}</optgroup>}
       </ChonDangNut>
-      <span className="text-[15px] text-slate-300"><b className="tabular-nums text-slate-100">{soDu}/{em.length}</b> {t('em đủ')}</span>
+      {data.dot && <span className="text-[15px] text-slate-300"><b className="tabular-nums text-slate-100">{soDu}/{em.length}</b> {t('em đủ')}</span>}
       <span className="flex-1" />
-      {data.xuat && <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null)}>
+      {data.quyetDot && data.dot && dotHien && (dotHien.them
+        ? <button type="button" className={nutDot} onClick={() => void xoaDotThem()}>{t('Xoá đợt')}</button>
+        : <button type="button" className={nutDot} onClick={() => setHop('bo')}>{t('Không báo cáo đợt này')}</button>)}
+      {data.quyetDot && <button type="button" className={nutDot} onClick={() => setHop('them')}>{t('+ Đợt báo cáo')}</button>}
+      {data.xuat && data.dot && <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null)}>
         {dangXuat === 0 ? t('Đang tạo file…') : t('Xuất lớp')}</button>}
     </div>
   );
+  const hopDot = hop && (
+    <HopDotBaoCaoPh kieu={hop} lopId={lopId} lopMa={data.lop.ma} chiNhanh={data.lop.cn} ft={data.lop.ft}
+      dot={hop === 'bo' && dotHien ? { ma: dotHien.ma, nhan: dotHien.nhan } : undefined} onClose={() => setHop(null)} onDone={sauDoi} />
+  );
+  if (!data.dot) {
+    return (
+      <section className="card p-4">
+        {congCu}
+        {data.daBo ? (
+          <div className="rounded-lg border px-4 py-5 text-center" style={{ borderColor: 'var(--line)' }}>
+            <h2 className="m-0 text-[17px] font-bold text-slate-300">{dich(data.daBo.nhan)} · {t('Không báo cáo')}</h2>
+            <p className="m-0 mt-1 text-sm text-slate-400">{t('Bài đã viết vẫn còn; khôi phục là hiện lại.')}</p>
+            <button type="button" className={`${nutDot} mt-3`} onClick={() => void khoiPhuc()}>{t('Khôi phục')}</button>
+          </div>
+        ) : (
+          <div className="px-4 py-6 text-center">
+            <h2 className="m-0 text-[17px] font-bold text-slate-100">{t('Chưa có đợt')}</h2>
+            {data.dotDau && <p className="m-0 mt-1 text-sm text-slate-400">{t('Đợt đầu: {dot}', { dot: dich(data.dotDau) })}</p>}
+          </div>
+        )}
+        {hopDot}
+      </section>
+    );
+  }
 
   const panel = mo && (() => {
     const ph = bo.find((p) => p.khoa === mo.phan)!;
@@ -157,16 +210,17 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet }: {
           {data.phan.map((p) => <span key={p.khoa}>{p.ngan} <b className="tabular-nums text-slate-100">{em.filter((e) => e.o[p.khoa] === 'du').length}</b></span>)}
         </div>
         {panel}
+        {hopDot}
       </section>
     );
   }
 
   return (
-    <section className="card p-4" aria-label={`${t('Báo cáo PH')} · ${dich(dotHien.nhan)}`}>
+    <section className="card p-4" aria-label={`${t('Báo cáo PH')} · ${dich(dotHien!.nhan)}`}>
       {congCu}
       {/* BANG-3: bảng chung `Bang` (thẻ 375 riêng ở trên). Đầu cột hai dòng: mã phần + GV (`.bang-bc .bang-chu-thich` xuống dòng). */}
       <div className="bang-bc">
-        <Bang ten={`${t('Báo cáo PH')} · ${dich(dotHien.nhan)}`} khung={false} the375={false} deu khoa={(e) => e.id} hang={em}
+        <Bang ten={`${t('Báo cáo PH')} · ${dich(dotHien!.nhan)}`} khung={false} the375={false} deu khoa={(e) => e.id} hang={em}
           cot={[
             { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 300 },
             ...data.phan.map((p): CotBang => ({ key: p.khoa, nhan: p.ngan, phu: tenGv(p), kieu: 'so', rong: 120, goiY: p.ten })),
@@ -196,6 +250,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet }: {
           )} />
       </div>
       {panel}
+      {hopDot}
     </section>
   );
 }
@@ -356,7 +411,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
                 })}
               </ul>
             )}
-            <FormEm key={em.id} em={em} phan={phan} form={b!.form} dotTruoc={data.dotTruoc && dich(data.dotTruoc)} thang={dot.startsWith('thang:')} homNay={homNay} du={duCua(em)} nhap={!!em.banGhi || !!b!.luc || b!.o.chuaLuu()}
+            <FormEm key={em.id} em={em} phan={phan} form={b!.form} dotTruoc={data.dotTruoc && dich(data.dotTruoc)} thang={data.ft} homNay={homNay} du={duCua(em)} nhap={!!em.banGhi || !!b!.luc || b!.o.chuaLuu()}
               onDoi={doiForm} onRoiChu={() => void b!.o.luu()} />
           </div>
         )}

@@ -4,7 +4,7 @@
  * Đợt TÍNH KHI ĐỌC từ lịch lớp (`dsDotLop`) — không lưu sẵn. Em trong đợt = em đang học lớp lúc hạn (đợt còn mở: hôm nay), còn đang học (`HV_DANG_HOC_SQL`).
  * Turso: mở tab ≈ 6 câu (lớp đã nhớ, tiến độ, phân công, em, bản ghi đợt); mở panel ≈ 5 câu (+ điểm gốc một câu); lưu một ô = 1 ghi + 1 nhật ký.
  */
-import { DS_JSON, db } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, lopDayDu, vaiTaiChiNhanh, type Principal } from '../permissions.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
@@ -14,17 +14,19 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
 import {
-  MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, docMaDot, dotMacDinh, dotTruoc, dsDotLop, loiDiemSua, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan,
-  type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
+  MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, dotMacDinh, dotTruoc, dsDotLop, loiDiemSua, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan,
+  type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc, type TuyChinhDot,
 } from '../../../shared/domain/index.ts';
 
 const VAI_VIET_HO = ['manager', 'system_admin'];
+/** BC-DOT-QL: ai quyết đợt nào cần báo cáo (bỏ / thêm đợt) — như quyền xuất, trừ TVV (chủ SP 06/11). */
+const VAI_QUYET_DOT = ['manager', 'system_admin', 'office_admin'];
 
 export type LopBc = Lop;
 type Lop = { id: number; code: string; branch_id: number; programme_code: string | null; kind: string; is_fast_track: number; start_date: string | null;
   created_at: string; nguong_dat: number | null; status: string };
 
-function docLop(classId: number): Lop {
+export function docLop(classId: number): Lop {
   const c = ((coNho() ? lopDayDu().get(classId) : null) ?? db().prepare('SELECT * FROM classes WHERE id = ?').get(classId)) as Lop | undefined;
   if (!c) throw notFound('Không tìm thấy lớp');
   return c;
@@ -40,19 +42,43 @@ export function quyenBc(p: Principal, c: Pick<Lop, 'id' | 'branch_id'>, homNay =
     vietHo: vai.some((v) => VAI_VIET_HO.includes(v)),
     /** PR b: xuất Excel — QL, Admin, TVV (chủ SP 05/11). */
     xuat: vai.some((v) => VAI_XUAT_BC.includes(v)),
+    /** BC-DOT-QL: bỏ / thêm đợt — QL, Quản trị, Admin ở chi nhánh lớp (TVV, GV không). */
+    quyetDot: vai.some((v) => VAI_QUYET_DOT.includes(v)),
     cuaToi,
   };
 }
 
+export const lopFt = (c: Pick<Lop, 'programme_code' | 'is_fast_track'>): boolean => (c.programme_code ?? '') === 'FT' || !!c.is_fast_track;
+/** Đợt chấm theo band (FT): đợt tháng, hoặc đợt thêm của lớp FT. */
+export const laDotFt = (c: Pick<Lop, 'programme_code' | 'is_fast_track'>, d: Pick<DotBc, 'loai'>): boolean => d.loai === 'thang' || (d.loai === 'them' && lopFt(c));
+
+/**
+ * BC-DOT-QL: quyết định đợt của NHIỀU lớp — MỘT câu (`bao_cao_ph_dot`, chỉ mục theo lớp). Lớp không có dòng nào → không có trong kết quả.
+ * Nơi đọc nhiều lớp gọi một lần rồi truyền vào `dotCuaLop` (không đọc từng lớp).
+ */
+export function docTuyChinhDot(classIds: readonly number[]): Map<number, TuyChinhDot> {
+  const out = new Map<number, { bo: Set<string>; them: DotBc[] }>();
+  theoLoJson([...new Set(classIds)], (json) => {
+    for (const r of db().prepare(`SELECT id, class_id, ma, loai, ten, mo, han FROM bao_cao_ph_dot WHERE class_id IN (${DS_JSON}) AND xoa_luc IS NULL ORDER BY id`).all(json) as any[]) {
+      const o = out.get(r.class_id) ?? { bo: new Set<string>(), them: [] };
+      if (r.loai === 'bo') o.bo.add(r.ma);
+      else o.them.push({ ma: `them:${r.id}`, loai: 'them', mo: r.mo, han: r.han, ten: r.ten });
+      out.set(r.class_id, o);
+    }
+  });
+  return out;
+}
+
 /** Lịch lớp → mọi đợt + bộ phần. Chương trình chưa có mẫu (PET, KET, Pre FOU) → null (không có tab). */
-/** `tienDo`: tiến độ lớp đã đọc theo lô (`classProgressMany`) — nơi đọc nhiều lớp truyền vào, không đọc từng lớp. */
-export function dotCuaLop(c: Lop, homNay = demoToday(), tienDo?: Map<number, { progressWeekStart: string | null; finalWeekStart: string | null; startWeekStart: string | null }>): { bo: readonly PhanBc[]; ds: DotBc[]; dau: DotBc | null } | null {
+/** `tienDo`: tiến độ lớp đã đọc theo lô (`classProgressMany`) · `tuyChinh`: quyết định đợt đã đọc theo lô (`docTuyChinhDot`) — nơi đọc nhiều lớp truyền vào, không đọc từng lớp. */
+export function dotCuaLop(c: Lop, homNay = demoToday(), tienDo?: Map<number, { progressWeekStart: string | null; finalWeekStart: string | null; startWeekStart: string | null }>,
+  tuyChinh?: Map<number, TuyChinhDot>): { bo: readonly PhanBc[]; ds: DotBc[]; dau: DotBc | null; daBo: DotBc[] } | null {
   const bo = boPhanBc(c.programme_code ?? c.kind);
   if (!bo) return null;
-  const ft = (c.programme_code ?? '') === 'FT' || !!c.is_fast_track;
+  const ft = lopFt(c);
   const pr = ft ? null : (tienDo ?? classProgressMany([c.id])).get(c.id) ?? null;
   return { bo, ...dsDotLop({ ft, batDau: ft ? (c.start_date ?? pr?.startWeekStart ?? c.created_at).slice(0, 10) : null,
-    progress: pr?.progressWeekStart ?? null, final: pr?.finalWeekStart ?? null }, homNay) };
+    progress: pr?.progressWeekStart ?? null, final: pr?.finalWeekStart ?? null }, homNay, (tuyChinh ?? docTuyChinhDot([c.id])).get(c.id)) };
 }
 
 /** Chip trên tab (đặc tả §12): đợt đang mở "Tháng 11 · hạn 30/11"; đợt vừa quá hạn (≤ 7 ngày) mà lớp chưa đủ → "quá hạn n ngày". Không quyền / không mẫu → null. */
@@ -124,13 +150,17 @@ function napChung(p: Principal, classId: number) {
 
 /** GET /classes/:id/bao-cao-ph?dot= — chọn đợt + bảng em × phần (ô: đủ / nháp / chưa viết). */
 export function trangBaoCaoPh(p: Principal, classId: number, dotMa?: string | null) {
-  const { c, q, homNay, bo, ds, dau } = napChung(p, classId);
+  const { c, q, homNay, bo, ds, dau, daBo } = napChung(p, classId);
   const phanCot = (gv: Map<string, { id: number; ten: string }[]>) => bo.map((x) => ({
     khoa: x.khoa, ngan: x.ngan, ten: x.ten, gv: gv.get(x.khoa) ?? [], cuaToi: q.cuaToi.has(x.khoa),
   }));
-  const dsDot = ds.map((x) => ({ ma: x.ma, nhan: nhanDotBc(x, homNay), mo: x.mo, han: x.han }));
-  if (!ds.length) {
-    return { lop: { id: c.id, ma: c.code }, dsDot, dot: null, dotDau: dau ? nhanDotBc(dau, homNay) : null, phan: phanCot(new Map()), em: [], vietHo: q.vietHo, xuat: q.xuat };
+  const dsDot = ds.map((x) => ({ ma: x.ma, nhan: nhanDotBc(x, homNay), mo: x.mo, han: x.han, them: x.loai === 'them' }));
+  /* BC-DOT-QL: đợt đã bỏ chỉ QL / Admin thấy (để Khôi phục); chọn đúng một đợt bỏ → không bảng, chỉ thẻ "Không báo cáo". */
+  const dsBo = q.quyetDot ? daBo.map((x) => ({ ma: x.ma, nhan: nhanDotBc(x, homNay) })) : [];
+  const chungTrang = { lop: { id: c.id, ma: c.code, cn: c.branch_id, ft: lopFt(c) }, dsDot, dsBo, quyetDot: q.quyetDot, vietHo: q.vietHo, xuat: q.xuat };
+  const daChon = dotMa ? dsBo.find((x) => x.ma === dotMa) ?? null : null;
+  if (!ds.length || daChon) {
+    return { ...chungTrang, dot: null, daBo: daChon, dotDau: dau && !daChon ? nhanDotBc(dau, homNay) : null, phan: phanCot(new Map()), em: [] };
   }
   const d = chonDot(ds, dotMa, homNay);
   const em = emCuaDot(classId, d, homNay);
@@ -140,9 +170,8 @@ export function trangBaoCaoPh(p: Principal, classId: number, dotMa?: string | nu
       .all(d.ma, JSON.stringify(em.map((e) => e.id))) as any[]) o.set(`${r.student_id}:${r.phan}`, r.du ? 'du' : 'nhap');
   }
   return {
-    lop: { id: c.id, ma: c.code }, dsDot, dot: d.ma, dotDau: null, phan: phanCot(gvTheoPhan(classId, homNay)),
+    ...chungTrang, dot: d.ma, daBo: null, dotDau: null, phan: phanCot(gvTheoPhan(classId, homNay)),
     em: em.map((e) => ({ id: e.id, ten: e.ten, o: Object.fromEntries(bo.map((x) => [x.khoa, o.get(`${e.id}:${x.khoa}`) ?? null])) })),
-    vietHo: q.vietHo, xuat: q.xuat,
   };
 }
 
@@ -153,21 +182,25 @@ export function trangBaoCaoPh(p: Principal, classId: number, dotMa?: string | nu
 export function diemGoc(c: Lop, d: DotBc, phanKhoa: string, emIds: readonly number[]): Map<number, DiemGocBc> {
   const out = new Map<number, DiemGocBc>();
   if (!emIds.length || phanKhoa === 'chung') return out;
-  const ft = d.loai === 'thang';
+  const ft = laDotFt(c, d);
+  /* BC-DOT-QL: đợt thêm bất chợt = lượt gần nhất CÓ ĐIỂM, tuần thi ≤ hạn (FT: Mock; lớp thường: Progress / Final của lớp này; lượt chưa gắn tuần: tính). */
+  const them = d.loai === 'them';
+  const trongHan = '(pr.week_start IS NULL OR pr.week_start <= ?)';
   const rows = db().prepare(
     `SELECT a.student_id, a.kind, a.attempt_no, a.target_at_attempt, cy.route, pr.week_start, sc.band, sc.raw_score, sc.raw_total
        FROM assessment_attempts a JOIN assessment_scores sc ON sc.attempt_id = a.id AND sc.skill = ?
        LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
       WHERE a.student_id IN (${DS_JSON}) AND a.status != 'cancelled'
-        AND ${ft ? `a.kind = 'mock' AND sc.band IS NOT NULL AND pr.year = ? AND pr.month = ?` : `a.kind = ? AND a.class_id = ? AND sc.raw_score IS NOT NULL`}
+        AND ${ft ? `a.kind = 'mock' AND sc.band IS NOT NULL AND ${them ? trongHan : 'pr.year = ? AND pr.month = ?'}`
+          : `${them ? "a.kind IN ('progress', 'final')" : 'a.kind = ?'} AND a.class_id = ? AND sc.raw_score IS NOT NULL${them ? ` AND ${trongHan}` : ''}`}
       ORDER BY pr.week_start DESC, a.attempt_no DESC, a.id DESC`,
-  ).all(phanKhoa, JSON.stringify(emIds), ...(ft ? [Number(d.mo.slice(0, 4)), Number(d.mo.slice(5, 7))] : [d.loai, c.id])) as any[];
+  ).all(phanKhoa, JSON.stringify(emIds), ...(ft ? (them ? [d.han] : [Number(d.mo.slice(0, 4)), Number(d.mo.slice(5, 7))]) : them ? [c.id, d.han] : [d.loai, c.id])) as any[];
   const nguong = c.nguong_dat || RATIO_PASS_THRESHOLD;
   for (const r of rows) {
     if (out.has(r.student_id)) continue;   // mới nhất trước
     out.set(r.student_id, ft
       ? { so: r.band, tong: null, kyVong: kyVongCuaLuot(r), nguong: null, luot: `MT${r.attempt_no}`, tuan: r.week_start ?? null }
-      : { so: r.raw_score, tong: r.raw_total ?? null, kyVong: null, nguong, luot: d.loai === 'progress' ? 'Progress' : 'Final', tuan: r.week_start ?? null });
+      : { so: r.raw_score, tong: r.raw_total ?? null, kyVong: null, nguong, luot: r.kind === 'progress' ? 'Progress' : 'Final', tuan: r.week_start ?? null });
   }
   return out;
 }
@@ -191,7 +224,7 @@ export function phanBaoCaoPh(p: Principal, classId: number, dotMa: string | null
   const goc = ph.coDiem ? diemGoc(c, d, phanKhoa, em.map((e) => e.id)) : new Map();
   return {
     lop: { id: c.id, ma: c.code }, dot: { ma: d.ma, nhan: nhanDotBc(d, homNay), han: d.han }, dotTruoc: truoc ? nhanDotBc(truoc, homNay) : null,
-    phan: ph.khoa, viet: q.cuaToi.has(ph.khoa), vietHo: q.vietHo,
+    phan: ph.khoa, viet: q.cuaToi.has(ph.khoa), vietHo: q.vietHo, ft: laDotFt(c, d),
     em: em.map((e) => {
       const r = bg.get(`${d.ma}:${e.id}`);
       const t = truoc && bg.get(`${truoc.ma}:${e.id}`);
@@ -210,8 +243,7 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   const homNay = demoToday();
   const d0 = dotCuaLop(c, homNay);
   if (!d0) throw badRequest('Chương trình của lớp chưa có mẫu báo cáo PH');
-  const dm = docMaDot(String(body?.dot ?? ''));
-  const d = dm && d0.ds.find((x) => x.ma === dm.ma);
+  const d = d0.ds.find((x) => x.ma === String(body?.dot ?? ''));
   if (!d) throw badRequest('Đợt báo cáo chưa mở hoặc không có ở lớp này');
   const ph = d0.bo.find((x) => x.khoa === body?.phan);
   if (!ph) throw badRequest('Phần báo cáo không hợp lệ');
@@ -232,8 +264,9 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   if (body?.diemSua != null && body.diemSua !== '') {
     if (!ph.coDiem) throw badRequest('Phần này không có ô điểm');
     diemSua = Number(body.diemSua);
-    const tong = d.loai === 'thang' ? null : diemGoc(c, d, ph.khoa, [sid]).get(sid)?.tong ?? null;
-    if (d.loai !== 'thang' && tong == null) throw badRequest('Chưa có điểm bài để sửa');
+    const ft = laDotFt(c, d);
+    const tong = ft ? null : diemGoc(c, d, ph.khoa, [sid]).get(sid)?.tong ?? null;
+    if (!ft && tong == null) throw badRequest('Chưa có điểm bài để sửa');
     const l = loiDiemSua(diemSua, tong);
     if (l) throw badRequest(l);
   }
@@ -249,4 +282,10 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   writeAudit({ actorUserId: p.userId, action: 'bao_cao_ph.luu', entityType: 'student', entityId: sid, entityLabel: c.code,
     after: { dot: d.ma, phan: ph.khoa, du: !!du, vietHo: !q.cuaToi.has(ph.khoa) } });
   return { du: !!du, suaLuc: luc };
+}
+
+/** GET /bao-cao-ph/lop?branchId= — lớp cùng chi nhánh người xem quyết được đợt (hộp "Áp thêm lớp" của BC-DOT-QL). Một câu (`lopDayDu`, nhớ theo request). */
+export function lopChoQuyetDot(p: Principal, branchId: number): { id: number; ma: string; ft: boolean; ct: string }[] {
+  return [...lopDayDu().values() as Iterable<Lop>].filter((c) => c.branch_id === branchId && c.status === 'active' && boPhanBc(c.programme_code ?? c.kind) && quyenBc(p, c).quyetDot)
+    .sort((a, b) => a.code.localeCompare(b.code)).map((c) => ({ id: c.id, ma: c.code, ft: lopFt(c), ct: c.programme_code ?? c.kind }));
 }

@@ -65,12 +65,12 @@ export async function runPrTlHvlTests(t: any) {
   const lopFt = ids(`SELECT id FROM classes WHERE code = 'MB FT 101'`)[0];
   const dem = (cau: string[], r: RegExp) => cau.filter((x) => r.test(x)).length;
 
-  await checkAsync('H1 · /classes/{lopFT}/overview QL: ghi danh một câu, listCases một lần, câu ≤ 32', async () => {
+  await checkAsync('H1 · /classes/{lopFT}/overview QL: ghi danh một câu, listCases một lần, câu ≤ 33', async () => {
     const { cau } = await doGet(P.mbManager.userId, `/classes/${lopFt}/overview`);
     const gd = cau.filter((x) => /^SELECT [^()]*FROM enrollments/.test(x)), lc = dem(cau, /^SELECT sc\.\*, COALESCE\(sc\.student_id/);
     assert(gd.length <= 1, `${gd.length} câu ghi danh: ${gd.map((x) => x.slice(0, 100)).join(' | ')}`);
     assert(lc <= 1, `listCases ${lc} lần`);
-    assert(cau.length <= 32, `${cau.length} câu`);
+    assert(cau.length <= 33, `${cau.length} câu`);
   });
 
   await checkAsync('H1 · /classes/{lopFT}/roster QL: câu ≤ 22, bảng lớp + điểm + Case mở không đọc lại', async () => {
