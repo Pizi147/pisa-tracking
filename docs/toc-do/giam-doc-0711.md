@@ -33,6 +33,11 @@ JSON 755 / 755 đường giống hệt. Phép kiểm `GIAM-DOC-0711a` (`tocDo.ru
 1. **Tổng quan GV hai-khoi** (~400 lần / ngày × ~2 000 dòng trả ×1 ≈ 0,8 triệu dòng SQLite / ngày, Turso cao hơn vì tính cả dòng chỉ mục): mọi câu đi chỉ mục, không câu thừa.
    Bớt thêm phải đổi cái hiện: vd khối "Lớp tôi chủ nhiệm" / Kết quả theo lớp chỉ tải khi mở, hoặc bỏ một trong hai kiểu lịch kỹ năng ('valid' + 'due' — `loadSkillRows`).
    Ước bớt 30–50 % đường ≈ 0,3–0,5 triệu / ngày. Cần chủ SP.
+   **GIAM-DOC-TQGV (07/11, PTA chọn A):** đo ×1 demo GVCN 53 câu · 1 880 dòng, trong đó Dưới kỳ vọng + SOS + Case (chỉ hàng chủ nhiệm) 14 câu · 1 180 dòng.
+   Tách khối chủ nhiệm tải khi cuộn tới — KHÔNG làm: ở 1440×900 khối nằm trong màn đầu (y ≈ 698 với 5 lớp dạy; ra ngoài khi ≥ 9 lớp, bản chính không GV có
+   chủ nhiệm nào ≥ 9), gọi cả hai đường = 57 câu · 2 253 dòng (+20 %, hai khối cùng đọc lượt / điểm HV) → ròng ≈ 0. Làm A: khung không có lớp chủ nhiệm thì
+   `/hai-khoi` không tính ba số đó (13/47 GV thật không chủ nhiệm): demo 42 · 246 → 37 · 152, 41 · 348 → 33 · 192, 39 · 577 → 28 · 530, 32 · 542 → 24 · 498 (câu · dòng);
+   GV có chủ nhiệm không đổi. JSON = cách tính cũ với mọi GV demo (phép kiểm `GIAM-DOC-TQGV`, prSvTqGv).
 2. **`viecQuaHanMo` (DEM-QUA-HAN)** vẫn dựng gần đủ Công việc chi nhánh (~40 câu) cho mỗi lần mở hồ sơ GV / panel Việc đúng hạn dù chỉ cần việc quá hạn của MỘT GV.
    Bớt nữa = Công việc dựng riêng theo người giữ việc (đổi lớn `mywork.ts`, rủi ro lệch số với Công việc). Ít người mở → để sau, xem Turso sau deploy.
    GV dạy nhiều chi nhánh: hồ sơ GV đọc Case mở mỗi chi nhánh một lần (QT `/giao-vien/9/chi-so` +2 câu, dòng trả vẫn giảm 2 319 → 2 243).

@@ -1034,6 +1034,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* GIAM-DOC-TQGV: Tổng quan GV — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1 (GVCN 1 839, GVBM 2 101; hai vai đều có lớp chủ nhiệm nên số không đổi — GV không chủ nhiệm khoá ở prSvTqGv). */
+  'GVCN /tong-quan/lop-toi-day/hai-khoi': 2391, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 2732, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 2391,
   /* GIAM-DOC-0711a: napCaseMo tập cha theo chi nhánh (QL "Tất cả", lọc chi nhánh, Phân tích GV / hồ sơ GV — DEM-QUA-HAN) — trần dòng mới = max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1. */
   'QL /my-work?nguoi=7': 1098, 'QL /my-work?nguoi=tat-ca&branchId=1': 1476, 'QT /my-work?nguoi=tat-ca&branchId=1': 1482, 'QL /giao-vien/7/viec': 1102, 'QT /giao-vien/7/viec': 1099, 'QL /giao-vien/9/chi-so': 2363, 'QT /giao-vien/9/chi-so': 2587, 'QL /giao-vien/7/chi-so': 2187, 'GVCN /giao-vien/7/chi-so': 2184, 'GVCN_THUONG /giao-vien/7/chi-so': 2184, 'QT /giao-vien/7/chi-so': 2186, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2932, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2931,
   /* DEM-QUA-HAN b: panel Chấm Test đúng hạn (số chung) — ⌈đo × 1,3⌉, đo 285 · 285. */
