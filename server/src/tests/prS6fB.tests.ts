@@ -46,13 +46,11 @@ export async function runPrS6fBTests(t: YThucTestKit) {
     assert(/duongHieuQuaPaGv\(/.test(doc('web/src/modules/giaoVien/HoSoGiaoVienPage.tsx')), 'trang hồ sơ GV gọi hàm chung');
   });
 
-  check('S6F-b (5) · chip "Bàn giao" của GVBM mở thẳng môn (&mon=mã môn); panel Chấm điểm: hai ô ngày 12 px', () => {
+  /* DEM-QUA-HAN b (chủ SP 06/11): panel Chấm điểm riêng của Phân tích GV đã thay bằng panel số chung (`BangLuotPanel` kiểu `viec`) — bỏ kiểm cỡ ô ngày của panel cũ. */
+  check('S6F-b (5) · chip "Bàn giao" của GVBM mở thẳng môn (&mon=mã môn)', () => {
     const tsx = doc('web/src/modules/giaoVien/HoSoGiaoVienPage.tsx');
     assert(/viec=ban-giao\$\{b\.maMon \? `&mon=\$\{b\.maMon\}` : ''\}/.test(tsx), 'chip Bàn giao thiếu &mon=');
     assert(/maMon: v\.mon/.test(doc('server/src/giaoVien/hoSo.ts')), 'chipBanGiao mang mã môn đầu còn thiếu');
-    const pt = doc('web/src/modules/phanTich/PhanTichGiaoVien.tsx');
-    assert(/<td className="td whitespace-nowrap text-right text-xs tabular-nums">\{ngay\(r\.han, homNay\)\}/.test(pt), 'ô Hạn nhập 12 px');
-    assert(/<td className="td whitespace-nowrap text-right text-xs tabular-nums">\s*\{r\.nhapDau \?/.test(pt), 'ô Lần nhập đầu 12 px');
   });
 
   await runTask6(t, d);
