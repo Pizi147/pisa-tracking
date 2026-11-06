@@ -6,6 +6,7 @@ import { CHIP_TRON, ChipHan, Nhan, NhanLich } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { TheSosViec } from '../../ui/TheKetQuaSos.tsx';
 import {
   CHAM_CHEO, LOAI_HAN_CUA_VIEC, chiaVachHan, daysBetween, demDongViec, dongNhinThay, laViecChamCheo, shortDate, xepTheoEm, type NhomViecXem,
 } from '@shared/domain/index.ts';
@@ -461,6 +462,8 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
             {chipMuc(it, false)}
           </span>
           <ThePhu ds={doiTuong} />
+          {/* PHOI-HOP-SOS-INFO: Phối hợp SOS ghi ngay em thi thế nào, trượt kỹ năng nào — cùng thẻ với hồ sơ lớp / hồ sơ HV. */}
+          {it.theSos?.length ? <TheSosViec ds={it.theSos} tong={it.count} /> : null}
         </button>
         {/* UA-03: dòng gộp cũng ghi người phụ trách (QL "Tất cả" phân biệt ba dòng giống nhau). */}
         <span className="col-start-2 sm:col-start-auto"><CotHan it={it} daXong={daXong} nguoi={nguoi} /></span>

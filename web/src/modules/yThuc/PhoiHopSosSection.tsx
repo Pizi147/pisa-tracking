@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { TheKetQuaSos } from '../../ui/TheKetQuaSos.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, NhanTrangThai, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_USER_REMOVE_REASONS, COORDINATION_REMOVE_REASON_LABEL,
-  type CoordinationKind, type NguoiChon, GHI_CHU_MEETING_TOI_THIEU, kiemGhiRoKhac, laMeetingCx, nguoiThieu, reasonNeedsText, trangThaiPhoiHop,
+  type CoordinationKind, type NguoiChon, type TheSosLuot, GHI_CHU_MEETING_TOI_THIEU, kiemGhiRoKhac, laMeetingCx, nguoiThieu, reasonNeedsText, trangThaiPhoiHop,
 } from '@shared/domain/index.ts';
 import { fmtDate, sosLabel } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -39,6 +40,8 @@ type CoordAction = {
 export type CoordTurn = {
   attemptId: number; attemptNo: number; studentId: number; studentName: string;
   classCode: string | null; sosLevel: number | null; skillLabels: string[];
+  /** PHOI-HOP-SOS-INFO: thẻ kết quả (lượt · Overall so kỳ vọng · kỹ năng trượt) — cùng dựng với dòng việc. */
+  the: TheSosLuot;
   /** Lớp thường (T58): `Giữa khoá` + `2/4 môn đạt` thay cho `MT2 · SOS 2`; null với lượt Mock FT. */
   nhanDot?: string | null; ketQua?: { chinh: string; phu: string | null } | null;
   summary: { done: number; active: number; label: string; complete: boolean };
@@ -102,7 +105,6 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
   const mtSos = luot.nhanDot
     ? `${luot.nhanDot}${luot.ketQua ? ` · ${luot.ketQua.chinh}` : ''}`
     : `MT${luot.attemptNo}${luot.sosLevel !== null ? ` · ${sosLabel(luot.sosLevel)}` : ''}`;
-  const kyNang = luot.skillLabels.length > 0 ? luot.skillLabels.join(' + ') : '—';
 
   if (xanh) {
     /* UI-3 / UI-2 (mockup U10 K8): phân đoạn Phối hợp SOS hồ sơ HV và hồ sơ lớp — đầu lượt một dòng (lớp: tên em trước), việc là hàng 3 cột (tên · hạn · nút). */
@@ -112,10 +114,9 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           {cot1 === 'hocVien' && (
             <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
           )}
-          {!luot.nhanDot && luot.sosLevel !== null
-            ? <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />
-            : <b className="text-[15px] font-semibold text-slate-100">{mtSos}</b>}
-          {!luot.nhanDot && luot.sosLevel !== null && <span className="inline-flex h-[22px] items-center rounded-md px-2 text-xs font-semibold text-slate-400 surface-2">MT{luot.attemptNo}</span>}
+          {/* PHOI-HOP-SOS-INFO: chip chỉ "SOS n" (kỹ năng trượt nằm trong thẻ kết quả bên cạnh — một chỗ, không lặp). */}
+          {!luot.nhanDot && luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
+          <TheKetQuaSos th={luot.the} />
           <span className="ml-auto flex flex-wrap items-center gap-2">
             <BadgeViec tong={luot.summary.complete ? 'xong' : 'dang'}>{t('{label} việc xong', { label: luot.summary.label })}</BadgeViec>
             {luot.summary.complete && <button type="button" className="link inline-flex min-h-[44px] items-center gap-1 appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" aria-expanded={open} onClick={() => setOpen((v) => !v)}><MuiTenGap mo={open} />{t('Việc')}</button>}
@@ -145,9 +146,8 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
               <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />MT{luot.attemptNo}
             </span>
           ) : (
-            <span className={`block text-xs text-slate-500 ${gon ? 'truncate' : ''}`} title={gon ? kyNang : undefined}>
-              {cot1 === 'luot' ? kyNang : gon ? mtSos : `${mtSos}${luot.skillLabels.length > 0 ? ` · ${luot.skillLabels.join(' + ')}` : ''}`}
-            </span>
+            /* PHOI-HOP-SOS-INFO: dòng phụ = thẻ kết quả (hồ sơ HV: dòng trên đã ghi lượt). */
+            <span className="mt-0.5 block"><TheKetQuaSos th={luot.the} anLuot={cot1 === 'luot'} /></span>
           )}
         </div>
         <div className="min-w-0">
