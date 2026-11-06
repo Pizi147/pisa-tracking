@@ -12,6 +12,9 @@ màu mè cũng kì lắm, không rõ là phải làm gì ấy". Kèm ý 5: bỏ 
 - **Bản 2 (06/11, chủ SP xem #1039: "cái thanh cạnh tên HV là sao vậy?" → "Bỏ thanh và làm lại 1 chút"):** bỏ thanh 4 nấc và chữ
   "Tháng → Ngày → KQ → Bước tiếp" ở đầu cột · cột Việc tiếp theo luật nút chính (mục 4a) · cân lại cột (Học viên 200 · Lịch thi 230 · Việc tiếp 320) ·
   Ghi chú một dòng, người · ngày (của ghi chú và của lần chốt) vào Lịch sử ở phần mở chi tiết. Ảnh chụp lại: 13 khung 1440 + 3 khung 375 (m3 không đổi).
+- **Bản 3 (06/11, chủ SP: "khi expand thanh của học sinh thì hiện cả những thông tin quan trọng… điểm các kĩ năng gần nhất… ưu tiên xếp trước theo lớp,
+  sau đó theo thời gian từ sớm đến muộn"; PTA chốt + [XM-8]; sau đó chủ SP: "thi thật lần trước không cần"):** mở hàng = dải dưới hàng dáng HV & Lớp #1038 (`.hvl-dai` / `.okn`), 5 khối (mục 3) ·
+  xếp theo lớp rồi thời gian thi (mục 4b) · "Đặt tháng" thành chữ phụ, không đếm "Cần làm" (Cần làm 5 → 3). Chụp lại mọi khung trừ `lt-m3`.
 
 ## 1. Vì sao màn cũ "lôm côm" (hiện trạng đã kiểm trong mã)
 
@@ -34,25 +37,25 @@ màu mè cũng kì lắm, không rõ là phải làm gì ấy". Kèm ý 5: bỏ 
   3. Mọi hộp làm tại chỗ là MỘT hàng dưới hàng em, thẳng cột Lịch thi, nhãn bên trái ô, mọi ô / nút cao 36 → hết "trồi".
   4. Ghi chú là MỘT dòng chữ đọc (màu chữ phụ), bấm để sửa; người · ngày nằm ở Lịch sử (phần mở chi tiết); hàng trống chỉ hiện "+ Ghi chú" khi rê / focus.
   5. Bỏ chip màu trong cột, bỏ nền xanh phần mở; màu chỉ còn ở điểm (✓ / ✗ — G12), quá hạn, nút chính.
-- **Không làm:** không thêm bước / trạng thái / điều kiện chặn mới; không tách danh sách thành nhóm (luật 29/10: một danh sách, thi gần nhất trước); không form KQ mới.
+- **Không làm:** không thêm bước / trạng thái / điều kiện chặn mới; một danh sách (bản 3: dòng tiêu đề lớp chỉ để đọc, không gập / tách trang); không form KQ mới.
 
 ## 3. Khung
 
 | Khung | Nội dung | Ảnh |
 |---|---|---|
-| a | Danh sách 11 em đủ 7 trạng thái lẫn nhau, rê một hàng | `lt-a1-1440-toi`, `lt-m1-375-sang` |
+| a | Danh sách 11 em đủ 7 trạng thái, xếp theo lớp (dòng tiêu đề lớp) rồi thời gian thi, rê một hàng | `lt-a1-1440-toi`, `lt-m1-375-sang` |
 | b | Dời tháng (hộp một hàng) · sau lưu "Đã dời sang 11/2026" + Hoàn tác · em chưa có lịch "Đặt tháng" | `lt-b1`, `lt-b2`, `lt-b3` |
 | c | Chốt ngày (ONgay ngày) · sau lưu "Thi 26/09 · còn 9 ngày" | `lt-c1`, `lt-c2`, `lt-m2-375-sang` |
 | d | Đã có ngày, chờ thi · Sửa ngày | `lt-d1` |
 | e | Ghi kết quả → `PanelSauThi` có sẵn (① KQ ② Bước tiếp) | `lt-e1`, `lt-m3-375-sang` |
-| f | Chi tiết em: hết bề ngang, 6 trường (MT 5 kỹ năng · Test sắp tới · Case · GVCN · TVV · Lịch sử 3 dòng + Xem toàn bộ) | `lt-f1`, `lt-m4-375-sang` |
+| f | Mở hàng (bản 3): dải dưới hàng như HV & Lớp, 5 khối một hàng — ① MT gần nhất: ô Overall ✓ / ✗ so Target + L R W1 W2 S ✓ / ✗ so kỳ vọng lượt, dưới mỗi ô ↑ / ↓ / = so MT trước · ② Hỗ trợ đang mở (kỹ năng bấm → panel Case · Case · số PA) · ③ Test sắp tới · ④ Phụ trách GVCN · TVV · ⑤ Lịch sử lịch thi 3 dòng + Xem toàn bộ. Không có "Thi thật trước" (chủ SP: không cần). Trống = "—". 375: 5 khối xếp dọc, ô điểm chia đều thẻ. Lớp thường: ô theo kỹ năng của lớp (như HV & Lớp) | `lt-f1`, `lt-m4-375-sang` |
 | g | Rỗng khoảng tháng · "Cần làm" hết việc · lỗi tải · lỗi lưu tại hàng (giữ chữ, Thử lại) · chỉ xem | `lt-g1` … `lt-g5` |
 
 ## 4. Bảng trạng thái → hàng
 
 | Trạng thái (hàm có sẵn) | Chữ chính · dòng phụ | Nút chính | Chữ phụ |
 |---|---|---|---|
-| `chua-co` | Chưa có lịch · chưa có tháng thi | **Đặt tháng** | Chốt ngày |
+| `chua-co` | Chưa có lịch · chưa có tháng thi | — (bản 3, [XM-8]) | Đặt tháng · Chốt ngày |
 | `du-kien` (tháng sau) | Dự kiến 10/2026 · chốt ngày khi tới tháng | — | Chốt ngày · Dời tháng |
 | `chua-chot-ngay` (tới tháng) | Chưa chốt ngày · đã tới tháng thi 09/2026 | **Chốt ngày** | Dời tháng |
 | `da-chot-ngay` | Thi 26/09 · còn 9 ngày (≤ 14) / chốt 05/09 (người chốt: Lịch sử) | — | Sửa ngày |
@@ -60,7 +63,7 @@ màu mè cũng kì lắm, không rõ là phải làm gì ấy". Kèm ý 5: bỏ 
 | `cho_buoc_tiep` | KQ ✓ 7.0 · chờ bước tiếp · hạn 19/09 · thi 12/09 | **Bước tiếp** | Sửa KQ |
 | `xong` | Xong · Kết thúc học · KQ ✓ 7.5 · thi 05/09 (chữ mờ) | — | Sửa KQ |
 
-"Cần làm" (công tắc trên bảng) = em ở 4 trạng thái có nút chính ở bảng trên (demo: 5 em); đếm cùng hàm với hàng.
+"Cần làm" (công tắc trên bảng) = em ở 4 trạng thái có nút chính ở bảng trên (demo: 3 em — Ghi KQ, Bước tiếp, Chốt ngày); đếm cùng hàm với hàng, khớp số việc lịch thi ở Công việc.
 
 ## 4a. Luật nút chính (bản 2 — trả lời "vì sao Dự kiến 10/2026 không có nút mà Chưa chốt ngày có")
 
@@ -73,7 +76,14 @@ màu mè cũng kì lắm, không rõ là phải làm gì ấy". Kèm ý 5: bỏ 
   "Dự kiến 10/2026" chưa tới tháng → Công việc chưa báo → không nút chính; dòng phụ nói thẳng "chốt ngày khi tới tháng"; ai biết ngày sớm vẫn bấm chữ **Chốt ngày** (không chặn).
   Sang 01/10 hàm tự đổi sang `chua-chot-ngay` → hàng tự có nút, không ai phải làm gì.
 - Hàng chỉ chờ (đã có ngày, chưa tới ngày thi) và hàng Xong: không nút chính.
-- Ngoại lệ cần quyết: **[XM-8]** `chua-co` (em FT chưa có tháng thi) có nút **Đặt tháng** và nằm trong "Cần làm", nhưng Công việc chưa có việc tương ứng.
+- `chua-co` (em FT chưa có tháng thi): Công việc không có việc → **không nút chính, không đếm "Cần làm"**; chữ phụ **Đặt tháng · Chốt ngày** (PTA quyết [XM-8], bản 3).
+
+## 4b. Thứ tự danh sách (bản 3 — chủ SP 06/11, thay "thi gần nhất trước" 29/10)
+
+1. Theo **lớp**, mã lớp A→Z (so sánh như `soSanhLop` có sẵn). Mỗi lớp mở đầu bằng dòng tiêu đề nhẹ "MB FT 101 · 3 em" (không nút, không gập); hàng em bỏ dòng mã lớp dưới tên.
+2. Trong lớp, theo **thời gian thi sớm → muộn**: em có ngày (ngày thi thật / ngày đã chốt, kể cả đã qua đang chờ KQ / bước tiếp) theo ngày ↑ →
+   em chỉ có tháng (chưa chốt ngày, dự kiến) theo tháng ↑ → em chưa có lịch → em **Xong** cuối lớp. Cùng mốc: tên A→Z.
+3. Áp cho cả "Cần làm" và "Tất cả". Luật 5b giữ: lưu xong hàng không nhảy chỗ tới khi rời trang / đổi khoảng.
 
 ## 5. Thao tác trước → sau
 
@@ -114,11 +124,11 @@ màu mè cũng kì lắm, không rõ là phải làm gì ấy". Kèm ý 5: bỏ 
 3. **[XM-3] Bỏ chip `NhanLich` trong cột Lịch thi của tab này** (thay bằng chữ trạng thái + dòng phụ). Luật V4 (badge lịch thi) giữ ở nơi khác (cột Lịch thi tab Tất cả, đầu hồ sơ).
    Hai nơi khác dáng cho cùng dữ liệu — chấp nhận vì tab này là nơi LÀM lịch thi; nếu chủ SP muốn đồng bộ thì đổi tab Tất cả sau.
 4. **[XM-4] Ô tháng ONgay có dòng gợi ý "DEC 2026" dưới ô** → trong hộp dùng `gon` (không dòng gợi ý). Code: kiểm mọi chỗ dùng `ONgay kieu="thang"` không `gon` cạnh ô khác.
-5. **[XM-5] Em "Xong" (đã chọn bước tiếp) xuống cuối danh sách**, chữ mờ (critique vòng 1: đứng đầu bảng phí chỗ). PTA hiểu luật 29/10 "thi gần nhất trước" là
+5. **[XM-5] — đã xong ở bản 3** (chủ SP chốt thứ tự mới, mục 4b: Xong cuối lớp). Ghi cũ: Em "Xong" (đã chọn bước tiếp) xuống cuối danh sách, chữ mờ (critique vòng 1: đứng đầu bảng phí chỗ). PTA hiểu luật 29/10 "thi gần nhất trước" là
    kỳ thi CÒN tới / còn việc; em xong không còn kỳ thi tới. Vẫn một danh sách, không tách nhóm. Chủ SP sửa nếu khác.
 6. **[XM-6] Gạch hồng trước "VIỆC · THI THẬT"** của panel là dáng `KhungPanel` có sẵn (V5) — giữ, không sửa trong PR này dù V2 nói hồng chỉ để nhận diện.
 7. **[XM-7] "Lần trước · MT3"** trong panel Sau thi (`DongLanTruoc` có sẵn) đặt điểm Test cạnh ô điểm Thi — giữ (có sẵn, giúp gõ nhanh).
-8. **[XM-8] Em chưa có tháng thi: nút chính "Đặt tháng" + đếm vào "Cần làm"**, trong khi Công việc không có việc "Đặt tháng thi" → số "Cần làm" ở tab
+8. **[XM-8] — PTA quyết (bản 3): "Đặt tháng" hạ thành chữ phụ, không đếm "Cần làm"** (khớp số với Công việc). Ghi cũ: Em chưa có tháng thi: nút chính "Đặt tháng" + đếm vào "Cần làm", trong khi Công việc không có việc "Đặt tháng thi" → số "Cần làm" ở tab
    lớn hơn số việc lịch thi ở Công việc. Khuyến nghị: giữ ở tab (em FT không có tháng thi = không có đầu ra; tab này là nơi rà lịch thi), không thêm việc
    ở Công việc trong PR này. Nếu chủ SP muốn khớp tuyệt đối: hoặc thêm việc "Đặt tháng thi" ở Công việc, hoặc hạ "Đặt tháng" thành chữ.
 
@@ -128,6 +138,15 @@ màu mè cũng kì lắm, không rõ là phải làm gì ấy". Kèm ý 5: bỏ 
   (`thi_that_l/r/w/s`, `thi_that_khong_thi`, `buoc_tiep`, `ngay_kq`, `han_sau_thi`, `han_sau_thi_so_lan`) — **không thêm dòng đọc, không thêm câu**.
 - Panel Sau thi: như ở Công việc (`/cycles/:id` + `/cycles/:id/buoc-tiep`) chỉ khi bấm. Sau lưu: chỉ sửa hàng đó tại chỗ, không tải lại danh sách (như nay).
 - Hoàn tác: một PUT. Không cảnh báo.
+- **Dải mở hàng (bản 3) — không request khi mở, đọc thêm rất ít khi tải danh sách.** Đã có sẵn trong `chiTiet` của `GET /hoc-vien-lop/lich-thi` (`server/src/classes/lichThi.ts`):
+  điểm 5 kỹ năng MT gần nhất (`kn`, từ `standingFor`), Test sắp tới (`sapToi`), Case mở (`caseMo`, cùng nguồn `listCases` của người xem), Lịch sử (`lichSu`), GVCN · TVV (đã đọc cho hàng).
+  (Thi thật trước: chủ SP bỏ — không đọc.) Còn thiếu, đề xuất gộp vào cùng request (dữ liệu chia đều cho 10–40 em một lần, rẻ hơn mỗi lần mở một request khi rà cả buổi họp):
+  - **↑↓ so MT trước**: `standingFor` đã đọc mọi `assessment_attempts`; điểm kỹ năng của lượt trước: **+1 câu** `assessment_scores WHERE attempt_id IN (…)` theo lô ≈ 5 dòng / em
+    (40 em ≈ 200 dòng / lần mở tab). Session code kiểm: nếu `standingFor` đã giữ điểm lượt trước thì +0.
+  - **Số PA theo Case**: `listCases` đã có PA của Case mở → +0 (nếu không: +1 câu đếm theo lô).
+  - Ước: ≤ +2 câu, ≤ ~250 dòng mỗi lần mở tab; QL mở ~10 lần / ngày → < 3 000 dòng / ngày. Không cần cảnh báo (≪ 15 triệu / ngày).
+  - Phương án dự phòng nếu session code thấy nặng: một request khi mở hàng `GET /hoc-vien-lop/lich-thi/:studentId/mo` ≈ 3 câu, ≤ 30 dòng / lần mở.
+- Xếp theo lớp / thời gian: sắp xếp trên dữ liệu đã nạp, +0.
 
 ## 8. Critique (impeccable, hai bản rà tách riêng: A thiết kế · B máy dò + tương phản)
 
@@ -138,9 +157,10 @@ màu mè cũng kì lắm, không rõ là phải làm gì ấy". Kèm ý 5: bỏ 
 | 3 | **36/40** | 0 / 0 | câu rỗng g1 nói rõ em chưa có lịch luôn hiện |
 | bản 2 · 1 | 30/40 | 0 / 0 (3 P2) | (người rà mới, chấm lại từ đầu) 375 "+ Ghi chú" luôn hiện 44 px, chữ ghi chú bấm sửa · 375 chữ phụ luôn mép phải thẻ · ghi chú Vy khớp Lịch sử · "chốt 05/09" bỏ tên người · chữ phụ đang mở chỉ đổi nền · bỏ "lỗi 503" |
 | bản 2 · 2 | **32/40** | 0 / 0 / 0 P2 | "+ Ghi chú" 375 lên 14 px màu chữ phụ. Dừng theo cổng chất lượng (chạm 30 → tối đa 2 vòng, rồi chỉ cần không P0/P1) |
+| bản 3 · 1 | **32/40** | 0 / 0 (1 P2) | dòng tiêu đề lớp đếm "n cần làm" + ⚠ n quá hạn (việc gấp không chìm khi xếp theo lớp) · 375: ô Overall một hàng riêng, 5 kỹ năng chia đều · ghi chú khung cắt giữ lớp dưới tên · (P3 khối Thi thật trước hết vì chủ SP bỏ khối) |
 
 - P3 bản 2 giữ lại: "+ Ghi chú" ở 1440 chỉ hiện khi rê (người · ngày đã ở Lịch sử) · thẻ 375 chỉ có chữ phụ hơi thưa · thứ tự "Tất cả" rải hàng có việc
-  (luật 29/10 "thi gần nhất trước" — chủ SP quyết; lọc "Cần làm" gom đủ 5 hàng có nút).
+  (bản 3 đã đổi sang xếp theo lớp — chủ SP chốt; dòng lớp đếm cần làm / quá hạn).
 
 - Máy dò (`impeccable detect`): 2 "side-tab" = vạch trái 3 px của hàng đang mở (G14, đã duyệt); 2 "phông ngoài DESIGN.md" = Be Vietnam Pro / Inter (đúng luật);
   còn lại là màu / bo góc của phần chú thích mockup (nền vàng, bảng thao tác) — không lên web.
