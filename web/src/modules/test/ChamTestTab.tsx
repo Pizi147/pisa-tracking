@@ -6,7 +6,7 @@ import { KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { PanelViec } from '../congViec/PanelViec.tsx';
+import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { PanelChamSpeaking } from '../congViec/PanelChamSpeaking.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { KHOA_CHAM_SPEAKING, LOAI_HAN_CUA_VIEC, addDaysIso, mondayOfDate, soSanhLop, tuanLich, viecKeTiep } from '@shared/domain/index.ts';

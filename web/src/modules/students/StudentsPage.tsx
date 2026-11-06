@@ -11,7 +11,8 @@ import { OChiNhanh, docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
-import { PanelViec, lamTaiCho } from '../congViec/PanelViec.tsx';
+import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
+import { lamTaiCho } from '../congViec/lamTaiCho.ts';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
