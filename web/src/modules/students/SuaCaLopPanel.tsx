@@ -9,7 +9,7 @@ import { ErrorState, NutChon, Skeleton, Th } from '../../ui/ui.tsx';
 import { NutMon } from '../../ui/NutMon.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { KCK, chuMon, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, kyThiCuaChuongTrinh, tachKck, type KyThi, type VanDeNhap } from '@shared/domain/index.ts';
+import { KCK, chuMon, LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, chiaLoSuaCaLop, chuTargetKck, chuanOTarget, tachKck, type KyThi, type VanDeNhap } from '@shared/domain/index.ts';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 

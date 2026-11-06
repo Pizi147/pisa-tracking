@@ -3,8 +3,8 @@
  * UI-HV-LOP: bảng học viên theo lớp của Học viên & Lớp đã thay bằng danh sách gọn (`DanhSachHvLop.tsx`) — thân bảng cũ gỡ khỏi tệp này.
  */
 import type { ExamPlan, GiaiDoanSauThi, LichThi, NhanYThucEm } from '@shared/domain/index.ts';
-import type { KetQuaVao, ViecTiepTheo } from '@shared/domain/index.ts';
-import { dich } from '@shared/i18n/index.ts';
+import type { KetQuaVao } from '@shared/domain/index.ts';
+
 
 /** Các trường của một dòng `GET /classes/:id/roster` mà bảng này đọc. */
 export type NhanSauThiEm = { giaiDoan: GiaiDoanSauThi; han: string | null; quaHan: boolean; daGiaHan: boolean };
@@ -33,7 +33,3 @@ export type DongRoster = {
   /** OV-15b (C13): lượt MT có điểm, mới nhất đầu (`roster` ở classes.ts) — lớp FT hiện OVR · L · R · W · S của lượt đầu. */
   history?: { id: number; overall: number | null; expectation: number | null; writing: number | null; bands: Record<string, number | null> | null; lichSu?: boolean }[];
 };
-
-/** PR-EN-c: việc tiếp theo máy chủ dựng (chữ Việt) → tiếng của trang. */
-export const dichViec = (v: ViecTiepTheo): ViecTiepTheo => ({ ...v, viec: dich(v.viec), han: v.han && dich(v.han), title: dich(v.title) });
-

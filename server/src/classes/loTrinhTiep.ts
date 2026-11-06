@@ -5,7 +5,7 @@ import {
   CAU_LIEN_TUC, NORMAL_LADDER, PERMISSIONS, canLopDich, laLienTuc, maHocLai, chuanHoaHuong, kiemDongChuyenTiep, nhanHuong, nhanTiepTheo, soSanhLop, tuanHopLe,
   type Huong, type HuongLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
+import { badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { demoToday } from '../demoConfig.ts';
 import { can, require_, type Principal } from '../permissions.ts';

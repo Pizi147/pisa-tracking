@@ -2,8 +2,7 @@ import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { coKhoa, coNho, datNho, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
-import {
-  ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, REGULAR_SKILLS, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
 import { entryBandsOf, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, maCtCuaLuot, nguongDatLop } from '../normal/regular.ts';

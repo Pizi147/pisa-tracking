@@ -11,7 +11,7 @@ import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { lopKq } from './BieuTuong.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
 import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
-import { Empty, ErrorState, OChiSo, Skeleton } from './ui.tsx';
+import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';

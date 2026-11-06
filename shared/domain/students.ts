@@ -79,32 +79,9 @@ export const tenRoute = (c: { route?: string | null; route_ten?: string | null; 
 
 export const CYCLE_STATUSES = ['active', 'completed', 'abandoned'] as const;
 
-export const JOURNEY_FILTERS = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'assessment', label: 'Assessment' },
-  { key: 'warning', label: 'Warning / WL' },
-] as const;
 
-export const JOURNEY_EVENT_LABEL: Record<string, string> = {
-  enrollment: 'Vào lớp',
-  transfer: 'Chuyển lớp',
-  handover: 'Bàn giao',   // PR-CT: GVCN xác nhận bàn giao (mở lại phiếu từ Hành trình)
-  pause: 'Tạm dừng học',
-  resume: 'Quay lại học',
-  finish: 'Kết thúc học',
-  cycle_start: 'Bắt đầu lộ trình',
-  repeat: 'Học tiếp lộ trình',
-  exam_date_changed: 'Đổi ngày thi IELTS',
-  mock_scheduled: 'Lên kế hoạch MT',
-  mock_rescheduled: 'Đổi lịch MT',
-  mock_cancelled: 'Huỷ cả lượt MT',
-  mock_result: 'Kết quả MT',
-  /* Kỳ thi IELTS THẬT — khác hẳn một lượt Mock Test, nên có nhãn riêng. */
-  exam_result: 'Kết quả thi IELTS',
-  estimate: 'Đánh giá GV',
-  warning: 'Cảnh báo',
-  wl: 'Warning Letter',
-};
+
+
 
 /** Nhóm sự kiện theo bộ lọc — giữ đúng ba lựa chọn đã chốt. */
 export const JOURNEY_GROUP: Record<string, 'assessment' | 'warning' | 'other'> = {

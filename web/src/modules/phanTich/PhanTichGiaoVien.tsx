@@ -1,9 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ngay, rateView, tuanLich,
-  type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq,
-} from '@shared/domain/index.ts';
+import { ngay, rateView, tuanLich, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';

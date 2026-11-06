@@ -19,7 +19,7 @@ import { classIssueBoard } from '../cases/effectiveness.ts';
 import { rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { evaluateAttemptRow, luotKck } from '../worklist/danhGia.ts';
 import { diemTuEval } from '../worklist/diemDong.ts';
-import { badRequest, loi } from '../util.ts';
+import { loi } from '../util.ts';
 import { entryBandsOf, kyVongCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt } from '../fasttrack/scoring.ts';
 import { evaluateRegular, nguongDatLop, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';

@@ -259,14 +259,7 @@ export function ghiPhanHoi(violationIds: readonly number[], homNay = demoToday()
   }
 }
 
-/**
- * ỨNG VIÊN (chỉ lọc, không luật): em chưa lưu trữ có vi phạm chưa nằm trong lần xử lý xong / chờ / đã duyệt, hoặc có đề xuất đang
- * chờ / đã duyệt. Lọc thêm theo lớp đang học hoặc chi nhánh (lớp đang học, không thì chi nhánh của em).
- * ponytail: tập ứng viên gồm cả em chỉ còn vi phạm "Đã ghi nhận" cũ (luật dính không cho lọc theo ngày ở SQL) — lọc thêm khi dữ liệu lớn.
- */
-export function ungVienYThuc(f: { branchId?: number | null; classId?: number | null } = {}): number[] {
-  return ungVienVaThe(f).map((r) => r.id);
-}
+
 
 /**
  * Như `ungVienYThuc` + em đang có thẻ Báo QL Ý thức chờ (để quét đóng thẻ khi hết lý do) — MỘT câu, cờ `coThe` cho từng em.

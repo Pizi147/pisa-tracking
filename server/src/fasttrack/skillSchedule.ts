@@ -37,8 +37,7 @@ export function canMoveSkillSchedule(
   return choSuaLichTest(p, ctx) || can(p, PERMISSIONS.SCHEDULE_MOVE, ctx);
 }
 
-/** P6 N15: vai GỐC Quản trị hệ thống (không theo quyền — quyền sửa được; đang "xem như" vai khác vẫn miễn). */
-export const laQuanTriGoc = (p: Principal) => (p.vaiGoc ?? p.roleKeys).includes('system_admin');
+
 
 /**
  * P6 N15 (chủ SP 24–25/10): T6 → CN chặn thêm / huỷ / dời lịch MT, MT0, S Ex có tuần gốc / đích thuộc tuần trước / này / sau — trừ

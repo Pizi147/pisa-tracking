@@ -8,14 +8,14 @@ import { t } from '../i18n/index.ts';
 
 export const LOAI_THI = ['mock', 'thi-that'] as const;
 export type LoaiThi = (typeof LOAI_THI)[number];
-export const NHAN_LOAI_THI: Record<LoaiThi, string> = { mock: 'Mock Test', 'thi-that': t('Thi thật') };
+
 
 export type KetQuaMock = 'dat' | 'chua-dat' | 'chua-du';
 export const NHAN_KET_QUA_MOCK: Record<KetQuaMock, string> = { dat: t('Đạt'), 'chua-dat': t('Chưa đạt'), 'chua-du': t('Chưa đủ điểm') };
 /** Mock "Xếp theo": Lớp · Mức SOS (nặng trước). */
 export const XEP_MOCK = ['lop', 'sos'] as const;
 export type XepMock = (typeof XEP_MOCK)[number];
-export const NHAN_XEP_MOCK: Record<XepMock, string> = { lop: t('Lớp'), sos: t('Mức SOS') };
+
 
 export function ketQuaMock(ovr: number | null, kyVong: number | null): KetQuaMock {
   if (ovr === null || kyVong === null) return 'chua-du';

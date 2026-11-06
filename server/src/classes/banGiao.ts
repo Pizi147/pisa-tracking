@@ -24,11 +24,6 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
  * `lenh_chuyen_lop` (nhận xét chung + bản chụp phần tự điền + xác nhận) và các dòng `ban_giao_mon`.
  */
 
-type LenhPhieu = {
-  id: number; lop_nguon_id: number; lop_dich_id: number | null; trang_thai: string; huong: string;
-  han_gvcn: string | null; han_gvbm: string | null; xac_nhan_luc: string | null;
-};
-
 const coGvcn = (lopId: number) => !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(lopId);
 
 /**

@@ -10,7 +10,7 @@ import { catDongPhu } from './hocVienLop.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { TASK_GROUPS, TASK_PROGRESS_CLOSED, type TaskGroup, type TaskProgress } from './worklist.ts';
-import { NHOM_VIEC, demDongViec, nhomViecCua, type DongDem, type NhomViec } from './tongQuan.ts';
+import { demDongViec, type DongDem } from './tongQuan.ts';
 import { t } from '../i18n/index.ts';
 
 const DAY_MS = 86_400_000;

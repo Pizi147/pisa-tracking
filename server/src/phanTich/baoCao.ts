@@ -4,10 +4,7 @@
  * cùng nguồn với Tổng quan; Kết quả Mock đếm bằng `mockTrongKhoang` của tab Kết quả thi.
  */
 import { db, theoLo } from '../db.ts';
-import {
-  COT_KQ_MT, LUOT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, PERMISSIONS, addDaysIso, baiId, cotKqMt, khoangTruoc, luotKqMt, tachBaiId, tenMonNgan, tuanLich,
-  type BaoCaoKq, type ChuongTrinh, type CotKqMt, type DongKqMt, type KetQuaMtKq, type DongMock, type DongSosBc, type GvQuaHanBc, type LuotKqMt, type DiemHv,
-} from '../../../shared/domain/index.ts';
+import { COT_KQ_MT, LUOT_KQ_MT, NHAN_COT_KQ_MT, NHAN_LUOT_KQ_MT, addDaysIso, baiId, cotKqMt, khoangTruoc, luotKqMt, tachBaiId, tenMonNgan, tuanLich, type BaoCaoKq, type ChuongTrinh, type CotKqMt, type DongKqMt, type KetQuaMtKq, type DongMock, type DongSosBc, type GvQuaHanBc, type LuotKqMt, type DiemHv } from '../../../shared/domain/index.ts';
 import { badRequest } from '../util.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import type { Principal } from '../permissions.ts';

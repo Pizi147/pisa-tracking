@@ -1,9 +1,6 @@
 import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import {
-  KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, NHAN_XET_TOI_THIEU, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich,
-  type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode,
-} from '../../../shared/domain/index.ts';
+import { KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich, type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, loadPrincipal, lopDayDu, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -16,7 +13,6 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { taoYeuCau } from '../duyet/yeuCau.ts';
 import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, huongChuyenMotEm, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
-import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { dongBoTuLenh } from './loTrinhTiep.ts';

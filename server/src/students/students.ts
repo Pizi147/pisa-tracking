@@ -1,11 +1,7 @@
 import { db, tx } from '../db.ts';
-import {
-  ENTRY_SKILLS, JOURNEY_GROUP, chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap,
-  type LoaiLop, type ProgrammeCode,
-  CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_LIEN_HE_TAM_DUNG, TRUONG_LIEN_HE, coONhapLienHe,
-} from '../../../shared/domain/index.ts';
+import { chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_LIEN_HE_TAM_DUNG, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, padCode, loi } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, loi } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import { can, classScopeSql, require_, scopeFor, vaiVoiEm, type Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -15,7 +11,7 @@ import { datLaiHanCase } from '../cases/sosAuto.ts';
 import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { entryBandsOf, kckCuaLuot, scoresOf, skipsOf } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, roundToHalf } from '../fasttrack/scoring.ts';
-import { currentCycle, cyclesOf, docDuKienThi, docTarget, examPlanOf } from '../fasttrack/cycles.ts';
+import { currentCycle, docDuKienThi, docTarget, examPlanOf } from '../fasttrack/cycles.ts';
 import { isRatioCycle } from '../normal/regular.ts';
 import {
   apDungMotDong, danhSachLopDich, doiTg, dongLopNeuHet, lopDichHopLe, lopHienTaiCua, moLoTrinhMoi, thongBaoChuyenVao, type LoTrinhMoiSauThi,
@@ -24,19 +20,9 @@ import { moLaiLop } from '../classes/xoaKetThucLop.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { cauEmailTrung, emailDangDung } from './emailHocVien.ts';
 
-import { weekInfo } from '../platform/week.ts';
 import { LUOT_HIEN_TAI_SQL } from './tamDung.ts';
 
-export function nextStudentCode(): string {
-  const conn = db();
-  const row = conn.prepare('SELECT next_value FROM student_code_seq WHERE id = 1').get() as any;
-  if (!row) {
-    conn.prepare('INSERT INTO student_code_seq (id, next_value) VALUES (1, 2)').run();
-    return padCode('PISA', 1);
-  }
-  conn.prepare('UPDATE student_code_seq SET next_value = next_value + 1 WHERE id = 1').run();
-  return padCode('PISA', row.next_value);
-}
+
 
 export function listStudents(p: Principal, f: { q?: string; branchId?: number; classId?: number; needAttention?: boolean } = {}) {
   const scope = scopeFor(p, PERMISSIONS.STUDENT_VIEW);

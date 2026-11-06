@@ -75,13 +75,7 @@ export function diffDays(a: string, b: string): number {
   return Math.round((parseDate(a).getTime() - parseDate(b).getTime()) / 86400000);
 }
 
-/** Thứ Hai của tuần chứa ngày d. */
-export function weekStartOf(d: string): string {
-  const dt = parseDate(d);
-  const dow = dt.getUTCDay();               // 0 = CN
-  const delta = dow === 0 ? -6 : 1 - dow;
-  return addDays(d, delta);
-}
+
 
 export function nowIso(): string {
   return new Date().toISOString();
@@ -106,10 +100,7 @@ export function toInt(v: unknown): number | null {
   return Number.isFinite(n) ? Math.trunc(n) : null;
 }
 
-export function pct(numerator: number, denominator: number): number | null {
-  if (!denominator || denominator <= 0) return null;
-  return Math.round((numerator / denominator) * 1000) / 10;
-}
+
 
 /** Sinh mã dạng PREFIX-000001 từ số thứ tự. */
 export function padCode(prefix: string, n: number, width = 6): string {

@@ -8,7 +8,6 @@ import { CHIP_TRON } from '../../../ui/Nhan.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { LuoiKeHoach } from './LuoiKeHoach.tsx';
 import type { LopKH, LuoiFTData, LuoiThuongData } from './kieu.ts';
-import { kyHieuLop } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**

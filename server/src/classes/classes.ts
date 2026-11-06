@@ -1,11 +1,6 @@
-import { DS_JSON, db, tx } from '../db.ts';
+import { DS_JSON, db } from '../db.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
-import {
-  ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, moRongPhanCong, nhanKetThucVi, nhanTiepTheo,
-  oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa,
-  type AssessedSkill, type DoiChoPc, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope,
-  coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, daGhiLuot, MON_GOP,
-} from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, nhanKetThucVi, nhanTiepTheo, oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa, type AssessedSkill, type DoiChoPc, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope, coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, daGhiLuot, MON_GOP } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
@@ -14,7 +9,7 @@ import {
   can, classScopeSql, coTheXemLuotCham, defaultWorkScope, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
-import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
+import { writeAudit } from '../platform/audit.ts';
 import { CON_O_SQL, loadBundle, pendingInputOf, regularSkillViews, resultOf, skillCells, tuanVangCu } from '../fasttrack/attempts.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { dotHoanTatMany, type HoanTatInfo } from '../fasttrack/hoanTat.ts';

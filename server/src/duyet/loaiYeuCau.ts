@@ -31,7 +31,7 @@ import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.t
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import type { BanGhiDao } from '../platform/ghiDao.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
-import { apDungDeXuatChuyenLop, demChuaCoLenh, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
+import { apDungDeXuatChuyenLop, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
 import { duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 

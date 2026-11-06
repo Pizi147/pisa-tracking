@@ -9,7 +9,7 @@ import { LISTENING_BY_RAW, READING_BY_RAW, expectationFor, failingEntrySkills } 
 import { raiseSignal } from '../cases/signals.ts';
 import { refreshRegularOutcome } from '../normal/regular.ts';
 import { loadPrincipal } from '../permissions.ts';
-import { DEMO_DATE, type CaseSeed, type CycleSeed, type StudentSeed, type TestSeed } from './journeys.ts';
+import { DEMO_DATE, type CaseSeed, type CycleSeed, type TestSeed } from './journeys.ts';
 import { STUDENTS } from './students.ts';
 
 /**

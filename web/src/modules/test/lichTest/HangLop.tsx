@@ -2,36 +2,12 @@ import { Link } from 'react-router-dom';
 import { HangCon, HangNhom } from '../../../ui/HangNhom.tsx';
 import { ChipHan, Nhan } from '../../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
-import { chuOChuaLuu, ngay, tenMon, tenMonNgan } from '@shared/domain/index.ts';
-import { TONE_NHAN_LOP, khoaHang, type LichTest, type LopLichTest, type PhanCuaBan } from './kieu.ts';
+import { chuOChuaLuu, ngay, tenMon } from '@shared/domain/index.ts';
+import { TONE_NHAN_LOP, khoaHang, type LichTest, type LopLichTest } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
-/**
- * OV-1b (3.5, mockup overhaul-1 §4): GV thấy "phần của bạn" tách với phần GV khác — "Quá hạn" đỏ chỉ khi ô của chính mình (`quaHan`).
- * OV-11e (TE-7): khối 1 dùng chung. Chữ tắt kỹ năng, tên đủ ở `title`.
- */
-export function OPhan({ phan, ct, quaHan }: { phan: PhanCuaBan; ct: string | null; quaHan: boolean }) {
-  const mon = (ds: string[]) => ds.map((k) => tenMonNgan(ct, k)).join(', ');
-  const du = (ds: string[]) => ds.map((k) => tenMon(ct, k)).join(', ');
-  const { toi, khac } = phan;
-  return (
-    <span className="flex flex-col gap-0.5 text-[13px] font-normal leading-tight">
-      {toi && (toi.con === 0
-        ? <span className="font-semibold text-ok" title={du(toi.kyNang)}>✓ {mon(toi.kyNang)}{' '}{t('của bạn xong')}</span>
-        : (
-          <span className="flex flex-wrap items-center gap-1.5">
-            {quaHan && <Nhan tone="late">{t('Quá hạn')}</Nhan>}
-            <span className="font-semibold text-slate-200" title={du(toi.kyNang)}>{mon(toi.kyNang)}{' '}{t('của bạn: còn {con} bài', { con: toi.con })}</span>
-          </span>
-        ))}
-      {khac && (
-        /* U06 (PTA 04/11 "không số về GV khác"): chỉ nói môn nào của GV khác, không số ngày quá hạn của họ. */
-        <span className="truncate text-slate-500" title={`${du(khac.kyNang)}${t(': GV khác')}`}>{mon(khac.kyNang)}{t(': GV khác')}</span>
-      )}
-    </span>
-  );
-}
+
 
 /**
  * Một badge cho hàng lớp (N-3; UI-LICH-TUAN theo dieu-chinh-cuoi khu a: Đang chấm · Chưa chấm · Đã chấm). Còn ô lưu hỏng trong lưới của lớp

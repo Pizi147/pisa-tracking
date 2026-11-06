@@ -1,11 +1,6 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
-import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_LABEL, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE,
-  CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich,
-  type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind,
-  type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai,
-} from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_BAND_TU_TINH, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, duocNhapBandThang, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
@@ -20,7 +15,7 @@ import {
   ScoreError, assessedSkillOf, bandFromCriteria, bandFromRaw, entrySkillsOf, evaluateAttempt,
   boTaskTrong, oNhapHoc, expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
-import { mondayOf, quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
+import { mondayOf, quaHanNhapDiem, weekInfo } from '../platform/week.ts';
 import { datNho, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
@@ -31,7 +26,7 @@ import {
 import {
   canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
 } from './absence.ts';
-import { raiseSignalsForResult, stepsFor } from '../cases/sos.ts';
+import { raiseSignalsForResult } from '../cases/sos.ts';
 import { reconcileCorrectedSignals, withdrawSignalsNoLongerValid } from '../cases/signals.ts';
 import { dongBoNguyenNhanMt } from '../cases/nguyenNhanO.ts';
 import { currentCycle, cycleById, examPlanOf, luotSoCuaLoTrinh } from './cycles.ts';
@@ -41,7 +36,7 @@ import {
 } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
-import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, programmeOfClass, refreshRegularOutcome, regularDeadline } from '../normal/regular.ts';
+import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, programmeOfClass, refreshRegularOutcome } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
@@ -850,7 +845,6 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma));
-      const editable = a.class_id ? editableSkills(p, a.class_id, regularSkills) : [];
       /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
       const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];
       /*

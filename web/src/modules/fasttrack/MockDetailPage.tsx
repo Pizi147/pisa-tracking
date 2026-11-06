@@ -5,7 +5,7 @@ import { useChongVe, useVe } from '../../lib/quayLai.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, ErrorState, ExamPlanText, Info as Tag, SectionNote, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
+import { Empty, ErrorState, ExamPlanText, Info as Tag, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
 import { Nhan, NhanKq, O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
@@ -291,7 +291,6 @@ export default function MockDetailPage() {
       hint: lyDoXoa ?? t('Ô vẫn hiện "Đã xoá", khôi phục được ngay'),
     }] : []),
   ];
-  const coKhoa = d.cells.some((c) => c.khoa);
   const laRf = d.cycle.route === 'RF';
   /* HSL-FT: Case của lượt trong bảng kỹ năng hồ sơ HV (thẻ đủ: PA, việc tiếp, quyền) — Case không có thẻ thì vùng mở chỉ có nút mở Ngăn Case. */
   const theCase = new Map((bang.data?.rows ?? []).flatMap((r) => r.cases).filter((c) => d.caseLuot?.some((x) => x.id === c.id)).map((c) => [c.id, c]));

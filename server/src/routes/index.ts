@@ -12,7 +12,6 @@ import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts'
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
 import { activeAt, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
-import { writeAudit } from '../platform/audit.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';

@@ -17,7 +17,7 @@ import {
   bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { can, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';

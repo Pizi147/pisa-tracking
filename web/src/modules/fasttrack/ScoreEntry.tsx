@@ -111,8 +111,7 @@ export type SavePatch = {
 /** Tuỳ chọn của một lần lưu. `nem` = ném lỗi ra cho nơi gọi (hộp lý do hiện câu lỗi ngay tại ô) thay vì chỉ toast. */
 export type SaveOpts = { nem?: boolean };
 
-/** Ô đang hiện dấu "-": chưa chốt (`noShow`) hoặc đã chốt mà chưa có điểm (`daChot`, PR-BV). */
-export const coDau = (cell: Cell) => !!cell.noShow || !!cell.daChot;
+
 /** Ô KHÔNG nhận lệnh "-" mới: đang mang dấu của chính tuần này. "-" đã chốt mà bài đã dời (`doiSang`) là dấu tuần cũ — tuần mới vẫn báo vắng được. */
 export const chanDau = (cell: Cell) => !!cell.noShow || (!!cell.daChot && !cell.daChot.doiSang);
 /** Ô sửa được ở lưới: quyền nhập thường, HOẶC gỡ được dấu "-" đã chốt (PR-BV — bài vắng / huỷ vắng vẫn xoá "-" được). */

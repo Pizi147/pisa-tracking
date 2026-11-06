@@ -1,10 +1,7 @@
 import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';
-import {
-  CASE_OUTCOME_LABEL, NGUONG_KY_VONG, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua,
-  type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot,
-} from '../../../shared/domain/index.ts';
-import { addDays, badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
+import { CASE_OUTCOME_LABEL, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua, type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -19,7 +16,6 @@ import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
-import { phanCongO } from '../classes/quyenChuyenLop.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { allProgrammes, evaluateRegular } from './regular.ts';
 import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';

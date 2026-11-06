@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { db, tx } from '../db.ts';
 import { ENTRY_SKILLS, PERMISSIONS, duocCapRieng, lyDoCamCapRieng, roleLabel, ROLE_LABEL, VAI_DANG_KY } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso, padCode } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } from '../util.ts';
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';

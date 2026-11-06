@@ -1,8 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import {
-  NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, tenMonNgan, hanKyGhiKetQua, tuanMuonNhatMt0,
-  type GoiYKyVong, type RegularSkill,
-} from '../../../shared/domain/index.ts';
+import { NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';

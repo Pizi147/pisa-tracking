@@ -1,8 +1,5 @@
 import { db, tx } from '../db.ts';
-import {
-  NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, cungThangTarget, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, luatDoiLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0,
-  type DongChuyenTiep, type Huong, type LoaiLop, type ProgrammeCode,
-} from '../../../shared/domain/index.ts';
+import { NGUONG_KY_VONG, PERMISSIONS, CAU_LIEN_TUC, cungThangTarget, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0, type DongChuyenTiep, type Huong, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';

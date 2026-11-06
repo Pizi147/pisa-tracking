@@ -48,7 +48,6 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   /** RA-LOI-0611 (PTA 06/11): đợt đang xem đủ mọi em mọi phần? — tính từ bảng đã nạp + ô vừa lưu, không thêm request (chip "quá hạn" trên tab tắt tại chỗ). */
   onDuHet?: (dot: string, du: boolean) => void;
 }) {
-  const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<TrangBc>(duongTrang(lopId, dot), [lopId, dot]);
   const [mo, setMo] = useState<Mo | null>(null);
   /* Lưu trong panel → ô bảng đổi tại chỗ (khoá `em:phần`). */

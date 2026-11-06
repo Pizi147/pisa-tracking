@@ -1,9 +1,6 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
-import {
-  ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, PERMISSIONS, duocHoanTacVang, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich,
-  type AssessedSkill,
-} from '../../../shared/domain/index.ts';
+import { PERMISSIONS, duocHoanTacVang, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { chanVangLopKetThuc } from './hoanTat.ts';
@@ -12,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau } from '../duyet/yeuCau.ts';
-import { ensurePeriod, mondayOf, skillScoreDeadline } from '../platform/week.ts';
+import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import {
   checkSkillWeekMove, ensureSkillRows, kiemVuot, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu, tuanCuoiSauKhiDoi,
 } from './skillSchedule.ts';

@@ -75,12 +75,7 @@ export function weekNumberInMonthOf(weekStart: string): number {
   return n;
 }
 
-/** Mã tuần đầy đủ của tuần chứa ngày này — "W1 SEP 2026". */
-export function weekCodeOf(date: string): string {
-  const start = mondayOfDate(date);
-  const { year, month } = owningMonthOf(start);
-  return `W${weekNumberInMonthOf(start)} ${MONTH_CODE[month - 1]} ${year}`;
-}
+
 
 
 export { MONTH_CODE };
