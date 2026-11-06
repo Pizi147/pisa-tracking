@@ -154,6 +154,11 @@ export const KhungTaiCho = createContext(false);
 export const KhungTrongCot = createContext(false);
 /** U02: thân của panel đang đặt trong cột (KhungTrongCot bị đặt lại false cho panel con) — thân Case vẽ dạng khung trường (`DauMuc`). */
 export const ThanTrongCot = createContext(false);
+/**
+ * CASE-PA-UI (mockup v16 d1 · e1 · h2 · k5): form việc của Case (Xác nhận PA, Ghi kết quả, Thêm PA, Hoàn thành…) đặt THẲNG trong thẻ PA / mục của panel Case —
+ * như `KhungTrongCot` nhưng không đầu panel (một dòng đầu mục `.muc-h` thay), không đệm ngang, chân không dính đáy. Không đổi view, không panel lồng panel.
+ */
+export const KhungTrongThe = createContext(false);
 /** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …") + dòng "Em này còn" dưới đầu. */
 /** M6 6b-3 `dai`: dải "✓ Đã lưu … · Hoàn tác" của việc vừa làm — đầu thân panel của việc kế (mockup panel-pilot ②b). */
 export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; dai?: ReactNode;
@@ -230,7 +235,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const quayLai = quayLaiRieng ?? quayLaiNgoai ?? undefined;
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
-  const trongCot = useContext(KhungTrongCot);
+  const trongThe = useContext(KhungTrongThe);
+  const trongCot = useContext(KhungTrongCot) || trongThe;
   const taiCho = useContext(KhungTaiCho) || trongCot;
   /* M6 6b-2 (khu K D6): một chuỗi view một bề rộng — panel trong chuỗi `XemCha` lấy bề rộng của chuỗi khi không tự đặt. */
   const chuoi = useContext(XemCha);
@@ -349,7 +355,10 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   );
   const than = (
     <>
-        {anDau && !lui ? null : dau ? (
+        {trongThe ? (
+          /* Chỉ form có hạn riêng (Kết quả PA · tuần + hạn — v16 e1) mới cần dòng đầu; Thêm PA / Hoàn thành đã có tên ở thẻ / mục. */
+          dau?.han ? <div className="muc-h mt-3 flex-wrap">{dau.tieu ?? tieuDe}<span className="phai-h">{dau.han}</span></div> : null
+        ) : anDau && !lui ? null : dau ? (
           <header className={`flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 sm:px-5 ${lui ? 'pt-2' : 'pt-4'}`} style={{ borderColor: 'var(--line)' }}>
             {hangLui}
             {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
@@ -402,11 +411,11 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         {/* AUDIT-LOI F06: luật cuộn theo loại khung. Nổi: thân cuộn riêng, chặn cuộn xuyên xuống nền. Tại chỗ: cuộn riêng khi bị giới hạn cao (lg),
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
-        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 px-4 ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
+        <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 ${trongThe ? 'px-0' : 'px-4'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
-          <footer className={`flex shrink-0 flex-col gap-2 border-t px-4 pb-3.5 pt-2.5 ${chan.dongTren || chan.conThieu?.length ? '' : 'sm:hidden'} ${taiCho ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+          <footer className={`flex shrink-0 flex-col gap-2 border-t ${trongThe ? 'px-0' : 'px-4'} pb-3.5 pt-2.5 ${chan.dongTren || chan.conThieu?.length ? '' : 'sm:hidden'} ${taiCho && !trongThe ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren && <div className="flex min-h-6 items-center gap-2 text-[13px] text-slate-400">{chan.dongTren}</div>}
             {chan.chinh && <div className="sm:hidden [&>button]:min-h-[48px] [&>button]:w-full [&>button]:justify-center [&>button]:text-[15px] [&>button]:font-bold">{chan.chinh}</div>}
@@ -414,7 +423,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         )}
         {chan && !chan.v3 && (
           /* U02 (mockup c2, PTA 04/11): trong cột — chân không nền, không kẻ, không dải trống: nút về phải ngay dưới hàng cuối. */
-          <footer className={`shrink-0 ${trongCot ? 'mx-4 [&>div]:px-0 [&>div]:pb-3 [&>div]:pt-0' : 'border-t'} ${taiCho ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line)', background: trongCot ? 'transparent' : 'var(--surface)' }}>
+          <footer className={`shrink-0 ${trongCot ? `${trongThe ? '' : 'mx-4'} [&>div]:px-0 [&>div]:pb-3 [&>div]:pt-0` : 'border-t'} ${taiCho && !trongThe ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line)', background: trongCot ? 'transparent' : 'var(--surface)' }}>
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             {/* RA-UI-1 (mockup `v7/khai-bac-lo.html` #w375): 375 — dòng trạng thái / đếm lên đầu chân, mọi nút chia đều MỘT hàng (Huỷ | Lưu, Lưu không còn nhỏ lệch trái). */}
@@ -437,7 +446,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
       /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
         className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
-        <KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider>
+        <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>
     );
   }

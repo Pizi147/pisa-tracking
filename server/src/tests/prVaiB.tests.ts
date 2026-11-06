@@ -341,7 +341,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     });
     const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
     assert(/tamDung && tt\.t === 'qua-han' \? <NhanTamDung/.test(the) && /tamDung && han \? <> <NhanTamDung/.test(the), 'thẻ kỹ năng thay "Quá hạn" bằng NhanTamDung');
-    assert(/data\.tamDungTu \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8')), 'Ngăn Case thay quá hạn bằng NhanTamDung');
+    assert(/data\.tamDungTu && hanGhi \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8')), 'Ngăn Case thay quá hạn bằng NhanTamDung');
   });
 
   /* OV-9: em KCK CHƯA có Target (demo Hồ Gia Hân) — câu mở đầu đổi "KCK · không tính SOS"; Target + KCK tách ở dòng thông tin. */

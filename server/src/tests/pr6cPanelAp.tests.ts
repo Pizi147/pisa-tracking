@@ -97,9 +97,11 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
   check('6c ⑥ (#644 XM-4): view Case mở từ việc không lặp ô ghi nhanh / Xác nhận PA / Kết quả của chính PA đó', () => {
     assert(/viecBanDau=\{\{ loai: 'case' \}\} paViec=\{p\.it\.paId \?\? null\}/.test(doc(W + 'congViec/PanelViec.tsx')), 'PanelViec chưa truyền paViec');
     const nc = doc(W + 'students/NganCase.tsx');
-    assert(/paViec=\{paViec\}/.test(nc) && /if \(paViec !== null && v\?\.paId === paViec\) return undefined;/.test(nc), 'NganCase chưa chặn nút chính / thẻ PA');
+    /* CASE-PA-UI (v16): việc đang mở = thẻ PA đó mở sẵn + viền nhấn (`dich`), không lặp nút ở chân. */
+    assert(/paId \?\? paViec/.test(nc) && !/nutChinh/.test(nc), 'NganCase chưa đưa PA của việc thành thẻ đích');
     const cp = doc(W + 'cases/CasePanel.tsx');
-    assert(/anViec=\{iv\.id === paViec\}/.test(cp) && /nutXacNhan = !anXacNhan && !anViec/.test(cp) && /nutKetQua = !anViec/.test(cp) && /ghiDuoc = !anViec/.test(cp), 'thẻ PA còn lặp thao tác');
+    /* v16: không còn view việc dưới panel → thẻ PA của việc CHÍNH LÀ chỗ làm (nút trạng thái / form trong thẻ), không có bản thứ hai để lặp. */
+    assert(/dich=\{dichPa === iv\.id\}/.test(cp) && /const formHien: FormThe \| null = form \?\?/.test(cp), 'thẻ PA của việc không là thẻ đích / không mở sẵn form');
   });
 
   const { conn } = t as any;
@@ -134,15 +136,16 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
   /* ---------------------------------------------------------------- 6c-2 lỗi 9 (PTA 28/10): hộp xác nhận ngắn = hộp nhỏ, không KhungPanel đè */
   check('6c-2 ③ Xoá PA · Kết thúc PA · Xoá Case · Xoá vi phạm · Thu hồi / Rút xử lý = ConfirmDialog; ô lý do đang gõ → hỏi một lần', () => {
     /* N37 (PTA 05/11): Xoá PA không còn hộp hỏi (Hoàn tác + Thùng rác) — MenuXoaPa chỉ còn hộp Kết thúc PA; Xoá Case hỏi khi còn PA (`useXoaCase`). */
-    const can: [string, number][] = [['cases/MenuXoaPa.tsx', 1], ['cases/ThaoTacCase.tsx', 1], ['yThuc/DeleteViolationConfirm.tsx', 1], ['yThuc/XemXuLyPanel.tsx', 1]];
+    /* CASE-PA-UI (v16 f3 · j3): Xoá Case hỏi MỘT lần NGAY TẠI CHỖ (`.hoi-xoa`), Kết thúc PA sớm = lý do trong thẻ — không hộp đè; MenuXoaPa gỡ. */
+    const can: [string, number][] = [['yThuc/DeleteViolationConfirm.tsx', 1], ['yThuc/XemXuLyPanel.tsx', 1]];
     for (const [f, n] of can) {
       const s = doc(W + f);
       assert((s.match(/<ConfirmDialog /g) ?? []).length === n && !/<KhungPanel[^>]*longTrong/.test(s), `${f}: còn panel đè / thiếu hộp nhỏ`);
     }
-    assert(/daSua=\{!!lyDo\.trim\(\)\}/.test(doc(W + 'cases/MenuXoaPa.tsx')) && /daSua=\{!rutDuoc && !!lyDo\.trim\(\)\}/.test(doc(W + 'yThuc/XemXuLyPanel.tsx')), 'ô lý do chưa giữ chữ');
+    assert(/useBaoDangSua\(!!lyDo\.trim\(\)\)/.test(doc(W + 'cases/CasePanel.tsx')) && /daSua=\{!rutDuoc && !!lyDo\.trim\(\)\}/.test(doc(W + 'yThuc/XemXuLyPanel.tsx')), 'ô lý do chưa giữ chữ');
     /* PTA 28/10: dòng PA gọn (`DongPaGon`) phải có "Kết thúc PA" — PA quy chế đang chạy chỉ vẽ dạng gọn. */
     const cp = doc(W + 'cases/CasePanel.tsx');
-    assert((cp.match(/<MenuPa [^\n]*ketThuc=\{nut\.ketThuc\}/g) ?? []).length === 2 && (cp.match(/coTheKetThucPa: data\.viewer\.coTheKetThucPa/g) ?? []).length === 2,
+    assert(/nut\.ketThuc && <button[^\n]*setForm\('ket-thuc'\)/.test(cp) && (cp.match(/coTheKetThucPa: vw\.coTheKetThucPa/g) ?? []).length === 1,
       'dòng PA gọn thiếu Kết thúc PA');
     const dr = doc('web/src/ui/Drawer.tsx');
     assert(/const dong = busy \? \(\) => \{\} : daSua \? \(\) => setHoi\(true\) : onClose;/.test(dr) && /export function HopBoChu\(/.test(dr), 'ConfirmDialog chưa hỏi khi còn chữ');

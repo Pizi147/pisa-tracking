@@ -539,11 +539,11 @@ async function runTask6(t: YThucTestKit, d: any) {
       assert(/chuTuanHoc\([^)]*\.dangDung\)/.test(doc(f)), `${f}: chưa truyền dangDung`);
     }
     const ngan = doc('web/src/modules/students/NganCase.tsx');
-    assert(/data\.tamDungTu && data\.trangThaiV4\.t === 'qua-han'[\s\S]{0,40}<NhanTamDung tu=\{data\.tamDungTu\}/.test(ngan), 'Ngăn Case: nhãn đầu panel Tạm dừng thay Quá hạn');
-    assert(/!data\.tamDungTu && canDong && !conPaChay/.test(ngan), 'Ngăn Case: hạn báo kết quả ẩn khi Tạm dừng');
+    /* CASE-PA-UI (v16): đầu panel chỉ một chip hạn của việc tiếp (không còn dòng "hạn báo kết quả" của cả Case). */
+    assert(/data\.tamDungTu && data\.trangThaiV4\?\.t === 'qua-han' \? <NhanTamDung tu=\{data\.tamDungTu\}/.test(ngan), 'Ngăn Case: nhãn đầu panel Tạm dừng thay Quá hạn');
     /* PR-PA Task 6: chân dòng PA tính cờ `hienHan` một lần. */
     const cpPa = doc('web/src/modules/cases/CasePanel.tsx');
-    assert(/const hienHan = !!hanGhi && !choDuyet;/.test(cpPa) && /hienHan && hanGhi && \(data\.tamDungTu \? <NhanTamDung/.test(cpPa), 'thẻ PA Ngăn Case: mọi hạn → Tạm dừng');
+    assert(/data\.tamDungTu && hanGhi \? <NhanTamDung/.test(cpPa), 'thẻ PA Ngăn Case: mọi hạn → Tạm dừng');
   });
 
   check('S6F-b (6) · ngày Tạm dừng trước lần Quay lại gần nhất → 400 (khoangTamDung không ghép sai cặp)', () => {
