@@ -131,7 +131,8 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
       ...it,
       key: k, urgency: dau.urgency, due,
       studentId: null, studentName: tuan ?? `Lớp ${it.classCode ?? ''}`.trim(),
-      ...(tuan && lop.length > 1 ? { classId: null, classCode: null } : {}),
+      /* CV-TAB b: dòng tuần nhiều lớp ở > 1 chi nhánh không mang thẻ chi nhánh (`cn`) của lớp đầu. */
+      ...(tuan && lop.length > 1 ? { classId: null, classCode: null, ...(new Set(nhom.map((x) => (x as { cn?: number | null }).cn)).size > 1 ? { cn: null } : {}) } : {}),
       attemptId: null, attemptNo: null, caseId: null, level: null, nhac: undefined,
       tieuDe: `${nhanLoai} · ${tuan ?? it.classCode ?? ''} · ${chuSo}`,
       contextLabel: tuan

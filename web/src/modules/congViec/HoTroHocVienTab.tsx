@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useManHinh } from '../../ui/TheDong.tsx';
 import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { COT_VIEC, DaiNhom, DanhSachViec, HangTab, tenBoEm } from './DanhSachViec.tsx';
@@ -44,6 +45,10 @@ type Work = {
   chiXem?: boolean;
   /** BO-QUA-XEP-MT: việc QL đã bỏ qua (chỉ QL / Quản trị; không có = rỗng) — khu "Đã bỏ qua" cuối danh sách, khôi phục được. */
   daBoQua?: ViecDaBoQua[];
+  /** CV-TAB b: chi nhánh của các việc khi > 1 (GV dạy liên chi nhánh) — dải chọn + thẻ CN. */
+  chiNhanh?: { id: number; code: string; name: string }[];
+  /** CV-TAB b: QL xem một GV — chi nhánh GV còn việc nhưng ngoài phạm vi người xem (việc ở đó không hiện). */
+  cnAn?: string[];
 };
 type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
 
@@ -92,6 +97,7 @@ export function HoTroHocVienTab() {
   const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
   /* UI-CV-TVV (mockup `tvv.html`): TVV — chỉ việc của mình, chia nhóm theo việc TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ). */
   const laTvv = !laQuanLy && !!session?.nav?.hvCuaToi;
+  const hep = useManHinh('(max-width: 639px)');
   const loc: LocNhanh = (LOC_NHANH as readonly string[]).includes(params.get('loc') ?? '') ? (params.get('loc') as LocNhanh) : 'tat-ca';
   /* CV-TAB (chủ SP 06/11): tab hạng mục ở `nhom=` (tham số sẵn có — link Tổng quan / chuông / Quay lại cũ vẫn đúng); link `loai=` (một loại việc) → tab chứa loại đó. */
   const tabUrl = params.get('nhom') ?? (params.get('loai') ? (laTvv ? nhomViecTvvCua : nhomViecCua)(params.get('loai')!) : null);
@@ -105,8 +111,14 @@ export function HoTroHocVienTab() {
     setParams(next, { replace: true });
   };
 
+  /*
+   * CV-TAB b (chủ SP 06/11): GV (Của tôi) dạy nhiều chi nhánh — `/my-work` không lọc chi nhánh (một lần nạp), dải "Tất cả chi nhánh · {CN}…" lọc TẠI MÁY
+   * (`cn=` trên địa chỉ), mặc định Tất cả. QL / Admin / QT giữ ô Chi nhánh gửi máy chủ như cũ.
+   */
+  const laGvThuong = !laQuanLy && !laTvv;
+  const cnLoc = laGvThuong && params.get('cn') ? Number(params.get('cn')) : null;
   const qs = new URLSearchParams();
-  if (branchId) qs.set('branchId', String(branchId));
+  if (branchId && !laGvThuong) qs.set('branchId', String(branchId));
   /* GV không gửi `nguoi` — `/my-work` không tham số giữ NGUYÊN hành vi cũ (Q3). OV-15d: QL đọc "tất cả" MỘT lần, Của tôi / Của GV lọc tại máy (cùng danh sách, cùng số). */
   if (laQuanLy) qs.set('nguoi', typeof nguoi === 'number' ? String(nguoi) : 'tat-ca');
   const url = `/my-work${qs.toString() ? `?${qs}` : ''}`;
@@ -133,7 +145,12 @@ export function HoTroHocVienTab() {
   }, [data, anTam]);
   /* S11 (chủ SP 05/11): ô "Của tôi" = số badge (dòng của tôi quá hạn + hôm nay, `soCuaToi` — cùng hàm máy chủ); "Của GV" / "Tất cả" không số. */
   const soToi = useMemo(() => soCuaToi(dsGoc), [dsGoc]);
-  const tatCaViec = useMemo(() => (typeof nguoi === 'number' ? dsGoc : dsGoc.filter((it) => khopNguoiViec(it, nguoi))), [dsGoc, nguoi]);
+  const tatCaViec = useMemo(() => (typeof nguoi === 'number' ? dsGoc : dsGoc.filter((it) => khopNguoiViec(it, nguoi)))
+    /* ponytail: việc không gắn lớp / dòng tuần nhiều chi nhánh (`cn` null) hiện ở mọi chi nhánh (như khung — không bao giờ giấu việc); tổng các ô CN có thể > "Tất cả". */
+    .filter((it) => cnLoc == null || it.cn == null || it.cn === cnLoc), [dsGoc, nguoi, cnLoc]);
+  const dsCn = laGvThuong ? data?.chiNhanh ?? [] : [];
+  const maCn = useMemo(() => new Map(dsCn.map((b) => [b.id, b.code])), [dsCn]);
+  const demCn = (id: number | null) => demDongViec(dsGoc.filter((it) => id == null || it.cn == null || it.cn === id)).n;
   /* S11: số trên công tắc khung đếm DÒNG (`demDongViec`), cùng đơn vị đầu nhóm. */
   const demKhung = useMemo(() => ({
     ft: demDongViec(tatCaViec.filter((it) => it.khung === 'ft')).n,
@@ -350,8 +367,11 @@ export function HoTroHocVienTab() {
   const coBaoCao = !!session?.nav?.workReports;
   const loiVanHanh = <LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} />;
   const tenGvChon = typeof nguoi === 'number' ? (tenGv ?? dsGoc.find((x) => x.ownerId === nguoi)?.owner ?? t('một GV')) : null;
-  const laGv = !laQuanLy && !laTvv;
+  const laGv = laGvThuong;
   const tenCn = useTenChiNhanh(laTvv);
+  /* a2 "7 việc ở Cẩm Phả": QL xem một GV trong một chi nhánh — tên chi nhánh đang lọc (danh sách chi nhánh của ô Chi nhánh, đã nạp). */
+  const dsCnXem = useApi<{ id: number; name: string }[]>(xemMotGv && branchId ? '/ref/branches' : null).data;
+  const tenCnXem = branchId ? dsCnXem?.find((b) => b.id === branchId)?.name ?? null : null;
   /* CV-TAB (mockup v17 `.tom`): đầu trang "n việc · m quá hạn" — đếm dòng (`demDongViec`), cùng phạm vi lọc người / khung với badge tab. */
   const tong = useMemo(() => demDongViec(items), [items]);
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
@@ -401,7 +421,7 @@ export function HoTroHocVienTab() {
             <span className="text-sm text-dim" data-hd="cv-tom">
               {/* a2: đang xem việc MỘT GV — tên GV đứng đầu dòng tóm tắt (thay dải "Đang xem việc của …"). */}
               {[tenGvChon, tenCn].filter(Boolean).map((x) => <span key={x}>{x} · </span>)}
-              <b className="font-bold tabular-nums text-[color:var(--text)]">{tong.n}</b> {t('việc')}
+              <b className="font-bold tabular-nums text-[color:var(--text)]">{tong.n}</b> {xemMotGv && tenCnXem ? t('việc ở {cn}', { cn: tenCnXem }) : t('việc')}
               {tong.quaHan > 0 && <> · <b className="font-bold tabular-nums text-late">{tong.quaHan}</b> {t('quá hạn')}</>}
             </span>
           )}
@@ -421,6 +441,14 @@ export function HoTroHocVienTab() {
                     onChange={(k) => { nhoNguoi(uid, k); setParam('nguoi', k); }}
                     muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: k === 'toi' && hienSoToi ? soToi : null }))} /></span>}
               </>
+            )}
+            {/* CV-TAB b (mockup a1 `.seg`): GV có việc ở > 1 chi nhánh — "Tất cả chi nhánh n · {CN} n …", mặc định Tất cả; lọc tại máy, badge tab đếm theo CN đang chọn. */}
+            {dsCn.length > 1 && (
+              <span className="max-sm:col-span-3 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center">
+                <BoLocDoan ariaLabel={t('Chi nhánh')} value={cnLoc ? String(cnLoc) : 'tat-ca'} onChange={(k) => setParam('cn', k === 'tat-ca' ? null : k)}
+                  muc={[{ key: 'tat-ca', nhan: hep ? t('Tất cả CN') : t('Tất cả chi nhánh'), so: demCn(null) },
+                    ...dsCn.map((b) => ({ key: String(b.id), nhan: b.name, so: demCn(b.id) }))]} />
+              </span>
             )}
             {/* Mockup "Mọi hạn ▾" — P7: hạn ghi ngày thật, không "tuần này". */}
             <ChonDangNut className="max-sm:w-full" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'hom-nay' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
@@ -443,7 +471,7 @@ export function HoTroHocVienTab() {
             {laQuanLy && data && <ChonPhuTrach chiChonGv value={typeof nguoi === 'number' ? nguoi : 'tat-ca'} valueName={tenGvChon}
               onChange={(v, name) => { setTenGv(name ?? null); setParam('nguoi', String(v)); }} />}
             {haiKhung && <CongTacKhung trang="cong-viec" coTatCa kieu="chon" chuTatCa={t('Mọi khung')} value={khung} dem={{ ft: demKhung.ft, thuong: demKhung.thuong }} onChange={(k) => setParam('khung', k === 'tat-ca' ? null : k)} />}
-            <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />
+            {!dsCn.length && <BranchFilter branchId={branchId} onBranch={(id) => setParam('cn', id ? String(id) : null)} />}
           </div>
         )}
         {chipLoc.length > 0 && (
@@ -452,6 +480,12 @@ export function HoTroHocVienTab() {
               <button key={c.k} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" title={t('Bỏ lọc')} onClick={c.bo}>{c.nhan} <span aria-hidden>✕</span></button>
             ))}
           </div>
+        )}
+        {/* CV-TAB b (mockup a2): QL xem một GV dạy cả chi nhánh khác — việc ở đó do QL chi nhánh đó theo dõi, không hiện ở đây (máy chủ `cnAn`). */}
+        {xemMotGv && !!data?.cnAn?.length && (
+          <p className="m-0 text-[13px] text-faint" role="note">
+            {t('{gv} dạy cả {cn} — việc ở đó do QL {cn} theo dõi, không hiện ở đây.', { gv: (tenGvChon ?? '').trim().split(/\s+/).pop() ?? '', cn: data.cnAn.join(', ') })}
+          </p>
         )}
         {/* CV-TAB: hàng tab hạng mục — dưới hàng lọc, kẻ dưới hết bề ngang (mockup `.tabs`). */}
         {data && !data.scopeEmpty && tabs.length > 0 && <HangTab tabs={tabs} dang={tab} idPanel="cv-tab-than" onChon={(k) => {
@@ -492,7 +526,7 @@ export function HoTroHocVienTab() {
           {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length > 0 && (
             <DanhSachViec muc={mucs} dem={demMuc} soHien={10} cuoi={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
               onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
-              theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null}
+              theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
               /* RA-LUONG-4: chỉ "Chọn bước tiếp" có hạn để gia hạn (N6; máy chủ `coTheGiaHanSauThi`) — "Cập nhật KQ thi thật" không hạn, Gia hạn sẽ 400. */
               nutPhu={(x) => (!x.con && x.cycleId && x.group === 'buoc_tiep' && !xong.has(x.key) && !theoDoi(x)
                 ? <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:h-8 sm:min-h-8" onClick={() => setGiaHan(x)}>{t('Gia hạn')}</button>

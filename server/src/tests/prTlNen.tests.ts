@@ -140,7 +140,8 @@ export async function runPrTlNenTests(t: any) {
     moc.thamChieuDayDuKhiKiem.bat = true;
     try {
       ngu.chayTrongRequest('GET', () => {
-        const moi: Record<string, () => unknown> = { 'bang-lop': bangLop, 'lop-day-du': lopDayDu, 'chuong-trinh': allProgrammes, 'nguong-dat-lop': nguongDatKhacMacDinh, 'che-do-lop': cheDo };
+        const moi: Record<string, () => unknown> = { 'bang-lop': bangLop, 'lop-day-du': lopDayDu, 'chuong-trinh': allProgrammes, 'nguong-dat-lop': nguongDatKhacMacDinh, 'che-do-lop': cheDo,
+          'bang-chi-nhanh': () => c().prepare('SELECT id, code, name FROM branches ORDER BY id').all() };   // CV-TAB b: tên chi nhánh (mywork.ts `bangChiNhanh`)
         for (const [k, v] of ds) {
           const doc = moi[k] ?? (k.startsWith('cfg:') ? () => getConfig(k.slice(4)) : null);
           assert(doc, `khoá lạ ${k}`);

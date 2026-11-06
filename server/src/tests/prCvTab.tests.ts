@@ -8,6 +8,8 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
   const mywork: any = await import('../worklist/mywork.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const d: any = await import('../../../shared/domain/index.ts');
+  const { db } = await import('../db.ts');
+  const { bangLop, loadPrincipal } = await import('../permissions.ts');
   console.log('\nCV-TAB · Công việc chia tab hạng mục');
 
   check('CVT-1 · hàm thuần: badge đỏ > vàng > trắng; mục "Quá hạn" đứng đầu, mục rỗng ẩn; tab mặc định = tab đầu có quá hạn', () => {
@@ -44,5 +46,32 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
       for (const x of w.dong as any[]) assert(thuTu.includes(d.tabCuaViec(x, tvv)), `${ten}: ${x.group} không có tab`);
       assert(tong === d.demDongViec(w.dong).n, `${ten}: tổng tab ${tong} ≠ demDongViec ${d.demDongViec(w.dong).n}`);
     }
+  });
+
+  /* CV-TAB b (chủ SP 06/11): GV dạy liên chi nhánh — mỗi dòng mang chi nhánh của lớp; QL một chi nhánh chỉ thấy việc ở chi nhánh mình + tên chi nhánh bị ẩn. */
+  check('CVT-3 · GV hai chi nhánh: dòng có `cn` = chi nhánh lớp, `chiNhanh` liệt kê đủ; QL Cẩm Phả xem GV CP + HD: chỉ việc CP, `cnAn` = chi nhánh GV còn dạy', () => {
+    const gvHai = (db().prepare(`SELECT ta.user_id AS id, GROUP_CONCAT(DISTINCT cl.branch_id) AS cn FROM teacher_assignments ta JOIN classes cl ON cl.id = ta.class_id
+      WHERE ta.status = 'active' GROUP BY ta.user_id HAVING COUNT(DISTINCT cl.branch_id) > 1`).all() as any[]);
+    assert(gvHai.length > 0, 'seed không có GV hai chi nhánh');
+    let coHai = 0;
+    for (const g of gvHai) {
+      xoaNho();
+      const w = mywork.myWork(loadPrincipal(g.id), {});
+      for (const x of w.items as any[]) if (x.classId) assert(x.cn === bangLop().get(x.classId)?.branchId, `GV ${g.id}: ${x.key} cn ${x.cn}`);
+      const cns = new Set((w.items as any[]).map((x) => x.cn).filter((x) => x != null));
+      assert(cns.size > 1 ? w.chiNhanh?.length === cns.size : w.chiNhanh === undefined, `GV ${g.id}: chiNhanh ${JSON.stringify(w.chiNhanh)}`);
+      if (cns.size > 1) coHai++;
+    }
+    const cp = P.cpManager.grants.find((x: any) => x.roleKey === 'manager')?.branchId;
+    const gvCp = gvHai.find((g) => String(g.cn).split(',').map(Number).includes(cp));
+    if (!gvCp) return;
+    /* Chi nhánh GV dạy (phân công đang hiệu lực) ngoài Cẩm Phả = dòng "… dạy cả {CN}" — kể cả khi QL lọc chi nhánh (myWork đã bỏ việc CN khác). */
+    const khac = new Set(loadPrincipal(gvCp.id).assignments.filter((a: any) => a.effectiveFrom <= TODAY && (!a.effectiveTo || a.effectiveTo >= TODAY))
+      .map((a: any) => bangLop().get(a.classId)?.branchId).filter((x: any) => x != null && x !== cp));
+    xoaNho();
+    const xem = mywork.viecCuaNguoi(P.cpManager, gvCp.id, cp);
+    for (const x of xem.items as any[]) assert(x.cn == null || x.cn === cp, `QL CP thấy việc chi nhánh ${x.cn}: ${x.key}`);
+    assert(khac.size ? xem.cnAn.length === khac.size : xem.cnAn.length === 0, `cnAn ${JSON.stringify(xem.cnAn)} ≠ ${khac.size} chi nhánh khác`);
+    console.log(`    GV hai chi nhánh có việc ở > 1 CN: ${coHai} · GV ${gvCp.id} việc CN khác ẩn: ${khac.size}`);
   });
 }

@@ -10,4 +10,8 @@ export const EN_CV_TAB = {
   'Thiếu dữ liệu': 'Missing data',
   'Hạng mục việc': 'Task categories',
   '{n} việc gần hạn': '{n} tasks due soon',
+  /* CV-TAB b — GV nhiều chi nhánh, QL xem một GV. */
+  'Tất cả CN': 'All branches',
+  'việc ở {cn}': 'tasks in {cn}',
+  '{gv} dạy cả {cn} — việc ở đó do QL {cn} theo dõi, không hiện ở đây.': '{gv} also teaches at {cn} — tasks there are followed by the {cn} manager and are not shown here.',
 } satisfies Record<string, Dich>;
