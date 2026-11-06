@@ -25,6 +25,7 @@ export async function runXoaMtTests(t: any) {
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
   const svc: any = await import('../fasttrack/attempts.ts');
+  const kh: any = await import('../keHoach/keHoachTest.ts');
   const ss: any = await import('../fasttrack/skillSchedule.ts');
   const perm: any = await import('../permissions.ts');
   const msl: any = await import('../platform/moSuaLichTest.ts');
@@ -102,6 +103,25 @@ export async function runXoaMtTests(t: any) {
       assert(x.required === 1 && x.sit_status === 'cancelled' && x.huy_vang === 1, `${hoanTac ? 'Hoàn tác' : 'Khôi phục'}: L huỷ vắng 2 lần phải giữ huỷ: ${JSON.stringify(x)}`);
       assert(['reading', 'writing'].every((s) => k[s].startsWith('1:')), JSON.stringify(k));
     }
+  }));
+
+  check('XM-7 · chủ SP 07/11: MT đã xoá KHÔNG tính "đã có MT" — Kế hoạch Test "Chưa có MT kế tiếp" +1; Khôi phục → như cũ; huỷ vắng hết (MT-HUY-XONG) vẫn tính có', () => thu(() => {
+    const chua = () => { xoaNho(); return kh.danhSachLop(P.mbManager, {}).lop.find((l: any) => l.id === MB_FT).chuaCoLichTiep as number; };
+    const a = luot();
+    const sid = get('SELECT student_id FROM assessment_attempts WHERE id = ?', a).student_id;
+    /* Web (`dotDaXoa` trên ô lưới) cùng luật máy chủ (`LUOT_DA_XOA_SQL`). */
+    const xoaO = () => { xoaNho(); return dm.dotDaXoa(kh.luoiFT(P.mbManager, MB_FT).hang.find((h: any) => h.studentId === sid).dot[1].kn) as boolean; };
+    const goc = chua();
+    assert(!xoaO(), 'ô MT1 còn lịch mà web coi đã xoá');
+    svc.xoaLuot(P.mbManager, a);
+    assert(chua() === goc + 1 && xoaO(), `xoá: ${chua()} ≠ ${goc + 1} / ô ${xoaO()}`);
+    svc.duaLaiCaLuot(P.mbManager, a);
+    assert(chua() === goc && !xoaO(), `khôi phục: ${chua()} ≠ ${goc}`);
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ?`).run(a);
+    assert(chua() === goc && !xoaO(), `huỷ vắng hết: ${chua()} ≠ ${goc}`);
+    /* Dữ liệu cũ (BQ-6): huỷ vắng ghi "ngoài phạm vi" — vẫn là huỷ, không phải xoá. */
+    conn.prepare(`UPDATE attempt_skills SET required = 0 WHERE attempt_id = ?`).run(a);
+    assert(chua() === goc && !xoaO(), `huỷ cũ ngoài phạm vi: ${chua()} ≠ ${goc}`);
   }));
 
   check('XM-3 · chặn như "Xóa lịch" cũ: có điểm → 400; đã làm bài → 400; không đổi gì. Lớp thường / lượt không phải MT → 400', () => thu(() => {

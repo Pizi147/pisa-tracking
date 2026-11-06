@@ -492,10 +492,23 @@ function docThe(id: number): YeuCauRow {
   if (!r) throw notFound('Không tìm thấy yêu cầu này.');
   return r;
 }
+/**
+ * Chủ SP 07/11 (mục 7): thẻ "chết" mà lượt quét nền chưa kịp đóng (≤ 15 s, #1099) — đóng ngay như lượt quét (`tu_dong` + lý do + `sau`), để
+ * quyết định không chạy trên đối tượng đã mất. 1 câu đọc mỗi lần bấm (chỉ loại có `chet`).
+ */
+function dongNeuChet(yc: YeuCauRow): void {
+  const chet = dinhNghiaCua(yc.loai)?.chet;
+  if (!chet || yc.trang_thai !== 'cho') return;
+  if (!db().prepare(`SELECT 1 FROM yeu_cau_duyet y WHERE y.id = ? AND y.trang_thai = 'cho' AND (${chet.sql})`).get(yc.id)) return;
+  tx(() => {
+    if (chotYeuCau(db(), doiTuongCua(yc), 'tu_dong', { lyDo: chet.lyDo })) chet.sau?.(yc);
+  });
+}
 /** Đọc thẻ, kiểm quyền theo phạm vi CỦA THẺ; trong giao dịch đọc lại để hai người bấm cùng lúc chỉ một người chốt. */
 function quyetDinh<T>(p: Principal, id: number, lam: (yc: YeuCauRow, meta: LoaiYcMeta) => T): T {
   const truoc = docThe(id);
   require_(p, P_DUYET, ctxThe(truoc), 'Yêu cầu này nằm ngoài phạm vi bạn được duyệt.');
+  dongNeuChet(truoc);
   return tx(() => {
     const yc = docThe(id);
     if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý. Danh sách đã được làm mới.');

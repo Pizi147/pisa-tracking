@@ -3,7 +3,7 @@ import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, type TheSosEm, LUOT_HUY_HET_SQL } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, type TheSosEm, LUOT_HUY_HET_SQL, LUOT_DA_XOA_SQL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -484,7 +484,8 @@ const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_i
           AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
           /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc QL xếp lại; QL vẫn tự xếp được. */
           AND NOT EXISTS (SELECT 1 FROM assessment_attempts nx WHERE nx.cycle_id = a.cycle_id AND nx.attempt_no > a.attempt_no
-                            AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')})`;
+                            AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')} AND NOT ${LUOT_DA_XOA_SQL('nx')})   -- chủ SP 07/11: MT đã xoá = chưa xếp, vẫn nhắc
+`;
 
 /** Chữ của việc `moc:` + `dau` = mốc đang thiếu (`mt{n}` | `thi`) — bỏ qua ghi mốc này; mốc khác thì việc hiện lại. */
 function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name: string | null }) {

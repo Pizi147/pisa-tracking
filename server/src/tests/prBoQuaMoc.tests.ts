@@ -11,6 +11,8 @@
 export async function runPrBoQuaMocTests(t: { check: any; assert: any; conn: any; P: any; classId: (c: string) => number }) {
   const { check, assert, conn, P, classId } = t;
   const mywork: any = await import('../worklist/mywork.ts');
+  const sos: any = await import('../cases/sosAuto.ts');
+  const att: any = await import('../fasttrack/attempts.ts');
   const { xoaNho, soCauSql } = await import('../platform/nguCanhRequest.ts');
   const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   console.log('\nBO-QUA-XEP-MT · Bỏ qua việc Xếp lịch MT');
@@ -108,5 +110,23 @@ export async function runPrBoQuaMocTests(t: { check: any; assert: any; conn: any
       const it = (viec().items as any[]).find((x) => x.key === key);
       assert(!it, `${ten}: còn việc "${it?.tieuDe}" (${mt})`);
     }
+  }));
+
+  /* Chủ SP 07/11 (XM-MT-TUAN): MT kế ĐÃ XOÁ (mọi môn ra khỏi đợt, không phải huỷ vắng) = như chưa xếp — vẫn nhắc; MT sau nữa có tuần thì mốc PA theo MT đó. */
+  check('BQ-7 · MT kế đã xoá (Xoá MT) → vẫn có việc "Xếp lịch MT"; MT sau nữa có tuần → mốc PA theo MT đó, không kẹt ở MT đã xoá', () => thu(() => {
+    const { key, id } = dung();
+    const iv = one(`SELECT a.cycle_id, a.attempt_no FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id = ?`, id);
+    const ke = one(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?`, iv.cycle_id, iv.attempt_no + 1);
+    assert(ke, 'bộ thử thiếu lượt MT kế');
+    conn.prepare(`UPDATE assessment_attempts SET status = 'planned', planned_period_id = NULL WHERE id = ?`).run(ke.id);
+    conn.prepare(`UPDATE attempt_skills SET required = 0, huy_vang = 0, sit_status = 'scheduled', scope_reason = 'Xoá MT' WHERE attempt_id = ?`).run(ke.id);
+    assert(coViec(key), 'MT kế đã xoá: mất việc "Xếp lịch MT"');
+    /* MT sau nữa (n+2) có tuần — bộ thử không có sẵn: tạo bằng đường thật (`createAttempt`, số kế = n+2 vì MT đã xoá vẫn giữ số). */
+    const sid = one('SELECT student_id FROM learning_cycles WHERE id = ?', iv.cycle_id).student_id;
+    const tuan = one(`SELECT id FROM report_periods ORDER BY week_start DESC LIMIT 1`).id;
+    att.createAttempt(P.admin, { studentId: sid, cycleId: iv.cycle_id, attemptNo: iv.attempt_no + 2, periodId: tuan });
+    xoaNho();
+    const caseId = one('SELECT case_id FROM case_interventions WHERE id = ?', id).case_id;
+    assert(sos.keHoachMocQuyChe({ caseIds: [caseId] }).some((r: any) => r.id === id), 'MT sau nữa có tuần: PA vẫn không có mốc (kẹt ở MT đã xoá)');
   }));
 }

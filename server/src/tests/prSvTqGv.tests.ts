@@ -95,6 +95,55 @@ export async function runPrSvTqGvTests(t: any) {
     assert(ma(() => tq.oLopToiDay(P.coreTeacher, { ct: lop.khung, classId: lop.classId, cot: 'x' })) === 400, 'cột lạ không 400');
   });
 
+  /*
+   * GIAM-DOC-TQGV (XM GIAM-DOC-0711 mục 1, PTA 07/11 phương án A): khung lớp không có lớp chủ nhiệm nào → `/hai-khoi` không tính Dưới kỳ vọng · SOS · Case
+   * (chỉ hiện ở hàng chủ nhiệm). Oracle = cách tính cũ dựng lại từ `lopToiDay` đủ (V4, không đổi) — JSON phải y hệt với MỌI GV demo.
+   */
+  check('GIAM-DOC-TQGV · mọi GV demo: `/hai-khoi` JSON = cách tính cũ (đủ số mọi lớp); GV không chủ nhiệm đọc ít câu hơn', () => {
+    const xem = (p: any) => ({ ...p, grants: [{ id: 0, roleKey: 'teacher', roleName: '', branchId: null, branchName: null, permissions: new Set(['analysis.view']) }] });
+    const cu = (p: any) => {
+      const ft = tq.lopToiDay(p, { ct: 'ft' });
+      const hang = [...ft.rows.map((r: any) => ({ ...r, khung: 'ft' })), ...(ft.coThuong ? tq.lopToiDay(p, { ct: 'thuong' }).rows.map((r: any) => ({ ...r, khung: 'thuong' })) : [])];
+      const day = hang.filter((r: any) => r.kyNang.length || r.baiCho);
+      const cs = pt.chiSoHoSoGv(p, p.userId, {}, true);
+      const ht = new Map(day.length ? cs.hocThuatTheoLop.map((h: any) => [h.classId, h]) : []);
+      const cn = hang.filter((r: any) => r.gvcn);
+      const thi = new Map<number, number>();
+      for (const khung of ['ft', 'thuong']) {
+        if (!cn.some((r: any) => r.khung === khung)) continue;
+        for (const x of bc.tapThiThangNayLop(xem(p), { ct: khung }).values()) thi.set(x.lop, (thi.get(x.lop) ?? 0) + 1);
+      }
+      return {
+        ky: day.length ? { tu: cs.tu, den: cs.den } : null,
+        chiSo: { tu: cs.tu, den: cs.den, ketQua: cs.ketQua, tienBo: cs.tienBo },
+        day: day.map((r: any) => {
+          const h: any = ht.get(r.classId);
+          return {
+            classId: r.classId, code: r.code, khung: r.khung, route: r.route, ct: r.ct, kyNang: r.kyNang, tuanHoc: r.tuanHoc,
+            testKeTiep: r.testKeTiep, testTuanNay: r.testTuanNay, baiCho: r.baiCho, baiQuaHan: r.baiQuaHan, hanCham: r.hanCham,
+            ketQua: h?.ketQua ?? null, tienBo: r.khung === 'ft' ? h?.tienBo ?? null : null,
+          };
+        }),
+        chuNhiem: cn.map((r: any) => ({
+          classId: r.classId, code: r.code, khung: r.khung, route: r.route, ct: r.ct, hocVien: r.hocVien,
+          duoiKyVong: r.duoiKyVong, sos: r.sos, sosMuc: r.sosMuc, caseMo: r.caseMo, thiThangNay: thi.get(r.classId) ?? 0,
+        })),
+      };
+    };
+    const dem = (fn: () => unknown) => { const t0 = nguCanh.soCauSql(); nguCanh.chayTrongRequest('GET', fn); return nguCanh.soCauSql() - t0; };
+    const gv = (conn.prepare('SELECT DISTINCT user_id id FROM teacher_assignments ORDER BY user_id').all() as any[]).map((x) => perm.loadPrincipal(x.id));
+    let khongCn = 0;
+    for (const p of [...gv, P.mbManager]) {
+      const a = JSON.stringify(tq.lopToiDayHaiKhoi(p)), c = cu(p);
+      assert(a === JSON.stringify(c), `${p.fullName}: /hai-khoi ≠ cách cũ\n${a}\n${JSON.stringify(c)}`);
+      if (c.chuNhiem.length || !c.day.length) continue;
+      khongCn++;
+      const moi = dem(() => tq.lopToiDayHaiKhoi(p)), cach = dem(() => cu(p));
+      assert(moi < cach, `${p.fullName} (không chủ nhiệm): /hai-khoi ${moi} câu, cách cũ ${cach} — chưa bỏ số chủ nhiệm`);
+    }
+    assert(khongCn > 0, 'dữ liệu demo: cần GV dạy mà không chủ nhiệm');
+  });
+
   /* S1 (giảm dòng đọc Turso): Tổng quan GV tính `chiSoHoSoGv` MỘT lần — `/hai-khoi` trả `chiSo`, web thôi GET `/giao-vien/:id/chi-so` ở trang này. */
   check('S1 · Tổng quan GV: `/hai-khoi` chạy `chiSoHoSoGv` đúng MỘT lần, `chiSo` = `/giao-vien/:id/chi-so` kỳ mặc định; web không gọi thêm `/chi-so`', () => {
     let hep = '';

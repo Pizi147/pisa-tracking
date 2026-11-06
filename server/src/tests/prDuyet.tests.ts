@@ -145,6 +145,22 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       assert(n.n === 1, `Quản trị nhận ${n.n} thông báo tự duyệt`);
       assert(!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND kind IN ('duyet_ket_qua', 'duyet_moi') AND entity_id = ?`).get(P.mbManager.userId, id), 'tự báo cho mình');
     });
+    check('DUYET (3) · chủ SP 07/11 (mục 7): thẻ "chết" quét nền (≤ 15 s) chưa kịp đóng — Duyệt / Từ chối / hàng loạt: máy chủ đóng thẻ (tu_dong + lý do), báo 400 "đã được xử lý", khiDuyet KHÔNG chạy', () => {
+      const a = tao({ doiTuongId: -(++seq) });
+      assert(docThe(a).trang_thai === 'cho', 'dựng: thẻ chết phải còn chờ');
+      const truoc = daDuyet.length;
+      const e = chuLoi(() => yc.duyetYeuCau(P.mbManager, a));
+      assert(/đã được xử lý/.test(e), `duyệt thẻ chết: "${e}"`);
+      assert(daDuyet.length === truoc, 'khiDuyet chạy trên đối tượng đã mất');
+      assert(docThe(a).trang_thai === 'tu_dong' && docThe(a).ly_do_dong === 'Đối tượng thử đã mất', JSON.stringify(docThe(a)));
+      const b = tao({ doiTuongId: -(++seq) });
+      assert(/đã được xử lý/.test(chuLoi(() => yc.tuChoiYeuCau(P.mbManager, b, 'Không'))) && docThe(b).trang_thai === 'tu_dong', 'từ chối thẻ chết');
+      const c = tao({ doiTuongId: -(++seq) }), song = tao();
+      const r = yc.duyetNhieu(P.mbManager, [c, song]);
+      assert(r.ok.includes(song) && r.loi.length === 1 && r.loi[0].id === c && r.loi[0].ma === 400 && /đã được xử lý/.test(r.loi[0].loi), JSON.stringify(r));
+      assert(d.tomTatKetQuaHangLoat('duyet', r.ok.length, r.loi).includes('đã có người xử lý'), 'tóm tắt hàng loạt');
+      assert(d.laDaXuLy({ status: 400, message: e }) && !d.laDaXuLy({ status: 403, message: e }) && !d.laDaXuLy(null), 'laDaXuLy (web báo trung tính)');
+    });
     check('DUYET (3) · quét: đối tượng "chết" → tu_dong + lý do; quá hạn → đúng MỘT thông báo cho QL và Quản trị sau hai lần quét', () => {
       const chet = tao({ doiTuongId: -(++seq) });
       yc.quetYeuCau(TODAY);

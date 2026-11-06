@@ -10,7 +10,7 @@
  */
 import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
-import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
+import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, LUOT_DA_XOA_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -102,7 +102,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         `SELECT e.class_id AS class_id, s.id AS student_id, c.lich_mt, c.route AS lop_route, cy.route,
                 CASE WHEN cy.id IS NOT NULL AND NOT ${DA_THI_THAT_SQL('cy')} AND NOT EXISTS (   -- PTA 28/10: đã thi thật thì không còn nhắc xếp MT
                   SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned'
-                    AND (a.planned_period_id IS NOT NULL OR ${LUOT_HUY_HET_SQL('a')})) THEN 1 ELSE 0 END AS chua_co_lich,   -- MT-HUY-XONG: đợt huỷ hết = đã có MT, không nhắc   -- PR-LM: lượt đã huỷ lịch (tuần NULL) không phải "có lịch"
+                    AND (a.planned_period_id IS NOT NULL OR ${LUOT_HUY_HET_SQL('a')}) AND NOT ${LUOT_DA_XOA_SQL('a')}) THEN 1 ELSE 0 END AS chua_co_lich,   -- MT-HUY-XONG: đợt huỷ hết = đã có MT, không nhắc; chủ SP 07/11: MT đã xoá = chưa có   -- PR-LM: lượt đã huỷ lịch (tuần NULL) không phải "có lịch"
                 (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_XONG_SQL('a')}) AS so_mt_xong
            FROM students s
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'

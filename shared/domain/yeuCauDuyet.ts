@@ -134,13 +134,15 @@ export function chonHet<T extends ChonDuoc & { trangThai: string }>(ds: readonly
 }
 
 /** Kết quả hàng loạt một câu: "Đã duyệt 7/9 — 2 không có quyền". Lý do gom theo mã (PR-GVb G7). */
+/** Lỗi "thẻ đã được xử lý" (người khác chốt trước / thẻ chết tự đóng — máy chủ `quyetDinh`): web báo trung tính, không đỏ (chủ SP 07/11, mục 7). */
+export const laDaXuLy = (e: { status?: number; message?: string } | null | undefined): boolean => e?.status === 400 && /đã được xử lý/.test(e.message ?? '');
 export function tomTatKetQuaHangLoat(viec: 'duyet' | 'tu-choi', ok: number, loi: readonly { ma: number; loi: string }[]): string {
   const dong = viec === 'duyet' ? t('duyệt') : t('từ chối');
   const dau = t('Đã {dong} {ok}/{x}', { dong, ok, x: ok + loi.length });
   if (!loi.length) return dau;
   const nhom: [string, number][] = [
     [t('không có quyền'), loi.filter((l) => l.ma === 403).length],
-    [t('đã có người xử lý'), loi.filter((l) => l.ma === 400 && /đã được xử lý/.test(l.loi)).length],
+    [t('đã có người xử lý'), loi.filter((l) => laDaXuLy({ status: l.ma, message: l.loi })).length],
     [t('không còn'), loi.filter((l) => l.ma === 404).length],
   ];
   /* PR-NV: hết giờ giữa chừng (503) — nói cuối, kèm việc cần làm (chủ sản phẩm 05/10: "20 chưa nhắc, bấm lại"). */
