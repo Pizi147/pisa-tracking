@@ -366,6 +366,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV'], url: '/phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { TVV: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=ghi-pa' },
+  /* DEM-QUA-HAN b: ô Chấm Test đúng hạn mở panel số chung (dòng việc) thay panel Chấm điểm riêng. */
+  { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=cham-diem' },
   /* PT-PANEL (PR-1, 05/11): panel BẢNG có điểm — chỉ khi MỞ; dòng lượt + điểm theo lô (`dongLuotDiemCua`). */
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=kn:listening' },
   { trang: 'Phân tích · panel bảng', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot' },
@@ -969,6 +971,8 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 89,   // DOC-PT: đo 27 (trước 31)
   'QL /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 29,   // đo 24
   'QT /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 28,   // đo 23
+  /* DEM-QUA-HAN b: ô Chấm Test đúng hạn → panel số chung (thay panel Chấm điểm riêng, đo 24) — max(đo + 10, ⌈đo × 1,3⌉), đo 13 · 13. */
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 23, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 23,
   // OV-15e (19/10): Báo cáo · Kết quả thi · panel chỉ số GV — max(đo + 10, ⌈đo × 1,3⌉)
   'QL /phan-tich/bao-cao?ct=ft': 60,   // TL-TQ: đo 46 (trước 53)
   'QL /phan-tich/bao-cao/ket-qua-mt?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 23,   // TL-TQ: đo 13 (trước 15) · SV-SO3: đo 18
@@ -1030,6 +1034,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* DEM-QUA-HAN b: panel Chấm Test đúng hạn (số chung) — ⌈đo × 1,3⌉, đo 285 · 285. */
+  'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371,
   /* DEM-QUA-HAN: Phân tích GV + panel Việc đúng hạn — trần = ⌈đo × 1,3⌉, đo bảng FT 2 349 · 2 347, thường 2 168 · 2 166, khoảng dài 2 702 · 2 700, panel 1 192 · 1 190. */
   /* GIAM-DOC-0611: đường GET mới đo — max(đo + 50, ⌈đo × 1,3⌉), đo 06/11 ×1; `/classes/3/phoi-hop-sos` GIAM-DOC-0611d: đo 205 (trước 217). */
   'ADMIN /tong-quan/gv-tre': 597, 'GVBM /classes/3/phoi-hop-sos': 267, 'GVBM /ref/periods': 78, 'GVBM /students/1/phoi-hop-sos': 55, 'GVBM /students/1/s-expert': 56, 'GVCN /cham/lich-test/qua-han': 410, 'GVCN /classes/3/phoi-hop-sos': 267, 'GVCN /classes/3/y-thuc/lo': 275, 'GVCN /cycles/3/suggested-mocks': 98, 'GVCN /hoc-vien-lop/lich-thi/3/lich-su': 57, 'GVCN /ref/periods': 78, 'GVCN /students/1/phoi-hop-sos': 55, 'GVCN /students/1/s-expert': 56, 'GVCN_THUONG /classes/3/phoi-hop-sos': 267, 'GVCN_THUONG /ref/periods': 78, 'GVCN_THUONG /students/1/phoi-hop-sos': 55, 'GVCN_THUONG /students/1/s-expert': 56, 'QL /bao-cao-ph/lop?branchId=1': 51, 'QL /cham/lich-test/qua-han': 409, 'QL /classes/3/phoi-hop-sos': 267, 'QL /classes/3/teachers': 69, 'QL /classes/3/y-thuc/lo': 275, 'QL /cycles/3/suggested-mocks': 95, 'QL /hoc-vien-lop/lich-thi/3/lich-su': 54, 'QL /ref/periods': 78, 'QL /students/1/phoi-hop-sos': 55, 'QL /students/1/s-expert': 53, 'QL /tong-quan/gv-tre?gv=7': 497, 'QT /admin/mo-sua-lich-test': 51, 'QT /bao-cao-ph/lop?branchId=1': 51, 'QT /classes/3/phoi-hop-sos': 267, 'QT /classes/3/teachers': 69, 'QT /ref/periods': 78, 'QT /students/1/phoi-hop-sos': 53, 'QT /students/1/s-expert': 51, 'QT /tong-quan/gv-tre?gv=7': 757,

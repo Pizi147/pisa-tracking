@@ -512,8 +512,8 @@ const dongViecMo = (ds: readonly WorkItem[], homNay: string): { dung: boolean; r
 });
 /** Nghĩa vụ Kết quả PA (`dongNghiaVu`) → dòng việc: chưa ghi = còn mở quá hạn; mở đúng PA ở Case. */
 const dongViecPa = (pa: DongPa): DongViecHan => ({
-  tab: 'case', mo: !pa.ngayGhi, ten: [t('Kết quả PA'), pa.loaiPa, pa.dot !== undefined ? t('Đợt {n}', { n: pa.dot }) : null].filter(Boolean).join(' · '),
-  phu: pa.kyNang, em: { id: pa.studentId, ten: pa.ten }, lop: { id: pa.classId, ma: pa.lop }, han: pa.han ?? null, ngayXong: pa.ngayGhi ?? null,
+  tab: 'case', mo: !pa.ngayGhi, ten: `${t('Kết quả PA')} · ${pa.loaiPa}`,
+  phu: [pa.kyNang, pa.dot !== undefined ? t('Đợt {n}', { n: pa.dot }) : null].filter(Boolean).join(' · ') || null, em: { id: pa.studentId, ten: pa.ten }, lop: { id: pa.classId, ma: pa.lop }, han: pa.han ?? null, ngayXong: pa.ngayGhi ?? null,
   dung: !!pa.dungHan, treNgay: pa.dungHan ? null : pa.treNgay ?? null, href: duongCaseRieng(pa.caseId, { paId: parseObligation(pa.id).interventionId }),
 });
 /** Dòng việc: việc đang quá hạn trước (quá hạn lâu nhất đầu), rồi việc đã làm trong kỳ — trễ trước. */

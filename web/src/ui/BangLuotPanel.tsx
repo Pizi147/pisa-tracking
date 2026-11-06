@@ -394,8 +394,8 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const soQuaHan = tatVc.filter((h) => h.mo).length;
   const cotVc: DinhNghiaCot[] = [
     { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 150 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 },
-    { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 64 }, { key: 'tt', nhan: t('Đúng hạn'), kieu: 'chu', rong: 150 },
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 100 },
+    { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 76 }, { key: 'tt', nhan: t('Đúng hạn'), kieu: 'chu', rong: 176 },
   ];
   const ttVc = (h: HVc) => (h.mo ? <span className="font-semibold text-bad">⚠ {t('Quá hạn · {n} ngày', { n: h.treNgay ?? 0 })}</span>
     : h.dung ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
@@ -408,12 +408,12 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
     return ttVc(h);
   };
   /* Dòng phụ: kỹ năng / tuần Test dưới tên việc; ngày làm (nhập điểm / ghi kết quả) dưới tình trạng. */
-  const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec' ? (h.phu ? dich(h.phu) : null) : c.key === 'tt' && h.ngayXong ? t('làm {ngay}', { ngay: ddmm(h.ngayXong) }) : null);
+  const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec' ? (h.phu ? dich(h.phu) : null) : c.key === 'tt' && h.ngayXong ? (laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('làm {ngay}', { ngay: ddmm(h.ngayXong) })) : null);
   const theVc = (h: HVc) => (
     <div className="grid gap-1">
       <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, cotVc[0])}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
       {(h.em || h.lop) && <div className="text-[14px]">{h.em && lkHv(h.em.id, h.em.ten)}{h.em && h.lop && ' · '}{h.lop && lkLop(h.lop.id, h.lop.ma)}</div>}
-      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.ngayXong && <> · {t('làm {ngay}', { ngay: ddmm(h.ngayXong) })}</>}{h.phu && <> · {dich(h.phu)}</>}</div>
+      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.ngayXong && <> · {(laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('làm {ngay}', { ngay: ddmm(h.ngayXong) }))}</>}{h.phu && <> · {dich(h.phu)}</>}</div>
     </div>
   );
 
