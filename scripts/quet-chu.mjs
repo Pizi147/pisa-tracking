@@ -129,13 +129,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
 
   // Phép tự kiểm: chạy mỗi lần; lệch thì dừng, không in gì ra stdout.
   assert.ok(ra.some((r) => r.nhom === 'server' && r.vo === 'notify.title'), 'thiếu notify.title ở server');
-  assert.ok(ra.some((r) => r.vo.startsWith('toast')), 'thiếu toast');
+  /* RA-LOI-0711m: chữ toast web nay đi qua t() (bỏ khỏi bản quét từ đợt EN) — kiểm chữ JSX của web thay "thiếu toast"; mốc file:dòng đổi sang
+     hằng còn trong chu.ts (CHUA_CO_PHUONG_AN đã gỡ ở GON-1 #1090). */
+  assert.ok(ra.some((r) => r.nhom === 'web' && r.loai === 'jsx-text'), 'thiếu chữ JSX ở web');
   assert.ok(ra.some((r) => r.loai === 'attr:placeholder'), 'thiếu placeholder');
   assert.ok(!ra.some((r) => /\/(tests|seed)\//.test(r.file)), 'lọt tests/seed');
   {
     const f = 'web/src/ui/chu.ts';
-    const dong = fs.readFileSync(path.join(GOC, f), 'utf8').split('\n').findIndex((l) => l.includes('CHUA_CO_PHUONG_AN =')) + 1;
-    assert.ok(dong > 0 && ra.some((r) => r.file === f && r.line === dong && r.text === 'Chưa có PA'), 'thiếu CHUA_CO_PHUONG_AN đúng file:dòng');
+    const dong = fs.readFileSync(path.join(GOC, f), 'utf8').split('\n').findIndex((l) => l.includes('MOC_KIEM_TRA_NORMAL =')) + 1;
+    assert.ok(dong > 0 && ra.some((r) => r.file === f && r.line === dong && r.text === 'Các mốc kiểm tra được tính từ tuần khai giảng.'), 'thiếu MOC_KIEM_TRA_NORMAL đúng file:dòng');
   }
   assert.ok(ra.length >= 4000 && ra.length <= 12000, `tổng bản ghi ${ra.length} ngoài 4000–12000 — xem lại bộ bỏ`);
   process.stdout.write(ra.map((r) => JSON.stringify(r)).join('\n') + '\n');
