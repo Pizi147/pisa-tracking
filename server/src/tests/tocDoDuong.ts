@@ -514,15 +514,15 @@ export const TRAN: Record<string, number> = {
   'QL /highlights': 25,
   'QT /highlights': 25,
   /* OV-10c: Tổng quan theo vai — CX / QT gọi thêm danh sách Học viên & Lớp (chip Thiếu thông tin cùng nguồn): đo TVV 71, CX 95, QT 94, CX một CN 77, Admin 62 / 15. */
-  'TVV /tong-quan/hoc-vien': 60,   // TL-NEN: đo 55 (trước 68); RA-DOC-0611: đo 46 (trước 48)
-  'CX /tong-quan/hoc-vien': 78,   // TL-NEN: đo 72 (trước 80); RA-DOC-0611: đo 60 (trước 62)
-  'QT /tong-quan/hoc-vien': 77,   // TL-NEN: đo 71 (trước 81); RA-DOC-0611: đo 59 (trước 61)
-  'CX /tong-quan/hoc-vien?branchId=1': 68,   // {cn} = Móng Bình; TL-NEN: đo 62 (trước 75); RA-DOC-0611: đo 52 (trước 54)
+  'TVV /tong-quan/hoc-vien': 26,   // TL-NEN: đo 55 (trước 68); RA-DOC-0611: đo 46 (trước 48); GIAM-DOC-0611: đo 16 (trước 46) — cờ Thiếu thông tin không dựng cả danh sách
+  'CX /tong-quan/hoc-vien': 27,   // TL-NEN: đo 72 (trước 80); RA-DOC-0611: đo 60 (trước 62); GIAM-DOC-0611: đo 17 (trước 60) — cờ Thiếu thông tin không dựng cả danh sách
+  'QT /tong-quan/hoc-vien': 26,   // TL-NEN: đo 71 (trước 81); RA-DOC-0611: đo 59 (trước 61); GIAM-DOC-0611: đo 16 (trước 59) — cờ Thiếu thông tin không dựng cả danh sách
+  'CX /tong-quan/hoc-vien?branchId=1': 26,   // {cn} = Móng Bình; TL-NEN: đo 62 (trước 75); RA-DOC-0611: đo 52 (trước 54); GIAM-DOC-0611: đo 16 (trước 52) — cờ Thiếu thông tin không dựng cả danh sách
   /* OV-10b: Học viên & Lớp / hồ sơ HV theo vai — trần = min(max(đo+10, ⌈đo×1,3⌉), 100); đo 13/10: TVV 74 · TVV cả CN 72 · CX 97 (chip = chipHocVien, 95 như Tổng quan) · CX một CN 80 · Admin 70 · hồ sơ CX 83 / Admin 86. */
-  'TVV /hoc-vien-lop/theo-vai': 64,   // TL-NEN: đo 61 (trước 73); TL-HVL: đo 53 (trước 57); RA-DOC-0611: đo 49
-  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 63,   // TL-NEN: đo 60 (trước 72); TL-HVL: đo 52 (trước 56); RA-DOC-0611: đo 48
-  'CX /hoc-vien-lop/theo-vai': 81,   // TL-NEN: đo 75 (trước 84); TL-HVL: đo 64 (trước 70); RA-DOC-0611: đo 62
-  'CX /hoc-vien-lop/theo-vai?branchId=1': 73,   // TL-NEN: đo 67 (trước 79); TL-HVL: đo 58 (trước 62); RA-DOC-0611: đo 56
+  'TVV /hoc-vien-lop/theo-vai': 31,   // TL-NEN: đo 61 (trước 73); TL-HVL: đo 53 (trước 57); RA-DOC-0611: đo 49; GIAM-DOC-0611: đo 21 (trước 49) — cờ Thiếu thông tin không dựng cả danh sách
+  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 31,   // TL-NEN: đo 60 (trước 72); TL-HVL: đo 52 (trước 56); RA-DOC-0611: đo 48; GIAM-DOC-0611: đo 21 (trước 48) — cờ Thiếu thông tin không dựng cả danh sách
+  'CX /hoc-vien-lop/theo-vai': 30,   // TL-NEN: đo 75 (trước 84); TL-HVL: đo 64 (trước 70); RA-DOC-0611: đo 62; GIAM-DOC-0611: đo 20 (trước 62) — cờ Thiếu thông tin không dựng cả danh sách
+  'CX /hoc-vien-lop/theo-vai?branchId=1': 30,   // TL-NEN: đo 67 (trước 79); TL-HVL: đo 58 (trước 62); RA-DOC-0611: đo 56; GIAM-DOC-0611: đo 20 (trước 56) — cờ Thiếu thông tin không dựng cả danh sách
   'ADMIN /hoc-vien-lop': 63,   // TL-NEN: đo 55 (trước 69); TL-HVL: đo 48 (trước 51)
   'CX /students/1': 99,   // TL-NEN: đo 76 (trước 82)
   'ADMIN /students/1': 100,
