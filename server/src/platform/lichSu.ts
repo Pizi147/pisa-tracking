@@ -177,7 +177,7 @@ function sEx(p: Principal, studentId: number, tiep: number | null): TrangLs {
 // ------------------------------------------------------------------ lớp: thông tin · tiến độ · phân công · góp ý · nhập HV
 
 const VIEC_LOP = ['class.create', 'class.info', 'class.progress', 'class.progress.doi_bai', 'class.assign', 'class.finished', 'class.reopened',
-  'class.sua_ca_lop', 'class.lop_nghi', 'class.lop_nghi_hoan_tac', 'score.dan_excel', 'score.dan_excel_hoan_tac'];
+  'class.sua_ca_lop', 'score.dan_excel', 'score.dan_excel_hoan_tac'];
 /** OV-15i1: góp ý tuần của lớp — đi chỉ mục `idx_audit_viec` (loại, việc, em) và so ĐẦU nhãn bằng `substr` (mã lớp có `_` / `%` không thành ký tự đại diện). */
 export const DK_GOP_Y = `a.entity_type = 'student' AND a.action IN ('gop_y_tuan.ghi', 'gop_y_tuan.xoa')
   AND a.entity_id IN (SELECT student_id FROM enrollments WHERE class_id = ?) AND substr(a.entity_label, 1, ?) = ?`;
@@ -274,11 +274,6 @@ function truongLop(r: DongNk, ct: string | null): { nguon: string | null; lyDo: 
         })),
       };
     }
-    case 'class.lop_nghi':
-      return { nguon: 'Lớp nghỉ 1 tuần', lyDo: chu(f.lyDo), truong: [tt('Tuần nghỉ', null, f.tuan), tt('MT dời +1 tuần', null, `${f.soEmDoi ?? 0} em (giữ nguyên ${f.soEmGiu ?? 0})`),
-        tt('Hạn PA / Case dời +7 ngày', null, `${f.soPa ?? 0} PA · ${f.soCase ?? 0} Case`)] };
-    case 'class.lop_nghi_hoan_tac':
-      return { nguon: 'Hoàn tác lớp nghỉ 1 tuần', lyDo: null, truong: [tt('Khôi phục', null, `${f.khoiPhuc ?? 0} mục${f.boQua ? ` (bỏ qua ${f.boQua} mục đã sửa tiếp)` : ''}`)] };
     case 'class.sua_ca_lop':
       return { nguon: 'Sửa cả lớp', lyDo: null, truong: [{ ten: 'Sửa cả lớp', cu: null, moi: chu(f.daSua), lo: [Number(f.tu), r.id], n: 'thong-tin' }] };
     case 'score.dan_excel': case 'score.dan_excel_hoan_tac': {

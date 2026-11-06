@@ -16,7 +16,6 @@ import { BanGiaoGvPanel } from './BanGiaoGvPanel.tsx';
 import { PanelXetLai, XetLaiCtx, duongXetLai, type EmXetLai } from './PanelXetLai.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
-import { LopNghiPanel } from './LopNghiPanel.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { TabHocVienLop, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { DiemTheoLop } from '../cham/DiemTheoLop.tsx';
@@ -205,7 +204,6 @@ export default function ClassOverviewPage() {
         <NganXuatMt khung={thuong ? 'thuong' : 'ft'} lop={{ id: data.id, ma: data.code }} chiNhanh={data.branchId}
           thoiGianMacDinh={{ kieu: 'dot', dot: [...(thuong ? DOT_XUAT_THUONG : DOT_XUAT_FT)] }} onDong={dong} />
       )}
-      {viec === 'lop-nghi' && <LopNghiPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong} />}
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
       {viec === 'ket-thuc-lop' && (
         <KetThucLopPanel classId={data.id} classCode={data.code} onClose={dong} onDone={xong}

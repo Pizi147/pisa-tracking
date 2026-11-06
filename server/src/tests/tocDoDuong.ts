@@ -172,8 +172,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph/phan?phan=writing' },
   /* PR-HVL (7): panel Tuần khai giảng — thêm `coGiuaKhoa` và `tomTatMt` (một câu). */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/progress' },
-  /* FT-LOP-NGHI: xem trước "Lớp nghỉ 1 tuần" (bấm trong hộp, không mở cùng trang) — năm câu cho cả lớp bất kể số em. */
-  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT', 'GVCN'], url: '/classes/{lopFT}/lop-nghi', maChuDich: { GVCN: 403 } },
   /* PR-HVL (6): danh sách sau một số ở bảng vấn đề / hiệu quả PA — tính lại bằng chính `issueBoard`. */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/issue-board/o?category=listening&cot=case' },
   /* V8-HSL-2: ô dòng Overall bảng FT — chạy khi MỞ, tính bằng chính `phanTichNhieuLop`. */
