@@ -325,11 +325,14 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const dauCv = useContext(DauViecCongViec);
   const cvNgoai = dauCv && !trongKhung ? dauCv : null;
   const dongLoai = loai === undefined ? (cvNgoai?.loai ?? dau?.loai ?? null) : loai;
-  const vachLoai = dongLoai && !trongCot && (
+  /* CV-TAB (mockup v17 `.pv-loai`): ở Công việc dòng loại 12 / 700 giãn chữ, không vạch hồng. */
+  const vachLoai = dongLoai && !trongCot && (cvNgoai ? (
+    <div className="mb-1 text-xs font-bold tracking-[.05em] text-faint">{dongLoai}</div>
+  ) : (
     <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-[.02em] text-slate-500">
       <span aria-hidden className="h-[3px] w-3.5 shrink-0 rounded-sm bg-[color:var(--hong)]" />{dongLoai}
     </div>
-  );
+  ));
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   /* AUDIT-LOI (PTA 03/11): nút Đóng / Huỷ ở chân gọi đúng `onDong` (mặc định, hoặc nơi gọi truyền lại chính hàm đó) → đi đường `dong` như ✕ / Esc:
      đang có chữ thì hộp "Bỏ chữ, đóng". DON-CHU: gọi đúng hàm của ‹ Quay lại (vd Sửa công việc: Huỷ = về việc) → đi đường `veLai` như ‹.
@@ -364,8 +367,16 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
               {/* RA-UI-6 (critique A4): panel nằm trong cột hồ sơ (`trongCot`) dưới đầu mục 15 → tiêu đề 15, không lớn hơn tầng cha. */}
-              <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
-              {dau.han}
+              {/* CV-TAB (mockup v17 `.pv-tieu` 20 px → 22, cỡ gần nhất trong thang khoá): ở Công việc tiêu đề 22 / 700, chip hạn đứng ngay sau tiêu đề, ✕ góc phải. */}
+              {cvNgoai ? (
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+                  <h2 className={`m-0 min-w-0 text-[22px] font-bold leading-7 text-slate-100${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
+                  {dau.han}
+                </div>
+              ) : <>
+                <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
+                {dau.han}
+              </>}
               {!lui && nutDong}
             </div>
             {/* 6c (#641 XM-3): mỗi mục mang "·" rộng cố định ĐỨNG TRƯỚC, hàng lùi trái đúng bề rộng đó, khung cắt ngang → mục đầu mỗi dòng
@@ -396,7 +407,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${lui ? 'flex-wrap pb-2.5 pt-1.5' : vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
           {hangLui}
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
-          <h2 className="m-0 min-w-0 truncate text-[17px] font-bold text-slate-100" title={tieuDe}>{tieuDe}</h2>
+          <h2 className={`m-0 min-w-0 truncate font-bold text-slate-100 ${cvNgoai ? 'text-[22px]' : 'text-[17px]'}`} title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           {nutXem}
@@ -445,7 +456,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
     return (
       /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
-        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 ${cvNgoai ? 'lg:min-h-[560px]' : ''} max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>
     );

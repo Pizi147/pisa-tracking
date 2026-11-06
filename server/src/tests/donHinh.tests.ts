@@ -18,8 +18,10 @@ export async function runDonHinhTests(t: any) {
     const css = doc('web/src/index.css');
     assert(/--text-dim-rgb: 186 198 222;/.test(css) && /--text-faint-rgb: 158 172 200;/.test(css), 'token chữ phụ tối chưa đổi');
   });
-  check("DON-HINH · tên nhóm cham-cheo = 'Speaking chấm chéo'", () => {
-    assert(/key: 'cham-cheo' as never, label: t\('Speaking chấm chéo'\)/.test(doc('web/src/modules/congViec/DanhSachViec.tsx')), 'nhãn nhóm sai');
+  /* CV-TAB (06/11): bài chấm chéo là tab "Bài thi Speaking", mục "Speaking chấm chéo" (`shared/domain/tongQuan.ts`). */
+  check("DON-HINH · tab cham-cheo = 'Bài thi Speaking', mục = 'Speaking chấm chéo'", () => {
+    const s = doc('shared/domain/tongQuan.ts');
+    assert(/k === 'cham-cheo' \? t\('Bài thi Speaking'\)/.test(s) && /\['cham-cheo', t\('Speaking chấm chéo'\)\]/.test(s), 'nhãn nhóm sai');
   });
   check('DON-HINH · boTenEm bỏ tên em ở mọi vị trí, không để chuỗi rỗng', () => {
     assert(!boTenEm('Nhắc Ánh nộp bài · Ánh', 'Ánh').includes('Ánh'), 'còn tên em');
@@ -45,7 +47,8 @@ export async function runDonHinhTests(t: any) {
   });
   check('CV-0611 · dòng việc gọn: tên "{mã lớp} · {việc}" (không "Cả lớp"), Xét lại lộ trình không liệt kê tên em, "›" chỉ khi dòng chưa có nút', () => {
     const s = doc('web/src/modules/congViec/DanhSachViec.tsx');
-    assert(!/Cả lớp \{lop\}/.test(s) && /<b className="font-semibold">\{it\.classCode\}<\/b> · /.test(s), 'tên dòng cả lớp còn "Cả lớp"');
+    /* CV-TAB (mockup v17): mã lớp sang dòng phụ ("MB FT 101 · MT3 · W1 NOV · 8 bài"), tên dòng = tên việc. */
+    assert(!/Cả lớp \{lop\}/.test(s) && /caLop \? it\.classCode/.test(s), 'tên dòng cả lớp còn "Cả lớp"');
     assert(/it\.group === 'xet_lai_lo_trinh' \? null/.test(s), 'Xét lại lộ trình còn thẻ tên em');
     assert(/\$\{nut \? 'sm:hidden' : ''\}/.test(s) && /\u00A0/.test(s), '"›" chưa ẩn khi có nút / chưa dính chữ');
   });
