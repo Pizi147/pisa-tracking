@@ -23,7 +23,7 @@ RESET-HAN-CASE #1127 (thêm cột vào câu sẵn có + một `getConfig` nhớ)
 
 | PR | Việc | Trước → sau | Ước / ngày |
 |---|---|---|---|
-| a | `napCaseMo` tập cha theo chi nhánh: người xem có quyền theo chi nhánh (QL / QT một chi nhánh, "QL chi nhánh" của Phân tích GV / hồ sơ GV) hoặc Công việc lọc chi nhánh — điều kiện trong SQL không phụ thuộc dòng ghi danh; `lamThayCua` dùng lại dòng đã nạp | bản chính: câu Case mở 118 900 → 25 500–79 200 bước VM (TB theo số QL ≈ 42 000, −64 %); demo ×3: −9 đến −11 k bước / đường, câu không đổi | ~0,8–1 triệu |
+| a | `napCaseMo` tập cha theo chi nhánh: người xem có quyền theo chi nhánh (QL / QT một chi nhánh, "QL chi nhánh" của Phân tích GV / hồ sơ GV) hoặc Công việc lọc chi nhánh — điều kiện trong SQL không phụ thuộc dòng ghi danh; `lamThayCua` dùng lại dòng đã nạp | bản chính: câu Case mở 118 900 → 22 600–75 800 bước VM (TB theo số QL ≈ 39 000, −67 %); demo ×3: −9 đến −11 k bước / đường, câu không đổi | ~0,8–1 triệu |
 
 JSON 755 / 755 đường giống hệt. Phép kiểm `GIAM-DOC-0711a` (`tocDo.run`): `myWork` mọi tài khoản × (không lọc, từng chi nhánh) × (Của tôi, Tất cả, Tất cả tách Của tôi)
 + Phân tích GV từng chi nhánh × khung + hồ sơ GV mọi GV — 620 lần so giống hệt đọc cả hệ thống; QL chi nhánh khác "Tất cả" 733 → 567 dòng (khoá giảm).

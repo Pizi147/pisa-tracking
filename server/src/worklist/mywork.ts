@@ -404,7 +404,8 @@ const CHUA_CO_NGUOI = `(sc.owner_user_id IS NULL AND sc.tam = 0 AND ${HV_DANG_HO
  * như cũ). Case ngoài chi nhánh không còn đọc câu con của cột + các bước sau (trạng thái chờ, phạm vi em, quyền chủ Case).
  */
 type LocCaseMo = { lop: readonly number[] } | { cn: readonly number[]; lopGv: readonly number[] } | null;
-const DS = 'SELECT value FROM json_each(?)';
+/* Danh sách ngắn (vài chi nhánh / lớp GVCN) → `IN (?,…)`: `json_each` hiện thành SCAN trong kế hoạch (S5-b, TV). */
+const dsCho = (n: number) => Array(n).fill('?').join(',');
 function napCaseMo(loc: LocCaseMo = null): any[] {
   if (coKhoa('case-mo')) loc = null;   // đã đọc đủ trong request → tập cha nào cũng là tập con của nó, khỏi đọc lại
   const lop = loc && 'lop' in loc ? loc.lop : null;
@@ -412,7 +413,7 @@ function napCaseMo(loc: LocCaseMo = null): any[] {
   const lopGv = loc && 'lopGv' in loc ? loc.lopGv : [];
   if ((lop && !lop.length) || (cn && !cn.length)) return [];
   const ph = (lop ?? []).map(() => '?').join(',');
-  const thamSo = lop ? [...lop, ...lop] : cn ? [...Array(3).fill(JSON.stringify(cn)), ...(lopGv.length ? [JSON.stringify(lopGv)] : [])] : [];
+  const thamSo = lop ? [...lop, ...lop] : cn ? [...cn, ...cn, ...cn, ...lopGv] : [];
   const kq = nho(lop ? `case-mo:${lop.join(',')}` : cn ? `case-mo:cn:${cn.join(',')}:${lopGv.join(',')}` : 'case-mo', () => db().prepare(
     `SELECT sc.*, ${COT_CASE}, a.class_id AS attempt_class_id,
             COALESCE(ac.branch_id, cc.branch_id, s.branch_id) AS cn_du,
@@ -429,11 +430,11 @@ function napCaseMo(loc: LocCaseMo = null): any[] {
         AND sc.id IN (SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
                       UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
                       UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`}${!cn ? '' : `
-        AND (ac.branch_id IN (${DS})
-             OR (ac.branch_id IS NULL AND (s.id IS NULL OR s.branch_id IS NULL OR s.branch_id IN (${DS})
+        AND (ac.branch_id IN (${dsCho(cn.length)})
+             OR (ac.branch_id IS NULL AND (s.id IS NULL OR s.branch_id IS NULL OR s.branch_id IN (${dsCho(cn.length)})
                  OR EXISTS (SELECT 1 FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
-                             WHERE e2.student_id = s.id AND e2.status = 'active' AND c2.branch_id IN (${DS}))))${!lopGv.length ? '' : `
-             OR EXISTS (SELECT 1 FROM enrollments e3 WHERE e3.student_id = s.id AND e3.status = 'active' AND e3.class_id IN (${DS}))`})`} ORDER BY sc.id`,
+                             WHERE e2.student_id = s.id AND e2.status = 'active' AND c2.branch_id IN (${dsCho(cn.length)}))))${!lopGv.length ? '' : `
+             OR EXISTS (SELECT 1 FROM enrollments e3 WHERE e3.student_id = s.id AND e3.status = 'active' AND e3.class_id IN (${dsCho(lopGv.length)}))`})`} ORDER BY sc.id`,
   ).all(...thamSo) as any[]);
   /* GIAM-DOC-0711a: `lamThayCua` dùng lại dòng đã nạp ở request (bất kỳ tập cha nào — id thiếu `ctxSuaCaseNhieu` tự đọc). */
   if (!coKhoa(CASE_MO_DA_NAP)) nho(CASE_MO_DA_NAP, () => kq);
@@ -451,6 +452,8 @@ export const caseMoTapChaKhiKiem = { tat: false };
 function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boolean): LocCaseMo {
   if (caseMoTapChaKhiKiem.tat) return null;
   const lopGv = [...new Set(p.assignments.map((a) => a.classId))].sort((a, b) => a - b);
+  /* `laGvcnLopDangHoc` chỉ xét phân công GVCN (`isCoreTeacherOf`) — QL không chủ nhiệm lớp nào: không có vế này. */
+  const lopCn = [...new Set(p.assignments.filter((a) => a.isCore).map((a) => a.classId))].sort((a, b) => a - b);
   const rong = p.grants.some((g) => g.permissions.has(PERMISSIONS.CASE_APPROVE) || g.permissions.has(PERMISSIONS.CLASS_ASSIGN)
     || (g.permissions.has(PERMISSIONS.SOS_EDIT) && g.roleKey !== 'teacher'));
   if (!rong && !tatCa) return { lop: lopGv };
@@ -460,7 +463,7 @@ function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boo
   /* GIAM-DOC-0711a: grant có một trong ba quyền mà khoá dòng (sos.edit · class.assign · case.approve) đều theo chi nhánh → tập cha theo các chi nhánh đó. */
   const g3 = p.grants.filter((g) => g.permissions.has(PERMISSIONS.SOS_EDIT) || g.permissions.has(PERMISSIONS.CLASS_ASSIGN) || g.permissions.has(PERMISSIONS.CASE_APPROVE));
   if (g3.some((g) => g.branchId === null)) return null;
-  return { cn: [...new Set(g3.map((g) => g.branchId!))].sort((a, b) => a - b), lopGv };
+  return { cn: [...new Set(g3.map((g) => g.branchId!))].sort((a, b) => a - b), lopGv: lopCn };
 }
 
 /**
