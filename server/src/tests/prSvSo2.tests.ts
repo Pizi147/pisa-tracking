@@ -19,6 +19,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   const svc: any = await import('../fasttrack/attempts.ts');
   const bc: any = await import('../phanTich/baoCao.ts');
   const mt: any = await import('../worklist/metrics.ts');
+  const wl: any = await import('../worklist/mywork.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { boLichTuTao, luotThu } = await import('./luotThu.ts');
@@ -83,18 +84,20 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     assert(hl && hl.luot > 0 && (hl.ketQua.k === 'so' ? hl.ketQua.tong : 0) === cong, JSON.stringify({ hl, cong }));
   }));
 
-  check('SVSO2 (05 #8, #9, 10) · Việc đúng hạn = Kết quả PA (đơn vị việc; Xử lý vi phạm đã bỏ khỏi bảng), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
+  check('SVSO2 (05 #8, #9, 10) · Việc đúng hạn = Kết quả PA + việc còn mở quá hạn (DEM-QUA-HAN; đơn vị việc; Xử lý vi phạm đã bỏ khỏi bảng), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const bang = pt.phanTichGiaoVien(P.mbManager, ky);
+    const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, ky));
     const tong = (o: any) => (o?.k === 'so' ? o.tong : 0), dung = (o: any) => (o?.k === 'so' ? o.dung : 0);
     let coViec = false;
     for (const h of bang.hang) {
-      assert(!('xuLyViPham' in h) && tong(h.viecDungHan) === tong(h.ghiKetQuaPa) && dung(h.viecDungHan) === dung(h.ghiKetQuaPa), `${h.ten}: ${JSON.stringify(h)}`);
-      if (tong(h.viecDungHan) && !coViec) {
+      const nMo = mo.get(h.id)?.length ?? 0;
+      assert(!('xuLyViPham' in h) && tong(h.viecDungHan) === tong(h.ghiKetQuaPa) + nMo && dung(h.viecDungHan) === dung(h.ghiKetQuaPa), `${h.ten}: ${JSON.stringify(h)}`);
+      if (tong(h.ghiKetQuaPa) && !coViec) {
         coViec = true;
         const p = pt.oChiSoGv(P.mbManager, { ...ky, gv: h.id, cot: 'viec-dung-han' });
         assert(p.n === tong(h.viecDungHan) && p.tieuDe.endsWith(`${dung(h.viecDungHan)}/${tong(h.viecDungHan)} việc`), p.tieuDe);
-        assert(p.rows.every((r: any) => /^Kết quả PA/.test(r.sub) && !('viec' in r)), JSON.stringify(p.rows[0]));
+        assert(p.rows.filter((r: any) => /^Kết quả PA/.test(r.sub) && !('viec' in r)).length === tong(h.ghiKetQuaPa), JSON.stringify(p.rows[0]));
       }
     }
     assert(coViec, 'seed không có GV nào có việc có hạn trong 13 tuần');
@@ -106,6 +109,36 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     if (soCn === 1 && !get(`SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE ta.user_id = ? AND c.is_fast_track = 0`, h.id)) {
       assert(hoSo.diemDungHan.tong === h.chamDiem.tong && hoSo.diemDungHan.dung === h.chamDiem.dung, 'hồ sơ ≠ bảng (một chi nhánh, một khung)');
     }
+  }));
+
+  check('DEM-QUA-HAN (chủ SP 06/11) · việc Công việc còn mở đã quá hạn vào MẪU Việc đúng hạn của người giữ việc (không vào tử) — cùng dòng quá hạn Công việc "Tất cả"; panel + hồ sơ GV cùng số', () => thu(() => {
+    const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
+    const nc = pt.nguCanhPtGv(P.mbManager, ky);
+    const mo: Map<number, any[]> = pt.viecQuaHanMo(nc);
+    assert(mo.size > 0, 'seed phải có việc còn mở quá hạn (Thêm PA / Mô tả Case…) của GV trong 13 tuần');
+    /* Cùng nguồn: đúng các dòng quá hạn của Công việc "Tất cả" (QL chi nhánh) có người giữ, hạn trong kỳ, khung FT / không lớp — trừ Nhập điểm, Kết quả PA, Ý thức, Thiếu dữ liệu. */
+    const NGOAI = ['score', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'missing_data'];
+    const cv = (wl.myWork(P.mbManager, { branchId: nc.cn, nguoi: 'tat-ca' }).items as any[])
+      .filter((it) => it.urgency === 'overdue' && it.ownerId != null && it.ownerId !== P.mbManager.userId && it.due >= nc.tu && it.due <= nc.cuoi
+        && (!it.khung || it.khung === 'ft') && !NGOAI.includes(it.group));
+    const khoa = (ds: any[]) => ds.map((it) => `${it.ownerId}|${it.key}`).sort().join();
+    assert(khoa([...mo].filter(([g]) => g !== P.mbManager.userId).flatMap(([, ds]) => ds)) === khoa(cv), 'tập Phân tích ≠ dòng quá hạn Công việc');
+    const bang = pt.phanTichGiaoVien(P.mbManager, ky);
+    for (const [gv, ds] of mo) {
+      const h = bang.hang.find((x: any) => x.id === gv);
+      if (!h) continue;   // người giữ việc không có phân công ở khung này (QL, TVV) — không có hàng
+      assert(ds.every((it) => it.urgency === 'overdue' && it.due < D), 'chỉ việc đã quá hạn');
+      assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong === (h.ghiKetQuaPa.tong ?? 0) + ds.length && h.viecDungHan.dung === (h.ghiKetQuaPa.dung ?? 0),
+        `mẫu phải gồm ${ds.length} việc mở, tử không đổi: ${JSON.stringify(h.viecDungHan)}`);
+      const p = pt.oChiSoGv(P.mbManager, { ...ky, gv, cot: 'viec-dung-han' });
+      assert(p.n === h.viecDungHan.tong && p.rows.filter((r: any) => /Quá hạn · \d+ ngày$/.test(r.sub)).length >= ds.length, JSON.stringify(p.rows));
+      const hs = pt.chiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den }).viecDungHan;
+      assert(pt.oChiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den, cot: 'viec-dung-han' }).n === hs.tong, 'panel hồ sơ ≠ ô hồ sơ');
+      assert(hs.tong >= h.viecDungHan.tong, 'hồ sơ GV phải có việc mở của bảng');
+    }
+    /* Việc hạn trước kỳ không vào kỳ này. */
+    const truoc = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }));
+    assert([...truoc.values()].flat().every((it: any) => it.due >= tuanNay), 'việc hạn trước kỳ lọt vào kỳ');
   }));
 
   check('SVSO2 (quyền, T19) · GV tự xem hồ sơ theo kỳ; GV khác / QL chi nhánh khác bị chặn; kỳ không dữ liệu → "Chưa có dữ liệu", không 0 %', () => {

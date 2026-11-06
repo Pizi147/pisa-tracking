@@ -397,7 +397,10 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     deXuatGui(s2, ids2).gui();
     const b = bang('ft', { tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
     const h = hangCua(b, gvcn.userId);
-    assert(h && !('xuLyViPham' in h) && JSON.stringify(h.viecDungHan) === JSON.stringify(h.ghiKetQuaPa), JSON.stringify(h));
+    /* DEM-QUA-HAN: Việc đúng hạn = Kết quả PA + việc Công việc còn mở quá hạn — vi phạm (Ý thức) không vào phần nào. */
+    const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) })).get(gvcn.userId) ?? [];
+    assert(h && !('xuLyViPham' in h) && mo.every((it: any) => !it.group.startsWith('yt_'))
+      && (h.viecDungHan.tong ?? 0) === (h.ghiKetQuaPa.tong ?? 0) + mo.length && (h.viecDungHan.dung ?? 0) === (h.ghiKetQuaPa.dung ?? 0), JSON.stringify(h));
     assert((conn.prepare(`SELECT COUNT(*) AS n FROM violations WHERE id IN (${[...ids, ...ids2].join(',')})`).get() as any).n === 6, 'vi phạm phải còn');
   });
   check('Pb2b (4i) · Kết quả: GV L có ô L (FT 5 khoá), GV không dạy L → "—" ở L; em KCK không tính; HV tiến bộ: MT trước L 5.5 → nay 6.0 tiến bộ; chưa có bài trước → không có mặt', () => {
