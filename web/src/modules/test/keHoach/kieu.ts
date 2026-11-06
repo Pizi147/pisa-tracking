@@ -58,6 +58,8 @@ export type LuoiThuongData = {
   /** Bộ môn của chương trình lớp (K4-16): FOU/BE/ELE 4 môn, Pre FOU `tong_hop`. */
   boMon: KyNangKH[];
   ghiChuLop?: GhiChuLich | null;
+  /** TAT-CHECKPOINT: Checkpoint tự sinh đang tắt — ô Checkpoint em chưa có là nút "Xếp {tuần}" (QL xếp tay). */
+  cpTay?: boolean;
 };
 
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */

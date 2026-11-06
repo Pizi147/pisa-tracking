@@ -80,6 +80,7 @@ import { migratePrBaoCaoPh } from './migrate/prBaoCaoPh.ts';
 import { migratePrBaoCaoPhDot } from './migrate/prBaoCaoPhDot.ts';
 import { migratePrMt0Em } from './migrate/prMt0Em.ts';
 import { migratePrGiamDoc0611 } from './migrate/prGiamDoc0611.ts';
+import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
 import { migratePrOv15d } from './migrate/prOv15d.ts';
 import { migratePrOv15e } from './migrate/prOv15e.ts';
@@ -457,6 +458,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* MT0-THEO-EM (chủ SP 06/11): chỉ mục một phần idx_attempt_mt0 — lớp FT hiện MT0 của em (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrMt0Em(conn, applied));
     /* GIAM-DOC-0611: chỉ mục một phần idx_sca_cho — việc Báo PH qua TVV đang chờ thôi quét cả sos_coordination_actions (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611(conn, applied));
     /* GIAM-DOC-0611h: chỉ mục idx_student_branch — Case theo chi nhánh của em (listCases quyền chi nhánh) thôi quét cả students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611h(conn, applied));
+    /* TAT-CHECKPOINT (chủ SP 06/11): công tắc Checkpoint tự sinh tắt → huỷ mềm Checkpoint chưa có điểm; bật → khôi phục (chạy MỖI lần, chạy lặp không đổi). */ buoc(() => migratePrTatCp(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

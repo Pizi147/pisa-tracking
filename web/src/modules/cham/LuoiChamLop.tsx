@@ -5,7 +5,7 @@ import { LuoiFT, type FtSheet, type HangMo, type SExTuan } from './LuoiFT.tsx';
 import { LuoiThuong, type ThuongSheet } from './LuoiThuong.tsx';
 import { MotKyNang } from './MotKyNang.tsx';
 import type { OnHet } from './phienCham.ts';
-import type { TomTatLuot } from '@shared/domain/index.ts';
+import { dongCuaBai, type TomTatLuot } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Trả lời của `GET /classes/:classId/cham` (`chamSheet` ở server/src/cham/canCham.ts). */
@@ -52,9 +52,9 @@ export function useManHinhHep() {
   return hep;
 }
 
-/** Lưới lớp thường của MỘT bài (mockup 10b §2) — cột tổng và tuần thi chỉ có nghĩa trong một bài. */
+/** Lưới lớp thường của MỘT bài (mockup 10b §2) — cột tổng và tuần thi chỉ có nghĩa trong một bài. `checkpoint` trần (việc Nhập điểm) = mọi Checkpoint (`dongCuaBai`). */
 export function thuongTheoBai(t: ThuongSheet | null | undefined, kind: string | null): ThuongSheet | null {
-  return t ? { ...t, rows: t.rows.filter((r) => !kind || r.kind === kind) } : null;
+  return t ? { ...t, rows: t.rows.filter((r) => dongCuaBai(r.kind, kind)) } : null;
 }
 
 /**

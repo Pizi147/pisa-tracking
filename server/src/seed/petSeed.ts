@@ -2,11 +2,12 @@ import { loadPrincipal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { commitIntake, taoLopVaPhanCong } from '../classes/intake.ts';
-import { saveRegularScore } from '../normal/regular.ts';
+import { CHI_TIET_CP_TAY, CHI_TIET_CP_TU_SINH, saveRegularScore } from '../normal/regular.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { datKetQuaThiThat } from '../loTrinh/thiThat.ts';
 import { DEMO_DATE } from './journeys.ts';
 import { emailThu } from './emailThu.ts';
+import { CONG_TAC_CP } from '../../../shared/domain/index.ts';
 
 /**
  * BỘ DEMO OV-6b2 — lớp PET dựng qua CHÍNH hàm nghiệp vụ (tạo lớp + phân công, thêm em, nhập điểm): `MB PET 01` khai giảng 5 tuần trước ngày demo
@@ -15,6 +16,19 @@ import { emailThu } from './emailThu.ts';
  * Hai em đủ điểm đã có Checkpoint 2 (tuần học 12). Không Case / PA / việc. Nằm ở: Test › Điểm theo lớp (MB PET 01 · Checkpoint 1), hồ sơ lớp.
  */
 export function buildPetDemo(conn: any, o: { adminId: number; mbId: number; userId: Map<string, number> }): { soHv: number } {
+  /* TAT-CHECKPOINT: dựng bằng đường tự sinh (bật tạm — lượt, lịch, điểm như cũ, băm tốc độ giữ) rồi ghi nguồn là QL XẾP TAY: bộ demo = lịch QL đã
+     xếp khi tắt tự sinh, nên migrate `prTatCp` không ẩn gì (DEPLOY-2a: migrate không đổi dữ liệu mã hiện hành ghi). */
+  const cu = CONG_TAC_CP.tuSinh;
+  CONG_TAC_CP.tuSinh = true;
+  try {
+    const kq = dungPetDemo(conn, o);
+    conn.prepare(`UPDATE journey_events SET detail = ? WHERE detail = ? AND ref_table = 'assessment_attempts'`).run(CHI_TIET_CP_TAY, CHI_TIET_CP_TU_SINH);
+    conn.prepare(`UPDATE attempt_schedule_history SET reason = ? WHERE reason = ? AND action = 'created'`).run(CHI_TIET_CP_TAY, CHI_TIET_CP_TU_SINH);
+    return kq;
+  } finally { CONG_TAC_CP.tuSinh = cu; }
+}
+
+function dungPetDemo(conn: any, o: { adminId: number; mbId: number; userId: Map<string, number> }): { soHv: number } {
   const admin = loadPrincipal(o.adminId);
   const gv = (ma: string) => o.userId.get(ma)!;
   const khaiGiang = addDays(mondayOf(DEMO_DATE), -35);

@@ -72,6 +72,16 @@ export const ATTEMPT_KIND_SHORT: Record<AttemptKind, string> = {
 };
 /** Khoá "bài" của dòng lưới lớp thường: Progress / Final theo `kind`; Checkpoint kèm số (`checkpoint:2`) — mỗi Checkpoint là một bài riêng. */
 export const khoaBai = (kind: string, attemptNo: number | null | undefined): string => (kind === 'checkpoint' ? `checkpoint:${attemptNo ?? 0}` : kind);
+/**
+ * Dòng lưới lớp thường (khoá `khoaBai`) thuộc bài `kind` không — `checkpoint` trần (việc Nhập điểm, chưa biết số) khớp mọi `checkpoint:n`.
+ * MỘT hàm cho panel việc (`thuongTheoBai`) và phép kiểm "việc Nhập điểm ⇔ panel có bài" (TAT-CHECKPOINT: trước so `===` → panel rỗng).
+ */
+export const dongCuaBai = (khoa: string, kind: string | null | undefined): boolean => !kind || khoa === kind || khoa.startsWith(`${kind}:`);
+/**
+ * TAT-CHECKPOINT (chủ SP 06/11): Checkpoint TỰ SINH của lớp liên tục (PET, KET…) tạm TẮT — QL tự xếp ở Kế hoạch Test (ô "Xếp {tuần}").
+ * Chủ SP bảo mở lại → đổi `true` (bước migrate `prTatCp` khôi phục các Checkpoint đã ẩn). Đối tượng (không hằng) chỉ để phép kiểm bật / tắt.
+ */
+export const CONG_TAC_CP = { tuSinh: false };
 /** Tên bài theo khoá `khoaBai`: `checkpoint:2` → "Checkpoint 2"; còn lại như `ATTEMPT_KIND_SHORT`. */
 export const nhanBai = (khoa: string): string => {
   const cp = /^checkpoint:(\d+)$/.exec(khoa);

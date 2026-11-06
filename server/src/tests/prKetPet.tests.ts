@@ -5,6 +5,8 @@
 export async function runPrKetPetTests(t: any) {
   const { check, assert, conn, P, TODAY, addDays } = t;
   const d: any = await import('../../../shared/domain/index.ts');
+  /* TAT-CHECKPOINT: tệp này kiểm Checkpoint TỰ SINH (công tắc bật = như cũ) — bật suốt tệp, trả về tắt ở cuối. */
+  d.CONG_TAC_CP.tuSinh = true;
   const intake: any = await import('../classes/intake.ts');
   const regular: any = await import('../normal/regular.ts');
   const week: any = await import('../platform/week.ts');
@@ -531,5 +533,5 @@ export async function runPrKetPetTests(t: any) {
     const dong = tongKet.cacLoTrinh(P.admin, c.student_id).find((x: any) => x.id === c.id);
     assert(dong?.ketQua?.kyThi?.tong === 159 && dong.ketQua.kyThi.grade === 'B', JSON.stringify(dong?.ketQua));
   }));
-
+  d.CONG_TAC_CP.tuSinh = false;
 }

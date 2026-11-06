@@ -10,7 +10,7 @@
  */
 import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
-import { CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
+import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -28,7 +28,7 @@ import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
 import { effectiveSkillDeadline } from '../platform/week.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
-import { planRegularTests, programmeByCode, programmeOfClass } from '../normal/regular.ts';
+import { planRegularTests, programmeByCode, programmeOfClass, taoCheckpointTay } from '../normal/regular.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
@@ -894,9 +894,15 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
   const theoEm = new Map<string, any>();
   for (const a of attempts) { const key = `${a.student_id}:${cotCua(a)}`; if (!theoEm.has(key)) theoEm.set(key, a); }
   /* OV-6b2: lớp liên tục — mỗi Checkpoint đã có của lớp một cột (số chung cả lớp, tuần học n × mỗi-n-tuần); không Progress / Final. */
-  const soCp = progress.mocLap ? [...new Set(attempts.filter((a) => a.kind === 'checkpoint').map((a) => a.attempt_no as number))].sort((x, y) => x - y) : [];
-  if (progress.mocLap) kinds.splice(0, kinds.length, ...soCp.map((n) => `cp${n}`));
   const homNay = demoToday();
+  const tuanCp = (n: number) => (progress.startWeekStart && progress.mocLap ? addDays(progress.startWeekStart, 7 * (n * progress.mocLap - 1)) : null);
+  /* TAT-CHECKPOINT: tắt tự sinh → thêm cột Checkpoint KẾ TIẾP (tuần thi chưa qua) để QL xếp tay bằng ô "Xếp {tuần}". */
+  const cpTay = !!progress.mocLap && !CONG_TAC_CP.tuSinh && !!progress.startWeekStart;
+  let nKe = 1;
+  while (cpTay && addDays(tuanCp(nKe)!, 6) < homNay) nKe += 1;
+  const soCp = progress.mocLap
+    ? [...new Set([...attempts.filter((a) => a.kind === 'checkpoint').map((a) => a.attempt_no as number), ...(cpTay ? [nKe] : [])])].sort((x, y) => x - y) : [];
+  if (progress.mocLap) kinds.splice(0, kinds.length, ...soCp.map((n) => `cp${n}`));
   const ttMt0 = mt0TheoHocVien(mt0s.map((a) => a.student_id as number));
   const mt0Cua = new Map(mt0s.map((a) => [a.student_id as number, oMt0(a, bundle, skillRows, homNay, ttMt0.get(a.student_id)?.trangThai === 'khong_dung')]));
   const hang = students.map((s) => {
@@ -913,9 +919,10 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
   const nhanKhoa = (n: number | null) => (n && progress.totalWeeks ? tuanKhoaCua(n, progress.totalWeeks) : null);
   const hvChuaCoLich = students.filter((s) => kinds.every((k) => !theoEm.has(`${s.id}:${k}`))).length;
   const cw = progress.currentWeek;
-  const tuanCp = (n: number) => (progress.startWeekStart && progress.mocLap ? addDays(progress.startWeekStart, 7 * (n * progress.mocLap - 1)) : null);
   return {
     classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), chuongTrinh: progress.programmeCode as string | null,
+    /** TAT-CHECKPOINT: ô Checkpoint em chưa có → nút "Xếp {tuần}" (QL xếp tay) thay "—". */
+    cpTay,
     khaiGiang: progress.startWeekStart, tongTuan: progress.totalWeeks,
     tuanHienTai: progress.mocLap ? (cw && cw >= 1 ? `tuần ${cw}` : null)
       : cw && progress.totalWeeks ? (cw > progress.totalWeeks ? 'sau khoá' : cw >= 1 ? tuanKhoaCua(cw, progress.totalWeeks) : null) : null,
@@ -941,8 +948,10 @@ export function xepMoiThuong(p: Principal, i: {
   const conn = db();
   requireSuaLichTest(p, { classId: i.classId }, PLAN_MSG);
   const { prog } = docLopThuong(i.classId);
-  if (/^cp\d+$/.test(i.kind)) throw badRequest('Checkpoint tự xếp theo lịch lớp — bấm ô Checkpoint đã có để dời tuần.');
-  if (i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Progress Test hoặc Final Test.');
+  /* TAT-CHECKPOINT: tắt tự sinh → QL xếp tay Checkpoint n (`taoCheckpointTay`); bật lại → như cũ (chỉ dời lượt đã có). */
+  const cp = /^cp([1-9]\d{0,4})$/.exec(i.kind);
+  if (cp && CONG_TAC_CP.tuSinh) throw badRequest('Checkpoint tự xếp theo lịch lớp — bấm ô Checkpoint đã có để dời tuần.');
+  if (!cp && i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Progress Test hoặc Final Test.');
   const bo = boMonThuong(prog);
   const dangHoc = conn
     .prepare(`SELECT 1 FROM enrollments WHERE class_id = ? AND student_id = ? AND status = 'active'`)
@@ -953,6 +962,16 @@ export function xepMoiThuong(p: Principal, i: {
 
   return tx(() => {
     const cycle = cycleThuong(i.studentId);
+    if (cp) {
+      const n = Number(cp[1]);
+      if (!cycle) throw badRequest('Học viên chưa có lộ trình lớp thường.');
+      const kiem = kiemTuanMoi(cycle.id, n, bo.map((k) => periods.get(tuan[k]).week_start), 'checkpoint');
+      if (kiem.blockers.length) throw badRequest(kiem.blockers.join(' '));
+      if (kiem.warnings.length && !i.force) throw badRequest(`${kiem.warnings.join(' ')} ${CAU_XAC_NHAN}`);
+      const id = taoCheckpointTay(i.classId, cycle.id, i.studentId, n, periods.get(tuan[bo[0]]).week_start, p.userId);
+      luuDot(p, { attemptId: id, kyNang: bo.map((k) => ({ skill: k, periodId: tuan[k] })), force: true, khiTao: true });
+      return { id };
+    }
     if (cycle && conn.prepare('SELECT 1 FROM assessment_attempts WHERE cycle_id = ? AND kind = ?').get(cycle.id, i.kind)) {
       throw badRequest('Học viên đã có bài này rồi. Đổi tuần thay vì xếp mới.');
     }
@@ -1006,12 +1025,18 @@ function xetMotEmThuong(i: {
     ? conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = 'checkpoint' AND attempt_no = ? AND status != 'cancelled'`).get(cycle.id, Number(cp[1])) as any
     : conn.prepare(`SELECT * FROM assessment_attempts WHERE cycle_id = ? AND kind = ?`).get(cycle.id, i.kind) as any;
 
-  if (!existing && cp) return loi(`Em chưa có ${nhanDot} — Checkpoint tự xếp theo lịch lớp.`);
+  if (!existing && cp && CONG_TAC_CP.tuSinh) return loi(`Em chưa có ${nhanDot} — Checkpoint tự xếp theo lịch lớp.`);
   if (!existing) {
     /* Em chưa có bài: bài mới luôn tạo đủ dòng lịch (Q2) nên cần đủ bộ môn. */
     if (co.length < i.bo.length) return loi(`Em chưa có ${nhanDot} — ${cauThieuMon(i.bo).replace(/^C/, 'c')}`);
-    const attemptNo = cycle ? ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?').get(cycle.id) as any)?.m ?? 0) + 1 : 1;
-    const kiem = kiemTuanMoi(cycle?.id ?? null, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start), i.kind);
+    /* TAT-CHECKPOINT: Checkpoint xếp tay giữ số n (số chung cả lớp) — số đã có lượt khác (không phải Checkpoint n đã ẩn) thì chặn như `taoCheckpointTay`. */
+    if (cp) {
+      const trung = cycle ? conn.prepare('SELECT kind, status FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?').get(cycle.id, Number(cp[1])) as any : null;
+      if (!cycle) return loi('Học viên chưa có lộ trình lớp thường.');
+      if (trung && (trung.kind !== 'checkpoint' || trung.status !== 'cancelled')) return loi(`Em đã có bài số ${cp[1]} — bấm ô Checkpoint đã có để dời tuần.`);
+    }
+    const attemptNo = cp ? Number(cp[1]) : cycle ? ((conn.prepare('SELECT MAX(attempt_no) m FROM assessment_attempts WHERE cycle_id = ?').get(cycle.id) as any)?.m ?? 0) + 1 : 1;
+    const kiem = kiemTuanMoi(cycle?.id ?? null, attemptNo, co.map((k) => i.periods.get(i.tuan[k]!).week_start), cp ? 'checkpoint' : i.kind);
     const bai = baiMoi(co, i.tuan, i.periods, kiem);
     if (kiem.blockers.length) return loi(kiem.blockers.join(' '), bai);
     return { dong: { studentId: i.studentId, ten: i.ten, hanhDong: 'tao', bai, loi: null }, attemptId: null };
