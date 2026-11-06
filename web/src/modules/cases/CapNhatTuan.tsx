@@ -12,7 +12,6 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
-import { nhapKetQua } from './GhiNhanh.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import {
@@ -33,6 +32,10 @@ import { dich, dichDu, t } from '@shared/i18n/index.ts';
  * "Vấn đề còn tồn / Ghi chú" — chữ cũ không xoá: sửa lần ghi cũ gửi lại nguyên giá trị, lịch sử vẫn đọc. Luật giữ nguyên (máy chủ kiểm lại); nút chính
  * luôn bấm được, bấm khi thiếu mới hiện lỗi dưới ô + "Còn thiếu n ô" ở chân.
  */
+
+/** Nháp Ghi kết quả của một PA (Hoàn tác lần lưu trả lại ĐỦ ô — form mở lại điền sẵn một lần). `GhiKetQuaPanel` đọc rồi xoá. */
+export type NhapKetQua = { outcome: string; note: string; khac?: Record<string, any> };
+export const nhapKetQua = new Map<number, NhapKetQua>();
 
 export type PaCanCapNhat = {
   id: number; kind: string; description: string | null; performer: string | null;

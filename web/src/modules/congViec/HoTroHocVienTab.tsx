@@ -23,6 +23,7 @@ import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { PanelViec, lamTaiCho, moCaDong } from './PanelViec.tsx';
+import { NganCase } from '../students/NganCase.tsx';
 import { DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
@@ -30,7 +31,7 @@ import { NutXuatLopBc } from '../classes/TabBaoCaoPh.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import {
-  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, duongHoSoHocVien, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
+  LOC_NHANH_LABEL, NHOM_VIEC, NHOM_VIEC_LABEL, demLocNhanh, gomNhomViec, khoaGopCua, khopLocNhanh, nhomViecCua,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type NhomViec as MaNhomViec, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, type DemYeuCau, type LocNguoiViec,
 } from '@shared/domain/index.ts';
@@ -599,6 +600,12 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
   const iv = it.paId ? (data?.interventions ?? []).find((x: any) => x.id === it.paId) : null;
   const ai = it.owner ?? t('người phụ trách');
+  /* CASE-PA-UI b (v16 i2): "Mở Case ›" mở CÙNG panel Case ngay tại chỗ (chỉ xem theo quyền) — "‹ {việc}" về tóm tắt; không đổi trang. */
+  const [xemCase, setXemCase] = useState(false);
+  if (xemCase && it.caseId !== null) {
+    return <NganCase caseId={it.caseId} paId={it.paId ?? null} hocVien={it.studentId !== null ? it.studentName : null} lop={it.classCode} onClose={onDong}
+      veNguon={{ nhan: tenBoEm(it), onClick: () => setXemCase(false) }} />;
+  }
   return (
     <DauViecCongViec.Provider value={{ loai, them }}>
       <KhungPanel tieuDe={tenBoEm(it)} onDong={onDong}
@@ -622,8 +629,8 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
               {iv.description && <div className="mt-1.5"><Trich>{dichDu(iv.description)}</Trich></div>}
             </> : null],
             /* N37: Case · PA · Kết quả PA một tuyến — "Mở Case ›" sang hồ sơ em, Case mở sẵn ở đúng PA (id sẵn có). */
-            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.studentId !== null && it.caseId !== null && <> · <Link className="inline-flex items-center font-semibold no-underline hover:underline max-sm:min-h-[44px]"
-              to={duongHoSoHocVien(it.studentId, { caseId: it.caseId, paId: it.paId ?? undefined })}>{t('Mở Case ›')}</Link></>}</> : null],
+            [t('Tới đâu'), data?.trangThaiV4?.chu ? <>{dich(data.trangThaiV4.chu)}{it.caseId !== null && <> · <button type="button" className="link-nho inline-flex items-center text-[15px] max-sm:min-h-[44px]"
+              onClick={() => setXemCase(true)}>{t('Mở Case ›')}</button></>}</> : null],
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />
           {/* SUA-LOI-CV: bài chấm chéo không của riêng ai (T18) — không câu "Chỉ … làm được". */}
