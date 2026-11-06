@@ -112,6 +112,7 @@ import { migratePrBanGiaoGv } from './migrate/prBanGiaoGv.ts';
 import { migratePrTlNen } from './migrate/prTlNen.ts';
 import { migratePrTlNapBai } from './migrate/prTlNapBai.ts';
 import { migratePrGiamDoc0611h } from './migrate/prGiamDoc0611h.ts';
+import { migratePrNgayXong0711 } from './migrate/prNgayXong0711.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -177,6 +178,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* BO-QUA-XEP-MT: 3 cột case_interventions.bo_qua_* (Bỏ qua việc Xếp lịch MT) — ĐẦU migrate, chỉ thêm cột NULL (myWork đọc). */ buoc(() => themCotPrBoQuaMoc(conn, applied));
     /* HAN-BAO-PH: han_chon (Báo PH, Meeting CX) + viec_han_lan + viec_bao_ph_lan.khoa — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrHanBaoPh(conn, applied));
     /* RESET-HAN-CASE: cột sos_cases.han_them_pa — ĐẦU migrate, chỉ thêm (`hanThemPa` / `XU_LY_COT_SQL` đọc). */ buoc(() => themCotHanThemPa(conn, applied));
+    /* XM-VIEC-DUNG-HAN b: cột sos_cases.mo_ta_luc (ngày xong Xác nhận / Mô tả Case) — đầu migrate, chỉ thêm, chạy lặp được. */ buoc(() => migratePrNgayXong0711(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [

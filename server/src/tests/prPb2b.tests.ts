@@ -294,6 +294,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 4 · bảng Phân tích giáo viên — máy chủ (Task 4)
   console.log('\nPR-Pb2-b · Bảng Phân tích giáo viên: mỗi cột một hàm tập, hai đường, quyền, không N+1');
   const pt: any = await import('../phanTich/giaoVien.ts');
+  const vx: any = await import('../phanTich/viecDaXong.ts');
   const hieuQuaPaSvc: any = await import('../phanTich/hieuQuaPa.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const nguCanh: any = await import('../platform/nguCanhRequest.ts');
@@ -398,9 +399,12 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const b = bang('ft', { tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
     const h = hangCua(b, gvcn.userId);
     /* DEM-QUA-HAN: Việc đúng hạn = Kết quả PA + việc Công việc còn mở quá hạn — Ý thức chỉ "Xử lý vi phạm" bắt buộc QUÁ HẠN (vừa ghi hôm nay: chưa quá hạn → không vào). */
-    const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) })).get(gvcn.userId) ?? [];
+    const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
+    const mo = pt.viecQuaHanMo(nc).get(gvcn.userId) ?? [];
+    /* XM-VIEC-DUNG-HAN a / b: đếm DÒNG (≤ số việc) và cộng việc đã xong có ngày xong (`viecDaXong`). */
+    const xg: any[] = vx.viecDaXong(nc).get(gvcn.userId) ?? [];
     assert(h && !('xuLyViPham' in h) && mo.every((it: any) => !it.group.startsWith('yt_') || (it.group === 'yt_xu_ly' && it.due < D))
-      && (h.viecDungHan.tong ?? 0) === (h.ghiKetQuaPa.tong ?? 0) + mo.length && (h.viecDungHan.dung ?? 0) === (h.ghiKetQuaPa.dung ?? 0), JSON.stringify(h));
+      && (h.viecDungHan.tong ?? 0) <= (h.ghiKetQuaPa.tong ?? 0) + mo.length + xg.length && (h.viecDungHan.dung ?? 0) <= (h.ghiKetQuaPa.dung ?? 0) + xg.filter((x) => x.dung).length, JSON.stringify(h));
     assert((conn.prepare(`SELECT COUNT(*) AS n FROM violations WHERE id IN (${[...ids, ...ids2].join(',')})`).get() as any).n === 6, 'vi phạm phải còn');
   });
   check('Pb2b (4i) · Kết quả: GV L có ô L (FT 5 khoá), GV không dạy L → "—" ở L; em KCK không tính; HV tiến bộ: MT trước L 5.5 → nay 6.0 tiến bộ; chưa có bài trước → không có mặt', () => {

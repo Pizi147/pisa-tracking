@@ -1,4 +1,5 @@
 import { DS_JSON, db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
+import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
 import { TIN_HIEU_CASE_DA_XOA } from './signals.ts';
@@ -895,6 +896,7 @@ export function addIssues(caseId: number, actor: number | null, input: {
   };
   if (input.primaryCode) add(input.primaryCode, 'primary', input.observation);
   for (const c of input.secondaryCodes ?? []) add(c, 'secondary', null);
+  if (input.primaryCode) capNhatMoTaLuc(conn, caseId);   // XM-VIEC-DUNG-HAN b: ngày xong Xác nhận / Mô tả Case
 }
 
 // ---------------------------------------------------------------- tác động và xem lại
@@ -1527,6 +1529,7 @@ export function hoanTacXacNhanCaseS(p: Principal, caseId: number) {
       conn.prepare(`INSERT INTO case_issues (id, case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?)`)
         .run(r.id, caseId, r.role, r.taxonomy_code, r.taxonomy_version, r.skill ?? null, r.observation ?? null, r.created_by ?? null, r.created_at);
     }
+    capNhatMoTaLuc(conn, caseId);   // XM-VIEC-DUNG-HAN b: hoàn tác về chưa mô tả → ngày xong NULL
     const luc = nowIso();
     conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = ?, updated_at = ? WHERE id = ?').run(h.moTaAttemptId, luc, caseId);
     conn.prepare('UPDATE assessment_scores SET cho_phu_trach_xem = 1 WHERE id = ?').run(h.scoreId);

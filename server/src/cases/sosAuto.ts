@@ -1,4 +1,5 @@
 import { db, theoLo, tx } from '../db.ts';
+import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
@@ -704,6 +705,7 @@ export function hoanTacXacNhanCase(p: Principal, caseId: number) {
     const khac = (a: Record<string, unknown> | undefined, b: Record<string, unknown>) => !a || COT_PA_XAC_NHAN.some((k) => k !== 'followup_due' && a[k] !== b[k]);
     if (h.pa.some((x) => khac(hien.get(x.id), x.sau))) throw conflict('PA của Case đã đổi sau lần xác nhận — sửa PA hoặc sửa Case nếu cần.');
     conn.prepare('DELETE FROM case_issues WHERE case_id = ? AND id NOT IN (SELECT value FROM json_each(?))').run(caseId, JSON.stringify(h.issues));
+    capNhatMoTaLuc(conn, caseId);   // XM-VIEC-DUNG-HAN b: hoàn tác Xác nhận Case → ngày xong NULL
     conn.prepare('UPDATE sos_cases SET urgency = ?, summary = ?, title = ?, updated_at = ? WHERE id = ?').run(h.urgency, h.summary, h.title, nowIso(), caseId);
     conn.prepare('DELETE FROM case_milestones WHERE dedup_key = ?').run(`xac_nhan_case:${caseId}`);
     for (const x of h.pa) traPa(conn, x.id, x.truoc);
