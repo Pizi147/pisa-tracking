@@ -34,8 +34,9 @@ const TenCn = ({ ten, ma }: { ten: string; ma: string | null | undefined }) => {
     <span className="ml-1.5 inline-flex h-[18px] items-center rounded-[5px] border px-1.5 align-[2px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{ma}</span></span></>;
 };
 
-/* CV-TAB (mockup v17 `.than .viec`): [tên + phụ | hạn 132 px | nút ≥ 104 px] từ 640 px; 375 (mockup b): [tên + phụ, hạn dưới | nút giữa hai hàng]. */
-export const COT_VIEC = 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_132px_minmax(104px,auto)]';
+/* CV-TAB (mockup v17 `.than .viec`): [tên + phụ | hạn 132 px | nút ≥ 124 px] từ 640 px; 375 (mockup b): [tên + phụ, hạn dưới | nút giữa hai hàng].
+   RA-GD-0711: nút 104 → 124 px (nút dài nhất tiếng Việt "Bàn giao môn P" 122 px) — nút dài không đẩy cột hạn lệch khỏi hàng trên / dưới. */
+export const COT_VIEC = 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_132px_minmax(124px,auto)]';
 const DONG = `grid min-h-[56px] cursor-pointer items-center gap-x-3 gap-y-1 px-4 py-[11px] ${COT_VIEC}`;
 const O_HAN = 'max-sm:col-start-1 max-sm:row-start-2';
 const O_NUT = 'max-sm:col-start-2 max-sm:row-span-2 max-sm:row-start-1 max-sm:self-center';
@@ -125,7 +126,9 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
 export function HangTab({ tabs, dang, onChon, idPanel }: { tabs: readonly { key: string; nhan: string; badge: BadgeTab | null }[]; dang: string | null; onChon: (k: string) => void; idPanel: string }) {
   return (
     <div role="tablist" aria-label={t('Hạng mục việc')} onKeyDown={phimHangTab}
-      className="-mx-4 flex gap-1 overflow-x-auto border-b px-4 [scrollbar-width:none] md:-mx-5 md:px-5" style={{ borderColor: 'var(--line)' }}>
+      /* RA-GD-0711: `relative` — chữ `sr-only` (absolute) của badge bám vào hàng tab, không kéo <main> trượt ngang ở 375 (784/375);
+         375 mép phải mờ như `ui/HangTab` (tab bị cắt ở mép thì biết còn tab để cuộn). */
+      className="relative -mx-4 flex gap-1 overflow-x-auto border-b px-4 [scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:-mx-5 md:px-5" style={{ borderColor: 'var(--line)' }}>
       {tabs.map((x) => {
         const on = x.key === dang;
         return (
@@ -228,13 +231,13 @@ function CotHan({ it, daXong, nguoi }: { it: WorkItem; daXong: boolean; nguoi: s
 export function NguoiGiu({ ten, vai }: { ten: string; vai?: string | null }) {
   const nhanVai = vai ? dich(vai) : null;
   return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-[5px] pl-0.5 text-[13px] font-normal text-dim" title={nhanVai ? `${ten} · ${nhanVai}` : ten}>
-      <svg aria-hidden viewBox="0 0 12 12" className="h-3 w-3 shrink-0 fill-none stroke-[color:var(--text-faint)]" strokeWidth={1.5}>
+    /* RA-GD-0711: tên người xuống dòng thay vì "Phạm Thu T…" (cột 150 px của Chờ duyệt) — tên cắt mất nghĩa. */
+    <span className="inline-flex min-w-0 max-w-full items-start gap-[5px] pl-0.5 text-[13px] font-normal leading-snug text-dim" title={nhanVai ? `${ten} · ${nhanVai}` : ten}>
+      <svg aria-hidden viewBox="0 0 12 12" className="mt-[3px] h-3 w-3 shrink-0 fill-none stroke-[color:var(--text-faint)]" strokeWidth={1.5}>
         <circle cx="6" cy="4" r="2.2" /><path d="M1.8 11c.5-2.3 2.1-3.5 4.2-3.5s3.7 1.2 4.2 3.5" />
       </svg>
-      <span className="truncate">{ten}</span>
-      {/* [XM] #939: vai người gửi với em (máy chủ gắn) — chữ mờ hơn tên, không đậm, cùng hàng (M10). */}
-      {nhanVai && <span className="shrink-0 text-faint">{nhanVai}</span>}
+      {/* [XM] #939: vai người gửi với em (máy chủ gắn) — chữ mờ hơn tên, không đậm, cùng hàng (M10); thiếu chỗ thì vai xuống dòng sau tên. */}
+      <span className="min-w-0 [overflow-wrap:anywhere]">{ten}{nhanVai && <>{' '}<span className="whitespace-nowrap text-faint">{nhanVai}</span></>}</span>
     </span>
   );
 }
@@ -310,10 +313,11 @@ function MuiTenMoTrang({ it, dong, nut }: { it: WorkItem; dong: ChungDong; nut: 
   return <span aria-label={t('mở trang')} className={`text-[13px] font-normal text-[color:var(--accent)] ${nut ? 'sm:hidden' : ''}`}>{' '}›</span>;
 }
 
-/** Dòng phụ 13 / 400 mờ (mockup `.t2`): các mẩu nối " · ", xuống dòng khi thiếu chỗ — không cắt "…". */
+/** Dòng phụ 13 / 400 mờ (mockup `.t2`): các mẩu nối " · ", xuống dòng khi thiếu chỗ — không cắt "…".
+ *  RA-GD-0711: "·" dính CUỐI mẩu trước — xuống dòng không mở đầu dòng bằng "· tuần W1 SEP". */
 const DongPhu = ({ ds, children }: { ds: readonly ReactNode[]; children?: ReactNode }) => (ds.length || children ? (
   <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim">
-    {ds.map((x, i) => <span key={i} className="whitespace-nowrap">{i > 0 && <span aria-hidden>· </span>}{x}</span>)}
+    {ds.map((x, i) => <span key={i} className="whitespace-nowrap">{x}{i < ds.length - 1 && <span aria-hidden> ·</span>}</span>)}
     {children}
   </span>
 ) : null);
