@@ -255,7 +255,7 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi, nguoiAn }: Chung
   const viecCaLop = it.group === 'chot_len_ft' || it.group === 'xet_lai_lo_trinh' || it.group === 'ky_vong_dau_ra';
   /* brief 7: chế độ theo dõi — không động từ; quyền làm thay thật (`lamThay`) mới có nút. */
   /* U01 #4: nút khay dòng gộp "4 em ▾" — số việc đã ở thẻ phụ. */
-  const nut = con ? dich(it.actionLabel.split(' · ')[0]) : laViecChamCheo(it) && !xem ? t('Chấm') : xem ? ((it as { lamThay?: boolean }).lamThay ? (it.group === 'score' ? t('Nhập hộ') : t('Làm thay')) : null) : laPhoiHop(it) ? t('Phối hợp') : dich(it.actionLabel);
+  const nut = con ? dich(it.actionLabel.split(' · ')[0]) : laViecChamCheo(it) && !xem ? ((it as { chiXemCham?: boolean }).chiXemCham ? t('Xem') : t('Chấm')) : xem ? ((it as { lamThay?: boolean }).lamThay ? (it.group === 'score' ? t('Nhập hộ') : t('Làm thay')) : null) : laPhoiHop(it) ? t('Phối hợp') : dich(it.actionLabel);
   /* QL Tất cả: người giữ việc đứng dưới hạn (mockup `.h .ai`) — cột "khi nào · ai" thẳng hàng. v12 S3: không lặp điều đã biết — việc của tôi,
      việc của GV đang xem (`nguoiAn`), bài chấm chéo ("GV chấm chéo" = tên nhóm) không ghi người. */
   const cc = laViecChamCheo(it) || dich(it.statusLabel) === CHAM_CHEO;

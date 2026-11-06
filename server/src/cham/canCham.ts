@@ -16,7 +16,7 @@ import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import {
-  ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, CHAM_CHEO, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
+  ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
   tenMonNgan, type Khung, nhanLopLichTest,
   soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
 } from '../../../shared/domain/index.ts';
@@ -274,7 +274,7 @@ export function noQuaHan(
     moved: MonDoiLich | null;
   };
   type Gom = DongNo & {
-    _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _cc: boolean; _chuaPc: boolean;
+    _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _chuaPc: boolean;
     /* OV-11e (TE-7): phần của người xem / của GV khác (cùng luật `hangLopTuan`). */
     _toiKn: Set<string>; _toiCon: number; _toiQuaHan: boolean; _khacKn: Set<string>; _khacCon: number; _khacTre: number | null;
   };
@@ -304,6 +304,8 @@ export function noQuaHan(
         }
         continue;
       }
+      /* T18 (chủ SP 06/11): S Mock chấm chéo quá hạn CHỈ ghi ở Công việc + Chấm Test — không vào khối 1 Lịch Test (mọi vai). */
+      if (laChamCheo(a.kind, x.skill)) continue;
       const key = `${a.classId}:${a.kind}:${a.attemptNo ?? 0}:${x.periodId ?? 0}`;
       let cu = gom.get(key);
       if (!cu) {
@@ -314,7 +316,7 @@ export function noQuaHan(
           periodId: x.periodId, weekStart: x.weekStart,
           kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, attemptIds: [], han: null, quaHan: false, luiLich: null,
           cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), phan: null, hrefDayDu: '', gvNo: [],
-          _hs: new Set(), _aid: new Set(), _gv: new Set(), _cc: false, _chuaPc: false,
+          _hs: new Set(), _aid: new Set(), _gv: new Set(), _chuaPc: false,
           _toiKn: new Set(), _toiCon: 0, _toiQuaHan: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null,
         };
         gom.set(key, cu);
@@ -324,7 +326,7 @@ export function noQuaHan(
       cu._hs.add(a.studentId);
       cu._aid.add(a.id);
       const gv = (a.pendingOwners ?? {})[x.skill] ?? null;   // cùng nguồn tên với lượt (listAttempts) — không câu SQL mới
-      if (gv === CHAM_CHEO) cu._cc = true; else if (gv) cu._gv.add(gv); else cu._chuaPc = true;
+      if (gv) cu._gv.add(gv); else cu._chuaPc = true;
       if (x.deadline && (!cu.han || x.deadline < cu.han)) cu.han = x.deadline;
       if (x.overdue) cu.quaHan = true;
       if (cuaToi(a.classId, a.kind, x.skill)) {
@@ -348,7 +350,7 @@ export function noQuaHan(
   const luiLichOf = dungLuiLich(doi);
 
   const dong: DongNo[] = [...gom.values()].map((d) => {
-    const { _hs, _aid, _gv, _cc, _chuaPc, _toiKn, _toiCon, _toiQuaHan, _khacKn, _khacCon, _khacTre, ...rest } = d;
+    const { _hs, _aid, _gv, _chuaPc, _toiKn, _toiCon, _toiQuaHan, _khacKn, _khacCon, _khacTre, ...rest } = d;
     const kyNang = [...d.kyNang].sort(theoThuTu);
     /* OV-11e (TE-7, CA3-4): người có phân công — "Quá hạn" đỏ + số chỉ phần của mình; Quản lý / Quản trị (xếp lịch được lớp) — mọi ô, như cũ. */
     const phanRieng = !!f.coPhanCong && !can(p, PERMISSIONS.PLAN_WEEK, { classId: d.classId });
@@ -362,7 +364,7 @@ export function noQuaHan(
       kyNang,
       kyNangLabel: kyNangLabelOf(d.mode, kyNang, d.chuongTrinh),
       soHv: _hs.size,
-      gvNo: [...[..._gv].sort((x, y) => x.localeCompare(y, 'vi')), ...(_cc ? [CHAM_CHEO] : []), ...(_chuaPc ? ['chưa phân công'] : [])],
+      gvNo: [...[..._gv].sort((x, y) => x.localeCompare(y, 'vi')), ...(_chuaPc ? ['chưa phân công'] : [])],
       attemptIds: [..._aid],
       luiLich: luiLichOf.get(d.key) ?? null,
       cuaToi: mySkills(p, d.classId, kyNang.filter((k) => !laChamCheo(d.kind, k))).length > 0,

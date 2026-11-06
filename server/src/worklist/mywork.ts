@@ -148,6 +148,8 @@ export type WorkItem = {
   soLanThu?: number;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
+  /** T18 (06/11): việc Chấm Speaking của người KHÔNG chấm được S (GVCN) — chỉ xem, nút "Xem". */
+  chiXemCham?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
   boQuaDuoc?: boolean;
 };
@@ -739,6 +741,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       items.push({
         ...mau, key: KHOA_CHAM_SPEAKING,
         ...(hanQua.length ? { urgency: 'overdue' as const, due: hanQua.filter((x): x is string => !!x).sort()[0] ?? null } : {}),
+        ...(lopCheo.size ? {} : { chiXemCham: true }),
         studentId: null, studentName: '', emIds: undefined, classId: null, classCode: null,
         /* Dòng phụ: số lớp (tiêu đề đã có số bài). */
         attemptId: null, attemptNo: null, contextLabel: `${new Set(ccDongs.map((x) => x.classId)).size} lớp`, phu: null, luot: undefined, periodId: null, tuanThi: null,

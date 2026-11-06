@@ -1259,9 +1259,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* BAO-CAO-PH b (06/11): chụp lại 'ADMIN toi' — đổi CÓ CHỦ Ý: Admin có việc mới "Xuất báo cáo PH" (nhóm Việc quản lý — đợt quá hạn chưa đủ / lớp đủ 7 ngày);
        10 băm khác giữ (QL không nhận việc này). Trước: ADMIN toi 4ed1fc3fa34653f2; chụp lại lần hai sau khi `reason` của việc bỏ tên đợt
        (EN theo mẫu từ điển) — chỉ chữ đó đổi (ddb1ac7c6032790f → 4c6c4dd6a797d681). */
-    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': 'f343db0526d3c367', 'GVBM toi': 'e089af060bbfcf23',
-    'GVCN_THUONG toi': 'f343db0526d3c367', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '68eb7bf00d5d3794', 'QT tat-ca': '5a8f912d0266aeb4',
-    'QT tat-ca cn': '699c581b1c85ef3a', 'QL gvcn': '840bfb4a2833e9e6', 'GVS toi': '8925006102baff97',
+    'QL toi': 'f2cc522d889b43ca', 'QT toi': '51fe838d1a390ccb', 'GVCN toi': '60c5bade0f68786f', 'GVBM toi': 'e089af060bbfcf23',
+    'GVCN_THUONG toi': '60c5bade0f68786f', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '68eb7bf00d5d3794', 'QT tat-ca': '5a8f912d0266aeb4',
+    'QT tat-ca cn': '699c581b1c85ef3a', 'QL gvcn': 'b3b7a8f54f080ef5', 'GVS toi': '8925006102baff97',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
