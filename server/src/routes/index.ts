@@ -27,6 +27,7 @@ import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
+import * as lopNghiSvc from '../classes/lopNghi.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
@@ -2071,6 +2072,17 @@ api.post('/ban-giao-gv/:id/xac-nhan', requireAuth, wrap((req) => {
 api.patch('/classes/:id/progress', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return scheduleSvc.setClassProgress(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
+/** FT-LOP-NGHI: "Lớp nghỉ 1 tuần" của lớp Fast Track — xem trước · áp dụng · Hoàn tác (quyền `duocSuaLichLop`, kiểm lại trong hàm). */
+api.get('/classes/:id/lop-nghi', requireAuth, wrap((req) => lopNghiSvc.xemTruocLopNghi(principalOf(req), pInt(req, 'id'), req.query.tuan)));
+api.post('/classes/:id/lop-nghi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return lopNghiSvc.apDungLopNghi(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/classes/:id/lop-nghi/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return lopNghiSvc.hoanTacLopNghi(principalOf(req), pInt(req, 'id'), req.body?.lanId);
 }));
 
 /** Lịch MT hệ thống ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học. */
