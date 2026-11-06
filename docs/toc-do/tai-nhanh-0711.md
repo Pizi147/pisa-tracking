@@ -49,3 +49,16 @@ Cách đo như `tai-nhanh-0611.md`: `vite build` → `vite preview` (5714) + API
 - Mảnh `NganCase` có trong `NAP_SAN` qua `PanelViec` → bấm Case sau trang đầu mở ngay. Request API không đổi → Turso không đổi.
 - Bấm thử bản build 1440 tối: hồ sơ lớp MB FT 101 → ô S "✗ 5.0" → "Xem chi tiết" mở panel "CASE HỌC THUẬT · Case Speaking · MT3"; hồ sơ HV 70
   (mảnh Case nạp từ đầu như cũ); Học viên & Lớp. Không lỗi 5xx.
+
+## PR TAI-NHANH-0711c — hồ sơ lớp: gọi sớm 4 đường tầng sau (nối sau PR b)
+Trước: `/xet-lai`, `/classes/:id/viec-theo-em?chi=toi`, `/classes/:id/xoa-ket-thuc`, `/cases?classId` chỉ gọi khi effect của lần dựng đầu chạy — sau khi cả
+trang (33 em) dựng xong, ~30–100 ms sau `/overview` (tầng 2 rồi tầng 3). Nay `ClassOverviewPage` gọi `taiTruoc` CÙNG URL ngay lúc `/overview` về, đúng điều kiện
+nơi gắn (một lần mỗi lớp); hook dùng lại lời gọi đang bay (`dangBay`).
+
+- Danh sách request mỗi lần mở — y hệt trước / sau, 10 tình huống (QL: FT tab Học viên, `?tab=y-thuc`, `?che-do=thong-tin`, `?che-do=ket-qua`, lớp thường,
+  lớp thường `?xem=cuoi-khoa`, FT khác · GV: FT, lớp thường · QT: FT) → **Turso y hệt**.
+- `/cases?classId` bắt đầu: trước 30–46 ms sau `/overview` xong, sau ~2 ms. Thời gian từ `/overview` xong tới request cuối (máy cục bộ, API ~10 ms):
+  trước 35–69 ms, sau 38–66 ms — trong nhiễu, vì ở máy cục bộ API nhanh hơn thời gian dựng. Lợi thật ở mạng / Turso chậm: 4 đường chạy song song với
+  lúc dựng trang thay vì nối sau (≈ thời gian dựng, 30–100 ms mỗi lần mở hồ sơ lớp).
+- Không gọi sớm `/hoc-vien-lop/ids` (gọi bằng `api.get` trong lối Lớp trước / sau, không qua `dangBay` — gọi sớm sẽ thành hai lần).
+- Điều kiện hẹp hơn thực tế (vd `?che-do=thong-tin` của QL bị đổi về Tổng hợp) chỉ là không gọi sớm, không thêm lần gọi.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { taiTruoc, useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
@@ -27,7 +27,7 @@ import { TabBaoCaoPh } from './TabBaoCaoPh.tsx';
 import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
-import { ThanhViecLop } from './ThanhViecLop.tsx';
+import { ThanhViecLop, duongViecLop } from './ThanhViecLop.tsx';
 import { CuoiKhoaLop } from './CuoiKhoaLop.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -78,6 +78,8 @@ export default function ClassOverviewPage() {
   const xemXl = !!data && (data.viewer.coTheChuyenTiep || data.viewer.isCoreTeacher);
   const xl = useApi<{ em: EmXetLai[] }>(classId && xemXl ? duongXetLai(Number(classId)) : null, [classId, xemXl]);
   const coXetLai = new Set((xl.data?.em ?? []).filter((e) => !e.quyetDinh).map((e) => e.studentId));
+  /* TAI-NHANH-0711c: lớp đã gọi sớm `/xet-lai` + `/cases?classId` (một lần mỗi lớp — dựng lại không gọi thêm). */
+  const daGoiSom = useRef<number | null>(null);
 
   useEffect(() => {
     if (periodId === null && periods.data?.length && homNay) {
@@ -136,6 +138,20 @@ export default function ClassOverviewPage() {
   const thuong = data.programme?.scoringMode === 'ratio';
   const bc = data.baoCaoPh ?? null;
   const tab: TabHoSoLop = tabMacDinhLop(params.get('tab'), daKetThuc, !!bc);
+  /*
+   * TAI-NHANH-0711c: các đường chỉ biết điều kiện sau `/overview` — `/xet-lai` (hook `xl` trên), việc của tôi (`ThanhViecLop`), Xoá / Kết thúc lớp
+   * (`DauTrangLop`), Case cả lớp (bảng FT `BangHoSoLop`, tab Học viên · cách xem Tổng hợp) — trước chỉ gọi khi effect của lần dựng đầu chạy, sau khi
+   * cả trang lớn dựng xong (~30–100 ms sau `/overview`). Gọi NGAY lúc `/overview` về, CÙNG URL, CÙNG điều kiện gắn → hook dùng lại lời gọi đang bay
+   * (`dangBay`), không thêm lần đọc nào. Điều kiện hẹp hơn thực tế (vd `?che-do=ket-qua` bị đổi về Tổng hợp) chỉ là không gọi sớm.
+   */
+  if (daGoiSom.current !== data.id && String(data.id) === classId) {
+    daGoiSom.current = data.id;
+    const trangChinh = !(params.get('xem') === 'cuoi-khoa' && thuong && !data.lienTuc);   // trang con Cuối khoá không gắn đầu trang / bảng
+    if (xemXl) taiTruoc(duongXetLai(data.id));
+    if (trangChinh && !daKetThuc) taiTruoc(duongViecLop(data.id));
+    if (trangChinh && (data.viewer.coTheXoaKetThuc || data.viewer.coTheKetThucLop)) taiTruoc(`/classes/${data.id}/xoa-ket-thuc`);
+    if (trangChinh && !thuong && tab === 'hoc-vien' && cheDo === 'diem') taiTruoc(`/cases?classId=${data.id}`);
+  }
   const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc);
   const dsTab = tabHienCuaLop(daKetThuc, !!bc);
   /* BAO-CAO-PH (mockup t0, e1): chip nhẹ trên tab — đợt đang mở "Tháng 11 · hạn 30/11", vừa quá hạn mà lớp chưa đủ "⚠ … · quá hạn 2 ngày". Không chuông, không việc. */
