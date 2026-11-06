@@ -313,12 +313,12 @@ export default function App() {
         const vai = gocNhin.coThe.find((v) => v.role === gocNhin.dangChon);
         const goc = gocNhin.coThe.find((v) => v.role === gocNhin.vaiGoc);
         return (
-          <div role="status" className="shrink-0 flex items-center gap-x-2.5 gap-y-1 border-b px-4 sm:px-5 py-1.5 text-[13px] text-slate-300 min-w-0"
+          <div role="status" className="shrink-0 flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 sm:px-5 py-1.5 text-[13px] text-slate-300 min-w-0"
             style={{ borderColor: 'rgb(var(--muted-line-rgb))', background: 'rgb(var(--muted-bg-rgb))' }}>
             <b className="shrink-0 font-semibold" style={{ color: 'rgb(var(--muted-rgb))' }}>{t('Góc nhìn: {vai}', { vai: vai?.nhan ?? gocNhin.dangChon })}</b>
             {/* Vai GV: phạm vi là danh sách phân công dài → chỉ hiện số, danh sách ở title. Vai khác: tên chi nhánh (ngắn). */}
             {vai?.phamVi && (
-              <span className="min-w-0 truncate" title={vai.phamVi}>
+              <span className="min-w-0" title={vai.phamVi}>
                 · {vai.soPhanCong ? t('{n} phân công', { n: vai.soPhanCong }) : vai.phamVi}
               </span>
             )}
