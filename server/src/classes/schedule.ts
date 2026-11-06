@@ -418,6 +418,12 @@ export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
 }
 
 export function classProgressMany(classIds: number[]): Map<number, ClassProgress> {
+  if (!coNho()) return tinhTienDoNhieu(classIds);
+  /* RA-DOC-0611: hồ sơ lớp thường gọi 2–3 lần cùng tập lớp trong một request — nhớ theo đúng danh sách; trả bản chép sâu (dữ liệu thuần). */
+  return structuredClone(nho(`tien-do-lop:${classIds.join(',')}`, () => tinhTienDoNhieu(classIds)));
+}
+
+function tinhTienDoNhieu(classIds: number[]): Map<number, ClassProgress> {
   const out = new Map<number, ClassProgress>();
   if (!classIds.length) return out;
   const conn = db();

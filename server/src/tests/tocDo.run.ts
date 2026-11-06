@@ -33,6 +33,8 @@ const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permis
 const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP, LO_HANG_LOAT_EM } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
+const { standingFor } = await import('../students/standing.ts');   // RA-DOC-0611
+const { chiSoHoSoGv } = await import('../phanTich/giaoVien.ts');   // RA-DOC-0611
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
@@ -272,7 +274,7 @@ async function callHttp(vai: Vai, method: string, url: string, body?: unknown) {
 }
 
 /** Đếm câu SQL của MỘT lượt gọi HTTP — gọi TUẦN TỰ (không song song, để số không lẫn giữa các lượt gọi). */
-async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number; dong: number; status: number }> {
+async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number; dong: number; status: number; json: unknown }> {
   /*
    * TL-NEN: quét đường đọc chạy theo mốc DB (60 s / sau ghi qua API / sang ngày) — các lượt ghi lô ở tệp này xoá mốc. Đo GET với mốc CÒN HẠN
    * (như phần lớn GET thật); `PISA_DO_QUET=1` đo khi quét chạy (mốc NULL). Đặt trước khi tính câu — không vào số đo.
@@ -281,9 +283,9 @@ async function doSql(vai: Vai, method: string, url: string): Promise<{ n: number
     .run(process.env.PISA_DO_QUET === '1' ? null : new Date().toISOString(), demoToday15d());
   const truoc = soCauSql(), dongTruoc = soDongSql();
   if (process.env.PISA_DEM_SQL === '1') console.log(`[vai] ${vai}`);   // TD3-0: dòng `[sql]` ngay sau là của vai này
-  const { status } = await callHttp(vai, method, url);
+  const { status, json } = await callHttp(vai, method, url);
   const sau = soCauSql();
-  return { n: sau - truoc, dong: soDongSql() - dongTruoc, status };
+  return { n: sau - truoc, dong: soDongSql() - dongTruoc, status, json };
 }
 
 // ==================================================================== Task 1 — hạ tầng nguCanhRequest.ts
@@ -615,6 +617,24 @@ await checkAsync('PR-TD Task3(3) · facets của gọi trực tiếp và của G
   assert(saiFacets.length === 0, `Facets lệch:\n${saiFacets.slice(0, 10).join('\n')}`);
 });
 
+check('RA-DOC-0611 · standingFor nhớ theo em (tập con, khác thứ tự: 0 câu, như tính thẳng) · chiSoHoSoGv chiHocThuat giữ số Tổng quan GV', () => {
+  const ids = (conn.prepare('SELECT id FROM students WHERE branch_id = ? ORDER BY id LIMIT 80').all(CN) as any[]).map((r) => r.id as number);
+  const con = ids.filter((_, i) => i % 2).reverse();
+  const thang = JSON.stringify([...standingFor(con)]);   // ngoài request: tính thẳng, không nhớ
+  chayTrongRequest('GET', () => {
+    standingFor(ids);
+    const truoc = soCauSql();
+    const lai = standingFor(con);
+    assert(soCauSql() === truoc, `Tập con đã nhớ phải 0 câu SQL thêm: được ${soCauSql() - truoc}`);
+    assert(JSON.stringify([...lai]) === thang, 'standingFor nhớ theo em phải trùng tính thẳng (cả thứ tự Map)');
+  });
+  const p = PRINCIPAL_CUA.get(USER.GVCN)!;
+  const du = chiSoHoSoGv(p, p.userId, {}), gon = chiSoHoSoGv(p, p.userId, {}, true);
+  for (const k of ['tu', 'den', 'ketQua', 'tienBo', 'hocThuatTheoLop'] as const) {
+    assert(JSON.stringify(du[k]) === JSON.stringify(gon[k]), `chiHocThuat đổi "${k}"`);
+  }
+});
+
 check('PR-TD Task3(4) · trong một kho GET, gọi listCases(p, {}) hai lần cùng bộ lọc → lần hai 0 câu SQL', () => {
   const p = PRINCIPAL_CUA.get(USER.QT)!;
   chayTrongRequest('GET', () => {
@@ -682,6 +702,8 @@ await checkAsync(
  * (khoá `QUET …`), chép DB ×3 (`VACUUM INTO`) → `python scripts/do-it.py <đường dẫn>` chạy lại từng câu: dòng quét cả bảng, bước máy ảo, SCAN. Cách đọc: docs/toc-do/doc-it-0211.md.
  */
 const doIt: { bat: boolean; cau: Record<string, unknown> } = { bat: false, cau: {} };
+/* RA-DOC-0611: `PISA_IN_JSON=<tệp>` ghi [mã, JSON] từng (vai × đường) của lượt đo đầu (×1) — so trước / sau từng byte khi giảm đọc. */
+const inJson: Record<string, unknown> | null = process.env.PISA_IN_JSON ? {} : null;
 async function doMotLuot(dong?: Map<string, number>, lap?: string[]): Promise<Map<string, number>> {
   const ra = new Map<string, number>();
   for (const muc of DUONG_DO) {
@@ -695,6 +717,7 @@ async function doMotLuot(dong?: Map<string, number>, lap?: string[]): Promise<Ma
       if (ghiIt) doIt.cau[`${vai} ${url}`] = { n: r.n, dong: r.dong, cau: ghiIt };
       ra.set(`${vai} ${url}`, r.n);
       dong?.set(`${vai} ${url}`, r.dong);
+      if (dong && inJson) inJson[`${vai} ${url}`] = [r.status, r.json];
       if (lap) {
         for (const [ten, dem] of doLap.thay!) {
           const lai = [...dem].filter(([, k]) => k > 1).map(([id]) => id);
@@ -711,6 +734,7 @@ const dongTruocNhan = new Map<string, number>();
 const docLap: string[] = [];
 const truocNhan = await doMotLuot(dongTruocNhan, docLap);
 /* TL-NEN: `PISA_IN_DO=<tệp>` ghi số câu / dòng từng (vai × đường) ra JSON — cột trước → sau của mô tả PR. */
+if (inJson) fs.writeFileSync(process.env.PISA_IN_JSON!, JSON.stringify(inJson));
 if (process.env.PISA_IN_DO) fs.writeFileSync(process.env.PISA_IN_DO, JSON.stringify(Object.fromEntries([...truocNhan].map(([k, n]) => [k, [n, dongTruocNhan.get(k)]])), null, 1));
 
 /* DOC-IT-1: `isInitialised` hỏi `sqlite_master` (SCAN ~270 dòng trên bản chính) mỗi lần mở app — đã khởi tạo thì nhớ theo kết nối. */

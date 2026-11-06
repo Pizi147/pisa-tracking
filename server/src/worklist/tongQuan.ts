@@ -22,6 +22,7 @@ import { tapThiThangNayLop } from '../phanTich/baoCao.ts';
 import { phamViXemViec } from './xemViec.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { toiHan } from '../platform/thongBaoTuDong.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 /**
  * TỔNG QUAN (PR-Pa, đặc tả §3.2). File này KHÔNG ĐẾM gì: mọi số lấy từ `metricSet` (hợp đồng số liệu luật 1), ở đây chỉ
@@ -263,7 +264,8 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
     cua.set(a.classId, x);
   }
   const ids = [...cua.keys()];
-  const lop = ids.length ? (conn.prepare(
+  /* RA-DOC-0611: Tổng quan GV gọi hai lần (khung FT rồi lớp thường) cùng tập lớp — nhớ trong request, đọc một lần. */
+  const lop = ids.length ? nho(`lop-toi-day:${ids.join(',')}`, () => conn.prepare(
     `SELECT c.id, c.code, c.programme_code AS ct, c.is_fast_track AS ft, c.route, c.branch_id,
             (SELECT COUNT(*) FROM enrollments e JOIN students s ON s.id = e.student_id
               WHERE e.class_id = c.id AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}) AS so_hv
@@ -366,7 +368,7 @@ export function lopToiDayHaiKhoi(p: Principal) {
   /* Lớp chỉ GVCN (không kỹ năng) mà còn bài chờ chấm của tôi vẫn vào khối dạy — không giấu bài. */
   const day = hang.filter((r) => r.kyNang.length || r.baiCho);
   /* S1: MỘT lần `chiSoHoSoGv` cho cả trang — thẻ "Đạt kỳ vọng Test" / "Tiến bộ" đầu trang đọc `chiSo` ở đây (trước gọi thêm `/giao-vien/:id/chi-so`, tính lại y hệt). */
-  const cs = chiSoHoSoGv(p, p.userId, {});
+  const cs = chiSoHoSoGv(p, p.userId, {}, true);   // RA-DOC-0611: chỉ Kết quả / Tiến bộ — không tính Chấm đúng hạn, Ghi KQ PA, PA hiệu quả (không hiện ở đây)
   const ht = new Map(day.length ? cs.hocThuatTheoLop.map((h) => [h.classId, h]) : []);
   const cn = hang.filter((r) => r.gvcn);
   const thi = new Map<number, number>();

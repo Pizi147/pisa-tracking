@@ -792,7 +792,11 @@ function nguCanhCuaGv(p: Principal, gvId: number, q: { tu?: string | null; den?:
   return { tu: k.tu, den: k.den, homNay, ds: rows.map((r) => nguCanhCn(r.branch_id, { ct: r.is_fast_track ? 'ft' : 'thuong', tu: k.tu, den: k.den })) };
 }
 
-export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null }): ChiSoHoSoGv {
+/**
+ * RA-DOC-0611: `chiHocThuat` — Tổng quan GV chỉ đọc `tu`, `den`, `ketQua`, `tienBo`, `hocThuatTheoLop`: bỏ ba tập Chấm điểm đúng hạn, Ghi KQ PA
+ * (`dung-han-cap-nhat` cả chi nhánh), PA hiệu quả (`paCoKetQua` cả chi nhánh) — các trường đó khi ấy là tập rỗng, người gọi không được đọc.
+ */
+export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null }, chiHocThuat = false): ChiSoHoSoGv {
   const g = nguCanhCuaGv(p, gvId, q);
   const cham: ({ dung: number[]; tong: number[] } | undefined)[] = [], ghi: ({ dung: number[]; tong: number[] } | undefined)[] = [], tb: ({ dung: number[]; tong: number[] } | undefined)[] = [], pa: ({ dung: number[]; tong: number[] } | undefined)[] = [];
   const kq = new Map<string, { khung: KhungPtGv; skill: string; tap: ({ dung: number[]; tong: number[] } | undefined)[] }>();
@@ -803,8 +807,10 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
     ?? hang.set(classId, { ma: c.lop.get(classId)!.ma, khung: c.khung, ct: c.lop.get(classId)!.ct, khai: c.lop.get(classId)!.khai, xong: c.lop.get(classId)!.xong, skill: new Set(), kq: [], luot: new Map() }).get(classId)!;
   for (const c of g.ds) {
     const nap = napBai(p, c, gvId);
-    cham.push(tapChamDiem(c, nap).tap.get(gvId));
-    ghi.push(tapGhiKetQuaPa(xemChiNhanh(c.cn), c).tap.get(gvId));
+    if (!chiHocThuat) {
+      cham.push(tapChamDiem(c, nap).tap.get(gvId));
+      ghi.push(tapGhiKetQuaPa(xemChiNhanh(c.cn), c).tap.get(gvId));
+    }
     /* Chủ SP 23/10: thi thật (IELTS thật) KHÁC phạm trù Test — kết quả / lượt chỉ tính MT, Progress, Final. Thi thật (2F): `mucThiTheoGv`, hàng lớp = lớp lúc thi. */
     const muc = mucKetQua(c, nap);
     const theoId = new Map(muc.map((m) => [m.x.id, m.x]));
@@ -829,7 +835,7 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
       const tbc = tapTienBo(c, nap);
       tb.push(tbc.get(gvId));
       for (const [classId, o] of tbc.theoLop?.get(gvId) ?? []) hangCua(c, classId).tb = o;
-      pa.push(tapPaHieuQua(c).get(gvId));
+      if (!chiHocThuat) pa.push(tapPaHieuQua(c).get(gvId));
     }
   }
   const coFt = g.ds.some((c) => c.khung === 'ft');
