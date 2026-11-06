@@ -21,7 +21,6 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
   console.log('\nHV-LOP-VIEC · Học viên & Lớp: cột Việc hẹp mép phải');
   const d: any = await import('../../../shared/domain/index.ts');
   const ds = doc('web/src/modules/students/DanhSachHvLop.tsx');
-  const goc = doc('web/src/modules/students/GocLichThi.tsx');
   const trang = doc('web/src/modules/students/StudentsPage.tsx');
 
   /* U04 (mockup V11 duyệt 03/11, chủ SP "vừa 1280"): ⋯ cột cuối, Việc của tôi giãn, các cột khác cố định — thay H1 cũ (Việc 300 mép phải). */
@@ -56,13 +55,6 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
     assert(d.chuMiniKn(5.0, 6.0, true) === '5.0', 'KCK dưới kỳ vọng không tô / không ✗');
   });
 
-  check('H1 · MiniKn: bỏ nền đỏ ô; ký hiệu qua chuMiniKn, màu đạt = Overall đạt (kq-bang), hụt kq-duoi 700', () => {
-    const mk = than(goc, 'export function MiniKn');
-    assert(mk.length > 100, 'thiếu MiniKn');
-    assert(!mk.includes('bg-bad-bg'), 'còn nền đỏ ô');
-    assert(mk.includes('chuMiniKn') && mk.includes("lopKq('duoi')") && mk.includes("lopKq('bang')"), 'màu / ký hiệu');
-  });
-
   check('H1 · "+n việc" không mất việc ngoài Case: PanelMotEm có khối "Việc khác" từ việc trang đã nạp, làm tại chỗ (PanelViec thay nội dung, ← tên em)', () => {
     const pm = doc('web/src/modules/students/PanelMotEm.tsx');
     assert(pm.includes("t('Việc khác')") && /viecTrang \?\?/.test(pm), 'thiếu khối Việc khác dùng viecTrang');
@@ -74,8 +66,12 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
     assert(/quayLaiRieng \?\? quayLaiNgoai/.test(kp) && /<QuayLaiPanel\.Provider value=\{null\}>/.test(kp), 'KhungPanel: ← từ nơi mở chỉ cho panel ngoài cùng');
   });
 
-  check('H1 · MiniKn ở chi tiết dưới hàng Lịch thi truyền kck (em KCK không ✗)', () => {
-    assert(/<MiniKn kn=\{c\.kn\} kv=\{st\?\.expectation \?\? null\} kck=\{r\.kck\} \/>/.test(goc), 'ChiTietDuoiHang thiếu kck');
+  check('H1 · dải mở hàng Lịch thi: ô kỹ năng ✓ / ✗ qua datKv, em KCK dưới kỳ vọng không ✗ (truyền kck)', () => {
+    const hang = doc('web/src/modules/students/HangLichThi.tsx');
+    const ok = than(hang, 'function OKn');
+    assert(ok.includes('datKv(v, kv, kck)'), 'OKn phải dùng datKv(v, kv, kck)');
+    assert((hang.match(/kck=\{r\.kck\}/g) ?? []).length >= 2, 'DaiMo thiếu kck={r.kck} ở ô Overall / kỹ năng');
+    assert(!hang.includes('bg-bad-bg'), 'còn nền đỏ ô');
   });
 
   check('U04 [XM] PTA 04/11 · Fast Track / Lớp thường hai trạng thái: luôn một mục chọn, mặc định FT, URL khung + nhớ phiên', () => {

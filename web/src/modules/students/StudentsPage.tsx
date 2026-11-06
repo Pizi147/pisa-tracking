@@ -287,9 +287,9 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const sosRows = sosTat.filter((r) => (mucSos === 'pa' ? coPaQuaHan(r) : mucSos ? r.sosLevel === Number(mucSos) : true));
   const hangTheoEm = useMemo(() => new Map((data?.hocVien ?? []).map((h) => [h.id, h.hang])), [data]);
 
-  /* Số trên tab Lịch thi: em có tháng thi trong khoảng đang xem (cùng khoảng của chế độ Lịch thi, không gồm "Chưa có tháng thi"). */
+  /* Số trên tab Lịch thi = "Tất cả" của chính chế độ đó (luật cùng số liệu cùng nguồn; mockup v16: tab 11 = Tất cả 11): em có tháng thi trong khoảng đang xem + em Fast Track chưa có tháng thi (luôn ở danh sách Lịch thi). */
   const [tuThang, denThang] = khoangThang(params.get('thang'), homNay);
-  const demLich = new Set(goc0.filter((h) => h.lich?.thang && h.lich.thang >= tuThang && h.lich.thang <= denThang).map((h) => h.id)).size;
+  const demLich = new Set(goc0.filter((h) => (h.lich?.thang ? h.lich.thang >= tuThang && h.lich.thang <= denThang : h.lich?.trangThai === 'chua-co' && h.khung === 'ft')).map((h) => h.id)).size;
 
   const khoaLoc = [goc, q, khung, chiLop, locThiThang, locQuaHan, locDaThi, chipVai, mucSos, branchId, phamViUrl, sapXep, ...['lc', 'lk', 'lq', 'ltu', 'lden'].map((k) => params.get(k))].join('|');
   /*
@@ -595,7 +595,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
         {goc === 'lich-thi' && (
           <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })}
-            onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc} />
+            onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc}
+            onMoCase={(id, caseId) => setPanelEm({ id, caseMo: caseId })} />
         )}
 
         {/* key: đổi chi nhánh (đã OK "rời đi sẽ mất") → góc dựng lại, nháp chi nhánh cũ không theo sang. */}

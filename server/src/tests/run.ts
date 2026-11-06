@@ -9735,6 +9735,9 @@ await runPrQuyenLienHeTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== PANEL-MC (dòng điểm đúng lượt + dữ liệu panel — PANEL-V10, N30)
 const { runPrPanelMcTests } = bocTep('prPanelMc', await import('./prPanelMc.tests.ts'));
 await runPrPanelMcTests({ check, checkAsync, assert, conn, P, TODAY } as any);
+// ==================================================================== PHOI-HOP-SOS-INFO (thẻ kết quả SOS ba nơi cùng nguồn — chủ SP 06/11)
+const { runPrSosTheTests } = bocTep('prSosThe', await import('./prSosThe.tests.ts'));
+await runPrSosTheTests({ check, assert, conn, P } as any);
 // ==================================================================== PANEL-CHUNG (mẫu dòng điểm + dòng panel có lý do — PANEL-V10)
 const { runPrPanelChungTests } = bocTep('prPanelChung', await import('./prPanelChung.tests.ts'));
 await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);

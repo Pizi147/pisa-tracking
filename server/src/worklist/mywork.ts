@@ -9,7 +9,7 @@ import {
   SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, cycleDeadline,
   duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa,
   khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop,
-  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL } from '../../../shared/domain/index.ts';
+  type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, type TheSosEm, LUOT_HUY_HET_SQL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -152,6 +152,8 @@ export type WorkItem = {
   chiXemCham?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
   boQuaDuoc?: boolean;
+  /** PHOI-HOP-SOS-INFO: dòng Phối hợp SOS — thẻ kết quả (em · lượt · Overall so kỳ vọng · kỹ năng trượt) của tối đa 3 lượt chưa xong; `count` là số lượt. */
+  theSos?: TheSosEm[];
 };
 
 /**
@@ -1248,7 +1250,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: `${l.pendingCount} lượt Phối hợp SOS chưa xong`,
       tieuDe: `Phối hợp SOS · ${l.className} · ${l.pendingCount} lượt`, actionLabel: 'Mở Phối hợp SOS',
       href: `/hoc-vien/lop/${l.classId}?tab=y-thuc&sub=phoi-hop`,
-      ownerId: gv, owner: null, mine: gv === p.userId, due: l.han, statusLabel: 'Chưa xong',
+      ownerId: gv, owner: null, mine: gv === p.userId, due: l.han, statusLabel: 'Chưa xong', theSos: l.sos,
     });
   }
   /*
