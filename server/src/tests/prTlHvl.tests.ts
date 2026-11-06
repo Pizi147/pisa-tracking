@@ -70,18 +70,18 @@ export async function runPrTlHvlTests(t: any) {
     const gd = cau.filter((x) => /^SELECT [^()]*FROM enrollments/.test(x)), lc = dem(cau, /^SELECT sc\.\*, COALESCE\(sc\.student_id/);
     assert(gd.length <= 1, `${gd.length} câu ghi danh: ${gd.map((x) => x.slice(0, 100)).join(' | ')}`);
     assert(lc <= 1, `listCases ${lc} lần`);
-    assert(cau.length <= 33, `${cau.length} câu`);
+    assert(cau.length <= 34, `${cau.length} câu`);   // GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): 33 → 34
   });
 
   await checkAsync('H1 · /classes/{lopFT}/roster QL: câu ≤ 22, bảng lớp + điểm + Case mở không đọc lại', async () => {
     const { cau } = await doGet(P.mbManager.userId, `/classes/${lopFt}/roster`);
     const lap = [dem(cau, /^SELECT [^()]*FROM classes WHERE id = \?/), dem(cau, /FROM assessment_scores WHERE attempt_id IN/), dem(cau, /^SELECT (sc\.)?student_id, .*FROM sos_cases sc/) - 1];
     assert(lap.every((n) => n <= 0), `đọc lại: lớp ${lap[0]} · điểm ${lap[1]} · Case mở ${lap[2]}`);
-    assert(cau.length <= 22, `${cau.length} câu`);
+    assert(cau.length <= 23, `${cau.length} câu`);   // GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): 22 → 23
   });
 
   await checkAsync('H2 · /hoc-vien-lop QL: Case chi tiết + Ý thức + tiến độ lớp mỗi thứ một lượt, câu ≤ 48 (them=1 ≤ 49)', async () => {
-    for (const [url, tran] of [['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1', 48], ['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1', 49]] as [string, number][]) {
+    for (const [url, tran] of [['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1', 50], ['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1', 51]]   /* GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): hai lần nạp lịch có tuần mới → +2 */  as [string, number][]) {
       const { cau } = await doGet(P.mbManager.userId, url);
       const so = { 'Case chi tiết': dem(cau, /^SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN/), 'Ý thức': dem(cau, /^SELECT 0 AS loai, id AS id/),
         'tiến độ lớp': dem(cau, /^SELECT e\.class_id, COUNT\(\*\) n, SUM/) };

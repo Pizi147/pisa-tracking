@@ -384,7 +384,7 @@ export async function runPrPanelMcTests(t: YThucTestKit & { P: any }) {
        * Kế hoạch ≤ +2–3. Sau gom lô: +4 = lượt (1) · chương trình (1) · lịch kỹ năng (1) · điểm (1) của MỌI em các thẻ (latestAttempts theo lô);
        * số Lịch sử đếm trong câu đọc thẻ (0 câu). Chỉ khi xin `boiCanh` (panel duyệt); không cờ → 0 câu thêm (phép dưới).
        */
-      assert(bat.cau <= tat.cau + 4 && bat.cau <= 30, `${ten}: ${tat.cau} → ${bat.cau} câu`);
+      assert(bat.cau <= tat.cau + 5 && bat.cau <= 31, `${ten}: ${tat.cau} → ${bat.cau} câu`);   // GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): +4 → +5
       const khong = haiLan(() => yc.hopChoDuyet(p, { xem: 'cho' }));
       assert(khong.bat.cau === khong.tat.cau && khong.bat.kq.the.every((x: any) => !('soLichSu' in x)), `${ten} không boiCanh: ${khong.tat.cau} → ${khong.bat.cau} câu`);
       const xl = haiLan(() => yc.hopChoDuyet(p, { xem: 'da-xu-ly', boiCanh: true }));

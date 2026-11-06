@@ -105,7 +105,7 @@ export async function runOverallFtLopTests(t: YThucTestKit & { P: any; TODAY: st
 
   check('OV-FT · /classes/:id/phan-tich-lop không thêm câu (trần 24/25/23 giữ)', () => {
     const { cau } = doCau(() => ptl.phanTichLop(P.admin, MB_FT));
-    assert(cau === 8, `đo trước PR 8 câu, nay ${cau}`);
+    assert(cau === 9, `đo trước PR 8 câu (GIAM-DOC-0611g: + câu tuần của lịch kỹ năng → 9), nay ${cau}`);
   });
 
   check('OV-FT · ô overall mở đúng em', () => {
@@ -117,7 +117,7 @@ export async function runOverallFtLopTests(t: YThucTestKit & { P: any; TODAY: st
     assert([...o.rows.map((r: any) => r.id)].sort().join() === [...x.dat, ...x.chua].sort().join(), 'tập em lệch ô');
     assert(o.rows.every((r: any) => r.diemHv?.luot === 'MT1' && r.diemHv.overall !== null && r.diemHv.soVoi?.nhan === 'KV' && r.diemHv.tuan && r.href === `/hoc-vien/${r.id}`), JSON.stringify(o.rows[0]));
     assert(o.rows.every((r: any) => (r.ketQua === 'dat') === (r.diemHv.overall >= r.diemHv.soVoi.v)), 'dòng điểm phải giải thích được kết luận');
-    assert(cau <= 9, `mở panel ${cau} câu`);
+    assert(cau <= 10, `mở panel ${cau} câu`);   // GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): 9 → 10
     assert(ptl.oPhanTichLop(P.admin, MB_FT, 'overall', 'overall', 'mt9').n === 0, 'đợt chưa có → rỗng');
     let loi: any = null;
     try { ptl.oPhanTichLop(P.admin, MB_FT, 'overall', 'overall', 'x'); } catch (e) { loi = e; }
