@@ -150,3 +150,16 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
   return out.map((x, i) => ({ x, i })).sort((a, b) => nang(a.x.urgency) - nang(b.x.urgency)
     || (a.x.due && b.x.due ? a.x.due.localeCompare(b.x.due) : a.x.due ? -1 : b.x.due ? 1 : 0) || a.i - b.i).map((x) => x.x);
 }
+
+/**
+ * Chủ SP 07/11 (mục 8, thay ponytail #1130): dải chi nhánh của Công việc — dòng tuần nhiều lớp ở > 1 chi nhánh (`cn` null, `con` mang `cn` từng lớp)
+ * dựng lại CHỈ với việc của chi nhánh `cn` (cùng `gopViecTheoLop`, dữ liệu đã nạp — 0 câu). Việc không gắn lớp (`cn` null, không `con`) giữ nguyên.
+ */
+export function dongTheoChiNhanh<T extends ViecGopDuoc & { cn?: number | null; con?: readonly T[] }>(ds: readonly T[], cn: number): T[] {
+  return ds.flatMap((x) => {
+    if (x.cn != null || !x.con?.some((c) => c.cn != null)) return [x];
+    const con = x.con.filter((c) => c.cn == null || c.cn === cn);
+    const nhan = x.tieuDe.split(' · ')[0];   // tên loại việc của dòng gộp (`${nhan} · tuần · số`)
+    return con.length ? (gopViecTheoLop(con, () => nhan) as T[]) : [];
+  });
+}
