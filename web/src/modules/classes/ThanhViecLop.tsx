@@ -5,7 +5,7 @@ import { invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { TheSosViec } from '../../ui/TheKetQuaSos.tsx';
-import { PanelViec } from '../congViec/PanelViec.tsx';
+import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { daysBetween, nhanQuaHan, shortDate, viecKeTiep } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';

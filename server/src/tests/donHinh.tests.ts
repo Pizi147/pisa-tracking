@@ -54,7 +54,7 @@ export async function runDonHinhTests(t: any) {
   });
   check('CV-0611 · Bổ sung hồ sơ thiếu mở TẠI CHỖ (panel Sửa thông tin từng em, "Lưu · em tiếp ›"), không đổi trang', () => {
     const pv = doc('web/src/modules/congViec/PanelViec.tsx');
-    assert(/case 'bo_sung_ho_so': return !!it\.emIds\?\.length/.test(pv) && /<PanelBoSungHoSo key=\{it\.key\}/.test(pv), 'lamTaiCho / panel chưa nối');
+    assert(/case 'bo_sung_ho_so': return !!it\.emIds\?\.length/.test(doc('web/src/modules/congViec/lamTaiCho.ts')) &&/<PanelBoSungHoSo key=\{it\.key\}/.test(pv), 'lamTaiCho / panel chưa nối');
     const sm = doc('web/src/modules/students/StudentManagePanel.tsx');
     assert(/tiep\?\.conLai \? t\('Lưu · em tiếp ›'\)/.test(sm) && /document\.getElementById\(lf\.oId\(khoa\)\)\?\.focus\(\)/.test(sm), 'nút em tiếp / con trỏ ô thiếu');
   });
