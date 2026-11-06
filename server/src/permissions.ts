@@ -288,13 +288,15 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
      dùng `.size` của `cnDangHoc` để quyết thì một em CHỈ có `students.branch_id`, không ghi danh
      active nào, sẽ bị tính nhầm là "đang học"). */
   const coActive = new Set<number>();
+  /* GIAM-DOC-0611: lớp đang học = ghi danh `active` id lớn nhất (đúng câu `activeClassOf`, yThuc/access.ts) — nạp cùng câu, hết N+1 (tab Phối hợp SOS của lớp: một câu mỗi em). */
+  const lopActive = new Map<number, { eid: number; cid: number }>();
   for (const id of idsCanNap) { lopCua.set(id, []); lopDangHoc.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
 
   theoLoJson(idsCanNap, (json) => {   // S5: một tham số JSON (trước TD4: lô 900 tham số)
     /* TD4: ghi danh + `students.branch_id` MỘT câu (trước hai câu mỗi lô) — em không ghi danh nào vẫn ra một dòng (`trang_thai` NULL). */
     for (const r of db()
       .prepare(
-        `SELECT s.id AS sid, s.branch_id AS sbid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid
+        `SELECT s.id AS sid, s.branch_id AS sbid, e.id AS eid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid
            FROM students s LEFT JOIN enrollments e ON e.student_id = s.id LEFT JOIN classes c ON c.id = e.class_id
           WHERE s.id IN (${DS_JSON})`,
       )
@@ -302,7 +304,11 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
       if (r.sbid != null) { cnMoiGhiDanh.get(r.sid)!.add(r.sbid); cnDangHoc.get(r.sid)!.add(r.sbid); }
       if (r.trang_thai == null) continue;
       lopCua.get(r.sid)!.push(r.cid);
-      if (r.trang_thai === 'active') coActive.add(r.sid);
+      if (r.trang_thai === 'active') {
+        coActive.add(r.sid);
+        const cu = lopActive.get(r.sid);
+        if (!cu || r.eid > cu.eid) lopActive.set(r.sid, { eid: r.eid, cid: r.cid });
+      }
       if (r.trang_thai === 'active' || r.trang_thai === 'paused') lopDangHoc.get(r.sid)!.push({ class_id: r.cid, status: r.trang_thai });   // cùng luật `classesOfStudentDangHoc`
       if (r.bid != null) {
         cnMoiGhiDanh.get(r.sid)!.add(r.bid);
@@ -315,6 +321,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
     datNho('hv-lop:' + id, lopCua.get(id)!);
     datNho('hv-lop-dh:' + id, lopDangHocTu(lopDangHoc.get(id)!));
     datNho('hv-cn:' + id, [...(coActive.has(id) ? cnDangHoc.get(id)! : cnMoiGhiDanh.get(id)!)]);
+    datNho('lop-dang-hoc:' + id, lopActive.get(id)?.cid ?? null);
   }
 }
 
