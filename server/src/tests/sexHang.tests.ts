@@ -16,7 +16,7 @@ export async function runSexHangTests(t: any) {
 
   check('SH-1 · web: mỗi S Ex một ô dẹt THẲNG CỘT MT (S Ex i dưới cột MTi, dư dồn ô cuối); ô trống "+ S Ex" chỉ khi onThem (không chiXem), không thì trống nhạt; 375 thẻ ≥ 3 ô; chip S Ex rời cột Thêm', () => {
     const h = doc('web/src/modules/test/keHoach/HangSEx.tsx');
-    assert(/return onThem\s*\?[\s\S]*?'\+ S Ex'/.test(h) && /o-sex o-sex-trong" aria-label/.test(h), 'ô trống: + S Ex / trống nhạt');
+    assert(/return onThem\s*\?[\s\S]*?'\+ S Ex \{n\}'/.test(h) && /o-sex o-sex-trong" aria-label/.test(h), 'ô trống: + S Ex / trống nhạt');
     assert(/onMo && \(x\.sua \|\| x\.cham\)/.test(h) && /Math\.max\(3, xep\.length\)/.test(h), 'ô có lượt bấm khi sửa / chấm được; 375 ≥ 3 ô');
     const l = doc('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/cots\.map\(\(c, ci\) => \([\s\S]*?<OSEx x=\{xep\[ci\] \?\? null\} so=\{ci \+ 1\}/.test(l), 'S Ex i dưới cột MT i');

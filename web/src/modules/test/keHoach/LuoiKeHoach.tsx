@@ -295,7 +295,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
               const them = chiXem ? undefined : () => setSEx({ hang: h as HangFT, dong: null });
               return (
                 <tr className={`kh-hang-sex ${hvChon === h.studentId ? 'row-active' : ''}`}>
-                  <td className="kh-td sticky-col"><span className="hang-sex-nhan">{t('S Ex')}</span></td>
+                  <td className="kh-td sticky-col" aria-hidden />
                   {cots.map((c, ci) => (
                     <td key={c.key} className="kh-td">
                       <div className="flex flex-col gap-1">

@@ -14,14 +14,14 @@ export const sapSEx = (ds: readonly DongSEx[]) => [...ds].sort((a, b) => a.tuan.
 export function OSEx({ x, so, onMo, onThem }: { x: DongSEx | null; so: number; onMo?: (d: DongSEx) => void; onThem?: () => void }) {
   if (!x) {
     return onThem
-      ? <button type="button" className="o-sex o-sex-trong o-sex-them" aria-label={t('Xếp S Ex {n}', { n: so })} onClick={onThem}>{t('+ S Ex')}</button>
-      : <span className="o-sex o-sex-trong" aria-label={t('S Ex {n} chưa xếp', { n: so })} />;
+      ? <button type="button" className="o-sex o-sex-trong o-sex-them" aria-label={t('Xếp S Ex {n}', { n: so })} onClick={onThem}>{t('+ S Ex {n}', { n: so })}</button>
+      : <span className="o-sex o-sex-trong" aria-label={t('S Ex {n} chưa xếp', { n: so })}>{t('S Ex {n}', { n: so })} —</span>;
   }
   const tuan = tuanLich(x.tuan);
   const doc = [`${t('S Ex')} ${so}`, tuan, x.diem !== null ? fmtBand(x.diem) : t('chờ chấm')].join(' · ');
   const title = [x.ngay && `${x.ngay.slice(8, 10)}/${x.ngay.slice(5, 7)}`, x.themBoi && t('{ai} thêm', { ai: x.themBoi }), x.nguoiCham && t('{ai} chấm', { ai: x.nguoiCham }), x.nhanXet]
     .filter(Boolean).join('\n') || undefined;
-  const chu = <><span className="o-sex-tuan">{tuan}</span>{x.diem !== null && <b className="tabular-nums">{fmtBand(x.diem)}</b>}</>;
+  const chu = <><b className="o-sex-nhan">{t('S Ex {n}', { n: so })}</b><span className="o-sex-tuan">{tuan}</span>{x.diem !== null && <b className="tabular-nums">{fmtBand(x.diem)}</b>}</>;
   return onMo && (x.sua || x.cham)
     ? <button type="button" className="o-sex" aria-label={doc} title={title} onClick={() => onMo(x)}>{chu}</button>
     : <span className="o-sex" aria-label={doc} title={title}>{chu}</span>;
@@ -32,7 +32,6 @@ export function HangSExThe({ ds, onMo, onThem }: { ds: readonly DongSEx[]; onMo?
   const xep = sapSEx(ds);
   return (
     <div className="hang-sex" role="group" aria-label={t('S Ex')}>
-      <b className="hang-sex-nhan">{t('S Ex')}</b>
       {Array.from({ length: Math.max(3, xep.length) }, (_, i) => (
         <OSEx key={xep[i] ? `x${xep[i].id}` : `o${i}`} x={xep[i] ?? null} so={i + 1} onMo={onMo} onThem={onThem} />
       ))}
