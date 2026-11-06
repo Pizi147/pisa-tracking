@@ -34,7 +34,7 @@ const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP, LO_HANG_LOAT_EM } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
 const { standingFor } = await import('../students/standing.ts');   // RA-DOC-0611
-const { chiSoHoSoGv } = await import('../phanTich/giaoVien.ts');   // RA-DOC-0611
+const { chiSoHoSoGv, phanTichGiaoVien } = await import('../phanTich/giaoVien.ts');   // RA-DOC-0611 · GIAM-DOC-0711a
 const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');   // RA-DOC-0611b
 const { muonTuViec, viecMuon } = await import('../platform/thongBaoTuDong.ts');   // RA-DOC-0611b
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
@@ -654,6 +654,44 @@ check('RA-DOC-0611b · /my-work mọi tài khoản: tập cha Case theo lớp (G
   }
   caseMoTapChaKhiKiem.tat = false;
   assert(!sai.length, sai.slice(0, 10).join(' | '));
+});
+
+check('GIAM-DOC-0711a · napCaseMo tập cha theo chi nhánh: myWork mọi tài khoản × chi nhánh × Của tôi / Tất cả · Phân tích GV · hồ sơ GV giống hệt đọc cả hệ thống', () => {
+  const sai: string[] = [];
+  const cns = [null, ...(conn.prepare('SELECT id FROM branches ORDER BY id').all() as any[]).map((r) => r.id as number)];
+  const hai = (ten: string, fn: () => unknown) => {
+    caseMoTapChaKhiKiem.tat = true;
+    const cu = chayTrongRequest('GET', () => JSON.stringify(fn()));
+    caseMoTapChaKhiKiem.tat = false;
+    const moi = chayTrongRequest('GET', () => JSON.stringify(fn()));
+    if (cu !== moi) sai.push(ten);
+  };
+  let soSo = 0;
+  for (const uid of TOAN_BO_TK) {
+    const p = PRINCIPAL_CUA.get(uid)!;
+    for (const branchId of cns) for (const f of [{}, { nguoi: 'tat-ca' as const }, { nguoi: 'tat-ca' as const, tachCuaToi: true }]) {
+      hai(`${uid} cn=${branchId} ${JSON.stringify(f)}`, () => myWork(p, { ...f, branchId }));
+      soSo++;
+    }
+  }
+  const ql = PRINCIPAL_CUA.get(USER.QT)!;
+  for (const cn of cns.filter((x): x is number => x !== null)) for (const ct of ['ft', 'thuong'] as const) { hai(`phanTichGiaoVien cn=${cn} ${ct}`, () => phanTichGiaoVien(ql, { cn, ct })); soSo++; }
+  for (const r of conn.prepare(`SELECT DISTINCT user_id AS id FROM teacher_assignments WHERE status = 'active' ORDER BY user_id`).all() as any[]) {
+    hai(`chiSoHoSoGv ${r.id}`, () => chiSoHoSoGv(ql, r.id, {}));
+    soSo++;
+  }
+  /* Khoá giảm đọc: QL một chi nhánh khác chi nhánh mẫu, Công việc "Tất cả" — Case mở ngoài chi nhánh không còn về (trước: đọc mọi Case cả hệ thống). */
+  const qlKhac = (conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+    WHERE r.key = 'manager' AND ur.status = 'active' AND u.approval_state = 'approved' AND ur.branch_id != ? ORDER BY ur.user_id LIMIT 1`).get(CN) as any).id as number;
+  const dong = (tat: boolean) => {
+    caseMoTapChaKhiKiem.tat = tat;
+    return chayTrongRequest('GET', () => { const d0 = soDongSql(); myWork(PRINCIPAL_CUA.get(qlKhac)!, { nguoi: 'tat-ca' }); return soDongSql() - d0; });
+  };
+  const [cu, moi] = [dong(true), dong(false)];
+  caseMoTapChaKhiKiem.tat = false;
+  console.log(`      (so ${soSo} lần; QL chi nhánh khác "Tất cả": ${cu} → ${moi} dòng)`);
+  assert(!sai.length, sai.slice(0, 10).join(' | '));
+  assert(moi < cu - 50, `QL một chi nhánh vẫn đọc Case mở cả hệ thống: ${cu} → ${moi} dòng`);
 });
 
 check('GIAM-DOC-0611 · cờ Thiếu thông tin (chip TVV / CX) = cờ của danh sách Học viên & Lớp — mọi tài khoản × phạm vi × chi nhánh', () => {

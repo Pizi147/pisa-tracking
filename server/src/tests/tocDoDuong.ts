@@ -1034,6 +1034,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* GIAM-DOC-0711a: napCaseMo tập cha theo chi nhánh (QL "Tất cả", lọc chi nhánh, Phân tích GV / hồ sơ GV — DEM-QUA-HAN) — trần dòng mới = max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1. */
+  'QL /my-work?nguoi=7': 1098, 'QL /my-work?nguoi=tat-ca&branchId=1': 1476, 'QT /my-work?nguoi=tat-ca&branchId=1': 1482, 'QL /giao-vien/7/viec': 1102, 'QT /giao-vien/7/viec': 1099, 'QL /giao-vien/9/chi-so': 2677, 'QT /giao-vien/9/chi-so': 2916, 'QL /giao-vien/7/chi-so': 2502, 'GVCN /giao-vien/7/chi-so': 2499, 'GVCN_THUONG /giao-vien/7/chi-so': 2499, 'QT /giao-vien/7/chi-so': 2500, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 3247, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 3244, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 3244, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 3245,
   /* DEM-QUA-HAN b: panel Chấm Test đúng hạn (số chung) — ⌈đo × 1,3⌉, đo 285 · 285. */
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371,
   /* DEM-QUA-HAN: Phân tích GV + panel Việc đúng hạn — trần = ⌈đo × 1,3⌉, đo bảng FT 2 349 · 2 347, thường 2 168 · 2 166, khoảng dài 2 702 · 2 700, panel 1 192 · 1 190. */
@@ -1046,10 +1048,10 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVCN /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVBM /classes/3/bao-cao-ph/phan?phan=listening': 102, 'GVCN_THUONG /classes/3/bao-cao-ph/phan?phan=listening': 102, 'QT /classes/3/bao-cao-ph/phan?phan=listening': 102,
   'QL /classes/6/bao-cao-ph': 65, 'QL /classes/6/bao-cao-ph/phan?phan=writing': 61, 'QT /classes/6/bao-cao-ph': 65, 'QT /classes/6/bao-cao-ph/phan?phan=writing': 61, 'GVCN_THUONG /classes/6/bao-cao-ph': 65, 'GVCN_THUONG /classes/6/bao-cao-ph/phan?phan=writing': 61,
   /* DOC-PT (05/11): Phân tích GV — trước chưa có trần dòng (đo 2 219 · 2 167 · 1 972 · 1 920 · 2 572 · 2 520). */
-  'QL /phan-tich/giao-vien?cn=1&ct=ft': 3054, 'QT /phan-tich/giao-vien?cn=1&ct=ft': 3052,   // đo 1554 · 1502
-  'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 2819, 'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 2816,   // đo 1328 · 1276
-  'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 3513, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 3510,   // đo 1907 · 1855
-  'QL /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 663, 'QT /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 1000, 'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 1550, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 1547,   // PT-VP-PA: đo 510 · 769 · 352 · 300 — max(đo + 50, ⌈đo × 1,3⌉)
+  'QL /phan-tich/giao-vien?cn=1&ct=ft': 3014, 'QT /phan-tich/giao-vien?cn=1&ct=ft': 3011,   // đo 1554 · 1502
+  'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 2777, 'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 2775,   // đo 1328 · 1276
+  'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 3481, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 3478,   // đo 1907 · 1855
+  'QL /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 663, 'QT /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 1000, 'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 1505, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 1502,   // PT-VP-PA: đo 510 · 769 · 352 · 300 — max(đo + 50, ⌈đo × 1,3⌉)
   /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11 (bộ demo ít thi thật: QL 12 · QT / CX 22 · TVV 14 dòng). Ước bản chính 2 tháng ~1 000 dòng (ghi chú v13 mục 4). */
   'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,
   'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 72,
@@ -1112,7 +1114,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
   'QL /my-work?nguoi=tat-ca&branchId={cn}': 1420, 'QT /my-work?nguoi=tat-ca&branchId={cn}': 1427,   // DOC-THUA: đo QL 1092 · QT 1097 (trước 1093 · 1098 — seed chỉ 1 dòng Báo PH ở chi nhánh khác; DB thật bớt mọi dòng Báo PH chờ của chi nhánh khác)
   'ADMIN /my-work': 584,   // RA-DOC-0611: đo 449 (việc Xuất báo cáo PH: ghi danh lớp có đợt ~100) → max(đo + 50, ⌈đo × 1,3⌉)
-  'QL /my-work': 1416,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1089 (trước 1147)
+  'QL /my-work': 1360,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1089 (trước 1147)
   'GVCN /my-work': 1026,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)   // RA-DOC-0611b: đo 789 (trước 852) — Case mở tập cha theo lớp
   'GVBM /my-work': 1038,   // TD4: đo 847 (trước 2016)   // V5 SV-SO1 sau gộp main: đo 1194 (trần cũ 1102) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 853 (trước 911); TL-VIEC: đo 834 (trước 853)   // RA-DOC-0611b: đo 798 (trước 855)
   'GVCN_THUONG /my-work': 1026,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)   // RA-DOC-0611b: đo 789 (trước 852)
