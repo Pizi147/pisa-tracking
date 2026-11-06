@@ -15,6 +15,7 @@ export async function runPrTatCpTests(t: any) {
   const canCham: any = await import('../cham/canCham.ts');
   const diemTheoLuot: any = await import('../cham/diemTheoLuot.ts');
   const mig: any = await import('../migrate/prTatCp.ts');
+  const attempts: any = await import('../fasttrack/attempts.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const d: any = await import('../../../shared/domain/index.ts');
@@ -115,6 +116,13 @@ export async function runPrTatCpTests(t: any) {
       const ap2: string[] = [];
       mig.migratePrTatCp(conn, ap2);
       assert(ap2.length === 0 && st(b1.id).status === 'planned', `chạy lặp không đổi, không ẩn lại lượt QL xếp: ${ap2}`);
+      /* RA-LOI-0711a: QL "Khôi phục lượt" (trang lượt, `reopenAttempt` ghi `reopened`) Checkpoint đã ẩn → deploy kế không được ẩn lại. */
+      attempts.reopenAttempt(P.mbManager, a2.id); xoaNho();
+      assert(st(a2.id).status === 'planned', `Khôi phục lượt ${a2.id} phải mở lại: ${JSON.stringify(st(a2.id))}`);
+      const apMo: string[] = [];
+      mig.migratePrTatCp(conn, apMo);
+      assert(apMo.length === 0 && st(a2.id).status === 'planned', `migrate không được ẩn lại lượt QL đã Khôi phục: ${apMo} ${JSON.stringify(st(a2.id))}`);
+      conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled', cancel_reason = ? WHERE id = ?`).run(mig.LY_DO_TAT_CP, a2.id);   // về như trước để bước bật dưới đây giữ nguyên
       /* Bật lại công tắc → lượt còn ẩn (A · Checkpoint 2) hiện lại. */
       d.CONG_TAC_CP.tuSinh = true;
       const ap3: string[] = [];
