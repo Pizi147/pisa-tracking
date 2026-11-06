@@ -39,7 +39,7 @@ import { dich as dichChu, t } from '@shared/i18n/index.ts';
 export { mucQuanLyHocVien, type LopHocQuyen, type ViecQuanLy };
 const NHAN_VIEC = NHAN_VIEC_QUAN_LY;
 
-export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, soViPhamMo = 0, quyen, lopHoc, onDeXuatSua, onDoiViec }: {
+export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempts, onDone, soViPhamMo = 0, quyen, lopHoc, onDeXuatSua, onDoiViec, tiep }: {
   /** Việc đang mở; `null` = không mở gì. `lo-trinh` do nơi gọi mở (StudentPlanPanel), không qua đây. */
   viec: ViecQuanLy | null; onClose: () => void;
   student: ThongTinEm;
@@ -57,6 +57,8 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   onDeXuatSua?: () => void;
   /** P7: hộp bị chặn vì quyết định chuyển lớp chờ → "Chuyển lớp…" mở đúng việc đó (nơi gọi đổi việc). */
   onDoiViec?: (v: ViecQuanLy) => void;
+  /** Bổ sung hồ sơ thiếu: đi qua nhiều em (chỉ việc `info`). */
+  tiep?: TiepEm;
 }) {
   if (!viec || viec === 'lo-trinh') return null;
   const xong = () => { onDone(); onClose(); };
@@ -74,7 +76,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     /* P7: Quay lại học — máy chủ chọn hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại), cùng đường nút ở Lưu trữ. */
     case 'quay-lai': return <QuayLaiTuMenu em={{ id: student.id, ten: student.name, lop }} onClose={onClose} onDone={onDone} />;
     case 'outcome': return cycle && <KetQuaThiThatPanel cycleId={cycle.id} studentName={chung.studentName} lop={chung.lop} onClose={chung.onClose} onDone={chung.onDone} />;
-    case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} quyen={quyen} onDeXuatSua={onDeXuatSua} />;
+    case 'info': return <ThongTinPanel {...chung} student={student} cycle={cycle} attempts={attempts} quyen={quyen} onDeXuatSua={onDeXuatSua} tiep={tiep} />;
     case 'lich-su-sua': return <LichSuThayDoi loai="hv" id={student.id} dong2={[student.name, lop]} onClose={onClose} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
@@ -84,6 +86,12 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     default: return null;
   }
 }
+
+/**
+ * BỔ SUNG HỒ SƠ THIẾU (06/11): đang đi qua nhiều em ở Công việc — đầu panel ghi "em {stt}/{tong}", Lưu = "Lưu · em tiếp ›" khi còn em,
+ * "Bỏ qua ›" sang em kế không lưu, con trỏ vào ô còn thiếu đầu tiên.
+ */
+export type TiepEm = { stt: number; tong: number; conLai: boolean; boQua: () => void };
 
 /** Dữ liệu em cho Sửa thông tin — đúng các trường hồ sơ (`/students/:id`) trả. */
 export type ThongTinEm = {
@@ -111,8 +119,8 @@ export type QuyenSua = { canEdit: boolean; coTheSuaThongTin?: boolean; canEditCy
  * SỬA THÔNG TIN MỘT EM TỪ DÒNG BẢNG (PR-OV2b — ⋯ dòng ở hồ sơ lớp / Học viên & Lớp): nạp hồ sơ em rồi mở đúng panel của ⋯ hồ sơ HV.
  * OV-10b: `viec` — ⋯ dòng của TVV / CX mở cả Tạm dừng / Thôi học · Quay lại học · Kết quả thi thật (cùng panel, cùng quyền của hồ sơ).
  */
-export function SuaThongTinMotEm({ viec = 'info', studentId, studentName, lop, onClose, onDone }: {
-  viec?: ViecQuanLy; studentId: number; studentName: string; lop?: string | null; onClose: () => void; onDone: () => void;
+export function SuaThongTinMotEm({ viec = 'info', studentId, studentName, lop, onClose, onDone, tiep }: {
+  viec?: ViecQuanLy; studentId: number; studentName: string; lop?: string | null; onClose: () => void; onDone: () => void; tiep?: TiepEm;
 }) {
   const { data, error, reload } = useApi<any>(`/students/${studentId}`, [studentId]);
   const [deXuat, setDeXuat] = useState(false);
@@ -121,7 +129,7 @@ export function SuaThongTinMotEm({ viec = 'info', studentId, studentName, lop, o
   return (
     <StudentManagePanel viec={deXuat ? 'de-xuat-sua' : viec} onClose={onClose} lop={lop} cycle={data.cycle} attempts={data.attempts ?? []} onDone={onDone}
       student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null} soViPhamMo={data.dauHoSo?.soViPhamMo ?? 0}
-      onDeXuatSua={() => setDeXuat(true)} />
+      onDeXuatSua={() => setDeXuat(true)} tiep={tiep} />
   );
 }
 
@@ -254,8 +262,8 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
  * Target: `cycle.edit` / `student.edit_more` sửa thẳng kèm lý do (`target-revision`); GVCN cùng ô → Đề xuất sửa gửi QL duyệt (`de-xuat-sua`).
  * Lưu một lần, ba phần theo thứ tự (hồ sơ + TVV + điểm đầu vào · lộ trình · Target): phần lỗi báo đúng phần, phần đã lưu nói rõ, panel còn mở.
  */
-function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, attempts, quyen, onDeXuatSua }: ChungViec & {
-  student: ThongTinEm; cycle: any | null; attempts: any[]; quyen: QuyenSua; onDeXuatSua?: () => void;
+function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, attempts, quyen, onDeXuatSua, tiep }: ChungViec & {
+  student: ThongTinEm; cycle: any | null; attempts: any[]; quyen: QuyenSua; onDeXuatSua?: () => void; tiep?: TiepEm;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -320,6 +328,12 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
     return () => { con = false; clearTimeout(h); };
   }, [doiMon, JSON.stringify(mon)]);   // eslint-disable-line react-hooks/exhaustive-deps
   const lf = useLoiForm();
+  /* Bổ sung hồ sơ thiếu: con trỏ vào ô còn thiếu đầu tiên (thứ tự `missingForStudent`: ngày sinh · email · tuần bắt đầu · Target). */
+  useEffect(() => {
+    if (!tiep) return;
+    const khoa = !student.dob ? 'ngay-sinh' : !student.email?.trim() ? 'email' : quanLy && cycle && !tuanCu ? 'tuan' : cycle && !cycle.ratio && !targetCu ? 'target' : null;   // Target thiếu kể cả khi tích KCK (OV-9)
+    if (khoa) document.getElementById(lf.oId(khoa))?.focus();
+  }, [student.id]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [busy, setBusy] = useState(false);
   /* Lỗi máy chủ gắn đúng ô (câu lỗi mở đầu bằng tên ô); gõ lại thì bỏ. */
   const [loiMay, setLoiMay] = useState<{ khoa: string; nhan: string; lyDo: string } | null>(null);
@@ -419,11 +433,12 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   }
 
   return (
-    <KhungPanel tieuDe={NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
+    <KhungPanel tieuDe={tiep && tiep.tong > 1 ? `${NHAN_VIEC.info} · ${t('em {stt}/{tong}', { stt: tiep.stt, tong: tiep.tong })}` : NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
         daSua,
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
+        phu: tiep?.conLai ? <button type="button" className="btn btn-ghost min-h-[44px] sm:min-h-0" onClick={tiep.boQua} disabled={busy}>{t('Bỏ qua ›')}</button> : undefined,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? t('Đang lưu…') : tiep?.conLai ? t('Lưu · em tiếp ›') : t('Lưu')}</button>,
       }}>
       <Khoi tieuDe={t('Học viên')}>
         {!chiLienHe && <>

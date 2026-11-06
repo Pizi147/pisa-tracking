@@ -359,6 +359,15 @@ export function ThePhu({ ds, vien = [] }: { ds: readonly string[]; vien?: readon
 }
 
 /**
+ * "›" sau tên = dòng này mở TRANG (không phải panel). 06/11: dòng đã có nút động từ bên phải thì tên không thêm "›" (nút đã nói) — chỉ còn ở 375, nơi nút ẩn
+ * (chạm cả dòng). Dính vào chữ cuối của tên (khoảng trắng không ngắt) để không rơi xuống một dòng riêng.
+ */
+function MuiTenMoTrang({ it, dong, nut }: { it: WorkItem; dong: ChungDong; nut: string | null }) {
+  if (!dong.moTrang(it) || it.group === 'xuat_bc_ph') return null;
+  return <span aria-label={t('mở trang')} className={`text-[13px] font-normal text-[color:var(--accent)] ${nut ? 'sm:hidden' : ''}`}>{' '}›</span>;
+}
+
+/**
  * TẦNG ③ — MỘT VIỆC CỦA EM (mockup `.viec`): [tên 15 / 500 + phụ 13 | hạn 136 px | nút 112 px]. Tên là nút thật (bàn phím); bấm chỗ trống của dòng = bấm tên
  * (một kiểu mở). 375: một cột, hạn dưới tên, ẩn nút, dòng ≥ 56 px.
  */
@@ -377,9 +386,11 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
         className="grid min-w-0 scroll-mt-14 appearance-none gap-px border-0 bg-transparent p-0 text-left disabled:cursor-default">
         {/* v12 S1: tên việc 500 — chỉ tên em đậm (600). */}
         <span className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px] font-medium leading-snug ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
-          <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}{ten}</span>
+          <span>
+            <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}{ten}</span>
+            <MuiTenMoTrang it={it} dong={dong} nut={nut} />
+          </span>
           {chipMuc(it, true)}
-          {dong.moTrang(it) && <span aria-label={t('mở trang')} className="text-[13px] text-[color:var(--accent)]">›</span>}
         </span>
         {tvv ? (
           <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] leading-snug text-dim">
@@ -412,16 +423,21 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const caLop = !!it.classCode && (gop || viecCaLop || it.studentName === 'Lớp ' + it.classCode);
   const phan = (it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe).split(' · ');
   const laThe = (x: string) => LA_SO.test(x) || MA_TUAN.test(x);
-  /* SOS ghi ở từng em trong khay — dòng gộp không lặp. */
-  const ngCanh = gop ? it.contextLabel?.split(' · ').filter((x) => !/^SOS \d/.test(x)).join(' · ') : it.contextLabel;
+  /* SOS ghi ở từng em trong khay — dòng gộp không lặp. 06/11: Xét lại lộ trình không liệt kê tên em ("Hứa …", "Giang …") — chỉ "n em"; tên mở ở panel. */
+  const soTong = Number(phan.find((x) => LA_SO.test(x))?.split(' ')[0]);
+  /* 06/11: thẻ "n em quá hạn" bằng đúng tổng thì bỏ (viên hạn đỏ ở cột hạn đã nói); chỉ giữ khi quá hạn MỘT PHẦN. */
+  const ngCanh = it.group === 'xet_lai_lo_trinh' ? null : gop
+    ? it.contextLabel?.split(' · ').filter((x) => !/^SOS \d/.test(x) && !(soTong && dich(x) === t('{n} em quá hạn', { n: soTong }))).join(' · ') : it.contextLabel;
   const tenGoc = phan.filter((x) => x !== it.classCode && !laThe(x)).join(' · ') || phan[0];
+  /* 06/11: số em chỉ ghi MỘT lần — tên việc đã có "n em", hoặc việc cả lớp có thẻ ngữ cảnh "n em chưa chọn" thì không thêm "n HV". */
+  const daCoSoEm = phan.some((x) => /^\d+ (em|HV)$/.test(x)) || (viecCaLop && !!ngCanh && /^\d+ em/.test(ngCanh));
   const daNoi = (x: string) => it.tieuDe.includes(x.replace(/^Lớp /, ''));
   const doiTuong = thePhu([
     caLop || gop || viecCaLop ? null : it.studentName,
     !caLop && it.classCode && it.studentName !== 'Lớp ' + it.classCode && !daNoi(it.classCode) ? it.classCode : null,
     ngCanh,
-    ...phan.filter((x) => x !== it.classCode && laThe(x)),
-    !gop && it.group === 'score' && it.soBai && !phan.some((x) => / bài$/.test(x)) ? t('{soBai} bài', { soBai: it.soBai }) : !gop && it.count !== null && it.count > 1 ? t('{n} HV', { n: it.count }) : null,
+    ...phan.filter((x) => x !== it.classCode && laThe(x) && !(gop && /^\d+ việc$/.test(x) && phan.some((y) => /^\d+ em$/.test(y)))),   // "4 em · 8 việc" → chỉ "4 em"
+    !gop && it.group === 'score' && it.soBai && !phan.some((x) => / bài$/.test(x)) ? t('{soBai} bài', { soBai: it.soBai }) : !gop && it.count !== null && it.count > 1 && !daCoSoEm ? t('{n} HV', { n: it.count }) : null,
   ]);
   return (
     <div className={con && mo ? 'bg-[color:var(--bg)]' : ''}>
@@ -434,13 +450,15 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
           aria-current={dangChon ? 'true' : undefined} className="grid min-w-0 scroll-mt-14 appearance-none gap-px border-0 bg-transparent p-0 pl-0.5 text-left disabled:cursor-default">
           {/* v12 S1: "Cả lớp {mã}" 600 (vai tên em của dòng lớp), tên việc 500. */}
           <span className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px] font-medium leading-snug ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
-            <span className={daXong ? 'line-through' : ''}>
-              {daXong && <span aria-hidden className="text-ok">✓ </span>}
-              {caLop && <><b className="font-semibold">{t('Cả lớp {lop}', { lop: it.classCode! })}</b> · </>}{tenViec(tenGoc)}
+            <span>
+              <span className={daXong ? 'line-through' : ''}>
+                {daXong && <span aria-hidden className="text-ok">✓ </span>}
+                {/* 06/11: tên = "{mã lớp} · {việc}" — không chữ "Cả lớp" (số em đã ở thẻ phụ). */}
+                {caLop && <><b className="font-semibold">{it.classCode}</b> · </>}{tenViec(tenGoc)}
+              </span>
+              {!con && <MuiTenMoTrang it={it} dong={dong} nut={nut} />}
             </span>
             {chipMuc(it, false)}
-            {/* BAO-CAO-PH b (mockup k1): việc Xuất báo cáo PH đã có nút "Báo cáo PH ›" / Xuất lớp — tên không thêm "›". */}
-            {dong.moTrang(it) && !con && it.group !== 'xuat_bc_ph' && <span aria-label={t('mở trang')} className="text-[13px] font-normal text-[color:var(--accent)]">›</span>}
           </span>
           <ThePhu ds={doiTuong} />
         </button>

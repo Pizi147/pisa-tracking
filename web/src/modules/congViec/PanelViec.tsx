@@ -68,6 +68,7 @@ export function lamTaiCho(it: WorkItem): boolean {
     /* OV-13b (đặc tả OV-13 §1): Ghi nhận vi phạm · Báo phụ huynh qua TVV · Điền Target (Thiếu thông tin) · Chọn người phụ trách — tại chỗ.
        Thiếu thông tin khác (Chốt tuần MT, Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
     case 'phoi_hop': return it.studentId !== null;
+    case 'bo_sung_ho_so': return !!it.emIds?.length;   // 06/11: sửa thông tin từng em tại chỗ, "Lưu · em tiếp ›"
     case 'missing_data': return it.studentId !== null && (it.key.startsWith('target:') || it.key.startsWith('chot-ngay-thi:'));   // UI-CV-TVV: Chốt ngày thi
     case 'bao_ph_yt': return !!it.viecId && it.studentId !== null;   // UI-CV-TVV: Báo PH (TVV / QL khi em chưa có TVV)
     /* CV-LOI: Phân công GV môn / GVCN còn thiếu — tại chỗ · R1-NO-CU: "Chọn người phụ trách" (lớp đủ người) — hộp đổi người tại chỗ.
@@ -139,6 +140,25 @@ export function PanelViec(p: PropsViec) {
   );
 }
 
+/**
+ * BỔ SUNG HỒ SƠ THIẾU (chủ SP 06/11): bấm dòng → sửa thông tin từng em NGAY TẠI CHỖ (panel Sửa thông tin sẵn có), con trỏ ở ô còn thiếu;
+ * "Lưu · em tiếp ›" / "Bỏ qua ›" qua em kế; hết em thì đóng. Danh sách em chốt lúc mở (lưu xong dòng việc có thể đổi nhưng thứ tự không nhảy).
+ * Không chuyển trang, không đụng bộ lọc / vị trí cuộn của trang đang đứng.
+ */
+function PanelBoSungHoSo({ emIds, onDong, onDaLam }: { emIds: readonly number[]; onDong: () => void; onDaLam: () => void }) {
+  const [ds] = useState(emIds);
+  const [i, setI] = useState(0);
+  const daLuu = useRef(false);
+  const tiep = () => (i + 1 < ds.length ? setI(i + 1) : onDong());
+  return (
+    <SuaThongTinMotEm key={ds[i]} studentId={ds[i]} studentName="" lop={null}
+      tiep={{ stt: i + 1, tong: ds.length, conLai: i + 1 < ds.length, boQua: tiep }}
+      /* Panel Sửa thông tin gọi onDone() rồi onClose() sau khi lưu — onClose ngay sau onDone không phải "người dùng đóng". */
+      onDone={() => { daLuu.current = true; onDaLam(); tiep(); }}
+      onClose={() => { if (daLuu.current) { daLuu.current = false; return; } onDong(); }} />
+  );
+}
+
 function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep }: PropsViec) {
   const lop = it.classCode;
   const hv = it.studentId !== null ? it.studentName : null;
@@ -201,6 +221,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
           onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
       }
       return <SuaThongTinMotEm key={it.key} studentId={it.studentId!} studentName={it.studentName} lop={lop} onClose={onDong} onDone={doi} />;
+    case 'bo_sung_ho_so':
+      return <PanelBoSungHoSo key={it.key} emIds={it.emIds ?? []} onDong={onDong} onDaLam={doi} />;
     /* P9a: thanh Việc cần làm ở hồ sơ lớp — panel Xét lại tại chỗ (ở Công việc: "Xét lại ›" đổi trang, `lamTaiCho` = false). */
     case 'xet_lai_lo_trinh':
       return <PanelXetLai key={it.key} classId={it.classId!} onClose={onDong} onDone={doi} />;

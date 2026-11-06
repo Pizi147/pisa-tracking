@@ -43,4 +43,16 @@ export async function runDonHinhTests(t: any) {
     assert(!/NhanTrangThai/.test(doc('web/src/modules/phanTich/YThucPhoiHop.tsx')), 'Ý thức còn kiểu nhãn thứ hai');
     assert(/disabled=\{!phanLoai\[k\]/.test(doc('web/src/modules/platform/AccountsAdmin.tsx')), 'chip 0 còn bấm được');
   });
+  check('CV-0611 · dòng việc gọn: tên "{mã lớp} · {việc}" (không "Cả lớp"), Xét lại lộ trình không liệt kê tên em, "›" chỉ khi dòng chưa có nút', () => {
+    const s = doc('web/src/modules/congViec/DanhSachViec.tsx');
+    assert(!/Cả lớp \{lop\}/.test(s) && /<b className="font-semibold">\{it\.classCode\}<\/b> · /.test(s), 'tên dòng cả lớp còn "Cả lớp"');
+    assert(/it\.group === 'xet_lai_lo_trinh' \? null/.test(s), 'Xét lại lộ trình còn thẻ tên em');
+    assert(/\$\{nut \? 'sm:hidden' : ''\}/.test(s) && /\u00A0/.test(s), '"›" chưa ẩn khi có nút / chưa dính chữ');
+  });
+  check('CV-0611 · Bổ sung hồ sơ thiếu mở TẠI CHỖ (panel Sửa thông tin từng em, "Lưu · em tiếp ›"), không đổi trang', () => {
+    const pv = doc('web/src/modules/congViec/PanelViec.tsx');
+    assert(/case 'bo_sung_ho_so': return !!it\.emIds\?\.length/.test(pv) && /<PanelBoSungHoSo key=\{it\.key\}/.test(pv), 'lamTaiCho / panel chưa nối');
+    const sm = doc('web/src/modules/students/StudentManagePanel.tsx');
+    assert(/tiep\?\.conLai \? t\('Lưu · em tiếp ›'\)/.test(sm) && /document\.getElementById\(lf\.oId\(khoa\)\)\?\.focus\(\)/.test(sm), 'nút em tiếp / con trỏ ô thiếu');
+  });
 }

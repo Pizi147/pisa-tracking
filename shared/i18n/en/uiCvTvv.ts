@@ -16,6 +16,8 @@ export const EN_UI_CV_TVV = {
   'Bỏ việc': 'Drop task',
   'Bỏ việc…': 'Drop task…',
   'Bổ sung hồ sơ': 'Complete profile',
+  'Bỏ qua ›': 'Skip ›',
+  'em {stt}/{tong}': 'student {stt}/{tong}',
   'Chưa có lần ghi nào.': 'Nothing recorded yet.',
   'Chưa liên hệ được · lần {n}': 'Could not reach · attempt {n}',
   'Chưa liên hệ được': 'Could not reach',

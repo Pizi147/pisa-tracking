@@ -41,6 +41,19 @@ export async function runPrOv15eTests(t: YThucTestKit) {
   const t2 = d.mondayOfDate(TODAY);
   const RONG = { tu: d.addDaysIso(t2, -77), den: d.addDaysIso(t2, 6) };
 
+  check('PT-0611 · Phân tích mở lần đầu = 2 tuần GẦN NHẤT (Thứ Hai tuần trước → hết tuần này), nơi khác giữ 2 tuần vừa qua; link tu / den theo link; chọn lại khoảng cũ không bị nuốt', () => {
+    const md = d.khoangPhanTichMacDinh('2026-10-14');   // thứ Tư W3 OCT
+    assert(md.tu === '2026-10-05' && md.den === '2026-10-18' && md.kieu === '2-tuan', JSON.stringify(md));
+    const q = (s: string) => d.khoangTuUrl(new URLSearchParams(s), '2026-10-14', md);
+    assert(JSON.stringify(q('')) === JSON.stringify(md), 'URL trống = mặc định mới');
+    assert(q('tu=2026-09-28&den=2026-10-11').tu === '2026-09-28' && q('kieu=2-tuan&tu=2026-09-28&den=2026-10-11').den === '2026-10-11', 'link có tu / den theo link');
+    assert(Object.keys(d.thamSoKhoang(md, '2026-10-14', md)).length === 0, 'mặc định mới không ghi URL');
+    const cu = d.khoangMacDinh('2026-10-14');   // W1 + W2 OCT — chọn tay thì phải ghi vào URL (không thành mặc định mới)
+    assert(d.thamSoKhoang(cu, '2026-10-14', md).tu === '2026-09-28', 'khoảng cũ chọn tay phải ghi URL');
+    assert(Object.keys(d.thamSoKhoang(cu, '2026-10-14')).length === 0 && JSON.stringify(d.khoangTuUrl(new URLSearchParams(''), '2026-10-14')) === JSON.stringify(cu), 'Tutor / HV & Lớp: mặc định cũ không đổi');
+    assert(JSON.stringify(d.khoangVeTuan({ tu: md.tu, den: md.den }, '2026-10-14', md)) === JSON.stringify(md), 'trùng mặc định mới → 2-tuan');
+  });
+
   check('OV15e-1 · khoảng thời gian: mặc định 2 tuần HOÀN CHỈNH trước tuần này (cả sang năm); link cũ tg / thang / tu-den Thứ Hai; nhãn có năm', () => {
     const md = d.khoangMacDinh('2026-10-14');   // thứ Tư W3 OCT
     assert(md.tu === '2026-09-28' && md.den === '2026-10-11' && md.kieu === '2-tuan', JSON.stringify(md));
@@ -84,8 +97,8 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(d.khuVucHienThi(n).map((k: any) => k.key).join(',') === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', d.khuVucHienThi(n).map((k: any) => k.key).join(','));
     assert(!d.khuVucHienThi(navOf(P.w1Teacher)).some((k: any) => k.key === 'phan-tich'), 'GV không có mục Phân tích');
     assert(d.khuVucCuaDuong('/phan-tich') === 'phan-tich', 'tô sáng mục Phân tích');
-    assert([...d.GOC_NHIN].join(',') === 'bao-cao,giao-vien,tong-hop,ket-qua-thi,hieu-qua-pa,y-thuc', [...d.GOC_NHIN].join(','));   // UI-PHAN-TICH: thứ tự mockup V5
-    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo HV · Phân tích GV · Test + SOS · Thi thật · Hiệu quả PA · Ý thức', 'tên tab');
+    assert([...d.GOC_NHIN].join(',') === 'bao-cao,giao-vien,ket-qua-thi,tong-hop,hieu-qua-pa,y-thuc', [...d.GOC_NHIN].join(','));   // UI-PHAN-TICH: thứ tự mockup V5; 06/11: KQ Thi thật đứng thứ 3
+    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo HV · Phân tích GV · KQ Thi thật · Test + SOS · Hiệu quả PA · Ý thức', 'tên tab');
     const g = (s: string) => d.gocNhinTuThamSo(new URLSearchParams(s));
     assert(g('').goc === 'bao-cao', 'không tham số → Báo cáo');
     assert(g('goc=van-de').goc === 'tong-hop' && g('goc=van-de').gocMoi === 'tong-hop', 'van-de cũ → Test + SOS');
