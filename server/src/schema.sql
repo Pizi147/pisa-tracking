@@ -1989,6 +1989,8 @@ CREATE TABLE sos_coordination_actions (
 CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
 CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
 CREATE INDEX idx_sca_student ON sos_coordination_actions(student_id, status);
+-- GIAM-DOC-0611: việc đang chờ theo loại (Báo PH qua TVV ở Công việc / chuông) — không quét cả bảng (bảng chỉ tăng).
+CREATE INDEX idx_sca_cho ON sos_coordination_actions(kind) WHERE status = 'pending';
 
 /*
  * HỘP CHỜ DUYỆT (PR-DUYET, §5.5, §7.6) — mọi thứ "ai đó xin Quản lý quyết" là MỘT thẻ ở đây. Bảng nguồn (case_interventions,

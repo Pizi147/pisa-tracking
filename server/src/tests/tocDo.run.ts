@@ -1417,6 +1417,28 @@ await checkAsync('DOC-IT-5 (×3) · Lưu trữ HV đi chỉ mục một phần, 
   assert(!loi.length, loi.join(' · '));
 });
 
+/* GIAM-DOC-0611c: việc "Báo PH qua TVV" đang chờ (`mywork.ts` 3c, `emCoBaoPhChuaLam`) `x.kind = ? AND x.status = 'pending'` trước SCAN cả `sos_coordination_actions`
+   (bản chính 29/10: 436 dòng, 117 đang chờ) — nay đi chỉ mục một phần idx_sca_cho. */
+await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca_cho, không SCAN sos_coordination_actions; migrate chạy lặp được', async () => {
+  const { migratePrGiamDoc0611 } = await import('../migrate/prGiamDoc0611.ts');
+  const lan: string[][] = [[], []];
+  migratePrGiamDoc0611(conn, lan[0]); migratePrGiamDoc0611(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    assert((await doSql('GVCN', 'GET', '/my-work')).status === 200, 'GVCN /my-work không 200');
+  } finally { doQuet.ghi = null; }
+  const cau = [...new Map(ghi.filter((g) => /FROM sos_coordination_actions x JOIN students s[\s\S]*x\.kind = 'bao_ph_tvv' AND x\.status = 'pending'/.test(g.sql)).map((g) => [g.sql, g])).values()];
+  assert(cau.length, 'không bắt được câu Báo PH qua TVV');
+  const loi: string[] = [];
+  for (const { sql, args } of cau) {
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+    if (!plan.some((d) => d.includes('idx_sca_cho')) || plan.some((d) => /^SCAN x$/.test(d))) loi.push(plan.join(' | '));
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');
