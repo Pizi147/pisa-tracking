@@ -22,6 +22,16 @@ type ChungDong = {
   theoDoi: (it: WorkItem) => boolean;
   /** v12 S3: đang xem việc của MỘT GV (id) — dòng của GV đó không lặp tên (dải "Đang xem việc của…" đã nói). */
   nguoiAn?: number | null;
+  /** CV-TAB b (mockup `.cn`): mã chi nhánh của dòng — chỉ khi GV có việc ở > 1 chi nhánh. */
+  theCn?: (it: WorkItem) => string | null;
+};
+
+/** Tên việc + thẻ mã chi nhánh nhỏ (mockup v17 `.cn`): thẻ dính chữ cuối của tên (không rơi một mình xuống dòng ở 375). */
+const TenCn = ({ ten, ma }: { ten: string; ma: string | null | undefined }) => {
+  if (!ma) return <>{ten}</>;
+  const i = ten.lastIndexOf(' ');
+  return <>{ten.slice(0, i + 1)}<span className="whitespace-nowrap">{ten.slice(i + 1)}
+    <span className="ml-1.5 inline-flex h-[18px] items-center rounded-[5px] border px-1.5 align-[2px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{ma}</span></span></>;
 };
 
 /* CV-TAB (mockup v17 `.than .viec`): [tên + phụ | hạn 132 px | nút ≥ 104 px] từ 640 px; 375 (mockup b): [tên + phụ, hạn dưới | nút giữa hai hàng]. */
@@ -329,7 +339,7 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
       <span className="grid min-w-0 gap-0.5">
         <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-current={dangChon ? 'true' : undefined}
           className={`${TEN} ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
-          <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}{ten}</span>
+          <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={ten} ma={dong.theCn?.(it)} /></span>
           <MuiTenMoTrang it={it} dong={dong} nut={nut} />
           {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
         </button>
@@ -386,7 +396,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
         <span className="grid min-w-0 gap-0.5">
           <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined}
             aria-current={dangChon ? 'true' : undefined} className={`${TEN} ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
-            <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}{tenViec(tenGoc)}</span>
+            <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={tenViec(tenGoc)} ma={dong.theCn?.(it)} /></span>
             {!con && <MuiTenMoTrang it={it} dong={dong} nut={nut} />}
             {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
           </button>

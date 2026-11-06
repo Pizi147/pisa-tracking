@@ -6,6 +6,8 @@ export type WorkItem = {
   classId: number | null; classCode: string | null;
   /** MH4: khung của lớp; `null` = việc không gắn lớp (hiện ở mọi khung). */
   khung?: 'ft' | 'thuong' | null;
+  /** CV-TAB b: chi nhánh của lớp (máy chủ `ganKhung`); `null` = việc không gắn lớp → hiện ở mọi chi nhánh. */
+  cn?: number | null;
   attemptId: number | null; attemptNo: number | null; caseId: number | null;
   level: { tone: 'ok' | 'info' | 'warn' | 'danger'; text: string } | null;
   reason: string; actionLabel: string; href: string;

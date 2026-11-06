@@ -28,7 +28,7 @@ import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { ctxSuaCaseNhieu, laGvcnLopDangHoc } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
-import { quetTheoMoc } from '../platform/mocHeThong.ts';
+import { nhoThamChieu, quetTheoMoc } from '../platform/mocHeThong.ts';
 import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
@@ -93,6 +93,8 @@ export type WorkItem = {
   mine: boolean;
   /** MH4, K1-30: khung của lớp (Fast Track / Lớp thường). `null` = việc không gắn lớp → hiện ở mọi khung. */
   khung?: Khung | null;
+  /** CV-TAB b: chi nhánh của lớp (bảng lớp đã nhớ, 0 câu) — GV dạy nhiều chi nhánh lọc / gắn thẻ ở web. `null` = việc không gắn lớp. */
+  cn?: number | null;
   due: string | null;
   statusLabel: string;
   /**
@@ -1637,8 +1639,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     xemNguoiKhac,
     /* BO-QUA-XEP-MT: chỉ QL / Quản trị có (việc `moc:`); rỗng thì không gửi. */
     daBoQua: daBoQua.length ? daBoQua : undefined,
+    /* CV-TAB b: việc ở > 1 chi nhánh (GV dạy liên chi nhánh) — mã + tên các chi nhánh đó cho dải chọn / thẻ CN ở web; một chi nhánh thì không gửi. */
+    chiNhanh: chiNhanhCuaViec(flat),
   };
 }
+
+const chiNhanhCuaViec = (ds: readonly WorkItem[]) => {
+  const ids = new Set(ds.map((it) => it.cn).filter((x): x is number => x != null));
+  return ids.size > 1 ? bangChiNhanh().filter((b) => ids.has(b.id)) : undefined;
+};
 
 /** SV-YT-TVV + SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
 export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['bao_ph_yt', 'missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
@@ -1671,6 +1680,7 @@ function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined
   for (const it of items) {
     const l = it.classId ? lopCua(it.classId) : null;
     it.khung = l ? khungCua(l.mode) : null;
+    it.cn = it.classId ? bangLop().get(it.classId)?.branchId ?? null : null;
   }
 }
 
@@ -1698,9 +1708,19 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
   const loc = (w.items as WorkItem[]).filter((it) => !laViecChamCheo(it) || it.key === KHOA_CHAM_SPEAKING);
   const lt = lamThayCua(p, loc);
   const cuaGv = new Set(loc.filter((it) => it.mine).map((it) => it.key));   // `mine` gốc (của GV đó) — bị ghi đè `false` bên dưới
+  const xemDuoc = (it: WorkItem) => (it.group === 'mgmt' && it.classId === null && it.studentId === null) || it.key === KHOA_CHAM_SPEAKING
+    || ((it.classId !== null || it.studentId !== null) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId }));
+  /*
+   * CV-TAB b (chủ SP 06/11): QL một chi nhánh chỉ thấy việc ở chi nhánh mình (lọc quyền xem lớp / em ở trên — đã đúng từ trước); việc của GV ở chi nhánh
+   * khác không hiện, chỉ ghi TÊN chi nhánh đó cho dòng "… dạy cả {CN} — việc ở đó do QL {CN} theo dõi". Chi nhánh GV dạy = lớp của phân công đang hiệu lực
+   * (`x.assignments`, đã nạp) mà người xem không xem được; tên: bảng nhỏ nhớ theo tiến trình (0 câu khi DB chưa đổi).
+   */
+  const homNay = demoToday();
+  const cnAnIds = new Set(x.assignments.filter((a) => activeAt(a, homNay) && !can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: a.classId }))
+    .map((a) => bangLop().get(a.classId)?.branchId).filter((b): b is number => b != null));
+  const cnAn = cnAnIds.size ? bangChiNhanh().filter((b) => cnAnIds.has(b.id)).map((b) => b.name) : [];
   const items = loc
-    .filter((it: any) => (it.group === 'mgmt' && it.classId === null && it.studentId === null) || it.key === KHOA_CHAM_SPEAKING
-      || ((it.classId !== null || it.studentId !== null) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId })))
+    .filter(xemDuoc)
     .map((it: any) => ({
       ...it,
       owner: it.ownerId === x.userId ? x.fullName : it.owner,
@@ -1719,8 +1739,12 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
     }));
   const dong = dungDong(items);
   /* V5 SV-SO1 (brief 7): xem việc người khác = chế độ theo dõi (`chiXem`); dòng nào người xem làm thay được thì `lamThay` (quyền máy chủ thật). */
-  return { summary: { ...demSo(dong, (i) => cuaGv.has(i.key)), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true };
+  return { summary: { ...demSo(dong, (i) => cuaGv.has(i.key)), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true, cnAn };
 }
+
+/** Bảng chi nhánh (vài dòng) — nhớ theo tiến trình, khoá phiên bản DB. */
+const bangChiNhanh = (): { id: number; code: string; name: string }[] =>
+  nhoThamChieu('bang-chi-nhanh', () => db().prepare('SELECT id, code, name FROM branches ORDER BY id').all() as any[]);
 
 /**
  * V5 SV-SO1: người xem LÀM THAY được việc này không — cùng quyền máy chủ kiểm khi lưu: Nhập điểm = `editableSkills` (QL / Admin / QT nhập hộ qua
