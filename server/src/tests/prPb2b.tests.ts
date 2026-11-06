@@ -388,7 +388,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     assert(b.hang.every((h: any) => h.ghiKetQuaPa.k !== 'so' || h.ghiKetQuaPa.tong === r.tap.get(h.id)?.tong.length), 'ô = tập');
   });
   /* 10 (22/10): "Xử lý vi phạm" bỏ khỏi Phân tích GV (dữ liệu vi phạm giữ). Giữ đúng dữ liệu (4g), (4h) từng tạo — id của phép kiểm sau không lệch. */
-  check('Pb2b (4g) · Phân tích GV không còn cột Xử lý vi phạm; vi phạm + đề xuất vẫn lưu, không vào Việc đúng hạn', () => {
+  check('Pb2b (4g) · Phân tích GV không còn cột Xử lý vi phạm; vi phạm + đề xuất vẫn lưu; Việc đúng hạn chỉ có Xử lý vi phạm bắt buộc đã quá hạn', () => {
     const sid = hv();
     const ids = [ghiVp(sid, addDays(D, -2)), ghiVp(sid, addDays(D, -1)), ghiVp(sid, D)];
     deXuatGui(sid, ids).gui();
@@ -397,9 +397,9 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     deXuatGui(s2, ids2).gui();
     const b = bang('ft', { tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
     const h = hangCua(b, gvcn.userId);
-    /* DEM-QUA-HAN: Việc đúng hạn = Kết quả PA + việc Công việc còn mở quá hạn — vi phạm (Ý thức) không vào phần nào. */
+    /* DEM-QUA-HAN: Việc đúng hạn = Kết quả PA + việc Công việc còn mở quá hạn — Ý thức chỉ "Xử lý vi phạm" bắt buộc QUÁ HẠN (vừa ghi hôm nay: chưa quá hạn → không vào). */
     const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) })).get(gvcn.userId) ?? [];
-    assert(h && !('xuLyViPham' in h) && mo.every((it: any) => !it.group.startsWith('yt_'))
+    assert(h && !('xuLyViPham' in h) && mo.every((it: any) => !it.group.startsWith('yt_') || (it.group === 'yt_xu_ly' && it.due < D))
       && (h.viecDungHan.tong ?? 0) === (h.ghiKetQuaPa.tong ?? 0) + mo.length && (h.viecDungHan.dung ?? 0) === (h.ghiKetQuaPa.dung ?? 0), JSON.stringify(h));
     assert((conn.prepare(`SELECT COUNT(*) AS n FROM violations WHERE id IN (${[...ids, ...ids2].join(',')})`).get() as any).n === 6, 'vi phạm phải còn');
   });

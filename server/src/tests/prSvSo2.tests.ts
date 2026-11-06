@@ -84,7 +84,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     assert(hl && hl.luot > 0 && (hl.ketQua.k === 'so' ? hl.ketQua.tong : 0) === cong, JSON.stringify({ hl, cong }));
   }));
 
-  check('SVSO2 (05 #8, #9, 10) · Việc đúng hạn = Kết quả PA + việc còn mở quá hạn (DEM-QUA-HAN; đơn vị việc; Xử lý vi phạm đã bỏ khỏi bảng), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
+  check('SVSO2 (05 #8, #9, 10) · Việc đúng hạn = Kết quả PA + việc còn mở quá hạn (DEM-QUA-HAN; đơn vị việc; Ý thức chỉ Xử lý vi phạm bắt buộc), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const bang = pt.phanTichGiaoVien(P.mbManager, ky);
     const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, ky));
@@ -116,8 +116,8 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const nc = pt.nguCanhPtGv(P.mbManager, ky);
     const mo: Map<number, any[]> = pt.viecQuaHanMo(nc);
     assert(mo.size > 0, 'seed phải có việc còn mở quá hạn (Thêm PA / Mô tả Case…) của GV trong 13 tuần');
-    /* Cùng nguồn: đúng các dòng quá hạn của Công việc "Tất cả" (QL chi nhánh) có người giữ, hạn trong kỳ, khung FT / không lớp — trừ Nhập điểm, Kết quả PA, Ý thức, Thiếu dữ liệu. */
-    const NGOAI = ['score', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'missing_data'];
+    /* Cùng nguồn: đúng các dòng quá hạn của Công việc "Tất cả" (QL chi nhánh) có người giữ, hạn trong kỳ, khung FT / không lớp — trừ Nhập điểm, Kết quả PA, Ý thức không bắt buộc, Thiếu dữ liệu. */
+    const NGOAI = ['score', 'ghi_ket_qua_pa', 'yt_xem', 'yt_thuc_hien', 'missing_data'];   // chủ SP 06/11: Ý thức chỉ "Xử lý vi phạm" bắt buộc vào
     const cv = (wl.myWork(P.mbManager, { branchId: nc.cn, nguoi: 'tat-ca' }).items as any[])
       .filter((it) => it.urgency === 'overdue' && it.ownerId != null && it.ownerId !== P.mbManager.userId && it.due >= nc.tu && it.due <= nc.cuoi
         && (!it.khung || it.khung === 'ft') && !NGOAI.includes(it.group));

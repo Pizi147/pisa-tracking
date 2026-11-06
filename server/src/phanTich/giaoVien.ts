@@ -463,12 +463,13 @@ export function tapGhiKetQuaPa(p: Principal, c: NguCanhPtGv): { tap: Tap; khongN
  * DEM-QUA-HAN (chủ SP 06/11): "quá hạn thì vẫn phải tính". Việc CÒN MỞ ĐÃ QUÁ HẠN ở Công việc = KHÔNG đúng hạn (vào mẫu, không vào tử) của NGƯỜI GIỮ VIỆC —
  * CHÍNH dòng `myWork` (`urgency = 'overdue'`, `ownerId`; một việc = một dòng chưa gộp), hạn trong khoảng (như nghĩa vụ Kết quả PA), khung của bảng
  * (việc không gắn lớp: mọi khung, như Công việc). Không lấy: Nhập điểm (cột Chấm Test, đơn vị bài) · Kết quả PA (`tapGhiKetQuaPa` đã có cả nghĩa vụ chưa ghi) ·
- * Ý thức (10, 22/10: bỏ khỏi Phân tích GV) · Thiếu dữ liệu (không hạn) · Chấm Speaking chéo (T18 — nằm ở `score`) · việc chưa ai giữ.
+ * Ý thức trừ "Xử lý vi phạm" (chủ SP 06/11: chỉ việc xử lý BẮT BUỘC của GVCN — ≥ 3 vi phạm, hạn 5 ngày — vào; "Xem vi phạm mới" chỉ ghi nhận ở Công việc;
+ * "Đã thực hiện" chờ PTA) · Thiếu dữ liệu (không hạn) · Chấm Speaking chéo (T18 — nằm ở `score`) · việc chưa ai giữ.
  * ponytail: các loại này khi ĐÃ XONG chưa có ngày xong để so hạn → chưa vào tử (chỉ Kết quả PA có); thêm khi có cột ngày xong.
  */
 const VIEC_CO_HAN: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>([
   'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'no_plan', 'bao_ph_yt', 'khai_bac', 'chot_len_ft',
-  'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'bo_sung_ho_so', 'xuat_bc_ph',
+  'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'bo_sung_ho_so', 'xuat_bc_ph', 'yt_xu_ly',
 ]);
 /**
  * Người giữ việc theo Công việc "Tất cả" của QUẢN LÝ chi nhánh (vai `manager` ở `cn`, không là người cụ thể) — bảng, panel bảng và hồ sơ GV (GV tự xem,
@@ -602,7 +603,7 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
       casePa: cp?.mo ? { k: 'so', dung: cp.coPa, tong: cp.mo } : { k: 'rong' },
       chamDiem: oTuTap(coMon, cham.get(id)),
       ghiKetQuaPa: oTuTap(true, ghi.get(id)),
-      /* 10 (22/10): "Xử lý vi phạm" bỏ khỏi Phân tích GV — không vào Việc đúng hạn. DEM-QUA-HAN: + việc Công việc còn mở quá hạn (gồm Báo PH). */
+      /* DEM-QUA-HAN: Kết quả PA + việc Công việc còn mở quá hạn (gồm Báo PH, Xử lý vi phạm bắt buộc — chủ SP 06/11 thay 10 (22/10)). */
       viecDungHan: oTuTap(true, gopTap<unknown>(ghi.get(id), tapViecMo(mo.get(id)))),
       ketQua,
     };
