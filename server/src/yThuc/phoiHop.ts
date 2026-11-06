@@ -2,7 +2,7 @@ import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
   CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_SYNC_REVIVE_REASONS, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
-  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, boMonTheoLuot, daGhiLuot,
+  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type TheSosEm, type TheSosLuot, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, conflict, loi, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -11,6 +11,7 @@ import { notify, writeAudit } from '../platform/audit.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
+import type { AttemptResult } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
@@ -215,6 +216,8 @@ export type CoordinationTurn = {
   nhanDot: string | null;
   /** PR-LT2a (T58): chữ kết quả lớp thường qua MỘT hàm `nhanKetQuaThuong` (`2/4 môn đạt` + `Không đạt: G+V P`), null với FT. */
   ketQua: { chinh: string; phu: string | null; pct: string | null; dat: boolean | null } | null;
+  /** PHOI-HOP-SOS-INFO: thẻ kết quả (lượt · Overall so kỳ vọng · kỹ năng trượt) — cùng dựng với dòng việc Công việc / hồ sơ lớp (`theSosTuKetQua`). */
+  the: TheSosLuot;
   /** Kỹ năng đang trượt ở lượt này (từ tín hiệu còn hiệu lực). */
   skills: string[]; skillLabels: string[];
   /** Chữ ngắn của kỹ năng cho chip SOS ("R", "W"). */
@@ -223,6 +226,52 @@ export type CoordinationTurn = {
   actions: CoordinationAction[];
   canAct: boolean;
 };
+
+/**
+ * PHOI-HOP-SOS-INFO (chủ SP 06/11): THẺ KẾT QUẢ của một lượt từ kết quả ĐÃ TÍNH — FT: `resultOf` (Overall, kỳ vọng, kỹ năng ✗ của CHÍNH lượt); lớp thường:
+ * `evaluateRegular` (% tổng, ngưỡng lớp, môn không đạt). MỘT hàm cho thẻ Phối hợp (`turnsOf`) và dòng việc (`dongPhoiHopLop`) — cùng chữ ba nơi. 0 câu SQL.
+ */
+export function theSosTuKetQua(a: any, kq: { ft: AttemptResult } | { thuong: ReturnType<typeof evaluateRegular>; truot: string[] }): TheSosLuot {
+  if ('ft' in kq) {
+    const r = kq.ft;
+    return { luot: `MT${a.attempt_no}`, ovr: r.overall, moc: r.expectation, tam: r.provisional || !r.chot,
+      truot: r.verdicts.filter((v) => v.passed === false).map((v) => tenMonNgan(null, v.skill)) };
+  }
+  const r = kq.thuong;
+  return { luot: nhanDot(a.kind, a.attempt_no), ovr: r.tyLeTong === null ? null : r.tyLeTong * 100, moc: r.passThreshold * 100, pt: true, tam: r.provisional,
+    truot: kq.truot.map((s) => tenMonNgan(a.programme_code, s)) };
+}
+
+/** Hàng lượt + tên em + chương trình / lộ trình — MỘT câu cho cả tập (dùng chung `turnsOf` và `dongPhoiHopLop`, không N+1). */
+function docLuotTheoId(ids: readonly number[]): Map<number, any> {
+  const conn = db();
+  const luot = new Map<number, any>();
+  for (let i = 0; i < ids.length; i += 400) {
+    const lo = ids.slice(i, i + 400); const q = lo.map(() => '?').join(',');
+    for (const a of conn.prepare(`SELECT a.*, s.full_name, s.student_code, c.code AS class_code, c.programme_code,
+        (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck FROM assessment_attempts a
+        JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${q})`).all(...lo) as any[]) luot.set(a.id, a);
+  }
+  return luot;
+}
+
+/** Dòng việc Phối hợp SOS hiện tối đa bấy nhiêu thẻ (còn lại ghi "+n lượt nữa" ở web, mở panel thấy đủ). */
+export const THE_SOS_TOI_DA = 3;
+
+/** Thẻ kết quả cho một tập lượt Mock FT (dòng việc chỉ có lượt Mock — PR-S6F-a Q11): một câu lượt + `loadBundle` theo tập, 0 câu theo từng em. */
+function theSosCuaLuot(ids: readonly number[]): Map<number, TheSosEm> {
+  const out = new Map<number, TheSosEm>();
+  if (!ids.length) return out;
+  const luot = docLuotTheoId(ids);
+  const bundle = loadBundle([...ids], { boCase: true });
+  for (const id of ids) {
+    const a = luot.get(id);
+    if (!a || a.status === 'cancelled') continue;
+    out.set(id, { attemptId: id, studentId: a.student_id, studentName: a.full_name,
+      the: theSosTuKetQua(a, { ft: resultOf(a, bundle.scores.get(id) ?? [], bundle.skips.get(id) ?? [], bundle.skillRows.get(id) ?? []) }) });
+  }
+  return out;
+}
 
 function shapeAction(r: any, attachments: Map<number, number>): CoordinationAction {
   const han = hanPhoiHop(r.kind, r.created_at, r.han_chon);
@@ -258,13 +307,10 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   const out: CoordinationTurn[] = [];
   /* PR-SOS: đọc theo TẬP (lượt, kỹ năng tín hiệu, điểm) — trước đây mỗi lượt 2 câu + `resultOf` tự hỏi điểm (N+1 theo số SOS Event). */
   const ids = [...byAttempt.keys()];
-  const luot = new Map<number, any>();
+  const luot = docLuotTheoId(ids);
   const kyNang = new Map<number, string[]>();
   for (let i = 0; i < ids.length; i += 400) {
     const lo = ids.slice(i, i + 400); const q = lo.map(() => '?').join(',');
-    for (const a of conn.prepare(`SELECT a.*, s.full_name, s.student_code, c.code AS class_code, c.programme_code,
-        (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck FROM assessment_attempts a
-        JOIN students s ON s.id = a.student_id LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${q})`).all(...lo) as any[]) luot.set(a.id, a);
     for (const r of conn.prepare(`SELECT attempt_id, skill FROM case_signals WHERE attempt_id IN (${q}) AND status != 'withdrawn' AND skill IS NOT NULL
         ORDER BY id`).all(...lo) as any[]) {
       const ds = kyNang.get(r.attempt_id) ?? [];
@@ -294,11 +340,15 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
     let skills = kyNang.get(attemptId) ?? [];
     let sosLevel: number | null = null, ketQua: CoordinationTurn['ketQua'] = null;
     let noiDungCua: ((daLamNgay: string | null) => string[]) | null = null;
-    if (laMock) sosLevel = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []).sosLevel;
-    else {
+    let the: TheSosLuot;
+    if (laMock) {
+      const res = resultOf(a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
+      sosLevel = res.sosLevel; the = theSosTuKetQua(a, { ft: res });
+    } else {
       /* Lớp thường: KHÔNG có mức SOS — chữ kết quả qua `nhanKetQuaThuong`, đọc từ điểm đã nạp (không SQL, không `resultOf` FT). */
       const r = evaluateRegular(boMonTheoLuot(chuongTrinh.get(a.programme_code)?.skills ?? [], daGhiLuot(bundle.skillRows.get(a.id), bundle.scores.get(a.id))), bundle.scores.get(a.id) ?? [], a.programme_code, nguongDatLop(a.class_id, a.programme_code, nguongKhac));
       skills = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
+      the = theSosTuKetQua(a, { thuong: r, truot: skills });
       const kq = ketQua = nhanKetQuaThuong({
         kind: a.kind, ct: a.programme_code ?? null, scored: r.scored, required: r.required, failedSkills: skills, tyLeTong: r.tyLeTong,
         khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(a.programme_code), nguong: r.passThreshold,
@@ -316,6 +366,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       attemptId, attemptNo: a.attempt_no, studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
       classId: a.class_id ?? null, classCode: a.class_code ?? null,
       sosLevel, nhanDot: laMock ? null : nhanDot(a.kind, a.attempt_no), ketQua,
+      the,
       skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)), kyNangNgan: skills.map((s) => tenMonNgan(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => {
@@ -366,7 +417,7 @@ export function myCoordinationLines(p: Principal) {
 /** OV-11c (CV-8): cùng dòng Phối hợp SOS cho một tập lớp bất kỳ — "Của GV" của Quản lý dựng dòng của mọi GVCN trong phạm vi, cùng luật đếm. */
 export function dongPhoiHopLop(classIds: number[]) {
   /* OV-12h: `han` = hạn sớm nhất của việc meeting CX còn Cần xử lý trong các lượt chưa xong của lớp (null = không có việc có hạn). */
-  const lines: Array<{ classId: number; className: string; pendingCount: number; text: string; han: string | null }> = [];
+  const lines: Array<{ classId: number; className: string; pendingCount: number; text: string; han: string | null; sos: TheSosEm[] }> = [];
   if (!classIds.length) return lines;
   /* MỘT lượt đọc cho MỌI lớp mình chủ nhiệm (số câu không tăng theo số lớp — PR-LT2a thêm hai lớp demo làm lộ N+1 theo lớp), rồi chia lại theo lớp em đang học.
      Cùng luật đếm với `coordinationOfClass`: lượt chưa hoàn thành. Lớp mình chủ nhiệm nên không cần `requireViewClass`. */
@@ -393,17 +444,24 @@ export function dongPhoiHopLop(classIds: number[]) {
   }
   const dem = new Map<number, number>();
   const hanLop = new Map<number, string>();
-  for (const l of luot.values()) {
+  const chuaXong = new Map<number, number[]>();   // lớp → mã lượt chưa xong (cho thẻ kết quả)
+  for (const [attemptId, l] of luot) {
     if (coordinationSummary(l.trangThai).complete) continue;
+    chuaXong.set(l.lop, [...(chuaXong.get(l.lop) ?? []), attemptId]);
     dem.set(l.lop, (dem.get(l.lop) ?? 0) + 1);
     for (const h of l.han) if (!hanLop.has(l.lop) || h < hanLop.get(l.lop)!) hanLop.set(l.lop, h);
   }
   const lop = lopDayDu();
+  /* PHOI-HOP-SOS-INFO: thẻ kết quả của tối đa THE_SOS_TOI_DA lượt mới nhất mỗi lớp — MỘT lô (lượt + điểm) cho cả tập lớp, không theo lớp / em. ponytail: lượt mới nhất, không xếp theo mức SOS. */
+  const chon = new Map<number, number[]>();
+  for (const [classId, ds] of chuaXong) if (lop.has(classId)) chon.set(classId, ds.sort((x, y) => y - x).slice(0, THE_SOS_TOI_DA));
+  const the = theSosCuaLuot([...chon.values()].flat());
   for (const classId of classIds) {
     const pendingCount = dem.get(classId) ?? 0;
     if (pendingCount > 0 && lop.has(classId)) {
       const code = lop.get(classId).code as string;
-      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp SOS cần xử lý`, han: hanLop.get(classId) ?? null });
+      lines.push({ classId, className: code, pendingCount, text: `Lớp ${code} — ${pendingCount} lượt Phối hợp SOS cần xử lý`, han: hanLop.get(classId) ?? null,
+        sos: (chon.get(classId) ?? []).map((id) => the.get(id)).filter((x): x is TheSosEm => !!x).sort((x, y) => x.studentName.localeCompare(y.studentName, 'vi') || x.attemptId - y.attemptId) });
     }
   }
   return lines;

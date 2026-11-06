@@ -315,7 +315,7 @@ function gocNhinCua(p: Principal) {
   return {
     dangChon: p.gocNhin ?? null,
     vaiGoc: goc,
-    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role) })),
+    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role), soPhanCong: role === 'teacher' ? new Set(du.assignments.map((a) => `${a.classId}|${a.isCore}|${a.skill ?? ''}`)).size : 0 })),
   };
 }
 
@@ -1638,6 +1638,7 @@ api.get('/hoc-vien-lop/lich-thi', requireAuth, wrap((req) => {
     thang: qStr(req, 'thang') ?? null, branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null, cnNho: qInt(req, 'cnNho') ?? null,
   });
 }));
+api.get('/hoc-vien-lop/lich-thi/:cycleId/lich-su', requireAuth, wrap((req) => ({ dong: lichThiSvc.lichSuLichThiMotEm(principalOf(req), pInt(req, 'cycleId')) })));
 api.put('/hoc-vien-lop/lich-thi/:cycleId', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return lichThiSvc.luuLichThi(principalOf(req), pInt(req, 'cycleId'), req.body ?? {});

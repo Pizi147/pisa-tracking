@@ -79,11 +79,12 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
 
   check('6b-3 · Ghi kết quả gọn: "Lưu · việc tiếp ›" báo dải (có Hoàn tác — đường đảo /followups/:id/hoan-tac), PA qua ChuDich', () => {
     const pv = docSach('web/src/modules/congViec/PanelViec.tsx');
-    const kq = pv.slice(pv.indexOf('function PanelKetQuaNhanh'));
-    assert(/cv\?\.bao\(/.test(kq) && /hoanTacNhanh\(/.test(kq), 'Lưu · việc tiếp › mất Hoàn tác của việc vừa lưu');
-    assert(/<ChuDich chu=\{iv\.description\}/.test(kq), 'nội dung PA (chữ GV) in chuỗi trần');
-    const gn = docSach('web/src/modules/cases/GhiNhanh.tsx');
-    assert(/export async function hoanTacNhanh/.test(gn) && /hoanTacNhanh\(kq\)/.test(gn), 'Hoàn tác dòng đã lưu không dùng chung một đường');
+    /* CASE-PA-UI b (v16 e1): việc Kết quả PA mở CÙNG panel Case (form trong thẻ, Hoàn tác `/followups/:id/hoan-tac` của form); "Việc tiếp ›" báo dải việc vừa lưu. */
+    assert(!/PanelKetQuaNhanh/.test(pv) && /case 'ghi_ket_qua_pa': case 'mini_test':[\s\S]{0,400}<NganCase[^\n]*viec="ghi-ket-qua"/.test(pv), 'Kết quả PA chưa mở cùng panel Case');
+    const ngB = docSach('web/src/modules/students/NganCase.tsx'), cpB = docSach('web/src/modules/cases/CasePanel.tsx');
+    assert(/cv\?\.bao\(daLuu\)/.test(ngB) && /bao\?\.daLuu\(x\)/.test(cpB), 'Việc tiếp › mất Hoàn tác của việc vừa lưu');
+    assert(/<ChuDich chu=\{iv\.description\}/.test(cpB), 'nội dung PA (chữ GV) in chuỗi trần');
+    assert(/\/followups\/\$\{f\.id\}\/hoan-tac/.test(docSach('web/src/modules/cases/CapNhatTuan.tsx')), 'Hoàn tác lần ghi không dùng đường đảo');
   });
 
   check('6b-3 · Công việc: dải việc vừa lưu ở đầu thân việc kế + thẻ Hết việc; Hoàn tác mở lại việc đó', () => {

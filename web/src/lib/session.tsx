@@ -60,7 +60,7 @@ export type GocNhin = {
   /** Vai đang chọn; null = làm việc bằng mọi vai (vai gốc). */
   dangChon: string | null;
   vaiGoc: string;
-  coThe: { role: string; nhan: string; phamVi: string }[];
+  coThe: { role: string; nhan: string; phamVi: string; soPhanCong?: number }[];
 };
 
 type Ctx = {

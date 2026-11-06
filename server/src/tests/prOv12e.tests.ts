@@ -73,7 +73,7 @@ export async function runPrOv12eTests(t: YThucTestKit) {
     /* CD-GON (05/11): thẻ Chờ duyệt vẽ hạn bằng ChipHan vien (ngưỡng trong deadlineView — vẫn một chỗ), không tự so ngày. */
     const tyc = doc('web/src/modules/duyet/TheYeuCau.tsx');
     assert(tyc.includes('<ChipHan vien loai="duyet"') && !/\.slice\(0, 10\) < homNay|86_400_000/.test(tyc), 'TheYeuCau');
-    assert(/han\.ganHan \? 'font-semibold text-soon'/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'TheKyNang');
+    assert(/han\.ganHan \? 'font-semibold text-slate-100'/.test(doc('web/src/modules/students/CotCaseHv.tsx')), 'CotCaseHv (CASE-PA-UI b: TheKyNang gỡ)');
     assert(/v\.ganHan && !v\.homNay/.test(doc('web/src/ui/Han.tsx')), 'Han');
   });
 

@@ -534,6 +534,18 @@ export function can(p: Principal, permission: string, ctx: Ctx = {}): boolean {
   return false;
 }
 
+/**
+ * SUA-LICH-LOP (chủ SP 06/11): ai sửa được LỊCH lớp thường (tuần khai giảng, tuần Progress, tuần Final) — QL / Quản trị (`class.edit`), Admin chi nhánh
+ * của lớp, và GVCN lớp đó (phân công `is_core` còn hiệu lực). Quyền HẸP, suy từ vai + phân công (như `class.assign_subject`): KHÔNG mở `class.edit`
+ * (đổi lớp, chương trình, kết thúc…). Lớp FT vẫn chỉ `class.edit`. Cờ nút `viewer.canEditSchedule` và máy chủ `setClassProgress` dùng chung hàm này.
+ */
+export function duocSuaLichLop(p: Principal, classId: number): boolean {
+  if (can(p, PERMISSIONS.CLASS_EDIT, { classId })) return true;
+  if (classIsFastTrack(classId)) return false;
+  const ctx = { classId };
+  return p.grants.some((g) => grantCovers(g, ctx) && (g.roleKey === 'office_admin' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));
+}
+
 export function require_(p: Principal, permission: string, ctx: Ctx = {}, message?: string) {
   if (!can(p, permission, ctx)) {
     throw forbidden(message ?? 'Bạn không có quyền thực hiện thao tác này.', {

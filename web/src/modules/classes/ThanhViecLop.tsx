@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
+import { TheSosViec } from '../../ui/TheKetQuaSos.tsx';
 import { PanelViec } from '../congViec/PanelViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { daysBetween, nhanQuaHan, shortDate, viecKeTiep } from '@shared/domain/index.ts';
@@ -58,6 +59,7 @@ const gonKyNang = (s: string) => s.replace(/Writing Task [12]|Listening|Reading|
  */
 function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
+  const sos = it.theSos?.length ? it.theSos : null;
   const vach = it.urgency === 'overdue' ? 'rgb(var(--bad-rgb))' : it.urgency === 'today' ? 'rgb(var(--soon-line-rgb))' : 'var(--accent)';
   const tieuDe = gonKyNang(dich(it.tieuDe));
   const ten = it.studentId !== null && !tieuDe.includes(it.studentName) ? `${tieuDe} · ${it.studentName}` : tieuDe;
@@ -65,9 +67,9 @@ function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () =
   const han = it.due ? (it.urgency === 'overdue' && homNay ? nhanQuaHan(Math.max(1, daysBetween(it.due.slice(0, 10), homNay))) : it.urgency === 'today' ? t('hạn hôm nay') : t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })) : null;
   return (
     <button type="button" onClick={onMo} aria-expanded={dangMo} title={`${ten} — ${dich(it.actionLabel)}`}
-      className={`flex h-9 min-w-0 items-center gap-2 rounded-lg border border-l-[3px] px-3 text-left max-lg:h-auto max-lg:min-h-[44px] max-lg:flex-wrap max-lg:py-1.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)] hover:bg-[color:var(--nut-hover)]'}`}
+      className={`flex ${sos ? 'min-h-9 flex-wrap py-1.5' : 'h-9'} min-w-0 items-center gap-x-2 gap-y-0.5 rounded-lg border border-l-[3px] px-3 text-left max-lg:h-auto max-lg:min-h-[44px] max-lg:flex-wrap max-lg:py-1.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)] hover:bg-[color:var(--nut-hover)]'}`}
       style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
-      <span className="min-w-0 truncate text-sm font-semibold text-slate-100">{ten}</span>
+      <span className={`min-w-0 text-sm font-semibold text-slate-100 ${sos ? '' : 'truncate'}`}>{ten}</span>
       {it.group === 'score' && it.soBai ? <span className="whitespace-nowrap text-[13px] tabular-nums text-slate-400">{t('{soBai} bài', { soBai: it.soBai })}</span> : null}
       {han && (
         <span className={`${CHIP_TRON} ml-auto shrink-0 tabular-nums ${
@@ -75,6 +77,8 @@ function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () =
           {it.urgency === 'overdue' && <span aria-hidden className="mr-0.5">⚠</span>}{han}
         </span>
       )}
+      {/* PHOI-HOP-SOS-INFO: Phối hợp SOS — em thi thế nào, trượt kỹ năng nào (cùng thẻ với Công việc / thẻ Phối hợp); ô thanh hiện 2 lượt, còn lại "+n lượt nữa". */}
+      {sos && <span className="min-w-0 basis-full"><TheSosViec ds={sos} tong={it.count} toiDa={2} /></span>}
     </button>
   );
 }

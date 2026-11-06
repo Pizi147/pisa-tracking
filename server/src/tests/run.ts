@@ -92,7 +92,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9201,6 +9201,9 @@ await runPrGopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, a
 // ==================================================================== PR-LTGON (lớp thường: đổi mốc dời bài theo; "-" trùng Final hoà vào)
 const { runPrLtGonTests } = bocTep('prLtGon', await import('./prLtGon.tests.ts'));
 await runPrLtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== SUA-LICH-LOP (GVCN / Admin / QL sửa lịch lớp thường; việc gắn mốc dời theo)
+const { runPrSuaLichLopTests } = bocTep('prSuaLichLop', await import('./prSuaLichLop.tests.ts'));
+await runPrSuaLichLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-MTGON (chống kẹt Mock Test, chủ sản phẩm 08/10)
 const { runPrMtGonTests } = bocTep('prMtGon', await import('./prMtGon.tests.ts'));
 await runPrMtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9732,6 +9735,9 @@ await runPrQuyenLienHeTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== PANEL-MC (dòng điểm đúng lượt + dữ liệu panel — PANEL-V10, N30)
 const { runPrPanelMcTests } = bocTep('prPanelMc', await import('./prPanelMc.tests.ts'));
 await runPrPanelMcTests({ check, checkAsync, assert, conn, P, TODAY } as any);
+// ==================================================================== PHOI-HOP-SOS-INFO (thẻ kết quả SOS ba nơi cùng nguồn — chủ SP 06/11)
+const { runPrSosTheTests } = bocTep('prSosThe', await import('./prSosThe.tests.ts'));
+await runPrSosTheTests({ check, assert, conn, P } as any);
 // ==================================================================== PANEL-CHUNG (mẫu dòng điểm + dòng panel có lý do — PANEL-V10)
 const { runPrPanelChungTests } = bocTep('prPanelChung', await import('./prPanelChung.tests.ts'));
 await runPrPanelChungTests({ check, checkAsync, assert, conn } as any);

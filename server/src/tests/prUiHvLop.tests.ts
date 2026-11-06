@@ -20,6 +20,7 @@ export async function runPrUiHvLopTests(t: Kit) {
   const sos: any = await import('../classes/hocVienSos.ts');
   const standing: any = await import('../students/standing.ts');
   const dhv: any = await import('../classes/dongHocVien.ts');
+  const vt: any = await import('../worklist/viecTvv.ts');
   console.log('\nV5 · UI-HV-LOP — danh sách gọn: TVV + lịch thi trên hàng, chi tiết dưới hàng Lịch thi');
 
   check('UHL-1 · thangTrongKhoang: gồm hai đầu, qua năm, ngược → rỗng, trần 12', () => {
@@ -93,22 +94,69 @@ export async function runPrUiHvLopTests(t: Kit) {
     assert(vt.some((c: any) => c.viecTiep.nguoi), 'seed: phải có việc tiếp có người làm');
   });
 
-  check('LT-29/10 (chủ SP) · Lịch thi: MỘT danh sách thi gần nhất trước (ngày chốt · tuần · đầu tháng dự kiến; chưa có tháng cuối); lọc Lớp / khung của trang áp vào góc Lịch thi', () => {
+  check('LICH-THI-UI (chủ SP 06/11) · Lịch thi: xếp theo LỚP (A→Z), trong lớp: có ngày → chỉ tháng → chưa có lịch → Xong cuối; lọc Lớp / khung của trang áp vào góc Lịch thi', () => {
     const L = (o: any) => ({ trangThai: 'du-kien', ngay: null, thang: null, tuan: null, ...o });
+    const em = (ten: string, classCode: string, buoc: string, lichThi: any) => ({ ten, classCode, buoc, lichThi });
     const ds = [
-      { ten: 'Chưa có', lichThi: L({ trangThai: 'chua-co' }) },
-      { ten: 'Dự kiến 11', lichThi: L({ thang: '2026-11' }) },
-      { ten: 'Chốt 20/10', lichThi: L({ trangThai: 'da-chot-ngay', ngay: '2026-10-20', thang: '2026-10' }) },
-      { ten: 'Dời sang 10', lichThi: L({ thang: '2026-12' }), doiSang: '2026-10' },
-      { ten: 'Tuần 12/10', lichThi: L({ trangThai: 'chua-chot-ngay', thang: '2026-10', tuan: '2026-10-12' }) },
-      { ten: 'An dự kiến 11', lichThi: L({ thang: '2026-11' }) },
+      em('Xong', 'MB FT 101', 'xong', L({ trangThai: 'da-thi', ngay: '2026-09-05', thang: '2026-09' })),
+      em('Chưa có', 'MB FT 101', 'chua-co', L({ trangThai: 'chua-co' })),
+      em('Dự kiến 11', 'MB FT 101', 'du-kien', L({ thang: '2026-11' })),
+      em('Chốt 20/10', 'MB FT 101', 'da-chot-ngay', L({ trangThai: 'da-chot-ngay', ngay: '2026-10-20', thang: '2026-10' })),
+      em('Lớp 105', 'MB FT 105', 'da-chot-ngay', L({ trangThai: 'da-chot-ngay', ngay: '2026-09-20', thang: '2026-09' })),
+      em('Tuần 12/10', 'MB FT 101', 'chua-chot-ngay', L({ trangThai: 'chua-chot-ngay', thang: '2026-10', tuan: '2026-10-12' })),
+      em('Đã thi chờ KQ', 'MB FT 101', 'cho-kq', L({ trangThai: 'da-thi', ngay: '2026-09-08', thang: '2026-09' })),
+      em('Lớp 99', 'MB FT 99', 'chua-co', L({ trangThai: 'chua-co' })),
+      em('An dự kiến 11', 'MB FT 101', 'du-kien', L({ thang: '2026-11' })),
     ];
-    const ra = d.xepLichThi(ds).map((x: any) => x.ten);
-    assert(JSON.stringify(ra) === JSON.stringify(['Dời sang 10', 'Tuần 12/10', 'Chốt 20/10', 'An dự kiến 11', 'Dự kiến 11', 'Chưa có']), `thứ tự: ${ra.join(' | ')}`);
+    const ra = d.xepLichThiTheoLop(ds).map((x: any) => x.ten);
+    assert(JSON.stringify(ra) === JSON.stringify(['Lớp 99', 'Đã thi chờ KQ', 'Chốt 20/10', 'Tuần 12/10', 'An dự kiến 11', 'Dự kiến 11', 'Chưa có', 'Xong', 'Lớp 105']), `thứ tự: ${ra.join(' | ')}`);
     const goc = fs.readFileSync(path.join(REPO, 'web/src/modules/students/GocLichThi.tsx'), 'utf8');
     const trang = fs.readFileSync(path.join(REPO, 'web/src/modules/students/StudentsPage.tsx'), 'utf8');
-    assert(/<GocLichThi[\s\S]{0,600}?\bloc=\{trongLoc\}/.test(trang), 'StudentsPage không truyền bộ lọc Lớp / khung (trongLoc) cho góc Lịch thi');
-    assert(/xepLichThi\(rows\.filter\(\(r\) => !loc \|\| loc\(r\.classId, !r\.thuong\)\)\)/.test(goc), 'góc Lịch thi không lọc theo loc / không xếp xepLichThi');
+    assert(/<GocLichThi[\s\S]{0,600}?loc=\{trongLoc\}/.test(trang), 'StudentsPage không truyền bộ lọc Lớp / khung (trongLoc) cho góc Lịch thi');
+    assert(/!loc \|\| loc\(r\.classId, !r\.thuong\)/.test(goc) && goc.includes('xepLichThiTheoLop(rows)'), 'góc Lịch thi không lọc theo loc / không xếp theo lớp');
     assert(!/loai: 'nhom'/.test(goc), 'góc Lịch thi còn dòng nhóm');
   });
+
+  check('LICH-THI-UI · luật nút: tối đa MỘT nút chính; chỉ việc ĐÃ TỚI LÚC (Chốt ngày khi tới tháng · Ghi KQ · Bước tiếp) và chỉ em Fast Track; "Đặt tháng" là chữ phụ, không đếm "Cần làm"', () => {
+    const buoc = ['chua-co', 'du-kien', 'chua-chot-ngay', 'da-chot-ngay', 'cho-kq', 'cho-buoc-tiep', 'xong'];
+    const chinh = Object.fromEntries(buoc.map((b) => [b, d.thaoTacLichThi(b, true).chinh]));
+    assert(JSON.stringify(chinh) === JSON.stringify({ 'chua-co': null, 'du-kien': null, 'chua-chot-ngay': 'chot-ngay', 'da-chot-ngay': null, 'cho-kq': 'ghi-kq', 'cho-buoc-tiep': 'buoc-tiep', xong: null }), JSON.stringify(chinh));
+    assert(d.thaoTacLichThi('chua-co', true).phu.join() === 'dat-thang,chot-ngay', '"Đặt tháng" chữ phụ');
+    assert(buoc.every((b) => d.thaoTacLichThi(b, false).chinh === null), 'lớp thường không có việc thi thật');
+    const L = (o: any) => ({ trangThai: 'chua-co', ngay: null, thang: null, tuan: null, ...o });
+    assert(d.buocLichThi(L({ trangThai: 'da-thi', ngay: '2026-09-08' }), 'da_thi_cho_kq') === 'cho-kq' && d.buocLichThi(L({ trangThai: 'da-chot-ngay' }), 'xong') === 'xong'
+      && d.buocLichThi(L({ trangThai: 'du-kien' }), 'chua_thi') === 'du-kien', 'buocLichThi');
+  });
+
+  check('LICH-THI-UI · "Cần làm" = việc Chốt ngày thi của Công việc (cùng hàm, cùng tập em Fast Track); mỗi hàng có buoc / sauThi / kq và dải mở hàng có truoc + caseMo {id, soPa}', () => {
+    const r = lt.danhSachLichThi(P.mbManager, { thang: [-1, 0, 1].map((n) => addDays(TODAY, 30 * n).slice(0, 7)).join(','), phamVi: 'tat-ca' });
+    assert(r.rows.length > 0 && r.rows.every((x: any) => x.buoc && x.sauThi && 'kq' in x && 'buocTiep' in x), 'thiếu trường mới');
+    assert(r.rows.every((x: any) => d.buocLichThi(x.lichThi, x.sauThi.giaiDoan) === x.buoc), 'buoc ≠ buocLichThi(lichThi, sauThi)');
+    assert(r.rows.every((x: any) => 'truoc' in x.chiTiet && 'mtTuan' in x.chiTiet && x.chiTiet.caseMo.every((c: any) => typeof c.id === 'number' && typeof c.soPa === 'number')), 'chiTiet');
+    const viec = new Set((vt.viecHoSoTvv(P.mbManager, { today: TODAY, tatCa: true, branchId: null, chot: true, boSung: false }) as any[]).map((i) => i.key as string));
+    const tab = r.rows.filter((x: any) => x.buoc === 'chua-chot-ngay' && !x.thuong && x.coTheSua).map((x: any) => `chot-ngay-thi:${x.cycleId}`);
+    const lech = tab.filter((k: string) => !viec.has(k));
+    assert(lech.length === 0, `việc lịch thi ở tab mà Công việc không có: ${lech.join()}`);
+  });
+
+  check('LICH-THI-UI · Hoàn tác (XM-2): Đặt tháng rồi PUT boLich → chưa có lịch, có nhật ký; Đặt tháng + ghi chú rồi hoàn tác cả ghi chú', () => {
+    const r0 = lt.danhSachLichThi(P.mbManager, { thang: TODAY.slice(0, 7), phamVi: 'tat-ca' });
+    const em = r0.rows.find((x: any) => x.cycleId && x.coTheSua && x.buoc === 'chua-co');
+    assert(em, 'seed: cần một em chưa có tháng thi');
+    conn.exec('SAVEPOINT lthoantac');
+    try {
+      const thang = d.thangKeTiep(TODAY);
+      const a = lt.luuLichThi(P.mbManager, em.cycleId, { ketLuan: 'chuyen-thang', thang, ghiChu: 'PH xin tháng sau' });
+      assert(a.buoc === 'du-kien' && a.lichThi.thang === thang, `sau đặt: ${a.buoc}`);
+      const b = lt.luuLichThi(P.mbManager, em.cycleId, { boLich: true, ghiChu: '' });
+      assert(b.buoc === 'chua-co' && b.lichThi.trangThai === 'chua-co', `sau hoàn tác: ${b.buoc}`);
+      assert(!b.luu?.ghiChu, 'ghi chú cũ phải về trống');
+      const ls = lt.lichSuLichThiMotEm(P.mbManager, em.cycleId);
+      assert(ls.some((x: any) => x.ketLuan === 'bo-lich'), `lịch sử thiếu "bỏ tháng thi": ${JSON.stringify(ls)}`);
+      assert(!ls.some((x: any) => x.ketLuan === null && x.ngay === null && x.ghiChu === null), 'dòng lịch sử trống');
+    } finally {
+      conn.exec('ROLLBACK TO lthoantac'); conn.exec('RELEASE lthoantac');
+    }
+  });
 }
+

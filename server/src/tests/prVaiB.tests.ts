@@ -339,8 +339,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     voiNhatKy(sid, [['pause', addDays(tu, -14)], ['resume', addDays(tu, -7)]], () => {
       assert((skillSupportBoard(P.admin, sid) as any).tamDungTu === null, 'đã Quay lại → null');
     });
-    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
-    assert(/tamDung && tt\.t === 'qua-han' \? <NhanTamDung/.test(the) && /tamDung && han \? <> <NhanTamDung/.test(the), 'thẻ kỹ năng thay "Quá hạn" bằng NhanTamDung');
+    /* CASE-PA-UI b: TheKyNang (khối Case trang lượt) gỡ — trang lượt dùng CÙNG panel Case (`CaseLuotKn` → `NganCase`), luật ở `CasePanel` / `NganCase`. */
+    assert(/data\.tamDungTu && data\.trangThaiV4\?\.t === 'qua-han' \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/students/NganCase.tsx'), 'utf8')), 'đầu panel Case thay "Quá hạn" bằng NhanTamDung');
     assert(/data\.tamDungTu && hanGhi \? <NhanTamDung/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8')), 'Ngăn Case thay quá hạn bằng NhanTamDung');
   });
 
@@ -425,8 +425,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const dong11 = web.split('\n').filter((l) => l.includes('text-[11px]'));
     assert(dong11.every((l) => /rounded/.test(l)), `còn chữ 11 px không phải nhãn: ${dong11.map((l) => l.trim().slice(0, 90)).join(' | ')}`);
     assert(/loai === 'Case' \? 'border-current/.test(web) && /bg-\[color:var\(--line-strong\)\]/.test(web), 'Case khung rỗng / PA khối đặc');
-    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
-    assert(/<NhanLoai loai="Case" \/>/.test(the) && /<NhanLoai loai="PA" \/>/.test(the), 'khối Case / khối PA dùng NhanLoai');
+    /* CASE-PA-UI b: TheKyNang (khối Case trang lượt) gỡ — trang lượt dùng CÙNG panel Case (`CaseLuotKn` → `NganCase`), luật ở `CasePanel` / `NganCase`. */
     assert(!/ngan\(p\.startedOn\)|ngan\(p\.lastOutcomeOn\)/.test(web), 'khoảng PA / kết quả còn dd/mm');
   });
 
@@ -446,7 +445,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(d.docKnMock('abc') === null && d.docKnMock(null) === null, 'docKnMock lạ → null');
     const f = fs.readFileSync(path.join(REPO, 'web/src/lib/format.ts'), 'utf8');
     assert(/return duongDotTest\(a\);/.test(f), 'attemptHref web phải gọi duongDotTest');
-    for (const tep of ['cases/SkillBoard.tsx', 'cases/TheKyNang.tsx', 'students/StudentDetailPage.tsx', 'students/DauHoSo.tsx']) {
+    for (const tep of ['cases/SkillBoard.tsx', 'fasttrack/CaseLuotKn.tsx', 'students/StudentDetailPage.tsx', 'students/DauHoSo.tsx']) {
       assert(!/`\/mock-test\//.test(fs.readFileSync(path.join(REPO, 'web/src/modules', tep), 'utf8')), `${tep} tự ghép /mock-test/`);
     }
     assert(/docKnMock\(thamSo\.get\('kn'\)\)/.test(fs.readFileSync(path.join(REPO, 'web/src/modules/fasttrack/MockDetailPage.tsx'), 'utf8')), 'hồ sơ Mock đọc ?kn=');
@@ -637,7 +636,8 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       conn.prepare(`UPDATE enrollments SET status = 'active' WHERE id = ?`).run(e.id);
       conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
     }
-    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/cases/TheKyNang.tsx'), 'utf8');
-    assert(/tamDung && han \?/.test(the), 'Việc tiếp của em Tạm dừng còn hiện hạn');
+    /* CASE-PA-UI b: TheKyNang (khối Case trang lượt) gỡ — trang lượt dùng CÙNG panel Case (`CaseLuotKn` → `NganCase`), luật ở `CasePanel` / `NganCase`. */
+    const the = fs.readFileSync(path.join(REPO, 'web/src/modules/students/NganCase.tsx'), 'utf8') + fs.readFileSync(path.join(REPO, 'web/src/modules/cases/CasePanel.tsx'), 'utf8');
+    assert(/data\.tamDungTu && data\.trangThaiV4\?\.t === 'qua-han' \? <NhanTamDung/.test(the) && /data\.tamDungTu && hanGhi \? <NhanTamDung/.test(the), 'Việc tiếp của em Tạm dừng còn hiện hạn');
   });
 }

@@ -11,7 +11,6 @@ import { skillShort } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganCase } from './NganCase.tsx';
 import { PanelViec, lamTaiCho } from '../congViec/PanelViec.tsx';
-import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -70,7 +69,6 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
   const [view, setView] = useState<{ caseId: number; viec?: ViecCase; paId?: number | null } | null>(null);
   const [mo, setMo] = useState<Set<number>>(() => new Set(caseMo ? [caseMo] : []));
   /* OV-13b: lần ghi nhanh vừa lưu theo Case — dòng "✓ Đã lưu · … · Hoàn tác" đứng lại sau khi việc rời danh sách. */
-  const [daLuu, setDaLuu] = useState<ReadonlyMap<number, DaLuuNhanh>>(new Map());
   /* OV-13q: việc sau thi THAY nội dung panel (như Ngăn Case, "← tên em"); Gia hạn là hộp nhỏ đè. */
   const [sauThiMo, setSauThiMo] = useState<'thi-that' | 'buoc-tiep' | null>(null);
   const [giaHan, setGiaHan] = useState(false);
@@ -226,20 +224,8 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
                     </button>
                     {m && (
                       <div className="space-y-2.5 border-t px-3 pb-3 pt-2.5" style={{ borderColor: 'var(--line)' }}>
-                        {daLuu.get(c.id) && (
-                          <DongDaLuu kq={daLuu.get(c.id)!} onHoanTac={() => { setDaLuu((m) => { const x = new Map(m); x.delete(c.id); return x; }); daDoi(); }} />
-                        )}
-                        {viec.map((v) => v.group === 'ghi_ket_qua_pa' && v.ghiNhanh && v.paId ? (
-                          /* OV-13b (mockup OV-13 §1): Kết quả PA ghi nhanh ngay trong khối; "Điều chỉnh / Kết thúc…" mở Ngăn Case (panel lớn). */
-                          <div key={v.key} className="space-y-1.5">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="min-w-0 flex-1 text-sm font-bold text-slate-100">{dich(v.tieuDe)}</span>
-                              {v.due && <ChipHan loai="cap-nhat-pa" han={v.due} />}
-                            </div>
-                            <GhiNhanh paId={v.paId} onDaLuu={(kq) => { setDaLuu((m) => new Map(m).set(c.id, kq)); daDoi(); }}
-                              onMoPanel={() => setView({ caseId: c.id, viec: 'ghi-ket-qua', paId: v.paId ?? null })} />
-                          </div>
-                        ) : (
+                        {viec.map((v) => (
+                          /* CASE-PA-UI b (v16 e1, ghi chú mục 8): Ghi kết quả PA mở CÙNG panel Case, form ngay trong thẻ PA — không còn ô ghi nhanh riêng. */
                           /* Khối Cần làm chung (`CanLam`, panel v3 §1): tên việc + chip hạn (`ChipHan`, 3 mức), một nút chính = động từ việc. */
                           <CanLam key={v.key}>
                             <div className="flex flex-wrap items-center gap-2">
