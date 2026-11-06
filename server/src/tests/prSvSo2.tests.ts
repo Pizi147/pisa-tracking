@@ -92,12 +92,15 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     let coViec = false;
     for (const h of bang.hang) {
       const nMo = mo.get(h.id)?.length ?? 0;
-      assert(!('xuLyViPham' in h) && tong(h.viecDungHan) === tong(h.ghiKetQuaPa) + nMo && dung(h.viecDungHan) === dung(h.ghiKetQuaPa), `${h.ten}: ${JSON.stringify(h)}`);
+      /* XM-VIEC-DUNG-HAN a: đếm DÒNG như Công việc (gộp lớp, một PA một việc) — không quá số việc, có việc thì có dòng; dòng đúng hạn ≤ nghĩa vụ đúng hạn. */
+      assert(!('xuLyViPham' in h) && tong(h.viecDungHan) <= tong(h.ghiKetQuaPa) + nMo && (tong(h.viecDungHan) > 0) === (tong(h.ghiKetQuaPa) + nMo > 0)
+        && dung(h.viecDungHan) <= dung(h.ghiKetQuaPa), `${h.ten}: ${JSON.stringify(h)}`);
       if (tong(h.ghiKetQuaPa) && !coViec) {
         coViec = true;
         const p = pt.oChiSoGv(P.mbManager, { ...ky, gv: h.id, cot: 'viec-dung-han' });
         assert(p.n === tong(h.viecDungHan) && p.tieuDe.endsWith(`${dung(h.viecDungHan)}/${tong(h.viecDungHan)} việc`), p.tieuDe);
-        assert(p.rows.filter((r: any) => /^Kết quả PA/.test(r.sub) && !('viec' in r)).length === tong(h.ghiKetQuaPa), JSON.stringify(p.rows[0]));
+        const kq = p.rows.filter((r: any) => /^Kết quả PA/.test(r.sub) && !('viec' in r)).length;
+        assert(kq > 0 && kq <= tong(h.ghiKetQuaPa), JSON.stringify(p.rows[0]));
       }
     }
     assert(coViec, 'seed không có GV nào có việc có hạn trong 13 tuần');
@@ -128,13 +131,15 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
       const h = bang.hang.find((x: any) => x.id === gv);
       if (!h) continue;   // người giữ việc không có phân công ở khung này (QL, TVV) — không có hàng
       assert(ds.every((it) => it.urgency === 'overdue' && it.due < D), 'chỉ việc đã quá hạn');
-      assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong === (h.ghiKetQuaPa.tong ?? 0) + ds.length && h.viecDungHan.dung === (h.ghiKetQuaPa.dung ?? 0),
-        `mẫu phải gồm ${ds.length} việc mở, tử không đổi: ${JSON.stringify(h.viecDungHan)}`);
+      /* XM-VIEC a: việc mở vào mẫu theo DÒNG Công việc (`prViecDong` kiểm số dòng); tử không lớn hơn nghĩa vụ Kết quả PA đúng hạn. */
+      const dongMo = d.demDongViec(d.gopViecTheoLop(ds, wl.nhanNhomViec)).n;
+      assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong >= dongMo && h.viecDungHan.tong <= (h.ghiKetQuaPa.tong ?? 0) + dongMo && h.viecDungHan.dung <= (h.ghiKetQuaPa.dung ?? 0),
+        `mẫu phải gồm ${dongMo} dòng mở: ${JSON.stringify(h.viecDungHan)}`);
       const p = pt.oChiSoGv(P.mbManager, { ...ky, gv, cot: 'viec-dung-han' });
       /* DEM-QUA-HAN b: panel dòng việc ('viec') — việc mở = chính dòng Công việc (href, tab theo loại việc), đứng đầu. */
       assert(p.n === h.viecDungHan.tong && p.kieu === 'viec', JSON.stringify(p).slice(0, 300));
-      const moP = p.rows.filter((r: any) => r.id < 0).map((r: any) => r.dongViec);
-      assert(moP.length === ds.length && moP.every((v: any) => v.mo && v.ngayXong === null && v.treNgay > 0 && ds.some((it: any) => it.href === v.href && d.tabViecHanCua(it.group) === v.tab)), JSON.stringify(moP));
+      const moP = p.rows.filter((r: any) => r.dongViec.mo && !/^Kết quả PA/.test(r.sub)).map((r: any) => r.dongViec);
+      assert(moP.length === dongMo && moP.every((v: any) => v.mo && v.ngayXong === null && v.treNgay > 0 && ds.some((it: any) => it.href === v.href && d.tabViecHanCua(it.group) === v.tab)), JSON.stringify(moP));
       assert(p.rows.findIndex((r: any) => !r.dongViec.mo) === -1 || p.rows.slice(p.rows.findIndex((r: any) => !r.dongViec.mo)).every((r: any) => !r.dongViec.mo), 'việc mở phải đứng đầu panel');
       const hsP = pt.oChiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den, cot: 'viec-dung-han' });
       assert(hsP.kieu === 'viec' && hsP.rows.every((r: any) => r.dongViec), 'hồ sơ GV: panel Việc đúng hạn cùng kiểu dòng việc');
