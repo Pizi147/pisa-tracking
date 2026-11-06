@@ -111,7 +111,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   const nutDot = 'btn btn-sm min-h-[44px] font-semibold sm:min-h-0';
   const congCu = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
-      <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot ?? data.daBo?.ma ?? ''} onChange={(ev) => onDot(ev.target.value === data.dsDot[0]?.ma ? null : ev.target.value)}>
+      <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot ?? data.daBo?.ma ?? ''} onChange={(ev) => onDot(ev.target.value || null)}>
         {!data.dot && !data.daBo && <option value="">—</option>}
         {data.dsDot.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}
         {data.dsBo.length > 0 && <optgroup label={t('Không báo cáo')}>{data.dsBo.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}</optgroup>}
