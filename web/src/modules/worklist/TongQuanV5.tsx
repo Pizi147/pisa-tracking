@@ -482,7 +482,6 @@ type TqTvv = { ky: { tu: string; den: string }; baoPh: { dung: number; tong: num
 export function TongQuanTvvV5() {
   const tq = useApi<TqTvv>('/tong-quan/tvv', []);
   const hv = useApi<SoHv>('/tong-quan/hoc-vien', []);
-  const viec = useApi<{ summary: { viec: number } }>('/my-work', []).data?.summary;
   if (tq.error) return <ErrorState message={tq.error.message} hint={tq.error.hint} status={tq.error.status} onRetry={tq.reload} />;
   if (!tq.data) return <Skeleton rows={4} />;
   const d = tq.data;
