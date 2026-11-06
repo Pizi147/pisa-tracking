@@ -69,6 +69,9 @@ Mọi đường khác: số câu, dòng, bước VM không đổi.
    CX / QT `/tong-quan/hoc-vien` 59–60 câu / ~4 300 dòng · `/tong-quan/v5?ct=ft` QL 35 câu / 2 270 dòng. Mỗi câu đã đi chỉ mục; dòng = em × lượt.
    Đề xuất nhẹ hơn cho `/tong-quan/hoc-vien` (CX / QT): chip chỉ cần số đếm nhưng gọi `danhSachHocVienLop` đủ (dựng cả danh sách) chỉ để lấy cờ "Thiếu thông tin" —
    tính riêng cờ đó cho em đang học (ước bớt ~1/2 đường; ít người mở nên lợi nhỏ).
-4. `scripts/chup-api.mjs` cũ (thiếu vai / chỗ thay) — thay bằng `PISA_IN_JSON` của `tocDo.run`; xoá hoặc sửa script là việc riêng.
+4. **`ADMIN /my-work`** (RA-LOI-0611 hỏi — `viecXuatBaoCaoPh` chạy mỗi lần; `/my-work` gọi ở mỗi lần mở app cho badge): thêm vào `DUONG_DO` + trần.
+   Đo 13 câu · 449 dòng ×1 (×3: 86 k bước VM, 265 quét cả bảng); phần Xuất báo cáo PH = 4 câu (ghi danh lớp có đợt 294 dòng ×3, tiến độ lớp, bản ghi PH, đợt) ≈ 19 % bước VM.
+   Đã theo chỉ mục, không đọc lặp; gộp thành một câu đếm vẫn đọc đủ dòng ghi danh (Turso tính dòng đọc) → không sửa. Vài Admin × vài lần / ngày: ~vài chục nghìn dòng / ngày.
+5. `scripts/chup-api.mjs` cũ (thiếu vai / chỗ thay) — thay bằng `PISA_IN_JSON` của `tocDo.run`; xoá hoặc sửa script là việc riêng.
 
 Không index mới → **không có migrate cần chạy khi deploy.**
