@@ -8,19 +8,19 @@ Dữ liệu demo 18/09: QL Phạm Quang Anh (Hải Dương), lớp HD FT 306.
 
 | Phần | Cách |
 |---|---|
-| Hàng | dưới hàng MT mỗi em (lớp FT), cao 28 px (đo): `S Ex · 1 W2 OCT · 2 Xếp · 3 —` — số = thứ tự lượt theo tuần; có điểm thì `1 W2 OCT · 6.5`; em có > 3 lượt thì hiện đủ |
-| Xếp | ô trống KẾ TIẾP là nút "Xếp" (như "Xếp MTn" chỉ ở MT kế tiếp) → hộp S Ex sẵn có (`HopSEx`, chọn ngày `ONgay`) |
+| Hàng | dưới hàng MT mỗi em (lớp FT), chữ "S Ex" nhỏ ở cột tên; **mỗi lượt một ô DẸT** (cao 26 px, đo) cùng dáng khung ô MT, **thẳng cột và cùng rộng ô MT** (S Ex 1 dưới MT1, 2 dưới MT2…; đo: cùng x, cùng rộng 174 px). Ô có lượt ghi tuần (+ band); số = thứ tự theo tuần; lượt nhiều hơn số cột MT dồn dưới ô cuối. Chủ SP 06/11 (xem ảnh bản đầu): "S Ex cũng để một box dẹt nhỏ ngang cùng với từng đợt MT chính nhé" |
+| Xếp | ô trống ghi "+ S Ex" (người sửa được lịch Test) → hộp S Ex sẵn có (`HopSEx`, chọn ngày `ONgay`); chỉ xem: ô trống nhạt |
 | Dời / xoá | bấm ô có lượt → cùng hộp: đổi ngày, Xoá + **Hoàn tác** (máy chủ xoá mềm + khôi phục — đã có) |
 | Quyền | người sửa được lịch Test (QL · Admin đúng chi nhánh · Quản trị; GVCN lớp đó khi công tắc #1064 bật) — máy chủ `requireSuaLichTest` như cũ; người khác **chỉ xem** (không nút Xếp; ô có lượt chỉ mở khi chấm được — GV Speaking nhập điểm như cũ) |
-| 375 | cùng hàng trong thẻ em, ô cao 44 px |
+| 375 | thẻ em: "S Ex" + ≥ 3 ô dẹt chia đều (ô bấm cao 44 px) |
 | Dữ liệu | `sEx` lưới đã nạp (`sExCuaHv`, một lô cho cả lớp) — **không câu đọc thêm**, không đổi API, không đổi `tocDoDuong.ts` |
 
 ## Ảnh trước | sau
 
 | Nơi | 1440 tối | 375 sáng |
 |---|---|---|
-| Kế hoạch Test HD FT 306 (QL) | `truoc-kht-1440.png` · `sau-kht-1440.png` | `truoc-kht-375.png` · `sau-kht-375.png` |
-| Hộp S Ex mở từ ô "1 W2 OCT" | `sau-hop-sex-1440.png` | — |
+| Kế hoạch Test HD FT 306 (QL) | `truoc-kht-1440.png` · `sau-kht-1440.png` · `sau-kht-them-sex2-1440.png` (bấm "+ S Ex" ô 2 → W4 OCT) | `truoc-kht-375.png` · `sau-kht-375.png` |
+| Hộp S Ex mở từ ô có lượt | `sau-hop-sex-1440.png` | — |
 | GVCN khi công tắc tắt — chỉ xem (không "Xếp") | `sau-kht-gvcn-chi-xem-1440.png` | — |
 
 ## Thao tác TRƯỚC → SAU

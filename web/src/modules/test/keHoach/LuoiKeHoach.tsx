@@ -12,7 +12,7 @@ import { HopKyNang } from './HopKyNang.tsx';
 import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
 import { HopSEx } from './HopSEx.tsx';
-import { HangSEx } from './HangSEx.tsx';
+import { HangSExThe, OSEx, sapSEx } from './HangSEx.tsx';
 import { Menu } from '../../../ui/Menu.tsx';
 import { ODiem } from '../../../ui/ODiem.tsx';
 import { useDienThoai } from '../../../ui/TheDong.tsx';
@@ -158,7 +158,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                 ) : null}
               </div>
               {/* Chủ SP 06/11: hàng S Ex mảnh dưới ô MT (375). */}
-              <HangSEx ds={h.sEx ?? []} onMo={(x) => setSEx({ hang: h, dong: x })} onThem={chiXem ? undefined : () => setSEx({ hang: h, dong: null })} />
+              <HangSExThe ds={h.sEx ?? []} onMo={(x) => setSEx({ hang: h, dong: x })} onThem={chiXem ? undefined : () => setSEx({ hang: h, dong: null })} />
             </div>
           );
         })}
@@ -288,15 +288,27 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
               <td className="kh-td" aria-hidden />
             </tr>
             {/* Chủ SP 06/11: hàng S Ex mảnh ngay dưới hàng MT (thay chip S Ex ở cột "Thêm"); mọi người thấy, chỉ người sửa lịch Test xếp. */}
-            {loai === 'ft' && (
-              <tr className={`kh-hang-sex ${hvChon === h.studentId ? 'row-active' : ''}`}>
-                <td className="kh-td sticky-col" aria-hidden />
-                <td className="kh-td" colSpan={cots.length + (chiXem ? 0 : 1) + 1}>
-                  <HangSEx ds={(h as HangFT).sEx ?? []} onMo={(x) => setSEx({ hang: h as HangFT, dong: x })}
-                    onThem={chiXem ? undefined : () => setSEx({ hang: h as HangFT, dong: null })} />
-                </td>
-              </tr>
-            )}
+            {loai === 'ft' && (() => {
+              /* Chủ SP 06/11: mỗi S Ex một ô dẹt thẳng cột MT (S Ex 1 dưới MT1…); lượt nhiều hơn số cột → dồn dưới ô cuối. */
+              const xep = sapSEx((h as HangFT).sEx ?? []);
+              const mo = (x: DongSEx) => setSEx({ hang: h as HangFT, dong: x });
+              const them = chiXem ? undefined : () => setSEx({ hang: h as HangFT, dong: null });
+              return (
+                <tr className={`kh-hang-sex ${hvChon === h.studentId ? 'row-active' : ''}`}>
+                  <td className="kh-td sticky-col"><span className="hang-sex-nhan">{t('S Ex')}</span></td>
+                  {cots.map((c, ci) => (
+                    <td key={c.key} className="kh-td">
+                      <div className="flex flex-col gap-1">
+                        <OSEx x={xep[ci] ?? null} so={ci + 1} onMo={mo} onThem={them} />
+                        {ci === cots.length - 1 && xep.slice(cots.length).map((x, k) => <OSEx key={x.id} x={x} so={cots.length + k + 1} onMo={mo} />)}
+                      </div>
+                    </td>
+                  ))}
+                  {!chiXem && <td className="kh-td" aria-hidden />}
+                  <td className="kh-td" aria-hidden />
+                </tr>
+              );
+            })()}
             </Fragment>
           ))}
         </tbody>

@@ -2,7 +2,6 @@
 import type { Dich } from '../en.ts';
 
 export const EN_SEX_HANG = {
-  'Xếp': 'Schedule',
   'Xếp S Ex {n}': 'Schedule S Ex {n}',
   'S Ex {n} chưa xếp': 'S Ex {n} not scheduled',
 } satisfies Record<string, Dich>;
