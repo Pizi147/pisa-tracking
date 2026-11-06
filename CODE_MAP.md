@@ -213,7 +213,7 @@ Dựng **từ hành trình học viên**, viết tay, không sinh ngẫu nhiên.
 | Đếm "bài cần chấm" (một chỗ) · ai phụ trách bài thiếu | `shared/domain/fasttrack.ts` → `pendingSkillsOf` · `server/src/fasttrack/attempts.ts` (`ownersOf`, `classScoreSheet`) |
 | Ô MT dùng chung (trạng thái đợt) | `shared/domain/oMt.ts` (`oMt`, `chipDongKyNang`) · `web/src/ui/OMt.tsx` (`OMt`) |
 | Thao tác một kỹ năng theo trạng thái | `shared/domain/thaoTacMt.ts` (`thaoTacKyNang`, `menuHopKyNang`) · `web/src/modules/fasttrack/HopThaoTacMt.tsx` |
-| Hộp nhập điểm MT, band W / S tự tính | `web/src/modules/fasttrack/HopNhapDiem.tsx` (`ODiemMt`, `HopNhapDiem`) · `shared/domain/chamDiem.ts` (`duocNhapBandThang`) · `attempts.ts` → `saveScore` |
+| Hộp nhập điểm MT, W / S: 4 tiêu chí HOẶC Band (không cả hai) | `web/src/modules/fasttrack/HopNhapDiem.tsx` (`ODiemMt`, `HopNhapDiem`) · `shared/domain/chamDiem.ts` (`caHaiKieu`, `LOI_MOT_KIEU`) · `attempts.ts` → `saveScore` |
 | Lưu · bài tiếp › | `web/src/modules/cham/phienCham.ts` (`usePhienCham`) · `shared/domain/baiKeTiep.ts` (`baiKeTiep`) |
 | Nhận xét W / S, GV chấm, nhóm nguyên nhân | `web/src/modules/fasttrack/NhanXet.tsx` · `web/src/modules/cham/GvCham.tsx` (`useGvChamCot`) · `shared/domain/nhanXet.ts` (`kiemNhanXet`, `kiemNhomNguyenNhan`) |
 | Tên 4 tiêu chí (W1 TA, W2 TR) | `shared/domain/skills.ts` (`tieuChiCua`) |

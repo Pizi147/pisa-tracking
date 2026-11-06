@@ -8,7 +8,7 @@
  *                R1-LUU-TIEP (V12 26/10): "Lưu" ở lại ("✓ Đã lưu" · Bài tiếp ›); "Lưu · bài tiếp ›" (Enter) sang bài còn thiếu kế; hết →
  *                "Đã xong phần của bạn" + Lớp tiếp / Việc tiếp / Đóng. Esc đóng. < 640 px: tấm trượt từ dưới.
  *
- * Luật dùng lại, không luật thứ hai: `rawPatchFrom` / `criteriaPatchFrom` dựng lệnh ("-" = Vắng; Band nhập thẳng chỉ MT cũ / MT0 — OV-4c), lưu qua
+ * Luật dùng lại, không luật thứ hai: `rawPatchFrom` / `criteriaPatchFrom` dựng lệnh ("-" = Vắng; W / S: 4 tiêu chí HOẶC ô Band, không cả hai — BAND-THANG), lưu qua
  * `useSaveScore` với `nem` — lỗi máy chủ hiện TRONG hộp, chữ đã gõ giữ nguyên; chỉ sang bài kế khi máy chủ đã trả về.
  * Sửa ô đã có điểm: thêm ô "Lý do sửa (tuỳ chọn)" (RB-5, T7 — như `SuaDiemCoLyDo`). Ô đang Vắng (`daChot`): "Vắng lần n · đã dời
  * sang …", Bỏ vắng (quyền OV-1b do máy chủ tính: `goDuoc`), Lưu điểm.
@@ -23,7 +23,7 @@ import { OKhongHoc } from '../../ui/ODiem.tsx';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, TRAN_CHU, bandTuSoCau, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi,
+  CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, TRAN_CHU, bandTuSoCau, caHaiKieu, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi, LOI_MOT_KIEU,
   chuDoiVang, demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -267,8 +267,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   });
   const [vals0] = useState<string[]>(() => (vang || motO ? ['', '', '', '']
     : chanDau(cell) && cell.criteria.every((v) => v === null) ? ['-', '', '', ''] : cell.criteria.map((v) => (v === null ? '' : String(v)))));
-  /* OV-4c: ô Band chỉ là ô nhập khi máy chủ cho nhập thẳng (`bandThang`: MT cũ); lượt thường Band tự tính — ô chỉ đọc, `bandText` luôn trống. */
-  const [band0] = useState(() => (vang || motO || !cell.bandThang ? '' : bandBanDau(cell)));
+  /* BAND-THANG: W1 / W2 / S ở mọi lượt — 4 tiêu chí (Band tự tính, hiện mờ trong ô Band) HOẶC chỉ ô Band; ô cũ chỉ có band thì ô Band mang sẵn band đó. */
+  const [band0] = useState(() => (vang || motO ? '' : bandBanDau(cell)));
   const [tho, setT] = useState(t0);
   const [vals, setVals] = useState(vals0);
   const [bandText, setBandText] = useState(band0);
@@ -284,6 +284,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const busy = dangLuu !== null;
   const dangGui = useRef(false);
   const [loi, setLoi] = useState<{ cau: string; o: number | null } | null>(null);
+  const luoiRef = useRef<HTMLDivElement>(null);
   /* V12: "Lưu" ở lại — ảnh chữ lúc lưu xong; chữ còn y nguyên = "✓ Đã lưu" (gõ tiếp là chưa lưu). */
   const [luuAnh, setLuuAnh] = useState<string | null>(null);
   const loiRef = useRef<HTMLDivElement>(null);
@@ -298,7 +299,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         const s = tho.trim();
         if (s === '-') return { doi, patch: { noShow: true } as SavePatch, loi: null, o: null, preview: null };
         if (s === '') return { doi, patch: (chanDau(cell) ? { noShow: false } : { band: null }) as SavePatch, loi: null, o: null, preview: null };
-        const r = criteriaPatchFrom(['', '', '', ''], cell, s, true);   // MT0: một ô Band, nhập thẳng
+        const r = criteriaPatchFrom(['', '', '', ''], cell, s);   // MT0: một ô Band, nhập thẳng
         return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : 0, preview: r.preview };
       }
       const p = rawPatchFrom(tho, cell) as SavePatch | null;
@@ -311,12 +312,14 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       return { doi, patch: p, loi: null, o: null, preview: p.band ?? null };
     }
     const doi = vals.some((v, i) => v.trim() !== vals0[i].trim()) || bandText.trim() !== band0.trim();
-    const r = criteriaPatchFrom(vals, cell, bandText, cell.bandThang);
+    const r = criteriaPatchFrom(vals, cell, bandText);
     const sai = vals.findIndex((v) => { const s = v.trim(); return s !== '' && s !== '-' && kiemTieuChi(Number(s)) !== null; });
     return { doi, patch: r.patch as SavePatch | null, loi: r.loi, o: r.patch ? null : sai >= 0 ? sai : 4, preview: r.preview };
   })();
   /* Ô vắng: xoá trắng ô "Em có làm bài?" không phải lệnh gì — Bỏ vắng là nút riêng; gõ "-" ở đó báo ngay (không nuốt, không đóng hộp). */
   const doiDiem = diem.doi && !(vang && diem.patch && 'noShow' in diem.patch);
+  /* BAND-THANG: gõ cả tiêu chí lẫn Band → đỏ cả năm ô + chữ nhỏ ngay khi gõ; không lưu, chữ giữ; xoá một phía là hết đỏ. */
+  const haiKieu = !motO && caHaiKieu(vals, bandText);
   const dauLai = vang && diem.doi && diem.patch?.noShow === true;
   const doiNx = nx.trim() !== (cell.nhanXet ?? '').trim();
   const doiGv = laS && !cungGvCham(gv, gv0, session?.user?.id);
@@ -365,6 +368,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   };
 
   const luu = (tiep: boolean) => {
+    if (haiKieu) { luoiRef.current?.querySelector<HTMLElement>('input')?.focus(); return; }
     if (dauLai) { setLoi({ cau: t('Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.'), o: 0 }); return; }
     /* Rà #410: ô không nhận "-" (lớp đã kết thúc — cờ máy chủ `khongVang`): báo tại hộp, không gửi. */
     if (cell.khongVang && doiDiem && diem.patch?.noShow === true) { setLoi({ cau: dich(cell.khongVang), o: 0 }); return; }
@@ -421,7 +425,6 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const tuan = cell.weekStart ? tuanLich(cell.weekStart, homNay) : null;
   const kvHien = !vang ? kv : null;   // OV-12b: "Kỳ vọng MT{n}" ở cả W1 / W2 / S
   const nTask = cell.skill === 'writing1' ? 1 : 2;
-  const coTieuChi = vals.some((v) => v.trim() !== '');
 
   /* OV-14c: S đã có điểm của NGƯỜI KHÁC — nói ai / lúc nào trước khi ghi đè (hai GV cùng chấm chéo một em). */
   const nguoiKhac = laS && coDiemChinhThuc(cell) && !!cell.enteredByName && cell.enteredById != null && cell.enteredById !== session?.user?.id;
@@ -472,24 +475,24 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       ) : (
         <div>
           {vang && <div className="mb-1.5 text-xs font-medium text-slate-300">{t('Em có làm bài?')}</div>}
-          <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_4rem] items-end gap-1.5">
+          <div ref={luoiRef} className="grid grid-cols-[repeat(4,minmax(0,1fr))_4rem] items-end gap-1.5">
             {tc.map((n) => <span key={n} className="text-center text-xs font-medium text-slate-400">{n}</span>)}
             <span className="text-center text-xs font-medium text-slate-400">Band</span>
             {tc.map((n, i) => (
-              <input key={n} className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === i)} inputMode="numeric"
-                value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${n}`} aria-invalid={loi?.o === i || undefined} disabled={busy}
+              <input key={n} className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === i || haiKieu)} inputMode="numeric"
+                value={vals[i] ?? ''} aria-label={`${skillLabel(cell.skill)} — ${n}`} aria-invalid={loi?.o === i || haiKieu || undefined} aria-describedby={haiKieu ? 'hop-diem-hai-kieu' : undefined} disabled={busy}
                 onChange={(e) => { setVals((v) => v.map((x, j) => (j === i ? e.target.value : x))); setLoi(null); }} />
             ))}
-            {coTieuChi || !cell.bandThang ? (
-              <output className="inline-flex items-center justify-center gap-1 self-center text-base font-bold tabular-nums text-slate-100" aria-label={`${skillLabel(cell.skill)} — band`}>
-                {diem.patch && 'noShow' in diem.patch ? '-' : fmtBand(coTieuChi ? diem.preview : cell.band)}<MuiTenKyVong kq={soKyVong(bandSau, kvHien)} />
-              </output>
-            ) : (
-              <input className={oSo('w-full px-1 max-sm:h-11 max-sm:text-base')} style={stSai(loi?.o === 4)} inputMode="decimal" value={bandText}
-                aria-label={`${skillLabel(cell.skill)} — band`} aria-invalid={loi?.o === 4 || undefined} disabled={busy}
+            {/* Ô Band luôn gõ được; gõ 4 tiêu chí thì Band tự tính hiện MỜ trong ô (placeholder), gõ Band thì tiêu chí để trống. */}
+            <span className="inline-flex flex-col items-center gap-0.5">
+              <input className={oSo('w-full px-1 font-bold max-sm:h-11 max-sm:text-base placeholder:text-slate-300')} style={stSai(loi?.o === 4 || haiKieu)} inputMode="decimal" value={bandText}
+                placeholder={diem.patch && 'noShow' in diem.patch ? '-' : diem.preview === null ? '' : fmtBand(diem.preview)}
+                aria-label={`${skillLabel(cell.skill)} — band`} aria-invalid={loi?.o === 4 || haiKieu || undefined} aria-describedby={haiKieu ? 'hop-diem-hai-kieu' : undefined} disabled={busy}
                 onChange={(e) => { setBandText(e.target.value); setLoi(null); }} />
-            )}
+              <MuiTenKyVong kq={soKyVong(bandSau, kvHien)} />
+            </span>
           </div>
+          {haiKieu && <p id="hop-diem-hai-kieu" role="alert" className="mt-1 text-xs text-bad">{LOI_MOT_KIEU}</p>}
           {!vang && <DongKyVong luot={ctx.luot} kv={kvHien} />}
           {laW && !vang && (
             <div className="mt-1.5 text-xs text-slate-500">
