@@ -308,6 +308,21 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(co(), `đợt tháng ${dot0} (≤ 30 ngày sau hạn) phải còn việc Admin sau khi thêm 2 đợt`);
   }));
 
+  check('BC-17 · RA-LOI-0711j: chip tab — đợt mới nhất đã đủ không che đợt trước còn thiếu (≤ 7 ngày sau hạn); đợt đang mở vẫn thắng', () => thu(() => {
+    const them = (mo: number, han: number) => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, mo), han: d.addDaysIso(TODAY, han) }).ma[0].ma as string;
+    const a = them(-5, -3), b = them(-1, -1);
+    xoaNho();
+    const trB = bc.trangBaoCaoPh(P.mbManager, lop, b);
+    viet(lop, b, trB.em, trB.phan);   // đợt mới nhất (B) đủ — đợt A còn thiếu, quá hạn 3 ngày
+    xoaNho();
+    let chip = bc.chipBaoCaoPh(P.mbManager, lop);
+    assert(chip?.dot === a && chip.quaHan === 3, `chip phải nhắc đợt ${a} quá hạn 3 ngày: ${JSON.stringify(chip)}`);
+    const moi = them(-1, 2);   // một đợt đang mở → chip đợt đang mở như cũ
+    xoaNho();
+    chip = bc.chipBaoCaoPh(P.mbManager, lop);
+    assert(chip?.dot === moi && chip.quaHan === 0, `đợt đang mở thắng: ${JSON.stringify(chip)}`);
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');
