@@ -66,7 +66,7 @@ export async function runPrPhhTests(t: AnToanTestKit) {
 
   check('PHH-1e · việc loại khác: cột NULL, noiDung null, không cờ', () => {
     const v = conn.prepare(`SELECT co.id, co.student_id sid, co.attempt_id aid FROM sos_coordination_actions co JOIN assessment_attempts a ON a.id = co.attempt_id
-      WHERE co.kind != 'bao_ph_tvv' AND co.status = 'pending' AND a.status != 'cancelled' LIMIT 1`).get() as any;
+      WHERE co.kind != 'bao_ph_tvv' AND co.status = 'pending' AND a.status != 'cancelled' ORDER BY co.id LIMIT 1`).get() as any;   // GIAM-DOC-0611c: idx_sca_cho đổi thứ tự khi không ORDER BY
     assert(v, 'seed không có việc phối hợp loại khác đang chờ');
     ph.confirmCoordination(P.admin, v.id, { performedOn: TODAY });
     const x = doc1(v.sid, v.aid, v.id);
