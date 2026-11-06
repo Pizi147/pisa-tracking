@@ -155,4 +155,56 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(items.some((x: any) => x.group === 'xuat_bc_ph' && x.classId === lop && !x.due), 'dòng ở Công việc Admin');
     assert(!xbc.viecXuatBaoCaoPh(P.mbManager, null).length, 'QL không nhận');
   }));
+
+  check('BC-12 · RA-LOI-0611 (PTA 06/11): file tháng lấy em của lớp LÚC HẠN như tab — em chuyển lớp sau hạn vẫn ở sheet lớp cũ', () => thu(() => {
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, null);
+    const dot = d.docMaDot(tr.dot);
+    assert(dot && dot.han < TODAY && tr.em.length, 'cần đợt đã qua hạn có em: ' + tr.dot);
+    const em = tr.em[0];
+    const sau = d.addDaysIso(dot.han, 3);
+    const moi = classId('MB FT 102');
+    conn.prepare(`UPDATE enrollments SET status = 'transferred', ended_at = ? WHERE student_id = ? AND class_id = ? AND status = 'active'`).run(sau, em.id, lop);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(em.id, moi, sau, sau);
+    xoaNho();
+    assert(bc.trangBaoCaoPh(P.mbManager, lop, tr.dot).em.some((e: any) => e.id === em.id), 'tab lớp cũ vẫn có em ở đợt đã qua hạn');
+    const r = xbc.xuatBaoCaoPhNhieu(P.mbManager, { ids: [em.id], thang: dot.mo.slice(0, 7) });
+    const sh = r.sheets.find((x: any) => x.ten === tr.lop.ma);
+    assert(sh && sh.aoa[0].includes(em.ten), 'file tháng: em nằm ở sheet lớp cũ — ' + r.sheets.map((x: any) => `${x.ten}:${x.aoa[0].slice(1).join('/')}`).join(' | '));
+  }));
+
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+  const doc = (f: string) => fs.readFileSync(path.join(repo, f), 'utf8').replace(/\r\n/g, '\n');
+  check('BC-11 · RA-LOI-0611: lưu xong quên bản vừa xem; "Sửa" điểm theo loại đợt; hết em thiếu → thẻ Xong; chip quá hạn tại chỗ; ✕ không nuốt cú bấm; ?dot= cũ về mặc định; mẫu Xuất theo vai', () => {
+    const tab = doc('web/src/modules/classes/TabBaoCaoPh.tsx');
+    assert(/moi\.daLuu = f;[\s\S]{0,300}quenBanXem\(`\/classes\/\$\{lopId\}\/bao-cao-ph`\)/.test(tab), 'lưu xong phải quên bản vừa xem (mở lại panel dựng form từ bản cũ → ghi đè chữ)');
+    assert(tab.includes('const coTheSua = thang || tong != null;') && tab.includes("thang={dot.startsWith('thang:')}"), 'lớp thường chưa có điểm gốc: không có nút Sửa');
+    assert(tab.includes('if (keTiep) setChon(keTiep.id); else setXong(true);'), 'hết em thiếu khác → thẻ Xong (PTA 06/11: không đứng im)');
+    const lop_ = doc('web/src/modules/classes/ClassOverviewPage.tsx');
+    assert(tab.includes('onDuHet(data.dot,') && lop_.includes('!(bc.quaHan && bcDu === bc.dot)'), 'chip quá hạn tắt tại chỗ khi tab thấy đủ (không thêm request)');
+    assert(tab.includes('const dongPanel = dongSauKhiLuu(hang, onDong, baoChuaLuu);'), '✕ / Esc (đã qua hộp Bỏ chữ) không dùng cờ nút');
+    assert(/error\?\.status === 404 && dot\) onDot\(null\)/.test(tab), '?dot= không còn → đợt mặc định');
+    const ngan = doc('web/src/modules/students/NganXuatDs.tsx');
+    assert(ngan.includes('VAI_XUAT_BC.includes(r)') && ngan.includes('coBc && (') && /setDem\(null\); setLoi\(null\);/.test(ngan), 'mẫu Báo cáo PH theo vai + đếm lại xoá lỗi cũ');
+    /* Cùng một nguồn vai với máy chủ: Admin / TVV xuất được, GV không. */
+    assert(d.VAI_XUAT_BC.join() === 'manager,system_admin,office_admin,consultant' && !d.VAI_XUAT_BC.includes('teacher'), d.VAI_XUAT_BC.join());
+    /* Máy chủ (đối chiếu web): lớp thường, em chưa có điểm bài → sửa tay bị chặn (web không còn nút). */
+    let daKiem = false;
+    thu(() => {
+      const lt = conn.prepare(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' AND c.status = 'active' AND c.programme_code IN ('BE','ELE') ORDER BY c.id`).all() as any[];
+      for (const { id } of lt) {
+        const tr = bc.trangBaoCaoPh(P.mbManager, id, null);
+        if (!tr.dot || !tr.em.length) continue;
+        const ph = bc.phanBaoCaoPh(P.mbManager, id, tr.dot, 'listening');
+        const e = ph.em.find((x: any) => !x.goc);
+        if (!e) continue;
+        assertThrows(() => bc.luuBaoCaoPh(P.mbManager, id, { dot: tr.dot, phan: 'listening', studentId: e.id, diemSua: 6 }), /Chưa có điểm bài/, 'lớp thường thiếu điểm gốc');
+        daKiem = true;
+        return;
+      }
+    });
+    assert(daKiem, 'seed không còn lớp thường MB có đợt + em thiếu điểm L — đổi lớp mẫu của phép kiểm');
+  });
 }

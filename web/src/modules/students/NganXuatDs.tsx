@@ -4,7 +4,7 @@ import { useSession } from '../../lib/session.tsx';
 import { Khoi, KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { taiXlsx, type SheetXuat } from '../test/keHoach/taiXlsx.ts';
-import { COT_THEO_MAU, COT_XUAT_DS, MAU_XUAT_DS, cotXuatDs, type KhoaCotXuatDs, type MauXuatDs } from '@shared/domain/index.ts';
+import { COT_THEO_MAU, COT_XUAT_DS, MAU_XUAT_DS, VAI_XUAT_BC, cotXuatDs, type KhoaCotXuatDs, type MauXuatDs } from '@shared/domain/index.ts';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -33,7 +33,10 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
   onDong: () => void;
 }) {
   const toast = useToast();
-  const uid = useSession().session?.user?.id ?? null;
+  const { session } = useSession();
+  const uid = session?.user?.id ?? null;
+  /* RA-LOI-0611: mẫu "Báo cáo PH" chỉ cho vai máy chủ cho xuất (`quyenBc.xuat`) — GV thấy mẫu thì chỉ ra số 0 + nút khoá. */
+  const coBc = (session?.roles ?? []).some((r) => VAI_XUAT_BC.includes(r));
   const [nho] = useState(() => docNho(uid));
   const [pham, setPham] = useState<'loc' | 'ca'>('loc');
   const mau: MauXuatDs = mauMacDinh ?? nho.mau;
@@ -51,7 +54,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
   useEffect(() => {
     if (loai !== 'bc' || !dsId.length) { setDem(null); return undefined; }
     let con = true;
-    setDem(null);
+    setDem(null); setLoi(null);   // RA-LOI-0611: đổi tháng / phạm vi đếm lại được thì bỏ câu lỗi lần trước
     api.post<DemBc>('/hoc-vien-lop/xuat-bao-cao-ph', { ids: dsId, thang, xemTruoc: true }).then((r) => { if (con) setDem(r); }, (e) => { if (con) setLoi(e.message); });
     return () => { con = false; };
   }, [loai, thang, pham]);   // eslint-disable-line react-hooks/exhaustive-deps -- dsId theo pham
@@ -103,7 +106,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
           {busy ? t('Đang tạo file…') : t('Xuất {n} HV', { n: dsId.length })}</button>,
       }}>
       <p className="m-0 pt-3 text-sm text-slate-300">{t('Theo bộ lọc: {boLoc}', { boLoc })} · <b className="tabular-nums text-slate-100">{t('{n} HV', { n: ids.length })}</b></p>
-      {/* Mẫu luôn có — "Danh sách" giữ mẫu theo góc trang (`mauMacDinh`) như cũ. */ (
+      {/* "Danh sách" giữ mẫu theo góc trang (`mauMacDinh`) như cũ; vai không xuất được Báo cáo PH: không có khối Mẫu. */ coBc && (
         <Khoi tieuDe={t('Mẫu')}>
           <div role="radiogroup" aria-label={t('Mẫu')} className="flex flex-wrap gap-2">
             <Chon dang={loai === 'ds'} onChon={() => { setLoai('ds'); setXong(null); setLoi(null); }} nhan={t('Danh sách')} />

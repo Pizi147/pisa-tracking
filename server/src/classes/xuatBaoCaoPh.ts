@@ -155,12 +155,16 @@ export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | n
 function viecTheoThang(p: Principal, ids: readonly number[], thang: string) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(thang)) throw badRequest('Tháng không hợp lệ');
   const homNay = demoToday();
-  const lopCua = new Map<number, number[]>();
+  /* RA-LOI-0611 (PTA 06/11): em của lớp LÚC HẠN (đặc tả §4) — cùng hàm `emTheoLo` với tab lớp, không lọc theo ghi danh đang chạy: em chuyển lớp sau hạn
+     vẫn nằm trong file tháng của lớp cũ. Ở đây chỉ lấy lớp ứng viên: ghi danh của tập em có phủ tháng đó (lọc rẻ; mốc chính xác ở `emTheoLo`). */
+  const dauThang = `${thang}-01`, cuoiThang = `${thang}-31`;
+  const lopCua = new Map<number, Set<number>>();
   theoLoJson([...new Set(ids)], (json) => {
     for (const r of db().prepare(
       `SELECT DISTINCT e.class_id, e.student_id FROM enrollments e JOIN students s ON s.id = e.student_id
-        WHERE e.student_id IN (${DS_JSON}) AND e.status = 'active' AND ${HV_DANG_HOC_SQL('s')}`,
-    ).all(json) as any[]) lopCua.set(r.class_id, [...(lopCua.get(r.class_id) ?? []), r.student_id]);
+        WHERE e.student_id IN (${DS_JSON}) AND e.status != 'withdrawn' AND ${HV_DANG_HOC_SQL('s')}
+          AND substr(e.started_at, 1, 10) <= ? AND (e.ended_at IS NULL OR substr(e.ended_at, 1, 10) > ?)`,
+    ).all(json, cuoiThang, dauThang) as any[]) lopCua.set(r.class_id, (lopCua.get(r.class_id) ?? new Set()).add(r.student_id));
   });
   const lop = [...lopCua.keys()].map((id) => lopDayDu().get(id) as LopBc).filter((c) => c && quyenBc(p, c, homNay).xuat)
     .sort((a, b) => a.code.localeCompare(b.code));
@@ -176,7 +180,7 @@ function viecTheoThang(p: Principal, ids: readonly number[], thang: string) {
   const emDot = emTheoLo(cap, homNay);
   const daDung = new Set<string>();
   const viec: Viec[] = cap.map(({ c, d, bo }) => ({
-    c, d, bo, em: (emDot.get(`${c.id}|${d.ma}`) ?? []).filter((e) => lopCua.get(c.id)!.includes(e.id)),
+    c, d, bo, em: (emDot.get(`${c.id}|${d.ma}`) ?? []).filter((e) => lopCua.get(c.id)!.has(e.id)),
     tenSheet: tenSheet(cap.filter((x) => x.c.id === c.id).length > 1 && d.loai === 'final' ? `${c.code} · Final` : c.code, daDung),
   })).filter((v) => v.em.length);
   return { viec, khongDot, homNay };

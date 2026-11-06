@@ -14,11 +14,10 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
 import {
-  MUC_BC, RATIO_PASS_THRESHOLD, boPhanBc, docMaDot, dotMacDinh, dotTruoc, dsDotLop, loiDiemSua, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan,
+  MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, docMaDot, dotMacDinh, dotTruoc, dsDotLop, loiDiemSua, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan,
   type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
 } from '../../../shared/domain/index.ts';
 
-const VAI_XEM = ['manager', 'system_admin', 'office_admin', 'consultant'];
 const VAI_VIET_HO = ['manager', 'system_admin'];
 
 export type LopBc = Lop;
@@ -37,10 +36,10 @@ export function quyenBc(p: Principal, c: Pick<Lop, 'id' | 'branch_id'>, homNay =
   const pc = p.assignments.filter((a) => a.classId === c.id && activeAt(a, homNay));
   const cuaToi = new Set(pc.flatMap((a) => (a.isCore ? ['chung'] : a.skill ? [a.skill] : [])));
   return {
-    xem: vai.some((v) => VAI_XEM.includes(v)) || pc.length > 0,
+    xem: vai.some((v) => VAI_XUAT_BC.includes(v)) || pc.length > 0,
     vietHo: vai.some((v) => VAI_VIET_HO.includes(v)),
     /** PR b: xuất Excel — QL, Admin, TVV (chủ SP 05/11). */
-    xuat: vai.some((v) => VAI_XEM.includes(v)),
+    xuat: vai.some((v) => VAI_XUAT_BC.includes(v)),
     cuaToi,
   };
 }

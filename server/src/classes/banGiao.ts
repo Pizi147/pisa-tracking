@@ -419,10 +419,12 @@ function baoBanGiao(p: Principal, l: any, nx: string) {
     detail: nx, refTable: 'lenh_chuyen_lop', refId: l.id, createdBy: p.userId, dedupKey: `ban_giao:${l.id}`,
   });
   if (!l.lop_dich_id) return;
+  /* RA-LOI-0611 (PTA 06/11): chỉ GV có phân công HIỆU LỰC hôm gửi — lịch đổi GV tương lai / phân công đã hết không nhận chuông. */
+  const homNay = demoToday();
   const gv = db().prepare(
     `SELECT ta.user_id, ta.is_core, ta.skill, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
-      WHERE ta.class_id = ? AND ta.status = 'active'`,
-  ).all(l.lop_dich_id) as { user_id: number; is_core: number; skill: string | null; ct: string | null }[];
+      WHERE ta.class_id = ? AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)`,
+  ).all(l.lop_dich_id, homNay, homNay) as { user_id: number; is_core: number; skill: string | null; ct: string | null }[];
   const hoc = boMonBanGiaoCt(gv[0]?.ct ?? null, l.mdk);   // môn em học ở lớp mới (N13), dạng kỹ năng GV (FT: W1 · W2)
   const nhan = new Set(gv.filter((r) => r.is_core || (!!r.skill && hoc.includes(r.skill))).map((r) => r.user_id));
   for (const userId of nhan) {

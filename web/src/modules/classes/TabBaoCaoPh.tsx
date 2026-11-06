@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, typ
 import { api } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { taiXlsx, type SheetXuat } from '../test/keHoach/taiXlsx.ts';
-import { useApi } from '../../lib/useApi.ts';
+import { quenBanXem, useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
 import { taoHangLuu, dongSauKhiLuu, type TrangThaiO } from '../../lib/luuChac.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -38,13 +38,21 @@ const emDuHet = (o: Record<string, OBc>, ds: readonly PhanCot[]) => ds.every((p)
  * Ô phần của mình (GV) / mọi ô (QL viết hộ) có viền khi còn thiếu; bấm ô phần của mình → panel viết; ô khác → panel đọc (QL: Viết hộ).
  * Đợt nằm trên URL (`?dot=`) — Quay lại về đúng đợt. Mở tab = một lớp × một đợt (đặc tả §7). Lưu trong panel cập nhật ô tại chỗ, không tải lại bảng.
  */
-export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: string | null; dot: string | null; onDot: (ma: string | null) => void }) {
+export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet }: {
+  lopId: number; ct: string | null; dot: string | null; onDot: (ma: string | null) => void;
+  /** RA-LOI-0611 (PTA 06/11): đợt đang xem đủ mọi em mọi phần? — tính từ bảng đã nạp + ô vừa lưu, không thêm request (chip "quá hạn" trên tab tắt tại chỗ). */
+  onDuHet?: (dot: string, du: boolean) => void;
+}) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<TrangBc>(duongTrang(lopId, dot), [lopId, dot]);
   const [mo, setMo] = useState<Mo | null>(null);
   /* Lưu trong panel → ô bảng đổi tại chỗ (khoá `em:phần`). */
   const [doi, setDoi] = useState<Record<string, OBc>>({});
   useEffect(() => setDoi({}), [data]);
+  useEffect(() => {
+    if (!data?.dot || !onDuHet) return;
+    onDuHet(data.dot, data.em.length > 0 && data.em.every((e) => data.phan.every((p) => (doi[`${e.id}:${p.khoa}`] ?? e.o[p.khoa]) === 'du')));
+  }, [data, doi]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [them, setThem] = useState(false);
   const dt = useDienThoai();
   const bo = useMemo(() => boPhanBc(ct), [ct]);
@@ -60,6 +68,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot }: { lopId: number; ct: stri
       toast.push('error', e?.message ?? t('Chưa tạo được file.'));
     } finally { setDangXuat(null); }
   };
+  /* RA-LOI-0611: `?dot=` không còn trong lịch lớp (tuần thi đã dời, link cũ) → về đợt mặc định thay vì kẹt ở màn lỗi 404. */
+  useEffect(() => { if (error?.status === 404 && dot) onDot(null); }, [error, dot]);   // eslint-disable-line react-hooks/exhaustive-deps
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data || !bo) return <Skeleton rows={6} />;
   if (!data.dot) {
@@ -250,6 +260,8 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
         try {
           const r = await api.put<{ du: boolean; suaLuc: string }>(`/classes/${lopId}/bao-cao-ph`, { dot, phan: phan.khoa, studentId: e.id, ...f });
           moi.daLuu = f; moi.luc = r.suaLuc;
+          /* RA-LOI-0611: quên bản vừa xem của tab + panel — mở lại panel trong 10 s không dựng form từ bản cũ (lưu tiếp sẽ xoá chữ vừa lưu). Không tải lại. */
+          quenBanXem(`/classes/${lopId}/bao-cao-ph`);
           onDoi(e.id, r.du ? 'du' : 'nhap');
           return null;
         } catch (err: any) { return err?.message ?? ''; }
@@ -260,7 +272,15 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
     return b;
   };
   const chuaLuu = [...ban.current.values()].some((b) => b.tt !== 'dang' && (b.o.chuaLuu() || b.tt === 'loi'));
-  const dongPanel = dongSauKhiLuu(hang, onDong, () => ve((x) => x + 1), true);
+  /* RA-LOI-0611: còn ô lưu lỗi → về em đó + nói rõ (trước chỉ vẽ lại, bấm như không có tác dụng). ✕ / Esc / Quay lại đã qua hộp "Bỏ chữ, đóng" → `nut` = false. */
+  const toast = useToast();
+  const baoChuaLuu = (n: number) => {
+    const k = [...hang.chuaLuu.keys()][0];
+    if (k) { setXong(false); setChon(Number(k)); }
+    toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại; bấm Đóng lần nữa thì chữ ở ô lỗi sẽ mất.', { n }));
+  };
+  const dongPanel = dongSauKhiLuu(hang, onDong, baoChuaLuu);
+  const dongNut = dongSauKhiLuu(hang, onDong, baoChuaLuu, true);
 
   const tieuDe = `${t('Báo cáo PH')} · ${lopMa} · ${phan.khoa === 'chung' ? t('Nhận xét chung') : phan.ten}`;
   const ds = data?.em ?? [];
@@ -284,12 +304,13 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
     if (!b) return;
     await b.o.luu();
     if (b.tt === 'loi') return;   // V12 ②: lỗi → ở lại em này, chữ còn
+    /* Hết em thiếu khác → thẻ "Xong phần của bạn" (Phần tiếp › · Đóng; dòng đếm "n/N em đủ" nói thật số còn thiếu) — PTA 06/11: không đứng im. */
     if (keTiep) setChon(keTiep.id); else setXong(true);
   };
   const tt: TtLuu | null = !b ? null : b.tt === 'dang' ? 'dang' : b.tt === 'loi' ? 'loi' : b.o.chuaLuu() ? 'nhap' : b.luc ? 'da' : null;
   const gio = b?.luc ? new Date(b.luc).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }) : null;
 
-  const chan = xong || !em ? { huy: { nhan: t('Đóng'), onClick: dongPanel } } : {
+  const chan = xong || !em ? { huy: { nhan: t('Đóng'), onClick: dongNut } } : {
     huy: null, daSua: chuaLuu, tuHoi: false,
     trai: <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400">{t('Tự lưu khi rời ô')}{tt && <ChuLuu tt={tt} loi={b?.loi} luc={gio} gon />}</span>,
     dongTren: keTiep && dt ? <span className="block px-4 text-[13px] text-slate-400">{t('Tiếp:')} <b className="text-slate-100">{keTiep.ten}</b></span> : undefined,
@@ -304,7 +325,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : !em ? <p className="m-0 text-sm text-slate-400">{t('Đợt này không có học viên.')}</p>
-        : xong ? <HetEm lopMa={lopMa} phan={phan} dotNhan={dich(data.dot.nhan)} so={`${soDu}/${ds.length}`} phanTiep={phanTiep} onPhanTiep={onPhanTiep} onDong={dongPanel} />
+        : xong ? <HetEm lopMa={lopMa} phan={phan} dotNhan={dich(data.dot.nhan)} so={`${soDu}/${ds.length}`} phanTiep={phanTiep} onPhanTiep={onPhanTiep} onDong={dongNut} />
         : (
           <div className="grid gap-0 sm:grid-cols-[200px_minmax(0,1fr)] sm:-mx-4 sm:-my-3">
             {dt ? (
@@ -335,7 +356,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
                 })}
               </ul>
             )}
-            <FormEm key={em.id} em={em} phan={phan} form={b!.form} dotTruoc={data.dotTruoc && dich(data.dotTruoc)} homNay={homNay} du={duCua(em)} nhap={!!em.banGhi || !!b!.luc || b!.o.chuaLuu()}
+            <FormEm key={em.id} em={em} phan={phan} form={b!.form} dotTruoc={data.dotTruoc && dich(data.dotTruoc)} thang={dot.startsWith('thang:')} homNay={homNay} du={duCua(em)} nhap={!!em.banGhi || !!b!.luc || b!.o.chuaLuu()}
               onDoi={doiForm} onRoiChu={() => void b!.o.luu()} />
           </div>
         )}
@@ -362,8 +383,8 @@ function HetEm({ lopMa, phan, dotNhan, so, phanTiep, onPhanTiep, onDong }: {
 }
 
 /** Form MỘT em: Điểm → tiêu chí → ô chữ (ghi chú mockup mục 5). */
-function FormEm({ em, phan, form, dotTruoc, homNay, du, nhap, onDoi, onRoiChu }: {
-  em: EmPhan; phan: PhanBc; form: Form; dotTruoc: string | null; homNay: string; du: boolean; nhap: boolean;
+function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRoiChu }: {
+  em: EmPhan; phan: PhanBc; form: Form; dotTruoc: string | null; thang: boolean; homNay: string; du: boolean; nhap: boolean;
   onDoi: (doi: (f: Form) => Form, luuNgay: boolean) => void; onRoiChu: () => void;
 }) {
   const chonMuc = (k: string, m: MucBc) => onDoi((f) => ({ ...f, muc: { ...f.muc, [k]: m }, datSan: f.datSan.filter((x) => x !== k) }), true);
@@ -373,7 +394,7 @@ function FormEm({ em, phan, form, dotTruoc, homNay, du, nhap, onDoi, onRoiChu }:
         <h3 className="m-0 flex-1 text-[17px] font-bold text-slate-100">{em.ten}</h3>
         {du ? <Nhan tone="done">{t('Đủ')}</Nhan> : nhap ? <Nhan tone="soon">{t('Nháp')}</Nhan> : null}
       </div>
-      {phan.coDiem && <DongDiem goc={em.goc} diemSua={form.diemSua} homNay={homNay} onDoi={(v) => onDoi((f) => ({ ...f, diemSua: v }), true)} />}
+      {phan.coDiem && <DongDiem goc={em.goc} thang={thang} diemSua={form.diemSua} homNay={homNay} onDoi={(v) => onDoi((f) => ({ ...f, diemSua: v }), true)} />}
       {phan.nhom.map((n, gi) => {
         const san = n.ds.some((x) => form.datSan.includes(x.khoa));
         return (
@@ -430,12 +451,13 @@ function HangThang({ ten, muc, san, dotTruoc, onChon }: { ten: string; muc: MucB
 }
 
 /** Dòng Điểm: "✓ 6.5 · MT4 · W3 NOV · Sửa"; đã sửa: "✗ 6.0 · đã sửa · gốc 6.5 · Về điểm gốc"; ô sửa tại chỗ (Enter / rời ô lưu, sai thì viền đỏ, không lưu). */
-function DongDiem({ goc, diemSua, homNay, onDoi }: { goc: DiemGocBc | null; diemSua: number | null; homNay: string; onDoi: (v: number | null) => void }) {
+function DongDiem({ goc, thang, diemSua, homNay, onDoi }: { goc: DiemGocBc | null; thang: boolean; diemSua: number | null; homNay: string; onDoi: (v: number | null) => void }) {
   const [sua, setSua] = useState(false);
   const [chu, setChu] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
   const tong = goc?.tong ?? null;
-  const ft = !goc || goc.tong == null;
+  /* RA-LOI-0611: chưa có điểm gốc → theo loại đợt (lớp thường không có điểm bài thì máy chủ không cho sửa tay — trước hiện "Sửa", lưu là lỗi mãi). */
+  const ft = goc ? goc.tong == null : thang;
   const so = diemSua ?? goc?.so ?? null;
   const chuSo = (v: number) => (ft ? fmtBand(v) : String(v));
   const xong = () => {
@@ -444,7 +466,7 @@ function DongDiem({ goc, diemSua, homNay, onDoi }: { goc: DiemGocBc | null; diem
     setSua(false); setLoi(null);
     onDoi(v === null || v === goc?.so ? null : v);
   };
-  const coTheSua = ft || tong != null;
+  const coTheSua = thang || tong != null;   // RA-LOI-0611: đúng luật máy chủ (đợt tháng, hoặc có tổng điểm bài)
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span className="w-14 text-[13px] font-medium text-slate-400">{t('Điểm')}</span>
