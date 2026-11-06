@@ -4,7 +4,7 @@ import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
-import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -475,6 +475,11 @@ export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: nu
   return lienTuc.length ? [...ids, ...sinhCheckpointKeTiep(lienTuc, ngayVao, actorUserId, cys.map((c) => c.id as number))] : ids;
 }
 
+/** Chữ Hành trình / lịch sử lịch của lượt Checkpoint TỰ SINH (`sinhCheckpointKeTiep`) — dấu để migrate `prTatCp` chỉ ẩn Checkpoint tự sinh, không đụng lượt QL xếp tay. */
+export const CHI_TIET_CP_TU_SINH = 'Tự xếp Checkpoint kế tiếp';
+/** Chữ của lượt Checkpoint QL xếp tay (Kế hoạch Test, `taoCheckpointTay`). */
+export const CHI_TIET_CP_TAY = 'Quản lý xếp Checkpoint';
+
 type LuotMoi = { cycleId: number; studentId: number; kind: 'progress' | 'final' | 'checkpoint'; classId: number; week: string; no: number };
 
 /**
@@ -536,6 +541,7 @@ function ghiLuotThuong(moi: readonly LuotMoi[], ctLop: Map<number, string | null
  */
 export function sinhCheckpointKeTiep(classIds: readonly number[] | null, homNay: string = demoToday(), actorUserId: number | null = null,
   cycleIds?: readonly number[]): number[] {
+  if (!CONG_TAC_CP.tuSinh) return [];   // TAT-CHECKPOINT: tắt tự sinh — mọi đường gọi (vào lớp, sau nhập điểm, quét khi đọc, thứ Hai) dừng ở đây
   const conn = db();
   const lop: any[] = [];
   const cauLop = `SELECT c.id, c.programme_code, c.moc_lap, rp.week_start FROM classes c JOIN report_periods rp ON rp.id = c.start_period_id
@@ -587,7 +593,7 @@ export function sinhCheckpointKeTiep(classIds: readonly number[] | null, homNay:
     if (daDung.get(e.cycleId)?.has(n)) continue;      // số đã có lượt khác (lộ trình cũ chuyển sang) — không đè
     moi.push({ cycleId: e.cycleId, studentId: e.studentId, kind: 'checkpoint', classId: e.classId, week: tuanCua(n), no: n });
   }
-  return ghiLuotThuong(moi, new Map(lop.map((x) => [x.id as number, x.programme_code ?? null])), actorUserId, 'Tự xếp Checkpoint kế tiếp');
+  return ghiLuotThuong(moi, new Map(lop.map((x) => [x.id as number, x.programme_code ?? null])), actorUserId, CHI_TIET_CP_TU_SINH);
 }
 
 /**
@@ -599,6 +605,24 @@ export function quetCheckpoint(classId: number, homNay = demoToday()): void {
     try { tx(() => sinhCheckpointKeTiep([classId], homNay)); } catch (e) { console.error('[checkpoint] quét khi đọc', e); }
     return true;
   });
+}
+
+/**
+ * TAT-CHECKPOINT: QL XẾP TAY Checkpoint n cho MỘT em (Kế hoạch Test, khi tắt tự sinh) — trong tx của nơi gọi; tuần từng môn nơi gọi đặt (`luuDot`).
+ * Checkpoint n đã ẩn (huỷ khi tắt) → mở lại đúng lượt đó (điểm / lịch sử giữ); số n đã có lượt khác → chặn; chưa có → tạo như lượt tự sinh.
+ */
+export function taoCheckpointTay(classId: number, cycleId: number, studentId: number, n: number, week: string, actorUserId: number | null): number {
+  const conn = db();
+  const cu = conn.prepare('SELECT id, kind, status FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?').get(cycleId, n) as any;
+  if (cu) {
+    if (cu.kind !== 'checkpoint' || cu.status !== 'cancelled') throw loi(400, 'Em đã có bài số {n} — bấm ô Checkpoint đã có để dời tuần.', { n });
+    conn.prepare(`UPDATE assessment_attempts SET status = 'planned', cancel_reason = NULL, cancelled_at = NULL, class_id = ?, updated_at = ? WHERE id = ?`)
+      .run(classId, nowIso(), cu.id);
+    logSchedule(cu.id, { action: 'restored', reason: `Khôi phục Checkpoint ${n}`, actor: actorUserId });
+    return cu.id;
+  }
+  const ct = (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any)?.programme_code ?? null;
+  return ghiLuotThuong([{ cycleId, studentId, kind: 'checkpoint', classId, week, no: n }], new Map([[classId, ct]]), actorUserId, CHI_TIET_CP_TAY)[0];
 }
 
 // ---------------------------------------------------------------- nhập điểm

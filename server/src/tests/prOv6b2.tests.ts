@@ -21,6 +21,8 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
   const week: any = await import('../platform/week.ts');
   const mig: any = await import('../migrate/prOv6b2.ts');
   const d: any = await import('../../../shared/domain/index.ts');
+  /* TAT-CHECKPOINT: tệp này kiểm Checkpoint TỰ SINH (công tắc bật = như cũ) — bật suốt tệp, trả về tắt ở cuối. */
+  d.CONG_TAC_CP.tuSinh = true;
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nPR-OV6b2 · chương trình mới (Liên tục, Checkpoint lặp, môn gộp) + PET / KET');
 
@@ -215,4 +217,5 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     const chu = bang.rows.map((r: any) => r.chip?.chu ?? null);
     assert(bang.rows.length === 3 && chu.includes('Đạt') && chu.some((c: string | null) => c?.startsWith('SOS · ')), `demo: ${JSON.stringify(chu)}`);
   });
+  d.CONG_TAC_CP.tuSinh = false;
 }

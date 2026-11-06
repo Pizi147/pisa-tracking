@@ -257,8 +257,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                         /* K4-08: chỉ MT kế tiếp có "Xếp MTn"; MT sau nữa "–" (mockup #659). GV chỉ xem: chữ mờ "chưa xếp". */
                         <NutXepO chu={t('Xếp MT{n}', { n: c.dot.attemptNo })} title={t('Bấm để xếp {maDot}', { maDot: nhanDot(c.dot) })} ke={khongConLuot(h)} onMo={chiXem ? undefined : moHop} />
                       ) : <OTrong title={t('Xếp MT trước rồi mới tới {maDot}', { maDot: nhanDot(c.dot) })} />
-                    ) : /^cp\d+$/.test(c.key) ? (
-                      /* OV-6b2: Checkpoint tự sinh theo lịch lớp — em không có Checkpoint này (vào sau) thì không có gì để xếp. */
+                    ) : /^cp\d+$/.test(c.key) && !(data as LuoiThuongData).cpTay ? (
+                      /* OV-6b2: Checkpoint tự sinh theo lịch lớp — em không có Checkpoint này (vào sau) thì không có gì để xếp. TAT-CHECKPOINT: tắt tự sinh → nút Xếp như Progress / Final. */
                       <OTrong title={t('Em không có Checkpoint này')} />
                     ) : (
                       /* Lớp thường chưa có bài: nút viền đứt "Xếp {tuần đề xuất}" — "đề xuất" ở tooltip. */
