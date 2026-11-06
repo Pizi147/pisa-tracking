@@ -127,7 +127,8 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   /* Giữ phân trang 10 / 20 / 50 của panel cũ (`NganDanhSach`) — số "n lượt · m HV" tính trên cả tab, bảng chỉ trang đang xem. */
   const pt = usePhanTrang(loc.length, `${tieuDe}|${tab}`, t('mục'));
 
-  const lkHv = (id: number, ten: string) => <Link className={`font-semibold ${LINK}`} to={duongHoSoHocVien(id)}>{ten}</Link>;
+  /* DEM-QUA-HAN: dòng việc cả lớp (Bàn giao, Phối hợp SOS…) không có em — tên trơn. */
+  const lkHv = (id: number, ten: string) => (id ? <Link className={`font-semibold ${LINK}`} to={duongHoSoHocVien(id)}>{ten}</Link> : <b className="font-semibold">{dich(ten)}</b>);
   const lkLop = (classId: number | null, lop: string) => (classId ? <Link className={`${LINK} !text-dim`} to={`/hoc-vien/lop/${classId}`}>{lop}</Link> : <span className="text-dim">{lop}</span>);
   const lkMt = (attemptId: number, mt: number, dam = true) => <Link className={`${dam ? 'font-semibold' : ''} ${LINK}`} to={duongDotTest({ id: attemptId, kind: 'mock' })}>MT{mt}</Link>;
   const kv = (v: number | null) => <span className="tabular-nums text-dim">{v === null ? '—' : fmtBand(v)}</span>;

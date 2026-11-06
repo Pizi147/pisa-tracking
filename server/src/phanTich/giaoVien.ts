@@ -30,7 +30,7 @@ import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { dongBaiThuongCua, dongLuotDiemCua, ganLuotDiem, nguongCua } from './tongHop.ts';
-import { KN_LUOT_CUA, NHAN_KN_LUOT, tachBaiId, type DongTangGiam } from '../../../shared/domain/index.ts';
+import { KN_LUOT_CUA, NHAN_KN_LUOT, tachBaiId, type DongPa, type DongTangGiam } from '../../../shared/domain/index.ts';
 
 const LO = 400;
 const KN_NGAN: Record<KnDay, string> = { l: 'L', r: 'R', w1: 'W1', w2: 'W2', s: 'S' };
@@ -495,18 +495,21 @@ export function viecQuaHanMo(c: NguCanhPtGv, kemKhongLop = true): Map<number, Wo
 }
 const tapViecMo = (ds: readonly WorkItem[] | undefined) => (ds?.length ? { dung: [] as string[], tong: ds.map((it) => it.key) } : undefined);
 
-/** Dòng panel của việc còn mở quá hạn — số dòng = số ở ô; id âm theo khoá việc (không trùng id nghĩa vụ Kết quả PA, giữ qua nhiều ngữ cảnh hồ sơ). */
+/**
+ * Dòng panel của việc còn mở quá hạn — số dòng = số ở ô. Cùng kiểu bảng nghĩa vụ Kết quả PA (`kieu: 'pa'`: Học viên · Lớp · việc · Hạn · Chưa ghi · Trễ n ngày) để panel
+ * trộn hai tập vẫn là một bảng. id âm theo khoá việc (không trùng id nghĩa vụ, giữ qua nhiều ngữ cảnh hồ sơ).
+ */
 const idViec = (key: string) => -1 - Math.abs([...key].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 0));
 const dongViecMo = (ds: readonly WorkItem[], homNay: string): { dung: boolean; row: MetricRow }[] => [...ds]
   .sort((a, b) => (a.due ?? '').localeCompare(b.due ?? '') || a.key.localeCompare(b.key))
-  .map((it) => ({
-    dung: false,
-    row: {
-      id: idViec(it.key), title: it.studentName || it.tieuDe, href: it.href, lop: it.classCode, nguoi: it.owner, han: it.due,
-      sub: [nhanNhomViec(it.group), it.classCode, it.tieuDe, t('hạn {ngay}', { ngay: `${it.due!.slice(8, 10)}/${it.due!.slice(5, 7)}` }),
-        t('Quá hạn · {n} ngày', { n: ngayCach(it.due!, homNay) })].filter(Boolean).join(' · '),
-    },
-  }));
+  .map((it) => {
+    const ten = it.studentName || nhanNhomViec(it.group);
+    const pa: DongPa = {
+      id: idViec(it.key), studentId: it.studentId ?? 0, ten, classId: it.classId, lop: it.classCode ?? '—', caseId: it.caseId ?? 0, kyNang: null,
+      loaiPa: it.tieuDe, batDau: null, ketQua: null, nguoiPhuTrach: null, han: it.due, ngayGhi: null, dungHan: false, treNgay: ngayCach(it.due!, homNay),
+    };
+    return { dung: false, row: { id: pa.id, title: ten, href: it.href, lop: it.classCode, sub: [nhanNhomViec(it.group), it.tieuDe].join(' · '), pa } as MetricRow };
+  });
 
 // ------------------------------------------------------------------ cột 4 · PA hiệu quả (FT)
 

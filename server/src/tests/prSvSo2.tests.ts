@@ -131,7 +131,9 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
       assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong === (h.ghiKetQuaPa.tong ?? 0) + ds.length && h.viecDungHan.dung === (h.ghiKetQuaPa.dung ?? 0),
         `mẫu phải gồm ${ds.length} việc mở, tử không đổi: ${JSON.stringify(h.viecDungHan)}`);
       const p = pt.oChiSoGv(P.mbManager, { ...ky, gv, cot: 'viec-dung-han' });
-      assert(p.n === h.viecDungHan.tong && p.rows.filter((r: any) => /Quá hạn · \d+ ngày$/.test(r.sub)).length >= ds.length, JSON.stringify(p.rows));
+      /* Panel cùng kiểu bảng nghĩa vụ ('pa'): dòng việc mở = chưa ghi, không đúng hạn, trễ n ngày. */
+      assert(p.n === h.viecDungHan.tong && p.kieu === 'pa'
+        && p.rows.filter((r: any) => r.id < 0 && r.pa.ngayGhi === null && r.pa.dungHan === false && r.pa.treNgay > 0).length === ds.length, JSON.stringify(p.rows));
       const hs = pt.chiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den }).viecDungHan;
       assert(pt.oChiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den, cot: 'viec-dung-han' }).n === hs.tong, 'panel hồ sơ ≠ ô hồ sơ');
       assert(hs.tong >= h.viecDungHan.tong, 'hồ sơ GV phải có việc mở của bảng');
