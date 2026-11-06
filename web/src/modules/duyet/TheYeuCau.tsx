@@ -15,7 +15,7 @@ import { useSession } from '../../lib/session.tsx';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, LOAI_NGUOI_XIN_SUA, deadlineView, kiemGhiRoKhac, laVaiQuanLy, nhanTrangThaiYc, reasonNeedsText,
   type TheYeuCauDto, type TruongDeXuat,
-  kyThiCuaChuongTrinh,
+  kyThiCuaChuongTrinh, laDaXuLy,
 } from '@shared/domain/index.ts';
 import { lazyTai } from '../../lib/taiLaiManh.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -148,7 +148,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
       onXong(yc.id, xongChu, huyDuoc, kq?.soLichSu);
     } catch (e: any) {
       /* Người khác đã xử lý / thẻ tự đóng: nói rõ rồi làm mới — không để người dùng bấm lại vào một thẻ đã chết. */
-      if (e?.status === 400 && /đã được xử lý/.test(e.message ?? '')) { toast.push('error', e.message); onXong(yc.id); return; }
+      /* Chủ SP 07/11 (mục 7): báo trung tính, không đỏ — thẻ chết đã được máy chủ đóng (`dongNeuChet`). */
+      if (laDaXuLy(e)) { toast.push('info', t('Yêu cầu này đã được xử lý.')); onXong(yc.id); return; }
       /* Lỗi mạng (không phải câu của máy chủ): nói bằng tiếng Việt, chữ đang gõ giữ nguyên để bấm lại. */
       setLoiMay(e instanceof ApiError ? e.message : t('Mất kết nối, chưa lưu gì. Kiểm tra mạng rồi bấm lại — chữ bạn gõ vẫn còn.'));
     } finally { setBusy(false); }
