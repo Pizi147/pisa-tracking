@@ -29,7 +29,7 @@ Mọi PR: JSON mọi (vai × đường) giống hệt trước / sau (`PISA_IN_J
 |---|---|---|---|
 | a (#1087) | `listCases` theo em (`COALESCE(...) = ?` → tập cha đi chỉ mục) + 13 đường mới vào `DUONG_DO` | panel một em: quét cả bảng 329 → 3 · Lịch thi −326 | ~0,4 triệu |
 | b (#1086) | chip TVV / CX: cờ Thiếu thông tin không dựng cả danh sách Học viên & Lớp | CX Tổng quan 61 → 16 câu · 11 215 → 6 180 dòng · 986 k → 538 k bước VM | ~0,45 triệu |
-| c | chỉ mục một phần `idx_sca_cho` (migrate `prGiamDoc0611`) — việc phối hợp đang chờ | Công việc: SCAN `sos_coordination_actions` (bản chính 436) → ~21 | ~0,35 triệu |
+| c (#1091) | chỉ mục một phần `idx_sca_cho` (migrate `prGiamDoc0611`) — việc phối hợp đang chờ | Công việc: SCAN `sos_coordination_actions` (bản chính 436) → ~21 | ~0,35 triệu |
 | d | `napTruocPhamVi` nạp sẵn lớp đang học — hết N+1 `activeClassOf` | tab Phối hợp SOS của lớp 23 → 11 câu (×1; bản chính một câu mỗi em) | tốc độ (dòng ≈) |
 | **Tổng** | | | **~1,2 triệu dòng / ngày (~36 triệu / tháng)** |
 
