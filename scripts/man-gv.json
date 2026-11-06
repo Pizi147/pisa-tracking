@@ -95,6 +95,7 @@
  "web/src/modules/students/GocLichThi.tsx",
  "web/src/modules/students/GocPhanCongGv.tsx",
  "web/src/modules/students/HangLichMt.tsx",
+ "web/src/modules/students/HangLichThi.tsx",
  "web/src/modules/students/HanhTrinh.tsx",
  "web/src/modules/students/HanhTrinhKyNang.tsx",
  "web/src/modules/students/HocVienTheoVai.tsx",
