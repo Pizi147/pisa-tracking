@@ -1,5 +1,5 @@
 import { DS_JSON, db, theoLoJson } from '../db.ts';
-import { nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { coKhoa, coNho, datNho, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
@@ -174,6 +174,20 @@ export function caseMoTheoEm(studentIds: number[]): Map<number, { student_id: nu
  */
 /** HSL-KET-THUC-SO: `lopKetThuc` = hồ sơ lớp ĐÃ KẾT THÚC — chỉ lượt của CHÍNH lớp đó (lộ trình chứa lượt đó), không lượt lớp em đang học. */
 export function standingFor(studentIds: number[], lopKetThuc?: number): Map<number, Standing> {
+  if (!coNho()) return tinhStanding(studentIds, lopKetThuc);
+  /*
+   * RA-DOC-0611: nhớ trong request GET THEO TỪNG EM (như `nhoTheoId`) — Tổng quan TVV / CX và Học viên theo vai tính hai lần gần cùng tập em
+   * (chip, rồi danh sách Học viên & Lớp — tập con, khác thứ tự; ~1/10 đường). Kết quả một em không phụ thuộc em khác trong lô; lần sau chỉ tính
+   * em chưa nhớ. Map trả về theo thứ tự người gọi (lần đầu gặp em, như cũ); bản chép sâu (dữ liệu thuần) — nơi gọi sửa tại chỗ không hỏng bộ nhớ.
+   */
+  const tien = `standing:${lopKetThuc ?? ''}:${standingNapDuKhiKiem.bat ? 1 : 0}:`;
+  const thuTu = [...new Set(studentIds)];
+  const thieu = thuTu.filter((id) => !coKhoa(tien + id));
+  for (const [id, st] of tinhStanding(thieu, lopKetThuc)) datNho(tien + id, st);
+  return new Map(thuTu.map((id) => [id, structuredClone(nho(tien + id, () => tinhStanding([id], lopKetThuc).get(id)!))]));
+}
+
+function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, Standing> {
   const out = new Map<number, Standing>();
   if (!studentIds.length) return out;
   const conn = db();

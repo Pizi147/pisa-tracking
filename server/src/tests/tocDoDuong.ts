@@ -501,7 +501,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=duoiKyVong': 47,   // {lopFT} = MB FT 101
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=bai-qua-han': 54,   // PR-S6F-b D10 — đo 46 (01/10)
   /* SV-TQ-GV: trần = max(đo+10, ⌈đo×1,3⌉), đo 24/10 — hai khối = `lopToiDay` FT (34) + Lớp thường (36) + hồ sơ GV theo kỳ (đã nhớ) + Thi tháng này. */
-  'GVCN /tong-quan/lop-toi-day/hai-khoi': 78, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 91, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 91,   // TL-NEN: đo 60 (trước 65)
+  'GVCN /tong-quan/lop-toi-day/hai-khoi': 64, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 64, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 64,   // TL-NEN: đo 60 (trước 65); RA-DOC-0611: đo 49 (trước 61)
   'GVCN /tong-quan/lop-toi-day/o?ct=ft&classId=3&cot=thi-thang-nay': 45,   // đo 34
   'QL /signals': 41,   // PR-S6F-b: đo 38 (một metricSet mỗi chỉ số)
   'QT /signals': 38,   // đo 35
@@ -512,15 +512,15 @@ export const TRAN: Record<string, number> = {
   'QL /highlights': 25,
   'QT /highlights': 25,
   /* OV-10c: Tổng quan theo vai — CX / QT gọi thêm danh sách Học viên & Lớp (chip Thiếu thông tin cùng nguồn): đo TVV 71, CX 95, QT 94, CX một CN 77, Admin 62 / 15. */
-  'TVV /tong-quan/hoc-vien': 72,   // TL-NEN: đo 55 (trước 68)
-  'CX /tong-quan/hoc-vien': 94,   // TL-NEN: đo 72 (trước 80)
-  'QT /tong-quan/hoc-vien': 93,   // TL-NEN: đo 71 (trước 81)
-  'CX /tong-quan/hoc-vien?branchId=1': 81,   // {cn} = Móng Bình; TL-NEN: đo 62 (trước 75)
+  'TVV /tong-quan/hoc-vien': 60,   // TL-NEN: đo 55 (trước 68); RA-DOC-0611: đo 46 (trước 48)
+  'CX /tong-quan/hoc-vien': 78,   // TL-NEN: đo 72 (trước 80); RA-DOC-0611: đo 60 (trước 62)
+  'QT /tong-quan/hoc-vien': 77,   // TL-NEN: đo 71 (trước 81); RA-DOC-0611: đo 59 (trước 61)
+  'CX /tong-quan/hoc-vien?branchId=1': 68,   // {cn} = Móng Bình; TL-NEN: đo 62 (trước 75); RA-DOC-0611: đo 52 (trước 54)
   /* OV-10b: Học viên & Lớp / hồ sơ HV theo vai — trần = min(max(đo+10, ⌈đo×1,3⌉), 100); đo 13/10: TVV 74 · TVV cả CN 72 · CX 97 (chip = chipHocVien, 95 như Tổng quan) · CX một CN 80 · Admin 70 · hồ sơ CX 83 / Admin 86. */
-  'TVV /hoc-vien-lop/theo-vai': 69,   // TL-NEN: đo 61 (trước 73); TL-HVL: đo 53 (trước 57)
-  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 68,   // TL-NEN: đo 60 (trước 72); TL-HVL: đo 52 (trước 56)
-  'CX /hoc-vien-lop/theo-vai': 84,   // TL-NEN: đo 75 (trước 84); TL-HVL: đo 64 (trước 70)
-  'CX /hoc-vien-lop/theo-vai?branchId=1': 76,   // TL-NEN: đo 67 (trước 79); TL-HVL: đo 58 (trước 62)
+  'TVV /hoc-vien-lop/theo-vai': 64,   // TL-NEN: đo 61 (trước 73); TL-HVL: đo 53 (trước 57); RA-DOC-0611: đo 49
+  'TVV /hoc-vien-lop/theo-vai?phamVi=chi-nhanh': 63,   // TL-NEN: đo 60 (trước 72); TL-HVL: đo 52 (trước 56); RA-DOC-0611: đo 48
+  'CX /hoc-vien-lop/theo-vai': 81,   // TL-NEN: đo 75 (trước 84); TL-HVL: đo 64 (trước 70); RA-DOC-0611: đo 62
+  'CX /hoc-vien-lop/theo-vai?branchId=1': 73,   // TL-NEN: đo 67 (trước 79); TL-HVL: đo 58 (trước 62); RA-DOC-0611: đo 56
   'ADMIN /hoc-vien-lop': 63,   // TL-NEN: đo 55 (trước 69); TL-HVL: đo 48 (trước 51)
   'CX /students/1': 99,   // TL-NEN: đo 76 (trước 82)
   'ADMIN /students/1': 100,
@@ -784,8 +784,8 @@ export const TRAN: Record<string, number> = {
   'GVCN /ref/nguoi?nhom=giao_vien&studentId=1': 20,
   'GVBM /ref/nguoi?nhom=giao_vien&studentId=1': 20,
   /* PR-Dọn (9c): khoá lớp thường đổi /5 → /6 ({lopThuong} thật) — đo 01/10, trần max(đo + 10, ⌈đo × 1,3⌉), trần cứng 100. */
-  'QL /classes/6/overview': 55,   // TD2-a: đo 72 → max(đo+10, ⌈đo×1,3⌉), cũ 97; TL-NEN: đo 49 (trước 65); TL-HVL: đo 42 (trước 46)
-  'QT /classes/6/overview': 54,   // TD2-a: đo 69 → max(đo+10, ⌈đo×1,3⌉), cũ 93; TL-NEN: đo 48 (trước 63); TL-HVL: đo 41 (trước 45)
+  'QL /classes/6/overview': 52,   // TD2-a: đo 72 → max(đo+10, ⌈đo×1,3⌉), cũ 97; TL-NEN: đo 49 (trước 65); TL-HVL: đo 42 (trước 46); RA-DOC-0611: đo 40 (trước 44)
+  'QT /classes/6/overview': 51,   // TD2-a: đo 69 → max(đo+10, ⌈đo×1,3⌉), cũ 93; TL-NEN: đo 48 (trước 63); TL-HVL: đo 41 (trước 45); RA-DOC-0611: đo 39 (trước 43)
   'GVCN_THUONG /classes/6/overview': 54,   // TD2-a: đo 76 → max(đo+10, ⌈đo×1,3⌉), cũ 100; TL-NEN: đo 46 (trước 63); TL-HVL: đo 41 (trước 45)
   'QL /classes/6/phan-tich-lop': 24,
   'QT /classes/6/phan-tich-lop': 23,
@@ -1127,9 +1127,9 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /classes/3/overview': 918,   // TD3-b: đo 929 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1286 (trần cũ 1208) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-HVL: đo 706 (trước 739)
   'GVCN_THUONG /classes/3/overview': 918,   // TD3-b: đo 931 (60 câu)   // V5 SV-SO1 sau gộp main: đo 1288 (trần cũ 1211) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-HVL: đo 706 (trước 741)
   'QT /classes/3/overview': 857,   // TD3-b: đo 827 (53 câu)   // V5 SV-SO1 sau gộp main: đo 1182 (trần cũ 1076) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 693 (trước 754); TL-HVL: đo 659 (trước 691)
-  'QL /classes/6/overview': 288,   // TD3-b: đo 616 (68 câu); TL-HVL: đo 221 (trước 230)
-  'QT /classes/6/overview': 284,   // TD3-b: đo 581 (65 câu); TL-HVL: đo 218 (trước 227)
-  'GVCN_THUONG /classes/6/overview': 298,   // TD3-b: đo 630 (72 câu); TL-HVL: đo 229 (trước 241)
+  'QL /classes/6/overview': 283,   // TD3-b: đo 616 (68 câu); TL-HVL: đo 221 (trước 230); RA-DOC-0611: đo 217
+  'QT /classes/6/overview': 279,   // TD3-b: đo 581 (65 câu); TL-HVL: đo 218 (trước 227); RA-DOC-0611: đo 214
+  'GVCN_THUONG /classes/6/overview': 296,   // TD3-b: đo 630 (72 câu); TL-HVL: đo 229 (trước 241); RA-DOC-0611: đo 227
   'QL /tong-quan/v5?ct=ft': 2951,   // DOC-PT: đo 2270 (trước 2449)
   'QT /tong-quan/v5?ct=ft': 4199,   // TL-TQ: đo 3230 (trước 3381)
   'GVCN /my-work?nguoi=tat-ca': 51,   // TL-NEN: đo 1 (trước 3)
@@ -1251,12 +1251,12 @@ export const TRAN_GHI_LO = {
 /* ponytail: danh sách viết tay, phép quét (prDonA 9e) bắt route mới; chuyển sang hằng dùng chung với web khi Tổng quan ổn định. */
 export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number }> = {
   'GV trang Tổng quan': {
-    vai: 'GVCN', tran: 251,   // đo 157 (trước PR ≈ 157 + 2 × 66 = 289) · SV-TQ-GV: đo 208 — `/hai-khoi` đọc CẢ hai khung (Lớp thường +36 câu) thay `?ct=ft` · S1: đo 193 (bỏ `/chi-so` tính lại, + ô Case) → max(193 + 10, ⌈193 × 1,3⌉)
+    vai: 'GVCN', tran: 151,   // RA-DOC-0611: đo 116 (trước 128) → max(116 + 10, ⌈116 × 1,3⌉) · đo 157 (trước PR ≈ 157 + 2 × 66 = 289) · SV-TQ-GV: đo 208 — `/hai-khoi` đọc CẢ hai khung (Lớp thường +36 câu) thay `?ct=ft` · S1: đo 193 (bỏ `/chi-so` tính lại, + ô Case) → max(193 + 10, ⌈193 × 1,3⌉)
     urls: ['/demo/session', '/my-work', '/notifications', '/tong-quan/lop-toi-day/hai-khoi', '/yeu-cau/dem', '/giao-vien/{gv}/o?cot=case-mo'],   // UI-TONG-QUAN: + chỉ số GV · SV-TQ-GV: hai khối thay Lớp tôi dạy · S1: chỉ số GV theo `/hai-khoi` (bỏ GET `/giao-vien/{gv}/chi-so`), thêm ô Case đang xử lý (gọi lúc mở, trước sót)
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'TVV trang Tổng quan': {
-    vai: 'TVV', tran: 186,   // UI-TONG-QUAN: + /tong-quan/tvv + /my-work (n việc của tôi) — đo 143 → max(143 + 10, ⌈143 × 1,3⌉)
+    vai: 'TVV', tran: 101,   // RA-DOC-0611: đo 77 (trước 79) → max(77 + 10, ⌈77 × 1,3⌉) · UI-TONG-QUAN: + /tong-quan/tvv + /my-work (n việc của tôi) — đo 143 → max(143 + 10, ⌈143 × 1,3⌉)
     urls: ['/demo/session', '/notifications', '/tong-quan/hoc-vien', '/tong-quan/tvv', '/my-work'],   // UI-TONG-QUAN: 3 nhóm TVV
   },
   'QL trang Tổng quan': {
@@ -1268,7 +1268,7 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/notifications', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft', '/yeu-cau?hop=cho-duyet&branchId={cn}', '/phan-tich/giao-vien?cn={cn}&ct=ft'],
   },
   'CX trang Tổng quan': {
-    vai: 'CX', tran: 450,
+    vai: 'CX', tran: 142,   // RA-DOC-0611: đo 109 (trước 111) → max(109 + 10, ⌈109 × 1,3⌉)
     urls: ['/demo/session', '/notifications', '/ref/branches', '/tong-quan/hoc-vien', '/tong-quan/v5?ct=ft'],   // UI-TONG-QUAN: một GET
   },
   'Admin trang Tổng quan': {
