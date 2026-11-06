@@ -4,93 +4,9 @@ import { BaoOTrongNhan } from './ONgay.tsx';
 import { buocDanhSach, chotChuGo, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { useBamNgoai } from './useBamNgoai.ts';
 
 export type Person = { id: number; name: string; title: string | null; role: string | null; branches: string[] };
 
-/** `Nguyễn A · Admin CN · CP` — đủ để không chọn nhầm hai người trùng tên. */
-function contextOf(p: Person): string {
-  return [p.role, p.branches.join('/')].filter(Boolean).join(' · ');
-}
-
-function usePeopleSearch(term: string) {
-  const [rows, setRows] = useState<Person[]>([]);
-  const [loading, setLoading] = useState(false);
-  const seq = useRef(0);
-  useEffect(() => {
-    const my = ++seq.current;
-    setLoading(true);
-    const t = setTimeout(async () => {
-      try {
-        const r = await api.get<Person[]>(`/ref/people${term.trim() ? `?q=${encodeURIComponent(term.trim())}` : ''}`);
-        if (my === seq.current) setRows(r);          // bỏ qua kết quả của lần gõ cũ
-      } catch { if (my === seq.current) setRows([]); } finally { if (my === seq.current) setLoading(false); }
-    }, 250);
-    return () => clearTimeout(t);
-  }, [term]);
-  return { rows, loading };
-}
-
-/**
- * Chọn MỘT người — gõ để tìm, không kéo một dropdown dài.
- *
- * Một trung tâm có hàng chục tài khoản và nhiều người trùng tên, nên mỗi dòng kèm vai trò
- * và chi nhánh; một danh sách chỉ có tên là một danh sách chọn nhầm người.
- */
-export function PersonPicker({ value, valueName, onChange, disabled, placeholder = t('Gõ tên để tìm…') }: {
-  value: number | null; valueName?: string | null;
-  onChange: (id: number | null, person: Person | null) => void;
-  disabled?: boolean; placeholder?: string;
-}) {
-  const [term, setTerm] = useState('');
-  const [open, setOpen] = useState(false);
-  const { rows, loading } = usePeopleSearch(open ? term : '');
-  const box = useRef<HTMLDivElement>(null);
-
-  useBamNgoai(open, () => setOpen(false), box);
-
-  if (value && !open) {
-    return (
-      <div className="field flex items-center justify-between gap-2">
-        <span className="text-slate-100 truncate">{valueName ?? `#${value}`}</span>
-        {!disabled && (
-          <span className="flex gap-1 shrink-0">
-            <button className="btn btn-sm" onClick={() => { setTerm(''); setOpen(true); }}>{t('Đổi')}</button>
-            <button className="btn btn-sm" onClick={() => onChange(null, null)}>{t('Bỏ')}</button>
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative" ref={box}>
-      <input
-        className="field" value={term} disabled={disabled} placeholder={placeholder}
-        onFocus={() => setOpen(true)} onChange={(e) => { setTerm(e.target.value); setOpen(true); }}
-      />
-      {open && (
-        <div
-          className="absolute z-30 mt-1 w-[min(24rem,calc(100vw-2rem))] max-h-64 overflow-y-auto surface-2 rounded-lg border shadow-xl"
-          style={{ borderColor: 'var(--line-strong)' }}
-        >
-          {loading && <div className="px-3 py-2 text-xs text-slate-500">{t('Đang tìm…')}</div>}
-          {!loading && rows.length === 0 && <div className="px-3 py-2 text-xs text-slate-500">{t('Không tìm thấy ai khớp.')}</div>}
-          {rows.map((p) => (
-            <button
-              key={p.id}
-              className="w-full text-left px-3 py-2 bam appearance-none bg-transparent border-0"
-              onClick={() => { onChange(p.id, p); setOpen(false); setTerm(''); }}
-            >
-              <div className="text-sm text-slate-100">{p.name}</div>
-              <div className="text-xs text-slate-500">{contextOf(p) || p.title || '—'}</div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // =========================================================================== ChonNguoi (PR-Form F-2)
 

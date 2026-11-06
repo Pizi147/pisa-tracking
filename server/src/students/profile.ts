@@ -1,12 +1,6 @@
 import { db, theoLo } from '../db.ts';
 import { datNho } from '../platform/nguCanhRequest.ts';
-import {
-  ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0,
-  ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, JOURNEY_GROUP, PERMISSIONS,
-  caseHeadline, duongCase, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi,
-  bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, quaHan, studyWeekOf, tenMon, tuanHocTai, tuanLich,
-  type AssessedSkill, type EntrySkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode,
-  coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0, ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseHeadline, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, studyWeekOf, tenMon, tuanHocTai, tuanLich, type AssessedSkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode, coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';

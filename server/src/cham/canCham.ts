@@ -15,15 +15,11 @@ import { demoToday } from '../demoConfig.ts';
 import {
   activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
-import {
-  ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo,
-  tenMonNgan, type Khung, nhanLopLichTest,
-  soSanhLop, trangThaiChamLabel, type AssessedSkill, type AttemptKind, type LoaiNhanLop, type PhamViLichTest,
-} from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
-import { assessedSkillOf, entrySkillsOf } from '../fasttrack/scoring.ts';
+import { assessedSkillOf } from '../fasttrack/scoring.ts';
 import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, type CheDo } from '../normal/regular.ts';
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { addDays } from '../util.ts';

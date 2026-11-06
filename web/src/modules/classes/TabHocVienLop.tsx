@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BoLocDoan, Level } from '../../ui/ui.tsx';
+import { BoLocDoan } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { NoiDungThongTinLop } from './ThongTinLopPanel.tsx';

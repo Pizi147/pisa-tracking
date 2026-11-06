@@ -7,10 +7,10 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
-import { badRequest, forbidden, HttpError, notFound, loi } from '../util.ts';
+import { badRequest, forbidden, loi } from '../util.ts';
 import { ghiDuocPaMany, listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo } from '../cases/caseLop.ts';
-import { NOT_UNCONFIRMED_PRESET, sosCaseStateMany, xuLyCaseMany } from '../cases/sosState.ts';
+import { NOT_UNCONFIRMED_PRESET, xuLyCaseMany } from '../cases/sosState.ts';
 
 /**
  * OV-15h1 (C23): phân rã "Case chưa chốt PA" theo `NHOM_CASE_CHUA_CHOT` — mỗi Case một nhóm, cùng `xuLyCaseMany` của tập. Case "đang làm" mà có PA chưa huỷ
@@ -59,7 +59,6 @@ import { missingForClasses } from '../classes/schedule.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
 import { listMgmtTasks } from './mgmttasks.ts';
-import { mondayOf } from '../platform/week.ts';
 
 /**
  * TẬP ID CỦA TỪNG CHỈ SỐ — nơi duy nhất sinh ra cả CON SỐ lẫn DANH SÁCH KHI BẤM VÀO (hợp đồng số liệu).

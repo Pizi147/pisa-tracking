@@ -3,9 +3,7 @@
  * Một tập (`thiThatTrongKhoang`), một hàm tính (`thongKeThiThat`): số trên ô = số dòng panel (G7).
  * Theo GV chỉ vai có `analysis.view_teacher` hoặc CX (2E) — chặn ở máy chủ. Tuần dạy đọc theo `student_id` / `class_id` của tập (2 câu), không cả chi nhánh.
  */
-import {
-  PERMISSIONS, coMucThi, soSanhDiem, type DongThiThatBang, type MucGv, type OPtGv, kyNangThiLanNay, mucThi, thongKeThiThat, type DoanDay, type KetQuaThiThatKq, type ThongKeThiThatWeb, type KnDay, type KnThiThat, type ThongKeThiThat,
-} from '../../../shared/domain/index.ts';
+import { PERMISSIONS, coMucThi, soSanhDiem, type DongThiThatBang, type MucGv, type OPtGv, kyNangThiLanNay, mucThi, thongKeThiThat, type DoanDay, type KetQuaThiThatKq, type ThongKeThiThatWeb, type KnDay, type KnThiThat } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { db, theoLo } from '../db.ts';
 import { scopeFor, type Principal } from '../permissions.ts';

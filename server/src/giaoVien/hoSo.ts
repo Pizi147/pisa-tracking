@@ -270,7 +270,6 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   }
   const homNay = demoToday();
   const ct = ctTuyChon(q.ct);   // vắng = gộp hai khung (Q2)
-  const conn = db();
   const ket = (rows: MetricRow[], tieuDe: (n: number) => string) => ({ n: rows.length, tieuDe: tieuDe(rows.length), rows });
 
   if (cot === 'yc-cho' || cot === 'yc-tu-choi') {

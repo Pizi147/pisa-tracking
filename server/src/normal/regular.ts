@@ -4,12 +4,8 @@ import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
-import {
-  ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai,
-  categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ngay, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich,
-  type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel,
-} from '../../../shared/domain/index.ts';
-import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
+import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
+import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';

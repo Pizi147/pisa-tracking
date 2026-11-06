@@ -424,7 +424,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Đường đo × vai, trần câu SQL / dòng | `server/src/tests/tocDoDuong.ts` (`DUONG_DO`, `TRAN`) · `server/src/tests/tocDo.run.ts` |
 | Tải lại mảnh JS sau deploy | `web/src/lib/taiLaiManh.ts` (`lazyTai`) |
 | Đo khung / bảng trên trang thật, miễn lỗi đã biết | `scripts/do-khung.mjs` · `scripts/do-bang.mjs` · `scripts/mien-do.json` |
-| Cảnh báo esbuild, ảnh cặp mockup \| web, chụp API | `scripts/kiem-esbuild.mjs` · `scripts/kiem-css.mjs` (CSS PostCSS sạch: không khối mất selector, không `!lớp-tự-viết`) · `scripts/anh-cap.mjs` · `scripts/chup-api.mjs` |
+| Cảnh báo esbuild, ảnh cặp mockup \| web | `scripts/kiem-esbuild.mjs` · `scripts/kiem-css.mjs` (CSS PostCSS sạch: không khối mất selector, không `!lớp-tự-viết`) · `scripts/anh-cap.mjs` |
 | Đo dòng quét Turso từng (vai × đường) — `PISA_DO_IT` của `tocDo.run` + chạy lại câu (cách đọc `docs/toc-do/doc-it-0211.md`) | `scripts/do-it.py` |
 
 ### Bản chính (Netlify + Turso)
@@ -463,7 +463,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Lệnh `npm run …`: th
 | Báo lỗi form | `web/src/ui/loiForm.tsx` (`useLoiForm`) · `shared/domain/loiForm.ts` |
 | Lưu chắc chắn, không mất chữ | `web/src/lib/luuChac.ts` · `web/src/lib/useApi.ts` · `web/src/lib/api.ts` |
 | Ô số, ô chỉ số, % không đứng một mình | `web/src/ui/{OSo,SoLieu,TyLe}.tsx` |
-| ⓘ luật, dòng thời gian, lịch sử thay đổi | `web/src/ui/{NutLuat,DongThoiGian,LichSuThayDoi}.tsx` |
+| ⓘ luật, lịch sử thay đổi | `web/src/ui/{NutLuat,LichSuThayDoi}.tsx` |
 | Chữ trình bày dùng chung | `web/src/ui/chu.ts` |
 | Tên hiển thị mã máy, tên kỹ năng | `web/src/lib/format.ts` |
 | Cuộn ổn định | `web/src/lib/cuonOnDinh.ts` (`cuonVeViTri`) |

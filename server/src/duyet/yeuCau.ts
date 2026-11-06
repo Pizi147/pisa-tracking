@@ -8,10 +8,10 @@
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
-import { trongBoNho, xoaNho } from '../platform/nguCanhRequest.ts';
+import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { quetTheoMoc } from '../platform/mocHeThong.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import {

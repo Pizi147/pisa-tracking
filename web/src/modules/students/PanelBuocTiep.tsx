@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { CanLam, KhoiDaLuu, NutChu, TrangThaiLuu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from './PanelLoTrinhMoi.tsx';

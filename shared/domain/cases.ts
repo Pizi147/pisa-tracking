@@ -774,8 +774,7 @@ export function signalVerifyDue(raisedOn: string): string {
 /** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
 export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa điểm';
 
-/** Chữ ghi vào `resolution_note` khi GV bấm "Bỏ qua" tín hiệu (S1). Có lý do thì thêm " — {lý do}". */
-export const SIGNAL_DISMISS_NOTE = 'Bỏ qua';
+
 
 /**
  * SỐ NGÀY HẠN XÁC NHẬN — MỘT NƠI QUYẾT (chủ sản phẩm 08/10, đặc tả cuối khoá §4): Xác nhận nguyên nhân Case SOS, Xác nhận PA và

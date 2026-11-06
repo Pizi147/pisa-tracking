@@ -1,10 +1,6 @@
 import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import {
-  BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich,
-  TASK_PROGRESS, TASK_PROGRESS_LABEL, TASK_TYPES,
-  TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState,
-} from '../../../shared/domain/index.ts';
+import { BRANCH_REPORT_CATEGORIES, ENTRY_SKILLS, PERMISSIONS, chuanKhoaGui, tenMon, tuanLich, TASK_PROGRESS, TASK_PROGRESS_LABEL, TUTOR_REPORT_CATEGORIES, UNIT_STATUSES, ngayTheoGioVN, trangThaiDonVi, trangThaiO, type DueState } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, diffDays, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';

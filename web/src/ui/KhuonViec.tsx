@@ -2,7 +2,7 @@ import { Fragment, createContext, useContext, useEffect, useState, type ReactNod
 import { Link } from 'react-router-dom';
 import { duongHoSoHocVien, mucDiem } from '@shared/domain/index.ts';
 import { lopKq } from './BieuTuong.tsx';
-import { dich, t } from '@shared/i18n/index.ts';
+import { t } from '@shared/i18n/index.ts';
 import { KhungTrongThe, NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
 import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
 
@@ -156,10 +156,7 @@ export function NutChu({ children, onClick, mo, disabled, title }: { children: R
   );
 }
 
-/** Nhóm nguyên nhân có số thứ tự (1 = chính): "1 Kỹ năng làm bài · 2 Quản lý thời gian". */
-export function NhomCoSo({ ds }: { ds: { code: string; label: string }[] }) {
-  return <>{ds.map((x, i) => <span key={x.code}>{i > 0 && ' · '}<b className="font-semibold text-slate-300">{i + 1}</b> {dich(x.label)}</span>)}</>;
-}
+
 
 /** OV-13b: kết quả một lần lưu ở panel làm việc — câu chính, dòng phụ, Hoàn tác (nếu có đường đảo). */
 /** M6 6b-2: `paId` = PA vừa thêm / vừa ghi (Ngăn Case về Case, viền thẻ PA đó). */

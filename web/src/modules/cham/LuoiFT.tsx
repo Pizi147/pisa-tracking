@@ -9,9 +9,7 @@ import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DeadlinePill, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { ODiemMt, chuVangO, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
-import {
-  fmtBand, skillLabel, skillShort, sosLabel, sosTone,
-} from '../../lib/format.ts';
+import { fmtBand, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
 import { ENTRY_SKILLS, chipSosMt0, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';

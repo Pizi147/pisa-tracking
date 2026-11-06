@@ -14,7 +14,7 @@ import { MoSuaLichTest } from './MoSuaLichTest.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useSession } from '../../lib/session.tsx';
-import { fmtDateTime, roleLabel } from '../../lib/format.ts';
+import { fmtDateTime } from '../../lib/format.ts';
 import { MO_TA_QUYEN, NHOM_QUYEN, lyDoCamVai, nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
 
 type AdminData = {

@@ -145,7 +145,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
 // ------------------------------------------------------------------ việc nhắc "Cập nhật kết quả thi thật"
 /* OV-13q: cột / câu dùng chung ở tệp lá `cotSauThi.ts` (không import gì) — buocTiep.ts dựng SQL lúc nạp module, không vướng vòng import. */
 export { COT_SAU_THI, LO_TRINH_MOI_NHAT, NGAY_CO_KQ, cotSauThi, ngayCoKq } from './cotSauThi.ts';
-import { COT_SAU_THI, LO_TRINH_MOI_NHAT, NGAY_CO_KQ } from './cotSauThi.ts';
+import { COT_SAU_THI, LO_TRINH_MOI_NHAT } from './cotSauThi.ts';
 
 /**
  * Lộ trình FT chưa có kết quả thi thật đã qua ngày thi (`trangThaiSauThi` = "Đã thi · chờ kết quả") — MỘT câu cho việc GVCN / QL (`viecThiThat`),

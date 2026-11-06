@@ -9,7 +9,7 @@ import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { PanelHuongDanManNay } from '../huongDan/NutHuongDan.tsx';
 import { useDaXemHd } from '../huongDan/MucHuongDan.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
-import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
+import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
 import { Han } from '../../ui/Han.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';

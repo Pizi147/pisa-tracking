@@ -34,16 +34,7 @@ export function thamSoLoc(p: PhamViPhanTich, them: Record<string, string> = {}):
  */
 export const DINH_TRAI = '[&>td:first-child]:sticky [&>td:first-child]:left-0 [&>td:first-child]:z-[5]';
 
-/** Dòng tóm tắt đầu bảng: `<b>27 học viên có Case…</b> · 38 Case · 9 lớp` + ⓘ luật. */
-export function DongTomTat({ chinh, phu, luat }: { chinh: ReactNode; phu?: ReactNode; luat?: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-4 py-2.5 text-sm">
-      <b className="font-semibold text-slate-100">{chinh}</b>
-      {phu && <span className="text-xs text-slate-500">· {phu}</span>}
-      {luat}
-    </div>
-  );
-}
+
 
 /** `↑3` đỏ (nhiều hơn) · `↓1` xanh lá (ít hơn) · `=` xám — cùng luật với `nhanSoVoiTruoc` của luật thuần. */
 export const MAU_SO_VOI_TRUOC = { bad: 'text-bad', ok: 'text-ok', muted: 'text-faint' } as const;

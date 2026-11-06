@@ -17,7 +17,7 @@ import { CacLoTrinh } from './CacLoTrinh.tsx';
 import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
-import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
+import { Nhan, NhanLich } from '../../ui/Nhan.tsx';
 import { CHU_DA_XONG } from '@shared/domain/index.ts';
 import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -29,10 +29,7 @@ import { TomTatLuuTru } from './TomTatLuuTru.tsx';
 import { Menu } from '../../ui/Menu.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
-import {
-  attemptHref,
-  attemptStatusLabel, fmtBand, skillLabel, sosTone, studentStatusLabel,
-} from '../../lib/format.ts';
+import { attemptHref, fmtBand, skillLabel, sosTone, studentStatusLabel } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
   nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, trangCha, vaiXemHocVien, type HoSoTab,
@@ -88,7 +85,6 @@ export default function StudentDetailPage() {
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const [giaHan, setGiaHan] = useState(false);   // OV-13q
   const [quayLaiBt, setQuayLaiBt] = useState(false);   // OV-13m: Quay lại học sau Tạm dừng sau thi = panel Bước tiếp mở sẵn Lộ trình mới
-  const dienThoai = useDienThoai();
   /* OV-10b (mockup vai mục 3): TVV / CX / Admin — nút việc của vai hiện thẳng (không ⋯), khối Đang xử lý. QL / GV không đổi. */
   const vaiXem = vaiXemHocVien(useSession().session?.roles);
   const [planOpen, setPlanOpen] = useState(false);

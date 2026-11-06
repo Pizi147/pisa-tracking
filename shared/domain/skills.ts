@@ -17,11 +17,7 @@ export const ENTRY_SKILL_SHORT: Record<EntrySkill, string> = {
   listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2', speaking: 'S',
 };
 
-/** Lớp thường có hai kỹ năng riêng, cũng cần viết tắt để badge không tràn dòng. */
-export const REGULAR_SKILL_SHORT: Record<string, string> = {
-  listening: 'L', reading: 'R', writing: 'W', pronunciation: 'Pron', speaking: 'S',
-  prep_writing: 'W',   // mã cũ, giữ để dữ liệu chưa di trú không hiện mã thô
-};
+
 
 /** Kỹ năng ĐÁNH GIÁ dùng để xét kỳ vọng và SOS. Writing gộp từ W1 + W2. */
 export const ASSESSED_SKILLS = ['listening', 'reading', 'writing', 'speaking'] as const;

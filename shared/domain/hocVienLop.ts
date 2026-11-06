@@ -7,7 +7,7 @@
 import { PROGRAMME_TEMPLATES, programmeOf, type ProgrammeCode, skillShort, tenMon, tenMonNgan } from './normal.ts';
 import { deadlineView } from './display.ts';
 import { goiYCuoiKhoa } from './cuoiKhoa.ts';
-import type { TrangThaiCaseV4, ViecTiepCase } from './sosV4.ts';
+import type { ViecTiepCase } from './sosV4.ts';
 import type { CotXuLy } from './phanTich.ts';
 import type { NhanYThucEm } from './yThuc.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';

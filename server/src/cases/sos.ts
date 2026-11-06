@@ -1,5 +1,5 @@
 import { suggestCaseOwner } from './owner.ts';
-import { db, tx } from '../db.ts';
+import { db } from '../db.ts';
 import {
   ENTRY_SKILL_LABEL,
   DUOI_KY_VONG_KCK, SOS_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseDedupKey, categoryOf, hanXacNhan, laMt0, luotSinhViec,

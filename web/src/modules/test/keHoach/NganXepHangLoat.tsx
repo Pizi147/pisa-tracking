@@ -15,10 +15,7 @@ import {
 } from '@shared/domain/index.ts';
 import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-import {
-  KY, chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot,
-  type DotChon, type LopKH, type LuoiThuongData,
-} from './kieu.ts';
+import { chuTinhTrang, dotCuaEm, emXongDot, khoaDot, nhanDot, thanDot, type DotChon, type LopKH, type LuoiThuongData } from './kieu.ts';
 import { KhungXepLich } from './NganXepLichMt.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 

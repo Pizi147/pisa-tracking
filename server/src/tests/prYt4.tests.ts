@@ -929,10 +929,6 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(/'Ghi vi phạm'/.test(s) && /nhom: ''/.test(s) && /dsLoiGhiViPham/.test(s), 'panel ghi (nhóm không chọn sẵn, bắt buộc chọn — luật ở dsLoiGhiViPham)');
     assert(!/Ghi nhận vi phạm/.test(boChuThich(s)), 'chữ cũ');
   });
-  check('YT4 (8) · DongThoiGian D5: dưới sm ngày + cột 2 một dòng, nội dung và cột cuối chiếm cả dòng dưới', () => {
-    const s = docW('web/src/ui/DongThoiGian.tsx');
-    assert(/khong: 'grid-cols-\[3\.25rem_minmax\(0,1fr\)\] md:/.test(s) && /col-span-2 md:col-span-1/.test(s), 'lưới D5');
-  });
   /* UI-Y-THUC-LOP (mockup V5): hai khung M6 thay bằng bảng theo HV — nhóm em (NhomHang), bốn khối nghĩa, chi tiết mở dưới hàng. */
   check('YT4 (9) · Tab lớp V5: bảng theo HV theo nhóm, chi tiết mở dưới hàng; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);

@@ -12,8 +12,7 @@ import {
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
-/** Mọi việc thật của danh sách — dòng lẻ và từng việc trong dòng gộp (dòng gộp không tự đếm). */
-export const viecThat = (ds: readonly WorkItem[]) => ds.flatMap((x) => (x.con?.length ? x.con : [x]));
+
 
 type ChungDong = {
   onOpen: (it: WorkItem) => void; chon: string | null; xong: ReadonlySet<string>;

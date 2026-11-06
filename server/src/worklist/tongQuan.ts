@@ -304,7 +304,7 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong') {
 }
 
 export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }) {
-  const { cua, trong, tap, coFt, coThuong, soFt, soThuong, today } = tinhLopToiDay(p, f.ct);
+  const { cua, trong, tap, coFt, coThuong, today } = tinhLopToiDay(p, f.ct);
   const conn = db();
   /* Test kế tiếp — FT: lượt mốc kế tiếp sớm nhất của lớp (`MOC_KE_TIEP_SQL`); lớp thường: mốc Giữa/Cuối khoá kế tiếp của lớp. */
   const keTiep = new Map<number, string>();

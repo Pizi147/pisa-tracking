@@ -132,8 +132,6 @@ export function DiTiep({ dong, tieuDe = t('Điều hướng') }: { dong: { to: s
     </Card>
   );
 }
-const So = ({ n }: { n: number }) => <b className="tabular-nums">{n}</b>;
-
 /** Công tắc hai nút ngoài tiêu đề bảng (đầu thẻ). */
 /** `v8` (mockup v8 `.doan.nho`): khối liền cao 30 (375: 44 full bề rộng, chia đều), mục chọn đậm chữ chính + gạch đáy 2 px nhấn. */
 export function CongTac<K extends string>({ value, onChange, muc, v8 }: { value: K; onChange: (k: K) => void; muc: [K, string][]; v8?: boolean }) {

@@ -498,7 +498,6 @@ const sosHienTai = (p: Principal, c: NguCanhPtGv, hv: ReadonlySet<number>) => hv
 
 export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   const c = nguCanhPtGv(p, f);
-  const conn = db();
   /* Hàng: người có phân công ở lớp của khung trong khoảng. Lớp đã kết thúc (dòng phân công không đóng ngày) chỉ tính khi còn bài trong khoảng. */
   const nap = napBai(p, c);
   const lopCoBai = new Set(nap.o.map((x) => x.classId));

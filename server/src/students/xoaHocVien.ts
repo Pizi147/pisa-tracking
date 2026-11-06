@@ -14,7 +14,7 @@
  */
 import { db, tx } from '../db.ts';
 import { CHU_XAC_NHAN_XOA, PERMISSIONS, khopXacNhanXoa } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, notFound, loi } from '../util.ts';
+import { HttpError, notFound, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';

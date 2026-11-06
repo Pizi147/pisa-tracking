@@ -2,26 +2,7 @@ import { db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
 import { TIN_HIEU_CASE_DA_XOA } from './signals.ts';
-import {
-  DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
-  INTERVENTION_STATUS_LABEL, shortDate,
-  FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
-  ISSUE_ROLES, PERMISSIONS, URGENCY_LEVELS, DEFAULT_URGENCY,
-  isNoPlanCase,
-  issuesForTopic,
-  CASE_CATEGORY_SHORT, CASE_CATEGORIES, CASE_CATEGORY_LABEL, FOLLOWUP_OUTCOME_LABEL, ratioResult,
-  caseCategoriesFor, chuanKhoaGui, componentsAreCounts, componentsFor, type CaseCategory,
-  CASE_OUTCOME_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf,
-  type SystemCloseReason,
-  NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor,
-  RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
-  canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua, LY_DO_KET_THUC_PA_TOI_THIEU,
-  HAN_DUYET_NGAY, hanTheoNgay,
-  type NextStep, type RescheduleTarget,
-  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU, TRAN_CHU, vuotTran,
-  SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
-  type CaseOutcome, type FollowUpOutcome, type InterventionKind,
-} from '../../../shared/domain/index.ts';
+import { DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep, INTERVENTION_STATUS_LABEL, shortDate, FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS, PERMISSIONS, URGENCY_LEVELS, DEFAULT_URGENCY, isNoPlanCase, issuesForTopic, CASE_CATEGORIES, CASE_CATEGORY_LABEL, ratioResult, caseCategoriesFor, chuanKhoaGui, componentsAreCounts, componentsFor, type CaseCategory, CASE_OUTCOME_LABEL, SYSTEM_CLOSE_REASON_LABEL, caseCategoryLabel, caseDedupKey, caseHeadline, caseTitle, categoryOf, type SystemCloseReason, NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor, RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua, LY_DO_KET_THUC_PA_TOI_THIEU, HAN_DUYET_NGAY, hanTheoNgay, type NextStep, type RescheduleTarget, issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU, TRAN_CHU, vuotTran, SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc, type CaseOutcome, type InterventionKind } from '../../../shared/domain/index.ts';
 import { HttpError, addDays, badRequest, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';

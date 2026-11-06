@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
-import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -100,7 +100,6 @@ const KN_NGAN: Record<string, string> = { listening: 'L', reading: 'R', writing:
 /** Việc Case ở Công việc → Panel một em (các việc khác giữ panel / hộp sẵn có). */
 const VIEC_CASE = new Set(['xac_nhan_pa', 'ghi_ket_qua_pa', 'mini_test', 'no_plan', 'cause', 'ghi_nhan_xet']);
 /** Lọc mức của chế độ Đang SOS (khu d): Tất cả · SOS 3 · SOS 2 · SOS 1 · PA quá hạn. */
-type MucSos = '3' | '2' | '1' | 'pa';
 /** Cột Xuất mặc định của chế độ Tất cả (khu d hộp Xuất): Tên · Email · Lớp · Target · Điểm · SOS · Ngày thi. */
 const COT_XUAT_TAT_CA: KhoaCotXuatDs[] = ['ten', 'gmail', 'lop', 'target', 'diem', 'sos', 'lichThi'];
 

@@ -10,15 +10,10 @@
  */
 import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
-import {
-  CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemSoMtMoi, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang,
-  tuanKhoa as tuanKhoaCua,
-  type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT,
-  bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam,
-  type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
+import { CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
-import { can, classScopeSql, lopFtChoGvSpeaking, require_, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
@@ -30,7 +25,7 @@ import {
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { ketQuaHuyCua } from '../fasttrack/ketQuaHuy.ts';
-import { effectiveSkillDeadline, mondayOf } from '../platform/week.ts';
+import { effectiveSkillDeadline } from '../platform/week.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass } from '../normal/regular.ts';
@@ -59,7 +54,6 @@ const boMonThuong = (prog: { code: string; skills: readonly string[] } | null): 
 const cauThieuMon = (bo: readonly KyNangKH[]) => (bo.length === 1 ? 'Cần chọn tuần cho 1 môn.' : `Cần chọn tuần cho cả ${bo.length} môn.`);
 
 const phOf = (n: number) => Array.from({ length: n }, () => '?').join(',');
-const thuTuKn = (k: string) => (O_KE_HOACH as readonly string[]).indexOf(k);
 
 /* Nhận cả ô `tong_hop` (Pre FOU); môn có thuộc ĐÚNG lượt không thì `setSkillWeek` kiểm bằng `boMonCuaLuot`. */
 function chonKyNang(skill: string): KyNangKH {

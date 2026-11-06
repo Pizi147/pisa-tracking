@@ -8,7 +8,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { can, duocSuaLichLop, lopDayDu, phanCongDaNap, require_, type Principal } from '../permissions.ts';
+import { can, duocSuaLichLop, lopDayDu, phanCongDaNap, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';

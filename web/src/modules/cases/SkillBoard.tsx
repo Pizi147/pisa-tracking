@@ -1,13 +1,10 @@
-import { createContext } from 'react';
+
 import { Link, useLocation } from 'react-router-dom';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { type BanDieuChinh } from './CapNhatTuan.tsx';
 import type { XinYKien } from './DongXinYKien.tsx';
 import type { BoTro } from './CasePanel.tsx';
-import {
-  GIAI_THICH_KCK, chuTamDung, coNguoiDay, nhanNguoiDay, duongDotTest, tuanLich,
-  type DeadlineKind, type TrangThai, type TrangThaiCaseV4,
-} from '@shared/domain/index.ts';
+import { GIAI_THICH_KCK, chuTamDung, duongDotTest, tuanLich, type DeadlineKind, type TrangThai, type TrangThaiCaseV4 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 
@@ -147,14 +144,12 @@ export function NhanTamDung({ tu }: { tu: string }) {
     </span>
   );
 }
-/** Ngày Tạm dừng của em (null = đang học) — đọc ở mọi hàng của bảng mà không truyền tay qua từng tầng. */
-export const TamDungCtx = createContext<string | null>(null);
+
 
 /** Việc mở ngăn Case từ bảng này (Q3): không còn form trải trong trang. `viec` không có = mở view Case. PR-SOS: + Xác nhận Case / PA. */
 export type MoCase = { viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa'; paId?: number };
 
-/** Khoá hàng: nhóm "Case bàn giao" cùng `category` với hàng chuẩn của chương trình mới (G+V ↔ Writing) nên cần khoá riêng. */
-export const khoaHang = (r: { category: string; tuLopTruoc?: string | null }) => (r.tuLopTruoc ? `${r.category}@truoc` : r.category);
+
 
 /** Đang xử lý / mới cập nhật lên trước, đã hoàn thành xuống dưới, đã huỷ / hệ thống đóng cuối cùng. */
 export function xepCase(cases: CaseCard[]): CaseCard[] {
@@ -241,10 +236,7 @@ export function NhanLoai({ loai, cho }: { loai: 'Case' | 'PA'; cho?: boolean }) 
   return <span className={`${CHIP_VUONG} shrink-0 ${lop}`}>{loai}</span>;
 }
 
-/** PR-PA (§8): "3/10 buổi" ở dòng phụ của PA có Số buổi (bảng kỹ năng, thẻ 375). */
-export const chuBuoi = (p: { soBuoi?: number | null; daDay?: number }) => (p.soBuoi != null ? t('{x}/{soBuoi} buổi', { x: p.daDay ?? 0, soBuoi: p.soBuoi }) : null);
-/** PR-PA (§8): người ở dòng phụ PA — theo Loại như panel Case: Tự học không có người; Tutor/Bổ trợ "chưa có người dạy". */
-export const chuNguoi = (p: { kind: string; performer?: string | null }) =>
-  coNguoiDay(p.kind) ? p.performer ?? (nhanNguoiDay(p.kind) === 'Người dạy' ? t('chưa có người dạy') : t('chưa có người thực hiện')) : null;
+
+
 
 export type { Row as SkillBoardRow, CaseCard, Plan };

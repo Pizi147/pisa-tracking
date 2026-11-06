@@ -7,7 +7,7 @@ import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { IconCanhBao, IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';
-import { dich, dichChu, t, type Bien, type ChuKhoa } from '@shared/i18n/index.ts';
+import { dich, dichChu, t, type Bien } from '@shared/i18n/index.ts';
 
 /**
  * ĐẦU HỒ SƠ HỌC VIÊN "hiểu trong 30 giây" (PR-VAI-b, mockup 24) — máy chủ dựng mọi chữ (`dauHoSo`), web chỉ vẽ.
@@ -26,7 +26,6 @@ export type Viec = {
 };
 
 /** PR-EN-c: chữ máy chủ dựng — có khoá thì dịch theo khoá, không thì theo chính chữ. */
-const dk = (s: string | null | undefined, k?: ChuKhoa | null): string | null => (k ? dichChu(k) : s ? dich(s) : null);
 /* EN-SOT: biến chữ máy chủ ghép sẵn ("đến MT2 · Listening", "OVR 7.0 · Đạt Target") dịch theo mẫu như `dich`; tên / mã giữ nguyên. */
 const chuViec = (x: Viec) => dichChu(x.bien ? { ...x, bien: Object.fromEntries(Object.entries(x.bien).map(([k, v]) => [k, typeof v === 'string' ? dich(v) : v])) } : x);
 const nutViec = (x: Viec) => dich(x.nut);
