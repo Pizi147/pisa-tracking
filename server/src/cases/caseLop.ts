@@ -59,7 +59,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
   const mocTheoCase = new Map<number, any[]>();
   theoLoJson(ids, (json) => {   // S5: một tham số JSON
     const ph = DS_JSON;
-    for (const r of conn.prepare(`SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN (${ph})`).all(json) as any[]) goc.set(r.id, r);
+    for (const r of conn.prepare(`SELECT id, title, system_close_reason, cycle_id, han_them_pa FROM sos_cases WHERE id IN (${ph})`).all(json) as any[]) goc.set(r.id, r);
     for (const [k, v] of gom(conn.prepare(
       `SELECT iv.case_id, iv.id, iv.kind, iv.description, iv.status, iv.preset, iv.confirmed_at, iv.approval_state, iv.action_due, iv.followup_due,
               iv.moc_quy_che, iv.created_at, iv.performer_name, iv.superseded_by, iv.closed_reason, u.full_name AS performer_account
@@ -94,7 +94,7 @@ export function chiTietCaseMo(cases: readonly MappedCase[]): Map<number, CaseChi
       choDuyetKhongTheoDoi: !!s.choDuyetKhongTheoDoi, coPaChoXacNhan: s.coPaChoXacNhan, choDoiPa: s.choDoiPa, hanXacNhan: s.dueOn, tam: s.tam,
       lyDoHeThong: g.system_close_reason ? SYSTEM_CLOSE_REASON_LABEL[g.system_close_reason as keyof typeof SYSTEM_CLOSE_REASON_LABEL] ?? null : null,
     };
-    const hanLapPa = hanThemPa({ detected_at: c.detectedAt, urgency: c.urgency, sos_level: c.sosLevel, kck: c.kck });   // OV-11c (HV-14): cùng hàm với Công việc
+    const hanLapPa = hanThemPa({ detected_at: c.detectedAt, urgency: c.urgency, sos_level: c.sosLevel, kck: c.kck, han_them_pa: g.han_them_pa });   // OV-11c (HV-14): cùng hàm với Công việc
     const viecTiep = viecTiepCuaCase(v4, cua(paTheoCase, c.id).map((iv, i) => ({
       id: pas[i].id, ten: tenPaViecTiep(iv.kind, iv.description), batBuoc: pas[i].batBuoc, choXacNhan: pas[i].choXacNhan, xong: pas[i].xong,
       actionDue: iv.action_due ?? null, followupDue: iv.followup_due ?? null, choDuyet: pas[i].choDuyet, mienPhi: iv.kind === 'bo_tro_mien_phi',

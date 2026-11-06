@@ -81,6 +81,7 @@ import { migratePrBaoCaoPhDot } from './migrate/prBaoCaoPhDot.ts';
 import { migratePrMt0Em } from './migrate/prMt0Em.ts';
 import { migratePrGiamDoc0611 } from './migrate/prGiamDoc0611.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
+import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
 import { migratePrOv15d } from './migrate/prOv15d.ts';
 import { migratePrOv15e } from './migrate/prOv15e.ts';
@@ -175,6 +176,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
     /* BO-QUA-XEP-MT: 3 cột case_interventions.bo_qua_* (Bỏ qua việc Xếp lịch MT) — ĐẦU migrate, chỉ thêm cột NULL (myWork đọc). */ buoc(() => themCotPrBoQuaMoc(conn, applied));
     /* HAN-BAO-PH: han_chon (Báo PH, Meeting CX) + viec_han_lan + viec_bao_ph_lan.khoa — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrHanBaoPh(conn, applied));
+    /* RESET-HAN-CASE: cột sos_cases.han_them_pa — ĐẦU migrate, chỉ thêm (`hanThemPa` / `XU_LY_COT_SQL` đọc). */ buoc(() => themCotHanThemPa(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
@@ -459,6 +461,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* GIAM-DOC-0611: chỉ mục một phần idx_sca_cho — việc Báo PH qua TVV đang chờ thôi quét cả sos_coordination_actions (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611(conn, applied));
     /* GIAM-DOC-0611h: chỉ mục idx_student_branch — Case theo chi nhánh của em (listCases quyền chi nhánh) thôi quét cả students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611h(conn, applied));
     /* TAT-CHECKPOINT (chủ SP 06/11): công tắc Checkpoint tự sinh tắt → huỷ mềm Checkpoint chưa có điểm; bật → khôi phục (chạy MỖI lần, chạy lặp không đổi). */ buoc(() => migratePrTatCp(conn, applied));
+    /* RESET-HAN-CASE (chủ SP 06/11): cột sos_cases.han_them_pa (mỗi lần) + việc tuyến Case quá hạn → hạn hôm nay + 7, nhật ký viec_han_lan (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrResetHanCase(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

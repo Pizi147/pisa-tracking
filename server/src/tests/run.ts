@@ -9831,6 +9831,9 @@ await runPrNghiHocLuuTruTests({ check, assert, conn, P, TODAY, classId } as any)
 // ==================================================================== TAT-CHECKPOINT (chủ SP 06/11: tắt Checkpoint tự sinh, QL xếp tay; việc Nhập điểm ⇔ panel có bài)
 const { runPrTatCpTests } = bocTep('prTatCp', await import('./prTatCp.tests.ts'));
 await runPrTatCpTests({ check, assert, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== RESET-HAN-CASE (chủ SP 06/11 khuya: việc tuyến Case quá hạn → hạn hôm nay + 7, hoàn tác được)
+const { runPrResetHanCaseTests } = bocTep('prResetHanCase', await import('./prResetHanCase.tests.ts'));
+await runPrResetHanCaseTests({ check, assert, conn, P, TODAY, addDays } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

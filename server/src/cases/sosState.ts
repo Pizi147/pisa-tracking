@@ -176,7 +176,7 @@ export function awaitingCauseCaseIds(caseIds: number[]): number[] {
  * Trạng thái theo `trangThaiCaseV4` (cùng đầu vào `sosCaseStateMany`) + PA đang theo dõi (`cotXuLy`). `quaHan` (chỉ khi Chờ duyệt) = việc tiếp có hạn đã
  * qua: hạn Xác nhận Case / Mô tả Case / Xác nhận PA (`han_xac_nhan`), hoặc hạn Thêm PA (`hanThemPa`) khi Case chưa có PA nào.
  */
-export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reason_code, sc.system_close_reason, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck, sc.tam,
+export const XU_LY_COT_SQL = `sc.id, sc.status, sc.han_xac_nhan, sc.dismiss_reason_code, sc.system_close_reason, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck, sc.tam, sc.han_them_pa,
   ${LA_CASE_SOS('sc')} AS from_sos, ${LA_CASE_MT('sc')} AS la_mt,
   EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS has_cause,
   EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')}) AS pa_cho,

@@ -88,6 +88,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_mt_vang_reset_da_chay', now, now);
   /* NGHI-HOC-LUU-TRU: DB mới — Kết thúc học đã luôn vào Lưu trữ; khoá trước, migrate chỉ lưu trữ một lần trên DB cũ. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_nghi_hoc_luu_tru_da_chay', now, now);
+  /* RESET-HAN-CASE: DB mới không có việc Case quá hạn kiểu cũ — khoá trước, migrate chỉ đặt lại hạn một lần trên DB cũ. */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_reset_han_case_da_chay', now, now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };
