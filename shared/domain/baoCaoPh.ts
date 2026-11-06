@@ -166,15 +166,16 @@ export type LichLopBc = { ft: boolean; batDau: string | null; progress: string |
  * MỌI đợt của lớp (tính khi đọc, không lưu — đặc tả §10: dời tuần thi thì đợt dời theo), MỚI NHẤT TRƯỚC, kèm đợt đầu chưa mở.
  * FT: mỗi tháng từ tháng có hạn ≥ ngày khai giảng tới tháng đã mở gần nhất (tối đa 12 tháng gần nhất). Lớp thường: Progress, Final đã tới thứ Hai.
  */
-export function dsDotLop(l: LichLopBc, homNay: string, tc?: TuyChinhDot): { ds: DotBc[]; dau: DotBc | null; daBo: DotBc[] } {
+export function dsDotLop(l: LichLopBc, homNay: string, tc?: TuyChinhDot): { ds: DotBc[]; dau: DotBc | null; daBo: DotBc[]; sapMo: DotBc[] } {
   const r = dsDotTinh(l, homNay);
-  if (!tc || (!tc.bo.size && !tc.them.length)) return { ...r, daBo: [] };
+  if (!tc || (!tc.bo.size && !tc.them.length)) return { ...r, daBo: [], sapMo: [] };
   /* BC-DOT-QL: đợt tính + đợt thêm (đã tới ngày mở) − đợt QL / Admin bỏ; mới nhất trước. `daBo` = đợt bỏ (để khôi phục). */
   const tatCa = [...r.ds, ...tc.them.filter((d) => d.mo <= homNay)];
   const theoMo = (a: DotBc, b: DotBc) => b.mo.localeCompare(a.mo);
   const ds = tatCa.filter((d) => !tc.bo.has(d.ma)).sort(theoMo);
   const daBo = tatCa.filter((d) => tc.bo.has(d.ma)).sort(theoMo);
-  return { ds, dau: ds.length || daBo.length ? null : r.dau, daBo };
+  /* `sapMo` = đợt thêm hẹn trước, chưa tới ngày mở: chưa hiện cho ai, QL / Admin thấy để sửa / xoá. */
+  return { ds, dau: ds.length || daBo.length ? null : r.dau, daBo, sapMo: tc.them.filter((d) => d.mo > homNay).sort(theoMo) };
 }
 
 /** Đợt TÍNH từ lịch lớp (chưa qua quyết định của QL / Admin). */

@@ -11,8 +11,11 @@ Thêm nút theo mẫu sẵn có (hộp panel như "Lớp nghỉ 1 tuần", ô ch
 | Tab Báo cáo PH · đầu tab (QL / Quản trị / Admin) | chọn đợt · "n/N em đủ" · Xuất lớp | + nút **Không báo cáo đợt này** (đợt thêm: **Xoá đợt**) · + nút **+ Đợt báo cáo** |
 | GV · TVV | như trên (không nút) | không đổi — máy chủ trả `quyetDot = false`, 403 nếu gọi thẳng |
 | Không báo cáo đợt này | không có | hộp nhỏ: nói rõ hệ quả (ẩn khỏi tab, việc Admin, Excel; bài đã viết giữ) · "Áp cho lớp" + thêm lớp cùng chi nhánh · **Bỏ đợt này** → toast Hoàn tác |
-| Đợt đã bỏ | — | ô chọn đợt có nhóm **Không báo cáo** (chỉ QL / Admin thấy); chọn → thẻ mờ "Tháng 11 · Không báo cáo" + **Khôi phục** (toast Hoàn tác) |
-| + Đợt báo cáo | không có | hộp: tên (tuỳ chọn, mặc định "Đợt W2 NOV") · mở từ (≤ hôm nay) · hạn (mặc định +6 ngày) · Áp cho lớp (nhiều lớp cùng chi nhánh) · **Thêm đợt** → mở ngay đợt mới, toast Hoàn tác |
+| Đợt đã bỏ | — | ô chọn đợt có nhóm **Không báo cáo** (chỉ QL / Admin thấy); chọn → thẻ "Tháng 11 · Không báo cáo" + **Khôi phục** → hộp (áp nhiều lớp được) → toast Hoàn tác (= bỏ lại) |
+| + Đợt báo cáo | không có | hộp: tên (tuỳ chọn, mặc định "Đợt W2 NOV") · mở từ (hôm nay hoặc **hẹn trước**) · hạn (mặc định +6 ngày) · Áp cho lớp (nhiều lớp cùng chi nhánh) · **Thêm đợt** → mở ngay đợt mới, toast Hoàn tác |
+| Đợt thêm đang dùng | — | **Sửa đợt** (tên · mở · hạn, nhiều lớp, Hoàn tác trả giá trị cũ) · **Xoá đợt** (hộp, nhiều lớp, toast Hoàn tác) |
+| Đợt hẹn trước (mở ở tương lai) | — | chưa hiện cho GV; QL / Admin thấy ở nhóm **Sắp mở** của ô chọn đợt → thẻ "Sắp mở từ dd/mm" + Sửa đợt · Xoá đợt; tới ngày mở tự hiện như đợt thường |
+| Đợt đã xoá | — | không mất: nhóm **Đã xoá** của ô chọn đợt (30 đợt gần nhất) → thẻ "Đã xoá" + **Khôi phục** (bất cứ lúc nào, không cần toast; bài đã viết còn nguyên) |
 | GV viết đợt thêm | — | như đợt thường; điểm tự điền = lượt gần nhất có điểm, tuần thi ≤ hạn (FT: Mock; lớp thường: Progress / Final của lớp) |
 | Chip trên tab · việc Admin "Xuất báo cáo PH" · "thiếu n em" · Excel chi nhánh theo tháng | chỉ đợt tính từ lịch lớp | đợt đã bỏ biến mất khỏi cả bốn; đợt thêm vào như đợt thường (Excel: theo tháng của hạn) |
 | Nhật ký | Viết / Xuất báo cáo PH | + Bỏ / Khôi phục / Thêm / Xoá / Khôi phục (đợt đã xoá) đợt báo cáo PH, mỗi lớp một dòng |
@@ -28,10 +31,19 @@ Không mất thao tác nào: viết, sửa điểm, đặt sẵn, Xuất lớp /
 - Nút dùng `btn btn-sm` cùng cỡ nút "Xuất lớp"; ô 44 px trên điện thoại. Không đổi màu, cỡ chữ, bảng.
 - Hộp dùng `KhungPanel rong="hep"` + `Khoi` + `Truong` như "Lớp nghỉ 1 tuần".
 
-## Chủ SP quyết / ghi chú
-- Đợt thêm chỉ mở được **từ hôm nay trở về trước** (đợt tương lai không hiện tới ngày mở nên không có chỗ xoá). Muốn hẹn trước ngày mở: nói, thêm sau.
+## Rút lại được MỌI việc (chủ SP 06/11: "luôn nghĩ tới mọi trường hợp… xóa, khôi phục, rút lại, TẤT CẢ")
+| Việc | Rút lại bằng |
+|---|---|
+| Không báo cáo đợt | Hoàn tác (toast) · Khôi phục (thẻ đợt, nhóm "Không báo cáo", bất cứ lúc nào) · nhiều lớp |
+| Khôi phục đợt bỏ | Hoàn tác = bỏ lại |
+| Thêm đợt | Hoàn tác = xoá · Sửa đợt · Xoá đợt |
+| Sửa đợt | Hoàn tác trả đúng tên / mở / hạn cũ |
+| Xoá đợt | Hoàn tác · Khôi phục (nhóm "Đã xoá") · bài đã viết không bao giờ bị xoá |
+| Đợt hẹn trước | Sửa ngày mở (về hôm nay → hiện ngay) · Xoá · Khôi phục |
+- Nhật ký mỗi lớp: Bỏ / Khôi phục / Thêm / Sửa / Xoá / Khôi phục (đợt đã xoá). Nhiều lớp = mỗi lớp một dòng; việc trên đợt thêm ở nhiều lớp khớp theo cùng tên / mở / hạn.
 - Áp nhiều lớp cho "Không báo cáo": đợt tháng FT trùng mã giữa các lớp FT; đợt Progress / Final lớp thường chỉ trùng khi cùng tuần thi — lớp không có đợt đó được bỏ qua và toast ghi "n lớp không có đợt này".
-- TVV: không bỏ / thêm đợt (như yêu cầu "trừ TVV"); vẫn xuất Excel như cũ.
+- TVV: không bỏ / thêm / sửa đợt (như yêu cầu "trừ TVV"); vẫn xuất Excel như cũ.
+- Ảnh các trạng thái **Sửa đợt / Đã xoá / Sắp mở** chưa chụp (khung trình duyệt của phiên bị ẩn lúc kiểm); đã bấm thử thật trên bản chạy (Sửa → tên mới ở ô chọn + chip tab; Xoá → nhóm "Đã xoá"; Khôi phục không qua toast) và có phép kiểm BC-16.
 
 ## Ghi chú ảnh
 - Ảnh **trước** = cùng trang, cùng dữ liệu, ẩn hai nút mới bằng DOM (bản chính chưa có nút nên giao diện trước PR y hệt). Ảnh **sau** chụp từ bản chạy thật sau `migrate`.

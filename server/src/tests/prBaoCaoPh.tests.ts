@@ -267,7 +267,6 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     const x = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null);
     assert(x.sheets.length === 1 && x.sheets[0].aoa[0].length === tr.em.length + 1, 'Excel một lớp theo đợt thêm');
     /* kiểm dữ liệu vào */
-    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, 3), han: d.addDaysIso(TODAY, 9) }), /./, 'mở trong tương lai');
     assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: TODAY, han: d.addDaysIso(TODAY, -1) }), /./, 'hạn trước ngày mở');
     assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [], mo: TODAY, han: TODAY }), /./, 'chưa chọn lớp');
 
@@ -286,6 +285,74 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(['bao_cao_ph.dot_them', 'bao_cao_ph.dot_xoa', 'bao_cao_ph.dot_hoan_xoa'].every((a) => acts.includes(a)), acts.join());
   }));
 
+  check('BC-16 · BC-DOT-QL: mọi việc rút lại được — sửa đợt (+ Hoàn tác), xoá / khôi phục NHIỀU lớp, đợt hẹn trước "Sắp mở", đợt "Đã xoá" khôi phục sau, khôi phục đợt bỏ nhiều lớp', () => thu(() => {
+    const lop2 = classId('MB FT 102');
+    const tomLai = (id: number, ma: string | null) => bc.trangBaoCaoPh(P.mbManager, id, ma);
+    const them = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop, lop2], ten: 'Đợt nhóm', mo: TODAY, han: d.addDaysIso(TODAY, 5) });
+    xoaNho();
+    assert(them.dotIds.length === 2, 'thêm cho hai lớp');
+    const maLop = (r: any, id: number) => r.ma.find((x: any) => x.classId === id).ma;
+
+    /* sửa cả hai lớp một lần → Hoàn tác trả đúng giá trị cũ */
+    const sua = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'sua', dotId: them.dotIds[0], classIds: [lop, lop2], ten: 'Đợt đã đổi', mo: TODAY, han: d.addDaysIso(TODAY, 9) });
+    assert(sua.dotIds.length === 2 && sua.cu.ten === 'Đợt nhóm' && sua.cu.han === d.addDaysIso(TODAY, 5), JSON.stringify(sua));
+    xoaNho();
+    for (const id of [lop, lop2]) assert(tomLai(id, null).dsDot.some((x: any) => x.ma === maLop(them, id) && x.nhan === 'Đợt đã đổi' && x.han === d.addDaysIso(TODAY, 9) && x.ten === 'Đợt đã đổi'), 'đã sửa ở ' + id);
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'sua', dotIds: sua.dotIds, ten: sua.cu.ten ?? '', mo: sua.cu.mo, han: sua.cu.han });
+    xoaNho();
+    assert(tomLai(lop, null).dsDot.find((x: any) => x.ma === maLop(them, lop))?.nhan === 'Đợt nhóm', 'Hoàn tác sửa: tên cũ');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.lrTeacher, { viec: 'sua', dotIds: sua.dotIds, mo: TODAY, han: TODAY }), /./, 'GV không sửa');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'sua', dotIds: sua.dotIds, mo: TODAY, han: d.addDaysIso(TODAY, -2) }), /./, 'hạn trước ngày mở');
+
+    /* xoá cả hai lớp từ một đợt (khớp theo tên / mở / hạn) → "Đã xoá" ở cả hai lớp; GV không thấy */
+    const xoa = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'xoa', dotId: them.dotIds[0], classIds: [lop, lop2] });
+    assert(xoa.dotIds.length === 2, JSON.stringify(xoa));
+    xoaNho();
+    for (const id of [lop, lop2]) {
+      const tr = tomLai(id, null);
+      assert(!tr.dsDot.some((x: any) => x.ma === maLop(them, id)) && tr.dsBo.some((x: any) => x.ma === maLop(them, id) && x.kieu === 'xoa'), 'đợt đã xoá ở mục Đã xoá: ' + id);
+    }
+    const the = tomLai(lop, maLop(them, lop));
+    assert(the.dot === null && the.daBo?.kieu === 'xoa', 'chọn đợt đã xoá → thẻ Đã xoá');
+    assert(!bc.trangBaoCaoPh(P.lrTeacher, lop, null).dsBo.length, 'GV không thấy đợt đã xoá');
+    /* khôi phục LẠI SAU (không qua toast): chỉ một lớp, rồi lớp còn lại bằng dotId + lớp */
+    const kp1 = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'hoan-xoa', dotId: them.dotIds[0], classIds: [lop] });
+    assert(kp1.dotIds.join() === String(them.dotIds[0]), 'chỉ khôi phục lớp đã chọn');
+    xoaNho();
+    assert(tomLai(lop, null).dsDot.some((x: any) => x.ma === maLop(them, lop)) && !tomLai(lop2, null).dsDot.some((x: any) => x.ma === maLop(them, lop2)), 'lớp 1 có lại, lớp 2 chưa');
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'hoan-xoa', dotId: them.dotIds[1], classIds: [lop2] });
+    xoaNho();
+    assert(tomLai(lop2, null).dsDot.some((x: any) => x.ma === maLop(them, lop2)), 'lớp 2 có lại');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'hoan-xoa', dotId: them.dotIds[0], classIds: [lop] }), /./, 'đợt đang dùng, không còn gì để khôi phục');
+
+    /* hẹn trước: không hiện cho GV, QL / Admin thấy ở Sắp mở, sửa / xoá được, tới ngày mở thì hiện */
+    const sap = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt hẹn', mo: d.addDaysIso(TODAY, 20), han: d.addDaysIso(TODAY, 27) });
+    xoaNho();
+    const ms = maLop(sap, lop);
+    const trQl = tomLai(lop, null);
+    assert(!trQl.dsDot.some((x: any) => x.ma === ms) && trQl.dsBo.some((x: any) => x.ma === ms && x.kieu === 'sap'), 'Sắp mở: QL thấy, chưa vào danh sách đợt');
+    assert(tomLai(lop, ms).daBo?.kieu === 'sap', 'chọn đợt sắp mở → thẻ');
+    assert(!bc.trangBaoCaoPh(P.lrTeacher, lop, null).dsBo.length, 'GV không thấy đợt sắp mở');
+    assertThrows(() => bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ms, phan: 'listening', studentId: trQl.em[0].id, muc: {}, chu: 'x' }), /./, 'chưa mở thì chưa viết');
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'sua', dotIds: sap.dotIds, ten: 'Đợt hẹn', mo: TODAY, han: d.addDaysIso(TODAY, 3) });
+    xoaNho();
+    assert(tomLai(lop, null).dsDot.some((x: any) => x.ma === ms), 'sửa ngày mở về hôm nay → đợt hiện');
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'xoa', dotIds: sap.dotIds });
+
+    /* khôi phục đợt BỎ cho nhiều lớp một lần + Hoàn tác của khôi phục = bỏ lại */
+    const dot0 = tomLai(lop, null).dsDot.find((x: any) => x.ma.startsWith('thang:')).ma;
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'bo', classIds: [lop, lop2], ma: dot0 });
+    const kpNhieu = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'khoi-phuc', classIds: [lop, lop2], ma: dot0 });
+    assert(kpNhieu.lopDoi.length + kpNhieu.boQua === 2 && kpNhieu.lopDoi.includes(lop), JSON.stringify(kpNhieu));
+    xoaNho();
+    assert(tomLai(lop, null).dsDot.some((x: any) => x.ma === dot0) && tomLai(lop, null).dsBo.every((x: any) => x.ma !== dot0), 'đợt bỏ khôi phục hết');
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'bo', classIds: kpNhieu.lopDoi, ma: dot0 });
+    xoaNho();
+    assert(!tomLai(lop, null).dsDot.some((x: any) => x.ma === dot0), 'Hoàn tác khôi phục = bỏ lại');
+    const acts = (conn.prepare("SELECT DISTINCT action FROM audit_logs WHERE action LIKE 'bao_cao_ph.dot_%'").all() as any[]).map((a) => a.action);
+    assert(['bao_cao_ph.dot_sua', 'bao_cao_ph.dot_xoa', 'bao_cao_ph.dot_hoan_xoa', 'bao_cao_ph.dot_khoi_phuc'].every((a) => acts.includes(a)), acts.join());
+  }));
+
   check('BC-15 · BC-DOT-QL: dsDotLop gộp đợt tính + đợt thêm − đợt bỏ; đợt chưa tới ngày mở không hiện', () => {
     const l = { ft: true, batDau: '2026-09-01', progress: null, final: null };
     const them = { ma: 'them:9', loai: 'them', mo: '2026-11-05', han: '2026-11-12', ten: null };
@@ -293,6 +360,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(a.ds.map((x: any) => x.ma).join() === 'thang:2026-11,them:9,thang:2026-09', a.ds.map((x: any) => x.ma).join());
     assert(a.daBo.map((x: any) => x.ma).join() === 'thang:2026-10' && a.dau === null, 'daBo / dau');
     assert(d.nhanDotBc(them, '2026-11-24').startsWith('Đợt ') && d.nhanDotBc({ ...them, ten: 'Kiểm tra giữa kỳ' }, '2026-11-24') === 'Kiểm tra giữa kỳ', d.nhanDotBc(them, '2026-11-24'));
+    assert(a.sapMo.map((x: any) => x.ma).join() === 'them:10', 'đợt hẹn trước: sapMo, không vào ds');
     const b = d.dsDotLop(l, '2026-11-24');
     assert(b.ds.length === 3 && b.daBo.length === 0, 'không tuỳ chỉnh = như cũ');
   });
