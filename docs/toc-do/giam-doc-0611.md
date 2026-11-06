@@ -46,8 +46,9 @@ Số đo là bước máy ảo + dòng quét / trả của SQLite, không phải
 2. **[XM-B] Quản lý / Admin / CX một chi nhánh đọc mọi Case cả hệ thống rồi lọc quyền trong mã**: `napCaseMo(null)` (Công việc QL) và `listCases(p, {})` (Danh sách Case,
    `/signals`, `/metrics/*`, Phân tích Báo cáo, Tổng quan V5 `kemBaoCao=1`) SCAN `sos_cases` (bản chính 573) + tra lượt / em từng Case. DOC-IT-3 / RA-DOC-0611b đã lọc tập cha
    cho GV (quyền theo lớp); với quyền theo chi nhánh tập cha phải gồm cả Case của em có ghi danh CŨ ở chi nhánh đó + `students.branch_id` (luật `branchesOfStudent`) + lớp có phân công
-   → cần phép kiểm "giống hệt" mọi tài khoản như RA-DOC-0611b. Ước: QL ~150 lần Công việc / ngày × ~1 500 dòng bớt ≈ **0,2 triệu dòng / ngày** + trang Case / Phân tích ít mở.
-   Đề xuất làm thành PR riêng nếu PTA đồng ý.
+   → cần phép kiểm "giống hệt" mọi tài khoản như RA-DOC-0611b. Tập cha đúng luật `grantCovers` phải đọc cả lượt của mọi lớp chi nhánh (bản chính ~850 lượt / chi nhánh lớn)
+   + ghi danh mọi trạng thái → câu tập cha tự đọc gần bằng phần bớt (SCAN 573 Case + tra lượt / em). Ước lợi ròng QL ~150 lần Công việc / ngày ≈ **0,1–0,15 triệu dòng / ngày**,
+   chạm luật quyền. Đề xuất: chỉ làm nếu Turso Top Queries sau deploy cho thấy câu Case QL đứng đầu.
 3. **[XM-3] còn lại**: `/hoc-vien-lop` GV / QL 48–50 câu · 5 200–7 000 dòng ×3; `/tong-quan/v5?ct=ft` QL 35 câu · 6 500 dòng ×3; Tổng quan GV 49 câu. Câu nặng nhất đều đi
    chỉ mục (lượt, điểm, Case của lớp mình) — dòng = em × lượt, không có câu thừa / lặp / quét cả bảng. Không làm.
 4. `SELECT name FROM branches WHERE id = ?` hỏi lại trong cùng request (Tổng quan GV, hồ sơ GV: +1 câu) — `branches` không có trigger phiên bản để nhớ theo tiến trình; thêm trigger =
