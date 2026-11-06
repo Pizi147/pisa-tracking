@@ -22,6 +22,8 @@ type Kho = {
   moc?: unknown;
   /** TL-NEN: request này đã ghi DB (sau bước kiểm phiên) → không dùng nhớ tiến trình của bảng tham chiếu nữa. */
   coGhi?: boolean;
+  /** Bộ nhớ MỘT request cho giá trị chỉ đổi qua đúng một hàm có tên (xem `nhoCaRequest`) — mở cho MỌI request, kể cả ghi; `xoaNho` KHÔNG xoá. */
+  rieng?: Map<string, unknown>;
 };
 
 /**
@@ -94,6 +96,25 @@ export function nho<T>(khoa: string, tinh: () => T): T {
   if (process.env.PISA_DONG_BANG_NHO === '1') giaTri = dongBangMotTang(giaTri);
   s.nho.set(khoa, giaTri);
   return giaTri;
+}
+
+/**
+ * Nhớ MỘT request cho giá trị cấu hình ít đổi, đọc ở cả request GHI (nơi `nho` không mở): công tắc "Mở sửa lịch Test" được hỏi mỗi lần kiểm
+ * khoá cuối tuần — ghi hàng loạt hỏi từng em thì tốn một câu mỗi em. CHỈ dùng cho giá trị có MỘT nơi duy nhất đổi nó, và nơi đó gọi
+ * `quenNhoCaRequest(khoa)` ngay sau khi ghi (ghi từ request khác không ảnh hưởng — request đang chạy chấp nhận thấy bản lúc nó bắt đầu hỏi).
+ * Ngoài request (phép kiểm gọi thẳng hàm, lệnh ops) → tính thẳng, không nhớ.
+ */
+export function nhoCaRequest<T>(khoa: string, tinh: () => T): T {
+  const s = kho.getStore();
+  if (!s) return tinh();
+  const m = (s.rieng ??= new Map());
+  if (m.has(khoa)) return m.get(khoa) as T;
+  const v = tinh();
+  m.set(khoa, v);
+  return v;
+}
+export function quenNhoCaRequest(khoa: string): void {
+  kho.getStore()?.rieng?.delete(khoa);
 }
 
 /** Đặt thẳng một giá trị vào bộ nhớ (dùng khi nạp trước theo lô — `napTruocPhamVi`). Không có bộ nhớ → bỏ qua. */

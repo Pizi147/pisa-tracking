@@ -8,6 +8,7 @@
  * Đọc Turso: `getConfig` đã đi qua bộ nhớ request + bộ nhớ tham chiếu (bảng `demo_config` có trigger phiên bản) — tắt thì 0 câu thêm.
  */
 import { getConfig, setConfig } from '../demoConfig.ts';
+import { nhoCaRequest, quenNhoCaRequest } from './nguCanhRequest.ts';
 import { db, tx } from '../db.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, require_, type Ctx, type Principal } from '../permissions.ts';
@@ -19,7 +20,8 @@ export const KHOA_MO_SUA_LICH_TEST = 'mo_sua_lich_test';
 export type TrangThaiMoSua = { bat: boolean; nguoi: string | null; luc: string | null };
 
 /** Trạng thái hiện tại (chưa từng bật → tắt). Dữ liệu hỏng → tắt (an toàn: về luật N15 / N23). */
-export function trangThaiMoSua(): TrangThaiMoSua {
+export const trangThaiMoSua = (): TrangThaiMoSua => nhoCaRequest(KHOA_MO_SUA_LICH_TEST, docTrangThai);
+function docTrangThai(): TrangThaiMoSua {
   try {
     const v = JSON.parse(getConfig(KHOA_MO_SUA_LICH_TEST) || 'null');
     if (v && v.bat === true) return { bat: true, nguoi: typeof v.nguoi === 'string' ? v.nguoi : null, luc: typeof v.luc === 'string' ? v.luc : null };
@@ -84,6 +86,7 @@ export function datMoSua(p: Principal, bat: unknown): TrangThaiMoSua {
       actorUserId: p.userId, action: bat ? 'mo_sua_lich_test.bat' : 'mo_sua_lich_test.tat', entityType: 'cai_dat', entityId: null,
       entityLabel: 'Mở sửa lịch Test', before: { bat: !bat }, after: { bat },
     });
+    quenNhoCaRequest(KHOA_MO_SUA_LICH_TEST);
     return { bat, nguoi: ten, luc };
   });
 }

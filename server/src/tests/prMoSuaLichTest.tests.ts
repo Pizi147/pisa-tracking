@@ -18,7 +18,8 @@ export async function runPrMoSuaLichTestTests(t: any) {
   const perm: any = await import('../permissions.ts');
   const msl: any = await import('../platform/moSuaLichTest.ts');
   const { setConfig, getConfig } = await import('../demoConfig.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const nc: any = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho } = nc;
   const { boLichTuTao } = await import('./luotThu.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -137,6 +138,21 @@ export async function runPrMoSuaLichTestTests(t: any) {
     msl.datMoSua(P.admin, false);
     assert(ma(() => ss.setSkillWeek(G, m1, 'reading', pid(W.c3), {})) === 403, 'tắt lại: GVCN 403');
     assert(loi(() => ss.setSkillWeek(QL, k1, 'reading', pid(W.sau), {})) === L, 'tắt lại: QL bị khoá T6');
+  }));
+
+  check('MSL-7 · Đọc Turso: request GHI hỏi công tắc 200 lần = tối đa 1 câu SQL (nhớ MỘT request, kể cả không phải GET); bật / tắt trong request thì lần hỏi sau thấy bản mới', () => thu(() => {
+    const { chayTrongRequest, soCauSql } = nc;
+    const dem = (method: string, fn: () => void) => { const t0 = soCauSql(); chayTrongRequest(method, fn); return soCauSql() - t0; };
+    for (const method of ['POST', 'GET']) {
+      const n = dem(method, () => { for (let i = 0; i < 200; i++) msl.boKhoaCuoiTuan(QL, { classId: MB_FT, studentId: 1 }); });
+      assert(n <= 1, `${method}: 200 lần hỏi tốn ${n} câu (tối đa 1)`);
+    }
+    let thay: boolean[] = [];
+    chayTrongRequest('PUT', () => { thay.push(msl.dangMoSuaLichTest()); msl.datMoSua(P.admin, true); thay.push(msl.dangMoSuaLichTest()); });
+    assert(thay[0] === false && thay[1] === true, `trong cùng request: ${thay}`);
+    let moi = false;
+    chayTrongRequest('POST', () => { moi = msl.dangMoSuaLichTest(); });
+    assert(moi, 'request mới thấy bản BẬT');
   }));
 
   check('MSL-6 · Dữ liệu công tắc hỏng / không phải boolean thật → coi như TẮT (về N15, N23)', () => thu(() => {
