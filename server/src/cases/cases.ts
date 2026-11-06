@@ -3922,7 +3922,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     const cam = input.decision !== undefined
       ? !quyetDinhChoPa({ preset: true }, false).includes(input.decision as PlanDecision)
       : mode === 'end';
-    if (cam) throw badRequest('PA theo quy chế — không thay, không kết thúc sớm. GVCN / Quản lý: "Kết thúc PA" ở menu ⋯ của PA, kèm lý do.');
+    if (cam) throw badRequest('PA theo quy chế — không thay, không kết thúc sớm. GVCN / Quản lý: "Kết thúc sớm…" ở thẻ PA, kèm lý do.');
   }
 
   /*
