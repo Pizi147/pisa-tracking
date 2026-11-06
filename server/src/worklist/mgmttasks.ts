@@ -705,5 +705,6 @@ export function myMgmtTasks(p: Principal) {
       progressLabel: TASK_PROGRESS_LABEL[t.progress as TaskProgress] ?? t.progress,
       overdue: !closed(t.progress) && !!t.due_date && t.due_date < today,
       group: t.group_key ?? null,
+      branchId: (t.branch_id ?? null) as number | null,   // RA-LOI-0711f: chi nhánh của việc — QL CN khác không thấy (`viecCuaNguoi`)
     }));
 }
