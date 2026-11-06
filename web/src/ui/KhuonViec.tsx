@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { duongHoSoHocVien, mucDiem } from '@shared/domain/index.ts';
 import { lopKq } from './BieuTuong.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
+import { KhungTrongThe, NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
 import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
 
 /**
@@ -15,6 +15,8 @@ import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
  * Đầu panel 2 dòng = `KhungPanel dau`. Chân = `KhungPanel chan` (dòng trạng thái + nút chính dính đáy ở 375).
  */
 export function CanLam({ children, trongDong }: { children: ReactNode; /** OV-12e: trong dòng mở rộng (nền dòng đã accent-soft) → nền surface. */ trongDong?: boolean }) {
+  /* CASE-PA-UI (v16 d1 · e1 · k5): form đặt trong thẻ PA — thẻ đã là khung, không hộp lồng hộp. */
+  if (useContext(KhungTrongThe)) return <div className="flex flex-col gap-3.5">{children}</div>;
   return (
     <div className="flex flex-col gap-3.5 rounded-[4px_10px_10px_4px] py-4 pl-[19px] pr-4 max-sm:py-3.5 max-sm:pl-[15px] max-sm:pr-3"
       style={{ background: trongDong ? 'var(--surface)' : 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>

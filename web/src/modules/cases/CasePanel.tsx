@@ -452,11 +452,11 @@ function PhuTrach({ data, toi, onDoi, reload }: { data: CaseDetail; toi: number 
       {daDoi && !moHop && <DaDoi key={daDoi.ten} chu={t('Đã đổi')} hoanTac={daDoi.cu ? () => doi(daDoi.cu!, data.ownerUserId ?? null) : undefined} onXong={() => setDaDoi(null)} />}
       {loi && <span role="alert" className="basis-full text-[13px] text-bad">⚠ {loi}</span>}
       {moHop && (
-        <div className="basis-full sm:max-w-[340px]">
+        <div className="w-full basis-full"><div className="sm:max-w-[340px]">
           <ChonNguoi nhom="giao_vien" choToi={false} choNgoai={false} tuMo ariaLabel={t('Người phụ trách')} ds={ds}
             value={data.ownerUserId ? { kieu: 'tai_khoan', id: data.ownerUserId, ten } : null}
             onChange={(v) => { if (v?.kieu === 'tai_khoan') void chon(v.id); else setMoHop(false); }} />
-        </div>
+        </div></div>
       )}
     </>
   );
@@ -496,7 +496,7 @@ function NguyenNhan({ data, sua, nhap, onDoi }: { data: CaseDetail; sua: boolean
       {nhap && nhap.v.length > 0 && <span className="text-[13px] text-faint">{t('lưu cùng Mô tả')}</span>}
       {chinh?.observation && !laMt && laKhac(chinh.code) && !moHop && <span className="basis-full text-[13px] text-slate-300">{t('Khác')}: {chinh.observation}</span>}
       {moHop && (
-        <div className="flex basis-full flex-col gap-2 rounded-[10px] border p-3 sm:max-w-[420px]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+        <div className="w-full basis-full"><div className="flex flex-col gap-2 rounded-[10px] border p-3 sm:max-w-[420px]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
           <span className="text-xs font-semibold text-faint">{t('{kn} · chọn một hoặc nhiều (chọn trước = chính)', { kn: data.categoryLabel ?? '' })}</span>
           <ChonNhom skill={data.topic ?? ''} ct={data.chuongTrinh ?? null} value={v} onChange={(x) => { setV(x); if (!(!laMt && x[0] && laKhac(x[0]))) void luu(x, ghiRo); }} />
           {canGhiRo && (
@@ -506,7 +506,7 @@ function NguyenNhan({ data, sua, nhap, onDoi }: { data: CaseDetail; sua: boolean
           {canGhiRo && ghiRo.trim().length < KHAC_TOI_THIEU && <span className="text-[13px] text-soon">{t('Ghi rõ ít nhất {n} ký tự để lưu', { n: KHAC_TOI_THIEU })}</span>}
           {loi && <span role="alert" className="text-[13px] text-bad">⚠ {loi}</span>}
           <span className="flex justify-end"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { if (canGhiRo) void luu(v, ghiRo); setMoHop(false); }}>{t('Xong')}</button></span>
-        </div>
+        </div></div>
       )}
     </>
   );
@@ -706,6 +706,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   const toast = useToast();
   const bao = useContext(BaoLuuCase);
   const [sua, setSua] = useState<'noiDung' | 'buoi' | 'nguoi' | 'batDau' | null>(null);
+  useEffect(() => { if (!mo) setSua(null); }, [mo]);   // gập thẻ = thôi ô đang sửa (chữ đã tự lưu)
   const [busyXoa, setBusyXoa] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const vw = data.viewer;
@@ -827,10 +828,10 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
             {iv.performer ? <>{iv.performer}{iv.byProxy && iv.recordedBy ? <span className="ban"> {t('({recordedBy} nhập hộ)', { recordedBy: iv.recordedBy })}</span> : null}</> : <span className="font-semibold text-soon">{t('Chưa chọn')}</span>}
           </GiaTriSua>
           {tt('nguoi') && (
-            <div className="basis-full sm:max-w-[340px]">
+            <div className="w-full basis-full"><div className="sm:max-w-[340px]">
               <ChonNguoi nhom="giao_vien" studentId={data.student?.id} value={null} tuMo ariaLabel={t('Người dạy')} placeholder={t('Gõ tên để tìm')}
                 onChange={(x) => void luuNgay(async () => { const d = await api.patch<CaseDetail>(`/interventions/${iv.id}`, datLaiNguoi(x)); onDoi(d); })} />
-            </div>
+            </div></div>
           )}
         </dd>
       </>}
