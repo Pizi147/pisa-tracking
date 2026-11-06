@@ -4,7 +4,7 @@ import { Fragment, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { ChipLoc, KHOI, MUC_H, TenEm } from './BangHoSoLop.tsx';
 import { DongCase, type CanHoTro } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';

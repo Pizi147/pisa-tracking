@@ -109,6 +109,7 @@
  "web/src/modules/students/LuuTruPage.tsx",
  "web/src/modules/students/MissingBadge.tsx",
  "web/src/modules/students/NganCase.tsx",
+ "web/src/modules/students/NganCaseLuoi.tsx",
  "web/src/modules/students/NganTongKet.tsx",
  "web/src/modules/students/NganXuatDs.tsx",
  "web/src/modules/students/PanelBuocTiep.tsx",

@@ -30,3 +30,22 @@ Cách đo như `tai-nhanh-0611.md`: `vite build` → `vite preview` (5714) + API
 - Request API: không đổi (cùng danh sách từng trang) → Turso không đổi.
 - Bấm thử bản build 1440 tối: Công việc QL tab Case học thuật → "Phối hợp" mở panel Báo PH; mở thẳng `?viec=baoph:25`; hồ sơ lớp MB FT 101;
   Kế hoạch Test; GV Trần Ngọc Hà Chấm Test tự mở lưới "Nhập điểm · W1 JUL". Không lỗi console.
+
+## PR TAI-NHANH-0711b — panel Case (`NganCase`) tải lười (nối sau PR a)
+
+| JS mở trang (gzip) | Sau PR a | Sau PR b |
+|---|---|---|
+| Công việc | 317,1 KB | **290,1 KB (−27 KB)** |
+| hồ sơ lớp | 533,5 KB | **501,6 KB (−32 KB)** |
+| Học viên & Lớp | 442,8 KB | **398,7 KB (−44 KB)** |
+| hồ sơ HV | 506,8 KB | 511,0 KB (+4 KB: chia mảnh) |
+| Mock Test chi tiết · lượt thường | 440,0 · 447,2 KB | 444,1 · 451,4 KB (+4 KB, cùng lý do) |
+| Tổng quan · Test · Phân tích | 224,8 · 338,5 · 247,9 KB | 225,1 · 338,9 · 248,1 KB |
+
+- `students/NganCaseLuoi.tsx` (vỏ `lazyTai` + `Suspense`) thay `NganCase` ở mọi nơi chỉ mở Case sau một bấm / `?case=`: Công việc, Chờ duyệt, hồ sơ lớp
+  (bảng FT + bảng lớp thường), Học viên & Lớp (panel một em), trang Case riêng, panel Case ở hồ sơ HV / Mock / lượt thường, ô số Phân tích.
+- GIỮ nhập tĩnh: `CotCaseHv` (cột Case hồ sơ HV) và `CaseLuotKn` (Case trong lượt Mock / lượt thường) — hai nơi này MỞ SẴN Case khi tải trang
+  (Case của tôi / Case duy nhất), tải lười sẽ thêm một nhịp chờ trước `/cases/{id}`. `PanelViec` cũng giữ tĩnh (đã nằm trong mảnh lười).
+- Mảnh `NganCase` có trong `NAP_SAN` qua `PanelViec` → bấm Case sau trang đầu mở ngay. Request API không đổi → Turso không đổi.
+- Bấm thử bản build 1440 tối: hồ sơ lớp MB FT 101 → ô S "✗ 5.0" → "Xem chi tiết" mở panel "CASE HỌC THUẬT · Case Speaking · MT3"; hồ sơ HV 70
+  (mảnh Case nạp từ đầu như cũ); Học viên & Lớp. Không lỗi 5xx.

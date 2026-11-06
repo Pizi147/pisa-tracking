@@ -13,7 +13,7 @@ import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
-import { NganCase } from '../students/NganCase.tsx';
+import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { BAC_1, IconNhom, KeBac2, NET_CAY, NguoiGiu, ThePhu, chuDau } from '../congViec/DanhSachViec.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
