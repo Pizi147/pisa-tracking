@@ -2786,6 +2786,16 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
 
   const where: string[] = ['1=1'];
   const params: unknown[] = [];
+  /*
+   * GIAM-DOC-0611: `COALESCE(...) = ?` không chỉ mục nào dùng được → SCAN cả `sos_cases` (panel một em, Lịch thi). Lọc trước TẬP CHA đi chỉ mục: Case gắn em
+   * (`idx_case_student`) ∪ Case của lượt của em (`idx_attempt_student`, `idx_case_attempt`); điều kiện cũ vẫn lọc sau → tập kết quả không đổi. `json_each`: hai tham số.
+   */
+  const emCua = f.studentId ? [f.studentId] : f.studentIds?.length ? f.studentIds : null;
+  if (emCua) {
+    where.push(`sc.id IN (SELECT x.id FROM json_each(?) j JOIN sos_cases x ON x.student_id = j.value
+                          UNION SELECT x.id FROM json_each(?) j JOIN assessment_attempts a2 ON a2.student_id = j.value JOIN sos_cases x ON x.attempt_id = a2.id)`);
+    params.push(JSON.stringify(emCua), JSON.stringify(emCua));
+  }
   if (f.studentId) { where.push('COALESCE(sc.student_id, a.student_id) = ?'); params.push(f.studentId); }
   if (f.studentIds?.length) { where.push(`COALESCE(sc.student_id, a.student_id) IN (${f.studentIds.map(() => '?').join(',')})`); params.push(...f.studentIds); }
   /*
