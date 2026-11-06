@@ -1574,7 +1574,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: t.progressLabel,
       tieuDe: t.title,
       actionLabel: 'Cập nhật',
-      href: `/cong-viec?viec=mgmt:${t.id}`,
+      href: `/cong-viec?viec=mgmt:${t.id}`, cn: t.branchId,
       ownerId: p.userId, owner: null, mine: true,
       due: t.due, statusLabel: t.progressLabel,
     });
@@ -1714,7 +1714,7 @@ function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined
   for (const it of items) {
     const l = it.classId ? lopCua(it.classId) : null;
     it.khung = l ? khungCua(l.mode) : null;
-    it.cn = it.classId ? bangLop().get(it.classId)?.branchId ?? null : null;
+    it.cn = it.classId ? bangLop().get(it.classId)?.branchId ?? null : it.cn ?? null;   // việc không gắn lớp: giữ chi nhánh đã gắn (Giao việc)
   }
 }
 
@@ -1742,7 +1742,10 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
   const loc = (w.items as WorkItem[]).filter((it) => !laViecChamCheo(it) || it.key === KHOA_CHAM_SPEAKING);
   const lt = lamThayCua(p, loc);
   const cuaGv = new Set(loc.filter((it) => it.mine).map((it) => it.key));   // `mine` gốc (của GV đó) — bị ghi đè `false` bên dưới
-  const xemDuoc = (it: WorkItem) => (it.group === 'mgmt' && it.classId === null && it.studentId === null) || it.key === KHOA_CHAM_SPEAKING
+  /* RA-LOI-0711f (chủ SP 06/11 "QL chỉ thấy việc chi nhánh mình" — mới hơn PT-7 ở trên): việc Giao việc của chi nhánh người xem không quản lý thì ẩn
+     (`cn` = `tasks.branch_id`, đã đọc sẵn — 0 câu thêm); việc không gắn chi nhánh vẫn hiện. */
+  const xemDuoc = (it: WorkItem) => (it.group === 'mgmt' && it.classId === null && it.studentId === null
+      && (pv.branchIds == null || it.cn == null || pv.branchIds.includes(it.cn))) || it.key === KHOA_CHAM_SPEAKING
     || ((it.classId !== null || it.studentId !== null) && can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: it.classId, studentId: it.studentId }));
   /*
    * CV-TAB b (chủ SP 06/11): QL một chi nhánh chỉ thấy việc ở chi nhánh mình (lọc quyền xem lớp / em ở trên — đã đúng từ trước); việc của GV ở chi nhánh

@@ -74,4 +74,27 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
     assert(khac.size ? xem.cnAn.length === khac.size : xem.cnAn.length === 0, `cnAn ${JSON.stringify(xem.cnAn)} ≠ ${khac.size} chi nhánh khác`);
     console.log(`    GV hai chi nhánh có việc ở > 1 CN: ${coHai} · GV ${gvCp.id} việc CN khác ẩn: ${khac.size}`);
   });
+
+  /* RA-LOI-0711f (chủ SP 06/11 "QL chỉ thấy việc chi nhánh mình" — mới hơn OV-11c PT-7): việc Giao việc (`tasks`, không gắn lớp) mang chi nhánh của việc. */
+  check('CVT-4 · việc được giao (Giao việc) của GV: QL Cẩm Phả xem GV chỉ thấy việc CP; việc chi nhánh khác ẩn; GV tự xem thấy cả hai, dòng có `cn`', () => {
+    const conn = db();
+    const cp = P.cpManager.grants.find((x: any) => x.roleKey === 'manager')?.branchId as number;
+    const gv = conn.prepare(`SELECT ta.user_id AS id FROM teacher_assignments ta JOIN classes cl ON cl.id = ta.class_id WHERE ta.status = 'active' AND cl.branch_id = ?
+      GROUP BY ta.user_id HAVING COUNT(DISTINCT cl.branch_id) > 1 OR 1 ORDER BY COUNT(DISTINCT cl.branch_id) DESC LIMIT 1`).get(cp) as any;
+    const khac = (conn.prepare('SELECT id FROM branches WHERE id != ? ORDER BY id LIMIT 1').get(cp) as any).id as number;
+    assert(gv && khac, 'seed thiếu GV Cẩm Phả / chi nhánh khác');
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      const them = (cn: number) => Number(conn.prepare(`INSERT INTO tasks (code, title, kind, branch_id, assignee_user_id, progress, created_at) VALUES (?, ?, 'branch_ops', ?, ?, 'not_started', ?)`)
+        .run(`CVT4-${cn}`, `Việc thử CN ${cn}`, cn, gv.id, TODAY).lastInsertRowid);
+      const tCp = them(cp), tKhac = them(khac);
+      xoaNho();
+      const xem = (mywork.viecCuaNguoi(P.cpManager, gv.id, null).items as any[]).map((x) => x.key);
+      assert(xem.includes(`mgmt:${tCp}`), `QL CP phải thấy việc CP: ${xem.filter((k) => k.startsWith('mgmt'))}`);
+      assert(!xem.includes(`mgmt:${tKhac}`), `QL CP không được thấy việc chi nhánh ${khac}: ${xem.filter((k) => k.startsWith('mgmt'))}`);
+      xoaNho();
+      const tu = (mywork.myWork(loadPrincipal(gv.id), {}).items as any[]).filter((x) => x.group === 'mgmt');
+      assert(tu.find((x) => x.key === `mgmt:${tCp}`)?.cn === cp && tu.find((x) => x.key === `mgmt:${tKhac}`)?.cn === khac, `GV tự xem: ${JSON.stringify(tu.map((x) => [x.key, x.cn]))}`);
+    } finally { conn.exec('ROLLBACK'); xoaNho(); }
+  });
 }
