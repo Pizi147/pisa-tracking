@@ -1,7 +1,7 @@
 /**
  * PHÉP KIỂM TL-NEN (TRANG-LON S3, kế hoạch `docs/superpowers/plans/2026-10-31-trang-lon.md`):
  * N1 bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB (`moc_he_thong` 'tham-chieu' + 15 trigger) ·
- * N2 quét đường đọc theo mốc DB toàn hệ thống (60 s, sau mỗi lần ghi qua API, sang ngày nghiệp vụ).
+ * N2 quét đường đọc theo mốc DB toàn hệ thống (60 s, sau mỗi lần ghi qua API khi lượt trước ≥ 15 s — GIAM-DOC-0611, sang ngày nghiệp vụ).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -247,17 +247,29 @@ export async function runPrTlNenTests(t: any) {
     });
   });
 
-  await checkAsync('N2-b · RF3: GV ghi thành công → mốc NULL trong DB → GET của QL quét ngay; GET thứ hai trong 60 s không quét', async () => {
+  await checkAsync('N2-b · RF3 + GIAM-DOC-0611: GV ghi thành công → mốc lùi 45 s MỘT lần → GET trong 15 s không quét; lượt trước ≥ 15 s → GET của QL quét; GET thứ hai không quét', async () => {
     await voiMayChu(async (goi) => {
-      conHan();
-      const r = await goi(P.coreTeacher.userId, '/notifications/doc-het', { method: 'POST', body: '{}' });
-      assert(r.status < 400, `ghi ${r.status}`);
-      await new Promise((ok) => setTimeout(ok, 20));   // móc chạy ở 'finish'
-      assert(mocQuet().every((q) => q.luc === null), JSON.stringify(mocQuet()));
+      const luc = new Date(Date.now() - 5_000).toISOString();   // vừa quét 5 s trước
+      datMocQuet(luc);
+      const ghi = async () => {
+        const r = await goi(P.coreTeacher.userId, '/notifications/doc-het', { method: 'POST', body: '{}' });
+        assert(r.status < 400, `ghi ${r.status}`);
+        await new Promise((ok) => setTimeout(ok, 20));   // móc chạy ở 'finish'
+      };
+      await ghi();
+      const lui = new Date(Date.parse(luc) - 45_000).toISOString();
+      assert(mocQuet().every((q) => q.luc === lui), `mốc phải lùi 45 s (${lui}): ${JSON.stringify(mocQuet())}`);
+      await ghi();
+      assert(mocQuet().every((q) => q.luc === lui), `ghi lần hai không lùi thêm: ${JSON.stringify(mocQuet())}`);
+      assert(cauQuet(await ghiCau(() => goi(P.mbManager.userId, '/my-work'))).length === 0, 'lượt trước < 15 s vẫn quét');
+      datMocQuet(new Date(Date.now() - 61_000).toISOString());   // = lượt trước 16 s, đã lùi 45 s
       const lan1 = await ghiCau(() => goi(P.mbManager.userId, '/my-work'));
       assert(lan1.some((s) => CAU_QUET[1].test(s)) && lan1.some((s) => CAU_QUET[3].test(s)), 'GET của QL không quét');
       const lan2 = await ghiCau(() => goi(P.mbManager.userId, '/my-work'));
       assert(cauQuet(lan2).length === 0, `GET thứ hai vẫn quét: ${cauQuet(lan2).join(' | ')}`);
+      datMocQuet(null);
+      await ghi();
+      assert(mocQuet().every((q) => q.luc === null), 'mốc NULL giữ NULL (quét ngay)');
     });
   });
 
@@ -359,7 +371,7 @@ export async function runPrTlNenTests(t: any) {
     });
   });
 
-  await checkAsync('N2-i · việc đã xong không còn báo chờ: thẻ chết + một lần ghi qua API → /yeu-cau/dem của QL ngay sau giảm', async () => {
+  await checkAsync('N2-i · việc đã xong không còn báo chờ: thẻ chết + một lần ghi qua API → /yeu-cau/dem của QL giảm khi lượt trước ≥ 15 s (GIAM-DOC-0611)', async () => {
     const { DINH_NGHIA_LOAI } = await import('../duyet/loaiYeuCau.ts');
     const d: any = await import('../../../shared/domain/index.ts');
     const yc: any = await import('../duyet/yeuCau.ts');
@@ -380,6 +392,8 @@ export async function runPrTlNenTests(t: any) {
         const r = await goi(P.coreTeacher.userId, '/notifications/doc-het', { method: 'POST', body: '{}' });
         assert(r.status < 400, `ghi ${r.status}`);
         await new Promise((ok) => setTimeout(ok, 20));
+        assert(await dem() === truoc, 'lượt trước < 15 s đã quét');   // GIAM-DOC-0611: trễ tối đa 15 s
+        datMocQuet(new Date(Date.now() - 61_000).toISOString());   // = 16 s sau lượt trước (mốc đã lùi 45 s)
         const sau = await dem();
         assert(sau === truoc - 1, `${truoc} → ${sau}`);
       });

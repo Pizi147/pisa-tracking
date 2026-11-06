@@ -5,7 +5,7 @@ import { coGhiTrongRequest, coNho, layMoc, nho } from './nguCanhRequest.ts';
  * MỐC CHUNG TOÀN HỆ THỐNG (TL-NEN, TRANG-LON S3) — bảng `moc_he_thong` (migrate/prTlNen.ts), đọc kèm câu phiên (`COT_MOC`, auth.ts): 0 câu thêm.
  * (1) `tham-chieu`: phiên bản bảng tham chiếu (lớp, chương trình, cấu hình) do trigger tăng → `nhoThamChieu` nhớ THEO TIẾN TRÌNH giữa các
  *     request, đọc lại khi số đổi (người ghi ở tiến trình nào cũng vậy). (2) `quet:*`: lượt quét đường đọc chạy TOÀN HỆ THỐNG theo mốc
- *     (chủ SP 31/10): ≥ 60 s từ lần quét trước, HOẶC đã có một lần ghi qua API (`xoaMocQuetSauGhi`), HOẶC sang ngày nghiệp vụ khác.
+ *     (chủ SP 31/10): ≥ 60 s từ lần quét trước, HOẶC đã có một lần ghi qua API và lượt trước ≥ 15 s (`luiMocQuetSauGhi`, GIAM-DOC-0611), HOẶC sang ngày nghiệp vụ khác.
  */
 export type KhoaQuet = 'quet:yeu-cau' | 'quet:lenh' | 'quet:doi-qua-han';
 export type MocHeThong = { thamChieu: number | null; quet: Partial<Record<KhoaQuet, { luc: string | null; ngay: string | null }>> };
@@ -96,7 +96,16 @@ export function quetTheoMoc(khoa: KhoaQuet, homNay: string, fn: () => void): boo
   });
 }
 
-/** Một lần ghi thành công qua API → GET kế (của bất kỳ ai, tiến trình nào) quét lại. */
-export function xoaMocQuetSauGhi(): void {
-  db().prepare("UPDATE moc_he_thong SET luc = NULL WHERE khoa LIKE 'quet:%' AND luc IS NOT NULL").run();
+/** GIAM-DOC-0611 [XM-A] (chủ SP 06/11 đồng ý): sau một lần ghi, quét lại khi lượt trước đã đủ từng này — trước quét ngay ở GET kế, gần như mỗi lần ghi một lượt. */
+export const QUET_SAU_GHI_MS = 15_000;
+
+/**
+ * Một lần ghi thành công qua API → lượt quét kế (của bất kỳ ai, tiến trình nào) chạy khi lượt trước đã ≥ `QUET_SAU_GHI_MS` (thẻ tự tạo / tự đóng trễ tối đa 15 s).
+ * Lùi mốc MỘT lần: mốc mới hơn `now − 45 s` (lượt vừa quét, chưa lùi) → mốc − 45 s, tức hết hạn 60 s ở lượt trước + 15 s; ghi tiếp không lùi thêm (mốc đã cũ hơn
+ * `now − 45 s`). Mốc NULL / cũ hơn giữ nguyên (đằng nào cũng quét trong ≤ 15 s).
+ */
+export function luiMocQuetSauGhi(): void {
+  const lui = QUET_DOC_MS - QUET_SAU_GHI_MS;
+  db().prepare(`UPDATE moc_he_thong SET luc = strftime('%Y-%m-%dT%H:%M:%fZ', luc, ?) WHERE khoa LIKE 'quet:%' AND luc > ?`)
+    .run(`-${lui / 1000} seconds`, new Date(Date.now() - lui).toISOString());
 }
