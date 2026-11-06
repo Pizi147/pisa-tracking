@@ -1,35 +1,40 @@
-import { useContext, useEffect, useState, type ReactNode } from 'react';
-import { ThanTrongCot } from '../../ui/KhungPanel.tsx';
-import { MenuKetQua, MenuPa } from './MenuXoaPa.tsx';
-import { KhoaNho, NhatKyPa, VachBuoi } from './FormPa.tsx';
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { KhungTrongThe, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
+import { NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { ApiError, api, invalidate } from '../../lib/api.ts';
+import { hoanTacXoa } from '../../lib/thungRac.ts';
+import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { NhanTrangThai, Outcome } from '../../ui/ui.tsx';
+import { Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { CHIP_VUONG, Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
-import { LinkLuot, MuiTen, NhanTamDung, TenCase, type LuotCase } from './SkillBoard.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
+import { LinkLuot, MuiTen, NhanTamDung, type LuotCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
-  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, INTERVENTION_STATUS_LABEL,
-  NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE,
-  chuAiLamDuoc, chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, ghiNhanhDuoc, nhanNguoiDay, nutDongPa, outcomeLabelFor, soDongNhatKyPa, tenMon, toiKyGhi, tuanLich,
-  type NguoiChon, type TrangThai,
+  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, NEXT_STEP_LABEL, NHAN_XET_MT_TOI_THIEU, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
+  chuAiLamDuoc, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, giaTriCuaPa, issuesForTopic, laKhac, laPaMacDinh, loiFormPa, nhanNguoiDay, nutDongPa, outcomeLabelFor,
+  tenMon, thanSuaPa, toiKyGhi, tuanLich,
+  type GiaTriPa, type TrangThai,
 } from '@shared/domain/index.ts';
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { DongBuoiTutor } from './BuoiTutorO.tsx';
-import type { BuoiTutor } from '@shared/domain/index.ts';
-import { DongDaLuu, GhiNhanh, type DaLuuNhanh } from './GhiNhanh.tsx';
+import type { BuoiTutor, TheYeuCauDto } from '@shared/domain/index.ts';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
-import { CanLam, NutChu } from '../../ui/KhuonViec.tsx';
+import { CanLam, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ketQuaGanNhat } from '../yThuc/CaseSosControls.tsx';
+import { XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
+import { GhiKetQuaPanel, SuaKetQuaPanel } from './CapNhatTuan.tsx';
+import { HoanThanhCasePanel, ThemPaPanel } from './ThaoTacCase.tsx';
+import { ChonNhom } from '../fasttrack/NhanXet.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
+import { BaoLuuCase, DaDoi, DaiDaXoa, GiaTriSua, LyDoChan, NutXoa, OGoTuLuu, gioLuu } from './TaiCho.tsx';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 
@@ -116,7 +121,9 @@ export type CaseDetail = {
     /** PR-LUI-a2: Mở lại (Case đã hoàn thành, QL/QT) · Sửa Case · Xoá Case / câu chặn · Kỹ năng khoá · tên để sửa. */
     coTheMoLai?: boolean; coTheSua?: boolean; xoa?: 'ngay' | 'xin' | null; choXoa?: boolean; khoaKyNang?: boolean; tenSua?: string | null;
     /** OV-13a (C): ⋯ "Kết thúc PA" cho PA theo quy chế đang chạy — GVCN lớp đang học · Quản lý. */
-    coTheKetThucPa?: boolean };
+    coTheKetThucPa?: boolean;
+    /** CASE-PA-UI (XM1): thẻ xin xoá Case đang chờ — người gửi Rút lại, QL duyệt tại chỗ. */
+    theXoa?: TheYeuCauDto | null };
 };
 
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
@@ -143,11 +150,6 @@ export function tenNganCase(d: { categoryLabel: string | null; category: string 
 
 const daBatDau = (iv: any) => iv.status === 'planned' || iv.status === 'started';
 
-/** Tone `Nhan` của trạng thái PA (trạng thái CÔNG VIỆC, không phải kết quả — mục 2.2): xanh dương đang chạy, tím chờ, xám xong/huỷ. */
-function toneTrangThaiPa(status: string): ToneNhan {
-  return status === 'completed' ? 'done' : status === 'cancelled' ? 'muted' : status === 'planned' ? 'muted' : 'doing';
-}
-
 /** Số ngày từ `tu` đến `den` (ISO), `null` khi thiếu. */
 function soNgayGiua(tu: string | null | undefined, den: string | null | undefined): number | null {
   if (!tu || !den) return null;
@@ -159,207 +161,516 @@ function soNgayGiua(tu: string | null | undefined, den: string | null | undefine
 /** M6 6b-2 (Q1): PA vừa thêm / vừa ghi kết quả — thẻ PA viền nhấn + "✓ {chu} · Hoàn tác" (đường đảo của form, 10 giây). */
 export type VuaDoiPa = { paId: number; chu: string; hoanTac?: () => Promise<void> };
 
+/** Đích khi mở panel Case (v16 i1 · i2): một panel cho mọi lối vào, cuộn tới đúng phần, thẻ đích viền nhấn — form việc mở sẵn. */
+export type DichCase =
+  | { loai: 'mo-ta' } | { loai: 'xac-nhan' } | { loai: 'them-pa' } | { loai: 'hoan-thanh' }
+  | { loai: 'pa'; paId: number } | { loai: 'ghi-ket-qua'; paId: number } | { loai: 'xac-nhan-pa'; paId: number };
+
+/** Form đang mở trong một thẻ PA (thay view riêng cũ — [XM3]). */
+type FormThe = 'xac-nhan' | 'ghi' | 'ket-thuc' | { suaKq: number };
+const tenForm = (f: FormThe) => (f === 'xac-nhan' ? t('Xác nhận PA') : f === 'ghi' ? t('Kết quả PA') : f === 'ket-thuc' ? t('Kết thúc PA') : t('Sửa kết quả'));
+
+/** Báo nơi mở (chân panel): form nào đang mở (chưa lưu) và lần lưu vừa xong (Hoàn tác theo sang việc kế). */
+export type BaoThanCase = { formMo: (ten: string | null) => void; daLuu: (x: DaLuuPanel) => void };
+
 /**
- * KHỐI CASE A (M6 6b-2, mockup `thiet-ke/v7/panel-pilot.html` "Case — phương án A", "Vòng 2 · chữ") — THÂN Case dùng chung cho mọi lối vào (Ngăn Case,
- * trang riêng, panel việc; M5 ② và trang lượt M4 dùng lại): một cột đọc từ trên xuống, mỗi mục một ĐẦU MỤC (`DauMuc`) — Case (tên · Điểm · Nguyên nhân ·
- * Mô tả) → Phương án (Chờ duyệt · xác nhận / Đang theo dõi; Đã kết thúc gập; việc của PA nằm ngay trong thẻ PA; dòng PA mang `data-pa-id` cho Hành trình
- * cuộn tới) → Kết luận → Lịch sử (gập) → Bằng chứng. Không vỏ, không chân — vỏ là `KhungPanel` của nơi gọi.
+ * THÂN CASE MỘT TUYẾN (CASE-PA-UI, mockup v16 a–k, chủ SP 06/11): Case (Phụ trách · Điểm · Nguyên nhân · Mô tả — bấm thẳng giá trị để sửa) → Phương án (thẻ PA bấm
+ * mở tại chỗ: xem đủ, sửa, xác nhận, ghi / sửa / xoá kết quả, nhật ký) → Kết luận (Hoàn thành Case + lý do chặn cạnh nút, form ngay trong mục) → Lịch sử · Bằng chứng
+ * → Xoá Case. Không view riêng, không ⋯, không panel lồng panel. Dùng chung: panel Case (mọi lối vào) và khối Case trong cột hồ sơ HV (N33 ①).
  */
-export function ThanCase({ data, onViec, onDoi, paNutChinh = null, paViec = null, vuaDoi = null, onHoanTac, anNutMoTa = false, lyDoKhoa = null, dauCoDiem = false }: {
-  /** U03 A2: đầu panel đã có tên Case + SOS + dải Điểm · Kỳ vọng — thân không lặp dòng tên Case và dòng Điểm. */
-  dauCoDiem?: boolean;
-  /** U02 (PTA 04/11): trong cột hồ sơ HV — lý do chưa hoàn thành được (PA quy chế chưa khép) vào ⓘ cạnh "Kết luận". */
-  lyDoKhoa?: ReactNode;
-  /** U02: nút "Mô tả Case" đã ở dòng tóm tắt Case (cột hồ sơ HV) — trường Mô tả chỉ ghi "Chưa có". */
-  anNutMoTa?: boolean;
-  /** 6c (#644 XM-4): PA mà việc đang mở (view dưới, panel việc) đã làm — thẻ PA đó không lặp thao tác của việc. */
-  paViec?: number | null;
-  data: CaseDetail; onViec: (v: ViewCase) => void; /** OV-13b: đã lưu tại chỗ (ghi nhanh, chọn người dạy, rút) — nơi gọi tải lại. */ onDoi?: () => void;
-  /** OV-14b: PA mà nút chính ở chân panel đã là "Xác nhận PA" — thẻ PA đó không lặp nút. */
-  paNutChinh?: number | null;
-  /** M6 6b-2 (Q1): PA vừa đổi ở form trong chuỗi Case; `onHoanTac` = đã hoàn tác xong (nơi gọi tải lại). */
-  vuaDoi?: VuaDoiPa | null; onHoanTac?: () => void;
+export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null, bao, onDaXoaCase, kyNangTiep = null }: {
+  data: CaseDetail; setData: (d: CaseDetail) => void; reload: () => void; onChanged?: () => void;
+  dich?: DichCase | null; bao?: BaoThanCase;
+  /** Xoá Case xong (vào Thùng rác) — nơi gọi vẽ dải Hoàn tác thay thân Case. */
+  onDaXoaCase: (x: { thungRacId: number | null; ten: string; soPa: number }) => void;
+  kyNangTiep?: { ten: string; di: () => void } | null;
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
+  const toast = useToast();
+  const toi = useSession().session?.user?.id ?? null;
+  const vw = data.viewer;
+  const canDong = data.status !== 'done';
   const primary = data.issues.find((i) => i.role === 'primary') ?? null;
-  const secondary = data.issues.filter((i) => i.role === 'secondary');
   const context = data.issues.filter((i) => i.role === 'context');
-  /* Đang chạy lên trên, đã xong xuống dưới; trong mỗi nhóm, mới nhất trước. OV-13b: PA mới của đề xuất đổi PA đang chờ / bị từ chối nằm ở dòng PA gốc. */
+  const laMt = !!data.sos?.laMt;
+  /* Đang chạy lên trên, đã khép xuống dưới; mới nhất trước. PA mới của đề xuất đổi PA đang chờ / bị từ chối nằm ở thẻ PA gốc. */
   const dsPa = [...(data.interventions ?? [])].filter((x) => !(x.laPaDoi && (x.approvalState === 'pending' || x.approvalState === 'declined'))).sort((a, b) =>
     Number(daBatDau(b)) - Number(daBatDau(a)) || (b.id as number) - (a.id as number));
-  /* Case A: PA còn mở chia "Chờ duyệt · xác nhận" (việc đang chờ ai đó) và "Đang theo dõi"; PA đã khép gập ở "Đã kết thúc". */
-  const paMo = dsPa.filter((x) => daBatDau(x));
-  const paCho = paMo.filter((x) => x.awaitingConfirmation || x.approvalState === 'pending' || x.chuaChay);
-  const paChay = paMo.filter((x) => !paCho.includes(x));
-  const paKhep = dsPa.filter((x) => !daBatDau(x));
   const lichSu = buildLichSu(data, ngan);
-  const chiXem = !data.viewer.canClose && data.status !== 'done';
-  /* Số bằng chứng ở đầu thẻ: cùng đường với `BangChung` (lời gọi đang bay dùng chung), thêm / gỡ xong thì tải lại. */
   const bc = useApi<{ rows: unknown[] }>(`/attachments?ownerType=sos_case&ownerId=${data.id}`, [data.id]);
-  /* OV-11d (HV-20): Case giữ sau "Overall đã đạt" (OV-1c) — nói ngay đầu Case, không chỉ trong Lịch sử thu gọn. */
-  const overallDat = data.status !== 'done' ? [...(data.milestones ?? [])].reverse().find((m) => m.kind === 'overall_dat') : null;
-  const diem = ketQuaGanNhat(data);
-  const khung = useContext(ThanTrongCot);
-  const [moBc, setMoBc] = useState(false);
-  const pa = (iv: any) => <TheKhoiPa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anXacNhan={iv.id === paNutChinh} anViec={iv.id === paViec}
-    vua={vuaDoi?.paId === iv.id ? vuaDoi : null} onHoanTac={onHoanTac} />;
-  const nhomPa = (ten: string, ds: any[]) => ds.length > 0 && (
-    <>
-      {paCho.length > 0 && paChay.length > 0 && <p className="m-0 mt-1 flex items-center gap-2 text-[13px] font-semibold text-slate-300">{ten} <span className={`${CHIP_VUONG} text-slate-300`} style={{ borderColor: 'var(--line-strong)' }}>{ds.length}</span></p>}
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">{ds.map(pa)}</ul>
-    </>
+  const box = useRef<HTMLDivElement>(null);
+
+  /* Thẻ mở · form trong thẻ · thẻ vừa đổi (viền nhấn + "✓ … · Hoàn tác" 10 giây) · dải đã xoá PA. Đích mở sẵn theo lối vào. */
+  const dauForm = (): [number, FormThe] | null => {
+    if (!dichMo) return null;
+    if (dichMo.loai === 'ghi-ket-qua') return [dichMo.paId, 'ghi'];
+    if (dichMo.loai === 'xac-nhan-pa') return [dichMo.paId, 'xac-nhan'];
+    return null;
+  };
+  const [mo, setMo] = useState<Record<number, boolean>>(() => {
+    const id = dichMo && 'paId' in dichMo ? dichMo.paId : null;
+    return id ? { [id]: true } : {};
+  });
+  const [form, setForm] = useState<Record<number, FormThe | undefined>>(() => { const f = dauForm(); return f ? { [f[0]]: f[1] } : {}; });
+  const [vuaDoi, setVuaDoi] = useState<VuaDoiPa | null>(null);
+  const [daXoaPa, setDaXoaPa] = useState<{ paId: number; ten: string; thungRacId: number | null; viTri: number } | null>(null);
+  const [themPa, setThemPa] = useState(dichMo?.loai === 'them-pa');
+  const [hoanThanh, setHoanThanh] = useState(dichMo?.loai === 'hoan-thanh');
+  const dichPa = dichMo && 'paId' in dichMo ? dichMo.paId : null;
+  const tenFormMo = themPa ? t('PA mới') : hoanThanh ? t('Hoàn thành Case')
+    : (() => { const k = Object.entries(form).find(([, f]) => f); return k ? tenForm(k[1]!) : null; })();
+  useEffect(() => { bao?.formMo(tenFormMo); }, [tenFormMo]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* Cuộn tới phần đích một lần khi mở (Mô tả · thẻ PA · form). */
+  useEffect(() => {
+    const sel = dichPa ? `[data-pa-id="${dichPa}"]` : dichMo?.loai === 'them-pa' ? '[data-pa-moi]' : dichMo?.loai === 'hoan-thanh' ? '[data-ket-luan]' : null;
+    if (sel) box.current?.querySelector<HTMLElement>(sel)?.scrollIntoView({ block: 'nearest' });
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  const lamMoi = () => { reload(); onChanged?.(); };
+  /* Lưu tại chỗ (Case / một PA): máy chủ trả đúng Case vừa đổi → thay dữ liệu, không tải lại cả Case; danh sách việc làm mới. */
+  const nhan = (d: CaseDetail) => { setData(d); invalidate('/my-work'); invalidate('/students'); onChanged?.(); };
+  const xongForm = (paId: number) => (x?: DaLuuPanel) => {
+    setForm((f) => ({ ...f, [paId]: undefined })); setMo((m) => ({ ...m, [paId]: false }));
+    setVuaDoi({ paId: x?.paId ?? paId, chu: x?.chu ?? t('Đã lưu'), hoanTac: x?.hoanTac });
+    if (x) bao?.daLuu(x);
+    lamMoi();
+  };
+
+  /* ─── Case: Phụ trách · Điểm · Nguyên nhân · Mô tả */
+  const suaCase = !!vw.coTheSua && canDong;
+  const [nhomNhap, setNhomNhap] = useState<string[]>([]);   // Case MT chưa mô tả: nhóm lưu CÙNG mô tả (một lần ghi, như Mô tả Case cũ)
+  const choNhanXet = data.trangThaiV4?.k === 'cho-nhan-xet';
+  const choXacNhan = data.trangThaiV4?.k === 'cho-nguyen-nhan' && !!vw.coTheXacNhanCase && canDong;
+  const s = data.choXacNhanS?.coTheXacNhan && canDong ? data.choXacNhanS : null;
+  const viecMoTa = (choNhanXet && !!vw.canEdit) || !!s;
+  const nguoiViec = data.ownerUserId && data.ownerUserId !== toi ? data.owner : null;
+  const hanViec = data.viecTiep?.han ? ngan(data.viecTiep.han) : null;
+  const nhanViec = viecMoTa ? <span className="nhan-viec">{nguoiViec ? t('việc của {ten}', { ten: nguoiViec }) : t('việc của bạn')}{hanViec ? ` · ${t('hạn {ngay}', { ngay: hanViec })}` : ''}</span> : null;
+
+  const caseMuc = choXacNhan ? (
+    /* Progress Test: Xác nhận Case MỘT bước (nhóm + mô tả + PA Bổ trợ) — form cũ đủ trường, đặt ngay trong mục Case. */
+    <div className="muc"><p className="muc-h">Case</p>
+      <KhungTrongThe.Provider value>
+        <XacNhanCasePanel data={data} onClose={() => {}} onXong={lamMoi} />
+      </KhungTrongThe.Provider>
+    </div>
+  ) : (
+    <div className="muc">
+      <p className="muc-h">Case</p>
+      {data.yeuCauCase && vw.canApprove && <div className="pb-2"><TheYeuCau gon yc={data.yeuCauCase} onXong={lamMoi} /></div>}
+      <dl className="fld">
+        <dt>{t('Phụ trách')}</dt>
+        <dd><PhuTrach data={data} toi={toi} onDoi={nhan} reload={reload} /></dd>
+        {ketQuaGanNhat(data) && <>
+          <dt>{t('Điểm')}</dt>
+          <dd><span>{ketQuaGanNhat(data)}</span>{data.luot && <LinkLuot luot={data.luot} kn={data.topic} />}</dd>
+        </>}
+        <dt>{t('Nguyên nhân')}</dt>
+        <dd><NguyenNhan data={data} sua={suaCase && !s} nhap={!primary && laMt ? { v: nhomNhap, dat: setNhomNhap } : null} onDoi={nhan} /></dd>
+        <dt>{t('Mô tả')}</dt>
+        <dd>
+          <MoTaCase data={data} sua={suaCase || !!s} viec={nhanViec} tuMo={dichMo?.loai === 'mo-ta' || (dichMo === null && viecMoTa)} nhomNhap={nhomNhap} onDoi={nhan} onXong={lamMoi} />
+          {primary?.observation && (primary.moTaTuMt || primary.byName) && (
+            <span className="nguon basis-full">{(primary.moTaTuMt ? [t('theo nhận xét {mt}', { mt: primary.moTaTuMt })] : [primary.byName, primary.createdAt ? ngan(primary.createdAt) : null]).filter(Boolean).join(' · ')}</span>
+          )}
+          {primary?.nhanXetPhuTrach && (
+            <span className="basis-full text-[13px] text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “<ChuDich chu={primary.nhanXetPhuTrach} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' } : null} />”</span>
+          )}
+          {data.note && <span className="basis-full text-[13px] text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></span>}
+        </dd>
+        {context.length > 0 && <>
+          <dt>{t('Bối cảnh')}</dt>
+          <dd>{context.map((i) => <Nhan key={i.id} tone="muted" dut title={i.observation ?? undefined}>{i.label}</Nhan>)}</dd>
+        </>}
+      </dl>
+    </div>
   );
+
+  /* ─── Phương án */
+  const themPaDuoc = !!vw.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam);
+  const coPaBatBuoc = (data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'));
+  const the = (iv: any) => (
+    <ThePa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} toi={toi}
+      mo={!!mo[iv.id]} setMo={(v) => setMo((m) => ({ ...m, [iv.id]: v }))}
+      form={form[iv.id] ?? null} setForm={(f) => { setForm((x) => ({ ...x, [iv.id]: f ?? undefined })); if (f) setMo((m) => ({ ...m, [iv.id]: true })); }}
+      dich={dichPa === iv.id} vua={vuaDoi?.paId === iv.id ? vuaDoi : null} onHoanTac={() => { setVuaDoi(null); lamMoi(); }}
+      onXongForm={xongForm(iv.id)} onDoi={nhan} lamMoi={lamMoi} kyNangTiep={kyNangTiep}
+      onDaXoa={(x) => { setDaXoaPa({ ...x, paId: iv.id, viTri: dsPa.indexOf(iv) }); lamMoi(); }} />
+  );
+  const theXoa = daXoaPa && (
+    <DaiDaXoa key={`xoa-${daXoaPa.paId}`} chu={<>{t('Đã xoá PA')} <b>{daXoaPa.ten}</b></>} thungRacId={daXoaPa.thungRacId}
+      onKhoiPhuc={() => { setDaXoaPa(null); lamMoi(); toast.push('ok', t('Đã khôi phục')); }} onHet={() => setDaXoaPa(null)} />
+  );
+  const dsThe = dsPa.filter((x) => x.id !== daXoaPa?.paId).map(the);
+  if (theXoa) dsThe.splice(Math.min(daXoaPa!.viTri, dsThe.length), 0, theXoa);
+  const paMuc = (
+    <div className="muc">
+      <p className="muc-h">{t('Phương án')}{dsPa.length > 0 && <span className="dem">{dsPa.length}</span>}
+        {themPaDuoc && !themPa && (
+          <span className="phai-h"><button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${dsPa.length ? '' : 'btn-primary'}`} onClick={() => setThemPa(true)}>{t('+ Thêm PA')}</button></span>
+        )}
+      </p>
+      <div className="ds-pa">
+        {themPa && (
+          <div className="the-pa mo moi-doi" data-pa-moi>
+            <div className="pa-dau" style={{ gridTemplateColumns: 'minmax(0,1fr)' }}><span className="ten-pa py-1 text-[15px] font-semibold">{t('PA mới')}</span></div>
+            <div className="pa-than">
+              <KhungTrongThe.Provider value>
+                <ThemPaPanel caseId={data.id} studentId={data.student?.id} coPaBatBuoc={coPaBatBuoc} onClose={() => setThemPa(false)}
+                  onSaved={(x) => { setThemPa(false); if (x?.paId) setVuaDoi({ paId: x.paId, chu: x.chu, hoanTac: x.hoanTac }); if (x) bao?.daLuu(x); lamMoi(); }} />
+              </KhungTrongThe.Provider>
+            </div>
+          </div>
+        )}
+        {dsPa.length === 0 && !themPa && !theXoa && (
+          <div className="rong-pa"><span>{t('Chưa có PA.')}{canDong && data.viecTiep?.loaiHan === 'lap-pa' && data.viecTiep.han ? <> {t('Case cần ít nhất 1 PA trước')} <b>{t('hạn {ngay}', { ngay: ngan(data.viecTiep.han) })}</b>.</> : null}</span></div>
+        )}
+        {dsThe}
+      </div>
+    </div>
+  );
+
+  /* ─── Kết luận: Hoàn thành Case luôn thấy với người có quyền ([XM5]); bị chặn = mờ + lý do cạnh nút + ⓘ (thay dòng khoá đỏ). */
+  const ht = data.hoanThanh ?? null;
+  const chan = data.closeBlockers ?? [];
+  const paBatBuoc = ht?.an ? (data.interventions ?? []).find((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started')) ?? null : null;
+  const lyNgan = ht?.an && ht.dong
+    ? (paBatBuoc ? t('chờ PA {ten} · {moc}', { ten: dich(INTERVENTION_KIND_LABEL[paBatBuoc.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paBatBuoc.kind), moc: dich(paBatBuoc.mocChu ?? '') }).replace(/ · $/, '') : dich(ht.dong))
+    : chan.length ? lyDoNgan(chan[0]) : null;
+  const toiPa = (id: number) => { setMo((m) => ({ ...m, [id]: true })); box.current?.querySelector<HTMLElement>(`[data-pa-id="${id}"]`)?.scrollIntoView({ block: 'center' }); };
+  const hienHoanThanh = canDong && !!vw.canClose && !data.sos?.tam;
+  const ketLuan = !canDong ? (
+    <div className="muc" data-ket-luan>
+      <p className="muc-h">{t('Kết luận')}</p>
+      <dl className="fld">
+        <dt>{t('Cả Case')}</dt>
+        <dd>{data.outcomeLabel ? <span className={`ket ${LOP_KET[OUTCOME_TONE[data.outcome as keyof typeof OUTCOME_TONE] ?? 'muted'] ?? 'cd'}`}>{dich(data.outcomeLabel)}</span> : <span>{t('Đã kết luận')}</span>}
+          <span className="text-[13px] text-slate-300">{data.outcomeNote ? `“${data.outcomeNote}”` : ''}{data.closedAt ? ` · ${t('kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}` : ''}</span></dd>
+      </dl>
+      <MoLaiCase data={data} onXong={lamMoi} />
+    </div>
+  ) : hoanThanh ? (
+    <div className="muc" data-ket-luan>
+      <p className="muc-h">{t('Hoàn thành Case')}</p>
+      <KhungTrongThe.Provider value>
+        <HoanThanhCasePanel caseId={data.id} category={data.category} categoryLabel={data.categoryLabel} ratio={!!data.ratio}
+          paGanNhat={(() => { const f = (data.followups ?? []).find((x: any) => x.outcome); return f ? outcomeLabelFor(f.outcome) : null; })()}
+          onClose={() => setHoanThanh(false)} onSaved={() => { setHoanThanh(false); lamMoi(); }} />
+      </KhungTrongThe.Provider>
+    </div>
+  ) : hienHoanThanh ? (
+    <div className="muc" data-ket-luan>
+      <p className="muc-h">{t('Kết luận')}</p>
+      <div className="ket-luan">
+        {lyNgan ? (
+          <LyDoChan id={`ly-kl-${data.id}`} nut={t('Hoàn thành Case')} ngan={lyNgan} chiTiet={<>
+            {ht?.an && ht.dong && <p className="m-0">{dich(ht.dong)}</p>}
+            {chan.map((x) => <p key={x} className="m-0">{dich(x)}</p>)}
+            <p className="m-0">{t('Case hoàn thành được khi mọi PA đã khép.')}</p>
+            {paBatBuoc && <button type="button" className="link-nho mt-1.5" onClick={() => toiPa(paBatBuoc.id)}>{t('Tới PA {ten} ↑', { ten: dich(INTERVENTION_KIND_LABEL[paBatBuoc.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paBatBuoc.kind) })}</button>}
+          </>} />
+        ) : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setHoanThanh(true)}>{t('Hoàn thành Case')}</button>}
+      </div>
+    </div>
+  ) : null;
 
   return (
+    <div ref={box} className="cs-than">
+      {!vw.canEdit && canDong && !s && <p className="bao-chi-xem m-0 mt-4">{chuAiLamDuoc(data.owner)}</p>}
+      {data.status !== 'done' && (() => { const od = [...(data.milestones ?? [])].reverse().find((m) => m.kind === 'overall_dat'); return od ? (
+        <p className="m-0 mt-3 rounded-lg bg-ok-bg px-3 py-2 text-[13px] text-ok">{t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: od.dot ?? (od.attemptNo ? `MT${od.attemptNo}` : '') })}</p>
+      ) : null; })()}
+      {caseMuc}
+      {paMuc}
+      {ketLuan}
+      <div className="muc !pt-2">
+        {lichSu.length > 0 && (
+          <details className="group">
+            <summary className="dong-gap cursor-pointer list-none"><span>{t('Lịch sử · {n}', { n: lichSu.length })}</span>
+              <span className="phai link-nho">{t('Xem')} <span aria-hidden className="inline-flex transition-transform group-open:rotate-90"><MuiTen mo={false} /></span></span></summary>
+            <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
+              {lichSu.map((m) => (
+                <li key={m.key} className="text-[13px]">
+                  <span className="block text-xs tabular-nums text-slate-400">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
+                  <span className="flex items-start gap-1.5 text-slate-200">
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">{m.tieuDe}{m.badge}</span>
+                    {m.xoaKq && <NutXoaKetQua f={m.xoaKq.f} onXong={lamMoi} />}
+                  </span>
+                  {m.than}
+                  {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
+                </li>
+              ))}
+            </ol>
+          </details>
+        )}
+        <div className="border-t pt-1" style={{ borderColor: lichSu.length ? 'var(--line)' : 'transparent' }}>
+          <BangChung ownerType="sos_case" ownerId={data.id} canEdit={vw.canEdit} tieuDe={t('Bằng chứng{x}', { x: bc.data?.rows.length ? ` · ${bc.data.rows.length}` : ' · chưa có' })} onChanged={bc.reload} />
+        </div>
+      </div>
+      <XoaCase data={data} toi={toi} onXong={lamMoi} onDaXoa={onDaXoaCase} />
+    </div>
+  );
+}
+
+/** Lý do ngắn cạnh nút từ câu chặn của máy chủ (`closeBlockers`) — không tính lại luật. */
+function lyDoNgan(x: string): string {
+  if (x.startsWith('Case chưa có phương án')) return t('cần ít nhất 1 PA');
+  const a = /^(\d+) phương án đang chờ Quản lý duyệt/.exec(x);
+  if (a) return t('{n} PA chờ QL duyệt', { n: a[1] });
+  const b = /^(\d+) phương án chưa cập nhật kết quả cuối/.exec(x);
+  if (b) return t('{n} PA chưa có kết quả cuối', { n: b[1] });
+  return dich(x);
+}
+
+/** Phụ trách (v16 c1 · c2): QL + GVCN lớp em (`doiChu`) bấm tên → hộp chọn ngay dưới, lưu ngay, "✓ Đã đổi · Hoàn tác"; người khác thấy chữ thường. */
+function PhuTrach({ data, toi, onDoi, reload }: { data: CaseDetail; toi: number | null; onDoi: (d: CaseDetail) => void; reload: () => void }) {
+  const [moHop, setMoHop] = useState(false);
+  const [daDoi, setDaDoi] = useState<{ cu: number | null; ten: string } | null>(null);
+  const [loi, setLoi] = useState<string | null>(null);
+  const bao = useContext(BaoLuuCase);
+  const duoc = data.status !== 'done' && !!data.doiChu?.duoc;
+  const ten = data.owner ?? t('Chưa có');
+  const ds = (data.doiChu?.ungVien ?? []).map((u) => ({ id: u.id, ten: u.ten ?? '—' }));
+  const doi = async (id: number, cu: number | null) => {
+    setLoi(null); bao({ tt: 'dang' });
+    const d = await api.post<CaseDetail>(`/cases/${data.id}/nguoi-phu-trach`, { ownerId: id, ownerCu: cu });
+    bao({ tt: 'da', luc: gioLuu() });
+    if (d && (d as any).id) onDoi(d); else { reload(); invalidate('/my-work'); }
+  };
+  const chon = async (id: number) => {
+    const cu = data.ownerUserId ?? null;
+    setMoHop(false);
+    if (id === cu) return;
+    try { await doi(id, cu); setDaDoi({ cu, ten: ds.find((u) => u.id === id)?.ten ?? '' }); }
+    catch (e: any) { bao({ tt: 'loi' }); setLoi(e?.message ?? t('Không lưu được')); if (e instanceof ApiError && e.status === 409) reload(); }
+  };
+  return (
     <>
-      {overallDat && (
-        <p className="m-0 mt-3 rounded-lg bg-ok-bg px-3 py-2 text-[13px] text-ok">
-          {t('Overall {x} đã đạt — xem và Hoàn thành Case', { x: overallDat.dot ?? (overallDat.attemptNo ? `MT${overallDat.attemptNo}` : '') })}
-        </p>
-      )}
-      {/* VIEW-CASE-LUOT (mockup panel-pilot đầu mục Case): có lượt → đầu mục "Case MT3 · W2 SEP" (link), tên Case (phần giữa + SOS) là dòng đầu ngay dưới; Case tay giữ tên ở đầu mục. */}
-      {/* U02 (PTA 04/11): trong cột không vẽ link lượt — lượt đã ở chip "MTn ✗ …" dòng tóm tắt, mở lượt bằng "MTn ›" của bảng Mock Test cùng trang. */}
-      <DauMuc dau tieuDe="Case" phu={khung ? null : data.luot ? <LinkLuot luot={data.luot} kn={data.topic} />
-        : <span className="min-w-0 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} /></span>}>
-        {data.luot && !khung && !dauCoDiem && <p className="m-0 -mt-1 text-[13px] font-medium text-slate-300"><TenCase c={{ title: data.title ?? data.headline, tenSos: data.tenSos ?? null }} luot={data.luot} anLuot /></p>}
-        {/* Case A (mockup audit 03/11 `.fld`, U02 c2 + U03 A2): khung trường nhãn trái 13 / 500 mờ | giá trị 15 sáng, mỗi hàng một kẻ; Nguyên nhân = thẻ,
-            Mô tả = đoạn trích vạch trái + nguồn 12 mờ dưới. Trong cột hồ sơ HV: Điểm đã ở dòng tóm tắt (chip MTn) — không lặp. "Ghi nhận" → "Mô tả" (N8). */}
-        <dl className="fld">
-          {diem && !khung && !dauCoDiem && <><dt>{t('Điểm')}</dt><dd>{diem}</dd></>}
-          {(primary || secondary.length > 0) && <>
-            {/* N8 (PTA rà #632): Nguyên nhân chỉ ghi NHÓM (chính trước, phụ sau) — câu nhận xét / mô tả nằm ở dòng Mô tả, không lặp. */}
-            <dt>{t('Nguyên nhân')}</dt>
-            <dd><span className="flex flex-wrap items-center gap-1.5">{[...(primary ? [primary] : []), ...secondary].map((x) => <span key={x.id} className="the-phu">{dich(x.label)}</span>)}</span></dd>
-          </>}
-          <dt>{t('Mô tả')}</dt>
-          <dd className="flex flex-col items-start gap-1">
-            {/* N8: mô tả Case = câu của nguyên nhân chính (cùng nguồn #626: đi theo nhận xét bài `moTaTuMt` — chỉ ghi lượt, vì ngày dòng là ngày đồng bộ,
-                không phải ngày GV nhận xét; hoặc người ghi / sửa riêng `byName` · ngày) ·
-                không có thì tóm tắt của Case · thật sự không có → "Chưa có" + "Mô tả Case" khi người xem làm được. */}
-            {primary?.observation || data.summary ? (
-              <MoTaGon dai={(primary?.observation ?? data.summary ?? '').length > 180}>
-                {primary?.observation
-                  ? <ChuDich chu={primary.observation} nguon={{ bang: 'case_issues', id: primary.id, cot: 'observation' }} />
-                  : <ChuDich chu={data.summary!} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} />}
-              </MoTaGon>
-            ) : (
-              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-faint">{t('Chưa có')}</span>
-                {data.viewer.canEdit && data.trangThaiV4?.k === 'cho-nhan-xet' && !anNutMoTa && (
-                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-nhan-xet' })}>{t('Mô tả Case')}</button>
-                )}
-              </span>
-            )}
-            {primary?.observation && (primary.moTaTuMt || primary.byName) && (
-              <span className="nguon">{(primary.moTaTuMt ? [t('theo nhận xét {mt}', { mt: primary.moTaTuMt })] : [primary.byName, primary.createdAt ? ngan(primary.createdAt) : null]).filter(Boolean).join(' · ')}</span>
-            )}
-            {primary?.observation && data.summary && <span className="text-[13px] text-slate-400"><ChuDich chu={data.summary} nguon={{ bang: 'sos_cases', id: data.id, cot: 'summary' }} /></span>}
-            {primary?.nhanXetPhuTrach && (
-              <span className="text-[13px] text-slate-300"><span className="text-slate-400">{t('Nhận xét GV phụ trách')}:</span> “<ChuDich chu={primary.nhanXetPhuTrach} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'nhan_xet_phu_trach', kyNang: 'speaking' } : null} />”</span>
-            )}
-            {data.note && <span className="text-[13px] text-slate-400"><ChuDich chu={data.note} nguon={{ bang: 'sos_cases', id: data.id, cot: 'note' }} /></span>}
-          </dd>
-          {khung && <>
-            {/* U02 c2: "Mở" = mã tuần; người báo xem ở Lịch sử, phụ trách ở dòng tóm tắt. */}
-            <dt>{t('Mở')}</dt>
-            <dd>{tuanLich(data.detectedAt, homNay)}</dd>
-          </>}
-          {context.length > 0 && <>
-            <dt>{t('Bối cảnh')}</dt>
-            <dd className="flex flex-wrap items-center gap-1.5">
-              {context.map((i) => <Nhan key={i.id} tone="muted" dut title={i.observation ?? undefined}>{i.label}</Nhan>)}
-            </dd>
-          </>}
-        </dl>
-      </DauMuc>
-
-      {/* U02 c2: trong cột "Phương án" không số, không ⓘ (luật vào ⓘ của Kết luận). */}
-      <DauMuc tieuDe={t('Phương án')} dem={khung ? undefined : dsPa.length || undefined}
-        luat={khung || dauCoDiem ? undefined : (
-          <>
-            <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
-            {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
-          </>
-        )}>
-        {!data.viewer.canEdit && data.status !== 'done' && !dauCoDiem && (
-          <p className="m-0 flex items-start gap-2 text-[13px] leading-relaxed text-slate-300 [text-wrap:pretty]"><span className="mt-0.5 text-slate-400"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
-        )}
-        {dsPa.length === 0 ? <p className="m-0 text-sm text-slate-400">{t('Chưa có PA.')}</p> : (
-          <>
-            {nhomPa(t('Chờ duyệt · xác nhận'), paCho)}
-            {nhomPa(t('Đang theo dõi'), paChay)}
-            {paKhep.length > 0 && (
-              <details open={paMo.length === 0 || paKhep.some((x) => x.id === vuaDoi?.paId)}>
-                <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] font-semibold text-slate-300 sm:min-h-0">
-                  {t('Đã kết thúc')} <span className={`${CHIP_VUONG} text-slate-300`} style={{ borderColor: 'var(--line-strong)' }}>{paKhep.length}</span>
-                </summary>
-                <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">{paKhep.map(pa)}</ul>
-              </details>
-            )}
-          </>
-        )}
-      </DauMuc>
-
-      {(dsPa.length > 0 || data.outcome || data.status === 'done') && (
-        <DauMuc tieuDe={t('Kết luận')}>
-          {data.outcome || data.status === 'done' ? (
-            <p className="m-0 text-[15px] text-slate-100">
-              {t('Đã kết luận')}{data.outcomeLabel && <>: <strong>{dich(data.outcomeLabel)}</strong></>}
-              {data.outcomeNote && <span className="text-slate-400"> — {data.outcomeNote}</span>}
-              {data.closedAt && <span className="text-slate-400"> {t('· kết thúc theo dõi {tuanLich}', { tuanLich: tuanLich(data.closedAt, homNay) })}</span>}
-            </p>
-          ) : khung || dauCoDiem ? (
-            /* U02 c2 · U03 A2: "chưa có ⓘ" — lý do khoá + luật PA trong ⓘ cạnh giá trị. */
-            <div className="flex items-center gap-1.5 text-[15px] text-slate-100">{t('chưa có')}
-              <NutLuat>
-                <>
-                  {lyDoKhoa && <p className="m-0">{lyDoKhoa}</p>}
-                  <p className="m-0">{t('Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.')}</p>
-                  {chiXem && <p className="m-0">{t('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này. Bạn vẫn ghi được kết quả của từng PA.')}</p>}
-                </>
-              </NutLuat>
-            </div>
-          ) : <p className="m-0 text-sm text-slate-400">{t('Chưa có · ghi khi mọi PA đã khép')}</p>}
-        </DauMuc>
-      )}
-
-      {lichSu.length > 0 && (
-        <details className={`group border-t ${khung ? 'py-2.5' : 'mt-[22px] pt-3'}`} style={{ borderColor: 'var(--line)' }}>
-          <summary className={`flex min-h-[44px] cursor-pointer list-none items-center gap-2 sm:min-h-[32px] ${khung ? 'sm:grid sm:grid-cols-[8.5rem_auto_auto] sm:justify-start sm:gap-x-0' : ''}`}>
-            {khung ? <><span className="text-[13px] font-medium text-slate-400">{t('Lịch sử')}</span><span className="text-[15px] font-semibold text-[color:var(--accent)]">{t('{n} thay đổi', { n: lichSu.length })}</span></>
-              : <TieuDeMuc tieuDe={t('Lịch sử')} dem={lichSu.length} />}
-            <span aria-hidden className="inline-flex text-slate-400 transition-transform group-open:rotate-90"><MuiTen mo={false} /></span>
-          </summary>
-          <ol className="m-0 mt-3 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
-            {lichSu.map((m) => (
-              <li key={m.key} className="text-[13px]">
-                <span className="block text-xs tabular-nums text-slate-400">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
-                <span className="flex items-start gap-1.5 text-slate-200">
-                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">{m.tieuDe}{m.badge}</span>
-                  {m.xoaKq && <MenuKetQua f={m.xoaKq.f} ten={m.xoaKq.ten} />}
-                </span>
-                {m.than}
-                {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
-              </li>
-            ))}
-          </ol>
-        </details>
-      )}
-
-      <DauMuc tieuDe={t('Bằng chứng')} dem={bc.data?.rows.length || undefined}>
-        {/* U02 (D7): trong cột, chưa có bằng chứng → "chưa có · + Thêm"; bấm mới mở khung thêm tệp / liên kết. */}
-        {khung && !moBc && bc.data && bc.data.rows.length === 0 ? (
-          <span className="flex flex-wrap items-center gap-x-3 text-[15px] text-slate-400">{t('chưa có')}
-            {data.viewer.canEdit && <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" onClick={() => setMoBc(true)}>{t('+ Thêm')}</button>}
-          </span>
-        ) : <BangChung ownerType="sos_case" ownerId={data.id} canEdit={data.viewer.canEdit} tieuDe="" onChanged={bc.reload} />}
-      </DauMuc>
-      {/* U03 A2 / U02 c2: ai làm được việc của Case — một dòng mờ CUỐI thân Case (không ở đầu mục Phương án). */}
-      {dauCoDiem && !data.viewer.canEdit && data.status !== 'done' && (
-        <p className="m-0 mt-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-400 [text-wrap:pretty]"><span className="mt-0.5"><KhoaNho /></span>{chuAiLamDuoc(data.owner)}</p>
+      <GiaTriSua kieu="chon" nhan={t('Đổi người phụ trách')} sua={duoc} mo={moHop} onClick={() => setMoHop(!moHop)}>
+        {ten}{data.ownerUserId && data.ownerUserId === toi ? <span className="ban"> ({t('bạn')})</span> : null}
+      </GiaTriSua>
+      {daDoi && !moHop && <DaDoi key={daDoi.ten} chu={t('Đã đổi')} hoanTac={daDoi.cu ? () => doi(daDoi.cu!, data.ownerUserId ?? null) : undefined} onXong={() => setDaDoi(null)} />}
+      {loi && <span role="alert" className="basis-full text-[13px] text-bad">⚠ {loi}</span>}
+      {moHop && (
+        <div className="basis-full sm:max-w-[340px]">
+          <ChonNguoi nhom="giao_vien" choToi={false} choNgoai={false} tuMo ariaLabel={t('Người phụ trách')} ds={ds}
+            value={data.ownerUserId ? { kieu: 'tai_khoan', id: data.ownerUserId, ten } : null}
+            onChange={(v) => { if (v?.kieu === 'tai_khoan') void chon(v.id); else setMoHop(false); }} />
+        </div>
       )}
     </>
   );
+}
+
+/**
+ * Nguyên nhân (v16 n1): thẻ nhóm (chính trước); người sửa được Case bấm → chọn nhóm ngay dưới (thứ tự chọn — 1 = chính), lưu khi chọn; "Khác" (Case không phải MT)
+ * mở ô Ghi rõ. Case MT chưa có mô tả: nhóm giữ tạm, lưu CÙNG mô tả (`nhap`).
+ */
+function NguyenNhan({ data, sua, nhap, onDoi }: { data: CaseDetail; sua: boolean; nhap: { v: string[]; dat: (v: string[]) => void } | null; onDoi: (d: CaseDetail) => void }) {
+  const bao = useContext(BaoLuuCase);
+  const [moHop, setMoHop] = useState(false);
+  const goc = [...data.issues.filter((i) => i.role === 'primary'), ...data.issues.filter((i) => i.role === 'secondary')];
+  const [v, setV] = useState<string[]>(() => nhap?.v.length ? nhap.v : goc.map((x) => x.code));
+  const chinh = data.issues.find((i) => i.role === 'primary') ?? null;
+  const [ghiRo, setGhiRo] = useState(chinh?.observation ?? '');
+  const [loi, setLoi] = useState<string | null>(null);
+  const laMt = !!data.sos?.laMt;
+  const canGhiRo = !laMt && !!v[0] && laKhac(v[0]);
+  const luu = async (nhom: string[], ro: string) => {
+    if (nhap) { nhap.dat(nhom); return; }
+    if (!nhom.length || (!laMt && laKhac(nhom[0]) && ro.trim().length < KHAC_TOI_THIEU)) return;
+    setLoi(null); bao({ tt: 'dang' });
+    try {
+      const d = await api.patch<CaseDetail>(`/cases/${data.id}`, { luc: data.capNhatLuc, nhom, ...(!laMt && laKhac(nhom[0]) ? { observation: ro.trim() } : {}) });
+      bao({ tt: 'da', luc: gioLuu() }); onDoi(d);
+    } catch (e: any) { bao({ tt: 'loi' }); setLoi(e?.message ?? t('Không lưu được')); }
+  };
+  const tags = (ds: { code: string; label: string }[]) => ds.length
+    ? <span className="flex flex-wrap items-center gap-1.5">{ds.map((x) => <span key={x.code} className="the-phu">{dich(x.label)}</span>)}</span>
+    : <span className="text-faint">{t('Chưa có')}</span>;
+  const nhanCua = (code: string) => issuesForTopic(data.topic ?? '', data.chuongTrinh ?? null).find((i) => i.code === code)?.label ?? code;
+  const hien = nhap ? nhap.v.map((c) => ({ code: c, label: nhanCua(c) })) : goc.map((x) => ({ code: x.code, label: x.label }));
+  return (
+    <>
+      <GiaTriSua kieu="chon" nhan={t('Sửa nguyên nhân')} sua={sua} mo={moHop} onClick={() => setMoHop(!moHop)}>{tags(hien)}</GiaTriSua>
+      {nhap && nhap.v.length > 0 && <span className="text-[13px] text-faint">{t('lưu cùng Mô tả')}</span>}
+      {chinh?.observation && !laMt && laKhac(chinh.code) && !moHop && <span className="basis-full text-[13px] text-slate-300">{t('Khác')}: {chinh.observation}</span>}
+      {moHop && (
+        <div className="flex basis-full flex-col gap-2 rounded-[10px] border p-3 sm:max-w-[420px]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
+          <span className="text-xs font-semibold text-faint">{t('{kn} · chọn một hoặc nhiều (chọn trước = chính)', { kn: data.categoryLabel ?? '' })}</span>
+          <ChonNhom skill={data.topic ?? ''} ct={data.chuongTrinh ?? null} value={v} onChange={(x) => { setV(x); if (!(!laMt && x[0] && laKhac(x[0]))) void luu(x, ghiRo); }} />
+          {canGhiRo && (
+            <input className="field w-full" aria-label={t('Ghi rõ nguyên nhân khác')} value={ghiRo} placeholder={t('Ví dụ: Chưa quen dạng bài mới')}
+              onChange={(e) => setGhiRo(e.target.value)} onBlur={() => void luu(v, ghiRo)} />
+          )}
+          {canGhiRo && ghiRo.trim().length < KHAC_TOI_THIEU && <span className="text-[13px] text-soon">{t('Ghi rõ ít nhất {n} ký tự để lưu', { n: KHAC_TOI_THIEU })}</span>}
+          {loi && <span role="alert" className="text-[13px] text-bad">⚠ {loi}</span>}
+          <span className="flex justify-end"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { if (canGhiRo) void luu(v, ghiRo); setMoHop(false); }}>{t('Xong')}</button></span>
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Mô tả (v16 a · b1 · b2 · b3 · k1): trống = ô trông như ô nhập (viền nhấn + "việc của bạn · hạn" khi là việc đang làm, con trỏ sẵn trong ô); có chữ = đoạn bấm được
+ * (bút) → ô gõ tự lưu 15–300 / MT ≥ 10 (N35). Case MT: mô tả = quan sát của nhóm chính; Case khác: tóm tắt Case. S chấm chéo (N8 ③): nhận xét chấm chéo ngay dưới —
+ * "Dùng nhận xét này" (1 bấm) hoặc gõ mô tả của mình (= Xác nhận Case, cách "viết").
+ */
+function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
+  data: CaseDetail; sua: boolean; viec: ReactNode; tuMo: boolean; nhomNhap: string[]; onDoi: (d: CaseDetail) => void; onXong: () => void;
+}) {
+  const laMt = !!data.sos?.laMt;
+  const chinh = data.issues.find((i) => i.role === 'primary') ?? null;
+  const s = data.choXacNhanS?.coTheXacNhan && data.status !== 'done' ? data.choXacNhanS : null;
+  const chu = (laMt ? chinh?.observation : data.summary) ?? (chinh?.observation || '');
+  const [go, setGo] = useState(() => tuMo && sua && (typeof window === 'undefined' || !window.matchMedia?.('(pointer: coarse)').matches));
+  const [daXn, setDaXn] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const toiThieu = laMt ? NHAN_XET_MT_TOI_THIEU : 15;
+  const luu = async (x: string) => {
+    if (s) { await api.post(`/cases/${data.id}/xac-nhan-s`, { cach: 'viet', moTa: x }); setDaXn(t('Đã xác nhận Case')); onXong(); return; }
+    const body = laMt ? { luc: data.capNhatLuc, observation: x, ...(!chinh ? { nhom: nhomNhap } : {}) } : { luc: data.capNhatLuc, summary: x };
+    const d = await api.patch<CaseDetail>(`/cases/${data.id}`, body);
+    onDoi(d);
+  };
+  const xacNhanS = async (cach: 'dung' | 'giu') => {
+    setBusy(true); setLoi(null);
+    try { await api.post(`/cases/${data.id}/xac-nhan-s`, { cach }); setDaXn(t('Đã xác nhận Case')); onXong(); }
+    catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+  };
+  const hoanTacS = async () => { await api.post(`/cases/${data.id}/hoan-tac-xac-nhan-s`); onXong(); };
+  const o = go ? (
+    <OGoTuLuu dau={s ? '' : chu} toiThieu={toiThieu} toiDa={TRAN_CHU.moTaCase} nhan={t('Mô tả')} placeholder={t('Em vướng gì ở {kn}? Gõ ở đây', { kn: data.categoryLabel ?? '' })}
+      chan={laMt && !chinh && !s && !nhomNhap.length ? t('Chọn Nguyên nhân ở trên để lưu') : null} goiY={viec} luu={luu} onDong={() => setGo(false)} />
+  ) : chu && !s ? (
+    sua ? <GiaTriSua kieu="chu" nhan={t('Sửa mô tả')} onClick={() => setGo(true)}><ChuDich chu={chu} nguon={laMt && chinh ? { bang: 'case_issues', id: chinh.id, cot: 'observation' } : { bang: 'sos_cases', id: data.id, cot: 'summary' }} /></GiaTriSua>
+      : <MoTaGon dai={chu.length > 180}><ChuDich chu={chu} nguon={laMt && chinh ? { bang: 'case_issues', id: chinh.id, cot: 'observation' } : { bang: 'sos_cases', id: data.id, cot: 'summary' }} /></MoTaGon>
+  ) : sua ? (
+    <button type="button" className={`o-trong ${viec ? 'viec-toi' : ''}`} onClick={() => setGo(true)}>
+      <span>{t('Em vướng gì ở {kn}? Gõ ở đây', { kn: data.categoryLabel ?? '' })}</span>{viec}
+    </button>
+  ) : <span className="text-faint">{t('Chưa có')}</span>;
+  return (
+    <>
+      {o}
+      {daXn && <DaDoi chu={daXn} hoanTac={hoanTacS} onXong={() => setDaXn(null)} />}
+      {s && (
+        <div className="flex basis-full flex-col gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
+          <span className="text-[13px] font-semibold">{t('Nhận xét chấm chéo · {ai} · {luot}', { ai: s.nguoiCham ?? '—', luot: s.luot })}</span>
+          {s.nhanXet && <span className="text-sm leading-relaxed">“<ChuDich chu={s.nhanXet} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'comment', kyNang: 'speaking' } : null} />”</span>}
+          <span className="flex flex-wrap items-center gap-2">
+            {s.nhanXet && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('dung')}>{t('Dùng nhận xét này')}</button>}
+            {chinh?.observation && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('giu')}>{t('Giữ mô tả đang có')}</button>}
+            <span className="text-[13px] text-faint">{t('hoặc gõ mô tả của bạn ở ô trên')}</span>
+          </span>
+          {chinh?.observation && <span className="text-[13px] text-slate-300">{t('Mô tả đang có')}: “{chinh.observation}”</span>}
+          {loi && <span role="alert" className="text-[13px] text-bad">⚠ {loi}</span>}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Mở lại Case đã hoàn thành (v16 h3) — QL / QT / người đã hoàn thành; Case hệ thống đóng nói đường mở. */
+function MoLaiCase({ data, onXong }: { data: CaseDetail; onXong: () => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const moLai = async () => {
+    setBusy(true);
+    try { await api.post(`/cases/${data.id}/mo-lai`); invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); toast.push('ok', t('Đã mở lại Case')); onXong(); }
+    catch (e: any) { toast.push('error', e?.message ?? t('Không mở lại được')); } finally { setBusy(false); }
+  };
+  if (data.viewer.coTheMoLai) return <div className="ket-luan"><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>{busy ? t('Đang mở lại…') : t('Mở lại')}</button></div>;
+  if (data.systemCloseLabel && data.viewer.canApprove) {
+    return <p className="m-0 pt-1 text-[13px] text-slate-400">{
+      data.systemCloseReason === 'course_ended' ? t('Hệ thống đóng — Hoàn tác Kết thúc học để mở')
+        : data.systemCloseReason === 'cho_chot_sos' ? t('Hệ thống đóng — Case mới tạo khi chốt lượt')
+        : data.systemCloseReason === 'overall_dat' ? t('Hệ thống đóng — Overall đã đạt')
+        : t('Hệ thống đóng · {lyDoHeThong}', { lyDoHeThong: dich(data.systemCloseLabel) })}</p>;
+  }
+  return null;
+}
+
+/**
+ * Xoá Case (v16 f3 · g2, N37) — hàng riêng cuối thân. 'ngay': Case còn PA → hỏi MỘT lần tại chỗ nêu đúng các PA; chưa có PA → xoá luôn; xong → dải Hoàn tác (nơi gọi).
+ * 'xin' (Case SOS / còn PA quy chế): "Đề nghị QL xoá Case" 1 bấm gửi → "Chờ QL duyệt xoá Case · Rút lại" (người gửi); QL mở Case: duyệt tại chỗ.
+ */
+function XoaCase({ data, toi, onXong, onDaXoa }: { data: CaseDetail; toi: number | null; onXong: () => void; onDaXoa: (x: { thungRacId: number | null; ten: string; soPa: number }) => void }) {
+  const toast = useToast();
+  const [hoi, setHoi] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const vw = data.viewer;
+  const pas = data.interventions ?? [];
+  const tenCase = (() => { const x = data.title ?? tenNganCase(data); const kn = data.categoryLabel; return kn && !x.startsWith(kn) ? `${kn} — ${x}` : x; })();
+  const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
+  const gui = async () => {
+    setBusy(true);
+    try {
+      const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/cases/${data.id}`);
+      setHoi(false);
+      if (r?.choDuyet) { lamMoi(); onXong(); return; }
+      onDaXoa({ thungRacId: r?.thungRacId ?? null, ten: tenCase, soPa: pas.length });
+      lamMoi();
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
+  };
+  const the = vw.theXoa ?? null;
+  if (the) {
+    return (
+      <div className="cuoi-case">
+        {vw.canApprove ? <div className="w-full"><TheYeuCau gon yc={the} onXong={onXong} /></div> : (
+          <div className="cho-xoa w-full"><span><b>{t('Chờ QL duyệt xoá Case')}</b> · {t('gửi {ngay}', { ngay: (the.taoLuc ?? '').slice(8, 10) + '/' + (the.taoLuc ?? '').slice(5, 7) })}</span>
+            {the.nguoiXinId === toi && <span className="phai"><RutLai id={the.id} onXong={onXong} /></span>}</div>
+        )}
+      </div>
+    );
+  }
+  if (!vw.xoa) return null;
+  return (
+    <div className="cuoi-case">
+      {!hoi && <NutXoa busy={busy} onClick={() => (vw.xoa === 'ngay' && pas.length > 0 ? setHoi(true) : void gui())}>{vw.xoa === 'xin' ? t('Đề nghị QL xoá Case') : t('Xoá Case')}</NutXoa>}
+      {hoi && (
+        <div className="hoi-xoa" role="alertdialog" aria-label={t('Xoá Case')}>
+          <span>{t('Xoá Case')} <b>{tenCase}</b> {t('và')} <b>{t('{n} PA', { n: pas.length })}</b> ({pas.map((x: any) => dichDu(x.description) || dich(INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? x.kind)).join(', ')})? {t('Vào Thùng rác, khôi phục được.')}</span>
+          <span className="hang">
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setHoi(false)}>{t('Thôi')}</button>
+            <button type="button" className="btn btn-sm nut-do min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void gui()}>{busy ? t('Đang xoá…') : t('Xoá Case + {n} PA', { n: pas.length })}</button>
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** "Rút lại" đề nghị xoá (XM1) — người gửi, thẻ QL chưa trả lời (`POST /yeu-cau/:id/rut`, máy chủ kiểm đúng người gửi). */
+function RutLai({ id, onXong }: { id: number; onXong: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const rut = async () => {
+    setBusy(true); setLoi(null);
+    try { await api.post(`/yeu-cau/${id}/rut`); invalidate('/cases'); invalidate('/yeu-cau'); invalidate('/my-work'); onXong(); }
+    catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); setBusy(false); }
+  };
+  return <>{loi && <span role="alert" className="text-[13px] text-bad">⚠ {loi}</span>}<button type="button" className="link-nho" disabled={busy} onClick={() => void rut()}>{busy ? t('Đang lưu…') : t('Rút lại')}</button></>;
+}
+
+/** "Xoá kết quả" (v16 d2 · n5) — cờ máy chủ `f.xoa`: 'ngay' vào Thùng rác + toast Hoàn tác; 'xin' (PA quy chế) gửi QL duyệt. Bị chặn → câu máy chủ. */
+function NutXoaKetQua({ f, onXong }: { f: { id: number; xoa: 'ngay' | 'xin' | null }; onXong: () => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  if (!f.xoa) return null;
+  const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan'); onXong(); };
+  const xoa = async () => {
+    setBusy(true);
+    try {
+      const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/followups/${f.id}`);
+      lamMoi();
+      if (r?.choDuyet) toast.push('ok', t('Đã gửi QL duyệt xoá kết quả PA'));
+      else hoanTacXoa(toast, r?.thungRacId, t('Đã xoá kết quả PA'), lamMoi);
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
+  };
+  return <NutXoa busy={busy} onClick={() => void xoa()}>{f.xoa === 'xin' ? t('Đề nghị QL xoá kết quả') : t('Xoá kết quả')}</NutXoa>;
 }
 
 /** U02 dòng 7 (N35, `00` 21 "Mô tả dài"): mô tả = đoạn trích vạch trái (`.trich`); dài ≤ 3 dòng + "Xem đầy đủ" tại chỗ — không cắt dữ liệu lưu; nút Dịch nằm trong chữ (ChuDich) như cũ. */
@@ -377,307 +688,279 @@ function MoTaGon({ dai, children }: { dai: boolean; children: ReactNode }) {
   );
 }
 
-/** Chữ đầu mục (luật chữ đầu mục, M6): vạch 3 × 18 px màu nhấn + 15 / 700 + chip đếm vuông. */
-function TieuDeMuc({ tieuDe, dem }: { tieuDe: string; dem?: number }) {
-  return (
-    <h3 className="m-0 flex items-center gap-2 text-[15px] font-bold leading-[1.35] text-slate-100">
-      <span aria-hidden className="h-[18px] w-[3px] shrink-0 rounded-sm" style={{ background: 'var(--accent)' }} />
-      {tieuDe}
-      {dem !== undefined && <span className={`${CHIP_VUONG} text-slate-300`} style={{ borderColor: 'var(--line-strong)' }}>{dem}</span>}
-    </h3>
-  );
-}
+const IC_PA = <svg viewBox="0 0 16 16" aria-hidden><path d="M4 6l4 4 4-4" /></svg>;
 
 /**
- * ĐẦU MỤC của khối Case A (luật chữ đầu mục, M6 — ghi ở DESIGN.md): đường kẻ trên, khoảng trên 22 px, chữ 15 / 700 có vạch nhấn, chip đếm; `phu` = chip
- * ngữ cảnh cùng hàng (tên Case, lượt); `luat` = ⓘ (V6). Dùng chung: Ngăn Case, trang lượt, M5 ②.
+ * THẺ PA (v16 d1 · d2 · e1–e3 · f1 · g1 · g2 · j2 · j3 · n3–n5): đầu thẻ là MỘT nút (aria-expanded) — tên · dòng phụ (quy chế · mốc · người dạy · buổi · KQ) · trạng thái
+ * là NÚT LÀM VIỆC (Xác nhận PA / Ghi kết quả) khi tới việc của người xem · ▾. Thẻ mở = xem đủ + sửa từng trường tại chỗ (Nội dung ≤ 200 · Số buổi ≥ đã dạy · Người dạy ·
+ * Bắt đầu khoá khi đã có kết quả; Loại không sửa — ⓘ), Kết quả gần nhất (bấm để sửa · Xoá kết quả), Nhật ký. PA chờ xác nhận: thẻ mở CHÍNH LÀ form xác nhận.
+ * Chân thẻ: Xoá PA / Đề nghị QL xoá PA (+ Rút lại) · Kết thúc sớm… · Mở lại PA · Ghi kết quả / Cập nhật trước hạn. Không ⋯, không panel lồng panel.
  */
-export function DauMuc({ tieuDe, dem, phu, luat, dau = false, children }: {
-  tieuDe: string; dem?: number; phu?: ReactNode; luat?: ReactNode; /** Mục đầu khối: không đường kẻ trên (nơi gọi đã có vạch / viền). */ dau?: boolean; children: ReactNode;
+function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: laDich, vua, onHoanTac, onXongForm, onDoi, lamMoi, onDaXoa, kyNangTiep }: {
+  iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; toi: number | null;
+  mo: boolean; setMo: (v: boolean) => void; form: FormThe | null; setForm: (f: FormThe | null) => void;
+  dich: boolean; vua: VuaDoiPa | null; onHoanTac: () => void; onXongForm: (x?: DaLuuPanel) => void;
+  onDoi: (d: CaseDetail) => void; lamMoi: () => void; onDaXoa: (x: { ten: string; thungRacId: number | null }) => void;
+  kyNangTiep: { ten: string; di: () => void } | null;
 }) {
-  /* U02 (mockup `.fld`): Case trong cột hồ sơ HV — mỗi mục một hàng khung trường, nhãn trái 13 mờ | nội dung phải; đầu mục "Case" không vẽ (dòng tóm tắt đã nói). */
-  const khung = useContext(ThanTrongCot);
-  if (khung && dau) return <section className="flex flex-col gap-2">{phu && <div className="flex flex-wrap items-center gap-2">{phu}</div>}{children}</section>;
-  if (khung) {
-    return (
-      <section className="grid border-t py-2.5 sm:grid-cols-[8.5rem_minmax(0,1fr)]" style={{ borderColor: 'var(--line)' }}>
-        <div className="flex items-start gap-1.5 pt-0.5 text-[13px] font-medium text-slate-400">
-          {tieuDe}{dem !== undefined && <span className="tabular-nums">({dem})</span>}{luat && <NutLuat>{luat}</NutLuat>}
-        </div>
-        <div className="flex min-w-0 flex-col gap-2">{phu && <div className="flex flex-wrap items-center gap-2">{phu}</div>}{children}</div>
-      </section>
-    );
-  }
-  return (
-    <section className={dau ? 'mt-4 first:mt-0' : 'mt-[22px] border-t pt-3'} style={{ borderColor: 'var(--line)' }}>
-      <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <TieuDeMuc tieuDe={tieuDe} dem={dem} />
-        {phu}
-        <span className="flex-1" />
-        {luat && <NutLuat>{luat}</NutLuat>}
-      </div>
-      <div className="flex flex-col gap-2">{children}</div>
-    </section>
-  );
-}
-
-/**
- * MỘT DÒNG PA (mockup §8, một mẫu cho mọi loại): tên loại + khoá quy chế + trạng thái · ⋯ (Sửa PA · Xoá PA) · nội dung ·
- * "Dạy X / Thực hiện X · Từ W1 OCT · mốc" · vạch buổi (PA có Số buổi) · chân gạch đứt "Kết quả · hạn T2 13/10" + nút · Nhật ký PA (n).
- */
-function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXacNhan = false, anViec = false, vua = null, onHoanTac }: {
-  iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; onViec: (v: ViewCase) => void;
-  onDoi?: () => void; anXacNhan?: boolean;
-  /** 6c (#644 XM-4): việc của PA này đang mở ở view dưới — không vẽ Xác nhận PA / Kết quả / ghi nhanh. */
-  anViec?: boolean;
-  /** M6 6b-2 (Q1): PA vừa đổi — viền nhấn + "✓ … · Hoàn tác". */
-  vua?: VuaDoiPa | null; onHoanTac?: () => void;
-  /** OV-13b: phần chi tiết dưới dòng PA gọn — không đầu dòng, không chân việc. */
-  anDau?: boolean;
-}) {
-  const dangChay = daBatDau(iv);
+  const toast = useToast();
+  const bao = useContext(BaoLuuCase);
+  const [sua, setSua] = useState<'noiDung' | 'buoi' | 'nguoi' | 'batDau' | null>(null);
+  const [busyXoa, setBusyXoa] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const vw = data.viewer;
+  const caseXong = data.status === 'done';
+  const nut = nutDongPa(iv, { caseXong, coTheKetThucPa: vw.coTheKetThucPa });
+  const tenLoai = dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind);
+  const tenPa = dichDu(iv.description) || tenLoai;
+  const ketQua = data.followups ?? [];
+  const fGan = ketQua.find((f: any) => f.interventionId === iv.id && f.outcome) ?? null;
+  const fSua = ketQua.find((f: any) => f.interventionId === iv.id && f.nextStep && f.suaDuoc) ?? null;
+  const coKetQua = ketQua.some((f: any) => f.interventionId === iv.id);
+  const dangChay = iv.status === 'started' || iv.status === 'planned';
   const choDuyet = iv.approvalState === 'pending';
-  /* LOI-TEST-THUONG: hook trước mọi return sớm (PA chờ → đang chạy đổi nhánh trên cùng thẻ). */
-  const khung = useContext(ThanTrongCot);
-  /* OV-13b (mockup OV-13 §2): PA ĐANG CHẠY = một dòng gọn; chờ xác nhận / chờ duyệt / đã khép giữ thẻ đầy đủ. */
-  if (!anDau && iv.status === 'started' && !choDuyet && !iv.awaitingConfirmation && !iv.chuaChay) {
-    return <DongPaGon iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anViec={anViec} vua={vua} onHoanTac={onHoanTac} />;
-  }
-  /* PR-LT2a → PR-CT2: PA Bổ trợ chưa chạy = chờ Xác nhận Case (không có "Xác nhận PA", không có "Kết quả"). */
-  const bt = data.boTro ?? null;
-  const chuaChay = !!iv.chuaChay;
+  const xacNhanDuoc = !!(vw.canEdit && iv.awaitingConfirmation && data.sos?.hasCause) && !caseXong;
   const hanGhi = iv.actionDue && dangChay ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
+  const toiKy = toiKyGhi(iv.actionDue, homNay);
+  const ghiDuoc = nut.ketQua && !iv.awaitingConfirmation && !iv.chuaChay && iv.ghiDuoc !== false;
+  const theXoa = iv.theXoa ?? null;
+  const dem = iv.soBuoi != null ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
   const all: any[] = data.interventions ?? [];
-  const tenPA = (x: any) => dichDu(x.description) || INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] || x.kind;
-  /* OV-13b: `superseded_by` khi PA gốc CHƯA khép = đề xuất đổi PA còn chờ — chưa "được thay"; chỉ nói sau khi QL duyệt (gốc khép). */
   const thayBang = iv.supersededBy && iv.closedReason ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
   const thayCho = all.find((x) => x.supersededBy === iv.id && x.closedReason) ?? null;
-  const batDau = iv.startedDate ?? iv.plannedDate ?? null;
-  /* PR-SOS (Q28-4): không còn "dự kiến kết thúc"; PA quy chế nói mốc riêng. Khoảng PA nói MÃ TUẦN ("Từ W3 SEP", "Từ W3 SEP → W1 OCT"). */
-  const ketThuc = iv.completedDate ?? null;
-  const khoang = batDau ? chuKhoangPa({ startedOn: batDau, completedOn: ketThuc }, homNay)?.replace(/^từ /, '') : ketThuc ? t('đến {tuanLich}', { tuanLich: tuanLich(ketThuc, homNay) }) : null;
-  /* Người: "Dạy X" (Tutor, Bổ trợ) · "Thực hiện X" (loại khác) · Tự học không có. Không có ô Người theo dõi (§8). */
-  const nguoi = iv.performer ? `${iv.performer}${iv.byProxy && iv.recordedBy ? t(' ({recordedBy} nhập hộ)', { recordedBy: iv.recordedBy }) : ''}` : null;
-  const nut = nutDongPa(iv, { caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
-  const dem = iv.soBuoi != null ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
-  const quaHan = hanGhi?.tone === 'overdue';
-  /* Chân dòng PA: mỗi phần một cờ, tính một lần; không phần nào thì không vẽ chân. */
-  const hienHan = !!hanGhi && !choDuyet;
-  const hienChoQl = choDuyet && !(data.viewer.canApprove && iv.yeuCau);
-  const nutXacNhan = !anXacNhan && !anViec && !!(data.viewer.canEdit && iv.awaitingConfirmation && data.sos?.hasCause);
-  const nutKetQua = !anViec && nut.ketQua && !iv.awaitingConfirmation && !chuaChay;
-  const coChan = hienHan || hienChoQl || nutXacNhan || nutKetQua;
-  /* Nhật ký PA (mockup §8): Tạo · Kết quả từng tuần · Sửa PA / Điều chỉnh — luôn có ít nhất dòng Tạo. */
-  const ketQuaPa = data.followups ?? [];
-  /* OV-7b: lần ghi Kết quả gần nhất mà người xem sửa được (người đã ghi + QL, máy chủ quyết `suaDuoc`). */
-  const fSua = ketQuaPa.find((f: any) => f.interventionId === iv.id && f.nextStep && f.suaDuoc) ?? null;
-  const fGan = anDau ? null : ketQuaPa.find((f: any) => f.interventionId === iv.id && f.outcome) ?? null;
-  return (
-    <li className={anDau ? 'flex list-none flex-col gap-[5px]' : 'pa-the'} style={anDau ? undefined : { ...vienVua(vua), opacity: dangChay || choDuyet || vua ? undefined : 0.8 }} data-pa-id={anDau ? undefined : iv.id}>
-      {!anDau && <div className="flex flex-wrap items-center gap-1.5">
-        {/* Mockup audit 03/11 `.pa-the`: tên PA đậm + thẻ (theo quy chế · đến MTn · người dạy) — chip trạng thái công việc sau. */}
-        <TenPaThe iv={iv} nhat={khung} />
-        {/* Trạng thái CÔNG VIỆC, không phải kết quả (mục 2.2): "Đã xong" chỉ nghĩa việc đã làm xong. */}
-        {/* PR-SOS: PA quy chế chưa xác nhận = "Chờ xác nhận" (cùng chữ với hàng PA ở bảng kỹ năng), không phải "Đã lên kế hoạch". */}
-        <Nhan tone={toneTrangThaiPa(iv.status)}>{chuaChay ? t('Chưa bắt đầu') : iv.awaitingConfirmation ? t('Chờ xác nhận') : INTERVENTION_STATUS_LABEL[iv.status as keyof typeof INTERVENTION_STATUS_LABEL] ?? iv.status}</Nhan>
-        {choDuyet && <Nhan tone="muted" title={iv.approvalDue ? t('Hạn Quản lý trả lời {ngan}', { ngan: ngan(iv.approvalDue) }) : undefined}>{t('Chờ Quản lý duyệt')}</Nhan>}
-        {iv.approvalState === 'approved' && <Nhan tone="done">{t('Đã duyệt')}</Nhan>}
-        {iv.approvalState === 'declined' && <NhanTrangThai t="can-lam" chu={t('Bị từ chối')} />}
-        <span className="flex-1" />
-        <MenuPa iv={iv} ten={tenPA(iv)} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined} />
-      </div>}
-      {!anDau && <DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={onDoi} />}
-      {/* Dòng gọn (DongPaGon) đã vẽ nội dung — phần "Chi tiết" (`anDau`) không lặp. */}
-      {iv.description && !anDau && <p className="trich hai"><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></p>}
-      {fGan && <KetQuaGan f={fGan} homNay={homNay} ghiChu={!khung} cuoi={!dangChay && !choDuyet} />}
-      {iv.kind === 'bo_tro' && bt?.chung && bt.mon.length > 1 && (
-        <p className="m-0 text-xs text-slate-400">{t('PA chung · {x}', { x: bt.mon.map((m) => m.tenMon).join(', ') })}</p>
-      )}
-      {(thayCho || thayBang) && (
-        <p className="m-0 truncate text-xs text-slate-500">
-          {[thayCho && t('Thay cho: {tenPA}', { tenPA: tenPA(thayCho) }), thayBang && t('Được thay bằng: {tenPA}', { tenPA: tenPA(thayBang) })].filter(Boolean).join(' · ')}
-        </p>
-      )}
-      {/* Người dạy + mốc đã là thẻ ở dòng tên; ở đây: chưa chọn người / nhập hộ, khoảng chạy ("Chi tiết" của dòng gọn: đủ như cũ). */}
-      {(anDau || (coNguoiDay(iv.kind) && (!iv.performer || iv.byProxy)) || khoang) && (
-        <p className="m-0 flex flex-wrap gap-x-3.5 gap-y-0.5 text-[13px] text-slate-300">
-          {coNguoiDay(iv.kind) && (anDau || !iv.performer || iv.byProxy) && (
-            <span><span className="text-slate-500">{nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Dạy') : t('Thực hiện')}</span> {nguoi ?? <span className="text-slate-500">{t('chưa chọn')}</span>}</span>
-          )}
-          {(khoang || (anDau && iv.mocChu)) && (
-            <span className="tabular-nums">{batDau && <span className="text-slate-500">{t('Từ')} </span>}{[khoang, anDau && iv.mocChu && dich(iv.mocChu)].filter(Boolean).join(' · ')}</span>
-          )}
-        </p>
-      )}
-      {dem && (
-        <div className="flex flex-wrap items-center gap-2.5 text-[13px] text-slate-300">
-          <VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />
-          <span>{t('Đã dạy')} <b className="font-semibold text-slate-100 tabular-nums">{dem.da}/{dem.tong}</b></span>
-          {dem.tt === 'du' ? <span className="font-semibold text-ok">{t('· đủ buổi')}</span>
-            : dem.tt === 'vuot' ? <span className="font-semibold text-late">{t('· vượt {x}', { x: dem.da - dem.tong })}</span>
-            : <span>{t('· còn')} <b className="font-semibold text-slate-100 tabular-nums">{dem.con}</b></span>}
-        </div>
-      )}
-      {iv.approvalNote && (
-        <p className="m-0 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>
-          {t('Quản lý{x}: {approvalNote}', { x: iv.approvedBy ? ` (${iv.approvedBy})` : '', approvalNote: iv.approvalNote })}
-        </p>
-      )}
-      {/* PR-DUYET (T64): Xin ý kiến không dừng PA — dòng tím khi đang chờ, câu trả lời của QL khi đã có. */}
-      <DongXinYKien x={iv.xinYKien} ngan={ngan} />
-      {fSua && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-300">
-          <span className="min-w-0">
-            <span className="text-slate-500">{t('Kết quả {tuanLich} ·', { tuanLich: tuanLich(fSua.observedOn, homNay) })} </span>{outcomeLabelFor(fSua.outcome)}
-            <span className="text-slate-500"> → {NEXT_STEP_LABEL[fSua.nextStep as keyof typeof NEXT_STEP_LABEL] ?? fSua.nextStep}</span>
-          </span>
-          <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" aria-label={t('Sửa kết quả {tuanLich}', { tuanLich: tuanLich(fSua.observedOn, homNay) })}
-            onClick={() => onViec({ loai: 'sua-ket-qua', followupId: fSua.id })}>{t('Sửa')}</button>
-        </div>
-      )}
-      {coChan && !anDau && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-dashed pt-1" style={{ borderColor: 'var(--line)' }}>
-          {/* Hạn Kết quả: "Kết quả · hạn T2 13/10"; quá hạn → "Kết quả · quá hạn n ngày" cam đậm; em Tạm dừng → nhãn Tạm dừng. */}
-          {hienHan && hanGhi && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
-            : <span className={`text-[13px] tabular-nums ${quaHan ? 'font-semibold text-late' : 'text-slate-500'}`}>{t('Kết quả · {x}', { x: hanGhi.quaHan ?? hanGhi.han })}</span>)}
-          {hienChoQl && (
-            <span className="text-xs text-slate-500 tabular-nums">
-              {t('Đang chờ Quản lý trả lời{x} — thời gian chờ tính cho Quản lý.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}
-            </span>
-          )}
-          <span className="flex-1" />
-          {nutXacNhan && (
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'xac-nhan-pa', paId: iv.id })}>{t('Xác nhận PA')}</button>
-          )}
-          {nutKetQua && (
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onViec({ loai: 'ghi-ket-qua', paId: iv.id })}
-              title={t('Kết quả kỳ, tiến triển, và quyết định {x}', { x: iv.preset ? t('Giữ nguyên / Điều chỉnh / Xin ý kiến') : t('Giữ nguyên / Điều chỉnh / Thay / Kết thúc') })}>
-              {iv.lanCuoi ? t('Kết quả cuối') : t('Kết quả')}
-            </button>
-          )}
-        </div>
-      )}
-      {/* "Đã điều chỉnh n lần" gộp vào Nhật ký PA (mockup §8): n = số dòng nhật ký (`soDongNhatKyPa`, cùng danh sách `NhatKyPa` vẽ). */}
-      <details>
-        <summary className="cursor-pointer text-xs text-slate-400 max-sm:flex max-sm:min-h-[44px] max-sm:items-center">{t('Nhật ký PA ({soDongNhatKyPa})', { soDongNhatKyPa: soDongNhatKyPa(iv, ketQuaPa) })}</summary>
-        <div className="mt-1"><NhatKyPa pa={iv} ketQua={ketQuaPa} /></div>
-      </details>
-      {/* PR-DUYET (K3-20): người duyệt được quyết NGAY dưới PA — cùng thẻ với hộp Chờ duyệt, không còn panel "Trả lời đề xuất". */}
-      {!anDau && data.viewer.canApprove && iv.yeuCau && iv.yeuCau.loai === 'de_xuat_pa' && (
-        <div className="mt-1"><TheYeuCau gon yc={iv.yeuCau} onXong={() => onViec({ loai: 'case' })} /></div>
-      )}
-      {vua && !anDau && <DaiVuaDoi x={vua} onHoanTac={onHoanTac} />}
-    </li>
-  );
-}
+  const tenCua = (x: any) => dichDu(x.description) || dich(INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? x.kind);
+  /* Thẻ PA chờ xác nhận mở = form xác nhận (điền sẵn). */
+  const formHien: FormThe | null = form ?? (mo && xacNhanDuoc ? 'xac-nhan' : null);
 
-/**
- * DÒNG PA ĐANG CHẠY GỌN (OV-13b, mockup OV-13 §2): "Xếp tự học · Đang chạy · kết quả gần nhất W3 OCT Tiến bộ một phần · hạn kế T3 10/11 · ⋯"; PA chưa có
- * người dạy: "Chưa chọn người dạy · Chọn" (chọn tại dòng, lưu ngay). Tới kỳ: ghi nhanh ngay dưới (PA không đếm buổi) / nút Ghi kết quả (Tutor, kết quả
- * cuối → panel); chưa tới kỳ: "Cập nhật trước hạn" (nút thường). Nội dung, người, vạch buổi, Sửa kết quả, Nhật ký PA gập ở "Chi tiết".
- */
-function DongPaGon({ iv, data, homNay, ngan, onViec, onDoi, anViec = false, vua = null, onHoanTac }: {
-  iv: any; data: CaseDetail; homNay: string; ngan: (d: string | null | undefined) => string; onViec: (v: ViewCase) => void; onDoi?: () => void;
-  anViec?: boolean;
-  vua?: VuaDoiPa | null; onHoanTac?: () => void;
-}) {
-  const [moNhanh, setMoNhanh] = useState(false);
-  const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
-  const [chonNguoi, setChonNguoi] = useState(false);
-  const [loiNguoi, setLoiNguoi] = useState<string | null>(null);
-  /* 6c-2 (bấm thử): PA quy chế đang chạy luôn vẽ dòng gọn — thiếu `coTheKetThucPa` / `ketThuc` ở đây thì "Kết thúc PA" không với tới được. */
-  const nut = nutDongPa(iv, { caseXong: data.status === 'done', coTheKetThucPa: data.viewer.coTheKetThucPa });
-  const fGan = (data.followups ?? []).find((f: any) => f.interventionId === iv.id && f.outcome) ?? null;
-  const hanGhi = iv.actionDue ? deadlineView({ kind: 'cap-nhat-pa', due: iv.actionDue, today: homNay }) : null;
-  const toiKy = toiKyGhi(iv.actionDue, homNay);
-  const ghiDuoc = !anViec && nut.ketQua && iv.ghiDuoc !== false;
-  const nhanh = ghiNhanhDuoc(iv);
-  const thieuNguoi = coNguoiDay(iv.kind) && !iv.performer;
-  const datNguoi = async (x: NguoiChon | null) => {
-    setLoiNguoi(null);
-    try { await api.patch(`/interventions/${iv.id}`, datLaiNguoi(x)); invalidate('/cases'); invalidate('/my-work'); setChonNguoi(false); onDoi?.(); } catch (e: any) { setLoiNguoi(e?.message ?? t('Không lưu được')); }
+  const phu = [iv.preset ? [t('Theo quy chế'), iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).join(' · ') : null,
+    coNguoiDay(iv.kind) ? (iv.performer ? `${nhanNguoiDay(iv.kind) === 'Người dạy' ? t('người dạy') : t('thực hiện')} ${iv.performer}` : t('chưa chọn người dạy')) : null,
+    dem ? t('{da}/{tong} buổi', { da: dem.da, tong: dem.tong }) : null,
+    fGan ? t('KQ {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) }) : null,
+    !dangChay && iv.completedDate ? t('khép {tuan}', { tuan: tuanLich(iv.completedDate, homNay) }) : null].filter(Boolean).join(' · ');
+
+  /* Trạng thái = nút làm việc khi tới việc của người xem; còn lại viên xám + chấm màu (V4 ③). */
+  const vien = (chu: string, cham: string) => <span className="tt-pa" style={{ ['--cham' as any]: cham }}>{chu}</span>;
+  const trangThai = theXoa ? vien(t('Chờ QL duyệt xoá'), 'rgb(var(--soon-rgb))')
+    : formHien === 'ghi' ? vien(t('Đang ghi kết quả'), 'rgb(var(--soon-rgb))')
+    : iv.awaitingConfirmation ? (xacNhanDuoc && !mo ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('xac-nhan')}>{t('Xác nhận PA')}</button> : vien(t('Chờ xác nhận'), 'rgb(var(--doing-rgb))'))
+    : choDuyet ? vien(t('Chờ Quản lý duyệt'), 'rgb(var(--soon-rgb))')
+    : iv.chuaChay ? vien(t('Chưa bắt đầu'), 'var(--text-faint)')
+    : dangChay ? (ghiDuoc && toiKy && !mo
+      ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
+      : data.tamDungTu && hanGhi ? <NhanTamDung tu={data.tamDungTu} />
+      : hanGhi?.tone === 'overdue' ? vien(`⚠ ${hanGhi.quaHan ?? ''}`, 'rgb(var(--bad-rgb))')
+      : vien(hanGhi ? t('Đang chạy · KQ hạn {ngay}', { ngay: ngan(iv.actionDue) }) : t('Đang chạy'), 'var(--accent)'))
+    : fGan ? <span className={`ket ${LOP_KET[OUTCOME_TONE[fGan.outcome as keyof typeof OUTCOME_TONE]] ?? 'cd'}`}>{dich(outcomeLabelFor(fGan.outcome))}</span>
+    : vien(t('Đã khép'), 'var(--text-faint)');
+
+  /* Sửa một trường PA tại chỗ — chỉ gửi trường đó (`thanSuaPa`), máy chủ trả Case → thay dữ liệu, không tải lại cả Case. */
+  const goc = giaTriCuaPa(iv);
+  const luuTruong = async (p: Partial<GiaTriPa>, ngay?: string) => {
+    const v = { ...goc, ...p };
+    const loiPa = loiFormPa(v, { daDay: iv.daDay ?? 0, goc });
+    if (loiPa.length) throw new Error(loiPa[0].lyDo ?? loiPa[0].nhan);
+    const body = thanSuaPa(v, goc, { moi: ngay ?? '', cu: iv.startedDate ?? null });
+    if (!Object.keys(body).length) return;
+    const d = await api.patch<CaseDetail>(`/interventions/${iv.id}`, body);
+    onDoi(d);
   };
-  const moPanel = () => onViec({ loai: 'ghi-ket-qua', paId: iv.id });
-  const khung = useContext(ThanTrongCot);
+  const luuNgay = async (fn: () => Promise<void>) => {
+    setLoi(null); bao({ tt: 'dang' });
+    try { await fn(); bao({ tt: 'da', luc: gioLuu() }); setSua(null); } catch (e: any) { bao({ tt: 'loi' }); setLoi(e?.message ?? t('Không lưu được')); }
+  };
+
+  const xoaPa = async () => {
+    setBusyXoa(true);
+    try {
+      const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/interventions/${iv.id}`);
+      invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan');
+      if (r?.choDuyet) lamMoi(); else onDaXoa({ ten: tenPa, thungRacId: r?.thungRacId ?? null });
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusyXoa(false); }
+  };
+  const moLaiPa = async () => {
+    try { await api.post(`/interventions/${iv.id}/hoan-tac-ket-thuc`); toast.push('ok', t('Đã mở lại PA')); lamMoi(); }
+    catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.')); }
+  };
+
+  const chung = { hocVien: data.student?.name ?? null, lop: null, onClose: () => { setForm(null); if (iv.awaitingConfirmation) setMo(false); } };
+  const formThan = !formHien ? null : (
+    <KhungTrongThe.Provider value>
+      {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} />
+        : formHien === 'ghi' ? (
+          <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm}
+            tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={t('Lưu · kỹ năng tiếp ›')}
+            boiCanh={[[t('Kết quả kỳ trước'), fGan ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(fGan.outcome))}</b> · {tuanLich(fGan.observedOn, homNay)}</> : t('chưa có')], [t('Điểm'), ketQuaGanNhat(data)]]}
+            pa={{
+              id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null, performerUserId: iv.performerUserId ?? null,
+              actionDue: iv.actionDue ?? null, miniTestHan: iv.miniTestHan ?? null, cycleNo: iv.cycleNo ?? null,
+              batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
+              laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho',
+            }} />
+        ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
+        : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} onSaved={onXongForm} />}
+    </KhungTrongThe.Provider>
+  );
+
+  const tt = (ma: typeof sua) => sua === ma;
+  const fld = (
+    <dl className="fld">
+      <dt>{t('Loại')}</dt>
+      <dd><span>{tenLoai}</span>{iv.preset && <span className="the-phu nhat">{t('theo quy chế')}{iv.mocChu ? ` · ${dich(iv.mocChu)}` : ''}</span>}
+        {nut.sua && <NutLuat label={t('Đổi loại PA')}>{iv.preset ? t('Loại không sửa được. PA quy chế: Đề xuất PA khác.') : t('Loại không sửa được. Đổi loại: Ghi kết quả › Điều chỉnh › Thay PA.')}</NutLuat>}</dd>
+      <dt>{t('Nội dung')}</dt>
+      <dd>{tt('noiDung')
+        ? <OGoTuLuu dau={iv.description ?? ''} toiThieu={8} toiDa={TRAN_CHU.noiDungPa} nhan={t('Nội dung PA')} luu={(x) => luuTruong({ description: x })} onDong={() => setSua(null)} />
+        : iv.description
+          ? <GiaTriSua kieu="chu" nhan={t('Sửa nội dung PA')} sua={nut.sua} onClick={() => setSua('noiDung')}><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></GiaTriSua>
+          : <GiaTriSua kieu="chu" nhan={t('Sửa nội dung PA')} sua={nut.sua} onClick={() => setSua('noiDung')}><span className="text-faint">{t('Chưa có')}</span></GiaTriSua>}</dd>
+      {iv.soBuoi != null && <>
+        <dt>{t('Số buổi')}</dt>
+        <dd>{tt('buoi')
+          ? <OGoTuLuu mot dau={String(iv.soBuoi)} toiThieu={1} toiDa={3} nhan={t('Số buổi')} luu={(x) => luuTruong({ soBuoi: x })} onDong={() => setSua(null)} />
+          : <GiaTriSua kieu="go" nhan={t('Sửa số buổi')} sua={nut.sua} onClick={() => setSua('buoi')}><span className="tabular-nums">{t('{n} buổi', { n: iv.soBuoi })}</span></GiaTriSua>}
+          {dem && <span className="flex items-center gap-2 text-[13px] text-slate-300"><VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />{t('đã dạy {da}', { da: dem.da })}{dem.tt === 'du' ? ` · ${t('đủ buổi')}` : dem.tt === 'vuot' ? ` · ${t('vượt {x}', { x: dem.da - dem.tong })}` : ` · ${t('còn {n}', { n: dem.con })}`}</span>}</dd>
+      </>}
+      {coNguoiDay(iv.kind) && <>
+        <dt>{nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Người dạy') : t('Thực hiện')}</dt>
+        <dd>
+          <GiaTriSua kieu="chon" nhan={t('Đổi người dạy')} sua={nut.sua} mo={tt('nguoi')} onClick={() => setSua(tt('nguoi') ? null : 'nguoi')}>
+            {iv.performer ? <>{iv.performer}{iv.byProxy && iv.recordedBy ? <span className="ban"> {t('({recordedBy} nhập hộ)', { recordedBy: iv.recordedBy })}</span> : null}</> : <span className="font-semibold text-soon">{t('Chưa chọn')}</span>}
+          </GiaTriSua>
+          {tt('nguoi') && (
+            <div className="basis-full sm:max-w-[340px]">
+              <ChonNguoi nhom="giao_vien" studentId={data.student?.id} value={null} tuMo ariaLabel={t('Người dạy')} placeholder={t('Gõ tên để tìm')}
+                onChange={(x) => void luuNgay(async () => { const d = await api.patch<CaseDetail>(`/interventions/${iv.id}`, datLaiNguoi(x)); onDoi(d); })} />
+            </div>
+          )}
+        </dd>
+      </>}
+      <dt>{t('Bắt đầu')}</dt>
+      <dd>{coKetQua || !nut.sua
+        ? <><span className="tabular-nums">{iv.startedDate ? `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}` : '—'}</span>{coKetQua && nut.sua && <span className="text-[13px] text-faint">{t('đã có kết quả — không đổi')}</span>}</>
+        : tt('batDau')
+          ? <ONgay kieu="ngay" value={iv.startedDate ?? ''} ariaLabel={t('Bắt đầu')} onChange={(x) => { if (x && x !== iv.startedDate) void luuNgay(() => luuTruong({}, x)); }} />
+          : <GiaTriSua kieu="go" nhan={t('Đổi ngày bắt đầu')} onClick={() => setSua('batDau')}><span className="tabular-nums">{iv.startedDate ? `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}` : t('Chưa đặt')}</span></GiaTriSua>}</dd>
+      {!iv.awaitingConfirmation && <>
+        <dt>{t('Kết quả')}</dt>
+        <dd>{fGan ? <>
+          <GiaTriSua kieu="go" nhan={t('Sửa kết quả {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) })} sua={!!fSua && fSua.id === fGan.id && !caseXong} onClick={() => setForm({ suaKq: fGan.id })}>
+            <span className={`ket ${LOP_KET[OUTCOME_TONE[fGan.outcome as keyof typeof OUTCOME_TONE]] ?? 'cd'}`}>{dich(outcomeLabelFor(fGan.outcome))}</span>
+            <span className="text-[13px] text-slate-300">{tuanLich(fGan.observedOn, homNay)}{fGan.note ? <> · “<ChuDich chu={fGan.note} nguon={{ bang: 'case_followups', id: fGan.id, cot: 'note' }} />”</> : null}</span>
+          </GiaTriSua>
+          <NutXoaKetQua f={fGan} onXong={lamMoi} />
+        </> : <span className="text-slate-300">{t('Chưa có')}{hanGhi ? ` · ${t('hạn {ngay}', { ngay: ngan(iv.actionDue) })}` : ''}</span>}</dd>
+      </>}
+      <dt>{t('Nhật ký')}</dt>
+      <dd><NhatKyPa pa={iv} ketQua={ketQua} /></dd>
+    </dl>
+  );
+
+  const xoaNut = theXoa ? (
+    <span className="cho-xoa w-full"><span><b>{t('Chờ QL duyệt xoá PA')}</b> · {t('gửi {ngay}', { ngay: ngan(theXoa.taoLuc) })} · {t('PA vẫn chạy')}</span>
+      {theXoa.nguoiXinId === toi && <span className="phai"><RutLai id={theXoa.id} onXong={lamMoi} /></span>}</span>
+  ) : nut.xoa ? <NutXoa busy={busyXoa} onClick={() => void xoaPa()}>{iv.xoa === 'xin' ? t('Đề nghị QL xoá PA') : t('Xoá PA')}</NutXoa> : null;
+  const chanThe = formHien || (!xoaNut && !nut.ketThuc && !iv.coTheHoanTacKetThuc && !ghiDuoc) ? null : (
+    <div className="pa-chan">
+      <span className="trai">{!(theXoa && vw.canApprove) && xoaNut}
+        {nut.ketThuc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('ket-thuc')}>{t('Kết thúc sớm…')}</button>}</span>
+      {iv.coTheHoanTacKetThuc && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => void moLaiPa()}>{t('Mở lại PA')}</button>}
+      {ghiDuoc && (toiKy
+        ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
+        : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{t('Cập nhật trước hạn')}</button>)}
+    </div>
+  );
+
   return (
-    <li className="pa-the" style={vienVua(vua)} data-pa-id={iv.id}>
-      <div className="flex items-start gap-x-2">
-        {/* Mockup audit 03/11 `.pa-the`: tên PA đậm + thẻ (theo quy chế · đến MTn · người dạy); "đang chạy" đã ở dòng tóm tắt / đầu mục — không chip lặp. */}
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1">
-        <TenPaThe iv={iv} nhat={khung} />
-        {hanGhi && !daLuu && (data.tamDungTu ? <NhanTamDung tu={data.tamDungTu} />
-          : <span className={`text-[13px] tabular-nums ${hanGhi.tone === 'overdue' ? 'font-semibold text-late' : 'text-slate-400'}`}>{hanGhi.quaHan ? `⚠ ${hanGhi.quaHan}` : t('hạn kế {ngay}', { ngay: ngan(iv.actionDue) })}</span>)}
-        </div>
-        <MenuPa iv={iv} ten={dichDu(iv.description) || iv.kind} xoa={nut.xoa} ketThuc={nut.ketThuc} onSua={nut.sua ? () => onViec({ loai: 'sua-pa', paId: iv.id }) : undefined} />
+    <div className={`the-pa ${mo ? 'mo' : ''} ${vua || laDich ? 'moi-doi' : ''}`} data-pa-id={iv.id} style={dangChay || choDuyet || vua || mo ? undefined : { opacity: 0.85 }}>
+      <div className="pa-dau">
+        <button type="button" className="pa-bam" aria-expanded={mo} onClick={() => { setMo(!mo); if (mo) setForm(null); }}>
+          <span className="ten-pa">{tenLoai}</span>
+          {phu && <span className="phu-pa">{phu}</span>}
+        </button>
+        <span className="pa-tt">{trangThai}</span>
+        <button type="button" className="mui-pa" aria-expanded={mo} aria-label={mo ? t('Gập PA {ten}', { ten: tenLoai }) : t('Mở PA {ten}', { ten: tenLoai })}
+          onClick={() => { setMo(!mo); if (mo) setForm(null); }}>{IC_PA}</button>
       </div>
-      {thieuNguoi && (
-        chonNguoi ? (
-          <div className="flex flex-col gap-1">
-            <ChonNguoi nhom="giao_vien" studentId={data.student?.id} value={null} onChange={(x) => void datNguoi(x)} ariaLabel={t('Người dạy')}
-              placeholder={t('Chưa chọn · gõ tên để tìm')} />
-            {loiNguoi && <span role="alert" className="text-xs text-bad">⚠ {loiNguoi}</span>}
-          </div>
-        ) : (
-          <p className="m-0 flex flex-wrap items-center gap-x-2 text-[13px]">
-            <span className="font-semibold text-soon">{t('Chưa chọn người dạy')}</span>
-            {nut.sua && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setChonNguoi(true)}>{t('Chọn')}</button>}
-          </p>
-        )
-      )}
-      {iv.description && <p className="trich hai"><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></p>}
-      {fGan && <KetQuaGan f={fGan} homNay={homNay} ghiChu={!khung} />}
-      <DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={onDoi} />
-      {ghiDuoc && (daLuu ? (
-        <DongDaLuu kq={daLuu} onHoanTac={() => { setDaLuu(null); setMoNhanh(true); onDoi?.(); }} />
-      ) : nhanh && (toiKy || moNhanh) ? (
-        <GhiNhanh paId={iv.id} batBuoc={!!iv.batBuoc} onDaLuu={(kq) => { setDaLuu(kq); setMoNhanh(false); onDoi?.(); }} onMoPanel={moPanel} />
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          {toiKy
-            ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" onClick={moPanel}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
-            : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={() => (nhanh ? setMoNhanh(true) : moPanel())}>{t('Cập nhật trước hạn')}</button>}
+      {vua && !mo && <div className="px-3.5 pb-2"><DaiVuaDoi x={vua} onHoanTac={onHoanTac} /></div>}
+      {!mo && <DongDoiPaGon iv={iv} data={data} ngan={ngan} onDoi={lamMoi} />}
+      {mo && (
+        <div className="pa-than">
+          {formHien && iv.description && <p className="m-0 pt-2.5 text-sm text-slate-300">{dichDu(iv.description)}</p>}
+          {formThan}
+          {!formHien && <>
+            {theXoa && vw.canApprove && <div className="pt-2.5"><TheYeuCau gon yc={theXoa} onXong={lamMoi} /></div>}
+            {vw.canApprove && iv.yeuCau && iv.yeuCau.loai === 'de_xuat_pa' && <div className="pt-2.5"><TheYeuCau gon yc={iv.yeuCau} onXong={lamMoi} /></div>}
+            <div className="pt-1"><DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={lamMoi} /></div>
+            {fld}
+            {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
+            {choDuyet && !(vw.canApprove && iv.yeuCau) && (
+              <p className="m-0 text-xs text-slate-400">{t('Đang chờ Quản lý trả lời{x} — thời gian chờ tính cho Quản lý.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}</p>
+            )}
+            {iv.approvalNote && <p className="m-0 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>{t('Quản lý{x}: {approvalNote}', { x: iv.approvedBy ? ` (${iv.approvedBy})` : '', approvalNote: iv.approvalNote })}</p>}
+            <DongXinYKien x={iv.xinYKien} ngan={ngan} />
+            {iv.kind === 'bo_tro' && data.boTro?.chung && data.boTro.mon.length > 1 && <p className="m-0 text-xs text-slate-400">{t('PA chung · {x}', { x: data.boTro.mon.map((m) => m.tenMon).join(', ') })}</p>}
+            {(thayCho || thayBang) && <p className="m-0 text-xs text-slate-400">{[thayCho && t('Thay cho: {tenPA}', { tenPA: tenCua(thayCho) }), thayBang && t('Được thay bằng: {tenPA}', { tenPA: tenCua(thayBang) })].filter(Boolean).join(' · ')}</p>}
+          </>}
         </div>
-      ))}
-      <details>
-        <summary className="flex min-h-[44px] cursor-pointer items-center text-xs text-slate-400 sm:min-h-0">{t('Chi tiết · Nhật ký PA ({soDongNhatKyPa})', { soDongNhatKyPa: soDongNhatKyPa(iv, data.followups ?? []) })}</summary>
-        <ul className="m-0 mt-1 p-0"><TheKhoiPa iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anDau /></ul>
-      </details>
-      {vua && <DaiVuaDoi x={vua} onHoanTac={onHoanTac} />}
-    </li>
+      )}
+      {mo && chanThe}
+    </div>
   );
 }
 
-/** Tên PA (mockup audit 03/11 `.pa-the`): tên 15 / 700 + thẻ "theo quy chế" · mốc ("đến MT3") · "người dạy: X"; `nhat` = thẻ nền mờ (cột hồ sơ HV, U02 c2), không = thẻ viền (panel, U03 A2). */
-function TenPaThe({ iv, nhat }: { iv: any; nhat: boolean }) {
-  const lop = `the-phu ${nhat ? 'nhat' : ''}`;
+/** Thẻ gập: đề xuất đổi PA đang chờ vẫn thấy ("Chờ duyệt đổi PA → …") — mở thẻ thấy đủ + Rút. */
+function DongDoiPaGon({ iv, ngan }: { iv: any; data: CaseDetail; ngan: (d: string | null | undefined) => string; onDoi: () => void }) {
+  const d = iv.doiPa as { trangThai: 'cho' | 'tu_choi'; loaiMoi: string; guiLuc: string } | null;
+  if (!d) return null;
+  const tenMoi = dich(INTERVENTION_KIND_LABEL[d.loaiMoi as keyof typeof INTERVENTION_KIND_LABEL] ?? d.loaiMoi);
   return (
-    <>
-      <b className="text-[15px] font-bold text-slate-100">{dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind)}</b>
-      {/* PR-N1 S4-1: PA theo quy chế SOS do máy gán. */}
-      {iv.preset && <span className={lop} title={iv.kind === 'bo_tro' ? t('PA Bổ trợ bắt buộc đến Cuối khoá — không thay, không kết thúc sớm') : t('PA theo quy chế SOS — chỉ GVCN / QL kết thúc sớm (⋯)')}>{t('theo quy chế')}</span>}
-      {iv.mocChu && <span className={`${lop} tabular-nums`}>{dich(iv.mocChu)}</span>}
-      {coNguoiDay(iv.kind) && iv.performer && <span className={lop}>{t('người dạy: {ten}', { ten: iv.performer })}</span>}
-    </>
+    <p className="m-0 px-3.5 pb-2 text-[13px] text-slate-300">
+      {d.trangThai === 'cho' ? <>{t('Chờ duyệt đổi PA')} → <b className="font-semibold text-slate-100">{tenMoi}</b> · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}</>
+        : <b className="font-semibold text-late">{t('QL từ chối đổi PA')}</b>}
+    </p>
+  );
+}
+
+/** "Kết thúc sớm…" (v16 j3, OV-13a C): lý do ≥ 10 ngay trong thẻ → Kết thúc PA · toast Hoàn tác 5 giây (như cũ) + "Mở lại PA" về sau. */
+function KetThucSom({ iv, onThoi, onXong }: { iv: any; onThoi: () => void; onXong: () => void }) {
+  const toast = useToast();
+  const [lyDo, setLyDo] = useState('');
+  const [thu, setThu] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const ngan = lyDo.trim().length < LY_DO_KET_THUC_PA_TOI_THIEU;
+  useBaoDangSua(!!lyDo.trim());
+  const key = `ket-thuc-pa-${iv.id}`;
+  const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan'); };
+  const ketThuc = async () => {
+    setThu(true);
+    if (ngan) return;
+    setBusy(true);
+    try {
+      await api.post(`/interventions/${iv.id}/ket-thuc`, { lyDo: lyDo.trim() });
+      lamMoi();
+      toast.hoanTac(t('Đã kết thúc PA'), () => {
+        api.post(`/interventions/${iv.id}/hoan-tac-ket-thuc`).then(() => { lamMoi(); toast.push('ok', t('Đã mở lại PA'), { key }); },
+          (e: any) => toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }));
+      }, { key });
+      onXong();
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }   // lỗi: giữ chữ đang gõ
+  };
+  return (
+    <div className="flex flex-col gap-3 pt-3">
+      <p className="muc-h m-0">{t('Kết thúc PA sớm')}</p>
+      <Truong nhan={t('Lý do')} batBuoc loi={thu && ngan ? t('Ít nhất {n} ký tự', { n: LY_DO_KET_THUC_PA_TOI_THIEU }) : null}>
+        <textarea className="field w-full" rows={2} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
+      </Truong>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onThoi}>{t('Thôi')}</button>
+        <button type="button" className="btn nut-do min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void ketThuc()}>{busy ? t('Đang lưu…') : t('Kết thúc PA')}</button>
+      </div>
+    </div>
   );
 }
 
 /** Mockup `.ket`: tone kết quả (OUTCOME_TONE) → lớp chip — tiến bộ rõ xanh · một phần / không đổi vàng · kém hơn đỏ · chưa đủ dữ liệu xám. */
 const LOP_KET: Record<string, string> = { ok: 'tb', warn: 'mp', danger: 'ko', muted: 'cd' };
-
-/** "Kết quả gần nhất: [chip] [tuần]" (U02 c2) — panel (U03 A2) thêm ghi chú mờ; PA đã khép: "Kết quả cuối:". */
-function KetQuaGan({ f, homNay, ghiChu, cuoi = false }: { f: any; homNay: string; ghiChu: boolean; cuoi?: boolean }) {
-  return (
-    <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[15px] text-slate-100">
-      {cuoi ? t('Kết quả cuối:') : t('Kết quả gần nhất:')}
-      <span className={`ket ${LOP_KET[OUTCOME_TONE[f.outcome]] ?? 'cd'}`}>{dich(outcomeLabelFor(f.outcome))}</span>
-      <span className="the-phu nhat tabular-nums">{tuanLich(f.observedOn, homNay)}</span>
-      {ghiChu && f.note && <span className="min-w-0 text-[14px] text-slate-300"><ChuDich chu={f.note} nguon={{ bang: 'case_followups', id: f.id, cot: 'note' }} /></span>}
-    </span>
-  );
-}
-
-/** Thẻ PA vừa đổi: viền nhấn 2 px (cùng dáng "đang chọn" — G14), thẻ khác viền mảnh. */
-const vienVua = (vua: VuaDoiPa | null) => (vua ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent)' } : { borderColor: 'var(--line)' });
 
 /** "✓ Đã thêm PA · Hoàn tác" ngay trong thẻ PA vừa đổi (Q1) — Hoàn tác 10 giây, gọi đường đảo của form (máy chủ kiểm lại quyền + thời gian). */
 function DaiVuaDoi({ x, onHoanTac }: { x: VuaDoiPa; onHoanTac?: () => void }) {

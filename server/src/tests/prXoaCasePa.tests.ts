@@ -268,4 +268,26 @@ export async function runPrXoaCasePaTests(t: any) {
     console.log(`    xoá kết quả PA ${n} câu`);
     assert(n <= TRAN_GHI_LO.xoaKetQuaPa, `${n} câu`);
   }));
+
+  check('XCP-10 · CASE-PA-UI (XM1): thẻ xin xoá đang chờ có ở PA / Case (`theXoa`, người gửi) → người gửi Rút lại; GV khác 403; QL thấy cùng thẻ để duyệt tại chỗ', () => thu(() => {
+    const caseId = taoCase();
+    const iv = themPa(caseId);
+    conn.prepare('UPDATE case_interventions SET preset = 1, confirmed_by = ?, confirmed_at = ? WHERE id = ?').run(P.lrTeacher.userId, TODAY, iv);
+    const pa = (p: any) => cases.caseDetail(p, caseId).interventions.find((i: any) => i.id === iv);
+    assert(pa(P.lrTeacher).theXoa === null, 'chưa gửi mà có thẻ');
+    cases.xoaPa(P.lrTeacher, iv);
+    const the = pa(P.lrTeacher).theXoa;
+    assert(the && the.loai === 'xin_xoa' && the.nguoiXinId === P.lrTeacher.userId && the.trangThai === 'cho', JSON.stringify(the));
+    assert(pa(QL).theXoa?.id === the.id, 'QL không thấy thẻ');
+    assert(maLoi(() => yc.rutYeuCau(P.coreTeacher, the.id)) === 403, 'GV khác rút được');
+    yc.rutYeuCau(P.lrTeacher, the.id);
+    assert(pa(P.lrTeacher).theXoa === null && pa(P.lrTeacher).choXoa === false && mot('SELECT 1 FROM case_interventions WHERE id = ?', iv), 'Rút lại chưa đóng thẻ / mất PA');
+    /* Case SOS: cùng đường. */
+    conn.prepare(`UPDATE sos_cases SET origin_kind = 'mock' WHERE id = ?`).run(caseId);
+    cases.xoaCase(P.lrTeacher, caseId);
+    const tc = cases.caseDetail(P.lrTeacher, caseId).viewer.theXoa;
+    assert(tc && tc.nguoiXinId === P.lrTeacher.userId, JSON.stringify(tc));
+    yc.rutYeuCau(P.lrTeacher, tc.id);
+    assert(cases.caseDetail(P.lrTeacher, caseId).viewer.theXoa === null && mot('SELECT 1 FROM sos_cases WHERE id = ?', caseId), 'Rút lại Case');
+  }));
 }
