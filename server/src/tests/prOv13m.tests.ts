@@ -75,7 +75,10 @@ export async function runPrOv13mTests(t: YThucTestKit) {
       }
       return fetch(`http://127.0.0.1:${cong}/api${url}`, { ...init, headers: { 'content-type': 'application/json', cookie: phien.get(userId)!, ...(init.headers ?? {}) } });
     };
-    try { setConfig('demo_date', ngay); xoaNho(); await fn(goi); } finally { may.close(); setConfig('demo_date', cu); xoaNho(); }
+    /* GIAM-DOC-0611: ghi không còn đặt mốc quét về NULL (lùi tới lượt trước + 15 s) — nhảy qua lại giữa hai ngày demo thì mốc có thể mang đúng ngày đích từ ca trước
+       → coi đổi ngày như sang ngày mới (bản chính ngày chỉ tiến, GET đầu ngày quét). */
+    const sangNgay = () => conn.prepare(`UPDATE moc_he_thong SET luc = NULL WHERE khoa LIKE 'quet:%'`).run();
+    try { setConfig('demo_date', ngay); xoaNho(); sangNgay(); await fn(goi); } finally { may.close(); setConfig('demo_date', cu); xoaNho(); sangNgay(); }
   }
   const json = async (r: Response): Promise<any> => { const x = await r.json().catch(() => null); if (!r.ok) throw new Error(`${r.status} ${JSON.stringify(x)}`); return x; };
   const post = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.stringify(body) });
