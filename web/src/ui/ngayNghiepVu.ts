@@ -32,6 +32,7 @@ export function useNgayNghiepVu() {
 export function useKhoaCuoiTuan() {
   const { session } = useSession();
   const homNay = session?.demoDate ?? '';
-  const quanTri = session?.gocNhin?.vaiGoc === 'system_admin' || !!session?.roles?.includes('system_admin');
+  /* Công tắc "Mở sửa lịch Test" BẬT: chỉ người sửa được lịch (không `chiXem`) tới được nút — bỏ chip khoá; máy chủ kiểm lại theo lớp. */
+  const quanTri = session?.gocNhin?.vaiGoc === 'system_admin' || !!session?.roles?.includes('system_admin') || !!session?.moSuaLichTest;
   return (...tuan: (string | null | undefined)[]) => (homNay ? khoaCuoiTuan({ tuan: tuan.map((w) => w ?? null), homNay, quanTri }) : null);
 }

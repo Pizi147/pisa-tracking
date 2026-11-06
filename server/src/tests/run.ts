@@ -90,7 +90,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prOv6b2: 100, prOv10a: 100, prOv1d: 100, prOv4c: 100, prOv11a: 100, prOv11i: 100, prOv12b: 100, prOv12g: 100, prHd: 100, prVn1: 100, prOv15a: 100,
   prOv15b: 100, prOv15i2: 100, prBang0: 100, prLuat5: 100, prSuaNoRa: 100, prKhungLoi: 100, caseLo: 100, prSvBaiLop: 100, prNenPanel: 100,
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
-  prKhoaLich: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
+  prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
   prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100,
 };
@@ -9602,6 +9602,9 @@ await runPrChonLopTests({ check, assert } as any);
 // ==================================================================== P6 KHOA-LICH (T6 → CN khoá đổi lịch MT 3 tuần, trừ Quản trị hệ thống)
 const { runPrKhoaLichTests } = bocTep('prKhoaLich', await import('./prKhoaLich.tests.ts'));
 await runPrKhoaLichTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== MO-SUA-LICH-TEST (công tắc Quản trị mở sửa lịch Test cho GVCN / Admin / QL, bỏ khoá N15)
+const { runPrMoSuaLichTestTests } = bocTep('prMoSuaLichTest', await import('./prMoSuaLichTest.tests.ts'));
+await runPrMoSuaLichTestTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)
 const { runPrXetLaiTests } = bocTep('prXetLai', await import('./prXetLai.tests.ts'));
 await runPrXetLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

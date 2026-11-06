@@ -12,6 +12,7 @@ import { PERMISSIONS, nhanDot, tenMon, type KetQuaHuy } from '../../../shared/do
 import type { ChupCaseDong } from '../cases/systemClose.ts';
 import { badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { require_, scoreEditPath, type Principal } from '../permissions.ts';
+import { choHuyKhoiPhucLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
@@ -101,7 +102,9 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
   const conn = db();
   const a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
-  require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được kết quả MT.');
+  if (!choHuyKhoiPhucLichTest(p, { classId: a.class_id, studentId: a.student_id })) {
+    require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được kết quả MT.');
+  }
   const nhan = nhanDot(a.kind, a.attempt_no);
   const lyDo = o.lyDo?.trim() || null;
   return tx(() => {

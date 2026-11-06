@@ -109,6 +109,7 @@ import * as accountSvc from '../platform/accounts.ts';
 import * as gioiHan from '../platform/gioiHanThu.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as bangQuyDoiSvc from '../platform/bangQuyDoi.ts';
+import * as moSuaLichTestSvc from '../platform/moSuaLichTest.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
 import * as tongQuanSvc from '../worklist/tongQuan.ts';
@@ -245,6 +246,8 @@ api.get('/demo/session', wrap((req) => {
     coS: laGvSpeaking(p) || p.assignments.some((a) => a.skill === 'speaking' && activeAt(a, demoToday())),
     /* P14 DICH (N19): nút "Dịch" chỉ hiện khi máy chủ có khoá và không tắt — cờ đi theo phiên, không thêm lời gọi. */
     dichBat: cauHinhDich().bat,
+    /* Mở sửa lịch Test (chủ SP 06/11): web bỏ chip khoá cuối tuần N15 cho người sửa được lịch — máy chủ vẫn kiểm lại từng lần ghi. */
+    moSuaLichTest: moSuaLichTestSvc.dangMoSuaLichTest(),
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
@@ -2084,7 +2087,7 @@ api.get('/cycles/:id/suggested-mocks', requireAuth, wrap((req) => {
   const bang = keHoachSvc.lichMtLoTrinh(c.id);
   const ctx = { classId: bang.classId, studentId: c.student_id };
   /* PR-OV2a: Admin xếp được lịch nhưng không khôi phục kết quả (`attempt.cancel`). */
-  return { ...bang, coTheXep: can(principalOf(req), PERMISSIONS.PLAN_WEEK, ctx), coTheKhoiPhuc: can(principalOf(req), PERMISSIONS.ATTEMPT_CANCEL, ctx) };
+  return { ...bang, coTheXep: moSuaLichTestSvc.choSuaLichTest(principalOf(req), ctx), coTheKhoiPhuc: moSuaLichTestSvc.choHuyKhoiPhucLichTest(principalOf(req), ctx) };
 }));
 
 /**
@@ -3175,5 +3178,7 @@ api.get('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.listProgram
 api.put('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.saveProgramme(principalOf(req), req.body ?? {})));
 /* BAND-QUY-DOI: bảng quy đổi số câu → band. `/ref` = bảng đang dùng (hộp nhập điểm xem trước band); `/admin` = phiên bản (QT sửa, QL xem). */
 api.get('/ref/bang-quy-doi', requireAuth, wrap(() => bangQuyDoiSvc.bangHienHanh()));
+api.get('/admin/mo-sua-lich-test', requireAuth, wrap((req) => moSuaLichTestSvc.xemMoSua(principalOf(req))));
+api.put('/admin/mo-sua-lich-test', requireAuth, wrap((req) => moSuaLichTestSvc.datMoSua(principalOf(req), req.body?.bat)));
 api.get('/admin/bang-quy-doi', requireAuth, wrap((req) => bangQuyDoiSvc.xemBangQuyDoi(principalOf(req))));
 api.put('/admin/bang-quy-doi', requireAuth, wrap((req) => bangQuyDoiSvc.luuBangQuyDoi(principalOf(req), req.body ?? {})));

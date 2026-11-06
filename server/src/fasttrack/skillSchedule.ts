@@ -6,6 +6,7 @@ import {
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
+import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
@@ -33,7 +34,7 @@ import {
 export function canMoveSkillSchedule(
   p: Principal, ctx: { classId: number; studentId: number; skill?: string },
 ): boolean {
-  return can(p, PERMISSIONS.PLAN_WEEK, ctx) || can(p, PERMISSIONS.SCHEDULE_MOVE, ctx);
+  return choSuaLichTest(p, ctx) || can(p, PERMISSIONS.SCHEDULE_MOVE, ctx);
 }
 
 /** P6 N15: vai GỐC Quản trị hệ thống (không theo quyền — quyền sửa được; đang "xem như" vai khác vẫn miễn). */
@@ -44,9 +45,10 @@ export const laQuanTriGoc = (p: Principal) => (p.vaiGoc ?? p.roleKeys).includes(
  * Quản trị hệ thống. Gọi ở từng đường ghi lịch THỦ CÔNG (không có phễu chung); ngoại lệ ("-", vắng, duyệt thẻ dời, khôi phục, Không mock
  * lại) và đường gián tiếp (chuyển lớp, đổi mốc, áp lịch mặc định) không gọi. Lớp thường (`kind` khác) bỏ qua.
  */
-export function chanCuoiTuan(p: Principal, a: { kind: string }, tuan: readonly (string | null | undefined)[]): void {
+export function chanCuoiTuan(p: Principal, a: { kind: string; class_id?: number | null; student_id?: number | null }, tuan: readonly (string | null | undefined)[]): void {
   if (a.kind !== 'mock' && a.kind !== 'mt0' && a.kind !== 's_expert') return;
-  const cau = khoaCuoiTuan({ tuan: tuan.map((w) => w ?? null), homNay: demoToday(), quanTri: laQuanTriGoc(p) });
+  /* Mở sửa lịch Test (chủ SP 06/11): công tắc BẬT → QL / Admin / GVCN lớp đó miễn khoá (đã qua kiểm quyền ghi ở nơi gọi). */
+  const cau = khoaCuoiTuan({ tuan: tuan.map((w) => w ?? null), homNay: demoToday(), quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
   if (cau) throw badRequest(cau);
 }
 
@@ -791,7 +793,7 @@ export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string |
   const conn = db();
   const a = conn.prepare(`SELECT a.*, ${CO_DIEM_SQL('a')} AS co_diem FROM assessment_attempts a WHERE a.id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới huỷ lịch được một lượt.');
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới huỷ lịch được một lượt.');
   const nhan = nhanDot(a.kind, a.attempt_no);
   if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
   const rows = ensureSkillRows(attemptId);
@@ -913,7 +915,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
    * vẫn qua `SCHEDULE_MOVE` khi máy tự dời do "-" (`ghiBuDau`) hoặc khi tạo lượt (`khiTao`); GVCN dời MT tuần đã qua theo `gvcnCu` (N23).
    */
   if (!gvcnCu && !opts.khiTao && !opts.ghiBuDau) {
-    require_(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id },
+    requireSuaLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id },
       'Chỉ Quản lý dời lịch Test. Gõ "-" khi em vắng thì máy tự dời.');
   } else if (!gvcnCu) {
     requireMoveSkillSchedule(
@@ -935,7 +937,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
    * em vào web; GVCN / GV chỉ từ tuần này. Sau khi lưu, lượt Mock tính lại cờ MT cũ theo tuần muộn nhất (`tinhLaiMtCu`).
    */
   const lichSu = !!attempt.lich_su && !opts.khiTao && !opts.ghiBuDau;
-  const quanLy = gvcnCu || can(p, PERMISSIONS.PLAN_WEEK, { classId: attempt.class_id, studentId: attempt.student_id });
+  const quanLy = gvcnCu || choSuaLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id });
   if (!opts.khiTao && !opts.ghiBuDau) {
     const cau = kiemTuanXep({ ketThuc: [period.week_end], homNay, quanLy }).cau;
     if (cau) throw badRequest(cau);
