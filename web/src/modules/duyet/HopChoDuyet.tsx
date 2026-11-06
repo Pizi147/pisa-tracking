@@ -18,7 +18,7 @@ import { useSession } from '../../lib/session.tsx';
 import { BAC_1, IconNhom, KeBac2, NET_CAY, NguoiGiu, ThePhu, chuDau } from '../congViec/DanhSachViec.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat,
+  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat, laDaXuLy,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -175,13 +175,16 @@ export function HopChoDuyet({ gon = false, branchId: cnTrang, khuPanel }: {
       else toast.push('ok', chu);
       giuCho(y, chu, !!kq?.coTheHuy);
     } catch (e: any) {
+      /* Chủ SP 07/11 (mục 7): thẻ đã xử lý / chết — báo trung tính, danh sách làm mới (`xong`). */
+      if (laDaXuLy(e)) { toast.push('info', t('Yêu cầu này đã được xử lý.')); lamMoi(); return; }
       toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối, chưa lưu gì. Kiểm tra mạng rồi bấm lại.'));
     } finally { setDangGui(null); xong(); }
   };
   /* Thẻ lỗi: một câu tổng + tối đa 3 dòng chi tiết, còn lại gộp — không dồn hàng chục toast. */
   const baoKetQua = (viec: 'duyet' | 'tu-choi', ok: number, loi: { id: number; loi: string; ma: number }[]) => {
-    toast.push(loi.length ? 'error' : 'ok', tomTatKetQuaHangLoat(viec, ok, loi));
-    const chiTiet = loi;
+    /* Chủ SP 07/11 (mục 7): thẻ đã được xử lý (người khác / tự đóng) không phải lỗi — chỉ đếm trong câu tổng, không toast đỏ riêng. */
+    const chiTiet = loi.filter((l) => !laDaXuLy({ status: l.ma, message: l.loi }));
+    toast.push(chiTiet.length ? 'error' : loi.length ? 'info' : 'ok', tomTatKetQuaHangLoat(viec, ok, loi));
     for (const l of chiTiet.slice(0, 3)) toast.push('error', `${ds.find((x) => x.id === l.id)?.hocVien ?? t('Yêu cầu #{id}', { id: l.id })}: ${dich(l.loi)}`);
     if (chiTiet.length > 3) toast.push('error', t('…và {n} thẻ khác', { n: chiTiet.length - 3 }));
   };

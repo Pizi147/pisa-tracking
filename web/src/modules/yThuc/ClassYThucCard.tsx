@@ -748,7 +748,7 @@ function PanelDuyetXuLy({ id, thuHoi, moSan, onDong, onXong }: { id: number; thu
   const yc = thuHoi ? data?.thuHoi : data?.the;
   useEffect(() => {
     if (error) { toast.push('error', error.message); onDong(); }
-    else if (data && (!yc || yc.trangThai !== 'cho')) { toast.push('error', t('Yêu cầu này đã được xử lý.')); onXong(); }
+    else if (data && (!yc || yc.trangThai !== 'cho')) { toast.push('info', t('Yêu cầu này đã được xử lý.')); onXong(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, data]);
   if (!yc || yc.trangThai !== 'cho') return null;
