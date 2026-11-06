@@ -9,18 +9,19 @@ import { DOAN, doanNut } from './dungChung.tsx';
  * hiện thẳng trên hàng lọc "[ô tuần] → [ô tuần]" (không chữ nhãn — chủ SP 24/10; trình đọc màn có aria "Tuần bắt đầu" / "Tuần kết thúc") (ô gõ + lịch, `ONgay`), đổi là áp dụng ngay — không hộp bấm mở, không nút ‹ ›.
  * `toanBo` (chỉ Phân tích): thêm lựa chọn "Toàn bộ" · "Chọn khoảng tuần" (P9, không trần). Chọn tuần bắt đầu sau tuần kết thúc → tự kéo đầu kia theo (không báo lỗi).
  */
-export function BoChonThoiGian({ khoang, onChange, toanBo = false }: { khoang: KhoangNgay; onChange: (k: KhoangNgay) => void; toanBo?: boolean }) {
+export function BoChonThoiGian({ khoang, onChange, toanBo = false, macDinh }: { khoang: KhoangNgay; onChange: (k: KhoangNgay) => void; toanBo?: boolean; macDinh?: KhoangNgay }) {
   const { homNay } = useNgayNghiepVu();
+  const md = macDinh ?? khoangMacDinh(homNay);   // Phân tích: 2 tuần gần nhất (06/11); Tutor / HV & Lớp: 2 tuần vừa qua
   const laTb = khoang.kieu === 'toan-bo';
   const tuanDau = khoang.tu, tuanCuoi = addDaysIso(khoang.den, -6);   // Thứ Hai tuần đầu / tuần cuối
-  const dat = (tu: string, cuoi: string) => onChange(khoangVeTuan({ tu, den: addDaysIso(cuoi, 6) }, homNay));
+  const dat = (tu: string, cuoi: string) => onChange(khoangVeTuan({ tu, den: addDaysIso(cuoi, 6) }, homNay, md));
   return (
     <div className="flex flex-wrap items-center gap-2 max-sm:w-full" data-hd="pt-thoi-gian" role="group" aria-label={t('Thời gian')}>
       {toanBo && (
         <span role="group" aria-label={t('Thời gian')} className={DOAN}>
           <button type="button" aria-pressed={laTb} className={doanNut(laTb)}
             onClick={() => !laTb && onChange(khoangTuUrl({ get: (k) => (k === 'kieu' ? 'toan-bo' : null) }, homNay))}>{t('Toàn bộ')}</button>
-          <button type="button" aria-pressed={!laTb} className={doanNut(!laTb)} onClick={() => laTb && onChange(khoangMacDinh(homNay))}>{t('Chọn khoảng tuần')}</button>
+          <button type="button" aria-pressed={!laTb} className={doanNut(!laTb)} onClick={() => laTb && onChange(md)}>{t('Chọn khoảng tuần')}</button>
         </span>
       )}
       {!laTb && (

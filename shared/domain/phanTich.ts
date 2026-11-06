@@ -23,12 +23,13 @@ import { t } from '../i18n/index.ts';
  * "Tổng hợp vấn đề HV" (`van-de`) đã bỏ khỏi tab: link cũ về Test + SOS (máy chủ `/phan-tich/van-de-hv` bỏ ở OV-15h2).
  */
 /** UI-PHAN-TICH (`phan-tich.html`): Báo cáo HV · Phân tích GV đứng đầu (C22 — tách báo cáo HV / GV), các tab cũ giữ sau. */
-export const GOC_NHIN = ['bao-cao', 'giao-vien', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'y-thuc'] as const;
+/* 06/11 (chủ SP): KQ Thi thật đứng thứ 3, ngay sau Phân tích GV; khoá URL `ket-qua-thi` giữ (link cũ). */
+export const GOC_NHIN = ['bao-cao', 'giao-vien', 'ket-qua-thi', 'tong-hop', 'hieu-qua-pa', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'bao-cao': 'Báo cáo HV',
   'tong-hop': 'Test + SOS',
-  'ket-qua-thi': 'Thi thật',   // THI-THAT (05/11): bỏ phần Mock, tab chỉ thi thật — khoá URL giữ
+  'ket-qua-thi': 'KQ Thi thật',   // THI-THAT (05/11): bỏ phần Mock, tab chỉ thi thật — khoá URL giữ; 06/11 đổi tên "KQ Thi thật"
   'hieu-qua-pa': 'Hiệu quả PA',
   'giao-vien': 'Phân tích GV',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này

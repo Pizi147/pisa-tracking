@@ -16,7 +16,6 @@ export const EN_AUDIT_CONG_VIEC = {
   'Thêm PA học thuật': 'Add PA',
   'Xem thêm {n} dòng': 'Show {n} more rows',
   'tuần {w}': 'week {w}',
-  'Cả lớp {lop}': 'Whole class {lop}',
   'Xem lại': 'Review',
   'Xem lại: {viec}': 'Review: {viec}',
   'LÀM THAY': 'ACTING FOR',

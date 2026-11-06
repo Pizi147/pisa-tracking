@@ -25,6 +25,15 @@ export function khoangMacDinh(homNay: string): KhoangNgay {
   return { kieu: '2-tuan', tu: addDaysIso(t2, -14), den: addDaysIso(t2, -1) };
 }
 
+/**
+ * 06/11 (chủ SP): khoảng MẶC ĐỊNH CỦA PHÂN TÍCH = 2 tuần gần nhất — Thứ Hai tuần trước → hết tuần này (dữ liệu tới hôm nay). Nơi khác (Tổng quan,
+ * HV & Lớp, Tutor) giữ `khoangMacDinh`. Truyền làm `md` cho `khoangTuUrl` / `khoangVeTuan` / `thamSoKhoang` để URL trống = khoảng này.
+ */
+export function khoangPhanTichMacDinh(homNay: string): KhoangNgay {
+  const t2 = mondayOfDate(homNay);
+  return { kieu: '2-tuan', tu: addDaysIso(t2, -7), den: addDaysIso(t2, 6) };
+}
+
 /** Các tuần thuộc tháng `YYYY-MM` (Thứ Hai đầu → Chủ nhật cuối). Tháng sai → null. */
 export function khoangThang(thang: string): { tu: string; den: string } | null {
   const m = /^(\d{4})-(\d{2})$/.exec(thang);
@@ -48,7 +57,7 @@ export function loiKhoang(k: { tu: string; den: string }): string | null {
  * ĐỌC KHOẢNG TỪ URL. `kieu` + `tu` + `den` (mới); không có → link CŨ: `thang=YYYY-MM` (Phân tích GV), `tu`/`den` Thứ Hai (Hiệu quả PA, GV — `den` là
  * Thứ Hai tuần cuối), `tg=n` (n tuần tới tuần này); không gì cả → 2 tuần vừa qua. Theo tuần / tháng / 2 tuần luôn chuẩn về Thứ Hai → Chủ nhật.
  */
-export function khoangTuUrl(q: { get(k: string): string | null }, homNay: string): KhoangNgay {
+export function khoangTuUrl(q: { get(k: string): string | null }, homNay: string, md: KhoangNgay = khoangMacDinh(homNay)): KhoangNgay {
   const kieu = q.get('kieu') as KieuKhoang | null;
   const tu = q.get('tu'), den = q.get('den');
   const thang = q.get('thang');
@@ -68,20 +77,18 @@ export function khoangTuUrl(q: { get(k: string): string | null }, homNay: string
     const t2 = mondayOfDate(homNay);
     return { kieu: 'tuan', tu: addDaysIso(t2, -7 * (tg - 1)), den: addDaysIso(t2, 6) };
   }
-  return khoangMacDinh(homNay);
+  return md;
 }
 
 /** SL1 (A5-01): hộp chỉ còn Từ tuần – Đến tuần — mọi khoảng về Thứ Hai đầu → Chủ nhật cuối; trùng mặc định thì là "2 tuần vừa qua" (URL trống). */
-export function khoangVeTuan(k: { tu: string; den: string }, homNay: string): KhoangNgay {
+export function khoangVeTuan(k: { tu: string; den: string }, homNay: string, md: KhoangNgay = khoangMacDinh(homNay)): KhoangNgay {
   const tu = mondayOfDate(k.tu), den = addDaysIso(mondayOfDate(k.den), 6);
-  const md = khoangMacDinh(homNay);
   return md.tu === tu && md.den === den ? md : { kieu: 'tuan', tu, den };
 }
 
 /** Tham số URL của một khoảng — 2 tuần vừa qua (mặc định) không ghi gì. */
-export function thamSoKhoang(k: KhoangNgay, homNay: string): Record<string, string> {
+export function thamSoKhoang(k: KhoangNgay, homNay: string, md: KhoangNgay = khoangMacDinh(homNay)): Record<string, string> {
   if (k.kieu === 'toan-bo') return { kieu: 'toan-bo' };
-  const md = khoangMacDinh(homNay);
   if (k.kieu === '2-tuan' && k.tu === md.tu && k.den === md.den) return {};
   return { kieu: k.kieu, tu: k.tu, den: k.den };
 }
