@@ -27,8 +27,10 @@ export const BaoLuuCase = createContext<(x: TtLuuCase) => void>(() => {});
  * GIÁ TRỊ SỬA ĐƯỢC TẠI CHỖ (`.sd`): `kieu` 'chon' (▾, mở hộp chọn) · 'go' (bút, ô ngắn) · 'chu' (bút, đoạn dài — rộng hết hàng). Không `sua` → chữ thường (không bút,
  * không ▾). Tên trường cho trình đọc màn đứng trước giá trị ("Sửa người phụ trách: Nguyễn Khánh Vy").
  */
-export function GiaTriSua({ kieu, nhan, sua = true, mo = false, tieu = false, onClick, children }: {
+export function GiaTriSua({ kieu, nhan, sua = true, mo = false, tieu = false, khongDau = false, onClick, children }: {
   kieu: 'chon' | 'go' | 'chu'; nhan: string; sua?: boolean; mo?: boolean;
+  /** Nhiều hộp liền nhau cho một trường (Nguyên nhân: mỗi nhóm một hộp) — chỉ hộp cuối mang dấu ▾. */
+  khongDau?: boolean;
   /** Tên Case ở đầu panel: chữ 17 / 700, khung chỉ hiện khi rê. */
   tieu?: boolean;
   onClick: () => void; children: ReactNode;
@@ -39,7 +41,7 @@ export function GiaTriSua({ kieu, nhan, sua = true, mo = false, tieu = false, on
       aria-haspopup={kieu === 'chon' ? 'listbox' : undefined} aria-expanded={kieu === 'chon' ? mo : undefined}>
       <span className="sr-only">{nhan}: </span>
       <span className="min-w-0">{children}</span>
-      {kieu === 'chon' ? IC_MUI : IC_BUT}
+      {khongDau ? null : kieu === 'chon' ? IC_MUI : IC_BUT}
     </button>
   );
 }

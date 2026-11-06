@@ -81,7 +81,7 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
     assert(!/t\('Vấn đề'\)|Ghi nhận/.test(than), 'còn "Vấn đề" / "Ghi nhận"');
     /* PTA rà #632 (N8): Nguyên nhân chỉ nhóm; Mô tả = câu của nguyên nhân chính (cùng nguồn #626) — không "Chưa có" khi đã có câu. */
     /* Chủ SP 04/11 (mockup audit 03/11 `.tag`): Nguyên nhân = thẻ từng nhóm. */
-    assert(!/<DongNguyenNhan/.test(than) && /className="the-phu">\{dich\(x\.label\)\}/.test(than), 'Nguyên nhân còn kèm câu nhận xét / chưa là thẻ');
+    assert(!/<DongNguyenNhan/.test(than) && /khongDau=\{i < hien\.length - 1\}[^\n]*>\{dich\(x\.label\)\}/.test(than), 'Nguyên nhân còn kèm câu nhận xét / chưa mỗi nhóm một hộp');   // chủ SP 06/11: mỗi nhóm một hộp riêng
     /* CASE-PA-UI (v16): Mô tả = quan sát của nhóm chính (Case MT) / tóm tắt; trống = ô trông như ô nhập, gõ là lưu (không nút "Mô tả Case"). */
     assert(/chinh\?\.observation/.test(than) && /moTaTuMt/.test(than) && /className=\{`o-trong/.test(than), 'Mô tả không đọc observation / thiếu ô Mô tả');
     /* CASE-PA-UI (v16 k3): câu "ai làm được" ở thân Case (`bao-chi-xem`) — mọi lối vào cùng thân. */

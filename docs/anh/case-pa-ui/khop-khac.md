@@ -32,6 +32,7 @@ Dữ liệu demo khác ảnh 5 của chủ SP (em Đặng Quốc Bảo, Case Rea
 | k3 · chỉ xem | câu "ai làm được" + giá trị chữ thường, không bút / ▾ / nút xoá | k3-cap | KHỚP |
 | k4 · lỗi tải | `ErrorState` + Tải lại (giữ) | — | KHỚP |
 | k5 · + Thêm PA | thẻ "PA mới" đầu danh sách, `ThemPaPanel` trong thẻ | k5-cap | KHỚP |
+| Nguyên nhân (chủ SP 06/11, xem PR #1054) | `NguyenNhan`: **mỗi nhóm đã chọn một hộp riêng** (chính trước), hộp cuối mang ▾, bấm hộp nào cũng mở chọn nhóm — thay một hộp lồng các thẻ | n1-cap | KHÁC có chủ ý (lời chủ SP mới hơn mockup) |
 | n1 / n2 | `NguyenNhan` (chọn nhóm, thứ tự = chính trước, Khác → Ghi rõ) · `SuaTenCase` (Tên · Kỹ năng khoá khi có PA · Mức) | — | KHÁC nhỏ: n1 chọn bằng thẻ nhóm (`ChonNhom` sẵn có) thay ô tích |
 | n3 / n4 | Đề xuất PA khác… / Không cần theo dõi… — trong form xác nhận ở thẻ | — | KHỚP |
 | n5 | Mở lại PA (chân thẻ), sửa kết quả bị chặn (lý do tại chỗ — form cũ), Xoá kết quả ở Lịch sử | — | KHỚP |

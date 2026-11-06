@@ -486,14 +486,16 @@ function NguyenNhan({ data, sua, nhap, onDoi }: { data: CaseDetail; sua: boolean
       bao({ tt: 'da', luc: gioLuu() }); onDoi(d);
     } catch (e: any) { bao({ tt: 'loi' }); setLoi(e?.message ?? t('Không lưu được')); }
   };
-  const tags = (ds: { code: string; label: string }[]) => ds.length
-    ? <span className="flex flex-wrap items-center gap-1.5">{ds.map((x) => <span key={x.code} className="the-phu">{dich(x.label)}</span>)}</span>
-    : <span className="text-faint">{t('Chưa có')}</span>;
   const nhanCua = (code: string) => issuesForTopic(data.topic ?? '', data.chuongTrinh ?? null).find((i) => i.code === code)?.label ?? code;
   const hien = nhap ? nhap.v.map((c) => ({ code: c, label: nhanCua(c) })) : goc.map((x) => ({ code: x.code, label: x.label }));
   return (
     <>
-      <GiaTriSua kieu="chon" nhan={t('Sửa nguyên nhân')} sua={sua} mo={moHop} onClick={() => setMoHop(!moHop)}>{tags(hien)}</GiaTriSua>
+      {/* Chủ SP 06/11 (xem PR a): mỗi nhóm đã chọn MỘT hộp riêng (chính trước) — không hộp lồng thẻ; bấm hộp nào cũng mở chọn nhóm. Không quyền: chữ thường. */}
+      {!hien.length ? <GiaTriSua kieu="chon" nhan={t('Sửa nguyên nhân')} sua={sua} mo={moHop} onClick={() => setMoHop(!moHop)}><span className="text-faint">{t('Chưa có')}</span></GiaTriSua>
+        : !sua ? <span>{hien.map((x) => dich(x.label)).join(' · ')}</span>
+        : hien.map((x, i) => (
+          <GiaTriSua key={x.code} kieu="chon" nhan={t('Sửa nguyên nhân')} mo={moHop} khongDau={i < hien.length - 1} onClick={() => setMoHop(!moHop)}>{dich(x.label)}</GiaTriSua>
+        ))}
       {nhap && nhap.v.length > 0 && <span className="text-[13px] text-faint">{t('lưu cùng Mô tả')}</span>}
       {chinh?.observation && !laMt && laKhac(chinh.code) && !moHop && <span className="basis-full text-[13px] text-slate-300">{t('Khác')}: {chinh.observation}</span>}
       {moHop && (
