@@ -116,7 +116,7 @@ export function HoTroHocVienTab() {
    * (`cn=` trên địa chỉ), mặc định Tất cả. QL / Admin / QT giữ ô Chi nhánh gửi máy chủ như cũ.
    */
   const laGvThuong = !laQuanLy && !laTvv;
-  const cnLoc = laGvThuong && params.get('cn') ? Number(params.get('cn')) : null;
+  const cnUrl = laGvThuong && params.get('cn') ? Number(params.get('cn')) : null;
   const qs = new URLSearchParams();
   if (branchId && !laGvThuong) qs.set('branchId', String(branchId));
   /* GV không gửi `nguoi` — `/my-work` không tham số giữ NGUYÊN hành vi cũ (Q3). OV-15d: QL đọc "tất cả" MỘT lần, Của tôi / Của GV lọc tại máy (cùng danh sách, cùng số). */
@@ -145,9 +145,13 @@ export function HoTroHocVienTab() {
   }, [data, anTam]);
   /* S11 (chủ SP 05/11): ô "Của tôi" = số badge (dòng của tôi quá hạn + hôm nay, `soCuaToi` — cùng hàm máy chủ); "Của GV" / "Tất cả" không số. */
   const soToi = useMemo(() => soCuaToi(dsGoc), [dsGoc]);
-  const tatCaViec = useMemo(() => (typeof nguoi === 'number' ? dsGoc : dsGoc.filter((it) => khopNguoiViec(it, nguoi)))
+  /* RA-LOI-0711d: `cn=` chỉ lọc khi chi nhánh đó còn trên dải — làm hết việc một CN (dải ẩn) hay mở địa chỉ cũ thì không giấu việc CN khác. */
+  const cnLoc = cnUrl != null && (data?.chiNhanh ?? []).some((b) => b.id === cnUrl) ? cnUrl : null;
+  /* Nguồn đang xem (người · chi nhánh) — một điều kiện cho danh sách và dòng giữ chỗ vừa xong. */
+  const trongNguon = (it: WorkItem) => (typeof nguoi === 'number' || khopNguoiViec(it, nguoi))
     /* ponytail: việc không gắn lớp / dòng tuần nhiều chi nhánh (`cn` null) hiện ở mọi chi nhánh (như khung — không bao giờ giấu việc); tổng các ô CN có thể > "Tất cả". */
-    .filter((it) => cnLoc == null || it.cn == null || it.cn === cnLoc), [dsGoc, nguoi, cnLoc]);
+    && (cnLoc == null || it.cn == null || it.cn === cnLoc);
+  const tatCaViec = useMemo(() => dsGoc.filter(trongNguon), [dsGoc, nguoi, cnLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const dsCn = laGvThuong ? data?.chiNhanh ?? [] : [];
   const maCn = useMemo(() => new Map(dsCn.map((b) => [b.id, b.code])), [dsCn]);
   const demCn = (id: number | null) => demDongViec(dsGoc.filter((it) => id == null || it.cn == null || it.cn === id)).n;
@@ -166,8 +170,11 @@ export function HoTroHocVienTab() {
    */
   const [giu, setGiu] = useState<ReadonlyMap<string, WorkItem>>(new Map());
   useEffect(() => { setGiu(new Map()); }, [url]);   // đổi người xem / chi nhánh = nguồn khác: bỏ giữ chỗ của nguồn cũ
-  const conTrenMayChu = useMemo(() => new Set(phang(tatCaViec).map((x) => x.key)), [tatCaViec]);
-  const xong = useMemo(() => new Set([...giu.keys()].filter((k) => !conTrenMayChu.has(k))), [giu, conTrenMayChu]);
+  /* RA-LOI-0711d: "còn trên máy chủ" so CẢ danh sách đã nạp (không phải phần đang lọc) — đổi dải chi nhánh / Của tôi ↔ Của GV không biến việc
+     chưa xong thành "đã xong"; dòng giữ chỗ chỉ hiện trong đúng nguồn của nó. */
+  const conTrenMayChu = useMemo(() => new Set(phang(dsGoc).map((x) => x.key)), [dsGoc]);
+  const xong = useMemo(() => new Set([...giu].filter(([k, x]) => !conTrenMayChu.has(k) && trongNguon(x)).map(([k]) => k)),
+    [giu, conTrenMayChu, nguoi, cnLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* OV-11c (CV-7): em vừa xong của một dòng gộp (lớp × loại việc) đứng lại TRONG dòng gộp đó (mờ + gạch), không rơi thành dòng riêng cuối nhóm. */
   const hienThi = useMemo(() => {
     const giuXong = [...giu.values()].filter((x) => xong.has(x.key));
@@ -213,11 +220,16 @@ export function HoTroHocVienTab() {
     return [{ key: 'duyet', nhan: tenTab('duyet'), badge: bd }, ...ds];
   }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Mở trang: tab đầu có việc quá hạn, không có thì tab đầu (`tabMacDinh`); panel duyệt đang mở → tab Chờ bạn duyệt. */
-  const tab = theId ? 'duyet' : tabs.some((x) => x.key === tabUrl) ? tabUrl : tabMacDinh(tabs);
-  /* Ghi tab vào địa chỉ một lần (thay chỗ) — lưu việc làm đổi số quá hạn không làm trang nhảy tab; Quay lại về đúng tab. `loai=` đang lọc thì không ghi (ghi `nhom` = bỏ lọc loại). */
+  /* RA-LOI-0711d: mở từ link `?viec=` (chuông, Tổng quan, Giao việc) không kèm `nhom` → tab của chính việc đó, danh sách + Quay lại đúng chỗ. */
+  const tabViec = !tabUrl && viec ? (() => { const x = phang(dsGoc).find((y) => y.key === viec); return x ? tabCua(x) : null; })() : null;
+  const tab = theId ? 'duyet' : tabs.some((x) => x.key === tabUrl) ? tabUrl
+    : tabViec && tabs.some((x) => x.key === tabViec) ? tabViec : tabMacDinh(tabs);
+  /* Ghi tab vào địa chỉ một lần (thay chỗ) — lưu việc làm đổi số quá hạn không làm trang nhảy tab; Quay lại về đúng tab. `loai=` đang lọc thì không ghi (ghi `nhom` = bỏ lọc loại).
+     Đếm thẻ duyệt chưa về → chưa ghi (địa chỉ `nhom=duyet` không bị tab mặc định đè). */
+  const choDemDuyet = !!session?.nav?.workApprove && !xemMotGv && demDuyet === undefined;
   useEffect(() => {
-    if (data && tab && tab !== params.get('nhom') && !params.get('loai') && !theId) setParam('nhom', tab);
-  }, [data, tab]);   // eslint-disable-line react-hooks/exhaustive-deps
+    if (data && tab && !choDemDuyet && tab !== params.get('nhom') && !params.get('loai') && !theId) setParam('nhom', tab);
+  }, [data, tab, choDemDuyet]);   // eslint-disable-line react-hooks/exhaustive-deps
   const trongTab = useMemo(() => items.filter((it) => tabCua(it) === tab), [items, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   const demHan = useMemo(() => demLocNhanh(trongTab, 'tat-ca', homNay), [trongTab, homNay]);
   /* `viec` trỏ tới việc không có panel (đường cũ, gõ tay) → như chưa chọn. */
@@ -355,7 +367,7 @@ export function HoTroHocVienTab() {
   /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ đọc); SUA-LOI-CV: đang xem việc MỘT GV thì không có (yêu cầu là của người xem). */
   const [khuDuyet, setKhuDuyet] = useState<HTMLDivElement | null>(null);
   /* U01 #1: Lọc thêm — số bộ lọc đang bật trong đó (Một GV · khung · chi nhánh khác mặc định); đang bật thì mở sẵn. */
-  const soLocThem = (typeof nguoi === 'number' ? 1 : 0) + (khung !== 'tat-ca' ? 1 : 0) + (params.get('cn') ? 1 : 0);
+  const soLocThem = (typeof nguoi === 'number' ? 1 : 0) + (khung !== 'tat-ca' ? 1 : 0) + (!laGvThuong && params.get('cn') ? 1 : 0);   // GV: `cn` là dải chi nhánh, không nằm trong Lọc thêm
   const [moLocThem, setMoLocThem] = useState(soLocThem > 0);
   const [xemXong, setXemXong] = useState(false);
   /* ponytail: "xong hôm nay" = việc đã lưu trong phiên này (`giu`), mất khi tải lại trang; cần nhật ký máy chủ nếu chủ SP muốn giữ qua phiên. */
@@ -370,8 +382,11 @@ export function HoTroHocVienTab() {
   const laGv = laGvThuong;
   const tenCn = useTenChiNhanh(laTvv);
   /* a2 "7 việc ở Cẩm Phả": QL xem một GV trong một chi nhánh — tên chi nhánh đang lọc (danh sách chi nhánh của ô Chi nhánh, đã nạp). */
-  const dsCnXem = useApi<{ id: number; name: string }[]>(xemMotGv && branchId ? '/ref/branches' : null).data;
-  const tenCnXem = branchId ? dsCnXem?.find((b) => b.id === branchId)?.name ?? null : null;
+  /* RA-LOI-0711d: QL chỉ một chi nhánh (không có ô Chi nhánh, `branchId` null) → chi nhánh duy nhất của quyền. */
+  const cnQuyen = [...new Set((session?.grants ?? []).map((g) => g.branchId))];
+  const cnXem = branchId ?? (cnQuyen.length === 1 ? cnQuyen[0] : null);
+  const dsCnXem = useApi<{ id: number; name: string }[]>(xemMotGv && cnXem ? '/ref/branches' : null).data;
+  const tenCnXem = cnXem ? dsCnXem?.find((b) => b.id === cnXem)?.name ?? null : null;
   /* CV-TAB (mockup v17 `.tom`): đầu trang "n việc · m quá hạn" — đếm dòng (`demDongViec`), cùng phạm vi lọc người / khung với badge tab. */
   const tong = useMemo(() => demDongViec(items), [items]);
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
