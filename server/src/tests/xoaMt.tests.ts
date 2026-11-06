@@ -88,6 +88,22 @@ export async function runXoaMtTests(t: any) {
     assert(k.speaking.startsWith('0:') && ['listening', 'reading', 'writing'].every((s) => k[s].startsWith('1:')), JSON.stringify(k));
   }));
 
+  check('XM-6 · RA-LOI-0711c: Khôi phục (nút ô / hồ sơ, không `kyNang`) cũng chỉ đưa lại môn vừa Xoá MT; môn huỷ vắng 2 lần trước khi xoá GIỮ huỷ (Hoàn tác lẫn Khôi phục)', () => thu(() => {
+    const huy = (id: number) => conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ? AND skill = 'listening'`).run(id);
+    const l = (id: number) => get(`SELECT required, sit_status, huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`, id);
+    for (const hoanTac of [true, false]) {
+      const a = luot();
+      svc.setSkillSkip(P.mbManager, a, 'speaking', true, null);
+      huy(a);
+      const r = svc.xoaLuot(P.mbManager, a);
+      svc.duaLaiCaLuot(P.mbManager, a, hoanTac ? r.kyNang : null);
+      const k = kn(a), x = l(a);
+      assert(k.speaking.startsWith('0:'), `${hoanTac ? 'Hoàn tác' : 'Khôi phục'}: S xoá riêng từ trước phải giữ xoá: ${JSON.stringify(k)}`);
+      assert(x.required === 1 && x.sit_status === 'cancelled' && x.huy_vang === 1, `${hoanTac ? 'Hoàn tác' : 'Khôi phục'}: L huỷ vắng 2 lần phải giữ huỷ: ${JSON.stringify(x)}`);
+      assert(['reading', 'writing'].every((s) => k[s].startsWith('1:')), JSON.stringify(k));
+    }
+  }));
+
   check('XM-3 · chặn như "Xóa lịch" cũ: có điểm → 400; đã làm bài → 400; không đổi gì. Lớp thường / lượt không phải MT → 400', () => thu(() => {
     const a = luot();
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'sat' WHERE attempt_id = ? AND skill = 'listening'`).run(a);

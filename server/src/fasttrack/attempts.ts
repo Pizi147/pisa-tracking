@@ -1601,6 +1601,7 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
  * GVCN khi công tắc #1064 bật); khoá cuối tuần N15 qua `setSkillScope`. Đã có điểm / đã làm bài → chặn như "Xóa lịch" cũ (điểm xoá theo T22).
  * Ô hiện "Đã xoá" + Khôi phục (`duaLaiCaLuot`); Hoàn tác = Khôi phục đúng các kỹ năng vừa xoá.
  */
+const LY_DO_XOA_MT = 'Xoá MT';   // `scope_reason` của lần Xoá MT — Khôi phục chỉ đưa lại đúng các môn mang dấu này
 export function xoaLuot(p: Principal, attemptId: number) {
   const a = loadAttempt(attemptId);
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới xoá được MT.');
@@ -1612,7 +1613,7 @@ export function xoaLuot(p: Principal, attemptId: number) {
   if (scoresOf(attemptId).some((s) => s.band !== null || s.raw_score !== null)) throw loi(400, '{nhan} đã có điểm — không xoá được.', { nhan });
   if (ds.some((r) => r.sit_status === 'sat')) throw loi(400, '{nhan} đã làm bài — không xoá được.', { nhan });
   return tx(() => {
-    for (const r of ds) setSkillScope(p, attemptId, r.skill, false, 'Xoá MT', { daKiemQuyen: true });
+    for (const r of ds) setSkillScope(p, attemptId, r.skill, false, LY_DO_XOA_MT, { daKiemQuyen: true });
     refreshOutcome(p, attemptId);
     return { ok: true as const, kyNang: ds.map((r) => r.skill as string) };
   });
@@ -1626,12 +1627,17 @@ export function duaLaiCaLuot(p: Principal, attemptId: number, kyNang?: readonly 
   const a = loadAttempt(attemptId);
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được MT.');
   if (a.status === 'cancelled') throw loi(400, 'MT{attempt_no} đã huỷ — mở lại lượt trước.', { attempt_no: a.attempt_no });
-  /* Môn em không học (môn đăng ký P8) không phải "đã xoá" — chỉ đổi ở Sửa thông tin, không đưa lại ở đây. */
-  const ds = ensureSkillRows(attemptId).filter((r) => (!r.required || r.sit_status === 'cancelled') && r.scope_reason !== LY_DO_KHONG_HOC
+  /* Môn em không học (môn đăng ký P8) không phải "đã xoá" — chỉ đổi ở Sửa thông tin, không đưa lại ở đây.
+     RA-LOI-0711c: MT đã "Xoá MT" → Khôi phục (Hoàn tác lẫn nút ô / hồ sơ) chỉ đưa lại đúng các môn lần xoá đó, về trạng thái trước xoá
+     (môn xoá riêng từ trước giữ xoá; môn đã huỷ vắng 2 lần giữ huỷ — N38 L2). */
+  const rows = ensureSkillRows(attemptId);
+  const laXoaMt = (r: (typeof rows)[number]) => !r.required && r.scope_reason === LY_DO_XOA_MT;
+  const coXoaMt = rows.some(laXoaMt);
+  const ds = rows.filter((r) => (coXoaMt ? laXoaMt(r) : (!r.required || r.sit_status === 'cancelled') && r.scope_reason !== LY_DO_KHONG_HOC)
     && (!kyNang || kyNang.includes(r.skill)));
   if (!ds.length) throw badRequest('Không có kỹ năng nào đã huỷ.');
   return tx(() => {
-    for (const r of ds) setSkillScope(p, attemptId, r.skill, true, null, { daKiemQuyen: true });
+    for (const r of ds) setSkillScope(p, attemptId, r.skill, true, null, { daKiemQuyen: true, giuHuy: coXoaMt });
     refreshOutcome(p, attemptId);
     return { ok: true as const, kyNang: ds.map((r) => r.skill as string) };
   });

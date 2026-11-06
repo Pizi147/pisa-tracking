@@ -128,7 +128,9 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
           const daXong = ft.cot.map((n) => ({ n, d: h.dot[n] })).filter((x) => x.d?.attemptId != null && x.d.ovr !== undefined && emXongDot(x.d));
           const gan = daXong[daXong.length - 1];
           const ganTuan = gan ? Object.values(gan.d!.kn).map((x) => x?.tuan).filter((w): w is string => !!w).sort().pop() : null;
-          const tiep = ft.cot.find((n) => h.dot[n]?.attemptId != null && !h.dot[n]!.lichSu && !emXongDot(h.dot[n]!));
+          /* RA-LOI-0711c: MT đã xoá (`oGon` null) không che MT đang chờ sau nó — chỉ hiện "Đã xoá" khi em không còn MT nào khác đang chờ. */
+          const cho = ft.cot.filter((n) => h.dot[n]?.attemptId != null && !h.dot[n]!.lichSu && !emXongDot(h.dot[n]!));
+          const tiep = cho.find((n) => oGon(h.dot[n]!.kn, homNay) !== null) ?? cho[0];
           const c = tiep != null ? cotMt(tiep) : null;
           const g = tiep != null ? oGon(h.dot[tiep]!.kn, homNay) : null;
           const moHop = (el: HTMLElement, cot: Cot) => setHop({ anchor: el, hang: h, cot, kyNangDau: null });
