@@ -242,6 +242,16 @@ function sortRows(rows: SkillRow[], bo: readonly string[] = ASSESSED_SKILLS): Sk
 }
 
 /**
+ * GIAM-DOC-0611g: tuần (`report_periods`) theo id — MỘT câu cho các id chưa nhớ trong request (`nhoTheoId`, nhớ theo từng id; ngoài request đọc thẳng).
+ * Trang gọi `loadSkillRows` nhiều lần chỉ đọc tuần một lần (vài chục dòng, bảng ~67 tuần).
+ */
+function tuanTheoId(ids: readonly number[]): Map<number, { week_start: string; week_end: string; code: string }> {
+  const m = nhoTheoId('tuan:', [...new Set(ids)], (thieu) => new Map((db().prepare(`SELECT id, week_start, week_end, code FROM report_periods WHERE id IN (${DS_JSON})`)
+    .all(JSON.stringify(thieu)) as any[]).map((t) => [t.id as number, [{ week_start: t.week_start as string, week_end: t.week_end as string, code: t.code as string }]])));
+  return new Map([...m].map(([id, [t]]) => [id, t]));
+}
+
+/**
  * Nạp lịch kỹ năng của NHIỀU đợt bằng một truy vấn — dùng cho mọi danh sách.
  *
  * Đợt nào chưa có dòng nào thì KHÔNG tự tạo ở đây: danh sách là màn chỉ đọc, và ghi vào
@@ -264,11 +274,9 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
         if (r.id === null) mon.set(r.attempt_id, r.mon_luot!);
         else rows.push(r);
       }
-      /* GIAM-DOC-0611g (Turso câu #1, ~5,9 K dòng / lần): tuần của dòng lịch đọc RIÊNG một lần theo tập id tuần (bảng ~67 tuần, mỗi lô vài chục id) thay JOIN
-         `report_periods` cho TỪNG dòng lịch (4–5 dòng / lượt). Cùng ba cột, cùng giá trị (tuần không có / id NULL → NULL như LEFT JOIN). */
-      const idTuan = [...new Set(rows.map((r) => r.planned_period_id).filter((x): x is number => x != null))];
-      const tuan = new Map(!idTuan.length ? [] : (conn.prepare(`SELECT id, week_start, week_end, code FROM report_periods WHERE id IN (${DS_JSON})`)
-        .all(JSON.stringify(idTuan)) as any[]).map((t) => [t.id as number, t]));
+      /* GIAM-DOC-0611g (Turso câu #1, ~5,9 K dòng / lần): tuần của dòng lịch lấy từ `tuanTheoId` (nhớ theo kết nối) thay JOIN `report_periods` cho TỪNG dòng lịch
+         (4–5 dòng / lượt). Cùng ba cột, cùng giá trị (tuần không có / id NULL → NULL như LEFT JOIN). */
+      const tuan = tuanTheoId(rows.map((r) => r.planned_period_id).filter((x): x is number => x != null));
       for (const r of rows) {
         const t = r.planned_period_id != null ? tuan.get(r.planned_period_id) : undefined;
         if (t) { r.week_start = t.week_start; r.week_end = t.week_end; r.period_code = t.code; }

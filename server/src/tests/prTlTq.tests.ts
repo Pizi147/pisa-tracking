@@ -106,7 +106,7 @@ export async function runPrTlTqTests({ check, assert, P }: Ctx) {
       return soCauSql() - d0;
     });
     console.log(`   tapDatMt + tapKqMt QL: ${r} câu`);
-    assert(r <= 9, `${r} câu`);
+    assert(r <= 10, `${r} câu`);   // GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): 9 → 10
   });
   check('Q2 · EXPLAIN lượt khoảng lùi (kèm MT0): đi từ tuần (report_periods) qua idx_attempt_period, không quét bảng lượt', () => {
     const { cs } = phamViPhanTich(P.mbManager, mb, null);
