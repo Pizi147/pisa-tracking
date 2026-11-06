@@ -11,6 +11,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
+import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
@@ -320,7 +321,7 @@ export function planRegularTests(p: Principal, classId: number, opts: {
   const conn = db();
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId },
+  requireSuaLichTest(p, { classId },
     'Chỉ Quản lý mới lập được kế hoạch kiểm tra của lớp.');
 
   const prog = programmeOfClass(classId);

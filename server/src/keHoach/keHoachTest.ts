@@ -19,12 +19,13 @@ import {
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, require_, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
 import { currentCycle, nextAttemptNo } from '../fasttrack/cycles.ts';
 import {
-  baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, laQuanTriGoc, loadSkillRows, scoringModeOf, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
+  baoGvcnDoiLichThuongLop, checkWeekVsNeighbours, kiemVuot, loadSkillRows, scoringModeOf, setSitStatus, setSkillWeek, tinhLaiMtCu, tuanCuoiSauKhiDoi,
 } from '../fasttrack/skillSchedule.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
@@ -49,8 +50,8 @@ function xemDuoc(p: Principal): (classId: number) => boolean {
   return (classId) => can(p, PERMISSIONS.PLAN_WEEK, { classId }) || teachesClass(p, classId) || lopS.has(classId);
 }
 const requireXem = (p: Principal, classId: number) => { if (!xemDuoc(p)(classId)) throw forbidden(XEM_MSG); };
-/** Lớp này người xem chỉ xem được, không xếp (không `PLAN_WEEK`). */
-const chiXemLop = (p: Principal, classId: number) => !can(p, PERMISSIONS.PLAN_WEEK, { classId });
+/** Lớp này người xem chỉ xem được, không xếp (không `PLAN_WEEK`, và không phải GVCN lớp đó khi công tắc "Mở sửa lịch Test" BẬT). */
+const chiXemLop = (p: Principal, classId: number) => !choSuaLichTest(p, { classId });
 
 /** Bộ môn xếp lịch của lớp thường (bảng `programme_skills`, Pre FOU `tong_hop`) — K4-16. */
 const boMonThuong = (prog: { code: string; skills: readonly string[] } | null): KyNangKH[] =>
@@ -632,9 +633,9 @@ function docDot(attemptId: number) {
 
 export function kiemDot(p: Principal, i: { attemptId: number; kyNang: YeuCauKyNang[] }) {
   const a = docDot(i.attemptId);
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
   for (const k of i.kyNang) chonKyNang(k.skill);
-  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true, quanTri: laQuanTriGoc(p) });
+  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true, quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
 }
 
 /** Lưu MỘT ĐỢT (hộp chip bấm Lưu một lần): kiểm hết rồi mới ghi, một `tx` — chặn một kỹ năng thì cả lần lưu không đổi gì. */
@@ -647,12 +648,12 @@ export function luuDot(p: Principal, i: {
   khongBaoGvcn?: boolean;
 }): { ok: true; doi: KyNangKH[] } {
   const a = docDot(i.attemptId);
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
   for (const k of i.kyNang) chonKyNang(k.skill);
 
   const duaLai = new Set(i.kyNang.filter((k) => k.bo === false).map((k) => k.skill));
   const datTuan = i.kyNang.filter((k) => k.periodId && !k.bo) as YeuCauKyNang[];
-  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao, quanTri: laQuanTriGoc(p) });
+  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao, quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
   if (chan.length) {
     const ct = (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(a.class_id) as any)?.programme_code ?? null;
@@ -692,7 +693,7 @@ const CAU_THI_LAI_TUAN_QUA = 'Thi lại: chọn tuần từ tuần này trở đ
  */
 export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; periodId: number; lyDo?: string | null; force?: boolean }) {
   const a = docDot(i.attemptId);
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: a.class_id }, PLAN_MSG);
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
   if (a.kind !== 'mock' || a.lich_su || a.status === 'cancelled') throw badRequest('Chỉ thi lại được ở lượt Mock đang chạy.');
   if (!i.skills?.length) throw badRequest('Chưa chọn kỹ năng thi lại.');
   /* T4 (PR-MTa): Quản lý xếp được tuần đã qua — trừ thi lại: thi lại là một buổi thi thật, cần tuần từ tuần này trở đi. */
@@ -793,7 +794,7 @@ export function xepMoi(p: Principal, i: {
   lyDoBo?: string | null; force?: boolean;
 }) {
   const conn = db();
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: lopDangHocCua(i.studentId), studentId: i.studentId }, PLAN_MSG);
+  requireSuaLichTest(p, { classId: lopDangHocCua(i.studentId), studentId: i.studentId }, PLAN_MSG);
   const bo = (i.bo ?? []).map(chonKyNang);
   const tuan = tuanDayDu(i.tuan, bo);
   /* CÙNG CÁCH CHỌN LỘ TRÌNH VỚI `createAttempt` (ưu tiên `active`, không có thì lộ trình gần nhất). */
@@ -944,7 +945,7 @@ export function xepMoiThuong(p: Principal, i: {
   classId: number; studentId: number; kind: string; tuan: Partial<Record<KyNangKH, number>>; force?: boolean;
 }) {
   const conn = db();
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
+  requireSuaLichTest(p, { classId: i.classId }, PLAN_MSG);
   const { prog } = docLopThuong(i.classId);
   if (/^cp\d+$/.test(i.kind)) throw badRequest('Checkpoint tự xếp theo lịch lớp — bấm ô Checkpoint đã có để dời tuần.');
   if (i.kind !== 'progress' && i.kind !== 'final') throw badRequest('Cần chọn Progress Test hoặc Final Test.');
@@ -1168,7 +1169,7 @@ export function xepHangLoat(p: Principal, i: {
   idempotencyKey?: string;
 }, today: string = demoToday()): { dong: DongHangLoat[]; daLuu: number } {
   const conn = db();
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
+  requireSuaLichTest(p, { classId: i.classId }, PLAN_MSG);
   if (i.attemptNo !== undefined && i.attemptNo !== 'moi' && !Number.isInteger(i.attemptNo)) throw badRequest('Đợt không hợp lệ.');
   if ((i.attemptNo ? 1 : 0) + (i.kind ? 1 : 0) !== 1) throw badRequest('Cần chọn đúng một đợt để xếp.');
   const cls = conn
@@ -1208,13 +1209,14 @@ export function xepHangLoat(p: Principal, i: {
   );
 
   const lo = laThuong ? null : docFtTheoLo(studentIds);
+  const boKhoa = laThuong ? false : boKhoaCuoiTuan(p, { classId: i.classId });   // một lần cho cả lô — không một câu đọc công tắc mỗi em
   const xet = studentIds.map((studentId) => {
     const ten = hv.get(studentId)?.ten ?? '';
     if (laThuong) return xetMotEmThuong({ studentId, ten, kind: i.kind!, tuan, periods, bo });
     const rieng = Number(i.dotTheoEm?.[studentId]) || 0;
     return xetMotEmFT({
       studentId, ten, chon: rieng || i.attemptNo!, ep: !!rieng, thiLai: (i.thiLai?.[studentId] ?? []).map(chonKyNang),
-      tuan, periods, homNay: today, lo: lo!, kyChon, quanTri: laQuanTriGoc(p),
+      tuan, periods, homNay: today, lo: lo!, kyChon, quanTri: boKhoa,
     });
   });
   if (i.xemTruoc) return { dong: xet.map((x) => x.dong), daLuu: 0 };
@@ -1315,7 +1317,7 @@ function docGhiChu(classId: number, em: readonly { id: number; cycleId: number |
 
 /** Khoá ghi chú của một em × đợt (hoặc cả lớp) sau khi kiểm quyền, lớp, em, đợt. */
 function khoaGhiChu(p: Principal, i: { classId: number; studentId?: number | null; dot?: string | null }) {
-  require_(p, PERMISSIONS.PLAN_WEEK, { classId: i.classId }, PLAN_MSG);
+  requireSuaLichTest(p, { classId: i.classId }, PLAN_MSG);
   const conn = db();
   const lop = conn.prepare(`SELECT c.id, pg.scoring_mode AS mode FROM classes c LEFT JOIN programmes pg ON pg.code = c.programme_code WHERE c.id = ?`).get(i.classId) as any;
   if (!lop) throw notFound('Không tìm thấy lớp');

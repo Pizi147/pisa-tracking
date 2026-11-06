@@ -13,7 +13,8 @@ import { db, theoLo, tx } from '../db.ts';
 import { kiemBand, NHAN_XET_TOI_DA, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt } from '../util.ts';
-import { can, coTheXemLuotCham, grantGvNhapDiem, laGvSpeaking, require_, scoreEditPath, type Principal } from '../permissions.ts';
+import { can, coTheXemLuotCham, grantGvNhapDiem, isCoreTeacherOf, laGvSpeaking, scoreEditPath, type Principal } from '../permissions.ts';
+import { dangMoSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanCuoiTuan } from '../fasttrack/skillSchedule.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -34,7 +35,12 @@ const QL_MSG = 'Chỉ Quản lý / Admin thêm, dời, xoá hoặc khôi phục 
 const CHAM_MSG = 'Chỉ GV Speaking cùng chi nhánh hoặc Quản lý / Admin chấm được S Expert của học viên này.';
 const laQl = (p: Principal, studentId: number) => can(p, PERMISSIONS.PLAN_WEEK, { studentId });
 /** Có `plan.week` ở phạm vi nào đó — kiểm TRƯỚC khi tra dòng, để vai khác nhận 403 chứ không 404. */
-const coQuyenQl = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMISSIONS.PLAN_WEEK));
+const coQuyenQl = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMISSIONS.PLAN_WEEK)) || coQuyenSuaLich(p);
+/** Mở sửa lịch Test (chủ SP 06/11): công tắc BẬT → GVCN lớp mình thêm / dời / xoá / khôi phục lượt S Ex (CHỈ lịch — chấm điểm vẫn `chamDuoc`). */
+const coQuyenSuaLich = (p: Principal) => dangMoSuaLichTest() && p.assignments.some((a) => a.isCore);
+/** Cùng `laQl` nhưng cộng GVCN của lớp `lopId` khi công tắc BẬT (không câu SQL thêm — lớp đã có trong dòng). */
+const laSuaLich = (p: Principal, studentId: number, lopId: number | null | undefined) =>
+  laQl(p, studentId) || (!!lopId && dangMoSuaLichTest() && isCoreTeacherOf(p, lopId));
 
 /* Nhớ trong request: `dong()` gọi `chamDuoc` cho từng lượt của Kế hoạch Test / Lịch Test — không một câu SQL mỗi lượt (Turso). */
 const lopDangHoc = (studentId: number) => nho('sex-lop:' + studentId, () => db().prepare(
@@ -62,7 +68,7 @@ function dong(p: Principal, r: any, today: string): DongSEx & { branchId: number
     id: r.id, loai: 's-ex', studentId: r.student_id, ten: r.ten, ma: r.ma, classId: r.lop_id ?? null, classCode: r.lop_code ?? null, branchId: r.lop_cn ?? null,
     tuan: r.tuan, tuanMa: tuanLich(r.tuan, today), ngay: r.ngay ?? null, diem: r.diem ?? null, nhanXet: r.nhan_xet ?? null,
     nguoiCham: r.cham_ten ?? null, chamLuc: r.cham_luc ?? null, themBoi: r.them_ten ?? null, themLuc: r.them_luc,
-    sua: laQl(p, r.student_id), cham: chamDuoc(p, r.student_id),
+    sua: laSuaLich(p, r.student_id, r.lop_id), cham: chamDuoc(p, r.student_id),
   };
 }
 
@@ -126,10 +132,10 @@ export function themSEx(p: Principal, body: Record<string, unknown>) {
   const studentId = toInt(body.studentId);
   if (!studentId) throw badRequest('Thiếu học viên.');
   if (!db().prepare('SELECT 1 AS c FROM students WHERE id = ?').get(studentId)) throw notFound('Không tìm thấy học viên.');
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, QL_MSG);
+  requireSuaLichTest(p, { studentId }, QL_MSG);
   if (!lopDangHoc(studentId).length) throw badRequest('Học viên không có lớp đang học (hoặc đang tạm dừng) — xếp em vào lớp / cho em học lại trước khi thêm lượt S Expert.');
   const t = docThan(body, null, today);
-  chanCuoiTuan(p, SEX, [t.tuan]);
+  chanCuoiTuan(p, { ...SEX, student_id: studentId }, [t.tuan]);
   const luc = nowIso();
   const chamBoi = t.diem !== null || t.nhanXet ? p.userId : null;
   return tx(() => {
@@ -163,13 +169,13 @@ export function suaSEx(p: Principal, id: number, body: Record<string, unknown>) 
   return tx(() => {
     const { studentId, t: cu } = docLuot(id);
     /* Kiểm quyền theo HV TRƯỚC mọi phản hồi khác ("lưu y nguyên", 400) — người ngoài phạm vi chỉ nhận 403. */
-    if (!laQl(p, studentId) && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
+    if (!laQl(p, studentId) && !coQuyenSuaLich(p) && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     const t = docThan(body, cu, today);
     const doiLich = t.tuan !== cu.tuan || t.ngay !== cu.ngay;
     const doiDiem = t.diem !== cu.diem || t.nhanXet !== cu.nhanXet;
     if (!doiLich && !doiDiem) return { id, doi: false };
-    if (doiLich) require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, QL_MSG);
-    if (doiLich) chanCuoiTuan(p, SEX, [cu.tuan, t.tuan]);
+    if (doiLich) requireSuaLichTest(p, { studentId }, QL_MSG);
+    if (doiLich) chanCuoiTuan(p, { ...SEX, student_id: studentId }, [cu.tuan, t.tuan]);
     if (doiDiem && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     const luc = nowIso();
     motDong(db().prepare(`UPDATE s_expert SET tuan = ?, ngay = ?, diem = ?, nhan_xet = ?, sua_boi = ?, sua_luc = ?
@@ -198,8 +204,8 @@ function doiXoa(p: Principal, id: number, xoa: boolean) {
   if (!coQuyenQl(p)) throw forbidden(QL_MSG);
   return tx(() => {
     const { studentId, t } = docLuot(id, !xoa);
-    require_(p, PERMISSIONS.PLAN_WEEK, { studentId }, QL_MSG);
-    chanCuoiTuan(p, SEX, [t.tuan]);
+    requireSuaLichTest(p, { studentId }, QL_MSG);
+    chanCuoiTuan(p, { ...SEX, student_id: studentId }, [t.tuan]);
     motDong(db().prepare(`UPDATE s_expert SET xoa_luc = ?, xoa_boi = ? WHERE id = ? AND xoa_luc IS ${xoa ? '' : 'NOT '}NULL`)
       .run(xoa ? nowIso() : null, xoa ? p.userId : null, id));
     writeAudit({

@@ -10,6 +10,7 @@ import { addDays, badRequest, notFound, nowIso, loi } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { lopDayDu, phanCongDaNap, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
@@ -304,7 +305,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
 export function applySuggestedMockWeeks(p: Principal, cycleId: number): { created: number; moved: number; kept: number } {
   const cy = db().prepare('SELECT * FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!cy) throw notFound('Không tìm thấy lộ trình');
-  require_(p, PERMISSIONS.PLAN_WEEK, { studentId: cy.student_id },
+  requireSuaLichTest(p, { studentId: cy.student_id },
     'Bạn không có quyền xếp tuần MT cho học viên này.');
   if (!suggestedMockWeeks(cycleId).length) {
     throw badRequest('Chưa khai tuần bắt đầu học nên chưa đề xuất được lịch MT.');
