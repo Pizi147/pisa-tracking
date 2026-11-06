@@ -1,0 +1,74 @@
+/* Nháp Công việc chia tab (PTA 06/11) — token lấy từ thiet-ke/audit-0311/chung.css */
+.toi { --bg:#050a16; --surface:#111c33; --surface-2:#172440; --line:#22324f; --line-strong:#33496f;
+  --accent:#9cbde7; --accent-soft:#192b46; --text:#e7edf7; --text-dim:rgb(183 194 216); --text-faint:rgb(154 168 194);
+  --ok:rgb(148 209 174); --bad:rgb(232 154 140); --bad-nen:rgb(52 28 29); --bad-vien:rgb(126 72 65);
+  --soon:rgb(228 199 132); --soon-nen:rgb(48 42 26); --soon-vien:rgb(118 102 63); --muted-nen:rgb(22 34 58);
+  --sos3-nen:#a33d2d; --hong:#f57aae; }
+.sang { --bg:#f3f5f9; --surface:#fff; --surface-2:#f2f4f9; --line:#d9deea; --line-strong:#b0b8cd;
+  --accent:#273c8f; --accent-soft:#eef1fa; --text:#141a2b; --text-dim:rgb(74 83 108); --text-faint:rgb(95 105 132);
+  --ok:rgb(56 103 76); --bad:rgb(166 58 45); --bad-nen:rgb(251 237 235); --bad-vien:rgb(222 156 148);
+  --soon:rgb(126 95 54); --soon-nen:rgb(251 244 225); --soon-vien:rgb(203 173 110); --muted-nen:rgb(242 244 249);
+  --sos3-nen:#862e27; --hong:#f25a98; }
+* { box-sizing:border-box; }
+body { margin:0; background:#0b0f19; font-family:'Be Vietnam Pro', system-ui, sans-serif; }
+.man { background:var(--bg); color:var(--text); font-size:14px; }
+.so { font-family:Inter,'Be Vietnam Pro',sans-serif; font-variant-numeric:tabular-nums; }
+.nav { display:flex; align-items:center; gap:22px; height:52px; padding:0 20px; border-bottom:1px solid var(--line); background:var(--surface); }
+.nav .logo { font-weight:800; letter-spacing:.5px; } .nav .logo b { color:var(--hong); }
+.nav a { color:var(--text-dim); font-weight:600; font-size:14px; text-decoration:none; }
+.nav a.dang { color:var(--text); box-shadow:inset 0 -2px 0 var(--accent); padding-bottom:14px; margin-top:14px; }
+.nav .phai { margin-left:auto; color:var(--text-dim); font-size:13px; }
+.dau { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; padding:16px 20px 10px; }
+.dau h1 { margin:0; font-size:22px; font-weight:700; }
+.dau .tom { color:var(--text-dim); font-size:14px; } .dau .tom b { color:var(--text); }
+.dau .loc { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.seg { display:inline-flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+.seg span { padding:7px 12px; font-weight:600; font-size:13px; color:var(--text-dim); border-right:1px solid var(--line-strong); white-space:nowrap; }
+.seg span:last-child { border-right:0; }
+.seg span.dang { background:var(--accent-soft); color:var(--text); box-shadow:inset 0 0 0 1px var(--accent); }
+.chon { display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border:1px solid var(--line-strong); border-radius:8px; font-weight:600; font-size:13px; white-space:nowrap; }
+.chon::after { content:"▾"; color:var(--text-faint); font-size:11px; }
+.chon i { font-style:normal; color:var(--text-dim); font-weight:500; }
+/* hàng tab hạng mục */
+.tabs { display:flex; gap:4px; padding:0 20px; border-bottom:1px solid var(--line); overflow-x:auto; }
+.tab { display:inline-flex; align-items:center; gap:8px; padding:11px 14px 12px; font-weight:600; font-size:14px; color:var(--text-dim); white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px; }
+.tab.dang { color:var(--text); border-bottom-color:var(--accent); }
+.bd { display:inline-flex; align-items:center; gap:3px; height:22px; min-width:24px; justify-content:center; padding:0 7px; border-radius:999px; font:700 12px Inter,'Be Vietnam Pro',sans-serif; font-variant-numeric:tabular-nums; }
+.bd.do { background:var(--bad-nen); color:var(--bad); border:1px solid var(--bad-vien); }
+.bd.do::before { content:"⚠"; font-size:11px; }
+.bd.vang { background:var(--soon-nen); color:var(--soon); border:1px solid var(--soon-vien); }
+.bd.vang::before { content:"◷"; font-size:12px; }
+.bd.trang { background:var(--muted-nen); color:var(--text-dim); border:1px solid var(--line-strong); }
+.tong { color:var(--text-faint); font-weight:500; font-size:12px; }
+/* thân */
+.than { display:grid; grid-template-columns:minmax(0,1fr) 520px; gap:16px; padding:14px 20px 20px; }
+.ds { background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.nhom-han { padding:9px 16px; font-weight:600; font-size:13px; color:var(--text-dim); background:var(--surface-2); border-top:1px solid var(--line); }
+.nhom-han:first-child { border-top:0; }
+.nhom-han.qua { color:var(--bad); }
+.nhom-han.gan { color:var(--soon); }
+.viec { display:grid; grid-template-columns:minmax(0,1fr) 150px 112px; gap:12px; align-items:center; padding:11px 16px; border-top:1px solid var(--line); }
+.viec .t1 { font-weight:600; } .viec .t2 { color:var(--text-dim); font-size:13px; margin-top:2px; }
+.cn { display:inline-flex; height:18px; align-items:center; padding:0 6px; margin-left:6px; border-radius:5px; border:1px solid var(--line-strong); font:600 11px 'Be Vietnam Pro'; color:var(--text-dim); vertical-align:2px; }
+.han { font-weight:600; font-size:13px; } .han.qua { color:var(--bad); } .han.qua::before { content:"⚠ "; }
+.han.gan { color:var(--soon); } .han.gan::before { content:"◷ "; } .han.xa { color:var(--text-dim); }
+.ai { color:var(--text-dim); font-size:13px; margin-top:2px; }
+.nut { display:inline-flex; justify-content:center; padding:7px 10px; border:1px solid var(--line-strong); border-radius:8px; font-weight:600; font-size:13px; }
+.pn { background:var(--surface); border:1px solid var(--line); border-radius:10px; min-height:420px; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--text-dim); }
+.pn b { display:block; color:var(--text); font-size:15px; margin-bottom:4px; }
+.ghi-cn { padding:8px 20px 0; font-size:13px; color:var(--text-faint); }
+.thu-gon { padding:10px 16px; border-top:1px solid var(--line); color:var(--text-dim); font-weight:600; font-size:13px; }
+/* 375 */
+.m375 { width:375px; }
+.m375 .nav { gap:12px; padding:0 14px; }
+.m375 .dau { padding:12px 16px 8px; }
+.m375 .dau .loc { margin-left:0; width:100%; }
+.m375 .tabs { padding:0 16px; }
+.m375 .than { grid-template-columns:1fr; padding:10px 16px 16px; }
+.m375 .viec { grid-template-columns:minmax(0,1fr) auto; }
+.m375 .viec .cot-han { grid-column:1; }
+.m375 .viec .nut { grid-row:1 / span 2; grid-column:2; align-self:center; }
+/* chú thích nháp (không lên web) */
+.mk { background:#fff8d6; color:#3b3000; border:1px dashed #b49a2c; border-radius:8px; padding:10px 14px; font:13px/1.5 'Be Vietnam Pro'; }
+.mk b { color:#000; }
+.m375 .seg span { padding:7px 6px; text-align:center; font-size:12px; }
