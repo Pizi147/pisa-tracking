@@ -140,6 +140,7 @@
  "web/src/modules/test/keHoach/TuanNho.tsx",
  "web/src/modules/test/keHoach/kieu.ts",
  "web/src/modules/test/keHoach/taiXlsx.ts",
+ "web/src/modules/test/keHoach/xoaMt.ts",
  "web/src/modules/test/lichTest/DaiSo.tsx",
  "web/src/modules/test/lichTest/HangLop.tsx",
  "web/src/modules/test/lichTest/KhoiNo.tsx",

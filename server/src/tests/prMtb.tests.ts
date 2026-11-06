@@ -445,7 +445,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
         }
       }
     }
-    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Dời","Vắng","Bỏ khỏi đợt","Dời hạn chấm","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
+    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Dời","Vắng","Xoá","Dời hạn chấm","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
     assert(JSON.stringify(d.NUT_HOP) === '["doi-tuan","bao-vang","bo-ky-nang"]', 'ba nút trên dòng');
   });
 
@@ -469,7 +469,8 @@ export async function runPrMtbTests(t: YThucTestKit) {
     }
     assert(!duoc('huy-vang', false, { ...QL_TT, quanLy: false, gvcn: true })[0].duoc, 'GVCN không xếp lại');
     assert(d.theoTuanChung('dang-thi', QL_TT, false) && d.theoTuanChung('chua-xep', QL_TT, false), 'đổi tuần thường theo Tuần chung');
-    assert(duoc('khong-yeu-cau')[2].viSao === 'Đã bỏ khỏi đợt', JSON.stringify(duoc('khong-yeu-cau')[2]));
+    /* Chủ SP 06/11: môn đã xoá → nút thứ ba "Khôi phục" sáng (Quản lý FT). */
+    assert(duoc('khong-yeu-cau')[2].duoc, JSON.stringify(duoc('khong-yeu-cau')[2]));
   });
 
   check('MTb (T5) · menuHopKyNang: (d) đợt chưa tạo — Dời + Bỏ khỏi đợt sáng, còn lại "Đợt chưa tạo"; đang thi: Vắng + Dời hạn sáng', () => {

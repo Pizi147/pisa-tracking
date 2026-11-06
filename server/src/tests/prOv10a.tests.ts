@@ -70,7 +70,8 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     const qa = ROLE_PERMISSIONS.office_admin;
     for (const k of ['cycle.edit', 'attempt.skip_skill', 'deadline.override']) assert(!qa.includes(k), `Admin không được có ${k}`);
     assert(loi(() => attempts.setSkillSkip(V.Admin, luot, 'listening', true, 'x'))?.status === 403, 'Huỷ kỹ năng → 403');
-    assert(loi(() => attempts.duaLaiCaLuot(V.Admin, luot))?.status === 403, 'Đưa lại → 403');
+    /* XOA-MT (chủ SP 06/11): "Đưa lại cả lượt" nay là Khôi phục MT — quyền như Xoá MT (sửa lịch Test, Admin có); Đưa lại MỘT môn vẫn 403. */
+    assert(loi(() => attempts.setSkillSkip(V.Admin, luot, 'listening', false, null))?.status === 403, 'Đưa lại một môn → 403');
     assert(loi(() => skillSchedule.setSkillDeadline(V.Admin, luot, 'listening', demoToday(), 'x'))?.status === 403, 'Dời hạn chấm → 403');
     assert(loi(() => hangLoat.xemTruoc(V.Admin, { viec: 'luu-tru', studentIds: [em.id] }))?.status === 403, 'hàng loạt (Lưu trữ) → 403');
     assert(/can\(PERMISSIONS\.CYCLE_EDIT\)/.test(doc('web/src/modules/classes/TabHocVienLop.tsx')), 'TabHocVienLop: chọn nhiều gắn cycle.edit');

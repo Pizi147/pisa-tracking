@@ -23,6 +23,7 @@ import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
 import { HopThaoTacMt } from '../../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from '../../cham/NganLichSuBai.tsx';
+import { khoiPhucMt, xoaMt } from './xoaMt.ts';
 
 type Dong = { tick: boolean; periodId: number | null; weekStart: string | null };
 
@@ -30,19 +31,20 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  * HỘP MỘT ĐỢT (mockup test-MT 05/10 phần 2; trước là "hộp kỹ năng" mockup 14 (1), Q19) — hộp nhỏ NEO CẠNH chip vừa bấm (portal,
  * `position: fixed`, kẹp trong màn); 375px thì là tấm dưới đáy rộng hết màn. Dùng ở Kế hoạch Test và hồ sơ HV › Lộ trình.
  *   · đầu `{tên em} · MT{n}` + ✕ · hàng "Tuần chung" (đổi một lần cho mọi dòng còn hiệu lực — kể cả có điểm / đã thi, điểm giữ (luật 1, PR-HOP1) — trừ dòng đã "Đổi tuần" riêng, đã huỷ, vắng, chờ duyệt) ·
- *     mỗi môn một dòng `L · tuần / trạng thái · [Dời] [Vắng] [Bỏ khỏi đợt] · ⋯` (N38, U05 chủ SP 05/11 "nút riêng cho từng môn"):
+ *     mỗi môn một dòng `L · tuần / trạng thái · [Dời] [Vắng] [Xoá] · ⋯` (N38, U05 chủ SP 05/11 "nút riêng cho từng môn"; chủ SP 06/11 "Bỏ khỏi đợt" → "Xoá"):
  *       - có điểm → `W3 SEP · 6.5`; chưa điểm → chip tuần + chip trạng thái (`trễ chấm` · `chờ chấm` · `vắng` · `huỷ · vắng 2 lần`, luật `oMt`);
  *       - ba nút + ⋯ (Dời hạn chấm · Huỷ điểm · Nhật ký) theo `menuHopKyNang` (một nguồn `thaoTacKyNang`); nút chưa làm được mờ, tooltip nói vì sao;
  *       - Dời = bộ chọn tuần ngay trên dòng = XẾP LẠI TỪ ĐẦU (L5) ở MỌI trạng thái — vắng, huỷ vắng 2 lần, Không dự thi, bỏ khỏi đợt (đưa lại);
- *         chọn đúng tuần đang có cũng lưu được (gửi `xepLai`). Vắng = "-" (hộp nhỏ). Bỏ khỏi đợt bật / tắt, lưu cùng nút Lưu; lớp thường không có.
+ *         chọn đúng tuần đang có cũng lưu được (gửi `xepLai`). Vắng = "-" (hộp nhỏ). Xoá ⇄ Khôi phục, lưu cùng nút Lưu; lớp thường không có.
  *   · mỗi lần đổi tuần gọi `/ke-hoach-test/dot/kiem` (đợt đã có) hoặc xem trước hàng loạt một em (đợt chưa có) → CHỈ dòng đỏ
  *     `Chặn: …` (Lưu tắt; PR-MTGON: dời vượt lượt sau cũng chặn ở đây) và dòng vàng (cảnh báo → nút đổi thành `Vẫn xếp vào tuần này`;
  *     chip "Tuần đã qua"). Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
  * PR-HOP1: một việc dời lịch một MT chỉ có hộp này và một đường lưu `/ke-hoach-test/dot` (Hồ sơ MT cũng mở nó). FT đợt đã có: ⋯ đầu
  *   hộp `Nhật ký · Mở hồ sơ MT`. `doiTuanDau`: dòng `kyNangDau` mở sẵn bộ chọn tuần (⋯ "Dời lịch thi" một kỹ năng).
- * OV-15c (mục 6, mockup 6 khung 8): chân hộp `Đóng · Xóa … Lưu` — Xóa = bỏ tuần (`/attempts/:id/bo-tuan`, đợt về Chưa xếp, lịch sử giữ),
- *   hỏi một lần NGAY TRONG hộp, xong có Hoàn tác; đã có điểm / đã thi → mờ + lý do. Không còn "Huỷ MT{n}". N38: bỏ `Khôi phục → Chưa xếp` ·
- *   `Giữ huỷ` (Dời thay). Ô "Ghi chú lịch thi" (C21) lưu cùng nút Lưu. Tuần luôn kèm năm (C20).
+ * OV-15c (mục 6, mockup 6 khung 8): lớp thường ⋯ "Xóa lịch" = bỏ tuần (`/attempts/:id/bo-tuan`, đợt về Chưa xếp, lịch sử giữ), hỏi một lần
+ *   NGAY TRONG hộp, xong có Hoàn tác. FT (chủ SP 06/11): ⋯ "Xoá MT{n}" (`xoaMt`, cùng đường hồ sơ MT) — không hỏi lại, ô "Đã xoá" + Khôi phục,
+ *   Hoàn tác; MT đã xoá → ⋯ "Khôi phục MT{n}". Đã có điểm / đã thi → mờ + lý do. N38: bỏ `Khôi phục → Chưa xếp` · `Giữ huỷ` (Dời thay).
+ *   Ô "Ghi chú lịch thi" (C21) lưu cùng nút Lưu. Tuần luôn kèm năm (C20).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm nút Lưu mở ngay.
  */
 export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maLop = null, ghiChu, loai, classId, studentId, dot, attemptId, kn, kyNangDau, deXuat, khaiGiang, tongTuan, onClose, onSaved, onHienDien, ky = KY, ct = null, lichSu = false, doiTuanDau = false }: {
@@ -267,9 +269,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
     setRieng({}); setDaChinh(false); setForce(false); setLyDo(''); setGhi(ghiChu?.noiDung ?? '');
   };
 
-  /* Xóa (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ. */
-  const lyDoXoa = attemptId === null ? null : lyDoKhongXoa(kn)
-    ?? (loai === 'ft' ? khoaCt(...ky.map((k) => (kn[k]?.batBuoc && kn[k]?.sit === 'scheduled' ? kn[k]?.tuan : null))) : null);
+  /* Lớp thường — Xóa lịch (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ. */
+  const lyDoXoa = attemptId === null ? null : lyDoKhongXoa(kn);
   const xoa = async () => {
     if (attemptId === null || busy) return;
     setBusy(true); setLoiXoa(null);
@@ -345,9 +346,20 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   const hoSo = attemptId !== null && dot.loai === 'ft' ? duongDotTest({ id: attemptId, kind: 'mock', classId }, null) : null;
   /* U05 (mockup khu C): "Lịch sử" · "Mở hồ sơ MT ›" là link ở chân hộp (luôn thấy); ⋯ chỉ còn "Xóa lịch" (ít dùng, xa nút Lưu — U3 30/10). */
   const moHoSo = hoSo && hoSo !== pathname ? hoSo : null;
-  const mucDau = attemptId === null ? [] : [
+  /* Chủ SP 06/11: FT ⋯ "Xoá MT{n}" (mọi kỹ năng ra khỏi đợt, tuần giữ) — cùng đường, cùng chữ hồ sơ MT; MT đã xoá → "Khôi phục MT{n}". */
+  const daXoaHet = loai === 'ft' && !moi && ky.every((k) => !kn[k]?.batBuoc);
+  const lyDoXoaFt = ky.some((k) => kn[k]?.batBuoc && kn[k]?.khoa === 'đã có điểm') ? t('Đã có điểm — không xoá được')
+    : ky.some((k) => kn[k]?.batBuoc && kn[k]?.sit === 'sat') ? t('Đã làm bài — không xoá được')
+    : khoaCt(...ky.map((k) => (kn[k]?.batBuoc ? kn[k]?.tuan : null)));
+  const mtNay = { attemptId: attemptId ?? 0, nhan: nhanDot(dot), tenHv, onXong: () => { onSaved(); onClose(); } };
+  const chanFt = (lyDo: string | null) => ({ tat: !!(lyDo || daSua || doiGhi || busy), title: lyDo ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined) });
+  const mucDau = attemptId === null ? [] : loai === 'thuong' ? [
     { key: 'xoa', nhan: t('Xóa lịch'), nguyHiem: true, tat: !!(lyDoXoa || daSua || doiGhi || busy),
       title: lyDoXoa ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined), onChon: () => setHoi(true) },
+  ] : daXoaHet ? [
+    { key: 'khoi-phuc', nhan: t('Khôi phục {dot}', { dot: nhanDot(dot) }), ...chanFt(null), onChon: () => { setBusy(true); void khoiPhucMt(toast, mtNay).finally(() => setBusy(false)); } },
+  ] : [
+    { key: 'xoa', nhan: t('Xoá {dot}', { dot: nhanDot(dot) }), nguyHiem: true, ...chanFt(lyDoXoaFt), onChon: () => { setBusy(true); void xoaMt(toast, mtNay).finally(() => setBusy(false)); } },
   ];
   const nutLuu = canhBao.length && !force ? t('Vẫn xếp vào tuần này') : t('Lưu');
   const nhanChung = loai === 'thuong' && chung?.weekStart ? nhanTuanKhoa(chung.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
@@ -480,7 +492,7 @@ function DongKyNangHop({ k, o, moi, loai, d, noiBat, khaiGiang, tongTuan, onTuan
   k: KyNangKH; o?: OKyNang; moi: boolean; loai: 'ft' | 'thuong'; d: Dong; noiBat: boolean; homNay: string | null; busy: boolean;
   khaiGiang?: string | null; tongTuan?: number | null; onTuan: (t: Tuan) => void; goc: string | null;
 }) {
-  /* Lớp thường luôn đủ bộ môn — không có "Bỏ khỏi đợt" (Q3). OV-10a: Admin không có `attempt.skip_skill` → nút mờ "Chỉ Quản lý" (máy chủ 403). */
+  /* Lớp thường luôn đủ bộ môn — không có "Xoá" môn (Q3). OV-10a: Admin không có `attempt.skip_skill` → nút mờ "Chỉ Quản lý" (máy chủ 403). */
   const bo = !d.tick;
   const nhanTuan = loai === 'thuong' && d.weekStart ? nhanTuanKhoa(d.weekStart, khaiGiang ?? null, tongTuan ?? null) : null;
   const coDiem = !moi && o?.khoa === 'đã có điểm';
@@ -491,9 +503,11 @@ function DongKyNangHop({ k, o, moi, loai, d, noiBat, khaiGiang, tongTuan, onTuan
   const ten = tenMon(ct, k);
   const muc = muc0.map((m) => (coSua && m.duoc && (m.muc === 'bao-vang' || m.muc === 'doi-han' || m.muc === 'huy-diem')
     ? { ...m, duoc: false, viSao: t('Lưu hoặc huỷ thay đổi trước') } : m));
-  /* N38 (U05): ba nút trên dòng; ⋯ giữ Dời hạn chấm · Huỷ điểm · Nhật ký. Nút mờ vẫn nhận focus + tooltip vì sao (aria-disabled). */
+  /* N38 (U05): ba nút trên dòng; ⋯ giữ Dời hạn chấm · Huỷ điểm · Nhật ký. Nút mờ vẫn nhận focus + tooltip vì sao (aria-disabled).
+     Chủ SP 06/11: môn đã xoá (hoặc vừa bấm Xoá, chưa lưu) — nút thứ ba đổi chữ "Khôi phục" (bấm lại = thôi xoá). */
   const nut = muc.filter((m) => NUT_HOP.includes(m.muc) && (m.muc !== 'bo-ky-nang' || loai === 'ft'));
-  const dangBat = (m: MucHop) => (m === 'doi-tuan' && riengTuan) || (m === 'bo-ky-nang' && bo);
+  const dangBat = (m: MucHop) => m === 'doi-tuan' && riengTuan;
+  const chuNut = (m: MucHop) => (m === 'bo-ky-nang' && bo ? t('Khôi phục') : CHU_MUC_HOP[m]);
   return (
     <div className={`grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 border-t py-1.5 first:border-t-0 max-sm:grid-cols-[44px_minmax(0,1fr)] ${noiBat ? 'rounded bg-white/5' : ''}`} style={{ borderColor: 'var(--line)' }}>
       <div className="break-words text-[14px] text-slate-100">
@@ -502,7 +516,7 @@ function DongKyNangHop({ k, o, moi, loai, d, noiBat, khaiGiang, tongTuan, onTuan
       </div>
       <div className="min-w-0 text-xs">
         {bo ? (
-          <span className="text-slate-500">{t('Bỏ khỏi đợt')}</span>
+          <span className="text-slate-500">{t('Đã xoá')}</span>
         ) : riengTuan ? (
           /* Rà #212 (T4/T20): hộp chỉ mở cho Quản lý / Quản trị (PLAN_WEEK) — chọn được cả tuần đã qua, máy chủ đã cho. */
           <TuanNho nam d={d} goc={goc} onTuan={onTuan} nhanKhoa={nhanTuan} />
@@ -518,10 +532,10 @@ function DongKyNangHop({ k, o, moi, loai, d, noiBat, khaiGiang, tongTuan, onTuan
       </div>
       <div className="flex items-center justify-end gap-1.5 max-sm:col-span-2">
         {nut.map((m) => (
-          <button key={m.muc} type="button" aria-disabled={!m.duoc || busy || undefined} aria-pressed={m.muc === 'bao-vang' ? undefined : dangBat(m.muc)}
-            aria-label={`${CHU_MUC_HOP[m.muc]} · ${ten}`} title={m.viSao ?? undefined}
+          <button key={m.muc} type="button" aria-disabled={!m.duoc || busy || undefined} aria-pressed={m.muc === 'doi-tuan' ? dangBat(m.muc) : undefined}
+            aria-label={`${chuNut(m.muc)} · ${ten}`} title={m.viSao ?? undefined}
             className={`btn btn-sm min-h-[44px] sm:min-h-0 ${!m.duoc ? 'cursor-not-allowed opacity-50' : ''} ${dangBat(m.muc) ? 'border-[color:var(--accent)] text-[color:var(--accent)]' : ''}`}
-            onClick={() => { if (m.duoc && !busy) onMuc(m.muc); }}>{CHU_MUC_HOP[m.muc]}</button>
+            onClick={() => { if (m.duoc && !busy) onMuc(m.muc); }}>{chuNut(m.muc)}</button>
         ))}
         <MenuDong luonHien nhan={t('Thao tác khác · {skillLabel}', { skillLabel: ten })} muc={muc.filter((m) => !NUT_HOP.includes(m.muc)).map((m) => ({
           key: m.muc, nhan: CHU_MUC_HOP[m.muc], nguyHiem: m.muc === 'huy-diem', tat: !m.duoc, title: m.viSao ?? undefined, onChon: () => onMuc(m.muc),

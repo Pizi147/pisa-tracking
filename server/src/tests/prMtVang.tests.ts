@@ -36,17 +36,19 @@ export async function runPrMtVangTests(t: YThucTestKit) {
     assert(!dm.cauDaGhiVang('L', 'Em', { kq: 'khong-du-thi' }).includes('huỷ') && dm.cauDaGhiVang('L', 'Em', { kq: 'khong-du-thi' }).includes('Không dự thi'), 'câu Không dự thi');
   });
 
-  check('MV-0b · thao tác: hộp kỹ năng 3 nút Dời · Vắng · Bỏ khỏi đợt; không còn Xếp lại bài vắng / Đưa lại vào đợt / Không mock lại', () => {
+  check('MV-0b · thao tác: hộp kỹ năng 3 nút Dời · Vắng · Xoá; không còn Xếp lại bài vắng / Đưa lại vào đợt / Không mock lại', () => {
     const q = { nhapDiem: true, quanLy: true, gvcn: false, laFt: true, dotHoanTat: false };
     const cu = ['xep-lai', 'dua-lai', 'khong-mock-lai'];
     for (const tt of ['khong-yeu-cau', 'chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'cho-duyet', 'da-huy', 'lich-su', 'huy-vang']) {
       const x = dm.thaoTacKyNang(tt, q);
       assert(![x.chinh, ...x.menu].some((m: string) => cu.includes(m)), `${tt}: ${JSON.stringify(x)}`);
     }
-    for (const tt of ['vang', 'da-huy', 'huy-vang', 'khong-yeu-cau']) assert(dm.thaoTacKyNang(tt, q).chinh === 'doi-lich', `${tt} → Dời (L5)`);
+    for (const tt of ['vang', 'da-huy', 'huy-vang']) assert(dm.thaoTacKyNang(tt, q).chinh === 'doi-lich', `${tt} → Dời (L5)`);
+    /* Chủ SP 06/11: môn đã xoá → "Khôi phục" một bấm, Dời vẫn trong ⋯ (xoaMt.tests XM-0). */
+    assert(dm.thaoTacKyNang('khong-yeu-cau', q).chinh === 'khoi-phuc-kn' && dm.thaoTacKyNang('khong-yeu-cau', q).menu.includes('doi-lich'), 'khong-yeu-cau → Khôi phục + Dời');
     const m = dm.menuHopKyNang('huy-vang', q, false);
     assert(m.map((x: any) => x.muc).join(',') === 'doi-tuan,bao-vang,bo-ky-nang,doi-han,huy-diem,nhat-ky', JSON.stringify(m));
-    assert(m[0].duoc && dm.CHU_MUC_HOP['doi-tuan'] === 'Dời' && dm.CHU_MUC_HOP['bao-vang'] === 'Vắng' && dm.CHU_MUC_HOP['bo-ky-nang'] === 'Bỏ khỏi đợt', 'chữ 3 nút');
+    assert(m[0].duoc && dm.CHU_MUC_HOP['doi-tuan'] === 'Dời' && dm.CHU_MUC_HOP['bao-vang'] === 'Vắng' && dm.CHU_MUC_HOP['bo-ky-nang'] === 'Xoá', 'chữ 3 nút');
     assert(dm.menuHopKyNang('dang-thi', q, false)[1].duoc && !dm.menuHopKyNang('chua-toi-tuan', q, false)[1].duoc, 'Vắng chỉ khi đã tới tuần Test');
     assert(dm.lyDoHuy({ huyVang: true }) === 'vắng 2 lần', 'nhãn Huỷ · vắng 2 lần');
   });

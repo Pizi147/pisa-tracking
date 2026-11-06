@@ -1604,15 +1604,43 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
   refreshRegularOutcome(p, a.id);
 }
 
-/** PR-MTGON (Hồ sơ MT khi mọi kỹ năng đã huỷ): "Đưa lại cả 4 kỹ năng" — mọi kỹ năng đã huỷ / không yêu cầu về đợt, MỘT tx. */
-export function duaLaiCaLuot(p: Principal, attemptId: number) {
+/**
+ * XOÁ MT (chủ SP 06/11 — MỘT thao tác "Xoá" ở Kế hoạch Test và hồ sơ MT, thay "Xóa lịch" về Chưa xếp + "Bỏ khỏi đợt" cả 4 kỹ năng): mọi kỹ năng
+ * bắt buộc ra khỏi đợt (`required = 0`, tuần GIỮ để Khôi phục), MỘT tx. Quyền như "Xóa lịch" cũ (`requireSuaLichTest`: QL / Admin / Quản trị,
+ * GVCN khi công tắc #1064 bật); khoá cuối tuần N15 qua `setSkillScope`. Đã có điểm / đã làm bài → chặn như "Xóa lịch" cũ (điểm xoá theo T22).
+ * Ô hiện "Đã xoá" + Khôi phục (`duaLaiCaLuot`); Hoàn tác = Khôi phục đúng các kỹ năng vừa xoá.
+ */
+export function xoaLuot(p: Principal, attemptId: number) {
   const a = loadAttempt(attemptId);
-  require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới đưa lại kỹ năng vào đợt.');
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới xoá được MT.');
+  if (a.kind !== 'mock') throw badRequest('Chỉ xoá được MT của lớp FT.');
+  const nhan = `MT${a.attempt_no}`;
+  if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
+  const ds = ensureSkillRows(attemptId).filter((r) => r.required);
+  if (!ds.length) throw loi(400, '{nhan} đã xoá.', { nhan });
+  if (scoresOf(attemptId).some((s) => s.band !== null || s.raw_score !== null)) throw loi(400, '{nhan} đã có điểm — không xoá được.', { nhan });
+  if (ds.some((r) => r.sit_status === 'sat')) throw loi(400, '{nhan} đã làm bài — không xoá được.', { nhan });
+  return tx(() => {
+    for (const r of ds) setSkillScope(p, attemptId, r.skill, false, 'Xoá MT', { daKiemQuyen: true });
+    refreshOutcome(p, attemptId);
+    return { ok: true as const, kyNang: ds.map((r) => r.skill as string) };
+  });
+}
+
+/**
+ * KHÔI PHỤC MT (PR-MTGON "Đưa lại cả 4 kỹ năng"; chủ SP 06/11 — nút Khôi phục ở ô "Đã xoá" và hồ sơ MT): kỹ năng đã xoá / huỷ về đợt, MỘT tx.
+ * `kyNang` (Hoàn tác của Xoá): chỉ các kỹ năng đó. Quyền như Xoá (`requireSuaLichTest`) — ai xoá được thì khôi phục được.
+ */
+export function duaLaiCaLuot(p: Principal, attemptId: number, kyNang?: readonly string[] | null) {
+  const a = loadAttempt(attemptId);
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được MT.');
   if (a.status === 'cancelled') throw loi(400, 'MT{attempt_no} đã huỷ — mở lại lượt trước.', { attempt_no: a.attempt_no });
-  const ds = ensureSkillRows(attemptId).filter((r) => !r.required || r.sit_status === 'cancelled');
+  /* Môn em không học (môn đăng ký P8) không phải "đã xoá" — chỉ đổi ở Sửa thông tin, không đưa lại ở đây. */
+  const ds = ensureSkillRows(attemptId).filter((r) => (!r.required || r.sit_status === 'cancelled') && r.scope_reason !== LY_DO_KHONG_HOC
+    && (!kyNang || kyNang.includes(r.skill)));
   if (!ds.length) throw badRequest('Không có kỹ năng nào đã huỷ.');
   return tx(() => {
-    for (const r of ds) setSkillScope(p, attemptId, r.skill, true, null);
+    for (const r of ds) setSkillScope(p, attemptId, r.skill, true, null, { daKiemQuyen: true });
     refreshOutcome(p, attemptId);
     return { ok: true as const, kyNang: ds.map((r) => r.skill as string) };
   });

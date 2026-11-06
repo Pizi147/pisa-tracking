@@ -1511,7 +1511,7 @@ const EN_B_MAY = {
   '{ai} đổi lịch.': '{ai} changed the schedule.',
   '{nhanDot} · {soEm} em · đổi lịch': (b) => `${b.nhanDot} · ${so(b.soEm, 'student', 'students')} · rescheduled`,
   'Lớp thường luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Progress Test / Final Test.': 'Normal classes always need all four subjects L/R/W/S. No subject can be waived to complete a Progress Test / Final Test.',
-  'Kỹ năng đã có điểm — Xoá điểm và bỏ khỏi đợt?': 'The skill has a score — clear it and remove it from the round?',
+  'Kỹ năng đã có điểm — Xoá cả điểm?': 'The skill has a score — delete the score too?',
   'Trạng thái làm bài không hợp lệ.': 'Invalid sitting status.',
   'Bạn không có quyền xác nhận trạng thái làm bài của kỹ năng này.': 'You cannot confirm the sitting status of this skill.',
   '{skill} đã có điểm ở đợt này, không thể xác nhận là vắng.': '{skill} has a score in this round, so it cannot be marked absent.',

@@ -1088,10 +1088,11 @@ export function baoGvcnDoiLichThuongLop(p: Principal, classId: number, kind: str
 export function setSkillScope(
   p: Principal, attemptId: number, skill: string, required: boolean, reason?: string | null,
   /** `khiTao`, `khongMockLai`: nơi gọi cũ — không còn chặn gì riêng. `monDangKy`: P8 đổi môn — nơi gọi đã kiểm quyền Sửa thông tin (`apMonDangKy`). */
-  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string; monDangKy?: boolean } = {},
+  /** `daKiemQuyen`: Xoá / Khôi phục cả MT (`xoaLuot`, `duaLaiCaLuot`) đã kiểm quyền sửa lịch Test. */
+  _opts: { khiTao?: boolean; khongMockLai?: boolean; today?: string; monDangKy?: boolean; daKiemQuyen?: boolean } = {},
 ) {
   const { attempt, row } = loadOne(attemptId, skill);
-  if (!_opts.monDangKy) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
+  if (!_opts.monDangKy && !_opts.daKiemQuyen) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
     'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
   const duaLaiHuy = required && row.sit_status === 'cancelled';
   if (!!row.required === required && !duaLaiHuy) return { ok: true, unchanged: true };
@@ -1103,7 +1104,7 @@ export function setSkillScope(
         'Lớp thường luôn phải đủ bốn môn L/R/W/S. Không có thao tác miễn môn để hoàn tất Progress Test / Final Test.',
       );
     }
-    if (hasScore(attemptId, row.skill)) throw new HttpError(409, 'Kỹ năng đã có điểm — Xoá điểm và bỏ khỏi đợt?');
+    if (hasScore(attemptId, row.skill)) throw new HttpError(409, 'Kỹ năng đã có điểm — Xoá cả điểm?');
   }
   /* Đưa lại: tuần đang giữ vướng thứ tự đợt → Chưa xếp (kiểm như dời một kỹ năng). */
   const boTuan = required && !!row.week_start && (

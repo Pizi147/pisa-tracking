@@ -9,13 +9,14 @@ import { t } from '../i18n/index.ts';
 
 /* N38 (PR-MT-VANG): bỏ 'xep-lai' (Xếp lại bài vắng), 'dua-lai' (Đưa lại vào đợt), 'khong-mock-lai' (Giữ huỷ) — chọn tuần (Dời) thay cả ba (L5, L6).
    'khoi-phuc' chỉ còn ở lớp thường (dữ liệu "đã huỷ" cũ). */
+/* Chủ SP 06/11: "Bỏ khỏi đợt" → "Xoá" (một tên cho xoá một môn và xoá cả MT); môn đã xoá có "Khôi phục" một bấm ('khoi-phuc-kn'). */
 export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-han' | 'bo-ky-nang' | 'bao-vang' | 'huy-diem'
-  | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khoi-phuc-diem';
+  | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khoi-phuc-diem' | 'khoi-phuc-kn';
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch'), 'doi-han': t('Dời hạn chấm'),
-  'bo-ky-nang': t('Bỏ khỏi đợt'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
-  'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'), 'khoi-phuc-diem': t('Khôi phục điểm'),
+  'bo-ky-nang': t('Xoá'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
+  'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'), 'khoi-phuc-diem': t('Khôi phục điểm'), 'khoi-phuc-kn': t('Khôi phục'),
 };
 
 export type TrangThaiTT = 'khong-yeu-cau' | 'chua-xep' | 'chua-toi-tuan' | 'dang-thi' | 'co-diem' | 'vang' | 'cho-duyet' | 'da-huy' | 'lich-su'
@@ -67,7 +68,8 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
      bài vắng, Khôi phục, Giữ huỷ, Đưa lại vào đợt). Máy chủ `setSkillWeek` / `luuDot` làm phần còn lại. */
   const xepLai: ThaoTac | null = q.laFt && ql ? 'doi-lich' : null;
   switch (tt) {
-    case 'khong-yeu-cau': return { chinh: ftQl ? 'doi-lich' : null, menu: [] };
+    /* Chủ SP 06/11: môn đã xoá → "Khôi phục" một bấm (tuần cũ giữ); muốn đổi tuần thì Dời (L5). */
+    case 'khong-yeu-cau': return { chinh: ftQl ? 'khoi-phuc-kn' : null, menu: ftQl ? ['doi-lich'] : [] };
     case 'chua-xep': return { chinh: ql ? 'dat-lich' : null, menu: huy };
     case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...huy] as ThaoTac[] };
     case 'dang-thi': return { chinh: q.nhapDiem ? 'nhap-diem' : null,
@@ -90,7 +92,7 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
 }
 
 /**
- * DÒNG KỸ NĂNG CỦA HỘP MỘT ĐỢT (N38 · U05 chủ SP 05/11 "nút riêng cho từng môn"): ba NÚT Dời · Vắng · Bỏ khỏi đợt (thao tác lịch của môn) rồi ⋯
+ * DÒNG KỸ NĂNG CỦA HỘP MỘT ĐỢT (N38 · U05 chủ SP 05/11 "nút riêng cho từng môn"): ba NÚT Dời · Vắng · Xoá (môn đã xoá: Khôi phục) rồi ⋯
  * (Dời hạn chấm · Huỷ điểm · Nhật ký — thao tác cũ giữ). Thứ tự cố định; mục chưa làm được vẫn hiện, mờ, `viSao` là tooltip. `duoc` lấy từ
  * `thaoTacKyNang` (một nguồn). Dời ở MỌI trạng thái = chọn tuần = xếp lại từ đầu (L5); kỹ năng đang bỏ khỏi đợt → Dời đưa lại (L6).
  */
@@ -98,12 +100,11 @@ export type MucHop = 'doi-tuan' | 'bao-vang' | 'bo-ky-nang' | 'doi-han' | 'huy-d
 /** Ba mục đầu là nút trên dòng; còn lại nằm trong ⋯. */
 export const NUT_HOP: readonly MucHop[] = ['doi-tuan', 'bao-vang', 'bo-ky-nang'];
 export const CHU_MUC_HOP: Record<MucHop, string> = {
-  'doi-tuan': t('Dời'), 'bao-vang': t('Vắng'), 'bo-ky-nang': t('Bỏ khỏi đợt'), 'doi-han': t('Dời hạn chấm'), 'huy-diem': t('Huỷ điểm'), 'nhat-ky': t('Nhật ký'),
+  'doi-tuan': t('Dời'), 'bao-vang': t('Vắng'), 'bo-ky-nang': t('Xoá'), 'doi-han': t('Dời hạn chấm'), 'huy-diem': t('Huỷ điểm'), 'nhat-ky': t('Nhật ký'),
 };
 
 /** Vì sao mục mờ (≤ 6 từ). `moi` = đợt chưa tạo. */
 function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
-  if (muc === 'bo-ky-nang' && tt === 'khong-yeu-cau') return t('Đã bỏ khỏi đợt');
   if (moi) return muc === 'bao-vang' || muc === 'doi-han' || muc === 'huy-diem' || muc === 'nhat-ky' ? t('Đợt chưa tạo') : t('Chỉ Quản lý');
   if (muc === 'huy-diem' && tt !== 'co-diem') return t('Chưa có điểm');
   switch (tt) {
@@ -126,7 +127,7 @@ export function menuHopKyNang(tt: TrangThaiTT, q: QuyenTT, moi: boolean): Array<
     'doi-tuan': doiTuan,
     'bao-vang': !moi && t.menu.includes('bao-vang'),
     /* Đợt mới: bỏ kỹ năng trước khi tạo (Quản lý FT); đợt đã có: theo bảng thao tác. */
-    'bo-ky-nang': moi ? q.laFt && q.quanLy && (q.huy ?? true) : t.menu.includes('bo-ky-nang'),
+    'bo-ky-nang': moi ? q.laFt && q.quanLy && (q.huy ?? true) : t.menu.includes('bo-ky-nang') || t.chinh === 'khoi-phuc-kn',
     'doi-han': !moi && t.menu.includes('doi-han'),
     'huy-diem': !moi && t.menu.includes('huy-diem'),
     'nhat-ky': !moi,

@@ -35,7 +35,7 @@ function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<
     case 'dat-lich': return t('Đặt tuần Test cho {mon}; các kỹ năng khác giữ nguyên.', { mon });
     case 'doi-lich': return t('Chỉ {mon} đổi tuần Test; các kỹ năng khác giữ nguyên. Không tính là một lần dời do vắng.', { mon });
     case 'doi-han': return t('Hạn chấm mới chỉ áp cho {mon}; hết ngày hạn mới tính quá hạn.', { mon });
-    case 'bo-ky-nang': return t('{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. Muốn làm lại thì Dời — chọn tuần.', { mon });
+    case 'bo-ky-nang': return t('{mon} ra khỏi MT này, không tính vào kết quả. Khôi phục được ngay ở dòng {mon}.', { mon });
     case 'bao-vang': return vang?.khongDuThi
       ? t('Tuần Test đã qua 2 tuần: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.', { mon })
       : laThuong
@@ -193,7 +193,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         dongTren: loiMay ? <p className="m-0 px-4 pt-2 text-xs font-semibold text-bad" role="alert">{loiMay}</p> : undefined,
         chinh: (
           <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${nguyHiem ? 'btn-danger' : 'btn-primary'}`} disabled={busy || !!khoa} title={khoa ?? undefined} onClick={() => void luu()}>
-            {busy ? t('Đang lưu…') : canhBao ? t('Vẫn dời vào tuần này') : xoaDiem ? t('Xoá điểm và bỏ khỏi đợt') : ten}
+            {busy ? t('Đang lưu…') : canhBao ? t('Vẫn dời vào tuần này') : xoaDiem ? t('Xoá cả điểm') : ten}
           </button>
         ),
       }}>
@@ -231,7 +231,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
             placeholder={tt === 'bao-vang' ? t('Ví dụ: em ốm, phụ huynh đã báo') : tt === 'huy-diem' ? t('Ví dụ: nhập nhầm bài của em khác') : t('Ví dụ: trùng lịch phòng')} />
         </Truong>
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}
-        {xoaDiem && <p className="m-0 text-xs text-amber-200" role="status">{t('{mon} đã có điểm. Xoá điểm và bỏ khỏi đợt?', { mon })}</p>}
+        {xoaDiem && <p className="m-0 text-xs text-amber-200" role="status">{t('{mon} đã có điểm. Xoá cả điểm?', { mon })}</p>}
         {(quaTuan || khoa) && (
           <div className="flex flex-wrap gap-1.5">
             {quaTuan && <Nhan tone="soon" title={CAU_TUAN_DA_QUA}>{t('Tuần đã qua')}</Nhan>}

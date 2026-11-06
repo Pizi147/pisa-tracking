@@ -952,10 +952,18 @@ api.post('/attempts/:id/skills/:skill/skip', requireAuth, wrap((req) => {
     req.body?.skipped !== false, req.body?.reason, { xoaDiem: req.body?.xoaDiem === true });
 }));
 
-/** PR-MTGON: "Đưa lại cả 4 kỹ năng" — mọi kỹ năng đã huỷ của lượt về đợt, một lần. */
+/** Chủ SP 06/11: "Xoá" một MT — mọi kỹ năng ra khỏi đợt (tuần giữ), ô "Đã xoá" + Khôi phục. */
+api.post('/attempts/:id/xoa', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return attemptSvc.xoaLuot(principalOf(req), pInt(req, 'id'));
+}));
+
+/** PR-MTGON: Khôi phục MT — kỹ năng đã xoá / huỷ của lượt về đợt, một lần. `{ kyNang? }` (Hoàn tác của Xoá): chỉ các kỹ năng đó. */
 api.post('/attempts/:id/dua-lai-ca-luot', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return attemptSvc.duaLaiCaLuot(principalOf(req), pInt(req, 'id'));
+  const kn = req.body?.kyNang;
+  if (kn !== undefined && kn !== null && !(Array.isArray(kn) && kn.every((x: unknown) => typeof x === 'string'))) throw badRequest('Kỹ năng không hợp lệ.');
+  return attemptSvc.duaLaiCaLuot(principalOf(req), pInt(req, 'id'), kn ?? null);
 }));
 
 /*
