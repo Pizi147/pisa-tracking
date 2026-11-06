@@ -548,13 +548,6 @@ api.get('/ref/users', requireAuth, wrap((req) => {
 api.get('/ref/teachers', requireAuth, wrap((req) =>
   classSvc.giaoVienPhanCong(principalOf(req), { branchId: qInt(req, 'branchId'), classId: qInt(req, 'classId') })));
 
-api.get('/ref/units', requireAuth, wrap((req) => {
-  const p = principalOf(req);
-  return meetingSvc.visibleUnits(p).map((u: any) => ({
-    id: u.id, code: u.code, name: u.name, kind: u.kind, branchId: u.branch_id,
-  }));
-}));
-
 // ============================================================ Tổng quan
 
 /**
