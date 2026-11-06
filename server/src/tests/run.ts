@@ -9607,6 +9607,8 @@ const { runPrMoSuaLichTestTests } = bocTep('prMoSuaLichTest', await import('./pr
 await runPrMoSuaLichTestTests({ check, assert, conn, P, classId } as any);
 const { runXoaMtTests } = bocTep('xoaMt', await import('./xoaMt.tests.ts'));
 await runXoaMtTests({ check, assert, conn, P, classId } as any);
+const { runSexHangTests } = bocTep('sexHang', await import('./sexHang.tests.ts'));
+await runSexHangTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)
 const { runPrXetLaiTests } = bocTep('prXetLai', await import('./prXetLai.tests.ts'));
 await runPrXetLaiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

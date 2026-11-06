@@ -496,6 +496,23 @@
   .kh-th.sticky-col, .kh-td.sticky-col { padding-left: 14px; }
   .kh-td.sticky-col .ten-ho-so { font-size: 15px; line-height: 1.35; }
   .kh-hang:last-child > .kh-td { border-bottom: 0; }
+  /* Chủ SP 06/11: hàng S Ex mảnh (~26 px) dính dưới hàng MT — bỏ vạch giữa hai hàng, vạch dưới hàng S Ex. */
+  .kh-hang-co-sex > .kh-td { border-bottom: 0; }
+  .kh-hang-sex > .kh-td { padding-top: 0; padding-bottom: 5px; }
+  .kh-hang-sex:last-child > .kh-td { border-bottom: 0; }
+  .hang-sex { display: grid; grid-template-columns: auto repeat(3, minmax(0, 1fr)); align-items: center; gap: 6px; }
+  .hang-sex-nhan { font-size: 12px; font-weight: 600; color: var(--hong-chu); }
+  .kh-hang-sex .sticky-col { vertical-align: middle; }
+  /* Ô dẹt S Ex: cùng dáng khung ô MT (.o-kh) nhưng mảnh — cao 26 px, một dòng tuần (+ band). */
+  .o-sex { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; height: 26px; padding: 0 6px;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 12px; white-space: nowrap; text-align: left; }
+  .o-sex-tuan { color: var(--text-dim); font-weight: 600; font-variant-numeric: tabular-nums; }
+  button.o-sex { cursor: pointer; }
+  button.o-sex:hover { border-color: var(--accent-line); }
+  button.o-sex:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .o-sex-trong { border-style: dashed; background: transparent; }
+  .o-sex-them { justify-content: center; color: var(--text-dim); font-weight: 600; }
+  @media (max-width: 639px) { button.o-sex { height: 44px; } }
   .o-kh { display: grid; align-content: start; gap: 3px; width: 100%; min-height: 62px; padding: 6px; border: 1px solid var(--line); border-radius: 6px;
     background: var(--bg); color: var(--text); text-align: left; cursor: pointer; }
   .o-kh:hover { border-color: var(--accent-line); }
