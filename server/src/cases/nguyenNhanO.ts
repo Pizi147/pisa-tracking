@@ -1,4 +1,5 @@
 import { db, theoLo, THAM_SO_TOI_DA } from '../db.ts';
+import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { docNhomNguyenNhan, issuesForTopic, laKhac } from '../../../shared/domain/index.ts';
 import { LA_CASE_MT, dongBoTrangThaiCaseLo } from './sosState.ts';
 
@@ -62,5 +63,6 @@ export function ganMoTaTuO(conn: any, caseId: number, topic: string | null, nguo
   muon.forEach((code, i) => conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at)
       VALUES (?,?,?,1,?,?,NULL,?)`).run(caseId, i ? 'secondary' : 'primary', code, topic ?? null, i ? null : nx, luc));
   conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = ?, updated_at = ? WHERE id = ?').run(nguon, luc, caseId);
+  capNhatMoTaLuc(conn, caseId);   // XM-VIEC-DUNG-HAN b: ngày xong Mô tả Case
   return true;
 }

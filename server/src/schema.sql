@@ -1042,7 +1042,9 @@ CREATE TABLE sos_cases (
   /* SV-NX-CASE (N8 ②): NGUỒN MÔ TẢ Case MT — lượt có nhận xét (ô lượt này × topic) mà mô tả đang đi theo. NULL = chưa có mô tả từ nhận xét. Mô tả do người sửa riêng (case_issues.created_by có người) thì tách hẳn và cột này chỉ còn để tra. Không dấu phẩy (DROP COLUMN) */
   mo_ta_attempt_id INTEGER,
   /* RESET-HAN-CASE (06/11): hạn Thêm PA đã đặt lại — thắng công thức `hanThemPa`; NULL = công thức. Không dấu phẩy (DROP COLUMN) */
-  han_them_pa TEXT
+  han_them_pa TEXT,
+  /* XM-VIEC-DUNG-HAN b (07/11): ngày nghiệp vụ Case lần đầu có nguyên nhân chính (hết việc Xác nhận / Mô tả Case) — ngày xong của "Việc đúng hạn"; NULL = chưa / dữ liệu cũ */
+  mo_ta_luc TEXT
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.

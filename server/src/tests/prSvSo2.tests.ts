@@ -13,6 +13,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
+  const vx: any = await import('../phanTich/viecDaXong.ts');
   const lop: any = await import('../classes/phanTichLop.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
@@ -88,13 +89,14 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const bang = pt.phanTichGiaoVien(P.mbManager, ky);
     const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, ky));
+    const xong: Map<number, any[]> = vx.viecDaXong(pt.nguCanhPtGv(P.mbManager, ky));   // XM-VIEC b: việc đã xong có ngày xong
     const tong = (o: any) => (o?.k === 'so' ? o.tong : 0), dung = (o: any) => (o?.k === 'so' ? o.dung : 0);
     let coViec = false;
     for (const h of bang.hang) {
-      const nMo = mo.get(h.id)?.length ?? 0;
+      const nMo = (mo.get(h.id)?.length ?? 0) + (xong.get(h.id)?.length ?? 0), nXongDung = (xong.get(h.id) ?? []).filter((x: any) => x.dung).length;
       /* XM-VIEC-DUNG-HAN a: đếm DÒNG như Công việc (gộp lớp, một PA một việc) — không quá số việc, có việc thì có dòng; dòng đúng hạn ≤ nghĩa vụ đúng hạn. */
       assert(!('xuLyViPham' in h) && tong(h.viecDungHan) <= tong(h.ghiKetQuaPa) + nMo && (tong(h.viecDungHan) > 0) === (tong(h.ghiKetQuaPa) + nMo > 0)
-        && dung(h.viecDungHan) <= dung(h.ghiKetQuaPa), `${h.ten}: ${JSON.stringify(h)}`);
+        && dung(h.viecDungHan) <= dung(h.ghiKetQuaPa) + nXongDung, `${h.ten}: ${JSON.stringify(h)}`);
       if (tong(h.ghiKetQuaPa) && !coViec) {
         coViec = true;
         const p = pt.oChiSoGv(P.mbManager, { ...ky, gv: h.id, cot: 'viec-dung-han' });
@@ -133,7 +135,9 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
       assert(ds.every((it) => it.urgency === 'overdue' && it.due < D), 'chỉ việc đã quá hạn');
       /* XM-VIEC a: việc mở vào mẫu theo DÒNG Công việc (`prViecDong` kiểm số dòng); tử không lớn hơn nghĩa vụ Kết quả PA đúng hạn. */
       const dongMo = d.demDongViec(d.gopViecTheoLop(ds, wl.nhanNhomViec)).n;
-      assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong >= dongMo && h.viecDungHan.tong <= (h.ghiKetQuaPa.tong ?? 0) + dongMo && h.viecDungHan.dung <= (h.ghiKetQuaPa.dung ?? 0),
+      const xg: any[] = vx.viecDaXong(nc).get(gv) ?? [];   // XM-VIEC b: + việc đã xong có ngày xong
+      assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong >= dongMo && h.viecDungHan.tong <= (h.ghiKetQuaPa.tong ?? 0) + dongMo + xg.length
+        && h.viecDungHan.dung <= (h.ghiKetQuaPa.dung ?? 0) + xg.filter((x) => x.dung).length,
         `mẫu phải gồm ${dongMo} dòng mở: ${JSON.stringify(h.viecDungHan)}`);
       const p = pt.oChiSoGv(P.mbManager, { ...ky, gv, cot: 'viec-dung-han' });
       /* DEM-QUA-HAN b: panel dòng việc ('viec') — việc mở = chính dòng Công việc (href, tab theo loại việc), đứng đầu. */
