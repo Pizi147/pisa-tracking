@@ -11,8 +11,13 @@ import type { DongSEx } from './kieu.ts';
  */
 export const sapSEx = (ds: readonly DongSEx[]) => [...ds].sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id);
 
-export function OSEx({ x, so, onMo, onThem }: { x: DongSEx | null; so: number; onMo?: (d: DongSEx) => void; onThem?: () => void }) {
+export function OSEx({ x, so, onMo, onThem, soKe }: {
+  x: DongSEx | null; so: number; onMo?: (d: DongSEx) => void; onThem?: () => void;
+  /** Số của lượt S Ex sẽ tạo (= số lượt đã có + 1): chỉ ô trống mang số đó có "+ S Ex n"; ô trống sau nó trống nhạt (bấm ô sau cũng ra S Ex n — RA-LOI-0711i). */
+  soKe?: number;
+}) {
   if (!x) {
+    if (onThem && soKe != null && so !== soKe) return <span className="o-sex o-sex-trong" aria-hidden="true" />;
     return onThem
       ? <button type="button" className="o-sex o-sex-trong o-sex-them" aria-label={t('Xếp S Ex {n}', { n: so })} onClick={onThem}>{t('+ S Ex {n}', { n: so })}</button>
       : <span className="o-sex o-sex-trong" aria-label={t('S Ex {n} chưa xếp', { n: so })}>{t('S Ex {n}', { n: so })} —</span>;
@@ -33,7 +38,7 @@ export function HangSExThe({ ds, onMo, onThem }: { ds: readonly DongSEx[]; onMo?
   return (
     <div className="hang-sex" role="group" aria-label={t('S Ex')}>
       {Array.from({ length: Math.max(3, xep.length) }, (_, i) => (
-        <OSEx key={xep[i] ? `x${xep[i].id}` : `o${i}`} x={xep[i] ?? null} so={i + 1} onMo={onMo} onThem={onThem} />
+        <OSEx key={xep[i] ? `x${xep[i].id}` : `o${i}`} x={xep[i] ?? null} so={i + 1} onMo={onMo} onThem={onThem} soKe={xep.length + 1} />
       ))}
     </div>
   );

@@ -38,7 +38,7 @@ import {
   TRAN_CHU,
 } from '@shared/domain/index.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useKhoaCuoiTuan, useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { TOOLTIP_TUAN_HOAN_TAT } from '../../ui/chu.ts';
 import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
@@ -160,6 +160,7 @@ export default function MockDetailPage() {
   const chongVe = useChongVe();
   const veNguon = useVe();
   const { homNay } = useNgayNghiepVu();
+  const khoaCt = useKhoaCuoiTuan();
   const chiDoc = !!vaiXemHocVien(useSession().session?.roles);
   /* R15 — các đợt của CHÍNH học viên này, để chuyển đợt ngay trên trang (không phải quay lại hồ sơ). */
   const dsDot = useApi<{ rows: DotCuaHv[] }>(data ? `/attempts?studentId=${data.student.id}` : null);
@@ -253,7 +254,9 @@ export default function MockDetailPage() {
   const lanXoa = daXoa ? d.history.find((h) => h.action === 'skill_skipped') ?? null : null;
   const mtNay = { attemptId: d.id, nhan: `MT${d.attemptNo}`, tenHv: d.student.name, onXong: reload };
   const lyDoXoa = d.result.scoredRequired > 0 || d.cells.some(coDiemO) ? t('Đã có điểm — không xoá được')
-    : kn4.some((r) => r.required && r.sitStatus === 'sat') ? t('Đã làm bài — không xoá được') : null;
+    : kn4.some((r) => r.required && r.sitStatus === 'sat') ? t('Đã làm bài — không xoá được')
+    /* RA-LOI-0711i: khoá cuối tuần N15 (máy chủ chặn qua `setSkillScope`) — nói lý do tại nút như Kế hoạch Test, không đợi toast lỗi. */
+    : khoaCt(...kn4.filter((r) => r.required).map((r) => r.weekStart?.slice(0, 10)));
   const xoa = () => { if (dangXoa) return; setDangXoa(true); void xoaMt(toast, mtNay).finally(() => setDangXoa(false)); };
   const khoiPhuc = () => { if (dangXoa) return; setDangXoa(true); void khoiPhucMt(toast, mtNay).finally(() => setDangXoa(false)); };
   /* PR-HOP1 + chủ SP 06/11: hộp một đợt như Kế hoạch Test, kèm ô "Ghi chú lịch Test" (đọc ghi chú hiện tại khi mở — một câu, chỉ lúc bấm). */

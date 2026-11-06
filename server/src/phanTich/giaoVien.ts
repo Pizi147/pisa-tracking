@@ -1023,7 +1023,9 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
   /* P8: `ket-qua:<khung>:<kỹ năng>:<lớp>` = ô một lớp của `ketQuaTheoLop` — dòng của chính các mục em học lớp đó lúc thi. */
   const maLop = lopId !== null ? ds.find((c) => c.lop.has(lopId))?.lop.get(lopId)?.ma : null;
   if (lopId !== null && !maLop) throw badRequest('Lớp này không có trong kỳ của giáo viên.');
-  const dong = phan.flatMap((x) => x.dong).filter((d) => !maLop || d.row.lop === maLop).sort((a, b) => Number(a.dung) - Number(b.dung));
+  /* RA-LOI-0711i: panel dòng việc (Việc / Điểm đúng hạn) nối nhiều ngữ cảnh (GV nhiều chi nhánh / khung) → xếp lại như Phân tích GV (`xepViec`). */
+  const dong = phan.flatMap((x) => x.dong).filter((d) => !maLop || d.row.lop === maLop)
+    .sort(q.cot === 'viec-dung-han' || q.cot === 'cham-diem' ? xepViec : (a, b) => Number(a.dung) - Number(b.dung));
   /* TEN-CHI-SO: panel hồ sơ GV và Phân tích GV cùng tên "Đạt kỳ vọng Test" · đơn vị "lượt Test" (THUAT_NGU HSGV-1, 6) — đặt ở `oChiSoCua`. */
   const dau = phan[0] ?? { nhan: q.cot === 'cham-diem' ? t('Điểm đúng hạn') : q.cot === 'viec-dung-han' ? t('Việc đúng hạn') : t('Đạt kỳ vọng Test'), donVi: '' };
   const dung = dong.filter((d) => d.dung).length;
