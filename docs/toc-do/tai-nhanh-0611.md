@@ -30,3 +30,24 @@ Gốc = origin/main 9f1f32337.
 - Bấm thử bản build: nút "?" mở Hướng dẫn đúng vai · ô tìm "quang huy" tô chữ khớp · thẻ "Đề xuất chuyển lớp" → Duyệt… mở panel Chuyển lớp ·
   ô số Phân tích → panel "SỐ · BÁO CÁO HV" đúng nhãn. Không lỗi console.
 - Request API: không đổi (8 vai đo lại, cùng danh sách).
+
+## PR TAI-NHANH-0611-2 (#1089) — Phân tích một chi nhánh không tải hai lần
+Tài khoản một chi nhánh mở `/phan-tich` chưa có `cn`: tab tải "mọi chi nhánh" rồi tải lại sau khi effect gắn `cn`. Nay chờ `cn` (khung xám) rồi mới tải.
+
+| Mở trang (QL Monbay) | Trước | Sau |
+|---|---|---|
+| Báo cáo HV | 8 request (`/tong-quan/v5?…&kemBaoCao=1` hai lần) | 7 |
+| Test + SOS | 11 request (`/phan-tich/tong-hop` hai lần, 2 `/ref/classes` thừa) | 8 |
+
+Turso: bớt một lượt dữ liệu chính mỗi lần mở (Báo cáo HV: một `/tong-quan/v5` ≈ 52 câu, ~2 700 dòng bộ demo).
+
+## Rà thêm, không thấy việc đáng làm
+- Request trùng: trang đầu 8 vai, Học viên & Lớp, hồ sơ lớp (13 GET), hồ sơ HV, Lịch Test, Công việc, Phân tích — không URL nào gọi hai lần (ngoài lỗi PR 2).
+- Bảng lớn: không long task > 50 ms ở bản build (máy cục bộ không giới hạn); trang lớn nhất (hồ sơ lớp MB FT 101, 33 em) ~1 700 phần tử DOM.
+  Ở CPU ×4 ước < 200 ms — dưới ngưỡng dừng, không ảo hoá / memo thêm.
+- `/my-work` gọi ở mọi trang của QL / QT / Admin / GV (số "việc của tôi" trên thanh trên) — thuộc máy chủ (GIAM-DOC), không sửa ở đây.
+
+## Đã thử, KHÔNG làm (lợi < ~20 KB gzip trang đầu)
+- Nạp lười `WelcomePage` (đăng nhập / đăng ký, kéo `ChonKyNang` của `ProfilePage`): ~28 KB mã ≈ 8 KB gzip; người chưa đăng nhập thêm một request nối tiếp.
+- `LichNho` (lịch nhỏ, 15 KB mã) nằm gói chính qua `Filters` / `ONgay` — trang đầu dùng ô chọn tuần, tách ra lợi ~4 KB.
+- `@remix-run/router` + `react-dom` (~300 KB mã) là nền, không tách được.
