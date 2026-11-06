@@ -8,11 +8,13 @@ import { theoLo } from '../db.ts';
 
 const lui1 = (iso: string) => new Date(Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 
-/** PA sẽ đổi hạn: [id, hạn cũ, hạn mới] — một nguồn cho migrate và phép kiểm. */
+/** PA sẽ đổi hạn: [id, hạn cũ, hạn mới] — một nguồn cho migrate và phép kiểm. RA-LOI-0711b: PA còn đúng hạn RESET-HAN-CASE đặt (chủ SP: hôm nay + 14,
+ *  không theo lịch kỳ) thì giữ — GV ghi kết quả xong `hanKe` tự về lịch kỳ; hoàn tác reset cần hạn = `han_moi`. */
 export function paDoiHanOv12a(conn: any): [number, string, string][] {
   const ds = conn.prepare(
-    `SELECT id, action_due, COALESCE(started_date, cycle_started_on) AS bat_dau FROM case_interventions
-      WHERE status IN ('planned', 'started') AND action_due IS NOT NULL AND COALESCE(started_date, cycle_started_on) IS NOT NULL`,
+    `SELECT id, action_due, COALESCE(started_date, cycle_started_on) AS bat_dau FROM case_interventions iv
+      WHERE status IN ('planned', 'started') AND action_due IS NOT NULL AND COALESCE(started_date, cycle_started_on) IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM viec_han_lan l WHERE l.loai = 'reset_case:action_due' AND l.viec_id = iv.id AND l.han_moi = iv.action_due)`,
   ).all() as any[];
   const doi: [number, string, string][] = [];
   for (const r of ds) {

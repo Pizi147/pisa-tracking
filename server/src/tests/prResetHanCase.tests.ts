@@ -8,6 +8,7 @@
 export async function runPrResetHanCaseTests(t: any) {
   const { check, assert, conn, P, TODAY, addDays } = t;
   const mig: any = await import('../migrate/prResetHanCase.ts');
+  const ov12a: any = await import('../migrate/prOv12a.ts');
   const mywork: any = await import('../worklist/mywork.ts');
   const metrics: any = await import('../worklist/metrics.ts');
   const sosState: any = await import('../cases/sosState.ts');
@@ -98,6 +99,12 @@ export async function runPrResetHanCaseTests(t: any) {
     mig.datLaiHanCase(conn, TODAY);
     const sau = nghiaVu();
     assert(!cua(sau.ids).length, `còn ${cua(sau.ids).length} nghĩa vụ đã lỡ`);
+    /* RA-LOI-0711b: PR-OV12a chạy MỖI lần migrate (đặt hạn về lịch kỳ hai tuần) — không được dời hạn đã reset (hoàn tác cần hạn = han_moi). */
+    const ovAp: string[] = [];
+    (ov12a as any).migratePrOv12a(conn, ovAp);
+    const lech = all(`SELECT l.viec_id, iv.action_due FROM viec_han_lan l JOIN case_interventions iv ON iv.id = l.viec_id
+      WHERE l.loai = 'reset_case:action_due' AND iv.action_due != l.han_moi`);
+    assert(!lech.length, `OV12a dời ${lech.length} hạn Kết quả PA đã reset: ${JSON.stringify(lech.slice(0, 3))}`);
     assert(one('SELECT action_due FROM case_interventions WHERE id = ?', pa[0]).action_due === MOI_PA, 'Kết quả PA hạn = hôm nay + 14');
     xoaNho();
     assert(!(mywork.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).some((i) => i.group === 'ghi_ket_qua_pa' && i.paId === pa[0]), 'Kết quả PA ẩn tới hạn − 2 (luật sẵn có)');
