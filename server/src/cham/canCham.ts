@@ -13,7 +13,7 @@ import { notFound } from '../util.ts';
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
+  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import { ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -134,6 +134,19 @@ export type NhacLichSu = {
  */
 export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null } = {}): NhacLichSu[] {
   if (o.classIds && !o.classIds.length) return [];
+  /*
+   * GIAM-DOC-0611f (Turso 30/10–06/11: câu này 5,3 K dòng / lần × 2,55 K lần): không truyền lớp → trước đọc MỌI lượt MT lịch sử còn trống cả hệ thống (bản chính 641)
+   * rồi mới lọc `duoc` dưới. Tập cha của `duoc` = lớp người xem là GVCN ∪ lớp thuộc chi nhánh của grant có `plan.week` (`can` → `grantCovers`; vai Giáo viên có quyền
+   * này cũng phủ cả chi nhánh — `teacherAllows` mặc định true); grant toàn hệ thống → không lọc. `duoc` vẫn lọc như cũ → kết quả không đổi.
+   */
+  if (!o.classIds) {
+    const pw = p.grants.filter((g) => g.permissions.has(PERMISSIONS.PLAN_WEEK));
+    if (!pw.some((g) => g.branchId === null)) {
+      const cn = new Set(pw.map((g) => g.branchId));
+      o = { ...o, classIds: [...bangLop()].filter(([id, l]) => cn.has(l.branchId) || isCoreTeacherOf(p, id)).map(([id]) => id) };
+      if (!o.classIds!.length) return [];
+    }
+  }
   /* T23 (PR-MTa): ô "-" (không dự thi) của MT cũ không còn là ô chưa nhập — chỉ nhắc lượt còn ô trống thật. */
   const where = ['a.lich_su = 1', `a.status = 'planned'`, `c.status = 'active'`, `EXISTS (SELECT 1 FROM attempt_skills k
     WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled'
