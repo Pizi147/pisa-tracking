@@ -68,8 +68,8 @@ export function PhanTich() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branches.data, branchId, branchCount]);
   /* TAI-NHANH-0611: tài khoản một chi nhánh, URL chưa có `cn` — chờ effect trên gắn `cn` rồi mới tải số liệu; trước đây tab tải một lần "mọi chi nhánh"
-     rồi tải lại theo `cn` (thừa một `/tong-quan/v5` + `/ref/classes` mỗi lần mở trang). */
-  const choCn = !branchId && branchCount === 1 && (branches.data == null || branches.data.length === 1);
+     rồi tải lại theo `cn` (thừa một `/tong-quan/v5` + `/ref/classes` mỗi lần mở trang). `/ref/branches` lỗi → thôi chờ, tải như cũ. */
+  const choCn = !branchId && branchCount === 1 && (branches.data == null ? !branches.error : branches.data.length === 1);
 
   const dat = (o: Record<string, string | null>, replace = false) => {
     const next = new URLSearchParams(params);
