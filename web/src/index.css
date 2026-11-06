@@ -778,8 +778,7 @@
   .pc-nhan-nhap::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
   .pc-nhan-cho { font-size: 12px; font-weight: 600; color: rgb(var(--doing-rgb)); white-space: nowrap; }
   /* SUA-HVL-0611: nút dòng "Huỷ sửa" + "Lưu" không xuống dòng / không co — vừa cột nút 140 px, không tràn đè ô GVCN. */
-  .pc-hang-nut { display: flex; flex-wrap: nowrap; gap: 4px; justify-content: flex-end; align-items: center; padding-right: 4px; white-space: nowrap; }
-  .pc-hang-nut > .btn { flex: none; }
+  .pc-hang-nut { display: flex; gap: 4px; justify-content: flex-end; align-items: center; padding-right: 4px; white-space: nowrap; }
   .pc-phu-luu { font-size: 12px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
   .pc-loi-hang > td { background: rgb(var(--bad-bg-rgb)) !important; height: auto !important; padding: 8px 16px 8px 28px !important; }
   .pc-loi-hang .bao { display: flex; align-items: center; gap: 10px; font-size: 14px; white-space: normal; }
