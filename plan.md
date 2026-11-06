@@ -276,6 +276,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
   2. [XM GIAM-DOC-0711] Tổng quan GV hai-khoi ~0,8 triệu dòng / ngày, mọi câu đã đi chỉ mục: bớt 0,3–0,5 triệu / ngày chỉ bằng đổi thiết kế (khối "Lớp tôi chủ nhiệm" / Kết quả theo lớp tải khi mở, hoặc bỏ một kiểu lịch 'valid' / 'due' trong `loadSkillRows`). `viecQuaHanMo` (hồ sơ GV, panel Việc đúng hạn) dựng gần đủ Công việc chi nhánh — ít người mở, xem Turso sau deploy. `/hoc-vien-lop` QL 51 câu như cũ. Chi tiết `docs/toc-do/giam-doc-0711.md`.
   3. [XM RA-GD-0711] Panel Báo PH của TVV ở Công việc tự cuộn thân (khung panel dùng chung OV-5a, chân Lưu luôn thấy) — muốn cao theo nội dung phải đổi khung dùng chung. PTA đề xuất giữ.
   4. [PTA đã quyết] Việc "Giao việc" (`mgmt`) của GV ở chi nhánh khác: QL chi nhánh này không còn thấy (theo lời chủ SP 06/11 "QL chỉ thấy việc chi nhánh mình", mới hơn OV-11c) — RA-LOI-0711f.
+  5. [XM RA-LOI 3] Panel "Việc đúng hạn" đếm TỪNG việc, trang Công việc đếm DÒNG (gộp lớp = 1): lớp 5 em "Thêm PA" quá hạn → Công việc 1, panel 5. Muốn khớp phải đổi số GV.
+  6. [XM RA-LOI 4] Việc làm xong SAU hạn (trừ Kết quả PA, Chấm Test) không có ngày xong → ra khỏi cả tử lẫn mẫu, tỷ lệ "Việc đúng hạn" đẹp lên. Sửa cần thêm cột ngày xong.
+  7. [XM RA-LOI 6] Quét nền 15 s (#1099, đã duyệt XM-A): thẻ Chờ duyệt / lệnh tới hạn có thể trễ ≤ 15 s; web không tự tải lại.
+  8. [XM RA-LOI 8] Dòng tuần của lớp ở > 1 chi nhánh hiện ở mọi chi nhánh kèm em chi nhánh kia (ponytail #1130) — sửa đúng phải tách dòng theo chi nhánh.
+  9. [XM RA-LOI 9] Lần mở app đầu `/my-work` và `/notifications` có thể cùng đồng bộ chuông (Netlify song song) — số không sai, phần tiết kiệm đọc có thể mất. Xem Turso sau deploy.
+  Báo cáo đầy đủ RA-LOI-0711 (7 PR #1135 #1136 #1139 #1143 #1144 #1148 #1149 + phần đã rà không lỗi): ghi chú session, PTA tóm ở đây.
 
 ### 03/11 tối — AUDIT OVERHAUL (chủ SP gửi prompt rà toàn diện + 4 ảnh)
 - **Nguồn (chỉ trên máy, không commit):** `D:/Download/Pisa tracking web/PISA-Tracking-Claude-Audit-Overhaul-2026-11-03.md` + 4 ảnh `D:/Download/Pisa tracking web/audit-0311-anh/` (Ảnh 1 = Ý thức hồ sơ lớp, Ảnh 2 = hộp hành trình bị cắt + khung Case không cuộn trang, Ảnh 3 hồ sơ HV 4 Case, Ảnh 4 hành trình "5.0 Giảm 0.5 4.5"). Ảnh U01–U10 (mục 19) chưa gửi.
