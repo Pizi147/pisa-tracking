@@ -2331,6 +2331,8 @@ export function caseDetail(p: Principal, caseId: number) {
       /** N37: ⋯ "Xoá PA" — 'ngay' (Thùng rác + Hoàn tác) · 'xin' (PA theo quy chế: gửi QL duyệt) · null; `choXoa` = thẻ xin xoá đang chờ. */
       xoa: cachXoaPa(p, iv, c, ghi),
       choXoa: theCuaPa.some((y) => y.doiTuongId === iv.id && y.loai === 'xin_xoa' && y.trangThai === 'cho'),
+      /** CASE-PA-UI (v16 g2 · j2, XM1): thẻ xin xoá đang chờ — người gửi "Rút lại" (`/yeu-cau/:id/rut`), QL "Giữ lại · Duyệt xoá" ngay trên thẻ PA. */
+      theXoa: theCuaPa.find((y) => y.doiTuongId === iv.id && y.loai === 'xin_xoa' && y.trangThai === 'cho') ?? null,
       performer: iv.performer_account ?? iv.performer_name ?? null,
       /** Tài khoản người làm hiện tại — panel Điều chỉnh lấy làm giá trị đầu (PR-UX3 Q15); null khi người làm ngoài hệ thống. */
       performerUserId: iv.performer_user_id ?? null,
@@ -2622,6 +2624,8 @@ export function caseDetail(p: Principal, caseId: number) {
       /** N37: ⋯ "Xoá Case" — 'ngay' · 'xin' (Case hệ thống / còn PA quy chế: gửi QL duyệt) · null; `choXoa` = thẻ xin xoá đang chờ. */
       xoa: cachXoaCase(p, c, interventions),
       choXoa: theCase.some((y) => y.trangThai === 'cho' && y.loai === 'xin_xoa'),
+      /** CASE-PA-UI (XM1): thẻ xin xoá Case đang chờ — "Chờ QL duyệt xoá Case · Rút lại" (người gửi) / duyệt tại chỗ (QL). */
+      theXoa: theCase.find((y) => y.trangThai === 'cho' && y.loai === 'xin_xoa') ?? null,
       khoaKyNang: c.origin_kind === 'mock' || interventions.length > 0,
     },
   };

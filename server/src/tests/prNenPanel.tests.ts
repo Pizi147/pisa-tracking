@@ -78,7 +78,7 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
   check('NEN-PANEL rà #530 · đang lưu: ô nháp chỉ đọc (chữ gõ thêm lúc gửi không bị xoaNhap xoá); bàn phím chỉ đo ở panel ngoài cùng; 375 toàn màn', () => {
     for (const [f, re] of [['web/src/modules/cases/GhiNhanh.tsx', /value=\{note\} readOnly=\{busy\}/], ['web/src/modules/cases/CapNhatTuan.tsx', /value=\{progress\} readOnly=\{busy\}/],
       ['web/src/modules/yThuc/XacNhanXuLyPanel.tsx', /value=\{moTa\} readOnly=\{busy\}/], ['web/src/modules/yThuc/LoYThucPanel.tsx', /value=\{moTa\} readOnly=\{busy\}/],
-      ['web/src/modules/yThuc/CaseSosControls.tsx', /value=\{moTa\} disabled=\{busy\}[\s\S]*value=\{nx\} disabled=\{busy\}/]] as const) {
+      ['web/src/modules/yThuc/CaseSosControls.tsx', /value=\{moTa\} disabled=\{busy\}/]] as const) {
       assert(re.test(docSach(f)), `${f}: ô nháp chưa khoá khi đang lưu`);
     }
     assert(/chon=\{outcome === x\} disabled=\{busy\}/.test(docSach('web/src/modules/cases/GhiNhanh.tsx')), 'GhiNhanh: chip Tiến triển chưa khoá khi đang lưu');

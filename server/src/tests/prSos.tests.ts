@@ -515,7 +515,8 @@ export async function runPrSosTests(t: YThucTestKit) {
     const mocs = [...kinds].filter((k) => (d.MILESTONE_KINDS as readonly string[]).includes(k) && k !== 'opened');
     const thieu = mocs.filter((k) => !new RegExp(`\\b${k}:`).test(bang));
     assert(mocs.includes('xac_nhan_case') && thieu.length === 0, `thiếu nhãn: ${thieu.join()}`);
-    const nc = doc('web/src/modules/students/NganCase.tsx');
+    /* CASE-PA-UI (v16): việc tiếp / chặn Hoàn thành (lý do cạnh nút) / Xác nhận Case / thẻ Không cần theo dõi ở thân Case `ThanCase`. */
+    const nc = doc('web/src/modules/students/NganCase.tsx') + cp;
     assert(/viecTiep/.test(nc) && /ht\?\.an/.test(nc) && /XacNhanCasePanel/.test(nc) && /TheYeuCau gon yc=\{data\.yeuCauCase\}/.test(nc), 'NganCase chưa theo việc tiếp v4');
     assert(!/<Level/.test(nc), 'Ngăn Case còn nhãn SOS ở ngữ cảnh (SOS đã ở tên)');
   });

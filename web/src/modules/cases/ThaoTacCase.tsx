@@ -1,27 +1,19 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { ApiError, api, invalidate } from '../../lib/api.ts';
+import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
-import { ConfirmDialog } from '../../ui/Drawer.tsx';
-import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { OKhac } from '../../ui/OKhac.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { BoiCanh, CanLam, DongTiep, NutVaTiep, TrangThaiLuu, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  dsLoi, kiemGhiRoKhac, KHAC_TOI_THIEU, moiKhoaGui, tuanLich,
-  giaTriCuaPa, loiFormPa, paMoi, paPayload, thanSuaPa, type GiaTriPa, type KetQuaNhatKy,
-  URGENCY_LEVELS, URGENCY_LABEL, duongDotTest, caseTopicsFor, issuesForTopic, laKhac, tenMon, tenMonNgan, NHAN_XET_MT_TOI_THIEU, TRAN_CHU,
-} from '@shared/domain/index.ts';
+  dsLoi, moiKhoaGui, loiFormPa, paMoi, paPayload, type GiaTriPa, } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
-import { FormPa, NgayKhoa, NhatKyPa } from './FormPa.tsx';
-import type { BanDieuChinh } from './CapNhatTuan.tsx';
+import { FormPa } from './FormPa.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
 
@@ -166,92 +158,6 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
   );
 }
 
-// ==================================================================== Sửa PA
-
-/** Phần PA trong `CaseDetail.interventions` mà Sửa PA cần. */
-export type PaDeSua = {
-  id: number; kind: string; description: string | null; soBuoi: number | null; daDay: number;
-  performer: string | null; performerUserId: number | null; startedDate: string | null;
-  preset: boolean; recordedBy: string | null; createdAt?: string | null; mocChu: string | null;
-  /** Máy chủ: 'ky_vong' (Tutor Kỳ vọng đầu ra) · 'he_thong' (quy chế, Bổ trợ, không người ghi) · null (tạo tay). */
-  nguonTao?: 'ky_vong' | 'he_thong' | null;
-  revisions: BanDieuChinh[];
-};
-
-/** Nguồn của PA web tạo (dòng đầu Sửa PA): `null` = PA người tạo tay; '' = web tạo, không rõ nguồn. */
-function nguonWebTao(pa: PaDeSua): string | null {
-  if (pa.nguonTao === 'ky_vong') return t('theo Kết quả đầu ra');
-  if (!pa.nguonTao) return null;
-  if (pa.kind === 'bo_tro') return 'theo Progress Test';
-  if (pa.kind === 'bo_tro_mien_phi') return 'theo Final Test';
-  return pa.preset ? t('theo quy chế SOS') : '';
-}
-
-/**
- * SỬA PA (PR-PA §8, mockup mục 5–6) — cùng form Thêm PA; Loại khoá (đổi loại = Kết quả › Thay PA); Số buổi ≥ đã dạy; Ngày bắt đầu khoá khi
- * PA đã có Kết quả. Chỉ gửi ô ĐÃ ĐỔI (`PATCH /interventions/:id`): ô không đổi không bị kiểm lại (PA vượt buổi, người cũ đã nghỉ vẫn sửa
- * được ô khác); đổi người thì gửi đủ ba khoá người (cả ba trống = xoá người). Mỗi lần lưu máy chủ ghi một dòng Nhật ký PA (cũ → mới).
- * Chân: Huỷ thay đổi / Lưu (`daSua`, luật S3).
- */
-export function SuaPaPanel({ pa, ketQua, studentId, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
-  pa: PaDeSua;
-  /** `CaseDetail.followups` — Nhật ký PA và khoá Ngày bắt đầu khi PA đã có Kết quả. */
-  ketQua: readonly KetQuaNhatKy[];
-  studentId?: number | null;
-}) {
-  const coKetQua = ketQua.some((f) => f.interventionId === pa.id);
-  const toast = useToast();
-  const { homNay, ngan } = useNgayNghiepVu();
-  const goc = giaTriCuaPa(pa);
-  const [v, setV] = useState<GiaTriPa>(goc);
-  const [startedDate, setStartedDate] = useState(pa.startedDate ?? '');
-  const lf = useLoiForm();
-  const [busy, setBusy] = useState(false);
-  const loi = loiFormPa(v, { daDay: pa.daDay, goc });
-
-  const body = thanSuaPa(v, goc, { moi: startedDate, cu: pa.startedDate });
-  const daSua = Object.keys(body).length > 0;
-
-  const luu = async () => {
-    lf.bam();
-    if (loi.length > 0) return;
-    if (!daSua) { onSaved(); return; }
-    setBusy(true);
-    try {
-      await api.patch(`/interventions/${pa.id}`, body);
-      invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan');
-      toast.push('ok', t('Đã lưu PA'));
-      onSaved();
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
-  };
-
-  const nguon = nguonWebTao(pa);
-  return (
-    <KhungPanel tieuDe={t('Sửa PA')} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
-      chan={{
-        daSua,
-        conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
-      }}>
-      {nguon !== null && (
-        <p className="m-0 pt-3 text-xs text-slate-300">
-          {t('Web tạo{x}{x2}.', { x: nguon ? ` ${nguon}` : '', x2: pa.createdAt ? ` · ${ngan(pa.createdAt)}` : '' })}<span className="max-sm:hidden"> {t('Sửa được mọi ô trừ Loại.')}</span>
-        </p>
-      )}
-      <FormPa v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} daDay={pa.daDay} studentId={studentId}
-        quyChe={pa.preset ? { mocChu: pa.mocChu } : null}
-        ngay={coKetQua
-          ? <NgayKhoa chu={pa.startedDate ? `${tuanLich(pa.startedDate, homNay)} · ${ngan(pa.startedDate)}` : '—'} phu={t('Đã có kết quả tuần — không đổi')} />
-          : (
-            <Truong nhan={t('Ngày bắt đầu')}>
-              <ChonNgayGan value={startedDate} onChange={setStartedDate} soNgay={14} chuaChon={t('Chọn ngày')} />
-            </Truong>
-          )} />
-      <Khoi tieuDe={t('Nhật ký PA')}><NhatKyPa pa={pa} ketQua={ketQua} /></Khoi>
-    </KhungPanel>
-  );
-}
-
 // ==================================================================== Hoàn thành Case
 
 /**
@@ -332,174 +238,3 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
   );
 }
 
-// ==================================================================== Sửa Case · Xoá Case (PR-LUI-a2, mockup mục 18–20)
-
-/** Phần dữ liệu Ngăn Case mà panel Sửa Case cần (một phần của `CaseDetail`). */
-export type CaseDeSua = {
-  id: number; topic?: string | null; chuongTrinh?: string | null; ratio: boolean; urgency: string | null; summary: string | null;
-  /** Lượt MT của Case — link "hồ sơ MT" khi nguyên nhân lấy từ bài. */
-  attemptId?: number | null;
-  issues: { role: string; code: string; label?: string; observation: string | null; byName?: string | null; /** SV-NX-CASE: mô tả đang theo nhận xét MT nào. */ moTaTuMt?: string | null }[];
-  /** SV-NX-CASE (N8 ②): Case Mock Test — mô tả = quan sát của nhóm chính; sửa ở đây thì tách khỏi nhận xét của bài. */
-  sos?: { laMt?: boolean } | null;
-  /** SV-NX-CASE: mốc phiên bản (409 khi Case vừa đổi). */
-  capNhatLuc?: string | null;
-  viewer: { khoaKyNang?: boolean; tenSua?: string | null };
-};
-
-/**
- * XOÁ CASE (N37, chủ SP 05/11 + PTA 05/11 "đừng phức tạp hoá") — ⋯ đầu panel Case, MỘT chỗ. `xoa` = cờ máy chủ: 'xin' (Case hệ thống / còn PA quy chế, người
- * không phải QL) → bấm là gửi QL duyệt · 'ngay' → vào Thùng rác + toast Hoàn tác; chỉ Case còn PA mới hỏi một câu "Xoá Case và n PA".
- */
-export function useXoaCase({ caseId, xoa, tenCase, soPa, onDeleted }: { caseId: number; xoa: 'ngay' | 'xin' | null | undefined; tenCase: string; soPa: number; onDeleted: () => void }) {
-  const toast = useToast();
-  const [hoi, setHoi] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
-  const gui = async () => {
-    setBusy(true);
-    try {
-      const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/cases/${caseId}`);
-      setHoi(false);
-      if (r?.choDuyet) { lamMoi(); toast.push('ok', t('Đã gửi QL duyệt xoá Case')); return; }
-      onDeleted();   // đóng panel TRƯỚC khi làm mới — panel không tải lại Case vừa xoá
-      lamMoi();
-      hoanTacXoa(toast, r?.thungRacId, t('Đã xoá Case · {ten}', { ten: tenCase }), lamMoi);
-    } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
-  };
-  return {
-    bam: () => (xoa === 'ngay' && soPa > 0 ? setHoi(true) : void gui()),
-    hop: (
-      <ConfirmDialog open={hoi} onClose={() => setHoi(false)} onConfirm={() => void gui()} title={t('Xoá Case này?')} danger busy={busy} z="z-[60]"
-        confirmLabel={t('Xoá Case và {n} PA', { n: soPa })} busyLabel={t('Đang xoá…')} body={tenCase} />
-    ),
-  };
-}
-
-/**
- * SỬA CASE: Kỹ năng (khoá khi Case đã có PA) · Nhóm nguyên nhân · Mức độ · Tên Case · Mô tả (Case MT không có — OV-13a Q1). Xoá Case: N37 chỉ ở ⋯ đầu panel
- * Case (`useXoaCase`), không ở chân panel này. Luật nội dung kiểm ở máy chủ (`kiemNoiDungCase`).
- */
-export function SuaCasePanel({ c, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & { c: CaseDeSua }) {
-  const toast = useToast();
-  const ct = c.chuongTrinh ?? null;
-  const goc = c.issues.find((i) => i.role === 'primary') ?? null;
-  const laMt = !!c.sos?.laMt;
-  /* OV-13a (Q1) → SV-NX-CASE: Case Mock Test không có ô Mô tả riêng (`summary`) — mô tả là quan sát của nhóm chính, mặc định theo nhận xét của bài. */
-  const coMoTa = !laMt;
-  const [topic, setTopic] = useState(c.topic ?? '');
-  const [primaryCode, setPrimaryCode] = useState(goc?.code ?? '');
-  const [ghiRo, setGhiRo] = useState(goc?.observation ?? '');
-  const [urgency, setUrgency] = useState(c.urgency ?? '');
-  const [title, setTitle] = useState(c.viewer.tenSua ?? '');
-  const [summary, setSummary] = useState(c.summary ?? '');
-  const [busy, setBusy] = useState(false);
-  /* SV-NX-CASE: mốc phiên bản gửi kèm — 409 thì giữ chữ đang gõ, lấy mốc mới để lần Lưu sau ghi đè có chủ ý. */
-  const [luc, setLuc] = useState<string | null | undefined>(c.capNhatLuc);
-  const lf = useLoiForm();
-  const topics = caseTopicsFor(c.ratio, ct);
-  /* Case MT chưa có mô tả: chỉ đổi tên / mức độ thì không đòi nhóm + mô tả; gõ một trong hai thì đòi đủ. */
-  const doiNguyenNhan = !(laMt && !goc && !primaryCode && !ghiRo.trim());
-  const causes = topic ? issuesForTopic(topic, ct) : [];
-  /* N35: mô tả ≤ 300 chỉ khi chữ ĐÃ ĐỔI — mô tả cũ dài vẫn sửa được ô khác (máy chủ cùng luật). */
-  const tranMoTa = (moi: string, cu: string | null | undefined) => (moi.trim() !== (cu ?? '').trim() ? TRAN_CHU.moTaCase : undefined);
-  const loi = dsLoi([
-    ...(doiNguyenNhan ? [{ khoa: 'phan-loai', nhan: t('Nhóm nguyên nhân'), chon: true }] : []),
-    ...(laMt ? (doiNguyenNhan ? [{ khoa: 'ghi-ro', nhan: t('Mô tả'), toiThieu: NHAN_XET_MT_TOI_THIEU, toiDa: tranMoTa(ghiRo, goc?.observation) }] : [])
-      : laKhac(primaryCode) ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
-    { khoa: 'muc-do', nhan: t('Mức độ'), chon: true },
-    { khoa: 'ten', nhan: t('Tên Case'), toiThieu: 3 },
-    ...(coMoTa ? [{ khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: 15, toiDa: tranMoTa(summary, c.summary) }] : []),
-  ], { 'phan-loai': primaryCode, 'ghi-ro': ghiRo, 'muc-do': urgency, ten: title, 'mo-ta': summary });
-  const daSua = topic !== (c.topic ?? '') || primaryCode !== (goc?.code ?? '') || ghiRo !== (goc?.observation ?? '')
-    || urgency !== (c.urgency ?? '') || title !== (c.viewer.tenSua ?? '') || summary !== (c.summary ?? '');
-
-  const luu = async () => {
-    lf.bam();
-    if (loi.length) return;
-    setBusy(true);
-    try {
-      await api.patch(`/cases/${c.id}`, {
-        /* Case MT: chỉ gửi nhóm + mô tả khi đổi — đổi mức độ / tên không tách mô tả khỏi nhận xét. */
-        luc, topic, ...(laMt && primaryCode === (goc?.code ?? '') && ghiRo === (goc?.observation ?? '') ? {}
-          : { primaryCode, observation: laMt || laKhac(primaryCode) ? ghiRo.trim() : null }), urgency, title: title.trim(), ...(coMoTa ? { summary: summary.trim() } : {}),
-      });
-      invalidate('/cases'); invalidate('/students'); invalidate('/my-work');
-      toast.push('ok', t('Đã lưu Case'));
-      onSaved();
-    } catch (e: any) {
-      if (e instanceof ApiError && e.status === 409) setLuc(e.details?.luc ?? null);   // chữ đang gõ giữ nguyên
-      toast.push('error', e?.message ?? t('Không lưu được'));
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <>
-      <KhungPanel tieuDe={t('Sửa Case')} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
-        ngCanh={<><span aria-hidden className="text-bad">*</span> {t('= bắt buộc')}</>}
-        chan={{
-          daSua,
-          conThieu: lf.conThieu(loi),
-          chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>,
-        }}>
-        <Khoi tieuDe="Case">
-          <Truong nhan={t('Kỹ năng')} batBuoc as="div">
-            {c.viewer.khoaKyNang ? (
-              <div className="field w-full cursor-not-allowed opacity-70" aria-disabled>{topic ? tenMon(ct, topic) : '—'}</div>
-            ) : (
-              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(topics.length, 1)}, minmax(0, 1fr))` }}>
-                {topics.map((k) => (
-                  <NutChon key={k} chon={topic === k} title={tenMon(ct, k)} className="justify-center px-1"
-                    onClick={() => { if (k !== topic) { setTopic(k); setPrimaryCode(''); } }}>
-                    {tenMonNgan(ct, k)}
-                  </NutChon>
-                ))}
-              </div>
-            )}
-          </Truong>
-          <div>
-            <Truong nhan={t('Nhóm nguyên nhân')} batBuoc loi={lf.loiCua(loi, 'phan-loai')}>
-              <select className="field w-full" {...lf.o(loi, 'phan-loai')} value={primaryCode} onChange={(e) => setPrimaryCode(e.target.value)}
-                title={causes.find((i) => i.code === primaryCode)?.hint}>
-                <option value="">{t('Chọn nhóm')}</option>
-                {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
-              </select>
-            </Truong>
-            {laMt ? (
-              <div className="mt-4">
-              <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'ghi-ro')} dem={{ co: ghiRo.trim().length, can: NHAN_XET_MT_TOI_THIEU, toiDa: TRAN_CHU.moTaCase }}>
-                <textarea className="field w-full" {...lf.o(loi, 'ghi-ro')} rows={3} value={ghiRo} onChange={(e) => setGhiRo(e.target.value)} />
-                <div className="mt-1 text-xs text-slate-400">
-                  {goc?.moTaTuMt
-                    ? (c.attemptId
-                      ? <Link className="link" to={duongDotTest({ id: c.attemptId, kind: 'mock' }, c.topic)}>{t('Đang theo nhận xét {mt} — sửa ở đây thì mô tả tách khỏi nhận xét.', { mt: goc.moTaTuMt })}</Link>
-                      : t('Đang theo nhận xét {mt} — sửa ở đây thì mô tả tách khỏi nhận xét.', { mt: goc.moTaTuMt }))
-                    : goc?.byName ? t('Mô tả đã sửa riêng — nhận xét của bài không đè.') : null}
-                </div>
-              </Truong>
-              </div>
-            ) : (
-            <OKhac hien={laKhac(primaryCode)} value={ghiRo} onChange={setGhiRo} goiY={t('Ví dụ: Chưa quen dạng bài mới')}
-              id={lf.oId('ghi-ro')} onBlur={lf.roi('ghi-ro')} loi={lf.hien('ghi-ro') ? kiemGhiRoKhac(ghiRo) : null} />
-            )}
-          </div>
-          <Truong nhan={t('Mức độ')} batBuoc as="div" loi={lf.loiCua(loi, 'muc-do')}>
-            <div className="grid grid-cols-2 gap-2 outline-none sm:w-80" {...lf.o(loi, 'muc-do')} tabIndex={-1}>
-              {URGENCY_LEVELS.map((u) => (
-                <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>{URGENCY_LABEL[u]}</NutChon>
-              ))}
-            </div>
-          </Truong>
-          <Truong nhan={t('Tên Case')} batBuoc loi={lf.loiCua(loi, 'ten')}>
-            <input className="field w-full" {...lf.o(loi, 'ten')} maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
-          </Truong>
-          {coMoTa && (
-            <Truong nhan={t('Mô tả')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: summary.trim().length, can: 15, toiDa: TRAN_CHU.moTaCase }}>
-              <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={summary} onChange={(e) => setSummary(e.target.value)} />
-            </Truong>
-          )}
-        </Khoi>
-      </KhungPanel>
-    </>
-  );
-}

@@ -67,7 +67,8 @@ export async function runPrKhungNganXepTests(t: YThucTestKit) {
     assert(!/quayLai:\s*veNguon\s*\?\?/.test(n), 'còn quayLai = veNguon ?? Case (nhảy cóc)');
     assert(/useXem\(/.test(n), 'NganCase không dùng ngăn xếp view');
     assert(!/useState<ViewCase>/.test(n), 'view Case còn là state rời (không theo ngăn xếp)');
-    assert(/maHien === 'xac-nhan'/.test(n.slice(n.indexOf('const tuDong'), n.indexOf('const tuDong') + 300)), 'dòng "Xác nhận Case" trong panel số không còn tự sang Xác nhận S / Ghi nhận xét');
+    /* CASE-PA-UI (v16): không còn view riêng — dòng "Xác nhận Case" mở panel, form / ô Mô tả nằm ngay trong thân (`dich`). */
+    assert(/viewTuMa\(xem\.ds\[xem\.ds\.length - 1\]/.test(n), 'đường cũ ?panel=… không còn mở đúng phần');
     const l = docSach('web/src/modules/worklist/LamDongSoLieu.tsx');
     assert(!/veNguon=/.test(l), 'LamDongSoLieu còn nối veNguon bằng tay');
     const s = docSach('web/src/ui/SoLieu.tsx');
