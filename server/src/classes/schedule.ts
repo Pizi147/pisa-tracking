@@ -3,13 +3,13 @@ import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } fr
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, ROUTE_KHAC, boMonLich, CLASS_PHASE_LABEL, CO_DIEM_SQL, MOC_KE_TIEP_SQL, PERMISSIONS, docLichMt, kiemSoMtMoi, laMtCu, lichMtGoc, tuanHocCuaMt, tuanLich,
-  NHAN_THIEU_EMAIL, PROGRAMME_TEMPLATES, kyHieuLop, laLienTuc, nextStepsAfter, programmeOf, studyWeekOf,
+  NHAN_THIEU_EMAIL, PROGRAMME_TEMPLATES, hanBanGiaoLenh, kyHieuLop, laLienTuc, nextStepsAfter, programmeOf, studyWeekOf,
   type ClassPhase, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, notFound, nowIso, loi } from '../util.ts';
+import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { lopDayDu, phanCongDaNap, require_, type Principal } from '../permissions.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { can, duocSuaLichLop, lopDayDu, phanCongDaNap, require_, type Principal } from '../permissions.ts';
+import { notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriods, mondayOf, periodById, weekInfo } from '../platform/week.ts';
 import { apMonChoLuotMoi, recomputeCompletionWeek, tinhLaiMtCu } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes, programmeByCode, type ProgrammeInfo } from '../normal/regular.ts';
@@ -655,7 +655,38 @@ function doiBaiTheoMoc(p: Principal, classId: number, kind: 'progress' | 'final'
 }
 
 /**
- * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền: Admin CN và Quản lý CN (mục 7.6).
+ * SUA-LICH-LOP: phần gắn mốc mà `classProgress` KHÔNG tự tính lại vì đã LƯU theo ngày — dời theo, cùng giao dịch:
+ *  · `bao_cao_ph.dot` = `progress:<thứ Hai>` / `final:<thứ Hai>` (mã đợt Báo cáo PH đợt thường): đổi mã → chữ GV đã viết KHÔNG mồ côi (UNIQUE trùng thì giữ bản ở tuần mới);
+ *  · hạn bàn giao `han_gvbm / han_gvcn` của lệnh Cuối khoá đang chờ (tính từ tuần Final lúc ra lệnh) — chỉ lệnh chưa xác nhận.
+ * Bài Progress / Final, MT0: `doiBaiTheoMoc`. Còn lại (đợt Báo cáo PH hiện, hạn Chốt lộ trình, Cuối khoá, kết thúc khoá, Kế hoạch Test) đọc thẳng `classProgress`.
+ */
+function doiViecTheoMoc(classId: number, kind: 'progress' | 'final', tuCu: string, sangMoi: string, tuanFinalMoi: string | null) {
+  const conn = db();
+  conn.prepare('UPDATE OR IGNORE bao_cao_ph SET dot = ? WHERE class_id = ? AND dot = ?').run(`${kind}:${sangMoi}`, classId, `${kind}:${tuCu}`);
+  if (kind !== 'final') return;
+  for (const l of conn.prepare(
+    `SELECT id, ngay_ra_lenh FROM lenh_chuyen_lop WHERE lop_nguon_id = ? AND trang_thai = 'cho' AND boi_canh = 'cuoi-khoa' AND han_gvcn IS NOT NULL AND xac_nhan_luc IS NULL`,
+  ).all(classId) as any[]) {
+    const h = hanBanGiaoLenh({ nguonFt: false, boiCanh: 'cuoi-khoa', tuanFinal: tuanFinalMoi, ngay: l.ngay_ra_lenh });
+    conn.prepare('UPDATE lenh_chuyen_lop SET han_gvbm = ?, han_gvcn = ? WHERE id = ?').run(h.gvbm, h.gvcn, l.id);
+  }
+}
+
+/** SUA-LICH-LOP: một chuông cho mỗi GV đang dạy lớp (trừ người vừa sửa) khi khai giảng / tuần thi đổi. */
+function baoGvDoiLich(p: Principal, c: any, tom: string) {
+  const luc = nowIso();
+  for (const r of db().prepare(
+    `SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)`,
+  ).all(c.id, demoToday(), demoToday()) as any[]) {
+    if (r.user_id === p.userId) continue;
+    notify({ userId: r.user_id, kind: 'doi_lich_lop', title: `${p.fullName} đã đổi lịch lớp ${c.code}: ${tom}`.slice(0, 300), entityType: 'class', entityId: c.id,
+      dedupKey: `doi_lich_lop:${c.id}:${luc}`, duong: `/hoc-vien/lop/${c.id}` });
+  }
+}
+
+/**
+ * Đổi tuần bắt đầu và mốc kiểm tra của lớp. Quyền (SUA-LICH-LOP, chủ SP 06/11): QL / Quản trị, Admin chi nhánh, GVCN lớp đó — `duocSuaLichLop`
+ * (lớp FT chỉ `class.edit`). Mốc đổi → mọi thứ gắn mốc dời theo, không hỏi lại (bài, MT0, đợt Báo cáo PH, hạn bàn giao Cuối khoá) + báo GV lớp.
  *
  * Đặt mốc về TRỐNG là quay lại mốc mặc định của chương trình — không phải xoá mốc. Cần có
  * đường quay lại, nếu không thì một lần gõ nhầm là lớp đó vĩnh viễn lệch chuẩn.
@@ -666,7 +697,9 @@ export function setClassProgress(p: Principal, classId: number, input: {
   const conn = db();
   const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!c) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Bạn không có quyền sửa tiến độ của lớp này.');
+  if (!duocSuaLichLop(p, classId)) throw forbidden('Chỉ GVCN của lớp, Admin chi nhánh hoặc Quản lý mới sửa được lịch lớp.');
+  /* Lớp đã kết thúc: viewer đã tắt nút — máy chủ cũng chặn người chỉ có quyền hẹp (QL / Quản trị như cũ). */
+  if (c.status !== 'active' && !can(p, PERMISSIONS.CLASS_EDIT, { classId })) throw forbidden('Lớp đã kết thúc — chỉ Quản lý sửa được lịch lớp.');
 
   const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
   const weeks: number | null = c.so_tuan ?? (code ? allProgrammes().get(code)?.weeks ?? null : null);
@@ -701,12 +734,16 @@ export function setClassProgress(p: Principal, classId: number, input: {
       throw badRequest('Progress Test phải ở trước Final Test.');   // tx cuộn lại, không dời gì
     }
     for (const [kind, tuCu, sangMoi] of [['progress', cu.progressWeekStart, moi.progressWeekStart], ['final', cu.finalWeekStart, moi.finalWeekStart]] as const) {
-      if (tuCu && sangMoi && tuCu !== sangMoi) doiBaiTheoMoc(p, classId, kind, tuCu, sangMoi);
+      if (tuCu && sangMoi && tuCu !== sangMoi) { doiBaiTheoMoc(p, classId, kind, tuCu, sangMoi); doiViecTheoMoc(classId, kind, tuCu, sangMoi, moi.finalWeekStart); }
     }
     /* OV-15g: nhật ký trong CÙNG giao dịch, chỉ khi có trường đổi (Lịch sử thay đổi của lớp không có mục rỗng). */
     const before: Record<string, unknown> = { startPeriodId: c.start_period_id, progressWeek: c.progress_week_override, finalWeek: c.final_week_override };
     if (Object.keys(input).some((k) => k in before && ((input as any)[k] ?? null) !== (before[k] ?? null))) {
       writeAudit({ actorUserId: p.userId, action: 'class.progress', entityType: 'class', entityId: classId, entityLabel: c.code, before, after: input });
+      const hn = demoToday();
+      const tom = ([['khai giảng', cu.startWeekStart, moi.startWeekStart], ['Progress', cu.progressWeekStart, moi.progressWeekStart], ['Final', cu.finalWeekStart, moi.finalWeekStart]] as const)
+        .filter(([, a, b]) => a !== b).map(([ten, a, b]) => `${ten} ${a ? tuanLich(a, hn) : '—'} → ${b ? tuanLich(b, hn) : '—'}`).join(' · ');
+      if (tom) baoGvDoiLich(p, c, tom);
     }
   });
   return classProgress(classId);

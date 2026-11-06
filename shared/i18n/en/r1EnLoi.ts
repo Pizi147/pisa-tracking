@@ -57,6 +57,8 @@ export const EN_R1_EN_LOI = {
   'Xuất tối đa {TOI_DA} học viên một lần — thu hẹp bộ lọc.': 'Export at most {TOI_DA} students at a time — narrow the filter.',
   '{label} không thể vượt quá {weeks} tuần của chương trình.': '{label} cannot exceed the programme\'s {weeks} weeks.',
   '{label} phải là số tuần từ 1 trở lên.': '{label} must be a week number of 1 or more.',
+  'Chỉ GVCN của lớp, Admin chi nhánh hoặc Quản lý mới sửa được lịch lớp.': 'Only the class homeroom teacher, the branch Admin or a Manager can edit the class schedule.',
+  'Lớp đã kết thúc — chỉ Quản lý sửa được lịch lớp.': 'This class has ended — only a Manager can edit its schedule.',
   '{skill} chưa bị huỷ — không có gì để khôi phục.': '{skill} is not cancelled — nothing to restore.',
   '{skill} chưa có tuần Test để dời.': '{skill} has no Test week to move.',
   '{skill} chưa huỷ — dùng "Bỏ khỏi đợt".': '{skill} is not cancelled — use "Remove from round".',

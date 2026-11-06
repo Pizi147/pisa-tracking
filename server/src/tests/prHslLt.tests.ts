@@ -86,7 +86,7 @@ export async function runPrHslLtTests(t: any) {
     assert(the && JSON.stringify(the.luot) === JSON.stringify(d.luot), `thẻ bảng kỹ năng: ${JSON.stringify(the?.luot)}`);
     const sb = doc('web/src/modules/cases/SkillBoard.tsx');
     assert(/duongDotTest\(\{ id: luot\.id, kind: luot\.kind, classId: luot\.classId \}, kn\)/.test(sb), 'TenCase dựng đường bằng duongDotTest');
-    assert(/<TenCase c=\{c\} luot=\{c\.luot\} kn=\{c\.topic\} \/>/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'khối Case hồ sơ HV truyền luot');
+    assert(/<TenCase c=\{c\} luot=\{c\.luot\} kn=\{c\.topic\} \/>/.test(doc('web/src/modules/fasttrack/CaseLuotKn.tsx')), 'khối Case trang lượt truyền luot');
     assert(/luot=\{data\.luot\} kn=\{data\.topic\}/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'thân Case (Ngăn Case / panel) truyền luot');
   });
 }

@@ -7,10 +7,11 @@
  * câu SELECT của danh sách; `audit_logs` chỉ còn là nhật ký. Không bước duyệt, không tạo việc ("Cần xác nhận" chỉ hiện ở dải đếm).
  * Dòng đọc Turso: MỘT câu em × lộ trình (lọc tháng ngay trong SQL — chỉ em có tháng chọn + em chưa có dự kiến).
  */
-import { db, theoLo } from '../db.ts';
+import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
 import {
   PERMISSIONS, chuanHoaMaLop, mondayOfDate, dsThangLichThi, ketLuanHienTai, suaLichTheoKetLuan, trangThaiLichThi, KET_LUAN_LICH_THI, laThangIso,
-  type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi,
+  trangThaiSauThi, ketQuaThiThat, buocLichThi,
+  type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type TrangThaiSauThi, type BuocLichThi,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
@@ -22,10 +23,14 @@ import { cycleById, examPlanOf, updateCycle } from '../fasttrack/cycles.ts';
 import { chanLuuTru } from '../students/students.ts';
 import { standingFor } from '../students/standing.ts';
 import { diemCuaLuot } from '../fasttrack/attempts.ts';
+import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
+import { cotSauThi } from '../loTrinh/cotSauThi.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 
 const GHI_CHU_TOI_DA = 300;
 
+/** KQ thi thật đã ghi: Overall (điểm lộ trình cũ có `outcome_score`), đạt Target (null = không Target), "Không thi". */
+export type KqThiThatHang = { ovr: number | null; dat: boolean | null; khongThi: boolean };
 export type LuuLichThi = { ketLuan: KetLuanLichThi | null; thang: string | null; ghiChu: string | null; ai: string | null; luc: string };
 export type HangLichThi = {
   studentId: number; cycleId: number | null; ten: string; ma: string;
@@ -35,14 +40,22 @@ export type HangLichThi = {
   /** LT-SV: trạng thái lịch thi thật (`trangThaiLichThi`) — web vẽ chữ bằng `nhanLichThi`. */
   lichThi: LichThi;
   ketLuan: KetLuanLichThi | null; luu: LuuLichThi | null; coTheSua: boolean;
+  /** LICH-THI-UI: bước của em (`buocLichThi` — trước thi gộp sau thi) + trạng thái sau thi (`trangThaiSauThi`, cùng luật Công việc) + KQ thi thật + bước tiếp đã chọn. */
+  buoc: BuocLichThi; sauThi: TrangThaiSauThi; kq: KqThiThatHang | null; buocTiep: string | null;
   /** OV-15h2 (ý 2): ai · lúc đặt ngày thi đang có ("chốt 05/10 · Lê Thu"); chỉ khi đã chốt ngày và có nhật ký. */
   chot: { luc: string; ai: string | null } | null;
-  /** UI-HV-LOP (V4 khung Lịch thi — mở dưới hàng): 5 ô MT gần nhất · Test sắp tới (mã lượt + tuần) · Case đang mở (kỹ năng) · lịch sử lịch thi (mới trước, ≤ 3). */
+  /**
+   * Dải mở hàng (LICH-THI-UI bản 3, như HV & Lớp): 5 ô MT gần nhất + ô so MT trước (`truoc`: điểm cùng kỹ năng của lượt trước, null = không có lượt trước) · Test sắp tới (mã lượt + tuần) ·
+   * Case đang mở (id để mở panel Case, kỹ năng, mức SOS, số PA) · lịch sử lịch thi (mới trước, ≤ 3).
+   */
   chiTiet: {
     kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null> | null;
+    /** Tuần thi của lượt MT gần nhất (thứ Hai) — tiêu đề khối "MT2 · W4 AUG". */
+    mtTuan: string | null;
+    truoc: { nhan: string; ovr: number | null; kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null> } | null;
     sapToi: { luot: string; tuan: string } | null;
-    caseMo: string[];
-    lichSu: { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null }[];
+    caseMo: { id: number; kyNang: string | null; sos: number | null; soPa: number }[];
+    lichSu: DongLichSu[];
   };
 };
 export type TrangLichThi = { thang: string[]; rows: HangLichThi[] };
@@ -59,12 +72,29 @@ export const COT_LICH_THI_SQL = 'cy.lich_thi_ket_luan, cy.lich_thi_thang, cy.lic
 /** Tình trạng lịch của một lộ trình + nhật ký → các trường của hàng (một nguồn cho danh sách và cho kết quả sau khi lưu). */
 function tinhLich(c: any, luu: LuuLichThi | null, homNay: string, chot: { luc: string; ai: string | null } | null = null) {
   const duKien = examPlanOf(c);
+  const lichThi = trangThaiLichThi(c, duKien, homNay);
+  const sauThi = trangThaiSauThi(c ?? {}, homNay);
   const coNgay = !!c?.exam_date;
   const thangDuKien = duKien.month;
   return {
-    duKien, coNgay, thangDuKien, chuaCo: duKien.confidence === 'none', lichThi: trangThaiLichThi(c, duKien, homNay), ketLuan: ketLuanHienTai({ coNgay, thangDuKien, luu }), luu,
+    duKien, coNgay, thangDuKien, chuaCo: duKien.confidence === 'none', lichThi, ketLuan: ketLuanHienTai({ coNgay, thangDuKien, luu }), luu,
     chot: coNgay ? chot : null,
+    buoc: buocLichThi(lichThi, sauThi.giaiDoan), sauThi, kq: kqThiThatCua(c), buocTiep: c?.buoc_tiep ?? null,
   };
+}
+
+/** KQ thi thật của lộ trình: 4 ô thi thật (đủ → Overall + so Target) hoặc `outcome_score` cũ; chưa có → null. */
+function kqThiThatCua(c: any): KqThiThatHang | null {
+  if (!c) return null;
+  if (c.thi_that_khong_thi) return { ovr: null, dat: null, khongThi: true };
+  const d = [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].map((x) => (x === null || x === undefined ? null : Number(x)));
+  let ovr: number | null = null; let dat: boolean | null = null;
+  try {
+    const k = ketQuaThiThat({ l: d[0], r: d[1], w: d[2], s: d[3], khongThi: false }, c.target_score ?? null);
+    ovr = k.ovr; dat = k.ketLuan === 'reached' ? true : k.ketLuan === 'not_reached' ? false : null;
+  } catch { /* điểm hỏng trong dữ liệu cũ → coi như chưa có */ }
+  if (ovr === null && c.outcome_score != null) { ovr = Number(c.outcome_score); dat = c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null; }
+  return ovr === null ? null : { ovr, dat, khongThi: false };
 }
 
 /**
@@ -116,8 +146,8 @@ export function danhSachLichThi(
   theoLo([...lop.keys()], (lo, ph) => {
     em.push(...db().prepare(
       `SELECT e.class_id, s.id, s.full_name, s.normalized_name, s.student_code, tv.full_name AS tvv,
-              cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.exam_month, cy.exam_date, cy.exam_period_id, cy.thi_that_ngay,
-              rp.week_start AS exam_week_start, rp.code AS exam_week_code, ${COT_LICH_THI_SQL}
+              cy.id AS cycle_id, cy.target_score, cy.khong_cam_ket, cy.exam_period_id,
+              rp.week_start AS exam_week_start, rp.code AS exam_week_code, ${cotSauThi('cy', 'rp')}, ${COT_LICH_THI_SQL}
          FROM enrollments e JOIN students s ON s.id = e.student_id
          LEFT JOIN users tv ON tv.id = s.consultant_user_id
          LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
@@ -162,23 +192,14 @@ export function danhSachLichThi(
   return { thang, rows };
 }
 
+export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null };
 /**
- * Phần mở dưới hàng Lịch thi (V4 `mockup-v4-hoc-vien-lop.html` khung 3) — đọc THEO LÔ cho cả trang: điểm lượt của `standing` (`diemCuaLuot`, nhớ theo request),
- * một câu lượt kế hoạch sắp tới, một câu Case đang mở, hai câu nhật ký lịch thi (`lich_thi.luu` · `cycle.update` có đổi ngày / tháng thi) — mỗi lô ≤ 900.
+ * Lịch sử lịch thi của các lộ trình (mới trước, tối đa `gioiHan` dòng mỗi lộ trình) — theo lô. Hai câu, mỗi câu theo chỉ mục `idx_audit_entity` (entity_type, entity_id) —
+ * không OR giữa hai loại (Turso quét cả bảng nhật ký). Dùng cho dải mở hàng (3 dòng) và "Xem toàn bộ" (một lộ trình, khi bấm).
  */
-function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<typeof standingFor>, hom: string): (r: any) => HangLichThi['chiTiet'] {
-  const luotSt = [...new Set(ds.map((r) => standing.get(r.id)?.attemptId).filter((x): x is number => !!x))];
-  const diem = diemCuaLuot(luotSt);
-  const cyc = [...new Set(ds.map((r) => r.cycle_id).filter((x): x is number => !!x))];
-  const sapToi = new Map<number, { luot: string; tuan: string }>();
-  const lichSu = new Map<number, HangLichThi['chiTiet']['lichSu']>();
-  theoLo(cyc, (lo, ph) => {
-    for (const a of db().prepare(
-      `SELECT a.cycle_id, a.kind, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE a.cycle_id IN (${ph}) AND a.status = 'planned' AND rp.week_start >= ? ORDER BY rp.week_start, a.attempt_no`).all(...lo, mondayOfDate(hom)) as any[]) {
-      if (!sapToi.has(a.cycle_id)) sapToi.set(a.cycle_id, { luot: a.kind === 'mt0' ? 'MT0' : a.kind === 'final' ? 'Final' : `MT${a.attempt_no}`, tuan: a.week_start });
-    }
-    /* Hai câu, mỗi câu theo chỉ mục `idx_audit_entity` (entity_type, entity_id) — không OR giữa hai loại (Turso quét cả bảng nhật ký). */
+export function lichSuLichThi(cyc: readonly number[], gioiHan: number): Map<number, DongLichSu[]> {
+  const out = new Map<number, DongLichSu[]>();
+  theoLo([...cyc], (lo, ph) => {
     const nk = [
       ...db().prepare(
         `SELECT a.id, a.entity_id, a.action, a.created_at, u.full_name AS ai, a.after_json FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
@@ -190,32 +211,75 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
               OR json_extract(a.after_json, '$.exam_month') IS NOT json_extract(a.before_json, '$.exam_month'))`).all(...lo) as any[],
     ].sort((x, y) => y.id - x.id);
     for (const x of nk) {
-      const ls = lichSu.get(x.entity_id) ?? [];
-      if (ls.length >= 3) continue;
+      const ls = out.get(x.entity_id) ?? [];
+      if (ls.length >= gioiHan) continue;
       const sau = (() => { try { return JSON.parse(x.after_json ?? 'null') ?? {}; } catch { return {}; } })();
-      ls.push(x.action === 'lich_thi.luu'
-        ? { luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null }
-        : { luc: x.created_at, ai: x.ai ?? null, ketLuan: null, ngay: sau.exam_date ?? sau.exam_month ?? null, ghiChu: null });
-      lichSu.set(x.entity_id, ls);
+      if (x.action === 'lich_thi.luu') {
+        if (sau.boLich) continue;   // Hoàn tác đặt tháng: dòng `cycle.update` (tháng → trống) đã nói "bỏ tháng thi"
+        ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null });
+      } else {
+        const moc = sau.exam_date ?? sau.exam_month ?? null;
+        ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: moc ? null : 'bo-lich', ngay: moc, ghiChu: null });
+      }
+      out.set(x.entity_id, ls);
     }
   });
+  return out;
+}
+
+/**
+ * Phần mở dưới hàng Lịch thi (V4 `mockup-v4-hoc-vien-lop.html` khung 3) — đọc THEO LÔ cho cả trang: điểm lượt của `standing` (`diemCuaLuot`, nhớ theo request),
+ * một câu lượt kế hoạch sắp tới, một câu Case đang mở, hai câu nhật ký lịch thi (`lich_thi.luu` · `cycle.update` có đổi ngày / tháng thi) — mỗi lô ≤ 900.
+ */
+function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<typeof standingFor>, hom: string): (r: any) => HangLichThi['chiTiet'] {
+  const luotSt = [...new Set(ds.map((r) => standing.get(r.id)?.attemptId).filter((x): x is number => !!x))];
+  /* "So MT trước" (↑ ↓ =): lượt có Overall liền trước của lượt MT gần nhất — CÙNG hàm Xu hướng của hàng HV (`luotTruocCoOverall`); chỉ em có MT ≥ 1 và Overall đủ. */
+  const theoCy = luotTheoLoTrinh(ds.filter((r) => { const s = standing.get(r.id); return s?.mode === 'ielts_band' && s.overall != null && (s.attemptNo ?? 0) > 0 && s.cycleId; }).map((r) => standing.get(r.id)!.cycleId as number));
+  const luotTruoc = new Map<number, ReturnType<typeof luotTruocCoOverall>>();
+  for (const r of ds) { const s = standing.get(r.id); if (s?.cycleId && theoCy.has(s.cycleId) && s.attemptNo != null) luotTruoc.set(r.id, luotTruocCoOverall(theoCy.get(s.cycleId), s.attemptNo)); }
+  const diem = diemCuaLuot([...luotSt, ...[...luotTruoc.values()].map((x) => x?.attemptId).filter((x): x is number => !!x)]);
+  const cyc = [...new Set(ds.map((r) => r.cycle_id).filter((x): x is number => !!x))];
+  const sapToi = new Map<number, { luot: string; tuan: string }>();
+  theoLo(cyc, (lo, ph) => {
+    for (const a of db().prepare(
+      `SELECT a.cycle_id, a.kind, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE a.cycle_id IN (${ph}) AND a.status = 'planned' AND rp.week_start >= ? ORDER BY rp.week_start, a.attempt_no`).all(...lo, mondayOfDate(hom)) as any[]) {
+      if (!sapToi.has(a.cycle_id)) sapToi.set(a.cycle_id, { luot: a.kind === 'mt0' ? 'MT0' : a.kind === 'final' ? 'Final' : `MT${a.attempt_no}`, tuan: a.week_start });
+    }
+  });
+  const lichSu = lichSuLichThi(cyc, 3);
   /* "Case mở" CÙNG nguồn với hàng HV / `chiTietCaseMo` (`listCases` của người xem, status ≠ done, không Case tạm) — không câu SQL riêng. */
-  const caseMo = new Map<number, string[]>();
+  const caseMo = new Map<number, { id: number; kyNang: string | null; sos: number | null; soPa: number }[]>();
   const ids = [...new Set(ds.map((r) => r.id as number))];
   const mo: MappedCase[] = [];
   for (let k = 0; k < ids.length; k += 500) mo.push(...listCases(p, { studentIds: ids.slice(k, k + 500) }).rows);   // lô 500 như `xuatDanhSach` (trần tham số Turso)
-  for (const c of mo) {
-    if (c.status === 'done' || c.studentId === null || !c.topic) continue;
-    caseMo.set(c.studentId, [...new Set([...(caseMo.get(c.studentId) ?? []), c.topic])]);
-  }
+  const dangMo = mo.filter((c) => c.status !== 'done' && c.studentId !== null && !c.tam);
+  /* Số PA mỗi Case đang mở: MỘT câu đếm theo lô (PA chưa huỷ — cùng điều kiện `chiTietCaseMo`, không dựng cả chi tiết Case). */
+  const soPa = new Map<number, number>();
+  theoLoJson(dangMo.map((c) => c.id), (json) => {
+    for (const x of db().prepare(`SELECT case_id, COUNT(*) AS n FROM case_interventions WHERE case_id IN (${DS_JSON}) AND status != 'cancelled' GROUP BY case_id`).all(json) as any[]) soPa.set(x.case_id, x.n);
+  });
+  for (const c of dangMo) caseMo.set(c.studentId!, [...(caseMo.get(c.studentId!) ?? []), { id: c.id, kyNang: c.topicLabel ?? c.topic, sos: c.sosLevel, soPa: soPa.get(c.id) ?? 0 }]);
   return (r) => {
     const st = standing.get(r.id);
-    const band = (k: string) => diem.get(st?.attemptId as number)?.find((x) => x.skill === k)?.band ?? null;
+    const bandCua = (id: number | null | undefined) => (k: string) => (id ? diem.get(id)?.find((x) => x.skill === k)?.band ?? null : null);
+    const kn5 = (id: number | null | undefined) => { const b = bandCua(id); return { L: b('listening'), R: b('reading'), W1: b('writing1'), W2: b('writing2'), S: b('speaking') }; };
+    const tr = luotTruoc.get(r.id);
     return {
-      kn: st?.attemptId && st.mode === 'ielts_band' ? { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') } : null,
+      kn: st?.attemptId && st.mode === 'ielts_band' ? kn5(st.attemptId) : null,
+      mtTuan: st?.attemptWeekStart ?? null,
+      truoc: tr ? { nhan: `MT${tr.mt}`, ovr: tr.ovr, kn: kn5(tr.attemptId) } : null,
       sapToi: sapToi.get(r.cycle_id) ?? null, caseMo: caseMo.get(r.id) ?? [], lichSu: lichSu.get(r.cycle_id) ?? [],
     };
   };
+}
+
+/** GET /hoc-vien-lop/lich-thi/:cycleId/lich-su — "Xem toàn bộ" của dải mở hàng (chỉ khi bấm): tối đa 50 dòng, cùng nguồn 3 dòng của danh sách, cùng quyền xem em. */
+export function lichSuLichThiMotEm(p: Principal, cycleId: number): DongLichSu[] {
+  const c = cycleById(cycleId);
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: c.student_id })) throw forbidden('Bạn không có quyền xem em này.');
+  return lichSuLichThi([cycleId], 50).get(cycleId) ?? [];
 }
 
 /**
@@ -224,22 +288,26 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
  */
 export function luuLichThi(
   p: Principal, cycleId: number,
-  i: { ketLuan?: unknown; ngay?: unknown; thang?: unknown; ghiChu?: unknown },
-): { duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean; lichThi: LichThi; ketLuan: KetLuanLichThi | null; luu: LuuLichThi | null; chot: HangLichThi['chot'] } {
+  i: { ketLuan?: unknown; ngay?: unknown; thang?: unknown; ghiChu?: unknown; boLich?: unknown },
+): Pick<HangLichThi, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'lichThi' | 'ketLuan' | 'luu' | 'chot' | 'buoc' | 'sauThi' | 'kq' | 'buocTiep'> {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   chanLuuTru(p, cycleId);
   if (!coTheSua(p, c.student_id)) throw forbidden('Bạn không có quyền sửa dự kiến thi của em này.');
-  const doc = () => db().prepare(`SELECT cy.*, ${COT_LICH_THI_SQL} FROM learning_cycles cy LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE cy.id = ?`).get(cycleId) as any;
+  const doc = () => db().prepare(`SELECT cy.*, rp.week_start AS exam_week_start, ${cotSauThi('cy', 'rp')}, ${COT_LICH_THI_SQL} FROM learning_cycles cy
+      LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE cy.id = ?`).get(cycleId) as any;
   const cu = luuTuCot(doc());
   const ghiChu = i.ghiChu === undefined ? undefined : String(i.ghiChu ?? '').trim();
   if (ghiChu !== undefined && ghiChu.length > GHI_CHU_TOI_DA) throw loi(400, 'Ghi chú tối đa {GHI_CHU_TOI_DA} ký tự.', { GHI_CHU_TOI_DA });
   const ketLuan = i.ketLuan === undefined || i.ketLuan === null ? null : String(i.ketLuan);
   if (ketLuan !== null && !(KET_LUAN_LICH_THI as readonly string[]).includes(ketLuan)) throw badRequest('Kết luận không hợp lệ.');
-  if (ketLuan === null && ghiChu === undefined) throw badRequest('Chọn kết luận hoặc ghi chú.');
+  /* LICH-THI-UI (XM-2): Hoàn tác một lần ĐẶT tháng đầu tiên = xoá lịch về "chưa có" (các lần khác hoàn tác bằng PUT lại giá trị cũ); có nhật ký. */
+  const boLich = i.boLich === true && ketLuan === null;
+  if (ketLuan === null && ghiChu === undefined && !boLich) throw badRequest('Chọn kết luận hoặc ghi chú.');
   const homNay = demoToday();
   const truoc = tinhLich(c, cu, homNay);
   let thangGhi: string | null = cu?.thang ?? null;
+  if (boLich) { updateCycle(p, cycleId, { examDate: null }); thangGhi = null; }
   if (ketLuan) {
     const s = suaLichTheoKetLuan({
       ketLuan: ketLuan as KetLuanLichThi, ngay: typeof i.ngay === 'string' ? i.ngay : null, thang: typeof i.thang === 'string' ? i.thang : null,
@@ -251,7 +319,7 @@ export function luuLichThi(
     thangGhi = ketLuan === 'chuyen-thang' && laThangIso(i.thang) ? i.thang : truoc.thangDuKien;
   }
   const moi = {
-    ketLuan: (ketLuan as KetLuanLichThi | null) ?? cu?.ketLuan ?? null, thang: thangGhi,
+    ketLuan: boLich ? null : (ketLuan as KetLuanLichThi | null) ?? cu?.ketLuan ?? null, thang: thangGhi,
     ghiChu: ghiChu === undefined ? cu?.ghiChu ?? null : ghiChu || null,
   };
   const luc = nowIso();
@@ -263,7 +331,7 @@ export function luuLichThi(
   const st = db().prepare('SELECT student_code FROM students WHERE id = ?').get(c.student_id) as any;
   writeAudit({
     actorUserId: p.userId, action: 'lich_thi.luu', entityType: 'lich_thi', entityId: cycleId,
-    entityLabel: `${st?.student_code ?? ''} · ${moi.ketLuan ?? 'ghi chú'}`, before: cu ? { ketLuan: cu.ketLuan, thang: cu.thang, ghiChu: cu.ghiChu } : null, after: moi,
+    entityLabel: `${st?.student_code ?? ''} · ${moi.ketLuan ?? (boLich ? 'bỏ lịch' : 'ghi chú')}`, before: cu ? { ketLuan: cu.ketLuan, thang: cu.thang, ghiChu: cu.ghiChu } : null, after: boLich ? { ...moi, boLich: true } : moi,
   });
   const sau = doc();
   return tinhLich(sau, luuTuCot(sau), homNay, chotNgayCua([{ id: cycleId, exam_date: sau.exam_date ?? null }]).get(cycleId) ?? null);

@@ -245,8 +245,8 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   });
   check('UXF-b (6) · quét chữ: DongXinYKien dùng ở Ngăn Case, hàng PA (bảng kỹ năng) và thẻ PA; không còn chữ "Quản lý hạn" (PR-CT2 bỏ hạn duyệt kế hoạch)', () => {
     assert(/<DongXinYKien/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'CasePanel');
-    assert(/<DongXinYKien/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'KhoiPa');
-    assert(!/Quản lý hạn /.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'R5-3');
+    assert(/<DongXinYKien/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'thẻ PA (CASE-PA-UI b: TheKyNang gỡ)');
+    assert(!/Quản lý hạn /.test(doc('web/src/modules/cases/CasePanel.tsx')), 'R5-3');
   });
 
   // ------------------------------------------------------------------ Task 7 · panel Tạm dừng đếm vi phạm (O2) + em sau khi Quản lý từ chối (VN26)
@@ -398,7 +398,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   });
   check('UXF-b (11) · polish: khung bảng Phân tích GV đủ cao cho một chú thích nổi khi bảng 1–2 hàng (Q18); thẻ Xin ý kiến trên 375 px cho xuống dòng', () => {
     /* UI-PHAN-TICH (Q-7): bảng Phân tích GV không còn chú thích nổi ở tiêu đề (P1) — bỏ kiểm min-height Q18. */
-    assert(/<DongXinYKien x=\{p\.xinYKien\} ngan=\{ngan\} \/>/.test(doc('web/src/modules/cases/TheKyNang.tsx')), 'thẻ 375 px không cắt dòng Xin ý kiến');
+    assert(/<DongXinYKien x=\{iv\.xinYKien\} ngan=\{ngan\} \/>/.test(doc('web/src/modules/cases/CasePanel.tsx')), 'thẻ 375 px không cắt dòng Xin ý kiến');
   });
   check('UXF-b (10) · R5-5: không thêm câu SQL theo số Case (lớp của Case đọc cùng câu nạp Case); quét chữ web có nhóm + dòng phụ "từ <lớp>"', () => {
     assert(/AS ct_attempt/.test(doc('server/src/cases/cases.ts')), 'cases.ts: chương trình của lớp Case đọc cùng câu SQL nạp Case (không câu mới)');

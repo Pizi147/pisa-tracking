@@ -690,7 +690,7 @@ export function menuHoSoLop(i: {
   thuong: boolean; chuongTrinh: string | null; soHocVien: number;
   /** OV-6b2: lớp liên tục (PET, KET…) — không có Lộ trình tiếp theo. */
   lienTuc?: boolean;
-  canEditProgress: boolean; canAssign: boolean; canAssignSubject: boolean; canAddStudents: boolean; coTheChuyenTiep: boolean;
+  canEditProgress: boolean; /** SUA-LICH-LOP: Admin chi nhánh sửa lịch lớp → có mục Thông tin lớp. */ canEditSchedule?: boolean; canAssign: boolean; canAssignSubject: boolean; canAddStudents: boolean; coTheChuyenTiep: boolean;
   coTheXuatExcel: boolean; coTheMoLaiLop: boolean; coTheXoa: boolean; coTheKetThuc: boolean;
   /** OV-13i: cờ máy chủ `viewer.coTheSuaCaLop` (GVCN / QL / TVV / CX đúng phạm vi); không truyền → theo `canAddStudents`. */
   coTheSuaCaLop?: boolean;
@@ -701,7 +701,7 @@ export function menuHoSoLop(i: {
 }): MucMenuLop[] {
   const m = (key: ViecMenuLop, nhan: string, nhom: MucMenuLop['nhom'], co: boolean): MucMenuLop[] => (co ? [{ key, nhan, nhom }] : []);
   return [
-    ...m('thong-tin', t('Thông tin lớp'), 'Lớp', i.canEditProgress || i.canAssign || i.canAssignSubject),
+    ...m('thong-tin', t('Thông tin lớp'), 'Lớp', i.canEditProgress || !!i.canEditSchedule || i.canAssign || i.canAssignSubject),
     ...m('sua-hoc-vien', t('Sửa thông tin học viên'), 'Lớp', (i.coTheSuaCaLop ?? i.canAddStudents) && i.soHocVien > 0),
     ...m('hoc-vien', t('+ Học viên'), 'Lớp', i.canAddStudents),
     /* P9b: trang Cuối khoá (thay Lộ trình tiếp theo + Đánh giá đầu ra); R5.3: lớp FT bỏ "Chuyển tiếp lớp" — đổi lớp từng em / chọn nhiều em → Chuyển lớp…. */

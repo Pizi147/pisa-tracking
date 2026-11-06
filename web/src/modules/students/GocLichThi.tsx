@@ -1,47 +1,24 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, Empty, ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
-import { ODiem } from '../../ui/ODiem.tsx';
-import { lopKq } from '../../ui/BieuTuong.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { skillShort } from '../../lib/format.ts';
+import { PanelSauThi } from '../congViec/PanelSauThi.tsx';
 import {
-  chuMiniKn, datKv, dauDiem, dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, xepLichThi,
-  type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type NguCanhDs,
+  CotGhi, CotLich, CotMt, CotTarget, CotViec, ChuLop, DaiMo, HopLich, NutMo, TenEm, canLam, laHop,
+  type Hanh, type Hang, type HangHien, type LuuBody,
+} from './HangLichThi.tsx';
+import {
+  datKv, dsThangLichThi, nhanThang, thangTrongKhoang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, xepLichThiTheoLop,
+  type NguCanhDs, type ThaoTacLichThi, type LichThi,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
-/** Một hàng của `GET /hoc-vien-lop/lich-thi` (server/src/classes/lichThi.ts → HangLichThi). */
-type Luu = { ketLuan: KetLuanLichThi | null; thang: string | null; ghiChu: string | null; ai: string | null; luc: string };
-type Kn = Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null>;
-type Hang = {
-  studentId: number; cycleId: number | null; ten: string; ma: string; classId: number; classCode: string; thuong: boolean; gvcn: string | null; tvv: string | null;
-  target: number | null; kck: boolean; standing: KetQuaVao | null;
-  duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean; ketLuan: KetLuanLichThi | null; luu: Luu | null; coTheSua: boolean;
-  lichThi: LichThi;
-  chot: { luc: string; ai: string | null } | null;
-  chiTiet: {
-    kn: Kn | null; sapToi: { luot: string; tuan: string } | null; caseMo: string[];
-    lichSu: { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null }[];
-  };
-};
 type Trang = { thang: string[]; rows: Hang[] };
-type TrangThaiLuu = { kieu: 'luu' | 'xong' | 'loi'; loi?: string; lai?: () => void };
-/** Hàng đang hiện: dữ liệu máy chủ + việc làm tại chỗ. Em vừa dời tháng ra khỏi khoảng đang xem vẫn ở lại tới khi rời trang ("Đã dời sang 11/2026"). */
-type HangHien = Hang & { doiSang: string | null; tt?: TrangThaiLuu };
-
-/** Hai nút của hàng (V4 Q-C3 ①): Chốt ngày · Dời tháng — mở một hộp nhỏ ngay dưới hàng (ngày / tháng + ghi chú). */
-type Hop = { id: number; kieu: 'chot' | 'doi' };
-
-const KN_MINI = ['L', 'R', 'W1', 'W2', 'S'] as const;
-const NHOM = ['chua-chot-ngay', 'da-chot-ngay', 'du-kien', 'chua-co'] as const;
-type Nhom = (typeof NHOM)[number];
-const nhomCua = (l: LichThi): Nhom => (l.trangThai === 'da-thi' ? 'da-chot-ngay' : l.trangThai);
 
 /** `?thang=` của trang → khoảng [từ, đến]; mặc định tháng này → tháng sau (V4 khung 3: 09/2026 → 10/2026). */
 export function khoangThang(thangUrl: string | null, homNay: string): [string, string] {
@@ -66,275 +43,240 @@ export function ChipLichThi({ l, them }: { l: LichThi | null | undefined; them?:
 export const kqOverall = (ovr: number | null | undefined, kv: number | null | undefined) =>
   ovr == null || kv == null ? null : ovr > kv ? 'vuot' as const : ovr === kv ? 'bang' as const : 'duoi' as const;
 
-/**
- * Dải 5 ô L R W1 W2 S (W1 W2 riêng) — HV-LOP-GON (chủ SP 28/10, mockup V5 `.mini-kn`): nhãn mờ; ô cột cố định nên các hàng thẳng cột.
- * HV-LOP-VIEC (PANEL-V10, chủ SP 30/10 + PTA Q1): đạt / không đạt như ô Overall — hụt "✗" `kq-duoi` 700, đạt "✓" màu Overall đạt 500; không nền đỏ ô; KCK dưới kỳ vọng trung tính.
- */
-export function MiniKn({ kn, kv, kck }: { kn: Kn; kv: number | null; kck?: boolean }) {
-  return (
-    <span className="mt-1 grid w-max grid-cols-[46px_46px_58px_58px_46px] gap-x-1 text-[13px] leading-5 tabular-nums text-slate-100">
-      {KN_MINI.map((k) => {
-        const v = kn[k];
-        const dat = datKv(v, kv, kck);
-        /* Ký hiệu sát số (cột hẹp); trình đọc màn đọc chữ đủ "W1 ✗ 5.0". */
-        return (
-          <span key={k} className="whitespace-nowrap" title={dat === false ? t('Dưới kỳ vọng') : undefined} role="img" aria-label={`${k} ${chuMiniKn(v, kv, kck)}${dat === false ? `, ${t('Dưới kỳ vọng')}` : ''}`}>
-            <span className="mr-0.5 font-medium text-faint">{k}</span>
-            {v == null ? <span className="font-normal text-faint">—</span>
-              : <span className={dat === false ? `font-bold ${lopKq('duoi')}` : dat ? `font-medium ${lopKq('bang')}` : 'font-medium'}>{dauDiem(dat)}{v.toFixed(1)}</span>}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
+const COT_LICH: CotBang[] = [
+  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 200 },
+  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 230 },
+  { key: 'viec', nhan: t('Việc tiếp'), kieu: 'viec', rong: 320 },
+  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 110 },
+  { key: 'target', nhan: 'Target', kieu: 'so', rong: 80 },
+  { key: 'ghi', nhan: t('Ghi chú'), kieu: 'chu' },
+  { key: 'mo', nhan: '', kieu: 'nut', rong: 56 },
+];
+const [C_TEN, C_LICH, C_VIEC, C_MT, C_TARGET, C_GHI, C_MO] = COT_LICH;
+/** Hàng công cụ: lọc TVV — "-" = em chưa có TVV. */
+const TVV_CHUA = '-';
+const SELECT_GON = 'field h-8 w-auto !py-0 text-sm max-sm:min-h-[44px] max-sm:w-full';
+const HOAN_TAC_MS = 10_000;
+
+/** Hợp dữ liệu mới tải với hàng đang hiện: giữ việc làm tại chỗ (`tt`, `doiSang`) — em vừa dời tháng ra khỏi khoảng đang xem vẫn ở lại tới khi rời trang. */
+const hopNhat = (cu: readonly HangHien[], moi: readonly Hang[]): HangHien[] => {
+  const giu = new Map(cu.map((r) => [r.studentId, r]));
+  const ra: HangHien[] = moi.map((r) => ({ ...r, doiSang: giu.get(r.studentId)?.doiSang ?? null, tt: giu.get(r.studentId)?.tt }));
+  for (const c of cu) if (c.doiSang && !moi.some((m) => m.studentId === c.studentId)) ra.push(c);
+  return ra;
+};
+
+/** Cái cần PUT để trả lịch về như trước khi lưu (Hoàn tác, XM-2): ngày cũ · tháng cũ · chưa có lịch → `boLich`; kèm ghi chú cũ nếu lần lưu có đổi ghi chú. */
+const bodyHoanTac = (r: HangHien, da: LuuBody): LuuBody => {
+  const lich: LuuBody = r.coNgay && r.lichThi.ngay ? { ketLuan: 'chot-ngay', ngay: r.lichThi.ngay }
+    : r.lichThi.thang ? { ketLuan: 'chuyen-thang', thang: r.lichThi.thang } : { boLich: true };
+  return da.ghiChu !== undefined ? { ...lich, ghiChu: r.luu?.ghiChu ?? '' } : lich;
+};
 
 /**
- * HỌC VIÊN & LỚP › LỊCH THI (UI-HV-LOP — V4 `mockup-v4-hoc-vien-lop.html` khung 3 + trường của `mockup-ov14-5`): Tháng dự kiến [từ] → [đến];
- * MỘT danh sách thi gần nhất trước (chủ SP 29/10 — trước là nhóm Chưa chốt ngày · Đã chốt ngày · Dự kiến · Chưa có tháng thi); lọc Lớp / khung của trang; hàng: Học viên (lớp · TVV) · MT gần nhất ·
- * Target · Lịch thi · Ghi chú · [Chốt ngày] [Dời tháng] · ▸ mở chi tiết dưới hàng. Lưu ngay (`PUT /hoc-vien-lop/lich-thi/:cycleId`, có nhật ký).
- * `duongGoc`: đuôi truy vấn của trang (`?q=&phamVi=&branchId=`) — cùng phạm vi các góc kia. Khoảng tháng trên URL (`thang=từ,đến`).
+ * HỌC VIÊN & LỚP › LỊCH THI (LICH-THI-UI — mockup `thiet-ke/v16/lich-thi.html` bản 3, chủ SP 06/11): Tháng thi [từ] → [đến] · Lớp · TVV · Cần làm | Tất cả;
+ * MỘT danh sách xếp theo LỚP (dòng tiêu đề lớp), trong lớp thi sớm → muộn, Xong cuối; hàng: Học viên · Lịch thi (chữ trạng thái + dòng phụ) · Việc tiếp (một nút chính khi
+ * việc đã tới lúc + chữ phụ) · MT gần nhất · Target · Ghi chú · mũi tên mở dải. Lưu ngay (`PUT /hoc-vien-lop/lich-thi/:cycleId`, có nhật ký); lưu xong chỉ sửa hàng đó tại chỗ — không xếp lại.
+ * Ghi KQ / Bước tiếp / Sửa KQ mở panel Sau thi CÓ SẴN (như Công việc). `duongGoc`: đuôi truy vấn của trang (`?q=&phamVi=&branchId=`). Khoảng tháng trên URL (`thang=từ,đến`).
  */
-export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren, loc }: {
+export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren, loc, onMoCase }: {
   duongGoc: string; thangUrl: string | null; onDoiThang: (thang: string[]) => void;
   /** Bộ lọc Lớp / khung của trang (cùng `trongLoc` của các góc khác) — chủ SP 29/10: chọn CP FT 116 mà còn em CP FT 130 là lỗi. */
   loc?: (classId: number, ft: boolean) => boolean;
-  /** Em đang hiện (trừ nhóm gập) — nút Xuất đầu trang lấy đúng danh sách này. */
+  /** Em đang hiện — nút Xuất đầu trang lấy đúng danh sách này. */
   onIds?: (ids: number[]) => void;
   ds?: NguCanhDs;
-  /** Ô lọc chung của trang (chi nhánh …) đặt trong dải lọc của góc. */
+  /** Ô lọc chung của trang (tìm, lớp …) đặt trong dải lọc của góc. */
   locTren?: ReactNode;
+  /** Tên kỹ năng ở "Hỗ trợ đang mở" bấm → panel Case của em (lối mở sẵn có của trang). */
+  onMoCase?: (studentId: number, caseId: number) => void;
 }) {
   const { homNay } = useNgayNghiepVu();
+  const dienThoai = useDienThoai();
   const [tu, den] = khoangThang(thangUrl, homNay);
   const thang = useMemo(() => thangTrongKhoang(tu, den), [tu, den]);
   const duong = `/hoc-vien-lop/lich-thi${duongGoc}${duongGoc.includes('?') ? '&' : '?'}thang=${thang.join(',')}`;
   const { data, loading, error, reload, cu } = useApi<Trang>(duong, [duong], { giuCu: true });
   const [rows, setRows] = useState<HangHien[]>([]);
-  useEffect(() => { setRows((data?.rows ?? []).map((r) => ({ ...r, doiSang: null }))); }, [data]);
+  const duongDa = useRef(duong);
+  useEffect(() => {
+    const cungKhoang = duongDa.current === duong;
+    duongDa.current = duong;
+    setRows((x) => hopNhat(cungKhoang ? x : [], data?.rows ?? []));
+  }, [data]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [mo, setMo] = useState<Set<number>>(new Set());
-  const [hop, setHop] = useState<Hop | null>(null);
+  const [hop, setHop] = useState<Hanh['hop']>(null);
+  const [panel, setPanel] = useState<{ id: number; cycleId: number; ten: string; lop: string; nut: ThaoTacLichThi } | null>(null);
+  const [chiCan, setChiCan] = useState(false);
+  const [tvv, setTvv] = useState('');
+  const hen = useRef(new Set<ReturnType<typeof setTimeout>>());
+  useEffect(() => () => { hen.current.forEach(clearTimeout); }, []);
 
-  /* Chủ SP 29/10 (luật mới): MỘT danh sách, thi gần nhất trước — không tách nhóm Đã chốt ngày / Chưa chốt / Dự kiến; em chưa có tháng ở cuối. */
-  const hien = useMemo(() => xepLichThi(rows.filter((r) => !loc || loc(r.classId, !r.thuong))), [rows, loc]);
-  useEffect(() => { onIds?.(hien.map((r) => r.studentId)); }, [hien.map((r) => r.studentId).join(',')]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* Luật 5b: lưu xong chỉ sửa hàng đó tại chỗ — hàng không nhảy chỗ giữa buổi họp. Thứ tự chốt lúc tập em đổi (tải khoảng mới, em mới vào). */
+  const idsKey = rows.map((r) => r.studentId).sort((a, b) => a - b).join(',');
+  const thuTu = useMemo(() => new Map(xepLichThiTheoLop(rows).map((r, i) => [r.studentId, i])), [idsKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const trongPham = rows.filter((r) => (!loc || loc(r.classId, !r.thuong)) && (!tvv || (tvv === TVV_CHUA ? !r.tvv : r.tvv === tvv)));
+  const soCan = trongPham.filter(canLam).length;
+  /* "Cần làm": hàng vừa làm xong ở lại tới khi đổi bộ lọc / khoảng (không biến mất giữa lúc đang làm). */
+  const daTungCan = useRef(new Set<number>());
+  useEffect(() => { for (const r of rows) if (canLam(r)) daTungCan.current.add(r.studentId); }, [rows]);
+  const hien = trongPham.filter((r) => !chiCan || canLam(r) || daTungCan.current.has(r.studentId)).sort((a, b) => (thuTu.get(a.studentId) ?? 0) - (thuTu.get(b.studentId) ?? 0));
+  const hienKey = hien.map((r) => r.studentId).join(',');
+  useEffect(() => { onIds?.(hien.map((r) => r.studentId)); }, [hienKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const dsTvv = useMemo(() => [...new Set(rows.map((r) => r.tvv).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, 'vi')), [rows]);
+  const coChuaTvv = rows.some((r) => !r.tvv);
+  /* Dòng tiêu đề lớp: số em · số cần làm · ⚠ quá hạn — đếm cùng hàm với hàng, dữ liệu đã nạp. */
+  const dauLop = useMemo(() => {
+    const m = new Map<number, { lop: string; n: number; can: number; qua: number }>();
+    const dau = new Map<number, number>();
+    for (const r of hien) {
+      const x = m.get(r.classId) ?? { lop: r.classCode, n: 0, can: 0, qua: 0 };
+      x.n += 1; if (canLam(r)) { x.can += 1; if (r.sauThi.quaHan) x.qua += 1; }
+      m.set(r.classId, x);
+      if (!dau.has(r.classId)) dau.set(r.classId, r.studentId);
+    }
+    return new Map([...dau].map(([lop, id]) => [id, m.get(lop)!]));
+  }, [hienKey, rows]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const sua = (id: number, f: (r: HangHien) => HangHien) => setRows((x) => x.map((r) => (r.studentId === id ? f(r) : r)));
-  /** Lưu MỘT kết luận + ghi chú; lỗi thì giữ hộp đang mở (chữ đang gõ còn nguyên) và cho Thử lại. */
-  const luu = (r: HangHien, body: { ketLuan?: KetLuanLichThi; ngay?: string; thang?: string; ghiChu?: string }) => {
+  const xoaTtSau = (id: number) => {
+    const h = setTimeout(() => { hen.current.delete(h); sua(id, (x) => (x.tt?.kieu === 'xong' ? { ...x, tt: undefined } : x)); }, HOAN_TAC_MS);
+    hen.current.add(h);
+  };
+  /** Lưu MỘT kết luận + ghi chú; lỗi thì giữ hộp đang mở (chữ đang gõ còn nguyên) và cho Thử lại. Lưu lịch → "✓ Đã lưu · Hoàn tác" 10 giây (PUT lại giá trị cũ). */
+  const luu = (r: HangHien, body: LuuBody, hoanTac = false) => {
     if (!r.cycleId) return;
     sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'luu' } }));
     api.put<Partial<Hang>>(`/hoc-vien-lop/lich-thi/${r.cycleId}`, body)
       .then((kq) => {
         /* Làm mới các trang khác nhưng KHÔNG đường của chính góc này — tải lại làm em vừa dời tháng biến mất khỏi danh sách. */
         invalidate('/hoc-vien-lop?'); invalidate('/hoc-vien-lop/theo-vai'); invalidate('/hoc-vien-lop/em'); invalidate('/students');
-        const doi = body.ketLuan === 'chuyen-thang' && body.thang && !thang.includes(body.thang) ? body.thang : null;
-        sua(r.studentId, (x) => ({ ...x, ...kq, doiSang: doi, tt: { kieu: 'xong' } }));
-        setHop(null);
+        const doi = !hoanTac && body.ketLuan === 'chuyen-thang' && body.thang && !thang.includes(body.thang) ? { sang: body.thang, truoc: r.lichThi.thang } : null;
+        const huy = !hoanTac && (body.ketLuan || body.boLich) ? () => luu({ ...r, ...kq, luu: kq.luu ?? r.luu } as HangHien, bodyHoanTac(r, body), true) : undefined;
+        sua(r.studentId, (x) => ({ ...x, ...kq, doiSang: doi, tt: { kieu: 'xong', hoanTac: huy } }));
+        if (body.ketLuan || body.boLich) setHop(null);
+        xoaTtSau(r.studentId);
       })
-      .catch((e: any) => sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'loi', loi: e?.message ?? t('Không lưu được'), lai: () => luu(r, body) } })));
+      .catch((e: any) => sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'loi', loi: e?.message ?? t('Không lưu được'), lai: () => luu(r, body, hoanTac) } })));
   };
   const doiMo = (id: number) => setMo((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const demTrangThai = (k: Nhom) => hien.filter((r) => !r.doiSang && nhomCua(r.lichThi) === k).length;
-  const dem = { b: demTrangThai('chua-chot-ngay'), a: demTrangThai('da-chot-ngay'), dk: demTrangThai('du-kien') + hien.filter((r) => r.doiSang).length };
+  /** Chốt / Sửa ngày · Đặt / Dời tháng → hộp dưới hàng; Ghi KQ · Bước tiếp · Sửa KQ → panel Sau thi có sẵn (XM-1). */
+  const bam = (r: HangHien, nut: ThaoTacLichThi) => {
+    if (laHop(nut)) { setPanel(null); setHop(hop?.id === r.studentId && hop.nut === nut ? null : { id: r.studentId, nut }); return; }
+    if (r.cycleId) { setHop(null); setPanel({ id: r.studentId, cycleId: r.cycleId, ten: r.ten, lop: r.classCode, nut }); }
+  };
+  const hanh: Hanh = { hop, panel, mo, bam, doiMo, huyHop: () => setHop(null), luu: (r, b) => luu(r, b), moCase: onMoCase, ds };
+  const khoang = `${nhanThang(tu)} → ${nhanThang(den)}`;
+
+  const dongBang = (r: HangHien) => {
+    const dau = dauLop.get(r.studentId);
+    const khoa = !r.coTheSua || r.tt?.kieu === 'luu';
+    const dangMo = mo.has(r.studentId);
+    const hopMo = hop?.id === r.studentId ? hop.nut : null;
+    return (
+      <Fragment>
+        {dau && <tr className="lt-lop"><td colSpan={COT_LICH.length}><ChuLop {...dau} /></td></tr>}
+        <tr className={`lt-h ${dangMo || hopMo ? 'lt-mo' : ''}`}>
+          <OBang c={C_TEN}><TenEm r={r} ds={ds} /></OBang>
+          <OBang c={C_LICH}><CotLich r={r} /></OBang>
+          <OBang c={C_VIEC}><CotViec r={r} hanh={hanh} /></OBang>
+          <OBang c={C_MT}><CotMt r={r} /></OBang>
+          <OBang c={C_TARGET}><CotTarget r={r} /></OBang>
+          <OBang c={C_GHI}><CotGhi r={r} khoa={khoa} onLuu={(ghiChu) => luu(r, { ghiChu })} /></OBang>
+          <OBang c={C_MO}><NutMo r={r} mo={dangMo} onMo={() => doiMo(r.studentId)} /></OBang>
+        </tr>
+        {hopMo && <tr className="lt-r-hop"><td colSpan={COT_LICH.length}><HopLich r={r} nut={hopMo} onHuy={() => setHop(null)} onLuu={(b) => luu(r, b)} /></td></tr>}
+        {dangMo && <tr className="lt-r-dai"><td colSpan={COT_LICH.length}><DaiMo r={r} hanh={hanh} /></td></tr>}
+      </Fragment>
+    );
+  };
+
+  const the = (r: HangHien) => {
+    const dau = dauLop.get(r.studentId);
+    const khoa = !r.coTheSua || r.tt?.kieu === 'luu';
+    const dangMo = mo.has(r.studentId);
+    const hopMo = hop?.id === r.studentId ? hop.nut : null;
+    const st = r.standing;
+    return (
+      <Fragment key={r.studentId}>
+        {dau && <li className="lt-lop"><ChuLop {...dau} /></li>}
+        <li className={dangMo || hopMo ? 'lt-mo' : ''}>
+          <div className="lt-the-1"><TenEm r={r} ds={ds} /><NutMo r={r} mo={dangMo} onMo={() => doiMo(r.studentId)} /></div>
+          {(st?.overall != null || r.target != null) && (
+            <div className="lt-the-diem">
+              {st?.overall != null && <span>{st.attemptLabel} <span className={`lt-diem ${datKv(st.overall, st.expectation, r.kck) === true ? 'dat' : datKv(st.overall, st.expectation, r.kck) === false ? 'duoi' : ''}`}>{st.overall.toFixed(1)}</span></span>}
+              <span>Target <b className="tabular-nums"><CotTarget r={r} /></b></span>
+            </div>
+          )}
+          <CotLich r={r} />
+          <CotGhi r={r} khoa={khoa} hienNhan onLuu={(ghiChu) => luu(r, { ghiChu })} />
+          {hopMo ? <HopLich r={r} nut={hopMo} the onHuy={() => setHop(null)} onLuu={(b) => luu(r, b)} /> : <CotViec r={r} hanh={hanh} the />}
+          {dangMo && <DaiMo r={r} hanh={hanh} />}
+        </li>
+      </Fragment>
+    );
+  };
+
+  const oThang = (v: string, ten: string, f: (m: string) => void) => <ONgay kieu="thang" gon value={v} ariaLabel={ten} onChange={(m) => m && f(m.slice(0, 7))} />;
+  const oTu = oThang(tu, t('Từ tháng'), (m) => onDoiThang(m > den ? [m, m] : [m, den]));
+  const oDen = oThang(den, t('Đến tháng'), (m) => onDoiThang(m < tu ? [m, m] : [tu, m]));
+  const doan = (
+    <span className="doan" role="group" aria-label={t('Hiện')}>
+      <button type="button" aria-pressed={chiCan} onClick={() => { daTungCan.current = new Set(); setChiCan(true); }}>{t('Cần làm')}<b className="tabular-nums">{soCan}</b></button>
+      <button type="button" aria-pressed={!chiCan} onClick={() => setChiCan(false)}>{t('Tất cả')}<b className="tabular-nums">{trongPham.length}</b></button>
+    </span>
+  );
+  const locTvv = (dsTvv.length > 0 || coChuaTvv) && (
+    <select className={SELECT_GON} aria-label={t('TVV')} value={tvv} onChange={(e) => setTvv(e.target.value)}>
+      <option value="">{t('Mọi TVV')}</option>
+      {dsTvv.map((x) => <option key={x} value={x}>{x}</option>)}
+      {coChuaTvv && <option value={TVV_CHUA}>{t('Chưa có TVV')}</option>}
+    </select>
+  );
 
   return (
     <div className="card overflow-hidden !p-0">
-      <div className="flex flex-wrap items-center gap-2 border-b p-3" style={{ borderColor: 'var(--line)' }} data-hd="hvl-lich-thi">
-        <span className="text-[13px] text-slate-400">{t('Tháng dự kiến')}</span>
-        <span className="w-[150px]"><ONgay kieu="thang" gon value={tu} ariaLabel={t('Từ tháng')} onChange={(m) => m && onDoiThang(m.slice(0, 7) > den ? [m.slice(0, 7), m.slice(0, 7)] : [m.slice(0, 7), den])} /></span>
-        <span aria-hidden className="text-slate-400">→</span>
-        <span className="w-[150px]"><ONgay kieu="thang" gon value={den} ariaLabel={t('Đến tháng')} onChange={(m) => m && onDoiThang(m.slice(0, 7) < tu ? [m.slice(0, 7), m.slice(0, 7)] : [tu, m.slice(0, 7)])} /></span>
+      <div className="flex flex-wrap items-center gap-2 border-b p-3 max-sm:gap-2" style={{ borderColor: 'var(--line)' }} data-hd="hvl-lich-thi">
+        <span className="text-[13px] font-medium text-slate-400 max-sm:hidden">{t('Tháng thi')}</span>
+        <span className="flex items-center gap-2 max-sm:w-full max-sm:[&>span]:min-w-0 max-sm:[&>span]:flex-1">
+          <span className="w-[150px]">{oTu}</span><span aria-hidden className="text-slate-400 max-sm:!flex-none">→</span><span className="w-[150px]">{oDen}</span>
+        </span>
         {locTren}
-        {data && (
-          <span className="ml-auto text-xs tabular-nums text-slate-400 max-sm:hidden">
-            {t('{b} chưa chốt ngày · {a} đã chốt · {dk} dự kiến', dem)}
-          </span>
-        )}
+        {locTvv}
+        {data && <span className="ml-auto max-sm:ml-0 max-sm:w-full max-sm:[&>.doan]:w-full">{doan}</span>}
       </div>
       {error && <div className="p-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>}
       {loading && !data && <div className="p-3"><Skeleton rows={5} /></div>}
-      {data && hien.length === 0 && <Card><Empty title={t('Không có HV có lịch thi trong {khoang}.', { khoang: `${nhanThang(tu)} → ${nhanThang(den)}` })} /></Card>}
+      {data && hien.length === 0 && (
+        chiCan && trongPham.length > 0
+          ? (
+            <Card>
+              <div className="lt-rong">
+                <span className="lt-rong-t">✓ {t('Hết việc lịch thi trong {khoang}', { khoang })}</span>
+                <span className="lt-rong-p">{t('Không em nào chờ chốt ngày, ghi KQ hay chọn bước tiếp. Em chưa có lịch xem ở "Tất cả".')}</span>
+                <button type="button" className="btn" onClick={() => setChiCan(false)}>{t('Xem tất cả · {n}', { n: trongPham.length })}</button>
+              </div>
+            </Card>
+          )
+          : (
+            <Card>
+              <div className="lt-rong">
+                <span className="lt-rong-t">{t('Không có HV có lịch thi trong {khoang}.', { khoang })}</span>
+                <span className="lt-rong-p">{t('Em chưa có lịch luôn ở danh sách này; hiện không còn em nào. Đổi khoảng tháng ở trên để xem tháng khác.')}</span>
+              </div>
+            </Card>
+          )
+      )}
       {data && hien.length > 0 && (
-        <div className={cu ? 'dang-tai-lai' : undefined} aria-busy={cu || undefined}>
-        <Bang ten={t('Lịch thi')} cot={COT_LICH} hang={hien} khoa={(r) => r.studentId} khung={false} the375={false} dinh
-          hangRieng={(r) => (
-            <DongLichThi r={r} ds={ds} mo={mo.has(r.studentId)} onMo={() => doiMo(r.studentId)} nhom={r.doiSang ? 'du-kien' : nhomCua(r.lichThi)}
-              hop={hop?.id === r.studentId ? hop.kieu : null} onHop={(kieu) => setHop(kieu ? { id: r.studentId, kieu } : null)} onLuu={(b) => luu(r, b)} />
-          )} />
+        <div className={`lt-bang ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
+          {dienThoai
+            ? <ul className="lt-the" aria-label={t('Lịch thi')}>{hien.map(the)}</ul>
+            : <Bang ten={t('Lịch thi')} cot={COT_LICH} hang={hien} khoa={(r) => r.studentId} khung={false} the375={false} dinh hangRieng={dongBang} />}
         </div>
+      )}
+      {panel && (
+        <PanelSauThi key={panel.cycleId} cycleId={panel.cycleId} em={{ id: panel.id, ten: panel.ten }} lop={panel.lop} onDong={() => setPanel(null)} onDaLam={() => undefined} onTiep={null} />
       )}
     </div>
   );
 }
-
-const COT_LICH: CotBang[] = [
-  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 260 },
-  { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 150 },
-  { key: 'target', nhan: 'Target', kieu: 'so' },
-  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 200 },
-  { key: 'ghi', nhan: t('Ghi chú'), kieu: 'chu' },
-  { key: 'nut', nhan: '', kieu: 'chu', rong: 210 },
-  { key: 'mo', nhan: '', kieu: 'nut' },
-];
-const [C_TEN, C_MT, C_TARGET, C_LICH, C_GHI, C_NUT, C_MO] = COT_LICH;
-
-function DongLichThi({ r, ds, mo, onMo, nhom, hop, onHop, onLuu }: {
-  r: HangHien; ds?: NguCanhDs; mo: boolean; onMo: () => void; nhom: Nhom;
-  hop: 'chot' | 'doi' | null; onHop: (k: 'chot' | 'doi' | null) => void;
-  onLuu: (b: { ketLuan?: KetLuanLichThi; ngay?: string; thang?: string; ghiChu?: string }) => void;
-}) {
-  const st = r.standing;
-  const khoa = !r.coTheSua || r.tt?.kieu === 'luu';
-  const daChot = r.lichThi.trangThai === 'da-chot-ngay' || r.lichThi.trangThai === 'da-thi';
-  const phuEm = [r.classCode, r.tvv ? `TVV ${r.tvv}` : t('chưa có TVV')].join(' · ');
-  return (
-    <>
-      <tr className={mo ? 'dang-mo' : ''}>
-        <OBang c={C_TEN}>
-          <Link className="ten-ho-so khong-mui block truncate" to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>
-          <span className="block truncate text-xs text-slate-400" title={phuEm}>{phuEm}</span>
-        </OBang>
-        <OBang c={C_MT}><ODiem so={st?.overall != null ? st.overall.toFixed(1) : null} kq={kqOverall(st?.overall, st?.expectation)} phu={st?.attemptLabel ?? undefined} /></OBang>
-        <OBang c={C_TARGET}><TargetText band={r.target} kck={r.kck} /></OBang>
-        <OBang c={C_LICH}>
-          {r.doiSang ? <NhanLich loai="du-kien">{t('Đã dời sang {thang}', { thang: nhanThang(r.doiSang) })}</NhanLich> : <ChipLichThi l={r.lichThi} />}
-        </OBang>
-        <OBang c={C_GHI}><GhiChu r={r} khoa={khoa} onLuu={(ghiChu) => onLuu({ ghiChu })} /></OBang>
-        <OBang c={C_NUT}>
-          {r.coTheSua && (daChot
-            ? <button type="button" className="btn btn-sm" disabled={khoa} aria-expanded={hop === 'chot'} onClick={() => onHop(hop === 'chot' ? null : 'chot')}>{t('Sửa ngày')}</button>
-            : <span className="flex flex-wrap gap-1.5">
-                <button type="button" className={nhom === 'chua-chot-ngay' ? 'btn btn-sm btn-primary' : 'btn btn-sm'} disabled={khoa} aria-expanded={hop === 'chot'}
-                  onClick={() => onHop(hop === 'chot' ? null : 'chot')}>{t('Chốt ngày')}</button>
-                <button type="button" className="btn btn-sm" disabled={khoa} aria-expanded={hop === 'doi'} onClick={() => onHop(hop === 'doi' ? null : 'doi')}>{t('Dời tháng')}</button>
-              </span>)}
-          {r.tt && <TrangThai tt={r.tt} />}
-        </OBang>
-        <OBang c={C_MO}>
-          <button type="button" className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded border-0 bg-transparent text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11"
-            aria-expanded={mo} aria-label={t('Chi tiết {ten}', { ten: r.ten })} onClick={onMo}>{mo ? '▾' : '▸'}</button>
-        </OBang>
-      </tr>
-      {hop && (
-        <tr><td colSpan={COT_LICH.length} className="px-3 pb-3">
-          <HopLich r={r} kieu={hop} khoa={khoa} onHuy={() => onHop(null)} onLuu={onLuu} />
-        </td></tr>
-      )}
-      {mo && <ChiTietDuoiHang r={r} />}
-    </>
-  );
-}
-
-/** Ghi chú sửa tại chỗ (V4 / ov14-5): rời ô hoặc Enter = lưu; dưới ô: người · ngày ghi. Chưa có ghi chú → chữ mờ "Chưa kết luận". */
-function GhiChu({ r, khoa, onLuu }: { r: HangHien; khoa: boolean; onLuu: (ghiChu: string) => void }) {
-  const { homNay } = useNgayNghiepVu();
-  const [chu, setChu] = useState(r.luu?.ghiChu ?? '');
-  useEffect(() => { setChu(r.luu?.ghiChu ?? ''); }, [r.luu?.ghiChu]);
-  const luu = () => { if (chu.trim() !== (r.luu?.ghiChu ?? '').trim()) onLuu(chu.trim()); };
-  return (
-    <span className="block min-w-0">
-      <input className="field h-8 w-full text-[13px] max-sm:min-h-[44px]" aria-label={t('Ghi chú {ten}', { ten: r.ten })} placeholder={t('Chưa kết luận')} maxLength={300}
-        disabled={!r.coTheSua || khoa} value={chu} onChange={(e) => setChu(e.target.value)} onBlur={luu} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
-      {r.luu?.ghiChu && <span className="block truncate text-[12px] text-slate-500">{[r.luu.ai, r.luu.luc ? shortDate(r.luu.luc, homNay) : null].filter(Boolean).join(' · ')}</span>}
-    </span>
-  );
-}
-
-/** Hộp nhỏ dưới hàng: Chốt ngày (ngày — nhận ngày đã qua, em đã thi) hoặc Dời tháng (mặc định tháng sau) + ghi chú tuỳ chọn. Lỗi: hộp ở lại, giữ chữ. */
-function HopLich({ r, kieu, khoa, onHuy, onLuu }: {
-  r: HangHien; kieu: 'chot' | 'doi'; khoa: boolean; onHuy: () => void;
-  onLuu: (b: { ketLuan: KetLuanLichThi; ngay?: string; thang?: string; ghiChu?: string }) => void;
-}) {
-  const { homNay } = useNgayNghiepVu();
-  const [ngay, setNgay] = useState<string | null>(kieu === 'chot' ? r.lichThi.ngay : null);
-  const [thang, setThang] = useState<string | null>(kieu === 'doi' ? thangKeTiep(`${r.lichThi.thang ?? homNay.slice(0, 7)}-01`) : null);
-  const [ghiChu, setGhiChu] = useState(r.luu?.ghiChu ?? '');
-  const gc = ghiChu.trim() !== (r.luu?.ghiChu ?? '') ? { ghiChu: ghiChu.trim() } : {};
-  const duoc = kieu === 'chot' ? !!ngay : !!thang;
-  const gui = () => {
-    if (!duoc || khoa) return;
-    onLuu(kieu === 'chot' ? { ketLuan: 'chot-ngay', ngay: ngay!, ...gc } : { ketLuan: 'chuyen-thang', thang: thang!.slice(0, 7), ...gc });
-  };
-  return (
-    <div role="group" aria-label={kieu === 'chot' ? t('Chốt ngày thi · {ten}', { ten: r.ten }) : t('Dời tháng thi · {ten}', { ten: r.ten })}
-      className="ml-auto flex max-w-[640px] flex-wrap items-end gap-3 rounded-lg border p-3" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}
-      onKeyDown={(e) => { if (e.key === 'Escape') onHuy(); }}>
-      <label className="block w-[160px] text-xs text-slate-400">
-        {kieu === 'chot' ? t('Ngày thi') : t('Tháng dự kiến')}
-        {kieu === 'chot'
-          ? <ONgay kieu="ngay" value={ngay} ariaLabel={t('Ngày thi')} onChange={setNgay} />
-          : <ONgay kieu="thang" value={thang} ariaLabel={t('Tháng dự kiến')} toiThieu={homNay.slice(0, 7)} onChange={setThang} />}
-      </label>
-      <label className="block min-w-[180px] flex-1 text-xs text-slate-400">
-        {t('Ghi chú')}
-        <input className="field mt-1 w-full" maxLength={300} placeholder={t('Tuỳ chọn')} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') gui(); }} />
-      </label>
-      <span className="flex gap-2">
-        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" onClick={onHuy}>{t('Đóng')}</button>
-        <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-[32px]" disabled={!duoc || khoa} onClick={gui}>
-          {r.tt?.kieu === 'luu' ? t('Đang lưu…') : kieu === 'chot' ? t('Chốt ngày') : t('Dời tháng')}
-        </button>
-      </span>
-    </div>
-  );
-}
-
-const CHU_KET_LUAN: Record<string, string> = {
-  'chot-ngay': t('chốt ngày'), 'chuyen-thang': t('dời tháng'), 'giu-thang': t('giữ tháng'), 'can-xac-nhan': t('chưa kết luận'),
-};
-
-/** Mở dưới hàng (V4): MT gần nhất 5 ô · Test sắp tới · Case · GVCN · lịch sử lịch thi. */
-function ChiTietDuoiHang({ r }: { r: HangHien }) {
-  const { homNay } = useNgayNghiepVu();
-  const c = r.chiTiet;
-  const st = r.standing;
-  const tde = 'mb-1 text-[12px] font-semibold text-slate-400';
-  return (
-    <tr className="bg-[color:var(--accent-soft)]">
-      <td colSpan={7} className="px-6 pb-3.5 pt-2">
-        <div className="grid gap-4 text-[13px] text-slate-200 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <div className={tde}>{[st?.attemptLabel, st?.expectation != null ? t('kỳ vọng {kv}', { kv: st.expectation.toFixed(1) }) : null].filter(Boolean).join(' · ') || t('MT gần nhất')}</div>
-            {c.kn ? <MiniKn kn={c.kn} kv={st?.expectation ?? null} kck={r.kck} /> : <span className="text-slate-500">—</span>}
-          </div>
-          <div>
-            <div className={tde}>{t('Test sắp tới')}</div>
-            {c.sapToi ? `${c.sapToi.luot} · ${tuanLich(c.sapToi.tuan, homNay)}` : <span className="text-slate-500">—</span>}
-          </div>
-          <div>
-            <div className={tde}>{t('Case · GVCN')}</div>
-            {c.caseMo.length ? `Case ${c.caseMo.map((k) => skillShort(k)).join(', ')}` : t('Không có Case')}
-            {r.gvcn && <span className="block text-xs text-slate-400">{t('GVCN {ten}', { ten: r.gvcn })}</span>}
-          </div>
-          <div>
-            <div className={tde}>{t('Lịch sử lịch thi')}</div>
-            {c.lichSu.length ? c.lichSu.map((x, i) => (
-              <span key={i} className="block text-xs text-slate-400">
-                {[shortDate(x.luc, homNay), x.ai,
-                  x.ketLuan ? CHU_KET_LUAN[x.ketLuan] ?? x.ketLuan : x.ngay ? t('lịch → {moc}', { moc: x.ngay.length === 7 ? nhanThang(x.ngay) : shortDate(x.ngay, homNay) }) : null,
-                  x.ghiChu ? `“${x.ghiChu}”` : null].filter(Boolean).join(' · ')}
-              </span>
-            )) : <span className="text-slate-500">—</span>}
-          </div>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function TrangThai({ tt }: { tt: TrangThaiLuu }) {
-  return (
-    <span className="mt-1 block text-[12px]" aria-live="polite">
-      {tt.kieu === 'luu' && <span className="text-slate-400">{t('Đang lưu…')}</span>}
-      {tt.kieu === 'xong' && <span className="text-slate-300">{t('Đã lưu')}</span>}
-      {tt.kieu === 'loi' && (
-        <span role="alert" className="text-bad">
-          {tt.loi} <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={tt.lai}>{t('Thử lại')}</button>
-        </span>
-      )}
-    </span>
-  );
-}
-

@@ -76,12 +76,12 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
   });
 
   check('NEN-PANEL rà #530 · đang lưu: ô nháp chỉ đọc (chữ gõ thêm lúc gửi không bị xoaNhap xoá); bàn phím chỉ đo ở panel ngoài cùng; 375 toàn màn', () => {
-    for (const [f, re] of [['web/src/modules/cases/GhiNhanh.tsx', /value=\{note\} readOnly=\{busy\}/], ['web/src/modules/cases/CapNhatTuan.tsx', /value=\{progress\} readOnly=\{busy\}/],
+    /* CASE-PA-UI b: GhiNhanh gỡ — Ghi kết quả PA mở form đủ (`GhiKetQuaPanel`) trong thẻ PA. */
+    for (const [f, re] of [['web/src/modules/cases/CapNhatTuan.tsx', /value=\{progress\} readOnly=\{busy\}/],
       ['web/src/modules/yThuc/XacNhanXuLyPanel.tsx', /value=\{moTa\} readOnly=\{busy\}/], ['web/src/modules/yThuc/LoYThucPanel.tsx', /value=\{moTa\} readOnly=\{busy\}/],
       ['web/src/modules/yThuc/CaseSosControls.tsx', /value=\{moTa\} disabled=\{busy\}/]] as const) {
       assert(re.test(docSach(f)), `${f}: ô nháp chưa khoá khi đang lưu`);
     }
-    assert(/chon=\{outcome === x\} disabled=\{busy\}/.test(docSach('web/src/modules/cases/GhiNhanh.tsx')), 'GhiNhanh: chip Tiến triển chưa khoá khi đang lưu');
     const kp = docSach('web/src/ui/KhungPanel.tsx');
     assert(/useBanPhim\(!trongKhung\)/.test(kp) && /if \(!bat \|\| !vv\) return undefined;/.test(kp), 'useBanPhim phải chỉ chạy ở panel ngoài cùng');
     assert(/max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0/.test(kp), 'panel tại chỗ ở 375 chưa toàn màn');
@@ -94,7 +94,7 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     await luuRoiTiep(async () => false, () => { sang++; });
     await luuRoiTiep(async () => { throw new Error('mất mạng'); }, () => { sang++; }).catch(() => undefined);
     assert(sang === 1, `sang việc kế ${sang} lần (phải 1: chỉ lần lưu được)`);
-    assert(/luuRoiTiep\(luu, onTiep\)/.test(docSach('web/src/modules/cases/GhiNhanh.tsx')), 'GhiNhanh: Lưu và tiếp phải qua luuRoiTiep');
+    assert(/luuRoiTiep\(/.test(docSach('web/src/modules/congViec/PanelBaoPhTvv.tsx')), 'Lưu và tiếp phải qua luuRoiTiep');
   });
 
   check('NEN-PANEL T16 · đổi việc / ✕ khi còn chữ: hộp trong panel (Ở lại nhận focus), không window.confirm; Công việc đi qua boChuRoi', () => {
@@ -110,7 +110,7 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
   });
 
   check('NEN-PANEL K12 · ô chữ của panel Công việc giữ nháp (useNhap) và bỏ nháp khi lưu xong (useXoaNhap)', () => {
-    for (const f of ['web/src/modules/cases/GhiNhanh.tsx', 'web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/yThuc/XacNhanXuLyPanel.tsx',
+    for (const f of ['web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/yThuc/XacNhanXuLyPanel.tsx',
       'web/src/modules/yThuc/LoYThucPanel.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx']) {
       const s = docSach(f);
       assert(/useNhap\(/.test(s) && /xoaNhap\(\)/.test(s), `${f}: thiếu useNhap / xoaNhap()`);

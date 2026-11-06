@@ -34,7 +34,7 @@ type Progress = {
 
 /**
  * PHẦN "LỊCH TEST CỦA LỚP" / "TUẦN KHAI GIẢNG" (FT) của panel Thông tin lớp (PR-OV3a; trước là panel riêng — mục 7.6, E7, K2-22, K2-23).
- * Sửa: Admin CN / Quản lý CN (`canEditProgress`); máy chủ kiểm lại.
+ * Sửa (SUA-LICH-LOP, chủ SP 06/11): GVCN lớp đó, Admin chi nhánh, Quản lý (`viewer.canEditSchedule`); máy chủ kiểm lại. Đổi mốc → bài, MT0, đợt Báo cáo PH, hạn bàn giao dời theo.
  * FT: chỉ tuần khai giảng — là tuần bắt đầu MẶC ĐỊNH khi thêm học viên; lịch MT do từng em (Test › Kế hoạch Test). Lớp thường: tuần khai giảng +
  * hai mốc kiểm tra (ô Giữa khoá chỉ khi chương trình có mốc đó).
  *

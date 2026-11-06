@@ -1,5 +1,5 @@
 import { PanelXetLai } from '../classes/PanelXetLai.tsx';
-import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
@@ -8,14 +8,10 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HienLaiPanel, KhungPanel, NhapViec, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { BoiCanh, TheMuc, TruongDoc, ViecVuaLuu, dauViec } from '../../ui/KhuonViec.tsx';
-import { ChipSos } from '../../ui/ChipSos.tsx';
-import { mucSosTheoNhan } from '../../lib/format.ts';
-import { ChuDich } from '../../ui/ChuDich.tsx';
+import { dauViec } from '../../ui/KhuonViec.tsx';
 import { XemCaseViec, useXem } from '../../lib/quayLai.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { chonNguoi, phuGv } from '../classes/ClassCreatePanel.tsx';
-import { DongDaLuu, GhiNhanh, hoanTacNhanh, type DaLuuNhanh } from '../cases/GhiNhanh.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NganCase } from '../students/NganCase.tsx';
 import { tenNganCase, type CaseDetail } from '../cases/CasePanel.tsx';
@@ -32,7 +28,7 @@ import { khopKn } from '../cham/LuoiFT.tsx';
 import { oThuong } from '../cham/LuoiThuong.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
 import { tenBoEm } from './DanhSachViec.tsx';
-import { INTERVENTION_KIND_LABEL, KHOA_CHAM_SPEAKING, conThieuFt, shortDate, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, outcomeLabelFor, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { KHOA_CHAM_SPEAKING, conThieuFt, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, tenMon, tuanLich } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import { VIEC_LO_Y_THUC, type WorkItem } from '../worklist/WorkList.tsx';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
@@ -172,7 +168,7 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       if (it.con) return <XacNhanPaLo key={it.key} it={it} onDong={onDong} onDaLam={onDaLam} onMo={onMo} onTiep={onTiep} />;
       return <NganCase key={it.key} caseId={it.caseId!} paId={it.paId} viec="xac-nhan-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'ghi_ket_qua_pa': case 'mini_test':
-      if (it.group === 'ghi_ket_qua_pa' && it.ghiNhanh && it.paId) return <PanelKetQuaNhanh key={it.key} it={it} onDong={onDong} onDaLam={onDaLam} onTiep={onTiep} />;
+      /* CASE-PA-UI b (v16 a · e1): mọi việc Kết quả PA mở CÙNG panel Case — thẻ PA đích mở sẵn form Ghi kết quả (thay panel ghi nhanh riêng). */
       return <NganCase key={it.key} caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'no_plan':
       return <NganCase key={it.key} caseId={it.caseId!} viec="them-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
@@ -471,78 +467,6 @@ function PanelChonPhuTrach({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
                 )}
             </div>
           )}
-    </KhungPanel>
-  );
-}
-
-/**
- * CV-LOI (02 mục 4.7 A12, X-62, ảnh v4-3): Kết quả PA ghi nhanh được — khung phải như mọi việc, không mở dưới dòng. Đầu = tên việc + hạn · em · lớp;
- * Bối cảnh (Phương án · Kết quả kỳ trước); form gọn `GhiNhanh` (Tiến triển · Nhận xét · Lưu — vẫn 3 bấm); "Điều chỉnh / Kết thúc…" mở phần đủ ngay tại
- * chỗ (`NganCase`, chữ mang theo). Lưu xong: "✓ Đã lưu · Hoàn tác" + Việc tiếp ›.
- */
-function PanelKetQuaNhanh({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null }) {
-  const { homNay } = useNgayNghiepVu();
-  const [lon, setLon] = useState(false);
-  const [daLuu, setDaLuu] = useState<DaLuuNhanh | null>(null);
-  const [chanTrai, setChanTrai] = useState<HTMLElement | null>(null);
-  const [chanNut, setChanNut] = useState<HTMLElement | null>(null);
-  const { data } = useApi<any>(`/cases/${it.caseId}`, [it.caseId]);
-  /* M6 6b-3: "Xem Case" (đầu panel) = view Case kế trong panel việc (`PanelViec`) — thay mở thân Case dưới bối cảnh / "‹ Việc" (nhãn lặp). */
-  const xemCase = useContext(XemCaseViec);
-  const cv = useContext(ViecVuaLuu);
-  /* "Lưu · việc tiếp ›": lần ghi vừa lưu (GhiNhanh gọi `onDaLuu` rồi mới sang việc kế) → dải "✓ Đã lưu kết quả · Hoàn tác" ở đầu việc kế. */
-  const vuaGhi = useRef<DaLuuNhanh | null>(null);
-  /* Bối cảnh giữ như lúc mở — lưu xong (tải lại Case) không biến lần vừa ghi thành "kỳ trước". */
-  const daTruoc = useRef<any>(undefined);
-  const em = it.studentId !== null ? { id: it.studentId, ten: it.studentName } : null;
-  if (lon) return <NganCase caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={em?.ten ?? null} lop={it.classCode} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
-  const tiepSauGhi = onTiep ? () => {
-    const kq = vuaGhi.current;
-    if (kq) {
-      cv?.bao({
-        chu: t('Đã lưu kết quả'), phu: `${dich(outcomeLabelFor(kq.outcome))} · ${t('Giữ nguyên')}`,
-        hoanTac: kq.followupId ? () => hoanTacNhanh(kq) : undefined,
-      });
-    }
-    onTiep();
-  } : null;
-  const iv = (data?.interventions ?? []).find((x: any) => x.id === it.paId);
-  if (data && daTruoc.current === undefined) daTruoc.current = (data.followups ?? []).find((f: any) => f.interventionId === it.paId && f.outcome) ?? null;
-  const truoc = daTruoc.current;
-  const tenLoai = iv ? dich(INTERVENTION_KIND_LABEL[iv.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? iv.kind) : null;
-  const muc = it.level ? mucSosTheoNhan(it.level.text) : null;
-  return (
-    <KhungPanel tieuDe={tenBoEm(it)} onDong={onDong} quayLai={xemCase ? { nhan: t('Xem Case'), onClick: xemCase, xem: true } : undefined}
-      /* UI-CONG-VIEC (mockup U01 A3): đầu = dải sự kiện Học viên · Lớp · Mức · Hạn ghi KQ (+ Phụ trách khi làm thay); chân = Lưu / Lưu · việc tiếp ›. */
-      dau={{ ...dauViec({ em, lop: it.classCode, ngCanh: it.contextLabel }), su: [
-        [t('Học viên'), em ? <Link className="no-underline hover:underline" to={`/hoc-vien/${em.id}`}>{em.ten}</Link> : null],
-        [t('Lớp'), it.classCode],
-        [t('Mức'), muc ? <ChipSos muc={muc} tinh /> : null],
-        [t('Hạn ghi KQ'), it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa ?? 'cap-nhat-pa'} han={it.due} chuThuong /> : null],
-      ] }}
-      chan={daLuu ? undefined : { huy: null, trai: <span ref={setChanTrai} className="contents" />, chinh: <span ref={setChanNut} className="contents" /> }}>
-      <div className="flex flex-col gap-5 pt-3">
-        <TruongDoc dong={[
-          [t('Phương án'), iv ? <>
-            <span className="flex flex-wrap items-center gap-1.5"><b className="font-semibold">{tenLoai}</b>{[iv.performer, iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).map((x) => <TheMuc key={x}>{x}</TheMuc>)}</span>
-            {iv.description && <span className="mt-1 block text-sm text-dim"><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></span>}
-          </> : null],
-          [t('Kết quả kỳ trước'), truoc ? <><b className="font-semibold">{dich(outcomeLabelFor(truoc.outcome))}</b> · {tuanLich(truoc.observedOn, homNay)}</> : null],
-        ]} />
-        {daLuu ? (
-          <div className="flex flex-col gap-2">
-            <DongDaLuu kq={daLuu} onHoanTac={() => setDaLuu(null)} />
-            <div>
-              {onTiep
-                ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tiepSauGhi ?? onTiep}>{t('Việc tiếp ›')}</button>
-                : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>}
-            </div>
-          </div>
-        ) : (
-          <GhiNhanh key={it.paId} paId={it.paId!} batBuoc={!!iv?.batBuoc} onTiep={tiepSauGhi} tenTiep={cv?.ten} chan={{ trai: chanTrai, nut: chanNut }}
-            onDaLuu={(kq) => { vuaGhi.current = kq; setDaLuu(kq); onDaLam(); }} onMoPanel={() => setLon(true)} />
-        )}
-      </div>
     </KhungPanel>
   );
 }

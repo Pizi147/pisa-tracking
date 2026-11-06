@@ -40,7 +40,7 @@ export function NoiDungThongTinLop({ lop, phan, onDone, onChuyenTiep, chiDoc = f
         lop={{ id: lop.id, code: lop.code, branchCode: lop.branchCode, route: lop.route, programmeCode: lop.programme?.code ?? null,
           programmeName: lop.programme?.name ?? null, soHocVien: lop.summary?.studentCount ?? 0 }} />
       <PhanPhanCong lop={lop} suaDuoc={!chiDoc && (lop.viewer.canAssign || !!lop.viewer.canAssignSubject)} moSua={phan === 'phan-cong'} onDone={onDone} />
-      <PhanLichTest classId={lop.id} tieuDe={thuong ? t('Lịch Test của lớp') : t('Tuần khai giảng')} suaDuoc={!chiDoc && lop.viewer.canEditProgress}
+      <PhanLichTest classId={lop.id} tieuDe={thuong ? t('Lịch Test của lớp') : t('Tuần khai giảng')} suaDuoc={!!lop.viewer.canEditSchedule}
         onDone={onDone} onChuyenTiep={chiDoc ? undefined : onChuyenTiep} />
     </>
   );
