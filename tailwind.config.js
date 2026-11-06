@@ -15,7 +15,7 @@ export default {
    */
   blocklist: ['!bam', '!bang', '!bc', '!san', '!du', '!cham', '!chon', '!ct', '!cu', '!cua', '!doi', '!dong', '!gon', '!h', '!k', '!loi', '!lu', '!moi', '!nhat', '!hai', '!nguon', '!nhap', '!p', '!pt',
     '!qua', '!rong', '!so', '!t', '!td', '!th', '!thieu', '!trong', '!tvv',
-    /* CASE-PA-UI: lớp mới của panel Case (v16) trùng phủ định JS. */ '!muc', '!dem', '!ban', '!chu', '!da', '!dang', '!mo', '!hang'],
+    /* CASE-PA-UI: lớp mới của panel Case (v16) trùng phủ định JS. */ '!muc', '!dem', '!ban', '!chu', '!da', '!dang', '!mo', '!hang', '!ngay'],   // LICH-THI-UI: .ngay (.lt-ls .ngay) trùng phủ định JS
   theme: {
     /*
      * NEN-TYPO-MAU (04 mục 2.2): THANG CHỮ 12 · 13 · 14 · 15 · 17 · 22 · 28 — đặt `fontSize` (không extend) để lớp ngoài thang không sinh được.

@@ -4,6 +4,8 @@
  */
 import { shortDate } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { soSanhLop } from './tenLop.ts';
+import type { GiaiDoanSauThi } from './tongKetLoTrinh.ts';
 import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------------------------ Lịch thi
@@ -196,12 +198,46 @@ export function bangThongTinXuatDs(o: { dieuKien: string; luc: string; pham: 'lo
 }
 
 /**
- * Mốc xếp của MỘT em ở Lịch thi (chủ SP 29/10: một danh sách, THI GẦN NHẤT TRƯỚC — không tách nhóm Đã chốt / Chưa chốt / Dự kiến): ngày thi đã chốt ·
- * tuần dự kiến · đầu tháng dự kiến (`doiSang` = tháng vừa dời tới); chưa có tháng → cuối.
+ * Mốc xếp của MỘT em ở Lịch thi: ngày thi đã chốt · tuần dự kiến · đầu tháng dự kiến; chưa có tháng → cuối.
  */
-export const mocXepLichThi = (l: LichThi, doiSang?: string | null): string =>
-  (doiSang ? `${doiSang}-01` : l.ngay ?? l.tuan ?? (l.thang ? `${l.thang}-01` : '9999-12-31'));
-/** Xếp danh sách Lịch thi: mốc tăng dần, cùng mốc theo tên (tiếng Việt). Không đổi mảng gốc. */
-export function xepLichThi<T extends { lichThi: LichThi; ten: string; doiSang?: string | null }>(ds: readonly T[]): T[] {
-  return [...ds].sort((a, b) => mocXepLichThi(a.lichThi, a.doiSang).localeCompare(mocXepLichThi(b.lichThi, b.doiSang)) || a.ten.localeCompare(b.ten, 'vi'));
+export const mocXepLichThi = (l: LichThi): string => l.ngay ?? l.tuan ?? (l.thang ? `${l.thang}-01` : '9999-12-31');
+
+/**
+ * LICH-THI-UI (chủ SP 06/11, mockup v16 bản 3): MỘT hàm "em đang ở bước nào" cho tab Lịch thi — gộp `trangThaiLichThi` (trước thi) với
+ * `trangThaiSauThi` (sau thi). `giaiDoan` = `trangThaiSauThi(...).giaiDoan`; sau thi thắng.
+ */
+export type BuocLichThi = 'chua-co' | 'du-kien' | 'chua-chot-ngay' | 'da-chot-ngay' | 'cho-kq' | 'cho-buoc-tiep' | 'xong';
+export function buocLichThi(l: LichThi, giaiDoan: GiaiDoanSauThi | null | undefined): BuocLichThi {
+  if (giaiDoan === 'xong') return 'xong';
+  if (giaiDoan === 'cho_buoc_tiep') return 'cho-buoc-tiep';
+  if (giaiDoan === 'da_thi_cho_kq' || l.trangThai === 'da-thi') return 'cho-kq';
+  return l.trangThai;
+}
+export type ThaoTacLichThi = 'chot-ngay' | 'doi-thang' | 'dat-thang' | 'sua-ngay' | 'ghi-kq' | 'buoc-tiep' | 'sua-kq';
+/**
+ * Luật nút của hàng (ghi chú mockup 4a): `chinh` = MỘT việc ĐÃ TỚI LÚC (cùng nguồn Công việc: "Chốt ngày thi" chỉ khi tháng thi ≤ tháng này, Ghi KQ / Bước tiếp
+ * sau ngày thi — việc Fast Track); `phu` = thao tác chữ. Em lớp thường không có lộ trình thi thật → không nút chính, không Sửa KQ.
+ */
+export function thaoTacLichThi(buoc: BuocLichThi, ft: boolean): { chinh: ThaoTacLichThi | null; phu: ThaoTacLichThi[] } {
+  switch (buoc) {
+    case 'chua-co': return { chinh: null, phu: ['dat-thang', 'chot-ngay'] };
+    case 'du-kien': return { chinh: null, phu: ['chot-ngay', 'doi-thang'] };
+    case 'chua-chot-ngay': return ft ? { chinh: 'chot-ngay', phu: ['doi-thang'] } : { chinh: null, phu: ['chot-ngay', 'doi-thang'] };
+    case 'da-chot-ngay': return { chinh: null, phu: ['sua-ngay'] };
+    case 'cho-kq': return { chinh: ft ? 'ghi-kq' : null, phu: ['sua-ngay'] };
+    case 'cho-buoc-tiep': return { chinh: ft ? 'buoc-tiep' : null, phu: ft ? ['sua-kq'] : [] };
+    case 'xong': return { chinh: null, phu: ft ? ['sua-kq'] : [] };
+  }
+}
+
+/** Số hạng sắp xếp trong một lớp: có ngày → chỉ có tháng → chưa có lịch → Xong cuối (chủ SP 06/11). */
+const hangXepLichThi = (b: BuocLichThi, l: LichThi): number => (b === 'xong' ? 3 : l.ngay ? 0 : l.thang ? 1 : 2);
+/**
+ * Xếp danh sách Lịch thi (bản 3): theo LỚP (mã A→Z như `soSanhLop`), trong lớp: có ngày (ngày ↑) → có tháng (mốc ↑) → chưa có lịch → Xong cuối; cùng mốc theo tên.
+ * Không đổi mảng gốc. Áp cho cả "Cần làm" và "Tất cả".
+ */
+export function xepLichThiTheoLop<T extends { classCode: string; lichThi: LichThi; ten: string; buoc: BuocLichThi }>(ds: readonly T[]): T[] {
+  return [...ds].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })
+    || hangXepLichThi(a.buoc, a.lichThi) - hangXepLichThi(b.buoc, b.lichThi)
+    || mocXepLichThi(a.lichThi).localeCompare(mocXepLichThi(b.lichThi)) || a.ten.localeCompare(b.ten, 'vi'));
 }

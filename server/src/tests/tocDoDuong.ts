@@ -1076,6 +1076,8 @@ export const TRAN_DONG: Record<string, number> = {
   /* TU-b: trang Tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 65, 'QT /tutors': 66, 'QL /tutors/1': 58, 'QT /tutors/1': 59, 'QT /tutors/dem': 51, 'QT /tutors/go-tay': 52,   // đo 15 · 16 · 8 · 9 · 1 · 2
   'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 1154,   // OV-15f: đo 593 (FT + lớp thường; ×3 → 1 659); trần = max(đo + 50, ⌈đo × 1,3⌉). UI-HV-LOP: + chi tiết dưới hàng (lượt sắp tới, nhật ký, điểm, Case mở qua `listCases`) đo 1 104 (×3 → 2 936) → đo + 50
+  /* LICH-THI-UI (dải mở hàng bản 3): + 3 cột thi thật trên cùng hàng lộ trình (không thêm dòng), + so MT trước (`luotTheoLoTrinh` 1 câu + `diemCuaLuot` lượt trước, nhớ theo lượt) + đếm PA theo Case (1 câu theo lô);
+     đo 20 câu / 946 dòng (×3 → 2 704) — dưới trần cũ, giữ nguyên trần. */
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 3469,   // OV-15h2: đo 2816 (×3 → 7094; trang không them ~2545) → max(đo + 50, ⌈đo × 1,3⌉); TL-HVL: đo 2668 (trước 3023)
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
