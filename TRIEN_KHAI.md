@@ -674,6 +674,18 @@ Gán TVV trước để việc đến đúng người.
    Một em lẻ: hồ sơ học viên › Sửa thông tin › TVV. Người làm: chủ SP (Quản trị) hoặc QL chi nhánh.
 4. **Chạy lại** `npm run dem-tvv`. Mục tiêu: **≥ 95 %** em đang học có TVV, hoặc chủ SP chấp nhận phần còn lại để việc về QL. "TVV sai" phải về 0 (chọn lại người đang làm).
 
+### 11.6. Hoàn tác đặt lại hạn tuyến Case (RESET-HAN-CASE) — CHỈ khi chủ SP bảo
+
+Lần `npm run migrate` có bước RESET-HAN-CASE (#1127) đặt lại hạn việc tuyến Case đang quá hạn: hôm nay + 7, riêng Kết quả PA là hôm nay + 14. Hạn cũ
+được lưu lại. Muốn **trả hạn cũ**, làm đúng bước 1–2 của mục 11.1 (sao lưu, xác nhận tên database), rồi chạy:
+
+```powershell
+npm run hoan-tac-reset-han-case
+```
+
+**Kết quả đúng:** `Xong: trả hạn cũ cho n việc tuyến Case.` Việc mà ai đó đã đổi hạn tiếp sau lần đặt lại thì giữ hạn mới. Chạy lần hai báo
+`Không có việc nào để trả` — không sao. Lần `migrate` sau **không** đặt lại hạn nữa. Lệnh báo `TỪ CHỐI` → bước 2 gõ chưa đúng tên.
+
 ---
 
 ## 12. Bảng tra — mọi tên biến dùng trong file này
