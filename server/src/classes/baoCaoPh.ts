@@ -88,17 +88,21 @@ export function chipBaoCaoPh(p: Principal, classId: number): { coTab: true; dot:
   const homNay = demoToday();
   const d = dotCuaLop(c, homNay);
   if (!d) return null;
-  const moi = d.ds[0];
-  if (!moi) return { coTab: true, dot: null, nhan: null, han: null, quaHan: 0 };
-  const qh = soNgayQuaHan(moi, homNay);
-  if (qh === 0) return { coTab: true, dot: moi.ma, nhan: nhanDotBc(moi, homNay), han: moi.han, quaHan: 0 };
-  if (qh > 7) return { coTab: true, dot: null, nhan: null, han: null, quaHan: 0 };
-  /* Một câu đếm (≤ em × phần dòng) — chỉ trong 7 ngày sau hạn của đợt mới nhất. */
-  const em = emCuaDot(classId, moi, homNay);
-  const du = em.length ? (db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (${DS_JSON})`)
-    .get(moi.ma, JSON.stringify(em.map((e) => e.id))) as any).n : 0;
-  return du >= em.length * d.bo.length ? { coTab: true, dot: null, nhan: null, han: null, quaHan: 0 }
-    : { coTab: true, dot: moi.ma, nhan: nhanDotBc(moi, homNay), han: moi.han, quaHan: qh };
+  const khong = { coTab: true as const, dot: null, nhan: null, han: null, quaHan: 0 };
+  /* RA-LOI-0711j: đợt QL thêm (BC-DOT-QL) làm `ds[0]` không còn là "đợt cần nhắc" — đợt đang mở (bất kỳ) thắng; không có thì đợt quá hạn ≤ 7 ngày
+     MỚI NHẤT còn thiếu. Không có đợt thêm: đúng như cũ (một đợt, hai câu); có đợt thêm trong 7 ngày: thêm hai câu cho mỗi đợt đã đủ đứng trước. */
+  const mo = d.ds.find((x) => soNgayQuaHan(x, homNay) === 0);
+  if (mo) return { coTab: true, dot: mo.ma, nhan: nhanDotBc(mo, homNay), han: mo.han, quaHan: 0 };
+  for (const x of d.ds) {
+    const qh = soNgayQuaHan(x, homNay);
+    if (qh > 7) continue;
+    /* Một câu em + một câu đếm (≤ em × phần dòng) — chỉ đợt trong 7 ngày sau hạn. */
+    const em = emCuaDot(classId, x, homNay);
+    const du = em.length ? (db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (${DS_JSON})`)
+      .get(x.ma, JSON.stringify(em.map((e) => e.id))) as any).n : 0;
+    if (du < em.length * d.bo.length) return { coTab: true, dot: x.ma, nhan: nhanDotBc(x, homNay), han: x.han, quaHan: qh };
+  }
+  return khong;
 }
 
 /** Em trong đợt: ghi danh lớp phủ ngày mốc (hạn, hoặc hôm nay khi đợt còn mở) + em đang học (đặc tả §4). Xếp theo tên. */
