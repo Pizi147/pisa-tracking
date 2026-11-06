@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case – PA · v16</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;600;700&display=swap">
+<!-- Thành phần = CSS mockup đã duyệt (audit-0311 chung + ro, v12 Công việc). <style> dưới chỉ thêm phần MỚI của tuyến Case – PA. -->
+<link rel="stylesheet" href="../audit-0311/chung.css">
+<link rel="stylesheet" href="../audit-0311/ro.css">
+<style>
+.man.dai { height:auto; min-height:0; } .dt.dai { height:auto; }
+.noi-dung { padding-bottom:20px; }
+.loc-1 { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; } .loc-1 h1 { font-size:22px; font-weight:700; }
+.loc-1 .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.bo-cuc { grid-template-columns:600px minmax(0,1fr); }
+.cot-ds { overflow:visible; }
+/* v12 S1 · S12 · S13 (giữ y nguyên) */
+.viec .t1 { font-weight:500; }
+.the-phu { display:flex; gap:3px; margin-top:3px; min-width:0; flex-wrap:nowrap; overflow:hidden; }
+.the-phu .tag { height:20px; font-size:12px; padding:0 6px; font-weight:500; color:var(--text-dim); }
+.khoi { border-top:1px solid var(--o-vien); } .khoi.dau-tien { border-top:0; }
+.han-v { display:inline-flex; align-items:center; gap:4px; height:22px; padding:0 9px; border-radius:999px; font:600 12px var(--phong); white-space:nowrap; }
+.han-v.qua { background:var(--bad-nen); color:var(--bad); } .han-v.qua::before { content:"⚠"; }
+.han-v.xa { background:var(--muted-nen); color:var(--text-dim); font-weight:500; }
+.viec .n .nut { white-space:nowrap; }
+.khay-em .viec { padding-left:54px; }
+.tt .so-nav.do { background:#7a2b26; color:#ffe1dc; }
+
+/* ================= MỚI · panel Case một tuyến ================= */
+.pn { position:relative; }
+.pn-than.cs { overflow:visible; padding:0 20px 8px; }
+.dt .pn-than.cs { padding:0 16px 8px; }
+.pn-tieu h2 { flex:0 1 auto; min-width:0; } .pn-tieu h2 .sd { white-space:nowrap; margin:0 0 0 -10px; max-width:none; overflow:visible; border-color:transparent; background:transparent; }
+.dt .pn-than .link-nho, .dt .pn-than a, .dt .pa-chan .link-nho { min-height:44px; display:inline-flex; align-items:center; } .dt .pn-than .nut-nho, .dt .mui-pa, .dt .pa-chan .nut { min-height:44px; } .dt .nut-i, .dt .ly-do .nut-i { width:44px; height:44px; }
+.dt .pa-dau { grid-template-columns:minmax(0,1fr) 44px; } .dt .pa-tt { grid-column:1; grid-row:2; justify-self:start; padding-bottom:4px; } .dt .mui-pa { grid-column:2; grid-row:1; }
+.dt .o-trong { flex-wrap:wrap; } .dt textarea.o { min-height:88px; } .dt .o.so { width:132px !important; }
+.dt .pa-than .fld { grid-template-columns:minmax(0,1fr); } .dt .pa-chan .trai { flex-basis:100%; } .dt .pa-chan .nut-chinh { flex:1; } .dt .pa-chan .link-nho { padding:12px 0; } .dt .o-trong .nhan-viec { margin-left:0; } .pn-tieu .sos { margin-top:7px; }
+.pn-tieu .han-p { margin-left:auto; font:600 14px var(--phong); white-space:nowrap; padding-top:2px; }
+.pn-tieu .han-p.qua { color:var(--bad); } .pn-tieu .han-p.qua::before { content:"⚠ "; }
+.dt .pn-tieu .han-p { margin-left:0; flex-basis:100%; padding-top:0; }
+/* đầu mục (DauMuc V21) */
+.muc { padding-top:20px; }
+.muc + .muc { border-top:1px solid var(--line); margin-top:14px; }
+.muc-h .phai-h { margin-left:auto; display:inline-flex; gap:8px; align-items:center; }
+.muc-h { margin:0 0 8px; }
+/* khung trường: nhãn 7.5rem trái, giá trị phải */
+.fld { grid-template-columns:7.5rem minmax(0,1fr); }
+.fld > dt { padding:15px 0 0; color:var(--text-dim); font-weight:600; }
+.fld > dd { padding:6px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:44px; }
+.dt .fld > dt { padding:10px 0 0; border-top:1px solid var(--line); }
+.dt .fld > dt:first-of-type { border-top:0; }
+.dt .fld > dd { padding:2px 0 8px; min-height:0; }
+/* GIÁ TRỊ SỬA ĐƯỢC TẠI CHỖ — bấm chính chữ đang thấy. Luôn có dấu: ▾ (chọn) hoặc bút (gõ); rê = khung ô nhập. */
+.sd { appearance:none; display:inline-flex; align-items:center; gap:10px; min-height:36px; max-width:100%; margin:0; padding:5px 10px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text); font:500 15px/1.45 var(--phong); text-align:left; cursor:pointer; }
+.sd:hover, .sd.re { background:var(--o-nen); border-color:var(--o-vien); }
+.sd .ic-sd { width:14px; height:14px; flex:none; color:var(--text-faint); fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.sd:hover .ic-sd, .sd.re .ic-sd { color:var(--accent); }
+.sd .ban { font:500 13px var(--phong); color:var(--text-faint); }
+.sd.chu { display:flex; width:100%; align-items:flex-start; font-weight:400; line-height:1.55; padding:7px 12px; }
+.sd.chu .ic-sd { margin-top:4px; margin-left:auto; }
+.sd.mo-o { border-color:var(--accent); background:var(--o-nen); box-shadow:0 0 0 1px var(--accent); }
+.dt .sd { min-height:44px; }
+/* ô trống = trông như ô nhập; việc của người xem: viền nhấn */
+.o-trong { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:8px 12px; border-radius:8px; border:1px dashed var(--o-vien); background:var(--o-nen); color:var(--text-faint); font:400 15px var(--phong); cursor:text; text-align:left; }
+.o-trong.viec-toi { border:1px solid var(--accent); box-shadow:0 0 0 1px var(--accent); color:var(--text-dim); } .o-trong .nhan-viec { margin-left:auto; }
+.nhan-viec { display:inline-flex; align-items:center; gap:5px; height:20px; padding:0 7px; border-radius:4px; background:var(--accent-soft); color:var(--accent); font:700 12px var(--phong); white-space:nowrap; }
+.dt-nhan { display:grid; gap:4px; }
+.dt-nhan .nhan-viec { justify-self:start; }
+/* ô gõ đang mở */
+.o-mo { width:100%; display:grid; gap:6px; }
+.o-mo textarea.o { min-height:96px; border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.o-mo .duoi-o { display:flex; align-items:center; gap:12px; font-size:13px; }
+.o-mo .duoi-o .dem-chu { margin-left:auto; }
+.o-mo.loi textarea.o { border-color:var(--bad); box-shadow:0 0 0 1px var(--bad); }
+.tt-luu.dang { color:var(--text-dim); }
+.td.dot::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--cham, var(--text-faint)); }
+.cuoi-case { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-start; border-top:1px solid var(--line); margin-top:8px; padding:12px 0 6px; } .tt-luu.loi { color:var(--bad); }
+.dai-hoan { display:inline-flex; align-items:center; gap:10px; font-size:13px; color:var(--ok); font-weight:600; }
+.dai-hoan .link-nho { font-size:13px; }
+/* hộp chọn tại chỗ (popover dưới giá trị) */
+.hop-chon { position:absolute; z-index:8; width:340px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 12px 32px rgb(0 0 0 / .45), 0 2px 6px rgb(0 0 0 / .3); padding:8px; display:grid; gap:4px; }
+.sang .hop-chon { box-shadow:0 12px 28px rgb(17 26 66 / .18), 0 2px 6px rgb(17 26 66 / .12); }
+.hop-chon .o { height:36px; }
+.hop-chon .nhom-c { font:600 12px var(--phong); color:var(--text-faint); padding:8px 8px 2px; }
+.hop-chon button.lc { appearance:none; border:0; background:none; display:flex; align-items:center; gap:10px; width:100%; min-height:38px; padding:4px 8px; border-radius:6px; text-align:left; font:500 14px var(--phong); color:var(--text); cursor:pointer; }
+.hop-chon button.lc:hover, .hop-chon button.lc.tro { background:var(--accent-soft); }
+.hop-chon button.lc .phu { margin-left:auto; font:400 13px var(--phong); color:var(--text-faint); }
+.hop-chon button.lc[aria-selected="true"]::after { content:"✓"; color:var(--accent); font-weight:700; }
+.hop-chon button.lc[aria-selected="true"] .phu { margin-left:auto; margin-right:2px; }
+.dt .hop-chon { position:static; width:auto; margin:4px 0 8px; box-shadow:none; }
+.dt .hop-chon button.lc { min-height:44px; }
+
+/* THẺ PA — bấm cả đầu thẻ để mở / gập; nút trạng thái là nút làm việc */
+.ds-pa { display:grid; gap:10px; }
+.the-pa { border:1px solid var(--line-strong); border-radius:10px; background:var(--surface); }
+.the-pa.mo { border-color:var(--o-vien); box-shadow:0 1px 0 rgb(255 255 255 / .02), 0 6px 18px rgb(0 0 0 / .25); }
+.sang .the-pa.mo { box-shadow:0 6px 18px rgb(17 26 66 / .08); }
+.the-pa.moi-doi { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+.pa-dau { display:grid; grid-template-columns:minmax(0,1fr) auto 36px; align-items:center; gap:4px 10px; padding:8px 8px 8px 14px; }
+.pa-bam { appearance:none; border:0; background:none; padding:4px 0; margin:0; color:inherit; text-align:left; cursor:pointer; display:grid; gap:3px; min-width:0; font:inherit; }
+.pa-bam .ten-pa { font:600 15px/1.35 var(--phong); color:var(--text); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.pa-bam .phu-pa { font:400 13px/1.4 var(--phong); color:var(--text-dim); }
+.pa-bam:hover .ten-pa { color:var(--accent); }
+.mui-pa { appearance:none; width:36px; height:36px; border-radius:8px; border:0; background:none; color:var(--text-dim); cursor:pointer; display:grid; place-items:center; }
+.mui-pa svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.the-pa.mo .mui-pa svg { transform:rotate(180deg); }
+.the-pa:not(.mo) .pa-dau:hover { background:var(--accent-soft); border-radius:9px; }
+.pa-tt { justify-self:end; }
+.pa-than { border-top:1px solid var(--line); padding:4px 14px 12px; }
+.pa-than .fld { grid-template-columns:6.5rem minmax(0,1fr); }
+.pa-chan { display:flex; align-items:center; gap:10px; flex-wrap:wrap; border-top:1px solid var(--line); padding:10px 14px; }
+.pa-chan .trai { flex:1; min-width:0; font-size:13px; color:var(--text-dim); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+/* nút xoá (chủ SP 06/11: viền nhỏ, màu đỏ) — Xoá Case / Xoá PA / Đề nghị QL xoá… cùng một dáng */
+.nut-xoa, .nut-xin { appearance:none; display:inline-flex; align-items:center; gap:6px; height:30px; padding:0 10px; border-radius:6px; border:1px solid var(--bad-vien); background:transparent; color:var(--bad); font:600 13px var(--phong); cursor:pointer; white-space:nowrap; }
+.nut-xoa:hover, .nut-xin:hover, .nut-xin.re { background:var(--bad-nen); border-color:var(--bad); }
+.dt .nut-xoa, .dt .nut-xin { height:44px; padding:0 14px; font-size:14px; }
+/* hỏi lại tại chỗ (chỉ khi Case còn PA) */
+.hoi-xoa { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:10px 12px; border-radius:8px; border:1px solid var(--bad-vien); background:var(--bad-nen); font-size:14px; }
+.hoi-xoa b { color:var(--text); }
+.hoi-xoa .hang { margin-left:auto; display:flex; gap:8px; }
+.nut-do { background:var(--bad); border-color:var(--bad); color:#1a0806; font-weight:700; }
+.sang .nut-do { color:#fff; }
+/* dải đã xoá + Hoàn tác (thay đúng chỗ thẻ) */
+.da-xoa { display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-height:48px; padding:8px 14px; border-radius:10px; border:1px dashed var(--line-strong); color:var(--text-dim); font-size:14px; }
+.da-xoa b { color:var(--text); font-weight:600; }
+.da-xoa .link-nho { margin-left:auto; font-size:14px; }
+.da-xoa .nho { font-size:13px; color:var(--text-faint); }
+/* đề nghị QL xoá: hộp nhỏ ngay dưới nút */
+.xin-hop { display:grid; gap:8px; padding:12px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line-strong); }
+.xin-hop label { font:600 13px var(--phong); color:var(--text); }
+.xin-hop .hang { display:flex; gap:8px; justify-content:flex-end; align-items:center; }
+.xin-hop .hang .dem-chu { margin-right:auto; }
+.cho-duyet { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 12px; border-radius:8px; background:var(--soon-nen); border:1px solid var(--soon-vien); font-size:14px; color:var(--text); }
+.cho-duyet b { color:var(--soon); }
+.cho-duyet .link-nho, .cho-duyet .hang { margin-left:auto; }
+.cho-duyet .hang { display:flex; gap:8px; }
+/* nhật ký PA (thẳng trong thẻ) */
+.nk { list-style:none; margin:0; padding:0; display:grid; gap:4px; font-size:13px; color:var(--text-dim); }
+.nk li { display:grid; grid-template-columns:3.4rem minmax(0,1fr); gap:8px; }
+.nk li span:first-child { font-family:var(--phong-so); color:var(--text-faint); }
+.nk-mo { appearance:none; border:0; background:none; padding:0; color:var(--accent); font:600 13px var(--phong); cursor:pointer; }
+/* ghi kết quả trong thẻ */
+.ghi-kq { display:grid; gap:14px; padding:14px 0 4px; }
+.ghi-kq .truong > .nhan { font-size:14px; }
+.ghi-kq .ngu-kq { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:14px; color:var(--text-dim); }
+.lua button .y { display:block; font:400 12px var(--phong); color:var(--text-faint); }
+.lua.doc { display:grid; gap:6px; } .lua.doc button { height:auto; min-height:40px; text-align:left; padding:6px 12px; }
+.lua button.kq-tb[aria-pressed="true"] { border-color:var(--ok); color:var(--ok); background:var(--ok-nen); box-shadow:inset 0 0 0 1px var(--ok); }
+.lua button.kq-mp[aria-pressed="true"] { border-color:var(--soon); color:var(--soon); background:var(--soon-nen); box-shadow:inset 0 0 0 1px var(--soon); }
+.ket.tb::before { content:"✓"; } .ket.mp::before { content:"↗"; } .ket.ko::before { content:"↓"; }
+/* nút bị chặn: lý do NGAY BÊN nút */
+.chan-ly { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ly-do { display:inline-flex; align-items:center; gap:4px; font:500 13px var(--phong); color:var(--text-dim); }
+.ly-do .nut-i { width:24px; height:24px; font-size:15px; }
+.meo { position:absolute; z-index:9; width:300px; padding:10px 12px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line-strong); box-shadow:0 10px 26px rgb(0 0 0 / .4); font-size:13px; line-height:1.5; color:var(--text); }
+.sang .meo { box-shadow:0 10px 26px rgb(17 26 66 / .16); }
+.meo b { font-weight:700; }
+.ket-luan { display:flex; align-items:center; gap:10px 14px; flex-wrap:wrap; padding:6px 0 4px; }
+.ket-luan .xoa-o { margin-left:auto; }
+.dt .ket-luan .xoa-o { margin-left:0; flex-basis:100%; }
+/* dòng gập (lịch sử, bằng chứng) */
+.dong-gap { display:flex; align-items:center; gap:10px; min-height:40px; font-size:14px; color:var(--text-dim); }
+.dong-gap .link-nho { margin-left:auto; }
+/* dải làm thay (N33 ③) */
+.dai-thay { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 12px; margin:0 0 2px; border-radius:8px; background:var(--soon-nen); border:1px solid var(--soon-vien); font-size:14px; color:var(--text); }
+.dai-thay b { color:var(--soon); }
+.dai-thay .link-nho { margin-left:auto; }
+/* chân panel */
+.pn-chan .nut-chinh { min-width:132px; }
+/* rỗng / lỗi trong panel */
+.rong-pa { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px; border-radius:10px; border:1px dashed var(--line-strong); color:var(--text-dim); font-size:14px; }
+.rong-pa .nut { margin-left:auto; }
+/* hồ sơ HV · khối Case (N33 ①) */
+.trang-hs { padding:18px 24px 24px; display:grid; gap:14px; }
+.hs-1 { display:flex; align-items:center; gap:12px; } .hs-1 h1 { font-size:22px; font-weight:700; } .hs-1 .phai { margin-left:auto; display:flex; gap:8px; }
+.hai-cot { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:16px; align-items:start; }
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; display:grid; gap:10px; }
+.the-dau { display:flex; align-items:center; gap:10px; } .the-dau h2 { font-size:17px; font-weight:700; } .the-dau .phai { margin-left:auto; }
+.ds-case { display:grid; }
+.cs-dong { display:grid; grid-template-columns:44px minmax(0,1fr) auto 36px; align-items:center; gap:10px; min-height:52px; padding:6px 0; border-top:1px solid var(--line); cursor:pointer; }
+.ds-case > .cs-dong:first-child { border-top:0; }
+.cs-dong .kn { font:700 13px var(--phong); color:var(--text-dim); width:40px; height:28px; border-radius:6px; background:var(--surface-2); display:grid; place-items:center; }
+.cs-dong .ten-cs { display:grid; gap:2px; min-width:0; } .cs-dong .ten-cs b { font:600 15px var(--phong); display:flex; gap:8px; align-items:center; }
+.cs-dong .ten-cs span { font-size:13px; color:var(--text-dim); }
+.cs-mo { border:1px solid var(--line-strong); border-radius:10px; padding:2px 14px 12px; margin:2px 0 8px; }
+.gap-xong { font-size:14px; color:var(--text-dim); padding-top:4px; }
+.td-mo { display:grid; gap:10px; font-size:14px; color:var(--text-dim); }
+.td-mo .hang-td { display:grid; grid-template-columns:48px minmax(0,1fr); gap:8px; padding:8px 0; border-top:1px solid var(--line); }
+/* sơ đồ một tuyến */
+.tuyen { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; }
+.tuyen .vao { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; display:grid; gap:4px; font-size:14px; }
+.tuyen .vao b { font-size:14px; } .tuyen .vao span { font-size:13px; color:var(--text-dim); }
+.tuyen-dich { margin-top:10px; background:var(--surface-2); border:1px solid var(--accent); border-radius:10px; padding:12px 14px; font-size:14px; display:grid; gap:4px; }
+/* phần đọc mockup */
+.bang-tt { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
+.bang-tt th, .bang-tt td { border:1px solid #d9deea; padding:6px 10px; text-align:left; vertical-align:top; }
+.bang-tt th { background:#f2f4f9; font-weight:700; white-space:nowrap; }
+.bang-tt td:first-child { font-weight:700; }
+.gi { color:#38674c; font-weight:600; } .doi { color:#7e5f36; font-weight:600; } .moi { color:#273c8f; font-weight:600; } .bo { color:#a63a2d; font-weight:600; }
+.cong-tac { display:inline-flex; gap:6px; margin-left:8px; } .cong-tac button { font:600 13px 'Be Vietnam Pro',sans-serif; padding:5px 10px; border-radius:6px; border:1px solid #b0b8cd; background:#fff; cursor:pointer; }
+.cong-tac button[aria-pressed="true"] { background:#273c8f; color:#fff; border-color:#273c8f; }
+.khung-pn { width:744px; }
+.khung-pn > .pn { border-radius:6px; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v16 · Tuyến Case – Phương án – Kết quả PA: bấm thẳng, sửa tại chỗ, xoá có Hoàn tác</h1>
+    <p>Chủ SP 06/11 ý 6 (<code>plan.md</code>) · luật N37 · N33 ① · N35 · N8. Dữ liệu như ảnh 5: em <b>Ngô Bảo Châu</b> (MB FT 101), Case <b>Speaking · MT2</b> SOS 3, người xem <b>Nguyễn Khánh Vy</b> (GV phụ trách S). Hôm nay <b>14/09 · W3 SEP</b>. 1440 <b>tối</b> · 375 <b>sáng</b>. Nền vàng viền đứt = ghi chú, không lên web.</p>
+    <nav class="muc-mk"><a href="#a">a · Case chờ mô tả</a><a href="#b">b · Sửa mô tả</a><a href="#c">c · Đổi người</a><a href="#d">d · Thẻ PA mở</a><a href="#e">e · Ghi kết quả</a><a href="#f">f · Xoá + Hoàn tác</a><a href="#g">g · Đề nghị QL xoá</a><a href="#h">h · Hoàn thành bị chặn</a><a href="#i">i · Hồ sơ HV</a><a href="#j">j · QL làm thay</a><a href="#k">k · Lỗi / rỗng</a><a href="#n">n · Thao tác khác</a><a href="#m">375 sáng</a><a href="#tt">Thao tác trước → sau</a>
+      <span class="cong-tac" role="group" aria-label="Chế độ khung"><button type="button" data-che="goc" aria-pressed="true">Như ghi</button><button type="button" data-che="toi">Tất cả tối</button><button type="button" data-che="sang">Tất cả sáng</button></span></nav>
+  </header>
+
+  <section class="khu" id="a">
+    <h2>a — Công việc › "Mô tả Case" của Ngô Bảo Châu: panel Case (1440 tối)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Mỗi giá trị là chỗ bấm để sửa: tên người phụ trách (▾), ô Mô tả, từng trường PA — không còn nút "Sửa", "Đổi người…", "⋯"
+      · <span class="so-mk">2</span>việc đang làm = ô Mô tả viền nhấn + nhãn "việc của bạn" — con trỏ đã ở trong ô khi panel mở
+      · <span class="so-mk">3</span>thẻ PA: bấm cả đầu thẻ mở ra; trạng thái "Chờ xác nhận" là nút <b>Xác nhận PA</b>
+      · <span class="so-mk">4</span>dòng khoá đỏ bỏ; lý do nằm cạnh nút <b>Hoàn thành Case</b> ("chờ PA Học Tutor · MT3" + ⓘ) · Xoá ở cuối phần đang mở (Case SOS → "Đề nghị QL xoá").</p>
+    <div class="man toi" style="height:960px" data-k="a"></div>
+  </section>
+
+  <section class="khu" id="b">
+    <h2>b — Sửa mô tả tại chỗ: đang gõ → đã lưu (1440 tối, phần panel)</h2>
+    <div class="hang-khung">
+      <figure><figcaption>b1 · đang gõ · bộ đếm 300 (N35) · tự lưu khi rời ô / ngừng gõ 1 giây</figcaption><div class="khung-pn toi man" style="height:auto" data-k="b1"></div></figure>
+      <figure><figcaption>b2 · đã lưu · chữ thành giá trị bấm được (bút) · nút chính "Việc tiếp ›"</figcaption><div class="khung-pn toi man" style="height:auto" data-k="b2"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>b3 · Xác nhận Case (S chấm chéo, N8 ③): nhận xét chấm chéo hiện ngay dưới ô · "Dùng nhận xét này" = 1 bấm</figcaption><div class="khung-pn toi man" style="height:auto" data-k="b3"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="c">
+    <h2>c — Đổi người phụ trách tại chỗ: bấm tên → chọn (2 bấm)</h2>
+    <div class="hang-khung">
+      <figure><figcaption>c1 · bấm tên → hộp chọn ngay dưới (gõ để tìm, ↑↓ Enter)</figcaption><div class="khung-pn toi man" style="height:560px" data-k="c1"></div></figure>
+      <figure><figcaption>c2 · chọn xong: lưu ngay · "✓ Đã đổi · Hoàn tác" cạnh tên</figcaption><div class="khung-pn toi man" style="height:auto" data-k="c2"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="d">
+    <h2>d — Thẻ PA mở ra ngay trong thẻ: xem đủ + sửa từng trường</h2>
+    <p class="ghi">Bấm đầu thẻ (tên, dòng phụ hoặc ▾) → thẻ mở tại chỗ, thẻ khác giữ nguyên. Trường sửa được như ở Case: Nội dung ≤ 200 · Số buổi (≥ số đã dạy) · Người dạy · Bắt đầu (khoá khi đã có kết quả). Loại không sửa (ⓘ: đổi loại = Ghi kết quả › Điều chỉnh › Thay PA). Kết quả đã ghi: bấm để sửa, "Xoá kết quả" cạnh đó. Nhật ký luôn trong thẻ. PA <b>chờ xác nhận</b>: thẻ mở CHÍNH LÀ form xác nhận (điền sẵn) + Đề xuất PA khác… · Không cần theo dõi…. Không panel lồng panel, không ⋯.</p>
+    <div class="hang-khung">
+      <figure><figcaption>d1 · PA quy chế chờ xác nhận: bấm "Xác nhận PA" ở thẻ gập → thẻ mở, sửa ngay (đang sửa Nội dung) → Xác nhận PA</figcaption><div class="khung-pn toi man" style="height:auto" data-k="d1"></div></figure>
+      <figure><figcaption>d2 · PA "Tăng cường bài tập" đang chạy mở · có 1 kết quả (bấm để sửa / Xoá kết quả)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="d2"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="e">
+    <h2>e — Ghi kết quả PA ngay trong thẻ (sau MT3, PA "Học Tutor" đang chạy)</h2>
+    <div class="hang-khung">
+      <figure><figcaption>e1 · nút trạng thái "Ghi kết quả" → form mở trong thẻ · Tiến triển · Nhận xét 8–200 · Quyết định (Điều chỉnh mở thêm Sửa PA này / Thay PA / Xin hỗ trợ QL)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="e1"></div></figure>
+      <figure><figcaption>e2 · lưu xong: thẻ gập, viền nhấn + "✓ Đã ghi kết quả · Hoàn tác" (10 giây) · Case thấy ngay</figcaption><div class="khung-pn toi man" style="height:auto" data-k="e2"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>e3 · PA Học Tutor (quy chế, đếm buổi): khối buổi tutor nằm trong thẻ · Quyết định chỉ Giữ nguyên / Điều chỉnh / Xin hỗ trợ QL</figcaption><div class="khung-pn toi man" style="height:auto" data-k="e3"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="f">
+    <h2>f — Xoá PA / Xoá Case + Hoàn tác (vào Thùng rác, khôi phục được — N28, N37)</h2>
+    <div class="hang-khung">
+      <figure><figcaption>f1 · "Xoá PA" ở cuối thẻ đang mở (PA thường) — 1 bấm, không hỏi (như hiện tại)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="f1"></div></figure>
+      <figure><figcaption>f2 · thẻ thành dải "Đã xoá … · Hoàn tác" đúng chỗ cũ (10 giây, rồi gọn đi; Thùng rác giữ)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="f2"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>f3 · Case tạo tay còn 2 PA: "Xoá Case" → hỏi MỘT lần ngay tại chỗ, nêu đúng 2 PA (Case chưa có PA: xoá luôn)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="f3"></div></figure>
+      <figure><figcaption>f4 · đã xoá Case: panel còn một dải Hoàn tác + Việc tiếp ›</figcaption><div class="khung-pn toi man" style="height:auto" data-k="f4"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="g">
+    <h2>g — PA theo quy chế / Case SOS: "Đề nghị QL xoá" (N37)</h2>
+    <div class="hang-khung">
+      <figure><figcaption>g1 · PA quy chế: nút chữ "Đề nghị QL xoá" ở cuối thẻ (thay ⋯ › Xoá PA) — 1 bấm là gửi, như hiện tại</figcaption><div class="khung-pn toi man" style="height:auto" data-k="g1"></div></figure>
+      <figure><figcaption>g2 · đã gửi (PA + Case SOS): "Chờ QL duyệt xoá · Rút lại" ngay tại chỗ; PA vẫn chạy tới khi QL duyệt</figcaption><div class="khung-pn toi man" style="height:auto" data-k="g2"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="h">
+    <h2>h — Hoàn thành Case bị chặn: lý do ngay cạnh nút (thay dòng khoá đỏ) · form Hoàn thành tại chỗ · Mở lại</h2>
+    <div class="hang-khung">
+      <figure><figcaption>h1 · nút mờ + "chờ PA Học Tutor · MT3" · rê / chạm ⓘ (hoặc chạm nút mờ) → lý do đủ + đi tới PA</figcaption><div class="khung-pn toi man" style="height:auto" data-k="h1"></div></figure>
+      <figure><figcaption>h2 · mọi PA đã khép → nút sáng, bấm mở form Hoàn thành ngay trong mục (điền sẵn theo PA gần nhất)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="h2"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>h3 · Case đã hoàn thành: Kết luận + "Mở lại" (QL / QT / người hoàn thành)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="h3"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="i">
+    <h2>i — Một tuyến: hồ sơ HV (khối Case N33 ①) dùng CÙNG mẫu; mọi lối vào mở cùng panel</h2>
+    <p class="ghi">Hồ sơ HV: Case mở tại chỗ trong khối (N33 ①) với đúng các mục, giá trị bấm được, thẻ PA như panel. Lối vào khác (Công việc, thẻ việc ở HV &amp; Lớp, "Mở Case ›" ở Phân tích / Chờ duyệt / chuông) mở <b>cùng panel Case</b>, cuộn tới đúng mục (Mô tả · thẻ PA · form Kết quả), thẻ đích viền nhấn. ✕ / Esc về đúng chỗ cũ (bộ lọc, cuộn). PA và Kết quả luôn nằm trong Case → luôn thấy Case.</p>
+    <div class="man toi" style="height:auto" data-k="i1"></div>
+    <figure style="margin:16px 0 0"><figcaption>Lối vào → cùng một panel Case</figcaption><div class="man toi" style="height:auto;width:1100px;padding:16px" data-k="i2"></div></figure>
+  </section>
+
+  <section class="khu" id="j">
+    <h2>j — QL làm thay (dải "Bạn đang làm thay…", N33 ③) · QL duyệt đề nghị xoá ngay trên thẻ</h2>
+    <div class="hang-khung">
+      <figure><figcaption>j1 · QL Trần Ngọc Hà bấm "Làm thay": cùng panel, mọi giá trị bấm được; PA quy chế: "Xoá PA" thẳng + "Kết thúc sớm…" (GVCN / QL)</figcaption><div class="khung-pn toi man" style="height:auto" data-k="j1"></div></figure>
+      <figure><figcaption>j2 · QL mở Case có đề nghị xoá: Duyệt xoá / Giữ lại ngay trên thẻ (cùng việc ở "Chờ bạn duyệt")</figcaption><div class="khung-pn toi man" style="height:auto" data-k="j2"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>j3 · "Kết thúc sớm…" → lý do (≥ 10 ký tự) ngay trong thẻ · Kết thúc PA · Hoàn tác 5 giây</figcaption><div class="khung-pn toi man" style="height:auto" data-k="j3"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k">
+    <h2>k — Lỗi lưu · rỗng · chỉ xem</h2>
+    <div class="hang-khung">
+      <figure><figcaption>k1 · lỗi lưu mô tả: chữ giữ nguyên, báo tại ô + Thử lại</figcaption><div class="khung-pn toi man" style="height:auto" data-k="k1"></div></figure>
+      <figure><figcaption>k1b · quá 300 (N35): không lưu, báo tại ô, chữ giữ</figcaption><div class="khung-pn toi man" style="height:auto" data-k="k1b"></div></figure>
+      <figure><figcaption>k2 · Case chưa có PA (việc "Thêm PA") · Kết luận chặn "cần ít nhất 1 PA"</figcaption><div class="khung-pn toi man" style="height:auto" data-k="k2"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>k3 · GV khác (không quyền): giá trị là chữ thường, không bút / ▾; một câu "ai làm được"</figcaption><div class="khung-pn toi man" style="height:auto" data-k="k3"></div></figure>
+      <figure><figcaption>k4 · lỗi tải panel</figcaption><div class="khung-pn toi man" style="height:auto" data-k="k4"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>k5 · "+ Thêm PA" → thẻ mới dạng form ở đầu mục Phương án (đủ trường form cũ), không đổi view</figcaption><div class="khung-pn toi man" style="height:auto" data-k="k5"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="n">
+    <h2>n — Các thao tác còn lại, cùng mẫu (vẽ đủ bảng trước → sau)</h2>
+    <div class="hang-khung">
+      <figure><figcaption>n1 · Nguyên nhân: bấm thẻ → chọn nhiều, "Khác" mở ô Ghi rõ · lưu khi chọn</figcaption><div class="khung-pn toi man" style="height:auto" data-k="n1"></div></figure>
+      <figure><figcaption>n2 · bấm tên Case (bút) → Tên Case · Kỹ năng (khoá khi đã có PA) · Mức độ</figcaption><div class="khung-pn toi man" style="height:auto" data-k="n2"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>n3 · "Đề xuất PA khác…" (thẻ chờ xác nhận) → form ngay trong thẻ · Gửi Quản lý duyệt</figcaption><div class="khung-pn toi man" style="height:auto" data-k="n3"></div></figure>
+      <figure><figcaption>n4 · "Không cần theo dõi…" → lý do trong thẻ · Gửi Quản lý</figcaption><div class="khung-pn toi man" style="height:auto" data-k="n4"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>n5 · PA đã kết thúc sớm: "Mở lại PA" · sửa kết quả bị chặn (lý do tại chỗ) · Lịch sử mở, Xoá kết quả ở từng dòng</figcaption><div class="khung-pn toi man" style="height:auto" data-k="n5"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="m">
+    <h2>375 sáng — panel toàn màn, cùng mẫu (nhãn trên giá trị, vùng bấm 44 px, hộp chọn mở ngay dưới)</h2>
+    <div class="hang-khung">
+      <figure><figcaption>m1 · a · Case chờ mô tả</figcaption><div class="dt sang dai" data-k="m1"></div></figure>
+      <figure><figcaption>m2 · b · đang gõ mô tả</figcaption><div class="dt sang dai" data-k="m2"></div></figure>
+      <figure><figcaption>m3 · c · đổi người</figcaption><div class="dt sang dai" data-k="m3"></div></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>m4 · d · thẻ PA mở = form xác nhận</figcaption><div class="dt sang dai" data-k="m4"></div></figure>
+      <figure><figcaption>m5 · e · ghi kết quả trong thẻ</figcaption><div class="dt sang dai" data-k="m5"></div></figure>
+      <figure><figcaption>m6 · g · chờ QL duyệt · f · đã xoá PA + Hoàn tác</figcaption><div class="dt sang dai" data-k="m6"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="tt">
+    <h2>Thao tác trước → sau (không mất thao tác nào)</h2>
+    <table class="bang-tt" id="bang-tt"></table>
+  </section>
+</div>
+
+<script>
+/* Bảng thao tác trước → sau. "Trước" theo mã main 0a2277248 (NganCase, CasePanel, ThaoTacCase, MenuXoaPa, CapNhatTuan, GhiNhanh, FormPa, DoiPa, DoiNguoiPhuTrach). Số bấm tính từ lúc panel Case đã mở. */
+window.BANG_TT = [
+  ['Đổi người phụ trách', 'Nút "Đổi người…" ở dải đầu → hộp → chọn → "Lưu · đóng" (3 bấm)', 'Bấm tên ở dòng Phụ trách → chọn trong hộp ngay dưới, lưu ngay, "✓ Đã đổi · Hoàn tác". Danh sách = GV dạy kỹ năng ở lớp em + GVCN (như cũ). Quyền: QL, GVCN (như cũ)', '2', 'doi', 'GỌN'],
+  ['Mô tả Case (việc "Mô tả Case")', 'Nút "Mô tả Case" cạnh "Chưa có" hoặc nút chính ở chân → view Mô tả → gõ → Lưu (≥ 2 bấm + đổi view)', 'Con trỏ đã ở ô Mô tả khi mở việc (ô viền nhấn + "việc của bạn") → gõ, tự lưu khi rời ô / ngừng 1 giây. 15–300 ký tự (N35)', '0 (gõ luôn)', 'doi', 'GỌN'],
+  ['Sửa mô tả đã có', 'Nút "Sửa" → view Sửa Case (5 ô) → Lưu (2 bấm + đổi view)', 'Bấm chính đoạn mô tả → ô gõ tại chỗ, tự lưu · Esc bỏ thay đổi', '1', 'doi', 'GỌN'],
+  ['Sửa nguyên nhân', 'Trong view Sửa Case (Nhóm nguyên nhân + Ghi rõ khi "Khác")', 'Bấm các thẻ nguyên nhân ở dòng Nguyên nhân → hộp chọn ngay dưới (Khác → ô Ghi rõ), lưu khi đóng hộp', '2', 'doi', 'GỌN'],
+  ['Sửa tên Case · kỹ năng · mức độ', 'Trong view Sửa Case (kỹ năng khoá khi đã có PA)', 'Bấm tên Case ở đầu panel → hộp nhỏ: Tên Case · Kỹ năng (khoá khi đã có PA, ⓘ lý do) · Mức độ (Case tạo tay). Case SOS: mức = SOS, không sửa', '2', 'doi', 'GỌN'],
+  ['Sửa xác nhận (Case SOS có nguyên nhân)', 'Nút "Sửa xác nhận" → view Sửa', 'Không còn nút riêng: nguyên nhân, mô tả sửa tại chỗ như mọi Case', '1–2', 'doi', 'GỘP'],
+  ['Xác nhận Case (S chấm chéo, N8 ③)', 'Nút chính "Xác nhận Case" → view, chọn dùng nhận xét chéo hay viết khác', 'Ô Mô tả trống viền nhấn + khối nhận xét chấm chéo ngay dưới: "Dùng nhận xét này" (1 bấm) hoặc gõ vào ô', '1', 'doi', 'GỌN'],
+  ['Xoá Case (được xoá thẳng)', '⋯ → Xoá Case; còn PA thì hỏi "Xoá Case và n PA" (2–3 bấm)', 'Nút chữ "Xoá Case" cuối panel; còn PA → hỏi MỘT lần ngay tại chỗ, nêu đúng các PA; chưa có PA → xoá luôn. Sau xoá: dải "Đã xoá … · Hoàn tác" + Thùng rác (N28)', '1–2', 'doi', 'GỌN'],
+  ['Xin xoá Case (SOS / còn PA quy chế, người không phải QL — N37)', '⋯ → Xoá Case (mục cùng tên, bấm là gửi; mờ khi đang chờ)', 'Nút chữ "Đề nghị QL xoá Case" — 1 bấm gửi; tại chỗ hiện "Chờ QL duyệt xoá Case · Rút lại"', '1', 'doi', 'RÕ TÊN + MỚI Rút lại'],
+  ['Xoá PA (PA thường)', '⋯ → Xoá PA (2 bấm, ⋯ chỉ một mục)', 'Nút chữ "Xoá PA" cuối thẻ đang mở · thẻ thành dải "Đã xoá PA … · Hoàn tác" đúng chỗ', '1 (thẻ đang mở) · 2', 'doi', 'GỌN'],
+  ['Xin xoá PA quy chế', '⋯ → Xoá PA (bấm là gửi)', 'Nút chữ "Đề nghị QL xoá" cuối thẻ · "Chờ QL duyệt xoá · Rút lại"', '1–2', 'doi', 'RÕ TÊN'],
+  ['QL duyệt / từ chối xoá', 'Chờ bạn duyệt (Công việc)', 'GIỮ ở Chờ bạn duyệt + thêm ngay trên thẻ PA khi QL mở Case: "Giữ lại" · "Duyệt xoá"', '1', 'gi', 'GIỮ + tại chỗ'],
+  ['Xem PA', 'Thẻ không bấm được; chi tiết rải trong thẻ, Nhật ký gập riêng', 'Bấm cả đầu thẻ → thẻ mở tại chỗ: Loại · Nội dung · Số buổi · Người dạy · Bắt đầu · Kết quả · Nhật ký', '1', 'doi', 'MỚI'],
+  ['Sửa PA', '⋯ → Sửa PA → view Sửa PA → Lưu (3 bấm + đổi view)', 'Bấm giá trị trong thẻ đang mở → sửa tại chỗ, tự lưu: Nội dung ≤ 200 · Số buổi ≥ số đã dạy · Người dạy · Bắt đầu (khoá khi đã có kết quả). Loại không sửa (ⓘ). Chỉ khi PA đang chạy (như cũ)', '2', 'doi', 'GỌN'],
+  ['Chọn người dạy (dòng gọn "Chưa chọn")', 'Ô chọn tại dòng PA, lưu ngay', 'Dòng Người dạy trong thẻ (cùng kiểu hộp chọn ▾)', '2', 'gi', 'GIỮ'],
+  ['Xác nhận PA', 'Nút ở chân thẻ / chân panel → view Xác nhận PA (Nội dung, Số buổi, Người dạy, Bắt đầu) → Xác nhận (2 bấm + đổi view)', 'Nút "Xác nhận PA" ở thẻ gập → thẻ mở = form điền sẵn, sửa tại chỗ → "Xác nhận PA" cuối thẻ. Cần nguyên nhân trước (như cũ: lý do cạnh nút)', '2', 'doi', 'GỌN'],
+  ['Đề xuất PA khác… (PA quy chế / Bổ trợ)', 'Trong view Xác nhận PA / Ghi kết quả › Điều chỉnh / "Đề xuất lại"', 'Link "Đề xuất PA khác…" cuối thẻ chờ xác nhận + trong Quyết định › Điều chỉnh; form mở trong thẻ (PA mới · Lý do ≥ 10 · Gửi Quản lý duyệt)', '2', 'gi', 'GIỮ, vào thẻ'],
+  ['Không cần theo dõi…', 'Trong view Xác nhận PA', 'Link cuối thẻ chờ xác nhận → hộp lý do trong thẻ, gửi QL (như cũ)', '2', 'gi', 'GIỮ, vào thẻ'],
+  ['Rút đề xuất đổi PA · Đề xuất lại', 'Dải trong thẻ PA', 'Giữ dải trong thẻ (thẻ gập vẫn thấy "Chờ duyệt đổi PA")', '1', 'gi', 'GIỮ'],
+  ['Ghi kết quả PA (ghi nhanh)', 'Dòng gọn: form ngay dưới dòng; link "Điều chỉnh / Kết thúc…" mở panel lớn', 'Nút trạng thái "Ghi kết quả" (thẻ gập) → form trong thẻ: Tiến triển · Nhận xét 8–200 · Quyết định Giữ nguyên / Điều chỉnh / Kết thúc PA · Ngày ghi → "Lưu kết quả". Không còn panel lớn riêng', '3 (mở · chọn mức · Lưu) + gõ', 'doi', 'GỘP'],
+  ['Ghi kết quả PA (panel lớn: Tutor, số buổi, Điều chỉnh / Thay / Xin hỗ trợ / Kết thúc, lần cuối, Mini Test)', 'View "Kết quả PA · W3–W4 SEP" riêng, lưu xong tự về Case', 'Cùng form trong thẻ, đủ trường cũ (buổi tutor, Số buổi kỳ này, Mini Test lần cuối, Lý do chưa đủ dữ liệu…). Chặn quyết định hiện dưới hàng nút như cũ. Nháp tự lưu theo PA (như cũ)', '3+ (theo trường)', 'doi', 'VÀO THẺ'],
+  ['Cập nhật trước hạn', 'Nút thường ở dòng gọn khi chưa tới kỳ', 'Nút thường cuối thẻ đang mở (thẻ gập: "Đang chạy · KQ hạn …")', '2', 'gi', 'GIỮ'],
+  ['Hoàn tác sau Thêm PA / Ghi kết quả', '"✓ … · Hoàn tác" trong thẻ vừa đổi, 10 giây', 'Giữ y nguyên (viền nhấn + Hoàn tác trong đầu thẻ)', '1', 'gi', 'GIỮ'],
+  ['Sửa kết quả gần nhất', 'Nút "Sửa" trong thẻ → view Sửa kết quả', 'Bấm dòng kết quả trong thẻ → form trong thẻ, điền sẵn; bị chặn → chỉ sửa chữ, lý do tại ô (như cũ)', '1', 'doi', 'GỌN'],
+  ['Xoá kết quả PA', '⋯ → Xoá kết quả ở Lịch sử', 'Nút chữ "Xoá kết quả" cạnh dòng kết quả trong thẻ (vẫn có ở Lịch sử) · Hoàn tác / xin QL như cũ', '1', 'doi', 'GỌN'],
+  ['Kết thúc PA sớm (GVCN / QL, PA quy chế)', '⋯ → Kết thúc PA → hộp lý do ≥ 10 → Kết thúc PA', 'Nút chữ "Kết thúc sớm…" cuối thẻ → lý do trong thẻ → "Kết thúc PA" · Hoàn tác 5 giây (như cũ)', '2 + gõ', 'doi', 'GỌN'],
+  ['Mở lại PA (đã kết thúc sớm)', '⋯ → Mở lại PA', 'Nút chữ "Mở lại PA" cuối thẻ đã khép', '1', 'doi', 'GỌN'],
+  ['+ Thêm PA', 'Nút ở chân panel → view Thêm PA', 'Nút "+ Thêm PA" cạnh đầu mục Phương án (nút chính khi Case chưa có PA) → thẻ PA mới mở sẵn dạng form ở đầu danh sách (đủ trường FormPa cũ), Thêm PA / Gửi Quản lý duyệt', '1 + điền', 'doi', 'VÀO CHỖ'],
+  ['Hoàn thành Case', 'Ẩn khi PA quy chế chưa khép + dòng khoá đỏ; bấm khi còn chặn → lỗi ở chân; mở view Hoàn thành', 'Nút luôn thấy cuối panel; bị chặn = mờ + lý do ngắn cạnh nút ("chờ PA Học Tutor · MT3", "cần ít nhất 1 PA", "1 PA chờ QL duyệt") + ⓘ lý do đủ + "Tới PA ↑". Không chặn: form ngay trong mục (4 mức điền sẵn, Vì sao ≥ 10, Ngày, + chi tiết)', '2 + gõ', 'doi', 'GỌN'],
+  ['Mở lại Case', 'Nút ở dải đầu khi Case xong', 'Nút "Mở lại" trong mục Kết luận (Case đã xong) · nhãn "Hệ thống đóng — …" giữ nguyên chữ', '1', 'gi', 'GIỮ, dời chỗ'],
+  ['Bằng chứng', '"+ Thêm" → khung tải', '"+ Tệp" · "+ Liên kết" một dòng (mẫu U10 #917)', '1', 'gi', 'GIỮ'],
+  ['Lịch sử Case', 'Khối gập "n thay đổi"', 'Giữ khối gập "Lịch sử · n" (đủ dòng cũ, Sửa lần xem lại cũ)', '1', 'gi', 'GIỮ'],
+  ['Xem đầy đủ mô tả dài · Dịch', 'Có', 'Có (giá trị mô tả > 3 dòng: "Xem đầy đủ"; nút Dịch cạnh chữ)', '1', 'gi', 'GIỮ'],
+  ['Quay lại · Đóng · Việc tiếp › · Case tiếp ›', '‹ tên view trước (vd "‹ Mô tả Case · Speaking · MT2"), Đóng, nút chính theo việc', 'Ít view hơn → hầu như không còn ‹ trong Case. Chân: trạng thái lưu · "Tiếp: …" · Đóng · Việc tiếp › (hoặc Case tiếp › khi mở từ danh sách số)', '1', 'gi', 'GIỮ'],
+  ['Làm thay (QL)', 'Tóm tắt chỉ đọc → "Làm thay" → dải "Bạn đang làm thay … · Chỉ xem"', 'Giữ; dải nằm ngay dưới loại việc, panel giống hệt của GV', '1', 'gi', 'GIỮ'],
+  ['Chỉ xem (TVV, CX, GV môn khác)', 'Một câu "ai làm được" + khối Xem thêm; TVV / CX: Phụ huynh · Gọi', 'Giá trị là chữ thường (không bút / ▾), không nút xoá; một câu "ai làm được" cuối. Phụ huynh · Gọi giữ', '—', 'gi', 'GIỮ'],
+  ['Dòng khoá "🔒 Hoàn thành được sau khi PA theo quy chế kết thúc · đến MT3"', 'Dòng đỏ / mờ chen giữa dải đầu và thân', 'BỎ — thay bằng lý do cạnh nút Hoàn thành Case (h)', '—', 'bo', 'BỎ'],
+  ['Menu ⋯ (Case, PA, kết quả)', '⋯ của Case chỉ có Xoá; ⋯ PA: Sửa · Kết thúc · Mở lại · Xoá (thường chỉ hiện 1)', 'BỎ hết ⋯ trong tuyến Case — mỗi việc một nút chữ ở đúng chỗ', '—', 'bo', 'BỎ'],
+  ['Nút "Sửa", "Đổi người…" rời ở dải đầu', 'Có', 'BỎ — bấm thẳng giá trị', '—', 'bo', 'BỎ']
+];
+</script>
+<script>
+(function () {
+  'use strict';
+  var e = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
+  var thanh = function (menu, ten, badge) {
+    var ms = ['Tổng quan', 'Học viên &amp; Lớp', 'Test', 'Công việc', 'Phân tích'];
+    return '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>' + ms.map(function (m) {
+      return '<span class="m' + (m === menu ? ' dang' : '') + '">' + m + (m === 'Công việc' && badge ? ' <span class="so-nav do">' + badge + '</span>' : '') + '</span>';
+    }).join('') + '<span class="phai"><span>' + e(ten) + '</span></span></div>';
+  };
+  var thanhDt = '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc</span><span class="phai"><span>☰</span></span></div>';
+  var IC_BUT = '<svg class="ic-sd" viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3z"/></svg>';
+  var IC_MUI = '<svg class="ic-sd" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
+  var IC_PA = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
+
+  /* ---------- giá trị sửa được ---------- */
+  // kieu: 'chon' (▾) | 'chu' (bút, chữ dài) | 'go' (bút, ngắn) ; o.re = đang rê ; o.mo = đang mở
+  function sd(noiDung, kieu, o) {
+    o = o || {};
+    if (o.chiXem) return '<span>' + noiDung + '</span>';
+    return '<button type="button" class="sd' + (kieu === 'chu' ? ' chu' : '') + (o.re ? ' re' : '') + (o.mo ? ' mo-o' : '') + '"' + (kieu === 'chon' ? ' aria-haspopup="listbox" aria-expanded="' + (o.mo ? 'true' : 'false') + '"' : '') + ' aria-label="' + e(o.nhan || '') + '">' + noiDung + (kieu === 'chon' ? IC_MUI : IC_BUT) + '</button>';
+  }
+  var dem = function (n, max) { return '<span class="dem-chu' + (n > max * 0.9 ? ' gan' : '') + '">' + n + ' / ' + max + '</span>'; };
+
+  /* ---------- dữ liệu ---------- */
+  var MO_TA = 'Part 2 nói chưa tới 1 phút, hay ngắt để tìm từ. Part 3 trả lời một câu rồi dừng, chưa mở rộng ý. Đuôi -s, -ed còn nuốt âm.';
+  var PA1 = { id: 1, ten: 'Học Tutor', quyChe: true, loai: 'Học Tutor', noiDung: 'Tutor 1 kèm 1, luyện Part 2 – 3', buoi: '6', nguoi: 'Nguyễn Khánh Vy', batDau: '15/09', moc: 'MT3', tt: 'cho', nk: [['14/09', 'Hệ thống tạo theo quy chế (SOS 3)']] };
+  var PA2 = { id: 2, ten: 'Tăng cường bài tập', loai: 'Tăng cường bài tập', noiDung: 'Mỗi tuần 2 đề Part 2, ghi âm gửi GV', nguoi: 'Nguyễn Khánh Vy', batDau: '15/09', tt: 'chay', hanKq: 'KQ hạn 29/09', nk: [['15/09', 'Nguyễn Khánh Vy thêm PA']] };
+
+  function nhanTt(pa) {
+    return { cho: '<span class="td dot" style="--cham:var(--doing)">Chờ xác nhận</span>', chay: '<span class="td dot" style="--cham:var(--accent)">Đang chạy</span>', xong: pa.kq ? '<span class="ket ' + pa.kq[0] + '">' + pa.kq[1] + '</span>' : '<span class="td">Đã khép</span>' }[pa.tt];
+  }
+  /* nút trạng thái = nút làm việc (bấm "Xác nhận PA" ở thẻ gập = mở thẻ, form xác nhận đã điền sẵn) */
+  function nutTt(pa, o) {
+    if (o.chiXem) return nhanTt(pa);
+    if (pa.tt === 'cho') return o.mo ? '<span class="td dot" style="--cham:var(--doing)">Chờ xác nhận</span>' : '<button class="nut nut-nho">Xác nhận PA</button>';
+    if (pa.tt === 'chay' && o.denHan) return o.ghi ? '<span class="td dot" style="--cham:var(--soon)">Đang ghi kết quả</span>' : '<button class="nut nut-nho">Ghi kết quả</button>';
+    if (pa.tt === 'chay') return '<span class="td dot" style="--cham:var(--accent)">Đang chạy · ' + (pa.hanKq || 'KQ hạn 29/09') + '</span>';
+    return nhanTt(pa);
+  }
+  function phuPa(pa) {
+    return (pa.quyChe ? 'Theo quy chế · đến ' + pa.moc + ' · ' : '') + 'người dạy ' + pa.nguoi + (pa.buoi ? ' · ' + (pa.daDay ? pa.daDay + '/' : '') + pa.buoi + ' buổi' : '') + (pa.kq ? ' · KQ ' + pa.kqTuan : '');
+  }
+  var oNgay = function (v) { return '<span style="display:inline-flex;gap:6px;align-items:center"><input class="o so" style="width:116px;height:36px" value="' + v + '/2026"><button class="nut nut-nho" aria-label="Chọn ngày" style="width:36px;height:36px;padding:0"><svg class="ic" viewBox="0 0 16 16"><path d="M3 4h10v9H3zM3 7h10M6 2v3M10 2v3"/></svg></button></span>'; };
+  /* thẻ PA: o.mo (mở) · o.sua ('noiDung' | 'buoi') · o.ghi (form kết quả: 'nhanh' | 'tutor') · o.choDuyet · o.qlDuyet · o.chiXem · o.denHan · o.ql · o.ketThuc · o.re (rê nút xoá) */
+  function thePa(pa, o) {
+    o = o || {};
+    if (o.daXoa) return '<div class="da-xoa" role="status"><span>Đã xoá PA <b>' + e(pa.ten) + '</b></span><span class="nho">vào Thùng rác</span><button class="link-nho">Hoàn tác</button></div>';
+    var dau = '<div class="pa-dau"><button class="pa-bam" aria-expanded="' + (o.mo ? 'true' : 'false') + '"><span class="ten-pa">' + e(pa.ten) + (o.moiDoi ? '<span class="dai-hoan">✓ ' + e(o.moiDoi) + ' <span class="link-nho">Hoàn tác</span></span>' : '') + '</span><span class="phu-pa">' + e(phuPa(pa)) + '</span></button>' +
+      '<span class="pa-tt">' + (o.choDuyet ? '<span class="td dot" style="--cham:var(--soon)">Chờ QL duyệt xoá</span>' : nutTt(pa, o)) + '</span><button class="mui-pa" aria-label="' + (o.mo ? 'Gập' : 'Mở') + ' PA ' + e(pa.ten) + '">' + IC_PA + '</button></div>';
+    if (!o.mo) return '<div class="the-pa' + (o.moiDoi || o.dich ? ' moi-doi' : '') + '">' + dau + '</div>';
+    var cx = { chiXem: o.chiXem };
+    var noiDung = o.sua === 'noiDung'
+      ? '<div class="o-mo"><textarea class="o" rows="2" style="min-height:64px">' + e(pa.noiDung) + ', ghi âm mỗi buổi</textarea><div class="duoi-o">' + (pa.tt === 'cho' ? '<span></span>' : '<span class="tt-luu dang">Đang lưu…</span>') + dem(47, 200) + '</div></div>'
+      : sd(e(pa.noiDung), 'chu', Object.assign({ nhan: 'Sửa nội dung PA' }, cx));
+    var buoi = pa.buoi ? (o.sua === 'buoi'
+      ? '<input class="o so" style="width:72px;height:36px;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)" value="8"><span class="mo" style="font-size:13px">đã dạy 2 · không nhỏ hơn 2</span><span class="tt-luu da">✓ Đã lưu</span>'
+      : sd(pa.buoi + ' buổi', 'go', Object.assign({ nhan: 'Sửa số buổi' }, cx)) + (pa.daDay ? '<span class="mo" style="font-size:13px">đã dạy ' + pa.daDay + ' · còn ' + (pa.buoi - pa.daDay) + '</span>' : '')) : null;
+    var loaiI = '<button class="nut-i" aria-label="Đổi loại PA" title="Loại không sửa được. Đổi loại: Ghi kết quả › Điều chỉnh › Thay PA' + (pa.quyChe ? ' (PA quy chế: Đề xuất PA khác)' : '') + '.">ⓘ</button>';
+    var kqDong = pa.kq
+      ? '<span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%">' + sd('<span class="ket ' + pa.kq[0] + '">' + pa.kq[1] + '</span><span class="mo" style="font-size:13px">' + pa.kqTuan + ' · "' + e(pa.kqNx) + '"</span>', 'go', Object.assign({ nhan: 'Sửa kết quả ' + pa.kqTuan }, cx)) + (o.chiXem ? '' : '<button class="nut-xoa">Xoá kết quả</button>') + '</span>'
+      : '<span class="mo">Chưa có · ' + (pa.tt === 'cho' ? 'sau khi xác nhận' : (pa.hanKq || 'KQ hạn 29/09').replace('KQ ', '')) + '</span>';
+    var gon = o.ghi || o.ketThuc;
+    var than = '<div class="pa-than">' + (gon ? '<p class="mo" style="font-size:14px;padding-top:10px">' + e(pa.noiDung) + '</p>' + (o.ghi ? ghiKq(pa, o.ghi) : ketThucHop(pa)) + '</div>' : '') +
+      (gon ? '' : (o.qlDuyet ? '<div class="cho-duyet" style="margin-top:10px"><span><b>Nguyễn Khánh Vy đề nghị xoá PA</b> · gửi 14/09</span><span class="hang"><button class="nut nut-nho">Giữ lại</button><button class="nut nut-nho nut-do">Duyệt xoá</button></span></div>' : '') +
+      '<dl class="fld">' +
+      '<dt>Loại</dt><dd><span>' + e(pa.loai) + '</span>' + (pa.quyChe ? '<span class="tag nhat">theo quy chế · đến ' + pa.moc + '</span>' : '') + (o.chiXem ? '' : loaiI) + '</dd>' +
+      '<dt>Nội dung</dt><dd>' + noiDung + '</dd>' +
+      (buoi ? '<dt>Số buổi</dt><dd>' + buoi + '</dd>' : '') +
+      '<dt>Người dạy</dt><dd>' + sd(e(pa.nguoi), 'chon', Object.assign({ nhan: 'Đổi người dạy' }, cx)) + '</dd>' +
+      '<dt>Bắt đầu</dt><dd>' + (pa.kq ? '<span class="so">' + pa.batDau + '</span><span class="mo2" style="font-size:13px">đã có kết quả — không đổi</span>' : sd('<span class="so">' + pa.batDau + '</span>', 'go', Object.assign({ nhan: 'Đổi ngày bắt đầu' }, cx))) + '</dd>' +
+      (pa.tt === 'cho' ? '' : '<dt>Kết quả</dt><dd>' + kqDong + '</dd>') +
+      '<dt>Nhật ký</dt><dd><ul class="nk">' + pa.nk.map(function (n) { return '<li><span>' + n[0] + '</span><span>' + e(n[1]) + '</span></li>'; }).join('') + '</ul></dd>' +
+      '</dl></div>');
+    var xoaNut = (pa.quyChe && !o.ql) ? '<button class="nut-xin' + (o.re ? ' re' : '') + '">Đề nghị QL xoá PA</button>' : '<button class="nut-xoa">Xoá PA</button>';
+    var chan;
+    if (o.chiXem) chan = '';
+    else if (o.choDuyet) chan = '<div class="pa-chan"><span class="td dot" style="--cham:var(--soon)">Chờ QL duyệt xoá PA · gửi 14/09 · PA vẫn chạy</span><button class="link-nho">Rút lại</button></div>';
+    else if (o.ghi) chan = '<div class="pa-chan"><span class="trai">' + '' + '</span><button class="nut nut-nho">Thôi</button><button class="nut nut-chinh">Lưu kết quả</button></div>';
+    else if (o.ketThuc) chan = '<div class="pa-chan"><span class="trai"></span><button class="nut nut-nho">Thôi</button><button class="nut nut-do">Kết thúc PA</button></div>';
+    else if (pa.tt === 'cho') chan = '<div class="pa-chan"><span class="trai">' + xoaNut + '</span><button class="link-nho">Đề xuất PA khác…</button><button class="link-nho">Không cần theo dõi…</button><button class="nut nut-chinh">Xác nhận PA</button></div>';
+    else chan = '<div class="pa-chan"><span class="trai">' + xoaNut + (o.ql && pa.quyChe ? '<button class="nut nut-nho">Kết thúc sớm…</button>' : '') + '</span>' + (o.denHan ? '<button class="nut nut-chinh">Ghi kết quả</button>' : '<button class="nut">Cập nhật trước hạn</button>') + '</div>';
+    return '<div class="the-pa mo' + (o.dich ? ' moi-doi' : '') + '">' + dau + than + chan + '</div>';
+  }
+  function ketThucHop(pa) {
+    return '<div class="ghi-kq" style="border-top:1px solid var(--line);margin-top:6px"><p class="muc-h" style="margin:0">Kết thúc PA "' + e(pa.ten) + '" sớm</p><div class="truong"><label class="nhan" for="ly-kt">Lý do <span class="bb">*</span></label><textarea class="o" id="ly-kt" rows="2" style="min-height:56px">Em chuyển sang lớp buổi tối, học Tutor ở đó</textarea>' + dem(43, 500) + '</div></div>';
+  }
+  function ghiKq(pa, kieu) {
+    var kq = [['Tiến bộ rõ', 'kq-tb'], ['Tiến bộ một phần', 'kq-mp', 1], ['Không tiến bộ'], ['Kém hơn'], ['Chưa đủ dữ liệu']];
+    var qd = pa.quyChe ? ['Giữ nguyên', 'Điều chỉnh', 'Xin hỗ trợ QL'] : ['Giữ nguyên', 'Điều chỉnh', 'Kết thúc PA'];
+    var tutor = kieu === 'tutor' ? '<div class="truong" style="border-top:1px solid var(--line);padding-top:10px"><span class="nhan">Buổi 3 · 22/09</span>' +
+      '<dl class="fld" style="grid-template-columns:7rem minmax(0,1fr)"><dt>Tutor</dt><dd>' + sd('Nguyễn Khánh Vy', 'chon', { nhan: 'Tutor' }) + '<span class="lua" style="margin-left:auto"><button aria-pressed="true">Offline</button><button>Online</button></span></dd>' +
+      '<dt>Nhận xét buổi</dt><dd><textarea class="o" rows="2" style="min-height:52px">Luyện 4 đề Part 2, em giữ được 1 phút 40 giây.</textarea></dd>' +
+      '<dt>Tutor buổi này</dt><dd><span class="lua"><button aria-pressed="true">Chuẩn bị · Có</button><button aria-pressed="true">Tài liệu · Có</button><button aria-pressed="true">Feedback GV · Có</button></span><button class="link-nho">Cả 3 Có</button></dd></dl>' +
+      '<button class="link-nho" style="justify-self:start">▸ Đánh giá tutor · tuỳ chọn</button></div>' : '';
+    return '<div class="ghi-kq" style="border-top:1px solid var(--line);margin-top:6px"><p class="muc-h" style="margin:0">Kết quả PA · W3–W4 SEP<span class="phai-h"><span class="han-v xa">hạn 29/09</span></span></p>' +
+      '<div class="ngu-kq"><span>MT2 · S <b class="so" style="color:var(--bad)">✗ 5.5</b> · kỳ vọng 6.0</span><span>Kỳ trước: chưa có</span></div>' +
+      tutor +
+      '<div class="truong"><span class="nhan">Tiến triển (2 tuần) <span class="bb">*</span></span><div class="lua">' + kq.map(function (k) { return '<button class="' + (k[1] || '') + '" aria-pressed="' + (k[2] ? 'true' : 'false') + '">' + k[0] + '</button>'; }).join('') + '</div></div>' +
+      (kieu === 'tutor' ? '' : '<div class="truong"><label class="nhan" for="nx-kq">Nhận xét <span class="bb">*</span></label><textarea class="o" id="nx-kq" rows="2" style="min-height:60px">Nộp đủ 4 bài ghi âm; Part 2 nói được 1 phút 30 giây, còn ngắt khi gặp chủ đề lạ.</textarea>' + dem(82, 200) + '</div>') +
+      '<div class="truong"><span class="nhan">Quyết định</span><div class="doan" role="radiogroup" style="justify-self:start">' + qd.map(function (q, i) { return '<button aria-pressed="' + (i === 0 ? 'true' : 'false') + '">' + q + '</button>'; }).join('') + '</div></div>' +
+      '<div class="truong"><span class="nhan">Ngày ghi</span><span>' + oNgay('29/09') + '</span></div></div>';
+  }
+
+  /* ---------- panel Case ---------- */
+  // o: moTa ('trong' | 'go' | 'da' | 'loi' | 'dai'), nguoi ('mo' | 'da'), pa [ [pa, opts] ], ketLuan ('chan' | 'meo' | 'mo' | 'chanPa' | 'bat'), xoaCase ('xin' | 'xoa' | 'hoi'),
+  //    thay (QL), chiXem, chan (chân), dt (375), daXoaCase, loiTai, rongPa
+  function dauPn(o) {
+    return '<div class="pn-dau">' +
+      '<div class="pn-h1"><span class="loai">' + (o.loai || 'VIỆC · CASE HỌC THUẬT') + '</span><button class="x" aria-label="Đóng">✕</button></div>' +
+      (o.thay ? '<div class="dai-thay"><span>Bạn đang <b>làm thay Nguyễn Khánh Vy</b></span><button class="link-nho">Thôi, chỉ xem</button></div>' : '') +
+      '<div class="pn-tieu"><h2>' + (o.chiXem ? (o.tieu || 'Case Speaking · MT2') : sd(o.tieu || 'Case Speaking · MT2', 'go', { nhan: 'Sửa tên Case, kỹ năng' }).replace('class="sd"', 'class="sd" style="font:700 17px/1.35 var(--phong)"')) + '</h2>' + (o.khongSos ? '' : '<span class="sos m3">SOS 3</span>') + '<span class="han-p' + (o.hanQua ? ' qua' : '') + '">' + (o.han != null ? o.han : 'hạn 16/09') + '</span></div>' +
+      '<div class="pn-ngu"><span><a class="ten-em" href="#">Ngô Bảo Châu</a></span><span>MB FT 101</span><span>mở W3 AUG</span></div></div>';
+  }
+  function moTa(o) {
+    var viecToi = o.viec !== false && !o.chiXem;
+    if (o.moTa === 'trong') return '<button class="o-trong' + (viecToi ? ' viec-toi' : '') + '"><span>Em vướng gì ở Speaking? Gõ ở đây</span>' + (viecToi ? '<span class="nhan-viec">' + (o.thay ? 'việc của Nguyễn Khánh Vy' : 'việc của bạn') + ' · hạn 16/09</span>' : '') + '</button>';
+    if (o.moTa === 'cheo') return '<button class="o-trong viec-toi">Em vướng gì ở Speaking? Gõ ở đây</button>' +
+      '<div class="xin-hop" style="width:100%"><span style="font:600 13px var(--phong)">Nhận xét chấm chéo · Phạm Thu Trang · MT2</span><span style="font-size:14px;line-height:1.5">"Fluency yếu: Part 2 dừng nhiều, lặp từ. Part 3 trả lời ngắn, thiếu lý do và ví dụ."</span><span class="hang" style="justify-content:flex-start"><button class="nut nut-nho nut-chinh">Dùng nhận xét này</button><span class="mo2" style="font-size:13px">hoặc gõ mô tả của bạn ở ô trên</span></span></div>';
+    if (o.moTa === 'go') return '<div class="o-mo"><textarea class="o" rows="3" aria-describedby="dm">' + e(MO_TA.slice(0, 104)) + '</textarea><div class="duoi-o"><span class="tt-luu dang">Đang gõ · tự lưu</span>' + (o.dt ? '' : '<span class="mo2">Esc: bỏ thay đổi</span>') + '' + dem(104, 300) + '</div></div>';
+    if (o.moTa === 'loi') return '<div class="o-mo loi"><textarea class="o" rows="3">' + e(MO_TA) + '</textarea><div class="duoi-o"><span class="tt-luu loi">⚠ Chưa lưu được — mất kết nối. Chữ vẫn giữ.</span><button class="link-nho">Thử lại</button>' + dem(127, 300) + '</div></div>';
+    if (o.moTa === 'dai') return '<div class="o-mo loi"><textarea class="o" rows="4">' + e(MO_TA + ' Phát âm âm cuối /t/, /d/ chưa rõ khi nói nhanh; trọng âm từ nhiều âm tiết sai (vd "photography", "economic"). Từ vựng chủ đề công việc, môi trường còn ít, lặp "good", "very". Cần luyện thêm cấu trúc so sánh và câu điều kiện khi trả lời Part 3, và thêm ví dụ.') + '</textarea><div class="duoi-o"><span class="tt-luu loi">⚠ Dài quá 300 — rút bớt 12 ký tự để lưu</span>' + '<span class="dem-chu" style="color:var(--bad);font-weight:700">312 / 300</span></div></div>';
+    return sd(e(MO_TA), 'chu', { nhan: 'Sửa mô tả', chiXem: o.chiXem });
+  }
+  function nguoi(o) {
+    var ten = o.nguoiTen || 'Nguyễn Khánh Vy';
+    var v = sd(e(ten) + (ten === 'Nguyễn Khánh Vy' && !o.thay && !o.chiXem ? ' <span class="ban">(bạn)</span>' : ''), 'chon', { nhan: 'Đổi người phụ trách', mo: o.nguoi === 'mo', chiXem: o.chiXem });
+    if (o.nguoi === 'da') v += '<span class="dai-hoan">✓ Đã đổi <button class="link-nho">Hoàn tác</button></span>';
+    if (o.nguoi === 'mo') v += '<div class="hop-chon" role="listbox" aria-label="Người phụ trách" style="' + (o.dt ? '' : 'left:138px;top:270px') + '"><input class="o" placeholder="Tìm GV" value="">' +
+      '<span class="nhom-c">Dạy Speaking ở MB FT 101</span><button class="lc" aria-selected="true">Nguyễn Khánh Vy <span class="phu">bạn</span></button><button class="lc tro">Phạm Thu Trang <span class="phu">S · W2</span></button>' +
+      '<span class="nhom-c">GVCN</span><button class="lc">Trần Ngọc Hà <span class="phu">MB FT 101</span></button></div>';
+    return v;
+  }
+  function ketLuan(o) {
+    var k = o.ketLuan || 'chan';
+    var xoa = o.chiXem || o.xoaCase === 'hoi' ? ''
+      : o.xoaCase === 'cho' ? '<span class="td dot" style="--cham:var(--soon)">Chờ QL duyệt xoá Case · gửi 14/09</span><button class="link-nho">Rút lại</button>'
+      : (o.thay || o.caseTay) ? '<button class="nut-xoa">Xoá Case</button>' : '<button class="nut-xin">Đề nghị QL xoá Case</button>';
+    var nut;
+    if (k === 'bat') nut = '<button class="nut">Hoàn thành Case</button>';
+    else if (k === 'chanPa') nut = '<span class="chan-ly"><button class="nut" disabled aria-describedby="ly-kl">Hoàn thành Case</button><span class="ly-do" id="ly-kl">cần ít nhất 1 PA</span></span>';
+    else nut = '<span class="chan-ly"><button class="nut" disabled aria-describedby="ly-kl">Hoàn thành Case</button><span class="ly-do" id="ly-kl">chờ PA Học Tutor · MT3<button class="nut-i" aria-label="Vì sao chưa hoàn thành được">ⓘ</button></span></span>';
+    var meo = k === 'meo' ? '<div class="meo" role="tooltip" style="left:150px;top:58px">PA <b>Học Tutor</b> theo quy chế chạy tới <b>MT3 · W2 OCT</b>. Case hoàn thành được khi mọi PA đã khép.<br><button class="link-nho" style="margin-top:6px">Tới PA Học Tutor ↑</button></div>' : '';
+    var hoi = o.xoaCase === 'hoi' ? '<div class="hoi-xoa" role="alertdialog" aria-label="Xoá Case" style="flex-basis:100%"><span>Xoá Case <b>Speaking chưa trôi chảy</b> và <b>2 PA</b> (Tăng cường bài tập, Xếp tự học)? Vào Thùng rác, khôi phục được.</span><span class="hang"><button class="nut nut-nho">Thôi</button><button class="nut nut-nho nut-do">Xoá Case + 2 PA</button></span></div>' : '';
+    if (k === 'xong') return '<div class="muc"><p class="muc-h">Kết luận</p><dl class="fld"><dt>Cả Case</dt><dd><span class="ket mp">Tiến bộ một phần</span><span class="mo" style="font-size:13px">"MT3 Speaking lên 6.0, Part 3 còn ngắn" · kết thúc theo dõi W2 OCT</span></dd></dl><div class="ket-luan"><button class="nut">Mở lại</button><span class="mo2" style="font-size:13px">Nguyễn Khánh Vy hoàn thành 12/10</span></div></div>';
+    if (k === 'mo') return '<div class="muc"><p class="muc-h">Hoàn thành Case</p><div class="ghi-kq" style="padding-top:4px">' +
+      '<div class="truong"><span class="nhan">Sau cả đợt hỗ trợ, em tiến bộ đến đâu? <span class="bb">*</span></span><div class="lua"><button>Tiến bộ rõ</button><button aria-pressed="true" class="kq-mp">Tiến bộ một phần</button><button>Không tiến bộ</button><button>Kém hơn</button></div><span class="mo2" style="font-size:13px">Điền sẵn theo PA gần nhất: Tiến bộ một phần</span></div>' +
+      '<div class="truong"><label class="nhan" for="vs">Vì sao kết luận vậy <span class="bb">*</span></label><textarea class="o" id="vs" rows="2" style="min-height:56px">MT3 Speaking lên 6.0, Part 3 còn ngắn</textarea></div>' +
+      '<div class="truong"><span class="nhan">Ngày hoàn thành</span><span>' + oNgay('12/10') + '</span></div>' +
+      '<button class="link-nho" style="justify-self:start">+ Ghi chi tiết Speaking (không bắt buộc)</button>' +
+      '<div class="ket-luan"><span class="xoa-o" style="display:flex;gap:8px"><button class="nut">Thôi</button><button class="nut nut-chinh">Hoàn thành Case</button></span></div></div></div>';
+    return '<div class="muc" style="position:relative"><div class="ket-luan">' + nut + '</div>' + meo + '</div>';
+  }
+  function cuoiCase(o) {
+    if (o.chiXem || o.formMo) return '';
+    var xoa = o.xoaCase === 'hoi' ? ''
+      : o.xoaCase === 'cho' ? '<span class="td dot" style="--cham:var(--soon)">Chờ QL duyệt xoá Case · gửi 14/09</span><button class="link-nho">Rút lại</button>'
+      : (o.thay || o.caseTay) ? '<button class="nut-xoa">Xoá Case</button>' : '<button class="nut-xin">Đề nghị QL xoá Case</button>';
+    var hoi = o.xoaCase === 'hoi' ? '<div class="hoi-xoa" role="alertdialog" aria-label="Xoá Case" style="flex-basis:100%"><span>Xoá Case <b>Speaking chưa trôi chảy</b> và <b>2 PA</b> (Tăng cường bài tập, Xếp tự học)? Vào Thùng rác, khôi phục được.</span><span class="hang"><button class="nut nut-nho">Thôi</button><button class="nut nut-nho nut-do">Xoá Case + 2 PA</button></span></div>' : '';
+    return '<div class="cuoi-case">' + xoa + hoi + '</div>';
+  }
+
+  function body(o) {
+    if (o.loiTai) return '<div class="pn-than cs"><div class="bao-loi" style="margin-top:18px" role="alert"><span>⚠</span><span><b>Không tải được Case.</b> Kiểm tra mạng rồi tải lại; việc trong danh sách vẫn giữ.</span><button class="nut nut-nho" style="margin-left:auto">Tải lại</button></div></div>';
+    if (o.daXoaCase) return '<div class="pn-than cs"><div class="da-xoa" style="margin-top:18px" role="status"><span>Đã xoá Case <b>Speaking · MT2</b> cùng 2 PA</span><span class="nho">vào Thùng rác</span><button class="link-nho">Hoàn tác</button></div><p class="mo2" style="font-size:13px;padding-top:10px">Việc "Thêm PA" của Case này cũng rời danh sách.</p></div>';
+    var dt = o.dt;
+    var moTaDt = '<dt>Mô tả</dt>';
+    var caseMuc = '<div class="muc"><p class="muc-h">Case</p><dl class="fld">' +
+      '<dt>Phụ trách</dt><dd style="position:' + (dt ? 'static' : 'static') + '">' + nguoi(o) + '</dd>' +
+      '<dt>Điểm</dt><dd><span>MT2 · S <b class="so" style="color:var(--bad)">✗ 5.5</b> · kỳ vọng 6.0</span><a href="#" style="font-size:13px;font-weight:600">Hồ sơ MT2 ›</a></dd>' +
+      '<dt>Nguyên nhân</dt><dd>' + (o.chiXem ? '<span class="tag">Trôi chảy / mạch lạc</span><span class="tag">Phát âm</span>' : sd('<span class="tags"><span class="tag">Trôi chảy / mạch lạc</span><span class="tag">Phát âm</span></span>', 'chon', { nhan: 'Sửa nguyên nhân' })) + '</dd>' +
+      moTaDt + '<dd>' + moTa(o) + '</dd>' +
+      '</dl></div>';
+    var nPa = o.pa ? o.pa.filter(function (p) { return !(p[1] && p[1].daXoa); }).length : 0;
+    var paMuc = '<div class="muc"><p class="muc-h">Phương án ' + (nPa ? '<span class="dem">' + nPa + '</span>' : '') + '<span class="phai-h">' + (o.chiXem || o.themMo ? '' : '<button class="nut nut-nho' + (o.rongPa ? ' nut-chinh' : '') + '">+ Thêm PA</button>') + '</span></p>' +
+      (o.rongPa ? '<div class="rong-pa"><span>Chưa có PA. Case cần ít nhất 1 PA trước <b>hạn 16/09</b>.</span></div>'
+        : '<div class="ds-pa">' + o.pa.map(function (p) { return thePa(p[0], Object.assign({ chiXem: o.chiXem, ql: o.thay }, p[1] || {})); }).join('') + '</div>') + '</div>';
+    var phu = '<div class="muc" style="padding-top:8px"><div class="dong-gap"><span>Lịch sử · 3</span><button class="link-nho">Xem ▾</button></div><div class="dong-gap" style="border-top:1px solid var(--line)"><span>Bằng chứng · chưa có</span>' + (o.chiXem ? '' : '<span style="margin-left:auto;display:flex;gap:14px"><button class="link-nho">+ Tệp</button><button class="link-nho">+ Liên kết</button></span>') + '</div></div>';
+    var chiXemCau = o.chiXem && !o.dong ? '<p class="bao-chi-xem" style="margin-top:16px">Chỉ Nguyễn Khánh Vy (phụ trách) hoặc Quản lý sửa được Case này.</p>' : '';
+    return '<div class="pn-than cs">' + chiXemCau + caseMuc + paMuc + (o.chiXem && o.ketLuan !== 'xong' ? '' : ketLuan(o)) + phu + cuoiCase(o) + '</div>';
+  }
+  function chan(o) {
+    if (o.chanAn) return '';
+    var trai = o.luu === 'dang' ? '<span class="tt-luu dang">Đang lưu…</span>' : o.luu === 'loi' ? '<span class="tt-luu loi">⚠ Chưa lưu được</span>' : o.luu === 'da' ? '<span class="tt-luu da">✓ Đã lưu 14:02</span>' : '<span>Tự lưu</span>';
+    if (o.formMo) trai = '<span class="tt-luu nhap">● ' + o.formMo + ' chưa lưu · nháp giữ trên máy</span>';
+    var tiep = o.tiep === false || o.formMo ? '' : '<span class="mo2" style="font-size:13px">Tiếp: Mô tả Case · Phạm Khánh Linh</span>';
+    return '<div class="pn-chan"><span class="trai">' + trai + '</span>' + (o.dt ? '' : tiep) + '<button class="nut">Đóng</button><button class="nut' + (o.formMo ? '' : ' nut-chinh') + '">Việc tiếp ›</button></div>';
+  }
+  function panel(o) { return '<div class="pn">' + dauPn(o) + body(o) + chan(o) + '</div>'; }
+
+  /* ---------- Công việc (v12, cột trái) ---------- */
+  var IC = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 14V2m0 1h8l-2 3 2 3H4"/></svg>';
+  var han = function (h) { return '<span class="han-v ' + (h[0] === 'qua' ? 'qua' : 'xa') + '">' + e(h[1]) + '</span>'; };
+  var tags = function (a) { return '<span class="the-phu">' + a.map(function (t) { return '<span class="tag nhat">' + e(t) + '</span>'; }).join('') + '</span>'; };
+  function viec(t1, tg, h, nut, chon) { return '<li><div class="viec' + (chon ? ' chon' : '') + '"><span class="tv"><span class="t1">' + t1 + '</span>' + (tg ? tags(tg) : '') + '</span><span class="h">' + han(h) + '</span><span class="n"><span class="nut nut-nho">' + nut + '</span></span></div></li>'; }
+  var dsCv = '<section class="nhom"><div class="dai-nhom"><span class="bam-nhom">' + IC + 'Case học thuật</span><span class="sau-ten"><span class="dem">5 việc</span><span class="bao-qua">⚠ 1 quá hạn</span></span><button class="mui">▾</button></div>' +
+    '<div class="khoi dau-tien"><div class="dt-khoi"><span class="av">KN</span><span class="dt-ten"><a class="ten-em" href="#">Kiều Thảo Nhi</a><span class="lop">MB FT 101</span><span class="sos m3">SOS 3</span></span></div><ul class="ds-viec">' + viec('Ghi kết quả PA · Speaking', ['MT2'], ['qua', 'quá hạn 15/09'], 'Ghi kết quả') + '</ul></div>' +
+    '<div class="khoi"><div class="viec dt-lop" style="cursor:pointer"><span class="av vuong"><svg class="ic" viewBox="0 0 16 16"><path d="M2 3h12v10H2zM2 7h12M6 3v10"/></svg></span><span class="tv"><span class="t1"><span>MB FT 101 · Mô tả Case</span></span>' + tags(['MT2', '4 em']) + '</span><span class="h">' + han(['xa', 'hạn 16/09']) + '</span><span class="n"><span class="nut nut-nho">4 em ▴</span></span></div>' +
+    '<ul class="ds-viec khay-em">' + [['Kiều Thảo Nhi'], ['Lý Thanh Tâm'], ['Ngô Bảo Châu', 1], ['Phạm Khánh Linh']].map(function (x) { return viec('<span>' + x[0] + '</span>', ['Speaking · MT2'], ['xa', 'hạn 16/09'], 'Mô tả Case', x[1]); }).join('') + '</ul></div>' +
+    '<div class="khoi"><div class="dt-khoi"><span class="av">BV</span><span class="dt-ten"><a class="ten-em" href="#">Bùi Thảo Vy</a><span class="lop">MB FT 101</span><span class="sos m1">SOS 1</span></span></div><ul class="ds-viec">' + viec('Xác nhận PA · Speaking', ['MT3'], ['xa', 'hạn 18/09'], 'Xác nhận PA') + '</ul></div>' +
+    '</section>' +
+    '<section class="nhom gap"><div class="dai-nhom"><span class="bam-nhom">' + IC + 'Ý thức &amp; Phối hợp</span><span class="sau-ten"><span class="dem">2 việc</span></span><button class="mui">▸</button></div></section>';
+
+  /* ---------- khung ---------- */
+  var K = {};
+  var A = { moTa: 'trong', pa: [[PA1]] };
+  K.a = thanh('Công việc', 'Nguyễn Khánh Vy', 1) + '<div class="noi-dung"><div class="loc-1"><h1>Công việc</h1><span class="phai"><span class="o-chon">Của tôi</span><span class="o-chon">Mọi hạn</span><span class="o-chon">Loại việc</span></span></div>' +
+    '<div class="bo-cuc"><div class="cot-ds">' + dsCv + '</div><div class="cot-pn">' + panel(A) + '</div></div></div>';
+  K.b1 = panel({ moTa: 'go', pa: [[PA1]], luu: 'tu' });
+  K.b2 = panel({ moTa: 'da', pa: [[PA1]], luu: 'da', viec: false });
+  K.b3 = panel({ moTa: 'cheo', pa: [[PA1]], loai: 'VIỆC · XÁC NHẬN CASE' });
+  K.c1 = panel({ moTa: 'da', nguoi: 'mo', pa: [[PA1]], luu: 'da', viec: false });
+  K.c2 = panel({ moTa: 'da', nguoi: 'da', nguoiTen: 'Phạm Thu Trang', pa: [[PA1]], luu: 'da', viec: false });
+  var PA2c = Object.assign({}, PA2, { kq: ['mp', 'Tiến bộ một phần'], kqTuan: 'W3–W4 SEP', kqNx: 'Nộp đủ 4 bài ghi âm, Part 2 dài hơn', tt: 'chay', hanKq: 'KQ hạn 13/10', nk: [['15/09', 'Nguyễn Khánh Vy thêm PA'], ['29/09', 'Nguyễn Khánh Vy ghi kết quả · Giữ nguyên']] });
+  K.d1 = panel({ formMo: 'Xác nhận PA', moTa: 'da', pa: [[PA1, { mo: true, sua: 'noiDung' }]], luu: 'dang', viec: false, tiep: false });
+  var PA1c = Object.assign({}, PA1, { tt: 'chay', daDay: 2, hanKq: 'KQ hạn 29/09', nk: [['14/09', 'Hệ thống tạo theo quy chế (SOS 3)'], ['15/09', 'Nguyễn Khánh Vy xác nhận']] });
+  K.d2 = panel({ moTa: 'da', pa: [[PA1c], [PA2c, { mo: true }]], luu: 'da', viec: false, tiep: false });
+  var PA2h = Object.assign({}, PA2, { hanKq: 'KQ hạn 29/09' });
+  K.e1 = panel({ formMo: 'Kết quả PA', moTa: 'da', pa: [[PA1c], [PA2h, { mo: true, ghi: 'nhanh', denHan: true }]], han: 'KQ hạn 29/09', loai: 'VIỆC · CASE HỌC THUẬT', tiep: false });
+  K.e2 = panel({ moTa: 'da', pa: [[PA1c], [Object.assign({}, PA2c), { moiDoi: 'Đã ghi kết quả' }]], luu: 'da', han: 'KQ hạn 29/09', viec: false });
+  K.e3 = panel({ formMo: 'Kết quả PA', moTa: 'da', pa: [[PA1c, { mo: true, ghi: 'tutor', denHan: true }]], han: 'KQ hạn 29/09', tiep: false });
+  K.f1 = panel({ moTa: 'da', pa: [[PA1c], [PA2c, { mo: true }]], luu: 'da', viec: false, tiep: false });
+  K.f2 = panel({ moTa: 'da', pa: [[PA1c], [PA2c, { daXoa: true }]], luu: 'da', viec: false, tiep: false });
+  var PA3 = { id: 3, ten: 'Xếp tự học', loai: 'Xếp tự học', noiDung: 'Tự học phòng lab thứ Bảy, 2 giờ', nguoi: 'Phạm Thu Trang', batDau: '19/09', tt: 'chay', hanKq: 'KQ hạn 03/10', nk: [] };
+  K.f3 = panel({ moTa: 'da', pa: [[PA2], [PA3]], xoaCase: 'hoi', ketLuan: 'bat', caseTay: true, khongSos: true, tieu: 'Speaking chưa trôi chảy', han: '', loai: 'CASE HỌC THUẬT', luu: 'da', tiep: false, viec: false });
+  K.f4 = panel({ daXoaCase: true, khongSos: true, tieu: 'Speaking chưa trôi chảy', han: '', loai: 'CASE HỌC THUẬT', luu: 'da', tiep: false });
+  K.g1 = panel({ moTa: 'da', pa: [[PA1c, { mo: true, re: true }]], luu: 'da', viec: false, tiep: false });
+  K.g2 = panel({ moTa: 'da', pa: [[PA1c, { choDuyet: true }]], luu: 'da', viec: false, xoaCase: 'cho', tiep: false });
+  K.h1 = panel({ moTa: 'da', pa: [[PA1c]], luu: 'da', viec: false, ketLuan: 'meo', tiep: false });
+  var PA1k = Object.assign({}, PA1c, { tt: 'xong', daDay: 6, kq: ['mp', 'Tiến bộ một phần'], kqTuan: 'W2 OCT', kqNx: 'Part 2 đủ 2 phút, Part 3 còn ngắn', nk: PA1c.nk.concat([['12/10', 'Kết quả cuối · PA quy chế kết thúc']]) });
+  K.h2 = panel({ formMo: 'Hoàn thành Case', moTa: 'da', pa: [[PA1k]], luu: 'da', ketLuan: 'mo', han: 'hạn 19/10', tiep: false, viec: false });
+  K.h3 = panel({ chiXem: true, dong: true, moTa: 'da', pa: [[PA1k]], ketLuan: 'xong', chanAn: true, loai: 'CASE HỌC THUẬT · ĐÃ XONG', han: '', viec: false });
+  K.j1 = panel({ tiep: false, moTa: 'trong', pa: [[PA1c, { mo: true }]], thay: true, loai: 'LÀM THAY · CASE HỌC THUẬT' });
+  K.j2 = panel({ moTa: 'da', pa: [[PA1c, { mo: true, qlDuyet: true }]], thay: true, loai: 'CHỜ BẠN DUYỆT · CASE HỌC THUẬT', luu: 'da', tiep: false, viec: false }).replace('<div class="dai-thay"><span>Bạn đang <b>làm thay Nguyễn Khánh Vy</b></span><button class="link-nho">Thôi, chỉ xem</button></div>', '');
+  K.j3 = panel({ formMo: 'Kết thúc PA', moTa: 'da', pa: [[PA1c, { mo: true, ketThuc: true, ql: true }]], thay: true, loai: 'LÀM THAY · CASE HỌC THUẬT', luu: 'da', tiep: false, viec: false });
+  K.k1 = panel({ moTa: 'loi', pa: [[PA1]], luu: 'loi' });
+  K.k1b = '<div class="pn"><div class="pn-than cs"><div class="muc" style="padding-bottom:12px"><dl class="fld"><dt>Mô tả</dt><dd>' + moTa({ moTa: 'dai' }) + '</dd></dl></div></div></div>';
+  K.k2 = panel({ moTa: 'da', rongPa: true, ketLuan: 'chanPa', luu: 'da', viec: false, loai: 'VIỆC · CASE HỌC THUẬT', tiep: false });
+  K.k3 = panel({ moTa: 'da', pa: [[PA1c, { mo: true }]], chiXem: true, chanAn: true, loai: 'CASE HỌC THUẬT' });
+  K.k4 = panel({ loiTai: true, chanAn: true });
+  var formThem = '<div class="the-pa mo moi-doi"><div class="pa-dau" style="grid-template-columns:minmax(0,1fr)"><span class="ten-pa" style="font:600 15px var(--phong);padding:4px 0">PA mới</span></div><div class="pa-than"><div class="ghi-kq" style="padding-top:8px">' +
+    '<div class="truong"><span class="nhan">Loại PA <span class="bb">*</span></span><div class="lua"><button>Xếp tự học</button><button>Học Tutor</button><button>Điều chỉnh cách dạy</button><button aria-pressed="true">Tăng cường bài tập</button></div><span class="phu-t">Cần Quản lý duyệt:</span><div class="lua"><button>Hỗ trợ học thuật</button><button>Khác</button></div></div>' +
+    '<div class="truong"><label class="nhan" for="nd-moi">Nội dung <span class="bb">*</span></label><textarea class="o" id="nd-moi" rows="2" style="min-height:56px">Mỗi tuần 2 đề Part 2, ghi âm gửi GV</textarea>' + dem(36, 200) + '</div>' +
+    '<dl class="fld"><dt>Người dạy</dt><dd>' + sd('Nguyễn Khánh Vy', 'chon', { nhan: 'Người dạy' }) + '<span class="mo2" style="font-size:13px">để trống được</span></dd><dt>Bắt đầu</dt><dd>' + oNgay('14/09') + '<button class="link-nho">Ghi một PA đã làm trước đây</button></dd></dl></div></div>' +
+    '<div class="pa-chan"><span class="trai">PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.</span><button class="nut nut-nho">Thôi</button><button class="nut nut-chinh">Thêm PA</button></div></div>';
+  K.k5 = panel({ formMo: 'PA mới', themMo: true, moTa: 'da', pa: [[PA1c]], luu: 'da', viec: false, tiep: false }).replace('<div class="ds-pa">', '<div class="ds-pa">' + formThem);
+
+
+  /* n · phần còn lại (critique: vẽ đủ thao tác trong bảng) */
+  var pnMuc = function (h) { return '<div class="pn"><div class="pn-than cs" style="padding-bottom:16px">' + h + '</div></div>'; };
+  var chk = function (t, on) { return '<label class="lc" style="display:flex;align-items:center;gap:10px;min-height:38px;padding:4px 8px;border-radius:6px;font:500 14px var(--phong)"><input type="checkbox" class="o-tich"' + (on ? ' checked' : '') + '>' + t + '</label>'; };
+  K.n1 = pnMuc('<div class="muc" style="position:relative;min-height:470px"><p class="muc-h">Case</p><dl class="fld"><dt>Nguyên nhân</dt><dd>' + sd('<span class="tags"><span class="tag">Trôi chảy / mạch lạc</span><span class="tag">Phát âm</span></span>', 'chon', { mo: true, nhan: 'Sửa nguyên nhân' }) + '</dd></dl>' +
+    '<div class="hop-chon" role="group" aria-label="Nguyên nhân" style="left:138px;top:100px;width:360px"><span class="nhom-c">Speaking · chọn một hoặc nhiều</span>' + chk('Trôi chảy / mạch lạc', 1) + chk('Từ vựng') + chk('Ngữ pháp') + chk('Phát âm', 1) + chk('Khác', 1) +
+    '<input class="o" value="Ngại nói trước lớp" aria-label="Ghi rõ nguyên nhân khác"><span style="display:flex;justify-content:space-between;align-items:center;padding:6px 4px 2px"><span class="tt-luu da">✓ Đã lưu</span><button class="nut nut-nho">Xong</button></span></div></div>');
+  K.n2 = pnMuc('<div class="muc" style="position:relative;min-height:300px"><div class="pn-tieu"><h2>' + sd('Case Speaking · MT2', 'go', { mo: true, nhan: 'Sửa tên Case' }).replace('class="sd', 'style="font:700 17px var(--phong)" class="sd') + '</h2><span class="sos m3">SOS 3</span></div>' +
+    '<div class="hop-chon" style="left:0;top:58px;width:420px;padding:12px;gap:10px"><label class="truong"><span style="font:600 13px var(--phong)">Tên Case</span><input class="o" value="Case Speaking · MT2"></label>' +
+    '<dl class="fld" style="grid-template-columns:6.5rem minmax(0,1fr)"><dt>Kỹ năng</dt><dd><span>Speaking</span><span class="mo2" style="font-size:13px">đã có PA — không đổi</span></dd><dt>Mức độ</dt><dd><span class="sos m3">SOS 3</span><span class="mo2" style="font-size:13px">theo điểm MT2</span></dd></dl>' +
+    '<span style="display:flex;justify-content:space-between;align-items:center"><span class="mo2" style="font-size:13px">Case tạo tay: Mức độ chọn được</span><button class="nut nut-nho">Xong</button></span></div></div>');
+  var dauPaCho = '<div class="pa-dau"><button class="pa-bam" aria-expanded="true"><span class="ten-pa">Học Tutor</span><span class="phu-pa">Theo quy chế · đến MT3 · người dạy Nguyễn Khánh Vy · 6 buổi</span></button><span class="pa-tt"><span class="td dot" style="--cham:var(--doing)">Chờ xác nhận</span></span><button class="mui-pa" aria-label="Gập PA">' + IC_PA + '</button></div>';
+  K.n3 = pnMuc('<div class="muc"><p class="muc-h">Phương án <span class="dem">1</span></p><div class="the-pa mo">' + dauPaCho + '<div class="pa-than"><div class="ghi-kq" style="padding-top:10px"><p class="muc-h" style="margin:0">Đề xuất PA khác · thay cho Học Tutor</p>' +
+    '<div class="truong"><span class="nhan">PA mới <span class="bb">*</span></span><div class="lua"><button>Xếp tự học</button><button>Điều chỉnh cách dạy</button><button aria-pressed="true">Tăng cường bài tập</button></div></div>' +
+    '<div class="truong"><label class="nhan" for="nd3">Nội dung <span class="bb">*</span></label><textarea class="o" id="nd3" rows="2" style="min-height:52px">Mỗi tuần 2 đề Part 2, ghi âm gửi GV</textarea></div>' +
+    '<div class="truong"><label class="nhan" for="ly3">Lý do <span class="bb">*</span></label><textarea class="o" id="ly3" rows="2" style="min-height:52px">Em học thêm Tutor ở ngoài, trùng lịch</textarea><span class="dem-chu">37 ký tự · tối thiểu 10</span></div>' +
+    '<p class="mo" style="font-size:13px">Bắt đầu: ngày QL duyệt · PA hiện tại chạy tới khi Quản lý duyệt</p></div></div>' +
+    '<div class="pa-chan"><span class="trai"><button class="link-nho">‹ Xác nhận PA gốc</button></span><button class="nut nut-chinh">Gửi Quản lý duyệt</button></div></div></div>');
+  K.n4 = pnMuc('<div class="muc"><p class="muc-h">Phương án <span class="dem">1</span></p><div class="the-pa mo">' + dauPaCho + '<div class="pa-than"><div class="ghi-kq" style="padding-top:10px"><p class="muc-h" style="margin:0">Không cần theo dõi</p>' +
+    '<div class="truong"><label class="nhan" for="ly4">Lý do <span class="bb">*</span></label><textarea class="o" id="ly4" rows="2" style="min-height:52px">Em vắng MT2 vì ốm, điểm Speaking các tuần trước đều đạt</textarea></div><p class="mo" style="font-size:13px">Gửi Quản lý duyệt · Case giữ nguyên tới khi QL trả lời</p></div></div>' +
+    '<div class="pa-chan"><span class="trai"><button class="link-nho">‹ Xác nhận PA gốc</button></span><button class="nut nut-chinh">Gửi Quản lý</button></div></div></div>');
+  var dongLs = function (ngay, h, xoa) { return '<li style="display:grid;grid-template-columns:3.4rem minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)"><span class="so mo2" style="font-size:13px">' + ngay + '</span><span style="font-size:14px">' + h + '</span>' + (xoa ? '<button class="nut-xoa">Xoá kết quả</button>' : '<span></span>') + '</li>'; };
+  K.n5 = pnMuc('<div class="muc"><p class="muc-h">Phương án <span class="dem">2</span></p><div class="ds-pa">' +
+    '<div class="the-pa mo"><div class="pa-dau"><button class="pa-bam" aria-expanded="true"><span class="ten-pa">Xếp tự học</span><span class="phu-pa">người dạy Phạm Thu Trang · kết thúc sớm 05/10</span></button><span class="pa-tt"><span class="td dot">Đã khép</span></span><button class="mui-pa" aria-label="Gập PA">' + IC_PA + '</button></div>' +
+    '<div class="pa-than"><dl class="fld" style="grid-template-columns:6.5rem minmax(0,1fr)"><dt>Kết thúc</dt><dd><span>05/10 · Trần Ngọc Hà</span><span class="mo" style="font-size:13px">"Em chuyển sang lớp buổi tối"</span></dd>' +
+    '<dt>Kết quả</dt><dd>' + sd('<span class="ket ko">Không tiến bộ</span><span class="mo" style="font-size:13px">W1 OCT</span>', 'go', { nhan: 'Sửa kết quả' }) + '<span class="ly-do">chỉ sửa chữ — PA đã thay<button class="nut-i" aria-label="Vì sao">ⓘ</button></span></dd></dl></div>' +
+    '<div class="pa-chan"><span class="trai"></span><button class="nut">Mở lại PA</button></div></div></div></div>' +
+    '<div class="muc" style="padding-top:8px"><div class="dong-gap"><span>Lịch sử · 4</span><button class="link-nho">Thu ▴</button></div><ul style="list-style:none;margin:0;padding:0">' +
+    dongLs('05/10', '<b>Kết thúc PA</b> · Xếp tự học · Trần Ngọc Hà') +
+    dongLs('01/10', '<span class="ket ko">Không tiến bộ</span> · Xếp tự học → Thay PA · Phạm Thu Trang · "2 buổi không lên lab"', true) +
+    dongLs('29/09', '<span class="ket mp">Tiến bộ một phần</span> · Tăng cường bài tập → Giữ nguyên · Nguyễn Khánh Vy', true) +
+    dongLs('14/09', 'Mở Case · SOS 3 · MT2') + '</ul></div>');
+
+  /* i · hồ sơ HV */
+  var caseMo = function () {
+    var o = { moTa: 'trong', pa: [[PA1]] };
+    var b = body(o).replace('<div class="pn-than cs">', '<div>');
+    return '<div class="cs-mo">' + b + '</div>';
+  };
+  K.i1 = thanh('Học viên &amp; Lớp', 'Nguyễn Khánh Vy', 1) + '<div class="trang-hs"><div class="hs-1"><h1>Ngô Bảo Châu</h1><span class="tag nhat">MB FT 101</span><span class="sos m3">SOS 3</span><span class="phai"><span class="nut nut-nho">+ Case</span><span class="nut nut-nho">⋯</span></span></div>' +
+    '<div class="hai-cot"><div class="the"><div class="the-dau"><h2>Tiến độ trên lớp · Overall</h2></div><div class="td-mo">' +
+    [['L', 'W3 AUG · làm đủ Section 3, sai dạng map'], ['R', 'W3 AUG · đọc kịp giờ, sai T/F/NG'], ['W1', 'W2 AUG · biểu đồ đường ổn'], ['W2', 'W2 AUG · thiếu ví dụ đoạn 2'], ['S', 'W3 AUG · Part 2 dưới 1 phút']].map(function (r) { return '<div class="hang-td"><b>' + r[0] + '</b><span>' + r[1] + '</span></div>'; }).join('') + '</div></div>' +
+    '<div class="the"><div class="the-dau"><h2>Case &amp; phương án</h2><span class="tag"><b>2</b>&nbsp;đang mở</span></div><div class="ds-case">' +
+    '<div class="cs-dong"><span class="kn">S</span><span class="ten-cs"><b>Speaking · MT2 <span class="sos m3">SOS 3</span></b><span>Chờ mô tả · 1 PA chờ xác nhận · bạn · hạn 16/09</span></span><span class="han sap">hạn 16/09</span><button class="mui-pa" aria-expanded="true" style="transform:rotate(180deg)">' + IC_PA + '</button></div>' + caseMo() +
+    '<div class="cs-dong"><span class="kn">W2</span><span class="ten-cs"><b>Writing Task 2 · MT2</b><span>Đang chạy · PA Bài tập thêm · Cao Khánh Linh</span></span><span class="han xa">KQ hạn 12/10</span><button class="mui-pa">' + IC_PA + '</button></div>' +
+    '</div><div class="gap-xong">▸ 1 Case đã đóng</div></div></div></div>';
+  K.i2 = '<div class="tuyen">' +
+    [['Công việc', 'Dòng việc Case / PA / Kết quả → panel, cuộn tới việc'], ['Học viên &amp; Lớp', 'Thẻ việc dưới hàng em (vd "Mô tả Case · Speaking · MT2") → panel'], ['Hồ sơ HV', 'Khối Case: mở tại chỗ, cùng mẫu (N33 ①)'], ['Phân tích · Chờ duyệt · chuông', '"Mở Case ›" → panel, cuộn tới thẻ PA / kết quả']].map(function (x) { return '<div class="vao"><b>' + x[0] + '</b><span>' + x[1] + '</span></div>'; }).join('') +
+    '</div><div class="tuyen-dich"><b>Cùng MỘT panel Case</b><span class="mo">Case → Phương án (thẻ, mở tại chỗ) → Kết quả PA (trong thẻ) → Kết luận. Không view riêng cho PA / Kết quả → không cần nút "tới Case" / "tới PA": luôn cùng trang. ✕ / Esc về đúng nguồn (bộ lọc, tab, vị trí cuộn).</span></div>';
+
+  /* 375 */
+  var dtPn = function (o, cao) { o.dt = true; return '<div style="position:relative;min-height:' + (cao || 780) + 'px;display:flex;flex-direction:column">' + thanhDt + '<div class="pn-toan" style="position:static;flex:1">' + panel(o) + '</div></div>'; };
+  K.m1 = dtPn({ moTa: 'trong', pa: [[PA1]] });
+  K.m2 = dtPn({ moTa: 'go', pa: [[PA1]], luu: 'tu' });
+  K.m3 = dtPn({ moTa: 'da', nguoi: 'mo', pa: [[PA1]], luu: 'da', viec: false });
+  K.m4 = dtPn({ formMo: 'Xác nhận PA', moTa: 'da', pa: [[PA1, { mo: true }]], luu: 'da', viec: false });
+  K.m5 = dtPn({ formMo: 'Kết quả PA', moTa: 'da', pa: [[PA1c], [PA2h, { mo: true, ghi: 'nhanh', denHan: true }]], han: 'KQ hạn 29/09', viec: false });
+  K.m6 = dtPn({ moTa: 'da', pa: [[PA1c, { choDuyet: true }], [PA2c, { daXoa: true }]], luu: 'da', viec: false });
+
+  document.querySelectorAll('[data-k]').forEach(function (n) { var k = K[n.getAttribute('data-k')]; if (k) n.innerHTML = k; });
+
+  /* ---------- bảng trước → sau ---------- */
+  var T = window.BANG_TT || [];
+  document.getElementById('bang-tt').innerHTML = '<tr><th>#</th><th>Thao tác</th><th>Trước (web hiện tại)</th><th>Sau (v16)</th><th>Số bấm</th><th>Loại</th></tr>' +
+    T.map(function (r, i) { return '<tr><td>' + (i + 1) + '</td><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td><td class="' + r[4] + '">' + r[5] + '</td></tr>'; }).join('');
+
+  var khung = Array.prototype.slice.call(document.querySelectorAll('.man, .dt'));
+  var goc = khung.map(function (k) { return k.classList.contains('sang') ? 'sang' : 'toi'; });
+  document.querySelectorAll('[data-che]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var c = b.getAttribute('data-che');
+      document.querySelectorAll('[data-che]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      khung.forEach(function (k, i) { var m = c === 'goc' ? goc[i] : c; k.classList.remove('toi', 'sang'); k.classList.add(m); });
+    });
+  });
+})();
+</script>
+</body>
+</html>
