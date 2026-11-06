@@ -5,7 +5,8 @@ import { t } from '../../../shared/i18n/index.ts';
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
-import { demoToday } from '../demoConfig.ts';
+import { demoToday, getConfig } from '../demoConfig.ts';
+import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
 import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { badRequest, forbidden, loi } from '../util.ts';
 import { ghiDuocPaMany, listCases, type MappedCase } from '../cases/cases.ts';
@@ -561,8 +562,15 @@ function tuanGhiBu(due: string, den: string): { k: number; dung: boolean }[] {
   return Array.from({ length: nhanTuanGhiKetQua(due, den).soKy }, (_, k) => ({ k, dung: addDaysIso(due, 14 * k) >= den }));
 }
 
+/**
+ * RESET-HAN-CASE [XM-2] (chờ chủ SP): `tinh: false` → lần ghi Kết quả PA TRỄ có hạn trước ngày reset (`demo_config` khoá reset) không vào "Việc đúng hạn".
+ * Mặc định tính như cũ — đổi một chữ. `tinh` không đọc thêm gì; tắt thì một lần getConfig (nhớ theo tiến trình).
+ */
+export const KQ_PA_TRE_TRUOC_RESET = { tinh: true };
+
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
+  const mocReset = KQ_PA_TRE_TRUOC_RESET.tinh ? '' : getConfig(KHOA_PR_RESET_HAN_CASE).slice(0, 10);
   const den = new Map<number, boolean>();           // id nghĩa vụ → hoàn thành đúng hạn
   for (let i = 0; i < caseIds.length; i += 400) {
     const chunk = caseIds.slice(i, i + 400);
@@ -578,7 +586,11 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
       if (r.due >= today) continue;
       /* Đúng hạn: một nghĩa vụ đúng. Trễ: mỗi kỳ ghi bù là một nghĩa vụ trễ. */
       const ks = r.late === 0 ? [{ k: 0, dung: true }] : tuanGhiBu(r.due, r.ghi ?? today);
-      for (const { k, dung } of ks) if (inPeriod(addDaysIso(r.due, 14 * k))) den.set(obligationId(r.iv, r.cycle, k), dung);
+      for (const { k, dung } of ks) {
+        const han = addDaysIso(r.due, 14 * k);
+        if (!dung && han < mocReset) continue;   // [XM-2] tắt: trễ trước reset không tính
+        if (inPeriod(han)) den.set(obligationId(r.iv, r.cycle, k), dung);
+      }
     }
     for (const r of db()
       .prepare(

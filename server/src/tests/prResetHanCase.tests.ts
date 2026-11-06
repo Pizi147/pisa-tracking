@@ -18,7 +18,8 @@ export async function runPrResetHanCaseTests(t: any) {
   const thu = (fn: () => void) => { conn.exec('BEGIN IMMEDIATE'); try { fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); } };
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
-  const MOI = addDays(TODAY, mig.SO_NGAY_RESET);
+  const MOI = addDays(TODAY, mig.SO_NGAY_RESET), MOI_PA = addDays(TODAY, mig.SO_NGAY_RESET_PA);
+  const moiCua = (loai: string) => loai === 'reset_case:action_due' ? MOI_PA : MOI;
   const NHOM_CASE = new Set(['cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'no_plan', 'ghi_ket_qua_pa', 'mini_test']);
   const chup = () => JSON.stringify([
     all('SELECT id, han_xac_nhan, han_them_pa FROM sos_cases ORDER BY id'),
@@ -38,17 +39,18 @@ export async function runPrResetHanCaseTests(t: any) {
     const pa = all(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
       WHERE iv.status IN ('planned', 'started') AND COALESCE(iv.approval_state, '') != 'pending' AND ${sosState.NOT_UNCONFIRMED_PRESET('iv')}
         AND sc.status != 'done' AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id AND f.cycle_no = iv.cycle_no)
-      ORDER BY iv.id LIMIT 2`).map((r) => r.id as number);
-    assert(caseXn.length === 2 && caseKhongPa.length === 1 && pa.length === 2, `seed thiếu dữ liệu dựng: ${JSON.stringify({ caseXn, caseKhongPa, pa })}`);
+      ORDER BY iv.id LIMIT 3`).map((r) => r.id as number);
+    assert(caseXn.length === 2 && caseKhongPa.length === 1 && pa.length === 3, `seed thiếu dữ liệu dựng: ${JSON.stringify({ caseXn, caseKhongPa, pa })}`);
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -3), caseXn[0]);
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(TODAY, caseXn[1]);
     conn.prepare('UPDATE sos_cases SET detected_at = ? WHERE id = ?').run(addDays(TODAY, -30), caseKhongPa[0]);
     conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(addDays(TODAY, -30), pa[0]);   // lỡ ba đợt hai tuần
-    conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(TODAY, pa[1]);
+    conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(addDays(TODAY, 5), pa[1]);   // chưa quá hạn, tới hạn trước mốc PA → vào
+    conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(addDays(TODAY, mig.SO_NGAY_RESET_PA), pa[2]);   // = mốc PA → không
     return { caseXn, caseKhongPa, pa };
   };
 
-  check('RH-1 · reset đúng tập: Công việc không còn việc Case quá hạn, việc reset hạn = hôm nay + 7, mọi hạn khác giữ nguyên', () => thu(() => {
+  check('RH-1 · reset đúng tập: Công việc không còn việc Case quá hạn, việc reset hạn = hôm nay + 7 (Kết quả PA + 14, gồm đợt tới hạn trước mốc), mọi hạn khác giữ nguyên', () => thu(() => {
     const { caseXn, caseKhongPa, pa } = dung();
     const truoc = viecCase();
     assert(truoc.some((i) => i.urgency === 'overdue'), 'tiền đề: có việc Case quá hạn');
@@ -56,8 +58,8 @@ export async function runPrResetHanCaseTests(t: any) {
     const ds = mig.viecCaseQuaHan(conn, TODAY) as { loai: string; id: number; han: string }[];
     const co = (loai: string, id: number) => ds.some((v) => v.loai === loai && v.id === id);
     assert(co('reset_case:han_xac_nhan', caseXn[0]) && !co('reset_case:han_xac_nhan', caseXn[1]), 'Case quá hạn vào, Case hạn hôm nay không');
-    assert(co('reset_case:han_them_pa', caseKhongPa[0]) && co('reset_case:action_due', pa[0]) && !co('reset_case:action_due', pa[1]), 'Thêm PA + Kết quả PA');
-    assert(ds.every((v) => v.han < TODAY), 'chỉ việc hạn < hôm nay');
+    assert(co('reset_case:han_them_pa', caseKhongPa[0]) && co('reset_case:action_due', pa[0]) && co('reset_case:action_due', pa[1]) && !co('reset_case:action_due', pa[2]), 'Thêm PA + Kết quả PA (hạn < mốc +14)');
+    assert(ds.every((v) => v.han < (v.loai === 'reset_case:action_due' ? MOI_PA : TODAY)), 'chỉ việc hạn < hôm nay; Kết quả PA hạn < mốc PA');
 
     const cuAnh = JSON.parse(chup());
     const daDoi = mig.datLaiHanCase(conn, TODAY);
@@ -78,14 +80,14 @@ export async function runPrResetHanCaseTests(t: any) {
     const so = (bang: number, cot: string, ten: string) => cuAnh[bang].forEach((r: any, i: number) => {
       if (r[cot] !== moiAnh[bang][i][cot]) {
         doi.push(`${ten}:${r.id}`);
-        assert(moiAnh[bang][i][cot] === MOI, `${ten}:${r.id} → ${moiAnh[bang][i][cot]}`);
+        assert(moiAnh[bang][i][cot] === moiCua(ten), `${ten}:${r.id} → ${moiAnh[bang][i][cot]}`);
       }
     });
     so(0, 'han_xac_nhan', 'reset_case:han_xac_nhan'); so(0, 'han_them_pa', 'reset_case:han_them_pa');
     so(1, 'action_due', 'reset_case:action_due'); so(2, 'han', 'reset_case:mini_test');
     assert(JSON.stringify(doi.sort()) === JSON.stringify(ds.map((v) => `${v.loai}:${v.id}`).sort()), `ô đổi ≠ tập chọn: ${doi.length} / ${ds.length}`);
     const nk = all(`SELECT loai, viec_id, han_cu, han_moi, boi FROM viec_han_lan WHERE loai LIKE 'reset_case:%'`);
-    assert(nk.length === ds.length && nk.every((l) => l.han_moi === MOI && l.boi === null && ds.some((v) => v.loai === l.loai && v.id === l.viec_id && v.han === l.han_cu)), 'nhật ký hạn cũ → mới');
+    assert(nk.length === ds.length && nk.every((l) => l.han_moi === moiCua(l.loai) && l.boi === null && ds.some((v) => v.loai === l.loai && v.id === l.viec_id && v.han === l.han_cu)), 'nhật ký hạn cũ → mới');
   }));
 
   check('RH-2 · Kết quả PA: đợt đã lỡ không còn tính trong "Việc đúng hạn"; lần ghi đã có giữ nguyên', () => thu(() => {
@@ -96,6 +98,9 @@ export async function runPrResetHanCaseTests(t: any) {
     mig.datLaiHanCase(conn, TODAY);
     const sau = nghiaVu();
     assert(!cua(sau.ids).length, `còn ${cua(sau.ids).length} nghĩa vụ đã lỡ`);
+    assert(one('SELECT action_due FROM case_interventions WHERE id = ?', pa[0]).action_due === MOI_PA, 'Kết quả PA hạn = hôm nay + 14');
+    xoaNho();
+    assert(!(mywork.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).some((i) => i.group === 'ghi_ket_qua_pa' && i.paId === pa[0]), 'Kết quả PA ẩn tới hạn − 2 (luật sẵn có)');
     const daGhi = new Set(all('SELECT DISTINCT intervention_id AS iv FROM case_followups WHERE intervention_id IS NOT NULL').map((r) => r.iv as number));
     const ghiTruoc = truoc.ids.filter((id) => daGhi.has(metrics.parseObligation(id).interventionId) && metrics.parseObligation(id).interventionId !== pa[0]);
     assert(ghiTruoc.every((id) => sau.ids.includes(id) && truoc.numeratorIds.includes(id) === sau.numeratorIds.includes(id)), 'nghĩa vụ của lần ghi đã có giữ');
@@ -126,4 +131,21 @@ export async function runPrResetHanCaseTests(t: any) {
     assert(d.hanThemPa({ ...c, kck: 1, han_them_pa: '2026-12-01' }) === null, 'KCK không hạn');
     assert(sosState.XU_LY_COT_SQL.includes('sc.han_them_pa'), 'Tổng hợp xử lý đọc cột');
   });
+
+  check('RH-5 · [XM-2] cờ KQ_PA_TRE_TRUOC_RESET: mặc định lần ghi trễ cũ vẫn tính; tắt → trễ có hạn trước ngày reset không vào "Việc đúng hạn", phần khác giữ', () => thu(() => {
+    conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(mig.KHOA_PR_RESET_HAN_CASE, TODAY, TODAY);
+    const tre = new Set(all('SELECT intervention_id AS iv, cycle_no AS c FROM case_followups WHERE late = 1 AND cycle_due < ?', TODAY).map((r) => `${r.iv}|${r.c}`));
+    const laTre = (r: { ids: number[]; numeratorIds: number[] }) => r.ids.filter((id) => {
+      const o = metrics.parseObligation(id);
+      return !r.numeratorIds.includes(id) && tre.has(`${o.interventionId}|${o.cycle}`);
+    });
+    const truoc = nghiaVu();
+    assert(laTre(truoc).length > 0, 'tiền đề: seed có lần ghi trễ');
+    metrics.KQ_PA_TRE_TRUOC_RESET.tinh = false;
+    let sau: { ids: number[]; numeratorIds: number[] };
+    try { sau = nghiaVu(); } finally { metrics.KQ_PA_TRE_TRUOC_RESET.tinh = true; }
+    const bo = new Set(truoc.ids.filter((id) => !sau.ids.includes(id)));
+    assert(!laTre(sau).length && bo.size === laTre(truoc).length && [...bo].every((id) => laTre(truoc).includes(id)), `bỏ ${bo.size} / trễ ${laTre(truoc).length}`);
+    assert(JSON.stringify(sau.numeratorIds) === JSON.stringify(truoc.numeratorIds), 'đúng hạn giữ');
+  }));
 }
