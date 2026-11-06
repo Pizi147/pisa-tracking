@@ -312,7 +312,7 @@ function gocNhinCua(p: Principal) {
   return {
     dangChon: p.gocNhin ?? null,
     vaiGoc: goc,
-    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role) })),
+    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role), soPhanCong: role === 'teacher' ? new Set(du.assignments.map((a) => `${a.classId}|${a.isCore}|${a.skill ?? ''}`)).size : 0 })),
   };
 }
 
