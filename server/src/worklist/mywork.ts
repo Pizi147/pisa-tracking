@@ -392,14 +392,28 @@ const CHUA_CO_NGUOI = `(sc.owner_user_id IS NULL AND sc.tam = 0 AND ${HV_DANG_HO
  * Một dòng mỗi (Case, ghi danh `active`) như các câu cũ — `la_no_plan` tự gom theo Case (cũ `GROUP BY sc.id`).
  */
 /*
- * RA-DOC-0611b: `lop` (≠ null) = người xem CHỈ có quyền theo lớp (`lopChiQuyenGv`) — trước đọc MỌI Case mở cả hệ thống (SCAN `sos_cases`) rồi các khối
+ * RA-DOC-0611b: `lop` (≠ null) = người xem CHỈ có quyền theo lớp (`locCaseMo`) — trước đọc MỌI Case mở cả hệ thống (SCAN `sos_cases`) rồi các khối
  * dưới bỏ gần hết. Dòng của người đó chỉ lọt qua `can(SOS_EDIT, { classId: lớp lượt ?? lớp đang học, studentId })` / `laGvcnLopDangHoc` — tức lớp của lượt
  * hoặc một lớp em từng ghi danh có phân công của họ — nên lọc trước TẬP CHA đó trong SQL (như DOC-IT-3 `caseTrongPhamVi`); mọi kiểm quyền dưới giữ nguyên.
  */
-function napCaseMo(lop: readonly number[] | null = null): any[] {
-  if (lop && !lop.length) return [];
+/*
+ * GIAM-DOC-0711a: `cn` (≠ null) = người xem có quyền THEO CHI NHÁNH (QL / Quản trị một chi nhánh, "QL chi nhánh" của Phân tích GV / hồ sơ GV — DEM-QUA-HAN)
+ * hoặc Công việc lọc một chi nhánh — trước cũng đọc MỌI Case mở cả hệ thống. Dòng chỉ lọt khi: `can(...)` có ngữ cảnh lớp lượt → chi nhánh lớp lượt ∈ `cn`;
+ * không có lớp lượt → lớp đang học (∈ `cn`) hoặc chi nhánh em (`students.branch_id` ∈ `cn` / chưa có); `laGvcnLopDangHoc` → em đang học một lớp ở `lopGv`;
+ * lọc Công việc theo chi nhánh: `eff_branch_id` / `cn_du` = cùng các cột đó. Điều kiện KHÔNG phụ thuộc dòng ghi danh `cur` (em hai ghi danh giữ đủ hai dòng
+ * như cũ). Case ngoài chi nhánh không còn đọc câu con của cột + các bước sau (trạng thái chờ, phạm vi em, quyền chủ Case).
+ */
+type LocCaseMo = { lop: readonly number[] } | { cn: readonly number[]; lopGv: readonly number[] } | null;
+const DS = 'SELECT value FROM json_each(?)';
+function napCaseMo(loc: LocCaseMo = null): any[] {
+  if (coKhoa('case-mo')) loc = null;   // đã đọc đủ trong request → tập cha nào cũng là tập con của nó, khỏi đọc lại
+  const lop = loc && 'lop' in loc ? loc.lop : null;
+  const cn = loc && 'cn' in loc ? loc.cn : null;
+  const lopGv = loc && 'lopGv' in loc ? loc.lopGv : [];
+  if ((lop && !lop.length) || (cn && !cn.length)) return [];
   const ph = (lop ?? []).map(() => '?').join(',');
-  return nho(lop ? `case-mo:${lop.join(',')}` : 'case-mo', () => db().prepare(
+  const thamSo = lop ? [...lop, ...lop] : cn ? [...Array(3).fill(JSON.stringify(cn)), ...(lopGv.length ? [JSON.stringify(lopGv)] : [])] : [];
+  const kq = nho(lop ? `case-mo:${lop.join(',')}` : cn ? `case-mo:cn:${cn.join(',')}:${lopGv.join(',')}` : 'case-mo', () => db().prepare(
     `SELECT sc.*, ${COT_CASE}, a.class_id AS attempt_class_id,
             COALESCE(ac.branch_id, cc.branch_id, s.branch_id) AS cn_du,
             (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS iv_count,
@@ -414,22 +428,39 @@ function napCaseMo(lop: readonly number[] | null = null): any[] {
        FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done'${!lop ? '' : `
         AND sc.id IN (SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
                       UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
-                      UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`} ORDER BY sc.id`,
-  ).all(...(lop ? [...lop, ...lop] : [])) as any[]);
+                      UNION SELECT x.id FROM sos_cases x WHERE x.student_id IS NULL)`}${!cn ? '' : `
+        AND (ac.branch_id IN (${DS})
+             OR (ac.branch_id IS NULL AND (s.id IS NULL OR s.branch_id IS NULL OR s.branch_id IN (${DS})
+                 OR EXISTS (SELECT 1 FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
+                             WHERE e2.student_id = s.id AND e2.status = 'active' AND c2.branch_id IN (${DS}))))${!lopGv.length ? '' : `
+             OR EXISTS (SELECT 1 FROM enrollments e3 WHERE e3.student_id = s.id AND e3.status = 'active' AND e3.class_id IN (${DS}))`})`} ORDER BY sc.id`,
+  ).all(...thamSo) as any[]);
+  /* GIAM-DOC-0711a: `lamThayCua` dùng lại dòng đã nạp ở request (bất kỳ tập cha nào — id thiếu `ctxSuaCaseNhieu` tự đọc). */
+  if (!coKhoa(CASE_MO_DA_NAP)) nho(CASE_MO_DA_NAP, () => kq);
+  return kq;
 }
+const CASE_MO_DA_NAP = 'case-mo:da-nap';
 
 /**
  * RA-DOC-0611b: lớp có phân công (mọi ngày — tập cha của `activeAt`) khi các dòng Case mở của người xem CHỈ có thể đến qua quyền theo lớp: không grant nào
  * có `case.approve` / `class.assign` (Thêm PA của QL, việc Case chưa có người), và `sos.edit` chỉ qua vai Giáo viên (`teacherAllows` → `hasAssignment`).
- * Không thì null (đọc như cũ). Theo quyền thật của grant (Quản trị sửa được quyền vai), không theo tên vai.
+ * GIAM-DOC-0711a: còn lại theo chi nhánh của grant (hoặc chi nhánh Công việc đang lọc); grant toàn hệ thống → null (đọc như cũ). Theo quyền thật của grant, không theo tên vai.
  */
 /** RA-DOC-0611b: phép kiểm bật → đọc như trước (không tập cha) để so JSON. */
 export const caseMoTapChaKhiKiem = { tat: false };
-function lopChiQuyenGv(p: Principal): number[] | null {
+function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boolean): LocCaseMo {
   if (caseMoTapChaKhiKiem.tat) return null;
+  const lopGv = [...new Set(p.assignments.map((a) => a.classId))].sort((a, b) => a - b);
   const rong = p.grants.some((g) => g.permissions.has(PERMISSIONS.CASE_APPROVE) || g.permissions.has(PERMISSIONS.CLASS_ASSIGN)
     || (g.permissions.has(PERMISSIONS.SOS_EDIT) && g.roleKey !== 'teacher'));
-  return rong ? null : [...new Set(p.assignments.map((a) => a.classId))].sort((a, b) => a - b);
+  if (!rong && !tatCa) return { lop: lopGv };
+  /* GIAM-DOC-0711a: Công việc lọc một chi nhánh — mọi khối dùng `caseMo` bỏ dòng có `eff_branch_id` / `cn_du` khác chi nhánh đó. */
+  if (branchId) return { cn: [branchId], lopGv: [] };
+  if (!rong) return null;   // RA-DOC-0611b: "Tất cả" giữ đọc như cũ
+  /* GIAM-DOC-0711a: grant có một trong ba quyền mà khoá dòng (sos.edit · class.assign · case.approve) đều theo chi nhánh → tập cha theo các chi nhánh đó. */
+  const g3 = p.grants.filter((g) => g.permissions.has(PERMISSIONS.SOS_EDIT) || g.permissions.has(PERMISSIONS.CLASS_ASSIGN) || g.permissions.has(PERMISSIONS.CASE_APPROVE));
+  if (g3.some((g) => g.branchId === null)) return null;
+  return { cn: [...new Set(g3.map((g) => g.branchId!))].sort((a, b) => a - b), lopGv };
 }
 
 /**
@@ -830,7 +861,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * TL-VIEC · PHA ĐỌC: mọi nguồn dòng việc đọc TRƯỚC (đoạn này không có ghi; đọc lại Mốc PA quy chế ở mục riêng sau `dienMocQuyChe`), rồi MỘT lần nạp phạm vi em / chủ Case /
    * tỷ lệ cho cả tập; pha DỰNG phía dưới giữ nguyên thứ tự `items.push`.
    */
-  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo(tatCa ? null : lopChiQuyenGv(p)) : [];
+  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo(locCaseMo(p, f.branchId, tatCa)) : [];
   /* Một dòng mỗi Case (em hai ghi danh `active` có hai dòng ở `caseMo`). */
   const caseRows = !co('no_plan') ? [] : [...new Map(caseMo.filter((c) => c.la_no_plan).map((c) => [c.id, c])).values()];
   /* RA-LUONG-8 (N8 ④): Case tạm (em KCK, lượt chưa chốt) không sinh việc "Mô tả Case" — cùng `CASE_THAT` như mọi câu đếm. */
@@ -1751,7 +1782,7 @@ const bangChiNhanh = (): { id: number; code: string; name: string }[] =>
  * `score.override` / `plan.week` — `06` điểm 1) đủ mọi kỹ năng của việc; Case học thuật = `SOS_EDIT` theo ngữ cảnh Case (`ctxSuaCaseNhieu` — như `cases.ts`). Việc chưa phân công / việc khác: chỉ theo dõi.
  */
 export function lamThayCua(p: Principal, items: readonly WorkItem[]): (it: WorkItem) => boolean {
-  const ctx = ctxSuaCaseNhieu(items.filter((it) => it.caseId && nhomViecCua(it.group) === 'case-hoc-thuat').map((it) => it.caseId!), coKhoa('case-mo') ? napCaseMo() : undefined);
+  const ctx = ctxSuaCaseNhieu(items.filter((it) => it.caseId && nhomViecCua(it.group) === 'case-hoc-thuat').map((it) => it.caseId!), coKhoa(CASE_MO_DA_NAP) ? nho(CASE_MO_DA_NAP, () => []) : undefined);
   return (it) => {
     if (it.ownerId === null) return false;   // việc chưa có người giữ (chưa phân công): không "làm thay" ai
     if (it.group === 'score') return !!it.classId && !!it.kns?.length && editableSkills(p, it.classId, it.kns).length === it.kns.length;
