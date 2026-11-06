@@ -268,8 +268,9 @@ export async function runPrS3fTests(t: YThucTestKit) {
     assert(!tap().huyHieu && !tap().chiSo, `em Tạm dừng phải vắng ở cả hai: ${JSON.stringify(tap())}`);
 
     const sid3 = hvYt();
-    conn.prepare(`INSERT INTO violations (student_id, class_id, category, occurred_on, reported_on, reported_by, description, created_at) VALUES (?,?, 'homework', ?, ?, ?, 'Vi phạm cũ chưa ai xem', ?)`)
-      .run(sid3, CLASS, addDays(TODAY, -9), addDays(TODAY, -9), gvbm.userId, new Date().toISOString());
+    /* Chủ SP 06/11: vi phạm chưa xem không còn Báo QL — dùng 3 vi phạm bắt buộc đã quá hạn xử lý (vẫn Báo QL). */
+    for (const n of [-9, -8, -7]) conn.prepare(`INSERT INTO violations (student_id, class_id, category, occurred_on, reported_on, reported_by, description, created_at) VALUES (?,?, 'homework', ?, ?, ?, 'Vi phạm cũ chưa xử lý', ?)`)
+      .run(sid3, CLASS, addDays(TODAY, n), addDays(TODAY, n), gvbm.userId, new Date().toISOString());
     const em3 = emYt(sid3);
     assert(lyDoBaoLenYThuc({ ...em3, gvcnId: null }) !== null, 'lớp chưa có GVCN vẫn phải Báo QL');
   });
