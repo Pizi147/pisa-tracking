@@ -33,6 +33,10 @@ Dữ liệu demo 18/09: QL Phạm Quang Anh (Hải Dương), lớp HD FT 306.
 
 Không mất thao tác nào. Chip S Ex ở cột "Thêm" bỏ (đã ở hàng S Ex — một chỗ một thứ).
 
+## Sửa kèm (PTA rà #1078)
+
+Ô MT "Đã xoá" (từ #1076): "Khôi phục" rơi ra ngoài khung, lệch xuống dưới → nay nằm TRONG khung (dòng 1 "Đã xoá", dòng 2 "Khôi phục"), ô cao 62 px bằng ô thường (đo); bấm phần còn lại của ô vẫn mở hộp; GV chỉ xem: cả ô là link trang lượt. Ảnh `sau-kht-1440.png` (Quách Tuấn Kiệt, MT3).
+
 ## [XM]
 
 1. Xoá một lượt S Ex: ô về trống (số lượt sau dồn lên), có **Hoàn tác** trong toast — không giữ ô mờ "Đã xoá" như MT (PR a): giữ ô sẽ phải đọc thêm lượt đã xoá. Muốn có thì PR riêng.
