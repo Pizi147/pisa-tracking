@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
+import { Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { BaoCao } from './BaoCao.tsx';
@@ -66,6 +67,9 @@ export function PhanTich() {
     setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branches.data, branchId, branchCount]);
+  /* TAI-NHANH-0611: tài khoản một chi nhánh, URL chưa có `cn` — chờ effect trên gắn `cn` rồi mới tải số liệu; trước đây tab tải một lần "mọi chi nhánh"
+     rồi tải lại theo `cn` (thừa một `/tong-quan/v5` + `/ref/classes` mỗi lần mở trang). */
+  const choCn = !branchId && branchCount === 1 && (branches.data == null || branches.data.length === 1);
 
   const dat = (o: Record<string, string | null>, replace = false) => {
     const next = new URLSearchParams(params);
@@ -87,7 +91,7 @@ export function PhanTich() {
   const laYThuc = goc === 'y-thuc';
   const coCt = goc !== 'y-thuc' && goc !== 'ket-qua-thi';   // Kết quả thi chỉ Fast Track (Mock / Thi thật)
   const qLop = new URLSearchParams({ kieu: khoang.kieu, tu: khoang.tu, den: khoang.den, ...(branchId ? { branchId: String(branchId) } : {}) });
-  const classesApi = useApi<any[]>(coLop ? `/ref/classes?${qLop}` : null, [qLop.toString(), coLop]);
+  const classesApi = useApi<any[]>(coLop && !choCn ? `/ref/classes?${qLop}` : null, [qLop.toString(), coLop, choCn]);
   const ctLop: ChuongTrinh = goc === 'ket-qua-thi' ? 'ft' : ct;
   const classes = (classesApi.data ?? []).filter((c) => laYThuc || (c.scoring_mode === 'ratio') === (ctLop === 'thuong'));
   useEffect(() => {
@@ -135,14 +139,14 @@ export function PhanTich() {
           </span>
         </div>
 
-        <KheHangLoc.Provider value={{ dau, giua, phai }}>
+        {choCn ? <Skeleton rows={6} /> : <KheHangLoc.Provider value={{ dau, giua, phai }}>
           {goc === 'bao-cao' && <BaoCao {...pv} />}
           {goc === 'tong-hop' && <TongHopTestSos {...pv} ct={ct} />}
           {goc === 'ket-qua-thi' && <KetQuaThi {...pv} />}
           {goc === 'hieu-qua-pa' && <HieuQuaPa {...pv} ct={ct} />}
           {goc === 'y-thuc' && <YThucPhoiHop {...pv} ct={null} />}
           {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} ct={ct} khoang={khoang} />}
-        </KheHangLoc.Provider>
+        </KheHangLoc.Provider>}
       </div>
     </div>
   );
