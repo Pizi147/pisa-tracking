@@ -1,4 +1,4 @@
-import { boDau } from '@shared/huongDan/index.ts';
+import { boDau } from '@shared/huongDan/kieu.ts';
 
 /** UI-CON-LAI k1: tô chữ khớp (không dấu, không hoa thường) bằng màu hồng nhận diện — chuỗi dựng sẵn NFC nên mỗi ký tự bỏ dấu vẫn là một ký tự. */
 export function ToKhop({ chu, q }: { chu: string; q: string }) {

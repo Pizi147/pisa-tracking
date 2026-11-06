@@ -1,6 +1,5 @@
-import { useCallback, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { useSession } from '../../lib/session.tsx';
-import { api } from '../../lib/api.ts';
 import { ChuDam } from '../../ui/ui.tsx';
 import { HUONG_DAN, vaiCoNoiDung, vaiHdCua, type ChiChoToi, type MucHd } from '@shared/huongDan/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -38,16 +37,4 @@ export function useVaiHd() {
   const { session } = useSession();
   const cuaToi = vaiHdCua(session?.roles ?? []);
   return { cuaToi, coNoiDung: !!HUONG_DAN[cuaToi], macDinh: vaiCoNoiDung(cuaToi) };
-}
-
-/** Ghi "đã mở Hướng dẫn" một lần cho tài khoản (hết chấm trên nút "?"). Trả false khi lưu lỗi. */
-export function useDaXemHd() {
-  const { session, reload } = useSession();
-  const chuaXem = !!session?.authenticated && session.daXemHuongDan === false;
-  return {
-    chuaXem,
-    ghi: useCallback(async () => {
-      try { await api.patch('/me/profile', { daXemHuongDan: true }); await reload(); return true; } catch { return false; }
-    }, [reload]),
-  };
 }

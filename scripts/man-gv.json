@@ -79,6 +79,7 @@
  "web/src/modules/huongDan/MucHuongDan.tsx",
  "web/src/modules/huongDan/NutHuongDan.tsx",
  "web/src/modules/huongDan/chiChoToi.tsx",
+ "web/src/modules/huongDan/daXemHd.ts",
  "web/src/modules/phanTich/BoChonThoiGian.tsx",
  "web/src/modules/phanTich/dungChung.tsx",
  "web/src/modules/students/BangHocVienLop.tsx",

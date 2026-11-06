@@ -6,6 +6,9 @@
  */
 import type { Khoa } from '../i18n/index.ts';
 
+/** Bỏ dấu: "han" tìm ra "hạn", "de xuat" ra "Đề xuất". Ở đây, không ở `index.ts`: ô tìm thanh trên (`ToKhop`) dùng mà không kéo nội dung Hướng dẫn vào gói chính. */
+export const boDau = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+
 export type VaiHd = 'gv' | 'ql' | 'qt' | 'tvv' | 'cx' | 'admin' | 'ht';
 
 /** "Chỉ cho tôi": khoanh phần tử `data-hd="{hd}"` đang hiện + một dòng chú thích; `duong` = trang mở trước nếu đang ở trang khác.

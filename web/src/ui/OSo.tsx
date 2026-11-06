@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { BangLuotPanel, loaiBangLuot, type DuLieuBangLuot } from './BangLuotPanel.tsx';
+import type { DuLieuBangLuot } from './BangLuotPanel.tsx';
 import { METRIC_UNIT_LABEL, khoaSoLieu, metricById, tenMonNgan, type ChiSo } from '@shared/domain/index.ts';
 import { useMoSoLieu } from '../lib/quayLai.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -12,6 +12,10 @@ import { t } from '@shared/i18n/index.ts';
 
 /* M6 6b-4: panel "GV chấm quá hạn" (lưới Nhập hộ) chỉ tải khi bấm — trang có ô số không kéo lưới chấm vào lần tải đầu. */
 const PanelGvTre = lazyTai(() => import('../modules/worklist/PanelGvTre.tsx').then((m) => ({ default: m.PanelGvTre })));
+/* TAI-NHANH-0611: panel bảng có điểm cũng chỉ tải khi máy chủ trả `bangLuot` (sau khi bấm số). */
+const BangLuotPanel = lazyTai(() => import('./BangLuotPanel.tsx').then((m) => ({
+  default: ({ nguon, ...p }: Omit<Parameters<typeof m.BangLuotPanel>[0], 'loai'> & { nguon: string }) => <m.BangLuotPanel {...p} loai={m.loaiBangLuot(nguon)} />,
+})));
 
 /**
  * Ô SỐ BÁO CÁO `OSo` (NEN-V5: gộp SoLieuO + OSoNho cũ; G6, G-10) — một dáng "số gạch chân liền màu nhấn → panel dữ liệu chỉ đọc", khác nút động từ
@@ -60,7 +64,7 @@ export function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string;
   if (!open) return null;
   /* PT-PANEL (mockup v13 A1 / A2): máy chủ trả `bangLuot` → panel BẢNG có điểm (lượt / Tăng · Giữ · Giảm). */
   if (data?.bangLuot) {
-    return <BangLuotPanel tieuDe={tieuDe} loai={loaiBangLuot(nguon)} data={data as DuLieuBangLuot} loading={loading} error={error} reload={reload} onDong={onClose} />;
+    return <Suspense fallback={null}><BangLuotPanel tieuDe={tieuDe} nguon={nguon} data={data as DuLieuBangLuot} loading={loading} error={error} reload={reload} onDong={onClose} /></Suspense>;
   }
   /* OV-12e: cùng panel mở rộng dòng với ô số trong sổ (`NganDanhSach`). M6 6b-1 (bảng kê 0.2): tiêu đề = chữ nơi gọi (kèm ngữ cảnh: chi nhánh, lớp)
      — không đổi sang tiêu đề máy chủ khi tải xong (đầu panel không nhảy, không mất ngữ cảnh). */

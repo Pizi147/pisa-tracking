@@ -5,7 +5,8 @@ import { HUONG_DAN, TEN_VAI_HD, VAI_CO_NOI_DUNG, coXemVaiKhac, locHd, locVai, ti
 import { useSession } from '../../lib/session.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { chiChoToi } from './chiChoToi.tsx';
-import { MucHuongDan, useDaXemHd, useVaiHd } from './MucHuongDan.tsx';
+import { MucHuongDan, useVaiHd } from './MucHuongDan.tsx';
+import { useDaXemHd } from './daXemHd.ts';
 import { DsNhom, KetQuaTim, TabTuan, TheoMan, type Ctx } from './NutHuongDan.tsx';
 
 /**

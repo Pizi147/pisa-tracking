@@ -13,7 +13,8 @@ import {
 import { KHU_VUC } from '@shared/domain/dieuHuong.ts';
 import { t, type Khoa } from '@shared/i18n/index.ts';
 import { chiChoToi } from './chiChoToi.tsx';
-import { useDaXemHd, useVaiHd } from './MucHuongDan.tsx';
+import { useVaiHd } from './MucHuongDan.tsx';
+import { useDaXemHd } from './daXemHd.ts';
 
 /**
  * HD-V2 — PANEL HƯỚNG DẪN (đặc tả `2026-11-05-huong-dan-v2/de-xuat.md` mục 3, 8, 10; mockup `thiet-ke/v14/huong-dan.html`): mở từ nút "?" trên thanh trên.
