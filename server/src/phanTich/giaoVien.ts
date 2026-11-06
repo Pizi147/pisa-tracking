@@ -701,8 +701,8 @@ const CACH_TINH_GV: Record<string, string> = {
   'hv-chu-y': 'HV đang SOS ở lớp GV đang dạy; bảng hiện lượt Mock có điểm gần nhất của HV.',
   'ket-qua': 'Mỗi dòng là một môn GV phụ trách (viền nhấn) ở một bài Progress Test / Final Test. Môn đạt khi tỷ lệ đúng từ ngưỡng của lớp.',
   /* DEM-QUA-HAN b. */
-  'viec-dung-han': 'Việc có hạn trong kỳ: Kết quả PA (đã ghi / chưa ghi đã quá hạn) và việc ở Công việc còn mở đã quá hạn (Case, Bàn giao, Xử lý vi phạm bắt buộc, Báo PH…). Chấm Test tính ở cột riêng.',
-  'cham-diem': 'Bài có tuần Test trong kỳ: đã nhập (lần nhập đầu so mốc trễ — lần sửa sau không tính) và chưa nhập đã quá hạn. Không tính bài vắng đã xác nhận, bài chưa tới hạn chưa nhập.',
+  'viec-dung-han': 'Việc có hạn trong kỳ: Kết quả PA (đã ghi / chưa ghi) và việc ở Công việc còn mở đã quá hạn (Case, Bàn giao, Xử lý vi phạm bắt buộc, Báo PH…). Làm sau hạn = quá hạn. Chấm Test tính ở cột riêng.',
+  'cham-diem': 'Bài có tuần Test trong kỳ: đã nhập (lần nhập đầu — nhập sau hạn = quá hạn; lần sửa sau không tính) và chưa nhập đã quá hạn. Không tính bài vắng đã xác nhận, bài chưa tới hạn chưa nhập.',
 };
 export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string }): { n: number; tieuDe: string; rows: MetricRow[]; chiNhanh?: string } {
   const c = nguCanhPtGv(p, f);

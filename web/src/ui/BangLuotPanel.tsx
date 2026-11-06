@@ -123,12 +123,18 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const coTab = soChua > 0 && soDat > 0;
   const [tabChon, setTab] = useState<'chua' | 'dat' | null>(null);
   const tab = tabChon ?? 'chua';
-  /* DEM-QUA-HAN b (chủ SP 06/11): panel việc — tab theo loại / tuyến việc, có số, tab rỗng ẩn; một loại thì không tab. */
+  /*
+   * DEM-QUA-HAN b (chủ SP 06/11, chốt: "việc đang quá hạn ưu tiên hiện lên, còn việc đã làm rồi cho hẳn sang 1 tab"): tab loại / tuyến việc CHỈ chứa việc còn mở
+   * đang quá hạn (số tab = số quá hạn, rỗng ẩn) + tab cuối "Đã làm n" (mọi việc đã làm trong kỳ). Mặc định: tab loại đầu tiên có việc quá hạn, không có thì "Đã làm".
+   * Panel Chấm Test: "Quá hạn chưa chấm n" · "Đã nhập n".
+   */
   const vk = data?.kieu === 'viec';
-  const tabsViec = vk ? TAB_VIEC_HAN.filter((k) => goc.some((r) => r.dongViec?.tab === k)) : [];
-  const [tabViecChon, setTabViec] = useState<TabViecHan | null>(null);
+  const tabsViec: (TabViecHan | 'da-lam')[] = vk ? [...TAB_VIEC_HAN.filter((k) => goc.some((r) => r.dongViec?.mo && r.dongViec.tab === k)),
+    ...(goc.some((r) => r.dongViec && !r.dongViec.mo) ? ['da-lam' as const] : [])] : [];
+  const [tabViecChon, setTabViec] = useState<TabViecHan | 'da-lam' | null>(null);
   const tabViec = tabViecChon && tabsViec.includes(tabViecChon) ? tabViecChon : tabsViec[0] ?? null;
-  const loc = vk ? (tabsViec.length > 1 ? goc.filter((r) => r.dongViec?.tab === tabViec) : goc) : coTab ? goc.filter((r) => r.ketQua === tab) : goc;
+  const loc = vk ? goc.filter((r) => r.dongViec && (tabViec === 'da-lam' ? !r.dongViec.mo : r.dongViec.mo && r.dongViec.tab === tabViec))
+    : coTab ? goc.filter((r) => r.ketQua === tab) : goc;
   /* Giữ phân trang 10 / 20 / 50 của panel cũ (`NganDanhSach`) — số "n lượt · m HV" tính trên cả tab, bảng chỉ trang đang xem. */
   const pt = usePhanTrang(loc.length, `${tieuDe}|${tab}|${tabViec ?? ''}`, t('mục'));
 
@@ -391,15 +397,17 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const tatVc = loc.flatMap((r) => (r.dongViec ? [{ ...r.dongViec, id: r.id, studentId: r.dongViec.em?.id }] : []));
   type HVc = (typeof tatVc)[number];
   const laBai = vk && goc.every((r) => r.dongViec?.tab === 'cham');
-  const soQuaHan = tatVc.filter((h) => h.mo).length;
+  const daLam = tabViec === 'da-lam';
+  const nhanTabViec = (k: TabViecHan | 'da-lam') => (k === 'da-lam' ? (laBai ? t('Đã nhập') : t('Đã làm')) : k === 'cham' ? t('Quá hạn chưa chấm') : dich(TAB_VIEC_HAN_LABEL[k]));
   const cotVc: DinhNghiaCot[] = [
     { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
     { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 100 },
     { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 76 }, { key: 'tt', nhan: t('Đúng hạn'), kieu: 'chu', rong: 176 },
   ];
-  const ttVc = (h: HVc) => (h.mo ? <span className="font-semibold text-bad">⚠ {t('Quá hạn · {n} ngày', { n: h.treNgay ?? 0 })}</span>
-    : h.dung ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
-    : <span className="font-semibold text-late">{t('Trễ {n} ngày', { n: h.treNgay ?? 0 })}</span>);
+  /* Chủ SP 06/11: MỘT chữ "Quá hạn" (bỏ "Trễ") — việc mở và việc làm sau hạn cùng nhãn; dòng phụ "đã làm / nhập dd/mm" phân biệt. */
+  const ttVc = (h: HVc) => (h.dung ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
+    : <span className="font-semibold text-bad">⚠ {t('Quá hạn {q} ngày', { q: h.treNgay ?? 0 })}</span>);
+  const ngayLam = (h: HVc) => (h.ngayXong ? (laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('đã làm {ngay}', { ngay: ddmm(h.ngayXong) })) : null);
   const oVc = (h: HVc, c: DinhNghiaCot): ReactNode => {
     if (c.key === 'viec') return <Link className={`font-semibold ${LINK}`} to={h.href}>{dich(h.ten)}</Link>;
     if (c.key === 'ten') return h.em ? lkHv(h.em.id, h.em.ten) : mo('—');
@@ -408,19 +416,20 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
     return ttVc(h);
   };
   /* Dòng phụ: kỹ năng / tuần Test dưới tên việc; ngày làm (nhập điểm / ghi kết quả) dưới tình trạng. */
-  const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec' ? (h.phu ? dich(h.phu) : null) : c.key === 'tt' && h.ngayXong ? (laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('làm {ngay}', { ngay: ddmm(h.ngayXong) })) : null);
+  /* Tab "Đã làm": dòng phụ ghi loại việc (các loại chung một tab). */
+  const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec' ? ([daLam && !laBai ? dich(TAB_VIEC_HAN_LABEL[h.tab]) : null, h.phu ? dich(h.phu) : null].filter(Boolean).join(' · ') || null) : c.key === 'tt' ? ngayLam(h) : null);
   const theVc = (h: HVc) => (
     <div className="grid gap-1">
       <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, cotVc[0])}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
       {(h.em || h.lop) && <div className="text-[14px]">{h.em && lkHv(h.em.id, h.em.ten)}{h.em && h.lop && ' · '}{h.lop && lkLop(h.lop.id, h.lop.ma)}</div>}
-      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.ngayXong && <> · {(laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('làm {ngay}', { ngay: ddmm(h.ngayXong) }))}</>}{h.phu && <> · {dich(h.phu)}</>}</div>
+      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.ngayXong && <> · {ngayLam(h)}</>}{phuVc(h, cotVc[0]) && <> · {phuVc(h, cotVc[0])}</>}</div>
     </div>
   );
 
   const tat = (vk ? tatVc : tt ? tatH : bt ? tatB : tg ? tatT : vpk ? [...tatV, ...tatVe, ...tatVl] : pak ? tatP : tatL) as { studentId?: number }[];
   const soDong = tat.length;
   const soHv = new Set(tat.map((h) => h.studentId).filter((x) => x !== undefined)).size;
-  const dem = vk ? [laBai ? t('{n} bài', { n: soDong }) : t('{n} việc', { n: soDong }), soQuaHan ? `⚠ ${t('{n} đang quá hạn', { n: soQuaHan })}` : null].filter(Boolean).join(' · ')
+  const dem = vk ? (daLam ? (laBai ? t('{n} bài', { n: soDong }) : t('{n} việc', { n: soDong })) : t('{n} đang quá hạn', { n: soDong }))
     : vpk ? (tatVl.length ? t('{n} lớp', { n: soDong }) : tatVe.length ? t('{n} HV', { n: soDong }) : `${t('{n} vi phạm', { n: soDong })} · ${t('{n} HV', { n: soHv })}`)
     : pak ? `${nghiaVu ? t('{n} việc', { n: soDong }) : t('{n} PA', { n: soDong })} · ${t('{n} HV', { n: soHv })}`
     : (tg || tt) && soDong === soHv ? t('{n} HV', { n: soHv })
@@ -434,16 +443,15 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
         : loading || !data ? <div className="pt-3"><Skeleton rows={4} /></div>
           : (
             <div className="grid gap-3 pt-3">
-              {tabsViec.length > 1 && (
-                /* DEM-QUA-HAN b: tab theo loại việc — cùng dáng tab Chưa đạt · Đạt. */
+              {vk && tabsViec.length > 0 && (
+                /* DEM-QUA-HAN b: tab loại việc (chỉ việc quá hạn, số đỏ) + "Đã làm" — cùng dáng tab Chưa đạt · Đạt. */
                 <div role="tablist" aria-label={t('Loại việc')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>
                   {tabsViec.map((k) => {
-                    const ds = goc.filter((r) => r.dongViec?.tab === k);
-                    const quaHan = ds.some((r) => r.dongViec?.mo);
+                    const n = goc.filter((r) => r.dongViec && (k === 'da-lam' ? !r.dongViec.mo : r.dongViec.mo && r.dongViec.tab === k)).length;
                     return (
                       <button key={k} type="button" role="tab" aria-selected={tabViec === k} tabIndex={tabViec === k ? 0 : -1} onClick={() => setTabViec(k)}
                         className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tabViec === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-                        {dich(TAB_VIEC_HAN_LABEL[k])} <span className={`tabular-nums ${quaHan ? 'text-bad' : ''}`}>{ds.length}</span>
+                        {nhanTabViec(k)} <span className={`tabular-nums ${k === 'da-lam' ? '' : 'text-bad'}`}>{n}</span>
                       </button>
                     );
                   })}
