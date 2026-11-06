@@ -1,5 +1,5 @@
 import { capNhatConOCho } from './conOCho.ts';
-import { THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
   gvcnDoiMtCu, khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
@@ -115,12 +115,12 @@ export type SkillRow = {
  */
 /* S2: `mon_luot` KHÔNG còn là câu con theo từng dòng (Turso tính dòng quét của câu con mỗi dòng) — danh sách đọc môn MỘT lần mỗi lượt trong
    cùng câu (`MON_THEO_LO`), một lượt đọc qua câu con KHÔNG tương quan (`MON_MOT_LUOT_SQL`, SQLite tính một lần). */
-const SELECT_SKILLS = (mon = 'NULL') => `
+const SELECT_SKILLS = (mon = 'NULL', coTuan = true) => `
   SELECT ask.id, ask.attempt_id, ask.skill, ask.required, ask.scope_reason, ask.planned_period_id, ask.plan_source, ask.sit_status,
          ask.sit_note, ask.deadline_override, ask.deadline_override_reason, ask.absence_move_count, ask.absent_from_no_show, ask.huy_vang, ask.bo_task,
-         pr.week_start, pr.week_end, pr.code AS period_code, ${mon} AS mon_luot
-    FROM attempt_skills ask
-    LEFT JOIN report_periods pr ON pr.id = ask.planned_period_id`;
+         ${coTuan ? 'pr.week_start, pr.week_end, pr.code AS period_code' : 'NULL AS week_start, NULL AS week_end, NULL AS period_code'}, ${mon} AS mon_luot
+    FROM attempt_skills ask${coTuan ? `
+    LEFT JOIN report_periods pr ON pr.id = ask.planned_period_id` : ''}`;
 
 // ---------------------------------------------------------------- đọc
 
@@ -260,9 +260,18 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
       const rows: SkillRow[] = [];
       /* Danh sách id buộc MỘT lần (CTE `ids`) cho cả hai nhánh. */
       for (const r of conn.prepare(`WITH ids(id) AS (VALUES ${chunk.map(() => '(?)').join(',')})
-          ${SELECT_SKILLS()} WHERE ask.attempt_id IN ids ${MON_THEO_LO}`).all(...chunk) as SkillRow[]) {
+          ${SELECT_SKILLS('NULL', false)} WHERE ask.attempt_id IN ids ${MON_THEO_LO}`).all(...chunk) as SkillRow[]) {
         if (r.id === null) mon.set(r.attempt_id, r.mon_luot!);
         else rows.push(r);
+      }
+      /* GIAM-DOC-0611g (Turso câu #1, ~5,9 K dòng / lần): tuần của dòng lịch đọc RIÊNG một lần theo tập id tuần (bảng ~67 tuần, mỗi lô vài chục id) thay JOIN
+         `report_periods` cho TỪNG dòng lịch (4–5 dòng / lượt). Cùng ba cột, cùng giá trị (tuần không có / id NULL → NULL như LEFT JOIN). */
+      const idTuan = [...new Set(rows.map((r) => r.planned_period_id).filter((x): x is number => x != null))];
+      const tuan = new Map(!idTuan.length ? [] : (conn.prepare(`SELECT id, week_start, week_end, code FROM report_periods WHERE id IN (${DS_JSON})`)
+        .all(JSON.stringify(idTuan)) as any[]).map((t) => [t.id as number, t]));
+      for (const r of rows) {
+        const t = r.planned_period_id != null ? tuan.get(r.planned_period_id) : undefined;
+        if (t) { r.week_start = t.week_start; r.week_end = t.week_end; r.period_code = t.code; }
       }
       for (const r of rows) {
         r.mon_luot = mon.get(r.attempt_id) ?? null;
