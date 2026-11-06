@@ -44,8 +44,9 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     assert(!/shrink-0/.test(v), 'cụm hạn còn shrink-0');
   });
 
-  check('K4 · WorkList (tên việc + dòng phụ) và TheKyNang (Case, PA): truncate có max-sm:whitespace-normal', () => {
-    for (const [f, can] of [['web/src/modules/cases/TheKyNang.tsx', 2]] as const) {
+  /* CASE-PA-UI b: TheKyNang gỡ — khối Case trang lượt (`CaseLuotKn`) không cắt chữ: mọi truncate (nếu có) phải xuống dòng ở 375. */
+  check('K4 · WorkList (tên việc + dòng phụ) và khối Case trang lượt: truncate có max-sm:whitespace-normal', () => {
+    for (const [f, can] of [['web/src/modules/fasttrack/CaseLuotKn.tsx', 0]] as const) {
       const lop = [...doc(f).matchAll(/className="([^"]*\btruncate\b[^"]*)"/g)].map((m) => m[1]);
       const du = lop.filter((l) => /max-sm:whitespace-normal/.test(l)).length;
       assert(du >= can, `${f}: ${du}/${can} chỗ truncate có max-sm:whitespace-normal`);

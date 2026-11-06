@@ -167,7 +167,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     assert(/\.\.\.TASK_PROGRESS_LABEL/.test(docNguon('web/src/modules/worklist/MgmtTasksPage.tsx')), 'MgmtTasksPage dùng TASK_PROGRESS_LABEL');
     assert(/inactive: t\('Tạm dừng học'\)/.test(docNguon('shared/domain/students.ts')) && /chuTamDung/.test(docNguon('shared/domain/students.ts')), 'students.ts');
     assert(!/NHAN_TRANG_THAI_O/.test(docNguon('shared/domain/hoSoHocVien.ts')), 'bản sao NHAN_TRANG_THAI_O đã gộp');
-    assert(/CHUA_CO_HAN/.test(docNguon('shared/domain/display.ts')) && /CHUA_CO_HAN/.test(docNguon('shared/domain/hoSoHocVien.ts')) && /CHUA_CO_HAN/.test(docNguon('web/src/modules/cases/TheKyNang.tsx')), 'so khớp "Chưa có hạn" theo hằng, không theo chuỗi');
+    assert(/CHUA_CO_HAN/.test(docNguon('shared/domain/display.ts')) && /CHUA_CO_HAN/.test(docNguon('shared/domain/hoSoHocVien.ts')), 'so khớp "Chưa có hạn" theo hằng, không theo chuỗi');
   });
   // ------------------------------------------------------------------ Task 4 · nút và hành động (nhóm D)
   khongCon('S3 (4) · Nút: thoát hộp là "Đóng" (không Thôi / Huỷ trần), Thao tác khác, Đánh dấu đã đọc, Nhập điểm, Thêm PA, Báo QL, Gửi Quản lý duyệt…', [

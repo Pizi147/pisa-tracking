@@ -12,7 +12,6 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
-import { nhapKetQua } from './GhiNhanh.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import {
@@ -33,6 +32,10 @@ import { dich, dichDu, t } from '@shared/i18n/index.ts';
  * "Vấn đề còn tồn / Ghi chú" — chữ cũ không xoá: sửa lần ghi cũ gửi lại nguyên giá trị, lịch sử vẫn đọc. Luật giữ nguyên (máy chủ kiểm lại); nút chính
  * luôn bấm được, bấm khi thiếu mới hiện lỗi dưới ô + "Còn thiếu n ô" ở chân.
  */
+
+/** Nháp Ghi kết quả của một PA (Hoàn tác lần lưu trả lại ĐỦ ô — form mở lại điền sẵn một lần). `GhiKetQuaPanel` đọc rồi xoá. */
+export type NhapKetQua = { outcome: string; note: string; khac?: Record<string, any> };
+export const nhapKetQua = new Map<number, NhapKetQua>();
 
 export type PaCanCapNhat = {
   id: number; kind: string; description: string | null; performer: string | null;
@@ -445,7 +448,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
                   ))}
                 </ol>
               )}
-              {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-400">{t('PA chưa có Số buổi — thêm ở ⋯ › Sửa PA nếu muốn đếm.')}</span>}
+              {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-400">{t('PA chưa có Số buổi — thêm ở thẻ PA (dòng Số buổi) nếu muốn đếm.')}</span>}
             </div>
           )}
           {coMiniTest && (
@@ -472,7 +475,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               {chanQd && <p className="m-0 text-xs text-late" role="alert">{chanQd}</p>}
               {pa.batBuoc && (
                 <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-400">
-                  {t('PA theo quy chế — không thay; GVCN / QL kết thúc sớm ở ⋯. Cần thêm hỗ trợ?')}
+                  {t('PA theo quy chế — không thay; GVCN / QL kết thúc sớm bằng "Kết thúc sớm…" ở thẻ PA. Cần thêm hỗ trợ?')}
                   {onThemPa && <NutChu onClick={onThemPa}>{t('+ Thêm PA')}</NutChu>}
                 </p>
               )}

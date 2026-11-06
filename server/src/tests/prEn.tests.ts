@@ -618,7 +618,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
  * Không vào: `cases/CapNhatTuan.tsx` (Ghi kết quả PA — đợt b dịch). `cases/TheKyNang.tsx`: phần còn sót sau EN-b dịch ở đợt d.
  */
 const FILE_DA_DICH_D = [
-  ...['CaseBoardPage', 'CasePanel', 'ChiTietKyNang', 'DongXinYKien', 'FormPa', 'TaiCho', 'NeedsEvaluation', 'QuickReport', 'SkillBoard', 'ThaoTacCase', 'TheKyNang']
+  ...['CaseBoardPage', 'CasePanel', 'ChiTietKyNang', 'DongXinYKien', 'FormPa', 'TaiCho', 'NeedsEvaluation', 'QuickReport', 'SkillBoard', 'ThaoTacCase']
     .map((f) => `web/src/modules/cases/${f}.tsx`),
   ...fs.readdirSync(path.join(GOC_REPO, 'web/src/modules/yThuc')).filter((f) => /\.tsx?$/.test(f)).map((f) => `web/src/modules/yThuc/${f}`),
   'web/src/modules/students/NganCase.tsx',
@@ -629,7 +629,6 @@ const CHO_PHEP_D: { file: string; text: RegExp }[] = [
   ...['cases/CasePanel', 'cases/FormPa', 'cases/SkillBoard'].map((f) => ({ file: `web/src/modules/${f}.tsx`, text: /^Người dạy$/ })),   // so với nhanNguoiDay()
   ...['KhaiBacPanel', 'StudentYThucSection', 'ThangYThuc', 'XacNhanXuLyPanel'].map((f) => ({ file: `web/src/modules/yThuc/${f}.tsx`, text: /^lớp thường$/ })),   // so với chuoi.nhan máy chủ gửi
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },
-  { file: 'web/src/modules/cases/TheKyNang.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },   // so với viecTiep.chu máy chủ gửi   // so với viecTiep.chu máy chủ gửi
   { file: 'shared/domain/cases.ts', text: /^(Không còn hợp lệ do sửa điểm|Bỏ qua|Chỉnh khi xác nhận gợi ý tự động)$/ },   // hằng máy chủ ghi vào DB
   { file: 'web/src/modules/yThuc/ClassYThucCard.tsx', text: /^Chưa báo$/ },   // UI-Y-THUC-LOP: so với nhanTrangThai máy chủ gửi
 ];
