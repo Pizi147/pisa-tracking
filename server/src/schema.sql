@@ -591,6 +591,8 @@ CREATE INDEX idx_attempt_lich_su_cho ON assessment_attempts(class_id) WHERE lich
 CREATE INDEX idx_attempt_o_cho ON assessment_attempts(o_cho_tu) WHERE o_cho_tu IS NOT NULL AND status != 'cancelled';
 /* TD7b: cùng cờ, theo lớp — câu giới hạn lớp / chi nhánh / giáo viên (Công việc, Lịch Test, badge lớp, Nợ điểm theo chi nhánh) chỉ đọc lượt ĐẾN HẠN của các lớp đó. */
 CREATE INDEX idx_attempt_o_cho_lop ON assessment_attempts(class_id, o_cho_tu) WHERE o_cho_tu IS NOT NULL AND status != 'cancelled';
+/* MT0-THEO-EM (chủ SP 06/11): MT0 của em — lớp FT hiện MT0 em mang theo (`MT0_THEO_EM_SQL`), đọc một dòng / em. */
+CREATE INDEX idx_attempt_mt0 ON assessment_attempts(student_id) WHERE kind = 'mt0';
 
 CREATE TABLE attempt_schedule_history (
   id INTEGER PRIMARY KEY,

@@ -13,8 +13,10 @@ import {
 import { t } from '@shared/i18n/index.ts';
 
 /**
- * HỘP NỔI NEO (PC-GV-C): vẽ qua portal, đặt tuyệt đối theo nút neo (mép phải nút, dưới nút) — không bị khung bảng cuộn ngang cắt; lùi vào
- * trong khi tràn mép màn. `tamDuoi`: < 640 px / thẻ 375 → tấm dưới đáy màn có nền che (mockup v9 khu 5 375). Esc / bấm ra ngoài → `onDong`.
+ * HỘP NỔI NEO (PC-GV-C): vẽ qua portal, `position: fixed` đặt theo nút neo lúc mở (mép phải nút, dưới nút) — không bị khung bảng cuộn ngang cắt.
+ * Cả hộp luôn nằm trong màn: tràn đáy thì dịch lên, cao hơn màn thì phần thân cuộn bên trong (đầu + chân hộp ghim). Vùng cuộn của trang là `<main>`
+ * chứ không phải `window` nên KHÔNG tính theo `scrollY` (SUA-HVL-0611: hộp từng đứng yên ngoài màn, không bấm tới được nút chân).
+ * `tamDuoi`: < 640 px / thẻ 375 → tấm dưới đáy màn có nền che (mockup v9 khu 5 375). Esc / bấm ra ngoài → `onDong`.
  */
 export function NoiNeo({ neo, rong, tamDuoi, canh = 'duoi', nhan, giuFocus = true, onDong, children, className = '' }: {
   neo: HTMLElement | null; rong: number; tamDuoi?: boolean; /** `trai`: cạnh trái phần tử neo, ngang đầu nó (hộp Lưu cạnh panel Thông tin lớp — mockup v9 khu 9). */ canh?: 'duoi' | 'trai'; nhan: string; giuFocus?: boolean; onDong: () => void; children: ReactNode; className?: string;
@@ -22,12 +24,21 @@ export function NoiNeo({ neo, rong, tamDuoi, canh = 'duoi', nhan, giuFocus = tru
   const hop = useRef<HTMLDivElement>(null);
   const [vt, setVt] = useState<{ top: number; left: number } | null>(null);
   useLayoutEffect(() => {
-    if (tamDuoi || !neo) return;
-    const r = neo.getBoundingClientRect();
-    const w = Math.min(rong, window.innerWidth - 16);
-    if (canh === 'trai') { setVt({ top: r.top + window.scrollY, left: Math.max(8, r.left - w - 8) + window.scrollX }); return; }
-    const left = Math.max(8, Math.min(r.right - w, window.innerWidth - 8 - w));
-    setVt({ top: r.bottom + window.scrollY + 6, left: left + window.scrollX });
+    if (tamDuoi || !neo) return undefined;
+    const r = neo.getBoundingClientRect();   // chốt vị trí nút lúc mở: nội dung nạp xong / đổi kích thước thì chỉ dịch lại cho vừa màn, không nhảy theo cuộn
+    const dat = () => {
+      const w = Math.min(rong, window.innerWidth - 16);
+      const h = hop.current?.offsetHeight ?? 0;
+      const top0 = canh === 'trai' ? r.top : r.bottom + 6;
+      const left = canh === 'trai' ? Math.max(8, r.left - w - 8) : Math.max(8, Math.min(r.right - w, window.innerWidth - 8 - w));
+      const top = Math.max(8, Math.min(top0, window.innerHeight - h - 8));
+      setVt((p) => (p && p.top === top && p.left === left ? p : { top, left }));
+    };
+    dat();
+    const ro = new ResizeObserver(dat);
+    if (hop.current) ro.observe(hop.current);
+    window.addEventListener('resize', dat);
+    return () => { ro.disconnect(); window.removeEventListener('resize', dat); };
   }, [neo, rong, tamDuoi, canh]);
   useGiuFocus(hop, giuFocus);
   const bam = useBamNgoai(true, () => onDong(), hop);
@@ -48,6 +59,11 @@ export function NoiNeo({ neo, rong, tamDuoi, canh = 'duoi', nhan, giuFocus = tru
     </>,
     document.body,
   );
+}
+
+/** ✕ góc đầu hộp — cùng việc với Esc (hộp Lưu: "Quay lại sửa", giữ nháp). Đang lưu thì tắt. */
+function NutDongHop({ busy, onDong }: { busy: boolean; onDong: () => void }) {
+  return <button type="button" className="btn btn-sm btn-ghost pc-hop-x" aria-label={t('Đóng')} disabled={busy} onClick={onDong}>✕</button>;
 }
 
 export type LopLuuPc = { classId: number; code: string; slots: SlotPhanCong[]; phienBan: string };
@@ -199,6 +215,7 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
   return (
     <NoiNeo neo={neoEl ?? null} rong={nhieu ? 560 : 480} tamDuoi={neo === 'tam-duoi'} canh={canh} nhan={tieuDe} onDong={() => { if (!busy) onQuayLai(); }}>
       <div className="pc-hop-dau">
+        <NutDongHop busy={busy} onDong={onQuayLai} />
         <h3>{tieuDe}</h3>
         <span className="ng">{nhieu ? `${t('{n} ô đổi', { n: soO })} · ${lop.map((l) => l.code).join(' · ')}` : `${t('{n} ô đổi', { n: soO })} · ${t('{n} HV', { n: soHv })}`}</span>
       </div>
@@ -287,6 +304,7 @@ export function HopChoDoi({ code, cho, nhanO, ten, neoEl, tamDuoi, onDong, onXon
   return (
     <NoiNeo neo={neoEl} rong={380} tamDuoi={tamDuoi} nhan={tieuDe} onDong={() => { if (!busy) onDong(); }}>
       <div className="pc-hop-dau">
+        <NutDongHop busy={busy} onDong={onDong} />
         <h3>{tieuDe}</h3>
         <span className="ng">{t('từ {tuan} ({ngay})', { tuan: tuanLich(cho[0]?.hieuLuc, hn), ngay: ngay(cho[0]?.hieuLuc, hn) })}</span>
       </div>

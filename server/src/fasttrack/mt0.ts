@@ -242,6 +242,17 @@ export function doiMt0KhiVeThuong(ftCycleId: number, k: KeHoachVeThuong): void {
   conn.prepare('UPDATE learning_cycles SET baseline_attempt_id = NULL, baseline_source = NULL WHERE id = ? AND baseline_attempt_id = ?').run(ftCycleId, k.mt0.id);
 }
 
+/**
+ * MT0-THEO-EM (chủ SP 06/11): MT0 là điểm của em — lớp FT em đang học (lớp đã kết thúc: em từng học) HIỆN MT0 đã nối vào lộ trình FT của em
+ * (`noiMt0VaoFt`). `class_id` của MT0 giữ lớp thường cũ: chấm, hạn, trễ, quyền, việc, nợ, Phân tích vẫn theo lớp cũ — lớp FT chỉ hiện.
+ * Trả cột `id` (lượt) + `lop` (lớp FT); `ph` = chỗ tham số các lớp.
+ */
+export const MT0_THEO_EM_SQL = (ph: string) => `SELECT DISTINCT m.id, e.class_id AS lop FROM enrollments e
+  JOIN classes c ON c.id = e.class_id AND c.route IS NOT NULL
+  JOIN assessment_attempts m ON m.student_id = e.student_id AND m.kind = 'mt0' AND m.status != 'cancelled'
+  JOIN learning_cycles cy ON cy.id = m.cycle_id AND cy.route IS NOT NULL
+ WHERE e.class_id IN (${ph}) AND (e.status = 'active' OR c.status = 'finished')`;
+
 export type Mt0View = {
   attemptId: number; tuan: string | null; maTuan: string | null; han: string | null;
   trangThai: TrangThaiMt0; coDiem: boolean; sos: { skill: AssessedSkill; band: number }[];

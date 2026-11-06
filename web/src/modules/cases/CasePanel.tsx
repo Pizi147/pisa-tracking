@@ -437,6 +437,8 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
 }) {
   const dangChay = daBatDau(iv);
   const choDuyet = iv.approvalState === 'pending';
+  /* LOI-TEST-THUONG: hook trước mọi return sớm (PA chờ → đang chạy đổi nhánh trên cùng thẻ). */
+  const khung = useContext(ThanTrongCot);
   /* OV-13b (mockup OV-13 §2): PA ĐANG CHẠY = một dòng gọn; chờ xác nhận / chờ duyệt / đã khép giữ thẻ đầy đủ. */
   if (!anDau && iv.status === 'started' && !choDuyet && !iv.awaitingConfirmation && !iv.chuaChay) {
     return <DongPaGon iv={iv} data={data} homNay={homNay} ngan={ngan} onViec={onViec} onDoi={onDoi} anViec={anViec} vua={vua} onHoanTac={onHoanTac} />;
@@ -470,7 +472,6 @@ function TheKhoiPa({ iv, data, homNay, ngan, onViec, onDoi, anDau = false, anXac
   /* OV-7b: lần ghi Kết quả gần nhất mà người xem sửa được (người đã ghi + QL, máy chủ quyết `suaDuoc`). */
   const fSua = ketQuaPa.find((f: any) => f.interventionId === iv.id && f.nextStep && f.suaDuoc) ?? null;
   const fGan = anDau ? null : ketQuaPa.find((f: any) => f.interventionId === iv.id && f.outcome) ?? null;
-  const khung = useContext(ThanTrongCot);
   return (
     <li className={anDau ? 'flex list-none flex-col gap-[5px]' : 'pa-the'} style={anDau ? undefined : { ...vienVua(vua), opacity: dangChay || choDuyet || vua ? undefined : 0.8 }} data-pa-id={anDau ? undefined : iv.id}>
       {!anDau && <div className="flex flex-wrap items-center gap-1.5">

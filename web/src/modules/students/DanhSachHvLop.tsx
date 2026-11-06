@@ -68,9 +68,9 @@ function ToKhop({ chu, tim }: { chu: string; tim?: string }) {
   return <>{chu.slice(0, i)}<span className="khop-tim">{chu.slice(i, i + n)}</span>{chu.slice(i + n)}</>;
 }
 
-/** Tên em (link hồ sơ, chữ khớp ô tìm tô hồng) + dòng phụ TVV / Tạm dừng (mockup U04 `.dong2`). */
+/** Tên em (link hồ sơ, chữ khớp ô tìm tô hồng) + dòng phụ Tạm dừng (mockup U04 `.dong2`). Chủ SP 06/11: bỏ "TVV {tên}" dưới tên em. */
 function TenEm({ h, ev, ds, tim }: { h: HvGon; ev?: EmVai; ds: NguCanhDs; tim?: string }) {
-  const phu = [ev?.status === 'inactive' ? t('Tạm dừng') : null, h.tvv ? `TVV ${h.tvv}` : null].filter(Boolean).join(' · ');
+  const phu = ev?.status === 'inactive' ? t('Tạm dừng') : '';
   return (
     <span className="block min-w-0">
       <Link className="ten-ho-so khong-mui block" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}><ToKhop chu={h.ten} tim={tim} /></Link>
@@ -397,7 +397,6 @@ function TheEm({ h, mo, onMo, lop, viec, nguCanh, onMoViec, onDoi, vai, tim }: O
       </div>
       <div className="the-em-2">
         {ev?.status === 'inactive' && <span>{t('Tạm dừng')}</span>}
-        {h.tvv && <span>TVV {h.tvv}</span>}
         {g && g.loTrinh.soMt > 0 && <span className="tabular-nums">MT {g.loTrinh.mt}/{g.loTrinh.soMt}</span>}
         {m && g && <span className="inline-flex items-center gap-1"><NutOvr g={g} mo={mo} onMo={onMo} />
           {m.ovr != null && <span className="tabular-nums">{m.kyVong != null ? `${t('kỳ vọng {kv}', { kv: chuSo(m.kyVong)! })} · ` : ''}MT{m.mt}</span>}</span>}

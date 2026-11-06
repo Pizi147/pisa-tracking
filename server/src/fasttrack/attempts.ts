@@ -46,6 +46,7 @@ import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
+import { MT0_THEO_EM_SQL } from './mt0.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -2550,14 +2551,17 @@ export function classScoreSheet(
    * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.
    * Chặn ở MÁY CHỦ chứ không chỉ ở giao diện: gõ thẳng đường dẫn vẫn phải ra đúng bảng.
    */
-  if (chon.theo !== 'mt0' && isRatioClass(classId)) {
+  const lopThuong = isRatioClass(classId);
+  if (chon.theo !== 'mt0' && lopThuong) {
     throw badRequest('Lớp thường dùng bảng điểm riêng (số câu đúng / tổng số câu), không dùng bảng điểm Mock Test.');
   }
   const period = chon.theo !== 'luot' && chon.periodId
     ? (conn.prepare('SELECT * FROM report_periods WHERE id = ?').get(chon.periodId) as any) : null;
 
   const params: unknown[] = [classId];
-  let sql = `${ATTEMPT_SELECT} WHERE a.class_id = ? AND a.status != 'cancelled'`;
+  /* MT0-THEO-EM (chủ SP 06/11): lưới MT0 của lớp FT = MT0 em mang từ lớp thường (`class_id` vẫn lớp cũ — quyền, hạn theo lớp cũ). */
+  const mt0TheoEm = chon.theo === 'mt0' && !lopThuong;
+  let sql = `${ATTEMPT_SELECT} WHERE ${mt0TheoEm ? `a.id IN (SELECT id FROM (${MT0_THEO_EM_SQL('?')}))` : 'a.class_id = ?'} AND a.status != 'cancelled'`;
   /* Lỗi chủ SP 28/10: lớp đang học chỉ hiện lượt hiện tại (lộ trình mới nhất, em đang học hoặc Tạm dừng); lớp đã kết thúc (Lưu trữ) giữ đủ lịch sử. */
   if (cls.status !== 'finished') sql += ` AND ${LUOT_HIEN_TAI_SQL('a', 's', true)}`;
   /*
@@ -2584,7 +2588,7 @@ export function classScoreSheet(
     sql += ` AND a.kind = 'mock' AND a.attempt_no = ?`;
     params.push(chon.attemptNo);
   }
-  /* PR-MT0: lưới MT0 chỉ MT0; lưới FT theo tuần không có MT0 (MT0 chỉ ở lớp thường — lớp FT không bao giờ có). */
+  /* PR-MT0: lưới MT0 chỉ MT0; lưới FT theo tuần không có MT0 (MT0 gắn lớp thường — lớp FT chỉ hiện ở lượt `mt:0`). */
   if (chon.theo === 'mt0') sql += ` AND a.kind = 'mt0'`;
   sql += ' ORDER BY s.full_name';
   const attempts = conn.prepare(sql).all(...params) as any[];
@@ -2611,8 +2615,10 @@ export function classScoreSheet(
       const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat, vangCu);
       /* OV-13h: GV giữ `canEdit` ở ô chưa có điểm (skillCells đã xét `oChuaCoDiem`); ô có điểm khoá, không gỡ "-". */
       /* Rà #410: lớp đã kết thúc — mọi ô không nhận "-" (`khongVang`, cùng câu máy chủ), kể cả QL. */
-      const cells = ketThuc ? cells0.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG,
-        ...(gvKetThuc ? { ...(c.canEdit ? {} : { lyDoKhoa: 'Lớp đã kết thúc' }), daChot: c.daChot && { ...c.daChot, goDuoc: false } } : {}) })) : cells0;
+      /* MT0-THEO-EM: MT0 hiện ở lớp FT không là việc / trễ của lớp FT (vẫn ở lớp thường cũ); sửa được hay không giữ theo quyền lớp cũ. */
+      const cells1 = a.class_id !== classId ? cells0.map((c) => ({ ...c, viec: false, overdue: false })) : cells0;
+      const cells = ketThuc ? cells1.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG,
+        ...(gvKetThuc ? { ...(c.canEdit ? {} : { lyDoKhoa: 'Lớp đã kết thúc' }), daChot: c.daChot && { ...c.daChot, goDuoc: false } } : {}) })) : cells1;
       return {
         attemptId: a.id,
         studentId: a.student_id,
