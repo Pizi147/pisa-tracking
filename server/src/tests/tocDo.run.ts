@@ -391,7 +391,7 @@ await checkAsync('PR-TD Task1(g) · mọi đường trong DUONG_DO × vai của 
 
 // ==================================================================== Task 2 — quyền & ngày nghiệp vụ qua bộ nhớ
 
-const TOAN_BO_HV = (conn.prepare('SELECT id FROM students').all() as any[]).map((r) => r.id as number);
+const TOAN_BO_HV = (conn.prepare('SELECT id FROM students ORDER BY consultant_user_id, id').all() as any[]).map((r) => r.id as number);
 const TOAN_BO_LOP = (conn.prepare('SELECT id FROM classes').all() as any[]).map((r) => r.id as number);
 const TOAN_BO_TK = (conn.prepare(`SELECT id FROM users WHERE approval_state = 'approved'`).all() as any[]).map((r) => r.id as number);
 const PRINCIPAL_CUA = new Map<number, ReturnType<typeof loadPrincipal>>();
@@ -901,7 +901,9 @@ function nhanDuLieu(n: number): { hvTruoc: number; hvSau: number; caseTruoc: num
   const hvTruoc = demHv();
   const caseTruoc = demCase();
 
-  const idHvGoc = (conn.prepare('SELECT id FROM students').all() as any[]).map((r) => r.id as number);
+  /* GIAM-DOC-0611h: câu cũ không ORDER BY → SQLite quét chỉ mục phủ nhỏ nhất (trước: idx_student_consultant; nay idx_student_branch) — giữ ĐÚNG thứ tự cũ
+     (TVV, id; NULL đầu như chỉ mục) để id dữ liệu ×3 và ảnh chụp TD4-a không đổi. */
+  const idHvGoc = (conn.prepare('SELECT id FROM students ORDER BY consultant_user_id, id').all() as any[]).map((r) => r.id as number);
   /* Ánh xạ case CŨ → case MỚI, dùng chung suốt cả lượt nhân để previous_case_id nối đúng bản sao của chính nó. */
   const banCase = new Map<number, number>();
 
@@ -1357,6 +1359,42 @@ await checkAsync('DOC-IT-3 (×3) · listCases của GV: trùng cách cũ mọi G
   const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${cau!.sql}`).all(...cau!.args) as any[]).map((r) => r.detail as string);
   if (plan.some((d) => /^SCAN sc\b/.test(d))) loi.push(`GVCN listCases(p, {}) vẫn SCAN sos_cases: ${plan.join(' | ')}`);
   console.log(`      (đo ×3: ${soGv} GV, ${soCase} dòng Case so)`);
+  assert(!loi.length, loi.join(' · '));
+});
+
+/* GIAM-DOC-0611h ([XM-B]): người xem quyền THEO CHI NHÁNH (QL / Admin / CX / TVV một chi nhánh) — tập cha "Case của em thuộc chi nhánh" trùng cách cũ, không SCAN. */
+await checkAsync('GIAM-DOC-0611h (×3) · listCases quyền chi nhánh: trùng cách cũ mọi tài khoản × bộ lọc; không SCAN sos_cases / students; migrate chạy lặp được', async () => {
+  const cases = await import('../cases/cases.ts');
+  const { migratePrGiamDoc0611h } = await import('../migrate/prGiamDoc0611h.ts');
+  const lan: string[][] = [[], []];
+  migratePrGiamDoc0611h(conn, lan[0]); migratePrGiamDoc0611h(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  const loi: string[] = [];
+  let soTk = 0, soCase = 0;
+  const moiCn = (conn.prepare('SELECT id FROM branches').all() as any[]).map((r) => r.id as number);
+  for (const { id } of conn.prepare(`SELECT id FROM users WHERE status = 'active' ORDER BY id`).all() as any[]) {
+    const p = loadPrincipal(id);
+    const pv = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+    if (pv.none || pv.all || !pv.branchIds.length) continue;
+    soTk++;
+    for (const f of [{}, { status: 'open' }, { kemTam: true }, { noOwner: true }, ...moiCn.map((branchId) => ({ branchId }))] as any[]) {
+      cases.tapChaTheoLopKhiKiem.tat = true;
+      let cu: string;
+      try { cu = JSON.stringify(cases.listCases(p, f)); } finally { cases.tapChaTheoLopKhiKiem.tat = false; }
+      const moi = cases.listCases(p, f);
+      soCase += moi.rows.length;
+      if (JSON.stringify(moi) !== cu) loi.push(`user ${id} ${JSON.stringify(f)}: ${JSON.stringify(moi).length} ≠ ${cu.length} ký tự`);
+    }
+  }
+  assert(soTk >= 3 && soCase > 0, `bộ đo quá mỏng: ${soTk} tài khoản, ${soCase} dòng Case`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try { cases.listCases(loadPrincipal(USER.QL), {}); } finally { doQuet.ghi = null; }
+  const cau = ghi.find((g) => /FROM sos_cases sc\s+LEFT JOIN assessment_attempts a/.test(g.sql));
+  assert(cau, 'không bắt được câu danh sách Case');
+  const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${cau!.sql}`).all(...cau!.args) as any[]).map((r) => r.detail as string);
+  if (plan.some((d) => /^SCAN (sc|s2|x)\b/.test(d))) loi.push(`QL listCases(p, {}) vẫn SCAN: ${plan.join(' | ')}`);
+  console.log(`      (đo ×3: ${soTk} tài khoản quyền chi nhánh, ${soCase} dòng Case so)`);
   assert(!loi.length, loi.join(' · '));
 });
 
