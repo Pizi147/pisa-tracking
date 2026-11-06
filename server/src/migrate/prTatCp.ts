@@ -5,9 +5,10 @@ import { nowIso } from '../util.ts';
 /** Lý do huỷ đánh dấu Checkpoint ẩn vì tắt tự sinh — bật lại công tắc chỉ khôi phục đúng các lượt mang dấu này. */
 export const LY_DO_TAT_CP = 'Tạm tắt Checkpoint tự sinh (chủ SP 06/11)';
 /** Checkpoint TỰ SINH (dòng Hành trình `CHI_TIET_CP_TU_SINH` — bản chính 29/10: cả 15 lượt có) chưa có điểm nào (không điểm, không dấu "-"):
- *  đối tượng ẩn khi tắt. Checkpoint QL xếp tay (kể cả lượt ẩn QL đã mở lại — dòng `restored` có người làm) không đụng. */
+ *  đối tượng ẩn khi tắt. Checkpoint QL xếp tay (kể cả lượt ẩn QL đã mở lại — dòng `restored` (xếp tay) / `reopened` (Khôi phục lượt) có người làm)
+ *  không đụng (RA-LOI-0711a: thiếu `reopened` → deploy kế ẩn lại lượt QL vừa Khôi phục). */
 const TU_SINH_CHUA_DIEM = `EXISTS (SELECT 1 FROM journey_events j WHERE j.ref_table = 'assessment_attempts' AND j.ref_id = a.id AND j.detail = ?)
-  AND NOT EXISTS (SELECT 1 FROM attempt_schedule_history h WHERE h.attempt_id = a.id AND h.action = 'restored' AND h.actor_user_id IS NOT NULL)
+  AND NOT EXISTS (SELECT 1 FROM attempt_schedule_history h WHERE h.attempt_id = a.id AND h.action IN ('restored', 'reopened') AND h.actor_user_id IS NOT NULL)
   AND NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND (sc.raw_score IS NOT NULL OR sc.no_show_period_id IS NOT NULL))`;
 
 /**
