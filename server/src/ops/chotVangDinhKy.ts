@@ -4,7 +4,6 @@ import { quetXetLaiHetHan } from '../normal/xetLai.ts';
 import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 import { todayInBusinessTz } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { baoChamCheoQuaHan } from '../cham/chamCheo.ts';
 import { sinhCheckpointKeTiep } from '../normal/regular.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { donThungRac } from '../platform/thungRac.ts';
@@ -47,8 +46,6 @@ export function chotVangDinhKy(o: {
   if (!o.chuyen) try { donGhiDao(); } catch (e) { console.error('[chot-vang] dọn ghi_dao', e); }
   /* PC-GV-A: lịch đổi phân công GV tới tuần hiệu lực → áp (lỗi luật giữ lịch + báo người tạo); chạy lặp vô hại. */
   if (!o.chuyen) try { apDoiDenHan(ngay); } catch (e) { console.error('[chot-vang] đổi phân công', e); }
-  /* PR-LT3 (T18, D3): chuông "Speaking quá hạn chấm" cho GVBM Speaking + GVCN — cùng lượt quét thứ Hai; lỗi không làm hỏng lượt quét. */
-  try { baoChamCheoQuaHan(ngay); } catch (e) { console.error('[chot-vang] chuông chấm chéo', e); }
   /* OV-6b2: lớp liên tục — em đã qua tuần thi Checkpoint (chưa đủ điểm) có Checkpoint kế tiếp; lỗi không làm hỏng lượt quét. */
   try { tx(() => sinhCheckpointKeTiep(null, ngay)); } catch (e) { console.error('[chot-vang] checkpoint', e); }
   return { ngay, daChuyen, boQua: null, ms: Date.now() - batDau };

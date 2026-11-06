@@ -261,7 +261,7 @@ export async function runPrEnTests(t: any) {
    * hàm máy chủ sinh ra nó (chữ tiêu đề / nội dung là chữ thật của máy chủ), TRƯỚC `duLieu` (tên em / lớp / lý do mới là dữ liệu).
    * EN-TB soi thông báo của GVCN, GVBM + mỗi loại một người nhận; EN-TB-LOAI giữ tập loại không teo lại.
    */
-  const LOAI_TB_GV = ['cham_qua_han', 'cham_cheo_qua_han', 'case_chua_chot_pa', 'doi_lich_thuong', 'huy_lenh', 'lam_lai_ban_giao', 'phan_cong_moi', 'discipline'];
+  const LOAI_TB_GV = ['cham_qua_han', 'case_chua_chot_pa', 'doi_lich_thuong', 'huy_lenh', 'lam_lai_ban_giao', 'phan_cong_moi', 'discipline'];
   const loiDung: string[] = [];
   {
     const TODAY = t.TODAY;
@@ -271,7 +271,6 @@ export async function runPrEnTests(t: any) {
     const mywork: any = await import('../worklist/mywork.ts');
     const { xuLyCaseMany } = await import('../cases/sosState.ts');
     const { loadPrincipal } = await import('../permissions.ts');
-    const chamCheo: any = await import('../cham/chamCheo.ts');
     const att: any = await import('../fasttrack/attempts.ts');
     const { luotThu } = await import('./luotThu.ts');
     const week: any = await import('../platform/week.ts');
@@ -307,16 +306,6 @@ export async function runPrEnTests(t: any) {
       const xl = xuLyCaseMany(mo.map((c) => c.id), TODAY);
       const qh = mo.find((c) => xl.get(c.id)?.cot === 'choDuyet' && xl.get(c.id)?.quaHan);
       td.dongBoThongBaoTuDong(loadPrincipal(qh.owner_user_id), TODAY);
-    });
-    /* cham_cheo_qua_han: em mới MB FT 101, MT5 chỉ Speaking thi 2 tuần trước, chưa chấm → lượt quét thứ Hai. */
-    thu('cham_cheo_qua_han', () => {
-      const hai = week.ensurePeriod(t.addDays(d.mondayOfDate(TODAY), -14)).id;
-      const e = emMoi(FT101, null);
-      const a = luotThu(conn, att.createAttempt, P.admin, { studentId: e.sid, cycleId: e.cy, classId: FT101, no: 5, periodId: hai });
-      conn.prepare('UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ?').run(hai, a.id);
-      conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(a.id);
-      conn.prepare(`UPDATE attempt_skills SET required = 0 WHERE attempt_id = ? AND skill != 'speaking'`).run(a.id);
-      chamCheo.baoChamCheoQuaHan(TODAY);
     });
     /* doi_lich_thuong: QL dời một bài Progress Test của lớp thường → GVCN; bản cả lớp. */
     thu('doi_lich_thuong', () => {

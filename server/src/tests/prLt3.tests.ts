@@ -117,7 +117,11 @@ export async function runPrLt3Tests(t: YThucTestKit) {
       const r = cham.lichTest(P.mbManager, pid(NAY), null, TODAY, { classId: s.id, phamVi: 'tat-ca' });
       const k = [r.no.reduce((n: number, x: any) => n + x.conBai, 0), (r.chamTuanNay ?? []).reduce((n: number, l: any) => n + l.conBai, 0),
         r.lop.reduce((n: number, l: any) => n + l.conBai, 0)];
-      if (k[0] + k[1] + k[2] !== s.needScores) {
+      /* T18 (06/11): S chấm chéo quá hạn không vào khối 1 nhưng vẫn là bài chờ chấm của badge. */
+      const cheoQua = (att.listAttempts(P.mbManager, { classId: s.id, scope: 'managed', chiDangHoc: true }).rows as any[])
+        .filter((a: any) => a.status !== 'cancelled').flatMap((a: any) => ((a.pendingDetail ?? []) as any[]).filter((x) => d.laChamCheo(a.kind, x.skill)
+          && x.weekStart && d.khoiCham({ tuanThi: x.weekStart, tuanHomNay: NAY, quaHan: x.overdue }) === 'qua-han')).length;
+      if (k[0] + k[1] + k[2] + cheoQua !== s.needScores) {
         /* In chi tiết khi lệch (giữ từ G-10 cũ): ô chờ chấm theo khối của chính ô. */
         const cells = att.listAttempts(P.mbManager, { classId: s.id, scope: 'managed', chiDangHoc: true }).rows
           .filter((a: any) => a.status !== 'cancelled').flatMap((a: any) => a.pendingDetail ?? []);
@@ -170,16 +174,12 @@ export async function runPrLt3Tests(t: YThucTestKit) {
       && /Speaking/.test(i.reason));
     assert(tc && tc.statusLabel === d.CHAM_CHEO && !tc.mine, `"Tất cả trong phạm vi": ${JSON.stringify(tc && [tc.statusLabel, tc.mine])}`);
   });
-  check('LT3-3 (c) khối 1: cột GV chấm ghi "GV chấm chéo", không tên GVBM S; GVBM S không "Chờ bạn chấm"', () => {
-    const aid = emMoi(6, HAI, true);   // MT6: dòng khối 1 chỉ có ô S (MT5 tuần HAI còn em khác đủ L/R/W)
-    const dong = xem(NAY).no.find((x: any) => x.attemptIds.includes(aid));
-    assert(dong && dong.gvNo.includes(d.CHAM_CHEO) && !dong.gvNo.includes(P.sTeacher.fullName) && !dong.gvNo.includes('chưa phân công'),
-      JSON.stringify(dong?.gvNo));
-    const gv = cham.lichTest(P.sTeacher, pid(NAY), null, TODAY, { classId: LOP }).no.find((x: any) => x.attemptIds.includes(aid));
-    assert(gv && gv.cuaToi === false && gv.duocCham === true && gv.coDayLop === false, JSON.stringify(gv && [gv.cuaToi, gv.duocCham, gv.coDayLop]));
-    /* GVCN (dạy lớp): dòng chỉ còn ô S Mock → "Chờ chấm" (coDayLop false), không "Chờ GV khác". */
-    const cn = cham.lichTest(P.coreTeacher, pid(NAY), null, TODAY, { classId: LOP }).no.find((x: any) => x.attemptIds.includes(aid));
-    assert(cn && cn.cuaToi === false && cn.coDayLop === false, JSON.stringify(cn && [cn.cuaToi, cn.coDayLop]));
+  check('LT3-3 (c) khối 1 KHÔNG có S Mock chấm chéo quá hạn (T18, 06/11: chỉ ghi ở Công việc + Chấm Test); GVBM S không "Chờ bạn chấm" ở khối 2', () => {
+    const aid = emMoi(6, HAI, true);   // MT6: chỉ ô S
+    for (const p of [P.mbManager, P.sTeacher, P.coreTeacher]) {
+      const dong = cham.lichTest(p, pid(NAY), null, TODAY, { classId: LOP, phamVi: 'tat-ca' }).no.find((x: any) => x.attemptIds.includes(aid));
+      assert(!dong, `${p.fullName}: S chấm chéo quá hạn còn ở khối 1`);
+    }
     /* Khối 2/3: S Mock không là "bài của tôi" của GVBM S (nhãn "Chờ bạn chấm" / tự mở). */
     emMoi(5, TRUOC, true);
     const h = xem(NAY, P.sTeacher).chamTuanNay.find((l: any) => l.classId === LOP && l.weekStart === TRUOC);
@@ -222,61 +222,50 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(x && x[1].chamCheo === true && x[1].nguoi.length === 0, JSON.stringify(x));
   });
 
-  check('LT3-3 (f) GV chấm chéo lớp khác, "Tất cả": thấy S Mock quá hạn ở khối 1 (cùng phạm vi khối 2/3 — rà #218 I2); không thấy lớp chi nhánh khác', () => {
+  check('LT3-3 (f) GV chấm chéo lớp khác, "Tất cả": không thấy S Mock quá hạn ở khối 1 (T18 06/11); không thấy lớp chi nhánh khác', () => {
     assert(cheoId, 'dữ liệu demo: cần một GV Speaking lớp FT khác cùng chi nhánh');
     const cheo = perm.loadPrincipal(cheoId);
     const aid = emMoi(7, HAI, true);
     const r = cham.lichTest(cheo, pid(NAY), null, TODAY, { classId: LOP, phamVi: 'tat-ca' });
-    const dong = r.no.find((x: any) => x.attemptIds.includes(aid));
-    assert(dong && dong.duocCham === true && dong.cuaToi === false, `khối 1 của GV chấm chéo: ${JSON.stringify(r.no.map((x: any) => x.key))}`);
+    assert(!r.no.some((x: any) => x.attemptIds.includes(aid)), 'T18 (06/11): S chấm chéo quá hạn không vào khối 1');
     const cp = cham.lichTest(cheo, pid(NAY), null, TODAY, { classId: classId('CP FT 110'), phamVi: 'tat-ca' });
     assert(!cp.no.length && cp.lopDangLoc === null, 'lớp chi nhánh khác không lộ');
   });
 
-  // ------------------------------------------------------------------ LT3-4 chuông
-  const chamCheo: any = await import('../cham/chamCheo.ts');
+  // ------------------------------------------------------------------ LT3-4 "quá hạn" chỉ ghi (chủ SP 06/11)
   const ops: any = await import('../ops/chotVangDinhKy.ts');
-  check('LT3-4 chuông "Speaking quá hạn chấm": GVBM S + GVCN, một lần; không GVBM W; S tuần trước không chuông; lượt quét thứ Hai gọi', () => {
-    const don = () => conn.prepare(`DELETE FROM notifications WHERE kind = 'cham_cheo_qua_han'`).run();
-    don();
-    try {
-      const aid = emMoi(5, HAI, true);
-      const key = `chamcheo:${LOP}:5:${pid(HAI)}`;
-      const nhan = () => (conn.prepare('SELECT user_id, title, body, duong FROM notifications WHERE dedup_key = ?').all(key) as any[]);
-      assert(chamCheo.baoChamCheoQuaHan(TODAY) > 0, 'phải ghi chuông');
-      const ds = nhan();
-      const ids = new Set(ds.map((x) => x.user_id));
-      /* Người nhận = GV đang phụ trách S của lớp (luật phân công chung) + GVCN đang hiệu lực — đọc lại lúc kiểm (phép kiểm trước có đổi phân công). */
-      const gvS = debt.phanCongDangHieuLuc([LOP], TODAY).get(`${LOP}|speaking`)?.userId;
-      const gvcn = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'
-          AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)`).all(LOP, TODAY, TODAY) as any[]).map((r) => r.user_id);
-      const mong = new Set([gvS, ...gvcn].filter(Boolean));
-      assert(mong.size > 0 && [...mong].every((id) => ids.has(id)) && ids.size === mong.size && ds.length === ids.size,
-        `người nhận ${JSON.stringify([...ids])} ≠ GV S + GVCN ${JSON.stringify([...mong])}`);
-      assert(ds[0].title === 'Speaking MT5 quá hạn chấm' && /MB FT 101 · W\d [A-Z]{3} · \d+ bài · GV chấm chéo$/.test(ds[0].body), ds[0].body);
-      assert(ds[0].duong === `/test/lich?classId=${LOP}&kn=speaking`, ds[0].duong);
-      chamCheo.baoChamCheoQuaHan(TODAY);
-      assert(nhan().length === ds.length, 'chạy lại không gửi trùng');
-      if (!mong.has(P.w1Teacher.userId)) assert(!ids.has(P.w1Teacher.userId), 'GVBM W1 không nhận');
-      void aid;
-      emMoi(5, TRUOC, true);
-      don();
-      chamCheo.baoChamCheoQuaHan(TODAY);
-      assert(!(conn.prepare('SELECT 1 FROM notifications WHERE dedup_key = ?').get(`chamcheo:${LOP}:5:${pid(TRUOC)}`)), 'S tuần trước (khối 2) không chuông');
-      /* Tuần thi cũ hơn 4 tuần (rà #218): không chuông — lần đầu chạy trên bản chính không dồn nợ cũ. */
-      const CU = t.addDays(NAY, -7 * 5);
-      emMoi(5, CU, true);
-      don();
-      chamCheo.baoChamCheoQuaHan(TODAY);
-      assert(!(conn.prepare('SELECT 1 FROM notifications WHERE dedup_key = ?').get(`chamcheo:${LOP}:5:${pid(CU)}`)), 'S Mock thi 5 tuần trước không chuông');
-      const BON = t.addDays(NAY, -7 * 4);
-      emMoi(5, BON, true);
-      chamCheo.baoChamCheoQuaHan(TODAY);
-      assert(conn.prepare('SELECT 1 FROM notifications WHERE dedup_key = ?').get(`chamcheo:${LOP}:5:${pid(BON)}`), 'S Mock thi 4 tuần trước vẫn chuông');
-      emMoi(5, HAI, true);
-      don();
-      ops.chotVangDinhKy({ ngay: TODAY, chuyen: () => 0, daKhoiTao: () => true });
-      assert(nhan().length > 0, 'lượt quét thứ Hai phải gọi chuông');
-    } finally { don(); }
+  const td: any = await import('../platform/thongBaoTuDong.ts');
+  check('LT3-4 S chấm chéo quá hạn: GVCN + GV phụ trách S + GV S chấm chéo thấy "quá hạn" ở Công việc / Chấm Speaking; KHÔNG chuông, KHÔNG vào số quá hạn / badge', () => {
+    const aid = emMoi(5, HAI, true);
+    const gvS = debt.phanCongDangHieuLuc([LOP], TODAY).get(`${LOP}|speaking`)?.userId;
+    const gvcn = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'
+        AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)`).all(LOP, TODAY, TODAY) as any[]).map((r) => r.user_id as number);
+    const ai = [...new Set([gvS, ...gvcn, cheoId].filter((x): x is number => !!x))];
+    assert(ai.length >= 2, `cần ≥ 2 người: ${JSON.stringify(ai)}`);
+    const nhoTruoc = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind IN ('cham_cheo_qua_han')`).get() as any).n;
+    for (const uid of ai) {
+      const p = perm.loadPrincipal(uid);
+      const w = mw.myWork(p);
+      const it = (w.items as any[]).find((x) => x.key === d.KHOA_CHAM_SPEAKING);
+      assert(it && it.urgency === 'overdue' && !!it.due, `${uid}: việc Chấm Speaking phải "quá hạn" có hạn: ${JSON.stringify(it && [it.urgency, it.due])}`);
+      /* Không tính: số quá hạn đầu nhóm / badge / Tổng quan (demDongViec), tóm tắt máy chủ, chuông. */
+      const khac = (w.items as any[]).filter((x) => x.key !== d.KHOA_CHAM_SPEAKING && !d.laViecChamCheo(x));
+      assert(d.demDongViec(w.items as any[]).quaHan === d.demDongViec(khac).quaHan, `${uid}: demDongViec đếm việc chấm chéo`);
+      assert(![...td.muonTuViec(p, [it], TODAY).keys()].some((k: string) => k.startsWith('tudong:cham:')), `${uid}: việc chấm chéo quá hạn sinh chuông "cham_qua_han"`);
+      /* Hàng đợi (Chấm Test + panel): bài quá hạn có cờ + hạn. */
+      const h = att.baiChamSpeaking(p, TODAY).rows.find((r: any) => r.attemptId === aid);
+      assert(h && h.cho && h.cell.overdue === true && !!h.cell.deadline, `${uid}: Chấm Test thiếu bài quá hạn`);
+    }
+    /* GVCN không là GV Speaking: chỉ thấy bài QUÁ HẠN của lớp mình (bài chưa quá hạn không vào). */
+    const chiCn = gvcn.find((id) => id !== gvS && !perm.lopFtChoGvSpeaking(perm.loadPrincipal(id), TODAY).includes(LOP));
+    if (chiCn) {
+      const moi = emMoi(6, NAY, true);
+      const rows = att.baiChamSpeaking(perm.loadPrincipal(chiCn), TODAY).rows;
+      assert(!rows.some((r: any) => r.attemptId === moi), 'GVCN thường thấy cả bài chưa quá hạn');
+    }
+    /* Chuông: không còn (lượt quét thứ Hai cũng không gọi). */
+    ops.chotVangDinhKy({ ngay: TODAY, chuyen: () => 0, daKhoiTao: () => true });
+    const nhoSau = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind IN ('cham_cheo_qua_han')`).get() as any).n;
+    assert(nhoSau === nhoTruoc && nhoSau === 0, `chuông chấm chéo: ${nhoTruoc} → ${nhoSau}`);
   });
 }

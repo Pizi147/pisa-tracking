@@ -55,7 +55,7 @@ export async function runPrOv11cTests(t: YThucTestKit) {
         if (x.studentId !== null) em.add(x.studentId);
         for (const id of x.emIds ?? []) em.add(id);
         /* Việc cả lớp đếm em: có đủ id em (không còn chỉ số đếm). */
-        if (x.studentId === null && x.count && ['score', 'ban_giao', 'khai_bac', 'ky_vong_dau_ra', 'xet_lai_lo_trinh', 'chot_len_ft'].includes(x.group)) {
+        if (x.studentId === null && x.count && !d.laViecChamCheo(x) /* T18: Chấm Speaking đếm bài, không có id em */ && ['score', 'ban_giao', 'khai_bac', 'ky_vong_dau_ra', 'xet_lai_lo_trinh', 'chot_len_ft'].includes(x.group)) {
           assert((x.emIds ?? []).length === (x.group === 'score' ? x.count : x.count), `${x.key}: emIds ${(x.emIds ?? []).length} ≠ count ${x.count}`);
         }
       }

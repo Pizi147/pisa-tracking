@@ -330,6 +330,10 @@ export function lopFtChoGvSpeaking(p: Principal, date = demoToday()): number[] {
   const cn = new Set(gv.map((g) => g.branchId));
   return [...bangLop()].filter(([, l]) => l.isFastTrack && l.branchId != null && (toanHt || cn.has(l.branchId))).map(([id]) => id);
 }
+/** T18 (chủ SP 06/11): lớp FT mà người này là GVCN đang hiệu lực — được THẤY bài S chấm chéo quá hạn của lớp mình (không có quyền chấm). */
+export function lopFtGvcn(p: Pick<Principal, 'assignments'>, date = demoToday()): number[] {
+  return [...new Set(p.assignments.filter((a) => a.isCore && activeAt(a, date) && !!bangLop().get(a.classId)?.isFastTrack).map((a) => a.classId))];
+}
 export const grantGvNhapDiem = (p: Pick<Principal, 'grants'>) => p.grants.filter((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT));
 /**
  * OV-14c: AI LÀ GV SPEAKING — vai Giáo viên có `SCORE_EDIT`, và có kỹ năng `speaking` ở hồ sơ (`user_skills`) HOẶC đang có phân công

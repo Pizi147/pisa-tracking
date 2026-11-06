@@ -48,7 +48,9 @@ export async function runPrOv13gTests(t: YThucTestKit) {
     assert(ds.length === 1 && ds[0].key === d.KHOA_CHAM_SPEAKING, `phải đúng một việc Chấm Speaking (${ds.length})`);
     const r = ds[0];
     assert(r.tieuDe === `${d.VIEC_CHAM_CHEO} · ${ky.length} bài` && r.soBai === ky.length, `số bài ${r.tieuDe} ≠ Nợ điểm ${ky.length}`);
-    assert(r.urgency === 'normal' && r.due === null, 'không đỏ / quá hạn, không hạn');
+    /* T18 (chủ SP 06/11): có bài S quá hạn trong lớp thì việc ghi "quá hạn" + hạn; không thì không hạn. */
+    const coQuaHan = scoreDebtCells(perm.loadPrincipal(P.admin.userId), TODAY, null).some((c) => c.chamCheo && c.overdue && lopS.has(c.classId));
+    assert(coQuaHan ? (r.urgency === 'overdue' && !!r.due) : (r.urgency === 'normal' && r.due === null), `quá hạn ${coQuaHan}: ${r.urgency} / ${r.due}`);
   });
 
   check('OV13g-2 · chi nhánh khác không thấy; GV không dạy S không có dòng', () => {
@@ -60,7 +62,9 @@ export async function runPrOv13gTests(t: YThucTestKit) {
     assert(!ngoai.some((c) => lopQ.has(c.classId)), 'lớp chi nhánh khác lọt vào hàng đợi');
     for (const k of ['w1Teacher', 'lrTeacher', 'normalCoreTeacher'] as const) {
       const x = (P as any)[k];
-      assert(!perm.lopFtChoGvSpeaking(x, TODAY).length && dongCc(x).length === 0, `${k} không dạy S mà có dòng chấm chéo`);
+      /* T18 (06/11): GVCN lớp FT có bài S quá hạn vẫn THẤY dòng (chỉ ghi quá hạn); người khác thì không. */
+      const cn = perm.lopFtGvcn(x, TODAY).length > 0;
+      assert(!perm.lopFtChoGvSpeaking(x, TODAY).length && (cn || dongCc(x).length === 0), `${k} không dạy S, không là GVCN lớp FT mà có dòng chấm chéo`);
     }
   });
 

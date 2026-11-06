@@ -95,7 +95,7 @@ export async function runPrGvTests(t: YThucTestKit) {
     const r = viecCuaNguoi(P.mbManager, gv) as any;
     assert(r.xemNguoiKhac === true && r.items.every((i: any) => goc.has(i.key)), 'mọi dòng thuộc việc của GV');
     /* OV-11c (PT-7): việc Vận hành giao cho GV (không lớp / HV) nay được tính; dòng khác vẫn lọc theo quyền người xem. */
-    assert(r.items.every((i: any) => (i.group === 'mgmt' && i.classId === null && i.studentId === null)
+    assert(r.items.every((i: any) => (i.group === 'mgmt' && i.classId === null && i.studentId === null) || i.key.endsWith('|cc')   // T18: việc Chấm Speaking của GV S / GVCN
       || ((i.classId !== null || i.studentId !== null) && can(P.mbManager, PERMISSIONS.ATTEMPT_VIEW, { classId: i.classId, studentId: i.studentId }))),
       'dòng không lớp/HV chỉ là việc Vận hành; lọc theo quyền người xem');
     assertThrows(() => viecCuaNguoi(P.subjectTeacher, gv), /chỉ xem được việc của mình/, 'GV gửi nguoi= → 403');

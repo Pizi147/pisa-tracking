@@ -110,8 +110,11 @@ export async function runPrS6fATests(t: YThucTestKit) {
   };
 
   check('S6F-a (2a) · em Tạm dừng → badge "n bài chờ chấm" và Lịch Test tuần cũ (conBai, tongQuan.quaHan) cùng giảm đúng số ô của em; Quay lại học → tăng lại', () => {
-    const soO = (svc.skillCells(P.admin, get('SELECT * FROM assessment_attempts WHERE id = ?', aX.id), svc.scoresOf(aX.id), [], TODAY,
-      svc.loadBundle([aX.id]).skillRows.get(aX.id)) as any[]).filter((c) => c.required && c.band === null).length;
+    const aRow = get('SELECT * FROM assessment_attempts WHERE id = ?', aX.id);
+    const oCho = (svc.skillCells(P.admin, aRow, svc.scoresOf(aX.id), [], TODAY,
+      svc.loadBundle([aX.id]).skillRows.get(aX.id)) as any[]).filter((c) => c.required && c.band === null);
+    const soO = oCho.length;
+    const soKhoi1 = oCho.filter((c) => !d.laChamCheo(aRow.kind, c.skill)).length;   // T18 06/11: S chéo quá hạn không vào khối 1
     assert(soO >= 4, `em X chỉ có ${soO} ô chưa nhập`);
     const b0 = badge(); const l0 = lt();
     studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'inactive', TODAY, 'Tạm nghỉ');
@@ -120,7 +123,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const b2 = badge(); const l2 = lt();
     assert(b0 - b1 === soO && b2 === b0, `badge ${b0} → ${b1} → ${b2} (ô của em: ${soO})`);
     assert(l0.conBai - l1.conBai === soO && l2.conBai === l0.conBai, `Lịch Test conBai ${l0.conBai} → ${l1.conBai} → ${l2.conBai}`);
-    assert(l0.quaHan - l1.quaHan === soO && l2.quaHan === l0.quaHan, `Lịch Test quá hạn ${l0.quaHan} → ${l1.quaHan} → ${l2.quaHan}`);
+    assert(l0.quaHan - l1.quaHan === soKhoi1 && l2.quaHan === l0.quaHan, `Lịch Test quá hạn ${l0.quaHan} → ${l1.quaHan} → ${l2.quaHan}`);
   });
   check('S6F-a (2b) · em Kết thúc học / đã lưu trữ có MT2 planned quá hạn → không ở Chấm điểm bảng GV, không ở scoreDebtCells; còn học → có', () => {
     const eY = emMoi('MB FT 101');

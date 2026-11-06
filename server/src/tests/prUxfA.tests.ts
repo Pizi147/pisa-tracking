@@ -384,7 +384,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(cuaFt.length === 2, `hai dòng MT3: ${cuaFt.length}`);
     const chu = cuaFt.map((x) => `${x.dotLabel} · ${d.tuanLich(x.weekStart, TODAY)}`);
     assert(chu[0] !== chu[1] && chu.every((c) => /^MT3 · W\d [A-Z]{3}$/.test(c)), `chữ Đợt: ${chu.join(' | ')}`);
-    const soO = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => luot.includes(c.attemptId)).length;
+    const soO = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => luot.includes(c.attemptId) && !c.chamCheo).length;   // T18 06/11: S chéo không vào khối 1
     assert(cuaFt.reduce((n, x) => n + x.conBai, 0) === soO, `conBai ${cuaFt.reduce((n, x) => n + x.conBai, 0)} ≠ số bài ${soO}`);
     for (let i = 1; i < no.length; i++) assert(d.soSanhLop({ code: no[i - 1].classCode }, { code: no[i].classCode }) <= 0, `Nợ không nhóm theo lớp: ${no[i - 1].classCode} › ${no[i].classCode}`);
   });

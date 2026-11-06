@@ -13,7 +13,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopFtGvcn, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -148,6 +148,8 @@ export type WorkItem = {
   soLanThu?: number;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
+  /** T18 (06/11): việc Chấm Speaking của người KHÔNG chấm được S (GVCN) — chỉ xem, nút "Xem". */
+  chiXemCham?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
   boQuaDuoc?: boolean;
 };
@@ -547,13 +549,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const lopCheo = new Set<number>(co('score') && (!tatCa || f.tachCuaToi)
     ? lopFtChoGvSpeaking(p, today).filter((id) => !f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1)) : []);
+  /* T18 (chủ SP 06/11): GVCN lớp FT (không là GV Speaking) chỉ THẤY bài S chấm chéo QUÁ HẠN của lớp mình — cùng việc "Chấm Speaking", không hạn cho bài chưa quá hạn. */
+  const lopCn = new Set<number>(co('score') && (!tatCa || f.tachCuaToi)
+    ? lopFtGvcn(p, today).filter((id) => !lopCheo.has(id) && (!f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1))) : []);
   const tuanHomNay = mondayOfDate(today);
-  /** Ô S Mock vào việc Chấm Speaking của người xem: lớp `lopCheo`, từ thứ Hai tuần thi (`canChamCheo`). */
-  const vaoChamS = (a: any, c: any) => lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay);
+  /** Ô S Mock vào việc Chấm Speaking của người xem: lớp `lopCheo`, từ thứ Hai tuần thi (`canChamCheo`); lớp `lopCn`: chỉ ô quá hạn. */
+  const vaoChamS = (a: any, c: any) => (lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay))
+    || (lopCn.has(a.classId) && laChamCheo(a.kind, c.skill) && !!c.overdue);
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
     branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true,
-    ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
-    ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo])] } : {}),
+    ...((tatCa && co('score')) || lopCheo.size || lopCn.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
+    ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo, ...lopCn])] } : {}),
   }).rows.filter((a: any) => a.status !== 'cancelled');
   /*
    * OV-11c (CV-8, Q6): "Của GV" có cả việc của GVCN (Phối hợp SOS, Điền Target, Nhập điểm MT cũ) — như "Của một GV" (`viecCuaNguoi`). GVCN đang hiệu lực
@@ -710,20 +716,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * `lopFtChoGvSpeaking` từ thứ Hai tuần thi tới khi chấm (`canChamCheo`). Có số, KHÔNG hạn / quá hạn (T18: không là nợ của ai). Panel của việc
    * (`/my-work/cham-speaking`, `baiChamSpeaking` — cùng tập bài) liệt kê từng em. Không đổi luật ai chấm.
    */
-  if (lopCheo.size) {
+  if (lopCheo.size || lopCn.size) {
     const ccDongs: BaiChuaCham[] = [];
     /*
-     * VIEC-SAU-LOGIC ([XM] #926): QL kiêm GV S — bài S quá hạn (cờ ô, như Lịch Test khối 1) ở lớp QL quản lý trước là dòng "GV chấm chéo" đỏ ở
-     * "Tất cả"; nay ở việc này nên việc đỏ quá hạn, hạn = hạn sớm nhất (cùng ở Của tôi / Tất cả). GV S không quản lý / Admin (P12 Q12): giữ không hạn (OV-14c).
-     * Vẫn không đếm (`demDongViec` bỏ chấm chéo, T18).
+     * T18 (chủ SP 06/11): bài S quá hạn (cờ ô, như Lịch Test khối 1) → việc ghi "quá hạn", hạn = hạn sớm nhất — cho GV Speaking, GVCN và GV phụ trách S của lớp.
+     * CHỈ GHI, không tính: `demDongViec` / `demSo` / chuông bỏ chấm chéo. Admin (`cham-diem`, P12 Q12): bài chưa ai nhận không quá hạn.
      */
     const hanQua: (string | null)[] = [];
     for (const a of attempts as any[]) {
-      if (!lopCheo.has(a.classId)) continue;
-      const quanLy = xemViec === 'het' && (scope.all || scope.classIds.includes(a.classId) || scope.branchIds.includes(a.branchId));
+      if (!lopCheo.has(a.classId) && !lopCn.has(a.classId)) continue;
       for (const c of (a.pendingDetail ?? []) as any[]) {
         if (!vaoChamS(a, c)) continue;
-        if (quanLy && c.overdue) hanQua.push(c.deadline ?? null);
+        if (c.overdue && xemViec !== 'cham-diem') hanQua.push(c.deadline ?? null);
         ccDongs.push({
           classId: a.classId, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
@@ -737,6 +741,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       items.push({
         ...mau, key: KHOA_CHAM_SPEAKING,
         ...(hanQua.length ? { urgency: 'overdue' as const, due: hanQua.filter((x): x is string => !!x).sort()[0] ?? null } : {}),
+        ...(lopCheo.size ? {} : { chiXemCham: true }),
         studentId: null, studentName: '', emIds: undefined, classId: null, classCode: null,
         /* Dòng phụ: số lớp (tiêu đề đã có số bài). */
         attemptId: null, attemptNo: null, contextLabel: `${new Set(ccDongs.map((x) => x.classId)).size} lớp`, phu: null, luot: undefined, periodId: null, tuanThi: null,

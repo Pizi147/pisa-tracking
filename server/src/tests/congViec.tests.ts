@@ -398,7 +398,7 @@ export async function runCongViecTests(t: YThucTestKit) {
   })();
 
   check('PR-Ra · myWork mặc định (không nguoi): dòng chấm điểm của GV chỉ khác khoá cũ ở đuôi "|u…"; QL không được phân công thì vẫn không có dòng chấm điểm', () => {
-    const scoreOf = (p: any) => (mywork.myWork(p, {}).items ?? []).filter((i: any) => i.group === 'score');
+    const scoreOf = (p: any) => (mywork.myWork(p, {}).items ?? []).filter((i: any) => i.group === 'score' && !i.key.endsWith('|cc'));   // T18: việc Chấm Speaking (|cc) không mang |u…
     const gvItems = scoreOf(gvMB);
     assert(gvItems.length > 0, 'GV đang nợ điểm phải thấy dòng chấm điểm của chính mình');
     for (const it of gvItems) {
@@ -512,10 +512,10 @@ export async function runCongViecTests(t: YThucTestKit) {
   await checkAsync('PR-Ra Q2 · /my-work?nguoi={X} (qua HTTP, QL): mọi khoá score/cause của X nằm trong khoá của "tat-ca"', async () => {
     const tatCaRes = await goiHttp(P.mbManager.userId, 'GET', '/my-work?nguoi=tat-ca');
     assert(tatCaRes.status === 200, `tat-ca: ${tatCaRes.status}`);
-    const tatCaKeys = new Set(viecLe(tatCaRes.json).filter((i: any) => i.group === 'score' || i.group === 'cause').map((i: any) => i.key));
+    const tatCaKeys = new Set(viecLe(tatCaRes.json).filter((i: any) => i.group === 'score' || i.group === 'cause').map((i: any) => i.key));   // T18: Chấm Speaking (|cc) chỉ ở góc nhìn của chính người đó
     const xRes = await goiHttp(P.mbManager.userId, 'GET', `/my-work?nguoi=${gvMB.userId}`);
     assert(xRes.status === 200, `nguoi=X: ${xRes.status}`);
-    const xItems = viecLe(xRes.json).filter((i: any) => i.group === 'score' || i.group === 'cause');
+    const xItems = viecLe(xRes.json).filter((i: any) => (i.group === 'score' || i.group === 'cause') && !i.key.endsWith('|cc'));
     assert(xItems.length > 0, 'GV X phải có ít nhất một dòng score/cause');
     for (const it of xItems) assert(tatCaKeys.has(it.key), `Khoá ${it.key} của X không nằm trong "tat-ca"`);
   });

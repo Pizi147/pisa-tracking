@@ -9,7 +9,7 @@
  * Chạy khi người đó mở chuông (`GET /notifications`), tối đa một lần / `CHU_KY_MS` mỗi người (mốc ở DB). Không email / push.
  */
 import { chenNhieuDong, db, theoLo } from '../db.ts';
-import { tenMon, thuNgay } from '../../../shared/domain/index.ts';
+import { laViecChamCheo, tenMon, thuNgay } from '../../../shared/domain/index.ts';
 import { activeAt, type Principal } from '../permissions.ts';
 import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
@@ -56,7 +56,7 @@ export function muonTuViec(p: Principal, items: readonly WorkItem[], homNay: str
   /* 1. Bài quá hạn chấm của chính GV — gom theo lớp · đợt; bấm mở việc đầu của nhóm trong Công việc. */
   const cham = new Map<string, WorkItem[]>();
   for (const x of items) {
-    if (x.group !== 'score' || !x.mine || x.urgency !== 'overdue') continue;
+    if (x.group !== 'score' || !x.mine || x.urgency !== 'overdue' || laViecChamCheo(x)) continue;   // T18: chấm chéo quá hạn chỉ ghi, không chuông
     const k = khoaChamQuaHan(x);
     cham.set(k, [...(cham.get(k) ?? []), x]);
   }

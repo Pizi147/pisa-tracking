@@ -34,7 +34,7 @@ export async function runPrUiConLaiTests(t: any) {
       const w = mw.myWork(p, {});
       const s = mw.demSo(w.dong.filter((i: any) => i.mine), () => true);
       assert(w.summary.viec === s.viec, `${p.userId}: ${w.summary.viec} ≠ ${s.viec}`);
-      for (const i of w.items.filter((x: any) => x.group === 'score' && x.urgency === 'overdue')) {
+      for (const i of w.items.filter((x: any) => x.group === 'score' && x.urgency === 'overdue' && !x.key.endsWith('|cc'))) {   // T18: Chấm Speaking quá hạn không mang knsQuaHan
         assert(i.knsQuaHan?.length && i.knsQuaHan.every((k: string) => i.kns.includes(k)), `${i.key}: ${JSON.stringify(i.knsQuaHan)}`);
       }
     }
