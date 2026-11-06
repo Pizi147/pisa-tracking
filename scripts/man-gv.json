@@ -39,7 +39,6 @@
  "web/src/modules/classes/DaiChuyenLop.tsx",
  "web/src/modules/classes/DauTrangLop.tsx",
  "web/src/modules/classes/HopLuuPhanCong.tsx",
- "web/src/modules/classes/LopNghiPanel.tsx",
  "web/src/modules/classes/LuoiTaoLop.tsx",
  "web/src/modules/classes/PanelXetLai.tsx",
  "web/src/modules/classes/PhanTichLopTab.tsx",

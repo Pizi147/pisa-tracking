@@ -680,7 +680,7 @@ export function sapEmCanHoTro<T extends { ten: string; cases: readonly { quaHan:
 
 // ---------------------------------------------------------------- menu ⋯ đầu hồ sơ lớp (PR-OV3a, M2 §1)
 
-export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop' | 'lich-su' | 'lop-nghi';
+export type ViecMenuLop = 'thong-tin' | 'sua-hoc-vien' | 'hoc-vien' | 'lo-trinh-ca-lop' | 'xuat-mt' | 'mo-lai-lop' | 'xoa-lop' | 'ket-thuc-lop' | 'lich-su';
 export type MucMenuLop = { key: ViecMenuLop; nhan: string; nhom: 'Lớp' | 'Cuối khoá' | 'Công cụ' | null };
 /**
  * Menu ⋯ hồ sơ lớp: Lớp → Cuối khoá (lớp thường: Cuối khoá… · Kết thúc lớp) → Công cụ → (kẻ) Mở lại / Xoá / Kết thúc lớp FT (`nhom` null). Mỗi mục giữ
@@ -698,13 +698,10 @@ export function menuHoSoLop(i: {
   coTheSuaHocVien?: boolean;
   /** OV-15g (C22): Lịch sử thay đổi của lớp — ai xem được hồ sơ lớp đều xem được (máy chủ kiểm lại). */
   coTheXemLichSu?: boolean;
-  /** FT-LOP-NGHI: lớp FT còn học + người sửa được lịch lớp (QL / Quản trị) — mục "Lớp nghỉ 1 tuần…" cạnh Thông tin lớp. */
-  coTheLopNghi?: boolean;
 }): MucMenuLop[] {
   const m = (key: ViecMenuLop, nhan: string, nhom: MucMenuLop['nhom'], co: boolean): MucMenuLop[] => (co ? [{ key, nhan, nhom }] : []);
   return [
     ...m('thong-tin', t('Thông tin lớp'), 'Lớp', i.canEditProgress || !!i.canEditSchedule || i.canAssign || i.canAssignSubject),
-    ...m('lop-nghi', t('Lớp nghỉ 1 tuần…'), 'Lớp', !!i.coTheLopNghi && !i.thuong),
     ...m('sua-hoc-vien', t('Sửa thông tin học viên'), 'Lớp', (i.coTheSuaCaLop ?? i.canAddStudents) && i.soHocVien > 0),
     ...m('hoc-vien', t('+ Học viên'), 'Lớp', i.canAddStudents),
     /* P9b: trang Cuối khoá (thay Lộ trình tiếp theo + Đánh giá đầu ra); R5.3: lớp FT bỏ "Chuyển tiếp lớp" — đổi lớp từng em / chọn nhiều em → Chuyển lớp…. */
