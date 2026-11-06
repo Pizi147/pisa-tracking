@@ -484,12 +484,13 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
                 onChange={(e) => { setVals((v) => v.map((x, j) => (j === i ? e.target.value : x))); setLoi(null); }} />
             ))}
             {/* Ô Band luôn gõ được; gõ 4 tiêu chí thì Band tự tính hiện MỜ trong ô (placeholder), gõ Band thì tiêu chí để trống. */}
-            <span className="inline-flex flex-col items-center gap-0.5">
+            <span className="relative">
               <input className={oSo('w-full px-1 font-bold max-sm:h-11 max-sm:text-base placeholder:text-slate-300')} style={stSai(loi?.o === 4 || haiKieu)} inputMode="decimal" value={bandText}
                 placeholder={diem.patch && 'noShow' in diem.patch ? '-' : diem.preview === null ? '' : fmtBand(diem.preview)}
                 aria-label={`${skillLabel(cell.skill)} — band`} aria-invalid={loi?.o === 4 || haiKieu || undefined} aria-describedby={haiKieu ? 'hop-diem-hai-kieu' : undefined} disabled={busy}
                 onChange={(e) => { setBandText(e.target.value); setLoi(null); }} />
-              <MuiTenKyVong kq={soKyVong(bandSau, kvHien)} />
+              {/* Mũi tên kỳ vọng nằm TRONG ô (không đẩy ô Band lệch hàng với 4 tiêu chí). */}
+              <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2"><MuiTenKyVong kq={soKyVong(bandSau, kvHien)} /></span>
             </span>
           </div>
           {haiKieu && <p id="hop-diem-hai-kieu" role="alert" className="mt-1 text-xs text-bad">{LOI_MOT_KIEU}</p>}
