@@ -127,10 +127,11 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(the('bao_len_y_thuc', 'Phạm Bảo Ngọc').some((x) => x.trangThai === 'cho'), 'thẻ Báo QL');
   });
 
-  check('YT4 (11) · DEMO (d) Vũ Hải Đăng: 1 vi phạm cô Trang ghi 04/09, chưa ai xem → Quá hạn (lý do "chưa xem"), có thẻ Báo QL', () => {
+  /* Chủ SP 06/11: vi phạm chưa xem vẫn Quá hạn (việc Xem đỏ của GVCN) nhưng KHÔNG Báo QL — thẻ seed (nếu có) tự đóng ở lượt quét. */
+  check('YT4 (11) · DEMO (d) Vũ Hải Đăng: 1 vi phạm cô Trang ghi 04/09, chưa ai xem → Quá hạn (lý do "chưa xem"), KHÔNG thẻ Báo QL đang chờ', () => {
     const e = em('Vũ Hải Đăng');
     assert(e.nhom === 'qua_han' && e.vp.length === 1 && e.vp[0].t === 'qua_han' && e.vp[0].lyDo === 'xem' && !e.vp[0].ghiNhan, JSON.stringify(e.vp));
-    assert(the('bao_len_y_thuc', 'Vũ Hải Đăng').some((x) => x.trangThai === 'cho'), 'thẻ Báo QL');
+    assert(!the('bao_len_y_thuc', 'Vũ Hải Đăng').some((x) => x.trangThai === 'cho'), 'không thẻ Báo QL đang chờ');
   });
 
   check('YT4 (11) · DEMO (e) Nguyễn Minh An: Report 1 → Report 2 → WL 1 (có tệp) → bậc kế "Report 4 + Meeting CX/GĐCN"; một vi phạm Mới', () => {

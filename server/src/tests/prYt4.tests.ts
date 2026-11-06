@@ -715,14 +715,18 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     yc.quetYeuCau(TODAY);
     assert(!theCho('bao_len_y_thuc', sid2), 'Tạm dừng không Báo QL');
   });
-  check('YT4 (5) · Báo QL cả "Mới quá 5 ngày chưa ai xem" (V4-5) và "đã duyệt chưa thực hiện quá 5 ngày" (K3-37)', () => {
+  check('YT4 (5) · Báo QL "đã duyệt chưa thực hiện quá 5 ngày" (K3-37); KHÔNG Báo QL "Mới quá 5 ngày chưa ai xem" — vẫn Quá hạn + việc Xem đỏ của GVCN (chủ SP 06/11)', () => {
     const sid = hv(); vpDb(sid, addDays(TODAY, -8));
     const sid2 = hv(); const v2 = ghiVp(gvbm, sid2);
     const m = deXuatGui(gvcn, sid2, 'suspension', [v2]);
     yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
     conn.prepare(`UPDATE discipline_measures SET quyet_luc = ? WHERE id = ?`).run(addDays(TODAY, -6), m.id);
     yc.quetYeuCau(TODAY);
-    assert(JSON.parse(theCho('bao_len_y_thuc', sid).du_lieu).viecKey === `yt_xem:${sid}`, 'Mới quá hạn');
+    assert(!theCho('bao_len_y_thuc', sid), 'Mới quá 5 ngày chưa xem: không Báo QL');
+    const e = em(sid);
+    assert(e.nhom === 'qua_han' && [...e.viPham.values()].some((x: any) => x.lyDoQuaHan === 'xem'), 'vẫn Quá hạn lý do xem (V4-5 giữ hạn)');
+    const it = (myworkYt.myWork(P.coreTeacher).items as any[]).find((i) => i.key === `yt_xem:${sid}`);
+    assert(it && it.urgency === 'overdue' && it.due, `việc Xem vẫn quá hạn ở Công việc GVCN: ${JSON.stringify(it)}`);
     const t2 = theCho('bao_len_y_thuc', sid2);
     assert(t2 && JSON.parse(t2.du_lieu).viecKey === `yt_thuc_hien:${m.id}` && /đã duyệt chưa thực hiện|QL đã duyệt, quá 5 ngày/.test(t2.ly_do), JSON.stringify(t2));
   });

@@ -36,17 +36,16 @@ import { duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, so
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 
 /**
- * PR-YT4 — vì sao em cần Báo QL (null = không): bắt buộc quá hạn · Mới quá 5 ngày chưa ai xem · đã duyệt chưa thực hiện quá 5 ngày
+ * PR-YT4 — vì sao em cần Báo QL (null = không): bắt buộc quá hạn · đã duyệt chưa thực hiện quá 5 ngày. Chủ SP 06/11: vi phạm Mới quá 5 ngày chưa xem
+ * KHÔNG Báo QL nữa — vẫn "Quá hạn n ngày" + việc "Xem" đỏ ở Công việc GVCN (`trangThaiViPham`, V4-5 giữ hạn), chỉ bỏ thẻ Báo QL.
  * (K3-37). Em Tạm dừng không Báo QL (T65). `viec` = tiền tố khoá việc trong Công việc của GVCN (Nhắc trỏ đúng dòng).
  */
-export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'; ngan: string; cau: string; viecId: number } | null {
+export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | 'yt_thuc_hien'; ngan: string; cau: string; viecId: number } | null {
   /* PR-S3F #12: lớp CHƯA có GVCN vẫn Báo QL (thẻ không có `ownerId`) — đúng là lúc QL cần biết nhất. */
   if (!em || em.tamDung) return null;
   const tt = [...em.viPham.values()];
   const xuLy = tt.filter((x) => x.lyDoQuaHan === 'xu-ly').length;
   if (xuLy) return { viec: 'yt_xu_ly', viecId: em.studentId, ngan: `${em.soBatBuoc} vi phạm chưa xử lý`, cau: `${em.soBatBuoc} vi phạm bắt buộc xử lý đã quá hạn` };
-  const xem = tt.filter((x) => x.lyDoQuaHan === 'xem').length;
-  if (xem) return { viec: 'yt_xem', viecId: em.studentId, ngan: `${xem} vi phạm chưa xem`, cau: `${xem} vi phạm mới quá 5 ngày chưa ai ghi nhận` };
   /* PR-S3F #7: quá hạn tính trên MỌI đề xuất đã duyệt — nêu lần xử lý quá hạn sớm nhất; khoá việc theo id lần xử lý (`yt_thuc_hien:{id}`). */
   const qua = em.daDuyet.find((x) => x.quaHan);
   if (qua) {
