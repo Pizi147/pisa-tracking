@@ -11,8 +11,8 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { fmtBand } from '../lib/format.ts';
 import type { ApiError } from '../lib/api.ts';
 import {
-  KN_LUOT_BANG, NHAN_KN_LUOT, OUTCOME_MARK, OUTCOME_TONE, dongTieuChi, duongDotTest, duongHoSoHocVien, ngay, outcomeLabelFor, tuanLich,
-  type DinhNghiaCot, type DongBaiThuong, type DongPa, type DongViPham, type DongViPhamEm, type DongViPhamLop, type TrangThaiVp, type DongLuotDiem, type DongTangGiam, type DongThiThatBang, type KnThiBang, type EntrySkill, type KieuBangLuot, type KnLuot, type ODiemLuot,
+  KN_LUOT_BANG, NHAN_KN_LUOT, OUTCOME_MARK, TAB_VIEC_HAN, TAB_VIEC_HAN_LABEL, OUTCOME_TONE, dongTieuChi, duongDotTest, duongHoSoHocVien, ngay, outcomeLabelFor, tuanLich,
+  type DinhNghiaCot, type DongBaiThuong, type DongPa, type DongViecHan, type TabViecHan, type DongViPham, type DongViPhamEm, type DongViPhamLop, type TrangThaiVp, type DongLuotDiem, type DongTangGiam, type DongThiThatBang, type KnThiBang, type EntrySkill, type KieuBangLuot, type KnLuot, type ODiemLuot,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { NhanViPham } from '../modules/yThuc/NhanViPham.tsx';
@@ -20,7 +20,7 @@ import { NhanViPham } from '../modules/yThuc/NhanViPham.tsx';
 export type { DongLuotDiem, DongTangGiam, ODiemLuot } from '@shared/domain/index.ts';
 type DongBang = {
   id: number; luotDiem?: DongLuotDiem; tangGiam?: DongTangGiam; baiThuong?: DongBaiThuong; thiThat?: DongThiThatBang; ketQua?: 'dat' | 'chua';
-  viPham?: DongViPham; viPhamEm?: DongViPhamEm; viPhamLop?: DongViPhamLop; pa?: DongPa;
+  viPham?: DongViPham; viPhamEm?: DongViPhamEm; viPhamLop?: DongViPhamLop; pa?: DongPa; dongViec?: DongViecHan;
 };
 export type DuLieuBangLuot = {
   n: number; rows: DongBang[]; bangLuot?: boolean; kieu?: KieuBangLuot; knNhan?: string | null; cachTinh?: string | null;
@@ -123,9 +123,14 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const coTab = soChua > 0 && soDat > 0;
   const [tabChon, setTab] = useState<'chua' | 'dat' | null>(null);
   const tab = tabChon ?? 'chua';
-  const loc = coTab ? goc.filter((r) => r.ketQua === tab) : goc;
+  /* DEM-QUA-HAN b (chủ SP 06/11): panel việc — tab theo loại / tuyến việc, có số, tab rỗng ẩn; một loại thì không tab. */
+  const vk = data?.kieu === 'viec';
+  const tabsViec = vk ? TAB_VIEC_HAN.filter((k) => goc.some((r) => r.dongViec?.tab === k)) : [];
+  const [tabViecChon, setTabViec] = useState<TabViecHan | null>(null);
+  const tabViec = tabViecChon && tabsViec.includes(tabViecChon) ? tabViecChon : tabsViec[0] ?? null;
+  const loc = vk ? (tabsViec.length > 1 ? goc.filter((r) => r.dongViec?.tab === tabViec) : goc) : coTab ? goc.filter((r) => r.ketQua === tab) : goc;
   /* Giữ phân trang 10 / 20 / 50 của panel cũ (`NganDanhSach`) — số "n lượt · m HV" tính trên cả tab, bảng chỉ trang đang xem. */
-  const pt = usePhanTrang(loc.length, `${tieuDe}|${tab}`, t('mục'));
+  const pt = usePhanTrang(loc.length, `${tieuDe}|${tab}|${tabViec ?? ''}`, t('mục'));
 
   /* DEM-QUA-HAN: dòng việc cả lớp (Bàn giao, Phối hợp SOS…) không có em — tên trơn. */
   const lkHv = (id: number, ten: string) => (id ? <Link className={`font-semibold ${LINK}`} to={duongHoSoHocVien(id)}>{ten}</Link> : <b className="font-semibold">{dich(ten)}</b>);
@@ -382,14 +387,45 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
     </div>
   );
 
-  const tat = (tt ? tatH : bt ? tatB : tg ? tatT : vpk ? [...tatV, ...tatVe, ...tatVl] : pak ? tatP : tatL) as { studentId?: number }[];
+  /* ---------- kiểu 'viec' (DEM-QUA-HAN b): việc / bài có hạn trong kỳ — đang quá hạn trước (máy chủ xếp), bấm tên việc mở đúng việc ---------- */
+  const tatVc = loc.flatMap((r) => (r.dongViec ? [{ ...r.dongViec, id: r.id, studentId: r.dongViec.em?.id }] : []));
+  type HVc = (typeof tatVc)[number];
+  const laBai = vk && goc.every((r) => r.dongViec?.tab === 'cham');
+  const soQuaHan = tatVc.filter((h) => h.mo).length;
+  const cotVc: DinhNghiaCot[] = [
+    { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 150 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 96 },
+    { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 64 }, { key: 'tt', nhan: t('Đúng hạn'), kieu: 'chu', rong: 150 },
+  ];
+  const ttVc = (h: HVc) => (h.mo ? <span className="font-semibold text-bad">⚠ {t('Quá hạn · {n} ngày', { n: h.treNgay ?? 0 })}</span>
+    : h.dung ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
+    : <span className="font-semibold text-late">{t('Trễ {n} ngày', { n: h.treNgay ?? 0 })}</span>);
+  const oVc = (h: HVc, c: DinhNghiaCot): ReactNode => {
+    if (c.key === 'viec') return <Link className={`font-semibold ${LINK}`} to={h.href}>{dich(h.ten)}</Link>;
+    if (c.key === 'ten') return h.em ? lkHv(h.em.id, h.em.ten) : mo('—');
+    if (c.key === 'lop') return h.lop ? lkLop(h.lop.id, h.lop.ma) : mo('—');
+    if (c.key === 'han') return <span className="tabular-nums">{ddmm(h.han)}</span>;
+    return ttVc(h);
+  };
+  /* Dòng phụ: kỹ năng / tuần Test dưới tên việc; ngày làm (nhập điểm / ghi kết quả) dưới tình trạng. */
+  const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec' ? (h.phu ? dich(h.phu) : null) : c.key === 'tt' && h.ngayXong ? t('làm {ngay}', { ngay: ddmm(h.ngayXong) }) : null);
+  const theVc = (h: HVc) => (
+    <div className="grid gap-1">
+      <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, cotVc[0])}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
+      {(h.em || h.lop) && <div className="text-[14px]">{h.em && lkHv(h.em.id, h.em.ten)}{h.em && h.lop && ' · '}{h.lop && lkLop(h.lop.id, h.lop.ma)}</div>}
+      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.ngayXong && <> · {t('làm {ngay}', { ngay: ddmm(h.ngayXong) })}</>}{h.phu && <> · {dich(h.phu)}</>}</div>
+    </div>
+  );
+
+  const tat = (vk ? tatVc : tt ? tatH : bt ? tatB : tg ? tatT : vpk ? [...tatV, ...tatVe, ...tatVl] : pak ? tatP : tatL) as { studentId?: number }[];
   const soDong = tat.length;
   const soHv = new Set(tat.map((h) => h.studentId).filter((x) => x !== undefined)).size;
-  const dem = vpk ? (tatVl.length ? t('{n} lớp', { n: soDong }) : tatVe.length ? t('{n} HV', { n: soDong }) : `${t('{n} vi phạm', { n: soDong })} · ${t('{n} HV', { n: soHv })}`)
+  const dem = vk ? [laBai ? t('{n} bài', { n: soDong }) : t('{n} việc', { n: soDong }), soQuaHan ? `⚠ ${t('{n} đang quá hạn', { n: soQuaHan })}` : null].filter(Boolean).join(' · ')
+    : vpk ? (tatVl.length ? t('{n} lớp', { n: soDong }) : tatVe.length ? t('{n} HV', { n: soDong }) : `${t('{n} vi phạm', { n: soDong })} · ${t('{n} HV', { n: soHv })}`)
     : pak ? `${nghiaVu ? t('{n} việc', { n: soDong }) : t('{n} PA', { n: soDong })} · ${t('{n} HV', { n: soHv })}`
     : (tg || tt) && soDong === soHv ? t('{n} HV', { n: soHv })
     : `${bt ? t('{n} bài', { n: soDong }) : t('{n} lượt', { n: soDong })} · ${t('{n} HV', { n: soHv })}`;
-  const dong2 = [data && 'chiNhanh' in data ? data.chiNhanh ?? t('Tất cả chi nhánh') : null, tt ? t('Thi thật') : bt ? t('Lớp thường') : vpk || pak ? null : 'Fast Track',
+  const dong2 = [data && 'chiNhanh' in data ? data.chiNhanh ?? t('Tất cả chi nhánh') : null, tt ? t('Thi thật') : bt ? t('Lớp thường') : vpk || pak || vk ? null : 'Fast Track',
     bt && data?.nguong != null ? t('đạt từ {n} % mỗi môn', { n: data.nguong }) : null, vpk && tatV.length ? t('mới nhất trước') : null,
     tg ? t('so mốc MT trước') : t('dữ liệu đến {ngay}', { ngay: ngay(homNay).slice(0, 5) }), tt && /^W[12]$/.test(knNhan ?? '') ? t('{kn} tính nửa W', { kn: knNhan! }) : null].filter(Boolean).join(' · ');
   return (
@@ -398,6 +434,21 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
         : loading || !data ? <div className="pt-3"><Skeleton rows={4} /></div>
           : (
             <div className="grid gap-3 pt-3">
+              {tabsViec.length > 1 && (
+                /* DEM-QUA-HAN b: tab theo loại việc — cùng dáng tab Chưa đạt · Đạt. */
+                <div role="tablist" aria-label={t('Loại việc')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>
+                  {tabsViec.map((k) => {
+                    const ds = goc.filter((r) => r.dongViec?.tab === k);
+                    const quaHan = ds.some((r) => r.dongViec?.mo);
+                    return (
+                      <button key={k} type="button" role="tab" aria-selected={tabViec === k} tabIndex={tabViec === k ? 0 : -1} onClick={() => setTabViec(k)}
+                        className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tabViec === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
+                        {dich(TAB_VIEC_HAN_LABEL[k])} <span className={`tabular-nums ${quaHan ? 'text-bad' : ''}`}>{ds.length}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {coTab && (
                 /* Giữ hai tab Chưa đạt · Đạt của panel cũ (chủ SP 05/11) — cùng dáng tab `NganDanhSach`. */
                 <div role="tablist" aria-label={t('Kết quả')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
@@ -411,7 +462,9 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
               )}
               <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>
               <PhanTrang {...pt.thanh} />
-              {tt
+              {vk
+                ? <Bang deu day ten={tieuDe} cot={cotVc} hang={pt.cat(tatVc)} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc} />
+              : tt
                 ? <Bang deu day ten={tieuDe} cot={cotH} hang={hangH} khoa={(h) => h.id} oCua={oH} khung={false} theRieng={theH} />
               : vpk ? (tatVl.length ? <Bang deu day ten={tieuDe} cot={cotVl} hang={pt.cat(tatVl)} khoa={(h) => h.id} oCua={oVl} khung={false} />
                 : tatVe.length ? <Bang deu day ten={tieuDe} cot={cotVe} hang={pt.cat(tatVe)} khoa={(h) => h.id} oCua={oVe} khung={false} />

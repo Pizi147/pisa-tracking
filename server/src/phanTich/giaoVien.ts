@@ -30,7 +30,7 @@ import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { dongBaiThuongCua, dongLuotDiemCua, ganLuotDiem, nguongCua } from './tongHop.ts';
-import { KN_LUOT_CUA, NHAN_KN_LUOT, tachBaiId, type DongPa, type DongTangGiam } from '../../../shared/domain/index.ts';
+import { KN_LUOT_CUA, NHAN_KN_LUOT, duongCaseRieng, duongDotTest, tabViecHanCua, tachBaiId, type DongPa, type DongTangGiam, type DongViecHan } from '../../../shared/domain/index.ts';
 
 const LO = 400;
 const KN_NGAN: Record<KnDay, string> = { l: 'L', r: 'R', w1: 'W1', w2: 'W2', s: 'S' };
@@ -249,6 +249,8 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
 export type DongChamDiem = {
   id: number; studentId: number; hocVien: string; lop: string; bai: string; mon: string; tuan: string; han: string;
   nhapDau: string | null; tre: number | null; dung: boolean;
+  /** DEM-QUA-HAN b: mở đúng bài (`duongDotTest`). */
+  classId: number; kind: string;
 };
 /**
  * Q13, Q20: ô có tuần thi trong khoảng, gán cho người được phân công ở HẠN NHẬP. Đúng hạn ⇔ `nhap_dau_ngay ≤ mốc trễ` (sửa sau không tính);
@@ -276,7 +278,7 @@ export function tapChamDiem(c: NguCanhPtGv, nap: NapBai): { tap: Tap; dong: Map<
     them(tap, gv, x.id, dung);
     dong.set(x.id, {
       id: x.id, gv, studentId: x.studentId, hocVien: x.hocVien, lop: l.ma, bai: x.bai, mon: tenMonNgan(l.ct, x.skill), tuan: x.tuan, han: x.han,
-      nhapDau: x.nhapDau, dung, tre: dung ? null : ngayCach(moc, x.nhapDau ?? c.homNay),
+      nhapDau: x.nhapDau, dung, tre: dung ? null : ngayCach(moc, x.nhapDau ?? c.homNay), classId: x.classId, kind: x.kind,
     });
   }
   return { tap, dong, khongTinh };
@@ -427,9 +429,9 @@ export function ganTangGiam(p: Principal, rows: MetricRow[], doi: DoiTb): Metric
 }
 
 /** PT-PANEL: trường đầu panel bảng khi MỌI dòng có `luotDiem` / `tangGiam` (dòng thiếu → panel cũ, không lệch số = dòng). */
-export function kieuBang(rows: readonly MetricRow[], cachTinh?: string | null): { bangLuot?: true; kieu?: 'luot' | 'tang-giam' | 'bai-thuong' | 'pa'; cachTinh?: string | null; nguong?: number | null } {
+export function kieuBang(rows: readonly MetricRow[], cachTinh?: string | null): { bangLuot?: true; kieu?: 'luot' | 'tang-giam' | 'bai-thuong' | 'pa' | 'viec'; cachTinh?: string | null; nguong?: number | null } {
   if (!rows.length) return {};
-  const kieu = rows.every((r: any) => r.tangGiam) ? 'tang-giam' : rows.every((r: any) => r.luotDiem) ? 'luot' : rows.every((r: any) => r.baiThuong) ? 'bai-thuong'
+  const kieu = rows.every((r: any) => r.dongViec) ? 'viec' : rows.every((r: any) => r.tangGiam) ? 'tang-giam' : rows.every((r: any) => r.luotDiem) ? 'luot' : rows.every((r: any) => r.baiThuong) ? 'bai-thuong'
     : rows.every((r: any) => r.pa) ? 'pa' : null;
   if (!kieu) return {};
   return { bangLuot: true, kieu, cachTinh: cachTinh ?? null,
@@ -497,20 +499,28 @@ export function viecQuaHanMo(c: NguCanhPtGv, kemKhongLop = true): Map<number, Wo
 const tapViecMo = (ds: readonly WorkItem[] | undefined) => (ds?.length ? { dung: [] as string[], tong: ds.map((it) => it.key) } : undefined);
 
 /**
- * Dòng panel của việc còn mở quá hạn — số dòng = số ở ô. Cùng kiểu bảng nghĩa vụ Kết quả PA (`kieu: 'pa'`: Học viên · Lớp · việc · Hạn · Chưa ghi · Trễ n ngày) để panel
- * trộn hai tập vẫn là một bảng. id âm theo khoá việc (không trùng id nghĩa vụ, giữ qua nhiều ngữ cảnh hồ sơ).
+ * Dòng panel (kiểu `viec`, DEM-QUA-HAN b) — số dòng = số ở ô. Việc còn mở quá hạn: CHÍNH dòng Công việc (tên việc, `href` mở đúng việc), tab theo loại việc.
+ * id âm theo khoá việc (không trùng id nghĩa vụ Kết quả PA, giữ qua nhiều ngữ cảnh hồ sơ).
  */
 const idViec = (key: string) => -1 - Math.abs([...key].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 0));
-const dongViecMo = (ds: readonly WorkItem[], homNay: string): { dung: boolean; row: MetricRow }[] => [...ds]
-  .sort((a, b) => (a.due ?? '').localeCompare(b.due ?? '') || a.key.localeCompare(b.key))
-  .map((it) => {
-    const ten = it.studentName || nhanNhomViec(it.group);
-    const pa: DongPa = {
-      id: idViec(it.key), studentId: it.studentId ?? 0, ten, classId: it.classId, lop: it.classCode ?? '—', caseId: it.caseId ?? 0, kyNang: null,
-      loaiPa: it.tieuDe, batDau: null, ketQua: null, nguoiPhuTrach: null, han: it.due, ngayGhi: null, dungHan: false, treNgay: ngayCach(it.due!, homNay),
-    };
-    return { dung: false, row: { id: pa.id, title: ten, href: it.href, lop: it.classCode, sub: [nhanNhomViec(it.group), it.tieuDe].join(' · '), pa } as MetricRow };
-  });
+const dongViecMo = (ds: readonly WorkItem[], homNay: string): { dung: boolean; row: MetricRow }[] => ds.map((it) => {
+  const dongViec: DongViecHan = {
+    tab: tabViecHanCua(it.group), mo: true, ten: it.tieuDe, em: it.studentId ? { id: it.studentId, ten: it.studentName } : null,
+    lop: it.classCode ? { id: it.classId, ma: it.classCode } : null, han: it.due, ngayXong: null, dung: false, treNgay: ngayCach(it.due!, homNay), href: it.href,
+  };
+  return { dung: false, row: { id: idViec(it.key), title: it.studentName || it.tieuDe, href: it.href, lop: it.classCode, sub: [nhanNhomViec(it.group), it.tieuDe].join(' · '), dongViec } as MetricRow };
+});
+/** Nghĩa vụ Kết quả PA (`dongNghiaVu`) → dòng việc: chưa ghi = còn mở quá hạn; mở đúng PA ở Case. */
+const dongViecPa = (pa: DongPa): DongViecHan => ({
+  tab: 'case', mo: !pa.ngayGhi, ten: [t('Kết quả PA'), pa.loaiPa, pa.dot !== undefined ? t('Đợt {n}', { n: pa.dot }) : null].filter(Boolean).join(' · '),
+  phu: pa.kyNang, em: { id: pa.studentId, ten: pa.ten }, lop: { id: pa.classId, ma: pa.lop }, han: pa.han ?? null, ngayXong: pa.ngayGhi ?? null,
+  dung: !!pa.dungHan, treNgay: pa.dungHan ? null : pa.treNgay ?? null, href: duongCaseRieng(pa.caseId, { paId: parseObligation(pa.id).interventionId }),
+});
+/** Dòng việc: việc đang quá hạn trước (quá hạn lâu nhất đầu), rồi việc đã làm trong kỳ — trễ trước. */
+const xepViec = (a: { row: MetricRow }, b: { row: MetricRow }) => {
+  const x = (a.row as any).dongViec as DongViecHan, y = (b.row as any).dongViec as DongViecHan;
+  return Number(y.mo) - Number(x.mo) || Number(x.dung) - Number(y.dung) || (y.treNgay ?? 0) - (x.treNgay ?? 0) || (x.han ?? '').localeCompare(y.han ?? '');
+};
 
 // ------------------------------------------------------------------ cột 4 · PA hiệu quả (FT)
 
@@ -690,6 +700,9 @@ const CACH_TINH_GV: Record<string, string> = {
   'dat-mt': 'Lượt Test đạt khi Overall đạt kỳ vọng của lượt (mọi kỹ năng tính Đạt); Overall chưa đạt thì xét từng kỹ năng. Cột tô nền là kỹ năng GV phụ trách.',
   'hv-chu-y': 'HV đang SOS ở lớp GV đang dạy; bảng hiện lượt Mock có điểm gần nhất của HV.',
   'ket-qua': 'Mỗi dòng là một môn GV phụ trách (viền nhấn) ở một bài Progress Test / Final Test. Môn đạt khi tỷ lệ đúng từ ngưỡng của lớp.',
+  /* DEM-QUA-HAN b. */
+  'viec-dung-han': 'Việc có hạn trong kỳ: Kết quả PA (đã ghi / chưa ghi đã quá hạn) và việc ở Công việc còn mở đã quá hạn (Case, Bàn giao, Xử lý vi phạm bắt buộc, Báo PH…). Chấm Test tính ở cột riêng.',
+  'cham-diem': 'Bài có tuần Test trong kỳ: đã nhập (lần nhập đầu so mốc trễ — lần sửa sau không tính) và chưa nhập đã quá hạn. Không tính bài vắng đã xác nhận, bài chưa tới hạn chưa nhập.',
 };
 export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string }): { n: number; tieuDe: string; rows: MetricRow[]; chiNhanh?: string } {
   const c = nguCanhPtGv(p, f);
@@ -792,21 +805,29 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
   if (cot === 'cham-diem') {
     const dong = [...tapChamDiem(c, napBai(p, c, gv)).dong.values()].filter((d) => d.gv === gv)
       .sort((a, b) => Number(a.dung) - Number(b.dung) || a.lop.localeCompare(b.lop, 'vi') || a.hocVien.localeCompare(b.hocVien, 'vi') || a.id - b.id);
-    return ra(t('Điểm đúng hạn'), 'bài', dong.map((d) => ({
-      dung: d.dung,
-      row: {
-        id: d.id, title: d.hocVien, href: `/hoc-vien/${d.studentId}`,
-        sub: [d.lop, `${d.bai} · ${tuanLichNgan(d.tuan)}`, d.mon, t('hạn {ngay}', { ngay: `${d.han.slice(8, 10)}/${d.han.slice(5, 7)}` }), d.dung ? t('Đúng hạn') : t('Quá hạn · {n} ngày', { n: d.tre ?? 0 })].join(' · '),
-      },
-    })));
+    return ra(t('Điểm đúng hạn'), 'bài', dong.map((d) => {
+      /* DEM-QUA-HAN b: bài chưa nhập đã quá hạn = còn mở (đầu panel); bài đã nhập: lần nhập đầu so mốc trễ. Bấm mở đúng bài (trang lượt, kỹ năng). */
+      const dongViec: DongViecHan = {
+        tab: 'cham', mo: !d.nhapDau, ten: `${d.bai} · ${d.mon}`, phu: tuanLichNgan(d.tuan), em: { id: d.studentId, ten: d.hocVien }, lop: { id: d.classId, ma: d.lop },
+        han: d.han, ngayXong: d.nhapDau, dung: d.dung, treNgay: d.tre, href: duongDotTest({ id: tachBaiId(d.id).attemptId, kind: d.kind, classId: d.classId, studentId: d.studentId }, tachBaiId(d.id).skill),
+      };
+      return {
+        dung: d.dung,
+        row: {
+          id: d.id, title: d.hocVien, href: `/hoc-vien/${d.studentId}`, dongViec,
+          sub: [d.lop, `${d.bai} · ${tuanLichNgan(d.tuan)}`, d.mon, t('hạn {ngay}', { ngay: `${d.han.slice(8, 10)}/${d.han.slice(5, 7)}` }), d.dung ? t('Đúng hạn') : t('Quá hạn · {n} ngày', { n: d.tre ?? 0 })].join(' · '),
+        } as MetricRow,
+      };
+    }).sort(xepViec));
   }
   if (cot === 'viec-dung-han') {
     /* 05 #8: các tập việc có hạn (Kết quả PA + DEM-QUA-HAN việc Công việc còn mở quá hạn), mỗi tập trễ trước — rồi xếp chung trễ trước. */
     const mo = viecQuaHanMo(c, hoSo?.dau ?? true);
     return ra(t('Việc đúng hạn'), 'việc', [
-      ...((x) => dongTheoTap(x, (ids) => dongNghiaVu(ids, new Set(x?.dung ?? []), c.homNay), t('Kết quả PA')))(tapGhiKetQuaPa(pTap, c).tap.get(gv)),
+      ...((x) => dongTheoTap(x, (ids) => dongNghiaVu(ids, new Set(x?.dung ?? []), c.homNay), t('Kết quả PA')))(tapGhiKetQuaPa(pTap, c).tap.get(gv))
+        .map((d) => ({ ...d, row: { ...d.row, dongViec: dongViecPa((d.row as any).pa) } as MetricRow })),
       ...dongViecMo(mo.get(gv) ?? [], c.homNay),
-    ].sort((a, b) => Number(a.dung) - Number(b.dung)));
+    ].sort(xepViec));
   }
   if (cot === 'ghi-pa') { const x = tapGhiKetQuaPa(pTap, c).tap.get(gv); return ra(t('Kết quả PA đúng hạn'), '', dongTheoTap(x, (ids) => dongNghiaVu(ids, new Set(x?.dung ?? []), c.homNay))); }
   if (cot === 'hv-chu-y') {
@@ -956,7 +977,9 @@ export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null
   const rows = [...gop.values()].filter((x) => !q.loc || (q.loc === 'vuot' ? x.vuot : x.ketQua === q.loc));
   /* PT-PANEL (PR-1): Tổng quan "HV tiến bộ" + ô Tiến bộ Lớp tôi dạy → panel Trước → Sau (giữ tab Chưa đạt · Đạt). */
   const tienBo = q.cot === 'tien-bo' || q.cot.startsWith('tien-bo-lop:');
-  return { n: rows.length, tieuDe: r.tieuDe, rows, ...(tienBo ? kieuBang(rows, CACH_TINH_GV['tien-bo']) : {}) };
+  /* DEM-QUA-HAN b: Việc đúng hạn / Điểm đúng hạn — cùng panel dòng việc (`viec`) như Phân tích GV. */
+  const viec = q.cot === 'viec-dung-han' || q.cot === 'cham-diem';
+  return { n: rows.length, tieuDe: r.tieuDe, rows, ...(tienBo ? kieuBang(rows, CACH_TINH_GV['tien-bo']) : viec ? kieuBang(rows, CACH_TINH_GV[q.cot]) : {}) };
 }
 
 function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string; cn?: number | null }): { n: number; tieuDe: string; rows: MetricRow[] } {

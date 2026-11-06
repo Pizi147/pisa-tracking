@@ -1,16 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ngay, rateView, tuanLich, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
+import { rateView, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { BoLocDoan, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { LOP_OSO, VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
+import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
 import { DOAN, DauThe, RongDau, VaoHangLoc, doanNut } from './dungChung.tsx';
 
@@ -18,7 +15,8 @@ import { DOAN, DauThe, RongDau, VaoHangLoc, doanNut } from './dungChung.tsx';
  * PHÂN TÍCH GV (UI-PHAN-TICH, `thiet-ke/v5/phan-tich.html` tab "Phân tích GV"; `10` mục 1 + dòng UI-PHAN-TICH): MỘT bảng, hai nhóm cột Hành chính / Học thuật.
  * Bộ cột Gọn (mặc định, vừa 1280 không cuộn) / Đầy đủ (`?cot=day`). Không KPI, không xếp hạng, không màu ngưỡng (C08) — xếp theo tên. Mỗi số mở panel
  * CHỈ ĐỌC đúng tập (C22): `/phan-tich/giao-vien/o` (cùng hàm ô), Quá hạn = Trễ chấm Tổng quan, Case có PA = hồ sơ GV — cùng nguồn Tổng quan › GV cần chú ý.
- * Chấm Test đúng hạn giữ panel Chấm điểm V4 (lọc Trễ). "Xử lý vi phạm" bỏ (10, 22/10). < 640 px: thẻ (Bang).
+ * DEM-QUA-HAN b (chủ SP 06/11): Việc đúng hạn + Chấm Test đúng hạn mở CÙNG panel dòng việc (`BangLuotPanel` kiểu `viec`: đang quá hạn trước, tab theo loại việc;
+ * thay panel Chấm điểm V4 — lọc Trễ → bài quá hạn / trễ xếp đầu). < 640 px: thẻ (Bang).
  */
 type TyLe = { dat: number; mau: number; pt?: number };
 /* V8-PT (mockup B2): đầu nhóm chữ thường, như mọi đầu cột. */
@@ -46,26 +44,19 @@ const COT_DAY: readonly CotBang[] = [
 const CHI_FT = new Set(['tb', 'pa', 'tt']);
 const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
-/** V8-PT: nút mở panel Chấm điểm cùng dáng `OSo` (một kiểu gạch chân liền, không chấm). % to bấm được + "n/m" dòng phụ (Bang `phuCua`); mẫu 0 → "—" (title "Chưa có dữ liệu"), không 0 % (T19). */
-function OPt({ x, nguon, tieuDe, onBam }: { x: TyLe | null; nguon?: string; tieuDe: string; onBam?: () => void }) {
+/** % to bấm được (`OSo`) + "n/m" dòng phụ (Bang `phuCua`); mẫu 0 → "—" (title "Chưa có dữ liệu"), không 0 % (T19). */
+function OPt({ x, nguon, tieuDe }: { x: TyLe | null; nguon: string; tieuDe: string }) {
   if (!x) return <span className="text-slate-500">—</span>;
   const v = rateView(x.dat, x.mau);
   if (v.kind !== 'value') return <span className="text-slate-500" title={t('Chưa có dữ liệu')} aria-label={t('Chưa có dữ liệu')}>—</span>;
-  if (onBam) {
-    return (
-      <button type="button" onClick={onBam} aria-label={t('{gt} — {ten}. Bấm để xem danh sách', { gt: `${v.percent} %`, ten: tieuDe })}
-        className={`${VUNG_BAM_SO} ${LOP_OSO}`}>{v.percent} %</button>
-    );
-  }
   /* Thi thật (2F): số to = % theo tuần dạy (`pt`); n/m dòng phụ = mục em × kỹ năng (= số dòng panel). */
-  return <OSo giaTri={x.mau} nhan={`${x.pt ?? v.percent} %`} nguon={nguon!} tieuDe={tieuDe} />;
+  return <OSo giaTri={x.mau} nhan={`${x.pt ?? v.percent} %`} nguon={nguon} tieuDe={tieuDe} />;
 }
 
 export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | null; ct: ChuongTrinh; khoang: KhoangNgay }) {
   const khung: KhungPtGv = ct;
   const [boCot, setBoCot] = useThamSoUrl('cot', 'gon');
   const [tim, setTim] = useState('');
-  const [chamDiem, setChamDiem] = useState<HangPtGv | null>(null);
   const q = new URLSearchParams({ ct: khung, ...(branchId ? { cn: String(branchId) } : {}), kieu: khoang.kieu, tu: khoang.tu, den: khoang.den });
   const { data, loading, error, reload } = useApi<PhanTichGvKq>(branchId ? `/phan-tich/giao-vien?${q}` : null, [q.toString()]);
   const hang = (data?.hang ?? []).filter((h) => !tim.trim() || boDau(h.ten).includes(boDau(tim.trim())));
@@ -83,7 +74,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
     dat: h.datMt ? tyLeGv(h.datMt) : gopKq(h.ketQua), tb: tyLeGv(h.tienBo), casePa: tyLeGv(h.casePa), pa: tyLeGv(h.paHieuQua), tt: tyLeGv(h.thiThat),
   } as Record<string, TyLe | null>)[k] ?? null;
   const NGUON: Record<string, (h: HangPtGv) => string> = {
-    viec: (h) => nguonO(h, 'viec-dung-han'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
+    viec: (h) => nguonO(h, 'viec-dung-han'), diem: (h) => nguonO(h, 'cham-diem'), dat: (h) => nguonO(h, ft ? 'dat-mt' : 'ket-qua'), tb: (h) => nguonO(h, 'tien-bo'),
     casePa: (h) => `/giao-vien/${h.id}/o?cot=case-mo&${ctQ}`, pa: (h) => nguonO(h, 'pa-hieu-qua'),
     /* Pass Target (2F): panel của hồ sơ GV (cùng `mucThiTheoGv`, một dòng một mục em × kỹ năng) — 6C-NHO: chỉ chi nhánh đang chọn (`cn`), số dòng = ô. */
     tt: (h) => `/giao-vien/${h.id}/chi-so/o?cot=thi-that&cn=${branchId}&tu=${data?.tu ?? ''}&den=${data?.den ?? ''}`,
@@ -92,7 +83,6 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'chuY') return <OSo giaTri={h.hvChuY} tieuDe={`${t('HV cần chú ý')} · ${h.ten}`} nguon={nguonO(h, 'hv-chu-y')} />;
     const tieuDe = `${c.nhan} · ${h.ten}`;
-    if (c.key === 'diem') return <OPt x={tyLe(h, 'diem')} tieuDe={tieuDe} onBam={() => setChamDiem(h)} />;
     return <OPt x={tyLe(h, c.key)} nguon={NGUON[c.key](h)} tieuDe={tieuDe} />;
   };
   const phuCua = (h: HangPtGv, c: CotBang): ReactNode => {
@@ -132,99 +122,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
               </div>
             </section>
             <PhanTrang {...pt.thanh} duoi />
-            {chamDiem && <PanelChamDiem kq={data} h={chamDiem} onDong={() => setChamDiem(null)} />}
           </>
         )}
     </div>
-  );
-}
-
-// ------------------------------------------------------------------ panel Chấm điểm (màn C)
-
-type DongCham = {
-  id: number; studentId: number; hocVien: string; lop: string; bai: string; mon: string; tuan: string; han: string;
-  nhapDau: string | null; tre: number | null; dung: boolean; sua: string | null;
-};
-type PanelCham = { ten: string; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; n: number; tre: number; khongTinhVang: number; rows: DongCham[] };
-
-function Dau({ ok }: { ok: boolean }) {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden className="shrink-0">
-      {ok
-        ? <path d="M2.5 6.3 5 8.6l4.5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        : <path d="M3.5 3.5l5 5M8.5 3.5l-5 5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />}
-    </svg>
-  );
-}
-
-function PanelChamDiem({ kq, h, onDong }: { kq: PhanTichGvKq; h: HangPtGv; onDong: () => void }) {
-  const { homNay } = useNgayNghiepVu();
-  const [chiTre, setChiTre] = useState(false);
-  const q = new URLSearchParams({ cn: String(kq.cn), ct: kq.khung, gv: String(h.id), ...(kq.thang ? { thang: kq.thang } : { tu: kq.tu, den: kq.den }) });
-  const { data, loading, error, reload } = useApi<PanelCham>(`/phan-tich/giao-vien/cham-diem?${q}`, [q.toString()]);
-  const rows = (data?.rows ?? []).filter((r) => !chiTre || !r.dung);
-  const pt = usePhanTrang(rows.length, `${q}|${chiTre}`, t('bài'));
-  const khoang = `${tuanLich(kq.tu, homNay)} – ${tuanLich(kq.den, homNay)}`;
-  return (
-    <KhungPanel tieuDe={`${t('Chấm Test đúng hạn')} · ${h.ten}`} rong="rong" onDong={onDong}
-      ngCanh={data ? (
-        <span className="text-xs text-slate-400">
-          {kq.khung === 'ft' ? 'Fast Track' : t('Lớp thường')} · {data.tenChiNhanh} · {t('tuần Test')} <span className="tabular-nums">{khoang}</span> ·{' '}
-          <b className="tabular-nums text-slate-200">{data.n}</b> {t('đúng hạn')} · <b className="tabular-nums text-slate-200">{data.tre}</b> {t('trễ')} · <span className="tabular-nums">{data.rows.length}</span> {t('ô')}
-        </span>
-      ) : undefined}
-      tabs={data ? (
-        <BoLocDoan<'tat-ca' | 'tre'> ariaLabel={t('Lọc bài')} value={chiTre ? 'tre' : 'tat-ca'} onChange={(v) => setChiTre(v === 'tre')}
-          muc={[{ key: 'tat-ca', nhan: t('Tất cả'), so: data.rows.length }, { key: 'tre', nhan: t('Trễ'), so: data.tre }]} />
-      ) : undefined}
-      chan={{
-        huy: { nhan: t('Đóng'), onClick: onDong },
-        phu: (
-          <span className="text-xs text-slate-400">
-            {t('Không tính:')} {data?.khongTinhVang ? <><span className="tabular-nums">{data.khongTinhVang}</span> {t('ô vắng đã xác nhận')} · </> : null}{t('ô chưa tới hạn và chưa nhập.')}
-          </span>
-        ),
-        chinh: <Link to="/test/lich" className="link text-xs">{t('Mở Lịch Test / Chấm Test ›')}</Link>,
-      }}>
-      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
-        : loading || !data ? <div className="pt-3"><Skeleton rows={6} /></div>
-        : !rows.length ? <div className="pt-3"><Empty title={chiTre ? t('Không có bài trễ.') : t('Không có bài nào trong khoảng này.')} /></div>
-        : (
-          <>
-          <div className="mt-2"><PhanTrang {...pt.thanh} /></div>
-          <div className="table-scroll rounded-lg border" style={{ borderColor: 'var(--line)' }} role="region" aria-label={t('Danh sách bài')} tabIndex={0}>
-            <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '640px' }}>
-              <colgroup><col style={{ width: '20%' }} /><col style={{ width: '23%' }} /><col style={{ width: '11%' }} /><col style={{ width: '11%' }} /><col style={{ width: '16%' }} /><col style={{ width: '19%' }} /></colgroup>
-              <thead><tr className="whitespace-nowrap">
-                <th className="th">{t('Học viên')}</th><th className="th">{t('Lớp · bài · kỹ năng')}</th><th className="th">{t('Tuần Test')}</th>
-                <th className="th text-right">{t('Hạn chấm')}</th><th className="th text-right">{t('Lần nhập đầu')}</th><th className="th">{t('Kết quả')}</th>
-              </tr></thead>
-              <tbody>
-                {pt.cat(rows).map((r) => (
-                  <tr key={r.id} style={r.dung ? undefined : { boxShadow: 'inset 3px 0 0 rgb(var(--bad-rgb))' }}>
-                    <td className="td"><Link to={`/hoc-vien/${r.studentId}`} className="ten-ho-so">{r.hocVien}</Link></td>
-                    <td className="td text-slate-300">{r.lop} · {r.bai} · {r.mon}</td>
-                    <td className="td whitespace-nowrap tabular-nums">{tuanLich(r.tuan, homNay)}</td>
-                    <td className="td whitespace-nowrap text-right text-xs tabular-nums">{ngay(r.han, homNay)}</td>
-                    <td className="td whitespace-nowrap text-right text-xs tabular-nums">
-                      {r.nhapDau ? ngay(r.nhapDau, homNay) : <span className="text-slate-400">{t('chưa nhập')}</span>}
-                      {r.sua && <span className="block text-xs text-slate-400">{t('sửa {ngay}', { ngay: ngay(r.sua, homNay) })}</span>}
-                    </td>
-                    <td className="td">
-                      <span className={`inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold ${r.dung ? 'text-ok' : 'text-bad'}`}>
-                        <Dau ok={r.dung} />{r.dung ? t('Đúng hạn') : t('Quá hạn · {n} ngày', { n: r.tre })}
-                      </span>
-                      {!r.dung && !r.nhapDau && <span className="block text-xs text-slate-400">{t('tới hôm nay {ngay}', { ngay: ngay(homNay, homNay) })}</span>}
-                      {r.dung && r.sua && <span className="block text-xs text-slate-400">{t('lần sửa không tính')}</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <PhanTrang {...pt.thanh} duoi />
-          </>
-        )}
-    </KhungPanel>
   );
 }

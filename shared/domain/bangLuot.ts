@@ -2,7 +2,10 @@
  * PANEL BẢNG CÓ ĐIỂM (PT-PANEL, kế hoạch 2026-11-05, mockup v13 A1 / A2) — kiểu dữ liệu chung máy chủ ↔ `web/src/ui/BangLuotPanel.tsx`.
  * Máy chủ trả `{ n, tieuDe, rows, bangLuot: true, kieu, knNhan?, cachTinh?, chiNhanh? }`; mỗi dòng mang `luotDiem` (kiểu 'luot') hoặc `tangGiam` (kiểu 'tang-giam').
  */
-export type KieuBangLuot = 'luot' | 'tang-giam' | 'bai-thuong' | 'vi-pham' | 'pa' | 'thi-that';
+import { t } from '../i18n/index.ts';
+import { nhomViecCua } from './tongQuan.ts';
+
+export type KieuBangLuot = 'luot' | 'tang-giam' | 'bai-thuong' | 'vi-pham' | 'pa' | 'thi-that' | 'viec';
 export type KnLuot = 'l' | 'r' | 'w1' | 'w2' | 's';
 export type KqDiem = 'vuot' | 'bang' | 'duoi' | null;
 
@@ -67,4 +70,23 @@ export type DongPa = {
   /** Mô tả PA do GV ghi (dòng phụ dưới loại PA). */
   moTa?: string | null;
   dot?: number; han?: string | null; ngayGhi?: string | null; dungHan?: boolean; treNgay?: number | null;
+};
+
+/**
+ * DEM-QUA-HAN b (chủ SP 06/11): panel ô "Việc đúng hạn" / "Chấm Test đúng hạn" (Phân tích GV, hồ sơ GV) — một dòng một VIỆC (hoặc một bài) có hạn trong kỳ.
+ * `mo` = còn mở, đã quá hạn (đứng đầu panel) · đã làm: `ngayXong` + `dung` (đúng / trễ `treNgay`). `href` mở đúng việc (như Công việc).
+ * Tab theo loại / tuyến (`tabViecHanCua`) — không tab Chấm Test (cột riêng); panel Chấm Test mọi dòng `cham`.
+ */
+export const TAB_VIEC_HAN = ['case', 'ban-giao', 'y-thuc', 'bao-ph', 'khac', 'cham'] as const;
+export type TabViecHan = (typeof TAB_VIEC_HAN)[number];
+export const TAB_VIEC_HAN_LABEL: Record<TabViecHan, string> = {
+  case: t('Case – PA – Kết quả'), 'ban-giao': t('Bàn giao'), 'y-thuc': t('Ý thức'), 'bao-ph': t('Báo PH'), khac: t('Khác'), cham: t('Chấm Test'),
+};
+/** Loại việc Công việc (`WorkGroupKey`) → tab: Bàn giao · Xử lý vi phạm · Báo PH riêng; nhóm Case học thuật (Case, PA, Phối hợp SOS) chung một tab; còn lại Khác. */
+export const tabViecHanCua = (group: string): TabViecHan =>
+  group === 'ban_giao' ? 'ban-giao' : group.startsWith('yt_') ? 'y-thuc' : group === 'bao_ph_yt' ? 'bao-ph' : nhomViecCua(group) === 'case-hoc-thuat' ? 'case' : 'khac';
+export type DongViecHan = {
+  tab: TabViecHan; mo: boolean; ten: string; phu?: string | null;
+  em: { id: number; ten: string } | null; lop: { id: number | null; ma: string } | null;
+  han: string | null; ngayXong: string | null; dung: boolean; treNgay: number | null; href: string;
 };
