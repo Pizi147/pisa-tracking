@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api, invalidateAll } from '../../lib/api.ts';
+import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { fmtDateTime } from '../../lib/format.ts';
@@ -16,7 +16,10 @@ type TrangThai = { bat: boolean; nguoi: string | null; luc: string | null };
  * Bấm là có hiệu lực ngay; muốn đổi ý bấm lại (nhật ký ghi cả hai lần) — không hộp xác nhận.
  */
 export function MoSuaLichTest() {
-  const { data, error, loading, reload } = useApi<TrangThai>('/admin/mo-sua-lich-test');
+  const { data: tai, error, loading, reload } = useApi<TrangThai>('/admin/mo-sua-lich-test');
+  /* Kết quả của lần bấm gần nhất (PUT trả trạng thái mới) — hiện ngay, không chờ tải lại. */
+  const [vua, setVua] = useState<TrangThai | null>(null);
+  const data = vua ?? tai;
   const { reload: napLaiPhien } = useSession();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -25,11 +28,9 @@ export function MoSuaLichTest() {
     if (busy) return;
     setBusy(true);
     try {
-      await api.put<TrangThai>('/admin/mo-sua-lich-test', { bat });
+      setVua(await api.put<TrangThai>('/admin/mo-sua-lich-test', { bat }));
       toast.push('ok', bat ? t('Đã mở sửa lịch Test') : t('Đã tắt mở sửa lịch Test'));
-      invalidateAll();
-      reload();
-      void napLaiPhien();
+      void napLaiPhien();   // cờ `moSuaLichTest` của phiên (nạp lại phiên cũng xoá bản vừa xem)
     } catch (e: any) {
       toast.push('error', e?.message ?? t('Không lưu được'));
     } finally { setBusy(false); }
