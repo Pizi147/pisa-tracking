@@ -11,7 +11,7 @@ import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
-  can, classScopeSql, coTheXemLuotCham, defaultWorkScope, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
+  can, classScopeSql, coTheXemLuotCham, defaultWorkScope, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -898,7 +898,7 @@ function classOverviewThat(p: Principal, classId: number) {
      * không còn gì để sửa/nhập/gán nữa.
      */
     viewer: { ...(finished ? {
-      canPlanWeek: false, canAddStudents: false, coTheSuaHocVien: false, canAssign: false, canAssignSubject: false, canEditProgress: false,
+      canPlanWeek: false, canAddStudents: false, coTheSuaHocVien: false, canAssign: false, canAssignSubject: false, canEditProgress: false, canEditSchedule: false,
       editableSkills: [] as string[], isCoreTeacher: false,
       canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
       coTheSuaThongTin: false, coTheSuaThem: false, coTheSuaCaLop: false,
@@ -912,6 +912,8 @@ function classOverviewThat(p: Principal, classId: number) {
       canAssignSubject: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) || can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId }),
       /** Sửa tuần khai giảng và hai mốc kiểm tra — Admin CN và Quản lý CN (mục 7.6). */
       canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+      /** SUA-LICH-LOP (chủ SP 06/11): sửa tuần khai giảng + Progress + Final — thêm GVCN lớp và Admin chi nhánh (`duocSuaLichLop`, hẹp hơn `class.edit`). */
+      canEditSchedule: duocSuaLichLop(p, classId),
       editableSkills: editableSkills(p, classId, classSkills),
       isCoreTeacher: isCoreTeacherOf(p, classId),
       /** Nút đầu trang và menu ⋯ dòng học viên chỉ hiện khi làm được (Q9) — máy chủ vẫn chặn lại. */
