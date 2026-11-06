@@ -1040,7 +1040,9 @@ CREATE TABLE sos_cases (
   /* PR-OV13a (Q2): 1 = Case TẠM của lượt Mock FT chưa chốt ("Chờ chốt SOS") — chưa hạn / PA / việc / chuông; lượt chốt thì thành Case thật hoặc xoá. Không dấu phẩy (DROP COLUMN) */
   tam INTEGER NOT NULL DEFAULT 0,
   /* SV-NX-CASE (N8 ②): NGUỒN MÔ TẢ Case MT — lượt có nhận xét (ô lượt này × topic) mà mô tả đang đi theo. NULL = chưa có mô tả từ nhận xét. Mô tả do người sửa riêng (case_issues.created_by có người) thì tách hẳn và cột này chỉ còn để tra. Không dấu phẩy (DROP COLUMN) */
-  mo_ta_attempt_id INTEGER
+  mo_ta_attempt_id INTEGER,
+  /* RESET-HAN-CASE (06/11): hạn Thêm PA đã đặt lại — thắng công thức `hanThemPa`; NULL = công thức. Không dấu phẩy (DROP COLUMN) */
+  han_them_pa TEXT
 );
 /*
  * MỘT HỌC VIÊN × MỘT HẠNG MỤC = MỘT CASE.

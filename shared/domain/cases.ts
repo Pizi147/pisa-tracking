@@ -803,8 +803,9 @@ export function planDueDate(assignedOn: string, urgency: string | null | undefin
  * OV-11c (HV-14, Q10): HẠN THÊM PA của Case chưa có PA — MỘT hàm cho Công việc ("Thêm PA học thuật") và hồ sơ HV (việc tiếp của Case), kể cả Case
  * hệ thống mở (Progress Test lớp thường); Case nhẹ KCK / SOS 0 không hạn. Mốc = ngày phát hiện (thiếu thì ngày tạo); mức gấp = `urgency` của Case, không có thì suy từ SOS.
  */
-export function hanThemPa(c: { detected_at?: string | null; created_at?: string | null; urgency?: string | null; sos_level?: number | null; kck?: number | boolean | null }): string | null {
+export function hanThemPa(c: { detected_at?: string | null; created_at?: string | null; urgency?: string | null; sos_level?: number | null; kck?: number | boolean | null; han_them_pa?: string | null }): string | null {
   if (c.kck || c.sos_level === 0) return null;   // OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn — cùng điều kiện việc "Thêm PA" ở Công việc
+  if (c.han_them_pa) return c.han_them_pa;   // RESET-HAN-CASE (06/11): hạn đã đặt lại thắng công thức
   const moc = c.detected_at ?? (c.created_at ?? '').slice(0, 10);
   return moc ? planDueDate(String(moc).slice(0, 10), c.urgency ?? urgencyFromSos(c.sos_level ?? null)) : null;
 }
