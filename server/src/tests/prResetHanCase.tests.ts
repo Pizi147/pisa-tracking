@@ -123,6 +123,7 @@ export async function runPrResetHanCaseTests(t: any) {
     const n = mig.hoanTacResetHanCase(conn);
     assert(n > 0 && chup() === goc, 'hoàn tác: đúng như trước reset');
     assert(!one(`SELECT 1 FROM viec_han_lan WHERE loai LIKE 'reset_case:%'`), 'xoá nhật ký reset');
+    assert(one('SELECT value FROM demo_config WHERE key = ?', mig.KHOA_PR_RESET_HAN_CASE)?.value === '', 'hoàn tác: ngày reset rỗng (lần ghi trễ cũ tính lại), khoá giữ');
   }));
 
   check('RH-4 · hanThemPa: hạn đã đặt lại thắng công thức (Công việc, hồ sơ HV, Tổng hợp xử lý cùng hàm); KCK vẫn không hạn', () => {
@@ -132,20 +133,24 @@ export async function runPrResetHanCaseTests(t: any) {
     assert(sosState.XU_LY_COT_SQL.includes('sc.han_them_pa'), 'Tổng hợp xử lý đọc cột');
   });
 
-  check('RH-5 · [XM-2] cờ KQ_PA_TRE_TRUOC_RESET: mặc định lần ghi trễ cũ vẫn tính; tắt → trễ có hạn trước ngày reset không vào "Việc đúng hạn", phần khác giữ', () => thu(() => {
-    conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(mig.KHOA_PR_RESET_HAN_CASE, TODAY, TODAY);
+  check('RH-5 · [XM-2] "Xoá luôn": lần ghi Kết quả PA trễ có hạn trước ngày reset không vào "Việc đúng hạn" (tử lẫn mẫu), đúng hạn giữ; ngày rỗng / tắt luật → như cũ', () => thu(() => {
+    const ngay = (v: string) => conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(mig.KHOA_PR_RESET_HAN_CASE, v, TODAY);
     const tre = new Set(all('SELECT intervention_id AS iv, cycle_no AS c FROM case_followups WHERE late = 1 AND cycle_due < ?', TODAY).map((r) => `${r.iv}|${r.c}`));
     const laTre = (r: { ids: number[]; numeratorIds: number[] }) => r.ids.filter((id) => {
       const o = metrics.parseObligation(id);
       return !r.numeratorIds.includes(id) && tre.has(`${o.interventionId}|${o.cycle}`);
     });
-    const truoc = nghiaVu();
-    assert(laTre(truoc).length > 0, 'tiền đề: seed có lần ghi trễ');
-    metrics.KQ_PA_TRE_TRUOC_RESET.tinh = false;
-    let sau: { ids: number[]; numeratorIds: number[] };
-    try { sau = nghiaVu(); } finally { metrics.KQ_PA_TRE_TRUOC_RESET.tinh = true; }
-    const bo = new Set(truoc.ids.filter((id) => !sau.ids.includes(id)));
-    assert(!laTre(sau).length && bo.size === laTre(truoc).length && [...bo].every((id) => laTre(truoc).includes(id)), `bỏ ${bo.size} / trễ ${laTre(truoc).length}`);
-    assert(JSON.stringify(sau.numeratorIds) === JSON.stringify(truoc.numeratorIds), 'đúng hạn giữ');
+    ngay('');
+    const goc = nghiaVu();
+    assert(laTre(goc).length > 0, 'tiền đề: seed có lần ghi trễ');
+    ngay(TODAY);
+    const sau = nghiaVu();
+    const bo = new Set(goc.ids.filter((id) => !sau.ids.includes(id)));
+    assert(!laTre(sau).length && bo.size === laTre(goc).length && [...bo].every((id) => laTre(goc).includes(id)), `bỏ ${bo.size} / trễ ${laTre(goc).length}`);
+    assert(JSON.stringify(sau.numeratorIds) === JSON.stringify(goc.numeratorIds), 'đúng hạn giữ');
+    metrics.KQ_PA_TRE_TRUOC_RESET.tinh = true;
+    let bat: { ids: number[] };
+    try { bat = nghiaVu(); } finally { metrics.KQ_PA_TRE_TRUOC_RESET.tinh = false; }
+    assert(JSON.stringify(bat.ids) === JSON.stringify(goc.ids), 'tắt luật = như cũ');
   }));
 }

@@ -6,11 +6,11 @@
  *   · Kết quả PA — `case_interventions.action_due`, mốc RIÊNG hôm nay + `SO_NGAY_RESET_PA` (chủ SP 06/11 "reset hết cho đến 2 tuần tới"): mọi PA có
  *     hạn TRƯỚC mốc (đang quá hạn + đợt tới hạn trong hai tuần) → hạn = mốc; Công việc hiện lại theo luật sẵn có (hạn − 2). Nghĩa vụ CHƯA GHI của
  *     "Việc đúng hạn" đếm từ cột này (`obligations`) nên các đợt đã lỡ không còn tính cho ai; ghi xong thì `hanKe` về lại lịch hai tuần của PA.
- *     Lần ghi TRỄ đã có: cờ `KQ_PA_TRE_TRUOC_RESET` (metrics.ts, [XM-2] chờ chủ SP).
+ *     Lần ghi TRỄ đã có hạn trước ngày reset: không còn tính (chủ SP "Xoá luôn" — `KQ_PA_TRE_TRUOC_RESET`, metrics.ts, đọc ngày = giá trị khoá).
  *   · Ghi Mini Test — `mini_test.han`.
  * Không gồm Phối hợp SOS (meeting CX — tab "Ý thức & Phối hợp", không thuộc tuyến Case) — [XM] PTA.
  * Mỗi việc một dòng `viec_han_lan` (loai `reset_case:<cột>`, hạn hiệu lực cũ → mới, boi NULL). HOÀN TÁC: `hoanTacResetHanCase(conn)` — trả hạn cũ
- * cho dòng chưa ai đổi tiếp (hạn hiện tại = hạn reset), xoá các dòng nhật ký reset. Khoá `demo_config` → chạy lặp không làm gì; DB mới (init / seed)
+ * cho dòng chưa ai đổi tiếp (hạn hiện tại = hạn reset), xoá các dòng nhật ký reset, giá trị khoá → '' (lần ghi trễ cũ tính lại; khoá giữ → không chạy lại). Khoá `demo_config` → chạy lặp không làm gì; DB mới (init / seed)
  * ghi khoá sẵn (`duLieuNen`).
  */
 import { nowIso } from '../util.ts';
@@ -97,6 +97,7 @@ export function hoanTacResetHanCase(conn: any): number {
     n += conn.prepare(`UPDATE ${bang} SET ${cot} = ? WHERE id = ? AND ${cot} = ?`).run(cot === 'han_them_pa' ? null : l.han_cu, l.viec_id, l.han_moi).changes;
   }
   conn.prepare(`DELETE FROM viec_han_lan WHERE loai LIKE 'reset_case:%'`).run();
+  conn.prepare(`UPDATE demo_config SET value = '', updated_at = ? WHERE key = ?`).run(nowIso(), KHOA_PR_RESET_HAN_CASE);
   return n;
 }
 

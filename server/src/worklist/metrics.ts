@@ -563,10 +563,11 @@ function tuanGhiBu(due: string, den: string): { k: number; dung: boolean }[] {
 }
 
 /**
- * RESET-HAN-CASE [XM-2] (chờ chủ SP): `tinh: false` → lần ghi Kết quả PA TRỄ có hạn trước ngày reset (`demo_config` khoá reset) không vào "Việc đúng hạn".
- * Mặc định tính như cũ — đổi một chữ. `tinh` không đọc thêm gì; tắt thì một lần getConfig (nhớ theo tiến trình).
+ * RESET-HAN-CASE [XM-2] (chủ SP 06/11 "Xoá luôn"): lần ghi Kết quả PA TRỄ có hạn trước NGÀY RESET (giá trị khoá `demo_config` reset) không vào
+ * "Việc đúng hạn" (cả tử lẫn mẫu); dòng dữ liệu giữ. Giá trị khoá rỗng (DB mới, đã hoàn tác) → tính như cũ. `tinh: true` = tắt luật (một chữ).
+ * Đọc: một getConfig (nhớ theo tiến trình).
  */
-export const KQ_PA_TRE_TRUOC_RESET = { tinh: true };
+export const KQ_PA_TRE_TRUOC_RESET = { tinh: false };
 
 function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
