@@ -92,7 +92,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prFtLopNghi: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9204,6 +9204,9 @@ await runPrLtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== SUA-LICH-LOP (GVCN / Admin / QL sửa lịch lớp thường; việc gắn mốc dời theo)
 const { runPrSuaLichLopTests } = bocTep('prSuaLichLop', await import('./prSuaLichLop.tests.ts'));
 await runPrSuaLichLopTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== FT-LOP-NGHI (lớp FT nghỉ 1 tuần: MT kế tiếp +1 tuần, hạn PA / Case +7 ngày, Hoàn tác)
+const { runPrFtLopNghiTests } = bocTep('prFtLopNghi', await import('./prFtLopNghi.tests.ts'));
+await runPrFtLopNghiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-MTGON (chống kẹt Mock Test, chủ sản phẩm 08/10)
 const { runPrMtGonTests } = bocTep('prMtGon', await import('./prMtGon.tests.ts'));
 await runPrMtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
