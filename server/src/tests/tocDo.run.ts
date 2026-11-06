@@ -35,6 +35,8 @@ const { PERMISSIONS, LO_LUU_SUA_CA_LOP, LO_HANG_LOAT_EM } = await import('../../
 const { listCases } = await import('../cases/cases.ts');
 const { standingFor } = await import('../students/standing.ts');   // RA-DOC-0611
 const { chiSoHoSoGv } = await import('../phanTich/giaoVien.ts');   // RA-DOC-0611
+const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');   // RA-DOC-0611b
+const { muonTuViec, viecMuon } = await import('../platform/thongBaoTuDong.ts');   // RA-DOC-0611b
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
@@ -633,6 +635,23 @@ check('RA-DOC-0611 · standingFor nhớ theo em (tập con, khác thứ tự: 0 
   for (const k of ['tu', 'den', 'ketQua', 'tienBo', 'hocThuatTheoLop'] as const) {
     assert(JSON.stringify(du[k]) === JSON.stringify(gon[k]), `chiHocThuat đổi "${k}"`);
   }
+});
+
+check('RA-DOC-0611b · /my-work mọi tài khoản: tập cha Case theo lớp (GV) giống hệt đọc cả hệ thống · chuông từ /my-work đủ = viecMuon', () => {
+  const sai: string[] = [];
+  for (const uid of TOAN_BO_TK) {
+    const p = PRINCIPAL_CUA.get(uid)!;
+    caseMoTapChaKhiKiem.tat = true;
+    const cu = chayTrongRequest('GET', () => JSON.stringify(myWork(p, {})));
+    caseMoTapChaKhiKiem.tat = false;
+    const moi = chayTrongRequest('GET', () => JSON.stringify(myWork(p, {})));
+    if (cu !== moi) sai.push(`${uid}: myWork khác`);
+    const [tuViec, muon] = chayTrongRequest('GET', () => [
+      JSON.stringify([...muonTuViec(p, (myWork(p, {}).items ?? []) as any[], demoToday15d())]), JSON.stringify([...viecMuon(p, demoToday15d())])]);
+    if (tuViec !== muon) sai.push(`${uid}: chuông khác`);
+  }
+  caseMoTapChaKhiKiem.tat = false;
+  assert(!sai.length, sai.slice(0, 10).join(' | '));
 });
 
 check('PR-TD Task3(4) · trong một kho GET, gọi listCases(p, {}) hai lần cùng bộ lọc → lần hai 0 câu SQL', () => {
@@ -1593,7 +1612,7 @@ for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_G
   check(`OV-15d · đồng bộ thông báo tự động (dongBoThongBaoTuDong) ${vai} ≤ ${tran} câu SQL`, () => {
     const { dongBoThongBaoTuDong } = td15d;
     const p = loadPrincipal(USER[vai]);
-    let n = 0, dong = 0;
+    let n = 0, dong = 0, n2 = 0, dong2 = 0;
     conn.exec('BEGIN IMMEDIATE');
     try {
       chayTrongRequest('GET', () => {
@@ -1602,8 +1621,19 @@ for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_G
         n = soCauSql() - truoc; dong = soDongSql() - dongTruoc;
       });
     } finally { conn.exec('ROLLBACK'); }
-    console.log(`      (đo ×3: ${n} câu, ${dong} dòng)`);
+    /* RA-DOC-0611b: đồng bộ sau `GET /my-work` — từ việc đã tính (không chạy lại `myWork`). */
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      chayTrongRequest('GET', () => {
+        const items = (myWork(p, {}).items ?? []) as any[];
+        const truoc = soCauSql(), dongTruoc = soDongSql();
+        dongBoThongBaoTuDong(p, demoToday15d(), items);
+        n2 = soCauSql() - truoc; dong2 = soDongSql() - dongTruoc;
+      });
+    } finally { conn.exec('ROLLBACK'); }
+    console.log(`      (đo ×3: ${n} câu, ${dong} dòng · từ /my-work: ${n2} câu, ${dong2} dòng)`);
     assert(n <= tran, `${n} câu > trần ${tran}`);
+    assert(n2 <= TRAN_GHI_LO.dongBoTuMyWork, `từ /my-work ${n2} câu > trần ${TRAN_GHI_LO.dongBoTuMyWork}`);
   });
 }
 

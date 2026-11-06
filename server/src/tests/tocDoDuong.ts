@@ -96,6 +96,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/my-work' },
   /* PR-Ra: trang "Công việc" — Hỗ trợ học viên dùng lại `/my-work`, nay có thêm `nguoi`. */
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work' },
+  /* RA-DOC-0611: Admin — `/my-work` gọi ở mỗi lần mở app (badge `App.tsx`), kèm việc "Xuất báo cáo PH" (`viecXuatBaoCaoPh`, BAO-CAO-PH b). */
+  { trang: 'Công việc Admin', vai: ['ADMIN'], url: '/my-work' },
   /* SV-YT-TVV + SV-TVV-VIEC: việc của TVV (Báo PH, Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật) ở Tổng quan TVV (TVV không có khu Công việc). */
   { trang: 'Việc TVV', vai: ['TVV'], url: '/tong-quan/viec-cua-toi' },
   {
@@ -579,6 +581,7 @@ export const TRAN: Record<string, number> = {
   'GVBM /my-work': 42,   // TD4: đo 61 (trước 64); TL-NEN: đo 45 (trước 60) · TL-VIEC: đo 32 (trước 45)
   'GVCN_THUONG /my-work': 43,   // TD4: đo 61 (trước 64); TL-NEN: đo 46 (trước 61) · TL-VIEC: đo 33 (trước 46)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
+  'ADMIN /my-work': 23,   // RA-DOC-0611: đường mới đo — đo 13 (gồm 4 câu việc Xuất báo cáo PH) → max(đo + 10, ⌈đo × 1,3⌉)
   'QL /my-work': 49,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn — một câu rẻ trong `quetLenhDenHan`, mọi đường đọc có quét); SV-NX-CASE +1 (MT mới nhất của em, một câu / trang); TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu); SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70); TL-NEN: đo 54 (trước 69) · TL-VIEC: đo 39 (trước 54)
   'QT /my-work': 49,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn); SV-NX-CASE +1; TD4: đo 61 (trước 64); SV-YT-TVV +1; SV-TVV-VIEC +1; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70); TL-NEN: đo 54 (trước 69) · TL-VIEC: đo 39 (trước 54)
   'QL /my-work?nguoi=tat-ca': 54,   // TD4: đo 69 (trước 76) — một lần `listAttempts`; 16/10 +1 OV-13k (xem_nx_s) +1 OV-13m (Chọn bước tiếp) = 73; SV-YT-TVV +1, SV-TVV-VIEC +1 = 75; SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); V5 SV-SO1 +1 (ngữ cảnh Case "Làm thay" một câu); P9a XET-LAI +2 (Xét lại lộ trình: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ thay 4 câu cũ — đo 80) · TL-VIEC: đo 44 (trước 64)
@@ -1040,7 +1043,7 @@ export const TRAN_DONG: Record<string, number> = {
   /* LOP-1-LOP: hồ sơ lớp chỉ đọc lượt của lớp (`myWork({ classIds })`) — đo QL / QT 1 278 (trước 1 448), GVCN / GVCN_THUONG 854 (trước 935), GVBM 850 (trước 958);
      badge quá hạn nay trong cùng đường (trước thêm `/my-work` QL 1 414 · GV 921–944 dòng). Trần = max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /classes/3/viec-theo-em?chi=toi': 1304, 'QT /classes/3/viec-theo-em?chi=toi': 1304,   // TL-NEN: đo 1155 · 1155 (trước 1245 · 1245); TL-VIEC: đo 1003 · 1003 (trước 1155 · 1155)
-  'GVCN /classes/3/viec-theo-em?chi=toi': 951, 'GVBM /classes/3/viec-theo-em?chi=toi': 969, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 987,   // TL-NEN: đo 731 (trước 821); TL-VIEC: đo 759 · 745 · 759 (trước 731 · 727 · 731 — nạp mọi phân công đổi lấy −13 câu; ×3 giảm 1601 → 1537)
+  'GVCN /classes/3/viec-theo-em?chi=toi': 930, 'GVBM /classes/3/viec-theo-em?chi=toi': 920, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 930,   // TL-NEN: đo 731 (trước 821); TL-VIEC: đo 759 · 745 · 759 (trước 731 · 727 · 731 — nạp mọi phân công đổi lấy −13 câu; ×3 giảm 1601 → 1537)   // RA-DOC-0611b: đo 715 · 707 · 715 (trước 779 · 765 · 779)
   /* PR CHUONG-NHE: chuông — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trong mốc QL 34 · GVCN 47 · GVBM 16 · GVCN_THUONG 47; QT đồng bộ vì vừa ghi 345, trước 853). */
   'QL /notifications': 84, 'GVCN /notifications': 97, 'GVBM /notifications': 66, 'GVCN_THUONG /notifications': 97, 'QT /notifications': 449,
   /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */
@@ -1078,10 +1081,11 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
   'QL /my-work?nguoi=tat-ca&branchId={cn}': 1420, 'QT /my-work?nguoi=tat-ca&branchId={cn}': 1427,   // DOC-THUA: đo QL 1092 · QT 1097 (trước 1093 · 1098 — seed chỉ 1 dòng Báo PH ở chi nhánh khác; DB thật bớt mọi dòng Báo PH chờ của chi nhánh khác)
+  'ADMIN /my-work': 584,   // RA-DOC-0611: đo 449 (việc Xuất báo cáo PH: ghi danh lớp có đợt ~100) → max(đo + 50, ⌈đo × 1,3⌉)
   'QL /my-work': 1416,   // TD4: đo 849 (trước 2155); V5 SV-SO1: đo 1193 (trước 1104) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1089 (trước 1147)
-  'GVCN /my-work': 1079,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)
-  'GVBM /my-work': 1085,   // TD4: đo 847 (trước 2016)   // V5 SV-SO1 sau gộp main: đo 1194 (trần cũ 1102) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 853 (trước 911); TL-VIEC: đo 834 (trước 853)
-  'GVCN_THUONG /my-work': 1079,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)
+  'GVCN /my-work': 1026,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)   // RA-DOC-0611b: đo 789 (trước 852) — Case mở tập cha theo lớp
+  'GVBM /my-work': 1038,   // TD4: đo 847 (trước 2016)   // V5 SV-SO1 sau gộp main: đo 1194 (trần cũ 1102) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 853 (trước 911); TL-VIEC: đo 834 (trước 853)   // RA-DOC-0611b: đo 798 (trước 855)
+  'GVCN_THUONG /my-work': 1026,   // TD4: đo 822 (trước 1784)   // V5 SV-SO1 sau gộp main: đo 1139 (trần cũ 1069) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 830 (trước 888)   // RA-DOC-0611b: đo 789 (trước 852)
   'QT /my-work': 1624,   // TD4: đo 971 (trước 2889); V5 SV-SO1: đo 1741 (trước 1263) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1271 (trước 1329); TL-VIEC: đo 1249 (trước 1271)
   'QL /my-work?nguoi=tat-ca': 1538,   // TD4: đo 1119 (trước 2793); V5 SV-SO1: đo 1494 (trước 1455) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1446 (trước 1504); TL-VIEC: đo 1183 (trước 1446)
   'QT /my-work?nguoi=tat-ca': 1750,   // TD4: đo 1254 (trước 3688); V5 SV-SO1: đo 2062 (trước 1631) — ô có band thiếu nhận xét bắt buộc (seed: 327 ô) là việc thật → đọc thêm lượt còn ô chờ; TL-NEN: đo 1655 (trước 1713); TL-VIEC: đo 1346 (trước 1655)
@@ -1192,6 +1196,7 @@ export const TRAN_GHI_LO = {
   hoanTacXacNhanCaseS: 103,   // đo 79 câu (~40 là `caseDetail` trả về) → max(79 + 10, ⌈79 × 1,3⌉)
   /** OV-15d: đồng bộ thông báo tự động của MỘT người (`dongBoThongBaoTuDong`, khi mở chuông ≤ 1 lần / 5 phút) — QL / GVCN, trong giao dịch rồi cuộn lại. */
   dongBoThongBaoQL: 33,   // PR CHUONG-NHE: đo 23 câu, 308 dòng (×3; trước 33 câu, 1 189 dòng — QL không dạy lớp nên không đọc lượt) → max(23 + 10, ⌈23 × 1,3⌉)
+  dongBoTuMyWork: 14,   // RA-DOC-0611b: đồng bộ chuông sau GET /my-work từ việc đã tính (thông báo cũ + Case người đó + xử lý Case) — đo ×3 QL 3 · GVCN 4 · QT 3 câu (đường cũ 19 · 26 · 19) → max(4 + 10, ⌈4 × 1,3⌉)
   dongBoThongBaoGVCN: 43,   // PR CHUONG-NHE: đo 33 câu (×3, 1 101 dòng; trước cũng 33 — GVCN đọc lượt lớp mình dạy như cũ) → max(33 + 10, ⌈33 × 1,3⌉)
   dongBoThongBaoQT: 33,   // PR CHUONG-NHE: đo 23 câu, 312 dòng (×3; trước 33 câu, 1 703 dòng) → max(23 + 10, ⌈23 × 1,3⌉)
   /** BO-QUA-XEP-MT: POST /my-work/bo-qua — đọc lại MỘT PA (câu `moc:` + id), kiểm quyền, ghi 3 cột + nhật ký trong một giao dịch. */

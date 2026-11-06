@@ -52,7 +52,7 @@ import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, docNhieu, thongBaoCua } from '../platform/thongBao.ts';
-import { dongBoKhiMoChuong } from '../platform/thongBaoTuDong.ts';
+import { dongBoKhiMoChuong, dongBoSauMyWork } from '../platform/thongBaoTuDong.ts';
 import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
 import { xoaMocQuetSauGhi } from '../platform/mocHeThong.ts';
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
@@ -583,7 +583,9 @@ api.get('/my-work', requireAuth, wrap((req) => {
   }
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
-  return nheMyWork(myWork(p, { branchId }));
+  const kq = myWork(p, { branchId });
+  if (branchId == null && kq.items) dongBoSauMyWork(p, kq.items, demoToday());   // RA-DOC-0611b: chuông dùng lại việc vừa tính (tới chu kỳ 5 phút)
+  return nheMyWork(kq);
 }));
 
 /** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */

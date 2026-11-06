@@ -37,14 +37,21 @@ export const CAU_CASE_CUA_NGUOI = `SELECT sc.id, s.full_name AS ten, COALESCE(sc
 export const viecMuonDayDuKhiKiem = { bat: false };
 
 export function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
-  const muon = new Map<string, Muon>();
   /*
    * CHUONG-NHE: chỉ đọc lượt của lớp người này đang dạy — việc `score` + `mine` chỉ sinh ở lớp có phân công hiệu lực (`mySkills`, `activeAt`);
    * Chốt lộ trình / Báo PH / Case không đọc lượt. QL / QT không dạy lớp nào → không đọc lượt.
    */
   const ngay = demoToday();   // cùng ngày `myWork` / `mySkills` dùng để quyết `mine`
   const classIds = viecMuonDayDuKhiKiem.bat ? undefined : [...new Set(p.assignments.filter((a) => activeAt(a, ngay)).map((a) => a.classId))];
-  const items = (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']), classIds }).items ?? []) as WorkItem[];
+  return muonTuViec(p, (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']), classIds }).items ?? []) as WorkItem[], homNay);
+}
+
+/**
+ * RA-DOC-0611b: thông báo muốn có từ DANH SÁCH VIỆC đã tính — `viecMuon` (dựng một phần) và `GET /my-work` của chính người đó (đủ nhóm; chỉ đọc ba nhóm
+ * score · chot_len_ft · bao_ph_yt, cùng hàm `myWork` nên cùng dòng — phép kiểm `RA-DOC-0611b` ở tocDo.run so mọi tài khoản).
+ */
+export function muonTuViec(p: Principal, items: readonly WorkItem[], homNay: string): Map<string, Muon> {
+  const muon = new Map<string, Muon>();
 
   /* 1. Bài quá hạn chấm của chính GV — gom theo lớp · đợt; bấm mở việc đầu của nhóm trong Công việc. */
   const cham = new Map<string, WorkItem[]>();
@@ -111,8 +118,8 @@ export function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
  * Đồng bộ thông báo tự động của MỘT người: thêm cái mới, sửa chữ cái đổi, xoá cái đã hết việc. Trả số dòng đã ghi.
  * OV-15h1: thêm + sửa là MỘT câu upsert cho cả lô (`chenNhieuDong`, trùng khoá → chỉ đổi chữ / đường; `read_at` giữ nguyên — không reset đã đọc).
  */
-export function dongBoThongBaoTuDong(p: Principal, homNay: string): number {
-  const muon = viecMuon(p, homNay);
+export function dongBoThongBaoTuDong(p: Principal, homNay: string, items?: readonly WorkItem[]): number {
+  const muon = items ? muonTuViec(p, items, homNay) : viecMuon(p, homNay);
   const co = db().prepare(
     `SELECT id, dedup_key, title, body, duong, han FROM notifications WHERE user_id = ? AND kind IN (${KIND.map(() => '?').join(',')})`,
   ).all(p.userId, ...KIND) as any[];
@@ -151,4 +158,16 @@ export function dongBoKhiMoChuong(p: Principal, homNay: string) {
   try { db().prepare('UPDATE users SET chuong_dong_bo_luc = ? WHERE id = ?').run(luc, p.userId); } catch (e) { console.error('[chuong-moc]', e); }
   p.chuongDongBoLuc = luc;
   try { dongBoThongBaoTuDong(p, homNay); } catch (e) { console.error('[thong-bao-tu-dong]', e); }   // lỗi không làm hỏng chuông
+}
+
+/**
+ * RA-DOC-0611b: `GET /my-work` của chính người đó (không lọc chi nhánh) vừa tính đủ việc → đồng bộ chuông từ CHÍNH danh sách đó khi tới chu kỳ, thay vì lần mở
+ * chuông kế tính lại `myWork` (~30 câu GV). Mốc ghi SAU khi đồng bộ xong: `/notifications` chạy song song thấy mốc cũ thì tự đồng bộ như trước (không đọc thông báo
+ * cũ), thấy mốc mới thì đã có bản mới. Lỗi không làm hỏng Công việc — lần mở chuông kế đồng bộ lại.
+ */
+export function dongBoSauMyWork(p: Principal, items: readonly WorkItem[], homNay: string) {
+  if (p.chuongDongBoLuc && Date.now() - Date.parse(p.chuongDongBoLuc) < CHU_KY_MS) return;
+  try { dongBoThongBaoTuDong(p, homNay, items); } catch (e) { console.error('[thong-bao-tu-dong]', e); return; }
+  const luc = nowIso();
+  try { db().prepare('UPDATE users SET chuong_dong_bo_luc = ? WHERE id = ?').run(luc, p.userId); p.chuongDongBoLuc = luc; } catch (e) { console.error('[chuong-moc]', e); }
 }
