@@ -301,7 +301,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                   {cots.map((c, ci) => (
                     <td key={c.key} className="kh-td">
                       <div className="flex flex-col gap-1">
-                        <OSEx x={xep[ci] ?? null} so={ci + 1} onMo={mo} onThem={them} />
+                        <OSEx x={xep[ci] ?? null} so={ci + 1} onMo={mo} onThem={them} soKe={xep.length + 1} />
                         {ci === cots.length - 1 && xep.slice(cots.length).map((x, k) => <OSEx key={x.id} x={x} so={cots.length + k + 1} onMo={mo} />)}
                       </div>
                     </td>

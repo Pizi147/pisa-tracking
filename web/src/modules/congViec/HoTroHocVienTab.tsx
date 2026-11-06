@@ -155,7 +155,9 @@ export function HoTroHocVienTab() {
   const tatCaViec = useMemo(() => dsGoc.filter(trongNguon), [dsGoc, nguoi, cnLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const dsCn = laGvThuong ? data?.chiNhanh ?? [] : [];
   const maCn = useMemo(() => new Map(dsCn.map((b) => [b.id, b.code])), [dsCn]);
-  const demCn = (id: number | null) => demDongViec(dsGoc.filter((it) => id == null || it.cn == null || it.cn === id)).n;
+  /* RA-LOI-0711i: số trên dải chi nhánh = cùng bộ lọc với số đầu trang (người · khung · loại việc), chỉ khác chi nhánh — "Tất cả" = số đầu trang. */
+  const demCn = (id: number | null) => demDongViec(theoKhung(dsGoc.filter((it) => (typeof nguoi === 'number' || khopNguoiViec(it, nguoi))
+    && (id == null || it.cn == null || it.cn === id)))).n;
   /* S11: số trên công tắc khung đếm DÒNG (`demDongViec`), cùng đơn vị đầu nhóm. */
   const demKhung = useMemo(() => ({
     ft: demDongViec(tatCaViec.filter((it) => it.khung === 'ft')).n,
@@ -534,7 +536,8 @@ export function HoTroHocVienTab() {
               <HopChoDuyet gon branchId={branchId} khuPanel={khuDuyet} />
             </section>
           )}
-          {chiCc && tab !== 'duyet' && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
+          {/* RA-LOI-0711i: tab đang hiện chính danh sách bài chấm chéo thì không ghi "không có việc" ngay trên danh sách đó. */}
+          {chiCc && tab !== 'duyet' && !trongTab.some(laViecChamCheo) && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
           {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length === 0 && !(tab === 'van-hanh' && coVanHanh) && (
             <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : t('Không còn việc đang mở')}
               action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : laTvv ? <Link className="link" to="/hoc-vien">{t('HV của tôi ›')}</Link> : undefined} /></Card>
