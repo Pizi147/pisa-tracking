@@ -15,12 +15,12 @@
 import { db, tx } from '../db.ts';
 import { PERMISSIONS, soSanhLop, tenMon } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, canXacNhan, notFound, nowIso } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 
 const CHI_ADMIN = 'Chỉ Quản trị hệ thống mới xoá được tài khoản.';
-const DA_XOA = 'Tài khoản đã xoá.';
+const DA_XOA = 'Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.';
 
 type Loai = 'dau_vet' | 'thiet_lap';
 const c = (bang: string, cot: string, loai: Loai, nhan: string) => ({ bang, cot, loai, nhan });
@@ -117,7 +117,7 @@ export type XemXoaTaiKhoan = {
   soDauVet: number;
   /** Gộp theo nhãn, chỉ nhãn > 0, giảm dần. */
   chiTiet: { nhan: string; so: number }[];
-  cach: 'han' | 'mem'; chan: string | null; canhBao: string[];
+  cach: 'han' | 'mem'; chan: string | null; canhBao: string[]; goLai: 'email' | 'ho-ten';
 };
 
 type Nguoi = {
@@ -149,12 +149,14 @@ function docNguoi(userId: number, homNay: string): Nguoi {
 function lyDoChan(p: Principal, u: Nguoi): string | null {
   if (u.id === p.userId) return 'Không tự xoá tài khoản của chính mình.';
   if (u.la_qt && u.status === 'active' && u.so_qt_khac === 0) return 'Đây là Quản trị hệ thống cuối cùng.';
-  /* PR-UXF-a U1: group_concat không hứa thứ tự — sắp bằng soSanhLop. */
-  if (u.lop_gvcn) return `Đổi GVCN lớp ${u.lop_gvcn.split(', ').sort((a, b) => soSanhLop({ code: a }, { code: b })).join(', ')} trước.`;
-  /* 6C-NHO: xác nhận xoá bằng gõ lại email — chưa có email thì nói lý do + bước tiếp, không tắt nút im lặng. */
-  if (!u.email) return 'Tài khoản chưa có email. Thêm email ở ⋯ › Sửa thông tin rồi xoá.';
+  /* RKC-6 (chủ SP 07/11 "không chặn cứng"): đang là GVCN → cảnh báo + hỏi lúc xoá (lớp sẽ thiếu GVCN); chưa có email → gõ lại HỌ TÊN để xác nhận. */
   return null;
 }
+
+/** Lớp người này đang là GVCN (lớp còn hoạt động), sắp theo mã (PR-UXF-a U1: group_concat không hứa thứ tự). */
+const lopGvcnCua = (u: Nguoi): string | null => (u.lop_gvcn ? u.lop_gvcn.split(', ').sort((a, b) => soSanhLop({ code: a }, { code: b })).join(', ') : null);
+/** Chữ phải gõ lại để xác nhận xoá: email, chưa có email thì họ tên. */
+const chuXacNhan = (u: Nguoi): string => u.email ?? u.full_name;
 
 function demDauVet(userId: number): { tong: number; theoCot: Map<string, number> } {
   const rows = CAU_DAU_VET.flatMap((cau) => db().prepare(cau).all(userId) as { k: string; n: number }[]);
@@ -189,6 +191,7 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
   /* Gộp theo TÊN MÔN hiện ra (MH2): ô `writing` là "Writing" ở BE nhưng "Grammar + Vocabulary" ở FOU. */
   for (const m of mon) { const ten = tenMon(m.programme_code, m.skill); theoMon.set(ten, [...(theoMon.get(ten) ?? []), m.code]); }
   for (const [ten, lop] of theoMon) canhBao.push(`Lớp ${lop.join(', ')} sẽ thiếu GV môn ${ten}.`);
+  if (lopGvcnCua(u)) canhBao.unshift(`Lớp ${lopGvcnCua(u)} sẽ thiếu GVCN — phân công GVCN mới sau khi xoá.`);   // RKC-6
   /* Q12: việc đang giao cho người này. */
   const viec = (conn.prepare(
     `SELECT (SELECT COUNT(*) FROM sos_cases WHERE owner_user_id = ?1 AND status != 'done')
@@ -206,6 +209,8 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
     soDauVet: dv.tong,
     chiTiet: [...gop].map(([nhan, so]) => ({ nhan, so })).sort((a, b) => b.so - a.so),
     cach: dv.tong > 0 ? 'mem' : 'han', chan: lyDoChan(p, u), canhBao,
+    /** RKC-6: chữ gõ lại để xác nhận — `email` hoặc `ho-ten` (chưa có email). */
+    goLai: u.email ? 'email' : 'ho-ten',
   };
 }
 
@@ -215,16 +220,18 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
   const homNay = demoToday();
   const u = docNguoi(userId, homNay);
   if (u.status === 'deleted') throw badRequest(DA_XOA);
-  if (String(input.emailXacNhan ?? '').trim().toLowerCase() !== (u.email ?? '').toLowerCase() || !u.email) {
-    throw badRequest('Gõ lại đúng email để xác nhận xoá.');
+  if (String(input.emailXacNhan ?? '').trim().toLowerCase() !== chuXacNhan(u).trim().toLowerCase()) {
+    throw badRequest(u.email ? 'Gõ lại đúng email để xác nhận xoá.' : 'Gõ lại đúng họ tên để xác nhận xoá.');
   }
   const chan = lyDoChan(p, u);
   if (chan) throw badRequest(chan);
+  if (lopGvcnCua(u)) canXacNhan('Người này đang là GVCN lớp {ds} — vẫn xoá? Lớp sẽ thiếu GVCN.', { ds: lopGvcnCua(u)! }, 'Vẫn xoá');
   return tx(() => {
     const conn = db();
     /* Tính lại TRONG giao dịch: hai Quản trị bấm cùng lúc, hoặc người này vừa ghi gì đó. */
     const soDauVet = demDauVet(userId).tong;
     const cach: 'han' | 'mem' = soDauVet > 0 ? 'mem' : 'han';
+    let roleIds: number[] = [];
     if (cach === 'han') {
       for (const x of COT_THIET_LAP) conn.prepare(`DELETE FROM ${x.bang} WHERE ${x.cot} = ?1`).run(userId);
       conn.prepare('DELETE FROM users WHERE id = ?1').run(userId);
@@ -237,15 +244,59 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
       for (const bang of ['demo_sessions', 'user_emails', 'user_permissions', 'user_prefs', 'task_followers', 'notifications']) {
         conn.prepare(`DELETE FROM ${bang} WHERE user_id = ?1`).run(userId);
       }
-      /* `user_roles` không có effective_to — đóng như setRoles (Q11). */
+      /* `user_roles` không có effective_to — đóng như setRoles (Q11). RKC-6: nhớ đúng các dòng vai vừa đóng (nhật ký) để Khôi phục trả lại. */
+      roleIds = (conn.prepare(`SELECT id FROM user_roles WHERE user_id = ?1 AND status = 'active'`).all(userId) as any[]).map((r) => r.id as number);
       conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ?1 AND status = 'active'`).run(userId);
       conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ?2 WHERE user_id = ?1 AND status = 'active'`)
         .run(userId, homNay);
     }
     writeAudit({
       actorUserId: p.userId, action: 'user.delete', entityType: 'users', entityId: userId, entityLabel: u.full_name,
-      before: { email: u.email, vai: u.vai ? u.vai.split(',') : [] }, after: { cach, soDauVet },
+      before: { email: u.email, vai: u.vai ? u.vai.split(',') : [], roleIds }, after: { cach, soDauVet },
     });
     return { ok: true as const, cach };
+  });
+}
+
+/**
+ * KHÔI PHỤC TÀI KHOẢN ĐÃ XOÁ MỀM (RKC-6, PTA quyết 8) — CHỈ Quản trị hệ thống. Trả: trạng thái dùng được, tên bỏ " (đã xoá)", email cũ (nhật ký lúc xoá)
+ * nếu chưa ai dùng, các dòng vai đã đóng lúc xoá (nhật ký `roleIds`; nhật ký cũ không có → vai cùng tên, dòng đóng gần nhất). KHÔNG trả: mật khẩu (Đặt lại
+ * mật khẩu), phân công lớp (phân công lại — lớp có thể đã có người khác). Nhật ký `user.restore`; lỡ tay thì Xoá lại.
+ */
+export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canhBao: string[] } {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống mới khôi phục được tài khoản.');
+  const conn = db();
+  const u = conn.prepare('SELECT id, full_name, email, status FROM users WHERE id = ?').get(userId) as any;
+  if (!u) throw notFound('Không tìm thấy tài khoản.');
+  if (u.status !== 'deleted') throw badRequest('Tài khoản này chưa bị xoá.');
+  const nk = conn.prepare(`SELECT before_json FROM audit_logs WHERE action = 'user.delete' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(userId) as any;
+  let truoc: { email?: string | null; vai?: string[]; roleIds?: number[] } = {};
+  try { truoc = JSON.parse(nk?.before_json ?? '{}'); } catch { truoc = {}; }
+  const canhBao: string[] = [];
+  return tx(() => {
+    let email: string = u.email;
+    if (truoc.email) {
+      const trung = conn.prepare(`SELECT 1 FROM users WHERE lower(email) = lower(?) AND id != ? LIMIT 1`).get(truoc.email, userId);
+      if (trung) canhBao.push(`Email ${truoc.email} đã có tài khoản khác — đặt email mới ở ⋯ › Sửa thông tin.`);
+      else email = truoc.email;
+    } else canhBao.push('Tài khoản chưa có email — thêm ở ⋯ › Sửa thông tin.');
+    const ten = String(u.full_name).replace(/ \(đã xoá\)$/, '');
+    conn.prepare(`UPDATE users SET status = 'active', deleted_at = NULL, full_name = ?, email = ? WHERE id = ?`).run(ten, email, userId);
+    let soVai = 0;
+    if (truoc.roleIds?.length) {
+      soVai = conn.prepare(`UPDATE user_roles SET status = 'active' WHERE user_id = ? AND status = 'ended' AND id IN (${truoc.roleIds.map(() => '?').join(',')})`)
+        .run(userId, ...truoc.roleIds).changes;
+    } else if (truoc.vai?.length) {
+      for (const tenVai of truoc.vai) {
+        const r = conn.prepare(`SELECT ur.id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'ended' AND r.name_vi = ?
+          ORDER BY ur.id DESC LIMIT 1`).get(userId, tenVai) as any;
+        if (r) soVai += conn.prepare(`UPDATE user_roles SET status = 'active' WHERE id = ?`).run(r.id).changes;
+      }
+    }
+    if (!soVai) canhBao.push('Chưa có vai trò — cấp vai ở nút Sửa.');
+    canhBao.push('Đặt lại mật khẩu để người này đăng nhập; phân công lớp làm lại ở hồ sơ lớp.');
+    writeAudit({ actorUserId: p.userId, action: 'user.restore', entityType: 'users', entityId: userId, entityLabel: ten,
+      before: { status: 'deleted' }, after: { status: 'active', email, soVai } });
+    return { ok: true as const, canhBao };
   });
 }

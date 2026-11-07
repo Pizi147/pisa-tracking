@@ -725,20 +725,23 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     const gvcnId = P.normalCoreTeacher.userId;
     const truoc = JSON.stringify(user(gvcnId));
     const x = xoaTK.xemXoaTaiKhoan(P.admin, gvcnId);
-    assert(/^Đổi GVCN lớp .*MB FOU 12.* trước\.$/.test(String(x.chan)), String(x.chan));
-    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, gvcnId, { emailXacNhan: user(gvcnId).email })) === 400, 'GVCN phải 400');
-    assert(JSON.stringify(user(gvcnId)) === truoc, 'bị chặn mà vẫn đổi');
+    /* RKC-6: GVCN không còn chặn — cảnh báo "sẽ thiếu GVCN" + hỏi lúc xoá (409, chưa đổi gì). */
+    assert(x.chan === null && x.canhBao.some((c: string) => /^Lớp .*MB FOU 12.* sẽ thiếu GVCN/.test(c)), JSON.stringify(x));
+    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, gvcnId, { emailXacNhan: user(gvcnId).email })) === 409, 'GVCN phải hỏi (409)');
+    assert(JSON.stringify(user(gvcnId)) === truoc, 'chưa đồng ý mà vẫn đổi');
   });
 
-  check('6C-NHO · Tài khoản chưa có email: chặn và nói bước tiếp (không tắt nút im lặng)', () => {
+  check('6C-NHO · RKC-6: Tài khoản chưa có email → xác nhận bằng gõ lại HỌ TÊN (sai → 400, đúng → xoá)', () => {
     const k = accounts.createAccount(P.admin, {
       email: `thu.xoa.ko.email${Date.now() % 100000}.pisa@gmail.com`, password: 'matkhau-ko-email', fullName: 'Thu Xoa Khong Email', roles: [{ role: 'teacher', branches: ['MB'] }],
     }) as { userId: number };
     conn.prepare('UPDATE users SET email = NULL WHERE id = ?').run(k.userId);
     const x = xoaTK.xemXoaTaiKhoan(P.admin, k.userId);
-    assert(x.chan === 'Tài khoản chưa có email. Thêm email ở ⋯ › Sửa thông tin rồi xoá.', String(x.chan));
-    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, k.userId, { emailXacNhan: '' })) === 400, 'không email phải 400');
-    assert(user(k.userId) !== undefined, 'bị chặn mà vẫn xoá');
+    assert(x.chan === null && x.goLai === 'ho-ten', JSON.stringify(x));
+    assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, k.userId, { emailXacNhan: '' })) === 400, 'gõ sai phải 400');
+    assert(user(k.userId) !== undefined, 'gõ sai mà vẫn xoá');
+    xoaTK.xoaTaiKhoan(P.admin, k.userId, { emailXacNhan: 'Thu Xoa Khong Email' });
+    assert(user(k.userId) === undefined || user(k.userId).status === 'deleted', 'gõ đúng họ tên phải xoá');
   });
 
   check('PR-XOA T8 · Cảnh báo: GVBM → "Lớp … sẽ thiếu GV môn …"; việc đang giao có số', () => {
@@ -765,16 +768,25 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(maLoi(() => xoaTK.xoaTaiKhoan(P.mbManager, a.id, { emailXacNhan: a.email })) === 403, 'QL xoá phải 403');
     assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: 'sai.pisa@gmail.com' })) === 400, 'email sai phải 400');
     assert(!!user(a.id), 'email sai mà vẫn xoá');
-    t.assertThrows(() => xoaTK.xoaTaiKhoan(P.admin, gv.id, { emailXacNhan: `da-xoa-${gv.id}@invalid` }), /Tài khoản đã xoá\./, 'xoá lần hai');
-    t.assertThrows(() => xoaTK.xemXoaTaiKhoan(P.admin, gv.id), /Tài khoản đã xoá\./, 'xem tài khoản đã xoá');
+    t.assertThrows(() => xoaTK.xoaTaiKhoan(P.admin, gv.id, { emailXacNhan: `da-xoa-${gv.id}@invalid` }), /Tài khoản đã xoá — bấm Khôi phục/, 'xoá lần hai');
+    t.assertThrows(() => xoaTK.xemXoaTaiKhoan(P.admin, gv.id), /Tài khoản đã xoá — bấm Khôi phục/, 'xem tài khoản đã xoá');
   });
 
   check('PR-XOA T10 · listAccounts có dòng đã xoá kèm deletedAt; setRoles / resetPassword / quyền riêng trên tài khoản đã xoá → 400', () => {
     const row = accounts.listAccounts(P.admin).find((r) => r.id === gv.id);
     assert(!!row && row.status === 'deleted' && !!row.deletedAt, JSON.stringify(row));
-    t.assertThrows(() => accounts.setRoles(P.admin, gv.id, [{ role: 'teacher', branches: ['MB'] }]), /Tài khoản đã xoá\./, 'setRoles');
-    t.assertThrows(() => accounts.resetPassword(P.admin, gv.id, 'matkhau-xyz'), /Tài khoản đã xoá\./, 'resetPassword');
-    t.assertThrows(() => accounts.setUserPermissions(P.admin, gv.id, []), /Tài khoản đã xoá\./, 'setUserPermissions');
+    t.assertThrows(() => accounts.setRoles(P.admin, gv.id, [{ role: 'teacher', branches: ['MB'] }]), /Tài khoản đã xoá — bấm Khôi phục/, 'setRoles');
+    t.assertThrows(() => accounts.resetPassword(P.admin, gv.id, 'matkhau-xyz'), /Tài khoản đã xoá — bấm Khôi phục/, 'resetPassword');
+    t.assertThrows(() => accounts.setUserPermissions(P.admin, gv.id, []), /Tài khoản đã xoá — bấm Khôi phục/, 'setUserPermissions');
+    /* RKC-6 (PTA 8): Khôi phục tài khoản xoá mềm — QL 403; Quản trị khôi phục → đang dùng, tên bỏ "(đã xoá)", vai trả lại; khôi phục lần hai 400. */
+    assert(maLoi(() => xoaTK.khoiPhucTaiKhoan(P.mbManager, gv.id)) === 403, 'QL khôi phục phải 403');
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      const kp = xoaTK.khoiPhucTaiKhoan(P.admin, gv.id);
+      const u2 = user(gv.id);
+      assert(kp.ok && u2.status === 'active' && !/\(đã xoá\)/.test(u2.full_name) && (!String(u2.email).endsWith('@invalid') || kp.canhBao.some((c: string) => /đã có tài khoản khác/.test(c))), JSON.stringify({ kp, u2 }));   // email cũ đã có người dùng → giữ, báo
+      assert(maLoi(() => xoaTK.khoiPhucTaiKhoan(P.admin, gv.id)) === 400, 'khôi phục lần hai phải 400');
+    } finally { conn.exec('ROLLBACK'); }
   });
 
   check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm ≤ 15, xoá hẳn ≤ 15', () => {
@@ -830,7 +842,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
   check('PR-XOA (5) · AccountsAdmin: ⋯ "Xoá tài khoản" chữ đỏ; nút lọc "Đang dùng" / "Đã xoá"; dòng đã xoá không có Sửa/⋯', () => {
     const ad = docNguon('web/src/modules/platform/AccountsAdmin.tsx');
     assert(/nhan: t\('Xoá tài khoản'\), nguyHiem: true/.test(ad) && /nhan: t\('Đang dùng'\), so: /.test(ad) && /nhan: t\('Đã xoá'\), so: /.test(ad), 'thiếu mục Xoá / nút lọc');   // EN-SOT: chữ qua t()
-    assert(/u\.status === 'deleted' \? \(\s*<span[^>]*>\{t\('Đã xoá \{ngay\}', \{ ngay: ngay\(u\.deletedAt\) \}\)\}/.test(ad), 'dòng đã xoá phải ghi "Đã xoá {ngày}" thay cho Sửa/⋯');
+    assert(/u\.status === 'deleted' \? \([\s\S]{0,120}\{t\('Đã xoá \{ngay\}', \{ ngay: ngay\(u\.deletedAt\) \}\)\}[\s\S]{0,200}t\('Khôi phục'\)/.test(ad), 'dòng đã xoá phải ghi "Đã xoá {ngày}" + nút Khôi phục (RKC-6) thay cho Sửa/⋯');
     assert(/nguyHiem\?: boolean/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong thiếu nguyHiem');
   });
 

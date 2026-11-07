@@ -108,11 +108,19 @@ export function AccountsAdmin() {
   const xoaLoc = () => datParams(ghiBoLocTaiKhoan(BO_LOC_TAI_KHOAN_TRONG));
   const nhom = nhomTheo ? nhomTaiKhoan(rows, nhomTheo, new Map((branches.data ?? []).map((b) => [b.code, b.name])), (r) => dich(roleLabel(r)), loc3) : null;
   const hang = (u: Account, key: string | number) => (
-    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)}
+    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} onKhoiPhuc={() => void khoiPhuc(u)}
       onDuyetLai={() => setDuyetLai(u)} />
   );
   const pending = accounts.data?.pending ?? [];
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
+  /* RKC-6: Khôi phục tài khoản xoá mềm — một bấm; máy chủ trả câu nhắc (email trùng, đặt lại mật khẩu, phân công lại). Lỡ tay thì Xoá lại. */
+  const khoiPhuc = async (u: Account) => {
+    try {
+      const r = await api.post<{ canhBao: string[] }>(`/admin/accounts/${u.id}/khoi-phuc`);
+      reload();
+      toast.push('ok', [t('Đã khôi phục tài khoản {ten}', { ten: u.fullName.replace(/ \(đã xoá\)$/, '') }), ...(r?.canhBao ?? []).map((x) => dich(x))].join(' · '));
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
+  };
 
   return (
     <div className="space-y-4">
@@ -245,8 +253,10 @@ const NHAN_PHAN_LOAI: Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], string> = {
 };
 
 /** Một hàng của bảng Tài khoản — tách ra để dùng chung cho bảng phẳng và bảng nhóm (PR-BC L3); markup giữ nguyên. */
-function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai }: {
+function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, onKhoiPhuc }: {
   u: Account; hienQuyenRieng: boolean; onSua: () => void; onSuaTt: () => void; onXoa: () => void; onDuyetLai: () => void;
+  /** RKC-6 (PTA 8): tài khoản đã xoá mềm → Khôi phục. */
+  onKhoiPhuc?: () => void;
 }) {
   const khongDuyet = u.approvalState === 'declined';
   return (
@@ -285,7 +295,10 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai }: 
       </td>
       <td className="td whitespace-nowrap">
         {u.status === 'deleted' ? (
-          <span className="text-xs text-slate-500">{t('Đã xoá {ngay}', { ngay: ngay(u.deletedAt) })}</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-xs text-slate-500">{t('Đã xoá {ngay}', { ngay: ngay(u.deletedAt) })}</span>
+            {onKhoiPhuc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onKhoiPhuc}>{t('Khôi phục')}</button>}
+          </span>
         ) : (
           <span className="inline-flex items-center gap-1.5">
             {khongDuyet
