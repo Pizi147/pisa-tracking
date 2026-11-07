@@ -57,7 +57,8 @@ export function Menu({ label, items, align = 'right', className = 'btn btn-sm bt
     <div ref={ref} className="relative inline-block">
       <button ref={nut} type="button" className={className} aria-haspopup="menu" aria-expanded={open} aria-label={ariaLabel}
         onClick={() => setOpen((o) => !o)}>
-        {label} <IconGap mo={open} size={10} />
+        {/* Nút chỉ có ⋯: không mũi tên — cùng mặt nút ⋯ của `MenuDong` (chủ SP 07/11). */}
+        {label === '⋯' ? label : <>{label} <IconGap mo={open} size={10} /></>}
       </button>
       {open && (
         <div role="menu"

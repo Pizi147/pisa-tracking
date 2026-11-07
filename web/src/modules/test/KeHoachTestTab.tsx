@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MenuDong } from '../../ui/MenuDong.tsx';
+import { MenuDong, NUT_BA_CHAM_DAU } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -167,7 +167,7 @@ export function KeHoachTestTab() {
             setParams(next, { replace: true });
           };
           const nutTrang = coXep ? (
-            <MenuDong nhan={t('Thao tác trang')} lopNut="btn h-11 w-11 shrink-0 justify-center !px-0 font-bold" muc={[
+            <MenuDong nhan={t('Thao tác trang')} lopNut={`${NUT_BA_CHAM_DAU} h-11 w-11`} muc={[
               { key: 'xep', nhan: loai === 'ft' ? t('Xếp nhiều MT…') : t('Xếp lịch Test…'), tat: !!lyDoTat, onChon: () => setXep(loai) },
               ...(loai === 'ft' ? [
                 { key: 'xuat', nhan: t('Xuất Excel'), tat: !!lyDoTat || !danhSach.length, onChon: () => setXuat('ke-hoach') },

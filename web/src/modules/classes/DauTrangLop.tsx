@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
+import { MenuDong, NUT_BA_CHAM_DAU, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate, onInvalidate } from '../../lib/api.ts';
@@ -285,7 +285,7 @@ function So({ n, g }: { n: ReactNode; g: ReactNode }) {
   );
 }
 /* Nút ⋯ đầu trang cao 36 (mockup `.btn.ba-cham`) — cùng hàng nút Nhập điểm / + Case; điện thoại 44. */
-const NUT_BA_CHAM = 'btn h-9 w-9 shrink-0 !px-0 font-bold tracking-wider max-sm:h-11 max-sm:w-11';
+const NUT_BA_CHAM = `${NUT_BA_CHAM_DAU} h-9 w-9 max-sm:h-11 max-sm:w-11`;
 
 /** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2) — hồ sơ lớp + hồ sơ HV. */
 export function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
