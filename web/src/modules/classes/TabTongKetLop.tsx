@@ -107,7 +107,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                     {data.dong.map((d) => {
                       const k = ketQuaThi(d);
                       return (
-                        <tr key={d.studentId} onClick={() => mot(d)} className={`h-11 cursor-pointer border-t hover:bg-[color:var(--accent-soft)] ${d.roiSom ? 'opacity-60' : ''}`} style={{ borderColor: 'var(--line)' }}>
+                        <tr key={d.studentId} onClick={() => mot(d)} className={`h-11 cursor-pointer border-t hover:bg-[color:var(--accent-soft)] ${d.roiSom ? 'hang-mo' : ''}`} style={{ borderColor: 'var(--line)' }}>
                           <td className="px-3">{ten(d)}</td>
                           <td className="px-3 text-right tabular-nums">{b1(d.dauVao)}</td><td className="px-3 text-right tabular-nums">{b1(d.target)}</td>
                           <td className="whitespace-nowrap px-3 tabular-nums">
@@ -132,7 +132,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                   </thead>
                   <tbody>
                     {data.dong.map((d) => (
-                      <tr key={d.studentId} onClick={() => mot(d)} className={`h-11 cursor-pointer border-t hover:bg-[color:var(--accent-soft)] ${d.roiSom ? 'opacity-60' : ''}`} style={{ borderColor: 'var(--line)' }}>
+                      <tr key={d.studentId} onClick={() => mot(d)} className={`h-11 cursor-pointer border-t hover:bg-[color:var(--accent-soft)] ${d.roiSom ? 'hang-mo' : ''}`} style={{ borderColor: 'var(--line)' }}>
                         <td className="px-3">{ten(d)}</td><td className="px-3"><Giua g={d.giuaKhoa} /></td><td className="px-3"><Cuoi c={d.cuoiKhoa} /></td>
                         <td className="px-3">{d.roiSom ? Gach : <Huong d={d} />}</td>
                       </tr>
@@ -146,7 +146,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
               {data.dong.map((d) => {
                 const k = ketQuaThi(d);
                 return (
-                  <li key={d.studentId} className={`border-t px-3 py-2.5 first:border-t-0 ${d.roiSom ? 'opacity-60' : ''}`} style={{ borderColor: 'var(--line)' }}>
+                  <li key={d.studentId} className={`border-t px-3 py-2.5 first:border-t-0 ${d.roiSom ? 'hang-mo' : ''}`} style={{ borderColor: 'var(--line)' }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         {ten(d)}

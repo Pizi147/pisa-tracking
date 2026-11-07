@@ -326,7 +326,7 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
             onChange={(e) => setNote(e.target.value)} aria-invalid={daBam && !!loiGhiChu} />
         </Truong>
       ) : (
-        <textarea className="field w-full" rows={2} placeholder={t('Ghi chú (tuỳ chọn)')} value={note}
+        <textarea className="field w-full" rows={2} placeholder={t('Ghi chú (tuỳ chọn)')} aria-label={t('Ghi chú (tuỳ chọn)')} value={note}
           onChange={(e) => setNote(e.target.value)} />
       )}
       <div>

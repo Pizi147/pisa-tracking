@@ -196,7 +196,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
     const gdc = data.cacGiaiDoan.find((g) => g.loai === loai);
     if (gdc && (c.den ?? homNay) < khoangTruc(gdc, homNay, '3-thang').tu) setCheDoKhoang('ca-giai-doan');
     if (hep) setKieuXem('bd');
-    document.getElementById('truc-tuan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('truc-tuan')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   };
 
   const hopHienThi = chip === CHIP_TAT_CA ? data.hop : data.hop.filter((h) => h.kyNang === chip);

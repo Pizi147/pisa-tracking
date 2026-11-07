@@ -107,8 +107,8 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI[chonMay] }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI[chonMay] }), hoanTac: boChon });
   };
   const viecTiep = onTiep
-    ? <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
-    : <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button>;
+    ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
+    : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button>;
 
   const dongKetQua = (
     <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[14px]">
@@ -173,7 +173,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     );
   }
   const nut = chon === 'dung'
-    ? <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={luuDung} disabled={tt === 'dang'}>{dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc}</button>
+    ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuDung} disabled={tt === 'dang'}>{dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc}</button>
     : undefined;
   return (
     <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}

@@ -584,7 +584,7 @@
   .vh-qua::before { content: '⚠'; width: auto; height: auto; border-radius: 0; background: none; font-size: 12px; }
   tr.hang-dai > td { padding: 10px 12px 12px 24px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
   tr.hang-khop > td { background: color-mix(in srgb, var(--hong) 7%, var(--surface)); }
-  .khop-tim { color: var(--hong); font-weight: 700; }
+  .khop-tim { color: var(--hong-chu); font-weight: 700; }   /* A3 (AUDIT-UI C10): --hong chữ ở sáng chỉ 2,9 : 1; --hong-chu 5,5 : 1 */
   /* SUA-HVL-0611 (chủ SP 06/11 ý 5): dải dưới hàng em dàn ĐỀU hết bề ngang hàng — mockup v11 `.dai` xếp trái, chừa trống nửa phải; khối không còn chỗ thì xuống dòng (≥ 320 px / cột). */
   .hvl-dai { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; gap: 12px 40px; }
   .the-em .hvl-dai { margin: 4px -14px -12px; padding: 10px 14px; gap: 10px; background: var(--surface-2); }
@@ -607,14 +607,15 @@
   .chip-bac { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 6px;
     background: none; color: var(--text); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
   .chip-bac[aria-expanded='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
-  .o-xem { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 0 0 12px; border: 1px solid var(--line-strong); border-radius: 8px;
+  .o-xem { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 0 0 12px; border: 1px solid var(--o-nhap-vien); border-radius: 8px;
     background: var(--surface); font-size: 14px; cursor: pointer; }
   .o-xem-nhan { color: var(--text-faint); font-size: 13px; }
   .o-xem::after { content: '▾'; margin: 0 10px 0 -4px; color: var(--text-faint); font-size: 12px; pointer-events: none; }   /* mockup `.oxem::after` thay mũi tên gốc của select */
   .o-xem select { appearance: none; field-sizing: content; align-self: stretch; min-width: 0; padding: 0 10px 0 0; border: 0; border-radius: 0 8px 8px 0; background: var(--surface); color: var(--text);
     font-weight: 700; outline: none; cursor: pointer; padding-right: 8px; }
   .o-xem:focus-within { border-color: var(--accent); }
-  .doan { display: inline-flex; height: 36px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 8px; }
+  .o-xem:has(select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }   /* A3 C12: vòng focus chung (select bỏ outline) */
+  .doan { display: inline-flex; height: 36px; overflow: hidden; border: 1px solid var(--o-nhap-vien); border-radius: 8px; }   /* A3 C9: viền điều khiển chọn ≥ 3 : 1 (--line-strong 1,7–2,2) */
   .doan > button { padding: 0 12px; border: 0; background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 500; white-space: nowrap; cursor: pointer; }
   .doan > button + button { border-left: 1px solid var(--line-strong); }
   .doan > button[aria-pressed='true'] { background: var(--accent-soft); color: var(--text); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent); }
@@ -1097,6 +1098,10 @@
    Giữ gạch: số nằm giữa câu (dòng phụ `.text-xs` "38 chưa PA" — chỉ màu không đủ phân biệt link trong chữ, WCAG 1.4.1) và gạch CHẤM gợi ý (KCK).
    Chữ 500 khi số nằm trong ô bảng / dòng phụ / ô `.o-so` — đậm chỉ tên ở cột đầu, số lớn ô chỉ số 700; quá hạn (đỏ ⚠) vẫn đậm vì là việc cần làm ngay. */
 .so-bam:not(.text-xs *, .decoration-dotted):not(:hover, :focus-visible) { text-decoration-line: none; }
+/* A3 (AUDIT-UI C11): hàng / mục "không còn dùng" (rời sớm, ngừng, chưa chọn) — chữ mờ bằng token thay opacity (opacity ở sáng kéo chữ xuống 2,1–2,9 : 1). */
+.hang-mo, .hang-mo * { color: var(--text-faint); }
+/* A3 C16: gợi ý "Ctrl K" nằm trên ô tìm nền trang, không trên nền thanh xanh — dùng token gốc (sáng: chữ thanh #dce2f4 trên ô trắng chỉ 1,25 : 1). */
+.thanh-xanh input + kbd { color: var(--goc-text-faint); }
 :is(td, .text-xs) .so-bam:not(.text-bad, .text-late, .decoration-dotted), .o-so.so-bam { font-weight: 500; }
 
 /* O-TQ-BAM (chủ SP 07/11): CẢ Ô chỉ số bấm được (`ChiSo` → `.ca-o`) — số chính mang `.so-chinh` (nút `OSo` mở panel / link `SoDen` đổi trang) và

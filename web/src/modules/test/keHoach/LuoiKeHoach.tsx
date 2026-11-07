@@ -86,7 +86,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   /* C18: chọn em ở ô tìm → cuộn tới hàng em (giữa màn). */
   useEffect(() => {
     if (!hvChon) return;
-    document.getElementById(`kht-hv-${data.classId}-${hvChon}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    document.getElementById(`kht-hv-${data.classId}-${hvChon}`)?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }, [hvChon, data.classId]);
 
   /* 375px: mở sẵn ở đợt đang tới — MT trước đó nằm bên trái ngoài khung nhìn. */
