@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
@@ -12,7 +12,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { MONTH_CODE, chuGradeKyThi, hienTargetKck, ketQuaKyThi, ketQuaThiThat, kiemDiemKyThi, kyThiCuaChuongTrinh, ngay } from '@shared/domain/index.ts';
 import { laBand } from './StudentPlanPanel.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { PanelBuocTiep } from './PanelBuocTiep.tsx';
+import { PanelBuocTiep, useKhoiPhucThiThat } from './PanelBuocTiep.tsx';
 import { HopGiaHan } from './HopGiaHan.tsx';
 import { DongLanTruoc, diemBanDau, layLaiBanDau, type KyNangThi } from './diemLanTruoc.tsx';
 
@@ -49,11 +49,16 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   const [buocTiep, setBuocTiep] = useState(false);
   const [lichSu, setLichSu] = useState(false);   // OV-15g: thay nội dung panel (← Kết quả thi thật), chữ đang gõ giữ nguyên
   const lf = useLoiForm();
+  /* SUA-LUU-TRU: Hoàn tác / Khôi phục bản trước — xong thì nạp lại form từ dữ liệu MỚI (không giữ số cũ trong ô). */
+  const napLai = useRef(false);
+  const [napTu, setNapTu] = useState<unknown>(null);
+  const khoiPhuc = useKhoiPhucThiThat(cycleId, () => { napLai.current = true; reload(); onDone(); });
 
   /* P13 KET-PET: lộ trình KET / PET — điểm Cambridge (số nguyên trong thang), Overall · Grade · CEFR máy tính; không Bước tiếp. */
   const kt = c && !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
   /* Nạp giá trị đang lưu MỘT LẦN — tải lại nền không được xoá điều người dùng đang gõ. */
-  if (c && !form) {
+  if (c && (!form || (napLai.current && c !== napTu))) {
+    napLai.current = false; setNapTu(c);
     const fm = kt ? (v: number | null | undefined) => (v == null ? '' : String(v)) : fmt;
     const layLai = kt ? [] : layLaiBanDau(c);   // THI-LAI-1-KN: kỹ năng em không học → điểm KQ thi thật lần trước
     const f = { ngay: c.thi_that_ngay ?? '', ...diemBanDau(c, layLai, fm), khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? '', layLai };
@@ -61,7 +66,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     setForm(f); setGoc(JSON.stringify(layLai.length && !c.thi_that_lay_lai ? { ...f, ...diemBanDau(c, [], fm), layLai: [] } : f));
   }
   if (lichSu) {
-    return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[studentName, lop]} quayLai={{ nhan: t('Kết quả thi thật'), onClick: () => setLichSu(false) }} onClose={onClose} />;
+    return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[studentName, lop]} quayLai={{ nhan: t('Kết quả thi thật'), onClick: () => setLichSu(false) }} onClose={onClose} khoiPhuc={khoiPhuc} />;
   }
   if (buocTiep) {
     return <PanelBuocTiep cycleId={cycleId} hocVien={c ? { id: c.student_id, ten: studentName } : null} lop={lop} quayLai={quayLai}
@@ -94,15 +99,18 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     if (loi.length > 0) return;
     setBusy(true);
     try {
-      await api.put(`/cycles/${cycleId}/outcome`, form.khongThi
+      const r = await api.put<{ khoiPhucId?: number | null }>(`/cycles/${cycleId}/outcome`, form.khongThi
         ? { khongThi: true, ghiChu: form.ghiChu }
         : { khongThi: false, ngayThi: form.ngay || null, ...diem, ghiChu: form.ghiChu, layLai: form.layLai });
       invalidate('/students'); invalidate('/lo-trinh'); invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/work'); invalidate('/my-work'); invalidate('/cycles');
       const kqMoi = form.khongThi || KY_NANG.every((k) => form[k].trim() !== '');
       setGoc(JSON.stringify(form));
+      /* SUA-LUU-TRU (việc 1): mỗi lần lưu có đổi → toast Hoàn tác (trả đúng bản trước, cả bản chụp; có người sửa sau thì máy chủ từ chối). */
+      const id = r?.khoiPhucId ?? null;
+      const daLuu = (chu: string) => (id ? toast.hoanTac(chu, () => { khoiPhuc(id, true).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được'))); }, { key: `thi-that:${cycleId}` }) : toast.push('ok', chu));
       /* Đủ kết quả (4 kỹ năng hoặc Không thi) → Bước tiếp tại chỗ; chưa đủ → lưu như cũ rồi đóng. P13: KET / PET không có Bước tiếp. */
-      if (kqMoi && !kt) setBuocTiep(true);
-      else { toast.push('ok', t('Đã lưu')); onDone(); onClose(); }
+      if (kqMoi && !kt) { setBuocTiep(true); if (id) daLuu(t('Đã lưu kết quả thi thật')); }
+      else { daLuu(t('Đã lưu')); onDone(); onClose(); }
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 

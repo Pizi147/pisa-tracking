@@ -47,12 +47,14 @@ export function coTheTamDungKetThuc(quyen: Pick<LopHocQuyen, 'tamDung' | 'ketThu
  * (TVV / CX, `student.edit_more`) thêm Kết quả thi thật; Tạm dừng/ Kết thúc học / Quay lại học theo cờ `lopHoc.quyen` của máy chủ.
  * Không có mục nào → nơi gọi không vẽ ⋯. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
-export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
+export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
   canEdit: boolean;
   /** PR-OV2b: có `student.edit_info` (không cần `student.edit`). */
   suaThongTin?: boolean;
   /** OV-8b: có `student.edit_more` (TVV / CX) — Kết quả thi thật. */
   suaThem?: boolean;
+  /** SUA-LUU-TRU (chủ SP 07/11): hồ sơ đã lưu trữ — Kết quả thi thật theo `viewer.coTheNhapThiThat` (máy chủ `coTheNhapThiThat`). */
+  nhapThiThat?: boolean;
   lopHoc?: { quyen: LopHocQuyen; chiXem?: boolean } | null;
   /** P13: `kyThi` (KET / PET) — lớp thường có Kết quả thi thật theo điểm Cambridge. */
   cycle: { ratio?: boolean; kyThi?: unknown } | null;
@@ -63,7 +65,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   deXuatSua?: boolean;
 }): { key: ViecQuanLy; nhan: string; phu?: string; nguyHiem?: boolean; keTruoc?: boolean | 'dam' | 'do' }[] {
   const quyen = lopHoc?.quyen;
-  /* OV-11d (HV-3, Q4): hồ sơ Lưu trữ "chỉ xem" — không Sửa thông tin / Lộ trình / Kết quả thi thật (máy chủ 400 `CAU_LUU_TRU`).
+  /* OV-11d (HV-3, Q4): hồ sơ Lưu trữ "chỉ xem" — không Sửa thông tin / Lộ trình (máy chủ 400 `CAU_LUU_TRU`); SUA-LUU-TRU: Kết quả thi thật sửa được.
      P7: em Tạm dừng (Lưu trữ) trừ 3 việc — Quay lại học · Kết thúc học · Sửa thông tin liên hệ ([ĐX]). */
   const chiXem = !!lopHoc?.chiXem;
   const tamDungLuuTru = chiXem && status === 'inactive';
@@ -80,7 +82,8 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, lopHoc, cycle,
   /* OV-11d (HV-15): GVCN (`canEdit`) gửi đề xuất Target ngay ở Sửa thông tin — không thêm cửa thứ hai; GVBM giữ mục này. */
   if (deXuatSua && dangHoc && !canEdit) sau.push('de-xuat-sua');
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
-  if ((canEdit || suaThem) && cycle && (!ratio || !!cycle.kyThi) && !chiXem) sau.push('outcome');
+  /* SUA-LUU-TRU: em đã lưu trữ vẫn sửa được kết quả thi thật (máy chủ đã cho từ OV-13h) — theo cờ quyền của máy chủ. */
+  if (cycle && (!ratio || !!cycle.kyThi) && (chiXem ? !!nhapThiThat : canEdit || suaThem)) sau.push('outcome');
   /* P7: Quay lại học — em tạm dừng (`quayLai`) hoặc em đã kết thúc (`hocLai`, Quản lý). */
   if ((quyen?.quayLai && status === 'inactive') || (quyen?.hocLai && status === 'finished')) sau.push('quay-lai');
   /* OV-13j: ai sửa được thông tin em thì xem được lịch sử sửa (cả khi hồ sơ đã Lưu trữ — chỉ xem). */

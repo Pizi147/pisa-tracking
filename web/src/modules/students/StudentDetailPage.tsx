@@ -273,7 +273,7 @@ export default function StudentDetailPage() {
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
               {(() => {
                 const muc = mucQuanLyHocVien({
-                  canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
+                  canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, nhapThiThat: !!data.viewer.coTheNhapThiThat, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
                   deXuatSua: !!data.viewer.coTheDeXuatSua,
                 });
                 const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(k));

@@ -9828,6 +9828,9 @@ await runPrMoTatCaTests({ check, assert, P } as any);
 // ==================================================================== NGHI-HOC-LUU-TRU (chủ SP 05/11: nghỉ học luôn vào Lưu trữ, không hiện ở mọi nơi làm việc)
 const { runPrNghiHocLuuTruTests } = bocTep('prNghiHocLuuTru', await import('./prNghiHocLuuTru.tests.ts'));
 await runPrNghiHocLuuTruTests({ check, assert, conn, P, TODAY, classId } as any);
+// ==================================================================== SUA-LUU-TRU a (chủ SP 07/11: thi thật em lưu trữ sửa được · Hoàn tác · Khôi phục bản trước)
+const { runPrSuaLuuTruATests } = bocTep('prSuaLuuTruA', await import('./prSuaLuuTruA.tests.ts'));
+await runPrSuaLuuTruATests({ check, assert, assertThrows, conn, P, TODAY } as any);
 // ==================================================================== TAT-CHECKPOINT (chủ SP 06/11: tắt Checkpoint tự sinh, QL xếp tay; việc Nhập điểm ⇔ panel có bài)
 const { runPrTatCpTests } = bocTep('prTatCp', await import('./prTatCp.tests.ts'));
 await runPrTatCpTests({ check, assert, conn, P, TODAY, addDays, classId } as any);

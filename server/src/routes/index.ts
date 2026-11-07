@@ -1874,6 +1874,12 @@ api.put('/cycles/:id/outcome', requireAuth, wrap((req) => {
   return cycleSvc.setOutcome(principalOf(req), pInt(req, 'id'), body as any);
 }));
 
+/** SUA-LUU-TRU (chủ SP 07/11): Hoàn tác / Khôi phục bản trước của kết quả thi thật { auditId, hoanTac? } — cùng quyền nhập, cả em đã lưu trữ. */
+api.post('/cycles/:id/thi-that/khoi-phuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return thiThatSvc.khoiPhucThiThat(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /** OV-13q: Gia hạn sau thi { han, lyDo? } · `han: null` = Bỏ gia hạn — GVCN lớp cuối, Quản lý, Quản trị, TVV chi nhánh (GVBM / Admin / CX 403). */
 api.get('/cycles/:id/han-sau-thi', requireAuth, wrap((req) => {
   maybeSimulateReadError();

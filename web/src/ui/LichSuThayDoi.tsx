@@ -7,7 +7,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 export type LoaiLichSu = 'hv' | 'lop' | 'phan-cong' | 'gop-y' | 'nhap-hv' | 'thi-that' | 'o';
 type Truong = { ten: string; cu: string | null; moi: string | null; doiTuong?: string; heThong?: true };
-type Muc = { id: number | string; luc: string; nguoi: string; nguon: string | null; lyDo: string | null; truong: Truong[] };
+type Muc = { id: number | string; luc: string; nguoi: string; nguon: string | null; lyDo: string | null; truong: Truong[]; khoiPhuc?: true };
 type Trang = { dong: Muc[]; tiep: number | null; nhom: { key: string; nhan: string }[]; batDau: string | null };
 
 /** Chữ dài hơn mức này hiện gọn "đã sửa …" + Xem (C22: không buộc đọc hai đoạn dài cạnh nhau). */
@@ -87,13 +87,16 @@ function CacTruong({ ds }: { ds: Truong[] }) {
 
 /**
  * OV-15g — LỊCH SỬ THAY ĐỔI (C22, mẫu OV-13j): một panel cho mọi đối tượng (`GET /lich-su?loai=&id=`). Mới nhất trước, mỗi lần lưu một mục:
- * "18/10 14:32 · Người · Nguồn: … · Lý do: …" rồi từng trường trước → sau. Chỉ xem — không nút khôi phục (Lịch sử ≠ Hoàn tác).
+ * "18/10 14:32 · Người · Nguồn: … · Lý do: …" rồi từng trường trước → sau. Chỉ xem — trừ SUA-LUU-TRU (chủ SP 07/11): Lịch sử thi thật có
+ * "Khôi phục bản trước" ở mục máy chủ đánh `khoiPhuc` (nơi gọi truyền `khoiPhuc`; khôi phục xong có toast Hoàn tác).
  * Lọc nhóm trường khi danh sách dài; "Xem thêm" nối trang sau (con trỏ `tiep`); trang cuối báo "Lịch sử bắt đầu ghi từ …" khi đối tượng có trước mốc ghi.
  * Mở từ một panel khác: truyền `quayLai` — panel này THAY nội dung panel đó (không panel chồng panel), ← về đúng panel cũ. 375: toàn màn (KhungPanel).
  */
-export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
+export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose, khoiPhuc }: {
   loai: LoaiLichSu; id: number; dong2: (string | null | undefined)[];
   quayLai?: { nhan: string; onClick: () => void }; onClose: () => void;
+  /** SUA-LUU-TRU: trả về bản trước của mục (id nhật ký) — chỉ Lịch sử thi thật. */
+  khoiPhuc?: (auditId: number) => Promise<void>;
 }) {
   const [loc, setLoc] = useState('');
   const goc = `/lich-su?loai=${loai}&id=${id}${loc ? `&loc=${loc}` : ''}`;
@@ -108,6 +111,13 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
   useEffect(() => { dataCua.current = goc; }, [data]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [dangTai, setDangTai] = useState(false);
   const [loiThem, setLoiThem] = useState<string | null>(null);
+  const [dangKp, setDangKp] = useState<number | string | null>(null);
+  const [loiKp, setLoiKp] = useState<{ id: number | string; loi: string } | null>(null);
+  const bamKp = async (mid: number | string) => {
+    setDangKp(mid); setLoiKp(null);
+    try { await khoiPhuc!(Number(mid)); setThem({ goc, ds: [] }); reload(); }
+    catch (e) { setLoiKp({ id: mid, loi: (e as Error).message }); } finally { setDangKp(null); }
+  };
   useEffect(() => { setLoiThem(null); }, [goc]);
 
   const ds = [...(data?.dong ?? []), ...them.flatMap((x) => x.dong)];
@@ -154,6 +164,14 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose }: {
                     {d.lyDo && <><span aria-hidden>·</span><span className="break-words">{t('Lý do')}: {d.lyDo}</span></>}
                   </div>
                   <CacTruong ds={d.truong} />
+                  {khoiPhuc && d.khoiPhuc && (
+                    <div className="mt-1">
+                      <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" disabled={dangKp !== null} onClick={() => void bamKp(d.id)}>
+                        {dangKp === d.id ? t('Đang lưu…') : t('Khôi phục bản trước')}
+                      </button>
+                      {loiKp?.id === d.id && <p className="m-0 mt-1 text-sm text-bad" role="alert">{loiKp.loi}</p>}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
