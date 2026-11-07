@@ -259,8 +259,15 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
-### 07/11 — SỬA HV LƯU TRỮ + ĐỔI BƯỚC TIẾP (chủ SP, chưa làm — PTA đang soạn đề xuất)
+### 07/11 — SỬA HV LƯU TRỮ + ĐỔI BƯỚC TIẾP (chủ SP DUYỆT 07/11 — session SUA-LUU-TRU)
 - **Chủ SP 07/11:** "Tôi muốn có khả năng sửa đổi được một vài thông tin của HV đã lưu trữ, ví dụ như điểm thi thật chẳng hạn, và có thể undo lại và sửa lại lộ trình tiếp theo của học sinh thay vì phải đưa HS vào lộ trình mới xong mới sửa lại được thì thông tin nó bị nhiễu loạn, bạn hiểu ý tôi chứ? bạn còn đề xuất gì nữa không?"
+- **Hiện trạng (PTA kiểm mã 07/11):** máy chủ đã cho sửa điểm thi thật khi em lưu trữ (`PUT /cycles/:id/outcome`, `thiThat.ts`) nhưng web ẩn ⋯ "Kết quả thi thật" khi `chiXem`; không có Hoàn tác (chỉ audit before/after). Em Kết thúc học không sửa hồ sơ (`CAU_LUU_TRU`, `quanLyHocVien.ts:26-28`); em Tạm dừng chỉ sửa liên hệ. Máy chủ đã "đổi bước tiếp" trong một giao dịch (`chonBuocTiep` POST lại = hoàn tác cũ + làm mới, `buocTiep.ts:303,339`) nhưng web chỉ có Hoàn tác, không có "Đổi".
+- **Chủ SP 07/11: "Làm theo đề xuất"** → 5 việc (không cần mockup — thêm nút / ô theo mẫu sẵn có; Turso gần như không đổi):
+  1. "Kết quả thi thật" sửa được cả với em đã lưu trữ (⋯, trang Lưu trữ, hồ sơ); lưu xong toast **Hoàn tác** + "Khôi phục bản trước" trong Lịch sử (từ audit before/after).
+  2. **LUẬT MỚI (thay `CAU_LUU_TRU` một phần):** em Kết thúc học (đã lưu trữ) sửa được thông tin KHÔNG đụng lộ trình (liên hệ, phụ huynh, ngày sinh, ghi chú…); lớp / lộ trình / trạng thái vẫn qua Quay lại học.
+  3. Panel Bước tiếp khi đã chọn có nút **Đổi**: chọn lại tại chỗ, máy chủ gỡ lựa chọn cũ + làm mới (một giao dịch) — không Quay lại học, không sinh lộ trình thừa; áp cả em đã lưu trữ.
+  4. Không đổi được (lộ trình mới đã có dữ liệu, lệnh chuyển lớp đã chạy) → lý do + đường sửa tại nút (không lỗi chung).
+  5. Sửa điểm thi thật khi đã chọn bước tiếp → dòng nhắc nhẹ "Kết quả đã đổi — xem lại bước tiếp?" + link mở panel; không chặn.
 
 ### 07/11 đêm — chủ SP đi ngủ: rà cuối sau đợt 05–06/11 + giảm đọc + tốc độ + dọn máy
 - **Chủ SP 07/11 (đi ngủ):** "1. Rà lại và dọn bớt worktrees không cần thiết, dọn folder temp trong appdata và projects, chỉ giữ lại những thứ thực sự cần thiết 2. Dùng những skills hợp lý để rà và kiểm tra lại một lần cuối các vấn đề về lỗi có thể xảy ra sau những PR merge trong quãng thời gian vừa rồi, mọi thứ cần phải logic, không bị bug, không bị chặn một cách vô lý, mọi thứ cần phải đơn giản, không qua quá nhiều bước không cần thiết, lỗi giao diện máy tính cần phải để ý xem có bị đè cái gì không cần thiết, cái gì bị clipped, thiếu mỹ quan. 3. Đồng thời xử lý giảm dòng đọc, đẩy nhanh tốc độ web nếu có thể nhé. 4. Tạo plan chi tiết để xử lý các vấn dề trên. Bây giờ tôi sẽ đi ngủ, tự chủ động làm, tự chủ động merge và xử lý lỗi, tự chủ động giao việc và lưu ý model, effort khi giao 5. Sau khi làm xong hết, dọn lại như mục 1 một lần nữa"
