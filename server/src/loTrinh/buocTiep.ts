@@ -228,6 +228,8 @@ type GhiBuocTiep = {
   kq?: string;
   /** HOTFIX-MO-KHOA: lần Đổi này không hoàn tác chính xác được lựa chọn cũ — đi thẳng từ trạng thái lúc đó (nhật ký). */
   diThang?: boolean;
+  /** HOTFIX-MO-KHOA: Hẹn chọn từ Kết thúc học mà không gỡ Kết thúc — cờ của lần Kết thúc đó (Hoàn tác về Kết thúc dùng lại). */
+  giuKetThuc?: { ketThucHoc: boolean; luuTru: boolean };
   /** SUA-LUU-TRU (Đổi): đầu vào ĐÃ KIỂM của lần chọn này (chọn lại đúng nó được) · lựa chọn TRƯỚC lần Đổi (Hoàn tác = chọn lại nó, chuỗi lùi được). */
   vao?: ChonBuocTiepVao;
   truoc?: TruocDoi | null;
@@ -369,10 +371,12 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
       ghi.tamDungNgay = cu.em_archived ?? null;
       ghi.tamDungCu = { json: cu.buoc_tiep_json ?? null, luc: cu.buoc_tiep_luc ?? null, boi: cu.buoc_tiep_boi ?? null };
     } else if (cu.buoc_tiep === 'ket_thuc' && chon === 'lo_trinh_moi' && hen && !lopMoiId) {
-      /* HOTFIX-MO-KHOA: Kết thúc học → Hẹn bắt đầu (Giữ lớp; lớp khác vẫn qua lệnh Chuyển lớp): em ở nguyên Lưu trữ tới tuần hẹn (không mở lại lớp / lộ trình cũ cả tuần); tới hẹn `batDauHenDenHan` Học lại. */
+      /* HOTFIX-MO-KHOA: Kết thúc học → Hẹn bắt đầu (Giữ lớp; lớp khác vẫn qua lệnh Chuyển lớp): em ở nguyên Lưu trữ tới tuần hẹn (không mở lại lớp / lộ trình cũ cả tuần); tới hẹn `batDauHenDenHan` Học lại.
+         Nhớ cờ của lần Kết thúc — Hoàn tác về "Kết thúc học" giữ được đường về đang học. */
+      ghi.giuKetThuc = { ketThucHoc: !!gCu.ketThucHoc || !!gCu.giuKetThuc?.ketThucHoc, luuTru: !!gCu.luuTru || !!gCu.giuKetThuc?.luuTru };
     } else if (cu.buoc_tiep) {
-      /* HOTFIX-MO-KHOA (chủ SP 07/11, không chặn cứng): hoàn tác chính xác trong savepoint; vướng (409) → cuộn lại phần đó, đi THẲNG từ trạng thái hiện tại. */
-      try { tx(() => hoanTac(q, cu)); } catch (e) { if (!(e instanceof HttpError && e.status === 409)) throw e; ghi.diThang = true; }
+      /* HOTFIX-MO-KHOA (chủ SP 07/11, không chặn cứng): hoàn tác chính xác trong savepoint; vướng (409 / 400) → cuộn lại phần đó, đi THẲNG từ trạng thái hiện tại. */
+      try { tx(() => hoanTac(q, cu)); } catch (e) { if (!(e instanceof HttpError && (e.status === 409 || e.status === 400))) throw e; ghi.diThang = true; }
     }
     const c = docLoTrinh(cycleId);
     /* Đã có lựa chọn: lộ trình sau là của nó (Lộ trình mới đã có dữ liệu, hoàn tác không gỡ được) — Đổi không chặn. */
@@ -382,7 +386,9 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     conn.prepare('UPDATE learning_cycles SET buoc_tiep = ?, buoc_tiep_luc = ?, buoc_tiep_boi = ?, buoc_tiep_hen = ?, buoc_tiep_json = ? WHERE id = ?').run(chon, homNay, p.userId, hen, JSON.stringify(ghi), cycleId);
     if (chon === 'ket_thuc') {
       if (c.em_status !== 'finished') { setStudentStatus(q, c.student_id, 'finished', ngayDung, lyDoDung ?? 'Kết thúc sau thi'); ghi.ketThucHoc = true; }
+      else if (gCu.giuKetThuc?.ketThucHoc) ghi.ketThucHoc = true;   // về từ Hẹn đã giữ nguyên Kết thúc (trên)
       if (!(conn.prepare('SELECT archived_at FROM students WHERE id = ?').get(c.student_id) as any).archived_at) { archiveStudent(q, c.student_id); ghi.luuTru = true; }
+      else if (gCu.giuKetThuc?.luuTru) ghi.luuTru = true;
     } else if (chon === 'tam_dung') {
       if (c.status === 'active') {
         conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(ngayDung, cycleId);
@@ -399,7 +405,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
       });
       if (r.failed.length) throw badRequest(r.failed[0].message);
       ghi.lenhId = (conn.prepare('SELECT id FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1').get(c.student_id) as any).id;
-    } else if (chon === 'lo_trinh_moi' && coLtSau && c.em_status === 'active') {
+    } else if (chon === 'lo_trinh_moi' && coLtSau && !hen && c.em_status === 'active') {
       /* Đi thẳng, em đang học lộ trình sau (của lựa chọn cũ): đã ở lộ trình mới — chỉ ghi lựa chọn. */
     } else if (chon === 'lo_trinh_moi' && hen) {
       /* Hẹn bắt đầu: chưa đổi gì — tới Thứ Hai đó `batDauHenDenHan` bắt đầu bằng đúng đường "Ngay bây giờ". */

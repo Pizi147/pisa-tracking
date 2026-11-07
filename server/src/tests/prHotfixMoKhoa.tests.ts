@@ -10,6 +10,7 @@ export async function runPrHotfixMoKhoaTests(t: { check: any; assert: any; asser
   const bt: any = await import('../loTrinh/buocTiep.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { mondayOf } = await import('../platform/week.ts');
+  const saoLuu: any = await import('../ops/saoLuu.ts');
   console.log('\nHOTFIX-MO-KHOA — Đổi bước tiếp / Hoàn tác / sửa thi thật không chặn cứng (lược đồ bản chính ACTION / KEY)');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   /** Lược đồ bản chính: 6 cột viết hoa (PRAGMA table_info bản chép 07/11). */
@@ -45,8 +46,13 @@ export async function runPrHotfixMoKhoaTests(t: { check: any; assert: any; asser
   check('HMK-1 · lược đồ bản chính: dòng đọc ra có khoá `action` / `key` thường (cả `SELECT *`, cả `AS action`)', () => thu(() => {
     const r = get(`SELECT action FROM audit_logs ORDER BY id DESC LIMIT 1`);
     const r2 = get(`SELECT * FROM roles LIMIT 1`);
-    assert(r && typeof r.action === 'string' && !('ACTION' in r), `audit_logs: ${JSON.stringify(r)}`);
-    assert(r2 && typeof r2.key === 'string' && !('KEY' in r2), `roles: ${JSON.stringify(r2)}`);
+    assert(r && typeof r.action === 'string' && r.ACTION === r.action, `audit_logs: ${JSON.stringify(r)}`);
+    assert(r2 && typeof r2.key === 'string' && r2.KEY === r2.key, `roles: ${JSON.stringify(r2)}`);
+    /* Sao lưu đọc theo tên cột PRAGMA (viết hoa) — phải còn giá trị. */
+    const { docBang } = saoLuu;
+    const b = docBang(conn, 'audit_logs');
+    const cot = b.cot.find((c: string) => c.toLowerCase() === 'action');
+    assert(cot && b.dong.every((d: any) => d[cot] !== undefined && d[cot] !== null), `sao lưu mất cột ${cot}`);
   }));
 
   check('HMK-2 · ca bản chính: Kết thúc học (lưu trữ) → Đổi sang Lộ trình mới Khác "RF bù buổi chính" Hẹn tuần sau → lưu được, không lộ trình / ghi danh thừa', () => thu(() => {
@@ -61,6 +67,9 @@ export async function runPrHotfixMoKhoaTests(t: { check: any; assert: any; asser
     assert(em(x.sid).status === 'finished' && em(x.sid).archived_at && r.henLop, `hẹn: em ở nguyên Lưu trữ tới tuần hẹn, có lớp hẹn: ${JSON.stringify({ em: em(x.sid), henLop: r.henLop })}`);
     const h = bt.boChonBuocTiep(QL, x.cy);
     assert(h.chon === 'ket_thuc' && em(x.sid).status === 'finished' && em(x.sid).archived_at, `Hoàn tác về Kết thúc: ${h.chon} ${JSON.stringify(em(x.sid))}`);
+    /* Hoàn tác lần nữa → về đang học như trước Kết thúc (cờ Kết thúc giữ qua lần Hẹn). */
+    const h2 = bt.boChonBuocTiep(QL, x.cy);
+    assert(h2.chon === null && em(x.sid).status === 'active' && !em(x.sid).archived_at, `Hoàn tác lần 2: ${h2.chon} ${JSON.stringify(em(x.sid))}`);
   }));
 
   check('HMK-3 · lược đồ bản chính: mọi cặp Đổi (Kết thúc · Tạm dừng · Lộ trình mới ngay · Lộ trình mới hẹn) lưu được, đúng trạng thái em, không thừa', () => thu(() => {
