@@ -259,6 +259,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 07/11 sau deploy — Phân tích GV: ô "—" + bỏ "Cách tính" (chủ SP, đang kiểm)
+- **Chủ SP 07/11 (ảnh bảng Phân tích › Giáo viên, Cẩm Phả FT):** "sao tôi vẫn thấy một vài GV không có thông tin gì về việc quá hạn công việc hay chấm đúng hạn hay gì?" (4 GV có ô "—").
+- **Chủ SP 07/11 (ảnh panel "Việc đúng hạn", khoanh khối "Cách tính" cuối panel):** "và bỏ mấy cái này di làm ơn" + "hình như có vẻ là các phần ___ là do tôi vừa reset hạn?"
+- PTA: kiểm trên bản chép thật từng ô "—" (không có việc trong kỳ / reset hạn dời ra sau hôm nay / lỗi). Bỏ khối "Cách tính" cuối các panel số (giải thích giữ ở ⓘ).
+
 ### 07/11 sau deploy — GIAM-DOC-BC (log bản chính, chủ SP "Giao session")
 - Log Netlify 09:40–09:43 (DB 261107): `/my-work` 1,8–2,1 s · 57–72 câu · ~11 000 dòng (top `WITH ids(id) AS (VALUES …)` 4 017) · `/tong-quan/v5` 1,2–1,3 s · 55–60 câu · ~7 000 dòng (top `SELECT s.*, u.full_name …` ~1 350) · `/phan-tich/giao-vien` 1,1 s · 74 câu · 7 167 dòng (top `SELECT 'm' AS k, case_id …` 735) · `/hoc-vien-lop` 1,0 s · 57 câu · 6 284 dòng (top `WITH ids` 801). Ước `/my-work` riêng 11–16 triệu dòng / ngày → ưu tiên 1.
 - Session **GIAM-DOC-BC** (Opus 5.5 · high — B: —): đo trên bản chép bản chính `D:\pisa-mig\mig.sqlite` (chỉ đọc bản chép), tìm câu top từng đường, đọc đúng phạm vi; JSON y hệt; ước dòng / ngày trước → sau.
