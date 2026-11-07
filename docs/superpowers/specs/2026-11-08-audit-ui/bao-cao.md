@@ -235,3 +235,73 @@ Thứ tự khuyên làm: **C → A1 → A2 → B → E → F → D**, rồi G / 
 | Không đề xuất lại U02 | Đạt | |
 
 Ảnh minh hoạ ở thư mục `anh/` (01–15). Ảnh 1440 là chế độ tối, ảnh 15 là 375 sáng.
+
+---
+
+## 6. Chia việc qua đêm (PTA Plan 08/11, theo lời chủ SP "chủ động sửa mọi thứ hợp lý; cái nào khó, đổi luật hay đổi góc nhìn thì gom thành một mockup")
+
+Mục 4 ở trên là gợi ý ban đầu. **Mục này thay mục 4 khi giao việc.**
+
+### 6.1 Nhóm A — sửa ngay qua đêm
+
+Nhóm A chỉ gồm: đổi chữ, đổi màu / tương phản bằng token sẵn có, sửa a11y, bỏ thông tin / chú thích thừa, nhấn đúng chỗ. Không đổi bố cục, luật, quyền, API, hay dòng đọc Turso.
+
+Chia thành **3 gói, không gói nào sửa trùng tệp với gói khác**. Ngoại lệ duy nhất: mỗi gói thêm tệp dịch riêng `shared/i18n/en/auditUi<A1|A2|A3>.ts` và một dòng `import` trong `shared/i18n/en.ts`. Dòng import này có thể trùng nhẹ khi merge; PTA merge lần lượt từng gói.
+
+Mỗi gói làm đủ các bước:
+- `/ponytail lite`, `impeccable clarify` (A1, A2) hoặc `harden` (A3), rồi `audit` + `web-design-guidelines` trước khi mở PR.
+- Ảnh trước | sau ở 1440 tối + 375 sáng, chỉ cho những chỗ đã sửa.
+- Mô tả PR có bảng thao tác trước → sau. Mọi thao tác đều giữ, không mất thao tác nào.
+- Dòng đọc Turso trước → sau: 0 thay đổi.
+
+**A1 · CHU-FORM** — bỏ chú thích + sửa chữ trong form / panel / Quản trị / hồ sơ GV và hồ sơ cá nhân.
+
+| | |
+|---|---|
+| Tệp | `web/src/modules/platform/AdminPage.tsx` · `platform/ProfilePage.tsx` · `platform/AccountsAdmin.tsx` · `platform/ChiNhanhAdmin.tsx` · `platform/CatalogAdmin.tsx` · `cases/QuickReport.tsx` · `cases/ThaoTacCase.tsx` · `cases/CapNhatTuan.tsx` · `yThuc/RecordViolationPanel.tsx` · `yThuc/XacNhanXuLyPanel.tsx` · `yThuc/ThangYThuc.tsx` · `web/src/ui/BangChung.tsx` · `ui/TepCho.tsx` · `shared/domain/bangChung.ts` · `giaoVien/HoSoGiaoVienPage.tsx` · `students/phanCongGv/TongHopPc.tsx` · `shared/domain/quanLyHocVien.ts` |
+| Phát hiện | C6 (mọi câu giải thích trong các tệp trên) · F1 "Vấn đề" → "Case" · F2 nút "Thái độ / hành vi" không gãy dòng (lưới hai cột hoặc nowrap, **giữ tên** trong `shared/domain/yThuc.ts`) · F3 · QT1 · QT2 · QT3 · QT4 · CN1 · CN3 · HS3 · GV1 chip GVCN trung tính · GV2 · GV3 · MN1 · HS4 (kiểm quyền trước: nếu QL được xoá thì sửa dòng phụ; nếu không được thì DỪNG và báo PTA) · C11 trong 4 tệp AccountsAdmin / ChiNhanhAdmin / CatalogAdmin / HoSoGiaoVienPage · C2 cho số 0 viết tay trong TongHopPc và chip "… 0" ở AccountsAdmin |
+| Giữ | Ràng buộc chỉ hiện khi gõ sai ("Phải có đuôi .pisa@gmail.com", "Ít nhất 6 ký tự"); dấu * bắt buộc; bộ đếm ký tự N35 |
+| Ước | ~150 dòng |
+
+**A2 · DONG-GON** — bớt chữ lặp trong danh sách, bảng, đầu trang.
+
+| | |
+|---|---|
+| Tệp | `congViec/DanhSachViec.tsx` · `congViec/HoTroHocVienTab.tsx` · `duyet/TheYeuCau.tsx` · `duyet/HopChoDuyet.tsx` · `worklist/TongQuanV5.tsx` · `shared/domain/yeuCauDuyet.ts` · `web/src/ui/CongTacKhung.tsx` · `students/HangLichThi.tsx` · `students/StudentsPage.tsx` · `students/StudentDetailPage.tsx` · `students/DauHoSo.tsx` · `classes/BangHoSoLop.tsx` · `classes/DauTrangLop.tsx` · `cases/SkillBoard.tsx` · `cham/LuoiFT.tsx` · `classes/BangDiemLopThuong.tsx` · `test/lichTest/HangLop.tsx` · `test/LichTestTab.tsx` · `cham/DiemTheoLop.tsx` · `shared/domain/nhanXet.ts` · `platform/Header.tsx` · `phanTich/BaoCao.tsx` |
+| Phát hiện | C5: chip / nhãn ngắn không gãy dòng; "Xử lý Ý thức cần duyệt" → **"Xử lý Ý thức"**; **giữ tên "Không cần theo dõi"** vì đó là tên của thao tác Case. CV3 · CV4 · CV6 · CV7 · CV8 · TQ1 · HL1 · HL2 · HL3 (chỉ phần chữ: một dòng "Chưa có lịch" mờ, ẩn cột Ghi chú khi cả cột trống, **giữ hai link Đặt tháng / Chốt ngày**) · HSL1 · HSL2 (bỏ gạch chấm, chữ "Chưa có KV") · HSL3 · HS1 · HS2 · T3 · T5 · T6 · TB1 · PT2 · C2 cho số 0 viết tay trong TongQuanV5 / BaoCao / BangHoSoLop · C15 phần cuộn `smooth` của LichTestTab |
+| Giữ | Mọi nút, link, phím Enter / Lưu · bài tiếp; badge menu và luật đếm S11 (không động tới C8) |
+| Ước | ~220 dòng |
+
+**A3 · MAU-A11Y** — token, CSS, bàn phím, vùng chạm, kỹ thuật.
+
+| | |
+|---|---|
+| Tệp | `web/src/index.css` · `index.html` · `web/src/ui/OSo.tsx` · `ui/SoLieu.tsx` · `ui/HangNhom.tsx` · `ui/OMt.tsx` · `worklist/MgmtTasksPage.tsx` · `worklist/MeetingPage.tsx` · `cases/ChiTietKyNang.tsx` · `yThuc/PhoiHopSosSection.tsx` · `students/GocPhanCongGv.tsx` · `students/HanhTrinh.tsx` · `students/IntakePanel.tsx` · `students/PanelBuocTiep.tsx` · `students/ChuyenLopPanel.tsx` · `test/keHoach/LuoiKeHoach.tsx` · `classes/TabTongKetLop.tsx` · `tutor/TutorPage.tsx` |
+| Phát hiện | C9: viền ô chọn / nút đoạn dùng `--o-nhap-vien` (token sẵn có), nút có chữ giữ nguyên · C10: `.khop-tim` ở chế độ sáng dùng `--hong-chu` · C11 ở các tệp còn lại · C12 · C13: `MuiTenMo` và các nút ⋯ / chevron có vùng bấm ≥ 44 ở 375 bằng lớp chung · C15 (thang z-index trong index.css, reduced-motion ở 4 tệp, `btn-lg`, `theme-color`) · C16 (đo "Ctrl K"; dưới 4,5 : 1 thì dùng `--text-faint`) · C2 phần thành phần chung (`OSo` / `LOP_OSO`: số 0 dùng `--text-faint` 400, không bấm — đã có trong G6) |
+| Giữ | Không đổi giá trị token màu nào; chỉ chọn lại token sẵn có cho đúng chỗ |
+| Ước | ~200 dòng |
+
+Gói A1 và A2 giao song song được (Q-2: khác màn, khác tệp). Gói A3 chạy song song được với cả hai, vì nó chỉ đụng CSS chung và các tệp riêng.
+
+### 6.2 Nhóm B — để mockup `thiet-ke/2026-11-08-audit-ui-mockup.html`, chủ SP duyệt sáng mai
+
+| Mã | Vì sao không sửa ngay |
+|---|---|
+| C1 · TQ4 · TQ3 | Đổi bố cục Tổng quan, đụng V10 ("cột Chờ bạn duyệt / Điều hướng") và V13 ("đơn vị luôn ghi") |
+| C8 | Đổi luật đếm của badge tab (S11 / V13) |
+| CV1 · CV2 · CV5 | Đổi tên dòng việc, trục nhóm, dáng nút gộp — đụng V18 và mockup v12 |
+| CV10 | Mâu thuẫn V18 (ẩn nút ở 375) với v12 (giữ nút) — chủ SP chọn |
+| CV11 · CV12 | Gộp nơi làm việc (Hộp duyệt, Chấm Test) — đổi góc nhìn |
+| HL3 (gộp link) | "Đặt tháng · Chốt ngày" → một nút "Đặt lịch ▾" — đổi thao tác |
+| T1 · T4 / HSL6 | Đổi dải số (UI-LICH-TUAN) và bỏ cột trong lưới điểm (đổi bố cục lưới dùng nhiều nhất) |
+| HSL4 | Đụng ngoại lệ G13 chủ SP duyệt 30/10 |
+| PT3 | Đụng G8 (báo cáo không cột quá hạn) |
+| C4 | Một dáng cho Quay lại / Trước-Sau ở mọi hồ sơ — đổi thành phần đầu trang |
+| C7 | Dòng loại panel in hoa + vạch hồng của mockup NEN-PANEL |
+| C14 · LT1 · GV4 | Tách trường theo M10 — đổi bố cục dòng |
+| PT1 · OS1 | Bỏ một trong hai số ở mỗi ô Kết quả MT; bỏ phân trang trong panel số |
+| QT5 · QT6 | Bảng tài khoản thành thẻ ở 375; thay `select` gốc |
+
+### 6.3 Chưa giao — chờ PTA xác minh (mục 3)
+
+TQ2 · CV9 · HSL5 · T2 · CN2 · (HS4 nằm trong A1 nhưng phải kiểm quyền trước khi sửa) · (C16 nằm trong A3, đo rồi mới sửa).
