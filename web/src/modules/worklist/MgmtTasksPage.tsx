@@ -226,7 +226,8 @@ export function TasksBoard() {
                     : r.progress === 'stopped' ? r.stopReason : null;
                   const phuTrangThaiDu = r.progress === 'paused' ? dongTam : r.stopReason ?? '';
                   return (
-                    <tr key={r.id} className="bam cursor-pointer" onClick={() => setOpen(r.id)}>
+                    <tr key={r.id} className="bam cursor-pointer" onClick={() => setOpen(r.id)} tabIndex={0}
+                      onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setOpen(r.id); } }}>
                       <td className="td">
                         <span className="text-slate-100" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{r.title}</span>
                         <span className="block text-xs text-slate-500 mt-0.5">

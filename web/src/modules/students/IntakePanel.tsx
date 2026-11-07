@@ -158,7 +158,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   };
 
   const denDongCanSua = () =>
-    document.querySelector('[data-needs-fix="true"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.querySelector('[data-needs-fix="true"]')?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
 
   /* CA2-10: bỏ câu giải thích dưới ô — chỉ giữ chỗ người nhập phải tự chọn. */
   const goiYTuan = cls && !macDinh ? t('Lớp chưa có ngày khai giảng.') : null;

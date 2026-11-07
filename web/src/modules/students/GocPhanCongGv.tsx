@@ -291,7 +291,7 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
   const lopCuaTo = to !== null ? lop.filter((l) => l.slots.some((s) => s.userId === to)) : [];
   const batTo = (id: number | null) => {
     setTo(id);
-    if (id !== null) requestAnimationFrame(() => document.querySelector('[data-to="true"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }));
+    if (id !== null) requestAnimationFrame(() => document.querySelector('[data-to="true"]')?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
   };
 
   if (trang.error) return <ErrorState message={trang.error.message} hint={trang.error.hint} status={trang.error.status} onRetry={trang.reload} />;

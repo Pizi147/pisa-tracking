@@ -552,7 +552,7 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
 
   if (dt) {
     return (
-      <div role="listitem" className={`surface-2 rounded-lg p-3 ${chon || xong ? '' : 'opacity-60'}`} style={vien}>
+      <div role="listitem" className={`surface-2 rounded-lg p-3 ${chon || xong ? '' : 'hang-mo'}`} style={vien}>
         <label className="flex min-h-[44px] items-start gap-2.5">
           {oChon}
           <span className="min-w-0 flex-1">{ten}</span>
@@ -565,7 +565,7 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
     );
   }
   return (
-    <div role="row" className={`${LUOI_NHIEU} min-w-max px-3 py-2.5 text-sm lg:min-w-0 ${chon || xong ? '' : 'opacity-60'}`} style={vien}>
+    <div role="row" className={`${LUOI_NHIEU} min-w-max px-3 py-2.5 text-sm lg:min-w-0 ${chon || xong ? '' : 'hang-mo'}`} style={vien}>
       <span role="cell">{oChon}</span>
       <span role="cell">{ten}</span>
       <span role="cell" className="pt-0.5">{final}</span>

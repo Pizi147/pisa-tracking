@@ -46,12 +46,12 @@ export function ComponentsField({ label, components, counts, value, onChange, bu
             <span className="w-full shrink-0 text-xs text-slate-300 sm:w-52">{c}</span>
             <input className="field max-w-[6rem]" type="number" inputMode="decimal"
               step={counts ? 1 : 0.5} min={0} max={counts ? undefined : 9}
-              placeholder={counts ? t('đạt') : 'band'}
+              placeholder={counts ? t('đạt') : 'band'} aria-label={`${c} — ${counts ? t('đạt') : 'band'}`}
               value={value[c]?.score ?? ''} onChange={(e) => set(c, 'score', e.target.value)} />
             {counts && (
               <>
                 <span className="text-slate-500">/</span>
-                <input className="field max-w-[6rem]" type="number" min={1} placeholder={t('tổng')}
+                <input className="field max-w-[6rem]" type="number" min={1} placeholder={t('tổng')} aria-label={`${c} — ${t('tổng')}`}
                   value={value[c]?.total ?? ''} onChange={(e) => set(c, 'total', e.target.value)} />
               </>
             )}

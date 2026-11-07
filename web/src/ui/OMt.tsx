@@ -36,7 +36,7 @@ export function OMt({ v, homNay, ct = null, chon, chuChon, ghiChu, onClick, href
   const phan = chon && chuChon !== undefined ? [chuChon] : [r.tuan, r.viec].filter(Boolean);
   const tuongTac = !!(onClick || href);
   const cls = `relative inline-flex h-5 items-center gap-1 whitespace-nowrap rounded-md border px-1.5 text-[12px] font-semibold leading-[18px] no-underline ${
-    chon ? MAU_CHON : huy ? 'border-dashed border-muted-line bg-transparent text-muted' : MAU_O_MT[r.kieu]} ${v.khongDung ? 'opacity-60' : ''} ${tuongTac ? "max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']" : ''}`;
+    chon ? MAU_CHON : huy ? 'border-dashed border-muted-line bg-transparent text-muted' : MAU_O_MT[r.kieu]} ${v.khongDung ? 'hang-mo' : ''} ${tuongTac ? "max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']" : ''}`;
   const ruot = (
     <>
       {!chon && r.kieu === 'dang-thi' && <span aria-hidden className="h-1.5 w-1.5 flex-none rounded-full bg-current" />}
