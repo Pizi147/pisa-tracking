@@ -2906,7 +2906,10 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
    * đây chỉ tốn thêm hai câu SQL mà không có gì để lợi (đã tự bắt gặp lúc rà bằng `PR-Qa (17, fix planning) ·
    * classOverview`: nạp trước cho `P.admin` làm số câu tăng dù `can()` chưa từng cần dữ liệu đó).
    */
-  if (!scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).all) napTruocPhamVi(rows.map((r) => r.eff_student_id));
+  /* GIAM-DOC-BC: `can()` duyệt grant theo thứ tự — chỉ khi grant ĐẦU TIÊN có quyền là toàn hệ thống (không phải GV) mới trả ngay; tài khoản kiêm
+   * QL chi nhánh + Quản trị có `scope.all` mà grant QL đứng trước → trước đây bỏ nạp trước, `branchesOfStudent` một câu mỗi em (bản chính: 2 × 204 câu / Tổng quan). */
+  const dau = p.grants.find((g) => g.permissions.has(PERMISSIONS.ATTEMPT_VIEW));
+  if (!(dau && dau.branchId === null && dau.roleKey !== 'teacher')) napTruocPhamVi(rows.map((r) => r.eff_student_id));
 
   const thay = rows.filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop_quyen_id, studentId: r.eff_student_id }));
   const { latestAttemptByCase, planOf, lastResultOf } = phuDsCase(thay.map((r) => r.id as number));
