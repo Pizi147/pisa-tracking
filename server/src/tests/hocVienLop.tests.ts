@@ -20,6 +20,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   const violations: any = await import('../yThuc/violations.ts');
   const dongHv: any = await import('../classes/dongHocVien.ts');
   const casesMod: any = await import('../cases/cases.ts');
+  const { chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
   const fsMod = await import('node:fs');
   const pathMod = await import('node:path');
   const { fileURLToPath } = await import('node:url');
@@ -654,6 +655,19 @@ export async function runHocVienLopTests(t: YThucTestKit) {
       `Thêm 15 Case ở chi nhánh CP khiến danhSachHocVienLop (QL MB) tăng từ ${truocDsHv} lên ${sauDsHv} câu lệnh — nghi vấn quét ngoài phạm vi chi nhánh`);
     assert(sauOverview <= truocOverview + 3,
       `Thêm 15 Case ở chi nhánh CP khiến classOverview (QL MB, lớp MB) tăng từ ${truocOverview} lên ${sauOverview} câu lệnh — nghi vấn quét ngoài phạm vi chi nhánh`);
+  });
+
+  check('GIAM-DOC-BC c · listCases: tài khoản kiêm QL chi nhánh + Quản trị (phạm vi toàn hệ thống, grant QL đứng trước) — không hỏi chi nhánh từng em', () => {
+    /* Bản chính: QL + QT + GV — `scopeFor(ATTEMPT_VIEW).all` nhưng `can()` gặp grant QL (theo chi nhánh) trước → `branchesOfStudent` một câu mỗi em. */
+    const kiem = { ...P.mbManager, grants: [...P.mbManager.grants, ...P.admin.grants], roleKeys: [...new Set([...P.mbManager.roleKeys, ...P.admin.roleKeys])] };
+    let cnEm = 0, tong = 0, json = '';
+    const orig = conn.prepare.bind(conn);
+    (conn as any).prepare = (sql: string) => { tong += 1; if (/^SELECT DISTINCT c\.branch_id AS b FROM enrollments/.test(sql.trim())) cnEm += 1; return orig(sql); };
+    try { json = chayTrongRequest('GET', () => JSON.stringify(casesMod.listCases(kiem, {}).rows)); } finally { (conn as any).prepare = orig; }
+    const qt = demTruyVan(() => { chayTrongRequest('GET', () => casesMod.listCases(P.admin, {})); });
+    assert(json.length > 2, 'phép kiểm rỗng: không có Case nào');
+    assert(cnEm === 0 && tong <= qt + 5, `${cnEm} câu chi nhánh từng em · ${tong} câu (Quản trị thuần ${qt}) — listCases phải nạp trước phạm vi em, không N+1`);
+    assert(json === JSON.stringify(casesMod.listCases(kiem, {}).rows), 'danh sách Case khác khi đọc ngoài request (không nạp trước)');
   });
 
   // ------------------------------------------------------------------ Task 17 (fix round 2 — review Opus) · badge lệch khi học viên tạm dừng
