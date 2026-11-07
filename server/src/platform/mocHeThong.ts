@@ -7,7 +7,7 @@ import { coGhiTrongRequest, coNho, layMoc, nho } from './nguCanhRequest.ts';
  *     request, đọc lại khi số đổi (người ghi ở tiến trình nào cũng vậy). (2) `quet:*`: lượt quét đường đọc chạy TOÀN HỆ THỐNG theo mốc
  *     (chủ SP 31/10): ≥ 60 s từ lần quét trước, HOẶC đã có một lần ghi qua API và lượt trước ≥ 15 s (`luiMocQuetSauGhi`, GIAM-DOC-0611), HOẶC sang ngày nghiệp vụ khác.
  */
-export type KhoaQuet = 'quet:yeu-cau' | 'quet:lenh' | 'quet:doi-qua-han';
+export type KhoaQuet = 'quet:yeu-cau' | 'quet:lenh' | 'quet:doi-qua-han' | 'quet:lop-trong';
 export type MocHeThong = { thamChieu: number | null; quet: Partial<Record<KhoaQuet, { luc: string | null; ngay: string | null }>> };
 
 /** Cột con thêm vào câu phiên — một dòng JSON `{ khoa: [so, luc, ngay] }`. */
@@ -20,7 +20,7 @@ export function docMoc(json: string | null | undefined): MocHeThong {
   if (!o || typeof o !== 'object') return m;
   const tc = o['tham-chieu']?.[0];
   if (typeof tc === 'number') m.thamChieu = tc;
-  for (const k of ['quet:yeu-cau', 'quet:lenh', 'quet:doi-qua-han'] as const) {
+  for (const k of ['quet:yeu-cau', 'quet:lenh', 'quet:doi-qua-han', 'quet:lop-trong'] as const) {
     if (Array.isArray(o[k])) m.quet[k] = { luc: o[k][1] ?? null, ngay: o[k][2] ?? null };
   }
   return m;
@@ -90,6 +90,26 @@ export function quetTheoMoc(khoa: KhoaQuet, homNay: string, fn: () => void): boo
     if (r.length !== 1) return false;
     try { fn(); } catch (e) {
       conn.prepare('UPDATE moc_he_thong SET luc = NULL WHERE khoa = ?').run(khoa);
+      throw e;
+    }
+    return true;
+  });
+}
+
+/**
+ * Lượt quét MỖI NGÀY MỘT LẦN (LOP-TRONG): mốc trong câu phiên đã là hôm nay → 0 câu. Còn lại nhận lượt bằng MỘT câu upsert có điều kiện (thiếu dòng mốc thì
+ * tạo — không bao giờ tắt hẳn): chỉ tiến trình đổi được `ngay` mới quét. Quét lỗi → trả `ngay` về NULL (lần sau thử lại), lỗi ném tiếp.
+ */
+export function quetMoiNgay(khoa: KhoaQuet, homNay: string, fn: () => void): boolean {
+  return nho(`quet-ngay:${khoa}:${homNay}`, () => {
+    if ((layMoc() as MocHeThong | undefined)?.quet[khoa]?.ngay === homNay) return false;
+    const conn = db();
+    const r = conn.prepare(`INSERT INTO moc_he_thong (khoa, luc, ngay) VALUES (?, ?, ?)
+        ON CONFLICT (khoa) DO UPDATE SET luc = excluded.luc, ngay = excluded.ngay WHERE ngay IS NOT excluded.ngay RETURNING khoa`)
+      .all(khoa, new Date().toISOString(), homNay) as unknown[];
+    if (r.length !== 1) return false;
+    try { fn(); } catch (e) {
+      conn.prepare('UPDATE moc_he_thong SET ngay = NULL WHERE khoa = ?').run(khoa);
       throw e;
     }
     return true;

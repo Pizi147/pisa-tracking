@@ -17,6 +17,7 @@ import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { dongBoTuLenh } from './loTrinhTiep.ts';
 import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
+import { quetLopTrong } from './xoaKetThucLop.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
 import { quetDoiDenHan } from './phanCongGv.ts';
 
@@ -643,6 +644,8 @@ export function quetLenhDenHan(homNay = demoToday()): void {
     /* PC-GV-A: lịch đổi phân công GV tới tuần hiệu lực — cùng lượt quét (lỗi đã bắt trong hàm). */
     quetDoiDenHan(homNay);
   });
+  /* LOP-TRONG: lớp trống 7 ngày tự Kết thúc — mỗi ngày một lần (0 câu khi đã quét hôm nay), SAU lệnh tới hạn (lớp vừa nhận / vừa chuyển hết em). */
+  try { quetLopTrong(homNay); } catch (e) { console.error('[lop-trong] quét', e); }
 }
 
 const inHang = (ids: readonly number[]) => ids.map(() => '?').join(',');
