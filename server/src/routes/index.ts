@@ -1,6 +1,6 @@
 import { Router, type Request } from 'express';
 import multer from 'multer';
-import { db, isInitialised } from '../db.ts';
+import { db, isInitialised, tx } from '../db.ts';
 import { cauHinhDich, laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
@@ -2856,7 +2856,9 @@ api.post('/students/:id/hoan-tac-quay-lai', requireAuth, wrap((req) => {
 /** OV-11d (HV-21): Hoàn tác Tạm dừng — trả nguyên trạng, không tính lại hạn (ai Tạm dừng được thì hoàn tác được). */
 api.post('/students/:id/hoan-tac-tam-dung', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return studentSvc.hoanTacTamDung(principalOf(req), pInt(req, 'id'));
+  /* RKC-5b: trả lại quyết định chuyển lớp đã huỷ cùng lần Tạm dừng, cùng giao dịch. */
+  const p = principalOf(req), id = pInt(req, 'id');
+  return tx(() => { const s = studentSvc.hoanTacTamDung(p, id) as any; const canhBao = trangThaiHvSvc.traLaiLenhDaHuy(p, id); return canhBao ? { ...s, canhBao } : s; });
 }));
 
 /** RB-9: lưu trữ / bỏ lưu trữ — chỉ Quản lý, chỉ em đã kết thúc học. Không có tác vụ ngầm. */

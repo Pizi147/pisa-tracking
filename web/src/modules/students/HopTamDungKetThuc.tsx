@@ -84,14 +84,17 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
         : t('{ten} đã vào Lưu trữ · Tạm dừng', { ten }),
     async () => {
       /* Một em Tạm dừng: đường riêng (TVV / CX có `student.edit_more` hoàn tác được); hàng loạt giữ quyền `cycle.edit`. */
+      /* RKC-5b: quyết định chuyển lớp đã huỷ cùng lúc được trả lại; không trả được → toast nói lý do. */
+      let canhBao: string | null = null;
       if (mot && !ketThuc) {
-        try { await api.post(`/students/${ids[0]}/hoan-tac-tam-dung`); } catch (e: any) { lamMoi(); toast.push('error', e?.message ?? t('Mất kết nối')); return; }
+        try { canhBao = (await api.post<{ canhBao?: string }>(`/students/${ids[0]}/hoan-tac-tam-dung`))?.canhBao ?? null; } catch (e: any) { lamMoi(); toast.push('error', e?.message ?? t('Mất kết nối')); return; }
       } else {
         const r = await hoanTacHangLoat(viec, ids);
         if (r.failed.length) { lamMoi(); toast.push('error', r.failed[0].message); return; }
+        canhBao = r.canhBao?.[0]?.message ?? null;
       }
       lamMoi();
-      toast.push('ok', t('Đã hoàn tác'));
+      toast.push(canhBao ? 'error' : 'ok', canhBao ? `${t('Đã hoàn tác')} · ${dich(canhBao)}` : t('Đã hoàn tác'));
       onDone();
     }, { key: `${viec}:${ids.join(',')}` });
 
@@ -104,7 +107,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
         lamMoi(); hoanTac([mot.id], tenCua(mot.id), r?.thongBao); onDone(); onClose();
         return;
       }
-      const r = await chayHangLoat(viec, ds.map((e) => e.id).filter((id) => !boQua.some((b) => b.studentId === id)), { lyDo: lyDo.trim() || undefined, date: ngay || undefined });
+      const r = await chayHangLoat(viec, ds.map((e) => e.id).filter((id) => !boQua.some((b) => b.studentId === id)), { lyDo: lyDo.trim() || undefined, date: ngay || undefined, huyLenh: (nhieuXem?.tong.lenhHuy ?? 0) > 0 });
       const ten = tenCua;
       if (r.ok.length) { lamMoi(); hoanTac(r.ok, t('{n} em', { n: r.ok.length })); onDone(); }
       if (!r.failed.length) { onClose(); return; }

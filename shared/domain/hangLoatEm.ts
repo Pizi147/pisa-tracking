@@ -42,6 +42,8 @@ export type DongXemTruoc = {
   trangThai: 'dang-hoc' | 'tam-dung' | 'da-ket-thuc' | 'luu-tru';
   /** Có chữ = học viên này KHÔNG được làm (bỏ qua / ngoài quyền / thiếu điều kiện); `null` = làm được. */
   lyDoBo: string | null;
+  /** RKC-5b, chỉ Học lại: em chưa từng có lớp — làm được khi lô chọn "Sang lớp mới". */
+  chuaCoLop?: boolean;
 };
 export type XemTruocHangLoat = {
   viec: ViecHangLoat; rows: DongXemTruoc[];
@@ -53,4 +55,6 @@ export type XemTruocHangLoat = {
 };
 export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; message: string }[];
   /** Q-RL2b: Xoá — id mục thùng rác của từng em đã xoá (Hoàn tác cả lô). */
-  thungRac?: number[] };
+  thungRac?: number[];
+  /** RKC-5b: Hoàn tác Tạm dừng / Kết thúc học xong nhưng chưa trả lại được quyết định chuyển lớp — câu báo từng em. */
+  canhBao?: { studentId: number; message: string }[] };

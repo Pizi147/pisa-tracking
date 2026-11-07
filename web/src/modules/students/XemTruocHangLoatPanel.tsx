@@ -56,6 +56,8 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
     ...(viec === 'hoc-lai' && dich === 'moi' ? [{ khoa: 'lop', nhan: t('Lớp'), toiThieu: 1 }] : []),
   ], { 'ly-do': lyDo, lop: lopMoiId === '' ? '' : String(lopMoiId) });
   const idsLam = (xem?.rows ?? []).filter((r) => !r.lyDoBo).map((r) => r.studentId);
+  /* RKC-5b: Học lại — em chưa từng có lớp chỉ làm được khi chọn "Sang lớp mới"; nói trước, không bỏ lặng lẽ. */
+  const soChuaCoLop = viec === 'hoc-lai' && dich === 'cu' ? (xem?.rows ?? []).filter((r) => !r.lyDoBo && r.chuaCoLop).length : 0;
   const ten = (sid: number) => xem?.rows.find((r) => r.studentId === sid)?.ten ?? `#${sid}`;
   const dangThu = chuaLuu.length > 0;
   /* OV-12a: Xoá nói "xoá", không nói "lưu". */
@@ -68,6 +70,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
     setBusy(true); setChuaLuu([]);
     const kq = await chayHangLoat(viec, lam, {
       lyDo: lyDo.trim(), date: ngayHl, moLaiLop: viec === 'hoc-lai', lopMoiId: dich === 'moi' && lopMoiId !== '' ? lopMoiId : undefined, xacNhan: viec === 'xoa' ? goXoa : undefined,
+      huyLenh: (xem?.tong.lenhHuy ?? 0) > 0,   // RKC-5b: khối trên đã nêu số quyết định huỷ — không hỏi lại từng lô
     }, (xong, tong) => setTienDo({ xong, tong }));
     setBusy(false); setTienDo(null);
     for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
@@ -93,7 +96,9 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
     toast.hoanTac(`${nhanViec(viec)} ${t('{n} học viên', { n: tatCa.length })}`, async () => {
       const r = await hoanTacHangLoat(viec, tatCa);
       for (const k of ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lenh-chuyen', '/my-work']) invalidate(k);
-      toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? t('Hoàn tác {ok} học viên · {loi} học viên chưa được — {ly}', { ok: r.ok.length, loi: r.failed.length, ly: r.failed[0].message }) : t('Đã hoàn tác'));
+      const cb = r.canhBao?.[0]?.message;   // RKC-5b: chưa trả lại được quyết định chuyển lớp
+      toast.push(r.failed.length || cb ? 'error' : 'ok', r.failed.length ? t('Hoàn tác {ok} học viên · {loi} học viên chưa được — {ly}', { ok: r.ok.length, loi: r.failed.length, ly: r.failed[0].message })
+        : cb ? `${t('Đã hoàn tác')} · ${dichChu(cb)}` : t('Đã hoàn tác'));
       onDone();
     }, { key: `hang-loat:${viec}` });
     onDone(); onClose();
@@ -128,6 +133,7 @@ export function XemTruocHangLoatPanel({ viec, ids, maLop, onClose, onDone }: {
                   <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>{t('Về lớp cũ')}</NutChon>
                   <NutChon chon={dich === 'moi'} onClick={() => setDich('moi')}>{t('Sang lớp mới')}</NutChon>
                 </span>
+                {soChuaCoLop > 0 && <p role="status" className="m-0 text-xs text-late">{t('{n} em chưa có lớp cũ — chọn "Sang lớp mới" để các em học lại.', { n: soChuaCoLop })}</p>}
                 {dich === 'moi' && (
                   <Truong nhan={t('Lớp')} batBuoc loi={lf.loiCua(loi, 'lop')}>
                     <ChonLop ariaLabel={t('Lớp')} {...lf.o(loi, 'lop')} value={lopMoiId || null} onChange={(id) => setLopMoiId(id ?? '')} khongKhop={dsLop.data ? undefined : t('Đang tải…')}

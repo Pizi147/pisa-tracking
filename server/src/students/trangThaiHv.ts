@@ -8,12 +8,29 @@
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, tenRoute, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, canXacNhan, forbidden, notFound, loi } from '../util.ts';
+import { HttpError, badRequest, canXacNhan, forbidden, notFound, loi } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { setStudentStatus, transferStudent } from './students.ts';
-import { huyLenh } from '../classes/lenhChuyen.ts';
+import { huyLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
 import { danhSachLopDich } from '../classes/luatLoTrinh.ts';
 import { trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
+
+/** RKC-5b: lý do ghi vào quyết định chuyển lớp bị huỷ CÙNG Tạm dừng / Kết thúc học — Hoàn tác trạng thái tìm đúng quyết định này để trả lại. */
+export const LY_DO_HUY_THEO_TRANG_THAI = 'Huỷ cùng Tạm dừng / Kết thúc học';
+
+/**
+ * RKC-5b (PTA 07/11): Hoàn tác Tạm dừng / Kết thúc học TRẢ LẠI quyết định chuyển lớp đã huỷ cùng lần đó (qua `khoiPhucLenh`: quyền lớp nguồn, em còn ở lớp
+ * nguồn, tuần chưa tới, trong hạn giờ…). Không trả được → Hoàn tác trạng thái vẫn xong, trả câu báo kèm bước tiếp (web hiện ở toast). Gọi SAU khi trả trạng thái.
+ * ponytail: lấy quyết định gắn dấu gần nhất, không buộc đúng lần đổi trạng thái đang hoàn tác — lệch chỉ khi đổi trạng thái hai lần trong hạn giờ khôi phục.
+ */
+export function traLaiLenhDaHuy(p: Principal, studentId: number): string | null {
+  const l = db().prepare(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'huy' AND ly_do_huy = ? ORDER BY huy_luc DESC, id DESC LIMIT 1`)
+    .get(studentId, LY_DO_HUY_THEO_TRANG_THAI) as any;
+  if (!l) return null;
+  let lyDo: string;
+  try { const r = khoiPhucLenh(p, [l.id]); if (!r.failed.length) return null; lyDo = r.failed[0].message; } catch (e) { if (!(e instanceof HttpError)) throw e; lyDo = e.message; }
+  return `Chưa trả lại quyết định chuyển lớp (${lyDo}) — xem ở Chuyển lớp…`;
+}
 
 /** Câu khi em có quyết định chuyển lớp chờ mà người làm không huỷ được quyết định (hàng loạt nạp cả lô một lần). */
 export const cauLenhCho = (tuanBatDau: string): string =>
@@ -104,7 +121,7 @@ export function doiTrangThai(p: Principal, studentId: number, b: { status: 'acti
   if (l && !can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) throw badRequest(cauLenhCho(l.tuan_bat_dau));
   if (l && !b.huyLenh) canXacNhan('Em đang có quyết định chuyển lớp chờ {x} — huỷ quyết định rồi lưu?', { x: tuanLich(l.tuan_bat_dau, demoToday()) }, 'Huỷ quyết định và lưu');
   return tx(() => {
-    if (l) huyLenh(p, l.id, b.status === 'inactive' ? 'Tạm dừng học' : 'Kết thúc học');
+    if (l) huyLenh(p, l.id, LY_DO_HUY_THEO_TRANG_THAI);
     const s = setStudentStatus(p, studentId, b.status, b.date ?? demoToday(), b.reason, b.endKind ?? null) as any;
     return { ...s, thongBao: thongBaoTrangThai(s) };
   });

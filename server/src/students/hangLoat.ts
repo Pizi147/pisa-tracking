@@ -4,13 +4,13 @@ import {
   type DongXemTruoc, type KetQuaHangLoat, type ViecHangLoat, type XemTruocHangLoat,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, badRequest, chuTuDo, forbidden, notFound, loi } from '../util.ts';
+import { HttpError, badRequest, canXacNhan, chuTuDo, forbidden, notFound, loi } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
-import { huyNhieuLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
+import { huyLenh, huyNhieuLenh, khoiPhucLenh } from '../classes/lenhChuyen.ts';
 import { archiveStudent, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, setStudentStatus, unarchiveStudent } from './students.ts';
-import { cauLenhCho, tomTatTrangThai } from './trangThaiHv.ts';
+import { LY_DO_HUY_THEO_TRANG_THAI, cauLenhCho, tomTatTrangThai, traLaiLenhDaHuy } from './trangThaiHv.ts';
 import { matNhieuEm, xoaHocVien } from './xoaHocVien.ts';
 
 /**
@@ -41,17 +41,23 @@ type Em = { s: any; lopCuoi: any | null; lenhCho: any | null; lenhHuy: any | nul
 const coQuyenViec = (p: Principal, viec: ViecHangLoat, studentId: number): boolean =>
   can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) || (viec === 'hoan-tac-ket-thuc' && can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));
 
-function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em): string | null {
-  const { s, lopCuoi } = e;
+/** RKC-5b: em chưa từng có lớp — Học lại chỉ được khi chọn "Sang lớp mới" cho lô. */
+export const CAU_CHUA_CO_LOP_CU = 'Chưa có lớp cũ — chọn "Sang lớp mới" để em học lại.';
+const chuaCoLopCu = (e: Em) => e.lopCuoi?.status !== 'completed';
+
+/** `coLopMoi`: lô đã chọn lớp mới (xem trước truyền `true` — chưa biết hộp chọn gì, dòng mang cờ `chuaCoLop`). */
+function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em, coLopMoi = false): string | null {
+  const { s } = e;
   if (!coQuyenViec(p, viec, s.id)) return 'Ngoài phạm vi của bạn.';
+  /* RKC-5b (PTA 07/11): quyết định chuyển lớp chờ chỉ còn chặn khi người làm KHÔNG huỷ được nó (ngoài quyền lớp nguồn); huỷ được → huỷ cùng lúc (`chay`). */
+  const lenhChan = () => (e.lenhCho && !can(p, PERMISSIONS.CLASS_EDIT, { classId: e.lenhCho.lop_nguon_id }) ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null);
   switch (viec) {
-    /* P7 (N11): em có quyết định chuyển lớp chờ → không Tạm dừng / Kết thúc học (cùng câu hộp một em). */
-    case 'tam-dung': return s.status !== 'active' ? (s.status === 'inactive' ? 'Đang tạm dừng' : 'Đã kết thúc học') : e.lenhCho ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null;
-    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : e.lenhCho ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null;
+    case 'tam-dung': return s.status !== 'active' ? (s.status === 'inactive' ? 'Đang tạm dừng' : 'Đã kết thúc học') : lenhChan();
+    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : lenhChan();
     case 'hoan-tac-tam-dung': return s.status === 'inactive' ? null : 'Không còn ở trạng thái tạm dừng';
     case 'luu-tru': return s.status !== 'finished' ? 'Chưa kết thúc học' : s.archived_at ? 'Đã lưu trữ' : null;
     case 'bo-luu-tru': return s.archived_at ? null : 'Chưa lưu trữ';
-    case 'hoc-lai': return s.status !== 'finished' ? 'Đang học' : lopCuoi?.status !== 'completed' ? 'Chưa có lớp để học lại' : null;
+    case 'hoc-lai': return s.status !== 'finished' ? 'Đang học' : chuaCoLopCu(e) && !coLopMoi ? CAU_CHUA_CO_LOP_CU : null;
     case 'huy-lenh': return e.lenhCho ? null : 'Chưa có quyết định chuyển lớp';
     case 'khoi-phuc-lenh': return e.lenhHuy ? null : 'Không có quyết định vừa huỷ để khôi phục';
     case 'hoan-tac-ket-thuc': return s.status === 'finished' ? null : 'Không còn ở trạng thái kết thúc học';
@@ -100,15 +106,17 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
     return {
       studentId: id, ten: s.full_name, ma: s.student_code, lop: e.lopCuoi?.code ?? null,
       trangThai: s.archived_at ? 'luu-tru' : s.status === 'finished' ? 'da-ket-thuc' : s.status === 'inactive' ? 'tam-dung' : 'dang-hoc',
-      lyDoBo: lyDoBo(p, viec, e),
+      lyDoBo: lyDoBo(p, viec, e, true),
+      ...(viec === 'hoc-lai' && s.status === 'finished' && chuaCoLopCu(e) ? { chuaCoLop: true } : {}),
     };
   });
   const duoc = rows.filter((r) => !r.lyDoBo);
   const tong = { duoc: duoc.length, boQua: rows.length - duoc.length, caseDong: 0, paHuy: 0, lenhHuy: 0, lopMoLai: [] as string[], theoHuong: {} as Record<string, number>, tomTat: undefined as string[] | undefined };
-  /* P7: tóm tắt + số Case / PA của Kết thúc học — cùng một hàm với hộp một em. Em có lệnh chờ đã bị bỏ ở `lyDoBo`, nên không còn lệnh nào bị huỷ (`lenhHuy` = 0). */
+  /* P7: tóm tắt + số Case / PA của Kết thúc học — cùng một hàm với hộp một em. RKC-5b: em có quyết định chuyển lớp chờ (người làm huỷ được) → huỷ cùng lúc. */
   if ((viec === 'tam-dung' || viec === 'ket-thuc') && duoc.length) {
     const tt = tomTatTrangThai(duoc.map((r) => r.studentId), viec === 'ket-thuc');
-    tong.tomTat = tt.dong;
+    tong.lenhHuy = duoc.filter((r) => em.get(r.studentId)!.lenhCho).length;
+    tong.tomTat = [...tt.dong, ...(tong.lenhHuy ? [`Huỷ ${tong.lenhHuy} quyết định chuyển lớp chờ`] : [])];
     if (viec === 'ket-thuc') { tong.caseDong = tt.soCase; tong.paHuy = tt.soPa; }
   }
   if (viec === 'hoc-lai') {
@@ -125,6 +133,8 @@ export function xemTruoc(p: Principal, input: { viec?: unknown; studentIds?: unk
 /** POST /hang-loat-hoc-vien — làm ≤ `LO_HANG_LOAT_EM` học viên. Trả `ok` (đã làm) và `failed` (em nào, vì sao chưa). */
 export function chay(p: Principal, input: {
   viec?: unknown; studentIds?: unknown; lyDo?: unknown; date?: unknown; moLaiLop?: unknown; lopMoiId?: unknown; xacNhan?: unknown;
+  /** RKC-5b: hộp đã nêu "Huỷ n quyết định chuyển lớp chờ" → huỷ luôn, không hỏi lại. */
+  huyLenh?: unknown;
 }): KetQuaHangLoat {
   const viec = docViec(input?.viec);
   if (viec === 'xoa' && !khopXacNhanXoa(input.xacNhan)) throw loi(400, 'Gõ {CHU_XAC_NHAN_XOA} để xác nhận xoá.', { CHU_XAC_NHAN_XOA });
@@ -145,9 +155,12 @@ export function chay(p: Principal, input: {
   if (!ids.some((id) => em.has(id) && coQuyenViec(p, viec, id))) throw forbidden(CHI_QL);
 
   const kq: KetQuaHangLoat = { ok: [], failed: [] };
-  const lyDoCua = (id: number): string | null => { const e = em.get(id); return e ? lyDoBo(p, viec, e) : viec === 'xoa' ? 'Học viên đã bị xoá.' : 'Không tìm thấy học viên.'; };
+  const lyDoCua = (id: number): string | null => { const e = em.get(id); return e ? lyDoBo(p, viec, e, lopMoiId !== null) : viec === 'xoa' ? 'Học viên đã bị xoá.' : 'Không tìm thấy học viên.'; };
   const lamDuoc: number[] = [];
   for (const id of ids) { const bo = lyDoCua(id); if (bo) kq.failed.push({ studentId: id, message: bo }); else lamDuoc.push(id); }
+  /* RKC-5b: Tạm dừng / Kết thúc học em có quyết định chuyển lớp chờ → huỷ quyết định trong giao dịch của em đó; hộp chưa nêu thì hỏi MỘT lần cho cả lô. */
+  const soHuy = viec === 'tam-dung' || viec === 'ket-thuc' ? lamDuoc.filter((id) => em.get(id)!.lenhCho).length : 0;
+  if (soHuy && input.huyLenh !== true) canXacNhan('{n} em đang có quyết định chuyển lớp chờ — huỷ các quyết định đó rồi lưu?', { n: soHuy }, 'Huỷ quyết định và lưu');
 
   if (viec === 'huy-lenh') {
     /* MỘT lần gọi cho cả lô: mỗi lệnh một giao dịch bên trong, nhưng chuông gom MỘT cái cho mỗi người nhận. */
@@ -163,13 +176,17 @@ export function chay(p: Principal, input: {
         if (viec === 'xoa') { const r = xoaHocVien(p, id, { maXacNhan: e.s.student_code }); kq.ok.push(id); (kq.thungRac ??= []).push(r.thungRacId); continue; }
         tx(() => {
           chanGiaoDichNeuSapHetGio();   // sắp hết giờ → 503 "chưa lưu" cho em này (và các em sau)
+          if ((viec === 'tam-dung' || viec === 'ket-thuc') && e.lenhCho) huyLenh(p, e.lenhCho.id, LY_DO_HUY_THEO_TRANG_THAI);
           if (viec === 'tam-dung') setStudentStatus(p, id, 'inactive', date ?? demoToday(), lyDo ?? undefined);
           else if (viec === 'ket-thuc') setStudentStatus(p, id, 'finished', date ?? demoToday(), lyDo ?? undefined);
-          else if (viec === 'hoan-tac-tam-dung') hoanTacTamDung(p, id);
+          else if (viec === 'hoan-tac-tam-dung' || viec === 'hoan-tac-ket-thuc') {
+            if (viec === 'hoan-tac-tam-dung') hoanTacTamDung(p, id); else hoanTacKetThuc(p, id);
+            const cb = traLaiLenhDaHuy(p, id);   // RKC-5b: trả lại quyết định huỷ cùng lần; không được thì báo
+            if (cb) (kq.canhBao ??= []).push({ studentId: id, message: cb });
+          }
           else if (viec === 'luu-tru') archiveStudent(p, id);
           else if (viec === 'bo-luu-tru') unarchiveStudent(p, id);
           else if (viec === 'hoc-lai') hocLai(p, id, { date, lyDo, moLaiLop: input.moLaiLop === true, lopMoiId });
-          else if (viec === 'hoan-tac-ket-thuc') hoanTacKetThuc(p, id);
           else if (viec === 'hoan-tac-hoc-lai') hoanTacHocLai(p, id);
           else { const r = khoiPhucLenh(p, [e.lenhHuy.id]); if (r.failed.length) throw new HttpError(409, r.failed[0].message); }
         });

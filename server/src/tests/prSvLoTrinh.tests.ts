@@ -212,19 +212,25 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(thv.thongTinQuayLai(QL, c.sid).huong === 'hoc-lai', 'kết thúc giữa khoá → Học lại');
   }));
 
-  check('SV-6 · hàng loạt "tam-dung": 3 em, 1 em có lệnh chuyển lớp chờ → lưu 2, em lỗi giữ lý do; xem trước có "Khi lưu, web sẽ"; Hoàn tác hàng loạt', () => thu(() => {
+  check('SV-6 · hàng loạt "tam-dung": 3 em, 1 em có lệnh chuyển lớp chờ → RKC-5b: hỏi "huỷ 1 quyết định" rồi lưu cả 3; Hoàn tác hàng loạt trả lại quyết định', () => thu(() => {
     const L = lop(); const ds = [em(L), em(L), em(L)];
     const L2 = lop();
     conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc) VALUES (?,?,?,'chuyen_lop','giua-khoa',?,?,?,?)`)
       .run(ds[2].sid, L, L2, t.addDays(T2, 14), QL.userId, TODAY, NOW);
     const ids = ds.map((x) => x.sid);
     const xem = hangLoat.xemTruoc(QL, { viec: 'tam-dung', studentIds: ids });
-    assert(xem.tong.duoc === 2 && /quyết định chuyển lớp/.test(xem.rows[2].lyDoBo) && xem.tong.tomTat?.[0] === 'Đưa 2 em vào Lưu trữ · Tạm dừng', JSON.stringify(xem.tong));
-    const kq = hangLoat.chay(QL, { viec: 'tam-dung', studentIds: ids, date: TODAY });
-    assert(kq.ok.length === 2 && kq.failed.length === 1 && /quyết định chuyển lớp/.test(kq.failed[0].message), JSON.stringify(kq));
-    assert(ids.slice(0, 2).every((id) => hs(id).archived_at === TODAY), 'hai em vào Lưu trữ');
+    assert(xem.tong.duoc === 3 && xem.tong.lenhHuy === 1 && xem.tong.tomTat?.[0] === 'Đưa 3 em vào Lưu trữ · Tạm dừng'
+      && xem.tong.tomTat?.includes('Huỷ 1 quyết định chuyển lớp chờ'), JSON.stringify(xem.tong));
+    const hoi = loi(() => hangLoat.chay(QL, { viec: 'tam-dung', studentIds: ids, date: TODAY }));
+    assert(hoi?.status === 409 && hoi.details?.canXacNhan && ids.every((id) => hs(id).status === 'active'), `chưa cờ huyLenh → hỏi, chưa lưu em nào: ${hoi?.status} ${hoi?.message}`);
+    const kq = hangLoat.chay(QL, { viec: 'tam-dung', studentIds: ids, date: TODAY, huyLenh: true });
+    assert(kq.ok.length === 3 && kq.failed.length === 0, JSON.stringify(kq));
+    assert(ids.every((id) => hs(id).archived_at === TODAY), 'ba em vào Lưu trữ');
+    const lenh = () => get(`SELECT trang_thai, ly_do_huy FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1`, ds[2].sid);
+    assert(lenh().trang_thai === 'huy', `quyết định phải bị huỷ: ${JSON.stringify(lenh())}`);
     const nguoc = hangLoat.chay(QL, { viec: d.VIEC_NGUOC['tam-dung'], studentIds: kq.ok });
-    assert(nguoc.ok.length === 2 && ids.slice(0, 2).every((id) => hs(id).status === 'active' && !hs(id).archived_at), 'Hoàn tác hàng loạt');
+    assert(nguoc.ok.length === 3 && ids.every((id) => hs(id).status === 'active' && !hs(id).archived_at), 'Hoàn tác hàng loạt');
+    assert(lenh().trang_thai === 'cho', `Hoàn tác phải trả lại quyết định: ${JSON.stringify(lenh())}`);
   }));
 
   check('SV-6b · trang Lưu trữ: em tạm dừng có nhãn "Tạm dừng · Có thể quay lại" + lớp giữ chỗ; em kết thúc "Kết thúc học"; một cờ Quay lại học', () => thu(() => {
