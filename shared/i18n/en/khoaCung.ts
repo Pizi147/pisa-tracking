@@ -25,6 +25,7 @@ export const EN_KHOA_CUNG = {
   'Vẫn thu hồi': 'Revoke anyway',
   'Đã có {ten} sau lần này — vẫn huỷ quyết định thu hồi? Bậc tính lại.': '{ten} was recorded after this — undo the revocation anyway? The level is recalculated.',
   'Vẫn huỷ': 'Undo anyway',
+  'Việc này đã bỏ rồi — bấm Khôi phục nếu cần làm lại.': 'This task is already dropped — press Restore to do it again.',
   '{n} em đang có quyết định chuyển lớp chờ — huỷ các quyết định đó rồi lưu?': '{n} students have a pending transfer — cancel those transfers and save?',
   'Chưa có lớp cũ — chọn "Sang lớp mới" để em học lại.': 'No previous class — choose "New class" to return to study.',
   '{n} em chưa có lớp cũ — chọn "Sang lớp mới" để các em học lại.': '{n} students have no previous class — choose "New class" for them.',
