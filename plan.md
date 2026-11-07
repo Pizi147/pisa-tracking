@@ -259,6 +259,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 07/11 — LỖI BẢN CHÍNH: Case sinh 2 PA quy chế trùng (chủ SP — session PA-TRUNG)
+- **Chủ SP 07/11 14:01 (ảnh bản chính, GV S xem Công việc + QL xem hồ sơ lớp CP FT 136; Case Speaking · MT4 · SOS 3, mở W4 OCT):** "Đột nhiên lại sinh ra 2 phương án? lỗi gì vậy?" — PA "Học Tutor · Theo quy chế · đến lúc thi" ĐANG CHẠY (đến 24/11, 0/10 buổi, KQ hạn 21/11) + một PA "Học Tutor · Theo quy chế" thứ hai "Chờ xác nhận" (bắt đầu 07/11) → GV có việc "Xác nhận PA" thừa.
+- Session PA-TRUNG: tìm gốc (nơi sinh PA quy chế tự động — sau nhập MT4 W1 NOV? reset hạn? migrate?), sửa không sinh trùng khi đã có PA quy chế cùng loại đang chạy / chờ, dọn PA trùng trên bản chính bằng migrate một lần (báo số bản sao trước khi merge).
+
 ### 07/11 — Nút ⋯ hồ sơ lớp + LỚP TRỐNG TỰ LƯU TRỮ (chủ SP — session LOP-TRONG)
 - **Chủ SP 07/11 (ảnh hồ sơ lớp CP FT 130, khoanh nút ⋯ cạnh "Nhập điểm", "+ Case"):** "1. sửa lại nút này cho cân đối 2. Và thêm 1 cái nữa là nếu lớp không có học sinh, đã kết thúc sau khi chuyển hết đi, và không có kế hoạch nhận thêm HV nào thì sau 1 tuần sẽ tự động bị đưa vào lưu trữ nhée"
 - (1) Nút ⋯ cùng chiều cao / khung với hai nút cạnh (vuông, căn giữa) — mọi đầu trang có cụm nút + ⋯.
