@@ -385,7 +385,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('J8 · tên lớp / đợt có title; lưới chấm: tên break-words, chip "Đã hoàn tất" xuống dòng DƯỚI tên (không cùng hàng flex)', () => {
     /* UI-LICH-TUAN: ChamDiemPage (trang lưới cũ) đã thành chuyển hướng — bỏ phép kiểm tiêu đề của nó (Q-7). */
     /* Điện thoại (MotKyNang): tên xuống dòng, chip dưới tên. */
-    const mk = /<div className="([^"]*)">\s*<Link className="([^"]*)" to=\{.*\} title=\{ten\}>/.exec(doc('web/src/modules/cham/MotKyNang.tsx'));
+    const mk = /<div className="([^"]*)">\s*<span className="[^"]*"><Link className="([^"]*)" to=\{duongHoSoHocVien\(studentId\)\} title=\{ten\}>/.exec(doc('web/src/modules/cham/MotKyNang.tsx'));
     assert(mk && /break-words/.test(mk[2]) && !/(^|\s)flex(\s|$)/.test(mk[1]), `MotKyNang: khối tên em (${mk?.[1]} · ${mk?.[2]})`);
     /* BANG-1 (04 mục 6.2): lưới máy tính — hàng một dòng chính: tên cắt "…" + title. N33 ④ (03/11): bỏ chip "Đủ điểm" sau tên. */
     for (const f of ['LuoiFT', 'LuoiThuong']) {
@@ -398,7 +398,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   check('C33 · LuoiThuong: tên em < 640 px xuống dòng (max-sm:break-words), máy tính giữ truncate + title', () => {
     /* BANG-1: < 640 px lưới lớp thường không vẽ (màn điện thoại MotKyNang, tên xuống dòng — J8); máy tính cắt "…" + title. */
-    const m = /<Link className="([^"]*)" to=\{duongDotTest\(\{ id: row\.attemptId[^}]*\}\)\} title=\{row\.studentName\}>/.exec(doc('web/src/modules/cham/LuoiThuong.tsx'));
+    const m = /<Link className="([^"]*)" to=\{duongHoSoHocVien\(row\.studentId\)\} title=\{row\.studentName\}>/.exec(doc('web/src/modules/cham/LuoiThuong.tsx'));
     assert(m, 'không thấy Link tên em');
     assert(/(^|\s)truncate(\s|$)/.test(m![1]) && /min-w-0/.test(m![1]), m![1]);
   });
