@@ -355,7 +355,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     keHoach.luuDot(QL, { attemptId: b.m1, kyNang: bonKyNang(1) });
     keHoach.luuDot(QL, { attemptId: b.m2, kyNang: bonKyNang(4) });
     diem(b.m2, 'listening', 7, 33);
-    assertThrows(() => ketQuaHuy.khoiPhucKetQua(QL, b.m2), /MT2 đã có điểm mới — không khôi phục được/, 'điểm mới');
+    assertThrows(() => ketQuaHuy.khoiPhucKetQua(QL, b.m2), /MT2 đã có điểm mới — thay bằng kết quả cũ/, 'điểm mới: RKC hỏi (409)');
     assert((conn.prepare(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).get(b.m2) as any).band === 7, 'điểm mới bị đè');
   });
 
@@ -430,7 +430,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(soDeNghi(a.m1) === 0 && (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n === theTruoc, 'có đề nghị / thẻ');
     assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc && chuong('schedule_move', QL.userId, a.m1) === 0, 'N38 L2: không chuông QL');
     assert(chuong('huy_vang', GVCN.userId, a.m1) === gvTruoc, 'GVCN không có chuông (09/10)');
-    assertThrows(() => attemptsSvc.saveScore(P.sTeacher, a.m1, 'speaking', { noShow: true }), /đã bị huỷ/, 'gõ lại "-" vào phần thi đã huỷ');
+    assertThrows(() => attemptsSvc.saveScore(P.sTeacher, a.m1, 'speaking', { noShow: true }), /đã ghi vắng \/ đã huỷ/, 'gõ lại "-" vào phần thi đã huỷ');
     assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc && kyNang(a.m1, 'speaking').huy_vang === 1, 'gõ lại đổi');
   });
 

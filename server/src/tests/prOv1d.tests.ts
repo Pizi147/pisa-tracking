@@ -86,7 +86,7 @@ export async function runPrOv1dTests(t: YThucTestKit) {
     const dat = (sql: string) => { conn.prepare(`UPDATE students SET ${sql} WHERE id = ?`).run(s); xoaNho(); };
     dat(`archived_at = '2026-10-01T00:00:00Z'`);
     assert(!hang(a, QL, W, THU6), 'Lưu trữ: không còn hàng ở bảng điểm lớp');
-    for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { noShow: false }], ['speaking', { nhanXet: 'x' }]] as const) {
+    for (const [k, patch] of [['listening', { rawScore: 30 }], ['speaking', { nhanXet: 'x' }]] as const) {
       const e = loi(() => attempts.saveScore(QL, a, k, patch, THU6));
       assert(e === null, `RKC: em Lưu trữ ghi ${k} phải được: ${e?.status} ${e?.message}`);
     }

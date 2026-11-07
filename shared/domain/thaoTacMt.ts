@@ -69,7 +69,6 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
   const xepLai: ThaoTac | null = q.laFt && ql ? 'doi-lich' : null;
   /* RKC (chủ SP 07/11 "không chặn cứng"): ô vắng / đã huỷ vẫn NHẬP điểm được — máy chủ hỏi rồi đổi về "đã làm bài" (`saveScore`). */
   const nhap: ThaoTac[] = q.nhapDiem ? ['nhap-diem'] : [];
-  const vangKhiCoDiem: ThaoTac[] = q.gvcn || ql ? ['bao-vang'] : [];   // RKC (B): máy chủ hỏi "huỷ điểm rồi báo vắng?"
   switch (tt) {
     /* Chủ SP 06/11: môn đã xoá → "Khôi phục" một bấm (tuần cũ giữ); muốn đổi tuần thì Dời (L5). */
     case 'khong-yeu-cau': return { chinh: ftQl ? 'khoi-phuc-kn' : null, menu: ftQl ? ['doi-lich'] : [] };
@@ -80,7 +79,7 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). LUAT-34 (L3): "Đủ điểm"
      * không còn khoá — Huỷ điểm theo quyền sửa ô. */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
-      menu: [...(doi ? ['doi-lich'] : []), ...(q.nhapDiem || ql ? ['huy-diem'] : []), ...vangKhiCoDiem, ...huy] as ThaoTac[] };
+      menu: [...(doi ? ['doi-lich'] : []), ...(q.nhapDiem || ql ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
     /* `vang` chỉ còn dữ liệu trước N38 (vắng chờ thẻ Quản lý) → Dời (L5). CV-LOI (V4B H15): cờ quyền máy chủ `doiLich` thắng; không cờ thì suy
        như máy chủ — GVCN chỉ lớp thường (`SCHEDULE_MOVE` loại FT). */
     case 'vang': return { chinh: (q.doiLich ?? (ql || (q.gvcn && !q.laFt))) ? 'doi-lich' : null, menu: [...nhap, ...huy] };
