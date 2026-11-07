@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM RKC-1a (chủ SP 07/11 "KHÔNG BAO GIỜ CHẶN CỨNG"): điểm Test — hỏi xác nhận thay chặn (`canXacNhan` → 409 `{ canXacNhan }`, web gửi lại
- * `x-xac-nhan: 1`); ô vắng nhập được (đổi về "đã làm bài"); lượt huỷ: QL hỏi rồi khôi phục, GV chỉ đường; em Lưu trữ sửa điểm được; khôi phục điểm cũ
+ * `x-xac-nhan` = mã câu đã đồng ý); ô vắng nhập được (đổi về "đã làm bài"); lượt huỷ: QL hỏi rồi khôi phục, GV chỉ đường; em Lưu trữ sửa điểm được; khôi phục điểm cũ
  * đè điểm mới (cất); báo vắng ô có điểm (huỷ điểm, cất). Bảng: docs/ra-khoa-cung/bang.md.
  */
 export async function runRkcDiemTests(t: any) {
@@ -16,7 +16,7 @@ export async function runRkcDiemTests(t: any) {
   const absence: any = await import('../fasttrack/absence.ts');
   const perm: any = await import('../permissions.ts');
   const { setConfig, getConfig } = await import('../demoConfig.ts');
-  const { xoaNho, voiXacNhan, daXacNhan } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan, daXacNhan, chayTrongRequest, docXacNhan } = await import('../platform/nguCanhRequest.ts');
   const { boLichTuTao } = await import('./luotThu.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -49,11 +49,17 @@ export async function runRkcDiemTests(t: any) {
 
   console.log('\nRKC-1a — điểm Test: hỏi xác nhận thay chặn cứng');
 
-  check('RKC-0 · canXacNhan: ngoài xác nhận → 409 { canXacNhan } câu đúng; trong voiXacNhan → đi qua; xong thì cờ tắt', () => {
-    const e = loiCua(() => util.canXacNhan('Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?'));
-    assert(hoi(e) && /huỷ điểm/.test(e.message), `phải 409 hỏi: ${e?.status} ${e?.message}`);
-    voiXacNhan(() => { assert(daXacNhan(), 'trong voiXacNhan phải đã xác nhận'); util.canXacNhan('Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?'); });
-    assert(!daXacNhan(), 'ra ngoài phải tắt cờ');
+  check('RKC-0 · canXacNhan: chưa đồng ý → 409 { canXacNhan, ma, nut }; đồng ý ĐÚNG mã câu → qua, câu khác vẫn hỏi; voiXacNhan → mọi câu; xong thì tắt', () => {
+    const A = 'Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?', B = '{nhan} đã huỷ — khôi phục {nhan} rồi làm tiếp?';
+    const e = loiCua(() => util.canXacNhan(A, undefined, 'Huỷ điểm, ghi vắng'));
+    assert(hoi(e) && e.details.ma === A && e.details.nut === 'Huỷ điểm, ghi vắng', `phải 409 hỏi: ${e?.status} ${JSON.stringify(e?.details)}`);
+    chayTrongRequest('PUT', () => {
+      util.canXacNhan(A);
+      assert(hoi(loiCua(() => util.canXacNhan(B, { nhan: 'MT2' }))), 'đồng ý A không được cho qua B');
+    }, docXacNhan(encodeURIComponent(A)));
+    assert(hoi(loiCua(() => chayTrongRequest('PUT', () => util.canXacNhan(A), docXacNhan('1')))), '"1" không phải đồng ý');
+    voiXacNhan(() => { assert(daXacNhan(B), 'voiXacNhan: mọi câu'); util.canXacNhan(A); });
+    assert(!daXacNhan(A), 'ra ngoài phải tắt');
   });
 
   check('RKC-1 · ô ĐANG VẮNG: nhập điểm → 409 hỏi (không đổi gì); xác nhận → kỹ năng "đã làm bài" + điểm lưu + nhật ký lịch', () => thu(() => {

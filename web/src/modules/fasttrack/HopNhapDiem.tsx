@@ -39,7 +39,7 @@ import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import { ChonNhom, viDuNhanXet } from './NhanXet.tsx';
 import {
-  bandBanDau, chanDau, coDiemChinhThuc, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
+  bandBanDau, chanDau, coDiemChinhThuc, LY_DO_CHI_DOC, suaDuoc, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
@@ -223,7 +223,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
     return (
       <span className="inline-flex flex-col items-center">
         <span className={`inline-flex items-baseline gap-1 tabular-nums ${vang || h.kieu ? 'text-xs text-slate-500' : ''} ${lon ? 'text-base' : ''}`}
-          title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
+          title={cell.noShow?.text ?? LY_DO_CHI_DOC}>
           {/* OV-15b: ô của người khác chưa có điểm = trống (không "—"). */}
           {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
         </span>

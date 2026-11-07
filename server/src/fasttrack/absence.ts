@@ -736,21 +736,10 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
   if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
   if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = loadAttempt(attemptId); }   // RKC: hỏi rồi khôi phục lượt
-  const timRow = () => ensureSkillRows(attemptId).find((r) => r.skill === skill);
-  let row = timRow();
+  const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
   if (!row?.required) throw loi(400, '{skill} không nằm trong lượt này.', { skill: skillName(skill) });
   const boTask = row.bo_task;
-  /* RKC (B): ô của kỹ năng đã có điểm → hỏi; đồng ý → huỷ điểm (cất, Khôi phục được) rồi báo vắng. */
-  const coDiem = entrySkillsOf(skill as AssessedSkill).filter((k) => k !== boTask).filter((e) => {
-    const s = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
-    return s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null);
-  });
-  if (coDiem.length) {
-    canXacNhan('{skill} đã có điểm — huỷ điểm (khôi phục lại được) rồi báo vắng?', { skill: skillName(skill) }, 'Huỷ điểm, báo vắng');
-    for (const e of coDiem) saveScore(p, attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Báo vắng' });
-    row = timRow()!;
-  }
-  /* RKC: "đã làm bài" mà không còn điểm (điểm đã huỷ) vẫn báo vắng được. */
+  /* RKC: "đã làm bài" (kể cả còn điểm — huỷ điểm bên dưới, sau khi hỏi) vẫn báo vắng được. */
   if (!['scheduled', 'sat'].includes(row.sit_status) || !row.planned_period_id || !row.week_start || !row.week_end) {
     throw loi(400, '{skill} không còn chờ làm bài (đã làm bài, đang vắng hoặc đã huỷ) — không báo vắng được.', { skill: skillName(skill) });
   }
@@ -761,7 +750,14 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
      RKC: lớp đã kết thúc (không còn tuần để dời) → Không dự thi. */
   const khongDuThi = laLopKetThuc(a.class_id) || laMtCuKyNang(row.week_start, today);
   const late = today > row.week_end.slice(0, 10);
+  /* RKC (B): ô của kỹ năng đã có điểm → hỏi; đồng ý → huỷ điểm (cất, Khôi phục được) rồi báo vắng — cùng giao dịch ghi vắng. */
+  const coDiem = entrySkillsOf(skill as AssessedSkill).filter((k) => k !== boTask).filter((e) => {
+    const s = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
+    return s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null);
+  });
+  if (coDiem.length) canXacNhan('{skill} đã có điểm — huỷ điểm (khôi phục lại được) rồi báo vắng?', { skill: skillName(skill) }, 'Huỷ điểm, báo vắng');
   return tx(() => {
+    for (const e of coDiem) saveScore(p, attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Báo vắng' });
     const ids: number[] = [];
     const now = nowIso();
     for (const e of entrySkillsOf(skill as AssessedSkill).filter((k) => k !== row.bo_task)) {   // P8: task Writing không học không ghi "-"

@@ -1616,7 +1616,9 @@ export function xoaLuot(p: Principal, attemptId: number) {
   if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
   const ds = ensureSkillRows(attemptId).filter((r) => r.required);
   if (!ds.length) throw loi(400, '{nhan} đã xoá.', { nhan });
-  const coDiem = scoresOf(attemptId).filter((s) => s.band !== null || s.raw_score !== null);
+  /* Chỉ ô của kỹ năng đang trong đợt (ô kỹ năng đã bỏ / task không học không đổi khi Xoá). */
+  const coDiem = scoresOf(attemptId).filter((s) => (s.band !== null || s.raw_score !== null)
+    && ds.some((r) => r.skill === assessedSkillOf(s.skill) && r.bo_task !== s.skill));
   if (coDiem.length) canXacNhan('{nhan} đã có điểm — huỷ điểm rồi xoá {nhan}? (Khôi phục lại được)', { nhan }, 'Huỷ điểm và xoá');
   return tx(() => {
     for (const s of coDiem) saveScore(p, attemptId, s.skill, { rawScore: null, criteria: [null, null, null, null], lyDo: LY_DO_XOA_MT });
@@ -2251,16 +2253,18 @@ export function saveScore(
   if (scheduleRow.bo_task === skill) throw loi(400, 'Em không học {o} — ô này không nhập điểm (Writing = task em học).', { o: ENTRY_SKILL_SHORT[skill as EntrySkill] });   // P8 (N13)
   /*
    * PHẦN ĐÃ HUỶ (vắng 2 lần) / ĐÃ XÁC NHẬN VẮNG (mục 10.6). RKC (chủ SP 07/11, thay "sửa trạng thái trước rồi mới nhập"): NHẬP ĐIỂM = em đã làm
-   * bài — hỏi một câu rồi đổi trạng thái thi sang "đã làm bài" (`ghiSitStatus`, nhật ký lịch) và lưu điểm, một giao dịch. Nhận xét lưu thẳng;
-   * "-" vào phần đã vắng / huỷ không có nghĩa → câu chỉ đường.
+   * bài — hỏi một câu rồi đổi trạng thái thi sang "đã làm bài" (`ghiSitStatus`, nhật ký lịch) TRONG giao dịch lưu điểm (kiểm điểm hỏng → không đổi
+   * gì). Nhận xét lưu thẳng; "-" vào phần đã vắng / huỷ không có nghĩa → câu chỉ đường.
    */
   const sitChan = scheduleRow.sit_status === 'cancelled' || scheduleRow.sit_status === 'absent';
+  let doiSit: (() => void) | null = null;
   if (sitChan && ghiDiem) {
     canXacNhan(scheduleRow.sit_status === 'absent'
       ? '{x} đang ghi vắng — đổi thành đã làm bài rồi lưu điểm?' : '{x} đã huỷ (vắng 2 lần) — đưa lại thành đã làm bài rồi lưu điểm?',
     { x: tenMon(null, assessed) }, 'Đổi thành đã làm bài');
-    ghiSitStatus(p, attemptId, scheduleRow, 'sat', 'Nhập điểm');
-    scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
+    const goc = scheduleRow;
+    doiSit = () => { ghiSitStatus(p, attemptId, goc, 'sat', 'Nhập điểm'); };
+    scheduleRow = { ...scheduleRow, sit_status: 'sat' };
   }
   if (sitChan && patch.noShow !== undefined) {
     throw loi(400, '{x} đã ghi vắng / đã huỷ — muốn thi lại thì chọn tuần ở hộp lịch.', { x: tenMon(null, assessed) });
@@ -2291,6 +2295,7 @@ export function saveScore(
   if (chiNhanXet) return tx(() => luuNhanXet(p, a, skill, nxGt, gv, nhomGui));
 
   return tx(() => {
+    doiSit?.();
     let existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as ScoreRow | undefined;
     const before = existing ? { ...existing } : null;

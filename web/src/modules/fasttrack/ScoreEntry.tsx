@@ -120,8 +120,8 @@ export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawSco
 /** T10: ô Band của hộp tiêu chí — đầu vào là band đã lưu khi ô chỉ có band (bốn tiêu chí trống). */
 export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
 
-/** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-export const lyDoChiDoc = (_cell: Cell) => t('Bạn không được phân công kỹ năng này');
+/** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí (RKC: chỉ còn lý do quyền). */
+export const LY_DO_CHI_DOC = t('Bạn không được phân công kỹ năng này');
 
 /**
  * HOTFIX-3 (OV-13o): điểm vừa lưu (dòng `score` máy chủ trả về) đè lên ô cũ tới khi bảng tải lại được — tải lại hỏng thì ô vẫn hiện

@@ -83,17 +83,24 @@ export function onInvalidate(fn: InvalidateListener) {
  * Không có hộp (phép kiểm) / bấm Đóng → lỗi đi tiếp như cũ (câu hỏi = câu lỗi).
  */
 let hoiXacNhan: ((cau: string, nut?: string) => Promise<boolean>) | null = null;
+/* Một hộp một lúc: hai request cùng cần hỏi (gõ nhanh hai ô) → hỏi lần lượt, không hộp sau đè hộp trước (promise treo). */
+let hangHoi: Promise<unknown> = Promise.resolve();
+const hoiLanLuot = (cau: string, nut?: string): Promise<boolean> => {
+  const p = hangHoi.then(() => (hoiXacNhan ? hoiXacNhan(cau, nut) : false));
+  hangHoi = p.catch(() => undefined);
+  return p;
+};
 export function datHoiXacNhan(fn: (cau: string, nut?: string) => Promise<boolean>): () => void {
   hoiXacNhan = fn;
   return () => { if (hoiXacNhan === fn) hoiXacNhan = null; };
 }
 
-async function request<T>(method: string, path: string, body?: unknown, isForm = false, xacNhan = false): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, isForm = false, xacNhan: readonly string[] = []): Promise<T> {
   let res: Response;
   try {
     const headers: Record<string, string> = {};
     if (!isForm && body !== undefined) headers['Content-Type'] = 'application/json';
-    if (xacNhan) headers['x-xac-nhan'] = '1';
+    if (xacNhan.length) headers['x-xac-nhan'] = xacNhan.map(encodeURIComponent).join(',');
     res = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
@@ -119,8 +126,9 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
        Mọi chỗ in `e.message` tự đúng tiếng, không phải sửa từng nơi gọi. */
     const cau = typeof payload?.khoa === 'string' ? dich(payload.khoa, payload.bien) : typeof payload?.error === 'string' ? dich(payload.error) : t('Lỗi {status} — thử lại', { status: res.status });
     const nut = typeof payload?.details?.nut === 'string' ? dich(payload.details.nut) : undefined;
-    if (res.status === 409 && payload?.details?.canXacNhan && !xacNhan && hoiXacNhan && await hoiXacNhan(cau, nut)) {
-      return request<T>(method, path, body, isForm, true);
+    const ma = payload?.details?.canXacNhan && typeof payload.details.ma === 'string' ? payload.details.ma as string : null;
+    if (res.status === 409 && ma && !xacNhan.includes(ma) && hoiXacNhan && await hoiLanLuot(cau, nut)) {
+      return request<T>(method, path, body, isForm, [...xacNhan, ma]);   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
     }
     const loi = new ApiError(res.status, cau, payload?.details);
     throw loi;

@@ -120,7 +120,6 @@ export async function runPrOv13hTests(t: YThucTestKit) {
       await ma(await goi(gvL, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [8, 8, 8, 8], nhanXet: nx })), 403, 'GV L vào ô W1');
     }));
     /* RKC (chủ SP 07/11, mở Q-B1 "lớp đã kết thúc chỉ QL sửa điểm"): GV đúng môn sửa điểm đã có; "-" = Không dự thi (không còn tuần để dời). */
-    const xn = { 'x-xac-nhan': '1' };
     await checkAsync('OV13h-1c · RKC · FT lớp đã kết thúc: GV W1 "-" → 200 Không dự thi (no_show_cu); nhập ô → 200 + nhật ký; SỬA điểm đã có → 200; không cờ khongVang; QL vẫn sửa', lopTam(FT101, () => voiMayChu(SAU, async (goi) => {
       await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ noShow: true })), 200, 'GV "-" lớp kết thúc');
       assert(one(`SELECT no_show_cu FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`, x.aid)?.no_show_cu === 1, '"-" lớp kết thúc phải là Không dự thi');
@@ -154,7 +153,9 @@ export async function runPrOv13hTests(t: YThucTestKit) {
       const hoiJ = await hoi.json() as any;
       assert(hoi.status === 409 && hoiJ.details?.canXacNhan === true, `"-" ô có điểm phải hỏi: ${hoi.status} ${JSON.stringify(hoiJ)}`);
       assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a.id).raw_score === 25, 'chưa xác nhận: điểm giữ');
-      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, { ...put({ noShow: true }), headers: xn }), 200, 'xác nhận "-"');
+      /* Header phải mang ĐÚNG mã câu đã đồng ý — "1" (đồng ý chung) không cho qua. */
+      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, { ...put({ noShow: true }), headers: { 'x-xac-nhan': '1' } }), 409, 'đồng ý chung không cho qua');
+      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, { ...put({ noShow: true }), headers: { 'x-xac-nhan': encodeURIComponent(hoiJ.details.ma) } }), 200, 'xác nhận "-"');
       const sau = one(`SELECT raw_score, no_show_cu FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a.id);
       assert(sau.raw_score === null && sau.no_show_cu === 1, `sau xác nhận: ${JSON.stringify(sau)}`);
       assert(one(`SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_diem' AND khoi_phuc_luc IS NULL`, a.id).n >= 1, 'điểm phải được cất (khôi phục được)');

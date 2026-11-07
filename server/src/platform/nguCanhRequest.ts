@@ -24,8 +24,8 @@ type Kho = {
   coGhi?: boolean;
   /** Bộ nhớ MỘT request cho giá trị chỉ đổi qua đúng một hàm có tên (xem `nhoCaRequest`) — mở cho MỌI request, kể cả ghi; `xoaNho` KHÔNG xoá. */
   rieng?: Map<string, unknown>;
-  /** RKC (chủ SP 07/11 "không chặn cứng"): người dùng đã bấm đồng ý ở hộp xác nhận (header `x-xac-nhan: 1`) — xem `canXacNhan` (util.ts). */
-  xacNhan?: boolean;
+  /** RKC (chủ SP 07/11 "không chặn cứng"): các câu hỏi người dùng đã đồng ý (header `x-xac-nhan`, mã câu) — xem `canXacNhan` (util.ts). '*' = mọi câu (phép kiểm). */
+  xacNhan?: ReadonlySet<string> | '*';
 };
 
 /**
@@ -42,19 +42,31 @@ let tongCau = 0;
 /** Tổng dòng SQL trả về từ lúc tiến trình khởi động (TD2-0) — phép kiểm ĐO trừ trước/sau như `tongCau`. */
 let tongDong = 0;
 
-export function chayTrongRequest<T>(method: string, fn: () => T, xacNhan = false): T {
+export function chayTrongRequest<T>(method: string, fn: () => T, xacNhan?: ReadonlySet<string>): T {
   return kho.run({ nho: method === 'GET' ? new Map() : null, dem: demMoi(), xacNhan }, fn);
 }
 
-/** RKC: request hiện tại đã được người dùng xác nhận (gửi lại sau hộp hỏi). Ngoài request → false. */
-export function daXacNhan(): boolean {
-  return !!kho.getStore()?.xacNhan;
+/**
+ * RKC: header `x-xac-nhan` = các mã câu đã đồng ý (`encodeURIComponent`, nối ","). MỖI câu hỏi phải được đồng ý riêng — đồng ý câu A không cho qua
+ * hậu quả B phát sinh sau (B → 409 lần nữa, web hỏi tiếp). Hỏng mã → bỏ qua (coi như chưa đồng ý).
+ */
+export function docXacNhan(h: unknown): ReadonlySet<string> | undefined {
+  if (typeof h !== 'string' || !h) return undefined;
+  const out = new Set<string>();
+  for (const m of h.split(',')) { try { out.add(decodeURIComponent(m)); } catch { /* mã hỏng */ } }
+  return out;
 }
 
-/** RKC: chạy `fn` như request ĐÃ xác nhận (phép kiểm gọi thẳng hàm; ops). Giữ kho ngoài nếu có, chỉ bật cờ. */
+/** RKC: người dùng đã đồng ý câu `ma` trong request hiện tại? Ngoài request → false. */
+export function daXacNhan(ma: string): boolean {
+  const x = kho.getStore()?.xacNhan;
+  return x === '*' || !!x?.has(ma);
+}
+
+/** RKC: chạy `fn` như mọi câu hỏi ĐÃ được đồng ý (phép kiểm gọi thẳng hàm). Giữ kho ngoài nếu có. */
 export function voiXacNhan<T>(fn: () => T): T {
   const s = kho.getStore();
-  return kho.run(s ? { ...s, xacNhan: true } : { nho: null, dem: demMoi(), xacNhan: true }, fn);
+  return kho.run(s ? { ...s, xacNhan: '*' } : { nho: null, dem: demMoi(), xacNhan: '*' }, fn);
 }
 
 /** db.ts gọi ở mỗi `run` / `exec`: request đang chạy đã ghi DB (TL-NEN — bảng tham chiếu có thể vừa đổi, xem `nhoThamChieu`). */
