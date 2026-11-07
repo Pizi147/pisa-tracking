@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, ErrorState, Info, SectionNote, Skeleton, Task } from '../../ui/ui.tsx';
+import { Card, ErrorState, Info, Skeleton, Task } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -68,12 +68,6 @@ export function SignalList({ branchId, periodId }: { branchId?: number | null; p
           </li>
         ))}
       </ul>
-      <div className="p-3">
-        <SectionNote>
-          {t('Những việc này')} <strong>{t('tự hết khi dữ liệu nguồn được xử lý')}</strong>{' '}
-          {t('— không có nút đánh dấu đã xong, vì đánh dấu chỉ che một con số vẫn đang đúng. Bấm một dòng để mở đúng những bản ghi tạo nên nó. Việc quản lý đặc thù (liên hệ phụ huynh, tổ chức bổ trợ…) mới cần nhập tay ở phần dưới.')}
-        </SectionNote>
-      </div>
     </Card>
   );
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { SectionNote } from '../../ui/ui.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -59,9 +58,6 @@ export function ComponentsField({ label, components, counts, value, onChange, bu
           </div>
         ))}
       </div>
-      <SectionNote>
-        {t('Chỉ điền phần bạn thật sự đánh giá — để trống phần không xem tới. Đây là quan sát của bạn, không ghi đè điểm Test chính thức và không đổi mức SOS.')}
-      </SectionNote>
     </div>
   );
 }

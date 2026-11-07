@@ -152,9 +152,6 @@ export default function ProfilePage() {
         <div className="flex flex-wrap gap-1.5 [&>span]:whitespace-normal">
           {(session?.grants ?? []).map((g, i) => <Info key={i}>{nhanPhamVi(g)}</Info>)}
         </div>
-        <SectionNote>
-          <ChuDam chu={t('Vai trò và chi nhánh do <b>Quản trị hệ thống</b> cấp — không tự sửa được ở đây, vì tự cấp cho mình thì bước duyệt thành vô nghĩa.')} />
-        </SectionNote>
       </Card>
 
       <Card title={t('Đổi mật khẩu')}

@@ -121,7 +121,6 @@ export function NganXuatDiem({ branchId, lopFt, lopDau, onDong }: { branchId: nu
       </Khoi>
       <Khoi tieuDe={t('Xem trước cột · {n} cột', { n: cot.length })}>
         <p className="m-0 text-xs leading-relaxed text-slate-300">{cot.join(' · ')}</p>
-        {noiDung === 'chi-diem' && <p className="m-0 text-xs text-slate-400">{t('“Chỉ điểm” bỏ 2 cột nhận xét.')}</p>}
         <p className="m-0 text-xs text-slate-400" aria-live="polite">
           {loiMay ? <span className="text-bad">{loiMay}</span>
             : hienTai ? `${hienTai.boLoc} · ${t('Kèm sheet “Thông tin xuất”')}` : loiNhap ? '' : t('Đang tính…')}

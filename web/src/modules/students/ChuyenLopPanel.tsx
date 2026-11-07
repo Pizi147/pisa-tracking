@@ -307,7 +307,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
             {chonTheoCk && (
               <label className="flex min-h-[44px] cursor-pointer items-start gap-2 text-[13px] text-slate-300 sm:min-h-0">
                 <input type="checkbox" className="mt-0.5 h-4 w-4" checked={theoCk} disabled={busy} onChange={(e) => { setTheoCk(e.target.checked); setToClassId(null); }} />
-                <span>{t('Theo luồng chuyển tiếp lộ trình')}<span className="block text-xs text-slate-500">{t('Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển ngay, không Test đi kèm.')}</span></span>
+                <span>{t('Theo luồng chuyển tiếp lộ trình')}</span>
               </label>
             )}
             <Truong nhan={t('Lớp chuyển đến')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
@@ -317,9 +317,6 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
                 <span className="mt-1 block text-xs text-slate-500">{[`${t('GVCN')} ${dich.gvcn ?? t('chưa có')}`, dich.tuan ? t('tuần học {n}', { n: dich.tuan.replace(/^W/, '') }) : null].filter(Boolean).join(' · ')}</span>
               )}
             </Truong>
-            {!dx && dich && dangHoc && dich.chiNhanhId !== dangHoc.chiNhanhId && (
-              <p className="m-0 text-xs text-soon">{t('Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo “Sắp nhận”.')}</p>
-            )}
             <Truong nhan={dx ? t('Từ tuần') : t('Tuần bắt đầu')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'tuan')}>
               {dx ? <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel={t('Từ tuần')} chuaChon={t('Chưa chọn')} />
                 : <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />}
@@ -336,11 +333,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
             {oReset && <OResetBac checked={resetBac} onChange={setResetBac} disabled={busy} phu={t('Đang ở {bac}', { bac: tenBac(bacNay) })} />}
           </Khoi>
 
-          {dx ? (
-            <p className="mb-0 mt-3 text-xs text-slate-400">
-              {t('Gửi thành thẻ trong Chờ duyệt của Quản lý (loại Thông tin HV, hạn 5 ngày). Quản lý duyệt = ra quyết định chuyển lớp; Quản lý được sửa lớp và tuần trước khi duyệt.')}
-            </p>
-          ) : toClassId && (
+          {!dx && toClassId && (
             <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay, không hoàn tác')}` : t('Khi chuyển, web sẽ')}>
               {!xemLop ? <p className="m-0 text-sm text-slate-400">{xem.error ? xem.error.message : t('Đang xem trước…')}</p> : (
                 <div className={xemLop.canhBao || ngayNay ? 'rounded-lg border p-3' : ''} style={xemLop.canhBao || ngayNay ? khoiVang : undefined} role={xemLop.canhBao || ngayNay ? 'note' : undefined}>

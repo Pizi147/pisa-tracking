@@ -117,10 +117,6 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                   dot={{ loai: 'ft', attemptNo: bang.soKeTiep }} attemptId={null} kn={{}} kyNangDau={null}
                   onClose={() => setThemMt(null)} onSaved={doiLich} onHienDien={setHopMo} />
               )}
-
-              <SectionNote>
-                {t('Hệ thống chỉ đề xuất ba lượt đầu — đa số em chỉ làm ba lượt, MT4 và MT5 là dự phòng, thêm bằng "+ Thêm MT" (tuần cách ≥ 2 tuần = MT cũ). Lượt nào Quản lý đã chốt tay hoặc em đã làm xong thì đứng yên, kể cả khi đổi lại tuần bắt đầu học.')}
-              </SectionNote>
             </div>
           )}
         </div>

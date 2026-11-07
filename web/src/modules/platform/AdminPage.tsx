@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, ErrorState, Info, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { Card, ErrorState, Info, Skeleton, Th } from '../../ui/ui.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
@@ -116,7 +117,6 @@ function ConfigTab({ data, onDone }: { data: AdminData; onDone: () => void }) {
               </li>
             ))}
           </ul>
-          <SectionNote>{t('Tutor part-time là đơn vị báo cáo riêng, không phải chi nhánh thứ sáu.')}</SectionNote>
         </Card>
 
         <Card title={t('Nhật ký thay đổi gần nhất')} bodyClass="p-0">
@@ -265,7 +265,20 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
   };
 
   return (
-    <Card title={t('Quyền theo vai trò')} bodyClass="p-0"
+    <Card title={<span className="inline-flex items-center gap-1.5">{t('Quyền theo vai trò')}<NutLuat>
+          {t('Quyền = quyền của vai trò × phạm vi chi nhánh của CHÍNH grant đó × phân công lớp/kỹ năng. Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.')}
+            <br />
+            {t('Bấm "Sửa quyền", đổi các ô cần đổi rồi bấm Lưu: hộp xác nhận liệt kê từng thay đổi và số tài khoản bị ảnh hưởng. Chỉ các ô đã đổi được gửi, mỗi ô một dòng nhật ký ở cuối trang (sửa bảng quyền là việc phải tra lại được). Bấm "Huỷ thay đổi" thì không ghi gì.')}
+            <br />
+            <strong>{t('Ô có dấu khoá không bấm được')}</strong>{t(', lý do ghi ngay dưới tên quyền: hai quyền')} <strong>{t('Cấu hình hệ thống')}</strong> {t('và')}
+            <strong> {t('Xem học viên')}</strong> {t('của vai Quản trị hệ thống không gỡ được (gỡ xong thì không còn ai vào lại được màn này);')}
+            <strong> {t('Chốt tuần MT')}</strong> {t('không bật cho Giáo viên (SCH-01: giáo viên chỉ dời lịch lớp thường, chốt tuần MT và xếp lịch Fast Track là việc của Quản lý); quyền phân công GV bộ môn chỉ tự có theo chủ nhiệm, không bật theo vai.')}
+            <br />
+            <strong>{t('Cột GVCN (chỉ đọc):')}</strong> {t('GVCN có mọi quyền của Giáo viên, cộng các quyền tự có theo phân công chủ nhiệm — chỉ trong lớp mình chủ nhiệm, không bật/tắt ở đây. Đổi quyền của GVCN là đổi phân công chủ nhiệm ở màn Lớp.')}
+            <br />
+            <strong>{t('Quyền dẫn xuất khác (không có ô bật/tắt):')}</strong> <em>{t('Xem hồ sơ giáo viên')}</em> {t('— chính mình; Quản lý: giáo viên thuộc chi nhánh mình (có vai hoặc đang dạy lớp ở đó); Quản trị hệ thống: tất cả.')}
+            {' '}<em>{t('Xuất Excel kết quả Test')}</em> {t('— Quản lý và Quản trị hệ thống (trong phạm vi của mình), Giáo viên chủ nhiệm (lớp mình chủ nhiệm).')}
+        </NutLuat></span>} bodyClass="p-0"
       action={!dangSua && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setDangSua(true)}>{t('Sửa quyền')}</button>}>
       {/* ≥ 640px: bảng. Cột "Quyền" rộng nhất vì mang mô tả; cột vai hẹp, căn giữa. */}
       <div className="hidden sm:block table-scroll bang-dinh">
@@ -353,22 +366,6 @@ function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
           </>
         } />
 
-      <div className="p-3">
-        <SectionNote>
-          {t('Quyền = quyền của vai trò × phạm vi chi nhánh của CHÍNH grant đó × phân công lớp/kỹ năng. Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.')}
-          <br />
-          {t('Bấm "Sửa quyền", đổi các ô cần đổi rồi bấm Lưu: hộp xác nhận liệt kê từng thay đổi và số tài khoản bị ảnh hưởng. Chỉ các ô đã đổi được gửi, mỗi ô một dòng nhật ký ở cuối trang (sửa bảng quyền là việc phải tra lại được). Bấm "Huỷ thay đổi" thì không ghi gì.')}
-          <br />
-          <strong>{t('Ô có dấu khoá không bấm được')}</strong>{t(', lý do ghi ngay dưới tên quyền: hai quyền')} <strong>{t('Cấu hình hệ thống')}</strong> {t('và')}
-          <strong> {t('Xem học viên')}</strong> {t('của vai Quản trị hệ thống không gỡ được (gỡ xong thì không còn ai vào lại được màn này);')}
-          <strong> {t('Chốt tuần MT')}</strong> {t('không bật cho Giáo viên (SCH-01: giáo viên chỉ dời lịch lớp thường, chốt tuần MT và xếp lịch Fast Track là việc của Quản lý); quyền phân công GV bộ môn chỉ tự có theo chủ nhiệm, không bật theo vai.')}
-          <br />
-          <strong>{t('Cột GVCN (chỉ đọc):')}</strong> {t('GVCN có mọi quyền của Giáo viên, cộng các quyền tự có theo phân công chủ nhiệm — chỉ trong lớp mình chủ nhiệm, không bật/tắt ở đây. Đổi quyền của GVCN là đổi phân công chủ nhiệm ở màn Lớp.')}
-          <br />
-          <strong>{t('Quyền dẫn xuất khác (không có ô bật/tắt):')}</strong> <em>{t('Xem hồ sơ giáo viên')}</em> {t('— chính mình; Quản lý: giáo viên thuộc chi nhánh mình (có vai hoặc đang dạy lớp ở đó); Quản trị hệ thống: tất cả.')}
-          {' '}<em>{t('Xuất Excel kết quả Test')}</em> {t('— Quản lý và Quản trị hệ thống (trong phạm vi của mình), Giáo viên chủ nhiệm (lớp mình chủ nhiệm).')}
-        </SectionNote>
-      </div>
     </Card>
   );
 }

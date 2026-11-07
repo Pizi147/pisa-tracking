@@ -422,7 +422,6 @@ export const EN_A = {
   /* Câu có chữ đậm (<ChuDam />) */
   'Tài khoản <b>Quản trị hệ thống</b> mặc định:': 'Default <b>System admin</b> account:',
   'Tài khoản của bạn đang <b>chờ Quản trị hệ thống duyệt</b>.': 'Your account is <b>waiting for system admin approval</b>.',
-  'Vai trò và chi nhánh do <b>Quản trị hệ thống</b> cấp — không tự sửa được ở đây, vì tự cấp cho mình thì bước duyệt thành vô nghĩa.': 'Roles and branches are granted by the <b>System admin</b> — you cannot change them here; self-granting would make approval meaningless.',
   'Bản demo không gửi email thật nên <b>không có luồng quên mật khẩu</b>. Quên thì nhờ Quản trị hệ thống đặt lại hộ.': 'The demo sends no real email, so there is <b>no password reset</b>. If you forget, ask the system admin to reset it.',
 
   /* Tên môn lớp thường (máy chủ gửi) */

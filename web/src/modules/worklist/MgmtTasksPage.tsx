@@ -586,7 +586,7 @@ function SuaViec({ onClose, dongCa, task, onDone }: {
         <Field label={t('Người phụ trách')}>
           <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choNgoai macDinhTrong={t('Chưa giao')} />
         </Field>
-        <Field label={t('Người theo dõi')} hint={t('Nhìn thấy công việc nhưng KHÔNG sửa được.')}>
+        <Field label={t('Người theo dõi')}>
           <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong={t('Không có')} />
         </Field>
         <Field label={t('Hạn')}>
@@ -774,11 +774,6 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
                 </div>
               )}
             </Field>
-            <SectionNote>
-              {t('Việc này hiện trong hồ sơ của')} <strong>{cls ? t('{n} em lớp {lop}', { n: cls.studentCount, lop: cls.code }) : t('từng em trong lớp')}</strong>
-              {t(', ở đúng ô kỹ năng đã chọn — nhưng vẫn là')} <strong>{t('một việc')}</strong>
-              {t(', cập nhật một lần. Em nào chưa có Case ở kỹ năng đó thì hệ thống mở Case mới, ghi rõ là mở theo yêu cầu QL, và đưa thẳng vào')} <em>{t('đang xử lý')}</em> {t('— PA chính là việc này.')}
-            </SectionNote>
           </>
         ) : (
           <>
@@ -792,12 +787,12 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
             <Field label={t('Người phụ trách')}>
               <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai macDinhTrong={t('Chưa giao')} />
             </Field>
-            <Field label={t('Người theo dõi')} hint={t('Nhìn thấy công việc nhưng KHÔNG sửa được.')}>
+            <Field label={t('Người theo dõi')}>
               <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong={t('Không có')} />
             </Field>
           </>
         )}
-        <Field label={t('Hạn')} hint={parent ? t('Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.') : undefined}>
+        <Field label={t('Hạn')}>
           <ONgay kieu="ngay" value={due} onChange={setDue} />
         </Field>
         {!parent && !giaoGv && (

@@ -56,7 +56,6 @@ export const EN_SOT_HOP_QL = {
   'Sửa công việc': 'Edit task',
   'Người theo dõi': 'Follower',
   'Chưa giao': 'Unassigned',
-  'Nhìn thấy công việc nhưng KHÔNG sửa được.': 'Can see the task but CANNOT edit it.',
   '2–200 ký tự — hạn cũ vẫn hiện lại ở cột Hạn, không mất.': '2–200 characters — the old due date stays visible in the Due column.',
   'Ví dụ: Chờ duyệt ngân sách nhà cung cấp': 'E.g. Waiting for supplier budget approval',
   'Chưa xác định được tuần — bấm Thử lại.': 'Week not resolved — press Retry.',
@@ -73,16 +72,7 @@ export const EN_SOT_HOP_QL = {
   'Đang lấy tuần hiện tại…': 'Getting the current week…',
   'Chưa lấy được tuần hiện tại nên chưa giao được.': 'Could not load the current week, so the task cannot be assigned yet.',
   'Không xác định được tuần hiện tại nên chưa giao được.': 'The current week is not set, so the task cannot be assigned yet.',
-  'Việc này hiện trong hồ sơ của': 'This task shows in the profile of',
-  '{n} em lớp {lop}': (b) => `${soNhieu(b.n, 'student', 'students')} in ${b.lop}`,
-  'từng em trong lớp': 'each student in the class',
-  ', ở đúng ô kỹ năng đã chọn — nhưng vẫn là': ', in the chosen skill cell — but it is still',
-  'một việc': 'one task',
-  ', cập nhật một lần. Em nào chưa có Case ở kỹ năng đó thì hệ thống mở Case mới, ghi rõ là mở theo yêu cầu QL, và đưa thẳng vào':
-    ', updated once. Students without a case in that skill get a new case, marked as opened at the manager’s request, and moved straight to',
   'đang xử lý': 'in progress',
-  '— PA chính là việc này.': '— this task is the PA.',
-  'Mặc định là hạn của việc cha trừ một ngày — sửa được ngay.': 'Defaults to the parent due date minus one day — editable.',
 
   /* Báo cáo đơn vị (MeetingPage) */
   'Số lượng': 'Count',
@@ -134,10 +124,6 @@ export const EN_SOT_HOP_QL = {
   /* Việc đang tồn (SignalList) · Việc được giao (ManagerTasks) */
   '{n} loại việc': (b) => soNhieu(b.n, 'task type', 'task types'),
   'Không còn việc nào hệ thống tự nhìn ra được trong phạm vi của bạn.': 'No system-detected tasks left in your scope.',
-  'Những việc này': 'These tasks',
-  'tự hết khi dữ liệu nguồn được xử lý': 'clear themselves once the source data is handled',
-  '— không có nút đánh dấu đã xong, vì đánh dấu chỉ che một con số vẫn đang đúng. Bấm một dòng để mở đúng những bản ghi tạo nên nó. Việc quản lý đặc thù (liên hệ phụ huynh, tổ chức bổ trợ…) mới cần nhập tay ở phần dưới.':
-    '— there is no mark-as-done button, since marking would only hide a number that is still true. Click a row to open the records behind it. Only special management tasks (contacting parents, arranging extra classes…) need manual entry below.',
   'Chưa giao việc nào trong tuần này': 'No tasks assigned this week',
   'Việc chi nhánh là chuyện giáo trình và vận hành. Việc giao giáo viên gắn với lớp và kỹ năng, và hiện luôn trong hồ sơ từng em.':
     'Branch tasks cover materials and operations. Teacher tasks are tied to a class and skill, and show in each student’s profile.',

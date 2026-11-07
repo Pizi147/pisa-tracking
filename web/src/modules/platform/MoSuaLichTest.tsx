@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { fmtDateTime } from '../../lib/format.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, ErrorState, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -58,9 +58,6 @@ export function MoSuaLichTest() {
                 </span>
               )}
             </div>
-            <SectionNote>
-              {t('Mở: GVCN (lớp mình), Admin, Quản lý sửa được lịch Test kể cả Thứ Sáu – CN.')}
-            </SectionNote>
           </div>
         )}
     </Card>

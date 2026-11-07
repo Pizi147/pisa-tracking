@@ -104,8 +104,7 @@ export function ChuongLop({ chuong, lapLai, homNay, onChon }: {
       {lapLai.map((l) => (
         <p key={l.kyNang} className="m-0 flex items-start gap-2.5 rounded-[10px] px-3 py-[9px] text-[13px] text-slate-200" style={{ background: 'var(--surface-2)' }}>
           <span className="mt-[3px] text-late"><IconCanhBao /></span>
-          <span><b className="font-semibold">{t('Lặp lại qua các lớp:')}</b> {t('{kn} có Case ở {lop}.', { kn: dich(l.kyNang), lop: l.lop.join(', ').replace(/, ([^,]*)$/, ` ${t('và')} $1`) })}{' '}
-            <span className="text-slate-400">{t('Hệ thống tự viết dòng này khi một kỹ năng có Case ở hai lớp trở lên.')}</span></span>
+          <span><b className="font-semibold">{t('Lặp lại qua các lớp:')}</b> {t('{kn} có Case ở {lop}.', { kn: dich(l.kyNang), lop: l.lop.join(', ').replace(/, ([^,]*)$/, ` ${t('và')} $1`) })}</span>
         </p>
       ))}
     </section>

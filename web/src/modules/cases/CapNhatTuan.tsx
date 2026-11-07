@@ -353,7 +353,6 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           <Truong nhan={t('Cần Quản lý giúp gì')} batBuoc loi={loiCua('ly-do')}>
             <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
-          <p className="m-0 text-xs text-slate-400">{t('Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi')}</p>
         </div>
       );
     }
@@ -365,7 +364,6 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const khoiDoi = deXuat ? (
     <div className="space-y-2">
       <FormDoiPa d={doi} lf={lf} />
-      <p className="m-0 text-xs text-slate-400">{t('PA hiện tại chạy tới khi Quản lý duyệt')}</p>
     </div>
   ) : null;
   /* Quyết định bị chặn theo kết quả (vd "Chưa đủ dữ liệu" thì chưa Kết thúc) — bấm thì nói lý do ngay dưới, không chọn. */
@@ -448,7 +446,6 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
                   ))}
                 </ol>
               )}
-              {!coDem && coSoBuoi(pa.kind) && <span className="text-xs text-slate-400">{t('PA chưa có Số buổi — thêm ở thẻ PA (dòng Số buổi) nếu muốn đếm.')}</span>}
             </div>
           )}
           {coMiniTest && (

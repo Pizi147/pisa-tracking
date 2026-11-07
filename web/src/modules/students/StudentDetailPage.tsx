@@ -515,8 +515,6 @@ function KhoiMockTest({ cy, attempts, dotId, homNay, onOpen }: { cy: any; attemp
   return (
     <>
       {attempts.length === 0 && !th ? <div className="p-4"><Empty title={t('Chưa có lượt đánh giá nào trong lộ trình này')} /></div> : <>
-        {/* RF: kỳ vọng mọi MT bằng target — nói một lần ở đầu khối, không lặp ở từng hàng. */}
-        {cy.route === 'RF' && <p className="m-0 px-3 pt-2 text-xs text-slate-500">{t('Lộ trình RF — kỳ vọng mọi MT bằng Target.')}</p>}
         {/* Tăng dần như mockup M5: đọc cùng chiều chart, Thi thật là hàng cuối (kết quả cuối của lộ trình). */}
         <IeltsAttempts attempts={[...attempts].sort((x, y) => (x.weekStart ?? '9999').localeCompare(y.weekStart ?? '9999') || x.attemptNo - y.attemptNo)} dotId={dotId} homNay={homNay} onOpen={onOpen} thi={th} />
       </>}

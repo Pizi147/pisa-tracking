@@ -1,5 +1,5 @@
 import { useApi } from '../../lib/useApi.ts';
-import { ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
+import { ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { TyLe } from '../../ui/TyLe.tsx';
 import { NeedsEvaluation } from '../cases/NeedsEvaluation.tsx';
 import { SoO } from '../phanTich/dungChung.tsx';
@@ -100,8 +100,6 @@ export function VanDeKyNang({ classId, category }: { classId: number; category: 
       {/* F05: phương án đã kết thúc mà chưa ai ghi kết quả KHÔNG nằm trong bảng — liên kết riêng, ngoài bảng. */}
       <NeedsEvaluation count={data.needsEvaluation.count}
         url={`/classes/${classId}/issue-board/needs-evaluation?category=${category}`} />
-
-      <SectionNote>{t('Một Case chỉ đếm một lần. Mọi số bấm được ra danh sách đúng số đó.')}</SectionNote>
     </div>
   );
 }

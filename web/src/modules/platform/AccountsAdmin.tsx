@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, SectionNote, Skeleton, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, Skeleton, Th} from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -121,7 +121,7 @@ export function AccountsAdmin() {
         bodyClass="p-0">
         {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. Rỗng thì một dòng xám. */}
         {pending.length === 0 ? (
-          <p className="m-0 px-4 py-3 text-sm text-slate-500">{t('Không có đăng ký nào đang chờ. Giáo viên tự đăng ký ở màn đăng nhập sẽ hiện ở đây.')}</p>
+          <p className="m-0 px-4 py-3 text-sm text-slate-500">{t('Không có đăng ký nào đang chờ.')}</p>
         ) : (
           <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {pending.map((u) => (
@@ -208,11 +208,6 @@ export function AccountsAdmin() {
               )) : rows.map((u) => hang(u, u.id))}
             </tbody>
           </table>
-        </div>
-        <div className="p-3">
-          <SectionNote>
-            {t('Một người mang được')} <strong>{t('nhiều vai ở nhiều chi nhánh')}</strong> {t('(QL kiêm GV được). QT hoặc QL nắm ≥ 2 vai thì đổi được góc nhìn.')}
-          </SectionNote>
         </div>
       </Card>
 
