@@ -241,7 +241,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     ghi(ivId, 'end');
     cases.closeCaseOutcome(GV, caseId, { outcome: 'much_better', note: 'MT3 Listening lên 6.0, không còn sai dạng điền số' });
     e = loi(() => cases.suaKetQua(GV, fuMoi(ivId).id, LUA_CHON.keep));
-    assert(e?.status === 400 && /Mở lại/.test(e.message), JSON.stringify(e));
+    assert(e?.status === 409 && /mở lại Case/.test(e.message), JSON.stringify(e));   // RKC-2b: đổi lựa chọn → hỏi Mở lại
     /* GET điền sẵn nói đúng câu chặn, không ném */
     const mo = cases.moSuaKetQua(GV, fuMoi(x.ivId).id);
     assert(/PA thay thế đã có kết quả/.test(mo.chan ?? ''), JSON.stringify(mo.chan));
@@ -289,7 +289,8 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     const cu = get('SELECT * FROM case_followups WHERE case_id = ? AND next_step IS NULL ORDER BY id DESC LIMIT 1', caseId);
     cases.recordFollowUp(GV, caseId, { interventionId: ivId, outcome: 'improved', note: 'Xem lại lần hai: đúng hết số' });
     const moi = get('SELECT * FROM case_followups WHERE case_id = ? AND next_step IS NULL ORDER BY id DESC LIMIT 1', caseId);
-    assert(loi(() => cases.suaXemLai(GV, cu.id, { outcome: 'worse', note: 'Sửa lần cũ' }))?.status === 400, 'lần cũ 400');
+    cases.suaXemLai(GV, cu.id, { outcome: 'worse', note: 'Sửa lần cũ' });   // RKC-2b: lần xem lại cũ sửa được (không hệ quả)
+    assert(get('SELECT outcome FROM case_followups WHERE id = ?', cu.id).outcome === 'worse', 'lần cũ sửa được');
     assert(loi(() => cases.suaXemLai(P.w1Teacher, moi.id, { outcome: 'worse', note: 'Sửa của người khác' }))?.status === 403, 'GV khác 403');
     cases.suaXemLai(GV, moi.id, { outcome: 'unchanged', note: 'Xem lại lần hai: còn nhầm 15 và 50' });
     const sau = get('SELECT * FROM case_followups WHERE id = ?', moi.id);
@@ -299,7 +300,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     assert(nk.length === 1 && JSON.parse(nk[0].before_json).outcome === 'improved' && JSON.parse(nk[0].after_json).outcome === 'unchanged', JSON.stringify(nk));
     cases.suaXemLai(QL, moi.id, { outcome: 'improved', note: 'QL sửa: đúng hết số' });
     assert(loi(() => cases.suaXemLai(GV, moi.id, { outcome: 'bogus', note: 'x' }))?.status === 400, 'kết quả sai 400');
-    assert(cases.caseDetail(GV, caseId).followups.filter((f: any) => f.suaDuoc && f.nextStep === null).map((f: any) => f.id).join() === String(moi.id), 'cờ sửa đúng lần mới nhất');
+    assert(cases.caseDetail(GV, caseId).followups.filter((f: any) => f.suaDuoc && f.nextStep === null).map((f: any) => f.id).sort().join() === [cu.id, moi.id].sort().join(), 'RKC-2b: cờ sửa ở mọi lần xem lại');
   }));
 
   // ==================================================================== 6 · Mở lại Case: người đã hoàn thành (GV) như QL

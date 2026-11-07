@@ -223,7 +223,7 @@ export function duocDoiChuCase(p: Principal, caseId: number): boolean {
 export function doiChuCua(p: Principal, caseId: number) {
   const c = caseDoiChu(caseId);
   const ungVien = c ? ungVienCua(c) : [];
-  const duoc = !!c && c.status !== 'done' && !c.tam && ungVien.some((u) => u.id !== c.owner_user_id) && duocDoi(p, c);
+  const duoc = !!c && !c.tam && ungVien.some((u) => u.id !== c.owner_user_id) && duocDoi(p, c);
   return { duoc, ungVien: duoc ? ungVien : [] };
 }
 
@@ -242,8 +242,7 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
     const c: CaseDoiChu = { ...lc, student_id: lc.eff_student_id, class_id: lc.current_class_id ?? null,
       full_name: (db().prepare('SELECT full_name FROM students WHERE id = ?').get(lc.eff_student_id) as any)?.full_name ?? null };
     if (!duocDoi(p, c)) throw loi(403, 'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.');
-    /* RKC-2a: Case đã đóng không còn việc để giao (đổi người không đổi đầu ra) — câu chỉ đường. */
-    if (c.status === 'done') throw loi(400, 'Case đã đóng — Mở lại Case nếu cần người phụ trách mới.');
+    /* RKC-2b (PTA 07/11 "không chặn ở bất kỳ đâu"): Case đã đóng đổi người phụ trách thẳng được — lịch sử `sos_case_history` + nhật ký; web Hoàn tác = đổi lại người cũ. */
     if (c.tam) throw loi(400, 'Case tạm chưa là việc — chưa đổi người được.');
     if (c.owner_user_id !== ownerCu) throw loi(409, 'Người phụ trách vừa đổi — tải lại.');
     if (ownerId === ownerCu) throw loi(400, 'Người này đang phụ trách Case.');

@@ -288,7 +288,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   );
 
   /* ─── Phương án */
-  const themPaDuoc = !!vw.canEdit && !(   /* RKC-2a: Case đã hoàn thành → máy chủ hỏi rồi Mở lại Case */data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam);
+  /* RKC-2a / 2b: Case đã hoàn thành, chờ duyệt "Không cần theo dõi" → vẫn hiện; máy chủ hỏi (Mở lại Case / rút đề nghị). */
+  const themPaDuoc = !!vw.canEdit && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.tam);
   const coPaBatBuoc = (data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'));
   const the = (iv: any) => (
     <ThePa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} toi={toi}
@@ -429,7 +430,7 @@ function PhuTrach({ data, toi, onDoi, reload }: { data: CaseDetail; toi: number 
   const [daDoi, setDaDoi] = useState<{ cu: number | null; ten: string } | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const bao = useContext(BaoLuuCase);
-  const duoc = data.status !== 'done' && !!data.doiChu?.duoc;
+  const duoc = !!data.doiChu?.duoc;   // RKC-2b: Case đã đóng cũng đổi người được (máy chủ quyết)
   const ten = data.owner ?? t('Chưa có');
   const ds = (data.doiChu?.ungVien ?? []).map((u) => ({ id: u.id, ten: u.ten ?? '—' }));
   const doi = async (id: number, cu: number | null) => {
@@ -836,15 +837,16 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         </dd>
       </>}
       <dt>{t('Bắt đầu')}</dt>
-      <dd>{coKetQua || !nut.sua
-        ? <><span className="tabular-nums">{iv.startedDate ? (iv.completedDate ? chuKhoangPa({ startedOn: iv.startedDate, completedOn: iv.completedDate }, homNay) : `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}`) : '—'}</span>{coKetQua && nut.sua && <span className="text-[13px] text-faint">{t('đã có kết quả — không đổi')}</span>}</>
+      {/* RKC-2b: đổi Ngày bắt đầu cả khi đã có kết quả — máy chủ chỉ chặn ngày SAU lần ghi đầu (câu báo tại ô). */}
+      <dd>{!nut.sua
+        ? <span className="tabular-nums">{iv.startedDate ? (iv.completedDate ? chuKhoangPa({ startedOn: iv.startedDate, completedOn: iv.completedDate }, homNay) : `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}`) : '—'}</span>
         : tt('batDau')
           ? <ONgay kieu="ngay" value={iv.startedDate ?? ''} ariaLabel={t('Bắt đầu')} onChange={(x) => { if (x && x !== iv.startedDate) void luuNgay(() => luuTruong({}, x)); }} />
           : <GiaTriSua kieu="go" nhan={t('Đổi ngày bắt đầu')} onClick={() => setSua('batDau')}><span className="tabular-nums">{iv.startedDate ? `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}` : t('Chưa đặt')}</span></GiaTriSua>}</dd>
       {!iv.awaitingConfirmation && <>
         <dt>{t('Kết quả')}</dt>
         <dd>{fGan ? <>
-          <GiaTriSua kieu="go" nhan={t('Sửa kết quả {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) })} sua={!!fSua && fSua.id === fGan.id && !caseXong} onClick={() => setForm({ suaKq: fGan.id })}>
+          <GiaTriSua kieu="go" nhan={t('Sửa kết quả {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) })} sua={!!fSua && fSua.id === fGan.id} onClick={() => setForm({ suaKq: fGan.id })}>   {/* RKC-2b: Case xong vẫn sửa (đổi lựa chọn: máy chủ hỏi Mở lại) */}
             <span className={`ket ${LOP_KET[OUTCOME_TONE[fGan.outcome as keyof typeof OUTCOME_TONE]] ?? 'cd'}`}>{dich(outcomeLabelFor(fGan.outcome))}</span>
             <span className="text-[13px] text-slate-300">{tuanLich(fGan.observedOn, homNay)}{fGan.note ? <> · “<ChuDich chu={fGan.note} nguon={{ bang: 'case_followups', id: fGan.id, cot: 'note' }} />”</> : null}</span>
           </GiaTriSua>

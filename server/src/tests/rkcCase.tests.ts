@@ -8,6 +8,7 @@ export async function runRkcCaseTests(t: any) {
   const d: any = await import('../../../shared/domain/index.ts');
   const cases: any = await import('../cases/cases.ts');
   const { voiXacNhan, xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const yc: any = await import('../duyet/yeuCau.ts');
   const mot = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const thu = (fn: () => void) => { conn.exec('BEGIN IMMEDIATE'); try { fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); } };
   const loi = (fn: () => unknown): any => { try { fn(); return null; } catch (e) { return e; } };
@@ -85,5 +86,66 @@ export async function runRkcCaseTests(t: any) {
     cases.moLaiCase(QL, c);
     const sc = mot('SELECT status, system_close_reason r FROM sos_cases WHERE id = ?', c);
     assert(sc.status !== 'done' && sc.r === null, JSON.stringify(sc));
+  }));
+
+  const KQ = { decision: 'keep', outcome: 'partial', note: 'Đúng 15/20 câu điền số tuần này', soBuoi: 0 };
+  const fuMoi = (ivId: number) => mot('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId);
+
+  check('RKC2b-1 · + Thêm PA khi Case chờ QL duyệt "Không cần theo dõi" → hỏi; đồng ý → PA thêm + thẻ đóng (rút)', () => thu(() => {
+    const c = taoCase(moiEm());
+    yc.taoYeuCau(conn, { loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: c, hocVienId: null, nguoiXin: P.lrTeacher.userId, lyDo: 'Một lần sơ suất', duLieu: { reasonCode: 'single_incident' } });
+    xoaNho();
+    const e = loi(() => themPa(c));
+    assert(e?.status === 409 && e.details?.canXacNhan && /Không cần theo dõi/.test(e.message), `phải hỏi: ${e?.status} ${e?.message}`);
+    const id = voiXacNhan(() => themPa(c));
+    assert(pa(id).status === 'started', 'PA phải thêm');
+    assert(mot(`SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'khong_theo_doi' AND doi_tuong_id = ? AND trang_thai = 'cho'`, c).n === 0, 'thẻ phải rút');
+  }));
+
+  check('RKC2b-2 · Kết quả PA trên Case đã hoàn thành: sửa chữ thẳng (Case giữ xong); đổi lựa chọn → hỏi → Mở lại Case', () => thu(() => {
+    const c = taoCase(moiEm()); const iv = themPa(c);
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết' });
+    cases.closeCaseOutcome(QL, c, KL);
+    const f = fuMoi(iv).id;
+    cases.suaKetQua(QL, f, { decision: 'end', outcome: 'improved', note: 'Em nghe số, tên riêng và ngày tháng đúng hết' });
+    assert(mot('SELECT status FROM sos_cases WHERE id = ?', c).status === 'done' && /ngày tháng/.test(fuMoi(iv).note), 'sửa chữ, Case giữ xong');
+    const e = loi(() => cases.suaKetQua(QL, f, { decision: 'end', outcome: 'partial', note: 'Em nghe số, tên riêng và ngày tháng đúng hết' }));
+    assert(e?.status === 409 && e.details?.canXacNhan, `đổi lựa chọn phải hỏi: ${e?.status} ${e?.message}`);
+    voiXacNhan(() => cases.suaKetQua(QL, f, { decision: 'end', outcome: 'partial', note: 'Em nghe số, tên riêng và ngày tháng đúng hết' }));
+    assert(mot('SELECT status FROM sos_cases WHERE id = ?', c).status !== 'done' && fuMoi(iv).outcome === 'partial', 'Case mở lại + kết quả đổi');
+  }));
+
+  check('RKC2b-3 · lần ghi Kết quả CŨ: sửa chữ được; đổi lựa chọn → 400 nói "ở lần ghi gần nhất"', () => thu(() => {
+    const c = taoCase(moiEm()); const iv = themPa(c);
+    cases.updateResult(P.lrTeacher, iv, KQ);
+    const cu = fuMoi(iv).id;
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, note: 'Đúng 17/20 câu điền số tuần này' });
+    cases.suaKetQua(P.lrTeacher, cu, { ...KQ, note: 'Đúng 15/20 câu điền số, nhầm 15 và 50' });
+    assert(mot('SELECT note FROM case_followups WHERE id = ?', cu).note === 'Đúng 15/20 câu điền số, nhầm 15 và 50', 'sửa chữ lần cũ');
+    const e = loi(() => cases.suaKetQua(P.lrTeacher, cu, { ...KQ, outcome: 'improved' }));
+    assert(e?.status === 400 && /lần ghi gần nhất/.test(e.message), `${e?.status} ${e?.message}`);
+  }));
+
+  check('RKC2b-4 · Sửa PA đã kết thúc (nội dung) + đổi Ngày bắt đầu PA đã có Kết quả (trước lần đầu được, sau lần đầu 400)', () => thu(() => {
+    const c = taoCase(moiEm()); const iv = themPa(c);
+    cases.updateResult(P.lrTeacher, iv, KQ);
+    const dau = fuMoi(iv).observed_on as string;
+    const lui = new Date(Date.parse(dau) - 10 * 864e5).toISOString().slice(0, 10);
+    cases.suaPa(P.lrTeacher, iv, { startedDate: lui });
+    assert(mot('SELECT started_date d FROM case_interventions WHERE id = ?', iv).d === lui, 'ngày bắt đầu trước KQ đầu');
+    const sau = new Date(Date.parse(dau) + 864e5).toISOString().slice(0, 10);
+    assert(loi(() => cases.suaPa(P.lrTeacher, iv, { startedDate: sau }))?.status === 400, 'sau KQ đầu → 400');
+    cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết' });
+    cases.suaPa(P.lrTeacher, iv, { description: 'Tự học Listening — nghe chép 20 phút mỗi ngày' });
+    assert(pa(iv).status === 'completed' && /20 phút/.test(mot('SELECT description d FROM case_interventions WHERE id = ?', iv).d), 'sửa PA đã kết thúc');
+  }));
+
+  check('RKC2b-5 · Case đã xong chưa từng có nguyên nhân (Case SOS cũ): đổi mức / tên không đòi nhóm nguyên nhân', () => thu(() => {
+    const c = taoCase(moiEm());
+    cases.closeCaseOutcome(QL, c, KL);
+    conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(c);
+    xoaNho();
+    cases.suaCase(QL, c, { urgency: 'urgent' });
+    assert(mot('SELECT urgency FROM sos_cases WHERE id = ?', c).urgency === 'urgent', 'đổi mức được');
   }));
 }

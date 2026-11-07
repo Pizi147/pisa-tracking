@@ -185,7 +185,7 @@ export async function runPrXoaCasePaTests(t: any) {
     const lech = boGioCase(truoc, anh());
     assert(lech.length === 0, `khôi phục lệch bảng: ${lech.join(', ')}`);
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(caseId);
-    assert(maLoi(() => cases.xoaKetQuaPa(QL, cuoi.id)) === 400, 'Case đã hoàn thành mà xoá được kết quả gần nhất');
+    assert(maLoi(() => cases.xoaKetQuaPa(QL, cuoi.id)) === 409, 'Case đã hoàn thành: RKC-2b hỏi Mở lại (409), chưa xoá');
     assert(cases.xoaKetQuaPa(QL, fuCua(iv)[0].id).thungRacId > 0, 'kết quả cũ của Case đã hoàn thành phải xoá được');
   }));
 

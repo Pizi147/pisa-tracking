@@ -309,8 +309,9 @@ export const paDangChay = (pa: PaDong): boolean =>
  */
 export function nutDongPa(pa: PaDong, xem: { caseXong: boolean; coTheKetThucPa?: boolean }): { ketQua: boolean; sua: boolean; xoa: boolean; ketThuc: boolean } {
   const ghi = !!pa.ghiDuoc && paDangChay(pa);
+  /* RKC-2b: ⋯ Sửa PA cả khi PA đã kết thúc (máy chủ `suaPa` mở) — chỉ PA chưa chạy / đã huỷ không sửa. */
   return {
-    ketQua: ghi, sua: ghi, xoa: !!pa.xoa,
+    ketQua: ghi, sua: ghi || (!!pa.ghiDuoc && pa.status === 'completed'), xoa: !!pa.xoa,
     ketThuc: !!xem.coTheKetThucPa && !xem.caseXong && !!pa.preset && pa.kind !== 'bo_tro' && pa.kind !== 'bo_tro_mien_phi' && pa.status === 'started' && paDangChay(pa),
   };
 }

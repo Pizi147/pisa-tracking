@@ -320,8 +320,9 @@ export async function runPrPaTests(t: YThucTestKit) {
     cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 5, nguoiDay: { performerUserId: GV_L } });
     const nho = maLoi(() => cases.suaPa(P.lrTeacher, iv, { soBuoi: 4 }));
     assert(nho.status === 400 && nho.msg.includes('Đã dạy 5 buổi'), `số buổi < đã dạy: ${JSON.stringify(nho)}`);
-    const ngay = maLoi(() => cases.suaPa(P.lrTeacher, iv, { startedDate: t.addDays(TODAY, -20) }));
-    assert(ngay.status === 400 && ngay.msg.includes('Ngày bắt đầu'), `ngày bắt đầu sau kết quả: ${JSON.stringify(ngay)}`);
+    /* RKC-2b: PA đã có Kết quả vẫn đổi Ngày bắt đầu — chỉ không SAU lần ghi Kết quả đầu (dữ liệu không thể đúng). */
+    const ngay = maLoi(() => cases.suaPa(P.lrTeacher, iv, { startedDate: t.addDays(TODAY, 1) }));
+    assert(ngay.status === 400 && ngay.msg.includes('Ngày bắt đầu phải trước lần ghi Kết quả đầu'), `ngày bắt đầu sau kết quả đầu: ${JSON.stringify(ngay)}`);
     const loai = maLoi(() => cases.suaPa(P.lrTeacher, iv, { kind: 'self_study' }));
     assert(loai.status === 400, `đổi loại: ${JSON.stringify(loai)}`);
     assert(revCua(iv).length === 0, 'lỗi mà vẫn ghi nhật ký');
@@ -359,10 +360,10 @@ export async function runPrPaTests(t: YThucTestKit) {
     cases.suaPa(P.lrTeacher, ss, { soBuoi: 6, performerUserId: GV_L });
     const sr = get('SELECT * FROM case_interventions WHERE id = ?', ss);
     assert(sr.so_buoi === 6 && sr.performer_user_id === null && sr.performer_name === null, `Tự học: ${JSON.stringify(sr)}`);
-    /* PA đã kết thúc → 400. */
+    /* RKC-2b: PA đã kết thúc vẫn sửa Số buổi được (nhật ký sua_pa). */
     cases.updateResult(P.lrTeacher, moi.iv, { decision: 'end', outcome: 'improved', note: 'Em nghe số và tên riêng đúng hết', soBuoi: 1, nguoiDay: { performerUserId: GV_L } });
-    const ket = maLoi(() => cases.suaPa(P.lrTeacher, moi.iv, { soBuoi: 11 }));
-    assert(ket.status === 400, `PA đã kết thúc: ${JSON.stringify(ket)}`);
+    cases.suaPa(P.lrTeacher, moi.iv, { soBuoi: 11 });
+    assert(get('SELECT so_buoi FROM case_interventions WHERE id = ?', moi.iv).so_buoi === 11, 'PA đã kết thúc: sửa số buổi được');
   });
 
   check('PA6 · Điều chỉnh đổi Số buổi: ghi revisions adjust cũ → mới; nhỏ hơn đã dạy (tính cả tuần này) → 400', () => {
@@ -648,8 +649,9 @@ export async function runPrPaTests(t: YThucTestKit) {
     const n = (o: Record<string, unknown>, x: Record<string, unknown> = {}) => d.nutDongPa({ ...chay, ...o }, { ...xem, ...x });
     assert(JSON.stringify(n({})) === '{"ketQua":true,"sua":true,"xoa":false,"ketThuc":false}', JSON.stringify(n({})));
     assert(!n({ ghiDuoc: false }).sua && !n({ ghiDuoc: false }).ketQua, 'không ghi được → không Sửa PA / Kết quả');
-    for (const o of [{ status: 'completed' }, { status: 'cancelled' }, { approvalState: 'pending' }, { preset: true, confirmedAt: null, status: 'planned' }])
-      assert(!n(o).sua && !n(o).ketQua, `PA chưa chạy / đã khép: ${JSON.stringify(o)}`);
+    for (const o of [{ status: 'cancelled' }, { approvalState: 'pending' }, { preset: true, confirmedAt: null, status: 'planned' }])
+      assert(!n(o).sua && !n(o).ketQua, `PA chưa chạy / đã huỷ: ${JSON.stringify(o)}`);
+    assert(n({ status: 'completed' }).sua && !n({ status: 'completed' }).ketQua, 'RKC-2b: PA đã khép → ⋯ Sửa PA còn, không Kết quả');
     assert(n({ preset: true, confirmedAt: '2026-10-01', status: 'planned' }).sua, 'PA quy chế đã xác nhận → Sửa PA');
     /* N37: Xoá PA theo cờ máy chủ `xoa` ('ngay' | 'xin') — kể cả Case đã hoàn thành, PA quy chế (gửi QL duyệt). */
     assert(n({ xoa: 'ngay' }, { caseXong: true }).xoa && n({ xoa: 'xin', preset: true }).xoa && !n({ xoa: null }).xoa, 'Xoá PA theo cờ xoa');
@@ -660,9 +662,11 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(d.nutDongPa(dto, xem).sua === true, JSON.stringify({ ghiDuoc: dto.ghiDuoc, status: dto.status }));
     cases.updateResult(P.lrTeacher, iv, { ...KQ, decision: 'end', soBuoi: 1, nguoiDay: { performerUserId: GV_L } });
     const xong = paDto(c, iv);
-    assert(xong.status === 'completed' && !d.nutDongPa(xong, xem).sua, JSON.stringify({ status: xong.status }));
-    const loi = maLoi(() => cases.suaPa(P.lrTeacher, iv, { description: 'Tutor nghe chép 12 buổi' }));
-    assert(loi.status === 400, JSON.stringify(loi));
+    assert(xong.status === 'completed' && d.nutDongPa(xong, xem).sua, JSON.stringify({ status: xong.status }));
+    /* RKC-2b: PA đã kết thúc sửa được (nhật ký sua_pa), PA vẫn đã kết thúc. */
+    cases.suaPa(P.lrTeacher, iv, { description: 'Tutor nghe chép 12 buổi' });
+    assert(get('SELECT status, description FROM case_interventions WHERE id = ?', iv).description === 'Tutor nghe chép 12 buổi'
+      && get('SELECT status FROM case_interventions WHERE id = ?', iv).status === 'completed', 'sửa PA đã kết thúc');
   });
 
   check('PA19 · bảng kỹ năng: PA có Số buổi mang soBuoi + daDay (dòng phụ "3/10 buổi"); kết quả tuần nói nguoiDay (không còn phuTrach)', () => {

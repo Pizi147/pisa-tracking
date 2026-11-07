@@ -88,16 +88,16 @@ export async function runR1NoCuTests(t: YThucTestKit) {
     assert(maLoi(() => owner.doiChuCase(pGvcn, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 403, 'GVCN lớp cũ phải 403');
   }));
 
-  check('CHU-3 ngoài danh sách ứng viên → 400 · trùng người hiện tại → 400 · Case đã đóng → 400', () => thu(() => {
+  check('CHU-3 ngoài danh sách ứng viên → 400 · trùng người hiện tại → 400 · RKC-2b: Case đã đóng đổi được', () => thu(() => {
     const c = caseCuaLop();
     const ngoai = one(`SELECT id FROM users WHERE id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND status = 'active') ORDER BY id`, LOP).id;
     assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: ngoai, ownerCu: gvcn() })) === 400, 'người ngoài danh sách → 400');
     assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: gvcn(), ownerCu: gvcn() })) === 400, 'trùng người hiện tại → 400');
     assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: 'x', ownerCu: gvcn() })) === 400, 'ownerId không phải số → 400');
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(c.id);
-    assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 400, 'Case đã đóng → 400 (câu chỉ đường Mở lại)');
-    assert(cases.caseDetail(P.mbManager, c.id).doiChu.duoc === false, 'Case đóng: doiChu.duoc = false');
-    assert(chuCua(c.id) === gvcn(), 'không ghi');
+    assert(cases.caseDetail(P.mbManager, c.id).doiChu.duoc === true, 'Case đóng: doiChu.duoc = true');
+    owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: gvcn() });
+    assert(chuCua(c.id) === c.gvMon && one(`SELECT status FROM sos_cases WHERE id = ?`, c.id).status === 'done', 'Case đóng: đổi người, vẫn đóng');
   }));
 
   check('CHU-4 ownerCu lệch giá trị hiện tại (người khác vừa đổi) → 409, không ghi', () => thu(() => {

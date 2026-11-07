@@ -130,7 +130,9 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     const coL = cho.find((x) => x.topic === 'listening')!;
     assert(khongL && coL, `cần PA Listening và PA kỹ năng khác: ${JSON.stringify(cho)}`);
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, 60) }), /tối đa 30 ngày/, 'ngày bắt đầu quá xa');
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, -8) }), /lùi tối đa 7 ngày/, 'lùi quá 7 ngày');
+    /* RKC-2b: lùi quá 7 ngày được (ghi bù PA đã làm) — lỗi nếu có là của ô khác, không phải ngày. */
+    try { sosAuto.xacNhanPaQuyChe(P.mbManager, coL.id, { description: 'Nội dung đủ dài để xác nhận PA.', batDau: addDays(TODAY, -8) }); }
+    catch (e: any) { assert(!/Ngày bắt đầu/.test(String(e?.message)), `lùi 8 ngày vẫn bị chặn ngày: ${e?.message}`); }
     const gv = sosAuto.xacNhanPaNhieu(P.lrTeacher, { chung: { soBuoi: 4, description: 'Nội dung chung đủ dài để xác nhận PA.' }, ds: [{ id: coL.id }, { id: khongL.id }] });
     assert(gv.ok.includes(coL.id) && gv.loi.some((l: any) => l.id === khongL.id && l.ma === 403), `quyền từng PA: ${JSON.stringify(gv)}`);
     const con = cho.filter((x) => x.id !== coL.id).slice(0, 2);
