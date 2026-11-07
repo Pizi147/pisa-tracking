@@ -247,9 +247,9 @@ export function RecordViolationPanel({
         </Khoi>
 
         {!luu && (editing && violation ? (
-          <Khoi tieuDe={t('Bằng chứng · không bắt buộc')}><BangChung ownerType="violation" ownerId={violation.id} canEdit tieuDe="" /></Khoi>
+          <Khoi tieuDe={t('Bằng chứng')}><BangChung ownerType="violation" ownerId={violation.id} canEdit tieuDe="" /></Khoi>
         ) : (
-          <Khoi tieuDe={t('Bằng chứng · không bắt buộc')}>
+          <Khoi tieuDe={t('Bằng chứng')}>
             <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} /></div>
           </Khoi>
         ))}
@@ -316,7 +316,7 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, l
           placeholder={t('Ví dụ: Không nộp BTVN Reading')} />
       </Truong>
 
-      <Truong nhan={t('Mô tả')} tuyChon>
+      <Truong nhan={t('Mô tả')}>
         <textarea className="field w-full" rows={2} maxLength={2000} value={d.moTa} onChange={(e) => onSua({ moTa: e.target.value })} placeholder={t('Chi tiết nếu cần')} />
       </Truong>
 
@@ -383,7 +383,7 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
               </div>
               {rieng[id] !== undefined && (
                 <div className="mt-1.5 space-y-1">
-                  <Truong nhan={t('Mô tả riêng')} tuyChon>
+                  <Truong nhan={t('Mô tả riêng')}>
                     <textarea className="field w-full" rows={2} maxLength={2000} value={rieng[id]} onChange={(e) => onRieng({ ...rieng, [id]: e.target.value })} />
                   </Truong>
                   <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" onClick={() => { const { [id]: _b, ...con } = rieng; onRieng(con); }}>{t('Bỏ')}</button>

@@ -12,7 +12,7 @@ export function SoCuMoi({ cu, moi }: { cu: number; moi: number }) {
 }
 
 type XepPc = 'tong' | 'ft' | 'th' | 'ten';
-const CACH_DEM = 'Bấm tên GV để tô các ô của GV đó ở bảng lớp. Cách đếm: mỗi môn của một lớp là 1 — W1, W2 tính riêng; dạy L và R một lớp = 2. Lớp Pre FOU: GVCN dạy luôn = 1. Đếm người đang dạy hôm nay — ô chờ đổi tính từ tuần hiệu lực.';
+const CACH_DEM = 'Số môn đang dạy. Bấm tên GV để tô các ô của GV đó ở bảng lớp. Cách đếm: mỗi môn của một lớp là 1 — W1, W2 tính riêng; dạy L và R một lớp = 2. Lớp Pre FOU: GVCN dạy luôn = 1. Đếm người đang dạy hôm nay — ô chờ đổi tính từ tuần hiệu lực.';
 
 /**
  * HAI BẢNG TỔNG HỢP (mockup v9 khu 1–2): Giảng dạy (số môn đang dạy) · GVCN (số lớp chủ nhiệm), cột GV · FT · Lớp thường · Tổng + dòng Tổng.
@@ -52,8 +52,7 @@ function BangTong({ loai, dem, demNhap, gv, to, onTo, toiDa }: {
     <section className="card pc-the-tong" aria-label={tieu}>
       <div className="pc-the-dau">
         <h2>{tieu}</h2>
-        <span className="phu">{loai === 'day' ? t('số môn đang dạy') : t('số lớp chủ nhiệm')}</span>
-        <NutLuat label={t('Cách đếm')}>{loai === 'day' ? t(CACH_DEM) : t('Bấm tên GV để tô các lớp GV đó chủ nhiệm. Đếm GVCN hôm nay — ô chờ đổi tính từ tuần hiệu lực.')}</NutLuat>
+        <NutLuat label={t('Cách đếm')}>{loai === 'day' ? t(CACH_DEM) : t('Số lớp chủ nhiệm. Bấm tên GV để tô các lớp GV đó chủ nhiệm. Đếm GVCN hôm nay — ô chờ đổi tính từ tuần hiệu lực.')}</NutLuat>
         <span className="phai">
           <select className="pc-xep" aria-label={t('Xếp theo')} value={xep} onChange={(e) => setXep(e.target.value as XepPc)}>
             <option value="tong">{t('Xếp: Tổng')}</option>

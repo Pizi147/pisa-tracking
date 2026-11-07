@@ -96,8 +96,9 @@ export function CatalogAdmin() {
               <tbody>
                 {dong.map((d) => (
                   <tr key={khoaDong(d)} onClick={() => setSua(d)}
-                    className={`bam cursor-pointer ${dangSua === khoaDong(d) ? 'row-active' : ''} ${conDung(d) ? '' : 'opacity-50'}`}>
-                    <td className="td whitespace-nowrap text-slate-100">{tenDong(d)}{ngung(d)}</td>
+                    className={`bam cursor-pointer ${dangSua === khoaDong(d) ? 'row-active' : ''}`}>
+                    {/* AUDIT-UI C11: ngừng dùng = tên `text-faint` + nhãn "ngừng dùng", không opacity (chữ còn 2,1 : 1 ở chế độ sáng). */}
+                    <td className={`td whitespace-nowrap ${conDung(d) ? 'text-slate-100' : 'text-faint'}`}>{tenDong(d)}{ngung(d)}</td>
                     <td className="td whitespace-nowrap text-slate-400">{d.loai === 'ft' || d.ct.scoringMode !== 'ratio' ? 'band IELTS' : t('đúng / tổng')}</td>
                     <td className="td whitespace-nowrap text-right tabular-nums text-slate-300">{doDai(d)}</td>
                     <td className="td whitespace-nowrap tabular-nums text-slate-300">{chuMoc(d)}</td>
@@ -114,9 +115,9 @@ export function CatalogAdmin() {
               {dong.map((d) => (
                 <li key={khoaDong(d)} className="border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
                   <button type="button" onClick={() => setSua(d)}
-                    className={`flex min-h-[44px] w-full items-center gap-2 px-4 py-2.5 text-left ${conDung(d) ? '' : 'opacity-50'}`}>
+                    className="flex min-h-[44px] w-full items-center gap-2 px-4 py-2.5 text-left">
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm text-slate-100">{tenDong(d)}{ngung(d)}</span>
+                      <span className={`block text-sm ${conDung(d) ? 'text-slate-100' : 'text-faint'}`}>{tenDong(d)}{ngung(d)}</span>
                       <span className="block text-xs tabular-nums text-slate-400">
                         {doDai(d) !== '—' ? `${doDai(d).replace(/^./, (c) => c.toUpperCase())} · ` : ''}{chuMoc(d, true)}
                       </span>

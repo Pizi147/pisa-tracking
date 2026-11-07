@@ -63,13 +63,14 @@ function Goi({ chu }: { chu: string }) {
   );
 }
 
-const ChipGvcn = () => <span className={`${CHIP_TRON} bg-ok-bg font-semibold text-ok`}>GVCN</span>;
+/** AUDIT-UI GV1: chip vai trung tính — xanh lá là màu kết quả «Đạt» (V4), không dùng cho vai. */
+const ChipGvcn = () => <span className={`${CHIP_TRON} bg-[color:var(--surface-2)] font-semibold text-dim`}>GVCN</span>;
 
 export function HoSoGiaoVienPage() {
   const { id } = useParams();
   const { data, loading, error, reload } = useApi<HoSo>(`/giao-vien/${id}`, [id]);
   const { session } = useSession();
-  const { homNay, ngan } = useNgayNghiepVu();
+  const { homNay } = useNgayNghiepVu();
   /* P9: kỳ tự do — mặc định 4 tuần tới tuần này; giá trị mặc định không ghi lên URL. */
   const denMd = mondayOfDate(homNay), tuMd = addDaysIso(denMd, -21);
   const [tu, setTu] = useThamSoUrl('tu', tuMd);
@@ -125,7 +126,7 @@ export function HoSoGiaoVienPage() {
       <DaiChiSo data={data} cs={cs} ky={ky} />
       <KhoiLop data={data} />
       <KhoiHocThuat data={data} cs={cs} ky={ky} />
-      <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} ngan={ngan} viec={viec} />
+      <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} viec={viec} />
       <KhoiCase data={data} homNay={homNay}
         linkPa={!gv.laChinhMinh && session?.nav?.analysis && data.phamVi.cn
           ? { den: duongHieuQuaPaGv(data.phamVi.cn, gv.id, data.lop), chu: t('Hiệu quả PA của {ten} ›', { ten: tenGoi }) } : null} />
@@ -333,7 +334,7 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   const khung: Khung = coKhung.has(chon as Khung) ? (chon as Khung) : macDinh;
   return (
     <Card bodyClass="p-0"
-      title={<span className="inline-flex flex-wrap items-baseline gap-x-2">{t('Học thuật')}<span className="text-xs font-normal text-slate-500">{t('lượt Test của từng HV có tuần Test trong kỳ')}</span></span>}
+      title={t('Học thuật')}
       action={(
         <span className="flex items-center gap-2">
           {coKhung.size > 1 && <CongTac value={khung} onChange={(k) => setChon(k)} muc={[['ft', 'Fast Track'], ['thuong', t('Lớp thường')]]} />}
@@ -438,7 +439,7 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
     { key: 'kq', nhan: t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
   ];
   const oCua = (h: HangL, c: CotBang): ReactNode => {
-    const mo = h.xong ? 'opacity-60' : '';
+    const mo = h.xong ? 'text-faint' : '';   // AUDIT-UI C11: lớp đã kết thúc = chữ mờ bằng màu (không opacity) + nhãn «đã kết thúc»
     switch (c.key) {
       case 'lop': return h.cong ? <b className="font-bold">{h.ma}</b>
         : <span className={`inline-flex min-w-0 items-baseline gap-1.5 ${mo}`}><Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so truncate font-semibold">{h.ma}</Link>{h.xong && <span className="text-xs text-slate-500">{t('đã kết thúc')}</span>}</span>;
@@ -470,15 +471,15 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
 
 // ------------------------------------------------------------------ 1 · Việc đang tồn
 
-function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
-  gvId: number; nguoiXem: { userId: number; laQuanLy: boolean }; homNay: string; ngan: (iso: string) => string;
+function KhoiViec({ gvId, nguoiXem, homNay, viec }: {
+  gvId: number; nguoiXem: { userId: number; laQuanLy: boolean }; homNay: string;
   viec: { data: { viec: NhomSo[] } | null; loading: boolean; error: { message: string; hint?: string; status?: number } | null; reload: () => void };
 }) {
   const { data, loading, error, reload } = viec;
   return (
     <Card
-      title={<>{t('Việc đang tồn')}<Goi chu={t('Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}
-      action={<span className="text-xs text-slate-400">{t('hôm nay {ngay} · tuần', { ngay: ngan(homNay) })} <span className="tabular-nums text-slate-200">{tuanLich(homNay, homNay)}</span></span>}>
+      title={<>{t('Việc đang tồn')}<Goi chu={t('Tính tới hôm nay, không theo kỳ. Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}
+      action={<span className="text-xs tabular-nums text-slate-400">{tuanLich(homNay, homNay)}</span>}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={2} />
         : (
@@ -487,7 +488,7 @@ function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
               const link = (chiQuaHan: boolean) => duongViecCuaGv(gvId, nguoiXem, x.nhom, chiQuaHan);
               const trong = x.n === 0;
               return (
-                <div key={x.nhom} className={`relative flex min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2.5 ${trong ? 'opacity-70' : 'hover:border-[color:var(--accent-line)]'}`}
+                <div key={x.nhom} className={`relative flex min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2.5 ${trong ? '' : 'hover:border-[color:var(--accent-line)]'}`}
                   style={{ borderColor: 'var(--line)' }}>
                   <span className="text-xs text-slate-400">{dich(NHOM_VIEC_LABEL[x.nhom])}</span>
                   {trong
@@ -540,7 +541,8 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
             {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. */}
             {ds.some((c) => c.quaHan) && (
               <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold text-bad" style={{ borderColor: 'var(--line-strong)' }}>
-                ⚠ {t('việc quá hạn')}
+                {/* AUDIT-UI GV2: tên đủ để không lẫn với chip trạng thái «⚠ Quá hạn» đứng cạnh. */}
+                ⚠ {t('Case có việc quá hạn')}
                 <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
               </span>
             )}

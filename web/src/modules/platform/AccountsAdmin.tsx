@@ -7,7 +7,8 @@ import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, Skeleton,
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { fmtDate, skillLabel } from '../../lib/format.ts';
+import { fmtDate, skillLabel, skillShort } from '../../lib/format.ts';
+import { CHIP_VUONG, ChipKy } from '../../ui/Nhan.tsx';
 import { ChonKyNang } from './ProfilePage.tsx';
 import { useSession } from '../../lib/session.tsx';
 import {
@@ -124,23 +125,22 @@ export function AccountsAdmin() {
 
   return (
     <div className="space-y-4">
-      <Card
-        title={<span data-hd="qt-dang-ky">{t('Đăng ký chờ duyệt')} {pending.length > 0 && <span className="text-amber-200 tabular-nums">({pending.length})</span>}</span>}
-        bodyClass="p-0">
-        {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. Rỗng thì một dòng xám. */}
-        {pending.length === 0 ? (
-          <p className="m-0 px-4 py-3 text-sm text-slate-500">{t('Không có đăng ký nào đang chờ.')}</p>
-        ) : (
+      {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. AUDIT-UI QT2: rỗng thì một dòng, không chiếm cả thẻ. */}
+      {pending.length === 0 ? (
+        <p data-hd="qt-dang-ky" className="m-0 text-sm text-faint">{t('Đăng ký chờ duyệt')} <span className="tabular-nums">0</span></p>
+      ) : (
+        <Card title={<span data-hd="qt-dang-ky">{t('Đăng ký chờ duyệt')} <span className={`${CHIP_VUONG} ml-1 text-amber-200`} style={{ borderColor: 'var(--line-strong)' }}>{pending.length}</span></span>}
+          bodyClass="p-0">
           <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {pending.map((u) => (
               <PendingRow key={u.id} user={u} branches={branches.data ?? []}
                 onDone={(msg) => { reload(); toast.push('ok', msg); }} />
             ))}
           </ul>
-        )}
-      </Card>
+        </Card>
+      )}
 
-      <Card title={dangLoc ? t('Tài khoản ({n} / {tong})', { n: rows.length, tong: goc.length }) : t('Tài khoản ({n})', { n: rows.length })} bodyClass="p-0"
+      <Card title={<>{t('Tài khoản')} <span className={`${CHIP_VUONG} ml-1`} style={{ borderColor: 'var(--line-strong)' }}>{dangLoc ? `${rows.length} / ${goc.length}` : rows.length}</span></>} bodyClass="p-0"
         action={
           <span className="flex flex-wrap items-center gap-1.5">
             <BoLocDoan ariaLabel={t('Lọc tài khoản')} value={loc} onChange={setLoc}
@@ -174,14 +174,15 @@ export function AccountsAdmin() {
             <option value="vai">{t('Nhóm theo vai trò')}</option>
           </select>
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
-          {PHAN_LOAI_TAI_KHOAN.map((k) => (
-            <NutChon key={k} nho chon={loc3.phanLoai === k} disabled={!phanLoai[k] && loc3.phanLoai !== k} onClick={() => datLoc({ phanLoai: loc3.phanLoai === k ? null : k })}>
+        {/* AUDIT-UI C2: chip đếm 0 không lọc được gì → ẩn (đang chọn thì vẫn hiện để bỏ chọn); không còn gì thì bỏ cả hàng. */}
+        {(dangLoc || PHAN_LOAI_TAI_KHOAN.some((k) => phanLoai[k])) && <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
+          {PHAN_LOAI_TAI_KHOAN.filter((k) => phanLoai[k] || loc3.phanLoai === k).map((k) => (
+            <NutChon key={k} nho chon={loc3.phanLoai === k} onClick={() => datLoc({ phanLoai: loc3.phanLoai === k ? null : k })}>
               {NHAN_PHAN_LOAI[k]} <span className="tabular-nums text-slate-400">{phanLoai[k]}</span>
             </NutChon>
           ))}
           {dangLoc && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 sm:ml-auto" onClick={xoaLoc}>{t('Xoá lọc')}</button>}
-        </div>
+        </div>}
         <div className="table-scroll bang-dinh">
           <table className="w-full text-sm">
             <thead>
@@ -260,9 +261,10 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, on
 }) {
   const khongDuyet = u.approvalState === 'declined';
   return (
-    <tr className={u.status === 'deleted' ? 'opacity-60' : 'row-hover'}>
+    <tr className={u.status === 'deleted' ? '' : 'row-hover'}>
       <td className="td sticky-col whitespace-nowrap">
-        <span className="text-slate-100">{u.fullName}</span>
+        {/* AUDIT-UI C11: tài khoản đã xoá — chữ `text-faint` (không opacity: chữ còn 2,1 : 1 ở chế độ sáng); cột cuối ghi "Đã xoá {ngày}". */}
+        <span className={u.status === 'deleted' ? 'text-faint' : 'text-slate-100'}>{u.fullName}</span>
         <span className="block text-[12px] text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
       </td>
       <td className="td text-xs text-slate-300">{u.email ?? <span className="text-rose-200">{t('chưa có')}</span>}</td>
@@ -289,9 +291,12 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, on
         </td>
       )}
       <td className="td text-xs text-slate-400">
-        {u.skills.length ? u.skills.map(skillLabel).join(', ') : '—'}
-        {/* OV-14c: ai được tính là GV Speaking chấm chéo (kỹ năng S hoặc dạy S lớp FT, có vai GV) — vì sao một GV thấy / không thấy bài S. */}
-        {u.chamSpeaking && <span className="mt-1 block"><Info title={t('Kỹ năng Speaking hoặc dạy Speaking lớp FT — chấm S Mock mọi lớp FT chi nhánh của vai GV')}>{t('Chấm Speaking')}</Info></span>}
+        {/* AUDIT-UI QT4: chip ngắn L · R · W1 … (tên đủ ở title) + "Chấm S" cùng hàng — hàng cao đều. */}
+        <span className="flex flex-wrap items-center gap-1">
+          {u.skills.length ? u.skills.map((s) => <span key={s} title={skillLabel(s)}><ChipKy k={skillShort(s)} /></span>) : '—'}
+          {/* OV-14c: ai được tính là GV Speaking chấm chéo (kỹ năng S hoặc dạy S lớp FT, có vai GV) — vì sao một GV thấy / không thấy bài S. */}
+          {u.chamSpeaking && <Info title={t('Kỹ năng Speaking hoặc dạy Speaking lớp FT — chấm S Mock mọi lớp FT chi nhánh của vai GV')}>{t('Chấm S')}</Info>}
+        </span>
       </td>
       <td className="td whitespace-nowrap">
         {u.status === 'deleted' ? (
@@ -516,8 +521,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                 <input className="field w-full" maxLength={100} value={form.title} title={t('Chỉ để hiển thị, không ảnh hưởng quyền.')}
                   onChange={(e) => setForm({ ...form, title: e.target.value })} />
               </Field>
-              <Field label={t('Email đăng nhập')} required hint={t('Phải có đuôi .pisa@gmail.com.')} loi={lf.loiCua(loi, 'email')}>
-                <input className="field w-full" type="email" {...lf.o(loi, 'email')} value={form.email}
+              <Field label={t('Email đăng nhập')} required loi={lf.loiCua(loi, 'email')}>
+                <input className="field w-full" type="email" {...lf.o(loi, 'email')} value={form.email} placeholder="ten.pisa@gmail.com"
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </Field>
               <Field label={t('Mật khẩu ban đầu')} required loi={lf.loiCua(loi, 'mat-khau')}>

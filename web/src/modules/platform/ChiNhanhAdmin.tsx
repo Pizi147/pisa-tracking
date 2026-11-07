@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, ErrorState, Field, Forbidden, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Field, Forbidden, Info, Skeleton } from '../../ui/ui.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -43,10 +43,10 @@ export function ChiNhanhAdmin() {
     <>
       {loading || !data ? <Card><Skeleton rows={5} /></Card> : (
         <Bang ten={t('Chi nhánh')} cot={COT} hang={data} khoa={(b) => b.id} onHang={setSua} dangMo={(b) => sua?.id === b.id}
-          lopHang={(b) => (b.status === 'active' ? '' : 'opacity-50')}
           oCua={(b, c) => {
-            if (c.key === 'ma') return <b className="text-slate-100">{b.code}</b>;
-            if (c.key === 'ten') return b.name;
+            /* AUDIT-UI C11: chi nhánh ngừng = chữ `text-faint` + nhãn "ngừng dùng", không opacity (chữ còn 2,1 : 1 ở chế độ sáng). */
+            if (c.key === 'ma') return <b className={b.status === 'active' ? 'text-slate-100' : 'text-faint'}>{b.code}</b>;
+            if (c.key === 'ten') return b.status === 'active' ? b.name : <span className="text-faint">{b.name}<span className="ml-1.5"><Info pending>{t('ngừng dùng')}</Info></span></span>;
             if (c.key === 'dc') return chu(b.diaChi);
             if (c.key === 'sdt') return <span className="tabular-nums">{chu(b.soDienThoai)}</span>;
             return <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setSua(b); }}>{t('Sửa')}</button>;

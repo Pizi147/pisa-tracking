@@ -38,7 +38,7 @@ export async function runPrEnTests(t: any) {
     assert(i18n.dichSang('en', 'Đăng nhập') === 'Sign in', 'máy chủ vẫn có từ điển đầy đủ');
   });
 
-  const GIU = new Set<string>(['Tutor', 'Final Test', 'Progress Test']);   // R1-EN-2: tên bài giữ (mẫu 'Final {ct}' khớp nhầm)   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
+  const GIU = new Set<string>(['Tutor', 'Final Test', 'Progress Test', 'Case']);   // AUDIT-UI A1: 'Case' thuật ngữ cố định (PRODUCT.md), tiêu đề khối Tạo Case;   // R1-EN-2: tên bài giữ (mẫu 'Final {ct}' khớp nhầm)   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
 
   check('EN-KHOA · mọi chữ có bản Anh không rỗng, cùng {biến}, không còn "{" sau khi thay; không chép nguyên chữ Việt', () => {
     const loi: string[] = [];

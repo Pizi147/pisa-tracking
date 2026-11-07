@@ -233,8 +233,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
               <p className="m-0 text-[15px] font-bold text-slate-100">{dich(bacKe.nhan)}</p>
               {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
                 <p className="m-0 mt-1 text-xs text-slate-300">
-                  {t('Đã có mức độ vi phạm từ trước?')}{' '}
-                  <button type="button" className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Xác nhận cấp bậc vi phạm trước')}</button>
+                  <button type="button" title={t('Đã có mức độ vi phạm từ trước?')} className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Xác nhận cấp bậc vi phạm trước')}</button>
                 </p>
               )}
             </div>

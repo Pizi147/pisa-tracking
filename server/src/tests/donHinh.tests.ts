@@ -40,10 +40,10 @@ export async function runDonHinhTests(t: any) {
     assert(/phang\(dsGoc\)\.find\(\(y\) => y\.key === viec\)/.test(s), 'việc ngoài "Của tôi" không mở được');
     for (const m of doc('server/src/worklist/tongQuan.ts').matchAll(/`\/cong-viec\?[^`]*`/g)) assert(m[0].includes('nguoi=tat-ca'), `link thiếu nguoi=tat-ca: ${m[0]}`);
   });
-  check('DON-HINH · Nhập điểm lớp 375 một thanh chip; Ý thức một kiểu nhãn; Tài khoản chip 0 không bấm', () => {
+  check('DON-HINH · Nhập điểm lớp 375 một thanh chip; Ý thức một kiểu nhãn; Tài khoản chip 0 không bấm (AUDIT-UI C2: ẩn chip 0)', () => {
     assert(/chonMon && b && !motKyNang && <ChonMon/.test(doc('web/src/modules/cham/DiemTheoLop.tsx')), 'hai thanh chip');
     assert(!/NhanTrangThai/.test(doc('web/src/modules/phanTich/YThucPhoiHop.tsx')), 'Ý thức còn kiểu nhãn thứ hai');
-    assert(/disabled=\{!phanLoai\[k\]/.test(doc('web/src/modules/platform/AccountsAdmin.tsx')), 'chip 0 còn bấm được');
+    assert(/PHAN_LOAI_TAI_KHOAN\.filter\(\(k\) => phanLoai\[k\] \|\| loc3\.phanLoai === k\)/.test(doc('web/src/modules/platform/AccountsAdmin.tsx')), 'chip 0 còn hiện');
   });
   check('CV-0611 · dòng việc gọn: tên "{mã lớp} · {việc}" (không "Cả lớp"), Xét lại lộ trình không liệt kê tên em, "›" chỉ khi dòng chưa có nút', () => {
     const s = doc('web/src/modules/congViec/DanhSachViec.tsx');
