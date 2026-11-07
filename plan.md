@@ -260,6 +260,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
 ### 07/11 — LỖI BẢN CHÍNH: Case sinh 2 PA quy chế trùng (chủ SP — session PA-TRUNG)
+- **#1207:** gốc = nhánh "trượt lại" (`sos.ts`, K3-16) sinh PA quy chế mới dù PA "đến lúc thi" cùng loại đang chạy; chặn ở `createPresetPlan`; migrate `prPaTrung0711` dọn PA chờ xác nhận trùng (bản chép 09:17: 4 PA / 4 Case RF). [XM] 4 Case có hai PA đã xác nhận → **chủ SP 07/11: "Merge + dọn cả 4"** → giữ PA cũ, PA sau vào Thùng rác (khôi phục được). Việc để sau: K3-16 "PA cũ sang Kết quả cuối" ở nhánh trượt lại.
 - **Chủ SP 07/11 14:01 (ảnh bản chính, GV S xem Công việc + QL xem hồ sơ lớp CP FT 136; Case Speaking · MT4 · SOS 3, mở W4 OCT):** "Đột nhiên lại sinh ra 2 phương án? lỗi gì vậy?" — PA "Học Tutor · Theo quy chế · đến lúc thi" ĐANG CHẠY (đến 24/11, 0/10 buổi, KQ hạn 21/11) + một PA "Học Tutor · Theo quy chế" thứ hai "Chờ xác nhận" (bắt đầu 07/11) → GV có việc "Xác nhận PA" thừa.
 - Session PA-TRUNG: tìm gốc (nơi sinh PA quy chế tự động — sau nhập MT4 W1 NOV? reset hạn? migrate?), sửa không sinh trùng khi đã có PA quy chế cùng loại đang chạy / chờ, dọn PA trùng trên bản chính bằng migrate một lần (báo số bản sao trước khi merge).
 
