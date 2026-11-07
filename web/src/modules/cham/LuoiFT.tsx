@@ -226,7 +226,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
         ))}
         {chiSEx.map((d) => (
           <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] px-3.5 py-3">
-            <span className="font-semibold">{d.ten}</span><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
+            <Link className="ten-ho-so" to={`/hoc-vien/${d.studentId}`}>{d.ten}</Link><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
           </article>
         ))}
         {dongHetHv && <div className="px-3.5 py-2">{dongHetHv}</div>}
@@ -262,7 +262,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
       )}
       cuoi={<>{dongHetHv && <tr><td className="td py-2" colSpan={cotDs.length}>{dongHetHv}</td></tr>}{chiSEx.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={d.ten} studentId={d.studentId} cotDs={cotDs} cc={cc} rieng />)}{hangMo.map((h) => (
         <tr key={`mo-${h.studentId}`} data-hv={h.studentId}>
-          <OBang c={cc.hv} className="text-slate-500"><span title={h.ten}>{h.ten}</span></OBang>
+          <OBang c={cc.hv} className="text-slate-500"><Link className="ten-ho-so !font-normal !text-slate-500" title={h.ten} to={`/hoc-vien/${h.studentId}`}>{h.ten}</Link></OBang>
           <td className="td text-xs text-slate-400" colSpan={cotDs.length - 1}>{h.chu}</td>
         </tr>
       ))}</>} />
@@ -604,7 +604,7 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   return (
     <tr className="do-hang" data-hv={studentId} data-sex={d.id}>
       <OBang c={cc.hv}>
-        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><span className="truncate font-semibold" title={ten}>{ten}</span>{chip}</span> : <span className="pl-3">{chip}</span>}
+        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><Link className="ten-ho-so truncate" title={ten} to={`/hoc-vien/${studentId}`}>{ten}</Link>{chip}</span> : <span className="pl-3">{chip}</span>}
       </OBang>
       <td className="td text-xs text-slate-400" colSpan={Math.max(iS - 1, 1)}>{d.nguoiCham ?? ''}{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>
       {iS > 0 && (

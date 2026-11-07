@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { taiXlsx, type SheetXuat } from '../test/keHoach/taiXlsx.ts';
@@ -195,7 +196,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
             );
             return (
               <li key={e.id} className="py-2">
-                <div className="text-[15px] font-semibold text-slate-100">{e.ten}</div>
+                <Link className="ten-ho-so text-[15px]" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>
                 {!thieu.length && !nhap.length && <div className="text-[13px] text-slate-400">✓ {t('đủ')}</div>}
                 {thieu.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-slate-400">{t('Thiếu')} {thieu.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
                 {nhap.length > 0 && <div className="flex flex-wrap items-center gap-x-1 text-[13px] text-soon">{t('Nháp')} {nhap.map((p, i) => <Fragment key={p.khoa}>{i > 0 && <span aria-hidden>·</span>}{nutPhan(p)}</Fragment>)}</div>}
@@ -226,7 +227,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
             ...(data.xuat ? [{ key: 'xuat', nhan: t('Xuất'), kieu: 'nut', rong: 72 } as CotBang] : []),
           ]}
           oCua={(e, c) => {
-            if (c.key === 'ten') return <span className="font-semibold text-slate-100">{e.ten}</span>;
+            if (c.key === 'ten') return <Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
             if (c.key === 'xuat') {
               return <button type="button" className="link-nho min-h-[44px] font-medium sm:min-h-0" disabled={dangXuat !== null}
                 aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} onClick={() => void xuat(e.id)}>{dangXuat === e.id ? t('Đang tạo…') : t('Xuất')}</button>;

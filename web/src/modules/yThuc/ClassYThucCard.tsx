@@ -353,7 +353,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
               {chuaKhai.map((x) => (
                 <div key={x.studentId} className="flex min-h-[44px] items-center gap-2 border-b px-4" style={{ borderColor: 'var(--line)' }}>
                   <OChon chon={chonN} id={x.studentId} ten={x.ten} />
-                  <span className="min-w-0 flex-1 truncate py-2.5 text-sm font-semibold text-slate-100">{x.ten}</span>
+                  <span className="min-w-0 flex-1 truncate py-2.5 text-sm"><Link className="ten-ho-so" to={`/hoc-vien/${x.studentId}`}>{x.ten}</Link></span>
                 </div>
               ))}
             </NhomHang>

@@ -16,6 +16,7 @@ export async function runPrUiHoSoLopTests(t: any) {
   const { phamViXemViec } = await import('../worklist/xemViec.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const fs = await import('node:fs');
   console.log('\nUI-HO-SO-LOP · Việc cần làm của người xem · roster bỏ viecTiepTheo · Đánh giá đầu ra (C17)');
   const maLoi = (fn: () => unknown): number | string => { try { fn(); return 'không ném'; } catch (e: any) { return e?.status ?? String(e?.message ?? e); } };
   const LOP = classId('MB FT 101');
@@ -121,5 +122,16 @@ export async function runPrUiHoSoLopTests(t: any) {
   check('HSL-5 · migrate danh_gia_dau_ra chạy lặp không làm gì (DB đã có bảng)', () => {
     const a: string[] = []; migratePrUiHoSoLop(conn, a);
     assert(a.length === 0, JSON.stringify(a));
+  });
+  check('TEN-HV-LINK (chủ SP 07/11) · tên HV ở hồ sơ lớp (FT + lớp thường, bảng + thẻ 375) là link tới hồ sơ HV; mở rộng = nút ▾ / bấm hàng', () => {
+    const doc = (f: string) => fs.readFileSync(new URL(`../../../../web/src/${f}`, import.meta.url), 'utf8');
+    const ft = doc('modules/classes/BangHoSoLop.tsx');
+    const thuong = doc('modules/classes/BangDiemLopThuong.tsx');
+    const tenEm = ft.slice(ft.indexOf('export function TenEm'), ft.indexOf('const VUNG_BAM'));
+    assert(/<Link className="ten-ho-so[^"]*"[^>]*to=\{duongHoSoHocVien\(s\.id\)\} state=\{\{ ds \}\}>\{s\.fullName\}<\/Link>/.test(tenEm), 'TenEm: tên phải là <Link> duongHoSoHocVien + state ds');
+    assert(/<button[^>]*aria-expanded=\{mo\}[^>]*onClick=\{onMo\}/.test(tenEm) && !/<button[^>]*>\{s\.fullName\}/.test(tenEm), 'TenEm: mở rộng là nút riêng, không bọc tên');
+    assert((ft.match(/<TenEm s=\{r\}.*?ds=\{ngCanh\}/g) ?? []).length === 2 && /<TenEm s=\{s\}.*?ds=\{ds\}/.test(thuong), 'mọi chỗ dùng TenEm phải truyền ds');
+    assert((ft.match(/onClick=\{bamHang\(/g) ?? []).length === 2 && (thuong.match(/onClick=\{bamHang\(/g) ?? []).length === 2, 'hàng / thẻ: bấm phần còn lại = mở rộng (bamHang)');
+    assert(/e\.currentTarget\.contains\(vung\)/.test(ft), 'bamHang phải bỏ qua bấm trúng link / nút trong hàng');
   });
 }
