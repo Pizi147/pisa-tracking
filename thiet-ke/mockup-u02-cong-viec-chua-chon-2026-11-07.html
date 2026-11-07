@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>U02 · Công việc chưa chọn việc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap">
+<!-- U02 (rà ngoài #1228): ở 1440, chưa chọn việc → cột phải là khung trống lớn, dòng việc bên trái bị cắt "…".
+     Token = web hiện tại (`web/src/index.css`, chép từ thiet-ke/audit-0311/chung.css). Dữ liệu giả. Nền vàng viền đứt = chú thích mockup, không lên web.
+     Xem một khung: ?k=ht-1440-0 | ht-1440-1 | a-1440-0 | a-1440-1 | b-1440-0 | b-1440-1 | dt-375-0 | dt-375-1 -->
+<style>
+.toi {
+  --bg:#050a16; --surface:#111c33; --surface-2:#172440; --line:#22324f; --line-strong:#33496f;
+  --accent:#9cbde7; --accent-soft:#192b46; --nc-nen:#22406c; --nc-vien:#4d72a8; --nc-chu:#eaf1fb;
+  --text:#e7edf7; --text-dim:rgb(183 194 216); --text-faint:rgb(154 168 194);
+  --hong:#f57aae; --dh-nen:#0a1a3a; --dh-chu:#c3d2ec;
+  --bad:rgb(232 154 140); --bad-nen:rgb(52 28 29); --soon:rgb(228 199 132); --soon-nen:rgb(48 42 26); --soon-vien:rgb(118 102 63);
+  --ok:rgb(148 209 174); --muted-nen:rgb(22 34 58); --o-nen:#0b1427; --o-vien:#66789f;
+  --phong:'Be Vietnam Pro', system-ui, sans-serif; --phong-so:'Inter','Be Vietnam Pro',system-ui,sans-serif;
+  color:var(--text); font:15px/1.45 var(--phong); color-scheme:dark;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:#e4e8ef; color:#141a2b; font:15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; }
+.trang { padding:20px 24px 56px; display:grid; gap:32px; }
+.dau-mk h1 { font-size:22px; margin:0 0 6px; } .dau-mk p { margin:0; color:#4a536c; max-width:120ch; }
+.khu > h2 { font-size:18px; margin:0 0 8px; }
+.ghi { background:#fffbea; color:#4a3a06; border:1px dashed #d9a93a; border-radius:8px; padding:8px 12px; font-size:14px; margin:0; max-width:150ch; }
+.ghi b { font-weight:700; }
+.hang { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; margin:10px 0; }
+figure { margin:0; display:grid; gap:6px; }
+figcaption { font:700 13px var(--phong,sans-serif); color:#4a3a06; background:#fffbea; border:1px dashed #d9a93a; border-radius:6px; padding:3px 8px; justify-self:start; }
+.khuyen { background:#eef6f0; border:2px solid #38674c; border-radius:10px; padding:12px 16px; max-width:150ch; }
+.khuyen h2 { margin:0 0 4px; font-size:18px; color:#244b34; }
+
+/* ============ GIAO DIỆN WEB (mô phỏng) ============ */
+.man { width:1440px; height:820px; overflow:hidden; background:var(--bg); border-radius:6px; display:flex; flex-direction:column; }
+.dt { width:375px; height:780px; overflow:hidden; background:var(--bg); border-radius:6px; display:flex; flex-direction:column; }
+.so { font-family:var(--phong-so); font-variant-numeric:tabular-nums; }
+.tt { height:56px; flex:none; display:flex; align-items:center; gap:22px; padding:0 18px; background:var(--dh-nen); color:var(--dh-chu); font-weight:600; }
+.logo b { color:var(--hong); font-size:19px; letter-spacing:.02em; } .logo span { color:#fff; font-weight:400; letter-spacing:.22em; font-size:13px; margin-left:4px; }
+.tt .muc.dang { color:#fff; box-shadow:inset 0 -2px 0 var(--hong); padding:17px 0; }
+.tt .phai { margin-left:auto; display:flex; gap:10px; align-items:center; }
+.o-tim { width:220px; height:34px; border:1px solid var(--line-strong); border-radius:8px; padding:0 10px; display:flex; align-items:center; color:var(--text-faint); font-weight:400; font-size:14px; }
+.nd { padding:16px 18px 0; display:flex; flex-direction:column; gap:12px; min-height:0; flex:1; }
+.loc { display:flex; align-items:center; gap:10px; }
+.loc h1 { margin:0; font-size:22px; font-weight:700; }
+.loc .phai { margin-left:auto; display:flex; gap:8px; }
+.nut { height:32px; padding:0 12px; border:1px solid var(--line-strong); border-radius:8px; background:var(--surface); color:var(--text); font:600 13px var(--phong); display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; }
+.nut.chinh { background:var(--nc-nen); border-color:var(--nc-vien); color:var(--nc-chu); }
+.nhom-nut { display:inline-flex; } .nhom-nut .nut { border-radius:0; } .nhom-nut .nut:first-child { border-radius:8px 0 0 8px; } .nhom-nut .nut:last-child { border-radius:0 8px 8px 0; }
+.nhom-nut .nut.bat { background:var(--accent-soft); border-color:var(--accent); }
+.tabs { display:flex; gap:26px; border-bottom:1px solid var(--line); padding:0 12px; font-weight:600; color:var(--text-dim); font-size:14px; }
+.tabs span { padding:8px 0 10px; white-space:nowrap; } .tabs .dang { color:var(--text); box-shadow:inset 0 -2px 0 var(--accent); }
+.dem { display:inline-flex; min-width:18px; height:18px; border-radius:9px; padding:0 5px; margin-left:6px; align-items:center; justify-content:center; font:600 11px var(--phong-so); background:#5a2a24; color:#ffd9d2; }
+
+.bo-cuc { display:grid; gap:16px; align-items:start; min-height:0; }
+.bo-cuc.hai { grid-template-columns:640px minmax(0,1fr); }
+.bo-cuc.mot { grid-template-columns:minmax(0,1fr); }
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.dai-nhom { min-height:36px; display:flex; align-items:center; gap:8px; padding:0 14px; background:var(--surface-2); box-shadow:inset 3px 0 0 var(--bad); font-weight:700; font-size:14px; color:var(--bad); }
+.dai-nhom .dem2 { font:600 13px var(--phong-so); color:var(--text-dim); }
+.dong { display:grid; grid-template-columns:minmax(0,1fr) 150px 118px; gap:12px; align-items:center; padding:9px 14px; border-top:1px solid var(--line); }
+.dong.chon { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+.dong .t1 { font-weight:600; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dong .t2 { font-size:13px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dong .t2 .ng { color:var(--text-dim); } .dong .t2 .ng::before { content:"👤︎"; font-size:11px; margin-right:4px; filter:grayscale(1); opacity:.7; }
+.han { font-size:13px; line-height:1.35; } .han .q { color:var(--bad); font-weight:600; } .han .q::before { content:"⚠ "; } .han .d { color:var(--text-dim); }
+.dong .nut { width:100%; }
+
+/* cột phải */
+.cho-chon { border:1px dashed var(--line-strong); border-radius:12px; min-height:320px; display:grid; place-content:start center; padding-top:56px; color:var(--text-dim); text-align:center; }
+.dai-cho { border:1px dashed var(--line-strong); border-radius:10px; height:44px; display:flex; align-items:center; padding:0 16px; color:var(--text-dim); font-size:14px; }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.panel .dau { display:flex; align-items:flex-start; gap:10px; padding:14px 16px; border-bottom:1px solid var(--line); }
+.panel .dau h2 { font-size:17px; margin:0; } .panel .dau p { margin:2px 0 0; font-size:13px; color:var(--text-dim); }
+.panel .dong-p { display:grid; grid-template-columns:minmax(0,1fr) 92px 92px; gap:10px; align-items:center; padding:9px 16px; border-bottom:1px solid var(--line); font-size:14px; }
+.panel .dong-p.dau-cot { font-size:12px; color:var(--text-faint); font-weight:600; padding:7px 16px; }
+.o { height:34px; border:1px solid var(--o-vien); border-radius:6px; background:var(--o-nen); display:flex; align-items:center; padding:0 10px; font-family:var(--phong-so); }
+.o.trong { color:var(--text-faint); }
+.panel .chan { display:flex; gap:8px; justify-content:flex-end; align-items:center; padding:12px 16px; }
+.panel .chan .tiep { margin-right:auto; font-size:13px; color:var(--text-faint); }
+.x { margin-left:auto; width:32px; height:32px; border-radius:8px; border:1px solid var(--line-strong); display:grid; place-items:center; color:var(--text-dim); flex:none; }
+.chip-han { display:inline-flex; height:22px; padding:0 9px; border-radius:999px; align-items:center; background:var(--bad-nen); color:var(--bad); font:600 12px var(--phong); margin-top:6px; }
+
+/* 375 */
+.dt .tt { height:52px; gap:12px; padding:0 12px; } .dt .tt .phai { gap:8px; }
+.dt .nd { padding:12px 12px 0; gap:10px; }
+.dt .loc { flex-wrap:wrap; } .dt .loc .phai { margin-left:0; width:100%; display:grid; grid-template-columns:1fr 1fr; }
+.dt .tabs { gap:18px; padding:0 2px; overflow:hidden; }
+.dt .dong { grid-template-columns:minmax(0,1fr); gap:2px; padding:10px 12px; }
+.dt .dong .t1 { white-space:normal; } .dt .dong .t2 { white-space:normal; }
+.dt .dong .han { display:flex; gap:8px; } .dt .dong .nut { display:none; }
+.dt .panel { border-radius:0; border-left:0; border-right:0; }
+.dt .panel .dong-p { grid-template-columns:minmax(0,1fr) 72px 72px; padding:9px 12px; }
+.lui { color:var(--accent); font-weight:600; font-size:14px; min-height:44px; display:flex; align-items:center; }
+.mo-dt { flex:1; overflow:hidden; }
+</style>
+</head>
+<body>
+<div class="trang" id="trang">
+  <header class="dau-mk">
+    <h1>U02 · Công việc khi chưa chọn việc — so 3 cách (1440 tối · 375)</h1>
+    <p>Bản rà ngoài #1228: ở 1440, chưa chọn việc thì cột phải là <b>khung trống lớn</b>, còn dòng việc bên trái bị <b>cắt "…"</b>. Demo: QL xem tab Chấm điểm · Tất cả, hôm nay 14/09/2026. Mỗi cách: chưa chọn | đã chọn một việc. Mọi thao tác giữ nguyên (Nhập hộ, Lưu · việc tiếp ›, lọc, tab, Gia hạn, Bỏ qua…). Không đổi số dòng đọc Turso.</p>
+  </header>
+
+  <section class="khu" id="ht">
+    <h2>HIỆN TẠI — hai cột cố định 640 | phần còn lại</h2>
+    <div class="hang"><figure><figcaption>1440 · chưa chọn</figcaption><div class="man toi" data-k="ht-1440-0"></div></figure></div>
+    <div class="hang"><figure><figcaption>1440 · đã chọn một việc</figcaption><div class="man toi" data-k="ht-1440-1"></div></figure></div>
+    <p class="ghi"><b>Thao tác:</b> 1 bấm mở việc, panel hiện ngay cột phải · <b>Ưu:</b> bố cục đứng yên, không nhảy · <b>Nhược:</b> ~700 px trống khi chưa chọn; tên em · lớp · tuần bị cắt "…", phải mở việc mới đọc hết.</p>
+  </section>
+
+  <section class="khu" id="a">
+    <h2>A — giữ hai cột, khung trống thu thành dải mỏng một câu</h2>
+    <div class="hang"><figure><figcaption>1440 · chưa chọn</figcaption><div class="man toi" data-k="a-1440-0"></div></figure></div>
+    <div class="hang"><figure><figcaption>1440 · đã chọn một việc (giống hiện tại — cột không đổi bề rộng)</figcaption><div class="man toi" data-k="a-1440-1"></div></figure></div>
+    <p class="ghi"><b>Thao tác:</b> như hiện tại (1 bấm) · <b>Ưu:</b> sửa một dòng CSS; panel mở đúng chỗ dải, không nhảy · <b>Nhược:</b> chỉ bớt khung đứt, cột phải vẫn trống, dòng việc <b>vẫn bị cắt</b> — lỗi chính của U02 chưa hết.</p>
+  </section>
+
+  <section class="khu" id="b">
+    <h2>B — chưa chọn: danh sách rộng hết trang · chọn: panel phải mở như hiện tại</h2>
+    <div class="hang"><figure><figcaption>1440 · chưa chọn — dòng đủ chữ, không cắt</figcaption><div class="man toi" data-k="b-1440-0"></div></figure></div>
+    <div class="hang"><figure><figcaption>1440 · đã chọn — về đúng bố cục hiện tại; ✕ / Esc → về danh sách rộng, giữ vị trí cuộn, dòng vừa mở còn tô</figcaption><div class="man toi" data-k="b-1440-1"></div></figure></div>
+    <p class="ghi"><b>Thao tác:</b> như hiện tại (1 bấm mở, ✕ đóng) · <b>Ưu:</b> hết khung trống và hết cắt chữ — đọc đủ em · lớp · tuần mà không phải mở; làm liền nhiều việc bằng "Lưu · việc tiếp ›" thì panel ở yên, chỉ đổi bố cục lúc mở / đóng · <b>Nhược:</b> lúc mở việc đầu tiên, danh sách co từ rộng về 640 (dòng xuống hàng lại) — cần giữ dòng vừa bấm trong tầm nhìn; khi rộng, hạn + nút cách chữ xa (dòng tô khi rê giúp dò); sửa ~5 dòng mã (lưới theo có / không chọn việc, bỏ khung chờ).</p>
+  </section>
+
+  <section class="khu" id="dt">
+    <h2>375 — cả ba cách giống nhau (không đổi): danh sách → bấm → panel toàn màn, "‹ Công việc" về đúng chỗ</h2>
+    <div class="hang">
+      <figure><figcaption>375 · danh sách</figcaption><div class="dt toi" data-k="dt-375-0"></div></figure>
+      <figure><figcaption>375 · đã chọn</figcaption><div class="dt toi" data-k="dt-375-1"></div></figure>
+    </div>
+    <p class="ghi">375 đã một cột, không có khung trống → không có lý do đổi.</p>
+  </section>
+
+  <section class="khuyen">
+    <h2>Khuyến nghị: B</h2>
+    <p style="margin:0">B sửa đúng cả hai lỗi U02 (khung trống + dòng bị cắt) mà không thêm bước nào, không đổi thao tác, không thêm đọc Turso. Nhảy bố cục chỉ xảy ra lúc mở việc đầu / đóng panel; khi đang làm liền nhiều việc, panel đứng yên như hiện tại. A rẻ hơn nhưng chỉ đổi dáng khung trống, dòng việc vẫn cắt "…" nên không đáng một PR.</p>
+  </section>
+</div>
+
+<script>
+const DS = [
+  ['Nhập điểm Listening, Reading', 'Đỗ Thu Lan', 'MB FT 101 · tuần W1 JUL · 4 bài', 68, '08/07'],
+  ['Nhập điểm Writing Task 1', 'Phan Gia Huy', 'MB FT 101 · tuần W1 JUL · 2 bài', 68, '08/07'],
+  ['Nhập điểm Writing Task 2', 'Vũ Minh Châu', 'MB FT 101 · tuần W1 JUL · 2 bài', 68, '08/07'],
+  ['Nhập điểm Listening, Reading', 'Đỗ Thu Lan · Hồ Gia Bảo', 'MB FT 101 · tuần W4 JUL · 2 bài', 47, '29/07'],
+  ['Nhập điểm Writing Task 1', 'Phan Gia Huy · Hồ Gia Bảo', 'MB FT 101 · tuần W4 JUL · 1 bài', 47, '29/07'],
+  ['Nhập điểm Writing Task 2', 'Vũ Minh Châu · Hồ Gia Bảo', 'MB FT 101 · tuần W4 JUL · 1 bài', 47, '29/07'],
+  ['Nhập điểm Writing Task 2', 'Vũ Minh Châu · Lý Bảo Ngọc', 'MB FT 101 · tuần W2 AUG · 1 bài', 26, '19/08'],
+  ['Nhập điểm Reading', 'Đỗ Thu Lan · Mai Nhật Tân', 'MB FOU 12 · Progress Test · tuần W3 AUG · 1 bài', 19, '26/08'],
+  ['Nhập điểm Grammar + Vocabulary', 'Phan Gia Huy · Mai Nhật Tân', 'MB FOU 12 · Progress Test · tuần W3 AUG · 1 bài', 19, '26/08'],
+  ['Nhập điểm Pronunciation', 'Tạ Hải Yến', 'MB FOU 12 · Progress Test · tuần W3 AUG · 1 bài', 19, '26/08'],
+  ['Nhập điểm Speaking', 'Tạ Hải Yến · Lâm Khánh Duy', 'MB FOU 12 · Progress Test · tuần W3 AUG · 2 bài', 19, '26/08'],
+];
+const CHON = 1;
+const dau = (dt) => `<header class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${dt ? '' : '<span>Tổng quan</span><span>Học viên &amp; Lớp</span><span>Test</span><span class="muc dang">Công việc</span><span>Phân tích</span>'}<span class="phai">${dt ? '<span>⌕</span><span>☰</span>' : '<span class="o-tim">Tìm học viên, lớp, GV…</span><span>Thảo Vân</span>'}</span></header>`;
+const loc = () => `<div class="loc"><h1>Công việc</h1><span class="phai"><span class="nhom-nut"><span class="nut">Của tôi</span><span class="nut">Của GV</span><span class="nut bat">Tất cả</span></span><span class="nut">Mọi hạn ⌄</span><span class="nut">Lọc thêm ⌄</span></span></div>`;
+const tabs = () => `<div class="tabs"><span>Chờ bạn duyệt<i class="dem">1</i></span><span class="dang">Chấm điểm<i class="dem">14</i></span><span>Bài thi Speaking<i class="dem">2</i></span><span>Case học thuật<i class="dem">5</i></span><span>Ý thức &amp; Phối hợp<i class="dem">2</i></span><span>Việc quản lý<i class="dem">7</i></span></div>`;
+const dong = (r, i, chon) => `<div class="dong ${chon === i ? 'chon' : ''}"><div style="min-width:0"><div class="t1">${r[0]}</div><div class="t2"><span class="ng">${r[1]}</span> · <span class="so">${r[2]}</span></div></div><div class="han"><div class="q">quá hạn ${r[3]} ngày</div><div class="d so">hạn ${r[4]}</div></div><span class="nut">Nhập hộ</span></div>`;
+const ds = (chon, n = DS.length) => `<div class="the"><div class="dai-nhom">Quá hạn <span class="dem2">14</span></div>${DS.slice(0, n).map((r, i) => dong(r, i, chon)).join('')}</div>`;
+const panel = (dt) => { const r = DS[CHON]; return `<div class="panel"><div class="dau"><div><h2>${r[0]}</h2><p class="so">${r[2]} · nhập hộ ${r[1]}</p><span class="chip-han">⚠ quá hạn ${r[3]} ngày · hạn ${r[4]}</span></div>${dt ? '' : '<span class="x">✕</span>'}</div>
+  <div class="dong-p dau-cot"><span>Học viên</span><span>Task 1</span><span>Nhận xét</span></div>
+  <div class="dong-p"><span>Hồ Gia Bảo</span><span class="o so">6.0</span><span class="o">Đã ghi</span></div>
+  <div class="dong-p"><span>Lý Bảo Ngọc</span><span class="o trong">—</span><span class="o trong">Thêm</span></div>
+  <div class="chan">${dt ? '' : '<span class="tiep">Tiếp: Writing Task 2 · Vũ Minh Châu</span>'}<span class="nut">Vắng</span><span class="nut chinh">Lưu · việc tiếp ›</span></div></div>`; };
+
+const KHUNG = {
+  'ht-1440-0': () => `<div class="bo-cuc hai">${ds(-1)}<div class="cho-chon">Chọn một việc ở danh sách.</div></div>`,
+  'ht-1440-1': () => `<div class="bo-cuc hai">${ds(CHON)}${panel()}</div>`,
+  'a-1440-0': () => `<div class="bo-cuc hai">${ds(-1)}<div class="dai-cho">Chọn một việc ở danh sách.</div></div>`,
+  'a-1440-1': () => `<div class="bo-cuc hai">${ds(CHON)}${panel()}</div>`,
+  'b-1440-0': () => `<div class="bo-cuc mot">${ds(-1)}</div>`,
+  'b-1440-1': () => `<div class="bo-cuc hai">${ds(CHON)}${panel()}</div>`,
+  'dt-375-0': () => ds(-1, 8),
+  'dt-375-1': () => `<div class="lui">‹ Công việc</div>${panel(true)}`,
+};
+const k = new URLSearchParams(location.search).get('k');
+if (k) { const el = document.querySelector(`[data-k="${k}"]`); document.body.style.background = '#050a16'; document.body.replaceChildren(el); }
+document.querySelectorAll('[data-k]').forEach((el) => {
+  const dt = el.classList.contains('dt'); const than = KHUNG[el.dataset.k]();
+  el.innerHTML = dau(dt) + `<div class="nd">${el.dataset.k === 'dt-375-1' ? '' : loc() + tabs()}${than}</div>`;
+});
+</script>
+</body>
+</html>
