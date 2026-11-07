@@ -113,6 +113,7 @@ import { migratePrTlNen } from './migrate/prTlNen.ts';
 import { migratePrTlNapBai } from './migrate/prTlNapBai.ts';
 import { migratePrGiamDoc0611h } from './migrate/prGiamDoc0611h.ts';
 import { migratePrNgayXong0711 } from './migrate/prNgayXong0711.ts';
+import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -468,6 +469,9 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
   conn.pragma('foreign_keys = ON');
+  /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận: giữ PA nhiều kết quả nhất, rồi cũ nhất) → Thùng rác (đổi dữ liệu MỘT
+     lần, khoá demo_config). SAU khi bật khoá ngoại: Xoá PA dựa vào CASCADE (buổi Tutor của kết quả) — tắt thì để lại dòng mồ côi, khôi phục 409. */
+  buoc(() => migratePrPaTrung0711(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
