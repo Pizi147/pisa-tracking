@@ -4,9 +4,9 @@ import {
   ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
   gvcnDoiMtCu, khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
+import { HttpError, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
-import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
+import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
@@ -17,7 +17,7 @@ import { refreshOutcome } from './attempts.ts';
 import { entrySkillsOf } from './scoring.ts';
 import { classProgress } from '../classes/schedule.ts';
 import {
-  effectiveSkillDeadline, mondayOf, quaHanNhapDiem, weekInfo, type ScoringMode,
+  effectiveSkillDeadline, ensurePeriod, mondayOf, quaHanNhapDiem, weekInfo, type ScoringMode,
 } from '../platform/week.ts';
 
 /**
@@ -47,8 +47,12 @@ export function canMoveSkillSchedule(
 export function chanCuoiTuan(p: Principal, a: { kind: string; class_id?: number | null; student_id?: number | null }, tuan: readonly (string | null | undefined)[]): void {
   if (a.kind !== 'mock' && a.kind !== 'mt0' && a.kind !== 's_expert') return;
   /* Mở sửa lịch Test (chủ SP 06/11): công tắc BẬT → QL / Admin / GVCN lớp đó miễn khoá (đã qua kiểm quyền ghi ở nơi gọi). */
-  const cau = khoaCuoiTuan({ tuan: tuan.map((w) => w ?? null), homNay: demoToday(), quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
-  if (cau) throw badRequest(cau);
+  const ctx = { classId: a.class_id, studentId: a.student_id };
+  const cau = khoaCuoiTuan({ tuan: tuan.map((w) => w ?? null), homNay: demoToday(), quanTri: boKhoaCuoiTuan(p, ctx) });
+  if (!cau) return;
+  /* RKC: QL / Admin vượt khoá N15 sau một câu hỏi nêu đúng luật; GV giữ luật. */
+  if (vuotKhoaCuoiTuan(p, ctx)) canXacNhan('Đang khoá đổi lịch MT cuối tuần (T6 – CN) — vẫn đổi lịch?', undefined, 'Vẫn đổi lịch');
+  else throw badRequest(cau);
 }
 
 /** P6: tuần các kỹ năng bắt buộc của lượt — CHỈ ĐỌC (`ensureSkillRows` tự tạo dòng, làm sai bản khôi phục); chưa có dòng → tuần chung của lượt. */
@@ -610,7 +614,8 @@ export function logSchedule(attemptId: number, e: {
 
 // ---------------------------------------------------------------- ràng buộc khi đổi lịch
 
-export type ScheduleCheck = { blockers: string[]; warnings: string[] };
+/** RKC: `thuTu` = câu vướng THỨ TỰ lượt (trước là `blockers`, nay nằm trong `warnings` để người xếp lịch xác nhận) — đường TỰ ĐỘNG (chọn tuần, khôi phục) vẫn né tuần vướng. */
+export type ScheduleCheck = { blockers: string[]; warnings: string[]; thuTu?: string[] };
 
 /**
  * RÀNG BUỘC THỨ TỰ GIỮA CÁC ĐỢT khi lịch đã tách theo kỹ năng (mục 10.4).
@@ -651,7 +656,7 @@ export function checkWeekVsNeighbours(input: {
   boQua?: readonly number[];
 }): ScheduleCheck {
   const conn = db();
-  const blockers: string[] = [];
+  const canhBao: string[] = [];
   const warnings: string[] = [];
 
   /* Lịch hợp nhất của các đợt khác trong CÙNG lộ trình, bỏ đợt đã huỷ. Đọc THEO TỪNG KỸ NĂNG (không GROUP BY) để câu chặn
@@ -692,16 +697,18 @@ export function checkWeekVsNeighbours(input: {
     (!o.route ? soThuTuLuot(o, { kind: input.kind ?? '', attempt_no: input.attemptNo }) : o.attempt_no - input.attemptNo);
   for (const o of others) {
     /* LUAT-NX-MT (chủ SP 22/10, `10` mục 7.3): giữa hai MT không chặn vượt / trùng tuần — chỉ nhắc ở Kế hoạch Test (`sauMt`); cảnh báo
-       "cách đúng một tuần" giữ như cũ. MT0 ↔ MT1 và lớp thường giữ luật chặn. */
+       "cách đúng một tuần" giữ như cũ. RKC (chủ SP 07/11, PTA quyết định 6): MT0 ↔ MT1 và lớp thường (Giữa / Cuối khoá, Checkpoint) không còn CHẶN —
+       câu cũ thành CẢNH BÁO cần xác nhận (`warnings`: mọi nơi gọi đã đòi `force` / "Xác nhận lại"); người xếp được lịch vẫn làm được. */
     const chan = !(o.kind === 'mock' && input.kind === 'mock');
+
     if (soSanh(o) < 0) {
       if (input.newWeekStart < o.last_week) {
-        if (chan) blockers.push(
+        if (chan) canhBao.push(
           `${labelDot(o.attempt_no, o.kind)} có kỹ năng ở tuần ${tuanLich(o.last_week)}. `
           + 'Kỹ năng của lượt sau không được xếp trước phần cuối của lượt trước.',
         );
       } else if (input.newWeekStart === o.last_week) {
-        if (chan) blockers.push(
+        if (chan) canhBao.push(
           `Trùng tuần ${tuanLich(o.last_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.last_week)}). `
           + 'Hai lượt không làm bài cùng một tuần.',
         );
@@ -710,12 +717,12 @@ export function checkWeekVsNeighbours(input: {
       }
     } else if (soSanh(o) > 0) {
       if (input.newWeekStart > o.first_week) {
-        if (chan) blockers.push(
+        if (chan) canhBao.push(
           `${labelDot(o.attempt_no, o.kind)} đã có kỹ năng ở tuần ${tuanLich(o.first_week)}. `
           + 'Kỹ năng của lượt trước không được xếp vượt qua lượt kế tiếp.',
         );
       } else if (input.newWeekStart === o.first_week) {
-        if (chan) blockers.push(
+        if (chan) canhBao.push(
           `Trùng tuần ${tuanLich(o.first_week)} với ${labelDot(o.attempt_no, o.kind)} (${knTai(o, o.first_week)}). `
           + 'Hai lượt không làm bài cùng một tuần.',
         );
@@ -724,7 +731,8 @@ export function checkWeekVsNeighbours(input: {
       }
     }
   }
-  return { blockers, warnings };
+  /* RKC: thứ tự lượt thành cảnh báo (xem trên). */
+  return { blockers: [], warnings: [...canhBao, ...warnings], thuTu: canhBao };
 }
 
 export function checkSkillWeekMove(input: {
@@ -807,23 +815,21 @@ export function tuanCuoiSauKhiDoi(rows: readonly SkillRow[], doi: ReadonlyMap<st
  */
 export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string | null }): { daBo: string[] } {
   const conn = db();
-  const a = conn.prepare(`SELECT a.*, ${CO_DIEM_SQL('a')} AS co_diem FROM assessment_attempts a WHERE a.id = ?`).get(attemptId) as any;
+  const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới huỷ lịch được một lượt.');
   const nhan = nhanDot(a.kind, a.attempt_no);
   if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
   const rows = ensureSkillRows(attemptId);
-  if (a.co_diem) throw loi(400, '{nhan} đã có điểm — không huỷ lịch được.', { nhan });
-  if (rows.some((r) => r.required && r.sit_status === 'sat')) throw loi(400, '{nhan} đã làm bài — không huỷ lịch được.', { nhan });
-  const cho = conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending' LIMIT 1`).get(attemptId);
-  if (cho) throw loi(400, '{nhan} đang có đề nghị dời chờ duyệt — duyệt hoặc từ chối trước.', { nhan });
-  const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id);
+  /* RKC (chủ SP 07/11): đã có điểm / đã làm bài một phần → bỏ tuần PHẦN CHƯA THI, phần có điểm giữ nguyên; đề nghị dời cũ còn chờ tự rút (N38 L5). */
+  const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id && !hasScore(attemptId, r.skill));
   if (!bo.length) throw loi(400, '{nhan} chưa xếp lịch — không có gì để huỷ.', { nhan });
   chanCuoiTuan(p, a, bo.map((r) => r.week_start));
   const lyDo = o.lyDo?.trim() || 'Huỷ lịch';
 
   return tx(() => {
     const now = nowIso();
+    rutDeNghiDoi(attemptId);
     for (const r of bo) {
       conn.prepare(`UPDATE attempt_skills SET planned_period_id = NULL, plan_source = 'manual', updated_at = ? WHERE id = ?`).run(now, r.id);
       logSchedule(attemptId, { action: 'skill_unscheduled', field: r.skill, oldValue: r.period_code, newValue: null, reason: lyDo, actor: p.userId });
@@ -973,7 +979,9 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
   /* PR-MTGON (luật 1): dời vượt lượt sau → chặn, không đổi gì (không còn bỏ lịch / huỷ kết quả lượt bị vượt). */
   const vuot = opts.khiTao ? null
     : kiemVuot(attemptId, tuanCuoiSauKhiDoi(ensureSkillRows(attemptId), new Map([[row.skill, period.week_start]]))!, period.week_start).chan;
-  if (vuot) throw badRequest(vuot);
+  /* RKC (PTA quyết định 6 + luật chung C: N9 "MT0 trước MT1" giữ cho GV, người xếp lịch vượt kèm xác nhận): luật MT0 hỏi thay vì chặn; đã xác nhận cảnh báo
+     ở bước xem trước (`force`, luuDot) thì không hỏi lại. */
+  if (vuot && !opts.force) canXacNhan('{x} Vẫn xếp vào tuần này?', { x: vuot }, 'Vẫn xếp');
 
   const boQua = opts.hoaVaoFinal ? [opts.hoaVaoFinal] : undefined;
   const check = checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: period.week_start, boQua });
@@ -995,8 +1003,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
         + 'Trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
       );
     }
-    /* PR-MTGON (MTG-4c): lớp thường — kỹ năng đã huỷ (dữ liệu cũ) đi "Khôi phục và đặt tuần". */
-    if (row.sit_status === 'cancelled') throw loi(400, '{x} đã huỷ — "Khôi phục và đặt tuần" trước.', { x: tenMon(null, skill) });
+    /* RKC (thay MTG-4c "Khôi phục và đặt tuần trước"): lớp thường — kỹ năng đã huỷ (dữ liệu cũ): đặt tuần = khôi phục luôn (chờ thi ở tuần mới, dưới). */
   }
 
   return tx(() => {
@@ -1011,7 +1018,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
                 absent_from_no_show = 0, absence_move_count = CASE WHEN ? = 1 THEN 0 ELSE absence_move_count END, updated_at = ?
           WHERE id = ?`,
       )
-      .run(periodId, xepLai ? 1 : 0, xepLai ? 1 : 0, xepLai ? 1 : 0, nowIso(), row.id);
+      .run(periodId, xepLai || row.sit_status === 'cancelled' ? 1 : 0, xepLai ? 1 : 0, xepLai ? 1 : 0, nowIso(), row.id);
     /*
      * OV-1b (ca thật 08/10) · N38 L5: đổi tuần bằng tay = lịch mới — mọi dấu "-" của lịch cũ (cả Không dự thi) hết nghĩa, bỏ đi để ô ở tuần mới là
      * ô cần nhập bình thường. Lớp thường: "-" là chính lần dời (gỡ "-" trả về tuần cũ) — giữ.
@@ -1051,6 +1058,27 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
 export function kiemDaToiTuanThi(row: { week_start: string | null }, today: string): void {
   if (!row.week_start) throw badRequest('Chưa xếp tuần Test — chưa nhập điểm được.');
   if (row.week_start.slice(0, 10) > mondayOf(today)) throw loi(400, 'Chưa tới tuần Test {x} — chưa nhập điểm được.', { x: tuanLich(row.week_start, today) });
+}
+
+/**
+ * RKC (chủ SP 07/11, PTA quyết định 3): nhập điểm / ghi "-" khi kỹ năng CHƯA TỚI tuần thi (hoặc chưa xếp tuần) — người dời được lịch kỹ năng đó hỏi một câu
+ * rồi DỜI VỀ TUẦN NÀY (`setSkillWeek`, nhật ký lịch). Trả hàm ghi để nơi lưu gọi TRONG giao dịch của mình (lưu hỏng → không dời). Người không dời được
+ * lịch → câu cũ kèm chỉ đường. Tuần đã tới → null.
+ */
+export function doiVeTuanNayNeuChua(p: Principal, a: { id: number; class_id: number | null; student_id: number }, row: { skill: string; week_start: string | null },
+  today: string, viec: 'diem' | 'vang' = 'diem'): (() => void) | null {
+  const nay = mondayOf(today);
+  if (row.week_start && row.week_start.slice(0, 10) <= nay) return null;
+  if (!a.class_id || !canMoveSkillSchedule(p, { classId: a.class_id, studentId: a.student_id, skill: row.skill })) {
+    if (!row.week_start) throw badRequest('Chưa xếp tuần Test — nhờ Quản lý xếp tuần rồi nhập.');
+    throw loi(400, 'Chưa tới tuần Test {x} — nhờ Quản lý dời về tuần này rồi nhập.', { x: tuanLich(row.week_start, today) });
+  }
+  const x = tenMon(null, row.skill);
+  if (!row.week_start) canXacNhan(viec === 'vang' ? '{x} chưa xếp tuần — xếp vào tuần này rồi ghi vắng?' : '{x} chưa xếp tuần — xếp vào tuần này rồi lưu điểm?', { x }, 'Xếp vào tuần này');
+  else canXacNhan(viec === 'vang' ? '{x} thi tuần {tuan} (chưa tới) — dời về tuần này rồi ghi vắng?' : '{x} thi tuần {tuan} (chưa tới) — dời về tuần này rồi lưu điểm?',
+    { x, tuan: tuanLich(row.week_start, today) }, 'Dời về tuần này');
+  const pid = ensurePeriod(nay).id as number;
+  return () => { setSkillWeek(p, a.id, row.skill, pid, { reason: viec === 'vang' ? 'Ghi vắng sớm — dời về tuần này' : 'Nhập điểm sớm — dời về tuần này', force: true, today }); };
 }
 
 /** GVCN đang hoạt động của một lớp. */
@@ -1127,7 +1155,7 @@ export function setSkillScope(
   /* Đưa lại: tuần đang giữ vướng thứ tự đợt → Chưa xếp (kiểm như dời một kỹ năng). */
   const boTuan = required && !giuHuy && !!row.week_start && (
     !!kiemVuot(attemptId, tuanCuoiSauKhiDoi(ensureSkillRows(attemptId), new Map([[row.skill, row.week_start]]))!, row.week_start).chan
-    || checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: row.week_start }).blockers.length > 0);
+    || (checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: row.week_start }).thuTu?.length ?? 0) > 0);
 
   return tx(() => {
     db()

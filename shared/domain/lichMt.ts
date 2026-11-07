@@ -13,7 +13,7 @@ import { docTuanLich, tuanLich } from './hienThiNgay.ts';
 import { t } from '../i18n/index.ts';
 
 export const CUA_SO_CASE_LICH_SU_NGAY = 28;
-/** T37: một lộ trình tối đa MT8. */
+/** Độ dài tối đa của LỊCH MT MẶC ĐỊNH ở Danh mục (sysconfig). RKC (N14 "không giới hạn số MT"): không còn là trần số MT của một lộ trình. */
 export const MT_TOI_DA = 8;
 
 /** Lịch MT GỐC (luật viết cứng trước OV-6b1) — CHỈ để nạp cấu hình lần đầu (seed, migrate). `null` = lớp thường (không có MT). */
@@ -66,9 +66,9 @@ export function soMtKeTiep(ds: LuotSo[]): number {
   return Math.max(0, ...ds.filter((x) => x.status !== 'cancelled' || x.coDiem).map((x) => x.attempt_no)) + 1;
 }
 
-/** Số cột MT của lưới Kế hoạch Test: 1 … min(MT8, max(lịch mặc định của lớp, số lớn nhất còn hiệu lực)). Lưới và tóm tắt lớp dùng chung. */
+/** Số cột MT của lưới Kế hoạch Test: 1 … max(lịch mặc định của lớp, số lớn nhất còn hiệu lực) — không trần (N14). Lưới và tóm tắt lớp dùng chung. */
 export function soCotMt(soMacDinh: number, soHieuLuc: readonly number[]): number {
-  return Math.min(MT_TOI_DA, Math.max(soMacDinh, ...soHieuLuc));
+  return Math.max(soMacDinh, ...soHieuLuc);
 }
 
 /**
@@ -84,7 +84,6 @@ export function oXepMt(ds: LuotSo[], soCot: number): number | null {
 export function kiemSoMtMoi(ds: LuotSo[], n: number): string | null {
   const con = ds.filter((x) => x.status !== 'cancelled');
   if (!Number.isInteger(n) || n < 1) return t('Số MT không hợp lệ.');
-  if (n > MT_TOI_DA) return t('Tối đa MT{MT_TOI_DA} cho một lộ trình.', { MT_TOI_DA });
   if (con.some((x) => x.attempt_no === n)) return t('Lộ trình này đã có MT{n}. Đổi tuần thay vì tạo mới.', { n });
   const ke = soMtKeTiep(ds);
   if (n > ke) return t('Chưa có MT{ke} — xếp MT{ke2} trước rồi mới xếp MT{n}.', { ke, ke2: ke, n });
@@ -115,7 +114,7 @@ export function gvcnDoiMtCu(o: { tuanCuKetThuc: string | null | undefined; tuanM
 export const CAU_TUAN_DA_QUA = t('MT chưa làm bài xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.');
 
 /** P6 N15: câu lỗi một chỗ cho máy chủ, nút web, xem trước hàng loạt. */
-export const LOI_KHOA_CUOI_TUAN = t('Thứ Sáu – Chủ nhật không đổi lịch MT của tuần trước, tuần này và tuần sau — mở lại thứ Hai. Quản trị hệ thống đổi được.');
+export const LOI_KHOA_CUOI_TUAN = t('Thứ Sáu – Chủ nhật không đổi lịch MT của tuần trước, tuần này và tuần sau — mở lại thứ Hai. Quản lý / Quản trị đổi được.');
 
 /**
  * P6 N15 (chủ SP 24–25/10): thứ Sáu → Chủ nhật của tuần chứa `homNay`, lịch MT có tuần gốc / đích (`tuan` = Thứ Hai; null bỏ qua) thuộc

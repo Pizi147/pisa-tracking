@@ -9,7 +9,7 @@ import { Nhan } from '../../../ui/Nhan.tsx';
 import { useLoiForm } from '../../../ui/loiForm.tsx';
 import { ChonLop } from '../../../ui/ChonLop.tsx';
 import {
-  KY_NANG_KE_HOACH, MT_TOI_DA, mondayOfDate, tenMon, tenMonNgan, thuTuLuuLuot, tuanLich,
+  KY_NANG_KE_HOACH, mondayOfDate, tenMon, tenMonNgan, thuTuLuuLuot, tuanLich,
   type BaiXemTruoc, type DongHangLoat, type KyNangKH, type LoiTruong, type OKyNang,
 } from '@shared/domain/index.ts';
 import type { HangFT, KnO, LopKH, LuoiFTData } from './kieu.ts';
@@ -179,7 +179,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
     const b = bang.get(sid);
     if (!b || 'loi' in b) return null;
     const n = Math.max(b.soKeTiep, ...dongCua(sid).map((d) => d.n + 1));
-    return n <= MT_TOI_DA ? n : null;
+    return n;   // RKC: không trần MT (N14)
   };
   const themMt = async (sid: number) => {
     const n = soMoi(sid);

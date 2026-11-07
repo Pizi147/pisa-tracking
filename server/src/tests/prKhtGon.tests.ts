@@ -61,7 +61,7 @@ export async function runPrKhtGonTests(t: YThucTestKit) {
     assert(d.oXepMt([], 3) === 1, 'chưa có lượt → MT1');
     assert(d.oXepMt([l(1), l(2)], 3) === 3 && d.oXepMt([l(1), l(2), l(3)], 3) === null, 'MT kế trong / ngoài cột');
     assert(d.oXepMt([l(1), l(2, 'cancelled')], 3) === null, 'huỷ không điểm: số dùng lại nhưng ô là "đã huỷ"');
-    assert(d.soCotMt(3, [1, 5]) === 5 && d.soCotMt(3, []) === 3 && d.soCotMt(3, [12]) === d.MT_TOI_DA, 'số cột');
+    assert(d.soCotMt(3, [1, 5]) === 5 && d.soCotMt(3, []) === 3 && d.soCotMt(3, [12]) === 12, 'số cột (RKC: không trần MT — N14)');
     assert(d.tomTatLopFT({ dangThi: 1, chuaXep: [{ dot: 1, soEm: 1 }, { dot: 2, soEm: 0 }] }) === 'MT1 đang làm bài · MT1 chưa xếp 1 em', 'tóm tắt theo ô');
   });
 }

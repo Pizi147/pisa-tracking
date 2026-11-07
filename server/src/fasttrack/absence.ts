@@ -145,7 +145,7 @@ function nextWeekOf(weekStart: string): { id: number; code: string; week_start: 
 export function tuanDichMacDinh(attemptId: number, skill: string, today: string): { id: number; code: string; week_start: string } | null {
   for (let i = 1; i <= 8; i += 1) {
     const w = ensurePeriod(addDays(mondayOf(today), 7 * i));   // thứ Hai tuần sau trở đi = tuần CHƯA bắt đầu
-    if (!checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: w.weekStart }).blockers.length) {
+    if (!checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: w.weekStart }).thuTu?.length) {   // tự chọn: né tuần vướng thứ tự
       return { id: w.id, code: w.code, week_start: w.weekStart };
     }
   }
@@ -307,7 +307,8 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
     const check = checkSkillWeekMove({
       attemptId: req.attempt_id, skill: req.skill, newWeekStart: target.week_start,
     });
-    if (check.blockers.length) throw badRequest(check.blockers.join(' '));
+    /* RKC: vướng thứ tự lượt → hỏi (người duyệt là QL) thay vì chặn. */
+    if (check.thuTu?.length) canXacNhan('{x} Vẫn xếp vào tuần này?', { x: check.thuTu.join(' ') }, 'Vẫn xếp');
 
     applyMove(conn, p.userId, attempt, row, target, input.note ?? null, req.move_no);
     conn
@@ -441,7 +442,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
   if (!period) throw notFound('Không tìm thấy tuần.');
   /* PR-MTa T21: Quản lý khôi phục vào tuần này / tuần đã qua được (em đã thi thật) — rồi nhập điểm ngay (T19). */
   const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: period.week_start });
-  if (check.blockers.length) throw badRequest(check.blockers.join(' '));
+  if (check.thuTu?.length) canXacNhan('{x} Vẫn xếp vào tuần này?', { x: check.thuTu.join(' ') }, 'Vẫn xếp');   // RKC: hỏi thay vì chặn
 
   return tx(() => {
     const conn = db();

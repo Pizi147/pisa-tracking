@@ -10,11 +10,11 @@
  */
 import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
-import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
+import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
-import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
+import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
@@ -611,7 +611,7 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     const b = bai[d.i];
     const khoa = cheDo === 'ft' || a.kind === 'mt0' ? khoaCuoiTuan({ tuan: [d.row.week_start, d.pr.week_start], homNay, quanTri: !!pre.quanTri }) : null;
     if (khoa) { b.ghiChu = 'chan'; b.cau = khoa; continue; }
-    if (vuot.chan) { b.ghiChu = 'chan'; b.cau = vuot.chan; continue; }
+    if (vuot.chan) { b.ghiChu = 'canh-bao'; b.cau = vuot.chan; continue; }   // RKC: luật MT0 cảnh báo cần xác nhận, không chặn
     let c = checks.get(d.pr.week_start);
     if (!c) {
       c = checkWeekVsNeighbours({ cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: a.id, newWeekStart: d.pr.week_start, kind: a.kind });
@@ -633,7 +633,7 @@ export function kiemDot(p: Principal, i: { attemptId: number; kyNang: YeuCauKyNa
   const a = docDot(i.attemptId);
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
   for (const k of i.kyNang) chonKyNang(k.skill);
-  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true, quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
+  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true, quanTri: (boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) || vuotKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id })) });
 }
 
 /** Lưu MỘT ĐỢT (hộp chip bấm Lưu một lần): kiểm hết rồi mới ghi, một `tx` — chặn một kỹ năng thì cả lần lưu không đổi gì. */
@@ -651,7 +651,7 @@ export function luuDot(p: Principal, i: {
 
   const duaLai = new Set(i.kyNang.filter((k) => k.bo === false).map((k) => k.skill));
   const datTuan = i.kyNang.filter((k) => k.periodId && !k.bo) as YeuCauKyNang[];
-  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao, quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
+  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao, quanTri: (boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) || vuotKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id })) });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
   if (chan.length) {
     const ct = (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(a.class_id) as any)?.programme_code ?? null;
@@ -683,7 +683,6 @@ export function luuDot(p: Principal, i: {
   });
 }
 
-const CAU_THI_LAI_TUAN_QUA = 'Thi lại: chọn tuần từ tuần này trở đi.';
 
 /**
  * THI LẠI (T37 "ép vào đợt trùng", §5.5, Q13 — chủ sản phẩm chốt 29/09 câu 1 = A): Quản lý cho em thi lại kỹ năng ĐÃ CÓ ĐIỂM ở
@@ -694,9 +693,7 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
   if (a.kind !== 'mock' || a.lich_su || a.status === 'cancelled') throw badRequest('Chỉ thi lại được ở lượt Mock đang chạy.');
   if (!i.skills?.length) throw badRequest('Chưa chọn kỹ năng thi lại.');
-  /* T4 (PR-MTa): Quản lý xếp được tuần đã qua — trừ thi lại: thi lại là một buổi thi thật, cần tuần từ tuần này trở đi. */
-  const pr = db().prepare('SELECT week_end FROM report_periods WHERE id = ?').get(i.periodId) as any;
-  if (pr && laLichSu(pr.week_end, demoToday())) throw badRequest(CAU_THI_LAI_TUAN_QUA);
+  /* RKC (PTA quyết định 4 — thay T4 "thi lại cần tuần từ tuần này"): thi lại vào tuần đã qua được (ghi bù buổi thi lại đã diễn ra), có nhật ký. */
   const lyDo = i.lyDo?.trim() ? `Thi lại: ${i.lyDo.trim()}` : 'Thi lại';   // T7: lý do tuỳ chọn
   /* Rà #126: thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng / đã huỷ đi luồng Xếp lại bài vắng / Khôi phục, không qua đây. */
   const diem = scoresOf(i.attemptId);
@@ -1153,8 +1150,6 @@ function xetMotEmFT(i: {
       const tu = rowsCua(a).find((r) => r.skill === k)?.week_start ?? null;
       const khoa = khoaCuoiTuan({ tuan: [tu, pr.week_start], homNay: i.homNay, quanTri: i.quanTri });
       return khoa ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: khoa }
-        : laLichSu(pr.week_end, i.homNay)
-        ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: CAU_THI_LAI_TUAN_QUA }
         : { skill: k, tu, den: pr.week_start, ghiChu: 'doi', cau: 'Thi lại — điểm cũ giữ trong Lịch sử.' };
     });
     const chan = bai.filter((b) => b.ghiChu === 'chan');
@@ -1203,7 +1198,7 @@ export function xepHangLoat(p: Principal, i: {
   if (i.attemptNo && laThuong) throw badRequest('Lớp này là lớp thường — chọn Progress Test hoặc Final Test.');
   if (i.kind && !laThuong) throw badRequest('Lớp này là Fast Track — chọn MT.');
   if (i.kind && i.kind !== 'progress' && i.kind !== 'final' && !/^cp[1-9]\d{0,4}$/.test(i.kind)) throw badRequest('Cần chọn Progress Test hoặc Final Test.');
-  if (typeof i.attemptNo === 'number' && (i.attemptNo < 1 || i.attemptNo > MT_TOI_DA)) throw badRequest(`Tối đa MT${MT_TOI_DA} cho một lộ trình.`);
+  if (typeof i.attemptNo === 'number' && (!Number.isInteger(i.attemptNo) || i.attemptNo < 1)) throw badRequest('Số MT không hợp lệ.');   // RKC: không trần (N14)
   if (i.kyNang !== undefined && !laThuong && (!Array.isArray(i.kyNang) || !i.kyNang.length)) throw badRequest('Chưa chọn kỹ năng nào.');
 
   const tuan: Partial<Record<KyNangKH, number>> = {};
@@ -1232,7 +1227,7 @@ export function xepHangLoat(p: Principal, i: {
   );
 
   const lo = laThuong ? null : docFtTheoLo(studentIds);
-  const boKhoa = laThuong ? false : boKhoaCuoiTuan(p, { classId: i.classId });   // một lần cho cả lô — không một câu đọc công tắc mỗi em
+  const boKhoa = laThuong ? false : (boKhoaCuoiTuan(p, { classId: i.classId }) || vuotKhoaCuoiTuan(p, { classId: i.classId }));   // một lần cho cả lô — không một câu đọc công tắc mỗi em
   const xet = studentIds.map((studentId) => {
     const ten = hv.get(studentId)?.ten ?? '';
     if (laThuong) return xetMotEmThuong({ studentId, ten, kind: i.kind!, tuan, periods, bo });
@@ -1285,6 +1280,9 @@ export function xepHangLoat(p: Principal, i: {
       daLuu += 1;
       return dong;
     } catch (e: any) {
+      /* RKC: câu hỏi xác nhận (vd QL vượt khoá N15) KHÔNG thành lỗi dòng — đẩy lên cả request để web hỏi một lần; đồng ý thì gửi lại cả lô, dòng đã lưu
+         tính lại thành "giữ". */
+      if (e?.details?.canXacNhan) throw e;
       /* AN-5: `chanGiaoDichNeuSapHetGio` (db.ts) có thể từ chối một `tx` khi sắp hết giờ — lỗi đó cũng rơi vào đúng dòng
        * này, không làm hỏng cả lô. Người dùng bấm Lưu lại cho các dòng còn lỗi (R9b). */
       return { ...dong, hanhDong: 'loi' as const, loi: e?.message ?? 'Không lưu được.' };

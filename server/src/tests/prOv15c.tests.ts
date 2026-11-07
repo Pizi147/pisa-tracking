@@ -92,15 +92,16 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     assert(d.chuoiLop(['MB FT 101', 'MB FT 101', 'MB FT 105']) === 'MB FT 101 → MB FT 105', 'hai lớp một hàng');
     const kn = (o: any) => ({ listening: { batBuoc: true, tuan: '2026-08-24', sit: 'scheduled', khoa: null, ...o } });
     assert(d.lyDoKhongXoa(kn({})) === null, 'được xóa');
-    assert(d.lyDoKhongXoa(kn({ khoa: 'đã có điểm' })) === 'Đã có điểm — không xóa được', 'có điểm');
-    assert(d.lyDoKhongXoa(kn({ sit: 'sat', khoa: 'đã làm bài' })) === 'Đã làm bài — không xóa được', 'đã thi');
+    /* RKC: kỹ năng có điểm / đã làm bài không phải lý do chặn — Xóa lịch bỏ phần chưa thi; chỉ còn phần đó thì "Chưa xếp lịch" (không có gì để xoá). */
+    assert(d.lyDoKhongXoa(kn({ khoa: 'đã có điểm' })) === 'Chưa xếp lịch', 'có điểm');
+    assert(d.lyDoKhongXoa({ ...kn({ khoa: 'đã có điểm' }), reading: { batBuoc: true, tuan: '2026-08-24', sit: 'scheduled', khoa: null } }) === null, 'có điểm một phần → được xoá');
     assert(d.lyDoKhongXoa(kn({ tuan: null })) === 'Chưa xếp lịch', 'chưa xếp');
     const dd = { ovr: 6.5, kyVong: 6.5, danhGiaDuoc: true };
     assert(d.ketQuaLuot(dd) === 'Đạt' && d.ketQuaLuot({ ...dd, ovr: 6 }) === 'Chưa đạt' && d.ketQuaLuot({ ...dd, danhGiaDuoc: false }) === 'Chưa đủ điểm', 'kết quả');
   });
 
   // ------------------------------------------------------------------ 2 · Xóa = bỏ tuần
-  await checkAsync('C15-2 · Xóa (bo-tuan): QL và Admin được, GV 403; lượt về Chưa xếp (planned, tuần NULL), lịch sử giữ; đã có điểm / đã thi → 400', async () => {
+  await checkAsync('C15-2 · Xóa (bo-tuan): QL và Admin được, GV 403; lượt về Chưa xếp (planned, tuần NULL), lịch sử giữ; RKC: đã có điểm một phần → bỏ tuần phần chưa thi, ô có điểm giữ tuần', async () => {
     const l = lop();
     const a = em(l, 'Đỗ Trọng Tiến', 'tien.dotrong@gmail.com'), b = em(l, 'Lê Bảo Trâm', null), c = em(l, 'Hoàng Khánh Ngân', null);
     await voiMayChu(async (goi) => {
@@ -121,14 +122,15 @@ export async function runPrOv15cTests(t: YThucTestKit) {
       await json(await goi(QL, `/attempts/${ida}/bo-tuan`, post({})));
       await json(await goi(ADMIN, `/attempts/${idb}/bo-tuan`, post({})));
       conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?, 'listening', 6.5, ?)`).run(idc, NOW);
-      const e = await loi(await goi(QL, `/attempts/${idc}/bo-tuan`, post({})));
-      assert(e.status === 400 && /đã có điểm/.test(e.error), JSON.stringify(e));
+      await json(await goi(QL, `/attempts/${idc}/bo-tuan`, post({})));
+      const lc = all(`SELECT skill, planned_period_id FROM attempt_skills WHERE attempt_id = ? AND required = 1`, idc);
+      assert(lc.find((x) => x.skill === 'listening')?.planned_period_id && lc.filter((x) => x.skill !== 'listening').every((x) => x.planned_period_id === null), JSON.stringify(lc));
       /* Ô lưới: lượt đã Xóa → mọi kỹ năng chưa xếp; lyDoKhongXoa → "Chưa xếp lịch" (nút mờ). */
       const g = await json(await goi(QL, `/ke-hoach-test/ft/${l}`));
       const o = g.hang.find((h: any) => h.studentId === a.sid).dot[1];
       assert(o.attemptId === ida && Object.values(o.kn).every((x: any) => x.tuan === null) && d.lyDoKhongXoa(o.kn) === 'Chưa xếp lịch', JSON.stringify(o));
       const oc = g.hang.find((h: any) => h.studentId === c.sid).dot[1];
-      assert(d.lyDoKhongXoa(oc.kn) === 'Đã có điểm — không xóa được', JSON.stringify(oc.kn));
+      assert(d.lyDoKhongXoa(oc.kn) === 'Chưa xếp lịch', JSON.stringify(oc.kn));
     });
   });
 

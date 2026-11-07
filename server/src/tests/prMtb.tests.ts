@@ -97,9 +97,9 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(v6.loai === 'tao' && v6.no === 2, JSON.stringify(v6));
     const v7 = d.viecXepMt([ds[0]], 3, [L(1, 'completed', true)]) as any;
     assert(v7.loai === 'chan' && v7.cau === d.kiemSoMtMoi([L(1, 'completed', true)], 3), JSON.stringify(v7));
-    // Chọn quá MT8 → "Đã đủ MT8".
-    const v8 = d.viecXepMt([], 9, []) as any;
-    assert(v8.loai === 'chan' && /Đã đủ MT8/.test(v8.cau), JSON.stringify(v8));
+    // RKC (N14 không trần): MT9 là MT thường — đủ MT1…MT8 thì tạo MT9.
+    const v8 = d.viecXepMt([], 9, [1, 2, 3, 4, 5, 6, 7, 8].map((n) => L(n, 'completed', true))) as any;
+    assert(v8.loai === 'tao' && v8.no === 9, JSON.stringify(v8));
   });
 
   check('MTb (1) · dotMtMoi: đợt nhỏ nhất chưa có lịch, không có thì số kế tiếp', () => {
@@ -246,7 +246,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(lay().listening.hanCham === t.addDays(han, 3), 'hạn riêng');
   });
 
-  check('MTb (2) · "moi": em đã đủ MT8 / chưa có lộ trình → dòng đỏ, em khác vẫn xếp được (Review Focus 5)', () => {
+  check('MTb (2) · "moi": RKC — em đã có MT8 → xếp MT9 (không trần); em chưa có lộ trình → dòng đỏ, em khác vẫn xếp được (Review Focus 5)', () => {
     const day = emMoi();
     for (let n = 4; n <= 8; n++) {
       const cy = (conn.prepare('SELECT cycle_id c FROM assessment_attempts WHERE id = ?').get(day.m1) as any).c;
@@ -260,12 +260,12 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const tot = emMt1Xong();
     const r = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 'moi', studentIds: [day.sid, khong, tot.sid], tuan: bon(3), xemTruoc: true }, TODAY);
     const dd = dongCua(r, day.sid), dk = dongCua(r, khong), dt = dongCua(r, tot.sid);
-    assert(dd.hanhDong === 'loi' && /Đã đủ MT8/.test(dd.loi), JSON.stringify(dd));
+    assert(dd.hanhDong === 'tao' && dd.attemptNo === 9, JSON.stringify(dd));
     assert(dk.hanhDong === 'loi' && /chưa có lộ trình/.test(dk.loi), JSON.stringify(dk));
     assert(dt.hanhDong === 'tao' && dt.attemptNo === 2, JSON.stringify(dt));
-    assert(d.nhanSeXep(dd, null).tone === 'bad' && d.nhanSeXep(dk, null).tone === 'bad', 'cả hai dòng đỏ');
+    assert(d.nhanSeXep(dk, null).tone === 'bad', 'dòng chưa có lộ trình đỏ');
     const luu = keHoach.xepHangLoat(QL, { classId: LOP, attemptNo: 'moi', studentIds: [day.sid, khong, tot.sid], tuan: bon(3), force: true }, TODAY);
-    assert(luu.daLuu === 1 && luotSo(tot.sid, 2), 'em khác vẫn lưu');
+    assert(luu.daLuu === 2 && luotSo(tot.sid, 2) && luotSo(day.sid, 9), 'em khác vẫn lưu; em đủ MT8 có MT9');
   });
 
   // ------------------------------------------------------------------ menu kỹ năng đã có điểm (Task 0 mục 6a)

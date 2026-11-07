@@ -33,6 +33,8 @@ export function useKhoaCuoiTuan() {
   const { session } = useSession();
   const homNay = session?.demoDate ?? '';
   /* Công tắc "Mở sửa lịch Test" BẬT: chỉ người sửa được lịch (không `chiXem`) tới được nút — bỏ chip khoá; máy chủ kiểm lại theo lớp. */
-  const quanTri = session?.gocNhin?.vaiGoc === 'system_admin' || !!session?.roles?.includes('system_admin') || !!session?.moSuaLichTest;
+  /* RKC (chủ SP 07/11): QL / Admin (`plan.week`) vượt khoá N15 — máy chủ hỏi một câu khi lưu; web không vẽ chip khoá cho họ. */
+  const quanTri = session?.gocNhin?.vaiGoc === 'system_admin' || !!session?.roles?.includes('system_admin') || !!session?.moSuaLichTest
+    || !!session?.grants?.some((g) => g.permissions.includes('plan.week'));
   return (...tuan: (string | null | undefined)[]) => (homNay ? khoaCuoiTuan({ tuan: tuan.map((w) => w ?? null), homNay, quanTri }) : null);
 }

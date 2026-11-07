@@ -28,9 +28,8 @@ export type KnXoa = { batBuoc: boolean; tuan: string | null; sit: string | null;
  */
 export function lyDoKhongXoa(kn: Partial<Record<string, KnXoa | undefined>>): string | null {
   const ds = Object.values(kn).filter((o): o is KnXoa => !!o && o.batBuoc);
-  if (ds.some((o) => o.khoa === 'đã có điểm')) return t('Đã có điểm — không xóa được');
-  if (ds.some((o) => o.sit === 'sat' || o.khoa === 'đã làm bài')) return t('Đã làm bài — không xóa được');
-  if (!ds.some((o) => o.tuan && o.sit === 'scheduled')) return t('Chưa xếp lịch');
+  /* RKC: có điểm / đã làm bài một phần vẫn Xóa lịch phần chưa thi (máy chủ `boTuanLuot`). */
+  if (!ds.some((o) => o.tuan && o.sit === 'scheduled' && o.khoa !== 'đã có điểm' && o.khoa !== 'đã làm bài')) return t('Chưa xếp lịch');
   return null;
 }
 

@@ -144,7 +144,7 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
       if (!l.planned_period_id) continue;
       const pr = conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(l.planned_period_id) as any;
       const c = checkSkillWeekMove({ attemptId, skill: l.skill, newWeekStart: pr.week_start });
-      if (c.blockers.length) throw loi(400, '{x} Dời lượt trước về trước rồi khôi phục.', { x: c.blockers[0] });
+      if (c.thuTu?.length) canXacNhan('{x} Vẫn xếp vào tuần này?', { x: c.thuTu[0] }, 'Vẫn xếp');   // RKC: hỏi thay vì "Dời lượt trước về trước rồi khôi phục"
     }
     const now = nowIso();
     for (const l of lich) {

@@ -178,15 +178,15 @@ export async function runPrLmMayChu(t: YThucTestKit) {
   });
 
   // PR-MTa T7 thay "lý do ngắn → 400": Huỷ lịch — lý do tuỳ chọn.
-  check('PR-LM (2.10) · Huỷ lịch (bo-tuan): chưa điểm → bỏ tuần (lý do tuỳ chọn); có điểm → 400; GV → 403', () => {
+  check('PR-LM (2.10) · Huỷ lịch (bo-tuan): chưa điểm → bỏ tuần (lý do tuỳ chọn); RKC: có điểm một phần → bỏ tuần phần chưa thi, điểm giữ; GV → 403', () => {
     const b = emMoi();
     const e403 = loiCua(() => skillSch.boTuanLuot(P.coreTeacher, b.m2, { lyDo: 'Em xin lùi lịch' }));
     assert(e403.status === 403, `${e403.status} ${e403.message}`);
     const r = skillSch.boTuanLuot(QL, b.m2, { lyDo: 'ab' });
     assert(r.daBo.length === 4 && luot(b.m2).planned_period_id === null, JSON.stringify(r));
     diem(b.m3, 'reading');
-    const eDiem = loiCua(() => skillSch.boTuanLuot(QL, b.m3, { lyDo: 'Em xin lùi lịch' }));
-    assert(eDiem.status === 400 && /MT3 đã có điểm/.test(eDiem.message), eDiem.message);
+    const r3 = skillSch.boTuanLuot(QL, b.m3, { lyDo: 'Em xin lùi lịch' });
+    assert(!r3.daBo.includes('reading') && r3.daBo.length > 0, `bỏ tuần phần chưa thi, giữ R có điểm: ${JSON.stringify(r3)}`);
     const src = nguon('server/src/routes/index.ts');
     assert(/api\.post\('\/attempts\/:id\/bo-tuan'/.test(src) && !/xacNhanHuyLich/.test(src), 'route bo-tuan; không còn xacNhanHuyLich (PR-MTGON)');
   });

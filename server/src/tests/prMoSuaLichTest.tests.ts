@@ -36,6 +36,7 @@ export async function runPrMoSuaLichTestTests(t: any) {
   const loi = (fn: () => unknown): string | null => { try { fn(); return null; } catch (e: any) { return e?.message ?? String(e); } };
   const ma = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
   const L = (await import('../../../shared/domain/index.ts') as any).LOI_KHOA_CUOI_TUAN;
+  const HOI = 'Đang khoá đổi lịch MT cuối tuần (T6 – CN) — vẫn đổi lịch?';   // RKC: QL vượt N15 kèm xác nhận
   const MB_FT = classId('MB FT 101');
   const nguoi = (vai: string, cn: string) => {
     const id = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
@@ -80,10 +81,10 @@ export async function runPrMoSuaLichTestTests(t: any) {
     assert(!msl.dangMoSuaLichTest() && get("SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'mo_sua_lich_test.tat'").n === 1, 'tắt + nhật ký');
   }));
 
-  check('MSL-2 · TẮT, T6: QL bị khoá N15; GVCN FT không dời được lịch FT (N23); hàm quyền = như cũ', () => thu((doiNgay) => {
+  check('MSL-2 · TẮT, T6: RKC: QL được hỏi (vượt N15 kèm xác nhận); GVCN FT không dời được lịch FT (N23); hàm quyền = như cũ', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.nay);
     doiNgay();
-    assert(loi(() => ss.setSkillWeek(QL, m1, 'listening', pid(W.c3), {})) === L, 'QL phải bị khoá');
+    assert(loi(() => ss.setSkillWeek(QL, m1, 'listening', pid(W.c3), {})) === HOI, 'RKC: QL phải được hỏi');
     assert(ma(() => ss.setSkillWeek(P.coreTeacher, m1, 'listening', pid(W.c3), {})) === 403, 'GVCN FT 403');
     assert(!msl.choSuaLichTest(P.coreTeacher, { classId: MB_FT }) && msl.choSuaLichTest(QL, { classId: MB_FT }), 'choSuaLichTest như PLAN_WEEK');
     assert(kh.luoiFT(P.coreTeacher, MB_FT, T6).chiXem === true, 'GVCN chỉ xem');
@@ -137,7 +138,7 @@ export async function runPrMoSuaLichTestTests(t: any) {
     assert(ma(() => svc.huyLuot(P.subjectTeacher, huy, {})) === 403, 'GV bộ môn huỷ lượt 403');
     msl.datMoSua(P.admin, false);
     assert(ma(() => ss.setSkillWeek(G, m1, 'reading', pid(W.c3), {})) === 403, 'tắt lại: GVCN 403');
-    assert(loi(() => ss.setSkillWeek(QL, k1, 'reading', pid(W.sau), {})) === L, 'tắt lại: QL bị khoá T6');
+    assert(loi(() => ss.setSkillWeek(QL, k1, 'reading', pid(W.sau), {})) === HOI, 'tắt lại: RKC: QL được hỏi T6');
   }));
 
   check('MSL-7 · Đọc Turso: request GHI hỏi công tắc 200 lần = tối đa 1 câu SQL (nhớ MỘT request, kể cả không phải GET); bật / tắt trong request thì lần hỏi sau thấy bản mới', () => thu(() => {

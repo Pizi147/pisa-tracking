@@ -128,14 +128,13 @@ export async function runPrLtGonTests(t: YThucTestKit) {
     assert(tuanCua(e.final).join() === cp.finalWeekStart, `không được dời: ${tuanCua(e.final)}`);
   });
 
-  check('LTG-b2 · đã hoà vào tuần Final, gõ "-" lần nữa → vẫn bị chặn như luật cũ', () => {
+  check('LTG-b2 · RKC (thứ tự Giữa / Cuối khoá thành cảnh báo, như "-" của FT — N38 L4): đã hoà vào tuần Final, gõ "-" lần nữa → vẫn dời', () => {
     const cp = datMoc();
     const e = emMoi();
     const f = cp.finalWeekStart;
     schedule.setClassProgress(P.mbManager, LOP, { progressWeek: cp.finalWeek - 1 });
     const hom = t.addDays(f, 1);
     regular.reportRegularNoShow(P.admin, e.progress, 'listening', true, t.addDays(f, -6));
-    const loi = loiCua(() => regular.reportRegularNoShow(P.admin, e.progress, 'listening', true, hom));
-    assert(loi.status === 400 && /Final|vượt/.test(loi.message), String(loi.message));
+    regular.reportRegularNoShow(P.admin, e.progress, 'listening', true, hom);   // RKC: không còn chặn — dời tiếp
   });
 }

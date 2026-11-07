@@ -53,14 +53,15 @@ export async function runFixXepBaiThuongTests(t: YThucTestKit) {
     regularMod.saveRegularScore(P.admin, r.id, 'reading', { score: 20, total: 40 }, TODAY);
   });
 
-  check('XBT 3 · vẫn chặn đúng: Progress không được xếp SAU / CÙNG tuần Final; Final không được xếp trước Progress', () => {
+  check('XBT 3 · RKC (PTA quyết định 6): Progress SAU / CÙNG tuần Final, Final trước Progress → cảnh báo cần xác nhận (không force → hỏi lại, nêu đúng bài); xác nhận → lưu', () => {
     const { sid, fin } = taoEm('PISA-XBT-3');
     const sauFinal = week.ensurePeriod(addDays(TODAY, 42));
-    assertThrows(() => keHoachMod.xepMoiThuong(P.admin, { classId: lop, studentId: sid, kind: 'progress', tuan: t4(sauFinal.id), force: true }),
-      /Final Test/, 'Progress sau Final phải bị chặn');
+    assertThrows(() => keHoachMod.xepMoiThuong(P.admin, { classId: lop, studentId: sid, kind: 'progress', tuan: t4(sauFinal.id) }),
+      /Final Test/, 'Progress sau Final chưa xác nhận phải hỏi');
     const r = keHoachMod.xepMoiThuong(P.admin, { classId: lop, studentId: sid, kind: 'progress', tuan: t4(tuanNay.id), force: true });
-    assertThrows(() => keHoachMod.luuDot(P.admin, { attemptId: fin.id, force: true, kyNang: [{ skill: 'listening', periodId: tuanQua.id }] }),
-      /Progress Test/, 'Final trước Progress phải bị chặn');
+    assertThrows(() => keHoachMod.luuDot(P.admin, { attemptId: fin.id, kyNang: [{ skill: 'listening', periodId: tuanQua.id }] }),
+      /Progress Test/, 'Final trước Progress chưa xác nhận phải hỏi');
+    keHoachMod.luuDot(P.admin, { attemptId: fin.id, force: true, kyNang: [{ skill: 'listening', periodId: tuanQua.id }] });
     assert(r.id, 'thiếu id');
   });
 
