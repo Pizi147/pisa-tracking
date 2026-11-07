@@ -67,6 +67,17 @@ export async function runPrSuaLuuTruCTests(t: { check: any; assert: any; assertT
     assert(h2.chon === null && em(x.sid).status === 'active' && !em(x.sid).archived_at, `hoàn tác lần 2: ${h2.chon} ${JSON.stringify(em(x.sid))}`);
   }));
 
+  check('SLT-c2b · Hoàn tác về lựa chọn cũ giữ dấu kết quả LÚC CHỌN (vẫn nhắc "Kết quả đã đổi") + Hành trình ghi "hoàn tác"', () => thu(() => {
+    const x = emThiTruot();
+    bt.chonBuocTiep(QL, x.cy, { chon: 'ket_thuc' });
+    thiThat.datKetQuaThiThat(QL, x.cy, { l: 8, r: 8, w: 8, s: 8 });
+    bt.chonBuocTiep(QL, x.cy, { chon: 'lo_trinh_moi' });
+    xoaNho();
+    const h = bt.boChonBuocTiep(QL, x.cy);
+    assert(h.chon === 'ket_thuc' && h.kqDaDoi === true, `về Kết thúc phải còn nhắc: ${JSON.stringify({ chon: h.chon, kq: h.kqDaDoi })}`);
+    assert(get(`SELECT 1 FROM journey_events WHERE cycle_id = ? AND title LIKE 'Sau thi: hoàn tác%'`, x.cy), 'Hành trình không ghi hoàn tác');
+  }));
+
   check('SLT-c3 · em Tạm dừng sau thi → Đổi sang Kết thúc học → Hoàn tác về Tạm dừng; không lộ trình / ghi danh thừa', () => thu(() => {
     const x = emThiTruot();
     const goc = dem(x.sid);
