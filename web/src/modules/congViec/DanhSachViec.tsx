@@ -313,11 +313,14 @@ function MuiTenMoTrang({ it, dong, nut }: { it: WorkItem; dong: ChungDong; nut: 
   return <span aria-label={t('mở trang')} className={`text-[13px] font-normal text-[color:var(--accent)] ${nut ? 'sm:hidden' : ''}`}>{' '}›</span>;
 }
 
-/** Dòng phụ 13 / 400 mờ (mockup `.t2`): các mẩu nối " · ", xuống dòng khi thiếu chỗ — không cắt "…".
+/** Dòng phụ 13 / 400 mờ (mockup `.t2`): các mẩu nối " · ". < 640: xuống dòng khi thiếu chỗ — không cắt "…" (RA-GD-0711, điện thoại không rê được).
+ *  ≥ 640 (CV-HANG-DEU, PTA 07/11 — ngoại lệ có chủ ý): MỘT dòng, cắt "…" ở CUỐI để mọi hàng 2 dòng (mockup v17 a2); thứ tự quan trọng trước
+ *  (👤 người giữ · em · lớp · tuần · n bài), rê chuột thấy đủ chữ (`title` lấy chữ của dòng). Dòng có huy hiệu TVV (`children`) giữ xuống dòng — huy hiệu không bị cắt.
  *  RA-GD-0711: "·" dính CUỐI mẩu trước — xuống dòng không mở đầu dòng bằng "· tuần W1 SEP". */
 const DongPhu = ({ ds, children }: { ds: readonly ReactNode[]; children?: ReactNode }) => (ds.length || children ? (
-  <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim">
-    {ds.map((x, i) => <span key={i} className="whitespace-nowrap">{x}{i < ds.length - 1 && <span aria-hidden> ·</span>}</span>)}
+  <span onMouseEnter={(e) => { e.currentTarget.title = e.currentTarget.textContent ?? ''; }}
+    className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim ${children ? '' : 'sm:block sm:truncate'}`}>
+    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap ${children ? '' : 'sm:mr-1 sm:last:mr-0 sm:[&>.inline-flex]:align-top'}`}>{x}{i < ds.length - 1 && <span aria-hidden> ·</span>}</span>)}
     {children}
   </span>
 ) : null);
