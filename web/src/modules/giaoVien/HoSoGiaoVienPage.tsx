@@ -1,7 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, viecTiepCuaEm,
+  NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
   NHAN_TRANG_THAI, type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -126,7 +126,7 @@ export function HoSoGiaoVienPage() {
       <DaiChiSo data={data} cs={cs} ky={ky} />
       <KhoiLop data={data} />
       <KhoiHocThuat data={data} cs={cs} ky={ky} />
-      <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} viec={viec} />
+      <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} viec={viec} />
       <KhoiCase data={data} homNay={homNay}
         linkPa={!gv.laChinhMinh && session?.nav?.analysis && data.phamVi.cn
           ? { den: duongHieuQuaPaGv(data.phamVi.cn, gv.id, data.lop), chu: t('Hiệu quả PA của {ten} ›', { ten: tenGoi }) } : null} />
@@ -471,14 +471,15 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
 
 // ------------------------------------------------------------------ 1 · Việc đang tồn
 
-function KhoiViec({ gvId, nguoiXem, viec }: {
-  gvId: number; nguoiXem: { userId: number; laQuanLy: boolean };
+function KhoiViec({ gvId, nguoiXem, homNay, viec }: {
+  gvId: number; nguoiXem: { userId: number; laQuanLy: boolean }; homNay: string;
   viec: { data: { viec: NhomSo[] } | null; loading: boolean; error: { message: string; hint?: string; status?: number } | null; reload: () => void };
 }) {
   const { data, loading, error, reload } = viec;
   return (
     <Card
-      title={<>{t('Việc đang tồn')}<Goi chu={t('Tính tới hôm nay, không theo kỳ. Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}>
+      title={<>{t('Việc đang tồn')}<Goi chu={t('Tính tới hôm nay, không theo kỳ. Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}
+      action={<span className="text-xs tabular-nums text-slate-400">{tuanLich(homNay, homNay)}</span>}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={2} />
         : (
