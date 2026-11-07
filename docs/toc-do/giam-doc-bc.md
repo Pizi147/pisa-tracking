@@ -19,14 +19,17 @@ Bản chính có ~650 lượt **MT lịch sử** (`lich_su = 1`, nhập bù) ở
 | `/classes` QL · văn phòng · GV | 4 098 → 2 162 · 5 296 → 2 703 · 457 → 228 |
 | `/cham/lich-test` QL · văn phòng · GV | 4 023 → 2 213 · 5 261 → 2 854 · 1 482 → 653 |
 | `/hoc-vien-lop` văn phòng · CX · TVV · GV | 15 245 → 13 217 · 13 459 → 11 578 · 4 362 → 3 510 · 1 529 → 1 312 |
+| `/notifications` (đồng bộ chuông dựng Công việc) GV (46) · QL+GV (7) · QT+GV | 1 640 → 782 · 1 165 → 543 · 2 291 → 1 170 |
+| `/classes/{lớp}/viec-theo-em` GV (≤ 3 lớp dạy / người, 152 lần) | phần lớn −30–45 % (vd 3 530 → 1 962, 2 462 → 1 200); QL / QT ≈ −5 % |
+| `/notifications` + `viec-theo-em` (225 lần) | 326 884 → 232 378 (−29 %), JSON 225 / 225 |
 | **tổng 7 đường × 85 tài khoản** | **1 744 308 → 1 354 336 (−22 %)**; `/my-work` riêng 280 861 → 176 486 (−37 %) |
 
 Số câu không đổi, trừ `/hoc-vien-lop` +1–2 câu ở vài vai (lượt lịch sử không còn được nạp sẵn → nạp lô một lượt sau; dòng vẫn giảm).
 `/tong-quan/v5`, `/phan-tich/giao-vien`, `/cham/lich-test/qua-han`: không đổi. JSON 680 / 680 lần gọi giống hệt; bộ demo (`tocDo.run`): 758 / 758 đường câu · dòng · JSON
 không đổi (demo không có lượt lịch sử band còn cờ) → trần `tocDoDuong.ts` giữ; khoá bằng phép kiểm `GIAM-DOC-BC` (prTd7b, đỏ với mã cũ) + EXPLAIN `CON_O_SQL` vẫn đi `idx_attempt_o_cho`.
 
-Ước / ngày (dòng trả; Turso tính cả dòng duyệt nên giảm thật lớn hơn): `/my-work` −1 290 dòng / lần × ~1 000 lần ≈ **−1,3 triệu**; `/classes`, Lịch Test, `/hoc-vien-lop`,
-"Tất cả" −700 đến −2 000 / lần × vài trăm lần ≈ **−0,5–0,8 triệu** → **≈ −1,8–2,1 triệu dòng / ngày**.
+Ước / ngày (dòng trả; Turso tính cả dòng duyệt nên giảm thật lớn hơn): `/my-work` −1 290 dòng / lần × ~1 000 lần ≈ **−1,3 triệu**; `/notifications` GV −860 × vài trăm lần ≈ **−0,3 triệu**; `/classes`, Lịch Test, `/hoc-vien-lop`,
+"Tất cả" −700 đến −2 000 / lần × vài trăm lần ≈ **−0,5–0,8 triệu** → **≈ −2,1–2,4 triệu dòng / ngày**.
 
 ## [XM] chưa làm
 
