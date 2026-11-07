@@ -6,7 +6,8 @@
  *
  * Bố cục như bảng tính: mọi kích thước đo bằng "px" của trang tính mẫu rồi nhân `s` (pt / px) theo kiểu — FT dọc A4 (s 0,4231, chữ 6,6 pt),
  * lớp thường ngang A4 (s 0,75, chữ 12 pt). Hàng cao = số dòng × bước dòng + 5 px (tối thiểu 21 px), chữ tự xuống dòng theo bề rộng cột.
- * Ngắt trang theo hàng (không cắt ngang một hàng); hàng tiêu đề (hồng / xanh) không đứng một mình cuối trang; khoảng trống giữa khối không mở đầu trang.
+ * Ngắt trang như Google Sheets (PTA 07/11: "y hệt" — mẫu lớp thường để dòng II.4 sang trang 2, mẫu FT để tiêu đề VIẾT 1 cuối trang 1): ngắt GIỮA các hàng,
+ * không bao giờ cắt ngang một hàng, không lặp tiêu đề cột; chỉ hàng cao hơn cả trang (nhận xét rất dài) mới chia qua trang.
  * Chữ nghiêng: Quicksand không có bản nghiêng — mẫu nghiêng giả bằng ma trận chữ (FT 0,2, lớp thường 0,25) → làm y vậy.
  */
 import type * as PdfLib from 'pdf-lib';
@@ -50,8 +51,7 @@ type O = {
   /** Dòng đã ngắt sẵn (phần sau của một hàng quá cao bị chia qua trang). */
   dong?: Doan[];
 };
-/** `giu`: không đứng một mình cuối trang (đi cùng ≥ 3 dòng đầu hàng sau) · `kem`: đi liền n hàng sau (bảng tiêu chí không cắt ngang). */
-type Hang = { o: O[]; nen?: [number, number, number]; vien: boolean; khoang?: boolean; giu?: boolean; kem?: number; cao?: number };
+type Hang = { o: O[]; nen?: [number, number, number]; vien: boolean; cao?: number };
 
 export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong: { r: Uint8Array; b: Uint8Array }, bc: BaoCaoPdf): Promise<Uint8Array> {
   const k = bc.ft ? FT : THUONG;
@@ -106,11 +106,11 @@ export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong:
   const tieuDe = (vi: string, en: string | null): Doan[] => [[{ t: vi, b: true }], ...(en ? [[{ t: en, b: true, i: true }]] : [])];
   const oMuc = (): O[] => MUC.map((m, i) => ({ tu: i + 1, den: i + 1, ngang: 'giua', doc: 'giua', trang: true, doan: [[{ t: MUC_BC_VI[m], b: true }], [{ t: MUC_BC_EN[m], b: true, i: true }]] }));
   const tick = (muc: MucBc | null): O[] => MUC.map((m, i) => ({ tu: i + 1, den: i + 1, tick: muc === m }));
-  const khoang = () => { for (let i = 0; i < 2; i++) hang.push({ o: [{ tu: 0, den: 0 }, ...MUC.map((_, j) => ({ tu: j + 1, den: j + 1 }))], vien: k.vienKhoang, khoang: true, cao: 21 }); };
+  const khoang = () => { for (let i = 0; i < 2; i++) hang.push({ o: [{ tu: 0, den: 0 }, ...MUC.map((_, j) => ({ tu: j + 1, den: j + 1 }))], vien: k.vienKhoang, cao: 21 }); };
   const nhanChu = (vi: string, en: string): Doan => [{ t: `${vi} `, b: true }, { t: `(${en})`, b: true, i: true }, { t: ':', b: true }];
   const nhan = (d: Doan): O => ({ tu: 0, den: 0, doan: [d], doc: k.nhanGiua ? 'giua' : 'duoi' });
   const gvHang = (vi: string, en: string | null, gv: string, nhanGv: Doan): Hang => ({
-    nen: HONG, vien: true, giu: true, kem: 2,
+    nen: HONG, vien: true,
     o: [{ tu: 0, den: 0, trang: true, doan: tieuDe(vi, en), doc: 'giua' },
       ...(k.dau.tachNhan
         ? [{ tu: 1, den: 4, trang: true, doan: [nhanGv], doc: 'giua' as const, them: { cot: 2, chu: { t: gv, b: true } } }]
@@ -120,15 +120,15 @@ export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong:
   bc.phan.forEach((p, ip) => {
     if (p.khoa === 'chung') {
       const nhanGv: Doan = [{ t: 'Giáo viên chủ nhiệm (Core teacher):', b: true }];
-      hang.push({ nen: HONG, vien: true, giu: true, kem: 1, o: k.dau.tachNhan
+      hang.push({ nen: HONG, vien: true, o: k.dau.tachNhan
         ? [{ tu: 0, den: 0, trang: true, doan: [[{ t: 'NHẬN XÉT', b: true }]] }, { tu: 1, den: 4, trang: true, doan: [nhanGv], them: { cot: 3, chu: { t: p.gv, b: true } } }]
         : [{ tu: 0, den: 0, trang: true, doan: [[{ t: 'NHẬN XÉT', b: true }]] }, { tu: 1, den: 4, trang: true, doan: [[...nhanGv, { t: ` ${p.gv}`, b: true }]] }] });
       hang.push({ vien: true, o: [nhan([{ t: 'Nhận xét chung ', b: true }, { t: '(General comment)', b: true, i: true }, { t: ':', b: true }]), { tu: 1, den: 4, doan: [[{ t: p.chu }]] }] });
       p.nhom.forEach((n, i) => {
         const [vi, en] = NHOM_CHUNG[i] ?? [n.vi ?? '', n.en ?? ''];
         hang.push(i === 0
-          ? { nen: XANH, vien: true, kem: n.ds.length, o: [{ tu: 0, den: 0, trang: true, doan: tieuDe(vi, en) }, ...oMuc()] }
-          : { vien: true, kem: n.ds.length, o: [{ tu: 0, den: 0, doan: tieuDe(vi, en) }, ...MUC.map((_, j) => ({ tu: j + 1, den: j + 1 }))] });
+          ? { nen: XANH, vien: true, o: [{ tu: 0, den: 0, trang: true, doan: tieuDe(vi, en) }, ...oMuc()] }
+          : { vien: true, o: [{ tu: 0, den: 0, doan: tieuDe(vi, en) }, ...MUC.map((_, j) => ({ tu: j + 1, den: j + 1 }))] });
         n.ds.forEach((x, j) => hang.push({ vien: true, o: [{ tu: 0, den: 0, doan: [[{ t: `${j + 1}. ${x.vi}` }], [{ t: x.en, i: true }]] }, ...tick(x.muc)] }));
       });
     } else {
@@ -139,7 +139,7 @@ export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong:
       hang.push({ vien: true, o: [nhan(nhanChu('Đề xuất cải thiện', 'Suggestion')), { tu: 1, den: 4, doan: [[{ t: p.chu }]] }] });
       const ds = p.nhom.flatMap((n) => n.ds);
       if (ds.length) {
-        hang.push({ nen: XANH, vien: true, kem: ds.length, o: [{ tu: 0, den: 0, trang: true, doan: tieuDe('Cấp độ đạt được', 'Level achieved') }, ...oMuc()] });
+        hang.push({ nen: XANH, vien: true, o: [{ tu: 0, den: 0, trang: true, doan: tieuDe('Cấp độ đạt được', 'Level achieved') }, ...oMuc()] });
         for (const x of ds) hang.push({ vien: true, o: [{ tu: 0, den: 0, doan: [[{ t: x.vi }], [{ t: x.en, i: true }]] }, ...tick(x.muc)] });
       }
     }
@@ -188,7 +188,7 @@ export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong:
     const iDai = h.o.reduce((m, o, j) => (dongO(o).length > dongO(h.o[m]).length ? j : m), 0);
     const dong = dongO(h.o[iDai]);
     if (n < 2 || dong.length <= n || h.nen) return null;
-    const phan = (ds: Doan[], dau: boolean): Hang => ({ ...h, giu: false, o: h.o.map((o, j) => (j === iDai ? { ...o, doan: undefined, dong: ds, doc: 'tren' as const } : dau ? o : { ...o, doan: [], them: undefined })) });
+    const phan = (ds: Doan[], dau: boolean): Hang => ({ ...h, o: h.o.map((o, j) => (j === iDai ? { ...o, doan: undefined, dong: ds, doc: 'tren' as const } : dau ? o : { ...o, doan: [], them: undefined })) });
     return [phan(dong.slice(0, n), true), phan(dong.slice(n), false)];
   };
   const soDongVua = (caoPt: number) => Math.floor((caoPt / k.s - k.dem) / k.buocHang);
@@ -196,16 +196,12 @@ export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong:
   const hangDoi = [...hang];
   while (hangDoi.length) {
     let h = hangDoi.shift()!;
-    if (h.khoang && y === k.y0) continue;   // khoảng trống không mở đầu trang
     let cao = caoHang(h) * k.s;
-    /* Tiêu đề (hồng / xanh) đi cùng ít nhất 3 dòng đầu của hàng sau — không đứng một mình cuối trang. */
-    const kem = h.kem ? hangDoi.slice(0, h.kem).reduce((a, x) => a + caoHang(x), 0) * k.s : 0;
-    const sau = kem && cao + kem <= day - k.y0 ? kem : h.giu && hangDoi[0] ? Math.min(caoHang(hangDoi[0]), 3 * k.buocHang + k.dem) * k.s : 0;
-    if (y + cao + sau > day) {
+    if (y + cao > day) {
       /* Hàng cao hơn cả trang (nhận xét rất dài): viết phần vừa chỗ còn lại, phần sau sang trang. Hàng khác: sang trang nguyên hàng. */
-      const t = y > k.y0 && !sau && cao > day - k.y0 ? tach(h, soDongVua(day - y)) : null;
+      const t = y > k.y0 && cao > day - k.y0 ? tach(h, soDongVua(day - y)) : null;
       if (t) { [h] = t; hangDoi.unshift(t[1]); cao = caoHang(h) * k.s; }
-      else if (y > k.y0) { moTrang(); if (h.khoang) continue; }
+      else if (y > k.y0) moTrang();
       if (y === k.y0 && cao > day - k.y0) {   // cao hơn cả trang
         const t2 = tach(h, soDongVua(day - k.y0));
         if (t2) { [h] = t2; hangDoi.unshift(t2[1]); cao = caoHang(h) * k.s; }
