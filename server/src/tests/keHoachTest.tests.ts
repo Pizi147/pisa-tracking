@@ -75,13 +75,13 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(check.blockers.length === 0, `Dời MT3 trùng tuần cuối MT2 không còn bị chặn, đang ra: ${JSON.stringify(check)}`);
   });
 
-  check('T15 · Đợt CHƯA TẠO (MT4 mới) xếp trùng tuần MT3 → checkWeekVsNeighbours chặn', () => {
+  check('T15 → RKC · Đợt CHƯA TẠO (MT4 mới) xếp trùng tuần MT3 → checkWeekVsNeighbours CẢNH BÁO cần xác nhận (không chặn)', () => {
     const [mt1, mt2, mt3] = threeConsecutiveMocks();
     const mt3Week = week.periodById(mt3.planned_period_id)!.week_start;
     const check = skillSchedule.checkWeekVsNeighbours({
       cycleId: mt3.cycle_id, attemptNo: mt3.attempt_no + 1, excludeAttemptId: null, newWeekStart: mt3Week,
     });
-    assert(check.blockers.length > 0, `MT4 (chưa tạo) trùng tuần MT3 phải bị CHẶN, đang ra: ${JSON.stringify(check)}`);
+    assert(check.blockers.length === 0 && check.warnings.length > 0, `RKC: MT4 (chưa tạo) trùng tuần MT3 phải CẢNH BÁO, đang ra: ${JSON.stringify(check)}`);
   });
 
   check('T9 · Kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không dùng target hiện tại của lộ trình', () => {
@@ -841,10 +841,12 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     skillSchedule.setSkillWeek(P.mbManager, mt.id, 'speaking', A7.id, { force: true });
     /* MT3 (chưa tạo) vào đúng tuần S của MT2 → chặn, câu nêu kỹ năng ở tuần đó. */
     const trung = skillSchedule.checkWeekVsNeighbours({ cycleId: mt.cycle_id, attemptNo: 3, excludeAttemptId: null, newWeekStart: A7.weekStart });
-    assert(trung.blockers.length === 1 && /Trùng tuần .* \(S\)/.test(trung.blockers[0]), `Phải chặn và nêu "(S)", ra ${JSON.stringify(trung)}`);
+    /* RKC: thứ tự / trùng tuần giữa lượt thành cảnh báo cần xác nhận — câu giữ nguyên. */
+    assert(trung.blockers.length === 0 && trung.warnings.some((w: string) => /Trùng tuần .* \(S\)/.test(w)), `Phải cảnh báo và nêu "(S)", ra ${JSON.stringify(trung)}`);
     /* MT1 dời vào tuần L R W của MT2 thì câu KHÔNG nêu S — chỉ kỹ năng ở tuần đó. */
     const trungLrw = skillSchedule.checkWeekVsNeighbours({ cycleId: mt.cycle_id, attemptNo: 1, excludeAttemptId: mt1.id, newWeekStart: A.weekStart });
-    assert(trungLrw.blockers.length === 1 && /\(L R W\)/.test(trungLrw.blockers[0]) && !/\(S\)/.test(trungLrw.blockers[0]),
+    const cauLrw = trungLrw.warnings.find((w: string) => /Trùng tuần/.test(w)) ?? '';
+    assert(trungLrw.blockers.length === 0 && /\(L R W\)/.test(cauLrw) && !/\(S\)/.test(cauLrw),
       `Trùng tuần đầu phải nêu (L R W), ra ${JSON.stringify(trungLrw)}`);
     const A14 = week.ensurePeriod('2027-03-15');
     const cach = skillSchedule.checkWeekVsNeighbours({ cycleId: mt.cycle_id, attemptNo: 3, excludeAttemptId: null, newWeekStart: A14.weekStart });
@@ -1034,7 +1036,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(typeof thuong.hvChuaCoLich === 'number', 'Lớp thường phải có hvChuaCoLich');
   });
 
-  check('UX2 · hàng loạt lớp thường: kind=final, 2 em, S khác tuần L R W → mỗi em đúng 4 tuần; em có bài chặn không lưu gì (Q1)', () => {
+  check('UX2 · hàng loạt lớp thường: kind=final, 3 em, S khác tuần L R W → mỗi em đúng 4 tuần; RKC: em trùng tuần Giữa khoá chỉ CẢNH BÁO, xác nhận (force) thì vẫn lưu', () => {
     const { classId: lopMoi, hv: [em1, em2, em3] } = dungLopThuong('QA-FOU 94', '2029-12-03', 3);
     regularMod.planRegularTests(P.mbManager, lopMoi, { studentIds: [em3], kinds: ['progress'] });
     const cot = keHoachMod.luoiThuong(P.mbManager, lopMoi).cot;
@@ -1043,20 +1045,18 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     /* Em 3 đã có bài Giữa khoá ở đúng tuần p0 → xếp Cuối khoá L R W vào p0 là TRÙNG tuần (T15) → cả em 3 không lưu. */
     const tuan = { listening: p0.id, reading: p0.id, writing: p0.id, speaking: p1.id };
     const xt = keHoachMod.xepHangLoat(P.mbManager, { classId: lopMoi, kind: 'final', studentIds: [em1, em2, em3], tuan, xemTruoc: true });
-    assert(xt.dong.find((x: any) => x.studentId === em3).hanhDong === 'loi', 'Em 3 phải bị chặn');
-    assert(xt.dong.filter((x: any) => x.hanhDong === 'tao').length === 2, 'Em 1, 2 phải là "tao"');
-    const t = d.tomTatHangLoat(xt.dong);
-    assert(t.soEmLuu === 2 && t.soBaiLuu === 8 && t.biChan >= 1, `Tóm tắt: 2 em, 8 bài lưu được, ≥ 1 bài chặn; ra ${JSON.stringify(t)}`);
+    assert(xt.dong.find((x: any) => x.studentId === em3).hanhDong !== 'loi', `Em 3 không còn bị chặn: ${JSON.stringify(xt.dong.find((x: any) => x.studentId === em3))}`);
+    assert(xt.dong.filter((x: any) => x.hanhDong === 'tao').length === 3, 'Em 1, 2, 3 phải là "tao"');
     const luu = keHoachMod.xepHangLoat(P.mbManager, { classId: lopMoi, kind: 'final', studentIds: [em1, em2, em3], tuan, force: true });
-    assert(luu.daLuu === 2, `Chỉ 2 em lưu, ra ${luu.daLuu}`);
+    assert(luu.daLuu === 3, `RKC: cả 3 em lưu (đã xác nhận cảnh báo), ra ${luu.daLuu}`);
     for (const em of [em1, em2]) {
       const a = conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id=? AND student_id=? AND kind='final'`).get(lopMoi, em) as any;
       assert(a, `Em ${em} phải có bài Final Test`);
       for (const k of ['listening', 'reading', 'writing']) assert(tuanCua(a.id, k).w === p0.weekStart, `${k} của em ${em} phải ở tuần đã chọn`);
       assert(tuanCua(a.id, 'speaking').w === p1.weekStart, `S của em ${em} phải ở tuần riêng`);
     }
-    assert(!conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id=? AND student_id=? AND kind='final'`).get(lopMoi, em3),
-      'Em có bài bị chặn không được lưu gì (Q1)');
+    assert(conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id=? AND student_id=? AND kind='final'`).get(lopMoi, em3),
+      'RKC: em trùng tuần Giữa khoá (đã xác nhận cảnh báo) cũng có bài Final Test');
     assert(d.emGiuLaiSauLuu(luu.dong).join() === String(em3), 'R9b: chỉ em 3 còn ở lại');
     assertThrows(() => keHoachMod.xepHangLoat(P.mbManager, { classId: lopMoi, attemptNo: 1, studentIds: [em1], tuan, xemTruoc: true }), /lớp thường/, 'Lớp thường không nhận attemptNo');
     assertThrows(() => keHoachMod.xepHangLoat(P.mbManager, { classId: mbClass, kind: 'final', studentIds: [em1], tuan, xemTruoc: true }), /Fast Track/, 'Lớp FT không nhận kind');

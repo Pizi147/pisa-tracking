@@ -377,7 +377,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   // ------------------------------------------------------------------ sửa theo rà #126
   const classSvc: any = await import('../classes/classes.ts');
   // PR-MTa T4 thay K2-33: Quản lý dời lượt chưa thi vào tuần đã qua được (dời thẳng, lưu đợt); THI LẠI vẫn chặn (thi thật, cần tuần tới).
-  check('PR-XLMT (rà #126) · Tuần đã qua: QL dời thẳng / lưu đợt được (PR-MTa T4); thi lại vẫn chặn, điểm cũ còn nguyên', () => {
+  check('PR-XLMT (rà #126) · Tuần đã qua: QL dời thẳng / lưu đợt được (PR-MTa T4); RKC: thi lại vào tuần đã qua cũng được (ghi bù)', () => {
     const s = them('MB FT 101', 'XLMT Rà Tuần Qua');
     const a = luotCua(s)[0];
     datTuan(a.id, tuan(0).id);
@@ -386,9 +386,8 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     keHoach.luuDot(QL, { attemptId: a.id, force: true, kyNang: [{ skill: 'writing', periodId: tuan(-2).id }] });
     assert(lich(a.id, 'writing').tuan === t.addDays(tuanNay, -14), 'lưu đợt');
     attemptsSvc.saveScore(P.lrTeacher, a.id, 'listening', { rawScore: 30 }, TODAY);
-    assertThrows(() => keHoach.thiLai(QL, { attemptId: a.id, skills: ['listening'], periodId: tuan(-2).id, lyDo: 'Đề lỗi, thi lại', force: true }),
-      /Thi lại: chọn tuần từ tuần này trở đi/, 'thi lại');
-    assert(attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === 'listening')?.band != null, 'thi lại bị chặn thì điểm cũ còn nguyên (một tx)');
+    keHoach.thiLai(QL, { attemptId: a.id, skills: ['listening'], periodId: tuan(-2).id, lyDo: 'Đề lỗi, thi lại', force: true });
+    assert(lich(a.id, 'listening').tuan === t.addDays(tuanNay, -14), 'RKC: thi lại vào tuần đã qua');
   });
 
   check('PR-XLMT (rà #126) · Thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng/chưa điểm bị chặn', () => {

@@ -821,7 +821,7 @@ export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string |
   if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
   const rows = ensureSkillRows(attemptId);
   /* RKC (chủ SP 07/11): đã có điểm / đã làm bài một phần → bỏ tuần PHẦN CHƯA THI, phần có điểm giữ nguyên; đề nghị dời cũ còn chờ tự rút (N38 L5). */
-  const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id);
+  const bo = rows.filter((r) => r.required && r.sit_status === 'scheduled' && r.planned_period_id && !hasScore(attemptId, r.skill));
   if (!bo.length) throw loi(400, '{nhan} chưa xếp lịch — không có gì để huỷ.', { nhan });
   chanCuoiTuan(p, a, bo.map((r) => r.week_start));
   const lyDo = o.lyDo?.trim() || 'Huỷ lịch';

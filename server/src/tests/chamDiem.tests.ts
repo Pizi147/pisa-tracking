@@ -315,17 +315,16 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(!sc || !sc.no_show_period_id, 'Dấu đã được xoá');
   });
 
-  check('PR-Rc1 · C08 Dời bị chặn (vượt đợt kế tiếp) thì KHÔNG để lại dấu "-" — ghi dấu và dời là một giao dịch', () => {
+  check('PR-Rc1 · C08 → RKC (thứ tự lượt thành cảnh báo, như "-" của FT — N38 L4): "-" vướng lượt kế tiếp VẪN dời; dấu + dời cùng một giao dịch', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
     const { sid, cycleId, attemptId } = taoBaiThuong('2026-09-14');
-    /* Đợt 2 của cùng khoá cũng ở tuần 14/09: dời đợt 1 sang 21/09 là vượt qua đợt kế tiếp → setSkillWeek chặn. */
+    /* Đợt 2 của cùng khoá cũng ở tuần 14/09: dời đợt 1 sang 21/09 là vượt qua đợt kế tiếp → trước RKC chặn, nay dời + cảnh báo. */
     taoLuot(cycleId, sid, 2, 'final', '2026-09-14');
-    assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16'),
-      /vượt qua lượt kế tiếp/, 'Dời lịch bị chặn thì cả lần ghi dấu phải thất bại');
+    regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16');
     const sc = dauCua(attemptId, k);
-    assert(!sc || !sc.no_show_period_id, 'Không còn dòng dấu "-" mồ côi sau khi dời thất bại');
-    assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-14', 'Lịch giữ nguyên');
+    assert(!!sc?.no_show_period_id, 'Phải có dấu "-"');
+    assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-21', 'Phải dời sang tuần sau tuần thi');
   });
 
   check('PR-Rc1 · C08 Quyền: GVBM môn khác không ghi được "-"; Quản trị hệ thống ghi được; Quản lý ghi được (PR-XLMT: chủ sản phẩm chốt 29/09)', () => {

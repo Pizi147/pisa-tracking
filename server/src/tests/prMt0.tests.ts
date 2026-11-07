@@ -274,12 +274,12 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const tuanFinal = schedule.classProgress(l.classId).finalWeekStart as string;
     return { ...l, sid: l.sids[0], aid: mt0Cua(l.sids[0])[0].id as number, tuanFinal };
   };
-  check('MT0-4a · QL dời MT0 (chưa nối FT): Final + 3 tuần → 400 "muộn nhất"; + 1 tuần → lưu, hạn = thứ Tư tuần sau tuần mới', () => {
+  check('MT0-4a · RKC: QL dời MT0 (chưa nối FT): Final + 3 tuần → 409 hỏi "muộn nhất"; + 1 tuần → lưu, hạn = thứ Tư tuần sau tuần mới', () => {
     const e = lenFt('BE', 9);
     const x = loi(() => attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, 3)));
-    assert(x?.status === 400 && /muộn nhất/.test(x.message), `+3: ${x?.status} ${x?.message}`);
+    assert(x?.status === 409 && /muộn nhất/.test(x.message), `+3: ${x?.status} ${x?.message}`);
     const y = loi(() => skillSch.setSkillWeek(QL, e.aid, 'writing', tuanSo(e.tuanFinal, 3)));
-    assert(y?.status === 400 && /muộn nhất/.test(y.message), `+3 một kỹ năng: ${y?.message}`);
+    assert(y?.status === 409 && /muộn nhất/.test(y.message), `+3 một kỹ năng: ${y?.message}`);
     attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, 1));
     const moi = addDays(e.tuanFinal, 7);
     assert(tuanKn(e.aid) === moi, tuanKn(e.aid));
@@ -306,10 +306,10 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     skillSch.setSkillWeek(QL, e.aid, 'listening', qua);
     assert(tuanKn(e.aid).includes(addDays(e.tuanFinal, 7)), 'QL dời về tuần đã qua được');
   });
-  check('Rà #226 (5) · MT0 không sớm hơn tuần Final Test: QL dời về Final − 1 tuần → 400 "sớm nhất"', () => {
+  check('Rà #226 (5) · RKC: MT0 sớm hơn tuần Final Test: QL dời về Final − 1 tuần → 409 hỏi "sớm nhất"', () => {
     const e = lenFt('BE', 8);
     const x = loi(() => attempts.setPlanningWeek(QL, e.aid, tuanSo(e.tuanFinal, -1)));
-    assert(x?.status === 400 && /sớm nhất/.test(x.message), `${x?.status} ${x?.message}`);
+    assert(x?.status === 409 && /sớm nhất/.test(x.message), `${x?.status} ${x?.message}`);
     assert(/sớm nhất/.test(dm.kiemTuanMt0({ tuanMoi: '2026-10-19', tuanDau: '2026-10-12', tuanSomNhat: '2026-10-19', tuanMuonNhat: null, tuanMt1: null }) ?? ''), 'luật thuần');
   });
   // ------------------------------------------------------------------ MT0-5 · Chuyển tiếp lớp: nối MT0 vào lộ trình FT / không dùng
@@ -451,7 +451,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ MT0-4b/c · sau khi nối FT: MT0 muộn nhất tuần 2 FT, luôn trước MT1; không ở Xếp lịch MT
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
-  check('MT0-4b/c · sau nối FT: MT0 tới tuần 3 FT → 400; MT1 về tuần ≤ MT0 → 400 "trước MT1"; lưới chỉ ô MT0 chỉ xem, Xếp lịch MT không có MT0; đợt 0 → 400', () => {
+  check('MT0-4b/c · RKC: sau nối FT: MT0 tới tuần 3 FT → 409 hỏi; MT1 về tuần ≤ MT0 → 409 hỏi "trước MT1"; lưới chỉ ô MT0 chỉ xem, Xếp lịch MT không có MT0; đợt 0 → 400', () => {
     const l = taoLop('BE', 10, 1, 6);
     const sid = l.sids[0];
     loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track' });
@@ -460,12 +460,12 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const ft = lt(sid);
     const batDau = get('SELECT week_start w FROM report_periods WHERE id = ?', ft.start_period_id).w as string;
     let x = loi(() => attempts.setPlanningWeek(QL, m, tuanSo(batDau, 2)));   // tuần 3 FT
-    assert(x?.status === 400 && /muộn nhất/.test(x.message), `MT0 tuần 3 FT: ${x?.status} ${x?.message}`);
+    assert(x?.status === 409 && /muộn nhất/.test(x.message), `MT0 tuần 3 FT: ${x?.status} ${x?.message}`);
     const mt1 = get(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock' AND attempt_no = 1`, ft.id).id as number;
     x = loi(() => attempts.setPlanningWeek(QL, mt1, week.ensurePeriod(tuanKn(m).split(',')[0]).id));
-    assert(x?.status === 400 && /trước MT1/.test(x.message), `MT1 về tuần MT0: ${x?.status} ${x?.message}`);
+    assert(x?.status === 409 && /trước MT1/.test(x.message), `MT1 về tuần MT0: ${x?.status} ${x?.message}`);
     x = loi(() => skillSch.setSkillWeek(QL, mt1, 'reading', week.ensurePeriod(tuanKn(m).split(',')[0]).id));
-    assert(x?.status === 400 && /trước MT1/.test(x.message), `MT1 một kỹ năng về tuần MT0: ${x?.message}`);
+    assert(x?.status === 409 && /trước MT1/.test(x.message), `MT1 một kỹ năng về tuần MT0: ${x?.message}`);
     attempts.setPlanningWeek(QL, m, tuanSo(batDau, 1));   // tuần 2 FT: được
     /* MT0-THEO-EM (chủ SP 06/11): MT0 chỉ ở ô chỉ xem `mt0` của hàng — không vào cột / ô MT của lưới. */
     const hangEm = keHoach.luoiFT(QL, FT101).hang.find((h: any) => h.studentId === sid);
