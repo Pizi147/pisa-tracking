@@ -261,6 +261,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ### 07/11 sau deploy — Phân tích GV: ô "—" + BỎ CHÚ THÍCH MỌI NƠI (chủ SP chốt — session BO-CHU-THICH)
 - **Đã merge (chưa deploy):** #1186 — "Cách tính" mọi panel số thành ⓘ cạnh tiêu đề, bỏ ~35 đoạn lưu ý tĩnh / 27 tệp; bàn giao Writing cũ tính cho người ghi. Còn GIỮ: chú giải màu / ký hiệu (Hành trình, lưới FT) — chờ chủ SP quyết.
+- **Chủ SP 07/11: "Chuyển vào ⓘ"** → chú giải màu / ký hiệu (Hành trình, lưới FT và mọi chú giải tĩnh tương tự) chuyển vào ⓘ cạnh tiêu đề khối; trên màn không còn dòng chú giải. Session CHU-GIAI.
 - **Chủ SP 07/11 (ảnh bảng Phân tích › Giáo viên, Cẩm Phả FT):** "sao tôi vẫn thấy một vài GV không có thông tin gì về việc quá hạn công việc hay chấm đúng hạn hay gì?" (4 GV có ô "—").
 - **Chủ SP 07/11 (ảnh panel "Việc đúng hạn", khoanh khối "Cách tính" cuối panel):** "và bỏ mấy cái này di làm ơn" + "hình như có vẻ là các phần ___ là do tôi vừa reset hạn?"
 - PTA: kiểm trên bản chép thật từng ô "—" (không có việc trong kỳ / reset hạn dời ra sau hôm nay / lỗi). Bỏ khối "Cách tính" cuối các panel số (giải thích giữ ở ⓘ).
