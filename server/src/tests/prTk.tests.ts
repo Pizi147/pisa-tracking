@@ -592,7 +592,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     assert(ra.ovr === 6.5 && ra.nhan === 'Đạt Target' && ra.choNhap === false, JSON.stringify(ra));
     assert(rb.ovr === 6.5 && rb.nhan === '' && rb.choNhap === false, JSON.stringify(rb));
   }));
-  await checkAsync('TK-rà B3 · bảng lớp FT: "Chờ kết quả" không đếm em chuyển lớp và em "Không thi"; 4a · nhập thi thật cho lộ trình đóng vì chuyển lớp → 400', () => thu(() => {
+  await checkAsync('TK-rà B3 · bảng lớp FT: "Chờ kết quả" không đếm em chuyển lớp và em "Không thi"; 4a · nhập thi thật cho lộ trình đóng vì chuyển lớp → sửa được (HOTFIX-MO-KHOA)', () => thu(() => {
     const ft = taoLop('FT', true); const thuong = taoLop('FOU', false);
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);
     const cho = taoHV(ft, 'FT', true, 6.5); const khong = taoHV(ft, 'FT', true, 6.5); const chuyen = taoHV(ft, 'FT', true, 6.5);
@@ -603,7 +603,8 @@ export async function runPrTkTests(t: YThucTestKit) {
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(NGAY, ft);
     const r = tongKetSvc.tongKetLop(P.admin, ft);
     assert(r.dai.hocVien === 3 && r.dai.choKetQua === 1 && r.dai.datTarget === 0, JSON.stringify(r.dai));
-    assert(maLoi(() => thiThatSvc.datKetQuaThiThat(P.admin, chuyen.cy, NHAP4)) === 400, 'chuyển lớp: 400');
+    /* HOTFIX-MO-KHOA (chủ SP 07/11): lộ trình đóng vì chuyển lớp vẫn sửa được điểm thi thật (em có thể đã thi) — không chặn. */
+    assert(thiThatSvc.datKetQuaThiThat(P.admin, chuyen.cy, NHAP4).thi_that_l !== null, 'chuyển lớp: sửa được');
   }));
 
   // @@BAT-BIEN@@ — luôn ở CUỐI file: soi mọi lộ trình các phép kiểm trước để lại. Thêm phép kiểm mới Ở TRÊN dòng này.
