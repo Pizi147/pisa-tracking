@@ -36,7 +36,7 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'xem-so-mt', ten: 'Xem số Mock Test của chi nhánh', nhom: 'lich',
       loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Mock Test', duong: '/', chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Ba số Mock Test của chi nhánh — bấm để mở.' } },
-      buoc: ['Ba ô: <b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>HV chưa có MT tiếp theo</b>; bấm số mở đúng chỗ.', '<b>Lịch sắp tới</b>: <b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test.'],
+      buoc: ['Ba ô: <b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>HV chưa đủ MT</b>; bấm số mở đúng chỗ.', '<b>Lịch sắp tới</b>: <b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test.'],
       tuKhac: ['số liệu', 'mock test', 'thống kê', 'numbers'],
     },
     {

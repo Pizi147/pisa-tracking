@@ -185,17 +185,12 @@ export function mocKeTiep<T extends { status: string; lich_su: number; weekStart
 export const LUOT_HUY_HET_SQL = (a: string) => `(EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id)
   AND NOT EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id AND hk.required = 1 AND hk.sit_status != 'cancelled'))`;
 /**
- * Chủ SP 07/11: MT ĐÃ XOÁ (Xoá MT / xoá từng môn tới hết — ô "Đã xoá") = như CHƯA XẾP: không tính "đã có MT", vẫn nhắc xếp MT kế.
- * Khác huỷ hết (MT-HUY-XONG — huỷ vắng, cả dữ liệu cũ "ngoài phạm vi" `huy_vang = 1`): không còn môn bắt buộc VÀ có môn ra khỏi đợt không vì vắng.
- * Web dùng cùng luật (`dotDaXoa`).
+ * MT ĐÃ XOÁ (Xoá MT / xoá từng môn tới hết — ô "Đã xoá"): không còn môn bắt buộc VÀ có môn ra khỏi đợt không vì vắng (khác huỷ vắng hết —
+ * MT-HUY-XONG). Mốc PA quy chế "đến MT kế" bỏ qua MT đã xoá (`keHoachMocQuyChe`). XEP-MT-NHAC (chủ SP 07/11): MT đã xoá = đã xử lý — vẫn
+ * tính "MT đã có" (`LUOT_MT_DA_CO_SQL`), không nhắc xếp lại.
  */
 export const LUOT_DA_XOA_SQL = (a: string) => `(NOT EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id AND hk.required = 1)
   AND EXISTS (SELECT 1 FROM attempt_skills hk WHERE hk.attempt_id = ${a}.id AND hk.huy_vang = 0))`;
-/** Cùng luật `LUOT_DA_XOA_SQL` trên ô lưới Kế hoạch Test (`kn` của một đợt). */
-export const dotDaXoa = (kn: Readonly<Record<string, { batBuoc: boolean; huyVang?: boolean } | undefined>>): boolean => {
-  const ds = Object.values(kn).filter((o) => !!o);
-  return ds.every((o) => !o!.batBuoc) && ds.some((o) => !o!.huyVang);
-};
 /** Cùng luật `mocKeTiep` cho câu đếm theo lô (không N+1). Tham số `?` = thứ Hai của tuần này. */
 export const MOC_KE_TIEP_SQL = (a: string, rp: string) =>
   `${a}.status = 'planned' AND ${a}.lich_su = 0 AND NOT ${LUOT_HUY_HET_SQL(a)} AND ${rp}.week_start >= ?`;
@@ -214,10 +209,16 @@ export function demMtHocVien(ds: readonly LuotDem[]): { xong: number; tong: numb
   const tinh = ds.filter((l) => l.kind === 'mock' && l.status !== 'cancelled' && !l.huyHet);
   return { xong: tinh.filter((l) => l.status === 'done' || (l.yeuCau > 0 && l.coDiem >= l.yeuCau)).length, tong: tinh.length };
 }
-/** Em đã xong đủ số MT mặc định của lớp (`lichMtCua(...).length`) → thôi nhắc QL xếp thêm MT. Lớp không có lịch MT → false. */
-export function daDuMtMacDinh(xong: number, soMacDinh: number): boolean {
-  return soMacDinh > 0 && xong >= soMacDinh;
-}
+/**
+ * NHẮC XẾP MT CHỈ KHI THIẾU (chủ SP 07/11): MT ĐÃ CÓ của lộ trình = MỌI lượt Mock đã tạo — đã thi, có tuần, chưa tuần (máy đã tự xếp),
+ * QL chủ động xoá (Xoá MT / Xóa lịch / bỏ hết môn) hay Huỷ MTn: đều đã xử lý, không nhắc xếp lại. MT0 không tính. Alias `a` = assessment_attempts.
+ */
+export const LUOT_MT_DA_CO_SQL = (a: string) => `${a}.kind = 'mock'`;
+/**
+ * MỘT hàm "lộ trình thiếu MT" — chỉ khi thiếu mới nhắc (việc "Xếp lịch MTn" ở Công việc, chip "Chưa đủ MT", "HV chưa đủ MT").
+ * `soMtDaCo` đếm theo `LUOT_MT_DA_CO_SQL`; `soMacDinh` = `lichMtCua(...).length` (LT 3 · RF 2 · Khác / lớp thường 0 → không bao giờ thiếu).
+ */
+export const thieuMt = (soMtDaCo: number, soMacDinh: number): boolean => soMtDaCo < soMacDinh;
 /** Bản SQL của lượt tính trong `demMtHocVien` (alias `a` = assessment_attempts). */
 export const LUOT_MT_TINH_SQL = (a: string) => `(${a}.kind = 'mock' AND ${a}.status != 'cancelled' AND NOT ${LUOT_HUY_HET_SQL(a)})`;
 /**

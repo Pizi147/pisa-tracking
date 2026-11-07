@@ -19,7 +19,7 @@ import { useDienThoai } from '../../../ui/TheDong.tsx';
 import { kqOverall } from '../../students/GocLichThi.tsx';
 import { fmtBand } from '../../../lib/format.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-import { MT_TOI_DA, dotDaXoa, oGon, tuanLich } from '@shared/domain/index.ts';
+import { MT_TOI_DA, oGon, tuanLich } from '@shared/domain/index.ts';
 import {
   dotCuaEm, emXongDot, khoaBaiThuong, khoaDot, nhanDot,
   type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
@@ -45,7 +45,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
   /** OV-15c (C18): em vừa chọn ở ô tìm — cuộn tới hàng và đánh dấu hàng. */
   hvChon?: number | null;
-  /** U05 (G5, chip "Chưa có MT kế tiếp"): chỉ còn em chưa có lượt MT nào đang chờ và còn ô "Xếp MTn". */
+  /** U05 (G5, chip "Chưa đủ MT"): chỉ còn em có lộ trình thiếu MT (`thieuMt`). */
   chiChuaCoKe?: boolean;
 }) {
   const [hop, setHop] = useState<Hop | null>(null);
@@ -101,14 +101,13 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   const khaiGiang = loai === 'thuong' ? (data as LuoiThuongData).khaiGiang : null;
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
   const canXepLai = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
-    && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || (o?.trangThai === 'da-huy' && !o.huyVang)));   // N38 L2: huỷ vắng 2 lần = đã xong
+    && Object.values(d.kn).some((o) => o?.trangThai === 'vang'));   // N38 L2 + PTA 07/11: huỷ (vắng 2 lần / QL tự huỷ) không nhắc — cùng `emCanXepLai`
   const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
     && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
-  /* "Chưa có MT kế tiếp" (G5): em không còn lượt MT nào đang chờ (có lịch, chưa xong) — ô "Xếp MTn" của em viền nhấn đậm.
-     Chủ SP 07/11: MT đã xoá = như chưa xếp (cùng luật máy chủ `chuaCoLichTiep`). */
-  const khongConLuot = (h: HangFT | HangThuong) => loai === 'ft' && !Object.values((h as HangFT).dot)
-    .some((d) => d.attemptId !== null && !d.lichSu && !emXongDot(d) && !dotDaXoa(d.kn));
-  const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiChuaCoKe || (chuaXepKeTiep(h) && khongConLuot(h)));
+  /* "Chưa đủ MT" (G5) — XEP-MT-NHAC (chủ SP 07/11): em có lộ trình thiếu MT (máy chủ `thieuMt`, cùng hàm với số trên chip) —
+     lọc chip + ô "Xếp MTn" viền nhấn đậm. */
+  const thieu = (h: HangFT | HangThuong) => loai === 'ft' && !!(h as HangFT).thieuMt;
+  const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiChuaCoKe || thieu(h));
   /* UI-CHAM-TEST (mockup khu a): lớp dài hiện HANG_GON em đầu + "Hiện tất cả n"; đang tìm em / lọc "Cần xếp lại" thì hiện hết. */
   /* KHT-GON (critique): lớp dài thu gọn vẫn hiện MỌI em cần chú ý (cần xếp lại, trễ chấm, MT kế tiếp chưa xếp trong cột đang vẽ) —
      không em nào bị khuất sau "Hiện tất cả". */
@@ -157,14 +156,14 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                       <ODaXoa nhan={nhanDot(c.dot)} onMo={(el) => moHop(el, c)} busy={dangKhoiPhuc === id}
                         href={chiXem ? duongDotTest({ id, kind: 'mock', classId: data.classId, studentId: h.studentId }) : null}
                         onKhoiPhuc={chiXem ? undefined : () => khoiPhucO(id, nhanDot(c.dot), h.ten)} />
-                      {/* Chủ SP 07/11: MT đã xoá = như chưa xếp — "Xếp MT{n}" kế tiếp như 1440. */}
+                      {/* Chủ SP 07/11: thẻ có "Xếp MT{n}" kế tiếp như 1440 (kể cả khi MT đã xoá — nút thao tác, không phải nhắc). */}
                       {chuaXepKeTiep(h) && !chiXem && (
-                        <NutXepO chu={t('Xếp MT{n}', { n: h.soKeTiep })} ke={khongConLuot(h)} onMo={(el) => moHop(el, cotMt(h.soKeTiep))} />
+                        <NutXepO chu={t('Xếp MT{n}', { n: h.soKeTiep })} ke={thieu(h)} onMo={(el) => moHop(el, cotMt(h.soKeTiep))} />
                       )}
                     </>
                   );
                 })() : chuaXepKeTiep(h) && !chiXem ? (
-                  <NutXepO chu={t('Xếp MT{n}', { n: h.soKeTiep })} ke={khongConLuot(h)} onMo={(el) => moHop(el, cotMt(h.soKeTiep))} />
+                  <NutXepO chu={t('Xếp MT{n}', { n: h.soKeTiep })} ke={thieu(h)} onMo={(el) => moHop(el, cotMt(h.soKeTiep))} />
                 ) : null}
               </div>
               {/* Chủ SP 06/11: hàng S Ex mảnh dưới ô MT (375). */}
@@ -265,7 +264,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                         <OHuy onMo={chiXem ? undefined : (el) => setHuy({ attemptId: dot.huy!, anchor: el, hang: h as HangFT, cot: c })} />
                       ) : c.dot.attemptNo === (h as HangFT).soKeTiep ? (
                         /* K4-08: chỉ MT kế tiếp có "Xếp MTn"; MT sau nữa "–" (mockup #659). GV chỉ xem: chữ mờ "chưa xếp". */
-                        <NutXepO chu={t('Xếp MT{n}', { n: c.dot.attemptNo })} title={t('Bấm để xếp {maDot}', { maDot: nhanDot(c.dot) })} ke={khongConLuot(h)} onMo={chiXem ? undefined : moHop} />
+                        <NutXepO chu={t('Xếp MT{n}', { n: c.dot.attemptNo })} title={t('Bấm để xếp {maDot}', { maDot: nhanDot(c.dot) })} ke={thieu(h)} onMo={chiXem ? undefined : moHop} />
                       ) : <OTrong title={t('Xếp MT trước rồi mới tới {maDot}', { maDot: nhanDot(c.dot) })} />
                     ) : /^cp\d+$/.test(c.key) && !(data as LuoiThuongData).cpTay ? (
                       /* OV-6b2: Checkpoint tự sinh theo lịch lớp — em không có Checkpoint này (vào sau) thì không có gì để xếp. TAT-CHECKPOINT: tắt tự sinh → nút Xếp như Progress / Final. */

@@ -12,12 +12,12 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT LỚP TRONG KẾ HOẠCH TEST — hàng lớp TÁCH TRƯỜNG (U05, mockup V11 `.hl-kh`, 10.2 #9): ▸ · mã (→ hồ sơ lớp) · n HV · GVCN · đợt đang chạy
- * ("MT3 đang làm bài" / lớp thường "đang W8/8") · ô số "Chưa có MT kế tiếp · n em" (bấm = lọc lớp đó) hoặc "Chỉ xem"; rồi lưới HV × đợt khi mở
+ * ("MT3 đang làm bài" / lớp thường "đang W8/8") · ô số "Chưa đủ MT · n em" (bấm = lọc lớp đó) hoặc "Chỉ xem"; rồi lưới HV × đợt khi mở
  * (tải khi mở). Lớp thường còn em chưa có bài → nút nhỏ `Xếp cả lớp theo đề xuất`.
  */
 export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiChuaCoKe = false, hvChon = null, onLocLop }: {
   lop: LopKH; mo: boolean; onToggle: () => void; onHienDien: (open: boolean) => void; chiChuaCoKe?: boolean;
-  /** Ô số "Chưa có MT kế tiếp · n em" — bật lọc cho lớp này. */
+  /** Ô số "Chưa đủ MT · n em" — bật lọc cho lớp này. */
   onLocLop?: () => void;
   /** OV-15c (C18): em vừa chọn ở ô tìm (thuộc lớp này) — lưới cuộn tới hàng em. */
   hvChon?: number | null;
@@ -55,7 +55,7 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiChuaCoKe = false,
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           {lop.chiXem ? <span className={`${CHIP_TRON} !border-[var(--line-strong)] bg-[var(--surface)] text-dim`}>{t('Chỉ xem')}</span>
             : lop.loai === 'ft' && lop.chuaCoLichTiep > 0 ? (
-              <button type="button" className="o-so" onClick={(e) => { e.stopPropagation(); onLocLop?.(); }}>{t('Chưa có MT kế tiếp · {n} em', { n: lop.chuaCoLichTiep })}</button>
+              <button type="button" className="o-so" onClick={(e) => { e.stopPropagation(); onLocLop?.(); }}>{t('Chưa đủ MT · {n} em', { n: lop.chuaCoLichTiep })}</button>
             ) : null}
           {nutXep}
         </span>

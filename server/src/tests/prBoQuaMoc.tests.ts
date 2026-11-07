@@ -36,6 +36,9 @@ export async function runPrBoQuaMocTests(t: { check: any; assert: any; conn: any
     assert(iv, 'bộ thử thiếu PA quy chế đang chạy ở MB FT 101');
     conn.prepare(`UPDATE case_interventions SET moc_quy_che = 'until_next_mt', followup_due = NULL WHERE id = ?`).run(iv.id);
     conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE cycle_id = ? AND attempt_no > ?`).run(iv.cycle_id, iv.attempt_no);
+    /* XEP-MT-NHAC (chủ SP 07/11): việc chỉ khi lộ trình THIẾU MT — lịch lớp thêm một MT so với số MT đã có (Huỷ MTn cũng là đã có). */
+    const n = one(`SELECT COUNT(*) n FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mock'`, iv.cycle_id).n as number;
+    conn.prepare('UPDATE classes SET lich_mt = ? WHERE id = ?').run(JSON.stringify(Array.from({ length: n + 1 }, (_, i) => 4 * (i + 1))), classId('MB FT 101'));
     const key = `moc:${iv.id}`;
     assert(coViec(key), 'dựng xong phải có việc Xếp lịch MT');
     return { key, id: iv.id as number, mt: `mt${iv.attempt_no + 1}` };
@@ -112,15 +115,15 @@ export async function runPrBoQuaMocTests(t: { check: any; assert: any; conn: any
     }
   }));
 
-  /* Chủ SP 07/11 (XM-MT-TUAN): MT kế ĐÃ XOÁ (mọi môn ra khỏi đợt, không phải huỷ vắng) = như chưa xếp — vẫn nhắc; MT sau nữa có tuần thì mốc PA theo MT đó. */
-  check('BQ-7 · MT kế đã xoá (Xoá MT) → vẫn có việc "Xếp lịch MT"; MT sau nữa có tuần → mốc PA theo MT đó, không kẹt ở MT đã xoá', () => thu(() => {
+  /* XEP-MT-NHAC (chủ SP 07/11, đảo phần nhắc của XM-MT-TUAN): MT kế ĐÃ XOÁ = đã xử lý — không nhắc; MT sau nữa có tuần thì mốc PA theo MT đó (giữ). */
+  check('BQ-7 · MT kế đã xoá (Xoá MT) → KHÔNG việc "Xếp lịch MT" (xoá rồi thì thôi); MT sau nữa có tuần → mốc PA theo MT đó, không kẹt ở MT đã xoá', () => thu(() => {
     const { key, id } = dung();
     const iv = one(`SELECT a.cycle_id, a.attempt_no FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id = ?`, id);
     const ke = one(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND attempt_no = ?`, iv.cycle_id, iv.attempt_no + 1);
     assert(ke, 'bộ thử thiếu lượt MT kế');
     conn.prepare(`UPDATE assessment_attempts SET status = 'planned', planned_period_id = NULL WHERE id = ?`).run(ke.id);
     conn.prepare(`UPDATE attempt_skills SET required = 0, huy_vang = 0, sit_status = 'scheduled', scope_reason = 'Xoá MT' WHERE attempt_id = ?`).run(ke.id);
-    assert(coViec(key), 'MT kế đã xoá: mất việc "Xếp lịch MT"');
+    assert(!coViec(key), 'MT kế đã xoá: vẫn nhắc "Xếp lịch MT"');
     /* MT sau nữa (n+2) có tuần — bộ thử không có sẵn: tạo bằng đường thật (`createAttempt`, số kế = n+2 vì MT đã xoá vẫn giữ số). */
     const sid = one('SELECT student_id FROM learning_cycles WHERE id = ?', iv.cycle_id).student_id;
     const tuan = one(`SELECT id FROM report_periods ORDER BY week_start DESC LIMIT 1`).id;

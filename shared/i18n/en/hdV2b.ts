@@ -13,7 +13,7 @@ export const EN_HD_V2B = {
   'Bấm số GV mở panel; bấm dòng lớp để xem em còn trống rồi <b>Nhập hộ</b>.': 'Press a teacher’s number to open the panel; press a class row to see the empty students, then <b>Enter for them</b>.',
   'Xem số Mock Test của chi nhánh': 'See the branch’s Mock Test numbers',
   'Tổng quan › Mock Test': 'Home › Mock Test',
-  'Ba ô: <b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>HV chưa có MT tiếp theo</b>; bấm số mở đúng chỗ.': 'Three boxes: <b>MT rounds this week</b> · <b>Work not yet scored</b> · <b>Students with no next MT</b>; press a number to open the right place.',
+  'Ba ô: <b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>HV chưa đủ MT</b>; bấm số mở đúng chỗ.': 'Three boxes: <b>MT rounds this week</b> · <b>Work not yet scored</b> · <b>Students without enough MTs</b>; press a number to open the right place.',
   'Test › Kế hoạch Test': 'Test › Test plan',
   'Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Cần xếp lại</b> chỉ lớp có em cần xếp.': 'Open <b>Test › Test plan</b>: <b>Schedule MTs…</b> (FT) · <b>Schedule Test…</b> (regular classes); the <b>Needs rescheduling</b> chip shows only classes with students to reschedule.',
   'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.': 'One skill: press an MT cell — for each subject <b>Move</b> (choose a week = reschedule from scratch) · <b>Absent</b>, then <b>Save</b>.',

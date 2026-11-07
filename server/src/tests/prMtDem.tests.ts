@@ -56,8 +56,9 @@ export async function runPrMtDemTests(t: { check: any; assert: any; conn: any; P
     assert(JSON.stringify(d.demMtHocVien([])) === '{"xong":0,"tong":0}', 'rỗng');
   });
 
-  check('MTD-2 · daDuMtMacDinh: (3,3) (2,2) đủ · (2,3) chưa · lớp không lịch (5,0) không', () => {
-    assert(d.daDuMtMacDinh(3, 3) && d.daDuMtMacDinh(2, 2) && !d.daDuMtMacDinh(2, 3) && !d.daDuMtMacDinh(5, 0), 'daDuMtMacDinh');
+  /* XEP-MT-NHAC (chủ SP 07/11): `daDuMtMacDinh` (xong đủ) → `thieuMt` (MT đã có < mặc định) — một hàm nhắc xếp MT. */
+  check('MTD-2 · thieuMt: (3,3) (2,2) đủ · (2,3) thiếu · lớp không lịch (5,0) không', () => {
+    assert(!d.thieuMt(3, 3) && !d.thieuMt(2, 2) && d.thieuMt(2, 3) && !d.thieuMt(5, 0), 'thieuMt');
   });
 
   check('MTD-3 · Học viên & Lớp: MT1–3 xong + MT4 chưa xếp tuần → loTrinh 3/4; huỷ MT4 → 3/3; em chưa có lượt → 0/0', () => thu(() => {
@@ -74,7 +75,7 @@ export async function runPrMtDemTests(t: { check: any; assert: any; conn: any; P
     assert(lt?.mt === 0 && lt.soMt === 0, `chưa có lượt: ${JSON.stringify(lt)}`);
   }));
 
-  check('MTD-4 · "chưa có MT tiếp theo": em xong đủ 3 MT mặc định (kể cả có MT4 chưa xếp tuần) không đếm; em xong 2/3 vẫn đếm', () => thu(() => {
+  check('MTD-4 · "chưa đủ MT": em xong đủ 3 MT mặc định (kể cả có MT4 chưa xếp tuần) không đếm; em xong 2/3 vẫn đếm', () => thu(() => {
     const goc = lopKh(MB_FT).chuaCoLichTiep as number;
     const a = em(MB_FT);
     for (const n of [1, 2, 3]) a.luot(n, { xong: true, tuan: t.addDays(tuanNay, -7 * (8 - n)) });
@@ -99,7 +100,7 @@ export async function runPrMtDemTests(t: { check: any; assert: any; conn: any; P
     assert(/MT3 chưa xếp \d+ em/.test(tt), `có MT3: ${tt}`);
   }));
 
-  check('MTD-6 · Tổng quan Admin "HV chưa có MT tiếp theo" = Σ chuaCoLichTiep lớp FT; em đủ MT mặc định không làm tăng', () => thu(() => {
+  check('MTD-6 · Tổng quan Admin "HV chưa đủ MT" = Σ chuaCoLichTiep lớp FT; em đủ MT mặc định không làm tăng', () => thu(() => {
     const { loadPrincipal } = perm;
     const id = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
       WHERE r.key = 'office_admin' AND b.code = 'MB' ORDER BY ur.user_id LIMIT 1`)?.id;

@@ -10,7 +10,7 @@
  */
 import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
-import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, LUOT_DA_XOA_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_XONG_SQL, daDuMtMacDinh, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
+import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -100,10 +100,9 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
     for (const r of conn
       .prepare(
         `SELECT e.class_id AS class_id, s.id AS student_id, c.lich_mt, c.route AS lop_route, cy.route,
-                CASE WHEN cy.id IS NOT NULL AND NOT ${DA_THI_THAT_SQL('cy')} AND NOT EXISTS (   -- PTA 28/10: đã thi thật thì không còn nhắc xếp MT
-                  SELECT 1 FROM assessment_attempts a WHERE a.cycle_id = cy.id AND a.status = 'planned'
-                    AND (a.planned_period_id IS NOT NULL OR ${LUOT_HUY_HET_SQL('a')}) AND NOT ${LUOT_DA_XOA_SQL('a')}) THEN 1 ELSE 0 END AS chua_co_lich,   -- MT-HUY-XONG: đợt huỷ hết = đã có MT, không nhắc; chủ SP 07/11: MT đã xoá = chưa có   -- PR-LM: lượt đã huỷ lịch (tuần NULL) không phải "có lịch"
-                (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_XONG_SQL('a')}) AS so_mt_xong
+                /* XEP-MT-NHAC (chủ SP 07/11): số MT đã có của lộ trình đang chạy — chưa có lộ trình / đã thi thật (PTA 28/10) → NULL, không nhắc. */
+                CASE WHEN cy.id IS NOT NULL AND NOT ${DA_THI_THAT_SQL('cy')}
+                  THEN (SELECT COUNT(*) FROM assessment_attempts a WHERE a.cycle_id = cy.id AND ${LUOT_MT_DA_CO_SQL('a')}) END AS so_mt_co
            FROM students s
            JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
            JOIN classes c ON c.id = e.class_id
@@ -114,8 +113,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       if (!hvCuaLop.has(r.class_id)) hvCuaLop.set(r.class_id, []);
       hvCuaLop.get(r.class_id)!.push(r.student_id);
       if (!soMacDinh.has(r.class_id)) soMacDinh.set(r.class_id, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.lop_route).length);
-      /* P2 MT-DEM: em đã xong đủ MT mặc định của lớp thì thôi nhắc xếp thêm (lượt đã tạo vẫn nhắc thi / chấm như cũ). */
-      if (r.chua_co_lich && !daDuMtMacDinh(r.so_mt_xong, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.route).length)) chuaCoLichTiep.set(r.class_id, (chuaCoLichTiep.get(r.class_id) ?? 0) + 1);
+      /* XEP-MT-NHAC: "Chưa đủ MT" = lộ trình thiếu MT (`thieuMt`) — đủ 3 (RF 2) MT đã có thì không nhắc. */
+      if (r.so_mt_co != null && thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.route).length)) chuaCoLichTiep.set(r.class_id, (chuaCoLichTiep.get(r.class_id) ?? 0) + 1);
     }
     /*
      * MỘT câu lượt cho cả hai số (KHT-GON, trần tocDo): lượt của em đang học ở lớp FT — (1) `luotCuaLop` = lượt ở CHÍNH lớp đó, còn hiệu lực, còn là
@@ -145,7 +144,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       }
     }
   }
-  /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. */
+  /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ (PTA 07/11: phần thi đã huỷ không tính), lượt còn chạy, không lịch sử. */
   const canXepLai = new Map([...emCanXepLai(ftClassIds)].map(([lop, em]) => [lop, em.size]));
   /* U05 (mockup V11 hàng lớp): ô đợt đang chạy — "MTn đang làm bài", không thì MT cao nhất đã xong "MTn đã xong"; từ lượt đã đọc (0 câu). */
   const dotChay = (classId: number): string | null => {
@@ -331,7 +330,10 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
   const students = conn
     .prepare(
       `SELECT s.id, s.full_name, s.student_code, s.status, e.started_at,
-              (SELECT cy.id FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.id DESC LIMIT 1) AS cycle_id
+              (SELECT cy.id FROM learning_cycles cy WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.id DESC LIMIT 1) AS cycle_id,
+              /* XEP-MT-NHAC: lộ trình cho cờ thieuMt — đã thi thật → NULL (không nhắc), như danhSachLop. */
+              (SELECT CASE WHEN ${DA_THI_THAT_SQL('cy')} THEN NULL ELSE cy.route END FROM learning_cycles cy
+                WHERE cy.student_id = s.id AND cy.status = 'active' ORDER BY cy.id DESC LIMIT 1) AS route_nhac
          FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
         WHERE e.class_id = ? AND ${HV_DANG_HOC_SQL('s')}
         ORDER BY s.full_name`,
@@ -444,6 +446,8 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
       vaoMuon: laVaoMuon(s.started_at ?? null, cls.start_date ?? null), dot,
       /* K4-08: chỉ ô MT kế tiếp có "+ xếp" (Q11) — tính trên cả lộ trình của em (Q12). */
       soKeTiep: soKeTiepCua.get(s.id)!,
+      /* XEP-MT-NHAC: lọc "Chưa đủ MT" của lưới — cùng `thieuMt` với `chuaCoLichTiep` (MT đã có = mọi lượt Mock, `LUOT_MT_DA_CO_SQL`). */
+      thieuMt: thieuMt((tatCaCua.get(s.id) ?? []).length, lichMtCua(cls, s.route_nhac).length),
       mt0: mt0Cua.get(s.id) ?? null,
     };
   });
@@ -1489,7 +1493,7 @@ function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
            JOIN assessment_attempts a ON a.id = k.attempt_id AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
            JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
-          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status IN ('absent', 'cancelled') AND k.huy_vang = 0   -- N38 L2: huỷ vắng 2 lần = đã xong
+          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status = 'absent'   -- N38 L2: huỷ vắng 2 lần = đã xong · PTA 07/11 (XEP-MT-NHAC): môn QL tự huỷ = chủ động, không nhắc
             AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.skill = k.skill AND r.status = 'pending')`,
       )
       .all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, new Set()).get(r.class_id)!).add(r.student_id);

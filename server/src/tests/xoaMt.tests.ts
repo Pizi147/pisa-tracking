@@ -105,23 +105,19 @@ export async function runXoaMtTests(t: any) {
     }
   }));
 
-  check('XM-7 · chủ SP 07/11: MT đã xoá KHÔNG tính "đã có MT" — Kế hoạch Test "Chưa có MT kế tiếp" +1; Khôi phục → như cũ; huỷ vắng hết (MT-HUY-XONG) vẫn tính có', () => thu(() => {
+  /* XEP-MT-NHAC (chủ SP 07/11, đảo phần nhắc của #1158): MT QL chủ động xoá = đã xử lý — vẫn tính "MT đã có", không làm tăng "Chưa đủ MT". */
+  check('XM-7 · chủ SP 07/11 (XEP-MT-NHAC): Xoá MT / Khôi phục / huỷ vắng hết KHÔNG đổi "Chưa đủ MT" (chip + cờ hàng lưới) — xoá rồi thì thôi', () => thu(() => {
     const chua = () => { xoaNho(); return kh.danhSachLop(P.mbManager, {}).lop.find((l: any) => l.id === MB_FT).chuaCoLichTiep as number; };
     const a = luot();
     const sid = get('SELECT student_id FROM assessment_attempts WHERE id = ?', a).student_id;
-    /* Web (`dotDaXoa` trên ô lưới) cùng luật máy chủ (`LUOT_DA_XOA_SQL`). */
-    const xoaO = () => { xoaNho(); return dm.dotDaXoa(kh.luoiFT(P.mbManager, MB_FT).hang.find((h: any) => h.studentId === sid).dot[1].kn) as boolean; };
-    const goc = chua();
-    assert(!xoaO(), 'ô MT1 còn lịch mà web coi đã xoá');
+    const thieu = () => { xoaNho(); return kh.luoiFT(P.mbManager, MB_FT).hang.find((h: any) => h.studentId === sid).thieuMt as boolean; };
+    const goc = chua(), gocHang = thieu();
     svc.xoaLuot(P.mbManager, a);
-    assert(chua() === goc + 1 && xoaO(), `xoá: ${chua()} ≠ ${goc + 1} / ô ${xoaO()}`);
+    assert(chua() === goc && thieu() === gocHang, `xoá: ${chua()} ≠ ${goc} / hàng ${thieu()}`);
     svc.duaLaiCaLuot(P.mbManager, a);
-    assert(chua() === goc && !xoaO(), `khôi phục: ${chua()} ≠ ${goc}`);
+    assert(chua() === goc && thieu() === gocHang, `khôi phục: ${chua()} ≠ ${goc}`);
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1 WHERE attempt_id = ?`).run(a);
-    assert(chua() === goc && !xoaO(), `huỷ vắng hết: ${chua()} ≠ ${goc}`);
-    /* Dữ liệu cũ (BQ-6): huỷ vắng ghi "ngoài phạm vi" — vẫn là huỷ, không phải xoá. */
-    conn.prepare(`UPDATE attempt_skills SET required = 0 WHERE attempt_id = ?`).run(a);
-    assert(chua() === goc && !xoaO(), `huỷ cũ ngoài phạm vi: ${chua()} ≠ ${goc}`);
+    assert(chua() === goc && thieu() === gocHang, `huỷ vắng hết: ${chua()} ≠ ${goc}`);
   }));
 
   check('XM-3 · chặn như "Xóa lịch" cũ: có điểm → 400; đã làm bài → 400; không đổi gì. Lớp thường / lượt không phải MT → 400', () => thu(() => {

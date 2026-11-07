@@ -32,9 +32,10 @@ type KetQuaKiem = { loi: string | null; canhBao: string | null };
 const suaDuoc = (o: OKyNang | undefined): o is OKyNang =>
   !!o && o.trangThai !== 'khong-yeu-cau' && o.trangThai !== 'xong' && !o.diem && o.khoa !== 'đã có điểm' && o.khoa !== 'đã làm bài';
 const doiThat = (o: OKyNang | undefined, t: Tuan | undefined) => !!t && (!o || t.periodId !== o.periodId || o.sit === 'cancelled');
-const coLichTiep = (h: Hang) => Object.values(h.dot).some((o) => o.trangThaiDot === 'planned' && Object.values(o.kn).some((k) => !!k?.tuan));
+/** XEP-MT-NHAC (chủ SP 07/11): "Chưa đủ MT" = lộ trình thiếu MT — cùng hàm máy chủ `thieuMt` với chip "Chưa đủ MT" của lưới. */
+const chuaCoMtTiep = (h: Hang) => !!h.thieuMt;
 /** Cùng luật "Cần xếp lại" của lưới Kế hoạch Test (`LuoiKeHoach`). */
-const canXepLai = (h: Hang) => Object.values(h.dot).some((d) => !d.lichSu && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || (o?.trangThai === 'da-huy' && !o.huyVang)));   // N38 L2
+const canXepLai = (h: Hang) => Object.values(h.dot).some((d) => !d.lichSu && Object.values(d.kn).some((o) => o?.trangThai === 'vang'));   // N38 L2 + PTA 07/11: chỉ môn vắng chưa dời
 const minTuan = (ds: (string | null | undefined)[]) => ds.filter((x): x is string => !!x).map((x) => x.slice(0, 10)).sort()[0] ?? null;
 
 /** Một hàng của bảng một em: lượt có sẵn (từ `bang`) hoặc lượt mới trong nháp. */
@@ -42,7 +43,7 @@ type Dong = { n: number; luot: HangGoiY['luot']; goiY: HangGoiY | undefined; nha
 
 /**
  * TAB "XẾP THEO HỌC VIÊN" (PR-XTHV, mockup MT quy trình 08/10 vấn đề 4) — panel "Xếp nhiều MT", khung Fast Track, chỉ Quản lý / Quản trị.
- * Trái: lớp · tìm em · chip "Tất cả · Chưa có MT tiếp · Cần xếp lại" · tick tối đa 3 em. Phải: mỗi em một bảng Lượt × Tuần chung × L R W S
+ * Trái: lớp · tìm em · chip "Tất cả · Chưa đủ MT · Cần xếp lại" · tick tối đa 3 em. Phải: mỗi em một bảng Lượt × Tuần chung × L R W S
  * × Sẽ đổi × ⋯; "+ MT{n}" và "Điền gợi ý" (lịch đề xuất của lộ trình, chỉ điền nháp ô chưa có điểm). Lưu bằng API có sẵn: lượt có sẵn
  * `/ke-hoach-test/dot`, lượt mới `/xep-moi`, theo `thuTuLuuLuot`; lượt lỗi thì dừng em đó và báo lượt đã lưu. Không đánh số lại
  * (luật 08/10: vượt thì báo). Lưu xong panel KHÔNG đóng. 375: hai màn (danh sách → chi tiết em).
@@ -74,8 +75,8 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
     return l ? l.hang.map((h) => ({ ...h, classId: id, classCode: l.classCode })) : [];
   }).sort((a, b) => a.classCode.localeCompare(b.classCode, 'vi') || a.ten.localeCompare(b.ten, 'vi')), [luoi, lopChon]);
   const khopTim = (h: Hang) => !tim.trim() || `${h.ten} ${h.ma}`.toLowerCase().includes(tim.trim().toLowerCase());
-  const dem = { tat: hangs.length, chua: hangs.filter((h) => !coLichTiep(h)).length, 'xep-lai': hangs.filter(canXepLai).length };
-  const hienThi = hangs.filter((h) => khopTim(h) && (loc === 'tat' || (loc === 'chua' ? !coLichTiep(h) : canXepLai(h))));
+  const dem = { tat: hangs.length, chua: hangs.filter(chuaCoMtTiep).length, 'xep-lai': hangs.filter(canXepLai).length };
+  const hienThi = hangs.filter((h) => khopTim(h) && (loc === 'tat' || (loc === 'chua' ? chuaCoMtTiep(h) : canXepLai(h))));
 
   /* Em đã tick (theo thứ tự tick) + bảng lịch MT của từng em. */
   const [chon, setChon] = useState<number[]>([]);
@@ -321,7 +322,7 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
                 <input className="field w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={tChu('Tìm học viên · tên hoặc mã')} />
               </label>
               <div role="group" aria-label={tChu('Lọc học viên')} className="flex flex-wrap gap-1.5">
-                {([['tat', tChu('Tất cả')], ['chua', tChu('Chưa có MT tiếp')], ['xep-lai', tChu('Cần xếp lại')]] as const).map(([k, nhan]) => (
+                {([['tat', tChu('Tất cả')], ['chua', tChu('Chưa đủ MT')], ['xep-lai', tChu('Cần xếp lại')]] as const).map(([k, nhan]) => (
                   <button key={k} type="button" aria-pressed={loc === k} onClick={() => setLoc(k)}
                     className={`nut-loc tabular-nums ${loc === k ? 'border-doing-line bg-doing-bg text-doing' : ''}`}>{nhan} {dem[k]}</button>
                 ))}

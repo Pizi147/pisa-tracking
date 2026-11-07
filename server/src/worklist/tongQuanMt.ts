@@ -2,8 +2,8 @@
  * TỔNG QUAN ADMIN — tab "Mock Test" (OV-10c, mockup vai 13/10 mục 4). Không hàm đếm thứ hai: mỗi số lấy từ đúng hàm của màn ô đó mở.
  *  · Lượt MT tuần này — `highlights` tuần đầu (Kế hoạch Test `?tuan=` đọc cùng đường).
  *  · Ô điểm chưa nhập (n quá hạn) — `myWork` nhóm Chấm điểm, đếm bằng `demPhamVi` như dòng phạm vi Công việc ("m bài cần chấm"; lọc Quá hạn = `khopLocNhanh`).
- *  · HV chưa có MT tiếp theo — `danhSachLop` của Kế hoạch Test, `chuaCoLichTiep` các lớp FT (em đang học không còn lượt MT nào đã xếp tuần: đã thi hết
- *    lượt đã xếp, hoặc chưa có lượt) — để QL / Admin xem có cần thêm lượt MT. UI-TONG-QUAN (chủ SP 23/10): bỏ ô "Đề nghị dời chờ" (đề nghị ở Test › Lịch).
+ *  · HV chưa đủ MT — `danhSachLop` của Kế hoạch Test, `chuaCoLichTiep` các lớp FT (XEP-MT-NHAC 07/11: em có lộ trình thiếu MT — `thieuMt`,
+ *    mọi lượt Mock đã tạo < 3 / RF 2) — để QL / Admin xem có cần thêm lượt MT. UI-TONG-QUAN (chủ SP 23/10): bỏ ô "Đề nghị dời chờ" (đề nghị ở Test › Lịch).
  *  · GV chấm quá hạn — dòng Chấm điểm quá hạn của `myWork` có người phụ trách (OV-12h: chỉ xem, bỏ Nhắc); bài quá hạn chưa có người giữ (lớp thiếu GV môn)
  *    gộp MỘT dòng "Chưa có GV" (`ownerId` 0) cuối bảng — SUA-CHAM-LAI L9: Σ bài của bảng = "n quá hạn" của ô.
  *    P12 Q12 (chủ SP 25/10): CHỈ góc nhìn Admin — bài S chấm chéo chưa ai nhận KHÔNG quá hạn (`myWork` Admin) — một dòng "Chưa có GV · n bài chờ chấm"

@@ -25,7 +25,7 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'phoi_hop_sos': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
     case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': case 'thi_that': return soCuaKhoa(it.key) !== null;   // OV-13q: Kết quả thi thật tại chỗ
     /* OV-13b (đặc tả OV-13 §1): Ghi nhận vi phạm · Báo phụ huynh qua TVV · Điền Target (Thiếu thông tin) · Chọn người phụ trách — tại chỗ.
-       Thiếu thông tin khác (Chốt tuần MT, Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
+       Thiếu thông tin khác (Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
     case 'phoi_hop': return it.studentId !== null;
     case 'bo_sung_ho_so': return !!it.emIds?.length;   // 06/11: sửa thông tin từng em tại chỗ, "Lưu · em tiếp ›"
     case 'missing_data': return it.studentId !== null && (it.key.startsWith('target:') || it.key.startsWith('chot-ngay-thi:'));   // UI-CV-TVV: Chốt ngày thi

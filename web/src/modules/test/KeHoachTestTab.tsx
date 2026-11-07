@@ -45,7 +45,7 @@ export function KeHoachTestTab() {
   const [hopMo, setHopMo] = useState(false);
   /* PR-XLMT (M9): ngăn Xếp lịch — khung FT (nhiều lớp) hoặc Lớp thường (một lớp); không cần mở lớp trước. */
   const [xep, setXep] = useState<'ft' | 'thuong' | null>(null);
-  /* U05 (G5, N32 ⑤): chip "Chưa có MT kế tiếp · n" thay "Cần xếp lại" — vắng lần 1 tự dời (N4) và ô ghi "Vắng · xếp lại S" (vàng); chỉ lớp / em
+  /* U05 (G5, N32 ⑤): chip "Chưa đủ MT · n" thay "Cần xếp lại" — vắng lần 1 tự dời (N4) và ô ghi "Vắng · xếp lại S" (vàng); chỉ lớp / em
      chưa có lượt MT kế tiếp. `lopLoc`: lớp chọn ở ô tìm (hoặc ô số của hàng lớp) → chip "Lớp: … ✕". */
   const [chiChuaCoKe, setChiChuaCoKe] = useState(false);
   const [lopLoc, setLopLoc] = useState<number | null>(null);
@@ -140,7 +140,7 @@ export function KeHoachTestTab() {
 
   return (
     <div className="space-y-3">
-      {/* U05 (mockup V11 `.thanh-cu`): Fast Track / Lớp thường · chip "Chưa có MT kế tiếp" · Chi nhánh · ô tìm · chip "Lớp: … ✕" · ⓘ · phải: n HV.
+      {/* U05 (mockup V11 `.thanh-cu`): Fast Track / Lớp thường · chip "Chưa đủ MT" · Chi nhánh · ô tìm · chip "Lớp: … ✕" · ⓘ · phải: n HV.
           375 (khu E): ô tìm + "Lọc" + ⋯ (Xuất, Xếp nhiều MT…); chip, Chi nhánh trong "Lọc". */}
       <div className="loc-hv flex flex-wrap items-center gap-2" data-hd="kht-loc">
         {!dienThoai && <CongTacKhung v8 trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
@@ -156,8 +156,8 @@ export function KeHoachTestTab() {
               const bat = !locChuaCoKe;
               setChiChuaCoKe(bat);
               if (bat) setMoList(lopFT.filter((l) => !l.chiXem && l.chuaCoLichTiep > 0).map((l) => l.id));
-            }} title={t('Em chưa có lượt MT kế tiếp — Quản lý xếp tiếp')}>
-              {t('Chưa có MT kế tiếp')} <b className="tabular-nums">{soChuaCoKe}</b>{locChuaCoKe && <span aria-label={t('Bỏ lọc')}> ✕</span>}
+            }} title={t('Lộ trình chưa đủ MT (3 · RF 2) — Quản lý xếp tiếp')}>
+              {t('Chưa đủ MT')} <b className="tabular-nums">{soChuaCoKe}</b>{locChuaCoKe && <span aria-label={t('Bỏ lọc')}> ✕</span>}
             </button>
           ) : null;
           const doiCn = (id: number | null) => {
@@ -238,7 +238,7 @@ export function KeHoachTestTab() {
         </span>, choNut)}
 
       {danhSach.length === 0 ? (
-        <div className="card"><Empty title={locChuaCoKe ? t('Không lớp nào chưa có MT kế tiếp') : chu ? t('Không có lớp nào khớp "{chu}"', { chu }) : t('Không có lớp nào có đợt Test trong tuần này')}
+        <div className="card"><Empty title={locChuaCoKe ? t('Không lớp nào chưa đủ MT') : chu ? t('Không có lớp nào khớp "{chu}"', { chu }) : t('Không có lớp nào có đợt Test trong tuần này')}
           action={locChuaCoKe || lopLoc !== null ? <button type="button" className="btn btn-sm" onClick={() => { setChiChuaCoKe(false); setLopLoc(null); }}>{t('Bỏ lọc')}</button> : undefined} /></div>
       ) : (
         <div className="bang-kh">

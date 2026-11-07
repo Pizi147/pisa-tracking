@@ -35,6 +35,8 @@ export type DongSEx = {
 export type GhiChuLich = { noiDung: string; ai: string | null; luc: string };
 export type HangFT = {
   studentId: number; ten: string; ma: string; cycleId?: number | null; vaoMuon: boolean; dot: Record<number, DotFT>; soKeTiep: number;
+  /** XEP-MT-NHAC (chủ SP 07/11): lộ trình thiếu MT (`thieuMt` máy chủ) — lọc "Chưa đủ MT". */
+  thieuMt?: boolean;
   /** MT0-THEO-EM (chủ SP 06/11): MT0 em mang từ lớp thường — ô chỉ xem trước MT1. */
   mt0?: { attemptId: number; kn: KnO; khongDung: boolean } | null;
   ghiChu?: Record<string, GhiChuLich>;

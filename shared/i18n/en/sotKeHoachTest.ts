@@ -132,7 +132,6 @@ export const EN_SOT_KE_HOACH_TEST = {
   'Chọn lớp để xếp lịch': 'Pick a class to schedule',
   'Sau đó tick 1–3 học viên.': 'Then tick 1–3 students.',
   'Tìm học viên · tên hoặc mã': 'Search student · name or ID',
-  'Chưa có MT tiếp': 'No next MT',
   'Chọn tối đa {n} em một lần.': (b) => `Select up to ${em(b.n)} at a time.`,
   'cần xếp lại': 'reschedule',
   'Chưa có MT': 'No MT',
