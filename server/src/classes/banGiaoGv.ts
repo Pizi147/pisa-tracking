@@ -179,7 +179,7 @@ function docViec(id: number): any {
 function quyenViec(p: Principal, b: any) {
   const ql = coTheRaLenh(p, b.class_id);
   const laNguoiLam = b.nguoi_lam === p.userId;
-  const thay = ql && !laNguoiLam && (b.nguoi_lam === null || demoToday() > b.han || b.trang_thai === 'xong');
+  const thay = ql && !laNguoiLam;   // RKC-4a (N33 ③): Quản lý điền thay lúc nào cũng được (trước: chỉ khi không người viết / quá hạn)
   const viet = b.trang_thai !== 'huy' && (laNguoiLam || thay);
   return { ql, laNguoiLam, thay, viet, xacNhan: viet && b.trang_thai === 'mo' };
 }

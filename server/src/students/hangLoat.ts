@@ -1,10 +1,11 @@
 import { db, theoLo, tx } from '../db.ts';
 import {
-  CHU_XAC_NHAN_XOA, LO_HANG_LOAT_EM, PERMISSIONS, TOI_DA_HANG_LOAT_EM, VIEC_HANG_LOAT, khopXacNhanXoa,
+  CHU_XAC_NHAN_XOA, LO_HANG_LOAT_EM, PERMISSIONS, TOI_DA_HANG_LOAT_EM, VIEC_HANG_LOAT, khopXacNhanXoa, tuanLich,
   type DongXemTruoc, type KetQuaHangLoat, type ViecHangLoat, type XemTruocHangLoat,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { HttpError, badRequest, canXacNhan, chuTuDo, forbidden, notFound, loi } from '../util.ts';
+import { HttpError, addDays, badRequest, canXacNhan, chuTuDo, forbidden, notFound, loi } from '../util.ts';
+import { mondayOf } from '../platform/week.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanGiaoDichNeuSapHetGio } from '../platform/hanGio.ts';
@@ -82,7 +83,7 @@ function docEm(ids: number[]): Map<number, Em> {
       const e = kq.get(l.student_id); if (e) e.lenhCho = l;
     }
     /* Quyết định huỷ GẦN NHẤT của em (lệnh nào cũng được — `khoiPhucLenh` kiểm người huỷ, giờ, tuần, em còn ở lớp nguồn). */
-    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id FROM lenh_chuyen_lop WHERE trang_thai = 'huy' AND student_id IN (${ph}) ORDER BY id`).all(...lo) as any[]) {
+    for (const l of conn.prepare(`SELECT id, student_id, huong, lop_nguon_id, tuan_bat_dau FROM lenh_chuyen_lop WHERE trang_thai = 'huy' AND student_id IN (${ph}) ORDER BY id`).all(...lo) as any[]) {
       const e = kq.get(l.student_id); if (e) e.lenhHuy = l;
     }
   });
@@ -162,6 +163,12 @@ export function chay(p: Principal, input: {
   const soHuy = viec === 'tam-dung' || viec === 'ket-thuc' ? lamDuoc.filter((id) => em.get(id)!.lenhCho).length : 0;
   if (soHuy && input.huyLenh !== true) canXacNhan('{n} em đang có quyết định chuyển lớp chờ — huỷ các quyết định đó rồi lưu?', { n: soHuy }, 'Huỷ quyết định và lưu');
 
+  /* RKC-4a: Khôi phục quyết định có tuần bắt đầu đã qua → hỏi MỘT lần cho cả lô (cùng câu `khoiPhucLenh`), đồng ý = dời sang tuần sau. */
+  if (viec === 'khoi-phuc-lenh') {
+    const homNay = demoToday();
+    const qua = lamDuoc.filter((id) => em.get(id)!.lenhHuy?.tuan_bat_dau <= homNay).length;
+    if (qua) canXacNhan('{n} quyết định có tuần bắt đầu đã qua — khôi phục với tuần bắt đầu {tuan}?', { n: qua, tuan: tuanLich(mondayOf(addDays(homNay, 7)), homNay) }, 'Khôi phục, dời tuần');
+  }
   if (viec === 'huy-lenh') {
     /* MỘT lần gọi cho cả lô: mỗi lệnh một giao dịch bên trong, nhưng chuông gom MỘT cái cho mỗi người nhận. */
     const theoLenh = new Map(lamDuoc.map((id) => [em.get(id)!.lenhCho.id as number, id]));

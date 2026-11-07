@@ -249,9 +249,10 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     lenhSvc.raLenh(P.mbManager, { lopNguonId: classId('MB FT 101'), boiCanh: 'giua-khoa', tuanChung: null, dongs: [{ studentId: em[1], huong: 'bao_luu', tuan: d.tuanChonDuoc(TODAY)[0], lyDo: 'Mới', ngayXemLai: addDays(TODAY, 60) }] });
     const kp2 = lenhSvc.khoiPhucLenh(P.mbManager, ids.slice(0, 2));
     const lyDoLoi = Object.fromEntries(kp2.failed.map((f: any) => [f.id, f.message]));
-    assert(kp2.ok.length === 0 && lyDoLoi[ids[0]] === 'Quyết định do hệ thống huỷ — không khôi phục được.' && lyDoLoi[ids[1]] === 'Học viên đã có quyết định chuyển lớp khác.', JSON.stringify(kp2));
+    /* RKC-4a: quyết định do hệ thống huỷ khôi phục được (dữ liệu còn hợp lệ); em đã có quyết định khác vẫn chặn (D). */
+    assert(kp2.ok.includes(ids[0]) && lyDoLoi[ids[1]] === 'Học viên đã có quyết định chuyển lớp khác.', JSON.stringify(kp2));
     conn.prepare(`UPDATE lenh_chuyen_lop SET huy_luc = ? WHERE id = ?`).run(new Date(Date.now() - 25 * 3600_000).toISOString(), ids[2]);
-    assert(lenhSvc.khoiPhucLenh(P.mbManager, [ids[2]]).failed[0].message === 'Đã quá 24 giờ — ra quyết định mới.', 'quá 24 giờ');
+    assert(lenhSvc.khoiPhucLenh(P.mbManager, [ids[2]]).ok.length === 1, 'RKC-4a: quá 24 giờ vẫn khôi phục được');
   }));
 
   await checkAsync('LUIb-11b · Huỷ chuyển lớp qua làm nhiều học viên: xem trước theo hướng, huỷ rồi Khôi phục về đúng quyết định; học viên không có quyết định → bỏ qua có lý do', () => thu(() => {
@@ -456,8 +457,8 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const sid = dangHocTrong('MB FOU 12', 1)[0];
     conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc)
       VALUES (?,?,?, 'len_lop', 'cuoi-khoa', '2026-12-07', ?, ?, 'cho', ?)`).run(sid, classId('MB FOU 12'), c.id, P.mbManager.userId, TODAY, new Date().toISOString());
-    assert(maLoi(() => xk.ketThucLop(P.mbManager, c.id)) === 400, 'còn quyết định chuyển đến → 400');
-    assert(/quyết định chuyển/.test(xk.xemXoaKetThuc(P.mbManager, c.id).lyDoChanKetThuc ?? ''), 'xem phải nói lý do chặn');
+    assert(maLoi(() => xk.ketThucLop(P.mbManager, c.id)) === 409, 'RKC-4a: còn quyết định chuyển đến → hỏi (409)');
+    assert(xk.xemXoaKetThuc(P.mbManager, c.id).coTheKetThuc && xk.xemXoaKetThuc(P.mbManager, c.id).soSapNhan === 1, 'xem: Kết thúc được, nêu số quyết định đến');
     conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE lop_dich_id = ?`).run(c.id);
     xk.ketThucLop(P.mbManager, c.id);
     const au = conn.prepare(`SELECT actor_user_id, after_json FROM audit_logs WHERE action = 'class.finished' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(c.id) as any;

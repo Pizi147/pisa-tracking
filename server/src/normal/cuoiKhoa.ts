@@ -1,7 +1,7 @@
 import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';
 import { CASE_OUTCOME_LABEL, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua, type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
+import { addDays, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -609,7 +609,8 @@ export function kiemMiniTest(mt: { ngay_du_kien: string }, x: { tyLe?: unknown; 
   if (typeof pt !== 'number' || !Number.isFinite(pt) || pt < 0 || pt > 100) throw badRequest('Mini Test (%) phải là số từ 0 đến 100.');
   if (!isIsoDate(x.ngay)) throw badRequest('Ngày làm Mini Test không hợp lệ.');
   if (x.ngay > demoToday()) throw badRequest('Không ghi được ngày làm Mini Test ở tương lai.');
-  if (x.ngay < addDays(mt.ngay_du_kien, -14)) throw badRequest('Ngày làm Mini Test quá xa so với ngày dự kiến.');
+  /* RKC-4a: ngày làm thật có thể sớm — nhắc + xác nhận, không chặn (ngày tương lai vẫn chặn: dữ liệu không thể đúng). */
+  if (x.ngay < addDays(mt.ngay_du_kien, -14)) canXacNhan('Ngày làm Mini Test sớm hơn ngày dự kiến hơn 14 ngày — vẫn lưu?', undefined, 'Vẫn lưu');
   return { tyLe: pt / 100, ngay: x.ngay };
 }
 

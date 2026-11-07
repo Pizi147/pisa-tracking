@@ -12,10 +12,10 @@
 import { db, tx } from '../db.ts';
 import { CHU_CHUYEN_LOP, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, chuTuDo, notFound } from '../util.ts';
+import { addDays, badRequest, canXacNhan, chuTuDo, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { emChuaCoLenh } from './lenhChuyen.ts';
+import { emChuaCoLenh, huyNhieuLenh } from './lenhChuyen.ts';
 import { quetMoiNgay } from '../platform/mocHeThong.ts';
 
 const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
@@ -88,9 +88,10 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
     soDangHoc: t.soDangHoc, soTungGhiDanh: t.soTungGhiDanh, coDuLieu: t.coDuLieu, dangGan: t.gan, conTreo: t.conTreo,
     /** Xoá: chỉ lớp trống hẳn (đã kiểm `class.edit` ở trên). Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
     coTheXoa: !t.coDuLieu,
-    coTheKetThuc: !daKetThuc && t.soDangHoc === 0 && t.soSapNhan === 0,
-    lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.'
-      : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : t.soSapNhan > 0 ? lyDoSapNhan(t.soSapNhan) : null,
+    /* RKC-4a: còn quyết định chuyển ĐẾN → vẫn Kết thúc được (máy chủ hỏi rồi huỷ các quyết định đó, khôi phục được ở Chuyển lớp). */
+    coTheKetThuc: !daKetThuc && t.soDangHoc === 0,
+    lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.' : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : null,
+    soSapNhan: t.soSapNhan,
   };
 }
 
@@ -133,10 +134,18 @@ export function ketThucLop(p: Principal | null, classId: number, o: { lyDo?: str
   if (t.soDangHoc > 0) {
     throw badRequest(lyDoConEm(c, t.soDangHoc));
   }
-  if (t.soSapNhan > 0) throw badRequest(lyDoSapNhan(t.soSapNhan));
+  /* RKC-4a (chủ SP 07/11; trước: "huỷ hoặc đổi lớp đến trước"): người làm được hỏi MỘT câu nêu số quyết định đến, đồng ý = huỷ cùng giao dịch (lý do ghi
+     rõ, Khôi phục ở Chuyển lớp). Hệ thống (`p = null`, lớp trống) không hỏi — giữ chặn. */
+  if (t.soSapNhan > 0 && !p) throw badRequest(lyDoSapNhan(t.soSapNhan));
+  if (t.soSapNhan > 0) canXacNhan('Còn {n} quyết định chuyển ĐẾN lớp này — huỷ các quyết định đó rồi kết thúc lớp?', { n: t.soSapNhan }, 'Huỷ và kết thúc lớp');
   const ngay = demoToday();
   const conn = db();
   tx(() => {
+    if (p && t.soSapNhan > 0) {
+      const ids = (conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE lop_dich_id = ? AND trang_thai = 'cho'`).all(classId) as any[]).map((r) => r.id as number);
+      const r = huyNhieuLenh(p, ids, `Lớp ${c.code} kết thúc`);
+      if (r.failed.length) throw badRequest(`${r.failed[0].message} — huỷ quyết định đó ở Chuyển lớp rồi kết thúc lớp.`);
+    }
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngay, classId);
     writeAudit({
       actorUserId: p?.userId ?? null, action: 'class.finished', entityType: 'class', entityId: classId, entityLabel: c.code,

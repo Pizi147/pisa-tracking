@@ -888,15 +888,22 @@ function classOverviewThat(p: Principal, classId: number) {
     /** BAO-CAO-PH: tab "Báo cáo PH" + chip đợt (null = chương trình chưa có mẫu / người xem không có quyền) — tính từ lịch, đọc bảng báo cáo chỉ 7 ngày sau hạn. */
     baoCaoPh: chipBaoCaoPh(p, classId),
     /*
-     * LỚP ĐÃ KẾT THÚC → CHẾ ĐỘ CHỈ XEM (Q22): mọi cờ thao tác `false`, không nút nào hiện,
-     * không nhánh nào ở web đoán riêng — kể cả với Quản trị hệ thống (QT). Lớp đã đóng thì
-     * không còn gì để sửa/nhập/gán nữa.
+     * LỚP ĐÃ KẾT THÚC (RKC-4a, chủ SP 07/11 "không chặn cứng", PTA mở Q-B1; trước Q22 tắt MỌI cờ): thao tác DỮ LIỆU theo quyền như lớp đang chạy
+     * (nhập / sửa điểm, + Case, ghi vi phạm, sửa học viên, lịch lớp) — có lịch sử. Thao tác VÒNG ĐỜI lớp (thêm HV, phân công, xếp tuần MT, chuyển tiếp,
+     * sửa tiến độ) vẫn tắt: lớp đã đóng thì "Mở lại lớp" trước (một bấm, có nhật ký).
      */
     viewer: { ...(finished ? {
-      canPlanWeek: false, canAddStudents: false, coTheSuaHocVien: false, canAssign: false, canAssignSubject: false, canEditProgress: false, canEditSchedule: false,
-      editableSkills: [] as string[], isCoreTeacher: false,
-      canReportCase: false, canRecordViolation: false, canEnterScores: false, coTheChuyenTiep: false,
-      coTheSuaThongTin: false, coTheSuaThem: false, coTheSuaCaLop: false,
+      canPlanWeek: false, canAddStudents: false, canAssign: false, canAssignSubject: false, canEditProgress: false, coTheChuyenTiep: false,
+      coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
+      canEditSchedule: duocSuaLichLop(p, classId),
+      editableSkills: editableSkills(p, classId, classSkills),
+      isCoreTeacher: isCoreTeacherOf(p, classId),
+      canReportCase: can(p, PERMISSIONS.SOS_REPORT, { classId }),
+      canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
+      canEnterScores: editableSkills(p, classId, classSkills).length > 0,
+      coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId }),
+      coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { classId }),
+      coTheSuaCaLop: duocSuaCaLop(p, { classId }),
     } : {
       canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { classId }),
       /* OV-13p: "+ Học viên" = `student.add`; `coTheSuaHocVien` = `student.edit` (thao tác dòng GVCN / QL: đề xuất chuyển lớp, lộ trình). */
