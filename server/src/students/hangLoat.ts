@@ -50,10 +50,10 @@ function lyDoBo(p: Principal, viec: ViecHangLoat, e: Em, coLopMoi = false): stri
   const { s } = e;
   if (!coQuyenViec(p, viec, s.id)) return 'Ngoài phạm vi của bạn.';
   /* RKC-5b (PTA 07/11): quyết định chuyển lớp chờ chỉ còn chặn khi người làm KHÔNG huỷ được nó (ngoài quyền lớp nguồn); huỷ được → huỷ cùng lúc (`chay`). */
-  const lenhChan = e.lenhCho && !can(p, PERMISSIONS.CLASS_EDIT, { classId: e.lenhCho.lop_nguon_id }) ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null;
+  const lenhChan = () => (e.lenhCho && !can(p, PERMISSIONS.CLASS_EDIT, { classId: e.lenhCho.lop_nguon_id }) ? cauLenhCho(e.lenhCho.tuan_bat_dau) : null);
   switch (viec) {
-    case 'tam-dung': return s.status !== 'active' ? (s.status === 'inactive' ? 'Đang tạm dừng' : 'Đã kết thúc học') : lenhChan;
-    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : lenhChan;
+    case 'tam-dung': return s.status !== 'active' ? (s.status === 'inactive' ? 'Đang tạm dừng' : 'Đã kết thúc học') : lenhChan();
+    case 'ket-thuc': return s.status === 'finished' ? 'Đã kết thúc học' : lenhChan();
     case 'hoan-tac-tam-dung': return s.status === 'inactive' ? null : 'Không còn ở trạng thái tạm dừng';
     case 'luu-tru': return s.status !== 'finished' ? 'Chưa kết thúc học' : s.archived_at ? 'Đã lưu trữ' : null;
     case 'bo-luu-tru': return s.archived_at ? null : 'Chưa lưu trữ';
@@ -179,11 +179,14 @@ export function chay(p: Principal, input: {
           if ((viec === 'tam-dung' || viec === 'ket-thuc') && e.lenhCho) huyLenh(p, e.lenhCho.id, LY_DO_HUY_THEO_TRANG_THAI);
           if (viec === 'tam-dung') setStudentStatus(p, id, 'inactive', date ?? demoToday(), lyDo ?? undefined);
           else if (viec === 'ket-thuc') setStudentStatus(p, id, 'finished', date ?? demoToday(), lyDo ?? undefined);
-          else if (viec === 'hoan-tac-tam-dung') { hoanTacTamDung(p, id); traLaiLenhDaHuy(p, id); }   // RKC-5b: trả lại quyết định huỷ cùng lần
+          else if (viec === 'hoan-tac-tam-dung' || viec === 'hoan-tac-ket-thuc') {
+            if (viec === 'hoan-tac-tam-dung') hoanTacTamDung(p, id); else hoanTacKetThuc(p, id);
+            const cb = traLaiLenhDaHuy(p, id);   // RKC-5b: trả lại quyết định huỷ cùng lần; không được thì báo
+            if (cb) (kq.canhBao ??= []).push({ studentId: id, message: cb });
+          }
           else if (viec === 'luu-tru') archiveStudent(p, id);
           else if (viec === 'bo-luu-tru') unarchiveStudent(p, id);
           else if (viec === 'hoc-lai') hocLai(p, id, { date, lyDo, moLaiLop: input.moLaiLop === true, lopMoiId });
-          else if (viec === 'hoan-tac-ket-thuc') { hoanTacKetThuc(p, id); traLaiLenhDaHuy(p, id); }
           else if (viec === 'hoan-tac-hoc-lai') hoanTacHocLai(p, id);
           else { const r = khoiPhucLenh(p, [e.lenhHuy.id]); if (r.failed.length) throw new HttpError(409, r.failed[0].message); }
         });

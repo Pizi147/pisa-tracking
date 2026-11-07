@@ -20,13 +20,16 @@ export const LY_DO_HUY_THEO_TRANG_THAI = 'Huỷ cùng Tạm dừng / Kết thúc
 
 /**
  * RKC-5b (PTA 07/11): Hoàn tác Tạm dừng / Kết thúc học TRẢ LẠI quyết định chuyển lớp đã huỷ cùng lần đó (qua `khoiPhucLenh`: quyền lớp nguồn, em còn ở lớp
- * nguồn, tuần chưa tới, trong hạn giờ…). Không trả được thì thôi — Hoàn tác trạng thái vẫn xong, còn "Khôi phục quyết định" ở Chuyển lớp. Gọi SAU khi trả trạng thái.
+ * nguồn, tuần chưa tới, trong hạn giờ…). Không trả được → Hoàn tác trạng thái vẫn xong, trả câu báo kèm bước tiếp (web hiện ở toast). Gọi SAU khi trả trạng thái.
+ * ponytail: lấy quyết định gắn dấu gần nhất, không buộc đúng lần đổi trạng thái đang hoàn tác — lệch chỉ khi đổi trạng thái hai lần trong hạn giờ khôi phục.
  */
-export function traLaiLenhDaHuy(p: Principal, studentId: number): void {
+export function traLaiLenhDaHuy(p: Principal, studentId: number): string | null {
   const l = db().prepare(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'huy' AND ly_do_huy = ? ORDER BY huy_luc DESC, id DESC LIMIT 1`)
     .get(studentId, LY_DO_HUY_THEO_TRANG_THAI) as any;
-  if (!l) return;
-  try { khoiPhucLenh(p, [l.id]); } catch (e) { if (!(e instanceof HttpError)) throw e; }
+  if (!l) return null;
+  let lyDo: string;
+  try { const r = khoiPhucLenh(p, [l.id]); if (!r.failed.length) return null; lyDo = r.failed[0].message; } catch (e) { if (!(e instanceof HttpError)) throw e; lyDo = e.message; }
+  return `Chưa trả lại quyết định chuyển lớp (${lyDo}) — xem ở Chuyển lớp…`;
 }
 
 /** Câu khi em có quyết định chuyển lớp chờ mà người làm không huỷ được quyết định (hàng loạt nạp cả lô một lần). */

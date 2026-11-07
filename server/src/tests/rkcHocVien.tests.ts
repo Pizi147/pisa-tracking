@@ -94,6 +94,15 @@ export async function runRkcHocVienTests(t: any) {
     assert(lenhCua(sid) === 'huy', 'quyết định huỷ tay phải giữ huỷ');
   }));
 
+  check('RKC5b-4 · Hoàn tác khi tuần bắt đầu của quyết định đã tới → em vẫn đang học lại, quyết định giữ huỷ, có câu báo kèm bước tiếp (không im lặng)', () => thu(() => {
+    const sid = emCoLenh();
+    thv.doiTrangThai(QL, sid, { status: 'finished', date: TODAY, huyLenh: true });
+    conn.prepare(`UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE student_id = ?`).run(TODAY, sid);
+    const r = hangLoat.chay(QL, { viec: 'hoan-tac-ket-thuc', studentIds: [sid] });
+    assert(r.ok.length === 1 && get('SELECT status FROM students WHERE id = ?', sid).status === 'active', JSON.stringify(r));
+    assert(lenhCua(sid) === 'huy' && /Chưa trả lại quyết định chuyển lớp.*Chuyển lớp/.test(r.canhBao?.[0]?.message ?? ''), JSON.stringify(r.canhBao));
+  }));
+
   check('RKC5b-3 · hàng loạt Học lại: em chưa từng có lớp — xem trước cờ chuaCoLop (không bỏ); "Về lớp cũ" → báo từng em; "Sang lớp mới" → học lại', () => thu(() => {
     const sid = emKetThuc();
     conn.prepare('DELETE FROM enrollments WHERE student_id = ?').run(sid);

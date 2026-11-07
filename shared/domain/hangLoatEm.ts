@@ -55,4 +55,6 @@ export type XemTruocHangLoat = {
 };
 export type KetQuaHangLoat = { ok: number[]; failed: { studentId: number; message: string }[];
   /** Q-RL2b: Xoá — id mục thùng rác của từng em đã xoá (Hoàn tác cả lô). */
-  thungRac?: number[] };
+  thungRac?: number[];
+  /** RKC-5b: Hoàn tác Tạm dừng / Kết thúc học xong nhưng chưa trả lại được quyết định chuyển lớp — câu báo từng em. */
+  canhBao?: { studentId: number; message: string }[] };

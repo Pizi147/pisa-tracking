@@ -19,6 +19,7 @@ export async function chayHangLoat(
       });
       kq.ok.push(...r.ok); kq.failed.push(...r.failed);
       if (r.thungRac?.length) (kq.thungRac ??= []).push(...r.thungRac);   // Q-RL2b: Xoá — id thùng rác từng em đã xoá
+      if (r.canhBao?.length) (kq.canhBao ??= []).push(...r.canhBao);
     } catch (e: any) {
       for (const sid of lo.slice(i).flat()) kq.failed.push({ studentId: sid, message: e.message });
       break;
