@@ -266,6 +266,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **PTA kiểm bản chép thật:** 7 ô "—" không phải lỗi mã — đợt đặt lại hạn dời việc quá hạn ra khỏi kỳ 26/10–08/11; bài chưa tới hạn nhập; Speaking chấm chéo tính cho người chấm (T18); 1 GV: việc quá hạn rồi hệ thống tự đóng Case (em kết thúc) → rơi khỏi mẫu.
 - **Chủ SP 07/11:** "Không tính trễ nhé cho nhẹ gánh đỡ phải code thêm đúng không? và không chỉ phần 'cách tính' ở đây, những thông tin lưu ý hay note thêm ở mọi nơi cần phải bỏ đi nhé" → (1) việc quá hạn rồi bị hệ thống đóng: KHÔNG tính (giữ như hiện tại, không code). (2) **LUẬT GIAO DIỆN MỚI:** bỏ mọi đoạn chú thích / lưu ý / "Cách tính" / ghi chú tĩnh trên mọi màn, panel, hộp; giữ ⓘ (giải thích khi bấm), lỗi, lý do chặn tại nút, trạng thái lưu, ô rỗng. (3) Kèm sửa nhỏ: bàn giao Writing dữ liệu cũ tính cho đúng người ghi (`viecDaXong.ts` `gvLop`).
 
+### 07/11 — KHÔNG NHẮC XẾP LỊCH MT TRONG CÔNG VIỆC QL (chủ SP, đang chốt phạm vi)
+- **Chủ SP 07/11 (ảnh Công việc QL tab "Việc quản lý" › Thiếu dữ liệu: 5 việc "Chốt tuần MT · không hạn"):** "cái này tôi đã nói rồi là đừng cho thêm vào phần công việc của quản lý, xóa rồi thì thôi mà?" + "không cần nhắc là cần phải xếp lịch thêm nữa nhất là các HV refire" (RF).
+- PTA kiểm bản chép thật: "Chốt tuần MT" = mọi lượt `planned` không tuần (`mywork.ts` mục 4 ~1313) — có lượt QL đã "Xóa lịch" + bỏ hết môn (3/11) vẫn sinh việc; có lượt MT5 / MT6 / MT3 4 môn chưa tuần.
+
 ### 07/11 — Công việc "Của GV / Tất cả": dòng việc lôm côm (chủ SP)
 - **Chủ SP 07/11 (ảnh danh sách Nhập điểm, QL xem Tất cả):** "giao diện hơi lôm côm nhé" → PTA: cột hạn thành 3 dòng (tuần · hạn · 👤 tên người giữ việc), tên dài xuống dòng → chiều cao hàng lệch nhau; mockup v17 a2 mỗi hàng 2 dòng. Sửa: người giữ việc lên ĐẦU dòng phụ bên trái ("👤 Tên · 2 lớp · tuần W1 NOV · 6 bài"), cột hạn giữ 2 dòng như mockup; hàng đều nhau 1440 + 375. Giao BO-CHU-THICH (cùng tệp `DanhSachViec.tsx`), PR riêng.
 
