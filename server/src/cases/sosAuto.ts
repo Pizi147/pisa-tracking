@@ -80,6 +80,10 @@ export function createPresetPlan(input: {
 }): number | null {
   const p = presetFor(input.attempt, input.sosLevel);
   if (!p) return null;
+  /* PA-TRUNG (07/11): "đến lúc thi" không hết ở MT nào — Case đã có PA quy chế cùng loại "đến lúc thi" đang chạy / chờ thì MT sau trượt lại
+     (MT3 → MT4, MT5) không sinh PA thứ hai. "Đến MTn" / "1 tháng" thì PA cũ hết ở mốc của nó → PA mới theo hàng lượt mới (K3-16). */
+  if (p.span === 'until_exam' && db().prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND preset = 1 AND kind = ? AND moc_quy_che = 'until_exam'
+      AND status IN ('planned', 'started')`).get(input.caseId, p.kind)) return null;
   const performer = suggestCaseOwner({ classId: input.attempt.class_id ?? null, category: input.category });
   // Q28-3: PA quy chế KHÔNG tự chạy. Chờ xác nhận = preset=1, planned, confirmed_at NULL (UNCONFIRMED_PRESET). Mốc tính lúc Xác nhận PA.
   return chenPa(db(), [{ caseId: input.caseId, kind: p.kind, description: p.description, performerUserId: performer, status: 'planned', preset: true, mocQuyChe: p.span }])[0];

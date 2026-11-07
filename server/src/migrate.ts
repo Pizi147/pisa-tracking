@@ -113,6 +113,7 @@ import { migratePrTlNen } from './migrate/prTlNen.ts';
 import { migratePrTlNapBai } from './migrate/prTlNapBai.ts';
 import { migratePrGiamDoc0611h } from './migrate/prGiamDoc0611h.ts';
 import { migratePrNgayXong0711 } from './migrate/prNgayXong0711.ts';
+import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -464,6 +465,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* GIAM-DOC-0611h: chỉ mục idx_student_branch — Case theo chi nhánh của em (listCases quyền chi nhánh) thôi quét cả students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611h(conn, applied));
     /* TAT-CHECKPOINT (chủ SP 06/11): công tắc Checkpoint tự sinh tắt → huỷ mềm Checkpoint chưa có điểm; bật → khôi phục (chạy MỖI lần, chạy lặp không đổi). */ buoc(() => migratePrTatCp(conn, applied));
     /* RESET-HAN-CASE (chủ SP 06/11): cột sos_cases.han_them_pa (mỗi lần) + việc tuyến Case quá hạn → hạn hôm nay + 7, nhật ký viec_han_lan (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrResetHanCase(conn, applied));
+    /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" chờ xác nhận trùng PA cùng loại đang chạy → Thùng rác (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrPaTrung0711(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());

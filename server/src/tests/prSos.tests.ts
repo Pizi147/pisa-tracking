@@ -215,6 +215,52 @@ export async function runPrSosTests(t: YThucTestKit) {
     enter(a2, 'listening', 5);
     assert(plansOf(c.id).length === 2, 'chạy lặp nhân đôi PA');
   });
+  check('PA-TRUNG (07/11) · MT4 trượt lại, PA quy chế "Tutor · đến lúc thi" (MT3) ĐANG CHẠY → KHÔNG thêm PA quy chế thứ hai, hạn xác nhận giữ', () => {
+    const st = makeStudent('PT1');
+    const a3 = mkAttempt(st, 3);
+    for (const k of ['listening', 'reading', 'speaking']) enter(a3, k, 5);
+    const c = caseOf(st.id, 'listening');
+    ghiNguyenNhan(c.id);
+    conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ? WHERE case_id = ?`)
+      .run(TODAY, new Date().toISOString(), gvKyNang('listening'), c.id);
+    const han = addDays(TODAY, -10);
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(han, c.id);
+    assert(plansOf(c.id).length === 1 && plansOf(c.id)[0].moc_quy_che === 'until_exam', JSON.stringify(plansOf(c.id)));
+    const a4 = mkAttempt(st, 4);
+    for (const k of ['listening', 'reading', 'speaking']) enter(a4, k, 5);
+    assert(all(`SELECT kind FROM case_milestones WHERE case_id = ? AND attempt_id = ?`, c.id, a4.id).some((m: any) => m.kind === 'repeat'), 'thiếu mốc repeat');
+    assert(plansOf(c.id).length === 1, `PA quy chế trùng: ${JSON.stringify(plansOf(c.id))}`);
+    assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === han, 'hạn xác nhận bị đặt lại');
+  });
+  {
+    const mig: any = await import('../migrate/prPaTrung0711.ts');
+    const kp: any = await import('../platform/khoiPhucRac.ts');
+    const { chenPa } = await import('../cases/taoPa.ts');
+    check('PA-TRUNG · migrate prPaTrung0711: PA "đến lúc thi" chờ xác nhận trùng PA cùng loại đang chạy → Thùng rác + lịch sử; PA đang chạy / "đến MTn" giữ; khoá → lần hai không làm gì; Khôi phục trả lại', () => {
+      const { st } = mt1Sos3('PT2');
+      const c = caseOf(st.id, 'listening');
+      conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ?, moc_quy_che = 'until_exam' WHERE case_id = ?`)
+        .run(TODAY, new Date().toISOString(), gvKyNang('listening'), c.id);
+      const chay = plansOf(c.id)[0];
+      const moi = (span: string) => chenPa(conn, [{ caseId: c.id, kind: 'tutor', description: 'Tutor · đến lúc thi', performerUserId: chay.performer_user_id, status: 'planned', preset: true, mocQuyChe: span }])[0];
+      const trung = moi('until_exam');
+      const khac = moi('until_next_mt');   // "đến MTn": PA cũ hết ở mốc của nó — không phải trùng
+      assert(mig.paTrung(conn).some((r: any) => r.id === trung) && !mig.paTrung(conn).some((r: any) => r.id === khac), 'tập dọn sai');
+      conn.prepare('DELETE FROM demo_config WHERE key = ?').run(mig.KHOA_PR_PA_TRUNG_0711);
+      const ap: string[] = [];
+      mig.migratePrPaTrung0711(conn, ap);
+      const con = plansOf(c.id).map((r: any) => r.id);
+      assert(!con.includes(trung) && con.includes(chay.id) && con.includes(khac) && ap.some((x) => x.startsWith('PA-TRUNG')), JSON.stringify({ con, ap }));
+      const rac = get(`SELECT id FROM thung_rac WHERE loai = 'pa' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, trung);
+      assert(!!rac && !!get(`SELECT 1 FROM sos_case_history WHERE case_id = ? AND field = 'don_pa_trung'`, c.id), 'thiếu thùng rác / lịch sử');
+      const ap2: string[] = [];
+      conn.prepare(`UPDATE case_interventions SET moc_quy_che = 'until_exam' WHERE id = ?`).run(khac);
+      mig.migratePrPaTrung0711(conn, ap2);
+      assert(ap2.length === 0 && plansOf(c.id).some((r: any) => r.id === khac), 'khoá: lần hai vẫn dọn');
+      kp.khoiPhucRac(P.admin, rac.id);
+      assert(plansOf(c.id).some((r: any) => r.id === trung), 'Khôi phục không trả PA');
+    });
+  }
   check('SOS (3) · + Case cùng kỹ năng đang chờ xác nhận nguyên nhân → 400, không gộp (K3-23)', () => {
     const { st } = mt1Sos3('T3d');
     const c = caseOf(st.id, 'listening');

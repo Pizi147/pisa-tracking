@@ -1753,17 +1753,17 @@ export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId:
   }
   return tx(() => xoaPaTrongTx(p, iv, c));
 }
-/** Phần xoá của `xoaPa` (trong tx của nơi gọi — `xoaPa` hoặc hộp duyệt). Tệp trong kho giữ tới khi dọn thùng rác. */
-function xoaPaTrongTx(p: Principal, iv: any, c: any): { ok: true; caseId: number; thungRacId: number } {
+/** Phần xoá của `xoaPa` (trong tx của nơi gọi — `xoaPa`, hộp duyệt, migrate `prPaTrung0711` với `userId` null). Tệp trong kho giữ tới khi dọn thùng rác. */
+export function xoaPaTrongTx(p: { userId: number | null }, iv: any, c: any, lyDo = 'PA đã xoá'): { ok: true; caseId: number; thungRacId: number } {
   const conn = db();
   const chup = new BoChup(conn);
   const ketQua = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id').all(iv.id) as any[];
-  goPaTrongTx(conn, iv, { lyDo: 'PA đã xoá' }, chup.tep, chup);
+  goPaTrongTx(conn, iv, { lyDo }, chup.tep, chup);
   const hv = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name;
   const thungRacId = ghiThungRac(conn, { loai: 'pa', doiTuongId: iv.id, nhan: [iv.description ?? iv.kind, caseTitleOf(c), hv].filter(Boolean).join(' · '),
     hocVienId: c.eff_student_id, classId: c.class_id, nguoi: p.userId, chup });
   writeAudit({ actorUserId: p.userId, action: 'intervention.delete', entityType: 'case_intervention', entityId: iv.id,
-    entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: chup.tep.length }, after: { thungRacId } });
+    entityLabel: iv.description ?? iv.kind, before: { pa: iv, ketQua, soTep: chup.tep.length }, after: { thungRacId, lyDo } });
   return { ok: true as const, caseId: iv.case_id as number, thungRacId };
 }
 
