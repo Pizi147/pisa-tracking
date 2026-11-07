@@ -202,6 +202,7 @@ const EN_D_WEB = {
   'Đã gửi Quản lý duyệt': 'Sent to manager',
   'Đã ghi lại': 'Logged',
   'Gửi Quản lý duyệt': 'Send to manager',
+  'PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.': 'The rule-based PA keeps running — this PA is extra support.',
   'Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong {HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.':
     'This is a PROPOSAL: the manager replies within {HAN_DUYET_NGAY} days, counting today. No results can be recorded while waiting.',
   'Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.': 'Picking an item under "Needs manager approval" asks the manager.',
@@ -250,6 +251,7 @@ const EN_D_WEB = {
   'Đã gửi Quản lý duyệt — xem ở Yêu cầu của tôi': 'Sent to manager — see My requests',
   'Không cần theo dõi Case này vì:': 'Stop tracking this case because:',
   'Ví dụ: Em nghỉ ốm cả tuần Test': 'E.g. Off sick the whole test week',
+  'Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi': 'Send to manager · reply within 5 days · see My requests',
 
   /* Vi phạm: chi tiết, xoá */
   'Đã xoá vi phạm': 'Incident deleted',

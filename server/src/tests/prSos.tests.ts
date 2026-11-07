@@ -530,8 +530,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(/<FormPa/.test(doc(f4[0])) && /<FormPa/.test(cnt) && /GOI_Y_MO_TA_PA/.test(doc(f4[4])) && /GOI_Y_MO_TA_PA/.test(doc(f4[2])), 'thiếu gợi ý mô tả PA');
     assert(/GOI_Y_KET_QUA_PA/.test(cnt) && /quyetDinhChoPa/.test(cnt) && /'(Ghi )?[Kk]ết quả cuối'/.test(cnt) && !/ChonTuan/.test(cnt), 'Ghi kết quả chưa theo v4');
     assert(!/useState<string>\('improved'\)/.test(doc(f4[0])), 'Hoàn thành còn chọn sẵn');
-    /* BO-CHU-THICH (chủ SP 07/11): bỏ dòng lưu ý "PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm." (K3-18) — chỉ giữ chữ của nút. */
-    assert(/Ghi một PA đã làm trước đây/.test(doc(f4[0])) && !/PA theo quy chế vẫn chạy/.test(doc(f4[0])), 'Thêm PA: còn dòng lưu ý / thiếu chữ K3-18');
+    assert(/Ghi một PA đã làm trước đây/.test(doc(f4[0])) && /PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm\./.test(doc(f4[0])), 'Thêm PA thiếu chữ K3-18');
     const qr = doc(f4[2]);
     assert(/Mở form Xác nhận Case/.test(qr) && /Việc tiếp:/.test(qr) && /Kết quả PA/.test(qr) && /ketQua/.test(qr), 'QuickReport thiếu K3-23 / K3-24 / YC-12.5.3');
   });

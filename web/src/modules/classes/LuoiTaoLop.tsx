@@ -255,6 +255,9 @@ export function LuoiTaoLop({ cheDo, luoi, setLuoi, branches, onClose }: {
       }}>
       <div className="space-y-3 pt-3.5">
         {cheDo}
+        <p className="m-0 text-xs text-slate-400">
+          {t('Tối đa {n} lớp một lần. Tạo tất cả hoặc không lớp nào — một dòng lỗi thì chưa lớp nào được tạo.', { n: TOI_DA_DONG_TAO_LOP })}
+        </p>
         <ol className="m-0 list-none space-y-2.5 p-0">
           {tinh.map((x, i) => (
             <DongThe key={x.d.k} t={x} i={i} soDong={ds.length} busy={busy} routes={routes.data ?? []} dsCt={['FT', ...chuongTrinhThuong(programmes.data)]} branches={branches}

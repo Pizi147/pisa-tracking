@@ -170,7 +170,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
                   onChange={(e) => { setTouched(true); setFinalWeek(e.target.value); }} />
               </Field>
             </div>
-          ) : null}
+          ) : <p className="m-0 text-xs text-slate-400">{t('Đổi tuần khai giảng không dời lịch MT của em đã có.')}</p>}
         </div>
       )}
     </PhanThongTin>

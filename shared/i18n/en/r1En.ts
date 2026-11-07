@@ -265,6 +265,7 @@ export const EN_R1_EN = {
   'Kiểm tra': 'Check',
   'Tạo nhiều lớp': 'Create several classes',
   'Đã kiểm tra: tạo được cả {n} lớp.': (b) => `Checked: all ${so(b.n, 'class', 'classes')} can be created.`,
+  'Tối đa {n} lớp một lần. Tạo tất cả hoặc không lớp nào — một dòng lỗi thì chưa lớp nào được tạo.': 'Up to {n} classes at a time. All or nothing — one bad row means no class is created.',
   '+ Thêm {n} dòng giống dòng trên': (b) => `+ Add ${so(b.n, 'row', 'rows')} like the one above`,
   'Số dòng': 'Rows',
   'Đã đủ {n} dòng.': 'Reached {n} rows.',
@@ -338,6 +339,7 @@ export const EN_R1_EN = {
   'Đã xác nhận bàn giao {ten}': 'Handover confirmed for {ten}',
   'Đã lưu bàn giao {ten}': 'Handover saved for {ten}',
   '{a}/{b} đã xác nhận': '{a}/{b} confirmed',
+  'Môn còn trống sẽ ghi “GVBM chưa bàn giao”.': 'Empty subjects will read “Subject teacher has not handed over”.',
   'Viết nhận xét chung trước khi xác nhận': 'Write the overall comment before confirming',
   'Nhận xét chung': 'Overall comment',
   'Không có em nào cần bàn giao.': 'No students need a handover.',
@@ -384,6 +386,7 @@ export const EN_R1_EN = {
   'Đã huỷ quyết định chuyển lớp': 'Transfer decision cancelled',
   /* Q4 (chủ SP 29/10): Chuyển lớp một em tuần trước Final → hết tuần Final. */
   'Theo luồng chuyển tiếp lộ trình': 'Follow the end-of-course transition',
+  'Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển ngay, không Test đi kèm.': 'Tests come along (Move up to FT gets MT0 in the Final week). Untick: transfer now, no tests.',
   'Gửi đề xuất': 'Send request',
   'Duyệt và quyết định': 'Approve and decide',
   'Sửa đề xuất chuyển lớp': 'Edit transfer request',
@@ -393,6 +396,7 @@ export const EN_R1_EN = {
   'Chọn tuần hoặc lớp chuyển đến mới rồi lưu, hoặc huỷ quyết định.': 'Pick a new week or target class and save, or cancel the decision.',
   'Xác nhận huỷ quyết định': 'Confirm cancelling the decision',
   'tuần học {n}': 'study week {n}',
+  'Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo “Sắp nhận”.': 'The branch manager and the new class\'s core teacher will get an “Incoming” notice.',
   'Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học': 'E.g. parents asked to move to a class at another time',
   'Ghi lý do': 'Add a reason',
   'Em chưa có Target · band 0–9, hoặc tích KCK': 'No Target yet · band 0–9, or tick KCK',
@@ -487,6 +491,10 @@ export const EN_R1_EN = {
   /* Tên bài giữ nguyên (mẫu 'Final {ct}' khớp nhầm 'Final Test' → 'Tests Final') */
   'Final Test': 'Final Test',
   'Progress Test': 'Progress Test',
+  /* CHU-GIAI (chủ SP 07/11): lưu ý cần thiết viết lại ngắn. */
+  'Để trống phần không đánh giá · không đổi điểm Test, mức SOS': 'Leave unassessed parts blank · does not change Test scores or SOS level',
+  'Đổi tuần khai giảng không dời lịch MT của em đã có.': "Changing the start week does not move existing students' MT schedules.",
+  'Hiện ở hồ sơ {n} em lớp {lop} · em chưa có Case kỹ năng này được mở Case mới': (b) => `Shows on the profiles of ${so(b.n, 'student', 'students')} in ${b.lop} · students without a case in this skill get a new one`,
 } satisfies Record<string, Dich>;
 
 /** Mẫu dịch chữ máy chủ / dữ liệu dựng sẵn qua dich() (câu đủ dài, biến là số / mã / danh sách). */

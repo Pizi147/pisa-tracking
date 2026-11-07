@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { BoLocDoan, Empty, ErrorState, NhanTrangThai, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
-import { IconCanhBao, IconDangLam, IconDat, IconGap, IconKhong, IconMotPhan } from '../../ui/BieuTuong.tsx';
+import { IconCanhBao, IconDangLam, IconDat, IconKhong, IconMotPhan } from '../../ui/BieuTuong.tsx';
 import { DiemKq } from '../../ui/KhuonViec.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { NhanLoai } from '../cases/SkillBoard.tsx';
 import { ChuongLop, type ChuongWeb } from './ChuongLop.tsx';
 import {
@@ -228,11 +229,13 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
       {/* PR-VAI-b (mockup 26 bản 2): chương theo lớp ở đầu tab — thay bảng Lịch sử lớp. */}
       <ChuongLop chuong={data.chuong ?? []} lapLai={data.lapLai ?? []} homNay={homNay} onChon={chonChuong} />
 
-      <section id="truc-tuan" className="card min-w-0 scroll-mt-4 overflow-hidden" aria-label={t('Hành trình')}>
+      <section id="truc-tuan" className="card min-w-0 scroll-mt-4" aria-label={t('Hành trình')}>
         {/* U07 (mockup `.the-dau`): tiêu đề 17 / 700 "Hành trình · Fast Track · lớp" + chọn kỹ năng · khoảng ở phải; 375: Danh sách / Biểu đồ. */}
         <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-          <h2 className="m-0 min-w-0 text-[17px] font-bold text-slate-100">
+          <h2 className="m-0 inline-flex min-w-0 items-center gap-1.5 text-[17px] font-bold text-slate-100">
             {hep ? t('Hành trình') : [t('Hành trình'), giaiDoanDangXem.loai === 'ft' ? 'Fast Track' : t('Lớp thường'), tenLop || null].filter(Boolean).join(' · ')}
+            {/* CHU-GIAI (chủ SP 07/11): chú giải ký hiệu vào ⓘ cạnh tiêu đề, không còn dòng chân thẻ. */}
+            {!danhSach && <NutLuat label={t('Ký hiệu')}><ChuGiai cheDo={cheDo} coPaKq={coPaKq} coDung={dungHienThi.length > 0} /></NutLuat>}
           </h2>
           <span className="ml-auto flex max-w-full flex-wrap items-center gap-2">
             {hep && (
@@ -268,7 +271,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
         {danhSach ? <DanhSachSuKien hop={data.hop} homNay={homNay} onOpenCase={onOpenCase} /> : (
           <>
             {/* MỘT khung cuộn ngang, MỘT lưới — trục và mọi hộp kỹ năng là con trực tiếp của lưới này. */}
-            <div ref={setKhung} className="overflow-x-auto">
+            <div ref={setKhung} className="overflow-x-auto rounded-b-[inherit]">
               <div className="grid relative isolate"
                 style={{ gridTemplateColumns: `${boCuc.cotTen}px repeat(${soTuan}, ${boCuc.cotTuan})`, gridTemplateRows: hang.mau }}>
                 {/* ---- lớp nền: vạch tuần (đầu tháng đậm) · kẻ ngang giữa các nhóm · dải Tạm dừng */}
@@ -376,7 +379,6 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
                 ))}
               </div>
             </div>
-            <ChuGiai cheDo={cheDo} coPaKq={coPaKq} coDung={dungHienThi.length > 0} />
           </>
         )}
       </section>
@@ -673,11 +675,10 @@ function DanhSachSuKien({ hop, homNay, onOpenCase }: { hop: Hop[]; homNay: strin
 }
 
 /**
- * CHÚ GIẢI (U07, mockup `.chu-giai` — chân thẻ): Case viền SOS (mép phải đứt = đang mở) · PA đang chạy · PA chờ xác nhận · Huỷ (xám) · Xong ·
- * tăng / giảm = so hai MT ghi ngay cạnh; thêm kết quả PA / tạm dừng chỉ khi có trên trục. < 640 px thu gọn chỉ ký hiệu, nút "Ký hiệu" mở chữ.
+ * CHÚ GIẢI (U07) — nội dung ⓘ "Ký hiệu" cạnh tiêu đề (chủ SP 07/11): Case viền SOS (mép phải đứt = đang mở) · PA đang chạy · PA chờ xác nhận ·
+ * Huỷ (xám) · Xong · tăng / giảm = so hai MT ghi ngay cạnh; thêm kết quả PA / tạm dừng chỉ khi có trên trục.
  */
 function ChuGiai({ cheDo, coPaKq, coDung }: { cheDo: 'ielts' | 'ratio'; coPaKq: boolean; coDung: boolean }) {
-  const [moChu, setMoChu] = useState(false);
   const khoi = (lop: string, dau: ReactNode) => <span className={`inline-flex h-4 w-[18px] flex-none items-center justify-center rounded ${lop}`}>{dau}</span>;
   const muc: [ReactNode, string][] = [
     [<span key="c" className="inline-block h-3 w-[22px] rounded-l-[3px] border-[1.5px] border-[color:var(--text)]" style={{ borderRightStyle: 'dashed' }} />, cheDo === 'ielts' ? t('Case (viền theo SOS; mép phải đứt = đang mở)') : t('Case (mép phải đứt = đang mở)')],
@@ -691,16 +692,10 @@ function ChuGiai({ cheDo, coPaKq, coDung }: { cheDo: 'ielts' | 'ratio'; coPaKq: 
     [<span key="l" />, cheDo === 'ielts' ? t('tăng / giảm = so hai MT ghi ngay cạnh') : t('tăng / giảm = so hai bài ghi ngay cạnh')],
   ];
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t px-4 py-2.5 text-[13px] text-dim" style={{ borderColor: 'var(--line)' }} aria-label={t('Chú giải')}>
-      <button type="button" aria-expanded={moChu} onClick={() => setMoChu(!moChu)}
-        className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-[13px] font-semibold text-[color:var(--accent)] sm:hidden">
-        {t('Ký hiệu')} <IconGap mo={moChu} size={10} />
-      </button>
+    <span className="grid gap-1.5" aria-label={t('Chú giải')}>
       {muc.map(([ky, chu]) => (
-        <span key={chu} className="inline-flex items-center gap-[5px] whitespace-nowrap" title={chu}>
-          {ky}<span className={moChu ? '' : 'hidden sm:inline'}>{chu}</span>
-        </span>
+        <span key={chu} className="flex items-center gap-2"><span className="inline-flex w-[58px] flex-none justify-center">{ky}</span>{chu}</span>
       ))}
-    </div>
+    </span>
   );
 }

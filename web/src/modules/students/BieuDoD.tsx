@@ -372,7 +372,7 @@ export function BieuDoD(o: BieuDoDProps) {
   );
 }
 
-/** Chú giải dưới chart (chỉ mục có trên chart; đọc màn bỏ qua — mỗi dấu đã có tên riêng). */
+/** Chú giải chart — nội dung ⓘ "Cách đọc hành trình" (chỉ mục có trên chart). */
 export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, kyToi = false, thi, kvChu }: {
   kq: { vuot: boolean; bang: boolean; duoi: boolean } | 'thuong'; kvLuot: boolean; vang: boolean; thieu: boolean; tamDung: boolean; sex: boolean;
   /** Có khung đứt "kỳ tới" (PA đang chạy, hạn ghi kết quả sau tuần này). */
@@ -384,7 +384,7 @@ export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, kyToi = fa
   const c = (x: ReactNode) => <svg viewBox="0 0 18 12" width="18" height="12" className="overflow-visible" aria-hidden>{x}</svg>;
   const cham = (mau: string, chu: string) => <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<circle cx="9" cy="6" r="5" fill={mau} />)}{chu}</span>;
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 pb-3 text-[12px] text-slate-300" aria-hidden>
+    <span className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-slate-300">
       {kq === 'thuong' ? <>{cham(MAU_KQ.vuot, t('đạt'))}{cham(MAU_KQ.duoi, t('chưa đạt'))}</> : <>
         {kq.vuot && cham(MAU_KQ.vuot, t('vượt kỳ vọng'))}{kq.bang && cham(MAU_KQ.bang, t('bằng kỳ vọng'))}{kq.duoi && cham(MAU_KQ.duoi, t('dưới kỳ vọng'))}
       </>}
@@ -401,6 +401,6 @@ export function ChuGiaiD({ kq, kvLuot, vang, thieu, tamDung, sex, pa, kyToi = fa
       {thi === 'kq' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="5" y="2" width="8" height="8" transform="rotate(45 9 6)" fill="var(--lich-chu)" />)}{t('thi thật')}</span>}
       {thi === 'cho' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0" y="0" width="18" height="12" fill="var(--lich-nen)" />)}{t('thi thật · chờ kết quả')}</span>}
       {thi === 'du-kien' && <span className="inline-flex items-center gap-1.5 whitespace-nowrap">{c(<rect x="0.5" y="0.5" width="17" height="11" rx="2" fill="var(--lich-nen)" stroke="var(--lich-vien)" strokeDasharray="3 2" />)}{t('dự kiến thi')}</span>}
-    </div>
+    </span>
   );
 }

@@ -557,6 +557,7 @@ export const EN_C = {
   'Học viên đang tạm dừng': 'Student paused',
   'mọi hạn đang dừng': 'all deadlines paused',
   'người ghi:': 'by:',
+  'Quay lại học thì hạn tính lại từ ngày quay lại': 'Deadlines restart from the return date',
   'Yêu cầu chờ bạn duyệt': 'Requests awaiting you',
   '{n} yêu cầu chờ bạn duyệt': (b) => `${soNhieu(b.n, 'request', 'requests')} awaiting you`,
   'Đã mở lại Case': 'Case reopened',
