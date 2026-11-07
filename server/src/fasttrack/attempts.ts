@@ -3,8 +3,8 @@ import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
-import { CAU_KHONG_VANG, chanVangLopKetThuc, dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, oChuaCoDiem, quyenSuaSauHoanTat } from './hoanTat.ts';
+import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
+import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
   can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopFtGvcn, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
@@ -21,7 +21,7 @@ import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, MON_MOT_LUOT_SQL,
   type SkillRow, type SkillScheduleView,
-  chanCuoiTuan, tuanCacKyNang,
+  chanCuoiTuan, ghiSitStatus, tuanCacKyNang,
 } from './skillSchedule.ts';
 import {
   canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
@@ -448,6 +448,7 @@ export function skillCells(
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
+  const khoiPhucDuoc = cancelled && choHuyKhoiPhucLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id });
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
@@ -533,8 +534,9 @@ export function skillCells(
         })()
       : null;
     const doiTu = hasScore && view.absenceMoveCount > 0 ? vangCu?.get(`${attempt.id}:${assessed}`) ?? null : null;
-    /* E8 (T53 Q6): bài đã xác nhận vắng không nhập ở đâu cả — nhập bù thì Quản lý "Xếp lại bài vắng" / "Khôi phục" trước. */
-    const canEdit = required && !cancelled && view.sitStatus !== 'cancelled' && view.sitStatus !== 'absent'
+    /* RKC (thay E8 "vắng / huỷ không nhập ở đâu cả"): ô vắng / huỷ nhập được — `saveScore` hỏi rồi đổi trạng thái thi; lượt đã huỷ: người
+       khôi phục được (QL…) nhập được, máy hỏi rồi khôi phục lượt. */
+    const canEdit = required && (!cancelled || khoiPhucDuoc)
       /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
        * Quản lý dời sang tuần chưa tới (T20) — điểm vẫn hiện. */
       && (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today))
@@ -1172,9 +1174,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const result = resultOf(a, scores, skips, skillRows);
   const today = demoToday();
   /* R11 (Z2c-c, A3): đợt đã hoàn tất thì ô chỉ sửa được bởi Quản lý — thiếu dòng này GVBM thấy nút "Sửa điểm" rồi bị máy chủ chặn. */
-  const cells0 = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today), tuanVangCu([attemptId]));
-  /* Rà #410: lớp đã kết thúc — ô không nhận "-" (`khongVang`), hộp nhập điểm không gửi. */
-  const cells = laLopKetThuc(a.class_id) ? cells0.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG })) : cells0;
+  const cells = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today), tuanVangCu([attemptId]));
   const mode = scoringModeOf(a);
   const completion = completionWeekOf(skillRows);
   /* FIX-DTL: bài lớp thường bộ môn khác (PREFOU `tong_hop`) không có dòng L/R/W/S — bỏ qua thay vì 500, để màn nhận `kind` rồi chuyển trang. */
@@ -1447,15 +1447,14 @@ function hoiSinhLuot(p: Principal, cu: any, o: { classId: number | null; period:
 
 /**
  * OV-1d (chủ SP 13/10): em ĐÃ KẾT THÚC HỌC hoặc LƯU TRỮ — lưới chấm FT làm mờ hàng (chữ ở cột Kết quả), ô không phải việc / quá hạn.
- * Chỉ em Kết thúc học + Lưu trữ mới khoá ghi (`khoa`: ô chỉ đọc, `saveScore` 400 kèm câu chỉ đường). Kết thúc học chưa lưu trữ (FT chờ kết quả thi thật /
- * Bước tiếp, OV-8a) vẫn nhập bù / sửa — điểm vào bản chụp lộ trình (PR-TK). P7 (N11): em Tạm dừng (nay ở Lưu trữ) hàng mờ "Tạm dừng", VẪN nhập bù / sửa
- * điểm lượt cũ (không mất dữ liệu); số đếm vẫn theo `HV_DANG_HOC_SQL`. `null` = hàng bình thường.
+ * RKC (chủ SP 07/11, mở Q-B1 "hồ sơ Lưu trữ khoá"): em Lưu trữ / Kết thúc học / Tạm dừng VẪN nhập bù / sửa điểm, "-", nhận xét như em đang học —
+ * nhật ký điểm như thường; không bắt Quay lại học trước. Hàng chỉ mờ + nhãn; số đếm vẫn theo `HV_DANG_HOC_SQL`. `null` = hàng bình thường.
  */
-export function ngungHocCua(status: string | null | undefined, archivedAt: string | null | undefined): { nhan: string; khoa: string | null } | null {
-  if (status === 'inactive') return { nhan: 'Tạm dừng', khoa: null };
-  if (archivedAt) return { nhan: 'Lưu trữ', khoa: 'Em đã lưu trữ — Quay lại học trước khi nhập điểm.' };
+export function ngungHocCua(status: string | null | undefined, archivedAt: string | null | undefined): { nhan: string } | null {
+  if (status === 'inactive') return { nhan: 'Tạm dừng' };
+  if (archivedAt) return { nhan: 'Lưu trữ' };
   if (status === 'active') return null;
-  return { nhan: 'Đã kết thúc học', khoa: null };
+  return { nhan: 'Đã kết thúc học' };
 }
 
 function loadAttempt(attemptId: number) {
@@ -1604,7 +1603,8 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
 /**
  * XOÁ MT (chủ SP 06/11 — MỘT thao tác "Xoá" ở Kế hoạch Test và hồ sơ MT, thay "Xóa lịch" về Chưa xếp + "Bỏ khỏi đợt" cả 4 kỹ năng): mọi kỹ năng
  * bắt buộc ra khỏi đợt (`required = 0`, tuần GIỮ để Khôi phục), MỘT tx. Quyền như "Xóa lịch" cũ (`requireSuaLichTest`: QL / Admin / Quản trị,
- * GVCN khi công tắc #1064 bật); khoá cuối tuần N15 qua `setSkillScope`. Đã có điểm / đã làm bài → chặn như "Xóa lịch" cũ (điểm xoá theo T22).
+ * GVCN khi công tắc #1064 bật); khoá cuối tuần N15 qua `setSkillScope`. RKC (chủ SP 07/11): đã có điểm → HỎI rồi huỷ điểm (cất — "Khôi phục điểm"
+ * ở ô) và xoá; đã làm bài mà chưa có điểm → xoá thẳng (không mất gì).
  * Ô hiện "Đã xoá" + Khôi phục (`duaLaiCaLuot`); Hoàn tác = Khôi phục đúng các kỹ năng vừa xoá.
  */
 const LY_DO_XOA_MT = 'Xoá MT';   // `scope_reason` của lần Xoá MT — Khôi phục chỉ đưa lại đúng các môn mang dấu này
@@ -1616,9 +1616,12 @@ export function xoaLuot(p: Principal, attemptId: number) {
   if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
   const ds = ensureSkillRows(attemptId).filter((r) => r.required);
   if (!ds.length) throw loi(400, '{nhan} đã xoá.', { nhan });
-  if (scoresOf(attemptId).some((s) => s.band !== null || s.raw_score !== null)) throw loi(400, '{nhan} đã có điểm — không xoá được.', { nhan });
-  if (ds.some((r) => r.sit_status === 'sat')) throw loi(400, '{nhan} đã làm bài — không xoá được.', { nhan });
+  /* Chỉ ô của kỹ năng đang trong đợt (ô kỹ năng đã bỏ / task không học không đổi khi Xoá). */
+  const coDiem = scoresOf(attemptId).filter((s) => (s.band !== null || s.raw_score !== null)
+    && ds.some((r) => r.skill === assessedSkillOf(s.skill) && r.bo_task !== s.skill));
+  if (coDiem.length) canXacNhan('{nhan} đã có điểm — huỷ điểm rồi xoá {nhan}? (Khôi phục lại được)', { nhan }, 'Huỷ điểm và xoá');
   return tx(() => {
+    for (const s of coDiem) saveScore(p, attemptId, s.skill, { rawScore: null, criteria: [null, null, null, null], lyDo: LY_DO_XOA_MT });
     for (const r of ds) setSkillScope(p, attemptId, r.skill, false, LY_DO_XOA_MT, { daKiemQuyen: true });
     refreshOutcome(p, attemptId);
     return { ok: true as const, kyNang: ds.map((r) => r.skill as string) };
@@ -1771,14 +1774,8 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
   return tx(() => {
     /* Hai người huỷ cùng lúc: kiểm lại TRONG giao dịch — lần sau không được cất một bản rỗng đè lên bản có điểm. */
     if (loadAttempt(attemptId).status === 'cancelled') throw badRequest('Lượt này đã huỷ.');
+    /* RKC (LUAT-34 bỏ khoá "Đủ điểm"): huỷ lượt đã có điểm sau hoàn tất không còn chỉ QL — điểm cất, Khôi phục trả lại. */
     if (hq.xoaDiem) xoaDiemLuot(p, a, lyDo);
-    else {
-      /* R11 như `saveScore`: đợt đã hoàn tất có điểm thì chỉ người sửa được sau hoàn tất mới ẩn được điểm (huỷ lượt) — kiểm trước khi ghi. */
-      const hoanTat = dotHoanTat(a.id, demoToday());
-      if (hq.diem.length && hoanTat.hoanTat && (!a.class_id || !quyenSuaSauHoanTat(p, a.class_id, !!a.lich_su))) {
-        throw loi(403, 'Đợt này đã hoàn tất (hết Chủ nhật {chuNhatCuoi}). Chỉ Quản lý huỷ được lượt đã có điểm.', { chuNhatCuoi: ngay(hoanTat.chuNhatCuoi) });
-      }
-    }
     conn.prepare(`UPDATE assessment_attempts SET status='cancelled', cancel_reason=?, cancelled_at=?, updated_at=? WHERE id=?`)
       .run(lyDo, nowIso(), nowIso(), attemptId);
     logSchedule(attemptId, { action: 'cancelled', reason: lyDo, actor: p.userId });
@@ -1849,6 +1846,20 @@ export function chanKhoiPhucThuong(a: any, nhan: string): string | null {
   const khac = conn.prepare(`SELECT 1 FROM assessment_attempts WHERE student_id = ? AND cycle_id IS ? AND kind = ? AND id != ? AND status != 'cancelled'
       AND (kind != 'checkpoint' OR attempt_no = ?)`).get(a.student_id, a.cycle_id ?? null, a.kind, a.id, a.attempt_no);
   return khac ? `Em đã có ${nhan} khác đang dùng — không khôi phục lượt này. Nhập điểm vào ${nhan} đang có.` : null;
+}
+
+/**
+ * RKC (chủ SP 07/11 "không chặn cứng"): thao tác trên lượt ĐÃ HUỶ (nhập điểm, "-", báo vắng…) — người khôi phục được lượt hỏi một câu rồi
+ * KHÔI PHỤC lượt (`reopenAttempt`, đủ nhật ký) trong cùng giao dịch của thao tác; người không khôi phục được → câu chỉ đường. Nơi gọi bọc `tx`.
+ */
+export function moLaiLuotNeuHuy(p: Principal, a: any): void {
+  if (a.status !== 'cancelled') return;
+  const nhan = LOAI_THUONG.includes(a.kind) ? nhanBai(khoaBai(a.kind, a.attempt_no)) : `MT${a.attempt_no}`;
+  if (!choHuyKhoiPhucLichTest(p, { classId: a.class_id, studentId: a.student_id })) {
+    throw loi(400, '{nhan} đã huỷ — nhờ Quản lý khôi phục {nhan} rồi làm tiếp.', { nhan });
+  }
+  canXacNhan('{nhan} đã huỷ — khôi phục {nhan} rồi làm tiếp?', { nhan }, 'Khôi phục rồi làm tiếp');
+  reopenAttempt(p, a.id);
 }
 
 /**
@@ -2146,10 +2157,6 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
   const a = loadAttempt(attemptId);
   if (!laChamCheo(a.kind, 'speaking')) throw badRequest('Chỉ bài Speaking Mock Test (chấm chéo) có nhận xét GV phụ trách.');
   if (!quyenPhuTrachS(p, a.class_id)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý ghi được nhận xét GV phụ trách.');
-  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ.');
-  const hv = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(a.student_id) as any;
-  const khoa = ngungHocCua(hv?.status, hv?.archived_at)?.khoa;
-  if (khoa) throw badRequest(khoa);
   const coNx = body.nhanXetPhuTrach !== undefined, coNhom = body.nhomNguyenNhan !== undefined;
   if (!coNx && !coNhom) throw badRequest('Không có gì để lưu.');
   /* N35: nhận xét MT ≤ 300 (thành mô tả Case); chữ cũ dài gửi lại nguyên văn thì giữ — chỉ đọc chữ cũ khi chữ mới đã vượt. */
@@ -2195,30 +2202,20 @@ export function saveScore(
   o: { thiLai?: boolean } = {},
 ) {
   const conn = db();
-  const a = loadAttempt(attemptId);
+  let a = loadAttempt(attemptId);
   if (!(ENTRY_SKILLS as readonly string[]).includes(skill)) throw badRequest('Kỹ năng không hợp lệ.');
-  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ, không nhập điểm được.');
-  /* OV-1d: em đã Lưu trữ → không ghi gì vào ô (điểm, "-", Bỏ vắng, nhận xét) — điểm cũ giữ nguyên. */
-  const hv = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(a.student_id) as any;
-  const khoa = ngungHocCua(hv?.status, hv?.archived_at)?.khoa;
-  if (khoa) throw badRequest(khoa);
+  if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = loadAttempt(attemptId); }   // RKC: hỏi rồi khôi phục lượt, lưu tiếp
   /* T19: có ghi một giá trị điểm (không phải xoá) → kỹ năng phải tới tuần thi (kiểm dưới). */
   const ghiDiem = (patch.rawScore !== undefined && patch.rawScore !== null) || (patch.band !== undefined && patch.band !== null)
     || (Array.isArray(patch.criteria) && patch.criteria.some((v) => v !== null && v !== undefined && (v as unknown) !== ''));
-  /* OV-13h (chủ SP 15/10): NHẬP điểm vào ô chưa có điểm (kể cả ô "-") — GV đúng môn làm được cả sau hoàn tất / lớp đã kết thúc; sửa / xoá điểm đã có vẫn qua QL. */
-  /* Rà #410: chỉ đọc ô khi cần (lớp đã kết thúc / đợt đã hoàn tất), một lần. */
-  let oTrongNho: boolean | undefined;
-  const oTrong = () => (oTrongNho ??= ghiDiem && patch.noShow === undefined
-    && oChuaCoDiem(conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill)));
   /*
    * HOTFIX-2 (chủ SP 15/10: "không chặn cứng người đúng nhiệm vụ dù đã lâu"): lệnh chỉ nhận xét / nhóm — GV đúng kỹ năng (cả GV Speaking
    * chấm chéo), GVCN, Quản lý sửa MỌI LÚC: sau hoàn tất, cả khi lớp đã kết thúc. Kiểm nhập vẫn đủ (`luuNhanXet`); kèm điểm → luật dưới như cũ.
    */
   const nxMoiLuc = chiNhanXetNhom(patch) && !!a.class_id
     && (!!scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) || isCoreTeacherOf(p, a.class_id));
-  if (patch.noShow !== undefined) chanVangLopKetThuc(a.class_id);   // lớp đã kết thúc: không ghi / gỡ "-", kể cả QL — một câu cho mọi vai
-  /* OV-11g (HL-10): lớp đã kết thúc — GV 403 trước mọi việc ghi (trừ nhận xét / nhập ô trống); Quản lý đi đường `override` (dưới). */
-  const lopKetThuc = nxMoiLuc ? laLopKetThuc(a.class_id) : kiemLopKetThuc(p, a.class_id, oTrong);
+  /* RKC (mở Q-B1 "lớp đã kết thúc chỉ QL sửa điểm"): GV đúng môn sửa / xoá / "-" như lớp đang chạy (nhật ký thường); Quản lý đi đường `override`. */
+  const lopKetThuc = nxMoiLuc ? laLopKetThuc(a.class_id) : kiemLopKetThuc(p, a.class_id);
   /*
    * T23 · N38 L3: MT cũ CỦA KỸ NĂNG (tuần thi cách ≥ 2 tuần) nhận "-" = em không dự thi kỹ năng đó (`no_show_cu`) — không tính lần vắng, không tự
    * dời, không Case / thẻ / chuông; ô không còn đếm "còn trống" (nhánh "-" bên dưới).
@@ -2249,26 +2246,28 @@ export function saveScore(
   }
   if (lopKetThuc) path = 'override';
   const assessed = assessedSkillOf(skill);
-  const scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
+  let scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   if (!scheduleRow.required) {
     throw loi(400, 'Kỹ năng {x} không nằm trong phạm vi yêu cầu của đợt này.', { x: tenMon(null, assessed) });
   }
   if (scheduleRow.bo_task === skill) throw loi(400, 'Em không học {o} — ô này không nhập điểm (Writing = task em học).', { o: ENTRY_SKILL_SHORT[skill as EntrySkill] });   // P8 (N13)
   /*
-   * KHÔNG NHẬP ĐIỂM VÀO PHẦN ĐÃ HUỶ hoặc ĐÃ XÁC NHẬN VẮNG (mục 10.6).
-   *
-   * Cả hai đều là mâu thuẫn với một bản ghi mà một người đã ký tên vào: không có buổi thi
-   * thì không có bài để chấm. Nếu xác nhận đó sai, người có quyền sửa lại trạng thái thi
-   * trước — sửa xong mới nhập được điểm, và lịch sử giữ cả hai lần.
+   * PHẦN ĐÃ HUỶ (vắng 2 lần) / ĐÃ XÁC NHẬN VẮNG (mục 10.6). RKC (chủ SP 07/11, thay "sửa trạng thái trước rồi mới nhập"): NHẬP ĐIỂM = em đã làm
+   * bài — hỏi một câu rồi đổi trạng thái thi sang "đã làm bài" (`ghiSitStatus`, nhật ký lịch) TRONG giao dịch lưu điểm (kiểm điểm hỏng → không đổi
+   * gì). Nhận xét lưu thẳng; "-" vào phần đã vắng / huỷ không có nghĩa → câu chỉ đường.
    */
-  if (scheduleRow.sit_status === 'cancelled') {
-    throw loi(400, 'Kỹ năng {assessed} của đợt này đã bị huỷ. Khôi phục và đặt tuần mới trước khi nhập điểm.', { assessed });
+  const sitChan = scheduleRow.sit_status === 'cancelled' || scheduleRow.sit_status === 'absent';
+  let doiSit: (() => void) | null = null;
+  if (sitChan && ghiDiem) {
+    canXacNhan(scheduleRow.sit_status === 'absent'
+      ? '{x} đang ghi vắng — đổi thành đã làm bài rồi lưu điểm?' : '{x} đã huỷ (vắng 2 lần) — đưa lại thành đã làm bài rồi lưu điểm?',
+    { x: tenMon(null, assessed) }, 'Đổi thành đã làm bài');
+    const goc = scheduleRow;
+    doiSit = () => { ghiSitStatus(p, attemptId, goc, 'sat', 'Nhập điểm'); };
+    scheduleRow = { ...scheduleRow, sit_status: 'sat' };
   }
-  if (scheduleRow.sit_status === 'absent') {
-    throw badRequest(
-      `${assessed} đang được ghi nhận là học viên đã vắng. Nếu thực ra em có làm bài, `
-      + 'sửa trạng thái làm bài trước rồi mới nhập điểm.',
-    );
+  if (sitChan && patch.noShow !== undefined) {
+    throw loi(400, '{x} đã ghi vắng / đã huỷ — muốn thi lại thì chọn tuần ở hộp lịch.', { x: tenMon(null, assessed) });
   }
 
   /*
@@ -2296,7 +2295,8 @@ export function saveScore(
   if (chiNhanXet) return tx(() => luuNhanXet(p, a, skill, nxGt, gv, nhomGui));
 
   return tx(() => {
-    const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
+    doiSit?.();
+    let existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as ScoreRow | undefined;
     const before = existing ? { ...existing } : null;
 
@@ -2316,9 +2316,10 @@ export function saveScore(
       };
       if (patch.noShow === true) {
         if (hasOfficial) {
-          throw badRequest(
-            'Ô này đã có điểm chính thức — dấu "-" không xoá được điểm. Muốn sửa, dùng hiệu chỉnh điểm có ghi lý do.',
-          );
+          /* RKC (B): "-" vào ô đã có điểm → hỏi; đồng ý thì huỷ điểm (cất — "Khôi phục điểm" một bấm, `catDiemO`) rồi ghi "-". */
+          canXacNhan('Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?', undefined, 'Huỷ điểm, ghi vắng');
+          saveScore(p, attemptId, skill, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Ghi vắng' }, today);
+          existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as ScoreRow | undefined;
         }
         if (!scheduleRow.planned_period_id || !scheduleRow.week_end) {
           throw loi(400, '{assessed} chưa có tuần Test nên chưa báo "không có bài" được.', { assessed });
@@ -2337,7 +2338,8 @@ export function saveScore(
           throw loi(400, 'Chưa tới tuần Test {x} — muốn đổi tuần thì "Dời lịch".', { x: tuanLich(scheduleRow.week_start, today) });
         }
         const late = today > scheduleRow.week_end.slice(0, 10);
-        const cu = (a.kind === 'mock' ? laMtCuKyNang(scheduleRow.week_start ?? scheduleRow.week_end, today) : late) ? 1 : 0;
+        /* RKC: lớp đã kết thúc (không còn tuần để dời) → "-" = Không dự thi, như MT cũ. */
+        const cu = (laLopKetThuc(a.class_id) || (a.kind === 'mock' ? laMtCuKyNang(scheduleRow.week_start ?? scheduleRow.week_end, today) : late)) ? 1 : 0;
         const now = nowIso();
         if (existing) {
           conn
@@ -2636,9 +2638,8 @@ export function classScoreSheet(
       /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
       const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
       const vangCu = tuanVangCu(attempts.map((a) => a.id));
-      /* OV-11g (HL-10, Q4): lớp đã kết thúc — như bài đã hoàn tất (Quản lý sửa qua hộp lý do); GV chỉ đọc, cùng luật `kiemLopKetThuc` của `saveScore`. */
+      /* OV-11g: lớp đã kết thúc — đợt coi như hoàn tất (Quản lý sửa qua hộp lý do). RKC: GV đúng môn sửa như thường (`saveScore`). */
       const ketThuc = cls.status === 'finished';
-      const gvKetThuc = ketThuc && !quyenSuaSauHoanTat(p, classId);
       return attempts.map((a) => {
       const scores = bundle.scores.get(a.id) ?? [];
       const skips = bundle.skips.get(a.id) ?? [];
@@ -2646,12 +2647,8 @@ export function classScoreSheet(
       const hoanTat = ketThuc ? { hoanTat: true, chuNhatCuoi: ht.chuNhatCuoi ?? cls.finished_at ?? null } : ht;
       const ngung = ngungHocCua(a.student_status, a.student_archived_at);
       const cells0 = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), hoanTat, vangCu);
-      /* OV-13h: GV giữ `canEdit` ở ô chưa có điểm (skillCells đã xét `oChuaCoDiem`); ô có điểm khoá, không gỡ "-". */
-      /* Rà #410: lớp đã kết thúc — mọi ô không nhận "-" (`khongVang`, cùng câu máy chủ), kể cả QL. */
       /* MT0-THEO-EM: MT0 hiện ở lớp FT không là việc / trễ của lớp FT (vẫn ở lớp thường cũ); sửa được hay không giữ theo quyền lớp cũ. */
-      const cells1 = a.class_id !== classId ? cells0.map((c) => ({ ...c, viec: false, overdue: false })) : cells0;
-      const cells = ketThuc ? cells1.map((c) => ({ ...c, khongVang: CAU_KHONG_VANG,
-        ...(gvKetThuc ? { ...(c.canEdit ? {} : { lyDoKhoa: 'Lớp đã kết thúc' }), daChot: c.daChot && { ...c.daChot, goDuoc: false } } : {}) })) : cells1;
+      const cells = a.class_id !== classId ? cells0.map((c) => ({ ...c, viec: false, overdue: false })) : cells0;
       return {
         attemptId: a.id,
         studentId: a.student_id,
@@ -2661,9 +2658,8 @@ export function classScoreSheet(
         studentEmail: a.student_email ?? null,
         attemptNo: a.attempt_no,
         status: a.status,
-        /* OV-1d: em đã Kết thúc học / Lưu trữ — ô không việc / quá hạn; Lưu trữ thêm chỉ đọc, không Bỏ vắng (máy chủ cũng chặn ở `saveScore`). */
-        cells: ngung ? cells.map((c) => ({ ...c, viec: false, overdue: false,
-          ...(ngung.khoa ? { canEdit: false, lyDoKhoa: ngung.khoa, daChot: c.daChot && { ...c.daChot, goDuoc: false } } : {}) })) : cells,
+        /* OV-1d: em đã Kết thúc học / Lưu trữ — ô không việc / quá hạn; vẫn sửa được (RKC). */
+        cells: ngung ? cells.map((c) => ({ ...c, viec: false, overdue: false })) : cells,
         ...(ngung ? { ngungHoc: ngung.nhan } : {}),
         result: resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []),
         /* PR-MT0: chip SOS chỉ để nhìn (band ≤ Target − 2.0) thay cho mức SOS. */

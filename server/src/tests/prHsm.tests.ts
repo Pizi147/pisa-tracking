@@ -152,14 +152,14 @@ export async function runPrHsmTests(t: YThucTestKit) {
   });
 
   const eV = emMoi('Vắng S');
-  check('HSM (2f) · E8: kỹ năng đã xác nhận vắng → canEdit false ở hồ sơ Mock và lưới; saveScore vẫn 400', () => {
+  check('HSM (2f) · E8 → RKC: kỹ năng đã xác nhận vắng — không là việc; vẫn sửa được (canEdit) ở hồ sơ Mock và lưới; saveScore hỏi (409)', () => {
     skillSch.setSitStatus(QL, eV.aid, 'speaking', 'absent', 'Em vắng buổi Speaking');
-    assert(oCua(eV.aid, 'speaking').canEdit === false && oCua(eV.aid, 'speaking').viec === false, 'hồ sơ Mock');
+    assert(oCua(eV.aid, 'speaking').canEdit === true && oCua(eV.aid, 'speaking').viec === false, 'hồ sơ Mock');
     assert(oCua(eV.aid, 'listening').canEdit === true, 'kỹ năng khác vẫn sửa được');
     const sheet = svc.classScoreSheet(QL, LOP, week.ensurePeriod(tuanNay).id, TODAY);
     const row = sheet.rows.find((r: any) => r.attemptId === eV.aid);
-    assert(row && row.cells.find((c: any) => c.skill === 'speaking').canEdit === false, 'lưới');
-    assert(maLoi(() => svc.saveScore(QL, eV.aid, 'speaking', { criteria: S4 }, TODAY)) === 400, 'saveScore vắng');
+    assert(row && row.cells.find((c: any) => c.skill === 'speaking').canEdit === true, 'lưới');
+    assert(maLoi(() => svc.saveScore(QL, eV.aid, 'speaking', { criteria: S4 }, TODAY)) === 409, 'saveScore vắng phải hỏi');
   });
 
   check('HSM (2g) · dời do vắng lần 1 → skillSchedule.doiTu = tuần cũ; lượt huỷ → huy.ai / huy.lyDo', () => {

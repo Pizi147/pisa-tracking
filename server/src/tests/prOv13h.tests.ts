@@ -119,18 +119,20 @@ export async function runPrOv13hTests(t: YThucTestKit) {
       await ma(await goi(gvL, `/attempts/${x.aid}/scores/listening`, put({ band: 7.5, nhanXet: nx })), 200, 'GV sửa điểm đã có (LUAT-34)');
       await ma(await goi(gvL, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [8, 8, 8, 8], nhanXet: nx })), 403, 'GV L vào ô W1');
     }));
-    await checkAsync('OV13h-1c · FT lớp đã kết thúc: GV W1 nhập ô W1 ("-", chưa điểm) → 200 + nhật ký; sửa lại → 403; "-" → 400 câu "không ghi vắng" + cờ ô khongVang (GIỮ, rà #410); QL vẫn sửa', lopTam(FT101, () => voiMayChu(SAU, async (goi) => {
-      const vang = await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ noShow: true }));
-      assert(vang.status === 400 && (await vang.text()).includes('không ghi vắng'), `GV "-" lớp kết thúc: ${vang.status}`);
+    /* RKC (chủ SP 07/11, mở Q-B1 "lớp đã kết thúc chỉ QL sửa điểm"): GV đúng môn sửa điểm đã có; "-" = Không dự thi (không còn tuần để dời). */
+    await checkAsync('OV13h-1c · RKC · FT lớp đã kết thúc: GV W1 "-" → 200 Không dự thi (no_show_cu); nhập ô → 200 + nhật ký; SỬA điểm đã có → 200; không cờ khongVang; QL vẫn sửa', lopTam(FT101, () => voiMayChu(SAU, async (goi) => {
+      await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ noShow: true })), 200, 'GV "-" lớp kết thúc');
+      assert(one(`SELECT no_show_cu FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`, x.aid)?.no_show_cu === 1, '"-" lớp kết thúc phải là Không dự thi');
       const oW = ((await (await goi(gvW, `/attempts/${x.aid}`)).json()) as any).cells.find((c: any) => c.skill === 'writing1');
-      assert(oW.canEdit === true && /không ghi vắng/.test(oW.khongVang ?? ''), `cờ ô W1: ${JSON.stringify({ e: oW.canEdit, v: oW.khongVang })}`);
+      assert(oW.canEdit === true && oW.khongVang === undefined, `cờ ô W1: ${JSON.stringify({ e: oW.canEdit, v: oW.khongVang })}`);
       const truoc = nk('score.edit', gvW, x.aid);
-      await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [8, 8, 8, 8], nhanXet: nx })), 200, 'GV W1 nhập ô trống lớp kết thúc');
+      await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [8, 8, 8, 8], nhanXet: nx })), 200, 'GV W1 nhập ô lớp kết thúc');
       assert(nk('score.edit', gvW, x.aid) === truoc + 1, 'thiếu nhật ký');
-      await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [7, 7, 7, 7], nhanXet: nx })), 403, 'GV W1 sửa điểm đã có');
+      await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [7, 7, 7, 7], nhanXet: nx })), 200, 'GV W1 sửa điểm đã có (RKC)');
+      assert(nk('score.edit', gvW, x.aid) === truoc + 2, 'thiếu nhật ký lần sửa');
       await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/writing1`, put({ criteria: tieuChiThu(7.5), nhanXet: nx, lyDo: 'Chấm lại' })), 200, 'QL sửa');
     })));
-    await checkAsync('OV13h-1d · lớp thường đã kết thúc: GV đúng môn nhập ô trống → 200 + nhật ký regular.score; sửa lại → 403; GV khác môn → 403; rà #410: ô đã khoá điểm vẫn ghi nhận xét (200 + nhật ký), "-" → 400 đúng câu, cờ nhanXetDuoc / khongVang', lopTam(FOU12, () => voiMayChu(TODAY, async (goi) => {
+    await checkAsync('OV13h-1d · RKC · lớp thường đã kết thúc: GV đúng môn nhập + SỬA → 200 + nhật ký; GV khác môn → 403; nhận xét 200; "-" ô có điểm → 409 hỏi, xác nhận → huỷ điểm (cất) + Không dự thi; cờ canEdit, không khongVang', lopTam(FOU12, () => voiMayChu(TODAY, async (goi) => {
       const a = one(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
           AND EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = a.id AND k.skill = 'listening' AND rp.week_start <= ?)
         ORDER BY a.id LIMIT 1`, FOU12, TODAY);
@@ -142,17 +144,25 @@ export async function runPrOv13hTests(t: YThucTestKit) {
       const truoc = nk('regular.score', gv);   // nhật ký theo dòng điểm (`assessment_score`)
       await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, put({ score: 20, total: 40 })), 200, 'GV nhập ô trống lớp kết thúc');
       assert(nk('regular.score', gv) === truoc + 1, 'thiếu nhật ký regular.score');
-      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, put({ score: 25, total: 40 })), 403, 'GV sửa điểm đã có');
+      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, put({ score: 25, total: 40 })), 200, 'GV sửa điểm đã có (RKC)');
       const truocNx = nk('score.nhan_xet', gv, a.id);
-      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, put({ nhanXet: 'Nghe ý chính tốt, sót số liệu.' })), 200, 'GV nhận xét ô đã khoá');
+      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, put({ nhanXet: 'Nghe ý chính tốt, sót số liệu.' })), 200, 'GV nhận xét');
       assert(nk('score.nhan_xet', gv, a.id) === truocNx + 1, 'thiếu nhật ký score.nhan_xet');
       if (khac) await ma(await goi(khac, `/regular/attempts/${a.id}/scores/listening`, put({ nhanXet: 'GV khác môn' })), 403, 'GV khác môn nhận xét');
-      const vang = await goi(gv, `/regular/attempts/${a.id}/scores/listening`, put({ noShow: true }));
-      assert(vang.status === 400 && (await vang.text()).includes('không ghi vắng'), `GV "-" lớp thường kết thúc: ${vang.status}`);
+      const hoi = await goi(gv, `/regular/attempts/${a.id}/scores/listening`, put({ noShow: true }));
+      const hoiJ = await hoi.json() as any;
+      assert(hoi.status === 409 && hoiJ.details?.canXacNhan === true, `"-" ô có điểm phải hỏi: ${hoi.status} ${JSON.stringify(hoiJ)}`);
+      assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a.id).raw_score === 25, 'chưa xác nhận: điểm giữ');
+      /* Header phải mang ĐÚNG mã câu đã đồng ý — "1" (đồng ý chung) không cho qua. */
+      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, { ...put({ noShow: true }), headers: { 'x-xac-nhan': '1' } }), 409, 'đồng ý chung không cho qua');
+      await ma(await goi(gv, `/regular/attempts/${a.id}/scores/listening`, { ...put({ noShow: true }), headers: { 'x-xac-nhan': encodeURIComponent(hoiJ.details.ma) } }), 200, 'xác nhận "-"');
+      const sau = one(`SELECT raw_score, no_show_cu FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a.id);
+      assert(sau.raw_score === null && sau.no_show_cu === 1, `sau xác nhận: ${JSON.stringify(sau)}`);
+      assert(one(`SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_diem' AND khoi_phuc_luc IS NULL`, a.id).n >= 1, 'điểm phải được cất (khôi phục được)');
       const kind = one('SELECT kind, attempt_no FROM assessment_attempts WHERE id = ?', a.id);
       const sheet = (await (await goi(gv, `/regular/classes/${FOU12}/sheet?kind=${kind.kind === 'checkpoint' ? `checkpoint:${kind.attempt_no}` : kind.kind}`)).json()) as any;
       const oL = sheet.rows.find((r: any) => r.attemptId === a.id)?.skillSchedule.find((k: any) => k.skill === 'listening');
-      assert(oL && oL.canEdit === false && oL.nhanXetDuoc === true && /không ghi vắng/.test(oL.khongVang ?? ''), `cờ ô L: ${JSON.stringify(oL && { e: oL.canEdit, nx: oL.nhanXetDuoc, v: oL.khongVang })}`);
+      assert(oL && oL.canEdit === true && oL.nhanXetDuoc === true && oL.khongVang === undefined, `cờ ô L: ${JSON.stringify(oL && { e: oL.canEdit, nx: oL.nhanXetDuoc, v: oL.khongVang })}`);
     })));
   }
 

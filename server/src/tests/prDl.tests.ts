@@ -144,7 +144,9 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* N38 (PR-MT-VANG) chụp lại `moi` (đối chiếu từng trường với mã trước PR): hai ô S "-" ghi muộn ≥ 2 tuần (Hoàng Bảo Ngọc W2 AUG, Trịnh Gia Bảo
      W4 AUG) nay là Không dự thi (`scheduled`, chữ "Không dự thi · Tuần …") thay vắng chờ QL; Võ Minh Triết (seed: nút Vắng lần 2) có dấu "-" đã chốt.
      Rồi ô huỷ vắng 2 lần bỏ câu "Quản lý đã đổi kết luận…" (`noShowNote`) — đo lại: chỉ đổi đúng điều đó (trước: moi 7569e6e2e056032f). */
-  const ANH_CHUP = { tuan: 'cc83e6fa32c0aa95', moi: '2bde7d28eb00cb47' };
+  /* RKC (chủ SP 07/11 "không chặn cứng"): ô vắng / huỷ nay `canEdit` true (máy chủ hỏi rồi đổi trạng thái khi nhập) — so JSON trước/sau: chỉ
+     5 ô `canEdit` false → true, không trường nào khác (trước: tuan cc83e6fa32c0aa95 · moi 2bde7d28eb00cb47). */
+  const ANH_CHUP = { tuan: '6e3a3cc57097f59d', moi: '1948335ce82a6b6d' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

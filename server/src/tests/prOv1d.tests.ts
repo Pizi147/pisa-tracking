@@ -79,16 +79,16 @@ export async function runPrOv1dTests(t: YThucTestKit) {
 
   /* LOC-HIEN-TAI (chủ SP 28/10, PTA Plan): em Kết thúc học / Lưu trữ KHÔNG còn hàng ở bảng điểm lớp đang học (trước: hàng mờ `ngungHoc`); em Tạm dừng giữ như cũ.
    * Đường ghi giữ hành vi cũ: Lưu trữ chặn ghi (400), Kết thúc học vẫn nhập bù được (PR-TK — qua hồ sơ HV / trang lượt). */
-  check('OV1d-2 · em Lưu trữ: không hàng, ghi → 400; em Kết thúc học chưa lưu trữ: không hàng nhưng vẫn ghi được (PR-TK); em Tạm dừng như đang học; trở lại học → hàng + ghi được', () => thu(() => {
+  check('OV1d-2 · RKC · em Lưu trữ: không hàng, VẪN ghi được (mở Q-B1); em Kết thúc học chưa lưu trữ: không hàng nhưng vẫn ghi được (PR-TK); em Tạm dừng như đang học; trở lại học → hàng + ghi được', () => thu(() => {
     const a = luot[1], s = sid(a);
     dung(a);
     attempts.saveScore(gvL, a, 'reading', { noShow: true }, TRONG);   // ô dời vì vắng — Bỏ vắng cũng phải khoá khi Lưu trữ
     const dat = (sql: string) => { conn.prepare(`UPDATE students SET ${sql} WHERE id = ?`).run(s); xoaNho(); };
     dat(`archived_at = '2026-10-01T00:00:00Z'`);
     assert(!hang(a, QL, W, THU6), 'Lưu trữ: không còn hàng ở bảng điểm lớp');
-    for (const [k, patch] of [['listening', { rawScore: 30 }], ['reading', { noShow: false }], ['speaking', { nhanXet: 'x' }]] as const) {
+    for (const [k, patch] of [['listening', { rawScore: 30 }], ['speaking', { nhanXet: 'x' }]] as const) {
       const e = loi(() => attempts.saveScore(QL, a, k, patch, THU6));
-      assert(e?.status === 400 && /Quay lại học/.test(e.message), `Lưu trữ ghi ${k}: ${e?.status} ${e?.message}`);
+      assert(e === null, `RKC: em Lưu trữ ghi ${k} phải được: ${e?.status} ${e?.message}`);
     }
     dat(`archived_at = NULL, status = 'finished'`);
     assert(!hang(a, QL, W, THU6), 'Kết thúc học: không còn hàng ở bảng điểm lớp');

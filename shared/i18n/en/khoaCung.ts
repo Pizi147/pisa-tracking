@@ -1,0 +1,22 @@
+/** RKC (chủ SP 07/11 "không chặn cứng") — câu hỏi xác nhận thay chặn cứng. Khoá = chữ Việt máy chủ / web. */
+export const EN_KHOA_CUNG = {
+  'Vẫn làm': 'Proceed',
+  'Khôi phục rồi làm tiếp': 'Restore and continue',
+  'Đổi thành đã làm bài': 'Change to sat',
+  'Huỷ điểm, ghi vắng': 'Cancel score, mark absent',
+  'Huỷ điểm, báo vắng': 'Cancel score, report absent',
+  'Huỷ điểm và xoá': 'Cancel scores and delete',
+  'Dùng điểm cũ': 'Use old score',
+  'Dùng kết quả cũ': 'Use old result',
+  'Đã xác nhận vắng — em có làm bài thì nhập điểm, máy hỏi rồi đổi thành đã làm bài.': 'Absence confirmed — if the student did sit, enter the score; you will be asked to change it to sat.',
+  '{nhan} đã huỷ — nhờ Quản lý khôi phục {nhan} rồi làm tiếp.': '{nhan} is cancelled — ask a Manager to restore {nhan}, then continue.',
+  '{nhan} đã huỷ — khôi phục {nhan} rồi làm tiếp?': '{nhan} is cancelled — restore {nhan} and continue?',
+  '{x} đang ghi vắng — đổi thành đã làm bài rồi lưu điểm?': '{x} is marked absent — change to sat and save the score?',
+  '{x} đã huỷ (vắng 2 lần) — đưa lại thành đã làm bài rồi lưu điểm?': '{x} is cancelled (absent twice) — bring it back as sat and save the score?',
+  '{x} đã ghi vắng / đã huỷ — muốn thi lại thì chọn tuần ở hộp lịch.': '{x} is absent / cancelled — to retake, pick a week in the schedule box.',
+  'Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?': 'This cell has a score — cancel the score (restorable) and mark absent?',
+  '{skill} đã có điểm — huỷ điểm (khôi phục lại được) rồi báo vắng?': '{skill} has a score — cancel the score (restorable) and report absent?',
+  '{nhan} đã có điểm — huỷ điểm rồi xoá {nhan}? (Khôi phục lại được)': '{nhan} has scores — cancel the scores and delete {nhan}? (Restorable)',
+  '{x} đã có điểm mới — thay bằng điểm cũ? Điểm mới được cất, khôi phục lại được.': '{x} has a new score — replace it with the old one? The new score is kept and can be restored.',
+  '{nhan} đã có điểm mới — thay bằng kết quả cũ? Điểm mới được cất, khôi phục lại được.': '{nhan} has new scores — replace with the old result? The new scores are kept and can be restored.',
+};

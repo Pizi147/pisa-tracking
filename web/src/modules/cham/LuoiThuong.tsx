@@ -47,14 +47,10 @@ type SkillSchedule = {
   goDau?: boolean;
   /** OV-11a (Q1): "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi (không dời, không nợ). */
   khongDuThi?: boolean;
-  /** LUAT-34: lớp đã kết thúc — chỉ Quản lý sửa ("Đủ điểm" không còn khoá). */
-  khoa?: boolean;
   /** LUAT-34 (T20b): ô trống có điểm đã huỷ còn cất → ⋯ "Khôi phục điểm". */
   diemHuy?: boolean;
   /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi ô đã khoá điểm. */
   nhanXetDuoc?: boolean;
-  /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ. */
-  khongVang?: string | null;
   /** CV-LOI (V4B H15): máy chủ cho đổi lịch môn này — nút "Dời lịch". */
   doiLich?: boolean;
   /** HSL-MAY-CHU: người nhập điểm môn này (null = chưa có điểm). */
@@ -126,8 +122,6 @@ export function oThuong(r: Row, k: string, homNay: string) {
     tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
     chuaToiTuan: s?.progress === 'upcoming',
     tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
-    khoa: s?.khoa,
-    khongVang: s?.khongVang ?? null,
   };
   return { s, kq, canEdit, trong, dung, chuDung, quaHan, cell };
 }

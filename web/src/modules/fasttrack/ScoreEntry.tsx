@@ -20,10 +20,6 @@ export type Cell = {
   skill: EntrySkill;
   /** P8 (N13): em không học ô này — "Không học", không nhận gõ. */
   khongHoc?: boolean;
-  /** OV-1d: em đã Lưu trữ — câu "vì sao chỉ đọc" của máy chủ (chỉ lưới chấm FT gửi). */
-  lyDoKhoa?: string;
-  /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ; vắng mặt / null = gõ "-" được. */
-  khongVang?: string | null;
   assessedSkill: string;
   /** false khi Quản lý đã chốt trước là đợt này không yêu cầu kỹ năng đó. */
   required: boolean;
@@ -112,31 +108,20 @@ export type SaveOpts = { nem?: boolean };
 
 /** Ô KHÔNG nhận lệnh "-" mới: đang mang dấu của chính tuần này. "-" đã chốt mà bài đã dời (`doiSang`) là dấu tuần cũ — tuần mới vẫn báo vắng được. */
 export const chanDau = (cell: Cell) => !!cell.noShow || (!!cell.daChot && !cell.daChot.doiSang);
-/** Ô sửa được ở lưới: quyền nhập thường, HOẶC gỡ được dấu "-" đã chốt (PR-BV — bài vắng / huỷ vắng vẫn xoá "-" được). */
-export const suaDuoc = (cell: Cell) => (cell.canEdit && !lockedByNoShow(cell)) || !!cell.daChot?.goDuoc;
+/** Ô sửa được ở lưới: quyền nhập thường, HOẶC gỡ được dấu "-" đã chốt (PR-BV). RKC: ô vắng / huỷ / lớp kết thúc / em lưu trữ — máy chủ quyết
+ * `canEdit`, thao tác hậu quả lớn thì máy chủ hỏi (`canXacNhan`); web không tự khoá thêm. */
+export const suaDuoc = (cell: Cell) => cell.canEdit || !!cell.daChot?.goDuoc;
 
 /** Ô đã có điểm chính thức — sửa nó là hiệu chỉnh, phải qua `SuaDiemCoLyDo`. */
 export const coDiemChinhThuc = (cell: Cell) => cell.band !== null || cell.rawScore !== null;
-
-/** Ô đã chốt "không dự thi" hoặc đang chờ Quản lý: người nhập điểm không sửa được nữa (phải qua Quản lý). */
-/* T23 (PR-MTa): "-" của MT cũ (chốt cuối, không vào luồng vắng — thi chưa `absent`) không khoá: gỡ dấu hoặc nhập điểm đè được. */
-export const lockedByNoShow = (cell: Cell) => (cell.noShow?.state === 'khong-du-thi' && cell.sitStatus === 'absent')
-  || cell.noShow?.state === 'cho-ql-hieu-chinh';
-
-/** Lớp đã kết thúc: chỉ Quản lý sửa điểm (Q-B1 ①) — cùng câu máy chủ `kiemLopKetThuc`. */
-export const KHOA_KET_THUC_HINT = t('Lớp đã kết thúc — chỉ Quản lý sửa được điểm.');
-/** E8 (T53 Q6): bài đã xác nhận vắng không nhập điểm ở lưới — nhập bù thì Quản lý xếp lại bài trước. */
-export const VANG_HINT = t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.');
 
 /** T10: gợi ý band ở tooltip ô L/R. */
 
 /** T10: ô Band của hộp tiêu chí — đầu vào là band đã lưu khi ô chỉ có band (bốn tiêu chí trống). */
 export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.every((v) => v === null) ? fmtBand(cell.band) : '');
 
-/** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí. */
-export const lyDoChiDoc = (cell: Cell) => cell.lyDoKhoa ?? (cell.sitStatus === 'absent' ? VANG_HINT
-  : lockedByNoShow(cell) ? t('Đã chốt — cần Quản lý hiệu chỉnh')
-  : t('Bạn không được phân công kỹ năng này'));
+/** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí (RKC: chỉ còn lý do quyền). */
+export const LY_DO_CHI_DOC = t('Bạn không được phân công kỹ năng này');
 
 /**
  * HOTFIX-3 (OV-13o): điểm vừa lưu (dòng `score` máy chủ trả về) đè lên ô cũ tới khi bảng tải lại được — tải lại hỏng thì ô vẫn hiện
@@ -522,12 +507,8 @@ export function ODiemThuong({
     dau?: boolean; chuaToiTuan?: boolean; tiLe?: number | null; ketQua?: 'pass' | 'fail' | 'missing';
     /** OV-11a (Q1): ô "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi (không dời). */
     khongDuThi?: boolean;
-    /** R11: đợt đã hoàn tất — khoá với người không có `PLAN_WEEK`/`SCORE_OVERRIDE`. */
-    khoa?: boolean;
     /** PR-BV: người xem gỡ được dấu "-" lúc này · `oTuanCu` = đang xem đúng tuần có dấu (tuần mới có thể đã có điểm). */
     goDau?: boolean; oTuanCu?: boolean;
-    /** Rà #410: ô không nhận "-" (lớp đã kết thúc) — câu máy chủ. */
-    khongVang?: string | null;
   };
   tongCot: number | null;
   canEdit: boolean;
@@ -626,12 +607,6 @@ export function ODiemThuong({
         daBaoChuaToi.current = true;
         setDirty(false); goDiem.current = false; setCanhBao(null);
         toast.push('error', `${tenMon}: ${chuaToiCau}`);
-        return;
-      }
-      /* Rà #410: lớp đã kết thúc — không gửi "-", ô về như cũ, báo đúng câu máy chủ (như "chưa tới tuần"). */
-      if (cell.khongVang) {
-        setDirty(false); goDiem.current = false; setCanhBao(null);
-        toast.push('error', `${tenMon}: ${dich(cell.khongVang)}`);
         return;
       }
       setCanhBao(null);
@@ -743,7 +718,7 @@ export function ODiemThuong({
 
   /* ---- Chỉ đọc: môn không được phân công. */
   if (!canEdit) {
-    const khongDay = cell.khoa ? KHOA_KET_THUC_HINT : t('Bạn không được phân công kỹ năng này.');
+    const khongDay = t('Bạn không được phân công kỹ năng này.');
     if (coDiem) {
       return (
         <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"

@@ -146,8 +146,8 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(loi(() => students.updateStudent(QL, sid, { dauVao: null }))?.message === d.CAU_LUU_TRU, 'sửa trường lộ trình → 400');   // SUA-LUU-TRU: thông tin khác sửa được
     const h = profile.studentProfile(QL, sid);
     assert(h.lopHoc.chiXem && h.lopHoc.quyen.quayLai && h.lopHoc.quyen.ketThuc && !h.lopHoc.quyen.tamDung && !h.lopHoc.quyen.chuyenLop, `cờ quyền: ${JSON.stringify(h.lopHoc)}`);
-    assert(JSON.stringify(ngungHocCua('inactive', TODAY)) === '{"nhan":"Tạm dừng","khoa":null}', 'lưới FT: em tạm dừng hàng mờ, không khoá');
-    assert(ngungHocCua('finished', TODAY)?.khoa, 'em kết thúc + lưu trữ khoá như cũ');
+    assert(JSON.stringify(ngungHocCua('inactive', TODAY)) === '{"nhan":"Tạm dừng"}', 'lưới FT: em tạm dừng hàng mờ, không khoá');
+    assert(JSON.stringify(ngungHocCua('finished', TODAY)) === '{"nhan":"Lưu trữ"}', 'RKC: em kết thúc + lưu trữ hàng mờ, vẫn sửa điểm');
   }));
 
   check('SV-4c · "Khi lưu, web sẽ" do máy chủ tính: tạm dừng (Lưu trữ · giữ chỗ · Case dừng hạn) / kết thúc (rời lớp · đóng Case); lệnh chuyển lớp chờ → chặn, nói đúng câu', () => thu(() => {

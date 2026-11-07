@@ -93,13 +93,14 @@ export async function runPrVn4Tests(t: YThucTestKit) {
     assert(lech.length === 0, `${lech.length}/${ds.length} lượt sai:\n${lech.slice(0, 5).join('\n')}`);
   });
 
-  check('VN4-2b · Đợt đã hoàn tất: người chỉ có quyền huỷ lượt (không plan.week / score.override) → 403, không ô nào bị xoá (R11 như Huỷ điểm)', () => {
+  check('VN4-2b · RKC (LUAT-34 bỏ khoá Đủ điểm): đợt đã hoàn tất — người có quyền huỷ lượt huỷ được, điểm CẤT (không mất)', () => {
     const a = ds.find((x) => hoanTatSvc.dotHoanTat(x.id, TODAY).hoanTat);
     assert(a, 'cần một lượt đã hoàn tất có điểm');
     const chiHuy = { ...QL, grants: QL.grants.map((g: any) => ({ ...g, permissions: new Set([...g.permissions].filter((x) => x !== 'plan.week' && x !== 'score.override')) })) };
     const truoc = diemCo(a.id).length;
-    const loi = thu(() => { try { att.huyLuot(chiHuy, a.id, { lyDo }); return null; } catch (e: any) { return { status: e.status, conDiem: diemCo(a.id).length }; } });
-    assert(loi?.status === 403 && loi.conDiem === truoc, `phải 403 và giữ ${truoc} ô: ${JSON.stringify(loi)}`);
+    const kq = thu(() => { try { att.huyLuot(chiHuy, a.id, { lyDo }); } catch (e: any) { return { loi: e.status }; }
+      return { cat: (conn.prepare(`SELECT so_diem FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_luot' ORDER BY id DESC LIMIT 1`).get(a.id) as any)?.so_diem }; });
+    assert(kq && !('loi' in kq) && kq.cat === truoc, `phải huỷ được và cất đủ ${truoc} ô: ${JSON.stringify(kq)}`);
   });
 
   check('VN4-3 · GET /metrics/vi-pham-theo-nhom vai Quản trị (toàn hệ thống) không lỗi; hợp các khoá = vi-pham-tong', () => {

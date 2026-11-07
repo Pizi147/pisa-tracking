@@ -20,7 +20,7 @@ import { HopThaoTacMt } from './HopThaoTacMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DongThoiGianLuot, dongLuot, type DongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
 import {
-  DeadlinePill, coDiemChinhThuc, lockedByNoShow, useSaveScore, type Cell, type SaveOpts, type SavePatch,
+  DeadlinePill, coDiemChinhThuc, useSaveScore, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
 import { KY_NANG_LON, useODiem, type KyNangLon, type LichKn } from './ODiemLon.tsx';
 import { nguCanhChiTiet, type KetThucHop } from './HopNhapDiem.tsx';
@@ -253,10 +253,8 @@ export default function MockDetailPage() {
   const daXoa = d.kind === 'mock' && !cancelled && kn4.length > 0 && kn4.every((r) => !r.required);
   const lanXoa = daXoa ? d.history.find((h) => h.action === 'skill_skipped') ?? null : null;
   const mtNay = { attemptId: d.id, nhan: `MT${d.attemptNo}`, tenHv: d.student.name, onXong: reload };
-  const lyDoXoa = d.result.scoredRequired > 0 || d.cells.some(coDiemO) ? t('Đã có điểm — không xoá được')
-    : kn4.some((r) => r.required && r.sitStatus === 'sat') ? t('Đã làm bài — không xoá được')
-    /* RA-LOI-0711i: khoá cuối tuần N15 (máy chủ chặn qua `setSkillScope`) — nói lý do tại nút như Kế hoạch Test, không đợi toast lỗi. */
-    : khoaCt(...kn4.filter((r) => r.required).map((r) => r.weekStart?.slice(0, 10)));
+  /* RKC: MT có điểm / đã làm bài vẫn Xoá — máy chủ hỏi "huỷ điểm rồi xoá?". RA-LOI-0711i: khoá cuối tuần N15 nói lý do tại nút. */
+  const lyDoXoa = khoaCt(...kn4.filter((r) => r.required).map((r) => r.weekStart?.slice(0, 10)));
   const xoa = () => { if (dangXoa) return; setDangXoa(true); void xoaMt(toast, mtNay).finally(() => setDangXoa(false)); };
   const khoiPhuc = () => { if (dangXoa) return; setDangXoa(true); void khoiPhucMt(toast, mtNay).finally(() => setDangXoa(false)); };
   /* PR-HOP1 + chủ SP 06/11: hộp một đợt như Kế hoạch Test, kèm ô "Ghi chú lịch Test" (đọc ghi chú hiện tại khi mở — một câu, chỉ lúc bấm). */
@@ -666,7 +664,7 @@ function NhanXetKn({ k, attemptId, cells, save, phuTrach }: {
 }) {
   const toi = useSession().session?.user?.id;
   const o = (s: string) => cells.find((c) => c.skill === s);
-  const sua = (c: Cell | undefined): boolean => !!c && c.canEdit && !lockedByNoShow(c);
+  const sua = (c: Cell | undefined): boolean => !!c && c.canEdit;
   const phu = (c: Cell) => (c.enteredByName ? t('Người nhập điểm: {enteredByName}', { enteredByName: c.enteredByName }) : null);
   const nenCo = (c: Cell) => !!c.nenCoNhanXet && coDiemChinhThuc(c);
   const canNhom = (c: Cell) => !!c.coNhom && coDiemChinhThuc(c) && canNhomNguyenNhan(c.band, c.kyVong ?? null);
@@ -749,8 +747,8 @@ function thaoTacDong(d: Detail, k: string, homNay: string) {
   const cancelled = d.status === 'cancelled';
   const ws = cells.map((c, i) => {
     const ownsSchedule = i === 0;
-    const canScore = !cancelled && r.required && c.canEdit && !lockedByNoShow(c)
-      && r.sitStatus !== 'absent' && r.sitStatus !== 'cancelled' && r.progress !== 'cancelled';
+    /* RKC: ô vắng / huỷ / lượt huỷ — máy chủ quyết `canEdit` và hỏi trước khi đổi trạng thái (không khoá thêm ở web). */
+    const canScore = r.required && c.canEdit;
     /* OV-11a: "Không dự thi" chưa có điểm → nút chính "Nhập điểm" (không "Sửa điểm"). */
     const hasValue = c.rawScore !== null || c.band !== null || c.criteria.some((v) => v !== null) || (!!c.noShow && !khongDuThiO(c));
     const tt = trangThaiTT({

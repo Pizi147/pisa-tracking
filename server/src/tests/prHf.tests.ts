@@ -120,14 +120,14 @@ export async function runPrHfTests(t: YThucTestKit) {
     assert(f.status === 200, `LUAT-NX-MT: nhận xét < 10 ký tự vẫn lưu (chỉ nhắc): ${f.status}`);
   }));
 
-  await checkAsync('HF2-2 · lớp đã kết thúc: GV kỹ năng sửa nhận xét → 200; kèm điểm → 403', () => voiMayChu(TRONG, async (goi) => {
+  await checkAsync('HF2-2 · lớp đã kết thúc: GV kỹ năng sửa nhận xét → 200; RKC (mở Q-B1): kèm điểm → 200', () => voiMayChu(TRONG, async (goi) => {
     const cu = one('SELECT status FROM classes WHERE id = ?', mb).status;
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(mb); xoaNho();
     try {
       const a = await goi(P.lrTeacher.userId, `/attempts/${luot}/scores/listening`, put({ nhanXet: 'Lớp đã kết thúc: bổ sung nhận xét L.' }));
       assert(a.status === 200 && nx('listening') === 'Lớp đã kết thúc: bổ sung nhận xét L.', `lớp kết thúc: ${a.status} ${await a.text()}`);
       const b = await goi(P.lrTeacher.userId, `/attempts/${luot}/scores/listening`, put({ band: 7 }));
-      assert(b.status === 403, `kèm điểm phải 403: ${b.status}`);
+      assert(b.status === 200, `RKC: GV kỹ năng sửa điểm lớp kết thúc phải 200: ${b.status} ${await b.text()}`);
     } finally { conn.prepare('UPDATE classes SET status = ? WHERE id = ?').run(cu, mb); xoaNho(); }
   }));
 

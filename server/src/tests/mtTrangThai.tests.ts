@@ -421,7 +421,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(loi(() => ketQuaHuy.khoiPhucDiem(gvL, a, 'listening', TRONG))?.status === 400, 'đã có điểm mới → 400');
   }));
 
-  check('T21 · SỬA: Sửa điểm — GVBM đúng ô mọi lúc (sau Đủ điểm, MT cũ quá 7 ngày); GV khác môn 403; lớp kết thúc chỉ QL', () => thu(() => {
+  check('T21 · SỬA: Sửa điểm — GVBM đúng ô mọi lúc (sau Đủ điểm, MT cũ quá 7 ngày, RKC: cả lớp kết thúc); GV khác môn 403', () => thu(() => {
     const [a, b] = luot;
     dung(a);
     duDiem(a);
@@ -436,7 +436,8 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(dau(b, 'listening').raw_score === 29, 'MT cũ quá 7 ngày GVBM sửa được');
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(lop);
     xoaNho();
-    assert(loi(() => attempts.saveScore(gvL, a, 'listening', { rawScore: 33 }, QUA))?.status === 403, 'lớp kết thúc: GV 403');
+    attempts.saveScore(gvL, a, 'listening', { rawScore: 34 }, QUA);
+    assert(dau(a, 'listening').raw_score === 34, 'RKC: lớp kết thúc — GV đúng ô sửa');
     attempts.saveScore(QL, a, 'listening', { rawScore: 33, lyDo: 'QL hiệu chỉnh' }, QUA);
     assert(dau(a, 'listening').raw_score === 33, 'lớp kết thúc: QL sửa');
   }));
@@ -503,14 +504,16 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(tt.chinh === 'sua-diem' && tt.menu.includes('huy-diem'), `menu GVBM sau Đủ điểm: ${JSON.stringify(tt)}`);
   }));
 
-  check('T29 · lớp kết thúc: không ghi "-" (giữ); sửa điểm chỉ QL', () => thu(() => {
+  check('T29 · RKC · lớp kết thúc: "-" = Không dự thi; GV đúng ô sửa điểm', () => thu(() => {
     const a = luot[0];
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { rawScore: 30 }, TRONG);
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(lop);
     xoaNho();
-    assert(loi(() => attempts.saveScore(QL, a, 'reading', { noShow: true }, TRONG))?.status === 400, '"-" → 400');
-    assert(loi(() => attempts.saveScore(gvL, a, 'listening', { rawScore: 31 }, TRONG))?.status === 403, 'GV 403');
+    attempts.saveScore(QL, a, 'reading', { noShow: true }, TRONG);
+    assert(dau(a, 'reading').no_show_cu === 1, '"-" lớp kết thúc = Không dự thi');
+    attempts.saveScore(gvL, a, 'listening', { rawScore: 31 }, TRONG);
+    assert(dau(a, 'listening').raw_score === 31, 'GV sửa được');
   }));
 
   check('T30 · S11 (dữ liệu cũ "Không dự thi" / "Đã huỷ · vắng MT cũ"): mọi lượt hiện "Không dự thi" (N38 L3), gỡ được; QL chọn tuần (Dời) xoá dấu', () => thu(() => {

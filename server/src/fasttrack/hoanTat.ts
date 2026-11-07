@@ -118,33 +118,16 @@ export function quyenSuaSauHoanTat(p: Principal, classId: number, lichSu = false
 }
 
 /**
- * OV-11g (HL-10, Q4): lớp ĐÃ KẾT THÚC — chỉ Quản lý (người sửa được sau hoàn tất) ghi điểm / "-" / nhận xét, đi đường `override` (nhật ký như
- * sửa điểm thường); GV chỉ xem → 403. Trả `true` khi lớp đã kết thúc (nơi gọi ép đường `override`).
+ * Lớp ĐÃ KẾT THÚC: người sửa được sau hoàn tất (Quản lý) đi đường `override` (nhật ký như sửa điểm thường) → `true`. RKC (chủ SP 07/11, mở Q-B1
+ * "lớp đã kết thúc chỉ QL sửa điểm"): GV đúng môn sửa / xoá / ghi "-" qua đường thường của họ (nơi gọi kiểm phân công) → `false`, không 403.
  */
-export function kiemLopKetThuc(p: Principal, classId: number | null, oTrong: () => boolean = () => false): boolean {
-  if (!laLopKetThuc(classId)) return false;
-  if (quyenSuaSauHoanTat(p, classId!)) return true;
-  /* OV-13h (chủ SP 15/10): GV đúng môn vẫn NHẬP vào ô trống / ghi nhận xét — đường thường của họ (nơi gọi kiểm phân công); sửa / xoá điểm
-   * đã có vẫn chỉ QL. `oTrong` là hàm: chỉ đọc ô khi lớp thật sự đã kết thúc. */
-  if (oTrong()) return false;
-  throw forbidden('Lớp đã kết thúc — chỉ Quản lý sửa được điểm.');
+export function kiemLopKetThuc(p: Principal, classId: number | null): boolean {
+  return laLopKetThuc(classId) && quyenSuaSauHoanTat(p, classId!);
 }
 
-/**
- * OV-13h: ô CHƯA có điểm (số câu, band, tiêu chí) — GV đúng môn nhập được cả sau hoàn tất / lớp đã kết thúc. "-" không phải điểm: đợt FT chỉ
- * hoàn tất khi mọi ô có điểm hoặc "-", nên ô trống của đợt đã hoàn tất chính là ô "-" (điểm thật thắng "-", `saveScore`).
- */
+/** Ô CHƯA có điểm (số câu, band, tiêu chí). "-" không phải điểm. */
 export const oChuaCoDiem = (r: any): boolean =>
   !r || (r.band == null && r.raw_score == null && [r.c1, r.c2, r.c3, r.c4].every((v) => v == null));
-
-export const CAU_KHONG_VANG = 'Lớp đã kết thúc — không ghi vắng ("-"). Nhập điểm hoặc để trống.';
-/**
- * OV-11g (rà PR #379): lớp đã kết thúc không ghi / gỡ vắng ("-", Báo vắng, xin dời) — kể cả QL: không còn tuần học để dời bài vào.
- * OV-13h (rà #410): mọi vai cùng MỘT câu đúng (trước GV nhận 403 "chỉ Quản lý sửa được điểm"); ô mang cờ `khongVang` để web không gửi "-".
- */
-export function chanVangLopKetThuc(classId: number | null): void {
-  if (laLopKetThuc(classId)) throw badRequest(CAU_KHONG_VANG);
-}
 
 /** Lớp đã kết thúc → sửa điểm chỉ lưu điểm + nhật ký: không tự tạo / rút Case, tín hiệu, bổ trợ (rà PR #379, Q4). */
 export const laLopKetThuc = (classId: number | null): boolean =>

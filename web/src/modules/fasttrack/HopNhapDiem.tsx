@@ -39,7 +39,7 @@ import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import { ChonNhom, viDuNhanXet } from './NhanXet.tsx';
 import {
-  bandBanDau, chanDau, coDiemChinhThuc, lockedByNoShow, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
+  bandBanDau, chanDau, coDiemChinhThuc, LY_DO_CHI_DOC, suaDuoc, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
@@ -223,7 +223,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
     return (
       <span className="inline-flex flex-col items-center">
         <span className={`inline-flex items-baseline gap-1 tabular-nums ${vang || h.kieu ? 'text-xs text-slate-500' : ''} ${lon ? 'text-base' : ''}`}
-          title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
+          title={cell.noShow?.text ?? LY_DO_CHI_DOC}>
           {/* OV-15b: ô của người khác chưa có điểm = trống (không "—"). */}
           {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
         </span>
@@ -254,7 +254,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const vang = oVangCua(cell, tuanXem);
   /* OV-11a (TE-2): tuần thi bù — ô thường, dấu "-" tuần gốc chỉ còn là dòng "vắng lần 1 · dời từ …" (+ Bỏ vắng). */
   const thiBu = !!cell.daChot?.doiSang && !vang;
-  const nhapDuoc = cell.canEdit && !lockedByNoShow(cell);
+  const nhapDuoc = cell.canEdit;
   const laS = cell.skill === 'speaking';
   const laW = cell.skill === 'writing1' || cell.skill === 'writing2';
   const tc = tieuChiNganCua(cell.skill) ?? [];
@@ -335,7 +335,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const daLuu = luuAnh === anh;
   const daGo = !daLuu && !ketThuc && (doiDiem || doiNx || doiGv || doiNhom || lyDo.trim() !== '');
   const hoiLyDo = !daLuu && coDiemChinhThuc(cell) && doiDiem && !!diem.patch && !('noShow' in diem.patch);
-  const nhanVang = nhapDuoc && !vang && !coDiemChinhThuc(cell) && !chanDau(cell) && !doiDiem && !cell.khongVang;
+  const nhanVang = nhapDuoc && !vang && !chanDau(cell) && !doiDiem;   // RKC: ô đã có điểm vẫn ghi vắng — máy chủ hỏi "huỷ điểm rồi ghi vắng?"
   /* Hộp có chữ đã gõ chưa gửi = một ô chưa lưu (bảng điểm theo lượt chặn đổi lượt — như hộp lý do cũ). */
   useBaoHopLyDoMo(busy, daGo);
   /* Luật 2: lỗi → focus ô sai (lỗi máy chủ không chỉ ô: ô điểm đầu). */
@@ -370,8 +370,6 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const luu = (tiep: boolean) => {
     if (haiKieu) { luoiRef.current?.querySelector<HTMLElement>('input')?.focus(); return; }
     if (dauLai) { setLoi({ cau: t('Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.'), o: 0 }); return; }
-    /* Rà #410: ô không nhận "-" (lớp đã kết thúc — cờ máy chủ `khongVang`): báo tại hộp, không gửi. */
-    if (cell.khongVang && doiDiem && diem.patch?.noShow === true) { setLoi({ cau: dich(cell.khongVang), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
     /* N35: nhận xét MT ≤ 300 khi đã sửa (thành mô tả Case) — báo tại hộp, không gửi, chữ giữ. */
     if (doiNx && nx.trim().length > TRAN_CHU.nhanXetMt) { setLoi({ cau: `${t('Nhận xét')}: ${t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.nhanXetMt, n: nx.trim().length })}`, o: 0 }); return; }

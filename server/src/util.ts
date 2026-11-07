@@ -1,5 +1,6 @@
 /** Tiện ích ngày tháng, chuỗi và lỗi HTTP dùng chung cho toàn bộ server. */
 import { dichSang, type Bien, type Khoa } from '../../shared/i18n/index.ts';
+import { daXacNhan } from './platform/nguCanhRequest.ts';
 
 export class HttpError extends Error {
   /** PR-EN: câu Việt có `{biến}` (= khoá từ điển) + giá trị biến — web tiếng Anh dịch theo khoá. Câu không biến không cần: web dịch theo chính câu. */
@@ -15,6 +16,14 @@ export function loi(status: number, khoa: Khoa, bien?: Bien, details?: unknown):
   e.khoa = khoa;
   e.bien = bien;
   return e;
+}
+/**
+ * RKC (chủ SP 07/11 "không bao giờ chặn cứng"): thao tác có hậu quả lớn → HỎI, không cấm. Chưa xác nhận → 409 `{ canXacNhan: true }` với câu nêu
+ * đúng ảnh hưởng; web (`lib/api.ts`) mở hộp hỏi, đồng ý thì gửi lại cùng header `x-xac-nhan` (mã câu) và lần này câu đó đi qua. Câu có biến phải có bản Anh (`Khoa`).
+ */
+export function canXacNhan(cau: Khoa, bien?: Bien, nut?: Khoa): void {
+  /* `ma` = khoá câu (không biến): web gửi lại đúng mã đã đồng ý. `nut`: chữ nút đồng ý — gọi đúng việc. */
+  if (!daXacNhan(cau)) throw loi(409, cau, bien, { canXacNhan: true, ma: cau, ...(nut ? { nut } : {}) });
 }
 export const badRequest = (m: string, d?: unknown) => new HttpError(400, m, d);
 export const forbidden = (m: string, d?: unknown) => new HttpError(403, m, d);

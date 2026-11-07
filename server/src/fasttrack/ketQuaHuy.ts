@@ -10,13 +10,13 @@
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, nhanDot, tenMon, type KetQuaHuy } from '../../../shared/domain/index.ts';
 import type { ChupCaseDong } from '../cases/systemClose.ts';
-import { badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
+import { badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { require_, scoreEditPath, type Principal } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
-import { refreshOutcome, saveScore } from './attempts.ts';
+import { moLaiLuotNeuHuy, refreshOutcome, saveScore } from './attempts.ts';
 import { chanCuoiTuan, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu } from './skillSchedule.ts';
 import { saveRegularScore } from '../normal/regular.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -66,9 +66,16 @@ export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, tod
   if (!ban.length) throw loi(400, '{x} không có điểm đã huỷ để khôi phục.', { x: tenMon(null, skill) });
   const lyDo = 'Khôi phục điểm';
   return tx(() => {
+    /* RKC: bản cất của điểm MỚI (huỷ lúc trả điểm cũ) phải còn mở sau khi trả — nhập điểm cũ vào ô trống tự đóng mọi bản mở (`dongBanCat`). */
+    const banMoiTu = (conn.prepare('SELECT COALESCE(MAX(id), 0) AS m FROM ket_qua_huy').get() as any).m as number;
     for (const { k, d } of ban) {
       const hien = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, d.skill) as any;
-      if (hien && (hien.band != null || hien.raw_score != null)) throw loi(400, '{x} đã có điểm mới — không khôi phục điểm cũ.', { x: tenMon(null, d.skill) });
+      if (hien && (hien.band != null || hien.raw_score != null)) {
+        /* RKC (B): ô đã có điểm mới → hỏi; đồng ý → huỷ điểm mới (cất — khôi phục lại được) rồi trả điểm cũ. */
+        canXacNhan('{x} đã có điểm mới — thay bằng điểm cũ? Điểm mới được cất, khôi phục lại được.', { x: tenMon(null, d.skill) }, 'Dùng điểm cũ');
+        if (thuong) saveRegularScore(p, attemptId, d.skill, { score: null, lyDo }, today);
+        else saveScore(p, attemptId, d.skill, { rawScore: null, criteria: [null, null, null, null], lyDo }, today);
+      }
       if (thuong) saveRegularScore(p, attemptId, d.skill, { score: d.raw_score, total: d.raw_total, lyDo }, today);
       else {
         const tieuChi = [d.c1, d.c2, d.c3, d.c4];
@@ -84,6 +91,8 @@ export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, tod
         before: null, after: { ...d, lyDo },
       });
     }
+    conn.prepare(`UPDATE ket_qua_huy SET khoi_phuc_luc = NULL, khoi_phuc_boi = NULL, ly_do_khoi_phuc = NULL WHERE id > ? AND attempt_id = ? AND loai = 'huy_diem'`)
+      .run(banMoiTu, attemptId);
     return { ok: true as const, o: ban.map((x) => x.d.skill as string) };
   });
 }
@@ -110,11 +119,18 @@ export function khoiPhucKetQua(p: Principal, attemptId: number, o: { lyDo?: stri
   return tx(() => {
     const kq = conn.prepare(`SELECT * FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'doi_vuot' AND khoi_phuc_luc IS NULL ORDER BY id DESC LIMIT 1`).get(attemptId) as any;
     if (!kq) throw loi(400, '{nhan} không có kết quả đã huỷ.', { nhan });
-    if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ — mở lại lượt trước.', { nhan });
+    moLaiLuotNeuHuy(p, a);   // RKC: lượt đã huỷ → hỏi rồi khôi phục lượt trước
     const diemHuy = JSON.parse(kq.diem_json) as any[];
     const lichHuy = JSON.parse(kq.lich_json) as Array<{ skill: string; planned_period_id: number | null; sit_status: string; plan_source: string }>;
-    const hienTai = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(attemptId) as any[];
-    if (diemHuy.some((d) => hienTai.some((h) => h.skill === d.skill && CO_DIEM(h)))) throw loi(400, '{nhan} đã có điểm mới — không khôi phục được.', { nhan });
+    const docHienTai = () => conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(attemptId) as any[];
+    let hienTai = docHienTai();
+    const moi = diemHuy.filter((d) => hienTai.some((h) => h.skill === d.skill && CO_DIEM(h))).map((d) => d.skill as string);
+    if (moi.length) {
+      /* RKC (B): đã có điểm mới → hỏi; đồng ý → huỷ điểm mới (cất, khôi phục lại được) rồi trả kết quả cũ. */
+      canXacNhan('{nhan} đã có điểm mới — thay bằng kết quả cũ? Điểm mới được cất, khôi phục lại được.', { nhan }, 'Dùng kết quả cũ');
+      for (const k of moi) saveScore(p, attemptId, k, { rawScore: null, criteria: [null, null, null, null], lyDo: lyDo ?? 'Khôi phục kết quả' });
+      hienTai = docHienTai();
+    }
     const boQua = diemHuy.filter((d) => hienTai.some((h) => h.skill === d.skill && h.no_show_period_id != null)).map((d) => d.skill as string);
     const kyNangBoQua = new Set(boQua.map((k) => assessedSkillOf(k) as string));
     const diem = diemHuy.filter((d) => !kyNangBoQua.has(assessedSkillOf(d.skill)));

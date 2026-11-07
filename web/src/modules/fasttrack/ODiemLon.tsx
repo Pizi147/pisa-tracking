@@ -45,7 +45,7 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
     const cau = t('chờ Quản lý duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: l.pendingMove.moveNo, ngay: ngay(l.pendingMove.decideBy, homNay) });
     return { chu: cau, mau: 'text-muted', title: t('Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ kỹ năng.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
   }
-  if (l.sitStatus === 'absent') return { chu: t('vắng · chờ xếp lại'), title: t('Đã xác nhận vắng — Quản lý xếp lại bài trước khi nhập.') };
+  if (l.sitStatus === 'absent') return { chu: t('vắng · chờ xếp lại'), title: t('Đã xác nhận vắng — em có làm bài thì nhập điểm, máy hỏi rồi đổi thành đã làm bài.') };
   if (lichSu) return { chu: t('Nhập bù, không tính hạn') };
   if (l.doiTu && l.absenceMoveCount > 0) {
     return { chu: chuDoiVang(l.doiTu, homNay), title: t('Dời từ {doiTu} sang {tuan} (vắng lần {x}).', { doiTu: l.doiTu, tuan: tuanLich(l.weekStart, homNay), x: l.absenceMoveCount }) };

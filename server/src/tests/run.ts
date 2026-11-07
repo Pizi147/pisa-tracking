@@ -5706,7 +5706,7 @@ check('[10.6] Ô điểm trống KHÔNG tự thành vắng; và không nhập đ
 
   assertThrows(
     () => attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }),
-    /đã vắng|sửa trạng thái thi/, 'Nhập được điểm vào phần thi đã xác nhận vắng',
+    /đang ghi vắng — đổi thành đã làm bài/, 'RKC: nhập điểm vào phần thi đã vắng phải HỎI (409) trước khi đổi',
   );
 });
 
@@ -6212,7 +6212,7 @@ check('[10.6] Thẻ dời cũ bị từ chối: Fast Track huỷ PHẦN THI (gi�
   assert(sp.sit_status === 'cancelled' && sp.p && sp.required === 1, `Từ chối: ${JSON.stringify(sp)}`);
   const d = attempts.attemptDetail(mgr, a.id) as any;
   assert(d.completionWeek.valid && !d.completionWeek.blocking.includes('speaking'), `N38 L2: kỹ năng huỷ không chặn đợt: ${JSON.stringify(d.completionWeek)}`);
-  assertThrows(() => attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }), /đã bị huỷ/, 'Nhập được điểm vào phần thi đã huỷ');
+  assertThrows(() => attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }), /đã huỷ \(vắng 2 lần\) — đưa lại/, 'RKC: nhập điểm vào phần thi đã huỷ phải HỎI (409) trước');
   /* N38 L5: Fast Track chọn tuần (Dời) = xếp lại từ đầu — kỹ năng về "đã xếp", bộ đếm 0. */
   skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), cleanWeeksAhead(a, 4) * 7)), { reason: 'Xếp lại cho em thi bù', force: true });
   const after = conn.prepare(`SELECT sit_status, absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any;
@@ -8122,9 +8122,9 @@ check('PR-G · (OV-1b) Đổi ý sau "-": Bỏ vắng trả bài về tuần cũ
   assert(band !== null, 'Điểm hợp lệ phải được lưu');
   assert(!prgCell(id, 'reading').noShow, 'Dấu "-" phải hết hiệu lực khi đã có điểm');
   assert(prgSit(id, 'reading').sit_status === 'sat', 'Có điểm thì đã thi');
-  /* Đã có điểm chính thức: "-" KHÔNG được xoá âm thầm. */
-  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any), /điểm chính thức|hiệu chỉnh/,
-    'Nhập "-" đè lên một điểm chính thức');
+  /* Đã có điểm chính thức: "-" KHÔNG được xoá âm thầm — RKC: hỏi (409) trước khi huỷ điểm. */
+  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any), /đã có điểm — huỷ điểm/,
+    'Nhập "-" đè lên một điểm chính thức phải hỏi');
   assert(prgCell(id, 'reading').band === band, 'Điểm chính thức bị mất');
 });
 
@@ -9607,6 +9607,8 @@ const { runPrMoSuaLichTestTests } = bocTep('prMoSuaLichTest', await import('./pr
 await runPrMoSuaLichTestTests({ check, assert, conn, P, classId } as any);
 const { runXoaMtTests } = bocTep('xoaMt', await import('./xoaMt.tests.ts'));
 await runXoaMtTests({ check, assert, conn, P, classId } as any);
+const { runRkcDiemTests } = bocTep('rkcDiem', await import('./rkcDiem.tests.ts'));
+await runRkcDiemTests({ check, assert, conn, P, classId } as any);
 const { runSexHangTests } = bocTep('sexHang', await import('./sexHang.tests.ts'));
 await runSexHangTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)
