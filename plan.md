@@ -264,6 +264,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - Chủ SP 08/11 (đi ngủ): "chủ động làm mọi thứ, rà, duyệt và sửa mọi thứ bạn cho là hợp lý, nếu như thấy có gì quá khó khăn và thay đổi quá nhiều ảnh hưởng đến luật hay thay đổi góc nhìn của website thì tổng hợp lại thành 1 mockup mai tôi duyệt"
 - PTA chia: (1) báo cáo `docs/superpowers/specs/2026-11-08-audit-ui/` · (2) sửa ngay qua đêm: chữ, màu / tương phản, a11y, bỏ thông tin thừa, nhấn đúng chỗ — không đổi bố cục, luật, quyền, dòng đọc Turso; PTA rà + check + merge · (3) đổi bố cục / luật / góc nhìn → gom MỘT mockup trong `thiet-ke/` cho chủ SP duyệt sáng 09/11, chưa code.
 - Không đề xuất lại U02 (đã giữ như cũ). Chưa deploy.
+- Chủ SP 08/11 (thêm): "tự chủ động làm việc, giao session chọn model và effort phù hợp, đồng thời tự check và tiếp tục các session khi bị dừng lại giữa chừng do hết token"
+- PTA chạy: AUDIT-UI (Opus xhigh, rà + mockup) · SUA-UI-A, SUA-UI-B (Opus medium, chờ giao gói A) · PTA đặt lịch tự kiểm ~30 phút, session dừng giữa chừng thì nhắn tiếp tục.
 
 ### 07/11 tối — SỬA THEO BẢN RÀ NGOÀI #1228 (chủ SP chốt — session SUA-RA-1228)
 - **Chủ SP 07/11 (gửi `D:/Download/Pisa tracking web/PISA-Audit-PR1228-Claude-Prompt-2026-11-07.md`):** "Xem prompt này và xem có gì cần cải thiện, có gì cần sửa nhé, cứ xem hết đề xuất cụ thể và thấy cái nào hợp lý, khả thi thì cứ liệt kê ra để tính xem có nên làm không" → PTA kiểm từng mục trên main #1228 + bản chép thật (hiện 0 em dính F01 / F07 / F08 — lỗi tiềm ẩn).
