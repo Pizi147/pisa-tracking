@@ -54,6 +54,7 @@
  "web/src/modules/classes/banGiaoChung.tsx",
  "web/src/modules/classes/chuyenLopChung.tsx",
  "web/src/modules/classes/thaoTacDongHocVien.tsx",
+ "web/src/modules/classes/xuatPdfBaoCaoPh.ts",
  "web/src/modules/congViec/ChonPhuTrach.tsx",
  "web/src/modules/congViec/CongViecPage.tsx",
  "web/src/modules/congViec/DanhSachViec.tsx",
