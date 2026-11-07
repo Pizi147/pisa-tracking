@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -671,12 +672,15 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
 }
 
 /** P8 (mockup k6 `.chu-giai`): ba trạng thái ô đọc theo chữ, không chỉ màu — "-" vắng · "Không học" · "—" chưa có điểm. */
+/* CHU-GIAI (chủ SP 07/11): chú giải vào ⓘ "Ký hiệu" ở hàng công cụ, không còn dòng chữ. */
 function ChuGiaiKhongHoc() {
   return (
-    <span className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs text-slate-400" aria-label={t('Chú giải ô điểm')}>
-      <span><b className="font-bold tabular-nums text-slate-200">-</b> {t('vắng')}</span>
-      <span><OKhongHoc /> {t('em không học môn này')}</span>
-      <span><span className="text-faint">—</span> {t('chưa có điểm')}</span>
-    </span>
+    <NutLuat label={t('Ký hiệu')} phai>
+      <span className="grid gap-1.5" aria-label={t('Chú giải ô điểm')}>
+        <span><b className="font-bold tabular-nums text-slate-200">-</b> {t('vắng')}</span>
+        <span><OKhongHoc /> {t('em không học môn này')}</span>
+        <span><span className="text-faint">—</span> {t('chưa có điểm')}</span>
+      </span>
+    </NutLuat>
   );
 }

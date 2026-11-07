@@ -65,6 +65,7 @@ export const EN_BAN_GIAO_GV = {
   'Xác nhận bàn giao': 'Confirm handover',
   'Đã xác nhận bàn giao {lop}': 'Handover {lop} confirmed',
   'Chỉ đọc': 'Read only',
+  'Quản lý điền thay — góp ý ghi là điền thay.': 'Manager filling in — notes are marked as filled in.',
   'Lớp không còn em nào đang học.': 'No active students in this class.',
   /* dải hồ sơ lớp */
   '{mon} đã giao cho {ten} từ {ngay} · còn xem tới khi xong bàn giao, ít nhất tới {den}': '{mon} handed to {ten} from {ngay} · you can view until the handover is done, at least until {den}',

@@ -9,5 +9,7 @@ export const EN_MO_SUA_LICH_TEST = {
   'Đang mở': 'Open',
   'Đang tắt': 'Off',
   'Bật bởi {nguoi} lúc {luc}': (b) => `Turned on by ${b.nguoi} at ${b.luc}`,
+  'Mở: GVCN (lớp mình), Admin, Quản lý sửa được lịch Test kể cả Thứ Sáu – CN.':
+    'Open: homeroom teachers (own class), Admins and Managers can edit the Test schedule, including Fri – Sun.',
   'Đang lưu…': 'Saving…',
 } satisfies Record<string, Dich>;

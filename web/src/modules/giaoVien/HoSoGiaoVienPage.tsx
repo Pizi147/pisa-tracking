@@ -380,8 +380,8 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   };
   return (
     <KhungBang ten={t('Theo kỹ năng')} phai={ft && hang.some((h) => h.thi) && (
-      /* Chú giải ký hiệu thi thật — ô bảng chỉ còn ký hiệu + số. */
-      <span className="flex gap-2.5 text-xs font-semibold"><span className={MAU_THI.chua}>▼ Fail</span><span className={MAU_THI.dat}>▲ Pass</span><span className={MAU_THI.vuot}>★ Exceed</span></span>
+      /* Chú giải ký hiệu thi thật vào ⓘ (CHU-GIAI 07/11) — ô bảng chỉ còn ký hiệu + số. */
+      <NutLuat label={t('Ký hiệu')} phai><span className="flex gap-2.5 font-semibold"><span className={MAU_THI.chua}>▼ Fail</span><span className={MAU_THI.dat}>▲ Pass</span><span className={MAU_THI.vuot}>★ Exceed</span></span></NutLuat>
     )}>
       {dienThoai ? <BangGon cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} />
         : <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} khung={false}

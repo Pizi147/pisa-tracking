@@ -307,6 +307,15 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
           {cy.ratio
             ? t('Chấm = điểm bài của môn (% so tổng), màu theo ngưỡng đạt của lớp · vạch đứt = ngưỡng đạt · cột hồng = tuần này.')
             : t('Chấm = điểm MT, màu theo kỳ vọng của lượt · vạch ngắn = kỳ vọng lượt · đứt = Target · cột hồng = tuần này · cột xanh lơ = thi thật. Chạm hoặc Tab một dấu để xem chi tiết; Enter mở hồ sơ lượt hoặc Case.')}
+          {/* CHU-GIAI (chủ SP 07/11): chú giải dưới chart vào ⓘ — chỉ mục có trên chart đang xem. */}
+          {!bang && (d.diem.length > 0 || !!d.thi) && (
+            <ChuGiaiD kq={cy.ratio ? 'thuong' : { vuot: d.diem.some((x) => kqSo(x.v, x.kv) === 'vuot'), bang: d.diem.some((x) => kqSo(x.v, x.kv) === 'bang'), duoi: d.diem.some((x) => kqSo(x.v, x.kv) === 'duoi') }}
+              kvLuot={!cy.ratio && d.diem.some((x) => x.kv != null && x.kv !== (d.target?.filter((g) => !g.tu || g.tu <= x.tuan).at(-1)?.v ?? null))}
+              vang={d.diem.some((x) => x.loai === 'vang')} thieu={d.diem.some((x) => x.loai === 'thieu')} tamDung={!!tamDung?.length} sex={d.sex.length > 0}
+              pa={d.cases.flatMap((c) => c.pa.map((p) => p.kq).filter((k): k is string => !!k))}
+              kyToi={d.cases.some((c) => c.pa.some((p) => !p.den && !!p.denDk && mondayOfDate(p.denDk) > mondayOfDate(homNay)))}
+              thi={!d.thi ? null : d.thi.v != null ? 'kq' : d.thi.cho ? 'cho' : 'du-kien'} kvChu={d.kvPhang?.chu ?? 'Target'} />
+          )}
         </NutLuat>
         {!hep && (
           <span className="ml-auto inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }} role="group" aria-label={t('Kiểu xem')}>
@@ -328,12 +337,6 @@ export function HanhTrinhKn({ studentId, kn, row, attempts, cy, homNay, tenKn, t
       ) : bang ? <BangKn kn={kn} d={d} cy={cy} homNay={homNay} hep={hep} /> : (
         <>
           <BieuDoD ten={tenKn} diem={d.diem} sex={d.sex} target={d.target} kvPhang={d.kvPhang} cases={d.cases} thi={d.thi} homNay={homNay} tamDung={tamDung} toTuan={toTuan} lo={d.lo} hi={d.hi} buoc={d.buoc} fmt={d.fmt} />
-          <ChuGiaiD kq={cy.ratio ? 'thuong' : { vuot: d.diem.some((x) => kqSo(x.v, x.kv) === 'vuot'), bang: d.diem.some((x) => kqSo(x.v, x.kv) === 'bang'), duoi: d.diem.some((x) => kqSo(x.v, x.kv) === 'duoi') }}
-            kvLuot={!cy.ratio && d.diem.some((x) => x.kv != null && x.kv !== (d.target?.filter((g) => !g.tu || g.tu <= x.tuan).at(-1)?.v ?? null))}
-            vang={d.diem.some((x) => x.loai === 'vang')} thieu={d.diem.some((x) => x.loai === 'thieu')} tamDung={!!tamDung?.length} sex={d.sex.length > 0}
-            pa={d.cases.flatMap((c) => c.pa.map((p) => p.kq).filter((k): k is string => !!k))}
-            kyToi={d.cases.some((c) => c.pa.some((p) => !p.den && !!p.denDk && mondayOfDate(p.denDk) > mondayOfDate(homNay)))}
-            thi={!d.thi ? null : d.thi.v != null ? 'kq' : d.thi.cho ? 'cho' : 'du-kien'} kvChu={d.kvPhang?.chu ?? 'Target'} />
           {!coDiem && <p className="m-0 px-4 pb-3 text-[13px] text-slate-400">{t('Chưa có điểm MT ở {kn}.', { kn: tenKn })}</p>}
         </>
       )}

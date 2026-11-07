@@ -58,6 +58,7 @@ export function ComponentsField({ label, components, counts, value, onChange, bu
           </div>
         ))}
       </div>
+      <p className="m-0 text-xs text-slate-400">{t('Để trống phần không đánh giá · không đổi điểm Test, mức SOS')}</p>
     </div>
   );
 }

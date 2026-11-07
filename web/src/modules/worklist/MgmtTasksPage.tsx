@@ -774,6 +774,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
                 </div>
               )}
             </Field>
+            {cls && <p className="m-0 text-xs text-slate-400">{t('Hiện ở hồ sơ {n} em lớp {lop} · em chưa có Case kỹ năng này được mở Case mới', { n: cls.studentCount, lop: cls.code })}</p>}
           </>
         ) : (
           <>
