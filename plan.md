@@ -259,6 +259,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### ĐÃ DEPLOY 07/11 09:37 — DB `pisatracking-261107` (main tới #1174)
+- Chủ SP "bắt đầu deploy" → sao lưu 261030 (88 bảng · 70 253 dòng · 2 tệp) → migrate cục bộ `D:\pisa-mig\mig.sqlite` (19 bước; RESET-HAN-CASE 374 việc → 14/11, Kết quả PA 306 → 21/11; TAT-CHECKPOINT ẩn 25; NGHI-HOC-LUU-TRU 16 em; PR-MT-VANG-RESET 20 kỹ năng; lần 2 "Không có gì") → `khoi-phuc` 95 bảng · 70 731 dòng → `scripts/chep-kho-tep.mjs` (#1174) chép 2 tệp bằng chứng → biến Netlify production = 261107 (preview giữ `-demo`) → `netlify deploy --prod`.
+- Lần đầu migrate chạy nhầm ở cửa sổ còn biến Turso → máy TỪ CHỐI (không đổi gì) — luôn cửa sổ mới.
+- Token 261107 lộ trong ảnh chat → chủ SP đổi token khi rảnh (env:set --force + deploy). Giữ DB 261030 ~1 tuần (xoá ~14/11). Kiểm Turso Top Queries sau 2–3 ngày.
+
 ### 07/11 — TỔNG QUAN: CẢ Ô SỐ BẤM ĐƯỢC, MỌI VAI (chủ SP DUYỆT 07/11 — session O-TQ-BAM)
 - **Đã merge (chưa deploy):** #1170 cả ô bấm mọi vai (`.so-chinh` phủ `.ca-o`, số phụ + ⓘ riêng) + panel "Đạt Target thi thật" `/phan-tich/bao-cao/o?o=dat-target-thi` (QT/CX 17 câu · 1 259 dòng khi bấm). KHÁC nhỏ: 375 ô CX "Chờ KQ · Lộ trình tiếp ›" tên 2 dòng.
 - **Chủ SP 07/11:** "Thêm nữa, cũng giống như việc GV có thể bấm vào box thông tin ở trang tổng quan để sang trang điều hướng tiếp theo hợp lý, cũng làm như vậy với tất cả các box thông tin còn lại ở trang tổng quan trên tất cả các vai, thay vì phải bấm vào con số. Cái cần hiện ra panels thông tin vẫn hiện ra panels thông tin, cái gì cần hiện ra panels làm việc vẫn vậy, cái gì cần điều hướng sang trang khác cũng làm như thế nốt. Cần gì đề xuất thêm cứ đề xuất, và hỏi lại tôi"
