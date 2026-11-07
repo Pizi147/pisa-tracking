@@ -660,12 +660,13 @@ export async function runHocVienLopTests(t: YThucTestKit) {
   check('GIAM-DOC-BC c · listCases: tài khoản kiêm QL chi nhánh + Quản trị (phạm vi toàn hệ thống, grant QL đứng trước) — không hỏi chi nhánh từng em', () => {
     /* Bản chính: QL + QT + GV — `scopeFor(ATTEMPT_VIEW).all` nhưng `can()` gặp grant QL (theo chi nhánh) trước → `branchesOfStudent` một câu mỗi em. */
     const kiem = { ...P.mbManager, grants: [...P.mbManager.grants, ...P.admin.grants], roleKeys: [...new Set([...P.mbManager.roleKeys, ...P.admin.roleKeys])] };
-    let cnEm = 0, json = '';
+    let cnEm = 0, tong = 0, json = '';
     const orig = conn.prepare.bind(conn);
-    (conn as any).prepare = (sql: string) => { if (/^SELECT DISTINCT c\.branch_id AS b FROM enrollments/.test(sql.trim())) cnEm += 1; return orig(sql); };
+    (conn as any).prepare = (sql: string) => { tong += 1; if (/^SELECT DISTINCT c\.branch_id AS b FROM enrollments/.test(sql.trim())) cnEm += 1; return orig(sql); };
     try { json = chayTrongRequest('GET', () => JSON.stringify(casesMod.listCases(kiem, {}).rows)); } finally { (conn as any).prepare = orig; }
+    const qt = demTruyVan(() => { chayTrongRequest('GET', () => casesMod.listCases(P.admin, {})); });
     assert(json.length > 2, 'phép kiểm rỗng: không có Case nào');
-    assert(cnEm === 0, `${cnEm} câu chi nhánh từng em (N+1) — listCases phải nạp trước phạm vi em`);
+    assert(cnEm === 0 && tong <= qt + 5, `${cnEm} câu chi nhánh từng em · ${tong} câu (Quản trị thuần ${qt}) — listCases phải nạp trước phạm vi em, không N+1`);
     assert(json === JSON.stringify(casesMod.listCases(kiem, {}).rows), 'danh sách Case khác khi đọc ngoài request (không nạp trước)');
   });
 
