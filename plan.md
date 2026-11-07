@@ -259,6 +259,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 07/11 sau deploy — GIAM-DOC-BC (log bản chính, chủ SP "Giao session")
+- Log Netlify 09:40–09:43 (DB 261107): `/my-work` 1,8–2,1 s · 57–72 câu · ~11 000 dòng (top `WITH ids(id) AS (VALUES …)` 4 017) · `/tong-quan/v5` 1,2–1,3 s · 55–60 câu · ~7 000 dòng (top `SELECT s.*, u.full_name …` ~1 350) · `/phan-tich/giao-vien` 1,1 s · 74 câu · 7 167 dòng (top `SELECT 'm' AS k, case_id …` 735) · `/hoc-vien-lop` 1,0 s · 57 câu · 6 284 dòng (top `WITH ids` 801). Ước `/my-work` riêng 11–16 triệu dòng / ngày → ưu tiên 1.
+- Session **GIAM-DOC-BC** (Opus 5.5 · high — B: —): đo trên bản chép bản chính `D:\pisa-mig\mig.sqlite` (chỉ đọc bản chép), tìm câu top từng đường, đọc đúng phạm vi; JSON y hệt; ước dòng / ngày trước → sau.
+
 ### ĐÃ DEPLOY 07/11 09:37 — DB `pisatracking-261107` (main tới #1174)
 - Chủ SP "bắt đầu deploy" → sao lưu 261030 (88 bảng · 70 253 dòng · 2 tệp) → migrate cục bộ `D:\pisa-mig\mig.sqlite` (19 bước; RESET-HAN-CASE 374 việc → 14/11, Kết quả PA 306 → 21/11; TAT-CHECKPOINT ẩn 25; NGHI-HOC-LUU-TRU 16 em; PR-MT-VANG-RESET 20 kỹ năng; lần 2 "Không có gì") → `khoi-phuc` 95 bảng · 70 731 dòng → `scripts/chep-kho-tep.mjs` (#1174) chép 2 tệp bằng chứng → biến Netlify production = 261107 (preview giữ `-demo`) → `netlify deploy --prod`.
 - Lần đầu migrate chạy nhầm ở cửa sổ còn biến Turso → máy TỪ CHỐI (không đổi gì) — luôn cửa sổ mới.
