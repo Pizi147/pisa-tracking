@@ -96,7 +96,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const em = data.student ? { id: data.student.id, ten: data.student.name } : null;
   const tenCase = data.tenSos ? [tenNganCase(data), data.tenSos.mt ? `MT${data.tenSos.mt}` : null].filter(Boolean).join(' · ') : (data.title ?? tenNganCase(data));
   const v = data.viecTiep ?? null;
-  const sua = !!vw.coTheSua && canDong;
+  const sua = !!vw.coTheSua;   // RKC-2a: sửa tên / kỹ năng cả khi Case đã hoàn thành
   const bao: BaoThanCase = { formMo: setFormMo, daLuu: (x) => { setDaLuu(x); setLuu({ tt: 'da', luc: gioLuu() }); } };
 
   /* ─── đầu panel (v16 `.pn-h1` · `.pn-tieu` · `.pn-ngu`): loại việc · tên Case (bấm để sửa tên · kỹ năng · mức) + SOS + hạn · em (link hồ sơ) · lớp · mở W… */

@@ -289,7 +289,9 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assertThrows(() => cases.suaCase(QL, caseId, { title: 'ab' }), /3 đến 80/, 'tên ngắn');
     const c2 = taoCase(moiEm());
     dongCase(c2, themPa(c2));
-    assert(chuLoi(() => cases.suaCase(QL, c2, { urgency: 'urgent' })) === 'Case đã hoàn thành — Mở lại trước khi sửa.', 'Case done');
+    cases.suaCase(QL, c2, { urgency: 'urgent' });   // RKC-2a: Case đã hoàn thành sửa thẳng, giữ kết luận
+    const sc2 = hang('SELECT status, urgency FROM sos_cases WHERE id = ?', c2)[0];
+    assert(sc2.status === 'done' && sc2.urgency === 'urgent', 'Case done: sửa được, vẫn hoàn thành');
   }));
 
   check('LUIa2-13 · Sửa Case đổi kỹ năng: chưa có PA → đổi topic + khoá; có PA → 400; trùng Case đang mở → 400', () => thu(() => {

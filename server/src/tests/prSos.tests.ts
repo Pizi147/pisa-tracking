@@ -464,7 +464,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(get('SELECT followup_due f FROM case_interventions WHERE id = ?', tay.id).f === null, 'Giữ nguyên đặt ngày mặc định');
     const ht = (cases.caseDetail(P.mbManager, c.id) as any).hoanThanh;
     assert(ht.an && /^Hoàn thành được sau khi PA theo quy chế kết thúc \(1 tháng · đến /.test(ht.dong), JSON.stringify(ht));
-    assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Em tiến bộ rõ ở Task 2.' }), /PA theo quy chế kết thúc/, 'Hoàn thành sớm');
+    assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { outcome: 'improved', note: 'Em tiến bộ rõ ở Task 2.' }), /có PA theo quy chế — kết thúc sớm/, 'Hoàn thành sớm: RKC-2a hỏi, không chặn');
     assertThrows(() => cases.closeCaseOutcome(P.mbManager, c.id, { note: 'Em tiến bộ rõ ở Task 2.' }), /Mức độ thành công/, 'thiếu kết quả (K3-19)');
   });
   check('SOS (6) · until_exam chưa có ngày thi → PA chạy, OV-13a (B): mốc = MT cuối của lộ trình ("đến MT{n} · W…"), không việc Nhập ngày thi; có ngày thi rồi mở Case → mốc theo ngày thi', () => {

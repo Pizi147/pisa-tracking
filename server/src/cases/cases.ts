@@ -23,7 +23,7 @@ import {
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
-import { HttpError, addDays, badRequest, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { HttpError, addDays, badRequest, canXacNhan, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho, nhoTheoId, trongBoNho } from '../platform/nguCanhRequest.ts';
@@ -206,12 +206,27 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * sớm muộn sẽ có đường đóng được Case mà màn hình bảo là chưa đóng được — cụ thể là Case
    * CHƯA CÓ PHƯƠNG ÁN NÀO vẫn lọt qua đây.
    */
-  const blockers = closeBlockers(caseId);
-  if (blockers.length) {
-    throw loi(400, 'Chưa chốt kết quả Case được. {lyDo}', { lyDo: blockers.join(' ') });
+  /*
+   * RKC-2a (chủ SP 07/11 "không chặn cứng", PTA quyết 5): Case chưa có PA hoàn thành được (kết luận ≥ 10 ký tự đã đủ). Còn PA chưa khép — đang chạy, chờ
+   * duyệt, kể cả PA theo quy chế — thì HỎI một câu nêu số PA; đồng ý = kết thúc sớm các PA đó ("Dừng — Case hoàn thành", không tính hiệu quả), thẻ chờ
+   * của chúng tự đóng. Chụp ghi đảo để Mở lại Case trả các PA + thẻ về như cũ.
+   */
+  const paMo = conn.prepare(`SELECT id, preset FROM case_interventions WHERE case_id = ? AND status NOT IN ('cancelled', 'completed')`).all(caseId) as any[];
+  if (paMo.length) {
+    if (paMo.some((r) => r.preset === 1)) canXacNhan('Còn {n} PA chưa khép, có PA theo quy chế — kết thúc sớm các PA đó rồi hoàn thành Case?', { n: paMo.length }, 'Kết thúc PA và hoàn thành');
+    else canXacNhan('Còn {n} PA chưa khép — kết thúc các PA đó rồi hoàn thành Case?', { n: paMo.length }, 'Kết thúc PA và hoàn thành');
   }
 
   return tx(() => {
+    if (paMo.length) {
+      const ids = paMo.map((r) => r.id as number), ph = ids.map(() => '?').join(',');
+      const g = new GhiDao(conn);
+      g.sua('case_interventions', `id IN (${ph})`, ...ids);
+      g.sua('yeu_cau_duyet', `trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id IN (${ph})`, ...ids);
+      for (const id of ids) chotYeuCau(conn, { doiTuongLoai: 'intervention', doiTuongId: id }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'Case đã hoàn thành' });
+      conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'case_hoan_thanh', updated_at = ? WHERE id IN (${ph})`).run(nowIso(), ...ids);
+      luuGhiDao(conn, { loai: 'hoan_thanh_case', bang: 'sos_cases', id: caseId, nguoi: p.userId, ghi: g });
+    }
     conn
       .prepare(
         `UPDATE sos_cases
@@ -257,7 +272,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
     const quaGv = dongQuaGv(p, c);
     writeAudit({ actorUserId: p.userId, action: 'case.outcome', entityType: 'sos_case',
       entityId: caseId, entityLabel: caseTitleOf(c),
-      after: { outcome, closedOn, via: quaGv ? 'gv' : 'quan_ly' } });
+      after: { outcome, closedOn, via: quaGv ? 'gv' : 'quan_ly', ...(paMo.length ? { paKetThuc: paMo.map((r) => r.id) } : {}) } });
     if (quaGv) baoQuanLyCaseDong(p, caseId, c);
     return caseDetail(p, caseId);
   });
@@ -297,8 +312,12 @@ export function moLaiCase(p: Principal, caseId: number) {
   return tx(() => {
     /* Không PA nào → "Mới mở"; có PA → trạng thái suy như mọi đường khác (`dongBoTrangThaiCase`). */
     conn.prepare(`UPDATE sos_cases SET status = 'open', outcome = NULL, outcome_note = NULL, outcome_decision = NULL, outcome_by = NULL, outcome_at = NULL,
-                   closed_by = NULL, closed_at = NULL, dismiss_reason_code = NULL, dismiss_reason_text = NULL, dedup_key = COALESCE(dedup_key, ?), updated_at = ?
+                   closed_by = NULL, closed_at = NULL, dismiss_reason_code = NULL, dismiss_reason_text = NULL, system_close_reason = NULL,
+                   dedup_key = COALESCE(dedup_key, ?), updated_at = ?
                   WHERE id = ?`).run(chanMoLaiKhoa(c), nowIso(), caseId);
+    /* RKC-2a: lần Hoàn thành đã kết thúc sớm PA chưa khép → trả các PA + thẻ chờ về như cũ (chỉ khi chưa ai đổi chúng sau đó; đổi rồi thì PA giữ đã dừng). */
+    const gd = timGhiDao(conn, 'hoan_thanh_case', 'sos_cases', caseId);
+    if (gd && daoDuoc(gd)) daoLai(conn, gd, p.userId);
     if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(caseId)) dongBoTrangThaiCase(caseId);
     const moi = (conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(caseId) as any).status as string;
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'status', 'done', ?, ?, ?)`)
@@ -333,7 +352,7 @@ function chanMoLaiKhoa(c: any): string | null {
 }
 /** Vì sao Case `done` KHÔNG mở lại được (null = được). Dùng chung cho `moLaiCase` và cờ `viewer.coTheMoLai`. */
 function chanMoLai(c: any): { loi: string } | null {
-  if (c.system_close_reason) return { loi: 'Case do hệ thống đóng — không mở lại được.' };
+  /* RKC-2a: Case hệ thống đóng (em kết thúc học, Overall đạt…) mở lại tay được — PA đã huỷ theo hệ thống giữ huỷ, thêm PA mới nếu cần. */
   const key = chanMoLaiKhoa(c);
   const giu = key ? db().prepare('SELECT id FROM sos_cases WHERE dedup_key = ?').get(key) as any : null;
   if (giu && giu.id !== c.id) return { loi: `Đã có Case ${c.topic ? caseTopicLabel(c.topic) : 'Ý thức'} mới — mở Case đó.` };
@@ -950,6 +969,9 @@ export function recordIntervention(p: Principal, caseId: number, input: {
       'Bạn không có quyền ghi nhận hỗ trợ cho Case này.');
   }
   if (c.tam) throw badRequest('Case tạm — lượt Mock Test chưa chốt SOS. Lượt chốt rồi mới thêm PA.');   // OV-13a (Q2)
+  /* RKC-2a: Case đã hoàn thành → hỏi rồi Mở lại Case trong cùng giao dịch thêm PA. */
+  const moLaiTruoc = c.status === 'done';
+  if (moLaiTruoc) canXacNhan('Case đã hoàn thành — mở lại Case rồi thêm PA?', undefined, 'Mở lại và lưu');
   /* PR-S3F #2: thẻ "Không cần theo dõi" đang chờ Quản lý duyệt → chưa thêm PA (duyệt xong PA mới thêm sẽ bị huỷ oan). */
   if (sosCaseState(caseId).choDuyetKhongTheoDoi) {
     throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chưa thêm phương án được. Chờ duyệt xong (hoặc bị từ chối) rồi thêm.');
@@ -1048,6 +1070,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   const khoa = input.backfill || input.thayThe ? null : chuanKhoaGui(input.idempotencyKey);
   const taoMoi = () => tx(() => {
     if (theoKhoaGui('case_interventions', 'recorded_by', p.userId, khoa)) return caseDetail(p, caseId);
+    if (moLaiTruoc) moLaiCase(p, caseId);
     /*
      * HẠN QUẢN LÝ PHẢI TRẢ LỜI — `HAN_DUYET_NGAY` (5) ngày, tính cả ngày gửi (T54, K3-18, PR-N1).
      * Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
@@ -1275,8 +1298,9 @@ export function huyQuyetDinhPa(p: Principal, interventionId: number) {
 // ---------------------------------------------------------------- PR-LUI-a2 · Sửa Case · Xoá Case · Xoá PA
 
 /** Ai sửa được Case: người sửa Case (`SOS_EDIT` đúng môn), người tạo Case, GVCN lớp em, Quản lý / Quản trị trong phạm vi (C02 giữ cho PA). */
+/** RKC-2a: Case đã hoàn thành sửa thẳng được (có lịch sử) — không còn xét trạng thái. */
 function coTheSuaCase(p: Principal, c: any): boolean {
-  return c.status !== 'done' && nguoiSuaCase(p, c);
+  return nguoiSuaCase(p, c);
 }
 /** `coTheSuaCase` không xét trạng thái — N37: người xoá được Case (cả Case đã hoàn thành). */
 function nguoiSuaCase(p: Principal, c: any): boolean {
@@ -1358,7 +1382,8 @@ export function suaCase(p: Principal, caseId: number, input: {
 }) {
   const conn = db();
   const c = loadCase(caseId);
-  if (c.status === 'done') throw badRequest('Case đã hoàn thành — Mở lại trước khi sửa.');
+  /* RKC-2a: Case đã hoàn thành sửa thẳng được (tên, mô tả, nhóm…) — có lịch sử `sos_case_history` + nhật ký, Case giữ kết luận. */
+  const daXong = c.status === 'done';
   if (!coTheSuaCase(p, c)) throw forbidden('Bạn không có quyền sửa Case này.');
   const st = sosCaseState(caseId);
   /* SV-NX-CASE (N8 ②⑤): Case MT sửa / ghi mô tả lúc nào cũng được (kể cả chưa có, quá hạn) — chỉ Case không phải MT còn đòi Xác nhận Case trước. */
@@ -1397,7 +1422,8 @@ export function suaCase(p: Principal, caseId: number, input: {
     if (!(caseTopicsFor(!!cycle && isRatioCycle(cycle), ct) as readonly string[]).includes(topic)) throw loi(400, 'Chủ đề không hợp lệ: {topic}', { topic });
     khoaMoi = c.parallel ? null : caseDedupKey({ category: categoryOf(topic), studentId: c.eff_student_id, cycleId: c.eff_cycle_id });
     const giu = khoaMoi ? conn.prepare(`SELECT id, status FROM sos_cases WHERE dedup_key = ? AND id != ?`).get(khoaMoi, caseId) as any : null;
-    if (giu && giu.status !== 'done') throw loi(400, 'Đã có Case {chuDe} đang mở.', { chuDe: caseTopicLabel(topic, ct) });
+    if (giu && giu.status !== 'done' && !daXong) throw loi(400, 'Đã có Case {chuDe} đang mở.', { chuDe: caseTopicLabel(topic, ct) });
+    if (daXong) khoaMoi = null;   // Case đã xong không giữ khoá chống trùng của kỹ năng mới (Mở lại tự lấy lại)
   }
   const truoc: Record<string, unknown> = {
     title: c.title ?? null, summary: c.summary ?? null, urgency: c.urgency ?? null, topic: c.topic ?? null,
@@ -1418,7 +1444,7 @@ export function suaCase(p: Principal, caseId: number, input: {
     if (input.luc !== undefined && (input.luc ?? null) !== ban) {
       throw loi(409, 'Case vừa được cập nhật lúc {luc} — xem lại rồi bấm Lưu lần nữa để ghi đè', { luc: ban ? ban.slice(11, 16) : '—' }, { luc: ban });
     }
-    if (doiKyNang && khoaMoi) conn.prepare(`UPDATE sos_cases SET dedup_key = NULL WHERE dedup_key = ? AND status = 'done'`).run(khoaMoi);
+    if (doiKyNang && khoaMoi && !daXong) conn.prepare(`UPDATE sos_cases SET dedup_key = NULL WHERE dedup_key = ? AND status = 'done'`).run(khoaMoi);
     conn.prepare(`UPDATE sos_cases SET title = ?, summary = ?, urgency = ?, topic = ?, category = ?, dedup_key = ?, updated_at = ? WHERE id = ?`)
       .run(nd.tenGiua, nd.moTa, nd.urgency, topic, categoryOf(topic), khoaMoi, nowIso(), caseId);
     if (chinh) {
@@ -1719,7 +1745,11 @@ export function hoanTacKetThucPa(p: Principal, interventionId: number) {
   if (!coTheKetThucPa(p, c)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Quản lý mở lại PA đã kết thúc.');
   return tx(() => {
     /* Trong giao dịch: Case vừa được Đóng chen giữa lúc kiểm và lúc đảo không lọt qua. */
-    if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.status === 'done') throw conflict('Case đã hoàn thành — Mở lại Case trước khi mở lại PA.');
+    /* RKC-2a: Case đã hoàn thành → hỏi rồi Mở lại Case cùng giao dịch. */
+    if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.status === 'done') {
+      canXacNhan('Case đã hoàn thành — mở lại Case rồi mở lại PA?', undefined, 'Mở lại và lưu');
+      moLaiCase(p, iv.case_id);
+    }
     const r = timGhiDao(conn, 'ket_thuc_pa', 'case_interventions', interventionId);
     if (!r) throw conflict('PA này không có lần Kết thúc PA nào để hoàn tác.');
     daoLai(conn, r, p.userId);
@@ -2455,7 +2485,7 @@ export function caseDetail(p: Principal, caseId: number) {
       soBuoi: (f.so_buoi ?? null) as number | null,
       /** OV-12h: buổi Tutor (tên · nhận xét), theo thứ tự buổi; lần ghi cũ / loại khác: []. */
       buoi: buoiCua.get(f.id) ?? [],
-      suaDuoc: c.status !== 'done' && (f.observer_user_id === p.userId || quanLyCase)
+      suaDuoc: (c.status !== 'done' || (!f.next_step && !f.metrics)) && (f.observer_user_id === p.userId || quanLyCase)   // RKC-2a: lần xem lại sửa được cả khi Case xong
         && khoaSua(f) !== null && moiNhat.get(khoaSua(f)) === f.id && khopPa(f),
       /** VIEC-SAU-LOGIC (N37): ⋯ "Xoá" của dòng Kết quả PA — cùng cờ Xoá PA của PA đó ('ngay' · 'xin' · null). Không đọc thêm. */
       xoa: f.intervention_id ? (interventions.find((iv) => iv.id === f.intervention_id)?.xoa ?? null) : null,
@@ -4610,7 +4640,7 @@ export function suaXemLai(p: Principal, followupId: number, input: { outcome?: s
     throw forbidden('Chỉ người đã ghi lần xem lại này hoặc Quản lý sửa được.');
   }
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), 'Bạn không có quyền ghi nhận theo dõi cho Case này.');   // cùng quyền như `recordFollowUp`
-  if (c.status === 'done') throw badRequest('Case đã hoàn thành — bấm Mở lại trước khi sửa.');
+  /* RKC-2a: lần xem lại không có hệ quả → sửa được cả khi Case đã hoàn thành (nhật ký `case.followup.edit`). */
   if (conn.prepare('SELECT 1 FROM case_followups WHERE case_id = ? AND next_step IS NULL AND metrics IS NULL AND id > ? LIMIT 1').get(f.case_id, f.id)) {
     throw badRequest('Chỉ sửa được lần xem lại gần nhất.');
   }
