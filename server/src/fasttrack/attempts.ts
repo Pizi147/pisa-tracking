@@ -2171,8 +2171,10 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
   const nhomKiem = coNhom ? kiemNhomNguyenNhan(body.nhomNguyenNhan, 'speaking') : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   return tx(() => {
-    const cu = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(attemptId) as ScoreRow | undefined;
-    if (!cu || ((cu.band ?? null) === null && (cu.raw_score ?? null) === null)) throw badRequest('Bài Speaking này chưa có điểm — chờ người chấm.');
+    /* RKC (N8 ③ không đòi điểm trước): GV phụ trách ghi nhận xét trước khi người chấm nhập điểm — chưa có dòng ô thì tạo dòng trống. */
+    const docO = () => conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(attemptId) as ScoreRow | undefined;
+    if (!docO()) conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill) VALUES (?, 'speaking')`).run(attemptId);
+    const cu = docO()!;
     const band = cu.band ?? null;
     const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
     const chu = coNx ? (nx && 'gt' in nx ? nx.gt : null) : cu.nhan_xet_phu_trach ?? null;

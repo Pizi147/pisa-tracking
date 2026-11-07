@@ -1002,8 +1002,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
         + 'Trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
       );
     }
-    /* PR-MTGON (MTG-4c): lớp thường — kỹ năng đã huỷ (dữ liệu cũ) đi "Khôi phục và đặt tuần". */
-    if (row.sit_status === 'cancelled') throw loi(400, '{x} đã huỷ — "Khôi phục và đặt tuần" trước.', { x: tenMon(null, skill) });
+    /* RKC (thay MTG-4c "Khôi phục và đặt tuần trước"): lớp thường — kỹ năng đã huỷ (dữ liệu cũ): đặt tuần = khôi phục luôn (chờ thi ở tuần mới, dưới). */
   }
 
   return tx(() => {
@@ -1018,7 +1017,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
                 absent_from_no_show = 0, absence_move_count = CASE WHEN ? = 1 THEN 0 ELSE absence_move_count END, updated_at = ?
           WHERE id = ?`,
       )
-      .run(periodId, xepLai ? 1 : 0, xepLai ? 1 : 0, xepLai ? 1 : 0, nowIso(), row.id);
+      .run(periodId, xepLai || row.sit_status === 'cancelled' ? 1 : 0, xepLai ? 1 : 0, xepLai ? 1 : 0, nowIso(), row.id);
     /*
      * OV-1b (ca thật 08/10) · N38 L5: đổi tuần bằng tay = lịch mới — mọi dấu "-" của lịch cũ (cả Không dự thi) hết nghĩa, bỏ đi để ô ở tuần mới là
      * ô cần nhập bình thường. Lớp thường: "-" là chính lần dời (gỡ "-" trả về tuần cũ) — giữ.
