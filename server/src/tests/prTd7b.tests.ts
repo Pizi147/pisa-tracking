@@ -378,6 +378,29 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     assert(/idx_attempt_o_cho/.test(tatCa), `toàn hệ thống: ${tatCa}`);
     const theoLop = plan(`SELECT a.id FROM assessment_attempts a WHERE a.class_id IN (1, 2, 3) AND a.status != 'cancelled' AND a.o_cho_tu <= ?`, TODAY);
     assert(/idx_attempt_o_cho_lop/.test(theoLop), `theo lớp: ${theoLop}`);
+    /* GIAM-DOC-BC: câu thật (`CON_O_SQL` có thêm điều kiện lượt lịch sử) vẫn đi chỉ mục cờ. */
+    const conO = plan(`SELECT a.id FROM assessment_attempts a WHERE ${att.CON_O_SQL}`, TODAY);
+    assert(/idx_attempt_o_cho/.test(conO), `CON_O_SQL: ${conO}`);
   });
+
+  check('GIAM-DOC-BC · CON_O_SQL bỏ lượt MT lịch sử chấm band (không bao giờ có ô chờ chấm, ở mọi phạm vi) — lượt lịch sử lớp tỷ lệ giữ', () => thu(() => {
+    cc.capNhatConOChoTatCa();
+    const coO = (p: any, id: number, sid: number) => att.listAttempts(p, { studentId: sid, scope: 'managed', chiDangHoc: true, chiConO: true, kemChuaTuan: true }).rows.some((r: any) => r.id === id);
+    const dong = (p: any, id: number, sid: number) => att.listAttempts(p, { studentId: sid, scope: 'managed' }).rows.find((r: any) => r.id === id);
+    /* Lượt có ô chờ chấm THẬT ở một lớp band (FT) và một lớp tỷ lệ — đánh dấu lịch sử rồi xem câu CON_O. */
+    const mau = (tyLe: boolean) => all(`SELECT a.id, a.student_id AS sid FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN programmes pg ON pg.code = c.programme_code
+        WHERE a.status != 'cancelled' AND a.o_cho_tu <= ? AND a.lich_su = 0 AND a.kind != 'mt0' AND pg.scoring_mode ${tyLe ? "= 'ratio'" : "!= 'ratio'"} ORDER BY a.id`, TODAY)
+      .find((r) => (dong(QL, r.id, r.sid)?.pendingSkills ?? []).length > 0) as { id: number; sid: number } | undefined;
+    const band = mau(false), tyLe = mau(true);
+    assert(band && tyLe, `thiếu lượt mẫu: band ${band?.id}, tỷ lệ ${tyLe?.id}`);
+    conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id IN (?, ?)').run(band!.id, tyLe!.id);
+    assert(cc.demLuotLechCo() === 0, 'cờ phải không đổi khi đổi lich_su (cờ không xét lich_su)');
+    for (const [ten, p] of Object.entries(P)) {
+      const b = dong(p, band!.id, band!.sid);
+      if (b) assert(!b.pendingSkills.length && !b.pendingDetail.length && !b.myPendingDetail.length, `${ten}: lượt lịch sử band ${band!.id} vẫn có ô chờ chấm`);
+    }
+    assert(!coO(QL, band!.id, band!.sid), `lượt lịch sử band ${band!.id} vẫn vào câu CON_O`);
+    assert(coO(QL, tyLe!.id, tyLe!.sid) && dong(QL, tyLe!.id, tyLe!.sid).pendingSkills.length > 0, `lượt lịch sử lớp tỷ lệ ${tyLe!.id} phải giữ (còn ô chờ chấm)`);
+  }));
 }
 

@@ -26,7 +26,7 @@ const TUAN_O = (mon: string, o?: string) => `COALESCE(
          THEN (SELECT pr.week_start FROM report_periods pr WHERE pr.id = a.planned_period_id) END)`;
 
 /** LUOT-KHONG-LOP-2: chương trình CHẤM của lượt — cùng luật `maCtCuaLuot` (lớp của lượt; lượt không lớp theo chương trình lộ trình). */
-const MA_CT_LUOT = `(CASE WHEN a.class_id IS NOT NULL THEN (SELECT c.programme_code FROM classes c WHERE c.id = a.class_id)
+export const MA_CT_LUOT = `(CASE WHEN a.class_id IS NOT NULL THEN (SELECT c.programme_code FROM classes c WHERE c.id = a.class_id)
   ELSE (SELECT cy.programme_code FROM learning_cycles cy WHERE cy.id = a.cycle_id) END)`;
 
 /** Biểu thức tính cờ cho dòng `a` của `assessment_attempts` (dùng trong UPDATE … AS a / SELECT … AS a). */
