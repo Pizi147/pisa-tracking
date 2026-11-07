@@ -97,7 +97,6 @@ function HopChonLopQuayLai({ em, tt, onClose, onDone }: { em: Em; tt: ThongTin; 
       <div className="space-y-3">
         <Truong nhan={t('Lớp')} as="div">
           <ChonLop ds={ds} value={lopId} onChange={setLopId} ariaLabel={t('Lớp')} />
-          {goiY && lopId === goiY.id && <p className="m-0 mt-1 text-xs text-slate-400">{t('Gợi ý: lớp đang chạy cùng chương trình, cùng chi nhánh')}</p>}
         </Truong>
         <KhoiKhiLuu dong={lop ? [t('Bỏ lưu trữ · em đang học ở {lop}', { lop: lop.code }), t('Chuyển lớp theo luật Chuyển lớp · Case chạy hạn lại')] : []} />
         {loi && (

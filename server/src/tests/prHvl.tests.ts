@@ -550,7 +550,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const tt = web('modules/classes/ThongTinLopPanel.tsx');
     assert(/menuHoSoLop\(/.test(dau) && /onViec\('case'\)/.test(dau) && /'Tuần khai giảng'/.test(tt) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{bConLai\.an\.length\}`\}/.test(dau), 'DauTrangLop');
     assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
-    assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && /Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel');
+    assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && !/SectionNote|Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel (BO-CHU-THICH 07/11: không còn ghi chú tĩnh)');
     assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');
   });
 

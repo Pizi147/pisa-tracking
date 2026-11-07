@@ -327,7 +327,6 @@ function SuaBang({ bang, phienBan, onClose, onDone }: { bang: BangQuyDoi; phienB
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { datCot(daAp.k, o[daAp.k].map((v, n) => daAp.cu.get(n) ?? v)); setDaAp(null); }}>{t('Hoàn tác')}</button>
           </div>
         )}
-        <p className="m-0 -mt-1 text-xs text-slate-500">{t('Dán một cột từ Excel vào một ô → điền xuống · ↑ ↓ / Enter chuyển ô · "5,5" hay "5.5" đều được · — = IDP không công bố')}</p>
         {loiHien.length > 0 && (
           <ul className="m-0 grid list-none gap-0.5 rounded-md bg-bad-bg px-2 py-1.5" role="alert">
             {loiHien.map((l) => (

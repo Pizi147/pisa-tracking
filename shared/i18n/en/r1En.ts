@@ -67,8 +67,6 @@ export const EN_R1_EN = {
     'Which week the attempt is in now, and what Apply schedule does to it. Attempts locked by a manager or already done stay put.',
   'Hiện tại': 'Current',
   '+ Thêm MT{n}': '+ Add MT{n}',
-  'Hệ thống chỉ đề xuất ba lượt đầu — đa số em chỉ làm ba lượt, MT4 và MT5 là dự phòng, thêm bằng "+ Thêm MT" (tuần cách ≥ 2 tuần = MT cũ). Lượt nào Quản lý đã chốt tay hoặc em đã làm xong thì đứng yên, kể cả khi đổi lại tuần bắt đầu học.':
-    'Only the first three attempts are suggested — most students sit three; MT4 and MT5 are spare, added with "+ Add MT" (≥ 2 weeks back = past MT). Attempts locked by a manager or already done stay put, even if the start week changes.',
   /* Hồ sơ lớp › Phân công */
   '{nhan}: người khác vừa đổi ô này — kiểm lại rồi lưu.': '{nhan}: someone else just changed this — check, then save.',
   'Ô này đang có {n} người — chọn lại một người': (b) => `This slot has ${so(b.n, 'person', 'people')} — pick one`,
@@ -252,8 +250,6 @@ export const EN_R1_EN = {
   'Mặc định của {ct}: tuần {tuan}. Để trống là dùng mặc định.': 'Default for {ct}: week {tuan}. Leave empty to use the default.',
   'Tuần Final Test (tuần học)': 'Final Test week (study week)',
   'Để trống là dùng mốc mặc định của chương trình.': 'Leave empty to use the programme default.',
-  'Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em (MT ở tuần học {ds}) — xem ở Test › Kế hoạch Test. Đổi tuần khai giảng không dời lịch MT của em đã có.':
-    'The start week is the default start for new students. Each student\'s MT schedule counts from their own start week (MTs in study weeks {ds}) — see Tests › Test plan. Changing the start week does not move existing students\' MTs.',
   'Các mốc kiểm tra được tính từ tuần khai giảng.': 'Test dates are counted from the start week.',
   /* Tạo nhiều lớp */
   'Chọn chi nhánh.': 'Pick a branch.',
@@ -269,7 +265,6 @@ export const EN_R1_EN = {
   'Kiểm tra': 'Check',
   'Tạo nhiều lớp': 'Create several classes',
   'Đã kiểm tra: tạo được cả {n} lớp.': (b) => `Checked: all ${so(b.n, 'class', 'classes')} can be created.`,
-  'Tối đa {n} lớp một lần. Tạo tất cả hoặc không lớp nào — một dòng lỗi thì chưa lớp nào được tạo.': 'Up to {n} classes at a time. All or nothing — one bad row means no class is created.',
   '+ Thêm {n} dòng giống dòng trên': (b) => `+ Add ${so(b.n, 'row', 'rows')} like the one above`,
   'Số dòng': 'Rows',
   'Đã đủ {n} dòng.': 'Reached {n} rows.',
@@ -313,7 +308,6 @@ export const EN_R1_EN = {
   'Không đọc được dòng nào từ nội dung đã dán.': 'No rows could be read from the pasted content.',
   'Chưa thêm được dòng nào — xem cột Trạng thái.': 'No rows added yet — see the Status column.',
   'Lớp chưa có ngày khai giảng.': 'The class has no start date yet.',
-  'Chọn lớp, dán từ Excel hoặc gõ vào lưới': 'Pick a class, paste from Excel or type into the grid',
   '{n} dòng sẵn sàng': (b) => `${so(b.n, 'row', 'rows')} ready`,
   '{n} dòng cần sửa': (b) => `${so(b.n, 'row needs', 'rows need')} fixing`,
   'Thêm {n} học viên': (b) => `Add ${so(b.n, 'student', 'students')}`,
@@ -344,7 +338,6 @@ export const EN_R1_EN = {
   'Đã xác nhận bàn giao {ten}': 'Handover confirmed for {ten}',
   'Đã lưu bàn giao {ten}': 'Handover saved for {ten}',
   '{a}/{b} đã xác nhận': '{a}/{b} confirmed',
-  'Môn còn trống sẽ ghi “GVBM chưa bàn giao”.': 'Empty subjects will read “Subject teacher has not handed over”.',
   'Viết nhận xét chung trước khi xác nhận': 'Write the overall comment before confirming',
   'Nhận xét chung': 'Overall comment',
   'Không có em nào cần bàn giao.': 'No students need a handover.',
@@ -391,7 +384,6 @@ export const EN_R1_EN = {
   'Đã huỷ quyết định chuyển lớp': 'Transfer decision cancelled',
   /* Q4 (chủ SP 29/10): Chuyển lớp một em tuần trước Final → hết tuần Final. */
   'Theo luồng chuyển tiếp lộ trình': 'Follow the end-of-course transition',
-  'Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển ngay, không Test đi kèm.': 'Tests come along (Move up to FT gets MT0 in the Final week). Untick: transfer now, no tests.',
   'Gửi đề xuất': 'Send request',
   'Duyệt và quyết định': 'Approve and decide',
   'Sửa đề xuất chuyển lớp': 'Edit transfer request',
@@ -401,12 +393,9 @@ export const EN_R1_EN = {
   'Chọn tuần hoặc lớp chuyển đến mới rồi lưu, hoặc huỷ quyết định.': 'Pick a new week or target class and save, or cancel the decision.',
   'Xác nhận huỷ quyết định': 'Confirm cancelling the decision',
   'tuần học {n}': 'study week {n}',
-  'Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo “Sắp nhận”.': 'The branch manager and the new class\'s core teacher will get an “Incoming” notice.',
   'Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học': 'E.g. parents asked to move to a class at another time',
   'Ghi lý do': 'Add a reason',
   'Em chưa có Target · band 0–9, hoặc tích KCK': 'No Target yet · band 0–9, or tick KCK',
-  'Gửi thành thẻ trong Chờ duyệt của Quản lý (loại Thông tin HV, hạn 5 ngày). Quản lý duyệt = ra quyết định chuyển lớp; Quản lý được sửa lớp và tuần trước khi duyệt.':
-    'Sent as a card in the manager\'s Pending list (Student info, due in 5 days). Approval = a transfer decision; the manager can change the class and week before approving.',
   'Khi chuyển, web sẽ': 'When transferring, the web will',
   'Đang xem trước…': 'Loading preview…',
   'Đã quyết định chuyển lớp {n} em': (b) => `Transfer decided for ${so(b.n, 'student', 'students')}`,

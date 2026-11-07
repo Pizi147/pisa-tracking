@@ -5,7 +5,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { WeekPicker } from '../../ui/Filters.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useSession } from '../../lib/session.tsx';
-import { Field, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Field, Skeleton } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MOC_KIEM_TRA_NORMAL } from '../../ui/chu.ts';
@@ -170,11 +170,7 @@ export function PhanLichTest({ classId, tieuDe, suaDuoc, onDone, onChuyenTiep }:
                   onChange={(e) => { setTouched(true); setFinalWeek(e.target.value); }} />
               </Field>
             </div>
-          ) : (
-            <SectionNote>
-              {t('Tuần khai giảng là tuần bắt đầu mặc định khi thêm học viên. Lịch MT của từng em tính từ tuần bắt đầu của em (MT ở tuần học {ds}) — xem ở Test › Kế hoạch Test. Đổi tuần khai giảng không dời lịch MT của em đã có.', { ds: data.lichMt.join(' · ') })}
-            </SectionNote>
-          )}
+          ) : null}
         </div>
       )}
     </PhanThongTin>

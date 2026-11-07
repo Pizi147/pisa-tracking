@@ -64,7 +64,6 @@ export const EN_OV15C = {
   'MT đầu phải trước MT cuối.': 'The first MT must come before the last.',
   'Chọn tuần hợp lệ.': 'Choose a valid week.',
   'Xem trước cột · {n} cột': 'Column preview · {n} columns',
-  '“Chỉ điểm” bỏ 2 cột nhận xét.': '“Scores only” drops the 2 comment columns.',
   'Kèm sheet “Thông tin xuất”': 'Includes the “Export info” sheet',
   'Không có lượt nào khớp — đổi phạm vi.': 'No tests match — change the scope.',
   'Xuất Excel · {n} lượt': (b) => `Export Excel · ${b.n} ${Number(b.n) === 1 ? 'attempt' : 'attempts'}`,

@@ -143,7 +143,6 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
       }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>
-          {coPaBatBuoc && <p className="m-0 text-xs text-slate-300">{t('PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.')}</p>}
           <FormPa phang v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} chonLoai studentId={studentId}
             luat={deXuat
               ? t('Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong {HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.', { HAN_DUYET_NGAY })

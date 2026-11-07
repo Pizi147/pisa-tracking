@@ -163,7 +163,6 @@ export default function LuotThuongPage() {
       {!huy && khoiPhucLuot === 'xong' && (
         <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-sm" style={{ borderColor: 'var(--line-strong)' }}>
           <span className="font-semibold text-slate-100">✓ {t('Đã khôi phục {mt}', { mt: r.kindLabel })}</span>
-          <span className="text-slate-400">{t('Điểm trước khi huỷ xem ở Lịch sử.')}</span>
           <button type="button" className="link border-0 bg-transparent p-0 text-sm max-sm:min-h-[44px] sm:ml-auto"
             onClick={() => {
               const ls = document.getElementById('lich-su');

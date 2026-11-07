@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode 
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { KhungPanel } from './KhungPanel.tsx';
+import { NutLuat } from './NutLuat.tsx';
 import { Bang } from './Bang.tsx';
 import { ODiem } from './ODiem.tsx';
 import { phimHangTab } from './HangTab.tsx';
@@ -102,7 +103,7 @@ export function loaiBangLuot(nguon: string): string {
 
 /**
  * PANEL BẢNG CÓ ĐIỂM (U08-2 → PT-PANEL, mockup v13 A1 / A1m / A2). Chỉ đọc. Đầu: loại · tiêu đề ô · "chi nhánh · Fast Track · dữ liệu đến dd/mm" → "n lượt · m HV" →
- * (tab Chưa đạt · Đạt khi dòng có kết luận) → bảng → khối Cách tính.
+ * (tab Chưa đạt · Đạt khi dòng có kết luận) → bảng; "Cách tính" = ⓘ ở dòng tiêu đề.
  *   · `luot`: Học viên · Lớp · MT · L R W1 W2 S · OVR · Kỳ vọng — ô ✓ / ✗ (`ODiem`), ô có tiêu chí / số câu bấm mở hộp; cột `knNhan` nền nhấn.
  *   · `tang-giam`: Học viên · Lớp · (Kỹ năng) · Trước · Sau · Chênh · Kỳ vọng.
  *   · `thi-that` (v13 C2 / C3): Học viên · Lớp · Ngày thi · L R W S · OVR · Target (+ Tuần dạy ở panel GV) — ô so Target overall, chỉ band (không hộp);
@@ -439,7 +440,9 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
     bt && data?.nguong != null ? t('đạt từ {n} % mỗi môn', { n: data.nguong }) : null, vpk && tatV.length ? t('mới nhất trước') : null,
     tg ? t('so mốc MT trước') : t('dữ liệu đến {ngay}', { ngay: ngay(homNay).slice(0, 5) }), tt && /^W[12]$/.test(knNhan ?? '') ? t('{kn} tính nửa W', { kn: knNhan! }) : null].filter(Boolean).join(' · ');
   return (
-    <KhungPanel tieuDe={tieuDe} rong="bang" onDong={onDong} loai={loai} dau={{ dong2: [dong2] }} chan={{ huy: { nhan: t('Đóng'), onClick: onDong } }}>
+    <KhungPanel tieuDe={tieuDe} rong="bang" onDong={onDong} loai={loai} dau={{ dong2: [dong2],
+      /* BO-CHU-THICH (chủ SP 07/11): "Cách tính" là ⓘ cuối dòng tiêu đề như `NganDanhSach` — không còn khối chữ cuối panel. */
+      tieu: data?.cachTinh ? <><span className="min-w-0">{tieuDe}</span><NutLuat label={t('Cách tính')}>{dich(data.cachTinh)}</NutLuat></> : undefined }} chan={{ huy: { nhan: t('Đóng'), onClick: onDong } }}>
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={4} /></div>
           : (
@@ -491,9 +494,6 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
                 ? <Bang deu ten={tieuDe} cot={cotT} hang={hangT} khoa={(h) => h.id} oCua={oT} khung={false} theRieng={theT} />
                 : <Bang deu day ten={tieuDe} cot={cotL} hang={hangL} khoa={(h) => h.id} oCua={oL} phuCua={(h, c) => (c.key === 'mt' ? tuanLich(h.tuan, homNay) : null)} khung={false} theRieng={theL} />}
               <PhanTrang {...pt.thanh} duoi />
-              {data.cachTinh && (
-                <div className="grid gap-1 border-t pt-3 text-sm" style={{ borderColor: 'var(--line)' }}><b className="text-slate-100">{t('Cách tính')}</b><span className="text-dim">{dich(data.cachTinh)}</span></div>
-              )}
             </div>
           )}
     </KhungPanel>
