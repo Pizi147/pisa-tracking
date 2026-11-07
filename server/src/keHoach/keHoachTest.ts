@@ -611,7 +611,7 @@ function kiemDotNoi(a: any, kyNang: YeuCauKyNang[], duaLai: Set<KyNangKH> = new 
     const b = bai[d.i];
     const khoa = cheDo === 'ft' || a.kind === 'mt0' ? khoaCuoiTuan({ tuan: [d.row.week_start, d.pr.week_start], homNay, quanTri: !!pre.quanTri }) : null;
     if (khoa) { b.ghiChu = 'chan'; b.cau = khoa; continue; }
-    if (vuot.chan) { b.ghiChu = 'chan'; b.cau = vuot.chan; continue; }
+    if (vuot.chan) { b.ghiChu = 'canh-bao'; b.cau = vuot.chan; continue; }   // RKC: luật MT0 cảnh báo cần xác nhận, không chặn
     let c = checks.get(d.pr.week_start);
     if (!c) {
       c = checkWeekVsNeighbours({ cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: a.id, newWeekStart: d.pr.week_start, kind: a.kind });
@@ -683,7 +683,6 @@ export function luuDot(p: Principal, i: {
   });
 }
 
-const CAU_THI_LAI_TUAN_QUA = 'Thi lại: chọn tuần từ tuần này trở đi.';
 
 /**
  * THI LẠI (T37 "ép vào đợt trùng", §5.5, Q13 — chủ sản phẩm chốt 29/09 câu 1 = A): Quản lý cho em thi lại kỹ năng ĐÃ CÓ ĐIỂM ở
@@ -694,9 +693,7 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
   if (a.kind !== 'mock' || a.lich_su || a.status === 'cancelled') throw badRequest('Chỉ thi lại được ở lượt Mock đang chạy.');
   if (!i.skills?.length) throw badRequest('Chưa chọn kỹ năng thi lại.');
-  /* T4 (PR-MTa): Quản lý xếp được tuần đã qua — trừ thi lại: thi lại là một buổi thi thật, cần tuần từ tuần này trở đi. */
-  const pr = db().prepare('SELECT week_end FROM report_periods WHERE id = ?').get(i.periodId) as any;
-  if (pr && laLichSu(pr.week_end, demoToday())) throw badRequest(CAU_THI_LAI_TUAN_QUA);
+  /* RKC (PTA quyết định 4 — thay T4 "thi lại cần tuần từ tuần này"): thi lại vào tuần đã qua được (ghi bù buổi thi lại đã diễn ra), có nhật ký. */
   const lyDo = i.lyDo?.trim() ? `Thi lại: ${i.lyDo.trim()}` : 'Thi lại';   // T7: lý do tuỳ chọn
   /* Rà #126: thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng / đã huỷ đi luồng Xếp lại bài vắng / Khôi phục, không qua đây. */
   const diem = scoresOf(i.attemptId);
@@ -1153,8 +1150,6 @@ function xetMotEmFT(i: {
       const tu = rowsCua(a).find((r) => r.skill === k)?.week_start ?? null;
       const khoa = khoaCuoiTuan({ tuan: [tu, pr.week_start], homNay: i.homNay, quanTri: i.quanTri });
       return khoa ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: khoa }
-        : laLichSu(pr.week_end, i.homNay)
-        ? { skill: k, tu, den: pr.week_start, ghiChu: 'chan', cau: CAU_THI_LAI_TUAN_QUA }
         : { skill: k, tu, den: pr.week_start, ghiChu: 'doi', cau: 'Thi lại — điểm cũ giữ trong Lịch sử.' };
     });
     const chan = bai.filter((b) => b.ghiChu === 'chan');

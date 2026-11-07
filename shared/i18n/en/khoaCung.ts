@@ -9,6 +9,8 @@ export const EN_KHOA_CUNG = {
   'Em đang ở Lưu trữ — mở lộ trình mới bằng Quay lại học (chọn lớp) hoặc Bước tiếp › Lộ trình mới.': 'The student is archived — open a new pathway via Return to study (pick a class) or Next step › New pathway.',
   'Em đã kết thúc học — chuyển lớp bằng Quay lại học (chọn lớp mới).': 'The student has ended studies — transfer via Return to study (pick a new class).',
   'Em đã kết thúc học — dùng Quay lại học (về lớp cũ hoặc chọn lớp mới).': 'The student has ended studies — use Return to study (old class or a new one).',
+  '{x} Vẫn xếp vào tuần này?': '{x} Schedule in this week anyway?',
+  'Vẫn xếp': 'Schedule anyway',
   'Chưa tới tuần Test {x} — nhờ Quản lý dời về tuần này rồi nhập.': 'Test week {x} has not started — ask a Manager to move it to this week, then enter.',
   'Chưa xếp tuần Test — nhờ Quản lý xếp tuần rồi nhập.': 'No Test week yet — ask a Manager to schedule it, then enter.',
   '{x} chưa xếp tuần — xếp vào tuần này rồi ghi vắng?': '{x} has no week — schedule it this week and mark absent?',

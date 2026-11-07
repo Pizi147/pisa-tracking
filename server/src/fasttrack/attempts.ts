@@ -1494,7 +1494,7 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
   }
   /* Kiểm vượt trên CẢ lần dời (không từng kỹ năng) — 400 trước khi ghi bất cứ gì. */
   const vuot = kiemVuot(attemptId, tuanCuoiSauKhiDoi(rows, new Map(movable.map((r) => [r.skill, period.week_start])))!).chan;
-  if (vuot) throw badRequest(vuot);
+  if (vuot) canXacNhan('{x} Vẫn xếp vào tuần này?', { x: vuot }, 'Vẫn xếp');   // RKC: luật MT0 hỏi thay vì chặn
 
   return tx(() => {
     const warnings: string[] = [];
