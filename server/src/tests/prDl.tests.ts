@@ -146,7 +146,9 @@ export async function runPrDlTests(t: YThucTestKit) {
      Rồi ô huỷ vắng 2 lần bỏ câu "Quản lý đã đổi kết luận…" (`noShowNote`) — đo lại: chỉ đổi đúng điều đó (trước: moi 7569e6e2e056032f). */
   /* RKC (chủ SP 07/11 "không chặn cứng"): ô vắng / huỷ nay `canEdit` true (máy chủ hỏi rồi đổi trạng thái khi nhập) — so JSON trước/sau: chỉ
      5 ô `canEdit` false → true, không trường nào khác (trước: tuan cc83e6fa32c0aa95 · moi 2bde7d28eb00cb47). */
-  const ANH_CHUP = { tuan: '6e3a3cc57097f59d', moi: '1948335ce82a6b6d' };
+  /* RKC-1b: Quản lý (dời được lịch) nhập được ô chưa tới tuần — máy hỏi "Dời về tuần này". So JSON trước / sau: chỉ 1 ô `canEdit` false → true ở bảng
+     QL (`tuan`), bảng GVBM (`moi`) y nguyên (trước: tuan 6e3a3cc57097f59d). */
+  const ANH_CHUP = { tuan: '84a618be9795c451', moi: '1948335ce82a6b6d' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id
