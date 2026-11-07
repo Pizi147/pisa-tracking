@@ -6,7 +6,9 @@ CREATE TABLE branches (
   code TEXT NOT NULL UNIQUE,          -- MB, BC, CP, HD, UB
   name TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active',
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  dia_chi TEXT,                       -- CHI-NHANH-LIEN-HE: đầu tệp Báo cáo PH; Quản trị › Chi nhánh sửa
+  so_dien_thoai TEXT
 );
 
 -- Đơn vị báo cáo cho họp tuần. Tutor part-time là đơn vị riêng, KHÔNG phải chi nhánh thứ sáu.

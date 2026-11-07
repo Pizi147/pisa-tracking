@@ -3,7 +3,7 @@ import {
   MA_CHUONG_TRINH_MOI, MON_CHON, MON_GOP, MT_TOI_DA, PERMISSIONS, QUYEN_SUY_RA_GV, RATIO_PASS_THRESHOLD, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, docLichMt,
   laChuongTrinhGoc, lichMtGoc, lyDoCamVai, nhanBaiThuong, programmeOf,
 } from '../../../shared/domain/index.ts';
-import { badRequest, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
@@ -439,4 +439,33 @@ export function maTranQuyen(p: Principal) {
     suyRaGv: QUYEN_SUY_RA_GV,
     khoa,
   };
+}
+
+/* ------------------------------------------------------------------ chi nhánh (CHI-NHANH-LIEN-HE, chủ SP 07/11) */
+
+type LienHeCn = { name: string; diaChi: string | null; soDienThoai: string | null };
+const lienHe = (r: any): LienHeCn => ({ name: r.name, diaChi: r.dia_chi ?? null, soDienThoai: r.so_dien_thoai ?? null });
+
+/** GET /admin/chi-nhanh — Quản trị › Chi nhánh: tên hiển thị, địa chỉ, SĐT (đầu tệp Báo cáo PH). Một câu, ≤ số chi nhánh dòng. */
+export function listChiNhanh(p: Principal) {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được thông tin chi nhánh.');
+  return (db().prepare('SELECT id, code, name, status, dia_chi, so_dien_thoai FROM branches ORDER BY id').all() as any[])
+    .map((r) => ({ id: r.id, code: r.code, status: r.status, ...lienHe(r) }));
+}
+
+/**
+ * PUT /admin/chi-nhanh/:id { name, diaChi, soDienThoai } — sửa tên hiển thị, địa chỉ, SĐT. Mã chi nhánh không đổi (tên lớp, quyền dựa vào mã).
+ * Ô trống = xoá. Trả `truoc` để web Hoàn tác (gửi lại giá trị cũ); nhật ký ghi trước / sau.
+ */
+export function luuChiNhanh(p: Principal, id: number, input: { name?: unknown; diaChi?: unknown; soDienThoai?: unknown }) {
+  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống sửa được thông tin chi nhánh.');
+  const r = db().prepare('SELECT id, code, name, dia_chi, so_dien_thoai FROM branches WHERE id = ?').get(id) as any;
+  if (!r) throw notFound('Không tìm thấy chi nhánh');
+  const name = chuTuDo(input.name ?? '', 'Tên chi nhánh', 80);
+  if (!name) throw loiO('ten', 'Đặt tên cho chi nhánh.');
+  const sau: LienHeCn = { name, diaChi: chuTuDo(input.diaChi ?? '', 'Địa chỉ', 300), soDienThoai: chuTuDo(input.soDienThoai ?? '', 'Số điện thoại', 60) };
+  const truoc = lienHe(r);
+  db().prepare('UPDATE branches SET name = ?, dia_chi = ?, so_dien_thoai = ? WHERE id = ?').run(sau.name, sau.diaChi, sau.soDienThoai, id);
+  writeAudit({ actorUserId: p.userId, action: 'chi_nhanh.sua', entityType: 'branch', entityId: id, entityLabel: r.code, before: truoc, after: sau });
+  return { id, code: r.code, ...sau, truoc };
 }

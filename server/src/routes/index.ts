@@ -3175,6 +3175,9 @@ api.get('/admin/routes', requireAuth, wrap((req) => {
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));
 api.get('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.listProgrammes(principalOf(req))));
 api.put('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.saveProgramme(principalOf(req), req.body ?? {})));
+/* CHI-NHANH-LIEN-HE (chủ SP 07/11): Quản trị › Chi nhánh — tên hiển thị, địa chỉ, SĐT (đầu tệp Báo cáo PH). */
+api.get('/admin/chi-nhanh', requireAuth, wrap((req) => sysconfigSvc.listChiNhanh(principalOf(req))));
+api.put('/admin/chi-nhanh/:id', requireAuth, wrap((req) => sysconfigSvc.luuChiNhanh(principalOf(req), toInt(req.params.id) ?? 0, req.body ?? {})));
 /* BAND-QUY-DOI: bảng quy đổi số câu → band. `/ref` = bảng đang dùng (hộp nhập điểm xem trước band); `/admin` = phiên bản (QT sửa, QL xem). */
 api.get('/ref/bang-quy-doi', requireAuth, wrap(() => bangQuyDoiSvc.bangHienHanh()));
 api.get('/admin/mo-sua-lich-test', requireAuth, wrap((req) => moSuaLichTestSvc.xemMoSua(principalOf(req))));

@@ -55,7 +55,7 @@ sau đó viết tắt. Luật thuần (không đụng DB, máy chủ và web cù
 | Phân tích (Báo cáo · Test + SOS · Kết quả thi · Hiệu quả PA · GV · Ý thức) | `web/src/modules/phanTich/{PhanTichPage,PhanTich,BaoCao,TongHopTestSos,KetQuaThi,HieuQuaPa,PhanTichGiaoVien,YThucPhoiHop}.tsx` | `/phan-tich/*` → thư mục `server/src/phanTich/` |
 | Hồ sơ giáo viên `/giao-vien/:id` | `web/src/modules/giaoVien/HoSoGiaoVienPage.tsx` | `server/src/giaoVien/hoSo.ts` (`hoSoGiaoVien`) · `server/src/phanTich/giaoVien.ts` (`chiSoHoSoGv`) |
 | Lưu trữ | `web/src/modules/students/{LuuTruPage,TomTatLuuTru}.tsx` | `server/src/classes/luuTru.ts` |
-| Quản trị (Tài khoản · Quyền · Chương trình · Bảng quy đổi · Nhật ký) | `web/src/modules/platform/{AdminPage,AccountsAdmin,CatalogAdmin,BangQuyDoiAdmin}.tsx` | `server/src/platform/{accounts,sysconfig,bangQuyDoi,audit}.ts` |
+| Quản trị (Tài khoản · Quyền · Chương trình · Chi nhánh · Bảng quy đổi · Nhật ký) | `web/src/modules/platform/{AdminPage,AccountsAdmin,CatalogAdmin,ChiNhanhAdmin,BangQuyDoiAdmin}.tsx` | `server/src/platform/{accounts,sysconfig,bangQuyDoi,audit}.ts` |
 | Hồ sơ cá nhân | `web/src/modules/platform/ProfilePage.tsx` (`ChonKyNang`) | `PATCH /me/profile` |
 | Hướng dẫn `/huong-dan`, nút "?", "Chỉ cho tôi" | `web/src/modules/huongDan/{HuongDanPage,NutHuongDan,chiChoToi,MucHuongDan,DaiMoiDung}.tsx` | nội dung `shared/huongDan/index.ts` (`HUONG_DAN`, `manCuaDuong`) |
 | Trang Tutor (đang tắt: `/tutor` về `/`) | `web/src/modules/tutor/{TutorPage,PanelTutor,HopTutor,TaiDanhSach}.tsx` | `server/src/tutors/{trang,taiLen}.ts` |
@@ -397,6 +397,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Bảng quyền theo vai | `server/src/platform/sysconfig.ts` (`setRolePermission`, `maTranQuyen`) · `web/src/modules/platform/AdminPage.tsx` |
 | Ai được làm gì ở đâu | `server/src/permissions.ts` (`can`, `teacherAllows`, `scoreEditPath`, `editableSkills`) |
 | Chương trình, lộ trình FT, chương trình mới | `server/src/platform/sysconfig.ts` (`saveProgramme`, `saveRoute`, `taoChuongTrinh`) · `web/src/modules/platform/CatalogAdmin.tsx` |
+| Chi nhánh: tên, địa chỉ, SĐT (đầu tệp Báo cáo PH) | `server/src/platform/sysconfig.ts` (`listChiNhanh`, `luuChiNhanh`) · migrate `prChiNhanhLienHe.ts` · `web/src/modules/platform/ChiNhanhAdmin.tsx` |
 | Bảng quy đổi số câu → band | `server/src/platform/bangQuyDoi.ts` (`luuBangQuyDoi`) · `web/src/modules/platform/BangQuyDoiAdmin.tsx` |
 | Quy ước tuần, mã tuần, hạn chấm, trễ nhập điểm | `server/src/platform/week.ts` (`mocTreNhapDiem`, `quaHanNhapDiem`) · `shared/domain/week.ts` (`hanKyGhiKetQua`) |
 | Nhật ký thay đổi · Lịch sử thay đổi (một đường đọc) | `server/src/platform/audit.ts` · `shared/domain/nhatKy.ts` · `GET /lich-su` → `server/src/platform/lichSu.ts` |

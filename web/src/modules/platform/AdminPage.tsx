@@ -10,6 +10,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { api } from '../../lib/api.ts';
 import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
+import { ChiNhanhAdmin } from './ChiNhanhAdmin.tsx';
 import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
 import { MoSuaLichTest } from './MoSuaLichTest.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
@@ -30,6 +31,7 @@ type AdminData = {
  * QUẢN TRỊ HỆ THỐNG — ba việc khác hẳn nhau, nên ba tab thay vì một trang dài.
  *
  *   TÀI KHOẢN  duyệt đăng ký, tạo tài khoản, cấp vai và quyền riêng (mục 7.1, 7.3).
+ *   CHI NHÁNH  tên hiển thị, địa chỉ, SĐT từng cơ sở — đầu tệp Báo cáo PH (CHI-NHANH-LIEN-HE, chủ SP 07/11).
  *   CHƯƠNG TRÌNH  chương trình + FT theo lộ trình — tên, đạt từ, số tuần, mốc Test; áp cho lớp mở sau (OV-6b1); không thêm mã mới (K1-48).
  *   CẤU HÌNH   ma trận quyền theo vai (`/admin/permissions/matrix`), đơn vị báo cáo, nhật ký thay đổi (`/admin/overview`).
  *   BẢNG QUY ĐỔI  số câu L / R → band (BAND-QUY-DOI) — Quản lý (không có `nav.admin`) vào trang này chỉ thấy tab này + Đã xoá, chỉ đọc.
@@ -40,6 +42,7 @@ type AdminData = {
 const TABS = [
   { key: 'accounts', label: t('Tài khoản') },
   { key: 'catalog', label: t('Chương trình') },
+  { key: 'chi-nhanh', label: t('Chi nhánh') },
   { key: 'band', label: t('Bảng quy đổi') },
   { key: 'config', label: t('Quyền & nhật ký') },
   { key: 'da-xoa', label: t('Đã xoá') },
@@ -76,6 +79,7 @@ export default function AdminPage() {
       <div id="qt-vung" role="tabpanel" aria-label={t('Quản trị hệ thống')} className="space-y-4">
         {tab === 'accounts' && <AccountsAdmin />}
         {tab === 'catalog' && <CatalogAdmin />}
+        {tab === 'chi-nhanh' && <ChiNhanhAdmin />}
         {tab === 'band' && <BangQuyDoiAdmin />}
         {tab === 'da-xoa' && <DaXoaAdmin />}
         {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
