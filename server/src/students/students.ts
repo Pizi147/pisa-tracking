@@ -403,19 +403,10 @@ export function hocLai(p: Principal, studentId: number, o: {
   const khoiPhuc = nhatKy
     ? dongCompleted.filter((e) => nhatKy.ghiDanhDong.some((x) => x.id === e.id))
     : dongCompleted.some((e) => e.ended_at == null) ? dongCompleted.filter((e) => e.ended_at == null) : dongCompleted.slice(0, 1);
-  const enr = khoiPhuc[0];
-  if (!enr) {
-    /* RKC (chủ SP 07/11): em kết thúc chưa từng có lớp — Học lại sang lớp mới = xếp lớp lần đầu (`transferStudent`, mở lộ trình đúng luật) sau khi em hết
-       kết thúc, một giao dịch (trước: "dùng Chuyển lớp" mà Chuyển lớp lại bắt Quay lại học trước — vòng lặp). */
-    if (!o.lopMoiId) throw badRequest('Em chưa có lớp cũ — chọn lớp mới để em học lại.');
-    return tx(() => {
-      conn.prepare(`UPDATE students SET status = 'active', finished_at = NULL, archived_at = NULL WHERE id = ?`).run(studentId);
-      writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
-        before: { status: s.status, finishedAt: s.finished_at ?? null, archivedAt: s.archived_at ?? null }, after: { status: 'active', date, lyDo, hocLai: true, lopMoiId: Number(o.lopMoiId) } });
-      transferStudent(p, studentId, Number(o.lopMoiId), date, lyDo ?? 'Học lại', { noNote: true, mucTieu: typeof o.mucTieu === 'number' ? o.mucTieu : null, thangThi: o.thangThi ?? null });
-      return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
-    });
-  }
+  /* RKC (chủ SP 07/11): em kết thúc CHƯA TỪNG có lớp — Học lại sang lớp mới vẫn được (trước: "dùng Chuyển lớp" mà Chuyển lớp lại bắt Quay lại học trước —
+     vòng lặp). "Lớp cũ" rỗng: không lớp để loại trừ, lộ trình mới theo luật như từ lớp thường, cùng nhật ký + Hoàn tác học lại. */
+  if (!khoiPhuc[0] && !o.lopMoiId) throw badRequest('Em chưa có lớp cũ — chọn lớp mới để em học lại.');
+  const enr = khoiPhuc[0] ?? { id: null, class_id: -1, code: '—', branch_name: '', branch_id: s.branch_id, programme_code: null, is_fast_track: 0, route: null, class_status: null };
   const lopDong = [...new Map(khoiPhuc.filter((e) => e.class_status === 'finished').map((e) => [e.class_id, e])).values()];
   const lopDaDong = lopDong.length > 0;
 

@@ -51,6 +51,7 @@ export async function runRkcHocVienTests(t: any) {
     const s = get('SELECT status, archived_at FROM students WHERE id = ?', sid);
     assert(s.status === 'active' && !s.archived_at, `em phải đang học: ${JSON.stringify(s)}`);
     assert(!!get(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`, sid, dich), 'thiếu ghi danh lớp mới');
+    assert(!!get(`SELECT 1 FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid), 'phải có lộ trình đang chạy ở lớp mới');
     assert(!!get(`SELECT 1 FROM audit_logs WHERE entity_type = 'student' AND entity_id = ? AND action = 'student.status'`, sid), 'thiếu nhật ký');
   }));
 }
