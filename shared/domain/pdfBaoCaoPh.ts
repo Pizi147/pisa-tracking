@@ -53,6 +53,17 @@ type O = {
 };
 type Hang = { o: O[]; nen?: [number, number, number]; vien: boolean; cao?: number };
 
+/** Bỏ ký tự cấm trong tên tệp (Windows / macOS). */
+export const sachTenTep = (s: string) => s.replace(/[\\/:*?"<>|·]+/g, '-').replace(/\s+/g, ' ').trim();
+
+/** Tên PDF một em: "{Lớp} - {Tên HV} - {Đợt}.pdf" (U05: gửi PH không lẫn tháng); trùng tên trong `daCo` → thêm " (2)", " (3)". */
+export function tenTepPdf(bc: { lop: string; hocVien: string }, nhanDot: string, daCo: Record<string, unknown>): string {
+  const goc = sachTenTep(`${bc.lop} - ${bc.hocVien} - ${nhanDot}`);
+  let ten = `${goc}.pdf`;
+  for (let i = 2; ten in daCo; i++) ten = `${goc} (${i}).pdf`;
+  return ten;
+}
+
 export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong: { r: Uint8Array; b: Uint8Array }, bc: BaoCaoPdf): Promise<Uint8Array> {
   const k = bc.ft ? FT : THUONG;
   const pdf = await lib.PDFDocument.create();

@@ -88,6 +88,8 @@ export const EN_BAO_CAO_PH = {
   'Tháng không hợp lệ': 'Invalid month',
   'Không có lớp nào có đợt báo cáo PH trong tháng này': 'No class has a parent report round in this month',
   'Đã tạo {tep}': 'Created {tep}',
+  'Đang tạo {i}/{n}': 'Creating {i}/{n}',
+  'Chưa tạo được PDF của {ten}: {loi}': 'Could not create the PDF for {ten}: {loi}',
   'Tháng {m} · {y}': 'Month {m} · {y}',
   'Mẫu': 'Template',
   'Lớp FT · đợt {thang}': 'FT classes · round {thang}',

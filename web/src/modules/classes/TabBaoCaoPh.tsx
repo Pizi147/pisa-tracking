@@ -65,11 +65,12 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   const toast = useToast();
   /* Xuất Excel (PR b) / PDF (BCPH-PDF): `null` = không đang xuất · "xlsx:0" = cả lớp · "pdf:{id em}". File = ảnh lúc bấm; không đánh dấu "đã xuất". */
   const [dangXuat, setDangXuat] = useState<string | null>(null);
+  const [td, setTd] = useState<[number, number] | null>(null);   // tiến độ PDF cả lớp: [em đang dựng, tổng]
   const xuat = async (emId: number | null, kieu: KieuXuat = 'xlsx') => {
     if (dangXuat !== null || !data?.dot) return;
-    setDangXuat(`${kieu}:${emId ?? 0}`);
+    setDangXuat(`${kieu}:${emId ?? 0}`); setTd(null);
     try {
-      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(kieu, lopId, data.dot, emId) }));
+      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(kieu, lopId, data.dot, emId, (i, n) => setTd([i, n])) }));
     } catch (e: any) {
       toast.push('error', e?.message ?? t('Chưa tạo được file.'));
     } finally { setDangXuat(null); }
@@ -126,7 +127,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
       {data.xuat && data.dot && (['xlsx', 'pdf'] as const).map((k) => (
         <button key={k} type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null, k)}
           title={k === 'pdf' ? t('Mỗi em một tệp PDF, gói .zip') : undefined}>
-          {dangXuat === `${k}:0` ? t('Đang tạo file…') : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
+          {dangXuat === `${k}:0` ? chuDangXuat(k, td) : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
       ))}
     </div>
   );
@@ -267,11 +268,14 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
 
 type KieuXuat = 'xlsx' | 'pdf';
 /** Tải báo cáo PH: Excel, hoặc PDF (BCPH-PDF — mỗi em một tệp; thư viện + phông nạp lười chỉ khi bấm). Trả tên tệp. */
-async function taiBc(kieu: KieuXuat, lopId: number, dot: string, emId: number | null): Promise<string> {
+async function taiBc(kieu: KieuXuat, lopId: number, dot: string, emId: number | null, tienDo?: (i: number, n: number) => void): Promise<string> {
   if (kieu === 'xlsx') return taiBaoCaoPh(lopId, dot, emId);
   const { taiPdfBaoCaoPh } = await import('./xuatPdfBaoCaoPh.ts');
-  return taiPdfBaoCaoPh(lopId, dot, emId);
+  return taiPdfBaoCaoPh(lopId, dot, emId, tienDo);
 }
+/** Chữ nút xuất cả lớp khi đang chạy: PDF cả lớp → "Đang tạo i/n" (U04; trước khi dựng em đầu: "Đang tải…"). */
+const chuDangXuat = (kieu: KieuXuat, td: [number, number] | null) =>
+  kieu === 'pdf' ? (td ? t('Đang tạo {i}/{n}', { i: td[0], n: td[1] }) : t('Đang tải…')) : t('Đang tạo file…');
 
 /** Tải Excel báo cáo PH một lớp (`emId` null) / một em — trả tên tệp. Dùng ở tab và việc Admin ở Công việc. */
 export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | null): Promise<string> {
@@ -284,17 +288,18 @@ export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | nul
 export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
   const toast = useToast();
   const [busy, setBusy] = useState<KieuXuat | null>(null);
+  const [td, setTd] = useState<[number, number] | null>(null);
   /* 375 (mockup g3): ẩn — chạm cả dòng mở tab Báo cáo PH, Xuất bấm trong tab. */
   return (
     <span className="inline-flex gap-2 max-sm:hidden">
       {(['xlsx', 'pdf'] as const).map((k) => (
         <button key={k} type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[30px]" disabled={busy !== null}
           onClick={async () => {
-            setBusy(k);
-            try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(k, lopId, dot, null) })); }
+            setBusy(k); setTd(null);
+            try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(k, lopId, dot, null, (i, n) => setTd([i, n])) })); }
             catch (e: any) { toast.push('error', e?.message ?? t('Chưa tạo được file.')); }
             finally { setBusy(null); }
-          }}>{busy === k ? t('Đang tạo file…') : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
+          }}>{busy === k ? chuDangXuat(k, td) : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
       ))}
     </span>
   );

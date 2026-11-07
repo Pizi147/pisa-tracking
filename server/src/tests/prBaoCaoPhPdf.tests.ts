@@ -104,4 +104,16 @@ export async function runPrBaoCaoPhPdfTests(t: { check: any; checkAsync: any; as
       assert(doc.getTitle() === `CP ${ct} 01 - Nguyễn Văn Ấn`, String(doc.getTitle()));
     }
   });
+
+  await checkAsync('PDF-6 · tên tệp từng em có đợt (U05): "{Lớp} - {Tên} - {Đợt}.pdf"; ký tự cấm bị lọc; trùng tên → (2), (3)', async () => {
+    const { tenTepPdf } = await import('../../../shared/domain/pdfBaoCaoPh.ts');
+    const co: Record<string, unknown> = {};
+    const em = { lop: 'CP ELE 01', hocVien: 'An' };
+    const a = tenTepPdf(em, 'W2 OCT', co); co[a] = 1;
+    const b = tenTepPdf(em, 'W2 OCT', co); co[b] = 1;
+    const c = tenTepPdf(em, 'W2 OCT', co);
+    assert(a === 'CP ELE 01 - An - W2 OCT.pdf' && b === 'CP ELE 01 - An - W2 OCT (2).pdf' && c === 'CP ELE 01 - An - W2 OCT (3).pdf', `${a} | ${b} | ${c}`);
+    const x = tenTepPdf({ lop: 'A/B', hocVien: 'Lê "Bo": Ân?' }, 'Đợt 1 · tháng 10', {});
+    assert(x === 'A-B - Lê -Bo- Ân- - Đợt 1 - tháng 10.pdf', x);
+  });
 }
