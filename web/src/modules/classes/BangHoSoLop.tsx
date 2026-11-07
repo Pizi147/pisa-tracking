@@ -1,5 +1,5 @@
 import { ChipXetLaiDong } from './PanelXetLai.tsx';
-import { Fragment, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -160,7 +160,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
         <span className="inline-flex min-w-0 items-center gap-1.5">
           {chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
           <span className="flex min-w-0 flex-col items-start">
-            <TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} />
+            <TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />
             {/* Dòng dưới tên (mockup v10 `.chip-phu`): TVV (chữ mờ) · mới vào (chữ) · thiếu thông tin · Ý thức — chỉ việc cần làm có màu. */}
             <ChipXetLaiDong sid={r.id} />{(tvvRieng(r) || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}{nhanPhu(r)}</span>}
           </span>
@@ -187,10 +187,10 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
     const h = mocCua(r);
     const coNhan = r.moiVao || r.missing.length > 0 || !!r.canhBaoYThuc;
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex cursor-pointer flex-col gap-2" onClick={bamHang(() => moTen(r))}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
           <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
-            <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} />{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}</span></span>
+            <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}</span></span>
           {o(r, 'kq')}
           <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
             lopNut="btn h-11 w-11 shrink-0 !px-0 text-[13px] font-bold tracking-wider" />
@@ -220,7 +220,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   );
   const hangCua = (r: Hang) => (
     <Fragment key={r.id}>
-      <tr className={`${mo?.sid === r.id ? 'dang-mo' : ''} ${lopHang(r)}`}>
+      <tr className={`cursor-pointer ${mo?.sid === r.id ? 'dang-mo' : ''} ${lopHang(r)}`} onClick={bamHang(() => moTen(r))}>
         {COT.map((c) => {
           /* V8-HSL: hàng 48 px — đệm dọc 8 (dòng phụ dưới ô điểm đã bỏ — HSL-GON). */
           return <OBang key={c.key} c={c} className={`!align-middle !py-2 !h-12 ${c.key === 'ten' ? '!overflow-visible ![text-overflow:clip]' : ''}`}>{oCua(r, c)}</OBang>;
@@ -489,13 +489,29 @@ export function ChipLoc({ chon, so, onBam, children }: { chon: boolean; so: numb
   );
 }
 
-/** U03: bấm tên em = mở / đóng vùng mở rộng ngay dưới hàng (không đổi trang); "Hồ sơ HV ›" trong vùng mở rộng mang `state.ds` (Trước / Sau). */
-export function TenEm({ s, mo, onMo }: { s: { id: number; fullName: string }; mo: boolean; onMo: () => void }) {
+/**
+ * TEN-HV-LINK (chủ SP 07/11): tên em = link mở hồ sơ HV (mang `state.ds` — Trước / Sau, Quay lại về lớp); nút ▾ cạnh tên (Tab + Enter) hoặc
+ * bấm phần còn lại của hàng / thẻ (`bamHang`) = mở / đóng vùng mở rộng ngay dưới hàng.
+ */
+export function TenEm({ s, mo, onMo, ds }: { s: { id: number; fullName: string }; mo: boolean; onMo: () => void; ds: NguCanhDs }) {
   return (
-    <button type="button" aria-expanded={mo} aria-controls={`mo-${s.id}`} onClick={onMo}
-      className={`max-w-full truncate border-0 bg-transparent p-0 text-left font-semibold text-slate-100 ${mo ? '' : 'hover:underline'}`}>{s.fullName}{mo && <span aria-hidden> ▾</span>}</button>
+    <span className="inline-flex min-w-0 max-w-full items-center gap-0.5">
+      <Link className="ten-ho-so min-w-0 truncate" title={s.fullName} to={duongHoSoHocVien(s.id)} state={{ ds }}>{s.fullName}</Link>
+      <button type="button" className="lt-mo-ct ten-mo" aria-expanded={mo} aria-controls={`mo-${s.id}`} aria-label={t('Chi tiết {ten}', { ten: s.fullName })} onClick={onMo}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
+      </button>
+    </span>
   );
 }
+
+const VUNG_BAM = 'a,button,input,select,textarea,label,summary,[role="button"],[role="menuitem"],[role="checkbox"],[tabindex]';
+/** Bấm vào hàng / thẻ mà không trúng link, nút, ô nhập (và không trong popover cổng, không đang bôi chữ) = `onMo`. */
+export const bamHang = (onMo: () => void) => (e: MouseEvent<HTMLElement>) => {
+  const el = e.target as Element;
+  const vung = el.closest(VUNG_BAM);
+  if (!e.currentTarget.contains(el) || (vung && e.currentTarget.contains(vung)) || window.getSelection()?.toString()) return;
+  onMo();
+};
 
 /**
  * Kết quả lượt của em: SOS (thay "Chưa đạt" — không hai badge) · Đạt · Chưa đủ dữ liệu; em KCK / đã kết thúc giữ kết luận cũ (`KetLuan`).

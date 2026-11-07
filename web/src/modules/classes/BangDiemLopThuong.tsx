@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
-import { ChipLoc, KHOI, MUC_H, TenEm } from './BangHoSoLop.tsx';
+import { ChipLoc, KHOI, MUC_H, TenEm, bamHang } from './BangHoSoLop.tsx';
 import { DongCase, type CanHoTro } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
@@ -150,7 +150,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const nganCase = ngan && (
     <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={ngan.em} lop={maLop} onClose={() => { setNgan(null); tai(); }} onChanged={tai} />
   );
-  const tenEm = (s: DongThuong) => <TenEm s={s} mo={mo === s.id} onMo={() => moTen(s.id)} />;
+  const tenEm = (s: DongThuong) => <TenEm s={s} mo={mo === s.id} onMo={() => moTen(s.id)} ds={ds} />;
 
   /* D2: điện thoại (< 640 px) — mỗi em một thẻ, mỗi MỐC một dòng: "Giữa khoá · L 14/20 · R … · %". */
   if (dienThoai) {
@@ -159,7 +159,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         {thanh}{rongLoc}
         {rows.map((s) => (
           <Fragment key={s.id}>
-          <TheDong className={`${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
+          <TheDong onClick={bamHang(() => moTen(s.id))} className={`cursor-pointer ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}
             dau={(
               <>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -237,7 +237,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         <tbody>
           {rows.map((s) => (
             <Fragment key={s.id}>
-            <tr className={`row-hover ${mo === s.id ? 'dang-mo' : ''} ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
+            <tr onClick={bamHang(() => moTen(s.id))} className={`row-hover cursor-pointer ${mo === s.id ? 'dang-mo' : ''} ${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
               {/* 640–1023 px: bảng cuộn ngang TRONG vùng bảng, cột tên dính (mỗi lớp một bảng nên không bám cả trang). */}
               <td className="td sticky-col h-11">
                 <span className="flex min-w-0 items-center gap-1.5">
