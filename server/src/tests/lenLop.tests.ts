@@ -1015,15 +1015,15 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(!luuTruSvc.danhSachLuuTru(P.subjectTeacher, {}).hocVien.some((h) => h.id === sid), 'GV không dạy lớp của em (lớp FT khác) không được thấy');
   });
 
-  check('PR-LT (9) · classOverview lớp finished: mọi cờ viewer thao tác false, kể cả với QT (phạm vi toàn hệ thống)', () => {
+  check('PR-LT (9) · RKC-4a: classOverview lớp finished — cờ VÒNG ĐỜI false (thêm HV, phân công, xếp tuần, chuyển tiếp); cờ DỮ LIỆU theo quyền (QT: điểm, Case, vi phạm)', () => {
     const { cls } = taoLopVaKetThuc9();
     const ov = classesSvc.classOverview(P.admin, cls) as any;
     assert(ov.status === 'finished', `status phải finished: ${ov.status}`);
     const v = ov.viewer;
     assert(
-      v.canPlanWeek === false && v.canAddStudents === false && v.canAssign === false && v.canEditProgress === false
-        && v.canReportCase === false && v.canRecordViolation === false && v.canEnterScores === false && v.coTheChuyenTiep === false,
-      `Mọi cờ viewer phải false: ${JSON.stringify(v)}`,
+      v.canPlanWeek === false && v.canAddStudents === false && v.canAssign === false && v.canEditProgress === false && v.coTheChuyenTiep === false
+        && v.canReportCase === true && v.canRecordViolation === true && v.canEnterScores === true,
+      `Cờ vòng đời false, cờ dữ liệu theo quyền: ${JSON.stringify(v)}`,
     );
   });
 

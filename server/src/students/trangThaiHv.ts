@@ -28,7 +28,7 @@ export function traLaiLenhDaHuy(p: Principal, studentId: number): string | null 
     .get(studentId, LY_DO_HUY_THEO_TRANG_THAI) as any;
   if (!l) return null;
   let lyDo: string;
-  try { const r = khoiPhucLenh(p, [l.id]); if (!r.failed.length) return null; lyDo = r.failed[0].message; } catch (e) { if (!(e instanceof HttpError)) throw e; lyDo = e.message; }
+  try { const r = khoiPhucLenh(p, [l.id]); if (!r.failed.length) return null; lyDo = r.failed[0].message; } catch (e) { if (!(e instanceof HttpError)) throw e; lyDo = (e as any).details?.canXacNhan ? 'tuần bắt đầu đã qua' : e.message; }
   return `Chưa trả lại quyết định chuyển lớp (${lyDo}) — xem ở Chuyển lớp…`;
 }
 

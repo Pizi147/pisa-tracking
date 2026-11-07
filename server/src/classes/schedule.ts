@@ -701,8 +701,7 @@ export function setClassProgress(p: Principal, classId: number, input: {
   const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!c) throw notFound('Không tìm thấy lớp');
   if (!duocSuaLichLop(p, classId)) throw forbidden('Chỉ GVCN của lớp, Admin chi nhánh hoặc Quản lý mới sửa được lịch lớp.');
-  /* Lớp đã kết thúc: viewer đã tắt nút — máy chủ cũng chặn người chỉ có quyền hẹp (QL / Quản trị như cũ). */
-  if (c.status !== 'active' && !can(p, PERMISSIONS.CLASS_EDIT, { classId })) throw forbidden('Lớp đã kết thúc — chỉ Quản lý sửa được lịch lớp.');
+  /* RKC-4a (chủ SP 07/11, PTA Q-B1 mở khoá lớp kết thúc): GVCN / Admin chi nhánh sửa lịch lớp đã kết thúc như lớp đang chạy — nhật ký như cũ. */
 
   const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
   const weeks: number | null = c.so_tuan ?? (code ? allProgrammes().get(code)?.weeks ?? null : null);

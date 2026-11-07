@@ -10,7 +10,7 @@ export async function runRkcHocVienTests(t: any) {
   const intake: any = await import('../classes/intake.ts');
   const students: any = await import('../students/students.ts');
   const cycles: any = await import('../fasttrack/cycles.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const thv: any = await import('../students/trangThaiHv.ts');
   const hangLoat: any = await import('../students/hangLoat.ts');
@@ -116,5 +116,18 @@ export async function runRkcHocVienTests(t: any) {
     const moi = hangLoat.chay(QL, { viec: 'hoc-lai', studentIds: [sid], lopMoiId: dich });
     assert(moi.ok.length === 1, JSON.stringify(moi));
     assert(!!get(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`, sid, dich), 'phải đang học lớp mới');
+  }));
+
+  check('RKC4a-1 · khôi phục quyết định chuyển lớp có tuần bắt đầu đã qua (và huỷ hơn 24 giờ): hỏi → chờ lại, dời sang tuần sau', () => thu(() => {
+    const sid = emCoLenh();
+    const lid = get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ?`, sid).id;
+    lenhChuyen.huyLenh(QL, lid, 'Phụ huynh đổi ý');
+    conn.prepare(`UPDATE lenh_chuyen_lop SET tuan_bat_dau = ?, huy_luc = ? WHERE id = ?`).run(mondayOf(TODAY), new Date(Date.now() - 48 * 3600_000).toISOString(), lid);
+    xoaNho();
+    const e = loi(() => lenhChuyen.khoiPhucLenh(QL, [lid]));
+    assert(e?.status === 409 && e.details?.canXacNhan, `phải hỏi: ${e?.status} ${e?.message}`);
+    const r = voiXacNhan(() => lenhChuyen.khoiPhucLenh(QL, [lid]));
+    const l = get(`SELECT trang_thai, tuan_bat_dau FROM lenh_chuyen_lop WHERE id = ?`, lid);
+    assert(r.ok.length === 1 && l.trang_thai === 'cho' && l.tuan_bat_dau === mondayOf(new Date(Date.parse(TODAY) + 7 * 864e5).toISOString().slice(0, 10)), JSON.stringify({ r, l }));
   }));
 }

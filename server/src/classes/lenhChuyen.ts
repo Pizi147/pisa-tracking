@@ -1,7 +1,7 @@
 import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { KHOI_PHUC_LENH_GIO, LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich, type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode } from '../../../shared/domain/index.ts';
-import { HttpError, badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
+import { LO_HANG_LOAT_EM, kyThiCuaChuongTrinh, chuTargetKck, ghepMucTieu, tachMucTieu, laBandLenh, laLienTuc, PERMISSIONS, coPhieu, canLopDich, hanBanGiaoLenh, khacGoiY, mocLoTrinh, kiemDongChuyenTiep, kiemDongLenh, targetLenFt, tuanHopLe, tuanLich, type DemChotLoTrinh, type Huong, type HuongLenh, type MucTieuLenh, type ProgrammeCode } from '../../../shared/domain/index.ts';
+import { HttpError, addDays, badRequest, canXacNhan, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, loadPrincipal, lopDayDu, require_, type Principal } from '../permissions.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { quetTheoMoc } from '../platform/mocHeThong.ts';
@@ -475,6 +475,11 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
   const homNay = demoToday();
   const khoi: any[] = [];
   let ngoaiQuyen = 0;
+  /* RKC-4a (chủ SP 07/11 "không chặn cứng"; trước: chặn "quá 24 giờ" / "tuần bắt đầu đã tới" / "do hệ thống huỷ"): khôi phục lúc nào cũng được khi dữ liệu
+     còn hợp lệ (em còn ở lớp nguồn, lớp đến còn chạy, chưa có quyết định khác). Tuần bắt đầu đã qua → hỏi MỘT câu, đồng ý = dời sang tuần sau. */
+  const tuanSau = mondayOf(addDays(homNay, 7));
+  const quaTuan = ds.filter((id) => { const r = db().prepare(`SELECT tuan_bat_dau, trang_thai FROM lenh_chuyen_lop WHERE id = ?`).get(id) as any; return r?.trang_thai === 'huy' && r.tuan_bat_dau <= homNay; }).length;
+  if (quaTuan) canXacNhan('{n} quyết định có tuần bắt đầu đã qua — khôi phục với tuần bắt đầu {tuan}?', { n: quaTuan, tuan: tuanLich(tuanSau, homNay) }, 'Khôi phục, dời tuần');
   for (const id of ds) {
     let l: any = null;
     try {
@@ -482,17 +487,16 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
       if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }
       if (l.trang_thai === 'cho') throw conflict('Quyết định đã ở trạng thái chờ.');
       if (l.trang_thai !== 'huy') throw conflict('Quyết định đã thi hành — không khôi phục được.');
-      if (!l.huy_boi) throw conflict('Quyết định do hệ thống huỷ — không khôi phục được.');
-      if (Date.now() - Date.parse(String(l.huy_luc)) > KHOI_PHUC_LENH_GIO * 3600_000) throw loi(409, 'Đã quá {KHOI_PHUC_LENH_GIO} giờ — ra quyết định mới.', { KHOI_PHUC_LENH_GIO });
-      if (l.tuan_bat_dau <= homNay) throw conflict('Tuần bắt đầu đã tới — ra quyết định mới.');
+      const doiTuan = l.tuan_bat_dau <= homNay ? tuanSau : null;   // đã hỏi ở trên
       tx(() => {
         if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(l.student_id)) throw conflict('Học viên đã có quyết định chuyển lớp khác.');
         if (!conn.prepare(`SELECT 1 FROM enrollments WHERE student_id = ? AND class_id = ? AND status = 'active'`).get(l.student_id, l.lop_nguon_id)) throw conflict('Học viên không còn học lớp nguồn.');
         if (l.lop_dich_id && !conn.prepare(`SELECT 1 FROM classes WHERE id = ? AND status = 'active'`).get(l.lop_dich_id)) throw conflict('Lớp chuyển đến đã kết thúc.');
         conn.prepare(
-          `UPDATE lenh_chuyen_lop SET trang_thai = 'cho', huy_boi = NULL, huy_luc = NULL, ly_do_huy = NULL, thu_ngay = NULL, loi = NULL, sua_luc = ?
-            WHERE id = ? AND trang_thai = 'huy'`,
-        ).run(nowIso(), id);
+          `UPDATE lenh_chuyen_lop SET trang_thai = 'cho', huy_boi = NULL, huy_luc = NULL, ly_do_huy = NULL, thu_ngay = NULL, loi = NULL, sua_luc = ?,
+              tuan_bat_dau = COALESCE(?, tuan_bat_dau) WHERE id = ? AND trang_thai = 'huy'`,
+        ).run(nowIso(), doiTuan, id);
+        if (doiTuan) l.tuan_bat_dau = doiTuan;
         /*
          * PR-LCa (I1): quyết định Cuối khoá lớp thường chờ lại → Lộ trình tiếp theo + MT0 theo quyết định như `raLenh` (bất biến lệnh chờ ⇒
          * LTT cùng Hướng). Hướng LTT khác là do ghi SAU khi huỷ — của GVCN (`cuLaQl: false`). Mỗi lệnh một giao dịch nên đọc theo lệnh.
