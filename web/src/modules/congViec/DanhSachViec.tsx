@@ -200,9 +200,10 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi, nguoiAn }: Chung
 
 /**
  * Cột hạn (mockup v17 `.cot-han`): hàng 1 = tình trạng — quá hạn đỏ ⚠ "quá hạn n ngày" · gần hạn (mốc sẵn có `ganHan`, ≤ 3 ngày) vàng ⚠ "còn n ngày" /
- * "hạn hôm nay" · còn xa = MÃ TUẦN mờ (luật 30/09) · "không hạn" mờ; hàng 2 = "hạn dd/mm" (ẩn ở 375 — mockup b), dưới là người giữ việc (`NguoiGiu`).
+ * "hạn hôm nay" · còn xa = MÃ TUẦN mờ (luật 30/09) · "không hạn" mờ; hàng 2 = "hạn dd/mm" (ẩn ở 375 — mockup b). Người giữ việc ở ĐẦU dòng phụ
+ * (`NguoiGiu`, mockup v17 a2 — chủ SP 07/11 "lôm côm": cột hạn 3 dòng làm hàng cao thấp khác nhau).
  */
-function CotHan({ it, daXong, nguoi }: { it: WorkItem; daXong: boolean; nguoi: string | null }) {
+function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   const { homNay } = useNgayNghiepVu();
   const v = it.due && !daXong ? deadlineView({ kind: LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh', due: it.due, today: homNay }) : null;
   const qua = v?.tone === 'overdue';
@@ -222,7 +223,6 @@ function CotHan({ it, daXong, nguoi }: { it: WorkItem; daXong: boolean; nguoi: s
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
         : laViecChamCheo(it) ? null : <span className="text-faint">{t('không hạn')}</span>}
-      {!daXong && nguoi && <NguoiGiu ten={nguoi} />}
     </span>
   );
 }
@@ -348,6 +348,7 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
           {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
         </button>
         <DongPhu ds={[
+          ...(nguoi && !daXong ? [<NguoiGiu key="nguoi" ten={nguoi} />] : []),
           <Link key="em" to={`/hoc-vien/${it.studentId}`} title={t('Mở hồ sơ {ten}', { ten: it.studentName })} onClick={(e) => e.stopPropagation()}
             className="text-dim no-underline hover:text-[color:var(--accent)] hover:underline">{it.studentName}</Link>,
           ...phu,
@@ -356,7 +357,7 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
           {tvv && !daXong && <ConNgay it={it} />}
         </DongPhu>
       </span>
-      <CotHan it={it} daXong={daXong} nguoi={nguoi} />
+      <CotHan it={it} daXong={daXong} />
       <CotNut it={it} nut={nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
     </div>
   );
@@ -404,12 +405,12 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
             {!con && <MuiTenMoTrang it={it} dong={dong} nut={nut} />}
             {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
           </button>
-          <DongPhu ds={phu} />
+          <DongPhu ds={nguoi && !daXong ? [<NguoiGiu key="nguoi" ten={nguoi} />, ...phu] : phu} />
           {/* PHOI-HOP-SOS-INFO: Phối hợp SOS ghi ngay em thi thế nào, trượt kỹ năng nào — cùng thẻ với hồ sơ lớp / hồ sơ HV. */}
           {it.theSos?.length ? <TheSosViec ds={it.theSos} tong={it.count} /> : null}
         </span>
-        {/* UA-03: dòng gộp cũng ghi người phụ trách (QL "Tất cả" phân biệt ba dòng giống nhau). */}
-        <CotHan it={it} daXong={daXong} nguoi={nguoi} />
+        {/* UA-03: dòng gộp cũng ghi người phụ trách (QL "Tất cả" phân biệt ba dòng giống nhau) — ở đầu dòng phụ. */}
+        <CotHan it={it} daXong={daXong} />
         <CotNut it={it} nut={nut} daXong={daXong} mo={con ? mo : undefined} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
       </div>
       {con && mo && (
@@ -431,9 +432,9 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
       <span className="grid min-w-0 gap-0.5">
         <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-current={dangChon ? 'true' : undefined}
           className={`${TEN} font-medium ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>{daXong && <span aria-hidden className="text-ok">✓ </span>}{dich(it.conTen)}</button>
-        {it.conPhu && <span className="text-[13px] leading-snug text-dim">{dich(it.conPhu)}</span>}
+        <DongPhu ds={[...(nguoi && !daXong ? [<NguoiGiu key="nguoi" ten={nguoi} />] : []), ...(it.conPhu ? [dich(it.conPhu)] : [])]} />
       </span>
-      <CotHan it={it} daXong={daXong} nguoi={nguoi} />
+      <CotHan it={it} daXong={daXong} />
       <CotNut it={it} nut={nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
     </div>
   );
