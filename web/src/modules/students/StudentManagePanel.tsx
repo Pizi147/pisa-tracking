@@ -10,7 +10,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, coTheTamDungKetThuc, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop,
-  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi,
+  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi, TRUONG_SUA_LUU_TRU,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -100,7 +100,7 @@ export type ThongTinEm = {
   tvv?: { id: number; ten: string } | null; tvvChon?: NguoiTrongDs[] | null;
   /** OV-10b: liên hệ (SĐT em, phụ huynh). */
   lienHe?: LienHe | null;
-  /** P7: hồ sơ đã ở Lưu trữ (em Tạm dừng → Sửa thông tin chỉ còn liên hệ). */
+  /** P7 → SUA-LUU-TRU: hồ sơ đã ở Lưu trữ (Tạm dừng / Kết thúc học) → Sửa thông tin chỉ trường không đụng lộ trình (`TRUONG_SUA_LUU_TRU`). */
   archived?: boolean;
   /** OV-11d (HV-1): đề xuất sửa Target đang chờ Quản lý duyệt (`cuaToi`: người xem đã gửi — Sửa đề xuất). */
   deXuatTarget?: { id: number; moi: string; lyDo: string; cuaToi: boolean } | null;
@@ -267,11 +267,12 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  /* P7 [ĐX]: em Tạm dừng ở Lưu trữ — chỉ Email + Liên hệ (TVV gọi mời học lại); máy chủ chặn mọi trường khác (`CAU_LUU_TRU`). */
-  const chiLienHe = student.status === 'inactive' && !!student.archived;
-  const quanLy = quyen.canEdit && !chiLienHe;                     // QL, GVCN: thêm Tuần bắt đầu, Ghi chú
-  const ghiChu = !chiLienHe && (quanLy || !!quyen.coTheSuaThem);   // OV-8b: TVV / CX sửa Ghi chú
-  const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
+  /* SUA-LUU-TRU (chủ SP 07/11, LUẬT MỚI): em đã lưu trữ (Tạm dừng / Kết thúc học) — sửa thông tin KHÔNG đụng lộ trình (họ tên, ngày sinh, email, TVV,
+     ghi chú, liên hệ); không khối Lộ trình (Target, dự kiến thi, tuần bắt đầu, điểm đầu vào, môn) — máy chủ chặn bằng `CAU_LUU_TRU`, lối ra Quay lại học. */
+  const luuTru = !!student.archived;
+  const quanLy = quyen.canEdit && !luuTru;                        // QL, GVCN: thêm Tuần bắt đầu
+  const ghiChu = quyen.canEdit || !!quyen.coTheSuaThem;           // QL, GVCN · OV-8b: TVV / CX sửa Ghi chú
+  const targetThang = !luuTru && (!!quyen.canEditCycle || !!quyen.coTheSuaThem);   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
   /* OV-11e → OV-11d (Q8 chủ SP chốt): ô tích KCK chỉ QL / Quản trị / TVV; GVCN, CX, Admin chỉ đọc (máy chủ `reviseTarget` + đề xuất cũng chặn). */
   const oKck = !!quyen.doiKck;   // QUYEN-CN: theo chi nhánh em (trước: mọi vai của tài khoản)
@@ -302,7 +303,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [kck, setKck] = useState(kckCu);
   const [lyDo, setLyDo] = useState('');
   /* Điểm đầu vào — chỉ FT (lớp thường không có, như Thêm học viên). */
-  const coDauVao = !!cycle && !cycle.ratio;
+  const coDauVao = !!cycle && !cycle.ratio && !luuTru;
   const bl = cycle?.baseline ?? null;
   const dvCu = { l: s5(bl?.bands?.listening), r: s5(bl?.bands?.reading), w: s5(bl?.bands?.writing), s: s5(bl?.bands?.speaking), o: s5(bl?.score) };
   const [dv, setDv] = useState(dvCu);
@@ -312,7 +313,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const doiDauVao = coDauVao && JSON.stringify(dv) !== JSON.stringify(dvCu);
   const doiTarget = !!cycle && (targetThang || targetDeXuat) && (target !== targetCu || kck !== kckCu);
   /* P8 (N13, mockup k4): môn đăng ký của lộ trình FT — QL / GVCN; tóm tắt "Khi lưu" do máy chủ tính (cùng hàm lúc lưu). */
-  const coMon = !chiLienHe && !!cycle?.coTheDoiMon;   // máy chủ: QL, Quản trị, GVCN, TVV — lộ trình FT đang chạy
+  const coMon = !luuTru && !!cycle?.coTheDoiMon;   // máy chủ: QL, Quản trị, GVCN, TVV — lộ trình FT đang chạy
   const monCu: string[] | null = cycle?.monDangKy ?? null;
   const [mon, setMon] = useState<string[] | null>(monCu);
   const doiMon = coMon && JSON.stringify(mon) !== JSON.stringify(monCu);
@@ -372,13 +373,27 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         : duKn ? { listening: Number(dv.l), reading: Number(dv.r), writing: Number(dv.w), speaking: Number(dv.s) }
         : { overall: Number(dv.o), listening: kn[0] || null, reading: kn[1] || null, writing: kn[2] || null, speaking: kn[3] || null };
       const tvvId = tvv?.kieu === 'tai_khoan' ? tvv.id : null;
-      if (chiLienHe) {
-        await api.patch(`/students/${student.id}`, {
+      if (luuTru) {
+        /* Chỉ ô đã đổi, trong `TRUONG_SUA_LUU_TRU`; Hoàn tác = gửi lại giá trị cũ của đúng các ô đó (máy chủ ghi nhật ký cả hai lần). */
+        const moi: Record<string, unknown> = {
+          ...(fullName !== student.name ? { fullName } : {}), ...(dob !== (student.dob ?? '') ? { dob } : {}),
           ...(email.trim() !== (student.email ?? '') ? { email: email.trim() } : {}),
+          ...(tvvId !== (student.tvv?.id ?? null) ? { consultantUserId: tvvId } : {}),
+          ...(ghiChu && note !== (student.note ?? '') ? { note: note || null } : {}),
           ...(nhapLienHe ? Object.fromEntries(lhDoi.map((k) => [k, lh[k].trim() || null])) : {}),
-        });
-        for (const k of ['/students', '/hoc-vien-lop']) invalidate(k);
-        toast.push('ok', t('Đã lưu'));
+        };
+        const cu: Record<string, unknown> = { fullName: student.name, dob: student.dob ?? '', email: student.email ?? '', consultantUserId: student.tvv?.id ?? null,
+          note: student.note ?? null, ...Object.fromEntries(TRUONG_LIEN_HE.map((k) => [k, student.lienHe?.[k] ?? null])) };
+        const khoa = Object.keys(moi).filter((k) => (TRUONG_SUA_LUU_TRU as readonly string[]).includes(k));
+        const lamMoiHs = () => { for (const k of ['/students', '/hoc-vien-lop']) invalidate(k); };
+        if (khoa.length) await api.patch(`/students/${student.id}`, Object.fromEntries(khoa.map((k) => [k, moi[k]])));
+        lamMoiHs();
+        if (khoa.length) {
+          toast.hoanTac(t('Đã lưu'), () => {
+            api.patch(`/students/${student.id}`, Object.fromEntries(khoa.map((k) => [k, cu[k]])))
+              .then(() => { lamMoiHs(); toast.push('ok', t('Đã hoàn tác')); }, (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+          }, { key: `sua-hv:${student.id}` });
+        } else toast.push('ok', t('Đã lưu'));
         onDone();
         return;
       }
@@ -441,7 +456,6 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{busy ? t('Đang lưu…') : tiep?.conLai ? t('Lưu · em tiếp ›') : t('Lưu')}</button>,
       }}>
       <Khoi tieuDe={t('Học viên')}>
-        {!chiLienHe && <>
         <Truong nhan={t('Họ tên')} batBuoc loi={lf.loiCua(loi, 'ho-ten')}>
           <input className="field w-full" {...lf.o(loi, 'ho-ten')} value={fullName} onChange={(e) => sua(setFullName)(e.target.value)} />
         </Truong>
@@ -449,18 +463,17 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           <ONgay kieu="ngay" toiDa={homNay} id={lf.oId('ngay-sinh')} onBlur={lf.roi('ngay-sinh')} invalid={!!lf.loiCua(loi, 'ngay-sinh')}
             value={dob} onChange={sua(setDob)} />
         </Truong>
-        </>}
         <Truong nhan="Email" batBuoc thieu={!email.trim()} loi={lf.loiCua(loi, 'email')}>
           <input className="field w-full" type="email" inputMode="email" autoComplete="off" {...lf.o(loi, 'email')}
             value={email} onChange={(e) => sua(setEmail)(e.target.value)} placeholder={t('Ví dụ: an.nguyen@gmail.com')} />
         </Truong>
-        {!chiLienHe && <Truong nhan="TVV" tuyChon loi={lf.loiCua(loi, 'tvv')}
+        <Truong nhan="TVV" tuyChon loi={lf.loiCua(loi, 'tvv')}
           phu={[student.consultantName ? t('Ghi cũ: “{ten}”', { ten: student.consultantName }) : null,
             !(student.tvvChon ?? []).length ? t('Chưa có tài khoản Tư vấn viên — Quản trị tạo ở Tài khoản') : null].filter(Boolean).join(' · ') || undefined}>
           <ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={student.tvvChon ?? []} choTrong={t('— Chưa chọn —')}
             placeholder={t('Chọn tư vấn viên')} ariaLabel="TVV" id={lf.oId('tvv')} invalid={!!lf.loiCua(loi, 'tvv')}
             value={tvv} onChange={sua(setTvv)} khongKhop={(go) => t('Không có tư vấn viên khớp “{go}”', { go })} />
-        </Truong>}
+        </Truong>
         {ghiChu && (
           <Truong nhan={t('Ghi chú')} tuyChon>
             <textarea className="field w-full" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -490,7 +503,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           </Truong>
         </Khoi>
       )}
-      {cycle && !chiLienHe ? (
+      {cycle && !luuTru ? (
         <Khoi tieuDe={t('Lộ trình đang học')}
           luat={kt ? t('{ten}: Target theo điểm Cambridge {min}–{max} — không quy đổi band IELTS, không tính SOS.', { ten: kt.ten, min: kt.min, max: kt.max })
             : cycle.ratio
@@ -565,7 +578,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           )}
         </Khoi>
       ) : cycle ? (
-        /* SUA-NHO-QUYEN: em Tạm dừng (chỉ sửa liên hệ) — lộ trình đứng yên, hiện chỉ đọc; trước đây rơi vào câu "Em chưa có lộ trình". */
+        /* SUA-NHO-QUYEN → SUA-LUU-TRU: em đã lưu trữ (chỉ sửa thông tin không đụng lộ trình) — lộ trình đứng yên, hiện chỉ đọc; trước đây rơi vào câu "Em chưa có lộ trình". */
         <Khoi tieuDe={t('Lộ trình đang học')}>
           <p className="m-0 text-sm text-slate-200">
             {cycle.ratio ? (cycle.programmeName ?? dichChu(cycle.label)) : dichChu(cycle.label)}

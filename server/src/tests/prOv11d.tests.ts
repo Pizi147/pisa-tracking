@@ -62,7 +62,8 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     students.setStudentStatus(GVCN, sid, 'inactive', TODAY, 'Thử Tạm dừng OV11d');
     xoaNho();
     assert(one('SELECT status FROM students WHERE id = ?', sid).status === 'inactive', 'chưa Tạm dừng');
-    assert(loi(() => students.updateStudent(GVCN, sid, { note: 'Ghi chú sau Tạm dừng' }))?.message === d.CAU_LUU_TRU, 'P7: hồ sơ em Tạm dừng (Lưu trữ) chỉ xem');
+    /* SUA-LUU-TRU (07/11): thông tin không đụng lộ trình sửa được; điểm đầu vào (lộ trình) vẫn 400. */
+    assert(loi(() => students.updateStudent(GVCN, sid, { dauVao: null }))?.message === d.CAU_LUU_TRU, 'P7: lộ trình em Tạm dừng (Lưu trữ) chỉ xem');
     /* QUYEN-LIEN-HE (luật 13/10 nay ở máy chủ): liên hệ em Tạm dừng — GVCN 403, QL / TVV sửa được (TVV gọi mời học lại). */
     assert(loi(() => students.updateStudent(GVCN, sid, { parentPhone: '0912345678' }))?.status === 403, 'GVCN không sửa liên hệ');
     students.updateStudent(P.mbManager, sid, { parentPhone: '0912345678' });
@@ -160,8 +161,9 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     const cy = one('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1', sid)?.id as number | undefined;
     const ql = can(QL, d.PERMISSIONS.CYCLE_EDIT, { studentId: sid }) ? QL : P.admin;
     const la400 = (e: any) => e?.status === 400 && e.message === d.CAU_LUU_TRU;
-    assert(la400(loi(() => students.updateStudent(ql, sid, { phone: '0912345678' }))), 'PATCH /students/:id phải 400');
-    assert(la400(loi(() => students.updateStudent(CX, sid, { phone: '0912345678' }))), 'CX PATCH phải 400');
+    /* SUA-LUU-TRU (07/11): thông tin không đụng lộ trình sửa được; trường lộ trình (điểm đầu vào) vẫn 400. */
+    assert(la400(loi(() => students.updateStudent(ql, sid, { dauVao: null }))), 'PATCH /students/:id (điểm đầu vào) phải 400');
+    assert(la400(loi(() => students.updateStudent(CX, sid, { dauVao: null }))), 'CX PATCH (điểm đầu vào) phải 400');
     if (cy) assert(la400(loi(() => students.chanLuuTru(ql, cy))), 'đường /cycles/:id… phải 400');
     assert(la400(loi(() => students.chanLuuTruHv(ql, sid))), 'POST /students/:id/cycles phải 400');
     assert(la400(loi(() => students.setStudentStatus(ql, sid, 'active', TODAY))), 'status → đang học phải 400 (chỉ qua Học lại / Bỏ lưu trữ)');
@@ -171,7 +173,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(la400(loi(() => cases.reportIssue(ql, { studentId: sid, topic: 'listening', title: 'Thử Case hồ sơ lưu trữ', summary: 'Em nghe sót số và tên riêng ở Part 1.', urgency: 'attention' }))), '+ Case phải 400');
     assert(la400(loi(() => cases.backfillCase(ql, { studentId: sid, topic: 'listening', primaryCode: 'x', summary: 'Thử ghi bù hồ sơ lưu trữ', fromDate: '2026-08-03', toDate: '2026-08-10', actions: [] }))), 'ghi bù phải 400');
     const muc = d.mucQuanLyHocVien({ canEdit: true, suaThongTin: true, suaThem: true, lopHoc: { chiXem: true, quyen: { boLuuTru: true, hocLai: true } }, cycle: { ratio: false }, status: 'finished' }).map((m: any) => m.key);
-    assert(!muc.some((k: string) => ['info', 'lo-trinh', 'outcome'].includes(k)) && muc.includes('quay-lai'), JSON.stringify(muc));   // P7: Quay lại học thay Bỏ lưu trữ + Học lại
+    assert(!muc.some((k: string) => ['lo-trinh', 'outcome'].includes(k)) && muc.includes('info') && muc.includes('quay-lai'), JSON.stringify(muc));   // SUA-LUU-TRU: Sửa thông tin   // P7: Quay lại học thay Bỏ lưu trữ + Học lại
     students.unarchiveStudent(ql, sid);
     students.updateStudent(ql, sid, { phone: '0912345678' });
     assert(one('SELECT phone FROM students WHERE id = ?', sid).phone === '0912345678', 'Bỏ lưu trữ rồi sửa phải lưu');

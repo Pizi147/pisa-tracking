@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_LIEN_HE_TAM_DUNG, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
+import { chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_SUA_LUU_TRU, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, loi } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
@@ -848,8 +848,9 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound();
   chanDoiLienHe(p, patch, s);   // QUYEN-LIEN-HE: GV không đổi ô Liên hệ (máy chủ, không chỉ ẩn ô)
-  /* P7 → chủ SP chốt 30/10: em Tạm dừng (Lưu trữ) — chỉ thông tin liên hệ (TVV gọi mời học lại); nút "Sửa thông tin" ngay ở Lưu trữ (cờ `coTheSuaThongTin`, luuTru.ts). */
-  if (s.archived_at && !(s.status === 'inactive' && Object.keys(patch ?? {}).every((k) => (TRUONG_LIEN_HE_TAM_DUNG as readonly string[]).includes(k)))) throw badRequest(CAU_LUU_TRU);
+  /* SUA-LUU-TRU (chủ SP 07/11, thay P7 "chỉ liên hệ"): em đã lưu trữ (Tạm dừng / Kết thúc học) — chỉ trường KHÔNG đụng lộ trình (`TRUONG_SUA_LUU_TRU`);
+     gửi kèm trường khác (điểm đầu vào…) → 400 cả lần. Nút "Sửa thông tin" ngay ở Lưu trữ (cờ `coTheSuaThongTin`, luuTru.ts). */
+  if (s.archived_at && !Object.keys(patch ?? {}).every((k) => (TRUONG_SUA_LUU_TRU as readonly string[]).includes(k))) throw badRequest(CAU_LUU_TRU);
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
   const map: Record<string, string> = {
     fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email', consultantUserId: 'consultant_user_id',

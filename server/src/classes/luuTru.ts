@@ -22,7 +22,7 @@ export type HocVienLuuTru = {
   /** P7: một nút "Quay lại học" — em tạm dừng: người đổi trạng thái được (`student.edit` / `edit_more`); em kết thúc: Quản lý (`cycle.edit`, đường `hocLai`).
    * Máy chủ vẫn kiểm lúc làm (lớp cũ đã kết thúc → chỉ Quản lý chọn lớp mới). */
   coTheQuayLai: boolean;
-  /** SUA-NHO-QUYEN (chủ SP 30/10): nút "Sửa thông tin" (email, liên hệ) cho em Tạm dừng — cùng cổng `updateStudent` (`student.edit` / `edit_info`). */
+  /** SUA-NHO-QUYEN → SUA-LUU-TRU (07/11): nút "Sửa thông tin" (trường không đụng lộ trình) cho em đã lưu trữ — cùng cổng `updateStudent` (`student.edit` / `edit_info`). */
   coTheSuaThongTin: boolean;
   /** PR-TK: lộ trình đã đóng GẦN NHẤT của em (có bản chụp) — nút "Tổng kết" mở ngăn của lộ trình này; không có → không nút. */
   cycleIdCuoi: number | null;
@@ -118,9 +118,8 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
         coTheQuayLai: s.status === 'inactive'
           ? can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id }) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })
           : can(p, PERMISSIONS.CYCLE_EDIT, { studentId: s.id }),
-        /* Chủ SP 30/10 (#729): GVCN ở Lưu trữ vẫn có nút — panel chỉ hiện Email (ẩn Liên hệ); QUYEN-LIEN-HE: máy chủ chặn GV đổi liên hệ. */
-        coTheSuaThongTin: s.status === 'inactive'
-          && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: s.id })),
+        /* Chủ SP 30/10 (#729): GVCN ở Lưu trữ vẫn có nút (ẩn Liên hệ — QUYEN-LIEN-HE máy chủ chặn GV). SUA-LUU-TRU (07/11): cả em Kết thúc học — cùng cổng `updateStudent`. */
+        coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: s.id }),
         cycleIdCuoi: cycleCuoi.get(s.id) ?? null,
       }));
   }

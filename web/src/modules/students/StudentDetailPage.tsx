@@ -241,8 +241,8 @@ export default function StudentDetailPage() {
           } : undefined} />
         {data.lopHoc?.chiXem && (
           <DaiChiXem>{data.status === 'inactive'
-            ? t('Tạm dừng · ở Lưu trữ — chỉ xem, trừ Quay lại học, Kết thúc học và sửa liên hệ')
-            : t('Học viên đã lưu trữ{ngay} — chỉ xem', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
+            ? t('Tạm dừng · ở Lưu trữ — lộ trình chỉ xem')
+            : t('Học viên đã lưu trữ{ngay} — lộ trình chỉ xem', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
         )}
         {/*
           UI-HO-SO-HV (`dieu-chinh-cuoi.html` khu c + `ho-so-hv.html`): đầu HAI dòng, không khung — dòng 1 tên + nhãn trạng thái | + Case · ⋯ (GIỮ V4);

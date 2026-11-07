@@ -24,8 +24,12 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
 
 /** OV-11d (HV-3, Q4): hồ sơ đã Lưu trữ khoá — máy chủ trả câu này (400) ở mọi đường sửa hồ sơ / lộ trình / thi thật / Case. P7: lối ra là Quay lại học. */
 export const CAU_LUU_TRU = 'Đã lưu trữ — Quay lại học trước rồi sửa.';
-/** P7 [ĐX]: em Tạm dừng (Lưu trữ) vẫn sửa được thông tin liên hệ — TVV gọi mời học lại. Chủ SP không đồng ý thì bỏ dòng cho phép ở `updateStudent` + mục ⋯. */
-export const TRUONG_LIEN_HE_TAM_DUNG = ['email', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
+/**
+ * SUA-LUU-TRU (chủ SP 07/11, LUẬT MỚI thay `CAU_LUU_TRU` một phần; thay danh sách liên hệ của P7): em đã lưu trữ — Tạm dừng hay Kết thúc học — sửa được
+ * thông tin KHÔNG đụng lộ trình: họ tên, ngày sinh, email, TVV, ghi chú, liên hệ (SĐT em, phụ huynh). Lớp / lộ trình / Target / điểm đầu vào / trạng thái
+ * vẫn 400 `CAU_LUU_TRU` (lối ra Quay lại học). MỘT danh sách: máy chủ `updateStudent` + web Sửa thông tin (`StudentManagePanel`).
+ */
+export const TRUONG_SUA_LUU_TRU = ['fullName', 'dob', 'email', 'consultantUserId', 'consultantName', 'note', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
 
 export type LopHocQuyen = {
   ghiLoTrinhTiep: boolean; chuyenLop: boolean; /** PR-CT: GVCN đề xuất; Quản lý (`chuyenLop`) ra lệnh. */ deXuatChuyenLop?: boolean; tamDung: boolean; quayLai: boolean;
@@ -65,15 +69,14 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
   deXuatSua?: boolean;
 }): { key: ViecQuanLy; nhan: string; phu?: string; nguyHiem?: boolean; keTruoc?: boolean | 'dam' | 'do' }[] {
   const quyen = lopHoc?.quyen;
-  /* OV-11d (HV-3, Q4): hồ sơ Lưu trữ "chỉ xem" — không Sửa thông tin / Lộ trình (máy chủ 400 `CAU_LUU_TRU`); SUA-LUU-TRU: Kết quả thi thật sửa được.
-     P7: em Tạm dừng (Lưu trữ) trừ 3 việc — Quay lại học · Kết thúc học · Sửa thông tin liên hệ ([ĐX]). */
+  /* OV-11d (HV-3, Q4): hồ sơ Lưu trữ "chỉ xem" — không Lộ trình / Chuyển lớp (máy chủ 400 `CAU_LUU_TRU`). P7: em Tạm dừng còn Quay lại học · Kết thúc học.
+     SUA-LUU-TRU: Kết quả thi thật sửa được (cờ `nhapThiThat`); Sửa thông tin không đụng lộ trình (`TRUONG_SUA_LUU_TRU`) cho cả em Kết thúc học. */
   const chiXem = !!lopHoc?.chiXem;
-  const tamDungLuuTru = chiXem && status === 'inactive';
   const ratio = !!cycle?.ratio;
   const dangHoc = status === 'active';
   const dau: ViecQuanLy[] = [];
   const sau: ViecQuanLy[] = [];
-  if ((canEdit || suaThongTin) && (!chiXem || tamDungLuuTru)) dau.push('info');
+  if (canEdit || suaThongTin) dau.push('info');
   if (quyen?.chuyenLop && !chiXem) dau.push('chuyen-lop');
   const td = coTheTamDungKetThuc(quyen, status);
   if (td.tamDung || td.ketThuc) dau.push('tam-dung-ket-thuc');

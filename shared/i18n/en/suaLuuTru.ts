@@ -11,4 +11,7 @@ export const EN_SUA_LUU_TRU = {
   'Không tìm thấy bản trước.': 'Previous version not found.',
   'Bản này ghi trước khi có Khôi phục — sửa tay ở Kết quả thi thật.': 'This entry predates Restore — edit it by hand in Real exam result.',
   'Đã có người sửa kết quả sau lần lưu này — mở Lịch sử để khôi phục đúng bản.': 'Someone edited the result after this save — open History to restore the right version.',
+  /* SUA-LUU-TRU b */
+  'Tạm dừng · ở Lưu trữ — lộ trình chỉ xem': 'Paused · in Archive — learning path view only',
+  'Học viên đã lưu trữ{ngay} — lộ trình chỉ xem': 'Student archived{ngay} — learning path view only',
 } satisfies Record<string, Dich>;

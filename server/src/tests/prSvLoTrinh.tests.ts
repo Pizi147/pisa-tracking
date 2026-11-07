@@ -32,7 +32,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     /* [ĐX] em tạm dừng (Lưu trữ) vẫn Sửa thông tin liên hệ — TVV gọi mời học lại. */
     assert(keys(dung).split(',')[0] === 'info' && !keys(dung).split(',').includes('lo-trinh') && !keys(dung).includes('outcome') && !keys(dung).includes('chuyen-lop'), `tạm dừng chỉ xem trừ 3 việc: ${keys(dung)}`);
     const xong = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { chiXem: true, quyen: { ...QUYEN_QL, tamDung: false, ketThuc: false } }, cycle: { ratio: false }, status: 'finished' });
-    assert(keys(xong) === 'quay-lai,lich-su-sua', `kết thúc + lưu trữ: ${keys(xong)}`);
+    assert(keys(xong) === 'info,quay-lai,lich-su-sua', `kết thúc + lưu trữ: ${keys(xong)}`);   // SUA-LUU-TRU (07/11): em Kết thúc học Sửa thông tin (không đụng lộ trình)
     assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: { ...QUYEN_QL, hocLai: false } }, cycle: null, status: 'finished' }).every((m: any) => m.key !== 'quay-lai'), 'không quyền Học lại → không Quay lại học');
     assert(d.NHAN_VIEC_QUAN_LY['quay-lai'] === 'Quay lại học', 'nhãn Quay lại học');
     const vai = (status: string) => keys(d.mucDongTheoVai({ suaThongTin: true, suaThem: true, ft: true, status }));
@@ -143,7 +143,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     students.setStudentStatus(QL, sid, 'inactive', TODAY);
     students.updateStudent(QL, sid, { phone: '0912345678', parentName: 'Mẹ Lan' });
     assert(hs(sid).phone === '0912345678', 'sửa liên hệ em tạm dừng');
-    assert(loi(() => students.updateStudent(QL, sid, { note: 'x' }))?.message === d.CAU_LUU_TRU, 'sửa trường khác → 400');
+    assert(loi(() => students.updateStudent(QL, sid, { dauVao: null }))?.message === d.CAU_LUU_TRU, 'sửa trường lộ trình → 400');   // SUA-LUU-TRU: thông tin khác sửa được
     const h = profile.studentProfile(QL, sid);
     assert(h.lopHoc.chiXem && h.lopHoc.quyen.quayLai && h.lopHoc.quyen.ketThuc && !h.lopHoc.quyen.tamDung && !h.lopHoc.quyen.chuyenLop, `cờ quyền: ${JSON.stringify(h.lopHoc)}`);
     assert(JSON.stringify(ngungHocCua('inactive', TODAY)) === '{"nhan":"Tạm dừng","khoa":null}', 'lưới FT: em tạm dừng hàng mờ, không khoá');
