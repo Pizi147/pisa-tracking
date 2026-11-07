@@ -8,6 +8,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrUiCongViecTests(t: YThucTestKit) {
   const { check, assert } = t;
   const d: any = await import('../../../shared/domain/index.ts');
+  const fs = await import('node:fs');
   console.log('\nV5 · UI-CONG-VIEC — dòng theo em, vạch hạn');
   const v = (key: string, studentId: number | null, con?: any[]) => ({ key, studentId, studentName: studentId ? `Em ${studentId}` : 'Lớp A', classCode: 'A', con });
 
@@ -37,5 +38,11 @@ export async function runPrUiCongViecTests(t: YThucTestKit) {
     const ds = [{ urgency: 'overdue', due: '2026-09-09' }, { urgency: 'normal', due: '2026-09-20' }, { urgency: 'normal', due: '2026-09-23' }];
     const r = d.chiaVachHan(ds, '2026-09-14');
     assert(r.quaHan.length === 1 && r.denHetTuan.length === 1 && r.sau.length === 1 && r.cuoiTuan === '2026-09-20', JSON.stringify(r));
+  });
+  check('CV-HANG-DEU (PTA 07/11) · dòng phụ ≥ 640 một dòng cắt "…" (người giữ đầu dòng); chỉ dòng có huy hiệu TVV THẬT giữ xuống dòng — `{tvv && …}` = false không tính', () => {
+    const s = fs.readFileSync('web/src/modules/congViec/DanhSachViec.tsx', 'utf8');
+    const dp = s.slice(s.indexOf('const DongPhu'), s.indexOf('const TEN ='));
+    assert(/Children\.toArray\(children\)\.length > 0/.test(dp) && /coHuy \? '' : 'sm:block sm:truncate'/.test(dp) && !/\$\{children \?/.test(dp), 'DongPhu: điều kiện cắt sai');
+    assert(!/NguoiGiu/.test(s.slice(s.indexOf('function CotHan'), s.indexOf('export function NguoiGiu'))), 'CotHan còn người giữ việc (cột hạn phải 2 dòng)');
   });
 }
