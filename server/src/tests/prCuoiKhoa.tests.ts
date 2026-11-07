@@ -138,7 +138,7 @@ export async function runPrCuoiKhoaTests(t: any) {
   const mt0 = (sid: number) => get(`SELECT a.id, a.status, rp.week_start FROM assessment_attempts a
       LEFT JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.student_id = ? AND a.kind = 'mt0' ORDER BY a.id DESC LIMIT 1`, sid);
 
-  check('CK-2a · N20: chốt Lên FT thứ Bảy → MT0 có ở tuần Final; QL dời MT0 tay thứ Bảy → 400 câu khoá', () => thu(() => {
+  check('CK-2a · N20: chốt Lên FT thứ Bảy → MT0 có ở tuần Final; RKC: QL dời MT0 tay thứ Bảy → 409 hỏi (vượt N15 kèm xác nhận)', () => thu(() => {
     const { be, ft, sid } = chotFtCuoiTuan();
     datNgay('2026-09-19');
     const r = lenh.raLenh(QL, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: sid, huong: 'fast_track', toClassId: ft, tuan: '2026-09-28', mucTieu: 6 }] });
@@ -146,7 +146,7 @@ export async function runPrCuoiKhoaTests(t: any) {
     const m = mt0(sid);
     assert(m && m.status !== 'cancelled' && m.week_start === '2026-09-21', `MT0 ${JSON.stringify(m)}`);
     const e = loi(() => ss.setSkillWeek(QL, m.id, 'listening', week.ensurePeriod('2026-09-28').id, {}));
-    assert(e?.status === 400 && e.msg === d.LOI_KHOA_CUOI_TUAN, `dời tay: ${JSON.stringify(e)}`);
+    assert(e?.status === 409 && /Đang khoá đổi lịch MT cuối tuần/.test(e.msg), `dời tay: ${JSON.stringify(e)}`);
   }));
 
   check('CK-2b · N20: huỷ Lên FT Chủ nhật → MT0 huỷ theo; sửa sang Lên ELE thứ Sáu → MT0 huỷ', () => thu(() => {

@@ -612,15 +612,17 @@ export async function runPrMtaTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ T19 khung nhập điểm (chủ sản phẩm 06/10)
   console.log('\nPR-MTa · T19 không nhập điểm trước tuần thi; hạn lớp thường thứ Tư tuần sau');
-  const CHUA_TOI = /^Chưa tới tuần Test W\d [A-Z]{3} — chưa nhập điểm được\.$/;
-  check('MTa T19 (F1, F2) · MT tuần sau: GVBM, Quản lý, Quản trị nhập điểm → 400, không ghi gì', () => {
+  const CHUA_TOI = /^Chưa tới tuần Test W\d [A-Z]{3} — nhờ Quản lý dời về tuần này rồi nhập\.$/;   // RKC: GV được chỉ đường
+  check('MTa T19 (F1, F2) → RKC · MT tuần sau: GVBM → 400 chỉ đường; Quản lý, Quản trị (dời được lịch) → 409 hỏi "Dời về tuần này"; không ghi gì', () => {
     const a = emMoi();
-    for (const ai of [P.lrTeacher, QL, P.admin]) {
+    const eGv = loiCua(() => attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 }));
+    assert(eGv.status === 400 && CHUA_TOI.test(eGv.message), `GVBM: ${eGv.status} ${eGv.message}`);
+    for (const ai of [QL, P.admin]) {
       const e = loiCua(() => attemptsSvc.saveScore(ai, a.m1, 'listening', { rawScore: 30 }));
-      assert(e.status === 400 && CHUA_TOI.test(e.message), `${ai.userId}: ${e.status} ${e.message}`);
+      assert(e.status === 409 && /dời về tuần này/.test(e.message), `${ai.userId}: ${e.status} ${e.message}`);
     }
-    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'writing1', { criteria: [6, 6, 6, 6] })).status === 400, 'tiêu chí');
-    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'speaking', { band: 6 })).status === 400, 'band');
+    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'writing1', { criteria: [6, 6, 6, 6] })).status === 409, 'tiêu chí');
+    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'speaking', { band: 6 })).status === 409, 'band');
     assert(soDiem(a.m1) === 0 && !conn.prepare('SELECT 1 FROM assessment_scores WHERE attempt_id = ?').get(a.m1), 'đã ghi');
   });
 
@@ -639,10 +641,10 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(soDiem(cu.id) === 1 && luot(cu.id).lich_su === 1, 'MT cũ');
   });
 
-  check('MTa T19 (F5, F6) · lớp thường: tuần sau → 400; tuần này / đã qua → được; hạn = thứ Tư tuần sau', () => {
+  check('MTa T19 (F5, F6) → RKC · lớp thường: tuần sau → Quản trị được hỏi (409); tuần này / đã qua → được; hạn = thứ Tư tuần sau', () => {
     const tuanSau = baiThuong(1);
     const e = loiCua(() => regular.saveRegularScore(P.admin, tuanSau.aid, 'listening', { score: 7, total: 10 }));
-    assert(e.status === 400 && CHUA_TOI.test(e.message), e.message);
+    assert(e.status === 409 && /dời về tuần này/.test(e.message), e.message);
     regular.saveRegularScore(P.admin, baiThuong(0).aid, 'listening', { score: 7, total: 10 });
     regular.saveRegularScore(P.admin, baiThuong(-2).aid, 'listening', { score: 7, total: 10 });
     assert(week.skillScoreDeadline('ratio', '2026-09-14') === '2026-09-23' && week.skillScoreDeadline('band', '2026-09-14') === '2026-09-23', 'hạn');
@@ -650,12 +652,12 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(v.date === t.addDays(tuanNay, 9) && v.source === 'default', JSON.stringify(v));
   });
 
-  check('MTa T19 (F8, F9) · kỹ năng chưa xếp tuần → 400; dấu "-" và xoá điểm giữ luật cũ', () => {
+  check('MTa T19 (F8, F9) → RKC · kỹ năng chưa xếp tuần → hỏi "xếp vào tuần này"; "-" lớp thường trước tuần thi → hỏi; xoá điểm giữ luật cũ', () => {
     const a = emMoi([0, 4, 8]);
     skillSch.boTuanLuot(QL, a.m3, {});
-    assert(/^Chưa xếp tuần Test — chưa nhập điểm được\.$/.test(loiCua(() => attemptsSvc.saveScore(P.admin, a.m3, 'listening', { rawScore: 30 })).message), 'chưa xếp');
+    assert(/chưa xếp tuần — xếp vào tuần này/.test(loiCua(() => attemptsSvc.saveScore(P.admin, a.m3, 'listening', { rawScore: 30 })).message), 'chưa xếp');
     const b = baiThuong(1);
-    assert(/chưa ghi "-" được/.test(loiCua(() => regular.saveRegularScore(P.admin, b.aid, 'listening', { noShow: true })).message), '"-" lớp thường');
+    assert(/dời về tuần này rồi ghi vắng/.test(loiCua(() => regular.saveRegularScore(P.admin, b.aid, 'listening', { noShow: true })).message), '"-" lớp thường');
     attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });
     attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: null, lyDo: 'x' });
     assert(soDiem(a.m1) === 0, 'xoá điểm');
@@ -774,17 +776,19 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(soDiem(a.m1) === 0, 'chưa huỷ');
   });
 
-  check('Rà #212 (4) · ô có điểm mà kỹ năng đã dời sang tuần chưa tới: khoá như máy chủ (FT và lớp thường)', () => {
+  check('Rà #212 (4) → RKC · ô có điểm mà kỹ năng đã dời sang tuần chưa tới: Quản trị (dời được lịch) vẫn sửa được — máy chủ hỏi "Dời về tuần này"; GVBM khoá', () => {
     const a = emMoi([0, 4, 8]);
     attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });
     skillSch.setSkillWeek(QL, a.m1, 'listening', tuan(1).id, {});
     const o = attemptsSvc.attemptDetail(P.admin, a.m1).cells.find((x: any) => x.skill === 'listening');
-    assert(o.rawScore === 30 && o.canEdit === false, JSON.stringify({ r: o.rawScore, e: o.canEdit }));
+    assert(o.rawScore === 30 && o.canEdit === true, JSON.stringify({ r: o.rawScore, e: o.canEdit }));
+    const oGv = attemptsSvc.attemptDetail(P.lrTeacher, a.m1).cells.find((x: any) => x.skill === 'listening');
+    assert(oGv.canEdit === false, 'GVBM vẫn khoá (không dời được lịch FT)');
     const b = baiThuong(0);
     regular.saveRegularScore(P.admin, b.aid, 'speaking', { score: 7, total: 10 });
     skillSch.setSkillWeek(QL, b.aid, 'speaking', tuan(1).id, {});
     const dong = regular.regularSheet(P.admin, LOP_THUONG).rows.find((x: any) => x.attemptId === b.aid);
-    assert(dong.skillSchedule.find((x: any) => x.skill === 'speaking').canEdit === false, 'lớp thường');
+    assert(dong.skillSchedule.find((x: any) => x.skill === 'speaking').canEdit === true, 'lớp thường: Quản trị dời được lịch → sửa được (máy hỏi)');
   });
 
   check('Rà #212 (6) → LUAT-34 · MT cũ đã hoàn tất: GVCN lớp đó và GVBM đúng ô sửa / xoá được (khoá 7 ngày bỏ); GV khác môn vẫn bị chặn', () => {

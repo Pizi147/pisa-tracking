@@ -283,7 +283,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     }
   });
 
-  check('PR-Rc1 · "-" lần đầu trước tuần thi: bị chặn, không ghi gì, lịch giữ nguyên', () => {
+  check('PR-Rc1 · RKC · "-" lần đầu trước tuần thi: chưa xác nhận → hỏi, không ghi gì, lịch giữ nguyên', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
     const { attemptId } = taoBaiThuong('2026-09-28');
@@ -291,7 +291,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
       `SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ?`,
     ).get(attemptId) as any).n;
     assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22'),
-      /Chưa tới tuần Test W\d [A-Z]{3} — chưa ghi "-" được/, 'Tuần thi 28/09 chưa tới (hôm nay 22/09) thì không ghi "-"');
+      /dời về tuần này rồi ghi vắng/, 'RKC: tuần thi 28/09 chưa tới (hôm nay 22/09) → hỏi "Dời về tuần này" trước, chưa ghi gì');
     const sc = dauCua(attemptId, k);
     assert(!sc || !sc.no_show_period_id, 'Không có dòng dấu "-" nào được ghi');
     assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-28', 'Lịch giữ nguyên');

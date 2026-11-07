@@ -32,7 +32,7 @@ export async function runPrKhoaLichTests(t: any) {
   const sEx: any = await import('../cham/sExpert.ts');
   const sch: any = await import('../classes/schedule.ts');
   const { setConfig, getConfig } = await import('../demoConfig.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const { boLichTuTao } = await import('./luotThu.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -62,18 +62,20 @@ export async function runPrKhoaLichTests(t: any) {
   };
   const QL = P.mbManager;
   const L = d.LOI_KHOA_CUOI_TUAN;
+  /* RKC (chủ SP 07/11; PTA: luật đã chốt GIỮ cho GV, QL / Admin vượt kèm xác nhận): QL gặp câu hỏi thay vì khoá. */
+  const HOI = 'Đang khoá đổi lịch MT cuối tuần (T6 – CN) — vẫn đổi lịch?';
 
-  check('KHL-2a · T6: QL dời MT tuần này → khoá; Quản trị được; Quản trị "xem như" QL vẫn được (vai gốc)', () => thu((doiNgay) => {
+  check('KHL-2a · RKC · T6: QL dời MT tuần này → hỏi (QL vượt khoá N15 kèm xác nhận); Quản trị được; Quản trị "xem như" QL vẫn được (vai gốc)', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.nay);
     doiNgay();
-    assert(loi(() => ss.setSkillWeek(QL, m1, 'listening', pid(W.c3), {})) === L, 'QL phải bị khoá');
+    assert(loi(() => ss.setSkillWeek(QL, m1, 'listening', pid(W.c3), {})) === HOI, 'QL phải bị khoá');
     const xemNhu = { ...P.admin, roleKeys: ['manager'], gocNhin: 'manager', vaiGoc: ['system_admin'] };
-    assert(loi(() => ss.setSkillWeek(xemNhu, m1, 'listening', pid(W.c3), {})) !== L, 'Quản trị xem như QL vẫn miễn');
+    assert(loi(() => ss.setSkillWeek(xemNhu, m1, 'listening', pid(W.c3), {})) !== HOI, 'Quản trị xem như QL vẫn miễn');
     const e = loi(() => ss.setSkillWeek(P.admin, m1, 'reading', pid(W.c3), {}));
     assert(e === null, `Quản trị: ${e}`);
   }));
 
-  check('KHL-2b · T6: +3 → tuần sau khoá; +2 → +3 được; Thứ Năm được', () => thu((doiNgay) => {
+  check('KHL-2b · RKC · T6: +3 → tuần sau hỏi; +2 → +3 được; Thứ Năm được', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.c3);
     const b = em(); const n1 = b.luot(1, W.c2);
     const c = em(); const k1 = c.luot(1, W.nay);
@@ -81,44 +83,45 @@ export async function runPrKhoaLichTests(t: any) {
     const e0 = loi(() => ss.setSkillWeek(QL, k1, 'listening', pid(W.c3), {}));
     assert(e0 === null, `Thứ Năm: ${e0}`);
     doiNgay();
-    assert(loi(() => ss.setSkillWeek(QL, m1, 'listening', pid(W.sau), {})) === L, '+3 → tuần sau khoá');
+    assert(loi(() => ss.setSkillWeek(QL, m1, 'listening', pid(W.sau), {})) === HOI, '+3 → tuần sau khoá');
     const e = loi(() => ss.setSkillWeek(QL, n1, 'listening', pid(W.c3), {}));
     assert(e === null, `+2 → +3: ${e}`);
   }));
 
-  check('KHL-2c · T6: tạo MT vào tuần sau, huỷ lịch / huỷ lượt / bỏ kỹ năng MT tuần này, S Ex tuần này → khoá', () => thu((doiNgay) => {
+  check('KHL-2c · RKC · T6: tạo MT vào tuần sau, huỷ lịch / huỷ lượt / bỏ kỹ năng MT tuần này, S Ex tuần này → QL được hỏi', () => thu((doiNgay) => {
     const a = em(); const m1 = a.luot(1, W.nay);
     const b = em(); b.luot(1, W.truoc);
     const c = em(); const h1 = c.luot(1, W.nay); svc.huyLuot(P.admin, h1, {});
     const sx = sEx.themSEx(P.admin, { studentId: c.sid, tuan: W.nay }).id;
     doiNgay();
-    assert(loi(() => svc.reopenAttempt(QL, h1)) === L, 'reopenAttempt');
-    assert(loi(() => sEx.suaSEx(QL, sx, { tuan: W.c3 })) === L, 'suaSEx');
-    assert(loi(() => sEx.xoaSEx(QL, sx)) === L, 'xoaSEx');
+    assert(loi(() => svc.reopenAttempt(QL, h1)) === HOI, 'reopenAttempt');
+    assert(loi(() => sEx.suaSEx(QL, sx, { tuan: W.c3 })) === HOI, 'suaSEx');
+    assert(loi(() => sEx.xoaSEx(QL, sx)) === HOI, 'xoaSEx');
     const e0 = loi(() => sEx.suaSEx(QL, sx, { diem: 6.5 }));
     assert(e0 === null, `chấm S Ex vẫn được: ${e0}`);
-    assert(loi(() => svc.createAttempt(QL, { studentId: b.sid, cycleId: b.cy, attemptNo: 2, periodId: pid(W.sau) })) === L, 'createAttempt');
-    assert(loi(() => ss.boTuanLuot(QL, m1, {})) === L, 'boTuanLuot');
-    assert(loi(() => svc.huyLuot(QL, m1, {})) === L, 'huyLuot');
-    assert(loi(() => svc.setSkillSkip(QL, m1, 'speaking', true, 'thử')) === L, 'bỏ kỹ năng');
-    assert(loi(() => sEx.themSEx(QL, { studentId: a.sid, tuan: W.nay })) === L, 'themSEx');
+    assert(loi(() => svc.createAttempt(QL, { studentId: b.sid, cycleId: b.cy, attemptNo: 2, periodId: pid(W.sau) })) === HOI, 'createAttempt');
+    assert(loi(() => ss.boTuanLuot(QL, m1, {})) === HOI, 'boTuanLuot');
+    assert(loi(() => svc.huyLuot(QL, m1, {})) === HOI, 'huyLuot');
+    assert(loi(() => svc.setSkillSkip(QL, m1, 'speaking', true, 'thử')) === HOI, 'bỏ kỹ năng');
+    assert(loi(() => sEx.themSEx(QL, { studentId: a.sid, tuan: W.nay })) === HOI, 'themSEx');
     const e = loi(() => svc.createAttempt(QL, { studentId: b.sid, cycleId: b.cy, attemptNo: 2, periodId: pid(W.c3) }));
     assert(e === null, `MT vào +3 được: ${e}`);
   }));
 
-  check('KHL-2d · Hàng loạt T6: em MT1 tuần này lỗi đúng dòng; em MT1 tuần +4 → +3 vẫn xếp', () => thu((doiNgay) => {
+  check('KHL-2d · RKC · Hàng loạt T6 (QL): xem trước không khoá; em MT1 tuần này hỏi đúng dòng; em MT1 tuần +4 → +3 vẫn xếp', () => thu((doiNgay) => {
     const a = em(); a.luot(1, W.nay);
     const b = em(); b.luot(1, W.c4);
     doiNgay();
     const tuan = Object.fromEntries(['listening', 'reading', 'writing', 'speaking'].map((k) => [k, pid(W.c3)]));
     const vao = { classId: MB_FT, attemptNo: 1, studentIds: [a.sid, b.sid], tuan, force: true };
     const dong = (ds: any[], sid: number) => ds.find((x: any) => x.studentId === sid);
+    /* RKC: QL vượt khoá N15 — xem trước không đỏ; lưu chưa xác nhận → em tuần khoá lỗi đúng dòng bằng câu hỏi, em khác vẫn xếp; xác nhận → xếp cả hai. */
     const xt = kh.xepHangLoat(QL, { ...vao, xemTruoc: true }, T6).dong;
-    assert(dong(xt, a.sid)?.loi?.includes(L), `xem trước em 1: ${JSON.stringify(dong(xt, a.sid))}`);
-    assert(!dong(xt, b.sid)?.loi, `xem trước em 2: ${JSON.stringify(dong(xt, b.sid))}`);
-    const r = kh.xepHangLoat(QL, vao, T6);
-    assert(r.daLuu === 1 && dong(r.dong, a.sid).hanhDong === 'loi' && dong(r.dong, b.sid).hanhDong !== 'loi',
-      JSON.stringify(r.dong.map((x: any) => [x.hanhDong, x.loi])));
+    assert(!dong(xt, a.sid)?.loi && !dong(xt, b.sid)?.loi, `xem trước: ${JSON.stringify(xt.map((x: any) => x.loi))}`);
+    const e = (() => { try { kh.xepHangLoat(QL, vao, T6); return null; } catch (x: any) { return x; } })();
+    assert(e?.status === 409 && e.details?.canXacNhan && e.message === HOI, `chưa xác nhận → cả lô hỏi một lần: ${e?.status} ${e?.message}`);
+    const r = voiXacNhan(() => kh.xepHangLoat(QL, vao, T6));
+    assert(r.dong.every((x: any) => x.hanhDong !== 'loi'), JSON.stringify(r.dong.map((x: any) => [x.hanhDong, x.loi])));
   }));
 
   check('KHL-3 · T6 ngoại lệ: "-" ở MT tuần này dời theo luật vắng; duyệt thẻ dời; khôi phục phần thi vắng; từ chối thẻ cũ = Không mock lại; lớp thường', () => thu((doiNgay) => {

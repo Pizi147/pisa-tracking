@@ -1285,6 +1285,9 @@ export function xepHangLoat(p: Principal, i: {
       daLuu += 1;
       return dong;
     } catch (e: any) {
+      /* RKC: câu hỏi xác nhận (vd QL vượt khoá N15) KHÔNG thành lỗi dòng — đẩy lên cả request để web hỏi một lần; đồng ý thì gửi lại cả lô, dòng đã lưu
+         tính lại thành "giữ". */
+      if (e?.details?.canXacNhan) throw e;
       /* AN-5: `chanGiaoDichNeuSapHetGio` (db.ts) có thể từ chối một `tx` khi sắp hết giờ — lỗi đó cũng rơi vào đúng dòng
        * này, không làm hỏng cả lô. Người dùng bấm Lưu lại cho các dòng còn lỗi (R9b). */
       return { ...dong, hanhDong: 'loi' as const, loi: e?.message ?? 'Không lưu được.' };

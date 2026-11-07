@@ -159,11 +159,11 @@ export async function runXoaMtTests(t: any) {
     assert(kn(a).listening.startsWith('1:'), 'GVCN khi bật');
   }));
 
-  check('XM-5 · N15: T6 → CN, MT tuần này → QL bị khoá (không đổi gì); Quản trị hệ thống được', () => thu(() => {
+  check('XM-5 · N15: T6 → CN, MT tuần này → RKC: QL được hỏi (409, không đổi gì); Quản trị hệ thống được', () => thu(() => {
     const a = luot(NAY);
     datNgay(T6);
     const e = loi(() => svc.xoaLuot(P.mbManager, a));
-    assert(e?.status === 400 && kn(a).listening.startsWith('1:'), `QL T6: ${JSON.stringify(e)}`);
+    assert(e?.status === 409 && kn(a).listening.startsWith('1:'), `QL T6: ${JSON.stringify(e)}`);
     svc.xoaLuot(P.admin, a);
     assert(kn(a).listening.startsWith('0:'), 'Quản trị được');
   }));

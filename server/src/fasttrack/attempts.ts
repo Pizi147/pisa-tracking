@@ -21,7 +21,7 @@ import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, MON_MOT_LUOT_SQL,
   type SkillRow, type SkillScheduleView,
-  canMoveSkillSchedule, chanCuoiTuan, doiVeTuanNayNeuChua, ghiSitStatus, tuanCacKyNang,
+  chanCuoiTuan, doiVeTuanNayNeuChua, ghiSitStatus, tuanCacKyNang,
 } from './skillSchedule.ts';
 import {
   canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
@@ -448,9 +448,12 @@ export function skillCells(
   const mode = scoringModeOf(attempt);
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
-  const khoiPhucDuoc = cancelled && choHuyKhoiPhucLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id });
-  let doiLichNho: boolean | undefined;   // chỉ hỏi khi có ô chưa tới tuần
-  const doiLich = () => (doiLichNho ??= !!attempt.class_id && canMoveSkillSchedule(p, { classId: attempt.class_id, studentId: attempt.student_id }));
+  /* RKC: quyền khôi phục lượt / dời lịch hỏi MỘT lần mỗi lớp trong request (bảng lớp vẽ hàng trăm ô — không một câu mỗi lượt). Chỉ hỏi khi cần. */
+  const khoiPhucDuoc = cancelled && nho(`rkc-khoi-phuc:${attempt.class_id}`, () => choHuyKhoiPhucLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id }));
+  /* Theo LỚP (không theo em): tránh câu đọc chi nhánh của từng em — quyền dời lịch Test đi theo lớp (QL chi nhánh lớp, GVCN lớp). Máy chủ kiểm lại
+     đủ theo em lúc lưu (`doiVeTuanNayNeuChua`). */
+  const doiLich = () => !!attempt.class_id && nho(`rkc-doi-lich:${attempt.class_id}`, () => choSuaLichTest(p, { classId: attempt.class_id })
+    || can(p, PERMISSIONS.SCHEDULE_MOVE, { classId: attempt.class_id }));
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
