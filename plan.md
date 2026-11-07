@@ -259,10 +259,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
-### 07/11 sau deploy — Phân tích GV: ô "—" + bỏ "Cách tính" (chủ SP, đang kiểm)
+### 07/11 sau deploy — Phân tích GV: ô "—" + BỎ CHÚ THÍCH MỌI NƠI (chủ SP chốt — session BO-CHU-THICH)
 - **Chủ SP 07/11 (ảnh bảng Phân tích › Giáo viên, Cẩm Phả FT):** "sao tôi vẫn thấy một vài GV không có thông tin gì về việc quá hạn công việc hay chấm đúng hạn hay gì?" (4 GV có ô "—").
 - **Chủ SP 07/11 (ảnh panel "Việc đúng hạn", khoanh khối "Cách tính" cuối panel):** "và bỏ mấy cái này di làm ơn" + "hình như có vẻ là các phần ___ là do tôi vừa reset hạn?"
 - PTA: kiểm trên bản chép thật từng ô "—" (không có việc trong kỳ / reset hạn dời ra sau hôm nay / lỗi). Bỏ khối "Cách tính" cuối các panel số (giải thích giữ ở ⓘ).
+- **PTA kiểm bản chép thật:** 7 ô "—" không phải lỗi mã — đợt đặt lại hạn dời việc quá hạn ra khỏi kỳ 26/10–08/11; bài chưa tới hạn nhập; Speaking chấm chéo tính cho người chấm (T18); 1 GV: việc quá hạn rồi hệ thống tự đóng Case (em kết thúc) → rơi khỏi mẫu.
+- **Chủ SP 07/11:** "Không tính trễ nhé cho nhẹ gánh đỡ phải code thêm đúng không? và không chỉ phần 'cách tính' ở đây, những thông tin lưu ý hay note thêm ở mọi nơi cần phải bỏ đi nhé" → (1) việc quá hạn rồi bị hệ thống đóng: KHÔNG tính (giữ như hiện tại, không code). (2) **LUẬT GIAO DIỆN MỚI:** bỏ mọi đoạn chú thích / lưu ý / "Cách tính" / ghi chú tĩnh trên mọi màn, panel, hộp; giữ ⓘ (giải thích khi bấm), lỗi, lý do chặn tại nút, trạng thái lưu, ô rỗng. (3) Kèm sửa nhỏ: bàn giao Writing dữ liệu cũ tính cho đúng người ghi (`viecDaXong.ts` `gvLop`).
 
 ### 07/11 sau deploy — GIAM-DOC-BC (log bản chính, chủ SP "Giao session")
 - Log Netlify 09:40–09:43 (DB 261107): `/my-work` 1,8–2,1 s · 57–72 câu · ~11 000 dòng (top `WITH ids(id) AS (VALUES …)` 4 017) · `/tong-quan/v5` 1,2–1,3 s · 55–60 câu · ~7 000 dòng (top `SELECT s.*, u.full_name …` ~1 350) · `/phan-tich/giao-vien` 1,1 s · 74 câu · 7 167 dòng (top `SELECT 'm' AS k, case_id …` 735) · `/hoc-vien-lop` 1,0 s · 57 câu · 6 284 dòng (top `WITH ids` 801). Ước `/my-work` riêng 11–16 triệu dòng / ngày → ưu tiên 1.
