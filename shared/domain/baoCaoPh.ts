@@ -8,6 +8,7 @@ import { addDaysIso } from './sos.ts';
 import { programmeOf } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { soKyVong } from './chipSos.ts';
+import { chuDiem } from './diemDong.ts';
 
 /** Thang mọi tiêu chí (đặc tả §3). Excel ghi "Khá (Sound)". */
 export const MUC_BC = ['xuat_sac', 'tot', 'kha', 'yeu'] as const;
@@ -113,8 +114,11 @@ export const tieuChiPhan = (p: PhanBc): TieuChiBc[] => p.nhom.flatMap((n) => n.d
 /** Ô chữ của phần: GVCN "Nhận xét chung", kỹ năng "Đề xuất cải thiện". */
 export const nhanOChu = (p: Pick<PhanBc, 'khoa'>): string => (p.khoa === 'chung' ? t('Nhận xét chung') : t('Đề xuất cải thiện'));
 
-/** Bản ghi một (đợt, em, phần). `datSan`: tiêu chí còn mức đặt sẵn theo đợt trước (GV chưa đổi) — vẽ viền đứt. */
-export type BanGhiBc = { muc: Record<string, MucBc>; datSan: string[]; chu: string; diemSua: number | null };
+/**
+ * Bản ghi một (đợt, em, phần). `datSan`: tiêu chí còn mức đặt sẵn theo đợt trước (GV chưa đổi) — vẽ viền đứt.
+ * `diemSua`: điểm sửa tay — số, hoặc (FT, chủ SP 07/11) CHỮ tự do như mẫu PDF ("6.5 - 7.0"); cột REAL của SQLite giữ chữ dạng TEXT.
+ */
+export type BanGhiBc = { muc: Record<string, MucBc>; datSan: string[]; chu: string; diemSua: number | string | null };
 
 /** Em ĐỦ ở một phần (đặc tả §5.1 + ghi chú mockup mục 5): mọi tiêu chí có mức (đặt sẵn cũng tính) + ô chữ không trống. Điểm không bắt buộc. */
 export function phanDu(p: PhanBc, b: Pick<BanGhiBc, 'muc' | 'chu'> | null | undefined): boolean {
@@ -231,6 +235,43 @@ export function kqDiemBc(so: number | null, g: Pick<DiemGocBc, 'tong' | 'kyVong'
   if (g.tong != null) return g.nguong == null || !g.tong ? null : so / g.tong >= g.nguong ? 'dat' : 'duoi';
   return soKyVong(so, g.kyVong);
 }
+/** Tối đa ký tự điểm FT sửa thành chữ ("6.5 - 7.0"). */
+export const DIEM_CHU_TOI_DA = 20;
+/**
+ * Đọc ô điểm sửa tay (web + máy chủ cùng luật): trống → null; chữ số ("6,5", "7") → số và kiểm như `loiDiemSua`;
+ * chữ khác → chỉ FT (`ft`), ≤ 20 ký tự. Trả { gt, loi }.
+ */
+export function docDiemSua(v: unknown, ft: boolean, tong: number | null): { gt: number | string | null; loi: string | null } {
+  if (v == null) return { gt: null, loi: null };
+  const s = String(v).trim().replace(',', '.');
+  if (!s) return { gt: null, loi: null };
+  if (/^\d+(\.\d+)?$/.test(s)) { const so = Number(s); return { gt: so, loi: loiDiemSua(so, ft ? null : tong) }; }
+  if (!ft) return { gt: null, loi: t('Điểm không hợp lệ') };
+  const chu = String(v).trim();
+  return chu.length > DIEM_CHU_TOI_DA ? { gt: null, loi: t('Tối đa {n} ký tự', { n: DIEM_CHU_TOI_DA }) } : { gt: chu, loi: null };
+}
+/** Chữ điểm in PDF như mẫu: FT band ("6.5") hoặc chữ sửa ("6.5 - 7.0"); lớp thường "29/40 - ĐẠT" / "20/40 - CHƯA ĐẠT". Không điểm → null. */
+export function chuDiemPdf(sua: number | string | null, goc: DiemGocBc | null): string | null {
+  if (typeof sua === 'string') return sua;
+  const so = sua ?? goc?.so ?? null;
+  if (so == null) return null;
+  if (goc?.tong == null) return chuDiem(so);
+  const kq = kqDiemBc(so, goc);
+  return `${so}/${goc.tong}${kq === 'dat' ? ' - ĐẠT' : kq === 'duoi' ? ' - CHƯA ĐẠT' : ''}`;
+}
+
+/**
+ * NỘI DUNG PDF MỘT EM (BCPH-PDF) — máy chủ dựng cùng nguồn Excel (`xuatBaoCaoPh.ts`), web vẽ (`pdfBaoCaoPh.ts`).
+ * `ngan`: Chung · L · R · W1 · W2 · W · S · P (tiêu đề khối). `diem`: chữ đã định dạng (`chuDiemPdf`). `muc`: null = chưa chọn.
+ */
+export type BaoCaoPdf = {
+  ft: boolean; diaChi: string | null; soDienThoai: string | null; hocVien: string; lop: string;
+  phan: {
+    khoa: string; ngan: string; gv: string; chu: string; diem: string | null;
+    nhom: { vi: string | null; en: string | null; ds: { vi: string; en: string; muc: MucBc | null }[] }[];
+  }[];
+};
+
 /** Kiểm điểm sửa tay (ghi chú mockup mục 5): FT band 0–9 bước 0.5; lớp thường số nguyên 0 → tổng. Trả câu lỗi hoặc null. */
 export function loiDiemSua(so: number, tong: number | null): string | null {
   if (!Number.isFinite(so) || so < 0) return t('Điểm không hợp lệ');

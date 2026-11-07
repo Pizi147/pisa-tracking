@@ -17,7 +17,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  MUC_BC, boPhanBc, chuBc, kqDiemBc, loiDiemSua, nhanMucBc, nhanOChu, ngay, phanDu, tieuChiPhan, tuanLich,
+  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, tieuChiPhan, tuanLich,
   type BanGhiBc, type DiemGocBc, type MucBc, type PhanBc,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -63,13 +63,13 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   const dt = useDienThoai();
   const bo = useMemo(() => boPhanBc(ct), [ct]);
   const toast = useToast();
-  /* Xuất Excel (PR b): `null` = không đang xuất · 0 = cả lớp · id em. File = ảnh lúc bấm; không đánh dấu "đã xuất". */
-  const [dangXuat, setDangXuat] = useState<number | null>(null);
-  const xuat = async (emId: number | null) => {
+  /* Xuất Excel (PR b) / PDF (BCPH-PDF): `null` = không đang xuất · "xlsx:0" = cả lớp · "pdf:{id em}". File = ảnh lúc bấm; không đánh dấu "đã xuất". */
+  const [dangXuat, setDangXuat] = useState<string | null>(null);
+  const xuat = async (emId: number | null, kieu: KieuXuat = 'xlsx') => {
     if (dangXuat !== null || !data?.dot) return;
-    setDangXuat(emId ?? 0);
+    setDangXuat(`${kieu}:${emId ?? 0}`);
     try {
-      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBaoCaoPh(lopId, data.dot, emId) }));
+      toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(kieu, lopId, data.dot, emId) }));
     } catch (e: any) {
       toast.push('error', e?.message ?? t('Chưa tạo được file.'));
     } finally { setDangXuat(null); }
@@ -123,8 +123,11 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
         ? <button type="button" className={nutDot} onClick={() => void xoaDotThem()}>{t('Xoá đợt')}</button>
         : <button type="button" className={nutDot} onClick={() => setHop('bo')}>{t('Không báo cáo đợt này')}</button>)}
       {data.quyetDot && <button type="button" className={nutDot} onClick={() => setHop('them')}>{t('+ Đợt báo cáo')}</button>}
-      {data.xuat && data.dot && <button type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null)}>
-        {dangXuat === 0 ? t('Đang tạo file…') : t('Xuất lớp')}</button>}
+      {data.xuat && data.dot && (['xlsx', 'pdf'] as const).map((k) => (
+        <button key={k} type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-0" disabled={dangXuat !== null} onClick={() => void xuat(null, k)}
+          title={k === 'pdf' ? t('Mỗi em một tệp PDF, gói .zip') : undefined}>
+          {dangXuat === `${k}:0` ? t('Đang tạo file…') : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
+      ))}
     </div>
   );
   const hopDot = hop && (
@@ -224,13 +227,20 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
           cot={[
             { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 300 },
             ...data.phan.map((p): CotBang => ({ key: p.khoa, nhan: p.ngan, phu: tenGv(p), kieu: 'so', rong: 120, goiY: p.ten })),
-            ...(data.xuat ? [{ key: 'xuat', nhan: t('Xuất'), kieu: 'nut', rong: 72 } as CotBang] : []),
+            ...(data.xuat ? [{ key: 'xuat', nhan: t('Xuất'), kieu: 'nut', rong: 112 } as CotBang] : []),
           ]}
           oCua={(e, c) => {
             if (c.key === 'ten') return <Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
             if (c.key === 'xuat') {
-              return <button type="button" className="link-nho min-h-[44px] font-medium sm:min-h-0" disabled={dangXuat !== null}
-                aria-label={t('Xuất báo cáo · {ten}', { ten: e.ten })} onClick={() => void xuat(e.id)}>{dangXuat === e.id ? t('Đang tạo…') : t('Xuất')}</button>;
+              return (
+                <span className="inline-flex gap-3">
+                  {(['xlsx', 'pdf'] as const).map((k) => (
+                    <button key={k} type="button" className="link-nho min-h-[44px] font-medium sm:min-h-0" disabled={dangXuat !== null}
+                      aria-label={t(k === 'pdf' ? 'Xuất PDF · {ten}' : 'Xuất Excel · {ten}', { ten: e.ten })} onClick={() => void xuat(e.id, k)}>
+                      {dangXuat === `${k}:${e.id}` ? t('Đang tạo…') : k === 'pdf' ? 'PDF' : 'Excel'}</button>
+                  ))}
+                </span>
+              );
             }
             const p = data.phan.find((x) => x.khoa === c.key)!;
             const o = e.o[p.khoa];
@@ -255,6 +265,14 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   );
 }
 
+type KieuXuat = 'xlsx' | 'pdf';
+/** Tải báo cáo PH: Excel, hoặc PDF (BCPH-PDF — mỗi em một tệp; thư viện + phông nạp lười chỉ khi bấm). Trả tên tệp. */
+async function taiBc(kieu: KieuXuat, lopId: number, dot: string, emId: number | null): Promise<string> {
+  if (kieu === 'xlsx') return taiBaoCaoPh(lopId, dot, emId);
+  const { taiPdfBaoCaoPh } = await import('./xuatPdfBaoCaoPh.ts');
+  return taiPdfBaoCaoPh(lopId, dot, emId);
+}
+
 /** Tải Excel báo cáo PH một lớp (`emId` null) / một em — trả tên tệp. Dùng ở tab và việc Admin ở Công việc. */
 export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | null): Promise<string> {
   const r = await api.get<{ sheets: SheetXuat[]; tenTep: string }>(`/classes/${lopId}/bao-cao-ph/xuat?dot=${encodeURIComponent(dot)}${emId ? `&em=${emId}` : ''}`);
@@ -262,19 +280,23 @@ export async function taiBaoCaoPh(lopId: number, dot: string, emId: number | nul
   return r.tenTep;
 }
 
-/** Việc Admin (Công việc) "Xuất báo cáo PH" của lớp đã đủ: nút Xuất lớp tải ngay (PTA chốt 05/11) — không chuyển trang, không dấu "đã xuất". */
+/** Việc Admin (Công việc) "Xuất báo cáo PH" của lớp đã đủ: Excel / PDF cả lớp tải ngay (PTA chốt 05/11, BCPH-PDF) — không chuyển trang, không dấu "đã xuất". */
 export function NutXuatLopBc({ lopId, dot }: { lopId: number; dot: string }) {
   const toast = useToast();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<KieuXuat | null>(null);
+  /* 375 (mockup g3): ẩn — chạm cả dòng mở tab Báo cáo PH, Xuất bấm trong tab. */
   return (
-    /* 375 (mockup g3): ẩn — chạm cả dòng mở tab Báo cáo PH, Xuất lớp bấm trong tab. */
-    <button type="button" className="btn btn-sm min-h-[44px] font-semibold max-sm:hidden sm:min-h-[30px]" disabled={busy}
-      onClick={async () => {
-        setBusy(true);
-        try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBaoCaoPh(lopId, dot, null) })); }
-        catch (e: any) { toast.push('error', e?.message ?? t('Chưa tạo được file.')); }
-        finally { setBusy(false); }
-      }}>{busy ? t('Đang tạo file…') : t('Xuất lớp')}</button>
+    <span className="inline-flex gap-2 max-sm:hidden">
+      {(['xlsx', 'pdf'] as const).map((k) => (
+        <button key={k} type="button" className="btn btn-sm min-h-[44px] font-semibold sm:min-h-[30px]" disabled={busy !== null}
+          onClick={async () => {
+            setBusy(k);
+            try { toast.push('ok', t('Đã tạo {tep}', { tep: await taiBc(k, lopId, dot, null) })); }
+            catch (e: any) { toast.push('error', e?.message ?? t('Chưa tạo được file.')); }
+            finally { setBusy(null); }
+          }}>{busy === k ? t('Đang tạo file…') : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
+      ))}
+    </span>
   );
 }
 
@@ -506,20 +528,22 @@ function HangThang({ ten, muc, san, dotTruoc, onChon }: { ten: string; muc: MucB
 }
 
 /** Dòng Điểm: "✓ 6.5 · MT4 · W3 NOV · Sửa"; đã sửa: "✗ 6.0 · đã sửa · gốc 6.5 · Về điểm gốc"; ô sửa tại chỗ (Enter / rời ô lưu, sai thì viền đỏ, không lưu). */
-function DongDiem({ goc, thang, diemSua, homNay, onDoi }: { goc: DiemGocBc | null; thang: boolean; diemSua: number | null; homNay: string; onDoi: (v: number | null) => void }) {
+/** BCPH-PDF: FT sửa được thành CHỮ tự do ("6.5 - 7.0", như mẫu PDF) — in nguyên chữ, không tô ✓ / ✗; chữ số vẫn kiểm band. */
+function DongDiem({ goc, thang, diemSua, homNay, onDoi }: { goc: DiemGocBc | null; thang: boolean; diemSua: number | string | null; homNay: string; onDoi: (v: number | string | null) => void }) {
   const [sua, setSua] = useState(false);
   const [chu, setChu] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
   const tong = goc?.tong ?? null;
   /* RA-LOI-0611: chưa có điểm gốc → theo loại đợt (lớp thường không có điểm bài thì máy chủ không cho sửa tay — trước hiện "Sửa", lưu là lỗi mãi). */
   const ft = goc ? goc.tong == null : thang;
-  const so = diemSua ?? goc?.so ?? null;
+  const laChu = typeof diemSua === 'string';
+  const so = laChu ? null : diemSua ?? goc?.so ?? null;
   const chuSo = (v: number) => (ft ? fmtBand(v) : String(v));
   const xong = () => {
-    const v = chu.trim() === '' ? null : Number(chu.replace(',', '.'));
-    if (v !== null) { const l = loiDiemSua(v, ft ? null : tong); if (l) { setLoi(l); return; } }
+    const { gt, loi: l } = docDiemSua(chu, ft, tong);
+    if (l) { setLoi(l); return; }
     setSua(false); setLoi(null);
-    onDoi(v === null || v === goc?.so ? null : v);
+    onDoi(gt === goc?.so ? null : gt);
   };
   const coTheSua = thang || tong != null;   // RA-LOI-0611: đúng luật máy chủ (đợt tháng, hoặc có tổng điểm bài)
   return (
@@ -528,20 +552,22 @@ function DongDiem({ goc, thang, diemSua, homNay, onDoi }: { goc: DiemGocBc | nul
       {sua ? (
         <span className="inline-flex flex-col">
           <span className="inline-flex items-center gap-1.5">
-            <input autoFocus className={`field h-9 w-20 tabular-nums ${loi ? '!border-bad' : ''}`} inputMode="decimal" aria-label={t('Điểm')} aria-invalid={!!loi}
+            <input autoFocus className={`field h-9 tabular-nums ${ft ? 'w-28' : 'w-20'} ${loi ? '!border-bad' : ''}`} inputMode={ft ? 'text' : 'decimal'} aria-label={t('Điểm')} aria-invalid={!!loi}
+              maxLength={ft ? DIEM_CHU_TOI_DA : 6} placeholder={ft ? '6.5 - 7.0' : undefined}
               value={chu} onChange={(ev) => { setChu(ev.target.value); setLoi(null); }} onBlur={xong}
               onKeyDown={(ev) => { if (ev.key === 'Enter') { ev.preventDefault(); xong(); } if (ev.key === 'Escape') { ev.stopPropagation(); setSua(false); setLoi(null); } }} />
             {!ft && <span className="text-sm text-slate-400">/{tong}</span>}
           </span>
           {loi && <span role="alert" className="mt-0.5 text-[12px] font-semibold text-bad">{loi}</span>}
         </span>
-      ) : so == null ? <span className="text-sm text-slate-500">{t('Chưa có điểm')}</span>
+      ) : laChu ? <ODiem kieu="doc" so={diemSua as string} kq={null} nhan={t('Điểm')} />
+        : so == null ? <span className="text-sm text-slate-500">{t('Chưa có điểm')}</span>
         : <ODiem kieu={ft ? 'doc' : 'ti-le'} so={chuSo(so)} tong={tong ?? undefined} kq={kqDiemBc(so, goc)} nhan={t('Điểm')} />}
       {!sua && diemSua != null && goc && <span className="rounded surface-2 px-1.5 py-0.5 text-[12px] font-medium text-slate-400">{t('đã sửa · gốc {so}', { so: chuSo(goc.so) })}</span>}
       {!sua && diemSua == null && goc && <span className="rounded surface-2 px-1.5 py-0.5 text-[12px] font-semibold text-slate-300">{goc.luot}{goc.tuan ? ` · ${tuanLich(goc.tuan, homNay)}` : ''}</span>}
       {!sua && coTheSua && (diemSua != null && goc
         ? <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => onDoi(null)}>{t('Về điểm gốc')}</button>
-        : <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => { setChu(so == null ? '' : chuSo(so)); setSua(true); }}>{t('Sửa')}</button>)}
+        : <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => { setChu(laChu ? diemSua as string : so == null ? '' : chuSo(so)); setSua(true); }}>{t('Sửa')}</button>)}
     </div>
   );
 }
@@ -560,7 +586,8 @@ function PanelDocBc({ lopId, lopMa, dot, phan, gv, emId, vietHo, onVietHo, onDon
   const tc = tieuChiPhan(phan);
   const chon = tc.filter((x) => b?.muc[x.khoa]);
   const ft = !em?.goc || em.goc.tong == null;
-  const so = b?.diemSua ?? em?.goc?.so ?? null;
+  const sua = b?.diemSua ?? null;
+  const so = typeof sua === 'string' ? null : sua ?? em?.goc?.so ?? null;
   const hang = (nhan: string, giaTri: ReactNode) => (
     <div className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 border-t py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
       <dt className="text-[13px] font-medium text-slate-400">{nhan}</dt><dd className="m-0 min-w-0 text-sm text-slate-100">{giaTri}</dd>
@@ -575,9 +602,10 @@ function PanelDocBc({ lopId, lopMa, dot, phan, gv, emId, vietHo, onVietHo, onDon
         : !em ? <p className="m-0 text-sm text-slate-400">{t('Học viên không có trong đợt báo cáo này')}</p>
         : (
           <dl className="m-0">
-            {phan.coDiem && hang(t('Điểm'), so == null ? <span className="text-slate-500">{t('Chưa có điểm')}</span> : (
+            {phan.coDiem && hang(t('Điểm'), so == null && typeof sua !== 'string' ? <span className="text-slate-500">{t('Chưa có điểm')}</span> : (
               <span className="inline-flex flex-wrap items-center gap-2">
-                <ODiem kieu={ft ? 'doc' : 'ti-le'} so={ft ? fmtBand(so) : String(so)} tong={em.goc?.tong ?? undefined} kq={kqDiemBc(so, em.goc)} nhan={t('Điểm')} />
+                {typeof sua === 'string' ? <ODiem kieu="doc" so={sua} kq={null} nhan={t('Điểm')} />
+                  : <ODiem kieu={ft ? 'doc' : 'ti-le'} so={ft ? fmtBand(so!) : String(so)} tong={em.goc?.tong ?? undefined} kq={kqDiemBc(so, em.goc)} nhan={t('Điểm')} />}
                 {b?.diemSua != null ? <span className="text-[12px] text-slate-400">{t('đã sửa')}</span>
                   : em.goc && <span className="rounded surface-2 px-1.5 py-0.5 text-[12px] font-semibold text-slate-300">{em.goc.luot}{em.goc.tuan ? ` · ${tuanLich(em.goc.tuan, homNay)}` : ''}</span>}
               </span>

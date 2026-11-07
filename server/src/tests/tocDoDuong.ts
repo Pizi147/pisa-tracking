@@ -169,6 +169,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph' },
   /* BAO-CAO-PH b: Excel một lớp (GV không xuất → 403). */
   { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT', 'ADMIN', 'GVCN'], url: '/classes/{lopFT}/bao-cao-ph/xuat', maChuDich: { GVCN: 403 } },
+  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT', 'ADMIN', 'GVCN'], url: '/classes/{lopFT}/bao-cao-ph/xuat?kieu=pdf', maChuDich: { GVCN: 403 } },   // BCPH-PDF
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph/phan?phan=writing' },
   /* PR-HVL (7): panel Tuần khai giảng — thêm `coGiuaKhoa` và `tomTatMt` (một câu). */
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/progress' },
@@ -437,6 +438,8 @@ export const TRAN: Record<string, number> = {
   'ADMIN /tong-quan/gv-tre': 27, 'GVBM /classes/3/phoi-hop-sos': 21, 'GVBM /ref/periods': 14, 'GVBM /students/1/phoi-hop-sos': 17, 'GVBM /students/1/s-expert': 16, 'GVCN /cham/lich-test/qua-han': 19, 'GVCN /classes/3/phoi-hop-sos': 21, 'GVCN /classes/3/y-thuc/lo': 18, 'GVCN /cycles/3/suggested-mocks': 32, 'GVCN /hoc-vien-lop/lich-thi/3/lich-su': 18, 'GVCN /ref/periods': 14, 'GVCN /students/1/phoi-hop-sos': 17, 'GVCN /students/1/s-expert': 16, 'GVCN_THUONG /classes/3/phoi-hop-sos': 21, 'GVCN_THUONG /ref/periods': 14, 'GVCN_THUONG /students/1/phoi-hop-sos': 17, 'GVCN_THUONG /students/1/s-expert': 16, 'QL /bao-cao-ph/lop?branchId=1': 12, 'QL /cham/lich-test/qua-han': 18, 'QL /classes/3/phoi-hop-sos': 21, 'QL /classes/3/teachers': 17, 'QL /classes/3/y-thuc/lo': 18, 'QL /cycles/3/suggested-mocks': 31, 'QL /hoc-vien-lop/lich-thi/3/lich-su': 17, 'QL /ref/periods': 14, 'QL /students/1/phoi-hop-sos': 17, 'QL /students/1/s-expert': 15, 'QL /tong-quan/gv-tre?gv=7': 24, 'QT /admin/mo-sua-lich-test': 12, 'QT /bao-cao-ph/lop?branchId=1': 12, 'QT /classes/3/phoi-hop-sos': 21, 'QT /classes/3/teachers': 17, 'QT /ref/periods': 14, 'QT /students/1/phoi-hop-sos': 15, 'QT /students/1/s-expert': 13, 'QT /tong-quan/gv-tre?gv=7': 23,
   /* BAO-CAO-PH b: Excel một lớp (MB FT 101 33 em: em + bản ghi + GV + điểm gốc 5 kỹ năng) — max(đo + 10, ⌈đo × 1,3⌉), đo 06/11 QL / QT / Admin 12 · GVCN 403 2. */
   'QL /classes/3/bao-cao-ph/xuat': 22, 'QT /classes/3/bao-cao-ph/xuat': 22, 'ADMIN /classes/3/bao-cao-ph/xuat': 22, 'GVCN /classes/3/bao-cao-ph/xuat': 12,
+  /* BCPH-PDF: cùng câu Excel + 1 câu địa chỉ / SĐT chi nhánh (1 dòng) — trần = Excel + 1. */
+  'QL /classes/3/bao-cao-ph/xuat?kieu=pdf': 23, 'QT /classes/3/bao-cao-ph/xuat?kieu=pdf': 23, 'ADMIN /classes/3/bao-cao-ph/xuat?kieu=pdf': 23, 'GVCN /classes/3/bao-cao-ph/xuat?kieu=pdf': 12,
   /* BAO-CAO-PH: tab + panel một phần — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 06/11: FT tab 5 · panel 5; lớp thường (FOU, tính đợt từ tiến độ lớp) 7 · 7. */
   'QL /classes/3/bao-cao-ph': 15, 'GVCN /classes/3/bao-cao-ph': 15, 'GVBM /classes/3/bao-cao-ph': 15, 'GVCN_THUONG /classes/3/bao-cao-ph': 15, 'QT /classes/3/bao-cao-ph': 15, 'ADMIN /classes/3/bao-cao-ph': 15,
   'QL /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVBM /classes/3/bao-cao-ph/phan?phan=listening': 15, 'GVCN_THUONG /classes/3/bao-cao-ph/phan?phan=listening': 15, 'QT /classes/3/bao-cao-ph/phan?phan=listening': 15,

@@ -398,6 +398,7 @@ Mọi chuyển lớp thật chỉ đi qua `thiHanhLenhDenHan`; `applyTransition`
 | Ai được làm gì ở đâu | `server/src/permissions.ts` (`can`, `teacherAllows`, `scoreEditPath`, `editableSkills`) |
 | Chương trình, lộ trình FT, chương trình mới | `server/src/platform/sysconfig.ts` (`saveProgramme`, `saveRoute`, `taoChuongTrinh`) · `web/src/modules/platform/CatalogAdmin.tsx` |
 | Chi nhánh: tên, địa chỉ, SĐT (đầu tệp Báo cáo PH) | `server/src/platform/sysconfig.ts` (`listChiNhanh`, `luuChiNhanh`) · migrate `prChiNhanhLienHe.ts` · `web/src/modules/platform/ChiNhanhAdmin.tsx` |
+| Báo cáo PH xuất PDF như mẫu (FT dọc, lớp thường ngang; mỗi em một tệp, cả lớp .zip) | nội dung chung Excel / PDF `server/src/classes/xuatBaoCaoPh.ts` (`noiDung`, `baoCaoPdf`, `?kieu=pdf`) · dựng PDF `shared/domain/pdfBaoCaoPh.ts` (pdf-lib, không qua `index.ts`) · tải `web/src/modules/classes/xuatPdfBaoCaoPh.ts` (nạp lười + phông `web/src/assets/quicksand`) · nút ở `TabBaoCaoPh.tsx` |
 | Bảng quy đổi số câu → band | `server/src/platform/bangQuyDoi.ts` (`luuBangQuyDoi`) · `web/src/modules/platform/BangQuyDoiAdmin.tsx` |
 | Quy ước tuần, mã tuần, hạn chấm, trễ nhập điểm | `server/src/platform/week.ts` (`mocTreNhapDiem`, `quaHanNhapDiem`) · `shared/domain/week.ts` (`hanKyGhiKetQua`) |
 | Nhật ký thay đổi · Lịch sử thay đổi (một đường đọc) | `server/src/platform/audit.ts` · `shared/domain/nhatKy.ts` · `GET /lich-su` → `server/src/platform/lichSu.ts` |

@@ -14,40 +14,64 @@ import { badRequest, forbidden, notFound } from '../util.ts';
 import { diemGoc, docTuyChinhDot, dotCuaLop, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
 import { classProgressMany } from './schedule.ts';
 import {
-  boPhanBc, chuMucExcel, chuDiem, nhanDotBc, soNgayQuaHan, type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
+  boPhanBc, chuMucExcel, chuDiem, chuDiemPdf, nhanDotBc, soNgayQuaHan, type BanGhiBc, type BaoCaoPdf, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
 } from '../../../shared/domain/index.ts';
 
 export type SheetXuat = { ten: string; aoa: (string | number | null)[][] };
 type Em = { id: number; ten: string };
 
+/** Một phần của một em: GV phụ trách (lúc hạn đợt), ô chữ, điểm sửa tay / điểm gốc, mức từng tiêu chí. */
+type PhanEm = { p: PhanBc; gv: string; chu: string; sua: number | string | null; goc: DiemGocBc | null; muc: Record<string, MucBc> };
+/** NỘI DUNG một (lớp, đợt) — MỘT nguồn cho Excel (`dungSheet`) và PDF (`baoCaoPdf`), BCPH-PDF. */
+type NoiDung = { em: Em; phan: PhanEm[] }[];
+function noiDung(bo: readonly PhanBc[], em: readonly Em[], ghi: Map<string, BanGhiBc>, gv: Map<string, string[]>, goc: Map<string, Map<number, DiemGocBc>>): NoiDung {
+  return em.map((e) => ({
+    em: e,
+    phan: bo.map((p) => {
+      const b = ghi.get(`${e.id}:${p.khoa}`) ?? null;
+      return { p, gv: (gv.get(p.khoa) ?? []).join(', '), chu: b?.chu ?? '', sua: p.coDiem ? b?.diemSua ?? null : null, goc: goc.get(p.khoa)?.get(e.id) ?? null, muc: b?.muc ?? {} };
+    }),
+  }));
+}
+
 /** Một sheet = một lớp × một đợt × các em (đúng thứ tự mẫu). */
-function dungSheet(ten: string, ma: string, bo: readonly PhanBc[], em: readonly Em[], ghi: Map<string, BanGhiBc>, gv: Map<string, string[]>,
-  goc: Map<string, Map<number, DiemGocBc>>): SheetXuat {
-  const aoa: (string | number | null)[][] = [[ma, ...em.map((e) => e.ten)]];
-  const b = (sid: number, phan: string) => ghi.get(`${sid}:${phan}`) ?? null;
-  for (const p of bo) {
-    const tenGv = (gv.get(p.khoa) ?? []).join(', ');
+function dungSheet(ten: string, ma: string, bo: readonly PhanBc[], nd: NoiDung): SheetXuat {
+  const aoa: (string | number | null)[][] = [[ma, ...nd.map((x) => x.em.ten)]];
+  bo.forEach((p, i) => {
+    const o = nd.map((x) => x.phan[i]);
+    const tenGv = o[0]?.gv ?? '';
     if (p.khoa === 'chung') {
       aoa.push(['Giáo viên chủ nhiệm (Core teacher):', tenGv]);
-      aoa.push(['Nhận xét chung (General comment):', ...em.map((e) => b(e.id, p.khoa)?.chu || null)]);
+      aoa.push(['Nhận xét chung (General comment):', ...o.map((x) => x.chu || null)]);
     } else {
       aoa.push([`${p.excelVi} (${p.excelEn}) :`, tenGv]);
-      aoa.push(['Điểm:\nScore:', ...em.map((e) => {
-        const g = goc.get(p.khoa)?.get(e.id) ?? null;
-        const so = b(e.id, p.khoa)?.diemSua ?? g?.so ?? null;
+      aoa.push(['Điểm:\nScore:', ...o.map((x) => {
+        if (typeof x.sua === 'string') return x.sua;   // FT sửa thành chữ ("6.5 - 7.0")
+        const so = x.sua ?? x.goc?.so ?? null;
         if (so == null) return null;
-        return g?.tong != null ? `${so}/${g.tong}` : Number(chuDiem(so));
+        return x.goc?.tong != null ? `${so}/${x.goc.tong}` : Number(chuDiem(so));
       })]);
-      aoa.push(['Đề xuất cải thiện (Suggestion):', ...em.map((e) => b(e.id, p.khoa)?.chu || null)]);
+      aoa.push(['Đề xuất cải thiện (Suggestion):', ...o.map((x) => x.chu || null)]);
     }
     for (const n of p.nhom) {
-      n.ds.forEach((x, i) => {
-        const nhan = p.khoa === 'chung' ? `${i + 1}. ${x.vi}\n${x.en}` : `${x.vi}\n${x.en}`;
-        aoa.push([nhan, ...em.map((e) => { const m = b(e.id, p.khoa)?.muc[x.khoa] as MucBc | undefined; return m ? chuMucExcel(m) : null; })]);
+      n.ds.forEach((tc, j) => {
+        const nhan = p.khoa === 'chung' ? `${j + 1}. ${tc.vi}\n${tc.en}` : `${tc.vi}\n${tc.en}`;
+        aoa.push([nhan, ...o.map((x) => { const m = x.muc[tc.khoa]; return m ? chuMucExcel(m) : null; })]);
       });
     }
-  }
+  });
   return { ten, aoa };
+}
+
+/** Báo cáo PDF từng em (BCPH-PDF) — cùng nội dung Excel + đầu trang chi nhánh. */
+function baoCaoPdf(c: LopBc, nd: NoiDung, cn: { dia_chi: string | null; so_dien_thoai: string | null } | undefined): BaoCaoPdf[] {
+  return nd.map((x) => ({
+    ft: lopFt(c), diaChi: cn?.dia_chi ?? null, soDienThoai: cn?.so_dien_thoai ?? null, hocVien: x.em.ten, lop: c.code,
+    phan: x.phan.map((o) => ({
+      khoa: o.p.khoa, ngan: o.p.ngan, gv: o.gv, chu: o.chu, diem: o.p.coDiem ? chuDiemPdf(o.sua, o.goc) : null,
+      nhom: o.p.nhom.map((n) => ({ vi: n.vi, en: n.en, ds: n.ds.map((tc) => ({ vi: tc.vi, en: tc.en, muc: o.muc[tc.khoa] ?? null })) })),
+    })),
+  }));
 }
 
 /** Tên sheet Excel: ≤ 31 ký tự, bỏ ký tự cấm, trùng thì thêm số (đặc tả §10). */
@@ -80,8 +104,8 @@ function emTheoLo(ds: readonly { c: LopBc; d: DotBc }[], homNay: string): Map<st
   return out;
 }
 
-/** Bản ghi + GV + điểm gốc cho các việc → sheets. */
-function dungSheets(viec: readonly Viec[]): SheetXuat[] {
+/** Bản ghi + GV (phân công LÚC HẠN đợt) + điểm gốc cho các việc → nội dung từng việc (cùng thứ tự). */
+function dungNoiDung(viec: readonly Viec[]): NoiDung[] {
   if (!viec.length) return [];
   const ghi = new Map<string, Map<string, BanGhiBc>>();
   const dots = [...new Set(viec.map((v) => v.d.ma))];
@@ -94,21 +118,29 @@ function dungSheets(viec: readonly Viec[]): SheetXuat[] {
       ghi.set(r.dot, m);
     }
   });
-  const gv = new Map<number, Map<string, string[]>>();
+  /* GV in trên báo cáo = phân công LÚC HẠN đợt (đợt còn mở: hôm nay) — đổi GV sau hạn không đổi báo cáo đợt cũ (PTA chốt 07/11). Một câu cho mọi lớp. */
   const homNay = demoToday();
+  const moc = (v: Viec) => (v.d.han < homNay ? v.d.han : homNay);
+  const mocs = viec.map(moc).sort();
+  const pc: any[] = [];
   theoLoJson([...new Set(viec.map((v) => v.c.id))], (json) => {
-    for (const r of db().prepare(
-      `SELECT ta.class_id, ta.skill, ta.is_core, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
-        WHERE ta.class_id IN (${DS_JSON}) AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id`,
-    ).all(json, homNay, homNay) as any[]) {
+    pc.push(...db().prepare(
+      `SELECT ta.class_id, ta.skill, ta.is_core, ta.effective_from, ta.effective_to, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+        WHERE ta.class_id IN (${DS_JSON}) AND ta.status IN ('active', 'ended') AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id`,
+    ).all(json, mocs.at(-1), mocs[0]) as any[]);
+  });
+  const gvLuc = (v: Viec) => {
+    const m = new Map<string, string[]>();
+    const ngay = moc(v);
+    for (const r of pc) {
       const k = r.is_core ? 'chung' : r.skill;
-      if (!k) continue;
-      const m = gv.get(r.class_id) ?? new Map<string, string[]>();
+      if (!k || r.class_id !== v.c.id || r.effective_from > ngay || (r.effective_to && r.effective_to < ngay)) continue;
       const ds = m.get(k) ?? [];
       if (!ds.includes(r.full_name)) ds.push(r.full_name);
-      m.set(k, ds); gv.set(r.class_id, m);
+      m.set(k, ds);
     }
-  });
+    return m;
+  };
   /* Điểm gốc: lớp FT cùng đợt tháng → một câu mỗi kỹ năng cho mọi em; lớp thường theo lớp (lượt của chính lớp). ponytail: lớp thường mỗi lớp ≤ 4 câu — chi nhánh vài lớp có đợt trong tháng. */
   const goc = new Map<string, Map<string, Map<number, DiemGocBc>>>();   // khoá nhóm → phần → em
   const nhomGoc = (v: Viec) => (v.d.loai === 'thang' ? `ft|${v.d.ma}` : `${v.c.id}|${v.d.ma}`);
@@ -120,13 +152,19 @@ function dungSheets(viec: readonly Viec[]): SheetXuat[] {
     for (const p of ds[0].bo) if (p.coDiem) m.set(p.khoa, diemGoc(ds[0].c, ds[0].d, p.khoa, em));
     goc.set(k, m);
   }
-  return viec.map((v) => dungSheet(v.tenSheet, v.c.code, v.bo, v.em, ghi.get(v.d.ma) ?? new Map(), gv.get(v.c.id) ?? new Map(), goc.get(nhomGoc(v)) ?? new Map()));
+  return viec.map((v) => noiDung(v.bo, v.em, ghi.get(v.d.ma) ?? new Map(), gvLuc(v), goc.get(nhomGoc(v)) ?? new Map()));
 }
+
+/** Sheets Excel của các việc. */
+const dungSheets = (viec: readonly Viec[]): SheetXuat[] => dungNoiDung(viec).map((nd, i) => dungSheet(viec[i].tenSheet, viec[i].c.code, viec[i].bo, nd));
 
 const tep = (...phan: string[]) => `PISA_BaoCaoPH_${phan.join('_').replace(/[^\p{L}\p{N}_-]+/gu, '-')}_${demoToday()}.xlsx`;
 
-/** GET /classes/:id/bao-cao-ph/xuat?dot=&em= — một lớp (mọi em của đợt) hoặc một em (một sheet một cột). */
-export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | null, emId: number | null) {
+/**
+ * GET /classes/:id/bao-cao-ph/xuat?dot=&em=&kieu= — một lớp (mọi em của đợt) hoặc một em. Excel: một sheet một cột / em.
+ * `kieu=pdf` (BCPH-PDF): nội dung từng em (`BaoCaoPdf`) — web dựng PDF; + 1 câu địa chỉ / SĐT chi nhánh lớp (1 dòng).
+ */
+export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | null, emId: number | null, kieu: 'xlsx' | 'pdf' = 'xlsx') {
   const c = lopDayDu().get(classId) as LopBc | undefined;
   if (!c) throw notFound('Không tìm thấy lớp');
   if (!quyenBc(p, c).xuat) throw forbidden('Xuất báo cáo PH: chỉ Quản lý, Admin, Tư vấn viên.');
@@ -141,9 +179,14 @@ export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | n
     if (!em.length) throw badRequest('Học viên không có trong đợt báo cáo này');
   }
   const nhan = nhanDotBc(d, homNay);
-  const sheets = dungSheets([{ c, d, bo: dl.bo, em, tenSheet: tenSheet(c.code, new Set()) }]);
+  const viec: Viec[] = [{ c, d, bo: dl.bo, em, tenSheet: tenSheet(c.code, new Set()) }];
   writeAudit({ actorUserId: p.userId, action: 'bao_cao_ph.xuat', entityType: emId ? 'student' : 'class', entityId: emId ?? c.id, entityLabel: c.code,
-    after: { dot: d.ma, soHv: em.length } });
+    after: { dot: d.ma, soHv: em.length, ...(kieu === 'pdf' ? { kieu } : {}) } });
+  if (kieu === 'pdf') {
+    const cn = db().prepare('SELECT dia_chi, so_dien_thoai FROM branches WHERE id = ?').get(c.branch_id) as any;
+    return { ds: baoCaoPdf(c, dungNoiDung(viec)[0], cn), lop: c.code, nhanDot: nhan, dem: { hocVien: em.length, lop: 1 } };
+  }
+  const sheets = dungSheets(viec);
   return { sheets, tenTep: emId ? tep(c.code, nhan, em[0].ten) : tep(c.code, nhan), dem: { hocVien: em.length, lop: 1 } };
 }
 

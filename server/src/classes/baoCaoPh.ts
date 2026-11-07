@@ -14,7 +14,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
 import {
-  MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, dotMacDinh, dotTruoc, dsDotLop, loiDiemSua, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan,
+  MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, docDiemSua, dotMacDinh, dotTruoc, dsDotLop, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan,
   type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc, type TuyChinhDot,
 } from '../../../shared/domain/index.ts';
 
@@ -264,15 +264,17 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   }
   const datSan = (Array.isArray(body?.datSan) ? body.datSan : []).filter((k: unknown): k is string => typeof k === 'string' && k in muc);
   const chu = chuTuDo(body?.chu, ph.khoa === 'chung' ? 'Nhận xét chung' : 'Đề xuất cải thiện', 4000) ?? '';
-  let diemSua: number | null = null;
-  if (body?.diemSua != null && body.diemSua !== '') {
+  let diemSua: number | string | null = null;
+  if (body?.diemSua != null && String(body.diemSua).trim() !== '') {
     if (!ph.coDiem) throw badRequest('Phần này không có ô điểm');
-    diemSua = Number(body.diemSua);
+    if (typeof body.diemSua !== 'number' && typeof body.diemSua !== 'string') throw badRequest('Điểm không hợp lệ');
     const ft = laDotFt(c, d);
     const tong = ft ? null : diemGoc(c, d, ph.khoa, [sid]).get(sid)?.tong ?? null;
     if (!ft && tong == null) throw badRequest('Chưa có điểm bài để sửa');
-    const l = loiDiemSua(diemSua, tong);
-    if (l) throw badRequest(l);
+    /* BCPH-PDF: FT sửa được thành CHỮ tự do ("6.5 - 7.0", như mẫu PDF); chữ số vẫn kiểm band / tổng. */
+    const r = docDiemSua(body.diemSua, ft, tong);
+    if (r.loi) throw badRequest(r.loi);
+    diemSua = r.gt;
   }
   const b: BanGhiBc = { muc, datSan, chu, diemSua };
   const du = phanDu(ph, b) ? 1 : 0;
