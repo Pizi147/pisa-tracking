@@ -6,7 +6,7 @@
 import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docLayLai, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, lopDayDu, type Principal } from '../permissions.ts';
 import { coTheGiuViecTvv, nguoiGiuTvv } from '../worklist/viecTvv.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -112,6 +112,8 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
   const ngayLuu = khongThi ? null : ngayThi;
   const conn = db();
   return tx(() => {
+    /* SUA-LUU-TRU: bản trước đủ cột, đọc lại TRONG giao dịch (lần lưu xen giữa không bị bỏ qua); bản chụp chỉ khi lần này đổi nó. */
+    const hoan = banHoan(cycleById(cycleId), !kt && c.status !== 'active');
     conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = ?, thi_that_l = ?, thi_that_r = ?, thi_that_w = ?, thi_that_s = ?, thi_that_khong_thi = ?,
         thi_that_nhap_boi = ?, thi_that_nhap_luc = ?, outcome = ?, outcome_attempt_id = NULL, outcome_score = ?, outcome_note = ?,
         thi_that_target = ?, thi_that_lay_lai = ? WHERE id = ?`)   // P12: Target lúc nhập — đổi Target sau không đổi báo cáo thi thật đã qua
@@ -134,11 +136,84 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
     const truocNk = { ...cu, ngayThi: c.thi_that_ngay ?? null, khongThi: !!c.thi_that_khong_thi, ghiChu: c.outcome_note ?? null,
       layLai: docLayLai(c.thi_that_lay_lai)?.kn.join(' ') ?? null, ovr: c.outcome_score ?? null, ketLuan: c.outcome ?? null };
     const sauNk = { ...ghi, ngayThi: ngayLuu, khongThi, ghiChu, layLai: lay.join(' ') || null };
+    let khoiPhucId: number | null = null;
     if (Object.keys(sauNk).some((k) => (sauNk as any)[k] !== (truocNk as any)[k])) {   // ovr / kết luận suy từ điểm — không tự thành lần đổi
-      writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
-        before: truocNk, after: { ...sauNk, ovr: kq.ovr, ketLuan: kq.ketLuan, ...(kt ? { kyThi: kt.ma } : {}) } });
+      khoiPhucId = writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
+        before: { ...truocNk, _hoan: hoan }, after: { ...sauNk, ovr: kq.ovr, ketLuan: kq.ketLuan, ...(kt ? { kyThi: kt.ma } : {}) } });
     }
-    return cycleById(cycleId);
+    /* `khoiPhucId`: nhật ký của lần lưu này — toast Hoàn tác gửi lại (`khoiPhucThiThat`); không đổi gì → null (không có gì để hoàn tác). */
+    return { ...cycleById(cycleId), khoiPhucId };
+  });
+}
+
+/* SUA-LUU-TRU (chủ SP 07/11): cột kết quả thi thật của lộ trình + bản chụp mới nhất — chép ĐỦ vào nhật ký (`_hoan`) để trả đúng bản trước. */
+const COT_HOAN = ['thi_that_ngay', 'thi_that_l', 'thi_that_r', 'thi_that_w', 'thi_that_s', 'thi_that_khong_thi', 'thi_that_nhap_boi', 'thi_that_nhap_luc',
+  'outcome', 'outcome_attempt_id', 'outcome_score', 'outcome_note', 'thi_that_target', 'thi_that_lay_lai'] as const;
+const COT_HOAN_BC = ['thi_that_ngay', 'thi_that_l', 'thi_that_r', 'thi_that_w', 'thi_that_s', 'thi_that_ovr', 'thi_that_khong_thi', 'thi_that_nhap_boi',
+  'thi_that_nhap_luc', 'ket_luan', 'lam_moi_luc'] as const;
+type BanHoan = { c: Record<string, unknown>; bc: (Record<string, unknown> & { id: number }) | null };
+const chonCot = (r: any, cot: readonly string[]) => Object.fromEntries(cot.map((k) => [k, r[k] ?? null]));
+/** Bản đủ cột của lộ trình `c` + bản chụp mới nhất (`coBc`: lần lưu này đổi bản chụp — FT đã đóng) — trong giao dịch của nơi gọi. */
+function banHoan(c: any, coBc: boolean): BanHoan {
+  const bc = coBc ? db().prepare('SELECT * FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1').get(c.id) as any : null;
+  return { c: chonCot(c, COT_HOAN), bc: bc ? { id: bc.id, ...chonCot(bc, COT_HOAN_BC) } : null };
+}
+/** Trường hiện ở Lịch sử thi thật (cùng dạng nhật ký `datKetQuaThiThat`). */
+const truongNk = (r: any) => ({ l: r.thi_that_l ?? null, r: r.thi_that_r ?? null, w: r.thi_that_w ?? null, s: r.thi_that_s ?? null, ngayThi: r.thi_that_ngay ?? null,
+  khongThi: !!r.thi_that_khong_thi, ghiChu: r.outcome_note ?? null, layLai: docLayLai(r.thi_that_lay_lai)?.kn.join(' ') ?? null, ovr: r.outcome_score ?? null, ketLuan: r.outcome ?? null });
+
+/**
+ * POST /cycles/:id/thi-that/khoi-phuc { auditId, hoanTac? } — SUA-LUU-TRU (chủ SP 07/11): trả kết quả thi thật về BẢN TRƯỚC của một lần lưu (nhật ký
+ * `cycle.thi_that` có `_hoan`): cột lộ trình + bản chụp mới nhất (cùng lần chụp). Cùng quyền nhập (`coTheNhapThiThat`), cả em đã lưu trữ.
+ * `hoanTac` (toast ngay sau lưu): đã có người lưu sau lần đó → 409, không đè. Khôi phục cũng ghi nhật ký có `_hoan` → hoàn tác được. Không đụng Bước tiếp.
+ */
+export function khoiPhucThiThat(p: Principal, cycleId: number, input: { auditId?: unknown; hoanTac?: unknown }) {
+  const c = cycleById(cycleId);
+  if (!c) throw notFound('Không tìm thấy lộ trình');
+  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh nhập được kết quả thi thật.');
+  const auditId = Number(input.auditId);
+  if (!Number.isInteger(auditId) || auditId <= 0) throw badRequest('Bản trước không hợp lệ.');
+  const conn = db();
+  const nk = conn.prepare(`SELECT before_json FROM audit_logs WHERE id = ? AND action = 'cycle.thi_that' AND entity_type = 'learning_cycle' AND entity_id = ?`).get(auditId, cycleId) as any;
+  if (!nk) throw notFound('Không tìm thấy bản trước.');
+  let h: BanHoan | undefined;
+  try { h = JSON.parse(nk.before_json ?? '{}')?._hoan; } catch { h = undefined; }
+  if (!h?.c) throw badRequest('Bản này ghi trước khi có Khôi phục — sửa tay ở Kết quả thi thật.');
+  const b = h;
+  const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
+  return tx(() => {
+    if (input.hoanTac === true && conn.prepare(`SELECT 1 FROM audit_logs WHERE action IN ('cycle.thi_that', 'cycle.outcome') AND entity_type = 'learning_cycle' AND entity_id = ? AND id > ?`).get(cycleId, auditId)) {
+      throw conflict('Đã có người sửa kết quả sau lần lưu này — mở Lịch sử để khôi phục đúng bản.');
+    }
+    const cu = cycleById(cycleId);
+    const coBc = !kt && cu.status !== 'active';
+    const hoan = banHoan(cu, coBc);
+    const cot = COT_HOAN.filter((k) => k in b.c);
+    conn.prepare(`UPDATE learning_cycles SET ${cot.map((k) => `${k} = ?`).join(', ')} WHERE id = ?`).run(...cot.map((k) => b.c[k] ?? null), cycleId);
+    const sau = cycleById(cycleId);
+    /* Bản chụp mới nhất (FT đã đóng): đúng lần chụp đã ghi → trả nguyên cột; lần chụp MỚI hơn (đóng sau lần lưu) → tính lại từ kết quả vừa khôi phục,
+       cùng cách `datKetQuaThiThat` (so Target trong bản chụp) — bản chụp và lộ trình không lệch nhau. */
+    const bcNay = hoan.bc;
+    if (coBc && bcNay && b.bc?.id === bcNay.id) {
+      const bcb = b.bc;
+      const cb = COT_HOAN_BC.filter((k) => k in bcb);
+      conn.prepare(`UPDATE ban_chup_lo_trinh SET ${cb.map((k) => `${k} = ?`).join(', ')} WHERE id = ?`).run(...cb.map((k) => bcb[k] ?? null), bcb.id);
+    } else if (coBc && bcNay) {
+      const r = conn.prepare('SELECT target, khong_cam_ket FROM ban_chup_lo_trinh WHERE id = ?').get(bcNay.id) as any;
+      const d = { l: sau.thi_that_l ?? null, r: sau.thi_that_r ?? null, w: sau.thi_that_w ?? null, s: sau.thi_that_s ?? null };
+      const k2 = thiThatCuaCycle({ laFt: true, target: r.target ?? null, khongCamKet: !!r.khong_cam_ket, ...d, khongThi: !!sau.thi_that_khong_thi, outcome: null, outcomeScore: null });
+      conn.prepare(`UPDATE ban_chup_lo_trinh SET thi_that_ngay = ?, thi_that_l = ?, thi_that_r = ?, thi_that_w = ?, thi_that_s = ?, thi_that_ovr = ?, thi_that_khong_thi = ?,
+          thi_that_nhap_boi = ?, thi_that_nhap_luc = ?, ket_luan = ?, lam_moi_luc = ? WHERE id = ?`)
+        .run(sau.thi_that_ngay ?? null, d.l, d.r, d.w, d.s, k2.ovr, sau.thi_that_khong_thi ? 1 : 0, sau.thi_that_nhap_boi ?? null, sau.thi_that_nhap_luc ?? null, k2.ketLuan, nowIso(), bcNay.id);
+    }
+    const tom = (r: any) => (r.thi_that_khong_thi ? 'Không thi' : `L ${r.thi_that_l ?? '—'} · R ${r.thi_that_r ?? '—'} · W ${r.thi_that_w ?? '—'} · S ${r.thi_that_s ?? '—'}${r.outcome_score != null ? ` · OVR ${r.outcome_score}` : ''}`);
+    addJourney({
+      studentId: c.student_id, cycleId, eventType: 'cycle_outcome', eventDate: demoToday(), title: 'Kết quả thi thật',
+      detail: `${tom(cu)} → ${tom(sau)} · khôi phục bản trước`, refTable: 'learning_cycles', refId: cycleId, createdBy: p.userId,
+    });
+    const khoiPhucId = writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
+      before: { ...truongNk(cu), _hoan: hoan }, after: { ...truongNk(sau), _nguon: 'Khôi phục bản trước' } });
+    return { ...sau, khoiPhucId };
   });
 }
 

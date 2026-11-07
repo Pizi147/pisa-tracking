@@ -39,7 +39,9 @@ function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cyc
       <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
         <Nhan tone={toneXong(bt.ketLuan)}>{dich(bt.daXong)}</Nhan>
         {bt.hen ? <><Nhan tone="muted">{t('Hẹn bắt đầu {tuan}', { tuan: tuanLich(bt.hen, homNay) })}</Nhan>{bt.coTheChon && <button type="button" className={NUT_CHU} onClick={() => void huyHen()}>{t('Huỷ hẹn')}</button>}</>
-          : bt.chon ? (!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>)
+          : bt.chon ? <>{!d.dangHoc && d.huong && <Nhan tone={toneHuong(d.huong)}>{dich(d.huong)}</Nhan>}
+            {/* SUA-LUU-TRU (việc 5): kết quả đổi sau khi chọn — nhắc nhẹ, mở panel Bước tiếp (không chặn). */}
+            {bt.kqDaDoi && onBuocTiep && <button type="button" className={NUT_CHU} onClick={() => onBuocTiep(d.id)}>{t('Kết quả đã đổi — xem lại bước tiếp?')}</button>}</>
             : bt.coTheChon && onBuocTiep ? <button type="button" className={NUT_CHU} onClick={() => onBuocTiep(d.id)}>{t('Chọn bước tiếp ›')}</button>
               : <span className="text-[12px] text-slate-500">{t('Chờ QL / TVV chọn bước tiếp')}</span>}
       </span>

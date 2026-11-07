@@ -18,11 +18,13 @@ import { CYCLE_OUTCOME_LABEL, docMaLuot, kyThiCuaChuongTrinh, NHAN_SAU_THI, nhan
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { lichSuSua, truongSuaCaLop, xemLichSuHv } from '../students/lichSuSua.ts';
 import { scoreHistoryOf } from '../fasttrack/attempts.ts';
+import { coTheNhapThiThat } from '../loTrinh/thiThat.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
 
 /** `heThong`: giá trị là nhãn hệ thống (Có / Không, trạng thái, kết luận, "tuần n"…) — web dịch theo tiếng của trang; chữ người gõ giữ nguyên. */
 export type TruongLs = { ten: string; cu: string | null; moi: string | null; doiTuong?: string; heThong?: true };
-export type MucLs = { id: number | string; luc: string; nguoi: string; nguon: string | null; lyDo: string | null; truong: TruongLs[] };
+/** `khoiPhuc` (SUA-LUU-TRU): mục thi thật có bản trước đủ cột và người xem nhập được — nút "Khôi phục bản trước". */
+export type MucLs = { id: number | string; luc: string; nguoi: string; nguon: string | null; lyDo: string | null; truong: TruongLs[]; khoiPhuc?: true };
 export type TrangLs = { dong: MucLs[]; tiep: number | null; nhom: { key: string; nhan: string }[]; batDau: string | null };
 
 const LOAI = ['hv', 'lop', 'phan-cong', 'gop-y', 'bai-lop', 's-ex', 'nhap-hv', 'thi-that', 'o'] as const;
@@ -82,7 +84,7 @@ type Khoi = MucLs & { id: number; uid: number | null; action: string; truong: Tr
  * `gop` cho phép) gộp một mục — trường đổi hai lần lấy cũ của lần đầu, mới của lần sau (như OV-13j). Lọc nhóm có thể làm trống cả lô → đọc tối đa 4 lô.
  */
 function docNhatKy(where: string, thamSo: unknown[], tiep: number | null, loc: string | null,
-  doi: (r: DongNk) => { nguon: string | null; lyDo: string | null; truong: TruongNhom[] } | null, gop: (a: string, b: string) => boolean = () => false): { dong: MucLs[]; tiep: number | null } {
+  doi: (r: DongNk) => { nguon: string | null; lyDo: string | null; truong: TruongNhom[]; khoiPhuc?: true } | null, gop: (a: string, b: string) => boolean = () => false): { dong: MucLs[]; tiep: number | null } {
   const cau = db().prepare(sqlNhatKy(where));
   const khoi: Khoi[] = [];
   let truoc = tiep ?? Number.MAX_SAFE_INTEGER;
@@ -104,7 +106,7 @@ function docNhatKy(where: string, thamSo: unknown[], tiep: number | null, loc: s
         }
         tr.id = r.id; tr.lyDo ??= m.lyDo;
       } else {
-        khoi.push({ id: r.id, luc: r.luc, uid: r.uid, action: r.action, nguoi: r.ten ?? 'Hệ thống', nguon: m.nguon, lyDo: m.lyDo, truong });
+        khoi.push({ id: r.id, luc: r.luc, uid: r.uid, action: r.action, nguoi: r.ten ?? 'Hệ thống', nguon: m.nguon, lyDo: m.lyDo, truong, ...(m.khoiPhuc ? { khoiPhuc: true as const } : {}) });
       }
     }
   }
@@ -311,8 +313,12 @@ function thiThat(p: Principal, cycleId: number, tiep: number | null): TrangLs {
   /* OV-15i1: cùng cổng với lịch sử hồ sơ em (`loai=hv`) — GVBM không xem. */
   if (!xemLichSuHv(p, c.student_id)) throw forbidden('Chỉ Quản lý, GVCN, Tư vấn viên và CX của em xem được lịch sử.');
   const kt = !c.route && !!kyThiCuaChuongTrinh(c.programme_code);
+  /* SUA-LUU-TRU: hỏi quyền nhập MỘT lần, chỉ khi có mục khôi phục được (Lịch sử không có mục nào như thế → không thêm câu). */
+  let nhap: boolean | undefined;
+  const coTheKp = () => (nhap ??= coTheNhapThiThat(p, { id: cycleId, student_id: c.student_id }));
   const r = docNhatKy(`a.entity_type = 'learning_cycle' AND a.entity_id = ? AND a.action IN (${VIEC_THI.map(() => '?').join(',')})`, [cycleId, ...VIEC_THI], tiep, null, (r) => ({
-    nguon: null, lyDo: chu(r.f.lyDo),   // dòng hệ thống: người đã là "Hệ thống" — không lặp ở nguồn
+    nguon: chu(r.f._nguon), lyDo: chu(r.f.lyDo),   // dòng hệ thống: người đã là "Hệ thống" — không lặp ở nguồn; SUA-LUU-TRU: "Khôi phục bản trước"
+    ...(r.action === 'cycle.thi_that' && r.b._hoan && coTheKp() ? { khoiPhuc: true as const } : {}),
     truong: Object.keys(r.f).filter((k) => TRUONG_THI[k]).map((k) => {
       const [ten, hien0, cuKhoa] = TRUONG_THI[k];
       const hien = kt && hien0 === band ? chu : hien0;   // P13: KET / PET — điểm Cambridge số nguyên, không định dạng band

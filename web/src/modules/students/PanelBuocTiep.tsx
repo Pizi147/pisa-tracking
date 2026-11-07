@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -21,12 +22,29 @@ export type TrangThaiBuocTiep = {
   studentId: number; cycleId: number; ketLuan: string | null; hoanTacDuoc: boolean;
   /** OV-13q: hạn đã gia hạn · nút Gia hạn. */
   daGiaHan: boolean; coTheGiaHan: boolean;
+  /** SUA-LUU-TRU (việc 5): kết quả thi thật đổi sau khi chọn — dòng nhắc nhẹ. */
+  kqDaDoi?: boolean;
 };
 type Chon = HuongSauThi;
 
 const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/cases', '/lo-trinh', '/my-work', '/cycles', '/tong-quan'];
 const lamMoi = () => LAM_MOI.forEach((k) => invalidate(k));
 const gio = () => new Date().toTimeString().slice(0, 5);
+
+/**
+ * SUA-LUU-TRU (chủ SP 07/11): trả kết quả thi thật về bản trước của lần lưu `auditId` — toast Hoàn tác sau lưu (`hoanTac`: đã có người sửa sau → máy chủ 409, không đè)
+ * và "Khôi phục bản trước" ở Lịch sử. Xong → toast Hoàn tác chính lần khôi phục. Lỗi ném cho nơi gọi báo.
+ */
+export function useKhoiPhucThiThat(cycleId: number, sau?: () => void) {
+  const toast = useToast();
+  const kp = async (auditId: number, hoanTac = false): Promise<void> => {
+    const r = await api.post<{ khoiPhucId: number }>(`/cycles/${cycleId}/thi-that/khoi-phuc`, { auditId, hoanTac });
+    lamMoi(); sau?.();
+    toast.hoanTac(hoanTac ? t('Đã hoàn tác kết quả thi thật') : t('Đã khôi phục bản trước'),
+      () => { kp(r.khoiPhucId, true).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được'))); }, { key: `thi-that-kp:${cycleId}` });
+  };
+  return kp;
+}
 
 /**
  * BƯỚC TIẾP SAU THI (OV-13m, mockup `mockup-ov13-buoc-tiep-2026-10-15.html` §1–3) — panel v3: đầu "Bước tiếp · Hạn …", kết quả thi một dòng "✓ Đã xong · OVR … · Sửa",
@@ -53,6 +71,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const [daLuu, setDaLuu] = useState<{ x: DaLuuPanel; luc: string } | null>(null);
   const [giaHan, setGiaHan] = useState(false);
   const [lichSu, setLichSu] = useState(false);   // OV-15g: Lịch sử thay nội dung panel, ← Bước tiếp
+  const khoiPhuc = useKhoiPhucThiThat(cycleId, () => { reload(); onDone?.(); });
 
   const tieuDe = t('Bước tiếp');
   const em = hocVien ?? (bt ? { id: bt.studentId, ten: '' } : null);
@@ -61,7 +80,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     em: em?.ten ? em : null, lop: lop ?? bt?.lopNay?.code ?? null, ngCanh: CHU_DA_XONG,
   });
   if (lichSu) {
-    return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[em?.ten || null, lop ?? bt?.lopNay?.code ?? null]} quayLai={{ nhan: tieuDe, onClick: () => setLichSu(false) }} onClose={onClose} />;
+    return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[em?.ten || null, lop ?? bt?.lopNay?.code ?? null]} quayLai={{ nhan: tieuDe, onClick: () => setLichSu(false) }} onClose={onClose} khoiPhuc={khoiPhuc} />;
   }
   if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!bt) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
@@ -123,6 +142,8 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
           <b className="font-semibold text-slate-100">{chu}</b>
           {bt.chon && <span className="text-slate-400">{bt.luc ? ` · ${ngay(bt.luc, hn)}` : ''}{bt.boi ? ` · ${bt.boi}` : ''}</span>}
         </div>
+        {/* SUA-LUU-TRU (việc 5): kết quả thi thật đổi sau khi chọn — nhắc nhẹ, không chặn. */}
+        {bt.chon && bt.kqDaDoi && <p className="m-0 mt-2 text-sm text-soon">{t('Kết quả đã đổi — xem lại bước tiếp?')}</p>}
         {bt.chon && bt.coTheChon && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {bt.chon === 'tam_dung' && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { setDoi(true); setChon('lo_trinh_moi'); }}>{t('Quay lại học')}</button>}

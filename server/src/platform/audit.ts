@@ -22,8 +22,9 @@ const cotAudit = (a: DongAudit, luc: string) => {
 };
 const DAU_AUDIT = 'INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, before_json, after_json, created_at)';
 
-export function writeAudit(a: DongAudit) {
-  db().prepare(`${DAU_AUDIT} VALUES (?,?,?,?,?,?,?,?)`).run(...cotAudit(a, nowIso()));
+/** Trả id dòng nhật ký (SUA-LUU-TRU: Hoàn tác / Khôi phục bản trước trỏ đúng lần lưu). */
+export function writeAudit(a: DongAudit): number {
+  return Number(db().prepare(`${DAU_AUDIT} VALUES (?,?,?,?,?,?,?,?)`).run(...cotAudit(a, nowIso())).lastInsertRowid);
 }
 
 /** OV-13j: nhiều dòng audit MỘT câu (ghi theo lô — nhập Excel, chuyển / tạm dừng cả lớp). */

@@ -58,6 +58,8 @@ function docLoTrinh(cycleId: number) {
 const coMuc = (c: any) => !!c && !!c.route && (c.status === 'active' || c.bc_ly_do !== 'chuyen_lop') && (!!c.co_kq || !!c.buoc_tiep);
 const ketLuanCua = (c: any): string | null => (c.status !== 'active' ? c.bc_ket_luan : null) ?? c.outcome ?? null;
 const daXongCua = (c: any) => nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: ketLuanCua(c) });
+/** SUA-LUU-TRU (việc 5): dấu kết quả thi thật lúc chọn bước tiếp — khác dấu hiện tại = "Kết quả đã đổi — xem lại bước tiếp?". */
+const dauKq = (c: any) => JSON.stringify([!!c.thi_that_khong_thi, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, c.outcome_score ?? null, c.outcome ?? null]);
 
 export type TrangThaiBuocTiep = {
   chon: LuaChonSauThi | null; luc: string | null; boi: string | null; goiY: HuongSauThi | null; coTheChon: boolean;
@@ -70,6 +72,8 @@ export type TrangThaiBuocTiep = {
   hoanTacDuoc: boolean;
   /** OV-13q: hạn đã gia hạn (chữ "đã gia hạn") · nút Gia hạn (chưa chọn, người làm được việc — `coTheGiaHanSauThi`). */
   daGiaHan: boolean; coTheGiaHan: boolean;
+  /** SUA-LUU-TRU (việc 5): đã chọn mà kết quả thi thật đổi sau đó — dòng nhắc nhẹ, không chặn. Lựa chọn cũ (trước PR) không có dấu → false. */
+  kqDaDoi: boolean;
 };
 
 /** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
@@ -87,6 +91,7 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
     lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
     target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
     hoanTacDuoc: !(c.buoc_tiep === 'lo_trinh_moi' && g.lenhId && (db().prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any)?.trang_thai === 'da_chuyen'),
+    kqDaDoi: !!c.buoc_tiep && g.kq !== undefined && g.kq !== dauKq(c),
   };
 }
 
@@ -216,6 +221,8 @@ type GhiBuocTiep = {
   dongCaseLt?: { chup: ChupCaseDong[]; tinHieu: number[] };
   /** Q-RL3: việc Phối hợp SOS của lộ trình cũ đóng lần này — hoàn tác mở lại. */
   dongPhoiHop?: number[];
+  /** SUA-LUU-TRU: dấu kết quả thi thật lúc chọn (`dauKq`). */
+  kq?: string;
 };
 /** Bản chụp mới nhất của lộ trình (hai tham số: cycle_id, cycle_id). */
 const BAN_CHUP_MOI = 'cycle_id = ? AND lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = ?)';
@@ -334,7 +341,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     const cu = docLoTrinh(cycleId);
     /* Lưu lại ĐÚNG lựa chọn đang có (bấm đúp, gửi lại) → không làm lại gì. */
     if (cu.buoc_tiep === chon && (JSON.parse(cu.buoc_tiep_json ?? '{}') as GhiBuocTiep).thamSo === thamSo) return trangThaiBuocTiep(p, cycleId);
-    const ghi: GhiBuocTiep = { thamSo, ...(ghiChu ? { ghiChu } : {}), ...(lt ? { loTrinhMoi: { route: lt.route, routeTen: lt.routeTen, boTarget: lt.boTarget, monDangKy: lt.monDangKy, cuoiId: cycleId } } : {}) };
+    const ghi: GhiBuocTiep = { thamSo, kq: dauKq(cu), ...(ghiChu ? { ghiChu } : {}), ...(lt ? { loTrinhMoi: { route: lt.route, routeTen: lt.routeTen, boTarget: lt.boTarget, monDangKy: lt.monDangKy, cuoiId: cycleId } } : {}) };
     /* OV-13m: em Tạm dừng sau thi → Lộ trình mới = Quay lại học (hạn tính lại từ hôm nay), không gỡ Tạm dừng; hoàn tác thì Tạm dừng lại. */
     if (cu.buoc_tiep === 'tam_dung' && chon === 'lo_trinh_moi') {
       if (cu.em_status === 'inactive') setStudentStatus(q, cu.student_id, 'active', homNay, 'Quay lại học', null, { lopKetThucDuoc: true });   // P7 (E2): lớp giữ đã kết thúc → mở lại ở dưới

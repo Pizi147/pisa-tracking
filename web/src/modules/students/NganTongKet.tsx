@@ -158,6 +158,8 @@ function MucBuocTiep({ bt, onMo }: { bt: NonNullable<TongKet['buocTiep']>; onMo:
     <section aria-label={t('Bước tiếp')} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
       <span className="text-xs text-slate-500">{t('Bước tiếp')}</span>
       {chu && <span className="text-sm text-slate-200">{chu}{bt.chon && bt.luc ? <span className="text-slate-400"> · {ngay(bt.luc, homNay)}{bt.boi ? ` · ${bt.boi}` : ''}</span> : null}</span>}
+      {/* SUA-LUU-TRU (việc 5): kết quả đổi sau khi chọn — nhắc nhẹ, "Xem" mở panel Bước tiếp. */}
+      {bt.kqDaDoi && <span className="text-sm text-soon">{t('Kết quả đã đổi — xem lại bước tiếp?')}</span>}
       <span className="flex-1" />
       {bt.coTheChon && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${bt.chon ? '' : 'btn-primary'}`} onClick={onMo}>{bt.chon ? t('Xem') : t('Chọn bước tiếp ›')}</button>}
     </section>
@@ -207,7 +209,9 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                   {kq.ovr !== null ? (
                     <O nho={`${t('Thi thật')}${kq.ngay ? ` · ${ngay(kq.ngay, homNay)}` : ''}`}>
                       <Lon em="OVR">{b1(kq.ovr)}</Lon>
-                      <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}</div>
+                      <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}
+                        {/* SUA-LUU-TRU (việc 1): sửa kết quả đã nhập — cả em đã lưu trữ (cùng quyền nhập). */}
+                        {kq.coTheNhap && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>{t('Sửa')}</button></>}</div>
                       {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'doing' : kq.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(kq.nhan)}</Nhan></div>}
                     </O>
                   ) : kq.khongCoThi ? (
@@ -217,7 +221,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                   ) : (
                     <O nho={t('Thi thật')} cho>
                       <div className="text-sm font-semibold leading-snug text-slate-400">{kq.khongThi ? t('Không thi') : t('Chờ kết quả thi thật')}</div>
-                      {kq.coTheNhap && <div className="mt-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>{t('Nhập kết quả')}</button></div>}
+                      {kq.coTheNhap && <div className="mt-2"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>{kq.khongThi ? t('Sửa') : t('Nhập kết quả')}</button></div>}
                     </O>
                   )}
                   {MUI}
