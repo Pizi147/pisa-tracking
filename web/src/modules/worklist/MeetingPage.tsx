@@ -246,7 +246,8 @@ export function MeetingBoard() {
                       <tr key={u.unitId} className="border-t" style={{ borderColor: 'var(--line)' }}>
                         <td className="td text-slate-100 font-medium">{u.unitName}</td>
                         {u.cells.map((c, i) => (
-                          <td key={c.key} className="td cursor-pointer bam" onClick={() => setGanHoi({ unit: u, cell: c })}>
+                          <td key={c.key} className="td cursor-pointer bam" onClick={() => setGanHoi({ unit: u, cell: c })} tabIndex={0}
+                            onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setGanHoi({ unit: u, cell: c }); } }}>
                             <OTaBang cell={c} thTutor={u.kind !== 'branch' ? (TUTOR_LABEL_NGAN[c.key] ?? dich(c.label)) : undefined} />
                           </td>
                         ))}
@@ -363,7 +364,7 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
             ))}
           </div>
           <textarea className="field" rows={4} disabled={chiDoc} value={note} onChange={(e) => setNote(e.target.value)}
-            placeholder={t('Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào')} />
+            placeholder={t('Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào')} aria-label={t('Bằng chứng cụ thể: chuyện gì, ở lớp nào, buổi nào')} />
 
           {/* ── Nối với việc (R6) ── */}
           <section>
@@ -468,7 +469,7 @@ function ChonViec({ branchId, reportId, taskGroup, periodId, onLinked, onCreateN
 
   return (
     <div className="mt-2 surface-2 rounded-lg border p-2 space-y-1.5" style={{ borderColor: 'var(--line-strong)' }}>
-      <input className="field" placeholder={t('Gõ tên việc…')} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+      <input className="field" placeholder={t('Gõ tên việc…')} aria-label={t('Gõ tên việc…')} value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
       {loading && <Skeleton rows={2} />}
       <ul className="list-none p-0 m-0 max-h-48 overflow-y-auto space-y-0.5">
         {rows.map((r) => (

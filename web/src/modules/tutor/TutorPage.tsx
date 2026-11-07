@@ -174,7 +174,7 @@ export default function TutorPage() {
                     </tr></thead>
                     <tbody>
                       {pt.cat(rows).map((d) => (
-                        <tr key={d.id} className={`row-hover ${d.ketLuan?.kl === 'ngung' ? 'opacity-60' : ''}`}>
+                        <tr key={d.id} className={`row-hover ${d.ketLuan?.kl === 'ngung' ? 'hang-mo' : ''}`}>
                           <td className="td sticky-col">{ten(d)}</td>
                           <td className="td text-slate-300">{nhanNoiDay(d.noiDay)}</td>
                           <td className="td text-slate-300">{nhanKyNang(d.kyNang)}</td>
