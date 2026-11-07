@@ -3,6 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, ErrorState, Field, Forbidden, Skeleton } from '../../ui/ui.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { dsLoi, type LoiTruong } from '@shared/domain/index.ts';
@@ -10,10 +11,14 @@ import { t } from '@shared/i18n/index.ts';
 
 type ChiNhanh = { id: number; code: string; status: string; name: string; diaChi: string | null; soDienThoai: string | null };
 type LienHe = Pick<ChiNhanh, 'name' | 'diaChi' | 'soDienThoai'>;
+const COT: CotBang[] = [
+  { key: 'ma', nhan: t('Mã'), kieu: 'so', rong: 64 }, { key: 'ten', nhan: t('Tên'), kieu: 'ten', rong: 160 }, { key: 'dc', nhan: t('Địa chỉ'), kieu: 'chu' },
+  { key: 'sdt', nhan: t('Số điện thoại'), kieu: 'tuan', rong: 150 }, { key: 'sua', nhan: '', kieu: 'nut', rong: 72 },
+];
 
 /**
  * QUẢN TRỊ › CHI NHÁNH (CHI-NHANH-LIEN-HE, chủ SP 07/11) — tên hiển thị, địa chỉ, SĐT của từng cơ sở: in ở đầu tệp Báo cáo PH gửi phụ huynh.
- * Cùng kiểu Chương trình: bảng (điện thoại: danh sách) + panel sửa. Lưu xong có Hoàn tác (gửi lại giá trị cũ); nhật ký ghi trước / sau. Mã không sửa.
+ * Bảng (`Bang`, < 640 px thành thẻ) + panel sửa. Lưu xong có Hoàn tác (gửi lại giá trị cũ); nhật ký ghi trước / sau. Mã không sửa.
  */
 export function ChiNhanhAdmin() {
   const { data, loading, error, reload } = useApi<ChiNhanh[]>('/admin/chi-nhanh');
@@ -36,46 +41,17 @@ export function ChiNhanhAdmin() {
 
   return (
     <>
-      <Card className="min-w-0" bodyClass="p-0">
-        {loading || !data ? <div className="p-4"><Skeleton rows={5} /></div> : (
-          <>
-            <div className="table-scroll bang-dinh max-sm:hidden"><table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th className="th">{t('Mã')}</th><th className="th">{t('Tên')}</th><th className="th">{t('Địa chỉ')}</th>
-                  <th className="th">{t('Số điện thoại')}</th><th className="th" />
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((b) => (
-                  <tr key={b.id} onClick={() => setSua(b)} className={`bam cursor-pointer ${sua?.id === b.id ? 'row-active' : ''} ${b.status === 'active' ? '' : 'opacity-50'}`}>
-                    <td className="td whitespace-nowrap font-semibold text-slate-100">{b.code}</td>
-                    <td className="td whitespace-nowrap text-slate-100">{b.name}</td>
-                    <td className="td text-slate-300">{chu(b.diaChi)}</td>
-                    <td className="td whitespace-nowrap tabular-nums text-slate-300">{chu(b.soDienThoai)}</td>
-                    <td className="td text-right">
-                      <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setSua(b); }}>{t('Sửa')}</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-            <ul className="sm:hidden m-0 list-none p-0">
-              {data.map((b) => (
-                <li key={b.id} className="border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-                  <button type="button" onClick={() => setSua(b)} className={`flex min-h-[44px] w-full items-center gap-2 px-4 py-2.5 text-left ${b.status === 'active' ? '' : 'opacity-50'}`}>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm text-slate-100"><b>{b.code}</b> · {b.name}</span>
-                      <span className="block text-xs text-slate-400">{b.diaChi || t('Chưa có địa chỉ')}{b.soDienThoai ? ` · ${b.soDienThoai}` : ''}</span>
-                    </span>
-                    <span aria-hidden className="text-slate-500">›</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </Card>
+      {loading || !data ? <Card><Skeleton rows={5} /></Card> : (
+        <Bang ten={t('Chi nhánh')} cot={COT} hang={data} khoa={(b) => b.id} onHang={setSua} dangMo={(b) => sua?.id === b.id}
+          lopHang={(b) => (b.status === 'active' ? '' : 'opacity-50')}
+          oCua={(b, c) => {
+            if (c.key === 'ma') return <b className="text-slate-100">{b.code}</b>;
+            if (c.key === 'ten') return b.name;
+            if (c.key === 'dc') return chu(b.diaChi);
+            if (c.key === 'sdt') return <span className="tabular-nums">{chu(b.soDienThoai)}</span>;
+            return <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setSua(b); }}>{t('Sửa')}</button>;
+          }} />
+      )}
       {sua && <SuaChiNhanh key={sua.id} cn={sua} onClose={() => setSua(null)} onLuu={async (v) => { await gui(sua, v); setSua(null); }} />}
     </>
   );
