@@ -88,7 +88,7 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
     goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: ketLuanCua(c) }),
     coTheChon, daGiaHan: trangThaiSauThi({ ...c, buoc_tiep: null }, demoToday()).daGiaHan,
     coTheGiaHan: !c.buoc_tiep && coTheChon,   // rà #436: giai đoạn chờ bước tiếp — chỉ người chọn được (`coTheGiaHanSauThi`)
-    daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? null : null,
+    daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? c.bc_class_code ?? null : null,
     lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
     target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
     hoanTacDuoc: !daChuyen,
@@ -368,6 +368,8 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
       ghi.tuTamDung = true;
       ghi.tamDungNgay = cu.em_archived ?? null;
       ghi.tamDungCu = { json: cu.buoc_tiep_json ?? null, luc: cu.buoc_tiep_luc ?? null, boi: cu.buoc_tiep_boi ?? null };
+    } else if (cu.buoc_tiep === 'ket_thuc' && chon === 'lo_trinh_moi' && hen && !lopMoiId) {
+      /* HOTFIX-MO-KHOA: Kết thúc học → Hẹn bắt đầu (Giữ lớp; lớp khác vẫn qua lệnh Chuyển lớp): em ở nguyên Lưu trữ tới tuần hẹn (không mở lại lớp / lộ trình cũ cả tuần); tới hẹn `batDauHenDenHan` Học lại. */
     } else if (cu.buoc_tiep) {
       /* HOTFIX-MO-KHOA (chủ SP 07/11, không chặn cứng): hoàn tác chính xác trong savepoint; vướng (409) → cuộn lại phần đó, đi THẲNG từ trạng thái hiện tại. */
       try { tx(() => hoanTac(q, cu)); } catch (e) { if (!(e instanceof HttpError && e.status === 409)) throw e; ghi.diThang = true; }

@@ -58,6 +58,7 @@ export async function runPrHotfixMoKhoaTests(t: { check: any; assert: any; asser
     const r = bt.chonBuocTiep(QL, x.cy, { chon: 'lo_trinh_moi', route: 'KHAC', routeTen: 'RF bù buổi chính', batDau: tuanSau });
     assert(r.chon === 'lo_trinh_moi' && r.hen === tuanSau, `đổi: ${JSON.stringify({ chon: r.chon, hen: r.hen })}`);
     assert(JSON.stringify(dem(x.sid)) === JSON.stringify(goc), `thừa: ${JSON.stringify({ goc, nay: dem(x.sid) })}`);
+    assert(em(x.sid).status === 'finished' && em(x.sid).archived_at && r.henLop, `hẹn: em ở nguyên Lưu trữ tới tuần hẹn, có lớp hẹn: ${JSON.stringify({ em: em(x.sid), henLop: r.henLop })}`);
     const h = bt.boChonBuocTiep(QL, x.cy);
     assert(h.chon === 'ket_thuc' && em(x.sid).status === 'finished' && em(x.sid).archived_at, `Hoàn tác về Kết thúc: ${h.chon} ${JSON.stringify(em(x.sid))}`);
   }));
