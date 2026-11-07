@@ -260,6 +260,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
 ### 07/11 sau deploy — Phân tích GV: ô "—" + BỎ CHÚ THÍCH MỌI NƠI (chủ SP chốt — session BO-CHU-THICH)
+- **Đã merge (chưa deploy):** #1186 — "Cách tính" mọi panel số thành ⓘ cạnh tiêu đề, bỏ ~35 đoạn lưu ý tĩnh / 27 tệp; bàn giao Writing cũ tính cho người ghi. Còn GIỮ: chú giải màu / ký hiệu (Hành trình, lưới FT) — chờ chủ SP quyết.
 - **Chủ SP 07/11 (ảnh bảng Phân tích › Giáo viên, Cẩm Phả FT):** "sao tôi vẫn thấy một vài GV không có thông tin gì về việc quá hạn công việc hay chấm đúng hạn hay gì?" (4 GV có ô "—").
 - **Chủ SP 07/11 (ảnh panel "Việc đúng hạn", khoanh khối "Cách tính" cuối panel):** "và bỏ mấy cái này di làm ơn" + "hình như có vẻ là các phần ___ là do tôi vừa reset hạn?"
 - PTA: kiểm trên bản chép thật từng ô "—" (không có việc trong kỳ / reset hạn dời ra sau hôm nay / lỗi). Bỏ khối "Cách tính" cuối các panel số (giải thích giữ ở ⓘ).
@@ -267,6 +268,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - **Chủ SP 07/11:** "Không tính trễ nhé cho nhẹ gánh đỡ phải code thêm đúng không? và không chỉ phần 'cách tính' ở đây, những thông tin lưu ý hay note thêm ở mọi nơi cần phải bỏ đi nhé" → (1) việc quá hạn rồi bị hệ thống đóng: KHÔNG tính (giữ như hiện tại, không code). (2) **LUẬT GIAO DIỆN MỚI:** bỏ mọi đoạn chú thích / lưu ý / "Cách tính" / ghi chú tĩnh trên mọi màn, panel, hộp; giữ ⓘ (giải thích khi bấm), lỗi, lý do chặn tại nút, trạng thái lưu, ô rỗng. (3) Kèm sửa nhỏ: bàn giao Writing dữ liệu cũ tính cho đúng người ghi (`viecDaXong.ts` `gvLop`).
 
 ### 07/11 — NHẮC XẾP MT CHỈ KHI THIẾU (chủ SP chốt — session XEP-MT-NHAC)
+- **Đã merge (chưa deploy):** #1188 — đếm mọi lượt Mock đã tạo vào "đủ 3 / RF 2"; bỏ "Chốt tuần MT" (bản chép thật 28 → 0, chip 3 → 0); xoá / huỷ vắng 2 lần / QL tự huỷ môn không nhắc; nhãn "Chưa có MT kế tiếp" → "Chưa đủ MT" (Admin "HV chưa đủ MT"); "Cần xếp lại" chỉ môn vắng chưa dời (cả môn huỷ do đề nghị dời hết hạn cũng không nhắc).
 - **Chủ SP 07/11 (ảnh Công việc QL tab "Việc quản lý" › Thiếu dữ liệu: 5 việc "Chốt tuần MT · không hạn"):** "cái này tôi đã nói rồi là đừng cho thêm vào phần công việc của quản lý, xóa rồi thì thôi mà?" + "không cần nhắc là cần phải xếp lịch thêm nữa nhất là các HV refire" (RF).
 - PTA kiểm bản chép thật: "Chốt tuần MT" = mọi lượt `planned` không tuần (`mywork.ts` mục 4 ~1313) — có lượt QL đã "Xóa lịch" + bỏ hết môn (3/11) vẫn sinh việc; có lượt MT5 / MT6 / MT3 4 môn chưa tuần.
 - **Chủ SP 07/11 (chốt):** "đủ 3 MT cho các lộ trình bình thường và đủ 2 MT cho các lộ trình RF là được, đằng nào cũng đã tự xếp, thiếu thì mới báo, và nếu xóa rồi chủ động xóa rồi thì không báo xếp lại nữa"
@@ -276,6 +278,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 
 ### 07/11 — Công việc "Của GV / Tất cả": dòng việc lôm côm (chủ SP)
+- **Đã merge (chưa deploy):** #1187 — người giữ việc đầu dòng phụ; ≥ 640 dòng phụ một dòng cắt "…" cuối (ngoại lệ có chủ ý của RA-GD-0711, PTA chọn), 375 xuống dòng; hàng có huy hiệu TVV xuống dòng.
 - **Chủ SP 07/11 (ảnh danh sách Nhập điểm, QL xem Tất cả):** "giao diện hơi lôm côm nhé" → PTA: cột hạn thành 3 dòng (tuần · hạn · 👤 tên người giữ việc), tên dài xuống dòng → chiều cao hàng lệch nhau; mockup v17 a2 mỗi hàng 2 dòng. Sửa: người giữ việc lên ĐẦU dòng phụ bên trái ("👤 Tên · 2 lớp · tuần W1 NOV · 6 bài"), cột hạn giữ 2 dòng như mockup; hàng đều nhau 1440 + 375. Giao BO-CHU-THICH (cùng tệp `DanhSachViec.tsx`), PR riêng.
 
 ### 07/11 sau deploy — GIAM-DOC-BC (log bản chính, chủ SP "Giao session")
