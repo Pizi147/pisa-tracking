@@ -95,7 +95,7 @@ function dungTap(c: Ky): ViecXong[] {
     `SELECT v.id, v.student_id AS hv, s.full_name AS ten, s.consultant_user_id AS owner, v.han, v.han_chon, l.id AS lop, l.code AS ma, l.is_fast_track AS ft,
             (SELECT MIN(x.ngay) FROM viec_bao_ph_lan x WHERE x.viec_id = v.id AND x.ket_qua = 'da_bao') AS xong
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN classes l ON l.id = ${lopEm('v.student_id', 'NULL')}
-      WHERE s.branch_id = ? AND v.trang_thai = 'xong' AND v.han BETWEEN date(?, '-30 day') AND ?`,
+      WHERE s.branch_id = ? AND v.trang_thai = 'xong' AND COALESCE(v.han_chon, v.han) BETWEEN ? AND ?`,
   ).all(c.cn, c.tu, c.cuoi) as any[]) {
     them({ ...lopCua(r), owner: r.owner, han: hanBaoPhHieuLuc(r.han, [], r.han_chon), xong: r.xong ? String(r.xong).slice(0, 10) : null },
       { key: `bao-ph:${r.id}`, group: 'bao_ph_yt', tieuDe: 'Báo PH', href: duongHoSoHocVien(r.hv, { tab: 'y-thuc' }) });

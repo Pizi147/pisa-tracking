@@ -1,8 +1,10 @@
 /** Lớp gọi API + cache theo tài khoản. Đổi tài khoản là xoá sạch cache cũ. */
 import { dich, t } from '../../../shared/i18n/index.ts';
 
+/** Câu khi người dùng tự đóng hộp xác nhận (RKC) — `huy` = không phải lỗi; toast lỗi bỏ qua câu này. */
+export const cauHuy = () => t('Đã huỷ — chưa làm gì.');
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public details?: any) {
+  constructor(public status: number, message: string, public details?: any, public huy = false) {
     super(message);
   }
   get hint(): string | undefined {
@@ -127,11 +129,12 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     const cau = typeof payload?.khoa === 'string' ? dich(payload.khoa, payload.bien) : typeof payload?.error === 'string' ? dich(payload.error) : t('Lỗi {status} — thử lại', { status: res.status });
     const nut = typeof payload?.details?.nut === 'string' ? dich(payload.details.nut) : undefined;
     const ma = payload?.details?.canXacNhan && typeof payload.details.ma === 'string' ? payload.details.ma as string : null;
-    if (res.status === 409 && ma && !xacNhan.includes(ma) && hoiXacNhan && await hoiLanLuot(cau, nut)) {
-      return request<T>(method, path, body, isForm, [...xacNhan, ma]);   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
+    if (res.status === 409 && ma && !xacNhan.includes(ma) && hoiXacNhan) {
+      if (await hoiLanLuot(cau, nut)) return request<T>(method, path, body, isForm, [...xacNhan, ma]);   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
+      /* Người dùng bấm Đóng / Esc = KHÔNG làm, không phải lỗi: dấu `huy` + câu trung tính; Toast bỏ qua, 409 xung đột thật vẫn là lỗi. */
+      throw new ApiError(res.status, cauHuy(), payload?.details, true);
     }
-    const loi = new ApiError(res.status, cau, payload?.details);
-    throw loi;
+    throw new ApiError(res.status, cau, payload?.details);
   }
   return payload as T;
 }

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { HOAN_TAC_MS, giayHoanTacConLai } from '@shared/domain/index.ts';
 import { IconDat } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { cauHuy } from '../lib/api.ts';
 
 /** PR-YT2 Q5: nút trong toast (ví dụ `Hoàn tác`) — bấm thì chạy `onBam` rồi gỡ toast luôn, không chờ hết `ms`. */
 type HanhDong = { nhan: string; onBam: () => void };
@@ -31,6 +32,7 @@ function DemLui({ nhan, het }: { nhan: string; het: number }) {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
   const push = useCallback((kind: Toast['kind'], text: string, opts?: PushOpts) => {
+    if (kind === 'error' && text === cauHuy()) return;   // người dùng tự đóng hộp xác nhận — không phải lỗi
     const id = Date.now() + Math.random();
     const ms = opts?.ms ?? (kind === 'error' ? 7000 : 3500);
     const het = opts?.demLui ? Date.now() + ms : undefined;

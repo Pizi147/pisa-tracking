@@ -15,7 +15,7 @@ export type BuoiDay = {
   id: number; ngay: string; hocVien: string; lop: string | null; nguoiGhi: string | null; kn: string; hinhThuc: 'offline' | 'online' | null;
   chuanBi: boolean | null; taiLieu: boolean | null; feedbackGv: boolean | null; danhGia: number | null; nhanXet: string; nhanXetTutor: string | null;
 };
-export type NhanXet = { id: number; kl: KetLuan; noiDung: string; luc: string; suaLuc: string | null; nguoi: string; coSua: boolean };
+export type NhanXet = { id: number; kl: KetLuan; noiDung: string; luc: string; suaLuc: string | null; nguoi: string; coSua: boolean; coXoa: boolean };
 export type PanelTutorKq = { tutor: DongTutor; so: SoTutor; coSua: boolean; coBuoi: boolean; nhanXet: NhanXet[]; buoi: BuoiDay[] };
 /** Ba tiêu chí (cùng thứ tự `TIEU_CHI_TUTOR` của TU-a): khoá dữ liệu + nhãn cột. */
 export type TieuChi = 'chuanBi' | 'taiLieu' | 'feedbackGv';
