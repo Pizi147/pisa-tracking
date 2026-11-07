@@ -110,6 +110,7 @@ export async function runPrSvSo3Tests(t: YThucTestKit) {
     assert(tq && pt.n === tq.mau && pt.rows.length === tq.mau && pt.rows.filter((x: any) => x.ketQua === 'dat').length === tq.dat, JSON.stringify({ tq, n: pt.n }));
     assert(pt.rows.find((x: any) => x.id === a.sid)?.ketQua === 'dat' && pt.rows.find((x: any) => x.id === b.sid)?.ketQua === 'chua' && !pt.rows.some((x: any) => x.id === c.sid), 'a Đạt · b chưa · c KCK không vào');
     assert(pt.rows.findIndex((x: any) => x.id === b.sid) < pt.rows.findIndex((x: any) => x.id === a.sid), 'chưa đạt lên trước');
+    assert(pt.rows.every((x: any) => !/so lượt trước|Overall|Target/.test(x.sub ?? '')), 'dòng phụ chỉ lớp · ngày thi (điểm ở dòng điểm)');
   }));
 
   check('SVSO3 · O-TQ-BAM panel Đạt Target thi thật: QL chi nhánh khác → 403; lớp thường → 400', () => {

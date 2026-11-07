@@ -365,9 +365,10 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const rows = rowsFor('hoc-vien', ids, undefined, p, false, new Map(ids.map((s) => [s, em.get(s)!.diem]))).map((row) => {
       const e = em.get(row.id)!;
       const lech = e.ovr !== null && e.truoc !== null ? e.ovr - e.truoc : null;
+      /* O-TQ-BAM (PTA rà #1170): panel Đạt Target chỉ lớp · ngày thi — Overall / Target đã ở dòng điểm, "so lượt trước" vô nghĩa với thi thật. */
+      if (ttt) return { ...row, sub: [e.lop, e.nhan].filter(Boolean).join(' · '), ketQua: e.cot === 'dat' ? 'dat' as const : 'chua' as const };   // PANEL-CHUNG: tab Chưa đạt · Đạt
       return { ...row, sub: [e.lop, e.nhan, e.ovr === null ? t('chưa đủ điểm') : `Overall ${so(e.ovr)}`, e.target === null ? null : `Target ${so(e.target)}`,
-        lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · '),
-        ...(ttt ? { ketQua: e.cot === 'dat' ? 'dat' as const : 'chua' as const } : {}) };   // PANEL-CHUNG: tab Chưa đạt · Đạt như Đạt MT
+        lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · ') };
     });
     if (ttt) {
       const dat = rows.filter((r) => r.ketQua === 'dat').length;
