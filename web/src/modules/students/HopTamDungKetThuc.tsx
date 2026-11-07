@@ -58,7 +58,8 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
   const ketThuc = !quayLai;
   const viec = ketThuc ? 'ket-thuc' as const : 'tam-dung' as const;
   /* Xem trước: một em → `GET …/trang-thai/xem-truoc`; nhiều em → xem trước hàng loạt (cùng hàm `tomTatTrangThai`, có lý do từng em không làm được). */
-  const motXem = useApi<{ dong: string[]; chan: string | null }>(mot ? `/students/${mot.id}/trang-thai/xem-truoc?ketThuc=${ketThuc ? 1 : 0}` : null, [mot?.id, ketThuc]);
+  /* RKC: `huyLenh` — em có quyết định chuyển lớp chờ, dòng "Huỷ quyết định…" đã nằm trong khối Khi lưu → gửi kèm, máy chủ huỷ luôn (không hỏi lại). */
+  const motXem = useApi<{ dong: string[]; chan: string | null; huyLenh?: boolean }>(mot ? `/students/${mot.id}/trang-thai/xem-truoc?ketThuc=${ketThuc ? 1 : 0}` : null, [mot?.id, ketThuc]);
   const [nhieuXem, setNhieuXem] = useState<XemTruocHangLoat | null>(null);
   const idsKhoa = ds.map((e) => e.id).join(',');
   useEffect(() => {
@@ -99,7 +100,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
     setBusy(true); setLoi(null);
     try {
       if (mot) {
-        const r = await api.post<{ thongBao?: string | null }>(`/students/${mot.id}/status`, { status: ketThuc ? 'finished' : 'inactive', date: ngay || undefined, reason: lyDo.trim() || undefined });
+        const r = await api.post<{ thongBao?: string | null }>(`/students/${mot.id}/status`, { status: ketThuc ? 'finished' : 'inactive', date: ngay || undefined, reason: lyDo.trim() || undefined, ...(motXem.data?.huyLenh ? { huyLenh: true } : {}) });
         lamMoi(); hoanTac([mot.id], tenCua(mot.id), r?.thongBao); onDone(); onClose();
         return;
       }

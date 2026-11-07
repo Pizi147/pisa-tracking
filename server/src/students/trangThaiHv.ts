@@ -1,27 +1,23 @@
 /**
  * P7 SV-LO-TRINH (plan.md 1.6 N11, N22 ⑤) — "Tạm dừng/ Kết thúc học" và "Quay lại học", phần không nằm trong hàm một em sẵn có:
  *  · `tomTatTrangThai` — khối "Khi lưu, web sẽ" (một em / hàng loạt), đọc CÙNG luật lúc thi hành (Case mở như `closeCasesBySystem`);
- *  · `chanLenhCho` — em đang có quyết định chuyển lớp chờ thì không Tạm dừng / Kết thúc học (nói đúng câu + bước tiếp);
+ *  · quyết định chuyển lớp chờ khi Tạm dừng / Kết thúc học — RKC: huỷ luôn cùng giao dịch (`doiTrangThai`); hàng loạt vẫn bỏ em đó kèm câu (`cauLenhCho`);
  *  · `thongTinQuayLai` / `quayLaiHoc` — Quay lại học từ Lưu trữ: lớp cũ còn chạy → một bấm; lớp cũ đã kết thúc → chọn lớp (gợi ý cùng chương trình, cùng chi nhánh);
  *    lộ trình đã đóng (tạm dừng sau thi) / em kết thúc có KQ thi thật → panel Lộ trình mới; em kết thúc giữa khoá → đường Học lại sẵn có.
  */
 import { db, theoLo, tx } from '../db.ts';
 import { PERMISSIONS, tenRoute, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, forbidden, notFound, loi } from '../util.ts';
+import { badRequest, canXacNhan, forbidden, notFound, loi } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { setStudentStatus, transferStudent } from './students.ts';
+import { huyLenh } from '../classes/lenhChuyen.ts';
 import { danhSachLopDich } from '../classes/luatLoTrinh.ts';
 import { trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 
-/** Em có quyết định chuyển lớp đang chờ → câu chặn (chữ = không làm được). Một nguồn cho hộp một em và hàng loạt. */
-export function chanLenhCho(studentId: number): string | null {
-  const l = db().prepare(`SELECT tuan_bat_dau FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' LIMIT 1`).get(studentId) as any;
-  return l ? cauLenhCho(l.tuan_bat_dau) : null;
-}
-/** Câu chặn từ dòng lệnh chờ đã nạp (hàng loạt nạp cả lô một lần). */
+/** Câu khi em có quyết định chuyển lớp chờ mà người làm không huỷ được quyết định (hàng loạt nạp cả lô một lần). */
 export const cauLenhCho = (tuanBatDau: string): string =>
-  `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — huỷ quyết định ở Chuyển lớp… rồi làm lại.`;
+  `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — Quản lý lớp huỷ quyết định (Chuyển lớp…) hoặc làm việc này, rồi làm lại.`;
 
 /**
  * "Khi lưu, web sẽ" của hộp Tạm dừng/ Kết thúc học (k2, k3). `ketThuc` = ô "Có thể quay lại học" tắt. Em đã kết thúc / không tìm thấy không tính.
@@ -72,10 +68,23 @@ function dongTomTat(em: { status: string; lop: string | null; loTrinh: string | 
   ];
 }
 
-/** GET /students/:id/trang-thai/xem-truoc — hộp một em: tóm tắt + câu chặn (nếu có). Ai xem được em thì đọc được; quyền làm do máy chủ kiểm lúc lưu. */
-export function xemTruocTrangThai(p: Principal, studentId: number, ketThuc: boolean): { dong: string[]; chan: string | null } {
+/** Quyết định chuyển lớp CHỜ của em (một dòng) — RKC: Tạm dừng / Kết thúc học huỷ nó luôn (người huỷ được quyết định ở lớp nguồn). */
+function lenhChoCua(studentId: number): { id: number; tuan_bat_dau: string; lop_nguon_id: number } | null {
+  return (db().prepare(`SELECT id, tuan_bat_dau, lop_nguon_id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho' LIMIT 1`).get(studentId) as any) ?? null;
+}
+
+/**
+ * GET /students/:id/trang-thai/xem-truoc — hộp một em: tóm tắt + câu chặn (nếu có). Ai xem được em thì đọc được; quyền làm do máy chủ kiểm lúc lưu.
+ * RKC (chủ SP 07/11 "không chặn cứng"): có quyết định chuyển lớp chờ → thêm dòng "Huỷ quyết định…" (lưu = huỷ luôn); chỉ chặn khi người xem không huỷ được
+ * quyết định (không có quyền ở lớp nguồn — nhờ Quản lý).
+ */
+export function xemTruocTrangThai(p: Principal, studentId: number, ketThuc: boolean): { dong: string[]; chan: string | null; huyLenh?: boolean } {
   require_(p, PERMISSIONS.STUDENT_VIEW, { studentId }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
-  return { dong: tomTatTrangThai([studentId], ketThuc).dong, chan: chanLenhCho(studentId) };
+  const dong = tomTatTrangThai([studentId], ketThuc).dong;
+  const l = lenhChoCua(studentId);
+  if (!l) return { dong, chan: null };
+  if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) return { dong, chan: cauLenhCho(l.tuan_bat_dau) };
+  return { dong: [...dong, `Huỷ quyết định chuyển lớp chờ ${tuanLich(l.tuan_bat_dau, demoToday())}`], chan: null, huyLenh: true };
 }
 
 /** Câu báo sau khi lưu, đọc trạng thái THẬT của em. Web hiện đúng câu này. */
@@ -86,11 +95,19 @@ export function thongBaoTrangThai(s: { status: string; archived_at: string | nul
   return null;
 }
 
-/** POST /students/:id/status — như `setStudentStatus`, thêm chặn quyết định chuyển lớp chờ khi Tạm dừng / Kết thúc học. */
-export function doiTrangThai(p: Principal, studentId: number, b: { status: 'active' | 'inactive' | 'finished'; date?: string; reason?: string; endKind?: any }) {
-  if (b.status !== 'active') { const chan = chanLenhCho(studentId); if (chan) throw badRequest(chan); }
-  const s = setStudentStatus(p, studentId, b.status, b.date ?? demoToday(), b.reason, b.endKind ?? null) as any;
-  return { ...s, thongBao: thongBaoTrangThai(s) };
+/**
+ * POST /students/:id/status — như `setStudentStatus`. Tạm dừng / Kết thúc học khi em có quyết định chuyển lớp chờ: RKC (B) — huỷ quyết định cùng giao dịch.
+ * Hộp đã nêu dòng "Huỷ quyết định…" thì gửi `huyLenh: true` (không hỏi lại); đường khác → hỏi một câu. Người không huỷ được quyết định → câu chỉ đường.
+ */
+export function doiTrangThai(p: Principal, studentId: number, b: { status: 'active' | 'inactive' | 'finished'; date?: string; reason?: string; endKind?: any; huyLenh?: boolean }) {
+  const l = b.status !== 'active' ? lenhChoCua(studentId) : null;
+  if (l && !can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) throw badRequest(cauLenhCho(l.tuan_bat_dau));
+  if (l && !b.huyLenh) canXacNhan('Em đang có quyết định chuyển lớp chờ {x} — huỷ quyết định rồi lưu?', { x: tuanLich(l.tuan_bat_dau, demoToday()) }, 'Huỷ quyết định và lưu');
+  return tx(() => {
+    if (l) huyLenh(p, l.id, b.status === 'inactive' ? 'Tạm dừng học' : 'Kết thúc học');
+    const s = setStudentStatus(p, studentId, b.status, b.date ?? demoToday(), b.reason, b.endKind ?? null) as any;
+    return { ...s, thongBao: thongBaoTrangThai(s) };
+  });
 }
 
 export type HuongQuayLai = 'lop-cu' | 'chon-lop' | 'lo-trinh-moi' | 'hoc-lai';

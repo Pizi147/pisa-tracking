@@ -30,9 +30,10 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     const dung = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { chiXem: true, quyen: QUYEN_QL }, cycle: { ratio: false }, status: 'inactive' });
     assert(keys(dung).includes('tam-dung-ket-thuc') && keys(dung).includes('quay-lai'), `tạm dừng: ${keys(dung)}`);
     /* [ĐX] em tạm dừng (Lưu trữ) vẫn Sửa thông tin liên hệ — TVV gọi mời học lại. */
-    assert(keys(dung).split(',')[0] === 'info' && !keys(dung).split(',').includes('lo-trinh') && !keys(dung).includes('outcome') && !keys(dung).includes('chuyen-lop'), `tạm dừng chỉ xem trừ 3 việc: ${keys(dung)}`);
+    /* RKC (mở Q-B1): hồ sơ Lưu trữ có cả Lộ trình; Chuyển lớp đi qua Quay lại học. */
+    assert(keys(dung).split(',')[0] === 'info' && keys(dung).split(',').includes('lo-trinh') && !keys(dung).includes('outcome') && !keys(dung).includes('chuyen-lop'), `tạm dừng: ${keys(dung)}`);
     const xong = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { chiXem: true, quyen: { ...QUYEN_QL, tamDung: false, ketThuc: false } }, cycle: { ratio: false }, status: 'finished' });
-    assert(keys(xong) === 'info,quay-lai,lich-su-sua', `kết thúc + lưu trữ: ${keys(xong)}`);   // SUA-LUU-TRU (07/11): em Kết thúc học Sửa thông tin (không đụng lộ trình)
+    assert(keys(xong) === 'info,lo-trinh,quay-lai,lich-su-sua', `kết thúc + lưu trữ: ${keys(xong)}`);   // RKC: em Kết thúc học sửa cả Lộ trình
     assert(d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: { ...QUYEN_QL, hocLai: false } }, cycle: null, status: 'finished' }).every((m: any) => m.key !== 'quay-lai'), 'không quyền Học lại → không Quay lại học');
     assert(d.NHAN_VIEC_QUAN_LY['quay-lai'] === 'Quay lại học', 'nhãn Quay lại học');
     const vai = (status: string) => keys(d.mucDongTheoVai({ suaThongTin: true, suaThem: true, ft: true, status }));
@@ -143,14 +144,14 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     students.setStudentStatus(QL, sid, 'inactive', TODAY);
     students.updateStudent(QL, sid, { phone: '0912345678', parentName: 'Mẹ Lan' });
     assert(hs(sid).phone === '0912345678', 'sửa liên hệ em tạm dừng');
-    assert(loi(() => students.updateStudent(QL, sid, { dauVao: null }))?.message === d.CAU_LUU_TRU, 'sửa trường lộ trình → 400');   // SUA-LUU-TRU: thông tin khác sửa được
+    assert(loi(() => students.updateStudent(QL, sid, { dauVao: null })) === null, 'RKC: sửa trường lộ trình em tạm dừng được');
     const h = profile.studentProfile(QL, sid);
     assert(h.lopHoc.chiXem && h.lopHoc.quyen.quayLai && h.lopHoc.quyen.ketThuc && !h.lopHoc.quyen.tamDung && !h.lopHoc.quyen.chuyenLop, `cờ quyền: ${JSON.stringify(h.lopHoc)}`);
     assert(JSON.stringify(ngungHocCua('inactive', TODAY)) === '{"nhan":"Tạm dừng"}', 'lưới FT: em tạm dừng hàng mờ, không khoá');
     assert(JSON.stringify(ngungHocCua('finished', TODAY)) === '{"nhan":"Lưu trữ"}', 'RKC: em kết thúc + lưu trữ hàng mờ, vẫn sửa điểm');
   }));
 
-  check('SV-4c · "Khi lưu, web sẽ" do máy chủ tính: tạm dừng (Lưu trữ · giữ chỗ · Case dừng hạn) / kết thúc (rời lớp · đóng Case); lệnh chuyển lớp chờ → chặn, nói đúng câu', () => thu(() => {
+  check('SV-4c · "Khi lưu, web sẽ" do máy chủ tính: tạm dừng (Lưu trữ · giữ chỗ · Case dừng hạn) / kết thúc (rời lớp · đóng Case); RKC: lệnh chuyển lớp chờ → dòng "Huỷ quyết định…", lưu = huỷ luôn (API khác: hỏi)', () => thu(() => {
     const L = lop(); const { sid, cy } = em(L);
     conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, title, status, created_at, updated_at) VALUES (?,?,'reading','reading','Case P7','open',?,?)`).run(sid, cy, NOW, NOW);
     const td = thv.xemTruocTrangThai(QL, sid, false);
@@ -161,9 +162,13 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     const L2 = lop();
     conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, lop_dich_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, tao_luc) VALUES (?,?,?,'chuyen_lop','giua-khoa',?,?,?,?)`)
       .run(sid, L, L2, t.addDays(T2, 14), QL.userId, TODAY, NOW);
-    const chan = thv.xemTruocTrangThai(QL, sid, false).chan as string;
-    assert(/quyết định chuyển lớp chờ W\d [A-Z]{3}/.test(chan) && /Chuyển lớp…/.test(chan), chan);
-    assert(loi(() => thv.doiTrangThai(QL, sid, { status: 'inactive', date: TODAY }))?.message === chan, 'đổi trạng thái → 400 đúng câu');
+    const xt = thv.xemTruocTrangThai(QL, sid, false);
+    assert(xt.chan === null && xt.huyLenh === true && xt.dong.some((x: string) => /^Huỷ quyết định chuyển lớp chờ W\d [A-Z]{3}/.test(x)), JSON.stringify(xt));
+    const hoi = loi(() => thv.doiTrangThai(QL, sid, { status: 'inactive', date: TODAY }));
+    assert(hoi?.status === 409 && hoi.details?.canXacNhan, `không cờ huyLenh → hỏi: ${hoi?.status} ${hoi?.message}`);
+    thv.doiTrangThai(QL, sid, { status: 'inactive', date: TODAY, huyLenh: true });
+    assert(conn.prepare(`SELECT trang_thai FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1`).get(sid).trang_thai !== 'cho', 'quyết định phải bị huỷ');
+    assert(conn.prepare('SELECT status FROM students WHERE id = ?').get(sid).status === 'inactive', 'em phải Tạm dừng');
   }));
 
   check('SV-5a · Quay lại học: lớp cũ còn chạy → một bấm (hết lưu trữ, đang học, mốc resume) + Hoàn tác về Lưu trữ', () => thu(() => {
