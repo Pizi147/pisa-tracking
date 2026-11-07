@@ -12,10 +12,11 @@
 import { db, tx } from '../db.ts';
 import { CHU_CHUYEN_LOP, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, notFound } from '../util.ts';
+import { addDays, badRequest, chuTuDo, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { emChuaCoLenh } from './lenhChuyen.ts';
+import { quetMoiNgay } from '../platform/mocHeThong.ts';
 
 const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
 
@@ -120,9 +121,12 @@ export function xoaLop(p: Principal, classId: number, input: { maLop?: unknown }
   return { ok: true, ma: c.code };
 }
 
-/** POST /classes/:id/ket-thuc — kết thúc lớp không còn học viên đang học; lớp vào khu Lưu trữ. Quản lý của lớp hoặc Quản trị. */
-export function ketThucLop(p: Principal, classId: number) {
-  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
+/**
+ * POST /classes/:id/ket-thuc — kết thúc lớp không còn học viên đang học; lớp vào khu Lưu trữ. Quản lý của lớp hoặc Quản trị.
+ * `p = null`: HỆ THỐNG (LOP-TRONG `dongLopTrong`) — không kiểm quyền, nhật ký người làm "Hệ thống" + `lyDo`.
+ */
+export function ketThucLop(p: Principal | null, classId: number, o: { lyDo?: string } = {}) {
+  if (p) require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
   const c = docLop(classId);
   if (c.status === 'finished') throw badRequest('Lớp đã kết thúc.');
   const t = tinhTrangLop(classId);
@@ -135,11 +139,50 @@ export function ketThucLop(p: Principal, classId: number) {
   tx(() => {
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngay, classId);
     writeAudit({
-      actorUserId: p.userId, action: 'class.finished', entityType: 'class', entityId: classId, entityLabel: c.code,
-      before: { status: c.status }, after: { status: 'finished', on: ngay },
+      actorUserId: p?.userId ?? null, action: 'class.finished', entityType: 'class', entityId: classId, entityLabel: c.code,
+      before: { status: c.status }, after: { status: 'finished', on: ngay, ...(o.lyDo ? { lyDo: o.lyDo } : {}) },
     });
   });
   return { ok: true, ma: c.code, finishedAt: ngay };
+}
+
+/**
+ * LỚP TRỐNG TỰ LƯU TRỮ (chủ SP 07/11, LOP-TRONG): lớp đang chạy, 0 em đang học, KHÔNG có kế hoạch nhận HV, liên tục `NGAY_LOP_TRONG` ngày → hệ thống
+ * Kết thúc lớp (`ketThucLop`, cùng đường QL bấm) — lớp vào Lưu trữ, "Mở lại lớp" như cũ. "Kế hoạch nhận HV" = em Tạm dừng còn giữ chỗ (ghi danh `paused`)
+ * · quyết định chuyển ĐẾN lớp đang chờ · Lộ trình tiếp theo dự kiến về lớp chưa áp dụng · hẹn bắt đầu Lộ trình mới về lớp (`buoc_tiep_hen`; không chọn lớp
+ * khác = lớp cũ của em). Em mới xếp vào (dù chưa tới ngày học) là ghi danh `active` → lớp không trống. Lớp chưa từng có em (chờ khai giảng) không tự đóng.
+ * "7 ngày" tính từ ngày em cuối rời lớp (`MAX(ended_at)`, không thêm cột), hoặc từ lần Mở lại lớp gần nhất nếu muộn hơn (mở lại không bị đóng ngay hôm sau).
+ */
+export const NGAY_LOP_TRONG = 7;
+const LY_DO_LOP_TRONG = `Tự động — lớp trống ${NGAY_LOP_TRONG} ngày`;
+
+/** Lớp đủ điều kiện tự đóng tới `homNay` (một câu; chỉ lớp `active` không còn em `active`/`paused` mới đi tới các câu con). */
+const SQL_LOP_TRONG = `
+  SELECT c.id FROM classes c
+   WHERE c.status = 'active'
+     AND NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.class_id = c.id AND e.status IN ('active', 'paused'))
+     AND (SELECT MAX(COALESCE(e.ended_at, e.started_at)) FROM enrollments e WHERE e.class_id = c.id) <= ?1
+     AND NOT EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.lop_dich_id = c.id AND l.trang_thai = 'cho')
+     AND NOT EXISTS (SELECT 1 FROM lo_trinh_tiep_theo t WHERE t.lop_du_kien_id = c.id AND t.da_ap_dung_luc IS NULL)
+     AND NOT EXISTS (SELECT 1 FROM learning_cycles lc WHERE lc.buoc_tiep = 'lo_trinh_moi' AND lc.buoc_tiep_hen IS NOT NULL
+           AND (json_extract(lc.buoc_tiep_json, '$.lopMoiId') = c.id
+             OR (json_extract(lc.buoc_tiep_json, '$.lopMoiId') IS NULL AND lc.student_id IN (SELECT e.student_id FROM enrollments e WHERE e.class_id = c.id))))
+     AND NOT EXISTS (SELECT 1 FROM audit_logs a WHERE a.entity_type = 'class' AND a.action = 'class.reopened' AND a.entity_id = c.id AND substr(a.created_at, 1, 10) > ?1)
+   ORDER BY c.id`;
+
+/** Đóng các lớp trống đủ hạn; lỗi một lớp không chặn lớp khác. Trả id lớp đã đóng. */
+export function dongLopTrong(homNay = demoToday()): number[] {
+  const ids = (db().prepare(SQL_LOP_TRONG).all(addDays(homNay, -NGAY_LOP_TRONG)) as { id: number }[]).map((r) => r.id);
+  const xong: number[] = [];
+  for (const id of ids) {
+    try { ketThucLop(null, id, { lyDo: LY_DO_LOP_TRONG }); xong.push(id); } catch (e) { console.error('[lop-trong]', id, e); }
+  }
+  return xong;
+}
+
+/** Lượt quét MỘT lần mỗi ngày nghiệp vụ (mốc `quet:lop-trong`): đã quét hôm nay → 0 câu. Gọi cùng lượt quét lệnh chuyển lớp (`quetLenhDenHan`). */
+export function quetLopTrong(homNay = demoToday()): boolean {
+  return quetMoiNgay('quet:lop-trong', homNay, () => { dongLopTrong(homNay); });
 }
 
 /**
