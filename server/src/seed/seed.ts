@@ -42,6 +42,7 @@ import { ganChuCaseThieu } from '../cases/owner.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
 import { apMonDangKy } from '../fasttrack/monDangKy.ts';
 import { loadPrincipal } from '../permissions.ts';
+import { dienLienHeChiNhanh } from '../migrate/prChiNhanhLienHe.ts';
 
 const NOW = nowIso();
 
@@ -57,6 +58,7 @@ export function runSeed() {
         .run(b.code, b.name, 'active', NOW);
       branchId.set(b.code, Number(info.lastInsertRowid));
     }
+    dienLienHeChiNhanh(conn);   // CHI-NHANH-LIEN-HE: địa chỉ / SĐT mặc định — cùng hàm với migrate
 
     // Đơn vị báo cáo = 5 chi nhánh + Tutor part-time. Tutor KHÔNG phải chi nhánh thứ sáu.
     let seq = 0;

@@ -78,6 +78,7 @@ import { migratePrNghiHocLuuTru } from './migrate/prNghiHocLuuTru.ts';
 import { migratePrThiLai } from './migrate/prThiLai.ts';
 import { migratePrBaoCaoPh } from './migrate/prBaoCaoPh.ts';
 import { migratePrBaoCaoPhDot } from './migrate/prBaoCaoPhDot.ts';
+import { migratePrChiNhanhLienHe } from './migrate/prChiNhanhLienHe.ts';
 import { migratePrMt0Em } from './migrate/prMt0Em.ts';
 import { migratePrGiamDoc0611 } from './migrate/prGiamDoc0611.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
@@ -460,6 +461,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* THI-LAI-1-KN (chủ SP 05/11): learning_cycles.thi_that_lay_lai — kỹ năng KQ thi thật lấy điểm lần trước (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrThiLai(conn, applied));
     /* BAO-CAO-PH (chủ SP 05–06/11): bảng bao_cao_ph — báo cáo gửi phụ huynh theo (đợt, em, phần) (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBaoCaoPh(conn, applied));
     /* BC-DOT-QL (chủ SP 06/11): bảng bao_cao_ph_dot — QL / Admin bỏ / thêm đợt Báo cáo PH theo lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBaoCaoPhDot(conn, applied));
+    /* CHI-NHANH-LIEN-HE (chủ SP 07/11): branches.dia_chi + so_dien_thoai — đầu tệp Báo cáo PH, điền mặc định theo mã (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrChiNhanhLienHe(conn, applied));
     /* MT0-THEO-EM (chủ SP 06/11): chỉ mục một phần idx_attempt_mt0 — lớp FT hiện MT0 của em (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrMt0Em(conn, applied));
     /* GIAM-DOC-0611: chỉ mục một phần idx_sca_cho — việc Báo PH qua TVV đang chờ thôi quét cả sos_coordination_actions (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611(conn, applied));
     /* GIAM-DOC-0611h: chỉ mục idx_student_branch — Case theo chi nhánh của em (listCases quyền chi nhánh) thôi quét cả students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611h(conn, applied));
