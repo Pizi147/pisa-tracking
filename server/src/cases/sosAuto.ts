@@ -5,7 +5,7 @@ import {
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
+import { addDays, badRequest, canXacNhan, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
@@ -16,7 +16,7 @@ import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
-import { taoYeuCau } from '../duyet/yeuCau.ts';
+import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { CHO_DOI_PA, LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
@@ -240,7 +240,9 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (c.status === 'done') throw badRequest('Case này đã đóng rồi.');
   if (st.laMt) throw badRequest('Case Mock Test lấy nguyên nhân từ nhận xét của bài — ghi hoặc sửa nhận xét ở hộp chấm / hồ sơ MT.');
   if (st.hasCause) throw badRequest('Case đã xác nhận rồi.');
-  if (st.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận.');
+  /* RKC-2b: chờ QL duyệt "Không cần theo dõi" → hỏi; đồng ý = rút đề nghị đó cùng giao dịch Xác nhận. */
+  const rutKtd = !!st.choDuyetKhongTheoDoi;
+  if (rutKtd) canXacNhan(CAU_RUT_KTD, undefined, NUT_RUT_KTD);
   const ct = c.cycle_id ? (conn.prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
   const nhom = input.nhom === undefined || input.nhom === null ? (input.primaryCode ? [String(input.primaryCode)] : []) : input.nhom;
   if (!Array.isArray(nhom) || !nhom.every((x) => typeof x === 'string')) throw badRequest('Nhóm nguyên nhân không hợp lệ.');
@@ -257,6 +259,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   }, { moTaCu: c.summary });
   const today = demoToday();
   return tx(() => {
+    if (rutKtd) rutKhongTheoDoiTrongTx(conn, p, caseId);
     /* HOAN-TAC-XN: chụp trạng thái trước (Case, nhóm đang có, PA cùng nhóm Bổ trợ — `chayPaBoTro` / Sửa PA chạm cả nhóm); cuối giao dịch chỉ giữ PA lần này đổi. */
     const issuesTruoc = (conn.prepare('SELECT id FROM case_issues WHERE case_id = ?').all(caseId) as any[]).map((x) => x.id as number);
     const revTu = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_intervention_revisions').get() as any).m as number;
@@ -487,7 +490,8 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const stCase = sosCaseState(iv.case_id);
   /* OV-12c: nguyên nhân Case MT = nhận xét của ô — Case MT chưa có mô tả thì Mô tả Case trước. */
   if (!stCase.hasCause) throw badRequest(stCase.laMt ? 'Case chưa có mô tả — ghi Mô tả Case trước, rồi mới xác nhận PA.' : 'Xác nhận Case trước, rồi mới xác nhận PA.');
-  if (stCase.choDuyetKhongTheoDoi) throw badRequest('Case đang chờ Quản lý duyệt "Không cần theo dõi" — chờ trả lời rồi mới xác nhận PA.');
+  const rutKtd = !!stCase.choDuyetKhongTheoDoi;   // RKC-2b: như Xác nhận Case
+  if (rutKtd) canXacNhan(CAU_RUT_KTD, undefined, NUT_RUT_KTD);
   /* PR-S4F #9 (Q28-5): mô tả phải do người xác nhận gửi lên — không lấy mô tả máy gán thay (xác nhận "nguyên văn" thì gửi lại đúng chữ đó). */
   if (typeof input.description !== 'string' || !input.description.trim()) {
     throw badRequest('Thiếu mô tả PA — ghi hướng dẫn, trọng tâm và ai thực hiện rồi mới xác nhận.');
@@ -507,6 +511,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: batDau, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(iv.case_cycle_id, batDau) })   // OV-13a (B) + OV-13c: mốc tính từ ngày bắt đầu
     : null;
   return tx(() => {
+    if (rutKtd) rutKhongTheoDoiTrongTx(conn, p, iv.case_id);
     conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,
         cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?, confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`)
       .run(description, performerUserId, performerName, soBuoi, batDau, batDau, hanKyGhiKetQua(batDau, today), moc, p.userId, nowIso(), nowIso(), interventionId);
@@ -542,7 +547,8 @@ function batDauHopLe(v: unknown, homNay: string): string {
   if (v === undefined || v === null || v === '') return homNay;
   if (!isIsoDate(v)) throw badRequest('Ngày bắt đầu không hợp lệ.');
   const d = diffDays(v, homNay);
-  if (d < -7 || d > 30) throw badRequest('Ngày bắt đầu chỉ được lùi tối đa 7 ngày, tới tối đa 30 ngày.');
+  /* RKC-2b: lùi xa được (ghi bù PA đã làm từ trước) — hạn kỳ đầu vẫn kẹp không trước hôm nay. Tới quá 30 ngày vẫn giữ (PA chưa bắt đầu thì chưa xác nhận). */
+  if (d > 30) throw badRequest('Ngày bắt đầu tới tối đa 30 ngày — PA bắt đầu xa hơn thì xác nhận gần ngày đó.');
   return v;
 }
 
@@ -795,6 +801,15 @@ export function suaKhongTheoDoi(conn: any, yc: { doi_tuong_id: number }, input: 
  * OV-7a: người gửi RÚT thẻ "Không cần theo dõi" còn chờ (trong tx của hộp, thẻ đã đóng) — Case về chờ nguyên nhân như trước khi gửi: mốc xin gỡ,
  * hạn xác nhận giữ nguyên (lúc gửi không đổi hạn), việc Xác nhận nguyên nhân về lại người phụ trách.
  */
+/** RKC-2b: câu hỏi chung khi thêm PA / Xác nhận Case / Xác nhận PA lúc Case đang chờ QL duyệt "Không cần theo dõi". */
+export const CAU_RUT_KTD = 'Case đang chờ Quản lý duyệt "Không cần theo dõi" — rút đề nghị đó rồi lưu?';
+export const NUT_RUT_KTD = 'Rút đề nghị và lưu';
+/** RKC-2b: rút thẻ "Không cần theo dõi" đang chờ của Case (như người gửi bấm Rút — thẻ đóng `tu_dong`, mốc xin gỡ). Gọi TRONG giao dịch của nơi gọi. */
+export function rutKhongTheoDoiTrongTx(conn: any, p: Principal, caseId: number): void {
+  if (chotYeuCau(conn, { loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: caseId }, 'tu_dong', { nguoiDuyet: p.userId, lyDo: 'Đã thêm / xác nhận PA — rút "Không cần theo dõi"' })) {
+    rutKhongTheoDoi(conn, { doi_tuong_id: caseId });
+  }
+}
 export function rutKhongTheoDoi(conn: any, yc: { doi_tuong_id: number }) {
   conn.prepare(`DELETE FROM case_milestones WHERE id = (SELECT MAX(id) FROM case_milestones WHERE case_id = ? AND kind = 'xin_khong_theo_doi')`).run(yc.doi_tuong_id);
 }

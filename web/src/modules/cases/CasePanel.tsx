@@ -288,7 +288,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   );
 
   /* ─── Phương án */
-  const themPaDuoc = !!vw.canEdit && !(   /* RKC-2a: Case đã hoàn thành → máy chủ hỏi rồi Mở lại Case */data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam);
+  /* RKC-2a / 2b: Case đã hoàn thành, chờ duyệt "Không cần theo dõi" → vẫn hiện; máy chủ hỏi (Mở lại Case / rút đề nghị). */
+  const themPaDuoc = !!vw.canEdit && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.tam);
   const coPaBatBuoc = (data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'));
   const the = (iv: any) => (
     <ThePa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} toi={toi}
