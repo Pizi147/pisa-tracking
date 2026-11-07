@@ -1057,7 +1057,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     }
     assert(conn.prepare(`SELECT id FROM assessment_attempts WHERE class_id=? AND student_id=? AND kind='final'`).get(lopMoi, em3),
       'RKC: em trùng tuần Giữa khoá (đã xác nhận cảnh báo) cũng có bài Final Test');
-    assert(d.emGiuLaiSauLuu(luu.dong).join() === String(em3), 'R9b: chỉ em 3 còn ở lại');
+    assert(d.emGiuLaiSauLuu(luu.dong).length === 0, 'R9b → RKC: không em nào còn ở lại (cả 3 đã lưu)');
     assertThrows(() => keHoachMod.xepHangLoat(P.mbManager, { classId: lopMoi, attemptNo: 1, studentIds: [em1], tuan, xemTruoc: true }), /lớp thường/, 'Lớp thường không nhận attemptNo');
     assertThrows(() => keHoachMod.xepHangLoat(P.mbManager, { classId: mbClass, kind: 'final', studentIds: [em1], tuan, xemTruoc: true }), /Fast Track/, 'Lớp FT không nhận kind');
   });

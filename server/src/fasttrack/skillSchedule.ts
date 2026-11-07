@@ -614,7 +614,8 @@ export function logSchedule(attemptId: number, e: {
 
 // ---------------------------------------------------------------- ràng buộc khi đổi lịch
 
-export type ScheduleCheck = { blockers: string[]; warnings: string[] };
+/** RKC: `thuTu` = câu vướng THỨ TỰ lượt (trước là `blockers`, nay nằm trong `warnings` để người xếp lịch xác nhận) — đường TỰ ĐỘNG (chọn tuần, khôi phục) vẫn né tuần vướng. */
+export type ScheduleCheck = { blockers: string[]; warnings: string[]; thuTu?: string[] };
 
 /**
  * RÀNG BUỘC THỨ TỰ GIỮA CÁC ĐỢT khi lịch đã tách theo kỹ năng (mục 10.4).
@@ -731,7 +732,7 @@ export function checkWeekVsNeighbours(input: {
     }
   }
   /* RKC: thứ tự lượt thành cảnh báo (xem trên). */
-  return { blockers: [], warnings: [...canhBao, ...warnings] };
+  return { blockers: [], warnings: [...canhBao, ...warnings], thuTu: canhBao };
 }
 
 export function checkSkillWeekMove(input: {
@@ -1154,7 +1155,7 @@ export function setSkillScope(
   /* Đưa lại: tuần đang giữ vướng thứ tự đợt → Chưa xếp (kiểm như dời một kỹ năng). */
   const boTuan = required && !giuHuy && !!row.week_start && (
     !!kiemVuot(attemptId, tuanCuoiSauKhiDoi(ensureSkillRows(attemptId), new Map([[row.skill, row.week_start]]))!, row.week_start).chan
-    || checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: row.week_start }).blockers.length > 0);
+    || (checkSkillWeekMove({ attemptId, skill: row.skill, newWeekStart: row.week_start }).thuTu?.length ?? 0) > 0);
 
   return tx(() => {
     db()

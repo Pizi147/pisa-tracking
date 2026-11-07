@@ -1939,7 +1939,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
       .map((r) => String(r.week_start).slice(0, 10)).sort();
     const sai = tuan.length > 0 && (!!kiemVuot(attemptId, tuan[tuan.length - 1], tuan[0]).chan || [...new Set(tuan)].some((w) => checkWeekVsNeighbours({
       cycleId: a.cycle_id, attemptNo: a.attempt_no, excludeAttemptId: attemptId, newWeekStart: w, kind: a.kind,
-    }).blockers.length));
+    }).thuTu?.length));
     if (sai) {
       conn.prepare(`UPDATE attempt_skills SET planned_period_id = NULL, plan_source = 'manual', updated_at = ? WHERE attempt_id = ? AND required = 1 AND sit_status != 'cancelled'`)
         .run(nowIso(), attemptId);
