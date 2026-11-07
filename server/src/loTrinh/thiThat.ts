@@ -84,7 +84,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
      không bản chụp, không Bước tiếp (luồng FT lọc `route IS NOT NULL`). Overall · Grade · CEFR tính khi hiện (`ketQuaKyThi`). */
   const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
   if (!c.route && !kt) throw badRequest('Chỉ lộ trình Fast Track có kết quả thi thật.');
-  if ((db().prepare(`SELECT ly_do FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1`).get(cycleId) as any)?.ly_do === 'chuyen_lop') throw badRequest('Lộ trình đóng vì chuyển lớp — em không đi thi.');
+  /* HOTFIX-MO-KHOA (chủ SP 07/11): lộ trình đóng vì chuyển lớp vẫn sửa được (em có thể đã thi) — nhật ký `cycle.thi_that` như mọi lần lưu. */
   const homNay = demoToday();
   const khongThi = input.khongThi === true;
   let ngayThi: string | null = c.thi_that_ngay ?? null;

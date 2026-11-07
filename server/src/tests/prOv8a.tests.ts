@@ -133,7 +133,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
       JSON.stringify([hoSo(a.sid), loTrinh(a.cy).status]));
   }));
 
-  await checkAsync('OV8a-5 · đổi lựa chọn: Kết thúc → Học tiếp đúng như chỉ chọn Học tiếp; Học tiếp → Kết thúc gỡ lộ trình mới; lộ trình mới đã có điểm → 409, không ghi dở', () => thu(() => {
+  await checkAsync('OV8a-5 · đổi lựa chọn: Kết thúc → Học tiếp đúng như chỉ chọn Học tiếp; Học tiếp → Kết thúc gỡ lộ trình mới; lộ trình mới đã có điểm → đi thẳng (HOTFIX-MO-KHOA)', () => thu(() => {
     const lop = taoLop(); const lt2 = taoLop('LT2');
     const a = emDaKetThuc(lop); const b = emDaKetThuc(lop);
     for (const x of [a, b]) thiThatSvc.datKetQuaThiThat(P.admin, x.cy, NHAP4);
@@ -145,13 +145,14 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     assert(all(`SELECT 1 FROM journey_events WHERE cycle_id = ? AND title LIKE 'Sau thi:%'`, a.cy).length === 2, 'mỗi lần chọn một mốc');
     chon(QL, b.cy, { chon: 'ket_thuc' });
     assert(hoSo(b.sid).status === 'finished' && hoSo(b.sid).archived_at === NGAY && dangChay(b.sid).length === 0 && ghiDanhDang(b.sid).length === 0, tom(b));
-    /* lộ trình mới đã có bài làm → không đổi được */
+    /* HOTFIX-MO-KHOA (chủ SP 07/11, không chặn cứng): lộ trình mới đã có bài làm → không gỡ được, Đổi đi THẲNG: em Kết thúc + Lưu trữ, lộ trình mới GIỮ (đóng) */
     const moi = dangChay(a.sid)[0];
     conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, target_at_attempt, created_at) VALUES (?,?,99,'mock',?, 'done', 6.5, ?)`)
       .run(moi.id, a.sid, lt2, new Date().toISOString());
-    const truoc = tom(a);
-    assert(maLoi(() => chon(QL, a.cy, { chon: 'ket_thuc' })) === 409, 'có điểm → 409');
-    assert(tom(a) === truoc, 'không ghi dở');
+    const soLt = all('SELECT id FROM learning_cycles WHERE student_id = ?', a.sid).length;
+    chon(QL, a.cy, { chon: 'ket_thuc' });
+    assert(loTrinh(a.cy).buoc_tiep === 'ket_thuc' && hoSo(a.sid).status === 'finished' && hoSo(a.sid).archived_at && dangChay(a.sid).length === 0, `đi thẳng: ${tom(a)}`);
+    assert(all('SELECT id FROM learning_cycles WHERE student_id = ?', a.sid).length === soLt && loTrinh(moi.id), 'lộ trình mới (có điểm) giữ, không thừa');
   }));
 
   await checkAsync('OV8a-6 · GVCN / TVV chi nhánh khác / GVBM gọi chọn bước tiếp → 403 (OV-12a: TVV cùng chi nhánh chọn được — OV12a-6); lộ trình chưa có kết quả → 400', () => thu(() => {

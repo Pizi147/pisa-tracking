@@ -40,13 +40,27 @@ let sqlGanNhat = '';
    * `run` xoá bộ nhớ TRƯỚC khi chạy: mọi lệnh ghi trong một request GET phải làm mất bộ nhớ đã tích luỹ, vì dữ
    * liệu vừa đổi có thể ảnh hưởng bất kỳ tra cứu nào đã nhớ trước đó.
    */
+  /*
+   * HOTFIX-MO-KHOA (07/11): bản chính (Turso) tạo bảng ghi cột `action` / `key` thành `ACTION` / `KEY` (audit_logs, attempt_schedule_history, roles,
+   * permissions, user_prefs, demo_config — bản chép 17/10 và 07/11) và trả khoá dòng viết hoa, kể cả khi đặt `AS action` (FIX-DTL3). `r.action` = undefined
+   * làm mọi Hoàn tác trạng thái báo 409 "Không còn hoàn tác được". Thêm khoá chữ thường một lần ở đây cho mọi nơi đọc; GIỮ khoá viết hoa — sao lưu / khôi phục
+   * (`saoLuu.docBang`) đọc dòng theo tên cột của PRAGMA table_info (vẫn viết hoa).
+   */
+  const thuong = (row: unknown) => {
+    if (row && typeof row === 'object' && !Array.isArray(row)) {
+      const r = row as Record<string, unknown>;
+      if ('ACTION' in r && !('action' in r)) r.action = r.ACTION;
+      if ('KEY' in r && !('key' in r)) r.key = r.KEY;
+    }
+    return row;
+  };
   for (const ten of ['all', 'run', 'iterate'] as const) {
     const goc = proto[ten];
     if (ten === 'all') {
       /* TD2-0: đếm dòng ở `all` (mọi `get` của câu dùng lại cũng đi qua đây) — chỉ cộng length. */
       proto[ten] = function (this: { sql?: string }, ...args: unknown[]) {
         const out = goc.apply(this, motNull(args));
-        if (Array.isArray(out)) demDong(out.length, this.sql ?? '');
+        if (Array.isArray(out)) { demDong(out.length, this.sql ?? ''); for (const r of out) thuong(r); }
         return out;
       };
       continue;
@@ -67,7 +81,7 @@ let sqlGanNhat = '';
     const row = this.daLuu ? this.all(...args)[0] : getGoc.apply(this, motNull(args));
     if (!this.daLuu) { demCau(); demDong(row ? 1 : 0, this.sql ?? ''); }   // đường `all` đã đếm qua `iterate` / `all`
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
-    return row;
+    return thuong(row);
   };
   /*
    * PR-BN: `prepare()` của libsql 0.5.29 RÒ ~4,9 KB bộ nhớ native MỖI lần gọi và `gc()` không trả lại (đo: 100 000 lần → +480 MB).

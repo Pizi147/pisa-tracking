@@ -582,6 +582,29 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
 }
 
 /**
+ * HOTFIX-MO-KHOA (chủ SP 07/11): em Kết thúc học (Lưu trữ) → Tạm dừng THẲNG, không bắt hoàn tác trước — Bước tiếp đổi "Kết thúc học" sang "Tạm dừng" khi
+ * hoàn tác chính xác không còn được. Em vẫn ở Lưu trữ (giữ ngày cũ), ghi danh lần Kết thúc học đóng (không có nhật ký: ghi danh `completed` mới nhất) về `paused`;
+ * lộ trình / Case giữ như lúc Kết thúc. Sau đó Quay lại học như mọi em Tạm dừng. Cùng quyền Tạm dừng; nơi gọi mở giao dịch.
+ */
+export function ketThucSangTamDung(p: Principal, studentId: number, date: string, reason: string) {
+  if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.STUDENT_EDIT, { studentId });
+  const conn = db();
+  const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
+  if (!s) throw notFound('Không tìm thấy học viên');
+  if (s.status !== 'finished') return s;
+  const nk = nhatKyKetThucGanNhat(studentId);
+  const ids = nk?.ghiDanhDong.map((x) => x.id)
+    ?? (conn.prepare(`SELECT id FROM enrollments WHERE student_id = ? AND status = 'completed' ORDER BY id DESC LIMIT 1`).all(studentId) as any[]).map((r) => r.id as number);
+  const archivedAt = s.archived_at ?? date;
+  conn.prepare(`UPDATE students SET status = 'inactive', finished_at = NULL, archived_at = ? WHERE id = ?`).run(archivedAt, studentId);
+  for (const id of ids) conn.prepare(`UPDATE enrollments SET status = 'paused', end_kind = 'bao_luu' WHERE id = ? AND student_id = ? AND status = 'completed'`).run(id, studentId);
+  const journeyId = addJourney({ studentId, eventType: 'pause', eventDate: date, title: 'Tạm dừng học', detail: reason, createdBy: p.userId });
+  writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
+    before: { status: 'finished', finishedAt: s.finished_at ?? null, archivedAt: s.archived_at ?? null }, after: { status: 'inactive', date, reason, archivedAt, ghiDanhDung: ids, journeyId, tuKetThuc: true } });
+  return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+}
+
+/**
  * HOÀN TÁC TẠM DỪNG (OV-11d, HV-21) — bấm nhầm Tạm dừng: trả NGUYÊN TRẠNG (em đang học, đúng ghi danh lần đó dừng, bỏ mốc "Tạm dừng học" của lần đó),
  * KHÔNG tính lại hạn Case / Ý thức (khác Quay lại học — hạn chưa từng dừng). Chỉ khi Tạm dừng vẫn là việc trạng thái CUỐI. Ai Tạm dừng được thì Hoàn tác được.
  * Lớp tự đóng vì lần dừng đó (em là người cuối) thì mở lại.

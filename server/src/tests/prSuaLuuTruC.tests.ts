@@ -1,7 +1,7 @@
 /**
  * PHÉP KIỂM SUA-LUU-TRU c (chủ SP 07/11, plan.md mục 4 việc 3, 4 — nút "Đổi" bước tiếp): chọn lại tại chỗ = POST sẵn có (máy chủ hoàn tác lựa chọn cũ
  * + làm mới trong MỘT giao dịch), áp cả em đã lưu trữ — không sinh lộ trình / ghi danh thừa (đếm `learning_cycles`, `enrollments` trước / sau).
- * Hoàn tác ngay sau Đổi = về LỰA CHỌN CŨ (không về "chờ chọn"); không đổi được → 409 nói lý do, `lyDoKhongDoi` đặt tại nút.
+ * Hoàn tác ngay sau Đổi = về LỰA CHỌN CŨ (không về "chờ chọn"); HOTFIX-MO-KHOA: Đổi luôn làm được (đi thẳng khi không hoàn tác chính xác được).
  */
 export async function runPrSuaLuuTruCTests(t: { check: any; assert: any; assertThrows: any; conn: any; P: any; TODAY: string }) {
   const { check, assert, assertThrows, conn, P, TODAY } = t;
@@ -89,7 +89,7 @@ export async function runPrSuaLuuTruCTests(t: { check: any; assert: any; assertT
     assert(chon(x.cy) === 'tam_dung' && em(x.sid).status === 'inactive' && JSON.stringify(dem(x.sid)) === JSON.stringify(goc), `về Tạm dừng: ${chon(x.cy)} ${JSON.stringify(em(x.sid))}`);
   }));
 
-  check('SLT-c4 · lệnh chuyển lớp chờ (Lộ trình mới lớp khác, tuần sau) → Đổi sang Kết thúc: lệnh huỷ, không lệnh thừa; lệnh đã chạy → `lyDoKhongDoi` + 409', () => thu(() => {
+  check('SLT-c4 · lệnh chuyển lớp chờ (Lộ trình mới lớp khác, tuần sau) → Đổi sang Kết thúc: lệnh huỷ, không lệnh thừa; lệnh đã chạy → vẫn Đổi được (đi thẳng)', () => thu(() => {
     const x = emThiTruot(true);
     const tuanSau = new Date(Date.parse(mondayOf(TODAY)) + 7 * 864e5).toISOString().slice(0, 10);
     const lopKhac = (conn.prepare(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id AND b.code = 'MB' WHERE c.is_fast_track = 1 AND c.status = 'active' AND c.id != ? ORDER BY c.id`).all(x.class_id) as any[])
@@ -98,7 +98,7 @@ export async function runPrSuaLuuTruCTests(t: { check: any; assert: any; assertT
     bt.chonBuocTiep(QL, x.cy, { chon: 'lo_trinh_moi', lopMoiId: lopKhac, batDau: tuanSau });
     const lenh = get(`SELECT id, trang_thai FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1`, x.sid);
     assert(lenh?.trang_thai === 'cho', `tiền đề lệnh chờ: ${JSON.stringify(lenh)}`);
-    assert(bt.trangThaiBuocTiep(QL, x.cy).lyDoKhongDoi === null, 'lệnh chờ vẫn đổi được');
+    assert(bt.trangThaiBuocTiep(QL, x.cy).hoanTacDuoc === true, 'lệnh chờ vẫn hoàn tác được');
     const goc = dem(x.sid);
     bt.chonBuocTiep(QL, x.cy, { chon: 'ket_thuc' });
     assert(get('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?', lenh.id).trang_thai !== 'cho', 'lệnh chờ còn sau Đổi');
@@ -111,7 +111,8 @@ export async function runPrSuaLuuTruCTests(t: { check: any; assert: any; assertT
     const g = JSON.parse(get('SELECT buoc_tiep_json FROM learning_cycles WHERE id = ?', x.cy).buoc_tiep_json);
     if (g.lenhId !== l2.id) conn.prepare('UPDATE learning_cycles SET buoc_tiep_json = ? WHERE id = ?').run(JSON.stringify({ ...g, lenhId: l2.id }), x.cy);
     xoaNho();
-    assert(/chuyển sang lớp mới/.test(bt.trangThaiBuocTiep(QL, x.cy).lyDoKhongDoi ?? ''), 'thiếu lý do khoá Đổi');
-    assertThrows(() => bt.chonBuocTiep(QL, x.cy, { chon: 'ket_thuc' }), /chuyển sang lớp mới/, 'Đổi khi lệnh đã chạy');
+    assert(bt.trangThaiBuocTiep(QL, x.cy).hoanTacDuoc === false, 'lệnh đã chạy: không hoàn tác chính xác được');
+    const r = bt.chonBuocTiep(QL, x.cy, { chon: 'ket_thuc' });
+    assert(r.chon === 'ket_thuc' && em(x.sid).status === 'finished', `HOTFIX-MO-KHOA: lệnh đã chạy vẫn Đổi được (đi thẳng): ${r.chon}`);
   }));
 }
