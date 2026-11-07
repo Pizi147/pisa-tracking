@@ -104,7 +104,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
         lamMoi(); hoanTac([mot.id], tenCua(mot.id), r?.thongBao); onDone(); onClose();
         return;
       }
-      const r = await chayHangLoat(viec, ds.map((e) => e.id).filter((id) => !boQua.some((b) => b.studentId === id)), { lyDo: lyDo.trim() || undefined, date: ngay || undefined });
+      const r = await chayHangLoat(viec, ds.map((e) => e.id).filter((id) => !boQua.some((b) => b.studentId === id)), { lyDo: lyDo.trim() || undefined, date: ngay || undefined, huyLenh: (nhieuXem?.tong.lenhHuy ?? 0) > 0 });
       const ten = tenCua;
       if (r.ok.length) { lamMoi(); hoanTac(r.ok, t('{n} em', { n: r.ok.length })); onDone(); }
       if (!r.failed.length) { onClose(); return; }
