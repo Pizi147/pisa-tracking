@@ -9798,6 +9798,9 @@ await runPrChanRoiNhapTests({ check, checkAsync, assert } as any);
 // ==================================================================== BO-QUA-XEP-MT (chủ SP 03/11: QL bỏ qua việc Xếp lịch MT)
 const { runPrBoQuaMocTests } = bocTep('prBoQuaMoc', await import('./prBoQuaMoc.tests.ts'));
 await runPrBoQuaMocTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== XEP-MT-NHAC (chủ SP 07/11: nhắc xếp MT chỉ khi lộ trình thiếu MT)
+const { runPrXepMtNhacTests } = bocTep('prXepMtNhac', await import('./prXepMtNhac.tests.ts'));
+await runPrXepMtNhacTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== BADGE-CUA-TOI (PTA 04/11: badge Công việc = ô "Của tôi")
 const { runPrBadgeCuaToiTests } = bocTep('prBadgeCuaToi', await import('./prBadgeCuaToi.tests.ts'));
 await runPrBadgeCuaToiTests({ check, assert, P } as any);

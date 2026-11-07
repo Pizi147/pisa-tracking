@@ -3,7 +3,8 @@ import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, type TheSosEm, LUOT_HUY_HET_SQL, LUOT_DA_XOA_SQL } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, type TheSosEm, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
+import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -472,7 +473,9 @@ function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boo
  */
 const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_id, a.student_id) AS sid, s.full_name,
               COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
-              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten
+              COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten,
+              cc.lich_mt AS lop_lich_mt, cc.route AS lop_route, lc.route,   -- XEP-MT-NHAC: thieuMt (lịch lớp đang học, như danhSachLop)
+              (SELECT COUNT(*) FROM assessment_attempts x WHERE x.cycle_id = lc.id AND ${LUOT_MT_DA_CO_SQL('x')}) AS so_mt_co
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -480,11 +483,13 @@ const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_i
          LEFT JOIN classes ac ON ac.id = a.class_id
          LEFT JOIN classes cc ON cc.id = cur.class_id
          LEFT JOIN users ub ON ub.id = iv.bo_qua_boi
+         LEFT JOIN learning_cycles lc ON lc.id = a.cycle_id   -- cùng lộ trình với điều kiện MT sau (nx.cycle_id = a.cycle_id)
         WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
           AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
-          /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc QL xếp lại; QL vẫn tự xếp được. */
+          /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc QL xếp lại; QL vẫn tự xếp được.
+             XEP-MT-NHAC (chủ SP 07/11): MT sau QL chủ động xoá cũng vậy — xoá rồi thì thôi (LUOT_HUY_HET_SQL gồm cả MT đã xoá). */
           AND NOT EXISTS (SELECT 1 FROM assessment_attempts nx WHERE nx.cycle_id = a.cycle_id AND nx.attempt_no > a.attempt_no
-                            AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')} AND NOT ${LUOT_DA_XOA_SQL('nx')})   -- chủ SP 07/11: MT đã xoá = chưa xếp, vẫn nhắc
+                            AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')})
 `;
 
 /** Chữ của việc `moc:` + `dau` = mốc đang thiếu (`mt{n}` | `thi`) — bỏ qua ghi mốc này; mốc khác thì việc hiện lại. */
@@ -571,7 +576,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const tatCa = f.nguoi === 'tat-ca' && xemNguoiKhac;
   /* PR-UXF-a T65: em Tạm dừng không sinh việc nhập điểm. */
   /*
-   * TD4: Công việc chỉ đọc lượt CÓ THỂ còn ô cần chấm (`chiConO`) + lượt chưa xếp tuần (Chốt tuần MT) — trước đọc mọi lượt trong phạm vi.
+   * TD4: Công việc chỉ đọc lượt CÓ THỂ còn ô cần chấm (`chiConO`) — trước đọc mọi lượt trong phạm vi. XEP-MT-NHAC: bỏ lượt chưa tuần (hết việc "Chốt tuần MT").
    * "Tất cả" đọc MỘT lần ở phạm vi quản lý: `myPendingDetail` (việc của mình) không phụ thuộc `scope`, `pendingDetail` (việc GV khác) theo nó.
    */
   /*
@@ -590,7 +595,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const vaoChamS = (a: any, c: any) => (lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay))
     || (lopCn.has(a.classId) && laChamCheo(a.kind, c.skill) && !!c.overdue);
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
-    branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true, kemChuaTuan: true,
+    branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true,
     ...((tatCa && co('score')) || lopCheo.size || lopCn.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
     ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo, ...lopCn])] } : {}),
   }).rows.filter((a: any) => a.status !== 'cancelled');
@@ -1309,23 +1314,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       due: m.han, statusLabel: 'Chờ ghi Mini Test',
     });
   }
-  // ---------------------------------------------------------------- 4. chốt tuần MT
-  for (const a of attempts as any[]) {
-    if (a.period || a.status !== 'planned' || a.lichSu) continue;
-    if (!can(p, PERMISSIONS.PLAN_WEEK, { classId: a.classId })) continue;
-    items.push({
-      key: `week:${a.id}`, group: 'missing_data', urgency: 'normal',
-      studentId: a.studentId, studentName: a.studentName,
-      classId: a.classId ?? null, classCode: a.classCode ?? null,
-      attemptId: a.id, attemptNo: a.attemptNo, caseId: null, level: null,
-      contextLabel: nhanDot(a.kind, a.attemptNo), count: null,
-      reason: 'Bài chưa được xếp vào tuần nào nên chưa tính được hạn nhập điểm',
-      tieuDe: 'Chốt tuần MT', phu: 'Chốt tuần MT',
-      actionLabel: 'Chốt tuần MT', href: attemptHref(a),
-      ownerId: p.userId, owner: null, mine: true,
-      due: null, statusLabel: 'Chưa có tuần',
-    });
-  }
+  /* 4. XEP-MT-NHAC (chủ SP 07/11): bỏ việc "Chốt tuần MT" (lượt chưa tuần) — máy đã tự xếp; lộ trình thiếu MT nhắc qua việc
+     "Xếp lịch MTn" (\`moc:\`) và chip "Chưa có MT kế tiếp" (\`thieuMt\`). */
 
   /*
    * K5-09: HỌC VIÊN FT CHƯA CÓ TARGET — không có target thì không có kỳ vọng, SOS và Case không bao giờ sinh ra. Việc của GVCN lớp
@@ -1407,6 +1397,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         if (f.branchId && r.branch_id !== f.branchId) continue;
         if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;
         const v = viecMoc(r);
+        /* XEP-MT-NHAC (chủ SP 07/11): "Xếp lịch MTn" chỉ khi lộ trình thiếu MT — đủ 3 (RF 2) MT đã có thì không nhắc. */
+        if (!v.thi && !thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lop_lich_mt, route: r.lop_route }, r.route).length)) continue;
         /* BO-QUA-XEP-MT: QL đã bỏ qua đúng mốc này → không là việc, chỉ ở "Đã bỏ qua" (khôi phục được). Mốc khác (MT kế khác) → hiện lại. */
         if (r.bo_qua_moc === v.dau) {
           daBoQua.push({ key: `moc:${r.id}`, tieuDe: v.tieuDe, studentId: r.sid, studentName: r.full_name ?? 'Học viên', classCode: r.class_code ?? null,

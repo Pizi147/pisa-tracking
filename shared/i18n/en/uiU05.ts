@@ -2,7 +2,7 @@
 export const EN_UI_U05 = {
   '{m} không thi': '{m} not taken',
   'Chưa có MT kế tiếp · {n} em': 'No next MT · {n} students',
-  'Em chưa có lượt MT kế tiếp — Quản lý xếp tiếp': 'Students without a next MT — the manager schedules it',
+  'Lộ trình chưa đủ MT (3 · RF 2) — Quản lý xếp tiếp': 'Route has fewer MTs than required (3 · RF 2) — the manager schedules more',
   'Chưa có MT kế tiếp': 'No next MT',
   'Lớp: {ma}': 'Class: {ma}',
   'Không lớp nào chưa có MT kế tiếp': 'Every class has its next MT scheduled',

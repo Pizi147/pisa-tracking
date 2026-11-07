@@ -56,8 +56,9 @@ export async function runPrMtDemTests(t: { check: any; assert: any; conn: any; P
     assert(JSON.stringify(d.demMtHocVien([])) === '{"xong":0,"tong":0}', 'rỗng');
   });
 
-  check('MTD-2 · daDuMtMacDinh: (3,3) (2,2) đủ · (2,3) chưa · lớp không lịch (5,0) không', () => {
-    assert(d.daDuMtMacDinh(3, 3) && d.daDuMtMacDinh(2, 2) && !d.daDuMtMacDinh(2, 3) && !d.daDuMtMacDinh(5, 0), 'daDuMtMacDinh');
+  /* XEP-MT-NHAC (chủ SP 07/11): `daDuMtMacDinh` (xong đủ) → `thieuMt` (MT đã có < mặc định) — một hàm nhắc xếp MT. */
+  check('MTD-2 · thieuMt: (3,3) (2,2) đủ · (2,3) thiếu · lớp không lịch (5,0) không', () => {
+    assert(!d.thieuMt(3, 3) && !d.thieuMt(2, 2) && d.thieuMt(2, 3) && !d.thieuMt(5, 0), 'thieuMt');
   });
 
   check('MTD-3 · Học viên & Lớp: MT1–3 xong + MT4 chưa xếp tuần → loTrinh 3/4; huỷ MT4 → 3/3; em chưa có lượt → 0/0', () => thu(() => {

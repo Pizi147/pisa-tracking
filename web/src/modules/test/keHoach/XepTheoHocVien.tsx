@@ -32,7 +32,8 @@ type KetQuaKiem = { loi: string | null; canhBao: string | null };
 const suaDuoc = (o: OKyNang | undefined): o is OKyNang =>
   !!o && o.trangThai !== 'khong-yeu-cau' && o.trangThai !== 'xong' && !o.diem && o.khoa !== 'đã có điểm' && o.khoa !== 'đã làm bài';
 const doiThat = (o: OKyNang | undefined, t: Tuan | undefined) => !!t && (!o || t.periodId !== o.periodId || o.sit === 'cancelled');
-const coLichTiep = (h: Hang) => Object.values(h.dot).some((o) => o.trangThaiDot === 'planned' && Object.values(o.kn).some((k) => !!k?.tuan));
+/** XEP-MT-NHAC (chủ SP 07/11): "Chưa có MT tiếp" = lộ trình thiếu MT — cùng hàm máy chủ `thieuMt` với chip "Chưa có MT kế tiếp" của lưới. */
+const chuaCoMtTiep = (h: Hang) => !!h.thieuMt;
 /** Cùng luật "Cần xếp lại" của lưới Kế hoạch Test (`LuoiKeHoach`). */
 const canXepLai = (h: Hang) => Object.values(h.dot).some((d) => !d.lichSu && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || (o?.trangThai === 'da-huy' && !o.huyVang)));   // N38 L2
 const minTuan = (ds: (string | null | undefined)[]) => ds.filter((x): x is string => !!x).map((x) => x.slice(0, 10)).sort()[0] ?? null;
@@ -74,8 +75,8 @@ export function XepTheoHocVien({ lopDs, lopMoSan, tabs, onClose, onDone }: {
     return l ? l.hang.map((h) => ({ ...h, classId: id, classCode: l.classCode })) : [];
   }).sort((a, b) => a.classCode.localeCompare(b.classCode, 'vi') || a.ten.localeCompare(b.ten, 'vi')), [luoi, lopChon]);
   const khopTim = (h: Hang) => !tim.trim() || `${h.ten} ${h.ma}`.toLowerCase().includes(tim.trim().toLowerCase());
-  const dem = { tat: hangs.length, chua: hangs.filter((h) => !coLichTiep(h)).length, 'xep-lai': hangs.filter(canXepLai).length };
-  const hienThi = hangs.filter((h) => khopTim(h) && (loc === 'tat' || (loc === 'chua' ? !coLichTiep(h) : canXepLai(h))));
+  const dem = { tat: hangs.length, chua: hangs.filter(chuaCoMtTiep).length, 'xep-lai': hangs.filter(canXepLai).length };
+  const hienThi = hangs.filter((h) => khopTim(h) && (loc === 'tat' || (loc === 'chua' ? chuaCoMtTiep(h) : canXepLai(h))));
 
   /* Em đã tick (theo thứ tự tick) + bảng lịch MT của từng em. */
   const [chon, setChon] = useState<number[]>([]);
