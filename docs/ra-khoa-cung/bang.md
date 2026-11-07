@@ -69,6 +69,20 @@ Cần sửa CÂU (không đổi luật): `sysconfig.ts:147` bỏ qua lặng lẽ
 8. **Tài khoản đã xoá mềm** — không có đường khôi phục (`accounts.ts:366…680`) → thêm "Khôi phục tài khoản" cho Quản trị?
 9. Các "?" còn lại (thẻ không có Huỷ quyết định theo loại, thẻ đề xuất chuyển lớp tự đóng khi Tạm dừng, xử lý theo lô loại em có đề xuất chờ…) — xem bảng từng khu, sửa trong PR khu đó theo hướng A / B.
 
+## Quyết định PTA Plan 07/11 (duyệt bảng)
+1. Q-B1: **MỞ cả 3 khoá** (Lưu trữ, lớp kết thúc, Case xong) — có lịch sử + Hoàn tác.
+2. Thang vi phạm: ngày thực hiện < ngày duyệt → nhắc, không chặn. Bắt buộc xử lý không Ghi nhận / chỉ QL sửa bậc → GV giữ luật, QL / Admin làm được (xác nhận + lịch sử).
+3. Nhập điểm / "-" khi chưa tới tuần thi → B "Dời về tuần này rồi lưu?".
+4. Chọn tuần đã qua → cho chọn, có lịch sử.
+5. B "Kết thúc sớm PA quy chế" rồi Hoàn thành Case.
+6. Giữa / Cuối khoá, MT0 muộn → nhắc + xác nhận, không chặn.
+7. Đổi chương trình lớp có HV / bài; Kết thúc lớp còn em chưa chốt → B xác nhận nêu đúng số em / bài ảnh hưởng, rồi làm.
+8. Thêm Khôi phục tài khoản xoá mềm cho Quản trị.
+- N22 ③ "Chuyển ngay — không hoàn tác" → thêm Hoàn tác / khôi phục.
+- **Luật chung cho mọi dòng C:** "không chặn cứng" = luôn có người có quyền làm được → GV theo luật đã chốt (N15, N23, N3…), **QL / Admin VƯỢT KHOÁ được** (xác nhận ngắn nêu luật bị vượt + lịch sử + Hoàn tác).
+- **D:** giữ, nhưng mỗi câu chặn phải chỉ đường (làm gì tiếp, ở đâu). Câu báo / xác nhận ngắn tại nút. Turso không thêm đọc.
+- `PanelSauThi.tsx:180` "Sửa điểm" thi thật → HOTFIX-MO-KHOA làm. RKC-5 sau khi HOTFIX merge.
+
 ## Đề xuất chia PR (theo khu, mỗi PR máy chủ + web của khu)
 1. **RKC-1 Test & điểm** — G2 (phần điểm), G3, G4, G10, ô vắng → nhập điểm, `lockedByNoShow` (attempts, regular, skillSchedule, absence, ketQuaHuy, lichMt, keHoachTest + web fasttrack / test / cham).
 2. **RKC-2 Case & PA & Tutor** — G5, G6 (Case), G7 (tutor, ngày PA), G8 (cases, sosAuto, sosV4, owner, tutors + web cases / tutor).
