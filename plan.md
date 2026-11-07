@@ -271,6 +271,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - PTA kiểm bản chép thật: "Chốt tuần MT" = mọi lượt `planned` không tuần (`mywork.ts` mục 4 ~1313) — có lượt QL đã "Xóa lịch" + bỏ hết môn (3/11) vẫn sinh việc; có lượt MT5 / MT6 / MT3 4 môn chưa tuần.
 - **Chủ SP 07/11 (chốt):** "đủ 3 MT cho các lộ trình bình thường và đủ 2 MT cho các lộ trình RF là được, đằng nào cũng đã tự xếp, thiếu thì mới báo, và nếu xóa rồi chủ động xóa rồi thì không báo xếp lại nữa"
 - **LUẬT MỚI (thay #1158 phần nhắc + việc "Chốt tuần MT"):** một hàm dùng chung "lộ trình thiếu MT": số MT (đã thi + có tuần + MT QL chủ động xoá / xoá lịch / bỏ hết môn) < 3 (LT1, LT2, KHAC) hoặc < 2 (RF) → mới nhắc (một việc "Xếp lịch MT", chip / lọc "Chưa có MT kế tiếp" cùng hàm). Đủ thì không nhắc gì. MT chủ động xoá = đã xử lý, không nhắc xếp lại. Bỏ việc "Chốt tuần MT" (lượt chưa tuần) khỏi Công việc. Việc mốc PA "Xếp lịch MTn" (BO-QUA-XEP-MT) cũng không nhắc khi MT kế đã bị chủ động xoá. Nút "Xếp MT{n}" (thao tác) ở thẻ 375 / Kế hoạch Test giữ.
+- PTA (XEP-MT-NHAC hỏi): đếm MỌI lượt Mock đã tạo (đã thi / có tuần / chưa tuần / đã xoá / huỷ) vào "đủ 3 / RF 2" — bản chép thật: 28 "Chốt tuần MT" → 0, không lộ trình nào thiếu.
+- **Chủ SP 07/11 (nói rõ):** "ý chỉ đơn giản là khi đã bấm xóa, hoặc khi HV đã bị hủy do vắng 2 lần, thì không nhắc xếp lại nữa, QL sẽ phải tự chủ động rà soát và xếp lại nếu thấy cần thiết" → MT / môn huỷ do vắng 2 lần cũng không sinh việc / chip / mốc nhắc xếp lại.
 
 
 ### 07/11 — Công việc "Của GV / Tất cả": dòng việc lôm côm (chủ SP)
