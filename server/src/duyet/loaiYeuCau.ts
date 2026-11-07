@@ -349,7 +349,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       lam: (p, yc) => {
         if (yc.trang_thai !== 'duyet') return;
         const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat; cu?: string | number | null };
-        if (!TRUONG_TU_AP.includes(d.truong) || d.cu == null) return;
+        if (!TRUONG_TU_AP.includes(d.truong)) return;   // trường "khác": Duyệt không đổi dữ liệu
+        if (d.cu == null) throw badRequest('Không có giá trị trước đề xuất để trả lại — sửa Target / lộ trình ở hồ sơ học viên.');
         const cyc = hienTaiCua(db(), yc.hoc_vien_id!).cycle;
         if (!cyc) throw badRequest('Em không còn lộ trình đang chạy — sửa ở hồ sơ học viên.');
         if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.cu, reason: 'Huỷ quyết định đề xuất sửa Target' });

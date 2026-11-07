@@ -30,6 +30,7 @@ export const EN_KHOA_CUNG = {
   'Huỷ quyết định dời lịch': 'Reschedule decision cancelled',
   'Huỷ quyết định dời lịch Test': 'Test reschedule decision cancelled',
   'Em không còn lộ trình đang chạy — sửa ở hồ sơ học viên.': 'The student has no active learning cycle — edit on the student profile.',
+  'Không có giá trị trước đề xuất để trả lại — sửa Target / lộ trình ở hồ sơ học viên.': 'No pre-request value to restore — edit the Target / route on the student profile.',
   'Dữ liệu đã đổi sau quyết định — trả về giá trị trước đề xuất (từ hiện tại)?': 'The data changed after the decision — return to the value before the request (from now)?',
   'Case đã đổi sau quyết định — mở lại Case và các PA đã dừng vì "Không cần theo dõi"?': 'The Case changed after the decision — reopen it and the plans stopped by "No follow-up needed"?',
   '{n} quyết định có tuần bắt đầu đã qua — khôi phục với tuần bắt đầu {tuan}?': '{n} decisions have a start week that has passed — restore them starting {tuan}?',
