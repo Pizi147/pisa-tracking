@@ -114,13 +114,14 @@ function dungTap(c: Ky): ViecXong[] {
       { key: `buoc_tiep:${r.id}`, group: 'buoc_tiep', tieuDe: 'Chọn bước tiếp', href: duongHoSoHocVien(r.hv, { buocTiep: r.id }) });
   }
 
-  /* 5. Bàn giao — GVCN (lệnh) · GVBM (lệnh × môn) · đổi GV; lớp nguồn, người giữ theo phân công lúc hạn (như `viecBanGiao`). */
+  /* 5. Bàn giao — GVCN (lệnh) · GVBM (lệnh × môn) · đổi GV; lớp nguồn, người giữ theo phân công lúc hạn (như `viecBanGiao`).
+   *    Câu Writing chung cũ (`mon = 'writing'`, trước tách W1 / W2) do GV tự ghi → tính cho người ghi, không cho GV W phân công sau cùng (chủ SP 07/11). */
   for (const r of conn.prepare(
     `SELECT 'gvcn' AS loai, k.id AS id, k.han_gvcn AS han, k.xac_nhan_luc AS xong, ${gvLop('k.lop_nguon_id', 'k.han_gvcn', null)} AS owner, l.id AS lop, l.code AS ma, l.is_fast_track AS ft
        FROM lenh_chuyen_lop k JOIN classes l ON l.id = k.lop_nguon_id
       WHERE l.branch_id = ? AND k.xac_nhan_luc IS NOT NULL AND k.han_gvcn BETWEEN ? AND ?
      UNION ALL
-     SELECT 'gvbm', b.id, k.han_gvbm, b.ghi_luc, ${gvLop('k.lop_nguon_id', 'k.han_gvbm', 'b.mon')}, l.id, l.code, l.is_fast_track
+     SELECT 'gvbm', b.id, k.han_gvbm, b.ghi_luc, CASE WHEN b.mon = 'writing' AND b.dien_thay = 0 THEN b.nguoi_ghi ELSE ${gvLop('k.lop_nguon_id', 'k.han_gvbm', 'b.mon')} END, l.id, l.code, l.is_fast_track
        FROM ban_giao_mon b JOIN lenh_chuyen_lop k ON k.id = b.lenh_id JOIN classes l ON l.id = k.lop_nguon_id
       WHERE l.branch_id = ? AND b.lam_lai = 0 AND k.han_gvbm BETWEEN ? AND ?
      UNION ALL

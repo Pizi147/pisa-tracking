@@ -70,6 +70,24 @@ export async function runPrNgayXongTests(t: YThucTestKit) {
     assert(tre.dung === truoc.dung && tre.tong >= truoc.tong + 1, `trễ: ${JSON.stringify(truoc)} → ${JSON.stringify(tre)}`);
   }));
 
+  check('BO-CHU-THICH · Bàn giao GVBM dữ liệu cũ mon = writing: tính cho người thực sự ghi (nguoi_ghi), không phải GV W phân công cuối', () => thu(() => {
+    const it = viecMo('no_plan');
+    const gvA = it.ownerId as number;
+    const gvB = (conn.prepare('SELECT id FROM users WHERE id != ? ORDER BY id LIMIT 1').get(gvA) as any).id as number;
+    const nay = new Date().toISOString();
+    const pc = conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, effective_from, status, created_at) VALUES (?, ?, ?, ?, 'active', ?)`);
+    pc.run(gvA, it.classId, 'writing1', addDays(TODAY, -60), nay);
+    pc.run(gvB, it.classId, 'writing2', addDays(TODAY, -60), nay);   // phân công W sau cùng = B
+    const truoc = so(o(gvA)), truocB = so(o(gvB));
+    const han = addDays(TODAY, -3);
+    const lenhId = Number(conn.prepare(`INSERT INTO lenh_chuyen_lop (student_id, lop_nguon_id, huong, boi_canh, tuan_bat_dau, nguoi_ra_lenh, ngay_ra_lenh, trang_thai, tao_luc, han_gvbm, xac_nhan_luc)
+      VALUES (?, ?, 'len-ft', 'cuoi-khoa', ?, ?, ?, 'cho', ?, ?, ?)`).run(it.studentId, it.classId, week.mondayOf(TODAY), gvA, addDays(TODAY, -10), nay, han, nay).lastInsertRowid);
+    conn.prepare(`INSERT INTO ban_giao_mon (lenh_id, mon, noi_dung, nguoi_ghi, dien_thay, ghi_luc) VALUES (?, 'writing', 'Câu chung cũ', ?, 0, ?)`).run(lenhId, gvA, `${addDays(TODAY, -4)}T03:00:00.000Z`);
+    /* Phiếu đã xác nhận chỉ có câu Writing chung → không mở lại W1 / W2 (prBanGiaoGv): dòng xong duy nhất của lớp. */
+    const sau = so(o(gvA)), sauB = so(o(gvB));
+    assert(sau.dung === truoc.dung + 1 && sau.tong === truoc.tong + 1 && sauB.tong === truocB.tong, `người ghi A ${JSON.stringify(truoc)} → ${JSON.stringify(sau)} · GV W cuối B ${JSON.stringify(truocB)} → ${JSON.stringify(sauB)}`);
+  }));
+
   check('XM-VIEC b · migrate prNgayXong0711 chạy lại an toàn; dữ liệu cũ không có ngày xong giữ NULL', () => thu(() => {
     const ap: string[] = [];
     migratePrNgayXong0711(conn, ap);
