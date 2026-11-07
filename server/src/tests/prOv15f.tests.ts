@@ -172,7 +172,7 @@ export async function runPrOv15fTests(t: YThucTestKit) {
     });
   });
 
-  await checkAsync('F15-5 · Lịch thi theo vai: Admin chi nhánh sửa được dự kiến thi; GVCN của lớp sửa được; em lưu trữ bị chặn', async () => {
+  await checkAsync('F15-5 · Lịch thi theo vai: Admin chi nhánh sửa được dự kiến thi; GVCN của lớp sửa được; RKC: em lưu trữ sửa được', async () => {
     const l = lop();
     const a = em(l, 'Kiều Thu Trang', { month: M1 }), b = em(l, 'Trịnh Mai Anh', { month: M1 });
     const gvcn = nguoi('teacher', ['MB']);
@@ -186,7 +186,7 @@ export async function runPrOv15fTests(t: YThucTestKit) {
       assert(r.rows.every((z: any) => z.coTheSua === true || z.coTheSua === false), 'có cờ quyền ở mọi hàng');
       conn.prepare(`UPDATE students SET archived_at = ? WHERE id = ?`).run(NOW, b.sid);
       const e = await loi(await goi(QL, `/hoc-vien-lop/lich-thi/${b.cy}`, put({ ketLuan: 'giu-thang' })));
-      assert(e.status === 400, `lưu trữ khoá: ${JSON.stringify(e)}`);
+      assert(e.status === 200, `RKC (mở Q-B1): em lưu trữ sửa được dự kiến thi: ${JSON.stringify(e)}`);
       /* Ngoài phạm vi: QL chi nhánh khác và TVV chi nhánh khác không sửa được lịch thi của em chi nhánh này. */
       const tvvCp = nguoi('consultant', ['CP']);
       for (const [ai, ten] of [[P.cpManager.userId as number, 'QL CP'], [tvvCp, 'TVV CP']] as const) {
