@@ -140,7 +140,10 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
         onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((v) => !v); } }}
         className={`grid gap-x-3 gap-y-1 items-center cursor-pointer bam grid-cols-2 ${gon ? 'px-3.5 py-3' : 'px-3 py-2.5'} md:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_auto]`}>
         <div className="col-span-2 md:col-span-1 min-w-0">
-          <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[15px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : luot.studentName}</span>
+          <span className={`flex items-center gap-1 font-semibold text-slate-100 ${gon ? 'text-[15px]' : 'text-sm'}`}>{gon && <MuiTenGap mo={open} />}{cot1 === 'luot' ? mtSos : (
+            /* TEN-HV-LINK: tên = hồ sơ HV (không lan lên đầu thẻ mở / đóng). */
+            <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="ten-ho-so" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>{luot.studentName}</Link>
+          )}</span>
           {gon && !luot.nhanDot && luot.sosLevel !== null ? (
             /* Mockup `.phoi-hop`: chip "SOS 2 · R, W" dưới tên; chip tĩnh — đầu thẻ đã là nút mở. */
             <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">

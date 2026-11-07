@@ -268,7 +268,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               */}
             <p className="m-0 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-snug">
               {!gon && <ThePhu vien={[dich(yc.nhanPhanLoai)]} ds={[]} />}
-              {!gon && yc.hocVien && <b className="font-semibold text-[color:var(--text)]">{yc.hocVien}</b>}
+              {!gon && yc.hocVien && (yc.hocVienId != null ? <Link className="ten-ho-so" to={`/hoc-vien/${yc.hocVienId}`}>{yc.hocVien}</Link> : <b className="font-semibold text-[color:var(--text)]">{yc.hocVien}</b>)}
               <span className="font-medium text-[color:var(--text)]">{dich(yc.tieuDe)}</span>
               <ThePhu ds={[!gon ? yc.lop : null, yc.phu ? dich(yc.phu) : null].filter((x): x is string => !!x)} />
               {/* [XM] #939: người gửi + vai với em (hồ sơ HV, Case, panel) — cùng hàng, chữ mờ; thẻ mình gửi không cần. */}

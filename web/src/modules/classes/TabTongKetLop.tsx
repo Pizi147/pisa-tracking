@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -65,7 +65,8 @@ export function TabTongKetLop({ classId }: { classId: number }) {
   const ft = data.lop.loai === 'ft';
   const mot = (d: Dong) => (d.loTrinhId ? setMo(d.loTrinhId) : navigate(`/hoc-vien/${d.studentId}`));
   const ten = (d: Dong): ReactNode => (
-    <button type="button" className="link min-h-[44px] text-left font-bold sm:min-h-0" onClick={(e) => { e.stopPropagation(); mot(d); }}>{d.ten}</button>
+    /* TEN-HV-LINK (chủ SP 07/11): tên = hồ sơ HV; bấm phần còn lại của hàng = panel Tổng kết như cũ. */
+    <Link className="link inline-flex min-h-[44px] items-center text-left font-bold no-underline hover:underline sm:min-h-0" to={`/hoc-vien/${d.studentId}`} onClick={(e) => e.stopPropagation()}>{d.ten}</Link>
   );
   const moRong = data.dong.length === 0;
   return (

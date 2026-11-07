@@ -18,7 +18,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, duongDotTest, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, duongDotTest, duongHoSoHocVien, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -408,8 +408,9 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
       {/* Tên một dòng (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: dòng thi · trạng thái lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
         <span className="inline-flex max-w-full items-center gap-1.5 align-baseline">
-          {/* HSL-LT: tên em mở hồ sơ lượt lớp thường (như tên em ở lưới FT → hồ sơ lượt Mock); hồ sơ HV là link tên em ở đầu trang đó. */}
-          <Link className="ten-ho-so min-w-0 truncate max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })} title={row.studentName}>{row.studentName}</Link>
+          {/* TEN-HV-LINK (chủ SP 07/11, thay HSL-LT): tên em = hồ sơ HV; hồ sơ lượt lớp thường mở qua "{bài} ›". */}
+          <Link className="ten-ho-so min-w-0 truncate max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
+          <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })}>{nhanBai(row.kind)} ›</Link>
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">
           <DongThi muc={row.skillSchedule.filter((s) => s.progress !== 'cancelled' && s.progress !== 'skipped')

@@ -15,7 +15,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import {
   ENTRY_SKILLS, nhanBai, tenMon, tenMonNgan, tuanLich, type NguoiChon,
 } from '@shared/domain/index.ts';
-import { conThieuFt, dotGvCham, duongDotTest, type NguCanhDs } from '@shared/domain/index.ts';
+import { conThieuFt, dotGvCham, duongDotTest, duongHoSoHocVien, type NguCanhDs } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { Level } from '../../ui/ui.tsx';
 import {
@@ -107,8 +107,10 @@ function useDiChuyen() {
 }
 
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
-function DongHv({ studentId, active, ten, href, ds, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false }: {
+function DongHv({ studentId, active, ten, href, nhanLuot, ds, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false }: {
   studentId: number; active: boolean; ten: string; href: string;
+  /** TEN-HV-LINK: nhãn link hồ sơ lượt ('MT2', 'Progress Test') — tên em mở hồ sơ HV. */
+  nhanLuot: string;
   /** R1-LUU-TIEP: danh sách lượt nguồn cho hồ sơ MT ("Lưu · em tiếp ›"). */
   ds?: NguCanhDs;
   /** OV-1d: em đã Kết thúc học / Lưu trữ — dòng mờ. */
@@ -126,7 +128,8 @@ function DongHv({ studentId, active, ten, href, ds, phu, phuTitle, phuDo = false
       {/* OV-14b: tên giữ ≥ 8rem (375: không vỡ từng chữ cái) — cụm ô chật thì xuống dòng dưới tên. */}
       <div className="min-w-[8rem] flex-1">
         <div className="min-w-0">
-          <Link className="link block break-words max-sm:flex max-sm:min-h-[44px] max-sm:items-center" to={href} state={ds ? { ds } : undefined} title={ten}>{ten}</Link>
+          <span className="flex flex-wrap items-center gap-x-2"><Link className="ten-ho-so break-words max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(studentId)} title={ten}>{ten}</Link>
+            <Link className="link whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={href} state={ds ? { ds } : undefined}>{nhanLuot} ›</Link></span>
           {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
@@ -215,7 +218,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
         {hangMo.map((h) => (
           <li key={`mo-${h.studentId}`} data-hv={h.studentId} className="px-3 py-2 min-h-[60px] border-t text-slate-500"
             style={{ borderColor: 'var(--line)' }}>
-            <div className="truncate" title={h.ten}>{h.ten}</div>
+            <div className="truncate"><Link className="text-slate-500 no-underline hover:underline" title={h.ten} to={`/hoc-vien/${h.studentId}`}>{h.ten}</Link></div>
             <div className="text-xs text-slate-400">{h.chu}</div>
           </li>
         ))}
@@ -235,10 +238,10 @@ function DongFt({ row, k, nhieuMt, lop, active, onReload, gvMacDinh, mo, hop, ds
   const c0 = oCua(row, k);
   const c = c0 && apDiemVuaLuu(c0, vuaLuu[k]);
   const kv = row.result?.expectation ?? null;
-  const phu = [nhieuMt ? `MT${row.attemptNo}` : null, kv !== null ? t('KV {x}', { x: fmtBand(kv) }) : null]
+  const phu = [kv !== null ? t('KV {x}', { x: fmtBand(kv) }) : null]
     .filter(Boolean).join(' · ');
   return (
-    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)} ds={dsLuot}
+    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId }, k)} nhanLuot={`MT${row.attemptNo}`} ds={dsLuot}
       phu={phu} phuTitle={kv !== null ? t('Kỳ vọng (KV) của lượt này: {fmtBand}', { fmtBand: fmtBand(kv) }) : undefined}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       mo={!!row.ngungHoc}
@@ -350,7 +353,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     ?? ketQua
     ?? '';
   return (
-    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id }, k)}
+    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id }, k)} nhanLuot={nhanBai(row.kind)}
       phu={phu} phuTitle={tenMonO} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       thi={row.skillSchedule.filter((x) => x.progress !== 'cancelled' && x.progress !== 'skipped')

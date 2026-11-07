@@ -11,7 +11,7 @@ import { DeadlinePill, apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '..
 import { ODiemMt, chuVangO, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import { fmtBand, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
-import { ENTRY_SKILLS, chipSosMt0, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, chipSosMt0, duongHoSoHocVien, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
 import { DongThi } from './DongThi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
@@ -226,7 +226,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
         ))}
         {chiSEx.map((d) => (
           <article key={`sex-${d.id}`} className="flex flex-wrap items-center gap-2 border-b border-[color:var(--line)] px-3.5 py-3">
-            <span className="font-semibold">{d.ten}</span><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
+            <Link className="ten-ho-so" to={`/hoc-vien/${d.studentId}`}>{d.ten}</Link><ChipSEx d={d} ten={d.ten} studentId={d.studentId} />
           </article>
         ))}
         {dongHetHv && <div className="px-3.5 py-2">{dongHetHv}</div>}
@@ -262,7 +262,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
       )}
       cuoi={<>{dongHetHv && <tr><td className="td py-2" colSpan={cotDs.length}>{dongHetHv}</td></tr>}{chiSEx.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={d.ten} studentId={d.studentId} cotDs={cotDs} cc={cc} rieng />)}{hangMo.map((h) => (
         <tr key={`mo-${h.studentId}`} data-hv={h.studentId}>
-          <OBang c={cc.hv} className="text-slate-500"><span title={h.ten}>{h.ten}</span></OBang>
+          <OBang c={cc.hv} className="text-slate-500"><Link className="text-slate-500 no-underline hover:underline" title={h.ten} to={`/hoc-vien/${h.studentId}`}>{h.ten}</Link></OBang>
           <td className="td text-xs text-slate-400" colSpan={cotDs.length - 1}>{h.chu}</td>
         </tr>
       ))}</>} />
@@ -382,11 +382,13 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
       {/* Tên một dòng (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: dòng thi (Điểm theo lớp) · "lịch sử" · dấu lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
         <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
-          <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}>{row.studentName}</Link>
+          {/* TEN-HV-LINK (chủ SP 07/11): tên = hồ sơ HV; lượt mở qua "MTn ›". */}
+          <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
+          <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
           {vangHang && <span className="whitespace-nowrap">{vangHang}</span>}
-          <DongThi tienTo={`MT${row.attemptNo}`} muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
+          <DongThi muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
             .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
@@ -540,8 +542,8 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
   return (
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2">{/* DO-KHUNG-DO: thiếu chỗ thì chip xuống dòng, không cắt tên */}
-        <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
-        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">MT{row.attemptNo}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
+        <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongHoSoHocVien(row.studentId)} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400"><Link className="link inline-flex min-h-[44px] items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
       {vangHang && <span className="-mt-2 text-xs text-slate-400">{vangHang}</span>}
@@ -604,7 +606,7 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   return (
     <tr className="do-hang" data-hv={studentId} data-sex={d.id}>
       <OBang c={cc.hv}>
-        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><span className="truncate font-semibold" title={ten}>{ten}</span>{chip}</span> : <span className="pl-3">{chip}</span>}
+        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><Link className="ten-ho-so truncate" title={ten} to={`/hoc-vien/${studentId}`}>{ten}</Link>{chip}</span> : <span className="pl-3">{chip}</span>}
       </OBang>
       <td className="td text-xs text-slate-400" colSpan={Math.max(iS - 1, 1)}>{d.nguoiCham ?? ''}{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>
       {iS > 0 && (
