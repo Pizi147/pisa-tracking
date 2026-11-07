@@ -770,8 +770,12 @@ export async function runCongViecTests(t: YThucTestKit) {
   });
 
   check('PR-Ra Q13 · Nộp ngoài cửa sổ → 400; nộp không mức → 400; nộp trong cửa sổ → đã nộp, history kind="nop"', () => {
-    assertThrows(() => meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, curPeriodId, 'curriculum', { status: 'watch', nop: true }),
-      /mở từ|quá hạn|Quản trị hệ thống/, 'Nộp ngoài cửa sổ (tuần chưa tới cửa sổ) phải 400');
+    /* RKC-3b: tuần chưa tới hai ngày cuối → NỘP SỚM được (web nhắc "tuần chưa hết") — thử trong giao dịch rồi cuộn lại, không đổi dữ liệu các phép sau. */
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      const som = meetingSvc.saveUnitReport(P.mbManager, mbUnit.id, curPeriodId, 'curriculum', { status: 'watch', nop: true }) as any;
+      assert(!!som.submitted_at, 'Nộp sớm (tuần chưa tới cửa sổ) phải được');
+    } finally { conn.exec('ROLLBACK'); }
 
     /* Kỳ TRƯỚC (W2 SEP) đang trong hai ngày bù, cửa sổ đang MỞ. */
     const emptyCat = 'students';
