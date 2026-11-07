@@ -2602,7 +2602,7 @@ check('[9.1] Hai tab cập nhật kết quả: theo dõi tiếp thì không ph�
     () => cases.updateResult(P.coreTeacher, ivId, {
       mode: 'end', outcome: 'insufficient', nextStep: 'complete', note: 'Chưa có bài mới để nhìn',
     }),
-    /Giữ nguyên, Điều chỉnh, Thay PA/, '"Chưa đủ dữ liệu" vẫn kết thúc được phương án',   // RKC-2c: GV giữ luật (QL vượt kèm xác nhận)
+    /Giữ nguyên, Điều chỉnh hoặc Thay/, '"Chưa đủ dữ liệu" vẫn kết thúc được phương án',   // RKC-2c: GV giữ luật (QL vượt kèm xác nhận)
   );
   assertThrows(
     () => cases.updateResult(P.coreTeacher, ivId, {

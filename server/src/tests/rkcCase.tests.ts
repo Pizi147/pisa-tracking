@@ -149,11 +149,11 @@ export async function runRkcCaseTests(t: any) {
     assert(mot('SELECT urgency FROM sos_cases WHERE id = ?', c).urgency === 'urgent', 'đổi mức được');
   }));
 
-  check('RKC2c-1 · Kết thúc PA khi "Chưa đủ dữ liệu": GV → 400 chỉ đường Xin hỗ trợ QL; QL → hỏi nêu luật → lưu', () => thu(() => {
+  check('RKC2c-1 · Kết thúc PA khi "Chưa đủ dữ liệu": GV → 400 chỉ đường nhờ QL; QL → hỏi nêu luật → lưu', () => thu(() => {
     const c = taoCase(moiEm()); const iv = themPa(c);
     const vao = { ...KQ, decision: 'end', outcome: 'insufficient', note: 'Em vắng hai buổi, chưa đủ bài để nhìn', decisionNote: 'Gia đình xin dừng' };
     const e = loi(() => cases.updateResult(P.lrTeacher, iv, vao));
-    assert(e?.status === 400 && /Xin hỗ trợ Quản lý/.test(e.message), `GV: ${e?.status} ${e?.message}`);
+    assert(e?.status === 400 && /nhờ Quản lý/.test(e.message), `GV: ${e?.status} ${e?.message}`);
     const e2 = loi(() => cases.updateResult(QL, iv, vao));
     assert(e2?.status === 409 && e2.details?.canXacNhan, `QL phải hỏi: ${e2?.status} ${e2?.message}`);
     voiXacNhan(() => cases.updateResult(QL, iv, vao));

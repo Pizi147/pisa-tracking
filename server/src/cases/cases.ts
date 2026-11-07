@@ -3998,11 +3998,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
     const traiLuat = (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') || !(allowed as readonly string[]).includes(nextStep);
     if (traiLuat && !qlVuot) {
       if (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') {
-        throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh, Thay PA — hoặc Xin hỗ trợ Quản lý.');
+        throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được — chọn Giữ nguyên, Điều chỉnh hoặc Thay PA; cần kết thúc thì nhờ Quản lý.');
       }
       throw badRequest(
         `Kết quả "${outcomeLabelFor(input.outcome)}" chỉ kết thúc được bằng: `
-        + allowed.map((x) => NEXT_STEP_LABEL[x]).join(' · ') + ' — hoặc Xin hỗ trợ Quản lý.',
+        + allowed.map((x) => NEXT_STEP_LABEL[x]).join(' · ') + ' — cần kết thúc khác thì nhờ Quản lý.',
       );
     }
     if (traiLuat) canXacNhan('Kết quả "{x}" — luật chưa cho kết thúc PA theo cách này. Vẫn lưu?', { x: outcomeLabelFor(input.outcome) }, 'Vẫn lưu kết quả');

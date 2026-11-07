@@ -129,7 +129,7 @@ export async function runPrSoTests(t: YThucTestKit) {
       addDays(TODAY, 28), new Date().toISOString(), new Date().toISOString()).lastInsertRowid);
     let loi: any = null;
     try { cases.updateResult(P.admin, iv, { decision: 'end', outcome: 'improved', note: 'Em nghe tốt hơn hẳn sau hai tuần' }); } catch (e) { loi = e; }
-    assert(loi?.status === 400 && /không kết thúc sớm/.test(loi.message), `updateResult end: ${loi?.status} ${loi?.message}`);
+    assert(loi?.status === 409 && /luật không thay \/ kết thúc sớm/.test(loi.message), `updateResult end: ${loi?.status} ${loi?.message}`);   // RKC-2c: Quản trị được hỏi (chưa lưu)
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv).status === 'started', 'PA bị khép');
   });
 

@@ -11,6 +11,8 @@ export const EN_KHOA_CUNG = {
   'Case đang có PA chạy — vẫn gửi "Không cần theo dõi"? PA đang chạy sẽ dừng khi Quản lý duyệt.': 'The Case has running plans — send "No follow-up needed" anyway? Running plans stop when a Manager approves.',
   'Vẫn gửi': 'Send anyway',
   'Vẫn lưu kết quả': 'Save result anyway',
+  'PA theo quy chế — GV không thay / kết thúc sớm ở đây: chọn "Xin hỗ trợ Quản lý" để đề xuất; GVCN / Quản lý "Kết thúc sớm…" ở thẻ PA.': 'Policy plan — teachers cannot replace / end it early here: choose "Ask a Manager" to propose; the homeroom teacher / Manager uses "End early…" on the plan card.',
+  '"Chưa đủ dữ liệu" thì chưa kết thúc phương án được — chọn Giữ nguyên, Điều chỉnh hoặc Thay PA; cần kết thúc thì nhờ Quản lý.': '"Not enough data" cannot end the plan — choose Keep, Adjust or Replace; ask a Manager to end it.',
   'Case đang chờ Quản lý duyệt "Không cần theo dõi" — rút đề nghị đó rồi lưu?': 'The Case is waiting for a Manager to approve "No follow-up needed" — withdraw that request and save?',
   'Rút đề nghị và lưu': 'Withdraw and save',
   'Case đã hoàn thành — mở lại Case rồi đổi kết quả PA?': 'The Case is completed — reopen it and change the plan result?',
