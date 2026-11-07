@@ -259,6 +259,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 08/11 — RÀ TOÀN BỘ UI/UX + SỬA QUA ĐÊM (chủ SP — session AUDIT-UI)
+- Chủ SP 08/11: "Dùng skills phù hợp audit và rà soát đánh giá lại toàn bộ UI/UX, từng trang, từng panels, từng nút, từng text, từng phần màu một để xem có phần nào có thể cải thiện được tốt hơn về mặt giao diện, làm mọi thứ đơn giản, dễ nhìn và accessible hơn, bớt text, bớt thông tin thừa, nổi bật những thứ cần nổi bật."
+- Chủ SP 08/11 (đi ngủ): "chủ động làm mọi thứ, rà, duyệt và sửa mọi thứ bạn cho là hợp lý, nếu như thấy có gì quá khó khăn và thay đổi quá nhiều ảnh hưởng đến luật hay thay đổi góc nhìn của website thì tổng hợp lại thành 1 mockup mai tôi duyệt"
+- PTA chia: (1) báo cáo `docs/superpowers/specs/2026-11-08-audit-ui/` · (2) sửa ngay qua đêm: chữ, màu / tương phản, a11y, bỏ thông tin thừa, nhấn đúng chỗ — không đổi bố cục, luật, quyền, dòng đọc Turso; PTA rà + check + merge · (3) đổi bố cục / luật / góc nhìn → gom MỘT mockup trong `thiet-ke/` cho chủ SP duyệt sáng 09/11, chưa code.
+- Không đề xuất lại U02 (đã giữ như cũ). Chưa deploy.
+
 ### 07/11 tối — SỬA THEO BẢN RÀ NGOÀI #1228 (chủ SP chốt — session SUA-RA-1228)
 - **Chủ SP 07/11 (gửi `D:/Download/Pisa tracking web/PISA-Audit-PR1228-Claude-Prompt-2026-11-07.md`):** "Xem prompt này và xem có gì cần cải thiện, có gì cần sửa nhé, cứ xem hết đề xuất cụ thể và thấy cái nào hợp lý, khả thi thì cứ liệt kê ra để tính xem có nên làm không" → PTA kiểm từng mục trên main #1228 + bản chép thật (hiện 0 em dính F01 / F07 / F08 — lỗi tiềm ẩn).
 - **Chủ SP 07/11: "Giao nhóm A"** → một PR, không mockup, không tăng đọc Turso: F01 KPI Báo PH lọc theo hạn hiệu lực (`han_chon` ?? `han`, `viecDaXong.ts`) · F02 Lưu trữ tìm kiếm không đè tab / chi nhánh (`LuuTruPage.tsx`) · F03 Hoàn tác lô báo đúng n/m · F04 lô Quay lại học giữ chọn em chưa xong, tách lỗi mạng khỏi "cần chọn lớp", khoá nút khi chạy · F05 Đóng hộp Xác nhận = dừng yên lặng, không lỗi đỏ (`api.ts`, `HopXacNhanChung.tsx`; lưu một phần vẫn báo phần đã lưu) · F06 Hoàn tác sửa thông tin / liên hệ học viên (chỉ trả ô vừa đổi) · F07 lộ trình thiếu tuần bắt đầu không chặn lưu ô khác (chỉ lỗi khi xoá tuần đang có) · F08 Tutor: tách cờ Sửa (mọi lúc) / Xoá (24 giờ) (`tutors/trang.ts`, `PanelTutor.tsx`) · 8.3 Học lại em chưa từng có lớp: mở rồi đóng không hỏi bỏ thay đổi.
