@@ -1387,7 +1387,7 @@ export function suaCase(p: Principal, caseId: number, input: {
   if (!coTheSuaCase(p, c)) throw forbidden('Bạn không có quyền sửa Case này.');
   const st = sosCaseState(caseId);
   /* SV-NX-CASE (N8 ②⑤): Case MT sửa / ghi mô tả lúc nào cũng được (kể cả chưa có, quá hạn) — chỉ Case không phải MT còn đòi Xác nhận Case trước. */
-  if (st.fromSos && !st.hasCause && !st.laMt) throw badRequest('Case chưa xác nhận — Xác nhận Case trước.');
+  if (st.fromSos && !st.hasCause && !st.laMt && !daXong) throw badRequest('Case chưa xác nhận — Xác nhận Case trước.');   // RKC-2a: Case đã xong không còn bước Xác nhận
   const chinh = conn.prepare(`SELECT * FROM case_issues WHERE case_id = ? AND role = 'primary' ORDER BY id LIMIT 1`).get(caseId) as any;
   /* Case MT: mô tả đang đi theo nhận xét của bài (`created_by` NULL). Người sửa mô tả / nhóm ở đây → tách hẳn (`created_by` = người sửa), nhận xét sau không đè. */
   const theoNhanXet = st.laMt && !!chinh && chinh.created_by == null;
@@ -2649,7 +2649,7 @@ export function caseDetail(p: Principal, caseId: number) {
       coTheKetThucPa: quyenKetThuc,
       /* PR-LUI-a2: Mở lại (Case đã hoàn thành) · Sửa · Xoá Case (N37: `cachXoaCase`) · Kỹ năng khoá khi đã có PA. */
       coTheMoLai: c.status === 'done' && coTheMoLaiCase(p, c) && !chanMoLai(c),
-      coTheSua: suaDuoc && !(sosSt.fromSos && !sosSt.hasCause && !sosSt.laMt),   // SV-NX-CASE: Case MT ghi / sửa mô tả lúc nào cũng được
+      coTheSua: suaDuoc && (c.status === 'done' || !(sosSt.fromSos && !sosSt.hasCause && !sosSt.laMt)),   // SV-NX-CASE: Case MT ghi / sửa mô tả lúc nào cũng được
       /** Ô "Tên Case" của panel Sửa Case: tên riêng, hoặc phần giữa mặc định của Case SOS / Giữa khoá. */
       tenSua: suaDuoc ? (c.title ?? tenGiuaCua(c)) as string : null,
       /** N37: ⋯ "Xoá Case" — 'ngay' · 'xin' (Case hệ thống / còn PA quy chế: gửi QL duyệt) · null; `choXoa` = thẻ xin xoá đang chờ. */
