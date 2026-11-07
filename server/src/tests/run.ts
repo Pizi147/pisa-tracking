@@ -9843,6 +9843,9 @@ await runPrSuaLuuTruBTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== CV-TAB (chủ SP 06/11: Công việc chia tab hạng mục, badge số + màu)
 const { runPrCvTabTests } = bocTep('prCvTab', await import('./prCvTab.tests.ts'));
 await runPrCvTabTests({ check, assert, P, TODAY } as any);
+// ==================================================================== SUA-LUU-TRU c (chủ SP 07/11: nút Đổi bước tiếp tại chỗ · Hoàn tác về lựa chọn cũ)
+const { runPrSuaLuuTruCTests } = bocTep('prSuaLuuTruC', await import('./prSuaLuuTruC.tests.ts'));
+await runPrSuaLuuTruCTests({ check, assert, assertThrows, conn, P, TODAY } as any);
 // ==================================================================== XM-VIEC-DUNG-HAN a (chủ SP 07/11: Việc đúng hạn đếm DÒNG như Công việc)
 const { runPrViecDongTests } = bocTep('prViecDong', await import('./prViecDong.tests.ts'));
 await runPrViecDongTests({ check, assert, conn, P, TODAY, addDays } as any);

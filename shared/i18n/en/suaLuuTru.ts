@@ -2,6 +2,11 @@
 import type { Dich } from '../en.ts';
 
 export const EN_SUA_LUU_TRU = {
+  /* SUA-LUU-TRU c — Đổi bước tiếp */
+  'Đã đổi sang {chon}': 'Changed to {chon}',
+  'Đang đổi từ: {chon}': 'Changing from: {chon}',
+  'Giữ lựa chọn cũ': 'Keep previous choice',
+  'Em đã chuyển sang lớp mới — đổi ở hồ sơ (Chuyển lớp / Kết thúc học).': 'The student has moved to the new class — change it on the profile (Transfer / End studies).',
   'Kết quả đã đổi — xem lại bước tiếp?': 'Result changed — review next step?',
   'Đã lưu kết quả thi thật': 'Real exam result saved',
   'Đã hoàn tác kết quả thi thật': 'Real exam result undone',
