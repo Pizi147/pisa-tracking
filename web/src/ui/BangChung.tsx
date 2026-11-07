@@ -174,7 +174,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
 
   const rows = data?.rows ?? [];
 
-  /* U10.8 (mockup audit-0311 `.bc`): một dòng, không khung — [nhãn 72px] + Tệp · + Liên kết; trống thì thêm gợi ý dán ảnh cùng dòng. */
+  /* U10.8 (mockup audit-0311 `.bc`): một dòng, không khung — [nhãn 72px] + Tệp · + Liên kết; trống thì "chưa có" cùng dòng; gợi ý dán ảnh / kéo thả ở `title` của "+ Tệp" (AUDIT-UI 08/11 HS3). */
   const trong = !!data && rows.length === 0 && uploads.length === 0;
   return (
     <div
@@ -192,13 +192,13 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
         {tieuDe && <span className="bc-nh">{tieuDe}</span>}
         {canEdit && (
           <>
-            <button type="button" className="link-nho" onClick={() => fileRef.current?.click()}>{t('+ Tệp')}</button>
+            <button type="button" className="link-nho" title={CHU_KHOI_BANG_CHUNG} onClick={() => fileRef.current?.click()}>{t('+ Tệp')}</button>
             <button type="button" className="link-nho" onClick={() => setLinkOpen((o) => !o)} aria-expanded={linkOpen}>{t('+ Liên kết')}</button>
             <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={t('{o} — chọn tệp', { o: tieuDe || t('Bằng chứng') })}
               onChange={(e) => pick(e.target.files)} />
           </>
         )}
-        {trong && !linkOpen && <span className={canEdit ? 'bc-mo' : ''}>{canEdit ? CHU_KHOI_BANG_CHUNG : t('Chưa có bằng chứng nào.')}</span>}
+        {trong && !linkOpen && <span className={canEdit ? 'bc-mo' : ''}>{canEdit ? t('chưa có') : t('Chưa có bằng chứng nào.')}</span>}
         {loading && !data && <span className="bc-mo">{t('Đang tải…')}</span>}
       </div>
 

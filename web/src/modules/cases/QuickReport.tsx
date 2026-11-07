@@ -70,7 +70,7 @@ export function QuickReport({
 }) {
   const toast = useToast();
   /*
-   * HAI TAB (mục 10.3): "Đang gặp vấn đề" (đường thường) và "Đã xong từ trước" (nhập bù).
+   * HAI TAB (mục 10.3): "Đang mở" (đường thường) và "Đã xong từ trước" (nhập bù).
    * Cùng bốn trường đầu (nhóm/kỹ năng/phân loại/mô tả) — chỉ khác NHỮNG GÌ hỏi thêm sau đó,
    * nên dùng chung state của bốn trường đó thay vì dựng một bộ state thứ hai.
    */
@@ -462,7 +462,7 @@ export function QuickReport({
             placeholder={t('Ví dụ: Reading — sai dạng True/False/Not Given')} />
         </Truong>
       )}
-      <Truong nhan={t('Mô tả và dẫn chứng')} batBuoc phu={t('Sai ở đâu, bài hay buổi nào')} loi={loiCua(k('mo-ta'))}
+      <Truong nhan={t('Mô tả và dẫn chứng')} batBuoc loi={loiCua(k('mo-ta'))}
         dem={{ co: v.summary.trim().length, can: 15, toiDa: TRAN_CHU.moTaCase }}>
         <textarea className="field w-full" {...o(k('mo-ta'))} rows={3} value={v.summary} onChange={(e) => sua(kn, { summary: e.target.value })}
           placeholder={t('Ví dụ: Progress Test sai 4/5 câu Not Given')} />
@@ -471,7 +471,7 @@ export function QuickReport({
   };
   /* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ" để xin. Nhiều kỹ năng: một mức cho cả lô (khác thì sửa từng Case sau). */
   const mucDo = mode === 'now' && (
-    <Truong nhan={t('Mức độ')} batBuoc phu={t('Nhận định của người báo, không phải mức SOS')} as="div" loi={loiCua('muc-do')}>
+    <Truong nhan={t('Mức độ')} batBuoc as="div" loi={loiCua('muc-do')}>
       <div className="grid grid-cols-2 gap-2 outline-none" {...o('muc-do')} tabIndex={-1}>
         {URGENCY_LEVELS.map((u) => (
           <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>
@@ -522,10 +522,10 @@ export function QuickReport({
 
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong}
-      vungTab={{ id: 'qr-vung', nhan: mode === 'now' ? t('Đang gặp vấn đề') : t('Đã xong từ trước') }}
+      vungTab={{ id: 'qr-vung', nhan: mode === 'now' ? t('Đang mở') : t('Đã xong từ trước') }}
       tabs={(
         <HangTab cap="con" panelId="qr-vung" ariaLabel={t('Loại Case')} value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}
-          tabs={[{ key: 'now', label: t('Đang gặp vấn đề') }, { key: 'backfill', label: t('Đã xong từ trước') }]} />
+          tabs={[{ key: 'now', label: t('Đang mở') }, { key: 'backfill', label: t('Đã xong từ trước') }]} />
       )}
       chan={{
         daSua,
@@ -536,10 +536,10 @@ export function QuickReport({
           </button>
         ),
       }}>
-      <Khoi tieuDe={t('Vấn đề')}
+      <Khoi tieuDe={t('Case')}
         luat={mode === 'backfill'
           ? t('Nhập bù không có hạn và không tính vào tỷ lệ hiệu quả: đây là trí nhớ, không phải PA đang chạy. Không tạo bài đánh giá, không có mức SOS.')
-          : t('Hệ thống chỉ đọc được con số. Phần này là quan sát của bạn: em sai ở đâu, bài hay buổi nào.')}>
+          : t('Hệ thống chỉ đọc được con số. Phần này là quan sát của bạn: em sai ở đâu, bài hay buổi nào. Mức độ là nhận định của người báo, không phải mức SOS.')}>
         {/* CHỌN HỌC VIÊN — chỉ khi mở từ trang lớp (mục 13.1); ở hồ sơ một em thì không hỏi lại. */}
         {students && (
           <Truong nhan={t('Học viên')} batBuoc loi={loiCua('hoc-vien')}>

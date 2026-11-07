@@ -109,7 +109,6 @@ export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: 
 
 /** Một dòng hệ quả (mockup 24 B) — chỉ mục có hệ quả mới có. */
 const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
-  'lo-trinh': t('lịch MT'),
   'de-xuat-sua': t('Quản lý duyệt rồi mới đổi'),
   'chuyen-lop': t('chọn lớp chuyển đến và tuần bắt đầu'),
   'de-xuat-chuyen-lop': t('Quản lý duyệt rồi quyết định'),

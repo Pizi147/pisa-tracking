@@ -13,7 +13,6 @@ export const EN_UI_HO_SO_GV = {
   'Số to: bài Test nhập điểm trước hạn / bài Test tới hạn nhập trong kỳ (theo người được phân công ở hạn nhập). Việc: việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn.': 'Big figure: tests scored by the deadline / tests due in the period (teacher assigned at the deadline). Tasks: tasks due in the period (plan results) done by the deadline.',
   'Việc đang tồn': 'Open tasks',
   'bài Test': 'tests',
-  'lượt Test của từng HV có tuần Test trong kỳ': "each student's tests with a test week in the period",
   'lượt Test': 'test attempts',
   'việc quá hạn': 'overdue tasks',
   'Đạt Test': 'Test met',

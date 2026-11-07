@@ -61,11 +61,7 @@ export default function AdminPage() {
     <div className="page space-y-4">
       <div>
         <h1 className="text-xl font-bold text-slate-100">{quanTri ? t('Quản trị hệ thống') : tab === 'da-xoa' ? t('Quản trị') : t('Bảng quy đổi band')}</h1>
-        {(quanTri || tab === 'band') && (
-          <p className="text-xs text-slate-500 mt-0.5">
-            {quanTri ? t('Tài khoản, danh mục và cấu hình quyền của phần mềm.') : t('Quản trị hệ thống sửa; Quản lý xem.')}
-          </p>
-        )}
+        {!quanTri && tab === 'band' && <p className="text-xs text-slate-500 mt-0.5">{t('Quản trị hệ thống sửa; Quản lý xem.')}</p>}
       </div>
 
       {tabs.length > 1 && (

@@ -3,6 +3,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Card, ChuDam, ErrorState, Field, Info, NutChon, SectionNote, Skeleton } from '../../ui/ui.tsx';
 import { skillLabel, skillShort } from '../../lib/format.ts';
 import { ENTRY_SKILLS, nhanPhamVi } from '@shared/domain/index.ts';
@@ -39,9 +40,10 @@ export function ChonKyNang({ value, onToggle, disabled }: {
   return (
     <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Kỹ năng phụ trách được')}>
       {ENTRY_SKILLS.map((k) => (
-        <NutChon key={k} nho chon={co(k)} disabled={disabled} title={skillLabel(k)} onClick={() => onToggle(k)}
+        /* AUDIT-UI CN3: ✓ nằm trong chip (dấu góc chồng lên chip kề bên khi chip hẹp). */
+        <NutChon key={k} nho chon={co(k)} dau="" disabled={disabled} title={skillLabel(k)} onClick={() => onToggle(k)}
           className="min-w-[52px] justify-center">
-          {skillShort(k)}
+          {co(k) && <span aria-hidden>✓</span>}{skillShort(k)}
         </NutChon>
       ))}
     </div>
@@ -112,7 +114,11 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <Card title={t('Thông tin liên hệ')}>
+      <Card title={t('Thông tin liên hệ')}
+        action={<NutLuat label={t('Thông tin liên hệ')} phai>
+          <span className="block">{t('Email khác: cách nhau bằng dấu phẩy, chỉ để liên lạc, không đăng nhập được.')}</span>
+          {nguoiDay && <span className="block">{t('Kỹ năng: dùng để gợi ý khi phân công, không phải quyền nhập điểm.')}</span>}
+        </NutLuat>}>
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('Họ và tên')} required>
@@ -124,20 +130,18 @@ export default function ProfilePage() {
           </div>
 
           <Field label={t('Email đăng nhập')}
-            hint={t('Đổi email đăng nhập là đổi danh tính tài khoản — việc đó của Quản trị hệ thống.')}>
+            hint={t('Chỉ Quản trị hệ thống đổi được.')}>
             <input className="field w-full" value={data.email ?? ''} disabled />
           </Field>
 
-          <Field label={t('Email khác')}
-            hint={t('Cách nhau bằng dấu phẩy. Email phụ chỉ để liên lạc, không đăng nhập được.')}>
+          <Field label={t('Email khác')}>
             <input className="field w-full" value={d.extraEmails}
               placeholder="vidu@gmail.com, congviec@pisa.edu.vn"
               onChange={(e) => set({ extraEmails: e.target.value })} />
           </Field>
 
           {nguoiDay && (
-            <Field label={t('Kỹ năng bạn phụ trách được')}
-              hint={t('Đây là NĂNG LỰC, dùng để gợi ý khi phân công — không phải quyền nhập điểm.')}>
+            <Field label={t('Kỹ năng bạn phụ trách được')}>
               <ChonKyNang value={d.skills} onToggle={toggleSkill} />
             </Field>
           )}
@@ -165,7 +169,8 @@ export default function ProfilePage() {
             <input className="field w-full" type="password" autoComplete="current-password"
               value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
           </Field>
-          <Field label={t('Mật khẩu mới')} required hint={t('Ít nhất 6 ký tự.')}>
+          <Field label={t('Mật khẩu mới')} required
+            loi={pw.next && pw.next.length < 6 ? t('Cần ít nhất {toiThieu} ký tự (đang có {n})', { toiThieu: 6, n: pw.next.length }) : null}>
             <input className="field w-full" type="password" autoComplete="new-password"
               value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />
           </Field>

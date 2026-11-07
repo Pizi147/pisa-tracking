@@ -9,7 +9,6 @@ export const EN_SOT_QUAN_TRI = {
   'Đang dùng': 'In use',
   /* AdminPage */
   'Bảng quy đổi': 'Band table',
-  'Tài khoản, danh mục và cấu hình quyền của phần mềm.': 'Accounts, catalogues and permission settings.',
   'Quản trị hệ thống sửa; Quản lý xem.': 'System admins edit; managers view.',
   'Lượt Mock': 'Mock attempts',
   'Case SOS': 'SOS cases',
@@ -112,7 +111,6 @@ export const EN_SOT_QUAN_TRI = {
   'Lý do không duyệt — người đăng ký sẽ đọc câu này': 'Reason for declining — the applicant will read this',
   'Đã từ chối {ten}': 'Declined {ten}',
   'Phải có đuôi .pisa@gmail.com': 'Must end in .pisa@gmail.com',
-  'Phải có đuôi .pisa@gmail.com.': 'Must end in .pisa@gmail.com.',
   'Đã có tài khoản dùng email này': 'An account already uses this email',
   'Mật khẩu ban đầu': 'Initial password',
   'Cấp ít nhất một vai trò': 'Grant at least one role',

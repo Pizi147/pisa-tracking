@@ -11,7 +11,7 @@ const EN_D_WEB = {
   /* Ngăn Case, thân Case (CaseBoardPage, CasePanel, NganCase) */
   'Case này không gắn học viên nào.': 'This case has no student.',
   'Overall {x} đã đạt — xem và Hoàn thành Case': 'Overall {x} met — review and close the case',
-  'Vấn đề': 'Issue',
+  'Case': 'Case',
   'Bối cảnh': 'Context',
   'Mỗi PA cần Kết quả hai tuần một lần, trước hết Thứ Ba sau kỳ. Case chỉ hoàn thành được khi mọi PA đã khép.':
     'Each PA needs a result every two weeks, by end of the Tuesday after. A case can close only when every PA is closed.',
@@ -122,12 +122,11 @@ const EN_D_WEB = {
   'Việc tiếp: {chu}{x}': 'Next: {chu}{x}',
   'Bạn không có quyền đính kèm cho Case môn này. GV dạy môn đó hoặc Quản lý sẽ thêm.': 'You cannot attach files to this skill\'s case. Its teacher or a manager will add them.',
   'Loại Case': 'Case type',
-  'Đang gặp vấn đề': 'Current issue',
   'Đã xong từ trước': 'Already resolved',
   'Ghi lại Case đã xong': 'Log a past case',
   'Nhập bù không có hạn và không tính vào tỷ lệ hiệu quả: đây là trí nhớ, không phải PA đang chạy. Không tạo bài đánh giá, không có mức SOS.':
     'A back-entry has no due date and is not counted in effectiveness: it is a record, not a running PA. No assessment, no SOS level.',
-  'Hệ thống chỉ đọc được con số. Phần này là quan sát của bạn: em sai ở đâu, bài hay buổi nào.': 'The system only reads numbers. This is your observation: where the student went wrong, which test or lesson.',
+  'Hệ thống chỉ đọc được con số. Phần này là quan sát của bạn: em sai ở đâu, bài hay buổi nào. Mức độ là nhận định của người báo, không phải mức SOS.': "The system only reads numbers. This is your observation: where the student went wrong, which test or lesson. Urgency is the reporter's judgement, not the SOS level.",
   'Gõ tên học viên…': 'Type a student name…',
   'Chọn học viên trước': 'Pick a student first',
   'Đang có Case chờ xác nhận': 'Has a case to confirm',
@@ -137,10 +136,8 @@ const EN_D_WEB = {
   'Mở form Xác nhận Case': 'Open Confirm case',
   'Chọn nhóm': 'Pick a group',
   'Chọn kỹ năng trước': 'Pick a skill first',
-  'Nhận định của người báo, không phải mức SOS': 'Reporter\'s judgement, not the SOS level',
   'Ví dụ: Reading — sai dạng True/False/Not Given': 'E.g. Reading — errors on True/False/Not Given',
   'Mô tả và dẫn chứng': 'Details and evidence',
-  'Sai ở đâu, bài hay buổi nào': 'Where it went wrong, which test or lesson',
   'Ví dụ: Progress Test sai 4/5 câu Not Given': 'E.g. Progress Test: 4/5 Not Given wrong',
   'Bắt đầu theo dõi': 'Tracking from',
   'Đã áp dụng': 'Applied',

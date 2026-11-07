@@ -516,8 +516,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                 <input className="field w-full" maxLength={100} value={form.title} title={t('Chỉ để hiển thị, không ảnh hưởng quyền.')}
                   onChange={(e) => setForm({ ...form, title: e.target.value })} />
               </Field>
-              <Field label={t('Email đăng nhập')} required hint={t('Phải có đuôi .pisa@gmail.com.')} loi={lf.loiCua(loi, 'email')}>
-                <input className="field w-full" type="email" {...lf.o(loi, 'email')} value={form.email}
+              <Field label={t('Email đăng nhập')} required loi={lf.loiCua(loi, 'email')}>
+                <input className="field w-full" type="email" {...lf.o(loi, 'email')} value={form.email} placeholder="ten.pisa@gmail.com"
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </Field>
               <Field label={t('Mật khẩu ban đầu')} required loi={lf.loiCua(loi, 'mat-khau')}>

@@ -1,7 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
+  NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, viecTiepCuaEm,
   NHAN_TRANG_THAI, type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -69,7 +69,7 @@ export function HoSoGiaoVienPage() {
   const { id } = useParams();
   const { data, loading, error, reload } = useApi<HoSo>(`/giao-vien/${id}`, [id]);
   const { session } = useSession();
-  const { homNay, ngan } = useNgayNghiepVu();
+  const { homNay } = useNgayNghiepVu();
   /* P9: kỳ tự do — mặc định 4 tuần tới tuần này; giá trị mặc định không ghi lên URL. */
   const denMd = mondayOfDate(homNay), tuMd = addDaysIso(denMd, -21);
   const [tu, setTu] = useThamSoUrl('tu', tuMd);
@@ -125,7 +125,7 @@ export function HoSoGiaoVienPage() {
       <DaiChiSo data={data} cs={cs} ky={ky} />
       <KhoiLop data={data} />
       <KhoiHocThuat data={data} cs={cs} ky={ky} />
-      <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} ngan={ngan} viec={viec} />
+      <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} viec={viec} />
       <KhoiCase data={data} homNay={homNay}
         linkPa={!gv.laChinhMinh && session?.nav?.analysis && data.phamVi.cn
           ? { den: duongHieuQuaPaGv(data.phamVi.cn, gv.id, data.lop), chu: t('Hiệu quả PA của {ten} ›', { ten: tenGoi }) } : null} />
@@ -333,7 +333,7 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   const khung: Khung = coKhung.has(chon as Khung) ? (chon as Khung) : macDinh;
   return (
     <Card bodyClass="p-0"
-      title={<span className="inline-flex flex-wrap items-baseline gap-x-2">{t('Học thuật')}<span className="text-xs font-normal text-slate-500">{t('lượt Test của từng HV có tuần Test trong kỳ')}</span></span>}
+      title={t('Học thuật')}
       action={(
         <span className="flex items-center gap-2">
           {coKhung.size > 1 && <CongTac value={khung} onChange={(k) => setChon(k)} muc={[['ft', 'Fast Track'], ['thuong', t('Lớp thường')]]} />}
@@ -470,15 +470,14 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
 
 // ------------------------------------------------------------------ 1 · Việc đang tồn
 
-function KhoiViec({ gvId, nguoiXem, homNay, ngan, viec }: {
-  gvId: number; nguoiXem: { userId: number; laQuanLy: boolean }; homNay: string; ngan: (iso: string) => string;
+function KhoiViec({ gvId, nguoiXem, viec }: {
+  gvId: number; nguoiXem: { userId: number; laQuanLy: boolean };
   viec: { data: { viec: NhomSo[] } | null; loading: boolean; error: { message: string; hint?: string; status?: number } | null; reload: () => void };
 }) {
   const { data, loading, error, reload } = viec;
   return (
     <Card
-      title={<>{t('Việc đang tồn')}<Goi chu={t('Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}
-      action={<span className="text-xs text-slate-400">{t('hôm nay {ngay} · tuần', { ngay: ngan(homNay) })} <span className="tabular-nums text-slate-200">{tuanLich(homNay, homNay)}</span></span>}>
+      title={<>{t('Việc đang tồn')}<Goi chu={t('Tính tới hôm nay, không theo kỳ. Việc lấy từ Công việc. Bấm để mở đúng danh sách. Ý thức & Phối hợp: chỉ việc có hạn.')} /></>}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={2} />
         : (
