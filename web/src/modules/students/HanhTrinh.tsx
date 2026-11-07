@@ -229,7 +229,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
       {/* PR-VAI-b (mockup 26 bản 2): chương theo lớp ở đầu tab — thay bảng Lịch sử lớp. */}
       <ChuongLop chuong={data.chuong ?? []} lapLai={data.lapLai ?? []} homNay={homNay} onChon={chonChuong} />
 
-      <section id="truc-tuan" className="card min-w-0 scroll-mt-4 overflow-hidden" aria-label={t('Hành trình')}>
+      <section id="truc-tuan" className="card min-w-0 scroll-mt-4" aria-label={t('Hành trình')}>
         {/* U07 (mockup `.the-dau`): tiêu đề 17 / 700 "Hành trình · Fast Track · lớp" + chọn kỹ năng · khoảng ở phải; 375: Danh sách / Biểu đồ. */}
         <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
           <h2 className="m-0 inline-flex min-w-0 items-center gap-1.5 text-[17px] font-bold text-slate-100">
@@ -271,7 +271,7 @@ export function HanhTrinh({ studentId, active, onOpenCase }: {
         {danhSach ? <DanhSachSuKien hop={data.hop} homNay={homNay} onOpenCase={onOpenCase} /> : (
           <>
             {/* MỘT khung cuộn ngang, MỘT lưới — trục và mọi hộp kỹ năng là con trực tiếp của lưới này. */}
-            <div ref={setKhung} className="overflow-x-auto">
+            <div ref={setKhung} className="overflow-x-auto rounded-b-[inherit]">
               <div className="grid relative isolate"
                 style={{ gridTemplateColumns: `${boCuc.cotTen}px repeat(${soTuan}, ${boCuc.cotTuan})`, gridTemplateRows: hang.mau }}>
                 {/* ---- lớp nền: vạch tuần (đầu tháng đậm) · kẻ ngang giữa các nhóm · dải Tạm dừng */}
