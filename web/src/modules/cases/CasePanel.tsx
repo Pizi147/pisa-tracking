@@ -29,7 +29,7 @@ import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import { CanLam, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
+import { KhongTheoDoiForm, XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
 import { GhiKetQuaPanel, SuaKetQuaPanel } from './CapNhatTuan.tsx';
 import { HoanThanhCasePanel, ThemPaPanel } from './ThaoTacCase.tsx';
 import { ChonNhom } from '../fasttrack/NhanXet.tsx';
@@ -217,6 +217,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   const [daXoaPa, setDaXoaPa] = useState<{ paId: number; ten: string; thungRacId: number | null; viTri: number } | null>(null);
   const [themPa, setThemPa] = useState(dichMo?.loai === 'them-pa');
   const [hoanThanh, setHoanThanh] = useState(dichMo?.loai === 'hoan-thanh');
+  const [ktd, setKtd] = useState(false);   // RKC-2c ④: "Không cần theo dõi…" khi Case SOS đã có PA chạy (máy chủ hỏi nêu PA sẽ dừng)
   const dichPa = dichMo && 'paId' in dichMo ? dichMo.paId : null;
   const tenFormMo = themPa ? t('PA mới') : hoanThanh ? t('Hoàn thành Case')
     : (() => { const k = Object.entries(form).find(([, f]) => f); return k ? tenForm(k[1]!) : null; })();
@@ -372,7 +373,11 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
             {paBatBuoc && <button type="button" className="link-nho mt-1.5" onClick={() => toiPa(paBatBuoc.id)}>{t('Tới PA {ten} ↑', { ten: dich(INTERVENTION_KIND_LABEL[paBatBuoc.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paBatBuoc.kind) })}</button>}
           </>} />
         ) : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setHoanThanh(true)}>{t('Hoàn thành Case')}</button>}
+        {data.sos?.fromSos && !data.sos?.choDuyetKhongTheoDoi && !ktd && (
+          <button type="button" className="link-nho min-h-[44px] sm:min-h-0" onClick={() => setKtd(true)}>{t('Không cần theo dõi…')}</button>
+        )}
       </div>
+      {ktd && <KhongTheoDoiForm caseId={data.id} onClose={() => setKtd(false)} onDone={() => { setKtd(false); lamMoi(); }} />}
     </div>
   ) : null;
 
@@ -789,7 +794,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     <KhungTrongThe.Provider value>
       {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} />
         : formHien === 'ghi' ? (
-          <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm}
+          <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove}
             tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={t('Lưu · kỹ năng tiếp ›')}
             boiCanh={[[t('Kết quả kỳ trước'), fGan ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(fGan.outcome))}</b> · {tuanLich(fGan.observedOn, homNay)}</> : t('chưa có')], [t('Điểm'), ketQuaGanNhat(data)]]}
             pa={{

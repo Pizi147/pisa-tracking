@@ -756,8 +756,9 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
                 AND NOT ${UNCONFIRMED_PRESET('iv')} AND NOT ${PA_QUY_CHE_CHUA_GHI('iv')}`)
     .get(caseId) as any;
   const followed = conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ?').get(caseId) as any;
+  /* RKC-2c ④ (PTA 07/11): Case đã có PA chạy / kết quả vẫn gửi được — hỏi nêu hệ quả; QL duyệt thì PA đang chạy dừng (`apDungKhongTheoDoi`). */
   if (started.n > 0 || followed.n > 0) {
-    throw badRequest('Case này đã có phương án được xác nhận hoặc đang chạy — kết thúc bằng Hoàn thành Case.');
+    canXacNhan('Case đang có PA chạy — vẫn gửi "Không cần theo dõi"? PA đang chạy sẽ dừng khi Quản lý duyệt.', undefined, 'Vẫn gửi');
   }
   const today = demoToday();
   return tx(() => {

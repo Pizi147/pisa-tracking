@@ -438,9 +438,9 @@ export async function runPrSosTests(t: YThucTestKit) {
     const { iv } = w2DangChay('T6a');
     for (const decision of ['replace', 'end']) {
       assertThrows(() => cases.updateResult(P.w2Teacher, iv.id, { ...KQ, decision, decisionNote: 'Thử đổi phương án khác', newPlan: { kind: 'tutor', description: 'Tutor Writing' } }),
-        /PA theo quy chế — không thay, không kết thúc sớm\./, decision);
+        /PA theo quy chế — GV không thay \/ kết thúc sớm/, decision);   // RKC-2c: GV giữ luật, câu chỉ đường
     }
-    assertThrows(() => cases.updateResult(P.w2Teacher, iv.id, { ...KQ, mode: 'end', nextStep: 'complete' }), /không kết thúc sớm/, 'mode end kiểu cũ');
+    assertThrows(() => cases.updateResult(P.w2Teacher, iv.id, { ...KQ, mode: 'end', nextStep: 'complete' }), /kết thúc sớm/, 'mode end kiểu cũ');
     cases.updateResult(P.w2Teacher, iv.id, { ...KQ, decision: 'adjust', decisionNote: 'Tăng số bài viết mỗi tuần',
       adjust: { description: 'Tự học Writing Task 2, ba bài mỗi tuần', followupDue: addDays(TODAY, 60) } });
     const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);

@@ -256,7 +256,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const { ivId } = taoCase();
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
       decision: 'end', outcome: 'insufficient', note: 'Chưa có bài nghe mới để nhìn',
-    }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Kết thúc suông khi Chưa đủ dữ liệu');
+    }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Kết thúc suông khi Chưa đủ dữ liệu');   // RKC-2c: GV giữ luật
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
       decision: 'ask_manager', outcome: 'insufficient', note: 'Chưa có bài nghe mới để nhìn',
     }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Xin hỗ trợ từ Quản lý khi Chưa đủ dữ liệu');
