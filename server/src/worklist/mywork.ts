@@ -509,7 +509,7 @@ function viecMoc(r: { moc_quy_che: string; attempt_no: number | null; full_name:
 export type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
 
 /**
- * BO-QUA-XEP-MT (chủ SP 03/11): QL bỏ qua / khôi phục việc `moc:{PA}`. Chỉ ẩn VIỆC — không đổi lịch, PA, Case, số "HV chưa có MT tiếp theo".
+ * BO-QUA-XEP-MT (chủ SP 03/11): QL bỏ qua / khôi phục việc `moc:{PA}`. Chỉ ẩn VIỆC — không đổi lịch, PA, Case, số "HV chưa đủ MT".
  * Một người bỏ qua là cả phạm vi QL không thấy (cờ trên PA). Quyền = người thấy việc đó (QL / Quản trị có `case.approve` với em). Nhật ký `audit_logs`.
  */
 export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
@@ -1315,7 +1315,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
   /* 4. XEP-MT-NHAC (chủ SP 07/11): bỏ việc "Chốt tuần MT" (lượt chưa tuần) — máy đã tự xếp; lộ trình thiếu MT nhắc qua việc
-     "Xếp lịch MTn" (\`moc:\`) và chip "Chưa có MT kế tiếp" (\`thieuMt\`). */
+     "Xếp lịch MTn" (`moc:`) và chip "Chưa đủ MT" (`thieuMt`). */
 
   /*
    * K5-09: HỌC VIÊN FT CHƯA CÓ TARGET — không có target thì không có kỳ vọng, SOS và Case không bao giờ sinh ra. Việc của GVCN lớp

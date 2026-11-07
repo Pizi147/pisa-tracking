@@ -47,7 +47,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
           mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
         <ChiSo ten={ten(t('Bài chưa nhập điểm'), data.oChuaNhap.so)} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&nguoi=tat-ca&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
           mau={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {t('{n} quá hạn', { n: data.oChuaNhap.quaHan })}</span> : t('không bài nào quá hạn')} />
-        <ChiSo ten={ten(t('HV chưa có MT tiếp theo'), data.chuaXepLich)} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
+        <ChiSo ten={ten(t('HV chưa đủ MT'), data.chuaXepLich)} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
           mau={t('đã thi hết lượt MT đã xếp')} />
       </div>
       <section className="card" aria-labelledby="gv-qua-han">

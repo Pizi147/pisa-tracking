@@ -105,8 +105,8 @@ export async function runXoaMtTests(t: any) {
     }
   }));
 
-  /* XEP-MT-NHAC (chủ SP 07/11, đảo phần nhắc của #1158): MT QL chủ động xoá = đã xử lý — vẫn tính "MT đã có", không làm tăng "Chưa có MT kế tiếp". */
-  check('XM-7 · chủ SP 07/11 (XEP-MT-NHAC): Xoá MT / Khôi phục / huỷ vắng hết KHÔNG đổi "Chưa có MT kế tiếp" (chip + cờ hàng lưới) — xoá rồi thì thôi', () => thu(() => {
+  /* XEP-MT-NHAC (chủ SP 07/11, đảo phần nhắc của #1158): MT QL chủ động xoá = đã xử lý — vẫn tính "MT đã có", không làm tăng "Chưa đủ MT". */
+  check('XM-7 · chủ SP 07/11 (XEP-MT-NHAC): Xoá MT / Khôi phục / huỷ vắng hết KHÔNG đổi "Chưa đủ MT" (chip + cờ hàng lưới) — xoá rồi thì thôi', () => thu(() => {
     const chua = () => { xoaNho(); return kh.danhSachLop(P.mbManager, {}).lop.find((l: any) => l.id === MB_FT).chuaCoLichTiep as number; };
     const a = luot();
     const sid = get('SELECT student_id FROM assessment_attempts WHERE id = ?', a).student_id;

@@ -10,6 +10,6 @@ export const EN_SUA_CHAM_LAI = {
   'Chưa có GV': 'No teacher yet',
   'Lượt MT tuần này': 'MT sittings this week',
   'không bài nào quá hạn': 'none overdue',
-  'HV chưa có MT tiếp theo': 'Students without a next MT',
+  'HV chưa đủ MT': 'Students without enough MTs',
   'đã thi hết lượt MT đã xếp': 'sat every scheduled MT',
 };

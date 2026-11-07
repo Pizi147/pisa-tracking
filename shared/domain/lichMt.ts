@@ -215,7 +215,7 @@ export function demMtHocVien(ds: readonly LuotDem[]): { xong: number; tong: numb
  */
 export const LUOT_MT_DA_CO_SQL = (a: string) => `${a}.kind = 'mock'`;
 /**
- * MỘT hàm "lộ trình thiếu MT" — chỉ khi thiếu mới nhắc (việc "Xếp lịch MTn" ở Công việc, chip "Chưa có MT kế tiếp", "HV chưa có MT tiếp theo").
+ * MỘT hàm "lộ trình thiếu MT" — chỉ khi thiếu mới nhắc (việc "Xếp lịch MTn" ở Công việc, chip "Chưa đủ MT", "HV chưa đủ MT").
  * `soMtDaCo` đếm theo `LUOT_MT_DA_CO_SQL`; `soMacDinh` = `lichMtCua(...).length` (LT 3 · RF 2 · Khác / lớp thường 0 → không bao giờ thiếu).
  */
 export const thieuMt = (soMtDaCo: number, soMacDinh: number): boolean => soMtDaCo < soMacDinh;

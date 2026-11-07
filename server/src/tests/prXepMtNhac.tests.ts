@@ -2,10 +2,11 @@
  * PHÉP KIỂM XEP-MT-NHAC (chủ SP 07/11, plan.md mục 4 "07/11 — NHẮC XẾP MT CHỈ KHI THIẾU"):
  *  1. MỘT hàm "lộ trình thiếu MT" (`thieuMt` + `LUOT_MT_DA_CO_SQL`): số MT đã có < số MT mặc định của lộ trình (LT 3 · RF 2 · Khác 0).
  *     MT đã có = mọi lượt Mock đã tạo của lộ trình đang chạy — đã thi, có tuần, chưa tuần (máy đã tự xếp), MT QL chủ động xoá / huỷ.
- *  2. Chip / lọc "Chưa có MT kế tiếp" (`chuaCoLichTiep`, cờ hàng lưới `thieuMt`) và việc "Xếp lịch MTn" (`moc:`) chỉ khi thiếu.
+ *  2. Chip / lọc "Chưa đủ MT" (`chuaCoLichTiep`, cờ hàng lưới `thieuMt`) và việc "Xếp lịch MTn" (`moc:`) chỉ khi thiếu.
  *  3. Không còn việc "Chốt tuần MT" (lượt chưa tuần) ở Công việc.
  *  4. MT kế đã chủ động xoá → không việc "Xếp lịch MTn" (đảo phần nhắc của #1158).
  *  5. Chủ SP 07/11 (nói rõ): MT / môn HUỶ DO VẮNG 2 LẦN (N38 L2, `huy_vang = 1`) cũng không sinh việc / chip / mốc nhắc xếp lại.
+ *  6. PTA 07/11: "Cần xếp lại" chỉ còn môn VẮNG chưa dời — môn huỷ kiểu cũ (QL tự huỷ, không vì vắng: `cancelled`, `huy_vang = 0`) là chủ động, không đếm.
  */
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -148,5 +149,19 @@ export async function runPrXepMtNhacTests(t: { check: any; assert: any; conn: an
     xoaNho();
     const it = (mywork.myWork(QL, { nguoi: 'tat-ca' }).items as any[]).filter((x) => x.attemptId === id);
     assert(!it.length, `còn việc của lượt huỷ vắng: ${it.map((x) => x.tieuDe).join(', ')}`);
+  }));
+
+  check('XN-8 · PTA 07/11: môn huỷ kiểu cũ (cancelled, không vì vắng) → KHÔNG "cần xếp lại"; môn vắng chưa dời vẫn đếm', () => thu(() => {
+    const lop = () => { xoaNho(); return kh.danhSachLop(QL).lop.find((l: any) => l.id === MB_FT); };
+    const goc = lop().canXepLai as number;
+    const a = em(MB_FT);
+    a.luot(1, { xong: true }); a.luot(2);
+    const id = a.luot(3);
+    const tomTat = lop().tomTat as string;
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 0 WHERE attempt_id = ? AND skill = 'writing'`).run(id);
+    assert(lop().canXepLai === goc, `huỷ kiểu cũ: cần xếp lại ${lop().canXepLai} ≠ ${goc}`);
+    assert(lop().tomTat === tomTat, `huỷ kiểu cũ: tóm tắt lớp đổi: ${tomTat} → ${lop().tomTat}`);
+    conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = 'writing'`).run(id);
+    assert(lop().canXepLai === goc + 1, `vắng chưa dời: cần xếp lại ${lop().canXepLai} ≠ ${goc + 1}`);
   }));
 }

@@ -113,7 +113,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       if (!hvCuaLop.has(r.class_id)) hvCuaLop.set(r.class_id, []);
       hvCuaLop.get(r.class_id)!.push(r.student_id);
       if (!soMacDinh.has(r.class_id)) soMacDinh.set(r.class_id, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.lop_route).length);
-      /* XEP-MT-NHAC: "Chưa có MT kế tiếp" = lộ trình thiếu MT (`thieuMt`) — đủ 3 (RF 2) MT đã có thì không nhắc. */
+      /* XEP-MT-NHAC: "Chưa đủ MT" = lộ trình thiếu MT (`thieuMt`) — đủ 3 (RF 2) MT đã có thì không nhắc. */
       if (r.so_mt_co != null && thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lich_mt, route: r.lop_route }, r.route).length)) chuaCoLichTiep.set(r.class_id, (chuaCoLichTiep.get(r.class_id) ?? 0) + 1);
     }
     /*
@@ -144,7 +144,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       }
     }
   }
-  /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ + phần thi đã huỷ, lượt còn chạy, không lịch sử. */
+  /* K4-11, Q7 (PR-XLMT): em cần Quản lý xếp lại — kỹ năng vắng CHƯA có đề nghị chờ (PTA 07/11: phần thi đã huỷ không tính), lượt còn chạy, không lịch sử. */
   const canXepLai = new Map([...emCanXepLai(ftClassIds)].map(([lop, em]) => [lop, em.size]));
   /* U05 (mockup V11 hàng lớp): ô đợt đang chạy — "MTn đang làm bài", không thì MT cao nhất đã xong "MTn đã xong"; từ lượt đã đọc (0 câu). */
   const dotChay = (classId: number): string | null => {
@@ -446,7 +446,7 @@ export function luoiFT(p: Principal, classId: number, today: string = demoToday(
       vaoMuon: laVaoMuon(s.started_at ?? null, cls.start_date ?? null), dot,
       /* K4-08: chỉ ô MT kế tiếp có "+ xếp" (Q11) — tính trên cả lộ trình của em (Q12). */
       soKeTiep: soKeTiepCua.get(s.id)!,
-      /* XEP-MT-NHAC: lọc "Chưa có MT kế tiếp" của lưới — cùng `thieuMt` với `chuaCoLichTiep` (MT đã có = mọi lượt Mock, `LUOT_MT_DA_CO_SQL`). */
+      /* XEP-MT-NHAC: lọc "Chưa đủ MT" của lưới — cùng `thieuMt` với `chuaCoLichTiep` (MT đã có = mọi lượt Mock, `LUOT_MT_DA_CO_SQL`). */
       thieuMt: thieuMt((tatCaCua.get(s.id) ?? []).length, lichMtCua(cls, s.route_nhac).length),
       mt0: mt0Cua.get(s.id) ?? null,
     };
@@ -1493,7 +1493,7 @@ function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
            JOIN assessment_attempts a ON a.id = k.attempt_id AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
            JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
-          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status IN ('absent', 'cancelled') AND k.huy_vang = 0   -- N38 L2: huỷ vắng 2 lần = đã xong
+          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status = 'absent'   -- N38 L2: huỷ vắng 2 lần = đã xong · PTA 07/11 (XEP-MT-NHAC): môn QL tự huỷ = chủ động, không nhắc
             AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.skill = k.skill AND r.status = 'pending')`,
       )
       .all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, new Set()).get(r.class_id)!).add(r.student_id);

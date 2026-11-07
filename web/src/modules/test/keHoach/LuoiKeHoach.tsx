@@ -45,7 +45,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   loai: 'ft' | 'thuong'; data: LuoiFTData | LuoiThuongData; onReload: () => void; onHienDien: (open: boolean) => void;
   /** OV-15c (C18): em vừa chọn ở ô tìm — cuộn tới hàng và đánh dấu hàng. */
   hvChon?: number | null;
-  /** U05 (G5, chip "Chưa có MT kế tiếp"): chỉ còn em có lộ trình thiếu MT (`thieuMt`). */
+  /** U05 (G5, chip "Chưa đủ MT"): chỉ còn em có lộ trình thiếu MT (`thieuMt`). */
   chiChuaCoKe?: boolean;
 }) {
   const [hop, setHop] = useState<Hop | null>(null);
@@ -101,10 +101,10 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   const khaiGiang = loai === 'thuong' ? (data as LuoiThuongData).khaiGiang : null;
   const tongTuan = loai === 'thuong' ? (data as LuoiThuongData).tongTuan : null;
   const canXepLai = (h: HangFT | HangThuong) => Object.values((h as HangFT).dot ?? {}).some((d) => !d.lichSu
-    && Object.values(d.kn).some((o) => o?.trangThai === 'vang' || (o?.trangThai === 'da-huy' && !o.huyVang)));   // N38 L2: huỷ vắng 2 lần = đã xong
+    && Object.values(d.kn).some((o) => o?.trangThai === 'vang'));   // N38 L2 + PTA 07/11: huỷ (vắng 2 lần / QL tự huỷ) không nhắc — cùng `emCanXepLai`
   const chuaXepKeTiep = (h: HangFT | HangThuong) => loai === 'ft' && (data as LuoiFTData).cot.includes((h as HangFT).soKeTiep)
     && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.attemptId && !(h as HangFT).dot[(h as HangFT).soKeTiep]?.huy;
-  /* "Chưa có MT kế tiếp" (G5) — XEP-MT-NHAC (chủ SP 07/11): em có lộ trình thiếu MT (máy chủ `thieuMt`, cùng hàm với số trên chip) —
+  /* "Chưa đủ MT" (G5) — XEP-MT-NHAC (chủ SP 07/11): em có lộ trình thiếu MT (máy chủ `thieuMt`, cùng hàm với số trên chip) —
      lọc chip + ô "Xếp MTn" viền nhấn đậm. */
   const thieu = (h: HangFT | HangThuong) => loai === 'ft' && !!(h as HangFT).thieuMt;
   const tatCa = (data.hang as Array<HangFT | HangThuong>).filter((h) => !chiChuaCoKe || thieu(h));
