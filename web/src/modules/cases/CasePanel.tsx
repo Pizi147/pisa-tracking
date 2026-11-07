@@ -837,15 +837,16 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         </dd>
       </>}
       <dt>{t('Bắt đầu')}</dt>
-      <dd>{coKetQua || !nut.sua
-        ? <><span className="tabular-nums">{iv.startedDate ? (iv.completedDate ? chuKhoangPa({ startedOn: iv.startedDate, completedOn: iv.completedDate }, homNay) : `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}`) : '—'}</span>{coKetQua && nut.sua && <span className="text-[13px] text-faint">{t('đã có kết quả — không đổi')}</span>}</>
+      {/* RKC-2b: đổi Ngày bắt đầu cả khi đã có kết quả — máy chủ chỉ chặn ngày SAU lần ghi đầu (câu báo tại ô). */}
+      <dd>{!nut.sua
+        ? <span className="tabular-nums">{iv.startedDate ? (iv.completedDate ? chuKhoangPa({ startedOn: iv.startedDate, completedOn: iv.completedDate }, homNay) : `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}`) : '—'}</span>
         : tt('batDau')
           ? <ONgay kieu="ngay" value={iv.startedDate ?? ''} ariaLabel={t('Bắt đầu')} onChange={(x) => { if (x && x !== iv.startedDate) void luuNgay(() => luuTruong({}, x)); }} />
           : <GiaTriSua kieu="go" nhan={t('Đổi ngày bắt đầu')} onClick={() => setSua('batDau')}><span className="tabular-nums">{iv.startedDate ? `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}` : t('Chưa đặt')}</span></GiaTriSua>}</dd>
       {!iv.awaitingConfirmation && <>
         <dt>{t('Kết quả')}</dt>
         <dd>{fGan ? <>
-          <GiaTriSua kieu="go" nhan={t('Sửa kết quả {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) })} sua={!!fSua && fSua.id === fGan.id && !caseXong} onClick={() => setForm({ suaKq: fGan.id })}>
+          <GiaTriSua kieu="go" nhan={t('Sửa kết quả {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) })} sua={!!fSua && fSua.id === fGan.id} onClick={() => setForm({ suaKq: fGan.id })}>   {/* RKC-2b: Case xong vẫn sửa (đổi lựa chọn: máy chủ hỏi Mở lại) */}
             <span className={`ket ${LOP_KET[OUTCOME_TONE[fGan.outcome as keyof typeof OUTCOME_TONE]] ?? 'cd'}`}>{dich(outcomeLabelFor(fGan.outcome))}</span>
             <span className="text-[13px] text-slate-300">{tuanLich(fGan.observedOn, homNay)}{fGan.note ? <> · “<ChuDich chu={fGan.note} nguon={{ bang: 'case_followups', id: fGan.id, cot: 'note' }} />”</> : null}</span>
           </GiaTriSua>
