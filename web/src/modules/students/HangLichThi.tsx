@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { TargetText } from '../../ui/ui.tsx';
+import { fmtBand } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
+  GIAI_THICH_KCK, KCK,
   NHAN_SAU_THI, datKv, nhanThang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, thaoTacLichThi,
   type BuocLichThi, type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type NguCanhDs, type ThaoTacLichThi, type TrangThaiSauThi,
 } from '@shared/domain/index.ts';
@@ -70,7 +72,7 @@ export function CotLich({ r }: { r: HangHien }) {
   let s1: ReactNode; let s2: ReactNode = null; let qua = false;
   if (r.doiSang) { s1 = t('Đã dời sang {thang}', { thang: nhanThang(r.doiSang.sang) }); s2 = r.doiSang.truoc ? t('trước: {thang}', { thang: nhanThang(r.doiSang.truoc) }) : null; }
   else switch (r.buoc) {
-    case 'chua-co': s1 = t('Chưa có lịch'); s2 = t('chưa có tháng thi'); break;
+    case 'chua-co': s1 = <span className="font-normal text-faint">{t('Chưa có lịch')}</span>; break;   // AUDIT-UI HL3: một chữ mờ, không lặp "chưa có tháng thi"
     case 'du-kien': s1 = nhanThangDuKien(l.thang!); s2 = t('chốt ngày khi tới tháng'); break;
     case 'chua-chot-ngay': s1 = t('Chưa chốt ngày'); s2 = t('đã tới tháng thi {moc}', { moc: l.tuan ? tuanLich(l.tuan, homNay) : nhanThang(l.thang!) }); break;
     case 'da-chot-ngay': {
@@ -107,7 +109,10 @@ export function CotMt({ r }: { r: HangHien }) {
   const dat = datKv(st.overall, st.expectation, r.kck);
   return <><span className={`lt-diem ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{st.overall.toFixed(1)}</span>{st.attemptLabel && <span className="lt-diem-phu">{st.attemptLabel}</span>}</>;
 }
-export const CotTarget = ({ r }: { r: HangHien }) => <TargetText band={r.target} kck={r.kck} />;
+/* AUDIT-UI HSL2 (G6): KCK không gạch chấm; chưa có Target thì chỉ "KCK"; nghĩa ở title. */
+export const CotTarget = ({ r }: { r: HangHien }) => (r.kck
+  ? <span className="whitespace-nowrap" title={GIAI_THICH_KCK}>{r.target != null && <>{fmtBand(r.target)} · </>}{KCK}</span>
+  : <TargetText band={r.target} kck={false} />);
 
 /** Ghi chú một dòng chữ đọc; bấm → ô tại chỗ (Enter / rời ô lưu · Esc huỷ). Trống: "+ Ghi chú" khi rê / focus. Người · ngày ghi nằm ở Lịch sử (và tooltip). */
 export function CotGhi({ r, khoa, onLuu, hienNhan }: { r: HangHien; khoa: boolean; onLuu: (ghiChu: string) => void; hienNhan?: boolean }) {

@@ -31,7 +31,8 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
     const kq = than(bang, 'function OKetQua');
     assert(/<ChipSos /.test(kq) && !/hienKyNang=\{false\}/.test(kq), `OKetQua: ${kq}`);   // U03: chip 22 như mockup `.sos`
     assert(!kq.includes('<NhanKq'), 'OKetQua còn chip NhanKq (Đạt / Chưa đủ phải là chữ)');
-    assert(kq.includes("'✓ '") && kq.includes("'– '"), 'OKetQua thiếu ký hiệu ✓ / – trước chữ');
+    /* AUDIT-UI HSL1: "Chưa đủ dữ liệu" thành "—" mờ, chữ đủ ở title + sr-only. */
+    assert(kq.includes("'✓ '") && kq.includes('<span aria-hidden>—</span>') && kq.includes("t('Chưa đủ dữ liệu')"), 'OKetQua thiếu ký hiệu ✓ / "—" + chữ đọc màn');
     assert(!than(bang, 'function OLichThi').includes('NhanLich'), 'OLichThi còn chip NhanLich');
     assert(/nho \? `\$\{CHIP\} !h-5 !min-w-0 !px-1\.5`/.test(chip), 'ChipSos thiếu cỡ nhỏ (cao 20, đệm 6)');
   });

@@ -554,7 +554,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
   const dungLai = (e: { stopPropagation: () => void }) => e.stopPropagation();
   return (
     <div data-hd="cd-dong" onClick={() => onMo(y)} title={neuDuyet}
-      className={`grid min-h-[56px] cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 py-2 pr-3 sm:grid-cols-[auto_minmax(0,1fr)_150px_118px] sm:pr-4 ${
+      className={`grid min-h-[56px] cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 py-2 pr-3 sm:grid-cols-[auto_minmax(0,1fr)_170px_118px] sm:pr-4 ${
         em ? 'pl-[40px] sm:pl-[44px]' : 'pl-3 sm:pl-4'} ${dang === y.id ? 'row-active' : 'bam'}`}>
       {em ? (
         <span className="relative mt-2.5 inline-flex w-5 justify-center self-start" onClick={dungLai}>
@@ -578,7 +578,8 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
         {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
-        {y.nguoiXin && <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />}
+        {/* audit CV7: người gửi là chính người xem → "Bạn", không vai. */}
+        {y.nguoiXin && (y.nguoiXinId != null && y.nguoiXinId === toi ? <NguoiGiu ten={t('Bạn')} /> : <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />)}
       </span>
       <span className="col-start-2 flex flex-wrap items-center gap-x-4 gap-y-1 sm:col-start-auto sm:flex-col sm:items-stretch sm:gap-1" onClick={dungLai}>
         {y.kieuNut === 'duyet-tu-choi' ? (
@@ -604,6 +605,7 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
   yc: TheYeuCauDto; dang: boolean; onMo: () => void; chon: { checked: boolean; onChange: (v: boolean) => void } | null;
 }) {
   const { ngan } = useNgayNghiepVu();
+  const { session } = useSession();
   const cho = yc.trangThai === 'cho';
   const tt = nhanTrangThaiYc(yc.trangThai, yc.tuDuyet);
   /*
@@ -642,7 +644,7 @@ function DongYeuCau({ yc, dang, onMo, chon }: {
             {yc.phu && <span className="shrink-0"><ThePhu ds={[dich(yc.phu)]} /></span>}
           </span>
           {/* M8: 375 không đủ chỗ cột người — người gửi xem trong panel. */}
-          {yc.nguoiXin && <span className="max-w-[40%] shrink-0 max-sm:hidden"><NguoiGiu ten={yc.nguoiXin} vai={yc.vaiNguoiXin} /></span>}
+          {yc.nguoiXin && <span className="max-w-[40%] shrink-0 max-sm:hidden">{yc.nguoiXinId != null && yc.nguoiXinId === session?.user?.id ? <NguoiGiu ten={t('Bạn')} /> : <NguoiGiu ten={yc.nguoiXin} vai={yc.vaiNguoiXin} />}</span>}
         </span>
       </button>
     </li>

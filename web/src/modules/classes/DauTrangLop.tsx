@@ -274,7 +274,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
           <div className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0">
             {bConLai.hien.map(nutBadge)}
             {bConLai.an.length > 0 && (
-              <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
+              <MenuDong kieu="chip" bieuTuong={t('+{n} việc', { n: bConLai.an.length })} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
                 muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
             )}
           </div>
@@ -356,12 +356,12 @@ function DongGiaoVienBoMon({ nhom }: { nhom: (NhomGiaoVien & { tvv?: boolean })[
         {nhom.map((g, i) => mot(g, i, false))}
         {nhom.length > 2 && (
           <button type="button" aria-expanded={du} className="link relative border-0 bg-transparent p-0 text-[13px] sm:hidden after:absolute after:-inset-x-3 after:-inset-y-3.5 after:content-['']" onClick={() => setDu((v) => !v)}>
-            +{nhom.length - 2}
+            {t('+{n} người', { n: nhom.length - 2 })}
           </button>
         )}
         {nhom.filter((g) => !g.tvv).length > 5 && (
           <button type="button" className="link hidden border-0 bg-transparent p-0 text-[13px] sm:inline" onClick={() => setDu((v) => !v)}>
-            +{nhom.filter((g) => !g.tvv).length - 5}
+            {t('+{n} GV', { n: nhom.filter((g) => !g.tvv).length - 5 })}
           </button>
         )}
       </div>

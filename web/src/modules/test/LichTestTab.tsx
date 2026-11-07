@@ -225,7 +225,7 @@ export function LichTestTab() {
   const quaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`).data;
   /* M6 6b-1 (bảng kê lỗi 7): panel lên URL như ô số — ‹ / Back / F5 theo ngăn xếp `?panel=` (Nhập điểm của dòng là view kế). */
   const [moQuaHan, setMoQuaHan] = useMoSoLieu('qua-han-cham');
-  const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+  const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
   const bamSo = (o: OSo) => {
     if (!data) return;
     /* UX-2 (1): "bài quá hạn" mở DANH SÁCH đúng các ô đã đếm. Hai ô đầu → nhóm Test tuần này; "còn chấm" ép mở hàng còn bài. */
@@ -284,12 +284,13 @@ export function LichTestTab() {
       {/* OV-11e (TE-8): mỗi lượt một link → Điểm theo lớp đúng lượt, "Chỉ ô còn trống"; số em = số hàng ở đó. */}
       {data.nhacLichSu.map((n) => (
         <p key={n.classId} className="m-0 text-[13px] font-semibold tabular-nums text-[color:var(--accent)]">
-          {t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}
-          {n.luot.map((x) => (
+          {/* AUDIT-UI T6: "MT cũ chưa nhập · MB FT 101: MT1 (4 em) ›, MT3 (1 em) ›" — không chuỗi "·" dài lẫn số em với lượt. */}
+          {t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}:
+          {n.luot.map((x, i) => (
             <Fragment key={x.so}>
-              {' · '}
+              {i ? ', ' : ' '}
               <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={t('Nhập MT{so} cũ lớp {classCode}', { so: x.so, classCode: n.classCode })}>
-                MT{x.so} · {t('{n} em', { n: x.soEm })} ›
+                MT{x.so} ({t('{n} em', { n: x.soEm })}) ›
               </Link>
             </Fragment>
           ))}

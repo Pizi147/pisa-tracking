@@ -36,6 +36,8 @@ const laPhimTim = (e: KeyboardEvent) => {
 type LopRef = { id: number; code: string; student_count: number };
 
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
+const boTienToQuaHan = (chu: string) => { const tien = `${t('Quá hạn')} · `; return chu.startsWith(tien) ? chu.slice(tien.length) : chu; };
+
 export function Header() {
   const { session, signOut, doiGocNhin } = useSession();
   const toast = useToast();
@@ -346,7 +348,8 @@ export function Header() {
                         }}>
                         <span aria-hidden className={`mt-1.5 h-1.5 w-1.5 rounded-full ${n.read_at ? '' : 'bg-[color:var(--accent)]'}`} />
                         <span className={`text-[13px] leading-snug text-slate-100 ${n.read_at ? 'font-normal' : 'font-semibold'}`}>
-                          {!n.read_at && <span className="sr-only">{t('Chưa đọc: ')}</span>}{dich(n.title)}
+                          {/* AUDIT-UI TB1: dòng hạn "⚠ quá hạn n ngày" ngay dưới đã nói → bỏ tiền tố "Quá hạn · " ở tiêu đề. */}
+                          {!n.read_at && <span className="sr-only">{t('Chưa đọc: ')}</span>}{nhom === 'can-lam' && n.han ? boTienToQuaHan(dich(n.title)) : dich(n.title)}
                         </span>
                         <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500" title={nhan(homNay, n.created_at)}>{thoiGianThongBao(n.created_at, homNay)}</time>
                         {n.body && <span className="col-start-2 text-xs text-slate-400">{dich(n.body)}</span>}

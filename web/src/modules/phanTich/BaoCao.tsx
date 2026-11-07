@@ -24,7 +24,7 @@ import {
 const COT_KQ: readonly CotBang[] = [
   { key: 'luot', nhan: t('Lượt'), kieu: 'ten', rong: 120 },
   ...COT_KQ_MT.map((c): CotBang => ({ key: c, nhan: NHAN_COT_KQ_MT[c], kieu: 'so', rong: 100 })),
-  { key: 'truoc', nhan: t('So lượt trước · HV'), kieu: 'chu', rong: 160 },
+  { key: 'truoc', nhan: t('So lượt trước · HV'), kieu: 'chu', rong: 188 },
 ];
 const COT_TB: readonly CotBang[] = [
   { key: 'kn', nhan: t('Kỹ năng'), kieu: 'ten', rong: 64 },
@@ -120,7 +120,8 @@ function KetQuaMt({ api, nguon, phamVi }: { api: { data: KetQuaMtKq | null; erro
       if (!s.tang && !s.bang && !s.giam) return <span className="text-slate-500">—</span>;
       return (
         <span className="whitespace-nowrap tabular-nums" aria-label={t('Tăng {a} · giữ {b} · giảm {c}', { a: s.tang, b: s.bang, c: s.giam })}>
-          <span className={s.tang ? 'text-ok' : 'text-faint'}>↑ {s.tang}</span> · <span className="text-slate-300">= {s.bang}</span> · <span className={s.giam ? 'text-bad' : 'text-faint'}>↓ {s.giam}</span>
+          {/* AUDIT-UI PT2: chữ thay ký hiệu ↑ = ↓ nhỏ; số 0 mờ (C2). */}
+          <span className={s.tang ? 'text-ok' : 'text-faint'}>{t('Tăng')} {s.tang}</span> · <span className={s.bang ? 'text-slate-300' : 'text-faint'}>{t('Giữ')} {s.bang}</span> · <span className={s.giam ? 'text-bad' : 'text-faint'}>{t('Giảm')} {s.giam}</span>
         </span>
       );
     }

@@ -736,7 +736,7 @@ function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi }: 
         <span className="tabular-nums font-medium text-slate-100">{n}</span>{day && (dangLoc || cuaToi) ? <span className="tabular-nums">/{day.studentCount}</span> : null} {dangLoc ? t('HV khớp') : cuaToi ? t('HV của tôi') : 'HV'}
       </span>
       <span className="hl-o text-[13px] text-dim">{day?.gvcn && <>
-        <span className="max-sm:hidden [&_.ten-ho-so]:font-normal">{t('GVCN')} <TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></span>   {/* HVL-GON (M1): tên người 400, đậm chỉ mã lớp */}
+        <span className="max-sm:hidden [&_.ten-ho-so]:font-normal"><span className="text-faint">{t('GVCN')}</span> <TenGiaoVien id={day.gvcn.id} ten={day.gvcn.name} /></span>   {/* HVL-GON (M1): tên người 400, đậm chỉ mã lớp */}
         {/* 375 (mockup): "7 HV · N. H. Dũng" — họ, đệm viết tắt. */}
         <span className="sm:hidden [&_.ten-ho-so]:font-normal">· <TenGiaoVien id={day.gvcn.id} ten={tenNgan(day.gvcn.name)} /></span>
       </>}</span>
