@@ -4,7 +4,7 @@ import { db, isInitialised, tx } from '../db.ts';
 import { cauHinhDich, laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
-  PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, tenMon, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
+  PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
   khoangTuUrl, loiKhoang, mondayOfDate,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
@@ -293,21 +293,11 @@ function gocNhinCua(p: Principal) {
   const vaiGoc = p.vaiGoc ?? p.roleKeys;
   if (!coTheDoiGocNhin(vaiGoc)) return null;
   const du = p.gocNhin ? loadPrincipal(p.userId) : p;
-  const lopIds = [...new Set(du.assignments.map((a) => a.classId))];
-  const lop = new Map<number, { code: string; ct: string | null }>();
-  if (lopIds.length) {
-    for (const r of db().prepare(`SELECT id, code, programme_code FROM classes WHERE id IN (${lopIds.map(() => '?').join(',')})`).all(...lopIds) as any[]) {
-      lop.set(r.id, { code: r.code, ct: r.programme_code ?? null });
-    }
-  }
+  /* Chủ SP 07/11: dòng Giáo viên ghi gọn "{chi nhánh} · {n} lớp" (web ghép chữ từ `chiNhanh` + `soLop`) — không còn đọc bảng lớp để ghép chuỗi môn · lớp. */
+  const soLop = new Set(du.assignments.map((a) => a.classId)).size;
+  const chiNhanhGv = [...new Set(du.grants.filter((g) => g.roleKey === 'teacher' && g.branchName).map((g) => g.branchName as string))];
   const phamVi = (role: string) => {
-    if (role === 'teacher') {
-      const ds = [...new Set(du.assignments.map((a) => {
-        const l = lop.get(a.classId);
-        return l ? `${a.isCore ? 'GVCN' : tenMon(l.ct, a.skill ?? '')} ${l.code}` : null;
-      }).filter(Boolean))];
-      return ds.join(' · ') || 'chưa có lớp';
-    }
+    if (role === 'teacher') return [chiNhanhGv.length > 1 ? `${chiNhanhGv.length} CN` : chiNhanhGv[0], `${soLop} lớp`].filter(Boolean).join(' · ');
     const cn = du.grants.filter((g) => g.roleKey === role).map((g) => g.branchName ?? 'Toàn hệ thống');
     return [...new Set(cn)].join(' · ');
   };
@@ -315,7 +305,9 @@ function gocNhinCua(p: Principal) {
   return {
     dangChon: p.gocNhin ?? null,
     vaiGoc: goc,
-    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role), soPhanCong: role === 'teacher' ? new Set(du.assignments.map((a) => `${a.classId}|${a.isCore}|${a.skill ?? ''}`)).size : 0 })),
+    coThe: vaiGoc.map((role) => ({ role, nhan: ROLE_LABEL[role as Role] ?? role, phamVi: phamVi(role),
+      ...(role === 'teacher' ? { chiNhanh: chiNhanhGv, soLop } : {}),
+      soPhanCong: role === 'teacher' ? new Set(du.assignments.map((a) => `${a.classId}|${a.isCore}|${a.skill ?? ''}`)).size : 0 })),
   };
 }
 
