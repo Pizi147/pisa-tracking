@@ -9,6 +9,7 @@ export const EN_SV_SO2 = {
   '{nhan} · {ai} · {dung}/{tong} việc': '{nhan} · {ai} · {dung}/{tong} tasks',
   '{nhan} · {ai} · {dung}/{tong} bài': '{nhan} · {ai} · {dung}/{tong} papers',
   'Đạt MT · {pt} % = {dat}/{mau} HV': 'MT pass · {pt} % = {dat}/{mau} students',
+  'Đạt Target thi thật · {pt} % = {dat}/{mau} HV': 'Real-exam Target reached · {pt} % = {dat}/{mau} students',   // O-TQ-BAM
   'chưa đủ dữ liệu (ngoài mẫu Đạt MT)': 'not enough data (outside the MT pass sample)',
   '{n} HV — thi tháng này': '{n} students — exam this month',
 } as const;

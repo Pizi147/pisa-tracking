@@ -60,25 +60,28 @@ export function DauTrangTq({ phamVi, ben, ky }: { phamVi: ReactNode; ben?: React
  */
 export function ChiSo({ ten, giaTri, mau, ky, luat }: { ten: string; giaTri: ReactNode; mau?: ReactNode; ky?: string; luat?: ReactNode }) {
   return (
-    <OChiSo className="max-sm:p-3" ten={<span className="inline-flex items-center gap-1.5" title={ky}>{ten}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau} />
+    <OChiSo className="ca-o max-sm:p-3" ten={<span className="inline-flex items-center gap-1.5" title={ky}>{ten}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau} />
   );
 }
 export const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">{children}</div>;
 
 /** % to gạch chân bấm mở panel đúng tập; mẫu 0 → "Chưa có dữ liệu" (T19), không "0 %". */
-export function PhanTram({ x, nguon, tieuDe, gon, vung }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean; vung?: string }) {
+export function PhanTram({ x, nguon, tieuDe, gon, vung, className }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean; vung?: string;
+  /** O-TQ-BAM: `so-chinh` = số chính của ô chỉ số — cả ô bấm mở panel này. */ className?: string }) {
   if (!x) return <span className="text-slate-500">—</span>;
   const v = rateView(x.dat, x.mau);
   if (v.kind !== 'value') return gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')} aria-label={t('Chưa có dữ liệu')}>—</span>
     : <ChuaCoDl />;
-  return <OSo giaTri={x.mau} nhan={`${x.pt ?? v.percent} %`} nguon={nguon} tieuDe={tieuDe} vung={vung} />;
+  return <OSo giaTri={x.mau} nhan={`${x.pt ?? v.percent} %`} nguon={nguon} tieuDe={tieuDe} vung={vung} className={className} />;
 }
 /** V8-TQ (mockup `.chua-dl`): "– Chưa có dữ liệu" là viên viền đứt — cùng dáng "Chưa đủ dữ liệu", không chữ đậm trơn. */
 export const ChuaCoDl = () => (
   <span className="chua-dl my-1 inline-flex h-[26px] items-center self-start rounded border border-dashed px-2 text-[13px] font-semibold text-slate-500" style={{ borderColor: 'var(--thieu-vien)' }}>– {t('Chưa có dữ liệu')}</span>
 );
-/** Ô số dẫn sang trang khác (TVV / CX): cùng dáng ô số (gạch chân nhấn); 0 mờ, không bấm. */
-const SoDen = ({ n, to }: { n: number; to: string }) => (n > 0 ? <Link to={to} className={`${VUNG_BAM_SO} ${LOP_OSO}`}>{n}</Link> : <span className="font-medium text-slate-500">{n}</span>);
+/** Ô số dẫn sang trang khác (TVV / CX): cùng dáng ô số (gạch chân nhấn); 0 mờ, không bấm. `so-chinh` (O-TQ-BAM): cả ô chỉ số đổi trang tới `to`. */
+const SoDen = ({ n, to, className = '' }: { n: number; to: string; className?: string }) => (n > 0 ? <Link to={to} className={`${VUNG_BAM_SO} ${LOP_OSO} ${className}`}>{n}</Link> : <span className="font-medium text-slate-500">{n}</span>);
+/** O-TQ-BAM: ô đổi trang → tên thêm "›" khi số chính bấm được (> 0). */
+const tenDen = (ten: string, n: number) => (n > 0 ? `${ten} ›` : ten);   // không ngắt: 375 xuống dòng thì "›" đi cùng chữ cuối
 const Cham = () => <span className="font-normal text-slate-500" aria-hidden>·</span>;
 
 /**
@@ -153,8 +156,11 @@ const qBc = (d: TongQuanV5Data, them = '') => `/phan-tich/bao-cao/o?${thamSoTq(d
 /** Ô "Thi tháng này" (QL, QT): TQ-GON (M4) — định nghĩa "HV có ngày thi đã chốt" vào ⓘ, dòng phụ chỉ đơn vị. */
 const LUAT_THI = t('HV có ngày thi thật đã chốt trong tháng này.');
 const ChiSoThi = ({ d }: { d: TongQuanV5Data }) => (
-  <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} luat={LUAT_THI} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi tháng này')} nguon={qBc(d, '&o=thi-thang-nay')} />} mau={t('HV')} />
+  <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} luat={LUAT_THI} giaTri={<OSo giaTri={d.thiThangNay} tieuDe={t('Thi tháng này')} nguon={qBc(d, '&o=thi-thang-nay')} className="so-chinh" />} mau={t('HV')} />
 );
+/** Dòng phụ "Case có PA" (QL, QT — O-TQ-BAM: QT thêm số chưa PA như QL): số chưa PA mở panel riêng, nổi trên lớp phủ cả ô. */
+const MauCasePa = ({ d }: { d: TongQuanV5Data }) => (d.casePa.mo
+  ? <>{d.casePa.coPa}/{d.casePa.mo} Case · <OSo giaTri={d.casePa.chuaPa} tieuDe={t('Case chưa chốt PA')} nguon={qCn(d, 'caseChuaChot', 'tong')} /> {t('chưa PA')}</> : null);
 const qCn = (d: TongQuanV5Data, cot: string, khoa: string) => `/tong-quan/chi-nhanh/o?cot=${cot}&khoa=${khoa}&chuY=1&${thamSoTq(d.branchId, d.ct)}`;
 
 /* ───────────── Chờ bạn duyệt (dòng gọn → panel duyệt, C04) ───────────── */
@@ -310,13 +316,13 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
     <>
       <DaiChiSo>
         <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. Ngoài mẫu: HV chưa đủ dữ liệu.')}
-          giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
+          giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? mauDatMt(d.datMt) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Case có PA')} ky={t('hiện tại')}
-          giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} />}
-          mau={d.casePa.mo ? <>{d.casePa.coPa}/{d.casePa.mo} Case · <OSo giaTri={d.casePa.chuaPa} tieuDe={t('Case chưa chốt PA')} nguon={qCn(d, 'caseChuaChot', 'tong')} /> {t('chưa PA')}</> : null} />
+          giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} className="so-chinh" />}
+          mau={<MauCasePa d={d} />} />
         {/* TQ-GON (M5): "yêu cầu" — cùng tên với Chờ bạn duyệt ở Công việc / Hộp duyệt. */}
-        {duyet && <ChiSo ten={t('Chờ duyệt')} ky={t('hiện tại')} giaTri={choN} mau={<>{t('yêu cầu')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
+        {duyet && <ChiSo ten={tenDen(t('Chờ duyệt'), choN)} ky={t('hiện tại')} giaTri={<SoDen n={choN} to="/cong-viec/cho-duyet" className="so-chinh" />} mau={<>{t('yêu cầu')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
         <ChiSoThi d={d} />
       </DaiChiSo>
       <BoCuc
@@ -390,11 +396,12 @@ export function TongQuanQtV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
   return (
     <>
       <DaiChiSo>
-        <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
+        <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? mauDatMt(d.datMt) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} />}
-          mau={d.casePa.mo ? `${d.casePa.coPa}/${d.casePa.mo} Case` : null} />
-        <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ptChu(d.thiThat)} mau={tuMau(d.thiThat, t('HV'))} />
+        <ChiSo ten={t('Case có PA')} ky={t('hiện tại')} giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} className="so-chinh" />}
+          mau={<MauCasePa d={d} />} />
+        <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={<PhanTram x={d.thiThat} nguon={qBc(d, '&o=dat-target-thi')} tieuDe={t('Đạt Target thi thật')} className="so-chinh" />}
+          mau={tuMau(d.thiThat, t('HV'))} />
         <ChiSoThi d={d} />
       </DaiChiSo>
       <BoCuc trai={<TheoChiNhanh d={d} onChiNhanh={onChiNhanh} />}
@@ -419,20 +426,20 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
     <>
       {/* Chủ SP 23/10: CX xem điểm và tình trạng HV — kết quả trước, việc phối hợp sau. */}
       <DaiChiSo>
-        <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} /> : <span className="text-slate-500">—</span>}
+        <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? mauDatMt(d.datMt) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ft ? ptChu(d.thiThat) : <span className="text-slate-500">—</span>}
+        <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.thiThat} nguon={qBc(d, '&o=dat-target-thi')} tieuDe={t('Đạt Target thi thật')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.thiThat, t('HV')) : t('chỉ Fast Track')} />
-        <ChiSo ten={t('HV SOS 2–3')} ky={t('hiện tại')} giaTri={<b className="tabular-nums">{sos23}</b>} mau={t('HV')} />
+        <ChiSo ten={tenDen(t('HV SOS 2–3'), sos23)} ky={t('hiện tại')} giaTri={<SoDen n={sos23} to={`/hoc-vien?view=sos${cn}`} className="so-chinh" />} mau={t('HV')} />
         {/* TQ-GON (M5): cùng tên ô với TVV "Chờ KQ · Lộ trình tiếp"; (M3) dòng phụ chỉ đơn vị — tên ô đã nói hai số là gì. */}
-        <ChiSo ten={t('Chờ KQ · Lộ trình tiếp')} ky={t('hiện tại')}
-          giaTri={hv.data ? <span className="inline-flex items-baseline gap-2"><SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} /><Cham /><SoDen n={hv.data.dem['cho-buoc-tiep']} to={den('cho-buoc-tiep')} /></span> : '…'}
+        {/* O-TQ-BAM: cả ô → Lộ trình tiếp (số sau); số "Chờ KQ" giữ đích riêng (lọc Đã thi). */}
+        <ChiSo ten={tenDen(t('Chờ KQ · Lộ trình tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} ky={t('hiện tại')}
+          giaTri={hv.data ? <span className="inline-flex items-baseline gap-2"><SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} /><Cham /><SoDen n={hv.data.dem['cho-buoc-tiep']} to={den('cho-buoc-tiep')} className="so-chinh" /></span> : '…'}
           mau={t('HV')} />
       </DaiChiSo>
       <BoCuc trai={d.chiNhanh ? <TheoChiNhanh d={d} cx onChiNhanh={onChiNhanh} /> : <LopCanChuY d={d} />}
         phai={<DiTiep dong={[
           { to: `/phan-tich?goc=bao-cao${cn}`, t1: t('Báo cáo HV'), t2: t('kết quả + hỗ trợ') },
-          { to: `/hoc-vien?view=sos${cn}`, t1: t('HV SOS 2–3'), t2: t('Học viên & Lớp · Đang SOS') },
           { to: `/hoc-vien?view=lich-thi${cn}`, t1: t('Lịch thi'), t2: t('Học viên & Lớp · Lịch thi') },
           { to: `/hoc-vien${cn ? `?${cn.slice(1)}` : ''}`, t1: t('Học viên & Lớp'), t2: d.tenChiNhanh ?? t('Tất cả chi nhánh') },
         ]} />} />
@@ -453,7 +460,7 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => Re
   const viec = useApi<{ summary: { viec: number; viecQuaHan: number } }>(session?.nav?.workSupport ? '/my-work' : null, []).data?.summary;
   const nguonCase = `/giao-vien/${id}/o?cot=case-mo`;
   const caseMo = useApi<{ n: number }>(id ? nguonCase : null, [id]).data?.n;
-  const o = (x: OPtGv | undefined, cot: string, nhan: string) => <PhanTram x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}`} tieuDe={nhan} />;
+  const o = (x: OPtGv | undefined, cot: string, nhan: string) => <PhanTram x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}`} tieuDe={nhan} className="so-chinh" />;
   const ky = cs ? kyChu(cs) : undefined;
   return (
     <>
@@ -465,7 +472,7 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: (phai: ReactNode) => Re
           ? <Link to="/cong-viec" className="block h-full rounded-xl no-underline hover:[&>.card]:border-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]">{o}</Link>
           : o))(<ChiSo ten={session.nav.work ? `${t('Việc của tôi')} ›` : t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
           mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />)}
-        <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} />}
+        <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} className="so-chinh" />}
           mau="Case" />
         <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs?.ketQua), t('lượt Test'))} />
         <ChiSo ten={t('Tiến bộ')} ky={ky} giaTri={o(cs?.tienBo, 'tien-bo', t('HV tiến bộ'))} mau={tuMau(tyLeGv(cs?.tienBo), t('lượt'))} />
@@ -494,12 +501,12 @@ export function TongQuanTvvV5() {
       {/* V8: 3 chỉ số — 1440 ba cột đều; < 1024 thẻ đầu full bề rộng (không thẻ mồ côi nửa hàng). */}
       <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:first-child]:col-span-2">
         <ChiSo ten={t('Báo PH đúng hạn')} ky={kyChu(d.ky)} luat={t('Việc Báo PH đã báo trước hạn / việc Báo PH phát sinh trong kỳ.')}
-          giaTri={<PhanTram x={{ dat: d.baoPh.dung, mau: d.baoPh.tong }} nguon="/tong-quan/tvv/o?o=bao-ph" tieuDe={t('Báo PH đúng hạn')} />}
+          giaTri={<PhanTram x={{ dat: d.baoPh.dung, mau: d.baoPh.tong }} nguon="/tong-quan/tvv/o?o=bao-ph" tieuDe={t('Báo PH đúng hạn')} className="so-chinh" />}
           mau={d.baoPh.tong ? <>{d.baoPh.dung}/{d.baoPh.tong} {t('việc')}{d.baoPh.treXong > 0 && <> · {t('xong trễ {n}', { n: d.baoPh.treXong })}</>}</> : null} />
         {/* TQ-GON (M3, M4): định nghĩa vào ⓘ, dòng phụ chỉ đơn vị; không lặp lại hai số đã hiện ("0 chờ KQ · 1 chưa chốt…"). */}
-        <ChiSo ten={t('Thi tháng này')} ky={t('hiện tại')} luat={LUAT_THI} giaTri={<SoDen n={d.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" />} mau={t('HV')} />
-        <ChiSo ten={t('Chờ KQ · Lộ trình tiếp')} ky={t('hiện tại')}
-          giaTri={<span className="inline-flex items-baseline gap-2"><SoDen n={choKq} to={den('da-thi')} /><Cham /><SoDen n={buoc} to={den('cho-buoc-tiep')} /></span>}
+        <ChiSo ten={tenDen(t('Thi tháng này'), d.thiThangNay)} ky={t('hiện tại')} luat={LUAT_THI} giaTri={<SoDen n={d.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" className="so-chinh" />} mau={t('HV')} />
+        <ChiSo ten={tenDen(t('Chờ KQ · Lộ trình tiếp'), buoc)} ky={t('hiện tại')}
+          giaTri={<span className="inline-flex items-baseline gap-2"><SoDen n={choKq} to={den('da-thi')} /><Cham /><SoDen n={buoc} to={den('cho-buoc-tiep')} className="so-chinh" /></span>}
           mau={t('HV')} />
       </div>
       <BoCuc

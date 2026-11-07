@@ -349,24 +349,33 @@ const dauBang = (f: LocBaoCao, rows: MetricRow[], cachTinh: string | null, knNha
   ({ ...kieuBang(rows, cachTinh), ...(knNhan ? { knNhan } : {}), chiNhanh: tenChiNhanh(f.branchId) });
 
 export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number; tieuDe: string; rows: MetricRow[]; chiNhanh?: string | null } {
-  const kq = /^kq-mt:(mt0|mt1|mt2|mt3\+|thi):(dat|thieu-0\.5|thieu-1\.0|thieu-1\.5|chua-du)$/.exec(f.o);
+  /* O-TQ-BAM (chủ SP 07/11): `dat-target-thi` = ô "Đạt Target thi thật" (Tổng quan QT, CX) — CHÍNH hàng Thi của `tapKqMt` như số %:
+     mẫu = em có Overall + Target (bỏ "chưa đủ"), tab Đạt = tử; chưa đạt lên trước. */
+  const ttt = f.o === 'dat-target-thi';
+  const kq = ttt ? [f.o, 'thi', null] as const : /^kq-mt:(mt0|mt1|mt2|mt3\+|thi):(dat|thieu-0\.5|thieu-1\.0|thieu-1\.5|chua-du)$/.exec(f.o);
   if (kq) {
     /* Panel chỉ đọc Kết quả MT (C22): em của ô — lớp · lượt · Overall · Target · so lượt trước. */
     phamViPhanTich(p, f.branchId ?? null, null);   // không quyền → 403 trước 400
     if (f.ct !== 'ft') throw badRequest('Kết quả MT chỉ có ở Fast Track.');
-    const l = kq[1] as LuotKqMt, cot = kq[2] as CotKqMt;
+    const l = kq[1] as LuotKqMt, cot = kq[2] as CotKqMt | null;
     const em = tapKqMt(p, f).get(l)!;
-    const ids = [...em].filter(([, e]) => e.cot === cot).map(([s]) => s).sort((a, b) => a - b);
+    const ids = [...em].filter(([, e]) => (cot ? e.cot === cot : e.cot !== 'chua-du')).map(([s]) => s)
+      .sort((a, b) => (ttt ? Number(em.get(a)!.cot === 'dat') - Number(em.get(b)!.cot === 'dat') : 0) || a - b);
     const so = (x: number) => x.toFixed(1);
     const rows = rowsFor('hoc-vien', ids, undefined, p, false, new Map(ids.map((s) => [s, em.get(s)!.diem]))).map((row) => {
       const e = em.get(row.id)!;
       const lech = e.ovr !== null && e.truoc !== null ? e.ovr - e.truoc : null;
       return { ...row, sub: [e.lop, e.nhan, e.ovr === null ? t('chưa đủ điểm') : `Overall ${so(e.ovr)}`, e.target === null ? null : `Target ${so(e.target)}`,
-        lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · ') };
+        lech === null ? null : t('so lượt trước {d}', { d: lech > 0 ? `+${so(lech)}` : lech < 0 ? `−${so(-lech)}` : '=' })].filter(Boolean).join(' · '),
+        ...(ttt ? { ketQua: e.cot === 'dat' ? 'dat' as const : 'chua' as const } : {}) };   // PANEL-CHUNG: tab Chưa đạt · Đạt như Đạt MT
     });
+    if (ttt) {
+      const dat = rows.filter((r) => r.ketQua === 'dat').length;
+      return { n: ids.length, tieuDe: t('Đạt Target thi thật · {pt} % = {dat}/{mau} HV', { pt: ids.length ? Math.round((100 * dat) / ids.length) : 0, dat, mau: ids.length }), rows };
+    }
     /* PT-PANEL (PR-1): hàng MT → bảng lượt (lượt của ô). Hàng Thi giữ panel cũ tới PR-4 (THI-THAT). */
     const bang = l === 'thi' ? rows : ganLuotDiem(p, rows, (s) => em.get(s)?.attemptId ?? null);
-    return { n: ids.length, tieuDe: `${NHAN_LUOT_KQ_MT[l]} · ${NHAN_COT_KQ_MT[cot]} = ${ids.length} HV`, rows: bang,
+    return { n: ids.length, tieuDe: `${NHAN_LUOT_KQ_MT[l]} · ${NHAN_COT_KQ_MT[cot!]} = ${ids.length} HV`, rows: bang,
       ...(l === 'thi' ? {} : dauBang(f, bang, 'Lượt MT mới nhất của HV trong kỳ (cùng hàng). Cột Kỳ vọng = kỳ vọng của lượt; Đạt Target = Overall đạt Target lúc thi.')) };
   }
   const r = tinh(p, f);

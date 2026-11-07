@@ -7,8 +7,10 @@ import { OSo } from '../../ui/OSo.tsx';
 import { nhanQuaHan, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
-/** Số của ô = link đổi trang tới đúng danh sách (G6: không phải panel); 0 vẫn mở được — danh sách trống nói rõ. */
-const So = ({ to, n }: { to: string; n: number }) => <Link to={to} className={`link tabular-nums ${n ? '' : 'text-slate-500'}`}>{n}</Link>;
+/** Số của ô = link đổi trang tới đúng danh sách (G6: không phải panel). O-TQ-BAM (chủ SP 07/11): số > 0 = link `so-chinh` → cả ô đổi trang
+ *  (tên thêm "›"); 0 không bấm như mọi ô số (trước: 0 vẫn là link). */
+const So = ({ to, n }: { to: string; n: number }) => (n > 0 ? <Link to={to} className="link so-chinh tabular-nums">{n}</Link> : <span className="tabular-nums text-slate-500">{n}</span>);
+const ten = (chu: string, n: number) => (n > 0 ? `${chu} ›` : chu);
 
 const GV_TRE_ADMIN = {
   loai: t('SỐ LIỆU · MOCK TEST'), theoGv: true, trong: t('Không GV nào chấm quá hạn'),
@@ -41,11 +43,11 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
     <div className="space-y-3">
       {/* SUA-CHAM-LAI L8: ô chỉ số V5 (tên · số · mẫu · kỳ) như mọi vai, 3 cột như Tổng quan TVV; số = link đổi trang (mở đúng danh sách đã lọc). Đơn vị "bài" như Lịch Test. */}
       <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
-        <ChiSo ten={t('Lượt MT tuần này')} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
+        <ChiSo ten={ten(t('Lượt MT tuần này'), data.luotTuanNay.so)} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
           mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
-        <ChiSo ten={t('Bài chưa nhập điểm')} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&nguoi=tat-ca&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
+        <ChiSo ten={ten(t('Bài chưa nhập điểm'), data.oChuaNhap.so)} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&nguoi=tat-ca&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
           mau={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {t('{n} quá hạn', { n: data.oChuaNhap.quaHan })}</span> : t('không bài nào quá hạn')} />
-        <ChiSo ten={t('HV chưa có MT tiếp theo')} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
+        <ChiSo ten={ten(t('HV chưa có MT tiếp theo'), data.chuaXepLich)} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
           mau={t('đã thi hết lượt MT đã xếp')} />
       </div>
       <section className="card" aria-labelledby="gv-qua-han">

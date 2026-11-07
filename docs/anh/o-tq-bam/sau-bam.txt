@@ -1,0 +1,34 @@
+QT | Đạt MT | đổi trang → /?so-lieu=nguon%3A%2Fphan-tich%2Fbao-cao%2Fo%3Fct%3Dft%26kieu%3Dtuy-chon%26tu%3D2026-08-31%26den%3D2026-09-13%26o%3Ddat-mt
+QT | Case có PA | đổi trang → /?so-lieu=nguon%3A%2Ftong-quan%2Fchi-nhanh%2Fo%3Fcot%3DcaseMo%26khoa%3Dtong%26chuY%3D1%26ct%3Dft
+QT | Đạt Target thi thật | đổi trang → /?so-lieu=nguon%3A%2Fphan-tich%2Fbao-cao%2Fo%3Fct%3Dft%26kieu%3Dtuy-chon%26tu%3D2026-08-31%26den%3D2026-09-13%26o%3Ddat-target-thi
+QT | Thi tháng này ⓘ | đổi trang → /?so-lieu=nguon%3A%2Fphan-tich%2Fbao-cao%2Fo%3Fct%3Dft%26kieu%3Dtuy-chon%26tu%3D2026-08-31%26den%3D2026-09-13%26o%3Dthi-thang-nay
+  (QT 1440: phông Be Vietnam Pro true)
+  (QT 375: phông Be Vietnam Pro true)
+QL | Đạt MT ⓘ | đổi trang → /?so-lieu=nguon%3A%2Fphan-tich%2Fbao-cao%2Fo%3FbranchId%3D1%26ct%3Dft%26kieu%3Dtuy-chon%26tu%3D2026-08-31%26den%3D2026-09-13%26o%3Ddat-mt
+QL | Case có PA | đổi trang → /?so-lieu=nguon%3A%2Ftong-quan%2Fchi-nhanh%2Fo%3Fcot%3DcaseMo%26khoa%3Dtong%26chuY%3D1%26branchId%3D1%26ct%3Dft
+QL | Chờ duyệt › | đổi trang → /cong-viec/cho-duyet
+QL | Thi tháng này ⓘ | không đi đâu
+  (QL 1440: phông Be Vietnam Pro true)
+  (QL 375: phông Be Vietnam Pro true)
+GV | Việc của tôi › 27 việc · ⚠ 9 quá hạn | đổi trang → /cong-viec?nhom=cham-diem
+GV | Case đang xử lý | đổi trang → /?so-lieu=nguon%3A%2Fgiao-vien%2F7%2Fo%3Fcot%3Dcase-mo
+GV | Đạt kỳ vọng Test | đổi trang → /?so-lieu=nguon%3A%2Fgiao-vien%2F7%2Fchi-so%2Fo%3Fcot%3Dket-qua
+GV | Tiến bộ | đổi trang → /?so-lieu=nguon%3A%2Fgiao-vien%2F7%2Fchi-so%2Fo%3Fcot%3Dtien-bo
+  (GV 1440: phông Be Vietnam Pro true)
+  (GV 375: phông Be Vietnam Pro true)
+TVV | Báo PH đúng hạn ⓘ | không đi đâu
+TVV | Thi tháng này › ⓘ | đổi trang → /hoc-vien?phamVi=cua-toi&thi=1
+TVV | Chờ KQ · Lộ trình tiếp › | đổi trang → /hoc-vien?phamVi=cua-toi&view=cho-buoc-tiep
+  (TVV 1440: phông Be Vietnam Pro true)
+  (TVV 375: phông Be Vietnam Pro true)
+CX | Đạt MT | đổi trang → /?so-lieu=nguon%3A%2Fphan-tich%2Fbao-cao%2Fo%3Fct%3Dft%26kieu%3Dtuy-chon%26tu%3D2026-08-31%26den%3D2026-09-13%26o%3Ddat-mt
+CX | Đạt Target thi thật | đổi trang → /?so-lieu=nguon%3A%2Fphan-tich%2Fbao-cao%2Fo%3Fct%3Dft%26kieu%3Dtuy-chon%26tu%3D2026-08-31%26den%3D2026-09-13%26o%3Ddat-target-thi
+CX | HV SOS 2–3 › | đổi trang → /hoc-vien?view=sos
+CX | Chờ KQ · Lộ trình tiếp › | đổi trang → /hoc-vien?phamVi=tat-ca&view=cho-buoc-tiep
+  (CX 1440: phông Be Vietnam Pro true)
+  (CX 375: phông Be Vietnam Pro true)
+Admin | Lượt MT tuần này | không đi đâu
+Admin | Bài chưa nhập điểm | không đi đâu
+Admin | HV chưa có MT tiếp theo | không đi đâu
+  (Admin 1440: phông Be Vietnam Pro true)
+  (Admin 375: phông Be Vietnam Pro true)

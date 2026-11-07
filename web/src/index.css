@@ -1099,6 +1099,16 @@
 .so-bam:not(.text-xs *, .decoration-dotted):not(:hover, :focus-visible) { text-decoration-line: none; }
 :is(td, .text-xs) .so-bam:not(.text-bad, .text-late, .decoration-dotted), .o-so.so-bam { font-weight: 500; }
 
+/* O-TQ-BAM (chủ SP 07/11): CẢ Ô chỉ số bấm được (`ChiSo` → `.ca-o`) — số chính mang `.so-chinh` (nút `OSo` mở panel / link `SoDen` đổi trang) và
+   vùng bấm của nó phủ cả ô (stretched link: không lồng phần tử bấm, Tab + Enter vào đúng số). Số phụ ("52 chưa PA") và ⓘ nổi trên lớp phủ, bấm riêng.
+   Số 0 / "—" không phải nút → không phủ, ô không bấm. Rê / focus: viền nhấn như ô mẫu GV "Việc của tôi ›". Ngoài @layer để thắng `relative` / `after:*` của `VUNG_BAM_SO`. */
+.ca-o { position: relative; }
+.ca-o :is(button, a).so-chinh { position: static; }
+.ca-o :is(button, a).so-chinh::after { content: ''; position: absolute; inset: 0; width: auto; height: auto; min-width: 0; transform: none; border-radius: inherit; }
+.ca-o :is(button, a):not(.so-chinh) { position: relative; z-index: 1; }
+.ca-o:has(:is(button, a).so-chinh:hover) { border-color: var(--accent); }
+.ca-o:has(:is(button, a).so-chinh:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* HD-a — in trang Hướng dẫn (thay sổ tay PDF): giấy trắng chữ đen, chỉ nội dung (thanh trên / dưới đã `print:hidden`). */
 /* BAO-CAO-PH (mockup v15 `.thang`, `.o-bc`, `.bbc`): hàng nút thang 4 mức · ô bảng em × phần · bảng. Màu = token sẵn có (ô sửa, nút chính, soon). */
 @layer components {
