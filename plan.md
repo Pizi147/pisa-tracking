@@ -259,6 +259,11 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 07/11 — Nút ⋯ hồ sơ lớp + LỚP TRỐNG TỰ LƯU TRỮ (chủ SP — session LOP-TRONG)
+- **Chủ SP 07/11 (ảnh hồ sơ lớp CP FT 130, khoanh nút ⋯ cạnh "Nhập điểm", "+ Case"):** "1. sửa lại nút này cho cân đối 2. Và thêm 1 cái nữa là nếu lớp không có học sinh, đã kết thúc sau khi chuyển hết đi, và không có kế hoạch nhận thêm HV nào thì sau 1 tuần sẽ tự động bị đưa vào lưu trữ nhée"
+- (1) Nút ⋯ cùng chiều cao / khung với hai nút cạnh (vuông, căn giữa) — mọi đầu trang có cụm nút + ⋯.
+- (2) **LUẬT MỚI:** lớp 0 HV đang học (đã chuyển / kết thúc hết) VÀ không có kế hoạch nhận HV (không lệnh chuyển vào chờ, không hẹn bắt đầu / Học lại về lớp, không HV mới xếp vào) liên tục 7 ngày → hệ thống tự Kết thúc lớp + vào Lưu trữ (tab "Lớp đã kết thúc"), ghi lịch sử "tự động — lớp trống 7 ngày"; "Mở lại lớp" như cũ (không khoá). Có kế hoạch nhận HV xuất hiện thì không tự đóng. Chạy trong lượt quét nền / hằng ngày sẵn có, đọc ít (một câu theo lớp đang chạy có 0 HV).
+
 ### 07/11 — TÊN HV LUÔN MỞ HỒ SƠ HV (chủ SP)
 - **Chủ SP 07/11:** "Thêm nữa, ở Hồ sơ Lớp, tại sao khi bấm vào tên HV không mở ra hồ sơ HV? về bản chất cốt lõi là cần phải như vậy mà, còn expand thì bấm vào thanh thông tin không phải là tên là được, đùa sao cứ có những cái lỗi ngớ ngẩn như vậy?"
 - LUẬT: tên học viên ở MỌI danh sách / bảng / panel = link mở hồ sơ HV (giữ nguồn để Quay lại); bấm phần còn lại của hàng = mở rộng / chọn như cũ (luật bỏ ↗ 28/10: tên vẫn là link). Session TEN-HV-LINK sửa Hồ sơ lớp + rà mọi nơi khác.
