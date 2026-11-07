@@ -27,6 +27,7 @@ import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, type ViecQuanLy } from './StudentManagePanel.tsx';
 import { TomTatLuuTru } from './TomTatLuuTru.tsx';
 import { Menu } from '../../ui/Menu.tsx';
+import { NUT_BA_CHAM_DAU } from '../../ui/MenuDong.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { attemptHref, fmtBand, skillLabel, sosTone, studentStatusLabel } from '../../lib/format.ts';
@@ -285,7 +286,7 @@ export default function StudentDetailPage() {
                 return <>{nutQuayLai}{vaiXem ? conLai.map((m) => (
                   <button key={m.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
                 )) : conLai.length > 0 && (
-                  <Menu label="⋯" className="btn btn-sm min-h-[44px] sm:min-h-0" items={conLai.map((m) => ({
+                  <Menu label="⋯" ariaLabel={t('Thao tác khác')} className={`${NUT_BA_CHAM_DAU} btn-sm h-11 w-11 sm:h-[30px] sm:w-[30px]`} items={conLai.map((m) => ({
                     label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, onClick: () => mo(m.key),
                   }))} />
                 )}</>;
