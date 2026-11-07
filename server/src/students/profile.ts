@@ -1057,7 +1057,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         /** PR-OV2b: Admin / TVV / CX (`student.edit_info`) — ⋯ Sửa thông tin, chỉ các ô thông tin. */
         coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId }),
         /** SUA-LUU-TRU (chủ SP 07/11): ⋯ "Kết quả thi thật" của em đã lưu trữ — cùng hàm máy chủ (`coTheNhapThiThat`: cả GVCN lớp cuối). Em đang học: luật cũ (không thêm câu). */
-        coTheNhapThiThat: !!s.archived_at && !!selected && coTheNhapThiThat(p, selected),
+        coTheNhapThiThat: !!s.archived_at && !!selected && (!!selected.route || !!kyThiCuaChuongTrinh(selected.programme_code)) && coTheNhapThiThat(p, selected),
         /** OV-10b: ô nhập Liên hệ ở Sửa thông tin — QL, Quản trị, TVV, CX, Admin; GV không thấy (máy chủ vẫn nhận theo `student.edit_info`). */
         nhapLienHe: coONhapLienHe(vaiVoiEm(p, studentId)) && (can(p, PERMISSIONS.STUDENT_EDIT, { studentId }) || can(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId })),
         /* PR-DUYET (T44): target / lộ trình — Quản lý. GV của lớp không có quyền này thì gửi "Đề xuất sửa". */

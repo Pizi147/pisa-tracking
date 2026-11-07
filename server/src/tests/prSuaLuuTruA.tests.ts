@@ -70,6 +70,25 @@ export async function runPrSuaLuuTruATests(t: { check: any; assert: any; assertT
     assert(JSON.parse(ly(x.cy)).thi_that_l === JSON.parse(goc).thi_that_l, 'không về bản gốc');
   }));
 
+  check('SLT-a2b · lộ trình đóng (chụp lần mới) SAU lần lưu → Khôi phục: bản chụp mới nhất tính lại theo kết quả khôi phục (không lệch lộ trình)', () => thu(() => {
+    const r = get(`SELECT s.id AS sid, cy.id AS cy FROM students s
+        JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id AND c.is_fast_track = 1
+        JOIN branches b ON b.id = c.branch_id AND b.code = 'MB'
+        JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active' AND cy.route IS NOT NULL
+          AND cy.seq = (SELECT MAX(seq) FROM learning_cycles x WHERE x.student_id = s.id)
+       WHERE s.status = 'active' AND s.archived_at IS NULL ORDER BY s.id DESC LIMIT 1`);
+    conn.prepare('UPDATE learning_cycles SET target_score = 7, khong_cam_ket = 0 WHERE id = ?').run(r.cy);
+    thiThat.datKetQuaThiThat(QL, r.cy, { ngayThi: TODAY, l: 6, r: 6, w: 6, s: 6 });
+    const a = thiThat.datKetQuaThiThat(QL, r.cy, { l: 8, r: 8, w: 8, s: 8 });
+    buocTiep.chonBuocTiep(QL, r.cy, { chon: 'ket_thuc' });
+    xoaNho();
+    const bc0 = get('SELECT thi_that_l, ket_luan FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1', r.cy);
+    assert(bc0?.thi_that_l === 8 && bc0.ket_luan === 'reached', `tiền đề bản chụp: ${JSON.stringify(bc0)}`);
+    thiThat.khoiPhucThiThat(QL, r.cy, { auditId: a.khoiPhucId });
+    const bc = get('SELECT thi_that_l, thi_that_ovr, ket_luan FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1', r.cy);
+    assert(bc.thi_that_l === 6 && bc.thi_that_ovr === 6 && bc.ket_luan === 'not_reached', `bản chụp lệch: ${JSON.stringify(bc)}`);
+  }));
+
   check('SLT-a3 · quyền + đầu vào: GVBM / QL chi nhánh khác → 403; nhật ký của lộ trình khác / sai id → 404; nhật ký cũ không có bản trước → 400', () => thu(() => {
     const x = emKetThuc();
     const a = thiThat.datKetQuaThiThat(QL, x.cy, { l: 7 });
