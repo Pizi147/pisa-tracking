@@ -210,7 +210,7 @@ export async function runPrOv13hTests(t: YThucTestKit) {
   }
 
   // ------------------------------------------------------------------ 3 · mở lại Case
-  await checkAsync('OV13h-3 · Case L do QL hoàn thành: GV L (hoàn thành được) mở lại → 200 + nhật ký case.reopen; GV W1 → 403; Case hệ thống đóng → 400 (GIỮ)', () => voiMayChu(TODAY, async (goi) => {
+  await checkAsync('OV13h-3 · Case L do QL hoàn thành: GV L (hoàn thành được) mở lại → 200 + nhật ký case.reopen; GV W1 → 403; RKC-2a: Case hệ thống đóng mở lại tay được → 200', () => voiMayChu(TODAY, async (goi) => {
     /* Lớp của Case = lớp ghi danh `active` mới nhất của em (`loadCase`) — phải là MB FT 101. */
     const ca = all(`SELECT c.id FROM sos_cases c WHERE c.topic = 'listening' AND c.status != 'done' AND c.system_close_reason IS NULL
       AND (SELECT e.class_id FROM enrollments e WHERE e.student_id = c.student_id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) = ? ORDER BY c.id`, FT101);
@@ -221,7 +221,8 @@ export async function runPrOv13hTests(t: YThucTestKit) {
     await ma(await goi(gvW, `/cases/${ca[0].id}/mo-lai`, post()), 403, 'GV W1 mở lại Case L');
     await ma(await goi(gvL, `/cases/${ca[0].id}/mo-lai`, post()), 200, 'GV L mở lại');
     assert(one('SELECT status FROM sos_cases WHERE id = ?', ca[0].id).status !== 'done' && nk('case.reopen', gvL, ca[0].id) === 1, 'chưa mở lại / thiếu nhật ký');
-    await ma(await goi(gvL, `/cases/${ca[1].id}/mo-lai`, post()), 400, 'Case hệ thống đóng');
+    await ma(await goi(gvL, `/cases/${ca[1].id}/mo-lai`, post()), 200, 'Case hệ thống đóng mở lại tay');
+    assert(one('SELECT system_close_reason r FROM sos_cases WHERE id = ?', ca[1].id).r === null, 'mở lại phải gỡ lý do hệ thống đóng');
   }));
 
   // ------------------------------------------------------------------ 4 · bàn giao sau ngày chuyển lớp

@@ -2504,13 +2504,8 @@ check('[9.3] Hoàn thành Case: một đường duy nhất, có kết luận và
    * MỤC 7.7 [5]: case CHƯA CÓ PHƯƠNG ÁN NÀO không đủ điều kiện đóng. Đếm được "0 phương án
    * còn mở" không có nghĩa là đã làm gì cho em.
    */
-  assert(cases.closeBlockers(c.id).length === 1, 'Case chưa có phương án phải có đúng một lý do chặn');
-  assertThrows(
-    () => cases.closeCaseOutcome(P.mbManager, c.id, {
-      outcome: 'improved', note: 'Đã trao đổi, em ổn định lại hẳn',
-    }),
-    /chưa có phương án/, 'Case chưa có phương án nào mà vẫn đóng được',
-  );
+  /* RKC-2a (chủ SP 07/11 "không chặn cứng"): Case chưa có PA hoàn thành ĐƯỢC — kết luận ≥ 10 ký tự là đủ; ⓘ vẫn nói "chưa có PA". Ở đây chỉ kiểm lý do còn nói. */
+  assert(cases.closeBlockers(c.id).length === 1, 'Case chưa có phương án phải có đúng một lý do (nhắc)');
 
   // Có phương án nhưng CHƯA cập nhật kết quả → vẫn chặn, và nói rõ còn thiếu gì.
   const withPlan = cases.recordIntervention(P.coreTeacher, c.id, {
@@ -2524,7 +2519,7 @@ check('[9.3] Hoàn thành Case: một đường duy nhất, có kết luận và
     () => cases.closeCaseOutcome(P.mbManager, c.id, {
       outcome: 'improved', note: 'Đã trao đổi, em ổn định lại hẳn',
     }),
-    /chưa cập nhật kết quả/, 'Còn phương án chưa cập nhật mà vẫn đóng được',
+    /Còn 1 PA chưa khép/, 'Còn phương án chưa cập nhật mà vẫn đóng được không hỏi',   // RKC-2a: hỏi thay chặn
   );
 
   // Kết thúc PA (tab "Kết thúc") → lúc này mới đóng được.
@@ -3840,11 +3835,12 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
    * CHƯA LÀM GÌ THÌ CHƯA CHỐT ĐƯỢC. v3: case tự tạo có sẵn một phương án điền sẵn — nó chưa được xác nhận nên vẫn là "phương án chưa cập nhật
    * kết quả cuối cùng" chặn việc chốt. (Đóng ngay không cần theo dõi là đường riêng của GVBM, S05.)
    */
+  /* RKC-2a: còn PA quy chế chưa khép → HỎI (409 canXacNhan), chưa đóng. */
   assertThrows(
     () => cases.closeCaseOutcome(mgr, c.id, {
       outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
     }),
-    /chưa cập nhật kết quả cuối cùng|PA theo quy chế kết thúc/, 'Chốt được kết quả một case chưa ai làm gì',
+    /kết thúc sớm các PA đó rồi hoàn thành Case/, 'Chốt được kết quả một case chưa ai làm gì mà không hỏi',
   );
   cases.recordIntervention(rt, c.id, {
     kind: 'teaching_adjust', description: 'Luyện bấm giờ từng passage, 20 phút mỗi passage',
@@ -3859,7 +3855,7 @@ check('Case đã đóng mà MT sau trượt lại → MỞ CASE MỚI nối vào
     () => cases.closeCaseOutcome(mgr, c.id, {
       outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
     }),
-    /chưa cập nhật kết quả cuối cùng|PA theo quy chế kết thúc/, 'Chốt được kết quả case khi còn phương án treo',
+    /kết thúc sớm các PA đó rồi hoàn thành Case/, 'Chốt được kết quả case khi còn phương án treo mà không hỏi',   // RKC-2a
   );
   /* v3: phương án điền sẵn của case tự tạo phải được XÁC NHẬN thì mới ghi "đã làm" được (Q-V3-3). */
   for (const iv of open) {
@@ -4789,12 +4785,9 @@ check('Case CHƯA CÓ PHƯƠNG ÁN NÀO thì không chốt kết quả được'
     studentId: s.id, topic: 'reading', parallel: true,
     title: 'Reading: làm chậm', summary: 'Ba bài liên tiếp em không kịp thời gian phần cuối',
   }) as any;
-  assertThrows(
-    () => cases.closeCaseOutcome(P.admin, d.id, {
-      outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này',
-    }),
-    /chưa có phương án/i, 'Đóng được case chưa làm gì cho em',
-  );
+  /* RKC-2a: Case chưa có PA hoàn thành được (có kết luận) — không chặn cứng. */
+  const dd = cases.closeCaseOutcome(P.admin, d.id, { outcome: 'improved', note: 'Kết luận đủ dài cho phép kiểm này' }) as any;
+  assert(dd.status === 'done', 'Case chưa có PA phải hoàn thành được');
 });
 
 check('Chuyển lớp rồi thì hồ sơ học viên vẫn giữ lớp lúc đánh giá', () => {
@@ -9613,6 +9606,8 @@ const { runRkcHocVienTests } = bocTep('rkcHocVien', await import('./rkcHocVien.t
 await runRkcHocVienTests({ check, assert, conn, P, classId, TODAY } as any);
 const { runRkcLichTests } = bocTep('rkcLich', await import('./rkcLich.tests.ts'));
 await runRkcLichTests({ check, assert, conn, P, classId } as any);
+const { runRkcCaseTests } = bocTep('rkcCase', await import('./rkcCase.tests.ts'));
+await runRkcCaseTests({ check, assert, conn, P, classId, TODAY } as any);
 const { runSexHangTests } = bocTep('sexHang', await import('./sexHang.tests.ts'));
 await runSexHangTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)

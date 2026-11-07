@@ -242,7 +242,8 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
     const c: CaseDoiChu = { ...lc, student_id: lc.eff_student_id, class_id: lc.current_class_id ?? null,
       full_name: (db().prepare('SELECT full_name FROM students WHERE id = ?').get(lc.eff_student_id) as any)?.full_name ?? null };
     if (!duocDoi(p, c)) throw loi(403, 'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.');
-    if (c.status === 'done') throw loi(400, 'Case đã đóng.');
+    /* RKC-2a: Case đã đóng không còn việc để giao (đổi người không đổi đầu ra) — câu chỉ đường. */
+    if (c.status === 'done') throw loi(400, 'Case đã đóng — Mở lại Case nếu cần người phụ trách mới.');
     if (c.tam) throw loi(400, 'Case tạm chưa là việc — chưa đổi người được.');
     if (c.owner_user_id !== ownerCu) throw loi(409, 'Người phụ trách vừa đổi — tải lại.');
     if (ownerId === ownerCu) throw loi(400, 'Người này đang phụ trách Case.');

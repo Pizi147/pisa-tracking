@@ -95,7 +95,7 @@ export async function runR1NoCuTests(t: YThucTestKit) {
     assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: gvcn(), ownerCu: gvcn() })) === 400, 'trùng người hiện tại → 400');
     assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: 'x', ownerCu: gvcn() })) === 400, 'ownerId không phải số → 400');
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(c.id);
-    assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 400, 'Case đã đóng → 400');
+    assert(maLoi(() => owner.doiChuCase(P.mbManager, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 400, 'Case đã đóng → 400 (câu chỉ đường Mở lại)');
     assert(cases.caseDetail(P.mbManager, c.id).doiChu.duoc === false, 'Case đóng: doiChu.duoc = false');
     assert(chuCua(c.id) === gvcn(), 'không ghi');
   }));

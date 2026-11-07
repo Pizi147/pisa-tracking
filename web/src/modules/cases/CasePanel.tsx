@@ -238,7 +238,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   };
 
   /* ─── Case: Phụ trách · Điểm · Nguyên nhân · Mô tả */
-  const suaCase = !!vw.coTheSua && canDong;
+  const suaCase = !!vw.coTheSua;   // RKC-2a: Case đã hoàn thành sửa thẳng (có lịch sử)
   const [nhomNhap, setNhomNhap] = useState<string[]>([]);   // Case MT chưa mô tả: nhóm lưu CÙNG mô tả (một lần ghi, như Mô tả Case cũ)
   const choNhanXet = data.trangThaiV4?.k === 'cho-nhan-xet';
   const choXacNhan = data.trangThaiV4?.k === 'cho-nguyen-nhan' && !!vw.coTheXacNhanCase && canDong;
@@ -288,7 +288,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   );
 
   /* ─── Phương án */
-  const themPaDuoc = !!vw.canEdit && canDong && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam);
+  const themPaDuoc = !!vw.canEdit && !(   /* RKC-2a: Case đã hoàn thành → máy chủ hỏi rồi Mở lại Case */data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.choDuyetKhongTheoDoi || data.sos?.tam);
   const coPaBatBuoc = (data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'));
   const the = (iv: any) => (
     <ThePa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} toi={toi}
@@ -364,10 +364,10 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
       <p className="muc-h">{t('Kết luận')}</p>
       <div className="ket-luan">
         {lyNgan ? (
-          <LyDoChan id={`ly-kl-${data.id}`} nut={t('Hoàn thành Case')} ngan={lyNgan} chiTiet={<>
+          <LyDoChan id={`ly-kl-${data.id}`} nut={t('Hoàn thành Case')} ngan={lyNgan} onBam={() => setHoanThanh(true)} chiTiet={<>
             {ht?.an && ht.dong && <p className="m-0">{dich(ht.dong)}</p>}
             {chan.map((x) => <p key={x} className="m-0">{dich(x)}</p>)}
-            <p className="m-0">{t('Case hoàn thành được khi mọi PA đã khép.')}</p>
+            <p className="m-0">{t('Hoàn thành Case sẽ kết thúc các PA còn mở — Mở lại Case trả lại các PA đó.')}</p>
             {paBatBuoc && <button type="button" className="link-nho mt-1.5" onClick={() => toiPa(paBatBuoc.id)}>{t('Tới PA {ten} ↑', { ten: dich(INTERVENTION_KIND_LABEL[paBatBuoc.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paBatBuoc.kind) })}</button>}
           </>} />
         ) : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setHoanThanh(true)}>{t('Hoàn thành Case')}</button>}

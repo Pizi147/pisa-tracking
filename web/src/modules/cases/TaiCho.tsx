@@ -165,11 +165,13 @@ export function DaiDaXoa({ chu, thungRacId, onKhoiPhuc, onHet, phu }: {
  * NÚT BỊ CHẶN + LÝ DO NGAY CẠNH (v16 h1 · k2, thay dòng khoá đỏ): nút mờ (`aria-describedby` tới lý do ngắn) · ⓘ mở lý do đủ (+ "Tới PA ↑").
  * `chiTiet` cùng hàm tính lý do với máy chủ (`closeBlockers`) — không viết luật lần hai.
  */
-export function LyDoChan({ nut, ngan, chiTiet, id }: { nut: string; ngan: string; chiTiet?: ReactNode; id: string }) {
+export function LyDoChan({ nut, ngan, chiTiet, id, onBam }: { nut: string; ngan: string; chiTiet?: ReactNode; id: string;
+  /** RKC-2a: có = nút VẪN bấm được (máy chủ hỏi xác nhận nêu hệ quả), lý do thành lưu ý cạnh nút. */
+  onBam?: () => void }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
-      <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled aria-describedby={id}>{nut}</button>
-      <span className="ly-do" id={id}>{ngan}{chiTiet ? <NutLuat label={t('Vì sao chưa {x} được', { x: nut.toLocaleLowerCase('vi') })}>{chiTiet}</NutLuat> : null}</span>
+      <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={!onBam} onClick={onBam} aria-describedby={id}>{nut}</button>
+      <span className="ly-do" id={id}>{ngan}{chiTiet ? <NutLuat label={onBam ? t('Khi {x}', { x: nut.toLocaleLowerCase('vi') }) : t('Vì sao chưa {x} được', { x: nut.toLocaleLowerCase('vi') })}>{chiTiet}</NutLuat> : null}</span>
     </span>
   );
 }
