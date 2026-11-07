@@ -17,6 +17,7 @@ export async function runPrQrl2cDuyetTests(t: YThucTestKit) {
   const att: any = await import('../platform/attachments.ts');
   const lenh: any = await import('../classes/lenhChuyen.ts');
   const { loadPrincipal } = await import('../permissions.ts');
+  const { voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   console.log('\nQ-RL2c DUYET · Huỷ quyết định (đảo bằng bản ghi)');
 
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -141,11 +142,62 @@ export async function runPrQrl2cDuyetTests(t: YThucTestKit) {
     const { id } = lenh.guiDeXuatChuyenLop(gvcn, sid, { lyDo: 'Em theo không kịp lớp' });
     quyetRoiHuy(id, () => yc.tuChoiYeuCau(QL, id, 'Chờ thêm một MT'), 'chuyển lớp từ chối');
   }));
-  check('QRL2cD-8 · Dời lịch Test lần 2 (lich_thi) vẫn không huỷ quyết định được', () => thu(() => {
-    const khac = mot(`SELECT id FROM yeu_cau_duyet WHERE loai = 'lich_thi' LIMIT 1`);
-    if (!khac) return;
-    conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'duyet', xu_ly_luc = ? WHERE id = ?`).run(yc.mocNghiepVu(), khac.id);
-    assert(chuLoi(() => yc.huyQuyetDinh(P.admin, khac.id)) === 'Loại yêu cầu này không huỷ quyết định được.', 'lich_thi');
+  /* RKC-3c (PTA 07/11): Dời lịch Test (lich_thi) huỷ được bằng đường đảo riêng — kỹ năng về vắng chờ dời ở tuần cũ, đề nghị về chờ. */
+  const theDoi = (): any => mot(`SELECT y.id, y.doi_tuong_id rid FROM yeu_cau_duyet y JOIN skill_move_requests r ON r.id = y.doi_tuong_id
+      WHERE y.loai = 'lich_thi' AND y.trang_thai = 'cho' AND r.status = 'pending' ORDER BY y.id LIMIT 1`);
+  const dongKn = (rid: number) => mot(`SELECT k.sit_status, k.planned_period_id, k.absence_move_count FROM attempt_skills k JOIN skill_move_requests r
+      ON r.attempt_id = k.attempt_id AND r.skill = k.skill WHERE r.id = ?`, rid);
+  check('QRL2cD-8 · Dời lịch Test (lich_thi) Duyệt / Từ chối → Huỷ quyết định: đề nghị về chờ, kỹ năng vắng ở tuần cũ; có điểm sau → 400 chỉ đường', () => thu(() => {
+    const t = theDoi();
+    assert(t, 'seed không có thẻ Dời lịch đang chờ');
+    const r = mot('SELECT * FROM skill_move_requests WHERE id = ?', t.rid);
+    yc.duyetYeuCau(P.admin, t.id);
+    assert(mot('SELECT status FROM skill_move_requests WHERE id = ?', t.rid).status === 'approved', 'đã duyệt');
+    assert(daXuLy(t.id) === undefined || daXuLy(t.id).coTheHuy === true, 'Đã xử lý hiện Huỷ quyết định');
+    yc.huyQuyetDinh(P.admin, t.id);
+    assert(mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', t.id).trang_thai === 'cho', 'thẻ về chờ');
+    const r2 = mot('SELECT * FROM skill_move_requests WHERE id = ?', t.rid);
+    assert(r2.status === 'pending' && r2.decided_by === null && r2.decide_by >= r.decide_by, `đề nghị về chờ: ${r2.status}`);
+    const k = dongKn(t.rid);
+    assert(k.sit_status === 'absent' && k.planned_period_id === r.from_period_id && k.absence_move_count === Math.max(0, r.move_no - 1), `kỹ năng về vắng: ${JSON.stringify(k)}`);
+    yc.tuChoiYeuCau(P.admin, t.id, 'Không còn tuần phù hợp');
+    assert(mot('SELECT status FROM skill_move_requests WHERE id = ?', t.rid).status === 'declined', 'đã từ chối');
+    yc.huyQuyetDinh(P.admin, t.id);
+    const k2 = dongKn(t.rid);
+    assert(mot('SELECT status, cancelled_part FROM skill_move_requests WHERE id = ?', t.rid).cancelled_part === 0 && k2.sit_status === 'absent', 'từ chối → huỷ: phần thi mở lại');
+    yc.duyetYeuCau(P.admin, t.id);
+    const o = r.skill === 'writing' ? 'writing1' : r.skill;
+    if (!mot('SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill = ?', r.attempt_id, o)) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill) VALUES (?, ?)').run(r.attempt_id, o);
+    conn.prepare('UPDATE assessment_scores SET raw_score = 5 WHERE attempt_id = ? AND skill = ?').run(r.attempt_id, o);
+    assert(/đã có điểm sau quyết định/.test(chuLoi(() => yc.huyQuyetDinh(P.admin, t.id))), 'đã có điểm → chỉ đường ô điểm');
+  }));
+  /* RKC-3c: loại đảo bằng bản ghi mà dữ liệu đã đổi sau / quyết định cũ không có bản ghi → hỏi rồi ĐI THẲNG (không 409 cứng). */
+  check('QRL2cD-8b · Đề xuất sửa Target Duyệt → Target đổi tiếp sau (hoặc không có bản ghi đảo) → Huỷ hỏi → trả Target trước đề xuất, thẻ về chờ', () => thu(() => {
+    const sid = moiEm();
+    const goc = mot(`SELECT target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).target_score;
+    const { id } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'target', moi: 7.5, lyDo: 'PH muốn mục tiêu cao hơn' });
+    yc.duyetYeuCau(QL, id);
+    conn.prepare(`UPDATE learning_cycles SET note = 'sửa sau' WHERE student_id = ? AND status = 'active'`).run(sid);
+    const e = (() => { try { yc.huyQuyetDinh(QL, id); return null; } catch (x: any) { return x; } })();
+    assert(e?.status === 409 && e.details?.canXacNhan, `đã đổi sau → hỏi: ${e?.status} ${e?.message}`);
+    voiXacNhan(() => yc.huyQuyetDinh(QL, id));
+    assert(mot(`SELECT target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).target_score === goc, 'Target về trước đề xuất');
+    assert(mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', id).trang_thai === 'cho', 'thẻ về chờ');
+    yc.duyetYeuCau(QL, id);
+    conn.prepare(`DELETE FROM ghi_dao WHERE loai = 'quyet_dinh' AND doi_tuong_id = ?`).run(id);
+    voiXacNhan(() => yc.huyQuyetDinh(QL, id));
+    assert(mot(`SELECT target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).target_score === goc, 'không bản ghi đảo: vẫn trả được');
+  }));
+  check('QRL2cD-8c · Không cần theo dõi Duyệt → Case đổi sau → Huỷ hỏi → Case mở lại, PA dừng vì KTD về trạng thái lúc duyệt', () => thu(() => {
+    const the = theKtd();
+    assert(the, 'không dựng được thẻ Không cần theo dõi');
+    const pa = hang(`SELECT id, status FROM case_interventions WHERE case_id = ? AND status IN ('planned', 'started') ORDER BY id`, the.doi_tuong_id);
+    yc.duyetYeuCau(QL, the.id);
+    conn.prepare(`UPDATE sos_cases SET outcome_note = 'sửa sau' WHERE id = ?`).run(the.doi_tuong_id);
+    voiXacNhan(() => yc.huyQuyetDinh(QL, the.id));
+    assert(mot('SELECT status FROM sos_cases WHERE id = ?', the.doi_tuong_id).status !== 'done', 'Case mở lại');
+    for (const r of pa) assert(mot('SELECT status FROM case_interventions WHERE id = ?', r.id).status === r.status, `PA ${r.id} về ${r.status}`);
+    assert(mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', the.id).trang_thai === 'cho', 'thẻ về chờ');
   }));
 
   // ------------------------------------------------------------------ rà sâu PTA: việc làm SAU quyết định ở dòng ngoài ảnh chụp → chặn (`dao.chan`)
@@ -184,7 +236,7 @@ export async function runPrQrl2cDuyetTests(t: YThucTestKit) {
     assert(e?.status === 409 && /tự đóng khi Case đóng/.test(e.message), `${e?.status} ${e?.message}`);
     assert(!lech(truoc, anh()).length, '409 không đổi gì');
   }));
-  check('QRL2cD-11 · Duyệt sửa Target → nhập điểm một kỹ năng lượt Mock (chưa có điểm lúc duyệt) → Huỷ 409; lượt giữ Target mới', () => thu(() => {
+  check('QRL2cD-11 · Duyệt sửa Target → nhập điểm một kỹ năng lượt Mock (chưa có điểm lúc duyệt) → Huỷ hỏi (RKC-3c) → Target về cũ; lượt có điểm giữ Target lúc làm bài', () => thu(() => {
     const sid = moiEm();
     const { id } = dxs.guiDeXuatSua(gvcn, sid, { truong: 'target', moi: 7.5, lyDo: 'PH muốn mục tiêu cao hơn' });
     yc.duyetYeuCau(QL, id);
@@ -194,8 +246,11 @@ export async function runPrQrl2cDuyetTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?, 'listening', 6)`).run(luot.id);
     const truoc = anh();
     const e = (() => { try { yc.huyQuyetDinh(QL, id); return null; } catch (x: any) { return x; } })();
-    assert(e?.status === 409 && /nhập điểm Mock/.test(e.message), `${e?.status} ${e?.message}`);
-    assert(!lech(truoc, anh()).length && mot('SELECT target_at_attempt FROM assessment_attempts WHERE id = ?', luot.id).target_at_attempt === 7.5, '409 không đổi gì');
+    assert(e?.status === 409 && e.details?.canXacNhan, `hỏi: ${e?.status} ${e?.message}`);
+    assert(!lech(truoc, anh()).length, 'hỏi: chưa đổi gì');
+    voiXacNhan(() => yc.huyQuyetDinh(QL, id));
+    assert(mot('SELECT target_at_attempt FROM assessment_attempts WHERE id = ?', luot.id).target_at_attempt === 7.5, 'lượt có điểm giữ Target lúc làm bài');
+    assert(mot(`SELECT target_score FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid).target_score !== 7.5, 'Target về trước đề xuất');
   }));
   check('QRL2cD-12 · Hàng loạt không tính cờ Hoàn tác từng thẻ (trần câu SQL) — một thẻ vẫn tính', () => thu(() => {
     const a = lenh.guiDeXuatChuyenLop(gvcn, moiEm(), { lyDo: 'Em theo không kịp lớp' }).id;

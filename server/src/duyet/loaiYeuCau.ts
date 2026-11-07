@@ -13,11 +13,11 @@ import {
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
-import { apDungXinXoa, caseTitleOf, huyQuyetDinhPa, respondToPlan } from '../cases/cases.ts';
+import { apDungXinXoa, caseTitleOf, huyQuyetDinhPa, moLaiCase, respondToPlan } from '../cases/cases.ts';
 import { khoiPhucRac } from '../platform/khoiPhucRac.ts';
 import { apDungDoiPa, doiPaHuyDuoc, duLieuDoiPa, rutDoiPa, tenLoaiPa } from '../cases/doiPa.ts';
 import { apDungKhongTheoDoi, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
-import { chuTheDoiLan2, decideAbsenceMove } from '../fasttrack/absence.ts';
+import { chuTheDoiLan2, decideAbsenceMove, huyQuyetDinhDoi } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { addJourney } from '../platform/audit.ts';
@@ -83,6 +83,11 @@ export type DinhNghiaLoai = {
    * `huyDuoc`: thẻ nào trong lô (đã quyết, trong ngày) bảng nguồn còn cho huỷ — MỘT câu, cho cờ `coTheHuy` ở tab Đã xử lý.
    */
   khiHuy?: (p: Principal, yc: YeuCauRow) => void;
+  /**
+   * RKC-3c (PTA 07/11): loại có `dao` mà dữ liệu ĐÃ ĐỔI sau quyết định (bản ghi đảo không đảo được / `chan`) hoặc quyết định ghi trước khi có Hoàn tác →
+   * thay vì 409, hộp HỎI `cau` rồi gọi `lam` áp lại trạng thái trước quyết định TỪ HIỆN TẠI (đi thẳng). `g` = bản ghi đảo nếu có.
+   */
+  huyThang?: { cau: string; lam: (p: Principal, yc: YeuCauRow, g: BanGhiDao | null) => void; giuChan?: boolean };
   huyDuoc?: (conn: any, ds: YeuCauRow[]) => Set<number>;
   /**
    * Q-RL2c (N24 ②): loại KHÔNG có `khiHuy` — các dòng nguồn quyết định này đổi; hộp chụp chúng (cùng thẻ) bằng `GhiDao` lúc quyết, Huỷ quyết định
@@ -219,6 +224,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       decideAbsenceMove(p, yc.doi_tuong_id, { approve: true, note: v.ghiChu, periodId });
     },
     khiTuChoi: (p, yc, lyDo) => { decideAbsenceMove(p, yc.doi_tuong_id, { approve: false, note: lyDo }); },
+    /* RKC-3c (PTA 07/11): Huỷ quyết định dời lịch — đường đảo riêng (`huyQuyetDinhDoi`): kỹ năng về vắng chờ dời ở tuần cũ. */
+    khiHuy: (p, yc) => huyQuyetDinhDoi(p, yc.doi_tuong_id),
     /* Đề nghị đã được trả lời ở trang lượt thi (modal cũ) hoặc hết hạn qua đường khác → thẻ tự đóng.
      * PR-MT: lượt đã huỷ hoặc MT lịch sử (không vào luồng vắng) cũng không còn thẻ chờ. */
     chet: {
@@ -335,6 +342,22 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
           ? 'Đã nhập điểm Mock sau khi đổi Target — lượt có điểm giữ Target lúc làm bài, không huỷ quyết định được. Đổi Target lại bằng Đề xuất sửa.' : null;
       },
     },
+    /* RKC-3c: Target / lộ trình đã đổi tiếp sau quyết định (hoặc lượt Mock đã có điểm) → đi thẳng: trả trường về giá trị TRƯỚC đề xuất (`du_lieu.cu`) từ
+       hiện tại, qua đúng đường sửa (bản ghi đổi Target / nhật ký lộ trình). Lượt đã có điểm giữ Target lúc làm bài. */
+    huyThang: {
+      cau: 'Dữ liệu đã đổi sau quyết định — trả về giá trị trước đề xuất (từ hiện tại)?',
+      lam: (p, yc) => {
+        if (yc.trang_thai !== 'duyet') return;
+        const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat; cu?: string | number | null };
+        if (!TRUONG_TU_AP.includes(d.truong)) return;   // trường "khác": Duyệt không đổi dữ liệu
+        /* Target cũ `null` = chưa có Target (trả được, `reviseTarget` nhận null / "KCK"); thẻ không ghi `cu` hoặc lộ trình cũ trống → chỉ đường. */
+        if (!('cu' in d) || (d.truong !== 'target' && d.cu == null)) throw badRequest('Không có giá trị trước đề xuất để trả lại — sửa Target / lộ trình ở hồ sơ học viên.');
+        const cyc = hienTaiCua(db(), yc.hoc_vien_id!).cycle;
+        if (!cyc) throw badRequest('Em không còn lộ trình đang chạy — sửa ở hồ sơ học viên.');
+        if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.cu ?? null, reason: 'Huỷ quyết định đề xuất sửa Target' });
+        else updateCycle(p, cyc.id, { route: String(d.cu) });
+      },
+    },
     /* OV-7a: người gửi sửa giá trị mới + lý do (trường giữ — đổi trường thì Rút rồi gửi lại). */
     khiSua: (_p, yc, v) => {
       const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat };
@@ -427,6 +450,23 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     khiTuChoi: (p, yc, lyDo) => tuChoiKhongTheoDoi(db(), yc, p.userId, lyDo),
     khiSua: (_p, yc, v) => suaKhongTheoDoi(db(), yc, v),
     khiRut: (_p, yc) => rutKhongTheoDoi(db(), yc),
+    /* RKC-3c: Case đã đổi sau quyết định → đi thẳng: Mở lại Case (nếu đang đóng) + trả các PA đã dừng vì "Không cần theo dõi" về trạng thái lúc duyệt
+       (bản ghi đảo nếu có, không thì "Chưa bắt đầu"). Từ chối: chỉ thẻ về chờ (hạn xác nhận giữ như hiện tại). */
+    huyThang: {
+      giuChan: true,   // `dao.chan`: thẻ Đề xuất PA / Xin ý kiến đã tự đóng khi Case đóng — không mở lại đúng được (D, câu chỉ đường tạo Case mới)
+      cau: 'Case đã đổi sau quyết định — mở lại Case và các PA đã dừng vì "Không cần theo dõi"?',
+      lam: (p, yc, g) => {
+        if (yc.trang_thai !== 'duyet') return;
+        const conn = db();
+        if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(yc.doi_tuong_id) as any)?.status === 'done') moLaiCase(p, yc.doi_tuong_id);
+        const truoc = new Map<number, any>();
+        if (g) for (const m of JSON.parse(g.du_lieu) as { bang: string; truoc: any[] }[]) if (m.bang === 'case_interventions') for (const r of m.truoc) truoc.set(r.id, r);
+        for (const iv of conn.prepare(`SELECT id FROM case_interventions WHERE case_id = ? AND status = 'cancelled' AND closed_reason = 'khong_theo_doi'`).all(yc.doi_tuong_id) as any[]) {
+          const r = truoc.get(iv.id);
+          conn.prepare(`UPDATE case_interventions SET status = ?, closed_reason = NULL, updated_at = ? WHERE id = ?`).run(r?.status ?? 'planned', new Date().toISOString(), iv.id);
+        }
+      },
+    },
     /* Q-RL2c: Duyệt đóng Case + huỷ PA còn sống + mốc, lịch sử, Hành trình, việc Báo PH của các bài nối với Case; Từ chối đổi hạn xác nhận + mốc. */
     dao: {
       duyet: (yc) => [

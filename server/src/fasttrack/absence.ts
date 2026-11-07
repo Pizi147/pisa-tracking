@@ -324,6 +324,41 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
 }
 
 /**
+ * HUỶ QUYẾT ĐỊNH DỜI LỊCH THI (RKC-3c, PTA 07/11 — trước: "Loại này không huỷ quyết định được"). Đường đảo riêng: đề nghị về CHỜ, kỹ năng về đúng trạng thái
+ * trước quyết định — vắng (`absent`) ở tuần cũ (`from_period_id`), số lần dời lùi một (đã Duyệt) / phần thi đã huỷ hoặc "không mock lại" mở lại (đã Từ chối).
+ * Hạn trả lời lùi ra ít nhất 2 ngày (không tự hết hạn ngay). Kỹ năng đã có điểm sau quyết định → không thể "vắng chờ dời" (D, chỉ đường sửa ô điểm).
+ * Gọi TRONG giao dịch của hộp (`khiHuy`); thẻ về chờ do hộp làm. Lịch sử lịch + nhật ký.
+ */
+export function huyQuyetDinhDoi(p: Principal, requestId: number): void {
+  const conn = db();
+  const req = conn.prepare('SELECT * FROM skill_move_requests WHERE id = ?').get(requestId) as MoveRequest & { status: string; from_period_id: number | null; cancelled_part: number };
+  if (!req) throw notFound('Không tìm thấy đề nghị dời lịch.');
+  const attempt = loadAttempt(req.attempt_id);
+  if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
+  if (req.status !== 'approved' && req.status !== 'declined') throw badRequest('Đề nghị này chưa có quyết định để huỷ.');
+  const row = ensureSkillRows(req.attempt_id).find((r) => r.skill === req.skill)!;
+  const diem = conn.prepare(`SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill IN (${entrySkillsOf(req.skill as AssessedSkill).map(() => '?').join(',')})
+      AND (raw_score IS NOT NULL OR band IS NOT NULL) LIMIT 1`).get(req.attempt_id, ...entrySkillsOf(req.skill as AssessedSkill));
+  if (diem) throw loi(400, '{skill} đã có điểm sau quyết định — em đã thi; sửa ở ô điểm, không đưa về chờ dời được.', { skill: skillName(req.skill) });
+  /* Đã Từ chối kỹ năng huỷ vắng 2 lần = "không mock lại" (bỏ khỏi đợt) → trả về phạm vi trước (trước khi đề nghị về chờ, để đường phạm vi không rút nó). */
+  if (req.status === 'declined' && !row.required && row.huy_vang) setSkillSkip(p, req.attempt_id, req.skill, false, null);
+  const homNay = demoToday();
+  const cu = req.from_period_id ? (conn.prepare('SELECT code FROM report_periods WHERE id = ?').get(req.from_period_id) as any)?.code ?? null : null;
+  conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent', planned_period_id = COALESCE(?, planned_period_id), plan_source = 'manual',
+      absence_move_count = CASE WHEN ? = 'approved' THEN MAX(0, ? - 1) ELSE absence_move_count END, updated_at = ? WHERE id = ?`)
+    .run(req.from_period_id, req.status, req.move_no, nowIso(), row.id);
+  conn.prepare(`UPDATE skill_move_requests SET status = 'pending', decided_by = NULL, decided_at = NULL, decision_note = NULL, cancelled_part = 0,
+      decide_by = MAX(decide_by, ?), updated_at = ? WHERE id = ?`).run(addDays(homNay, 2), nowIso(), requestId);
+  logSchedule(attempt.id, { action: 'skill_move_decision_undone', field: req.skill, oldValue: row.period_code, newValue: cu,
+    reason: `Huỷ quyết định ${req.status === 'approved' ? 'duyệt' : 'từ chối'} dời lần ${req.move_no}`, actor: p.userId });
+  recomputeCompletionWeek(attempt.id, p.userId);
+  refreshOutcome(p, req.attempt_id);
+  writeAudit({ actorUserId: p.userId, action: 'attempt.absence_move_undo', entityType: 'assessment_attempt', entityId: attempt.id,
+    entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${req.skill}`,
+    before: { status: req.status, week: row.period_code }, after: { status: 'pending', week: cu } });
+}
+
+/**
  * HẾT HẠN MÀ CHƯA AI TRẢ LỜI → HUỶ (mục 10.6).
  *
  * Quét này chạy khi có người mở màn hình liên quan, vì bản demo không có tiến trình nền.
@@ -603,7 +638,7 @@ export function settleGroup(
 
 /** Dòng lịch sử lịch là QUYẾT ĐỊNH của người về lịch / trạng thái thi (khi `actor_user_id` có người). */
 const QUYET_DINH_LICH = [
-  'skill_week_set', 'skill_week_moved_absence', 'skill_week_restored', 'skill_part_restored', 'skill_part_cancelled', 'skill_appointment_cancelled',
+  'skill_week_set', 'skill_week_moved_absence', 'skill_move_decision_undone', 'skill_week_restored', 'skill_part_restored', 'skill_part_cancelled', 'skill_appointment_cancelled',
   'skill_skipped', 'skill_restored', 'skill_sit_status', 'skill_unscheduled',
 ];
 

@@ -245,11 +245,7 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     conn.prepare('UPDATE yeu_cau_duyet SET xu_ly_luc = ? WHERE id = ?').run(`${addDays(TODAY, -1)}T05:00:00.000Z`, t2);
     yc.huyQuyetDinh(QL, t2);   // RKC-3b: quyết hôm qua vẫn huỷ được
     assert(mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', t2).trang_thai === 'cho', 'quyết hôm qua: huỷ → thẻ về chờ');
-    const khac = mot(`SELECT id FROM yeu_cau_duyet WHERE loai = 'lich_thi' LIMIT 1`);
-    if (khac) {
-      conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'duyet', xu_ly_luc = ? WHERE id = ?`).run(yc.mocNghiepVu(), khac.id);
-      assert(chuLoi(() => yc.huyQuyetDinh(P.admin, khac.id)) === 'Loại yêu cầu này không huỷ quyết định được.', 'lich_thi');
-    }
+    /* RKC-3c: Dời lịch Test (lich_thi) huỷ được — đường đảo riêng, phép kiểm ở QRL2cD-8. */
     const c3 = taoCase(moiEm());
     const iv3 = deXuat(c3);
     const t3 = theCuaPa(iv3).id as number;
