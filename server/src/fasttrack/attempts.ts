@@ -1,4 +1,4 @@
-import { MA_CT_LUOT, capNhatConOCho } from './conOCho.ts';
+import { capNhatConOCho } from './conOCho.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -716,8 +716,10 @@ export type AttemptFilters = {
 /* GIAM-DOC-BC: + bỏ lượt MT lịch sử chấm band — `viewSkill` cho ô của chúng `progress = 'lich_su'` (không bao giờ chờ chấm), nhưng cờ vẫn ghi ô trống:
  * bản chính 07/11 ~650 lượt, Công việc QL đọc lịch + điểm của chúng mỗi lần mở. Lượt lịch sử ở chương trình tỷ lệ (`regularSkillViews` không xét `lich_su`) giữ.
  * Vế "Chốt tuần MT" (`kemChuaTuan`) cũng bỏ lượt lịch sử — `myWork` không tạo việc cho chúng. */
+/* `c` = lớp của lượt (JOIN sẵn ở mọi câu dùng hằng này) — chương trình chấm như `maCtCuaLuot`; chỉ lượt không lớp mới hỏi lộ trình. */
 export const CON_O_SQL = `a.status != 'cancelled' AND a.o_cho_tu <= ?
-  AND (a.lich_su = 0 OR ${MA_CT_LUOT} IN (SELECT pg.code FROM programmes pg WHERE pg.scoring_mode = 'ratio' AND pg.code != 'FT'))`;
+  AND (a.lich_su = 0 OR (CASE WHEN a.class_id IS NOT NULL THEN c.programme_code ELSE (SELECT y.programme_code FROM learning_cycles y WHERE y.id = a.cycle_id) END)
+    IN (SELECT pg.code FROM programmes pg WHERE pg.scoring_mode = 'ratio' AND pg.code != 'FT'))`;
 
 /**
  * AI PHỤ TRÁCH TỪNG MÔN của một lớp, cho CẢ DANH SÁCH lượt trong một lần đọc.

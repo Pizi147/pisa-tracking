@@ -379,7 +379,7 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     const theoLop = plan(`SELECT a.id FROM assessment_attempts a WHERE a.class_id IN (1, 2, 3) AND a.status != 'cancelled' AND a.o_cho_tu <= ?`, TODAY);
     assert(/idx_attempt_o_cho_lop/.test(theoLop), `theo lớp: ${theoLop}`);
     /* GIAM-DOC-BC: câu thật (`CON_O_SQL` có thêm điều kiện lượt lịch sử) vẫn đi chỉ mục cờ. */
-    const conO = plan(`SELECT a.id FROM assessment_attempts a WHERE ${att.CON_O_SQL}`, TODAY);
+    const conO = plan(`SELECT a.id FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE ${att.CON_O_SQL}`, TODAY);
     assert(/idx_attempt_o_cho/.test(conO), `CON_O_SQL: ${conO}`);
   });
 
