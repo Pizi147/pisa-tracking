@@ -18,7 +18,7 @@ import {
   type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
-import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
+import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
@@ -93,17 +93,19 @@ export function moTa(v: unknown): string {
  * PR-Dọn (6f): còn KHAI BẬC Ý thức HS cũ được không — có chuỗi, chưa lần xử lý nào trong chuỗi, chưa khai, không Tạm dừng.
  * Hồ sơ em (`coTheKhai`) và việc "Khai bậc" ở Công việc gọi CHUNG hàm này.
  */
-export const khaiDuoc = (em: { chuoi: readonly unknown[]; soXuLyChuoi: number; tungKhai: unknown; tamDung: unknown }): boolean =>
-  em.chuoi.length > 0 && em.soXuLyChuoi === 0 && !em.tungKhai && !em.tamDung;
+/* RKC-3a: em Tạm dừng khai được (không ảnh hưởng đầu ra — bậc dùng khi em quay lại). */
+export const khaiDuoc = (em: { chuoi: readonly unknown[]; soXuLyChuoi: number; tungKhai: unknown; tamDung?: unknown }): boolean =>
+  em.chuoi.length > 0 && em.soXuLyChuoi === 0 && !em.tungKhai;
 
 export function ghiNhan(p: Principal, studentId: number, violationIds: unknown): { ok: true; soGhiNhan: number } {
   const hv = hocVien(studentId);
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   const em = emCua(studentId);
   const ids = viPhamChon(em, violationIds);
-  for (const id of ids) {
-    const t = em.viPham.get(id)!;
-    if (t.t === 'can_xu_ly' || t.lyDoQuaHan === 'xu-ly') throw badRequest('Em đang phải xử lý bắt buộc — dùng Xác nhận xử lý.');
+  /* RKC-3a (PTA 07/11, luật thang vi phạm): GV giữ luật — bắt buộc xử lý thì dùng Xác nhận xử lý; Quản lý vượt được, hỏi một câu nêu luật (nhật ký Ghi nhận như thường). */
+  if (ids.some((id) => { const t = em.viPham.get(id)!; return t.t === 'can_xu_ly' || t.lyDoQuaHan === 'xu-ly'; })) {
+    if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId })) throw badRequest('Em đang phải xử lý bắt buộc — dùng Xác nhận xử lý (Quản lý Ghi nhận được).');
+    canXacNhan('Em đang phải xử lý bắt buộc — vẫn chỉ Ghi nhận (bỏ qua luật xử lý)?', undefined, 'Vẫn ghi nhận');
   }
   return { ok: true, soGhiNhan: luuGhiNhan(p, hv, studentId, ids, demoToday()) };
 }
@@ -213,17 +215,20 @@ export function luuXuLy(p: Principal, hv: { full_name: string; student_code: str
 export function khaiBac(p: Principal, studentId: number, v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const hv = hocVien(studentId);
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
-  return luuKhai(p, hv, studentId, kiemKhai(v), demoToday());
+  /* RKC-3a: chuỗi đã có lần xử lý trên web — GV giữ luật "khai một lần trước khi dùng web"; Quản lý vượt được (hỏi; bậc = max nên không chồng sai). */
+  const vuot = emCua(studentId).soXuLyChuoi > 0 && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId });
+  if (vuot) canXacNhan('Chuỗi này đã có lần xử lý trên web — vẫn xác nhận cấp bậc đã có trước đó?', undefined, 'Vẫn xác nhận');
+  return luuKhai(p, hv, studentId, kiemKhai(v), demoToday(), vuot);
 }
 
 /** Phần GHI của Xác nhận cấp bậc (đã kiểm quyền) — OV-13d lô gọi thẳng. Luật chuỗi tính lại TRONG giao dịch. */
-export function luuKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string) {
+export function luuKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string, vuotXuLyWeb = false) {
   const { bac, thang, ghiChu } = k;
   return tx(() => {
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
     if (!em.chuoi.length) throw badRequest('Em chưa có lộ trình — chưa xác nhận cấp bậc vi phạm được.');
     if (em.khai) throw badRequest('Chuỗi này đã xác nhận cấp bậc vi phạm — bấm Sửa để sửa bậc đã khai.');
-    if (em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — không xác nhận cấp bậc nữa.');
+    if (em.soXuLyChuoi > 0 && !vuotXuLyWeb) throw badRequest('Chuỗi này đã có lần xử lý trên web — nhờ Quản lý xác nhận cấp bậc.');
     db().prepare(
       `INSERT INTO y_thuc_khai_bac (student_id, chuoi_cycle_id, bac, thang, ghi_chu, khai_boi, khai_luc) VALUES (?,?,?,?,?,?,?)`,
     ).run(studentId, em.chuoi[0], bac, thang, ghiChu, p.userId, homNay);
@@ -277,6 +282,12 @@ export function kiemKhai(v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }
 
 // ---------------------------------------------------------------- Đã thực hiện (sau khi QL duyệt — V4-10)
 
+/** RKC-3a (PTA 07/11 quyết 2): ngày thực hiện TRƯỚC ngày QL duyệt (ngoài đời làm trước khi QL bấm) → nhắc + xác nhận, không chặn. */
+function hoiNgayTruocDuyet(m: { quyet_luc?: string | null }, performedOn: string): void {
+  const duyet = m.quyet_luc ? String(m.quyet_luc).slice(0, 10) : null;
+  if (duyet && performedOn < duyet) canXacNhan('Ngày thực hiện trước ngày QL duyệt ({x}) — vẫn lưu?', { x: duyet.split('-').reverse().join('/') }, 'Vẫn lưu');
+}
+
 export function daThucHien(p: Principal, measureId: number, v: { performedOn?: unknown; performerUserId?: unknown; performerName?: unknown; note?: unknown }) {
   const m = db().prepare('SELECT * FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy lần xử lý');
@@ -284,7 +295,7 @@ export function daThucHien(p: Principal, measureId: number, v: { performedOn?: u
   requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
   if (m.status !== 'da_duyet') throw badRequest('Chỉ lần xử lý QL đã duyệt mới bấm "Đã thực hiện".');
   const performedOn = ngayThucHien(v.performedOn);
-  if (m.quyet_luc && performedOn < String(m.quyet_luc).slice(0, 10)) throw badRequest('Ngày thực hiện phải từ ngày QL duyệt trở đi.');
+  hoiNgayTruocDuyet(m, performedOn);
   const nguoi = nguoiThucHien(p, v);
   const them = String(v.note ?? '').trim();
   tx(() => {
@@ -332,7 +343,7 @@ export function suaXuLy(p: Principal, measureId: number, v: { note?: unknown; pe
   if (m.status !== 'done') throw badRequest('Chỉ sửa ngày / người / mô tả của lần xử lý đã thực hiện — đề xuất đang chờ thì sửa ở thẻ Chờ duyệt.');
   const note = v.note !== undefined ? moTa(v.note) : m.note;
   const performedOn = v.performedOn !== undefined ? ngayThucHien(v.performedOn) : m.performed_on;
-  if (m.quyet_luc && performedOn < String(m.quyet_luc).slice(0, 10)) throw badRequest('Ngày thực hiện phải từ ngày QL duyệt trở đi.');
+  hoiNgayTruocDuyet(m, performedOn);
   const nguoi = v.performerSelf || v.performerUserId !== undefined || v.performerName !== undefined ? nguoiThucHien(p, v) : { by: m.performed_by ?? null, ten: m.performer_name ?? null };
   tx(() => {
     db().prepare('UPDATE discipline_measures SET note = ?, performed_on = ?, performed_by = ?, performer_name = ?, updated_at = ? WHERE id = ?')
@@ -384,7 +395,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
   const coTheSua = quyenSuaXuLy(p, m);
   const em = coTheSua ? emCua(m.student_id) : null;
   const sau = em ? lanSauCua(m, em) : null;
-  const bacVe = em && !sau ? bacSauThuHoi(em, id) : null;
+  const bacVe = em ? bacSauThuHoi(em, id) : null;   // RKC-3a: cả khi có lần sau (thu hồi lần giữa)
   return {
     id, studentId: m.student_id, ten: m.ten, kind: m.kind, nhan: nhanLoaiXuLy(m.kind, m.custom_name), customName: m.custom_name ?? null,
     status: m.status, statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status, bac: bacCuaLoai(m.kind),
@@ -392,7 +403,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
     nguoiId: m.performed_by ?? null, nguoiNgoai: m.performer_name ?? null,
     quyetLuc: m.quyet_luc ?? null, createdAt: m.created_at,
     viPham: violationsByIds(vIds), soTep: m.so_tep, canManage: canManageDiscipline(p, m.student_id) && m.status !== 'thu_hoi', the,
-    coTheSua, coTheThuHoi: coTheSua && !sau && THU_HOI_DUOC.has(m.status) && thuHoi?.trangThai !== 'cho',
+    coTheSua, coTheThuHoi: coTheSua && THU_HOI_DUOC.has(m.status) && thuHoi?.trangThai !== 'cho',   // RKC-3a: lần giữa thu hồi được (máy chủ hỏi nêu lần sau)
     lanSau: sau ? nhanLoaiXuLy(sau.kind, sau.custom_name) : null, bacVe, thuHoi,
     thuHoiThang: coTheSua && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }),
     chuaXuLy: em ? violationsByIds(em.dsViPham.map((v) => v.id).filter((vid) => {
@@ -693,13 +704,17 @@ export function kiemNguoiGuiYThuc(p: Principal, measureId: number): void {
   }
 }
 
-/** Chỉ lần MỚI NHẤT của chuỗi (giữ thứ tự thang) — kiểm lúc gửi, lúc QL duyệt và lúc huỷ quyết định (có thể đã có lần mới). */
-function chanLanSau(m: any, viec: (ten: string) => string): void {
-  const sau = lanSauCua(m, emCua(m.student_id));
-  if (sau) {
-    const ten = nhanLoaiXuLy(sau.kind, sau.custom_name);
-    throw badRequest(`Đã có ${ten} sau lần này — ${viec(ten)}.`);
-  }
+/**
+ * Đã có lần xử lý SAU lần này trong chuỗi — kiểm lúc gửi, lúc QL duyệt và lúc huỷ quyết định. RKC-3a (chủ SP 07/11 "không chặn cứng"; trước: chặn "thu hồi
+ * {lần sau} trước"): HỎI một câu nêu lần sau giữ nguyên + bậc tính lại (bậc = max các lần còn tính, nên không chồng sai).
+ */
+function hoiLanSau(m: any, thuHoi: boolean): void {
+  const em = emCua(m.student_id);
+  const sau = lanSauCua(m, em);
+  if (!sau) return;
+  const ten = nhanLoaiXuLy(sau.kind, sau.custom_name);
+  if (thuHoi) canXacNhan('Đã có {ten} sau lần này — vẫn thu hồi? {ten} giữ nguyên, bậc tính lại.', { ten }, 'Vẫn thu hồi');
+  else canXacNhan('Đã có {ten} sau lần này — vẫn huỷ quyết định thu hồi? Bậc tính lại.', { ten }, 'Vẫn huỷ');
 }
 
 /** Đường DELETE cũ (PR-LUI-a1). Luật 5: lần xử lý đã lưu không xoá — GVCN 403 (gửi QL thu hồi), QL 400 (Thu hồi kèm lý do). Không xoá vật lý. */
@@ -725,7 +740,7 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown 
   }
   const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id });
   tx(() => {
-    chanLanSau(m, (ten) => `thu hồi ${ten} trước`);
+    hoiLanSau(m, true);
     const em = emCua(m.student_id);
     const id = taoYeuCau(db(), {
       ...theThuHoi(measureId), hocVienId: m.student_id, lopId: em.lopId, nguoiXin: p.userId, lyDo, khongBao: ql,
@@ -768,7 +783,7 @@ function apDungThuHoi(p: Principal, m: any, hv: { student_code: string }, lyDo: 
 export function duyetThuHoiYThuc(p: Principal, measureId: number, lyDo: string): void {
   const m = loadXuLy(measureId);
   if (!THU_HOI_DUOC.has(m.status)) throw badRequest('Lần xử lý này không còn để thu hồi. Danh sách đã được làm mới.');
-  chanLanSau(m, (ten) => `thu hồi ${ten} trước`);
+  hoiLanSau(m, true);
   apDungThuHoi(p, m, hocVien(m.student_id), lyDo);
 }
 
@@ -779,17 +794,14 @@ export function duyetThuHoiYThuc(p: Principal, measureId: number, lyDo: string):
 export function huyThuHoiYThuc(p: Principal, measureId: number): void {
   const m = loadXuLy(measureId);
   if (m.status !== 'thu_hoi') throw badRequest('Lần xử lý này không còn ở trạng thái Đã thu hồi.');
-  chanLanSau(m, () => 'không huỷ quyết định được');
+  hoiLanSau(m, false);
   const vIds = viPhamCua(measureId);
   const dung = vIds.length && db().prepare(
     `SELECT 1 FROM measure_violations mv JOIN discipline_measures x ON x.id = mv.measure_id
       WHERE mv.violation_id IN (${vIds.map(() => '?').join(',')}) AND x.id != ? AND x.status IN ('done', 'cho_duyet', 'da_duyet') LIMIT 1`,
   ).get(...vIds, measureId);
   if (dung) throw badRequest('Vi phạm của lần này đã nằm trong lần xử lý khác — không huỷ quyết định được.');
-  /* Thu hồi hết lần xử lý của chuỗi mở lại "Xác nhận cấp bậc" — đã khai / sửa từ hôm thu hồi (huỷ chỉ trong ngày) thì bậc khai sẽ chồng lên lần này. */
-  const homNay = demoToday();
-  const khai = db().prepare('SELECT 1 FROM y_thuc_khai_bac WHERE student_id = ? AND (khai_luc >= ? OR sua_luc >= ?) LIMIT 1').get(m.student_id, homNay, homNay);
-  if (khai) throw badRequest('Sau khi thu hồi, em đã được xác nhận cấp bậc vi phạm — không huỷ quyết định được. Sửa cấp bậc đã khai ở tab Ý thức của em nếu cần.');
+  /* RKC-3a: đã khai cấp bậc sau khi thu hồi → vẫn huỷ được (bậc = max(lần xử lý, bậc khai), không đếm hai lần) — trước đây chặn. */
   const ve = m.performed_on ? 'done' : 'da_duyet';
   const doi = db().prepare(`UPDATE discipline_measures SET status = ?, updated_at = ? WHERE id = ? AND status = 'thu_hoi'`).run(ve, nowIso(), measureId).changes;
   if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');

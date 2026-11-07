@@ -920,7 +920,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(coordOf(f.a.id).filter((r) => r.preset === 0).length === 4, 'Việc thêm tay phải `preset = 0`');
     const done = rowOf(f.a.id, 'talk_family');
     phoiHop.confirmCoordination(gvcn, done.id, { performedOn: TODAY });
-    assertThrows(() => phoiHop.removeCoordination(gvcn, done.id, { reasonCode: 'not_needed' }), /cần xử lý|đã xong/, 'Bỏ việc đã xong');
+    phoiHop.removeCoordination(gvcn, done.id, { reasonCode: 'not_needed' });   // RKC-3a: việc đã xong bỏ được (Khôi phục trả về xong)
+    assert(rowOf(f.a.id, 'talk_family').status === 'removed', 'Bỏ việc đã xong');
+    phoiHop.confirmCoordination(gvcn, done.id, { performedOn: TODAY });   // RKC-3a: việc đã bỏ xác nhận thẳng (tự khôi phục)
+    assert(rowOf(f.a.id, 'talk_family').status === 'done', 'Xác nhận việc đã bỏ');
   });
 
   check('PR-T · P06+§10#7 Bỏ việc: lý do chọn nhanh NGAY tại dòng (không hộp thoại) — chỉ `Khác` cần chữ; `system_sos_changed` người dùng không chọn được; có audit; lượt tính 1/2 thay vì 1/3', () => {

@@ -175,7 +175,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     bo: v.trang_thai === 'bo' ? { lyDo: v.bo_ly_do, nhan: nhanLyDo(v.bo_ly_do), chu: v.bo_ly_do_chu ?? null, luc: v.bo_luc } : null,
     /* SĐT phụ huynh chỉ cho người làm việc (TVV / QL) — người chỉ xem trạng thái (GV) không cần. */
     lan, lienHe: ghi ? { ten: v.parent_name ?? null, quanHe: v.parent_relation ?? null, sdt: v.parent_phone ?? null } : { ten: null, quanHe: null, sdt: null },
-    coTheGhi: v.trang_thai !== 'bo' && xl === 'con' && ghi,
+    coTheGhi: xl === 'con' && ghi,   // RKC-3a: việc đã bỏ vẫn ghi được (ghi = mở lại theo kết quả)
     khoiPhucDuoc: v.trang_thai === 'bo' && xl === 'con' && ghi && laLyDoNguoiDung(v.bo_ly_do) && daoDuocHoacCu(id),
     boiCanh: { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
@@ -209,7 +209,7 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
     for (const id of ids) {
       const x = loadViec(id);
       requireGhi(p, x);
-      if (x.trang_thai === 'bo') throw badRequest(`Việc Báo PH · ${x.nhan} · ${x.full_name} đã kết thúc — chỉ xem.`);
+      /* RKC-3a: việc đã kết thúc (bỏ) vẫn ghi lần liên hệ được — ghi = việc mở lại theo kết quả (xong / còn mở); nhật ký giữ trạng thái trước. */
       const xl = xuLyCon(x);
       if (xl !== 'con') throw badRequest(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — việc Báo PH chỉ xem.`);
       db().prepare('INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_chu, ghi_boi, ghi_luc, khoa) VALUES (?,?,?,?,?,?,?)')

@@ -64,19 +64,18 @@ const SELECT = `
 /** `em`: trạng thái Ý thức của học viên đó (nơi gọi theo lô truyền vào); thiếu thì tự hỏi cửa trạng thái cho riêng em. */
 
 /**
- * DON-LUONG K23 (ra-luong L40): em không có lớp đang học → câu nói lý do + bước tiếp (mã 400 giữ). Ghi danh mới nhất: Tạm dừng → Quay lại học;
- * đã chuyển / kết thúc ở lớp cũ → ghi ở lớp em đang học (không còn); chưa từng xếp lớp → xếp lớp trước. Một câu, chỉ khi bị chặn.
+ * LỚP GHI VI PHẠM. Em đang học → lớp đang học. RKC-3a (chủ SP 07/11 "không chặn cứng"; trước: DON-LUONG K23 chặn kèm câu): em tạm dừng / đã học xong /
+ * đã thôi học / chỉ còn ghi danh đã chuyển → ghi vào lớp của ghi danh hiện tại (tạm dừng trước, rồi mới nhất). Vi phạm có Thùng rác + nhật ký như mọi lần ghi.
+ * Chỉ chặn khi em CHƯA TỪNG xếp lớp (không có lớp để gắn — dữ liệu không thể đúng).
  */
-function chanGhiViPham(studentId: number) {
+function lopGhiViPham(studentId: number): number {
+  const dang = activeClassOf(studentId);
+  if (dang) return dang;
   const r = db().prepare(
-    `SELECT e.status, c.code FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = ?
-      ORDER BY e.status = 'paused' DESC, e.started_at DESC, e.id DESC LIMIT 1`,   // Tạm dừng là trạng thái hiện tại; còn lại ghi danh mới nhất
-  ).get(studentId) as { status: string; code: string } | undefined;
-  if (!r) return loi(400, 'Em chưa xếp lớp — xếp lớp trước khi ghi vi phạm.');
-  if (r.status === 'paused') return loi(400, 'Em đang tạm dừng — Quay lại học trước khi ghi vi phạm.');
-  if (r.status === 'transferred') return loi(400, 'Em đã chuyển khỏi {lop} — ghi ở lớp em đang học.', { lop: r.code });
-  if (r.status === 'completed') return loi(400, 'Em đã học xong khoá ở {lop} — xếp lớp mới trước khi ghi vi phạm.', { lop: r.code });
-  return loi(400, 'Em đã thôi học ở {lop} — không ghi vi phạm mới.', { lop: r.code });
+    `SELECT e.class_id FROM enrollments e WHERE e.student_id = ? ORDER BY e.status = 'paused' DESC, e.started_at DESC, e.id DESC LIMIT 1`,
+  ).get(studentId) as { class_id: number } | undefined;
+  if (!r) throw loi(400, 'Em chưa xếp lớp — xếp lớp trước khi ghi vi phạm.');
+  return r.class_id;
 }
 
 export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
@@ -260,8 +259,7 @@ export function recordViolation(p: Principal, input: {
 }): { violation: ViolationView; similar: ViolationView[] } {
   const student = loadStudent(input.studentId);
   requireRecordViolation(p, input.studentId);
-  const classId = activeClassOf(input.studentId);
-  if (!classId) throw chanGhiViPham(input.studentId);
+  const classId = lopGhiViPham(input.studentId);
 
   const key = input.idempotencyKey?.trim() || null;
   if (key) {
@@ -342,8 +340,7 @@ export function recordViolations(p: Principal, input: {
       const student = students.get(sid);
       if (!student) throw notFound('Không tìm thấy học viên');
       requireRecordViolation(p, sid);
-      const classId = activeClassOf(sid);
-      if (!classId) throw chanGhiViPham(sid);
+      const classId = lopGhiViPham(sid);
       const cu = dong.map((_, i) => daGhiTheoKhoa(p, sid, daCo.get(khoa(sid, i))));
       if (cu.every((x) => x !== null)) { ok.push({ studentId: sid, ids: cu as number[] }); continue; }
       const emT = truoc.get(sid)!;

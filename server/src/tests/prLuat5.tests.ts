@@ -189,7 +189,7 @@ export async function runPrLuat5Tests(t: YThucTestKit) {
     const r1 = xuLy(gvcn, sid, [v1]);
     xu.thuHoiXuLy(ql, r1.id, { lyDo: 'Ghi nhầm em' });
     xu.khaiBac(gvcn, sid, { bac: 2, ghiChu: 'Report 2 tháng 8, cô Hà gửi' });
-    assertThrows(() => yc.huyQuyetDinh(ql, theThuHoi(r1.id)[0].id), /xác nhận cấp bậc/, 'khai sau thu hồi chặn huỷ');
-    assert(trangThai(r1.id) === 'thu_hoi' && theThuHoi(r1.id)[0].trang_thai === 'duyet', 'giữ nguyên');
+    yc.huyQuyetDinh(ql, theThuHoi(r1.id)[0].id);   // RKC-3a: khai sau thu hồi vẫn huỷ được (bậc = max, không đếm hai lần)
+    assert(trangThai(r1.id) !== 'thu_hoi', 'huỷ quyết định thu hồi → lần xử lý về');
   }));
 }

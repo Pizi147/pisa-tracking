@@ -173,10 +173,10 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
   await checkAsync('LUIa1-14 · thu hồi (thay xoá): chỉ lần mới nhất; dòng, liên kết, tệp giữ; bậc về Report 1; nhật ký giữ đủ', () => thu(async () => {
     const sid = moiEm('14'); const [v1, v2] = nVp(sid, 2);
     const r1 = xuLy(gvcn, sid, [v1]); const r2 = xuLy(gvcn, sid, [v2]);
-    assert(r2.bac === 2 && xu.xemXuLy(P.mbManager, r1.id).coTheThuHoi === false && xu.xemXuLy(P.mbManager, r1.id).lanSau === 'Report 2', 'r1 không thu hồi được khi còn r2');
+    assert(r2.bac === 2 && xu.xemXuLy(P.mbManager, r1.id).coTheThuHoi === true && xu.xemXuLy(P.mbManager, r1.id).lanSau === 'Report 2', 'RKC-3a: r1 thu hồi được khi còn r2 (máy chủ hỏi)');
     const x2 = xu.xemXuLy(P.mbManager, r2.id);
     assert(x2.coTheThuHoi && x2.bacVe === 1 && x2.chuaXuLy.length === 0, `bacVe/chuaXuLy: ${x2.bacVe} ${x2.chuaXuLy.length}`);
-    assertThrows(() => xu.thuHoiXuLy(P.mbManager, r1.id, { lyDo: 'Ghi nhầm' }), /Đã có Report 2 sau lần này — thu hồi Report 2 trước\./, 'còn lần sau');
+    assertThrows(() => xu.thuHoiXuLy(P.mbManager, r1.id, { lyDo: 'Ghi nhầm' }), /Đã có Report 2 sau lần này — vẫn thu hồi\?/, 'RKC-3a: còn lần sau → hỏi');
     const tep = await att.addFile(P.mbManager, { ownerType: 'discipline_measure', ownerId: r2.id, fileName: 'bien-ban.pdf', data: Buffer.from('bb') });
     const url = hang('SELECT url FROM attachments WHERE id = ?', tep.id)[0].url as string;
     try {

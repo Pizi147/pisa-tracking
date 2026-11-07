@@ -256,12 +256,15 @@ function ActionRow({ a, canAct, onChanged }: { a: CoordAction; canAct: boolean; 
         </span>
       </div>
       {/* Thao tác sửa sai nằm DƯỚI tên việc (không chiếm cột nhãn) — màn 375 tên việc không bị ép hẹp. */}
-      {canAct && (a.status === 'done' || khoiPhucDuoc) && (
+      {/* RKC-3a: việc đã xong bỏ thẳng được; việc đã bỏ xác nhận thẳng được (máy chủ tự khôi phục) — không bắt "Đưa lại" / "Khôi phục" trước. */}
+      {canAct && (a.status === 'done' || a.status === 'removed') && (
         <div className="-mt-1 flex flex-wrap gap-1.5 pb-2">
           {a.status === 'done' && <>
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={confirming} onClick={() => setConfirming(!confirming)}>{t('Sửa')}</button>
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>{t('Đưa lại Cần xử lý')}</button>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={removing} onClick={() => setRemoving(!removing)}>{t('Bỏ việc…')}</button>
           </>}
+          {a.status === 'removed' && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={confirming} onClick={() => setConfirming(!confirming)}>{a.kind === 'bao_ph_tvv' ? t('Đánh dấu đã làm') : t('Xác nhận')}</button>}
           {khoiPhucDuoc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void moLai()}>{t('Khôi phục')}</button>}
         </div>
       )}
