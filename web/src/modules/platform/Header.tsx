@@ -389,6 +389,10 @@ export function Header() {
                 {session.gocNhin.coThe.map((v) => {
                   const g = session.gocNhin!;
                   const dangO = (g.dangChon ?? g.vaiGoc) === v.role;
+                  /* Chủ SP 07/11: dòng Giáo viên gọn "{chi nhánh} · {n} lớp" (nhiều chi nhánh: "2 CN · 11 lớp"); dữ liệu đã nạp cùng phiên. */
+                  const phamVi = v.soLop != null
+                    ? [v.chiNhanh?.length ? (v.chiNhanh.length > 1 ? t('{n} CN', { n: v.chiNhanh.length }) : v.chiNhanh[0]) : null, t('{n} lớp', { n: v.soLop })].filter(Boolean).join(' · ')
+                    : v.phamVi;
                   return (
                     <button key={v.role} type="button" aria-pressed={dangO}
                       onClick={() => { setOpenMenu(null); if (!dangO) void doiGocNhin(v.role === g.vaiGoc ? null : v.role).catch((e) => toast.push('error', e instanceof Error ? e.message : t('Không đổi được góc nhìn.'))); }}
@@ -396,7 +400,7 @@ export function Header() {
                         ? 'border-[color:var(--accent-line)] bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)]'
                         : 'border-transparent font-medium text-slate-200 bam'}`}>
                       <span className="shrink-0">{dich(v.nhan)}</span>
-                      <span className="min-w-0 truncate text-xs font-normal text-faint" title={v.phamVi}>{v.phamVi}</span>
+                      <span className="min-w-0 truncate text-xs font-normal text-faint" title={phamVi}>{phamVi}</span>
                     </button>
                   );
                 })}
@@ -438,11 +442,7 @@ export function Header() {
                 <Link to={`/giao-vien/${session.user.id}`} className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Hồ sơ giáo viên')}</Link>
               )}
-              {/* DA-XOA-MENU (chủ SP 05/11): lối thẳng tới thùng rác — cùng cờ với route /quan-tri (QT, QL); lối cũ (tab Đã xoá) giữ. */}
-              {(session?.nav?.admin || session?.nav?.bangQuyDoi) && (
-                <Link to="/quan-tri?tab=da-xoa" className="btn w-full justify-center no-underline"
-                  onClick={() => setOpenMenu(null)}>{t('Đã xoá')}</Link>
-              )}
+              {/* Chủ SP 07/11: "Đã xoá" không còn nút ở menu — là tab trong trang Quản trị (`/quan-tri?tab=da-xoa`, cùng cờ admin || bangQuyDoi). */}
               {session?.nav?.admin ? (
                 <Link to="/quan-tri" className="btn w-full justify-center no-underline"
                   onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>

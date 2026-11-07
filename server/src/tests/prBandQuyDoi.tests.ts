@@ -145,13 +145,15 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
   }));
 
   /* DA-XOA-MENU (chủ SP 05/11): mục "Đã xoá" ở menu Tài khoản — hiện theo đúng cờ của route /quan-tri (QT, QL), mở thẳng tab da-xoa. */
-  check('BQD-7 · menu Tài khoản có "Đã xoá" cho QT / QL, không cho GV / TVV / CX; mở /quan-tri?tab=da-xoa', () => {
+  check('BQD-7 · trang Quản trị (tab Đã xoá) mở cho QT / QL, không cho GV / TVV / CX; menu Tài khoản không còn nút Đã xoá', () => {
     const theoVai = (vai: string) => loadPrincipal(one(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? LIMIT 1`, vai).id);
     const thay = (p: any) => { const n = navOf(p); return !!(n.admin || n.bangQuyDoi); };
     assert(thay(P.admin) && thay(P.mbManager), 'QT, QL thấy');
     for (const p of [P.lrTeacher, theoVai('consultant'), theoVai('cx')]) assert(!thay(p), 'GV / TVV / CX không thấy');
+    /* Chủ SP 07/11 (MENU-TK): nút "Đã xoá" rời menu Tài khoản — là tab của trang Quản trị; link cũ `/quan-tri?tab=da-xoa` vẫn mở tab đó. */
     const hd = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/Header.tsx'), 'utf8');
-    assert(/\(session\?\.nav\?\.admin \|\| session\?\.nav\?\.bangQuyDoi\) && \(\s*<Link to="\/quan-tri\?tab=da-xoa"[\s\S]{0,200}t\('Đã xoá'\)/.test(hd), 'Header: mục Đã xoá theo cờ admin || bangQuyDoi, mở tab da-xoa');
-    assert(hd.indexOf("t('Đã xoá')") > hd.indexOf("t('Hướng dẫn')"), 'đứng ngay sau Hướng dẫn');
+    assert(!hd.includes("{t('Đã xoá')}") && !hd.includes('to="/quan-tri?tab=da-xoa"'), 'Header: không còn nút Đã xoá ở menu Tài khoản');
+    const ap = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/AdminPage.tsx'), 'utf8');
+    assert(/key: 'da-xoa', label: t\('Đã xoá'\)/.test(ap) && /x\.key === 'band' \|\| x\.key === 'da-xoa'/.test(ap), 'Trang Quản trị có tab Đã xoá (QT đủ tab; QL: Bảng quy đổi + Đã xoá)');
   });
 }

@@ -58,6 +58,7 @@ export const EN_C = {
   '{n} lượt': (b) => soNhieu(b.n, 'attempt', 'attempts'),
   '{n} học viên': (b) => soNhieu(b.n, 'student', 'students'),
   '{n} lớp': (b) => soNhieu(b.n, 'class', 'classes'),
+  '{n} CN': (b) => `${b.n} branches`,
   '{n} đề xuất': (b) => soNhieu(b.n, 'request', 'requests'),   // V8-TQ: Chờ bạn duyệt
   '{n} đợt': (b) => soNhieu(b.n, 'round', 'rounds'),
   'từ {tuan}': 'from {tuan}',
