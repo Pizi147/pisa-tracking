@@ -174,15 +174,15 @@ export function AccountsAdmin() {
             <option value="vai">{t('Nhóm theo vai trò')}</option>
           </select>
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
-          {/* AUDIT-UI C2: chip đếm 0 không lọc được gì → ẩn (đang chọn thì vẫn hiện để bỏ chọn). */}
+        {/* AUDIT-UI C2: chip đếm 0 không lọc được gì → ẩn (đang chọn thì vẫn hiện để bỏ chọn); không còn gì thì bỏ cả hàng. */}
+        {(dangLoc || PHAN_LOAI_TAI_KHOAN.some((k) => phanLoai[k])) && <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
           {PHAN_LOAI_TAI_KHOAN.filter((k) => phanLoai[k] || loc3.phanLoai === k).map((k) => (
             <NutChon key={k} nho chon={loc3.phanLoai === k} onClick={() => datLoc({ phanLoai: loc3.phanLoai === k ? null : k })}>
               {NHAN_PHAN_LOAI[k]} <span className="tabular-nums text-slate-400">{phanLoai[k]}</span>
             </NutChon>
           ))}
           {dangLoc && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 sm:ml-auto" onClick={xoaLoc}>{t('Xoá lọc')}</button>}
-        </div>
+        </div>}
         <div className="table-scroll bang-dinh">
           <table className="w-full text-sm">
             <thead>
