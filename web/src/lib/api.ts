@@ -77,13 +77,27 @@ export function onInvalidate(fn: InvalidateListener) {
   return () => { listeners.delete(fn); };
 }
 
-async function request<T>(method: string, path: string, body?: unknown, isForm = false): Promise<T> {
+/*
+ * RKC (chủ SP 07/11 "không chặn cứng"): máy chủ trả 409 `{ canXacNhan }` cho thao tác hậu quả lớn (`canXacNhan`, server/src/util.ts) →
+ * hỏi người dùng bằng hộp chung (`HopXacNhanChung`), đồng ý thì gửi lại cùng header `x-xac-nhan: 1`. Mọi nơi gọi `api.*` có sẵn, không sửa từng chỗ.
+ * Không có hộp (phép kiểm) / bấm Đóng → lỗi đi tiếp như cũ (câu hỏi = câu lỗi).
+ */
+let hoiXacNhan: ((cau: string, nut?: string) => Promise<boolean>) | null = null;
+export function datHoiXacNhan(fn: (cau: string, nut?: string) => Promise<boolean>): () => void {
+  hoiXacNhan = fn;
+  return () => { if (hoiXacNhan === fn) hoiXacNhan = null; };
+}
+
+async function request<T>(method: string, path: string, body?: unknown, isForm = false, xacNhan = false): Promise<T> {
   let res: Response;
   try {
+    const headers: Record<string, string> = {};
+    if (!isForm && body !== undefined) headers['Content-Type'] = 'application/json';
+    if (xacNhan) headers['x-xac-nhan'] = '1';
     res = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
-      headers: isForm ? undefined : body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: isForm ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (e) {
@@ -104,6 +118,10 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     /* PR-EN: câu lỗi dịch theo khoá (câu có biến) hoặc theo chính câu Việt; chưa có bản Anh → câu Việt máy chủ gửi (không vỡ).
        Mọi chỗ in `e.message` tự đúng tiếng, không phải sửa từng nơi gọi. */
     const cau = typeof payload?.khoa === 'string' ? dich(payload.khoa, payload.bien) : typeof payload?.error === 'string' ? dich(payload.error) : t('Lỗi {status} — thử lại', { status: res.status });
+    const nut = typeof payload?.details?.nut === 'string' ? dich(payload.details.nut) : undefined;
+    if (res.status === 409 && payload?.details?.canXacNhan && !xacNhan && hoiXacNhan && await hoiXacNhan(cau, nut)) {
+      return request<T>(method, path, body, isForm, true);
+    }
     const loi = new ApiError(res.status, cau, payload?.details);
     throw loi;
   }

@@ -30,7 +30,8 @@ export async function runXoaMtTests(t: any) {
   const perm: any = await import('../permissions.ts');
   const msl: any = await import('../platform/moSuaLichTest.ts');
   const { setConfig, getConfig } = await import('../demoConfig.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const nguCanh: any = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho } = nguCanh;
   const { boLichTuTao } = await import('./luotThu.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -120,20 +121,25 @@ export async function runXoaMtTests(t: any) {
     assert(chua() === goc && thieu() === gocHang, `huỷ vắng hết: ${chua()} ≠ ${goc}`);
   }));
 
-  check('XM-3 · chặn như "Xóa lịch" cũ: có điểm → 400; đã làm bài → 400; không đổi gì. Lớp thường / lượt không phải MT → 400', () => thu(() => {
+  check('XM-3 · RKC (chủ SP 07/11): đã làm bài chưa điểm → xoá thẳng; có điểm → 409 hỏi (không đổi gì), xác nhận → huỷ điểm (cất) + xoá. Lớp thường / lượt không phải MT → 400', () => thu(() => {
+    const { voiXacNhan } = nguCanh;
     const a = luot();
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'sat' WHERE attempt_id = ? AND skill = 'listening'`).run(a);
     xoaNho();
-    const e1 = loi(() => svc.xoaLuot(P.mbManager, a));
-    assert(e1?.status === 400 && /đã làm bài/.test(e1.message) && kn(a).listening.startsWith('1:'), JSON.stringify(e1));
+    svc.xoaLuot(P.mbManager, a);
+    assert(kn(a).listening.startsWith('0:'), `đã làm bài phải xoá được: ${JSON.stringify(kn(a))}`);
     const b = luot();
     conn.prepare(`UPDATE assessment_scores SET band = 6.5 WHERE attempt_id = ? AND skill = 'reading'`).run(b);
     if (!get(`SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND band IS NOT NULL`, b)) {
       conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?, 'reading', 6.5)`).run(b);
     }
     xoaNho();
-    const e2 = loi(() => svc.xoaLuot(P.mbManager, b));
-    assert(e2?.status === 400 && /đã có điểm/.test(e2.message) && Object.values(kn(b)).every((v) => String(v).startsWith('1:')), JSON.stringify(e2));
+    const e2: any = (() => { try { svc.xoaLuot(P.mbManager, b); return null; } catch (e) { return e; } })();
+    assert(e2?.status === 409 && e2.details?.canXacNhan === true && /đã có điểm/.test(e2.message) && Object.values(kn(b)).every((v) => String(v).startsWith('1:')), `chưa xác nhận: ${e2?.status} ${e2?.message}`);
+    voiXacNhan(() => svc.xoaLuot(P.mbManager, b));
+    assert(Object.values(kn(b)).every((v) => String(v).startsWith('0:')), `xác nhận → xoá: ${JSON.stringify(kn(b))}`);
+    assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'reading'`, b).band === null, 'điểm phải huỷ');
+    assert(get(`SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_diem' AND khoi_phuc_luc IS NULL`, b).n === 1, 'điểm phải được cất (Khôi phục điểm)');
     const thuong = get(`SELECT a.id FROM assessment_attempts a WHERE a.kind != 'mock' AND a.status != 'cancelled' LIMIT 1`)?.id;
     if (thuong) assert(loi(() => svc.xoaLuot(P.admin, thuong))?.status === 400, 'bài lớp thường → 400');
   }));

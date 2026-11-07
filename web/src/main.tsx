@@ -4,6 +4,7 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { SessionProvider } from './lib/session.tsx';
 import { ToastProvider } from './ui/Toast.tsx';
+import { HopXacNhanChung } from './ui/HopXacNhanChung.tsx';
 // Phông tự phục vụ (T16, Q8): cùng tên miền, không gọi Google; trình duyệt chỉ tải bộ vietnamese + latin cần dùng (unicode-range).
 import '@fontsource/be-vietnam-pro/400.css';
 import '@fontsource/be-vietnam-pro/500.css';
@@ -19,6 +20,7 @@ const router = createBrowserRouter([{
     <ToastProvider>
       <SessionProvider>
         <App />
+        <HopXacNhanChung />
       </SessionProvider>
     </ToastProvider>
   ),

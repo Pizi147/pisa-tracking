@@ -116,7 +116,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
   }));
 
   /* OV-13h (chủ SP 15/10): GV đúng môn vẫn NHẬP ô chưa có điểm — chỉ ô đã có điểm khoá với GV (qua HTTP: prOv13h). */
-  check('OV11g-3 · Q4: lớp đã kết thúc — GV sửa ô đã có điểm 403 (lớp thường + FT; nhận xét ghi được — rà #410), QL 200 + nhật ký; bảng điểm GV chỉ mở ô trống, QL sửa được', () => thu(() => {
+  check('OV11g-3 · RKC (mở Q-B1): lớp đã kết thúc — GV đúng môn sửa ô đã có điểm (lớp thường + FT), QL 200 + nhật ký override; bảng điểm GV mở ô có điểm', () => thu(() => {
     const a = one(`SELECT a.id, a.class_id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
         AND EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = a.id AND k.skill = 'listening' AND rp.week_start <= ?)
       ORDER BY a.id LIMIT 1`, FOU12, TODAY);
@@ -127,7 +127,9 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     if (!one(`SELECT 1 x FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a.id)) run(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, raw_total) VALUES (?, 'listening', 18, 40)`, a.id);
     xoaNho();
     const pGv = loadPrincipal(gv);
-    assert(loi(() => regular.saveRegularScore(pGv, a.id, 'listening', { score: 20, total: 40 }))?.status === 403, 'GV ghi điểm lớp kết thúc phải 403');
+    /* RKC (chủ SP 07/11, mở Q-B1): GV đúng môn sửa điểm đã có ở lớp đã kết thúc. */
+    regular.saveRegularScore(pGv, a.id, 'listening', { score: 20, total: 40 });
+    assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a.id).raw_score === 20, 'RKC: GV sửa điểm lớp kết thúc phải lưu');
     /* Rà #410 (OV-13h): nhận xét không phải điểm — GV đúng môn ghi được cả ở lớp đã kết thúc. */
     regular.saveRegularScore(pGv, a.id, 'listening', { nhanXet: 'x' });
     const nk = () => one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'regular.score.override' AND actor_user_id = ?`, QL.userId).n;
@@ -139,7 +141,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     const bangQl = diemLuot.bangTheoLuot(QL, FOU12, 'thuong:final');
     const oSua = (b: any) => b.thuong.rows.some((r: any) => r.skillSchedule.some((k: any) => k.canEdit));
     const oCoDiemSua = (b: any) => b.thuong.rows.some((r: any) => r.skillSchedule.some((k: any) => k.canEdit && k.progress === 'scored'));
-    assert(!oCoDiemSua(bangGv), 'GV còn sửa được ô đã có điểm ở lớp kết thúc');
+    assert(oCoDiemSua(bangGv), 'RKC: GV đúng môn phải sửa được ô đã có điểm ở lớp kết thúc');
     assert(oSua(bangQl), 'QL không còn ô sửa được');
     /* FT: cùng luật ở `saveScore`. */
     const m = one(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY a.attempt_no LIMIT 1`, FT101);
@@ -149,11 +151,11 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     run(`UPDATE assessment_scores SET raw_score = 25, band = 6 WHERE attempt_id = ? AND skill = 'listening'`, m.id);
     if (!one(`SELECT 1 x FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, m.id)) run(`INSERT INTO assessment_scores (attempt_id, skill, raw_score, band) VALUES (?, 'listening', 25, 6)`, m.id);
     xoaNho();
-    assert(loi(() => attempts.saveScore(loadPrincipal(gvL), m.id, 'listening', { rawScore: 30 }))?.status === 403, 'GV FT sửa điểm lớp kết thúc phải 403');
+    assert(loi(() => attempts.saveScore(loadPrincipal(gvL), m.id, 'listening', { rawScore: 30 }))?.status !== 403, 'RKC: GV FT sửa điểm lớp kết thúc không còn 403');
   }));
 
-  check('OV11g-3b · rà #379: lớp đã kết thúc — Báo vắng / "-" bị chặn (mọi vai 400 cùng câu — rà #410, cả FT lẫn lớp thường); có lý do → lưu, KHÔNG tự tạo Case / tín hiệu; sửa ô đã có điểm thiếu lý do 400', () => thu(() => {
-    /* (1)(3) FT: Báo vắng + "-" — GVCN và QL 400 cùng câu "không ghi vắng" (rà #410); không ghi gì. */
+  check('OV11g-3b · RKC: lớp đã kết thúc — Báo vắng = Không dự thi; QL sửa điểm KHÔNG tự tạo Case / tín hiệu; sửa không lý do vẫn lưu (T7)', () => thu(() => {
+    /* RKC (chủ SP 07/11): lớp đã kết thúc — Báo vắng / "-" = Không dự thi (không còn tuần để dời), mọi vai có quyền. */
     const k = one(`SELECT a.id, k.skill FROM assessment_attempts a JOIN attempt_skills k ON k.attempt_id = a.id JOIN report_periods rp ON rp.id = k.planned_period_id
         WHERE a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0 AND k.required = 1 AND k.sit_status = 'scheduled'
           AND k.skill IN ('listening', 'reading') AND rp.week_start <= ?
@@ -163,24 +165,23 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     const gvcn = loadPrincipal(one(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' ORDER BY id LIMIT 1`, FT101).user_id);
     run(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id IN (?, ?)`, TODAY, FT101, FOU12);
     xoaNho();
-    assert(loi(() => absence.baoVang(gvcn, k.id, k.skill, 'ốm', TODAY))?.status === 400, 'GVCN Báo vắng lớp kết thúc phải 400 (không ghi vắng)');
-    assert(loi(() => absence.baoVang(QL, k.id, k.skill, 'ốm', TODAY))?.status === 400, 'QL Báo vắng lớp kết thúc phải 400');
-    assert(loi(() => attempts.saveScore(QL, k.id, k.skill, { noShow: true }, TODAY))?.status === 400, 'QL "-" FT lớp kết thúc phải 400');
-    assert(!one('SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.id, k.skill), 'đã ghi vắng dù bị chặn');
+    const bv = absence.baoVang(gvcn, k.id, k.skill, 'ốm', TODAY);
+    assert(bv.khongDuThi === true, `GVCN Báo vắng lớp kết thúc → Không dự thi: ${JSON.stringify(bv)}`);
+    assert(one('SELECT no_show_cu FROM assessment_scores WHERE attempt_id = ? AND skill = ?', k.id, k.skill)?.no_show_cu === 1, 'Không dự thi phải có no_show_cu');
     /* (3)(4)(2) lớp thường: "-" QL 400 · thiếu lý do 400 · có lý do → lưu + nhật ký, không Case / tín hiệu mới. */
     const g = one(`SELECT a.id, a.student_id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'progress' AND a.status != 'cancelled'
         AND EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = a.id AND k.skill = 'listening' AND rp.week_start <= ?)
       ORDER BY a.id LIMIT 1`, FOU12, TODAY);
     assert(!!g, 'không có bài Giữa khoá để thử');
-    assert(loi(() => regular.saveRegularScore(QL, g.id, 'listening', { noShow: true }))?.status === 400, 'QL "-" lớp thường kết thúc phải 400');
     const dem = () => [one('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', g.student_id).n,
       one('SELECT COUNT(*) n FROM case_signals WHERE student_id = ?', g.student_id).n].join('/');
     const truoc = dem();
     regular.saveRegularScore(QL, g.id, 'listening', { score: 3, total: 40, lyDo: 'Nhập sai, sửa lại' });
     assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, g.id).raw_score === 3, 'QL có lý do không lưu được');
     assert(dem() === truoc, `tự tạo Case / tín hiệu ở lớp đã kết thúc: ${truoc} → ${dem()}`);
-    /* (4) Sửa ô đã có điểm thiếu lý do → 400 (nhập lần đầu — Final về muộn, Q30-4 — không đòi). */
-    assert(loi(() => regular.saveRegularScore(QL, g.id, 'listening', { score: 4, total: 40 }))?.status === 400, 'sửa điểm thiếu lý do phải 400');
+    /* RKC (T7 lý do tuỳ chọn mọi nơi): sửa ô đã có điểm ở lớp đã kết thúc không còn bắt lý do. */
+    regular.saveRegularScore(QL, g.id, 'listening', { score: 4, total: 40 });
+    assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, g.id).raw_score === 4, 'sửa điểm không lý do phải lưu');
   }));
 
   check('OV11g-4 · HL-4: đầu hồ sơ lớp thường "Final Test a/b em có đủ điểm" = duDiem / coLich của khối điểm (danhSachLuot)', () => thu(() => {

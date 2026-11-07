@@ -82,7 +82,7 @@ function moNguCanhRequest(req: Request, res: Response, next: NextFunction): void
       res.on('finish', () => console.log(`[sql] ${req.method} ${req.originalUrl} ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng${topLog(dem ?? undefined)}`));
     }
     next();
-  });
+  }, req.headers?.['x-xac-nhan'] === '1');
 }
 
 const DA_THU_LAI = Symbol('daThuLaiMatKetNoi');
@@ -113,7 +113,7 @@ export function thuLaiKhiMatKetNoi(luong: (req: Request, res: Response, next: Ne
     }
     r[DA_THU_LAI] = true;
     console.warn(`[turso] mất kết nối (${kieu}) — đã mở lại kết nối, thử lại ${req.method} ${req.path} một lần`);
-    chayTrongRequest(req.method, () => { if (res.locals) res.locals.dem = demHienTai(); luong(req, res, next); });
+    chayTrongRequest(req.method, () => { if (res.locals) res.locals.dem = demHienTai(); luong(req, res, next); }, req.headers?.['x-xac-nhan'] === '1');
   };
 }
 

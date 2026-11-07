@@ -257,9 +257,8 @@ export async function runPrTkTests(t: YThucTestKit) {
     const luot = get(`SELECT a.id FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id WHERE a.cycle_id = ? AND a.status != 'cancelled' AND rp.week_start <= ? AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) AND EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.skill = 'speaking' AND k.required = 1 AND k.sit_status = 'scheduled') ORDER BY a.attempt_no DESC LIMIT 1`, fx.id, NGAY);
     attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [null, null, null, null] });   // thiếu S
     studentsSvc.setStudentStatus(P.admin, fx.student_id, 'finished', NGAY, 'Nghỉ học');
-    /* NGHI-HOC-LUU-TRU: Kết thúc học = Lưu trữ → điểm khoá như mọi em Lưu trữ; Bỏ lưu trữ (API cũ) rồi nhập bù để kiểm bản chụp cập nhật. */
-    let khoa = 0; try { attemptsSvc.saveScore(P.admin, luot.id, 'speaking', { criteria: [7, 7, 7, 7] }); } catch (e: any) { khoa = e.status; }
-    assert(khoa === 400, 'em Lưu trữ: nhập điểm phải 400');
+    /* NGHI-HOC-LUU-TRU: Kết thúc học = Lưu trữ. RKC (chủ SP 07/11, mở Q-B1): em Lưu trữ vẫn nhập bù — ở đây Bỏ lưu trữ (API cũ) rồi nhập bù để
+       kiểm bản chụp cập nhật như cũ. */
     studentsSvc.unarchiveStudent(P.admin, fx.student_id);
     const dongS = () => get(`SELECT * FROM ban_chup_luot WHERE ban_chup_id = (SELECT MAX(id) FROM ban_chup_lo_trinh WHERE cycle_id = ?) AND attempt_id = ? AND ky_nang = 'speaking'`, fx.id, luot.id);
     const truoc = dongS();

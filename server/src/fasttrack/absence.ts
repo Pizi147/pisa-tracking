@@ -2,8 +2,8 @@ import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
 import { PERMISSIONS, duocHoanTacVang, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
-import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { chanVangLopKetThuc } from './hoanTat.ts';
+import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
+import { laLopKetThuc } from './hoanTat.ts';
 import { can, isCoreTeacherOf, scoreEditPath, teachesClass, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit, notify } from '../platform/audit.ts';
@@ -13,7 +13,7 @@ import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import {
   checkSkillWeekMove, ensureSkillRows, kiemVuot, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu, tuanCuoiSauKhiDoi,
 } from './skillSchedule.ts';
-import { refreshOutcome, resultOf, setSkillSkip } from './attempts.ts';
+import { moLaiLuotNeuHuy, refreshOutcome, resultOf, saveScore, setSkillSkip } from './attempts.ts';
 
 /**
  * VẮNG MOCK TEST — nơi sở hữu DUY NHẤT của luật "-" (N38, chủ SP 05/11 — đặc tả `2026-11-04-luat-mt-thong-nhat-design.md`).
@@ -732,21 +732,34 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
  */
 export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: string | null | undefined, today: string = demoToday()) {
   const conn = db();
-  const a = loadAttempt(attemptId);
+  let a = loadAttempt(attemptId);
   if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
-  chanVangLopKetThuc(a.class_id);
   if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
-  if (a.status === 'cancelled') throw badRequest('Đợt này đã huỷ.');
-  const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+  if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = loadAttempt(attemptId); }   // RKC: hỏi rồi khôi phục lượt
+  const timRow = () => ensureSkillRows(attemptId).find((r) => r.skill === skill);
+  let row = timRow();
   if (!row?.required) throw loi(400, '{skill} không nằm trong lượt này.', { skill: skillName(skill) });
-  if (row.sit_status !== 'scheduled' || !row.planned_period_id || !row.week_start || !row.week_end) {
+  const boTask = row.bo_task;
+  /* RKC (B): ô của kỹ năng đã có điểm → hỏi; đồng ý → huỷ điểm (cất, Khôi phục được) rồi báo vắng. */
+  const coDiem = entrySkillsOf(skill as AssessedSkill).filter((k) => k !== boTask).filter((e) => {
+    const s = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
+    return s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null);
+  });
+  if (coDiem.length) {
+    canXacNhan('{skill} đã có điểm — huỷ điểm (khôi phục lại được) rồi báo vắng?', { skill: skillName(skill) }, 'Huỷ điểm, báo vắng');
+    for (const e of coDiem) saveScore(p, attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Báo vắng' });
+    row = timRow()!;
+  }
+  /* RKC: "đã làm bài" mà không còn điểm (điểm đã huỷ) vẫn báo vắng được. */
+  if (!['scheduled', 'sat'].includes(row.sit_status) || !row.planned_period_id || !row.week_start || !row.week_end) {
     throw loi(400, '{skill} không còn chờ làm bài (đã làm bài, đang vắng hoặc đã huỷ) — không báo vắng được.', { skill: skillName(skill) });
   }
   if (row.week_start.slice(0, 10) > mondayOf(today)) {
     throw loi(400, '{skill} chưa tới tuần Test — muốn đổi tuần thì "Dời lịch".', { skill: skillName(skill) });
   }
-  /* N38 L3: MT cũ xét theo tuần thi của KỸ NĂNG (cả lượt `lich_su`) → Không dự thi, không dời, không đếm. Ghi muộn tuần gần → chốt như trong tuần. */
-  const khongDuThi = laMtCuKyNang(row.week_start, today);
+  /* N38 L3: MT cũ xét theo tuần thi của KỸ NĂNG (cả lượt `lich_su`) → Không dự thi, không dời, không đếm. Ghi muộn tuần gần → chốt như trong tuần.
+     RKC: lớp đã kết thúc (không còn tuần để dời) → Không dự thi. */
+  const khongDuThi = laLopKetThuc(a.class_id) || laMtCuKyNang(row.week_start, today);
   const late = today > row.week_end.slice(0, 10);
   return tx(() => {
     const ids: number[] = [];

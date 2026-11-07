@@ -463,7 +463,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
             <>
               {row.result.kckDuoi ? <ChipDuoiKck />
                 : row.result.chot && row.result.sosLevel !== null && <SosLuot row={row} />}
-              <Level tone="muted" title={row.cells[0]?.lyDoKhoa && dich(row.cells[0].lyDoKhoa)}>{dich(row.ngungHoc)}</Level>
+              <Level tone="muted">{dich(row.ngungHoc)}</Level>
             </>
           ) : row.mt0Sos && row.result.scoredRequired > 0 ? (
             /* PR-MT0: chỉ chip SOS hiển thị; đủ điểm mà không SOS → `MT0 ✓` (chủ sản phẩm Q3). */

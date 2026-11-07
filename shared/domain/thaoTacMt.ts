@@ -67,6 +67,9 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
   /* N38 (PR-MT-VANG L5, L6): FT vắng / đã huỷ / huỷ vắng 2 lần / bỏ khỏi đợt → "Dời lịch" = chọn tuần = xếp lại từ đầu (một thao tác thay Xếp lại
      bài vắng, Khôi phục, Giữ huỷ, Đưa lại vào đợt). Máy chủ `setSkillWeek` / `luuDot` làm phần còn lại. */
   const xepLai: ThaoTac | null = q.laFt && ql ? 'doi-lich' : null;
+  /* RKC (chủ SP 07/11 "không chặn cứng"): ô vắng / đã huỷ vẫn NHẬP điểm được — máy chủ hỏi rồi đổi về "đã làm bài" (`saveScore`). */
+  const nhap: ThaoTac[] = q.nhapDiem ? ['nhap-diem'] : [];
+  const vangKhiCoDiem: ThaoTac[] = q.gvcn || ql ? ['bao-vang'] : [];   // RKC (B): máy chủ hỏi "huỷ điểm rồi báo vắng?"
   switch (tt) {
     /* Chủ SP 06/11: môn đã xoá → "Khôi phục" một bấm (tuần cũ giữ); muốn đổi tuần thì Dời (L5). */
     case 'khong-yeu-cau': return { chinh: ftQl ? 'khoi-phuc-kn' : null, menu: ftQl ? ['doi-lich'] : [] };
@@ -77,17 +80,17 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
     /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). LUAT-34 (L3): "Đủ điểm"
      * không còn khoá — Huỷ điểm theo quyền sửa ô. */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
-      menu: [...(doi ? ['doi-lich'] : []), ...(q.nhapDiem || ql ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
+      menu: [...(doi ? ['doi-lich'] : []), ...(q.nhapDiem || ql ? ['huy-diem'] : []), ...vangKhiCoDiem, ...huy] as ThaoTac[] };
     /* `vang` chỉ còn dữ liệu trước N38 (vắng chờ thẻ Quản lý) → Dời (L5). CV-LOI (V4B H15): cờ quyền máy chủ `doiLich` thắng; không cờ thì suy
        như máy chủ — GVCN chỉ lớp thường (`SCHEDULE_MOVE` loại FT). */
-    case 'vang': return { chinh: (q.doiLich ?? (ql || (q.gvcn && !q.laFt))) ? 'doi-lich' : null, menu: huy };
+    case 'vang': return { chinh: (q.doiLich ?? (ql || (q.gvcn && !q.laFt))) ? 'doi-lich' : null, menu: [...nhap, ...huy] };
     /* Thẻ dời cũ còn chờ (dữ liệu trước N38): Quản lý trả lời thẻ, hoặc Dời (thẻ tự rút, L5). */
     case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: ql && q.laFt ? ['doi-lich', ...huy] as ThaoTac[] : [] };
     /* Lớp thường giữ Khôi phục và đặt tuần (dữ liệu "đã huỷ" cũ). */
-    case 'da-huy': return { chinh: q.laFt ? xepLai : ql ? 'khoi-phuc' : null, menu: huy };
+    case 'da-huy': return { chinh: q.laFt ? xepLai : ql ? 'khoi-phuc' : null, menu: [...nhap, ...huy] };
     case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...khoiPhuc, ...(doi ? ['doi-lich'] : []), ...huy] as ThaoTac[] };
     /* L2: huỷ vắng 2 lần đã là kết cục (không việc, không "Giữ huỷ"); muốn xếp lại thì Dời. Chỉ Quản lý (luật 09/10). */
-    case 'huy-vang': return { chinh: xepLai, menu: huy };
+    case 'huy-vang': return { chinh: xepLai, menu: [...nhap, ...huy] };
   }
 }
 

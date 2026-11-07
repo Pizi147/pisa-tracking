@@ -348,9 +348,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   const moHoSo = hoSo && hoSo !== pathname ? hoSo : null;
   /* Chủ SP 06/11: FT ⋯ "Xoá MT{n}" (mọi kỹ năng ra khỏi đợt, tuần giữ) — cùng đường, cùng chữ hồ sơ MT; MT đã xoá → "Khôi phục MT{n}". */
   const daXoaHet = loai === 'ft' && !moi && ky.every((k) => !kn[k]?.batBuoc);
-  const lyDoXoaFt = ky.some((k) => kn[k]?.batBuoc && kn[k]?.khoa === 'đã có điểm') ? t('Đã có điểm — không xoá được')
-    : ky.some((k) => kn[k]?.batBuoc && kn[k]?.sit === 'sat') ? t('Đã làm bài — không xoá được')
-    : khoaCt(...ky.map((k) => (kn[k]?.batBuoc ? kn[k]?.tuan : null)));
+  /* RKC: MT có điểm / đã làm bài vẫn Xoá — máy chủ hỏi "huỷ điểm rồi xoá?". */
+  const lyDoXoaFt = khoaCt(...ky.map((k) => (kn[k]?.batBuoc ? kn[k]?.tuan : null)));
   const mtNay = { attemptId: attemptId ?? 0, nhan: nhanDot(dot), tenHv, onXong: () => { onSaved(); onClose(); } };
   const chanFt = (lyDo: string | null) => ({ tat: !!(lyDo || daSua || doiGhi || busy), title: lyDo ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined) });
   const mucDau = attemptId === null ? [] : loai === 'thuong' ? [

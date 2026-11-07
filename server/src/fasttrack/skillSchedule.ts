@@ -1190,7 +1190,15 @@ export function setSitStatus(p: Principal, attemptId: number, skill: string, sta
     throw loi(400, '{skill} chưa có tuần Test, chưa xác nhận được em đã làm bài hay vắng.', { skill });
   }
   if (row.sit_status === status) return { ok: true, unchanged: true };
+  return ghiSitStatus(p, attemptId, row, status, note, skill);
+}
 
+/**
+ * Phần GHI của `setSitStatus` (quyền + điều kiện kiểm ở nơi gọi). RKC (chủ SP 07/11): nhập điểm vào kỹ năng đang "vắng" / "đã huỷ" — người nhập
+ * được ô đó đã xác nhận ở hộp hỏi (`saveScore`) → kỹ năng về "đã làm bài" qua đây, nhật ký lịch + audit như đổi trạng thái tay.
+ */
+export function ghiSitStatus(p: Principal, attemptId: number, row: { id: number; skill: string; sit_status: string }, status: string,
+  note?: string | null, skill: string = row.skill) {
   return tx(() => {
     db()
       .prepare('UPDATE attempt_skills SET sit_status = ?, sit_by = ?, sit_at = ?, sit_note = ?, absent_from_no_show = 0, updated_at = ? WHERE id = ?')
