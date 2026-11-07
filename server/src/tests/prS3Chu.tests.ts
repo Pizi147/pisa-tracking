@@ -225,7 +225,9 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     ['chưa có vai', /chưa có vai(?! trò)|\+ Thêm vai(?! trò)/],
     ['Học tutor / trợ giảng', /Học tutor|trợ giảng/],
     ['Tiêu đề thông báo cũ', /Vi phạm mới —|Xem lại case|Xác nhận nguyên nhân \S+ —|Đăng ký tài khoản mới —/],
-  ], [...KY_THUAT, ['web/src/modules/platform/WelcomePage.tsx', '']]);
+  ], [...KY_THUAT, ['web/src/modules/platform/WelcomePage.tsx', ''],
+    /* BCPH-PDF: chữ in TỆP PDF gửi phụ huynh, chép nguyên mẫu chủ SP ("Học sinh / Student name") — không phải chữ màn web. */
+    ['shared/domain/pdfBaoCaoPh.ts', 'Học sinh / Student name']]);
   check('S3 (6) · Tiêu đề thông báo theo mẫu "việc · em · lớp" (dấu · , không còn "— tên")', () => {
     const yc = docNguon('server/src/duyet/yeuCau.ts');
     for (const mau of ["'Chờ duyệt'} · ${meta.nhan}", 'Bổ sung · ${meta.nhan}', 'Quá hạn duyệt · ${metaCua', 'Yêu cầu ${meta.nhan}']) assert(yc.includes(mau), mau);

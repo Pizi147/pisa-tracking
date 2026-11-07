@@ -10,7 +10,7 @@
  * Chữ nghiêng: Quicksand không có bản nghiêng — mẫu nghiêng giả bằng ma trận chữ (FT 0,2, lớp thường 0,25) → làm y vậy.
  */
 import type * as PdfLib from 'pdf-lib';
-import type { BaoCaoPdf, MucBc } from './baoCaoPh.ts';
+import { MUC_BC as MUC, MUC_BC_EN, MUC_BC_VI, type BaoCaoPdf, type MucBc } from './baoCaoPh.ts';
 
 type Kieu = {
   trang: [number, number]; s: number; x0: number; y0: number; cot: number[]; co: number; buoc: number; buocHang: number; dem: number; le: number;
@@ -33,9 +33,6 @@ const XANH: [number, number, number] = [0.16078, 0.22745, 0.56863];
 const HONG: [number, number, number] = [0.94902, 0.35294, 0.59608];
 const KE: [number, number, number] = [0.71765, 0.71765, 0.71765];
 const XAM_O: [number, number, number] = [0.50196, 0.50196, 0.50196];
-const MUC: MucBc[] = ['xuat_sac', 'tot', 'kha', 'yeu'];
-const MUC_VI = ['Xuất sắc', 'Tốt', 'Khá', 'Yếu'];
-const MUC_EN = ['Outstanding', 'Good', 'Sound', 'Basic'];
 /** Tiêu đề khối kỹ năng như mẫu (VN / EN); lớp thường W = "PREP - WRITING TASK" một dòng. */
 const TEN_PHAN: Record<string, [string, string | null]> = {
   L: ['NGHE', 'LISTENING'], R: ['ĐỌC', 'READING'], W1: ['VIẾT 1', 'WRITING 1'], W2: ['VIẾT 2', 'WRITING 2'],
@@ -107,7 +104,7 @@ export async function dungPdfBaoCao(lib: typeof PdfLib, fontkit: unknown, phong:
   /* ---------------- dựng các hàng ---------------- */
   const hang: Hang[] = [];
   const tieuDe = (vi: string, en: string | null): Doan[] => [[{ t: vi, b: true }], ...(en ? [[{ t: en, b: true, i: true }]] : [])];
-  const oMuc = (): O[] => MUC.map((_, i) => ({ tu: i + 1, den: i + 1, ngang: 'giua', doc: 'giua', trang: true, doan: [[{ t: MUC_VI[i], b: true }], [{ t: MUC_EN[i], b: true, i: true }]] }));
+  const oMuc = (): O[] => MUC.map((m, i) => ({ tu: i + 1, den: i + 1, ngang: 'giua', doc: 'giua', trang: true, doan: [[{ t: MUC_BC_VI[m], b: true }], [{ t: MUC_BC_EN[m], b: true, i: true }]] }));
   const tick = (muc: MucBc | null): O[] => MUC.map((m, i) => ({ tu: i + 1, den: i + 1, tick: muc === m }));
   const khoang = () => { for (let i = 0; i < 2; i++) hang.push({ o: [{ tu: 0, den: 0 }, ...MUC.map((_, j) => ({ tu: j + 1, den: j + 1 }))], vien: k.vienKhoang, khoang: true, cao: 21 }); };
   const nhanChu = (vi: string, en: string): Doan => [{ t: `${vi} `, b: true }, { t: `(${en})`, b: true, i: true }, { t: ':', b: true }];
