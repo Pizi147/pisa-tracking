@@ -3968,11 +3968,14 @@ export function updateResult(p: Principal, interventionId: number, input: {
    */
   const batBuoc = iv.preset === 1;
   const lanCuoi = laLanGhiCuoi({ preset: batBuoc, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, observedOn);
+  /* RKC-2c (PTA 07/11, luật chung: GV theo luật, QL / Admin vượt kèm xác nhận nêu luật + lịch sử): Quản lý trong phạm vi Case vượt được. */
+  const qlVuot = can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id });
   if (batBuoc && !lanCuoi) {
     const cam = input.decision !== undefined
       ? !quyetDinhChoPa({ preset: true }, false).includes(input.decision as PlanDecision)
       : mode === 'end';
-    if (cam) throw badRequest('PA theo quy chế — không thay, không kết thúc sớm. GVCN / Quản lý: "Kết thúc sớm…" ở thẻ PA, kèm lý do.');
+    if (cam && !qlVuot) throw badRequest('PA theo quy chế — GV không thay / kết thúc sớm ở đây: chọn "Xin hỗ trợ Quản lý" để đề xuất; GVCN / Quản lý "Kết thúc sớm…" ở thẻ PA.');
+    if (cam) canXacNhan('PA theo quy chế — luật không thay / kết thúc sớm ở form Kết quả. Vẫn lưu?', undefined, 'Vẫn lưu kết quả');
   }
 
   /*
@@ -3990,16 +3993,19 @@ export function updateResult(p: Principal, interventionId: number, input: {
     }
   } else if (mode === 'end') {
     /* PR-S2 (Q2): Chưa đủ dữ liệu vẫn không Kết thúc suông, nhưng THAY được (`endStepsFor('insufficient')` = ['propose']). */
-    if (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') {
-      throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh hoặc Thay PA.');
-    }
+    /* RKC-2c ①: GV giữ luật (câu chỉ đường "Xin hỗ trợ Quản lý"); Quản lý vượt được — hỏi một câu nêu luật. */
     const allowed = stepsForMode('end', input.outcome);
-    if (!(allowed as readonly string[]).includes(nextStep)) {
+    const traiLuat = (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') || !(allowed as readonly string[]).includes(nextStep);
+    if (traiLuat && !qlVuot) {
+      if (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') {
+        throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được, chọn Giữ nguyên, Điều chỉnh, Thay PA — hoặc Xin hỗ trợ Quản lý.');
+      }
       throw badRequest(
         `Kết quả "${outcomeLabelFor(input.outcome)}" chỉ kết thúc được bằng: `
-        + allowed.map((x) => NEXT_STEP_LABEL[x]).join(' · '),
+        + allowed.map((x) => NEXT_STEP_LABEL[x]).join(' · ') + ' — hoặc Xin hỗ trợ Quản lý.',
       );
     }
+    if (traiLuat) canXacNhan('Kết quả "{x}" — luật chưa cho kết thúc PA theo cách này. Vẫn lưu?', { x: outcomeLabelFor(input.outcome) }, 'Vẫn lưu kết quả');
     completedOn = input.completedOn ?? observedOn;
     if (!isIsoDate(completedOn)) throw badRequest('Ngày hoàn thành không hợp lệ.');
     if (completedOn > demoToday()) throw badRequest('Không ghi được ngày hoàn thành ở tương lai.');

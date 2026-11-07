@@ -92,7 +92,9 @@ const DA_LUU: Record<PlanDecision, string> = {
   ask_manager: t('Đã gửi Quản lý — PA vẫn chạy'),
 };
 
-export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep }: {
+export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat }: {
+  /** RKC-2c: người xem là Quản lý trong phạm vi Case — hiện đủ lựa chọn (máy chủ hỏi xác nhận nêu luật bị vượt). */
+  vuotLuat?: boolean;
   /** U03 (mockup A2 chân): "Lưu · kỹ năng tiếp ›" — lưu xong sang Case kỹ năng kế của em (nơi mở quyết việc kế). */
   tiep?: TiepViec; chuTiep?: string;
   pa: PaCanCapNhat; hocVien?: string | null; lop?: string | null;
@@ -193,7 +195,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     if (khoaLuaChon) return;
     setOutcome(o);
     setChanQd(null);
-    if (decision && decisionBlockedReason(o, decision)) setDecision('');
+    if (decision && !vuotLuat && decisionBlockedReason(o, decision)) setDecision('');
   };
   /* PR-SOS: lần CUỐI của PA theo quy chế — không khối Quyết định; "Chưa đủ dữ liệu" được, kèm Lý do (K3-13). */
   const lanCuoi = !!pa.lanCuoi;
@@ -202,7 +204,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const [mtTyLe, setMtTyLe] = useState<string>(k?.mtTyLe ?? dau.mtTyLe);
   const [mtNgay, setMtNgay] = useState<string>(k?.mtNgay ?? dau.mtNgay);
   /* T63, K3-12: PA theo quy chế chỉ có Giữ nguyên / Điều chỉnh / Xin hỗ trợ — Thay và Kết thúc ẨN (không mờ). */
-  const dsQuyetDinh = quyetDinhChoPa({ preset: !!pa.batBuoc }, lanCuoi);
+  const dsQuyetDinh = quyetDinhChoPa({ preset: !!pa.batBuoc && !vuotLuat }, lanCuoi);   // RKC-2c: QL thấy cả Thay / Kết thúc
   /* Ba nút trên cùng; Điều chỉnh = Sửa PA này · Thay PA · Xin hỗ trợ QL (cái nào PA được phép) — chức năng giữ đủ. */
   const { tren: dsTren, dieuChinh: dsDc } = nhomQuyetDinh(dsQuyetDinh);
   const trongDc = deXuat || dsDc.includes(decision as PlanDecision);
@@ -369,7 +371,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     </div>
   ) : null;
   /* Quyết định bị chặn theo kết quả (vd "Chưa đủ dữ liệu" thì chưa Kết thúc) — bấm thì nói lý do ngay dưới, không chọn. */
-  const chanCua = (x: PlanDecision) => (khoaLuaChon && decision !== x ? sua!.chan : outcome ? decisionBlockedReason(outcome, x) : null);
+  const chanCua = (x: PlanDecision) => (khoaLuaChon && decision !== x ? sua!.chan : outcome && !vuotLuat ? decisionBlockedReason(outcome, x) : null);
   const chonQd = (d: PlanDecision) => {
     setDeXuat(false);
     if (d === 'adjust') {
