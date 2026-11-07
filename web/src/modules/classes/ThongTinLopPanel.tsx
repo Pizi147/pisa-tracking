@@ -113,7 +113,7 @@ function PhanLop({ lop, suaDuoc, onDone }: {
   const [busy, setBusy] = useState(false);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const lf = useLoiForm();
-  const doiDuoc = lop.soHocVien === 0;
+  const doiDuoc = true;   // RKC-4b: lớp đã có HV / bài vẫn đổi được — máy chủ hỏi nêu hệ quả; Hoàn tác = đổi lại
   const ft = chuongTrinh === 'FT';
 
   const loiSo = soCu === null ? null : kiemSoLop(so);
@@ -132,13 +132,23 @@ function PhanLop({ lop, suaDuoc, onDone }: {
     if (loi.length) return;   // báo tại ô, không khoá nút
     setBusy(true); setLoiLuu(null);
     try {
+      const doiCt = !!chuongTrinh && chuongTrinh !== lop.programmeCode;
+      const doiLt = ft && loTrinh !== lop.route;
       await api.patch(`/classes/${lop.id}/thong-tin`, {
         ...(soCu !== null ? { so } : {}),
-        ...(chuongTrinh && chuongTrinh !== lop.programmeCode ? { programmeCode: chuongTrinh } : {}),
-        ...(ft && loTrinh !== lop.route ? { loTrinh } : {}),   // lớp FT cũ chưa có lộ trình: không gửi thì không bị khoá Q6
+        ...(doiCt ? { programmeCode: chuongTrinh } : {}),
+        ...(doiLt ? { loTrinh } : {}),   // lớp FT cũ chưa có lộ trình: không gửi thì không bị khoá Q6
       });
       invalidate('/classes'); invalidate('/ref/classes'); invalidate('/hoc-vien-lop');
-      toast.push('ok', t('Đã lưu thông tin lớp'));
+      /* RKC-4b: đổi chương trình / lộ trình → Hoàn tác = đổi lại cái cũ (cùng đường, máy chủ hỏi lại nếu lớp có HV). */
+      if (doiCt || doiLt) {
+        const cu = { programmeCode: lop.programmeCode, ...(lop.route ? { loTrinh: lop.route } : {}) };
+        toast.hoanTac(t('Đã lưu thông tin lớp'), async () => {
+          await api.patch(`/classes/${lop.id}/thong-tin`, cu);
+          invalidate('/classes'); invalidate('/ref/classes'); invalidate('/hoc-vien-lop');
+          onDone();
+        }, { key: `doi-ct:${lop.id}` });
+      } else toast.push('ok', t('Đã lưu thông tin lớp'));
       setDangSua(false);
       onDone();
     } catch (e: any) { setLoiLuu(e.message); toast.push('error', e.message); } finally { setBusy(false); }

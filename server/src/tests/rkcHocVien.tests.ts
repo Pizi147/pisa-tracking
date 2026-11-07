@@ -130,4 +130,41 @@ export async function runRkcHocVienTests(t: any) {
     const l = get(`SELECT trang_thai, tuan_bat_dau FROM lenh_chuyen_lop WHERE id = ?`, lid);
     assert(r.ok.length === 1 && l.trang_thai === 'cho' && l.tuan_bat_dau === mondayOf(new Date(Date.parse(TODAY) + 7 * 864e5).toISOString().slice(0, 10)), JSON.stringify({ r, l }));
   }));
+
+  const xk: any = await import('../classes/xoaKetThucLop.ts');
+  const ttl: any = await import('../classes/thongTinLop.ts');
+  check('RKC4b-1 · Kết thúc lớp FT còn em đang học: hỏi → Kết thúc học từng em + lớp kết thúc; Hoàn tác Kết thúc học + Mở lại lớp được', () => thu(() => {
+    const sid = emCoLenh();   // em có quyết định chờ → huỷ có dấu, Hoàn tác trả lại
+    const n = get(`SELECT COUNT(*) n FROM enrollments WHERE class_id = ? AND status = 'active'`, MB_FT).n;
+    const e = loi(() => xk.ketThucLop(QL, MB_FT));
+    assert(e?.status === 409 && e.details?.canXacNhan && new RegExp(`Còn ${n} em đang học`).test(e.message), `phải hỏi: ${e?.status} ${e?.message}`);
+    const r = voiXacNhan(() => xk.ketThucLop(QL, MB_FT));
+    assert(r.ketThucHoc.length === n && get('SELECT status FROM classes WHERE id = ?', MB_FT).status === 'finished', JSON.stringify({ k: r.ketThucHoc.length, n }));
+    assert(get('SELECT status FROM students WHERE id = ?', sid).status === 'finished' && lenhCua(sid) === 'huy', 'em kết thúc + quyết định huỷ');
+    xk.moLaiLop(QL, MB_FT);
+    hangLoat.chay(QL, { viec: 'hoan-tac-ket-thuc', studentIds: [sid] });
+    assert(get('SELECT status FROM students WHERE id = ?', sid).status === 'active' && lenhCua(sid) === 'cho', 'Hoàn tác: em học lại + quyết định chờ lại');
+  }));
+
+  check('RKC4b-2 · đổi chương trình lớp đã có HV / bài: hỏi nêu số em + bài → đổi; lộ trình em giữ', () => thu(() => {
+    const lop = get(`SELECT c.id, c.programme_code ct FROM classes c WHERE c.status = 'active' AND c.is_fast_track = 0
+      AND EXISTS (SELECT 1 FROM enrollments e WHERE e.class_id = c.id AND e.status = 'active') ORDER BY c.id LIMIT 1`);
+    const moi = lop.ct === 'FOU' ? 'BE' : 'FOU';
+    const em = get(`SELECT e.student_id sid FROM enrollments e WHERE e.class_id = ? AND e.status = 'active' LIMIT 1`, lop.id).sid;
+    const lt = get(`SELECT id, route FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1`, em);
+    const e = loi(() => ttl.capNhatThongTinLop(P.admin, lop.id, { programmeCode: moi }));
+    assert(e?.status === 409 && /vẫn đổi chương trình/.test(e.message), `phải hỏi: ${e?.status} ${e?.message}`);
+    voiXacNhan(() => ttl.capNhatThongTinLop(P.admin, lop.id, { programmeCode: moi }));
+    assert(get('SELECT programme_code ct FROM classes WHERE id = ?', lop.id).ct === moi, 'lớp phải đổi chương trình');
+    assert(JSON.stringify(get(`SELECT id, route FROM learning_cycles WHERE id = ?`, lt.id)) === JSON.stringify(lt), 'lộ trình em giữ nguyên');
+  }));
+
+  check('RKC4b-3 · Mở lại lớp để thêm học viên (`deViec`): hỏi → mở', () => thu(() => {
+    conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(TODAY, MB_FT);
+    xoaNho();
+    const e = loi(() => xk.moLaiLop(QL, MB_FT, { deViec: 'thêm học viên' }));
+    assert(e?.status === 409 && /Mở lại lớp để thêm học viên/.test(e.message), `phải hỏi: ${e?.status} ${e?.message}`);
+    voiXacNhan(() => xk.moLaiLop(QL, MB_FT, { deViec: 'thêm học viên' }));
+    assert(get('SELECT status FROM classes WHERE id = ?', MB_FT).status === 'active', 'lớp phải mở lại');
+  }));
 }

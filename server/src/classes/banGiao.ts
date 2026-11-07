@@ -3,7 +3,7 @@ import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
+import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, phanCongDaNap, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -33,14 +33,23 @@ const coGvcn = (lopId: number) => !!db().prepare(`SELECT 1 FROM teacher_assignme
 export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: string | null }, mon?: string, o: { coGvcn?: boolean; ct?: string | null } = {}) {
   const pc = phanCongO(db(), p.userId, l.lop_nguon_id);
   const ql = coTheRaLenh(p, l.lop_nguon_id);
-  const qlThay = ql && (!(o.coGvcn ?? coGvcn(l.lop_nguon_id)) || (!!l.han_gvcn && demoToday() > l.han_gvcn));
+  /* RKC-4b (PTA 07/11, luật chung "GV theo luật, QL vượt"): Câu 1 = A (QL thay khi lớp không GVCN / quá hạn) là luật — QL vẫn làm thay TRƯỚC điều kiện đó,
+     nhưng nơi ghi hỏi một câu (`vuot`, `hoiVuotBanGiao`). */
+  const qlLuat = ql && (!(o.coGvcn ?? coGvcn(l.lop_nguon_id)) || (!!l.han_gvcn && demoToday() > l.han_gvcn));
+  const qlThay = ql;
+  const vuot = ql && !qlLuat;
   const dungMon = !!mon && kyNangPhuTrach(o.ct ?? null, mon).some((k) => pc.kyNang.has(k));
   return {
     ghiMon: !!mon && (pc.gvcn || dungMon || qlThay), gvbmDungMon: dungMon,
     xacNhan: pc.gvcn || qlThay, xacNhanThay: !pc.gvcn && qlThay,
     doNguon: pc.gvcn || pc.kyNang.size > 0 || can(p, PERMISSIONS.STUDENT_VIEW, { classId: l.lop_nguon_id }),
-    laGvcn: pc.gvcn, kyNang: pc.kyNang, qlThay,
+    laGvcn: pc.gvcn, kyNang: pc.kyNang, qlThay, vuot,
   };
+}
+
+/** RKC-4b: Quản lý làm thay bàn giao khi GVCN còn hạn — hỏi nêu luật bị vượt (nhật ký ghi `thay` như cũ). */
+function hoiVuotBanGiao(q: { vuot: boolean; laGvcn: boolean }, chinhMinh = false): void {
+  if (q.vuot && !q.laGvcn && !chinhMinh) canXacNhan('GVCN lớp nguồn còn hạn bàn giao — Quản lý vẫn làm thay?', undefined, 'Vẫn làm thay');
 }
 
 // ==================================================================== MÔN BÀN GIAO (audit 03/11 F05)
@@ -350,6 +359,7 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   const q = quyenBanGiao(p, l, mon, { ct: l.ct });
   const qlSua = !!l.xac_nhan_luc && coTheRaLenh(p, l.lop_nguon_id);
   if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
+  if (!qlSua) hoiVuotBanGiao(q, q.gvbmDungMon);
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
   if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
   /* W1 · W2 riêng (F05); câu Writing chung cũ chỉ sửa được ở phiếu đã xác nhận giữ bộ môn cũ (17.4). */
@@ -385,6 +395,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
   if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
   if (l.xac_nhan_luc) throw conflict('Phiếu đã được xác nhận.');
+  hoiVuotBanGiao(q);
   const nx = String(nhanXetChung ?? '').trim();
   const cung = cungGvTheoLo([l]).get(l.id);
   /* Chủ SP 30/10 [PTA đoán]: GVCN lớp mới cũng là GVCN lớp cũ → nhận xét chung không bắt buộc. */
@@ -437,7 +448,9 @@ function baoBanGiao(p: Principal, l: any, nx: string) {
 export function luuNhapNhanXet(p: Principal, lenhId: number, chu: unknown): void {
   const l = docLenhPhieu(lenhId);
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không xác nhận bàn giao được.');
-  if (!quyenBanGiao(p, l, undefined, { ct: l.ct }).xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
+  const qn = quyenBanGiao(p, l, undefined, { ct: l.ct });
+  if (!qn.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
+  hoiVuotBanGiao(qn);
   const nx = chuTuDo(chu, 'Nhận xét chung', 2000);
   if (!db().prepare('UPDATE lenh_chuyen_lop SET nhan_xet_chung = ? WHERE id = ? AND xac_nhan_luc IS NULL').run(nx, lenhId).changes) throw badRequest('Phiếu đã xác nhận — dùng Sửa.');
 }

@@ -240,7 +240,7 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
   check('B2 · QL điền thay khi quá hạn → dien_thay = 1; chưa quá hạn mà có người viết → 403', () => thu(() => {
     luu(X, { listening: gB });
     const v = viecCua(X)[0];
-    assert(maLoi(() => bg.ghiGopYGv(QL, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'x' }))?.status === 403, 'chưa quá hạn 403');
+    assert(maLoi(() => bg.ghiGopYGv(QL, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'x' }))?.status === 409, 'RKC-4b: chưa quá hạn → QL được hỏi (409)');
     conn.prepare(`UPDATE ban_giao_gv SET han = ? WHERE id = ?`).run(addDays(TODAY, -1), v.id);
     bg.ghiGopYGv(QL, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'x' });
     assert(one(`SELECT dien_thay FROM ban_giao_gv_em WHERE ban_giao_id = ?`, v.id).dien_thay === 1, 'điền thay');

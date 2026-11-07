@@ -893,7 +893,14 @@ function classOverviewThat(p: Principal, classId: number) {
      * sửa tiến độ) vẫn tắt: lớp đã đóng thì "Mở lại lớp" trước (một bấm, có nhật ký).
      */
     viewer: { ...(finished ? {
-      canPlanWeek: false, canAddStudents: false, canAssign: false, canAssignSubject: false, canEditProgress: false, coTheChuyenTiep: false,
+      /* RKC-4b (PTA 07/11): thao tác VÒNG ĐỜI theo quyền như lớp đang chạy — bấm thì hỏi "Mở lại lớp để …?" rồi mở (web `DauTrangLop`, phân công:
+         máy chủ `luuPhanCong`). Xếp tuần MT giữ tắt (Kế hoạch Test chỉ lớp đang chạy). */
+      canPlanWeek: false,
+      canAddStudents: can(p, PERMISSIONS.STUDENT_ADD, { classId }),
+      canAssign: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }),
+      canAssignSubject: can(p, PERMISSIONS.CLASS_ASSIGN, { classId }) || can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId }),
+      canEditProgress: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
+      coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId }),
       coTheSuaHocVien: can(p, PERMISSIONS.STUDENT_EDIT, { classId }),
       canEditSchedule: duocSuaLichLop(p, classId),
       editableSkills: editableSkills(p, classId, classSkills),

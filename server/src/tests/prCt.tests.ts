@@ -593,7 +593,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monR).dien_thay === 1, 'GVCN điền thay');
     assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, '   ')) === 400 && maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'x'.repeat(301))) === 400, 'rỗng / quá dài');
     assert(maLoi(() => bg.ghiMon(gvcn5, l.id, 'khong_co_mon', 'x')) === 400, 'môn không có ở lớp nguồn');
-    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403 && maLoi(() => bg.ghiMon(P.mbManager, l.id, monL, 'QL ghi')) === 403, 'GV lớp chuyển đến, QL (chưa quá hạn) → 403');
+    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403 && maLoi(() => bg.ghiMon(P.mbManager, l.id, monL, 'QL ghi')) === 409, 'GV lớp chuyển đến 403; RKC-4b: QL (chưa quá hạn) được hỏi (409)');
     assert(maLoi(() => bg.ghiMon(gvcn5, lenhCua(em5[3]).id, monL, 'dừng học hẳn')) === 400, 'lệnh Dừng học hẳn không có phiếu');
   });
   check('CT (5b) · đọc phiếu: GV lớp chuyển đến trước xác nhận → 403; QL đọc 200; QL chi nhánh khác / GV không dạy → 403; phiếu cả lớp trả 3 em (Dừng học hẳn không có phiếu)', () => {
@@ -611,7 +611,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE id = ?').run(b.hanGvcn, b.lenhId);
     assert(som.hanGvcn === '2026-01-01' && som.hanGvcnEm === b.ten && som.ds.find((e: any) => e.lenhId === a.lenhId).hanGvcn === a.hanGvcn,
       JSON.stringify({ han: som.hanGvcn, em: som.hanGvcnEm, b: b.ten }));
-    assert(bg.phieuBanGiao(P.mbManager, { lopNguonId: n5 }).nguoiXem.xacNhan === false, 'QL chưa quá hạn: không xác nhận');
+    assert(bg.phieuBanGiao(P.mbManager, { lopNguonId: n5 }).nguoiXem.xacNhan === true, 'RKC-4b: QL chưa quá hạn vẫn có nút xác nhận (máy chủ hỏi)');
     assert(maLoi(() => bg.phieuBanGiao(gvDich, { lopNguonId: n5 })) === 403, 'GV lớp chuyển đến trước xác nhận → 403');
     assert(maLoi(() => bg.phieuBanGiao(gvDich, { lenhId: lenhCua(em5[0]).id })) === 403, 'GV lớp chuyển đến (một phiếu) → 403');
     assert(maLoi(() => bg.phieuBanGiao(P.cpManager, { lopNguonId: n5 })) === 403, 'QL chi nhánh khác → 403');
@@ -775,7 +775,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const e2 = hocVien(n5, 'FOU', false).sid;
     ra(P.mbManager, n5, 'cuoi-khoa', [dongCua(e2, 'len_lop', d5)]);
     const l2 = lenhCua(e2);
-    assert(maLoi(() => bg.xacNhanBanGiao(P.mbManager, l2.id, 'QL xác nhận sớm không được phép.')) === 403, 'chưa quá hạn → 403');
+    assert(maLoi(() => bg.xacNhanBanGiao(P.mbManager, l2.id, 'QL xác nhận sớm không được phép.')) === 409, 'RKC-4b: chưa quá hạn → QL được hỏi (409)');
     conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE id = ?').run(t.addDays(TODAY, -1), l2.id);
     bg.xacNhanBanGiao(P.mbManager, l2.id, 'Quá hạn 3 ngày, Quản lý xác nhận thay.');
     assert(lenhCua(e2).xac_nhan_thay === 1, 'quá hạn → QL thay được');

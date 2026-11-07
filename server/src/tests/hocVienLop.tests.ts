@@ -474,7 +474,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, rong, { loTrinh: 'LT1' }), /Fast Track/, 'Lớp thường không có LT');
     const coEm = taoLop('MB FT 9906', 'FT');
     taoHocVien({ cid: coEm, ft: true });
-    assertThrows(() => ttl.capNhatThongTinLop(P.admin, coEm, { programmeCode: 'FOU' }), /đã có \d+ học viên/, 'Lớp có học viên');
+    assertThrows(() => ttl.capNhatThongTinLop(P.admin, coEm, { programmeCode: 'FOU' }), /vẫn đổi chương trình/, 'Lớp có học viên: RKC-4b hỏi');
   });
 
   check('PR-Qa · Q8 đổi chương trình: phân công kỹ năng KHÔNG còn ở chương trình mới bị KẾT THÚC (không xoá); phân công vẫn khớp thì giữ nguyên', () => {
