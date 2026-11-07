@@ -300,11 +300,11 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, l
         )}
       </Hang2>
 
-      {/* Năm nhóm: danh sách hai hàng (≤ 4 nút/hàng), nút cao 44px ở điện thoại. */}
+      {/* Năm nhóm: danh sách hai hàng (≤ 4 nút/hàng), nút cao 44px ở điện thoại. AUDIT-UI F2: tên nhóm một dòng («Thái độ / hành vi» không gãy). */}
       <Truong nhan={t('Nhóm')} batBuoc as="div" loi={lf.loiCua(loi, `nhom-${n}`)}>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" {...lf.o(loi, `nhom-${n}`)}>
           {VIOLATION_CATEGORIES.map((c) => (
-            <NutChon key={c} chon={d.nhom === c} className="justify-center" onClick={() => onSua({ nhom: c })}>
+            <NutChon key={c} chon={d.nhom === c} className="justify-center !whitespace-nowrap" onClick={() => onSua({ nhom: c })}>
               {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
             </NutChon>
           ))}

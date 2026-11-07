@@ -38,12 +38,12 @@ export function ChonKyNang({ value, onToggle, disabled }: {
 }) {
   const co = (k: string) => ('has' in value ? value.has(k) : value.includes(k));
   return (
-    <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Kỹ năng phụ trách được')}>
+    /* AUDIT-UI CN3: dấu ✓ góc (`NutChon`, lệch -6 px) chồng lên chip kề bên khi cách 6 px → cách 12 px, chừa chỗ trên / phải cho dấu. */
+    <div className="flex flex-wrap gap-3 pr-1.5 pt-1.5" role="group" aria-label={t('Kỹ năng phụ trách được')}>
       {ENTRY_SKILLS.map((k) => (
-        /* AUDIT-UI CN3: ✓ nằm trong chip (dấu góc chồng lên chip kề bên khi chip hẹp). */
-        <NutChon key={k} nho chon={co(k)} dau="" disabled={disabled} title={skillLabel(k)} onClick={() => onToggle(k)}
+        <NutChon key={k} nho chon={co(k)} disabled={disabled} title={skillLabel(k)} onClick={() => onToggle(k)}
           className="min-w-[52px] justify-center">
-          {co(k) && <span aria-hidden>✓</span>}{skillShort(k)}
+          {skillShort(k)}
         </NutChon>
       ))}
     </div>

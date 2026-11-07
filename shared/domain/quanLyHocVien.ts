@@ -114,5 +114,5 @@ const PHU_VIEC: Partial<Record<ViecQuanLy, string>> = {
   'de-xuat-chuyen-lop': t('Quản lý duyệt rồi quyết định'),
   'tam-dung-ket-thuc': t('em vào Lưu trữ · tạm dừng giữ lớp'),
   'quay-lai': t('hạn tính lại từ ngày quay lại'),
-  'xoa-hoc-vien': t('chỉ Quản trị hệ thống thấy dòng này'),
+  'xoa-hoc-vien': t('khôi phục được trong 30 ngày'),
 };

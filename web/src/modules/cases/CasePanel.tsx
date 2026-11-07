@@ -411,7 +411,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
           </details>
         )}
         <div className="border-t pt-1" style={{ borderColor: lichSu.length ? 'var(--line)' : 'transparent' }}>
-          <BangChung ownerType="sos_case" ownerId={data.id} canEdit={vw.canEdit} tieuDe={bc.data?.rows.length ? `${t('Bằng chứng')} · ${bc.data.rows.length}` : t('Bằng chứng')} onChanged={bc.reload} />
+          <BangChung ownerType="sos_case" ownerId={data.id} canEdit={vw.canEdit} tieuDe={`${t('Bằng chứng')} · ${bc.data?.rows.length || t('chưa có')}`} onChanged={bc.reload} />
         </div>
       </div>
       <XoaCase data={data} toi={toi} onXong={lamMoi} onDaXoa={onDaXoaCase} />

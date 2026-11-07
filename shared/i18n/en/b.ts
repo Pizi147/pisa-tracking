@@ -1172,6 +1172,7 @@ const EN_B_MAY = {
 
   /* Đề xuất sửa (duyet/deXuatSua) */
   'lộ trình': 'pathway',
+  'lịch MT': 'MT schedule',
   'thông tin khác': 'other details',
   'Không tìm thấy học viên': 'Student not found',
   'Chỉ giáo viên của lớp em đang học mới gửi được đề xuất sửa.': 'Only teachers of the student’s current class can send a change request.',

@@ -105,10 +105,10 @@ export function TepCho({ value, onChange, khoa, onThuLai }: {
 
       {!khoa && (
         <div className={`flex flex-wrap items-center gap-x-3 gap-y-1${value.length ? ' mt-1.5' : ''}`}>
-          <button type="button" className="link-nho" onClick={() => fileRef.current?.click()}>{t('+ Tệp')}</button>
+          <button type="button" className="link-nho" title={CHU_KHOI_BANG_CHUNG} onClick={() => fileRef.current?.click()}>{t('+ Tệp')}</button>
           <button type="button" className="link-nho" aria-expanded={linkOpen} onClick={() => setLinkOpen((o) => !o)}>{t('+ Liên kết')}</button>
           <input ref={fileRef} type="file" accept={ACCEPT} multiple className="hidden" aria-label={t('{o} — chọn tệp', { o: t('Bằng chứng') })} onChange={(e) => them(e.target.files)} />
-          {!value.length && !linkOpen && <span className="bc-mo">{CHU_KHOI_BANG_CHUNG}</span>}
+          {/* AUDIT-UI C6 / HS3: gợi ý dán ảnh / kéo thả ở `title` của "+ Tệp" (vùng vẫn nhận dán, kéo thả như cũ). */}
         </div>
       )}
 

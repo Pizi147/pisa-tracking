@@ -953,6 +953,7 @@
   .pc-the-tong { overflow: clip; }
   .pc-the-dau { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
   .pc-the-dau h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); }
+  .pc-the-dau .phu { font-size: 13px; color: var(--text-dim); }
   .pc-the-dau .phai { margin-left: auto; }
   .pc-xep { width: auto; height: 30px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--o-nhap-vien); background: var(--o-nhap-nen); color: var(--text); font-size: 13px; font-weight: 500; }
   .pc-bang-tong .bang > thead > tr > th { background: var(--surface-2); height: 36px; vertical-align: middle; }

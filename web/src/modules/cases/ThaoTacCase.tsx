@@ -222,9 +222,10 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
             ))}
           </div>
         </Truong>
-        <Truong nhan={t('Vì sao kết luận vậy')} batBuoc phu={t('Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây')}
+        <Truong nhan={t('Vì sao kết luận vậy')} batBuoc
           loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: 10 }}>
-          <textarea className="field w-full" {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
+          {/* AUDIT-UI C6: câu hướng dẫn chuyển vào `title` của ô (ví dụ vẫn ở placeholder). */}
+          <textarea className="field w-full" title={t('Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây')} {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder={t('Ví dụ: MT3 Listening lên 6.0')} />
         </Truong>
         <Truong nhan={t('Ngày hoàn thành')}><ONgay kieu="ngay" value={closedOn} onChange={setClosedOn} toiDa={homNay} /></Truong>

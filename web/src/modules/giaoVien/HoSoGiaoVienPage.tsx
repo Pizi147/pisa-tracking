@@ -63,7 +63,8 @@ function Goi({ chu }: { chu: string }) {
   );
 }
 
-const ChipGvcn = () => <span className={`${CHIP_TRON} bg-ok-bg font-semibold text-ok`}>GVCN</span>;
+/** AUDIT-UI GV1: chip vai trung tính — xanh lá là màu kết quả «Đạt» (V4), không dùng cho vai. */
+const ChipGvcn = () => <span className={`${CHIP_TRON} bg-[color:var(--surface-2)] font-semibold text-dim`}>GVCN</span>;
 
 export function HoSoGiaoVienPage() {
   const { id } = useParams();
@@ -438,7 +439,7 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
     { key: 'kq', nhan: t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
   ];
   const oCua = (h: HangL, c: CotBang): ReactNode => {
-    const mo = h.xong ? 'opacity-60' : '';
+    const mo = h.xong ? 'text-faint' : '';   // AUDIT-UI C11: lớp đã kết thúc = chữ mờ bằng màu (không opacity) + nhãn «đã kết thúc»
     switch (c.key) {
       case 'lop': return h.cong ? <b className="font-bold">{h.ma}</b>
         : <span className={`inline-flex min-w-0 items-baseline gap-1.5 ${mo}`}><Link to={`/hoc-vien/lop/${h.classId}`} className="ten-ho-so truncate font-semibold">{h.ma}</Link>{h.xong && <span className="text-xs text-slate-500">{t('đã kết thúc')}</span>}</span>;
@@ -486,7 +487,7 @@ function KhoiViec({ gvId, nguoiXem, viec }: {
               const link = (chiQuaHan: boolean) => duongViecCuaGv(gvId, nguoiXem, x.nhom, chiQuaHan);
               const trong = x.n === 0;
               return (
-                <div key={x.nhom} className={`relative flex min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2.5 ${trong ? 'opacity-70' : 'hover:border-[color:var(--accent-line)]'}`}
+                <div key={x.nhom} className={`relative flex min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2.5 ${trong ? '' : 'hover:border-[color:var(--accent-line)]'}`}
                   style={{ borderColor: 'var(--line)' }}>
                   <span className="text-xs text-slate-400">{dich(NHOM_VIEC_LABEL[x.nhom])}</span>
                   {trong
@@ -539,7 +540,8 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
             {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. */}
             {ds.some((c) => c.quaHan) && (
               <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold text-bad" style={{ borderColor: 'var(--line-strong)' }}>
-                ⚠ {t('việc quá hạn')}
+                {/* AUDIT-UI GV2: tên đủ để không lẫn với chip trạng thái «⚠ Quá hạn» đứng cạnh. */}
+                ⚠ {t('Case có việc quá hạn')}
                 <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
               </span>
             )}

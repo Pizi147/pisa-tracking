@@ -174,7 +174,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
 
   const rows = data?.rows ?? [];
 
-  /* U10.8 (mockup audit-0311 `.bc`): một dòng, không khung — [nhãn 72px] + Tệp · + Liên kết; trống thì "chưa có" cùng dòng; gợi ý dán ảnh / kéo thả ở `title` của "+ Tệp" (AUDIT-UI 08/11 HS3). */
+  /* U10.8 (mockup audit-0311 `.bc`): một dòng, không khung — [nhãn 72px] + Tệp · + Liên kết; trống: người sửa được chỉ thấy hai nút; gợi ý dán ảnh / kéo thả ở `title` của "+ Tệp" (AUDIT-UI 08/11 HS3). */
   const trong = !!data && rows.length === 0 && uploads.length === 0;
   return (
     <div
@@ -189,7 +189,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
       onDrop={onDrop}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {tieuDe && <span className="bc-nh">{tieuDe}</span>}
+        {tieuDe && <span className="bc-nh whitespace-nowrap" style={{ width: 'auto', minWidth: 72 }}>{tieuDe}</span>}
         {canEdit && (
           <>
             <button type="button" className="link-nho" title={CHU_KHOI_BANG_CHUNG} onClick={() => fileRef.current?.click()}>{t('+ Tệp')}</button>
@@ -198,7 +198,7 @@ export function BangChung({ ownerType, ownerId, canEdit, tieuDe = t('Bằng ch�
               onChange={(e) => pick(e.target.files)} />
           </>
         )}
-        {trong && !linkOpen && <span className={canEdit ? 'bc-mo' : ''}>{canEdit ? t('chưa có') : t('Chưa có bằng chứng nào.')}</span>}
+        {trong && !linkOpen && !canEdit && <span>{t('Chưa có bằng chứng nào.')}</span>}
         {loading && !data && <span className="bc-mo">{t('Đang tải…')}</span>}
       </div>
 
