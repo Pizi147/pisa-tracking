@@ -6,10 +6,10 @@ import { useBamNgoai } from './useBamNgoai.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
- * NÚT ⋯ ĐẦU TRANG (chủ SP 07/11 "cho cân đối"): ô vuông cùng khung nút cạnh, ký tự ⋯ căn giữa, 18 px. Nơi gọi chỉ thêm cỡ ô
+ * NÚT ⋯ ĐẦU TRANG (chủ SP 07/11 "cho cân đối"): ô vuông cùng khung nút cạnh, ký tự ⋯ căn giữa, 17 px (thang chữ). Nơi gọi chỉ thêm cỡ ô
  * (`h-9 w-9` cạnh nút `btn`, …) — hồ sơ lớp, hồ sơ HV, Kế hoạch Test dùng chung.
  */
-export const NUT_BA_CHAM_DAU = 'btn shrink-0 justify-center !px-0 text-[18px] leading-none';
+export const NUT_BA_CHAM_DAU = 'btn shrink-0 justify-center !px-0 text-[17px] leading-none';
 
 export type MucMenu = {
   key: string; nhan: string; onChon: () => void;
