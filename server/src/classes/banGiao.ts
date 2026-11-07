@@ -24,6 +24,8 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
  * `lenh_chuyen_lop` (nhận xét chung + bản chụp phần tự điền + xác nhận) và các dòng `ban_giao_mon`.
  */
 
+const coGvcn = (lopId: number) => !!db().prepare(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' LIMIT 1`).get(lopId);
+
 /**
  * Quyền trên phiếu theo phân công Ở LỚP NGUỒN của lệnh (không theo ghi danh hiện tại). Planning 30/09 (Câu 1 = A): Quản lý phạm vi lớp nguồn được điền
  * thay và xác nhận thay khi lớp KHÔNG có GVCN hoặc quá hạn 3 ngày. `doc` không tính GV lớp chuyển đến — phần đó cần biết phiếu đã xác nhận/đã chuyển (Q15).
@@ -31,8 +33,7 @@ import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: string | null }, mon?: string, o: { coGvcn?: boolean; ct?: string | null } = {}) {
   const pc = phanCongO(db(), p.userId, l.lop_nguon_id);
   const ql = coTheRaLenh(p, l.lop_nguon_id);
-  /* RKC-4a (N33 ③, chủ SP 07/11 "không chặn cứng"; trước: chỉ khi lớp không GVCN hoặc quá hạn): Quản lý làm thay LÚC NÀO cũng được — ghi `xac_nhan_thay`. */
-  const qlThay = ql;
+  const qlThay = ql && (!(o.coGvcn ?? coGvcn(l.lop_nguon_id)) || (!!l.han_gvcn && demoToday() > l.han_gvcn));
   const dungMon = !!mon && kyNangPhuTrach(o.ct ?? null, mon).some((k) => pc.kyNang.has(k));
   return {
     ghiMon: !!mon && (pc.gvcn || dungMon || qlThay), gvbmDungMon: dungMon,

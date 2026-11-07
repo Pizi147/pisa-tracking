@@ -12,7 +12,7 @@
 import { db, tx } from '../db.ts';
 import { CHU_CHUYEN_LOP, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, badRequest, canXacNhan, chuTuDo, notFound } from '../util.ts';
+import { addDays, badRequest, canXacNhan, chuTuDo, loi, notFound } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { emChuaCoLenh, huyNhieuLenh } from './lenhChuyen.ts';
@@ -144,7 +144,7 @@ export function ketThucLop(p: Principal | null, classId: number, o: { lyDo?: str
     if (p && t.soSapNhan > 0) {
       const ids = (conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE lop_dich_id = ? AND trang_thai = 'cho'`).all(classId) as any[]).map((r) => r.id as number);
       const r = huyNhieuLenh(p, ids, `Lớp ${c.code} kết thúc`);
-      if (r.failed.length) throw badRequest(`${r.failed[0].message} — huỷ quyết định đó ở Chuyển lớp rồi kết thúc lớp.`);
+      if (r.failed.length) throw loi(400, '{x} — huỷ quyết định đó ở Chuyển lớp rồi kết thúc lớp.', { x: r.failed[0].message });
     }
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngay, classId);
     writeAudit({

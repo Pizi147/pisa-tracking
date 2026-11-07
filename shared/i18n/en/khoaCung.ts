@@ -10,6 +10,7 @@ export const EN_KHOA_CUNG = {
   'Khôi phục, dời tuần': 'Restore, move week',
   'Còn {n} quyết định chuyển ĐẾN lớp này — huỷ các quyết định đó rồi kết thúc lớp?': '{n} transfers INTO this class are pending — cancel them and end the class?',
   'Huỷ và kết thúc lớp': 'Cancel and end class',
+  '{x} — huỷ quyết định đó ở Chuyển lớp rồi kết thúc lớp.': '{x} — cancel that decision in Transfer, then end the class.',
   'Ngày làm Mini Test sớm hơn ngày dự kiến hơn 14 ngày — vẫn lưu?': 'The Mini Test date is more than 14 days before the planned date — save anyway?',
   'PA theo quy chế — luật không thay / kết thúc sớm ở form Kết quả. Vẫn lưu?': 'Policy plan — the rule does not allow replacing / ending it early from the Result form. Save anyway?',
   'Kết quả "{x}" — luật chưa cho kết thúc PA theo cách này. Vẫn lưu?': 'Result "{x}" — the rule does not allow ending the plan this way. Save anyway?',
