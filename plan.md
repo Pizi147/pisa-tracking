@@ -264,6 +264,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 - Session PA-TRUNG: tìm gốc (nơi sinh PA quy chế tự động — sau nhập MT4 W1 NOV? reset hạn? migrate?), sửa không sinh trùng khi đã có PA quy chế cùng loại đang chạy / chờ, dọn PA trùng trên bản chính bằng migrate một lần (báo số bản sao trước khi merge).
 
 ### 07/11 — Nút ⋯ hồ sơ lớp + LỚP TRỐNG TỰ LƯU TRỮ (chủ SP — session LOP-TRONG)
+- **Đã merge (chưa deploy):** #1203 nút ⋯ cân đối (hằng `NUT_BA_CHAM_DAU`) · #1205 lớp trống 7 ngày tự Kết thúc + Lưu trữ (**chủ SP "Merge #1205"**; bản chép thật: lần đầu đóng MB ELE 79, 09/11 + CP FT 133, 12/11 + MB BE 113; quét mỗi ngày trong `quetLenhDenHan`, ~2 câu).
 - **Chủ SP 07/11 (ảnh hồ sơ lớp CP FT 130, khoanh nút ⋯ cạnh "Nhập điểm", "+ Case"):** "1. sửa lại nút này cho cân đối 2. Và thêm 1 cái nữa là nếu lớp không có học sinh, đã kết thúc sau khi chuyển hết đi, và không có kế hoạch nhận thêm HV nào thì sau 1 tuần sẽ tự động bị đưa vào lưu trữ nhée"
 - (1) Nút ⋯ cùng chiều cao / khung với hai nút cạnh (vuông, căn giữa) — mọi đầu trang có cụm nút + ⋯.
 - (2) **LUẬT MỚI:** lớp 0 HV đang học (đã chuyển / kết thúc hết) VÀ không có kế hoạch nhận HV (không lệnh chuyển vào chờ, không hẹn bắt đầu / Học lại về lớp, không HV mới xếp vào) liên tục 7 ngày → hệ thống tự Kết thúc lớp + vào Lưu trữ (tab "Lớp đã kết thúc"), ghi lịch sử "tự động — lớp trống 7 ngày"; "Mở lại lớp" như cũ (không khoá). Có kế hoạch nhận HV xuất hiện thì không tự đóng. Chạy trong lượt quét nền / hằng ngày sẵn có, đọc ít (một câu theo lớp đang chạy có 0 HV).
