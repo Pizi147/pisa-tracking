@@ -259,6 +259,10 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 07/11 — TÊN HV LUÔN MỞ HỒ SƠ HV (chủ SP)
+- **Chủ SP 07/11:** "Thêm nữa, ở Hồ sơ Lớp, tại sao khi bấm vào tên HV không mở ra hồ sơ HV? về bản chất cốt lõi là cần phải như vậy mà, còn expand thì bấm vào thanh thông tin không phải là tên là được, đùa sao cứ có những cái lỗi ngớ ngẩn như vậy?"
+- LUẬT: tên học viên ở MỌI danh sách / bảng / panel = link mở hồ sơ HV (giữ nguồn để Quay lại); bấm phần còn lại của hàng = mở rộng / chọn như cũ (luật bỏ ↗ 28/10: tên vẫn là link). Session TEN-HV-LINK sửa Hồ sơ lớp + rà mọi nơi khác.
+
 ### 07/11 — KHẨN: MỞ MỌI CHẶN CỨNG (chủ SP, bản chính sau deploy 261107)
 - **Chủ SP 07/11 (4 ảnh bản chính: em Kết thúc học CP FT 131, panel Bước tiếp "Đổi" sang Lộ trình mới → "⚠ Không lưu được — Không đổi được 'Kết thúc học': Không còn hoàn tác được — học viên đã đổi trạng thái hoặc chuyển lớp sau lần Kết thúc học…"; nút Đổi mờ + câu chặn):** "TÔI ĐÃ NÓI LÀ CÁI VIỆC MÌNH LÀM TRONG ĐỢT VỪA RỒI LÀ ĐỂ KHÔNG BAO GIỜ BỊ CHẶN CỨNG. VÀ VỐN LÀ KHÔNG BAO GIỜ ĐƯỢC CHẶN CỨNG Ở BẤT KÌ CHỖ NÀO HẾT. GIỜ HỌC SINH HỌC XONG, SỬA ĐIỂM KHÔNG ĐƯỢC, SỬA QUYẾT ĐỊNH KHÔNG ĐƯỢC, QUAY LẠI HỌC CŨNG KHÔNG ĐƯỢC, KHÔNG CÓ THAO TÁC NÀO LÀM GÌ ĐƯỢC? VỐN TÔI MUỐN BẠN LÀM ĐỂ CÓ THỂ XỬ LÝ MỘT CÁCH THOẢI MÁI, MÀ BÂY GIỜ LẠI CHẶN CỨNG HẾT? CÁI GÌ VẬY? SỬA LỖI NÀY NGAY, VÀ ĐỒNG THỜI RÀ SOÁT LẠI HẾT TẤT CẢ MỌI THỨ CHỖ NÀO CHẶN CỨNG MỞ RA NGAY"
 - **LUẬT (nhắc lại, mạnh hơn memory feedback-khong-khoa-cung):** không chặn cứng ở bất kỳ đâu. Đổi quyết định / sửa điểm / quay lại học luôn làm được: không hoàn tác chính xác được thì đi THẲNG tới trạng thái mới từ trạng thái hiện tại (ghi lịch sử), không bắt "hoàn tác trước". Chỉ chặn khi là quyền (không đủ vai) hoặc dữ liệu không thể đúng (vd xoá bài đã có điểm thì hỏi xác nhận, không cấm). Lỗi / lý do hiện ngắn tại nút, không cột chữ đỏ dài.
