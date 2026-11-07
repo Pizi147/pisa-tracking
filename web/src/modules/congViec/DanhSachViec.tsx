@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { Children, type ReactNode, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Level } from '../../ui/ui.tsx';
@@ -317,13 +317,16 @@ function MuiTenMoTrang({ it, dong, nut }: { it: WorkItem; dong: ChungDong; nut: 
  *  ≥ 640 (CV-HANG-DEU, PTA 07/11 — ngoại lệ có chủ ý): MỘT dòng, cắt "…" ở CUỐI để mọi hàng 2 dòng (mockup v17 a2); thứ tự quan trọng trước
  *  (👤 người giữ · em · lớp · tuần · n bài), rê chuột thấy đủ chữ (`title` lấy chữ của dòng). Dòng có huy hiệu TVV (`children`) giữ xuống dòng — huy hiệu không bị cắt.
  *  RA-GD-0711: "·" dính CUỐI mẩu trước — xuống dòng không mở đầu dòng bằng "· tuần W1 SEP". */
-const DongPhu = ({ ds, children }: { ds: readonly ReactNode[]; children?: ReactNode }) => (ds.length || children ? (
+const DongPhu = ({ ds, children }: { ds: readonly ReactNode[]; children?: ReactNode }) => {
+  const coHuy = Children.toArray(children).length > 0;   // `{tvv && …}` = false khi không phải TVV — không tính
+  return ds.length || coHuy ? (
   <span onMouseEnter={(e) => { e.currentTarget.title = e.currentTarget.textContent ?? ''; }}
-    className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim ${children ? '' : 'sm:block sm:truncate'}`}>
-    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap ${children ? '' : 'sm:mr-1 sm:last:mr-0 sm:[&>.inline-flex]:align-top'}`}>{x}{i < ds.length - 1 && <span aria-hidden> ·</span>}</span>)}
+    className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim ${coHuy ? '' : 'sm:block sm:truncate'}`}>
+    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap ${coHuy ? '' : 'sm:mr-1 sm:last:mr-0 sm:[&>.inline-flex]:align-top'}`}>{x}{i < ds.length - 1 && <span aria-hidden> ·</span>}</span>)}
     {children}
   </span>
-) : null);
+) : null;
+};
 const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 text-left text-sm font-semibold leading-snug disabled:cursor-default';
 
 /**
