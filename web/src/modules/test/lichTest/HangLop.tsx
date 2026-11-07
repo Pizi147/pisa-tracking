@@ -24,6 +24,8 @@ function NhanLop({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) {
   }
   /* Người không chấm (Quản lý): "Chờ chấm" tách theo tiến độ — đã có bài chấm = Đang chấm, chưa bài nào = Chưa chấm (mockup). */
   const choCham = l.nhan.loai === 'cho-cham';
+  /* AUDIT-UI T3: "Đang chấm" là trạng thái thường — "x/y bài" cạnh đó đã nói; viên chỉ hiện khi khác thường (Chưa chấm, Đã chấm…). */
+  if (choCham && l.daCham > 0) return null;
   return (
     <>
       <Nhan tone={choCham && l.daCham > 0 ? 'doing' : TONE_NHAN_LOP[l.nhan.loai]}>

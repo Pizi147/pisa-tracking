@@ -55,7 +55,7 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   /* PR-SOS (S4-5, T23): GVBM xin không theo dõi Case SOS chờ nguyên nhân — Quản lý duyệt trong 5 ngày. */
   khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: t('Không cần theo dõi'), kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
   /* PR-YT4 (V4-9, V4-10): Meeting CX/GĐCN · WL 3 · Đình chỉ · Khác — QL duyệt trong 5 ngày. */
-  y_thuc: { phanLoai: 'y-thuc', nhan: t('Xử lý Ý thức cần duyệt'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  y_thuc: { phanLoai: 'y-thuc', nhan: t('Xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
   /* PR-YT4 (V4-4, V4-5, K3-37, Q9): một thẻ mỗi em — không duyệt, QL biết và nhắc. */
   bao_len_y_thuc: { phanLoai: 'bao-len', nhan: t('Ý thức quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo QL bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo QL lớp hết khoá còn em chưa có lệnh. */

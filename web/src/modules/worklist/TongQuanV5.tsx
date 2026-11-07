@@ -47,7 +47,8 @@ export function DauTrangTq({ phamVi, ben, ky }: { phamVi: ReactNode; ben?: React
   return (
     <header className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-2">
       <h1 className="m-0 text-[22px] font-bold leading-[1.3] text-slate-100">{t('Tổng quan')}</h1>
-      <span className="text-sm text-slate-400">{phamVi}{homNay && <> · <b className="font-bold text-[color:var(--accent)]">{tuanLich(homNay)}</b></>}
+      {/* AUDIT-UI TQ1: GV không có phạm vi (tên chính mình đã ở nút tài khoản) → bắt đầu bằng mã tuần, không "·" thừa. */}
+      <span className="text-sm text-slate-400">{phamVi}{homNay && <>{phamVi ? ' · ' : ''}<b className="font-bold text-[color:var(--accent)]">{tuanLich(homNay)}</b></>}
         {ky && <> · {t('kỳ {ky}', { ky: kyChu(ky) })}</>}</span>
       {ben && <span className="flex flex-wrap items-center gap-2 max-sm:w-full sm:ml-auto">{ben}</span>}
     </header>
@@ -79,7 +80,7 @@ export const ChuaCoDl = () => (
   <span className="chua-dl my-1 inline-flex h-[26px] items-center self-start rounded border border-dashed px-2 text-[13px] font-semibold text-slate-500" style={{ borderColor: 'var(--thieu-vien)' }}>– {t('Chưa có dữ liệu')}</span>
 );
 /** Ô số dẫn sang trang khác (TVV / CX): cùng dáng ô số (gạch chân nhấn); 0 mờ, không bấm. `so-chinh` (O-TQ-BAM): cả ô chỉ số đổi trang tới `to`. */
-const SoDen = ({ n, to, className = '' }: { n: number; to: string; className?: string }) => (n > 0 ? <Link to={to} className={`${VUNG_BAM_SO} ${LOP_OSO} ${className}`}>{n}</Link> : <span className="font-medium text-slate-500">{n}</span>);
+const SoDen = ({ n, to, className = '' }: { n: number; to: string; className?: string }) => (n > 0 ? <Link to={to} className={`${VUNG_BAM_SO} ${LOP_OSO} ${className}`}>{n}</Link> : <span className="font-normal text-faint">{n}</span>);   // AUDIT-UI C2: số 0 mờ (text-faint 400) để số thật nổi
 /** O-TQ-BAM: ô đổi trang → tên thêm "›" khi số chính bấm được (> 0). */
 const tenDen = (ten: string, n: number) => (n > 0 ? `${ten} ›` : ten);   // không ngắt: 375 xuống dòng thì "›" đi cùng chữ cuối
 const Cham = () => <span className="font-normal text-slate-500" aria-hidden>·</span>;
@@ -180,8 +181,9 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
               */}
             <button type="button" onClick={() => setMo(y)} title={[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.vaiNguoiXin ? `${y.nguoiXin} (${t(y.vaiNguoiXin)})` : y.nguoiXin })].filter(Boolean).join(' · ') || undefined}
               className={`bam flex min-h-[44px] w-full items-center gap-x-2 px-4 py-2 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
-              {/* RA-GD-0711c: tên em giữ một dòng (không "Lương Gia / Bảo") — thiếu chỗ thì CHỮ CHIP loại xuống dòng trong chip (không cắt "…"). */}
-              <span className="min-w-[4.5rem] max-w-[50%] shrink rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dich(y.nhanLoai)}</span>
+              {/* RA-GD-0711c: tên em giữ một dòng — thiếu chỗ thì chữ chip xuống dòng trong chip (không cắt "…"). NHAN-MOT-DONG (audit C5): tên loại
+                * ngắn + chip rộng tối thiểu bằng tên loại thường gặp ("Xử lý Ý thức") → chip một dòng, tên em thẳng cột (khối hẹp 360 px ở 1440 cũng vậy). */}
+              <span className="min-w-[5.25rem] max-w-[50%] shrink rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dich(y.nhanLoai)}</span>
               <span className={`${y.hocVien ? 'flex-[1_0_auto] whitespace-nowrap' : 'min-w-0 flex-1'} text-sm font-semibold text-slate-100`}>{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
               {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
             </button>
@@ -282,7 +284,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
     if (c.key === 'tre') {
       const n = tre.get(h.id) ?? 0;
       return n ? <span className="font-semibold text-bad">⚠ <OSo giaTri={n} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: h.ten })} nguon={`/tong-quan/gv-tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} gvTre={GV_TRE_QL} /></span>
-        : <span className="tabular-nums text-slate-500">0</span>;
+        : <span className="tabular-nums text-faint">0</span>;
     }
     const nguon = c.key === 'pa' ? `/giao-vien/${h.id}/o?cot=case-mo&cn=${d.branchId}&ct=${d.ct}` : `/phan-tich/giao-vien/o?gv=${h.id}&cot=${COT[c.key]}&${q}`;
     return <PhanTram gon x={giaTri(h, c)} nguon={nguon} tieuDe={c.key === 'pa' ? `${t('Case đang mở')} · ${h.ten}` : `${c.nhan} · ${h.ten}`} />;

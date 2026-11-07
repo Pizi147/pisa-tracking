@@ -9,7 +9,7 @@ import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { TheSosViec } from '../../ui/TheKetQuaSos.tsx';
 import {
-  CHAM_CHEO, LOAI_HAN_CUA_VIEC, daysBetween, deadlineView, laViecChamCheo, nhanHan, tuanLich, type BadgeTab, type MucTab,
+  CHAM_CHEO, LOAI_HAN_CUA_VIEC, daysBetween, deadlineView, laViecChamCheo, nhanHan, shortDate, type BadgeTab, type MucTab,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -60,6 +60,8 @@ const DUONG_IC: Record<string, ReactNode> = {
   'bo-qua': <><path d="M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z" /><circle cx="8" cy="8" r="1.8" /><path d="M3 13L13 3" /></>,
   /* U01 #3 (audit 03/11): dòng "Cả lớp" / dòng gộp — ô bảng (mockup `.av.vuong`), không số chồng. */
   'ca-lop': <><rect x="2.5" y="3" width="11" height="10" rx="1" /><path d="M2.5 7h11M6 3v10" /></>,
+  /* AUDIT-UI CV6: "Lớp tôi dạy" — bảng lớp, không dùng biểu tượng người. */
+  'lop-toi-day': <><rect x="2.5" y="2.5" width="11" height="8" rx="1" /><path d="M5 13.5l3-3 3 3M5.5 5.5h5M5.5 7.8h3" /></>,
   lop: <><circle cx="6" cy="6" r="2.2" /><circle cx="11.2" cy="6.6" r="1.7" /><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3" /></>,
 };
 export const IconNhom = ({ k }: { k: string }) => (
@@ -210,16 +212,22 @@ function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   return (
     <span className={`grid min-w-0 content-center justify-items-start gap-0.5 text-[13px] leading-snug ${O_HAN}`}>
       {daXong ? <span className="font-semibold text-dim">{t('✓ Đã lưu')}</span>
-        : v && it.due ? (
+        /* AUDIT-UI A2: CV3 — dòng quá hạn đã nằm dưới mục "Quá hạn" → MỘT dòng "⚠ 68 ngày · 08/07" (đủ câu ở title + trình đọc màn);
+           CV4 — còn xa: chỉ "hạn 23/09" (V8 hạn = ngày thật; mã tuần đã ở dòng phụ). */
+        : v && it.due ? qua ? (
+          <span title={v.text} className="inline-flex items-center gap-1 whitespace-nowrap font-semibold tabular-nums text-late">
+            <span aria-hidden>⚠</span><span className="sr-only">{t('quá hạn')}</span>{t('{n} ngày', { n: v.daysOverdue ?? 0 })}
+            <span className="font-normal max-sm:hidden">· {shortDate(it.due, homNay)}</span>
+          </span>
+        ) : v.homNay || v.ganHan ? (
           <>
-            <span title={v.text} className={`inline-flex items-center gap-1 whitespace-nowrap font-semibold tabular-nums ${qua ? 'text-late' : v.ganHan ? 'text-soon' : 'text-dim'}`}>
-              {(qua || v.ganHan) && <span aria-hidden>⚠</span>}
-              {qua ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : v.homNay ? t('hạn hôm nay')
-                : v.ganHan ? t('còn {n} ngày', { n: daysBetween(homNay, it.due.slice(0, 10)) }) : tuanLich(it.due, homNay)}
+            <span title={v.text} className={`inline-flex items-center gap-1 whitespace-nowrap font-semibold tabular-nums ${v.ganHan ? 'text-soon' : 'text-dim'}`}>
+              {v.ganHan && <span aria-hidden>⚠</span>}
+              {v.homNay ? t('hạn hôm nay') : t('còn {n} ngày', { n: daysBetween(homNay, it.due.slice(0, 10)) })}
             </span>
             <span className="whitespace-nowrap tabular-nums text-dim max-sm:hidden">{nhanHan(it.due, homNay)}</span>
           </>
-        )
+        ) : <span title={v.text} className="whitespace-nowrap tabular-nums text-dim">{nhanHan(it.due, homNay)}</span>
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
         : laViecChamCheo(it) ? null : <span className="text-faint">{t('không hạn')}</span>}
@@ -236,8 +244,9 @@ export function NguoiGiu({ ten, vai }: { ten: string; vai?: string | null }) {
       <svg aria-hidden viewBox="0 0 12 12" className="mt-[3px] h-3 w-3 shrink-0 fill-none stroke-[color:var(--text-faint)]" strokeWidth={1.5}>
         <circle cx="6" cy="4" r="2.2" /><path d="M1.8 11c.5-2.3 2.1-3.5 4.2-3.5s3.7 1.2 4.2 3.5" />
       </svg>
-      {/* [XM] #939: vai người gửi với em (máy chủ gắn) — chữ mờ hơn tên, không đậm, cùng hàng (M10); thiếu chỗ thì vai xuống dòng sau tên. */}
-      <span className="min-w-0 [overflow-wrap:anywhere]">{ten}{nhanVai && <>{' '}<span className="whitespace-nowrap text-faint">{nhanVai}</span></>}</span>
+      {/* [XM] #939: vai người gửi với em (máy chủ gắn) — chữ mờ hơn tên, không đậm, cùng hàng (M10). NHAN-MOT-DONG (audit C5): "tên · vai" một dòng
+        * khi cột đủ chỗ; tên quá dài mới xuống dòng (không cắt "…"). */}
+      <span className="min-w-0 [overflow-wrap:anywhere]">{ten}{nhanVai && <span className="whitespace-nowrap text-faint">{' · '}{nhanVai}</span>}</span>
     </span>
   );
 }
@@ -396,7 +405,8 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
     caLop ? it.classCode : gop || viecCaLop ? null : it.studentName,
     !caLop && it.classCode && it.studentName !== 'Lớp ' + it.classCode && !daNoi(it.classCode) ? it.classCode : null,
     ngCanh,
-    ...phan.filter((x) => x !== it.classCode && laThe(x) && !(gop && /^\d+ việc$/.test(x) && phan.some((y) => /^\d+ em$/.test(y)))),   // "4 em · 8 việc" → chỉ "4 em"
+    /* AUDIT-UI CV8: nút khay đã ghi "3 em ▾" → dòng phụ không lặp "· 3 em". */
+    ...phan.filter((x) => x !== it.classCode && laThe(x) && !(gop && /^\d+ việc$/.test(x) && phan.some((y) => /^\d+ em$/.test(y))) && !(con && nut === dich(x))),   // "4 em · 8 việc" → chỉ "4 em"
     !gop && it.group === 'score' && it.soBai && !phan.some((x) => / bài$/.test(x)) ? t('{soBai} bài', { soBai: it.soBai }) : !gop && it.count !== null && it.count > 1 && !daCoSoEm ? t('{n} HV', { n: it.count }) : null,
   ]);
   const muc = chipMuc(it, false);
