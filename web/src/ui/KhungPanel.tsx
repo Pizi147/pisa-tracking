@@ -441,7 +441,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 max-sm:[&>.btn]:flex-1 max-sm:[&>.btn]:justify-center">
               {huy && <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>}
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? t('Xoá')}</button>}
-              {chan.trai ? <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px] max-sm:order-first max-sm:basis-full">{chan.trai}</span> : <span className="flex-1 max-sm:hidden" />}
+              {chan.trai ? <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px] max-sm:order-first max-sm:basis-full has-[[role=alert]]:order-first has-[[role=alert]]:basis-full">{chan.trai}</span> : <span className="flex-1 max-sm:hidden" />}
               {chan.phu}
               {chan.chinh}
             </div>

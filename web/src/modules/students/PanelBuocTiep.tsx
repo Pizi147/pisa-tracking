@@ -24,8 +24,6 @@ export type TrangThaiBuocTiep = {
   daGiaHan: boolean; coTheGiaHan: boolean;
   /** SUA-LUU-TRU (việc 5): kết quả thi thật đổi sau khi chọn — dòng nhắc nhẹ. */
   kqDaDoi?: boolean;
-  /** SUA-LUU-TRU (việc 4): lý do không đổi được lựa chọn (khoá nút "Đổi") — null = đổi được. */
-  lyDoKhongDoi?: string | null;
 };
 type Chon = HuongSauThi;
 
@@ -73,8 +71,6 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const [daLuu, setDaLuu] = useState<{ x: DaLuuPanel; luc: string } | null>(null);
   const [giaHan, setGiaHan] = useState(false);
   const [lichSu, setLichSu] = useState(false);   // OV-15g: Lịch sử thay nội dung panel, ← Bước tiếp
-  /* SUA-LUU-TRU (việc 4): Đổi bị máy chủ từ chối (409: lộ trình mới đã có dữ liệu, em đổi trạng thái sau…) → khoá "Đổi" + lý do tại nút, không toast chung. */
-  const [khongDoi, setKhongDoi] = useState<string | null>(null);
   const khoiPhuc = useKhoiPhucThiThat(cycleId, () => { reload(); onDone?.(); });
 
   const tieuDe = t('Bước tiếp');
@@ -98,7 +94,6 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       const phu = r?.thongBao ? dich(r.thongBao) : x.phu;
       lamMoi(); setTt(null); setDaLuu({ x: { ...x, phu }, luc: gio() }); setDoi(false); reload(); onDone?.();
     } catch (e: any) {
-      if (e?.status === 409 && bt.chon) { setKhongDoi(e.message ?? t('Không lưu được')); setDoi(false); setChon(null); setTt(null); setLoi(null); return; }
       setTt('loi'); setLoi(e?.message ?? null);
     }
   };
@@ -155,15 +150,15 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
         {bt.chon && bt.kqDaDoi && <p className="m-0 mt-2 text-sm text-soon">{t('Kết quả đã đổi — xem lại bước tiếp?')}</p>}
         {bt.chon && bt.coTheChon && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {/* SUA-LUU-TRU (việc 3, 4): Đổi = chọn lại tại chỗ (máy chủ gỡ lựa chọn cũ + làm mới, một giao dịch); không đổi được → khoá + lý do ngay tại nút. */}
-            <NutChu onClick={() => { setDoi(true); setChon(null); setTt(null); setLoi(null); }} disabled={tt === 'dang' || !!(khongDoi ?? bt.lyDoKhongDoi)}>{t('Đổi')}</NutChu>
+            {/* SUA-LUU-TRU (việc 3): Đổi = chọn lại tại chỗ (máy chủ gỡ lựa chọn cũ + làm mới, một giao dịch). HOTFIX-MO-KHOA: luôn bấm được — không hoàn tác
+                chính xác được thì máy chủ đi thẳng từ trạng thái hiện tại. */}
+            <NutChu onClick={() => { setDoi(true); setChon(null); setTt(null); setLoi(null); }} disabled={tt === 'dang'}>{t('Đổi')}</NutChu>
             {bt.chon === 'tam_dung' && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { setDoi(true); setChon('lo_trinh_moi'); }}>{t('Quay lại học')}</button>}
             {(bt.hen || bt.hoanTacDuoc) && (
               <NutChu onClick={() => { setTt('dang'); setLoi(null); boChon().then(() => setTt(null), (e: any) => { setTt('loi'); setLoi(e?.message ?? null); }); }} disabled={tt === 'dang'}>
                 {bt.hen ? t('Huỷ hẹn') : t('Hoàn tác')}
               </NutChu>
             )}
-            {(khongDoi ?? bt.lyDoKhongDoi) && <span className="basis-full text-[13px] text-slate-400" role="status">{dich(khongDoi ?? bt.lyDoKhongDoi ?? '')}</span>}
           </div>
         )}
       </KhungPanel>

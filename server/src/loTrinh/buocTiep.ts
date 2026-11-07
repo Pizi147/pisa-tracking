@@ -21,7 +21,7 @@ import {
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso, chuTuDo } from '../util.ts';
 import { can, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
-import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, setStudentStatus, unarchiveStudent } from '../students/students.ts';
+import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, ketThucSangTamDung, setStudentStatus, unarchiveStudent } from '../students/students.ts';
 import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { dauVaoTuLoTrinh, type LoTrinhMoiSauThi } from '../classes/luatLoTrinh.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -74,8 +74,6 @@ export type TrangThaiBuocTiep = {
   daGiaHan: boolean; coTheGiaHan: boolean;
   /** SUA-LUU-TRU (việc 5): đã chọn mà kết quả thi thật đổi sau đó — dòng nhắc nhẹ, không chặn. Lựa chọn cũ (trước PR) không có dấu → false. */
   kqDaDoi: boolean;
-  /** SUA-LUU-TRU (việc 4): lý do KHÔNG đổi được lựa chọn — web khoá nút "Đổi" + câu ngắn tại nút; null = đổi được (vướng khác máy chủ báo 409 khi lưu). */
-  lyDoKhongDoi: string | null;
 };
 
 /** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
@@ -95,11 +93,10 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
     target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
     hoanTacDuoc: !daChuyen,
     kqDaDoi: !!c.buoc_tiep && g.kq !== undefined && g.kq !== dauKq(c),
-    lyDoKhongDoi: daChuyen ? LY_DO_DA_CHUYEN : null,
   };
 }
-/** SUA-LUU-TRU: lựa chọn Lộ trình mới · Lớp khác đã chuyển lớp xong — không hoàn tác / đổi được (chuyển lớp không hoàn tác). Đường sửa: hồ sơ. */
-const LY_DO_DA_CHUYEN = 'Em đã chuyển sang lớp mới — đổi ở hồ sơ (Chuyển lớp / Kết thúc học).';
+/** HOTFIX-MO-KHOA: Hoàn tác không trả đúng như trước được (em đã đổi sau đó, lộ trình mới đã có điểm, lệnh chuyển lớp đã chạy) — một câu ngắn, đường làm thay là "Đổi". */
+const KHONG_HOAN_TAC = 'Không trả về đúng như trước được — bấm "Đổi" để chọn lại.';
 
 export type ChonBuocTiepVao = {
   chon?: unknown; lopMoiId?: unknown; mucTieu?: number | string | null; thangThi?: string | null; date?: string; lyDo?: unknown; moLaiLop?: boolean;
@@ -229,6 +226,8 @@ type GhiBuocTiep = {
   dongPhoiHop?: number[];
   /** SUA-LUU-TRU: dấu kết quả thi thật lúc chọn (`dauKq`). */
   kq?: string;
+  /** HOTFIX-MO-KHOA: lần Đổi này không hoàn tác chính xác được lựa chọn cũ — đi thẳng từ trạng thái lúc đó (nhật ký). */
+  diThang?: boolean;
   /** SUA-LUU-TRU (Đổi): đầu vào ĐÃ KIỂM của lần chọn này (chọn lại đúng nó được) · lựa chọn TRƯỚC lần Đổi (Hoàn tác = chọn lại nó, chuỗi lùi được). */
   vao?: ChonBuocTiepVao;
   truoc?: TruocDoi | null;
@@ -237,7 +236,7 @@ type TruocDoi = { vao: ChonBuocTiepVao; kq?: string; truoc?: TruocDoi | null };
 /** Bản chụp mới nhất của lộ trình (hai tham số: cycle_id, cycle_id). */
 const BAN_CHUP_MOI = 'cycle_id = ? AND lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = ?)';
 
-/** Hoàn tác đúng lựa chọn đang có (trong giao dịch của nơi gọi). Vướng (Học lại đã có điểm / em đã đổi trạng thái / đã chuyển lớp) → 409 nói rõ. */
+/** Hoàn tác đúng lựa chọn đang có (trong giao dịch của nơi gọi). Vướng (Học lại đã có điểm / em đã đổi trạng thái / đã chuyển lớp) → 409 `KHONG_HOAN_TAC`. */
 function hoanTac(p: Principal, c: any) {
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
   const conn = db();
@@ -250,7 +249,7 @@ function hoanTac(p: Principal, c: any) {
       if (g.dongLoTrinh) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ? AND status = 'completed'`).run(c.id);
     } else if (c.buoc_tiep === 'lo_trinh_moi' && g.lenhId) {
       const l = conn.prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any;
-      if (l?.trang_thai === 'da_chuyen') throw conflict(LY_DO_DA_CHUYEN);
+      if (l?.trang_thai === 'da_chuyen') throw conflict(KHONG_HOAN_TAC);
       if (l?.trang_thai === 'cho') {
         conn.prepare('UPDATE learning_cycles SET buoc_tiep = NULL WHERE id = ?').run(c.id);   // nhật ký do nơi gọi ghi — `huyMotLenh` không ghi lần hai
         huyLenh(p, g.lenhId, 'Hoàn tác bước tiếp sau thi');
@@ -269,9 +268,7 @@ function hoanTac(p: Principal, c: any) {
       if (g.tamDungNgay) conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(g.tamDungNgay, c.student_id);   // P7: Lưu trữ đúng ngày Tạm dừng cũ
     }
   } catch (e) {
-    if (e instanceof HttpError && e.status === 409) {
-      throw conflict(`Không đổi được "${NHAN_SAU_THI[c.buoc_tiep as LuaChonSauThi]}": ${e.message}${e.message.includes('hồ sơ') ? '' : ' Giữ lựa chọn cũ, hoặc đổi ở hồ sơ học viên (Chuyển lớp / Kết thúc học).'}`);
-    }
+    if (e instanceof HttpError && e.status === 409) throw conflict(KHONG_HOAN_TAC);   // Đổi bắt lỗi này rồi đi thẳng (`chonBuocTiep`)
     throw e;
   }
   if (g.huongCu !== undefined) conn.prepare(`UPDATE ban_chup_lo_trinh SET huong_tiep = ? WHERE ${BAN_CHUP_MOI}`).run(g.huongCu, c.id, c.id);
@@ -361,7 +358,9 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     };
     /* Tạm dừng → Lộ trình mới (Quay lại học) đã có đường lùi riêng (`tuTamDung`: hoàn tác = Tạm dừng lại) — không nhớ thêm. */
     const quayLaiTuTamDung = cu.buoc_tiep === 'tam_dung' && chon === 'lo_trinh_moi';
-    const truoc: TruocDoi | null = o.truoc !== undefined ? o.truoc : cu.buoc_tiep && gCu.vao && !quayLaiTuTamDung ? { vao: gCu.vao, kq: gCu.kq, truoc: gCu.truoc ?? null } : null;
+    /* HOTFIX-MO-KHOA: lựa chọn Kết thúc / Tạm dừng ghi trước #1172 (không `vao`) — Hoàn tác sau Đổi vẫn về đúng nó. */
+    const vaoCu = gCu.vao ?? (cu.buoc_tiep === 'ket_thuc' || cu.buoc_tiep === 'tam_dung' ? { chon: cu.buoc_tiep } : null);
+    const truoc: TruocDoi | null = o.truoc !== undefined ? o.truoc : cu.buoc_tiep && vaoCu && !quayLaiTuTamDung ? { vao: vaoCu, kq: gCu.kq, truoc: gCu.truoc ?? null } : null;
     const ghi: GhiBuocTiep = { thamSo, kq: o.kq ?? dauKq(cu), vao, ...(truoc ? { truoc } : {}), ...(ghiChu ? { ghiChu } : {}), ...(lt ? { loTrinhMoi: { route: lt.route, routeTen: lt.routeTen, boTarget: lt.boTarget, monDangKy: lt.monDangKy, cuoiId: cycleId } } : {}) };
     /* OV-13m: em Tạm dừng sau thi → Lộ trình mới = Quay lại học (hạn tính lại từ hôm nay), không gỡ Tạm dừng; hoàn tác thì Tạm dừng lại. */
     if (quayLaiTuTamDung) {
@@ -369,10 +368,14 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
       ghi.tuTamDung = true;
       ghi.tamDungNgay = cu.em_archived ?? null;
       ghi.tamDungCu = { json: cu.buoc_tiep_json ?? null, luc: cu.buoc_tiep_luc ?? null, boi: cu.buoc_tiep_boi ?? null };
-    } else if (cu.buoc_tiep) hoanTac(q, cu);
+    } else if (cu.buoc_tiep) {
+      /* HOTFIX-MO-KHOA (chủ SP 07/11, không chặn cứng): hoàn tác chính xác trong savepoint; vướng (409) → cuộn lại phần đó, đi THẲNG từ trạng thái hiện tại. */
+      try { tx(() => hoanTac(q, cu)); } catch (e) { if (!(e instanceof HttpError && e.status === 409)) throw e; ghi.diThang = true; }
+    }
     const c = docLoTrinh(cycleId);
-    if (c.seq !== c.seq_cuoi) throw badRequest('Em đã có lộ trình sau lộ trình này — bước tiếp chọn ở lộ trình mới nhất.');
-    if (chon === 'tam_dung' && c.em_status === 'finished') throw badRequest('Em đã Kết thúc học — chọn Lộ trình mới hoặc Thôi học.');
+    /* Đã có lựa chọn: lộ trình sau là của nó (Lộ trình mới đã có dữ liệu, hoàn tác không gỡ được) — Đổi không chặn. */
+    const coLtSau = c.seq !== c.seq_cuoi;
+    if (coLtSau && !cu.buoc_tiep) throw badRequest('Em đã có lộ trình sau lộ trình này — bước tiếp chọn ở lộ trình mới nhất.');
     /* Ghi lựa chọn TRƯỚC khi làm: "Ngay bây giờ" ở lớp khác chuyển ngay trong cùng giao dịch, `apDungMotDong` đọc lựa chọn này để đóng lộ trình đã xong, mở lộ trình mới. */
     conn.prepare('UPDATE learning_cycles SET buoc_tiep = ?, buoc_tiep_luc = ?, buoc_tiep_boi = ?, buoc_tiep_hen = ?, buoc_tiep_json = ? WHERE id = ?').run(chon, homNay, p.userId, hen, JSON.stringify(ghi), cycleId);
     if (chon === 'ket_thuc') {
@@ -385,6 +388,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
         ghi.dongLoTrinh = true;
       }
       if (c.em_status === 'active') { setStudentStatus(q, c.student_id, 'inactive', ngayDung, lyDoDung ?? 'Tạm dừng sau thi'); ghi.tamDung = true; }
+      else if (c.em_status === 'finished') ketThucSangTamDung(q, c.student_id, ngayDung, lyDoDung ?? 'Tạm dừng sau thi');   // HOTFIX-MO-KHOA: Kết thúc → Tạm dừng thẳng
     } else if (chon === 'lo_trinh_moi' && lopMoiId && c.ghi_danh === 'active' && (conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any).status === 'active') {
       /* Lớp khác, em đang học: đúng đường Chuyển lớp (OV-13l) — cùng luật lớp đích, phiếu bàn giao, hạn ≥ 7 ngày; "Ngay bây giờ" = chuyển ngay. */
       const r = raLenh(q, {
@@ -393,6 +397,8 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
       });
       if (r.failed.length) throw badRequest(r.failed[0].message);
       ghi.lenhId = (conn.prepare('SELECT id FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1').get(c.student_id) as any).id;
+    } else if (chon === 'lo_trinh_moi' && coLtSau && c.em_status === 'active') {
+      /* Đi thẳng, em đang học lộ trình sau (của lựa chọn cũ): đã ở lộ trình mới — chỉ ghi lựa chọn. */
     } else if (chon === 'lo_trinh_moi' && hen) {
       /* Hẹn bắt đầu: chưa đổi gì — tới Thứ Hai đó `batDauHenDenHan` bắt đầu bằng đúng đường "Ngay bây giờ". */
       Object.assign(ghi, { lopMoiId, mucTieu });
@@ -429,7 +435,10 @@ export function boChonBuocTiep(p: Principal, cycleId: number) {
   if (!c.buoc_tiep) return trangThaiBuocTiep(p, cycleId);
   /* SUA-LUU-TRU: lựa chọn này là một lần ĐỔI → Hoàn tác = chọn lại lựa chọn trước (một giao dịch: gỡ cái mới, làm lại cái cũ), giữ chuỗi lùi phía trước. */
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
-  if (g.truoc?.vao) return chonBuocTiep(p, cycleId, g.truoc.vao, { truoc: g.truoc.truoc ?? null, kq: g.truoc.kq, hoanTac: true });
+  if (g.truoc?.vao) {
+    try { return chonBuocTiep(p, cycleId, g.truoc.vao, { truoc: g.truoc.truoc ?? null, kq: g.truoc.kq, hoanTac: true }); }
+    catch (e) { if (e instanceof HttpError && (e.status === 400 || e.status === 409)) throw conflict(KHONG_HOAN_TAC); throw e; }   // vd Hẹn cũ đã qua tuần
+  }
   return tx(() => {
     hoanTac(nguoiLam(p, c.student_id), c);
     addJourney({
