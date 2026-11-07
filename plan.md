@@ -259,6 +259,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 07/11 — TỔNG QUAN: CẢ BOX BẤM ĐƯỢC, MỌI VAI (chủ SP, đang brainstorm — chưa làm)
+- **Chủ SP 07/11:** "Thêm nữa, cũng giống như việc GV có thể bấm vào box thông tin ở trang tổng quan để sang trang điều hướng tiếp theo hợp lý, cũng làm như vậy với tất cả các box thông tin còn lại ở trang tổng quan trên tất cả các vai, thay vì phải bấm vào con số. Cái cần hiện ra panels thông tin vẫn hiện ra panels thông tin, cái gì cần hiện ra panels làm việc vẫn vậy, cái gì cần điều hướng sang trang khác cũng làm như thế nốt. Cần gì đề xuất thêm cứ đề xuất, và hỏi lại tôi"
+
 ### 07/11 — SỬA HV LƯU TRỮ + ĐỔI BƯỚC TIẾP (chủ SP DUYỆT 07/11 — session SUA-LUU-TRU)
 - **Chủ SP 07/11:** "Tôi muốn có khả năng sửa đổi được một vài thông tin của HV đã lưu trữ, ví dụ như điểm thi thật chẳng hạn, và có thể undo lại và sửa lại lộ trình tiếp theo của học sinh thay vì phải đưa HS vào lộ trình mới xong mới sửa lại được thì thông tin nó bị nhiễu loạn, bạn hiểu ý tôi chứ? bạn còn đề xuất gì nữa không?"
 - **Hiện trạng (PTA kiểm mã 07/11):** máy chủ đã cho sửa điểm thi thật khi em lưu trữ (`PUT /cycles/:id/outcome`, `thiThat.ts`) nhưng web ẩn ⋯ "Kết quả thi thật" khi `chiXem`; không có Hoàn tác (chỉ audit before/after). Em Kết thúc học không sửa hồ sơ (`CAU_LUU_TRU`, `quanLyHocVien.ts:26-28`); em Tạm dừng chỉ sửa liên hệ. Máy chủ đã "đổi bước tiếp" trong một giao dịch (`chonBuocTiep` POST lại = hoàn tác cũ + làm mới, `buocTiep.ts:303,339`) nhưng web chỉ có Hoàn tác, không có "Đổi".
