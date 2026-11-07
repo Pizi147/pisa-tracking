@@ -107,26 +107,26 @@ export async function runDonLuongTests(t: YThucTestKit) {
 
   /* ---------------------------------------------------------------- K23 */
   const vp: any = await import('../yThuc/violations.ts');
-  check('K23 · ghi vi phạm em Tạm dừng / em đã chuyển khỏi lớp: 400 nói lý do + bước tiếp', () => thu(() => {
+  check('K23 · RKC-3a: ghi vi phạm em Tạm dừng / đã chuyển / đã học xong → ghi vào lớp của ghi danh hiện tại (không chặn)', () => thu(() => {
     /* Em đang học ở lớp chi nhánh MB (QL MB ghi được — chỉ còn chặn vì không có lớp đang học). */
     /* Em đang học ở lớp chi nhánh MB, chỉ MỘT ghi danh (không phụ thuộc lịch sử lớp do tệp khác để lại khi chạy đủ bộ). */
     const c = one(`SELECT e.student_id, e.class_id FROM enrollments e JOIN classes c ON c.id = e.class_id AND c.branch_id = ? JOIN students s ON s.id = e.student_id
       AND s.status = 'active' AND s.archived_at IS NULL WHERE e.status = 'active'
         AND (SELECT COUNT(*) FROM enrollments x WHERE x.student_id = e.student_id) = 1 ORDER BY e.id LIMIT 1`, MB);
     const lop = one(`SELECT code FROM classes WHERE id = ?`, c.class_id).code;
-    const ghi = () => { try { vp.recordViolation(P.mbManager, { studentId: c.student_id, ten: 'Đi muộn', occurredOn: t.TODAY }); return null; } catch (e: any) { return e; } };
+    const ghi = () => { try { return vp.recordViolation(P.mbManager, { studentId: c.student_id, category: 'attendance', ten: 'Đi muộn', occurredOn: t.TODAY }).violation; } catch (e: any) { return e; } };
     conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ? AND status = 'active'`).run(c.student_id);
     xoaNho();
     const e1 = ghi();
-    assert(e1?.status === 400 && e1.message === 'Em đang tạm dừng — Quay lại học trước khi ghi vi phạm.', `${e1?.status} ${e1?.message}`);
+    assert(e1?.classId === c.class_id, `tạm dừng: ${e1?.status} ${e1?.message}`);
     conn.prepare(`UPDATE enrollments SET status = 'transferred' WHERE student_id = ? AND status = 'paused'`).run(c.student_id);
     xoaNho();
     const e2 = ghi();
-    assert(e2?.status === 400 && e2.message === `Em đã chuyển khỏi ${lop} — ghi ở lớp em đang học.`, `${e2?.status} ${e2?.message}`);
+    assert(e2?.classId === c.class_id, `đã chuyển: ${e2?.status} ${e2?.message} (${lop})`);
     conn.prepare(`UPDATE enrollments SET status = 'completed' WHERE student_id = ? AND status = 'transferred'`).run(c.student_id);
     xoaNho();
     const e3 = ghi();
-    assert(e3?.status === 400 && e3.message === `Em đã học xong khoá ở ${lop} — xếp lớp mới trước khi ghi vi phạm.`, `${e3?.status} ${e3?.message}`);
+    assert(e3?.classId === c.class_id, `học xong: ${e3?.status} ${e3?.message}`);
   }));
 
   /* ---------------------------------------------------------------- K42a + A6 */

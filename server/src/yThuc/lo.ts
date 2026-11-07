@@ -80,7 +80,7 @@ function lyDoCapBac(em: EmYThuc, laQl: boolean): ChuKhoa | null {
   if (!em.chuoi.length) return kem('chưa có lộ trình');
   if (em.khai) return laQl || em.khai.coTheSua ? null : kem('đã có xử lý · chỉ QL sửa');
   if (em.soXuLyChuoi > 0) return kem('đã có xử lý trên web');
-  return em.tamDung ? kem('em đang Tạm dừng') : null;   // như `khaiDuoc` (xuLy.ts) — em Tạm dừng không khai mới
+  return null;   // RKC-3a: em Tạm dừng khai được (như `khaiDuoc`)
 }
 
 const tomTat = (em: EmYThuc, ids: readonly number[]) => {

@@ -638,7 +638,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     studentsSvc.setStudentStatus(P.admin, sid, 'inactive', TODAY, 'Tạm dừng thử khai bậc');
     const sau = xuLy.yThucHocVien(gvcn, sid).coTheKhai;
     const coViec = itemsCua(gvcn).some((i: any) => i.group === 'khai_bac' && (i.studentId === sid || String(i.href).includes(`hv=${sid}`)));
-    assert(truoc === true && sau === false && !coViec, JSON.stringify({ truoc, sau, coViec }));
+    assert(truoc === true && sau === true && !coViec, JSON.stringify({ truoc, sau, coViec }));   // RKC-3a: em Tạm dừng vẫn khai được (không thành việc)
     assert(/khaiDuoc\(em\)/.test(docNguon('server/src/worklist/mywork.ts')) && /coTheKhai: canManage && khaiDuoc\(em\)/.test(docNguon('server/src/yThuc/xuLy.ts')), 'hai đường không gọi chung khaiDuoc');
   });
 

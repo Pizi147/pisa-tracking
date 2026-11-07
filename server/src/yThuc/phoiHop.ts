@@ -559,7 +559,7 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
 export function confirmCoordination(p: Principal, id: number, input: { performedOn?: string | null; note?: string | null; performerName?: string | null }): CoordinationAction {
   const r = loadAction(id);
   requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
-  if (r.status === 'removed') throw badRequest('Việc này đã bỏ — bấm Khôi phục trước khi xác nhận.');
+  /* RKC-3a: việc đã bỏ xác nhận thẳng được — tự khôi phục (xoá lý do bỏ) rồi ghi xong, cùng giao dịch; nhật ký giữ trạng thái trước. */
   if (!input.performedOn) throw badRequest('Cần chọn ngày thực hiện.');
   if (!isIsoDate(input.performedOn)) throw badRequest('Ngày thực hiện không hợp lệ.');
   if (input.performedOn > demoToday()) throw badRequest('Ngày thực hiện không được ở tương lai.');
@@ -572,7 +572,8 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
       ? turnsOf(p, [{ ...r, status: 'done', performed_on: input.performedOn, noi_dung_luc_bao: null }])[0]?.actions[0]?.noiDung ?? null : null;
     db()
       .prepare(
-        `UPDATE sos_coordination_actions SET status = 'done', performed_on = ?, performed_by = ?, performer_name = ?, note = ?, noi_dung_luc_bao = ?, updated_at = ? WHERE id = ?`,
+        `UPDATE sos_coordination_actions SET status = 'done', performed_on = ?, performed_by = ?, performer_name = ?, note = ?, noi_dung_luc_bao = ?,
+            remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`,
       )
       .run(input.performedOn, who ? null : p.userId, who || null, note || null, chup ? JSON.stringify(chup) : null, nowIso(), id);
     writeAudit({
@@ -592,7 +593,8 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
 export function removeCoordination(p: Principal, id: number, input: { reasonCode?: string | null; reasonText?: string | null }): CoordinationAction {
   const r = loadAction(id);
   requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
-  if (r.status !== 'pending') throw badRequest('Chỉ bỏ được việc đang ở trạng thái Cần xử lý — việc đã xong hoặc đã bỏ thì không bỏ nữa.');
+  /* RKC-3a: việc ĐÃ XONG cũng bỏ được (khỏi "Đưa lại" trước) — bản ghi đảo chụp nguyên dòng xong, Khôi phục trả về xong. Việc đã bỏ: không làm gì thêm. */
+  if (r.status === 'removed') throw badRequest('Việc này đã bỏ rồi — bấm Khôi phục nếu cần làm lại.');
   const code = String(input.reasonCode ?? '');
   if (!(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(code)) {
     throw loi(400, 'Chọn một lý do: {ds}.', { ds: COORDINATION_USER_REMOVE_REASONS.map((c) => COORDINATION_REMOVE_REASON_LABEL[c]).join(' · ') });
@@ -607,7 +609,7 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
     g.sua('sos_coordination_actions', 'id = ?', id);
     const doi = db()
       .prepare(
-        `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = ?, remove_reason_text = ?, removed_by = ?, removed_at = ?, updated_at = ? WHERE id = ? AND status = 'pending'`,
+        `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = ?, remove_reason_text = ?, removed_by = ?, removed_at = ?, updated_at = ? WHERE id = ? AND status IN ('pending', 'done')`,
       )
       .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), nowIso(), id).changes;
     if (!doi) throw badRequest('Việc vừa được cập nhật — mở lại.');

@@ -130,12 +130,11 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(xu.yThucHocVien(gvcn, moi).keTiep.nhan === 'Report 1', 'bậc 0 → lần kế Report 1');
     assert(!kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: ql, bac: 4 }] }), ql).ok, 'GVCN không sửa em đã xử lý');
     assert(kq(lo.loCapBac(P.mbManager, cid, { em: [{ studentId: ql, bac: 4 }] }), ql).ok && get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', ql).bac === 4, 'QL sửa được');
-    /* rà #408 (4): em Tạm dừng không khai mới (như khaiDuoc) */
+    /* RKC-3a (thay rà #408 (4)): em Tạm dừng khai được (không ảnh hưởng đầu ra). */
     const td = moiEm();
     studentsSvc.setStudentStatus(P.admin, td, 'inactive', TODAY, 'Tạm dừng thử cấp bậc lô');
     const dTd = lo.loYThucLop(gvcn, cid).em.find((x: any) => x.studentId === td);
-    assert(!dTd || (!dTd.capBac.duoc && /Tạm dừng/.test(dTd.capBac.lyDo.chu)), JSON.stringify(dTd));
-    assert(!kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: td, bac: 0 }] }), td).ok, 'em Tạm dừng không lưu');
+    assert(!dTd || dTd.capBac.duoc, JSON.stringify(dTd));
     assert(maLoi(() => lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] })) === 400 || !kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 9 }] }), moi).ok, 'bậc ngoài 0–6 bị từ chối');
   }));
 

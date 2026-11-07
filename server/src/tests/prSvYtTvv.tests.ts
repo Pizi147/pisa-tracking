@@ -227,8 +227,9 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(ma(() => ghi(P.cpManager, [v.id], 'da_bao')) === 403, 'QL chi nhánh khác 403');
     assert(ma(() => bp.boViecBaoPh(tvv, v.id, { lyDo: 'xyz' })) === 400 && ma(() => bp.boViecBaoPh(tvv, v.id, { lyDo: 'other' })) === 400, 'lý do');
     const x = bp.boViecBaoPh(tvv, v.id, { lyDo: 'other', lyDoKhac: 'Gia đình đổi số, không liên hệ được' });
-    assert(x.trangThai === 'bo' && x.bo?.chu === 'Gia đình đổi số, không liên hệ được' && x.coTheGhi === false, JSON.stringify(x));
-    assert(ma(() => ghi(tvv, [v.id], 'da_bao')) === 400 && ma(() => bp.boViecBaoPh(tvv, v.id, { lyDo: 'not_needed' })) === 400, 'đã bỏ');
+    assert(x.trangThai === 'bo' && x.bo?.chu === 'Gia đình đổi số, không liên hệ được' && x.coTheGhi === true, JSON.stringify(x));   // RKC-3a: việc đã bỏ vẫn ghi được
+    assert(ma(() => bp.boViecBaoPh(tvv, v.id, { lyDo: 'not_needed' })) === 400, 'đã bỏ: không bỏ lần nữa');
+    ghi(tvv, [v.id], 'da_bao');   // RKC-3a: việc đã bỏ ghi lần liên hệ được → xong
     const s2 = moiEm(tvv); xuLy(gvcn, s2, [nVp(s2, 1)[0]]);
     ghi(ql, [viecCua(s2)[0].id], 'da_bao');
     assert(viecCua(s2)[0].trang_thai === 'xong', 'QL chi nhánh ghi thay');
@@ -245,7 +246,8 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     const s2 = moiEm(tvvMoi()); xuLy(gvcn, s2, [nVp(s2, 1)[0]]);
     bp.boViecBaoPh(P.mbManager, viecCua(s2)[0].id, { lyDo: 'not_needed' });
     const s3 = moiEm(tvv); xuLy(gvcn, s3, [nVp(s3, 1)[0]]);
-    assert(ma(() => ghi(tvv, [viecCua(s3)[0].id, viecCua(s2)[0].id], 'da_bao')) === 400, 'một việc đã bỏ → 400');
+    /* RKC-3a: việc đã bỏ ghi được — lỗi một việc thử bằng việc không tồn tại. */
+    assert(ma(() => ghi(tvv, [viecCua(s3)[0].id, 999999], 'da_bao')) === 404, 'một việc không tồn tại → 404');
     assert(viecCua(s3)[0].trang_thai === 'mo' && hang('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ?', viecCua(s3)[0].id).length === 0, 'lui cả lần ghi');
   }));
 
