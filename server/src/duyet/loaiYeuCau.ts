@@ -161,8 +161,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const ids = ds.map((y) => y.doi_tuong_id);
       if (!ids.length) return new Set();
       const duoc = new Set((conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-          WHERE iv.id IN (${ids.map(() => '?').join(',')}) AND sc.status != 'done' AND iv.approval_state IN ('approved', 'declined')
-            AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = iv.id)`).all(...ids) as any[]).map((r) => r.id as number));
+          WHERE iv.id IN (${ids.map(() => '?').join(',')}) AND iv.approval_state IN ('approved', 'declined')`).all(...ids) as any[]).map((r) => r.id as number));   // RKC-3b: Case đóng / PA có kết quả → máy chủ hỏi
       const doi = doiPaHuyDuoc(conn, ds.map((y) => y.id));   // OV-13b: thẻ đổi PA mà PA gốc đã đổi sau quyết định → không huỷ
       return new Set(ds.filter((y) => duoc.has(y.doi_tuong_id) && doi.has(y.id)).map((y) => y.id));
     },

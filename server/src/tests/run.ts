@@ -1823,7 +1823,8 @@ console.log('\n13. Thao tác hàng loạt và việc theo thời điểm');
 check('Báo cáo tuần: mở hai ngày cuối tuần, hạn hết thứ Tư tuần sau, quá hạn vẫn nộp (nộp muộn — OV-13h)', () => {
   const cur = conn.prepare('SELECT * FROM report_periods WHERE week_start <= ? AND week_end >= ?')
     .get(demoToday(), demoToday()) as any;
-  assert(!week.reportEditWindow(cur, cur.week_start).open, 'Đầu tuần vẫn mở cho nhập báo cáo');
+  /* RKC-3b: đầu tuần nộp sớm được (cờ `som` để web nhắc) — không còn khoá. */
+  assert(week.reportEditWindow(cur, cur.week_start).open && week.reportEditWindow(cur, cur.week_start).som, 'Đầu tuần nộp sớm được, có cờ som');
   assert(week.reportEditWindow(cur, addDays(cur.week_end, -1)).open, 'Thứ Bảy phải mở');
   assert(week.reportEditWindow(cur, cur.week_end).open, 'Chủ nhật phải mở');
 

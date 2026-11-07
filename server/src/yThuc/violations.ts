@@ -15,7 +15,7 @@ import { currentCycle } from '../fasttrack/cycles.ts';
 import { purgeAttachmentsOf } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import {
-  EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, requireRecordViolation, requireViewClass, requireViewStudent,
+  EDIT_VIOLATION_MESSAGE, KEY_TAKEN_MESSAGE, activeClassOf, canEditViolation, lopGanNhat, requireRecordViolation, requireViewClass, requireViewStudent,
 } from './access.ts';
 
 /**
@@ -69,13 +69,9 @@ const SELECT = `
  * Chỉ chặn khi em CHƯA TỪNG xếp lớp (không có lớp để gắn — dữ liệu không thể đúng).
  */
 function lopGhiViPham(studentId: number): number {
-  const dang = activeClassOf(studentId);
-  if (dang) return dang;
-  const r = db().prepare(
-    `SELECT e.class_id FROM enrollments e WHERE e.student_id = ? ORDER BY e.status = 'paused' DESC, e.started_at DESC, e.id DESC LIMIT 1`,
-  ).get(studentId) as { class_id: number } | undefined;
-  if (!r) throw loi(400, 'Em chưa xếp lớp — xếp lớp trước khi ghi vi phạm.');
-  return r.class_id;
+  const lop = lopGanNhat(studentId);
+  if (!lop) throw loi(400, 'Em chưa xếp lớp — xếp lớp trước khi ghi vi phạm.');
+  return lop;
 }
 
 export function shapeViolation(r: any, em?: EmYThuc): ViolationView {

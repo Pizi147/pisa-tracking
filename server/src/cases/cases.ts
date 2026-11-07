@@ -1274,10 +1274,10 @@ export function huyQuyetDinhPa(p: Principal, interventionId: number) {
       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id = ?`).get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án');
   if (iv.approval_state !== 'approved' && iv.approval_state !== 'declined') throw badRequest('PA này chưa có quyết định để huỷ.');
-  if (iv.case_status === 'done') throw badRequest('Case đã đóng — không huỷ quyết định được.');
-  if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) {
-    throw badRequest('PA đã có kết quả — không huỷ quyết định được.');
-  }
+  /* RKC-3b: Case đã đóng → hỏi rồi Mở lại Case cùng giao dịch; PA đã có kết quả → hỏi, kết quả giữ ở lịch sử (PA về chờ duyệt như lúc gửi). */
+  const soKq = (conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE intervention_id = ?').get(interventionId) as any).n as number;
+  if (soKq) canXacNhan('PA đã có {n} lần ghi kết quả — vẫn huỷ quyết định? PA về chờ duyệt, kết quả giữ ở lịch sử.', { n: soKq }, 'Vẫn huỷ quyết định');
+  if (iv.case_status === 'done') { canXacNhan('Case đã hoàn thành — mở lại Case rồi huỷ quyết định?', undefined, 'Mở lại và lưu'); moLaiCase(p, iv.case_id); }
   const nk = conn.prepare(`SELECT before_json FROM audit_logs WHERE entity_type = 'case_intervention' AND entity_id = ? AND action = ?
       ORDER BY id DESC LIMIT 1`).get(interventionId, `case.plan.${iv.approval_state}`) as any;
   let batDau: string | null = iv.started_date ?? null;

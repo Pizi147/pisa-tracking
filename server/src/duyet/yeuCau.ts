@@ -707,7 +707,8 @@ function lyDoKhongHuy(yc: YeuCauRow & { xu_ly_luc?: string | null }): string | n
   if (!def?.khiHuy && !def?.dao) return 'Loại yêu cầu này không huỷ quyết định được.';
   if (yc.trang_thai !== 'duyet' && yc.trang_thai !== 'tu_choi') return 'Yêu cầu này đã tự đóng — không huỷ quyết định được.';
   if (!def.khiHuy && !daoCua(yc.loai, yc.trang_thai)) return 'Loại yêu cầu này không huỷ quyết định được.';   // Q-RL2c: vd Duyệt chuyển lớp — huỷ lệnh riêng
-  if (!yc.xu_ly_luc || ngayCua(yc.xu_ly_luc) !== demoToday()) return 'Chỉ huỷ được quyết định trong ngày.';
+  /* RKC-3b (chủ SP 07/11 "không chặn cứng"; trước: chỉ trong ngày): huỷ được mọi lúc — bảng nguồn vẫn kiểm dữ liệu sau (`khiHuy` / bản ghi đảo, giữ 30 ngày). */
+  void ngayCua;
   return null;
 }
 

@@ -229,6 +229,8 @@ export function reportEditWindow(
   open: boolean; reason: string | null; opensOn: string; closesOn: string;
   /** Đã quá hạn nộp (hết thứ Tư tuần sau) — nộp lúc này là nộp muộn. */
   late: boolean;
+  /** RKC-3b: nộp trước hai ngày cuối tuần (sớm) — được, web nhắc. */
+  som?: boolean;
 } {
   const opensOn = addDays(period.week_end, -(REPORT_EDIT_WINDOW_DAYS - 1));
   // Hết thứ Tư tuần sau: Chủ nhật + 3 ngày.
@@ -238,8 +240,8 @@ export function reportEditWindow(
   if (today < period.week_start) {
     return { ...base, open: false, reason: `Tuần ${tuanLich(period.week_start, today)} chưa bắt đầu — chưa có gì để báo cáo.` };
   }
-  if (today < opensOn) return { ...base, open: false, reason: `Báo cáo tuần mở từ ${opensOn} (hai ngày cuối tuần).` };
-  return { ...base, open: true, reason: null };
+  /* RKC-3b (chủ SP 07/11): nộp sớm được (trước hai ngày cuối tuần) — web nhắc "tuần chưa hết", không chặn. */
+  return { ...base, open: true, reason: null, som: today < opensOn };
 }
 
 /** PR-Dọn (Task 9e): nhớ trong request GET — hồ sơ HV đọc lại tuần bắt đầu lộ trình ở hai khối. */

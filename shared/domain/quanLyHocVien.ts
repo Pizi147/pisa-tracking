@@ -81,7 +81,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
   if (quyen?.ghiLoTrinhTiep && !chiXem) sau.push('lo-trinh-tiep');
   if (canEdit && cycle && !ratio) sau.push('lo-trinh');
   /* OV-11d (HV-15): GVCN (`canEdit`) gửi đề xuất Target ngay ở Sửa thông tin — không thêm cửa thứ hai; GVBM giữ mục này. */
-  if (deXuatSua && dangHoc && !canEdit) sau.push('de-xuat-sua');
+  if (deXuatSua && !canEdit) sau.push('de-xuat-sua');   // RKC-3b: mọi trạng thái — máy chủ cờ `coTheDeXuatSua` theo GV lớp ghi danh gần nhất
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');
   /* SUA-LUU-TRU: em đã lưu trữ vẫn sửa được kết quả thi thật (máy chủ đã cho từ OV-13h) — theo cờ quyền của máy chủ. */
   if (cycle && (!ratio || !!cycle.kyThi) && (chiXem ? !!nhapThiThat : canEdit || suaThem)) sau.push('outcome');
