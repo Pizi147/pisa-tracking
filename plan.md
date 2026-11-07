@@ -259,8 +259,17 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
-### 07/11 — TỔNG QUAN: CẢ BOX BẤM ĐƯỢC, MỌI VAI (chủ SP, đang brainstorm — chưa làm)
+### 07/11 — TỔNG QUAN: CẢ Ô SỐ BẤM ĐƯỢC, MỌI VAI (chủ SP DUYỆT 07/11 — session O-TQ-BAM)
 - **Chủ SP 07/11:** "Thêm nữa, cũng giống như việc GV có thể bấm vào box thông tin ở trang tổng quan để sang trang điều hướng tiếp theo hợp lý, cũng làm như vậy với tất cả các box thông tin còn lại ở trang tổng quan trên tất cả các vai, thay vì phải bấm vào con số. Cái cần hiện ra panels thông tin vẫn hiện ra panels thông tin, cái gì cần hiện ra panels làm việc vẫn vậy, cái gì cần điều hướng sang trang khác cũng làm như thế nốt. Cần gì đề xuất thêm cứ đề xuất, và hỏi lại tôi"
+- **Chủ SP 07/11 (ảnh dãy 4 ô QL):** "ý tôi là dãy này, cứ rà soát lại xem có chỗ nào không đi đâu cả thì đề xuất điều hướng đưa nó đi đến chỗ hợp lý, đơn giản vậy thôi" → PTA rà (TongQuanV5.tsx, MockTestAdmin.tsx): chỉ GV "Việc của tôi ›" bấm cả ô (Link bọc ChiSo, TQ:463-467); không đi đâu: QL Chờ duyệt, QT + CX Đạt Target thi thật, CX HV SOS 2–3, Đạt MT lớp thường "—".
+- **Chủ SP 07/11: "Đúng, làm đi"** → luật: CẢ Ô bấm = đích của số chính (viền accent khi rê như ô mẫu GV); mở panel → tên giữ nguyên, đổi trang → tên thêm "›"; số phụ (vd "52 chưa PA") giữ đích riêng; ⓘ chỉ giải thích; ô 0 / "—" không bấm. Đích:
+  - QL: Đạt MT → panel số · Case có PA → panel Case đang mở (số "chưa PA" giữ panel riêng) · **Chờ duyệt ›** → Hộp duyệt `/cong-viec/cho-duyet` · Thi tháng này → panel số.
+  - QT: Đạt MT, Thi tháng này → panel số · Case có PA → panel Case đang mở + THÊM số "n chưa PA" như QL · **Đạt Target thi thật** → panel MỚI (HV đã thi: điểm vs Target; chỉ đọc khi bấm).
+  - CX: Đạt MT → panel · Đạt Target thi thật → panel mới như QT · **HV SOS 2–3 ›** → `/hoc-vien?view=sos` (bỏ dòng trùng "HV SOS 2–3 ›" ở Điều hướng CX) · Chờ KQ · Lộ trình tiếp › → Học viên lọc chờ lộ trình tiếp (số "Chờ KQ" giữ lọc đã thi).
+  - TVV: Báo PH đúng hạn → panel · Thi tháng này › → Học viên lọc thi tháng này · Chờ KQ · Lộ trình tiếp › như CX.
+  - GV: Việc của tôi › giữ · Case đang xử lý, Đạt kỳ vọng Test, Tiến bộ → panel số.
+  - Admin: 3 ô Mock Test › → đúng trang như số; sửa số 0 vẫn bấm.
+  - Không đổi bố cục → không cần mockup. Turso: chỉ panel Đạt Target thi thật đọc mới (khi bấm).
 
 ### 07/11 — SỬA HV LƯU TRỮ + ĐỔI BƯỚC TIẾP (chủ SP DUYỆT 07/11 — session SUA-LUU-TRU)
 - **Chủ SP 07/11:** "Tôi muốn có khả năng sửa đổi được một vài thông tin của HV đã lưu trữ, ví dụ như điểm thi thật chẳng hạn, và có thể undo lại và sửa lại lộ trình tiếp theo của học sinh thay vì phải đưa HS vào lộ trình mới xong mới sửa lại được thì thông tin nó bị nhiễu loạn, bạn hiểu ý tôi chứ? bạn còn đề xuất gì nữa không?"
