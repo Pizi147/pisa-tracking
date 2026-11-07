@@ -37,7 +37,7 @@ import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
 import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
-import { CAU_LUU_TRU, PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
+import { PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { ganMoTaTuO } from './nguyenNhanO.ts';
 import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
@@ -548,7 +548,6 @@ export function reportIssue(p: Principal, input: {
    */
   require_(p, PERMISSIONS.SOS_REPORT, { classId, studentId: input.studentId },
     'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
-  if (student.archived_at) throw badRequest(CAU_LUU_TRU);   // OV-11d (HV-3): hồ sơ Lưu trữ khoá
 
   /*
    * BỐN TRƯỜNG BẮT BUỘC (mục 6.3): tên, mô tả, mức độ, phân loại.
@@ -1922,7 +1921,6 @@ export function backfillCase(p: Principal, input: {
     .get(input.studentId) as any)?.class_id ?? null;
   require_(p, PERMISSIONS.SOS_REPORT, { classId: lopDangHoc, studentId: input.studentId },
     'Bạn chỉ báo được vấn đề của học viên trong phạm vi mình phụ trách.');
-  if ((conn.prepare('SELECT archived_at FROM students WHERE id = ?').get(input.studentId) as any)?.archived_at) throw badRequest(CAU_LUU_TRU);   // OV-11d (HV-3)
   const key = typeof input.idempotencyKey === 'string' ? input.idempotencyKey.trim() || null : null;
   if (!isIsoDate(input.fromDate) || !isIsoDate(input.toDate)) {
     throw badRequest('Khoảng ngày "từ → đến" không hợp lệ.');

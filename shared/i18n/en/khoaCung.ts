@@ -1,6 +1,13 @@
 /** RKC (chủ SP 07/11 "không chặn cứng") — câu hỏi xác nhận thay chặn cứng. Khoá = chữ Việt máy chủ / web. */
 export const EN_KHOA_CUNG = {
   'Vẫn làm': 'Proceed',
+  'Tạm dừng · ở Lưu trữ': 'Paused · in Archive',
+  'Học viên đã lưu trữ{ngay}': 'Student archived{ngay}',
+  'Em đang có quyết định chuyển lớp chờ {x} — huỷ quyết định rồi lưu?': 'The student has a pending class transfer {x} — cancel it and save?',
+  'Huỷ quyết định và lưu': 'Cancel transfer and save',
+  'Em đang ở Lưu trữ — mở lộ trình mới bằng Quay lại học (chọn lớp) hoặc Bước tiếp › Lộ trình mới.': 'The student is archived — open a new pathway via Return to study (pick a class) or Next step › New pathway.',
+  'Em đã kết thúc học — chuyển lớp bằng Quay lại học (chọn lớp mới).': 'The student has ended studies — transfer via Return to study (pick a new class).',
+  'Em đã kết thúc học — dùng Quay lại học (về lớp cũ hoặc chọn lớp mới).': 'The student has ended studies — use Return to study (old class or a new one).',
   'Khôi phục rồi làm tiếp': 'Restore and continue',
   'Đổi thành đã làm bài': 'Change to sat',
   'Huỷ điểm, ghi vắng': 'Cancel score, mark absent',

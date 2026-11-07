@@ -87,8 +87,8 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
     assert(kq.some((x) => x.endsWith('true')) && kq.some((x) => x.endsWith('false')), kq.join(' '));
   }));
 
-  /* SUA-LUU-TRU (chủ SP 07/11, LUẬT MỚI): em Kết thúc học cũng có nút — cờ = đúng cổng `updateStudent`; trường lộ trình vẫn CAU_LUU_TRU. */
-  check('SNQ-4 · em Kết thúc học: cờ === PATCH email được (mọi vai); PATCH điểm đầu vào → CAU_LUU_TRU', () => thu(() => {
+  /* SUA-LUU-TRU (chủ SP 07/11): em Kết thúc học cũng có nút — cờ = đúng cổng `updateStudent`. RKC (mở Q-B1): trường lộ trình cũng sửa được. */
+  check('SNQ-4 · em Kết thúc học: cờ === PATCH email được (mọi vai); RKC: PATCH điểm đầu vào được', () => thu(() => {
     const sid = emLop();
     students.setStudentStatus(P.mbManager, sid, 'inactive', TODAY);   // tạm dừng → kết thúc: vẫn ở Lưu trữ (SV-4)
     students.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Thôi hẳn');
@@ -100,7 +100,7 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
       assert(co === sua, `${ten}: cờ ${co} ≠ PATCH ${sua}`);
     }
     const e = nem(() => students.updateStudent(P.mbManager, sid, { dauVao: null }));
-    assert(e?.message === d.CAU_LUU_TRU, `máy chủ chặn: ${e?.message} · ${JSON.stringify(get('SELECT status, archived_at FROM students WHERE id = ?', sid))}`);
+    assert(e === null, `RKC: điểm đầu vào em Kết thúc học phải lưu: ${e?.message}`);
   }));
 
   check('SNQ-6 · em Tạm dừng: /students/:id vẫn trả lộ trình đang học (panel Sửa thông tin hiện nhãn lộ trình, không "Em chưa có lộ trình")', () => thu(() => {

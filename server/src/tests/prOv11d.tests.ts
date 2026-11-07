@@ -62,8 +62,8 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     students.setStudentStatus(GVCN, sid, 'inactive', TODAY, 'Thử Tạm dừng OV11d');
     xoaNho();
     assert(one('SELECT status FROM students WHERE id = ?', sid).status === 'inactive', 'chưa Tạm dừng');
-    /* SUA-LUU-TRU (07/11): thông tin không đụng lộ trình sửa được; điểm đầu vào (lộ trình) vẫn 400. */
-    assert(loi(() => students.updateStudent(GVCN, sid, { dauVao: null }))?.message === d.CAU_LUU_TRU, 'P7: lộ trình em Tạm dừng (Lưu trữ) chỉ xem');
+    /* RKC (mở Q-B1): em Tạm dừng (Lưu trữ) sửa được cả điểm đầu vào (lộ trình) như em đang học. */
+    assert(loi(() => students.updateStudent(GVCN, sid, { dauVao: null })) === null, 'RKC: điểm đầu vào em Tạm dừng sửa được');
     /* QUYEN-LIEN-HE (luật 13/10 nay ở máy chủ): liên hệ em Tạm dừng — GVCN 403, QL / TVV sửa được (TVV gọi mời học lại). */
     assert(loi(() => students.updateStudent(GVCN, sid, { parentPhone: '0912345678' }))?.status === 403, 'GVCN không sửa liên hệ');
     students.updateStudent(P.mbManager, sid, { parentPhone: '0912345678' });
@@ -156,27 +156,19 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(doi?.chon === 'hoc_lai' && one('SELECT status FROM students WHERE id = ?', sid).status === 'active', `đổi Kết thúc → Học lại: ${JSON.stringify(doi)}`);
   }));
 
-  check('OV11d-3 · HV-3 (Q4): hồ sơ Lưu trữ → sửa hồ sơ / lộ trình / + Case / ghi bù 400 "Bỏ lưu trữ trước"; Bỏ lưu trữ rồi sửa → 200; menu không còn mục sửa', () => thu(() => {
-    const sid = one('SELECT id FROM students WHERE archived_at IS NOT NULL ORDER BY id LIMIT 1').id as number;
-    const cy = one('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1', sid)?.id as number | undefined;
+  check('OV11d-3 · RKC (chủ SP 07/11, mở Q-B1): hồ sơ Lưu trữ (Kết thúc học) → sửa hồ sơ / điểm đầu vào / + Case / ghi bù ĐƯỢC; mở lộ trình mới, chuyển lớp, đang học → câu chỉ đường Quay lại học; menu có Lộ trình', () => thu(() => {
+    const sid = one(`SELECT id FROM students WHERE archived_at IS NOT NULL AND status = 'finished' ORDER BY id LIMIT 1`).id as number;
     const ql = can(QL, d.PERMISSIONS.CYCLE_EDIT, { studentId: sid }) ? QL : P.admin;
-    const la400 = (e: any) => e?.status === 400 && e.message === d.CAU_LUU_TRU;
-    /* SUA-LUU-TRU (07/11): thông tin không đụng lộ trình sửa được; trường lộ trình (điểm đầu vào) vẫn 400. */
-    assert(la400(loi(() => students.updateStudent(ql, sid, { dauVao: null }))), 'PATCH /students/:id (điểm đầu vào) phải 400');
-    assert(la400(loi(() => students.updateStudent(CX, sid, { dauVao: null }))), 'CX PATCH (điểm đầu vào) phải 400');
-    if (cy) assert(la400(loi(() => students.chanLuuTru(ql, cy))), 'đường /cycles/:id… phải 400');
-    assert(la400(loi(() => students.chanLuuTruHv(ql, sid))), 'POST /students/:id/cycles phải 400');
-    assert(la400(loi(() => students.setStudentStatus(ql, sid, 'active', TODAY))), 'status → đang học phải 400 (chỉ qua Học lại / Bỏ lưu trữ)');
+    assert(loi(() => students.updateStudent(ql, sid, { dauVao: null })) === null, 'PATCH điểm đầu vào em Lưu trữ phải được');
+    assert(/Quay lại học/.test(loi(() => students.chanLuuTruHv(ql, sid))?.message ?? ''), 'POST /students/:id/cycles → câu chỉ đường');
+    assert(/Quay lại học/.test(loi(() => students.setStudentStatus(ql, sid, 'active', TODAY))?.message ?? ''), 'đang học → chỉ đường Quay lại học');
     const lopDich = one(`SELECT id FROM classes WHERE status = 'active' AND branch_id IN (SELECT branch_id FROM classes c JOIN enrollments e ON e.class_id = c.id WHERE e.student_id = ?) ORDER BY id LIMIT 1`, sid)?.id
       ?? one(`SELECT id FROM classes WHERE status = 'active' ORDER BY id LIMIT 1`).id;
-    assert(la400(loi(() => students.transferStudent(ql, sid, lopDich, TODAY, 'Thử chuyển em lưu trữ', { noNote: true }))), 'chuyển / xếp lớp em Lưu trữ phải 400');
-    assert(la400(loi(() => cases.reportIssue(ql, { studentId: sid, topic: 'listening', title: 'Thử Case hồ sơ lưu trữ', summary: 'Em nghe sót số và tên riêng ở Part 1.', urgency: 'attention' }))), '+ Case phải 400');
-    assert(la400(loi(() => cases.backfillCase(ql, { studentId: sid, topic: 'listening', primaryCode: 'x', summary: 'Thử ghi bù hồ sơ lưu trữ', fromDate: '2026-08-03', toDate: '2026-08-10', actions: [] }))), 'ghi bù phải 400');
+    assert(/Quay lại học/.test(loi(() => students.transferStudent(ql, sid, lopDich, TODAY, 'Thử chuyển em lưu trữ', { noNote: true }))?.message ?? ''), 'chuyển lớp em kết thúc → chỉ đường');
+    const eCase = loi(() => cases.reportIssue(ql, { studentId: sid, topic: 'listening', title: 'Thử Case hồ sơ lưu trữ', summary: 'Em nghe sót số và tên riêng ở Part 1.', urgency: 'attention' }));
+    assert(!/lưu trữ/i.test(eCase?.message ?? ''), `+ Case không còn chặn vì Lưu trữ: ${eCase?.message}`);
     const muc = d.mucQuanLyHocVien({ canEdit: true, suaThongTin: true, suaThem: true, lopHoc: { chiXem: true, quyen: { boLuuTru: true, hocLai: true } }, cycle: { ratio: false }, status: 'finished' }).map((m: any) => m.key);
-    assert(!muc.some((k: string) => ['lo-trinh', 'outcome'].includes(k)) && muc.includes('info') && muc.includes('quay-lai'), JSON.stringify(muc));   // SUA-LUU-TRU: Sửa thông tin   // P7: Quay lại học thay Bỏ lưu trữ + Học lại
-    students.unarchiveStudent(ql, sid);
-    students.updateStudent(ql, sid, { phone: '0912345678' });
-    assert(one('SELECT phone FROM students WHERE id = ?', sid).phone === '0912345678', 'Bỏ lưu trữ rồi sửa phải lưu');
+    assert(muc.includes('lo-trinh') && muc.includes('info') && muc.includes('quay-lai') && !muc.includes('chuyen-lop'), JSON.stringify(muc));
   }));
 
   check('OV11d-4 · HV-2: Đề xuất sửa — Admin / TVV / CX 403, GV của lớp em (GVCN, GVBM) 200; nút hồ sơ cùng hàm', () => thu(() => {

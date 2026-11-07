@@ -20,7 +20,6 @@ import { writeAudit } from '../platform/audit.ts';
 import { lopTrongPhamVi } from './classes.ts';
 import { phamViTrang } from './hocVienLop.ts';
 import { cycleById, examPlanOf, updateCycle } from '../fasttrack/cycles.ts';
-import { chanLuuTru } from '../students/students.ts';
 import { standingFor } from '../students/standing.ts';
 import { diemCuaLuot } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
@@ -292,7 +291,6 @@ export function luuLichThi(
 ): Pick<HangLichThi, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'lichThi' | 'ketLuan' | 'luu' | 'chot' | 'buoc' | 'sauThi' | 'kq' | 'buocTiep'> {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  chanLuuTru(p, cycleId);
   if (!coTheSua(p, c.student_id)) throw forbidden('Bạn không có quyền sửa dự kiến thi của em này.');
   const doc = () => db().prepare(`SELECT cy.*, rp.week_start AS exam_week_start, ${cotSauThi('cy', 'rp')}, ${COT_LICH_THI_SQL} FROM learning_cycles cy
       LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi WHERE cy.id = ?`).get(cycleId) as any;

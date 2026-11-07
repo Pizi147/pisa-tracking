@@ -1,6 +1,6 @@
 /**
- * PHÉP KIỂM SUA-LUU-TRU b (chủ SP 07/11, plan.md mục 4 việc 2 — LUẬT MỚI thay `CAU_LUU_TRU` một phần): em đã lưu trữ (Tạm dừng / Kết thúc học)
- * sửa được thông tin KHÔNG đụng lộ trình (`TRUONG_SUA_LUU_TRU`, một danh sách máy chủ + web); lớp / lộ trình / điểm đầu vào / trạng thái vẫn 400 `CAU_LUU_TRU`.
+ * PHÉP KIỂM SUA-LUU-TRU b (chủ SP 07/11, plan.md mục 4 việc 2) → RKC (07/11, mở Q-B1): em đã lưu trữ (Tạm dừng / Kết thúc học) sửa được MỌI trường
+ * như em đang học (có nhật ký); việc cần lớp (mở lộ trình mới, chuyển lớp, đang học) đi Quay lại học — câu chỉ đường.
  * Nút "Sửa thông tin" ở Lưu trữ (cờ `coTheSuaThongTin`) cho cả em Kết thúc học, đúng cổng `updateStudent`.
  */
 export async function runPrSuaLuuTruBTests(t: { check: any; assert: any; conn: any; P: any; TODAY: string }) {
@@ -36,17 +36,17 @@ export async function runPrSuaLuuTruBTests(t: { check: any; assert: any; conn: a
     assert(get(`SELECT 1 FROM audit_logs WHERE action = 'student.update' AND entity_type = 'student' AND entity_id = ?`, sid), 'thiếu nhật ký (Hoàn tác / Lịch sử)');
   }));
 
-  check('SLT-b2 · em Kết thúc học: điểm đầu vào / trạng thái / lộ trình vẫn 400 CAU_LUU_TRU (lối ra Quay lại học)', () => thu(() => {
+  check('SLT-b2 · RKC (mở Q-B1): em Kết thúc học — điểm đầu vào + trường khác sửa được (có nhật ký); Tạm dừng đi THẲNG; đang học → câu chỉ đường Quay lại học', () => thu(() => {
     const sid = emKetThuc();
-    const cy = get('SELECT id FROM learning_cycles WHERE student_id = ? ORDER BY seq DESC LIMIT 1', sid)?.id;
-    assert(nem(() => students.updateStudent(QL, sid, { dauVao: null }))?.message === d.CAU_LUU_TRU, 'điểm đầu vào (lộ trình) không bị chặn');
-    assert(nem(() => students.updateStudent(QL, sid, { email: 'x@vidu.vn', dauVao: null }))?.message === d.CAU_LUU_TRU, 'gửi kèm trường lộ trình không bị chặn');
-    assert(nem(() => students.setStudentStatus(QL, sid, 'active', TODAY))?.message === d.CAU_LUU_TRU, 'trạng thái không bị chặn');
-    if (cy) assert(nem(() => students.chanLuuTru(QL, cy))?.message === d.CAU_LUU_TRU, 'đường /cycles/:id… không bị chặn');
+    assert(nem(() => students.updateStudent(QL, sid, { email: 'slt.b2@vidu.vn', dauVao: null })) === null, 'gửi kèm trường lộ trình phải lưu');
+    assert(get('SELECT email FROM students WHERE id = ?', sid).email === 'slt.b2@vidu.vn', 'email phải lưu');
+    assert(/Quay lại học/.test(nem(() => students.setStudentStatus(QL, sid, 'active', TODAY))?.message ?? ''), 'đang học → chỉ đường');
+    students.setStudentStatus(QL, sid, 'inactive', TODAY, 'Đổi ý: tạm dừng');
+    const s = get('SELECT status, archived_at FROM students WHERE id = ?', sid);
+    assert(s.status === 'inactive' && !!s.archived_at, `Kết thúc → Tạm dừng thẳng: ${JSON.stringify(s)}`);
   }));
 
-  check('SLT-b3 · một danh sách `TRUONG_SUA_LUU_TRU`: không có trường lộ trình; cờ Lưu trữ `coTheSuaThongTin` (em Kết thúc học) === PATCH được, QL có, QL chi nhánh khác không', () => thu(() => {
-    assert(!d.TRUONG_SUA_LUU_TRU.includes('dauVao') && d.TRUONG_SUA_LUU_TRU.includes('fullName') && d.TRUONG_SUA_LUU_TRU.includes('phone'), JSON.stringify(d.TRUONG_SUA_LUU_TRU));
+  check('SLT-b3 · cờ Lưu trữ `coTheSuaThongTin` (em Kết thúc học) === PATCH được, QL có, QL chi nhánh khác không', () => thu(() => {
     const sid = emKetThuc();
     for (const [i, p] of [QL, P.cpManager, P.admin].entries()) {
       xoaNho();
@@ -59,8 +59,8 @@ export async function runPrSuaLuuTruBTests(t: { check: any; assert: any; conn: a
     }
   }));
 
-  check('SLT-b4 · ⋯ hồ sơ em Kết thúc học (chỉ xem): có "Sửa thông tin"; không Lộ trình / Chuyển lớp', () => {
+  check('SLT-b4 · ⋯ hồ sơ em Kết thúc học: có "Sửa thông tin", RKC: có "Lộ trình"; Chuyển lớp đi qua Quay lại học', () => {
     const muc = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { chiXem: true, quyen: { chuyenLop: true, hocLai: true } }, cycle: { ratio: false }, status: 'finished' }).map((m: any) => m.key);
-    assert(muc.includes('info') && !muc.includes('lo-trinh') && !muc.includes('chuyen-lop') && muc.includes('quay-lai'), JSON.stringify(muc));
+    assert(muc.includes('info') && muc.includes('lo-trinh') && !muc.includes('chuyen-lop') && muc.includes('quay-lai'), JSON.stringify(muc));
   });
 }

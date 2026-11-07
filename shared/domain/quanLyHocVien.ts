@@ -22,14 +22,12 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'lich-su-sua': t('Lịch sử'),   // OV-15g: một tên cho mọi nơi (thuật ngữ A-043)
 };
 
-/** OV-11d (HV-3, Q4): hồ sơ đã Lưu trữ khoá — máy chủ trả câu này (400) ở mọi đường sửa hồ sơ / lộ trình / thi thật / Case. P7: lối ra là Quay lại học. */
-export const CAU_LUU_TRU = 'Đã lưu trữ — Quay lại học trước rồi sửa.';
 /**
- * SUA-LUU-TRU (chủ SP 07/11, LUẬT MỚI thay `CAU_LUU_TRU` một phần; thay danh sách liên hệ của P7): em đã lưu trữ — Tạm dừng hay Kết thúc học — sửa được
- * thông tin KHÔNG đụng lộ trình: họ tên, ngày sinh, email, TVV, ghi chú, liên hệ (SĐT em, phụ huynh). Lớp / lộ trình / Target / điểm đầu vào / trạng thái
- * vẫn 400 `CAU_LUU_TRU` (lối ra Quay lại học). MỘT danh sách: máy chủ `updateStudent` + web Sửa thông tin (`StudentManagePanel`).
+ * RKC (chủ SP 07/11 "không chặn cứng", mở Q-B1 "hồ sơ Lưu trữ khoá"): em đã lưu trữ sửa được hồ sơ, lộ trình, Target, điểm, Case như em đang học. Chỉ
+ * còn việc CẦN LỚP đi đường có chọn lớp — hai câu chỉ đường dưới (không phải chặn: đường kia làm được ngay).
  */
-export const TRUONG_SUA_LUU_TRU = ['fullName', 'dob', 'email', 'consultantUserId', 'consultantName', 'note', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
+export const CAU_LO_TRINH_MOI_LUU_TRU = 'Em đang ở Lưu trữ — mở lộ trình mới bằng Quay lại học (chọn lớp) hoặc Bước tiếp › Lộ trình mới.';
+export const CAU_KET_THUC_CHUYEN_LOP = 'Em đã kết thúc học — chuyển lớp bằng Quay lại học (chọn lớp mới).';
 
 export type LopHocQuyen = {
   ghiLoTrinhTiep: boolean; chuyenLop: boolean; /** PR-CT: GVCN đề xuất; Quản lý (`chuyenLop`) ra lệnh. */ deXuatChuyenLop?: boolean; tamDung: boolean; quayLai: boolean;
@@ -69,8 +67,8 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
   deXuatSua?: boolean;
 }): { key: ViecQuanLy; nhan: string; phu?: string; nguyHiem?: boolean; keTruoc?: boolean | 'dam' | 'do' }[] {
   const quyen = lopHoc?.quyen;
-  /* OV-11d (HV-3, Q4): hồ sơ Lưu trữ "chỉ xem" — không Lộ trình / Chuyển lớp (máy chủ 400 `CAU_LUU_TRU`). P7: em Tạm dừng còn Quay lại học · Kết thúc học.
-     SUA-LUU-TRU: Kết quả thi thật sửa được (cờ `nhapThiThat`); Sửa thông tin không đụng lộ trình (`TRUONG_SUA_LUU_TRU`) cho cả em Kết thúc học. */
+  /* Hồ sơ Lưu trữ (`chiXem`): việc CẦN LỚP (Chuyển lớp, Lộ trình tiếp theo) đi qua Quay lại học. RKC (mở Q-B1): Lộ trình FT, Kết quả thi thật,
+     Sửa thông tin sửa được như em đang học. */
   const chiXem = !!lopHoc?.chiXem;
   const ratio = !!cycle?.ratio;
   const dangHoc = status === 'active';
@@ -81,7 +79,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
   const td = coTheTamDungKetThuc(quyen, status);
   if (td.tamDung || td.ketThuc) dau.push('tam-dung-ket-thuc');
   if (quyen?.ghiLoTrinhTiep && !chiXem) sau.push('lo-trinh-tiep');
-  if (canEdit && cycle && !ratio && !chiXem) sau.push('lo-trinh');
+  if (canEdit && cycle && !ratio) sau.push('lo-trinh');
   /* OV-11d (HV-15): GVCN (`canEdit`) gửi đề xuất Target ngay ở Sửa thông tin — không thêm cửa thứ hai; GVBM giữ mục này. */
   if (deXuatSua && dangHoc && !canEdit) sau.push('de-xuat-sua');
   if (quyen?.deXuatChuyenLop && dangHoc) sau.push('de-xuat-chuyen-lop');

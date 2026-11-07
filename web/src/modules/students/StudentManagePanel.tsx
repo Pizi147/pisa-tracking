@@ -10,7 +10,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, coTheTamDungKetThuc, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop,
-  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi, TRUONG_SUA_LUU_TRU,
+  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -100,8 +100,6 @@ export type ThongTinEm = {
   tvv?: { id: number; ten: string } | null; tvvChon?: NguoiTrongDs[] | null;
   /** OV-10b: liên hệ (SĐT em, phụ huynh). */
   lienHe?: LienHe | null;
-  /** P7 → SUA-LUU-TRU: hồ sơ đã ở Lưu trữ (Tạm dừng / Kết thúc học) → Sửa thông tin chỉ trường không đụng lộ trình (`TRUONG_SUA_LUU_TRU`). */
-  archived?: boolean;
   /** OV-11d (HV-1): đề xuất sửa Target đang chờ Quản lý duyệt (`cuaToi`: người xem đã gửi — Sửa đề xuất). */
   deXuatTarget?: { id: number; moi: string; lyDo: string; cuaToi: boolean } | null;
 };
@@ -138,7 +136,7 @@ export function thongTinEmCua(d: any): ThongTinEm {
   return {
     id: d.id, name: d.fullName, classId: d.currentClass?.id ?? null, dob: d.dob ?? null, email: d.email ?? null,
     consultantName: d.consultantName ?? null, note: d.note ?? null, status: d.status, tvv: d.tvv ?? null, tvvChon: d.tvvChon ?? null,
-    lienHe: d.lienHe ?? null, deXuatTarget: d.deXuatTarget ?? null, archived: !!d.archivedAt,
+    lienHe: d.lienHe ?? null, deXuatTarget: d.deXuatTarget ?? null,
   };
 }
 
@@ -180,7 +178,9 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
   if (canTarget && !giuTargetCu && !target.trim() && !kck) loi.push({ khoa: 'target', nhan: 'Target', lyDo: t('Lên FT cần Target (hoặc tích KCK)') });
   /* Tên lộ trình đúng như hồ sơ gọi: lớp FT = LT1 / RF…, lớp thường = chương trình (FOU…). */
   const tenLoTrinhMoi = lopMoi ? (lopMoi.ft ? lopMoi.route : lopMoi.ma) : null;
-  const chan = !data?.lopCu ? t('Chưa có lớp để học lại') : null;
+  /* RKC: em chưa có lớp cũ → chỉ còn "Sang lớp mới" (máy chủ xếp lớp lần đầu), không chặn cả panel. */
+  const coLopCu = !!data?.lopCu;
+  useEffect(() => { if (data && !data.lopCu) setDich('moi'); }, [data]);
 
   const luu = async () => {
     lf.bam();
@@ -209,14 +209,13 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
       chan={{
         daSua: !!lyDo.trim() || !!ngayHl || dich === 'moi' || lopMoiId !== '',
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data || !!chan}>{tieuDe}</button>,
+        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data}>{tieuDe}</button>,
       }}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <Skeleton rows={4} /> : (
           <Khoi tieuDe={tieuDe}>
-            {chan ? <p className="m-0 text-sm text-late">{chan}</p> : null}
             <span role="group" aria-label={tieuDe} className="flex flex-wrap gap-1.5">
-              <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>{t('Về lớp cũ')}</NutChon>
+              {coLopCu && <NutChon chon={dich === 'cu'} onClick={() => setDich('cu')}>{t('Về lớp cũ')}</NutChon>}
               <NutChon chon={dich === 'moi'} onClick={() => setDich('moi')}>{t('Sang lớp mới')}</NutChon>
             </span>
             {dich === 'cu' ? (
@@ -267,12 +266,10 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
-  /* SUA-LUU-TRU (chủ SP 07/11, LUẬT MỚI): em đã lưu trữ (Tạm dừng / Kết thúc học) — sửa thông tin KHÔNG đụng lộ trình (họ tên, ngày sinh, email, TVV,
-     ghi chú, liên hệ); không khối Lộ trình (Target, dự kiến thi, tuần bắt đầu, điểm đầu vào, môn) — máy chủ chặn bằng `CAU_LUU_TRU`, lối ra Quay lại học. */
-  const luuTru = !!student.archived;
-  const quanLy = quyen.canEdit && !luuTru;                        // QL, GVCN: thêm Tuần bắt đầu
+  /* RKC (chủ SP 07/11, mở Q-B1 — thay SUA-LUU-TRU): em đã lưu trữ sửa được mọi ô như em đang học (lộ trình, Target, điểm đầu vào…), có lịch sử. */
+  const quanLy = quyen.canEdit;                        // QL, GVCN: thêm Tuần bắt đầu
   const ghiChu = quyen.canEdit || !!quyen.coTheSuaThem;           // QL, GVCN · OV-8b: TVV / CX sửa Ghi chú
-  const targetThang = !luuTru && (!!quyen.canEditCycle || !!quyen.coTheSuaThem);   // QL / Quản trị · OV-8b: TVV / CX
+  const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
   /* OV-11e → OV-11d (Q8 chủ SP chốt): ô tích KCK chỉ QL / Quản trị / TVV; GVCN, CX, Admin chỉ đọc (máy chủ `reviseTarget` + đề xuất cũng chặn). */
   const oKck = !!quyen.doiKck;   // QUYEN-CN: theo chi nhánh em (trước: mọi vai của tài khoản)
@@ -303,7 +300,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [kck, setKck] = useState(kckCu);
   const [lyDo, setLyDo] = useState('');
   /* Điểm đầu vào — chỉ FT (lớp thường không có, như Thêm học viên). */
-  const coDauVao = !!cycle && !cycle.ratio && !luuTru;
+  const coDauVao = !!cycle && !cycle.ratio;
   const bl = cycle?.baseline ?? null;
   const dvCu = { l: s5(bl?.bands?.listening), r: s5(bl?.bands?.reading), w: s5(bl?.bands?.writing), s: s5(bl?.bands?.speaking), o: s5(bl?.score) };
   const [dv, setDv] = useState(dvCu);
@@ -313,7 +310,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const doiDauVao = coDauVao && JSON.stringify(dv) !== JSON.stringify(dvCu);
   const doiTarget = !!cycle && (targetThang || targetDeXuat) && (target !== targetCu || kck !== kckCu);
   /* P8 (N13, mockup k4): môn đăng ký của lộ trình FT — QL / GVCN; tóm tắt "Khi lưu" do máy chủ tính (cùng hàm lúc lưu). */
-  const coMon = !luuTru && !!cycle?.coTheDoiMon;   // máy chủ: QL, Quản trị, GVCN, TVV — lộ trình FT đang chạy
+  const coMon = !!cycle?.coTheDoiMon;   // máy chủ: QL, Quản trị, GVCN, TVV — lộ trình FT đang chạy
   const monCu: string[] | null = cycle?.monDangKy ?? null;
   const [mon, setMon] = useState<string[] | null>(monCu);
   const doiMon = coMon && JSON.stringify(mon) !== JSON.stringify(monCu);
@@ -373,30 +370,6 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         : duKn ? { listening: Number(dv.l), reading: Number(dv.r), writing: Number(dv.w), speaking: Number(dv.s) }
         : { overall: Number(dv.o), listening: kn[0] || null, reading: kn[1] || null, writing: kn[2] || null, speaking: kn[3] || null };
       const tvvId = tvv?.kieu === 'tai_khoan' ? tvv.id : null;
-      if (luuTru) {
-        /* Chỉ ô đã đổi, trong `TRUONG_SUA_LUU_TRU`; Hoàn tác = gửi lại giá trị cũ của đúng các ô đó (máy chủ ghi nhật ký cả hai lần). */
-        const moi: Record<string, unknown> = {
-          ...(fullName !== student.name ? { fullName } : {}), ...(dob !== (student.dob ?? '') ? { dob } : {}),
-          ...(email.trim() !== (student.email ?? '') ? { email: email.trim() } : {}),
-          ...(tvvId !== (student.tvv?.id ?? null) ? { consultantUserId: tvvId } : {}),
-          ...(ghiChu && note !== (student.note ?? '') ? { note: note || null } : {}),
-          ...(nhapLienHe ? Object.fromEntries(lhDoi.map((k) => [k, lh[k].trim() || null])) : {}),
-        };
-        const cu: Record<string, unknown> = { fullName: student.name, dob: student.dob ?? '', email: student.email ?? '', consultantUserId: student.tvv?.id ?? null,
-          note: student.note ?? null, ...Object.fromEntries(TRUONG_LIEN_HE.map((k) => [k, student.lienHe?.[k] ?? null])) };
-        const khoa = Object.keys(moi).filter((k) => (TRUONG_SUA_LUU_TRU as readonly string[]).includes(k));
-        const lamMoiHs = () => { for (const k of ['/students', '/hoc-vien-lop']) invalidate(k); };
-        if (khoa.length) await api.patch(`/students/${student.id}`, Object.fromEntries(khoa.map((k) => [k, moi[k]])));
-        lamMoiHs();
-        if (khoa.length) {
-          toast.hoanTac(t('Đã lưu'), () => {
-            api.patch(`/students/${student.id}`, Object.fromEntries(khoa.map((k) => [k, cu[k]])))
-              .then(() => { lamMoiHs(); toast.push('ok', t('Đã hoàn tác')); }, (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
-          }, { key: `sua-hv:${student.id}` });
-        } else toast.push('ok', t('Đã lưu'));
-        onDone();
-        return;
-      }
       await api.patch(`/students/${student.id}`, {
         fullName, dob, email: email.trim(),
         ...(tvvId !== (student.tvv?.id ?? null) ? { consultantUserId: tvvId } : {}),
@@ -503,7 +476,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           </Truong>
         </Khoi>
       )}
-      {cycle && !luuTru ? (
+      {cycle ? (
         <Khoi tieuDe={t('Lộ trình đang học')}
           luat={kt ? t('{ten}: Target theo điểm Cambridge {min}–{max} — không quy đổi band IELTS, không tính SOS.', { ten: kt.ten, min: kt.min, max: kt.max })
             : cycle.ratio

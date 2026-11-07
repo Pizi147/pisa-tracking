@@ -241,8 +241,8 @@ export default function StudentDetailPage() {
           } : undefined} />
         {data.lopHoc?.chiXem && (
           <DaiChiXem>{data.status === 'inactive'
-            ? t('Tạm dừng · ở Lưu trữ — lộ trình chỉ xem')
-            : t('Học viên đã lưu trữ{ngay} — lộ trình chỉ xem', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
+            ? t('Tạm dừng · ở Lưu trữ')
+            : t('Học viên đã lưu trữ{ngay}', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
         )}
         {/*
           UI-HO-SO-HV (`dieu-chinh-cuoi.html` khu c + `ho-so-hv.html`): đầu HAI dòng, không khung — dòng 1 tên + nhãn trạng thái | + Case · ⋯ (GIỮ V4);
@@ -261,13 +261,14 @@ export default function StudentDetailPage() {
               {data.archivedAt && data.status === 'active' && <Info>{t('Đã lưu trữ')}</Info>}
               {/* OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" thay nhãn "Đã xong" khi còn việc sau thi. */}
               {data.sauThi ? <NhanSauThi s={data.sauThi} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
-              {data.sauThi?.coTheGiaHan && !data.lopHoc?.chiXem && (
+              {data.sauThi?.coTheGiaHan && (
                 <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>
               )}
             </h1>
             {/* ml-auto: xuống dòng ở 375 thì nút vẫn bám phải — menu ⋯ (mở về bên trái) không tràn khỏi màn. */}
             <div className="ml-auto flex flex-wrap items-start gap-2">
-              {data.viewer.canReport && !data.lopHoc?.chiXem && (
+              {/* RKC (mở Q-B1): em Lưu trữ vẫn + Case / Gia hạn như em đang học. */}
+              {data.viewer.canReport && (
                 <button className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
@@ -387,7 +388,7 @@ export default function StudentDetailPage() {
               {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
                 : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
                 : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
-                  onReport={data.viewer.canReport && !data.lopHoc?.chiXem ? baoCase : undefined}
+                  onReport={data.viewer.canReport ? baoCase : undefined}
                   onChanged={() => { board.reload(); reload(); }} />}
               </div>
             </div>

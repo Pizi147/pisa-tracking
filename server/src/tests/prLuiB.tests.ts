@@ -317,7 +317,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const hl = s.slice(s.indexOf('function HocLaiPanel'));
     /* P7: panel Học lại cũ mở từ "Quay lại học" (QuayLaiHoc.tsx, hướng `hoc-lai` của máy chủ). */
     assert(doc('web/src/modules/students/QuayLaiHoc.tsx').includes('<HocLaiPanel') && hl.length > 100, 'thiếu panel Học lại');
-    for (const chu of ['Về lớp cũ', 'Sang lớp mới', 'Lộ trình cũ giữ ở Hành trình', 'Chưa có lớp để học lại']) assert(hl.includes(chu), `thiếu chữ "${chu}"`);
+    for (const chu of ['Về lớp cũ', 'Sang lớp mới', 'Lộ trình cũ giữ ở Hành trình']) assert(hl.includes(chu), `thiếu chữ "${chu}"`);   // RKC: không còn "Chưa có lớp để học lại" — chỉ còn Sang lớp mới
     assert(hl.includes('/hoc-lai`') && hl.includes('/hoc-lai/lop-dich') && hl.includes('moLaiLop: true'), 'phải gọi /hoc-lai và /hoc-lai/lop-dich');
     assert(/toast\.hoanTac\(`\$\{t\('Đã cho \{ten\} quay lại học', \{ ten: studentName \}\)\}/.test(hl) && hl.includes("hoanTacHangLoat('hoc-lai'"), 'Hoàn tác phải đi qua hoan-tac-hoc-lai');
     assert(/<Truong nhan=\{t\('Lý do'\)\} tuyChon/.test(hl) && hl.includes('canTarget'), 'Lý do tuỳ chọn + Target khi sang FT');

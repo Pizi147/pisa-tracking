@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_LUU_TRU, TRUONG_SUA_LUU_TRU, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
+import { chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_KET_THUC_CHUYEN_LOP, CAU_LO_TRINH_MOI_LUU_TRU, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, loi } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
@@ -187,9 +187,10 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
     require_(p, PERMISSIONS.STUDENT_EDIT, { studentId }, 'Bạn không có quyền chuyển lớp học viên này.');
     require_(p, PERMISSIONS.STUDENT_EDIT, { classId: toClassId }, 'Lớp chuyển đến nằm ngoài phạm vi bạn được cấp quyền.');
   }
-  /* OV-11d (Q4): hồ sơ Lưu trữ khoá — xếp / chuyển lớp phải Quay lại học trước. P7: em Tạm dừng (nay ở Lưu trữ) Quản lý vẫn xếp sang lớp khác được (như trước P7) — hết tạm dừng, ra khỏi Lưu trữ. */
+  /* Em Tạm dừng (Lưu trữ) xếp sang lớp khác được — hết tạm dừng, ra khỏi Lưu trữ. Em KẾT THÚC học (lộ trình đã đóng): chuyển lớp = Quay lại học › lớp
+     mới (`hocLai`, mở lộ trình đúng luật) — câu chỉ đường (RKC). */
   const luu = db().prepare('SELECT archived_at, status FROM students WHERE id = ?').get(studentId) as any;
-  if (luu?.archived_at && luu.status !== 'inactive') throw badRequest(CAU_LUU_TRU);
+  if (luu?.archived_at && luu.status === 'finished') throw badRequest(CAU_KET_THUC_CHUYEN_LOP);
   const toClass = lopDichHopLe(toClassId, enr?.class_id ?? -1);
   if (!toClass) throw badRequest('Lớp chuyển đến không hợp lệ.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
@@ -262,7 +263,9 @@ export function setStudentStatus(
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
   if (s.status === status) return s;
-  if (s.archived_at && s.status !== 'inactive') throw badRequest(CAU_LUU_TRU);   // OV-11d (Q4) → P7: em kết thúc đã lưu trữ chỉ qua Quay lại học (`hocLai`)
+  /* RKC (chủ SP 07/11): em KẾT THÚC học → Tạm dừng đi THẲNG (`ketThucSangTamDung`, nhật ký); → đang học = Quay lại học (`hocLai`, chọn lớp) — chỉ đường. */
+  if (s.status === 'finished' && status === 'inactive') return tx(() => ketThucSangTamDung(p, studentId, date, String(reason ?? '').trim() || 'Tạm dừng'));
+  if (s.status === 'finished' && status === 'active') throw badRequest('Em đã kết thúc học — dùng Quay lại học (về lớp cũ hoặc chọn lớp mới).');
   if (status === 'active' && s.status === 'inactive') {
     const tamDung = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'pause'`).get(studentId) as any)?.d as string | null;
     if (tamDung && date < tamDung) throw loi(400, 'Ngày quay lại không được trước ngày tạm dừng ({x}).', { x: tamDung.split('-').reverse().join('/') });
@@ -401,7 +404,18 @@ export function hocLai(p: Principal, studentId: number, o: {
     ? dongCompleted.filter((e) => nhatKy.ghiDanhDong.some((x) => x.id === e.id))
     : dongCompleted.some((e) => e.ended_at == null) ? dongCompleted.filter((e) => e.ended_at == null) : dongCompleted.slice(0, 1);
   const enr = khoiPhuc[0];
-  if (!enr) throw badRequest('Học viên chưa có lớp nào để học lại — dùng Chuyển lớp để xếp lớp.');
+  if (!enr) {
+    /* RKC (chủ SP 07/11): em kết thúc chưa từng có lớp — Học lại sang lớp mới = xếp lớp lần đầu (`transferStudent`, mở lộ trình đúng luật) sau khi em hết
+       kết thúc, một giao dịch (trước: "dùng Chuyển lớp" mà Chuyển lớp lại bắt Quay lại học trước — vòng lặp). */
+    if (!o.lopMoiId) throw badRequest('Em chưa có lớp cũ — chọn lớp mới để em học lại.');
+    return tx(() => {
+      conn.prepare(`UPDATE students SET status = 'active', finished_at = NULL, archived_at = NULL WHERE id = ?`).run(studentId);
+      writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
+        before: { status: s.status, finishedAt: s.finished_at ?? null, archivedAt: s.archived_at ?? null }, after: { status: 'active', date, lyDo, hocLai: true, lopMoiId: Number(o.lopMoiId) } });
+      transferStudent(p, studentId, Number(o.lopMoiId), date, lyDo ?? 'Học lại', { noNote: true, mucTieu: typeof o.mucTieu === 'number' ? o.mucTieu : null, thangThi: o.thangThi ?? null });
+      return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
+    });
+  }
   const lopDong = [...new Map(khoiPhuc.filter((e) => e.class_status === 'finished').map((e) => [e.class_id, e])).values()];
   const lopDaDong = lopDong.length > 0;
 
@@ -846,18 +860,12 @@ function docDauVao(v: any): { overall: number; bands: (number | null)[] } | null
 const TRUONG_THONG_TIN = new Set(['fullName', 'dob', 'email', 'consultantName', 'consultantUserId', 'dauVao', 'phone', 'parentName', 'parentRelation', 'parentPhone']);
 
 /**
- * OV-11d (HV-3, Q4): lộ trình của em đã Lưu trữ → 400 `CAU_LUU_TRU` (đường `/cycles/:id…`). Chỉ báo cho người xem được em — người ngoài phạm vi
- * đi tiếp tới kiểm quyền của hàm sửa (403), không biết em đã lưu trữ. Bỏ lưu trữ, Học lại không qua đây.
+ * `POST /students/:id/cycles` — em đã Lưu trữ: mở lộ trình mới cần lớp để học, nên đi đường có chọn lớp (Quay lại học › lớp mới, hoặc Bước tiếp ›
+ * Lộ trình mới). RKC (chủ SP 07/11): câu chỉ đường thay "Quay lại học trước rồi sửa". Sửa lộ trình đang có của em lưu trữ thì không chặn (đường `/cycles/:id…`).
  */
-export function chanLuuTru(p: Principal, cycleId: number) {
-  const r = db().prepare('SELECT s.id, s.archived_at FROM learning_cycles c JOIN students s ON s.id = c.student_id WHERE c.id = ?').get(cycleId) as any;
-  if (r?.archived_at && can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) throw badRequest(CAU_LUU_TRU);
-}
-
-/** Như `chanLuuTru` nhưng theo học viên (`POST /students/:id/cycles`). */
 export function chanLuuTruHv(p: Principal, studentId: number) {
   const r = db().prepare('SELECT archived_at FROM students WHERE id = ?').get(studentId) as any;
-  if (r?.archived_at && can(p, PERMISSIONS.STUDENT_VIEW, { studentId })) throw badRequest(CAU_LUU_TRU);
+  if (r?.archived_at && can(p, PERMISSIONS.STUDENT_VIEW, { studentId })) throw badRequest(CAU_LO_TRINH_MOI_LUU_TRU);
 }
 
 /** `emailRoiDi`: em cùng lô Sửa cả lớp đang bỏ email cũ (VN-1: hai em đổi email cho nhau) — không tính là đang dùng. */
@@ -871,9 +879,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound();
   chanDoiLienHe(p, patch, s);   // QUYEN-LIEN-HE: GV không đổi ô Liên hệ (máy chủ, không chỉ ẩn ô)
-  /* SUA-LUU-TRU (chủ SP 07/11, thay P7 "chỉ liên hệ"): em đã lưu trữ (Tạm dừng / Kết thúc học) — chỉ trường KHÔNG đụng lộ trình (`TRUONG_SUA_LUU_TRU`);
-     gửi kèm trường khác (điểm đầu vào…) → 400 cả lần. Nút "Sửa thông tin" ngay ở Lưu trữ (cờ `coTheSuaThongTin`, luuTru.ts). */
-  if (s.archived_at && !Object.keys(patch ?? {}).every((k) => (TRUONG_SUA_LUU_TRU as readonly string[]).includes(k))) throw badRequest(CAU_LUU_TRU);
+  /* RKC (chủ SP 07/11, mở Q-B1 — thay SUA-LUU-TRU "chỉ trường không đụng lộ trình"): em đã lưu trữ sửa được mọi trường như em đang học, có lịch sử. */
   // Target và ngày thi IELTS nằm ở LỘ TRÌNH, sửa qua updateCycle chứ không qua hồ sơ.
   const map: Record<string, string> = {
     fullName: 'full_name', note: 'note', dob: 'dob', consultantName: 'consultant_name', email: 'email', consultantUserId: 'consultant_user_id',
