@@ -15,6 +15,7 @@ export const EN_KHOA_CUNG = {
   'Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.': 'The account is deleted — press Restore in Accounts › Deleted.',
   'Người này đang là GVCN lớp {ds} — vẫn xoá? Lớp sẽ thiếu GVCN.': 'This person is homeroom teacher of {ds} — delete anyway? The class will have no homeroom teacher.',
   'Vẫn xoá': 'Delete anyway',
+  'Khôi phục tài khoản': 'Restore account',
   'Gõ lại họ tên': 'Retype full name',
   'Chưa khớp họ tên': 'Full name does not match',
   'Đã khôi phục tài khoản {ten}': 'Account {ten} restored',
