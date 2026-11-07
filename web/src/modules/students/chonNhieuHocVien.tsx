@@ -36,8 +36,10 @@ export function OChonTatCa({ chon, ids, nhan }: { chon: ChonNhieu; ids: number[]
  * Thanh thao tác DÍNH ĐÁY: `3 đã chọn` · các việc · `Bỏ chọn`. Chỉ hiện khi đã chọn ít nhất một học viên.
  * OV-13d: việc có thể là nút chính (`chinh`) hoặc nhạt khi không em nào làm được (`tat`); `dongTren` = một dòng trạng thái (đã lưu · Hoàn tác).
  */
-export function ThanhChonNhieu({ chon, viec, onViec, dongTren }: {
+export function ThanhChonNhieu({ chon, viec, onViec, dongTren, dangChay }: {
   chon: ChonNhieu; viec: { key: string; nhan: string; chinh?: boolean; tat?: boolean }[]; onViec: (key: string) => void; dongTren?: ReactNode;
+  /** Việc đang chạy: khoá các nút việc (chống bấm lặp) — chữ không đổi, nút mờ như `tat`. */
+  dangChay?: boolean;
 }) {
   if (!chon.bat || (chon.chon.size === 0 && !dongTren)) return null;
   return (
@@ -47,7 +49,7 @@ export function ThanhChonNhieu({ chon, viec, onViec, dongTren }: {
       {dongTren && <div role="status" className="flex basis-full flex-wrap items-center gap-2 text-sm">{dongTren}</div>}
       <b className="mr-1 text-sm tabular-nums text-slate-100">{t('{n} đã chọn', { n: chon.chon.size })}</b>
       {viec.map((v) => (
-        <button key={v.key} type="button" className={v.chinh ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={v.tat}
+        <button key={v.key} type="button" className={v.chinh ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={v.tat || dangChay}
           onClick={() => onViec(v.key)}>{v.nhan}</button>
       ))}
       <span className="flex-1" />

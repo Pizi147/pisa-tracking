@@ -207,7 +207,7 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
-        daSua: !!lyDo.trim() || !!ngayHl || dich === 'moi' || lopMoiId !== '',
+        daSua: !!lyDo.trim() || !!ngayHl || (coLopCu && dich === 'moi') || lopMoiId !== '',   // em không lớp cũ tự đặt 'moi' — chưa phải người dùng sửa
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy || !data}>{tieuDe}</button>,
       }}>
@@ -345,7 +345,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
     const e = nhapLienHe ? docSoDienThoai(lh[k]).loi : null;
     if (e) loi.push({ khoa: k, nhan: dichChu(NHAN_LIEN_HE[k]), lyDo: dichChu(`${e[0].toUpperCase()}${e.slice(1)}`) });
   }
-  if (quanLy && cycle && !tuan) loi.push({ khoa: 'tuan', nhan: t('Tuần bắt đầu'), lyDo: t('Chưa chọn') });
+  /* Chỉ báo khi xoá tuần đang có — lộ trình chưa có tuần bắt đầu vẫn lưu được các ô khác. */
+  if (quanLy && cycle && !tuan && tuanCu) loi.push({ khoa: 'tuan', nhan: t('Tuần bắt đầu'), lyDo: t('Chưa chọn') });
   if (doiTarget && kt) { const d = docTargetKyThi(kt, target); if ('loi' in d) loi.push({ khoa: 'target', nhan: 'Target', lyDo: t('Số nguyên {min}–{max}', { min: kt.min, max: kt.max }) }); }
   else if (doiTarget && (target !== '' || !kck) && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: target ? t('Band từ 0 đến 9, bước 0.5') : t('Chưa điền — hoặc tích KCK') });
   if (doiTarget) loi.push(...dsLoi([{ khoa: 'ly-do-target', nhan: t('Lý do đổi Target'), toiThieu: 1 }], { 'ly-do-target': lyDo }));
@@ -370,13 +371,17 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         : duKn ? { listening: Number(dv.l), reading: Number(dv.r), writing: Number(dv.w), speaking: Number(dv.s) }
         : { overall: Number(dv.o), listening: kn[0] || null, reading: kn[1] || null, writing: kn[2] || null, speaking: kn[3] || null };
       const tvvId = tvv?.kieu === 'tai_khoan' ? tvv.id : null;
-      await api.patch(`/students/${student.id}`, {
+      const moiTt: Record<string, unknown> = {
         fullName, dob, email: email.trim(),
         ...(tvvId !== (student.tvv?.id ?? null) ? { consultantUserId: tvvId } : {}),
         ...(ghiChu ? { note: note || null } : {}),
         ...(nhapLienHe ? Object.fromEntries(lhDoi.map((k) => [k, lh[k].trim() || null])) : {}),
-        ...(dauVao !== undefined ? { dauVao } : {}),
-      });
+      };
+      await api.patch(`/students/${student.id}`, { ...moiTt, ...(dauVao !== undefined ? { dauVao } : {}) });
+      /* Hoàn tác chỉ phần thông tin / liên hệ: gửi lại giá trị cũ của ĐÚNG các ô vừa đổi (máy chủ ghi nhật ký cả hai lần). */
+      const cuTt: Record<string, unknown> = { fullName: student.name, dob: student.dob ?? '', email: student.email ?? '', consultantUserId: student.tvv?.id ?? null,
+        note: student.note ?? null, ...Object.fromEntries(TRUONG_LIEN_HE.map((k) => [k, student.lienHe?.[k] ?? null])) };
+      const khoaDoi = Object.keys(moiTt).filter((k) => JSON.stringify(moiTt[k]) !== JSON.stringify(cuTt[k]));
       xong.push(t('thông tin'));
       /* Lộ trình — chỉ trường đã đổi (máy chủ kiểm lại). */
       const doi = { ...(quanLy && cycle && tuan !== tuanCu ? { startWeek: tuan } : {}), ...(cycle && thi !== thiCu ? { examDate: thi } : {}) };
@@ -397,12 +402,18 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         xong.push(t('môn học'));
       }
       for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop', '/tong-quan']) invalidate(k);
-      toast.push('ok', targetDeXuat && doiTarget ? t('Đã lưu · Target gửi Quản lý duyệt') : t('Đã lưu'));
+      const cau = targetDeXuat && doiTarget ? t('Đã lưu · Target gửi Quản lý duyệt') : t('Đã lưu');
+      if (khoaDoi.length) {
+        toast.hoanTac(xong.length > 1 ? `${cau} · ${t('Hoàn tác chỉ phần thông tin')}` : cau, () => {
+          api.patch(`/students/${student.id}`, Object.fromEntries(khoaDoi.map((k) => [k, cuTt[k]])))
+            .then(() => { for (const k of ['/students', '/hoc-vien-lop']) invalidate(k); toast.push('ok', t('Đã hoàn tác')); }, (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+        }, { key: `sua-hv:${student.id}` });
+      } else toast.push('ok', cau);
       onDone();
     } catch (e: any) {
       if (xong.length) for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop']) invalidate(k);
-      /* P13: lỗi thang Cambridge gắn ô qua `details.o` ("A2 Key: 100–150"). */
-      const o = e?.details?.o === 'target' ? { khoa: 'target', nhan: 'Target' } : oCuaLoi(String(e.message ?? ''));
+      /* P13: lỗi thang Cambridge gắn ô qua `details.o` ("A2 Key: 100–150"). Người dùng đóng hộp xác nhận (`huy`) = không phải lỗi ô. */
+      const o = e?.huy ? null : e?.details?.o === 'target' ? { khoa: 'target', nhan: 'Target' } : oCuaLoi(String(e.message ?? ''));
       if (o) setLoiMay({ ...o, lyDo: e?.details?.o === 'target' ? String(e.message) : String(e.message).replace(/^[^:]+:\s*/, '') });
       toast.push('error', xong.length ? t('Đã lưu {ds} · {phan} chưa lưu: {loi}', { ds: xong.join(', '), phan, loi: e.message }) : e.message);
     } finally { setBusy(false); }

@@ -196,7 +196,8 @@ export function panelTutor(p: Principal, id: number, k: Khoang) {
       WHERE n.tutor_id = ? ORDER BY n.luc DESC, n.id DESC`,
   ).all(id) as any[]).map((n) => ({
     id: n.id, kl: n.ket_luan as KetLuan, noiDung: n.noi_dung, luc: n.luc, suaLuc: n.sua_luc ?? null, nguoi: n.full_name ?? '',
-    coSua: sua && n.nguoi_id === p.userId && trong24h(n.luc),
+    coSua: sua && n.nguoi_id === p.userId,                      // LUAT-34: sửa mọi lúc
+    coXoa: sua && n.nguoi_id === p.userId && trong24h(n.luc),   // xoá trong 24 giờ
   }));
   return {
     tutor: thanhDong(r, docChiNhanh(conn), so, canChuY(conn, branchIds, id).get(id), sua), so, coSua: sua, nhanXet,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -55,14 +55,22 @@ export default function LuuTruPage() {
   /* PR-LUI-b → P7: "Chọn nhiều học viên" — thanh dính đáy "Quay lại học · n em"; từng em đi đúng hướng máy chủ chọn (`useQuayLaiHoc`). */
   const chon = useChonNhieu();
 
+  /* Dựa trên params MỚI NHẤT (ref) — không phải `params` của lần vẽ cũ (react-router 6 cũng đóng băng bản của `setParams(fn)`):
+     timer debounce 300 ms không đè tab / chi nhánh vừa chọn. */
+  const paramsMoi = useRef(params);
+  paramsMoi.current = params;
   const setParam = (patch: Record<string, string | null>) => {
-    const next = new URLSearchParams(params);
+    const next = new URLSearchParams(paramsMoi.current);
     for (const [k, v] of Object.entries(patch)) { if (v === null || v === '') next.delete(k); else next.set(k, v); }
+    paramsMoi.current = next;
     setParams(next, { replace: true });
   };
 
+  /* `q` đổi từ ngoài (Back / Forward) → ô gõ theo; `q` do chính ô gõ vừa đẩy lên thì không đè chữ đang gõ tiếp. */
+  const qDaGui = useRef(q);
+  useEffect(() => { if (q !== qDaGui.current) { qDaGui.current = q; setDraftQ(q); } }, [q]);
   useEffect(() => {
-    const t = setTimeout(() => { if (draftQ !== q) setParam({ q: draftQ || null }); }, 300);
+    const t = setTimeout(() => { if (draftQ !== q) { qDaGui.current = draftQ; setParam({ q: draftQ || null }); } }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftQ]);
@@ -77,26 +85,38 @@ export default function LuuTruPage() {
 
   const quayLai = useQuayLaiHoc(reload);
   /* Chọn nhiều: em quay lại được một bấm (lớp cũ còn chạy) làm ngay; em cần chọn lớp / lộ trình báo "làm từng em" — không đoán thay người dùng. */
+  const [dangChay, setDangChay] = useState(false);
+  const dangChayRef = useRef(false);   // chặn bấm lặp trước khi state kịp vẽ lại
   const quayLaiNhieu = async (ids: number[]) => {
-    const xong: number[] = []; const tungEm: string[] = [];
-    for (const id of ids) {
-      const ten = data?.hocVien.find((x) => x.id === id)?.fullName ?? `#${id}`;
-      try {
-        const tt = await api.get<{ huong: string }>(`/students/${id}/quay-lai`);
-        if (tt.huong !== 'lop-cu') { tungEm.push(ten); continue; }
-        await api.post(`/students/${id}/quay-lai`, {}); xong.push(id);
-      } catch (e: any) { tungEm.push(`${ten} (${e.message})`); }
-    }
-    for (const k of ['/students', '/hoc-vien-lop', '/classes', '/my-work']) invalidate(k);
-    chon.bo(); reload();
-    if (xong.length) {
-      toast.hoanTac(t('Đã cho {n} em quay lại học', { n: xong.length }), async () => {
-        for (const id of xong) { try { await api.post(`/students/${id}/hoan-tac-quay-lai`, {}); } catch (e: any) { toast.push('error', e.message); } }
-        for (const k of ['/students', '/hoc-vien-lop', '/classes']) invalidate(k);
-        reload(); toast.push('ok', t('Đã hoàn tác'));
-      }, { key: `quay-lai-nhieu:${xong.join(',')}` });
-    }
-    if (tungEm.length) toast.push('error', t('Làm từng em (cần chọn lớp / lộ trình): {ds}', { ds: tungEm.join(', ') }));
+    if (dangChayRef.current) return;
+    dangChayRef.current = true; setDangChay(true);
+    try {
+      const xong: number[] = []; const chonLop: string[] = []; const loi: string[] = []; const chuaXong: number[] = [];
+      for (const id of ids) {
+        const ten = data?.hocVien.find((x) => x.id === id)?.fullName ?? `#${id}`;
+        try {
+          const tt = await api.get<{ huong: string }>(`/students/${id}/quay-lai`);
+          if (tt.huong !== 'lop-cu') { chonLop.push(ten); chuaXong.push(id); continue; }
+          await api.post(`/students/${id}/quay-lai`, {}); xong.push(id);
+        } catch (e: any) { chuaXong.push(id); if (!e?.huy) loi.push(`${ten} (${e.message})`); }   // Đóng hộp xác nhận = không làm em này, không phải lỗi
+      }
+      for (const k of ['/students', '/hoc-vien-lop', '/classes', '/my-work']) invalidate(k);
+      /* Em đã xong rời danh sách chọn; em chưa xong (cần chọn lớp, lỗi, không xác nhận) vẫn được chọn để làm tiếp. */
+      if (chuaXong.length) chon.tatCa(chuaXong, true); else chon.bo();
+      reload();
+      if (xong.length) {
+        toast.hoanTac(t('Đã cho {n} em quay lại học', { n: xong.length }), async () => {
+          let ok = 0; let loiDau = '';
+          for (const id of xong) { try { await api.post(`/students/${id}/hoan-tac-quay-lai`, {}); ok++; } catch (e: any) { loiDau ||= e.message; } }
+          for (const k of ['/students', '/hoc-vien-lop', '/classes']) invalidate(k);
+          reload();
+          if (ok) toast.push('ok', ok === xong.length ? t('Đã hoàn tác') : t('Đã hoàn tác {ok}/{n}', { ok, n: xong.length }));
+          if (loiDau) toast.push('error', loiDau);
+        }, { key: `quay-lai-nhieu:${xong.join(',')}` });
+      }
+      if (chonLop.length) toast.push('error', t('Làm từng em (cần chọn lớp / lộ trình): {ds}', { ds: chonLop.join(', ') }));
+      if (loi.length) toast.push('error', t('Chưa làm được, thử lại: {ds}', { ds: loi.join(', ') }));
+    } finally { dangChayRef.current = false; setDangChay(false); }
   };
 
   return (
@@ -182,7 +202,7 @@ export default function LuuTruPage() {
       {/* Q-RL2b: học viên đã xoá 30 ngày (thùng rác) — Khôi phục tại dòng; rỗng thì không vẽ. */}
       {tab === 'hv' && <DaXoaAdmin loai="hoc_vien" loc={loc} />}
       {data && tab === 'hv' && (
-        <ThanhChonNhieu chon={chon} viec={[{ key: 'quay-lai', nhan: t('Quay lại học') }]} onViec={() => void quayLaiNhieu([...chon.chon])} />
+        <ThanhChonNhieu chon={chon} viec={[{ key: 'quay-lai', nhan: t('Quay lại học') }]} dangChay={dangChay} onViec={() => void quayLaiNhieu([...chon.chon])} />
       )}
       </div>
       {quayLai.panels}
