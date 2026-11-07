@@ -8,7 +8,7 @@
 
 import { studyWeekOf } from './fasttrack.ts';
 import { tuanKhoa, tuanLich } from './hienThiNgay.ts';
-import { MT_TOI_DA, kiemSoMtMoi, soMtKeTiep, type LuotSo } from './lichMt.ts';
+import { kiemSoMtMoi, soMtKeTiep, type LuotSo } from './lichMt.ts';
 import { tenMonNgan } from './normal.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
@@ -252,7 +252,6 @@ export type ViecXep =
  */
 export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false): ViecXep {
   const n = chon;
-  if (n > MT_TOI_DA) return { loai: 'chan', no: MT_TOI_DA, cau: `Đã đủ MT${MT_TOI_DA} — tối đa của một lộ trình.` };
   const a = ds.find((x) => x.no === n && !x.huy);
   if (!a) { const loi = kiemSoMtMoi(so, n); return loi ? { loai: 'chan', no: n, cau: loi } : { loai: 'tao', no: n }; }
   /* PR-MTGON (rà #282): mọi kỹ năng đã "Huỷ kỹ năng" (required=0) → xếp hàng loạt đưa lại cả lượt rồi đặt tuần (luật 5), không "đã xong". */

@@ -19,7 +19,7 @@ import { useDienThoai } from '../../../ui/TheDong.tsx';
 import { kqOverall } from '../../students/GocLichThi.tsx';
 import { fmtBand } from '../../../lib/format.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-import { MT_TOI_DA, oGon, tuanLich } from '@shared/domain/index.ts';
+import { oGon, tuanLich } from '@shared/domain/index.ts';
 import {
   dotCuaEm, emXongDot, khoaBaiThuong, khoaDot, nhanDot,
   type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
@@ -369,14 +369,14 @@ const cotMt = (n: number): Cot => ({ key: `mt${n}`, dot: { loai: 'ft', attemptNo
 
 /**
  * "+ MT" cuối hàng HV (chủ SP 22/10, 10 mục 6): chọn loại — MT kế tiếp (hộp xếp đợt sẵn có `HopKyNang`, đường "Tạo MT" của Kế hoạch Test) · S Ex
- * (`HopSEx`, `/s-expert`). MT vượt MT_TOI_DA thì chỉ còn S Ex. Neo hộp xếp đợt vào chính nút.
+ * (`HopSEx`, `/s-expert`). Không trần số MT (N14). Neo hộp xếp đợt vào chính nút.
  */
 function NutThemLuot({ hang, onMt, onSEx }: { hang: HangFT; onMt: (n: number, el: HTMLElement) => void; onSEx: () => void }) {
   const neo = useRef<HTMLSpanElement>(null);
   return (
     <span ref={neo} className="self-start">
       <Menu label={t('+ MT')} align="right" className="nut-them" items={[
-        ...(hang.soKeTiep <= MT_TOI_DA ? [{ label: t('MT{n} · MT thường', { n: hang.soKeTiep }), onClick: () => onMt(hang.soKeTiep, neo.current!) }] : []),
+        { label: t('MT{n} · MT thường', { n: hang.soKeTiep }), onClick: () => onMt(hang.soKeTiep, neo.current!) },
         { label: t('S Ex · Speaking với chuyên gia'), onClick: onSEx },
       ]} />
     </span>

@@ -9611,6 +9611,8 @@ const { runRkcDiemTests } = bocTep('rkcDiem', await import('./rkcDiem.tests.ts')
 await runRkcDiemTests({ check, assert, conn, P, classId } as any);
 const { runRkcHocVienTests } = bocTep('rkcHocVien', await import('./rkcHocVien.tests.ts'));
 await runRkcHocVienTests({ check, assert, conn, P, classId, TODAY } as any);
+const { runRkcLichTests } = bocTep('rkcLich', await import('./rkcLich.tests.ts'));
+await runRkcLichTests({ check, assert, conn, P, classId } as any);
 const { runSexHangTests } = bocTep('sexHang', await import('./sexHang.tests.ts'));
 await runSexHangTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== P9a XET-LAI (Xét lại lộ trình N21: 4 trường hợp, hạn, panel, lô, Hoàn tác, tự giữ)

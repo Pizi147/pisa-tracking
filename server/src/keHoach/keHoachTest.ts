@@ -10,11 +10,11 @@
  */
 import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
-import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, MT_TOI_DA, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
+import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
-import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
+import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
 import { createAttempt, loadBundle, oXongCua, resultOf, saveScore, scoresOf, setSkillSkip } from '../fasttrack/attempts.ts';
@@ -633,7 +633,7 @@ export function kiemDot(p: Principal, i: { attemptId: number; kyNang: YeuCauKyNa
   const a = docDot(i.attemptId);
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, PLAN_MSG);
   for (const k of i.kyNang) chonKyNang(k.skill);
-  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true, quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
+  return kiemDotNoi(a, i.kyNang, new Set(), { choHuyLich: true, quanTri: (boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) || vuotKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id })) });
 }
 
 /** Lưu MỘT ĐỢT (hộp chip bấm Lưu một lần): kiểm hết rồi mới ghi, một `tx` — chặn một kỹ năng thì cả lần lưu không đổi gì. */
@@ -651,7 +651,7 @@ export function luuDot(p: Principal, i: {
 
   const duaLai = new Set(i.kyNang.filter((k) => k.bo === false).map((k) => k.skill));
   const datTuan = i.kyNang.filter((k) => k.periodId && !k.bo) as YeuCauKyNang[];
-  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao, quanTri: boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) });
+  const kiem = kiemDotNoi(a, datTuan, duaLai, { choHuyLich: !i.khiTao, quanTri: (boKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id }) || vuotKhoaCuoiTuan(p, { classId: a.class_id, studentId: a.student_id })) });
   const chan = kiem.bai.filter((b) => b.ghiChu === 'chan');
   if (chan.length) {
     const ct = (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(a.class_id) as any)?.programme_code ?? null;
@@ -1203,7 +1203,7 @@ export function xepHangLoat(p: Principal, i: {
   if (i.attemptNo && laThuong) throw badRequest('Lớp này là lớp thường — chọn Progress Test hoặc Final Test.');
   if (i.kind && !laThuong) throw badRequest('Lớp này là Fast Track — chọn MT.');
   if (i.kind && i.kind !== 'progress' && i.kind !== 'final' && !/^cp[1-9]\d{0,4}$/.test(i.kind)) throw badRequest('Cần chọn Progress Test hoặc Final Test.');
-  if (typeof i.attemptNo === 'number' && (i.attemptNo < 1 || i.attemptNo > MT_TOI_DA)) throw badRequest(`Tối đa MT${MT_TOI_DA} cho một lộ trình.`);
+  if (typeof i.attemptNo === 'number' && (!Number.isInteger(i.attemptNo) || i.attemptNo < 1)) throw badRequest('Số MT không hợp lệ.');   // RKC: không trần (N14)
   if (i.kyNang !== undefined && !laThuong && (!Array.isArray(i.kyNang) || !i.kyNang.length)) throw badRequest('Chưa chọn kỹ năng nào.');
 
   const tuan: Partial<Record<KyNangKH, number>> = {};
@@ -1232,7 +1232,7 @@ export function xepHangLoat(p: Principal, i: {
   );
 
   const lo = laThuong ? null : docFtTheoLo(studentIds);
-  const boKhoa = laThuong ? false : boKhoaCuoiTuan(p, { classId: i.classId });   // một lần cho cả lô — không một câu đọc công tắc mỗi em
+  const boKhoa = laThuong ? false : (boKhoaCuoiTuan(p, { classId: i.classId }) || vuotKhoaCuoiTuan(p, { classId: i.classId }));   // một lần cho cả lô — không một câu đọc công tắc mỗi em
   const xet = studentIds.map((studentId) => {
     const ten = hv.get(studentId)?.ten ?? '';
     if (laThuong) return xetMotEmThuong({ studentId, ten, kind: i.kind!, tuan, periods, bo });

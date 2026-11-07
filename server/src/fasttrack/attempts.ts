@@ -21,7 +21,7 @@ import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, MON_MOT_LUOT_SQL,
   type SkillRow, type SkillScheduleView,
-  chanCuoiTuan, ghiSitStatus, tuanCacKyNang,
+  canMoveSkillSchedule, chanCuoiTuan, doiVeTuanNayNeuChua, ghiSitStatus, tuanCacKyNang,
 } from './skillSchedule.ts';
 import {
   canRequest as canRequestAbsence, chotVangNgay, dauDaChot, duocGoDau, goVangDaChot, pendingMove, rutDeNghiDoi,
@@ -449,6 +449,8 @@ export function skillCells(
   const schedule = skillScheduleOf(attempt, skillRows);
   const cancelled = attempt.status === 'cancelled';
   const khoiPhucDuoc = cancelled && choHuyKhoiPhucLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id });
+  let doiLichNho: boolean | undefined;   // chỉ hỏi khi có ô chưa tới tuần
+  const doiLich = () => (doiLichNho ??= !!attempt.class_id && canMoveSkillSchedule(p, { classId: attempt.class_id, studentId: attempt.student_id }));
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
@@ -537,9 +539,9 @@ export function skillCells(
     /* RKC (thay E8 "vắng / huỷ không nhập ở đâu cả"): ô vắng / huỷ nhập được — `saveScore` hỏi rồi đổi trạng thái thi; lượt đã huỷ: người
        khôi phục được (QL…) nhập được, máy hỏi rồi khôi phục lượt. */
     const canEdit = required && (!cancelled || khoiPhucDuoc)
-      /* T19 (PR-MTa): kỹ năng chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ (`kiemDaToiTuanThi`), kể cả ô đã có điểm mà
-       * Quản lý dời sang tuần chưa tới (T20) — điểm vẫn hiện. */
-      && (!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today))
+      /* T19: chưa tới tuần thi / chưa xếp tuần → ô khoá với người KHÔNG dời được lịch; RKC: người dời được lịch nhập được — máy chủ hỏi "Dời về tuần
+       * này" (`doiVeTuanNayNeuChua`). */
+      && ((!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today)) || doiLich())
       /* LUAT-34 (L3): "Đủ điểm" không còn khoá — GV đúng ô sửa mọi lúc (cùng `saveScore`). */
       && editable.includes(skill);
     const noShow = ns.state === 'none' ? null : {
@@ -2289,12 +2291,15 @@ export function saveScore(
   const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill) : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
-  if (ghiDiem) kiemDaToiTuanThi(scheduleRow, today);
+  /* RKC: chưa tới tuần thi → người dời được lịch hỏi "Dời về tuần này" (dời trong giao dịch lưu, dưới); người khác: câu chỉ đường. */
+  const doiTuan = ghiDiem ? doiVeTuanNayNeuChua(p, a, scheduleRow, today) : null;
+  if (doiTuan) scheduleRow = { ...scheduleRow, week_start: mondayOf(today) };
   const chiNhanXet = (coNhanXet || coGvCham || coNhom) && patch.rawScore === undefined && patch.band === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
   if (chiNhanXet) return tx(() => luuNhanXet(p, a, skill, nxGt, gv, nhomGui));
 
   return tx(() => {
+    doiTuan?.();
     doiSit?.();
     let existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as ScoreRow | undefined;
@@ -2334,9 +2339,10 @@ export function saveScore(
          *   · MT0 / lượt khác ghi muộn → "Không dự thi" như cũ.
          * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
          */
-        if (scheduleRow.week_start && scheduleRow.week_start.slice(0, 10) > mondayOf(today)) {
-          throw loi(400, 'Chưa tới tuần Test {x} — muốn đổi tuần thì "Dời lịch".', { x: tuanLich(scheduleRow.week_start, today) });
-        }
+        /* RKC: "-" trước tuần thi — người dời được lịch hỏi "Dời về tuần này" rồi ghi vắng (lần vắng của tuần này, dời tiếp theo N38). */
+        const doiVe = doiVeTuanNayNeuChua(p, a, scheduleRow, today, 'vang');
+        if (doiVe) { doiVe(); scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!; }
+        if (!scheduleRow.week_end || !scheduleRow.planned_period_id) throw loi(400, '{assessed} chưa có tuần Test nên chưa báo "không có bài" được.', { assessed });
         const late = today > scheduleRow.week_end.slice(0, 10);
         /* RKC: lớp đã kết thúc (không còn tuần để dời) → "-" = Không dự thi, như MT cũ. */
         const cu = (laLopKetThuc(a.class_id) || (a.kind === 'mock' ? laMtCuKyNang(scheduleRow.week_start ?? scheduleRow.week_end, today) : late)) ? 1 : 0;

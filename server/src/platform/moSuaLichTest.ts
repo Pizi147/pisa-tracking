@@ -62,6 +62,14 @@ export function requireSuaLichTest(p: Principal, ctx: Ctx, message: string): voi
  * Miễn khoá cuối tuần N15 cho người này ở lớp / em này: vai GỐC Quản trị hệ thống (như cũ), hoặc công tắc BẬT và người này sửa được lịch Test ở đó.
  * Gọi SAU kiểm quyền ghi — không thay kiểm quyền.
  */
+/**
+ * RKC (chủ SP 07/11 "không chặn cứng" — PTA: luật đã chốt GIỮ cho GV, QL / Admin VƯỢT được kèm xác nhận): người có `plan.week` ở lớp / em đó đổi lịch MT
+ * cuối tuần được sau một câu hỏi (`chanCuoiTuan`). Màn xem trước không vẽ "khoá" cho họ.
+ */
+export function vuotKhoaCuoiTuan(p: Principal, ctx: Ctx): boolean {
+  return can(p, PERMISSIONS.PLAN_WEEK, ctx);
+}
+
 export function boKhoaCuoiTuan(p: Principal, ctx: Ctx): boolean {
   if ((p.vaiGoc ?? p.roleKeys).includes('system_admin')) return true;
   return dangMoSuaLichTest() && choSuaLichTest(p, ctx);

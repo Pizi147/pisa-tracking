@@ -10,7 +10,7 @@ import { BranchFilter } from '../../../ui/Filters.tsx';
 import { Nhan } from '../../../ui/Nhan.tsx';
 import { OMt } from '../../../ui/OMt.tsx';
 import {
-  PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, MT_TOI_DA, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
+  PERMISSIONS, CAU_TUAN_DA_QUA, KY_NANG_KE_HOACH, demSeXep, mondayOfDate, nhanSeXep, tenMon, tenMonNgan, tomTatXepMt, tuanLich, tuanMacDinhDotMoi,
   type DongHangLoat, type KyNangKH, type ToneSeXep,
 } from '@shared/domain/index.ts';
 import { moiKhoaGui } from '@shared/domain/khoaGui.ts';
@@ -105,7 +105,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
     const l = luoi.get(id);
     return l ? l.hang.map((h) => ({ ...h, classId: id, classCode: l.classCode })) : [];
   }).sort((a, b) => a.classCode.localeCompare(b.classCode, 'vi') || a.ten.localeCompare(b.ten, 'vi')), [luoi, lopChon]);
-  const soCot = Math.min(MT_TOI_DA, Math.max(0, ...[...luoi.values()].map((l) => l.cot.length)) + 1);
+  const soCot = Math.max(0, ...[...luoi.values()].map((l) => l.cot.length)) + 1;   // RKC: không trần MT (N14)
   const cot = Array.from({ length: soCot }, (_, i) => i + 1);
 
   /* 1 Đợt: "MT mới" (mặc định) = mỗi em MỘT đợt riêng do máy chủ chọn (`dotMtMoi`); hoặc đúng đợt MT{n}. */
