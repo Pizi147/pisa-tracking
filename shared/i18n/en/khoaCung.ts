@@ -24,7 +24,6 @@ export const EN_KHOA_CUNG = {
   'Mở lại và lưu': 'Reopen and save',
   'Khi {x}': 'When you {x}',
   'Hoàn thành Case sẽ kết thúc các PA còn mở — Mở lại Case trả lại các PA đó.': 'Completing the Case ends the open plans — reopening the Case brings them back.',
-  'Case đã đóng — Mở lại Case nếu cần người phụ trách mới.': 'The Case is closed — reopen it if it needs a new owner.',
   'Dừng — Case hoàn thành': 'Stopped — Case completed',
   'Em đang ở Lưu trữ — mở lộ trình mới bằng Quay lại học (chọn lớp) hoặc Bước tiếp › Lộ trình mới.': 'The student is archived — open a new pathway via Return to study (pick a class) or Next step › New pathway.',
   'Em đã kết thúc học — chuyển lớp bằng Quay lại học (chọn lớp mới).': 'The student has ended studies — transfer via Return to study (pick a new class).',

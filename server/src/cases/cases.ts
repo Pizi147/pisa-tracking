@@ -1410,7 +1410,7 @@ export function suaCase(p: Principal, caseId: number, input: {
     observation: input.observation !== undefined ? input.observation : chinh?.observation ?? null,
     urgency: input.urgency ?? c.urgency ?? DEFAULT_URGENCY,
     moTa: input.summary ?? c.summary, tenGiua: input.title ?? c.title ?? tenGiuaCua(c),
-  }, { moTaCu: c.summary, khongDoiMoTa: st.laMt, boNguyenNhan: st.laMt && !chinh && !guiMoTa });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài
+  }, { moTaCu: c.summary, khongDoiMoTa: st.laMt, boNguyenNhan: (st.laMt || daXong) && !chinh && !guiMoTa });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài; RKC-2b: Case đã xong chưa từng có nguyên nhân — đổi tên / mức không đòi nhóm
   if (nhom?.slice(1).some((x) => !issuesForTopic(topic, ct).some((i) => i.code === x))) {
     throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ct) });
   }

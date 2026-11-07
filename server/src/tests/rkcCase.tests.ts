@@ -139,4 +139,13 @@ export async function runRkcCaseTests(t: any) {
     cases.suaPa(P.lrTeacher, iv, { description: 'Tự học Listening — nghe chép 20 phút mỗi ngày' });
     assert(pa(iv).status === 'completed' && /20 phút/.test(mot('SELECT description d FROM case_interventions WHERE id = ?', iv).d), 'sửa PA đã kết thúc');
   }));
+
+  check('RKC2b-5 · Case đã xong chưa từng có nguyên nhân (Case SOS cũ): đổi mức / tên không đòi nhóm nguyên nhân', () => thu(() => {
+    const c = taoCase(moiEm());
+    cases.closeCaseOutcome(QL, c, KL);
+    conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(c);
+    xoaNho();
+    cases.suaCase(QL, c, { urgency: 'urgent' });
+    assert(mot('SELECT urgency FROM sos_cases WHERE id = ?', c).urgency === 'urgent', 'đổi mức được');
+  }));
 }

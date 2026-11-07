@@ -430,7 +430,7 @@ function PhuTrach({ data, toi, onDoi, reload }: { data: CaseDetail; toi: number 
   const [daDoi, setDaDoi] = useState<{ cu: number | null; ten: string } | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const bao = useContext(BaoLuuCase);
-  const duoc = data.status !== 'done' && !!data.doiChu?.duoc;
+  const duoc = !!data.doiChu?.duoc;   // RKC-2b: Case đã đóng cũng đổi người được (máy chủ quyết)
   const ten = data.owner ?? t('Chưa có');
   const ds = (data.doiChu?.ungVien ?? []).map((u) => ({ id: u.id, ten: u.ten ?? '—' }));
   const doi = async (id: number, cu: number | null) => {
