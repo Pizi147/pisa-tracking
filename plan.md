@@ -259,6 +259,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### 07/11 — SỬA HV LƯU TRỮ + ĐỔI BƯỚC TIẾP (chủ SP, chưa làm — PTA đang soạn đề xuất)
+- **Chủ SP 07/11:** "Tôi muốn có khả năng sửa đổi được một vài thông tin của HV đã lưu trữ, ví dụ như điểm thi thật chẳng hạn, và có thể undo lại và sửa lại lộ trình tiếp theo của học sinh thay vì phải đưa HS vào lộ trình mới xong mới sửa lại được thì thông tin nó bị nhiễu loạn, bạn hiểu ý tôi chứ? bạn còn đề xuất gì nữa không?"
+
 ### 07/11 đêm — chủ SP đi ngủ: rà cuối sau đợt 05–06/11 + giảm đọc + tốc độ + dọn máy
 - **Chủ SP 07/11 (đi ngủ):** "1. Rà lại và dọn bớt worktrees không cần thiết, dọn folder temp trong appdata và projects, chỉ giữ lại những thứ thực sự cần thiết 2. Dùng những skills hợp lý để rà và kiểm tra lại một lần cuối các vấn đề về lỗi có thể xảy ra sau những PR merge trong quãng thời gian vừa rồi, mọi thứ cần phải logic, không bị bug, không bị chặn một cách vô lý, mọi thứ cần phải đơn giản, không qua quá nhiều bước không cần thiết, lỗi giao diện máy tính cần phải để ý xem có bị đè cái gì không cần thiết, cái gì bị clipped, thiếu mỹ quan. 3. Đồng thời xử lý giảm dòng đọc, đẩy nhanh tốc độ web nếu có thể nhé. 4. Tạo plan chi tiết để xử lý các vấn dề trên. Bây giờ tôi sẽ đi ngủ, tự chủ động làm, tự chủ động merge và xử lý lỗi, tự chủ động giao việc và lưu ý model, effort khi giao 5. Sau khi làm xong hết, dọn lại như mục 1 một lần nữa"
 - **Uỷ quyền đêm nay (PTA hiểu):** tự merge khi check chung xanh: sửa lỗi rõ, sửa đè / cắt chữ / lệch / tràn trên máy tính (không đổi bố cục màn), giảm đọc JSON y hệt, tăng tốc không đổi hành vi. **GIỮ chờ sáng** (ghi ở dòng "Sáng 07/11 chờ duyệt"): đổi luật nghiệp vụ, đổi bố cục màn, đổi số liệu em thật, tăng đọc Turso, thêm / bỏ bước người dùng thấy. Không deploy.
