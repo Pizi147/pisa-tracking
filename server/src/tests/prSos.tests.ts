@@ -260,6 +260,25 @@ export async function runPrSosTests(t: YThucTestKit) {
       kp.khoiPhucRac(P.admin, rac.id);
       assert(plansOf(c.id).some((r: any) => r.id === trung), 'Khôi phục không trả PA');
     });
+    check('PA-TRUNG · migrate: hai PA "đến lúc thi" cùng loại ĐỀU đã xác nhận → giữ PA bắt đầu sớm hơn, PA sau + kết quả của nó vào Thùng rác; Khôi phục trả đủ PA + kết quả', () => {
+      const { st } = mt1Sos3('PT3');
+      const c = caseOf(st.id, 'listening');
+      const xn = new Date().toISOString(), gv = gvKyNang('listening');
+      conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ?, moc_quy_che = 'until_exam' WHERE case_id = ?`)
+        .run(addDays(TODAY, -20), xn, gv, c.id);
+      const cu = plansOf(c.id)[0];
+      const sau = chenPa(conn, [{ caseId: c.id, kind: 'tutor', description: 'Tutor · đến lúc thi', performerUserId: gv, status: 'planned', preset: true, mocQuyChe: 'until_exam' }])[0];
+      conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ? WHERE id = ?`).run(addDays(TODAY, -5), xn, gv, sau);
+      const kq = Number(conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, note, created_at) VALUES (?,?,?, 'improved', 'Tiến bộ', ?)`)
+        .run(c.id, sau, TODAY, xn).lastInsertRowid);
+      const ds = mig.paTrung(conn).filter((r: any) => r.case_id === c.id).map((r: any) => r.id);
+      assert(JSON.stringify(ds) === JSON.stringify([sau]), `tập dọn ${JSON.stringify(ds)} (giữ ${cu.id})`);
+      mig.donPaTrung(conn);
+      assert(JSON.stringify(plansOf(c.id).map((r: any) => r.id)) === JSON.stringify([cu.id]) && !get('SELECT 1 FROM case_followups WHERE id = ?', kq), 'PA sau / kết quả còn');
+      const rac = get(`SELECT id FROM thung_rac WHERE loai = 'pa' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, sau);
+      kp.khoiPhucRac(P.admin, rac.id);
+      assert(plansOf(c.id).length === 2 && get('SELECT intervention_id i FROM case_followups WHERE id = ?', kq)?.i === sau, 'Khôi phục không trả đủ PA + kết quả');
+    });
   }
   check('SOS (3) · + Case cùng kỹ năng đang chờ xác nhận nguyên nhân → 400, không gộp (K3-23)', () => {
     const { st } = mt1Sos3('T3d');

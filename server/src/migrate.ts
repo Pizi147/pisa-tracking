@@ -465,11 +465,13 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* GIAM-DOC-0611h: chỉ mục idx_student_branch — Case theo chi nhánh của em (listCases quyền chi nhánh) thôi quét cả students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611h(conn, applied));
     /* TAT-CHECKPOINT (chủ SP 06/11): công tắc Checkpoint tự sinh tắt → huỷ mềm Checkpoint chưa có điểm; bật → khôi phục (chạy MỖI lần, chạy lặp không đổi). */ buoc(() => migratePrTatCp(conn, applied));
     /* RESET-HAN-CASE (chủ SP 06/11): cột sos_cases.han_them_pa (mỗi lần) + việc tuyến Case quá hạn → hạn hôm nay + 7, nhật ký viec_han_lan (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrResetHanCase(conn, applied));
-    /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" chờ xác nhận trùng PA cùng loại đang chạy → Thùng rác (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrPaTrung0711(conn, applied));
 
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
   conn.pragma('foreign_keys = ON');
+  /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận, giữ PA cũ nhất) → Thùng rác (đổi dữ liệu MỘT
+     lần, khoá demo_config). SAU khi bật khoá ngoại: Xoá PA dựa vào CASCADE (buổi Tutor của kết quả) — tắt thì để lại dòng mồ côi, khôi phục 409. */
+  buoc(() => migratePrPaTrung0711(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
