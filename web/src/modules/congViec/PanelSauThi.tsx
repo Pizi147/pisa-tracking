@@ -177,7 +177,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
                 {suaDiem && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { setSuaDiem(false); napDiem(c); }}>{t('Huỷ sửa')}</button>}
                 <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang'} onClick={luuDiem}>{t('Lưu điểm')}</button>
               </>
-            ) : !daChonTruoc && !daChot && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaDiem(true)}>{t('Sửa điểm')}</button>}
+            ) : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaDiem(true)}>{t('Sửa điểm')}</button>}
           </div>
         </Buoc>
 
