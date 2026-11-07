@@ -13,7 +13,7 @@ export const EN_KHOA_CUNG = {
   'Vẫn làm thay': 'Do it anyway',
   'Hẹn kết thúc lớp': 'Class end scheduled',
   'thêm học viên': 'add students',
-  'làm Cuối khoá': 'do End of course',
+  'chốt lộ trình cả lớp': 'confirm the class pathways',
   'chuyển tiếp lớp': 'move the class on',
   'Lớp đã kết thúc — Mở lại lớp để {viec}?': 'The class has ended — reopen it to {viec}?',
   'Lớp {ds} đã kết thúc — Mở lại lớp để phân công?': 'Class {ds} has ended — reopen it to assign teachers?',

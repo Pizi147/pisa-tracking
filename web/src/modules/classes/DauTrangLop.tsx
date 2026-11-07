@@ -105,7 +105,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
    * mở lại rồi làm tiếp ngay tại đây. Phân công: máy chủ hỏi lúc lưu. Bấm Đóng ở hộp hỏi → không làm gì.
    */
   const toastVd = useToast();
-  const VONG_DOI: Partial<Record<ViecDauTrang, string>> = { 'hoc-vien': t('thêm học viên'), 'lo-trinh-ca-lop': t('làm Cuối khoá'), 'chuyen-tiep': t('chuyển tiếp lớp') };
+  const VONG_DOI: Partial<Record<ViecDauTrang, string>> = { 'hoc-vien': t('thêm học viên'), 'lo-trinh-ca-lop': t('chốt lộ trình cả lớp'), 'chuyen-tiep': t('chuyển tiếp lớp') };
   const onViec = (v: ViecDauTrang) => {
     const viec = data.status === 'finished' ? VONG_DOI[v] : undefined;
     if (!viec) { onViecGoc(v); return; }
