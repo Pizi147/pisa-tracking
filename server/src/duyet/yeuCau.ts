@@ -8,7 +8,7 @@
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz } from '../util.ts';
+import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
 import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
@@ -735,11 +735,18 @@ function theHuyDuoc(conn: any, rows: any[]): Set<number> {
     }, 500);
     return ids;
   };
-  const conDao = ung.filter((r) => { const d = DINH_NGHIA_LOAI.find((x) => x.loai === r.loai); return d && !d.huyDuoc && !d.khiHuy; });
+  const conDao = ung.filter((r) => { const d = DINH_NGHIA_LOAI.find((x) => x.loai === r.loai); return d && !d.huyDuoc && !d.khiHuy && !d.huyThang; });
   for (const id of daoCua(conDao)) kq.add(id);
   for (const d of DINH_NGHIA_LOAI) {
     const cua = ung.filter((r) => r.loai === d.loai);
-    if (cua.length && d.huyDuoc) for (const id of d.huyDuoc(conn, cua)) kq.add(id);
+    if (!cua.length) continue;
+    if (d.huyDuoc) for (const id of d.huyDuoc(conn, cua)) kq.add(id);
+    /* RKC-3c: loại có đường đảo riêng / đi thẳng → luôn có nút (không đảo được thật thì bấm sẽ nói lý do + chỗ sửa). Không thêm câu đọc. */
+    else if (d.khiHuy || (d.huyThang && (cua.length > 1 || !d.huyThang.giuChan))) for (const r of cua) kq.add(r.id);
+    else if (d.huyThang) {   // một thẻ, loại giữ `chan` (D): toast Hoàn tác chỉ khi bấm sẽ được
+      const g = timGhiDao(conn, GD.loai, GD.bang, cua[0].id);
+      if (!(g && chanDao(conn, cua[0], g))) kq.add(cua[0].id);
+    }
   }
   return kq;
 }
@@ -771,11 +778,23 @@ export function huyQuyetDinh(p: Principal, id: number) {
       if (!doi) throw badRequest('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
     } else {
       const r = timGhiDao(conn, GD.loai, GD.bang, id);
-      if (!r) throw conflict('Quyết định này ghi trước khi có Hoàn tác — không huỷ được, sửa trực tiếp ở màn gốc.');
-      const chan = chanDao(conn, yc, r);
-      if (chan) throw conflict(chan);
-      daoLai(conn, r, p.userId);   // thẻ (đã chụp) về `cho` cùng dòng nguồn; dòng nào đã khác → 409, không đảo gì
-      if ((conn.prepare('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?').get(id) as any)?.trang_thai !== 'cho') throw conflict('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
+      const chan = r ? chanDao(conn, yc, r) : null;
+      if (r && !chan && daoDuoc(r)) {
+        daoLai(conn, r, p.userId);   // thẻ (đã chụp) về `cho` cùng dòng nguồn
+        if ((conn.prepare('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?').get(id) as any)?.trang_thai !== 'cho') throw conflict('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
+      } else if (def.huyThang && !(chan && def.huyThang.giuChan)) {
+        /* RKC-3c (PTA 07/11): dữ liệu đã đổi sau quyết định / quyết định cũ không có bản ghi đảo → ĐI THẲNG (hỏi một câu), không chặn. */
+        canXacNhan(def.huyThang.cau as Parameters<typeof canXacNhan>[0], undefined, 'Vẫn huỷ quyết định');
+        def.huyThang.lam(p, yc, r);
+        if (r) conn.prepare('UPDATE ghi_dao SET dao_luc = ?, dao_boi = ? WHERE id = ? AND dao_luc IS NULL').run(nowIso(), p.userId, r.id);
+        const doi = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'cho', nguoi_duyet = NULL, ly_do_tu_choi = NULL, tra_loi = NULL, ly_do_dong = NULL,
+            tu_duyet = 0, xu_ly_luc = NULL WHERE id = ? AND trang_thai = ?`).run(id, yc.trang_thai).changes as number;
+        if (!doi) throw badRequest('Yêu cầu này vừa đổi. Danh sách đã được làm mới.');
+      } else {
+        if (!r) throw conflict('Quyết định này ghi trước khi có Hoàn tác — không huỷ được, sửa trực tiếp ở màn gốc.');
+        if (chan) throw conflict(chan);
+        daoLai(conn, r, p.userId);   // dòng nào đã khác → 409 nói rõ bảng, không đảo gì
+      }
       xoaNho();   // trạng thái Ý thức / Case nhớ trong request đã cũ
     }
     /* Chuông kết quả cũ đổi khoá (giữ làm lịch sử) — quyết lại vẫn báo được người gửi. */

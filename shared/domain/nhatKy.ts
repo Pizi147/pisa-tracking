@@ -7,7 +7,7 @@ import { tenMonNgan } from './normal.ts';
  */
 const NHAN_NHAT_KY: Record<string, string> = {
   'attachment.add': 'Thêm bằng chứng', 'attachment.delete': 'Xoá bằng chứng',
-  'attempt.absence_move': 'Dời lịch Test vì vắng', 'attempt.absence_auto_move': 'Hệ thống tự dời do vắng lần 1', 'attempt.cancel': 'Huỷ cả lượt MT',
+  'attempt.absence_move': 'Dời lịch Test vì vắng', 'attempt.absence_move_undo': 'Huỷ quyết định dời lịch Test', 'attempt.absence_auto_move': 'Hệ thống tự dời do vắng lần 1', 'attempt.cancel': 'Huỷ cả lượt MT',
   'attempt.cancel_appointment': 'Huỷ lịch Test môn', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
   'attempt.unschedule': 'Huỷ lịch lượt (bỏ tuần, giữ lượt)',
   'attempt.huy_vang': 'Huỷ kỹ năng (vắng 2 lần)',
