@@ -24,6 +24,8 @@ export type TrangThaiBuocTiep = {
   daGiaHan: boolean; coTheGiaHan: boolean;
   /** SUA-LUU-TRU (việc 5): kết quả thi thật đổi sau khi chọn — dòng nhắc nhẹ. */
   kqDaDoi?: boolean;
+  /** SUA-LUU-TRU (việc 4): lý do không đổi được lựa chọn (khoá nút "Đổi") — null = đổi được. */
+  lyDoKhongDoi?: string | null;
 };
 type Chon = HuongSauThi;
 
@@ -71,6 +73,8 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const [daLuu, setDaLuu] = useState<{ x: DaLuuPanel; luc: string } | null>(null);
   const [giaHan, setGiaHan] = useState(false);
   const [lichSu, setLichSu] = useState(false);   // OV-15g: Lịch sử thay nội dung panel, ← Bước tiếp
+  /* SUA-LUU-TRU (việc 4): Đổi bị máy chủ từ chối (409: lộ trình mới đã có dữ liệu, em đổi trạng thái sau…) → khoá "Đổi" + lý do tại nút, không toast chung. */
+  const [khongDoi, setKhongDoi] = useState<string | null>(null);
   const khoiPhuc = useKhoiPhucThiThat(cycleId, () => { reload(); onDone?.(); });
 
   const tieuDe = t('Bước tiếp');
@@ -93,14 +97,19 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       /* P7: câu phụ theo trạng thái thật máy chủ trả (không tự nói "đã vào Lưu trữ"). */
       const phu = r?.thongBao ? dich(r.thongBao) : x.phu;
       lamMoi(); setTt(null); setDaLuu({ x: { ...x, phu }, luc: gio() }); setDoi(false); reload(); onDone?.();
-    } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
+    } catch (e: any) {
+      if (e?.status === 409 && bt.chon) { setKhongDoi(e.message ?? t('Không lưu được')); setDoi(false); setChon(null); setTt(null); setLoi(null); return; }
+      setTt('loi'); setLoi(e?.message ?? null);
+    }
   };
+  /* SUA-LUU-TRU (việc 3): đang chọn lại (đã có lựa chọn) — chữ "Đã đổi sang …"; Hoàn tác (máy chủ) về đúng lựa chọn cũ. */
+  const daChonTruoc = !!bt.chon;
   const boChon = () => api.del(`/cycles/${cycleId}/buoc-tiep`).then(() => { lamMoi(); reload(); onDone?.(); });
   /* "Tạm dừng/ Kết thúc học": ô bật → `tam_dung`, tắt → `ket_thuc` (máy chủ ghi như cũ), ngày + lý do của hộp. */
   const luuDung = () => {
     const chonMay: LuaChonSauThi = dung.quayLai ? 'tam_dung' : 'ket_thuc';
     void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: chonMay, date: dung.ngay || undefined, lyDo: dung.lyDo.trim() || undefined }),
-      { chu: t('Đã chọn {chon}', { chon: NHAN_SAU_THI[chonMay] }), hoanTac: boChon });
+      { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI[chonMay] }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI[chonMay] }), hoanTac: boChon });
   };
   const viecTiep = onTiep
     ? <button type="button" className="btn btn-primary btn-lg min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
@@ -146,12 +155,15 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
         {bt.chon && bt.kqDaDoi && <p className="m-0 mt-2 text-sm text-soon">{t('Kết quả đã đổi — xem lại bước tiếp?')}</p>}
         {bt.chon && bt.coTheChon && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
+            {/* SUA-LUU-TRU (việc 3, 4): Đổi = chọn lại tại chỗ (máy chủ gỡ lựa chọn cũ + làm mới, một giao dịch); không đổi được → khoá + lý do ngay tại nút. */}
+            <NutChu onClick={() => { setDoi(true); setChon(null); setTt(null); setLoi(null); }} disabled={tt === 'dang' || !!(khongDoi ?? bt.lyDoKhongDoi)}>{t('Đổi')}</NutChu>
             {bt.chon === 'tam_dung' && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { setDoi(true); setChon('lo_trinh_moi'); }}>{t('Quay lại học')}</button>}
             {(bt.hen || bt.hoanTacDuoc) && (
               <NutChu onClick={() => { setTt('dang'); setLoi(null); boChon().then(() => setTt(null), (e: any) => { setTt('loi'); setLoi(e?.message ?? null); }); }} disabled={tt === 'dang'}>
                 {bt.hen ? t('Huỷ hẹn') : t('Hoàn tác')}
               </NutChu>
             )}
+            {(khongDoi ?? bt.lyDoKhongDoi) && <span className="basis-full text-[13px] text-slate-400" role="status">{dich(khongDoi ?? bt.lyDoKhongDoi ?? '')}</span>}
           </div>
         )}
       </KhungPanel>
@@ -174,6 +186,12 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       {dongKetQua}
       <div className="pt-3">
         <CanLam>
+          {bt.chon && (
+            <p className="m-0 mb-2 flex flex-wrap items-center gap-x-2 text-sm text-slate-300">
+              <span>{t('Đang đổi từ: {chon}', { chon: NHAN_SAU_THI[bt.chon] })}</span>
+              <NutChu onClick={() => { setDoi(false); setChon(null); setTt(null); setLoi(null); }}>{t('Giữ lựa chọn cũ')}</NutChu>
+            </p>
+          )}
           <div role="group" aria-label={tieuDe} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {HUONG_SAU_THI.map((k) => (
               <button key={k} type="button" aria-pressed={chon === k} onClick={() => setChon(k)}
