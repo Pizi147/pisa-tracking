@@ -469,7 +469,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     conn.prepare("INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES ('case_engine_migrated_at', ?, ?)")
       .run(nowIso(), nowIso());
   conn.pragma('foreign_keys = ON');
-  /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận, giữ PA cũ nhất) → Thùng rác (đổi dữ liệu MỘT
+  /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận: giữ PA nhiều kết quả nhất, rồi cũ nhất) → Thùng rác (đổi dữ liệu MỘT
      lần, khoá demo_config). SAU khi bật khoá ngoại: Xoá PA dựa vào CASCADE (buổi Tutor của kết quả) — tắt thì để lại dòng mồ côi, khôi phục 409. */
   buoc(() => migratePrPaTrung0711(conn, applied));
 

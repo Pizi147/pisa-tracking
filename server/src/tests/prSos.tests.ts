@@ -260,24 +260,40 @@ export async function runPrSosTests(t: YThucTestKit) {
       kp.khoiPhucRac(P.admin, rac.id);
       assert(plansOf(c.id).some((r: any) => r.id === trung), 'Khôi phục không trả PA');
     });
-    check('PA-TRUNG · migrate: hai PA "đến lúc thi" cùng loại ĐỀU đã xác nhận → giữ PA bắt đầu sớm hơn, PA sau + kết quả của nó vào Thùng rác; Khôi phục trả đủ PA + kết quả', () => {
-      const { st } = mt1Sos3('PT3');
+    /** Case có hai PA quy chế "đến lúc thi" đều đã xác nhận: PA cũ bắt đầu 20 ngày trước + `nCu` kết quả, PA sau 5 ngày trước + `nSau` kết quả. */
+    const haiPaXacNhan = (ten: string, nCu: number, nSau: number) => {
+      const { st } = mt1Sos3(ten);
       const c = caseOf(st.id, 'listening');
       const xn = new Date().toISOString(), gv = gvKyNang('listening');
       conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ?, moc_quy_che = 'until_exam' WHERE case_id = ?`)
         .run(addDays(TODAY, -20), xn, gv, c.id);
-      const cu = plansOf(c.id)[0];
+      const cu = plansOf(c.id)[0].id as number;
       const sau = chenPa(conn, [{ caseId: c.id, kind: 'tutor', description: 'Tutor · đến lúc thi', performerUserId: gv, status: 'planned', preset: true, mocQuyChe: 'until_exam' }])[0];
       conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ? WHERE id = ?`).run(addDays(TODAY, -5), xn, gv, sau);
-      const kq = Number(conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, note, created_at) VALUES (?,?,?, 'improved', 'Tiến bộ', ?)`)
-        .run(c.id, sau, TODAY, xn).lastInsertRowid);
-      const ds = mig.paTrung(conn).filter((r: any) => r.case_id === c.id).map((r: any) => r.id);
-      assert(JSON.stringify(ds) === JSON.stringify([sau]), `tập dọn ${JSON.stringify(ds)} (giữ ${cu.id})`);
+      const kq = (pa: number) => Number(conn.prepare(`INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, note, created_at) VALUES (?,?,?, 'improved', 'Tiến bộ', ?)`)
+        .run(c.id, pa, TODAY, xn).lastInsertRowid);
+      for (let k = 0; k < nCu; k++) kq(cu);
+      const kqSau = Array.from({ length: nSau }, () => kq(sau));
+      return { c, cu, sau, kqSau, dsDon: () => mig.paTrung(conn).filter((r: any) => r.case_id === c.id).map((r: any) => r.id) };
+    };
+    check('PA-TRUNG · migrate: hai PA "đến lúc thi" ĐỀU đã xác nhận, cùng số kết quả → giữ PA bắt đầu sớm hơn', () => {
+      const x = haiPaXacNhan('PT3', 0, 0);
+      assert(JSON.stringify(x.dsDon()) === JSON.stringify([x.sau]), `tập dọn ${JSON.stringify(x.dsDon())} (giữ ${x.cu})`);
+    });
+    check('PA-TRUNG · migrate: PA sau CÓ kết quả, PA cũ chưa (Case 28) → giữ PA sau, PA cũ vào Thùng rác — không mất kết quả GV đã ghi', () => {
+      const x = haiPaXacNhan('PT4', 0, 1);
+      assert(JSON.stringify(x.dsDon()) === JSON.stringify([x.cu]), `tập dọn ${JSON.stringify(x.dsDon())} (giữ ${x.sau})`);
       mig.donPaTrung(conn);
-      assert(JSON.stringify(plansOf(c.id).map((r: any) => r.id)) === JSON.stringify([cu.id]) && !get('SELECT 1 FROM case_followups WHERE id = ?', kq), 'PA sau / kết quả còn');
-      const rac = get(`SELECT id FROM thung_rac WHERE loai = 'pa' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, sau);
+      assert(JSON.stringify(plansOf(x.c.id).map((r: any) => r.id)) === JSON.stringify([x.sau]) && !!get('SELECT 1 FROM case_followups WHERE id = ?', x.kqSau[0]), 'kết quả đã ghi bị mất');
+    });
+    check('PA-TRUNG · migrate: PA cũ nhiều kết quả hơn → giữ PA cũ; PA sau + kết quả của nó vào Thùng rác; Khôi phục trả đủ PA + kết quả', () => {
+      const x = haiPaXacNhan('PT5', 2, 1);
+      assert(JSON.stringify(x.dsDon()) === JSON.stringify([x.sau]), `tập dọn ${JSON.stringify(x.dsDon())} (giữ ${x.cu})`);
+      mig.donPaTrung(conn);
+      assert(JSON.stringify(plansOf(x.c.id).map((r: any) => r.id)) === JSON.stringify([x.cu]) && !get('SELECT 1 FROM case_followups WHERE id = ?', x.kqSau[0]), 'PA sau / kết quả còn');
+      const rac = get(`SELECT id FROM thung_rac WHERE loai = 'pa' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, x.sau);
       kp.khoiPhucRac(P.admin, rac.id);
-      assert(plansOf(c.id).length === 2 && get('SELECT intervention_id i FROM case_followups WHERE id = ?', kq)?.i === sau, 'Khôi phục không trả đủ PA + kết quả');
+      assert(plansOf(x.c.id).length === 2 && get('SELECT intervention_id i FROM case_followups WHERE id = ?', x.kqSau[0])?.i === x.sau, 'Khôi phục không trả đủ PA + kết quả');
     });
   }
   check('SOS (3) · + Case cùng kỹ năng đang chờ xác nhận nguyên nhân → 400, không gộp (K3-23)', () => {

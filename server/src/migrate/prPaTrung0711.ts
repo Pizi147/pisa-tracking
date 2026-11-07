@@ -3,7 +3,7 @@
  * "chờ xác nhận" cho Case đang có PA quy chế cùng loại "đến lúc thi" ĐANG CHẠY (gốc đã sửa ở `createPresetPlan`). PA thừa → Xoá PA hệ thống (`xoaPaTrongTx`,
  * cùng đường Xoá PA của người: Thùng rác 30 ngày — Khôi phục ở Quản trị › Đã xoá, nhật ký `intervention.delete` lý do "Dọn PA trùng") + một dòng
  * `sos_case_history` (`don_pa_trung`). Gồm cả cặp PA "đến lúc thi" cùng loại ĐỀU đã xác nhận (lỗi cũ, GV đã xác nhận cả hai — chủ SP 07/11
- * "Merge + dọn cả 4"): giữ PA bắt đầu sớm nhất. Khoá `demo_config` → chạy lặp không làm gì; DB mới ghi khoá sẵn (`duLieuNen`).
+ * "Merge + dọn cả 4"): giữ PA nhiều kết quả nhất, bằng nhau thì bắt đầu sớm nhất. Khoá `demo_config` → chạy lặp không làm gì; DB mới ghi khoá sẵn (`duLieuNen`).
  */
 import { nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -16,9 +16,10 @@ export const LY_DO_PA_TRUNG = 'Dọn PA trùng';
 /**
  * PA quy chế "đến lúc thi" TRÙNG — CHỈ ĐỌC. Case đã có PA quy chế cùng loại "đến lúc thi" đang chạy (`r`):
  *   · PA chờ xác nhận (chưa kết quả) → trùng;
- *   · PA đã xác nhận, đang chạy (chủ SP 07/11 "dọn cả 4") → trùng khi `r` bắt đầu sớm hơn (cùng ngày: id nhỏ hơn) — GIỮ PA cũ nhất, kết quả đã ghi theo PA sau
- *     vào Thùng rác cùng PA (khôi phục trả đủ).
+ *   · PA đã xác nhận, đang chạy (chủ SP 07/11 "dọn cả 4") → trùng khi `r` xếp trước: NHIỀU KẾT QUẢ hơn (không mất kết quả GV đã ghi — PTA 07/11), bằng nhau
+ *     thì bắt đầu sớm hơn, rồi id nhỏ hơn. Mỗi nhóm giữ đúng một PA; PA dọn vào Thùng rác cùng kết quả của nó (khôi phục trả đủ).
  */
+const SO_KQ = (a: string) => `(SELECT COUNT(*) FROM case_followups f WHERE f.intervention_id = ${a}.id)`;
 export function paTrung(conn: any): any[] {
   return conn.prepare(
     `SELECT d.* FROM case_interventions d
@@ -27,8 +28,9 @@ export function paTrung(conn: any): any[] {
              OR (d.confirmed_at IS NOT NULL AND d.status = 'started'))
         AND EXISTS (SELECT 1 FROM case_interventions r WHERE r.case_id = d.case_id AND r.id != d.id AND r.preset = 1 AND r.kind = d.kind
                       AND r.moc_quy_che = 'until_exam' AND r.status = 'started'
-                      AND (d.confirmed_at IS NULL OR COALESCE(r.started_date, '') < COALESCE(d.started_date, '')
-                           OR (COALESCE(r.started_date, '') = COALESCE(d.started_date, '') AND r.id < d.id)))
+                      AND (d.confirmed_at IS NULL OR ${SO_KQ('r')} > ${SO_KQ('d')}
+                           OR (${SO_KQ('r')} = ${SO_KQ('d')} AND (COALESCE(r.started_date, '') < COALESCE(d.started_date, '')
+                               OR (COALESCE(r.started_date, '') = COALESCE(d.started_date, '') AND r.id < d.id)))))
       ORDER BY d.id`,
   ).all() as any[];
 }
@@ -47,5 +49,5 @@ export function migratePrPaTrung0711(conn: any, applied: string[]) {
   if (conn.prepare('SELECT 1 FROM demo_config WHERE key = ?').get(KHOA_PR_PA_TRUNG_0711)) return;
   const ds = donPaTrung(conn);
   conn.prepare('INSERT OR REPLACE INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_PR_PA_TRUNG_0711, demoToday(), nowIso());
-  if (ds.length) applied.push(`PA-TRUNG: ${ds.length} PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận, giữ PA cũ nhất) → Thùng rác (khôi phục được), id ${ds.join(', ')}.`);
+  if (ds.length) applied.push(`PA-TRUNG: ${ds.length} PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận: giữ PA nhiều kết quả nhất, rồi cũ nhất) → Thùng rác (khôi phục được), id ${ds.join(', ')}.`);
 }
