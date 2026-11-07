@@ -5,10 +5,10 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  CHO_TAO_PRE_FOU, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop, kyHieuLop, programmeOf, tachSoLop,
+  CHO_TAO_PRE_FOU, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop, programmeOf, tachSoLop,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest, notFound, loi } from '../util.ts';
+import { badRequest, canXacNhan, notFound, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { ghiPhanCong } from './classes.ts';
@@ -56,12 +56,14 @@ export function capNhatThongTinLop(
   const doiCt = chuongTrinh !== cu;
   const doiLt = !doiCt && loTrinh !== undefined && route !== c.route;
   if (doiCt || doiLt) {
-    /* Q6 (K2-18): lớp và từng em không được nói hai lộ trình — đổi thì chuyển em sang lớp khác, không đổi lớp. */
-    const n = (conn.prepare('SELECT COUNT(DISTINCT student_id) n FROM enrollments WHERE class_id = ?').get(classId) as any).n as number;
-    const viec = doiCt ? 'chương trình' : 'lộ trình';
-    if (n) throw loi(400, 'Lớp đã có {n} học viên — muốn đổi {viec} thì chuyển các em sang lớp {x} khác.', { n, viec, x: kyHieuLop(chuongTrinh, route) });
-    if (conn.prepare('SELECT 1 FROM assessment_attempts WHERE class_id = ? LIMIT 1').get(classId)) {
-      throw loi(400, 'Lớp đã có bài Test nên không đổi được {viec}.', { viec });
+    /* RKC-4b (PTA 07/11; trước Q6 K2-18 chặn): lớp đã có học viên / bài Test → HỎI nêu đúng hệ quả rồi đổi. Lộ trình của các em giữ nguyên, bài cũ giữ
+       chương trình lúc làm, bài mới theo chương trình mới. Hoàn tác = đổi lại (web gửi lại chương trình / lộ trình cũ). */
+    const n = (conn.prepare(`SELECT COUNT(DISTINCT student_id) n FROM enrollments WHERE class_id = ? AND status IN ('active', 'paused')`).get(classId) as any).n as number;
+    const m = (conn.prepare('SELECT COUNT(*) n FROM assessment_attempts WHERE class_id = ?').get(classId) as any).n as number;
+    if (n || m) {
+      canXacNhan(doiCt
+        ? 'Lớp có {n} học viên, {m} bài Test — vẫn đổi chương trình? Lộ trình {n} em giữ nguyên, bài cũ giữ chương trình cũ, bài mới theo chương trình mới.'
+        : 'Lớp có {n} học viên, {m} bài Test — vẫn đổi lộ trình? Lộ trình {n} em giữ nguyên, bài cũ giữ lộ trình cũ, bài mới theo lộ trình mới.', { n, m }, doiCt ? 'Đổi chương trình' : 'Đổi lộ trình');
     }
   }
 

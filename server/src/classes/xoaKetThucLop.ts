@@ -16,6 +16,7 @@ import { addDays, badRequest, canXacNhan, chuTuDo, loi, notFound } from '../util
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { emChuaCoLenh, huyNhieuLenh } from './lenhChuyen.ts';
+import { doiTrangThai } from '../students/trangThaiHv.ts';
 import { quetMoiNgay } from '../platform/mocHeThong.ts';
 
 const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
@@ -88,9 +89,10 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
     soDangHoc: t.soDangHoc, soTungGhiDanh: t.soTungGhiDanh, coDuLieu: t.coDuLieu, dangGan: t.gan, conTreo: t.conTreo,
     /** Xoá: chỉ lớp trống hẳn (đã kiểm `class.edit` ở trên). Kết thúc: lớp còn hoạt động và không còn học viên đang học. */
     coTheXoa: !t.coDuLieu,
-    /* RKC-4a: còn quyết định chuyển ĐẾN → vẫn Kết thúc được (máy chủ hỏi rồi huỷ các quyết định đó, khôi phục được ở Chuyển lớp). */
-    coTheKetThuc: !daKetThuc && t.soDangHoc === 0,
-    lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.' : t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : null,
+    /* RKC-4a / 4b: còn quyết định chuyển ĐẾN / còn em đang học → vẫn Kết thúc được (máy chủ hỏi nêu đúng hệ quả). `lyDoConEm` thành lưu ý. */
+    coTheKetThuc: !daKetThuc,
+    lyDoChanKetThuc: daKetThuc ? 'Lớp đã kết thúc.' : null,
+    luuYKetThuc: !daKetThuc && t.soDangHoc > 0 ? lyDoConEm(c, t.soDangHoc) : null,
     soSapNhan: t.soSapNhan,
   };
 }
@@ -131,8 +133,20 @@ export function ketThucLop(p: Principal | null, classId: number, o: { lyDo?: str
   const c = docLop(classId);
   if (c.status === 'finished') throw badRequest('Lớp đã kết thúc.');
   const t = tinhTrangLop(classId);
+  /*
+   * RKC-4b (PTA 07/11 ①; trước: chặn "Còn n em đang học"): người làm được HỎI một câu nêu số em, rồi Kết thúc học từng em (vào Lưu trữ; lệnh chuyển lớp
+   * chờ của em huỷ có dấu → Hoàn tác Kết thúc học trả lại). Lớp thường: em ĐÃ chốt Lộ trình tiếp (có quyết định chờ tới tuần chuyển) KHÔNG đụng — lớp
+   * "hẹn kết thúc": các em chuyển đi rồi lớp trống tự kết thúc (LOP-TRONG). Hệ thống (`p = null`) giữ chặn.
+   */
+  let ketThucEm: number[] = [];
+  let conCho = 0;
   if (t.soDangHoc > 0) {
-    throw badRequest(lyDoConEm(c, t.soDangHoc));
+    if (!p) throw badRequest(lyDoConEm(c, t.soDangHoc));
+    const dangHoc = (db().prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active'`).all(classId) as any[]).map((r) => r.student_id as number);
+    ketThucEm = c.is_fast_track ? dangHoc : (emChuaCoLenh([classId]).get(classId) ?? []);
+    conCho = dangHoc.length - ketThucEm.length;
+    if (conCho) canXacNhan('Còn {n} em đang học — Kết thúc học {k} em (vào Lưu trữ); {c} em đã chốt Lộ trình tiếp giữ nguyên, lớp tự kết thúc khi các em chuyển đi. Tiếp tục?', { n: dangHoc.length, k: ketThucEm.length, c: conCho }, 'Kết thúc học các em');
+    else canXacNhan('Còn {n} em đang học — Kết thúc học {n} em (vào Lưu trữ) rồi kết thúc lớp?', { n: dangHoc.length }, 'Kết thúc học và kết thúc lớp');
   }
   /* RKC-4a (chủ SP 07/11; trước: "huỷ hoặc đổi lớp đến trước"): người làm được hỏi MỘT câu nêu số quyết định đến, đồng ý = huỷ cùng giao dịch (lý do ghi
      rõ, Khôi phục ở Chuyển lớp). Hệ thống (`p = null`, lớp trống) không hỏi — giữ chặn. */
@@ -146,13 +160,20 @@ export function ketThucLop(p: Principal | null, classId: number, o: { lyDo?: str
       const r = huyNhieuLenh(p, ids, `Lớp ${c.code} kết thúc`);
       if (r.failed.length) throw loi(400, '{x} — huỷ quyết định đó ở Chuyển lớp rồi kết thúc lớp.', { x: r.failed[0].message });
     }
+    for (const sid of ketThucEm) doiTrangThai(p!, sid, { status: 'finished', date: ngay, reason: `Lớp ${c.code} kết thúc`, huyLenh: true });
+    if (conCho) {
+      writeAudit({ actorUserId: p!.userId, action: 'class.finish_scheduled', entityType: 'class', entityId: classId, entityLabel: c.code,
+        after: { ketThucHoc: ketThucEm, conCho } });
+      return;
+    }
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(ngay, classId);
     writeAudit({
       actorUserId: p?.userId ?? null, action: 'class.finished', entityType: 'class', entityId: classId, entityLabel: c.code,
-      before: { status: c.status }, after: { status: 'finished', on: ngay, ...(o.lyDo ? { lyDo: o.lyDo } : {}) },
+      before: { status: c.status }, after: { status: 'finished', on: ngay, ...(o.lyDo ? { lyDo: o.lyDo } : {}), ...(ketThucEm.length ? { ketThucHoc: ketThucEm } : {}) },
     });
   });
-  return { ok: true, ma: c.code, finishedAt: ngay };
+  /* `ketThucHoc`: em vừa Kết thúc học cùng lớp — web Hoàn tác (Hoàn tác Kết thúc học hàng loạt + Mở lại lớp). `hen`: lớp chờ các em đã chốt chuyển đi. */
+  return { ok: true, ma: c.code, finishedAt: conCho ? null : ngay, ketThucHoc: ketThucEm, hen: conCho > 0, conCho };
 }
 
 /**
@@ -200,10 +221,14 @@ export function quetLopTrong(homNay = demoToday()): boolean {
  * ponytail: lớp thường đã hết khoá mà mở lại khi chưa có học viên đang học thì `dongLopNeuHet` (luatLoTrinh.ts) có thể kết thúc lại ở lần đổi trạng thái / chuyển
  * lớp kế tiếp của một học viên trong lớp; Học lại một học viên vào lớp (ghi danh `active`) thì lớp ở lại.
  */
-export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown; /** OV-8b: lớp tự đóng vì việc đang được hoàn tác — nơi gọi đã kiểm quyền việc đó. */ heQua?: true } = {}) {
+export function moLaiLop(p: Principal, classId: number, o: { lyDo?: unknown; /** OV-8b: lớp tự đóng vì việc đang được hoàn tác — nơi gọi đã kiểm quyền việc đó. */ heQua?: true;
+  /** RKC-4b: thao tác vòng đời bấm ở lớp đã kết thúc ("thêm học viên", "phân công"…) — hỏi "Mở lại lớp để …?" rồi mở. */
+  deViec?: unknown } = {}) {
   if (!o.heQua) require_(p, PERMISSIONS.CLASS_EDIT, { classId }, CHI_QL_LOP);
   const c = docLop(classId);
   if (c.status !== 'finished') throw badRequest('Lớp chưa kết thúc.');
+  const deViec = typeof o.deViec === 'string' ? o.deViec.trim().slice(0, 60) : '';
+  if (deViec) canXacNhan('Lớp đã kết thúc — Mở lại lớp để {viec}?', { viec: deViec }, 'Mở lại lớp');
   const lyDo = chuTuDo(o.lyDo, 'Lý do', 2000);
   const conn = db();
   tx(() => {

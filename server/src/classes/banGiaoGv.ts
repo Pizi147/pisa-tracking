@@ -14,7 +14,7 @@ import { can, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import type { GhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { badRequest, chuTuDo, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
+import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
 import { tuDienTheoLo } from './banGiao.ts';
 import { coTheRaLenh } from './quyenChuyenLop.ts';
 import { phanLoaiNguoi } from './phanCongGv.ts';
@@ -179,9 +179,11 @@ function docViec(id: number): any {
 function quyenViec(p: Principal, b: any) {
   const ql = coTheRaLenh(p, b.class_id);
   const laNguoiLam = b.nguoi_lam === p.userId;
-  const thay = ql && !laNguoiLam && (b.nguoi_lam === null || demoToday() > b.han || b.trang_thai === 'xong');
+  /* RKC-4b: QL điền thay TRƯỚC hạn được — hỏi một câu ở nơi ghi (`vuot`), như luật bàn giao chuyển lớp. */
+  const thayLuat = ql && !laNguoiLam && (b.nguoi_lam === null || demoToday() > b.han || b.trang_thai === 'xong');
+  const thay = ql && !laNguoiLam;
   const viet = b.trang_thai !== 'huy' && (laNguoiLam || thay);
-  return { ql, laNguoiLam, thay, viet, xacNhan: viet && b.trang_thai === 'mo' };
+  return { ql, laNguoiLam, thay, viet, xacNhan: viet && b.trang_thai === 'mo', vuot: thay && !thayLuat };
 }
 
 /** Em đang học lớp (lúc đọc) — một câu. */
@@ -242,6 +244,7 @@ export function ghiGopYGv(p: Principal, id: number, body: { studentId?: unknown;
   const b = docViec(id);
   const q = quyenViec(p, b);
   if (!q.viet) throw forbidden(b.trang_thai === 'huy' ? 'Việc bàn giao đã huỷ.' : 'Chỉ người được giao viết bàn giao (Quản lý điền thay khi quá hạn).');
+  if (q.vuot) canXacNhan('Người được giao còn hạn bàn giao — Quản lý vẫn điền thay?', undefined, 'Vẫn làm thay');
   const mon = String(body?.mon ?? '');
   const sid = Number(body?.studentId);
   const conn = db();
@@ -263,7 +266,9 @@ export function ghiGopYGv(p: Principal, id: number, body: { studentId?: unknown;
 /** NHẬN XÉT CHUNG cả lớp (`PUT /ban-giao-gv/:id/nhan-xet`) — tuỳ chọn; rỗng = xoá. */
 export function ghiNhanXetChungGv(p: Principal, id: number, chu: unknown): void {
   const b = docViec(id);
-  if (!quyenViec(p, b).viet) throw forbidden('Chỉ người được giao viết bàn giao (Quản lý điền thay khi quá hạn).');
+  const qv = quyenViec(p, b);
+  if (!qv.viet) throw forbidden('Chỉ người được giao viết bàn giao (Quản lý điền thay khi quá hạn).');
+  if (qv.vuot) canXacNhan('Người được giao còn hạn bàn giao — Quản lý vẫn điền thay?', undefined, 'Vẫn làm thay');
   const nx = chuTuDo(chu, 'Nhận xét chung', 2000);
   db().prepare('UPDATE ban_giao_gv SET nhan_xet_chung = ? WHERE id = ?').run(nx, id);
   writeAudit({ actorUserId: p.userId, action: 'ban_giao_gv.nhan_xet', entityType: 'class', entityId: b.class_id,
@@ -276,6 +281,7 @@ export function xacNhanBanGiaoGv(p: Principal, id: number): void {
   const q = quyenViec(p, b);
   if (b.trang_thai !== 'mo') throw conflict(b.trang_thai === 'xong' ? 'Bàn giao đã được xác nhận.' : 'Việc bàn giao đã huỷ.');
   if (!q.xacNhan) throw forbidden('Chỉ người được giao viết bàn giao (Quản lý xác nhận thay khi quá hạn).');
+  if (q.vuot) canXacNhan('Người được giao còn hạn bàn giao — Quản lý vẫn điền thay?', undefined, 'Vẫn làm thay');
   const conn = db();
   const cot = conn.prepare(`SELECT mon, nguoi_moi FROM ban_giao_gv_mon WHERE ban_giao_id = ? AND trang_thai = 'mo'`).all(id) as any[];
   const em = emDangHoc(b.class_id);

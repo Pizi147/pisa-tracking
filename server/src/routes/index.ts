@@ -1703,7 +1703,7 @@ api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
 /** PR-LUI-b: ⋮ Hồ sơ lớp đã kết thúc › Mở lại lớp — Quản lý của lớp hoặc Quản trị. */
 api.post('/classes/:id/mo-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return xoaKetThucLopSvc.moLaiLop(principalOf(req), pInt(req, 'id'), { lyDo: req.body?.lyDo });
+  return xoaKetThucLopSvc.moLaiLop(principalOf(req), pInt(req, 'id'), { lyDo: req.body?.lyDo, deViec: req.body?.deViec });
 }));
 
 /** ⋮ Sửa thông tin cả lớp (PR-SL): giá trị hiện tại của mọi em đang học (panel). */

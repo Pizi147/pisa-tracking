@@ -289,7 +289,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const [x, y] = [hocVien(nguon, 'FOU', false).sid, hocVien(nguon, 'FOU', false).sid];
     lenh.raLenh(P.mbManager, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(x, 'len_lop', dich), dongCua(y, 'len_lop', dich)] });
     conn.prepare(`UPDATE lenh_chuyen_lop SET han_gvcn = ?, xac_nhan_luc = ?, xac_nhan_boi = ? WHERE id = ?`).run(t.addDays(TODAY, -5), TODAY, GV[0], lenhCua(x).id);
-    assert(bg.phieuBanGiao(P.mbManager, { lopNguonId: nguon }).nguoiXem.xacNhan === false, 'QL không được xác nhận thay khi dòng chưa xác nhận còn hạn');
+    assert(bg.phieuBanGiao(P.mbManager, { lopNguonId: nguon }).nguoiXem.xacNhan === true, 'RKC-4b: QL xác nhận thay khi còn hạn được (máy chủ hỏi)');
     assert(/disabled=\{busy \|\| \(canNx && !nhap\.trim\(\)\)\}/.test(src('web/src/modules/classes/BanGiaoPanel.tsx')), 'nút Xác nhận bàn giao');   // PR-B: canNx = GVCN lớp mới khác GVCN lớp cũ (chủ SP 30/10)
     conn.prepare(`UPDATE lenh_chuyen_lop SET trang_thai = 'huy' WHERE lop_nguon_id = ?`).run(nguon);
   });

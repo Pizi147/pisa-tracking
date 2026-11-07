@@ -239,8 +239,8 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     /* CA2-4 / CA2-12: Kết thúc lớp còn em — lớp thường nói "chưa chốt Lộ trình tiếp theo", FT giữ câu chuyển lớp. */
     const n = emDangHoc(FOU12).length;
     const tt = xoaKetThuc.xemXoaKetThuc(QL, FOU12);
-    assert(new RegExp(`^Còn \\d+ em (chưa chốt Lộ trình tiếp theo|chờ tới tuần chuyển lớp)\\.$`).test(tt.lyDoChanKetThuc ?? '') && n > 0, `lớp thường: ${tt.lyDoChanKetThuc}`);
-    assert(/chuyển lớp từng em/.test(xoaKetThuc.xemXoaKetThuc(QL, FT101).lyDoChanKetThuc ?? ''), 'FT');
+    assert(new RegExp(`^Còn \\d+ em (chưa chốt Lộ trình tiếp theo|chờ tới tuần chuyển lớp)\\.$`).test(tt.luuYKetThuc ?? '') && n > 0, `lớp thường: ${tt.luuYKetThuc}`);
+    assert(/chuyển lớp từng em/.test(xoaKetThuc.xemXoaKetThuc(QL, FT101).luuYKetThuc ?? ''), 'FT');
     assert(d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0, soChuaLoTrinhTiep: 4 })
       .hien.some((b: any) => b.nhan === '4 HV chưa chốt lộ trình'), 'badge "n HV chưa chốt lộ trình"');
   }));

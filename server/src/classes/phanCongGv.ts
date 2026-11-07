@@ -15,7 +15,8 @@ import { can, loadPrincipal, require_, type Principal } from '../permissions.ts'
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { nho, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
-import { HttpError, badRequest, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
+import { HttpError, badRequest, canXacNhan, conflict, forbidden, loi, notFound, nowIso } from '../util.ts';
+import { moLaiLop } from './xoaKetThucLop.ts';
 import { allProgrammes, programmeByCode, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany } from './schedule.ts';
 import { boCotPhu, caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi, docViecLo, type ViecLop } from '../cases/owner.ts';
@@ -101,7 +102,7 @@ function docLopVao(body: { lop?: unknown }) {
   if (vao.length > TOI_DA_LOP) throw loi(400, 'Mỗi lần lưu tối đa {n} lớp.', { n: TOI_DA_LOP });
   const ids = vao.map((l) => Number(l?.classId));
   if (ids.some((id) => !Number.isInteger(id) || id <= 0) || new Set(ids).size !== ids.length) throw badRequest('Danh sách lớp không hợp lệ.');
-  const cls = new Map((db().prepare(`SELECT id, code, branch_id, programme_code FROM classes WHERE id IN (${inHang(ids.length)})`).all(...ids) as any[]).map((c) => [c.id as number, c]));
+  const cls = new Map((db().prepare(`SELECT id, code, branch_id, programme_code, status FROM classes WHERE id IN (${inHang(ids.length)})`).all(...ids) as any[]).map((c) => [c.id as number, c]));
   if (cls.size !== ids.length) throw notFound('Không tìm thấy lớp');
   /* Chương trình của cả lô: bảng chương trình đọc MỘT lần (như `programmeOfClass`, không một lượt mỗi lớp). */
   const progs = allProgrammes();
@@ -166,7 +167,11 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     return { classId, code: c.code, branchId: c.branch_id, ct, kyNang, full, doi, vao: l };
   }));
 
+  /* RKC-4b (PTA 07/11): phân công ở lớp đã kết thúc → hỏi "Mở lại lớp để phân công?" rồi Mở lại cùng giao dịch (Mở lại có nhật ký; Kết thúc lại được). */
+  const daKetThuc = lop.filter((l) => cls.get(l.classId)?.status === 'finished');
+  if (daKetThuc.length) canXacNhan('Lớp {ds} đã kết thúc — Mở lại lớp để phân công?', { ds: daKetThuc.map((l) => l.code).join(', ') }, 'Mở lại lớp');
   return tx(() => {
+    for (const l of daKetThuc) moLaiLop(p, l.classId);
     const sau = docHienTai(ids);
     for (const l of lop) kiemPhienBan(l.vao, sau.active.get(l.classId)!, sau.cho.get(l.classId)!);
     const g = new GhiDao(conn);

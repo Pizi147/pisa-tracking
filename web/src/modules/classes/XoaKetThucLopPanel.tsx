@@ -6,11 +6,14 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { hoanTacHangLoat } from '../students/hangLoatEm.ts';
 
 /** `GET /classes/:id/xoa-ket-thuc` — Quản lý của lớp hoặc Quản trị (OV-12a: cả hai xoá được lớp trống, `coTheXoa`). */
 export type TinhTrangXoaKetThuc = {
   id: number; ma: string; chiNhanh: string; daKetThuc: boolean; soDangHoc: number; soTungGhiDanh: number;
   coDuLieu: boolean; dangGan: string[]; coTheXoa: boolean; coTheKetThuc: boolean; lyDoChanKetThuc: string | null;
+  /** RKC-4b: còn em đang học — lưu ý (máy chủ hỏi lúc bấm, rồi Kết thúc học từng em). */
+  luuYKetThuc?: string | null;
   /** PR-LT2b (K2-35): việc còn treo, KHÔNG chặn — `Còn treo: 2 Mini Test chưa ghi`. */
   conTreo?: string | null;
 };
@@ -81,9 +84,20 @@ export function KetThucLopPanel({ classId, classCode, onClose, onDone, diTiep }:
   const ketThuc = async () => {
     setBusy(true);
     try {
-      await api.post(`/classes/${classId}/ket-thuc`, {});
-      invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/tong-quan');
-      toast.push('ok', t('Đã kết thúc lớp {classCode}', { classCode }));
+      const r = await api.post<{ ketThucHoc?: number[]; hen?: boolean; conCho?: number }>(`/classes/${classId}/ket-thuc`, {});
+      invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/tong-quan'); invalidate('/students');
+      const em = r?.ketThucHoc ?? [];
+      const chu = r?.hen ? t('Đã Kết thúc học {k} em — lớp {classCode} tự kết thúc khi {c} em đã chốt chuyển đi', { k: em.length, classCode, c: r.conCho ?? 0 })
+        : t('Đã kết thúc lớp {classCode}', { classCode });
+      /* RKC-4b: Hoàn tác = Mở lại lớp (nếu đã kết thúc) + Hoàn tác Kết thúc học các em (quyết định chuyển lớp huỷ cùng lúc được trả lại). */
+      if (em.length) {
+        toast.hoanTac(chu, async () => {
+          if (!r?.hen) await api.post(`/classes/${classId}/mo-lai`, {});
+          await hoanTacHangLoat('ket-thuc', em);
+          invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/students');
+          onDone();
+        }, { key: `ket-thuc-lop:${classId}` });
+      } else toast.push('ok', chu);
       onDone(); onClose();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -100,6 +114,7 @@ export function KetThucLopPanel({ classId, classCode, onClose, onDone, diTiep }:
               {t('Lớp')} <strong>{tt.data.ma}</strong> · {tt.data.chiNhanh} {t('sẽ chuyển sang')} <strong>{t('Đã kết thúc')}</strong> {t('và vào khu Lưu trữ. Hồ sơ chỉ còn xem; dữ liệu giữ nguyên.')}
             </p>
             {chan && <p className="m-0 text-xs text-late">{dich(chan)}</p>}
+            {tt.data.luuYKetThuc && <p className="m-0 text-xs text-soon">{dich(tt.data.luuYKetThuc)} {t('Bấm Kết thúc lớp: hỏi một câu rồi Kết thúc học các em (Hoàn tác được).')}</p>}
             {chan && diTiep && tt.data.soDangHoc > 0 && (
               <button type="button" className="btn btn-sm mt-2 min-h-[44px] sm:min-h-0" onClick={diTiep.onChon}>{diTiep.nhan}</button>
             )}

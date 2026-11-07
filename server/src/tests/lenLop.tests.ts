@@ -1021,9 +1021,10 @@ export async function runLenLopTests(t: YThucTestKit) {
     assert(ov.status === 'finished', `status phải finished: ${ov.status}`);
     const v = ov.viewer;
     assert(
-      v.canPlanWeek === false && v.canAddStudents === false && v.canAssign === false && v.canEditProgress === false && v.coTheChuyenTiep === false
+      /* RKC-4b: cờ vòng đời cũng theo quyền (bấm ở lớp đã kết thúc → hỏi "Mở lại lớp để …?"); xếp tuần MT giữ tắt. */
+      v.canPlanWeek === false && v.canAddStudents === true && v.canAssign === true && v.coTheChuyenTiep === true
         && v.canReportCase === true && v.canRecordViolation === true && v.canEnterScores === true,
-      `Cờ vòng đời false, cờ dữ liệu theo quyền: ${JSON.stringify(v)}`,
+      `Cờ theo quyền (trừ xếp tuần): ${JSON.stringify(v)}`,
     );
   });
 

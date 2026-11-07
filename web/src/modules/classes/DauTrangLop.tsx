@@ -7,6 +7,7 @@ import { MenuDong, NUT_BA_CHAM_DAU, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate, onInvalidate } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { CHE_DO_NHAN, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -90,7 +91,7 @@ export type ViecDauTrang = ViecMenuLop | 'chuyen-tiep' | 'ban-giao' | 'phan-cong
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
-export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }: {
+export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, thanhViec }: {
   data: HoSoLop; onViec: (v: ViecDauTrang) => void;
   /** V8-HSL hàng ⑤: thanh "Việc của tôi" (ThanhViecLop) nằm trong đầu trang, sau dải lớp chuyển. */
   thanhViec?: ReactNode;
@@ -99,6 +100,19 @@ export function DauTrangLop({ data, onViec, onBanGiao, onBanGiaoGv, thanhViec }:
   /** PR-B: mở panel bàn giao khi đổi GV (id việc). */
   onBanGiaoGv?: (id: number) => void;
 }) {
+  /*
+   * RKC-4b (PTA 07/11): thao tác VÒNG ĐỜI ở lớp đã kết thúc (+ Học viên, Cuối khoá, Chuyển tiếp) — máy chủ hỏi "Mở lại lớp để …?" (`deViec`), đồng ý thì
+   * mở lại rồi làm tiếp ngay tại đây. Phân công: máy chủ hỏi lúc lưu. Bấm Đóng ở hộp hỏi → không làm gì.
+   */
+  const toastVd = useToast();
+  const VONG_DOI: Partial<Record<ViecDauTrang, string>> = { 'hoc-vien': t('thêm học viên'), 'lo-trinh-ca-lop': t('chốt lộ trình cả lớp'), 'chuyen-tiep': t('chuyển tiếp lớp') };
+  const onViec = (v: ViecDauTrang) => {
+    const viec = data.status === 'finished' ? VONG_DOI[v] : undefined;
+    if (!viec) { onViecGoc(v); return; }
+    void api.post(`/classes/${data.id}/mo-lai`, { deViec: viec })
+      .then(() => { invalidate('/classes'); invalidate('/hoc-vien-lop'); onViecGoc(v); })
+      .catch((e: any) => { if (e?.status !== 409) toastVd.push('error', e?.message ?? t('Không lưu được')); });   // 409 = bấm Đóng ở hộp hỏi
+  };
   const navigate = useNavigate();
   const [sp] = useSearchParams();
   const { session } = useSession();
