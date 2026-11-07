@@ -9837,6 +9837,9 @@ await runPrTatCpTests({ check, assert, conn, P, TODAY, addDays, classId } as any
 // ==================================================================== RESET-HAN-CASE (chủ SP 06/11 khuya: việc tuyến Case quá hạn → hạn hôm nay + 7, hoàn tác được)
 const { runPrResetHanCaseTests } = bocTep('prResetHanCase', await import('./prResetHanCase.tests.ts'));
 await runPrResetHanCaseTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== SUA-LUU-TRU b (chủ SP 07/11: hồ sơ em Kết thúc học sửa được thông tin không đụng lộ trình)
+const { runPrSuaLuuTruBTests } = bocTep('prSuaLuuTruB', await import('./prSuaLuuTruB.tests.ts'));
+await runPrSuaLuuTruBTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== CV-TAB (chủ SP 06/11: Công việc chia tab hạng mục, badge số + màu)
 const { runPrCvTabTests } = bocTep('prCvTab', await import('./prCvTab.tests.ts'));
 await runPrCvTabTests({ check, assert, P, TODAY } as any);

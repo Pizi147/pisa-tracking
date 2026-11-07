@@ -87,15 +87,19 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
     assert(kq.some((x) => x.endsWith('true')) && kq.some((x) => x.endsWith('false')), kq.join(' '));
   }));
 
-  check('SNQ-4 · em Kết thúc học: cờ false mọi vai; PATCH liên hệ → CAU_LUU_TRU', () => thu(() => {
+  /* SUA-LUU-TRU (chủ SP 07/11, LUẬT MỚI): em Kết thúc học cũng có nút — cờ = đúng cổng `updateStudent`; trường lộ trình vẫn CAU_LUU_TRU. */
+  check('SNQ-4 · em Kết thúc học: cờ === PATCH email được (mọi vai); PATCH điểm đầu vào → CAU_LUU_TRU', () => thu(() => {
     const sid = emLop();
     students.setStudentStatus(P.mbManager, sid, 'inactive', TODAY);   // tạm dừng → kết thúc: vẫn ở Lưu trữ (SV-4)
     students.setStudentStatus(P.mbManager, sid, 'finished', TODAY, 'Thôi hẳn');
-    for (const [ten, p] of vai()) {
+    for (const [i, [ten, p]] of vai().entries()) {
       xoaNho();
-      assert(danhSachLuuTru(p).hocVien.find((s) => s.id === sid)?.coTheSuaThongTin !== true, `${ten}: có nút`);
+      const co = !!danhSachLuuTru(p).hocVien.find((s) => s.id === sid)?.coTheSuaThongTin;
+      xoaNho();
+      const sua = !nem(() => students.updateStudent(p, sid, { email: `snq4.vai${i}@vidu.vn` }));
+      assert(co === sua, `${ten}: cờ ${co} ≠ PATCH ${sua}`);
     }
-    const e = nem(() => students.updateStudent(P.mbManager, sid, { phone: '0912000111' }));
+    const e = nem(() => students.updateStudent(P.mbManager, sid, { dauVao: null }));
     assert(e?.message === d.CAU_LUU_TRU, `máy chủ chặn: ${e?.message} · ${JSON.stringify(get('SELECT status, archived_at FROM students WHERE id = ?', sid))}`);
   }));
 
