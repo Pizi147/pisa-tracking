@@ -3164,6 +3164,11 @@ api.post('/admin/accounts/:id/xoa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xoaTaiKhoanSvc.xoaTaiKhoan(principalOf(req), pInt(req, 'id'), req.body ?? {});
 }));
+/** RKC-6 (PTA 8): Tài khoản › Đã xoá › Khôi phục — CHỈ Quản trị hệ thống. */
+api.post('/admin/accounts/:id/khoi-phuc', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xoaTaiKhoanSvc.khoiPhucTaiKhoan(principalOf(req), pInt(req, 'id'));
+}));
 
 /** Lộ trình và loại lớp — nay là dữ liệu, Quản trị hệ thống sửa được (mục 7.3). */
 /* PR-Dọn (quét #10): danh mục cần đăng nhập; số "đang dùng" (lộ quy mô) chỉ ở bản Quản trị. */

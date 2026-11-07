@@ -363,7 +363,7 @@ export function setRoles(p: Principal, userId: number, roles: { role: string; br
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
-  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   if (user.approval_state === 'declined') throw badRequest('Chưa duyệt — bấm Duyệt lại.');
   if (user.approval_state !== 'approved') throw badRequest('Chưa duyệt — duyệt ở Đăng ký chờ duyệt.');
   roles = chuanVai(roles);
@@ -405,7 +405,7 @@ export function resetPassword(p: Principal, userId: number, password: string) {
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
-  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   const { hash, salt } = hashPassword(checkPassword(password));
   conn.prepare('UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?').run(hash, salt, userId);
   writeAudit({
@@ -443,7 +443,7 @@ export function adminUpdateAccount(p: Principal, userId: number, input: {
   const conn = db();
   const u = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!u) throw notFound('Không tìm thấy tài khoản.');
-  if (u.status === 'deleted') throw badRequest('Tài khoản đã xoá.');
+  if (u.status === 'deleted') throw badRequest('Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.');
   const phuCu = (conn.prepare('SELECT email FROM user_emails WHERE user_id = ? ORDER BY id').all(userId) as any[]).map((r) => r.email as string);
   const cu = { fullName: u.full_name, email: u.email, phone: u.phone, title: u.title, extraEmails: phuCu };
   const moi = { ...cu };
@@ -563,7 +563,7 @@ export function setUserPermissions(p: Principal, userId: number, items: {
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
-  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.');   // PR-XOA: xoá mềm là khoá hẳn
   if (!Array.isArray(items)) throw badRequest('Danh sách quyền không hợp lệ.');
   if (items.length > 100) throw badRequest('Tối đa 100 quyền cấp riêng cho một người.');
   /*
@@ -677,7 +677,7 @@ export function setUserSkills(p: Principal, userId: number, skills: string[]): {
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');
-  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá.');
+  if (user.status === 'deleted') throw badRequest('Tài khoản đã xoá — bấm Khôi phục ở Tài khoản › Đã xoá.');
   return tx(() => {
     setSkills(conn, userId, skills);
     const moi = (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ? ORDER BY skill').all(userId) as any[]).map((r) => r.skill);

@@ -12,6 +12,8 @@ export type XemXoaTaiKhoan = {
   id: number; ten: string; email: string | null; vai: string[]; chiNhanh: string[];
   soDauVet: number; chiTiet: { nhan: string; so: number }[];
   cach: 'han' | 'mem'; chan: string | null; canhBao: string[];
+  /** RKC-6: chưa có email → gõ lại họ tên để xác nhận. */
+  goLai?: 'email' | 'ho-ten';
 };
 
 /**
@@ -25,10 +27,12 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
   const [go, setGo] = useState('');
   const [busy, setBusy] = useState(false);
   const d = xem.data;
-  const khop = !!d?.email && go.trim().toLowerCase() === d.email.toLowerCase();
+  const chuGoLai = d ? (d.goLai === 'ho-ten' || !d.email ? d.ten : d.email) : '';   // RKC-6: chưa có email → họ tên
+  const nhanGoLai = d && (d.goLai === 'ho-ten' || !d.email) ? t('Gõ lại họ tên') : t('Gõ lại email');
+  const khop = !!chuGoLai && go.trim().toLowerCase() === chuGoLai.trim().toLowerCase();
   /* Nút Xoá chỉ sáng khi gõ khớp; rời ô mà còn lệch thì nói ngay dưới ô (YC-12.5.2). */
   const lf = useLoiForm();
-  const loi = go.trim() && !khop ? [{ khoa: 'go-lai', nhan: t('Gõ lại email'), lyDo: t('Chưa khớp email') }] : [];
+  const loi = go.trim() && !khop ? [{ khoa: 'go-lai', nhan: nhanGoLai, lyDo: d?.email ? t('Chưa khớp email') : t('Chưa khớp họ tên') }] : [];
 
   const xoa = async () => {
     if (!d) return;
@@ -83,7 +87,7 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
             {!d.chan && (
               <Khoi tieuDe={t('Xác nhận')}>
                 <p className="m-0 text-xs text-slate-400">{t('Nên sao lưu dữ liệu trước lần xoá đầu.')}</p>
-                <Truong nhan={t('Gõ lại email')} batBuoc phu={d.email ? `Email: ${d.email}` : undefined} loi={lf.loiCua(loi, 'go-lai')}>
+                <Truong nhan={nhanGoLai} batBuoc phu={d.email ? `Email: ${d.email}` : `${t('Họ tên')}: ${d.ten}`} loi={lf.loiCua(loi, 'go-lai')}>
                   <input className="field w-full" {...lf.o(loi, 'go-lai')} value={go} onChange={(e) => setGo(e.target.value)} autoComplete="off" spellCheck={false} />
                 </Truong>
               </Khoi>
