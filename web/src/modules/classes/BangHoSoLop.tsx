@@ -24,7 +24,7 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import {
-  CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, OUTCOME_TONE, chipSosTuKetQua, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
+  CASE_CATEGORY_LABEL, GIAI_THICH_KCK, INTERVENTION_KIND_LABEL, KCK, OUTCOME_TONE, chipSosTuKetQua, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
   lyDoChuaDu, nhanThang, outcomeLabelFor, soKyVong, tuanLich, tvvChinhCuaLop, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -166,7 +166,10 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
           </span>
         </span>
       );
-      case 'target': return <TargetText band={r.cycle?.target} kck={r.cycle?.khongCamKet} />;
+      /* AUDIT-UI HSL2 (G6): KCK không gạch chấm; chưa có Target thì chỉ "KCK" (không "— · KCK"); nghĩa ở title. */
+      case 'target': return r.cycle?.khongCamKet
+        ? <span className="whitespace-nowrap" title={GIAI_THICH_KCK}>{r.cycle.target != null && <>{fmtBand(r.cycle.target)} · </>}{KCK}</span>
+        : <TargetText band={r.cycle?.target} kck={false} />;
       case 'ph': return r.lienHe ? <OPhuHuynh l={r.lienHe} /> : <span className="text-faint">—</span>;
       case 'nut': return <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })} />;
       case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-100 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
@@ -525,7 +528,8 @@ function OKetQua({ r, h, kq }: { r: Hang; h: Moc | null; kq: ReturnType<typeof k
   if (kq === 'thieu') {
     /* Đ4: lý do ngắn ở tooltip + tên đọc màn (không thêm chữ trên màn — P1). */
     const ly = lyDoChuaDu(r.standing ?? null);
-    return <span className="whitespace-nowrap text-[13px] text-faint" title={ly ?? undefined}><span aria-hidden>{'– '}</span>{t('Chưa đủ dữ liệu')}{ly && <span className="sr-only"> · {ly}</span>}</span>;
+    /* AUDIT-UI HSL1: chip lọc "Chưa đủ dữ liệu n" đã nói — ô chỉ "—" mờ; chữ đủ ở title + trình đọc màn. */
+    return <span className="text-[13px] text-faint" title={[t('Chưa đủ dữ liệu'), ly].filter(Boolean).join(' · ')}><span aria-hidden>—</span><span className="sr-only">{t('Chưa đủ dữ liệu')}{ly && ` · ${ly}`}</span></span>;
   }
   if (r.kckDuoi) return <ChipDuoiKck />;
   return <KetLuan row={r} cotMocTrong={!h} />;

@@ -50,7 +50,7 @@ export default function OverviewPage() {
   );
 
   if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />, undefined, kyTvv);
-  if (vai === 'gv' || vai === 'ht') return trang(session?.user?.fullName ?? '', <TongQuanGvV5 lopToiDay={(phai) => <HaiKhoiGv phai={phai} />} />, undefined, kyGv && { tu: kyGv.tu, den: kyGv.den });
+  if (vai === 'gv' || vai === 'ht') return trang('', <TongQuanGvV5 lopToiDay={(phai) => <HaiKhoiGv phai={phai} />} />, undefined, kyGv && { tu: kyGv.tu, den: kyGv.den });
   if (vai === 'admin') {
     return trang(t('Mock Test'), <TongQuanAdminV5 cn={branchId} mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }
