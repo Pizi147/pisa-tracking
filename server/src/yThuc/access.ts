@@ -28,6 +28,16 @@ export function activeClassOf(studentId: number): number | null {
     .get(studentId) as any)?.class_id ?? null);
 }
 
+/**
+ * RKC-3b: lớp gắn với em khi em KHÔNG đang học — Tạm dừng (ghi danh `paused`) trước, rồi ghi danh mới nhất. Dùng cho việc vẫn làm được với em không
+ * còn học (ghi vi phạm, đề xuất sửa): GV lớp đó có quyền như khi em còn học. `null` = em chưa từng xếp lớp.
+ */
+export function lopGanNhat(studentId: number): number | null {
+  return activeClassOf(studentId) ?? ((db().prepare(
+    `SELECT class_id FROM enrollments WHERE student_id = ? ORDER BY status = 'paused' DESC, started_at DESC, id DESC LIMIT 1`,
+  ).get(studentId) as any)?.class_id ?? null);
+}
+
 /** Ngữ cảnh quyền của một học viên. */
 export function studentCtx(studentId: number) {
   return { classId: activeClassOf(studentId), studentId };
@@ -48,7 +58,7 @@ export function requireViewStudent(p: Principal, studentId: number) {
 }
 
 export function requireRecordViolation(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.VIOLATION_RECORD, studentCtx(studentId),
+  require_(p, PERMISSIONS.VIOLATION_RECORD, { classId: lopGanNhat(studentId), studentId },   // RKC-3b: GV lớp ghi danh gần nhất của em Tạm dừng / đã học xong
     'Bạn chỉ ghi được vi phạm của học viên thuộc phạm vi mình phụ trách.');
 }
 

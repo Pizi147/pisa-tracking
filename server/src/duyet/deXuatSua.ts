@@ -7,7 +7,7 @@
 import { db, tx } from '../db.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { hasAssignment, type Principal } from '../permissions.ts';
-import { activeClassOf } from '../yThuc/access.ts';
+import { activeClassOf, lopGanNhat } from '../yThuc/access.ts';
 import { CHI_DOI_KCK } from '../fasttrack/cycles.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { TRUONG_DE_XUAT, chuTargetKck, docTargetKyThi, kyThiCuaChuongTrinh, tachKck, thangKyThi, type TruongDeXuat } from '../../../shared/domain/index.ts';
@@ -33,10 +33,8 @@ export function hienTaiCua(conn: any, studentId: number) {
  * việc của họ, TVV / CX sửa thẳng). Một hàm cho máy chủ (`guiDeXuatSua`) và nút ở hồ sơ (`viewer.coTheDeXuatSua`).
  */
 export function laGvLopDangHoc(p: Principal, studentId: number): boolean {
-  /* OV-13h: em Tạm dừng giữ lớp ở ghi danh `paused` — GV lớp đó vẫn gửi đề xuất sửa. */
-  const lop = activeClassOf(studentId) ?? (db().prepare(
-    `SELECT e.class_id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.student_id = ? AND e.status = 'paused' AND s.status = 'inactive' ORDER BY e.id DESC LIMIT 1`,
-  ).get(studentId) as any)?.class_id ?? null;
+  /* OV-13h: em Tạm dừng giữ lớp ở ghi danh `paused`. RKC-3b: em đã kết thúc / lưu trữ → lớp của ghi danh gần nhất (GV lớp đó gửi được, QL duyệt). */
+  const lop = lopGanNhat(studentId);
   return lop != null && hasAssignment(p, { classId: lop }, 'any');
 }
 
@@ -45,8 +43,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   const hv = conn.prepare('SELECT id, full_name, status, archived_at FROM students WHERE id = ?').get(studentId) as any;
   if (!hv) throw notFound('Không tìm thấy học viên');
   if (!laGvLopDangHoc(p, studentId)) throw forbidden('Chỉ giáo viên của lớp em đang học mới gửi được đề xuất sửa.');
-  /* OV-13h (chủ SP 15/10): em Tạm dừng (`inactive`) vẫn nhận đề xuất sửa; Kết thúc học / Lưu trữ thì không. */
-  if ((hv.status !== 'active' && hv.status !== 'inactive') || hv.archived_at) throw badRequest('Học viên không còn đang học — không gửi đề xuất sửa được.');
+  /* RKC-3b (chủ SP 07/11; trước OV-13h chặn Kết thúc học / Lưu trữ): mọi trạng thái gửi được — QL duyệt vẫn kiểm giá trị. */
   if (body.truong === 'lop') throw badRequest('Dùng Đề xuất chuyển lớp.');   // PR-CT (Q30-1)
   const truong = body.truong as TruongDeXuat;
   if (truong === 'lich-mt') throw badRequest('Lịch Test do Quản lý xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng

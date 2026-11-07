@@ -39,7 +39,7 @@ type Board = {
   totals: { total: number; ok: number; watch: number; problem: number; notReported: number; daNop: number; nhap: number; chua: number };
   scope: { kind: 'week' | 'month'; month: string | null; weeks: string[]; editable: boolean };
   /** Báo cáo tuần mở từ hai ngày cuối tuần đó; quá hạn (`late`) vẫn nộp được — ghi "nộp muộn" (OV-13h). Máy chủ mới là nơi chặn thật. */
-  editWindow: { open: boolean; reason: string | null; opensOn: string; closesOn: string; late: boolean } | null;
+  editWindow: { open: boolean; reason: string | null; opensOn: string; closesOn: string; late: boolean; som?: boolean } | null;
 };
 
 const COT_GIUA: { key: string; label: string }[] = [
@@ -179,6 +179,7 @@ export function MeetingBoard() {
             ? t('Chưa mở — mở từ {ngay}.', { ngay: fmtDate(ew.opensOn) })
             : ew.late
               ? t('Quá hạn (hết {ngay}) — vẫn nộp được, ghi "nộp muộn".', { ngay: fmtDate(ew.closesOn) })
+              : ew.som ? t('Tuần chưa hết — nộp sớm được, sửa lại được tới hết {den}.', { den: fmtDate(ew.closesOn) })
               : t('Nộp từ {tu} đến hết {den}.', { tu: fmtDate(ew.opensOn), den: fmtDate(ew.closesOn) })}
         </p>
       )}

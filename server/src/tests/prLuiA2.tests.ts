@@ -231,19 +231,20 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     }
   }));
 
-  check('LUIa2-10 · Huỷ quyết định bị chặn: PA đã có kết quả, quyết hôm qua, loại khác, Case đã đóng, GV 403, thẻ đang chờ', () => thu(() => {
+  check('LUIa2-10 · Huỷ quyết định — RKC-3b: PA đã có kết quả / Case đã đóng → hỏi; quyết hôm qua → được; loại khác, GV 403, thẻ đang chờ giữ', () => thu(() => {
     const iv1 = deXuat(taoCase(moiEm()));
     const t1 = theCuaPa(iv1).id as number;
     assert(chuLoi(() => yc.huyQuyetDinh(QL, t1)) === 'Yêu cầu này chưa có quyết định.', 'thẻ chờ');
     yc.duyetYeuCau(QL, t1);
     assert(maLoi(() => yc.huyQuyetDinh(P.coreTeacher, t1)) === 403, 'GV');
     ketQua(iv1);
-    assert(chuLoi(() => yc.huyQuyetDinh(QL, t1)) === 'PA đã có kết quả — không huỷ quyết định được.', chuLoi(() => yc.huyQuyetDinh(QL, t1)));
+    assert(maLoi(() => yc.huyQuyetDinh(QL, t1)) === 409, 'PA đã có kết quả → hỏi (409)');
     const iv2 = deXuat(taoCase(moiEm()));
     const t2 = theCuaPa(iv2).id as number;
     yc.duyetYeuCau(QL, t2);
     conn.prepare('UPDATE yeu_cau_duyet SET xu_ly_luc = ? WHERE id = ?').run(`${addDays(TODAY, -1)}T05:00:00.000Z`, t2);
-    assert(chuLoi(() => yc.huyQuyetDinh(QL, t2)) === 'Chỉ huỷ được quyết định trong ngày.', chuLoi(() => yc.huyQuyetDinh(QL, t2)));
+    yc.huyQuyetDinh(QL, t2);   // RKC-3b: quyết hôm qua vẫn huỷ được
+    assert(mot('SELECT trang_thai FROM yeu_cau_duyet WHERE id = ?', t2).trang_thai === 'cho', 'quyết hôm qua: huỷ → thẻ về chờ');
     const khac = mot(`SELECT id FROM yeu_cau_duyet WHERE loai = 'lich_thi' LIMIT 1`);
     if (khac) {
       conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'duyet', xu_ly_luc = ? WHERE id = ?`).run(yc.mocNghiepVu(), khac.id);
@@ -256,17 +257,17 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     themPa(c3);
     const iv4 = Math.max(...hang('SELECT id FROM case_interventions WHERE case_id = ?', c3).map((r) => r.id));
     dongCase(c3, iv4);
-    assert(chuLoi(() => yc.huyQuyetDinh(QL, t3)) === 'Case đã đóng — không huỷ quyết định được.', chuLoi(() => yc.huyQuyetDinh(QL, t3)));
+    assert(maLoi(() => yc.huyQuyetDinh(QL, t3)) === 409, 'Case đã đóng → hỏi Mở lại (409)');
   }));
 
-  check('LUIa2-11 · Đã xử lý: thẻ Đề xuất PA quyết hôm nay có coTheHuy; thẻ đã có kết quả / quyết hôm qua thì không', () => thu(() => {
+  check('LUIa2-11 · Đã xử lý: RKC-3b — thẻ Đề xuất PA có coTheHuy cả khi đã có kết quả / quyết hôm qua (máy chủ hỏi)', () => thu(() => {
     const ivA = deXuat(taoCase(moiEm())); const tA = theCuaPa(ivA).id as number; yc.duyetYeuCau(QL, tA);
     const ivB = deXuat(taoCase(moiEm())); const tB = theCuaPa(ivB).id as number; yc.duyetYeuCau(QL, tB); ketQua(ivB);
     const ivC = deXuat(taoCase(moiEm())); const tC = theCuaPa(ivC).id as number; yc.duyetYeuCau(QL, tC);
     conn.prepare('UPDATE yeu_cau_duyet SET xu_ly_luc = ? WHERE id = ?').run(`${addDays(TODAY, -1)}T05:00:00.000Z`, tC);
     const ds = yc.hopChoDuyet(QL, { xem: 'da-xu-ly' }).the;
     const co = (id: number) => ds.find((x: any) => x.id === id)?.coTheHuy === true;
-    assert(co(tA) && !co(tB) && !co(tC), JSON.stringify([tA, tB, tC].map((id) => ds.find((x: any) => x.id === id)?.coTheHuy)));
+    assert(co(tA) && co(tB) && co(tC), JSON.stringify([tA, tB, tC].map((id) => ds.find((x: any) => x.id === id)?.coTheHuy)));
     assert(!ds.some((x: any) => ['lich_thi', 'xin_y_kien', 'ke_hoach_bo_tro'].includes(x.loai) && x.coTheHuy), 'loại không đảo được có coTheHuy');   // Q-RL2c: thêm loại có đường đảo (ghi_dao)
   }));
 

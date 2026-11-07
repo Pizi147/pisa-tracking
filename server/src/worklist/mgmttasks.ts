@@ -4,7 +4,7 @@ import {
   TASK_PROGRESS_NEEDS_REASON, chuanKhoaGui, facetVanHanh, locVanHanh,
   type DongVanHanh, type HangSo, type TaskGroup, type TaskProgress, type TrangThaiLoc,
 } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
+import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, notFound, nowIso, padCode, loi } from '../util.ts';
 import { can, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -550,16 +550,15 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
    * dấu cha xong hoặc dừng hẳn trong khi con còn dở là nói dối bảng tiến độ, và con sẽ treo
    * mãi ở "Việc cần làm" của người được giao mà không ai còn nhớ tới cha của nó nữa.
    */
+  let khepCon = false;
   if ((input.progress === 'done' || input.progress === 'stopped') && !t.parent_task_id) {
     const openSubs = conn
       .prepare(`SELECT title FROM tasks WHERE parent_task_id = ? AND progress NOT IN ('done','stopped') ORDER BY id`)
       .all(taskId) as any[];
+    /* RKC-3b (chủ SP 07/11 "không chặn cứng"): hỏi MỘT câu nêu việc con; đồng ý = khép luôn việc con cùng tiến độ (nhật ký từng việc con). */
     if (openSubs.length > 0) {
-      const verb = input.progress === 'done' ? 'hoàn thành' : 'dừng hẳn';
-      throw badRequest(
-        `Còn ${openSubs.length} việc con chưa khép lại: ${tenViecConMo(openSubs.map((s) => s.title))}. `
-        + `Khép chúng trước rồi mới ${verb} việc này.`,
-      );
+      canXacNhan('Còn {n} việc con chưa khép ({ds}) — khép luôn các việc con rồi lưu?', { n: openSubs.length, ds: tenViecConMo(openSubs.map((s) => s.title)) }, 'Khép cả việc con');
+      khepCon = true;
     }
   }
 
@@ -589,6 +588,17 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
          VALUES (?, 'progress', ?, ?, ?, ?)`,
       )
       .run(taskId, before, input.progress, p.userId, nowIso());
+    /* RKC-3b: khép luôn việc con còn mở cùng tiến độ của việc cha (đã hỏi) — mỗi việc con một dòng tiến độ + lịch sử. */
+    if (khepCon) {
+      for (const s of conn.prepare(`SELECT id, progress FROM tasks WHERE parent_task_id = ? AND progress NOT IN ('done','stopped')`).all(taskId) as any[]) {
+        conn.prepare(`UPDATE tasks SET progress = ?, stop_reason = ?, completed_at = ?, updated_at = ? WHERE id = ?`)
+          .run(input.progress, input.progress === 'stopped' ? (reason || 'Việc cha dừng hẳn') : null, input.progress === 'done' ? on : null, nowIso(), s.id);
+        conn.prepare(`INSERT INTO task_updates (task_id, period_id, progress, note, actor_user_id, updated_on, created_at) VALUES (?,?,?,?,?,?,?)`)
+          .run(s.id, ensurePeriod(on).id, input.progress, 'Khép cùng việc cha', p.userId, on, nowIso());
+        conn.prepare(`INSERT INTO task_history (task_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'progress', ?, ?, ?, ?)`)
+          .run(s.id, s.progress, input.progress, p.userId, nowIso());
+      }
+    }
     return mgmtTaskDetail(p, taskId);
   });
 }

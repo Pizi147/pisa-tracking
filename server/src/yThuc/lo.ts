@@ -19,7 +19,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { kem, type ChuKhoa } from '../../../shared/i18n/index.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { HttpError, badRequest, loi, notFound } from '../util.ts';
+import { HttpError, badRequest, canXacNhan, loi, notFound } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { requireViewClass } from './access.ts';
@@ -72,14 +72,15 @@ function lyDoXuLy(em: EmYThuc): ChuKhoa | null {
   if (em.soBatBuoc === 0) return em.soMoi > 0 ? kem('chưa bắt buộc — dùng Ghi nhận') : kem('không có vi phạm bắt buộc xử lý');
   return null;
 }
-function lyDoGhiNhan(em: EmYThuc): ChuKhoa | null {
-  if (em.soBatBuoc > 0) return kem('đang bắt buộc xử lý — dùng Xác nhận xử lý');
+/** RKC-3b: `vuot` = Quản lý (vượt luật bắt buộc xử lý — lô hỏi một câu trước). */
+function lyDoGhiNhan(em: EmYThuc, vuot = false): ChuKhoa | null {
+  if (em.soBatBuoc > 0) return vuot ? null : kem('đang bắt buộc xử lý — dùng Xác nhận xử lý (Quản lý Ghi nhận được)');
   return viPhamMoi(em).length ? null : kem('không có vi phạm Mới');
 }
 function lyDoCapBac(em: EmYThuc, laQl: boolean): ChuKhoa | null {
   if (!em.chuoi.length) return kem('chưa có lộ trình');
   if (em.khai) return laQl || em.khai.coTheSua ? null : kem('đã có xử lý · chỉ QL sửa');
-  if (em.soXuLyChuoi > 0) return kem('đã có xử lý trên web');
+  if (em.soXuLyChuoi > 0) return laQl ? null : kem('đã có xử lý trên web · nhờ QL');   // RKC-3b: QL vượt (lô hỏi một câu)
   return null;   // RKC-3a: em Tạm dừng khai được (như `khaiDuoc`)
 }
 
@@ -102,7 +103,7 @@ export function loYThucLop(p: Principal, classId: number): BangLo {
   const em: EmLo[] = ids.map((sid) => {
     const e = trang.get(sid)!;
     const tick = viPhamXuLy(e, homNay);
-    const lx = lyDoXuLy(e); const lg = lyDoGhiNhan(e); const lc = lyDoCapBac(e, laQl);
+    const lx = lyDoXuLy(e); const lg = lyDoGhiNhan(e, laQl); const lc = lyDoCapBac(e, laQl);
     return {
       studentId: sid, ten: hv.get(sid)?.full_name ?? '', nhom: e.nhom,
       bac: e.bac, bacNhan: e.bac > 0 ? nhanLoaiXuLy(kindCuaBac(e.bac)) : null,
@@ -191,15 +192,18 @@ export function loXuLy(p: Principal, classId: number, v: {
 
 export function loGhiNhan(p: Principal, classId: number, v: { studentIds?: unknown }): { em: KqEm[] } {
   const c = chuanBi(p, classId, Array.isArray(v.studentIds) ? v.studentIds : []);
+  /* RKC-3b (PTA 07/11): Quản lý vượt luật bắt buộc xử lý cho cả lô — MỘT câu hỏi nêu số em. */
+  const batBuoc = c.laQl ? c.ids.filter((sid) => c.trongLop.has(sid) && (c.trang.get(sid)?.soBatBuoc ?? 0) > 0).length : 0;
+  if (batBuoc) canXacNhan('{n} em đang phải xử lý bắt buộc — vẫn chỉ Ghi nhận cả lô (bỏ qua luật xử lý)?', { n: batBuoc }, 'Vẫn ghi nhận');
   return {
     em: tungEm(c, (sid, em, hv) => {
-      const moi = viPhamMoi(em);
+      const moi = c.laQl && em.soBatBuoc > 0 ? [...em.viPham].filter(([, t]) => t.t === 'moi' || t.t === 'can_xu_ly' || t.t === 'qua_han').map(([id]) => id) : viPhamMoi(em);
       /* Gửi lại sau khi mất phản hồi: vi phạm đã ghi nhận hôm nay → báo đã ghi nhận (không báo lỗi "không có vi phạm Mới"). */
       if (!moi.length && em.soBatBuoc === 0) {
         const daCo = em.dsViPham.filter((x) => x.ghiNhanLuc === c.homNay && em.viPham.get(x.id)?.t === 'da_ghi_nhan').map((x) => x.id);
         if (daCo.length) return { ids: daCo };
       }
-      const ld = lyDoGhiNhan(em);
+      const ld = lyDoGhiNhan(em, c.laQl);
       if (ld) throw loiEm(ld);
       /* Không đổi dòng nào (người khác vừa ghi nhận) → không trả id, để Hoàn tác không gỡ ghi nhận của người khác. */
       return { ids: luuGhiNhan(p, hv, sid, moi, c.homNay) ? moi : [] };
@@ -216,6 +220,9 @@ export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang
   const c = chuanBi(p, classId, ds.map((x) => x.studentId));
   const chung = kiemKhai({ bac: 0, thang: v.thang, ghiChu: v.ghiChu });
   const theoEm = new Map(ds.map((x) => [Number(x.studentId), x]));
+  /* RKC-3b: Quản lý xác nhận cấp bậc cho em mà chuỗi đã có xử lý trên web — MỘT câu hỏi cho cả lô. */
+  const daXl = c.laQl ? c.ids.filter((sid) => { const e = c.trang.get(sid); return c.trongLop.has(sid) && !!e && !e.khai && e.soXuLyChuoi > 0; }).length : 0;
+  if (daXl) canXacNhan('{n} em đã có lần xử lý trên web — vẫn xác nhận cấp bậc đã có trước đó?', { n: daXl }, 'Vẫn xác nhận');
   return {
     em: tungEm(c, (sid, em, hv) => {
       const ld = lyDoCapBac(em, c.laQl);
@@ -229,7 +236,7 @@ export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang
       });
       const truoc: BacKhai | null = em.khai ? { bac: em.khai.bac, thang: em.khai.thang, ghiChu: em.khai.ghiChu } : null;
       if (em.khai) luuSuaKhai(p, hv, sid, k, c.laQl, c.homNay);
-      else luuKhai(p, hv, sid, k, c.homNay);
+      else luuKhai(p, hv, sid, k, c.homNay, c.laQl);
       return { nhan: k.bac > 0 ? nhanLoaiXuLy(kindCuaBac(k.bac)) : BAC_0_NHAN, truoc, bac: k.bac };
     }),
   };

@@ -69,4 +69,37 @@ export async function runRkcYThucTests(t: any) {
     assert(mot('SELECT status FROM discipline_measures WHERE id = ?', r1.id).status === 'thu_hoi'
       && mot('SELECT status FROM discipline_measures WHERE id = ?', r2.id).status === 'done', 'r1 thu hồi, r2 giữ');
   }));
+
+  /* ---------------------------------------------------------------- RKC-3b */
+  const lo: any = await import('../yThuc/lo.ts');
+  const mgmt: any = await import('../worklist/mgmttasks.ts');
+  console.log('\nRKC-3b — Duyệt + việc + lô Ý thức');
+
+  check('RKC3b-1 · GV lớp ghi danh gần nhất ghi vi phạm cho em Tạm dừng (không 403)', () => thu(() => {
+    const sid = moiEm();
+    conn.prepare(`UPDATE enrollments SET status = 'paused' WHERE student_id = ?`).run(sid);
+    xoaNho();
+    const v = viol.recordViolation(gvbm, { studentId: sid, category: 'attendance', ten: 'Đi muộn', occurredOn: TODAY }).violation;
+    assert(v.classId === LOP, JSON.stringify(v));
+  }));
+
+  check('RKC3b-2 · lô Ghi nhận: QL có em bắt buộc xử lý → hỏi MỘT câu cho cả lô → ghi nhận', () => thu(() => {
+    const a = moiEm(), b = moiEm();
+    nVp(a, 3); nVp(b, 1);
+    const e = loi(() => lo.loGhiNhan(QL, LOP, { studentIds: [a, b] }));
+    assert(e?.status === 409 && e.details?.canXacNhan && /1 em đang phải xử lý bắt buộc/.test(e.message), `phải hỏi: ${e?.status} ${e?.message}`);
+    const r = voiXacNhan(() => lo.loGhiNhan(QL, LOP, { studentIds: [a, b] }));
+    assert(r.em.every((x: any) => x.ok), JSON.stringify(r));
+  }));
+
+  check('RKC3b-3 · Hoàn thành việc cha còn việc con → hỏi → khép cả việc con', () => thu(() => {
+    const cha = mgmt.createMgmtTask(QL, { title: 'Việc cha RKC3b', group: 'teacher', branchId: mot(`SELECT id FROM branches WHERE code = 'MB'`).id });
+    const con = mgmt.createMgmtTask(QL, { title: 'Việc con RKC3b', group: 'teacher', branchId: mot(`SELECT id FROM branches WHERE code = 'MB'`).id, parentTaskId: cha.id });
+    const e = loi(() => mgmt.updateMgmtTask(QL, cha.id, { progress: 'done' }));
+    assert(e?.status === 409 && e.details?.canXacNhan, `phải hỏi: ${e?.status} ${e?.message}`);
+    voiXacNhan(() => mgmt.updateMgmtTask(QL, cha.id, { progress: 'done' }));
+    assert(mot('SELECT progress FROM tasks WHERE id = ?', con.id).progress === 'done' && mot('SELECT progress FROM tasks WHERE id = ?', cha.id).progress === 'done', 'khép cả hai');
+  }));
+
+  /* Huỷ quyết định quyết hôm qua / PA đã có kết quả / Case đã đóng: prLuiA2 LUIa2-10, LUIa2-11 (RKC-3b). */
 }
