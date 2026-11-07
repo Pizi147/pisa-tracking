@@ -341,7 +341,7 @@ export function huyQuyetDinhDoi(p: Principal, requestId: number): void {
       AND (raw_score IS NOT NULL OR band IS NOT NULL) LIMIT 1`).get(req.attempt_id, ...entrySkillsOf(req.skill as AssessedSkill));
   if (diem) throw loi(400, '{skill} đã có điểm sau quyết định — em đã thi; sửa ở ô điểm, không đưa về chờ dời được.', { skill: skillName(req.skill) });
   /* Đã Từ chối kỹ năng huỷ vắng 2 lần = "không mock lại" (bỏ khỏi đợt) → trả về phạm vi trước (trước khi đề nghị về chờ, để đường phạm vi không rút nó). */
-  if (req.status === 'declined' && !row.required) setSkillSkip(p, req.attempt_id, req.skill, false, null);
+  if (req.status === 'declined' && !row.required && row.huy_vang) setSkillSkip(p, req.attempt_id, req.skill, false, null);
   const homNay = demoToday();
   const cu = req.from_period_id ? (conn.prepare('SELECT code FROM report_periods WHERE id = ?').get(req.from_period_id) as any)?.code ?? null : null;
   conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent', planned_period_id = COALESCE(?, planned_period_id), plan_source = 'manual',

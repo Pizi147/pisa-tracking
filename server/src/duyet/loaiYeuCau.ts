@@ -350,10 +350,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         if (yc.trang_thai !== 'duyet') return;
         const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat; cu?: string | number | null };
         if (!TRUONG_TU_AP.includes(d.truong)) return;   // trường "khác": Duyệt không đổi dữ liệu
-        if (d.cu == null) throw badRequest('Không có giá trị trước đề xuất để trả lại — sửa Target / lộ trình ở hồ sơ học viên.');
+        /* Target cũ `null` = chưa có Target (trả được, `reviseTarget` nhận null / "KCK"); thẻ không ghi `cu` hoặc lộ trình cũ trống → chỉ đường. */
+        if (!('cu' in d) || (d.truong !== 'target' && d.cu == null)) throw badRequest('Không có giá trị trước đề xuất để trả lại — sửa Target / lộ trình ở hồ sơ học viên.');
         const cyc = hienTaiCua(db(), yc.hoc_vien_id!).cycle;
         if (!cyc) throw badRequest('Em không còn lộ trình đang chạy — sửa ở hồ sơ học viên.');
-        if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.cu, reason: 'Huỷ quyết định đề xuất sửa Target' });
+        if (d.truong === 'target') reviseTarget(p, cyc.id, { newTarget: d.cu ?? null, reason: 'Huỷ quyết định đề xuất sửa Target' });
         else updateCycle(p, cyc.id, { route: String(d.cu) });
       },
     },
