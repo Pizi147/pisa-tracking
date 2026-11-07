@@ -8,13 +8,14 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrSvSo3Tests(t: YThucTestKit) {
-  const { check, assert, conn, P, TODAY, classId } = t as any;
+  const { check, assert, assertThrows, conn, P, TODAY, classId } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
   const svc: any = await import('../fasttrack/attempts.ts');
   const bc: any = await import('../phanTich/baoCao.ts');
   const hvl: any = await import('../classes/hocVienLop.ts');
+  const tqV5: any = await import('../worklist/tongQuanV5.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { boLichTuTao, luotThu } = await import('./luotThu.ts');
   console.log('\nV5 · SV-SO3 — Kết quả MT (MT0 · MT1 · MT2 · MT3+ · Thi thật), hàng HV của Học viên & Lớp');
@@ -101,7 +102,24 @@ export async function runPrSvSo3Tests(t: YThucTestKit) {
     xoaNho();
     const p = bc.oBaoCao(P.mbManager, { ...f, o: 'kq-mt:thi:dat' });
     assert(p.rows.some((x: any) => x.id === a.sid && /so lượt trước \+0\.5/.test(x.sub)) && !p.rows.some((x: any) => x.id === c.sid), JSON.stringify(p.rows.find((x: any) => x.id === a.sid)));
+    /* O-TQ-BAM (chủ SP 07/11): ô "Đạt Target thi thật" (QT, CX) bấm cả ô → panel `dat-target-thi` — số dòng = mẫu của %, tab Đạt = tử (cùng `tapKqMt`). */
+    xoaNho();
+    const tq = tqV5.tongQuanV5(P.admin, { branchId: null, ct: 'ft', ky: { tu: f.tu, den: f.den } }).thiThat;
+    xoaNho();
+    const pt = bc.oBaoCao(P.admin, { ...f, o: 'dat-target-thi' });
+    assert(tq && pt.n === tq.mau && pt.rows.length === tq.mau && pt.rows.filter((x: any) => x.ketQua === 'dat').length === tq.dat, JSON.stringify({ tq, n: pt.n }));
+    assert(pt.rows.find((x: any) => x.id === a.sid)?.ketQua === 'dat' && pt.rows.find((x: any) => x.id === b.sid)?.ketQua === 'chua' && !pt.rows.some((x: any) => x.id === c.sid), 'a Đạt · b chưa · c KCK không vào');
+    assert(pt.rows.findIndex((x: any) => x.id === b.sid) < pt.rows.findIndex((x: any) => x.id === a.sid), 'chưa đạt lên trước');
+    assert(pt.rows.every((x: any) => !/so lượt trước|Overall|Target/.test(x.sub ?? '')), 'dòng phụ chỉ lớp · ngày thi (điểm ở dòng điểm)');
   }));
+
+  check('SVSO3 · O-TQ-BAM panel Đạt Target thi thật: QL chi nhánh khác → 403; lớp thường → 400', () => {
+    const cpId = get("SELECT id FROM branches WHERE id <> (SELECT branch_id FROM classes WHERE id = ?) ORDER BY id LIMIT 1", MB_FT).id as number;
+    assertThrows(() => bc.oBaoCao(P.mbManager, { ...f, branchId: cpId, o: 'dat-target-thi' }), /phạm vi|quyền/, 'QL MB xem được chi nhánh khác');
+    let loi = false;
+    try { bc.oBaoCao(P.mbManager, { ...f, ct: 'thuong', o: 'dat-target-thi' }); } catch { loi = true; }
+    assert(loi, 'lớp thường → 400');
+  });
 
   check('SVSO3 (T20) · Kết quả MT nhiều chi nhánh = Σ theo chi nhánh (mỗi hàng, mỗi cột)', () => {
     const loc = { ct: 'ft', tu: week.mondayOf(t.addDays(TODAY, -7 * 26)), den: tuanNay };

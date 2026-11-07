@@ -1,0 +1,34 @@
+QT | Đạt MT | không đi đâu
+QT | Case có PA | không đi đâu
+QT | Đạt Target thi thật | không đi đâu
+QT | Thi tháng này ⓘ | không đi đâu
+  (QT 1440: phông Be Vietnam Pro true)
+  (QT 375: phông Be Vietnam Pro true)
+QL | Đạt MT ⓘ | không đi đâu
+QL | Case có PA | không đi đâu
+QL | Chờ duyệt | không đi đâu
+QL | Thi tháng này ⓘ | không đi đâu
+  (QL 1440: phông Be Vietnam Pro true)
+  (QL 375: phông Be Vietnam Pro true)
+GV | Việc của tôi › 27 việc · ⚠ 9 quá hạn | đổi trang → /cong-viec?nhom=cham-diem
+GV | Case đang xử lý | không đi đâu
+GV | Đạt kỳ vọng Test | không đi đâu
+GV | Tiến bộ | không đi đâu
+  (GV 1440: phông Be Vietnam Pro true)
+  (GV 375: phông Be Vietnam Pro true)
+TVV | Báo PH đúng hạn ⓘ | không đi đâu
+TVV | Thi tháng này ⓘ | không đi đâu
+TVV | Chờ KQ · Lộ trình tiếp | không đi đâu
+  (TVV 1440: phông Be Vietnam Pro true)
+  (TVV 375: phông Be Vietnam Pro true)
+CX | Đạt MT | không đi đâu
+CX | Đạt Target thi thật | không đi đâu
+CX | HV SOS 2–3 | không đi đâu
+CX | Chờ KQ · Lộ trình tiếp | không đi đâu
+  (CX 1440: phông Be Vietnam Pro true)
+  (CX 375: phông Be Vietnam Pro true)
+Admin | Lượt MT tuần này | không đi đâu
+Admin | Bài chưa nhập điểm | không đi đâu
+Admin | HV chưa có MT tiếp theo | không đi đâu
+  (Admin 1440: phông Be Vietnam Pro true)
+  (Admin 375: phông Be Vietnam Pro true)
