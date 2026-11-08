@@ -254,7 +254,9 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
   const hangLoc = (
     <>
       {/* AUDIT-UI B6 (mockup `.hang-loc`): một hàng chip — phân loại phải quyết · vạch · Báo QL · Đã xử lý · 30 ngày · Lớp ▾. Chip bật = nền nhấn nhạt + viền nhấn. */}
-      <div role="group" aria-label={t('Lọc yêu cầu')} className="flex flex-wrap items-center gap-2" data-hd="cd-loc">
+      {/* 375: một hàng cuộn ngang (như hàng tab), mép phải mờ — không gãy 4 dòng đẩy danh sách xuống. */}
+      <div role="group" aria-label={t('Lọc yêu cầu')} data-hd="cd-loc"
+        className="flex flex-wrap items-center gap-2 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] max-sm:[scrollbar-width:none]">
         {[{ key: 'tat-ca' as KhoaChip, nhan: t('Tất cả') }, ...PHAN_LOAI_CAN_QUYET.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k] }))].map((c) => (
           <ChipLoc key={c.key} bat={xem !== 'de-biet' && phan === c.key} so={dem?.[c.key] ?? null} onClick={() => chonLoc(xem === 'de-biet' ? 'cho' : xem, c.key)}>{c.nhan}</ChipLoc>
         ))}
@@ -264,7 +266,7 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
         {(dsLop.length > 0 || lopId) && (
           <span className="relative inline-flex">
             <select aria-label={t('Lọc theo lớp')} value={lopId ? String(lopId) : ''} onChange={(e) => setParam('lop', e.target.value || null)}
-              aria-pressed={!!lopId} className={`nut-loc appearance-none pr-7 text-[14px] text-[color:var(--text)] ${lopId ? 'nut-loc-dang font-semibold' : 'font-medium'}`}>
+              aria-pressed={!!lopId} className={`nut-loc appearance-none pr-7 [field-sizing:content] text-[14px] text-[color:var(--text)] ${lopId ? 'nut-loc-dang font-semibold' : 'font-medium'}`}>
               <option value="">{t('Lớp')}</option>
               {dsLop.map(([id, ma]) => <option key={id} value={id}>{ma}</option>)}
             </select>
