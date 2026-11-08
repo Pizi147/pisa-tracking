@@ -99,9 +99,7 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, anCotMt = false }: {
-  /** LT-GON: không cột MT — lượt ghi dưới tên em (`DongThi`, khối Quá hạn chấm gộp theo lớp). */
-  anCotMt?: boolean;
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
@@ -122,9 +120,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const phien = usePhienCham();
   const [hetHv, setHetHv] = useState(false);
   const hien = (s: string) => !chiCot || chiCot.some((k) => khopKn(s, k));
+  /* AUDIT-UI B8 (T4, HSL6): không cột MT — chip "MTn ›" cạnh tên em đã ghi lượt (và là link). */
   const cot = {
-    /* UI-LICH-TUAN: lưới theo tuần (Lịch tuần, panel việc) luôn ghi MT của từng em — không giả định cả lớp cùng MT. */
-    mt: !anCotMt && (!gon || !!tuanDangXem || new Set(data.rows.map((r) => r.attemptNo)).size > 1),
     trangThai: !gon,
     han: !gon,
     /* PR-MT0: lưới chỉ MT0 (`kind=mt0`) — không kỳ vọng. */
@@ -145,7 +142,6 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: skillShort(s), kieu: 'diem', rong: 96, sang: khopKn(s, kn), goiY: goiYO(s) });
   const cotDs: DinhNghiaCot[] = [
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
-    ...(cot.mt ? [{ key: 'mt', nhan: 'MT', kieu: 'so', rong: 56, goiY: t('Số thứ tự lượt Mock Test (MT) trong lộ trình của em.') } as const] : []),
     ...(cot.trangThai ? [{ key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 146, goiY: t('Lượt đã chấm xong, đang chờ, hay đã huỷ.') } as const] : []),
     ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần Test của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
     ...rawCot.map(oKn), ...wCot.map(oKn),
@@ -338,7 +334,7 @@ export type PhienO = { nhanTiep: string | null; ketThuc: KetThucHop | null };
 
 function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx, cotDs, lich = false }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;
-  cot: { mt: boolean; trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean; kq: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
+  cot: { trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean; kq: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
   tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
@@ -393,7 +389,6 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
         </div>
       </OBang>
-      {cot.mt && <OBang c={cc.mt} title={t('Mock Test lượt {attemptNo}', { attemptNo: row.attemptNo })}>MT{row.attemptNo}</OBang>}
       {cot.trangThai && (
         <OBang c={cc.tt}>
           <Status kind={row.status === 'done' ? 'done' : row.status === 'cancelled' || huyHet ? 'idle' : 'doing'}>
