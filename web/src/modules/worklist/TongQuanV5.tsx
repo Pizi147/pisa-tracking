@@ -123,7 +123,7 @@ export const mauDatMt = (x: (TyLeV5 & { chuaDu: number }) | null) => (!x ? null 
  * Không có gì cho cột phải → bảng rộng hết trang.
  */
 function BoCuc({ trai, phai }: { trai: ReactNode; phai?: ReactNode }) {
-  if (!phai) return <div className="flex min-w-0 flex-col gap-4">{trai}</div>;
+  if (phai === undefined) return <div className="flex min-w-0 flex-col gap-4">{trai}</div>;
   return (
     <div className="grid items-start gap-4 min-[1280px]:grid-cols-[minmax(0,1fr)_400px]">
       <div className="flex min-w-0 flex-col gap-4 max-[1279px]:order-2">{trai}</div>
