@@ -7,6 +7,8 @@ export const EN_NEN_PANEL = {
   'Quay lại {x}': (b) => `Back to ${b.x}`,
   'Báo cáo · chỉ đọc': 'Report · read-only',
   'Bỏ chữ đang gõ?': 'Discard what you typed?',
+  /* B13: nút cuối danh sách panel số. */
+  'Xem thêm {n} {dv}': 'Show {n} more {dv}',
   'Bỏ chữ, đóng': 'Discard and close',
   'Bỏ chữ, sang việc khác': 'Discard and open the other task',
   'Bỏ chữ, quay lại': 'Discard and go back',

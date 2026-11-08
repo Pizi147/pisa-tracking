@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { TargetText } from '../../ui/ui.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { fmtBand } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
@@ -50,11 +51,15 @@ export type Hanh = {
 /** Việc của hàng khi em CÓ quyền sửa (`coTheSua`): nút chính + chữ phụ; không quyền → "Chỉ xem". */
 export const viecCua = (r: HangHien) => thaoTacLichThi(r.buoc, !r.thuong);
 export const canLam = (r: HangHien) => r.coTheSua && viecCua(r).chinh !== null;
+/** B7: hàng có MỘT nút "Đặt lịch ▾" (không nút chính, ≥ 2 việc phụ) — thẻ 375 đặt nút này ở hàng tên (mockup). */
+export const laMenuLich = (r: HangHien) => r.coTheSua && r.tt?.kieu !== 'xong' && viecCua(r).chinh === null && viecCua(r).phu.length > 1;
 
 const NHAN_NUT: Record<ThaoTacLichThi, () => string> = {
   'chot-ngay': () => t('Chốt ngày'), 'doi-thang': () => t('Dời tháng'), 'dat-thang': () => t('Đặt tháng'), 'sua-ngay': () => t('Sửa ngày'),
   'ghi-kq': () => t('Ghi kết quả'), 'buoc-tiep': () => t('Bước tiếp'), 'sua-kq': () => t('Sửa KQ'),
 };
+/** Tên đủ trong menu "Đặt lịch ▾" (mockup B7). */
+const NHAN_MENU: Partial<Record<ThaoTacLichThi, () => string>> = { 'dat-thang': () => t('Đặt tháng dự kiến'), 'chot-ngay': () => t('Chốt ngày thi') };
 const MO_HOP: ThaoTacLichThi[] = ['chot-ngay', 'doi-thang', 'dat-thang', 'sua-ngay'];
 export const laHop = (nut: ThaoTacLichThi) => MO_HOP.includes(nut);
 
@@ -148,6 +153,19 @@ export function CotViec({ r, hanh, the }: { r: HangHien; hanh: Hanh; the?: boole
   const { chinh, phu } = viecCua(r);
   const mo = (a: ThaoTacLichThi) => (hanh.hop?.id === r.studentId && hanh.hop.nut === a) || (hanh.panel?.id === r.studentId && hanh.panel.nut === a);
   const loiNgoai = r.tt?.kieu === 'loi' && hanh.hop?.id !== r.studentId;
+  /* AUDIT-UI B7 (HL3, chủ SP 08/11): không nút chính mà ≥ 2 việc phụ → MỘT nút "Đặt lịch ▾" (menu giữ đủ việc cũ) thay hai link lặp mỗi dòng.
+     ≥ 640 px chuột: nút hiện khi rê / chọn dòng / focus bàn phím (CSS `.lt-dat`); 375 + màn chạm luôn hiện. */
+  if (laMenuLich(r)) {
+    return (
+      <div className={`lt-viec ${the ? 'chu' : ''}`}>
+        {/* `MenuDong` vẽ menu ra ngoài bảng (portal) — dòng cuối thẻ không bị cắt; đủ chỗ mở xuống, không thì mở lên. */}
+        <MenuDong nhan={t('Đặt lịch')} mat={<>{t('Đặt lịch')} ▾</>} lopNut="btn btn-sm lt-dat"
+          muc={khoa ? [] : phu.map((a) => ({ key: a, nhan: NHAN_MENU[a]?.() ?? NHAN_NUT[a](), onChon: () => hanh.bam(r, a) }))} />
+        {khoa && <span className="lt-tt dang" role="status">{t('Đang lưu…')}</span>}
+        {loiNgoai && <span className="lt-tt loi" role="alert">{r.tt!.loi} <button type="button" className="link appearance-none border-0 bg-transparent p-0" onClick={r.tt!.lai}>{t('Thử lại')}</button></span>}
+      </div>
+    );
+  }
   return (
     <div className={`lt-viec ${the && !chinh ? 'chu' : ''}`}>
       {chinh ? <button type="button" className="btn btn-primary" disabled={khoa} aria-expanded={mo(chinh)} onClick={() => hanh.bam(r, chinh)}>{NHAN_NUT[chinh]()}</button> : !the && <span />}
