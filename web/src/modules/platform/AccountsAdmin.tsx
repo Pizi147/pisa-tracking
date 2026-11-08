@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, Skeleton, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, ChonDangNut, ErrorState, Field, Forbidden, Info, NutChon, Skeleton, Th} from '../../ui/ui.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
+import { IconGap } from '../../ui/BieuTuong.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -63,6 +65,9 @@ export function AccountsAdmin() {
   /* PR-BC L3: bộ lọc nhớ trong URL (gửi link là mở đúng bộ lọc). Hook đặt TRƯỚC mọi `return` sớm (Rules of Hooks). */
   const [params, setParams] = useSearchParams();
   const [dongNhom, setDongNhom] = useState<Set<string>>(new Set());
+  /* B14 (mockup audit-ui 08/11): < 640 px — chi nhánh, vai trò, kỹ năng, nhóm gom vào nút "Lọc ▾"; bảng thành thẻ. */
+  const dienThoai = useDienThoai();
+  const [moLoc, setMoLoc] = useState(false);
 
   if (accounts.loading) return <Card title={t('Tài khoản')}><Skeleton rows={5} /></Card>;
   /*
@@ -123,6 +128,55 @@ export function AccountsAdmin() {
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
   };
 
+  const nutTao = (
+    <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" aria-label={dienThoai ? t('+ Tạo tài khoản') : undefined} onClick={() => setCreating(true)}>
+      {dienThoai ? t('+ Tạo') : t('+ Tạo tài khoản')}</button>
+  );
+  const doanDangDung = (
+    <BoLocDoan ariaLabel={t('Lọc tài khoản')} value={loc} onChange={setLoc}
+      muc={[{ key: 'dang-dung', nhan: t('Đang dùng'), so: dangDung.length }, { key: 'da-xoa', nhan: t('Đã xoá'), so: daXoa.length }]} />
+  );
+  const oTim = (
+    <input className="field w-full min-w-0 sm:w-56" type="search" placeholder={t('Tên, mã hoặc email')} aria-label={t('Tìm tài khoản')}
+      value={loc3.q} maxLength={100} onChange={(e) => datLoc({ q: e.target.value })} />
+  );
+  /* B14 / QT6: ô chọn dáng chung của web (`ChonDangNut`, như "Mọi hạn ▾") thay `select` gốc của trình duyệt. */
+  const chonCn = (
+    <ChonDangNut aria-label={t('Chi nhánh')} value={loc3.chiNhanh} onChange={(e) => datLoc({ chiNhanh: e.target.value })}>
+      <option value="tat-ca">{t('Chi nhánh: Tất cả')}</option>
+      {(branches.data ?? []).map((b) => <option key={b.id} value={b.code}>{b.name}</option>)}
+      <option value="toan-he-thong">{t('Toàn hệ thống')}</option>
+    </ChonDangNut>
+  );
+  const chonVai = (
+    <ChonDangNut aria-label={t('Vai trò')} value={loc3.vai} onChange={(e) => datLoc({ vai: e.target.value })}>
+      <option value="tat-ca">{t('Vai trò: Tất cả')}</option>
+      {ROLES.map((r) => <option key={r} value={r}>{dich(roleLabel(r))}</option>)}
+    </ChonDangNut>
+  );
+  /* OV-11b (QT-9): 375 — nhãn lên trên, nút đoạn đủ một hàng (không cắt "S"). */
+  const chonKyNang = (
+    <span className="flex min-w-0 max-w-full items-center gap-1.5 max-sm:w-full max-sm:flex-col max-sm:items-start">
+      <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{t('Kỹ năng')}</span>
+      <BoLocDoan ariaLabel={t('Lọc kỹ năng')} value={loc3.kyNang} onChange={(k) => datLoc({ kyNang: k })}
+        muc={[{ key: 'tat-ca', nhan: t('Tất cả') }, ...KY_NANG_TAI_KHOAN.map((k) => ({ key: k, nhan: k, title: skillLabel(k) }))]} />
+    </span>
+  );
+  const chonNhom = (
+    <ChonDangNut aria-label={t('Nhóm theo')} value={nhomTheo ?? ''} onChange={(e) => datParams({ nhom: e.target.value || null })}>
+      <option value="">{t('Không nhóm')}</option>
+      <option value="chi-nhanh">{t('Nhóm theo chi nhánh')}</option>
+      <option value="vai">{t('Nhóm theo vai trò')}</option>
+    </ChonDangNut>
+  );
+  /* Số bộ lọc trong tấm "Lọc" đang khác mặc định — hiện trên nút để thấy đang lọc khi tấm đóng. */
+  const soLocTam = [loc3.chiNhanh !== 'tat-ca', loc3.vai !== 'tat-ca', loc3.kyNang !== 'tat-ca', !!nhomTheo].filter(Boolean).length;
+  const moDongNhom = (k: string) => setDongNhom((s0) => { const n = new Set(s0); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const theTk = (u: Account, key: string | number) => (
+    <TheTaiKhoan key={key} u={u} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} onKhoiPhuc={() => void khoiPhuc(u)}
+      onDuyetLai={() => setDuyetLai(u)} />
+  );
+
   return (
     <div className="space-y-4">
       {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. AUDIT-UI QT2: rỗng thì một dòng, không chiếm cả thẻ. */}
@@ -140,42 +194,35 @@ export function AccountsAdmin() {
         </Card>
       )}
 
-      <Card title={<>{t('Tài khoản')} <span className={`${CHIP_VUONG} ml-1`} style={{ borderColor: 'var(--line-strong)' }}>{dangLoc ? `${rows.length} / ${goc.length}` : rows.length}</span></>} bodyClass="p-0"
-        action={
-          <span className="flex flex-wrap items-center gap-1.5">
-            <BoLocDoan ariaLabel={t('Lọc tài khoản')} value={loc} onChange={setLoc}
-              muc={[{ key: 'dang-dung', nhan: t('Đang dùng'), so: dangDung.length }, { key: 'da-xoa', nhan: t('Đã xoá'), so: daXoa.length }]} />
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => setCreating(true)}>{t('+ Tạo tài khoản')}</button>
-          </span>
-        }>
-        {/* PR-BC L3: hàng lọc ngay dưới tiêu đề Card, trên bảng; tự xuống dòng ở 375 px. */}
-        <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-          <input className="field w-full sm:w-56" type="search" placeholder={t('Tên, mã hoặc email')} aria-label={t('Tìm tài khoản')}
-            value={loc3.q} maxLength={100} onChange={(e) => datLoc({ q: e.target.value })} />
-          {/* 7 lựa chọn → select (BoLocDoan tràn ở 375 px), theo mẫu StudentsPage. */}
-          <select className="field w-auto" aria-label={t('Chi nhánh')} value={loc3.chiNhanh} onChange={(e) => datLoc({ chiNhanh: e.target.value })}>
-            <option value="tat-ca">{t('Chi nhánh: Tất cả')}</option>
-            {(branches.data ?? []).map((b) => <option key={b.id} value={b.code}>{b.name}</option>)}
-            <option value="toan-he-thong">{t('Toàn hệ thống')}</option>
-          </select>
-          <select className="field w-auto" aria-label={t('Vai trò')} value={loc3.vai} onChange={(e) => datLoc({ vai: e.target.value })}>
-            <option value="tat-ca">{t('Vai trò: Tất cả')}</option>
-            {ROLES.map((r) => <option key={r} value={r}>{dich(roleLabel(r))}</option>)}
-          </select>
-          {/* OV-11b (QT-9): 375 — nhãn lên trên, nút đoạn đủ một hàng (không cắt "S"). */}
-          <span className="flex min-w-0 max-w-full items-center gap-1.5 max-sm:w-full max-sm:flex-col max-sm:items-start">
-            <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{t('Kỹ năng')}</span>
-            <BoLocDoan ariaLabel={t('Lọc kỹ năng')} value={loc3.kyNang} onChange={(k) => datLoc({ kyNang: k })}
-              muc={[{ key: 'tat-ca', nhan: t('Tất cả') }, ...KY_NANG_TAI_KHOAN.map((k) => ({ key: k, nhan: k, title: skillLabel(k) }))]} />
-          </span>
-          <select className="field w-auto" aria-label={t('Nhóm theo')} value={nhomTheo ?? ''} onChange={(e) => datParams({ nhom: e.target.value || null })}>
-            <option value="">{t('Không nhóm')}</option>
-            <option value="chi-nhanh">{t('Nhóm theo chi nhánh')}</option>
-            <option value="vai">{t('Nhóm theo vai trò')}</option>
-          </select>
+      {dienThoai && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">{doanDangDung}<span className="ml-auto">{nutTao}</span></div>
+          <div className="flex items-center gap-2">
+            {oTim}
+            <button type="button" className="btn min-h-[44px] shrink-0 gap-1.5" aria-expanded={moLoc} aria-controls="qt-tam-loc" onClick={() => setMoLoc(!moLoc)}
+              style={soLocTam ? { borderColor: 'var(--accent)', boxShadow: 'inset 0 0 0 1px var(--accent)' } : undefined}>
+              {t('Lọc')}{soLocTam ? <span className="tabular-nums text-slate-400">{soLocTam}</span> : null} <IconGap mo={moLoc} />
+            </button>
+          </div>
+          {moLoc && (
+            <div id="qt-tam-loc" role="group" aria-label={t('Lọc')} className="card grid gap-3 p-3">
+              {chonCn}{chonVai}{chonKyNang}{chonNhom}
+            </div>
+          )}
         </div>
+      )}
+      <Card title={dienThoai ? undefined : <>{t('Tài khoản')} <span className={`${CHIP_VUONG} ml-1`} style={{ borderColor: 'var(--line-strong)' }}>{dangLoc ? `${rows.length} / ${goc.length}` : rows.length}</span></>} bodyClass="p-0"
+        action={dienThoai ? undefined : <span className="flex flex-wrap items-center gap-1.5">{doanDangDung}{nutTao}</span>}>
+        {/* PR-BC L3: hàng lọc ngay dưới tiêu đề Card, trên bảng (≥ 640 px; điện thoại: hàng tìm + "Lọc" ở trên). */}
+        {!dienThoai && (
+          <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+            {oTim}{chonCn}{chonVai}{chonKyNang}{chonNhom}
+          </div>
+        )}
         {/* AUDIT-UI C2: chip đếm 0 không lọc được gì → ẩn (đang chọn thì vẫn hiện để bỏ chọn); không còn gì thì bỏ cả hàng. */}
         {(dangLoc || PHAN_LOAI_TAI_KHOAN.some((k) => phanLoai[k])) && <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2" style={{ borderColor: 'var(--line)' }}>
+          {/* Điện thoại không có tiêu đề thẻ "Tài khoản n / m" — số khớp hiện ở đây khi đang lọc. */}
+          {dienThoai && dangLoc && <span className="text-[13px] tabular-nums text-slate-400">{t('{n} / {m} tài khoản', { n: rows.length, m: goc.length })}</span>}
           {PHAN_LOAI_TAI_KHOAN.filter((k) => phanLoai[k] || loc3.phanLoai === k).map((k) => (
             <NutChon key={k} nho chon={loc3.phanLoai === k} onClick={() => datLoc({ phanLoai: loc3.phanLoai === k ? null : k })}>
               {NHAN_PHAN_LOAI[k]} <span className="tabular-nums text-slate-400">{phanLoai[k]}</span>
@@ -183,7 +230,23 @@ export function AccountsAdmin() {
           ))}
           {dangLoc && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 sm:ml-auto" onClick={xoaLoc}>{t('Xoá lọc')}</button>}
         </div>}
-        <div className="table-scroll bang-dinh">
+        {dienThoai ? (
+          rows.length === 0 ? (
+            <p className="m-0 flex flex-wrap items-center gap-2 px-4 py-4 text-sm text-slate-400">
+              {dangLoc ? <>{t('Không có tài khoản nào khớp.')}<button type="button" className="btn btn-sm min-h-[44px]" onClick={xoaLoc}>{t('Xoá lọc')}</button></>
+                : loc === 'da-xoa' ? t('Chưa xoá tài khoản nào.') : t('Chưa có tài khoản.')}
+            </p>
+          ) : nhom ? nhom.map((g) => (
+            <Fragment key={g.key}>
+              <button type="button" aria-expanded={!dongNhom.has(g.key)} onClick={() => moDongNhom(g.key)}
+                className="flex min-h-[44px] w-full appearance-none items-center gap-2 border-0 border-t bg-[color:var(--surface-2)] px-4 text-left text-sm font-semibold text-slate-100 first:border-t-0"
+                style={{ borderColor: 'var(--line)' }}>
+                <IconGap mo={!dongNhom.has(g.key)} />{g.nhan} <span className="font-normal tabular-nums text-slate-400">· {t('{n} người', { n: g.rows.length })}</span>
+              </button>
+              {!dongNhom.has(g.key) && g.rows.map((u) => theTk(u, `${g.key}-${u.id}`))}
+            </Fragment>
+          )) : rows.map((u) => theTk(u, u.id))
+        ) : <div className="table-scroll bang-dinh">
           <table className="w-full text-sm">
             <thead>
               <tr>
@@ -210,14 +273,14 @@ export function AccountsAdmin() {
               {nhom ? nhom.map((g) => (
                 <Fragment key={g.key}>
                   <HangNhom mo={!dongNhom.has(g.key)} nhan={g.nhan} soCotDau={soCot}
-                    onMo={() => setDongNhom((s0) => { const n = new Set(s0); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n; })}
+                    onMo={() => moDongNhom(g.key)}
                     tieuDe={<span className="text-sm font-semibold text-slate-100">{g.nhan} <span className="font-normal tabular-nums text-slate-400">· {t('{n} người', { n: g.rows.length })}</span></span>} />
                   {!dongNhom.has(g.key) && g.rows.map((u) => hang(u, `${g.key}-${u.id}`))}
                 </Fragment>
               )) : rows.map((u) => hang(u, u.id))}
             </tbody>
           </table>
-        </div>
+        </div>}
       </Card>
 
       {creating && (
@@ -298,25 +361,65 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, on
           {u.chamSpeaking && <Info title={t('Kỹ năng Speaking hoặc dạy Speaking lớp FT — chấm S Mock mọi lớp FT chi nhánh của vai GV')}>{t('Chấm S')}</Info>}
         </span>
       </td>
-      <td className="td whitespace-nowrap">
-        {u.status === 'deleted' ? (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="text-xs text-slate-500">{t('Đã xoá {ngay}', { ngay: ngay(u.deletedAt) })}</span>
-            {onKhoiPhuc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onKhoiPhuc}>{t('Khôi phục')}</button>}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5">
-            {khongDuyet
-              ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onDuyetLai}>{t('Duyệt lại')}</button>
-              : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSua}>{t('Sửa')}</button>}
-            <MenuDong nhan={t('Thao tác khác')} muc={[
-              { key: 'sua-tt', nhan: t('Sửa thông tin'), onChon: onSuaTt },
-              { key: 'xoa', nhan: t('Xoá tài khoản'), nguyHiem: true, keTruoc: true, onChon: onXoa },
-            ]} />
-          </span>
-        )}
-      </td>
+      <td className="td whitespace-nowrap"><NutTaiKhoan u={u} onSua={onSua} onSuaTt={onSuaTt} onXoa={onXoa} onDuyetLai={onDuyetLai} onKhoiPhuc={onKhoiPhuc} /></td>
     </tr>
+  );
+}
+
+type ThaoTacTk = { u: Account; onSua: () => void; onSuaTt: () => void; onXoa: () => void; onDuyetLai: () => void; onKhoiPhuc?: () => void };
+
+/** Thao tác của một tài khoản — chung cho hàng bảng (≥ 640) và thẻ (375): Sửa / Duyệt lại · ⋯ (Sửa thông tin, Xoá) · đã xoá: Khôi phục. */
+function NutTaiKhoan({ u, onSua, onSuaTt, onXoa, onDuyetLai, onKhoiPhuc }: ThaoTacTk) {
+  const khongDuyet = u.approvalState === 'declined';
+  return (
+    <>
+      {u.status === 'deleted' ? (
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-xs text-slate-500">{t('Đã xoá {ngay}', { ngay: ngay(u.deletedAt) })}</span>
+          {onKhoiPhuc && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onKhoiPhuc}>{t('Khôi phục')}</button>}
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5">
+          {khongDuyet
+            ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onDuyetLai}>{t('Duyệt lại')}</button>
+            : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={onSua}>{t('Sửa')}</button>}
+          <MenuDong nhan={t('Thao tác khác')} muc={[
+            { key: 'sua-tt', nhan: t('Sửa thông tin'), onChon: onSuaTt },
+            { key: 'xoa', nhan: t('Xoá tài khoản'), nguyHiem: true, keTruoc: true, onChon: onXoa },
+          ]} />
+        </span>
+      )}
+    </>
+  );
+}
+
+/**
+ * B14 (mockup audit-ui 08/11 khung 375): một tài khoản một thẻ — tên · mã · Sửa · ⋯ / email / vai · chi nhánh, kỹ năng, Chấm S, quyền cấp riêng.
+ * Cùng dữ liệu, cùng thao tác với hàng bảng (`NutTaiKhoan`).
+ */
+function TheTaiKhoan(p: ThaoTacTk) {
+  const { u } = p;
+  const khongDuyet = u.approvalState === 'declined';
+  return (
+    <div className="grid gap-1.5 border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+      <div className="flex items-center gap-2">
+        <span className="min-w-0">
+          <span className={`text-[15px] font-semibold ${u.status === 'deleted' ? 'text-faint' : 'text-slate-100'}`}>{u.fullName}</span>{' '}
+          <span className="whitespace-nowrap text-xs tabular-nums text-slate-500">{u.code}{u.phone ? ` · ${u.phone}` : ''}</span>
+        </span>
+        <span className="ml-auto inline-flex shrink-0 items-center gap-1.5"><NutTaiKhoan {...p} /></span>
+      </div>
+      <div className="truncate text-[13px] text-slate-400" title={u.email ?? undefined}>{u.email ?? <span className="text-rose-200">{t('chưa có email')}</span>}</div>
+      <div className="flex flex-wrap items-center gap-1">
+        {khongDuyet && <Info pending title={u.declineReason ?? undefined}>{t('Không duyệt')}</Info>}
+        {u.roles.length === 0 && !khongDuyet && <span className="text-xs text-slate-500">{t('chưa có vai trò')}</span>}
+        {u.roles.map((g, i) => <Info key={i}>{dich(roleLabel(g.role) || g.roleName)} · {g.branchName ?? t('Toàn hệ thống')}</Info>)}
+        {u.skills.map((s) => <span key={s} title={skillLabel(s)}><ChipKy k={skillShort(s)} /></span>)}
+        {u.chamSpeaking && <Info title={t('Kỹ năng Speaking hoặc dạy Speaking lớp FT — chấm S Mock mọi lớp FT chi nhánh của vai GV')}>{t('Chấm S')}</Info>}
+        {u.extra.map((x, i) => <Info key={`q${i}`}>{dich(x.name)}{x.branchCode ? ` · ${x.branchCode}` : ` · ${t('toàn hệ thống')}`}</Info>)}
+      </div>
+      {khongDuyet && u.declineReason && <span className="text-xs text-slate-400">{u.declineReason}</span>}
+    </div>
   );
 }
 
