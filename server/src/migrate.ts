@@ -182,7 +182,6 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* HAN-BAO-PH: han_chon (Báo PH, Meeting CX) + viec_han_lan + viec_bao_ph_lan.khoa — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrHanBaoPh(conn, applied));
     /* RESET-HAN-CASE: cột sos_cases.han_them_pa — ĐẦU migrate, chỉ thêm (`hanThemPa` / `XU_LY_COT_SQL` đọc). */ buoc(() => themCotHanThemPa(conn, applied));
     /* XM-VIEC-DUNG-HAN b: cột sos_cases.mo_ta_luc (ngày xong Xác nhận / Mô tả Case) — đầu migrate, chỉ thêm, chạy lặp được. */ buoc(() => migratePrNgayXong0711(conn, applied));
-    /* SỔ NGHĨA VỤ (chủ SP 09/11): bảng nghia_vu — ĐẦU migrate, chỉ tạo bảng, chạy lặp được. */ buoc(() => migratePrNghiaVu(conn, applied));
     buoc(() => {
     // 1. Cột mới trên các bảng đang có.
     for (const [col, decl] of [
@@ -476,6 +475,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận: giữ PA nhiều kết quả nhất, rồi cũ nhất) → Thùng rác (đổi dữ liệu MỘT
      lần, khoá demo_config). SAU khi bật khoá ngoại: Xoá PA dựa vào CASCADE (buổi Tutor của kết quả) — tắt thì để lại dòng mồ côi, khôi phục 409. */
   buoc(() => migratePrPaTrung0711(conn, applied));
+  /* SỔ NGHĨA VỤ (chủ SP 09/11): bảng nghia_vu — bước CUỐI (không đổi số thứ tự bước cũ), chỉ tạo bảng, chạy lặp được. */
+  buoc(() => migratePrNghiaVu(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

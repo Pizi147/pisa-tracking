@@ -3,13 +3,14 @@
  * Mỗi bài phải chấm / việc có hạn = một dòng `nghia_vu`. Tệp này TÍNH dòng từ dữ liệu gốc bằng chính hàm luật đang có (`skillCells`,
  * `regularSkillViews`, `mocTreNhapDiem`, `kyNangPhuTrach`, `luatBai.ts`) rồi ghi sổ (`ghiSo`). Trạng thái (Đúng hạn / Làm muộn / Chưa làm) tính lúc đọc.
  */
-import { DS_JSON, db } from '../db.ts';
+import { DS_JSON, db, henTruocCommit } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { mocTreNhapDiem } from '../platform/week.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
+import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import type { Principal } from '../permissions.ts';
 import { boMonLich, boMonTheoLuot, daGhiLuot, kyNangPhuTrach, laChamCheo } from '../../../shared/domain/index.ts';
 import { dangHocLuc, lopLucThi, nguoiPcLuc, nguoiPcSau, type DongPc, type GhiDanh } from './luatBai.ts';
@@ -44,6 +45,10 @@ export function tinhBai(attemptId: number): DongNv[] {
 
 /** Như `tinhBai` cho nhiều lượt — nạp theo lô (lượt, điểm, lịch, ghi danh, tạm dừng, phân công, lớp): số câu không theo số lượt. */
 export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
+  /* Bộ nhớ tạm cho lời gọi (đề nghị dời, quyền theo lớp… `skillCells` hỏi mỗi lượt) — trong request ghi `nho` không mở, không có thì mỗi lượt một câu. */
+  return trongBoNho(() => tinhBaiLo(ids));
+}
+function tinhBaiLo(ids: readonly number[]): Map<number, DongNv[]> {
   const out = new Map<number, DongNv[]>();
   if (!ids.length) return out;
   const conn = db();
@@ -125,17 +130,20 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
 
 // ------------------------------------------------------------------ ghi sổ
 
-const COT = ['loai', 'kieu', 'khoa', 'chi_nhanh', 'lop', 'hoc_vien', 'nguoi', 's_cheo', 'pc_nhap_sau', 'han_goc', 'han', 'tuan', 'xong_luc', 'nguoi_lam', 'khong_tinh'] as const;
-/* Upsert theo `khoa`: `han_goc` giữ lần đầu (spec 1.5); chỉ ghi khi có cột đổi (đỡ ghi Turso, `cap_nhat` = lần đổi cuối). */
-const UPSERT = `INSERT INTO nghia_vu (${COT.join(', ')}, cap_nhat) VALUES (${COT.map(() => '?').join(', ')}, ?)
-  ON CONFLICT (khoa) DO UPDATE SET ${COT.filter((c) => c !== 'khoa' && c !== 'han_goc').map((c) => `${c} = excluded.${c}`).join(', ')},
-    han_goc = COALESCE(nghia_vu.han_goc, excluded.han_goc), cap_nhat = excluded.cap_nhat
-  WHERE ${COT.filter((c) => c !== 'khoa' && c !== 'han_goc').map((c) => `nghia_vu.${c} IS NOT excluded.${c}`).join(' OR ')}
-    OR (nghia_vu.han_goc IS NULL AND excluded.han_goc IS NOT NULL)`;
+const COT = ['loai', 'kieu', 'khoa', 'chi_nhanh', 'lop', 'hoc_vien', 'nguoi', 's_cheo', 'pc_nhap_sau', 'han_goc', 'han', 'tuan', 'xong_luc', 'nguoi_lam', 'khong_tinh', 'cap_nhat'] as const;
+const DOI = COT.filter((c) => c !== 'khoa' && c !== 'han_goc' && c !== 'cap_nhat');
+/* Upsert MỘT câu theo `khoa` (dòng gửi dạng JSON — một tham số, không chia lô theo trần tham số): `han_goc` giữ lần đầu (spec 1.5); chỉ ghi dòng có cột đổi
+   (đỡ ghi Turso, `cap_nhat` = lần đổi cuối). `WHERE true`: SQLite cần để tách SELECT khỏi ON CONFLICT. */
+const UPSERT = `INSERT INTO nghia_vu (${COT.join(', ')})
+  SELECT ${COT.map((_, i) => `json_extract(j.value, '$[${i}]')`).join(', ')} FROM json_each(?) j WHERE true
+  ON CONFLICT (khoa) DO UPDATE SET ${DOI.map((c) => `${c} = excluded.${c}`).join(', ')}, han_goc = COALESCE(nghia_vu.han_goc, excluded.han_goc), cap_nhat = excluded.cap_nhat
+  WHERE ${DOI.map((c) => `nghia_vu.${c} IS NOT excluded.${c}`).join(' OR ')} OR (nghia_vu.han_goc IS NULL AND excluded.han_goc IS NOT NULL)`;
 
-function upsert(d: DongNv, luc: string): void {
-  db().prepare(UPSERT).run(d.loai, d.kieu, d.khoa, d.chiNhanh, d.lop, d.hocVien, d.nguoi, d.sCheo ? 1 : 0, d.pcNhapSau ? 1 : 0, d.han, d.han, d.tuan,
-    d.xongLuc, d.nguoiLam, d.khongTinh, luc);
+/** Ghi các dòng (một câu). `hanGoc` của dòng (việc đã đặt lại hạn) thắng `han` cho lần ghi đầu. */
+export function ghiDong(ds: readonly (DongNv & { hanGoc?: string | null })[], luc = new Date().toISOString()): void {
+  if (!ds.length) return;
+  db().prepare(UPSERT).run(JSON.stringify(ds.map((d) => [d.loai, d.kieu, d.khoa, d.chiNhanh, d.lop, d.hocVien, d.nguoi, d.sCheo ? 1 : 0, d.pcNhapSau ? 1 : 0,
+    d.hanGoc ?? d.han, d.han, d.tuan, d.xongLuc, d.nguoiLam, d.khongTinh, luc])));
 }
 
 /**
@@ -149,20 +157,41 @@ function anToan(ten: string, fn: () => void): void {
   }
 }
 
-/** Tính lại + ghi mọi ô của các lượt; ô không còn (lượt xoá, ô thôi bắt buộc / chưa xếp tuần) → giữ dòng, `khong_tinh = 'da-xoa'`. */
-export function ghiSoLuot(ids: readonly (number | null | undefined)[]): void {
-  const ds = [...new Set(ids.filter((x): x is number => typeof x === 'number'))];
-  if (!ds.length) return;
-  anToan('ghiSoLuot', () => {
-    const luc = new Date().toISOString();
-    const moi = tinhBaiNhieu(ds);
-    const co = new Set<string>();
-    for (const rows of moi.values()) for (const d of rows) { upsert(d, luc); co.add(d.khoa); }
-    for (const r of db().prepare(`SELECT n.khoa FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 'bai:' || j.value || ':' AND n.khoa < 'bai:' || j.value || ';'
-        WHERE n.khong_tinh IS NOT 'da-xoa'`).all(JSON.stringify(ds)) as any[]) {
-      if (!co.has(r.khoa)) db().prepare(`UPDATE nghia_vu SET khong_tinh = 'da-xoa', cap_nhat = ? WHERE khoa = ?`).run(luc, r.khoa);
+/* Chờ ghi trong giao dịch đang mở: lượt · lớp (lượt của lớp + của em từng ghi danh lớp) · em. Ghi MỘT lô ngay trước COMMIT (`henTruocCommit`). */
+const cho = { luot: new Set<number>(), lop: new Set<number>(), hv: new Set<number>() };
+function hen(): void {
+  if (!henTruocCommit('nghia-vu', xaCho)) xaCho();
+}
+function xaCho(): void {
+  const luot = [...cho.luot], lop = [...cho.lop], hv = [...cho.hv];
+  cho.luot.clear(); cho.lop.clear(); cho.hv.clear();
+  if (!luot.length && !lop.length && !hv.length) return;
+  anToan('ghi sổ bài', () => {
+    const ids = new Set(luot);
+    if (lop.length || hv.length) {
+      for (const r of db().prepare(`SELECT a.id AS id FROM assessment_attempts a WHERE a.class_id IN (SELECT value FROM json_each(?)) OR a.student_id IN (SELECT value FROM json_each(?))
+          UNION SELECT a.id AS id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id WHERE e.class_id IN (SELECT value FROM json_each(?))`)
+        .all(JSON.stringify(lop), JSON.stringify(hv), JSON.stringify(lop)) as any[]) ids.add(r.id);
     }
+    ghiBaiNgay([...ids]);
   });
+}
+
+/** Tính lại + ghi mọi ô của các lượt NGAY; ô không còn (lượt xoá, ô thôi bắt buộc / chưa xếp tuần) → giữ dòng, `khong_tinh = 'da-xoa'`. */
+function ghiBaiNgay(ds: number[]): void {
+  if (!ds.length) return;
+  const luc = new Date().toISOString();
+  const moi = [...tinhBaiNhieu(ds).values()].flat();
+  ghiDong(moi, luc);
+  db().prepare(`UPDATE nghia_vu SET khong_tinh = 'da-xoa', cap_nhat = ? WHERE khong_tinh IS NOT 'da-xoa' AND khoa NOT IN (SELECT value FROM json_each(?))
+      AND khoa IN (SELECT n.khoa FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 'bai:' || j.value || ':' AND n.khoa < 'bai:' || j.value || ';')`)
+    .run(luc, JSON.stringify(moi.map((d) => d.khoa)), JSON.stringify(ds));
+}
+
+/** Ghi sổ các lượt (trong giao dịch `tx`: một lô trước COMMIT; ngoài giao dịch: ngay). */
+export function ghiSoLuot(ids: readonly (number | null | undefined)[]): void {
+  for (const x of ids) if (typeof x === 'number') cho.luot.add(x);
+  if (cho.luot.size) hen();
 }
 
 /** Một khoá sổ (`bai:<lượt>:<kỹ năng>`; việc: Task 4). */
@@ -176,13 +205,12 @@ export function ghiSo(khoa: string): void {
  * phân công mới cũng lấp người cho ô cũ chưa có phân công (spec 1.2 a, `pcNhapSau`). Upsert chỉ ghi dòng đổi.
  */
 export function ghiSoTheoLop(lop: number, _tuNgay?: string): void {
-  anToan('ghiSoTheoLop', () => ghiSoLuot((db().prepare(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ?
-      UNION SELECT a.id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id WHERE e.class_id = ?`).all(lop, lop) as any[]).map((r) => r.id)));
+  cho.lop.add(lop);
+  hen();
 }
 
 /** Đổi trạng thái em (Tạm dừng, Kết thúc, Lưu trữ, Quay lại học…): mọi lượt của em. */
 export function ghiSoHocVien(sids: readonly number[]): void {
-  if (!sids.length) return;
-  anToan('ghiSoHocVien', () => ghiSoLuot((db().prepare(`SELECT id FROM assessment_attempts WHERE student_id IN (SELECT value FROM json_each(?))`)
-    .all(JSON.stringify([...new Set(sids)])) as any[]).map((r) => r.id)));
+  for (const s of sids) cho.hv.add(s);
+  if (cho.hv.size) hen();
 }
