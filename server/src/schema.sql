@@ -2477,3 +2477,19 @@ CREATE TABLE bao_cao_ph_dot (
   UNIQUE (class_id, ma)
 );
 CREATE INDEX idx_bcph_dot_lop ON bao_cao_ph_dot(class_id);
+-- SỔ NGHĨA VỤ (chủ SP 09/11, spec 2026-11-09-so-nghia-vu-design mục 2.1): mỗi bài phải chấm / việc có hạn một dòng — ghiSo (phanTich/soNghiaVu.ts). migrate/prNghiaVu.ts chép y.
+CREATE TABLE IF NOT EXISTS nghia_vu (
+  id INTEGER PRIMARY KEY,
+  loai TEXT NOT NULL CHECK (loai IN ('bai', 'viec')),
+  kieu TEXT NOT NULL,
+  khoa TEXT NOT NULL UNIQUE,
+  chi_nhanh INTEGER, lop INTEGER, hoc_vien INTEGER,
+  nguoi INTEGER,
+  s_cheo INTEGER NOT NULL DEFAULT 0,
+  han_goc TEXT, han TEXT, tuan TEXT,
+  xong_luc TEXT, nguoi_lam INTEGER,
+  khong_tinh TEXT,
+  cap_nhat TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_nghia_vu_cn_han ON nghia_vu(chi_nhanh, han);
+CREATE INDEX IF NOT EXISTS idx_nghia_vu_nguoi_han ON nghia_vu(nguoi, han);
