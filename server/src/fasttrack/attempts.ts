@@ -1,4 +1,5 @@
 import { capNhatConOCho } from './conOCho.ts';
+import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -1676,6 +1677,7 @@ export function setDeadlineOverride(p: Principal, attemptId: number, date: strin
     action: date ? 'deadline_set' : 'deadline_cleared', field: 'deadline_override',
     oldValue: a.deadline_override, newValue: date, reason, actor: p.userId,
   });
+  ghiSoLuot([attemptId]);   // SỔ NGHĨA VỤ: hạn đổi
   return db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
 }
 
@@ -2040,6 +2042,7 @@ function luuNhanXet(
   });
   if (skill === 'speaking') baoPhuTrachS(p, a, comment, cu?.comment, gv !== undefined ? exUser : null);   // người chấm chỉ tính khi CHÍNH lần lưu này ghi
   dongBoNguyenNhanMt({ attemptId, skill });   // OV-12c: nhận xét + nhóm của ô = nguyên nhân Case MT (liên kết sống)
+  if (skill === 'speaking') ghiSoLuot([attemptId]);   // SỔ NGHĨA VỤ: GV chấm Speaking chéo đổi người chịu trách nhiệm
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   return {
     score: conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill),

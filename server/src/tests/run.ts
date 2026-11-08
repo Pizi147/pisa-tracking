@@ -161,6 +161,8 @@ function bocTep<T extends object>(ten: string, m: T): T {
 /** Phép kiểm viết thẳng ở nhóm ≠ 1: vẫn chạy (dựng trạng thái cho mục sau) nhưng không in, không đếm. */
 const imLang = () => NHOM !== 1 && !trongTep;
 
+/* SỔ NGHĨA VỤ: phép kiểm thấy lỗi ghi sổ (bản thật chỉ ghi log để không hỏng thao tác). */
+process.env.PISA_SO_NEM = '1';
 process.env.PISA_DB = SO_NHOM > 1
   ? path.join(ROOT, 'data', `nhom-${NHOM}`, 'test.sqlite')
   : path.join(ROOT, 'data', 'test.sqlite');

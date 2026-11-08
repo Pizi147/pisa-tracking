@@ -122,3 +122,67 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
   }
   return out;
 }
+
+// ------------------------------------------------------------------ ghi sổ
+
+const COT = ['loai', 'kieu', 'khoa', 'chi_nhanh', 'lop', 'hoc_vien', 'nguoi', 's_cheo', 'pc_nhap_sau', 'han_goc', 'han', 'tuan', 'xong_luc', 'nguoi_lam', 'khong_tinh'] as const;
+/* Upsert theo `khoa`: `han_goc` giữ lần đầu (spec 1.5); chỉ ghi khi có cột đổi (đỡ ghi Turso, `cap_nhat` = lần đổi cuối). */
+const UPSERT = `INSERT INTO nghia_vu (${COT.join(', ')}, cap_nhat) VALUES (${COT.map(() => '?').join(', ')}, ?)
+  ON CONFLICT (khoa) DO UPDATE SET ${COT.filter((c) => c !== 'khoa' && c !== 'han_goc').map((c) => `${c} = excluded.${c}`).join(', ')},
+    han_goc = COALESCE(nghia_vu.han_goc, excluded.han_goc), cap_nhat = excluded.cap_nhat
+  WHERE ${COT.filter((c) => c !== 'khoa' && c !== 'han_goc').map((c) => `nghia_vu.${c} IS NOT excluded.${c}`).join(' OR ')}
+    OR (nghia_vu.han_goc IS NULL AND excluded.han_goc IS NOT NULL)`;
+
+function upsert(d: DongNv, luc: string): void {
+  db().prepare(UPSERT).run(d.loai, d.kieu, d.khoa, d.chiNhanh, d.lop, d.hocVien, d.nguoi, d.sCheo ? 1 : 0, d.pcNhapSau ? 1 : 0, d.han, d.han, d.tuan,
+    d.xongLuc, d.nguoiLam, d.khongTinh, luc);
+}
+
+/**
+ * Ghi sổ KHÔNG BAO GIỜ làm hỏng thao tác của người dùng (nhập điểm, đổi lịch…): lỗi tính / ghi sổ chỉ ghi log — đối chiếu đêm (`doiChieuSo`) sửa lại.
+ * Trong phép kiểm (`PISA_SO_NEM=1`) thì ném để thấy lỗi.
+ */
+function anToan(ten: string, fn: () => void): void {
+  try { fn(); } catch (e) {
+    if (process.env.PISA_SO_NEM) throw e;
+    console.error(`[nghia_vu] ${ten} lỗi:`, (e as Error)?.message ?? e);
+  }
+}
+
+/** Tính lại + ghi mọi ô của các lượt; ô không còn (lượt xoá, ô thôi bắt buộc / chưa xếp tuần) → giữ dòng, `khong_tinh = 'da-xoa'`. */
+export function ghiSoLuot(ids: readonly (number | null | undefined)[]): void {
+  const ds = [...new Set(ids.filter((x): x is number => typeof x === 'number'))];
+  if (!ds.length) return;
+  anToan('ghiSoLuot', () => {
+    const luc = new Date().toISOString();
+    const moi = tinhBaiNhieu(ds);
+    const co = new Set<string>();
+    for (const rows of moi.values()) for (const d of rows) { upsert(d, luc); co.add(d.khoa); }
+    for (const r of db().prepare(`SELECT n.khoa FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 'bai:' || j.value || ':' AND n.khoa < 'bai:' || j.value || ';'
+        WHERE n.khong_tinh IS NOT 'da-xoa'`).all(JSON.stringify(ds)) as any[]) {
+      if (!co.has(r.khoa)) db().prepare(`UPDATE nghia_vu SET khong_tinh = 'da-xoa', cap_nhat = ? WHERE khoa = ?`).run(luc, r.khoa);
+    }
+  });
+}
+
+/** Một khoá sổ (`bai:<lượt>:<kỹ năng>`; việc: Task 4). */
+export function ghiSo(khoa: string): void {
+  const m = /^bai:(\d+):/.exec(khoa);
+  if (m) ghiSoLuot([Number(m[1])]);
+}
+
+/**
+ * Đổi phân công / mốc lớp: mọi lượt của lớp + của em từng ghi danh lớp (lớp lúc thi có thể là lớp này). Ghi lại MỌI dòng, không chỉ từ `tuNgay`:
+ * phân công mới cũng lấp người cho ô cũ chưa có phân công (spec 1.2 a, `pcNhapSau`). Upsert chỉ ghi dòng đổi.
+ */
+export function ghiSoTheoLop(lop: number, _tuNgay?: string): void {
+  anToan('ghiSoTheoLop', () => ghiSoLuot((db().prepare(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ?
+      UNION SELECT a.id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id WHERE e.class_id = ?`).all(lop, lop) as any[]).map((r) => r.id)));
+}
+
+/** Đổi trạng thái em (Tạm dừng, Kết thúc, Lưu trữ, Quay lại học…): mọi lượt của em. */
+export function ghiSoHocVien(sids: readonly number[]): void {
+  if (!sids.length) return;
+  anToan('ghiSoHocVien', () => ghiSoLuot((db().prepare(`SELECT id FROM assessment_attempts WHERE student_id IN (SELECT value FROM json_each(?))`)
+    .all(JSON.stringify([...new Set(sids)])) as any[]).map((r) => r.id)));
+}

@@ -1,4 +1,5 @@
 import { capNhatConOCho } from './conOCho.ts';
+import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
@@ -1262,6 +1263,7 @@ export function setSkillDeadline(p: Principal, attemptId: number, skill: string,
     action: date ? 'skill_deadline_set' : 'skill_deadline_cleared', field: skill,
     oldValue: row.deadline_override, newValue: date, reason: reason ?? null, actor: p.userId,
   });
+  ghiSoLuot([attemptId]);   // SỔ NGHĨA VỤ: hạn ô đổi
   return { ok: true };
 }
 

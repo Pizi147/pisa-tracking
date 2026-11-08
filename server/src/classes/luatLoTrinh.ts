@@ -1,4 +1,5 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
+import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
   PERMISSIONS, ROUTE_KHAC, coMt0, mocLoTrinh, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
@@ -895,4 +896,5 @@ export function apDungBaoLuuCaLop(p: Principal, o: { fromClassId: number; ngay: 
     actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: d.sid,
     before: { status: 'active' }, after: { status: 'inactive', date: o.ngay, reason: d.lyDo },
   })));
+  ghiSoHocVien(ids);   // SỔ NGHĨA VỤ: em tạm dừng từ ngày này
 }

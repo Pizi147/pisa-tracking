@@ -119,4 +119,84 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const d = dongL(a.id);
     assert(d.lop === a.class_id && d.nguoi === goc.nguoi, `sau chuyển: ${JSON.stringify(d)} (gốc ${JSON.stringify(goc)})`);
   }));
+
+  // ------------------------------------------------------------------ Task 3 · ghiSo + gắn vào đường ghi BÀI
+  const attempts: any = await import('../fasttrack/attempts.ts');
+  const skillSch: any = await import('../fasttrack/skillSchedule.ts');
+  const classesSvc: any = await import('../classes/classes.ts');
+  const studentsSvc: any = await import('../students/students.ts');
+  const { P } = t as any;
+  const so = (khoa: string) => get('SELECT * FROM nghia_vu WHERE khoa = ?', khoa);
+  /** Ô L chưa nhập của `oL()` + dòng sổ dựng sẵn. */
+  const chuanBi = () => {
+    const a = oL();
+    conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).run(a.id);
+    nv.ghiSoLuot([a.id]);
+    return { a, khoa: nv.khoaBai(a.id, 'listening') };
+  };
+
+  check('NV-GHI · ghiSo upsert một dòng; chạy lặp không đổi; ô không còn (thôi bắt buộc / lượt xoá) → dòng giữ, khong_tinh da-xoa (không DELETE)', () => thu(() => {
+    const { a, khoa } = chuanBi();
+    const d = so(khoa);
+    assert(d && d.loai === 'bai' && d.han && d.han_goc === d.han && d.xong_luc === null, `dòng: ${JSON.stringify(d)}`);
+    nv.ghiSo(khoa);
+    assert(so(khoa).cap_nhat === d.cap_nhat && (conn.prepare('SELECT COUNT(*) n FROM nghia_vu WHERE khoa = ?').get(khoa) as any).n === 1, 'chạy lặp phải không đổi');
+    conn.prepare(`UPDATE attempt_skills SET required = 0 WHERE attempt_id = ? AND skill = 'listening'`).run(a.id);   // ô thôi bắt buộc = gốc không còn
+    nv.ghiSo(khoa);
+    assert(so(khoa)?.khong_tinh === 'da-xoa', `ô không còn: ${JSON.stringify(so(khoa))}`);
+  }));
+
+  check('NV-NHAP · nhập điểm (saveScore) → xong_luc = ngày nhập, nguoi_lam = người nhập; NV-XOA · xoá điểm → xong_luc NULL', () => thu(() => {
+    const { a, khoa } = chuanBi();
+    const han = so(khoa).han;
+    attempts.saveScore(P.admin, a.id, 'listening', { rawScore: 30 }, han);
+    const d = so(khoa);
+    assert(d.xong_luc === han && d.nguoi_lam === P.admin.userId, `sau nhập: ${JSON.stringify(d)}`);
+    attempts.saveScore(P.admin, a.id, 'listening', { rawScore: null, lyDo: 'nhập nhầm' }, han);
+    assert(so(khoa).xong_luc === null, `sau xoá: ${JSON.stringify(so(khoa))}`);
+  }));
+
+  check('NV-PC · đổi phân công L từ ngày X (ghiPhanCong) → ô hạn < X giữ người cũ, ô hạn ≥ X sang người mới', () => thu(() => {
+    const a = oL();
+    nv.ghiSoTheoLop(a.class_id, '2000-01-01');
+    const dong = conn.prepare(`SELECT * FROM nghia_vu WHERE lop = ? AND kieu = 'listening' AND han IS NOT NULL ORDER BY han`).all(a.class_id) as any[];
+    const han = [...new Set(dong.map((d) => d.han))];
+    assert(han.length >= 2, `lớp cần ≥ 2 hạn L khác nhau: ${han.join(', ')}`);
+    const X = han[han.length - 1];
+    const cu = dong[0].nguoi;
+    const moi = get(`SELECT id FROM users WHERE id != ? ORDER BY id LIMIT 1`, cu).id;
+    const slots = (conn.prepare(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`).all(a.class_id) as any[])
+      .map((r) => ({ userId: r.skill === 'listening' && !r.is_core ? moi : r.user_id, skill: r.skill, isCore: !!r.is_core }));
+    classesSvc.ghiPhanCong(P.admin, a.class_id, slots, X);
+    const sau = conn.prepare(`SELECT * FROM nghia_vu WHERE lop = ? AND kieu = 'listening' AND han IS NOT NULL ORDER BY han`).all(a.class_id) as any[];
+    assert(sau.filter((d) => d.han < X).every((d) => d.nguoi === cu), `trước X phải giữ người cũ: ${JSON.stringify(sau.map((d) => [d.han, d.nguoi]))}`);
+    assert(sau.filter((d) => d.han >= X).every((d) => d.nguoi === moi), `từ X phải người mới: ${JSON.stringify(sau.map((d) => [d.han, d.nguoi]))}`);
+  }));
+
+  check('NV-HAN2 · đặt hạn ô hai lần (setSkillDeadline) → han_goc = hạn lần đầu, han = lần cuối; đặt hạn cả lượt (setDeadlineOverride) cũng ghi sổ', () => thu(() => {
+    const { a, khoa } = chuanBi();
+    const goc = so(khoa);
+    const d1 = get(`SELECT date(?, '+20 day') d`, goc.han).d, d2 = get(`SELECT date(?, '+30 day') d`, goc.han).d;
+    skillSch.setSkillDeadline(P.admin, a.id, 'listening', d1, null);
+    skillSch.setSkillDeadline(P.admin, a.id, 'listening', d2, null);
+    assert(so(khoa).han_goc === goc.han && so(khoa).han === d2, `hai lần: ${JSON.stringify(so(khoa))}`);
+    skillSch.setSkillDeadline(P.admin, a.id, 'listening', null, null);
+    const d3 = get(`SELECT date(?, '+40 day') d`, goc.han).d;
+    attempts.setDeadlineOverride(P.admin, a.id, d3, 'thử');
+    assert(so(khoa).han === d3 && so(khoa).han_goc === goc.han, `hạn cả lượt: ${JSON.stringify(so(khoa))}`);
+  }));
+
+  check('NV-DUONG · huỷ lượt → khong_tinh huy; ghi GV chấm Speaking → nguoi; em Lưu trữ trước hạn (setStudentStatus) → nghi-truoc-han', () => thu(() => {
+    const { a, khoa } = chuanBi();
+    const ks = nv.khoaBai(a.id, 'speaking');
+    conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
+    nv.ghiSoLuot([a.id]);
+    const gv = get(`SELECT id FROM users WHERE id != ? ORDER BY id LIMIT 1`, P.admin.userId).id;
+    attempts.saveScore(P.admin, a.id, 'speaking', { band: 6, gvCham: { performerUserId: gv } }, so(ks).han);
+    assert(so(ks).nguoi === gv && so(ks).xong_luc, `GV chấm S: ${JSON.stringify(so(ks))}`);
+    studentsSvc.setStudentStatus(P.admin, a.student_id, 'finished', get(`SELECT date(?, '-1 day') d`, so(khoa).han).d, 'thử');
+    assert(so(khoa).khong_tinh === 'nghi-truoc-han', `nghỉ: ${JSON.stringify(so(khoa))}`);
+    attempts.huyLuot(P.admin, a.id, { lyDo: 'thử huỷ' });
+    assert(so(khoa).khong_tinh === 'huy', `huỷ: ${JSON.stringify(so(khoa))}`);
+  }));
 }

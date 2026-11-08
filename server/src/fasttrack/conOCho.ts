@@ -1,5 +1,6 @@
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import { O_FT_XONG_SQL } from '../../../shared/domain/index.ts';
+import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 
 /**
  * TD7b — CỜ "CÒN Ô CHỜ ĐIỂM" của lượt: `assessment_attempts.o_cho_tu`.
@@ -50,11 +51,14 @@ function capNhat(conn: any, dieuKien: string, args: readonly unknown[]): void {
 export function capNhatConOCho(attemptIds: readonly (number | null | undefined)[]): void {
   const ids = [...new Set(attemptIds.filter((x): x is number => typeof x === 'number'))];
   theoLo(ids, (lo, ph) => capNhat(db(), `a.id IN (${ph})`, lo), THAM_SO_TOI_DA);
+  /* SỔ NGHĨA VỤ: mọi đường ghi điểm / lịch / lượt đã bắt buộc gọi hàm này ở cuối giao dịch — ghi sổ cùng chỗ (spec 2.2). */
+  ghiSoLuot(ids);
 }
 
 /** Mọi lượt của các lớp này — đổi mốc Progress / Final của lớp dời bài cả lớp. */
 export function capNhatConOChoLop(classIds: readonly number[]): void {
   theoLo([...new Set(classIds)], (lo, ph) => capNhat(db(), `a.class_id IN (${ph})`, lo), THAM_SO_TOI_DA);
+  ghiSoLuot((db().prepare(`SELECT id FROM assessment_attempts WHERE class_id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(classIds)])) as any[]).map((r) => r.id));   // SỔ NGHĨA VỤ
 }
 
 /** Lượt mỗi lô khi tính lại cả bảng — mỗi câu UPDATE chạm ≤ chừng này lượt (Turso cắt câu quá nặng). */
