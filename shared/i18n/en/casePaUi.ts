@@ -5,7 +5,6 @@ const soNhieu = (n: unknown, mot: string, nhieu: string) => `${n} ${Number(n) ==
 
 export const EN_CASE_PA_UI = {
   '({recordedBy} nhập hộ)': '(entered by {recordedBy})',
-  'Case học thuật': 'Academic case',
   'Case học thuật · đã xong': 'Academic case · done',
   'Case cần ít nhất 1 PA trước': 'The case needs at least 1 plan before',
   'Case hoàn thành được khi mọi PA đã khép.': 'The case can be closed once every plan is closed.',

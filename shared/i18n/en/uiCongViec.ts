@@ -11,7 +11,6 @@ export const EN_UI_CONG_VIEC = {
   'Lọc theo hạn': 'Filter by due date',
   'Nhập hộ': 'Enter for them',
   'Làm thay': 'Do it for them',
-  'Theo dõi': 'Watching',
   'Em này còn:': 'Also for this student:',
   'Đang xem việc của': 'Viewing tasks of',
   '— chế độ theo dõi.': '— watch mode.',
