@@ -5,7 +5,7 @@
  * chương trình đang chọn, 4 nhóm việc của GV, thứ tự dòng Cần xử lý, luật chọn Điểm đáng chú ý.
  * Không có con số nào được tính ở đây — số luôn đến từ `metricSet` (hợp đồng số liệu luật 1).
  */
-import { deadlineView, kyGhiKetQua, type DeadlineKind } from './display.ts';
+import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
 import { KHOA_CHAM_SPEAKING, laViecChamCheo } from './gopViec.ts';
 
@@ -125,7 +125,8 @@ export const nhanTabCv = (k: string, tvv = false): string =>
   (k === 'cham-cheo' ? t('Bài thi Speaking') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
 
 /**
- * MỤC trong tab (chủ SP 06/11 "mô tả case, phương án, kết quả…"): "Quá hạn" trên cùng, rồi mục theo LOẠI VIỆC, thứ tự `MUC_CV`; mục rỗng ẩn.
+ * MỤC trong tab (chủ SP 06/11 "mô tả case, phương án, kết quả…"): mục theo LOẠI VIỆC, thứ tự `MUC_CV`; mục rỗng ẩn.
+ * AUDIT-UI B4 (chủ SP 08/11): MỘT trục — không còn mục "Quá hạn" riêng; việc quá hạn lên đầu mục của nó (V11).
  * Chấm điểm chia theo loại bài (`kind` của việc Nhập điểm). Loại lạ → "Khác" (không bao giờ mất việc).
  */
 const MUC_CV = [
@@ -159,32 +160,27 @@ export function mucCuaViec(it: { group: string; key: string; kind?: string | nul
 export function dongTab<T extends { studentId: number | null; con?: readonly T[] | null }>(ds: readonly T[], caDong: (it: T) => boolean = () => false): T[] {
   return ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? [...it.con] : [it]));
 }
-export type MucTab<T> = { key: string; label: string; items: T[]; quaHan: boolean };
-/** Chia dòng của một tab: "Quá hạn" (mọi dòng quá hạn, hạn sớm trước) rồi mục theo loại việc (thứ tự `MUC_CV`, trong mục: hôm nay trước, hạn sớm trước). */
+export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "⚠ n quá hạn"). */ quaHan: number };
+/** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4). */
 export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false): MucTab<T>[] {
-  const w = (u: ViecGom['urgency']) => (u === 'today' ? 0 : 1);
+  const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
   const xep = (a: T, b: T) => Number(b.key === KHOA_CHAM_SPEAKING) - Number(a.key === KHOA_CHAM_SPEAKING) || w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999');
-  const qua = dong.filter((x) => x.urgency === 'overdue').sort(xep);
-  const out: MucTab<T>[] = qua.length ? [{ key: 'qua-han', label: t('Quá hạn'), items: qua, quaHan: true }] : [];
+  const out: MucTab<T>[] = [];
   for (const [m, nhan] of MUC_CV) {
-    const ds = dong.filter((x) => x.urgency !== 'overdue' && mucCuaViec(x, tvv) === m).sort(xep);
-    if (ds.length) out.push({ key: m, label: nhan, items: ds, quaHan: false });
+    const ds = dong.filter((x) => mucCuaViec(x, tvv) === m).sort(xep);
+    if (ds.length) out.push({ key: m, label: nhan, items: ds, quaHan: ds.filter((x) => x.urgency === 'overdue').length });
   }
   return out;
 }
 
 /**
- * BADGE TAB (chủ SP 06/11: chỉ số + màu, một badge / tab theo trạng thái gấp nhất): đỏ = số dòng quá hạn · vàng = số dòng gần hạn · trắng = tổng.
- * Gần hạn = MỐC SẴN CÓ `deadlineView().ganHan` (còn ≤ `HAN_GAN_NGAY` = 3 ngày, gồm hôm nay — chip hạn vàng mọi nơi; mockup ghi "hôm nay – 2 ngày").
- * Nhận dòng nhìn thấy (`dongTab`); chỉ đếm dữ liệu đã nạp, không gọi máy chủ.
+ * BADGE TAB — AUDIT-UI B3 (chủ SP 08/11, thay CV-TAB 06/11 "đỏ / vàng / trắng"): MỘT nghĩa như badge menu V13 — số dòng CẦN LÀM NGAY (quá hạn + hạn hôm nay);
+ * đỏ khi có quá hạn, vàng khi chỉ có hạn hôm nay; 0 → không badge. Tổng dòng chỉ ở đầu trang. Nhận dòng nhìn thấy (`dongTab`); dữ liệu đã nạp, không gọi máy chủ.
  */
-export type BadgeTab = { mau: 'do' | 'vang' | 'trang'; so: number; n: number; quaHan: number; ganHan: number };
-export function badgeTab(dong: readonly { group: string; urgency: string; due: string | null }[], homNay: string): BadgeTab {
-  const quaHan = dong.filter((x) => x.urgency === 'overdue').length;
-  const ganHan = dong.filter((x) => x.urgency !== 'overdue' && !!x.due
-    && deadlineView({ kind: LOAI_HAN_CUA_VIEC[x.group] ?? 'viec-van-hanh', due: x.due, today: homNay }).ganHan).length;
-  const n = dong.length;
-  return quaHan ? { mau: 'do', so: quaHan, n, quaHan, ganHan } : ganHan ? { mau: 'vang', so: ganHan, n, quaHan, ganHan } : { mau: 'trang', so: n, n, quaHan, ganHan };
+export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number };
+export function badgeTab(dong: readonly { urgency: string }[]): BadgeTab {
+  const quaHan = dong.filter((x) => x.urgency === 'overdue').length, homNay = dong.filter((x) => x.urgency === 'today').length;
+  return { so: quaHan + homNay, n: dong.length, quaHan, homNay };
 }
 /** Mở trang (chưa chọn tab): tab đầu tiên có việc quá hạn, không có thì tab đầu. */
 export const tabMacDinh = (ds: readonly { key: string; badge: BadgeTab | null }[]): string | null => (ds.find((x) => (x.badge?.quaHan ?? 0) > 0) ?? ds[0])?.key ?? null;
