@@ -106,6 +106,7 @@
 .c-case .t .sos { flex:none; }
 .c-case .t a { font:600 14px/1.35 var(--phong); color:var(--accent); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .c-case .p { font:500 12px var(--phong); color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gap { display:inline-flex; align-items:center; height:20px; padding:0 6px; border-radius:4px; border:1px solid var(--bad-vien); background:var(--bad-nen); color:var(--bad); font:700 12px var(--phong); flex:none; }
 .vien { display:inline-flex; align-items:center; justify-self:start; height:24px; padding:0 10px; border-radius:999px; font:600 13px var(--phong); white-space:nowrap; }
 .vien.lam { background:var(--doing-nen); color:var(--doing); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--doing) 35%, transparent); }
 .vien.can { background:var(--soon-nen); color:var(--soon); box-shadow:inset 0 0 0 1px var(--soon-vien); }
@@ -256,7 +257,7 @@
   <p class="ly-do"><b>Đổi:</b> vạch dọc tách nhóm mốc (đọc ngang không lẫn Progress với Final) · "% tổng" → "%" (đầu nhóm đã ghi mốc) · Target chưa có = "–", KCK chỉ "KCK" như FT (HSL2) · "mới vào W3 SEP" là chữ mờ dưới tên như FT (thay chip viền) · TVV dưới tên cùng hàm FT (chỉ khi khác TVV lớp) · Lộ trình tiếp theo tách hai dòng: hướng (đậm) / lớp đích + mã tuần (mờ), bổ trợ là thẻ nhỏ, chi tiết khi rê · hàng đang mở nền phụ + vạch trái như FT.
   <b>Giữ:</b> ô "✓ / ✗ 18/20" (ODiem ti-le), chip lọc Tất cả · Chưa đạt · Có Case, ⋯ từng dòng, Cách xem / Chọn nhiều trên hàng chip (QL).</p>
   <div class="cap"><figure><figcaption><span class="tr">TRƯỚC</span> · MB FOU 15 · 1440</figcaption><img data-t="fou15-1440" data-w="1440" width="1408" alt="Hồ sơ lớp MB FOU 15 trên web hiện tại, em Lê Hoàng Anh đang mở"></figure></div>
-  <div class="cap"><figure><figcaption><span class="sa">SAU</span> · MB FOU 15 · 1440 · em có Case "Cần làm"</figcaption>
+  <div class="cap"><figure><figcaption><span class="sa">SAU</span> · MB FOU 15 · 1440 · em có Case "Chờ xác nhận"</figcaption>
   <div class="man vung sang" style="width:1408px"><div class="noi-dung">
     <div class="the-bang">
       <div class="thanh"><span class="chip-l dang">Tất cả <b>6</b></span><span class="chip-l">Chưa đạt <b>5</b></span><span class="chip-l">Có Case <b>6</b></span></div>
@@ -281,7 +282,7 @@
                 <span class="c-pa"><span class="t"><svg class="khoa" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg><span>Bổ trợ 2 buổi/tuần</span><button class="nut-i" aria-label="Chi tiết PA">ⓘ</button></span><span class="m">đến Cuối khoá · W2 OCT</span></span>
                 <span class="nguoi"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg>Trần Ngọc Hà</span>
                 <span class="c-viec"><button class="nut nut-nho">Ghi kết quả PA</button><span class="k">kỳ W3 – W4 SEP</span></span><span class="c-han">29/09</span></div>
-              <div class="kc-luoi kc-dong hien"><span class="kn">P</span><span class="c-case"><span class="t"><a href="#">Progress Test - Pronunciation dưới kỳ vọng</a><span class="sos m2">SOS 2</span></span></span><span class="vien can" title="Chờ xác nhận Case">Cần làm</span>
+              <div class="kc-luoi kc-dong hien"><span class="kn">P</span><span class="c-case"><span class="t"><a href="#">Progress Test - Pronunciation dưới kỳ vọng</a><span class="sos m2">SOS 2</span></span></span><span class="vien can" title="Chờ xác nhận Case">Chờ xác nhận</span>
                 <span class="c-pa"><span class="t"><svg class="khoa" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg><span>Bổ trợ 2 buổi/tuần</span><button class="nut-i" aria-label="Chi tiết PA">ⓘ</button></span><span class="m">đến Cuối khoá · W2 OCT</span></span>
                 <span class="nguoi"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg>Trần Ngọc Hà</span>
                 <span class="c-viec"><button class="nut nut-nho">Xác nhận Case</button></span><span class="c-han">18/09</span></div>
@@ -343,7 +344,7 @@
             </div>
             <div class="kc-the">
               <div class="r1"><span class="kn">P</span><span class="c-case"><span class="t"><a href="#">Progress Test - Pronunciation dưới kỳ vọng</a><span class="sos m2">SOS 2</span></span></span></div>
-              <div class="r2"><span class="vien can">Cần làm</span></div>
+              <div class="r2"><span class="vien can" title="Chờ xác nhận Case">Chờ xác nhận</span></div>
               <div class="r2"><span class="c-pa"><span class="t"><svg class="khoa" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg><span>Bổ trợ 2 buổi/tuần</span><button class="nut-i" aria-label="Chi tiết PA">ⓘ</button></span><span class="m">đến Cuối khoá · W2 OCT</span></span></div>
               <div class="r2"><span class="nguoi"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg>Trần Ngọc Hà</span></div>
               <div class="r3"><button class="nut">Xác nhận Case</button><span class="c-han">hạn 18/09</span></div>
@@ -386,12 +387,12 @@
 <section class="khu" id="d">
   <h2><span class="ma-mk">D</span> Trạng thái khác của khung Case</h2>
   <div class="cap">
-    <figure><figcaption>D1 · quá hạn + Chờ QL duyệt + Case không PA (QL / GV)</figcaption>
+    <figure><figcaption>D1 · quá hạn + Chờ QL duyệt + Case không PA + mức Gấp (QL / GV)</figcaption>
     <div class="man vung toi" style="width:1180px"><div class="noi-dung">
       <div class="kc">
         <div class="kc-dau"><p class="muc-h">Case đang mở <span class="dem">3</span></p><span class="phai"><a class="nut nut-nho" href="#">Hồ sơ HV ›</a><button class="nut nut-nho">+ Case</button></span></div>
         <div class="kc-luoi kc-h"><span>Môn</span><span>Case</span><span>Trạng thái</span><span>Phương án</span><span>Phụ trách PA</span><span>Việc tiếp</span><span>Hạn</span></div>
-        <div class="kc-luoi kc-dong"><span class="kn">L</span><span class="c-case"><span class="t"><a href="#">Progress Test - Listening dưới kỳ vọng</a><span class="sos m1">SOS 1</span></span></span><span class="vien can">Cần làm</span>
+        <div class="kc-luoi kc-dong"><span class="kn">L</span><span class="c-case"><span class="t"><a href="#">Progress Test - Listening dưới kỳ vọng</a><span class="sos m1">SOS 1</span></span></span><span class="vien can" title="Chờ xác nhận Case">Chờ xác nhận</span>
           <span class="c-pa"><span class="t"><svg class="khoa" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg><span>Bổ trợ 2 buổi/tuần</span><button class="nut-i" aria-label="Chi tiết PA">ⓘ</button></span><span class="m">đến Cuối khoá · W2 OCT</span></span>
           <span class="nguoi"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg>Trần Ngọc Hà</span>
           <span class="c-viec"><button class="nut nut-nho">Xác nhận Case</button></span><span class="c-han qua">quá hạn 2 ngày</span></div>
@@ -399,7 +400,7 @@
           <span class="c-pa"><span class="t"><svg class="khoa" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg><span>Bổ trợ 2 buổi/tuần</span><button class="nut-i" aria-label="Chi tiết PA">ⓘ</button></span><span class="m">đến Cuối khoá · W2 OCT</span></span>
           <span class="nguoi"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg>Trần Ngọc Hà</span>
           <span class="c-viec"><span class="chu">Chờ Quản lý duyệt</span></span><span class="c-han rong">–</span></div>
-        <div class="kc-luoi kc-dong"><span class="kn">R</span><span class="c-case"><span class="t"><a href="#">Progress Test - Reading dưới kỳ vọng</a><span class="sos m3">SOS 3</span></span><span class="p">Từ vựng / ngữ pháp</span></span><span class="vien lam">Đang làm</span>
+        <div class="kc-luoi kc-dong"><span class="kn">R</span><span class="c-case"><span class="t"><a href="#">Progress Test - Reading dưới kỳ vọng</a><span class="sos m3">SOS 3</span><span class="gap hien" title="Mức: Gấp">⚠ Gấp</span></span><span class="p">Từ vựng / ngữ pháp</span></span><span class="vien lam">Đang làm</span>
           <span class="c-pa"><span class="t" style="cursor:default"><span style="text-decoration:none;color:var(--text-faint)">Chưa có PA</span></span></span>
           <span class="nguoi" style="color:var(--text-faint)">–</span>
           <span class="c-viec"><button class="nut nut-nho">Thêm PA</button></span><span class="c-han qua">quá hạn 18 ngày</span></div>
@@ -413,7 +414,7 @@
         <div class="kc-luoi doc kc-dong"><span class="kn">G+V</span><span class="c-case"><span class="t"><a href="#">G+V không đạt</a><span class="sos m2">SOS 2</span></span></span><span class="vien lam">Đang làm</span>
           <span class="c-pa"><span class="t"><svg class="khoa" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg><span>Bổ trợ 2 buổi/tuần</span><button class="nut-i" aria-label="Chi tiết PA">ⓘ</button></span><span class="m">đến Cuối khoá · W2 OCT</span></span>
           <span class="nguoi"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg>Trần Ngọc Hà</span></div>
-        <div class="kc-luoi doc kc-dong"><span class="kn">P</span><span class="c-case"><span class="t"><a href="#">Progress Test - Pronunciation dưới kỳ vọng</a><span class="sos m2">SOS 2</span></span></span><span class="vien can">Cần làm</span>
+        <div class="kc-luoi doc kc-dong"><span class="kn">P</span><span class="c-case"><span class="t"><a href="#">Progress Test - Pronunciation dưới kỳ vọng</a><span class="sos m2">SOS 2</span></span></span><span class="vien can" title="Chờ xác nhận Case">Chờ xác nhận</span>
           <span class="c-pa"><span class="t"><svg class="khoa" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg><span>Bổ trợ 2 buổi/tuần</span><button class="nut-i" aria-label="Chi tiết PA">ⓘ</button></span><span class="m">đến Cuối khoá · W2 OCT</span></span>
           <span class="nguoi"><svg viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg>Trần Ngọc Hà</span></div>
       </div>
@@ -480,7 +481,7 @@
     </tbody>
   </table>
   <p class="ghi" style="margin:0"><b>Dòng đọc Turso:</b> không thêm request. Khung dùng đúng <code>/classes/:id/can-ho-tro</code> đang đọc một lần khi mở em đầu tiên; PA ngắn / hộp chi tiết tách từ <code>pas[].ten</code>, <code>mocChu</code> đã có. Mốc "27/09" → mã tuần bằng <code>tuanLich</code> (luật thời gian 30/09).<br>
-  <b>Đọc màn:</b> nút việc mang tên đủ ("Ghi kết quả PA – Reading") vì nhiều hàng cùng chữ; ⓘ = "Chi tiết PA – Reading".<br><b>[XM] hỏi PTA:</b> (1) nhãn viên lấy từ <code>NhanTrangThai</code> hiện có ("Đang làm / Cần làm / Chờ duyệt") — giữ tên, chữ đủ ở rê; (2) "nguyên nhân · mức" (vd "Từ vựng · Bình thường") — SAU chỉ giữ nguyên nhân dưới tên Case, mức đưa vào hộp rê.</p>
+  <b>Đọc màn:</b> nút việc mang tên đủ ("Ghi kết quả PA – Reading") vì nhiều hàng cùng chữ; ⓘ = "Chi tiết PA – Reading".<br><b>[XM] PTA đã trả lời 08/11:</b> (1) viên dùng đúng tên trạng thái FT / hồ sơ HV dùng — Case chờ xác nhận ghi "Chờ xác nhận" (một khái niệm một tên); (2) mức "Bình thường" chỉ ở hộp ⓘ; mức "Gấp" hiện ngay trên dòng — chip "⚠ Gấp" cạnh tên Case (D1 hàng R).</p>
 </section>
 
 </div>

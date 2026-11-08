@@ -11,7 +11,7 @@ Tệp: `thiet-ke/2026-11-08-hsl-thuong.html` (mở bằng máy chủ tĩnh ở t
 | "Trường thông tin hơi chán" | Đạt — tách trường: viên trạng thái · PA một dòng ngắn (chi tiết khi rê) · người tách cột · việc là nút · hạn cột phải; bỏ chuỗi 5–6 trường nối "·", bỏ lặp "đến Cuối khoá" |
 | FT nâng cấp gì thì lớp thường đồng bộ | Đạt — khu E liệt kê 15 mục: đồng bộ (KCK, mới vào, TVV, hàng mở, tách trường, hạn, thẻ 375, B11) / khác vì workflow (chip lọc, dải mở, Kết quả / Ngày thi, tiêu chí W/S) |
 | Case theo kỹ năng | Đạt — cột "Môn" (tên môn của chương trình: L R G+V P) |
-| Trạng thái là viên | Đạt — `NhanTrangThai` giữ tên, đổi dáng thành viên (chữ + màu, không chỉ màu) |
+| Trạng thái là viên | Đạt — tên trạng thái như FT / hồ sơ HV ("Đang làm", "Chờ xác nhận", "Chờ duyệt"), dáng viên (chữ + màu, không chỉ màu) |
 | PA một dòng ngắn, chi tiết khi rê / mở | Đạt — đoạn đầu tên PA + dòng phụ mốc mã tuần; nút ⓘ mở hộp nhỏ đủ đoạn (A hàng R, C 375) |
 | Việc + hạn ở cột phải | Đạt |
 | Nút "Hồ sơ HV ›" / "+ Case" | Đạt — giữ, đầu khối |
@@ -21,11 +21,11 @@ Tệp: `thiet-ke/2026-11-08-hsl-thuong.html` (mở bằng máy chủ tĩnh ở t
 | GIỮ thao tác (⋯, Lộ trình, nhập điểm, + Case…) | Đạt — khu F, không mất thao tác |
 | Dòng đọc Turso | Không thêm request (khu F) |
 
-## Câu hỏi [XM] cho PTA
+## [XM] — PTA trả lời 08/11 (đã sửa mockup)
 
-1. Nhãn viên giữ chữ `NhanTrangThai` hiện có ("Đang làm / Cần làm / Chờ duyệt"), chữ đủ ở rê — hay đổi "Cần làm" thành "Chờ xác nhận"?
-2. "nguyên nhân · mức" (vd "Từ vựng · Bình thường"): SAU chỉ giữ nguyên nhân dưới tên Case, mức vào hộp rê — được không?
-3. Tên Case lớp thường dài ("Progress Test - Pronunciation dưới kỳ vọng"): giữ nguyên, kẹp 2 dòng — không tự rút gọn dữ liệu.
+1. Viên trạng thái dùng đúng tên FT / hồ sơ HV dùng cho cùng trạng thái: Case chờ xác nhận → "Chờ xác nhận" (không "Cần làm").
+2. Mức "Bình thường" chỉ trong hộp ⓘ; mức "Gấp" hiện ngay trên dòng — chip nhỏ "⚠ Gấp" cạnh tên Case (D1 hàng R).
+3. Tên Case lớp thường dài: giữ nguyên dữ liệu, kẹp 2 dòng (375: 3 dòng).
 
 ## Critique (cổng chất lượng 28/10)
 
