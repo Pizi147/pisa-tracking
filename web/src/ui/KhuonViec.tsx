@@ -95,7 +95,7 @@ export function dauViec({ han, em, lop, ngCanh }: {
   han?: ReactNode; em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: ReactNode;
 }): { han?: ReactNode; dong2: ReactNode[]; loai: string } {
   return {
-    han, loai: t('VIỆC'),   // M6 6b-1: panel việc khai nhãn loại — khung không đoán theo `dau`
+    han, loai: t('Việc'),   // M6 6b-1: panel việc khai nhãn loại — khung không đoán theo `dau`
     dong2: [
       em ? <Link className="font-bold text-slate-100 no-underline hover:underline max-sm:-my-3 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(em.id)}>{em.ten}</Link> : null,
       lop ?? null, ngCanh ?? null,

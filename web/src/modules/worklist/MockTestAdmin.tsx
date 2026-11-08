@@ -13,7 +13,7 @@ const So = ({ to, n }: { to: string; n: number }) => (n > 0 ? <Link to={to} clas
 const ten = (chu: string, n: number) => (n > 0 ? `${chu} ›` : chu);
 
 const GV_TRE_ADMIN = {
-  loai: t('SỐ LIỆU · MOCK TEST'), theoGv: true, trong: t('Không GV nào chấm quá hạn'),
+  loai: t('Số liệu · Mock Test'), theoGv: true, trong: t('Không GV nào chấm quá hạn'),
   cachTinh: t('Bài = ô kỹ năng còn trống của em đã thi (W1, W2 tính riêng), đã qua hạn chấm. Cùng tập với khối "GV chấm quá hạn" và ô "quá hạn" ở Tổng quan.'),
 };
 

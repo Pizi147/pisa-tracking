@@ -24,8 +24,8 @@ export const EN_BAN_GIAO_GV = {
   /* web */
   'Bàn giao {lop} · {mon} cho {ten}': 'Handover {lop} · {mon} to {ten}',
   'Bàn giao {lop} · {mon} từ {ten}': 'Handover {lop} · {mon} from {ten}',
-  'VIỆC · BÀN GIAO': 'TASK · HANDOVER',
-  'BÀN GIAO · ĐỌC': 'HANDOVER · READ',
+  'Việc · Bàn giao': 'Task · handover',
+  'Bàn giao · đọc': 'Handover · read',
   '{a}/{b} em đủ góp ý': '{a}/{b} students complete',
   'hiệu lực {tuan}': 'effective {tuan}',
   'xác nhận {ngay} bởi {ten}': 'confirmed {ngay} by {ten}',

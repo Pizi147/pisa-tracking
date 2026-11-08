@@ -123,7 +123,7 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
     .sort((a, b) => a.due!.localeCompare(b.due!))[0];
   const l = data?.luot;
   const dau = {
-    loai: t('HỌC VIÊN'),
+    loai: t('Học viên'),
     tieu: (
       <>
         <Link className="min-w-0 text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-[11px] max-sm:py-[11px]" to={duongHoSoHocVien(studentId)}>{ten}</Link>
