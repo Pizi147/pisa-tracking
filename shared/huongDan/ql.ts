@@ -8,6 +8,7 @@ import { HD_GV } from './gv.ts';
 import type { HuongDan, MucHd } from './kieu.ts';
 
 const CV = '/cong-viec';
+const DUYET = '/cong-viec?nhom=duyet';
 const HV = '/hoc-vien';
 const TEST = '/test/lich';
 const KH = '/test/ke-hoach';
@@ -25,9 +26,9 @@ export const HD_QL: HuongDan = {
     /* ---------------------------------------------------------------- Duyệt */
     {
       id: 'duyet', ten: 'Duyệt yêu cầu, đề xuất PA, chuyển lớp, Ý thức', nhom: 'duyet',
-      loiChinh: { man: 'cong-viec', chu: 'Công việc › Chờ bạn duyệt', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Nhóm <b>Chờ bạn duyệt</b> ở đầu — bấm dòng để duyệt.' } },
-      loiTat: ['tong-quan', 'cho-duyet', 'ho-so-hv'], tatThem: ['Thông báo'], cung: 'mở cùng panel duyệt.',
-      buoc: ['Mở <b>Công việc</b>, nhóm <b>Chờ bạn duyệt</b>; quá hạn xếp trước.', 'Bấm dòng: panel mở bên phải, thẻ ghi "Nếu duyệt: …".',
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Chờ bạn duyệt', duong: CV, chi: { hd: 'cd-dong', duong: DUYET, chu: 'Tab <b>Chờ bạn duyệt</b> — bấm dòng để duyệt.' } },
+      loiTat: ['tong-quan', 'ho-so-hv'], tatThem: ['Thông báo'], cung: 'mở cùng panel duyệt.',
+      buoc: ['Mở <b>Công việc</b>, tab <b>Chờ bạn duyệt</b>; quá hạn xếp trước.', 'Bấm dòng: panel mở bên phải, thẻ ghi "Nếu duyệt: …".',
         '<b>Duyệt</b> (<b>Duyệt…</b> khi cần chọn thêm) hoặc <b>Từ chối…</b> kèm lý do; <b>Xin ý kiến</b>: <b>Trả lời…</b>.',
         'Ý thức: duyệt xong GVCN bấm <b>Đã thực hiện</b>; thẻ <b>Báo QL</b> chỉ để biết.'],
       tuKhac: ['duyệt', 'từ chối', 'đề xuất', 'xin ý kiến', 'xin xoá', 'ý thức', 'wl 3', 'dời lịch', 'approve', 'reject', 'request'],
@@ -335,20 +336,15 @@ export const HD_QL: HuongDan = {
       muc: [{ id: 'nd-go', viec: 'sua-diem', ten: 'Nhập điểm, sửa điểm một lớp', buoc: ['Gõ điểm; Enter sang ô còn nhập kế.', 'Em vắng: gõ <b>-</b>.', 'Sửa hoặc xoá một điểm đã có: bấm ô, ghi <b>Lý do sửa</b> (chỉ QL).'] }],
     },
     {
-      id: 'cho-duyet', ten: 'Hộp duyệt', duong: ['/cong-viec/cho-duyet'],
-      dangO: { cau: 'Thẻ cần bạn quyết, thẻ để biết, thẻ đã xử lý.', truoc: { chu: 'Tổng quan', duong: '/' } },
-      muc: [
-        { id: 'ql-cd-loc', viec: 'duyet', ten: 'Duyệt yêu cầu, đề xuất PA, chuyển lớp, Ý thức', buoc: ['<b>Chờ duyệt</b> · <b>Báo QL</b> (để biết) · <b>Đã xử lý (30 ngày)</b>; loại: <b>Tất cả · Học thuật · Ý thức · Dời lịch Test · Thông tin HV</b>.',
-          '<b>Duyệt</b> / <b>Duyệt…</b> · <b>Từ chối…</b> (lý do bắt buộc) · <b>Mở</b>; <b>Xin ý kiến</b>: <b>Trả lời…</b> hoặc <b>+ Thêm PA</b>.', 'Đã xử lý: <b>Huỷ quyết định</b> · <b>Sửa trả lời…</b>.'],
-          chi: { hd: 'cd-loc', duong: '/cong-viec/cho-duyet', chu: 'Chọn trạng thái và loại thẻ ở đây.' } },
-        { id: 'ql-cd-nhieu', ten: 'Duyệt nhiều', buoc: ['Đề xuất PA, Dời lịch Test lần 2: đánh dấu ô ở thẻ cùng loại.', '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.'] },
-      ],
-    },
-    {
       id: 'cong-viec', ten: 'Công việc', duong: [CV],
       dangO: { cau: 'Mọi việc của bạn và của GV; Chờ bạn duyệt ở đầu.', truoc: { chu: 'Tổng quan', duong: '/' } },
       khongLam: [DEN_KH, { ten: 'Tạo, sửa, xoá tài khoản', cua: 'việc của Quản trị' }],
       muc: [
+        /* AUDIT-UI B6 (chủ SP 08/11): Hộp duyệt = tab "Chờ bạn duyệt" có hàng lọc — trang Chờ duyệt riêng đã bỏ. */
+        { id: 'ql-cd-loc', viec: 'duyet', ten: 'Lọc yêu cầu chờ duyệt', buoc: ['Tab <b>Chờ bạn duyệt</b>, hàng lọc: <b>Tất cả · Học thuật · Ý thức · Dời lịch Test · Thông tin HV</b> · <b>Báo QL</b> (để biết) · <b>Đã xử lý · 30 ngày</b> · <b>Lớp ▾</b>.',
+          '<b>Duyệt</b> / <b>Duyệt…</b> · <b>Từ chối…</b> (lý do bắt buộc) · <b>Mở</b>; <b>Xin ý kiến</b>: <b>Trả lời…</b> hoặc <b>+ Thêm PA</b>.', 'Đã xử lý: bấm dòng › <b>Huỷ quyết định</b> · <b>Sửa trả lời…</b>.'],
+          chi: { hd: 'cd-loc', duong: DUYET, chu: 'Chọn loại yêu cầu, Báo QL, Đã xử lý ở đây.' } },
+        { id: 'ql-cd-nhieu', ten: 'Duyệt nhiều', buoc: ['Đề xuất PA, Dời lịch Test lần 2: đánh dấu ô ở thẻ cùng loại.', '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.'] },
         { id: 'ql-cv-cua-gv', ten: 'Việc của GV', buoc: ['<b>Của tôi · Của GV · Tất cả</b>; ô <b>▾</b> chọn một GV.', '<b>Việc quản lý</b> cuối (gập) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Họp đơn vị ›</b>.'],
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Chọn việc của ai, lọc quá hạn ở đây.' } },
         { id: 'cv-nhap-ho', viec: 'nhap-ho', ten: 'Nhập hộ bài quá hạn', buoc: ['Chọn <b>Của GV</b>, nhóm <b>Chấm điểm</b>: dòng quá hạn có ⚠.', 'Bấm <b>Nhập hộ</b>, gõ điểm; em vắng gõ <b>-</b>.'] },

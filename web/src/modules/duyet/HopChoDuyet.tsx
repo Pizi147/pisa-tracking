@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, Empty, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { lucNgan } from '../../ui/LichSuThayDoi.tsx';
@@ -12,7 +13,6 @@ import { DongDiem } from '../../ui/SoLieu.tsx';
 import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { BAC_1, IconNhom, KeBac2, NET_CAY, NguoiGiu, ThePhu, chuDau } from '../congViec/DanhSachViec.tsx';
@@ -49,7 +49,9 @@ export function useTheNhanManh(ds: TheYeuCauDto[] | undefined): number | null {
  * Dưới hàng lọc: danh sách khối em (V8-CV) · panel duyệt ở cột phải (`?the=`). Thẻ quá hạn đứng đầu (máy chủ xếp).
  * Duyệt hàng loạt (PR-GVb D01/Q-B): chỉ ở Chờ duyệt, cùng MỘT loại `hangLoat`, tối đa `TRAN_HANG_LOAT`; kết quả một câu.
  */
-export function HopChoDuyet({ branchId, khuPanel }: {
+export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
+  /** AUDIT-UI B6: ô hàng lọc hết bề ngang dưới hàng tab của Công việc (không có → vẽ ngay trên danh sách). */
+  khuLoc?: HTMLElement | null;
   /** V8-CV: cột panel phải của Công việc — panel duyệt (`?the=`) vẽ vào đây, cùng chỗ panel việc. */
   khuPanel?: HTMLElement | null;
   /** SL1 (A7-01): chi nhánh của Công việc — số trên hàng lọc và thẻ cùng một phạm vi. `null` = mọi chi nhánh trong quyền. */
@@ -249,9 +251,8 @@ export function HopChoDuyet({ branchId, khuPanel }: {
     return [...m].sort((a, b) => a[1].localeCompare(b[1], 'vi', { numeric: true }));
   }, [ds, lopId, data]);
   const xemDaXuLy = () => chonLoc('da-xu-ly', null);
-  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
-  return (
-    <div className="space-y-3">
+  const hangLoc = (
+    <>
       {/* AUDIT-UI B6 (mockup `.hang-loc`): một hàng chip — phân loại phải quyết · vạch · Báo QL · Đã xử lý · 30 ngày · Lớp ▾. Chip bật = nền nhấn nhạt + viền nhấn. */}
       <div role="group" aria-label={t('Lọc yêu cầu')} className="flex flex-wrap items-center gap-2" data-hd="cd-loc">
         {[{ key: 'tat-ca' as KhoaChip, nhan: t('Tất cả') }, ...PHAN_LOAI_CAN_QUYET.map((k) => ({ key: k as KhoaChip, nhan: PHAN_LOAI_LABEL[k] }))].map((c) => (
@@ -276,6 +277,12 @@ export function HopChoDuyet({ branchId, khuPanel }: {
           </button>
         )}
       </div>
+    </>
+  );
+  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
+  return (
+    <div className="space-y-3">
+      {khuLoc ? createPortal(hangLoc, khuLoc) : hangLoc}
       <section id="nhom-cho-duyet" className="card overflow-clip p-0" aria-label={t('Chờ bạn duyệt')}>
         <h3 className="m-0 flex min-h-[38px] items-center gap-2 px-4 py-[9px] text-[13px] font-bold" style={{ background: 'var(--surface-2)' }}>
           {t('{n} yêu cầu', { n: ds.length })}

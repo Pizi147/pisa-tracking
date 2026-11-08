@@ -90,7 +90,8 @@ export function HoTroHocVienTab() {
   const { state: stLs } = useLocation();
   const [params, setParams] = useSearchParams();
   const macDinh = useChiNhanhMacDinh();
-  const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
+  /* AUDIT-UI B6: `cn=tat-ca` (link "n yêu cầu ở chi nhánh khác · Xem ›", đường cũ của Hộp duyệt) = mọi chi nhánh trong quyền. */
+  const branchId = params.get('cn') === 'tat-ca' ? null : params.get('cn') ? Number(params.get('cn')) : macDinh;
   /* PR-OV2a: Admin (`nav.workChamDiem`) xem việc Chấm điểm của GV như Quản lý, chỉ nhóm đó (OV-12h bỏ Nhắc). */
   const chiChamDiem = !!session?.nav?.workChamDiem;
   const laQuanLy = !!session?.nav?.workOps || chiChamDiem;
@@ -373,6 +374,8 @@ export function HoTroHocVienTab() {
   ];
   /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ đọc); SUA-LOI-CV: đang xem việc MỘT GV thì không có (yêu cầu là của người xem). */
   const [khuDuyet, setKhuDuyet] = useState<HTMLDivElement | null>(null);
+  /* AUDIT-UI B6 (mockup `.hang-loc`): hàng lọc Hộp duyệt hết bề ngang ngay dưới hàng tab — `HopChoDuyet` vẽ vào ô này. */
+  const [khuLocDuyet, setKhuLocDuyet] = useState<HTMLDivElement | null>(null);
   /* U01 #1: Lọc thêm — số bộ lọc đang bật trong đó (Một GV · khung · chi nhánh khác mặc định); đang bật thì mở sẵn. */
   const soLocThem = (typeof nguoi === 'number' ? 1 : 0) + (khung !== 'tat-ca' ? 1 : 0) + (!laGvThuong && params.get('cn') ? 1 : 0);   // GV: `cn` là dải chi nhánh, không nằm trong Lọc thêm
   const [moLocThem, setMoLocThem] = useState(soLocThem > 0);
@@ -514,6 +517,7 @@ export function HoTroHocVienTab() {
         {data && !data.scopeEmpty && tabs.length > 0 && <HangTab tabs={tabs} dang={tab} idPanel="cv-tab-than" onChon={(k) => {
           const next = new URLSearchParams(params); next.set('nhom', k); next.delete('loai'); next.delete('the'); setParams(next, { replace: true });
         }} />}
+        {tab === 'duyet' && <div ref={setKhuLocDuyet} />}
       </div>
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
@@ -530,17 +534,8 @@ export function HoTroHocVienTab() {
           {error && <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>}
           {!error && loading && !data && <Card><Skeleton rows={8} /></Card>}
           {data && data.scopeEmpty && <Card><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></Card>}
-          {/* V8-CV → CV-TAB: "Chờ bạn duyệt" là một tab — thẻ chờ (bấm chữ dòng = panel duyệt bên phải); ô tích chỉ loại duyệt nhiều được (ⓘ). */}
-          {tab === 'duyet' && (
-            <section id="nhom-cho-duyet" className="card overflow-clip p-0" aria-label={t('Chờ bạn duyệt')}>
-              <h3 className="m-0 flex min-h-[38px] items-center gap-2 px-4 py-[9px] text-[13px] font-bold" style={{ background: 'var(--surface-2)' }}>
-                {t('{n} yêu cầu', { n: demDuyet?.cho ?? 0 })}
-                {!!demDuyet?.quaHan && <span className="font-semibold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: demDuyet.quaHan })}</span>}
-                <NutLuat label={t('Duyệt nhiều')}>{t('Đánh dấu ô ở dòng để duyệt nhiều yêu cầu cùng loại một lần.')}</NutLuat>
-              </h3>
-              <HopChoDuyet gon branchId={branchId} khuPanel={khuDuyet} />
-            </section>
-          )}
+          {/* V8-CV → CV-TAB → AUDIT-UI B6: "Chờ bạn duyệt" là một tab VÀ là Hộp duyệt — hàng lọc (loại · Báo QL · Đã xử lý · Lớp) + thẻ chờ (bấm chữ dòng = panel duyệt bên phải). */}
+          {tab === 'duyet' && <HopChoDuyet branchId={branchId} khuPanel={khuDuyet} khuLoc={khuLocDuyet} />}
           {/* RA-LOI-0711i: tab đang hiện chính danh sách bài chấm chéo thì không ghi "không có việc" ngay trên danh sách đó. */}
           {chiCc && tab !== 'duyet' && !trongTab.some(laViecChamCheo) && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
           {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length === 0 && !(tab === 'van-hanh' && coVanHanh) && (
