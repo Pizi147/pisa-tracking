@@ -74,7 +74,8 @@ export function ChiSo({ ten, tenNgan, giaTri, mau, ky, luat }: { ten: string; /*
     <OChiSo className="ca-o max-sm:p-3" ten={<span className="inline-flex items-center gap-1.5" title={ky}>{chu}{luat && <NutLuat label={ten}>{luat}</NutLuat>}</span>} giaTri={giaTri} mau={mau} />
   );
 }
-export const DaiChiSo = ({ children }: { children: ReactNode }) => <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">{children}</div>;
+/** `nam`: 5 ô một hàng ở ≥ 1024 (CX — AUDIT-UI B2 đồng bộ: mỗi ô một số). */
+export const DaiChiSo = ({ children, nam }: { children: ReactNode; nam?: boolean }) => <div data-hd="tq-tom-tat" className={`grid grid-cols-2 gap-2 sm:gap-3 ${nam ? 'lg:grid-cols-5' : 'lg:grid-cols-4'} max-lg:[&>*:last-child:nth-child(odd)]:col-span-2`}>{children}</div>;
 
 /** % to gạch chân bấm mở panel đúng tập; mẫu 0 → "Chưa có dữ liệu" (T19), không "0 %". */
 export function PhanTram({ x, nguon, tieuDe, gon, vung, className }: { x: TyLeV5 | null; nguon: string; tieuDe: string; /** Ô bảng: mẫu 0 → "—" (chữ đầy đủ cho trình đọc màn). */ gon?: boolean; vung?: string;
@@ -93,7 +94,6 @@ export const ChuaCoDl = () => (
 const SoDen = ({ n, to, className = '' }: { n: number; to: string; className?: string }) => (n > 0 ? <Link to={to} className={`${VUNG_BAM_SO} ${LOP_OSO} ${className}`}>{n}</Link> : <span className="font-normal text-faint">{n}</span>);   // AUDIT-UI C2: số 0 mờ (text-faint 400) để số thật nổi
 /** O-TQ-BAM: ô đổi trang → tên thêm "›" khi số chính bấm được (> 0). */
 const tenDen = (ten: string, n: number) => (n > 0 ? `${ten} ›` : ten);   // không ngắt: 375 xuống dòng thì "›" đi cùng chữ cuối
-const Cham = () => <span className="font-normal text-slate-500" aria-hidden>·</span>;
 
 /**
  * SOS MỘT KIỂU (mockup v8: Lớp cần chú ý, Lớp tôi chủ nhiệm, đầu Hồ sơ lớp): chip mức (MAU-MUC) + ô số HV ngoài chip + "HV" chữ phụ, mỗi mức một cụm
@@ -409,17 +409,16 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
   return (
     <>
       {/* Chủ SP 23/10: CX xem điểm và tình trạng HV — kết quả trước, việc phối hợp sau. */}
-      <DaiChiSo>
+      <DaiChiSo nam>
         <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? mauDatMt(d.datMt) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.thiThat} nguon={qBc(d, '&o=dat-target-thi')} tieuDe={t('Đạt Target thi thật')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.thiThat, t('HV')) : t('chỉ Fast Track')} />
         <ChiSo ten={tenDen(t('HV SOS 2–3'), sos23)} ky={t('hiện tại')} giaTri={<SoDen n={sos23} to={`/hoc-vien?view=sos${cn}`} className="so-chinh" />} mau={t('HV')} />
-        {/* TQ-GON (M5): cùng tên ô với TVV "Chờ KQ · Lộ trình tiếp"; (M3) dòng phụ chỉ đơn vị — tên ô đã nói hai số là gì. */}
-        {/* O-TQ-BAM: cả ô → Lộ trình tiếp (số sau); số "Chờ KQ" giữ đích riêng (lọc Đã thi). */}
-        <ChiSo ten={tenDen(t('Chờ KQ · Lộ trình tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} ky={t('hiện tại')}
-          giaTri={hv.data ? <span className="inline-flex items-baseline gap-2"><SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} /><Cham /><SoDen n={hv.data.dem['cho-buoc-tiep']} to={den('cho-buoc-tiep')} className="so-chinh" /></span> : '…'}
-          mau={t('HV')} />
+        {/* AUDIT-UI B2 đồng bộ (PTA 08/11): tách ô hai số "Chờ KQ · Lộ trình tiếp" thành hai ô như TVV — mỗi ô một số, cùng đích đổi trang cũ. */}
+        <ChiSo ten={tenDen(t('Chờ KQ thi thật'), hv.data?.dem['da-thi'] ?? 0)} ky={t('hiện tại')} giaTri={hv.data ? <SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} className="so-chinh" /> : '…'} mau={t('HV')} />
+        <ChiSo ten={tenDen(t('Chưa chốt lộ trình tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} tenNgan={tenDen(t('Chưa chốt LT tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} ky={t('hiện tại')}
+          giaTri={hv.data ? <SoDen n={hv.data.dem['cho-buoc-tiep']} to={den('cho-buoc-tiep')} className="so-chinh" /> : '…'} mau={t('HV')} />
       </DaiChiSo>
       {d.chiNhanh ? <TheoChiNhanh d={d} cx onChiNhanh={onChiNhanh} /> : <LopCanChuY d={d} />}
     </>
