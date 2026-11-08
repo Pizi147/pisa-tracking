@@ -7,8 +7,8 @@ import {
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
-import { Card, Empty, ErrorState, LOP_NHAN, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
-import { CHIP_TRON, ChipKy, QuaHan } from '../../ui/Nhan.tsx';
+import { Card, Empty, ErrorState, LOP_NHAN, Skeleton } from '../../ui/ui.tsx';
+import { CHIP_TRON, CHIP_VUONG, ChipKy, QuaHan } from '../../ui/Nhan.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -543,28 +543,32 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
   const nhom = (['qua-han', 'can-lam', 'cho-duyet', 'dang-lam'] as const).map((tt) => ({ tt, n: ds.filter((c) => c.trangThai.t === tt).length })).filter((x) => x.n > 0);
   const truoc = ds.filter((c) => c.viecTiep).slice(0, CASE_TRUOC);
   return (
-    <Card title={t('Case đang phụ trách')}
-      action={linkPa ? <Link to={linkPa.den} className="link whitespace-nowrap py-2 -my-2 text-xs">{linkPa.chu}</Link> : undefined}>
+    /* B12 + PTA 08/11 ([XM] #1250, mockup sát): đầu thẻ = tiêu đề · ô đếm "n Case" · chip đếm theo trạng thái (+ Case có việc quá hạn) bên phải · link Hiệu quả PA;
+       bỏ hàng số to — mọi số giữ nguyên, vẫn bấm mở panel đúng nhóm (`OSo`). */
+    <Card title={<span className="inline-flex flex-wrap items-center gap-2">{t('Case đang phụ trách')}
+        {ds.length > 0 && <span className={`${CHIP_VUONG} gap-1 font-semibold text-slate-100`} style={{ borderColor: 'var(--line-strong)' }}>
+          <OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={`${vung} font-bold`} /> Case</span>}</span>}
+      action={(nhom.length > 0 || ds.some((c) => c.quaHan) || linkPa) ? (
+        <span className="flex flex-wrap items-center gap-2">
+          {nhom.map((x) => (
+            <span key={x.tt} className={`${CHIP_TRON} gap-1.5 bg-muted-bg ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-300'}`}>
+              {x.tt === 'qua-han' ? `⚠ ${dich(NHAN_TRANG_THAI[x.tt])}` : dich(NHAN_TRANG_THAI[x.tt])}
+              <OSo giaTri={x.n} tieuDe={`Case · ${dich(NHAN_TRANG_THAI[x.tt])}`} nguon={nguon(id, `cot=case-mo&tt=${x.tt}`)} className={`${vung} font-bold ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-100'}`} />
+            </span>
+          ))}
+          {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. AUDIT-UI GV2: tên đủ để không lẫn với «⚠ Quá hạn». */}
+          {ds.some((c) => c.quaHan) && (
+            <span className={`${CHIP_TRON} gap-1.5 bg-muted-bg text-bad`}>
+              ⚠ {t('Case có việc quá hạn')}
+              <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
+            </span>
+          )}
+          {linkPa && <Link to={linkPa.den} className="link ml-1 whitespace-nowrap py-2 -my-2 text-xs">{linkPa.chu}</Link>}
+        </span>
+      ) : undefined}
+      bodyClass={ds.length ? 'px-4 pb-4 pt-3' : 'p-4'}>
       {!ds.length ? <Empty title={t('Không có Case nào đang mở.')} /> : (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-2xl font-bold tabular-nums text-slate-100"><OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} /></span>
-            <span className="mr-2 text-sm text-slate-400">Case</span>
-            {nhom.map((x) => (
-              <span key={x.tt} className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px]" style={{ borderColor: 'var(--line-strong)' }}>
-                <NhanTrangThai t={x.tt} />
-                <OSo giaTri={x.n} tieuDe={`Case · ${dich(NHAN_TRANG_THAI[x.tt])}`} nguon={nguon(id, `cot=case-mo&tt=${x.tt}`)} className={`${vung} font-bold ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-100'}`} />
-              </span>
-            ))}
-            {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. */}
-            {ds.some((c) => c.quaHan) && (
-              <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold text-bad" style={{ borderColor: 'var(--line-strong)' }}>
-                {/* AUDIT-UI GV2: tên đủ để không lẫn với chip trạng thái «⚠ Quá hạn» đứng cạnh. */}
-                ⚠ {t('Case có việc quá hạn')}
-                <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
-              </span>
-            )}
-          </div>
           {truoc.length > 0 && (
             <div>
               <h3 className="m-0 mb-1 text-[13px] font-semibold text-slate-400">{t('Cần làm trước')}</h3>

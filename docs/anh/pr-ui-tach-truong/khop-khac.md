@@ -12,7 +12,8 @@ Mockup B12 chỉ vẽ 1440 (ghi-chu.md): ảnh 375 so với khung 1440 làm tham
 | Lưu trữ: bảng Lớp · Trình độ · GVCN · HV từng học · Kết thúc · Tổng kết / Mở lại | `students/LuuTruPage.tsx` dùng `Bang` (375 → thẻ) | luu-tru-* | KHỚP |
 | BỎ "Chi nhánh" khỏi dòng (trường đã biết) | GIỮ: thêm cột Chi nhánh khi danh sách lẫn > 1 chi nhánh | luu-tru-* | KHÁC có lý do (không mất thông tin khi xem mọi chi nhánh) |
 | Hồ sơ GV: bảng Học viên (lớp dòng phụ) · Case · Việc tiếp (kỳ chữ mờ) · Hạn | `giaoVien/HoSoGiaoVienPage.tsx` `Bang` + thân thẻ 375 riêng | ho-so-gv-* | KHỚP |
-| Đầu thẻ "Case đang phụ trách 26 Case" + chip đếm bên phải | GIỮ hàng số to + chip + link "Hiệu quả PA của …" (GV2 đã làm ở nhóm A; mockup không vẽ link) | ho-so-gv-* | KHÁC — ngoài B12, [XM] hỏi PTA nếu muốn dời |
+| Đầu thẻ "Case đang phụ trách" + ô "n Case" + chip đếm bên phải | PTA 08/11 quyết [XM]: làm như mockup — bỏ hàng số to; ô đếm cạnh tiêu đề, chip trạng thái + "Case có việc quá hạn" bên phải, GIỮ link "Hiệu quả PA" cuối hàng; mọi số vẫn bấm mở panel | ho-so-gv-* | KHỚP |
+| Dòng "Cần làm trước" | GIỮ (nói rõ bảng chỉ 5 Case gấp nhất) | ho-so-gv-* | KHÁC nhỏ có lý do |
 | Vạch đỏ trái hàng Case quá hạn | BỎ (mockup không vẽ; hạn đỏ ⚠ đã báo) | ho-so-gv-* | KHỚP |
 
 ## Thao tác TRƯỚC → SAU
