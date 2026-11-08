@@ -13,7 +13,7 @@ import { notFound } from '../util.ts';
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import {
-  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
+  activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
 import { ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
@@ -783,12 +783,17 @@ export function lichTest(
   const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
   const coPhamViRong = coPhanCong && (scope.all || scope.branchIds.length > 0 || scope.classIds.some((id) => !lopCuaToi.has(id)));
   /* Chip "Đang lọc: lớp …" chỉ nói tên lớp NGƯỜI XEM ĐƯỢC THẤY — lớp ngoài phạm vi thì null, không lộ mã lớp. */
-  const lopDangLoc = o.classId && (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId }) || lopFtChoGvSpeaking(p, today).includes(o.classId))
+  const lopDangLoc = o.classId && (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: o.classId }) || lopFtChoGvSpeaking(p, today).includes(o.classId) || lopMt0ChoGvSpeaking(p, today).includes(o.classId))
     ? (conn.prepare('SELECT id, code FROM classes WHERE id = ?').get(o.classId) as any) ?? null
     : null;
   const giuLop = (classId: number) =>
     (phamVi !== 'cua-toi' || lopCuaToi.has(classId)) && (!o.classId || classId === o.classId);
-  const ctx = { cs: classScopeSql(scope), branchId, today, coPhanCong, lopCuaToi, giuLop };
+  /* LOP-THUONG-QUYEN (chủ SP 08/11): GV Speaking thấy thêm lượt MT0 của lớp thường cùng chi nhánh (chấm S chéo) — chỉ `mt0`, không Progress / Final. */
+  const lopMt0 = scope.all ? [] : lopMt0ChoGvSpeaking(p, today).filter((id) => !scope.classIds.includes(id));
+  const cs0 = classScopeSql(scope);
+  const cs = lopMt0.length
+    ? { sql: `(${cs0.sql} OR (c.id IN (${lopMt0.map(() => '?').join(',')}) AND a.kind = 'mt0'))`, params: [...cs0.params, ...lopMt0] } : cs0;
+  const ctx = { cs, branchId, today, coPhanCong, lopCuaToi, giuLop };
 
   const lop = hangLopTuan(p, ctx, tuan);
 

@@ -8,7 +8,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopFtGvcn, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopGvcn, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -543,7 +543,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
-  if (scope.none && !lopFtChoGvSpeaking(p, today).length) return { summary: demSo([]), groups: [], scopeEmpty: true, xemNguoiKhac: false };
+  if (scope.none && !lopFtChoGvSpeaking(p, today).length && !lopMt0ChoGvSpeaking(p, today).length) return { summary: demSo([]), groups: [], scopeEmpty: true, xemNguoiKhac: false };
   /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
   const xemViec = phamViXemViec(p);
   if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>([...(f.chiNhom ?? ['score', 'xuat_bc_ph'])].filter((g) => g === 'score' || g === 'xuat_bc_ph')) };
@@ -585,11 +585,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * SUA-LOI-CV (chủ SP 05/11): "Tất cả" của trang Công việc (`tachCuaToi`) — web của QL đọc `nguoi=tat-ca` rồi lọc "Của tôi" tại máy, nên QL kiêm
    * GV Speaking cần việc Chấm Speaking ở đây. "Tất cả" ở nơi khác (hồ sơ lớp, Tổng quan Admin) giữ dòng chấm chéo theo lớp như cũ.
    */
+  /* LOP-THUONG-QUYEN (chủ SP 08/11): + lớp thường — chỉ ô S của lượt MT0 (`listAttempts` `phamViCham` đọc lượt `mt0` ở các lớp này, `vaoChamS` lọc `laChamCheo`). */
   const lopCheo = new Set<number>(co('score') && (!tatCa || f.tachCuaToi)
-    ? lopFtChoGvSpeaking(p, today).filter((id) => !f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1)) : []);
-  /* T18 (chủ SP 06/11): GVCN lớp FT (không là GV Speaking) chỉ THẤY bài S chấm chéo QUÁ HẠN của lớp mình — cùng việc "Chấm Speaking", không hạn cho bài chưa quá hạn. */
+    ? [...lopFtChoGvSpeaking(p, today), ...lopMt0ChoGvSpeaking(p, today)].filter((id) => !f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1)) : []);
+  /* T18 (chủ SP 06/11): GVCN lớp (FT: S Mock; thường: S MT0 — không là GV Speaking) chỉ THẤY bài S chấm chéo QUÁ HẠN của lớp mình — cùng việc "Chấm Speaking", không hạn cho bài chưa quá hạn. */
   const lopCn = new Set<number>(co('score') && (!tatCa || f.tachCuaToi)
-    ? lopFtGvcn(p, today).filter((id) => !lopCheo.has(id) && (!f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1))) : []);
+    ? lopGvcn(p, today).filter((id) => !lopCheo.has(id) && (!f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1))) : []);
   const tuanHomNay = mondayOfDate(today);
   /** Ô S Mock vào việc Chấm Speaking của người xem: lớp `lopCheo`, từ thứ Hai tuần thi (`canChamCheo`); lớp `lopCn`: chỉ ô quá hạn. */
   const vaoChamS = (a: any, c: any) => (lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay))
