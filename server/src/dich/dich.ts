@@ -41,9 +41,9 @@ export const NGUON_DICH: Record<string, Nguon> = {
   assessment_scores: {
     cot: ['comment', 'nhan_xet_phu_trach'],
     doc: (p, id, cot, kyNang) => {
-      const a = mot('SELECT class_id, student_id FROM assessment_attempts WHERE id = ?', id);
+      const a = mot('SELECT class_id, student_id, kind FROM assessment_attempts WHERE id = ?', id);
       if (!a || !kyNang) throw notFound();
-      requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id }, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
+      requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id, kind: a.kind }, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
       const r = mot(`SELECT ${cot} AS chu FROM assessment_scores WHERE attempt_id = ? AND skill = ?`, id, kyNang);
       return { chu: r?.chu ?? null, studentId: a.student_id };
     },

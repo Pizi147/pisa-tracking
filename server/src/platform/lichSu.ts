@@ -333,9 +333,9 @@ function thiThat(p: Principal, cycleId: number, tiep: number | null): TrangLs {
 const TRANG_THAI_THI: Record<string, string> = { scheduled: 'Theo lịch', sat: 'Đã làm bài', absent: 'Vắng', cancelled: 'Đã huỷ', excused: 'Vắng' };
 
 function oDiem(p: Principal, attemptId: number, loc: string | null, tiep: number | null): TrangLs {
-  const a = db().prepare('SELECT class_id, student_id, created_at FROM assessment_attempts WHERE id = ?').get(attemptId) as { class_id: number | null; student_id: number; created_at: string } | undefined;
+  const a = db().prepare('SELECT class_id, student_id, created_at, kind FROM assessment_attempts WHERE id = ?').get(attemptId) as { class_id: number | null; student_id: number; created_at: string; kind: string } | undefined;
   if (!a) throw notFound('Không tìm thấy lượt Test.');
-  requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id }, 'Lượt Test này nằm ngoài phạm vi bạn được xem.');   // cùng quyền hồ sơ MT
+  requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id, kind: a.kind }, 'Lượt Test này nằm ngoài phạm vi bạn được xem.');   // cùng quyền hồ sơ MT
   type Dong = { luc: string; nguoi: string; lyDo: string | null; khoa: string; t: TruongNhom };
   const trong = (v: string) => (v === 'Trống' ? null : v);
   const diem: Dong[] = scoreHistoryOf(attemptId, true).map((h) => ({

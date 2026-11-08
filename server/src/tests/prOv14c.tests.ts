@@ -117,7 +117,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
   check('OV14c-5 · GV không có kỹ năng S: không hàng đợi, không việc Chấm Speaking, không nhập S Mock lớp FT không dạy', () => {
     for (const p of [perm.loadPrincipal(idW), P.lrTeacher, P.w1Teacher]) {
       /* T18 (06/11): GVCN lớp FT chỉ thấy bài S QUÁ HẠN của lớp mình. */
-      assert(svc.baiChamSpeaking(p, TODAY).rows.every((r: any) => r.cell.overdue) && (viecCs(p).length === 0 || perm.lopFtGvcn(p, TODAY).length > 0), `${p.fullName} thấy Chấm Speaking`);
+      assert(svc.baiChamSpeaking(p, TODAY).rows.every((r: any) => r.cell.overdue) && (viecCs(p).length === 0 || perm.lopGvcn(p, TODAY).length > 0), `${p.fullName} thấy Chấm Speaking`);
     }
     const r = svc.baiChamSpeaking(gvS(), TODAY).rows.find((x: any) => x.cho);
     thu(() => assertThrows(() => svc.saveScore(perm.loadPrincipal(idW), r.attemptId, 'speaking', { criteria: [6, 6, 6, 6] }, TODAY), /./, 'GV Writing nhập S'));

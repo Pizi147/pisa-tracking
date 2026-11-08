@@ -9873,6 +9873,9 @@ await runPrNgayXongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== LOP-TRONG (chủ SP 07/11: lớp trống 7 ngày tự Kết thúc lớp + vào Lưu trữ)
 const { runPrLopTrongTests } = bocTep('prLopTrong', await import('./prLopTrong.tests.ts'));
 await runPrLopTrongTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== LOP-THUONG-QUYEN (chủ SP 08/11: MT0 Speaking chấm chéo — GV kỹ năng S thấy các lớp thường cùng chi nhánh)
+const { runPrLopThuongQuyenTests } = bocTep('prLopThuongQuyen', await import('./prLopThuongQuyen.tests.ts'));
+await runPrLopThuongQuyenTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

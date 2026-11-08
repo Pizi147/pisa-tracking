@@ -41,8 +41,9 @@ export function khoiCham(i: { tuanThi: string; tuanHomNay: string; quaHan: boole
   return i.quaHan ? 'qua-han' : 'tuan-nay';
 }
 
-/** T18: Speaking của Mock Test không có GV mặc định — ai dạy Speaking cùng chi nhánh cũng chấm được. MT0 / lớp thường không áp. */
-export const laChamCheo = (kind: string | null | undefined, skill: string): boolean => kind === 'mock' && skill === 'speaking';
+/** T18: Speaking của Mock Test và MT0 (chủ SP 08/11: "MT0 Speaking vẫn là chấm chéo") không có GV mặc định — ai dạy Speaking cùng chi nhánh
+ *  cũng chấm được. Progress / Final lớp thường không áp. */
+export const laChamCheo = (kind: string | null | undefined, skill: string): boolean => (kind === 'mock' || kind === 'mt0') && skill === 'speaking';
 /**
  * OV-13g / OV-13o; OV-14c (chủ SP 18/10): bài chấm chéo CẦN CHẤM từ **thứ Hai tuần thi** (không chờ hết tuần), chưa chấm thì còn tới khi chấm.
  * Một luật cho Công việc, Tổng quan "Lớp tôi dạy". Hạn chấm không đổi (cờ quá hạn của ô).

@@ -6,7 +6,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopFtGvcn, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopGvcn, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -236,7 +236,7 @@ export function entryBandsOf(rows: ScoreRow[]) {
  */
 /** Quyền theo lượt (MT lịch sử): cờ + các ô đã có điểm của CHÍNH lượt — đọc từ điểm đã nạp sẵn, không hỏi lại. */
 function luotQuyen(a: any, today?: string): LuotQuyen {
-  return { lich_su: a.lich_su ?? 0, today };
+  return { lich_su: a.lich_su ?? 0, today, kind: a.kind };
 }
 
 export function routeCuaLuot(attempt: any): string | null {
@@ -778,11 +778,14 @@ const ATTEMPT_SELECT = chonLuot();
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   const scope = f.phamViCham ? scopeXemLuotCham(p) : scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
-  if (scope.none) return { rows: [], scopeEmpty: true };
+  /* LOP-THUONG-QUYEN: đường chấm còn đọc lượt MT0 của lớp thường mà GV Speaking chấm S chéo — chỉ lượt `mt0`, không Progress / Final. */
+  const lopMt0 = f.phamViCham && !scope.all ? lopMt0ChoGvSpeaking(p).filter((id) => !scope.classIds.includes(id)) : [];
+  if (scope.none && !lopMt0.length) return { rows: [], scopeEmpty: true };
   const conn = db();
   const cs = classScopeSql(scope);
-  const where: string[] = [cs.sql];
-  const params: unknown[] = [...cs.params];
+  /* Danh sách `?,?,…` như `classScopeSql` (S5: json_each đổi kế hoạch câu). */
+  const where: string[] = [lopMt0.length ? `(${cs.sql} OR (c.id IN (${lopMt0.map(() => '?').join(',')}) AND a.kind = 'mt0'))` : cs.sql];
+  const params: unknown[] = [...cs.params, ...lopMt0];
 
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
   if (f.classId) { where.push('a.class_id = ?'); params.push(f.classId); }
@@ -1166,7 +1169,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const conn = db();
   const a = conn.prepare(`${ATTEMPT_SELECT} WHERE a.id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
-  requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id }, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
+  requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id, kind: a.kind }, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
 
   const scores = scoresOf(attemptId);
   /*
@@ -1575,7 +1578,7 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
             nhan_xet_phu_trach = NULL, nhan_xet_phu_trach_by = NULL, nhan_xet_phu_trach_at = NULL, cho_phu_trach_xem = 0
       WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`).run(a.id);
   for (const s of o) {
-    const path = a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0 }) : null;
+    const path = a.class_id ? scoreEditPath(p, a.class_id, s.skill, { lich_su: a.lich_su ?? 0, kind: a.kind }) : null;
     writeAudit({
       actorUserId: p.userId, action: path === 'override' ? 'score.override' : path === 'lich_su' ? 'score.lich_su' : 'score.edit',
       entityType: 'assessment_attempt', entityId: a.id, entityLabel: s.skill, before: s,
@@ -2220,7 +2223,7 @@ export function saveScore(
    * chấm chéo), GVCN, Quản lý sửa MỌI LÚC: sau hoàn tất, cả khi lớp đã kết thúc. Kiểm nhập vẫn đủ (`luuNhanXet`); kèm điểm → luật dưới như cũ.
    */
   const nxMoiLuc = chiNhanXetNhom(patch) && !!a.class_id
-    && (!!scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) || isCoreTeacherOf(p, a.class_id));
+    && (!!scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind }) || isCoreTeacherOf(p, a.class_id));
   /* RKC (mở Q-B1 "lớp đã kết thúc chỉ QL sửa điểm"): GV đúng môn sửa / xoá / "-" như lớp đang chạy (nhật ký thường); Quản lý đi đường `override`. */
   const lopKetThuc = nxMoiLuc ? laLopKetThuc(a.class_id) : kiemLopKetThuc(p, a.class_id);
   /*
@@ -2246,7 +2249,7 @@ export function saveScore(
    * GVBM đúng ô sửa / xoá điểm mọi lúc qua đường của mình; nhật ký ghi `sauHoanTat`. Lớp đã kết thúc vẫn chỉ Quản lý (`kiemLopKetThuc`, Q-B1 ①).
    */
   const hoanTat = dotHoanTat(attemptId, today);
-  let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 }) : null;
+  let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind }) : null;
   if (!path && !nxMoiLuc) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
@@ -2591,7 +2594,8 @@ export function classScoreSheet(
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   /* Kiểm quyền TRƯỚC mọi truy vấn dữ liệu HV (PR-DL). */
-  requireXemLuotCham(p, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  /* LOP-THUONG-QUYEN: lưới MT0 — GV Speaking chấm S chéo mở được ở lớp thường cùng chi nhánh (`kind`). */
+  requireXemLuotCham(p, { classId, kind: chon.theo === 'mt0' ? 'mt0' : null }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   /*
    * BẢNG NÀY LÀ BẢNG MOCK TEST. Lớp thường có bảng riêng (`regularSheet`): chấm theo số câu đúng/tổng số câu, bài tên
    * "Giữa khoá"/"Cuối khoá". Mở nhầm bảng là đọc sai cả kết quả — bảng này gọi mọi lượt là "MT{n}" và chấm theo band.
@@ -2643,7 +2647,7 @@ export function classScoreSheet(
     classId, classCode: cls.code, branchName: cls.branch_name,
     period: period ? { id: period.id, code: period.code, weekStart: period.week_start, weekEnd: period.week_end } : null,
     /* OV-13h: lớp đã kết thúc GV vẫn nhập ô trống — cờ từng ô (`canEdit`) quyết, không tắt cả môn. */
-    editableSkills: editableSkills(p, classId, ENTRY_SKILLS),
+    editableSkills: editableSkills(p, classId, ENTRY_SKILLS, chon.theo === 'mt0' ? { lich_su: 0, kind: 'mt0' } : undefined),
     rows: (() => {
       const bundle = loadBundle(attempts.map((a) => a.id));
       /* R11: một câu hỏi cho cả bảng (`dotHoanTatMany`) — không hỏi lẻ từng dòng. */
@@ -2694,9 +2698,10 @@ const TUAN_S_SQL = `COALESCE((SELECT kp.week_start FROM attempt_skills k JOIN re
  * Ô = đúng ô của bảng FT (`skillCells` + R11 `dotHoanTatMany`) — hộp chấm dùng lại, ghi qua `saveScore` như mọi nơi.
  */
 export function baiChamSpeaking(p: Principal, today = demoToday()) {
-  const lopS = lopFtChoGvSpeaking(p, today);
+  /* LOP-THUONG-QUYEN (chủ SP 08/11): + S MT0 các lớp thường cùng chi nhánh — SQL dưới chỉ lấy lượt `mt0` ở các lớp này. */
+  const lopS = [...lopFtChoGvSpeaking(p, today), ...lopMt0ChoGvSpeaking(p, today)];
   /* T18 (chủ SP 06/11): GVCN (không là GV Speaking) chỉ thấy bài QUÁ HẠN của lớp mình — ghi "quá hạn", không phải việc của họ. */
-  const lopCn = lopFtGvcn(p, today).filter((id) => !lopS.includes(id));
+  const lopCn = lopGvcn(p, today).filter((id) => !lopS.includes(id));
   const lop = [...lopS, ...lopCn];
   if (!lop.length) return { rows: [] as any[], soBai: 0 };
   const tuanNay = mondayOfDate(today);
@@ -2706,7 +2711,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday()) {
   theoLo(lop, (lo, ph) => {
     attempts.push(...conn.prepare(
       `${ATTEMPT_SELECT}
-        WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND a.lich_su = 0
+        WHERE a.class_id IN (${ph}) AND a.kind IN ('mock', 'mt0') AND a.status != 'cancelled' AND a.lich_su = 0
           AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
           AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND ${O_FT_XONG_SQL('sc', 'a')})
             OR ${TUAN_S_SQL} >= ?)`,
