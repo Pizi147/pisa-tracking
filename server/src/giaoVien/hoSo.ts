@@ -270,7 +270,8 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   }
   const homNay = demoToday();
   const ct = ctTuyChon(q.ct);   // vắng = gộp hai khung (Q2)
-  const ket = (rows: MetricRow[], tieuDe: (n: number) => string) => ({ n: rows.length, tieuDe: tieuDe(rows.length), rows });
+  /* B13: `unit` cho dòng đếm đầu panel ("26 Case") — cùng nhãn `METRIC_UNIT_LABEL` như ô số trong sổ. */
+  const ket = (rows: MetricRow[], tieuDe: (n: number) => string, unit?: 'case' | 'lop' | 'hoc-vien' | 'bai') => ({ n: rows.length, tieuDe: tieuDe(rows.length), rows, unit });
 
   if (cot === 'yc-cho' || cot === 'yc-tu-choi') {
     const trang = cot === 'yc-cho' ? 'cho' : 'tu_choi';
@@ -283,7 +284,7 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   if (cot === 'case-mo' || cot === 'case-qua-han') {
     if (q.tt != null && !(TRANG_THAI as readonly string[]).includes(q.tt)) throw badRequest('Trạng thái không hợp lệ.');
     const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => (cot === 'case-mo' || c.quaHan) && (!q.tt || c.trangThai.t === q.tt));
-    return ket(rowsFor('case', ds.map((c) => c.id), undefined, p), (n) => `${n} Case ${cot === 'case-mo' ? 'đang phụ trách' : 'có việc tiếp quá hạn'}`);
+    return ket(rowsFor('case', ds.map((c) => c.id), undefined, p), (n) => `${n} Case ${cot === 'case-mo' ? 'đang phụ trách' : 'có việc tiếp quá hạn'}`, 'case');
   }
 
   const lop = lopCuaGv(gvId, homNay, branchIds, ct);
@@ -291,16 +292,16 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
   if (q.lop != null && !chonLop.length) throw forbidden('Lớp này không nằm trong danh sách lớp đang dạy của giáo viên.');
 
   if (cot === 'lop') {
-    return ket(lop.map((l) => ({ id: l.id, title: l.ma, sub: l.vai, href: `/hoc-vien/lop/${l.id}` })), (n) => `${n} lớp đang dạy`);
+    return ket(lop.map((l) => ({ id: l.id, title: l.ma, sub: l.vai, href: `/hoc-vien/lop/${l.id}` })), (n) => `${n} lớp đang dạy`, 'lop');
   }
   if (cot === 'hoc-vien') {
     const ids = [...new Set(chonLop.flatMap((l) => [...l.hvIds]))].sort((a, b) => a - b);
-    return ket(rowsFor('hoc-vien', ids), (n) => `${n} học viên đang học`);
+    return ket(rowsFor('hoc-vien', ids), (n) => `${n} học viên đang học`, 'hoc-vien');
   }
   if (cot === 'chua-nhap' || cot === 'qua-han') {
     const o = noDiemCuaGv(p, gvId, homNay, chonLop).filter((d) => cot === 'chua-nhap' || d.overdue);
     /* PR-UXF-a Q7: mỗi dòng một BÀI (`baiId`) — CÙNG dựng dòng với ô "bài chưa nhập điểm quá hạn" ở Tổng quan (`rowsFor('bai')`). */
-    return ket(rowsFor('bai', o.map((d) => baiId(d.attemptId, d.skill)), undefined, p), (n) => `${n} bài ${cot === 'chua-nhap' ? 'chưa nhập' : 'quá hạn nhập'}`);
+    return ket(rowsFor('bai', o.map((d) => baiId(d.attemptId, d.skill)), undefined, p), (n) => `${n} bài ${cot === 'chua-nhap' ? 'chưa nhập' : 'quá hạn nhập'}`, 'bai');
   }
 
   throw badRequest('Cột không hợp lệ.');

@@ -255,6 +255,10 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     for (const f of ['KetQuaThi.tsx', 'TongHopTestSos.tsx', 'HieuQuaPa.tsx', 'PhanTichGiaoVien.tsx', 'YThucPhoiHop.tsx']) {
       assert(/PhanTrang|usePhanTrang/.test(doc(`web/src/modules/phanTich/${f}`)), `${f} chưa phân trang`);
     }
-    assert(/usePhanTrang/.test(doc('web/src/ui/SoLieu.tsx')), 'panel số liệu chưa phân trang');
+    /* B13 (audit-ui 08/11): panel số không phân trang — 20 dòng đầu + "Xem thêm", không còn chọn số dòng mỗi trang. */
+    for (const f of ['web/src/ui/SoLieu.tsx', 'web/src/ui/BangLuotPanel.tsx']) {
+      assert(/useXemThem/.test(doc(f)) && /<XemThem /.test(doc(f)) && !/PhanTrang \{/.test(doc(f)), `${f}: panel số phải dùng Xem thêm, không phân trang`);
+    }
+    assert(/export const BUOC_XEM_THEM = 20;/.test(doc('web/src/ui/PhanTrang.tsx')), 'Xem thêm mỗi lần 20 dòng');
   });
 }

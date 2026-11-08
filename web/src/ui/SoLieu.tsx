@@ -10,7 +10,7 @@ import { phimHangTab } from './HangTab.tsx';
 import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { lopKq } from './BieuTuong.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
-import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
+import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { NutLuat } from './NutLuat.tsx';
@@ -242,13 +242,11 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const [tabChon, setTab] = useState<'chua' | 'dat' | 'vuot' | null>(null);
   const tab = tabChon ?? (soChua > 0 ? 'chua' : 'dat');
   const hienTab = coTab ? hien.filter((r) => (tab === 'vuot' ? r.vuot : r.ketQua === tab)) : thuTu;
-  /* OV-15e: panel số liệu phân trang 10 / 20 / 50 (thanh đầu + cuối); dòng đang mở (`?dong=`) ở trang sau vẫn mở được khi lật tới. */
-  const pt = usePhanTrang(hienTab.length, tieuDe, dv ?? t('mục'));
-  /* Dòng đang mở (về từ hồ sơ) nằm ở trang sau → lật tới trang đó. */
+  /* B13 (audit-ui 08/11, thay phân trang OV-15e): 20 dòng đầu + "Xem thêm" cuối danh sách — cắt trên dữ liệu đã nạp, không gọi thêm máy chủ. */
+  const xt = useXemThem(hienTab.length, `${tieuDe}|${tab}`);
+  /* Dòng đang mở (về từ hồ sơ) nằm sau 20 dòng đầu → hiện tới dòng đó. */
   const viTriMo = mo === null ? -1 : hienTab.findIndex((r) => r.id === mo);
-  useEffect(() => {
-    if (viTriMo >= 0 && (viTriMo < pt.thanh.dau || viTriMo >= pt.thanh.cuoi)) pt.thanh.onTrang(Math.floor(viTriMo / pt.thanh.co) + 1);
-  }, [viTriMo]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (viTriMo >= 0) xt.hienToi(viTriMo); }, [viTriMo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const daLam = (r: DongSoLieu, chu: string) => {
     const i = hien.findIndex((x) => x.id === r.id);
@@ -518,12 +516,13 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         tieu: (
           <>
             <span className="min-w-0">{tieuDe}</span>
-            {data && (dv || nhomCase) && <span className="whitespace-nowrap"><span className="tabular-nums">{data.n}</span> <span className="text-sm font-medium text-slate-400">{dv ?? 'Case'}</span></span>}
             {cachTinh && <NutLuat label={t('Cách tính')}>{cachTinh}</NutLuat>}
           </>
         ),
         /* 6b-2: dòng vừa xử lý giữ chỗ nhưng không còn trong tập — đầu panel nói rõ để số khớp số dòng ("6 Case · 1 vừa xử lý"). */
-        dong2: [nhomCase && hien.length > data!.n ? t('{n} vừa xử lý', { n: hien.length - data!.n }) : null,
+        /* B13: dòng đếm đầu danh sách ("26 Case · quá hạn lên đầu"). */
+        dong2: [data ? <span key="dem" className="tabular-nums">{data.n} {dv ?? (nhomCase ? 'Case' : t('mục'))}</span> : null,
+          nhomCase && hien.length > data!.n ? t('{n} vừa xử lý', { n: hien.length - data!.n }) : null,
           soTre ? t('quá hạn lên đầu') : null],
       }}
       chan={vuaXong && !nhomCase ? { v3: true, dongTren: <span className="flex flex-wrap items-center gap-x-3"><span className="font-semibold text-ok">✓ {vuaXong.chu}</span><NutHoanTac key={vuaXong.lan} hoanTac={vuaXong.hoanTac} onHoanTac={() => setVuaXong(null)} /></span> } : undefined}>
@@ -543,9 +542,8 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
                 ))}
               </div>
             )}
-            <PhanTrang {...pt.thanh} />
-            <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(pt.cat(hienTab)) : <ul className="-mx-4 m-0 list-none p-0">{pt.cat(hienTab).map(veDong)}</ul>}</div>
-            <PhanTrang {...pt.thanh} duoi />
+            <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(xt.cat(hienTab)) : <ul className="-mx-4 m-0 list-none p-0">{xt.cat(hienTab).map(veDong)}</ul>}</div>
+            <XemThem {...xt} donVi={dv ?? (nhomCase ? 'Case' : t('mục'))} />
           </>
         )}
     </KhungPanel>

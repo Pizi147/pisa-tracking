@@ -6,7 +6,7 @@ import { NutLuat } from './NutLuat.tsx';
 import { Bang } from './Bang.tsx';
 import { ODiem } from './ODiem.tsx';
 import { phimHangTab } from './HangTab.tsx';
-import { PhanTrang, usePhanTrang } from './PhanTrang.tsx';
+import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { fmtBand } from '../lib/format.ts';
@@ -136,8 +136,9 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
   const tabViec = tabViecChon && tabsViec.includes(tabViecChon) ? tabViecChon : tabsViec[0] ?? null;
   const loc = vk ? goc.filter((r) => r.dongViec && (tabViec === 'da-lam' ? !r.dongViec.mo : r.dongViec.mo && r.dongViec.tab === tabViec))
     : coTab ? goc.filter((r) => r.ketQua === tab) : goc;
-  /* Giữ phân trang 10 / 20 / 50 của panel cũ (`NganDanhSach`) — số "n lượt · m HV" tính trên cả tab, bảng chỉ trang đang xem. */
-  const pt = usePhanTrang(loc.length, `${tieuDe}|${tab}|${tabViec ?? ''}`, t('mục'));
+  /* B13 (audit-ui 08/11, thay phân trang 10 / 20 / 50): 20 dòng đầu + "Xem thêm" cuối bảng — cắt trên dữ liệu đã nạp, không gọi thêm máy chủ.
+     Số "n lượt · m HV" tính trên cả tab. */
+  const pt = useXemThem(loc.length, `${tieuDe}|${tab}|${tabViec ?? ''}`);
 
   /* DEM-QUA-HAN: dòng việc cả lớp (Bàn giao, Phối hợp SOS…) không có em — tên trơn. */
   const lkHv = (id: number, ten: string) => (id ? <Link className={`font-semibold ${LINK}`} to={duongHoSoHocVien(id)}>{ten}</Link> : <b className="font-semibold">{dich(ten)}</b>);
@@ -473,7 +474,6 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
                 </div>
               )}
               <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>
-              <PhanTrang {...pt.thanh} />
               {vk
                 ? <Bang deu day ten={tieuDe} cot={cotVc} hang={pt.cat(tatVc)} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc} />
               : tt
@@ -493,7 +493,7 @@ export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, lo
               : tg
                 ? <Bang deu ten={tieuDe} cot={cotT} hang={hangT} khoa={(h) => h.id} oCua={oT} khung={false} theRieng={theT} />
                 : <Bang deu day ten={tieuDe} cot={cotL} hang={hangL} khoa={(h) => h.id} oCua={oL} phuCua={(h, c) => (c.key === 'mt' ? tuanLich(h.tuan, homNay) : null)} khung={false} theRieng={theL} />}
-              <PhanTrang {...pt.thanh} duoi />
+              <XemThem {...pt} donVi={t('mục')} />
             </div>
           )}
     </KhungPanel>

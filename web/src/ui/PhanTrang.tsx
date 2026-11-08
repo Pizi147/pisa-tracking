@@ -73,3 +73,32 @@ export function PhanTrang({ duoi, ...p }: ThanhPhanTrang & { duoi?: boolean }) {
     </nav>
   );
 }
+
+/**
+ * B13 (audit-ui 08/11) — PANEL SỐ: không phân trang, không chọn cỡ. Hiện 20 dòng đầu, cuối danh sách "Xem thêm n {đơn vị}" (mỗi lần thêm 20).
+ * Danh sách đã nạp MỘT lần (cắt ở máy khách) → "Xem thêm" không gọi máy chủ. Đổi tab / bộ lọc (`khoa`) → về 20 dòng.
+ *
+ *   const xt = useXemThem(rows.length, khoaLoc);  …  xt.cat(rows).map(…)  …  <XemThem {...xt} donVi="Case" />
+ */
+export const BUOC_XEM_THEM = 20;
+export function useXemThem(tong: number, khoa: string) {
+  const [so, setSo] = useState(BUOC_XEM_THEM);
+  useEffect(() => { setSo(BUOC_XEM_THEM); }, [khoa]);
+  return {
+    so, con: Math.max(0, tong - so),
+    them: () => setSo((s) => s + BUOC_XEM_THEM),
+    /** Dòng thứ `i` (0-based) đang bị ẩn → mở rộng tới nó (dòng `?dong=` về từ hồ sơ). */
+    hienToi: (i: number) => setSo((s) => (i < s ? s : Math.ceil((i + 1) / BUOC_XEM_THEM) * BUOC_XEM_THEM)),
+    cat: <T,>(ds: readonly T[]) => ds.slice(0, so),
+  };
+}
+
+/** Nút "Xem thêm n {đơn vị}" cuối danh sách panel — hết dòng ẩn thì không hiện. */
+export function XemThem({ con, them, donVi }: { con: number; them: () => void; donVi: string }) {
+  if (con <= 0) return null;
+  return (
+    <div className="-mx-4 flex justify-center border-t px-4 py-3 print:hidden" style={{ borderColor: 'var(--line)' }}>
+      <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={them}>{t('Xem thêm {n} {dv}', { n: Math.min(con, BUOC_XEM_THEM), dv: donVi })}</button>
+    </div>
+  );
+}
