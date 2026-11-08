@@ -281,7 +281,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   /* OV-6b2 (mockup §6): lưới Checkpoint có thêm cột "% tổng" trước Kết quả. */
   const laCp = data.rows.some((r) => r.kind.startsWith('checkpoint'));
   const cotDs: DinhNghiaCot[] = [
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', goiY: t('Cột này đứng yên khi cuộn ngang.') },
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 230, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8: như lưới FT — tên gốc 230, cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
       key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
@@ -315,7 +315,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
 
   return (
     <div className="luoi-thuong">
-      <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={data.rows} khoa={(r) => r.attemptId} the375={false} khung={false} dinh congCu={congCu}
+      <Bang ten={t('Bảng điểm {x}', { x: data.class.code })} cot={cotDs} hang={data.rows} khoa={(r) => r.attemptId} deu the375={false} khung={false} dinh congCu={congCu}
         hangRieng={(r) => {
           const ri = data.rows.indexOf(r);
           return (
