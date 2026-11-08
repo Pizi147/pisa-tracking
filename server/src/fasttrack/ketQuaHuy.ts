@@ -61,7 +61,7 @@ export function khoiPhucDiem(p: Principal, attemptId: number, skill: string, tod
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
   const thuong = scoringModeOf(a) === 'ratio';
   /* Quyền trước (rà #503 c): người không sửa được ô không được biết ô có điểm huỷ hay không. Lưu bên dưới vẫn kiểm đủ (lớp kết thúc, tuần thi…). */
-  if (!a.class_id || !scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0 })) throw forbidden('Bạn không sửa được ô điểm này.');
+  if (!a.class_id || !scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind })) throw forbidden('Bạn không sửa được ô điểm này.');
   const ban = banMoCuaO(conn, attemptId, thuong ? [skill] : entrySkillsOf(assessedSkillOf(skill)));
   if (!ban.length) throw loi(400, '{x} không có điểm đã huỷ để khôi phục.', { x: tenMon(null, skill) });
   const lyDo = 'Khôi phục điểm';

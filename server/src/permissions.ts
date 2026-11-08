@@ -337,9 +337,23 @@ export function lopFtChoGvSpeaking(p: Principal, date = demoToday()): number[] {
   const cn = new Set(gv.map((g) => g.branchId));
   return [...bangLop()].filter(([, l]) => l.isFastTrack && l.branchId != null && (toanHt || cn.has(l.branchId))).map(([id]) => id);
 }
-/** T18 (chủ SP 06/11): lớp FT mà người này là GVCN đang hiệu lực — được THẤY bài S chấm chéo quá hạn của lớp mình (không có quyền chấm). */
-export function lopFtGvcn(p: Pick<Principal, 'assignments'>, date = demoToday()): number[] {
-  return [...new Set(p.assignments.filter((a) => a.isCore && activeAt(a, date) && !!bangLop().get(a.classId)?.isFastTrack).map((a) => a.classId))];
+/**
+ * LOP-THUONG-QUYEN (chủ SP 08/11: "MT0 Speaking vẫn là chấm chéo, vẫn phải hiện các lớp khác"): lớp THƯỜNG đang chạy cùng phạm vi chi nhánh với
+ * `lopFtChoGvSpeaking` — GV Speaking chấm ô S của lượt **MT0** ở các lớp này. Chỉ MT0: Progress / Final lớp thường không mở (`laGvSpeakingLop` cần `kind`).
+ */
+export function lopMt0ChoGvSpeaking(p: Principal, date = demoToday()): number[] {
+  if (!laGvSpeaking(p, date)) return [];
+  const gv = grantGvNhapDiem(p);
+  const toanHt = gv.some((g) => g.branchId === null);
+  const cn = new Set(gv.map((g) => g.branchId));
+  const ds = lopDayDu();
+  return [...bangLop()].filter(([id, l]) => !l.isFastTrack && l.branchId != null && ds.get(id)?.status === 'active' && (toanHt || cn.has(l.branchId)))
+    .map(([id]) => id);
+}
+/** T18 (chủ SP 06/11): lớp mà người này là GVCN đang hiệu lực — được THẤY bài S chấm chéo quá hạn của lớp mình (không có quyền chấm).
+ *  Lớp FT (S Mock) và, từ LOP-THUONG-QUYEN, lớp thường (S MT0) — nơi gọi lọc đúng ô chấm chéo (`laChamCheo`). */
+export function lopGvcn(p: Pick<Principal, 'assignments'>, date = demoToday()): number[] {
+  return [...new Set(p.assignments.filter((a) => a.isCore && activeAt(a, date) && bangLop().has(a.classId)).map((a) => a.classId))];
 }
 export const grantGvNhapDiem = (p: Pick<Principal, 'grants'>) => p.grants.filter((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT));
 /**
@@ -351,13 +365,15 @@ export function laGvSpeaking(p: Pick<Principal, 'grants' | 'kyNang' | 'assignmen
   if (p.kyNang?.includes('speaking')) return true;
   return p.assignments.some((a) => a.skill === 'speaking' && activeAt(a, date) && !!bangLop().get(a.classId)?.isFastTrack);
 }
-const laGvSpeakingLop = (p: Principal, classId: number, date?: string) => lopFtChoGvSpeaking(p, date).includes(classId);
+/** Lớp FT: mọi lượt (chỉ có Mock). Lớp thường: chỉ khi biết lượt là MT0 (`kind`) — không biết thì đóng. */
+const laGvSpeakingLop = (p: Principal, classId: number, date?: string, kind?: string | null) =>
+  lopFtChoGvSpeaking(p, date).includes(classId) || (kind === 'mt0' && lopMt0ChoGvSpeaking(p, date).includes(classId));
 
-/** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo lớp FT cùng chi nhánh. Chỉ dùng ở đường chấm. */
-export function coTheXemLuotCham(p: Principal, ctx: Ctx): boolean {
-  return can(p, PERMISSIONS.ATTEMPT_VIEW, ctx) || !!(ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date));
+/** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo (lớp FT; lớp thường khi lượt MT0 — `kind`). Chỉ dùng ở đường chấm. */
+export function coTheXemLuotCham(p: Principal, ctx: Ctx & { kind?: string | null }): boolean {
+  return can(p, PERMISSIONS.ATTEMPT_VIEW, ctx) || !!(ctx.classId && laGvSpeakingLop(p, ctx.classId, ctx.date, ctx.kind));
 }
-export function requireXemLuotCham(p: Principal, ctx: Ctx, message: string) {
+export function requireXemLuotCham(p: Principal, ctx: Ctx & { kind?: string | null }, message: string) {
   if (!coTheXemLuotCham(p, ctx)) require_(p, PERMISSIONS.ATTEMPT_VIEW, ctx, message);
 }
 /** Phạm vi DANH SÁCH của đường chấm (Lịch Test, Test › Điểm theo lớp): `scopeFor(ATTEMPT_VIEW)` + lớp FT GV Speaking chấm S chéo. */
@@ -657,7 +673,7 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
       /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý sửa/xoá điểm có lý do (RB-5) ở MỌI lúc, không chỉ sau hoàn tất. */
       || (!chiViec && can(p, PERMISSIONS.PLAN_WEEK, { classId }))
       /* PR-HSM (chủ sản phẩm 30/09): GV Speaking chấm S chéo lớp FT cùng chi nhánh — quyền, không phải việc. */
-      || (!chiViec && skill === 'speaking' && laGvSpeakingLop(p, classId, luot?.today)),
+      || (!chiViec && skill === 'speaking' && laGvSpeakingLop(p, classId, luot?.today, luot?.kind)),
   );
 }
 
@@ -665,7 +681,7 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
  * PR-MT (K5-31, Q8, T34): lượt MT cụ thể đang xét quyền — MT cũ thì GVCN của lớp và Quản lý (xếp tuần được lớp đó) nhập / sửa / xoá
  * mọi ô ở cả bốn kỹ năng (PR-MTa T22 thay "GVCN chỉ ô trống"); lý do tuỳ chọn.
  */
-export type LuotQuyen = { lich_su: number; today?: string };
+export type LuotQuyen = { lich_su: number; today?: string; kind?: string | null };
 
 /**
  * KỸ NĂNG LÀ VIỆC CỦA CHÍNH NGƯỜI NÀY — chỉ đường PHÂN CÔNG, không tính đường sửa hộ.
@@ -705,10 +721,10 @@ export function defaultWorkScope(p: Principal): WorkScope {
 
 /** Người dùng đang sửa điểm bằng đường nào — dùng để ghi nhật ký cho đúng. 'lich_su' = lượt MT cũ + (Quản lý lớp, hoặc GVCN lớp — mọi ô, PR-MTa T22). */
 export function scoreEditPath(p: Principal, classId: number, skill: string,
-  attempt?: { lich_su: number }): 'assigned' | 'lich_su' | 'override' | null {
+  attempt?: { lich_su: number; kind?: string | null }): 'assigned' | 'lich_su' | 'override' | null {
   if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
   /* PR-HSM: GV Speaking chấm S chéo lớp FT cùng chi nhánh — nhật ký như nhập điểm thường (`score.edit`), tên GV chấm ghi ở ô. */
-  if (skill === 'speaking' && laGvSpeakingLop(p, classId)) return 'assigned';
+  if (skill === 'speaking' && laGvSpeakingLop(p, classId, undefined, attempt?.kind)) return 'assigned';
   if (attempt?.lich_su === 1 && (can(p, PERMISSIONS.PLAN_WEEK, { classId }) || isCoreTeacherOf(p, classId))) return 'lich_su';
   /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý (xếp lịch được lớp đó) sửa điểm qua đường `override` ở mọi lúc — RB-5 vẫn đòi lý do. */
   if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }) || can(p, PERMISSIONS.PLAN_WEEK, { classId })) return 'override';

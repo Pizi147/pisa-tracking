@@ -63,7 +63,7 @@ export async function runPrOv13gTests(t: YThucTestKit) {
     for (const k of ['w1Teacher', 'lrTeacher', 'normalCoreTeacher'] as const) {
       const x = (P as any)[k];
       /* T18 (06/11): GVCN lớp FT có bài S quá hạn vẫn THẤY dòng (chỉ ghi quá hạn); người khác thì không. */
-      const cn = perm.lopFtGvcn(x, TODAY).length > 0;
+      const cn = perm.lopGvcn(x, TODAY).length > 0;
       assert(!perm.lopFtChoGvSpeaking(x, TODAY).length && (cn || dongCc(x).length === 0), `${k} không dạy S, không là GVCN lớp FT mà có dòng chấm chéo`);
     }
   });

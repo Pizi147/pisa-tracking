@@ -23,10 +23,10 @@ import { chamSheet } from './canCham.ts';
 import { MT0_THEO_EM_SQL } from '../fasttrack/mt0.ts';
 
 /** Tra lớp rồi kiểm quyền — TRƯỚC mọi truy vấn dữ liệu HV. */
-function lopDuocXem(p: Principal, classId: number): CheDo {
+function lopDuocXem(p: Principal, classId: number, kind?: string | null): CheDo {
   const cls = db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  requireXemLuotCham(p, { classId }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
+  requireXemLuotCham(p, { classId, kind }, 'Lớp này nằm ngoài phạm vi bạn được xem.');
   return cheDoCua(cls.programme_code);
 }
 
@@ -138,8 +138,9 @@ export function danhSachLuot(p: Principal, classId: number, today: string = demo
 
 /** Bảng điểm cả lớp của một lượt: chính `chamSheet` (chọn theo số lượt / theo kind) + tóm tắt lượt + HV chưa có lịch lượt đó (FT). */
 export function bangTheoLuot(p: Principal, classId: number, ma: string, today: string = demoToday()) {
-  const mode = lopDuocXem(p, classId);
   const m = docMaLuot(ma);
+  /* LOP-THUONG-QUYEN: lượt MT0 (`thuong:mt0`, `mt:0`) — GV Speaking chấm S chéo xem được lớp thường cùng chi nhánh. */
+  const mode = lopDuocXem(p, classId, m && ((m.loai === 'thuong' && m.kind === 'mt0') || (m.loai === 'mt' && !m.so)) ? 'mt0' : null);
   /* Sai dạng, hoặc đúng dạng nhưng sai họ lớp (`thuong:*` ở lớp FT, `mt:*` ở lớp thường). */
   if (!m || (m.loai === 'mt') !== (mode === 'ielts_band')) throw badRequest('Mã lượt không hợp lệ');
   const luot = tomTatLop([classId], today).get(classId)!.find((l) => l.ma === ma);

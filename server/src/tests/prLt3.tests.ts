@@ -21,8 +21,8 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(d.khoiCham({ tuanThi: '2026-09-21', tuanHomNay: nay, quaHan: true }) === 'qua-han', 'sang tuần thứ hai + quá hạn');
     assert(d.khoiCham({ tuanThi: '2026-09-21', tuanHomNay: nay, quaHan: false }) === 'tuan-nay', 'hạn riêng dời xa');
   });
-  check('LT3-1 laChamCheo chỉ Speaking của Mock', () => {
-    assert(d.laChamCheo('mock', 'speaking') && !d.laChamCheo('mock', 'writing1') && !d.laChamCheo('mt0', 'speaking')
+  check('LT3-1 laChamCheo chỉ Speaking của Mock + MT0 (LOP-THUONG-QUYEN, chủ SP 08/11)', () => {
+    assert(d.laChamCheo('mock', 'speaking') && !d.laChamCheo('mock', 'writing1') && d.laChamCheo('mt0', 'speaking') && !d.laChamCheo('mt0', 'listening')
       && !d.laChamCheo('progress', 'speaking') && !d.laChamCheo(null, 'speaking'), 'cờ sai');
   });
 
