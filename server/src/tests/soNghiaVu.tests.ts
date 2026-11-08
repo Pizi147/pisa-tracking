@@ -275,4 +275,98 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
       assert(so(nv.khoaViec(it.key)).khong_tinh === 'thieu-ngay-xong', `sau mốc: ${JSON.stringify(so(nv.khoaViec(it.key)))}`);
     } finally { nv.MOC_TINH_TRE.ngay = ''; }
   }));
+
+  // ------------------------------------------------------------------ Task 5 · đếm (đọc sổ)
+  const dem: any = await import('../phanTich/demNghiaVu.ts');
+  const ng: any = await import('../platform/nguCanhRequest.ts');
+  const accounts: any = await import('../platform/accounts.ts');
+  /** Dòng sổ giả (chỉ cột đếm cần) — ca đếm cô lập khỏi luật tính dòng. */
+  let soGia = 0;
+  const chenSo = (o: { nguoi: number | null; cn?: number; han: string; xong?: string | null; hanGoc?: string; tuan?: string | null; sCheo?: boolean; khongTinh?: string | null; loai?: string }) =>
+    conn.prepare(`INSERT INTO nghia_vu (loai, kieu, khoa, chi_nhanh, nguoi, s_cheo, han_goc, han, tuan, xong_luc, khong_tinh, cap_nhat)
+      VALUES (?, 'listening', ?, ?, ?, ?, ?, ?, ?, ?, ?, '2026-09-01')`).run(o.loai ?? 'bai', `gia:${++soGia}`, o.cn ?? MB, o.nguoi, o.sCheo ? 1 : 0, o.hanGoc ?? o.han, o.han,
+      o.tuan ?? null, o.xong ?? null, o.khongTinh ?? null);
+  const KY = { tu: '2026-08-31', den: '2026-09-13', loai: 'bai', homNay: TODAY };
+  const gvMb = (conn.prepare(`SELECT DISTINCT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id JOIN roles r ON r.id = ur.role_id
+      WHERE r.key = 'teacher' AND ur.branch_id = ? AND ur.status = 'active' ORDER BY u.id`).all(MB) as any[]).map((r) => r.id as number);
+  const so3 = (m: Map<number, any>, gv: number) => m.get(gv) ?? { dung: 0, muon: 0, chua: 0 };
+
+  check('NV-DEM · 3 dòng (đúng hạn, làm muộn, chưa làm) → {1,1,1}; dòng chưa tới hạn / không tính / chưa phân công không đếm', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    const g = gvMb[0];
+    chenSo({ nguoi: g, han: '2026-09-02', xong: '2026-09-01' });
+    chenSo({ nguoi: g, han: '2026-09-02', xong: '2026-09-05' });
+    chenSo({ nguoi: g, han: '2026-09-03' });
+    chenSo({ nguoi: g, han: '2026-09-13' });                       // quá hạn 1 ngày (hôm nay 09-14) → chưa làm
+    chenSo({ nguoi: g, han: '2026-09-04', khongTinh: 'vang' });
+    chenSo({ nguoi: null, han: '2026-09-04' });
+    const m = dem.demTheoNguoi({ chiNhanh: MB, ...KY });
+    const x = so3(m, g);
+    assert(x.dung === 1 && x.muon === 1 && x.chua === 2, `So3: ${JSON.stringify(x)}`);
+    assert(dem.trangThai({ han: TODAY, hanGoc: TODAY, xongLuc: null }, TODAY) === 'chua-toi', 'hạn = hôm nay: chưa tới hạn');
+    assert(dem.chuaPhanCong(MB, KY.tu, KY.den).length === 1, 'dòng Chưa phân công');
+  }));
+
+  check('NV-MOC · mốc W4 OCT: hạn gốc 2026-10-12 xong muộn → đúng; 2026-10-19 xong muộn → muộn; trước mốc chưa xong → chưa; bài xét theo tuần thi', () => {
+    try {
+      nv.MOC_TINH_TRE.ngay = '2026-10-19';
+      const tt = (o: any) => dem.trangThai(o, '2026-11-09');
+      assert(tt({ han: '2026-10-12', hanGoc: '2026-10-12', xongLuc: '2026-10-20' }) === 'dung', 'hạn gốc trước mốc, xong muộn → đúng');
+      assert(tt({ han: '2026-10-19', hanGoc: '2026-10-19', xongLuc: '2026-10-25' }) === 'muon', 'hạn gốc = mốc, xong muộn → muộn');
+      assert(tt({ han: '2026-10-12', hanGoc: '2026-10-12', xongLuc: null }) === 'chua', 'trước mốc, chưa xong → chưa làm');
+      assert(tt({ han: '2026-10-21', hanGoc: '2026-10-21', tuan: '2026-10-12', xongLuc: '2026-10-30' }) === 'dung', 'bài tuần W3 OCT (hạn 21/10) xong muộn → đúng');
+      assert(tt({ han: '2026-11-25', hanGoc: '2026-10-08', xongLuc: '2026-11-20' }) === 'dung', 'hạn gốc trước mốc (đã đặt lại hạn) → đúng');
+    } finally { nv.MOC_TINH_TRE.ngay = ''; }
+  });
+
+  check('NV-SCHEO-CA-NHOM · S chéo chưa ai nhận, 3 GV có kỹ năng S ở chi nhánh → mỗi người chưa làm + 1; panel từng người có dòng đó', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    const ba = gvMb.slice(0, 3);
+    assert(ba.length === 3, 'seed cần ≥ 3 GV chi nhánh');
+    conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
+    conn.prepare(`DELETE FROM ky_nang_lan WHERE skill = 'speaking'`).run();
+    for (const g of ba) conn.prepare(`INSERT INTO user_skills (user_id, skill) VALUES (?, 'speaking')`).run(g);
+    chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
+    const m = dem.demTheoNguoi({ chiNhanh: MB, ...KY });
+    for (const g of ba) assert(so3(m, g).chua === 1, `GV ${g}: ${JSON.stringify(so3(m, g))}`);
+    assert(gvMb.slice(3).every((g) => so3(m, g).chua === 0), 'GV không có S không bị tính');
+    for (const g of ba) assert(dem.dongCuaNguoi({ nguoi: g, chiNhanh: MB, ...KY }).some((d: any) => d.sCheo && d.trangThai === 'chua'), `panel GV ${g}`);
+  }));
+
+  check('NV-SCHEO-NGAY · GV bỏ kỹ năng S SAU hạn (sửa hồ sơ) → vẫn bị tính bài S chéo hạn trước đó; bài hạn sau ngày bỏ → không', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    const g = gvMb[0];
+    conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
+    conn.prepare(`DELETE FROM ky_nang_lan WHERE skill = 'speaking'`).run();
+    accounts.ghiKyNangLan(conn, g, [], ['speaking'], '2026-08-01');   // có S từ 01/08
+    conn.prepare(`INSERT INTO user_skills (user_id, skill) VALUES (?, 'speaking')`).run(g);
+    accounts.ghiKyNangLan(conn, g, ['speaking'], [], '2026-09-05');   // bỏ S ngày 05/09
+    conn.prepare(`DELETE FROM user_skills WHERE user_id = ? AND skill = 'speaking'`).run(g);
+    chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
+    chenSo({ nguoi: null, sCheo: true, han: '2026-09-10' });
+    const x = so3(dem.demTheoNguoi({ chiNhanh: MB, ...KY }), g);
+    assert(x.chua === 1, `chỉ bài hạn trước ngày bỏ S: ${JSON.stringify(x)}`);
+  }));
+
+  check('NV-TONG · GV có dòng ở hai chi nhánh → chiNhanh = null ra MỘT dòng = tổng hai chi nhánh', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    const g = gvMb[0];
+    const khac = get(`SELECT id FROM branches WHERE id != ? ORDER BY id LIMIT 1`, MB).id;
+    chenSo({ nguoi: g, han: '2026-09-02', xong: '2026-09-01' });
+    chenSo({ nguoi: g, cn: khac, han: '2026-09-03' });
+    const tong = so3(dem.demTheoNguoi({ chiNhanh: null, ...KY }), g);
+    assert(tong.dung === 1 && tong.chua === 1, `tổng: ${JSON.stringify(tong)}`);
+    assert(so3(dem.demTheoNguoi({ chiNhanh: MB, ...KY }), g).chua === 0, 'một chi nhánh chỉ dòng của nó');
+  }));
+
+  check('NV-DEM-CAU · demTheoNguoi một chi nhánh ≤ 2 câu SQL (có S chéo)', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    chenSo({ nguoi: gvMb[0], han: '2026-09-02' });
+    chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
+    const c0 = ng.soCauSql();
+    ng.chayTrongRequest('GET', () => dem.demTheoNguoi({ chiNhanh: MB, ...KY }));
+    const n = ng.soCauSql() - c0;
+    assert(n <= 2, `${n} câu`);
+  }));
+  if (nv.MOC_TINH_TRE) nv.MOC_TINH_TRE.ngay = '2026-10-19';
 }

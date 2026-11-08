@@ -1,0 +1,101 @@
+/**
+ * ĐẾM SỔ NGHĨA VỤ (spec `2026-11-09-so-nghia-vu-design.md` mục 1.3 · 1.6 · 1.7): mọi nơi (Phân tích GV, hồ sơ GV, Tổng quan — PR-2) đọc 3 số
+ * Đúng hạn · Làm muộn · Chưa làm qua các hàm này. Trạng thái tính lúc đọc từ `han` / `han_goc` / `tuan` / `xong_luc`; mốc W4 OCT CHỈ áp ở `trangThai`.
+ */
+import { db } from '../db.ts';
+import { demoToday } from '../demoConfig.ts';
+import { truocMoc } from './soNghiaVu.ts';
+
+export type So3 = { dung: number; muon: number; chua: number };
+export type TrangThaiNv = 'dung' | 'muon' | 'chua' | 'chua-toi';
+type Q = { chiNhanh: number | null; tu: string; den: string; loai: 'bai' | 'viec'; homNay: string };
+
+const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
+
+/**
+ * Bốn ô (spec 1.3): xong ≤ hạn hiện tại → Đúng hạn; xong sau → Làm muộn; chưa xong và hôm nay > hạn → Chưa làm; còn lại → Chưa tới hạn.
+ * Mốc (spec 1.6): đã xong mà hạn gốc (bài: Thứ Hai tuần thi) trước thứ Hai W4 OCT 2026 → Đúng hạn. Chưa xong thì mốc không cứu.
+ */
+export function trangThai(d: { han: string | null; hanGoc?: string | null; tuan?: string | null; xongLuc: string | null }, homNay: string): TrangThaiNv {
+  if (!d.han) return 'chua-toi';
+  if (d.xongLuc) return d.xongLuc <= d.han || truocMoc(d.tuan ?? d.hanGoc ?? d.han) ? 'dung' : 'muon';
+  return homNay > d.han ? 'chua' : 'chua-toi';
+}
+
+type DongDoc = { khoa: string; loai: string; kieu: string; chi_nhanh: number; lop: number | null; hoc_vien: number | null; nguoi: number | null; s_cheo: number;
+  pc_nhap_sau: number; han_goc: string | null; han: string | null; tuan: string | null; xong_luc: string | null; nguoi_lam: number | null };
+const COT_DOC = 'khoa, loai, kieu, chi_nhanh, lop, hoc_vien, nguoi, s_cheo, pc_nhap_sau, han_goc, han, tuan, xong_luc, nguoi_lam';
+const tt = (r: DongDoc, homNay: string) => trangThai({ han: r.han, hanGoc: r.han_goc, tuan: r.tuan, xongLuc: r.xong_luc }, homNay);
+
+/**
+ * GV có kỹ năng S (hồ sơ GV) có vai giáo viên ở chi nhánh — TẠI NGÀY (lịch sử `ky_nang_lan`; người chưa có lịch sử: kỹ năng hiện tại `user_skills`).
+ * Một câu cho mọi chi nhánh của các dòng.
+ */
+function nhomS(cns: readonly number[]): (cn: number, ngay: string) => number[] {
+  if (!cns.length) return () => [];
+  const rows = db().prepare(`SELECT ur.branch_id AS cn, ur.user_id AS gv, l.tu, l.den, (us.user_id IS NOT NULL) AS hien_co
+      FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
+      LEFT JOIN ky_nang_lan l ON l.user_id = ur.user_id AND l.skill = 'speaking'
+      LEFT JOIN user_skills us ON us.user_id = ur.user_id AND us.skill = 'speaking'
+     WHERE ur.status = 'active' AND ur.branch_id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(cns)])) as any[];
+  return (cn, ngay) => [...new Set(rows.filter((r) => r.cn === cn && (r.tu != null ? r.tu <= ngay && (!r.den || r.den > ngay) : !!r.hien_co)).map((r) => r.gv as number))];
+}
+
+/** Dòng đang tính (không `khong_tinh`) có hạn trong kỳ — một câu theo chỉ mục (chi_nhanh, han). */
+function docKy(q: Q): DongDoc[] {
+  return db().prepare(`SELECT ${COT_DOC} FROM nghia_vu WHERE loai = ? AND khong_tinh IS NULL AND han BETWEEN ? AND ?${q.chiNhanh != null ? ' AND chi_nhanh = ?' : ''}`)
+    .all(q.loai, q.tu, q.den, ...(q.chiNhanh != null ? [q.chiNhanh] : [])) as DongDoc[];
+}
+
+/** Người chịu dòng (spec 1.2): người đã ghi; S chéo chưa ai nhận → mọi GV có S của chi nhánh tại ngày hạn; chưa phân công → không ai. */
+function nguoiCua(rows: readonly DongDoc[]): (r: DongDoc) => number[] {
+  const s = nhomS(rows.some((r) => r.s_cheo && r.nguoi == null) ? rows.filter((r) => r.s_cheo && r.nguoi == null).map((r) => r.chi_nhanh) : []);
+  return (r) => (r.nguoi != null ? [r.nguoi] : r.s_cheo ? s(r.chi_nhanh, r.han!) : []);
+}
+
+/** 3 số của mỗi người trong kỳ. `chiNhanh = null` → mọi chi nhánh, một người một dòng (tổng). ≤ 2 câu. */
+export function demTheoNguoi(q: Q): Map<number, So3> {
+  const rows = docKy(q);
+  const ai = nguoiCua(rows);
+  const out = new Map<number, So3>();
+  for (const r of rows) {
+    const t = tt(r, q.homNay);
+    if (t === 'chua-toi') continue;
+    for (const g of ai(r)) {
+      const x = out.get(g) ?? out.set(g, { dung: 0, muon: 0, chua: 0 }).get(g)!;
+      x[t] += 1;
+    }
+  }
+  return out;
+}
+
+export type DongNvXem = {
+  khoa: string; loai: string; kieu: string; chiNhanh: number; lop: number | null; hocVien: number | null; sCheo: boolean; pcNhapSau: boolean;
+  han: string; hanGoc: string | null; xongLuc: string | null; nguoiLam: number | null; trangThai: Exclude<TrangThaiNv, 'chua-toi'>;
+  /** Làm muộn: số ngày muộn · Chưa làm: số ngày quá hạn. */
+  soNgay: number | null;
+};
+const xem = (r: DongDoc, t: Exclude<TrangThaiNv, 'chua-toi'>, homNay: string): DongNvXem => ({
+  khoa: r.khoa, loai: r.loai, kieu: r.kieu, chiNhanh: r.chi_nhanh, lop: r.lop, hocVien: r.hoc_vien, sCheo: !!r.s_cheo, pcNhapSau: !!r.pc_nhap_sau,
+  han: r.han!, hanGoc: r.han_goc && r.han_goc !== r.han ? r.han_goc : null, xongLuc: r.xong_luc, nguoiLam: r.nguoi_lam, trangThai: t,
+  soNgay: t === 'muon' ? ngayCach(r.han!, r.xong_luc!) : t === 'chua' ? ngayCach(r.han!, homNay) : null,
+});
+const THU_TU: Record<string, number> = { chua: 0, muon: 1, dung: 2 };
+
+/** Dòng của MỘT người trong kỳ (panel): Chưa làm trước (quá lâu nhất đầu), rồi Làm muộn, Đúng hạn. Cùng tập với `demTheoNguoi`. */
+export function dongCuaNguoi(q: Q & { nguoi: number }): DongNvXem[] {
+  const rows = docKy(q);
+  const ai = nguoiCua(rows);
+  const out: DongNvXem[] = [];
+  for (const r of rows) {
+    const t = tt(r, q.homNay);
+    if (t !== 'chua-toi' && ai(r).includes(q.nguoi)) out.push(xem(r, t, q.homNay));
+  }
+  return out.sort((a, b) => THU_TU[a.trangThai] - THU_TU[b.trangThai] || (b.soNgay ?? 0) - (a.soNgay ?? 0) || a.han.localeCompare(b.han));
+}
+
+/** Bài / việc không có người (spec 1.2 a, "Chưa phân công") của một chi nhánh trong kỳ — cho QL. */
+export function chuaPhanCong(chiNhanh: number, tu: string, den: string, homNay = demoToday()): DongNvXem[] {
+  return (db().prepare(`SELECT ${COT_DOC} FROM nghia_vu WHERE chi_nhanh = ? AND han BETWEEN ? AND ? AND khong_tinh IS NULL AND nguoi IS NULL AND s_cheo = 0`)
+    .all(chiNhanh, tu, den) as DongDoc[]).flatMap((r) => { const t = tt(r, homNay); return t === 'chua-toi' ? [] : [xem(r, t, homNay)]; });
+}

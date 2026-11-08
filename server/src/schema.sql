@@ -2494,3 +2494,6 @@ CREATE TABLE IF NOT EXISTS nghia_vu (
 );
 CREATE INDEX IF NOT EXISTS idx_nghia_vu_cn_han ON nghia_vu(chi_nhanh, han);
 CREATE INDEX IF NOT EXISTS idx_nghia_vu_nguoi_han ON nghia_vu(nguoi, han);
+-- SỔ NGHĨA VỤ (spec 1.2 c): lịch sử kỹ năng hồ sơ GV — S chéo chưa ai nhận tính cho GV có S TẠI NGÀY HẠN. Một dòng một lần có (tu) → bỏ (den). accounts.setSkills ghi.
+CREATE TABLE IF NOT EXISTS ky_nang_lan (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, skill TEXT NOT NULL, tu TEXT NOT NULL, den TEXT);
+CREATE INDEX IF NOT EXISTS idx_ky_nang_lan ON ky_nang_lan(skill, user_id);
