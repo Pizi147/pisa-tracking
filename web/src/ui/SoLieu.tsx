@@ -511,7 +511,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase || goc.some((r) => r.diemHv || r.xuHuong) ? 'rong' : 'hep'}
       /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
-      loai={nhomCase ? t('SỐ LIỆU · TỔNG QUAN') : hien.some((r) => r.viec?.lam) ? t('VIỆC') : t('BÁO CÁO · CHỈ ĐỌC')}
+      loai={nhomCase ? t('Số liệu · Tổng quan') : hien.some((r) => r.viec?.lam) ? t('Việc') : t('Báo cáo · chỉ đọc')}
       dau={{
         han: soTre ? <ChipSoQuaHan n={soTre} /> : null,
         /* PANEL-RIENG (XM-1, mockup v10 `.pn-tieu`): số + đơn vị ngay sau tên số liệu ("SOS 2 · MB FT 101 4 HV"), "Cách tính" là ⓘ cuối dòng tiêu đề. */

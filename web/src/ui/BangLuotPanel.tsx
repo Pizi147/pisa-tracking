@@ -92,13 +92,13 @@ function ODiemO({ kn, o, nhan }: { kn: KnLuot; o: ODiemLuot; nhan: string }) {
 
 /** Nhãn đầu panel theo nơi gọi (mockup v13: "SỐ · TEST + SOS", "SỐ · BÁO CÁO HV"). */
 export function loaiBangLuot(nguon: string): string {
-  if (nguon.startsWith('/phan-tich/tong-hop')) return t('SỐ · TEST + SOS');
-  if (nguon.startsWith('/phan-tich/bao-cao')) return t('SỐ · BÁO CÁO HV');
-  if (nguon.startsWith('/phan-tich/giao-vien')) return t('SỐ · PHÂN TÍCH GV');
-  if (nguon.startsWith('/phan-tich/y-thuc')) return t('SỐ · Ý THỨC');
-  if (nguon.startsWith('/phan-tich/hieu-qua-pa')) return t('SỐ · HIỆU QUẢ PA');
-  if (nguon.startsWith('/phan-tich/thi-that')) return /[?&]o=gv:/.test(nguon) ? t('SỐ · THI THẬT · THEO GV') : t('SỐ · THI THẬT');
-  return t('BÁO CÁO · CHỈ ĐỌC');
+  if (nguon.startsWith('/phan-tich/tong-hop')) return t('Số · Test + SOS');
+  if (nguon.startsWith('/phan-tich/bao-cao')) return t('Số · Báo cáo HV');
+  if (nguon.startsWith('/phan-tich/giao-vien')) return t('Số · Phân tích GV');
+  if (nguon.startsWith('/phan-tich/y-thuc')) return t('Số · Ý thức');
+  if (nguon.startsWith('/phan-tich/hieu-qua-pa')) return t('Số · Hiệu quả PA');
+  if (nguon.startsWith('/phan-tich/thi-that')) return /[?&]o=gv:/.test(nguon) ? t('Số · Thi thật · theo GV') : t('Số · Thi thật');
+  return t('Báo cáo · chỉ đọc');
 }
 
 /**
@@ -110,7 +110,7 @@ export function loaiBangLuot(nguon: string): string {
  *     kỹ năng lấy lại khi thi lại một kỹ năng: mờ "↺".
  * < 640 px: thẻ (A1m) — tên + "Kỳ vọng x" phải · lớp · MT · lưới 6 ô điểm.
  */
-export function BangLuotPanel({ tieuDe, loai = t('SỐ · TEST + SOS'), data, loading, error, reload, onDong }: {
+export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, loading, error, reload, onDong }: {
   tieuDe: string; loai?: string; data: DuLieuBangLuot | null; loading: boolean; error: ApiError | null; reload: () => void; onDong: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();

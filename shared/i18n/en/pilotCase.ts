@@ -2,7 +2,7 @@
 import type { Dich } from '../en.ts';
 
 export const EN_PILOT_CASE = {
-  'SỐ LIỆU · TỔNG QUAN': 'DATA · OVERVIEW',
+  'Số liệu · Tổng quan': 'Data · overview',
   'Bạn': 'You',
   '{n} Case còn chờ': (b) => `${b.n} ${Number(b.n) === 1 ? 'case' : 'cases'} waiting`,
   'Đã xử lý hết': 'All handled',

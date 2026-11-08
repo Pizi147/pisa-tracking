@@ -184,7 +184,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
   const nguCanh = [data.nguon && t('Từ {lop}', { lop: data.nguon.code }),
     e0 && (e0.daThiHanh ? t('vào lớp {tuan}', { tuan: tuanLich(e0.tuanBatDau, homNay) }) : t('chuyển lớp {tuan}', { tuan: tuanLich(e0.tuanBatDau, homNay) }))].filter(Boolean) as string[];
   return (
-    <KhungPanel rong="rong" tieuDe={tieuDe} loai={t('VIỆC · XÉT LẠI LỘ TRÌNH')} onDong={dong}
+    <KhungPanel rong="rong" tieuDe={tieuDe} loai={t('Việc · Xét lại lộ trình')} onDong={dong}
       dau={{ han: data.han && !data.chiXem ? <ChipHan loai="viec-van-hanh" han={data.han} /> : null, dong2: nguCanh }}
       chan={data.chiXem ? { huy: { onClick: dong } } : {
         daSua: soan.length > 0, huy: { onClick: dong, disabled: busy },

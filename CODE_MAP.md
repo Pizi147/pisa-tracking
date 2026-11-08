@@ -455,6 +455,7 @@ Hướng dẫn cho chủ sản phẩm: `TRIEN_KHAI.md`. Lệnh `npm run …`: th
 | Panel trượt phải (một khung, một panel một lúc) | `web/src/ui/KhungPanel.tsx` (`KhungPanel`, `KhungTaiCho`) · `shared/domain/khoPanel.ts` |
 | Hộp giữa màn, xác nhận | `web/src/ui/Drawer.tsx` (`Modal`, `ConfirmDialog`) |
 | Menu, menu dòng ⋯, bấm ra ngoài | `web/src/ui/{Menu,MenuDong}.tsx` · `web/src/ui/useBamNgoai.ts` |
+| Lưới nhập điểm trong panel việc: cuộn ngang + mờ mép còn cột | `web/src/ui/LuoiTrongPanel.tsx` · `.luoi-trong-panel` trong `web/src/index.css` |
 | Bảng chung, ô điểm, hàng nhóm, hàng tab | `web/src/ui/{Bang,ODiem,HangNhom,HangTab}.tsx` · `shared/domain/bang.ts` |
 | Thẻ điện thoại thay bảng < 640 px | `web/src/ui/TheDong.tsx` (`TheDong`, `useDienThoai`) |
 | Ô ngày (gõ + lịch), tuần, tháng | `web/src/ui/{ONgay,LichNho,ChonNgay}.tsx` · `shared/domain/{oNgay,chonNgay}.ts` |

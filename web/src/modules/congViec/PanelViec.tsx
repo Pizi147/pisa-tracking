@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
+import { LuoiTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -250,11 +251,11 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
-            <div className="luoi-trong-panel -mx-4 px-2">
+            <LuoiTrongPanel className="luoi-trong-panel -mx-4 px-2">
               <LuoiChamLop data={data} kind={null} kn={kn} onReload={daLuu} gon anNutTao chiCot={kns} datConTro={!tuMo}
                 nutCaLop={!chiEmViec} anKetQua={chiEmViec}
                 chiAttempt={chiAttempt?.size ? chiAttempt : null} onHet={hetViec(onTiep)} />
-            </div>
+            </LuoiTrongPanel>
           )}
     </KhungPanel>
   );
@@ -315,13 +316,13 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
                 <span className="min-w-0 truncate text-xs text-slate-400">{dich(x.contextLabel ?? '')} · {dich(x.phu ?? x.reason)} · {t('{soBai} bài', { soBai: x.soBai ?? 0 })}</span>
               </button>
               {dangMo && (
-                <div className="luoi-trong-panel px-2 pb-2">
+                <LuoiTrongPanel className="luoi-trong-panel px-2 pb-2">
                   <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
                     hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
                     emCoBaiTuan={(x.kind ?? 'mock') === 'mock'}
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
                     datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
-                </div>
+                </LuoiTrongPanel>
               )}
             </li>
           );
