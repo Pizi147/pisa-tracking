@@ -48,12 +48,12 @@ export async function runPrViecNho2Tests(t: YThucTestKit) {
   }
 
   /* ---------------------------------------------------------------- 2. Chờ duyệt: hàng lọc đứng yên */
-  check('VN2-2 · Chờ duyệt: nhóm Trạng thái đứng trước nhóm Loại; nhóm Loại không bị gỡ khi ở Báo QL (OV-12h đổi tên tab; mờ, không bấm)', () => {
+  /* AUDIT-UI B6 (chủ SP 08/11, mockup `.hang-loc`): hộp duyệt là tab — MỘT hàng chip: loại phải quyết (đứng yên kể cả số 0) · vạch · Báo QL · Đã xử lý · Lớp ▾. */
+  check('VN2-2 · Chờ bạn duyệt: hàng lọc đứng yên — chip loại luôn vẽ (cả ở Báo QL), rồi Báo QL, Đã xử lý · 30 ngày, Lớp', () => {
     const s = doc('web/src/modules/duyet/HopChoDuyet.tsx');
-    const tt = s.indexOf("ariaLabel={t('Trạng thái')}"), loai = s.indexOf("ariaLabel={t('Loại yêu cầu')}");   // EN-SOT: chữ qua t()
-    assert(tt > 0 && loai > tt, 'Trạng thái phải đứng trước Loại');
-    assert(!/xem !== 'de-biet' && \(\s*<BoLocDoan ariaLabel=\{t\('Loại yêu cầu'\)\}/.test(s), 'nhóm Loại vẫn bị gỡ ở Báo QL');
-    assert(/Báo QL không chia loại/.test(s), 'thiếu chữ rê chuột của nhóm mờ');
+    const loai = s.indexOf('PHAN_LOAI_CAN_QUYET.map((k)'), bao = s.indexOf("{t('Báo QL')}"), xl = s.indexOf("{t('Đã xử lý · 30 ngày')}"), lop = s.indexOf("aria-label={t('Lọc theo lớp')}");
+    assert(loai > 0 && loai < bao && bao < xl && xl < lop, 'thứ tự hàng lọc');
+    assert(!/xem !== 'de-biet' && \(\s*\[\{ key: 'tat-ca'/.test(s), 'chip loại bị gỡ ở Báo QL');
   });
 
   /* ---------------------------------------------------------------- 4. GV chấm S */

@@ -36,7 +36,7 @@ export async function runTenChiSoTests({ check, assert }: { check: (ten: string,
   check('TEN-CHI-SO · đơn vị: "bài" thay "ô điểm" ở chữ hiển thị; Chấm Test đếm "việc" (không "nhóm")', () => {
     const o = tim(/(t\('[^']*ô điểm|aria-?[lL]abel="[^"]*ô điểm|ariaLabel="[^"]*ô điểm)(?!')/, /cham\/LuoiFT\.tsx$/);
     assert(!o.length, `"ô điểm" còn ở chữ hiển thị: ${o.join(', ')}`);
-    const ct = fs.readFileSync(path.join(REPO, 'web/src/modules/test/ChamTestTab.tsx'), 'utf8');
-    assert(!/t\('(nhóm|\{n\} nhóm[^']*|Chọn một nhóm[^']*)'\)/.test(ct), 'Chấm Test còn đếm "nhóm"');
+    /* AUDIT-UI B6: tab Chấm Test đã bỏ (`ChamTestTab.tsx` xoá) — việc chấm chỉ ở Công việc. */
+    assert(!fs.existsSync(path.join(REPO, 'web/src/modules/test/ChamTestTab.tsx')), 'Chấm Test còn tệp');
   });
 }

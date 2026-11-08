@@ -86,7 +86,7 @@ export async function runKhungTests(t: YThucTestKit) {
     'Đọc tab từ đường dẫn (không có đoạn = Việc học viên)');
     assert(Object.values(d.TAB_CONG_VIEC_LABEL).join(',') === 'Chờ duyệt,Hỗ trợ học viên,Yêu cầu của tôi,Vận hành,Họp đơn vị', 'Chữ tab Công việc');
     assert(d.DUONG_TAB_CONG_VIEC['ho-tro'] === '/cong-viec' && d.DUONG_TAB_CONG_VIEC['van-hanh'] === '/cong-viec/van-hanh'
-      && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec/cho-duyet', 'Đường dẫn tab');
+      && d.DUONG_TAB_CONG_VIEC['cho-duyet'] === '/cong-viec?nhom=duyet', 'Đường dẫn tab');   // AUDIT-UI B6: Hộp duyệt = tab "Chờ bạn duyệt"
     /* OV-15d (thay UX-2 (3)): Công việc một danh sách — "Chờ bạn duyệt" là nhóm đầu, mục menu luôn `/cong-viec`. */
     assert(d.khuVucHienThi(QL, 2).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
       && d.khuVucHienThi(QL, 0).find((k: any) => k.key === 'cong-viec')?.to === '/cong-viec'
