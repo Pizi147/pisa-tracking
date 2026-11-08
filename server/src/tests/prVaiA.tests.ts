@@ -572,7 +572,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const base = { entity_id: 7, student_id: 3, attempt_id: null, ten_hv: 'Vũ Ngọc Lan', mon: 'Reading', lop: 'MB FT 101' };
     eq(d.noiDenThongBao({ ...base, entity_type: 'sos_case', kind: 'sos' }), 'Hồ sơ Vũ Ngọc Lan › Case Reading', 'Case');
     eq(d.noiDenThongBao({ ...base, entity_type: 'yeu_cau_duyet', kind: 'duyet_tu_choi' }), 'Công việc › Yêu cầu của tôi', 'từ chối');
-    eq(d.noiDenThongBao({ ...base, entity_type: 'yeu_cau_duyet', kind: 'duyet_moi' }), 'Công việc › Chờ duyệt', 'thẻ mới');
+    eq(d.noiDenThongBao({ ...base, entity_type: 'yeu_cau_duyet', kind: 'duyet_moi' }), 'Công việc › Chờ bạn duyệt', 'thẻ mới');   // AUDIT-UI B6
     eq(d.noiDenThongBao({ ...base, entity_type: 'discipline_measure', kind: 'discipline', duong: '/hoc-vien/lop/5?tab=y-thuc&hv=3&mo=xu-ly' }), 'Lớp MB FT 101 › Ý thức', 'Ý thức lớp');
     eq(d.noiDenThongBao({ ...base, entity_type: 'user', kind: 'dang_ky' }), 'Quản trị › Tài khoản', 'đăng ký');
     eq(d.duongThongBao({ ...base, entity_type: 'yeu_cau_duyet', kind: 'duyet_tu_choi' }), d.duongThe(7, 'nguoi-xin'), 'từ chối về Yêu cầu của tôi');

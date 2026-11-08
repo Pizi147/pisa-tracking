@@ -3,12 +3,9 @@ import { useSession } from '../../lib/session.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { LichTestTab } from './LichTestTab.tsx';
 import { KeHoachTestTab } from './KeHoachTestTab.tsx';
-import { ChamTestTab, viecChamCuaToi } from './ChamTestTab.tsx';
-import { useApi } from '../../lib/useApi.ts';
-import type { WorkItem } from '../worklist/WorkList.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import {
-  DUONG_TAB_TEST, NAV_RONG, TAB_TEST_LABEL, locTuThamSoTrong, moDiemLopCu, tabTestHienThi, tabTestMacDinh, tabTestTuDuong, type TabTest,
+  DUONG_CHAM_CU, DUONG_TAB_TEST, NAV_RONG, TAB_TEST_LABEL, locTuThamSoTrong, moDiemLopCu, tabTestHienThi, tabTestMacDinh, tabTestTuDuong, type TabTest,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -26,9 +23,8 @@ export default function TestPage() {
   const tabs = tabTestHienThi(nav);
   const macDinh = tabTestMacDinh(nav);
   const tab = tabTestTuDuong(seg);
-  /* UI-CHAM-TEST: số nhóm "Của tôi" trên tab Chấm Test — cùng GET `/my-work` với badge Công việc (gộp GET đang bay). */
-  const viec = useApi<{ dong: WorkItem[] }>(tabs.includes('cham') ? '/my-work' : null, [tabs.includes('cham')]);
-
+  /* AUDIT-UI B6: tab "Chấm Test" đã bỏ — link cũ `/test/cham` sang Công việc › Chấm điểm (Công việc tự về tab đầu nếu người đó không có việc chấm). */
+  if (seg === 'cham') return <Navigate to={DUONG_CHAM_CU} replace />;
   if (!macDinh) return <Navigate to="/" replace />;
   const lopCu = tab === 'diem-lop' && moDiemLopCu(nav) ? Number(params.get('lop')) || null : null;
   if (!tab || (!tabs.includes(tab) && !lopCu)) {
@@ -49,13 +45,12 @@ export default function TestPage() {
       </div>
       {tabs.length > 1 && (
         <HangTab panelId="test-vung" ariaLabel={t('Test')} value={lopCu ? 'lich' : tab} onChange={go}
-          tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k], ...(k === 'cham' && viec.data ? { so: viecChamCuaToi(viec.data.dong).length, donVi: t('việc') } : {}) }))} />
+          tabs={tabs.map((k) => ({ key: k, label: TAB_TEST_LABEL[k] }))} />
       )}
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
       <div id="test-vung" role="tabpanel" aria-label={TAB_TEST_LABEL[lopCu ? 'lich' : tab]} className="space-y-4">
         {(tab === 'lich' || lopCu) && <LichTestTab />}
         {lopCu && <PanelNhapDiemLop classId={lopCu} luot={params.get('luot')} loc={locTuThamSoTrong(params.get('trong'))} onDong={dongLopCu} />}
-        {tab === 'cham' && <ChamTestTab />}
         {tab === 'ke-hoach' && <KeHoachTestTab />}
       </div>
     </div>

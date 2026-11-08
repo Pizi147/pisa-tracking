@@ -118,7 +118,7 @@ export function tenNguon(url: string): TenTrang {
   if (cv) {
     const tab = tabCongViecTuDuong(cv[1]);
     return { ten: t('Công việc'), chiTiet: noi(tab && tab !== 'ho-tro' && TAB_CONG_VIEC_LABEL[tab],
-      nhan<LocNhanh>(LOC_NHANH_LABEL, q.get('loc'), 'tat-ca'), nhan<NhomViec>(NHOM_VIEC_LABEL, q.get('nhom'))) };
+      nhan<LocNhanh>(LOC_NHANH_LABEL, q.get('loc'), 'tat-ca'), q.get('nhom') === 'duyet' ? t('Chờ bạn duyệt') : nhan<NhomViec>(NHOM_VIEC_LABEL, q.get('nhom'))) };   // AUDIT-UI B6: Hộp duyệt = tab
   }
   const test = /^\/test(?:\/([^/]+))?$/.exec(p);
   if (test) return { ten: TEN_TAB_TEST[test[1] ?? ''] ?? t('Test') };

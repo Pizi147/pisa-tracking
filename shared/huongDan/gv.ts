@@ -15,7 +15,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final', nhom: 'diem',
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Chấm điểm', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Dòng <b>Nhập điểm</b> ở nhóm <b>Chấm điểm</b> — bấm để gõ điểm.' } },
-      loiTat: ['lich-test', 'cham-test', 'diem-lop', 'ho-so-lop', 'nhap-diem', 'p-nhap-diem'], tatThem: ['⋯ dòng em'], cung: 'mở cùng ô điểm.',
+      loiTat: ['lich-test', 'diem-lop', 'ho-so-lop', 'nhap-diem', 'p-nhap-diem'], tatThem: ['⋯ dòng em'], cung: 'mở cùng ô điểm.',
       buoc: ['Mở <b>Công việc</b>, nhóm <b>Chấm điểm</b>.', 'Bấm <b>Nhập điểm</b> ở dòng lớp.', 'Gõ điểm; em vắng gõ <b>-</b>; <b>Lưu · bài tiếp ›</b>.'],
       tuKhac: ['chấm', 'chấm bài', 'điểm', 'sửa điểm', 'mock test', 'progress test', 'final test', 'score', 'grade', 'marks'],
     },
@@ -29,7 +29,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'cham-s', ten: 'Chấm Speaking chéo', nhom: 'diem', chiS: true,
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Speaking chấm chéo', duong: CV },
-      loiTat: ['lich-test', 'cham-test'], cung: 'mở cùng ô điểm.',
+      loiTat: ['lich-test'], cung: 'mở cùng ô điểm.',
       buoc: ['Mở <b>Công việc</b>, nhóm <b>Speaking chấm chéo</b>, dòng <b>Chấm Speaking · n bài</b>.', 'Tìm em (tên, email), lọc lớp, bấm ô S để chấm.', '<b>Enter</b> sang em chưa chấm kế; không tính quá hạn.'],
       tuKhac: ['speaking', 'chấm chéo', 'cross marking'],
     },
@@ -192,15 +192,6 @@ export const HD_GV: HuongDan = {
         { id: 'lt-nhap-diem', viec: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final',
           buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>.', 'Bấm dòng lớp: lưới điểm mở ngay dưới.', 'Gõ điểm; em vắng gõ <b>-</b>.'],
           chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Mỗi lớp một dòng — bấm dòng để gõ điểm.' } },
-      ],
-    },
-    {
-      id: 'cham-test', ten: 'Chấm Test', duong: ['/test/cham'],
-      dangO: { cau: 'Bài cần chấm của bạn, xếp theo hạn.', sau: { chu: 'Lịch Test tuần', duong: '/test/lich' } },
-      khongLam: [KHONG_XEP_MT],
-      muc: [
-        { id: 'ct-nhap-diem', viec: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final', buoc: ['Bấm một việc: lưới điểm mở ngay bên phải.', 'Gõ điểm; em vắng gõ <b>-</b>.'],
-          chi: { hd: 'cham-test-ds', duong: '/test/cham', chu: 'Bài cần chấm xếp theo hạn — bấm một dòng để chấm.' } },
       ],
     },
     {

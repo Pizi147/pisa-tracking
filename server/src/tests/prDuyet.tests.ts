@@ -30,7 +30,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const c = d.demChip([{ phanLoai: 'hoc-thuat' }, { phanLoai: 'hoc-thuat' }, { phanLoai: 'bao-len' }]);
     assert(c['tat-ca'] === 3 && c['hoc-thuat'] === 2 && c['bao-len'] === 1 && c['y-thuc'] === 0 && Object.keys(c).length === 6, JSON.stringify(c));
     assert(d.laTuDuyet(2, 2) && !d.laTuDuyet(null, 2) && !d.laTuDuyet(3, 2), 'tự duyệt');
-    assert(d.duongThe(5, 'nguoi-xin') === '/cong-viec/yeu-cau?the=5' && d.duongThe(12, 'duyet') === '/cong-viec/cho-duyet?the=12', 'đường');
+    assert(d.duongThe(5, 'nguoi-xin') === '/cong-viec/yeu-cau?the=5' && d.duongThe(12, 'duyet') === '/cong-viec?nhom=duyet&the=12', 'đường');   // AUDIT-UI B6
     assert(d.nhanTrangThaiYc('duyet', true).chu.includes('tự duyệt') && d.nhanTrangThaiYc('tu_choi').t === 'can-lam'   // PR-GVb: chủ sản phẩm 03/10
       && d.nhanTrangThaiYc('cho').t === 'cho-duyet', 'nhãn');
   });
@@ -171,7 +171,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       assert(dem(P.mbManager.userId) === 1 && dem(P.admin.userId) === 1 && dem(P.cpManager.userId) === 0, `${dem(P.mbManager.userId)} · ${dem(P.admin.userId)} · ${dem(P.cpManager.userId)}`);
       assert(yc.demYeuCau(P.mbManager).quaHan >= 1, 'đếm quá hạn');
       const duong = (kind: string) => d.duongThongBao({ entity_type: 'yeu_cau_duyet', entity_id: qua, kind, student_id: null, attempt_id: null });
-      assert(duong('duyet_qua_han') === `/cong-viec/cho-duyet?the=${qua}` && duong('duyet_ket_qua') === `/cong-viec/yeu-cau?the=${qua}`, 'đường thông báo');
+      assert(duong('duyet_qua_han') === `/cong-viec?nhom=duyet&the=${qua}` && duong('duyet_ket_qua') === `/cong-viec/yeu-cau?the=${qua}`, 'đường thông báo');
     });
   } finally {
     DINH_NGHIA_LOAI.splice(DINH_NGHIA_LOAI.findIndex((x) => x.loai === GIA), 1);

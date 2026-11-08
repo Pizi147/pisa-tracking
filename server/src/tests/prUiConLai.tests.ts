@@ -61,10 +61,13 @@ export async function runPrUiConLaiTests(t: any) {
     assert(!/text-soon/.test(lon) && /--soon-rgb/.test(lon) && /aria-description=\{thieu/.test(lon), 'ô lớn: viền vàng + aria, không chữ');
   });
 
-  check('UICL-7 (k3, chủ SP 24/10) · Hộp duyệt đầy đủ = danh sách dòng gọn + panel duyệt TẠI CHỖ (`?the=`, mẫu Chấm Test); bản gọn (V8-CV: dòng cây); hàng loạt giữ', () => {
+  /* AUDIT-UI B6 (chủ SP 08/11): trang Hộp duyệt đầy đủ bỏ — hộp là tab "Chờ bạn duyệt" của Công việc (dòng cây + hàng lọc), panel duyệt tại chỗ (`?the=`); đường cũ chuyển về tab giữ lọc. */
+  check('UICL-7 (k3 → AUDIT-UI B6) · Hộp duyệt = tab Chờ bạn duyệt: dòng cây + panel duyệt TẠI CHỖ (`?the=`); hàng loạt giữ; /cong-viec/cho-duyet → tab giữ lọc', () => {
     const h = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/HopChoDuyet.tsx'), 'utf8');
-    assert(/<DongYeuCau /.test(h) && /<KhungTaiCho\.Provider value>/.test(h) && /<PanelDuyet key=\{theMo\.id\}/.test(h) && /<TheYeuCau yc=\{yc\} panel /.test(h), 'danh sách + panel');
-    assert(/next\.set\('the', String\(id\)\)/.test(h) && /(ds|dsCay)\.length > 0 && gon &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= · bản gọn · hàng loạt');
+    const cvp = fs.readFileSync(path.join(REPO, 'web/src/modules/congViec/CongViecPage.tsx'), 'utf8');
+    assert(!/<DongYeuCau /.test(h) && /<KhungTaiCho\.Provider value>/.test(h) && /<PanelDuyet key=\{`\$\{theMo\.id\}/.test(h) && /<TheYeuCau yc=\{yc\} panel /.test(h), 'cây + panel');
+    assert(/next\.set\('the', String\(id\)\)/.test(h) && /dsCay\.length > 0 &&/.test(h) && /chonMot\(ds, s, y\.id, v\)/.test(h), '?the= · cây · hàng loạt');
+    assert(/q\.set\('nhom', 'duyet'\)/.test(cvp) && /new URLSearchParams\(params\)/.test(cvp) && !/<HopChoDuyet/.test(cvp), 'đường cũ → tab, giữ tham số');
   });
 
   check('V8-CV (mockup v8 cong-viec-ql, chủ SP duyệt 29/10) · Chờ bạn duyệt là nhóm đầu cột trái (dòng cây, panel duyệt ở cột phải); một panel một lúc; Mọi khung là ô chọn; giữ Duyệt tại dòng · Từ chối… · Trả lời… · Mở › · Hoàn tác', () => {
@@ -73,10 +76,10 @@ export async function runPrUiConLaiTests(t: any) {
     const the = fs.readFileSync(path.join(REPO, 'web/src/modules/duyet/TheYeuCau.tsx'), 'utf8');
     assert(/<CayDuyet ds=\{(dsHien|dsCay)\}/.test(h) && /createPortal\(/.test(h) && /\bkhuPanel,\r?\n/.test(h), 'bản gọn = cây + panel vào cột phải');
     assert(/onDuyet\(y\)/.test(h) && /onMo\(y, 'tu-choi'\)/.test(h) && /onMo\(y, 'tra-loi'\)/.test(h) && /t\('Mở ›'\)/.test(h), 'thao tác của dòng');
-    assert(/huy-quyet-dinh/.test(h) && /t\('Yêu cầu tiếp ›'\)/.test(h) && /if \(gon && id\) \{ next\.delete\('viec'\)/.test(h), 'Hoàn tác · Yêu cầu tiếp · bỏ panel việc');
+    assert(/huy-quyet-dinh/.test(h) && /t\('Yêu cầu tiếp ›'\)/.test(h) && /if \(id\) \{ next\.set\('the', String\(id\)\); next\.delete\('viec'\)/.test(h), 'Hoàn tác · Yêu cầu tiếp · bỏ panel việc');
     assert(/moSan === 'tu-choi' \|\| moSan === 'tra-loi'/.test(the) && /onXong\(yc\.id, xongChu(, huyDuoc(, kq\?\.soLichSu)?)?\)/.test(the), 'panel mở sẵn ô + câu kết quả');
     /* CV-TAB (06/11): Chờ bạn duyệt là tab đầu (`tab === 'duyet'`), vẫn ở cột trái, trước danh sách việc. */
-    const iTrai = cv.indexOf("{tab === 'duyet' && ("), iDs = cv.indexOf('<DanhSachViec muc={mucs}');
+    const iTrai = cv.indexOf("{tab === 'duyet' && <HopChoDuyet"), iDs = cv.indexOf('<DanhSachViec muc={mucs}');   // AUDIT-UI B6: hàng lọc vẽ vào `khuLoc` dưới hàng tab
     assert(iTrai > 0 && iTrai < iDs && cv.indexOf('lg:grid lg:grid-cols-[520px') < iTrai, 'Chờ bạn duyệt trong cột trái, trước nhóm việc');
     assert(!/chờ bạn duyệt', \{ n: demDuyet/.test(cv) && /kieu="chon" chuTatCa=\{t\('Mọi khung'\)\}/.test(cv) && /next\.delete\('the'\);/.test(cv), 'bỏ chữ trùng đầu trang · Mọi khung · mở việc bỏ panel duyệt');
   });

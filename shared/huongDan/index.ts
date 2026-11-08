@@ -34,7 +34,9 @@ export const VAI_CO_NOI_DUNG = (Object.keys(HUONG_DAN) as VaiHd[]);
 
 /** Màn của đường dẫn: tiền tố dài nhất (`/test/diem-lop` thắng `/test`; mục kết thúc "/" là "mọi trang con"); `'/'` chỉ khớp `/`. */
 export function manCuaDuong(hd: HuongDan, pathname: string): ManHd | null {
-  const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  /* AUDIT-UI B6: đường có tham số (`/cong-viec?nhom=duyet` — Hộp duyệt là tab) thuộc màn của phần đường. */
+  const duong = pathname.split('?')[0];
+  const p = duong.length > 1 ? duong.replace(/\/+$/, '') : duong;
   let tot: { man: ManHd; dai: number } | null = null;
   for (const man of hd.man) {
     for (const d of man.duong) {

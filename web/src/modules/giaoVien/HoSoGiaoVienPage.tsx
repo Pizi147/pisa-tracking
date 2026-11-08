@@ -578,7 +578,7 @@ function KhoiYeuCau({ data, coDuyet }: { data: HoSo; coDuyet: boolean }) {
   const id = gv.id;
   const link: ReactNode = gv.laChinhMinh
     ? <Link to="/cong-viec/yeu-cau" className="link text-xs">{t('Yêu cầu của tôi ›')}</Link>
-    : coDuyet ? <Link to="/cong-viec/cho-duyet" className="link text-xs">{t('Chờ duyệt ›')}</Link> : null;
+    : coDuyet ? <Link to="/cong-viec?nhom=duyet" className="link text-xs">{t('Chờ duyệt ›')}</Link> : null;
   return (
     <Card title={gv.laChinhMinh ? t('Yêu cầu đã gửi') : t('Yêu cầu {ten} đã gửi', { ten: gv.ten.split(' ').pop() ?? gv.ten })} action={link}>
       {y.cho === 0 && y.tuChoi === 0 ? <p className="m-0 text-sm text-slate-400">{t('Không có yêu cầu nào đang chờ.')}</p> : (
