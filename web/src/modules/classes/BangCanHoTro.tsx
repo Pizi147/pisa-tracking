@@ -100,7 +100,8 @@ export function DongCase({ h, c, ct, homNay, onMo, the = false, chiDoc = false }
                 <span className="block text-sm font-bold text-slate-100">{doan[0]}</span>
                 {p.batBuoc && <span className="inline-flex h-[22px] items-center rounded-md border px-2 text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{t('theo quy chế')}</span>}
                 <ul className="m-0 grid gap-0.5 pl-4">
-                  {doan.slice(1).map((x, i) => <li key={i}>{x}</li>)}
+                  {/* Bỏ đoạn trùng mốc ("đến Cuối khoá" đã có trong `mocChu` — chủ SP 08/11 chê lặp). */}
+                  {doan.slice(1).filter((x) => !p.mocChu?.startsWith(x)).map((x, i) => <li key={i}>{x}</li>)}
                   {p.mocChu && <li>{dich(p.mocChu)}</li>}
                   {p.choXacNhan && <li>{t('Chờ xác nhận')}</li>}{p.choDuyet && <li>{t('Chờ Quản lý duyệt')}</li>}
                   {c.moTu && !gap && <li>{t('Mức: {m}', { m: dich(c.moTu) })}</li>}
