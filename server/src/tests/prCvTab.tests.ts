@@ -12,16 +12,20 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
   const { bangLop, loadPrincipal } = await import('../permissions.ts');
   console.log('\nCV-TAB · Công việc chia tab hạng mục');
 
-  check('CVT-1 · hàm thuần: badge đỏ > vàng > trắng; mục "Quá hạn" đứng đầu, mục rỗng ẩn; tab mặc định = tab đầu có quá hạn', () => {
+  /* AUDIT-UI B3 + B4 (chủ SP 08/11): badge = dòng cần làm ngay (quá hạn + hôm nay), 0 → không badge; không còn mục "Quá hạn" riêng — quá hạn lên đầu mục loại việc. */
+  check('CVT-1 · hàm thuần: badge = quá hạn + hôm nay; mục theo loại, quá hạn đầu mục, mục rỗng ẩn; tab mặc định = tab đầu có quá hạn', () => {
     const v = (key: string, group: string, urgency: string, due: string | null, kind?: string) => ({ key, group, urgency, due, kind, studentId: 1 });
     const homNay = '2026-11-06';
-    const ds = [v('a', 'cause', 'overdue', '2026-11-01'), v('b', 'no_plan', 'normal', '2026-11-08'), v('c', 'ghi_ket_qua_pa', 'normal', '2026-11-30')];
-    const b = d.badgeTab(ds, homNay);
-    assert(b.mau === 'do' && b.so === 1 && b.n === 3 && b.ganHan === 1, JSON.stringify(b));
-    assert(d.badgeTab(ds.slice(1), homNay).mau === 'vang' && d.badgeTab(ds.slice(2), homNay).mau === 'trang', 'vàng / trắng');
-    assert(d.badgeTab(ds.slice(2), homNay).so === 1, 'trắng = tổng');
+    const ds = [v('a', 'cause', 'overdue', '2026-11-01'), v('b', 'no_plan', 'normal', '2026-11-08'), v('c', 'ghi_ket_qua_pa', 'today', homNay),
+      v('d', 'no_plan', 'overdue', '2026-11-03')];
+    const b = d.badgeTab(ds);
+    assert(b.so === 3 && b.n === 4 && b.quaHan === 2 && b.homNay === 1, JSON.stringify(b));
+    assert(d.badgeTab([ds[2]]).so === 1 && d.badgeTab([ds[2]]).quaHan === 0, 'chỉ hôm nay → badge vàng 1');
+    assert(d.badgeTab([ds[1]]).so === 0, 'không việc gấp → không badge');
+    void homNay;
     const muc = d.chiaMucTab(ds);
-    assert(muc.map((m: any) => m.key).join('|') === 'qua-han|pa|kq-pa' && muc[1].label === 'Phương án', muc.map((m: any) => m.key).join('|'));
+    assert(muc.map((m: any) => m.key).join('|') === 'mo-ta|pa|kq-pa' && muc[1].label === 'Phương án', muc.map((m: any) => m.key).join('|'));
+    assert(muc[1].items.map((x: any) => x.key).join('') === 'db' && muc[1].quaHan === 1 && muc[0].quaHan === 1, 'quá hạn lên đầu mục, đếm quá hạn mỗi mục');
     const sc = d.chiaMucTab([v('s1', 'score', 'normal', '2026-11-20', 'mock'), v('s2', 'score', 'normal', '2026-11-20', 'final'), v('s3', 'score', 'normal', '2026-11-20', 'checkpoint')]);
     assert(sc.map((m: any) => m.label).join('|') === 'Mock Test|Progress / Final Test|Checkpoint', 'mục Chấm điểm theo loại bài');
     assert(d.tabMacDinh([{ key: 'x', badge: null }, { key: 'y', badge: { quaHan: 2 } }]) === 'y' && d.tabMacDinh([{ key: 'x', badge: null }]) === 'x', 'tab mặc định');
@@ -41,7 +45,7 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
         for (const x of dong) assert(d.mucCuaViec(x, tvv) !== 'khac', `${ten}: ${x.group} ${x.key} rơi vào "Khác"`);
         const muc = d.chiaMucTab(dong, tvv);
         assert(muc.reduce((n: number, m: any) => n + m.items.length, 0) === dong.length, `${ten} ${k}: mục mất dòng`);
-        if (k !== 'cham-cheo') tong += d.badgeTab(dong, TODAY).n;
+        if (k !== 'cham-cheo') tong += d.badgeTab(dong).n;
       }
       for (const x of w.dong as any[]) assert(thuTu.includes(d.tabCuaViec(x, tvv)), `${ten}: ${x.group} không có tab`);
       assert(tong === d.demDongViec(w.dong).n, `${ten}: tổng tab ${tong} ≠ demDongViec ${d.demDongViec(w.dong).n}`);

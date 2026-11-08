@@ -167,6 +167,8 @@ const qCn = (d: TongQuanV5Data, cot: string, khoa: string) => `/tong-quan/chi-nh
 /* ───────────── Chờ bạn duyệt (dòng gọn → panel duyệt, C04) ───────────── */
 
 type Hop = { the: TheYeuCauDto[]; homNay: string };
+/** Chủ SP 08/11 (mockup AUDIT-UI B1): loại quá dài cho cột hẹp — nhãn ngắn, tên đủ khi rê (`title`) và cho trình đọc màn. */
+const NHAN_NGAN: Partial<Record<string, string>> = { khong_theo_doi: t('Không theo dõi') };
 function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
   const [mo, setMo] = useState<TheYeuCauDto | null>(null);
   if (!hop.the.length) return null;
@@ -183,7 +185,8 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
               className={`bam flex min-h-[44px] w-full items-center gap-x-2 px-4 py-2 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
               {/* RA-GD-0711c: tên em giữ một dòng — thiếu chỗ thì chữ chip xuống dòng trong chip (không cắt "…"). NHAN-MOT-DONG (audit C5): tên loại
                 * ngắn + chip rộng tối thiểu bằng tên loại thường gặp ("Xử lý Ý thức") → chip một dòng, tên em thẳng cột (khối hẹp 360 px ở 1440 cũng vậy). */}
-              <span className="min-w-[5.25rem] max-w-[50%] shrink rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}>{dich(y.nhanLoai)}</span>
+              <span className="min-w-[5.25rem] max-w-[50%] shrink rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}
+                title={dich(y.nhanLoai)}>{NHAN_NGAN[y.loai] ? <><span aria-hidden>{NHAN_NGAN[y.loai]}</span><span className="sr-only">{dich(y.nhanLoai)}</span></> : dich(y.nhanLoai)}</span>
               <span className={`${y.hocVien ? 'flex-[1_0_auto] whitespace-nowrap' : 'min-w-0 flex-1'} text-sm font-semibold text-slate-100`}>{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
               {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
             </button>

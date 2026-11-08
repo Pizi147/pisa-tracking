@@ -42,7 +42,7 @@ export async function runPrUiCongViecTests(t: YThucTestKit) {
   check('CV-HANG-DEU (PTA 07/11) · dòng phụ ≥ 640 một dòng cắt "…" (người giữ đầu dòng); chỉ dòng có huy hiệu TVV THẬT giữ xuống dòng — `{tvv && …}` = false không tính', () => {
     const s = fs.readFileSync('web/src/modules/congViec/DanhSachViec.tsx', 'utf8');
     const dp = s.slice(s.indexOf('const DongPhu'), s.indexOf('const TEN ='));
-    assert(/Children\.toArray\(children\)\.length > 0/.test(dp) && /coHuy \? '' : 'sm:block sm:truncate'/.test(dp) && !/\$\{children \?/.test(dp), 'DongPhu: điều kiện cắt sai');
+    assert(/Children\.toArray\(children\)\.length > 0/.test(dp) && /coHuy \? '' : 'sm:h-5 sm:overflow-hidden'/.test(dp) && !/\$\{children \?/.test(dp), 'DongPhu: điều kiện một hàng sai');   // AUDIT-UI B4: thẻ một hàng, thẻ thiếu chỗ ẩn cả thẻ
     assert(!/NguoiGiu/.test(s.slice(s.indexOf('function CotHan'), s.indexOf('export function NguoiGiu'))), 'CotHan còn người giữ việc (cột hạn phải 2 dòng)');
   });
 }
