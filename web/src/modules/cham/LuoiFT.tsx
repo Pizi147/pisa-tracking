@@ -141,7 +141,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     : t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel(s) }));
   const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: skillShort(s), kieu: 'diem', rong: 96, sang: khopKn(s, kn), goiY: goiYO(s) });
   const cotDs: DinhNghiaCot[] = [
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
+    /* B8 (chủ SP 08/11 "trải ra hẳn như mockup"): cột tên gốc 230 px (≈ 280 px sau khi chia phần dư theo tỉ lệ ở 1440), phần dư chia đều cho các cột điểm (`deu` của Bang) tới mép phải. */
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 230, goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
     ...(cot.trangThai ? [{ key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 146, goiY: t('Lượt đã chấm xong, đang chờ, hay đã huỷ.') } as const] : []),
     ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần Test của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
     ...rawCot.map(oKn), ...wCot.map(oKn),
@@ -241,7 +242,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
       </div>
     )}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}
-    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rowsHien} khoa={(r) => r.attemptId} day the375={false} khung={false} dinh={gon ? '1440' : false}
+    <Bang ten={t('Lưới điểm {dot}', { dot: tenDotFt(data) || 'MT' })} cot={cotDs} hang={rowsHien} khoa={(r) => r.attemptId} day deu the375={false} khung={false} dinh={gon ? '1440' : false}
       hangRieng={(r) => (
         <SheetRow
           row={r}
