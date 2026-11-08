@@ -27,6 +27,8 @@ export type DinhNghiaCot = {
   key: string; nhan: string; kieu: KieuCot;
   /** Chú thích cùng dòng tiêu đề, 12 px ("/25", "chấm chéo"). */
   phu?: string;
+  /** AUDIT-UI B1 (V13): đơn vị của cả cột ("HV", "lượt") — tiêu đề "Đạt MT · HV", ô chỉ còn số. */
+  dv?: string;
   /** Tên nhóm 2 tầng — cột liền nhau cùng nhóm gộp một ô tiêu đề. */
   nhom?: string;
   /** Rộng px riêng (chỉ khi kiểu mặc định không vừa — vd cột điểm có dòng phụ dài: 88). */

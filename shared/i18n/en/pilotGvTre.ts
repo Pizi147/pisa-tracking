@@ -30,6 +30,6 @@ export const EN_PILOT_GV_TRE = {
   'Mở lưới lớp ở Lịch Test ›': 'Open the class grid in Test schedule ›',
   'Các em của dòng này không còn trong lưới lượt — mở lưới lớp để xem.': 'These students are no longer in this test grid — open the class grid to check.',
   'Em còn trống': 'Students with empty cells',
-  'SỐ LIỆU · MOCK TEST': 'DATA · MOCK TEST',
+  'Số liệu · Mock Test': 'Data · Mock Test',
   'không tính': 'not counted',
 } satisfies Record<string, Dich>;

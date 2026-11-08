@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { MenuDong, NUT_BA_CHAM_DAU, type MucMenu } from '../../ui/MenuDong.tsx';
+import { MenuDong, NUT_BA_CHAM, NUT_DAU_HO_SO, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate, onInvalidate } from '../../lib/api.ts';
@@ -212,7 +212,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   return (
     <header className="flex flex-col gap-1.5">
       {/* PR-DH (Q-0310-4): Quay lại + Lớp trước/sau theo danh sách vừa mở; mở thẳng bằng link thì theo các lớp cùng khung ở Học viên & Lớp. */}
-      <ThanhTruocSau loai="lop" gon id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
+      <ThanhTruocSau loai="lop" id={data.id} cha={trangCha('lop')} ten={t('Hồ sơ lớp {lop}', { lop: data.code })}
         chiTiet={CHE_DO_NHAN[sp.get('che-do') as CheDoHocVien] ?? TAB_HO_SO_LOP_NHAN[sp.get('tab') as TabHoSoLop]}
         duong={(cid) => `/hoc-vien/lop/${cid}${sp.get('tab') ? `?tab=${sp.get('tab')}` : ''}`}
         dsDuPhong={async () => {
@@ -231,9 +231,9 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
           {meta.map((m, i) => <span key={i} className="inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md bg-[color:var(--surface-2)] px-2 text-xs font-medium text-dim">{m}</span>)}
         </span>
         <div className="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">
-          {data.viewer.canEnterScores && <button type="button" className="btn h-9 justify-center max-sm:h-11" onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
+          {data.viewer.canEnterScores && <button type="button" className={NUT_DAU_HO_SO} onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
           {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
-          {data.viewer.canReportCase && <button type="button" className="btn h-9 justify-center max-sm:h-11" onClick={() => onViec('case')}>+ Case</button>}
+          {data.viewer.canReportCase && <button type="button" className={NUT_DAU_HO_SO} onClick={() => onViec('case')}>+ Case</button>}
           <MenuDong muc={menu} nhan={t('Thao tác khác')} lopNut={NUT_BA_CHAM} />
         </div>
       </div>
@@ -298,8 +298,6 @@ function So({ n, g }: { n: ReactNode; g: ReactNode }) {
     </span>
   );
 }
-/* Nút ⋯ đầu trang cao 36 (mockup `.btn.ba-cham`) — cùng hàng nút Nhập điểm / + Case; điện thoại 44. */
-const NUT_BA_CHAM = `${NUT_BA_CHAM_DAU} h-9 w-9 max-sm:h-11 max-sm:w-11`;
 
 /** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2) — hồ sơ lớp + hồ sơ HV. */
 export function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {

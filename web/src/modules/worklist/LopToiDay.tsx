@@ -148,30 +148,29 @@ type HaiKhoi = { ky: { tu: string; den: string } | null; day: DongDay[]; chuNhie
  * 375: thẻ lưới (`theLuoi`) — chip kỹ năng cạnh tên lớp, nhãn trên / số dưới; SOS (`chu`) hàng riêng dưới lưới.
  */
 const COT_DAY: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten' }, { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 130 },
-  { key: 'dat', nhan: t('Đạt kỳ vọng Test'), kieu: 'phan-tram', rong: 170, goiY: t('Lớp thường: Đạt Test (≥ ngưỡng đạt của lớp)') },
-  { key: 'tb', nhan: t('Tiến bộ'), kieu: 'phan-tram', rong: 120 }, { key: 'bai', nhan: t('Chờ chấm'), kieu: 'diem', rong: 130 },
+  /* AUDIT-UI B1: bảng rộng hết trang — cột chia đều như mockup (`deu`: Lớp 210 · mỗi cột còn lại 150, phần dư theo tỉ lệ). */
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 210 }, { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chip', rong: 150 },
+  { key: 'dat', nhan: t('Đạt kỳ vọng Test'), dv: t('lượt'), kieu: 'phan-tram', rong: 150, goiY: t('Lớp thường: Đạt Test (≥ ngưỡng đạt của lớp)') },
+  { key: 'tb', nhan: t('Tiến bộ'), dv: t('lượt'), kieu: 'phan-tram', rong: 150 }, { key: 'bai', nhan: t('Chờ chấm'), dv: t('bài'), kieu: 'diem', rong: 150 },
 ];
 const COT_CN: readonly CotBang[] = [
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), kieu: 'diem', rong: 140, goiY: t('Lớp thường: HV chưa đạt') },
-  { key: 'sos', nhan: t('SOS hiện tại'), kieu: 'chu', rong: 340 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 100 }, { key: 'thi', nhan: t('Thi tháng này'), kieu: 'diem', rong: 130 },
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'duoi', nhan: t('Dưới kỳ vọng'), dv: t('HV'), kieu: 'diem', rong: 160, goiY: t('Lớp thường: HV chưa đạt') },
+  { key: 'sos', nhan: t('SOS hiện tại'), dv: t('HV'), kieu: 'chu', rong: 340 }, { key: 'case', nhan: 'Case', kieu: 'diem', rong: 100 }, { key: 'thi', nhan: t('Thi tháng này'), dv: t('HV'), kieu: 'diem', rong: 150 },
 ];
 
 /**
  * KỸ NĂNG TÔI DẠY · LỚP TÔI CHỦ NHIỆM — tầng trái Tổng quan GV (mockup `tong-quan.html?k=gv`). Một GET `/tong-quan/lop-toi-day/hai-khoi`, cả hai khung
  * (không công tắc FT / Thường — mỗi hàng ghi khung của lớp). Số giữ ô bấm V4 (`/tong-quan/lop-toi-day/o`); Đạt / Tiến bộ = ô bảng Học thuật hồ sơ GV
  * (`/giao-vien/:id/chi-so/o?cot=ket-qua-lop|tien-bo-lop:<lớp>`). Khối không có lớp thì không dựng; không lớp nào → một thẻ rỗng (trừ vai không dạy).
- * Lưới tự đặt cột Điều hướng (`phai`, 360): ≥ 1280 trái (dạy, chủ nhiệm xếp chồng) | Điều hướng; < 1280 một cột, Điều hướng trước.
+ * AUDIT-UI B1 (chủ SP 08/11): bỏ cột "Điều hướng" — hai bảng xếp chồng rộng hết trang ("Hồ sơ GV của tôi" lên cạnh tiêu đề trang).
  */
-const LUOI_GV = 'grid items-start gap-4 min-[1280px]:grid-cols-[minmax(0,1fr)_360px]';
 const O_MOT = 'min-w-0';
-export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
+export function HaiKhoiGv() {
   const { session } = useSession();
   const id = session?.user?.id;
   const dienThoai = useDienThoai();
   const { data, error, reload } = useApi<HaiKhoi>('/tong-quan/lop-toi-day/hai-khoi', []);
-  const cotPhai = <div className="flex min-w-0 flex-col gap-4 max-[1279px]:order-first">{phai}</div>;
-  const luoi = (trai: ReactNode) => <div data-hd="tq-lop-toi-day" className={LUOI_GV}><div className="flex min-w-0 flex-col gap-4">{trai}</div>{cotPhai}</div>;
+  const luoi = (trai: ReactNode) => <div data-hd="tq-lop-toi-day" className="flex min-w-0 flex-col gap-4">{trai}</div>;
   if (error) return luoi(<div className={O_MOT}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>);
   if (!data) return luoi(<Card className={O_MOT} title={t('Kỹ năng tôi dạy')} bodyClass="p-4"><Skeleton rows={3} /></Card>);
   if (!data.day.length && !data.chuNhiem.length) {
@@ -200,12 +199,26 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
       const ben = d.khung === 'ft' ? [d.route, d.testKeTiep] : [d.tuanHoc, d.testKeTiep];
       return dich(ben.filter(Boolean).join(' · ')) || null;   // chuỗi → Bang gắn title
     }
-    if (c.key === 'dat') return tuMau(tyLeGv(d.ketQua ?? undefined), t('lượt'));
-    if (c.key === 'tb') return d.khung === 'ft' ? tuMau(tyLeGv(d.tienBo ?? undefined), t('lượt')) : null;
-    /* U09 #10 (V13, B07): đơn vị luôn ghi — "bài quá hạn" · "bài · hạn 23/09". */
-    if (c.key === 'bai') return d.baiQuaHan > 0 ? t('bài quá hạn')
-      : d.baiCho ? (d.hanCham ? t('bài · hạn {ngay}', { ngay: `${d.hanCham.slice(8, 10)}/${d.hanCham.slice(5, 7)}` }) : t('bài')) : null;
+    /* AUDIT-UI B1 (V13): đơn vị ở tiêu đề cột ("· lượt", "· bài") — dòng phụ chỉ mẫu "11/14", "quá hạn", "hạn 23/09". */
+    if (c.key === 'dat') return tuMau(tyLeGv(d.ketQua ?? undefined));
+    if (c.key === 'tb') return d.khung === 'ft' ? tuMau(tyLeGv(d.tienBo ?? undefined)) : null;
+    if (c.key === 'bai') return d.baiQuaHan > 0 ? t('quá hạn')
+      : d.baiCho && d.hanCham ? t('hạn {ngay}', { ngay: `${d.hanCham.slice(8, 10)}/${d.hanCham.slice(5, 7)}` }) : null;
     return null;
+  };
+  /* AUDIT-UI B1 (mockup 375 `.card-tk`): thẻ gọn — tên lớp + chip kỹ năng; một hàng "Đạt KV · Tiến bộ · Chờ chấm", số giữ ô bấm. */
+  const theDay = (d: DongDay) => {
+    const cot = (k: string) => COT_DAY.find((c) => c.key === k)!;
+    return (
+      <div className="grid gap-1.5">
+        <span className="flex min-w-0 items-baseline gap-2 text-[15px]">{oDay(d, cot('lop'))}{oDay(d, cot('ky'))}</span>
+        <span className="flex flex-wrap gap-x-[18px] gap-y-1 text-[13px] text-slate-400">
+          <span className="inline-flex items-baseline gap-1">{t('Đạt KV')} <b className="text-[15px]">{oDay(d, cot('dat'))}</b></span>
+          {d.khung === 'ft' && <span className="inline-flex items-baseline gap-1">{t('Tiến bộ')} <b className="text-[15px]">{oDay(d, cot('tb'))}</b></span>}
+          <span className="inline-flex items-baseline gap-1">{t('Chờ chấm')} <b className="text-[15px]">{oDay(d, cot('bai'))}</b></span>
+        </span>
+      </div>
+    );
   };
   const oCn = (l: DongCn, c: CotBang): ReactNode => {
     if (c.key === 'lop') return lopLink(l.classId, l.code);
@@ -222,14 +235,14 @@ export function HaiKhoiGv({ phai }: { phai: ReactNode }) {
     return o(l.khung, l.classId, 'thi-thang-nay', l.thiThangNay, `${l.code} · ${t('HV thi tháng này')}`);
   };
   const phuCn = (l: DongCn, c: CotBang): ReactNode => (c.key === 'lop' ? [t('{n} HV', { n: l.hocVien }), l.khung === 'ft' ? l.route : null].filter(Boolean).join(' · ')
-    /* U09 #10: đơn vị dưới số khác 0 — "HV" (Dưới kỳ vọng · Thi tháng này). TQ-GON (M3): cột "Case" tiêu đề đã là đơn vị → không lặp. */
-    : c.key === 'duoi' ? (l.duoiKyVong ? t('HV') : null) : c.key === 'thi' ? (l.thiThangNay ? t('HV') : null) : null);
+    /* AUDIT-UI B1: đơn vị ở tiêu đề cột ("Dưới kỳ vọng · HV", "Thi tháng này · HV"), ô chỉ còn số. */
+    : null);
 
   return luoi(
     <>
       {data.day.length > 0 && (
         <Card className={O_MOT} bodyClass="p-0" title={<span className="inline-flex flex-wrap items-center gap-x-1">{t('Kỹ năng tôi dạy')} <NutLuat label={t('Kỹ năng tôi dạy')}>{t('Chỉ bài của tôi. Đạt = lượt Test có Overall đạt kỳ vọng, hoặc Overall chưa đạt nhưng kỹ năng của tôi không dưới kỳ vọng; lớp thường: đạt ngưỡng của lớp.')}</NutLuat></span>}>
-          <Bang ten={t('Kỹ năng tôi dạy')} cot={coTb ? COT_DAY : COT_DAY.filter((c) => c.key !== 'tb')} hang={data.day} khoa={(d) => d.classId} oCua={oDay} phuCua={phuDay} khung={false} theLuoi />
+          <Bang ten={t('Kỹ năng tôi dạy')} cot={coTb ? COT_DAY : COT_DAY.filter((c) => c.key !== 'tb')} hang={data.day} khoa={(d) => d.classId} oCua={oDay} phuCua={phuDay} khung={false} theLuoi deu theRieng={theDay} />
         </Card>
       )}
       {data.chuNhiem.length > 0 && (

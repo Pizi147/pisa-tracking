@@ -173,18 +173,18 @@ export const ChipKy = ({ k }: { k: string }) => (
 );
 
 /**
- * CV-TAB (chủ SP 06/11, mockup `thiet-ke/v17-nhap/` `.bd`): badge tab Công việc — CHỈ số + màu, một badge / tab theo trạng thái gấp nhất: đỏ = số việc quá hạn ·
- * vàng = số việc gần hạn · trắng = tổng. Chữ đủ cho trình đọc màn + rê chuột (màu không mang nghĩa một mình).
+ * Badge tab Công việc — AUDIT-UI B3 (chủ SP 08/11, mockup `thiet-ke/2026-11-08-audit-ui-mockup.html` `.bd`): số dòng cần làm ngay (quá hạn + hạn hôm nay), như badge
+ * menu V13; đỏ khi có quá hạn, vàng khi chỉ hạn hôm nay; 0 → không vẽ. Rê chuột / trình đọc màn: "4 quá hạn trong 7 việc" (màu không mang nghĩa một mình).
  */
-const MAU_BADGE_TAB: Record<BadgeTab['mau'], string> = {
-  do: 'bg-late-bg text-late border-[rgb(var(--late-line-rgb))]',
-  vang: 'bg-soon-bg text-soon border-[rgb(var(--soon-line-rgb))]',
-  trang: 'bg-[rgb(var(--muted-bg-rgb))] text-dim border-[color:var(--line-strong)]',
+export const chuBadgeTab = (b: BadgeTab) => {
+  const phan = [b.quaHan ? t('{n} quá hạn', { n: b.quaHan }) : null, b.homNay ? t('{n} hạn hôm nay', { n: b.homNay }) : null].filter(Boolean).join(', ');
+  return t('{phan} trong {n} việc', { phan, n: b.n });
 };
-export const chuBadgeTab = (b: BadgeTab) => (b.mau === 'do' ? t('{n} việc quá hạn', { n: b.so }) : b.mau === 'vang' ? t('{n} việc gần hạn', { n: b.so }) : t('{n} việc', { n: b.so }));
 export function BadgeTabSo({ b }: { b: BadgeTab }) {
+  if (!b.so) return null;
   return (
-    <span title={chuBadgeTab(b)} className={`inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full border px-1.5 text-xs font-bold tabular-nums ${MAU_BADGE_TAB[b.mau]}`}>
+    <span title={chuBadgeTab(b)} className={`inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full border px-1.5 text-xs font-bold tabular-nums ${
+      b.quaHan ? 'border-[rgb(var(--late-line-rgb))] bg-late-bg text-late' : 'border-[rgb(var(--soon-line-rgb))] bg-soon-bg text-soon'}`}>
       <span aria-hidden>{b.so}</span><span className="sr-only">{chuBadgeTab(b)}</span>
     </span>
   );

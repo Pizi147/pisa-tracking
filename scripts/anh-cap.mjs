@@ -33,6 +33,8 @@ await pm.goto(pathToFileURL(path.resolve(tepFile)).href + (tepQuery ? `?${tepQue
 // v7 / v8 / v11 tối mặc định, sáng qua `data-theme="light"` → gán theo chế độ cho MỌI mockup, trừ khi đã truyền `?theme=`.
 await pm.emulateMedia({ colorScheme: sang ? 'light' : 'dark' });
 await pm.evaluate((s) => { if (!/[?&]theme=/.test(location.search)) document.documentElement.dataset.theme = s ? 'light' : 'dark'; }, sang);
+// UI-TQ: MOCKUP_BAM="#dao" — bấm trong mockup trước khi chụp (vd nút đảo sáng / tối của mockup có khung tự đặt `toi` / `sang`).
+if (process.env.MOCKUP_BAM) { await pm.locator(process.env.MOCKUP_BAM).first().click(); await pm.waitForTimeout(300); }
 await pm.evaluate(() => document.fonts.ready);
 const anhMockup = khung === '-' ? await pm.screenshot({ fullPage: true }) : await pm.locator(khung).first().screenshot();
 

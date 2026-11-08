@@ -4,13 +4,12 @@ import { useApi } from '../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { Card, ErrorState, Skeleton, Th } from '../../ui/ui.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { DINH_TRAI, DaiChiSo, DauThe, MAU_SO_VOI_TRUOC, NutXemToanBo, NutXuat, RongDau, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
-  COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, NHOM_EM_LABEL, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
+  COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
 } from '@shared/domain/index.ts';
 
@@ -21,7 +20,7 @@ import {
  * V8-PT (khung B3): thẻ chỉ số đầu tab — HV cần chú ý đếm từ danh sách HV; Vi phạm · Chưa xử lý · Lớp có vi phạm CỘNG từ bảng Lớp (cùng số).
  * V8-PT-2: số thẻ bấm mở panel (`dong=tong` · `hv-can-chu-y`, chỉ gọi khi mở); 375: hai bảng thành thẻ `TheDong`, không cuộn ngang (mockup luật C1 — tab này không có khung 375).
  */
-const nhanNhom = (x: DongHvCanChuY) => <Nhan tone={x.nhom === 'qua_han' ? 'late' : x.nhom === 'bat_buoc' ? 'soon' : 'muted'}>{NHOM_EM_LABEL[x.nhom]}</Nhan>;
+/* AUDIT-UI B10 (chủ SP 08/11, G8 "báo cáo thuần"): không cột trạng thái "⚠ Quá hạn" / ô "n quá hạn" — việc quá hạn đã ở Công việc; số lần chưa xử lý ở cột "Chưa xử lý". */
 
 export function YThucPhoiHop(props: PhamViPhanTich) {
   const demoDate = useNgayNghiepVu().homNay || null;
@@ -51,7 +50,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const hv: (string | number)[][] = [
       [t('Học viên cần chú ý · {moTa}', { moTa })], [],
       COT_XUAT_HV_CAN_CHU_Y.map((c) => dich(c)),
-      ...data.hvCanChuY.map((x) => [x.ten, x.email ?? '', x.lop ?? '', NHOM_EM_LABEL[x.nhom], x.bac != null ? dich(x.bac) : t('Chưa xử lý lần nào'), x.bacKe != null ? dich(x.bacKe) : '', x.viPham, x.chuaXuLy,
+      ...data.hvCanChuY.map((x) => [x.ten, x.email ?? '', x.lop ?? '', x.bac != null ? dich(x.bac) : t('Chưa xử lý lần nào'), x.bacKe != null ? dich(x.bacKe) : '', x.viPham, x.chuaXuLy,
         `${x.bienPhapGanNhat != null ? dich(x.bienPhapGanNhat) : ''}${x.lanXuLyMoi ? ` ${t('(mới hơn: {ten} · {nhan})', { ten: dich(x.lanXuLyMoi.ten), nhan: dich(x.lanXuLyMoi.nhan) })}` : ''}`, x.ngay ? ngay(x.ngay, demoDate) : '']),
     ];
     const dongLop = (x: DongLopViPham, thut: boolean): (string | number)[] => [
@@ -100,7 +99,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   /* ---------------- 375: một thẻ mỗi dòng, cùng thứ tự cột với bảng (`TheDong`). */
   const theHv = (x: DongHvCanChuY) => (
     <TheDong key={x.studentId}
-      dau={<span className="flex items-center gap-2"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so min-w-0 truncate">{x.ten}</Link><span className="ml-auto shrink-0">{nhanNhom(x)}</span></span>}
+      dau={<Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so min-w-0 truncate">{x.ten}</Link>}
       dong={[
         { nhan: t('Lớp'), noiDung: x.lop ?? '—' },
         { nhan: t('Bậc hiện tại'), noiDung: x.bac != null ? dich(x.bac) : <span className="text-faint">{t('Chưa xử lý lần nào')}</span> },
@@ -134,11 +133,11 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
 
   const bang1 = (rows: DongHvCanChuY[]) => (
     <div className="table-scroll bang-dinh">   {/* P3 UI-CHUNG: danh sách HV cần chú ý cả chi nhánh — đầu cột dính */}
-      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 1100 }}>
-        <colgroup><col style={{ width: 200 }} /><col style={{ width: 120 }} /><col style={{ width: 170 }} /><col /><col /><col style={{ width: 100 }} /><col style={{ width: 110 }} /><col /></colgroup>
+      <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 930 }}>
+        <colgroup><col style={{ width: 200 }} /><col style={{ width: 120 }} /><col /><col /><col style={{ width: 100 }} /><col style={{ width: 110 }} /><col /></colgroup>
         <thead>
           <tr>
-            <Th className="sticky-col">{t('Học viên')}</Th><Th>{t('Lớp')}</Th><Th>{t('Trạng thái')}</Th>
+            <Th className="sticky-col">{t('Học viên')}</Th><Th>{t('Lớp')}</Th>
             <Th hint={t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web)')}>{t('Bậc hiện tại')}</Th>
             <Th hint={t('Lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt')}>{t('Bậc kế')}</Th>
             <Th align="center" hint={t('Trong khoảng đang lọc')}>{t('Vi phạm')}</Th><Th align="center" hint={t('Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)')}>{t('Chưa xử lý')}</Th>
@@ -150,7 +149,6 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
             <tr key={x.studentId} className="row-hover [&>td]:h-11">
               <td className="td sticky-col"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so">{x.ten}</Link></td>
               <td className="td text-slate-300">{x.lop ?? ''}</td>
-              <td className="td">{nhanNhom(x)}</td>
               <td className="td text-slate-200">{x.bac != null ? dich(x.bac) : <span className="text-faint">{t('Chưa xử lý lần nào')}</span>}</td>
               <td className="td text-slate-300">{x.bacKe && dich(x.bacKe)}</td>
               <td className="td text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.ten })} /></td>
@@ -168,7 +166,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
 
   const cachChon = (
     <>
-      <p className="m-0">{t('Học viên đang học đang Quá hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.')}</p>
+      <p className="m-0">{t('Học viên đang học có vi phạm chưa xử lý đã qua hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.')}</p>
       <p className="m-0">{t('Bậc kế theo thang Report 1 › Report 2 › WL 1 › Report 4 + Meeting CX/GĐCN › WL 2 › WL 3 (cần QL). Đề xuất ngoài thang không đổi bậc.')}</p>
     </>
   );
@@ -182,7 +180,6 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const siSo = lop.length && lop.every((x) => x.siSo !== null) ? lop.reduce((s, x) => s + (x.siSo ?? 0), 0) : null;
     const dem = (n: DongHvCanChuY['nhom']) => d.hvCanChuY.filter((x) => x.nhom === n).length;
     const nhom = [
-      dem('qua_han') && t('{n} quá hạn', { n: dem('qua_han') }),
       dem('bat_buoc') && t('{n} bắt buộc xử lý', { n: dem('bat_buoc') }),
       dem('cho_duyet') && t('{n} chờ QL duyệt', { n: dem('cho_duyet') }),
     ].filter(Boolean).join(' · ');
@@ -190,7 +187,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       <DaiChiSo ds={[
         { ten: t('HV cần chú ý'), ky: t('hôm nay'), gt: <OSo giaTri={d.hvCanChuY.length} nguon={nguon('hv-can-chu-y', 'hv')} tieuDe={t('HV cần chú ý')} vung="chi-so" />, mau: nhom || undefined },
         { ten: t('Vi phạm'), ky: t('trong kỳ'), gt: <OSo giaTri={viPham} nguon={nguon('tong', 'vi-pham')} tieuDe={t('Vi phạm')} vung="chi-so" />, mau: `${nhanSoVoiTruoc(d.soVoiTruoc).chu} ${t('so kỳ trước')}` },
-        { ten: t('Chưa xử lý'), gt: <OSo giaTri={cong('chuaXuLy')} nguon={nguon('tong', 'chua-xu-ly')} tieuDe={t('Chưa xử lý')} vung="chi-so" /> },   // PT-GON (M3): "trên n vi phạm" = ô Vi phạm ngay cạnh
+        { ten: t('Chưa xử lý'), gt: <OSo giaTri={cong('chuaXuLy')} nguon={nguon('tong', 'chua-xu-ly')} tieuDe={t('Chưa xử lý')} vung="chi-so" />, mau: t('vi phạm') },   // PT-GON (M3): "trên n vi phạm" = ô Vi phạm ngay cạnh; B10 mockup: dòng phụ đơn vị
         { ten: t('Lớp có vi phạm'), gt: <OSo giaTri={lop.length} nguon={nguon('tong', 'lop')} tieuDe={t('Lớp có vi phạm')} vung="chi-so" />, mau: siSo ? `${hv}/${siSo} HV` : hv ? t('{n} HV', { n: hv }) : undefined },
       ]} />
     );
