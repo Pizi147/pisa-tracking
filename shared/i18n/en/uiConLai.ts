@@ -19,6 +19,6 @@ export const EN_UI_CON_LAI = {
   'Hồ sơ của tôi ›': 'My profile ›',
   '{n} đề xuất · quá hạn trước → hạn gần nhất': '{n} requests · overdue first → nearest deadline',
   'Sau khi duyệt:': 'After approval:',
-  'VIỆC · DUYỆT': 'TASK · APPROVE',
+  'Việc · Duyệt': 'Task · approve',
   'Chọn một yêu cầu ở danh sách.': 'Pick a request from the list.',
 } as const;

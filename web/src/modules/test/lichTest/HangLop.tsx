@@ -50,9 +50,9 @@ function goiYHang(l: LopLichTest, homNay: string): string {
 }
 
 const TienDo = ({ l }: { l: LopLichTest }) => (
-  <span className="whitespace-nowrap tabular-nums text-slate-400" title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })}>
-    {/* LT-GON (M1): một chữ đậm mỗi hàng lớp = mã lớp — số đã chấm chữ sáng 500, không đậm. */}
-    <span className="font-medium text-slate-100">{l.daCham}</span>/{l.tong} {t('bài')}
+  <span className="whitespace-nowrap text-[15px] font-semibold tabular-nums text-slate-100" title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })}>
+    {/* B8 (mockup `.bai` 600 15 px, chủ SP 08/11): "2/27 bài" một khối chữ sáng, sát mép phải. */}
+    {l.daCham}/{l.tong} {t('bài')}
   </span>
 );
 
@@ -88,7 +88,8 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
 }) {
   const { homNay } = useNgayNghiepVu();
   /* LT-GON: mã lớp · (tên bài khi một lớp có hai hàng) · chi nhánh · x/y bài · một viên — bỏ cột kỹ năng, hạn. */
-  const cot = hep ? [null, 132] : [174, null, ...(coChiNhanh ? [110] : []), 110, 170];
+  /* B8 (chủ SP 08/11): "x/y bài" + viên chung MỘT ô cuối, căn sát mép phải như mockup (trước: hai cột 110 + 170 → số lơ lửng giữa hàng khi không có viên). */
+  const cot = hep ? [null, 132] : [174, null, ...(coChiNhanh ? [110] : []), 280];
   /* Tên bài ("Final Test") chỉ khi cùng lớp có hơn một hàng trong danh sách — để phân biệt hai hàng. */
   const haiHang = new Set(lop.map((x) => x.classId).filter((id, i, a) => a.indexOf(id) !== i));   // U06 (mockup V11): x/y bài · hạn · MỘT badge (bỏ "phần của bạn / GV khác")   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
   const soCot = cot.length;
@@ -126,8 +127,9 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
                 <>
                   <td className="truncate px-3 py-2 font-normal text-dim">{haiHang.has(l.classId) && l.luot.map((x) => dich(x.dot)).join(', ')}</td>
                   {coChiNhanh && <td className="truncate px-3 font-normal text-slate-400" title={l.branchName}>{l.branchName}</td>}
-                  <td className="px-3 font-normal"><TienDo l={l} /></td>
-                  <td className="px-3 font-normal"><span className="nhan-lop inline-flex">{/* mockup V11: badge có viền cùng tông */}<VienHang l={l} chuaLuu={chuaLuu[k]} /></span></td>
+                  <td className="px-4 font-normal">
+                    <span className="flex items-center justify-end gap-3"><TienDo l={l} /><span className="nhan-lop inline-flex empty:hidden">{/* mockup V11: badge có viền cùng tông */}<VienHang l={l} chuaLuu={chuaLuu[k]} /></span></span>
+                  </td>
                 </>
               )}
             </HangNhom>

@@ -137,9 +137,9 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
             )}
             <tr>
               {cot.map((c) => (
-                <th key={c.key} scope="col" data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-sang={c.sang || undefined} title={c.goiY}
+                <th key={c.key} scope="col" data-kieu={c.kieu} data-linh={c.linhHoat || undefined} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-sang={c.sang || undefined} title={c.goiY}
                   className={`th ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
-                  {c.nhan}{c.phu && <span className="bang-chu-thich"> {c.phu}</span>}
+                  {c.nhan}{c.dv && <span className="bang-dv"> · {c.dv}</span>}{c.phu && <span className="bang-chu-thich"> {c.phu}</span>}
                 </th>
               ))}
             </tr>
@@ -151,7 +151,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
                 <tr key={khoa(h)} className={lop(h)}
                   tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
                   {cot.map((c, i) => (
-                    <td key={c.key} data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
+                    <td key={c.key} data-kieu={c.kieu} data-linh={c.linhHoat || undefined} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                       {oCua(h, c)}
                       {/* SUA-375-3: dòng phụ dạng chữ bị cắt "…" thì rê chuột xem đủ (mẫu G4: cắt + title). */}
                       {coPhu(phu[i]) && <span className="bang-phu" data-phu-odiem="" title={typeof phu[i] === 'string' ? phu[i] : undefined}>{phu[i]}</span>}

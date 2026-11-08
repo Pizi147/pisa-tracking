@@ -29,7 +29,7 @@ export const EN_P9A_XET_LAI = {
   "Tiếp tục FT": "Continue FT",
   "Tiếp tục {lop}": "Continue {lop}",
   "Từ {lop}": "From {lop}",
-  "VIỆC · XÉT LẠI LỘ TRÌNH": "TASK · PATHWAY REVIEW",
+  'Việc · Xét lại lộ trình': 'Task · pathway review',
   "Về lớp thường": "Back to regular class",
   "Xét lại": "Review",
   "Xét lại lộ trình · {lop} · {n} em": "Pathway review · {lop} · {n} students",

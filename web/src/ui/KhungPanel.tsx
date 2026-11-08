@@ -184,7 +184,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
   anDau?: boolean; hocVien?: string | null; lop?: string | null;
-  /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". M6 6b-1: khung KHÔNG
+  /** NEN-PANEL (07 mục 3) + B11 (08/11): dòng loại trên tiêu đề, chữ thường 13 / 600 mờ — "Việc · …" / "Báo cáo · chỉ đọc". M6 6b-1: khung KHÔNG
    *  đoán theo `dau` — panel việc khai qua `dauViec` (`dau.loai`) hoặc prop này; `null` = không vẽ. */
   loai?: string | null;
   /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link) · lớp · ngữ cảnh.
@@ -201,7 +201,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   longTrong?: boolean;
   /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
   /** `vua` 1180 px: panel bàn giao (mockup v11 — bảng hai cột không trải hết 1440). */
-  rong?: 'hep' | 'rong' | 'vua' | 'toan' | /** PT-PANEL (mockup v13 A1): panel bảng điểm 820 — 11 cột L R W1 W2 S + OVR + Kỳ vọng không cuộn ngang. */ 'bang';
+  rong?: 'hep' | 'rong' | 'vua' | 'toan' | /** PT-PANEL (mockup v13 A1) + chủ SP 09/11: panel bảng số rộng 1040 — cột ngắn co theo nội dung, cột tên / việc thoải mái, không cắt chữ. */ 'bang';
   tabs?: ReactNode; ngCanh?: ReactNode;
   /** DON-NHO-3 (TAB-A11Y): thân cuộn là vùng của `tabs` (`role="tabpanel"`, id = `panelId` của HangTab) — chỉ gắn thuộc tính, không bọc thêm (Khoi `first:` giữ khoảng cách). */
   vungTab?: { id: string; nhan: string };
@@ -325,14 +325,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const dauCv = useContext(DauViecCongViec);
   const cvNgoai = dauCv && !trongKhung ? dauCv : null;
   const dongLoai = loai === undefined ? (cvNgoai?.loai ?? dau?.loai ?? null) : loai;
-  /* CV-TAB (mockup v17 `.pv-loai`): ở Công việc dòng loại 12 / 700 giãn chữ, không vạch hồng. */
-  const vachLoai = dongLoai && !trongCot && (cvNgoai ? (
-    <div className="mb-1 text-xs font-bold tracking-[.05em] text-faint">{dongLoai}</div>
-  ) : (
-    <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-[.02em] text-slate-500">
-      <span aria-hidden className="h-[3px] w-3.5 shrink-0 rounded-sm bg-[color:var(--hong)]" />{dongLoai}
-    </div>
-  ));
+  /* B11 (audit-ui 08/11): MỌI panel một dáng dòng loại — chữ thường 13 / 600 mờ, không vạch hồng (V2: hồng chỉ để nhận diện; G13 cấm in hoa). */
+  const vachLoai = dongLoai && !trongCot && <div className="mb-1 text-[13px] font-semibold text-dim">{dongLoai}</div>;
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   /* AUDIT-LOI (PTA 03/11): nút Đóng / Huỷ ở chân gọi đúng `onDong` (mặc định, hoặc nơi gọi truyền lại chính hàm đó) → đi đường `dong` như ✕ / Esc:
      đang có chữ thì hộp "Bỏ chữ, đóng". DON-CHU: gọi đúng hàm của ‹ Quay lại (vd Sửa công việc: Huỷ = về việc) → đi đường `veLai` như ‹.
@@ -465,7 +459,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
     /* T21: `bottom` = phần bàn phím ảo che (`useBanPhim`) — panel co lên, chân lưu nằm ngay trên bàn phím. */
     <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} style={{ bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
-      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'vua' ? 'max-w-[1180px]' : rong === 'rong' ? 'sm:w-[720px]' : rong === 'bang' ? 'sm:w-[820px]' : 'sm:w-[480px]'}`}
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'vua' ? 'max-w-[1180px]' : rong === 'rong' ? 'sm:w-[720px]' : rong === 'bang' ? 'sm:w-[1040px] sm:max-w-full' : 'sm:w-[480px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {voi(than)}
       </div>

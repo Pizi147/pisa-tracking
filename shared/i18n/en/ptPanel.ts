@@ -3,8 +3,8 @@ import type { Dich } from '../en.ts';
 
 export const EN_PT_PANEL = {
   '{a}/{b} câu': '{a}/{b} correct',
-  'SỐ · BÁO CÁO HV': 'NUMBER · STUDENT REPORT',
-  'SỐ · PHÂN TÍCH GV': 'NUMBER · TEACHER ANALYSIS',
+  'Số · Báo cáo HV': 'Number · student report',
+  'Số · Phân tích GV': 'Number · teacher analysis',
   'Chênh': 'Change',
   'Điểm kỹ năng ở lượt MT so lượt MT liền trước có điểm kỹ năng đó của chính HV. Ô "Sau" ✓ / ✗ so kỳ vọng của lượt đó.':
     'Skill score in the MT compared with the student’s previous MT that has this skill. "After" ✓ / ✗ is against that MT’s expectation.',
@@ -22,7 +22,7 @@ export const EN_PT_PANEL = {
     'Each row is one subject the teacher owns (outlined) in a Progress / Final Test. A subject passes when its correct ratio reaches the class threshold.',
   'mới nhất trước': 'newest first',
   'Trễ {n} ngày': (b) => `${b.n} days late`,
-  'SỐ · Ý THỨC': 'NUMBER · CONDUCT',
-  'SỐ · HIỆU QUẢ PA': 'NUMBER · PLAN EFFECTIVENESS',
+  'Số · Ý thức': 'Number · conduct',
+  'Số · Hiệu quả PA': 'Number · plan effectiveness',
   'Đợt {n}': (b) => `Round ${b.n}`,
 } satisfies Record<string, Dich>;
