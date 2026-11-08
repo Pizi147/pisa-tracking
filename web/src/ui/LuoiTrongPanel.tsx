@@ -3,7 +3,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 /**
  * LƯỚI NHẬP ĐIỂM TRONG PANEL VIỆC (chủ SP 08/11 duyệt #1246: "ô điểm ở panel bị clipped"). Lưới rộng hơn panel vẫn cuộn ngang
  * trong khung riêng (`.luoi-trong-panel .table-scroll`, OV-14b); khung này gắn `data-con-trai` / `data-con-phai` khi còn cột bị che
- * → CSS làm mờ đúng mép đó (chỉ báo "còn nữa, cuộn ngang"), hết che thì không mờ. Không đọc thêm dữ liệu.
+ * → CSS: cột tên HV dính trái (bóng khi đang cuộn), mép phải mờ khi còn cột. Không đọc thêm dữ liệu.
  */
 export function LuoiTrongPanel({ className, children }: { className: string; children: ReactNode }) {
   const goc = useRef<HTMLDivElement>(null);

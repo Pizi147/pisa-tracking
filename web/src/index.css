@@ -255,11 +255,12 @@
    * PR-KHUNG: overflow-y hidden — thanh cuộn ngang làm khối cao thừa 2–3 px, sinh cuộn dọc lồng trong trang.
    */
   .table-scroll { position: relative; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }   /* relative: chữ sr-only (absolute) trong bảng không thoát ra làm <main> trượt ngang (PR-HK2 rà #235 I1) */
-  /* Lưới trong panel việc (`LuoiTrongPanel`, chủ SP 08/11): còn cột bị che thì mép đó mờ dần — chỉ báo cuộn ngang, ô không bị cắt cụt. */
+  /* Lưới trong panel việc (`LuoiTrongPanel`, chủ SP 08/11): rộng hơn panel thì cuộn ngang — cột tên HV đứng yên (dính trái, nền đặc),
+     đang cuộn thì có viền + bóng nhẹ; còn cột bên phải thì mép phải mờ dần (chỉ báo cuộn). Ô không bị cắt cụt. */
+  .luoi-trong-panel .table-scroll > table > :is(thead, tbody) > tr > :first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+  .luoi-trong-panel .table-scroll > table > thead > tr > :first-child { z-index: 11; background: var(--surface-2); }
+  .luoi-trong-panel .table-scroll[data-con-trai] > table > :is(thead, tbody) > tr > :first-child { box-shadow: inset -1px 0 0 var(--line-strong), 6px 0 8px -4px rgb(0 0 0 / .28); }
   .luoi-trong-panel .table-scroll[data-con-phai] { mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent); }
-  .luoi-trong-panel .table-scroll[data-con-trai] { mask-image: linear-gradient(to right, transparent, #000 48px); }
-  .luoi-trong-panel .table-scroll[data-con-trai][data-con-phai] { mask-image: linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); }
-
   /*
    * ĐẦU CỘT DÍNH (PR-HK2, T15) — chỉ từ 1280 px (xl), chỉ bảng VỪA khung ở 1440 (không cần cuộn ngang). Đo: ở 768–1100 px nhiều bảng rộng hơn khung → bỏ khung cuộn thì <main> trượt ngang; từ 1200 px không trang nào tràn. Đặt `bang-dinh` cạnh `table-scroll`
    * trên khối bọc (hoặc thẳng trên <table> khi bảng không có khối bọc): từ xl khối bọc bỏ khung cuộn nên đầu cột bám <main>, top = -1.25rem

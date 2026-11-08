@@ -292,6 +292,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     /* Chủ SP 08/11 (#1246): lưới trong panel việc rộng hơn panel — cuộn ngang có chỉ báo mờ mép, không cắt cụt ô. */
     assert((docNguon('web/src/modules/congViec/PanelViec.tsx').match(/<LuoiTrongPanel className="luoi-trong-panel/g) ?? []).length === 2, 'PanelViec: cả hai lưới trong panel dùng LuoiTrongPanel');
     cao('web/src/index.css', /\.luoi-trong-panel \.table-scroll\[data-con-phai\] \{ mask-image/);
+    cao('web/src/index.css', /\.luoi-trong-panel \.table-scroll > table > :is\(thead, tbody\) > tr > :first-child \{ position: sticky; left: 0;/);   // cột tên HV đứng yên
     cao('web/src/modules/students/StudentsPage.tsx', /className="nut-loc"/);   // PR-HK2: lớp .nut-loc giữ 44 px ở điện thoại
     cao('web/src/index.css', /\.nut-loc \{[^}]*max-sm:min-h-\[44px\]/);
     cao('web/src/modules/worklist/LopToiDay.tsx', /max-sm:before:-inset-y-3/);
