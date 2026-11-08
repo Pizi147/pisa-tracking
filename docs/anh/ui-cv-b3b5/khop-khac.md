@@ -25,7 +25,7 @@ Dữ liệu: seed demo 14/09/2026, GVCN Trần Ngọc Hà (vai 7). Phông đã k
 | B5 375: ẩn nút, chạm cả dòng, "›" mờ bên phải, hạn dưới tên | `CotNut` (`an375`), `O_HAN` | b5-375-* | KHỚP |
 | B5 375: dải nhóm "Mock Test · 5 · ⚠ 4" (số dạt phải), tab "Speaking" | `DanhSachViec` (`max-sm:sr-only`), `HangTab` (`ngan`) | b5-375-* | KHỚP |
 | B5 375: "27 việc · 9 quá hạn" dòng riêng dưới tiêu đề | `HoTroHocVienTab` `cv-tom` | b5-375-* | KHỚP |
-| B1 câu hỏi chip "Không cần theo dõi" cột hẹp → "Không theo dõi", tên đủ khi rê | `ChoDuyetGon` (`TongQuanV5.tsx`, `NHAN_NGAN`) | — (B1 bố cục do UI-TQ làm) | KHỚP (title + sr-only chữ đủ) |
+| B1 câu hỏi chip "Không cần theo dõi" cột hẹp → "Không theo dõi", tên đủ khi rê | `ChoDuyetGon` (`TongQuanV5.tsx`) — #1247 (UI-TQ) đã làm; gộp main giữ bản #1247, thêm chữ đủ cho trình đọc màn | — | KHỚP |
 
 ## Khác mockup (có lý do)
 

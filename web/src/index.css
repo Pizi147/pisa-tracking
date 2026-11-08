@@ -765,6 +765,7 @@
   .bang th[data-sang] { color: var(--accent-strong); }   /* cột đang mở từ Lịch Test / việc */
   .bang .bang-phu { display: block; font-size: 12px; line-height: 1.4; color: var(--text-faint); font-weight: 400; }
   .bang .bang-chu-thich { font-size: 12px; font-weight: 400; color: var(--text-faint); }
+  .bang .bang-dv { font-weight: 500; color: var(--text-faint); }   /* AUDIT-UI B1: đơn vị cột, cùng cỡ tiêu đề (mockup `.dv`) */
   /* Cột đầu mỗi nhóm (`tach`): vạch dọc đậm chạy suốt bảng — đọc ngay đâu là Hành chính, đâu là Học thuật. */
   .bang :is(th, td)[data-tach] { border-left: 2px solid var(--line-strong); }
   .bang-nhom > th { height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--text-dim); background: var(--surface-2); text-align: center; }
