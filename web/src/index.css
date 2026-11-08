@@ -1215,6 +1215,14 @@
   .lt-phu:hover { text-decoration: underline; text-underline-offset: 3px; }
   .lt-phu[aria-expanded='true'] { text-decoration: none; background: var(--accent-soft); }
   .lt-phu:disabled, .lt-viec > .btn:disabled { opacity: .5; cursor: default; }
+  /* AUDIT-UI B7: "Đặt lịch ▾" (mockup `.nut.nut-nho`: cao 30, đệm 0 10, 13 / 600) — ≥ 640 px có chuột: hiện khi rê / chọn / focus dòng; chạm + 375 luôn hiện. */
+  .lt-viec .lt-dat { height: 30px; min-height: 0; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .lt-the .lt-dat { height: 36px; }
+  @media (hover: hover) and (min-width: 640px) {
+    tr.lt-h .lt-dat { opacity: 0; }
+    tr.lt-h:hover .lt-dat, tr.lt-h:focus-within .lt-dat, tr.lt-mo .lt-dat, .lt-dat[aria-expanded='true'] { opacity: 1; }
+  }
+  .lt-bang tr.lt-h, .lt-the > li:not(.lt-lop) { cursor: pointer; }
   .lt-tt { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 13px; font-weight: 600; color: var(--ok); }
   .lt-tt.dang { color: var(--text-dim); font-weight: 500; } .lt-tt.loi { color: rgb(var(--bad-rgb)); }
   .lt-tt .link { font-size: 13px; }
@@ -1270,7 +1278,9 @@
   .lt-the > li:first-child { border-top: 0; }
   .lt-the > li.lt-mo { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
   .lt-the > li.lt-lop { display: block; padding: 12px 14px 6px; font-size: 13px; font-weight: 700; color: var(--text-dim); background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
-  .lt-the-1 { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 8px; }
+  .lt-the-1 { display: flex; align-items: center; gap: 8px; }   /* B7: tên · [Đặt lịch ▾] · ⌄ */
+  .lt-the-1 > .lt-ten { flex: 1; min-width: 0; }
+  .lt-the-1 .lt-viec { display: block; }
   .lt-the-1 .lt-mo-ct { width: 44px; height: 44px; margin: -6px -6px -6px 0; }
   .lt-the-diem { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--text-dim); }
   .lt-the .lt-ghi-them { opacity: 1; min-height: 44px; justify-self: start; font-size: 14px; color: var(--text-dim); }
