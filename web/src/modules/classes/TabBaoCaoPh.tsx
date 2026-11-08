@@ -402,7 +402,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} loai={t('BÁO CÁO PH · VIẾT')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
+    <KhungPanel tieuDe={tieuDe} loai={t('Báo cáo PH · viết')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
       dau={{ dong2: ngCanh ?? [] }} chan={chan}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
@@ -599,7 +599,7 @@ function PanelDocBc({ lopId, lopMa, dot, phan, gv, emId, vietHo, onVietHo, onDon
     </div>
   );
   return (
-    <KhungPanel tieuDe={em ? `${em.ten} · ${ten}` : ten} loai={t('BÁO CÁO PH · ĐỌC')} onDong={onDong}
+    <KhungPanel tieuDe={em ? `${em.ten} · ${ten}` : ten} loai={t('Báo cáo PH · đọc')} onDong={onDong}
       dau={{ dong2: [lopMa, data ? dich(data.dot.nhan) : '', gv.map((g) => g.ten).join(', ') || t('Chưa phân công')] }}
       chan={{ huy: { nhan: t('Đóng'), onClick: onDong }, chinh: vietHo && em ? <button type="button" className="btn btn-primary min-h-[44px] font-semibold sm:min-h-0" onClick={onVietHo}>{t('Viết hộ')}</button> : undefined }}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />

@@ -74,7 +74,7 @@ export function dauCase(data: CaseDetail, lop: string | null | undefined, ngCanh
   /* U01 #6 (audit 03/11, mockup `.facts`): đầu panel việc của Case = dải sự kiện Học viên · Lớp · Case · Mức · Hạn (nhãn trên, giá trị dưới). */
   const muc = data.sosLevel ? <ChipSos muc={data.sosLevel as 1 | 2 | 3} tinh /> : null;
   return {
-    loai: t('VIỆC'),
+    loai: t('Việc'),
     dong2: [ten, lop ?? null, ngCanh],
     su: [[t('Học viên'), ten], [t('Lớp'), lop ?? null],
       data.luot ? [t('Lượt'), [dich(data.luot.dot), data.luot.tuan ? t('tuần {w}', { w: tuanLich(data.luot.tuan) }) : null].filter(Boolean).join(' · ')]

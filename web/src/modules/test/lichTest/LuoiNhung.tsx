@@ -30,7 +30,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
   onHet?: OnHet;
   /** N39 (panel việc chấm Mock): thêm mọi em có bài tuần `tuanDangXem` ở cột của việc — cả bài đã chấm, để sửa; không hiện cả lớp. */
   emCoBaiTuan?: boolean;
-  /** LT-GON (khối Quá hạn chấm một hàng một lớp): lưới gộp nhiều MT / tuần — "MT3 · W1 SEP" là chữ phụ dưới tên em (`DongThi`), không cột MT riêng. */
+  /** LT-GON (khối Quá hạn chấm một hàng một lớp): lưới gộp nhiều MT / tuần — "MT3 · W1 SEP" là chữ phụ dưới tên em (`DongThi`). */
   luotDuoiTen?: boolean;
 }) {
   const { data, error, reload } = useApi<Cham>(duongCham(classId, { periodId, kind }));
@@ -55,7 +55,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
           <DongThiContext.Provider value={luotDuoiTen}>
             <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}
               gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link}
-              onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} sEx={sEx} onHet={onHet} anCotMt={luotDuoiTen} />
+              onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} sEx={sEx} onHet={onHet} />
           </DongThiContext.Provider>
         )}
     </div>

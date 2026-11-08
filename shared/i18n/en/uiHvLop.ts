@@ -11,6 +11,8 @@ export const EN_UI_HV_LOP = {
   'Có việc quá hạn': 'Has overdue tasks',
   'Cột': 'Columns',
   'Dời tháng': 'Move month',
+  'Đặt lịch': 'Schedule',
+  'Đặt tháng dự kiến': 'Set planned month',
   'Dời tháng thi · {ten}': 'Move exam month · {ten}',
   'GVCN {ten}': 'HRT {ten}',
   'Ghi vào nhật ký xuất': 'Logged in export history',

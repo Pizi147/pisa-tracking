@@ -34,10 +34,10 @@ const TenCn = ({ ten, ma }: { ten: string; ma: string | null | undefined }) => {
     <span className="ml-1.5 inline-flex h-[18px] items-center rounded-[5px] border px-1.5 align-[2px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>{ma}</span></span></>;
 };
 
-/* CV-TAB (mockup v17 `.than .viec`): [tên + phụ | hạn 132 px | nút ≥ 124 px] từ 640 px; 375 (mockup b): [tên + phụ, hạn dưới | nút giữa hai hàng].
-   RA-GD-0711: nút 104 → 124 px (nút dài nhất tiếng Việt "Bàn giao môn P" 122 px) — nút dài không đẩy cột hạn lệch khỏi hàng trên / dưới. */
-export const COT_VIEC = 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_132px_minmax(124px,auto)]';
-const DONG = `grid min-h-[56px] cursor-pointer items-center gap-x-3 gap-y-1 px-4 py-[11px] ${COT_VIEC}`;
+/* AUDIT-UI B4 (mockup `.viec`): [tên + thẻ phụ | hạn 136 px | nút 112 px] từ 640 px — nút dài hơn ("Bàn giao môn P" 122 px, RA-GD-0711) nới cột, không cắt.
+   B5 (V18): 375 [tên + phụ, hạn dưới | "›"] — chạm cả dòng, nút ẩn (trừ "n ▾", nút phụ Gia hạn / Bỏ qua / Xuất). */
+export const COT_VIEC = 'grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_136px_minmax(112px,auto)]';
+const DONG = `grid min-h-[44px] cursor-pointer items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 sm:min-h-[50px] sm:px-4 sm:py-1.5 ${COT_VIEC}`;
 const O_HAN = 'max-sm:col-start-1 max-sm:row-start-2';
 const O_NUT = 'max-sm:col-start-2 max-sm:row-span-2 max-sm:row-start-1 max-sm:self-center';
 /* Nét cây (tầng 3 dưới tên em): dọc ở 30 px (375: 26), ngang 12 px vào giữa dòng; dòng cuối dừng ở giữa. */
@@ -74,34 +74,41 @@ export const chuDau = (ten: string) => {
 };
 
 /**
- * DANH SÁCH MỘT TAB (CV-TAB, mockup đã duyệt `thiet-ke/v17-nhap/` a1 · a2 · b, chủ SP 06/11 — thay danh sách ba tầng CONG-VIEC-2):
- * MỘT thẻ, mục "Quá hạn" trên cùng (chữ đỏ) rồi MỤC THEO LOẠI VIỆC (`chiaMucTab`; mục rỗng ẩn) — dải mục 13 / 700 nền `--surface-2` + số mờ.
- * Dòng PHẲNG: tên việc 14 / 600 + dòng phụ 13 (em = link hồ sơ · lớp · SOS · lượt · tuần) | cột hạn 132 px | cột nút 104 px. Dòng gộp giữ "n em ▾" + khay em.
+ * DANH SÁCH MỘT TAB — AUDIT-UI B4 (chủ SP 08/11, mockup `thiet-ke/2026-11-08-audit-ui-mockup.html` khu B4; thay CV-TAB "một thẻ, mục Quá hạn trên cùng"):
+ * MỖI MỤC LOẠI VIỆC MỘT THẺ (`chiaMucTab`, mục rỗng ẩn), quá hạn lên đầu mục. Đầu thẻ = dải nhóm (`.dai-nhom`: nền `--surface-2`, vạch trái 3 px nhấn, 15 / 700)
+ * · chip "n việc" · "⚠ n quá hạn" đỏ (375: "n" · "⚠ n"). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
  * Số đầu mục chỉ từ việc máy chủ trả (`dem`; dòng giữ chỗ vừa xong không đếm). Mỗi mục 10 dòng đầu + "Xem thêm".
  */
 export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDong & {
   muc: readonly MucTab<WorkItem>[];
-  dem: ReadonlyMap<string, number>;
+  dem: ReadonlyMap<string, { n: number; quaHan: number }>;
   soHien: number;
-  /** Cuối thẻ (QL "Việc quản lý": + Giao việc · Vận hành ›). */
+  /** Cuối thẻ cuối (QL "Việc quản lý": + Giao việc · Vận hành ›). */
   cuoi?: ReactNode;
   /** UI-CV-TVV (P1): luật của tab (vd hạn Báo PH) — ⓘ ở dải mục đầu, không thành câu trên màn. */
   luat?: ReactNode;
 }) {
   const [them, setThem] = useState<Record<string, number>>({});
   return (
-    <section className="card overflow-clip p-0">
+    <div className="flex flex-col gap-3.5">
       {muc.map((m, i) => {
         const n = soHien + (them[m.key] ?? 0);
+        const d = dem.get(m.key) ?? { n: 0, quaHan: 0 };
         return (
-          <div key={m.key} data-muc={m.key}>
-            <h3 className={`m-0 flex min-h-[38px] items-center gap-2 px-4 py-[9px] text-[13px] font-bold leading-snug ${i ? 'border-t' : ''} ${m.quaHan ? 'text-late' : 'text-[color:var(--text)]'}`}
-              style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
-              {m.label}<span className="font-semibold tabular-nums text-faint">{dem.get(m.key) ?? 0}</span>{i === 0 && luat}
-            </h3>
+          <section key={m.key} data-muc={m.key} className="card overflow-clip p-0" aria-label={m.label}>
+            <h2 className="sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
+              style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
+              <span className="min-w-0 text-[color:var(--text)] max-sm:flex-1">{m.label}</span>
+              <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
+                style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{d.n}<span className="max-sm:sr-only">&nbsp;{t('việc')}</span></span>
+              {d.quaHan > 0 && (
+                <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late"><span aria-hidden>⚠ </span>{d.quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>
+              )}
+              {i === 0 && luat}
+            </h2>
             <ul className="m-0 list-none p-0">
-              {m.items.slice(0, n).map((x) => (
-                <li key={`${x.key}|${x.ownerId ?? ''}`} className="border-t" style={{ borderColor: 'var(--line)' }}>
+              {m.items.slice(0, n).map((x, j) => (
+                <li key={`${x.key}|${x.ownerId ?? ''}`} className={j ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
                   {x.con?.length || x.studentId === null ? <DongLop it={x} {...dong} /> : <DongViec it={x} {...dong} />}
                 </li>
               ))}
@@ -113,19 +120,19 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
                 </button>
               </div>
             )}
-          </div>
+            {cuoi && i === muc.length - 1 && <div className="border-t px-4 py-1" style={{ borderColor: 'var(--line)' }}>{cuoi}</div>}
+          </section>
         );
       })}
-      {cuoi && <div className="border-t px-4 py-1" style={{ borderColor: 'var(--line)' }}>{cuoi}</div>}
-    </section>
+    </div>
   );
 }
 
 /**
- * HÀNG TAB HẠNG MỤC (mockup `.tabs`): dưới hàng lọc, kẻ dưới hết bề ngang; tab 14 / 600, đang chọn chữ đậm màu + gạch 2 px nhấn. 375: cuộn ngang.
+ * HÀNG TAB HẠNG MỤC (mockup `.tabs`): dưới hàng lọc, kẻ dưới hết bề ngang; tab 15 / 500, đang chọn 700 + gạch 2 px nhấn. 375: cuộn ngang, tên ngắn (`ngan`).
  * Bàn phím: phím chung `phimHangTab` (← → Home End chuyển focus, Enter / Space chọn — roving tabindex).
  */
-export function HangTab({ tabs, dang, onChon, idPanel }: { tabs: readonly { key: string; nhan: string; badge: BadgeTab | null }[]; dang: string | null; onChon: (k: string) => void; idPanel: string }) {
+export function HangTab({ tabs, dang, onChon, idPanel }: { tabs: readonly { key: string; nhan: string; ngan?: string; badge: BadgeTab | null }[]; dang: string | null; onChon: (k: string) => void; idPanel: string }) {
   return (
     <div role="tablist" aria-label={t('Hạng mục việc')} onKeyDown={phimHangTab}
       /* RA-GD-0711: `relative` — chữ `sr-only` (absolute) của badge bám vào hàng tab, không kéo <main> trượt ngang ở 375 (784/375);
@@ -135,9 +142,10 @@ export function HangTab({ tabs, dang, onChon, idPanel }: { tabs: readonly { key:
         const on = x.key === dang;
         return (
           <button key={x.key} type="button" role="tab" data-tab={x.key} aria-selected={on} aria-controls={idPanel} tabIndex={on ? 0 : -1} onClick={() => onChon(x.key)}
-            className={`-mb-px inline-flex min-h-[44px] shrink-0 appearance-none items-center gap-2 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 pb-3 pt-[11px] text-sm font-semibold ${
-              on ? 'border-[color:var(--accent)] text-[color:var(--text)]' : 'border-transparent text-dim hover:text-[color:var(--text)]'}`}>
-            {x.nhan}{x.badge && <BadgeTabSo b={x.badge} />}
+            /* AUDIT-UI B3 (mockup `.tab-hang .tb`): 15 px, chưa chọn 500 mờ, đang chọn 700 + gạch 2 px nhấn. */
+            className={`-mb-px inline-flex min-h-[44px] shrink-0 appearance-none items-center gap-2 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 py-2.5 text-[15px] ${
+              on ? 'border-[color:var(--accent)] font-bold text-[color:var(--text)]' : 'border-transparent font-medium text-dim hover:text-[color:var(--text)]'}`}>
+            {x.ngan ? <><span className="sm:hidden">{x.ngan}</span><span className="max-sm:hidden">{x.nhan}</span></> : x.nhan}{x.badge && <BadgeTabSo b={x.badge} />}
           </button>
         );
       })}
@@ -201,33 +209,25 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi, nguoiAn }: Chung
 }
 
 /**
- * Cột hạn (mockup v17 `.cot-han`): hàng 1 = tình trạng — quá hạn đỏ ⚠ "quá hạn n ngày" · gần hạn (mốc sẵn có `ganHan`, ≤ 3 ngày) vàng ⚠ "còn n ngày" /
- * "hạn hôm nay" · còn xa = MÃ TUẦN mờ (luật 30/09) · "không hạn" mờ; hàng 2 = "hạn dd/mm" (ẩn ở 375 — mockup b). Người giữ việc ở ĐẦU dòng phụ
- * (`NguoiGiu`, mockup v17 a2 — chủ SP 07/11 "lôm côm": cột hạn 3 dòng làm hàng cao thấp khác nhau).
+ * Cột hạn — AUDIT-UI B4 (mockup `.td-han`, 13 px): MỘT dòng mọi trạng thái — quá hạn đỏ 700 "⚠ 68 ngày · 08/07" · gần hạn (mốc sẵn có `ganHan`, ≤ 3 ngày)
+ * vàng "⚠ còn 2 ngày · 16/09" / "⚠ hạn hôm nay" · còn xa "hạn 23/09" mờ 600 (V8 hạn = ngày thật) · "không hạn" mờ. Câu đủ ở `title` + trình đọc màn.
+ * Người giữ việc ở ĐẦU dòng phụ (`NguoiGiu`, mockup v17 a2).
  */
 function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   const { homNay } = useNgayNghiepVu();
   const v = it.due && !daXong ? deadlineView({ kind: LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh', due: it.due, today: homNay }) : null;
   const qua = v?.tone === 'overdue';
   return (
-    <span className={`grid min-w-0 content-center justify-items-start gap-0.5 text-[13px] leading-snug ${O_HAN}`}>
+    <span className={`grid min-w-0 content-center justify-items-start text-[13px] leading-snug ${O_HAN}`}>
       {daXong ? <span className="font-semibold text-dim">{t('✓ Đã lưu')}</span>
-        /* AUDIT-UI A2: CV3 — dòng quá hạn đã nằm dưới mục "Quá hạn" → MỘT dòng "⚠ 68 ngày · 08/07" (đủ câu ở title + trình đọc màn);
-           CV4 — còn xa: chỉ "hạn 23/09" (V8 hạn = ngày thật; mã tuần đã ở dòng phụ). */
-        : v && it.due ? qua ? (
-          <span title={v.text} className="inline-flex items-center gap-1 whitespace-nowrap font-semibold tabular-nums text-late">
-            <span aria-hidden>⚠</span><span className="sr-only">{t('quá hạn')}</span>{t('{n} ngày', { n: v.daysOverdue ?? 0 })}
-            <span className="font-normal max-sm:hidden">· {shortDate(it.due, homNay)}</span>
+        : v && it.due ? qua || v.homNay || v.ganHan ? (
+          <span title={v.text} className={`inline-flex items-center gap-1 whitespace-nowrap tabular-nums ${qua ? 'font-bold text-late' : v.ganHan ? 'font-semibold text-soon' : 'font-semibold text-dim'}`}>
+            {(qua || v.ganHan) && <span aria-hidden>⚠</span>}
+            {qua ? <><span className="sr-only">{t('quá hạn')}</span>{t('{n} ngày', { n: v.daysOverdue ?? 0 })}</>
+              : v.homNay ? t('hạn hôm nay') : t('còn {n} ngày', { n: daysBetween(homNay, it.due.slice(0, 10)) })}
+            {!v.homNay && <span>· {shortDate(it.due, homNay)}</span>}
           </span>
-        ) : v.homNay || v.ganHan ? (
-          <>
-            <span title={v.text} className={`inline-flex items-center gap-1 whitespace-nowrap font-semibold tabular-nums ${v.ganHan ? 'text-soon' : 'text-dim'}`}>
-              {v.ganHan && <span aria-hidden>⚠</span>}
-              {v.homNay ? t('hạn hôm nay') : t('còn {n} ngày', { n: daysBetween(homNay, it.due.slice(0, 10)) })}
-            </span>
-            <span className="whitespace-nowrap tabular-nums text-dim max-sm:hidden">{nhanHan(it.due, homNay)}</span>
-          </>
-        ) : <span title={v.text} className="whitespace-nowrap tabular-nums text-dim">{nhanHan(it.due, homNay)}</span>
+        ) : <span title={v.text} className="whitespace-nowrap font-semibold tabular-nums text-dim">{nhanHan(it.due, homNay)}</span>
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
         : laViecChamCheo(it) ? null : <span className="text-faint">{t('không hạn')}</span>}
@@ -251,8 +251,13 @@ export function NguoiGiu({ ten, vai }: { ten: string; vai?: string | null }) {
   );
 }
 
-/** Cột nút (mockup `.nut`): một nút động từ, chữ một dòng đủ (không "…"); 375 nút vẫn hiện (mockup b), cao 44 px. Nút phụ (Gia hạn, Bỏ qua) dưới nút chính. */
-function CotNut({ it, nut, daXong, mo, onBam, nutPhu }: { it: WorkItem; nut: string | null; daXong: boolean; mo?: boolean; onBam: () => void; nutPhu?: ReactNode }) {
+/**
+ * Cột nút (mockup `.nut`): một nút động từ, chữ một dòng đủ (không "…"). Nút phụ (Gia hạn, Bỏ qua, Xuất) dưới nút chính.
+ * AUDIT-UI B5 (V18): 375 ẩn nút động từ — chạm cả dòng mở đúng panel, "›" mờ bên phải; còn hiện: nút "n ▾" (`trieu`), nút phụ, "Xem lại".
+ */
+function CotNut({ it, nut, daXong, mo, trieu, nhanNut, onBam, nutPhu }: {
+  it: WorkItem; nut: string | null; daXong: boolean; mo?: boolean; trieu?: boolean; nhanNut?: string; onBam: () => void; nutPhu?: ReactNode;
+}) {
   /* U01 #7: dòng vừa xong đứng nguyên chỗ — "Xem lại" mở lại panel của việc đó. */
   if (daXong) {
     return (
@@ -261,32 +266,48 @@ function CotNut({ it, nut, daXong, mo, onBam, nutPhu }: { it: WorkItem; nut: str
       </span>
     );
   }
-  if (!nut && !nutPhu) return <span className={O_NUT} />;
+  const coTrieu = mo !== undefined || !!trieu;
+  const an375 = !coTrieu;   // nút động từ ẩn ở 375 — cả dòng là nút
+  const muiTen = an375 && !nutPhu && <span aria-hidden className="self-start text-[15px] leading-snug text-faint max-sm:col-start-2 max-sm:row-start-1 sm:hidden">›</span>;
+  if (!nut && !nutPhu) return <>{muiTen}<span className={`${O_NUT} max-sm:hidden`} /></>;
   return (
-    <span className={`flex flex-col items-stretch gap-1.5 ${O_NUT}`} onClick={(e) => e.stopPropagation()}>
-      {nut && (
-        <button type="button" className="btn btn-sm min-h-[44px] justify-center whitespace-nowrap px-2.5 text-[13px] font-semibold sm:h-8 sm:min-h-8" onClick={onBam}
-          aria-expanded={it.con?.length && mo !== undefined ? mo : undefined}>
-          {nut}{mo !== undefined && <span aria-hidden className="ml-1">▾</span>}
-        </button>
-      )}
-      {nutPhu}
-    </span>
+    <>
+      {muiTen}
+      <span className={`flex flex-col items-stretch gap-1.5 ${O_NUT} ${an375 && !nutPhu ? 'max-sm:hidden' : ''}`} onClick={(e) => e.stopPropagation()}>
+        {nut && (
+          <button type="button" className={`btn btn-sm min-h-[44px] justify-center whitespace-nowrap px-2.5 text-[13px] font-semibold sm:h-[30px] sm:min-h-[30px] ${an375 ? 'max-sm:hidden' : ''}`} onClick={onBam}
+            aria-label={nhanNut} aria-expanded={it.con?.length && mo !== undefined ? mo : undefined}>
+            {nut}{coTrieu && <span aria-hidden className="ml-1">▾</span>}
+          </button>
+        )}
+        {nutPhu}
+      </span>
+    </>
   );
 }
 
 /** Tên việc bỏ tên em (máy chủ ghép "Xác nhận Case R · {em}") — tên em đã ở tầng ②. */
-export const tenBoEm = (it: WorkItem) => {
+const tenBoEmGoc = (it: WorkItem) => {
   const vi = it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe;
-  return tenViec(vi.split(' · ').filter((x) => !x.startsWith(it.studentName)).join(' · ') || vi);
+  return vi.split(' · ').filter((x) => !x.startsWith(it.studentName)).join(' · ') || vi;
 };
+export const tenBoEm = (it: WorkItem) => tenViec(tenBoEmGoc(it));
 /** U01 #15: tên việc máy chủ đã ghép "{thao tác} · {kỹ năng}" (`mywork.ts sauCham`) — web chỉ dịch. */
 export const tenViec = (vi: string) => vi.split(' · ').map((x) => dich(x)).join(' · ');
+/**
+ * AUDIT-UI B4 (CV1, chủ SP 08/11): ở DANH SÁCH, tên dòng = đối tượng ("Nhập điểm Listening, Reading" → "Listening, Reading") — động từ đã ở tên mục và ở nút.
+ * Chỉ loại việc mà tên mục nói đúng động từ đó (Chấm điểm › Mock Test…, Phương án › Thêm PA, Mô tả Case, Kết quả PA). Panel, "Tiếp: …" giữ tên đủ (`tenBoEm`).
+ */
+const DONG_TU: Partial<Record<string, RegExp>> = { score: /^Nhập điểm /, no_plan: /^Thêm (?=PA )/, ghi_nhan_xet: /^Mô tả Case · /, ghi_ket_qua_pa: /^Ghi kết quả PA · / };
+const boDongTu = (group: string, vi: string) => { const r = DONG_TU[group]; return (r && vi.replace(r, '')) || vi; };
 /* U01 #18: chip mức Case báo tay chỉ hiện "Gấp" (tông `danger`, `levelOf`) — "Bình thường" (tông `neutral`) không mang tin. */
 const chipMuc = (it: WorkItem, boSos: boolean) => (!it.level ? null : mucSosTheoNhan(it.level.text)
   ? (boSos ? null : <ChipSos muc={mucSosTheoNhan(it.level.text)!} tinh />) : (it.level.tone as string) !== 'neutral' ? <Level tone={it.level.tone}>{dich(it.level.text)}</Level> : null);
 
-/** U01 #3: tuần luôn có chữ "tuần" trước mã ("MT1 W4 JUL" → "MT1" + "tuần W4 JUL"), không nhầm W1 / W2 (Writing). */
+/**
+ * Tuần là MỘT thẻ riêng "W4 JUL" (AUDIT-UI B4 — mockup bỏ chữ "tuần" của U01 #3: thẻ tách riêng, có tháng, không lẫn W1 Writing).
+ * Lượt Progress / Final đi liền tuần trong một thẻ: "Progress Test W3 AUG" → "Progress W3 AUG".
+ */
 const MA_TUAN = /\b(W[1-5] [A-Z]{3})\b/;
 const LA_SO = /^\d+ (em|việc|bài|HV|lớp)$/;
 const tachTuan = (x: string): string[] => {
@@ -294,7 +315,8 @@ const tachTuan = (x: string): string[] => {
   if (!m) return [dich(x)];
   const truoc = x.slice(0, m.index).trim();
   const sau = x.slice(m.index + m[0].length).trim();
-  return [truoc ? dich(truoc) : '', t('tuần {w}', { w: m[1] }), sau ? dich(sau) : ''].filter(Boolean);
+  const loai = /^(Progress|Final) Test$/.exec(truoc);
+  return [loai ? `${loai[1]} ${m[1]}` : truoc ? dich(truoc) : '', loai ? '' : m[1], sau ? dich(sau) : ''].filter(Boolean);
 };
 /** Chuỗi phụ "a · b · c" của máy chủ → thẻ phụ (mockup `.the-phu .tag.nhat`): lượt · tuần · số bài / em / việc. */
 export const thePhu = (ds: readonly (string | null | undefined)[]) => ds.filter((x): x is string => !!x).flatMap((x) => x.split(' · ')).flatMap(tachTuan);
@@ -314,29 +336,36 @@ export function ThePhu({ ds, vien = [] }: { ds: readonly string[]; vien?: readon
 }
 
 /**
- * "›" sau tên = dòng này mở TRANG (không phải panel). 06/11: dòng đã có nút động từ bên phải thì tên không thêm "›" (nút đã nói) — chỉ còn ở 375, nơi nút ẩn
- * (chạm cả dòng). Dính vào chữ cuối của tên (khoảng trắng không ngắt) để không rơi xuống một dòng riêng.
+ * "›" sau tên = dòng này mở TRANG (không phải panel). 06/11: dòng đã có nút động từ bên phải thì tên không thêm "›" (nút đã nói).
+ * AUDIT-UI B5: 375 mọi dòng có "›" mờ bên phải (`CotNut`) — "›" sau tên chỉ còn ≥ 640. Dính vào chữ cuối của tên (khoảng trắng không ngắt).
  */
 function MuiTenMoTrang({ it, dong, nut }: { it: WorkItem; dong: ChungDong; nut: string | null }) {
-  if (!dong.moTrang(it) || it.group === 'xuat_bc_ph') return null;
-  return <span aria-label={t('mở trang')} className={`text-[13px] font-normal text-[color:var(--accent)] ${nut ? 'sm:hidden' : ''}`}>{' '}›</span>;
+  if (!dong.moTrang(it) || it.group === 'xuat_bc_ph' || nut) return null;
+  return <span aria-label={t('mở trang')} className="text-[13px] font-normal text-[color:var(--accent)] max-sm:hidden">{' '}›</span>;
 }
 
-/** Dòng phụ 13 / 400 mờ (mockup `.t2`): các mẩu nối " · ". < 640: xuống dòng khi thiếu chỗ — không cắt "…" (RA-GD-0711, điện thoại không rê được).
- *  ≥ 640 (CV-HANG-DEU, PTA 07/11 — ngoại lệ có chủ ý): MỘT dòng, cắt "…" ở CUỐI để mọi hàng 2 dòng (mockup v17 a2); thứ tự quan trọng trước
- *  (👤 người giữ · em · lớp · tuần · n bài), rê chuột thấy đủ chữ (`title` lấy chữ của dòng). Dòng có huy hiệu TVV (`children`) giữ xuống dòng — huy hiệu không bị cắt.
- *  RA-GD-0711: "·" dính CUỐI mẩu trước — xuống dòng không mở đầu dòng bằng "· tuần W1 SEP". */
-const DongPhu = ({ ds, children }: { ds: readonly ReactNode[]; children?: ReactNode }) => {
+/**
+ * Dòng phụ — AUDIT-UI B4 (mockup `.the-phu .tag.nhat`): ≥ 640 mỗi mẩu là MỘT THẺ nền nhạt 12 / 500 (em · lớp · tuần · n bài), một hàng
+ * (rê chuột thấy đủ chữ — `title` lấy chữ của dòng; thẻ không đủ chỗ ẩn cả thẻ); người giữ việc (`nguoi`, v12 S13) đứng đầu, chữ mờ + biểu tượng, không thẻ.
+ * < 640 (mockup B5): chữ 13 mờ nối " · ", xuống dòng khi thiếu chỗ — không cắt (RA-GD-0711, điện thoại không rê được); "·" dính CUỐI mẩu trước.
+ * Dòng có huy hiệu TVV (`children`) giữ xuống dòng — huy hiệu không bị cắt.
+ */
+/* Thẻ giữ đủ chữ; hàng ≥ 640 cao đúng một thẻ — thẻ không đủ chỗ rơi xuống hàng ẩn (thứ tự quan trọng trước), không thẻ nào bị cắt nửa / "Phan Khánh Li…". */
+const THE_PHU = 'sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5';
+const DongPhu = ({ nguoi, ds, children }: { nguoi?: ReactNode; ds: readonly ReactNode[]; children?: ReactNode }) => {
   const coHuy = Children.toArray(children).length > 0;   // `{tvv && …}` = false khi không phải TVV — không tính
-  return ds.length || coHuy ? (
+  const cham = (i: number) => i < ds.length - 1 && <span aria-hidden className="sm:hidden"> ·</span>;
+  return ds.length || coHuy || nguoi ? (
   <span onMouseEnter={(e) => { e.currentTarget.title = e.currentTarget.textContent ?? ''; }}
-    className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim ${coHuy ? '' : 'sm:block sm:truncate'}`}>
-    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap ${coHuy ? '' : 'sm:mr-1 sm:last:mr-0 sm:[&>.inline-flex]:align-top'}`}>{x}{i < ds.length - 1 && <span aria-hidden> ·</span>}</span>)}
+    className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px] ${coHuy ? '' : 'sm:h-5 sm:overflow-hidden'}`}>
+    {nguoi && <span className="shrink-0 whitespace-nowrap sm:mr-1">{nguoi}{ds.length > 0 && <span aria-hidden className="sm:hidden"> ·</span>}</span>}
+    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{x}{cham(i)}</span>)}
     {children}
   </span>
 ) : null;
 };
-const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 text-left text-sm font-semibold leading-snug disabled:cursor-default';
+/* AUDIT-UI B4 (mockup `.viec .t1`): tên dòng 15 / 500. */
+const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug disabled:cursor-default';
 
 /**
  * MỘT VIỆC CỦA MỘT EM (mockup v17 `.viec`): tên việc (không lặp tên em) · dòng phụ = em (link hồ sơ — tách xem hồ sơ / làm việc) · lớp · SOS · lượt / tuần.
@@ -345,7 +374,7 @@ const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 te
 function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const { daXong, dangChon, nut, nguoi } = useDong(it, dong);
   const tvv = laViecTvvTheoEm(it);
-  const ten = tenBoEm(it);
+  const ten = tenViec(boDongTu(it.group, tenBoEmGoc(it)));
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
   /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). */
   const phu = thePhu([it.classCode, sos ? `SOS ${sos}` : null, it.contextLabel ?? it.phu, it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
@@ -362,8 +391,7 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
           <MuiTenMoTrang it={it} dong={dong} nut={nut} />
           {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
         </button>
-        <DongPhu ds={[
-          ...(nguoi && !daXong ? [<NguoiGiu key="nguoi" ten={nguoi} />] : []),
+        <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} ds={[
           <Link key="em" to={`/hoc-vien/${it.studentId}`} title={t('Mở hồ sơ {ten}', { ten: it.studentName })} onClick={(e) => e.stopPropagation()}
             className="text-dim no-underline hover:text-[color:var(--accent)] hover:underline">{it.studentName}</Link>,
           ...phu,
@@ -388,6 +416,8 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const gop = !!it.con?.length;
   const bam = () => (con ? setMo(!mo) : dong.onOpen(it));
   const maDs = `con-${it.key}`;
+  /* AUDIT-UI B4 (CV5): Nhập điểm theo tuần nhiều lớp (`moCaDong`) — tên "Cả lớp", nút "4 lớp ▾" (dáng "n em ▾") mở panel lô như cũ; dòng phụ không lặp "4 lớp". */
+  const caTuan = gop && !con && it.group === 'score' && /^\d+ lớp$/.test(it.contextLabel ?? '');
   /* U01 #3–#4: tên việc máy chủ ghép "Mô tả Case · MB FT 101 · 4 em · 8 việc" — mã lớp / số / tuần sang dòng phụ (mockup v17: "MB FT 101 · MT3 · W1 NOV · 8 bài"). */
   const caLop = !!it.classCode && (gop || viecCaLop || it.studentName === 'Lớp ' + it.classCode);
   const phan = (it.group === 'bao_ph_yt' && it.phu ? it.phu : it.tieuDe).split(' · ');
@@ -395,7 +425,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   /* SOS ghi ở từng em trong khay — dòng gộp không lặp. 06/11: Xét lại lộ trình không liệt kê tên em — chỉ "n em"; tên mở ở panel. */
   const soTong = Number(phan.find((x) => LA_SO.test(x))?.split(' ')[0]);
   /* 06/11: thẻ "n em quá hạn" bằng đúng tổng thì bỏ (cột hạn đỏ đã nói); chỉ giữ khi quá hạn MỘT PHẦN. */
-  const ngCanh = it.group === 'xet_lai_lo_trinh' ? null : gop
+  const ngCanh = it.group === 'xet_lai_lo_trinh' || caTuan ? null : gop
     ? it.contextLabel?.split(' · ').filter((x) => !/^SOS \d/.test(x) && !(soTong && dich(x) === t('{n} em quá hạn', { n: soTong }))).join(' · ') : it.contextLabel;
   const tenGoc = phan.filter((x) => x !== it.classCode && !laThe(x)).join(' · ') || phan[0];
   /* 06/11: số em chỉ ghi MỘT lần — tên việc đã có "n em", hoặc việc cả lớp có thẻ ngữ cảnh "n em chưa chọn" thì không thêm "n HV". */
@@ -417,17 +447,18 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
         <span className="grid min-w-0 gap-0.5">
           <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined}
             aria-current={dangChon ? 'true' : undefined} className={`${TEN} ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
-            <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={tenViec(tenGoc)} ma={dong.theCn?.(it)} /></span>
+            <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={caTuan ? t('Cả lớp') : tenViec(boDongTu(it.group, tenGoc))} ma={dong.theCn?.(it)} /></span>
             {!con && <MuiTenMoTrang it={it} dong={dong} nut={nut} />}
             {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
           </button>
-          <DongPhu ds={nguoi && !daXong ? [<NguoiGiu key="nguoi" ten={nguoi} />, ...phu] : phu} />
+          <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} ds={phu} />
           {/* PHOI-HOP-SOS-INFO: Phối hợp SOS ghi ngay em thi thế nào, trượt kỹ năng nào — cùng thẻ với hồ sơ lớp / hồ sơ HV. */}
           {it.theSos?.length ? <TheSosViec ds={it.theSos} tong={it.count} /> : null}
         </span>
         {/* UA-03: dòng gộp cũng ghi người phụ trách (QL "Tất cả" phân biệt ba dòng giống nhau) — ở đầu dòng phụ. */}
         <CotHan it={it} daXong={daXong} />
-        <CotNut it={it} nut={nut} daXong={daXong} mo={con ? mo : undefined} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
+        <CotNut it={it} nut={caTuan && nut ? dich(it.contextLabel!) : nut} trieu={caTuan} nhanNut={caTuan ? `${t('Nhập điểm')} · ${dich(it.contextLabel!)}` : undefined}
+          daXong={daXong} mo={con ? mo : undefined} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
       </div>
       {con && mo && (
         <ul id={maDs} className="m-0 list-none border-t border-dashed p-0 pb-1.5" style={{ borderColor: 'var(--line-strong)' }} aria-label={dich(it.tieuDe)}>
@@ -444,11 +475,11 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
   const bam = () => dong.onOpen(it);
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
-      className={`${DONG} min-h-[48px] py-2 pl-8 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
+      className={`${DONG} min-h-[48px] pl-8 max-sm:py-2 sm:pl-8 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
       <span className="grid min-w-0 gap-0.5">
         <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-current={dangChon ? 'true' : undefined}
           className={`${TEN} font-medium ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>{daXong && <span aria-hidden className="text-ok">✓ </span>}{dich(it.conTen)}</button>
-        <DongPhu ds={[...(nguoi && !daXong ? [<NguoiGiu key="nguoi" ten={nguoi} />] : []), ...(it.conPhu ? [dich(it.conPhu)] : [])]} />
+        <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} ds={it.conPhu ? [dich(it.conPhu)] : []} />
       </span>
       <CotHan it={it} daXong={daXong} />
       <CotNut it={it} nut={nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />

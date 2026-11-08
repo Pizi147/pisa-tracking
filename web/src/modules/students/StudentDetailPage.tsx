@@ -27,7 +27,7 @@ import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, type ViecQuanLy } from './StudentManagePanel.tsx';
 import { TomTatLuuTru } from './TomTatLuuTru.tsx';
 import { Menu } from '../../ui/Menu.tsx';
-import { NUT_BA_CHAM_DAU } from '../../ui/MenuDong.tsx';
+import { NUT_BA_CHAM, NUT_DAU_HO_SO } from '../../ui/MenuDong.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { attemptHref, fmtBand, skillLabel, sosTone, studentStatusLabel } from '../../lib/format.ts';
@@ -270,7 +270,7 @@ export default function StudentDetailPage() {
             <div className="ml-auto flex flex-wrap items-start gap-2">
               {/* RKC (mở Q-B1): em Lưu trữ vẫn + Case / Gia hạn như em đang học. */}
               {data.viewer.canReport && (
-                <button className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setReportOpen(true)}>+ Case</button>
+                <button type="button" className={NUT_DAU_HO_SO} onClick={() => setReportOpen(true)}>+ Case</button>
               )}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
               {(() => {
@@ -281,12 +281,12 @@ export default function StudentDetailPage() {
                 const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(k));
                 /* P7 (k6): hồ sơ lưu trữ — "Quay lại học" là nút chính đầu hồ sơ, không nằm trong ⋯. */
                 const nutQuayLai = data.lopHoc?.chiXem && muc.some((m) => m.key === 'quay-lai')
-                  ? <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => mo('quay-lai')}>{t('Quay lại học')}</button> : null;
+                  ? <button type="button" className={`${NUT_DAU_HO_SO} btn-primary`} onClick={() => mo('quay-lai')}>{t('Quay lại học')}</button> : null;
                 const conLai = nutQuayLai ? muc.filter((m) => m.key !== 'quay-lai') : muc;
                 return <>{nutQuayLai}{vaiXem ? conLai.map((m) => (
-                  <button key={m.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
+                  <button key={m.key} type="button" className={NUT_DAU_HO_SO} title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
                 )) : conLai.length > 0 && (
-                  <Menu label="⋯" ariaLabel={t('Thao tác khác')} className={`${NUT_BA_CHAM_DAU} btn-sm h-11 w-11 sm:h-[30px] sm:w-[30px]`} items={conLai.map((m) => ({
+                  <Menu label="⋯" ariaLabel={t('Thao tác khác')} className={NUT_BA_CHAM} items={conLai.map((m) => ({
                     label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, onClick: () => mo(m.key),
                   }))} />
                 )}</>;

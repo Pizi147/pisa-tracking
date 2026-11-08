@@ -107,7 +107,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     </span>
   );
   const dau = {
-    loai: dauCv ? undefined : canDong ? t('CASE HỌC THUẬT') : t('CASE HỌC THUẬT · ĐÃ XONG'),
+    loai: dauCv ? undefined : canDong ? t('Case học thuật') : t('Case học thuật · đã xong'),
     tieu,
     /* Em Tạm dừng: hạn quá thành nhãn Tạm dừng (S6F-b) — không báo quá hạn khi em không học. */
     han: !canDong || !v?.han || !v.loaiHan ? null

@@ -255,7 +255,12 @@
    * PR-KHUNG: overflow-y hidden — thanh cuộn ngang làm khối cao thừa 2–3 px, sinh cuộn dọc lồng trong trang.
    */
   .table-scroll { position: relative; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }   /* relative: chữ sr-only (absolute) trong bảng không thoát ra làm <main> trượt ngang (PR-HK2 rà #235 I1) */
-
+  /* Lưới trong panel việc (`LuoiTrongPanel`, chủ SP 08/11): rộng hơn panel thì cuộn ngang — cột tên HV đứng yên (dính trái, nền đặc),
+     đang cuộn thì có viền + bóng nhẹ; còn cột bên phải thì mép phải mờ dần (chỉ báo cuộn). Ô không bị cắt cụt. */
+  .luoi-trong-panel .table-scroll > table > :is(thead, tbody) > tr > :first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+  .luoi-trong-panel .table-scroll > table > thead > tr > :first-child { z-index: 11; background: var(--surface-2); }
+  .luoi-trong-panel .table-scroll[data-con-trai] > table > :is(thead, tbody) > tr > :first-child { box-shadow: inset -1px 0 0 var(--line-strong), 6px 0 8px -4px var(--line-strong); }
+  .luoi-trong-panel .table-scroll[data-con-phai] { mask-image: linear-gradient(to right, var(--surface) calc(100% - 48px), transparent); }   /* mask chỉ dùng độ đục — màu nào đặc cũng được */
   /*
    * ĐẦU CỘT DÍNH (PR-HK2, T15) — chỉ từ 1280 px (xl), chỉ bảng VỪA khung ở 1440 (không cần cuộn ngang). Đo: ở 768–1100 px nhiều bảng rộng hơn khung → bỏ khung cuộn thì <main> trượt ngang; từ 1200 px không trang nào tràn. Đặt `bang-dinh` cạnh `table-scroll`
    * trên khối bọc (hoặc thẳng trên <table> khi bảng không có khối bọc): từ xl khối bọc bỏ khung cuộn nên đầu cột bám <main>, top = -1.25rem
@@ -297,6 +302,17 @@
   .btn-danger:hover:not(:disabled) { background: rgb(var(--bad-rgb) / 0.12); }
   .btn-sm { padding: 0.25rem 0.6rem; font-size: 13px; border-radius: 0.4rem; }   /* D10: chữ nút phụ 500 (theo .btn) — nút lặp từng dòng không đậm; nút chính vẫn 600 */
   .btn-ghost { background: transparent; border-color: transparent; }
+  /* B11 (audit-ui 08/11, mockup `.quay-btn` · `.pager b`): MỘT dáng nút đầu hồ sơ — "‹ nguồn" và ‹ / › Trước–Sau. Cao 32, điện thoại 44. */
+  .nut-ve, .nut-mui {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--accent);
+    font-weight: 600; font-size: 14px; white-space: nowrap; transition: background 120ms, border-color 120ms;
+  }
+  .nut-ve { max-width: 100%; padding: 0 10px; }
+  .nut-mui { width: 32px; padding: 0; }
+  .nut-ve:hover, .nut-mui:hover:not(:disabled) { background: var(--nut-hover); border-color: var(--accent-line); }
+  .nut-mui:disabled { opacity: 0.4; cursor: not-allowed; }
+  @media not all and (min-width: 640px) { .nut-ve, .nut-mui { height: 44px; } .nut-mui { width: 44px; } }
   .btn-ghost:hover:not(:disabled) { background: rgb(var(--phu-rgb) / 0.1); }
 
   /* U02 (thiet-ke/audit-0311 ro.css): thẻ phụ 22 px (`.the-phu` viền · `.nhat` nền mờ) · ô thông tin nhãn trên – giá trị dưới, vạch ngăn · thẻ kỹ năng · trích 3 dòng. */
@@ -765,6 +781,7 @@
   .bang th[data-sang] { color: var(--accent-strong); }   /* cột đang mở từ Lịch Test / việc */
   .bang .bang-phu { display: block; font-size: 12px; line-height: 1.4; color: var(--text-faint); font-weight: 400; }
   .bang .bang-chu-thich { font-size: 12px; font-weight: 400; color: var(--text-faint); }
+  .bang .bang-dv { font-weight: 500; color: var(--text-faint); }   /* AUDIT-UI B1: đơn vị cột, cùng cỡ tiêu đề (mockup `.dv`) */
   /* Cột đầu mỗi nhóm (`tach`): vạch dọc đậm chạy suốt bảng — đọc ngay đâu là Hành chính, đâu là Học thuật. */
   .bang :is(th, td)[data-tach] { border-left: 2px solid var(--line-strong); }
   .bang-nhom > th { height: 32px; padding: 0 12px; font-size: 13px; font-weight: 600; color: var(--text-dim); background: var(--surface-2); text-align: center; }
@@ -1198,6 +1215,14 @@
   .lt-phu:hover { text-decoration: underline; text-underline-offset: 3px; }
   .lt-phu[aria-expanded='true'] { text-decoration: none; background: var(--accent-soft); }
   .lt-phu:disabled, .lt-viec > .btn:disabled { opacity: .5; cursor: default; }
+  /* AUDIT-UI B7: "Đặt lịch ▾" (mockup `.nut.nut-nho`: cao 30, đệm 0 10, 13 / 600) — ≥ 640 px có chuột: hiện khi rê / chọn / focus dòng; chạm + 375 luôn hiện. */
+  .lt-viec .lt-dat { height: 30px; min-height: 0; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  .lt-the .lt-dat { height: 36px; }
+  @media (hover: hover) and (min-width: 640px) {
+    tr.lt-h .lt-dat { opacity: 0; }
+    tr.lt-h:hover .lt-dat, tr.lt-h:focus-within .lt-dat, tr.lt-mo .lt-dat, .lt-dat[aria-expanded='true'] { opacity: 1; }
+  }
+  .lt-bang tr.lt-h, .lt-the > li:not(.lt-lop) { cursor: pointer; }
   .lt-tt { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 13px; font-weight: 600; color: var(--ok); }
   .lt-tt.dang { color: var(--text-dim); font-weight: 500; } .lt-tt.loi { color: rgb(var(--bad-rgb)); }
   .lt-tt .link { font-size: 13px; }
@@ -1253,7 +1278,9 @@
   .lt-the > li:first-child { border-top: 0; }
   .lt-the > li.lt-mo { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
   .lt-the > li.lt-lop { display: block; padding: 12px 14px 6px; font-size: 13px; font-weight: 700; color: var(--text-dim); background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
-  .lt-the-1 { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 8px; }
+  .lt-the-1 { display: flex; align-items: center; gap: 8px; }   /* B7: tên · [Đặt lịch ▾] · ⌄ */
+  .lt-the-1 > .lt-ten { flex: 1; min-width: 0; }
+  .lt-the-1 .lt-viec { display: block; }
   .lt-the-1 .lt-mo-ct { width: 44px; height: 44px; margin: -6px -6px -6px 0; }
   .lt-the-diem { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--text-dim); }
   .lt-the .lt-ghi-them { opacity: 1; min-height: 44px; justify-self: start; font-size: 14px; color: var(--text-dim); }

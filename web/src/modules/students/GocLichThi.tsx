@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -9,7 +9,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelSauThi } from '../congViec/PanelSauThi.tsx';
 import {
-  CotGhi, CotLich, CotMt, CotTarget, CotViec, ChuLop, DaiMo, HopLich, NutMo, TenEm, canLam, laHop,
+  CotGhi, CotLich, CotMt, CotTarget, CotViec, ChuLop, DaiMo, HopLich, NutMo, TenEm, canLam, laHop, laMenuLich,
   type Hanh, type Hang, type HangHien, type LuuBody,
 } from './HangLichThi.tsx';
 import {
@@ -43,16 +43,18 @@ export function ChipLichThi({ l, them }: { l: LichThi | null | undefined; them?:
 export const kqOverall = (ovr: number | null | undefined, kv: number | null | undefined) =>
   ovr == null || kv == null ? null : ovr > kv ? 'vuot' as const : ovr === kv ? 'bang' as const : 'duoi' as const;
 
+/* B7 (chủ SP 08/11): thông tin em dồn trái cạnh tên (MT gần nhất · Target); Lịch thi · Việc tiếp ("Đặt lịch ▾") · Ghi chú · ⌄ dồn mép phải —
+   Target là cột giãn (nhận phần dư), các cột việc cố định nên luôn sát phải. */
 const COT_LICH: CotBang[] = [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 200 },
-  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 230 },
-  { key: 'viec', nhan: t('Việc tiếp'), kieu: 'viec', rong: 320 },
   { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 110 },
-  { key: 'target', nhan: 'Target', kieu: 'so', rong: 80 },
-  { key: 'ghi', nhan: t('Ghi chú'), kieu: 'chu' },
+  { key: 'target', nhan: 'Target', kieu: 'chu', linhHoat: true },
+  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 230 },
+  { key: 'viec', nhan: t('Việc tiếp'), kieu: 'viec', rong: 240 },
+  { key: 'ghi', nhan: t('Ghi chú'), kieu: 'chu', rong: 220 },
   { key: 'mo', nhan: '', kieu: 'nut', rong: 56 },
 ];
-const [C_TEN, C_LICH, C_VIEC, C_MT, C_TARGET, C_GHI, C_MO] = COT_LICH;
+const [C_TEN, C_MT, C_TARGET, C_LICH, C_VIEC, C_GHI, C_MO] = COT_LICH;
 /** Hàng công cụ: lọc TVV — "-" = em chưa có TVV. */
 const TVV_CHUA = '-';
 const SELECT_GON = 'field h-8 w-auto !py-0 text-sm max-sm:min-h-[44px] max-sm:w-full';
@@ -160,6 +162,12 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
       .catch((e: any) => sua(r.studentId, (x) => ({ ...x, tt: { kieu: 'loi', loi: e?.message ?? t('Không lưu được'), lai: () => luu(r, body, hoanTac) } })));
   };
   const doiMo = (id: number) => setMo((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  /** B7 (chủ SP 08/11): bấm thanh (dòng / thẻ) mở dải thông tin HV — trừ khi bấm vào link, nút, ô nhập, menu (việc riêng của chúng). Bàn phím: nút ⌄ của dòng. */
+  const bamDong = (id: number) => (e: MouseEvent) => {
+    if ((e.target as HTMLElement).closest('a, button, input, select, textarea, label, [role="menu"]')) return;
+    if (window.getSelection()?.toString()) return;   // đang bôi chữ để chép — không mở / thu
+    doiMo(id);
+  };
   /** Chốt / Sửa ngày · Đặt / Dời tháng → hộp dưới hàng; Ghi KQ · Bước tiếp · Sửa KQ → panel Sau thi có sẵn (XM-1). */
   const bam = (r: HangHien, nut: ThaoTacLichThi) => {
     if (laHop(nut)) { setPanel(null); setHop(hop?.id === r.studentId && hop.nut === nut ? null : { id: r.studentId, nut }); return; }
@@ -176,12 +184,12 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
     return (
       <Fragment>
         {dau && <tr className="lt-lop"><td colSpan={COT_LICH.length}><ChuLop {...dau} /></td></tr>}
-        <tr className={`lt-h ${dangMo || hopMo ? 'lt-mo' : ''}`}>
+        <tr className={`lt-h ${dangMo || hopMo ? 'lt-mo' : ''}`} onClick={bamDong(r.studentId)}>
           <OBang c={C_TEN}><TenEm r={r} ds={ds} /></OBang>
-          <OBang c={C_LICH}><CotLich r={r} /></OBang>
-          <OBang c={C_VIEC}><CotViec r={r} hanh={hanh} /></OBang>
           <OBang c={C_MT}><CotMt r={r} /></OBang>
           <OBang c={C_TARGET}><CotTarget r={r} /></OBang>
+          <OBang c={C_LICH}><CotLich r={r} /></OBang>
+          <OBang c={C_VIEC}><CotViec r={r} hanh={hanh} /></OBang>
           <OBang c={C_GHI}><CotGhi r={r} khoa={khoa} onLuu={(ghiChu) => luu(r, { ghiChu })} /></OBang>
           <OBang c={C_MO}><NutMo r={r} mo={dangMo} onMo={() => doiMo(r.studentId)} /></OBang>
         </tr>
@@ -200,8 +208,9 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
     return (
       <Fragment key={r.studentId}>
         {dau && <li className="lt-lop"><ChuLop {...dau} /></li>}
-        <li className={dangMo || hopMo ? 'lt-mo' : ''}>
-          <div className="lt-the-1"><TenEm r={r} ds={ds} /><NutMo r={r} mo={dangMo} onMo={() => doiMo(r.studentId)} /></div>
+        <li className={dangMo || hopMo ? 'lt-mo' : ''} onClick={bamDong(r.studentId)}>
+          {/* B7 (mockup 375): "Đặt lịch ▾" ở hàng tên, cạnh ⌄. */}
+          <div className="lt-the-1"><TenEm r={r} ds={ds} />{!hopMo && laMenuLich(r) && <CotViec r={r} hanh={hanh} the />}<NutMo r={r} mo={dangMo} onMo={() => doiMo(r.studentId)} /></div>
           {(st?.overall != null || r.target != null) && (
             <div className="lt-the-diem">
               {st?.overall != null && <span>{st.attemptLabel} <span className={`lt-diem ${datKv(st.overall, st.expectation, r.kck) === true ? 'dat' : datKv(st.overall, st.expectation, r.kck) === false ? 'duoi' : ''}`}>{st.overall.toFixed(1)}</span></span>}
@@ -210,7 +219,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
           )}
           <CotLich r={r} />
           <CotGhi r={r} khoa={khoa} hienNhan onLuu={(ghiChu) => luu(r, { ghiChu })} />
-          {hopMo ? <HopLich r={r} nut={hopMo} the onHuy={() => setHop(null)} onLuu={(b) => luu(r, b)} /> : <CotViec r={r} hanh={hanh} the />}
+          {hopMo ? <HopLich r={r} nut={hopMo} the onHuy={() => setHop(null)} onLuu={(b) => luu(r, b)} /> : !laMenuLich(r) && <CotViec r={r} hanh={hanh} the />}
           {dangMo && <DaiMo r={r} hanh={hanh} />}
         </li>
       </Fragment>

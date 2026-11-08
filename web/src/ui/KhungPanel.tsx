@@ -184,7 +184,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
   anDau?: boolean; hocVien?: string | null; lop?: string | null;
-  /** NEN-PANEL (07 mục 3, `v5-nen.css .panel-loai`): dòng loại trên tiêu đề, vạch hồng — "VIỆC · …" / "BÁO CÁO · CHỈ ĐỌC". M6 6b-1: khung KHÔNG
+  /** NEN-PANEL (07 mục 3) + B11 (08/11): dòng loại trên tiêu đề, chữ thường 13 / 600 mờ — "Việc · …" / "Báo cáo · chỉ đọc". M6 6b-1: khung KHÔNG
    *  đoán theo `dau` — panel việc khai qua `dauViec` (`dau.loai`) hoặc prop này; `null` = không vẽ. */
   loai?: string | null;
   /** OV-12c — ĐẦU PANEL v3 (mockup panel v3 §1): dòng 1 tên việc 17 px + MỘT chip hạn (`ChipHan`) + ✕; dòng 2 em (link) · lớp · ngữ cảnh.
@@ -325,14 +325,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const dauCv = useContext(DauViecCongViec);
   const cvNgoai = dauCv && !trongKhung ? dauCv : null;
   const dongLoai = loai === undefined ? (cvNgoai?.loai ?? dau?.loai ?? null) : loai;
-  /* CV-TAB (mockup v17 `.pv-loai`): ở Công việc dòng loại 12 / 700 giãn chữ, không vạch hồng. */
-  const vachLoai = dongLoai && !trongCot && (cvNgoai ? (
-    <div className="mb-1 text-xs font-bold tracking-[.05em] text-faint">{dongLoai}</div>
-  ) : (
-    <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold tracking-[.02em] text-slate-500">
-      <span aria-hidden className="h-[3px] w-3.5 shrink-0 rounded-sm bg-[color:var(--hong)]" />{dongLoai}
-    </div>
-  ));
+  /* B11 (audit-ui 08/11): MỌI panel một dáng dòng loại — chữ thường 13 / 600 mờ, không vạch hồng (V2: hồng chỉ để nhận diện; G13 cấm in hoa). */
+  const vachLoai = dongLoai && !trongCot && <div className="mb-1 text-[13px] font-semibold text-dim">{dongLoai}</div>;
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   /* AUDIT-LOI (PTA 03/11): nút Đóng / Huỷ ở chân gọi đúng `onDong` (mặc định, hoặc nơi gọi truyền lại chính hàm đó) → đi đường `dong` như ✕ / Esc:
      đang có chữ thì hộp "Bỏ chữ, đóng". DON-CHU: gọi đúng hàm của ‹ Quay lại (vd Sửa công việc: Huỷ = về việc) → đi đường `veLai` như ‹.

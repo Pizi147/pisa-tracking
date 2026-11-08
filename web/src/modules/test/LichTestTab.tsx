@@ -31,7 +31,7 @@ const loaiCua = (l: { mode: LopLichTest['mode']; kind?: string | null }): Loai =
  * TEST › LỊCH TUẦN (UI-LICH-TUAN, `thiet-ke/v5/dieu-chinh-cuoi.html` khu a; C13 một tuần + ‹ ›; gốc PR-UX1 / PR-LT3) — MỘT thẻ:
  *
  *   thanh tuần   ‹ W3 SEP 14/09 – 20/09 › · chip Tất cả · Fast Track · n · Lớp thường · n · (Lớp tôi dạy | Tất cả · chi nhánh) · Xuất Excel · Lịch thi thật ›
- *   dải số       n/m bài đã chấm · n bài còn chấm · n bài quá hạn — tuần đang xem (quá hạn theo hôm nay); bấm mở đúng tập
+ *   dải số       n/m bài đã chấm · n bài quá hạn (B8) — tuần đang xem (quá hạn theo hôm nay); bấm mở đúng tập
  *   ▸ Quá hạn chấm   theo hôm nay, không đổi khi đổi tuần; thu sẵn; mở dòng → lưới tại chỗ chỉ các em còn nợ
  *   ▸ Test tuần này  hàng lớp gọn một dòng (lớp · HV theo lượt · kỹ năng · tiến độ · hạn dd/mm · trạng thái; mã lớp = link hồ sơ lớp); mở lớp → bảng
  *                    từng HV làm Test trong tuần (MT của em · L R W1 W2 W S · kỳ vọng · Overall · kết quả), sửa điểm tại chỗ theo quyền,
@@ -228,10 +228,10 @@ export function LichTestTab() {
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
   const bamSo = (o: OSo) => {
     if (!data) return;
-    /* UX-2 (1): "bài quá hạn" mở DANH SÁCH đúng các ô đã đếm. Hai ô đầu → nhóm Test tuần này; "còn chấm" ép mở hàng còn bài. */
+    /* UX-2 (1): "bài quá hạn" mở DANH SÁCH đúng các ô đã đếm. B8: "đã chấm" → nhóm Test tuần này + ép mở hàng còn bài (thao tác của ô "còn chấm" đã bỏ). */
     if (o === 'no') { setMoQuaHan(true); return; }
     setMoKhoi((m) => ({ ...m, k3: true }));
-    if (o === 'con-phai-cham') setEpMo((s) => new Set([...s, ...lopTab.filter((l) => l.conBai > 0).map(khoaHang)]));
+    setEpMo((s) => new Set([...s, ...lopTab.filter((l) => l.conBai > 0).map(khoaHang)]));
     cuon('lich-test-k3');
   };
 

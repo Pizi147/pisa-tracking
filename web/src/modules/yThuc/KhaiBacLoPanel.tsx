@@ -164,7 +164,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
   const COT = '[@container(min-width:600px)]:grid-cols-[56px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,13rem)_minmax(0,1fr)] [@container(min-width:600px)]:items-center';
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong"
-      dau={{ loai: han ? t('VIỆC') : undefined, han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined,
+      dau={{ loai: han ? t('Việc') : undefined, han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined,
         dong2: [lop ?? data.classCode, t('{n} HV', { n: ds.length }), t('bậc cao nhất em đã bị xử lý trước khi dùng web')] }}
       chan={{
         daSua: gui.length > 0,
