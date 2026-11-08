@@ -41,7 +41,8 @@ Một nghĩa vụ tính cho đúng một người. Ngoại lệ duy nhất là m
 
 a. **Bài thường:** GV được phân công kỹ năng đó ở lớp em học tại tuần thi, theo phân công có hiệu lực ở ngày hạn. Writing FT: GV W1 hoặc W2, theo ô.
    - Chấm hộ: vẫn tính cho GV này.
-   - Không có phân công ở ngày hạn: để trống người, gắn nhãn **"Chưa phân công"**, hiện cho QL chi nhánh. Đếm riêng, không bị mất.
+   - Không có phân công ở ngày hạn (phân công nhập muộn — chẩn đoán 09/11: 86 bài): lấy phân công **gần nhất có hiệu lực SAU ngày hạn** của cùng lớp + kỹ năng (như Công việc đang giao), ghi cờ `pc_nhap_sau`.
+   - Lớp + kỹ năng không có phân công nào: để trống người, gắn nhãn **"Chưa phân công"**, hiện cho QL chi nhánh. Đếm riêng, không bị mất.
 
 b. **Việc:** người giữ việc theo Công việc ở ngày hạn. Ví dụ: chủ Case, GVCN / GVBM theo phân công lúc hạn, TVV của em, người giữ Mini Test, người nhận bàn giao.
 
