@@ -420,7 +420,9 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   };
   /* Dòng phụ: kỹ năng / tuần Test dưới tên việc; ngày làm (nhập điểm / ghi kết quả) dưới tình trạng. */
   /* Tab "Đã làm": dòng phụ ghi loại việc (các loại chung một tab). */
-  const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec' ? ([daLam && !laBai ? dich(TAB_VIEC_HAN_LABEL[h.tab]) : null, h.phu ? dich(h.phu) : null].filter(Boolean).join(' · ') || null) : c.key === 'tt' ? ngayLam(h) : null);
+  /* Chủ SP 09/11: tab Đã làm chỉ ghi loại việc khi có nhiều loại — một loại thì không lặp "Case – PA – Kết quả" trên mọi dòng. */
+  const nhieuLoai = new Set(tatVc.map((h) => h.tab)).size > 1;
+  const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec' ? ([daLam && !laBai && nhieuLoai ? dich(TAB_VIEC_HAN_LABEL[h.tab]) : null, h.phu ? dich(h.phu) : null].filter(Boolean).join(' · ') || null) : c.key === 'tt' ? ngayLam(h) : null);
   const theVc = (h: HVc) => (
     <div className="grid gap-1">
       <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, cotVc[0])}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
@@ -447,7 +449,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={4} /></div>
           : (
-            <div className="grid gap-3 pt-3">
+            <div className="pn-bang grid gap-3 pt-3">
               {vk && tabsViec.length > 0 && (
                 /* DEM-QUA-HAN b: tab loại việc (chỉ việc quá hạn, số đỏ) + "Đã làm" — cùng dáng tab Chưa đạt · Đạt. */
                 <div role="tablist" aria-label={t('Loại việc')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>

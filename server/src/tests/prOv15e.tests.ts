@@ -260,5 +260,9 @@ export async function runPrOv15eTests(t: YThucTestKit) {
       assert(/useXemThem/.test(doc(f)) && /<XemThem /.test(doc(f)) && !/PhanTrang \{/.test(doc(f)), `${f}: panel số phải dùng Xem thêm, không phân trang`);
     }
     assert(/export const BUOC_XEM_THEM = 20;/.test(doc('web/src/ui/PhanTrang.tsx')), 'Xem thêm mỗi lần 20 dòng');
+    /* Chủ SP 09/11: panel bảng số rộng 1040; cột ngắn co theo nội dung, cột tên / linh hoạt xuống dòng thay vì cắt; tab Đã làm không lặp loại việc khi chỉ một loại. */
+    assert(/rong === 'bang' \? 'sm:w-\[1040px\]/.test(doc('web/src/ui/KhungPanel.tsx')), 'panel bảng số 1040');
+    assert(/className="pn-bang /.test(doc('web/src/ui/BangLuotPanel.tsx')) && /\.pn-bang \.bang \{ table-layout: auto; \}/.test(doc('web/src/index.css')), 'pn-bang: cột co theo nội dung');
+    assert(/daLam && !laBai && nhieuLoai/.test(doc('web/src/ui/BangLuotPanel.tsx')), 'Đã làm: không lặp loại việc');
   });
 }

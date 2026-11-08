@@ -201,7 +201,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   longTrong?: boolean;
   /** `toan`: lưới nhập hàng loạt nhiều cột (Thêm học viên) — rộng theo màn tới 1440px, không ép 10 cột vào ngăn hẹp. */
   /** `vua` 1180 px: panel bàn giao (mockup v11 — bảng hai cột không trải hết 1440). */
-  rong?: 'hep' | 'rong' | 'vua' | 'toan' | /** PT-PANEL (mockup v13 A1): panel bảng điểm 820 — 11 cột L R W1 W2 S + OVR + Kỳ vọng không cuộn ngang. */ 'bang';
+  rong?: 'hep' | 'rong' | 'vua' | 'toan' | /** PT-PANEL (mockup v13 A1) + chủ SP 09/11: panel bảng số rộng 1040 — cột ngắn co theo nội dung, cột tên / việc thoải mái, không cắt chữ. */ 'bang';
   tabs?: ReactNode; ngCanh?: ReactNode;
   /** DON-NHO-3 (TAB-A11Y): thân cuộn là vùng của `tabs` (`role="tabpanel"`, id = `panelId` của HangTab) — chỉ gắn thuộc tính, không bọc thêm (Khoi `first:` giữ khoảng cách). */
   vungTab?: { id: string; nhan: string };
@@ -459,7 +459,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
     /* T21: `bottom` = phần bàn phím ảo che (`useBanPhim`) — panel co lên, chân lưu nằm ngay trên bàn phím. */
     <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} style={{ bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
-      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'vua' ? 'max-w-[1180px]' : rong === 'rong' ? 'sm:w-[720px]' : rong === 'bang' ? 'sm:w-[820px]' : 'sm:w-[480px]'}`}
+      <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'vua' ? 'max-w-[1180px]' : rong === 'rong' ? 'sm:w-[720px]' : rong === 'bang' ? 'sm:w-[1040px] sm:max-w-full' : 'sm:w-[480px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {voi(than)}
       </div>
