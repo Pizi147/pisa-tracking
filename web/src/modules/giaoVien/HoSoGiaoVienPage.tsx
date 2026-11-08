@@ -543,7 +543,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
   const nhom = (['qua-han', 'can-lam', 'cho-duyet', 'dang-lam'] as const).map((tt) => ({ tt, n: ds.filter((c) => c.trangThai.t === tt).length })).filter((x) => x.n > 0);
   const truoc = ds.filter((c) => c.viecTiep).slice(0, CASE_TRUOC);
   return (
-    /* B12 + PTA 08/11 ([XM] #1250, mockup sát): đầu thẻ = tiêu đề · ô đếm "n Case" · chip đếm theo trạng thái (+ Case có việc quá hạn) bên phải · link Hiệu quả PA;
+    /* B12 + PTA 08/11 ([XM] PR 1 B12, mockup sát): đầu thẻ = tiêu đề · ô đếm "n Case" · chip đếm theo trạng thái (+ Case có việc quá hạn) bên phải · link Hiệu quả PA;
        bỏ hàng số to — mọi số giữ nguyên, vẫn bấm mở panel đúng nhóm (`OSo`). */
     <Card title={<span className="inline-flex flex-wrap items-center gap-2">{t('Case đang phụ trách')}
         {ds.length > 0 && <span className={`${CHIP_VUONG} gap-1 font-semibold text-slate-100`} style={{ borderColor: 'var(--line-strong)' }}>
