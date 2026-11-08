@@ -280,11 +280,12 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     cao('web/src/ui/HangNhom.tsx', /phang \? 'max-sm:min-h-\[44px\]'/);
     /* PR-OV5b: nút Quay lại mọi hồ sơ (HV, lớp, MT, GV, Nhập điểm) là `DuongVe` "‹ {tên nguồn}" — 44 px ở điện thoại, cả menu Các bước. */
     cao('web/src/modules/fasttrack/MockDetailPage.tsx', /<DuongVe /);
-    /* V8-HSL (mockup v8 hồ sơ lớp, Q-7): dáng gọn `gon` (chữ, không khung) — điện thoại vẫn 44 px bằng `after:-inset-y-2.5`. */
-    cao('web/src/ui/ThanhTruocSau.tsx', /className=\{gon \? GON_VE : 'btn btn-sm min-h-\[44px\] max-w-full sm:min-h-\[32px\]'\} onClick=\{\(\) => ve\(/);
-    cao('web/src/ui/ThanhTruocSau.tsx', /const GON_VE = "[^"]*after:-inset-y-2\.5[^"]*sm:after:hidden"/);
+    /* B11 (audit-ui 08/11, thay V8-HSL `gon`): mọi hồ sơ một dáng `.nut-ve` "‹ nguồn" + `.nut-mui` ‹ / › — cao 32, điện thoại 44. */
+    cao('web/src/ui/ThanhTruocSau.tsx', /className="nut-ve" onClick=\{\(\) => ve\(/);
     cao('web/src/ui/ThanhTruocSau.tsx', /<Menu label=\{t\('Các bước[^\n]*className="btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-\[32px\]"/);
-    cao('web/src/ui/ThanhTruocSau.tsx', /btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-0 disabled/);   // ‹ Trước · Sau ›
+    cao('web/src/ui/ThanhTruocSau.tsx', /className="nut-mui" disabled=\{ben\.truoc === null\}/);   // ‹ Trước · Sau ›
+    cao('web/src/index.css', /@media not all and \(min-width: 640px\) \{ \.nut-ve, \.nut-mui \{ height: 44px; \}/);
+    assert(!/\bgon\b/.test(docNguon('web/src/ui/ThanhTruocSau.tsx')), 'B11: bỏ dáng gọn riêng của hồ sơ lớp');
     cao('web/src/modules/students/StudentDetailPage.tsx', /className="btn btn-sm min-h-\[44px\] sm:min-h-0" onClick=\{\(\) => setReportOpen\(true\)\}>\+ Case/);
     cao('web/src/modules/students/StudentsPage.tsx', /className="nut-loc"/);   // PR-HK2: lớp .nut-loc giữ 44 px ở điện thoại
     cao('web/src/index.css', /\.nut-loc \{[^}]*max-sm:min-h-\[44px\]/);

@@ -3,7 +3,7 @@ import type { Dich } from '../en.ts';
 
 export const EN_UI_CONG_VIEC = {
   'nhóm': 'groups',
-  'BÀI THI SPEAKING': 'SPEAKING TESTS',
+  'Bài thi Speaking': 'Speaking tests',
   '⚠ {n} hạn hôm nay': '⚠ {n} due today',
   'Hạn đến {ngay}': 'Due by {ngay}',
   'Hạn sau {ngay}': 'Due after {ngay}',
@@ -11,7 +11,7 @@ export const EN_UI_CONG_VIEC = {
   'Lọc theo hạn': 'Filter by due date',
   'Nhập hộ': 'Enter for them',
   'Làm thay': 'Do it for them',
-  'THEO DÕI': 'WATCHING',
+  'Theo dõi': 'Watching',
   'Em này còn:': 'Also for this student:',
   'Đang xem việc của': 'Viewing tasks of',
   '— chế độ theo dõi.': '— watch mode.',

@@ -3,7 +3,7 @@ import type { Dich } from '../en.ts';
 
 export const EN_PANEL_RIENG = {
   '{ten} chấm': (b) => `${b.ten} marking`,
-  'HỌC VIÊN': 'STUDENT',
+  'Học viên': 'Student',
   /* B6 — thay "Cần bổ sung đánh giá". */
   '{n} PA chưa có kết quả': (b) => `${b.n} ${Number(b.n) === 1 ? 'PA' : 'PAs'} with no result`,
   'PA chưa có kết quả': 'PAs with no result',

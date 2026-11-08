@@ -13,7 +13,7 @@ export const EN_UI_TONG_QUAN = {
   "Chờ KQ thi thật": "Awaiting real exam result",
   "Chờ KQ · Lộ trình tiếp": "Awaiting result · Next path",
   "Chờ KQ · bước tiếp": "Awaiting result · next step",
-  "DUYỆT": "APPROVE",
+  'Duyệt': 'Approve',
   "GV cần chú ý": "Teachers to watch",
   "HV chờ KQ · chưa chốt bước tiếp": "awaiting result · next step not set",
   "HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. Ngoài mẫu: HV chưa đủ dữ liệu.": "Students with an MT finalised in the period, Overall vs the attempt expectation. Excluded: students without enough data.",

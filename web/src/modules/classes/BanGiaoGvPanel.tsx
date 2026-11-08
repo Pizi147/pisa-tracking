@@ -96,7 +96,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
   };
 
   return (
-    <KhungPanel quayLai={quayLai} rong="toan" loai={viet ? t('VIỆC · BÀN GIAO') : t('BÀN GIAO · ĐỌC')} tieuDe={tieuDe} onDong={dong}
+    <KhungPanel quayLai={quayLai} rong="toan" loai={viet ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={tieuDe} onDong={dong}
       ngCanh={(
         <span className="flex flex-wrap gap-x-3 gap-y-1 tabular-nums">
           <span><b className="text-slate-100">{ds.length}</b> {t('em')}</span>

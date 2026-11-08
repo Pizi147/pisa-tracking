@@ -297,6 +297,17 @@
   .btn-danger:hover:not(:disabled) { background: rgb(var(--bad-rgb) / 0.12); }
   .btn-sm { padding: 0.25rem 0.6rem; font-size: 13px; border-radius: 0.4rem; }   /* D10: chữ nút phụ 500 (theo .btn) — nút lặp từng dòng không đậm; nút chính vẫn 600 */
   .btn-ghost { background: transparent; border-color: transparent; }
+  /* B11 (audit-ui 08/11, mockup `.quay-btn` · `.pager b`): MỘT dáng nút đầu hồ sơ — "‹ nguồn" và ‹ / › Trước–Sau. Cao 32, điện thoại 44. */
+  .nut-ve, .nut-mui {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--accent);
+    font-weight: 600; font-size: 14px; white-space: nowrap; transition: background 120ms, border-color 120ms;
+  }
+  .nut-ve { max-width: 100%; padding: 0 10px; }
+  .nut-mui { width: 32px; padding: 0; }
+  .nut-ve:hover, .nut-mui:hover:not(:disabled) { background: var(--nut-hover); border-color: var(--accent-line); }
+  .nut-mui:disabled { opacity: 0.4; cursor: not-allowed; }
+  @media not all and (min-width: 640px) { .nut-ve, .nut-mui { height: 44px; } .nut-mui { width: 44px; } }
   .btn-ghost:hover:not(:disabled) { background: rgb(var(--phu-rgb) / 0.1); }
 
   /* U02 (thiet-ke/audit-0311 ro.css): thẻ phụ 22 px (`.the-phu` viền · `.nhat` nền mờ) · ô thông tin nhãn trên – giá trị dưới, vạch ngăn · thẻ kỹ năng · trích 3 dòng. */
