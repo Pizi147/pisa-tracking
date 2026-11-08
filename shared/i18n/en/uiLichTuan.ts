@@ -1,6 +1,5 @@
 /** UI-LICH-TUAN (V5 Lịch tuần, dieu-chinh-cuoi khu a): thanh tuần, dải số, nhóm Quá hạn chấm · Test tuần này, hàng lớp, dòng S Ex. */
 export const EN_UI_LICH_TUAN = {
-  'bài còn chấm': 'to score',
   'Đang chấm': 'Scoring',
   'Chưa chấm': 'Not started',
   '{n} lớp · {x} đã chấm xong': '{n} classes · {x} fully scored',

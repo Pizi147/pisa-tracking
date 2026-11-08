@@ -6,5 +6,4 @@ export const EN_UI_U06 = {
   'Chờ {mon}': 'Waiting {mon}',
   '{mon} của bạn': '{mon} yours',
   'đã chấm': 'scored',
-  'còn chấm': 'to score',
 } as const;
