@@ -475,7 +475,8 @@ export type HieuQuaPaKetQua = {
 };
 
 /** OV-13f (Q8): tiêu đề sheet "HV cần chú ý" của tệp Ý thức — không cột Mã, Email ngay sau tên làm định danh. */
-export const COT_XUAT_HV_CAN_CHU_Y = ['Học viên', 'Email', 'Lớp', 'Trạng thái', 'Bậc hiện tại', 'Bậc kế', 'Vi phạm', 'Chưa xử lý', 'Lần xử lý gần nhất', 'Ngày'] as const;
+/** AUDIT-UI B10: báo cáo không cột trạng thái quá hạn (G8). */
+export const COT_XUAT_HV_CAN_CHU_Y = ['Học viên', 'Email', 'Lớp', 'Bậc hiện tại', 'Bậc kế', 'Vi phạm', 'Chưa xử lý', 'Lần xử lý gần nhất', 'Ngày'] as const;
 /** Ý thức (PR-YT4): "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
 export type DongHvCanChuY = {
   studentId: number; ten: string; email: string | null; lop: string | null; viPham: number; chuaXuLy: number;

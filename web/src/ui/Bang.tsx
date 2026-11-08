@@ -139,7 +139,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
               {cot.map((c) => (
                 <th key={c.key} scope="col" data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-sang={c.sang || undefined} title={c.goiY}
                   className={`th ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
-                  {c.nhan}{c.phu && <span className="bang-chu-thich"> {c.phu}</span>}
+                  {c.nhan}{c.dv && <span className="bang-dv"> · {c.dv}</span>}{c.phu && <span className="bang-chu-thich"> {c.phu}</span>}
                 </th>
               ))}
             </tr>
