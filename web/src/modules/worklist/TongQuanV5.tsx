@@ -181,7 +181,7 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
                 * ngắn + chip rộng tối thiểu bằng tên loại thường gặp ("Xử lý Ý thức") → chip một dòng, tên em thẳng cột (khối hẹp 360 px ở 1440 cũng vậy). */}
               {/* AUDIT-UI B1 (chủ SP 08/11): cột loại cố định 96 px; "Không cần theo dõi" quá dài → nhãn ngắn, tên đủ khi rê. */}
               <span className="justify-self-start whitespace-nowrap rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}
-                title={y.loai === 'khong_theo_doi' ? dich(y.nhanLoai) : undefined}>{y.loai === 'khong_theo_doi' ? t('Không theo dõi') : dich(y.nhanLoai)}</span>
+                title={y.loai === 'khong_theo_doi' ? dich(y.nhanLoai) : undefined}>{y.loai === 'khong_theo_doi' ? <><span aria-hidden>{t('Không theo dõi')}</span><span className="sr-only">{dich(y.nhanLoai)}</span></> : dich(y.nhanLoai)}</span>
               <span className="min-w-0 truncate text-sm font-semibold text-slate-100" title={y.hocVien ?? y.lop ?? dich(y.tieuDe)}>{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
               {/* AUDIT-UI B1 (mockup `.td-han`): hạn chỉ chữ, không viên. */}
               {y.hanDuyet && <ChipHan loai="duyet" han={y.hanDuyet} />}
