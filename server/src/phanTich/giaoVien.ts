@@ -27,6 +27,7 @@ import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { dongNghiaVu, dongPa, paCoKetQua } from './hieuQuaPa.ts';
 import { viecDaXong, type ViecXong } from './viecDaXong.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
+import { VIEC_CO_HAN, quanLyCn } from './viecCoHan.ts';
 import { dangHocLuc, lopLucThi, nguoiPcLuc } from './luatBai.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
@@ -464,19 +465,6 @@ export function tapGhiKetQuaPa(p: Principal, c: NguCanhPtGv): { tap: Tap; khongN
  * Kỳ vọng · Case chưa có người (luôn `ownerId: null`) · Giao việc (QL xem được bảng → không dựng; nếu dựng thì người giữ là QL giả `-cn`) · Xuất BC PH
  * (chỉ Admin → rỗng với QL) · Báo PH qua TVV, Khai bậc, Thi thật, Bổ sung hồ sơ (luôn `due: null`).
  */
-const VIEC_CO_HAN: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>([
-  'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop_sos', 'mini_test', 'no_plan', 'bao_ph_yt', 'buoc_tiep', 'ban_giao', 'yt_xu_ly',
-]);
-/**
- * Người giữ việc theo Công việc "Tất cả" của QUẢN LÝ chi nhánh (vai `manager` ở `cn`, không là người cụ thể) — bảng, panel bảng và hồ sơ GV (GV tự xem,
- * QL, QT) cùng MỘT cách gán: việc "chưa ai giữ" mà nhiều người làm được (Bước tiếp, Báo PH dự phòng QL) không thành việc của từng QL / TVV kiêm GV.
- */
-const quanLyCn = (cn: number): Principal => nho(`pt-gv:ql-cn:${cn}`, () => {
-  const perms = (db().prepare(`SELECT p.key AS k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
-    WHERE r.key = 'manager'`).all() as any[]).map((r) => r.k as string);
-  return { userId: -cn, code: '', fullName: '', title: null, roleKeys: ['manager'], assignments: [],
-    grants: [{ id: 0, roleKey: 'manager', roleName: '', branchId: cn, branchName: null, permissions: new Set(perms) }] };
-});
 /** `kemKhongLop`: lấy việc không gắn lớp — hồ sơ GV cộng nhiều ngữ cảnh của một chi nhánh nên chỉ ngữ cảnh đầu lấy (không đếm hai lần). */
 export function viecQuaHanMo(c: NguCanhPtGv, kemKhongLop = true): Map<number, WorkItem[]> {
   /* Một lần mỗi chi nhánh trong request — hồ sơ GV dạy cả FT lẫn lớp thường ở một chi nhánh không dựng Công việc hai lần. */

@@ -14,6 +14,10 @@ import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import type { Principal } from '../permissions.ts';
 import { boMonLich, boMonTheoLuot, daGhiLuot, kyNangPhuTrach, laChamCheo } from '../../../shared/domain/index.ts';
 import { dangHocLuc, lopLucThi, nguoiPcLuc, nguoiPcSau, type DongPc, type GhiDanh } from './luatBai.ts';
+import { myWork, type WorkItem } from '../worklist/mywork.ts';
+import { nghiaVuKetQuaPa, parseObligation } from '../worklist/metrics.ts';
+import { viecXongCn } from './viecDaXong.ts';
+import { VIEC_CO_HAN, quanLyCn } from './viecCoHan.ts';
 
 /** Một dòng sổ (chưa có trạng thái — trạng thái so `han` với hôm nay lúc đọc). */
 export type DongNv = {
@@ -194,10 +198,13 @@ export function ghiSoLuot(ids: readonly (number | null | undefined)[]): void {
   if (cho.luot.size) hen();
 }
 
-/** Một khoá sổ (`bai:<lượt>:<kỹ năng>`; việc: Task 4). */
+/** Một khoá sổ (`bai:<lượt>:<kỹ năng>` · `viec:<khoá Công việc>`). */
 export function ghiSo(khoa: string): void {
   const m = /^bai:(\d+):/.exec(khoa);
-  if (m) ghiSoLuot([Number(m[1])]);
+  if (m) return ghiSoLuot([Number(m[1])]);
+  /* Việc: ghi lại cả chi nhánh của dòng (một lượt Công việc — xem `ghiSoViecChiNhanh`). */
+  const cn = khoa.startsWith('viec:') ? (db().prepare('SELECT chi_nhanh FROM nghia_vu WHERE khoa = ?').get(khoa) as any)?.chi_nhanh : null;
+  if (cn != null) ghiSoViecChiNhanh(cn);
 }
 
 /**
@@ -213,4 +220,93 @@ export function ghiSoTheoLop(lop: number, _tuNgay?: string): void {
 export function ghiSoHocVien(sids: readonly number[]): void {
   for (const s of sids) cho.hv.add(s);
   if (cho.hv.size) hen();
+}
+
+// ------------------------------------------------------------------ VIỆC (spec 1.1 · 1.2 b · 1.3 · 1.5)
+
+/**
+ * Mốc bắt đầu tính trễ (chủ SP 09/11, spec 1.6): hạn gốc (bài: tuần thi) TRƯỚC thứ Hai W4 OCT 2026 mà đã xong = Đúng hạn. Một hằng; đọc ở `truocMoc`.
+ * Phép kiểm trên seed (ngày 2026-09) đặt `ngay = ''` để tắt, bật lại với ngày riêng khi kiểm luật này.
+ */
+export const MOC_TINH_TRE = { ngay: '2026-10-19' };
+export const truocMoc = (ngay: string | null | undefined): boolean => !!MOC_TINH_TRE.ngay && !!ngay && ngay.slice(0, 10) < MOC_TINH_TRE.ngay;
+
+export const khoaViec = (khoaCongViec: string) => `viec:${khoaCongViec}`;
+
+/** Hạn gốc từ nhật ký đặt lại hạn (`viec_han_lan`, lần đầu): theo loại việc. */
+function hanGocCn(cn: number): (loai: string, id: number | null | undefined) => string | null {
+  const m = new Map<string, string>();
+  for (const r of db().prepare(`SELECT h.loai, h.viec_id, h.han_cu FROM viec_han_lan h WHERE h.han_cu IS NOT NULL
+      AND h.id IN (SELECT MIN(id) FROM viec_han_lan GROUP BY loai, viec_id)`).all() as any[]) m.set(`${r.loai}|${r.viec_id}`, String(r.han_cu).slice(0, 10));
+  return (loai, id) => (id == null ? null : m.get(`${loai}|${id}`) ?? null);
+}
+
+/** Loại viec_han_lan + id của một khoá Công việc / việc đã xong (Case: id Case; Báo PH: id việc; Phối hợp: id hành động). */
+const NHAT_KY_HAN: [RegExp, string][] = [
+  [/^(?:cause|ghi_nhan_xet|xnpa-case):(\d+)$/, 'reset_case:han_xac_nhan'],
+  [/^support:(\d+)$/, 'reset_case:han_them_pa'],
+  [/^(?:baoph|bao-ph):(\d+)$/, 'bao_ph'],
+  [/^phoi-hop-xong:(\d+)$/, 'phoi_hop'],
+];
+
+/**
+ * Mọi việc có hạn của MỘT chi nhánh (spec 1.1):
+ *   CÒN MỞ   — CHÍNH dòng Công việc "Tất cả" của QL chi nhánh (`myWork`, nhóm `VIEC_CO_HAN`, có hạn): người giữ + hạn như Công việc đang giao.
+ *   ĐÃ XONG  — CHÍNH `viecXongCn` (ngày xong, người giữ lúc hạn). Không có ngày xong: hạn trước mốc → coi xong đúng hạn; sau mốc → `thieu-ngay-xong`.
+ *   Kết quả PA — CHÍNH nghĩa vụ `dung-han-cap-nhat` (`nghiaVuKetQuaPa`), mỗi kỳ một dòng, người = chủ Case.
+ * Hạn gốc: lần đặt lại hạn đầu (`viec_han_lan`).
+ */
+export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null })[] {
+  const homNay = demoToday();
+  const ql = quanLyCn(cn);
+  const hanGoc = hanGocCn(cn);
+  const goc = (key: string, caseId?: number | null) => {
+    for (const [re, loai] of NHAT_KY_HAN) { const m = re.exec(key); if (m) return hanGoc(loai, Number(m[1])); }
+    return key.startsWith('xnpa:') ? hanGoc('reset_case:han_xac_nhan', caseId) : null;
+  };
+  const out = new Map<string, DongNv & { hanGoc: string | null }>();
+  const items = ((myWork(ql, { branchId: cn, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as { items?: WorkItem[] }).items ?? []);
+  for (const it of items) {
+    if (!it.due || !VIEC_CO_HAN.has(it.group)) continue;
+    const khoa = khoaViec(it.key);
+    out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null,
+      nguoi: it.ownerId != null && it.ownerId > 0 ? it.ownerId : null, sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
+      xongLuc: null, nguoiLam: null, khongTinh: null, hanGoc: goc(it.key, it.caseId) });
+  }
+  for (const it of viecXongCn({ cn, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay }, true)) {
+    const khoa = khoaViec(it.key);
+    const thieu = !it.xong;
+    out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null, nguoi: it.ownerId ?? null,
+      sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
+      xongLuc: thieu ? (truocMoc(goc(it.key) ?? it.due) ? it.due : null) : it.xong, nguoiLam: null,
+      khongTinh: thieu && !truocMoc(goc(it.key) ?? it.due) ? 'thieu-ngay-xong' : null, hanGoc: goc(it.key) });
+  }
+  const pa = nghiaVuKetQuaPa(ql, cn, homNay);
+  const chu = new Map<number, { owner: number | null; hv: number | null; lop: number | null }>();
+  for (const r of db().prepare(`SELECT iv.id, sc.owner_user_id, sc.student_id, COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = sc.student_id AND e.status = 'active'
+        ORDER BY e.id DESC LIMIT 1), a.class_id) AS lop
+      FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id IN (SELECT value FROM json_each(?))`)
+    .all(JSON.stringify([...new Set([...pa.values()].map((x) => x.iv))])) as any[]) chu.set(r.id, { owner: r.owner_user_id ?? null, hv: r.student_id ?? null, lop: r.lop ?? null });
+  for (const [id, x] of pa) {
+    const c = chu.get(x.iv);
+    const khoa = khoaViec(`ket_qua_pa:${id}`);
+    out.set(khoa, { loai: 'viec', kieu: 'ghi_ket_qua_pa', khoa, chiNhanh: cn, lop: c?.lop ?? null, hocVien: c?.hv ?? null, nguoi: c?.owner ?? null,
+      sCheo: false, pcNhapSau: false, han: x.han, tuan: null, xongLuc: x.ghi, nguoiLam: null, khongTinh: null,
+      hanGoc: parseObligation(id).k === 0 ? hanGoc('reset_case:action_due', x.iv) : null });
+  }
+  return [...out.values()];
+}
+
+/**
+ * Ghi lại mọi việc của một chi nhánh; việc không còn (Case xoá, việc rời Công việc mà không có ngày xong…) → giữ dòng, `khong_tinh = 'da-xoa'`.
+ * Ruling PR-1: việc ghi theo CHI NHÁNH (nạp, đối chiếu đêm, `ghiSo(viec:…)`) — một lượt Công việc cho cả chi nhánh; gắn từng đường ghi việc để PR-2.
+ */
+export function ghiSoViecChiNhanh(cn: number): void {
+  anToan('ghiSoViecChiNhanh', () => {
+    const luc = new Date().toISOString();
+    const ds = tinhViecChiNhanh(cn);
+    ghiDong(ds, luc);
+    db().prepare(`UPDATE nghia_vu SET khong_tinh = 'da-xoa', cap_nhat = ? WHERE loai = 'viec' AND chi_nhanh = ? AND khong_tinh IS NOT 'da-xoa'
+        AND khoa NOT IN (SELECT value FROM json_each(?))`).run(luc, cn, JSON.stringify(ds.map((d) => d.khoa)));
+  });
 }

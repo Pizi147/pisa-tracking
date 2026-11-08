@@ -9,6 +9,8 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const { migratePrNghiaVu } = await import('../migrate/prNghiaVu.ts');
   const nv: any = await import('../phanTich/soNghiaVu.ts');
   const week: any = await import('../platform/week.ts');
+  /* Seed nằm trước W4 OCT 2026: tắt mốc bắt đầu tính trễ cho mọi ca; ca kiểm mốc bật lại riêng. */
+  if (nv.MOC_TINH_TRE) nv.MOC_TINH_TRE.ngay = '';
   console.log('\nSỔ NGHĨA VỤ — bảng, tính dòng, ghi sổ, đếm');
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { return fn(); } finally { conn.exec('ROLLBACK'); } };
 
@@ -198,5 +200,79 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(so(khoa).khong_tinh === 'nghi-truoc-han', `nghỉ: ${JSON.stringify(so(khoa))}`);
     attempts.huyLuot(P.admin, a.id, { lyDo: 'thử huỷ' });
     assert(so(khoa).khong_tinh === 'huy', `huỷ: ${JSON.stringify(so(khoa))}`);
+  }));
+
+  // ------------------------------------------------------------------ Task 4 · VIỆC (Công việc mở · việc đã xong · Kết quả PA)
+  const { myWork } = await import('../worklist/mywork.ts');
+  const { viecXongCn } = await import('../phanTich/viecDaXong.ts');
+  const { VIEC_CO_HAN, quanLyCn } = await import('../phanTich/viecCoHan.ts');
+  const metrics: any = await import('../worklist/metrics.ts');
+  const { TODAY } = t as any;
+  const MB = get(`SELECT branch_id FROM classes WHERE code = 'MB FT 101'`).branch_id as number;
+  const moViec = () => ((myWork(quanLyCn(MB), { branchId: MB, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as any).items ?? []).filter((x: any) => x.due && VIEC_CO_HAN.has(x.group));
+  const xongViec = () => viecXongCn({ cn: MB, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay: TODAY });
+  const mo0 = moViec(), xong0 = xongViec();
+  /* Mỗi loại việc spec 1.1 một ca: việc mở (Công việc) → dòng cùng hạn + người, chưa xong; việc đã xong → dòng cùng ngày xong (đúng hạn / làm muộn theo ngày). */
+  for (const g of [...VIEC_CO_HAN]) {
+    const mo = mo0.filter((x: any) => x.group === g), xo = xong0.filter((x: any) => x.group === g);
+    if (!mo.length && !xo.length) { console.log(`  · NV-VIEC-${g}: seed không có việc loại này (bỏ qua)`); continue; }
+    check(`NV-VIEC-${g} · ${mo.length} việc mở (Công việc) + ${xo.length} việc đã xong → dòng sổ cùng hạn, người, ngày xong`, () => thu(() => {
+      nv.ghiSoViecChiNhanh(MB);
+      for (const it of mo) {
+        const d = so(nv.khoaViec(it.key));
+        assert(d && d.loai === 'viec' && d.han === it.due && d.nguoi === (it.ownerId > 0 ? it.ownerId : null) && d.xong_luc === null && d.khong_tinh === null,
+          `việc mở ${it.key}: ${JSON.stringify(d)} ≠ hạn ${it.due} người ${it.ownerId}`);
+      }
+      for (const it of xo) {
+        const d = so(nv.khoaViec(it.key));
+        assert(d && d.han === it.due && d.nguoi === it.ownerId && d.xong_luc === it.xong, `việc xong ${it.key}: ${JSON.stringify(d)} ≠ ${it.due} / ${it.xong}`);
+      }
+    }));
+  }
+
+  check('NV-VIEC-ghi_ket_qua_pa · mỗi nghĩa vụ Kết quả PA (tập dung-han-cap-nhat) một dòng: đúng hạn có ngày ghi ≤ hạn; chưa ghi → xong NULL; người = chủ Case', () => thu(() => {
+    const r = metrics.metricSet(quanLyCn(MB), 'dung-han-cap-nhat', { branchId: MB });
+    assert(r.ids.length > 0, 'seed phải có nghĩa vụ Kết quả PA');
+    nv.ghiSoViecChiNhanh(MB);
+    const dung = new Set(r.numeratorIds);
+    for (const id of r.ids) {
+      const d = so(nv.khoaViec(`ket_qua_pa:${id}`));
+      assert(d && d.kieu === 'ghi_ket_qua_pa', `thiếu nghĩa vụ ${id}`);
+      if (dung.has(id)) assert(d.xong_luc && d.xong_luc <= d.han, `đúng hạn ${id}: ${JSON.stringify(d)}`);
+      const chu = get(`SELECT sc.owner_user_id AS o FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`, metrics.parseObligation(id).interventionId).o;
+      assert(d.nguoi === (chu ?? null), `người ${id}: ${d.nguoi} ≠ ${chu}`);
+    }
+  }));
+
+  check('NV-VIEC-RESET · đặt lại hạn (viec_han_lan) → han_goc = hạn cũ lần đầu, han = hạn hiện tại', () => thu(() => {
+    const it = mo0.find((x: any) => /^baoph:\d+$/.test(x.key)) ?? mo0.find((x: any) => /^(cause|ghi_nhan_xet|support):\d+$/.test(x.key));
+    assert(it, 'seed phải có việc Báo PH hoặc Case mở');
+    const m = /^(\w+):(\d+)$/.exec(it.key)!;
+    const loai = m[1] === 'baoph' ? 'bao_ph' : m[1] === 'support' ? 'reset_case:han_them_pa' : 'reset_case:han_xac_nhan';
+    conn.prepare(`INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, luc) VALUES (?, ?, '2026-08-01', ?, ?)`).run(loai, Number(m[2]), it.due, `${TODAY}T03:00:00.000Z`);
+    conn.prepare(`INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, luc) VALUES (?, ?, '2026-08-05', ?, ?)`).run(loai, Number(m[2]), it.due, `${TODAY}T04:00:00.000Z`);
+    conn.prepare(`DELETE FROM nghia_vu WHERE khoa = ?`).run(nv.khoaViec(it.key));
+    nv.ghiSoViecChiNhanh(MB);
+    const d = so(nv.khoaViec(it.key));
+    assert(d.han_goc === '2026-08-01' && d.han === it.due, `hạn gốc: ${JSON.stringify(d)}`);
+  }));
+
+  check('NV-VIEC-THIEU-NGAY · Case đã có mô tả mà không có ngày xong: hạn trước mốc → coi xong đúng hạn; hạn sau mốc → thieu-ngay-xong', () => thu(() => {
+    const it = [...mo0, ...xong0].find((x: any) => /^(cause|ghi_nhan_xet):\d+$/.test(x.key));
+    assert(it, 'seed phải có việc Xác nhận / Mô tả Case');
+    const caseId = Number(it.key.split(':')[1]);
+    conn.prepare(`DELETE FROM case_milestones WHERE case_id = ? AND kind = 'xac_nhan_case'`).run(caseId);
+    conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, observation, created_at) VALUES (?, 'primary', 'student.academic.listening.detail', 'thử', ?)`).run(caseId, `${TODAY}T03:00:00.000Z`);
+    conn.prepare(`UPDATE sos_cases SET mo_ta_luc = NULL WHERE id = ?`).run(caseId);
+    const han = get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', caseId).h;
+    try {
+      nv.MOC_TINH_TRE.ngay = get(`SELECT date(?, '+1 day') d`, han).d;
+      nv.ghiSoViecChiNhanh(MB);
+      const truoc = so(nv.khoaViec(it.key));
+      assert(truoc && truoc.xong_luc === han && truoc.khong_tinh === null, `trước mốc: ${JSON.stringify(truoc)}`);
+      nv.MOC_TINH_TRE.ngay = han;
+      nv.ghiSoViecChiNhanh(MB);
+      assert(so(nv.khoaViec(it.key)).khong_tinh === 'thieu-ngay-xong', `sau mốc: ${JSON.stringify(so(nv.khoaViec(it.key)))}`);
+    } finally { nv.MOC_TINH_TRE.ngay = ''; }
   }));
 }
