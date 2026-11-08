@@ -193,7 +193,7 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
           </li>
         ))}
       </ul>
-      <Link to="/cong-viec/cho-duyet" className="block border-t px-4 py-2.5 text-sm font-semibold text-[color:var(--accent)] no-underline" style={{ borderColor: 'var(--line)' }}>{t('Hộp duyệt ›')}</Link>
+      <Link to="/cong-viec?nhom=duyet" className="block border-t px-4 py-2.5 text-sm font-semibold text-[color:var(--accent)] no-underline" style={{ borderColor: 'var(--line)' }}>{t('Hộp duyệt ›')}</Link>
       {mo && (
         /* N37: thẻ về PA / Case có "Mở ›" sang hồ sơ em (Case mở sẵn) — như hộp Chờ duyệt. */
         /* TQ-GON: dòng chỉ còn tên em → đầu panel ghi em · lớp (lớp không còn ở dòng). */
@@ -327,7 +327,7 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
           giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} className="so-chinh" />}
           mau={<MauCasePa d={d} />} />
         {/* TQ-GON (M5): "yêu cầu" — cùng tên với Chờ bạn duyệt ở Công việc / Hộp duyệt. */}
-        {duyet && <ChiSo ten={tenDen(t('Chờ duyệt'), choN)} ky={t('hiện tại')} giaTri={<SoDen n={choN} to="/cong-viec/cho-duyet" className="so-chinh" />} mau={<>{t('yêu cầu')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
+        {duyet && <ChiSo ten={tenDen(t('Chờ duyệt'), choN)} ky={t('hiện tại')} giaTri={<SoDen n={choN} to="/cong-viec?nhom=duyet" className="so-chinh" />} mau={<>{t('yêu cầu')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
         <ChiSoThi d={d} />
       </DaiChiSo>
       <BoCuc

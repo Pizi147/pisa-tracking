@@ -3,4 +3,5 @@ export const EN_AUDIT_UI_CV = {
   '{n} hạn hôm nay': '{n} due today',
   '{phan} trong {n} việc': '{phan} of {n} tasks',
   'Không theo dõi': 'No follow-up',
+  'Công việc › Chờ bạn duyệt': 'Tasks › Awaiting your approval',
 };

@@ -8,7 +8,7 @@ import { laLoaiBoQuen } from './phanTich.ts';
 import { t } from '../i18n/index.ts';
 
 export type KhuVuc = 'tong-quan' | 'hoc-vien' | 'test' | 'phan-tich' | 'cong-viec' | 'tutor';
-export type TabTest = 'cham' | 'lich' | 'diem-lop' | 'ke-hoach';
+export type TabTest = 'lich' | 'diem-lop' | 'ke-hoach';
 export type TabCongViec = 'cho-duyet' | 'ho-tro' | 'yeu-cau' | 'van-hanh' | 'bao-cao';
 export type TabTongQuan = 'tong-quan' | 'phan-tich';
 
@@ -110,13 +110,18 @@ export function khuVucCuaDuong(pathname: string): KhuVuc | null {
 
 // ---------------------------------------------------------------- Test
 
-/** PR-DL (G4): "Điểm theo lớp" giữa Lịch Test và Kế hoạch Test, hiện theo `testGrade`. UI-CHAM-TEST: "Chấm Test" đầu hàng — GV (chấm được, không xếp lịch). */
-const TAB_TEST: readonly TabTest[] = ['cham', 'lich', 'diem-lop', 'ke-hoach'];
-export const TAB_TEST_LABEL: Record<TabTest, string> = { cham: t('Chấm Test'), lich: t('Lịch Test tuần'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
-export const DUONG_TAB_TEST: Record<TabTest, string> = { cham: '/test/cham', lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
+/**
+ * PR-DL (G4): "Điểm theo lớp" giữa Lịch Test và Kế hoạch Test, hiện theo `testGrade`.
+ * AUDIT-UI B6 (chủ SP 08/11): bỏ tab "Chấm Test" — làm việc chấm chỉ ở Công việc › Chấm điểm; Test = lịch + kế hoạch. Link cũ `/test/cham` → `DUONG_CHAM_CU`.
+ */
+const TAB_TEST: readonly TabTest[] = ['lich', 'diem-lop', 'ke-hoach'];
+export const TAB_TEST_LABEL: Record<TabTest, string> = { lich: t('Lịch Test tuần'), 'diem-lop': t('Điểm theo lớp'), 'ke-hoach': t('Kế hoạch Test') };
+export const DUONG_TAB_TEST: Record<TabTest, string> = { lich: '/test/lich', 'diem-lop': '/test/diem-lop', 'ke-hoach': '/test/ke-hoach' };
+/** AUDIT-UI B6: đường cũ Test › Chấm Test (bookmark, Hướng dẫn cũ) → Công việc › Chấm điểm. */
+export const DUONG_CHAM_CU = '/cong-viec?nhom=cham-diem';
 /** PR-UX1 Q16: Cần chấm gộp vào Lịch Test — ai chấm được (`testGrade`) hay xếp được lịch (`testSchedule`) đều thấy. */
 const HIEN_TEST: Record<TabTest, (n: NavQuyen) => boolean> = {
-  cham: (n) => n.testGrade && !n.testPlan && n.workSupport, lich: (n) => n.testSchedule || n.testGrade, 'diem-lop': (n) => n.testGrade, 'ke-hoach': (n) => n.testPlan || !!n.testPlanXem,
+  lich: (n) => n.testSchedule || n.testGrade, 'diem-lop': (n) => n.testGrade, 'ke-hoach': (n) => n.testPlan || !!n.testPlanXem,
 };
 
 export function tabTestHienThi(nav: NavQuyen): TabTest[] {
@@ -149,10 +154,10 @@ export function duongNhapDiemCu(classId: string, q: URLSearchParams, coDiemLop: 
 export function tabTestTuDuong(seg: string | undefined): TabTest | null {
   return (TAB_TEST as readonly string[]).includes(seg ?? '') ? (seg as TabTest) : null;
 }
-/** PR-UX1: mở Test vào Lịch Test; UI-CHAM-TEST: GV có "Chấm Test" thì vào đó. Tab mặc định luôn là một tab người đó thấy được. */
+/** PR-UX1: mở Test vào Lịch Test. Tab mặc định luôn là một tab người đó thấy được. */
 export function tabTestMacDinh(nav: NavQuyen): TabTest | null {
   const tabs = tabTestHienThi(nav);
-  return tabs.includes('cham') ? 'cham' : tabs.includes('lich') ? 'lich' : tabs[0] ?? null;
+  return tabs.includes('lich') ? 'lich' : tabs[0] ?? null;
 }
 
 /**
@@ -178,8 +183,9 @@ export const TAB_CONG_VIEC_LABEL: Record<TabCongViec, string> = {
 };
 /** OV-10a: Admin (`workChamDiem`) chỉ có nhóm Chấm điểm + Nhắc — tab đầu ghi "Chấm điểm", không "Hỗ trợ học viên". */
 export const nhanTabCongViec = (k: TabCongViec, nav: NavQuyen): string => (k === 'ho-tro' && nav.workChamDiem ? t('Chấm điểm') : TAB_CONG_VIEC_LABEL[k]);
+/** AUDIT-UI B6: Hộp duyệt = tab "Chờ bạn duyệt" của Công việc (`nhom=duyet`, hàng lọc trong tab); đường cũ `/cong-viec/cho-duyet` chuyển về đây giữ bộ lọc. */
 export const DUONG_TAB_CONG_VIEC: Record<TabCongViec, string> = {
-  'cho-duyet': '/cong-viec/cho-duyet', 'ho-tro': '/cong-viec', 'yeu-cau': '/cong-viec/yeu-cau',
+  'cho-duyet': '/cong-viec?nhom=duyet', 'ho-tro': '/cong-viec', 'yeu-cau': '/cong-viec/yeu-cau',
   'van-hanh': '/cong-viec/van-hanh', 'bao-cao': '/cong-viec/bao-cao',
 };
 /** Người duyệt không có tab Yêu cầu của tôi (họ tự gửi thì tự duyệt ngay trong hộp, Q-D). */

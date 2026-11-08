@@ -175,11 +175,11 @@ export function laTuDuyet(nguoiXin: number | null, nguoiDuyet: number): boolean 
   return nguoiXin !== null && nguoiXin === nguoiDuyet;
 }
 
-/** Đường tới đúng thẻ: người duyệt → hộp Chờ duyệt (Báo QL → tab Nhắc việc), người xin → Yêu cầu của tôi. */
+/** Đường tới đúng thẻ: người duyệt → Công việc › Chờ bạn duyệt (AUDIT-UI B6; Báo QL → lọc "Báo QL"), người xin → Yêu cầu của tôi. */
 export function duongThe(id: number, vai: 'duyet' | 'nguoi-xin' | 'de-biet'): string {
-  /* PR-GVb (J5b): thẻ Báo QL nằm ở tab Nhắc việc (mã `de-biet` giữ cho link cũ). */
-  if (vai === 'de-biet') return `/cong-viec/cho-duyet?xem=de-biet&the=${id}`;
-  return `/cong-viec/${vai === 'duyet' ? 'cho-duyet' : 'yeu-cau'}?the=${id}`;
+  /* PR-GVb (J5b): thẻ Báo QL — bộ lọc `xem=de-biet` (mã giữ cho link cũ). */
+  if (vai === 'de-biet') return `/cong-viec?nhom=duyet&xem=de-biet&the=${id}`;
+  return vai === 'duyet' ? `/cong-viec?nhom=duyet&the=${id}` : `/cong-viec/yeu-cau?the=${id}`;
 }
 
 /** Trạng thái thẻ → nhãn chung §7.3 (`NhanTrangThai`) + chữ riêng của hộp. */
