@@ -11,6 +11,7 @@ export const NGHIA_VU_SQL = `CREATE TABLE IF NOT EXISTS nghia_vu (
   nguoi INTEGER,
   s_cheo INTEGER NOT NULL DEFAULT 0,
   han_goc TEXT, han TEXT, tuan TEXT,
+  pc_nhap_sau INTEGER NOT NULL DEFAULT 0,
   xong_luc TEXT, nguoi_lam INTEGER,
   khong_tinh TEXT,
   cap_nhat TEXT NOT NULL
