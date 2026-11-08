@@ -9,7 +9,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import {
-  DauTrangTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanGvV5, TongQuanQlV5, TongQuanQtV5, TongQuanTvvV5, type TongQuanV5Data,
+  DauTrangTq, lienKetTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanGvV5, TongQuanQlV5, TongQuanQtV5, TongQuanTvvV5, type TongQuanV5Data,
 } from './TongQuanV5.tsx';
 import { laVaiQuanLy } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -44,15 +44,16 @@ export default function OverviewPage() {
   const chiNhanh = <BranchFilter branchId={branchId} onBranch={setBranchId} />;
   const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
     <div className="page tq-v8 space-y-4">
-      <DauTrangTq phamVi={phamVi} ben={ben} ky={ky} />
+      <DauTrangTq phamVi={phamVi} ben={ben} ky={ky}
+        lienKet={lienKetTq(vai === 'ql' && v5.data && !v5.data.lop ? 'qt' : vai, { id: session?.user?.id, cn: branchId, ky: v5.data?.ky, motCn: !!v5.data?.lop })} />
       {than}
     </div>
   );
 
   if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />, undefined, kyTvv);
-  if (vai === 'gv' || vai === 'ht') return trang('', <TongQuanGvV5 lopToiDay={(phai) => <HaiKhoiGv phai={phai} />} />, undefined, kyGv && { tu: kyGv.tu, den: kyGv.den });
+  if (vai === 'gv' || vai === 'ht') return trang('', <TongQuanGvV5 lopToiDay={<HaiKhoiGv />} />, undefined, kyGv && { tu: kyGv.tu, den: kyGv.den });
   if (vai === 'admin') {
-    return trang(t('Mock Test'), <TongQuanAdminV5 cn={branchId} mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
+    return trang(t('Mock Test'), <TongQuanAdminV5 mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }
   const d = v5.data;
   const phamVi = d?.tenChiNhanh ?? t('Tất cả chi nhánh');
