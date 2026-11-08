@@ -43,16 +43,18 @@ export function ChipLichThi({ l, them }: { l: LichThi | null | undefined; them?:
 export const kqOverall = (ovr: number | null | undefined, kv: number | null | undefined) =>
   ovr == null || kv == null ? null : ovr > kv ? 'vuot' as const : ovr === kv ? 'bang' as const : 'duoi' as const;
 
+/* B7 (chủ SP 08/11): thông tin em dồn trái cạnh tên (MT gần nhất · Target); Lịch thi · Việc tiếp ("Đặt lịch ▾") · Ghi chú · ⌄ dồn mép phải —
+   Target là cột giãn (nhận phần dư), các cột việc cố định nên luôn sát phải. */
 const COT_LICH: CotBang[] = [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 200 },
-  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 230 },
-  { key: 'viec', nhan: t('Việc tiếp'), kieu: 'viec', rong: 320 },
   { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 110 },
-  { key: 'target', nhan: 'Target', kieu: 'so', rong: 80 },
-  { key: 'ghi', nhan: t('Ghi chú'), kieu: 'chu' },
+  { key: 'target', nhan: 'Target', kieu: 'chu', linhHoat: true },
+  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 230 },
+  { key: 'viec', nhan: t('Việc tiếp'), kieu: 'viec', rong: 240 },
+  { key: 'ghi', nhan: t('Ghi chú'), kieu: 'chu', rong: 220 },
   { key: 'mo', nhan: '', kieu: 'nut', rong: 56 },
 ];
-const [C_TEN, C_LICH, C_VIEC, C_MT, C_TARGET, C_GHI, C_MO] = COT_LICH;
+const [C_TEN, C_MT, C_TARGET, C_LICH, C_VIEC, C_GHI, C_MO] = COT_LICH;
 /** Hàng công cụ: lọc TVV — "-" = em chưa có TVV. */
 const TVV_CHUA = '-';
 const SELECT_GON = 'field h-8 w-auto !py-0 text-sm max-sm:min-h-[44px] max-sm:w-full';
@@ -184,10 +186,10 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
         {dau && <tr className="lt-lop"><td colSpan={COT_LICH.length}><ChuLop {...dau} /></td></tr>}
         <tr className={`lt-h ${dangMo || hopMo ? 'lt-mo' : ''}`} onClick={bamDong(r.studentId)}>
           <OBang c={C_TEN}><TenEm r={r} ds={ds} /></OBang>
-          <OBang c={C_LICH}><CotLich r={r} /></OBang>
-          <OBang c={C_VIEC}><CotViec r={r} hanh={hanh} /></OBang>
           <OBang c={C_MT}><CotMt r={r} /></OBang>
           <OBang c={C_TARGET}><CotTarget r={r} /></OBang>
+          <OBang c={C_LICH}><CotLich r={r} /></OBang>
+          <OBang c={C_VIEC}><CotViec r={r} hanh={hanh} /></OBang>
           <OBang c={C_GHI}><CotGhi r={r} khoa={khoa} onLuu={(ghiChu) => luu(r, { ghiChu })} /></OBang>
           <OBang c={C_MO}><NutMo r={r} mo={dangMo} onMo={() => doiMo(r.studentId)} /></OBang>
         </tr>
