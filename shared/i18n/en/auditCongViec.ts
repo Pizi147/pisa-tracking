@@ -18,7 +18,6 @@ export const EN_AUDIT_CONG_VIEC = {
   'tuần {w}': 'week {w}',
   'Xem lại': 'Review',
   'Xem lại: {viec}': 'Review: {viec}',
-  'LÀM THAY': 'ACTING FOR',
   'Bạn đang làm thay {ai}.': 'You are acting for {ai}.',
   'Chỉ xem': 'View only',
   'Phụ trách': 'In charge',

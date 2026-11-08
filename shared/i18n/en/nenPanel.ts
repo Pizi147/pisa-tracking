@@ -2,10 +2,10 @@
 import type { Dich } from '../en.ts';
 
 export const EN_NEN_PANEL = {
-  'VIỆC': 'TASK',
+  'Việc': 'Task',
   /* M6 6b-1: nút ‹ {view trước} ở đầu panel. */
   'Quay lại {x}': (b) => `Back to ${b.x}`,
-  'BÁO CÁO · CHỈ ĐỌC': 'REPORT · READ-ONLY',
+  'Báo cáo · chỉ đọc': 'Report · read-only',
   'Bỏ chữ đang gõ?': 'Discard what you typed?',
   'Bỏ chữ, đóng': 'Discard and close',
   'Bỏ chữ, sang việc khác': 'Discard and open the other task',

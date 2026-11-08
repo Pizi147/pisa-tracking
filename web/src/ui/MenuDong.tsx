@@ -10,6 +10,9 @@ import { t } from '@shared/i18n/index.ts';
  * (`h-9 w-9` cạnh nút `btn`, …) — hồ sơ lớp, hồ sơ HV, Kế hoạch Test dùng chung.
  */
 export const NUT_BA_CHAM_DAU = 'btn shrink-0 justify-center !px-0 text-[17px] leading-none';
+/* B11 (audit-ui 08/11, mockup `.nut`): nút hàng đầu hồ sơ lớp + hồ sơ HV một dáng — cao 36, điện thoại 44; ⋯ vuông cùng cỡ. */
+export const NUT_DAU_HO_SO = 'btn h-9 justify-center max-sm:h-11';
+export const NUT_BA_CHAM = `${NUT_BA_CHAM_DAU} h-9 w-9 max-sm:h-11 max-sm:w-11`;
 
 export type MucMenu = {
   key: string; nhan: string; onChon: () => void;

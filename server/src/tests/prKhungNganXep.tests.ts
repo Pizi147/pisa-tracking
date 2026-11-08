@@ -89,14 +89,14 @@ export async function runPrKhungNganXepTests(t: YThucTestKit) {
 
   check('6b-1 · nhãn loại không đoán "VIỆC" theo `dau`: panel việc khai qua dauViec / loai; panel chỉ đọc không mang nhãn VIỆC', () => {
     const k = docSach('web/src/ui/KhungPanel.tsx');
-    assert(!/dau \? t\('VIỆC'\)/.test(k), 'khung còn đoán "VIỆC" khi có dau');
+    assert(!/dau \? t\('Việc'\)/.test(k), 'khung còn đoán "Việc" khi có dau');
     assert(/dau\?\.loai/.test(k), 'khung không đọc nhãn loại từ dau');
-    assert(/loai: t\('VIỆC'\)/.test(docSach('web/src/ui/KhuonViec.tsx')), 'dauViec không khai nhãn VIỆC');
+    assert(/loai: t\('Việc'\)/.test(docSach('web/src/ui/KhuonViec.tsx')), 'dauViec không khai nhãn VIỆC');
     for (const f of ['web/src/ui/LichSuThayDoi.tsx', 'web/src/modules/huongDan/NutHuongDan.tsx', 'web/src/modules/students/PanelMotEm.tsx']) {
       assert(!/dauViec\(/.test(docSach(f)), `${f} chỉ đọc mà dùng dauViec (nhãn VIỆC)`);
     }
     for (const f of ['web/src/modules/congViec/PanelChamSpeaking.tsx', 'web/src/modules/yThuc/LoYThucPanel.tsx']) {
-      assert(/loai: t\('VIỆC'\)/.test(docSach(f)), `${f} là panel việc mà mất nhãn VIỆC`);
+      assert(/loai: t\('Việc'\)/.test(docSach(f)), `${f} là panel việc mà mất nhãn VIỆC`);
     }
   });
 

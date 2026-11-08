@@ -407,10 +407,10 @@ export function HoTroHocVienTab() {
   const [lamThay, setLamThay] = useState<string | null>(null);
   const theoDoiChon = !!chon && theoDoi(chon);
   const khoaPanel = theoDoiChon && lamThay !== chon?.key;
-  const nhanNhom = chon ? (laViecChamCheo(chon) ? t('BÀI THI SPEAKING')
-    : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)]).toLocaleUpperCase('vi')) : '';
+  const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Bài thi Speaking')
+    : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
-    loai: `${khoaPanel ? t('THEO DÕI') : theoDoiChon ? t('LÀM THAY') : t('VIỆC')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
+    loai: `${khoaPanel ? t('Theo dõi') : theoDoiChon ? t('Làm thay') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
     dai: noiDai === 'viec' && daiVuaLuu || theoDoiChon ? <>
       {theoDoiChon && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={() => boChuRoi(() => setLamThay(null))} />}
       {noiDai === 'viec' ? daiVuaLuu : null}
