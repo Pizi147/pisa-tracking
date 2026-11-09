@@ -259,6 +259,31 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 ## 4. Việc chưa làm (kiểm với danh sách PR GitHub 11/10 — mọi PR tới #312 đã merge)
 
+### ⭐ VIỆC CÒN LẠI — tổng hợp 10/11 tối (PTA Plan bàn giao sang session planning mới; chủ SP: "liệt kê ra còn những gì chưa làm, cho hết vào plan tối nay")
+Đọc mục này TRƯỚC. Mục cũ hơn bên dưới là nhật ký; dòng nào ghi "chờ chủ SP" mà không có ở đây → đối chiếu mã thật (grep) trước khi coi là còn.
+
+**A. Đang làm / làm tiếp ngay**
+1. **Sổ nghĩa vụ PR-1 #1270** — chủ SP 10/11 "Duyệt" bảng chênh lệch; PTA đang check chung + merge (nếu chưa merge: `bash C:/Users/Admin/AppData/Local/Temp/pisa-slot/batch2.sh 1270`). Khi deploy PHẢI chạy `npm run migrate` rồi `npm run nap-so`.
+2. **Sổ nghĩa vụ PR-2 (giao diện)** — CHƯA CODE. Kế hoạch: `docs/superpowers/plans/2026-11-09-so-nghia-vu.md` mục PR-2 (đã cập nhật 10/11: gắn ghiSo đường ghi việc, khoá việc như Công việc, S chéo chung tách dòng phụ, Chưa phân công, ảnh cặp). Giao session **PT-DEM-VIEC** (`local_6829e51d-79d6-4f50-834c-496b0ff494f6`, đã nắm mã; Opus 5.5 · high). Ảnh → chủ SP duyệt.
+3. **Sổ nghĩa vụ PR-3** — bỏ cách đếm cũ (Task 8), sau PR-2.
+
+**B. Chờ chủ SP quyết (đã có đề xuất)**
+4. Dọn **13 lượt W lệch** trên bản chính (một W "-", W kia trống / một W Không dự thi) — cần migrate riêng; danh sách ở ghi chú `cv-sua-1011-dem-w-lech.md` (#1273). Sau #1273 GV gõ "-" vào W còn trống là chốt cả buổi.
+5. [XM] #1240–#1242 (dòng "Việc để sau — [XM] từ #1240–#1242" bên dưới): HL1 "Fast Track 6" đơn vị · HL3 ẩn cột Ghi chú · HS1 / HS2 / CV6 cần mockup · F2 "Thái độ / hành vi" gãy dòng (đổi chữ hay nới K2).
+6. **#1258 để sau:** GV S chéo chưa gỡ được "-" đã chốt ở MT0 S · Kế hoạch Test của GV S chưa gồm lớp thường.
+7. **Xác minh:** "TVV lớp" ở đầu hồ sơ lớp lấy từ đâu (seed: TVV đầu lớp ≠ TVV đa số em) — B9 chủ SP chọn giữ TVV mọi dòng.
+8. RA-LOI-MAY / RA-LOI-WEB (dòng "Chờ chủ SP (RA-LOI-…" bên dưới): QUYEN-KY-NANG đã giải một phần bằng lịch sử kỹ năng (#1270) — kiểm lại còn cần "chỉ Quản trị sửa kỹ năng" không · LECH-KHONG-LOP · giao việc người ngoài chi nhánh · HSL-KET-THUC-SO · Head tutor link Công việc.
+9. [XM-A] quét nền SOS sau mỗi lần ghi (đề xuất ≥ 15 s) · [XM] Tổng quan hàng lớp toàn 0 · `phanCongDangHoatDong` 527 dòng / request.
+10. BAO-CAO-PH [XM]: "Lớp tiếp ›" · Excel gộp ô.
+11. KET-PET-THI-THAT (chủ SP: tạm chưa làm) · Tutor (hoãn vô thời hạn — không hỏi).
+
+**C. Chưa kiểm bằng tay (chỉ mã + phép kiểm)**
+12. F07, 8.3 (#1230) · #1273: lưới chỉ xem khi người xem không có quyền nhập; "-" W trên giao diện.
+13. Sổ nghĩa vụ: các lần chuyển lớp TRƯỚC #1270 không tách được GV cũ / mới; vai GV ở chi nhánh đọc theo hiện tại (`ponytail:`); Mini Test không tính lại hạn khi chuyển lớp (đi theo GVCN lớp đang học).
+
+**D. Deploy** — chỉ khi chủ SP bảo (bộ nhớ `cach-deploy`, `deploy-khi-bao`). Lần cuối 07/11 09:37. Migrate mới từ đó gồm sổ nghĩa vụ (`prNghiaVu`, `prNghiaVuNap` / `npm run nap-so`, `user_skill_lich_su`) — chạy theo mô tả #1270.
+
+
 ### 08/11 — RÀ TOÀN BỘ UI/UX + SỬA QUA ĐÊM (chủ SP — session AUDIT-UI)
 - Chủ SP 08/11: "Dùng skills phù hợp audit và rà soát đánh giá lại toàn bộ UI/UX, từng trang, từng panels, từng nút, từng text, từng phần màu một để xem có phần nào có thể cải thiện được tốt hơn về mặt giao diện, làm mọi thứ đơn giản, dễ nhìn và accessible hơn, bớt text, bớt thông tin thừa, nổi bật những thứ cần nổi bật."
 - Chủ SP 08/11 (đi ngủ): "chủ động làm mọi thứ, rà, duyệt và sửa mọi thứ bạn cho là hợp lý, nếu như thấy có gì quá khó khăn và thay đổi quá nhiều ảnh hưởng đến luật hay thay đổi góc nhìn của website thì tổng hợp lại thành 1 mockup mai tôi duyệt"

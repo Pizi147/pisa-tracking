@@ -140,6 +140,15 @@ Người giữ việc: dùng đúng hàm gán người của Công việc (`myWo
 
 ## PR-2: giao diện đọc sổ (sau khi chủ SP duyệt bảng chênh lệch)
 
+> **Cập nhật 10/11 (PTA, sau PR-1 #1270 — chủ SP "Duyệt" bảng chênh lệch 10/11).** PR-1 đã có: bảng, `ghiSo` cho BÀI ở mọi đường ghi, việc qua lượt Công việc + đối chiếu đêm, chuyển lớp (GV cũ / mới, hạn tính lại), S chéo theo kỹ năng tại ngày hạn (`user_skill_lich_su`), `sChung` tách riêng. PR-2 thêm (quyết định PTA 10/11, đã báo PT-DEM-VIEC):
+> 1. **Task 7a — gắn `ghiSo` vào mọi đường ghi VIỆC** (Case / PA / Kết quả PA, Mini Test, Báo PH, bước tiếp, bàn giao, xử lý vi phạm, phối hợp) — số hằng ngày không trễ một đêm; đối chiếu đêm giữ làm lưới. Phép kiểm mỗi đường.
+> 2. **Khoá việc = đơn vị làm việc thật như Công việc**, cùng khoá lúc mở và lúc xong: Bàn giao theo lệnh (lớp / môn / GV), Phối hợp SOS theo lớp, Xác nhận PA theo Case; việc theo em (Mô tả Case, Kết quả PA, Báo PH…) giữ theo em. Chạy lại `so-sanh-so`, ghi chênh vào PR.
+> 3. **Hiển thị S chéo chung tách riêng** (chủ SP hỏi "làm kiểu gì?", PTA đề xuất, duyệt qua ảnh PR-2): 3 số riêng (Đúng hạn · Làm muộn · Chưa làm) KHÔNG cộng S chéo chưa ai nhận; dưới số Chưa làm của GV có S hiện dòng phụ nhỏ "+ n S chéo chung" (mọi GV S cùng chi nhánh cùng số); panel tab Chưa làm chia hai nhóm "Bài của bạn" / "S chéo chung · chưa ai nhận" (bấm mở thẳng lưới chấm). Tỉ lệ = 3 số riêng.
+> 4. Nhãn "Chưa phân công" (QL thấy, đếm riêng theo chi nhánh) · cờ "phân công nhập sau" ở dòng panel · "hạn gốc …" khi khác hạn.
+> 5. Ảnh cặp trước | sau 1440 + 375 (bảng Phân tích GV chi nhánh + Toàn bộ, panel 3 tab, hồ sơ GV, Tổng quan) → chủ SP duyệt trước merge.
+
+
+
 ### Task 7: Phân tích GV + hồ sơ GV + Tổng quan đọc sổ
 **Tệp:**
 - `server/src/phanTich/giaoVien.ts`: cột Chấm Test đúng hạn / Việc đúng hạn → `demTheoNguoi`. Ô / panel → `dongCuaNguoi`. "Toàn bộ chi nhánh" → `chiNhanh = null`.
