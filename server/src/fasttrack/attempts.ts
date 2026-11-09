@@ -2276,6 +2276,12 @@ export function saveScore(
     doiSit = () => { ghiSitStatus(p, attemptId, goc, 'sat', 'Nhập điểm'); };
     scheduleRow = { ...scheduleRow, sit_status: 'sat' };
   }
+  /* CV-SUA-1011 (chủ SP 10/11): "-" ở task Writing kia đã ghi luôn ô này và chốt (vắng / huỷ / dời sang tuần sau) — gõ lại "-" ở ô này
+     (hai ô cùng lô, hai thẻ) là vô hại: không hỏi dời, không lỗi. */
+  if (patch.noShow === true && entrySkillsOf(assessed).length > 1 && (sitChan || (scheduleRow.week_start ?? '').slice(0, 10) > mondayOf(today))) {
+    const dau = dauDaChot(attemptId, skill);
+    if (dau) { const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any; return { score: dau, result: resultOf(fresh), attemptStatus: fresh.status }; }
+  }
   if (sitChan && patch.noShow !== undefined) {
     throw loi(400, '{x} đã ghi vắng / đã huỷ — muốn thi lại thì chọn tuần ở hộp lịch.', { x: tenMon(null, assessed) });
   }
@@ -2315,7 +2321,7 @@ export function saveScore(
 
     /*
      * DẤU '-' — một lệnh, không phải một điểm (PR-G). Trả về NGAY, không đụng tới điểm hay bài khác:
-     * '-' ở W1 không xoá W2 hay S, không tạo điểm 0, và không kéo theo tính toán band.
+     * '-' ở W1 không xoá điểm W2 hay S, không tạo điểm 0, và không kéo theo tính toán band (W2 trống nhận cùng dấu — CV-SUA-1011).
      */
     if (patch.noShow !== undefined) {
       const hasOfficial = (existing?.band ?? null) !== null || (existing?.raw_score ?? null) !== null;
@@ -2375,6 +2381,27 @@ export function saveScore(
           actorUserId: p.userId, action: 'score.no_show', entityType: 'assessment_attempt', entityId: attemptId,
           entityLabel: skill, before, after: { noShow: true, week: scheduleRow.period_code, late, khongDuThi: !!cu },
         });
+        /*
+         * CV-SUA-1011 (chủ SP 10/11: "nhập '-' ở kĩ năng W thì cả 2 W đều bị coi là vắng"): "-" ở MỘT task Writing = CẢ buổi Writing vắng — task kia
+         * (em có học, chưa có điểm) nhận cùng dấu, rồi chốt (dời / huỷ) hoặc Không dự thi như một. Task kia có điểm: luật cũ (LUAT-34 dời cả W, điểm đi
+         * theo; MT cũ giữ điểm). Thay "W1 '-' một mình chờ ô kia" (OV-1b / LUAT-34).
+         */
+        for (const k of entrySkillsOf(assessed).filter((x) => x !== skill && x !== scheduleRow.bo_task)) {
+          const kia = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k) as ScoreRow | undefined;
+          if (kia && (kia.band !== null || kia.raw_score !== null)) continue;
+          if (kia?.no_show_period_id === scheduleRow.planned_period_id) continue;
+          if (kia) {
+            conn.prepare(`UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = ?, no_show_settled_at = ?, no_show_cu = ? WHERE id = ?`)
+              .run(scheduleRow.planned_period_id, p.userId, now, late ? 1 : 0, cu ? now : null, cu, kia.id);
+          } else {
+            conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_by, no_show_at, no_show_late, no_show_settled_at, no_show_cu)
+               VALUES (?,?,?,?,?,?,?,?)`).run(attemptId, k, scheduleRow.planned_period_id, p.userId, now, late ? 1 : 0, cu ? now : null, cu);
+          }
+          writeAudit({
+            actorUserId: p.userId, action: 'score.no_show', entityType: 'assessment_attempt', entityId: attemptId,
+            entityLabel: k, before: kia ? { ...kia } : null, after: { noShow: true, week: scheduleRow.period_code, late, khongDuThi: !!cu, theo: skill },
+          });
+        }
         const chot = !cu && a.kind === 'mock' ? chotVangNgay(conn, p, a, scheduleRow, today) : false;
         /* OV-11a (CA3-1): hậu quả thật của lần ghi — web nói đúng ("· dời W4 SEP" / "· huỷ (vắng 2 lần)" / "Không dự thi"). */
         const sau = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
@@ -2387,16 +2414,23 @@ export function saveScore(
       }
       /* patch.noShow === false: gỡ dấu chưa chốt / Không dự thi. Vắng đã chốt đi `goVangDaChot` (trên). */
       if (!existing?.no_show_period_id) return done();
-      conn
-        .prepare(
-          `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL,
-                  no_show_late = 0, no_show_settled_at = NULL, no_show_cu = 0 WHERE id = ?`,
-        )
-        .run(existing.id);
-      writeAudit({
-        actorUserId: p.userId, action: 'score.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
-        entityLabel: skill, before, after: { noShow: false },
-      });
+      /* CV-SUA-1011: gỡ "-" ở một task Writing gỡ luôn dấu cùng tuần (chưa chốt / Không dự thi) của task kia — một thao tác (vắng đã chốt: `goVangDaChot` gỡ cả buổi). */
+      const kia = conn.prepare(
+        `SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill IN (${entrySkillsOf(assessed).map(() => '?').join(',')}) AND skill != ?
+            AND no_show_period_id = ? AND (no_show_settled_at IS NULL OR no_show_cu = 1)`,
+      ).all(attemptId, ...entrySkillsOf(assessed), skill, existing.no_show_period_id) as ScoreRow[];
+      for (const r of [existing, ...kia]) {
+        conn
+          .prepare(
+            `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL,
+                    no_show_late = 0, no_show_settled_at = NULL, no_show_cu = 0 WHERE id = ?`,
+          )
+          .run(r.id);
+        writeAudit({
+          actorUserId: p.userId, action: 'score.no_show_cleared', entityType: 'assessment_attempt', entityId: attemptId,
+          entityLabel: r.skill, before: r === existing ? before : { ...r }, after: { noShow: false, ...(r === existing ? {} : { theo: skill }) },
+        });
+      }
       return done();
     }
 

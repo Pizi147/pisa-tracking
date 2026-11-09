@@ -228,14 +228,13 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(other.noShowNote === null, 'Ô không có chuyện gì thì không có dòng giải thích');
   });
 
-  check('S14 · (OV-1b thay resolveLateNoShow) W1 "-" nhập bù khi W2 chưa nhập: W1 Không dự thi riêng ô đó, buổi Writing không vắng, không hàng chờ hiệu chỉnh', () => {
+  check('S14 · (OV-1b thay resolveLateNoShow; CV-SUA-1011) W1 "-" nhập bù tuần kế khi W2 chưa nhập: W2 cùng dấu, buổi Writing vắng dời lần 1 (không Không dự thi), không hàng chờ hiệu chỉnh', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-07' });       // tuần đã hết 13/09
     attempts.saveScore(P.w1Teacher, hv.attemptId, 'writing1', { noShow: true }, '2026-09-15');
-    assert(sit(hv.attemptId, 'writing').sit_status === 'scheduled' && sit(hv.attemptId, 'writing').absence_move_count === 0, 'W1 nhập bù không phải buổi vắng');
-    const w1 = conn.prepare(`SELECT no_show_cu FROM assessment_scores WHERE attempt_id = ? AND skill = 'writing1'`).get(hv.attemptId) as any;
-    /* LUAT-34 (T07): W1 "-" ghi muộn khi W2 còn trống — chờ ô kia (không "Không dự thi"); W2 "-" / có điểm thì buổi mới chốt. */
-    assert(w1.no_show_cu === 0, 'W1 ghi muộn không còn là Không dự thi');
-    assert(cellOf(hv, 'writing1', '2026-09-15').noShow !== null, 'Ô W1 vẫn mang dấu "-"');
+    assert(sit(hv.attemptId, 'writing').sit_status === 'scheduled' && sit(hv.attemptId, 'writing').absence_move_count === 1, 'W1 "-" nhập bù tuần kế = cả buổi Writing vắng, dời lần 1');
+    const w = conn.prepare(`SELECT skill, no_show_cu, no_show_period_id FROM assessment_scores WHERE attempt_id = ? AND skill IN ('writing1', 'writing2')`).all(hv.attemptId) as any[];
+    /* N38: ghi muộn tuần kế chốt như trong tuần (không "Không dự thi"); CV-SUA-1011: W2 trống nhận cùng dấu. */
+    assert(w.length === 2 && w.every((x) => x.no_show_cu === 0 && x.no_show_period_id !== null), `W1 + W2 cùng "-" (không Không dự thi): ${JSON.stringify(w)}`);
     assert(typeof absence.resolveLateNoShow === 'undefined', 'Đường "chờ Quản lý hiệu chỉnh" phải đã bỏ');
   });
 
@@ -261,18 +260,14 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(no(TODAY, hv.attemptId).length === 0, 'Đủ bốn môn mà vẫn còn ô nợ');
   });
 
-  check('S12 · FT (OV-1b): W1 "-" một mình không nợ cả trong lẫn sau tuần (buổi Writing chưa phải vắng, W2 vẫn nợ); W1 + W2 cùng "-" → chốt vắng ngay, không ô nào nợ', () => {
+  check('S12 · FT (OV-1b; CV-SUA-1011): W1 "-" trong tuần = cả buổi Writing vắng → chốt ngay, W1 lẫn W2 không nợ ở tuần cũ', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
     attempts.saveScore(P.w1Teacher, hv.attemptId, 'writing1', { noShow: true }, '2026-09-16');
     const mid = no('2026-09-16', hv.attemptId);
-    assert(!mid.some((d) => d.skill === 'writing1'), 'Trong tuần, W1 đã báo "không có bài" thì không nợ');
-    assert(mid.some((d) => d.skill === 'writing2' && d.userId === teacherOf('MB FT 101', 'writing2')), 'W2 chưa nhập vẫn nợ, đúng GV W2');
-    assert(!no('2026-09-21', hv.attemptId).some((d) => d.skill === 'writing1'),
-      'Sau Chủ nhật, W1 "-" (W2 chưa nhập) vẫn có tác dụng ở ô W1 — không nợ, đúng như ô ở bảng chấm');
-    attempts.saveScore(P.w2Teacher, hv.attemptId, 'writing2', { noShow: true }, '2026-09-18');
+    assert(!mid.some((d) => d.skill === 'writing1' || d.skill === 'writing2'), `W1 "-" (W2 cùng dấu) — tuần thi cũ không ô W nào nợ: ${JSON.stringify(mid)}`);
     const after = no('2026-09-21', hv.attemptId);
-    /* OV-1b: W2 "-" trong tuần → chốt vắng ngay, tự dời Writing sang W4 SEP — ô tuần cũ không còn nợ/quá hạn; buổi mới là việc của tuần này. */
-    assert(!after.some((d) => (d.skill === 'writing1' || d.skill === 'writing2') && d.overdue), `W1 + W2 cùng "-" đã chốt mà vẫn quá hạn: ${JSON.stringify(after)}`);
+    /* OV-1b: chốt vắng ngay, tự dời Writing sang W4 SEP — ô tuần cũ không còn nợ/quá hạn; buổi mới là việc của tuần này. */
+    assert(!after.some((d) => (d.skill === 'writing1' || d.skill === 'writing2') && d.overdue), `W "-" đã chốt mà vẫn quá hạn: ${JSON.stringify(after)}`);
     assert(sit(hv.attemptId, 'writing').absence_move_count === 1, 'Máy phải tự dời buổi Writing lần 1');
   });
 

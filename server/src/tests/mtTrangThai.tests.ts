@@ -214,11 +214,10 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     let k = ky(a, 'writing');
     assert(k.planned_period_id === W1 && k.absence_move_count === 1 && dau(a, 'writing1').band === 6, `W1 điểm + W2 "-": ${JSON.stringify(k)}`);
     dung(b);
+    /* CV-SUA-1011 (chủ SP 10/11, thay "W2 '-' một mình: chờ ô kia" S4): W2 "-" = cả buổi Writing vắng — W1 trống cùng dấu, dời ngay. */
     attempts.saveScore(gvW2, b, 'writing2', { noShow: true }, TRONG);
-    assert(ky(b, 'writing').planned_period_id === W, 'W2 "-" một mình: chờ ô kia (S4)');
-    attempts.saveScore(gvW1, b, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
     k = ky(b, 'writing');
-    assert(k.planned_period_id === W1 && k.absence_move_count === 1, `W2 "-" rồi W1 điểm → dời: ${JSON.stringify(k)}`);
+    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && dau(b, 'writing1')?.no_show_period_id === W, `W2 "-" một mình → cả W dời: ${JSON.stringify(k)}`);
     dung(c, { lichSu: true });
     attempts.saveScore(gvW1, c, 'writing1', { criteria: [6, 6, 6, 6] }, QUA);   // N38 L3: MT cũ = tuần thi của W cách ≥ 2 tuần
     attempts.saveScore(gvW2, c, 'writing2', { noShow: true }, QUA);
@@ -546,7 +545,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(k.planned_period_id === W1 && k.absence_move_count === 1 && k.sit_status === 'scheduled', `sửa "-" cùng tuần vẫn lần 1: ${JSON.stringify(k)}`);
     attempts.saveScore(gvW1, a, 'writing1', { noShow: true }, TRONG);
     attempts.saveScore(gvW1, a, 'writing1', { noShow: true }, TRONG);
-    assert(ky(a, 'writing').absence_move_count === 0, 'gõ lại cùng tuần vô hại');
+    assert(ky(a, 'writing').absence_move_count === 1, 'gõ lại cùng tuần vô hại (CV-SUA-1011: W1 "-" dời cả buổi một lần)');
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     k = ky(a, 'listening');
     assert(k.sit_status === 'cancelled' && k.huy_vang === 1, `lần 2 ở tuần đã dời tới → huỷ: ${JSON.stringify(k)}`);

@@ -453,12 +453,14 @@ export async function runPrBvTests(t: YThucTestKit) {
   });
 
   /* OV-1b: "-" chưa chốt chỉ còn ở buổi Writing mới một task "-" (L/R/S "-" trong tuần chốt ngay). */
-  check('BV V11 · "-" chưa chốt (W1 một mình, trong tuần thi) → xoá: như nay, lịch không đổi', () => {
+  /* CV-SUA-1011 (chủ SP 10/11, thay "W1 '-' một mình chưa chốt"): "-" ở W1 trong tuần thi = cả buổi Writing vắng (W2 cùng dấu, chốt ngay); xoá → về tuần gốc, gỡ cả hai. */
+  check('BV V11 · W1 "-" trong tuần thi → W2 cùng dấu, chốt ngay; xoá "-" ở W1 → lịch về tuần thi, gỡ cả hai dấu', () => {
     const a = emMoi([0, 4, 8]);
     goVao(QL, a.m1, 'writing1');
-    assert(!dau(a.m1, 'writing1').no_show_settled_at, 'đã chốt');
+    assert(!!dau(a.m1, 'writing1').no_show_settled_at && !!dau(a.m1, 'writing2')?.no_show_settled_at, 'W1 "-" chưa chốt cả buổi');
     go(QL, a.m1, 'writing1');
-    assert(dau(a.m1, 'writing1').no_show_period_id === null && kyNang(a.m1, 'writing').planned_period_id === tuan(0).id, 'đổi lịch');
+    assert(dau(a.m1, 'writing1').no_show_period_id === null && dau(a.m1, 'writing2').no_show_period_id === null
+      && kyNang(a.m1, 'writing').planned_period_id === tuan(0).id && kyNang(a.m1, 'writing').absence_move_count === 0, 'không về đúng tuần thi');
   });
 
   check('BV V12 · Writing: W1 + W2 "-" chốt → xoá "-" ở W1 → về tuần gốc, gỡ cả hai dấu', () => {

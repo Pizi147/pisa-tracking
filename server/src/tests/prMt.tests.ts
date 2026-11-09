@@ -536,11 +536,11 @@ export async function runPrMtTests(t: YThucTestKit) {
       const l = lich(k);
       assert(l.sit_status === 'scheduled' && l.lan === 1 && l.tuan === '2026-09-14', `${k}: ${JSON.stringify(l)}`);
     }
-    /* GV W1 (gõ "-" trước, chưa đủ buổi) được báo; GV W2 vừa gõ "-" làm buổi đủ thì đã thấy ngay ở ô — không chuông. */
-    const tb = conn.prepare(`SELECT body FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w1Teacher.userId, a8.id) as any;
+    /* CV-SUA-1011: GV W1 gõ "-" là đủ buổi (W2 cùng dấu) — GV W2 được báo; GV W1 vừa gõ đã thấy ngay ở ô — không chuông; W2 "-" sau đó vô hại. */
+    const tb = conn.prepare(`SELECT body FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w2Teacher.userId, a8.id) as any;
     assert(tb?.body === 'Đã tự dời Writing của PRMT Em Vắng · MT1 sang W3 SEP (vắng lần 1).', JSON.stringify(tb));
     if (P.w1Teacher.userId !== P.w2Teacher.userId) {
-      assert(!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w2Teacher.userId, a8.id),
+      assert(!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND entity_id = ? AND body LIKE 'Đã tự dời Writing%'`).get(P.w1Teacher.userId, a8.id),
         'người vừa gõ "-" không cần chuông');
     }
     assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'attempt.absence_auto_move' AND entity_id = ?`).get(a8.id), 'thiếu nhật ký máy tự dời');
