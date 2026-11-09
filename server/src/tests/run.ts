@@ -9888,6 +9888,9 @@ await runPrLopThuongQuyenTests({ check, assert, assertThrows, conn, P, TODAY, ad
 // ==================================================================== CV-SUA-1011 (chủ SP 10/11: W "-" cả hai · bỏ Chấm Speaking của GVCN · theo dõi mở thẳng lưới)
 const { runPrCvSua1011Tests } = bocTep('prCvSua1011', await import('./prCvSua1011.tests.ts'));
 await runPrCvSua1011Tests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== LO-TRINH-GIU-LICH (chủ SP 10/11: chuyển lớp giữ lịch MT · Áp lịch chỉ xếp lượt chưa có lịch)
+const { runPrLoTrinhGiuLichTests } = bocTep('prLoTrinhGiuLich', await import('./prLoTrinhGiuLich.tests.ts'));
+await runPrLoTrinhGiuLichTests({ check, assert, conn, P, TODAY, addDays } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

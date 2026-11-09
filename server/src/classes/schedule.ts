@@ -57,7 +57,20 @@ export type SuggestedMock = {
   existingSource: 'auto' | 'manual' | null;
   /** Lượt đã làm xong thì KHÔNG được xếp lại — đó là lịch sử, không phải kế hoạch. */
   locked: boolean;
+  /** "Áp lịch" sẽ tạo / xếp lượt này (`xepTheoDeXuat`) — panel Lộ trình đếm nút và ghi trạng thái theo đúng cờ này. */
+  apDuoc: boolean;
 };
+
+/**
+ * "ÁP LỊCH" CHỈ XẾP LƯỢT CHƯA CÓ LỊCH (chủ SP 10/11): lượt `planned`, hệ thống tự xếp (`auto`), chưa có tuần, và tuần đề xuất chưa qua.
+ * Lượt đã có tuần GIỮ NGUYÊN — chuyển lớp (FT → FT giữ lộ trình, kể cả đổi LT1 → LT2: lịch lớp mới khác thì đề xuất khác), người dời
+ * từng kỹ năng, dời do vắng, lớp nghỉ đều để lại tuần thật khác đề xuất, và đó là quyết định, không phải lệch. Không bao giờ kéo một lượt
+ * chưa làm về tuần đã qua. Lộ trình mới (chuyển tiếp lộ trình, Lộ trình mới sau thi) có lượt mới → nhánh TẠO, không qua đây. Đổi tuần
+ * bắt đầu học (K2-33) vẫn dời theo mốc — `apLichMacDinh(…, { theoMoc: true })`.
+ */
+function xepTheoDeXuat(had: { status: string; plan_source: string | null; planned_period_id: number | null }, weekStart: string, homNay: string): boolean {
+  return had.status === 'planned' && had.plan_source === 'auto' && !had.planned_period_id && weekStart >= mondayOf(homNay);
+}
 
 /**
  * LỊCH MT ĐỀ XUẤT cho một lộ trình FT, tính từ tuần bắt đầu học — theo tuần MT của LỚP em đang học (`lichMtCua`, OV-6b1).
@@ -120,6 +133,7 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; lopId: numb
       existing.get(a.cycle_id)!.push(a);
     }
   });
+  const homNay = demoToday();
   for (const { cy, luot } of lich) {
     out.set(cy.id, { cy, lopId: lopOf.get(cy.student_id)?.id ?? null, goiY: luot.map(({ no, week, monday }) => {
       const period = periods.get(monday)!;
@@ -134,6 +148,7 @@ function goiYLo(yc: readonly YeuCauLichMt[]): Map<number, { cy: any; lopId: numb
         existingPeriodId: had?.planned_period_id ?? null,
         existingSource: (had?.plan_source ?? null) as any,
         locked: !!had && had.status === 'done',
+        apDuoc: !had || xepTheoDeXuat(had, monday, homNay),
       };
     }) });
   }
@@ -152,12 +167,13 @@ export { ngayTaoLuot } from '../fasttrack/skillSchedule.ts';
  *
  *   tạo   số còn thiếu (không có dòng nào, kể cả dòng đã huỷ — số huỷ để người tạo lại); giữ đánh số liền mạch (`kiemSoMtMoi`).
  *         `lich_su` = MT cũ: tuần thi cách tuần của `ngayTao` ≥ 2 tuần (mặc định hôm nay; T1 PR-MTa — lưu lúc tạo).
- *   dời   (trừ khi `chiTao`) chỉ lượt `planned` + `plan_source='auto'` CHƯA có điểm nào, và chỉ kỹ năng 'auto' + 'scheduled';
- *         rồi tính lại `lich_su` theo ngày tạo của chính lượt. Lượt người đã chốt / đã có điểm / đã xong đứng yên — đó là toàn bộ
+ *   xếp   (trừ khi `chiTao`) chỉ lượt CHƯA CÓ TUẦN (`xepTheoDeXuat`, chủ SP 10/11) và chưa có điểm; `theoMoc` (đổi tuần bắt đầu học, K2-33):
+ *         dời mọi lượt `planned` + `plan_source='auto'` CHƯA có điểm nào. Chỉ kỹ năng 'auto' + 'scheduled'; rồi tính lại `lich_su` theo
+ *         ngày tạo của chính lượt. Lượt người đã chốt / đã có điểm / đã xong đứng yên — đó là toàn bộ
  *         ý nghĩa của hàm này: đổi tuần bắt đầu học thì lịch đề xuất chạy theo, còn cái người đã chốt thì đứng yên.
  */
 export function apLichMacDinh(cycleId: number, actorUserId: number | null, o: {
-  ngayTao?: string; daThiToiMt?: number; chiTao?: boolean;
+  ngayTao?: string; daThiToiMt?: number; chiTao?: boolean; theoMoc?: boolean;
 } = {}): KetQuaLichMacDinh {
   return apLichMacDinhLo([{ cycleId, daThiToiMt: o.daThiToiMt }], actorUserId, o).get(cycleId) ?? { created: [], moved: [], kept: 0 };
 }
@@ -171,7 +187,7 @@ export function apLichMacDinh(cycleId: number, actorUserId: number | null, o: {
  * Tạo sau dời không đổi kết quả: `kiemSoMtMoi` chỉ đọc số lượt, trạng thái và có điểm — thứ phần dời không chạm.
  */
 export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number | null, o: {
-  ngayTao?: string; chiTao?: boolean;
+  ngayTao?: string; chiTao?: boolean; theoMoc?: boolean;
 } = {}): Map<number, KetQuaLichMacDinh> {
   const conn = db();
   const kqs = new Map<number, KetQuaLichMacDinh>();
@@ -207,7 +223,9 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
           ds.push({ id: 0, attempt_no: s.attemptNo, status: 'planned', plan_source: 'auto', planned_period_id: s.periodId, coDiem: 0 });
           continue;
         }
-        if (o.chiTao || had.status !== 'planned' || had.plan_source !== 'auto' || had.coDiem || had.planned_period_id === s.periodId) {
+        const xep = o.theoMoc ? had.status === 'planned' && had.plan_source === 'auto' && had.planned_period_id !== s.periodId
+          : xepTheoDeXuat(had, s.weekStart, ngayTao);
+        if (o.chiTao || had.coDiem || !xep) {
           kq.kept += 1; continue;
         }
         conn

@@ -535,6 +535,7 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
       attemptNo: n, studyWeek: g?.studyWeek ?? null, periodId: g?.periodId ?? null, weekStart: g?.weekStart ?? null, code: g?.code ?? null,
       existingAttemptId: a?.id ?? null, existingPeriodId: a?.planned_period_id ?? null, existingSource: (a?.plan_source ?? null) as any,
       locked: n === 0 || (g?.locked ?? (!!a && a.status === 'done')),
+      apDuoc: !!g?.apDuoc && !huy,   // số đã huỷ: Áp lịch không tạo lại (số huỷ để người tạo lại)
       luot: a ? luotCua(a) : null,
       huy: huy ? { attemptId: huy.id as number } : null,
     };

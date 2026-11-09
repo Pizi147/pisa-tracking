@@ -42,8 +42,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
       );
       invalidate('/attempts'); invalidate('/classes'); invalidate('/students');
       toast.push('ok',
-        t('Đã lên lịch: thêm {them} lượt, dời {doi} lượt', { them: r.created, doi: r.moved })
-        + (r.kept ? t(', giữ nguyên {n} lượt đã chốt tay', { n: r.kept }) : ''));
+        t('Đã lên lịch: thêm {them} lượt, xếp {doi} lượt', { them: r.created, doi: r.moved })
+        + (r.kept ? t(', giữ nguyên {n} lượt đã có lịch', { n: r.kept }) : ''));
       sugg.reload(); onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -51,11 +51,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
   const { homNay } = useNgayNghiepVu();
   const bang = sugg.data;
   const rows = bang?.hang ?? [];
-  /* Có gì để áp không — nếu mọi lượt đều đã đúng hoặc đã khoá thì nút không nên sáng. Hàng ngoài lịch mặc định (MT4+) không áp. */
-  const actionable = rows.filter(
-    (r) => r.studyWeek !== null && !r.locked && r.existingSource !== 'manual'
-      && (!r.existingAttemptId || r.existingPeriodId !== r.periodId),
-  ).length;
+  /* Có gì để áp không — cờ `apDuoc` của máy chủ (cùng luật với lúc Áp lịch): chỉ lượt chưa có lịch; lượt đã có lịch giữ nguyên (chủ SP 10/11). */
+  const actionable = rows.filter((r) => r.apDuoc).length;
 
   return (
     <KhungPanel tieuDe={t('Lộ trình')} hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
@@ -89,8 +86,8 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
                       <tr>
                         <Th hint={t('Số thứ tự lượt Mock Test trong lộ trình này, kèm kỳ vọng của lượt. Sang lộ trình mới thì đánh lại từ 1.')}>{t('Lượt')}</Th>
                         <Th hint={t('Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.')}>{t('Tuần học')}</Th>
-                        <Th hint={t('Tuần hệ thống tính ra từ tuần bắt đầu học. Chỉ là đề xuất — bấm Áp lịch mới thật sự đổi.')}>{t('Tuần đề xuất')}</Th>
-                        <Th hint={t('Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.')}>{t('Hiện tại')}</Th>
+                        <Th hint={t('Tuần hệ thống tính ra từ tuần bắt đầu học. Áp lịch chỉ xếp lượt chưa có lịch.')}>{t('Tuần đề xuất')}</Th>
+                        <Th hint={t('Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt đã có lịch (kể cả sau chuyển lớp) giữ nguyên.')}>{t('Hiện tại')}</Th>
                         <Th align="right">{t('Thao tác')}</Th>
                       </tr>
                     </thead>

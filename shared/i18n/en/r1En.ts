@@ -39,15 +39,15 @@ export const EN_R1_EN = {
   'Quản lý đã xếp': 'Scheduled by a manager',
   'Đã làm xong, giữ nguyên': 'Done, kept as is',
   'Quản lý đã chốt, giữ nguyên': 'Locked by a manager, kept as is',
-  'Sẽ dời sang tuần đề xuất': 'Will move to the suggested week',
+  'Giữ lịch hiện tại': 'Keeps its current week',
   'Đã đúng': 'Already correct',
   'Đang ở {tuan}': 'Now in {tuan}',
   'Chỉ Quản lý khôi phục được': 'Only a manager can restore',
   'Áp lịch để tạo': 'Apply schedule to create',
   'Thao tác khác · MT{n}': 'More actions · MT{n}',
   'Đóng dải điểm': 'Close score strip',
-  'Đã lên lịch: thêm {them} lượt, dời {doi} lượt': (b) => `Scheduled: ${so(b.them, 'attempt', 'attempts')} added, ${so(b.doi, 'attempt', 'attempts')} moved`,
-  ', giữ nguyên {n} lượt đã chốt tay': (b) => `, ${so(b.n, 'manually locked attempt', 'manually locked attempts')} kept`,
+  'Đã lên lịch: thêm {them} lượt, xếp {doi} lượt': (b) => `Scheduled: ${so(b.them, 'attempt', 'attempts')} added, ${so(b.doi, 'attempt', 'attempts')} placed`,
+  ', giữ nguyên {n} lượt đã có lịch': (b) => `, ${so(b.n, 'already scheduled attempt', 'already scheduled attempts')} kept`,
   'Đây là lớp thường nên không có lịch MT riêng từng em — cả lớp làm bài Progress Test và Final Test cùng tuần theo chương trình. Xem và sửa hai mốc đó ở trang lớp.':
     'This is a normal class, so there is no per-student MT schedule — the whole class sits the Progress Test and Final Test in the same week, per the programme. View and edit both dates on the class page.',
   'Lịch MT hệ thống đề xuất': 'Suggested MT schedule',
@@ -60,11 +60,11 @@ export const EN_R1_EN = {
     'Mock Test attempt number in this pathway, with its expected band. A new pathway starts again from 1.',
   'Tuần thứ mấy kể từ tuần em bắt đầu học. Mốc mặc định của Fast Track là tuần 6 · 12 · 16 · 20 · 24.':
     'Week number counted from the student\'s start week. Fast Track defaults are weeks 6 · 12 · 16 · 20 · 24.',
-  'Tuần hệ thống tính ra từ tuần bắt đầu học. Chỉ là đề xuất — bấm Áp lịch mới thật sự đổi.':
-    'Week calculated from the start week. Only a suggestion — nothing changes until you click Apply schedule.',
+  'Tuần hệ thống tính ra từ tuần bắt đầu học. Áp lịch chỉ xếp lượt chưa có lịch.':
+    'Week calculated from the start week. Apply schedule only places attempts that have no week yet.',
   'Tuần đề xuất': 'Suggested week',
-  'Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt Quản lý đã chốt tay và lượt đã làm xong thì đứng yên.':
-    'Which week the attempt is in now, and what Apply schedule does to it. Attempts locked by a manager or already done stay put.',
+  'Lượt đang ở tuần nào, và bấm Áp lịch thì lượt này ra sao. Lượt đã có lịch (kể cả sau chuyển lớp) giữ nguyên.':
+    'Which week the attempt is in now, and what Apply schedule does to it. Attempts that already have a week (including after a class transfer) stay put.',
   'Hiện tại': 'Current',
   '+ Thêm MT{n}': '+ Add MT{n}',
   /* Hồ sơ lớp › Phân công */
