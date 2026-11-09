@@ -67,10 +67,11 @@ export function LopToiDay() {
     <section className="card" aria-labelledby="lop-toi-day" data-hd="tq-lop-toi-day">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
-          {/* G9: không nút trong tiêu đề bảng — "?" của cột Dưới kỳ vọng / Chưa đạt nằm cạnh tiêu đề thẻ. */}
-          <NutLuat label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat>
+          {/* CV6 (mockup v18, chủ SP 10/11): khối chỉ nằm trong dải gập "Lớp tôi dạy" của Công việc — dải đã ghi tên, tiêu đề chỉ cho trình đọc màn hình. */}
+          <h2 id="lop-toi-day" className="sr-only">{t('Lớp tôi dạy')}</h2>
           {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
+          {/* G9: không nút trong tiêu đề bảng — "?" của cột Dưới kỳ vọng / Chưa đạt nằm cạnh tiêu đề thẻ (CV6 v18: sau Fast Track | Lớp thường). */}
+          <NutLuat label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat>
         </div>
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={3} /></div> : !data.rows.length ? (
