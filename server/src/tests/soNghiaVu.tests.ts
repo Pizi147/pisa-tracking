@@ -5,7 +5,7 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runSoNghiaVuTests(t: YThucTestKit) {
-  const { check, assert, assertThrows, conn } = t as any;
+  const { check, assert, assertThrows, conn, addDays } = t as any;
   const { migratePrNghiaVu } = await import('../migrate/prNghiaVu.ts');
   const nv: any = await import('../phanTich/soNghiaVu.ts');
   const week: any = await import('../platform/week.ts');
@@ -220,14 +220,19 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     if (!mo.length && !xo.length) { console.log(`  · NV-VIEC-${g}: seed không có việc loại này (bỏ qua)`); continue; }
     check(`NV-VIEC-${g} · ${mo.length} việc mở (Công việc) + ${xo.length} việc đã xong → dòng sổ cùng hạn, người, ngày xong`, () => thu(() => {
       nv.ghiSoViecChiNhanh(MB);
+      /* PR-2 mục 2: khoá ĐƠN VỊ (`khoaDonVi`) — việc gộp còn phần mở là việc mở; xong hết → ngày xong muộn nhất của các phần. */
+      const khoaMo = new Set(mo.map((it: any) => nv.khoaViec(nv.khoaDonVi(it.key, it))));
       for (const it of mo) {
-        const d = so(nv.khoaViec(it.key));
+        const d = so(nv.khoaViec(nv.khoaDonVi(it.key, it)));
         assert(d && d.loai === 'viec' && d.han === it.due && d.nguoi === (it.ownerId > 0 ? it.ownerId : null) && d.xong_luc === null && d.khong_tinh === null,
           `việc mở ${it.key}: ${JSON.stringify(d)} ≠ hạn ${it.due} người ${it.ownerId}`);
       }
       for (const it of xo) {
-        const d = so(nv.khoaViec(it.key));
-        assert(d && d.han === it.due && d.nguoi === it.ownerId && d.xong_luc === it.xong, `việc xong ${it.key}: ${JSON.stringify(d)} ≠ ${it.due} / ${it.xong}`);
+        const k = nv.khoaViec(nv.khoaDonVi(it.key, it));
+        const d = so(k);
+        if (khoaMo.has(k)) { assert(d && d.xong_luc === null, `việc gộp còn phần mở ${k}: ${JSON.stringify(d)}`); continue; }
+        const muon = xo.filter((x: any) => nv.khoaViec(nv.khoaDonVi(x.key, x)) === k).map((x: any) => x.xong).sort().at(-1);
+        assert(d && d.han === it.due && d.nguoi === it.ownerId && d.xong_luc === muon, `việc xong ${it.key} → ${k}: ${JSON.stringify(d)} ≠ ${it.due} / ${muon}`);
       }
     }));
   }
@@ -489,5 +494,93 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const sos = get('SELECT sos_level, urgency FROM sos_cases WHERE id = ?', x.caseId);
     assert(x.hanMoi === sosV4.hanXacNhan(TODAY, { sosLevel: sos.sos_level, urgency: sos.urgency, thuong: false }), `hạn theo luật từ ngày chuyển: ${x.hanMoi}`);
   }));
+  // ------------------------------------------------------------------ PR-2 · khoá đơn vị (mục 2) · làm mới sổ việc theo lần ghi (Task 7a) · đọc sổ (Task 7)
+  check('NV-KHOA-DON-VI · Xác nhận PA theo Case, Bàn giao theo lệnh (lớp + hạn), Phối hợp SOS theo lớp + hạn: một khoá một việc như Công việc; khoá cũ không còn', () => thu(() => {
+    nv.ghiSoViecChiNhanh(MB);
+    const xn = mo0.find((x: any) => x.group === 'xac_nhan_pa');
+    assert(xn && so(`viec:xnpa-case:${xn.caseId}`)?.khong_tinh === null && !so(`viec:${xn.key}`), `Xác nhận PA theo Case: ${xn?.key}`);
+    for (const g of ['ban_giao', 'phoi_hop_sos']) {
+      const mo = mo0.filter((x: any) => x.group === g);
+      assert(new Set(mo.map((it: any) => nv.khoaDonVi(it.key, it))).size === mo.length, `${g}: mỗi việc mở một khoá`);
+    }
+    /* Bàn giao GVCN đã xong: các lệnh cùng lớp + hạn là MỘT việc. */
+    const bg = xong0.filter((x: any) => /^ban-giao-xong:gvcn:/.test(x.key));
+    const khoa = new Set(bg.map((x: any) => nv.khoaViec(nv.khoaDonVi(x.key, x))));
+    for (const k of khoa) assert(so(k as string), `thiếu ${k}`);
+    const n = get(`SELECT COUNT(*) n FROM nghia_vu WHERE (khoa LIKE 'viec:ban-giao-xong:%' OR khoa LIKE 'viec:xnpa:%' OR khoa LIKE 'viec:phoi-hop-xong:%' OR khoa LIKE 'viec:yt-xong:%') AND khong_tinh IS NULL`).n;
+    assert(n === 0, `khoá cũ còn ${n} dòng đang tính`);
+  }));
+
+  const cuoiKhoa: any = await import('../normal/cuoiKhoa.ts');
+  const baoPh: any = await import('../yThuc/baoPhTvv.ts');
+  const ngu: any = await import('../platform/nguCanhRequest.ts');
+  check('NV-DUONG-VIEC · đường ghi việc → sổ (cùng khoá, hạn gốc giữ): ghi Mini Test · Báo PH "đã báo" → Đúng hạn', () => thu(() => {
+    nv.ghiSoViecChiNhanh(MB);
+    const mt = mo0.find((x: any) => x.group === 'mini_test');
+    const k = nv.khoaViec(mt.key);
+    const truoc = so(k);
+    assert(truoc && truoc.xong_luc === null, `trước: ${JSON.stringify(truoc)}`);
+    ngu.voiXacNhan(() => cuoiKhoa.ghiMiniTest(P.admin, Number(mt.key.split(':')[1]), { tyLe: 80, ngay: TODAY }));
+    /* Seed: ngày demo trước giờ máy — dấu giờ ghi (giờ máy) về ngày demo, như bản chính (giờ máy = ngày nghiệp vụ). */
+    conn.prepare('UPDATE mini_test SET ghi_luc = ? WHERE id = ?').run(`${TODAY}T03:00:00.000Z`, Number(mt.key.split(':')[1]));
+    nv.lamMoiViec([MB], TODAY);   // ngoài request có phiên → ghi luôn
+    const sau = so(k);
+    assert(sau && sau.xong_luc === TODAY && sau.han_goc === truoc.han_goc, `sau ghi Mini Test: ${JSON.stringify(sau)}`);
+    const bp = mo0.find((x: any) => x.group === 'bao_ph_yt');
+    baoPh.ghiKetQuaBaoPh(P.admin, { viecIds: [Number(bp.key.split(':')[1])], ketQua: 'da_bao', ngay: TODAY, ghiChu: 'Đã gọi mẹ em' });
+    nv.lamMoiViec([MB], TODAY);
+    const b = so(nv.khoaViec(bp.key));
+    assert(b && b.xong_luc === TODAY, `Báo PH: ${JSON.stringify(b)}`);
+  }));
+
+  const mocHt: any = await import('../platform/mocHeThong.ts');
+  const soGhi = () => get(`SELECT so FROM moc_he_thong WHERE khoa = 'so-viec'`)?.so as number;
+  check('NV-LAM-MOI · mọi lần ghi qua API tăng so-viec (cùng câu lùi mốc quét); GET đọc sổ: số đổi / sang ngày → ghi lại sổ việc chi nhánh một lần; không đổi → 0 câu', () => thu(() => {
+    assert(soGhi() != null, 'migrate tạo dòng so-viec');
+    const g0 = soGhi();
+    mocHt.luiMocQuetSauGhi();
+    assert(soGhi() === g0 + 1, `so-viec ${g0} → ${soGhi()}`);
+    const docMoc = () => mocHt.docMoc(get(`SELECT json_group_object(khoa, json_array(so, luc, ngay)) AS j FROM moc_he_thong`).j);
+    conn.prepare(`DELETE FROM moc_he_thong WHERE khoa = ?`).run(`so-viec:${MB}`);
+    const chay = () => ngu.chayTrongRequest('GET', () => { ngu.datMoc(docMoc()); const c = ngu.soCauSql(); nv.lamMoiViec([MB], TODAY); return ngu.soCauSql() - c; });
+    assert(chay() > 5, 'lần đầu phải ghi lại sổ việc');
+    assert(chay() === 0, 'không có lần ghi mới → 0 câu');
+    mocHt.luiMocQuetSauGhi();
+    assert(chay() > 5, 'có lần ghi mới → ghi lại');
+    assert(chay() === 0, 'sau đó lại 0 câu');
+    conn.prepare(`UPDATE moc_he_thong SET ngay = '2000-01-01' WHERE khoa = ?`).run(`so-viec:${MB}`);
+    assert(chay() > 5, 'sang ngày nghiệp vụ mới → ghi lại');
+  }));
+
+  const gvSvc: any = await import('../phanTich/giaoVien.ts');
+  check('NV-CUNG-SO · NV-PANEL · cùng GV, cùng kỳ: ô bảng Phân tích GV = panel (3 tab, Chưa làm đầu, S chéo chung riêng) = hồ sơ GV; Tổng quan đọc cùng bảng', () => thu(() => {
+    const bang = gvSvc.phanTichGiaoVien(P.mbManager, { cn: MB, ct: 'ft' });
+    const so3 = (rows: any[]) => ({ dung: rows.filter((r) => r.dongViec.trangThai === 'dung').length, muon: rows.filter((r) => r.dongViec.trangThai === 'muon').length,
+      chua: rows.filter((r) => r.dongViec.trangThai === 'chua').length });
+    let soGv = 0;
+    for (const h of bang.hang) {
+      for (const [cot, o] of [['cham-diem', h.chamDiem], ['viec-dung-han', h.viecDungHan]] as const) {
+        if (o.k !== 'so') continue;
+        const r = gvSvc.oChiSoGv(P.mbManager, { cn: MB, ct: 'ft', gv: h.id, cot });
+        const rieng = r.rows.filter((x: any) => !x.dongViec.sChung);
+        const s = so3(rieng);
+        assert(s.dung === o.dung && s.muon === o.muon && s.chua === o.chua && rieng.length === o.tong, `${h.ten} ${cot}: ô ${JSON.stringify(o)} ≠ panel ${JSON.stringify(s)}`);
+        assert(r.rows.filter((x: any) => x.dongViec.sChung).every((x: any) => x.dongViec.trangThai === 'chua'), 'S chéo chung chỉ ở Chưa làm');
+        assert((o.sChung ?? 0) === r.rows.filter((x: any) => x.dongViec.sChung).length, `${h.ten}: + n S chéo chung = số dòng nhóm S chéo chung`);
+        const tt = r.rows.map((x: any) => x.dongViec.trangThai);
+        assert(tt.join(',') === [...tt].sort((a: string, b: string) => ['chua', 'muon', 'dung'].indexOf(a) - ['chua', 'muon', 'dung'].indexOf(b)).join(','), 'Chưa làm đứng đầu');
+        assert(r.rows.every((x: any) => !x.dongViec.hanGoc || x.dongViec.hanGoc !== x.dongViec.han), 'hạn gốc chỉ khi khác hạn');
+        soGv += 1;
+      }
+      /* Hồ sơ GV (mọi chi nhánh, mọi khung): bằng bảng khi GV chỉ có dòng sổ ở MB FT. */
+      const tatCa = dem.demTheoNguoi({ chiNhanh: null, tu: bang.tu, den: addDays(bang.den, 6), loai: 'bai', homNay: TODAY, nguoi: h.id }).get(h.id);
+      const hs = gvSvc.chiSoHoSoGv(P.admin, h.id, { tu: bang.tu, den: bang.den });
+      if (h.chamDiem.k === 'so' && tatCa && tatCa.dung + tatCa.muon + tatCa.chua === h.chamDiem.tong) {
+        assert(hs.diemDungHan.k === 'so' && hs.diemDungHan.dung === h.chamDiem.dung && hs.diemDungHan.tong === h.chamDiem.tong, `hồ sơ ${h.ten}: ${JSON.stringify(hs.diemDungHan)} ≠ ${JSON.stringify(h.chamDiem)}`);
+      }
+    }
+    assert(soGv > 0, 'seed phải có GV có số');
+  }));
+
   if (nv.MOC_TINH_TRE) nv.MOC_TINH_TRE.ngay = '2026-10-19';
 }

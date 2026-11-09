@@ -10,7 +10,11 @@ export type KhungPtGv = 'ft' | 'thuong';
 export const khungPtGvTuThamSo = (s: string | null | undefined): KhungPtGv => (s === 'thuong' ? 'thuong' : 'ft');
 
 /** `pt` (thi thật, 2F): % theo tuần dạy — số to dùng `pt` thay dung / tong. */
-export type OPtGv = { k: 'na' } | { k: 'rong' } | { k: 'so'; dung: number; tong: number; pt?: number };
+/**
+ * SỔ NGHĨA VỤ (PR-2): "Chấm Test" / "Việc" có 3 số riêng — `dung` Đúng hạn · `muon` Làm muộn · `chua` Chưa làm (`tong` = cả ba; tỉ lệ = dung / tong).
+ * `sChung`: bài S chéo chưa ai nhận của chi nhánh (mọi GV có S cùng số) — KHÔNG trong 3 số, hiện dòng phụ "+ n S chéo chung".
+ */
+export type OPtGv = { k: 'na' } | { k: 'rong'; sChung?: number } | { k: 'so'; dung: number; tong: number; pt?: number; muon?: number; chua?: number; sChung?: number };
 export type HangPtGv = {
   id: number; ten: string;
   /** "R · W1 · W2 · GVCN MB FT 103" (mockup 25). */
@@ -62,7 +66,12 @@ export type ChiSoHoSoGv = {
   /** Số lần thi thật Overall CAO HƠN Target (tập con của Đạt) — panel `thi-that` + `loc=vuot`. */
   thiThatVuot: number;
 };
-export type PhanTichGvKq = { cn: number; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; thang: string | null; homNay: string; hang: HangPtGv[] };
+/**
+ * `cn = null` (PR-2, sổ nghĩa vụ): TỔNG MỌI CHI NHÁNH trong phạm vi — mỗi người một dòng, chỉ hai cột Hành chính (Việc · Chấm Test); cột khác `na`.
+ * `chuaPhanCong` (QL, chi nhánh): bài / việc không có người chịu (lớp + kỹ năng chưa phân công; S chéo khi chi nhánh không còn ai có S) — đếm riêng.
+ */
+export type PhanTichGvKq = { cn: number | null; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; thang: string | null; homNay: string; hang: HangPtGv[];
+  chuaPhanCong?: { chamDiem: OPtGv; viecDungHan: OPtGv } | null };
 
 /** Khoá cột kết quả theo khung (Q31-6: lớp thường bốn cột cố định L · R · W (G+V) · S (P); OV-11h: + L+S · R+W của PET / KET). */
 export const COT_KET_QUA_GV: Record<KhungPtGv, readonly string[]> = {
@@ -105,6 +114,14 @@ export function chuOPtGv(o: OPtGv): { so: string | null; phu: string } {
   if (o.k === 'rong') return { so: null, phu: 'Chưa có dữ liệu' };
   return { so: `${o.dung}/${o.tong}`, phu: `${o.pt ?? phanTramGv(o.dung, o.tong)}%` };
 }
+
+/** Ô từ 3 số của sổ nghĩa vụ (`dung` · `muon` · `chua`, + `sChung`). */
+export const oTuSo3 = (apDung: boolean, x: { dung: number; muon: number; chua: number; sChung?: number } | undefined): OPtGv => {
+  if (!apDung) return { k: 'na' };
+  const tong = x ? x.dung + x.muon + x.chua : 0;
+  const sChung = x?.sChung ? { sChung: x.sChung } : {};
+  return tong ? { k: 'so', dung: x!.dung, tong, muon: x!.muon, chua: x!.chua, ...sChung } : { k: 'rong', ...sChung };
+};
 
 /** Ô từ tập (dung ⊆ tong) + có áp dụng không. */
 export const oTuTap = (apDung: boolean, t: { dung: readonly unknown[]; tong: readonly unknown[] } | undefined): OPtGv =>

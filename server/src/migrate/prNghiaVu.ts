@@ -31,6 +31,8 @@ export function migratePrNghiaVu(conn: any, applied: string[]) {
   for (const [cot, kieu] of [['nguoi_cu', 'INTEGER'], ['ngay', 'TEXT']]) {
     if (!conn.prepare(`SELECT 1 FROM pragma_table_info('viec_han_lan') WHERE name = ?`).get(cot)) conn.exec(`ALTER TABLE viec_han_lan ADD COLUMN ${cot} ${kieu}`);
   }
+  /* PR-2 (Task 7a): bộ đếm lần ghi qua API (`luiMocQuetSauGhi`) — GET đọc sổ việc thấy đổi thì ghi lại sổ việc chi nhánh (`lamMoiViec`). */
+  if (conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'moc_he_thong'`).get()) conn.exec(`INSERT OR IGNORE INTO moc_he_thong (khoa, so) VALUES ('so-viec', 0)`);
   conn.exec('CREATE TABLE IF NOT EXISTS nghia_vu_lech (id INTEGER PRIMARY KEY, khoa TEXT NOT NULL, truoc TEXT, sau TEXT, luc TEXT NOT NULL)');
   if (!co) applied.push('SỔ NGHĨA VỤ: tạo bảng nghia_vu (chưa có dòng — nạp ở prNghiaVuNap).');
   if (!coKn) applied.push('SỔ NGHĨA VỤ: tạo bảng user_skill_lich_su (lịch sử kỹ năng GV, nạp kỹ năng hiện có làm mốc).');
