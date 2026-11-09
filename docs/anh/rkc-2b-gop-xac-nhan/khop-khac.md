@@ -27,6 +27,8 @@ Không mất thao tác nào.
 ## Hoàn tác
 
 - Hoàn tác **Ghi KQ lần đầu** có huỷ xác nhận ngầm: PA về chờ (`traXacNhanNgam`, nhật ký `case.preset.confirm_undo`). Giữ xác nhận khi PA còn KQ khác hoặc có thay đổi khác sau lần xác nhận (Sửa PA…) — không đè chỗ người khác đã sửa.
+- Chỉ **người đã ghi** (= người xác nhận ngầm) mới trả PA về chờ, như Hoàn tác xác nhận PA. Người khác hoàn tác KQ → chỉ gỡ KQ, PA vẫn chạy.
+- **Xoá kết quả** (QL, N37) không trả PA về chờ: xoá là việc khác Hoàn tác — PA đã chạy giữ nguyên, QL đổi tiếp nếu cần.
 - **Sửa Case = xác nhận**: Sửa Case không có Hoàn tác riêng; lần xác nhận ghi đúng nhật ký `case.confirm` nên `POST /cases/:id/hoan-tac-xac-nhan` dùng được như nút Xác nhận (phép kiểm GXN-1). Trên web không có đường này (Case chưa xác nhận hiện form Xác nhận, đã có toast Hoàn tác).
 
 ## "Chờ xác nhận" tự hết (phép kiểm `prHoanTacXn` GXN-1…3)
@@ -69,6 +71,10 @@ Không thêm đường GET, không thêm câu đọc khi mở trang.
 - `sau-da-luu-1440.png` — lưu → PA "Đang chạy · KQ hạn 13/10", dải "✓ Đã lưu kết quả · đã xác nhận PA · Hoàn tác"
 
 ## [XM] / ghi chú
+
+- PA đang chờ QL duyệt đổi PA (đề xuất PA khác): Ghi KQ vẫn bị chặn như cũ — không xác nhận ngầm PA gốc.
+- Case chưa xác nhận: `PATCH` kèm `luc` cũ → 409 như Sửa Case thường.
+- Rà `/code-review high`: 9 mục, sửa 5 (PA chờ đổi, `luc`, quyền Hoàn tác, chữ dải theo quyết định, trần `tocDoDuong.ts` 153 / 132 câu); bỏ qua 4 (Xoá KQ — xem trên; luật Tutor ở web; vài câu đọc lặp — tổng vẫn 117 < 194; lọc nhật ký — mọi đường sửa PA đều ghi nhật ký PA).
 
 - PR-S4F #9 (Q28-5) "mô tả PA do người xác nhận gửi": đường Ghi KQ dùng **nguyên văn** nội dung PA (xác nhận "giữ nguyên"); GV sửa Nội dung tại chỗ sau nếu cần. Theo chủ SP 11/11 (ghi KQ = xác nhận).
 - Ngày bắt đầu PA khi xác nhận ngầm = ngày ghi KQ (mốc quy chế tính từ đó).
