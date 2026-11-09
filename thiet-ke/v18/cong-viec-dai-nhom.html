@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Công việc · dải nhóm gập · v18</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;600;700&display=swap">
+<!-- GIỮ Công việc v12 đã duyệt (= web hiện tại). Chỉ sửa DẢI NHÓM GẬP (`DaiNhom`): Yêu cầu của tôi · Lớp tôi dạy · Đã bỏ qua. -->
+<link rel="stylesheet" href="../audit-0311/chung.css">
+<link rel="stylesheet" href="../audit-0311/ro.css">
+<style>
+.khung { padding:16px; display:grid; gap:14px; background:var(--bg); border-radius:6px; }
+.dt.khung { width:375px; box-sizing:border-box; height:auto; display:grid; align-content:start; padding:12px 16px; gap:14px; }
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:clip; }
+/* dải nhóm như web: min 48, vạch trái 3 px, nền surface-2, 15/700 */
+.dn { display:flex; align-items:center; gap:8px; min-height:48px; padding:0 8px 0 13px; background:var(--surface-2); border-left:3px solid var(--accent); font:700 15px/1.35 var(--phong); color:var(--text); position:relative; }
+.dn.tt-tinh { border-left-color:var(--text-faint); }
+.dn.mo { border-bottom:1px solid var(--line); }
+.dn .ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; color:var(--text-faint); }
+.dn .chip { display:inline-flex; height:22px; align-items:center; padding:0 7px; border-radius:4px; border:1px solid var(--line-strong); background:var(--surface); font:600 12px var(--phong-so); }
+.dn .nut-i { position:relative; z-index:1; }
+/* TRƯỚC: tam giác 13 px ở mép phải, nút riêng (tabIndex -1) */
+.dn .mui-cu { margin-left:auto; width:32px; height:32px; display:grid; place-items:center; font:400 13px var(--phong); color:var(--text-dim); }
+/* SAU (CV6): chevron 16 SÁT tên — cả dải là MỘT nút (lớp phủ ::after), ⓘ nằm trên lớp phủ nên vẫn bấm riêng */
+.dn .bam { all:unset; display:flex; align-items:center; gap:8px; min-height:44px; cursor:pointer; }
+.dn .bam::after { content:""; position:absolute; inset:0; border-radius:inherit; }
+.dn .chev { width:16px; height:16px; flex:none; fill:none; stroke:var(--text-dim); stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s; }
+.dn.mo .chev { transform:rotate(90deg); }
+.dn.re { background:var(--accent-soft); }
+.dn.re .chev { stroke:var(--text); }
+.dn.focus { box-shadow:inset 0 0 0 2px var(--accent); }
+.mk-vien { outline:2px dashed #d9a93a; outline-offset:2px; border-radius:12px; }
+/* nội dung mở (giữ như web) */
+.noi { padding:12px; display:grid; gap:10px; }
+.loai-bt { display:flex; align-items:center; gap:10px; }
+.doan2 { display:inline-flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+.doan2 span { padding:5px 12px; font:600 13px var(--phong); color:var(--text-dim); } .doan2 span.dang { background:var(--accent-soft); color:var(--text); box-shadow:inset 0 0 0 1px var(--accent); }
+.bl { width:100%; border-collapse:collapse; font-size:14px; }
+.bl th { font:600 13px var(--phong); color:var(--text-dim); text-align:right; padding:8px; border-bottom:1px solid var(--line); vertical-align:bottom; }
+.bl th:nth-child(-n+2), .bl td:nth-child(-n+2) { text-align:left; }
+.bl td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:right; font-family:var(--phong-so); }
+.bl td:first-child b { font-family:var(--phong); }
+.the-yc { border:1px solid var(--line); border-radius:10px; padding:10px 12px; display:grid; gap:4px; font-size:14px; }
+.the-yc .h1 { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-weight:600; }
+.the-yc .mo2 { color:var(--text-dim); font-size:13px; }
+.bq { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; padding:10px 16px; border-top:1px solid var(--line); align-items:center; }
+.bq:first-child { border-top:0; }
+.bq .t { font:500 15px var(--phong); color:var(--text-dim); } .bq .p { font-size:13px; color:var(--text-faint); }
+.vi-ec { display:grid; grid-template-columns:minmax(0,1fr) 150px 118px; gap:12px; align-items:center; padding:8px 16px; border-top:1px solid var(--line); }
+.vi-ec .t { font:500 15px var(--phong); } .vi-ec .h { font-size:13px; color:var(--text-dim); }
+.dt .vi-ec { grid-template-columns:minmax(0,1fr) auto; }
+
+.cap { display:grid; grid-template-columns:auto auto; gap:18px; align-items:start; justify-content:start; }
+.anh-truoc { width:670px; border:1px solid #b0b8cd; border-radius:6px; display:block; }
+.anh-truoc.dt-a { width:375px; }
+.bang-tt { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
+.bang-tt th, .bang-tt td { border:1px solid #d9deea; padding:6px 10px; text-align:left; vertical-align:top; }
+.bang-tt th { background:#f2f4f9; font-weight:700; white-space:nowrap; }
+.bang-tt td:first-child { font-weight:700; }
+.gi { color:#38674c; font-weight:600; } .doi { color:#7e5f36; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v18 · Công việc — CV6 chevron sát tên ở dải nhóm gập</h1>
+    <p>Nguồn: audit 08/11 dòng CV6 → [XM] #1240–#1242 (5) → chủ SP 10/11 "VẪN LÀM". Ba dải gập dùng chung <code>DaiNhom</code>: <b>Yêu cầu của tôi</b>, <b>Lớp tôi dạy</b> (GV, cuối trang) và <b>Đã bỏ qua</b> (QL, tab Việc quản lý).
+      Trước: tam giác ▸ 13 px ở <b>mép phải</b>, xa tên (~560 px), là nút riêng không nhận Tab; "Yêu cầu của tôi" mượn biểu tượng người. Sau: <span class="so-mk">1</span>chevron 16 px <b>ngay sau tên</b> (sau chip nếu có), xoay xuống khi mở · <span class="so-mk">2</span><b>cả dải là một nút</b> (bấm đâu cũng mở / đóng; Tab dừng một lần; viền focus cả dải; rê sáng cả dải) — ⓘ vẫn bấm riêng · <span class="so-mk">3</span>biểu tượng riêng: Yêu cầu = phiếu gửi đi, Lớp tôi dạy = bảng lớp (đã có) · <span class="so-mk">4</span>mở "Lớp tôi dạy": bỏ tiêu đề lặp "Lớp tôi dạy" bên trong (dải đã ghi), giữ ⓘ + Fast Track | Lớp thường.
+      Dải nhóm việc thường (Mock Test, Progress / Final Test…) không gập — không đổi. Demo 14/09/2026, GV Trần Ngọc Hà. 1440 tối · 375 sáng.</p>
+    <nav class="muc-mk"><a href="#a">A · 1440 trước | sau</a><a href="#b">B · 375</a><a href="#c">C · QL Đã bỏ qua</a><a href="#d">D · thao tác</a></nav>
+  </header>
+
+  <section class="khu" id="a">
+    <h2>A1 · 1440 tối — GV, hai dải đóng (rê chuột "Yêu cầu của tôi", Tab tới "Lớp tôi dạy")</h2>
+    <div class="cap">
+      <figure><figcaption>Trước · web hiện tại (cột danh sách, cuối trang)</figcaption><img class="anh-truoc" src="anh/truoc-cv-dai-1440.png" alt="Dải gập hiện tại, chevron ở mép phải"></figure>
+      <figure><figcaption>Sau</figcaption><div class="toi khung" data-k="a1" style="width:640px"></div></figure>
+    </div>
+  </section>
+  <section class="khu">
+    <h2>A2 · 1440 tối — hai dải mở</h2>
+    <div class="cap">
+      <figure><figcaption>Trước · mở</figcaption><img class="anh-truoc" src="anh/truoc-cv-dai-mo-1440.png" alt="Dải gập hiện tại khi mở"></figure>
+      <figure><figcaption>Sau · mở (nội dung giữ, bỏ tiêu đề lặp trong Lớp tôi dạy)</figcaption><div class="toi khung" data-k="a2" style="width:640px"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="b">
+    <h2>B · 375 sáng</h2>
+    <p class="ghi">Dải cao 48 (vùng chạm cả dải ≥ 44) · chevron ngay sau tên, không còn tam giác 8 px ở mép (vùng chạm 24 px trước đây).</p>
+    <div class="cap">
+      <figure><figcaption>Trước</figcaption><img class="anh-truoc dt-a" src="anh/truoc-cv-dai-375.png" alt="Dải gập hiện tại 375"></figure>
+      <figure><figcaption>Sau · đóng</figcaption><div class="sang dt khung" data-k="b1"></div></figure>
+      <figure><figcaption>Sau · Lớp tôi dạy mở</figcaption><div class="sang dt khung" data-k="b2"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="c">
+    <h2>C · QL · tab Việc quản lý — "Đã bỏ qua" (chip + ⓘ trên dải)</h2>
+    <p class="ghi">Chevron sau chip "3 việc"; ⓘ đứng sau chevron, nằm trên lớp phủ nên bấm ⓘ chỉ mở giải thích, không gập dải. Mở: dòng việc + Khôi phục như web.</p>
+    <div class="hang-khung">
+      <figure><figcaption>C1 · 1440 đóng</figcaption><div class="toi khung" data-k="c1" style="width:640px"></div></figure>
+      <figure><figcaption>C2 · 1440 mở</figcaption><div class="toi khung" data-k="c2" style="width:640px"></div></figure>
+      <figure><figcaption>C3 · 375 mở</figcaption><div class="sang dt khung" data-k="c3"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="d">
+    <h2>D · Thao tác / thành phần trước → sau</h2>
+    <table class="bang-tt">
+      <tr><th>Thao tác / thành phần</th><th>Trước (web)</th><th>Sau</th><th>Giữ / đổi</th></tr>
+      <tr><td>Mở / đóng dải</td><td>bấm vùng tên (nút) hoặc tam giác mép phải (nút thứ hai, <code>tabIndex -1</code>, <code>aria-hidden</code>)</td><td>cả dải là MỘT nút <code>aria-expanded</code>; chevron trong nút; Enter / Space; Tab dừng một lần</td><td class="doi">ĐỔI — CV6</td></tr>
+      <tr><td>Chevron</td><td>chữ ▸ / ▾ 13 px, mép phải</td><td>SVG 16 px nét 1,75 màu <code>--text-dim</code> (≥ 4,5 : 1 trên <code>--surface-2</code> cả sáng / tối — tam giác cũ 8 px khó thấy) sau tên (sau chip), xoay 90° khi mở; giảm chuyển động → không xoay động (đổi ngay)</td><td class="doi">ĐỔI — CV6</td></tr>
+      <tr><td>Rê / focus</td><td>rê chỉ ô tam giác</td><td>rê sáng cả dải (<code>--accent-soft</code>); focus viền 2 px cả dải</td><td class="doi">ĐỔI — a11y</td></tr>
+      <tr><td>ⓘ (Đã bỏ qua) · phần phụ của dải</td><td>có</td><td>có, bấm riêng (trên lớp phủ)</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Biểu tượng "Yêu cầu của tôi"</td><td>hai người (mượn của lớp)</td><td>phiếu gửi đi</td><td class="doi">ĐỔI — CV6</td></tr>
+      <tr><td>Gập sẵn · chỉ tải khi mở (không đọc Turso khi đóng) · vị trí cuối trang · thứ tự</td><td>có</td><td>có</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Bên trong Yêu cầu của tôi (thẻ yêu cầu, Mở ›, Xem thêm, "n yêu cầu chờ duyệt ›")</td><td>có</td><td>có</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Bên trong Lớp tôi dạy: tiêu đề "Lớp tôi dạy" lặp · ⓘ · Fast Track | Lớp thường · bảng lớp</td><td>có tiêu đề lặp</td><td>bỏ chữ lặp (chỉ khi nằm trong dải); giữ ⓘ, nút chọn, bảng</td><td class="doi">ĐỔI nhỏ — chữ lặp</td></tr>
+      <tr><td>Đã bỏ qua: dòng việc · Khôi phục · chip "n việc"</td><td>có</td><td>có</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Dải nhóm việc (không gập) · chip "n việc" · ⚠ quá hạn</td><td>có</td><td>không đổi</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Đọc dữ liệu</td><td>—</td><td>không đổi (chỉ là dáng dải)</td><td class="gi">GIỮ</td></tr>
+    </table>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var IC = {
+    yc: '<path d="M14 2L7 9"/><path d="M14 2l-4.5 12-2.5-5-5-2.5z"/>',
+    lop: '<rect x="2.5" y="2.5" width="11" height="8" rx="1"/><path d="M5 13.5l3-3 3 3M5.5 5.5h5M5.5 7.8h3"/>',
+    nguoi: '<circle cx="6" cy="6" r="2.2"/><circle cx="11.2" cy="6.6" r="1.7"/><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3"/>',
+    bq: '<path d="M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z"/><circle cx="8" cy="8" r="1.8"/><path d="M3 13L13 3"/>'
+  };
+  var ic = function (k) { return '<svg class="ic" viewBox="0 0 16 16">' + IC[k] + '</svg>'; };
+  var chev = '<svg class="chev" viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5"/></svg>';
+  /* dải SAU: o = { ic, ten, chip, mo, re, focus, i } */
+  function dai(o) {
+    return '<div class="dn tt-tinh' + (o.mo ? ' mo' : '') + (o.re ? ' re' : '') + (o.focus ? ' focus' : '') + '"><button class="bam" aria-expanded="' + !!o.mo + '">' + ic(o.ic) + '<span>' + o.ten + '</span>' + (o.chip ? '<span class="chip">' + o.chip + '</span>' : '') + chev + '</button>' + (o.i ? '<span class="nut-i">ⓘ</span>' : '') + '</div>';
+  }
+  var nhom = function (o, noi) { return '<section class="the mk-vien">' + dai(o) + (o.mo && noi ? noi : '') + '</section>'; };
+  var tg = function (a) { return '<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">' + a.map(function (x) { return '<span class="tag nhat" style="height:20px;font-weight:500">' + x + '</span>'; }).join('') + '</span>'; };
+  var cuoiDs = '<section class="the"><div class="dn"><span>Progress / Final Test</span><span class="chip">3 việc</span><span style="font:700 13px var(--phong);color:var(--bad)">⚠ 1 quá hạn</span></div>' +
+    '<div class="vi-ec" style="border-top:0"><span><span class="t">Listening, Reading</span>' + tg(['Hồ Thu Trang', 'MB BE 03', 'Progress W2 SEP', '2 bài']) + '</span><span class="h" style="color:var(--soon);font-weight:600">⚠ còn 2 ngày · 16/09</span><span class="nut nut-nho">Nhập điểm</span></div>' +
+    '<div class="vi-ec"><span><span class="t">Cả lớp</span>' + tg(['W3 SEP', '15 bài']) + '</span><span class="h">hạn 23/09</span><span class="nut nut-nho">4 lớp ▾</span></div></section>';
+  var cuoiDsDt = '<section class="the"><div class="dn"><span>Progress / Final Test</span><span class="chip">3</span><span style="font:700 13px var(--phong);color:var(--bad)">⚠ 1</span></div>' +
+    '<div class="vi-ec" style="border-top:0"><span><span class="t">Cả lớp</span><br><span class="h">W3 SEP · 15 bài · hạn 23/09</span></span><span class="nut nut-nho">4 lớp ▾</span></div></section>';
+  var yc = '<div class="noi"><p class="ghi" style="margin:0">Nội dung giữ nguyên như web (ảnh trái): Bị từ chối · thẻ yêu cầu · Mở › · Xem thêm · "n yêu cầu chờ duyệt ›".</p></div>';
+  var lop = function (dt) {
+    return '<div class="noi"><div class="loai-bt"><span class="doan2"><span class="dang">Fast Track</span><span>Lớp thường</span></span><span class="nut-i">ⓘ</span></div>' +
+      (dt ? [['MB FT 101', 'GVCN · Listening, Reading', '14', '11', '11', 'bài quá hạn'], ['MB FT RF 12', 'Listening', '2', '1', '0', 'bài chờ chấm']].map(function (r, i) {
+        var so = function (v, nhan, do_) { return '<span style="display:grid"><b class="so" style="font-size:17px;color:' + (do_ ? 'var(--bad)' : v === '0' ? 'var(--text-dim)' : 'var(--accent)') + '">' + v + '</b><span class="mo2">' + nhan + '</span></span>'; };
+        return '<div style="display:grid;gap:6px;padding:10px 2px;' + (i ? 'border-top:1px solid var(--line)' : '') + '"><span style="display:flex;justify-content:space-between;gap:8px"><b>' + r[0] + '</b><span class="mo2">' + r[1] + '</span></span><span style="display:grid;grid-template-columns:repeat(3,1fr)">' + so(r[2], 'dưới kỳ vọng') + so(r[3], 'SOS') + so(r[4], r[5], r[4] !== '0') + '</span></div>';
+      }).join('')
+        : '<table class="bl"><tr><th>Lớp</th><th>Tôi dạy</th><th>Học viên</th><th>Dưới kỳ vọng</th><th>SOS</th><th>Case đang mở</th><th>Bài chờ chấm</th></tr>' +
+        '<tr><td><b>MB FT 101</b> <span style="font-size:12px;color:var(--text-dim)">LT1</span></td><td style="font-family:var(--phong)">GVCN · Listening, Reading</td><td>33</td><td>14</td><td>11</td><td>38</td><td><b style="color:var(--bad)">11</b> quá hạn</td></tr>' +
+        '<tr><td><b>MB FT RF 12</b> <span style="font-size:12px;color:var(--text-dim)">RF</span></td><td style="font-family:var(--phong)">Listening</td><td>3</td><td>2</td><td>1</td><td>2</td><td>0</td></tr></table>') + '</div>';
+  };
+  var bq = '<div>' + [['Xếp lịch MT3 · Trịnh Gia Bảo', 'MB FT 101 · Bỏ qua bởi Nguyễn Khánh Vy · 12/09'], ['Chốt ngày thi · Lê Minh Khang', 'MB FT 101 · Bỏ qua bởi Nguyễn Khánh Vy · 10/09'], ['Báo PH · Hà Gia Bình', 'MB FT 101 · Bỏ qua bởi Trần Ngọc Hà · 09/09']].map(function (r) {
+    return '<div class="bq"><span><span class="t">' + r[0] + '</span><br><span class="p">' + r[1] + '</span></span><span class="nut nut-nho">Khôi phục</span></div>';
+  }).join('') + '</div>';
+  var K = {
+    a1: cuoiDs + nhom({ ic: 'yc', ten: 'Yêu cầu của tôi', re: true }) + nhom({ ic: 'lop', ten: 'Lớp tôi dạy', focus: true }),
+    a2: nhom({ ic: 'yc', ten: 'Yêu cầu của tôi', mo: true }, yc) + nhom({ ic: 'lop', ten: 'Lớp tôi dạy', mo: true }, lop(false)),
+    b1: cuoiDsDt + nhom({ ic: 'yc', ten: 'Yêu cầu của tôi' }) + nhom({ ic: 'lop', ten: 'Lớp tôi dạy' }),
+    b2: nhom({ ic: 'yc', ten: 'Yêu cầu của tôi' }) + nhom({ ic: 'lop', ten: 'Lớp tôi dạy', mo: true }, lop(true)),
+    c1: nhom({ ic: 'bq', ten: 'Đã bỏ qua', chip: '3 việc', i: true }),
+    c2: nhom({ ic: 'bq', ten: 'Đã bỏ qua', chip: '3 việc', i: true, mo: true }, bq),
+    c3: nhom({ ic: 'bq', ten: 'Đã bỏ qua', chip: '3 việc', i: true, mo: true }, bq)
+  };
+  document.querySelectorAll('[data-k]').forEach(function (el) { el.innerHTML = K[el.dataset.k] || ''; });
+})();
+</script>
+</body>
+</html>
