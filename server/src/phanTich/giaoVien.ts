@@ -860,6 +860,7 @@ export function oChamDiemGv(p: Principal, f: LocPtGv & { gv: number }): {
  * `cot`: `ket-qua:<kỹ năng>` · `tien-bo` · `ghi-pa` · `pa-hieu-qua`. Dòng chưa đạt / trễ lên đầu.
  */
 /** PT-PANEL: khối Cách tính của panel bảng (web dịch). */
+const CACH_TINH_SO = 'Bài, việc có hạn trong kỳ: Đúng hạn (xong trước / đúng hạn) · Làm muộn (xong sau hạn) · Chưa làm (quá hạn chưa xong). Tỉ lệ = đúng hạn / cả ba. Bài Speaking chấm chéo chưa ai nhận là việc chung của mọi GV có kỹ năng S ở chi nhánh — nhóm riêng, không tính vào tỉ lệ. Hạn gốc ghi khi đã đặt lại hạn. Việc / bài trước tuần W4 OCT 2026 đã làm = đúng hạn.';
 const CACH_TINH_GV: Record<string, string> = {
   'tien-bo': 'Điểm kỹ năng ở lượt MT so lượt MT liền trước có điểm kỹ năng đó của chính HV. Ô "Sau" ✓ / ✗ so kỳ vọng của lượt đó.',
   'dat-mt': 'Lượt Test đạt khi Overall đạt kỳ vọng của lượt (mọi kỹ năng tính Đạt); Overall chưa đạt thì xét từng kỹ năng. Cột tô nền là kỹ năng GV phụ trách.',
@@ -868,8 +869,9 @@ const CACH_TINH_GV: Record<string, string> = {
   /* DEM-QUA-HAN b. */
   /* XM-VIEC-DUNG-HAN a: đếm DÒNG như Công việc. */
   /* XM-VIEC-DUNG-HAN b: + việc đã làm (có ngày làm). */
-  'viec-dung-han': 'Việc có hạn trong kỳ: Kết quả PA (đã ghi / chưa ghi), việc ở Công việc còn mở đã quá hạn và việc đã làm (Case, Bàn giao, Xử lý vi phạm bắt buộc, Báo PH…). Việc đã làm mà không có ngày làm (một phần Mô tả Case trước 07/11/2026) không tính. Đếm theo dòng như Công việc: nhiều em cùng một việc ở một lớp = 1 dòng, đúng hạn khi mọi em đúng hạn. Làm sau hạn = quá hạn. Chấm Test tính ở cột riêng.',
-  'cham-diem': 'Bài có tuần Test trong kỳ: đã nhập (lần nhập đầu — nhập sau hạn = quá hạn; lần sửa sau không tính) và chưa nhập đã quá hạn. Không tính bài vắng đã xác nhận, bài chưa tới hạn chưa nhập.',
+  /* SỔ NGHĨA VỤ (PR-2): một câu cho hai panel (cùng luật đếm, spec 1.3 · 1.6 · 1.7). */
+  'viec-dung-han': CACH_TINH_SO,
+  'cham-diem': CACH_TINH_SO,
 };
 export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string }): { n: number; tieuDe: string; rows: MetricRow[]; chiNhanh?: string } {
   const so = f.cot === 'cham-diem' || f.cot === 'viec-dung-han' ? f.cot : null;

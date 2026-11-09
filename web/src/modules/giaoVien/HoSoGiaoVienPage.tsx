@@ -16,7 +16,7 @@ import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { CongTac, PhanTram, tuMau, tyLeGv, type TyLeV5 } from '../worklist/TongQuanV5.tsx';
+import { CongTac, PhanTram, PhuSo3, tuMau, tyLeGv, type TyLeV5 } from '../worklist/TongQuanV5.tsx';
 import { TenCase } from '../cases/SkillBoard.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { lopKq } from '../../ui/BieuTuong.tsx';
@@ -181,8 +181,10 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   const thi = d && d.thiThat.k === 'so' ? d.thiThat : null;
   const ds = [
     o1(t('Đúng hạn'), o(d?.diemDungHan, 'cham-diem', t('Điểm đúng hạn')),
-      <>{tuMau(tyLeGv(d?.diemDungHan), t('bài Test'))}{d && <> · {t('Việc')} {nho(d.viecDungHan, 'viec-dung-han', t('Việc đúng hạn'))}</>}</>,
-      t('Số to: bài Test nhập điểm trước hạn / bài Test tới hạn nhập trong kỳ (theo người được phân công ở hạn nhập). Việc: việc có hạn trong kỳ (ghi kết quả PA) xong trước hạn.')),
+      /* Sổ nghĩa vụ (PR-2): bài Test — 3 số riêng + S chéo chung; Việc — % (bấm → 3 tab) + số chưa làm. */
+      <><PhuSo3 o={d?.diemDungHan} />{d && <> · {t('Việc')} {nho(d.viecDungHan, 'viec-dung-han', t('Việc đúng hạn'))}
+        {d.viecDungHan.k === 'so' && (d.viecDungHan.chua ?? 0) > 0 && <span className="font-semibold text-bad"> · {t('{n} chưa làm', { n: d.viecDungHan.chua! })}</span>}</>}</>,
+      t('Số to: bài Test chấm đúng hạn / bài Test có hạn trong kỳ (đúng hạn + làm muộn + chưa làm quá hạn), tính cho người được phân công ở hạn. Bài Speaking chấm chéo chưa ai nhận ghi riêng "S chéo chung", không tính vào tỉ lệ. Việc: mọi việc có hạn trong kỳ (Case, PA, Kết quả PA, Mini Test, Báo PH, bàn giao…), cùng cách tính.')),
     o1(t('Đạt kỳ vọng Test'), o(d?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test')),
       <>{tuMau(tyLeGv(d?.ketQua), t('lượt Test'))}{d && d.tienBo.k !== 'na' && <> · {t('Tiến bộ')} {nho(d.tienBo, 'tien-bo', t('HV tiến bộ'))}</>}</>,
       t('Test (MT, Progress, Final — không gồm thi thật): theo quy tắc Overall, một lượt = một lượt Test của một HV × kỹ năng GV dạy, gán người dạy ở tuần thi. Tiến bộ: lượt có điểm cao hơn lượt MT trước của chính HV ở cùng kỹ năng (Fast Track).')),

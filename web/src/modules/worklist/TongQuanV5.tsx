@@ -113,6 +113,26 @@ export function SosDem({ muc, o }: { muc: readonly number[]; o: (i: number, n: n
 }
 /** `donVi` bỏ trống khi đơn vị đã ở tiêu đề cột (AUDIT-UI B1) — ô bảng chỉ "11/14". */
 export const tuMau = (x: TyLeV5 | null, donVi?: string) => (x && x.mau ? `${x.dat}/${x.mau}${donVi ? ` ${donVi}` : ''}` : null);
+/**
+ * SỔ NGHĨA VỤ (PR-2): dòng phụ của ô Chấm Test / Việc — 3 số RIÊNG "n đúng hạn · n làm muộn · n chưa làm" (số 0 của muộn / chưa làm không ghi; chưa làm đậm đỏ,
+ * có chữ — không chỉ màu) + dòng nhỏ "+ n S chéo chung" (bài S chéo chưa ai nhận của chi nhánh, không vào tỉ lệ). Ô không có 3 số → `tuMau` như cũ.
+ */
+export function PhuSo3({ o, donVi }: { o: OPtGv | undefined; donVi?: string }) {
+  if (!o || o.k === 'na') return null;
+  const s = o.k === 'so' && o.muon != null ? o : null;
+  const chung = o.sChung ?? 0;
+  if (!s) return chung ? <span className="block text-[12px] text-dim">{t('+ {n} S chéo chung', { n: chung })}</span> : o.k === 'so' ? <>{tuMau(tyLeGv(o), donVi)}</> : null;
+  const phan = [t('{n} đúng hạn', { n: s.dung }), s.muon ? t('{n} làm muộn', { n: s.muon }) : null].filter(Boolean) as string[];
+  return (
+    <>
+      <span className="inline-flex flex-wrap justify-[inherit] gap-x-1">
+        {phan.map((x, i) => <span key={i} className="whitespace-nowrap">{x}{i < phan.length - 1 || (s.chua ?? 0) > 0 ? ' ·' : ''}</span>)}
+        {(s.chua ?? 0) > 0 && <span className="whitespace-nowrap font-semibold text-bad">{t('{n} chưa làm', { n: s.chua })}</span>}
+      </span>
+      {chung > 0 && <span className="block text-[12px] text-dim">{t('+ {n} S chéo chung', { n: chung })}</span>}
+    </>
+  );
+}
 /** U09 #5 (B01, mockup v11): Đạt MT "26/36 HV · 8 chưa đủ dữ liệu" — không giấu em ngoài mẫu. */
 export const mauDatMt = (x: (TyLeV5 & { chuaDu: number }) | null) => (!x ? null : <>
   {x.mau ? `${x.dat}/${x.mau} ${t('HV')}` : null}{x.mau && x.chuaDu ? ' · ' : null}{x.chuaDu ? <>{x.chuaDu} {t('chưa đủ dữ liệu')}</> : null}
@@ -287,7 +307,8 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
     return <PhanTram gon x={giaTri(h, c)} nguon={nguon} tieuDe={c.key === 'pa' ? `${t('Case đang mở')} · ${h.ten}` : `${c.nhan} · ${h.ten}`} />;
   };
   /* TQ-GON (M3): cột "Bài chấm quá hạn" tiêu đề đã có đơn vị → không lặp "bài" dưới mỗi số. */
-  const phuCua = (h: HangGv, c: CotBang) => (c.key === 'gv' ? phuGv(h) : c.key === 'tre' ? null : tuMau(giaTri(h, c)));   // AUDIT-UI B1: đơn vị ở tiêu đề cột
+  const phuCua = (h: HangGv, c: CotBang) => (c.key === 'gv' ? phuGv(h) : c.key === 'tre' ? null
+    : c.key === 'viec' || c.key === 'diem' ? <PhuSo3 o={c.key === 'viec' ? h.viecDungHan : h.chamDiem} /> : tuMau(giaTri(h, c)));   // AUDIT-UI B1: đơn vị ở tiêu đề cột · sổ nghĩa vụ: 3 số
   /* G2 (N32 ②, U09 #1): đủ mọi GV, GV có bài chấm quá hạn lên đầu (nhiều trước); không ngưỡng, không nhãn người. TQ-GON (M3, M4): đầu thẻ chỉ "Giáo viên" —
      kỳ đã ở đầu trang, thứ tự tự thấy (rê chuột tên thẻ vẫn đọc được). */
   const hang = pt.data ? [...pt.data.hang].sort((a, b) => (tre.get(b.id) ?? 0) - (tre.get(a.id) ?? 0)) : [];

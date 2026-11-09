@@ -8,8 +8,8 @@ import { OSo } from '../../ui/OSo.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
-import { DOAN, DauThe, RongDau, VaoHangLoc, doanNut } from './dungChung.tsx';
+import { PhuSo3, gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
+import { DOAN, DauThe, VaoHangLoc, doanNut } from './dungChung.tsx';
 
 /**
  * PHÂN TÍCH GV (UI-PHAN-TICH, `thiet-ke/v5/phan-tich.html` tab "Phân tích GV"; `10` mục 1 + dòng UI-PHAN-TICH): MỘT bảng, hai nhóm cột Hành chính / Học thuật.
@@ -42,6 +42,10 @@ const COT_DAY: readonly CotBang[] = [
 ];
 /** Cột chỉ Fast Track (lớp thường không có MT / tiến bộ band / PA cải thiện / thi thật) — lớp thường: "Đạt Test" (≥ ngưỡng đạt của lớp; HSGV-1). */
 const CHI_FT = new Set(['tb', 'pa', 'tt']);
+/** Sổ nghĩa vụ (PR-2): tổng mọi chi nhánh — chỉ hai cột Hành chính (cột Học thuật đọc theo chi nhánh). */
+const COT_TONG = new Set(['gv', 'viec', 'diem']);
+/** Dòng "Chưa phân công" (spec 1.2 a, QL): id 0 — bấm số mở bài / việc không ai chịu (`gv=0`). */
+const ID_CHUA_PC = 0;
 const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
 
 /** % to bấm được (`OSo`) + "n/m" dòng phụ (Bang `phuCua`); mẫu 0 → "—" (title "Chưa có dữ liệu"), không 0 % (T19). */
@@ -58,16 +62,23 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const [boCot, setBoCot] = useThamSoUrl('cot', 'gon');
   const [tim, setTim] = useState('');
   const q = new URLSearchParams({ ct: khung, ...(branchId ? { cn: String(branchId) } : {}), kieu: khoang.kieu, tu: khoang.tu, den: khoang.den });
-  const { data, loading, error, reload } = useApi<PhanTichGvKq>(branchId ? `/phan-tich/giao-vien?${q}` : null, [q.toString()]);
-  const hang = (data?.hang ?? []).filter((h) => !tim.trim() || boDau(h.ten).includes(boDau(tim.trim())));
+  /* Sổ nghĩa vụ (PR-2): không chọn chi nhánh (QT / QL nhiều chi nhánh) → tổng mọi chi nhánh, mỗi người một dòng. */
+  const { data, loading, error, reload } = useApi<PhanTichGvKq>(`/phan-tich/giao-vien?${q}`, [q.toString()]);
+  const tong = !branchId;
+  const timCo = tim.trim();
+  const chuaPc: HangPtGv | null = !timCo && data?.chuaPhanCong ? {
+    id: ID_CHUA_PC, ten: t('Chưa phân công'), phu: '', mon: '', lopCn: [], dangDay: { lop: 0, hv: 0 }, hvChuY: 0, casePa: { k: 'na' }, ghiKetQuaPa: { k: 'na' }, ketQua: {},
+    chamDiem: data.chuaPhanCong.chamDiem, viecDungHan: data.chuaPhanCong.viecDungHan,
+  } : null;
+  const hang = [...(data?.hang ?? []).filter((h) => !timCo || boDau(h.ten).includes(boDau(timCo))), ...(chuaPc ? [chuaPc] : [])];
   const pt = usePhanTrang(hang.length, `${q}|${tim}`, t('giáo viên'));
 
-  if (!branchId) return <div className="card"><RongDau chu={t('Chọn một chi nhánh')} /></div>;   // PT-GON (M7): một câu ở đầu khung
   const ft = khung === 'ft';
   const day = boCot === 'day';
-  const cot = (day ? COT_DAY : COT_GON).filter((c) => ft || !CHI_FT.has(c.key)).map((c) => (!ft && c.key === 'dat' ? { ...c, nhan: t('Đạt Test') } : c));
+  const cot = (day ? COT_DAY : COT_GON).filter((c) => (ft || !CHI_FT.has(c.key)) && (!tong || COT_TONG.has(c.key)))
+    .map((c) => (!ft && c.key === 'dat' ? { ...c, nhan: t('Đạt Test') } : c));
   const nguonO = (h: HangPtGv, c: string) => `/phan-tich/giao-vien/o?${q}&gv=${h.id}&cot=${encodeURIComponent(c)}`;
-  const ctQ = `cn=${branchId}&ct=${khung}`;
+  const ctQ = `cn=${branchId ?? ''}&ct=${khung}`;
   /* Mỗi cột: tỷ lệ (`TyLe`) + nguồn panel — cùng nguồn với Tổng quan › GV cần chú ý. */
   const tyLe = (h: HangPtGv, k: string): TyLe | null => ({
     viec: tyLeGv(h.viecDungHan), diem: tyLeGv(h.chamDiem),
@@ -80,6 +91,10 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
     tt: (h) => `/giao-vien/${h.id}/chi-so/o?cot=thi-that&cn=${branchId}&tu=${data?.tu ?? ''}&den=${data?.den ?? ''}`,
   };
   const oCua = (h: HangPtGv, c: CotBang): ReactNode => {
+    if (h.id === ID_CHUA_PC) {
+      if (c.key === 'gv') return <span className="font-semibold text-dim">{h.ten}</span>;
+      if (c.key !== 'viec' && c.key !== 'diem') return null;
+    }
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'chuY') return <OSo giaTri={h.hvChuY} tieuDe={`${t('HV cần chú ý')} · ${h.ten}`} nguon={nguonO(h, 'hv-chu-y')} />;
     const tieuDe = `${c.nhan} · ${h.ten}`;
@@ -88,6 +103,9 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const phuCua = (h: HangPtGv, c: CotBang): ReactNode => {
     if (c.key === 'gv') return phuGv(h);
     if (c.key === 'chuY') return null;
+    if (h.id === ID_CHUA_PC && c.key !== 'viec' && c.key !== 'diem') return null;
+    /* Sổ nghĩa vụ (PR-2): Việc · Chấm Test — 3 số riêng + "+ n S chéo chung". */
+    if (c.key === 'viec' || c.key === 'diem') return <PhuSo3 o={c.key === 'viec' ? h.viecDungHan : h.chamDiem} />;
     const x = tyLe(h, c.key);
     /* V8-PT: chỉ "n/m" — đơn vị đã ở đầu cột / panel, không lặp dưới mỗi ô. */
     return x && x.mau ? `${x.dat}/${x.mau}` : null;
@@ -113,11 +131,11 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
             {/* V8-PT: thẻ bảng (`.the`) + đầu thẻ "Giáo viên · n GV · ⓘ Cách tính"; phân trang chỉ dưới (mốc cuộn giữ ở đầu thẻ). */}
             <section className="card overflow-clip">
               <div ref={pt.thanh.dauBang} />
-              <DauThe ten={t('Giáo viên')} dem={t('{n} GV', { n: hang.length })}
-                cachTinh={t('Mỗi số mở danh sách đúng tập (chỉ đọc), cùng nguồn Tổng quan › GV cần chú ý. Không xếp hạng, không màu ngưỡng — xếp theo tên. "—" = chưa có dữ liệu.')} />
+              <DauThe ten={tong ? t('Giáo viên · tất cả chi nhánh') : t('Giáo viên')} dem={t('{n} GV', { n: hang.length - (chuaPc ? 1 : 0) })}
+                cachTinh={t('Mỗi số mở danh sách đúng tập (chỉ đọc), cùng nguồn Tổng quan › GV cần chú ý. Không xếp hạng, không màu ngưỡng — xếp theo tên. "—" = chưa có dữ liệu. Việc · Chấm Test: tỉ lệ = đúng hạn / (đúng hạn + làm muộn + chưa làm); "S chéo chung" = bài Speaking chấm chéo chưa ai nhận của chi nhánh, mọi GV có kỹ năng S cùng thấy, không tính vào tỉ lệ.')} />
               {/* V8-PT (mockup B2): đầu nhóm phẳng như mockup (chữ chính, vạch trái) — bỏ dải màu xanh / hồng của `.bang-gv` (index.css), giữ đầu cột xuống dòng. */}
               <div className="[&_thead_th]:whitespace-normal [&_thead_th]:align-bottom [&_th[data-co-nhom]]:border-l-2 [&_th[data-co-nhom]]:border-[color:var(--line-strong)] [&_th[data-co-nhom]]:text-[color:var(--text)] [&_th[data-co-nhom]]:shadow-none">
-              <Bang ten={t('Phân tích GV — Hành chính và Học thuật')} cot={cot} hang={pt.cat(hang)} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} deu khung={false}
+              <Bang ten={t('Phân tích GV — Hành chính và Học thuật')} cot={cot} hang={pt.cat(hang)} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} deu khung={false} theLuoi
                 rong={{ tieuDe: tim.trim() ? t('Không GV nào khớp "{q}"', { q: tim.trim() }) : t('Không có giáo viên nào có {khung} trong khoảng này.', { khung: ft ? t('lớp Fast Track') : t('lớp thường') }) }} />
               </div>
             </section>
