@@ -155,6 +155,7 @@ export async function runPrCvSua1011Tests(t: YThucTestKit) {
     attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, CU);
     assert(dau('writing1').no_show_cu === 1 && !!dau('writing1').no_show_settled_at && dau('writing2').no_show_cu === 1,
       `W1 / W2: ${JSON.stringify([dau('writing1'), dau('writing2')])}`);
+    assert(dau('writing1').no_show_by === P.w1Teacher.userId && dau('writing1').no_show_at === '2026-11-03T03:00:00.000Z', 'W1 giữ người / giờ ghi gốc');
   }));
 
   check('CV1011-12 · migrate W-LECH: lượt lệch ở tuần thi → W trống nhận "-", chốt cả buổi (dời lần 1); nhật ký; Bỏ vắng được; chạy lại không đổi', () => thu(() => {
@@ -176,12 +177,13 @@ export async function runPrCvSua1011Tests(t: YThucTestKit) {
     mg.donWLech(conn, CU);
     assert(dau('writing1').no_show_cu === 1 && dau('writing2').no_show_cu === 1 && ky().planned_period_id === W, `MT cũ: ${JSON.stringify([dau('writing1'), dau('writing2'), ky()])}`);
     /* Ca lượt 895: W2 Không dự thi ở tuần cũ, lịch W nay ở tuần khác → W1 chép cùng dấu, không dời. */
+    const W0 = week.ensurePeriod('2026-10-12').id as number;
     dung();
     conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_at, no_show_settled_at, no_show_cu, no_show_late) VALUES (?, 'writing2', ?, ?, ?, 1, 1)`)
-      .run(a, W1, '2026-10-15T03:00:00.000Z', '2026-10-15T03:00:00.000Z');
+      .run(a, W0, '2026-10-15T03:00:00.000Z', '2026-10-15T03:00:00.000Z');
     xoaNho();
     const kq = mg.donWLech(conn, TRONG);
-    assert(kq.chep >= 1 && dau('writing1')?.no_show_period_id === W1 && dau('writing1').no_show_cu === 1 && ky().planned_period_id === W,
+    assert(kq.chep >= 1 && dau('writing1')?.no_show_period_id === W0 && dau('writing1').no_show_cu === 1 && ky().planned_period_id === W,
       `chép: ${JSON.stringify([kq, dau('writing1'), ky()])}`);
     conn.prepare('DELETE FROM demo_config WHERE key = ?').run(mg.KHOA_PR_W_LECH);
     mg.migratePrWLech(conn, []);

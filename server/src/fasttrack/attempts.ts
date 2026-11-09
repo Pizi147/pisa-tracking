@@ -2406,7 +2406,10 @@ export function saveScore(
           }
           /* W-LECH: dấu cùng tuần của task kia giữ nguyên — trừ khi lần này là Không dự thi mà dấu kia chưa (ca lệch cũ: W kia "-" chưa chốt) → cả hai Không dự thi. */
           if (kia?.no_show_period_id === scheduleRow.planned_period_id && (!cu || kia.no_show_cu)) continue;
-          if (kia) {
+          if (kia?.no_show_period_id === scheduleRow.planned_period_id) {
+            /* nâng lên Không dự thi: giữ người / giờ / báo muộn của dấu gốc */
+            conn.prepare('UPDATE assessment_scores SET no_show_settled_at = ?, no_show_cu = 1 WHERE id = ?').run(now, kia.id);
+          } else if (kia) {
             conn.prepare(`UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = ?, no_show_settled_at = ?, no_show_cu = ? WHERE id = ?`)
               .run(scheduleRow.planned_period_id, p.userId, now, late ? 1 : 0, cu ? now : null, cu, kia.id);
           } else {

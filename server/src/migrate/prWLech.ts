@@ -45,6 +45,9 @@ export function donWLech(conn: any, today: string = demoToday()): { chot: number
     const theoLich = p && r.kind === 'mock' && r.planned_period_id === r.no_show_period_id && !r.no_show_settled_at && !r.no_show_cu;
     if (theoLich) {
       try { saveScore(p, r.attempt_id, r.trong, { noShow: true }, today); chot++; continue; } catch (e) {
+        /* Chỉ lỗi nghiệp vụ (4xx: cần hỏi, chưa có tuần…) mới rơi về chép dấu; lỗi khác (mạng, DB) ném — bước migrate cuộn lại, chạy lại sau. */
+        const st = (e as any)?.status;
+        if (!(st >= 400 && st < 500)) throw e;
         console.warn(`[migrate] W-LECH: lượt ${r.attempt_id} không chốt được (${(e as any)?.message}) — chép dấu.`);
       }
     }
