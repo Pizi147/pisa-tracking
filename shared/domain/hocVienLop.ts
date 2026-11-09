@@ -235,6 +235,8 @@ export type KetQuaVao = {
   nguong?: number;
   /** OV-9: em KCK dưới kỳ vọng — không SOS (`sosLevel` null). */
   kckDuoi?: boolean;
+  /** Lớp thường: % từng môn của lượt (`v` 0–100; `under` chưa đạt ngưỡng; `evaluable` false = chưa chấm) — dải mở Lịch thi. */
+  skills?: Record<string, { evaluable: boolean; under: boolean; v: number | null }>;
 };
 /**
  * Cột Kết quả gần nhất (T18, K2-01, E7): tầng 1 `chinh` (+ `lech` FT) + tối đa HAI dòng chữ 12 px, không "…" (đủ chữ, không cắt).

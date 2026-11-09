@@ -96,7 +96,7 @@ export function NganXuatDs({ ids, ca, boLoc, macDinh, mauMacDinh, onDong }: {
   };
 
   return (
-    <KhungPanel tieuDe={t('Xuất Excel')} onDong={onDong}
+    <KhungPanel tieuDe={t('Xuất Excel')} loai={t('Xuất')} onDong={onDong}
       chan={{
         huy: { onClick: onDong, nhan: t('Đóng') },
         chinh: loai === 'bc'
