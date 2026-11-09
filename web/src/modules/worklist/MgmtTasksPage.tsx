@@ -585,10 +585,10 @@ function SuaViec({ onClose, dongCa, task, onDone }: {
           </select>
         </Field>
         <Field label={t('Người phụ trách')}>
-          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choNgoai macDinhTrong={t('Chưa giao')} />
+          <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" chiNhanh={task.branchId} choNgoai macDinhTrong={t('Chưa giao')} />
         </Field>
         <Field label={t('Người theo dõi')}>
-          <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choNgoai={false} macDinhTrong={t('Không có')} />
+          <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" chiNhanh={task.branchId} choNgoai={false} macDinhTrong={t('Không có')} />
         </Field>
         <Field label={t('Hạn')}>
           <ONgay kieu="ngay" value={due} onChange={setDue} />
@@ -670,6 +670,8 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   const [watcher, setWatcher] = useState<NguoiChon | null>(null);
   const [due, setDue] = useState(dau.due);
   const [branch, setBranch] = useState(dau.branch);
+  /* GIAO-VIEC-CN (B' 9): ô người phụ trách / theo dõi chỉ hiện người có vai ở chi nhánh của việc ('' = Toàn hệ thống → mọi người trong phạm vi). */
+  const cnViec = branch ? Number(branch) : null;
   const [classId, setClassId] = useState('');
   const [topic, setTopic] = useState('');
   const [note, setNote] = useState('');
@@ -787,10 +789,10 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
               </Field>
             )}
             <Field label={t('Người phụ trách')}>
-              <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" choToi choNgoai macDinhTrong={t('Chưa giao')} />
+              <ChonNguoi value={assignee} onChange={setAssignee} nhom="nhan_vien" chiNhanh={cnViec} choToi choNgoai macDinhTrong={t('Chưa giao')} />
             </Field>
             <Field label={t('Người theo dõi')}>
-              <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" choToi choNgoai={false} macDinhTrong={t('Không có')} />
+              <ChonNguoi value={watcher} onChange={setWatcher} nhom="nhan_vien" chiNhanh={cnViec} choToi choNgoai={false} macDinhTrong={t('Không có')} />
             </Field>
           </>
         )}

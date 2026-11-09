@@ -22,18 +22,35 @@ export function phamViHoSoGv(p: Principal, gvId: number): { branchIds: number[] 
   if (scope.none) throw forbidden(p.roleKeys.includes('teacher') ? 'Bạn chỉ xem được hồ sơ giáo viên của chính mình.' : 'Hồ sơ giáo viên dành cho Quản lý.');
   if (scope.all) return { branchIds: null, laChinhMinh: false };
   if (!scope.branchIds.length) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
-  const ph = scope.branchIds.map(() => '?').join(',');
+  if (!gvThuocChiNhanh(gvId, scope.branchIds)) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
+  return { branchIds: scope.branchIds, laChinhMinh: false };
+}
+
+/** GV có vai GV đang hoạt động ở một trong các chi nhánh này, hoặc phân công đang hiệu lực ở lớp của chúng. */
+function gvThuocChiNhanh(gvId: number, branchIds: readonly number[]): boolean {
+  if (!branchIds.length) return false;
+  const ph = branchIds.map(() => '?').join(',');
   const homNay = demoToday();
-  const thuoc = conn.prepare(
+  return !!db().prepare(
     `SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
       WHERE ur.user_id = ? AND ur.status = 'active' AND ur.branch_id IN (${ph})
      UNION ALL
      SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
       WHERE ta.user_id = ? AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
         AND c.branch_id IN (${ph})
-     LIMIT 1`).get(gvId, ...scope.branchIds, gvId, homNay, homNay, ...scope.branchIds);
-  if (!thuoc) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
-  return { branchIds: scope.branchIds, laChinhMinh: false };
+     LIMIT 1`).get(gvId, ...branchIds, gvId, homNay, homNay, ...branchIds);
+}
+
+/**
+ * QUYEN-KY-NANG (chủ SP 10/11, B' 7): chỉ QL / Quản trị sửa kỹ năng hồ sơ GV — người có `class.assign` (phân công GV) ở chi nhánh của GV;
+ * GV chỉ xem. `daBiet`: chi nhánh `phamViHoSoGv` đã xác nhận GV thuộc (một trong số đó) — nằm gọn trong phạm vi phân công thì khỏi đọc lại.
+ */
+export function duocSuaKyNang(p: Principal, gvId: number, daBiet?: readonly number[] | null): boolean {
+  const s = scopeFor(p, PERMISSIONS.CLASS_ASSIGN);
+  if (s.none) return false;
+  if (s.all || p.userId === gvId) return true;
+  if (daBiet?.length && daBiet.every((b) => s.branchIds.includes(b))) return true;
+  return gvThuocChiNhanh(gvId, s.branchIds);
 }
 
 /**

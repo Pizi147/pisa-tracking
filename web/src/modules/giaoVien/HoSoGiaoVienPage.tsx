@@ -1,10 +1,13 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
+  NHOM_VIEC_LABEL, addDaysIso, tabCongViecHienThi, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
   NHAN_TRANG_THAI, type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { api } from '../../lib/api.ts';
+import { useToast } from '../../ui/Toast.tsx';
+import { ChonKyNang } from '../platform/ProfilePage.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, Empty, ErrorState, LOP_NHAN, Skeleton } from '../../ui/ui.tsx';
@@ -39,7 +42,7 @@ type CaseHs = {
   hocVien: string; maLop: string | null; coPa: boolean;
 };
 type HoSo = {
-  gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; laChinhMinh: boolean };
+  gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; kyNangMa: string[]; suaKyNang: boolean; laChinhMinh: boolean };
   phamVi: { chiNhanh: string[] | null; cn: number | null };
   lop: LopHs[]; tongHocVien: number; caseMo: CaseHs[];
   yeuCau: { cho: number; choQuaHan: number; tuChoi: number };
@@ -82,7 +85,8 @@ export function HoSoGiaoVienPage() {
   if (loading || !data) return <Skeleton rows={8} />;
   const { gv } = data;
   const nguoiXem = { userId: session?.user?.id ?? 0, laQuanLy: laVaiQuanLy(session?.roles) };
-  const coNutViec = gv.laChinhMinh || !!session?.nav?.workOps;
+  /* Chủ SP 10/11 (B' 11): vai không có Công việc (Head tutor) → không nút sang Công việc (trước: bấm bị đẩy về Tổng quan). */
+  const coNutViec = (gv.laChinhMinh && !!session?.nav?.work) || !!session?.nav?.workOps;
   const tenGoi = gv.ten.split(' ').pop() ?? gv.ten;
   const soGvcn = data.lop.filter((l) => l.laGvcn).length;
   return (
@@ -94,7 +98,7 @@ export function HoSoGiaoVienPage() {
             <h1 className="m-0 text-xl font-bold text-slate-100">{gv.ten}</h1>
             <NhanDau nhan={t('Vai')}>{[gv.vai.map((v) => dich(v)).join(' · '), gv.chiNhanh.join(', ')].filter(Boolean).join(' · ') || '—'}</NhanDau>
             <NhanDau nhan={t('Kỹ năng')}>
-              {gv.kyNang.length ? <span className="flex flex-wrap gap-1">{gv.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />)}</span> : <span className="font-normal text-slate-500">{t('chưa khai')}</span>}
+              <KyNangGv gv={gv} onDaLuu={reload} />
             </NhanDau>
             {soGvcn > 0 && <NhanDau nhan="GVCN">{t('{n} lớp', { n: soGvcn })}</NhanDau>}
           </div>
@@ -129,12 +133,46 @@ export function HoSoGiaoVienPage() {
       <KhoiCase data={data} homNay={homNay}
         linkPa={!gv.laChinhMinh && session?.nav?.analysis && data.phamVi.cn
           ? { den: duongHieuQuaPaGv(data.phamVi.cn, gv.id, data.lop), chu: t('Hiệu quả PA của {ten} ›', { ten: tenGoi }) } : null} />
-      <KhoiYeuCau data={data} coDuyet={!!session?.nav?.workApprove} />
+      <KhoiYeuCau data={data} coDuyet={!!session?.nav?.workApprove} coYeuCau={!!session?.nav && tabCongViecHienThi(session.nav).includes('yeu-cau')} />
     </div>
   );
 }
 
 /** P2: nhãn nhỏ xám trên, giá trị đậm dưới — đầu hồ sơ. */
+/**
+ * QUYEN-KY-NANG (chủ SP 10/11, B' 7): kỹ năng hồ sơ GV — QL chi nhánh của GV / Quản trị sửa tại chỗ ("Sửa" → 5 ô → Lưu); GV chỉ xem.
+ * Lưu qua `PUT /admin/accounts/:id/skills` (máy chủ kiểm lại quyền, ghi lịch sử kỹ năng); xong chỉ tải lại hồ sơ.
+ */
+function KyNangGv({ gv, onDaLuu }: { gv: HoSo['gv']; onDaLuu: () => void }) {
+  const toast = useToast();
+  const [nhap, setNhap] = useState<Set<string> | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (!nhap) {
+    return (
+      <span className="flex flex-wrap items-center gap-1">
+        {gv.kyNang.length ? gv.kyNang.map((k) => <ChipKy key={k} k={dich(k)} />) : <span className="font-normal text-slate-500">{t('chưa khai')}</span>}
+        {gv.suaKyNang && <button type="button" className="btn btn-sm btn-ghost font-normal max-sm:min-h-11" onClick={() => setNhap(new Set(gv.kyNangMa))}>{t('Sửa')}</button>}
+      </span>
+    );
+  }
+  const doi = (k: string) => setNhap((cu) => { const m = new Set(cu); if (m.has(k)) m.delete(k); else m.add(k); return m; });
+  const luu = async () => {
+    setBusy(true);
+    try {
+      await api.put(`/admin/accounts/${gv.id}/skills`, { skills: [...nhap] });
+      toast.push('ok', t('Đã lưu kỹ năng'));
+      setNhap(null); onDaLuu();
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+  };
+  return (
+    <span className="flex flex-wrap items-center gap-2 font-normal">
+      <ChonKyNang value={nhap} onToggle={doi} disabled={busy} />
+      <button type="button" className="btn btn-sm btn-primary max-sm:min-h-11" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
+      <button type="button" className="btn btn-sm max-sm:min-h-11" disabled={busy} onClick={() => setNhap(null)}>{t('Đóng')}</button>
+    </span>
+  );
+}
+
 function NhanDau({ nhan, children }: { nhan: string; children: ReactNode }) {
   return (
     <span className="flex min-w-0 flex-col gap-0.5">
@@ -601,11 +639,11 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
 
 // ------------------------------------------------------------------ 5 · Yêu cầu đã gửi
 
-function KhoiYeuCau({ data, coDuyet }: { data: HoSo; coDuyet: boolean }) {
+function KhoiYeuCau({ data, coDuyet, coYeuCau }: { data: HoSo; coDuyet: boolean; coYeuCau: boolean }) {
   const { gv, yeuCau: y } = data;
   const id = gv.id;
   const link: ReactNode = gv.laChinhMinh
-    ? <Link to="/cong-viec/yeu-cau" className="link text-xs">{t('Yêu cầu của tôi ›')}</Link>
+    ? coYeuCau ? <Link to="/cong-viec/yeu-cau" className="link text-xs">{t('Yêu cầu của tôi ›')}</Link> : null
     : coDuyet ? <Link to="/cong-viec?nhom=duyet" className="link text-xs">{t('Chờ duyệt ›')}</Link> : null;
   return (
     <Card title={gv.laChinhMinh ? t('Yêu cầu đã gửi') : t('Yêu cầu {ten} đã gửi', { ten: gv.ten.split(' ').pop() ?? gv.ten })} action={link}>

@@ -155,12 +155,13 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
   if (sids && !sids.length) return out;
   const conn = db();
   const loc = sids ? ` AND e.student_id IN (${sids.map(() => '?').join(',')})` : '';
-  /* `daRoi` (PR-S5F-a): cả em đã chuyển khỏi lớp — hồ sơ HV sau chuyển vẫn thấy % Cuối khoá của lớp cũ. */
+  /* `daRoi` (PR-S5F-a): cả em đã chuyển khỏi lớp — hồ sơ HV sau chuyển vẫn thấy % Cuối khoá của lớp cũ. Chủ SP 10/11 (B' 10): cả em đã học
+     xong (`completed` — ghi danh của lớp đã kết thúc), để bảng Học viên lớp đã kết thúc có % Final Test cùng số tab Tổng kết. */
   const dong = conn.prepare(
     `SELECT e.student_id, a.id AS attempt_id FROM enrollments e
        LEFT JOIN assessment_attempts a ON a.student_id = e.student_id AND a.class_id = e.class_id AND a.kind = 'final' AND a.status != 'cancelled'${
          o.daRoi ? '' : ` AND ${LUOT_LO_TRINH_CUOI_SQL('a')}`}   -- lỗi chủ SP 28/10: lộ trình mới nhất của em; hồ sơ (daRoi) giữ lịch sử
-      WHERE e.class_id = ? AND e.status ${o.daRoi ? "IN ('active', 'transferred')" : "= 'active'"}${loc} ORDER BY a.id`,
+      WHERE e.class_id = ? AND e.status ${o.daRoi ? "IN ('active', 'transferred', 'completed')" : "= 'active'"}${loc} ORDER BY a.id`,
   ).all(classId, ...(sids ?? [])) as any[];
   const luotCuaEm = new Map<number, number | null>();
   for (const r of dong) luotCuaEm.set(r.student_id, r.attempt_id ?? luotCuaEm.get(r.student_id) ?? null);   // nhiều bài Final Test → bài id lớn nhất

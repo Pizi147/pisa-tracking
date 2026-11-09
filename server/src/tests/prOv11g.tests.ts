@@ -25,6 +25,7 @@ export async function runPrOv11gTests(t: YThucTestKit) {
   const luuTru: any = await import('../classes/luuTru.ts');
   const transition: any = await import('../classes/transition.ts');
   const { phanTichLop } = await import('../classes/phanTichLop.ts');
+  const { tongKetLop } = await import('../loTrinh/tongKet.ts');
   const xoaKetThuc: any = await import('../classes/xoaKetThucLop.ts');
   const students: any = await import('../students/students.ts');
   const accounts: any = await import('../platform/accounts.ts');
@@ -217,6 +218,15 @@ export async function runPrOv11gTests(t: YThucTestKit) {
         assert(Object.values(pt.ds).some((x) => x.dat.includes(r.id) || x.chua.includes(r.id)), `${ma} em ${r.id}: có Kết quả, Phân tích không có`);
       }
     }
+  });
+
+  /* Chủ SP 10/11 (B' 10): ghi danh lớp đã kết thúc là `completed` — % Cuối khoá bảng Học viên phải có, cùng số tab Tổng kết (trước: "–"). */
+  check('HSL-KET-THUC-SO · lớp thường đã kết thúc: % Final Test bảng Học viên = tab Tổng kết (em ghi danh completed)', () => {
+    const lop = one('SELECT id FROM classes WHERE code = ?', 'MB FOU 03').id as number;
+    const tk = new Map((tongKetLop(QL, lop).dong as any[]).map((x) => [x.studentId, x.cuoiKhoa?.tyLe ?? null]));
+    const ros = classes.classRoster(QL, lop) as any[];
+    assert(ros.some((r) => tk.get(r.id) != null), 'Tổng kết không em nào có % Cuối khoá');
+    for (const r of ros) assert((r.cuoiKhoa?.tyLe ?? null) === (tk.get(r.id) ?? null), `em ${r.id}: bảng ${r.cuoiKhoa?.tyLe ?? null} ≠ Tổng kết ${tk.get(r.id)}`);
   });
 
   check('OV11g-6 · HL-8 / HL-14 / HL-12 / CA2-4 / CA2-12: badge Admin, "+ Học viên" khi tìm không ra, lớp cùng chi nhánh lên đầu, câu chặn Kết thúc lớp', () => thu(() => {

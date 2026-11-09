@@ -16,6 +16,7 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
   const accounts: any = await import('../platform/accounts.ts');
   const skillSch: any = await import('../fasttrack/skillSchedule.ts');
   const week: any = await import('../platform/week.ts');
+  const kh: any = await import('../keHoach/keHoachTest.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nLOP-THUONG-QUYEN · MT0 Speaking chấm chéo: GV kỹ năng S thấy + chấm MT0 S các lớp thường cùng chi nhánh');
   (await import('../fasttrack/conOCho.ts')).capNhatConOChoTatCa();
@@ -86,5 +87,45 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     assertThrows(() => svc.saveScore(gvS(), e.mt0, 'listening', { band: 6 }, TODAY), /./, 'GV S nhập L MT0');
     assertThrows(() => regular.saveRegularScore(gvS(), e.fin, 'speaking', { score: 10, total: 20 }), /./, 'GV S nhập S Final lớp thường');
     assertThrows(() => svc.saveScore(perm.loadPrincipal(idKhac), e.mt0, 'speaking', { band: 5 }, TODAY), /./, 'GV S chi nhánh khác');
+  }));
+
+  /* B' 6a (chủ SP 10/11 tối): GV S chéo gỡ được "-" đã chốt ở MT0 S (Bỏ vắng) — như GV chấm ô đó; L MT0 và chi nhánh khác vẫn không. */
+  check('LTQ-4 · GV S chéo "Bỏ vắng" ở MT0 S: "-" đã chốt gỡ được (ô mở lại); GV chi nhánh khác bị chặn', () => thu(() => {
+    const e = emMt0();
+    const tuan = one(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0).p;
+    const chot = () => {
+      conn.prepare(`INSERT OR REPLACE INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_at, no_show_settled_at, no_show_late) VALUES (?, 'speaking', ?, ?, ?, 0)`)
+        .run(e.mt0, tuan, '2026-01-05T03:00:00.000Z', '2026-01-05T03:00:00.000Z');
+      conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent', absent_from_no_show = 1 WHERE attempt_id = ? AND skill = 'speaking'`).run(e.mt0);
+      xoaNho();
+    };
+    chot();
+    assertThrows(() => svc.saveScore(perm.loadPrincipal(idKhac), e.mt0, 'speaking', { noShow: false }, TODAY), /./, 'GV S chi nhánh khác gỡ');
+    svc.saveScore(gvS(), e.mt0, 'speaking', { noShow: false }, TODAY);
+    const sc = one(`SELECT no_show_period_id FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0);
+    const k = one(`SELECT sit_status FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0);
+    assert(!sc?.no_show_period_id && k.sit_status === 'scheduled', `Bỏ vắng: ${JSON.stringify([sc, k])}`);
+  }));
+
+  /* B' 6b (chủ SP 10/11 tối): Kế hoạch Test của GV S hiện lớp thường CÓ MT0 — chỉ xem, chỉ ô MT0 (Giữa / Cuối khoá vẫn chỉ GV lớp thấy, chủ SP 08/11). */
+  check('LTQ-5 · Kế hoạch Test GV S: lớp thường có MT0 vào danh sách, chỉ xem, chỉ em có MT0, không lộ Final; lớp không MT0 không vào; QL thấy đủ', () => thu(() => {
+    const coLop = () => kh.danhSachLop(gvS(), {}).lop.some((l: any) => l.id === LOP);
+    const truoc = coLop();
+    const e = emMt0();
+    xoaNho();
+    assert(coLop(), 'lớp thường có MT0 phải vào danh sách của GV S');
+    if (!truoc) {
+      conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE id = ?`).run(e.mt0); xoaNho();
+      assert(!coLop(), 'MT0 huỷ hết → lớp ra khỏi danh sách');
+      conn.prepare(`UPDATE assessment_attempts SET status = 'planned' WHERE id = ?`).run(e.mt0); xoaNho();
+    }
+    const l = kh.luoiThuong(gvS(), LOP, TODAY);
+    assert(l.chiXem && l.chiMt0, `chỉ xem + chỉ MT0: ${l.chiXem} ${l.chiMt0}`);
+    const h = l.hang.find((x: any) => x.studentId === e.sid);
+    assert(h?.mt0?.attemptId === e.mt0, 'ô MT0 của em');
+    assert(l.hang.every((x: any) => x.mt0) && Object.values(h.dot).every((d: any) => d.attemptId === null), `không lộ Final: ${JSON.stringify(h.dot)}`);
+    const ql = kh.luoiThuong(P.mbManager, LOP, TODAY);
+    assert(!ql.chiMt0 && Object.values(ql.hang.find((x: any) => x.studentId === e.sid).dot).some((d: any) => d.attemptId === e.fin), 'QL thấy Final');
+    assertThrows(() => kh.luoiThuong(perm.loadPrincipal(idKhac), LOP, TODAY), /./, 'GV S chi nhánh khác');
   }));
 }

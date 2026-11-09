@@ -62,6 +62,8 @@ export type LuoiThuongData = {
   ghiChuLop?: GhiChuLich | null;
   /** TAT-CHECKPOINT: Checkpoint tự sinh đang tắt — ô Checkpoint em chưa có là nút "Xếp {tuần}" (QL xếp tay). */
   cpTay?: boolean;
+  /** B' 6b: GV Speaking chỉ thấy ô MT0 (chấm chéo) — Giữa / Cuối khoá "—", không ghi chú theo đợt. */
+  chiMt0?: boolean;
 };
 
 /** Một đợt của lớp: FT = MT{n}, lớp thường = Giữa khoá / Cuối khoá. */
