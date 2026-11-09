@@ -8,7 +8,7 @@ export async function runPrTocTests(t: YThucTestKit) {
   const { ensurePeriod, ensurePeriods } = await import('../platform/week.ts');
   const dbMod = await import('../db.ts');
   const { chenNhieuDong } = dbMod;
-  const cp = await import('node:child_process');
+  const { Worker } = await import('node:worker_threads');
   const { ensureSkillRows } = await import('../fasttrack/skillSchedule.ts');
   const { updateStudent } = await import('../students/students.ts');
   const { updateCycle } = await import('../fasttrack/cycles.ts');
@@ -206,16 +206,22 @@ export async function runPrTocTests(t: YThucTestKit) {
   await checkAsync('TOC rà (4) · hai lời gọi song song cùng khoá: lời gọi sau đọc lại khoá TRONG giao dịch → trả kết quả lời gọi trước, không ghi lần hai', async () => {
     const khoa = `intake:${P.admin.userId}:${ft}:toc-ra-4`;
     const truoc = { added: 1, skipped: 0, failed: [], studentIds: [-4], hangDaThem: [1], mt: { soEm: 0, soLuotLichSu: 0, soEmCoLichSu: 0, luotLichSuDau: null } };
-    /* Tiến trình khác = "hàm Netlify thứ nhất": giữ khoá ghi, ghi khoá idempotency, 700 ms sau mới COMMIT (cùng mẫu giuKhoa của anToan). */
-    const con = cp.spawn(process.execPath, ['-e', [
-      "const D = require('libsql'); const d = new D(process.argv[1]);",
+    /* Kết nối khác = "hàm Netlify thứ nhất": giữ khoá ghi, ghi khoá idempotency, 700 ms sau mới COMMIT (cùng mẫu giuKhoa của anToan —
+       luồng phụ cùng tiến trình, không tiến trình con: khoá giữa hai tiến trình không đáng tin trong container cloud, KIEM-CHAP-CHON-3). */
+    const con = new Worker([
+      "const { parentPort, workerData: w } = require('node:worker_threads');",
+      "const D = require('libsql'); const d = new D(w.tep);",
       "d.exec('BEGIN IMMEDIATE');",
-      "d.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(process.argv[2], process.argv[3], 'x');",
-      "process.stdout.write('giu' + String.fromCharCode(10));",
+      "d.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(w.khoa, w.giaTri, 'x');",
+      "parentPort.postMessage('giu');",
       "setTimeout(() => { d.exec('COMMIT'); d.close(); }, 700);",
-    ].join('\n'), dbMod.DB_PATH, khoa, JSON.stringify(truoc)], { stdio: ['ignore', 'pipe', 'inherit'] });
-    await new Promise<void>((ok, loi) => { con.stdout!.once('data', () => ok()); con.once('exit', (c) => loi(new Error(`tiến trình con thoát sớm (${c})`))); });
-    const xong = new Promise<void>((ok) => { if (con.exitCode !== null) ok(); else con.once('exit', () => ok()); });
+    ].join('\n'), { eval: true, workerData: { tep: dbMod.DB_PATH, khoa, giaTri: JSON.stringify(truoc) } });
+    const xong = new Promise<void>((ok) => con.once('exit', () => ok()));
+    await new Promise<void>((ok, loi) => {
+      con.once('message', () => ok());
+      con.once('error', (e) => { console.error(`luồng giữ khoá hỏng: ${e.message}`); loi(e); });
+      con.once('exit', (c) => loi(new Error(`luồng giữ khoá thoát sớm (${c})`)));
+    });
     /* Lời gọi thứ hai: đọc khoá NGOÀI giao dịch chưa thấy (chưa COMMIT) → tx() chờ khoá → phải đọc lại và trả kết quả cũ. */
     const r = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'toc-ra-4', rows: [{ fullName: 'Song Song', dob: '2010-01-01', email: 'ss@demo.test' }] });
     await xong;

@@ -771,24 +771,29 @@ export async function runAnToanTests(t: AnToanTestKit) {
   /*
    * Bản chính 24/09 (log `mã 77e7df8f`): gõ L rồi Tab sang R → hai lần lưu gần như cùng lúc, hai bản hàm Netlify, hai giao dịch
    * Turso. Giao dịch mở bằng BEGIN thường chỉ xin khoá ghi ở câu ghi đầu tiên — lúc đó bên kia đang giữ khoá nên SQLite trả
-   * SQLITE_BUSY NGAY (không chờ được khi nâng từ đọc lên ghi). Tái hiện bằng một tiến trình con giữ khoá ghi trên CÙNG file.
+   * SQLITE_BUSY NGAY (không chờ được khi nâng từ đọc lên ghi). Tái hiện bằng một KẾT NỐI KHÁC giữ khoá ghi trên CÙNG file.
+   * KIEM-CHAP-CHON-3: kết nối đó chạy trong luồng phụ (worker) cùng tiến trình, không trong tiến trình con — khoá giữa hai TIẾN TRÌNH
+   * dựa vào khoá tệp + bộ nhớ chung (-shm) của hệ điều hành, trong container Linux của session cloud không đáng tin (503 cả trên main);
+   * hai kết nối cùng tiến trình SQLite tự khoá nhau như hai tiến trình, mà luồng chính bị chặn (Atomics.wait) không chặn luồng phụ.
    */
-  const cp = await import('node:child_process');
+  const { Worker } = await import('node:worker_threads');
   conn.exec('CREATE TABLE IF NOT EXISTS _thu_khoa (ai TEXT)');
   const demKhoa = (ai: string) => (conn.prepare('SELECT COUNT(*) n FROM _thu_khoa WHERE ai = ?').get(ai) as any).n as number;
-  /** Tiến trình con mở cùng file database, giữ khoá ghi `giuMs` ms rồi chốt. Trả khi nó ĐÃ giữ khoá. */
+  /** Kết nối khác (luồng phụ) mở cùng file database, giữ khoá ghi `giuMs` ms rồi chốt. Trả khi nó ĐÃ giữ khoá. */
   const giuKhoa = async (giuMs: number) => {
-    const con = cp.spawn(process.execPath, ['-e', `
-      const D = require('libsql'); const d = new D(process.argv[1]);
+    const con = new Worker(`
+      const { parentPort, workerData: w } = require('node:worker_threads');
+      const D = require('libsql'); const d = new D(w.tep);
       d.exec('BEGIN IMMEDIATE'); d.prepare('INSERT INTO _thu_khoa (ai) VALUES (?)').run('con');
-      process.stdout.write('giu\\n');
-      setTimeout(() => { d.exec('COMMIT'); d.close(); }, Number(process.argv[2]));
-    `, dbMod.DB_PATH, String(giuMs)], { stdio: ['ignore', 'pipe', 'inherit'] });
+      parentPort.postMessage('giu');
+      setTimeout(() => { d.exec('COMMIT'); d.close(); }, w.giuMs);
+    `, { eval: true, workerData: { tep: dbMod.DB_PATH, giuMs } });
+    const xong = new Promise<void>((ok) => con.once('exit', () => ok()));
     await new Promise<void>((ok, loi) => {
-      con.stdout!.once('data', () => ok());
-      con.once('exit', (c) => loi(new Error(`tiến trình giữ khoá thoát sớm (${c})`)));
+      con.once('message', () => ok());
+      con.once('error', (e) => { console.error(`luồng giữ khoá hỏng: ${e.message}`); loi(e); });
+      con.once('exit', (c) => loi(new Error(`luồng giữ khoá thoát sớm (${c})`)));
     });
-    const xong = new Promise<void>((ok) => { if (con.exitCode !== null) ok(); else con.once('exit', () => ok()); });
     return { xong };
   };
 
