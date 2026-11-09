@@ -45,11 +45,19 @@ a. **Bài thường:** GV được phân công kỹ năng đó ở lớp em họ
    - Lớp + kỹ năng không có phân công nào: để trống người, gắn nhãn **"Chưa phân công"**, hiện cho QL chi nhánh. Đếm riêng, không bị mất.
 
 b. **Việc:** người giữ việc theo Công việc ở ngày hạn. Ví dụ: chủ Case, GVCN / GVBM theo phân công lúc hạn, TVV của em, người giữ Mini Test, người nhận bàn giao.
+   - **Em chuyển lớp (chủ SP 10/11):** việc của GV lớp cũ, tại ngày chuyển:
+     - đã quá hạn mà chưa làm → GV cũ bị tính **Chưa làm** (giữ nguyên, không đổi người);
+     - chưa tới hạn → GV cũ **không tính** (`khong_tinh = chuyen-lop`).
+     - Cả hai trường hợp: GV lớp mới nhận việc mới, **hạn tính lại theo luật** của loại việc từ ngày em vào lớp mới (khoá mới, hạn gốc mới).
 
 c. **Speaking chấm chéo** (S Mock FT, S của MT0):
    - Chưa ai nhập: tính cho **mọi GV có kỹ năng S** (theo hồ sơ GV) của chi nhánh, có vai GV ở ngày hạn.
    - Đã nhập, người chấm có tài khoản: **chỉ tính cho người đó**.
    - Người chấm là tên ngoài, không có tài khoản: không tính cho ai, ghi "Người ngoài".
+   - **Nhóm S tính theo kỹ năng TẠI NGÀY HẠN (chủ SP 10/11):** lưu lịch sử đổi kỹ năng (`user_skill_lich_su`). Bỏ S → bài hạn sau ngày bỏ không tính cho người đó; bài đã quá hạn trước ngày bỏ vẫn tính (không tự bỏ kỹ năng để trốn).
+   - Nhập điểm S chéo: chỉ chọn được người chấm là GV có kỹ năng S (hoặc ghi tên ngoài → không tính ai).
+   - Chi nhánh không còn ai có kỹ năng S → bài hiện "Chưa phân công".
+   - **Hiển thị (đề xuất, chủ SP duyệt qua ảnh PR-2):** bài S chéo chưa ai nhận KHÔNG cộng vào 3 số riêng; hiện dòng phụ "+ n S chéo chung" (mọi GV S cùng số), panel tab Chưa làm chia "Bài của bạn" / "S chéo chung".
 
 ### 1.3 Trạng thái
 Mọi trạng thái so với **hạn hiện tại**.
