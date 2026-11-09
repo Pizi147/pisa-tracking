@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_KET_THUC_CHUYEN_LOP, CAU_LO_TRINH_MOI_LUU_TRU, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, loi } from '../util.ts';
@@ -264,7 +265,7 @@ export function setStudentStatus(
   if (!s) throw notFound('Không tìm thấy học viên');
   if (s.status === status) return s;
   /* RKC (chủ SP 07/11): em KẾT THÚC học → Tạm dừng đi THẲNG (`ketThucSangTamDung`, nhật ký); → đang học = Quay lại học (`hocLai`, chọn lớp) — chỉ đường. */
-  if (s.status === 'finished' && status === 'inactive') return tx(() => ketThucSangTamDung(p, studentId, date, String(reason ?? '').trim() || 'Tạm dừng'));
+  if (s.status === 'finished' && status === 'inactive') return tx(() => { const kq = ketThucSangTamDung(p, studentId, date, String(reason ?? '').trim() || 'Tạm dừng'); ghiSoHocVien([studentId]); return kq; });
   if (s.status === 'finished' && status === 'active') throw badRequest('Em đã kết thúc học — dùng Quay lại học (về lớp cũ hoặc chọn lớp mới).');
   if (status === 'active' && s.status === 'inactive') {
     const tamDung = (conn.prepare(`SELECT MAX(event_date) d FROM journey_events WHERE student_id = ? AND event_type = 'pause'`).get(studentId) as any)?.d as string | null;
@@ -334,6 +335,7 @@ export function setStudentStatus(
     writeAudit({ actorUserId: p.userId, action: 'student.status', entityType: 'student', entityId: studentId,
       entityLabel: s.student_code, before: { status: s.status, archivedAt: s.archived_at ?? null }, after: { status, date, reason, archivedAt, ...dongBoiLanNay, dongCase, rutTinHieu, ...(ghiDanhDung ? { ghiDanhDung, journeyId } : {}), ...(status === 'active' ? { journeyId } : {}) } });
     if (curEnr && status !== 'active') dongLopNeuHet([curEnr.class_id], date);
+    ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em đang học tại hạn đổi theo trạng thái
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
@@ -475,6 +477,7 @@ export function hocLai(p: Principal, studentId: number, o: {
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at, branchId: s.branch_id, ...tgDoi.truoc },
       after: { ...tgDoi.sau, status: 'active', date, lyDo, classId: lopMoi?.id ?? enr.class_id, lopMoi: !!lopMoi, moLaiLop: !lopMoi && lopDaDong, soGhiDanh: khoiPhuc.length, ghiDanhKhoiPhuc, loTrinhKhoiPhuc, lopMoLai, moi },
     });
+    ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em đang học tại hạn đổi theo trạng thái
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
@@ -547,6 +550,7 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
     }
     addJourney({ studentId, eventType: 'finish', eventDate: demoToday(), title: 'Hoàn tác Học lại', detail: null, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'student.rejoin_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code, before: a, after: { status: 'finished', finishedAt: b.finishedAt, archivedAt: b.archivedAt } });
+    ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em đang học tại hạn đổi theo trạng thái
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }
@@ -582,6 +586,7 @@ export function hoanTacKetThuc(p: Principal, studentId: number) {
     addJourney({ studentId, eventType: 'resume', eventDate: date, title: 'Hoàn tác Kết thúc học', detail: null, createdBy: p.userId });
     writeAudit({ actorUserId: p.userId, action: 'student.finish_undo', entityType: 'student', entityId: studentId, entityLabel: s.student_code,
       before: { status: 'finished', finishedAt: s.finished_at, archivedAt: s.archived_at }, after: { status: nk.truocStatus, archivedAt: veTamDung ? nk.truocArchivedAt ?? date : null, caseMoLai: cs.moLai, caseBoQua: cs.boQua } });
+    ghiSoHocVien([studentId]);   // SỔ NGHĨA VỤ: em đang học tại hạn đổi theo trạng thái
     return conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId);
   });
 }

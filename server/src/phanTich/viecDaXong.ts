@@ -41,16 +41,24 @@ export function viecDaXong(c: Ky, kemKhongLop = true): Map<number, ViecXong[]> {
   return out;
 }
 
-function dungTap(c: Ky): ViecXong[] {
+/**
+ * Việc đã xong của một chi nhánh, hạn trong [tu, cuoi] — mọi khung. `kemThieuNgay` (sổ nghĩa vụ, spec 1.3): thêm Xác nhận / Mô tả Case ĐÃ có mô tả mà
+ * KHÔNG có ngày xong (dữ liệu cũ) với `xong = ''` — "Việc đúng hạn" không gọi cờ này nên không đổi số.
+ */
+export function viecXongCn(c: Ky, kemThieuNgay = false): ViecXong[] {
+  return dungTap(c, kemThieuNgay);
+}
+
+function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
   const conn = db();
   const out: ViecXong[] = [];
   const trong = (han: string | null | undefined): han is string => !!han && han >= c.tu && han <= c.cuoi;
-  const them = (r: { owner: number | null; han: string | null; xong: string | null; lop: number | null; ma: string | null; ft: number | null; hv?: number | null; ten?: string | null },
+  const them = (r: { owner: number | null; han: string | null; xong: string | null; lop: number | null; ma: string | null; ft: number | null; hv?: number | null; ten?: string | null; daXong?: boolean },
     x: { key: string; group: string; tieuDe: string; href: string; caseSos?: boolean; sos?: number | null }) => {
     /* Ngày xong sau hôm nay nghiệp vụ (bản demo: dấu giờ máy đi trước ngày demo) — không tính. */
-    if (!r.owner || r.owner <= 0 || !trong(r.han) || !r.xong || r.xong > c.homNay) return;
+    if (!r.owner || r.owner <= 0 || !trong(r.han) || (r.xong ? r.xong > c.homNay : !(kemThieuNgay && r.daXong))) return;
     out.push({ ...x, urgency: 'normal', due: r.han, studentId: r.hv ?? null, studentName: r.ten ?? (r.ma ? `Lớp ${r.ma}` : ''), classId: r.lop, classCode: r.ma,
-      khung: r.lop == null ? null : r.ft ? 'ft' : 'thuong', ownerId: r.owner, contextLabel: null, count: null, actionLabel: '', xong: r.xong, dung: r.xong <= r.han });
+      khung: r.lop == null ? null : r.ft ? 'ft' : 'thuong', ownerId: r.owner, contextLabel: null, count: null, actionLabel: '', xong: r.xong ?? '', dung: !!r.xong && r.xong <= r.han });
   };
   const lopCua = (r: any) => ({ lop: r.lop ?? null, ma: r.ma ?? null, ft: r.ft ?? null, hv: r.hv ?? null, ten: r.ten ?? null });
 
@@ -59,6 +67,7 @@ function dungTap(c: Ky): ViecXong[] {
     `SELECT sc.id, sc.student_id AS hv, s.full_name AS ten, sc.owner_user_id AS owner, sc.han_xac_nhan, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck, sc.han_them_pa,
             ${LA_CASE_SOS('sc')} AS sos, ${LA_CASE_MT('sc')} AS mt,
             COALESCE(sc.mo_ta_luc, (SELECT MIN(m.occurred_on) FROM case_milestones m WHERE m.case_id = sc.id AND m.kind = 'xac_nhan_case')) AS mo_ta,
+            EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') AS co_mo_ta,
             (SELECT MAX(iv.confirmed_at) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.preset = 1 AND iv.kind != 'bo_tro') AS xnpa,
             (SELECT MIN(iv.created_at) FROM case_interventions iv WHERE iv.case_id = sc.id) AS pa_dau,
             EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.preset = 1) AS co_qc,
@@ -71,7 +80,7 @@ function dungTap(c: Ky): ViecXong[] {
     /* `caseSos` + mức SOS: dòng gộp như Công việc (Case SOS FT giữ từng dòng / gộp theo mức SOS). */
     const ca = { href: duongHoSoHocVien(r.hv, { caseId: r.id }), caseSos: !!r.sos, sos: r.sos_level ?? null };
     if (r.sos) {
-      them({ ...lopCua(r), owner: r.owner, han: r.han_xac_nhan, xong: r.mo_ta ? String(r.mo_ta).slice(0, 10) : null },
+      them({ ...lopCua(r), owner: r.owner, han: r.han_xac_nhan, xong: r.mo_ta ? String(r.mo_ta).slice(0, 10) : null, daXong: !!r.co_mo_ta },
         { ...ca, key: `${r.mt ? 'ghi_nhan_xet' : 'cause'}:${r.id}`, group: r.mt ? 'ghi_nhan_xet' : 'cause', tieuDe: r.mt ? 'Mô tả Case' : 'Xác nhận Case' });
       them({ ...lopCua(r), owner: r.owner, han: r.han_xac_nhan, xong: ngayTheoGioVN(r.xnpa) }, { ...ca, key: `xnpa-case:${r.id}`, group: 'xac_nhan_pa', tieuDe: 'Xác nhận PA' });
     }

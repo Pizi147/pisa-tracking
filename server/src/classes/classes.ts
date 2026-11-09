@@ -1,4 +1,5 @@
 import { DS_JSON, db } from '../db.ts';
+import { ghiSoTheoLop } from '../phanTich/soNghiaVu.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import { ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, nhanKetThucVi, nhanTiepTheo, oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa, type AssessedSkill, type DoiChoPc, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope, coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, daGhiLuot, MON_GOP } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -1174,6 +1175,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
 
   /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
   if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso(), ...(san?.caseThieu ? { caseThieu: san.caseThieu } : {}) });
+  if (added || ended) ghiSoTheoLop(classId);   // SỔ NGHĨA VỤ: người chịu trách nhiệm bài của lớp đổi theo phân công
   if (added || ended) {
     const code = maLop ?? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({

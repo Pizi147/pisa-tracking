@@ -17,6 +17,10 @@
 [functions."chot-vang"]
   schedule = "5 17,23 * * 0"
 
+# SỔ NGHĨA VỤ: đối chiếu sổ với gốc mỗi đêm, 5 lần 02:20 – 06:20 giờ VN — mỗi lần việc của một chi nhánh (ops/doiChieuSo.ts).
+[functions."doi-chieu-so"]
+  schedule = "20 19-23 * * *"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

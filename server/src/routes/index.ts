@@ -478,7 +478,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
   const nhom = qStr(req, 'nhom');
   return timNguoiSvc.timNguoi(principalOf(req), {
     q: qStr(req, 'q'),
-    nhom: nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien',
+    nhom: nhom === 'nhan_vien' || nhom === 'gv_speaking' ? nhom : 'giao_vien',
     studentId: qInt(req, 'studentId'),
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
   });

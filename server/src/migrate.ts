@@ -114,6 +114,7 @@ import { migratePrTlNen } from './migrate/prTlNen.ts';
 import { migratePrTlNapBai } from './migrate/prTlNapBai.ts';
 import { migratePrGiamDoc0611h } from './migrate/prGiamDoc0611h.ts';
 import { migratePrNgayXong0711 } from './migrate/prNgayXong0711.ts';
+import { migratePrNghiaVu } from './migrate/prNghiaVu.ts';
 import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 
 /**
@@ -474,6 +475,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* PA-TRUNG (chủ SP 07/11): PA quy chế "đến lúc thi" trùng PA cùng loại đang chạy (chờ xác nhận + đã xác nhận: giữ PA nhiều kết quả nhất, rồi cũ nhất) → Thùng rác (đổi dữ liệu MỘT
      lần, khoá demo_config). SAU khi bật khoá ngoại: Xoá PA dựa vào CASCADE (buổi Tutor của kết quả) — tắt thì để lại dòng mồ côi, khôi phục 409. */
   buoc(() => migratePrPaTrung0711(conn, applied));
+  /* SỔ NGHĨA VỤ (chủ SP 09/11): bảng nghia_vu — bước CUỐI (không đổi số thứ tự bước cũ), chỉ tạo bảng, chạy lặp được. */
+  buoc(() => migratePrNghiaVu(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

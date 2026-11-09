@@ -569,7 +569,9 @@ function tuanGhiBu(due: string, den: string): { k: number; dung: boolean }[] {
  */
 export const KQ_PA_TRE_TRUOC_RESET = { tinh: false };
 
-function obligations(caseIds: number[], today: string, from: string | null, to: string | null) {
+/** Chi tiết một nghĩa vụ Kết quả PA (sổ nghĩa vụ): hạn của kỳ, ngày ghi (null = chưa ghi), PA. */
+export type CtNghiaVuPa = { han: string; ghi: string | null; iv: number };
+function obligations(caseIds: number[], today: string, from: string | null, to: string | null, chiTiet?: Map<number, CtNghiaVuPa>) {
   const inPeriod = (due: string) => (!from || due >= from) && (!to || due <= to);
   const mocReset = KQ_PA_TRE_TRUOC_RESET.tinh ? '' : getConfig(KHOA_PR_RESET_HAN_CASE).slice(0, 10);
   const den = new Map<number, boolean>();           // id nghĩa vụ → hoàn thành đúng hạn
@@ -590,7 +592,7 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
       for (const { k, dung } of ks) {
         const han = addDaysIso(r.due, 14 * k);
         if (!dung && han < mocReset) continue;   // [XM-2] tắt: trễ trước reset không tính
-        if (inPeriod(han)) den.set(obligationId(r.iv, r.cycle, k), dung);
+        if (inPeriod(han)) { den.set(obligationId(r.iv, r.cycle, k), dung); chiTiet?.set(obligationId(r.iv, r.cycle, k), { han, ghi: r.ghi ? String(r.ghi).slice(0, 10) : null, iv: r.iv }); }
       }
     }
     for (const r of db()
@@ -605,11 +607,26 @@ function obligations(caseIds: number[], today: string, from: string | null, to: 
       .all(...chunk, today) as any[]) {
       /* Chưa ghi: mỗi kỳ đã bỏ quên là một nghĩa vụ trễ (PA bỏ quên nhiều kỳ không còn chỉ tính 1). */
       /* Tuần chưa tới hạn (`dung`) chưa phải nghĩa vụ — chưa ghi thì chỉ tuần đã qua hạn mới tính. */
-      for (const { k } of tuanGhiBu(r.due, today).filter((x) => !x.dung)) if (inPeriod(addDaysIso(r.due, 14 * k))) den.set(obligationId(r.id, r.cycle, k), false);
+      for (const { k } of tuanGhiBu(r.due, today).filter((x) => !x.dung)) {
+        if (!inPeriod(addDaysIso(r.due, 14 * k))) continue;
+        den.set(obligationId(r.id, r.cycle, k), false);
+        chiTiet?.set(obligationId(r.id, r.cycle, k), { han: addDaysIso(r.due, 14 * k), ghi: null, iv: r.id });
+      }
     }
   }
   const ids = [...den.keys()].sort((x, y) => x - y);
   return { ids, numeratorIds: ids.filter((id) => den.get(id)) };
+}
+
+/**
+ * SỔ NGHĨA VỤ: mọi nghĩa vụ Kết quả PA (đã đến hạn) của Case học thuật một chi nhánh — CHÍNH tập `dung-han-cap-nhat` (cùng `obligations`, không khoảng),
+ * kèm hạn + ngày ghi. `p`: người xem có quyền chi nhánh (QL chi nhánh).
+ */
+export function nghiaVuKetQuaPa(p: Principal, branchId: number, today: string): Map<number, CtNghiaVuPa> {
+  const caseIds = listCases(p, { branchId }).rows.filter((c: any) => c.originKind !== 'backfill').map((c: any) => c.id as number);
+  const ct = new Map<number, CtNghiaVuPa>();
+  obligations(caseIds, today, null, null, ct);
+  return ct;
 }
 
 /** PHƯƠNG ÁN CHỜ DUYỆT của một tập case. */

@@ -161,6 +161,8 @@ function bocTep<T extends object>(ten: string, m: T): T {
 /** Phép kiểm viết thẳng ở nhóm ≠ 1: vẫn chạy (dựng trạng thái cho mục sau) nhưng không in, không đếm. */
 const imLang = () => NHOM !== 1 && !trongTep;
 
+/* SỔ NGHĨA VỤ: phép kiểm thấy lỗi ghi sổ (bản thật chỉ ghi log để không hỏng thao tác). */
+process.env.PISA_SO_NEM = '1';
 process.env.PISA_DB = SO_NHOM > 1
   ? path.join(ROOT, 'data', `nhom-${NHOM}`, 'test.sqlite')
   : path.join(ROOT, 'data', 'test.sqlite');
@@ -9874,6 +9876,9 @@ await runPrViecDongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== XM-VIEC-DUNG-HAN b (chủ SP 07/11: việc đã xong có ngày xong vẫn vào Việc đúng hạn)
 const { runPrNgayXongTests } = bocTep('prNgayXong', await import('./prNgayXong.tests.ts'));
 await runPrNgayXongTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== SỔ NGHĨA VỤ (chủ SP 09/11: bộ đếm việc / bài chấm — spec 2026-11-09-so-nghia-vu-design)
+const { runSoNghiaVuTests } = bocTep('soNghiaVu', await import('./soNghiaVu.tests.ts'));
+await runSoNghiaVuTests({ check, assert, assertThrows, conn, P, TODAY, addDays } as any);
 // ==================================================================== LOP-TRONG (chủ SP 07/11: lớp trống 7 ngày tự Kết thúc lớp + vào Lưu trữ)
 const { runPrLopTrongTests } = bocTep('prLopTrong', await import('./prLopTrong.tests.ts'));
 await runPrLopTrongTests({ check, assert, conn, P, TODAY, addDays } as any);

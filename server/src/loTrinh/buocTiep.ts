@@ -12,6 +12,7 @@
  * Mỗi lựa chọn MỘT giao dịch; đổi lựa chọn = hoàn tác đúng lựa chọn cũ (`buoc_tiep_json`) rồi làm cái mới. Target giữ (Sửa = `mucTieu`).
  * Việc "Chọn bước tiếp" (QL / TVV): lộ trình FT mới nhất có kết quả, chưa chọn, em chưa Lưu trữ; hạn = hạn sau thi (OV-13q `trangThaiSauThi`), đỏ không chặn.
  */
+import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { db, tx } from '../db.ts';
 import {
   LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, tenMonNgan, ngay, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, trangThaiSauThi, tuanHopLe, tuanLich,
@@ -268,6 +269,7 @@ function hoanTac(p: Principal, c: any) {
     if (g.tuTamDung && (conn.prepare('SELECT status FROM students WHERE id = ?').get(c.student_id) as any)?.status === 'active') {
       setStudentStatus(p, c.student_id, 'inactive', demoToday(), 'Hoàn tác Lộ trình mới');   // mốc hôm nay (không được trước lần Quay lại học)
       if (g.tamDungNgay) conn.prepare('UPDATE students SET archived_at = ? WHERE id = ?').run(g.tamDungNgay, c.student_id);   // P7: Lưu trữ đúng ngày Tạm dừng cũ
+      ghiSoHocVien([c.student_id]);   // SỔ NGHĨA VỤ
     }
   } catch (e) {
     if (e instanceof HttpError && e.status === 409) throw conflict(KHONG_HOAN_TAC);   // Đổi bắt lỗi này rồi đi thẳng (`chonBuocTiep`)

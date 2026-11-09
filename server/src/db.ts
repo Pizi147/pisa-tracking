@@ -341,6 +341,17 @@ function choKhoaGhi<T>(lam: () => T): T {
  * thật, vòng trong là savepoint — lỗi ở vòng trong chỉ cuộn lại phần của nó rồi ném tiếp lên.
  */
 let savepointDepth = 0;
+/**
+ * SỔ NGHĨA VỤ: việc hẹn chạy NGAY TRƯỚC COMMIT của giao dịch ngoài (trong cùng giao dịch) — một thao tác chạm nhiều lượt / em ghi sổ MỘT lô thay vì mỗi lượt
+ * một lô. null = không trong giao dịch ngoài do `tx` mở (nơi gọi tự chạy ngay).
+ */
+let henCommit: Map<string, () => void> | null = null;
+/** Hẹn `fn` chạy trước COMMIT của giao dịch `tx` đang mở (khoá trùng = một lần). false = không có giao dịch `tx` ngoài — nơi gọi chạy ngay. */
+export function henTruocCommit(khoa: string, fn: () => void): boolean {
+  if (!henCommit) return false;
+  henCommit.set(khoa, fn);
+  return true;
+}
 
 /**
  * Sau fn() mà kết nối không còn trong giao dịch = giao dịch đã MẤT giữa chừng (phần ghi trước bị bỏ, phần sau có thể đã ghi lẻ).
@@ -369,12 +380,17 @@ export function tx<T>(fn: () => T): T {
       console.warn(`[turso] có khoá ghi nhưng lời gọi chỉ còn ${con} ms — cuộn lại, chưa ghi gì`);
       throw new HttpError(503, 'Máy chủ đang bận, chưa lưu gì. Thử lại sau ít phút.');
     }
+    henCommit = new Map();
     try {
       const out = fn();
+      /* Việc hẹn có thể hẹn thêm — chạy tới khi hết. */
+      while (henCommit.size) { const ds = [...henCommit.values()]; henCommit.clear(); for (const f of ds) f(); }
+      henCommit = null;
       giaoDichConKhong(conn, 'giao dịch ngoài');
       conn.exec('COMMIT');
       return out;
     } catch (e) {
+      henCommit = null;
       /* Cuộn lại hỏng (mạng Turso đứt…) thì vẫn ném LỖI GỐC — nhưng không im lặng: ghi log. */
       try { if (conn.inTransaction) conn.exec('ROLLBACK'); } catch (e2) { logRollbackHong('giao dịch ngoài', e2); }
       xoaNho();   // PR-Dọn (Q7, quét #27): giá trị đã nhớ trong giao dịch có thể là dữ liệu vừa bị cuộn lại

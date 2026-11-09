@@ -1,4 +1,5 @@
 import { capNhatConOCho } from './conOCho.ts';
+import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -1676,6 +1677,7 @@ export function setDeadlineOverride(p: Principal, attemptId: number, date: strin
     action: date ? 'deadline_set' : 'deadline_cleared', field: 'deadline_override',
     oldValue: a.deadline_override, newValue: date, reason, actor: p.userId,
   });
+  ghiSoLuot([attemptId]);   // SỔ NGHĨA VỤ: hạn đổi
   return db().prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId);
 }
 
@@ -2000,12 +2002,14 @@ function nhomSeLuu(a: any, o: { band: number | null; nhomGui: string[] | undefin
 }
 
 /** GV chấm hợp lệ: nhân viên đang làm việc, hoặc tên người ngoài 2–100 ký tự (luật `chuanHoaNguoiThucHien`). */
-function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>) {
+/** Chủ SP 10/11 (spec 1.2 c): Speaking CHẤM CHÉO — người chấm có tài khoản phải là GV có kỹ năng S (hoặc tên ngoài → không tính ai). */
+function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>, cheo = false) {
   if (typeof g !== 'object') throw badRequest('GV chấm không hợp lệ.');
   try {
-    return chuanHoaNguoiThucHien(p, g, { nhom: 'nhan_vien', batBuoc: false });
+    return chuanHoaNguoiThucHien(p, g, { nhom: cheo ? 'gv_speaking' : 'nhan_vien', batBuoc: false });
   } catch {
-    throw badRequest('GV chấm phải là nhân viên đang làm việc, hoặc gõ tên người ngoài (2–100 ký tự).');
+    throw badRequest(cheo ? 'Người chấm Speaking chéo phải là giáo viên có kỹ năng S, hoặc gõ tên người ngoài (2–100 ký tự).'
+      : 'GV chấm phải là nhân viên đang làm việc, hoặc gõ tên người ngoài (2–100 ký tự).');
   }
 }
 
@@ -2040,6 +2044,7 @@ function luuNhanXet(
   });
   if (skill === 'speaking') baoPhuTrachS(p, a, comment, cu?.comment, gv !== undefined ? exUser : null);   // người chấm chỉ tính khi CHÍNH lần lưu này ghi
   dongBoNguyenNhanMt({ attemptId, skill });   // OV-12c: nhận xét + nhóm của ô = nguyên nhân Case MT (liên kết sống)
+  if (skill === 'speaking') ghiSoLuot([attemptId]);   // SỔ NGHĨA VỤ: GV chấm Speaking chéo đổi người chịu trách nhiệm
   const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   return {
     score: conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill),
@@ -2300,7 +2305,7 @@ export function saveScore(
   if (coGvCham && patch.gvCham !== null && (typeof patch.gvCham !== 'object' || Array.isArray(patch.gvCham))) {
     throw badRequest('GV chấm không hợp lệ — gửi người chấm, hoặc null để xoá.');
   }
-  const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
+  const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham, laChamCheo(a.kind, skill)) : null) : undefined;
   const coNhom = patch.nhomNguyenNhan !== undefined;
   const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill) : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);

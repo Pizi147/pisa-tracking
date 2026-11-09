@@ -2290,7 +2290,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_bao_ph_lan_khoa ON viec_bao_ph_lan(kho
 CREATE TABLE IF NOT EXISTS viec_han_lan (
   id INTEGER PRIMARY KEY, loai TEXT NOT NULL, viec_id INTEGER NOT NULL, han_cu TEXT, han_moi TEXT NOT NULL,
   mac_dinh INTEGER NOT NULL DEFAULT 0,   -- 1 = về hạn mặc định
-  boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
+  boi INTEGER REFERENCES users(id), luc TEXT NOT NULL,
+  nguoi_cu INTEGER, ngay TEXT            -- SỔ NGHĨA VỤ (chủ SP 10/11): dòng `chuyen_lop:*` — người giữ việc lớp cũ + ngày chuyển (cases/hanChuyenLop.ts)
 );
 CREATE INDEX IF NOT EXISTS idx_viec_han_lan ON viec_han_lan(loai, viec_id);
 
@@ -2477,3 +2478,26 @@ CREATE TABLE bao_cao_ph_dot (
   UNIQUE (class_id, ma)
 );
 CREATE INDEX idx_bcph_dot_lop ON bao_cao_ph_dot(class_id);
+-- SỔ NGHĨA VỤ (chủ SP 09/11, spec 2026-11-09-so-nghia-vu-design mục 2.1): mỗi bài phải chấm / việc có hạn một dòng — ghiSo (phanTich/soNghiaVu.ts). migrate/prNghiaVu.ts chép y.
+CREATE TABLE IF NOT EXISTS nghia_vu (
+  id INTEGER PRIMARY KEY,
+  loai TEXT NOT NULL CHECK (loai IN ('bai', 'viec')),
+  kieu TEXT NOT NULL,
+  khoa TEXT NOT NULL UNIQUE,
+  chi_nhanh INTEGER, lop INTEGER, hoc_vien INTEGER,
+  nguoi INTEGER,
+  s_cheo INTEGER NOT NULL DEFAULT 0,
+  han_goc TEXT, han TEXT, tuan TEXT,
+  pc_nhap_sau INTEGER NOT NULL DEFAULT 0,
+  xong_luc TEXT, nguoi_lam INTEGER,
+  khong_tinh TEXT,
+  cap_nhat TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_nghia_vu_cn_han ON nghia_vu(chi_nhanh, han);
+CREATE INDEX IF NOT EXISTS idx_nghia_vu_nguoi_han ON nghia_vu(nguoi, han);
+-- SỔ NGHĨA VỤ (spec 1.2 c, chủ SP 10/11): lịch sử kỹ năng hồ sơ GV — S chéo chưa ai nhận tính cho GV có S TẠI NGÀY HẠN. Một dòng một lần có (tu) → bỏ (den).
+-- accounts.setSkills ghi (Hồ sơ cá nhân, Quản trị); migrate nạp hiện trạng làm mốc (tu = 2000-01-01).
+CREATE TABLE IF NOT EXISTS user_skill_lich_su (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, skill TEXT NOT NULL, tu TEXT NOT NULL, den TEXT);
+CREATE INDEX IF NOT EXISTS idx_user_skill_lich_su ON user_skill_lich_su(skill, user_id);
+-- SỔ NGHĨA VỤ (spec 2.3): nhật ký dòng BÀI lệch khi đối chiếu đêm (trước / sau dạng JSON) — thao tác nào quên gọi ghiSo.
+CREATE TABLE IF NOT EXISTS nghia_vu_lech (id INTEGER PRIMARY KEY, khoa TEXT NOT NULL, truoc TEXT, sau TEXT, luc TEXT NOT NULL);

@@ -27,6 +27,8 @@ import { mocTreNhapDiem, quaHanNhapDiem } from '../platform/week.ts';
 import { dongNghiaVu, dongPa, paCoKetQua } from './hieuQuaPa.ts';
 import { viecDaXong, type ViecXong } from './viecDaXong.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
+import { VIEC_CO_HAN, quanLyCn } from './viecCoHan.ts';
+import { dangHocLuc, lopLucThi, nguoiPcLuc } from './luatBai.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -102,10 +104,7 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
     const key = `${a.lop}|${a.core ? '' : a.skill ?? ''}`;
     if (a.core || a.skill) theoO.set(key, [...(theoO.get(key) ?? []), a]);
   }
-  const nguoiLuc = (l: number, skill: string | null, d: string) => {
-    const ds = (theoO.get(`${l}|${skill ?? ''}`) ?? []).filter((a) => a.tu <= d && (!a.den || a.den >= d));
-    return ds.length ? ds.reduce((x, y) => (y.id > x.id ? y : x)).gv : null;
-  };
+  const nguoiLuc = (l: number, skill: string | null, d: string) => nguoiPcLuc(theoO.get(`${l}|${skill ?? ''}`) ?? [], d);
   return { cn, tenChiNhanh: cb.name, khung, tu: k.tu, den: k.den, cuoi: addDays(k.den, 6), thang: f.thang ?? null, homNay, lop, pc, nguoiLuc };
 }
 
@@ -193,39 +192,21 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
       `SELECT student_id, class_id, substr(started_at, 1, 10) AS tu, substr(ended_at, 1, 10) AS den FROM enrollments WHERE student_id IN (${cho(lo.length)})`,
     ).all(...lo) as any[]) (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, den: e.den });
   }
-  /* Lớp lúc thi: ghi danh bắt đầu trước hết tuần thi và chưa kết thúc trước tuần thi; nhiều dòng → dòng bắt đầu muộn nhất. */
-  const lopLucThi = (sid: number, tuan: string, lopLuot: number) => {
-    const cuoi = addDays(tuan, 6);
-    const ds = (ghiDanh.get(sid) ?? []).filter((e) => e.tu && e.tu <= cuoi && (!e.den || e.den > tuan));
-    return ds.length ? ds.reduce((x, y) => (y.tu > x.tu ? y : x)).lop : lopLuot;
-  };
-  /*
-   * P12 (E8): em ĐANG HỌC TẠI NGÀY d (hạn nhập) — Q2 cùng nghĩa với `HV_DANG_HOC_SQL` nhưng theo ngày: chưa Kết thúc học / Lưu trữ trước d, không trong
-   * khoảng Tạm dừng ở d. Lưu trữ hôm nay không xoá ô kỳ trước. Trạng thái không có ngày (Tạm dừng thiếu nhật ký, Kết thúc thiếu ngày) → không đang học như cũ.
-   */
+  /* Lớp lúc thi + em đang học tại hạn: `luatBai.ts` (cùng sổ nghĩa vụ). */
   const tamDung = khoangTamDung([...new Set(rows.map((r) => r.student_id as number))]);
-  const dangHocLuc = (a: any, d: string) => {
-    const fin = a.hv_finished ? String(a.hv_finished).slice(0, 10) : null;
-    const arc = a.hv_archived ? String(a.hv_archived).slice(0, 10) : null;
-    if ((fin && fin <= d) || (arc && arc <= d)) return false;
-    const kd = tamDung[a.student_id] ?? [];
-    if (kd.some((k) => k.tu.slice(0, 10) <= d && (!k.den || k.den.slice(0, 10) > d))) return false;
-    if (a.hv_status === 'inactive' && !kd.some((k) => !k.den)) return false;
-    return !(a.hv_status === 'finished' && !fin);
-  };
   const o: OBai[] = [];
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
     const chung = (skill: string, v: { weekStart: string | null; deadline: string | null; progress: string; noShow: boolean }) => {
       if (!v.weekStart || v.weekStart < c.tu || v.weekStart > c.den) return;
-      const lop = lopLucThi(a.student_id, v.weekStart, a.class_id);
+      const lop = lopLucThi(ghiDanh.get(a.student_id) ?? [], v.weekStart, a.class_id);
       if (!c.lop.has(lop)) return;   // lớp lúc thi ngoài chi nhánh + khung đang xem
       const row = scores.find((s) => s.skill === skill);
       o.push({
         id: baiId(a.id, skill), attemptId: a.id, classId: lop, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
         nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
-        dangHoc: dangHocLuc(a, v.deadline ?? c.homNay), kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
+        dangHoc: dangHocLuc(a, tamDung[a.student_id] ?? [], v.deadline ?? c.homNay), kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
         kind: a.kind, examinerUserId: row?.examiner_user_id ?? null,
       });
     };
@@ -484,19 +465,6 @@ export function tapGhiKetQuaPa(p: Principal, c: NguCanhPtGv): { tap: Tap; khongN
  * Kỳ vọng · Case chưa có người (luôn `ownerId: null`) · Giao việc (QL xem được bảng → không dựng; nếu dựng thì người giữ là QL giả `-cn`) · Xuất BC PH
  * (chỉ Admin → rỗng với QL) · Báo PH qua TVV, Khai bậc, Thi thật, Bổ sung hồ sơ (luôn `due: null`).
  */
-const VIEC_CO_HAN: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>([
-  'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop_sos', 'mini_test', 'no_plan', 'bao_ph_yt', 'buoc_tiep', 'ban_giao', 'yt_xu_ly',
-]);
-/**
- * Người giữ việc theo Công việc "Tất cả" của QUẢN LÝ chi nhánh (vai `manager` ở `cn`, không là người cụ thể) — bảng, panel bảng và hồ sơ GV (GV tự xem,
- * QL, QT) cùng MỘT cách gán: việc "chưa ai giữ" mà nhiều người làm được (Bước tiếp, Báo PH dự phòng QL) không thành việc của từng QL / TVV kiêm GV.
- */
-const quanLyCn = (cn: number): Principal => nho(`pt-gv:ql-cn:${cn}`, () => {
-  const perms = (db().prepare(`SELECT p.key AS k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id
-    WHERE r.key = 'manager'`).all() as any[]).map((r) => r.k as string);
-  return { userId: -cn, code: '', fullName: '', title: null, roleKeys: ['manager'], assignments: [],
-    grants: [{ id: 0, roleKey: 'manager', roleName: '', branchId: cn, branchName: null, permissions: new Set(perms) }] };
-});
 /** `kemKhongLop`: lấy việc không gắn lớp — hồ sơ GV cộng nhiều ngữ cảnh của một chi nhánh nên chỉ ngữ cảnh đầu lấy (không đếm hai lần). */
 export function viecQuaHanMo(c: NguCanhPtGv, kemKhongLop = true): Map<number, WorkItem[]> {
   /* Một lần mỗi chi nhánh trong request — hồ sơ GV dạy cả FT lẫn lớp thường ở một chi nhánh không dựng Công việc hai lần. */

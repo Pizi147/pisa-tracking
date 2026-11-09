@@ -204,9 +204,12 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     assert(o.length === 1 && o[0].gv === cheoId && o[0].dung === false, `trễ của GV chấm chéo: ${JSON.stringify(o)}`);
     /* Chủ sản phẩm 06/10: người lưu chọn GV chấm là tài khoản khác → trễ tính cho người được chọn. */
     aid = emMoi(5, HAI, true);
-    att.saveScore(cheo, aid, 'speaking', { criteria: S4, gvCham: { performerUserId: P.w1Teacher.userId } }, TODAY);
+    /* Chủ SP 10/11 (sổ nghĩa vụ 1.2 c): người được chọn chấm S chéo phải là GV có kỹ năng S — chọn một GV S khác người lưu. */
+    const gvS = (conn.prepare(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id
+        AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' AND u.id != ? ORDER BY u.id LIMIT 1`).get(cheoId) as any).id as number;
+    att.saveScore(cheo, aid, 'speaking', { criteria: S4, gvCham: { performerUserId: gvS } }, TODAY);
     const khac = cuaLuot(aid);
-    assert(khac.length === 1 && khac[0].gv === P.w1Teacher.userId && khac[0].dung === false, `trễ của GV được chọn: ${JSON.stringify(khac)}`);
+    assert(khac.length === 1 && khac[0].gv === gvS && khac[0].dung === false, `trễ của GV được chọn: ${JSON.stringify(khac)}`);
     aid = emMoi(5, HAI, true);
     att.saveScore(cheo, aid, 'speaking', { criteria: S4, gvCham: { performerName: 'Cô Lan (ngoài)' } }, TODAY);
     assert(dongS(aid).examiner_user_id === null && dongS(aid).examiner_name === 'Cô Lan (ngoài)', 'người ngoài');
