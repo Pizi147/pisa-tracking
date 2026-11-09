@@ -466,4 +466,15 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     const gk = doc('web/src/modules/cases/CapNhatTuan.tsx');
     assert(/pa\.choXacNhan \? t\('Đã lưu kết quả · đã xác nhận PA'\)/.test(gk), 'Ghi kết quả PA chờ: không báo đã xác nhận PA');
   });
+
+  check('GXN-5 · Turso: gộp không thêm câu — Ghi KQ lần đầu ≤ Xác nhận PA + Ghi KQ riêng · Sửa Case chưa xác nhận ≤ Xác nhận Case + 5', () => {
+    const dem = (fn: () => unknown) => { xoaNho(); const s0 = soCauSql(); fn(); return soCauSql() - s0; };
+    const rieng = thu(() => { const { pa } = coPaCho(); return dem(() => xacNhanPa(QL, pa.id)) + dem(() => cases.updateResult(QL, pa.id, KQ)); });
+    const gop = thu(() => { const { pa } = coPaCho(); return dem(() => cases.updateResult(QL, pa.id, KQ)); });
+    const xnCase = thu(() => { const { c, gv } = caseBe(); return dem(() => sosAuto.xacNhanCase(gv, c.id, XN())); });
+    const suaCase = thu(() => { const { c, gv } = caseBe(); const x = XN(); return dem(() => cases.suaCase(gv, c.id, { nhom: x.nhom, summary: x.moTa, urgency: x.urgency, title: x.tenGiua })); });
+    console.log(`    GXN-5 đo: PA riêng ${rieng} · gộp ${gop} câu · Xác nhận Case ${xnCase} · Sửa Case = xác nhận ${suaCase} câu`);
+    assert(gop <= rieng, `Ghi KQ gộp ${gop} > riêng ${rieng}`);
+    assert(suaCase <= xnCase + 5, `Sửa Case = xác nhận ${suaCase} > Xác nhận Case ${xnCase} + 5`);
+  });
 }
