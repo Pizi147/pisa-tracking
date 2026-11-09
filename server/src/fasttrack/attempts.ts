@@ -37,7 +37,7 @@ import {
 } from './ketQuaHuy.ts';
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
-import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, programmeOfClass, refreshRegularOutcome } from '../normal/regular.ts';
+import { allProgrammes, chuongTrinhCuaLuot, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, refreshRegularOutcome } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
@@ -1565,7 +1565,7 @@ function xoaDiemLuot(p: Principal, a: ReturnType<typeof loadAttempt>, lyDo: stri
     .all(a.id) as ScoreRow[];   // dòng gốc như `saveScore` ghi vào nhật ký (không cột nối của `scoresOf`)
   if (!o.length) return;
   /* PR-VN5: bài lớp thường nhận môn của chương trình (`writing`, `tong_hop`…) — cùng nguồn `saveRegularScore`; MT0 ở lớp thường vẫn chấm band. */
-  const ct = a.class_id && scoringModeOf(a) === 'ratio' ? programmeOfClass(a.class_id) : null;
+  const ct = scoringModeOf(a) === 'ratio' ? chuongTrinhCuaLuot(a) : null;   // LECH-KHONG-LOP: lượt không lớp theo lộ trình
   const thuong = !!ct;
   /* P13: môn theo LƯỢT (`boMonCuaLuot`) — lượt đã chấm L+S / R+W cũ huỷ được như mọi lượt. */
   const boMon: readonly string[] = thuong ? boMonCuaLuot(db(), a.id) : ENTRY_SKILLS;

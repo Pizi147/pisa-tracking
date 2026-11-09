@@ -18,7 +18,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { classProgressMany } from '../classes/schedule.ts';
-import { allProgrammes, evaluateRegular } from './regular.ts';
+import { allProgrammes, evaluateRegular, maCtCuaLuot, nguongDatLop } from './regular.ts';
 import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
@@ -67,8 +67,13 @@ function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   theoLoJson([...new Set(attemptIds)], (json) => {   // S5: một tham số JSON
     const ph = DS_JSON;
     for (const r of conn.prepare(
-      `SELECT a.id, a.kind, c.programme_code, c.nguong_dat FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
-    ).all(json) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, nguong: r.nguong_dat ?? null });
+      `SELECT a.id, a.kind, a.class_id, c.programme_code, c.nguong_dat, cy.programme_code AS ct_lo_trinh FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
+         LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id AND a.class_id IS NULL   -- LECH-KHONG-LOP (maCtCuaLuot): chỉ lượt không lớp đọc lộ trình
+        WHERE a.id IN (${ph})`,
+    ).all(json) as any[]) {
+      const ct = maCtCuaLuot(r.class_id, r.programme_code, r.ct_lo_trinh);
+      luot.set(r.id, { kind: r.kind, ct, nguong: r.class_id ? r.nguong_dat ?? null : nguongDatLop(null, ct) });
+    }
     /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
     for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
         UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(json, json, ...GOP) as any[]) {

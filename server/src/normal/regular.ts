@@ -129,6 +129,23 @@ export function mocChupVaoLop(code: string | null | undefined, route: string | n
   };
 }
 
+/**
+ * LECH-KHONG-LOP · đường GHI (chủ SP 10/11 B' mục 8): chương trình chấm của MỘT lượt — lớp của lượt; lượt không lớp theo lộ trình (`maCtCuaLuot`), như đường đọc.
+ * Lượt có lớp: không thêm câu; lượt không lớp (hiếm): một câu một dòng.
+ */
+export function chuongTrinhCuaLuot(a: { class_id?: number | null; cycle_id?: number | null }): ProgrammeInfo | null {
+  if (a.class_id) return programmeOfClass(a.class_id);
+  const ma = a.cycle_id ? (db().prepare('SELECT programme_code AS m FROM learning_cycles WHERE id = ?').get(a.cycle_id) as any)?.m : null;
+  return ma ? allProgrammes().get(ma) ?? null : null;
+}
+
+/** Đường ghi điểm / "-" của lượt: có lớp → `scoreEditPath`; lượt không lớp → Quản lý / Quản trị phủ chi nhánh của em (`override`). */
+function duongGhiLuot(p: Principal, a: { class_id: number | null; student_id: number }, skill: string): ReturnType<typeof scoreEditPath> {
+  if (a.class_id) return scoreEditPath(p, a.class_id, skill);
+  const ctx = { studentId: a.student_id };
+  return can(p, PERMISSIONS.SCORE_OVERRIDE, ctx) || can(p, PERMISSIONS.PLAN_WEEK, ctx) ? 'override' : null;
+}
+
 export function programmeOfClass(classId: number): ProgrammeInfo | null {
   /* TL-HVL: GET đọc bảng lớp đã nhớ — hồ sơ HV hỏi lại cùng lớp cho từng lượt (`typedResult`), mỗi lần một lượt mạng Turso. */
   return programmeByCode(coNho() ? bangLop().get(classId)?.ct : (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any)?.programme_code);
@@ -279,11 +296,11 @@ export function regularDeadline(attempt: { planned_period_id?: number | null; de
 
 export function regularResultOf(attemptId: number): RegularResult {
   const conn = db();
-  const a = conn.prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
-  const prog = a?.class_id ? programmeOfClass(a.class_id) : null;
+  const a = conn.prepare('SELECT class_id, cycle_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  const prog = a ? chuongTrinhCuaLuot(a) : null;
   const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows)) : [], rows, prog?.code, nguongDatLop(a?.class_id));
+  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows)) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code));
 }
 
 /** Lớp có ngưỡng đạt khác 70 % — MỘT câu, nhớ trong request GET (thường rỗng: chỉ lớp mở sau khi Quản trị đổi "Đạt từ"). */
@@ -649,7 +666,7 @@ export function saveRegularScore(
   /* PR-OV1a (lỗi 3.3): MT0 ở lớp thường chấm band — đúng/tổng hay dấu "-" tỷ lệ ghi vào đây làm hỏng lượt. */
   if (a.kind === 'mt0') throw badRequest('MT0 chấm band — nhập ở Test › Điểm theo lớp › MT0.');
 
-  const prog = a.class_id ? programmeOfClass(a.class_id) : null;
+  const prog = chuongTrinhCuaLuot(a);
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!boMonCuaLuot(conn, attemptId).includes(skill)) {   // P13: lượt đã ghi môn gộp cũ (L+S, R+W) nhận đúng môn của lượt
     throw loi(400, 'Lớp {name} không có kỹ năng {x}.', { name: prog.name, x: tenMon(prog.code, skill) });
@@ -672,7 +689,7 @@ export function saveRegularScore(
    * Lớp đã kết thúc vẫn chỉ Quản lý (`kiemLopKetThuc` ở trên, Q-B1 ①).
    */
   const hoanTat = dotHoanTat(attemptId, today);
-  let path = a.class_id ? scoreEditPath(p, a.class_id, skill) : null;
+  let path = duongGhiLuot(p, a, skill);
   if (!path) {
     require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
       'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
@@ -797,7 +814,7 @@ export function reportRegularNoShow(
   if (!a) throw notFound('Không tìm thấy lượt đánh giá');
   if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId); }   // RKC
 
-  const prog = a.class_id ? programmeOfClass(a.class_id) : null;
+  const prog = chuongTrinhCuaLuot(a);
   if (!prog || prog.scoringMode !== 'ratio') throw badRequest('Lượt này không thuộc lớp thường.');
   if (!boMonCuaLuot(conn, attemptId).includes(skill)) throw loi(400, 'Lớp {name} không có kỹ năng {x}.', { name: prog.name, x: tenMon(prog.code, skill) });
   const ketThuc = laLopKetThuc(a.class_id);   // RKC: lớp đã kết thúc — "-" = Không dự thi (không còn tuần để dời)
@@ -811,7 +828,7 @@ export function reportRegularNoShow(
   const dauCu = bat ? null : conn.prepare(
     `SELECT rp.week_start, s.no_show_cu FROM assessment_scores s JOIN report_periods rp ON rp.id = s.no_show_period_id WHERE s.attempt_id = ? AND s.skill = ?`,
   ).get(attemptId, skill) as any;
-  let path = scoreEditPath(p, a.class_id, skill);
+  let path = duongGhiLuot(p, a, skill);
   /* OV-11a: gỡ "Không dự thi" như FT (`no_show_cu`) — người nhập được môn đó, không theo khung gỡ vắng. LUAT-34: "Đủ điểm" không còn khoá. */
   if (dauCu && !dauCu.no_show_cu) {
     const loi = duocGoDau(p, { classId: a.class_id, skill, today });
