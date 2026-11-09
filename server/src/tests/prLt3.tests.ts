@@ -235,12 +235,13 @@ export async function runPrLt3Tests(t: YThucTestKit) {
   // ------------------------------------------------------------------ LT3-4 "quá hạn" chỉ ghi (chủ SP 06/11)
   const ops: any = await import('../ops/chotVangDinhKy.ts');
   const td: any = await import('../platform/thongBaoTuDong.ts');
-  check('LT3-4 S chấm chéo quá hạn: GVCN + GV phụ trách S + GV S chấm chéo thấy "quá hạn" ở Công việc / Chấm Speaking; KHÔNG chuông, KHÔNG vào số quá hạn / badge', () => {
+  check('LT3-4 S chấm chéo quá hạn: GV phụ trách S + GV S chấm chéo thấy "quá hạn" ở Công việc / Chấm Speaking; KHÔNG chuông, KHÔNG vào số quá hạn / badge', () => {
     const aid = emMoi(5, HAI, true);
     const gvS = debt.phanCongDangHieuLuc([LOP], TODAY).get(`${LOP}|speaking`)?.userId;
     const gvcn = (conn.prepare(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'
         AND effective_from <= ? AND (effective_to IS NULL OR effective_to >= ?)`).all(LOP, TODAY, TODAY) as any[]).map((r) => r.user_id as number);
-    const ai = [...new Set([gvS, ...gvcn, cheoId].filter((x): x is number => !!x))];
+    /* CV-SUA-1011 (chủ SP 10/11, thay T18 06/11 phần GVCN): chỉ người chấm được S (GV Speaking) có việc — GVCN không S kiểm riêng bên dưới. */
+    const ai = [...new Set([gvS, ...gvcn, cheoId].filter((x): x is number => !!x && perm.lopFtChoGvSpeaking(perm.loadPrincipal(x), TODAY).includes(LOP)))];
     assert(ai.length >= 2, `cần ≥ 2 người: ${JSON.stringify(ai)}`);
     const nhoTruoc = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE kind IN ('cham_cheo_qua_han')`).get() as any).n;
     for (const uid of ai) {
@@ -256,12 +257,12 @@ export async function runPrLt3Tests(t: YThucTestKit) {
       const h = att.baiChamSpeaking(p, TODAY).rows.find((r: any) => r.attemptId === aid);
       assert(h && h.cho && h.cell.overdue === true && !!h.cell.deadline, `${uid}: Chấm Test thiếu bài quá hạn`);
     }
-    /* GVCN không là GV Speaking: chỉ thấy bài QUÁ HẠN của lớp mình (bài chưa quá hạn không vào). */
+    /* CV-SUA-1011: GVCN không là GV Speaking — không việc "Chấm Speaking", không hàng đợi (kể cả bài quá hạn của lớp mình). */
     const chiCn = gvcn.find((id) => id !== gvS && !perm.lopFtChoGvSpeaking(perm.loadPrincipal(id), TODAY).includes(LOP));
     if (chiCn) {
-      const moi = emMoi(6, NAY, true);
-      const rows = att.baiChamSpeaking(perm.loadPrincipal(chiCn), TODAY).rows;
-      assert(!rows.some((r: any) => r.attemptId === moi), 'GVCN thường thấy cả bài chưa quá hạn');
+      const x = perm.loadPrincipal(chiCn);
+      assert(!(mw.myWork(x).items as any[]).some((i) => i.key === d.KHOA_CHAM_SPEAKING), 'GVCN không S vẫn có việc Chấm Speaking');
+      assert(att.baiChamSpeaking(x, TODAY).rows.length === 0, 'GVCN không S vẫn có hàng đợi Chấm Speaking');
     }
     /* Chuông: không còn (lượt quét thứ Hai cũng không gọi). */
     ops.chotVangDinhKy({ ngay: TODAY, chuyen: () => 0, daKhoiTao: () => true });

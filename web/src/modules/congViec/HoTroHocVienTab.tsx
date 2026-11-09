@@ -409,13 +409,17 @@ export function HoTroHocVienTab() {
     ? phang(tatCaViec).filter((x) => !x.con?.length && x.studentId === chon.studentId && x.key !== chon.key && lamTaiCho(x) && !xong.has(x.key)) : [];
   const [lamThay, setLamThay] = useState<string | null>(null);
   const theoDoiChon = !!chon && theoDoi(chon);
-  const khoaPanel = theoDoiChon && lamThay !== chon?.key;
+  /* CV-SUA-1011 (chủ SP 10/11 ý 5 "skip cái panel thừa này đi … muốn nhập hộ thì nhập hộ luôn"): Nhập điểm / Chấm Speaking của người khác mở THẲNG
+     lưới — sửa được (quyền máy chủ từng ô) thì nhập ngay, không thì chỉ xem; không tóm tắt + nút "Nhập hộ". */
+  const moThang = theoDoiChon && chon.group === 'score';
+  const khoaPanel = theoDoiChon && !moThang && lamThay !== chon?.key;
+  const dangLamThay = theoDoiChon && (moThang ? !!(chon as { lamThay?: boolean }).lamThay : lamThay === chon?.key);
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Bài thi Speaking')
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
-    loai: `${khoaPanel ? t('Theo dõi') : theoDoiChon ? t('Làm thay') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
-    dai: noiDai === 'viec' && daiVuaLuu || theoDoiChon ? <>
-      {theoDoiChon && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={() => boChuRoi(() => setLamThay(null))} />}
+    loai: `${dangLamThay ? t('Làm thay') : theoDoiChon ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
+    dai: noiDai === 'viec' && daiVuaLuu || dangLamThay ? <>
+      {dangLamThay && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setLamThay(null))} />}
       {noiDai === 'viec' ? daiVuaLuu : null}
     </> : undefined,
     them: emNayCon.length ? (
@@ -657,7 +661,7 @@ function HetViecNhom({ nhom, ke, con, daLuu, dai, tenNhom, onDong, onTiep, onXem
 }
 
 /**
- * THEO DÕI (N33 ③, U01 #5 · khung A2 / C4): việc của người khác — TÓM TẮT chỉ đọc, không form mờ. Đầu = dải sự kiện (Học viên · Lớp · Mức · Hạn ·
+ * THEO DÕI (N33 ③, U01 #5 · khung A2 / C4): việc của người khác (trừ Nhập điểm / Chấm Speaking — mở thẳng lưới, CV-SUA-1011) — TÓM TẮT chỉ đọc, không form mờ. Đầu = dải sự kiện (Học viên · Lớp · Mức · Hạn ·
  * Phụ trách); thân = Việc · Phương án · Tới đâu · Gần nhất (Case đọc một lần — cùng câu form làm thay sẽ đọc); chân = Việc tiếp › + **Làm thay** (nút chính)
  * khi máy chủ báo `lamThay` (quyền thật: Case `SOS_EDIT`, điểm `editableSkills`), không có quyền → một câu ai làm được.
  */
@@ -686,7 +690,7 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
         ] }}
         chan={{ huy: null, trai: tenTiep && onTiep ? <span className="truncate text-dim">{t('Tiếp: {x}', { x: tenTiep })}</span> : undefined,
           phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
-          chinh: it.lamThay ? <button type="button" className="btn btn-primary min-h-[44px] font-bold sm:min-h-[36px]" onClick={onLamThay}>{it.group === 'score' ? t('Nhập hộ') : t('Làm thay')}</button> : undefined }}>
+          chinh: it.lamThay ? <button type="button" className="btn btn-primary min-h-[44px] font-bold sm:min-h-[36px]" onClick={onLamThay}>{t('Làm thay')}</button> : undefined }}>
         <div className="pt-3">
           <TruongDoc dong={[
             [t('Việc'), iv ? null : dich(it.reason)],   // PA có thì lý do việc = mô tả PA — không lặp
@@ -720,11 +724,11 @@ function NhomGap({ k, nhan, children }: { k: string; nhan: string; children: Rea
 }
 
 /** U01 #5 / #11 (khung A3): đang LÀM THAY — dải vàng trên panel việc, "Chỉ xem" (mockup "Thôi, chỉ xem" — từ điển S3 không dùng "Thôi") về lại tóm tắt (còn chữ thì hỏi như đổi việc). */
-function DaiLamThay({ ai, onThoi }: { ai: string; onThoi: () => void }) {
+function DaiLamThay({ ai, onThoi }: { ai: string; onThoi: (() => void) | null }) {
   return (
     <div className="mb-1 flex flex-wrap items-center gap-2.5 rounded-lg border px-3 py-2 text-sm" role="status" style={{ background: 'rgb(var(--soon-bg-rgb))', borderColor: 'rgb(var(--soon-line-rgb))' }}>
       <b className="font-semibold text-soon">{t('Bạn đang làm thay {ai}.', { ai })}</b>
-      <button type="button" className="link ml-auto min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={onThoi}>{t('Chỉ xem')}</button>
+      {onThoi && <button type="button" className="link ml-auto min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={onThoi}>{t('Chỉ xem')}</button>}
     </div>
   );
 }

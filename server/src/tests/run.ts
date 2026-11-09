@@ -7980,6 +7980,7 @@ const prgA = prgLrw[0], prgB = prgLrw[1], prgE = prgLrw[2];
  *   5 W1 và W2 cùng "-" (Writing của E) · 6 quyền và xác nhận C10 (Listening của E) · 7 từ chối C10 (Listening của B)
  */
 const prgAttempts = [prgA, prgA, prgE, prgB, prgB, prgE, prgE, prgB];
+const { voiXacNhan } = await import('../platform/nguCanhRequest.ts');
 const prgCell = (attemptId: number, skill: string, today: string = TODAY, period: number = prgWeek) => {
   const sheet = attempts.classScoreSheet(P.admin, mbClass, period, today) as any;
   return sheet.rows.find((r: any) => r.attemptId === attemptId)?.cells.find((c: any) => c.skill === skill);
@@ -8124,20 +8125,23 @@ check('PR-G · (OV-1b) Đổi ý sau "-": Bỏ vắng trả bài về tuần cũ
   assert(prgCell(id, 'reading').band === band, 'Điểm chính thức bị mất');
 });
 
-check('PR-G · "-" ở W1 KHÔNG xoá W2 và không đếm hai lần: chỉ khi CẢ HAI bài của buổi Writing đều "-" mới là vắng, và đúng MỘT lần', () => {
+check('PR-G · "-" ở W1 KHÔNG xoá điểm W2 và không đếm hai lần: "-" một W = CẢ buổi Writing vắng (CV-SUA-1011), đúng MỘT lần', () => {
   const id = prgAttempts[4];
-  /* LUAT-34 (T07, PTA): W2 đã có điểm; W1 báo "-" → buổi vắng, dời CẢ W lần 1 (điểm W2 đi theo, không bị xoá). */
+  /* CV-SUA-1011 (thay LUAT-34 "điểm W2 đi theo"): W2 đã có điểm; W1 báo "-" → HỎI huỷ điểm W2 (không âm thầm xoá); đồng ý → điểm W2 cất
+     (Khôi phục được), cả W vắng, dời lần 1 — không còn một W điểm một W vắng / huỷ. */
   attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, 6, 6, 6] });
-  attempts.saveScore(prgWriting1, id, 'writing1', { noShow: true } as any);
-  assert(prgCell(id, 'writing2').band === 6, 'W1 báo "-" đã xoá điểm W2');
-  assert(prgSit(id, 'writing').sit_status === 'scheduled' && prgSit(id, 'writing').absence_move_count === 1, `W1 "-" + W2 có điểm phải dời cả W: ${JSON.stringify(prgSit(id, 'writing'))}`);
+  assertThrows(() => attempts.saveScore(prgWriting1, id, 'writing1', { noShow: true } as any), /huỷ điểm W2/, 'W1 "-" khi W2 có điểm phải hỏi trước');
+  assert(prgCell(id, 'writing2').band === 6, 'chưa đồng ý mà điểm W2 đã mất');
+  voiXacNhan(() => attempts.saveScore(P.mbManager, id, 'writing1', { noShow: true } as any));
+  assert(prgCell(id, 'writing2').band === null, 'đồng ý mà điểm W2 còn');
+  assert(prgSit(id, 'writing').sit_status === 'scheduled' && prgSit(id, 'writing').absence_move_count === 1, `W1 "-" (W2 điểm đã huỷ) phải dời cả W: ${JSON.stringify(prgSit(id, 'writing'))}`);
 
   const id2 = prgAttempts[5];
+  /* CV-SUA-1011 (chủ SP 10/11, thay "W1 '-' một mình chờ W2"): "-" ở W1 → W2 cùng "-", buổi Writing dời lần 1 ngay; W2 "-" sau đó vô hại. */
   attempts.saveScore(prgWriting1, id2, 'writing1', { noShow: true } as any);
-  assert(prgSit(id2, 'writing').absence_move_count === 0 && prgSit(id2, 'writing').planned_period_id === prgWeek,
-    'Mới W1 báo "-", W2 chưa nhập — chưa đủ để coi buổi Writing là vắng');
+  assert(prgSit(id2, 'writing').sit_status === 'scheduled' && prgSit(id2, 'writing').absence_move_count === 1, 'W1 "-" phải dời cả buổi Writing lần 1 ngay');
   attempts.saveScore(prgWriting2, id2, 'writing2', { noShow: true } as any);
-  assert(prgSit(id2, 'writing').sit_status === 'scheduled' && prgSit(id2, 'writing').absence_move_count === 1, 'Cả W1 và W2 đều "-" thì buổi Writing phải dời lần 1 ngay');
+  assert(prgSit(id2, 'writing').absence_move_count === 1, 'W2 "-" sau W1 "-" dời thêm lần nữa');
   assert(prgSettled(id2, 'writing') === 1, `Hai ô "-" cùng một buổi chỉ được đếm MỘT lần vắng, đang ${prgSettled(id2, 'writing')}`);
   prgCell(id2, 'writing1', '2026-10-20');
   assert(prgSettled(id2, 'writing') === 1, 'Mở bảng sau đó làm bộ đếm vắng tăng');
@@ -8328,8 +8332,8 @@ check('PR-H · Badge đếm nói rõ ĐẾM CỦA AI: việc riêng khác toàn 
  */
 /* OV-1b đổi ý phép kiểm này: "-" luôn có tác dụng — W1 "-" (W2 có điểm) quá Chủ nhật là "Không dự thi" của RIÊNG ô W1, không quay về ô trống
    (lỗi chủ SP báo 11/10: "-" ra ô trống); buổi Writing vẫn không vắng và ô KHÔNG khoá (nhập điểm đè được). */
-check('Rà soát · LUAT-34 (T07) W1 "-" + W2 có điểm: buổi vắng lần 1 — dời cả W sang tuần kế, không chờ QL', () => {
-  const id = prgAttempts[4];                                    // W2 có điểm, W1 "-" (phép kiểm PR-G ở trên)
+check('Rà soát · (CV-SUA-1011) W1 "-" + W2 có điểm (đồng ý huỷ điểm W2): buổi vắng lần 1 — dời cả W sang tuần kế, không chờ QL', () => {
+  const id = prgAttempts[4];                                    // W2 điểm đã huỷ, W1 + W2 "-" (phép kiểm PR-G ở trên)
   const k = prgSit(id, 'writing');
   assert(k.sit_status === 'scheduled' && k.absence_move_count === 1 && k.planned_period_id !== prgWeek, `dời cả W: ${JSON.stringify(k)}`);
   assert(!(conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND skill = 'writing' AND status = 'pending'`).get(id)), 'không thẻ chờ');
@@ -9881,6 +9885,9 @@ await runPrLopTrongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== LOP-THUONG-QUYEN (chủ SP 08/11: MT0 Speaking chấm chéo — GV kỹ năng S thấy các lớp thường cùng chi nhánh)
 const { runPrLopThuongQuyenTests } = bocTep('prLopThuongQuyen', await import('./prLopThuongQuyen.tests.ts'));
 await runPrLopThuongQuyenTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== CV-SUA-1011 (chủ SP 10/11: W "-" cả hai · bỏ Chấm Speaking của GVCN · theo dõi mở thẳng lưới)
+const { runPrCvSua1011Tests } = bocTep('prCvSua1011', await import('./prCvSua1011.tests.ts'));
+await runPrCvSua1011Tests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

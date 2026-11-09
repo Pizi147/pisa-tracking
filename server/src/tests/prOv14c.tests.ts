@@ -116,8 +116,8 @@ export async function runPrOv14cTests(t: YThucTestKit) {
 
   check('OV14c-5 · GV không có kỹ năng S: không hàng đợi, không việc Chấm Speaking, không nhập S Mock lớp FT không dạy', () => {
     for (const p of [perm.loadPrincipal(idW), P.lrTeacher, P.w1Teacher]) {
-      /* T18 (06/11): GVCN lớp FT chỉ thấy bài S QUÁ HẠN của lớp mình. */
-      assert(svc.baiChamSpeaking(p, TODAY).rows.every((r: any) => r.cell.overdue) && (viecCs(p).length === 0 || perm.lopGvcn(p, TODAY).length > 0), `${p.fullName} thấy Chấm Speaking`);
+      /* CV-SUA-1011 (chủ SP 10/11, thay T18 06/11): GVCN không là GV Speaking cũng không hàng đợi, không việc. */
+      assert(svc.baiChamSpeaking(p, TODAY).rows.length === 0 && viecCs(p).length === 0, `${p.fullName} thấy Chấm Speaking`);
     }
     const r = svc.baiChamSpeaking(gvS(), TODAY).rows.find((x: any) => x.cho);
     thu(() => assertThrows(() => svc.saveScore(perm.loadPrincipal(idW), r.attemptId, 'speaking', { criteria: [6, 6, 6, 6] }, TODAY), /./, 'GV Writing nhập S'));
@@ -247,6 +247,6 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     assert(/const theId = [^\n]*!xemMotGv/.test(tab), 'panel duyệt (?the=) vẫn mở khi xem một GV');
     /* Việc Chấm Speaking của GV đang xem (OV14c-12) là dòng theo dõi — không nút động từ (brief 7). */
     /* UI-CV-V12 S5: nút một dòng — "Chấm" (tên nhóm "Speaking chấm chéo" đã nói). */
-    assert(/laViecChamCheo\(it\) && !xem \? \(\(it as \{ chiXemCham\?: boolean \}\)\.chiXemCham \? t\('Xem'\) : t\('Chấm'\)\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo (không theo dõi) còn nút "Chấm"');
+    assert(/laViecChamCheo\(it\) && !xem \? t\('Chấm'\)/.test(docSach('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng chấm chéo (không theo dõi) còn nút "Chấm"');
   });
 }

@@ -130,7 +130,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       return <NganCase key={it.key} caseId={it.caseId!} viec="them-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'score':
       /* R1-LUU-TIEP: mọi việc chấm có "Việc tiếp ›" ở chân panel + trong hộp nhập điểm khi hết phần người xem. */
-      if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
+      /* CV-SUA-1011: dòng theo dõi (việc của GV khác) — hàng đợi của chính GV đó, không của người xem. */
+      if (it.key === KHOA_CHAM_SPEAKING) return <PanelChamSpeaking key={it.key} nguoi={it.mine ? null : it.ownerId} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       /* N39 (chủ SP 05/11): việc chấm có tuần thi — kể cả Speaking chấm chéo — mở lưới TUẦN + LỚP, chỉ em có bài tuần đó; không mở bảng cả lớp theo đợt MT. */
       if (it.con || it.periodId) return <PanelNhapDiemTuan key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
       return <PanelNhapDiem key={it.key} it={it} tuMo={tuMo} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;

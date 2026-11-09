@@ -124,7 +124,7 @@ import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import * as thiThatTkSvc from '../phanTich/thiThatThongKe.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
-import { NHOM_VIEC_TVV, boQuaViec, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
+import { NHOM_VIEC_TVV, boQuaViec, gvDangXem, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
@@ -582,7 +582,12 @@ api.post('/my-work/bo-qua', requireAuth, wrap((req) => boQuaViec(principalOf(req
 /** OV-14c: hàng đợi "Chấm Speaking" của GV Speaking (panel của việc `KHOA_CHAM_SPEAKING`) — mỗi em một ô S Mock (`baiChamSpeaking`). */
 api.get('/my-work/cham-speaking', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return attemptSvc.baiChamSpeaking(principalOf(req));
+  const p = principalOf(req);
+  /* CV-SUA-1011: `nguoi` = QL theo dõi việc GV đó (dòng "Theo dõi · Chấm Speaking" mở thẳng hàng đợi của GV, không panel trống). */
+  const nguoi = qInt(req, 'nguoi');
+  if (!nguoi || nguoi === p.userId) return attemptSvc.baiChamSpeaking(p);
+  const { pv, x } = gvDangXem(p, nguoi);
+  return attemptSvc.baiChamSpeaking(p, undefined, { ai: x, cn: pv.branchIds });
 }));
 
 /* OV-12h (chủ SP 14/10): bỏ hẳn Nhắc — `/my-work/nhac`, `/my-work/nhac-nhieu`, `/yeu-cau/nhac-nhieu`, `/lenh-chuyen/:id/nhac` (404). */

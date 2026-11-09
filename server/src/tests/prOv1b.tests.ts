@@ -78,12 +78,11 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);   // thứ Tư W2 NOV — trong tuần thi mới
     k = ky(a, 'listening');
     assert(k.sit_status === 'cancelled' && k.huy_vang === 1, `lần 2 phải huỷ phần thi: ${JSON.stringify(k)}`);
-    /* Writing: W1 "-" một mình chưa phải buổi vắng; đủ W1 + W2 "-" mới dời, một lần. */
+    /* CV-SUA-1011 (thay "W1 '-' một mình chưa phải buổi vắng"): W1 "-" = cả buổi Writing vắng — dời ngay, một lần; W2 "-" sau đó vô hại. */
     attempts.saveScore(P.w1Teacher, a, 'writing1', { noShow: true }, TRONG);
-    assert(ky(a, 'writing').planned_period_id === W && ky(a, 'writing').absence_move_count === 0, 'W1 "-" một mình đã dời Writing');
-    assert(o(a, 'writing1', W, TRONG).noShow?.state === 'khong-co-bai', 'W1 "-" phải là Không có bài');
+    assert(ky(a, 'writing').planned_period_id === W1 && ky(a, 'writing').absence_move_count === 1, `W1 "-": ${JSON.stringify(ky(a, 'writing'))}`);
     attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG);
-    assert(ky(a, 'writing').planned_period_id === W1 && ky(a, 'writing').absence_move_count === 1, `W1 + W2 "-": ${JSON.stringify(ky(a, 'writing'))}`);
+    assert(ky(a, 'writing').planned_period_id === W1 && ky(a, 'writing').absence_move_count === 1, `W2 "-" sau W1: ${JSON.stringify(ky(a, 'writing'))}`);
   }));
 
   /* LUAT-34 → N38: "-" ghi muộn chốt như trong tuần (dời tuần ngay sau tuần thi); MT cũ CỦA KỸ NĂNG (tuần thi cách ≥ 2 tuần) "-" = Không dự thi
@@ -114,7 +113,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     assert(kr.planned_period_id === W1 && kr.absence_move_count === 1, `"-" ghi muộn trên ô sat phải dời: ${JSON.stringify(kr)}`);
   }));
 
-  check('OV1b-4 · Bỏ vắng: GV đúng kỹ năng / GVCN / QL đưa ô về tuần cũ, bộ đếm −1 (không chặn hạn tuần cũ); GV khác thì 403; đã huỷ phần thi chỉ QL', () => thu(() => {
+  check('OV1b-4 · Bỏ vắng: GV đúng kỹ năng / GVCN / QL đưa ô về tuần cũ, bộ đếm −1 (không chặn hạn tuần cũ); GV khác thì 403; đã huỷ phần thi: GVCN / GV kỹ năng cũng gỡ được (CV-SUA-1011)', () => thu(() => {
     const a = luot[0];
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
@@ -125,13 +124,14 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { noShow: false }, thu6);
     const k = ky(a, 'listening');
     assert(k.planned_period_id === W && k.absence_move_count === 0 && k.sit_status === 'scheduled', `bỏ vắng: ${JSON.stringify(k)}`);
-    /* Vắng lần 2 → huỷ phần thi: GV không gỡ, QL "Khôi phục phần thi" (hoặc gỡ). */
+    /* Vắng lần 2 → huỷ phần thi. CV-SUA-1011 (chủ SP 10/11 "bấm nhầm thành vắng xong bị khoá thì vẫn phải được bỏ vắng"): GVCN gỡ được, mở lại phần thi. */
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, TRONG);
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, BU);
     assert(ky(a, 'reading').sit_status === 'cancelled', 'tiền đề: Reading đã huỷ phần thi');
     conn.prepare(`UPDATE assessment_scores SET no_show_at = '2026-01-01T00:00:00.000Z' WHERE attempt_id = ? AND skill = 'reading'`).run(a);   // qua cửa sổ Hoàn tác (LUAT-34)
-    const e2 = loi(() => attempts.saveScore(gvcn, a, 'reading', { noShow: false }, BU));
-    assert(e2?.status === 403 && /Quản lý/.test(e2.message), `GVCN gỡ "-" phần thi đã huỷ: ${e2?.status} ${e2?.message}`);
+    attempts.saveScore(gvcn, a, 'reading', { noShow: false }, BU);
+    assert(ky(a, 'reading').sit_status === 'scheduled' && ky(a, 'reading').huy_vang === 0 && ky(a, 'reading').absence_move_count === 1,
+      `GVCN gỡ "-" phần thi đã huỷ: ${JSON.stringify(ky(a, 'reading'))}`);
     /* Writing đã dời, W1 có điểm ở tuần mới → Bỏ vắng W2 giữ lịch tuần mới (không kéo điểm W1 về tuần cũ). */
     attempts.saveScore(P.w1Teacher, a, 'writing1', { noShow: true }, TRONG);
     attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG);
@@ -167,7 +167,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     assert(dm.mocKeTiep([{ status: 'planned', lich_su: 0, weekStart: WS, attempt_no: 3, huyHet: 1 }], '2026-10-26') === null, 'mocKeTiep');
   }));
 
-  check('OV1b-7 · dòng lớp "phần của bạn": GV chỉ thấy "Quá hạn" khi ô CỦA MÌNH quá hạn; QL thấy toàn bộ; "-" một task sau tuần vẫn là xong ở cả hai nơi', () => thu(() => {
+  check('OV1b-7 · dòng lớp "phần của bạn": GV chỉ thấy "Quá hạn" khi ô CỦA MÌNH quá hạn; QL thấy toàn bộ; "-" một task = cả buổi Writing vắng (CV-SUA-1011), ô tuần cũ không quá hạn', () => thu(() => {
     const a = luot[0];
     dung(a);
     const thu5 = '2026-11-12';   // thứ Năm W2 NOV — tuần W1 NOV đã quá hạn chấm (thứ Tư 11/11) một ngày
@@ -186,17 +186,16 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     const q = hang(QL);
     assert(q.quaHan === true && q.phan === null, `QL thấy toàn bộ: quaHan=${q.quaHan} phan=${JSON.stringify(q.phan)}`);
 
-    /* Một hàm cho ô và hàng: W1 "-" (W2 chưa nhập) xem sau tuần — ô W1 là Không dự thi, không quá hạn; hàng lớp không đếm W1 là còn. */
+    /* CV-SUA-1011 (thay "W1 '-' một mình = Không dự thi riêng ô"): W1 "-" (W2 chưa nhập) trong tuần = cả buổi Writing vắng — W2 cùng dấu, dời tuần sau;
+       ô W1 tuần cũ không quá hạn. */
     const b = luot[1];
     dung(b);
     if (!cuaGvL.includes('writing1')) attempts.saveScore(P.w1Teacher, b, 'writing1', { noShow: true }, TRONG);
     else attempts.saveScore(QL, b, 'writing1', { noShow: true }, TRONG);
     const c = o(b, 'writing1', W, thu5);
-    assert(c.noShow?.state === 'khong-du-thi' && !c.overdue, `ô W1: ${JSON.stringify(c.noShow)} overdue=${c.overdue}`);
-    const conTruoc = hang(QL).conBai;
-    conn.prepare(`UPDATE assessment_scores SET no_show_period_id = NULL WHERE attempt_id = ? AND skill = 'writing1'`).run(b);
-    xoaNho();
-    assert(hang(QL).conBai === conTruoc + 1, 'hàng lớp không coi W1 "-" là đã xong');
+    assert(!c?.overdue, `ô W1: ${JSON.stringify(c?.noShow)} overdue=${c?.overdue}`);
+    assert(ky(b, 'writing').planned_period_id === W1 && ky(b, 'writing').absence_move_count === 1 && dau(b, 'writing2')?.no_show_period_id === W,
+      `W1 "-" phải dời cả buổi, W2 cùng dấu: ${JSON.stringify(ky(b, 'writing'))}`);
   }));
 
   /* ---------------------------------------------------------------- migrate prOv1b: dựng đúng trạng thái cũ của 4 ca */
