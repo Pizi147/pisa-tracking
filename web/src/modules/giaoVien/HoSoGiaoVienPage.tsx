@@ -1,7 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  NHOM_VIEC_LABEL, addDaysIso, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
+  NHOM_VIEC_LABEL, addDaysIso, tabCongViecHienThi, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
   NHAN_TRANG_THAI, type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -85,7 +85,8 @@ export function HoSoGiaoVienPage() {
   if (loading || !data) return <Skeleton rows={8} />;
   const { gv } = data;
   const nguoiXem = { userId: session?.user?.id ?? 0, laQuanLy: laVaiQuanLy(session?.roles) };
-  const coNutViec = gv.laChinhMinh || !!session?.nav?.workOps;
+  /* Chủ SP 10/11 (B' 11): vai không có Công việc (Head tutor) → không nút sang Công việc (trước: bấm bị đẩy về Tổng quan). */
+  const coNutViec = (gv.laChinhMinh && !!session?.nav?.work) || !!session?.nav?.workOps;
   const tenGoi = gv.ten.split(' ').pop() ?? gv.ten;
   const soGvcn = data.lop.filter((l) => l.laGvcn).length;
   return (
@@ -132,7 +133,7 @@ export function HoSoGiaoVienPage() {
       <KhoiCase data={data} homNay={homNay}
         linkPa={!gv.laChinhMinh && session?.nav?.analysis && data.phamVi.cn
           ? { den: duongHieuQuaPaGv(data.phamVi.cn, gv.id, data.lop), chu: t('Hiệu quả PA của {ten} ›', { ten: tenGoi }) } : null} />
-      <KhoiYeuCau data={data} coDuyet={!!session?.nav?.workApprove} />
+      <KhoiYeuCau data={data} coDuyet={!!session?.nav?.workApprove} coYeuCau={!!session?.nav && tabCongViecHienThi(session.nav).includes('yeu-cau')} />
     </div>
   );
 }
@@ -638,11 +639,11 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
 
 // ------------------------------------------------------------------ 5 · Yêu cầu đã gửi
 
-function KhoiYeuCau({ data, coDuyet }: { data: HoSo; coDuyet: boolean }) {
+function KhoiYeuCau({ data, coDuyet, coYeuCau }: { data: HoSo; coDuyet: boolean; coYeuCau: boolean }) {
   const { gv, yeuCau: y } = data;
   const id = gv.id;
   const link: ReactNode = gv.laChinhMinh
-    ? <Link to="/cong-viec/yeu-cau" className="link text-xs">{t('Yêu cầu của tôi ›')}</Link>
+    ? coYeuCau ? <Link to="/cong-viec/yeu-cau" className="link text-xs">{t('Yêu cầu của tôi ›')}</Link> : null
     : coDuyet ? <Link to="/cong-viec?nhom=duyet" className="link text-xs">{t('Chờ duyệt ›')}</Link> : null;
   return (
     <Card title={gv.laChinhMinh ? t('Yêu cầu đã gửi') : t('Yêu cầu {ten} đã gửi', { ten: gv.ten.split(' ').pop() ?? gv.ten })} action={link}>
