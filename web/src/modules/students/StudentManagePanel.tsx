@@ -498,7 +498,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             {cycle.endWeek && <span className="text-slate-500"> · {t('kết thúc {tuan}', { tuan: tuanLich(cycle.endWeek.weekStart, homNay) })}</span>}
           </p>
           {quanLy && (
-            <Truong nhan={t('Tuần bắt đầu')} batBuoc loi={lf.loiCua(loi, 'tuan')} phu={cauDoi && dichChu(cauDoi)}>
+            <Truong nhan={t('Tuần bắt đầu')} batBuoc={!!tuanCu} loi={lf.loiCua(loi, 'tuan')} phu={cauDoi && dichChu(cauDoi)}>
               <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')} value={tuan} onChange={setTuan} />
             </Truong>
           )}
