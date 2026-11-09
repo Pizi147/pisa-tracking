@@ -8,7 +8,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopGvcn, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -145,8 +145,6 @@ export type WorkItem = {
   soLanThu?: number;
   /** V5 SV-SO1: việc của người khác mà người xem làm thay được (`lamThayDuoc`) — chỉ có khi xem người khác ("Của GV", "Tất cả"). */
   lamThay?: boolean;
-  /** T18 (06/11): việc Chấm Speaking của người KHÔNG chấm được S (GVCN) — chỉ xem, nút "Xem". */
-  chiXemCham?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
   boQuaDuoc?: boolean;
   /** PHOI-HOP-SOS-INFO: dòng Phối hợp SOS — thẻ kết quả (em · lượt · Overall so kỳ vọng · kỹ năng trượt) của tối đa 3 lượt chưa xong; `count` là số lượt. */
@@ -588,17 +586,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* LOP-THUONG-QUYEN (chủ SP 08/11): + lớp thường — chỉ ô S của lượt MT0 (`listAttempts` `phamViCham` đọc lượt `mt0` ở các lớp này, `vaoChamS` lọc `laChamCheo`). */
   const lopCheo = new Set<number>(co('score') && (!tatCa || f.tachCuaToi)
     ? [...lopFtChoGvSpeaking(p, today), ...lopMt0ChoGvSpeaking(p, today)].filter((id) => !f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1)) : []);
-  /* T18 (chủ SP 06/11): GVCN lớp (FT: S Mock; thường: S MT0 — không là GV Speaking) chỉ THẤY bài S chấm chéo QUÁ HẠN của lớp mình — cùng việc "Chấm Speaking", không hạn cho bài chưa quá hạn. */
-  const lopCn = new Set<number>(co('score') && (!tatCa || f.tachCuaToi)
-    ? lopGvcn(p, today).filter((id) => !lopCheo.has(id) && (!f.cnCheo || f.cnCheo.includes(bangLop().get(id)?.branchId ?? -1))) : []);
+  /*
+   * CV-SUA-1011 (chủ SP 10/11, thay T18 06/11 phần GVCN): GVCN không là GV Speaking KHÔNG còn dòng "Chấm Speaking" theo dõi bài S chéo quá hạn của lớp
+   * mình ("lỗi này rất ngớ ngẩn cần phải bỏ ngay") — S chéo chưa chấm tính cho nhóm GV có S (sổ nghĩa vụ). Việc chỉ của người chấm được (`lopCheo`).
+   */
   const tuanHomNay = mondayOfDate(today);
-  /** Ô S Mock vào việc Chấm Speaking của người xem: lớp `lopCheo`, từ thứ Hai tuần thi (`canChamCheo`); lớp `lopCn`: chỉ ô quá hạn. */
-  const vaoChamS = (a: any, c: any) => (lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay))
-    || (lopCn.has(a.classId) && laChamCheo(a.kind, c.skill) && !!c.overdue);
+  /** Ô S Mock vào việc Chấm Speaking của người xem: lớp `lopCheo`, từ thứ Hai tuần thi (`canChamCheo`). */
+  const vaoChamS = (a: any, c: any) => lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay);
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
     branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true,
-    ...((tatCa && co('score')) || lopCheo.size || lopCn.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
-    ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo, ...lopCn])] } : {}),
+    ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
+    ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo])] } : {}),
   }).rows.filter((a: any) => a.status !== 'cancelled');
   /*
    * OV-11c (CV-8, Q6): "Của GV" có cả việc của GVCN (Phối hợp SOS, Điền Target, Nhập điểm MT cũ) — như "Của một GV" (`viecCuaNguoi`). GVCN đang hiệu lực
@@ -755,15 +753,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * `lopFtChoGvSpeaking` từ thứ Hai tuần thi tới khi chấm (`canChamCheo`). Có số, KHÔNG hạn / quá hạn (T18: không là nợ của ai). Panel của việc
    * (`/my-work/cham-speaking`, `baiChamSpeaking` — cùng tập bài) liệt kê từng em. Không đổi luật ai chấm.
    */
-  if (lopCheo.size || lopCn.size) {
+  if (lopCheo.size) {
     const ccDongs: BaiChuaCham[] = [];
     /*
-     * T18 (chủ SP 06/11): bài S quá hạn (cờ ô, như Lịch Test khối 1) → việc ghi "quá hạn", hạn = hạn sớm nhất — cho GV Speaking, GVCN và GV phụ trách S của lớp.
+     * T18 (chủ SP 06/11): bài S quá hạn (cờ ô, như Lịch Test khối 1) → việc ghi "quá hạn", hạn = hạn sớm nhất — cho GV Speaking (GV phụ trách S của lớp là GV Speaking).
      * CHỈ GHI, không tính: `demDongViec` / `demSo` / chuông bỏ chấm chéo. Admin (`cham-diem`, P12 Q12): bài chưa ai nhận không quá hạn.
      */
     const hanQua: (string | null)[] = [];
     for (const a of attempts as any[]) {
-      if (!lopCheo.has(a.classId) && !lopCn.has(a.classId)) continue;
+      if (!lopCheo.has(a.classId)) continue;
       for (const c of (a.pendingDetail ?? []) as any[]) {
         if (!vaoChamS(a, c)) continue;
         if (c.overdue && xemViec !== 'cham-diem') hanQua.push(c.deadline ?? null);
@@ -780,7 +778,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       items.push({
         ...mau, key: KHOA_CHAM_SPEAKING,
         ...(hanQua.length ? { urgency: 'overdue' as const, due: hanQua.filter((x): x is string => !!x).sort()[0] ?? null } : {}),
-        ...(lopCheo.size ? {} : { chiXemCham: true }),
         studentId: null, studentName: '', emIds: undefined, classId: null, classCode: null,
         /* Dòng phụ: số lớp (tiêu đề đã có số bài). */
         attemptId: null, attemptNo: null, contextLabel: `${new Set(ccDongs.map((x) => x.classId)).size} lớp`, phu: null, luot: undefined, periodId: null, tuanThi: null,

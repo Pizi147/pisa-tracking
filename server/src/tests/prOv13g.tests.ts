@@ -62,9 +62,8 @@ export async function runPrOv13gTests(t: YThucTestKit) {
     assert(!ngoai.some((c) => lopQ.has(c.classId)), 'lớp chi nhánh khác lọt vào hàng đợi');
     for (const k of ['w1Teacher', 'lrTeacher', 'normalCoreTeacher'] as const) {
       const x = (P as any)[k];
-      /* T18 (06/11): GVCN lớp FT có bài S quá hạn vẫn THẤY dòng (chỉ ghi quá hạn); người khác thì không. */
-      const cn = perm.lopGvcn(x, TODAY).length > 0;
-      assert(!perm.lopFtChoGvSpeaking(x, TODAY).length && (cn || dongCc(x).length === 0), `${k} không dạy S, không là GVCN lớp FT mà có dòng chấm chéo`);
+      /* CV-SUA-1011 (chủ SP 10/11, thay T18 06/11): GVCN không là GV Speaking cũng KHÔNG có dòng chấm chéo. */
+      assert(!perm.lopFtChoGvSpeaking(x, TODAY).length && dongCc(x).length === 0, `${k} không dạy S mà có dòng chấm chéo`);
     }
   });
 
