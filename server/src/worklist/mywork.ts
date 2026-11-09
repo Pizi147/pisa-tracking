@@ -1715,10 +1715,7 @@ function ganKhung(items: WorkItem[], lopCua: (classId: number | null | undefined
  * không 403 khi hồ sơ GV trả 200.
  */
 export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | null) {
-  const xemViec = phamViXemViec(p);
-  if (!xemViec) throw forbidden('Bạn chỉ xem được việc của mình.');
-  const pv = phamViHoSoGv(p, nguoi);
-  const x = loadPrincipal(nguoi);
+  const { xemViec, pv, x } = gvDangXem(p, nguoi);
   /* PR-OV2a: Admin chỉ thấy nhóm Chấm điểm của GV. SUA-LOI-CV: việc Chấm Speaking của GV chỉ tính lớp FT chi nhánh người xem quản lý. */
   const w = myWork(x, { branchId, cnCheo: pv.branchIds, ...(xemViec === 'cham-diem' ? { chiNhom: new Set<WorkGroupKey>(['score']) } : {}) }) as any;
   napTruocPhamVi(w.items.map((it: any) => it.studentId));   // `can()` từng dòng bên dưới đọc bộ nhớ, không N+1
@@ -1768,6 +1765,13 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
   const dong = dungDong(items);
   /* V5 SV-SO1 (brief 7): xem việc người khác = chế độ theo dõi (`chiXem`); dòng nào người xem làm thay được thì `lamThay` (quyền máy chủ thật). */
   return { summary: { ...demSo(dong, (i) => cuaGv.has(i.key)), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true, cnAn };
+}
+
+/** Người xem (QL / QT / Admin) theo dõi việc của GV `nguoi` — quyền như hồ sơ GV (`phamViHoSoGv`). Dùng chung `viecCuaNguoi` và hàng đợi Chấm Speaking của GV đó (CV-SUA-1011). */
+export function gvDangXem(p: Principal, nguoi: number) {
+  const xemViec = phamViXemViec(p);
+  if (!xemViec) throw forbidden('Bạn chỉ xem được việc của mình.');
+  return { xemViec, pv: phamViHoSoGv(p, nguoi), x: loadPrincipal(nguoi) };
 }
 
 /** Bảng chi nhánh (vài dòng) — nhớ theo tiến trình, khoá phiên bản DB. */

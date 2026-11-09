@@ -6,7 +6,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -2731,9 +2731,13 @@ const TUAN_S_SQL = `COALESCE((SELECT kp.week_start FROM attempt_skills k JOIN re
  *  · đã có điểm, tuần thi S từ tuần trước: vẫn hiện kèm "Nhập bởi …" — tìm em không ra trống, thấy ai đã chấm.
  * Ô = đúng ô của bảng FT (`skillCells` + R11 `dotHoanTatMany`) — hộp chấm dùng lại, ghi qua `saveScore` như mọi nơi.
  */
-export function baiChamSpeaking(p: Principal, today = demoToday()) {
+export function baiChamSpeaking(p: Principal, today = demoToday(),
+  /** CV-SUA-1011: QL theo dõi việc GV `ai` ("Của GV") — hàng đợi của GV đó, chỉ lớp ở chi nhánh `cn` của người xem (như `viecCuaNguoi`); ô (quyền sửa) theo người xem. */
+  xem?: { ai: Principal; cn: readonly number[] | null }) {
   /* LOP-THUONG-QUYEN (chủ SP 08/11): + S MT0 các lớp thường cùng chi nhánh — SQL dưới chỉ lấy lượt `mt0` ở các lớp này. */
-  const lopS = [...lopFtChoGvSpeaking(p, today), ...lopMt0ChoGvSpeaking(p, today)];
+  const ai = xem?.ai ?? p;
+  const lopS = [...lopFtChoGvSpeaking(ai, today), ...lopMt0ChoGvSpeaking(ai, today)]
+    .filter((id) => !xem?.cn || xem.cn.includes(bangLop().get(id)?.branchId ?? -1));
   /* CV-SUA-1011 (chủ SP 10/11, thay T18 06/11 phần GVCN): GVCN không là GV Speaking không còn hàng đợi này. */
   const lop = lopS;
   if (!lop.length) return { rows: [] as any[], soBai: 0 };

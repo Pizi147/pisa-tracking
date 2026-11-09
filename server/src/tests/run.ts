@@ -9876,6 +9876,9 @@ await runPrLopTrongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== LOP-THUONG-QUYEN (chủ SP 08/11: MT0 Speaking chấm chéo — GV kỹ năng S thấy các lớp thường cùng chi nhánh)
 const { runPrLopThuongQuyenTests } = bocTep('prLopThuongQuyen', await import('./prLopThuongQuyen.tests.ts'));
 await runPrLopThuongQuyenTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== CV-SUA-1011 (chủ SP 10/11: W "-" cả hai · bỏ Chấm Speaking của GVCN · theo dõi mở thẳng lưới)
+const { runPrCvSua1011Tests } = bocTep('prCvSua1011', await import('./prCvSua1011.tests.ts'));
+await runPrCvSua1011Tests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
