@@ -196,18 +196,22 @@ export async function runPrSosTests(t: YThucTestKit) {
       OR (n.entity_type = 'sos_case' AND n.entity_id IN (SELECT id FROM sos_cases WHERE student_id = ?)))`, w1, a.id, st.id);
     assert(w1 !== gvcn() && cuaW1.length === 0, `GV W1 nhận ${cuaW1.length}`);
   });
-  check('SOS (3) · MT2 trượt lại, Case ĐÃ có nguyên nhân → mốc repeat + một PA quy chế mới chờ xác nhận theo hàng MT2 + hạn xác nhận đặt lại; PA cũ giữ nguyên', () => {
+  check('SOS (3) · MT2 trượt lại, Case ĐÃ có nguyên nhân → mốc repeat + một PA quy chế mới chờ xác nhận theo hàng MT2 + hạn xác nhận đặt lại; PA cũ "đến MT2" sang Kết quả cuối (K3-16)', () => {
     const { st } = mt1Sos3('T3c');
     const c = caseOf(st.id, 'listening');
     ghiNguyenNhan(c.id);
     conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ? WHERE case_id = ?`)
       .run(TODAY, new Date().toISOString(), gvKyNang('listening'), c.id);
     conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(addDays(TODAY, -10), c.id);
-    const cu = JSON.stringify(plansOf(c.id)[0]);
+    const cu = plansOf(c.id)[0];
+    /* Mốc MT2 dự kiến muộn hơn ngày MT2 thật; hạn ghi kỳ này (T2) như lúc Xác nhận PA. */
+    conn.prepare('UPDATE case_interventions SET followup_due = ?, action_due = ? WHERE id = ?').run(addDays(TODAY, 20), addDays(TODAY, 7), cu.id);
     const a2 = mkAttempt(st, 2);
     for (const k of ['listening', 'reading', 'speaking']) enter(a2, k, 5);
     const ivs = plansOf(c.id);
-    assert(ivs.length === 2 && JSON.stringify(ivs[0]) === cu, JSON.stringify(ivs));
+    assert(ivs.length === 2 && ivs[0].id === cu.id && ivs[0].status === 'started' && ivs[0].moc_quy_che === cu.moc_quy_che, JSON.stringify(ivs));
+    assert(ivs[0].followup_due <= TODAY && d.laLanGhiCuoi({ preset: true, followupDue: ivs[0].followup_due, actionDue: ivs[0].action_due }, TODAY),
+      `PA cũ chưa sang Kết quả cuối: ${JSON.stringify(ivs[0])}`);
     assert(ivs[1].status === 'planned' && ivs[1].confirmed_at === null && ivs[1].description === 'Tutor · đến MT3' && ivs[1].moc_quy_che === 'until_next_mt', JSON.stringify(ivs[1]));
     assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === d.hanXacNhan(TODAY, { sosLevel: 1 }), 'hạn chưa đặt lại (L nhập trước: SOS 1 lúc đặt → 5 ngày)');
     assert(all(`SELECT kind FROM case_milestones WHERE case_id = ? AND attempt_id = ?`, c.id, a2.id).some((m: any) => m.kind === 'repeat'), 'thiếu mốc repeat');
@@ -232,6 +236,37 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(plansOf(c.id).length === 1, `PA quy chế trùng: ${JSON.stringify(plansOf(c.id))}`);
     assert(get('SELECT han_xac_nhan h FROM sos_cases WHERE id = ?', c.id).h === han, 'hạn xác nhận bị đặt lại');
   });
+  {
+    const k316: any = await import('../migrate/prK316.ts');
+    const { chenPa } = await import('../cases/taoPa.ts');
+    check('K3-16 · migrate prK316: PA cũ "đến MTn" đang chạy cạnh PA quy chế mới → Kết quả cuối + nhật ký; "đến lúc thi" / Case một PA không đụng; khoá; khôi phục trả mốc cũ', () => {
+      const lam = (ten: string, moc: string) => {
+        const { st } = mt1Sos3(ten);
+        const c = caseOf(st.id, 'listening');
+        conn.prepare(`UPDATE case_interventions SET status = 'started', started_date = ?, confirmed_at = ?, confirmed_by = ?, moc_quy_che = ?, followup_due = ?, action_due = ? WHERE case_id = ?`)
+          .run(TODAY, new Date().toISOString(), gvKyNang('listening'), moc, addDays(TODAY, 30), addDays(TODAY, 7), c.id);
+        return { c, cu: plansOf(c.id)[0] };
+      };
+      const a = lam('K316a', 'until_next_mt');
+      const moi = chenPa(conn, [{ caseId: a.c.id, kind: 'tutor', description: 'Tutor · đến MT3', performerUserId: a.cu.performer_user_id, status: 'planned', preset: true, mocQuyChe: 'until_next_mt' }])[0];
+      const b = lam('K316b', 'until_exam');
+      chenPa(conn, [{ caseId: b.c.id, kind: 'tutor', description: 'Tutor · đến MT3', performerUserId: b.cu.performer_user_id, status: 'planned', preset: true, mocQuyChe: 'until_next_mt' }]);
+      const motPa = lam('K316c', 'until_next_mt');
+      const ds = k316.paCuK316(conn).map((r: any) => r.id);
+      assert(ds.includes(a.cu.id) && !ds.includes(moi) && !ds.includes(b.cu.id) && !ds.includes(motPa.cu.id), JSON.stringify(ds));
+      conn.prepare('DELETE FROM demo_config WHERE key = ?').run(k316.KHOA_PR_K316);
+      const ap: string[] = [];
+      k316.migratePrK316(conn, ap);
+      const sau = get('SELECT followup_due f, action_due ad, moc_quy_che m, status s FROM case_interventions WHERE id = ?', a.cu.id);
+      assert(sau.f <= TODAY && sau.m === 'until_next_mt' && sau.s === 'started' && d.laLanGhiCuoi({ preset: true, followupDue: sau.f, actionDue: sau.ad }, TODAY), JSON.stringify(sau));
+      assert(ap.some((x) => x.startsWith('K3-16')) && !!get(`SELECT 1 FROM sos_case_history WHERE case_id = ? AND field = 'pa_het_moc_k316'`, a.c.id), JSON.stringify(ap));
+      assert(get('SELECT followup_due f FROM case_interventions WHERE id = ?', b.cu.id).f === addDays(TODAY, 30), '"đến lúc thi" bị đổi');
+      const ap2: string[] = [];
+      k316.migratePrK316(conn, ap2);
+      assert(ap2.length === 0, 'khoá: lần hai vẫn chạy');
+      assert(k316.khoiPhucK316(conn).includes(a.cu.id) && get('SELECT followup_due f FROM case_interventions WHERE id = ?', a.cu.id).f === addDays(TODAY, 30), 'khôi phục không trả mốc cũ');
+    });
+  }
   {
     const mig: any = await import('../migrate/prPaTrung0711.ts');
     const kp: any = await import('../platform/khoiPhucRac.ts');

@@ -117,6 +117,7 @@ import { migratePrNgayXong0711 } from './migrate/prNgayXong0711.ts';
 import { migratePrNghiaVu } from './migrate/prNghiaVu.ts';
 import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 import { migratePrWLech } from './migrate/prWLech.ts';
+import { migratePrK316 } from './migrate/prK316.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -480,6 +481,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrNghiaVu(conn, applied));
   /* W-LECH (chủ SP 10/11): lượt Writing một W "-" một W trống (trước #1273) → W trống nhận "-", chốt cả buổi; nhật ký (đổi dữ liệu MỘT lần, khoá demo_config). */
   buoc(() => migratePrWLech(conn, applied));
+  /* K3-16 (chủ SP 11/11): PA quy chế cũ "đến MTn" / "1 tháng" đang chạy cạnh PA mới (trượt lại trước #1303) → Kết quả cuối; nhật ký giữ mốc cũ (đổi dữ liệu MỘT lần, khoá demo_config). */
+  buoc(() => migratePrK316(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
