@@ -449,13 +449,18 @@ export function lichSuYeuCau(p: Principal, id: number): { dong: { luc: string; n
     chu: NHAN_HANH_DONG[r.action] ? t(NHAN_HANH_DONG[r.action] as Parameters<typeof t>[0]) : [nhanHanhDongNhatKy(r.action), r.entity_label].filter(Boolean).join(' · ') })) };   // DUYET-QL: nhãn nhật ký chung, không lộ mã máy
 }
 
+/** Dòng gốc các thẻ `nguoiXin` đã gửi (đang chờ + gửi trong NGAY_CUA_TOI ngày), sau lượt quét — CÙNG tập thẻ của "Yêu cầu của tôi". Hồ sơ GV đếm số trên dòng này (không dựng thẻ). */
+export function dongYeuCauCuaToi(nguoiXin: number, homNay = demoToday()): YeuCauRow[] {
+  quetYeuCau(homNay);
+  return db().prepare(
+    `SELECT * FROM yeu_cau_duyet WHERE nguoi_xin = ? AND (trang_thai = 'cho' OR tao_luc >= ?)`).all(nguoiXin, tuNgay(NGAY_CUA_TOI)) as any[];
+}
+
 /** Yêu cầu của tôi: mọi thẻ đang chờ + thẻ đã xử lý trong 60 ngày gần nhất. */
 export function yeuCauCuaToi(p: Principal) {
   const homNay = demoToday();
-  quetYeuCau(homNay);
   const conn = db();
-  const rows = conn.prepare(
-    `SELECT * FROM yeu_cau_duyet WHERE nguoi_xin = ? AND (trang_thai = 'cho' OR tao_luc >= ?)`).all(p.userId, tuNgay(NGAY_CUA_TOI)) as any[];
+  const rows = dongYeuCauCuaToi(p.userId, homNay);
   const ngu = napNguCanh(conn, rows, homNay);
   const the = rows.map((r) => theRa(r, ngu));
   return { the: [...sapThe(the.filter((x) => x.trangThai === 'cho')), ...the.filter((x) => x.trangThai !== 'cho').sort(xepDaXuLy)], homNay };

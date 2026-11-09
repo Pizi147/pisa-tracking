@@ -77,9 +77,12 @@ export function lopCuaTap(unit: ChiSo['donVi'], ids: number[]): Map<number, LopC
   switch (unit) {
     case 'hoc-vien': return lopHocVien(ids);
     case 'case': return lopCase(ids);
-    case 'phuong-an':
-      return quaCase(theoLo(ids, (json) => conn.prepare(
-        `SELECT id, case_id AS caseId FROM case_interventions WHERE id IN (${DS_JSON})`).all(json) as any[]));
+    case 'phuong-an': {
+      /* GIAM-DOC-HSGV: nhớ PA → Case theo phần tử trong request — hồ sơ GV lọc cùng tập Ghi KQ PA cho FT rồi cho lớp thường. */
+      const caseCua = nhoTheoId('pa-case:', ids, (thieu) => new Map(theoLo(thieu, (json) => conn.prepare(
+        `SELECT id, case_id AS caseId FROM case_interventions WHERE id IN (${DS_JSON})`).all(json) as any[]).map((r) => [r.id as number, [{ caseId: r.caseId as number }]])));
+      return quaCase([...caseCua].map(([id, [x]]) => ({ id, caseId: x.caseId })));
+    }
     case 'nghia-vu': {
       const ivOf = new Map(ids.map((id) => [id, parseObligation(id).interventionId]));
       const iv = lopCuaTap('phuong-an', [...new Set(ivOf.values())]);

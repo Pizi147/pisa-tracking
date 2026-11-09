@@ -9897,6 +9897,9 @@ await runPrKhongLopGhiTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== QUYEN-KY-NANG + GIAO-VIEC-CN (chủ SP 10/11, B' mục 7 + 9)
 const { runPrQuyenKyNangTests } = bocTep('prQuyenKyNang', await import('./prQuyenKyNang.tests.ts'));
 await runPrQuyenKyNangTests({ check, assert, conn, P } as any);
+// ==================================================================== GIAM-DOC-HSGV (trang Hồ sơ GV đọc ít câu — số trước = sau)
+const { runPrGiamDocHsgvTests } = bocTep('prGiamDocHsgv', await import('./prGiamDocHsgv.tests.ts'));
+await runPrGiamDocHsgvTests({ check, assert, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

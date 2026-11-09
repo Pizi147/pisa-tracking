@@ -50,12 +50,13 @@ function nhomS(cns: readonly number[]): (cn: number, ngay: string) => number[] {
  * Dòng đang tính (không `khong_tinh`) có hạn trong kỳ — một câu. Theo chỉ mục (chi_nhanh, han): mọi chi nhánh = `chi_nhanh IN (mọi chi nhánh)` (không quét
  * cả bảng). Có `nguoi`: hai nhánh UNION ALL theo chỉ mục (nguoi, han) — dòng của người đó + dòng S chéo chưa ai nhận (`nguoi IS NULL`).
  */
-function docKy(q: Q): DongDoc[] {
+function docKy(q: Omit<Q, 'loai'> & { loai: Q['loai'] | 'bai-viec' }): DongDoc[] {
   const cn = q.chiNhanh == null ? null : JSON.stringify(typeof q.chiNhanh === 'number' ? [q.chiNhanh] : q.chiNhanh);
-  const dk = `n.loai = ? AND n.khong_tinh IS NULL AND n.han BETWEEN ? AND ?
+  /* GIAM-DOC-HSGV: 'bai-viec' = bài + việc một câu (hồ sơ GV, Phân tích GV đọc cả hai số) — tách theo `loai` sau khi đọc. */
+  const dk = `${q.loai === 'bai-viec' ? `n.loai IN ('bai', 'viec')` : 'n.loai = ?'} AND n.khong_tinh IS NULL AND n.han BETWEEN ? AND ?
     AND n.chi_nhanh IN (${cn ? 'SELECT value FROM json_each(?)' : 'SELECT id FROM branches'})
     ${q.khung ? `AND (n.lop IS NULL OR n.lop IN (SELECT c.id FROM classes c WHERE c.is_fast_track = ?${cn ? ' AND c.branch_id IN (SELECT value FROM json_each(?))' : ''}))` : ''}`;
-  const tham = [q.loai, q.tu, q.den, ...(cn ? [cn] : []), ...(q.khung ? [q.khung === 'ft' ? 1 : 0, ...(cn ? [cn] : [])] : [])];
+  const tham = [...(q.loai === 'bai-viec' ? [] : [q.loai]), q.tu, q.den, ...(cn ? [cn] : []), ...(q.khung ? [q.khung === 'ft' ? 1 : 0, ...(cn ? [cn] : [])] : [])];
   if (q.nguoi == null) return db().prepare(`SELECT ${COT_DOC} FROM nghia_vu n WHERE ${dk}`).all(...tham) as DongDoc[];
   return db().prepare(`SELECT ${COT_DOC} FROM nghia_vu n WHERE n.nguoi = ? AND ${dk}
       UNION ALL SELECT ${COT_DOC} FROM nghia_vu n WHERE n.nguoi IS NULL AND n.s_cheo = 1 AND ${dk}`).all(q.nguoi, ...tham, ...tham) as DongDoc[];
@@ -74,7 +75,14 @@ const sChung = (r: DongDoc) => !!r.s_cheo && r.nguoi == null;
  * một người một dòng (tổng). ≤ 2 câu.
  */
 export function demTheoNguoi(q: Q): Map<number, So3 & { sChung: number }> {
-  const rows = docKy(q);
+  return demDong(docKy(q), q);
+}
+/** `demTheoNguoi` cho bài VÀ việc — một câu đọc sổ (GIAM-DOC-HSGV), cùng luật đếm từng loại. */
+export function demTheoNguoiHaiLoai(q: Omit<Q, 'loai'>): { bai: Map<number, So3 & { sChung: number }>; viec: Map<number, So3 & { sChung: number }> } {
+  const rows = docKy({ ...q, loai: 'bai-viec' });
+  return { bai: demDong(rows.filter((r) => r.loai === 'bai'), q), viec: demDong(rows.filter((r) => r.loai === 'viec'), q) };
+}
+function demDong(rows: readonly DongDoc[], q: Pick<Q, 'homNay' | 'nguoi'>): Map<number, So3 & { sChung: number }> {
   const ai = nguoiCua(rows);
   const out = new Map<number, So3 & { sChung: number }>();
   for (const r of rows) {
