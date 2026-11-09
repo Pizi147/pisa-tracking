@@ -8,7 +8,7 @@ import { fmtBand } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   GIAI_THICH_KCK, KCK,
-  NHAN_SAU_THI, datKv, nhanThang, nhanThangDuKien, shortDate, thangKeTiep, tuanLich, thaoTacLichThi,
+  NHAN_SAU_THI, datKv, nhanThang, nhanThangDuKien, shortDate, tenMonNgan, thangKeTiep, tuanLich, thaoTacLichThi,
   type BuocLichThi, type ExamPlan, type KetLuanLichThi, type KetQuaVao, type LichThi, type NguCanhDs, type ThaoTacLichThi, type TrangThaiSauThi,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -243,6 +243,17 @@ const chuLichSu = (x: DongLichSu, homNay: string) =>
 const doiDiem = (v: number | null, p: number | null | undefined): string | null =>
   v == null || p == null ? null : v === p ? '=' : `${v > p ? '↑' : '↓'}${Math.abs(v - p).toFixed(1)}`;
 
+/** Ô % một môn lớp thường (cùng dáng ô kỹ năng FT): ✓ đạt ngưỡng · ✗ chưa đạt · không dấu = chưa chấm / không xét. */
+function OPt({ nhan, v, dat }: { nhan: string; v: number | null; dat: boolean | null }) {
+  const so = v == null ? '—' : `${Math.round(v)}%`;
+  return (
+    <span className="lt-okn" role="img" aria-label={[nhan, so, dat === false ? t('Chưa đạt') : null].filter(Boolean).join(' ')}>
+      <span className="okn-t">{nhan}</span>
+      <span className={`lt-okn-so ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{so}</span>
+    </span>
+  );
+}
+
 function OKn({ nhan, v, kv, kck, dl, ovr }: { nhan: string; v: number | null; kv: number | null; kck: boolean; dl: string | null; ovr?: boolean }) {
   const dat = datKv(v, kv, kck);
   return (
@@ -268,6 +279,10 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
   const ls = toanBo && day.data ? day.data.dong : c.lichSu;
   const trong = <span className="lt-dai-trong">—</span>;
   const tr = c.truoc;
+  /* Lớp thường (#1061 việc để sau): lượt Progress / Final chấm theo tỷ lệ → ô % từng môn của lớp (✓ / ✗ theo ngưỡng), Pre FOU một ô Tổng — `standing.skills` đã nạp. */
+  const mon: [string, { v: number | null; dat: boolean | null }][] = st?.mode !== 'ratio' || !st.attemptId ? []
+    : st.khongChiaMon ? (st.tyLeTong != null ? [['', { v: st.tyLeTong * 100, dat: null }]] : [])
+      : Object.entries(st.skills ?? {}).map(([k, x]) => [k, { v: x.v, dat: x.evaluable ? !x.under : null }]);
   return (
     <div className="lt-dai">
       <div className="hvl-dai-k">
@@ -280,6 +295,8 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
             <OKn ovr nhan="Overall" v={st?.overall ?? null} kv={kv} kck={r.kck} dl={doiDiem(st?.overall ?? null, tr?.ovr)} />
             {(['L', 'R', 'W1', 'W2', 'S'] as const).map((k) => <OKn key={k} nhan={k} v={c.kn![k]} kv={kv} kck={r.kck} dl={doiDiem(c.kn![k], tr?.kn[k])} />)}
           </span>
+        ) : mon.length ? (
+          <span className="hvl-dai-kn">{mon.map(([k, x]) => <OPt key={k} nhan={k === '' ? t('Tổng') : tenMonNgan(st!.chuongTrinh, k)} v={x.v} dat={x.dat} />)}</span>
         ) : trong}
       </div>
       <div className="hvl-dai-k">

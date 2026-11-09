@@ -92,6 +92,7 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_reset_han_case_da_chay', '', now);   // giá trị = ngày reset; rỗng = không có lần ghi trễ cũ nào bị loại
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_pa_trung_0711_da_chay', now, now);   // PA-TRUNG: DB mới không có PA trùng cũ
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_w_lech_da_chay', now, now);   // W-LECH: DB mới đã theo luật "-" một W = cả buổi
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_k316_da_chay', now, now);   // K3-16: DB mới không có PA cũ chạy cạnh PA mới
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };
