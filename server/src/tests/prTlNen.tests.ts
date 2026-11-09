@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM TL-NEN (TRANG-LON S3, kế hoạch `docs/superpowers/plans/2026-10-31-trang-lon.md`):
- * N1 bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB (`moc_he_thong` 'tham-chieu' + 15 trigger) ·
+ * N1 bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB (`moc_he_thong` 'tham-chieu' + 20 trigger) ·
  * N2 quét đường đọc theo mốc DB toàn hệ thống (60 s, sau mỗi lần ghi qua API khi lượt trước ≥ 15 s — GIAM-DOC-0611, sang ngày nghiệp vụ).
  */
 import fs from 'node:fs';
@@ -17,7 +17,7 @@ export async function runPrTlNenTests(t: any) {
   const moc: any = await import('../platform/mocHeThong.ts');
   const ngu: any = await import('../platform/nguCanhRequest.ts');
   const { createApp } = await import('../app.ts');
-  const { bangLop, lopDayDu } = await import('../permissions.ts');
+  const { bangLop, lopDayDu, phanCongDangHoatDong } = await import('../permissions.ts');
   const { allProgrammes, nguongDatKhacMacDinh } = await import('../normal/regular.ts');
   const { getConfig } = await import('../demoConfig.ts');
   const { moBanGoc } = await import('./dbGoc.ts');
@@ -65,14 +65,14 @@ export async function runPrTlNenTests(t: any) {
   ];
 
   // ---------------------------------------------------------------- N1
-  check('N1-a · migrate chạy hai lần không lỗi; schema.sql có moc_he_thong + 15 trigger; dòng tham-chieu so ≠ 0', () => {
+  check('N1-a · migrate chạy hai lần không lỗi; schema.sql có moc_he_thong + 20 trigger; dòng tham-chieu so ≠ 0', () => {
     const lan1: string[] = []; mig.migratePrTlNen(c(), lan1);
     const lan2: string[] = []; mig.migratePrTlNen(c(), lan2);
     assert(lan1.length === 0 && lan2.length === 0, `DB seed đã có đủ, migrate phải không làm gì: ${lan1.join(' · ')} | ${lan2.join(' · ')}`);
     const schema = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
-    assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 15, 'schema.sql thiếu bảng / trigger');
+    assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 20, 'schema.sql thiếu bảng / trigger');
     const tg = c().prepare(`SELECT COUNT(*) n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_%'`).get() as any;
-    assert(tg.n === 15, `${tg.n} trigger`);
+    assert(tg.n === 20, `${tg.n} trigger`);
     assert(soThamChieu() > 0 && (c().prepare('SELECT COUNT(*) n FROM moc_he_thong').get() as any).n === 4, 'dòng mốc');
   });
 
@@ -109,6 +109,28 @@ export async function runPrTlNenTests(t: any) {
     });
   });
 
+  await checkAsync('N1-c2 · GIAM-DOC-1011 (mục 12b): /my-work?nguoi=tat-ca QL lần 2 không đọc phân công; đổi phân công / tên GV (ngoài API) → lần kế đọc lại', async () => {
+    const CAU_PC = /FROM teacher_assignments ta JOIN classes c ON c\.id = ta\.class_id JOIN users u ON u\.id = ta\.user_id WHERE ta\.status = 'active' ORDER BY ta\.id/;
+    const doc = (ds: string[]) => ds.some((s) => CAU_PC.test(s));
+    const url = '/my-work?nguoi=tat-ca';
+    await voiMayChu(async (goi) => {
+      await goi(P.mbManager.userId, url);
+      conHan();
+      await goi(P.mbManager.userId, url);
+      assert(!doc(await ghiCau(() => goi(P.mbManager.userId, url))), 'lần 2 vẫn đọc phân công');
+      const ta = (c().prepare(`SELECT id FROM teacher_assignments WHERE status = 'active' LIMIT 1`).get() as any).id;
+      c().prepare('UPDATE teacher_assignments SET skill = skill WHERE id = ?').run(ta);
+      assert(doc(await ghiCau(() => goi(P.mbManager.userId, url))), 'sau đổi phân công không đọc lại');
+      assert(!doc(await ghiCau(() => goi(P.mbManager.userId, url))), 'lần kế vẫn đọc');
+      const s0 = soThamChieu();
+      c().prepare('UPDATE users SET full_name = full_name WHERE id = ?').run(P.coreTeacher.userId);
+      assert(soThamChieu() === s0 + 1, 'đổi tên GV không tăng phiên bản');
+      c().prepare('UPDATE users SET status = status WHERE id = ?').run(P.coreTeacher.userId);
+      assert(soThamChieu() === s0 + 1, 'đổi cột khác của users vẫn tăng phiên bản');
+      assert(doc(await ghiCau(() => goi(P.mbManager.userId, url))), 'sau đổi tên GV không đọc lại');
+    });
+  });
+
   const nhoMoi = () => {
     const ds = moc.nhoThamChieuHienTai() as Map<string, { so: number; giaTri: unknown }> | undefined;
     return ds ? [...ds.keys()] : [];
@@ -140,7 +162,7 @@ export async function runPrTlNenTests(t: any) {
     moc.thamChieuDayDuKhiKiem.bat = true;
     try {
       ngu.chayTrongRequest('GET', () => {
-        const moi: Record<string, () => unknown> = { 'bang-lop': bangLop, 'lop-day-du': lopDayDu, 'chuong-trinh': allProgrammes, 'nguong-dat-lop': nguongDatKhacMacDinh, 'che-do-lop': cheDo,
+        const moi: Record<string, () => unknown> = { 'bang-lop': bangLop, 'lop-day-du': lopDayDu, 'chuong-trinh': allProgrammes, 'nguong-dat-lop': nguongDatKhacMacDinh, 'che-do-lop': cheDo, 'pc-active': phanCongDangHoatDong,
           'bang-chi-nhanh': () => c().prepare('SELECT id, code, name FROM branches ORDER BY id').all() };   // CV-TAB b: tên chi nhánh (mywork.ts `bangChiNhanh`)
         for (const [k, v] of ds) {
           const doc = moi[k] ?? (k.startsWith('cfg:') ? () => getConfig(k.slice(4)) : null);

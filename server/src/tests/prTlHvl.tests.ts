@@ -93,7 +93,10 @@ export async function runPrTlHvlTests(t: any) {
   await checkAsync('H2 · phân công: phạm vi hẹp đọc theo lớp, Toàn hệ thống một câu', async () => {
     const caBang = (cau: string[]) => cau.some((x) => x.startsWith('SELECT ta.id, ta.class_id, ta.user_id'));
     for (const [uid, url] of [[P.coreTeacher.userId, '/hoc-vien-lop'], [P.mbManager.userId, '/hoc-vien-lop?phamVi=chi-nhanh&branchId=1']] as [number, string][]) assert(!caBang((await doGet(uid, url)).cau), `${url}: nạp cả bảng phân công`);
-    const { cau } = await doGet(P.admin.userId, '/hoc-vien-lop?phamVi=tat-ca');
+    /* GIAM-DOC-1011: phân công nhớ theo tiến trình (doGet đo lần 2) — tắt nhớ tiến trình: khi phiên bản đổi vẫn đúng một câu. */
+    const moc: any = await import('../platform/mocHeThong.ts');
+    moc.thamChieuDayDuKhiKiem.bat = true;
+    const { cau } = await doGet(P.admin.userId, '/hoc-vien-lop?phamVi=tat-ca').finally(() => { moc.thamChieuDayDuKhiKiem.bat = false; });
     const n = dem(cau, /^SELECT [^()]*FROM teacher_assignments/);
     assert(caBang(cau) && n === 1, `Toàn hệ thống: ${n} câu phân công`);
   });

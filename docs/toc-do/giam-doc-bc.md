@@ -33,5 +33,5 @@ không đổi (demo không có lượt lịch sử band còn cờ) → trần `t
 
 ## [XM] chưa làm
 
-1. `phanCongDangHoatDong` (TL-VIEC) đọc cả bảng phân công (527 dòng) mỗi request Công việc — đánh đổi có chủ ý (một câu thay năm). Nhớ theo tiến trình (`nhoThamChieu`)
+1. ✅ GIAM-DOC-1011 (B' 12b): đã nhớ theo tiến trình (trigger `teacher_assignments` + tên / xoá `users`, prTlNen). Gốc: `phanCongDangHoatDong` (TL-VIEC) đọc cả bảng phân công (527 dòng) mỗi request Công việc — đánh đổi có chủ ý (một câu thay năm). Nhớ theo tiến trình (`nhoThamChieu`)
    cần trigger phiên bản trên `teacher_assignments` + `users` (tên) = migrate trigger, ngoài phạm vi "chỉ mục". Ước ~0,3 triệu / ngày.

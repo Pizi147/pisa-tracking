@@ -172,9 +172,10 @@ export type DongPhanCong = { id: number; classId: number; userId: number; ten: s
 /**
  * TL-VIEC: mọi phân công đang hoạt động, MỘT câu mỗi request. CHỈ trang đọc nhiều lớp (Công việc) gọi; hàm dùng chung đọc qua `phanCongDaNap` — trang một lớp giữ câu theo lớp của nó.
  * ponytail: cả bảng (SCAN ta — mọi chi nhánh, cả phân công đã kết thúc; cỡ bảng lớp × 5) — `nguoiGiuKetQua` nhận PA mọi chi nhánh nên không lọc được theo chi nhánh người xem. Bảng dày lịch sử thì thêm chỉ mục `status`.
+ * GIAM-DOC-1011 (B' 12b): nhớ theo tiến trình (`nhoThamChieu`) — trigger phiên bản trên `teacher_assignments`, `classes`, tên / xoá `users` (prTlNen) → 0 câu khi không ai đổi phân công.
  */
 export function phanCongDangHoatDong(): readonly DongPhanCong[] {
-  return nho('pc-active', () => (db().prepare(
+  return nhoThamChieu('pc-active', () => (db().prepare(
     `SELECT ta.id, ta.class_id, ta.user_id, u.full_name, ta.skill, ta.is_core, ta.effective_from, ta.effective_to,
             c.branch_id, c.status AS lop_status, c.code, c.programme_code
        FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN users u ON u.id = ta.user_id

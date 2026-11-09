@@ -101,7 +101,10 @@ export async function runPrTlViecTests(t: any) {
   });
 
   await checkAsync('TV · câu mới đúng thứ tự bảng + chỉ mục: Case mở · phân công · đề nghị dời', async () => {
-    const { cau } = await doGet(P.mbManager.userId, '/my-work?nguoi=tat-ca');
+    /* GIAM-DOC-1011: phân công nhớ theo tiến trình (doGet đo lần 2) — tắt nhớ tiến trình để xem kế hoạch câu khi phiên bản đổi. */
+    const moc: any = await import('../platform/mocHeThong.ts');
+    moc.thamChieuDayDuKhiKiem.bat = true;
+    const { cau } = await doGet(P.mbManager.userId, '/my-work?nguoi=tat-ca').finally(() => { moc.thamChieuDayDuKhiKiem.bat = false; });
     const keHoach = (dau: string) => {
       const sql = cau.find((s) => s.startsWith(dau));
       assert(sql, `không thấy câu ${dau}`);
