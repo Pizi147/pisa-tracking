@@ -356,7 +356,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
    * mốc mới. Q6: đây là LUẬT hệ thống, không phải thao tác xếp tuần — chạy cả khi người sửa là GVCN (trước đây nuốt lỗi quyền im lặng).
    */
   if (patch.startPeriodId !== undefined && patch.startPeriodId !== c.start_period_id && after?.start_period_id) {
-    const r = apLichMacDinh(cycleId, p.userId);
+    const r = apLichMacDinh(cycleId, p.userId, { theoMoc: true });
     if (r.moved.length) {
       const homNay = demoToday();
       addJourney({

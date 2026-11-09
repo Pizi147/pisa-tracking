@@ -20,6 +20,8 @@ import { t } from '@shared/i18n/index.ts';
 export type HangMt = {
   attemptNo: number; studyWeek: number | null; periodId: number | null; weekStart: string | null; code: string | null;
   existingAttemptId: number | null; existingPeriodId: number | null; existingSource: 'auto' | 'manual' | null; locked: boolean;
+  /** Áp lịch sẽ tạo / xếp lượt này — máy chủ tính (`xepTheoDeXuat`): chỉ lượt chưa có lịch, tuần đề xuất chưa qua (chủ SP 10/11). */
+  apDuoc: boolean;
   luot: {
     attemptId: number; trangThai: 'chua-xep' | 'da-xep' | 'co-diem' | 'lich-su' | 'huy'; lichSu: boolean; kyVong: number | null;
     kyNang: Array<{ skill: KyNangKH; periodId: number | null; weekStart: string | null; coDiem: boolean; daThi: boolean; batBuoc: boolean }>;
@@ -114,7 +116,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
             : !coDeXuat ? <Status kind="done">{t('Quản lý đã xếp')}</Status>
             : h.locked ? <Status kind="done">{t('Đã làm xong, giữ nguyên')}</Status>
             : h.existingSource === 'manual' ? <Status kind="done">{t('Quản lý đã chốt, giữ nguyên')}</Status>
-            : h.existingPeriodId !== h.periodId ? <Status kind="waiting">{t('Sẽ dời sang tuần đề xuất')}</Status>
+            : h.existingPeriodId !== h.periodId ? <Status kind="done">{t('Giữ lịch hiện tại')}</Status>
             : <Status kind="done">{t('Đã đúng')}</Status>}
           {that && <span className="mt-0.5 block text-xs text-slate-400">{t('Đang ở {tuan}', { tuan: that })}</span>}
         </td>
