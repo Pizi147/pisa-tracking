@@ -459,7 +459,7 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=tien-bo': 25,   // PT-PANEL: đo 15
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&tu=2026-03-02&den=2026-09-14&cot=dat-mt': 25,   // PT-PANEL: đo 15
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 25, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=hv-chu-y': 25,   // PT-PANEL: đo 15
-  'QL /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 31, 'GVCN /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 29, 'GVBM /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 29, 'QT /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 30,   // PT-PANEL: đo 21 · 19 · 4 (403) · 19 · 20
+  'QL /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 28, 'GVCN /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 26, 'GVBM /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 26, 'QT /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 27,   // PT-PANEL: đo 21 · 19 · 4 (403) · 19 · 20
   /* SUA-NHO-QUYEN: Quản trị › Tài khoản — đo 30/10 trước 138 câu (4 câu × tài khoản) → sau 11; trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/accounts': 21,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
@@ -477,8 +477,8 @@ export const TRAN: Record<string, number> = {
   'GVCN /classes/3/viec-theo-em?chi=toi': 45, 'GVBM /classes/3/viec-theo-em?chi=toi': 44, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 45,
   'QL /classes/3/viec-theo-em?chi=toi': 56, 'QT /classes/3/viec-theo-em?chi=toi': 56,   // TL-VIEC: đo 46 · 46 (trước 66 · 66), GV đo 35 · 34 · 35 (trước 48 · 47 · 48); còn > 30 câu → trần = đo + 10 (PTA 31/10)
   'QL /classes/6/danh-gia-dau-ra': 18, 'QT /classes/6/danh-gia-dau-ra': 17, 'GVCN_THUONG /classes/6/danh-gia-dau-ra': 19,
-  /* SV-SO2: hồ sơ GV theo kỳ, Đạt MT, Thi tháng này, khoảng ~29 tuần (P9) — trần = max(đo+10, ⌈đo×1,3⌉), đo ×3 22/10. */
-  'QL /giao-vien/7/chi-so': 100, 'GVCN /giao-vien/7/chi-so': 100, 'GVBM /giao-vien/7/chi-so': 16, 'GVCN_THUONG /giao-vien/7/chi-so': 100, 'QT /giao-vien/7/chi-so': 100, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 100, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 100, 'GVBM /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 16, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 100, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 100, 'QL /giao-vien/7/chi-so/o?cot=cham-diem': 40, 'GVCN /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'GVBM /giao-vien/7/chi-so/o?cot=cham-diem': 16, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'QT /giao-vien/7/chi-so/o?cot=cham-diem': 38, 'QL /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 43, 'GVCN /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'GVBM /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 16, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'QT /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 41, 'QL /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'QT /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 14, 'QL /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 29, 'QT /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 14, 'QL /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 54, 'QT /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 52, 'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 98, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 97,   // TL-TQ: đo 23 (trước 29) · 23 (trước 28) · 19 (trước 23) · 23 (trước 26) · 41 (trước 47) · 40 (trước 44) · TL-NEN: đo 39 (trước 44)   // DOC-PT: Phân tích GV khoảng dài đo 36 · 35 (trước 43 · 42)
+  /* SV-SO2: hồ sơ GV theo kỳ, Đạt MT, Thi tháng này, khoảng ~29 tuần (P9) — trần = max(đo+10, ⌈đo×1,3⌉), đo ×3 22/10. `/giao-vien/…`: GIAM-DOC-HSGV hạ lại (xem khối PR-GV (3)). */
+  'QL /giao-vien/7/chi-so': 43, 'GVCN /giao-vien/7/chi-so': 41, 'GVBM /giao-vien/7/chi-so': 14, 'GVCN_THUONG /giao-vien/7/chi-so': 41, 'QT /giao-vien/7/chi-so': 42, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 43, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 41, 'GVBM /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 41, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 42, 'QL /giao-vien/7/chi-so/o?cot=cham-diem': 21, 'GVCN /giao-vien/7/chi-so/o?cot=cham-diem': 19, 'GVBM /giao-vien/7/chi-so/o?cot=cham-diem': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=cham-diem': 19, 'QT /giao-vien/7/chi-so/o?cot=cham-diem': 20, 'QL /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 34, 'GVCN /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 32, 'GVBM /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 32, 'QT /giao-vien/7/chi-so/o?cot=ket-qua&tu=2026-03-02&den=2026-09-14': 33, 'QL /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'QT /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=dat-mt': 14, 'QL /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 29, 'QT /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 33, 'GVCN /phan-tich/bao-cao/o?ct=ft&o=thi-thang-nay': 14, 'QL /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 54, 'QT /phan-tich/bao-cao?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20': 52, 'QL /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 98, 'QT /phan-tich/giao-vien?cn=1&ct=ft&tu=2026-03-02&den=2026-09-14': 97,   // TL-TQ: đo 23 (trước 29) · 23 (trước 28) · 19 (trước 23) · 23 (trước 26) · 41 (trước 47) · 40 (trước 44) · TL-NEN: đo 39 (trước 44)   // DOC-PT: Phân tích GV khoảng dài đo 36 · 35 (trước 43 · 42)
   /* OV-15g: Lịch sử thay đổi — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /lich-su?loai=hv&id=1': 16, 'QT /lich-su?loai=hv&id=1': 14, 'GVCN /lich-su?loai=hv&id=1': 19, 'GVBM /lich-su?loai=hv&id=1': 18,
   'QL /lich-su?loai=lop&id=3': 16, 'GVCN /lich-su?loai=lop&id=3': 17, 'GVBM /lich-su?loai=lop&id=3': 17, 'GVCN_THUONG /lich-su?loai=lop&id=3': 17, 'QT /lich-su?loai=lop&id=3': 15,
@@ -936,25 +936,30 @@ export const TRAN: Record<string, number> = {
   'GVCN /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 21,
   'GVCN_THUONG /xuat-mt/xem-truoc?khung=thuong&tg=dot&dot=giua,cuoi': 24,
   // PR-GV (3), 30/09/2026 — hồ sơ GV tách 3 lời gọi (gộp một lời gọi đo 113–126 câu, vượt trần cứng 100): max(sau+10, ⌈sau×1.3⌉). Đo GVCN id 7 (6 lớp, 17 Case): hồ sơ 60–65, việc 61–72, kết quả 44–45, ô 20–27 câu; 403 = 10 câu.
-  'QL /giao-vien/7': 60,   // TL-NEN: đo 46 (trước 59)
-  'GVCN /giao-vien/7': 54,   // TL-NEN: đo 41 (trước 54)
-  'GVBM /giao-vien/7': 16,
-  'GVCN_THUONG /giao-vien/7': 54,   // TL-NEN: đo 41 (trước 54)
-  'QT /giao-vien/7': 56,   // TL-NEN: đo 43 (trước 56)
-  'QL /giao-vien/7/viec': 72,   // TL-NEN: đo 55 (trước 67)
-  'GVCN /giao-vien/7/viec': 62,   // TL-NEN: đo 47 (trước 59)
-  'GVBM /giao-vien/7/viec': 16,
-  'GVCN_THUONG /giao-vien/7/viec': 62,   // TL-NEN: đo 47 (trước 59)
-  'QT /giao-vien/7/viec': 69,   // TL-NEN: đo 53 (trước 65)
-  'QL /giao-vien/7/o?cot=chua-nhap': 34,
-  'GVCN /giao-vien/7/o?cot=chua-nhap': 32,
-  'GVBM /giao-vien/7/o?cot=chua-nhap': 16,
-  'GVCN_THUONG /giao-vien/7/o?cot=chua-nhap': 32,
-  'QT /giao-vien/7/o?cot=chua-nhap': 33,
+  /* GIAM-DOC-HSGV (09/11): mọi đường hồ sơ GV — trần = min(trần cũ, max(đo + 10, ⌈đo × 1,3⌉)), đo ×1 (trước → sau): hồ sơ 45 · 40 · 40 · 42 → 30 · 27 · 27 · 28
+     (một câu đầu hồ sơ, số yêu cầu đếm dòng gốc), việc 44 · 37 · 37 · 42 → 41 · 37 · 37 · 40 (thân `myWork` không đổi — chỉ bỏ kiểm quyền lặp), chỉ số 46 · 44 · 44 · 45 → 33 · 31 · 31 · 32
+     (một câu ngữ cảnh, câu lượt UNION ALL, phần nạp theo lượt / em một lượt, sổ bài + việc một câu), panel chỉ số −4 câu (ngữ cảnh); `/giao-vien/9/chi-so` QL 46 → 33,
+     QT 68 → 46 (gồm lượt ghi lại sổ việc chi nhánh thứ hai của GV — đường đầu tiên của lượt đo chạm chi nhánh đó). */
+  'QL /giao-vien/9/chi-so': 43, 'QT /giao-vien/9/chi-so': 60,
+  'QL /giao-vien/7': 40,   // TL-NEN: đo 46 (trước 59)
+  'GVCN /giao-vien/7': 37,   // TL-NEN: đo 41 (trước 54)
+  'GVBM /giao-vien/7': 14,
+  'GVCN_THUONG /giao-vien/7': 37,   // TL-NEN: đo 41 (trước 54)
+  'QT /giao-vien/7': 38,   // TL-NEN: đo 43 (trước 56)
+  'QL /giao-vien/7/viec': 54,   // TL-NEN: đo 55 (trước 67)
+  'GVCN /giao-vien/7/viec': 49,   // TL-NEN: đo 47 (trước 59)
+  'GVBM /giao-vien/7/viec': 14,
+  'GVCN_THUONG /giao-vien/7/viec': 49,   // TL-NEN: đo 47 (trước 59)
+  'QT /giao-vien/7/viec': 52,   // TL-NEN: đo 53 (trước 65)
+  'QL /giao-vien/7/o?cot=chua-nhap': 26,
+  'GVCN /giao-vien/7/o?cot=chua-nhap': 24,
+  'GVBM /giao-vien/7/o?cot=chua-nhap': 14,
+  'GVCN_THUONG /giao-vien/7/o?cot=chua-nhap': 24,
+  'QT /giao-vien/7/o?cot=chua-nhap': 25,
   /* 6c-2 (#632 XM-1): +1 câu điểm lượt mở Case (`diemCase`, `case_milestones` theo lô — một câu cho cả trang). GVBM không có Case trong tập nên không đổi. */
   'QL /giao-vien/7/o?cot=case-mo': 31,
   'GVCN /giao-vien/7/o?cot=case-mo': 29,
-  'GVBM /giao-vien/7/o?cot=case-mo': 16,
+  'GVBM /giao-vien/7/o?cot=case-mo': 14,
   'GVCN_THUONG /giao-vien/7/o?cot=case-mo': 29,
   'QT /giao-vien/7/o?cot=case-mo': 28,   // OV-13a (B): +1 câu MT cuối của lộ trình (chữ mốc "đến MT{n}") khi danh sách có PA "đến lúc thi" — một câu cho cả trang
   // PR-GV (4), 30/09/2026 — bảng GV chi nhánh: 36 (QL) / 34 (QT) câu, 403 = 9 câu; KHÔNG tăng theo số GV / lớp / Case (phép kiểm prGv.tests.ts).
@@ -1050,7 +1055,9 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN /tong-quan/lop-toi-day/hai-khoi': 2391, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 2732, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 2391,
   /* GIAM-DOC-0711a: napCaseMo tập cha theo chi nhánh (QL "Tất cả", lọc chi nhánh, Phân tích GV / hồ sơ GV — DEM-QUA-HAN) — trần dòng mới = max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1. */
   'QL /my-work?nguoi=7': 848, 'QL /my-work?nguoi=tat-ca&branchId=1': 1226, 'QT /my-work?nguoi=tat-ca&branchId=1': 1233,   /* GIAM-DOC-1011 (12b): phân công nhớ theo tiến trình — đo 652 · 943 · 948 (trước 818 · 1 109 · 1 114) */
-  'QL /giao-vien/7/viec': 1102, 'QT /giao-vien/7/viec': 1099, 'QL /giao-vien/9/chi-so': 2450,   /* SỔ NGHĨA VỤ PR-2: đo 2385 — gồm ghi lại sổ việc chi nhánh khi có lần ghi mới (`lamMoiViec`); sổ đang mới ít hơn */ 'QT /giao-vien/9/chi-so': 2587, 'QL /giao-vien/7/chi-so': 2187, 'GVCN /giao-vien/7/chi-so': 2184, 'GVCN_THUONG /giao-vien/7/chi-so': 2184, 'QT /giao-vien/7/chi-so': 2186, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2932, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2931,
+  /* GIAM-DOC-HSGV: đường hồ sơ GV = min(trần cũ, max(đo + 50, ⌈đo × 1,3⌉)), đo 09/11 ×1 — chỉ số 1 267–1 885, việc 651–652, `/giao-vien/9/chi-so` QL 1 332 · QT 1 431
+     (SỔ NGHĨA VỤ PR-2 đo QL 2 385 khi lượt ghi lại sổ việc MB rơi vào đường này; nay lượt đo chạm sổ MB ở đường trước đó). */
+  'QL /giao-vien/7/viec': 848, 'QT /giao-vien/7/viec': 847, 'QL /giao-vien/9/chi-so': 1732, 'QT /giao-vien/9/chi-so': 1861, 'QL /giao-vien/7/chi-so': 1648, 'GVCN /giao-vien/7/chi-so': 1657, 'GVCN_THUONG /giao-vien/7/chi-so': 1657, 'QT /giao-vien/7/chi-so': 1658, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2441, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2450, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2450, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2451,
   /* DEM-QUA-HAN b: panel Chấm Test đúng hạn (số chung) — ⌈đo × 1,3⌉, đo 285 · 285. */
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371,
   /* DEM-QUA-HAN: Phân tích GV + panel Việc đúng hạn — trần = ⌈đo × 1,3⌉, đo bảng FT 2 349 · 2 347, thường 2 168 · 2 166, khoảng dài 2 702 · 2 700, panel 1 192 · 1 190. */

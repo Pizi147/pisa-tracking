@@ -3,16 +3,23 @@ import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
 import { forbidden, normalizeName, notFound } from '../util.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 
 /**
  * Ai xem được hồ sơ GV (PR-GV Q9). Trả phạm vi chi nhánh của SỐ LIỆU: null = mọi chi nhánh. Ném 404 / 403.
  * Tệp riêng (không nằm trong hoSo.ts) để `mywork.ts` dùng được mà không vòng import.
  * GV thuần (và CX, TVV — PR-OV2a) không có `analysis.view_teacher` (seed/data.ts) nên `scopeFor` trả `none` → chỉ xem được chính mình.
  */
-export function phamViHoSoGv(p: Principal, gvId: number): { branchIds: number[] | null; laChinhMinh: boolean } {
+export function phamViHoSoGv(p: Principal, gvId: number): { branchIds: number[] | null; laChinhMinh: boolean; ten: string } {
+  /* GIAM-DOC-HSGV: nhớ trong request — `/giao-vien/:id/viec` kiểm ở hồ sơ rồi kiểm lại trong `viecCuaNguoi` (cùng người xem, cùng GV). */
+  return nho(`pham-vi-ho-so-gv:${p.userId}:${gvId}`, () => tinhPhamVi(p, gvId));
+}
+function tinhPhamVi(p: Principal, gvId: number): { branchIds: number[] | null; laChinhMinh: boolean; ten: string } {
   const conn = db();
-  if (!conn.prepare(`SELECT 1 FROM users WHERE id = ? AND status = 'active'`).get(gvId)) throw notFound('Không tìm thấy giáo viên này.');
-  if (p.userId === gvId) return { branchIds: null, laChinhMinh: true };
+  const u = conn.prepare(`SELECT full_name FROM users WHERE id = ? AND status = 'active'`).get(gvId) as { full_name: string } | undefined;
+  if (!u) throw notFound('Không tìm thấy giáo viên này.');
+  const ten = u.full_name;
+  if (p.userId === gvId) return { branchIds: null, laChinhMinh: true, ten };
   /* PR-S5F-b: hồ sơ GV của NGƯỜI KHÁC chỉ mở cho tài khoản có vai giáo viên đang hoạt động (không mở hồ sơ QL/QT qua đường này). */
   if (!conn.prepare(
     `SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'active' AND r.key = 'teacher' LIMIT 1`,
@@ -20,10 +27,10 @@ export function phamViHoSoGv(p: Principal, gvId: number): { branchIds: number[] 
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
   /* OV-11h (PT-11): câu theo vai — GV được xem hồ sơ của chính mình; TVV / CX / Admin không có phần GV. */
   if (scope.none) throw forbidden(p.roleKeys.includes('teacher') ? 'Bạn chỉ xem được hồ sơ giáo viên của chính mình.' : 'Hồ sơ giáo viên dành cho Quản lý.');
-  if (scope.all) return { branchIds: null, laChinhMinh: false };
+  if (scope.all) return { branchIds: null, laChinhMinh: false, ten };
   if (!scope.branchIds.length) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
   if (!gvThuocChiNhanh(gvId, scope.branchIds)) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
-  return { branchIds: scope.branchIds, laChinhMinh: false };
+  return { branchIds: scope.branchIds, laChinhMinh: false, ten };
 }
 
 /** GV có vai GV đang hoạt động ở một trong các chi nhánh này, hoặc phân công đang hiệu lực ở lớp của chúng. */

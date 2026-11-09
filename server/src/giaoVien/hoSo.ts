@@ -15,7 +15,7 @@ import { badRequest, forbidden, notFound } from '../util.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 import { chiTietCaseMo, type CaseChiTiet } from '../cases/caseLop.ts';
-import { trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
+import { dongYeuCauCuaToi, trongPhamVi, yeuCauCuaToi } from '../duyet/yeuCau.ts';
 import { metricSet, rowsFor, type MetricRow } from '../worklist/metrics.ts';
 import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
@@ -157,11 +157,19 @@ export function theYeuCauCuaGv(p: Principal, gvId: number): TheGv[] {
   }
   return the.filter((t) => duoc.has(t.id));
 }
-const soYeuCau = (the: TheGv[], homNay: string) => ({
-  cho: the.filter((t) => t.trangThai === 'cho').length,
-  choQuaHan: the.filter((t) => t.trangThai === 'cho' && !!t.hanDuyet && t.hanDuyet < homNay).length,
-  tuChoi: the.filter((t) => t.trangThai === 'tu_choi').length,
-});
+/**
+ * Số ở khối Yêu cầu: CÙNG tập thẻ `theYeuCauCuaGv` (thẻ = dòng gốc, `trangThai` / `hanDuyet` = `trang_thai` / `han_duyet`) nhưng đếm thẳng trên dòng gốc —
+ * GIAM-DOC-HSGV: không dựng chữ thẻ (~11 câu) chỉ để đếm. Người khác xem: cùng lọc `trongPhamVi`.
+ */
+function soYeuCauCuaGv(p: Principal, gvId: number, homNay: string) {
+  const rows = dongYeuCauCuaToi(gvId, homNay);
+  const the = p.userId === gvId || !rows.length ? rows : trongPhamVi(p, rows);
+  return {
+    cho: the.filter((t) => t.trang_thai === 'cho').length,
+    choQuaHan: the.filter((t) => t.trang_thai === 'cho' && !!t.han_duyet && t.han_duyet < homNay).length,
+    tuChoi: the.filter((t) => t.trang_thai === 'tu_choi').length,
+  };
+}
 
 // ------------------------------------------------------------------ hồ sơ một giáo viên
 
@@ -180,17 +188,19 @@ export type HoSoGv = {
 };
 
 export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
-  const { branchIds, laChinhMinh } = phamViHoSoGv(p, gvId);          // quyền TRƯỚC mọi câu khác
+  const { branchIds, laChinhMinh, ten } = phamViHoSoGv(p, gvId);          // quyền TRƯỚC mọi câu khác (tên GV đọc cùng câu kiểm)
   const homNay = demoToday();
   const conn = db();
-  const ten = (conn.prepare(`SELECT full_name FROM users WHERE id = ?`).get(gvId) as any).full_name as string;
-  const vaiRows = conn.prepare(
-    `SELECT r.key, b.id AS cn, b.name AS chi_nhanh FROM user_roles ur JOIN roles r ON r.id = ur.role_id LEFT JOIN branches b ON b.id = ur.branch_id
-      WHERE ur.user_id = ? AND ur.status = 'active' ORDER BY ur.id`).all(gvId) as any[];
-  const daKhai = new Set((conn.prepare(`SELECT skill FROM user_skills WHERE user_id = ?`).all(gvId) as any[]).map((r) => r.skill));
-  const tenChiNhanh = branchIds
-    ? (conn.prepare(`SELECT name FROM branches WHERE id IN (${cho(branchIds.length)}) ORDER BY name`).all(...branchIds) as any[]).map((r) => r.name as string)
-    : null;
+  /* GIAM-DOC-HSGV: vai · kỹ năng đã khai · tên chi nhánh phạm vi — MỘT câu (trước ba câu); thứ tự giữ như ba câu cũ (vai theo `ur.id`, chi nhánh theo tên). */
+  const dau = conn.prepare(
+    `SELECT 'r' AS k, r.key AS a, b.id AS cn, b.name AS chi_nhanh, ur.id AS o FROM user_roles ur JOIN roles r ON r.id = ur.role_id LEFT JOIN branches b ON b.id = ur.branch_id
+      WHERE ur.user_id = ? AND ur.status = 'active'
+     UNION ALL SELECT 's', skill, NULL, NULL, 0 FROM user_skills WHERE user_id = ?
+     ${branchIds ? `UNION ALL SELECT 'b', name, NULL, NULL, name FROM branches WHERE id IN (${cho(branchIds.length)})` : ''}
+     ORDER BY k, o`).all(gvId, gvId, ...(branchIds ?? [])) as any[];
+  const vaiRows = dau.filter((r) => r.k === 'r').map((r) => ({ key: r.a as string, cn: r.cn as number | null, chi_nhanh: r.chi_nhanh as string | null }));
+  const daKhai = new Set(dau.filter((r) => r.k === 's').map((r) => r.a));
+  const tenChiNhanh = branchIds ? dau.filter((r) => r.k === 'b').map((r) => r.a as string) : null;
 
   const lop = lopCuaGv(gvId, homNay, branchIds);
   const no = noDiemCuaGv(p, gvId, homNay, lop);
@@ -210,7 +220,7 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
     gv: {
       id: gvId, ten, laChinhMinh,
       vai: [...new Set(vaiRows.map((r) => roleLabel(r.key)))],
-      chiNhanh: [...new Set(vaiRows.map((r) => r.chi_nhanh).filter(Boolean))],
+      chiNhanh: [...new Set(vaiRows.map((r) => r.chi_nhanh).filter((x): x is string => !!x))],
       kyNang: ENTRY_SKILLS.filter((k) => daKhai.has(k)).map((k) => ENTRY_SKILL_SHORT[k]),
       /* QUYEN-KY-NANG (B' 7): mã kỹ năng (ô sửa) + ai sửa được — QL chi nhánh của GV / Quản trị; GV chỉ xem. */
       kyNangMa: ENTRY_SKILLS.filter((k) => daKhai.has(k)),
@@ -226,7 +236,7 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
     })),
     tongHocVien: new Set(lop.flatMap((l) => [...l.hvIds])).size,
     caseMo: caseMo.map((c) => ({ ...c, coPa: xl.get(c.id)?.cot !== 'choDuyet' })),
-    yeuCau: soYeuCau(theYeuCauCuaGv(p, gvId), homNay),
+    yeuCau: soYeuCauCuaGv(p, gvId, homNay),
     homNay,
   };
 }

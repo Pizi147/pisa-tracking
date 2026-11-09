@@ -26,7 +26,7 @@ import { dongNghiaVu, dongPa, paCoKetQua } from './hieuQuaPa.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { dangHocLuc, lopLucThi, nguoiPcLuc } from './luatBai.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
-import { chuaPhanCong, demTheoNguoi, dongCuaNguoi, type DongNvXem, type So3 } from './demNghiaVu.ts';
+import { chuaPhanCong, demTheoNguoi, demTheoNguoiHaiLoai, dongCuaNguoi, type DongNvXem, type So3 } from './demNghiaVu.ts';
 import { lamMoiViec } from './soNghiaVu.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -82,15 +82,22 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
   const cb = conn.prepare(`SELECT name FROM branches WHERE id = ?`).get(cn) as any;
   if (!cb) throw notFound('Không tìm thấy chi nhánh này.');
   const khung = f.ct ?? 'ft';
+  /* Một câu: lớp của chi nhánh + khung kèm MỌI dòng phân công (kể cả đã kết thúc — gán người theo ngày). */
+  const rows = conn.prepare(
+    `SELECT ${COT_LOP_PC} ${TU_LOP_PC} WHERE c.branch_id = ? AND c.is_fast_track = ?`).all(cn, khung === 'ft' ? 1 : 0) as any[];
+  return dungNguCanh(cn, cb.name, khung, k, f.thang ?? null, homNay, rows);
+}
+
+/** Cột + nguồn của câu "lớp chi nhánh + khung kèm mọi dòng phân công" — `nguCanhCn` (một ngữ cảnh) và `nguCanhCuaGv` (mọi ngữ cảnh của GV, một câu) dùng chung. */
+const COT_LOP_PC = `c.id AS lop, c.code, c.programme_code, c.status AS lop_status, COALESCE(sp.week_start, c.start_date) AS khai, ta.id, ta.user_id, u.full_name, ta.skill, ta.is_core, ta.effective_from, ta.effective_to`;
+const TU_LOP_PC = `FROM classes c LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.status IN ('active', 'ended')
+       LEFT JOIN users u ON u.id = ta.user_id
+       LEFT JOIN report_periods sp ON sp.id = c.start_period_id`;
+
+function dungNguCanh(cn: number, tenChiNhanh: string, khung: KhungPtGv, k: { tu: string; den: string }, thang: string | null, homNay: string, rows: readonly any[]): NguCanhPtGv {
   const lop = new Map<number, Lop>();
   const pc: PhanCong[] = [];
-  /* Một câu: lớp của chi nhánh + khung kèm MỌI dòng phân công (kể cả đã kết thúc — gán người theo ngày). */
-  for (const r of conn.prepare(
-    `SELECT c.id AS lop, c.code, c.programme_code, c.status AS lop_status, COALESCE(sp.week_start, c.start_date) AS khai, ta.id, ta.user_id, u.full_name, ta.skill, ta.is_core, ta.effective_from, ta.effective_to
-       FROM classes c LEFT JOIN teacher_assignments ta ON ta.class_id = c.id AND ta.status IN ('active', 'ended')
-       LEFT JOIN users u ON u.id = ta.user_id
-       LEFT JOIN report_periods sp ON sp.id = c.start_period_id
-      WHERE c.branch_id = ? AND c.is_fast_track = ?`).all(cn, khung === 'ft' ? 1 : 0) as any[]) {
+  for (const r of rows) {
     lop.set(r.lop, { id: r.lop, ma: r.code, ct: r.programme_code ?? null, xong: r.lop_status !== 'active', khai: r.khai ?? null });
     if (r.id) pc.push({ id: r.id, gv: r.user_id, ten: r.full_name, lop: r.lop, skill: r.skill ?? null, core: !!r.is_core, tu: r.effective_from, den: r.effective_to ?? null });
   }
@@ -100,7 +107,7 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
     if (a.core || a.skill) theoO.set(key, [...(theoO.get(key) ?? []), a]);
   }
   const nguoiLuc = (l: number, skill: string | null, d: string) => nguoiPcLuc(theoO.get(`${l}|${skill ?? ''}`) ?? [], d);
-  return { cn, tenChiNhanh: cb.name, khung, tu: k.tu, den: k.den, cuoi: addDays(k.den, 6), thang: f.thang ?? null, homNay, lop, pc, nguoiLuc };
+  return { cn, tenChiNhanh, khung, tu: k.tu, den: k.den, cuoi: addDays(k.den, 6), thang, homNay, lop, pc, nguoiLuc };
 }
 
 // ------------------------------------------------------------------ bài thi trong khoảng: một lần nạp cho Chấm điểm, Kết quả, HV tiến bộ
@@ -118,6 +125,8 @@ type NapBai = { o: OBai[]; attempts: Map<number, any>; bundle: ReturnType<typeof
 export const NAP_THEO_KY_TUAN = 8;
 /** S1: CHỈ phép kiểm bật — `napBai` của MỘT GV đi đường đủ (cả chi nhánh + khung) để so số với đường thu hẹp. */
 export const napDayDuKhiKiem = { bat: false };
+/** GIAM-DOC-HSGV: CHỈ phép kiểm bật — hồ sơ GV đọc TỪNG ngữ cảnh riêng (đường trước khi gộp: ngữ cảnh, lượt, phần nạp theo lượt / em, sổ bài + việc) để so số với đường gộp. */
+export const tachNguCanhKhiKiem = { bat: false };
 
 /**
  * Mọi ô điểm (một kỹ năng một lượt) có TUẦN THI CỦA CHÍNH Ô ĐÓ trong khoảng, ở lớp của chi nhánh + khung — `skillCells` / `regularSkillViews` như `scoreDebt.ts`.
@@ -127,10 +136,33 @@ export const napDayDuKhiKiem = { bat: false };
  * cần thì nạp thêm theo ghi danh.
  */
 export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
-  const conn = db();
-  const rows: any[] = [];
-  /* `kemKy` = lọc ô có tuần trong khoảng; đường theo kỳ bỏ vì `luot` dựng đúng từ điều kiện đó (đọc lại ô kỹ năng mỗi lượt là thừa). */
-  const chon = (loc: string, nguon = 'assessment_attempts a', cte = '', kemKy = true) => conn.prepare(
+  return napBaiNhieu(p, [c], gv)[0];
+}
+
+/**
+ * GIAM-DOC-HSGV: `napBai` của NHIỀU ngữ cảnh (hồ sơ GV: FT + thường, nhiều chi nhánh) — câu lượt vẫn riêng từng ngữ cảnh (cùng điều kiện như cũ), phần nạp theo
+ * lượt / em (lịch kỹ năng, điểm, Case theo lượt, ghi danh, tạm dừng) MỘT lượt cho mọi ngữ cảnh. Mọi phần đó tính theo từng lượt / từng em nên số không đổi.
+ */
+export function napBaiNhieu(p: Principal, cs: readonly NguCanhPtGv[], gv?: number): NapBai[] {
+  if (tachNguCanhKhiKiem.bat && cs.length > 1) return cs.map((c) => napBaiNhieu(p, [c], gv)[0]);
+  const luot = gv != null && !napDayDuKhiKiem.bat ? luotGv(cs, gv) : cs.map((c) => luotCua(c, gv));
+  const tatCa = luot.flat();
+  const bundle = loadBundle(tatCa.map((r) => r.id));
+  const programmes = allProgrammes();
+  const em = [...new Set(tatCa.map((r) => r.student_id as number))];
+  const ghiDanh = new Map<number, { lop: number; tu: string; den: string | null }[]>();
+  for (const lo of theoLo(em)) {
+    for (const e of db().prepare(
+      `SELECT student_id, class_id, substr(started_at, 1, 10) AS tu, substr(ended_at, 1, 10) AS den FROM enrollments WHERE student_id IN (${cho(lo.length)})`,
+    ).all(...lo) as any[]) (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, den: e.den });
+  }
+  /* Lớp lúc thi + em đang học tại hạn: `luatBai.ts` (cùng sổ nghĩa vụ). */
+  const tamDung = khoangTamDung(em);
+  return cs.map((c, i) => dungNapBai(p, c, luot[i], bundle, programmes, ghiDanh, tamDung));
+}
+
+/** `kemKy` = lọc ô có tuần trong khoảng; đường theo kỳ bỏ vì `luot` dựng đúng từ điều kiện đó (đọc lại ô kỹ năng mỗi lượt là thừa). */
+const sqlLuot = (loc: string, nguon = 'assessment_attempts a', cte = '', kemKy = true) =>
       `${cte}SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
               -- P12 (E6): Target + KCK LÚC LƯỢT (như resultOf) — đổi Target / KCK lộ trình sau đó không viết lại kỳ đã qua
               a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
@@ -143,8 +175,13 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
         WHERE ${loc} AND a.status != 'cancelled'${kemKy ? `
           AND (EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods r2 ON r2.id = k.planned_period_id
                         WHERE k.attempt_id = a.id AND r2.week_start BETWEEN ? AND ?)
-               OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start BETWEEN ? AND ?))` : ''}`,
-  );
+               OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start BETWEEN ? AND ?))` : ''}`;
+
+/** Lượt của một ngữ cảnh (ba đường: đủ theo lớp · cả chi nhánh theo kỳ · một GV) — xem chú thích từng nhánh. */
+function luotCua(c: NguCanhPtGv, gv?: number): any[] {
+  const conn = db();
+  const rows: any[] = [];
+  const chon = (...a: Parameters<typeof sqlLuot>) => conn.prepare(sqlLuot(...a));
   const soTuan = (Date.parse(c.den) - Date.parse(c.tu)) / (7 * 864e5) + 1;
   if (napDayDuKhiKiem.bat || (gv == null && (soTuan > NAP_THEO_KY_TUAN || c.khung !== 'ft'))) {
     for (const lo of theoLo([...c.lop.keys()])) rows.push(...chon(`a.class_id IN (${cho(lo.length)})`).all(...lo, c.tu, c.den, c.tu, c.den) as any[]);
@@ -164,7 +201,17 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
 `;
     if (c.lop.size) rows.push(...(chon(`a.class_id IN (${DS_JSON})`, 'luot x CROSS JOIN assessment_attempts a ON a.id = x.id', cte, false)
       .all(c.tu, c.den, c.cn, lop, lop) as any[]).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
-  } else {
+  } else return luotGv([c], gv)[0];
+  return rows;
+}
+
+/**
+ * Đường một GV cho MỘT hay NHIỀU ngữ cảnh. GIAM-DOC-HSGV: nhiều ngữ cảnh = MỘT câu (UNION ALL, mỗi vế đúng điều kiện của ngữ cảnh đó, nhãn `nc_` để tách lại) —
+ * chia lô khi vế / tham số nhiều (Turso: ≤ 20 vế, ≤ 900 tham số). Một ngữ cảnh: câu như cũ.
+ */
+function luotGv(cs: readonly NguCanhPtGv[], gv: number): any[][] {
+  const out: any[][] = cs.map(() => []);
+  const phan = cs.map((c, i) => {
     /*
      * S1 (giảm dòng đọc Turso): MỘT GV → chỉ lượt có thể gán cho GV đó, không mọi lượt của chi nhánh + khung. Mọi tập dùng `napBai` gán người qua
      * `c.nguoiLuc(lớp lúc thi, …)` — trả người có dòng phân công Ở LỚP ĐÓ (`c.pc`) — hoặc qua `examiner_user_id` (Speaking Mock chấm chéo, T18).
@@ -176,19 +223,27 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
     const g = [...new Set(c.pc.filter((a) => a.gv === gv).map((a) => a.lop))];
     const loc = `(a.class_id IN (${cho(g.length)}) OR a.student_id IN (SELECT e.student_id FROM enrollments e WHERE e.class_id IN (${cho(g.length)}))
                 OR a.id IN (SELECT sc.attempt_id FROM assessment_scores sc WHERE sc.examiner_user_id = ?))`;
-    rows.push(...(chon(loc).all(...g, ...g, gv, c.tu, c.den, c.tu, c.den) as any[])
-      .filter((r) => c.lop.has(r.class_id)).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
+    return { i, sql: sqlLuot(loc), args: [...g, ...g, gv, c.tu, c.den, c.tu, c.den] };
+  });
+  const chay = (lo: typeof phan) => {
+    if (lo.length === 1) { out[lo[0].i].push(...db().prepare(lo[0].sql).all(...lo[0].args) as any[]); return; }
+    for (const r of db().prepare(lo.map((x) => `SELECT ${x.i} AS nc_, q.* FROM (${x.sql}) q`).join(' UNION ALL ')).all(...lo.flatMap((x) => x.args)) as any[]) {
+      const i = r.nc_ as number;
+      delete r.nc_;
+      out[i].push(r);
+    }
+  };
+  let lo: typeof phan = [];
+  for (const x of phan) {
+    if (lo.length && (lo.length >= 10 || lo.reduce((n, y) => n + y.args.length, 0) + x.args.length > 800)) { chay(lo); lo = []; }
+    lo.push(x);
   }
-  const bundle = loadBundle(rows.map((r) => r.id));
-  const programmes = allProgrammes();
-  const ghiDanh = new Map<number, { lop: number; tu: string; den: string | null }[]>();
-  for (const lo of theoLo([...new Set(rows.map((r) => r.student_id as number))])) {
-    for (const e of conn.prepare(
-      `SELECT student_id, class_id, substr(started_at, 1, 10) AS tu, substr(ended_at, 1, 10) AS den FROM enrollments WHERE student_id IN (${cho(lo.length)})`,
-    ).all(...lo) as any[]) (ghiDanh.get(e.student_id) ?? ghiDanh.set(e.student_id, []).get(e.student_id)!).push({ lop: e.class_id, tu: e.tu, den: e.den });
-  }
-  /* Lớp lúc thi + em đang học tại hạn: `luatBai.ts` (cùng sổ nghĩa vụ). */
-  const tamDung = khoangTamDung([...new Set(rows.map((r) => r.student_id as number))]);
+  if (lo.length) chay(lo);
+  return cs.map((c, i) => out[i].filter((r) => c.lop.has(r.class_id)).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
+}
+
+function dungNapBai(p: Principal, c: NguCanhPtGv, rows: readonly any[], bundle: NapBai['bundle'], programmes: ReturnType<typeof allProgrammes>,
+  ghiDanh: ReadonlyMap<number, { lop: number; tu: string; den: string | null }[]>, tamDung: ReturnType<typeof khoangTamDung>): NapBai {
   const o: OBai[] = [];
   for (const a of rows) {
     const scores = bundle.scores.get(a.id) ?? [];
@@ -441,7 +496,8 @@ const qSo = (v: PhamViSo, loai: 'bai' | 'viec', nguoi?: number) =>
   ({ chiNhanh: v.cn, tu: v.tu, den: v.cuoi, homNay: v.homNay, khung: v.khung ?? null, loai, ...(nguoi != null ? { nguoi } : {}) });
 /** 3 số Chấm Test (bài) + Việc của mọi người (hoặc một người) trong phạm vi. */
 function soCuaKy(v: PhamViSo, nguoi?: number): { bai: Map<number, So3 & { sChung: number }>; viec: Map<number, So3 & { sChung: number }> } {
-  return { bai: demTheoNguoi(qSo(v, 'bai', nguoi)), viec: demTheoNguoi(qSo(v, 'viec', nguoi)) };
+  if (tachNguCanhKhiKiem.bat) return { bai: demTheoNguoi(qSo(v, 'bai', nguoi)), viec: demTheoNguoi(qSo(v, 'viec', nguoi)) };
+  return demTheoNguoiHaiLoai({ chiNhanh: v.cn, tu: v.tu, den: v.cuoi, homNay: v.homNay, khung: v.khung ?? null, ...(nguoi != null ? { nguoi } : {}) });   // GIAM-DOC-HSGV: một câu sổ cho cả hai số
 }
 const so3Tu = (ds: readonly DongNvXem[]) => ({ dung: ds.filter((d) => d.trangThai === 'dung').length, muon: ds.filter((d) => d.trangThai === 'muon').length,
   chua: ds.filter((d) => d.trangThai === 'chua').length });
@@ -850,12 +906,31 @@ function nguCanhCuaGv(p: Principal, gvId: number, q: { tu?: string | null; den?:
   const homNay = demoToday();
   const k = khoangPtGv(q, homNay);
   if ('loi' in k) throw badRequest(k.loi);
+  /*
+   * GIAM-DOC-HSGV: MỘT câu — (chi nhánh, khung) GV có phân công trong kỳ kèm tên chi nhánh, lớp + mọi dòng phân công của từng ngữ cảnh (cùng cột / nguồn
+   * `nguCanhCn`). Trước: một câu tìm ngữ cảnh + hai câu mỗi ngữ cảnh (tên chi nhánh, lớp + phân công). Thứ tự ngữ cảnh như cũ: chi nhánh tăng, FT trước.
+   */
+  if (tachNguCanhKhiKiem.bat) {
+    const ck = db().prepare(
+      `SELECT DISTINCT c.branch_id, c.is_fast_track FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ta.user_id = ? AND ta.status IN ('active', 'ended') AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
+          ${branchIds ? `AND c.branch_id IN (${cho(branchIds.length)})` : ''}
+        ORDER BY c.branch_id, c.is_fast_track DESC`).all(gvId, addDays(k.den, 6), k.tu, ...(branchIds ?? [])) as any[];
+    return ketNguCanhGv(branchIds, homNay, k, ck.map((r) => nguCanhCn(r.branch_id, { ct: r.is_fast_track ? 'ft' : 'thuong', tu: k.tu, den: k.den })));
+  }
   const rows = db().prepare(
-    `SELECT DISTINCT c.branch_id, c.is_fast_track FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+    `WITH ck AS (SELECT DISTINCT c.branch_id, c.is_fast_track FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
       WHERE ta.user_id = ? AND ta.status IN ('active', 'ended') AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
-        ${branchIds ? `AND c.branch_id IN (${cho(branchIds.length)})` : ''}
-      ORDER BY c.branch_id, c.is_fast_track DESC`).all(gvId, addDays(k.den, 6), k.tu, ...(branchIds ?? [])) as any[];
-  const ds = rows.map((r) => nguCanhCn(r.branch_id, { ct: r.is_fast_track ? 'ft' : 'thuong', tu: k.tu, den: k.den }));
+        ${branchIds ? `AND c.branch_id IN (${cho(branchIds.length)})` : ''})
+     SELECT ck.branch_id AS ck_cn, ck.is_fast_track AS ck_ft, b.name AS ck_ten, ${COT_LOP_PC}
+       FROM ck JOIN branches b ON b.id = ck.branch_id CROSS JOIN classes c ON c.branch_id = ck.branch_id AND c.is_fast_track = ck.is_fast_track
+       ${TU_LOP_PC.replace(/^FROM classes c /, '')}`).all(gvId, addDays(k.den, 6), k.tu, ...(branchIds ?? [])) as any[];
+  const nhom = new Map<string, any[]>();
+  for (const r of rows) (nhom.get(`${r.ck_cn}|${r.ck_ft}`) ?? nhom.set(`${r.ck_cn}|${r.ck_ft}`, []).get(`${r.ck_cn}|${r.ck_ft}`)!).push(r);
+  return ketNguCanhGv(branchIds, homNay, k, [...nhom.values()].sort((a, b) => a[0].ck_cn - b[0].ck_cn || b[0].ck_ft - a[0].ck_ft)
+    .map((g) => dungNguCanh(g[0].ck_cn, g[0].ck_ten, g[0].ck_ft ? 'ft' : 'thuong', k, null, homNay, g)));
+}
+function ketNguCanhGv(branchIds: number[] | null, homNay: string, k: { tu: string; den: string }, ds: NguCanhPtGv[]) {
   /*
    * Sổ nghĩa vụ (PR-2): Chấm Test · Việc của hồ sơ = dòng sổ của GV trong phạm vi người xem (`branchIds`, null = mọi chi nhánh), kỳ theo hạn. Ghi lại sổ việc
    * (`lamMoiViec`) chỉ ở chi nhánh GV dạy trong kỳ (phạm vi rộng: GV tự xem).
@@ -881,8 +956,9 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
   const thi: MucThiGv[] = [];
   const hangCua = (c: NguCanhPtGv, classId: number) => hang.get(classId)
     ?? hang.set(classId, { ma: c.lop.get(classId)!.ma, khung: c.khung, ct: c.lop.get(classId)!.ct, khai: c.lop.get(classId)!.khai, xong: c.lop.get(classId)!.xong, skill: new Set(), kq: [], luot: new Map() }).get(classId)!;
-  for (const c of g.ds) {
-    const nap = napBai(p, c, gvId);
+  const naps = napBaiNhieu(p, g.ds, gvId);   // GIAM-DOC-HSGV: phần nạp theo lượt / em một lượt cho mọi ngữ cảnh
+  for (const [i, c] of g.ds.entries()) {
+    const nap = naps[i];
     if (!chiHocThuat) ghi.push(tapGhiKetQuaPa(xemChiNhanh(c.cn), c).tap.get(gvId));
     /* Chủ SP 23/10: thi thật (IELTS thật) KHÁC phạm trù Test — kết quả / lượt chỉ tính MT, Progress, Final. Thi thật (2F): `mucThiTheoGv`, hàng lớp = lớp lúc thi. */
     const muc = mucKetQua(c, nap);
