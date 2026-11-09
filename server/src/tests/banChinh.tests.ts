@@ -1102,13 +1102,26 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
         const f = pathMod.join(dir, `khoi-phuc-${ten.length}.sqlite`);
         const dich = new Database(f);
         try { khoiPhuc(nguon, dich); } finally { nguon.close(); dich.close(); }
-        const r = chayCon(`const a = await import(${JSON.stringify(authJs)}); const acc = await import(${JSON.stringify(accJs2)});`
-          + ` const cu = a.resolveSession(${JSON.stringify(maCu)});`
-          + ` const dn = acc.login(${JSON.stringify(u.email)}, ${JSON.stringify(DEFAULT_ADMIN_PASSWORD_DEMO)});`
-          + ` const moi = a.resolveSession(a.createSession(dn.userId));`
-          + ` console.log(JSON.stringify({ cuVaoDuoc: !!cu, moiVaoDuoc: !!moi }));`,
-        { PISA_DB: f, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '' });
-        assert(r.status === 0, `${ten}: ${String(r.stderr).slice(-300)}`);
+        const goi = () => {
+          const t0 = Date.now();
+          const r = chayCon(`const a = await import(${JSON.stringify(authJs)}); const acc = await import(${JSON.stringify(accJs2)});`
+            + ` const cu = a.resolveSession(${JSON.stringify(maCu)});`
+            + ` const dn = acc.login(${JSON.stringify(u.email)}, ${JSON.stringify(DEFAULT_ADMIN_PASSWORD_DEMO)});`
+            + ` const moi = a.resolveSession(a.createSession(dn.userId));`
+            + ` console.log(JSON.stringify({ cuVaoDuoc: !!cu, moiVaoDuoc: !!moi }));`,
+          { PISA_DB: f, TURSO_DATABASE_URL: '', TURSO_AUTH_TOKEN: '' });
+          return { r, lyDo: `mã thoát ${r.status}, tín hiệu ${r.signal}, lỗi ${r.error?.message ?? '-'}, ${Date.now() - t0} ms;`
+            + ` stdout: ${String(r.stdout ?? '').slice(-200)} | stderr: ${String(r.stderr ?? '').slice(-300)}` };
+        };
+        /* KIEM-CHAP-CHON-3: một lần hỏng trong `npm run check` song song (09/11) báo stderr RỖNG — tiến trình con chết không lời
+           (bị giết khi quá 60 s, hoặc sập trong mã gốc), chạy lại đạt; 500 lần chạy riêng không tái hiện. Chết không lời (không stdout,
+           không stderr) không phải lỗi mã khôi phục → thử lại MỘT lần, in rõ lý do; lỗi có lời (ném lỗi, sai kết quả) vẫn hỏng ngay. */
+        let { r, lyDo } = goi();
+        if (r.status !== 0 && !String(r.stdout ?? '').trim() && !String(r.stderr ?? '').trim()) {
+          console.warn(`  ⚠ ${ten}: tiến trình con chết không lời (${lyDo}) — thử lại một lần`);
+          ({ r, lyDo } = goi());
+        }
+        assert(r.status === 0, `${ten}: ${lyDo}`);
         const o = JSON.parse(String(r.stdout).trim().split('\n').pop()!);
         assert(o.cuVaoDuoc === false, `${ten}: mã phiên cũ vẫn đăng nhập được sau khi khôi phục`);
         assert(o.moiVaoDuoc === true, `${ten}: đăng nhập lại bằng mật khẩu không được`);
