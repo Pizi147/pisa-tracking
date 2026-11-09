@@ -83,6 +83,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
       className={`btn h-[30px] px-2.5 text-[13px] max-sm:h-11 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{chon.bat ? '✓ ' : ''}{t('Chọn nhiều')}</button>
   ) : null;
   const trongThe = cheDo === 'diem';
+  /* HSL-LUU-TRU (chủ SP 10/11): lớp đã kết thúc hiện cả em đã lưu trữ (nhãn "Lưu trữ") — số dòng = "n HV" đầu trang = tab Tổng kết. */
+  const daKetThuc = lop.status === 'finished';
   return (
     <div className="space-y-2">
       {!trongThe && (cachXem || nutChon) && (
@@ -99,9 +101,9 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
         ? <BangKqdrLopFt classId={lop.id} />
         : thuong
           ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
-              chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} cachXem={cachXem} nutChon={nutChon} />
+              chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} cachXem={cachXem} nutChon={nutChon} daKetThuc={daKetThuc} />
           : <BangHoSoLop classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
-              onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} cachXem={cachXem} nutChon={nutChon} />}
+              onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} cachXem={cachXem} nutChon={nutChon} daKetThuc={daKetThuc} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
           viec={[...(!thuong && lop.viewer.coTheChuyenTiep ? [{ key: 'chuyen-lop', nhan: t('Chuyển lớp…') }] : []),
