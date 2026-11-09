@@ -589,7 +589,7 @@
   /* panel mở từ tab (không phải việc): dòng loại "BÁO CÁO PH", ‹ về tab */
   Object.keys(K).forEach(function (k) { K[k] = K[k].replace(/VIỆC · BÁO CÁO PH/g, 'BÁO CÁO PH · VIẾT'); });
   K.g1 = K.g1.replace('‹ Công việc', '‹ MB FT 131');
-  K.a2 = K.a2.replace('<button class="nut nut-chinh">Lớp tiếp: MB FT 128 ›</button><button class="nut">Việc tiếp ›</button>', '<button class="nut nut-chinh">Phần tiếp: Nhận xét chung ›</button><button class="nut">Lớp tiếp: MB FT 128 ›</button>');
+  K.a2 = K.a2.replace('<button class="nut nut-chinh">Lớp tiếp: MB FT 128 ›</button><button class="nut">Việc tiếp ›</button>', '<button class="nut nut-chinh">Phần tiếp: Nhận xét chung ›</button>');   /* chủ SP 10/11 (B' 13): bỏ "Lớp tiếp ›" */
 
   document.querySelectorAll('[data-k]').forEach(function (el) { el.innerHTML = K[el.getAttribute('data-k')] || ''; });
   document.fonts.ready.then(function () { document.querySelectorAll('.dt .tab-l').forEach(function (t) { t.scrollLeft = t.scrollWidth; }); });
@@ -597,7 +597,7 @@
   /* thao tác */
   var T = [
     ['Hồ sơ lớp', 'Tab Học viên · Ý thức & Phối hợp · Phân tích lớp', 'Thêm tab <b>Báo cáo PH</b> sau Phân tích lớp (chip đợt đang mở): chọn đợt · bảng em × phần · bấm ô → viết (phần của mình) / đọc · QL Viết hộ · QL / Admin / TVV Xuất lớp, Xuất (một em)', 'moi', 'MỚI'],
-    ['Panel viết', '—', 'Mở từ ô của tab: chọn em · Điểm tự điền + Sửa / Về điểm gốc · 4 nút thang (Tab, phím 1–4) · ô chữ · tự lưu · <b>Lưu · em tiếp ›</b> · hết em: Phần tiếp / Lớp tiếp · lỗi: Thử lại, giữ chữ', 'moi', 'MỚI'],
+    ['Panel viết', '—', 'Mở từ ô của tab: chọn em · Điểm tự điền + Sửa / Về điểm gốc · 4 nút thang (Tab, phím 1–4) · ô chữ · tự lưu · <b>Lưu · em tiếp ›</b> · hết em: Phần tiếp · Đóng · lỗi: Thử lại, giữ chữ', 'moi', 'MỚI'],
     ['Công việc GV', 'Không đổi', '<b>Không</b> thêm việc Báo cáo PH (chủ SP 05/11)', 'gi', 'GIỮ'],
     ['Công việc Admin', '—', 'Một việc <b>Xuất báo cáo PH · {lớp} · {đợt}</b> khi lớp đủ (hoặc quá hạn chưa đủ: "thiếu n em"), 7 ngày, nhóm Việc quản lý có sẵn · Xuất lớp · bấm tên → tab', 'moi', 'MỚI'],
     ['Xuất Excel (HV & Lớp)', 'Phạm vi · Cột · Xuất n HV (mẫu theo góc trang)', 'Thêm khối <b>Mẫu</b>: Danh sách (y cũ) · Báo cáo PH (Phạm vi · Tháng · Xuất n HV)', 'doi', 'THÊM, giữ cũ'],
