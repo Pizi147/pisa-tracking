@@ -351,7 +351,6 @@ export const DUONG_DO: MucDo[] = [
   // ---------------------------------------------------------------- PR-Pb2-b — bảng Phân tích giáo viên + panel Chấm điểm (QL, QT; GVCN → 403)
   { trang: 'Phân tích GV', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien?cn={cn}&ct=thuong&thang=2026-09' },
-  { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/cham-diem?cn={cn}&ct=ft&gv={gv}' },
   /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (QT, không cn) · panel một người mọi chi nhánh · panel "Chưa phân công" (gv = 0). */
   { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien?ct=ft' },
   { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han' },
@@ -979,8 +978,6 @@ export const TRAN: Record<string, number> = {
   'GVCN /phan-tich/giao-vien?cn=1&ct=ft': 14,   // 403, đo 9
   'QL /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 90,   // DOC-PT: đo 28 (trước 32)
   'QT /phan-tich/giao-vien?cn=1&ct=thuong&thang=2026-09': 89,   // DOC-PT: đo 27 (trước 31)
-  'QL /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 29,   // đo 24
-  'QT /phan-tich/giao-vien/cham-diem?cn=1&ct=ft&gv=7': 28,   // đo 23
   /* DEM-QUA-HAN b: ô Chấm Test đúng hạn → panel số chung (thay panel Chấm điểm riêng, đo 24) — max(đo + 10, ⌈đo × 1,3⌉), đo 13 · 13. */
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 23, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 23,
   // OV-15e (19/10): Báo cáo · Kết quả thi · panel chỉ số GV — max(đo + 10, ⌈đo × 1,3⌉)

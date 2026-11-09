@@ -294,7 +294,8 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 4 · bảng Phân tích giáo viên — máy chủ (Task 4)
   console.log('\nPR-Pb2-b · Bảng Phân tích giáo viên: mỗi cột một hàm tập, hai đường, quyền, không N+1');
   const pt: any = await import('../phanTich/giaoVien.ts');
-  const vx: any = await import('../phanTich/viecDaXong.ts');
+  const soCu: any = await import('./soCu.ts');   // PR-3 sổ nghĩa vụ: thay tapChamDiem / oChamDiemGv / viecQuaHanMo cũ
+  const soNv: any = await import('../phanTich/soNghiaVu.ts');
   const hieuQuaPaSvc: any = await import('../phanTich/hieuQuaPa.ts');
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const nguCanh: any = await import('../platform/nguCanhRequest.ts');
@@ -353,15 +354,13 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   check('Pb2b (4d) · ô L nhập đúng hạn rồi sửa sau hạn → vẫn đúng hạn, panel ghi ngày sửa; R hạn đè đã qua nhưng tuần thi chưa hết → chưa tính (S6F-a D6); S dấu "-" → không có mặt', () => {
     /* Dòng panel của MỌI GV (phép kiểm trước có thể đã đổi người dạy L/R của MB FT 101 — gán người theo hạn, không theo người cố định). */
     const kh = { ct: 'ft', tu: tuanNay, den: tuanNay };
-    const dongPanel = new Map<number, any>(bang('ft', kh).hang.flatMap((h: any) => pt.oChamDiemGv(P.mbManager, { ...kh, gv: h.id }).rows.map((r: any) => [r.id, r])));
+    const dongPanel = new Map<number, any>(soCu.dongChamSo(pt.nguCanhPtGv(P.mbManager, kh)));
     const L = dongPanel.get(d.baiId(a1.id, 'listening'));
     const pcL = all(`SELECT user_id, effective_from, effective_to, status FROM teacher_assignments WHERE class_id = ? AND skill = 'listening'`, MB_FT);
-    assert(L?.dung && L.nhapDau === D && L.sua, `ô L: ${JSON.stringify(L) ?? 'không có trong panel nào'} · hôm nay ${demoTodayNay()} · hạn ${hanL} · phân công L ${JSON.stringify(pcL)}`);
+    assert(L?.dung && L.nhapDau === D, `ô L: ${JSON.stringify(L) ?? 'không có trong panel nào'} · hôm nay ${demoTodayNay()} · hạn ${hanL} · phân công L ${JSON.stringify(pcL)}`);
     const R = dongPanel.get(d.baiId(a1.id, 'reading'));
     /* PR-S6F-a Q6 (D6) đổi kỳ vọng: một luật quá hạn nhập điểm — tuần thi còn chạy thì chưa ai trễ, kể cả hạn bị đặt đè sớm (phép kiểm S6F-a (3c) khoá phần sau tuần thi). */
     assert(!R, `ô R tuần thi chưa hết vẫn bị tính: ${JSON.stringify(R)}`);
-    const S = [...(pt.tapChamDiem(pt.nguCanhPtGv(P.mbManager, { ct: 'ft' }), { o: [], attempts: new Map(), bundle: null }).dong.values())];
-    assert(S.length === 0, 'rỗng khi không có ô');
     const tatCa = [...dongPanel.keys()];
     assert(!tatCa.includes(d.baiId(a1.id, 'speaking')), 'ô dấu "-" không được tính');
     assert(!tatCa.includes(d.baiId(a1.id, 'writing1')), 'ô chưa tới hạn chưa nhập không được tính');
@@ -372,8 +371,10 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const a2 = luotThu(conn, svc.createAttempt, P.admin, { studentId: e2.sid, cycleId: e2.cy, classId: MB_FT, no: 1, periodId: week.ensurePeriod(tuanNay).id });
     svc.saveScore(P.admin, a2.id, 'listening', { rawScore: 25 }, D);
     conn.prepare(`UPDATE students SET status = 'inactive' WHERE id = ?`).run(e2.sid);
-    const pn = pt.oChamDiemGv(P.mbManager, { ct: 'ft', gv: P.lrTeacher.userId });
+    soNv.ghiSoHocVien([e2.sid]);
+    const pn = soCu.panelChamSo(pt.nguCanhPtGv(P.mbManager, { ct: 'ft' }), P.lrTeacher.userId);
     conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(e2.sid);
+    soNv.ghiSoHocVien([e2.sid]);
     assert(!pn.rows.some((r: any) => r.id === d.baiId(a2.id, 'listening')), 'em Tạm dừng vẫn tính');
     const a = P.normalCoreTeacher.userId; const b = P.normalSubjectTeacher.userId; const c3 = P.w1Teacher.userId;
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE class_id = ? AND skill = 'speaking' AND status = 'active'`).run(addDays(D, 2), lopFouMoi);
@@ -403,11 +404,10 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const h = hangCua(b, gvcn.userId);
     /* DEM-QUA-HAN: Việc đúng hạn = Kết quả PA + việc Công việc còn mở quá hạn — Ý thức chỉ "Xử lý vi phạm" bắt buộc QUÁ HẠN (vừa ghi hôm nay: chưa quá hạn → không vào). */
     const nc = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: week.mondayOf(addDays(D, 7)) });
-    const mo = pt.viecQuaHanMo(nc).get(gvcn.userId) ?? [];
-    /* XM-VIEC-DUNG-HAN a / b: đếm DÒNG (≤ số việc) và cộng việc đã xong có ngày xong (`viecDaXong`). */
-    const xg: any[] = vx.viecDaXong(nc).get(gvcn.userId) ?? [];
+    const mo = soCu.viecMoQuaHan(nc).get(gvcn.userId) ?? [];
+    /* Sổ nghĩa vụ: Việc = 3 số riêng (mẫu = đúng + muộn + chưa làm). */
     assert(h && !('xuLyViPham' in h) && mo.every((it: any) => !it.group.startsWith('yt_') || (it.group === 'yt_xu_ly' && it.due < D))
-      && (h.viecDungHan.tong ?? 0) <= (h.ghiKetQuaPa.tong ?? 0) + mo.length + xg.length && (h.viecDungHan.dung ?? 0) <= (h.ghiKetQuaPa.dung ?? 0) + xg.filter((x) => x.dung).length, JSON.stringify(h));
+      && (h.viecDungHan.k !== 'so' || h.viecDungHan.tong === h.viecDungHan.dung + h.viecDungHan.muon + h.viecDungHan.chua), JSON.stringify(h));
     assert((conn.prepare(`SELECT COUNT(*) AS n FROM violations WHERE id IN (${[...ids, ...ids2].join(',')})`).get() as any).n === 6, 'vi phạm phải còn');
   });
   check('Pb2b (4i) · Kết quả: GV L có ô L (FT 5 khoá), GV không dạy L → "—" ở L; em KCK không tính; HV tiến bộ: MT trước L 5.5 → nay 6.0 tiến bộ; chưa có bài trước → không có mặt', () => {
@@ -478,12 +478,12 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     await voiMayChu(async (goi) => {
       const ma = async (u: number, url: string) => (await goi(u, url)).status;
       assert(await ma(gvcn.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'GVCN');
-      assert(await ma(P.w1Teacher.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=${gvcn.userId}`) === 403, 'GVBM');
+      assert(await ma(P.w1Teacher.userId, `/phan-tich/giao-vien/o?cn=${MB}&ct=ft&gv=${gvcn.userId}&cot=cham-diem`) === 403, 'GVBM');
       assert(await ma(P.cpManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'QL CP');
       assert(await ma(P.admin.userId, `/phan-tich/giao-vien?ct=ft`) === 200, 'QT không cn → tổng mọi chi nhánh (sổ nghĩa vụ PR-2)');
       assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&tu=2026-06-01&den=2026-08-31`) === 200, '14 tuần (không trần)');
       assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&thang=2026-09`) === 200, 'QL MB');
-      assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=abc`) === 400, 'gv sai dạng');
+      assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien/o?cn=${MB}&ct=ft&gv=abc&cot=cham-diem`) === 400, 'gv sai dạng');
     });
   });
   check('Pb2b (4m) · KHÔNG N+1: số câu SQL của bảng bằng nhau khi chi nhánh có thêm 3 GV + 2 lớp FT có phân công', () => {
@@ -520,8 +520,9 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     assert(ngoc?.phu === 'P' && ngoc.ketQua.speaking.k === 'so' && ['listening', 'reading', 'writing'].every((k) => ngoc.ketQua[k].k === 'na'), JSON.stringify(ngoc));
     assert(ngoc.dangDay.lop === 2, `Ngọc dạy ${ngoc.dangDay.lop} lớp`);
   });
-  check('Pb2b (6c) · panel Chấm điểm của Hương: ≥ 1 dòng trễ, ≥ 1 dòng "sửa sau" vẫn đúng hạn', () => {
-    const pn = pt.oChamDiemGv(P.mbManager, { ct: 'ft', thang: '2026-09', gv: idGv('Đỗ Thu Hương') });
-    assert(pn.tre >= 1 && pn.rows.some((r: any) => r.dung && r.sua), `${pn.tre} trễ · sửa: ${pn.rows.filter((r: any) => r.sua).length}`);
+  /* Sổ nghĩa vụ PR-3: bỏ ý "sửa sau" của panel V4 (không còn); giữ ý dữ liệu demo có bài trễ và bài sửa sau vẫn đúng hạn. */
+  check('Pb2b (6c) · Chấm điểm của Hương: ≥ 1 bài trễ, ≥ 1 bài đúng hạn', () => {
+    const pn = soCu.panelChamSo(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', thang: '2026-09' }), idGv('Đỗ Thu Hương'));
+    assert(pn.tre >= 1 && pn.rows.some((r: any) => r.dung), `${pn.tre} trễ / ${pn.rows.length}`);
   });
 }

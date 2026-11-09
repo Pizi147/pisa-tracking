@@ -849,12 +849,6 @@ api.get('/phan-tich/giao-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return giaoVienPtSvc.phanTichGiaoVien(principalOf(req), filterPtGvOf(req));
 }));
-api.get('/phan-tich/giao-vien/cham-diem', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  const gv = soDuong(req.query.gv, 'gv');
-  if (gv == null) throw badRequest('Thiếu giáo viên.');
-  return giaoVienPtSvc.oChamDiemGv(principalOf(req), { ...filterPtGvOf(req), gv });
-}));
 /* OV-15e (C30): panel một chỉ số khác Chấm điểm của một GV — `cot` = ket-qua:<kỹ năng> · tien-bo · ghi-pa · vi-pham · pa-hieu-qua. */
 api.get('/phan-tich/giao-vien/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();

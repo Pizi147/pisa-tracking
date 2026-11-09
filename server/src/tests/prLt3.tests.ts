@@ -139,6 +139,7 @@ export async function runPrLt3Tests(t: YThucTestKit) {
   const debt: any = await import('../worklist/scoreDebt.ts');
   const mw: any = await import('../worklist/mywork.ts');
   const ptgv: any = await import('../phanTich/giaoVien.ts');
+  const soCu: any = await import('./soCu.ts');   // PR-3 sổ nghĩa vụ: thay tapChamDiem / oChamDiemGv / viecQuaHanMo cũ
   const metrics: any = await import('../worklist/metrics.ts');
   const perm: any = await import('../permissions.ts');
   const MB = (conn.prepare('SELECT branch_id FROM classes WHERE id = ?').get(LOP) as any).branch_id as number;
@@ -193,7 +194,7 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     const cheo = perm.loadPrincipal(cheoId);
     const pt = () => {
       const c = ptgv.nguCanhPtGv(P.mbManager, { cn: MB, ct: 'ft', tu: HAI, den: NAY });
-      return [...ptgv.tapChamDiem(c, ptgv.napBai(P.mbManager, c)).dong.values()];
+      return [...soCu.dongChamSo(c).values()];
     };
     const cuaLuot = (aid: number) => pt().filter((x: any) => Math.floor(x.id / 10) === aid);
     let aid = emMoi(5, HAI, true);

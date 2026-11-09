@@ -1,6 +1,7 @@
 /**
- * Việc CÓ HẠN của Công việc + "người xem QL chi nhánh" — chung cho "Việc đúng hạn" (`giaoVien.ts` · `viecQuaHanMo`) và sổ nghĩa vụ (`soNghiaVu.ts`).
- * Nhóm có thể ra dòng quá hạn có hạn + người giữ thật (RA-LOI-0711h, DEM-QUA-HAN — chú thích đầy đủ ở `viecQuaHanMo`).
+ * Việc CÓ HẠN của Công việc + "người xem QL chi nhánh" — sổ nghĩa vụ (`soNghiaVu.ts` · `tinhViecChiNhanh`) đọc việc mở của chi nhánh qua đây.
+ * Nhóm có thể ra dòng quá hạn có hạn + người giữ thật (RA-LOI-0711h, DEM-QUA-HAN): Nhập điểm (bài, sổ riêng), Kết quả PA (nghĩa vụ riêng), Ý thức trừ Xử lý vi phạm
+ * bắt buộc, Thiếu dữ liệu (không hạn), việc chưa ai giữ — không vào.
  */
 import { db } from '../db.ts';
 import { nho } from '../platform/nguCanhRequest.ts';

@@ -13,6 +13,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
+  const soCu: any = await import('./soCu.ts');   // PR-3 sổ nghĩa vụ: thay tapChamDiem / oChamDiemGv / viecQuaHanMo cũ
   const lop: any = await import('../classes/phanTichLop.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
@@ -87,7 +88,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   check('SVSO2 (05 #8, #9, 10) · Việc đúng hạn = Kết quả PA + việc còn mở quá hạn (DEM-QUA-HAN; đơn vị việc; Ý thức chỉ Xử lý vi phạm bắt buộc), Điểm đúng hạn = Chấm điểm (bài); panel đủ số dòng', () => thu(() => {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const bang = pt.phanTichGiaoVien(P.mbManager, ky);
-    const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, ky));
+    const mo = soCu.viecMoQuaHan(pt.nguCanhPtGv(P.mbManager, ky));
     const tong = (o: any) => (o?.k === 'so' ? o.tong : 0), dung = (o: any) => (o?.k === 'so' ? o.dung : 0);
     let coViec = false;
     for (const h of bang.hang) {
@@ -118,7 +119,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   check('DEM-QUA-HAN (chủ SP 06/11) · việc Công việc còn mở đã quá hạn vào MẪU Việc đúng hạn của người giữ việc (không vào tử) — cùng dòng quá hạn Công việc "Tất cả"; panel + hồ sơ GV cùng số', () => thu(() => {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const nc = pt.nguCanhPtGv(P.mbManager, ky);
-    const mo: Map<number, any[]> = pt.viecQuaHanMo(nc);
+    const mo: Map<number, any[]> = soCu.viecMoQuaHan(nc);
     assert(mo.size > 0, 'seed phải có việc còn mở quá hạn (Thêm PA / Mô tả Case…) của GV trong 13 tuần');
     /* Cùng nguồn: đúng các dòng quá hạn của Công việc "Tất cả" (QL chi nhánh) có người giữ, hạn trong kỳ, khung FT / không lớp — trừ Nhập điểm, Kết quả PA, Ý thức không bắt buộc, Thiếu dữ liệu. */
     const NGOAI = ['score', 'ghi_ket_qua_pa', 'yt_xem', 'yt_thuc_hien', 'missing_data'];   // chủ SP 06/11: Ý thức chỉ "Xử lý vi phạm" bắt buộc vào
@@ -147,7 +148,7 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
       assert(hs.tong >= h.viecDungHan.tong, 'hồ sơ GV phải có việc mở của bảng');
     }
     /* Việc hạn trước kỳ không vào kỳ này. */
-    const truoc = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }));
+    const truoc = soCu.viecMoQuaHan(pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }));
     assert([...truoc.values()].flat().every((it: any) => it.due >= tuanNay), 'việc hạn trước kỳ lọt vào kỳ');
   }));
 

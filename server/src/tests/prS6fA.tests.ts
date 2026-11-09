@@ -24,6 +24,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
   const svc: any = await import('../fasttrack/attempts.ts');
   const regular: any = await import('../normal/regular.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
+  const soCu: any = await import('./soCu.ts');   // PR-3 sổ nghĩa vụ: thay tapChamDiem / oChamDiemGv / viecQuaHanMo cũ
   const debt: any = await import('../worklist/scoreDebt.ts');
   const { boLichTuTao, luotThu } = await import('./luotThu.ts');
   let seq = 0;
@@ -42,7 +43,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
   /** Dòng Chấm điểm của bảng GV (mọi GV) tại ngày `ngay`, khoảng một tuần `tuan`. */
   const dongCham = (ngay: string, tuan = tuanNay) => voiNgay(ngay, () => {
     const c = pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuan, den: tuan });
-    return pt.tapChamDiem(c, pt.napBai(P.mbManager, c)).dong as Map<number, any>;
+    return soCu.dongChamSo(c) as Map<number, any>;
   });
 
   // ------------------------------------------------------------------ khối 1 · P0 "lần nhập đầu" chỉ khi ô có điểm thật (Q18)
@@ -162,7 +163,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const c = pt.nguCanhPtGv(P.mbManager, kh);
     const nap = pt.napBai(P.mbManager, c);
     const trongKhoang = new Set(nap.o.map((x: any) => x.id));
-    const tre = new Set([...pt.tapChamDiem(c, nap).dong.values()].filter((r: any) => !r.dung && !r.nhapDau).map((r: any) => r.id));
+    const tre = new Set([...soCu.dongChamSo(c).values()].filter((r: any) => !r.dung && !r.nhapDau).map((r: any) => r.id));
     const no = (debt.scoreDebtCells(P.mbManager, TODAY, [MB]) as any[])
       .filter((x) => x.overdue && x.userId !== null && !x.thieuNhanXet).map(   /* V5 SV-SO1: ô có band thiếu nhận xét là nợ, nhưng không "chưa nhập" */(x) => d.baiId(x.attemptId, x.skill)).filter((id) => trongKhoang.has(id));
     const thieu = no.filter((id) => !tre.has(id));
@@ -218,7 +219,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     assert(L?.dung && L.tre === null, `L: ${JSON.stringify(L)}`);
     svc.saveScore(P.admin, aW.id, 'reading', { rawScore: 30 }, '2026-09-21');
     const R = dongCham('2026-09-21').get(d.baiId(aW.id, 'reading'));
-    assert(R && !R.dung && R.tre === 1 && R.han === '2026-09-13', `R: ${JSON.stringify(R)}`);
+    assert(R && !R.dung && R.tre === 1 && R.han === '2026-09-20', `R: ${JSON.stringify(R)}`);   // sổ: hạn = mốc trễ (Chủ nhật tuần thi), hạn chấm 13/09
   });
   check('S6F-a (3d) · tuần thi ĐÃ hết, qua hạn: cả bốn đường quá hạn (Việc, Việc tiếp theo, Nợ điểm, bảng GV)', () => {
     const it = viecL(eV.sid);
@@ -329,7 +330,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
   });
   check('S6F-a (4e) · PHỦ ĐỊNH: panel Chấm điểm với gv không có lớp ở chi nhánh → 404, không lộ tên', () => {
     let loi: any = null;
-    try { pt.oChamDiemGv(P.cpManager, { ct: 'ft', gv: P.lrTeacher.userId }); } catch (e) { loi = e; }
+    try { pt.oChiSoGv(P.cpManager, { ct: 'ft', gv: P.lrTeacher.userId, cot: 'cham-diem' }); } catch (e) { loi = e; }
     assert(loi?.status === 404 && /không có lớp ở chi nhánh này/.test(loi.message), `${loi?.status} ${loi?.message}`);
   });
   check('S6F-a (4f) · KHÔNG N+1: thêm 2 lớp FT có em + lượt có điểm → số câu SQL của bảng không đổi', () => {
@@ -375,13 +376,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
       }
     }
   });
-  check('S6F-a (4i) · panel Chấm điểm: ngày "sửa" đổi giờ nhật ký UTC sang ngày VN (20:00Z → hôm sau)', () => {
-    conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, entity_label, after_json, created_at)
-      VALUES (?, 'score.edit', 'assessment_attempt', ?, 'listening', '{"lyDo":"Chấm lại"}', '2026-09-22T20:00:00.000Z')`).run(P.admin.userId, aW.id);
-    const gv = voiNgay('2026-09-28', () => pt.nguCanhPtGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay }).nguoiLuc(MB_FT, 'listening', '2026-09-20'));
-    const dong = voiNgay('2026-09-28', () => pt.oChamDiemGv(P.mbManager, { ct: 'ft', tu: tuanNay, den: tuanNay, gv }).rows as any[]).find((r) => r.id === d.baiId(aW.id, 'listening'));
-    assert(dong?.sua === '2026-09-23', `sửa: ${JSON.stringify(dong)}`);
-  });
+  /* S6F-a (4i) ngày "sửa" của panel Chấm điểm V4: bỏ ở sổ nghĩa vụ PR-3 — panel V4 không còn (web đọc panel số từ 06/11, DEM-QUA-HAN b); nhật ký sửa vẫn ghi. */
   // ------------------------------------------------------------------ khối 10 · chuông + Phối hợp SOS (Q11, Q12)
   console.log('\nPR-S6F-a · (10) Chuông: Báo QL ở Cần làm; Phối hợp SOS chỉ lượt Mock FT');
   const phoiHop: any = await import('../yThuc/phoiHop.ts');

@@ -22,7 +22,7 @@ export async function runSuaRa1228Tests(t: any) {
   check('F01 · Báo PH xong: hạn gốc 20/09 hoặc 01/12, hạn chọn 05/11 → tháng 11 có tính (đúng hạn); bỏ hạn chọn → về hạn gốc, không tính tháng 11', () => thu(() => {
     const s = one(`SELECT s.id, s.branch_id cn FROM students s WHERE s.consultant_user_id IS NOT NULL AND EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.status = 'active') LIMIT 1`);
     const ky = (khung: 'ft' | 'thuong') => ({ cn: s.cn, khung, tu: '2026-11-01', cuoi: '2026-11-30', homNay: '2026-11-07' });
-    const co = (id: number) => [...vx.viecDaXong(ky('ft')).values(), ...vx.viecDaXong(ky('thuong')).values()].flat().find((x: any) => x.key === `bao-ph:${id}`);
+    const co = (id: number) => vx.viecXongCn(ky('ft')).find((x: any) => x.key === `bao-ph:${id}`);   // PR-3: viecDaXong (theo người, theo khung) bỏ — viecXongCn mọi khung
     for (const hanGoc of ['2026-09-20', '2026-12-01']) {
       const id = Number(run(`INSERT INTO viec_bao_ph (student_id, nhan, han, han_chon, trang_thai, tao_luc) VALUES (?,?,?,?,?,?)`, s.id, 'x', hanGoc, '2026-11-05', 'xong', '2026-09-01T00:00:00.000Z').lastInsertRowid);
       run(`INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_luc) VALUES (?,?,?,?)`, id, 'da_bao', '2026-11-04', '2026-11-04T03:00:00.000Z');

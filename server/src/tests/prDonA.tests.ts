@@ -741,7 +741,7 @@ export async function runPrDonATests(t: YThucTestKit) {
     '/giao-vien/': 'UI-TONG-QUAN: Case đang xử lý của chính GV — đo ở TAI_TRANG GV `/giao-vien/{gv}/o?cot=case-mo` (S1: chỉ số GV theo `/hai-khoi`); ô bấm `/chi-so/o` khi bấm',
     '/cases': 'UI-HO-SO-LOP: bảng hồ sơ lớp (Case + PA) — không gọi ở Tổng quan',
     '/ref/periods': 'Filters.tsx — bộ lọc tuần, Tổng quan không vẽ', '/ref/current-period': 'Filters.tsx — như trên', '/ref/period-window': 'Filters.tsx — như trên',
-    '/phan-tich/hieu-qua-pa': 'tab Phân tích — khi bấm tab', '/phan-tich/giao-vien': 'tab Phân tích', '/phan-tich/giao-vien/cham-diem': 'tab Phân tích',
+    '/phan-tich/hieu-qua-pa': 'tab Phân tích — khi bấm tab', '/phan-tich/giao-vien': 'tab Phân tích',
     '/phan-tich/tong-hop': 'tab Phân tích', '/phan-tich/y-thuc': 'tab Phân tích', '/xuat-mt/xem-truoc': 'tab Phân tích › Xuất',
     '/giao-vien': 'bảng Theo giáo viên — tab Phân tích', '/metrics/': 'SoLieu / OSo — mở danh sách khi bấm ô (ô số lúc mở trang kiểm riêng ở dưới)',
     '/ref/classes': 'Header — gợi ý lớp ở ô tìm thanh trên, chỉ khi gõ ≥ 2 chữ (TAI-NHANH 02/11; trước gọi mỗi lần mở trang)',

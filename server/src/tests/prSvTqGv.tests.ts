@@ -6,6 +6,7 @@ export async function runPrSvTqGvTests(t: any) {
   const { check, assert, conn, P } = t;
   const tq: any = await import('../worklist/tongQuan.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
+  const soCu: any = await import('./soCu.ts');   // PR-3 sổ nghĩa vụ: thay tapChamDiem / oChamDiemGv / viecQuaHanMo cũ
   const bc: any = await import('../phanTich/baoCao.ts');
   const hoSo: any = await import('../giaoVien/hoSo.ts');
   const perm: any = await import('../permissions.ts');
@@ -208,8 +209,6 @@ export async function runPrSvTqGvTests(t: any) {
           const [du, hep] = hai(() => pt.oChiSoGv(P.admin, { ...f, gv, cot }));
           if (du !== hep) sai.push(`Phân tích GV cn ${cn} ${f.ct} GV ${gv} ${cot}`);
         }
-        const [du, hep] = hai(() => pt.oChamDiemGv(P.admin, { ...f, gv }));
-        if (du !== hep) sai.push(`Chấm điểm cn ${cn} ${f.ct} GV ${gv}`);
       }
     }
     assert(!loi.length && coSo >= 5, `lỗi ${loi.slice(0, 3).join(' | ')} · GV có số ${coSo}`);
@@ -225,13 +224,13 @@ export async function runPrSvTqGvTests(t: any) {
     const KY = { tu: '2026-03-02', den: '2026-09-14' };
     const c = pt.nguCanhPtGv(P.admin, { cn: conn.prepare(`SELECT branch_id FROM classes WHERE code = 'MB FT 101'`).get().branch_id, ct: 'ft', ...KY });
     const nap = pt.napBai(P.admin, c);
-    const dong = pt.tapChamDiem(c, nap).dong;
+    const dong = soCu.dongChamSo(c);
     const coPc = (gv: number, lop: number) => c.pc.some((a: any) => a.gv === gv && a.lop === lop);
     const ghiDanh = (sid: number) => new Set((conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ?`).all(sid) as any[]).map((r) => r.class_id));
     const oCua = (gv: number, id: number, hep: boolean) => {
       pt.napDayDuKhiKiem.bat = !hep;
-      /* Sổ nghĩa vụ (PR-2): panel Chấm Test đọc sổ — phép kiểm giữ đường thu hẹp `napBai(…, gv)` (Kết quả / Tiến bộ vẫn dùng) qua `tapChamDiem`. */
-      try { xoaNho(); return pt.tapChamDiem(c, pt.napBai(perm.loadPrincipal(gv), c, gv)).dong.get(id)?.gv === gv; } catch { return false; } finally { pt.napDayDuKhiKiem.bat = false; }
+      /* Sổ nghĩa vụ (PR-3): panel Chấm Test đọc sổ — phép kiểm giữ đường thu hẹp `napBai(…, gv)` (Kết quả / Tiến bộ vẫn dùng): ô của GV phải có trong lượt nạp. */
+      try { xoaNho(); return pt.napBai(perm.loadPrincipal(gv), c, gv).o.some((x: any) => x.id === id); } catch { return false; } finally { pt.napDayDuKhiKiem.bat = false; }
     };
     const lopLuot = (id: number) => conn.prepare(`SELECT class_id FROM assessment_attempts WHERE id = ?`).get(id).class_id;
     /*
