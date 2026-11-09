@@ -112,8 +112,6 @@ const dongThem: Record<string, number> = {};
 const demDong = () => process.env.PISA_DEM_DONG ? (db().prepare(`SELECT (SELECT COUNT(*) FROM assessment_attempts) + (SELECT COUNT(*) FROM attempt_skills) + (SELECT COUNT(*) FROM students) + (SELECT COUNT(*) FROM sos_cases) + (SELECT COUNT(*) FROM case_interventions) + (SELECT COUNT(*) FROM notifications) n`).get() as any).n as number : 0;
 const demPhep = () => { soPhep[tepHienTai || 'run.ts'] = (soPhep[tepHienTai || 'run.ts'] ?? 0) + 1; };
 /** Bọc module `./ten.tests.ts`: hàm `run*` của nhóm khác thành rỗng; của nhóm mình thì đo giờ + đánh dấu đang trong tệp. */
-/* SỔ NGHĨA VỤ: seed nằm trước W4 OCT 2026 — tắt mốc bắt đầu tính trễ cho mọi phép kiểm (ca NV-MOC bật riêng), như lúc chưa có mốc. */
-(await import('../phanTich/soNghiaVu.ts')).MOC_TINH_TRE.ngay = '';
 function bocTep<T extends object>(ten: string, m: T): T {
   const cuaToi = CHI_TEP ? CHI_TEP.includes(ten) : nhomCua(ten) === NHOM;
   const docLap = docLapCua(ten);
@@ -174,6 +172,8 @@ fs.mkdirSync(path.dirname(process.env.PISA_DB), { recursive: true });
  * nạp `db.ts`, để `npm run check` trong một cửa sổ đang có token không bao giờ chạm database thật.
  */
 for (const k of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BAN_CHINH', 'PISA_CHO_PHEP_SEED_TURSO']) delete process.env[k];
+/* SỔ NGHĨA VỤ: seed nằm trước W4 OCT 2026 — tắt mốc bắt đầu tính trễ cho mọi phép kiểm (ca NV-MOC bật riêng). SAU khi đặt PISA_DB và gỡ biến Turso (db.ts đọc biến lúc nạp). */
+(await import('../phanTich/soNghiaVu.ts')).MOC_TINH_TRE.ngay = '';
 for (const suffix of ['', '-wal', '-shm']) {
   const p = process.env.PISA_DB + suffix;
   if (fs.existsSync(p)) fs.rmSync(p);
