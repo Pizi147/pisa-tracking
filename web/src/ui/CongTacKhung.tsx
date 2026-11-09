@@ -49,7 +49,8 @@ export function CongTacKhung({ trang, value, onChange, dem, coTatCa = false, kie
 }) {
   /* SUA-NHO-UI U2 (chủ SP 30/10 "làm hết cả thể"): MỌI kiểu (đoạn · chip · ô chọn) gọn "Fast Track 4" — số sau tên, không "·", không đơn vị. */
   /* UX-2 (5): hiện theo lớp trong phạm vi người xem; chưa biết phạm vi thì theo dữ liệu đang xem như cũ. */
-  const coDuLieu = khungCuaPhamVi ? (['ft', 'thuong'] as const).filter((k) => khungCuaPhamVi![k]) : (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
+  /* KIEM-TAY-1011: khung ngoài phạm vi dạy nhưng trang có dữ liệu (GV S chỉ dạy FT thấy lớp thường có MT0 S — #1285) vẫn hiện, không thì không vào được. */
+  const coDuLieu = khungCuaPhamVi ? (['ft', 'thuong'] as const).filter((k) => khungCuaPhamVi![k] || (dem?.[k] ?? 0) > 0) : (['ft', 'thuong'] as const).filter((k) => (dem?.[k] ?? 1) > 0);
   if (coDuLieu.length < 2) return null;
   if (kieu === 'chon') {
     const chu = (ten: string, k: KhungLoc) => (dem?.[k] != null ? `${ten} ${dem[k]}` : ten);

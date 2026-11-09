@@ -14,7 +14,7 @@ import { t } from '@shared/i18n/index.ts';
 const PanelGvTre = lazyTai(() => import('../modules/worklist/PanelGvTre.tsx').then((m) => ({ default: m.PanelGvTre })));
 /* TAI-NHANH-0611: panel bảng có điểm cũng chỉ tải khi máy chủ trả `bangLuot` (sau khi bấm số). */
 const BangLuotPanel = lazyTai(() => import('./BangLuotPanel.tsx').then((m) => ({
-  default: ({ nguon, ...p }: Omit<Parameters<typeof m.BangLuotPanel>[0], 'loai'> & { nguon: string }) => <m.BangLuotPanel {...p} loai={m.loaiBangLuot(nguon)} />,
+  default: ({ nguon, ...p }: Omit<Parameters<typeof m.BangLuotPanel>[0], 'loai'> & { nguon: string }) => <m.BangLuotPanel {...p} nguon={nguon} loai={m.loaiBangLuot(nguon)} />,
 })));
 
 /**
