@@ -4445,7 +4445,7 @@ check('Quyền cấp riêng cho cá nhân cộng thêm vào quyền của vai, k
   assert(!can(loadPrincipal(mgr), PERMISSIONS.ATTEMPT_VIEW, { classId: cp }), 'Gỡ quyền riêng không có tác dụng');
 });
 
-check('Hồ sơ cá nhân: sửa được tên, kỹ năng và email phụ; KHÔNG sửa được email đăng nhập', () => {
+check('Hồ sơ cá nhân: sửa được tên, điện thoại và email phụ (kỹ năng GV chỉ xem — prQuyenKyNang); KHÔNG sửa được email đăng nhập', () => {
   /* Lớp 102: lớp 101 đã bị bài kiểm phân công ở trên gỡ mất giáo viên Listening. */
   const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   const before = accounts.myProfile(gv);
@@ -4453,11 +4453,11 @@ check('Hồ sơ cá nhân: sửa được tên, kỹ năng và email phụ; KHÔ
 
   accounts.updateProfile(gv, {
     fullName: `${before.fullName}`, phone: '0900000001',
-    skills: ['listening', 'writing1'], extraEmails: ['rieng@gmail.com', 'rieng@gmail.com'],
+    skills: before.skills, extraEmails: ['rieng@gmail.com', 'rieng@gmail.com'],
   });
   const after = accounts.myProfile(gv);
   assert(after.phone === '0900000001', 'Không lưu được số điện thoại');
-  assert(after.skills.sort().join() === 'listening,writing1', `Kỹ năng sai: ${after.skills.join()}`);
+  assert(after.skills.sort().join() === [...before.skills].sort().join(), `Kỹ năng sai: ${after.skills.join()}`);
   assert(after.extraEmails.length === 1, 'Email phụ trùng nhau không được gộp lại');
   assert(after.email === before.email, 'Email đăng nhập bị đổi qua hồ sơ cá nhân');
 
@@ -5389,9 +5389,9 @@ check('Người theo dõi xem được nhưng không cập nhật hộ', () => {
       `SELECT DISTINCT u.id FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
          JOIN roles r ON r.id = ur.role_id AND r.key IN ('teacher','manager')
-        WHERE u.status = 'active' AND u.id != ? ORDER BY u.id LIMIT 1`,
+        WHERE u.status = 'active' AND u.id != ? AND (? IS NULL OR ur.branch_id = ?) ORDER BY u.id LIMIT 1`,
     )
-    .get(row.assigneeUserId) as any).id;
+    .get(row.assigneeUserId, row.branchId ?? null, row.branchId ?? null) as any).id;   // GIAO-VIEC-CN: người có vai ở chi nhánh của việc
   mgmt.editMgmtTask(P.admin, row.id, { watcherUserId: other });
   const detail = mgmt.mgmtTaskDetail(P.admin, row.id);
   assert(detail.watcherUserId === other, 'Không gán được người theo dõi');
@@ -9891,6 +9891,9 @@ await runPrCvSua1011Tests({ check, assert, assertThrows, conn, P, TODAY, addDays
 // ==================================================================== LO-TRINH-GIU-LICH (chủ SP 10/11: chuyển lớp giữ lịch MT · Áp lịch chỉ xếp lượt chưa có lịch)
 const { runPrLoTrinhGiuLichTests } = bocTep('prLoTrinhGiuLich', await import('./prLoTrinhGiuLich.tests.ts'));
 await runPrLoTrinhGiuLichTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== QUYEN-KY-NANG + GIAO-VIEC-CN (chủ SP 10/11, B' mục 7 + 9)
+const { runPrQuyenKyNangTests } = bocTep('prQuyenKyNang', await import('./prQuyenKyNang.tests.ts'));
+await runPrQuyenKyNangTests({ check, assert, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

@@ -361,8 +361,12 @@ function nextCode(conn: any): string {
 }
 
 /** ID gửi lên phải là một tài khoản nhân_vien (giáo viên/quản lý) đang hoạt động, nếu có gửi. */
-function kiemNguoi(label: string, userId: number | null | undefined) {
+function kiemNguoi(label: string, userId: number | null | undefined, branchId?: number | null) {
   if (userId && !laNguoiHopLe(userId, 'nhan_vien')) throw loi(400, '{label} không hợp lệ.', { label });
+  /* GIAO-VIEC-CN (chủ SP 10/11, B' 9): việc của một chi nhánh chỉ giao / cho theo dõi người có vai ở chi nhánh đó; Toàn hệ thống → ai cũng được. */
+  if (userId && branchId && !laNguoiHopLe(userId, 'nhan_vien', branchId)) {
+    throw loi(400, '{label} phải có vai ở chi nhánh của công việc — chọn lại người.', { label });
+  }
 }
 
 /**
@@ -401,8 +405,6 @@ export function createMgmtTask(p: Principal, input: {
     throw badRequest('Công việc phải thuộc một trong bốn nhóm quản lý.');
   }
   if (input.due && !isIsoDate(input.due)) throw badRequest('Hạn không hợp lệ.');
-  kiemNguoi('Người phụ trách', input.assigneeUserId);
-  kiemNguoi('Người theo dõi', input.watcherUserId);
   const assigneeName = tenNgoai(input.assigneeUserId, input.assigneeName);
 
   const conn = db();
@@ -418,6 +420,8 @@ export function createMgmtTask(p: Principal, input: {
 
   const taskBranchId = input.branchId ?? parent?.branch_id ?? null;
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId: taskBranchId, anyScope: !taskBranchId }, 'Chỉ Quản lý mới tạo được công việc quản lý.');
+  kiemNguoi('Người phụ trách', input.assigneeUserId, taskBranchId);
+  kiemNguoi('Người theo dõi', input.watcherUserId, taskBranchId);
   /*
    * PR-Dọn (quét #5a): Case làm căn cứ — tối đa 50, mỗi Case phải tồn tại và người tạo XEM được (chi tiết việc hiện tên Case + tên HV;
    * gắn Case chi nhánh khác là lộ tên HV chi nhánh đó cho mọi người xem việc).
@@ -633,8 +637,12 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     put('group_key', patch.group);
   }
   if (patch.branchId !== undefined) put('branch_id', patch.branchId);
+  /* GIAO-VIEC-CN: chỉ kiểm chi nhánh khi người hoặc chi nhánh ĐỔI — việc cũ đã giao ngoài chi nhánh vẫn sửa tên / hạn được (form gửi lại người cũ). */
+  const cnMoi = patch.branchId !== undefined ? patch.branchId : t.branch_id;
+  const doiCn = (cnMoi ?? null) !== (t.branch_id ?? null);
+  const cnKiem = (moi: number | null | undefined, cu: number | null) => (doiCn || (moi ?? null) !== (cu ?? null) ? cnMoi : null);
   if (patch.assigneeUserId !== undefined) {
-    kiemNguoi('Người phụ trách', patch.assigneeUserId);
+    kiemNguoi('Người phụ trách', patch.assigneeUserId, cnKiem(patch.assigneeUserId, t.assignee_user_id));
     if (patch.assigneeUserId !== t.assignee_user_id) {
       historyRows.push({
         field: 'assignee_user_id', oldValue: t.assignee_user_id ? String(t.assignee_user_id) : null,
@@ -652,7 +660,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
     put('assignee_name', ten);
   }
   if (patch.watcherUserId !== undefined) {
-    kiemNguoi('Người theo dõi', patch.watcherUserId);
+    kiemNguoi('Người theo dõi', patch.watcherUserId, cnKiem(patch.watcherUserId, t.watcher_user_id));
     if (patch.watcherUserId !== t.watcher_user_id) {
       historyRows.push({
         field: 'watcher_user_id', oldValue: t.watcher_user_id ? String(t.watcher_user_id) : null,
