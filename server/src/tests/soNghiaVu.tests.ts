@@ -193,7 +193,9 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const ks = nv.khoaBai(a.id, 'speaking');
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
     nv.ghiSoLuot([a.id]);
-    const gv = get(`SELECT id FROM users WHERE id != ? ORDER BY id LIMIT 1`, P.admin.userId).id;
+    /* Chủ SP 10/11: người chấm S chéo phải là GV có kỹ năng S. */
+    const gv = get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
     attempts.saveScore(P.admin, a.id, 'speaking', { band: 6, gvCham: { performerUserId: gv } }, so(ks).han);
     assert(so(ks).nguoi === gv && so(ks).xong_luc, `GV chấm S: ${JSON.stringify(so(ks))}`);
     studentsSvc.setStudentStatus(P.admin, a.student_id, 'finished', get(`SELECT date(?, '-1 day') d`, so(khoa).han).d, 'thử');
@@ -280,6 +282,8 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const dem: any = await import('../phanTich/demNghiaVu.ts');
   const ng: any = await import('../platform/nguCanhRequest.ts');
   const accounts: any = await import('../platform/accounts.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const timNguoi: any = await import('../platform/timNguoi.ts');
   /** Dòng sổ giả (chỉ cột đếm cần) — ca đếm cô lập khỏi luật tính dòng. */
   let soGia = 0;
   const chenSo = (o: { nguoi: number | null; cn?: number; han: string; xong?: string | null; hanGoc?: string; tuan?: string | null; sCheo?: boolean; khongTinh?: string | null; loai?: string }) =>
@@ -319,33 +323,63 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     } finally { nv.MOC_TINH_TRE.ngay = ''; }
   });
 
-  check('NV-SCHEO-CA-NHOM · S chéo chưa ai nhận, 3 GV có kỹ năng S ở chi nhánh → mỗi người chưa làm + 1; panel từng người có dòng đó', () => thu(() => {
+  check('NV-SCHEO-CA-NHOM · S chéo chưa ai nhận, 3 GV có kỹ năng S → KHÔNG cộng vào 3 số riêng, đếm riêng "S chéo chung" + 1 mỗi người; panel có dòng sCheo', () => thu(() => {
     conn.exec('DELETE FROM nghia_vu');
     const ba = gvMb.slice(0, 3);
     assert(ba.length === 3, 'seed cần ≥ 3 GV chi nhánh');
     conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
-    conn.prepare(`DELETE FROM ky_nang_lan WHERE skill = 'speaking'`).run();
-    for (const g of ba) conn.prepare(`INSERT INTO user_skills (user_id, skill) VALUES (?, 'speaking')`).run(g);
+    conn.prepare(`DELETE FROM user_skill_lich_su WHERE skill = 'speaking'`).run();
+    for (const g of ba) accounts.ghiLichSuKyNang(conn, g, [], ['speaking'], '2026-08-01');
     chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
     const m = dem.demTheoNguoi({ chiNhanh: MB, ...KY });
-    for (const g of ba) assert(so3(m, g).chua === 1, `GV ${g}: ${JSON.stringify(so3(m, g))}`);
-    assert(gvMb.slice(3).every((g) => so3(m, g).chua === 0), 'GV không có S không bị tính');
+    for (const g of ba) assert(so3(m, g).chua === 0 && m.get(g)?.sChung === 1, `GV ${g}: ${JSON.stringify(m.get(g))}`);
+    assert(gvMb.slice(3).every((g) => !m.get(g)?.sChung), 'GV không có S không bị tính');
     for (const g of ba) assert(dem.dongCuaNguoi({ nguoi: g, chiNhanh: MB, ...KY }).some((d: any) => d.sCheo && d.trangThai === 'chua'), `panel GV ${g}`);
+    assert(dem.chuaPhanCong(MB, KY.tu, KY.den).every((d: any) => !d.sCheo), 'có người S → không phải Chưa phân công');
   }));
 
-  check('NV-SCHEO-NGAY · GV bỏ kỹ năng S SAU hạn (sửa hồ sơ) → vẫn bị tính bài S chéo hạn trước đó; bài hạn sau ngày bỏ → không', () => thu(() => {
+  check('NV-SCHEO-NGAY · kỹ năng S TẠI NGÀY HẠN: có S 01/08, bỏ S 05/09 → bài S chéo hạn 03/09 (quá hạn trước ngày bỏ) vẫn tính; hạn 10/09 không', () => thu(() => {
     conn.exec('DELETE FROM nghia_vu');
     const g = gvMb[0];
     conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
-    conn.prepare(`DELETE FROM ky_nang_lan WHERE skill = 'speaking'`).run();
-    accounts.ghiKyNangLan(conn, g, [], ['speaking'], '2026-08-01');   // có S từ 01/08
-    conn.prepare(`INSERT INTO user_skills (user_id, skill) VALUES (?, 'speaking')`).run(g);
-    accounts.ghiKyNangLan(conn, g, ['speaking'], [], '2026-09-05');   // bỏ S ngày 05/09
-    conn.prepare(`DELETE FROM user_skills WHERE user_id = ? AND skill = 'speaking'`).run(g);
+    conn.prepare(`DELETE FROM user_skill_lich_su WHERE skill = 'speaking'`).run();
+    accounts.ghiLichSuKyNang(conn, g, [], ['speaking'], '2026-08-01');
+    accounts.ghiLichSuKyNang(conn, g, ['speaking'], [], '2026-09-05');
     chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
     chenSo({ nguoi: null, sCheo: true, han: '2026-09-10' });
-    const x = so3(dem.demTheoNguoi({ chiNhanh: MB, ...KY }), g);
-    assert(x.chua === 1, `chỉ bài hạn trước ngày bỏ S: ${JSON.stringify(x)}`);
+    const x = dem.demTheoNguoi({ chiNhanh: MB, ...KY }).get(g);
+    assert(x?.sChung === 1, `chỉ bài hạn trước ngày bỏ S: ${JSON.stringify(x)}`);
+    const ds = dem.chuaPhanCong(MB, KY.tu, KY.den);
+    assert(ds.some((d: any) => d.sCheo && d.han === '2026-09-10'), 'hạn 10/09 không còn ai có S → Chưa phân công');
+  }));
+
+  check('NV-SCHEO-HO-SO · sửa kỹ năng ở Hồ sơ cá nhân (updateProfile) ghi lịch sử: bỏ S → dòng đóng ngày hôm nay; thêm lại → dòng mới', () => thu(() => {
+    const g = gvMb[0];
+    conn.prepare(`DELETE FROM user_skill_lich_su WHERE user_id = ?`).run(g);
+    conn.prepare(`DELETE FROM user_skills WHERE user_id = ?`).run(g);
+    conn.prepare(`INSERT INTO user_skills (user_id, skill) VALUES (?, 'speaking'), (?, 'listening')`).run(g, g);
+    const pg = loadPrincipal(g);
+    accounts.updateProfile(pg, { skills: ['listening'] });
+    const bo = conn.prepare(`SELECT * FROM user_skill_lich_su WHERE user_id = ? AND skill = 'speaking'`).all(g) as any[];
+    assert(bo.length === 1 && bo[0].den === TODAY && bo[0].tu === '2000-01-01', `bỏ S: ${JSON.stringify(bo)}`);
+    accounts.updateProfile(pg, { skills: ['listening', 'speaking'] });
+    const lai = conn.prepare(`SELECT * FROM user_skill_lich_su WHERE user_id = ? AND skill = 'speaking' ORDER BY id`).all(g) as any[];
+    assert(lai.length === 2 && lai[1].tu === TODAY && lai[1].den === null, `thêm lại S: ${JSON.stringify(lai)}`);
+  }));
+
+  check('NV-SCHEO-CHON · nhập điểm S chéo: người chấm phải có kỹ năng S (hoặc tên ngoài); người không có S → 400', () => thu(() => {
+    const a = oL();
+    const s = nv.tinhBai(a.id).find((d: any) => d.kieu === 'speaking');
+    const coS = get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
+    const khongS = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
+      WHERE u.status = 'active' AND NOT EXISTS (SELECT 1 FROM user_skills us WHERE us.user_id = u.id AND us.skill = 'speaking') ORDER BY u.id LIMIT 1`).id;
+    assertThrows(() => attempts.saveScore(P.admin, a.id, 'speaking', { band: 6, gvCham: { performerUserId: khongS } }, s.han), /kỹ năng S|Speaking/, 'người không có S phải bị chặn');
+    attempts.saveScore(P.admin, a.id, 'speaking', { band: 6, gvCham: { performerUserId: coS } }, s.han);
+    attempts.saveScore(P.admin, a.id, 'speaking', { gvCham: { performerName: 'Cô Lan ngoài' } }, s.han);
+    const nguoiS = (conn.prepare(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' WHERE u.status = 'active'`).all() as any[]).map((r) => r.id);
+    const tim = timNguoi.timNguoi(P.admin, { nhom: 'gv_speaking' }) as any[];
+    assert(tim.length > 0 && tim.every((r) => nguoiS.includes(r.id)), `ô chọn chỉ GV có S: ${tim.map((r) => r.id)}`);
   }));
 
   check('NV-TONG · GV có dòng ở hai chi nhánh → chiNhanh = null ra MỘT dòng = tổng hai chi nhánh', () => thu(() => {

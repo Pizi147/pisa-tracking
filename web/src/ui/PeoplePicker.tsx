@@ -13,7 +13,7 @@ export type Person = { id: number; name: string; title: string | null; role: str
 type NguoiKetQua = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[] };
 
 function useNguoiSearch(
-  term: string, nhom: 'giao_vien' | 'nhan_vien', studentId: number | null | undefined, active: boolean,
+  term: string, nhom: 'giao_vien' | 'nhan_vien' | 'gv_speaking', studentId: number | null | undefined, active: boolean,
   /** PR-S5F-b: chỉ GV ở chi nhánh lớp của em (`studentId`) — người dạy bổ trợ. */
   cungChiNhanh = false,
 ) {
@@ -115,7 +115,7 @@ export function ChonNguoi({
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null, tutor?: TutorChon) => void;
-  nhom: 'giao_vien' | 'nhan_vien';
+  nhom: 'giao_vien' | 'nhan_vien' | 'gv_speaking';
   studentId?: number | null;
   choToi?: boolean; choNgoai?: boolean;
   /** PR-S5F-b: chỉ GV cùng chi nhánh lớp của em — ô Người dạy bổ trợ. */

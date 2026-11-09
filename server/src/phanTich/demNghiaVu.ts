@@ -28,14 +28,15 @@ const COT_DOC = 'khoa, loai, kieu, chi_nhanh, lop, hoc_vien, nguoi, s_cheo, pc_n
 const tt = (r: DongDoc, homNay: string) => trangThai({ han: r.han, hanGoc: r.han_goc, tuan: r.tuan, xongLuc: r.xong_luc }, homNay);
 
 /**
- * GV có kỹ năng S (hồ sơ GV) có vai giáo viên ở chi nhánh — TẠI NGÀY (lịch sử `ky_nang_lan`; người chưa có lịch sử: kỹ năng hiện tại `user_skills`).
- * Một câu cho mọi chi nhánh của các dòng.
+ * GV có kỹ năng S (hồ sơ GV) có vai giáo viên ở chi nhánh — TẠI NGÀY HẠN (lịch sử `user_skill_lich_su`, chủ SP 10/11; người chưa có dòng lịch sử nào:
+ * kỹ năng hiện tại). Bỏ S → bài hạn sau ngày bỏ không còn tính cho người đó; bài đã quá hạn trước vẫn tính. Một câu cho mọi chi nhánh của các dòng.
+ * ponytail: vai giáo viên ở chi nhánh đọc theo HIỆN TẠI (`user_roles` không có lịch sử) — GV rời chi nhánh thôi bị tính bài S chéo cũ; cần lịch sử vai thì thêm.
  */
 function nhomS(cns: readonly number[]): (cn: number, ngay: string) => number[] {
   if (!cns.length) return () => [];
   const rows = db().prepare(`SELECT ur.branch_id AS cn, ur.user_id AS gv, l.tu, l.den, (us.user_id IS NOT NULL) AS hien_co
       FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
-      LEFT JOIN ky_nang_lan l ON l.user_id = ur.user_id AND l.skill = 'speaking'
+      LEFT JOIN user_skill_lich_su l ON l.user_id = ur.user_id AND l.skill = 'speaking'
       LEFT JOIN user_skills us ON us.user_id = ur.user_id AND us.skill = 'speaking'
      WHERE ur.status = 'active' AND ur.branch_id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(cns)])) as any[];
   return (cn, ngay) => [...new Set(rows.filter((r) => r.cn === cn && (r.tu != null ? r.tu <= ngay && (!r.den || r.den > ngay) : !!r.hien_co)).map((r) => r.gv as number))];
@@ -52,18 +53,23 @@ function nguoiCua(rows: readonly DongDoc[]): (r: DongDoc) => number[] {
   const s = nhomS(rows.some((r) => r.s_cheo && r.nguoi == null) ? rows.filter((r) => r.s_cheo && r.nguoi == null).map((r) => r.chi_nhanh) : []);
   return (r) => (r.nguoi != null ? [r.nguoi] : r.s_cheo ? s(r.chi_nhanh, r.han!) : []);
 }
+/** Dòng S chéo chưa ai nhận — đếm riêng ("+ n S chéo chung", chủ SP 10/11), không cộng vào 3 số riêng. */
+const sChung = (r: DongDoc) => !!r.s_cheo && r.nguoi == null;
 
-/** 3 số của mỗi người trong kỳ. `chiNhanh = null` → mọi chi nhánh, một người một dòng (tổng). ≤ 2 câu. */
-export function demTheoNguoi(q: Q): Map<number, So3> {
+/**
+ * 3 số RIÊNG của mỗi người trong kỳ + `sChung` = số bài S chéo chung chưa làm (mọi GV có S cùng số; hiển thị dòng phụ). `chiNhanh = null` → mọi chi nhánh,
+ * một người một dòng (tổng). ≤ 2 câu.
+ */
+export function demTheoNguoi(q: Q): Map<number, So3 & { sChung: number }> {
   const rows = docKy(q);
   const ai = nguoiCua(rows);
-  const out = new Map<number, So3>();
+  const out = new Map<number, So3 & { sChung: number }>();
   for (const r of rows) {
     const t = tt(r, q.homNay);
     if (t === 'chua-toi') continue;
     for (const g of ai(r)) {
-      const x = out.get(g) ?? out.set(g, { dung: 0, muon: 0, chua: 0 }).get(g)!;
-      x[t] += 1;
+      const x = out.get(g) ?? out.set(g, { dung: 0, muon: 0, chua: 0, sChung: 0 }).get(g)!;
+      if (sChung(r)) { if (t === 'chua') x.sChung += 1; } else x[t] += 1;
     }
   }
   return out;
@@ -94,8 +100,13 @@ export function dongCuaNguoi(q: Q & { nguoi: number }): DongNvXem[] {
   return out.sort((a, b) => THU_TU[a.trangThai] - THU_TU[b.trangThai] || (b.soNgay ?? 0) - (a.soNgay ?? 0) || a.han.localeCompare(b.han));
 }
 
-/** Bài / việc không có người (spec 1.2 a, "Chưa phân công") của một chi nhánh trong kỳ — cho QL. */
+/**
+ * Bài / việc không có người (spec 1.2 a, "Chưa phân công") của một chi nhánh trong kỳ — cho QL. Gồm bài S chéo chưa ai nhận mà chi nhánh không còn GV nào có
+ * kỹ năng S tại ngày hạn (chủ SP 10/11).
+ */
 export function chuaPhanCong(chiNhanh: number, tu: string, den: string, homNay = demoToday()): DongNvXem[] {
-  return (db().prepare(`SELECT ${COT_DOC} FROM nghia_vu WHERE chi_nhanh = ? AND han BETWEEN ? AND ? AND khong_tinh IS NULL AND nguoi IS NULL AND s_cheo = 0`)
-    .all(chiNhanh, tu, den) as DongDoc[]).flatMap((r) => { const t = tt(r, homNay); return t === 'chua-toi' ? [] : [xem(r, t, homNay)]; });
+  const rows = db().prepare(`SELECT ${COT_DOC} FROM nghia_vu WHERE chi_nhanh = ? AND han BETWEEN ? AND ? AND khong_tinh IS NULL AND nguoi IS NULL`)
+    .all(chiNhanh, tu, den) as DongDoc[];
+  const ai = nguoiCua(rows);
+  return rows.flatMap((r) => { const t = tt(r, homNay); return t === 'chua-toi' || ai(r).length ? [] : [xem(r, t, homNay)]; });
 }

@@ -16,7 +16,10 @@ import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
 const ROLE_KEYS_OF: Record<NhomNguoi, readonly string[]> = {
   giao_vien: ['teacher'],
   nhan_vien: ['teacher', 'manager'],
+  gv_speaking: ['teacher'],
 };
+/** `gv_speaking`: thêm điều kiện kỹ năng S trong hồ sơ (`user_skills`). */
+const KY_NANG_S = (nhom: NhomNguoi, u = 'u') => (nhom === 'gv_speaking' ? ` AND EXISTS (SELECT 1 FROM user_skills us WHERE us.user_id = ${u}.id AND us.skill = 'speaking')` : '');
 
 /**
  * Người này có thuộc nhóm `nhom` không: tài khoản đang hoạt động, có vai đúng nhóm đang hoạt động.
@@ -32,7 +35,7 @@ export function laNguoiHopLe(userId: number, nhom: NhomNguoi, branchId?: number 
       `SELECT 1 FROM users u
         JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
         JOIN roles r ON r.id = ur.role_id
-       WHERE u.id = ? AND u.status = 'active' AND r.key IN (${placeholders})${branchId ? ' AND ur.branch_id = ?' : ''} LIMIT 1`,
+       WHERE u.id = ? AND u.status = 'active' AND r.key IN (${placeholders})${branchId ? ' AND ur.branch_id = ?' : ''}${KY_NANG_S(nhom)} LIMIT 1`,
     )
     .get(userId, ...keys, ...(branchId ? [branchId] : []));
   return !!row;
@@ -79,7 +82,7 @@ function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: r
          FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
          JOIN roles r ON r.id = ur.role_id
-        WHERE u.status = 'active' AND r.key IN (${keyPlaceholders})${idClause}${branchClause}`,
+        WHERE u.status = 'active' AND r.key IN (${keyPlaceholders})${idClause}${branchClause}${KY_NANG_S(nhom)}`,
     )
     .all(...keys, ...keys, ...(ids ?? []), ...(branchIds ?? [])) as HangNguoiTho[];
 }
@@ -88,7 +91,7 @@ export function timNguoi(
   p: Principal,
   opts: { q?: string; nhom?: NhomNguoi; studentId?: number | null; cungChiNhanh?: boolean },
 ): HangNguoi[] {
-  const nhom: NhomNguoi = opts.nhom === 'nhan_vien' ? 'nhan_vien' : 'giao_vien';
+  const nhom: NhomNguoi = opts.nhom === 'nhan_vien' || opts.nhom === 'gv_speaking' ? opts.nhom : 'giao_vien';
   const term = (opts.q ?? '').trim();
   /* PR-Dọn (Q2): hỏi theo một em → phải xem được em đó, TRƯỚC khi đọc lớp / người dạy của em. */
   if (opts.studentId) require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: opts.studentId }, 'Bạn không có quyền xem học viên này.');

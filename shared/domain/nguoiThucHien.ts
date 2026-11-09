@@ -24,7 +24,8 @@ export function chotChuGo<T>(go: string, khop: readonly T[]): T | null {
 }
 
 /** Nhóm người hợp lệ cho một ô chọn: PA học thuật chỉ nhận giáo viên, Ý thức nhận cả giáo viên lẫn quản lý. */
-export const NHOM_NGUOI = ['giao_vien', 'nhan_vien'] as const;
+/** `gv_speaking` (chủ SP 10/11): người chấm Speaking chéo — giáo viên có kỹ năng S trong hồ sơ. */
+export const NHOM_NGUOI = ['giao_vien', 'nhan_vien', 'gv_speaking'] as const;
 export type NhomNguoi = (typeof NHOM_NGUOI)[number];
 
 export type NguoiChon =

@@ -184,13 +184,13 @@ const DOI_MA_CU: Record<string, string[]> = {
  * SỔ NGHĨA VỤ (spec 1.2 c): ghi lịch sử kỹ năng khi đổi — bỏ → đóng dòng đang mở (`den` = ngày; chưa có lịch sử → dòng từ trước tới ngày); thêm → dòng mới từ ngày.
  * S chéo chưa ai nhận tính cho GV có S TẠI NGÀY HẠN (`demNghiaVu.nhomS`).
  */
-export function ghiKyNangLan(conn: any, userId: number, cu: readonly string[], moi: readonly string[], ngay = demoToday()): void {
+export function ghiLichSuKyNang(conn: any, userId: number, cu: readonly string[], moi: readonly string[], ngay = demoToday()): void {
   for (const k of cu.filter((x) => !moi.includes(x))) {
-    if (!conn.prepare('UPDATE ky_nang_lan SET den = ? WHERE user_id = ? AND skill = ? AND den IS NULL').run(ngay, userId, k).changes) {
-      conn.prepare(`INSERT INTO ky_nang_lan (user_id, skill, tu, den) VALUES (?, ?, '2000-01-01', ?)`).run(userId, k, ngay);
+    if (!conn.prepare('UPDATE user_skill_lich_su SET den = ? WHERE user_id = ? AND skill = ? AND den IS NULL').run(ngay, userId, k).changes) {
+      conn.prepare(`INSERT INTO user_skill_lich_su (user_id, skill, tu, den) VALUES (?, ?, '2000-01-01', ?)`).run(userId, k, ngay);
     }
   }
-  for (const k of moi.filter((x) => !cu.includes(x))) conn.prepare('INSERT INTO ky_nang_lan (user_id, skill, tu) VALUES (?, ?, ?)').run(userId, k, ngay);
+  for (const k of moi.filter((x) => !cu.includes(x))) conn.prepare('INSERT INTO user_skill_lich_su (user_id, skill, tu) VALUES (?, ?, ?)').run(userId, k, ngay);
 }
 
 function setSkills(conn: any, userId: number, skills: string[]) {
@@ -199,7 +199,7 @@ function setSkills(conn: any, userId: number, skills: string[]) {
   const doi = skills.flatMap((s) => DOI_MA_CU[String(s)] ?? [String(s)]);
   const wanted = [...new Set(doi)].filter((s) => ALL_SKILLS.includes(s));
   const cu = (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(userId) as any[]).map((r) => r.skill as string);
-  ghiKyNangLan(conn, userId, cu, wanted);
+  ghiLichSuKyNang(conn, userId, cu, wanted);
   conn.prepare('DELETE FROM user_skills WHERE user_id = ?').run(userId);
   for (const s of wanted) {
     conn.prepare('INSERT INTO user_skills (user_id, skill) VALUES (?,?)').run(userId, s);

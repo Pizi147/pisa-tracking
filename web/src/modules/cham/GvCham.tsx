@@ -96,7 +96,7 @@ export function NutGvCham({ value, onChange, lon = false, hang = false, goiY = G
     <KhungPanel tieuDe={t('GV chấm Speaking')} longTrong z="z-[60]" onDong={dong}
       chan={{ huy: { nhan: t('Xong'), onClick: dong } }}>
       <div className="space-y-2 pt-3">
-        <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="nhan_vien" choNgoai ariaLabel={t('GV chấm Speaking')} />
+        <ChonNguoi value={value} onChange={(v) => { onChange(v); }} nhom="gv_speaking" choNgoai ariaLabel={t('GV chấm Speaking')} />
         <p className="m-0 text-xs text-slate-400">{goiY}</p>
       </div>
     </KhungPanel>

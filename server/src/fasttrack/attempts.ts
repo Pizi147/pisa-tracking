@@ -2002,12 +2002,14 @@ function nhomSeLuu(a: any, o: { band: number | null; nhomGui: string[] | undefin
 }
 
 /** GV chấm hợp lệ: nhân viên đang làm việc, hoặc tên người ngoài 2–100 ký tự (luật `chuanHoaNguoiThucHien`). */
-function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>) {
+/** Chủ SP 10/11 (spec 1.2 c): Speaking CHẤM CHÉO — người chấm có tài khoản phải là GV có kỹ năng S (hoặc tên ngoài → không tính ai). */
+function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>, cheo = false) {
   if (typeof g !== 'object') throw badRequest('GV chấm không hợp lệ.');
   try {
-    return chuanHoaNguoiThucHien(p, g, { nhom: 'nhan_vien', batBuoc: false });
+    return chuanHoaNguoiThucHien(p, g, { nhom: cheo ? 'gv_speaking' : 'nhan_vien', batBuoc: false });
   } catch {
-    throw badRequest('GV chấm phải là nhân viên đang làm việc, hoặc gõ tên người ngoài (2–100 ký tự).');
+    throw badRequest(cheo ? 'Người chấm Speaking chéo phải là giáo viên có kỹ năng S, hoặc gõ tên người ngoài (2–100 ký tự).'
+      : 'GV chấm phải là nhân viên đang làm việc, hoặc gõ tên người ngoài (2–100 ký tự).');
   }
 }
 
@@ -2303,7 +2305,7 @@ export function saveScore(
   if (coGvCham && patch.gvCham !== null && (typeof patch.gvCham !== 'object' || Array.isArray(patch.gvCham))) {
     throw badRequest('GV chấm không hợp lệ — gửi người chấm, hoặc null để xoá.');
   }
-  const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham) : null) : undefined;
+  const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham, laChamCheo(a.kind, skill)) : null) : undefined;
   const coNhom = patch.nhomNguyenNhan !== undefined;
   const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill) : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);

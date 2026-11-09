@@ -2494,8 +2494,9 @@ CREATE TABLE IF NOT EXISTS nghia_vu (
 );
 CREATE INDEX IF NOT EXISTS idx_nghia_vu_cn_han ON nghia_vu(chi_nhanh, han);
 CREATE INDEX IF NOT EXISTS idx_nghia_vu_nguoi_han ON nghia_vu(nguoi, han);
--- SỔ NGHĨA VỤ (spec 1.2 c): lịch sử kỹ năng hồ sơ GV — S chéo chưa ai nhận tính cho GV có S TẠI NGÀY HẠN. Một dòng một lần có (tu) → bỏ (den). accounts.setSkills ghi.
-CREATE TABLE IF NOT EXISTS ky_nang_lan (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, skill TEXT NOT NULL, tu TEXT NOT NULL, den TEXT);
-CREATE INDEX IF NOT EXISTS idx_ky_nang_lan ON ky_nang_lan(skill, user_id);
+-- SỔ NGHĨA VỤ (spec 1.2 c, chủ SP 10/11): lịch sử kỹ năng hồ sơ GV — S chéo chưa ai nhận tính cho GV có S TẠI NGÀY HẠN. Một dòng một lần có (tu) → bỏ (den).
+-- accounts.setSkills ghi (Hồ sơ cá nhân, Quản trị); migrate nạp hiện trạng làm mốc (tu = 2000-01-01).
+CREATE TABLE IF NOT EXISTS user_skill_lich_su (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, skill TEXT NOT NULL, tu TEXT NOT NULL, den TEXT);
+CREATE INDEX IF NOT EXISTS idx_user_skill_lich_su ON user_skill_lich_su(skill, user_id);
 -- SỔ NGHĨA VỤ (spec 2.3): nhật ký dòng BÀI lệch khi đối chiếu đêm (trước / sau dạng JSON) — thao tác nào quên gọi ghiSo.
 CREATE TABLE IF NOT EXISTS nghia_vu_lech (id INTEGER PRIMARY KEY, khoa TEXT NOT NULL, truoc TEXT, sau TEXT, luc TEXT NOT NULL);
