@@ -660,7 +660,7 @@ function NhanLop({ lop, vai, soViecQuaHan, bo }: { lop: LopTrenTrang; vai: VaiXe
   const denBadge = (x: BadgeLop): string | null =>
     x.key === 'cham' && session?.nav?.test ? duongLichTest({ classId: lop.id })
       : x.key === 'xep-lop' ? (lop.viewer.coTheChuyenTiep ? `/hoc-vien/lop/${lop.id}?viec=chuyen-tiep` : `/hoc-vien/lop/${lop.id}`)
-      : x.key === 'cho-duyet' && session?.nav?.workApprove ? `/cong-viec/cho-duyet?lop=${lop.id}`
+      : x.key === 'cho-duyet' && session?.nav?.workApprove ? `/cong-viec?nhom=duyet&lop=${lop.id}`
       : x.key === 'qua-han' ? `/hoc-vien?view=qua-han&classId=${lop.id}`
       : null;
   if (!badge.length) return null;

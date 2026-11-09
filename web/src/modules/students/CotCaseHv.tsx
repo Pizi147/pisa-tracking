@@ -4,7 +4,7 @@ import { xepCase, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import { NganCase } from './NganCase.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
-import { IconCanhBao, IconGap } from '../../ui/BieuTuong.tsx';
+import { IconCanhBao, IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
@@ -54,22 +54,32 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
     const han = !dong(c) && v?.han && v.loaiHan && homNay ? deadlineView({ kind: v.loaiHan as DeadlineKind, due: v.han, today: homNay }) : null;
     const pa = c.plans.find((x) => x.status === 'started' || x.status === 'planned') ?? null;
     const bat = () => setTay((x) => ({ ...x, [c.id]: !moRa }));
-    /* v16 i1: dòng tóm tắt = trạng thái · PA · ai làm (chữ 13 mờ) — số điểm, PA đủ, nút việc ở trong Case mở ngay dưới (một việc một chỗ). */
-    const phu = [dong(c) ? null : dich(c.trangThaiV4.chu), pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : !dong(c) ? t('Chưa có PA') : null,
-      !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null].filter(Boolean).join(' · ');
+    /* B12 (mockup audit-ui 08/11, M10): tách trường — trạng thái = viên · PA = chữ mờ · người = chữ mờ + biểu tượng · hạn = cột phải. Bỏ tình trạng PA
+       ("đã lên kế hoạch") vì trạng thái Case đã nói (rê chuột vẫn đọc được). Khung ≥ 640 px: mỗi trường một cột; hẹp hơn: dòng 2 gói lại. */
+    const nguoi = !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null;
+    const chuHan = dong(c) ? <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />
+      : han ? <span title={han.text} className={`inline-flex items-center gap-1 whitespace-nowrap text-[13px] tabular-nums ${han.quaHan ? 'font-bold text-bad' : han.ganHan ? 'font-semibold text-slate-100' : 'text-slate-400'}`}>
+        {han.quaHan && <IconCanhBao />}{han.han}</span> : null;
+    const chuPa = pa ? `PA ${pa.name}` : !dong(c) ? t('Chưa có PA') : null;
     return (
       <div key={c.id} id={`case-${c.id}`} className="border-t px-4 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 ${dong(c) ? 'opacity-[.85]' : ''}`}>
+        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_140px_minmax(0,1fr)_150px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
           <span className="the-kn">{r.short}</span>
           <button type="button" aria-expanded={moRa} onClick={bat}
-            className="grid min-h-[44px] min-w-0 appearance-none gap-0.5 border-0 bg-transparent p-0 text-left">
-            <b className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
-            {phu && <span className="text-[13px] text-dim">{phu}</span>}
+            className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-3 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
+            <b className="flex basis-full flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
+            {(!dong(c) || chuPa) && (
+              <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                {!dong(c) && <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />}
+                {chuPa && <span className="min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : undefined}>{chuPa}</span>}
+              </span>
+            )}
+            {nguoi && <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim"><IconNguoi /><span className="truncate" title={nguoi}>{nguoi}</span></span>}
+            {/* Khung hẹp (375): hạn đi cùng dòng chi tiết để tên + SOS có đủ chỗ; khung rộng: cột hạn riêng bên phải. */}
+            {chuHan && <span className="[@container(min-width:640px)]:hidden">{chuHan}</span>}
           </button>
-          <span className="flex items-center gap-2">
-            {dong(c) ? <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />
-              : han ? <span title={han.text} className={`inline-flex items-center gap-1 whitespace-nowrap text-[13px] tabular-nums ${han.quaHan ? 'font-bold text-bad' : han.ganHan ? 'font-semibold text-slate-100' : 'text-slate-400'}`}>
-                {han.quaHan && <IconCanhBao />}{han.han}</span> : null}
+          <span className={`flex items-center gap-2 [@container(min-width:640px)]:contents`}>
+            <span className="hidden [@container(min-width:640px)]:inline-flex">{chuHan}</span>
             <button type="button" className="mui-pa" aria-label={moRa ? t('Gập Case') : t('Mở Case')} aria-expanded={moRa} onClick={bat}><IconGap mo={moRa} /></button>
           </span>
         </div>
@@ -86,7 +96,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
   };
 
   return (
-    <section className="card flex min-w-0 flex-col overflow-hidden" aria-label={t('Case & phương án · {kn}', { kn: tenKn })}>
+    <section className="card flex min-w-0 flex-col overflow-hidden [container-type:inline-size]" aria-label={t('Case & phương án · {kn}', { kn: tenKn })}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <h2 className="m-0 text-[17px] font-bold text-slate-100">{mot ? t('Case & phương án · {kn}', { kn: tenKn }) : t('Case & phương án')}</h2>
         {dangMo.length > 0 && <span className="the-phu"><b>{dangMo.length}</b> {t('đang mở')}</span>}

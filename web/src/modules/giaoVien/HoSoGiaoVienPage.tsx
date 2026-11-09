@@ -7,13 +7,12 @@ import {
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
-import { Card, Empty, ErrorState, LOP_NHAN, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
-import { CHIP_TRON, ChipKy } from '../../ui/Nhan.tsx';
+import { Card, Empty, ErrorState, LOP_NHAN, Skeleton } from '../../ui/ui.tsx';
+import { CHIP_TRON, CHIP_VUONG, ChipKy, QuaHan } from '../../ui/Nhan.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
-import { ViecTiep } from '../../ui/ViecTiep.tsx';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -517,51 +516,80 @@ const CASE_TRUOC = 5;
 function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa: { den: string; chu: string } | null }) {
   const id = data.gv.id;
   const ds = data.caseMo;
-  const viec = (c: CaseHs) => {
-    const [v] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: null });
-    return v ? <ViecTiep v={v} den={duongHoSoHocVien(c.studentId, { caseId: c.id })} /> : <span className="text-slate-500">—</span>;
+  const viecCua = (c: CaseHs) => viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: null })[0] ?? null;
+  /* Một ô của bảng "Cần làm trước" — dùng chung cho bảng (≥ 640) và thân thẻ (375). */
+  const oCaseGv = (c: CaseHs, k: string): ReactNode => {
+    if (k === 'ten') return <Link to={`/hoc-vien/${c.studentId}`} className="ten-ho-so">{c.hocVien}</Link>;
+    if (k === 'case') return (
+      <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="inline-flex min-w-0 max-w-full text-left text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline" title={dich(c.tieuDe)}>
+        <TenCase c={{ title: dich(c.tieuDe), tenSos: c.tenSos && { ...c.tenSos, giua: dich(c.tenSos.giua) } }} />
+      </Link>
+    );
+    const v = viecCua(c);
+    if (!v) return <span className="text-slate-500">—</span>;
+    if (k === 'viec') {
+      const [chinh, ...phu] = v.viec.split(' · ');
+      return (
+        <span title={v.title}>
+          <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline">{chinh}</Link>
+          {phu.length > 0 && <span className="ml-2 whitespace-nowrap text-xs text-slate-500">{phu.join(' · ')}</span>}
+        </span>
+      );
+    }
+    return v.quaHanNgay !== null ? <span className="text-sm font-bold"><QuaHan ngay={v.quaHanNgay} gon /></span>
+      : v.han ? <span className="whitespace-nowrap text-sm text-slate-400">{v.han}</span> : <span className="text-slate-500">—</span>;
   };
   /* Trạng thái theo thứ tự gấp: Quá hạn · Cần làm · Chờ duyệt · Đang làm (chỉ nhóm có Case). */
   const nhom = (['qua-han', 'can-lam', 'cho-duyet', 'dang-lam'] as const).map((tt) => ({ tt, n: ds.filter((c) => c.trangThai.t === tt).length })).filter((x) => x.n > 0);
   const truoc = ds.filter((c) => c.viecTiep).slice(0, CASE_TRUOC);
   return (
-    <Card title={t('Case đang phụ trách')}
-      action={linkPa ? <Link to={linkPa.den} className="link whitespace-nowrap py-2 -my-2 text-xs">{linkPa.chu}</Link> : undefined}>
+    /* B12 + PTA 08/11 ([XM] PR 1 B12, mockup sát): đầu thẻ = tiêu đề · ô đếm "n Case" · chip đếm theo trạng thái (+ Case có việc quá hạn) bên phải · link Hiệu quả PA;
+       bỏ hàng số to — mọi số giữ nguyên, vẫn bấm mở panel đúng nhóm (`OSo`). */
+    <Card title={<span className="inline-flex flex-wrap items-center gap-2">{t('Case đang phụ trách')}
+        {ds.length > 0 && <span className={`${CHIP_VUONG} gap-1 font-semibold text-slate-100`} style={{ borderColor: 'var(--line-strong)' }}>
+          <OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} className={`${vung} font-bold`} /> Case</span>}</span>}
+      action={(nhom.length > 0 || ds.some((c) => c.quaHan) || linkPa) ? (
+        <span className="flex flex-wrap items-center gap-2">
+          {nhom.map((x) => (
+            <span key={x.tt} className={`${CHIP_TRON} gap-1.5 bg-muted-bg ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-300'}`}>
+              {x.tt === 'qua-han' ? `⚠ ${dich(NHAN_TRANG_THAI[x.tt])}` : dich(NHAN_TRANG_THAI[x.tt])}
+              <OSo giaTri={x.n} tieuDe={`Case · ${dich(NHAN_TRANG_THAI[x.tt])}`} nguon={nguon(id, `cot=case-mo&tt=${x.tt}`)} className={`${vung} font-bold ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-100'}`} />
+            </span>
+          ))}
+          {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. AUDIT-UI GV2: tên đủ để không lẫn với «⚠ Quá hạn». */}
+          {ds.some((c) => c.quaHan) && (
+            <span className={`${CHIP_TRON} gap-1.5 bg-muted-bg text-bad`}>
+              ⚠ {t('Case có việc quá hạn')}
+              <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
+            </span>
+          )}
+          {linkPa && <Link to={linkPa.den} className="link ml-1 whitespace-nowrap py-2 -my-2 text-xs">{linkPa.chu}</Link>}
+        </span>
+      ) : undefined}
+      bodyClass={ds.length ? 'px-4 pb-4 pt-3' : 'p-4'}>
       {!ds.length ? <Empty title={t('Không có Case nào đang mở.')} /> : (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-2xl font-bold tabular-nums text-slate-100"><OSo giaTri={ds.length} tieuDe={t('Case đang phụ trách')} nguon={nguon(id, 'cot=case-mo')} /></span>
-            <span className="mr-2 text-sm text-slate-400">Case</span>
-            {nhom.map((x) => (
-              <span key={x.tt} className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px]" style={{ borderColor: 'var(--line-strong)' }}>
-                <NhanTrangThai t={x.tt} />
-                <OSo giaTri={x.n} tieuDe={`Case · ${dich(NHAN_TRANG_THAI[x.tt])}`} nguon={nguon(id, `cot=case-mo&tt=${x.tt}`)} className={`${vung} font-bold ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-100'}`} />
-              </span>
-            ))}
-            {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. */}
-            {ds.some((c) => c.quaHan) && (
-              <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold text-bad" style={{ borderColor: 'var(--line-strong)' }}>
-                {/* AUDIT-UI GV2: tên đủ để không lẫn với chip trạng thái «⚠ Quá hạn» đứng cạnh. */}
-                ⚠ {t('Case có việc quá hạn')}
-                <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
-              </span>
-            )}
-          </div>
           {truoc.length > 0 && (
             <div>
               <h3 className="m-0 mb-1 text-[13px] font-semibold text-slate-400">{t('Cần làm trước')}</h3>
-              <ul className="m-0 list-none p-0">
-                {truoc.map((c) => (
-                  <li key={c.id} className="grid gap-x-4 gap-y-0.5 border-t py-2 first:border-t-0 sm:grid-cols-[minmax(10rem,14rem)_minmax(0,1fr)_minmax(0,16rem)] sm:items-center"
-                    style={{ borderColor: 'var(--line)', ...(c.quaHan ? { boxShadow: 'inset 3px 0 0 rgb(var(--bad-rgb))', paddingLeft: 8 } : {}) }}>
-                    <span className="min-w-0 truncate text-sm"><Link to={`/hoc-vien/${c.studentId}`} className="ten-ho-so">{c.hocVien}</Link>{c.maLop && <span className="text-xs text-slate-400"> · {c.maLop}</span>}</span>
-                    <Link to={duongHoSoHocVien(c.studentId, { caseId: c.id })} className="link inline-flex min-w-0 max-w-full text-left text-sm" title={dich(c.tieuDe)}>
-                      <TenCase c={{ title: dich(c.tieuDe), tenSos: c.tenSos && { ...c.tenSos, giua: dich(c.tenSos.giua) } }} />
-                    </Link>
-                    <span className="min-w-0 text-sm">{viec(c)}</span>
-                  </li>
-                ))}
-              </ul>
+              {/* B12 (mockup audit-ui 08/11, M10): tách trường — Học viên (lớp dòng phụ) · Case · Việc tiếp (kỳ chữ mờ) · Hạn cột phải; thay chuỗi
+                  "⚠ quá hạn 6 ngày Kết quả PA R · kỳ …" gãy hai dòng. */}
+              <Bang ten={t('Cần làm trước')} khung={false} khoa={(c) => c.id} hang={truoc}
+                cot={[
+                  { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 220 },
+                  { key: 'case', nhan: 'Case', kieu: 'chu', linhHoat: true },
+                  { key: 'viec', nhan: t('Việc tiếp'), kieu: 'chu', rong: 340 },
+                  { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 120 },
+                ]}
+                phuCua={(c, k) => (k.key === 'ten' && c.maLop ? c.maLop : null)}
+                theRieng={(c) => (
+                  <div className="grid gap-1">
+                    <div className="flex items-baseline gap-2">{oCaseGv(c, 'ten')}{c.maLop && <span className="text-xs text-slate-500">{c.maLop}</span>}<span className="ml-auto">{oCaseGv(c, 'han')}</span></div>
+                    <div className="text-sm">{oCaseGv(c, 'case')}</div>
+                    <div className="text-sm">{oCaseGv(c, 'viec')}</div>
+                  </div>
+                )}
+                oCua={(c, k) => oCaseGv(c, k.key)} />
             </div>
           )}
           {/* 6C-NHO (bảng kê lỗi 2): bỏ "Xem cả n Case" — trùng số to đầu thẻ (cùng panel, cùng khoá → nháy). */}
@@ -578,7 +606,7 @@ function KhoiYeuCau({ data, coDuyet }: { data: HoSo; coDuyet: boolean }) {
   const id = gv.id;
   const link: ReactNode = gv.laChinhMinh
     ? <Link to="/cong-viec/yeu-cau" className="link text-xs">{t('Yêu cầu của tôi ›')}</Link>
-    : coDuyet ? <Link to="/cong-viec/cho-duyet" className="link text-xs">{t('Chờ duyệt ›')}</Link> : null;
+    : coDuyet ? <Link to="/cong-viec?nhom=duyet" className="link text-xs">{t('Chờ duyệt ›')}</Link> : null;
   return (
     <Card title={gv.laChinhMinh ? t('Yêu cầu đã gửi') : t('Yêu cầu {ten} đã gửi', { ten: gv.ten.split(' ').pop() ?? gv.ten })} action={link}>
       {y.cho === 0 && y.tuChoi === 0 ? <p className="m-0 text-sm text-slate-400">{t('Không có yêu cầu nào đang chờ.')}</p> : (

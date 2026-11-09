@@ -6,6 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
 import { DaXoaAdmin } from '../platform/DaXoaAdmin.tsx';
@@ -144,25 +145,31 @@ export default function LuuTruPage() {
       {data && tab === 'lop' && (
         data.lop.length === 0
           ? <Card><Empty title={loc ? t('Không có lớp khớp "{loc}"', { loc }) : t('Chưa có lớp nào kết thúc')} /></Card>
-          : <div className="space-y-1.5">
-              {data.lop.map((l) => (
-                <div key={l.id} className="card flex flex-wrap items-center gap-x-2 gap-y-1 p-3">
-                  <Link to={`/hoc-vien/lop/${l.id}`} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 no-underline">
-                    <span className="font-semibold text-slate-200">{l.code}</span>
-                    <span className="text-xs text-slate-500">
-                      {l.tenChuongTrinh ?? l.ma ?? '—'} · {l.chiNhanh}
-                      {l.gvcn && <> · {t('GVCN')} {l.gvcn}</>} · {t('{n} HV từng học', { n: l.soHvTungHoc })}
-                    </span>
-                    <span className="flex-1" />
-                    <span className="text-xs text-slate-500 whitespace-nowrap">
-                      {t('Đã kết thúc {ngay}', { ngay: l.finishedAt ? ngay(l.finishedAt) : '—' })}
-                    </span>
-                  </Link>
-                  <Link to={`/hoc-vien/lop/${l.id}?tab=tong-ket`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">{t('Tổng kết')}</Link>
-                  {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>{t('Mở lại')}</button>}
-                </div>
-              ))}
-            </div>
+          : <Bang ten={t('Lớp đã kết thúc')} khoa={(l) => l.id} hang={data.lop}
+              cot={[
+                { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 180 },
+                { key: 'trinhDo', nhan: t('Trình độ'), kieu: 'chu', rong: 180 },
+                /* B12: chi nhánh là trường đã biết khi danh sách chỉ một chi nhánh (đã lọc) — chỉ thêm cột khi lẫn nhiều chi nhánh. */
+                ...(new Set(data.lop.map((l) => l.chiNhanh)).size > 1 ? [{ key: 'cn', nhan: t('Chi nhánh'), kieu: 'chu', rong: 140 } as CotBang] : []),
+                { key: 'gvcn', nhan: t('GVCN'), kieu: 'chu', rong: 240 },
+                { key: 'hv', nhan: t('HV từng học'), kieu: 'so', rong: 120 },
+                { key: 'ketThuc', nhan: t('Kết thúc'), kieu: 'chu', linhHoat: true },
+                { key: 'nut', nhan: '', kieu: 'nut', rong: 200 },
+              ]}
+              oCua={(l, c) => {
+                if (c.key === 'lop') return <Link to={`/hoc-vien/lop/${l.id}`} className="link font-bold">{l.code}</Link>;
+                if (c.key === 'trinhDo') return l.tenChuongTrinh ?? l.ma ?? '—';
+                if (c.key === 'cn') return l.chiNhanh;
+                if (c.key === 'gvcn') return l.gvcn ? <span className="text-slate-400">{l.gvcn}</span> : <span className="text-slate-500">—</span>;
+                if (c.key === 'hv') return l.soHvTungHoc;
+                if (c.key === 'ketThuc') return l.finishedAt ? ngay(l.finishedAt) : '—';
+                return (
+                  <span className="inline-flex gap-2">
+                    <Link to={`/hoc-vien/lop/${l.id}?tab=tong-ket`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">{t('Tổng kết')}</Link>
+                    {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>{t('Mở lại')}</button>}
+                  </span>
+                );
+              }} />
       )}
       {data && tab === 'hv' && (
         data.hocVien.length === 0

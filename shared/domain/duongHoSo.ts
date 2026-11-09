@@ -229,7 +229,7 @@ export function noiDenThongBao(n: ThongBaoRow): string | null {
     return t('Hồ sơ {hv}', { hv });
   }
   if (path.startsWith('/cong-viec/yeu-cau')) return t('Công việc › Yêu cầu của tôi');
-  if (path.startsWith('/cong-viec/cho-duyet')) return t('Công việc › Chờ duyệt');
+  if (path.startsWith('/cong-viec') && p.get('nhom') === 'duyet') return t('Công việc › Chờ bạn duyệt');   // AUDIT-UI B6: Hộp duyệt = tab
   if (path.startsWith('/cong-viec')) return t('Công việc');
   if (path.startsWith('/mock-test/') || path.startsWith('/luot-test/')) return t('Test › Lượt{x}', { x: n.ten_hv ? t(' của {ten_hv}', { ten_hv: n.ten_hv }) : '' });
   if (path.startsWith('/test')) return t('Test › Lịch Test');
@@ -243,9 +243,10 @@ export function noiDenThongBao(n: ThongBaoRow): string | null {
  * Không điều hướng / hồ sơ / lớp (máy chủ tự chặn) → mở được.
  */
 export function moDuocThongBao(n: ThongBaoRow, nav: Partial<Pick<NavQuyen, 'work' | 'workApprove' | 'workOps' | 'workReports' | 'workRequests' | 'admin' | 'test' | 'analysis'>>): boolean {
-  const path = (duongThongBao(n) ?? '').split('?')[0];
-  if (path.startsWith('/cong-viec/cho-duyet')) return !!nav.workApprove;
+  const [path, q = ''] = (duongThongBao(n) ?? '').split('?');
   if (path.startsWith('/cong-viec/yeu-cau')) return !!nav.workRequests;
+  /* AUDIT-UI B6: thẻ duyệt nay ở tab "Chờ bạn duyệt" (`nhom=duyet`) — chỉ người duyệt mở được, như trang Chờ duyệt cũ. */
+  if (path.startsWith('/cong-viec') && new URLSearchParams(q).get('nhom') === 'duyet') return !!nav.workApprove;
   if (path.startsWith('/cong-viec/van-hanh')) return !!nav.workOps;
   if (path.startsWith('/cong-viec/bao-cao')) return !!nav.workReports;
   if (path.startsWith('/cong-viec')) return !!nav.work;

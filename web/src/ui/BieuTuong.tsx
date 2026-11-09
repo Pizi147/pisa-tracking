@@ -67,6 +67,16 @@ export function IconDangLam(p: P) {
   return <svg {...khung(p)}><path d="M4.2 2.9v6.2L9.1 6z" fill="currentColor" /></svg>;
 }
 
+/** Người phụ trách (B12 — trường "người" = chữ mờ + biểu tượng). */
+export function IconNguoi(p: P) {
+  return (
+    <svg {...khung(p)}>
+      <circle cx="6" cy="4" r="2.1" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M1.9 10.6c.5-2.1 2.1-3.3 4.1-3.3s3.6 1.2 4.1 3.3" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** ↑ lên lớp. */
 export function IconLen(p: P) {
   return (

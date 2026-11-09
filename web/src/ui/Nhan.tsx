@@ -69,6 +69,16 @@ export function NhanKetPa({ tone, children }: { tone: string; children: ReactNod
   return <span className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold ${KET_PA[tone] ?? KET_PA.muted}`}>{children}</span>;
 }
 
+/** HSL-THUONG (mockup `.vien`): viên trạng thái Case — chữ + nền nhạt + viền trong (không chỉ màu); tông theo `TrangThai` chung. */
+const VIEN_CASE: Record<string, string> = {
+  'dang-lam': 'bg-[rgb(var(--doing-bg-rgb))] text-doing shadow-[inset_0_0_0_1px_color-mix(in_srgb,currentColor_35%,transparent)]',
+  'can-lam': 'bg-soon-bg text-soon shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]',
+  'qua-han': 'bg-late-bg text-late shadow-[inset_0_0_0_1px_color-mix(in_srgb,currentColor_40%,transparent)]',
+};
+export function NhanVienCase({ tt, title, children }: { tt: string; title?: string; children: ReactNode }) {
+  return <span title={title} className={`inline-flex h-6 items-center justify-self-start whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold ${VIEN_CASE[tt] ?? 'bg-muted-bg text-dim shadow-[inset_0_0_0_1px_var(--line-strong)]'}`}>{children}</span>;
+}
+
 export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'muted';
 
 /** Nhóm 3 (V5): viên nền xám nhạt + chấm màu đầu (`CHAM`); sắp hạn / quá hạn / lỗi: nền nhạt cùng họ (quá hạn luôn kèm ⚠ thay chấm). */

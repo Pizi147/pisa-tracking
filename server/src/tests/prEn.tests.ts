@@ -598,7 +598,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp \{/ },
   { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{…\}: \{x\}$/ },   // ghi chú gửi máy chủ, lưu vào nhật ký (giữ Việt) — OV-12f
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
-  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA)$/ },
+  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Chờ Quản lý duyệt)$/ },
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
   { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },

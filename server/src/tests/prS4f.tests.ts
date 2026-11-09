@@ -198,7 +198,7 @@ export async function runPrS4fTests(t: YThucTestKit) {
       assert(gv.status === 403, `GV mở hộp chờ duyệt: ${gv.status}`);
     });
     for (const f of ['modules/students/StudentsPage.tsx', 'modules/classes/DauTrangLop.tsx']) {
-      assert(/cho-duyet\?lop=\$\{/.test(docWeb(f)), `${f}: badge chờ duyệt phải kèm ?lop=`);
+      assert(/nhom=duyet&lop=\$\{/.test(docWeb(f)), `${f}: badge chờ duyệt phải kèm ?lop=`);   // AUDIT-UI B6: tab Chờ bạn duyệt
     }
   });
 
