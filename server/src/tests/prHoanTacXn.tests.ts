@@ -410,6 +410,7 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     assert(/nhóm nguyên nhân/i.test(cauLoi(() => cases.suaCase(gv, c.id, { summary: x.moTa }))), 'thiếu nhóm → nói lý do');
     assert(ma(() => cases.suaCase(gvOf('MB BE 04', 'speaking'), c.id, { nhom: x.nhom, summary: x.moTa })) === 403, 'GVBM môn khác → 403');
     assert(one('SELECT status FROM case_interventions WHERE id = ?', bt.id).status === 'planned', 'lần lỗi không ghi gì');
+    assert(ma(() => cases.suaCase(gv, c.id, { nhom: x.nhom, summary: x.moTa, luc: '2000-01-01T00:00:00.000Z' })) === 409, 'mở bản cũ (luc khác) → 409, không ghi đè');
     const r = cases.suaCase(gv, c.id, { nhom: x.nhom, summary: x.moTa, title: 'Writing thiếu ý' });
     assert(r?.id === c.id && r.sos?.hasCause, 'trả Case đã xác nhận');
     assert(all('SELECT 1 FROM case_issues WHERE case_id = ?', c.id).length === 2 && one('SELECT summary s FROM sos_cases WHERE id = ?', c.id).s === x.moTa, 'nhóm + mô tả');
@@ -432,6 +433,9 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     assert(/Xác nhận PA/.test(truoc.viec) && soMo(`xnpa-case:${c.id}`) === 1, `trước: ${truoc.viec} · sổ ${soMo(`xnpa-case:${c.id}`)}`);
     assert(ma(() => cases.updateResult(QL, pa.id, { ...KQ, note: 'ngắn' })) === 400 && anhPa(pa.id) === truoc.pa, 'ghi lỗi → PA vẫn chờ, không xác nhận');
     assert(ma(() => cases.updateResult(QL, pa.id, { ...KQ, observedOn: addDays(TODAY, 3) })) === 400 && anhPa(pa.id) === truoc.pa, 'ngày tương lai → PA vẫn chờ');
+    run('UPDATE case_interventions SET superseded_by = ? WHERE id = ?', pa.id, pa.id);
+    assert(ma(() => cases.updateResult(QL, pa.id, KQ)) === 400 && one('SELECT confirmed_at c FROM case_interventions WHERE id = ?', pa.id).c == null, 'PA chờ QL duyệt đổi PA → vẫn chặn, không xác nhận');
+    run('UPDATE case_interventions SET superseded_by = NULL WHERE id = ?', pa.id);
     cases.updateResult(QL, pa.id, KQ);
     const iv = one('SELECT * FROM case_interventions WHERE id = ?', pa.id);
     assert(iv.status === 'started' && iv.confirmed_by === QL.userId && iv.started_date === TODAY && iv.description === pa.description, `PA chạy từ ngày ghi, nội dung giữ: ${JSON.stringify([iv.status, iv.started_date])}`);
@@ -464,7 +468,7 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     const cp = doc('web/src/modules/cases/CasePanel.tsx');
     assert(/onGhiKetQua=\{iv\.kind === 'tutor' && iv\.soBuoi == null \? undefined : \(\) => setForm\('ghi'\)\}/.test(cp), 'thẻ PA: Ghi kết quả không mở form ghi (Tutor thiếu Số buổi: ẩn)');
     const gk = doc('web/src/modules/cases/CapNhatTuan.tsx');
-    assert(/pa\.choXacNhan \? t\('Đã lưu kết quả · đã xác nhận PA'\)/.test(gk), 'Ghi kết quả PA chờ: không báo đã xác nhận PA');
+    assert(/pa\.choXacNhan && decision === 'keep' \? t\('Đã lưu kết quả · đã xác nhận PA'\)/.test(gk), 'Ghi kết quả PA chờ: không báo đã xác nhận PA');
   });
 
   check('GXN-5 · Turso: gộp không thêm câu — Ghi KQ lần đầu ≤ Xác nhận PA + Ghi KQ riêng · Sửa Case chưa xác nhận ≤ Xác nhận Case + 5', () => {
@@ -476,5 +480,6 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     console.log(`    GXN-5 đo: PA riêng ${rieng} · gộp ${gop} câu · Xác nhận Case ${xnCase} · Sửa Case = xác nhận ${suaCase} câu`);
     assert(gop <= rieng, `Ghi KQ gộp ${gop} > riêng ${rieng}`);
     assert(suaCase <= xnCase + 5, `Sửa Case = xác nhận ${suaCase} > Xác nhận Case ${xnCase} + 5`);
+    assert(gop <= TRAN_GHI_LO.ghiKqXacNhanNgam && suaCase <= TRAN_GHI_LO.suaCaseXacNhan, `trần: ${gop}/${TRAN_GHI_LO.ghiKqXacNhanNgam} · ${suaCase}/${TRAN_GHI_LO.suaCaseXacNhan}`);
   });
 }

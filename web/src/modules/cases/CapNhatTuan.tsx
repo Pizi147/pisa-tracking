@@ -293,7 +293,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       const f = sua ? null : (ct?.followups ?? []).find((x: any) => x.interventionId === pa.id) ?? null;
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;
       (diTiep && tiep ? tiep.lam : onSaved)({
-        chu: sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Quản lý duyệt đổi PA') : pa.choXacNhan ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
+        chu: sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Quản lý duyệt đổi PA') : pa.choXacNhan && decision === 'keep' ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
         phu: [dich(outcomeLabelFor(outcome)), hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
         hoanTac: f ? async () => {
           await api.post(`/followups/${f.id}/hoan-tac`); lamMoi();

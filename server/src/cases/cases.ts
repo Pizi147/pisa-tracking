@@ -1390,6 +1390,9 @@ export function suaCase(p: Principal, caseId: number, input: {
      quyền (`coTheXacNhanCase`), nhật ký `case.confirm` (+ `nguon`) — Hoàn tác xác nhận dùng được như nút Xác nhận. RKC-2a: Case đã xong không còn bước Xác nhận. */
   if (st.fromSos && !st.hasCause && !st.laMt && !daXong) {
     if (input.topic != null && String(input.topic).trim() !== c.topic) throw badRequest('Case từ kết quả Test — không đổi kỹ năng.');
+    if (input.luc !== undefined && (input.luc ?? null) !== (c.updated_at ?? null)) {
+      throw loi(409, 'Case vừa được cập nhật lúc {luc} — xem lại rồi bấm Lưu lần nữa để ghi đè', { luc: c.updated_at ? String(c.updated_at).slice(11, 16) : '—' }, { luc: c.updated_at ?? null });
+    }
     return xacNhanCase(p, caseId, {
       nhom: input.nhom ?? (input.primaryCode ? [String(input.primaryCode)] : null), observation: input.observation,
       urgency: input.urgency, moTa: input.summary ?? c.summary, tenGiua: input.title,
@@ -3940,7 +3943,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   kiemQuyenPa(p, iv, c);
   /* RKC-2b ③ (chủ SP 11/11): PA quy chế chờ xác nhận — ghi Kết quả lần đầu = Xác nhận PA (nguyên văn nội dung PA, bắt đầu từ ngày quan sát), cùng giao
      dịch: lần ghi lỗi thì PA vẫn chờ. Quyền, luật, nhật ký của Xác nhận PA (`nguon: 'ghi_ket_qua'`). */
-  if (iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && iv.approval_state !== 'pending') {
+  if (iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && iv.approval_state !== 'pending' && !choDoiPa(iv)) {   // PA chờ QL duyệt đổi PA: giữ chặn
     return tx(() => {
       xacNhanPaQuyChe(p, interventionId, { description: iv.description, batDau: isIsoDate(input.observedOn) ? input.observedOn : undefined }, { chiGhi: true, nguon: 'ghi_ket_qua' });
       return updateResult(p, interventionId, input, opts);

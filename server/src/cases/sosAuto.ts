@@ -681,7 +681,7 @@ export function hoanTacXacNhanPa(p: Principal, interventionId: number, o: { chiG
 
 /**
  * RKC-2b ③: Hoàn tác lần ghi Kết quả ĐẦU TIÊN đã xác nhận ngầm PA → PA về chờ xác nhận đúng như trước (bản chụp `hoanTac` của lần xác nhận đó), bản lịch sử
- * + mốc Hành trình của lần xác nhận gỡ. Giữ xác nhận khi PA còn kết quả khác, hay PA có thay đổi khác sau lần xác nhận (Sửa PA…). Gọi TRONG giao dịch, sau khi
+ * + mốc Hành trình của lần xác nhận gỡ. Giữ xác nhận khi PA còn kết quả khác, PA có thay đổi khác sau lần xác nhận (Sửa PA…), hay người hoàn tác không phải người đã xác nhận. Gọi TRONG giao dịch, sau khi
  * đảo kết quả. Trả `true` khi đã trả PA về chờ.
  */
 export function traXacNhanNgam(p: Principal, interventionId: number): boolean {
@@ -689,7 +689,7 @@ export function traXacNhanNgam(p: Principal, interventionId: number): boolean {
   if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) return false;
   const nk = conn.prepare(`SELECT * FROM audit_logs WHERE entity_type = 'case_intervention' AND action = 'case.preset.confirm' AND entity_id = ? ORDER BY id DESC LIMIT 1`)
     .get(interventionId) as any;
-  if (!nk) return false;
+  if (!nk || nk.actor_user_id !== p.userId) return false;   // chỉ người đã ghi (= đã xác nhận ngầm) — như Hoàn tác xác nhận PA
   let truoc: any = null, sau: any = null;
   try { truoc = JSON.parse(nk.before_json ?? 'null'); sau = JSON.parse(nk.after_json ?? 'null'); } catch { return false; }
   if (sau?.nguon !== 'ghi_ket_qua' || !truoc?.hoanTac) return false;
