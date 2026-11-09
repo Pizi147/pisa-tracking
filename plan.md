@@ -277,6 +277,15 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 10. BAO-CAO-PH [XM]: "Lớp tiếp ›" · Excel gộp ô.
 11. KET-PET-THI-THAT (chủ SP: tạm chưa làm) · Tutor (hoãn vô thời hạn — không hỏi).
 
+**B'. CHỦ SP QUYẾT 10/11 tối** (PTA liệt kê 14 mục kèm khuyến nghị; chủ SP: "4 vẫn sẽ làm nhé, còn lại theo đề xuất"):
+1. Migrate dọn 13 lượt W lệch: W còn trống nhận "-", chốt cả buổi; nhật ký + GV "Bỏ vắng" được · 2. "Fast Track 6" giữ không đơn vị · 3. Giữ cột Ghi chú (Lịch thi) ·
+4. **HS1, HS2, CV6 VẪN LÀM** (cần mockup trước: HS1 / HS2 hồ sơ HV hành trình kỹ năng + tiến độ trên lớp, CV6 chevron sát tên dải nhóm Công việc) ·
+5. Hàng nút nhóm vi phạm (Ghi vi phạm) không xuống dòng — ngoại lệ K2, tên giữ · 6a. GV S chéo được "Bỏ vắng" ở MT0 S · 6b. Kế hoạch Test GV S hiện lớp thường có MT0 (chỉ xem) ·
+7. Chỉ QL / Quản trị sửa kỹ năng GV (GV chỉ xem) · 8. Lượt không lớp: một cách tính theo band (đếm em đổi trước merge) · 9. Giao việc chỉ cho người có vai ở chi nhánh ·
+10. Hồ sơ lớp đã kết thúc: chỉ lượt của chính lớp · 11. Bỏ link Công việc của Head tutor · 12a. Quét nền SOS chỉ chạy lại khi lần trước ≥ 15 s · 12b. Giảm đọc phân công Công việc (~527 dòng) · 12c. Tổng quan ẩn lớp toàn 0 ·
+13. Báo cáo PH: bỏ "Lớp tiếp ›", bỏ gộp ô Excel · 14. KET / PET vẫn hoãn.
+**Chủ SP 10/11 (ảnh panel Lộ trình một em: "Lịch MT hệ thống đề xuất", MT3 · W2 NOV "Sẽ dời sang tuần đề xuất W4 OCT", nút "Áp lịch cho 1 lượt"):** "phần sẽ dời sang tuần đề xuất là thế nào? tôi đã bảo nếu HV có chuyển lớp (ngoại trừ chuyển tiếp lộ trình) thì lịch MT của HV giữ nguyên cơ mà" → session LO-TRINH-GIU-LICH sửa (đề xuất không được dời lượt đã có lịch của em chuyển lớp; không bao giờ đề xuất dời về tuần đã qua).
+
 **C. Chưa kiểm bằng tay (chỉ mã + phép kiểm)**
 12. F07, 8.3 (#1230) · #1273: lưới chỉ xem khi người xem không có quyền nhập; "-" W trên giao diện.
 13. Sổ nghĩa vụ: các lần chuyển lớp TRƯỚC #1270 không tách được GV cũ / mới; vai GV ở chi nhánh đọc theo hiện tại (`ponytail:`); Mini Test không tính lại hạn khi chuyển lớp (đi theo GVCN lớp đang học).
