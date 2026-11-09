@@ -8,6 +8,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 export async function runPrNgayXongTests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, addDays } = t as any;
   const pt: any = await import('../phanTich/giaoVien.ts');
+  const soCu: any = await import('./soCu.ts');   // PR-3 sổ nghĩa vụ: thay tapChamDiem / oChamDiemGv / viecQuaHanMo cũ
   const week: any = await import('../platform/week.ts');
   const cases: any = await import('../cases/cases.ts');
   const tax: any = await import('../../../shared/domain/index.ts');
@@ -23,7 +24,7 @@ export async function runPrNgayXongTests(t: YThucTestKit) {
   const so = (x: any) => ({ dung: x.k === 'so' ? x.dung : 0, tong: x.k === 'so' ? x.tong : 0 });
   const viecMo = (group: string) => {
     xoaNho();
-    const it = [...pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, ky)).values()].flat().find((x: any) => x.group === group);
+    const it = [...soCu.viecMoQuaHan(pt.nguCanhPtGv(P.mbManager, ky)).values()].flat().find((x: any) => x.group === group);
     assert(it, `seed phải có việc ${group} quá hạn`);
     return it;
   };

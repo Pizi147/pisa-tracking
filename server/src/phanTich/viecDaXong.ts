@@ -1,5 +1,5 @@
 /**
- * XM-VIEC-DUNG-HAN b (chủ SP 07/11, plan.md mục 4 "07/11 đêm" mục 6): VIỆC ĐÃ XONG của "Việc đúng hạn" — mọi loại `VIEC_CO_HAN` (trừ Kết quả PA, Chấm Test
+ * NGÀY XONG CỦA VIỆC (sổ nghĩa vụ — `tinhViecChiNhanh`; gốc XM-VIEC-DUNG-HAN b, chủ SP 07/11): VIỆC ĐÃ XONG — mọi loại `VIEC_CO_HAN` (trừ Kết quả PA, Chấm Test
  * đã có tập riêng) có HẠN trong kỳ và NGÀY XONG: xong ≤ hạn = đúng hạn (tử + mẫu), xong sau hạn = không đúng hạn (mẫu). Trước đây việc xong rời Công việc là
  * rời luôn số liệu (làm trễ còn làm % đẹp lên). Việc đã xong mà KHÔNG có ngày xong (dữ liệu cũ của Mô tả / Xác nhận Case) → không tính, như cũ.
  *
@@ -15,7 +15,6 @@
  * ponytail: Bàn giao môn sửa lại câu thì `ghi_luc` là lần sửa cuối; Báo PH bỏ trượt hạn theo Tạm dừng — thêm cột "xong lần đầu" nếu chủ SP báo lệch.
  */
 import { db } from '../db.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
 import { LA_CASE_MT, LA_CASE_SOS } from '../cases/sosState.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from '../loTrinh/cotSauThi.ts';
 import { nguoiGiuMiniTest } from '../normal/cuoiKhoa.ts';
@@ -30,20 +29,9 @@ const lopEm = (hv: string, luot: string) => `COALESCE((SELECT e.class_id FROM en
 const gvLop = (lop: string, ngay: string, mon: string | null) => `(SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = ${lop} AND ta.status IN ('active', 'ended')
   AND ${mon ? `(ta.skill = ${mon} OR (${mon} = 'writing' AND ta.skill IN ('writing1', 'writing2')))` : 'ta.is_core = 1'} AND ta.effective_from <= ${ngay} AND (ta.effective_to IS NULL OR ta.effective_to >= ${ngay}) ORDER BY ta.id DESC LIMIT 1)`;
 
-/** Việc đã xong có hạn trong kỳ của MỘT chi nhánh, theo người giữ việc. `kemKhongLop`: lấy việc không gắn lớp (như `viecQuaHanMo`). */
-export function viecDaXong(c: Ky, kemKhongLop = true): Map<number, ViecXong[]> {
-  const ds = nho(`pt-gv:viec-xong:${c.cn}:${c.tu}:${c.cuoi}`, () => dungTap(c));
-  const out = new Map<number, ViecXong[]>();
-  for (const it of ds) {
-    if (it.khung ? it.khung !== c.khung : !kemKhongLop) continue;
-    (out.get(it.ownerId!) ?? out.set(it.ownerId!, []).get(it.ownerId!)!).push(it);
-  }
-  return out;
-}
-
 /**
  * Việc đã xong của một chi nhánh, hạn trong [tu, cuoi] — mọi khung. `kemThieuNgay` (sổ nghĩa vụ, spec 1.3): thêm Xác nhận / Mô tả Case ĐÃ có mô tả mà
- * KHÔNG có ngày xong (dữ liệu cũ) với `xong = ''` — "Việc đúng hạn" không gọi cờ này nên không đổi số.
+ * KHÔNG có ngày xong (dữ liệu cũ) với `xong = ''`.
  */
 export function viecXongCn(c: Ky, kemThieuNgay = false): ViecXong[] {
   return dungTap(c, kemThieuNgay);
