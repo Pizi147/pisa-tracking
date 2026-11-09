@@ -9891,6 +9891,9 @@ await runPrCvSua1011Tests({ check, assert, assertThrows, conn, P, TODAY, addDays
 // ==================================================================== LO-TRINH-GIU-LICH (chủ SP 10/11: chuyển lớp giữ lịch MT · Áp lịch chỉ xếp lượt chưa có lịch)
 const { runPrLoTrinhGiuLichTests } = bocTep('prLoTrinhGiuLich', await import('./prLoTrinhGiuLich.tests.ts'));
 await runPrLoTrinhGiuLichTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== KHONG-LOP-GHI (chủ SP 10/11 B' mục 8: lượt không lớp — đường ghi theo chương trình lộ trình)
+const { runPrKhongLopGhiTests } = bocTep('prKhongLopGhi', await import('./prKhongLopGhi.tests.ts'));
+await runPrKhongLopGhiTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== QUYEN-KY-NANG + GIAO-VIEC-CN (chủ SP 10/11, B' mục 7 + 9)
 const { runPrQuyenKyNangTests } = bocTep('prQuyenKyNang', await import('./prQuyenKyNang.tests.ts'));
 await runPrQuyenKyNangTests({ check, assert, conn, P } as any);
