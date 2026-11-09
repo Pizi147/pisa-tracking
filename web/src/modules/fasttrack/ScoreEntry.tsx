@@ -11,7 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import type { gvChamPayload } from '../cham/GvCham.tsx';
 import {
-  oLuoiThuong, tuanLich, ENTRY_SKILL_SHORT, type EntrySkill, type ThieuNhanXet,
+  oLuoiThuong, tuanLich, ENTRY_SKILL_SHORT, HOAN_TAC_VANG_MS, type EntrySkill, type ThieuNhanXet,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
@@ -160,7 +160,9 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       if (patch.khoiPhuc) toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: ((r?.o as string[] | undefined) ?? [skill]).map((k) => ENTRY_SKILL_SHORT[k as EntrySkill]).join(' + '), x2: tenHv ? ` · ${tenHv}` : '' }));
       /* PR-BV: xoá "-" đã chốt — máy chủ trả tuần bài về / giữ (mockup bản 2). */
       if (r?.goVang?.tuanVe) {
-        toast.push('ok', t('Đã bỏ vắng {x}{x2} · {x3} {tuanVe}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '', x3: r.goVang.giuLich ? t('giữ') : t('về'), tuanVe: r.goVang.tuanVe }));
+        /* CV-SUA-1011: "Đã bỏ vắng · Hoàn tác" như gõ "-" — Hoàn tác = ghi lại "-" (máy chủ chốt lại theo luật vắng). */
+        toast.push('ok', t('Đã bỏ vắng {x}{x2} · {x3} {tuanVe}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '', x3: r.goVang.giuLich ? t('giữ') : t('về'), tuanVe: r.goVang.tuanVe }),
+          { key: `vang:${attemptId}:${skill}`, ms: HOAN_TAC_VANG_MS, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: () => void save(skill, { noShow: true }) } });
       }
       /* W1: điểm thường → gộp vô hiệu 1,5 s (mỗi ô từng kéo cả lưới lớp + /my-work tải lại); "-" / bỏ vắng / khôi phục đổi lịch → ngay.
          PR-S6F-a: /my-work có trong danh sách — badge quá hạn của GV vẫn tải lại sau khi nhập điểm. */

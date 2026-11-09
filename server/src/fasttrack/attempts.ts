@@ -524,7 +524,7 @@ export function skillCells(
           const tuanGoc = row.no_show_week_start
             ?? (db().prepare('SELECT week_start FROM report_periods WHERE id = ?').get(row.no_show_period_id) as any).week_start as string;
           /* `editable` đã tính cho cả dòng — không hỏi quyền nhập lại cho từng ô (PR-TD: trần câu SQL). */
-          /* Vắng 2 lần (huỷ phần thi) → chỉ Quản lý; còn lại gỡ mọi lúc (OV-13h). */
+          /* CV-SUA-1011: gỡ mọi lúc, cả vắng 2 lần (huỷ phần thi) — người nhập ô / GVCN / QL (`duocGoDau`). */
           const boVang = view.periodId !== row.no_show_period_id;
           const loi = duocGoDau(p, { classId: attempt.class_id, skill, today, duocNhap: editable.includes(skill), daHuyPhan: view.sitStatus === 'cancelled' });
           return {
@@ -2383,12 +2383,22 @@ export function saveScore(
         });
         /*
          * CV-SUA-1011 (chủ SP 10/11: "nhập '-' ở kĩ năng W thì cả 2 W đều bị coi là vắng"): "-" ở MỘT task Writing = CẢ buổi Writing vắng — task kia
-         * (em có học, chưa có điểm) nhận cùng dấu, rồi chốt (dời / huỷ) hoặc Không dự thi như một. Task kia có điểm: luật cũ (LUAT-34 dời cả W, điểm đi
-         * theo; MT cũ giữ điểm). Thay "W1 '-' một mình chờ ô kia" (OV-1b / LUAT-34).
+         * (em có học) nhận cùng dấu, rồi chốt (dời / huỷ) hoặc Không dự thi như một. Task kia đã có điểm → hỏi rồi huỷ điểm đó (cất, Khôi phục điểm được —
+         * như "Báo vắng"), không để một W điểm một W vắng / huỷ. Thay "W1 '-' một mình chờ ô kia" (OV-1b) và "task kia có điểm → dời cả W, điểm đi theo" (LUAT-34).
          */
         for (const k of entrySkillsOf(assessed).filter((x) => x !== skill && x !== scheduleRow.bo_task)) {
-          const kia = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k) as ScoreRow | undefined;
-          if (kia && (kia.band !== null || kia.raw_score !== null)) continue;
+          let kia = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k) as ScoreRow | undefined;
+          if (kia && (kia.band !== null || kia.raw_score !== null)) {
+            const o = ENTRY_SKILL_SHORT[k as EntrySkill];
+            canXacNhan('{o} đã có điểm — vắng là vắng cả Writing: huỷ điểm {o} (khôi phục lại được) rồi ghi vắng?', { o }, 'Huỷ điểm, ghi vắng');
+            try {
+              saveScore(p, attemptId, k, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Ghi vắng cả Writing' }, today);
+            } catch (e) {
+              if ((e as any)?.status === 403) throw loi(403, '{o} đã có điểm — nhờ GV {o}, GVCN hoặc Quản lý ghi vắng (huỷ điểm {o}).', { o });
+              throw e;
+            }
+            kia = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k) as ScoreRow | undefined;
+          }
           if (kia?.no_show_period_id === scheduleRow.planned_period_id) continue;
           if (kia) {
             conn.prepare(`UPDATE assessment_scores SET no_show_period_id = ?, no_show_by = ?, no_show_at = ?, no_show_late = ?, no_show_settled_at = ?, no_show_cu = ? WHERE id = ?`)
@@ -2562,6 +2572,15 @@ export function saveScore(
                   no_show_late = 0, no_show_settled_at = NULL, no_show_cu = 0 WHERE attempt_id = ? AND skill = ?`,
         )
         .run(attemptId, skill);
+      /* CV-SUA-1011: Writing — có điểm một task = em CÓ làm buổi Writing → dấu "-" chưa chốt của task kia hết hiệu lực (cả hai cùng trạng thái; thay
+         LUAT-34 "task kia đang '-' → buổi vắng, dời cả W, điểm đi theo"). Task kia vẫn chờ điểm của nó. */
+      const kia = entrySkillsOf(assessed).filter((x) => x !== skill);
+      if (kia.length) {
+        conn.prepare(
+          `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0
+            WHERE attempt_id = ? AND skill IN (${kia.map(() => '?').join(',')}) AND no_show_period_id IS NOT NULL AND no_show_settled_at IS NULL AND no_show_cu = 0`,
+        ).run(attemptId, ...kia);
+      }
     }
 
     /* OV-13k: Thi lại → nhận xét GV phụ trách hết nghĩa như nhận xét người chấm; có nhận xét mới của người chấm chéo → báo GV phụ trách. */
@@ -2598,8 +2617,6 @@ export function saveScore(
         reason: 'Suy từ việc đã có điểm', actor: p.userId,
       });
     }
-    /* LUAT-34 (T07): Writing — task này vừa có điểm mà task kia đang "-" ở tuần này → buổi là vắng, chốt ngay (dời cả W, điểm đi theo). */
-    if (hasValue && a.kind === 'mock' && scheduleRow.week_start && !laMtCuKyNang(scheduleRow.week_start, today) && entrySkillsOf(assessed).length > 1) chotVangNgay(conn, p, a, scheduleRow, today);
     capNhatConOCho([attemptId]);   // TD7b: nhập / sửa / xoá điểm đổi ô chờ
     refreshOutcome(p, attemptId, !!o.thiLai);
     const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;

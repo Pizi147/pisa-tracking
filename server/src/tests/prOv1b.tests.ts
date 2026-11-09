@@ -113,7 +113,7 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     assert(kr.planned_period_id === W1 && kr.absence_move_count === 1, `"-" ghi muộn trên ô sat phải dời: ${JSON.stringify(kr)}`);
   }));
 
-  check('OV1b-4 · Bỏ vắng: GV đúng kỹ năng / GVCN / QL đưa ô về tuần cũ, bộ đếm −1 (không chặn hạn tuần cũ); GV khác thì 403; đã huỷ phần thi chỉ QL', () => thu(() => {
+  check('OV1b-4 · Bỏ vắng: GV đúng kỹ năng / GVCN / QL đưa ô về tuần cũ, bộ đếm −1 (không chặn hạn tuần cũ); GV khác thì 403; đã huỷ phần thi: GVCN / GV kỹ năng cũng gỡ được (CV-SUA-1011)', () => thu(() => {
     const a = luot[0];
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
@@ -124,13 +124,14 @@ export async function runPrOv1bTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { noShow: false }, thu6);
     const k = ky(a, 'listening');
     assert(k.planned_period_id === W && k.absence_move_count === 0 && k.sit_status === 'scheduled', `bỏ vắng: ${JSON.stringify(k)}`);
-    /* Vắng lần 2 → huỷ phần thi: GV không gỡ, QL "Khôi phục phần thi" (hoặc gỡ). */
+    /* Vắng lần 2 → huỷ phần thi. CV-SUA-1011 (chủ SP 10/11 "bấm nhầm thành vắng xong bị khoá thì vẫn phải được bỏ vắng"): GVCN gỡ được, mở lại phần thi. */
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, TRONG);
     attempts.saveScore(gvcn, a, 'reading', { noShow: true }, BU);
     assert(ky(a, 'reading').sit_status === 'cancelled', 'tiền đề: Reading đã huỷ phần thi');
     conn.prepare(`UPDATE assessment_scores SET no_show_at = '2026-01-01T00:00:00.000Z' WHERE attempt_id = ? AND skill = 'reading'`).run(a);   // qua cửa sổ Hoàn tác (LUAT-34)
-    const e2 = loi(() => attempts.saveScore(gvcn, a, 'reading', { noShow: false }, BU));
-    assert(e2?.status === 403 && /Quản lý/.test(e2.message), `GVCN gỡ "-" phần thi đã huỷ: ${e2?.status} ${e2?.message}`);
+    attempts.saveScore(gvcn, a, 'reading', { noShow: false }, BU);
+    assert(ky(a, 'reading').sit_status === 'scheduled' && ky(a, 'reading').huy_vang === 0 && ky(a, 'reading').absence_move_count === 1,
+      `GVCN gỡ "-" phần thi đã huỷ: ${JSON.stringify(ky(a, 'reading'))}`);
     /* Writing đã dời, W1 có điểm ở tuần mới → Bỏ vắng W2 giữ lịch tuần mới (không kéo điểm W1 về tuần cũ). */
     attempts.saveScore(P.w1Teacher, a, 'writing1', { noShow: true }, TRONG);
     attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG);

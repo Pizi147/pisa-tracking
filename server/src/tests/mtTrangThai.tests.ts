@@ -20,7 +20,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
   const permissions: any = await import('../permissions.ts');
   const yeuCau: any = await import('../duyet/yeuCau.ts');
   const dm: any = await import('../../../shared/domain/index.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   console.log('\nLUAT-34 · bảng chuyển trạng thái Mock Test T01–T31 + chuyenVang + Luật 3');
 
   const thu = <T>(fn: () => T): T => {
@@ -206,13 +206,16 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(r3.vang?.kq === 'doi' && ky(c, 'listening').planned_period_id === W1 && ky(c, 'listening').absence_move_count === 1, `lich_su tuần gần: ${JSON.stringify(r3.vang)}`);
   }));
 
-  check('T07 · SỬA: Writing — MT hiện tại task kia có điểm → dời cả W (điểm đi theo); MT cũ một task "-" → chỉ ô đó Không dự thi, giữ điểm task kia', () => thu(() => {
+  /* CV-SUA-1011 (chủ SP 10/11: "-" ở W = cả hai W vắng; W1 / W2 cùng trạng thái): task kia có điểm → HỎI huỷ điểm đó rồi cả hai "-" (thay LUAT-34
+     "dời cả W, điểm đi theo" và "MT cũ: chỉ ô đó Không dự thi, giữ điểm task kia"). */
+  check('T07 · SỬA (CV-SUA-1011): Writing — task kia có điểm → hỏi huỷ điểm, đồng ý thì cả W vắng (dời / MT cũ: cả hai Không dự thi), điểm cất', () => thu(() => {
     const [a, b, c] = luot;
     dung(a);
     attempts.saveScore(gvW1, a, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
-    attempts.saveScore(gvW2, a, 'writing2', { noShow: true }, TRONG);
+    assert(loi(() => attempts.saveScore(gvW2, a, 'writing2', { noShow: true }, TRONG))?.status === 409, 'phải hỏi huỷ điểm W1');
+    voiXacNhan(() => attempts.saveScore(QL, a, 'writing2', { noShow: true }, TRONG));
     let k = ky(a, 'writing');
-    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && dau(a, 'writing1').band === 6, `W1 điểm + W2 "-": ${JSON.stringify(k)}`);
+    assert(k.planned_period_id === W1 && k.absence_move_count === 1 && dau(a, 'writing1').band === null, `W1 điểm + W2 "-": ${JSON.stringify(k)}`);
     dung(b);
     /* CV-SUA-1011 (chủ SP 10/11, thay "W2 '-' một mình: chờ ô kia" S4): W2 "-" = cả buổi Writing vắng — W1 trống cùng dấu, dời ngay. */
     attempts.saveScore(gvW2, b, 'writing2', { noShow: true }, TRONG);
@@ -220,9 +223,9 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(k.planned_period_id === W1 && k.absence_move_count === 1 && dau(b, 'writing1')?.no_show_period_id === W, `W2 "-" một mình → cả W dời: ${JSON.stringify(k)}`);
     dung(c, { lichSu: true });
     attempts.saveScore(gvW1, c, 'writing1', { criteria: [6, 6, 6, 6] }, QUA);   // N38 L3: MT cũ = tuần thi của W cách ≥ 2 tuần
-    attempts.saveScore(gvW2, c, 'writing2', { noShow: true }, QUA);
-    assert(dau(c, 'writing2').no_show_cu === 1 && dau(c, 'writing1').band === 6 && ky(c, 'writing').sit_status !== 'cancelled'
-      && ky(c, 'writing').planned_period_id === W, 'MT cũ: chỉ W2 Không dự thi, W không dời');
+    voiXacNhan(() => attempts.saveScore(QL, c, 'writing2', { noShow: true }, QUA));
+    assert(dau(c, 'writing2').no_show_cu === 1 && dau(c, 'writing1').no_show_cu === 1 && dau(c, 'writing1').band === null && ky(c, 'writing').sit_status !== 'cancelled'
+      && ky(c, 'writing').planned_period_id === W, 'MT cũ: cả hai Không dự thi, W không dời');
     const c2 = o(c, 'writing2', W, QUA);
     assert(c2?.noShow?.state === 'khong-du-thi' && !c2?.overdue, `W2 MT cũ: ${JSON.stringify(c2?.noShow)}`);
   }));
@@ -237,7 +240,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(dau(a, 'reading').band !== null && dau(a, 'reading').no_show_period_id === null, 'S8 → S5');
   }));
 
-  check('T09 · Gỡ "-": S8 trả như trước · S9 Hoàn tác 10 s người vừa gõ, sau đó chỉ QL · S13 (Không dự thi): người có quyền sửa ô gỡ + nhật ký, không chuông (N38)', () => thu(() => {
+  check('T09 · Gỡ "-": S8 trả như trước · S9 Hoàn tác 10 s người vừa gõ, sau đó GV vẫn gỡ được (CV-SUA-1011) · S13 (Không dự thi): người có quyền sửa ô gỡ + nhật ký, không chuông (N38)', () => thu(() => {
     const [a, b, c] = luot;
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
@@ -254,8 +257,9 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(chuong(QL, `huy_vang:${a}:listening:%`) === 0, 'Hoàn tác không sinh chuông');
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, BU);
     quaHoanTac(a, 'listening');
-    const e = loi(() => attempts.saveScore(gvL, a, 'listening', { noShow: false }, BU));
-    assert(e?.status === 403, `S9 sau 10 s GV gỡ: ${e?.status} ${e?.message}`);
+    /* CV-SUA-1011 (chủ SP 10/11 "bấm nhầm thành vắng xong bị khoá thì vẫn phải được bỏ vắng"): qua 10 s GV vẫn gỡ được phần thi đã huỷ. */
+    attempts.saveScore(gvL, a, 'listening', { noShow: false }, BU);
+    assert(ky(a, 'listening').sit_status === 'scheduled' && ky(a, 'listening').absence_move_count === 1, `S9 sau 10 s GV gỡ: ${JSON.stringify(ky(a, 'listening'))}`);
     /* S13 */
     dung(b, { lichSu: true });
     attempts.saveScore(gvL, b, 'listening', { noShow: true }, QUA);   // N38 L3: tuần thi cách 2 tuần → Không dự thi
@@ -269,15 +273,18 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.saveScore(gvL, c, 'listening', { noShow: true }, QUA);
     attempts.saveScore(gvL, c, 'listening', { noShow: false }, QUA);   // Hoàn tác trong 10 s
     assert(chuong(QL, `huy_vang_cu:${c}:listening`) === 0 && chuong(QL, `go_huy_cu:${c}:listening:%`) === 0, 'Hoàn tác: rút chuông, không chuông mới');
-    /* Rà #503 (1): W1 có điểm từ trước + W2 "-" nhầm → cả W dời; Hoàn tác trả W về tuần cũ, đếm 0. */
+    /* Rà #503 (1) → CV-SUA-1011: W1 có điểm từ trước + W2 "-" nhầm (đồng ý huỷ điểm W1) → cả W dời; Hoàn tác trả W về tuần cũ, đếm 0, hết "-" cả hai;
+       điểm W1 lấy lại bằng "Khôi phục điểm" (một bấm, như mọi ô bị huỷ điểm khi ghi vắng). */
     const d = luot[3];
     dung(d);
     attempts.saveScore(gvW1, d, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
-    attempts.saveScore(gvW2, d, 'writing2', { noShow: true }, TRONG);
+    voiXacNhan(() => attempts.saveScore(QL, d, 'writing2', { noShow: true }, TRONG));
     assert(ky(d, 'writing').planned_period_id === W1, 'tiền đề: W dời');
-    attempts.saveScore(gvW2, d, 'writing2', { noShow: false }, TRONG);
+    attempts.saveScore(QL, d, 'writing2', { noShow: false }, TRONG);
     k = ky(d, 'writing');
-    assert(k.planned_period_id === W && k.absence_move_count === 0 && dau(d, 'writing1').band === 6, `Hoàn tác W2 "-": ${JSON.stringify(k)}`);
+    assert(k.planned_period_id === W && k.absence_move_count === 0 && !dau(d, 'writing1').no_show_period_id && !dau(d, 'writing2').no_show_period_id, `Hoàn tác W2 "-": ${JSON.stringify(k)}`);
+    ketQuaHuy.khoiPhucDiem(gvW1, d, 'writing1', TRONG);
+    assert(dau(d, 'writing1').band === 6, 'Khôi phục điểm W1');
   }));
 
   check('T10 · S6 (thẻ cũ) → S8: QL Duyệt thẻ (+1 lần) — vắng tiếp ở tuần đích → huỷ', () => thu(() => {

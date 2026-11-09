@@ -15,7 +15,7 @@ export async function runPrCvSua1011Tests(t: YThucTestKit) {
   const perm: any = await import('../permissions.ts');
   const mw: any = await import('../worklist/mywork.ts');
   const d: any = await import('../../../shared/domain/index.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   console.log('\nCV-SUA-1011 · W "-" cả hai · bỏ Chấm Speaking của GVCN · theo dõi mở thẳng lưới');
 
   const thu = <T>(fn: () => T): T => {
@@ -85,13 +85,59 @@ export async function runPrCvSua1011Tests(t: YThucTestKit) {
     assert(!dau('writing1')?.no_show_period_id && !dau('writing2')?.no_show_period_id, 'gỡ một W phải gỡ cả hai');
   }));
 
-  check('CV1011-4 · W1 có điểm + W2 "-": điểm W1 giữ nguyên (không ghi "-" đè), cả W dời như luật cũ', () => thu(() => {
+  check('CV1011-4 · W1 có điểm + W2 "-": hỏi huỷ điểm W1 (409) → đồng ý: điểm W1 cất (Khôi phục được), CẢ HAI "-", W dời; không còn một W điểm một W vắng', () => thu(() => {
     dung();
     attempts.saveScore(P.w1Teacher, a, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
-    attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG);
+    const e = (() => { try { attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG); } catch (x) { return x as any; } return null; })();
+    assert(e?.status === 409 && ky().planned_period_id === W && dau('writing1').band === 6, `phải hỏi trước khi huỷ điểm W1: ${e?.status} ${e?.message}`);
+    /* GV W2 không nhập được W1: được chỉ đường, không lỗi mơ hồ. */
+    const e2 = (() => { try { voiXacNhan(() => attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG)); } catch (x) { return x as any; } return null; })();
+    if (e2) assert(e2.status === 403 && /nhờ GV W1/.test(e2.message), `GV W2: ${e2.status} ${e2.message}`);
+    voiXacNhan(() => attempts.saveScore(P.mbManager, a, 'writing2', { noShow: true }, TRONG));
     const w1 = dau('writing1');
-    assert(w1.band === 6 && !w1.no_show_period_id, `W1: ${JSON.stringify(w1)}`);
+    assert(w1.band === null && w1.no_show_period_id === W && dau('writing2').no_show_period_id === W, `W1 / W2: ${JSON.stringify([w1, dau('writing2')])}`);
     assert(ky().planned_period_id === W1 && ky().absence_move_count === 1, `dời cả W: ${JSON.stringify(ky())}`);
+  }));
+
+  check('CV1011-4b · nhập điểm W1 khi W2 đang "-" chưa chốt (dữ liệu cũ lệch) → W2 hết "-" (em có làm buổi Writing), không dời / huỷ cả W', () => thu(() => {
+    dung();
+    /* Dựng ca cũ: W2 "-" chưa chốt một mình (luật trước CV-SUA-1011). */
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, no_show_period_id, no_show_at, no_show_late) VALUES (?, 'writing2', ?, ?, 0)`).run(a, W, '2026-11-03T03:00:00.000Z');
+    attempts.saveScore(P.w1Teacher, a, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
+    assert(!dau('writing2').no_show_period_id && ky().planned_period_id === W && ky().absence_move_count === 0 && ky().sit_status !== 'cancelled', `W2 / lịch: ${JSON.stringify([dau('writing2'), ky()])}`);
+  }));
+
+  // ------------------------------------------------------------------ ② đường lui: Bỏ vắng (chủ SP 10/11)
+  check('CV1011-8 · GV phụ trách Bỏ vắng sau lần 1 (đã dời): W về tuần thi, W1 + W2 hết "-", lần vắng 0', () => thu(() => {
+    dung();
+    attempts.saveScore(P.w1Teacher, a, 'writing1', { noShow: true }, TRONG);
+    const r = attempts.saveScore(P.w1Teacher, a, 'writing1', { noShow: false }, TRONG);
+    assert(r.goVang && ky().planned_period_id === W && ky().absence_move_count === 0, `bỏ vắng lần 1: ${JSON.stringify(ky())}`);
+    assert(!dau('writing1').no_show_period_id && !dau('writing2').no_show_period_id, 'còn dấu');
+  }));
+
+  check('CV1011-9 · Bỏ vắng sau lần 2 (Đã huỷ · vắng 2 lần): GV phụ trách (không chỉ QL) gỡ được — W mở lại ở tuần lần 2, giữ lần 1; ô có "Bỏ vắng" (goDuoc)', () => thu(() => {
+    dung();
+    attempts.saveScore(P.w1Teacher, a, 'writing1', { noShow: true }, TRONG);          // lần 1 → dời W1 NOV+1
+    attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, '2026-11-11');    // lần 2 ở tuần đã dời tới → huỷ
+    let k = ky();
+    assert(k.sit_status === 'cancelled' && k.huy_vang === 1, `lần 2 phải huỷ: ${JSON.stringify(k)}`);
+    const o = attempts.skillCells(P.w2Teacher, one('SELECT * FROM assessment_attempts WHERE id = ?', a), attempts.scoresOf(a), attempts.skipsOf(a), '2026-11-11', skillSchedule.ensureSkillRows(a))
+      .find((c: any) => c.skill === 'writing2');
+    assert(o?.daChot?.goDuoc === true, `ô W2 đã huỷ phải có Bỏ vắng cho GV W2: ${JSON.stringify(o?.daChot)}`);
+    attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: false }, '2026-11-11');
+    k = ky();
+    assert(k.sit_status === 'scheduled' && k.huy_vang === 0 && k.planned_period_id === W1 && k.absence_move_count === 1, `bỏ vắng lần 2: ${JSON.stringify(k)}`);
+    assert(!dau('writing1')?.no_show_period_id && !dau('writing2')?.no_show_period_id, 'W1 + W2 phải cùng hết "-"');
+    assert(one(`SELECT 1 x FROM audit_logs WHERE entity_id = ? AND action = 'score.no_show_cleared' AND actor_user_id = ?`, a, P.w2Teacher.userId), 'thiếu nhật ký bỏ vắng');
+  }));
+
+  check('CV1011-10 · Bỏ vắng sau Không dự thi (MT cũ): GV phụ trách gỡ ở một W → W1 + W2 cùng trở lại chờ điểm', () => thu(() => {
+    dung();
+    attempts.saveScore(P.w1Teacher, a, 'writing1', { noShow: true }, CU);
+    assert(dau('writing2')?.no_show_cu === 1, 'tiền đề: cả hai Không dự thi');
+    attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: false }, CU);
+    assert(!dau('writing1').no_show_period_id && !dau('writing2').no_show_period_id && ky().sit_status === 'scheduled', 'chưa trở lại');
   }));
 
   // ------------------------------------------------------------------ ④ GVCN không S
