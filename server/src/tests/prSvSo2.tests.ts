@@ -13,7 +13,6 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
-  const vx: any = await import('../phanTich/viecDaXong.ts');
   const lop: any = await import('../classes/phanTichLop.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
@@ -89,14 +88,12 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const bang = pt.phanTichGiaoVien(P.mbManager, ky);
     const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, ky));
-    const xong: Map<number, any[]> = vx.viecDaXong(pt.nguCanhPtGv(P.mbManager, ky));   // XM-VIEC b: việc đã xong có ngày xong
     const tong = (o: any) => (o?.k === 'so' ? o.tong : 0), dung = (o: any) => (o?.k === 'so' ? o.dung : 0);
     let coViec = false;
     for (const h of bang.hang) {
       /* SỔ NGHĨA VỤ (PR-2, thay XM-VIEC a / b — chủ SP duyệt bảng chênh lệch 10/11): Việc = 3 số riêng của sổ (mẫu = đúng + muộn + chưa làm); có việc mở quá hạn → có Chưa làm. */
       const v = h.viecDungHan;
       assert(!('xuLyViPham' in h) && (v.k !== 'so' || v.tong === v.dung + v.muon + v.chua) && (!(mo.get(h.id)?.length) || (v.k === 'so' && v.chua > 0)), `${h.ten}: ${JSON.stringify(v)}`);
-      void xong;
       if (tong(h.ghiKetQuaPa) && !coViec) {
         coViec = true;
         const p = pt.oChiSoGv(P.mbManager, { ...ky, gv: h.id, cot: 'viec-dung-han' });

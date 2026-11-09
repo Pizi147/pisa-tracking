@@ -475,7 +475,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                       <button key={k} type="button" role="tab" aria-selected={tabViec === k} tabIndex={tabViec === k ? 0 : -1} onClick={() => setTabViec(k)}
                         className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tabViec === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
                         {nhanTabViec(k)} <span className={`tabular-nums ${k === 'chua' && n ? 'text-bad' : ''}`}>{n}</span>
-                        {chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}> +{chung}</span>}
+                        {chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}> +{chung}<span className="sr-only"> {t('S chéo chung')}</span></span>}
                       </button>
                     );
                   })}

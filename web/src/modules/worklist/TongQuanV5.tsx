@@ -117,15 +117,15 @@ export const tuMau = (x: TyLeV5 | null, donVi?: string) => (x && x.mau ? `${x.da
  * SỔ NGHĨA VỤ (PR-2): dòng phụ của ô Chấm Test / Việc — 3 số RIÊNG "n đúng hạn · n làm muộn · n chưa làm" (số 0 của muộn / chưa làm không ghi; chưa làm đậm đỏ,
  * có chữ — không chỉ màu) + dòng nhỏ "+ n S chéo chung" (bài S chéo chưa ai nhận của chi nhánh, không vào tỉ lệ). Ô không có 3 số → `tuMau` như cũ.
  */
-export function PhuSo3({ o, donVi }: { o: OPtGv | undefined; donVi?: string }) {
+export function PhuSo3({ o }: { o: OPtGv | undefined }) {
   if (!o || o.k === 'na') return null;
   const s = o.k === 'so' && o.muon != null ? o : null;
   const chung = o.sChung ?? 0;
-  if (!s) return chung ? <span className="block text-[12px] text-dim">{t('+ {n} S chéo chung', { n: chung })}</span> : o.k === 'so' ? <>{tuMau(tyLeGv(o), donVi)}</> : null;
+  if (!s) return chung ? <span className="block text-[12px] text-dim">{t('+ {n} S chéo chung', { n: chung })}</span> : o.k === 'so' ? <>{tuMau(tyLeGv(o))}</> : null;
   const phan = [t('{n} đúng hạn', { n: s.dung }), s.muon ? t('{n} làm muộn', { n: s.muon }) : null].filter(Boolean) as string[];
   return (
     <>
-      <span className="inline-flex flex-wrap justify-[inherit] gap-x-1">
+      <span className="inline-flex flex-wrap justify-[inherit] gap-x-1 tabular-nums">
         {phan.map((x, i) => <span key={i} className="whitespace-nowrap">{x}{i < phan.length - 1 || (s.chua ?? 0) > 0 ? ' ·' : ''}</span>)}
         {(s.chua ?? 0) > 0 && <span className="whitespace-nowrap font-semibold text-bad">{t('{n} chưa làm', { n: s.chua })}</span>}
       </span>
