@@ -467,6 +467,23 @@ export function paSangKetQuaCuoi(caseIds: readonly number[], ngayDat: string, ac
 }
 
 /**
+ * K3-16 (1): MT sau TRƯỢT LẠI → PA quy chế ĐANG CHẠY "đến MTn" / "1 tháng" hết ở lượt này: `followup_due` = ngày lượt (không muộn hơn hôm nay / mốc cũ)
+ * nên lần ghi tới là "Ghi kết quả cuối"; loại mốc giữ (chữ "đến MT2 · W2 OCT" vẫn đúng). "Đến lúc thi" không hết ở MT nào (PA-TRUNG) — không đụng.
+ */
+export function paHetMocTruotLai(caseId: number, ngay: string, actor: number | null): number[] {
+  const conn = db();
+  const moc = ngay < demoToday() ? ngay : demoToday();
+  const ds = conn.prepare(`SELECT id, followup_due FROM case_interventions WHERE case_id = ? AND preset = 1 AND status = 'started'
+      AND confirmed_at IS NOT NULL AND moc_quy_che IN ('one_month', 'until_next_mt') AND (followup_due IS NULL OR followup_due > ?)`).all(caseId, moc) as any[];
+  for (const iv of ds) {
+    conn.prepare('UPDATE case_interventions SET followup_due = ?, updated_at = ? WHERE id = ?').run(moc, nowIso(), iv.id);
+    conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_het_moc', ?, ?, ?, ?)`)
+      .run(caseId, iv.followup_due, moc, actor, nowIso());
+  }
+  return ds.map((iv) => iv.id);
+}
+
+/**
  * XÁC NHẬN PA THEO QUY CHẾ (Q28-3, §3.1d Planning tự quyết, K3-46): PA chờ xác nhận → đang chạy TỪ HÔM NAY. Mốc quy chế tính từ ngày
  * xác nhận (`mocQuyChe`); chưa có lịch / ngày thi thì để trống, điền sau (`dienMocQuyChe`). Đổi người thực hiện được; loại PA thì không.
  * Chỉ hàm này đặt `confirmed_at` + `confirmed_by` (người).

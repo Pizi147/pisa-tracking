@@ -15,7 +15,7 @@ import { resultOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { laLopKetThuc } from '../fasttrack/hoanTat.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
-import { announceAutoCase, createPresetPlan, isFastTrackMock, paSangKetQuaCuoi, resyncUnconfirmedPresets } from './sosAuto.ts';
+import { announceAutoCase, createPresetPlan, isFastTrackMock, paHetMocTruotLai, paSangKetQuaCuoi, resyncUnconfirmedPresets } from './sosAuto.ts';
 import { CO_THE_KHONG_THEO_DOI, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { closeCasesBySystem } from './systemClose.ts';
 import { xoaCaseHeThong } from './cases.ts';
@@ -503,6 +503,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
           .run(attempt.id, kck ? open.sos_level : result.sosLevel, followUntil, nowIso(), open.id);   // OV-9: lượt KCK không đổi mức SOS của Case
         /* OV-12c: Case theo lượt mới → nguyên nhân = nhận xét + nhóm của ô lượt mới (lượt cũ giữ nhận xét của nó — `nguyenNhanTheoLuot`). */
         if (autoCases) dongBoNguyenNhanMt({ caseIds: [open.id] });
+        if (autoCases) paHetMocTruotLai(open.id, detectedAt, p.userId);   // K3-16: PA cũ "đến MTn" / "1 tháng" sang "Kết quả cuối"
         if (!kck && open.sos_level !== result.sosLevel) {
           recordChange(open.id, 'sos_level', String(open.sos_level), String(result.sosLevel), p.userId);
         }
