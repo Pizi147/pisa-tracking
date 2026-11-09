@@ -775,7 +775,10 @@ function phamViSoTong(f: LocPtGv, cns: number[] | null): PhamViSo & { khung: Khu
  */
 function phanTichGiaoVienTong(f: LocPtGv, cns: number[] | null): PhanTichGvKq {
   const v = phamViSoTong(f, cns);
-  moiViec(v);
+  /*
+   * KHÔNG ghi lại sổ việc ở đây (đo seed: ghi lại 5 chi nhánh = 136 câu, trần cứng 100): đọc sổ đang có — bài luôn mới (ghi sổ ở đường ghi), việc mới theo lần mở
+   * bảng / hồ sơ GV của chi nhánh (`lamMoiViec`) + đối chiếu đêm. [XM] chờ PTA nếu cần số việc tổng "không trễ".
+   */
   const so = soCuaKy(v);
   const conn = db();
   const ten = new Map<number, string>();
@@ -878,11 +881,13 @@ export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string })
   /* Sổ nghĩa vụ: tổng mọi chi nhánh — panel một người qua mọi chi nhánh, mỗi dòng ghi chi nhánh. */
   const tong = f.cn == null && so ? phamViTong(p) : null;
   if (tong && so) {
-    const v = phamViSoTong(f, tong.cns);
-    moiViec(v);
-    const ten = (db().prepare('SELECT full_name FROM users WHERE id = ?').get(f.gv) as any)?.full_name;
-    if (!ten) throw notFound('Không tìm thấy giáo viên này.');
+    const v = phamViSoTong(f, tong.cns);   // như bảng tổng: đọc sổ đang có, không ghi lại sổ việc
     const r = oSoCua(v, f.gv, so, true);
+    /* Chỉ người có dòng sổ trong phạm vi (hoặc phân công ở lớp khung trong khoảng) — không trả tên tài khoản bất kỳ qua `gv=`. */
+    const ten = (db().prepare(`SELECT u.full_name FROM users u WHERE u.id = ? AND (? OR EXISTS (SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ta.user_id = u.id AND ta.status IN ('active', 'ended') AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
+          ${tong.cns ? `AND c.branch_id IN (${DS_JSON})` : ''}))`).get(f.gv, r.dong.length ? 1 : 0, v.cuoi, v.tu, ...(tong.cns ? [JSON.stringify(tong.cns)] : [])) as any)?.full_name;
+    if (!ten) throw notFound('Không tìm thấy giáo viên này trong phạm vi bạn được xem.');
     const rows = r.dong.map((d) => d.row);
     return { n: rows.length, tieuDe: tieuDeChiSo(r.nhan, ten, r.dung, r.tong, r.donVi), rows, ...kieuBang(rows, CACH_TINH_GV[so]), chiNhanh: t('Tất cả chi nhánh') };
   }

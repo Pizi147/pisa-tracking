@@ -352,6 +352,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích GV', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien?cn={cn}&ct=thuong&thang=2026-09' },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/cham-diem?cn={cn}&ct=ft&gv={gv}' },
+  /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (QT, không cn) · panel một người mọi chi nhánh · panel "Chưa phân công" (gv = 0). */
+  { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien?ct=ft' },
+  { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han' },
+  { trang: 'Phân tích GV', vai: ['QL'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem' },
 
   // ---------------------------------------------------------------- OV-15e — Báo cáo + Kết quả thi (QL, QT; GVCN → 403) + panel chỉ số GV
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/bao-cao?ct=ft', maChuDich: { GVCN: 403 } },
@@ -431,6 +435,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (đọc sổ, không ghi lại sổ việc) · panel một người mọi chi nhánh · panel Chưa phân công — đo 7 · 8 · 6 câu, trần max(đo + 10, ⌈đo × 1,3⌉). */
+  'QT /phan-tich/giao-vien?ct=ft': 17, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 18, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 16,
   /* DEM-QUA-HAN (chủ SP 06/11 — quá hạn vẫn phải tính): Phân tích GV bảng / panel Việc đúng hạn / hồ sơ GV dựng Công việc "Tất cả" của chi nhánh (`viecQuaHanMo`,
      một lần mỗi chi nhánh mỗi request) → +~30–40 câu. Trần nâng = min(100, max(đo + 10, ⌈đo × 1,3⌉)): đo bảng FT 79 · 78, thường 69 · 68, khoảng dài 75 · 74,
      panel 56 · 55, hồ sơ GV 80–82. Đã cảnh báo PTA (dòng / ngày trong mô tả PR). */
@@ -1039,12 +1045,14 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* SỔ NGHĨA VỤ (PR-2): đo 333 · 49 · 58 dòng → max(đo + 50, ⌈đo × 1,3⌉). */
+  'QT /phan-tich/giao-vien?ct=ft': 433, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 99, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 108,
   /* O-TQ-BAM: panel Đạt Target thi thật (chỉ khi bấm) — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 kỳ 6 tháng: 1 259 · 1 259 · 691. */
   'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'CX /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 899,
   /* GIAM-DOC-TQGV: Tổng quan GV — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1 (GVCN 1 839, GVBM 2 101; hai vai đều có lớp chủ nhiệm nên số không đổi — GV không chủ nhiệm khoá ở prSvTqGv). */
   'GVCN /tong-quan/lop-toi-day/hai-khoi': 2391, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 2732, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 2391,
   /* GIAM-DOC-0711a: napCaseMo tập cha theo chi nhánh (QL "Tất cả", lọc chi nhánh, Phân tích GV / hồ sơ GV — DEM-QUA-HAN) — trần dòng mới = max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1. */
-  'QL /my-work?nguoi=7': 1098, 'QL /my-work?nguoi=tat-ca&branchId=1': 1476, 'QT /my-work?nguoi=tat-ca&branchId=1': 1482, 'QL /giao-vien/7/viec': 1102, 'QT /giao-vien/7/viec': 1099, 'QL /giao-vien/9/chi-so': 2363, 'QT /giao-vien/9/chi-so': 2587, 'QL /giao-vien/7/chi-so': 2187, 'GVCN /giao-vien/7/chi-so': 2184, 'GVCN_THUONG /giao-vien/7/chi-so': 2184, 'QT /giao-vien/7/chi-so': 2186, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2932, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2931,
+  'QL /my-work?nguoi=7': 1098, 'QL /my-work?nguoi=tat-ca&branchId=1': 1476, 'QT /my-work?nguoi=tat-ca&branchId=1': 1482, 'QL /giao-vien/7/viec': 1102, 'QT /giao-vien/7/viec': 1099, 'QL /giao-vien/9/chi-so': 2450,   /* SỔ NGHĨA VỤ PR-2: đo 2385 — gồm ghi lại sổ việc chi nhánh khi có lần ghi mới (`lamMoiViec`); sổ đang mới ít hơn */ 'QT /giao-vien/9/chi-so': 2587, 'QL /giao-vien/7/chi-so': 2187, 'GVCN /giao-vien/7/chi-so': 2184, 'GVCN_THUONG /giao-vien/7/chi-so': 2184, 'QT /giao-vien/7/chi-so': 2186, 'QL /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2932, 'GVCN /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'GVCN_THUONG /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2929, 'QT /giao-vien/7/chi-so?tu=2026-03-02&den=2026-09-14': 2931,
   /* DEM-QUA-HAN b: panel Chấm Test đúng hạn (số chung) — ⌈đo × 1,3⌉, đo 285 · 285. */
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=cham-diem': 371,
   /* DEM-QUA-HAN: Phân tích GV + panel Việc đúng hạn — trần = ⌈đo × 1,3⌉, đo bảng FT 2 349 · 2 347, thường 2 168 · 2 166, khoảng dài 2 702 · 2 700, panel 1 192 · 1 190. */

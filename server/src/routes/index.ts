@@ -857,7 +857,8 @@ api.get('/phan-tich/giao-vien/cham-diem', requireAuth, wrap((req) => {
 /* OV-15e (C30): panel một chỉ số khác Chấm điểm của một GV — `cot` = ket-qua:<kỹ năng> · tien-bo · ghi-pa · vi-pham · pa-hieu-qua. */
 api.get('/phan-tich/giao-vien/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  const gv = soDuong(req.query.gv, 'gv');
+  /* Sổ nghĩa vụ (PR-2): `gv=0` = dòng "Chưa phân công" của bảng. */
+  const gv = req.query.gv === '0' ? 0 : soDuong(req.query.gv, 'gv');
   if (gv == null) throw badRequest('Thiếu giáo viên.');
   return giaoVienPtSvc.oChiSoGv(principalOf(req), { ...filterPtGvOf(req), gv, cot: qStr(req, 'cot') ?? '' });
 }));

@@ -36,7 +36,7 @@ export async function runPrNgayXongTests(t: YThucTestKit) {
     const sau = so(o(it.ownerId));
     assert(sau.tong === truoc.tong && sau.dung === truoc.dung, `trước ${JSON.stringify(truoc)} → sau ${JSON.stringify(sau)} (việc làm trễ phải còn trong mẫu)`);
     const p = pt.oChiSoGv(P.mbManager, { ...ky, gv: it.ownerId, cot: 'viec-dung-han' });
-    const v = p.rows.map((r: any) => r.dongViec).find((x: any) => !x.mo && x.em?.id === it.studentId && x.tab === 'case');
+    const v = p.rows.map((r: any) => r.dongViec).find((x: any) => !x.mo && x.em?.id === it.studentId && x.tab === 'case' && x.han === it.due);   // sổ: mỗi việc một dòng (Kết quả PA cùng em cũng tab Case)
     assert(v && v.ngayXong === TODAY && !v.dung && v.treNgay > 0 && v.han === it.due, `panel thiếu dòng đã làm trễ: ${JSON.stringify(p.rows.map((r: any) => r.dongViec))}`);
   }));
 

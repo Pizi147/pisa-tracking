@@ -535,7 +535,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
 
   const mocHt: any = await import('../platform/mocHeThong.ts');
   const soGhi = () => get(`SELECT so FROM moc_he_thong WHERE khoa = 'so-viec'`)?.so as number;
-  check('NV-LAM-MOI · mọi lần ghi qua API tăng so-viec (cùng câu lùi mốc quét); GET đọc sổ: số đổi / sang ngày → ghi lại sổ việc chi nhánh một lần; không đổi → 0 câu', () => thu(() => {
+  check('NV-LAM-MOI · mọi lần ghi qua API tăng so-viec (cùng câu lùi mốc quét); GET đọc sổ: số đổi (lần ghi sổ trước ≥ 5 phút) / sang ngày → ghi lại sổ việc chi nhánh một lần; không đổi → 0 câu', () => thu(() => {
     assert(soGhi() != null, 'migrate tạo dòng so-viec');
     const g0 = soGhi();
     mocHt.luiMocQuetSauGhi();
@@ -546,7 +546,9 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(chay() > 5, 'lần đầu phải ghi lại sổ việc');
     assert(chay() === 0, 'không có lần ghi mới → 0 câu');
     mocHt.luiMocQuetSauGhi();
-    assert(chay() > 5, 'có lần ghi mới → ghi lại');
+    assert(chay() === 0, 'có lần ghi mới nhưng vừa ghi sổ < 5 phút → đọc sổ đang có');
+    conn.prepare(`UPDATE moc_he_thong SET luc = ? WHERE khoa = ?`).run(new Date(Date.now() - nv.LAM_MOI_VIEC_MS - 1000).toISOString(), `so-viec:${MB}`);
+    assert(chay() > 5, 'có lần ghi mới, lần ghi sổ trước ≥ 5 phút → ghi lại');
     assert(chay() === 0, 'sau đó lại 0 câu');
     conn.prepare(`UPDATE moc_he_thong SET ngay = '2000-01-01' WHERE khoa = ?`).run(`so-viec:${MB}`);
     assert(chay() > 5, 'sang ngày nghiệp vụ mới → ghi lại');
@@ -582,5 +584,4 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(soGv > 0, 'seed phải có GV có số');
   }));
 
-  if (nv.MOC_TINH_TRE) nv.MOC_TINH_TRE.ngay = '2026-10-19';
 }

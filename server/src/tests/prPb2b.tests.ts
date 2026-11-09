@@ -342,9 +342,12 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const coSo = b.hang.filter((h: any) => h.chamDiem.k === 'so');
     assert(coSo.length >= 1, 'không GV nào có ô Chấm điểm');
     for (const h of coSo) {
-      const pn = pt.oChamDiemGv(P.mbManager, { ct: 'ft', gv: h.id });
-      assert(pn.rows.length === h.chamDiem.tong && pn.tre === h.chamDiem.tong - h.chamDiem.dung && pn.rows.filter((r: any) => !r.dung).length === pn.tre, `${h.ten}: ${h.chamDiem.dung}/${h.chamDiem.tong} ‖ ${pn.rows.length} dòng, ${pn.tre} trễ`);
-      assert(pn.rows.every((r: any, i: number, ds: any[]) => i === 0 || Number(ds[i - 1].dung) <= Number(r.dung)), `${h.ten}: dòng trễ phải đứng đầu`);
+      /* Sổ nghĩa vụ (PR-2): ô = panel số (`oChiSoGv` cham-diem, đọc sổ) — panel V4 `oChamDiemGv` không còn đọc từ web (bỏ ở PR-3). */
+      const pn = pt.oChiSoGv(P.mbManager, { ct: 'ft', gv: h.id, cot: 'cham-diem' });
+      const rieng = pn.rows.filter((r: any) => !r.dongViec.sChung);
+      const tre = rieng.filter((r: any) => r.dongViec.trangThai !== 'dung').length;
+      assert(rieng.length === h.chamDiem.tong && tre === h.chamDiem.tong - h.chamDiem.dung, `${h.ten}: ${h.chamDiem.dung}/${h.chamDiem.tong} ‖ ${rieng.length} dòng, ${tre} trễ`);
+      assert(rieng.every((r: any, i: number, ds: any[]) => i === 0 || Number(ds[i - 1].dongViec.dung) <= Number(r.dongViec.dung)), `${h.ten}: dòng trễ phải đứng đầu`);
     }
   });
   check('Pb2b (4d) · ô L nhập đúng hạn rồi sửa sau hạn → vẫn đúng hạn, panel ghi ngày sửa; R hạn đè đã qua nhưng tuần thi chưa hết → chưa tính (S6F-a D6); S dấu "-" → không có mặt', () => {
@@ -471,13 +474,13 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     }
     assert(coSo > 0, 'bộ demo không GV nào có PA giáo viên thêm có kết quả trong 13 tuần');
   });
-  await t.checkAsync('Pb2b (4l) · PHỦ ĐỊNH qua route: GVCN / GVBM → 403; QL CP xem cn = MB → 403; Quản trị không cn → 400; 14 tuần → 200 (P9); QL MB → 200', async () => {
+  await t.checkAsync('Pb2b (4l) · PHỦ ĐỊNH qua route: GVCN / GVBM → 403; QL CP xem cn = MB → 403; Quản trị không cn → 200 tổng mọi chi nhánh; 14 tuần → 200 (P9); QL MB → 200', async () => {
     await voiMayChu(async (goi) => {
       const ma = async (u: number, url: string) => (await goi(u, url)).status;
       assert(await ma(gvcn.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'GVCN');
       assert(await ma(P.w1Teacher.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=${gvcn.userId}`) === 403, 'GVBM');
       assert(await ma(P.cpManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft`) === 403, 'QL CP');
-      assert(await ma(P.admin.userId, `/phan-tich/giao-vien?ct=ft`) === 400, 'QT không cn');
+      assert(await ma(P.admin.userId, `/phan-tich/giao-vien?ct=ft`) === 200, 'QT không cn → tổng mọi chi nhánh (sổ nghĩa vụ PR-2)');
       assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&tu=2026-06-01&den=2026-08-31`) === 200, '14 tuần (không trần)');
       assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien?cn=${MB}&ct=ft&thang=2026-09`) === 200, 'QL MB');
       assert(await ma(P.mbManager.userId, `/phan-tich/giao-vien/cham-diem?cn=${MB}&ct=ft&gv=abc`) === 400, 'gv sai dạng');

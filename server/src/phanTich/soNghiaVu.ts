@@ -413,16 +413,21 @@ export function ghiSoViecChiNhanh(cn: number): void {
  * TASK 7a (PTA 10/11 "số hằng ngày không trễ một đêm"): GẮN MỌI ĐƯỜNG GHI VIỆC bằng một chỗ — mọi lần ghi thành công qua API tăng bộ đếm `so-viec`
  * (`luiMocQuetSauGhi`, cùng câu sẵn có: 0 câu thêm). Nơi ĐỌC sổ việc (Phân tích GV, hồ sơ GV) gọi hàm này trước: chi nhánh có lần ghi mới từ lần ghi sổ
  * trước, hoặc sang ngày nghiệp vụ mới (việc tới hạn theo ngày) → ghi lại sổ việc chi nhánh đó (~50 câu, như cách đếm cũ mỗi lần mở); không đổi → 0 câu
- * (mốc đọc kèm câu phiên). Không đường ghi nào bị quên (Case, PA, Kết quả PA, Mini Test, Báo PH, bước tiếp, bàn giao, vi phạm, phối hợp, đặt lại hạn…),
+ * (mốc đọc kèm câu phiên); lần ghi sổ trước < 5 phút (`LAM_MOI_VIEC_MS`) → đọc sổ đang có. Không đường ghi nào bị quên (Case, PA, Kết quả PA, Mini Test, Báo PH, bước tiếp, bàn giao, vi phạm, phối hợp, đặt lại hạn…),
  * thao tác ghi không chậm thêm. Nhận lượt bằng upsert có điều kiện: nhiều tiến trình không ghi trùng. Ngoài request có phiên (phép kiểm, ops) → ghi luôn.
  * ponytail: đếm MỌI lần ghi (cả nhập điểm, sửa hồ sơ…) — đọc sổ sau một lần ghi bất kỳ ghi lại sổ việc; tách theo bảng nếu đọc Turso tăng.
  */
+/**
+ * Giãn cách (đo bản chép 07/11, một chi nhánh: ghi lại sổ việc +~50 câu; giờ làm việc gần như luôn có lần ghi mới): đã ghi sổ việc trong 5 phút thì đọc sổ
+ * đang có — số việc trễ tối đa 5 phút, đọc ≈ cách cũ chia ~2 khi nhiều người mở trong 5 phút.
+ */
+export const LAM_MOI_VIEC_MS = 5 * 60_000;
 export function lamMoiViec(cns: readonly number[], homNay = demoToday()): void {
   const m = layMoc() as MocHeThong | undefined;
   for (const cn of new Set(cns)) {
     if (!m) { ghiSoViecChiNhanh(cn); continue; }
     const ghi = m.soViec.ghi ?? -1, da = m.soViec.cn.get(cn);
-    if (da && da.so === ghi && da.ngay === homNay) continue;
+    if (da && da.ngay === homNay && (da.so === ghi || (da.luc && Date.now() - Date.parse(da.luc) < LAM_MOI_VIEC_MS))) continue;
     const r = db().prepare(`INSERT INTO moc_he_thong (khoa, so, luc, ngay) VALUES (?, ?, ?, ?)
         ON CONFLICT (khoa) DO UPDATE SET so = excluded.so, luc = excluded.luc, ngay = excluded.ngay WHERE so IS NOT excluded.so OR ngay IS NOT excluded.ngay RETURNING khoa`)
       .all(`so-viec:${cn}`, ghi, new Date().toISOString(), homNay) as unknown[];

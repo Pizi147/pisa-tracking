@@ -64,7 +64,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const q = new URLSearchParams({ ct: khung, ...(branchId ? { cn: String(branchId) } : {}), kieu: khoang.kieu, tu: khoang.tu, den: khoang.den });
   /* Sổ nghĩa vụ (PR-2): không chọn chi nhánh (QT / QL nhiều chi nhánh) → tổng mọi chi nhánh, mỗi người một dòng. */
   const { data, loading, error, reload } = useApi<PhanTichGvKq>(`/phan-tich/giao-vien?${q}`, [q.toString()]);
-  const tong = !branchId;
+  /* Chế độ tổng theo câu trả lời (`cn = null`), không theo URL: QL một chi nhánh chưa gắn `cn` nhận số của chi nhánh mình. */
+  const tong = !!data && data.cn == null;
   const timCo = tim.trim();
   const chuaPc: HangPtGv | null = !timCo && data?.chuaPhanCong ? {
     id: ID_CHUA_PC, ten: t('Chưa phân công'), phu: '', mon: '', lopCn: [], dangDay: { lop: 0, hv: 0 }, hvChuY: 0, casePa: { k: 'na' }, ghiKetQuaPa: { k: 'na' }, ketQua: {},

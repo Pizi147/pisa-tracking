@@ -113,7 +113,8 @@ export function dongCuaNguoi(q: Q & { nguoi: number }): DongNvXem[] {
     const t = tt(r, q.homNay);
     if (t !== 'chua-toi' && ai(r).includes(q.nguoi)) out.push(xem(r, t, q.homNay));
   }
-  return out.sort((a, b) => THU_TU[a.trangThai] - THU_TU[b.trangThai] || (b.soNgay ?? 0) - (a.soNgay ?? 0) || a.han.localeCompare(b.han));
+  /* Trong Chưa làm: bài của người trước, bài S chéo chung sau (panel tách hai nhóm; cắt 20 dòng đầu không giấu bài của người). */
+  return out.sort((a, b) => THU_TU[a.trangThai] - THU_TU[b.trangThai] || Number(a.sChung) - Number(b.sChung) || (b.soNgay ?? 0) - (a.soNgay ?? 0) || a.han.localeCompare(b.han));
 }
 
 /**

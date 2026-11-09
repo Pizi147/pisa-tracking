@@ -13,7 +13,7 @@ export type KhoaQuet = 'quet:yeu-cau' | 'quet:lenh' | 'quet:doi-qua-han' | 'quet
  * lúc sổ VIỆC của chi nhánh được ghi lại lần cuối (dòng `so-viec:<cn>`, `lamMoiViec`).
  */
 export type MocHeThong = { thamChieu: number | null; quet: Partial<Record<KhoaQuet, { luc: string | null; ngay: string | null }>>;
-  soViec: { ghi: number | null; cn: Map<number, { so: number | null; ngay: string | null }> } };
+  soViec: { ghi: number | null; cn: Map<number, { so: number | null; luc: string | null; ngay: string | null }> } };
 
 /** Cột con thêm vào câu phiên — một dòng JSON `{ khoa: [so, luc, ngay] }`. */
 export const COT_MOC = `(SELECT json_group_object(khoa, json_array(so, luc, ngay)) FROM moc_he_thong) AS u_moc`;
@@ -31,7 +31,7 @@ export function docMoc(json: string | null | undefined): MocHeThong {
   for (const [k, v] of Object.entries(o)) {
     if (!Array.isArray(v)) continue;
     if (k === 'so-viec') m.soViec.ghi = typeof v[0] === 'number' ? v[0] : null;
-    else if (k.startsWith('so-viec:')) m.soViec.cn.set(Number(k.slice(8)), { so: typeof v[0] === 'number' ? v[0] : null, ngay: v[2] ?? null });
+    else if (k.startsWith('so-viec:')) m.soViec.cn.set(Number(k.slice(8)), { so: typeof v[0] === 'number' ? v[0] : null, luc: v[1] ?? null, ngay: v[2] ?? null });
   }
   return m;
 }

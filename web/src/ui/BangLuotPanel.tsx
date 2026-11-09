@@ -412,7 +412,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
     /* RA-GD-0711: Lớp 100 → 120 — "MB FT RF 12", "MB Pre FOU 03" không còn "MB FT RF…" (cột Việc / Bài linh hoạt nhường chỗ). */
     { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 120 },
-    { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 92 }, { key: 'tt', nhan: t('Tình trạng'), kieu: 'chu', rong: 176 },
+    { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 92 }, { key: 'tt', nhan: t('Trạng thái'), kieu: 'chu', rong: 176 },
   ];
   /* Chủ SP 06/11: MỘT chữ "Quá hạn" (bỏ "Trễ") — việc mở và việc làm sau hạn cùng nhãn; dòng phụ "đã làm / nhập dd/mm" phân biệt. */
   const ttVc = (h: HVc) => {
@@ -466,7 +466,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
             <div className="pn-bang grid gap-3 pt-3">
               {vk && tabsViec.length > 0 && (
                 /* DEM-QUA-HAN b: tab loại việc (chỉ việc quá hạn, số đỏ) + "Đã làm" — cùng dáng tab Chưa đạt · Đạt. */
-                <div role="tablist" aria-label={t('Tình trạng')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>
+                <div role="tablist" aria-label={t('Trạng thái')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>
                   {tabsViec.map((k) => {
                     /* Sổ nghĩa vụ: số tab = 3 số riêng (như ô bảng); bài S chéo chung ghi "+n" mờ riêng. */
                     const n = goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && !r.dongViec.sChung).length;

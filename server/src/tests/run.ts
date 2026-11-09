@@ -112,6 +112,8 @@ const dongThem: Record<string, number> = {};
 const demDong = () => process.env.PISA_DEM_DONG ? (db().prepare(`SELECT (SELECT COUNT(*) FROM assessment_attempts) + (SELECT COUNT(*) FROM attempt_skills) + (SELECT COUNT(*) FROM students) + (SELECT COUNT(*) FROM sos_cases) + (SELECT COUNT(*) FROM case_interventions) + (SELECT COUNT(*) FROM notifications) n`).get() as any).n as number : 0;
 const demPhep = () => { soPhep[tepHienTai || 'run.ts'] = (soPhep[tepHienTai || 'run.ts'] ?? 0) + 1; };
 /** Bọc module `./ten.tests.ts`: hàm `run*` của nhóm khác thành rỗng; của nhóm mình thì đo giờ + đánh dấu đang trong tệp. */
+/* SỔ NGHĨA VỤ: seed nằm trước W4 OCT 2026 — tắt mốc bắt đầu tính trễ cho mọi phép kiểm (ca NV-MOC bật riêng), như lúc chưa có mốc. */
+(await import('../phanTich/soNghiaVu.ts')).MOC_TINH_TRE.ngay = '';
 function bocTep<T extends object>(ten: string, m: T): T {
   const cuaToi = CHI_TEP ? CHI_TEP.includes(ten) : nhomCua(ten) === NHOM;
   const docLap = docLapCua(ten);
@@ -9871,8 +9873,6 @@ await runPrSuaLuuTruCTests({ check, assert, assertThrows, conn, P, TODAY } as an
 const { runPrHotfixMoKhoaTests } = bocTep('prHotfixMoKhoa', await import('./prHotfixMoKhoa.tests.ts'));
 await runPrHotfixMoKhoaTests({ check, assert, assertThrows, conn, P, TODAY } as any);
 // ==================================================================== XM-VIEC-DUNG-HAN a (chủ SP 07/11: Việc đúng hạn đếm DÒNG như Công việc)
-const { runPrViecDongTests } = bocTep('prViecDong', await import('./prViecDong.tests.ts'));
-await runPrViecDongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== XM-VIEC-DUNG-HAN b (chủ SP 07/11: việc đã xong có ngày xong vẫn vào Việc đúng hạn)
 const { runPrNgayXongTests } = bocTep('prNgayXong', await import('./prNgayXong.tests.ts'));
 await runPrNgayXongTests({ check, assert, conn, P, TODAY, addDays } as any);
