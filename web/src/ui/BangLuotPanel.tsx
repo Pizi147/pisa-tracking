@@ -9,6 +9,7 @@ import { phimHangTab } from './HangTab.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
+import { useSession } from '../lib/session.tsx';
 import { fmtBand } from '../lib/format.ts';
 import type { ApiError } from '../lib/api.ts';
 import {
@@ -115,10 +116,16 @@ const TT_VIEC = ['chua', 'muon', 'dung'] as const;
 type TrangThaiViec = (typeof TT_VIEC)[number];
 const ttViec = (v: Pick<DongViecHan, 'trangThai' | 'mo' | 'dung'>): TrangThaiViec => v.trangThai ?? (v.mo ? 'chua' : v.dung ? 'dung' : 'muon');
 
-export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, loading, error, reload, onDong }: {
+export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, loading, error, reload, onDong, nguon }: {
   tieuDe: string; loai?: string; data: DuLieuBangLuot | null; loading: boolean; error: ApiError | null; reload: () => void; onDong: () => void;
+  /** Đường đọc của panel — biết panel là của GV nào (`gv=` / `/giao-vien/:id/`). */
+  nguon?: string;
 }) {
   const { homNay } = useNgayNghiepVu();
+  const { session } = useSession();
+  /* KIEM-TAY-1011: QL mở số của GV khác — nhóm Chưa làm ghi "Bài của GV"; "Bài của bạn" chỉ khi panel là của chính người xem. */
+  const gvPanel = Number((nguon && (/[?&]gv=(\d+)/.exec(nguon) ?? /^\/giao-vien\/(\d+)\//.exec(nguon))?.[1]) ?? NaN);
+  const nhanBaiRieng = Number.isFinite(gvPanel) && gvPanel !== session?.user?.id ? t('Bài của GV') : t('Bài của bạn');
   const tg = data?.kieu === 'tang-giam';
   const tt = data?.kieu === 'thi-that';
   const bt = data?.kieu === 'bai-thuong';
@@ -499,7 +506,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
               {!(vk && nhomChung) && <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>}
               {vk
                 /* Sổ nghĩa vụ: tab Chưa làm có bài S chéo chung → hai nhóm "Bài của bạn" / "S chéo chung · chưa ai nhận" (máy chủ xếp nhóm riêng sau). */
-                ? (nhomChung ? [[t('Bài của bạn'), false], [t('S chéo chung · chưa ai nhận'), true]] as const : [[null, null]] as const).map(([nhom, chung]) => {
+                ? (nhomChung ? [[nhanBaiRieng, false], [t('S chéo chung · chưa ai nhận'), true]] as const : [[null, null]] as const).map(([nhom, chung]) => {
                   const hang = pt.cat(tatVc).filter((h) => chung === null || !!h.sChung === chung);
                   /* PTA rà #1292: "Bài của bạn 0" vẫn hiện (một dòng) để GV thấy 0 là của mình. */
                   if (!hang.length && chung !== false) return null;

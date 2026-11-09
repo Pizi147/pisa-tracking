@@ -16,6 +16,7 @@ export const EN_SO_NGHIA_VU = {
   'phân công nhập sau': 'assignment entered later',
   'hạn gốc {ngay}': (b) => `original due ${b.ngay}`,
   'Bài của bạn': 'Your scripts',
+  'Bài của GV': "Teacher's scripts",
   'S chéo chung · chưa ai nhận': 'Shared S cross-marking · unclaimed',
   'Giáo viên · tất cả chi nhánh': 'Teachers · all branches',
   'Mỗi số mở danh sách đúng tập (chỉ đọc), cùng nguồn Tổng quan › GV cần chú ý. Không xếp hạng, không màu ngưỡng — xếp theo tên. "—" = chưa có dữ liệu. Việc · Chấm Test: tỉ lệ = đúng hạn / (đúng hạn + làm muộn + chưa làm); "S chéo chung" = bài Speaking chấm chéo chưa ai nhận của chi nhánh, mọi GV có kỹ năng S cùng thấy, không tính vào tỉ lệ.':

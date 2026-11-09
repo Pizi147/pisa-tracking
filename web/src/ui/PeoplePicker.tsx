@@ -153,6 +153,11 @@ export function ChonNguoi({
   phuPhai?: boolean;
 }) {
   const { session } = useSession();
+  /* KIEM-TAY-1011: "Tôi" chỉ khi chính mình qua được `laNguoiHopLe` của máy chủ (vai GV / QL, đúng chi nhánh của việc, GV S có S) — Quản trị chỉ có
+     vai hệ thống chọn "Tôi" thì Tạo bị trả "Người phụ trách không hợp lệ". Chưa có phiên thì giữ như cũ. */
+  const vaiHopLe = nhom === 'nhan_vien' ? ['teacher', 'manager'] : ['teacher'];
+  const toiHopLe = !session?.grants || (session.grants.some((g) => vaiHopLe.includes(g.role) && (!chiNhanh || g.branchId === chiNhanh))
+    && (nhom !== 'gv_speaking' || !!session.coS));
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
   const [term, setTerm] = useState('');
   const [open, setOpen] = useState(!!tuMo);
@@ -202,12 +207,12 @@ export function ChonNguoi({
   const options = useMemo<ChonNguoiOption[]>(() => {
     const out: ChonNguoiOption[] = [];
     if (choTrong && !term.trim()) out.push({ kind: 'trong' });   // đang gõ tên → ↓ Enter chọn người khớp đầu, không phải dòng trống
-    if (choToi) out.push({ kind: 'toi' });
+    if (choToi && toiHopLe) out.push({ kind: 'toi' });
     for (const r of rows) out.push({ kind: 'nguoi', row: r });
     if (choNgoai) out.push({ kind: 'ngoai', text: term.trim() });
     if (them) out.push({ kind: 'them' });
     return out;
-  }, [choTrong, choToi, rows, choNgoai, term, them]);
+  }, [choTrong, choToi, toiHopLe, rows, choNgoai, term, them]);
   /** Dòng "tên ngoài" chưa đủ 2 ký tự / dòng nơi gọi tắt (`row.tat`): hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
   const tat = (opt: ChonNguoiOption) => (opt.kind === 'ngoai' && opt.text.length < 2) || (opt.kind === 'nguoi' && !!opt.row.tat);
   const chonDuoc = options.flatMap((o, i) => (tat(o) ? [] : [i]));
