@@ -436,5 +436,58 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const l = conn.prepare(`SELECT * FROM nghia_vu_lech WHERE khoa = ?`).all(r.khoa) as any[];
     assert(l.length === 1 && /-12345/.test(l[0].truoc) && l[0].sau.includes(String(r.nguoi)) && kq.lechBai >= 1, `nhật ký lệch: ${JSON.stringify(l)} · ${JSON.stringify(kq)}`);
   }));
+
+  // ------------------------------------------------------------------ Chủ SP 10/11 · em chuyển lớp (spec 1.2 b)
+  const ownerMod: any = await import('../cases/owner.ts');
+  const sosV4: any = await import('../../../shared/domain/sosV4.ts');
+  /**
+   * Một Case "Xác nhận Case" mở (Công việc) của MB: đặt hạn `han`, chuyển em sang lớp FT khác có GV môn khác chủ cũ (đường thật: ganChuCaseThieu theo em, K8).
+   * Trả { caseId, cu, moi, hanMoi } — null khi seed không có lớp đích phù hợp.
+   */
+  const chuyenEm = (han: string) => {
+    const it = mo0.find((x: any) => /^cause:\d+$/.test(x.key) && x.ownerId > 0 && x.studentId);
+    assert(it, 'seed phải có việc Xác nhận Case mở có chủ');
+    const caseId = Number(it.key.split(':')[1]);
+    const c = get('SELECT owner_user_id, category, student_id FROM sos_cases WHERE id = ?', caseId);
+    conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(han, caseId);
+    nv.ghiSoViecChiNhanh(MB);   // sổ trước khi chuyển: dòng của chủ cũ
+    const dich = get(`SELECT cl.id FROM classes cl JOIN teacher_assignments t ON t.class_id = cl.id AND t.status = 'active' AND t.skill = ?
+        WHERE cl.branch_id = ? AND cl.is_fast_track = 1 AND cl.status = 'active' AND t.user_id != ?
+          AND cl.id NOT IN (SELECT class_id FROM enrollments WHERE student_id = ?) ORDER BY cl.id LIMIT 1`, c.category, MB, c.owner_user_id, c.student_id);
+    assert(dich, 'seed phải có lớp đích có GV môn khác');
+    conn.prepare(`UPDATE enrollments SET status = 'completed', ended_at = ? WHERE student_id = ? AND status = 'active'`).run(TODAY, c.student_id);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?, ?, 'active', ?, ?)`).run(c.student_id, dich.id, TODAY, TODAY);
+    ownerMod.ganChuCaseThieu({ studentIds: [c.student_id], actorId: P.admin.userId, luc: `${TODAY}T03:00:00.000Z` });
+    const sau = get('SELECT owner_user_id, han_xac_nhan FROM sos_cases WHERE id = ?', caseId);
+    assert(sau.owner_user_id !== c.owner_user_id, `chủ Case phải đổi theo lớp mới: ${sau.owner_user_id}`);
+    nv.ghiSoViecChiNhanh(MB);
+    return { caseId, cu: c.owner_user_id as number, moi: sau.owner_user_id as number, hanMoi: sau.han_xac_nhan as string };
+  };
+
+  check('NV-CHUYEN-QUA-HAN · em chuyển lớp khi việc GV cũ ĐÃ quá hạn chưa làm → GV cũ giữ Chưa làm; GV mới nhận việc mới, hạn tính lại từ ngày chuyển (khoá mới, hạn gốc mới)', () => thu(() => {
+    const hanCu = get(`SELECT date(?, '-3 day') d`, TODAY).d;
+    const x = chuyenEm(hanCu);
+    const l = get(`SELECT * FROM viec_han_lan WHERE loai = 'chuyen_lop:han_xac_nhan' AND viec_id = ?`, x.caseId);
+    assert(l && l.han_cu === hanCu && l.nguoi_cu === x.cu && l.ngay === TODAY && x.hanMoi === l.han_moi && x.hanMoi > TODAY, `hạn đặt lại + nhật ký: ${JSON.stringify(l)} · ${x.hanMoi}`);
+    const cu = so(nv.khoaViec(`chuyen:${l.id}`));
+    assert(cu && cu.nguoi === x.cu && cu.han === hanCu && cu.khong_tinh === null && cu.xong_luc === null, `dòng GV cũ: ${JSON.stringify(cu)}`);
+    const moi = so(`${nv.khoaViec(`cause:${x.caseId}`)}~c1`);
+    assert(moi && moi.nguoi === x.moi && moi.han === x.hanMoi && moi.han_goc === x.hanMoi && moi.khong_tinh === null, `dòng GV mới: ${JSON.stringify(moi)}`);
+    assert(so(nv.khoaViec(`cause:${x.caseId}`))?.khong_tinh === 'da-xoa', 'khoá cũ của việc không còn tính');
+    const m = dem.demTheoNguoi({ chiNhanh: MB, tu: '2026-08-01', den: '2026-12-31', loai: 'viec', homNay: TODAY });
+    assert((m.get(x.cu)?.chua ?? 0) >= 1, `GV cũ phải có Chưa làm: ${JSON.stringify(m.get(x.cu))}`);
+  }));
+
+  check('NV-CHUYEN-CHUA-HAN · em chuyển lớp khi việc GV cũ CHƯA tới hạn → GV cũ không tính (chuyen-lop); GV mới việc mới, hạn tính lại', () => thu(() => {
+    const hanCu = get(`SELECT date(?, '+3 day') d`, TODAY).d;
+    const x = chuyenEm(hanCu);
+    const l = get(`SELECT * FROM viec_han_lan WHERE loai = 'chuyen_lop:han_xac_nhan' AND viec_id = ?`, x.caseId);
+    const cu = so(nv.khoaViec(`chuyen:${l.id}`));
+    assert(cu && cu.nguoi === x.cu && cu.khong_tinh === 'chuyen-lop', `dòng GV cũ: ${JSON.stringify(cu)}`);
+    const moi = so(`${nv.khoaViec(`cause:${x.caseId}`)}~c1`);
+    assert(moi && moi.nguoi === x.moi && moi.han === x.hanMoi, `dòng GV mới: ${JSON.stringify(moi)}`);
+    const sos = get('SELECT sos_level, urgency FROM sos_cases WHERE id = ?', x.caseId);
+    assert(x.hanMoi === sosV4.hanXacNhan(TODAY, { sosLevel: sos.sos_level, urgency: sos.urgency, thuong: false }), `hạn theo luật từ ngày chuyển: ${x.hanMoi}`);
+  }));
   if (nv.MOC_TINH_TRE) nv.MOC_TINH_TRE.ngay = '2026-10-19';
 }

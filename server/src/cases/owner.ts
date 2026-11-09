@@ -1,4 +1,6 @@
 import { db, tx } from '../db.ts';
+import { datLaiHanKhiChuyenLop } from './hanChuyenLop.ts';
+import { demoToday } from '../demoConfig.ts';
 import { CASE_CATEGORY_SKILL, MON_GOP, PERMISSIONS, caseThuocO, caseTopicLabel, categoryOf, laCapBanGiao, tenMonNgan, type DoiO } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -104,6 +106,7 @@ function doiChuTheoLopMoi(rows: { id: number; topic: string | null; goc_programm
   con_day: number; moi_mon: number | null; moi_cn: number | null }[], o: { actorId: number | null; luc: string }): number {
   const conn = db();
   let n = 0;
+  const doiChu: { caseId: number; nguoiCu: number | null }[] = [];
   for (const r of rows) {
     const moi = r.con_day ? null : r.moi_mon ?? r.moi_cn;
     if (moi === null || moi === r.owner_user_id) continue;
@@ -111,12 +114,15 @@ function doiChuTheoLopMoi(rows: { id: number; topic: string | null; goc_programm
     /* Cùng quy ước lịch sử của bàn giao chủ Case khi chuyển lớp (`luatLoTrinh` / `cuoiKhoa`): field 'owner', "bàn giao khi chuyển lớp". */
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'owner', ?, 'bàn giao khi chuyển lớp', ?, ?)`)
       .run(r.id, r.owner_user_id, o.actorId, o.luc);
+    doiChu.push({ caseId: r.id, nguoiCu: r.owner_user_id });
     if (moi !== o.actorId) {
       notify({ userId: moi, kind: 'case_giao', title: `Phụ trách Case ${r.topic ? caseTopicLabel(r.topic, r.goc_programme_code) : ''} · ${r.full_name ?? ''}`,
         entityType: 'sos_case', entityId: r.id, dedupKey: `case_giao:${r.id}` });
     }
     n += 1;
   }
+  /* Chủ SP 10/11: GV lớp mới nhận việc với hạn tính lại từ ngày chuyển (sổ nghĩa vụ 1.2 b). */
+  datLaiHanKhiChuyenLop(doiChu, demoToday(), o.actorId, o.luc);
   return n;
 }
 

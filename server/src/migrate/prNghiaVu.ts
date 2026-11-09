@@ -27,6 +27,10 @@ export function migratePrNghiaVu(conn: any, applied: string[]) {
   conn.exec('CREATE INDEX IF NOT EXISTS idx_user_skill_lich_su ON user_skill_lich_su(skill, user_id)');
   /* Nạp hiện trạng làm mốc (chủ SP 10/11): kỹ năng đang có coi là có từ trước — lần đổi sau mới ghi ngày. */
   if (!coKn) conn.exec(`INSERT INTO user_skill_lich_su (user_id, skill, tu) SELECT user_id, skill, '2000-01-01' FROM user_skills`);
+  /* Chủ SP 10/11 (em chuyển lớp): nhật ký đổi hạn ghi người giữ việc lớp cũ + ngày chuyển. */
+  for (const [cot, kieu] of [['nguoi_cu', 'INTEGER'], ['ngay', 'TEXT']]) {
+    if (!conn.prepare(`SELECT 1 FROM pragma_table_info('viec_han_lan') WHERE name = ?`).get(cot)) conn.exec(`ALTER TABLE viec_han_lan ADD COLUMN ${cot} ${kieu}`);
+  }
   conn.exec('CREATE TABLE IF NOT EXISTS nghia_vu_lech (id INTEGER PRIMARY KEY, khoa TEXT NOT NULL, truoc TEXT, sau TEXT, luc TEXT NOT NULL)');
   if (!co) applied.push('SỔ NGHĨA VỤ: tạo bảng nghia_vu (chưa có dòng — nạp ở prNghiaVuNap).');
   if (!coKn) applied.push('SỔ NGHĨA VỤ: tạo bảng user_skill_lich_su (lịch sử kỹ năng GV, nạp kỹ năng hiện có làm mốc).');

@@ -2290,7 +2290,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_bao_ph_lan_khoa ON viec_bao_ph_lan(kho
 CREATE TABLE IF NOT EXISTS viec_han_lan (
   id INTEGER PRIMARY KEY, loai TEXT NOT NULL, viec_id INTEGER NOT NULL, han_cu TEXT, han_moi TEXT NOT NULL,
   mac_dinh INTEGER NOT NULL DEFAULT 0,   -- 1 = về hạn mặc định
-  boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
+  boi INTEGER REFERENCES users(id), luc TEXT NOT NULL,
+  nguoi_cu INTEGER, ngay TEXT            -- SỔ NGHĨA VỤ (chủ SP 10/11): dòng `chuyen_lop:*` — người giữ việc lớp cũ + ngày chuyển (cases/hanChuyenLop.ts)
 );
 CREATE INDEX IF NOT EXISTS idx_viec_han_lan ON viec_han_lan(loai, viec_id);
 

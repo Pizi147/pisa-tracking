@@ -18,6 +18,7 @@ import { myWork, type WorkItem } from '../worklist/mywork.ts';
 import { nghiaVuKetQuaPa, parseObligation } from '../worklist/metrics.ts';
 import { viecXongCn } from './viecDaXong.ts';
 import { VIEC_CO_HAN, quanLyCn } from './viecCoHan.ts';
+import { LA_CASE_MT } from '../cases/sosState.ts';
 
 /** Một dòng sổ (chưa có trạng thái — trạng thái so `han` với hôm nay lúc đọc). */
 export type DongNv = {
@@ -257,6 +258,48 @@ const NHAT_KY_HAN: [RegExp, string][] = [
 ];
 
 /**
+ * EM CHUYỂN LỚP (chủ SP 10/11, spec 1.2 b) — từ nhật ký `viec_han_lan` loai `chuyen_lop:*` (`cases/hanChuyenLop.ts`, ghi lúc Case đổi chủ theo lớp mới):
+ *   · dòng "GV cũ" mỗi việc còn mở lúc chuyển (`viec:chuyen:<id>`): hạn cũ, người cũ; đã quá hạn lúc chuyển → Chưa làm (giữ), chưa tới hạn → `chuyen-lop`;
+ *   · phân đoạn khoá việc Case: sau n lần chuyển, việc của GV mới mang khoá `…~c<n>` (việc mới, hạn gốc = hạn tính lại);
+ *   · người theo ngày: việc xong / Kết quả PA có ngày trước lần chuyển → người giữ cũ.
+ * Lần chuyển trước khi có nhật ký này không tách (không biết hạn lúc chuyển).
+ */
+function chuyenLopCn(cn: number) {
+  const rows = db().prepare(`SELECT h.id, h.loai, h.han_cu, h.han_moi, h.nguoi_cu, h.ngay, h.luc, sc.id AS case_id, sc.student_id, ${LA_CASE_MT('sc')} AS mt, sc.mo_ta_luc
+      FROM viec_han_lan h LEFT JOIN case_interventions iv ON h.loai = 'chuyen_lop:action_due' AND iv.id = h.viec_id
+      JOIN sos_cases sc ON sc.id = COALESCE(iv.case_id, h.viec_id) JOIN students s ON s.id = sc.student_id
+     WHERE h.loai LIKE 'chuyen_lop:%' AND s.branch_id = ? ORDER BY h.ngay, h.id`).all(cn) as any[];
+  const suKien = new Map<number, { luc: string; ngay: string; nguoiCu: number | null }[]>();
+  const hanMoi = new Map<string, string>();
+  for (const r of rows) {
+    const ds = suKien.get(r.case_id) ?? suKien.set(r.case_id, []).get(r.case_id)!;
+    if (!ds.some((x) => x.luc === r.luc)) ds.push({ luc: r.luc, ngay: r.ngay, nguoiCu: r.nguoi_cu ?? null });
+    hanMoi.set(`${r.loai}|${r.case_id}`, r.han_moi);
+  }
+  const cot = (loai: string, r: any) => (loai === 'chuyen_lop:han_them_pa' ? 'no_plan' : loai === 'chuyen_lop:action_due' ? 'ghi_ket_qua_pa'
+    : r.mo_ta_luc && String(r.mo_ta_luc).slice(0, 10) <= r.ngay ? 'xac_nhan_pa' : r.mt ? 'ghi_nhan_xet' : 'cause');
+  const cu: (DongNv & { hanGoc: string | null })[] = rows.map((r) => ({
+    loai: 'viec', kieu: cot(r.loai, r), khoa: khoaViec(`chuyen:${r.id}`), chiNhanh: cn, lop: null, hocVien: r.student_id ?? null,
+    nguoi: nguoiChiuViec({ ownerId: r.nguoi_cu }), sCheo: false, pcNhapSau: false, han: r.han_cu, tuan: null, xongLuc: null, nguoiLam: null,
+    khongTinh: r.han_cu < r.ngay ? null : 'chuyen-lop', hanGoc: null,
+  }));
+  /** Số lần chuyển của Case tới ngày `d` (phân đoạn khoá). */
+  const doan = (caseId: number | null, d: string) => (caseId == null ? 0 : (suKien.get(caseId) ?? []).filter((x) => x.ngay <= d).length);
+  /** Người giữ Case tại ngày `d`: trước lần chuyển đầu SAU `d` là người cũ của lần đó; không có → người hiện tại. */
+  const chuLuc = (caseId: number | null, d: string, hienTai: number | null | undefined) =>
+    (caseId == null ? hienTai : (suKien.get(caseId) ?? []).find((x) => x.ngay > d)?.nguoiCu ?? hienTai) ?? null;
+  return { cu, doan, chuLuc, hanMoi: (loai: string, caseId: number | null) => (caseId == null ? null : hanMoi.get(`${loai}|${caseId}`) ?? null) };
+}
+
+/** Case + cột hạn của một khoá việc tuyến Case (`xnpa:<PA>` lấy Case từ dòng Công việc). */
+const CASE_KHOA = /^(cause|ghi_nhan_xet|support|xnpa-case):(\d+)$/;
+function caseCua(key: string, caseId?: number | null): { caseId: number | null; loai: string } {
+  const m = CASE_KHOA.exec(key);
+  if (m) return { caseId: Number(m[2]), loai: m[1] === 'support' ? 'chuyen_lop:han_them_pa' : 'chuyen_lop:han_xac_nhan' };
+  return key.startsWith('xnpa:') ? { caseId: caseId ?? null, loai: 'chuyen_lop:han_xac_nhan' } : { caseId: null, loai: '' };
+}
+
+/**
  * Mọi việc có hạn của MỘT chi nhánh (spec 1.1):
  *   CÒN MỞ   — CHÍNH dòng Công việc "Tất cả" của QL chi nhánh (`myWork`, nhóm `VIEC_CO_HAN`, có hạn): người giữ + hạn như Công việc đang giao.
  *   ĐÃ XONG  — CHÍNH `viecXongCn` (ngày xong, người giữ lúc hạn). Không có ngày xong: hạn trước mốc → coi xong đúng hạn; sau mốc → `thieu-ngay-xong`.
@@ -272,32 +315,41 @@ export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null 
     return key.startsWith('xnpa:') ? hanGoc('reset_case:han_xac_nhan', caseId) : null;
   };
   const out = new Map<string, DongNv & { hanGoc: string | null }>();
+  const ch = chuyenLopCn(cn);
+  for (const d of ch.cu) out.set(d.khoa, d);
+  /* Khoá + hạn gốc theo phân đoạn chuyển lớp (ngày `d`: hôm nay cho việc mở, ngày xong cho việc xong). */
+  const theoDoan = (key: string, d: string, caseId?: number | null) => {
+    const c = caseCua(key, caseId);
+    const n = ch.doan(c.caseId, d);
+    return { khoa: khoaViec(key) + (n ? `~c${n}` : ''), hanGoc: n ? ch.hanMoi(c.loai, c.caseId) : goc(key, caseId), caseId: c.caseId };
+  };
   const items = ((myWork(ql, { branchId: cn, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as { items?: WorkItem[] }).items ?? []);
   for (const it of items) {
     if (!it.due || !VIEC_CO_HAN.has(it.group)) continue;
-    const khoa = khoaViec(it.key);
+    const { khoa, hanGoc: hg } = theoDoan(it.key, homNay, it.caseId);
     out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null,
       nguoi: nguoiChiuViec(it), sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
-      xongLuc: null, nguoiLam: null, khongTinh: null, hanGoc: goc(it.key, it.caseId) });
+      xongLuc: null, nguoiLam: null, khongTinh: null, hanGoc: hg });
   }
   for (const it of viecXongCn({ cn, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay }, true)) {
-    const khoa = khoaViec(it.key);
     const thieu = !it.xong;
-    out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null, nguoi: nguoiChiuViec(it),
+    const { khoa, hanGoc: hg, caseId } = theoDoan(it.key, it.xong || it.due!);
+    out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null,
+      nguoi: nguoiChiuViec({ ownerId: ch.chuLuc(caseId, it.xong || it.due!, it.ownerId) }),
       sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
       xongLuc: thieu ? (truocMoc(goc(it.key) ?? it.due) ? it.due : null) : it.xong, nguoiLam: null,
-      khongTinh: thieu && !truocMoc(goc(it.key) ?? it.due) ? 'thieu-ngay-xong' : null, hanGoc: goc(it.key) });
+      khongTinh: thieu && !truocMoc(goc(it.key) ?? it.due) ? 'thieu-ngay-xong' : null, hanGoc: hg });
   }
   const pa = nghiaVuKetQuaPa(ql, cn, homNay);
-  const chu = new Map<number, { owner: number | null; hv: number | null; lop: number | null }>();
-  for (const r of db().prepare(`SELECT iv.id, sc.owner_user_id, sc.student_id, COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = sc.student_id AND e.status = 'active'
+  const chu = new Map<number, { owner: number | null; hv: number | null; lop: number | null; caseId: number }>();
+  for (const r of db().prepare(`SELECT iv.id, sc.id AS case_id, sc.owner_user_id, sc.student_id, COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = sc.student_id AND e.status = 'active'
         ORDER BY e.id DESC LIMIT 1), a.class_id) AS lop
       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE iv.id IN (SELECT value FROM json_each(?))`)
-    .all(JSON.stringify([...new Set([...pa.values()].map((x) => x.iv))])) as any[]) chu.set(r.id, { owner: r.owner_user_id ?? null, hv: r.student_id ?? null, lop: r.lop ?? null });
+    .all(JSON.stringify([...new Set([...pa.values()].map((x) => x.iv))])) as any[]) chu.set(r.id, { owner: r.owner_user_id ?? null, hv: r.student_id ?? null, lop: r.lop ?? null, caseId: r.case_id });
   for (const [id, x] of pa) {
     const c = chu.get(x.iv);
     const khoa = khoaViec(`ket_qua_pa:${id}`);
-    out.set(khoa, { loai: 'viec', kieu: 'ghi_ket_qua_pa', khoa, chiNhanh: cn, lop: c?.lop ?? null, hocVien: c?.hv ?? null, nguoi: nguoiChiuViec({ ownerId: c?.owner }),
+    out.set(khoa, { loai: 'viec', kieu: 'ghi_ket_qua_pa', khoa, chiNhanh: cn, lop: c?.lop ?? null, hocVien: c?.hv ?? null, nguoi: nguoiChiuViec({ ownerId: ch.chuLuc(c?.caseId ?? null, x.han, c?.owner) }),
       sCheo: false, pcNhapSau: false, han: x.han, tuan: null, xongLuc: x.ghi, nguoiLam: null, khongTinh: null,
       hanGoc: parseObligation(id).k === 0 ? hanGoc('reset_case:action_due', x.iv) : null });
   }

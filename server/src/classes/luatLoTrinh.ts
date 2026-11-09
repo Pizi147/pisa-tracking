@@ -1,4 +1,5 @@
 import { capNhatConOCho } from '../fasttrack/conOCho.ts';
+import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
@@ -492,6 +493,7 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
   else if (tuLop.ft && denLop.ft && !sauThi) banGiaoPaQuyChe(d.sid, d.toClassId, p.userId);
 
   if (d.nguoiNhan) {
+    const doiChu: { caseId: number; nguoiCu: number | null }[] = [];
     for (const [caseIdStr, userId] of Object.entries(d.nguoiNhan)) {
       const caseId = Number(caseIdStr);
       const c = conn.prepare('SELECT owner_user_id FROM sos_cases WHERE id = ? AND status != \'done\'').get(caseId) as any;
@@ -503,7 +505,9 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
            VALUES (?, 'owner', ?, 'bàn giao khi chuyển lớp', ?, ?)`,
         )
         .run(caseId, c.owner_user_id, p.userId, nowIso());
+      if (c.owner_user_id !== userId) doiChu.push({ caseId, nguoiCu: c.owner_user_id ?? null });
     }
+    datLaiHanKhiChuyenLop(doiChu, d.ngay, p.userId);   // chủ SP 10/11: GV lớp mới — hạn tính lại từ ngày chuyển
   }
 
   /* PR-S6F-a Q1 (D1): lớp đổi → mốc vào lớp đổi → hạn xử lý vi phạm chưa phản hồi chốt LẠI (như Quay lại học) — hạn ở màn Ý thức = hạn bảng GV. */

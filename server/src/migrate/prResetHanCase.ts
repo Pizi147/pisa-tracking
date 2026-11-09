@@ -39,36 +39,41 @@ export function themCotHanThemPa(conn: any, applied: string[]) {
   applied.push('RESET-HAN-CASE: thêm cột sos_cases.han_them_pa (hạn Thêm PA đã đặt lại; NULL = công thức).');
 }
 
-/** Việc tuyến Case còn mở đã quá hạn tại `homNay` + PA có hạn trước mốc Kết quả PA (chỉ đọc) — mỗi dòng: loai, id, hạn hiệu lực cũ. */
-export function viecCaseQuaHan(conn: any, homNay: string): { loai: Loai; id: number; han: string }[] {
+/**
+ * Việc tuyến Case còn mở đã quá hạn tại `homNay` + PA có hạn trước mốc Kết quả PA (chỉ đọc) — mỗi dòng: loai, id, hạn hiệu lực cũ.
+ * `caseIds` (chuyển lớp, `cases/hanChuyenLop.ts`): MỌI việc còn mở của các Case đó, mọi hạn; không Mini Test.
+ */
+export function viecCaseQuaHan(conn: any, homNay: string, caseIds?: readonly number[]): { loai: Loai; id: number; han: string }[] {
   const out: { loai: Loai; id: number; han: string }[] = [];
+  const theoCase = caseIds ? JSON.stringify(caseIds) : null;
   for (const r of conn.prepare(
     `SELECT sc.id, sc.han_xac_nhan AS han FROM sos_cases sc
-      WHERE sc.status != 'done' AND sc.han_xac_nhan IS NOT NULL AND sc.han_xac_nhan < ?
+      WHERE sc.status != 'done' AND sc.han_xac_nhan IS NOT NULL AND ${theoCase ? 'sc.id IN (SELECT value FROM json_each(?))' : 'sc.han_xac_nhan < ?'}
         AND (NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')   -- Xác nhận / Mô tả Case
              OR EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned'
                           AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')})   -- Xác nhận PA
              OR (sc.topic = 'speaking' AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = sc.attempt_id AND s.skill = 'speaking'
                                                      AND s.cho_phu_trach_xem = 1)))   -- Xác nhận Case Speaking chấm chéo
       ORDER BY sc.id`,
-  ).all(homNay) as any[]) out.push({ loai: 'reset_case:han_xac_nhan', id: r.id, han: r.han });
+  ).all(theoCase ?? homNay) as any[]) out.push({ loai: 'reset_case:han_xac_nhan', id: r.id, han: r.han });
   /* Thêm PA: cùng điều kiện `la_no_plan` của Công việc + Case chưa có PA nào; hạn qua `hanThemPa` (một hàm với Công việc / hồ sơ HV). */
   for (const r of conn.prepare(
     `SELECT sc.id, sc.detected_at, sc.created_at, sc.urgency, sc.sos_level, sc.kck, sc.han_them_pa FROM sos_cases sc
       WHERE sc.status != 'done' AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL AND COALESCE(sc.sos_level, 1) > 0
-        AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled')
+        AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled')${theoCase ? ' AND sc.id IN (SELECT value FROM json_each(?))' : ''}
       ORDER BY sc.id`,
-  ).all() as any[]) {
+  ).all(...(theoCase ? [theoCase] : [])) as any[]) {
     const han = hanThemPa(r);
-    if (han && han < homNay) out.push({ loai: 'reset_case:han_them_pa', id: r.id, han });
+    if (han && (theoCase || han < homNay)) out.push({ loai: 'reset_case:han_them_pa', id: r.id, han });
   }
   /* Kết quả PA: cùng điều kiện nghĩa vụ chưa ghi của `dung-han-cap-nhat` (metrics `obligations`) ⊇ dòng Công việc; hạn trước mốc riêng. */
   for (const r of conn.prepare(
     `SELECT iv.id, iv.action_due AS han FROM case_interventions iv
       WHERE iv.status IN ('planned', 'started') AND COALESCE(iv.approval_state, '') != 'pending' AND ${NOT_UNCONFIRMED_PRESET('iv')}
-        AND iv.action_due IS NOT NULL AND iv.action_due < ?
+        AND iv.action_due IS NOT NULL AND ${theoCase ? 'iv.case_id IN (SELECT value FROM json_each(?))' : 'iv.action_due < ?'}
       ORDER BY iv.id`,
-  ).all(addDaysIso(homNay, SO_NGAY_RESET_PA)) as any[]) out.push({ loai: 'reset_case:action_due', id: r.id, han: r.han });
+  ).all(theoCase ?? addDaysIso(homNay, SO_NGAY_RESET_PA)) as any[]) out.push({ loai: 'reset_case:action_due', id: r.id, han: r.han });
+  if (theoCase) return out;
   for (const r of conn.prepare(`SELECT id, han FROM mini_test WHERE ty_le IS NULL AND han IS NOT NULL AND han < ? ORDER BY id`).all(homNay) as any[]) {
     out.push({ loai: 'reset_case:mini_test', id: r.id, han: r.han });
   }
