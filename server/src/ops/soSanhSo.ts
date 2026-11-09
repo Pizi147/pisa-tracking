@@ -30,25 +30,32 @@ const gvs = (conn.prepare(`SELECT DISTINCT ta.user_id AS id FROM teacher_assignm
   .all(cuoi, k.tu) as any[]).map((r) => r.id as number);
 const ids = [...new Set([...gvs, ...bai.keys(), ...viec.keys()])].sort((a, b) => a - b);
 console.log(`Kỳ ${k.tu} → ${cuoi} · hôm nay ${homNay}\n`);
-console.log('| GV | Chấm Test cũ | Chấm Test sổ (đúng · muộn · chưa làm) | Việc cũ | Việc sổ (đúng · muộn · chưa làm) | Lý do chênh (dòng sổ) |\n|---|---|---|---|---|---|');
+console.log('| GV | Chấm Test cũ | Chấm Test sổ (đúng · muộn · chưa làm) | + S chéo chung | Việc cũ | Việc sổ (đúng · muộn · chưa làm) | Lý do chênh (dòng sổ) |\n|---|---|---|---|---|---|---|');
 const tong = { chamCu: [0, 0], chamSo: [0, 0], viecCu: [0, 0], viecSo: [0, 0] };
 for (const id of ids) {
   let cu: any = null;
   try { cu = chayTrongRequest('GET', () => chiSoHoSoGv(P, id, { tu: k.tu, den: k.den })); } catch { /* GV không còn phân công trong phạm vi */ }
   const c = o(cu?.diemDungHan), v = o(cu?.viecDungHan), b = so3(bai.get(id)), w = so3(viec.get(id));
-  if (!c.tong && !v.tong && !b.tong && !w.tong) continue;
+  const sChung = bai.get(id)?.sChung ?? 0;
+  if (!c.tong && !v.tong && !b.tong && !w.tong && !sChung) continue;
   tong.chamCu[0] += c.dung; tong.chamCu[1] += c.tong; tong.chamSo[0] += b.dung; tong.chamSo[1] += b.tong;
   tong.viecCu[0] += v.dung; tong.viecCu[1] += v.tong; tong.viecSo[0] += w.dung; tong.viecSo[1] += w.tong;
   const d = dongCuaNguoi({ nguoi: id, chiNhanh: null, tu: k.tu, den: cuoi, loai: 'bai', homNay });
   const ly: string[] = [];
   const n = (f: (x: any) => boolean) => d.filter(f).length;
-  if (n((x) => x.sCheo && x.trangThai === 'chua')) ly.push(`S chéo chưa ai chấm (cả nhóm) ${n((x) => x.sCheo && x.trangThai === 'chua')}`);
   if (n((x) => x.pcNhapSau)) ly.push(`phân công nhập sau ${n((x) => x.pcNhapSau)}`);
   if (n((x) => x.trangThai === 'dung' && x.xongLuc && x.xongLuc > x.han)) ly.push(`mốc W4 OCT (xong muộn → đúng) ${n((x) => x.trangThai === 'dung' && !!x.xongLuc && x.xongLuc > x.han)}`);
   if (n((x) => x.trangThai === 'chua' && !x.sCheo)) ly.push(`chưa làm ${n((x) => x.trangThai === 'chua' && !x.sCheo)}`);
-  console.log(`| GV #${id} | ${pt(c.dung, c.tong)} | ${b.tong ? `${pt(b.dung, b.tong)} · ${b.muon} · ${b.chua}` : '—'} | ${pt(v.dung, v.tong)} | ${w.tong ? `${pt(w.dung, w.tong)} · ${w.muon} · ${w.chua}` : '—'} | ${ly.join(' · ')} |`);
+  console.log(`| GV #${id} | ${pt(c.dung, c.tong)} | ${b.tong ? `${pt(b.dung, b.tong)} · ${b.muon} · ${b.chua}` : '—'} | ${sChung ? `+ ${sChung}` : ''} | ${pt(v.dung, v.tong)} | ${w.tong ? `${pt(w.dung, w.tong)} · ${w.muon} · ${w.chua}` : '—'} | ${ly.join(' · ')} |`);
 }
-console.log(`| **Tổng** | ${pt(tong.chamCu[0], tong.chamCu[1])} | ${pt(tong.chamSo[0], tong.chamSo[1])} | ${pt(tong.viecCu[0], tong.viecCu[1])} | ${pt(tong.viecSo[0], tong.viecSo[1])} | |`);
+console.log(`| **Tổng** | ${pt(tong.chamCu[0], tong.chamCu[1])} | ${pt(tong.chamSo[0], tong.chamSo[1])} | | ${pt(tong.viecCu[0], tong.viecCu[1])} | ${pt(tong.viecSo[0], tong.viecSo[1])} | |`);
+/* Chủ SP 10/11: bài S chéo chưa ai nhận — đếm riêng, mọi GV có S của chi nhánh cùng số (không cộng vào 3 số riêng). */
+console.log('\nS chéo chung chưa làm (bài, theo chi nhánh):');
+for (const b of cns) {
+  const n = (conn.prepare(`SELECT COUNT(*) AS n FROM nghia_vu WHERE loai = 'bai' AND chi_nhanh = ? AND s_cheo = 1 AND nguoi IS NULL AND khong_tinh IS NULL
+      AND xong_luc IS NULL AND han BETWEEN ? AND ? AND han < ?`).get(b.id, k.tu, cuoi, homNay) as any).n;
+  if (n) console.log(`- ${b.code}: ${n}`);
+}
 console.log('\nChưa phân công (bài / việc không có người, theo chi nhánh):');
 for (const b of cns) {
   const ds = chuaPhanCong(b.id, k.tu, cuoi, homNay);
