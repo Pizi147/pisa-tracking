@@ -28,8 +28,9 @@ export function datLaiHanKhiChuyenLop(ds: readonly { caseId: number; nguoiCu: nu
     .all(JSON.stringify([...cu.keys()])) as any[]).map((r) => [r.id as number, r]));
   const paCua = new Map((conn.prepare(`SELECT id, case_id FROM case_interventions WHERE case_id IN (SELECT value FROM json_each(?))`)
     .all(JSON.stringify([...cu.keys()])) as any[]).map((r) => [r.id as number, r.case_id as number]));
-  const ghi = conn.prepare(`INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, mac_dinh, boi, luc, nguoi_cu, ngay) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`);
-  let n = 0;
+  /* Theo lô (số câu không theo số Case): gom đổi theo (bảng, cột), một UPDATE mỗi cột + một INSERT nhật ký. */
+  const doi = new Map<string, [number, string][]>();
+  const nhatKy: unknown[][] = [];
   for (const v of viecCaseQuaHan(conn, ngay, [...cu.keys()])) {
     if (!(v.loai in COT)) continue;
     const [bang, cot, loai] = COT[v.loai as keyof typeof COT];
@@ -39,9 +40,19 @@ export function datLaiHanKhiChuyenLop(ds: readonly { caseId: number; nguoiCu: nu
       : v.loai === 'reset_case:han_them_pa' ? planDueDate(ngay, c?.urgency ?? urgencyFromSos(c?.sos_level ?? null))
       : hanKyGhiKetQua(ngay);
     if (moi === v.han) continue;
-    conn.prepare(`UPDATE ${bang} SET ${cot} = ? WHERE id = ?`).run(moi, v.id);
-    ghi.run(loai, v.id, v.han, moi, boi, luc, cu.get(caseId) ?? null, ngay);
-    n += 1;
+    const k = `${bang}.${cot}`;
+    (doi.get(k) ?? doi.set(k, []).get(k)!).push([v.id, moi]);
+    nhatKy.push([loai, v.id, v.han, moi, boi, luc, cu.get(caseId) ?? null, ngay]);
   }
-  return n;
+  for (const [k, ds] of doi) {
+    const [bang, cot] = k.split('.');
+    conn.prepare(`UPDATE ${bang} SET ${cot} = (SELECT json_extract(j.value, '$[1]') FROM json_each(?1) j WHERE json_extract(j.value, '$[0]') = ${bang}.id)
+      WHERE id IN (SELECT json_extract(value, '$[0]') FROM json_each(?1))`).run(JSON.stringify(ds));
+  }
+  if (nhatKy.length) {
+    conn.prepare(`INSERT INTO viec_han_lan (loai, viec_id, han_cu, han_moi, mac_dinh, boi, luc, nguoi_cu, ngay)
+      SELECT json_extract(value, '$[0]'), json_extract(value, '$[1]'), json_extract(value, '$[2]'), json_extract(value, '$[3]'), 0,
+             json_extract(value, '$[4]'), json_extract(value, '$[5]'), json_extract(value, '$[6]'), json_extract(value, '$[7]') FROM json_each(?)`).run(JSON.stringify(nhatKy));
+  }
+  return nhatKy.length;
 }

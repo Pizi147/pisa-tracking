@@ -225,7 +225,8 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     }
   });
   const lichSuChu: unknown[][] = [];
-  const doiChu: { caseId: number; nguoiCu: number | null }[] = [];
+  /* Chủ SP 10/11: Case đổi chủ theo ngày chuyển — đặt lại hạn MỘT lần mỗi ngày chuyển sau vòng (không theo từng em). */
+  const doiChu = new Map<string, { caseId: number; nguoiCu: number | null }[]>();
   for (const d of dongs) {
     const ds = caseMoCu.get(d.sid);
     if (!ds) continue;
@@ -235,11 +236,11 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
       if (!u || u === c.owner) continue;
       conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?').run(u, nowIso(), c.id);
       lichSuChu.push([c.id, 'owner', c.owner, 'bàn giao khi chuyển lớp', p.userId, nowIso()]);
-      doiChu.push({ caseId: c.id, nguoiCu: c.owner });
+      (doiChu.get(d.ngay) ?? doiChu.set(d.ngay, []).get(d.ngay)!).push({ caseId: c.id, nguoiCu: c.owner });
     }
-    datLaiHanKhiChuyenLop(doiChu.splice(0), d.ngay, p.userId);   // chủ SP 10/11: GV lớp mới — hạn tính lại từ ngày chuyển
   }
   chenNhieuDong('INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at)', lichSuChu);
+  for (const [ngay, ds] of doiChu) datLaiHanKhiChuyenLop(ds, ngay, p.userId);   // chủ SP 10/11: GV lớp mới — hạn tính lại từ ngày chuyển
   /* PR-CT2 (§8): Mini Test chưa ghi của bổ trợ Final sinh sớm đi theo Case sang lộ trình mới — một câu mỗi lô (cặp em × lộ trình cũ). */
   theoLo(thuong.map((d) => [d.sid, cu.get(d.sid)!]), (lo) => {
     conn.prepare(`UPDATE mini_test SET cycle_id = (SELECT lc.id FROM learning_cycles lc WHERE lc.student_id = mini_test.student_id AND lc.status = 'active')
