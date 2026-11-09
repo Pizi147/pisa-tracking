@@ -21,7 +21,7 @@ import { myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { scoreDebtCells, type DebtCell } from '../worklist/scoreDebt.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
-import { phamViHoSoGv } from './phamVi.ts';
+import { duocSuaKyNang, phamViHoSoGv } from './phamVi.ts';
 
 const LO = 400;
 const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -166,7 +166,7 @@ const soYeuCau = (the: TheGv[], homNay: string) => ({
 // ------------------------------------------------------------------ hồ sơ một giáo viên
 
 export type HoSoGv = {
-  gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; laChinhMinh: boolean };
+  gv: { id: number; ten: string; vai: string[]; chiNhanh: string[]; kyNang: string[]; kyNangMa: string[]; suaKyNang: boolean; laChinhMinh: boolean };
   /** `cn`: chi nhánh cho link "Hiệu quả PA của …" (P6, Q26) — chi nhánh duy nhất trong phạm vi người xem, không thì chi nhánh của GV. */
   phamVi: { chiNhanh: string[] | null; cn: number | null };
   /** `gvcn`: tên GVCN của lớp khi GV này không phải GVCN (khối Lớp đang dạy, V5-D khu e). */
@@ -212,6 +212,9 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
       vai: [...new Set(vaiRows.map((r) => roleLabel(r.key)))],
       chiNhanh: [...new Set(vaiRows.map((r) => r.chi_nhanh).filter(Boolean))],
       kyNang: ENTRY_SKILLS.filter((k) => daKhai.has(k)).map((k) => ENTRY_SKILL_SHORT[k]),
+      /* QUYEN-KY-NANG (B' 7): mã kỹ năng (ô sửa) + ai sửa được — QL chi nhánh của GV / Quản trị; GV chỉ xem. */
+      kyNangMa: ENTRY_SKILLS.filter((k) => daKhai.has(k)),
+      suaKyNang: duocSuaKyNang(p, gvId, branchIds),
     },
     phamVi: {
       chiNhanh: laChinhMinh ? null : tenChiNhanh,

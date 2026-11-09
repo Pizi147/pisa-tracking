@@ -15,6 +15,8 @@ type Profile = {
   title: string | null;
   skills: string[]; extraEmails: string[]; allSkills: string[];
   canSetPassword: boolean;
+  /** QUYEN-KY-NANG (B' 7): kỹ năng chỉ QL / Quản trị sửa — GV chỉ xem. */
+  suaKyNang: boolean;
 };
 
 /**
@@ -83,7 +85,7 @@ export default function ProfilePage() {
       await api.patch('/me/profile', {
         fullName: d.fullName,
         phone: d.phone || null,
-        skills: [...d.skills],
+        ...(data.suaKyNang ? { skills: [...d.skills] } : {}),
         extraEmails: d.extraEmails.split(/[,;\s]+/).map((x) => x.trim()).filter(Boolean),
       });
       toast.push('ok', t('Đã lưu hồ sơ'));
@@ -141,8 +143,8 @@ export default function ProfilePage() {
           </Field>
 
           {nguoiDay && (
-            <Field label={t('Kỹ năng bạn phụ trách được')}>
-              <ChonKyNang value={d.skills} onToggle={toggleSkill} />
+            <Field label={t('Kỹ năng bạn phụ trách được')} hint={data.suaKyNang ? undefined : t('Quản lý hoặc Quản trị hệ thống sửa.')}>
+              <ChonKyNang value={d.skills} onToggle={toggleSkill} disabled={!data.suaKyNang} />
             </Field>
           )}
           {/* K1-54: Lưu ở CHÂN thẻ — sau khi đã đọc hết các ô, không lẫn với tiêu đề. */}

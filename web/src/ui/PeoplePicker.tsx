@@ -16,6 +16,8 @@ function useNguoiSearch(
   term: string, nhom: 'giao_vien' | 'nhan_vien' | 'gv_speaking', studentId: number | null | undefined, active: boolean,
   /** PR-S5F-b: chỉ GV ở chi nhánh lớp của em (`studentId`) — người dạy bổ trợ. */
   cungChiNhanh = false,
+  /** GIAO-VIEC-CN (B' 9): chỉ người có vai ở chi nhánh này (Việc quản lý của một chi nhánh). */
+  chiNhanh: number | null = null,
 ) {
   const [rows, setRows] = useState<NguoiKetQua[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,12 +31,13 @@ function useNguoiSearch(
         const qs = new URLSearchParams({ q: term.trim(), nhom });
         if (studentId) qs.set('studentId', String(studentId));
         if (cungChiNhanh) qs.set('cungChiNhanh', '1');
+        if (chiNhanh) qs.set('chiNhanh', String(chiNhanh));
         const r = await api.get<NguoiKetQua[]>(`/ref/nguoi?${qs.toString()}`);
         if (my === seq.current) setRows(r);          // bỏ qua kết quả của lượt gõ cũ
       } catch { if (my === seq.current) setRows([]); } finally { if (my === seq.current) setLoading(false); }
     }, 250);
     return () => clearTimeout(t);
-  }, [term, nhom, studentId, active, cungChiNhanh]);
+  }, [term, nhom, studentId, active, cungChiNhanh, chiNhanh]);
   return { rows, loading };
 }
 
@@ -110,7 +113,7 @@ type ChonNguoiOption =
  * — lọc không dấu tại chỗ, không gọi `/ref/nguoi`, giữ đúng danh sách + quyền của nơi gọi. `choTrong`: dòng đầu = bỏ chọn.
  */
 export function ChonNguoi({
-  value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false,
+  value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false, chiNhanh = null,
   khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor, them, phuPhai,
 }: {
   value: NguoiChon | null;
@@ -120,6 +123,8 @@ export function ChonNguoi({
   choToi?: boolean; choNgoai?: boolean;
   /** PR-S5F-b: chỉ GV cùng chi nhánh lớp của em — ô Người dạy bổ trợ. */
   cungChiNhanh?: boolean;
+  /** GIAO-VIEC-CN (B' 9): chỉ người có vai ở chi nhánh này — ô người phụ trách / theo dõi của Việc quản lý một chi nhánh. */
+  chiNhanh?: number | null;
   /** Ô Điều chỉnh: khi `value = null` hiện "Không đổi · hiện: {khongDoi}". */
   khongDoi?: string;
   /** Ô Phụ trách: khi `value = null` hiện nguyên câu này (ví dụ "Mặc định: GVCN của lớp"). */
@@ -156,7 +161,7 @@ export function ChonNguoi({
   const inputRef = useRef<HTMLInputElement>(null);
   const uid = useId();
   const chiTutor = !!tutor?.chi;
-  const tim = useNguoiSearch(term, nhom, studentId, editing && !ds && !chiTutor, cungChiNhanh);
+  const tim = useNguoiSearch(term, nhom, studentId, editing && !ds && !chiTutor, cungChiNhanh, chiNhanh);
   const tt = useTutorChon(term, tutor, editing && open && !!tutor);   // chỉ nạp khi danh sách mở
   const rows = useMemo<NguoiTrongDs[]>(() => {
     /* TU-a: tutor — gợi ý (nơi dạy = chi nhánh lớp + kỹ năng PA) rồi "Khác"; ô Người dạy: nhóm "Tutor" trước người. */
