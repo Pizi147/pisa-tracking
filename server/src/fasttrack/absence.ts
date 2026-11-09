@@ -661,7 +661,8 @@ export function sauLanChot(conn: any, attemptId: number, assessed: string): { da
 /**
  * AI GỠ ĐƯỢC DẤU "-" (Mock đã chốt + lớp thường). `null` = được; chuỗi = câu lỗi 403.
  * Quản lý / Quản trị (xếp lịch được lớp), người được nhập ô đó, GVCN lớp: MỌI LÚC (OV-13h, chủ SP 15/10 — bỏ hạn thứ Tư sau tuần gốc).
- * `daHuyPhan` — vắng lần 2 đã huỷ → chỉ Quản lý (người chọn lại tuần, L5).
+ * CV-SUA-1011 (chủ SP 10/11 "lỡ bấm nhầm thành vắng xong bị khoá thì vẫn phải được bấm sửa lại / bỏ vắng"; luật "không khoá cứng" 07/11): cả khi vắng
+ * lần 2 đã huỷ phần thi — thay "chỉ Quản lý" (L5). `daHuyPhan` / `hoanTac` giữ trong chữ ký cho nơi gọi, không còn chặn.
  */
 export function duocGoDau(p: Principal, o: {
   classId: number; skill: string; today: string;
@@ -675,7 +676,7 @@ export function duocGoDau(p: Principal, o: {
   if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
     return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Quản lý gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
-  return o.daHuyPhan && !o.hoanTac ? 'Đã huỷ · vắng 2 lần — Quản lý chọn tuần mới (Dời) để xếp lại.' : null;
+  return null;
 }
 
 /** Dấu "-" ĐÃ CHỐT của một ô Mock (không phải MT cũ) — dòng điểm, hoặc null. */

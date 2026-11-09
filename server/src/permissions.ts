@@ -350,11 +350,6 @@ export function lopMt0ChoGvSpeaking(p: Principal, date = demoToday()): number[] 
   return [...bangLop()].filter(([id, l]) => !l.isFastTrack && l.branchId != null && ds.get(id)?.status === 'active' && (toanHt || cn.has(l.branchId)))
     .map(([id]) => id);
 }
-/** T18 (chủ SP 06/11): lớp mà người này là GVCN đang hiệu lực — được THẤY bài S chấm chéo quá hạn của lớp mình (không có quyền chấm).
- *  Lớp FT (S Mock) và, từ LOP-THUONG-QUYEN, lớp thường (S MT0) — nơi gọi lọc đúng ô chấm chéo (`laChamCheo`). */
-export function lopGvcn(p: Pick<Principal, 'assignments'>, date = demoToday()): number[] {
-  return [...new Set(p.assignments.filter((a) => a.isCore && activeAt(a, date) && bangLop().has(a.classId)).map((a) => a.classId))];
-}
 export const grantGvNhapDiem = (p: Pick<Principal, 'grants'>) => p.grants.filter((g) => g.roleKey === 'teacher' && g.permissions.has(PERMISSIONS.SCORE_EDIT));
 /**
  * OV-14c: AI LÀ GV SPEAKING — vai Giáo viên có `SCORE_EDIT`, và có kỹ năng `speaking` ở hồ sơ (`user_skills`) HOẶC đang có phân công

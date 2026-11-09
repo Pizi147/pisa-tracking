@@ -127,6 +127,8 @@ export const EN_KHOA_CUNG = {
   '{x} đã huỷ (vắng 2 lần) — đưa lại thành đã làm bài rồi lưu điểm?': '{x} is cancelled (absent twice) — bring it back as sat and save the score?',
   '{x} đã ghi vắng / đã huỷ — muốn thi lại thì chọn tuần ở hộp lịch.': '{x} is absent / cancelled — to retake, pick a week in the schedule box.',
   'Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?': 'This cell has a score — cancel the score (restorable) and mark absent?',
+  '{o} đã có điểm — vắng là vắng cả Writing: huỷ điểm {o} (khôi phục lại được) rồi ghi vắng?': '{o} has a score — absence covers the whole Writing session: cancel the {o} score (restorable) and mark absent?',
+  '{o} đã có điểm — nhờ GV {o}, GVCN hoặc Quản lý ghi vắng (huỷ điểm {o}).': '{o} has a score — ask the {o} teacher, the homeroom teacher or a manager to mark absent (cancel the {o} score).',
   '{skill} đã có điểm — huỷ điểm (khôi phục lại được) rồi báo vắng?': '{skill} has a score — cancel the score (restorable) and report absent?',
   '{nhan} đã có điểm — huỷ điểm rồi xoá {nhan}? (Khôi phục lại được)': '{nhan} has scores — cancel the scores and delete {nhan}? (Restorable)',
   '{x} đã có điểm mới — thay bằng điểm cũ? Điểm mới được cất, khôi phục lại được.': '{x} has a new score — replace it with the old one? The new score is kept and can be restored.',

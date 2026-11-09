@@ -29,13 +29,15 @@ const sap = (a: Dong, b: Dong) => soSanhLop({ code: a.classCode }, { code: b.cla
  * ảnh chụp thứ tự lúc mở hộp, vòng lên; hết → "Đã xong phần của bạn").
  * Dòng vừa lưu đứng nguyên chỗ (bài còn tồn cũ rời hàng đợi máy chủ sau khi chấm — vẫn giữ để thấy đã lưu).
  */
-export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = null }: { onDong: () => void; onDaLam: () => void;
+export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = null, nguoi = null }: { onDong: () => void; onDaLam: () => void;
+  /** CV-SUA-1011: QL theo dõi việc GV này ("Của GV") — hàng đợi của GV đó; ô sửa được theo quyền người xem. */
+  nguoi?: number | null;
   /** R1-LUU-TIEP: việc kế (Công việc) — "Việc tiếp ›" ở chân panel và khi hết bài. */
   onTiep?: (() => void) | null;
   /** UI-CHAM-TEST: mở từ một lớp ở Chấm Test — lọc sẵn lớp đó (đổi được). */
   lopDau?: number | null;
 }) {
-  const { data, error, reload } = useApi<{ rows: Dong[]; soBai: number }>('/my-work/cham-speaking');
+  const { data, error, reload } = useApi<{ rows: Dong[]; soBai: number }>(`/my-work/cham-speaking${nguoi ? `?nguoi=${nguoi}` : ''}`, [nguoi]);
   const [q, setQ] = useState('');
   const [lop, setLop] = useState<number | null>(lopDau);
   const [mo, setMo] = useState<number | null>(null);
