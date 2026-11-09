@@ -87,5 +87,5 @@ export const EN_CASE_PA_UI = {
   'đủ buổi': 'all sessions done',
   /* RKC-2b ③: Ghi kết quả PA chờ xác nhận = Xác nhận PA. */
   'Ghi kết quả…': 'Record result…',
-  'đã xác nhận PA': 'plan confirmed',
+  'Đã lưu kết quả · đã xác nhận PA': 'Result saved · plan confirmed',
 } satisfies Record<string, Dich>;

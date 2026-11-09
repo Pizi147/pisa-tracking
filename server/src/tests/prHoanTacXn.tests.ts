@@ -464,6 +464,6 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
     const cp = doc('web/src/modules/cases/CasePanel.tsx');
     assert(/onGhiKetQua=\{iv\.kind === 'tutor' && iv\.soBuoi == null \? undefined : \(\) => setForm\('ghi'\)\}/.test(cp), 'thẻ PA: Ghi kết quả không mở form ghi (Tutor thiếu Số buổi: ẩn)');
     const gk = doc('web/src/modules/cases/CapNhatTuan.tsx');
-    assert(/choXacNhan/.test(gk) && /đã xác nhận PA/.test(gk), 'Ghi kết quả PA chờ: không báo đã xác nhận PA');
+    assert(/pa\.choXacNhan \? t\('Đã lưu kết quả · đã xác nhận PA'\)/.test(gk), 'Ghi kết quả PA chờ: không báo đã xác nhận PA');
   });
 }
