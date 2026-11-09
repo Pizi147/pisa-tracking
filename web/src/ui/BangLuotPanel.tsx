@@ -139,9 +139,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
    * "Đã làm" (DEM-QUA-HAN b): loại việc ghi ở dòng phụ. Dòng không có `trangThai` (panel cũ) suy từ `mo` / `dung`.
    */
   const vk = data?.kieu === 'viec';
-  const tabsViec: TrangThaiViec[] = vk ? TT_VIEC.filter((k) => goc.some((r) => r.dongViec && ttViec(r.dongViec) === k)) : [];
+  /* PTA rà #1292: luôn đủ 3 tab (tab 0 mờ, cùng vị trí mọi GV); mặc định tab đầu có dòng. */
+  const tabsViec: readonly TrangThaiViec[] = vk && goc.length ? TT_VIEC : [];
   const [tabViecChon, setTabViec] = useState<TrangThaiViec | null>(null);
-  const tabViec = tabViecChon && tabsViec.includes(tabViecChon) ? tabViecChon : tabsViec[0] ?? null;
+  const tabViec = tabViecChon && tabsViec.includes(tabViecChon) ? tabViecChon
+    : tabsViec.find((k) => goc.some((r) => r.dongViec && ttViec(r.dongViec) === k)) ?? tabsViec[0] ?? null;
   const loc = vk ? goc.filter((r) => r.dongViec && ttViec(r.dongViec) === tabViec)
     : coTab ? goc.filter((r) => r.ketQua === tab) : goc;
   /* B13 (audit-ui 08/11, thay phân trang 10 / 20 / 50): 20 dòng đầu + "Xem thêm" cuối bảng — cắt trên dữ liệu đã nạp, không gọi thêm máy chủ.
@@ -407,6 +409,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const tatVc = loc.flatMap((r) => (r.dongViec ? [{ ...r.dongViec, id: r.id, studentId: r.dongViec.em?.id }] : []));
   type HVc = (typeof tatVc)[number];
   const laBai = vk && goc.every((r) => r.dongViec?.tab === 'cham');
+  const nhomChung = tabViec === 'chua' && tatVc.some((h) => h.sChung);
   const nhanTabViec = (k: TrangThaiViec) => (k === 'chua' ? t('Chưa làm') : k === 'muon' ? t('Làm muộn') : t('Đúng hạn'));
   const cotVc: DinhNghiaCot[] = [
     { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
@@ -465,7 +468,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
           : (
             <div className="pn-bang grid gap-3 pt-3">
               {vk && tabsViec.length > 0 && (
-                /* DEM-QUA-HAN b: tab loại việc (chỉ việc quá hạn, số đỏ) + "Đã làm" — cùng dáng tab Chưa đạt · Đạt. */
+                /* Sổ nghĩa vụ: 3 tab trạng thái (Chưa làm số đỏ, tab 0 mờ) — cùng dáng tab Chưa đạt · Đạt. */
                 <div role="tablist" aria-label={t('Trạng thái')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>
                   {tabsViec.map((k) => {
                     /* Sổ nghĩa vụ: số tab = 3 số riêng (như ô bảng); bài S chéo chung ghi "+n" mờ riêng. */
@@ -474,7 +477,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                     return (
                       <button key={k} type="button" role="tab" aria-selected={tabViec === k} tabIndex={tabViec === k ? 0 : -1} onClick={() => setTabViec(k)}
                         className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tabViec === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-                        {nhanTabViec(k)} <span className={`tabular-nums ${k === 'chua' && n ? 'text-bad' : ''}`}>{n}</span>
+                        {nhanTabViec(k)} <span className={`tabular-nums ${k === 'chua' && n ? 'text-bad' : !n ? 'font-normal text-faint' : ''}`}>{n}</span>
                         {chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}> +{chung}<span className="sr-only"> {t('S chéo chung')}</span></span>}
                       </button>
                     );
@@ -492,16 +495,19 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                   ))}
                 </div>
               )}
-              <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>
+              {/* PTA rà #1292: tab Chưa làm chia nhóm → mỗi nhóm có số riêng, bỏ dòng tổng (lẫn với số nhóm). */}
+              {!(vk && nhomChung) && <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>}
               {vk
                 /* Sổ nghĩa vụ: tab Chưa làm có bài S chéo chung → hai nhóm "Bài của bạn" / "S chéo chung · chưa ai nhận" (máy chủ xếp nhóm riêng sau). */
-                ? (tabViec === 'chua' && tatVc.some((h) => h.sChung) ? [[t('Bài của bạn'), false], [t('S chéo chung · chưa ai nhận'), true]] as const : [[null, null]] as const).map(([nhom, chung]) => {
+                ? (nhomChung ? [[t('Bài của bạn'), false], [t('S chéo chung · chưa ai nhận'), true]] as const : [[null, null]] as const).map(([nhom, chung]) => {
                   const hang = pt.cat(tatVc).filter((h) => chung === null || !!h.sChung === chung);
-                  if (!hang.length) return null;
+                  /* PTA rà #1292: "Bài của bạn 0" vẫn hiện (một dòng) để GV thấy 0 là của mình. */
+                  if (!hang.length && chung !== false) return null;
                   return (
                     <section key={String(chung)} className="grid gap-1.5" aria-label={nhom ?? tieuDe}>
                       {nhom && <h3 className="m-0 text-[14px] font-semibold text-dim">{nhom} <span className="tabular-nums">{tatVc.filter((h) => !!h.sChung === chung).length}</span></h3>}
-                      <Bang deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVc} hang={hang} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc} />
+                      {hang.length || !nhom ? <Bang deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVc} hang={hang} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc} />
+                        : <p className="m-0 text-[14px] text-dim">{t('Không có bài chưa làm.')}</p>}
                     </section>
                   );
                 })

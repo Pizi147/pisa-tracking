@@ -9,6 +9,7 @@ export const EN_SO_NGHIA_VU = {
   '{n} chưa làm': (b) => `${b.n} not done`,
   '+ {n} S chéo chung': (b) => `+ ${b.n} shared S cross-marking`,
   'Làm muộn': 'Late',
+  'Không có bài chưa làm.': 'No scripts left to mark.',
   'S chéo chung': 'shared S cross-marking',
   'Làm muộn {n} ngày': (b) => `${so(b.n, 'day', 'days')} late`,
   'Chưa làm · quá {n} ngày': (b) => `Not done · ${so(b.n, 'day', 'days')} overdue`,
