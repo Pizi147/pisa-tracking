@@ -78,14 +78,13 @@
 .pa-the { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 12px; display:grid; gap:4px; }
 .rong-case { margin:0; padding:14px 16px; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; font-size:14px; color:var(--text-faint); }
 
-/* ===== HS2 · Tiến độ RỖNG → một dòng hết bề ngang; Case lấy hết hàng ===== */
-.td-mot-dong { display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; padding:10px 16px; min-height:52px; }
+/* ===== HS2 · Tiến độ RỖNG → thẻ gọn trong CỘT TRÁI (chủ SP 10/11: Tiến độ luôn trái, Case phải): hàng 1 tên · ⓘ, hàng 2 "Chưa có ghi nhận" · + Ghi tiến độ; không kẻ ngăn đầu thẻ ===== */
+.td-mot-dong { display:flex; align-items:center; gap:6px 12px; flex-wrap:wrap; padding:12px 16px; }
 .td-mot-dong h2 { font-size:17px; font-weight:700; margin:0; }
-.td-mot-dong .td-rong { font-size:14px; color:var(--text-faint); padding:0; display:inline; }
-.td-mot-dong .nut { margin-left:auto; }
+.td-mot-dong .td-rong { font-size:14px; color:var(--text-faint); padding:0; display:inline; order:3; flex:1 1 calc(100% - 140px); }
+.td-mot-dong .nut { order:4; margin-left:auto; }
 .dt .td-mot-dong { padding:10px 12px 10px 16px; }
-.dt .td-mot-dong .td-rong { order:3; flex:1 1 calc(100% - 140px); }
-.dt .td-mot-dong .nut { order:4; }
+.hai-cot .form-td { grid-template-columns:minmax(0,1fr); }
 .form-td { padding:14px 16px 16px; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px 16px; max-width:760px; }
 .form-td .ca { grid-column:1 / -1; }
 .form-td label { display:grid; gap:4px; font:600 13px var(--phong); color:var(--text-dim); }
@@ -115,7 +114,7 @@
     <h1>v18 · Hồ sơ HV — HS1 dải ô điểm · HS2 Tiến độ trên lớp rỗng</h1>
     <p>Nguồn: audit 08/11 (<code>docs/superpowers/specs/2026-11-08-audit-ui/bao-cao.md</code> dòng HS1, HS2) → [XM] #1240–#1242 → chủ SP 10/11 "VẪN LÀM". <b>Giữ bố cục U02 đã duyệt</b>, chỉ sửa hai chỗ:
       <span class="so-mk">HS1</span> thẻ nào cũng ghi "MT3" dưới số (375 cắt "MT3 · kỳ vọn…") → ghi nguồn <b>một lần</b> trên dải; thẻ chỉ ghi khi khác thường.
-      <span class="so-mk">HS2</span> Tiến độ trên lớp rỗng chiếm nửa hàng bên cạnh khối Case dài → <b>thu thành một dòng</b> hết bề ngang, Case lấy hết hàng.
+      <span class="so-mk">HS2</span> Tiến độ trên lớp rỗng chiếm nửa hàng bên cạnh khối Case dài → <b>thẻ gọn</b> trong cột trái (hai hàng, không ngăn đầu thẻ), Case vẫn cột phải — chủ SP 10/11: "tiến độ trên lớp ở phía bên trái và case bên phải".
       Mọi thao tác giữ (bảng D). Không thêm câu đọc máy chủ (bảng E). Demo Monbay, hôm nay <b>14/09/2026 · W3 SEP</b>, em <b>Bùi Thảo Vy</b> (MB FT 101 · LT1 · Target 7.0). 1440 <b>tối</b> · 375 <b>sáng</b>. Trái = ảnh chụp web hiện tại (main d8dec605f), phải = sau khi sửa. Viền đứt vàng = chỗ sửa (không lên web).</p>
     <nav class="muc-mk"><a href="#a">A · 1440 trước | sau</a><a href="#b">B · 375 trước | sau</a><a href="#c">C · trạng thái</a><a href="#d">D · thao tác trước → sau</a><a href="#e">E · đọc dữ liệu</a></nav>
   </header>
@@ -131,7 +130,7 @@
 
   <section class="khu">
     <h2>A2 · 1440 tối — chọn ô S, Tiến độ RỖNG, Case dài</h2>
-    <p class="ghi"><span class="so-mk">HS2</span>trước: thẻ "Tiến độ trên lớp · Chưa có ghi nhận" chiếm 5/12 hàng, bên phải Case mở dài → khoảng trống lớn dưới thẻ. Sau: <b>một dòng</b> "Tiến độ trên lớp · Speaking ⓘ · Chưa có ghi nhận · + Ghi tiến độ" hết bề ngang, ngay dưới Hành trình; Case lấy cả hàng. Có ghi nhận đầu tiên → về hai cột (A1).</p>
+    <p class="ghi"><span class="so-mk">HS2</span>trước: thẻ "Tiến độ trên lớp · Chưa có ghi nhận" chiếm 5/12 hàng, bên phải Case mở dài → khoảng trống lớn dưới thẻ. Sau (chủ SP 10/11): Tiến độ <b>vẫn cột trái</b>, Case cột phải; thẻ rỗng gọn hai hàng "Tiến độ trên lớp · Speaking ⓘ" / "Chưa có ghi nhận · + Ghi tiến độ", không ngăn đầu thẻ.</p>
     <div class="cap">
       <figure><figcaption>Trước · em Chu Nhật Minh (Case mở dài)</figcaption><img class="anh-truoc" src="anh/truoc-hs-hai-cot-1440.png" alt="Hồ sơ hiện tại: Tiến độ rỗng nửa hàng cạnh Case dài"></figure>
       <figure><figcaption>Sau · Bùi Thảo Vy · ô S</figcaption><div class="man toi dai" data-k="a2" style="width:980px"></div></figure>
@@ -140,7 +139,7 @@
 
   <section class="khu" id="b">
     <h2>B · 375 sáng</h2>
-    <p class="ghi"><span class="so-mk">HS1</span>hết cắt "MT3 · kỳ vọn…": dòng nguồn trên dải, Overall chỉ "kỳ vọng 7.0" · <span class="so-mk">HS2</span>Case trước (giữ luật U02 #16), Tiến độ rỗng một dòng sau Case — nút "+ Ghi tiến độ" 44 px.</p>
+    <p class="ghi"><span class="so-mk">HS1</span>hết cắt "MT3 · kỳ vọn…": dòng nguồn trên dải, Overall chỉ "kỳ vọng 7.0" · <span class="so-mk">HS2</span>Case trước (giữ luật U02 #16), Tiến độ rỗng thẻ gọn sau Case — nút "+ Ghi tiến độ" 44 px.</p>
     <div class="cap">
       <figure><figcaption>Trước</figcaption><img class="anh-truoc dt-a" src="anh/truoc-hs-375.png" alt="Hồ sơ hiện tại 375"></figure>
       <figure><figcaption>B1 · Sau · Overall</figcaption><div class="dt sang dai" data-k="b1"></div></figure>
@@ -150,9 +149,9 @@
 
   <section class="khu" id="c">
     <h2>C · Trạng thái (1440 tối trừ khi ghi)</h2>
-    <p class="ghi"><span class="so-mk">C1</span>bấm "+ Ghi tiến độ" ở dòng rỗng → dòng mở thành khung form <b>ngay tại chỗ</b> (form cũ, không panel) · Huỷ → về một dòng · Lưu → về hai cột, dòng vừa lưu viền nhấn + "✓ Đã lưu · Hoàn tác" 10 giây (như web).
-      <span class="so-mk">C2</span>nguồn lệch: S chưa có điểm MT3 (dời) → thẻ S ghi "<b>từ MT2</b>" chữ đậm, màu chữ chính (khác dòng phụ mờ — một ngoại lệ phải thấy ngay) (không chữ "vắng" — HSL-GON). <span class="so-mk">C3</span>em chưa có MT nào: dòng nguồn "Chưa có điểm Mock Test", thẻ "—" không lặp "chưa có điểm" 6 lần; Tiến độ + Case đều rỗng → hai dòng.
-      <span class="so-mk">C4</span>Overall, Tiến độ rỗng: một dòng, không nút (Overall chỉ đọc — ghi khi chọn kỹ năng, N33 ②). <span class="so-mk">C5</span>đã thi có KQ: ô Thi thật thay Overall — <b>giữ như web</b> (góc ghi nguồn từng ô), không dòng nguồn.</p>
+    <p class="ghi"><span class="so-mk">C1</span>bấm "+ Ghi tiến độ" ở dòng rỗng → thẻ mở form cũ <b>ngay trong cột trái</b> (không panel) · Huỷ → về thẻ gọn · Lưu → về hai cột, dòng vừa lưu viền nhấn + "✓ Đã lưu · Hoàn tác" 10 giây (như web).
+      <span class="so-mk">C2</span>nguồn lệch: S chưa có điểm MT3 (dời) → thẻ S ghi "<b>từ MT2</b>" chữ đậm, màu chữ chính (khác dòng phụ mờ — một ngoại lệ phải thấy ngay) (không chữ "vắng" — HSL-GON). <span class="so-mk">C3</span>em chưa có MT nào: dòng nguồn "Chưa có điểm Mock Test", thẻ "—" không lặp "chưa có điểm" 6 lần; Tiến độ + Case đều rỗng → hai thẻ gọn cạnh nhau.
+      <span class="so-mk">C4</span>Overall, Tiến độ rỗng: thẻ gọn, không nút (Overall chỉ đọc — ghi khi chọn kỹ năng, N33 ②). <span class="so-mk">C5</span>đã thi có KQ: ô Thi thật thay Overall — <b>giữ như web</b> (góc ghi nguồn từng ô), không dòng nguồn.</p>
     <div class="hang-khung">
       <figure><figcaption>C1 · + Ghi tiến độ từ dòng rỗng (ô S)</figcaption><div class="man toi dai" data-k="c1" style="width:980px"></div></figure>
       <figure><figcaption>C2 · nguồn lệch — S từ MT2</figcaption><div class="man toi dai" data-k="c2" style="width:980px"></div></figure>
@@ -176,10 +175,10 @@
       <tr><td>Ô Thi thật (đã thi / chờ KQ) · góc "thi thật" / "lần trước" · Target ±</td><td>có</td><td>có, không thêm dòng nguồn</td><td class="gi">GIỮ</td></tr>
       <tr><td>Lớp thường (môn, "đạt / chưa đạt")</td><td>có</td><td>có, không dòng nguồn (mỗi môn một bài khác nhau)</td><td class="gi">GIỮ</td></tr>
       <tr><td>Tiến độ trên lớp CÓ ghi nhận · + Ghi tiến độ · bấm dòng sửa / xoá · Hoàn tác 10 giây · Góp ý tuần khoá · Xem thêm · rê dòng tô tuần trên chart · ⓘ</td><td>cột trái 5/12</td><td>như cũ</td><td class="gi">GIỮ</td></tr>
-      <tr><td>Tiến độ trên lớp RỖNG</td><td>thẻ nửa hàng "Chưa có ghi nhận" (+ nút ở đầu thẻ khi ghi được)</td><td>một dòng hết bề ngang: tên · ⓘ · "Chưa có ghi nhận" · "+ Ghi tiến độ" (chỉ khi ghi được, quyền máy chủ như cũ); Case lấy cả hàng</td><td class="doi">ĐỔI bố cục — HS2</td></tr>
-      <tr><td>+ Ghi tiến độ → form (Kỹ năng · Tuần · Kết quả · Điểm / Thang / Band · Tên bài · Nhận xét)</td><td>form trong cột trái</td><td>form tại chỗ trong khung đó (hết bề ngang, form tối đa 760 px — hai cột trường), không panel</td><td class="gi">GIỮ form · đổi chỗ vẽ</td></tr>
+      <tr><td>Tiến độ trên lớp RỖNG</td><td>thẻ nửa hàng "Chưa có ghi nhận" (+ nút ở đầu thẻ khi ghi được)</td><td>vẫn cột trái 5/12, thẻ gọn hai hàng: tên · ⓘ / "Chưa có ghi nhận" · "+ Ghi tiến độ" (chỉ khi ghi được, quyền máy chủ như cũ); không ngăn đầu thẻ; Case cột phải</td><td class="doi">ĐỔI dáng thẻ rỗng — HS2</td></tr>
+      <tr><td>+ Ghi tiến độ → form (Kỹ năng · Tuần · Kết quả · Điểm / Thang / Band · Tên bài · Nhận xét)</td><td>form trong cột trái</td><td>form trong cột trái như cũ, không panel</td><td class="gi">GIỮ</td></tr>
       <tr><td>Thứ tự 375: Case trước, Tiến độ sau</td><td>có</td><td>có</td><td class="gi">GIỮ</td></tr>
-      <tr><td>Case &amp; phương án (mọi thao tác trong Case, + Case cho kỹ năng, Case đã đóng)</td><td>cột phải 7/12</td><td>cột phải 7/12 khi có Tiến độ · cả hàng khi Tiến độ rỗng; bên trong không đổi</td><td class="gi">GIỮ (chỉ đổi bề rộng)</td></tr>
+      <tr><td>Case &amp; phương án (mọi thao tác trong Case, + Case cho kỹ năng, Case đã đóng)</td><td>cột phải 7/12</td><td>cột phải 7/12; bên trong không đổi</td><td class="gi">GIỮ</td></tr>
     </table>
   </section>
 
@@ -282,13 +281,13 @@
   var vo = function (dt, body) { return thanh(dt) + '<div class="hs">' + body + '</div>'; };
 
   K.a1 = vo(false, dau() + dai(DU, 'Overall', NGUON) + tabs + mockTest() + '<div class="hai-cot">' + tienDoCo() + caseTatCa() + '</div>');
-  K.a2 = vo(false, dau() + dai(DU, 'S', NGUON) + tabs + hanhTrinh('Speaking') + tienDoRong('Speaking', true) + caseS());
+  K.a2 = vo(false, dau() + dai(DU, 'S', NGUON) + tabs + hanhTrinh('Speaking') + '<div class="hai-cot">' + tienDoRong('Speaking', true) + caseS() + '</div>');
   K.b1 = vo(true, dau(true) + dai(DU, 'Overall', NGUON) + tabs + mockTest(true) + caseTatCa() + tienDoCo());
   K.b2 = vo(true, dau(true) + dai(DU, 'S', NGUON) + tabs + bangKn375('Speaking') + caseS(true) + tienDoRong('Speaking', true));
-  K.c1 = vo(false, dai(DU, 'S', NGUON) + hanhTrinh('Speaking') + tienDoForm('Speaking') + caseS());
+  K.c1 = vo(false, dai(DU, 'S', NGUON) + hanhTrinh('Speaking') + '<div class="hai-cot">' + tienDoForm('Speaking') + caseS() + '</div>');
   K.c2 = vo(false, dai(LECH, 'S', NGUON) + hanhTrinh('Speaking', [[0, 6.0, 'duoi'], [1, 5.5, 'duoi']]));
-  K.c3 = vo(false, dau(false, { ten: 'Lê Hoàng Nam', tuan: '1' }) + dai(RONG, 'L', 'Chưa có điểm Mock Test') + tabs + hanhTrinh('Listening', []) + tienDoRong('Listening', true) + caseRong('Listening', 'Listening'));
-  K.c4 = vo(false, dai(DU, 'Overall', NGUON) + tienDoRong(null, false) + caseTatCa());
+  K.c3 = vo(false, dau(false, { ten: 'Lê Hoàng Nam', tuan: '1' }) + dai(RONG, 'L', 'Chưa có điểm Mock Test') + tabs + hanhTrinh('Listening', []) + '<div class="hai-cot">' + tienDoRong('Listening', true) + caseRong('Listening', 'Listening') + '</div>');
+  K.c4 = vo(false, dai(DU, 'Overall', NGUON) + '<div class="hai-cot">' + tienDoRong(null, false) + caseTatCa() + '</div>');
   K.c6 = vo(true, dai(DU, 'S', NGUON) + caseS(true) + tienDoForm('Speaking'));
   K.c7 = vo(true, dau(true, { ten: 'Lê Hoàng Nam', tuan: '1' }) + dai(RONG, 'L', 'Chưa có điểm Mock Test') + tabs + caseRong('Listening', 'Listening') + tienDoRong('Listening', true));
   document.querySelectorAll('[data-k]').forEach(function (el) { el.innerHTML = K[el.dataset.k] || ''; });
