@@ -62,6 +62,8 @@ const DUONG_IC: Record<string, ReactNode> = {
   'ca-lop': <><rect x="2.5" y="3" width="11" height="10" rx="1" /><path d="M2.5 7h11M6 3v10" /></>,
   /* AUDIT-UI CV6: "Lớp tôi dạy" — bảng lớp, không dùng biểu tượng người. */
   'lop-toi-day': <><rect x="2.5" y="2.5" width="11" height="8" rx="1" /><path d="M5 13.5l3-3 3 3M5.5 5.5h5M5.5 7.8h3" /></>,
+  /* CV6 (mockup v18): "Yêu cầu của tôi" — phiếu gửi đi, không mượn biểu tượng người của lớp. */
+  'yeu-cau': <><path d="M14 2L7 9" /><path d="M14 2l-4.5 12-2.5-5-5-2.5z" /></>,
   lop: <><circle cx="6" cy="6" r="2.2" /><circle cx="11.2" cy="6.6" r="1.7" /><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3" /></>,
 };
 export const IconNhom = ({ k }: { k: string }) => (
@@ -162,22 +164,22 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false 
   k: string; nhan: string; chip?: string; mo: boolean; onMo: () => void; luat?: ReactNode; phu?: ReactNode; trungTinh?: boolean;
 }) {
   return (
-    /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · ⚠ quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2). */
-    <h2 className={`sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
-      style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
+    /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · ⚠ quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2).
+       CV6 (mockup v18, chủ SP 10/11): chevron 16 px NGAY SAU tên (sau chip), xoay khi mở; CẢ DẢI là một nút (lớp phủ `after:`) — rê / focus cả dải;
+       ⓘ và phần phụ nằm trên lớp phủ (`relative z-[1]`) nên vẫn bấm riêng. */
+    <h2 className={`sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
+      style={{ borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
       <button type="button" aria-expanded={mo} onClick={onMo}
-        className="flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left">
+        className="group flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
         <span className={trungTinh ? 'text-faint' : 'text-[color:var(--accent)]'}><IconNhom k={k} /></span>
         <span className="min-w-0 text-[color:var(--text)]">{nhan}</span>
         {chip && <span className="inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
           style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{chip}</span>}
+        <svg viewBox="0 0 16 16" aria-hidden className={`h-4 w-4 shrink-0 fill-none stroke-[color:var(--text-dim)] group-hover:stroke-[color:var(--text)] motion-safe:transition-transform ${mo ? 'rotate-90' : ''}`}
+          strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
       </button>
-      {luat}
-      {phu && <span className="flex shrink-0 items-center gap-x-2.5 whitespace-nowrap text-[13px] empty:hidden">{phu}</span>}
-      <button type="button" tabIndex={-1} aria-hidden onClick={onMo}
-        className="ml-auto h-8 w-8 shrink-0 appearance-none rounded-md border-0 bg-transparent text-[13px] font-normal text-dim hover:bg-[color:var(--accent-soft)] max-sm:w-6">
-        {mo ? '▾' : '▸'}
-      </button>
+      {luat && <span className="relative z-[1] inline-flex">{luat}</span>}
+      {phu && <span className="relative z-[1] flex shrink-0 items-center gap-x-2.5 whitespace-nowrap text-[13px] empty:hidden">{phu}</span>}
     </h2>
   );
 }
