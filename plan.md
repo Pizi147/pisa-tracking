@@ -285,6 +285,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 10. Hồ sơ lớp đã kết thúc: chỉ lượt của chính lớp · 11. Bỏ link Công việc của Head tutor · 12a. Quét nền SOS chỉ chạy lại khi lần trước ≥ 15 s · 12b. Giảm đọc phân công Công việc (~527 dòng) · 12c. Tổng quan ẩn lớp toàn 0 ·
 13. Báo cáo PH: bỏ "Lớp tiếp ›", bỏ gộp ô Excel · 14. KET / PET vẫn hoãn.
 **Chủ SP 10/11 (ảnh panel Lộ trình một em: "Lịch MT hệ thống đề xuất", MT3 · W2 NOV "Sẽ dời sang tuần đề xuất W4 OCT", nút "Áp lịch cho 1 lượt"):** "phần sẽ dời sang tuần đề xuất là thế nào? tôi đã bảo nếu HV có chuyển lớp (ngoại trừ chuyển tiếp lộ trình) thì lịch MT của HV giữ nguyên cơ mà" → session LO-TRINH-GIU-LICH sửa (đề xuất không được dời lượt đã có lịch của em chuyển lớp; không bao giờ đề xuất dời về tuần đã qua).
+**Chủ SP 10/11 đêm — duyệt mockup #1279 (HS1 · HS2 · CV6):** "tôi vẫn muốn tiến độ trên lớp ở phía bên trái và case bên phải nhé, còn lại ok" → HS2: Tiến độ trên lớp LUÔN cột trái, Case cột phải (kể cả khi Tiến độ rỗng; bỏ phương án một dòng hết bề ngang); HS1, CV6 (kể cả bỏ tiêu đề lặp "Lớp tôi dạy") duyệt. Session MOCKUP-HS-CV6 sửa mockup rồi code, mỗi màn một PR; PR hồ sơ HV sửa luôn nút đè chữ thẻ "Ghi kết quả PA".
 
 **C. Chưa kiểm bằng tay (chỉ mã + phép kiểm)**
 12. F07, 8.3 (#1230) · #1273: lưới chỉ xem khi người xem không có quyền nhập; "-" W trên giao diện.
