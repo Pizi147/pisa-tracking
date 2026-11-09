@@ -44,7 +44,7 @@ import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
 import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
-import { CAU_RUT_KTD, NUT_RUT_KTD, chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, rutKhongTheoDoiTrongTx, tenGiuaCua } from './sosAuto.ts';
+import { CAU_RUT_KTD, NUT_RUT_KTD, chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, rutKhongTheoDoiTrongTx, tenGiuaCua, traXacNhanNgam, xacNhanCase, xacNhanPaQuyChe } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
@@ -1385,10 +1385,17 @@ export function suaCase(p: Principal, caseId: number, input: {
   const c = loadCase(caseId);
   /* RKC-2a: Case đã hoàn thành sửa thẳng được (tên, mô tả, nhóm…) — có lịch sử `sos_case_history` + nhật ký, Case giữ kết luận. */
   const daXong = c.status === 'done';
-  if (!coTheSuaCase(p, c)) throw forbidden('Bạn không có quyền sửa Case này.');
   const st = sosCaseState(caseId);
-  /* SV-NX-CASE (N8 ②⑤): Case MT sửa / ghi mô tả lúc nào cũng được (kể cả chưa có, quá hạn) — chỉ Case không phải MT còn đòi Xác nhận Case trước. */
-  if (st.fromSos && !st.hasCause && !st.laMt && !daXong) throw badRequest('Case chưa xác nhận — Xác nhận Case trước.');   // RKC-2a: Case đã xong không còn bước Xác nhận
+  /* RKC-2b ③ (chủ SP 11/11): Case chưa xác nhận (Progress / KCK — Case MT lấy nguyên nhân từ nhận xét) → lưu sửa = Xác nhận Case: cùng luật (nhóm + mô tả ≥ 15),
+     quyền (`coTheXacNhanCase`), nhật ký `case.confirm` (+ `nguon`) — Hoàn tác xác nhận dùng được như nút Xác nhận. RKC-2a: Case đã xong không còn bước Xác nhận. */
+  if (st.fromSos && !st.hasCause && !st.laMt && !daXong) {
+    if (input.topic != null && String(input.topic).trim() !== c.topic) throw badRequest('Case từ kết quả Test — không đổi kỹ năng.');
+    return xacNhanCase(p, caseId, {
+      nhom: input.nhom ?? (input.primaryCode ? [String(input.primaryCode)] : null), observation: input.observation,
+      urgency: input.urgency, moTa: input.summary ?? c.summary, tenGiua: input.title,
+    }, { nguon: 'sua_case' });
+  }
+  if (!coTheSuaCase(p, c)) throw forbidden('Bạn không có quyền sửa Case này.');
   const chinh = conn.prepare(`SELECT * FROM case_issues WHERE case_id = ? AND role = 'primary' ORDER BY id LIMIT 1`).get(caseId) as any;
   /* Case MT: mô tả đang đi theo nhận xét của bài (`created_by` NULL). Người sửa mô tả / nhóm ở đây → tách hẳn (`created_by` = người sửa), nhận xét sau không đè. */
   const theoNhanXet = st.laMt && !!chinh && chinh.created_by == null;
@@ -3925,12 +3932,20 @@ export function updateResult(p: Principal, interventionId: number, input: {
   giuCu?: boolean;
   /** TU-a: `suaKetQua` đường đảo — dòng buổi của lần ghi đang sửa (đọc TRƯỚC khi đảo): giữ `ghi_luc` / `lop_id`, lần ghi cũ không bắt 3 ô. */
   buoiTruoc?: DongBuoiCu[];
-} = {}) {
+} = {}): ReturnType<typeof caseDetail> | null {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
   kiemQuyenPa(p, iv, c);
+  /* RKC-2b ③ (chủ SP 11/11): PA quy chế chờ xác nhận — ghi Kết quả lần đầu = Xác nhận PA (nguyên văn nội dung PA, bắt đầu từ ngày quan sát), cùng giao
+     dịch: lần ghi lỗi thì PA vẫn chờ. Quyền, luật, nhật ký của Xác nhận PA (`nguon: 'ghi_ket_qua'`). */
+  if (iv.preset === 1 && !iv.confirmed_at && iv.status === 'planned' && iv.approval_state !== 'pending') {
+    return tx(() => {
+      xacNhanPaQuyChe(p, interventionId, { description: iv.description, batDau: isIsoDate(input.observedOn) ? input.observedOn : undefined }, { chiGhi: true, nguon: 'ghi_ket_qua' });
+      return updateResult(p, interventionId, input, opts);
+    });
+  }
   chanPaChuaChay(iv, 'Phương án điền sẵn này chưa được xác nhận — xác nhận (hoặc sửa / thay) trước khi ghi kết quả.');
 
   /*
@@ -4467,6 +4482,7 @@ export function hoanTacKetQua(p: Principal, followupId: number) {
     daoKetQua(conn, p, x, khoaTep);
     writeAudit({ actorUserId: p.userId, action: 'case.result.undo', entityType: 'case_intervention', entityId: x.iv.id,
       entityLabel: x.iv.description ?? x.iv.kind, before: anhLanGhi(x.chinh), after: null });
+    traXacNhanNgam(p, x.iv.id);   // RKC-2b ③: lần ghi đầu đã xác nhận ngầm PA → PA về chờ xác nhận như trước
     return x.f.case_id as number;
   });
   xoaTepSauGiaoDich(khoaTep);

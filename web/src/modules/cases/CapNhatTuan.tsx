@@ -50,6 +50,8 @@ export type PaCanCapNhat = {
   soBuoi?: number | null; daDay?: number;
   /** OV-13b: PA mặc định (quy chế · Bổ trợ) — Điều chỉnh có "Đề xuất PA khác"; `doiPaCho` = đã có đề xuất chờ QL (ẩn lựa chọn). */
   laMacDinh?: boolean; doiPaCho?: boolean;
+  /** RKC-2b ③: PA quy chế còn chờ xác nhận — lưu lần ghi đầu = Xác nhận PA (máy chủ), dải "Đã lưu" nói thêm "đã xác nhận PA". */
+  choXacNhan?: boolean;
 };
 
 /**
@@ -292,7 +294,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;
       (diTiep && tiep ? tiep.lam : onSaved)({
         chu: sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Quản lý duyệt đổi PA') : DA_LUU[decision as PlanDecision],
-        phu: [dich(outcomeLabelFor(outcome)), hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
+        phu: [dich(outcomeLabelFor(outcome)), pa.choXacNhan && !sua ? t('đã xác nhận PA') : null, hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
         hoanTac: f ? async () => {
           await api.post(`/followups/${f.id}/hoan-tac`); lamMoi();
           nhapKetQua.set(pa.id, { outcome, note: progress, khac: { deXuat, decision, reason, on, endOn, dc, tuan, buoi, nguoiDay, paThay, mtTyLe, mtNgay, doi: { v: doi.v, lyDo: doi.lyDo } } });

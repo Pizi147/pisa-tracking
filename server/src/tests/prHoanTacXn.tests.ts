@@ -391,4 +391,79 @@ export async function runPrHoanTacXnTests(t: YThucTestKit) {
       assert(src.includes(`api.post('${duong}'`), `thiếu ${duong}`);
     }
   });
+
+  // ---------------------------------------------------------------- (4) RKC-2b ③ (chủ SP 11/11): gộp bước xác nhận — Sửa Case = Xác nhận Case · Ghi KQ lần đầu = Xác nhận PA
+  const tb: any = await import('../platform/thongBao.ts');
+  const sNv: any = await import('../phanTich/soNghiaVu.ts');
+  const cauLoi = (fn: () => unknown): string => { try { fn(); return ''; } catch (e: any) { return `${e?.status} ${e?.message}`; } };
+  const sauNk = (action: string, id: number) => JSON.parse(nhatKy(action, id)?.after_json ?? 'null');
+  /** Dòng việc ở sổ nghĩa vụ (Phân tích đọc sổ này) còn mở theo khoá — `cause:` / `xnpa:`. */
+  const soMo = (khoa: string) => { xoaNho(); return (sNv.tinhViecChiNhanh(MB) as any[]).filter((r) => r.khoa.endsWith(khoa) && !r.xongLuc && !r.khongTinh).length; };
+  const KQ = { outcome: 'partial', note: 'Part 2 nói được 1 phút 30, còn ngập ngừng ở ý thứ hai.' };
+
+  check('GXN-1 · Case Progress chưa xác nhận: lưu Sửa Case = Xác nhận Case (nhóm + mô tả, PA Bổ trợ chạy, nhật ký "khi sửa Case"); Công việc · chuông · sổ nghĩa vụ hết; Hoàn tác xác nhận được', () => thu(() => {
+    const { c, bt, gv } = caseBe();
+    const x = XN();
+    assert(/Xác nhận Case/.test(viec(c.id)) && soMo(`cause:${c.id}`) === 1, `trước: việc ${viec(c.id)} · sổ ${soMo(`cause:${c.id}`)}`);
+    const chuong = () => { xoaNho(); return (tb.thongBaoCua(c.owner_user_id) as any[]).filter((r) => r.entity_type === 'sos_case' && r.entity_id === c.id && r.con_viec === 1).length; };
+    const chuongTruoc = chuong();
+    assert(/nhóm nguyên nhân/i.test(cauLoi(() => cases.suaCase(gv, c.id, { summary: x.moTa }))), 'thiếu nhóm → nói lý do');
+    assert(ma(() => cases.suaCase(gvOf('MB BE 04', 'speaking'), c.id, { nhom: x.nhom, summary: x.moTa })) === 403, 'GVBM môn khác → 403');
+    assert(one('SELECT status FROM case_interventions WHERE id = ?', bt.id).status === 'planned', 'lần lỗi không ghi gì');
+    const r = cases.suaCase(gv, c.id, { nhom: x.nhom, summary: x.moTa, title: 'Writing thiếu ý' });
+    assert(r?.id === c.id && r.sos?.hasCause, 'trả Case đã xác nhận');
+    assert(all('SELECT 1 FROM case_issues WHERE case_id = ?', c.id).length === 2 && one('SELECT summary s FROM sos_cases WHERE id = ?', c.id).s === x.moTa, 'nhóm + mô tả');
+    assert(one('SELECT status FROM case_interventions WHERE id = ?', bt.id).status === 'started', 'PA Bổ trợ chạy');
+    assert(sauNk('case.confirm', c.id)?.nguon === 'sua_case', 'nhật ký ghi nguồn "sua_case"');
+    assert(/khi sửa Case/.test(one('SELECT title FROM journey_events WHERE dedup_key = ?', `case-confirm:${c.id}`)?.title ?? ''), 'Hành trình ghi "khi sửa Case"');
+    assert(!/Xác nhận Case/.test(viec(c.id)), `Công việc hết "Xác nhận Case": ${viec(c.id)}`);
+    assert(chuong() === 0, `chuông hết việc (trước ${chuongTruoc})`);
+    assert(soMo(`cause:${c.id}`) === 0, 'sổ nghĩa vụ: việc xác nhận Case đã xong');
+    sosAuto.hoanTacXacNhanCase(gv, c.id);
+    assert(!all('SELECT 1 FROM case_issues WHERE case_id = ?', c.id).length && /Xác nhận Case/.test(viec(c.id)), 'Hoàn tác xác nhận → việc hiện lại');
+    /* Nút Xác nhận riêng vẫn còn. */
+    sosAuto.xacNhanCase(gv, c.id, XN());
+    assert(sauNk('case.confirm', c.id)?.nguon === undefined, 'nút Xác nhận: không ghi nguồn ngầm');
+  }));
+
+  check('GXN-2 · PA quy chế chờ xác nhận: Ghi kết quả lần đầu = Xác nhận PA (cùng giao dịch, nhật ký "khi ghi kết quả"); lần ghi lỗi → PA vẫn chờ; Công việc · sổ hết "Xác nhận PA"', () => thu(() => {
+    const { c, pa } = coPaCho();
+    const truoc = { pa: anhPa(pa.id), viec: viec(c.id) };
+    assert(/Xác nhận PA/.test(truoc.viec) && soMo(`xnpa-case:${c.id}`) === 1, `trước: ${truoc.viec} · sổ ${soMo(`xnpa-case:${c.id}`)}`);
+    assert(ma(() => cases.updateResult(QL, pa.id, { ...KQ, note: 'ngắn' })) === 400 && anhPa(pa.id) === truoc.pa, 'ghi lỗi → PA vẫn chờ, không xác nhận');
+    assert(ma(() => cases.updateResult(QL, pa.id, { ...KQ, observedOn: addDays(TODAY, 3) })) === 400 && anhPa(pa.id) === truoc.pa, 'ngày tương lai → PA vẫn chờ');
+    cases.updateResult(QL, pa.id, KQ);
+    const iv = one('SELECT * FROM case_interventions WHERE id = ?', pa.id);
+    assert(iv.status === 'started' && iv.confirmed_by === QL.userId && iv.started_date === TODAY && iv.description === pa.description, `PA chạy từ ngày ghi, nội dung giữ: ${JSON.stringify([iv.status, iv.started_date])}`);
+    assert(all('SELECT 1 FROM case_followups WHERE intervention_id = ?', pa.id).length === 1, 'có kết quả');
+    assert(sauNk('case.preset.confirm', pa.id)?.nguon === 'ghi_ket_qua', 'nhật ký ghi nguồn "ghi_ket_qua"');
+    assert(/khi ghi kết quả/.test(one('SELECT title FROM journey_events WHERE dedup_key = ?', `preset-confirm:${pa.id}`)?.title ?? ''), 'Hành trình ghi "khi ghi kết quả"');
+    assert(!/Xác nhận PA/.test(viec(c.id)), `Công việc hết "Xác nhận PA": ${viec(c.id)}`);
+    assert(soMo(`xnpa-case:${c.id}`) === 0, 'sổ nghĩa vụ: việc xác nhận PA đã xong');
+  }));
+
+  check('GXN-3 · Hoàn tác lần ghi đầu (đã xác nhận ngầm) → PA về chờ như trước, việc "Xác nhận PA" hiện lại; PA sửa sau đó → giữ xác nhận', () => thu(() => {
+    const { c, pa } = coPaCho();
+    const truoc = { pa: anhPa(pa.id), viec: viec(c.id) };
+    cases.updateResult(QL, pa.id, KQ);
+    cases.hoanTacKetQua(QL, one('SELECT id FROM case_followups WHERE intervention_id = ?', pa.id).id);
+    assert(anhPa(pa.id) === truoc.pa, `PA về chờ: ${anhPa(pa.id)} ≠ ${truoc.pa}`);
+    assert(!one('SELECT 1 c FROM journey_events WHERE dedup_key = ?', `preset-confirm:${pa.id}`), 'mốc Hành trình gỡ');
+    assert(viec(c.id) === truoc.viec, `việc như trước:\n${viec(c.id)}\n≠\n${truoc.viec}`);
+    assert(nhatKy('case.preset.confirm_undo', pa.id), 'nhật ký hoàn tác xác nhận');
+    /* Sửa PA sau lần ghi → hoàn tác KQ chỉ gỡ KQ, PA vẫn chạy (không đè chỗ sửa). */
+    cases.updateResult(QL, pa.id, KQ);
+    cases.suaPa(QL, pa.id, { description: 'Sửa sau khi ghi: luyện Part 2 + Part 3 mỗi tuần.' });
+    cases.hoanTacKetQua(QL, one('SELECT id FROM case_followups WHERE intervention_id = ?', pa.id).id);
+    assert(one('SELECT status FROM case_interventions WHERE id = ?', pa.id).status === 'started', 'đã sửa PA → giữ xác nhận');
+  }));
+
+  check('GXN-4 · web: PA chờ xác nhận có lối "Ghi kết quả" trong form Xác nhận PA; Ghi kết quả của PA chờ báo đã xác nhận PA', () => {
+    const cs = doc('web/src/modules/yThuc/CaseSosControls.tsx');
+    assert(/onGhiKetQua\?: \(\) => void/.test(cs) && /onGhiKetQua && <NutChu onClick=\{onGhiKetQua\}>/.test(cs), 'Xác nhận PA: thiếu lối Ghi kết quả');
+    const cp = doc('web/src/modules/cases/CasePanel.tsx');
+    assert(/onGhiKetQua=\{iv\.kind === 'tutor' && iv\.soBuoi == null \? undefined : \(\) => setForm\('ghi'\)\}/.test(cp), 'thẻ PA: Ghi kết quả không mở form ghi (Tutor thiếu Số buổi: ẩn)');
+    const gk = doc('web/src/modules/cases/CapNhatTuan.tsx');
+    assert(/choXacNhan/.test(gk) && /đã xác nhận PA/.test(gk), 'Ghi kết quả PA chờ: không báo đã xác nhận PA');
+  });
 }

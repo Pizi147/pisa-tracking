@@ -792,7 +792,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   const chung = { hocVien: data.student?.name ?? null, lop: null, onClose: () => { setForm(null); if (iv.awaitingConfirmation) setMo(false); } };
   const formThan = !formHien ? null : (
     <KhungTrongThe.Provider value>
-      {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} />
+      {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} onGhiKetQua={iv.kind === 'tutor' && iv.soBuoi == null ? undefined : () => setForm('ghi')} />   /* RKC-2b ③: Tutor chưa có Số buổi — xác nhận ở form (máy chủ đòi Số buổi) */
         : formHien === 'ghi' ? (
           <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove}
             tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={t('Lưu · kỹ năng tiếp ›')}
@@ -801,7 +801,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
               id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null, performerUserId: iv.performerUserId ?? null,
               actionDue: iv.actionDue ?? null, miniTestHan: iv.miniTestHan ?? null, cycleNo: iv.cycleNo ?? null,
               batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
-              laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho',
+              laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho', choXacNhan: !!iv.awaitingConfirmation,
             }} />
         ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
         : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} onSaved={onXongForm} />}
