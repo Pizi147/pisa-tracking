@@ -224,7 +224,10 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
  * OV-5a: `chiGhi`: không đọc lại chi tiết Case để trả; `daKiemQuyen`: quyền sửa Case ĐÃ kiểm bằng đúng `caseAccess(...).requireEdit` trong CÙNG
  * giao dịch (không kiểm lần hai sau mỗi câu ghi — bộ nhớ quyền bị xoá theo câu ghi).
  */
-export type XacNhanTrongLo = { chiGhi?: boolean; daKiemQuyen?: boolean };
+export type XacNhanTrongLo = { chiGhi?: boolean; daKiemQuyen?: boolean;
+  /** RKC-2b ③ (chủ SP 11/11): xác nhận NGẦM — lưu sửa Case chưa xác nhận (`sua_case`) / ghi Kết quả PA lần đầu (`ghi_ket_qua`); ghi rõ ở nhật ký + Hành trình. */
+  nguon?: 'sua_case' | 'ghi_ket_qua' };
+const CHU_NGUON = { sua_case: ' (khi sửa Case)', ghi_ket_qua: ' (khi ghi kết quả)' } as const;
 
 export function xacNhanCase(p: Principal, caseId: number, input: {
   primaryCode?: string | null; nhom?: unknown; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
@@ -289,11 +292,11 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
     };
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
-      title: `Xác nhận Case: ${ten}`, detail: moTa, refTable: 'sos_cases', refId: caseId, createdBy: p.userId, dedupKey: `case-confirm:${caseId}`,
+      title: `Xác nhận Case${o.nguon ? CHU_NGUON[o.nguon] : ''}: ${ten}`, detail: moTa, refTable: 'sos_cases', refId: caseId, createdBy: p.userId, dedupKey: `case-confirm:${caseId}`,
     });
     writeAudit({
       actorUserId: p.userId, action: 'case.confirm', entityType: 'sos_case', entityId: caseId, entityLabel: ten,
-      before: { hoanTac }, after: { primaryCode, secondaryCodes: nhom.slice(1), urgency, tenGiua },
+      before: { hoanTac }, after: { primaryCode, secondaryCodes: nhom.slice(1), urgency, tenGiua, ...(o.nguon ? { nguon: o.nguon } : {}) },
     });
     return o.chiGhi ? null : caseDetail(p, caseId);
   });
@@ -546,12 +549,12 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     const c = conn.prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
     addJourney({
       studentId: c.student_id, cycleId: c.cycle_id ?? null, eventType: 'intervention', eventDate: today,
-      title: `Xác nhận PA: ${description.slice(0, 60)}`, detail: null,
+      title: `Xác nhận PA${o.nguon ? CHU_NGUON[o.nguon] : ''}: ${description.slice(0, 60)}`, detail: null,
       refTable: 'case_interventions', refId: interventionId, createdBy: p.userId, dedupKey: `preset-confirm:${interventionId}`,
     });
     writeAudit({
       actorUserId: p.userId, action: 'case.preset.confirm', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description, hoanTac: chupPa(iv) }, after: { description, followupDue: moc, performerUserId, revId },
+      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description, hoanTac: chupPa(iv) }, after: { description, followupDue: moc, performerUserId, revId, ...(o.nguon ? { nguon: o.nguon } : {}) },
     });
     return o.chiGhi ? null : caseDetail(p, iv.case_id);
   });
@@ -691,6 +694,32 @@ export function hoanTacXacNhanPa(p: Principal, interventionId: number, o: { chiG
       entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: sau, after: truoc.hoanTac });
     return o.chiGhi ? null : caseDetail(p, iv.case_id);
   });
+}
+
+/**
+ * RKC-2b ③: Hoàn tác lần ghi Kết quả ĐẦU TIÊN đã xác nhận ngầm PA → PA về chờ xác nhận đúng như trước (bản chụp `hoanTac` của lần xác nhận đó), bản lịch sử
+ * + mốc Hành trình của lần xác nhận gỡ. Giữ xác nhận khi PA còn kết quả khác, PA có thay đổi khác sau lần xác nhận (Sửa PA…), hay người hoàn tác không phải người đã xác nhận. Gọi TRONG giao dịch, sau khi
+ * đảo kết quả. Trả `true` khi đã trả PA về chờ.
+ */
+export function traXacNhanNgam(p: Principal, interventionId: number): boolean {
+  const conn = db();
+  if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) return false;
+  const nk = conn.prepare(`SELECT * FROM audit_logs WHERE entity_type = 'case_intervention' AND action = 'case.preset.confirm' AND entity_id = ? ORDER BY id DESC LIMIT 1`)
+    .get(interventionId) as any;
+  if (!nk || nk.actor_user_id !== p.userId) return false;   // chỉ người đã ghi (= đã xác nhận ngầm) — như Hoàn tác xác nhận PA
+  let truoc: any = null, sau: any = null;
+  try { truoc = JSON.parse(nk.before_json ?? 'null'); sau = JSON.parse(nk.after_json ?? 'null'); } catch { return false; }
+  if (sau?.nguon !== 'ghi_ket_qua' || !truoc?.hoanTac) return false;
+  if (conn.prepare(`SELECT 1 FROM audit_logs WHERE entity_type = 'case_intervention' AND entity_id = ? AND id > ? AND action NOT LIKE 'case.result.%' LIMIT 1`)
+    .get(interventionId, nk.id)) return false;
+  const iv = conn.prepare('SELECT case_id, kind FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  traPa(conn, interventionId, truoc.hoanTac);
+  if (sau.revId) conn.prepare('DELETE FROM case_intervention_revisions WHERE id = ? AND intervention_id = ?').run(sau.revId, interventionId);
+  conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`preset-confirm:${interventionId}`);
+  dongBoTrangThaiCase(iv.case_id);
+  writeAudit({ actorUserId: p.userId, action: 'case.preset.confirm_undo', entityType: 'case_intervention', entityId: interventionId,
+    entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: sau, after: truoc.hoanTac });
+  return true;
 }
 
 /** Lô xác nhận chạy tới khi còn `DUNG_KHI_CON_MS` của lời gọi 10 s — PA đầu lô xác nhận sớm hơn lúc web hiện dải chừng ấy. */

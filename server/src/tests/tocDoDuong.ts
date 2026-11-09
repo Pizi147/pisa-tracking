@@ -1248,6 +1248,9 @@ export const TRAN_GHI_LO = {
   hoanTacXacNhanPa: 110,   // đo 84 câu (~40 là `caseDetail` trả về) → max(84 + 10, ⌈84 × 1,3⌉)
   hoanTacXacNhanCase: 114,   // đo 87 câu (~40 là `caseDetail` trả về) → max(87 + 10, ⌈87 × 1,3⌉)
   hoanTacXacNhanCaseS: 103,   // đo 79 câu (~40 là `caseDetail` trả về) → max(79 + 10, ⌈79 × 1,3⌉)
+  /** RKC-2b ③: POST /interventions/:id/result lần đầu trên PA quy chế chờ = Xác nhận PA + ghi KQ (một giao dịch) · PATCH /cases/:id trên Case chưa xác nhận = Xác nhận Case. */
+  ghiKqXacNhanNgam: 153,   // đo 117 câu (riêng hai bước 194) → max(117 + 10, ⌈117 × 1,3⌉)
+  suaCaseXacNhan: 132,   // đo 101 câu → max(101 + 10, ⌈101 × 1,3⌉)
   /** OV-15d: đồng bộ thông báo tự động của MỘT người (`dongBoThongBaoTuDong`, khi mở chuông ≤ 1 lần / 5 phút) — QL / GVCN, trong giao dịch rồi cuộn lại. */
   dongBoThongBaoQL: 33,   // PR CHUONG-NHE: đo 23 câu, 308 dòng (×3; trước 33 câu, 1 189 dòng — QL không dạy lớp nên không đọc lượt) → max(23 + 10, ⌈23 × 1,3⌉)
   dongBoTuMyWork: 14,   // RA-DOC-0611b: đồng bộ chuông sau GET /my-work từ việc đã tính (thông báo cũ + Case người đó + xử lý Case) — đo ×3 QL 3 · GVCN 4 · QT 3 câu (đường cũ 19 · 26 · 19) → max(4 + 10, ⌈4 × 1,3⌉)

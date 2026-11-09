@@ -200,7 +200,9 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
  * `GOI_Y_MO_TA_PA`, ≥ 15) · Người dạy (loại có người) · Số buổi (Tutor / Tự học) · Bắt đầu *; nút chính "Xác nhận PA" + "Đề xuất PA khác…" (PA mới +
  * lý do → Quản lý duyệt; PA gốc chờ, chưa chạy) + "Không cần theo dõi…". QL từ chối PA khác → dòng lý do ở đầu, việc quay lại.
  */
-export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel & { pa: PaQuyChe; data: CaseDetail; onXong: (x?: DaLuuPanel) => void; tiep?: TiepViec }) {
+export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }: ChungPanel & { pa: PaQuyChe; data: CaseDetail; onXong: (x?: DaLuuPanel) => void; tiep?: TiepViec;
+  /** RKC-2b ③ (chủ SP 11/11): PA đã làm — ghi Kết quả luôn (lưu = Xác nhận PA), không qua bước xác nhận riêng. */
+  onGhiKetQua?: () => void }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const goc: GiaTriPa = { ...paMoi(pa.kind), soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa) ?? nguoiMacDinh(pa.kind) };
   /* 6b-3: nội dung đang gõ ở nháp của việc — ✕ khi đang "Xem Case" (form ẩn) vẫn hỏi, mở lại việc thì chữ còn. */
@@ -327,6 +329,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, ...chung }: ChungPanel 
                 )} />
               {/* U01 #6: hai lối khác là LINK sát dưới hàng ô (không ngang hàng nút chính). */}
               <div className="-mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+                {onGhiKetQua && <NutChu onClick={onGhiKetQua}>{t('Ghi kết quả…')}</NutChu>}
                 <NutChu onClick={() => { setCheDo('doi'); lf.datLai(); }}>{t('Đề xuất PA khác…')}</NutChu>
                 <NutChu onClick={() => setCheDo('ktd')}>{t('Không cần theo dõi…')}</NutChu>
               </div>
