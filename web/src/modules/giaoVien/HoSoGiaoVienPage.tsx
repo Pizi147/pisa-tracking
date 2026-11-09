@@ -167,7 +167,7 @@ function KyNangGv({ gv, onDaLuu }: { gv: HoSo['gv']; onDaLuu: () => void }) {
     <span className="flex flex-wrap items-center gap-2 font-normal">
       <ChonKyNang value={nhap} onToggle={doi} disabled={busy} />
       <button type="button" className="btn btn-sm btn-primary max-sm:min-h-11" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
-      <button type="button" className="btn btn-sm max-sm:min-h-11" disabled={busy} onClick={() => setNhap(null)}>{t('Huỷ')}</button>
+      <button type="button" className="btn btn-sm max-sm:min-h-11" disabled={busy} onClick={() => setNhap(null)}>{t('Đóng')}</button>
     </span>
   );
 }
