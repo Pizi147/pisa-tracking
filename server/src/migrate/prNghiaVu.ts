@@ -25,6 +25,7 @@ export function migratePrNghiaVu(conn: any, applied: string[]) {
   const coKn = conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'ky_nang_lan'`).get();
   conn.exec('CREATE TABLE IF NOT EXISTS ky_nang_lan (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, skill TEXT NOT NULL, tu TEXT NOT NULL, den TEXT)');
   conn.exec('CREATE INDEX IF NOT EXISTS idx_ky_nang_lan ON ky_nang_lan(skill, user_id)');
+  conn.exec('CREATE TABLE IF NOT EXISTS nghia_vu_lech (id INTEGER PRIMARY KEY, khoa TEXT NOT NULL, truoc TEXT, sau TEXT, luc TEXT NOT NULL)');
   if (!co) applied.push('SỔ NGHĨA VỤ: tạo bảng nghia_vu (chưa có dòng — nạp ở prNghiaVuNap).');
   if (!coKn) applied.push('SỔ NGHĨA VỤ: tạo bảng ky_nang_lan (lịch sử kỹ năng GV; người chưa có lịch sử đọc kỹ năng hiện tại).');
 }

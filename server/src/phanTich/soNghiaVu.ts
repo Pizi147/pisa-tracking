@@ -233,6 +233,14 @@ export const truocMoc = (ngay: string | null | undefined): boolean => !!MOC_TINH
 
 export const khoaViec = (khoaCongViec: string) => `viec:${khoaCongViec}`;
 
+/**
+ * NGƯỜI CHỊU MỘT VIỆC (spec 1.2 b) — MỘT chỗ chọn: hiện = người Công việc giao (việc mở) / người giữ lúc hạn (`viecDaXong`, việc xong) / chủ Case (Kết quả PA).
+ * PTA 09/11: luật có thể đổi sang "chốt lúc việc sinh ra" — chỉ sửa ở đây.
+ */
+export function nguoiChiuViec(nguon: { ownerId: number | null | undefined }): number | null {
+  return nguon.ownerId != null && nguon.ownerId > 0 ? nguon.ownerId : null;
+}
+
 /** Hạn gốc từ nhật ký đặt lại hạn (`viec_han_lan`, lần đầu): theo loại việc. */
 function hanGocCn(cn: number): (loai: string, id: number | null | undefined) => string | null {
   const m = new Map<string, string>();
@@ -270,13 +278,13 @@ export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null 
     if (!it.due || !VIEC_CO_HAN.has(it.group)) continue;
     const khoa = khoaViec(it.key);
     out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null,
-      nguoi: it.ownerId != null && it.ownerId > 0 ? it.ownerId : null, sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
+      nguoi: nguoiChiuViec(it), sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
       xongLuc: null, nguoiLam: null, khongTinh: null, hanGoc: goc(it.key, it.caseId) });
   }
   for (const it of viecXongCn({ cn, khung: 'ft', tu: '2000-01-01', cuoi: '2100-12-31', homNay }, true)) {
     const khoa = khoaViec(it.key);
     const thieu = !it.xong;
-    out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null, nguoi: it.ownerId ?? null,
+    out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null, nguoi: nguoiChiuViec(it),
       sCheo: false, pcNhapSau: false, han: it.due, tuan: null,
       xongLuc: thieu ? (truocMoc(goc(it.key) ?? it.due) ? it.due : null) : it.xong, nguoiLam: null,
       khongTinh: thieu && !truocMoc(goc(it.key) ?? it.due) ? 'thieu-ngay-xong' : null, hanGoc: goc(it.key) });
@@ -290,7 +298,7 @@ export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null 
   for (const [id, x] of pa) {
     const c = chu.get(x.iv);
     const khoa = khoaViec(`ket_qua_pa:${id}`);
-    out.set(khoa, { loai: 'viec', kieu: 'ghi_ket_qua_pa', khoa, chiNhanh: cn, lop: c?.lop ?? null, hocVien: c?.hv ?? null, nguoi: c?.owner ?? null,
+    out.set(khoa, { loai: 'viec', kieu: 'ghi_ket_qua_pa', khoa, chiNhanh: cn, lop: c?.lop ?? null, hocVien: c?.hv ?? null, nguoi: nguoiChiuViec({ ownerId: c?.owner }),
       sCheo: false, pcNhapSau: false, han: x.han, tuan: null, xongLuc: x.ghi, nguoiLam: null, khongTinh: null,
       hanGoc: parseObligation(id).k === 0 ? hanGoc('reset_case:action_due', x.iv) : null });
   }

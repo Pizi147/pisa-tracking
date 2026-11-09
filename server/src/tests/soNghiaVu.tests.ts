@@ -368,5 +368,39 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const n = ng.soCauSql() - c0;
     assert(n <= 2, `${n} câu`);
   }));
+
+  // ------------------------------------------------------------------ Task 6 · nạp cũ + đối chiếu đêm
+  const { napSoNghiaVu } = await import('../migrate/prNghiaVuNap.ts');
+  const { doiChieuSo } = await import('../ops/doiChieuSo.ts');
+  const chup = () => new Map((conn.prepare(`SELECT * FROM nghia_vu ORDER BY khoa`).all() as any[]).map(({ id: _i, cap_nhat: _c, ...r }) => [r.khoa, JSON.stringify(r)]));
+
+  check('NV-NAP · seed → nạp → sổ = ghi từng lượt + từng chi nhánh (so toàn bộ); nạp lần hai không nhân đôi, không đổi', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    const kq = napSoNghiaVu();
+    const a = chup();
+    assert(kq.bai > 0 && kq.viec > 0 && a.size === kq.bai + kq.viec, `nạp: ${JSON.stringify(kq)} · ${a.size} dòng`);
+    napSoNghiaVu();
+    const a2 = chup();
+    assert(a2.size === a.size && [...a].every(([k, v]) => a2.get(k) === v), 'nạp lần hai đổi sổ');
+    conn.exec('DELETE FROM nghia_vu');
+    for (const r of conn.prepare(`SELECT id FROM assessment_attempts ORDER BY id`).all() as any[]) nv.ghiSoLuot([r.id]);
+    for (const b of conn.prepare(`SELECT id FROM branches ORDER BY id`).all() as any[]) nv.ghiSoViecChiNhanh(b.id);
+    const b = chup();
+    const lech = [...new Set([...a.keys(), ...b.keys()])].filter((k) => a.get(k) !== b.get(k));
+    assert(!lech.length, `${lech.length} khoá lệch: ${lech.slice(0, 3).map((k) => `${k} ${a.get(k)} ≠ ${b.get(k)}`).join(' ‖ ')}`);
+  }));
+
+  check('NV-DOI-CHIEU · dòng sổ bị sửa tay sai → doiChieuSo sửa lại + một dòng nghia_vu_lech (trước / sau)', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    napSoNghiaVu();
+    const r = get(`SELECT khoa, nguoi FROM nghia_vu WHERE loai = 'bai' AND nguoi IS NOT NULL AND han >= date(?, '-50 day') ORDER BY han DESC LIMIT 1`, TODAY);
+    assert(r, 'seed phải có bài hạn trong 8 tuần gần nhất');
+    conn.prepare(`UPDATE nghia_vu SET nguoi = -12345 WHERE khoa = ?`).run(r.khoa);
+    conn.exec('DELETE FROM nghia_vu_lech');
+    const kq = doiChieuSo(TODAY);
+    assert(so(r.khoa).nguoi === r.nguoi, `chưa sửa: ${JSON.stringify(so(r.khoa))}`);
+    const l = conn.prepare(`SELECT * FROM nghia_vu_lech WHERE khoa = ?`).all(r.khoa) as any[];
+    assert(l.length === 1 && /-12345/.test(l[0].truoc) && l[0].sau.includes(String(r.nguoi)) && kq.lechBai >= 1, `nhật ký lệch: ${JSON.stringify(l)} · ${JSON.stringify(kq)}`);
+  }));
   if (nv.MOC_TINH_TRE) nv.MOC_TINH_TRE.ngay = '2026-10-19';
 }
