@@ -229,6 +229,21 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     for (const r of ros) assert((r.cuoiKhoa?.tyLe ?? null) === (tk.get(r.id) ?? null), `em ${r.id}: bảng ${r.cuoiKhoa?.tyLe ?? null} ≠ Tổng kết ${tk.get(r.id)}`);
   });
 
+  /* Chủ SP 10/11 khuya ("Hiện, ghi Lưu trữ"): bấm thử #1297 — MB BE 08 đầu trang "2 HV", Tổng kết 2 em, tab Học viên "Tất cả 1" (em lưu trữ bị ẩn). */
+  check('HSL-LUU-TRU · lớp đã kết thúc: số dòng tab Học viên = "n HV" đầu trang = tab Tổng kết (gồm em đã lưu trữ); lớp đang học vẫn bỏ em lưu trữ', () => {
+    for (const ma of ['MB FOU 03', 'MB BE 08']) {
+      const lop = one('SELECT id FROM classes WHERE code = ?', ma).id as number;
+      const ros = classes.classRoster(QL, lop) as any[];
+      const tab = d.dongTabHocVien(ros, true).length;
+      const dau = classes.classOverview(QL, lop).summary.studentCount;
+      const tk = new Set((tongKetLop(QL, lop).dong as any[]).map((x) => x.studentId)).size;
+      assert(tab === dau && dau === tk, `${ma}: tab ${tab} · đầu trang ${dau} · Tổng kết ${tk}`);
+    }
+    const be = classes.classRoster(QL, one('SELECT id FROM classes WHERE code = ?', 'MB BE 08').id) as any[];
+    assert(be.some((r) => r.archived), 'seed MB BE 08 phải có em đã lưu trữ');
+    assert(d.dongTabHocVien(be, false).length === be.filter((r) => !r.archived).length && d.dongTabHocVien(be, false).length < be.length, 'lớp đang học: bỏ em lưu trữ');
+  });
+
   check('OV11g-6 · HL-8 / HL-14 / HL-12 / CA2-4 / CA2-12: badge Admin, "+ Học viên" khi tìm không ra, lớp cùng chi nhánh lên đầu, câu chặn Kết thúc lớp', () => thu(() => {
     for (const k of ['qua-han', 'cho-duyet', 'xep-lop']) assert(!d.badgeHienTheoVai('admin', k) && d.badgeHienTheoVai(null, k), `badge ${k}`);
     assert(d.badgeHienTheoVai('admin', 'thieu-tt') && d.badgeHienTheoVai('admin', 'cham') && !d.badgeHienTheoVai('tvv', 'cham'), 'badge thông tin');

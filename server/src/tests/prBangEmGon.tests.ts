@@ -37,9 +37,9 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
     assert(/nho \? `\$\{CHIP\} !h-5 !min-w-0 !px-1\.5`/.test(chip), 'ChipSos thiếu cỡ nhỏ (cao 20, đệm 6)');
   });
 
-  /* HSL-GON (05/11, M3): TVV chính ghi một lần ở đầu hồ sơ lớp; dòng em chỉ ghi TVV KHÁC TVV chính (`tvvRieng`). */
+  /* HSL-GON (05/11, M3): TVV chính ghi một lần ở đầu hồ sơ lớp; dòng em chỉ ghi TVV KHÁC TVV chính (`tvvRieng`). HSL-LUU-TRU: TVV chính tính trên em chưa lưu trữ (`dangLuu`) như đầu trang. */
   check('B1 · TVV dưới tên chỉ khi khác TVV chính của lớp (.tvv 11 px mờ); TVV chính = TVV giữ nhiều em nhất; mới vào là chữ (không chip MoiVao)', () => {
-    assert(/tvvRieng\(r\) && <span className="tvv">TVV \{r\.tvv\}<\/span>/.test(bang) && /const tvvChinh = tvvChinhCuaLop\(tatCa\)/.test(bang), 'thiếu TVV ngoại lệ dưới tên');
+    assert(/tvvRieng\(r\) && <span className="tvv">TVV \{r\.tvv\}<\/span>/.test(bang) && /const tvvChinh = tvvChinhCuaLop\(dangLuu\)/.test(bang), 'thiếu TVV ngoại lệ dưới tên');
     assert(dm.tvvChinhCuaLop([{ tvv: 'Lê Thu' }, { tvv: 'Phan Mai' }, { tvv: 'Phan Mai' }, { tvv: null }]) === 'Phan Mai', 'TVV chính = nhiều em nhất');
     assert(dm.tvvChinhCuaLop([]) === null && dm.tvvChinhCuaLop([{ tvv: 'B' }, { tvv: 'A' }]) === 'A', 'TVV chính: rỗng → null, hoà → theo chữ cái');
     assert(doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'TVV'"), 'đầu hồ sơ lớp thiếu ô TVV chính');

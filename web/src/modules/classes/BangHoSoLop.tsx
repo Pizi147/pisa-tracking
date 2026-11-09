@@ -9,7 +9,7 @@ import { fmtBand } from '../../lib/format.ts';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import { ODiem, OKhongHoc } from '../../ui/ODiem.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { NhanKetPa, NhanKq } from '../../ui/Nhan.tsx';
+import { Nhan, NhanKetPa, NhanKq } from '../../ui/Nhan.tsx';
 import { ChipDuoiKck } from '../../ui/KetQuaDot.tsx';
 import { ErrorState, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -25,7 +25,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import {
   CASE_CATEGORY_LABEL, GIAI_THICH_KCK, INTERVENTION_KIND_LABEL, KCK, OUTCOME_TONE, chipSosTuKetQua, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
-  lyDoChuaDu, nhanThang, outcomeLabelFor, soKyVong, tuanLich, tvvChinhCuaLop, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
+  lyDoChuaDu, nhanThang, outcomeLabelFor, soKyVong, tuanLich, dongTabHocVien, tvvChinhCuaLop, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -92,8 +92,10 @@ const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
  * Rê / focus ô W · S → thẻ tiêu chí (`dongTieuChi`; ô chỉ có band không thẻ). "Xem chi tiết" → panel Case phải (`NganCase`); "Hồ sơ HV ›" đổi trang.
  * < 640 px: mỗi em một thẻ (lưới 5 ô L R W S Overall), chạm tên mở cùng vùng mở rộng cuối thẻ (`sauThe`).
  */
-export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien, cachXem, nutChon }: {
+export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien, cachXem, nutChon, daKetThuc = false }: {
   classId: number; maLop: string; quyen: QuyenDong; onDoi: () => void; onThemHocVien?: () => void;
+  /** HSL-LUU-TRU: lớp đã kết thúc — giữ cả em đã lưu trữ (nhãn "Lưu trữ", không ⋯), khớp "n HV" đầu trang + Tổng kết. */
+  daKetThuc?: boolean;
   /** V8-HSL: nút đoạn Cách xem (tab Học viên) đứng ĐẦU hàng công cụ của thẻ bảng; `nutChon` = "Chọn nhiều" (QL) cuối hàng. */
   cachXem?: ReactNode; nutChon?: ReactNode;
   /** PR-LUI-b: "Chọn nhiều học viên" (Quản lý) — bật thì ô chọn cạnh tên. */
@@ -116,17 +118,18 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
 
   const caseCua = new Map<number, CaseLop[]>();
   for (const c of cases.data?.rows ?? []) if (c.studentId !== null && c.status !== 'done') caseCua.set(c.studentId, [...(caseCua.get(c.studentId) ?? []), c]);
-  const tatCa = roster.data.filter((r) => !r.archived);
+  const dangLuu = roster.data.filter((r) => !r.archived);
+  const tatCa = dongTabHocVien(roster.data, daKetThuc);
   const kq = new Map(tatCa.map((r) => [r.id, ketQua(r)]));
   const dem = { 'tat-ca': tatCa.length, sos: tatCa.filter((r) => kq.get(r.id) === 'sos').length, thieu: tatCa.filter((r) => kq.get(r.id) === 'thieu').length };
   const ds = tatCa.filter((r) => loc === 'tat-ca' || kq.get(r.id) === loc);
   const ngCanh: NguCanhDs = { loai: 'hoc-vien', ids: ds.map((s) => s.id), nhan: t('Lớp {lop}', { lop: maLop }) };
   /* HSL-GON (M3): TVV chính đã ghi ở đầu hồ sơ lớp (hàng GV) — dòng em chỉ ghi TVV khác TVV chính. */
-  const tvvChinh = tvvChinhCuaLop(tatCa);
+  const tvvChinh = tvvChinhCuaLop(dangLuu);
   const tvvRieng = (r: Hang) => !!r.tvv && r.tvv !== tvvChinh;
   const xong = () => { invalidate(`/cases?classId=${classId}`); cases.reload(); roster.reload(); onDoi(); };
   /* `moiVao` = vào lớp từ đầu tuần này → tuần của hôm nay. */
-  const nhanPhu = (r: Hang) => <>{r.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></>;
+  const nhanPhu = (r: Hang) => <>{r.archived && <Nhan tone="muted">{t('Lưu trữ')}</Nhan>}{r.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></>;
   /* Bấm tên: mở / đóng; mở thì chọn sẵn kỹ năng đầu tiên có Case (đỡ một bấm), không có Case → chưa chọn. Bấm ô điểm: mở với kỹ năng đó. */
   const moTen = (r: Hang) => setMo(mo?.sid === r.id ? null : { sid: r.id, kn: KN.find((k) => caseKn(caseCua.get(r.id) ?? [], k).length > 0) ?? null });
   const moO = (r: Hang, kn: Kn) => setMo(mo?.sid === r.id && mo.kn === kn ? null : { sid: r.id, kn });
@@ -162,7 +165,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
           <span className="flex min-w-0 flex-col items-start">
             <TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />
             {/* Dòng dưới tên (mockup v10 `.chip-phu`): TVV (chữ mờ) · mới vào (chữ) · thiếu thông tin · Ý thức — chỉ việc cần làm có màu. */}
-            <ChipXetLaiDong sid={r.id} />{(tvvRieng(r) || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}{nhanPhu(r)}</span>}
+            <ChipXetLaiDong sid={r.id} />{(tvvRieng(r) || r.archived || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}{nhanPhu(r)}</span>}
           </span>
         </span>
       );
@@ -171,7 +174,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
         ? <span className="whitespace-nowrap" title={GIAI_THICH_KCK}>{r.cycle.target != null && <>{fmtBand(r.cycle.target)} · </>}{KCK}</span>
         : <TargetText band={r.cycle?.target} kck={false} />;
       case 'ph': return r.lienHe ? <OPhuHuynh l={r.lienHe} /> : <span className="text-faint">—</span>;
-      case 'nut': return <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })} />;
+      case 'nut': return <MenuDong muc={r.archived ? [] : tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })} />;
       case 'mt': return h ? <Link to={duongHoSoHocVien(r.id, { dot: h.id })} className="text-slate-100 no-underline hover:underline">{dich(h.label)}</Link> : <span className="text-faint">—</span>;
       case 'l': case 'r': case 'w': case 's': case 'ovr': return oDiem(r, h, c.key);
       case 'kq': return <OKetQua r={r} h={h} kq={kq.get(r.id)!} />;
@@ -188,14 +191,14 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   const o = (r: Hang, k: string) => oCua(r, cotTheo.get(k)!);
   const theEm = (r: Hang): ReactNode => {
     const h = mocCua(r);
-    const coNhan = r.moiVao || r.missing.length > 0 || !!r.canhBaoYThuc;
+    const coNhan = r.archived || r.moiVao || r.missing.length > 0 || !!r.canhBaoYThuc;
     return (
       <div className="flex cursor-pointer flex-col gap-2" onClick={bamHang(() => moTen(r))}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
           <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
             <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}</span></span>
           {o(r, 'kq')}
-          <MenuDong muc={tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
+          <MenuDong muc={r.archived ? [] : tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
             lopNut="btn h-11 w-11 shrink-0 !px-0 text-[13px] font-bold tracking-wider" />
         </div>
         <ChipXetLaiDong sid={r.id} />

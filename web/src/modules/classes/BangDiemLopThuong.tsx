@@ -10,13 +10,14 @@ import { DongCase, NhanCotCase, type CanHoTro } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
+import { Nhan } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, GIAI_THICH_KCK, KCK, duongHoSoHocVien, tvvChinhCuaLop, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, GIAI_THICH_KCK, KCK, duongHoSoHocVien, dongTabHocVien, tvvChinhCuaLop, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -63,7 +64,7 @@ type MoNgan = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan'
  * bấm tên → mở ngay dưới hàng: Case đang mở của em (dòng Case cũ của Cần hỗ trợ: trạng thái · PA · việc tiếp → panel Case) + "Hồ sơ HV ›" · "+ Case".
  * Chi tiết Case chỉ đọc khi mở em đầu tiên (một `/classes/:id/can-ho-tro`, dùng lại cho các em khác).
  */
-export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon, lienTuc = false, cachXem, nutChon }: {
+export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = null, moc = null, chon, lienTuc = false, cachXem, nutChon, daKetThuc = false }: {
   classId: number; maLop?: string; quyen: QuyenDong; onDoi: () => void;
   /** Nút đoạn Cách xem (đầu) + "Chọn nhiều" (cuối) trên hàng chip lọc của thẻ bảng — như FT. */
   cachXem?: ReactNode; nutChon?: ReactNode;
@@ -73,6 +74,8 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   chuongTrinh?: string | null; moc?: string[] | null;
   /** OV-6b2: lớp liên tục (PET, KET…) — cột theo Checkpoint, không Target, không Lộ trình tiếp theo. */
   lienTuc?: boolean;
+  /** HSL-LUU-TRU: lớp đã kết thúc — giữ cả em đã lưu trữ (nhãn "Lưu trữ", không ⋯), khớp "n HV" đầu trang + Tổng kết. */
+  daKetThuc?: boolean;
 }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<DongThuong[]>(`/classes/${classId}/roster`, [classId]);
@@ -90,7 +93,8 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 
   if (error) return <p className="m-0 text-xs text-rose-200">{error.message}</p>;
   if (loading || !data) return <Skeleton rows={4} />;
-  const tatCa = data.filter((s) => !s.archived);
+  const dangLuu = data.filter((s) => !s.archived);
+  const tatCa = dongTabHocVien(data, daKetThuc);
   if (!tatCa.length) return <Empty title={t('Lớp chưa có học viên')} />;
   const mon = tatCa[0].skills ?? [];
   /* OV-6b2: lớp liên tục — mỗi Checkpoint đã có một nhóm cột (khoá `checkpoint:n`), 4 Checkpoint gần nhất.
@@ -153,12 +157,13 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   );
   const tenEm = (s: DongThuong) => <TenEm s={s} mo={mo === s.id} onMo={() => moTen(s.id)} ds={ds} />;
   /* HSL-THUONG (như FT `nhanPhu`): dòng dưới tên — TVV khác TVV chính của lớp · "mới vào W3 SEP" chữ mờ · thiếu thông tin · Ý thức · Kết thúc vì. */
-  const tvvChinh = tvvChinhCuaLop(tatCa);
+  const tvvChinh = tvvChinhCuaLop(dangLuu);
   const dongPhu = (s: DongThuong) => {
     const tvv = !!s.tvv && s.tvv !== tvvChinh;
-    if (!tvv && !s.moiVao && !s.missing.length && !s.canhBaoYThuc && !s.ketThucVi) return null;
+    if (!tvv && !s.archived && !s.moiVao && !s.missing.length && !s.canhBaoYThuc && !s.ketThucVi) return null;
     return (
       <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        {s.archived && <Nhan tone="muted">{t('Lưu trữ')}</Nhan>}
         {tvv && <span className="tvv">TVV {s.tvv}</span>}
         {s.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}
         <MissingBadge items={s.missing} gon /><CanhBaoYThuc cb={s.canhBaoYThuc} />
@@ -173,7 +178,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
     </span>
   );
   const menu = (s: DongThuong, lopNut?: string) => (
-    <MenuDong lopNut={lopNut} muc={tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
+    <MenuDong lopNut={lopNut} muc={s.archived ? [] : tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
   );
   const lopHang = (s: DongThuong) => `${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
 
