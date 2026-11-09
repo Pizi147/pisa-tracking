@@ -91,4 +91,8 @@ export type DongViecHan = {
   tab: TabViecHan; mo: boolean; ten: string; phu?: string | null;
   em: { id: number; ten: string } | null; lop: { id: number | null; ma: string } | null;
   han: string | null; ngayXong: string | null; dung: boolean; treNgay: number | null; href: string;
+  /** SỔ NGHĨA VỤ (PR-2): 3 tab Chưa làm · Làm muộn · Đúng hạn. Vắng (panel cũ) = suy từ `mo` / `dung`. `treNgay` = số ngày muộn / quá hạn. */
+  trangThai?: 'chua' | 'muon' | 'dung';
+  /** Hạn gốc khi đã đặt lại hạn (khác `han`) · phân công nhập sau hạn · bài S chéo chung chưa ai nhận · tên chi nhánh (xem tổng mọi chi nhánh). */
+  hanGoc?: string | null; pcNhapSau?: boolean; sChung?: boolean; chiNhanh?: string | null;
 };

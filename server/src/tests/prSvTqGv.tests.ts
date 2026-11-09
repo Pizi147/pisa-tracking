@@ -230,7 +230,8 @@ export async function runPrSvTqGvTests(t: any) {
     const ghiDanh = (sid: number) => new Set((conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ?`).all(sid) as any[]).map((r) => r.class_id));
     const oCua = (gv: number, id: number, hep: boolean) => {
       pt.napDayDuKhiKiem.bat = !hep;
-      try { xoaNho(); return pt.oChiSoHoSoGv(perm.loadPrincipal(gv), gv, { ...KY, cot: 'cham-diem' }).rows.some((r: any) => r.id === id); } catch { return false; } finally { pt.napDayDuKhiKiem.bat = false; }
+      /* Sổ nghĩa vụ (PR-2): panel Chấm Test đọc sổ — phép kiểm giữ đường thu hẹp `napBai(…, gv)` (Kết quả / Tiến bộ vẫn dùng) qua `tapChamDiem`. */
+      try { xoaNho(); return pt.tapChamDiem(c, pt.napBai(perm.loadPrincipal(gv), c, gv)).dong.get(id)?.gv === gv; } catch { return false; } finally { pt.napDayDuKhiKiem.bat = false; }
     };
     const lopLuot = (id: number) => conn.prepare(`SELECT class_id FROM assessment_attempts WHERE id = ?`).get(id).class_id;
     /*

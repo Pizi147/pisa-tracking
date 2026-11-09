@@ -73,7 +73,7 @@ export async function runPrTlNenTests(t: any) {
     assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 20, 'schema.sql thiếu bảng / trigger');
     const tg = c().prepare(`SELECT COUNT(*) n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_%'`).get() as any;
     assert(tg.n === 20, `${tg.n} trigger`);
-    assert(soThamChieu() > 0 && (c().prepare('SELECT COUNT(*) n FROM moc_he_thong').get() as any).n === 4, 'dòng mốc');
+    assert(soThamChieu() > 0 && (c().prepare('SELECT COUNT(*) n FROM moc_he_thong').get() as any).n === 5, 'dòng mốc');   // + 'so-viec' (sổ nghĩa vụ PR-2)
   });
 
   check('N1-b · mỗi bảng × INSERT / UPDATE / DELETE làm so tăng (BEGIN IMMEDIATE … ROLLBACK)', () => {

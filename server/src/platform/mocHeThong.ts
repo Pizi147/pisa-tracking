@@ -8,13 +8,18 @@ import { coGhiTrongRequest, coNho, layMoc, nho } from './nguCanhRequest.ts';
  *     (chủ SP 31/10): ≥ 60 s từ lần quét trước, HOẶC đã có một lần ghi qua API và lượt trước ≥ 15 s (`luiMocQuetSauGhi`, GIAM-DOC-0611), HOẶC sang ngày nghiệp vụ khác.
  */
 export type KhoaQuet = 'quet:yeu-cau' | 'quet:lenh' | 'quet:doi-qua-han' | 'quet:lop-trong';
-export type MocHeThong = { thamChieu: number | null; quet: Partial<Record<KhoaQuet, { luc: string | null; ngay: string | null }>> };
+/**
+ * `soViec` (SỔ NGHĨA VỤ PR-2, Task 7a): `ghi` = số lần ghi thành công qua API (dòng `so-viec`, tăng ở `luiMocQuetSauGhi`); `cn` = số `ghi` + ngày nghiệp vụ
+ * lúc sổ VIỆC của chi nhánh được ghi lại lần cuối (dòng `so-viec:<cn>`, `lamMoiViec`).
+ */
+export type MocHeThong = { thamChieu: number | null; quet: Partial<Record<KhoaQuet, { luc: string | null; ngay: string | null }>>;
+  soViec: { ghi: number | null; cn: Map<number, { so: number | null; luc: string | null; ngay: string | null }> } };
 
 /** Cột con thêm vào câu phiên — một dòng JSON `{ khoa: [so, luc, ngay] }`. */
 export const COT_MOC = `(SELECT json_group_object(khoa, json_array(so, luc, ngay)) FROM moc_he_thong) AS u_moc`;
 
 export function docMoc(json: string | null | undefined): MocHeThong {
-  const m: MocHeThong = { thamChieu: null, quet: {} };
+  const m: MocHeThong = { thamChieu: null, quet: {}, soViec: { ghi: null, cn: new Map() } };
   let o: Record<string, [number | null, string | null, string | null]>;
   try { o = JSON.parse(json ?? ''); } catch { return m; }
   if (!o || typeof o !== 'object') return m;
@@ -22,6 +27,11 @@ export function docMoc(json: string | null | undefined): MocHeThong {
   if (typeof tc === 'number') m.thamChieu = tc;
   for (const k of ['quet:yeu-cau', 'quet:lenh', 'quet:doi-qua-han', 'quet:lop-trong'] as const) {
     if (Array.isArray(o[k])) m.quet[k] = { luc: o[k][1] ?? null, ngay: o[k][2] ?? null };
+  }
+  for (const [k, v] of Object.entries(o)) {
+    if (!Array.isArray(v)) continue;
+    if (k === 'so-viec') m.soViec.ghi = typeof v[0] === 'number' ? v[0] : null;
+    else if (k.startsWith('so-viec:')) m.soViec.cn.set(Number(k.slice(8)), { so: typeof v[0] === 'number' ? v[0] : null, luc: v[1] ?? null, ngay: v[2] ?? null });
   }
   return m;
 }
@@ -126,6 +136,9 @@ export const QUET_SAU_GHI_MS = 15_000;
  */
 export function luiMocQuetSauGhi(): void {
   const lui = QUET_DOC_MS - QUET_SAU_GHI_MS;
-  db().prepare(`UPDATE moc_he_thong SET luc = strftime('%Y-%m-%dT%H:%M:%fZ', luc, ?) WHERE khoa LIKE 'quet:%' AND luc > ?`)
+  /* Cùng câu: SỔ NGHĨA VỤ (PR-2, Task 7a) — đếm lần ghi (`so-viec`); GET đọc sổ việc thấy số đổi thì ghi lại sổ việc của chi nhánh (`lamMoiViec`). */
+  db().prepare(`UPDATE moc_he_thong SET so = CASE WHEN khoa = 'so-viec' THEN COALESCE(so, 0) + 1 ELSE so END,
+      luc = CASE WHEN khoa = 'so-viec' THEN luc ELSE strftime('%Y-%m-%dT%H:%M:%fZ', luc, ?) END
+    WHERE khoa = 'so-viec' OR (khoa LIKE 'quet:%' AND luc > ?)`)
     .run(`-${lui / 1000} seconds`, new Date(Date.now() - lui).toISOString());
 }

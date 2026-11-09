@@ -122,19 +122,25 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     assert(lt.lopLucThiThat([khongMt]).get(-1) === cu, `khoảng trống quanh ngày thi, không MT → lớp cũ ${cu}: ${lt.lopLucThiThat([khongMt]).get(-1)}`);
   }));
 
+  const soNv: any = await import('../phanTich/soNghiaVu.ts');
   check('PBC-5 · em lưu trữ hôm nay → Chấm điểm GV kỳ trước giữ nguyên; em thôi học TRƯỚC hạn vẫn bỏ', () => {
     /* Kỳ trước: hết 2 tuần trước hôm nay — mọi hạn nhập đã qua (ô hạn từ hôm nay trở đi thì em lưu trữ hôm nay đúng là không còn học). */
     const kyTruoc = { ...ky, den: d.addDaysIso(den, -14) };
     const cham = () => { xoaNho(); return JSON.stringify(pt.phanTichGiaoVien(QL, kyTruoc).hang.map((h: any) => [h.id, h.chamDiem])); };
-    const truoc = cham();
     const lop = classId('MB FT 101');
     /* Lưu trữ SAU mọi hạn của kỳ (phép kiểm trước có thể đã dời hạn vài ô qua hôm nay — ô đó em lưu trữ hôm nay đúng là không tính). */
     const hanMax = get(`SELECT MAX(COALESCE(deadline_override, '')) AS h FROM assessment_attempts WHERE class_id = ?`, lop)?.h ?? '';
     const sauHan = [TODAY, d.addDaysIso(hanMax.slice(0, 10) || TODAY, 1)].sort().at(-1);
     thu(() => {
+      /* Sổ nghĩa vụ (PR-2): sửa thẳng DB → ghi sổ như đường đổi trạng thái em (`setStudentStatus` gọi `ghiSoHocVien`). */
+      const ids = (conn.prepare(`SELECT student_id AS id FROM enrollments WHERE class_id = ?`).all(lop) as any[]).map((r) => r.id);
+      soNv.ghiSoHocVien(ids);   // sổ khớp gốc trước khi so (phép kiểm trước sửa thẳng DB)
+      const truoc = cham();
       conn.prepare(`UPDATE students SET status = 'finished', finished_at = ?, archived_at = ? WHERE status = 'active' AND id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(sauHan, sauHan, lop);
+      soNv.ghiSoHocVien(ids);
       assert(cham() === truoc, 'lưu trữ hôm nay làm đổi Chấm điểm kỳ trước');
       conn.prepare(`UPDATE students SET finished_at = ?, archived_at = ? WHERE finished_at = ? AND id IN (SELECT student_id FROM enrollments WHERE class_id = ?)`).run(kyTruoc.tu, kyTruoc.tu, sauHan, lop);
+      soNv.ghiSoHocVien(ids);
       assert(cham() !== truoc, 'em thôi học trước hạn vẫn phải bỏ khỏi Chấm điểm');
     });
   });

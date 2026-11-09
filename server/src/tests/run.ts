@@ -172,6 +172,8 @@ fs.mkdirSync(path.dirname(process.env.PISA_DB), { recursive: true });
  * nạp `db.ts`, để `npm run check` trong một cửa sổ đang có token không bao giờ chạm database thật.
  */
 for (const k of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BAN_CHINH', 'PISA_CHO_PHEP_SEED_TURSO']) delete process.env[k];
+/* SỔ NGHĨA VỤ: seed nằm trước W4 OCT 2026 — tắt mốc bắt đầu tính trễ cho mọi phép kiểm (ca NV-MOC bật riêng). SAU khi đặt PISA_DB và gỡ biến Turso (db.ts đọc biến lúc nạp). */
+(await import('../phanTich/soNghiaVu.ts')).MOC_TINH_TRE.ngay = '';
 for (const suffix of ['', '-wal', '-shm']) {
   const p = process.env.PISA_DB + suffix;
   if (fs.existsSync(p)) fs.rmSync(p);
@@ -9871,8 +9873,6 @@ await runPrSuaLuuTruCTests({ check, assert, assertThrows, conn, P, TODAY } as an
 const { runPrHotfixMoKhoaTests } = bocTep('prHotfixMoKhoa', await import('./prHotfixMoKhoa.tests.ts'));
 await runPrHotfixMoKhoaTests({ check, assert, assertThrows, conn, P, TODAY } as any);
 // ==================================================================== XM-VIEC-DUNG-HAN a (chủ SP 07/11: Việc đúng hạn đếm DÒNG như Công việc)
-const { runPrViecDongTests } = bocTep('prViecDong', await import('./prViecDong.tests.ts'));
-await runPrViecDongTests({ check, assert, conn, P, TODAY, addDays } as any);
 // ==================================================================== XM-VIEC-DUNG-HAN b (chủ SP 07/11: việc đã xong có ngày xong vẫn vào Việc đúng hạn)
 const { runPrNgayXongTests } = bocTep('prNgayXong', await import('./prNgayXong.tests.ts'));
 await runPrNgayXongTests({ check, assert, conn, P, TODAY, addDays } as any);

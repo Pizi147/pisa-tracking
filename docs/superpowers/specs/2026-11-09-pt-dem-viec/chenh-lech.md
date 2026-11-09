@@ -171,3 +171,16 @@ Kết quả PA 14 (đã ghi cả 14) · Thêm PA 3.
 
 Đối chiếu đêm chạy 5 lần (02:20 – 06:20 giờ VN), mỗi lần bài cả trung tâm + việc của một chi nhánh, để không quá giờ hàm định kỳ.
 Ước 0,1 – 0,3 triệu dòng Turso mỗi đêm (dòng quét ≥ dòng trả về) — dưới trần spec 0,5 triệu.
+
+## PR-2 (10/11): khoá việc = đơn vị như Công việc — chạy lại trên bản chép
+
+Bản chép `mig.sqlite` → migrate → nạp sổ (code PR-2). Hôm nay 10/11. Bài **không đổi** (674/1 190 · 1 246/1 902). Việc:
+
+| Khoảng | PR-1 (khoá từng em) | PR-2 (khoá đơn vị) — đúng · muộn · chưa làm |
+|---|---|---|
+| 19/10 → 15/11 | 337/505 (67 %) | 271/430 (63 %) · 81 · 78 |
+| 31/08 → 15/11 | 778/946 (82 %) | 584/743 (79 %) · 81 · 78 |
+
+Vì sao giảm mẫu số: Bàn giao GVCN đã xong trước tính mỗi em một việc, nay một lệnh (lớp nguồn + hạn) một việc; Bàn giao môn theo lớp + môn + GV + hạn;
+Phối hợp SOS theo lớp + hạn; Xác nhận PA theo Case (trước: việc mở theo PA, việc xong theo Case — hai khoá); Xử lý vi phạm theo em + hạn.
+Việc gộp xong một phần vẫn là việc mở (Chưa làm khi quá hạn); xong hết → ngày xong muộn nhất.

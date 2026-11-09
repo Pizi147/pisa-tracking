@@ -13,7 +13,6 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
   const { check, assert, conn, P, TODAY, classId } = t as any;
   const d: any = await import('../../../shared/domain/index.ts');
   const pt: any = await import('../phanTich/giaoVien.ts');
-  const vx: any = await import('../phanTich/viecDaXong.ts');
   const lop: any = await import('../classes/phanTichLop.ts');
   const intake: any = await import('../classes/intake.ts');
   const week: any = await import('../platform/week.ts');
@@ -89,20 +88,18 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const bang = pt.phanTichGiaoVien(P.mbManager, ky);
     const mo = pt.viecQuaHanMo(pt.nguCanhPtGv(P.mbManager, ky));
-    const xong: Map<number, any[]> = vx.viecDaXong(pt.nguCanhPtGv(P.mbManager, ky));   // XM-VIEC b: việc đã xong có ngày xong
     const tong = (o: any) => (o?.k === 'so' ? o.tong : 0), dung = (o: any) => (o?.k === 'so' ? o.dung : 0);
     let coViec = false;
     for (const h of bang.hang) {
-      const nMo = (mo.get(h.id)?.length ?? 0) + (xong.get(h.id)?.length ?? 0), nXongDung = (xong.get(h.id) ?? []).filter((x: any) => x.dung).length;
-      /* XM-VIEC-DUNG-HAN a: đếm DÒNG như Công việc (gộp lớp, một PA một việc) — không quá số việc, có việc thì có dòng; dòng đúng hạn ≤ nghĩa vụ đúng hạn. */
-      assert(!('xuLyViPham' in h) && tong(h.viecDungHan) <= tong(h.ghiKetQuaPa) + nMo && (tong(h.viecDungHan) > 0) === (tong(h.ghiKetQuaPa) + nMo > 0)
-        && dung(h.viecDungHan) <= dung(h.ghiKetQuaPa) + nXongDung, `${h.ten}: ${JSON.stringify(h)}`);
+      /* SỔ NGHĨA VỤ (PR-2, thay XM-VIEC a / b — chủ SP duyệt bảng chênh lệch 10/11): Việc = 3 số riêng của sổ (mẫu = đúng + muộn + chưa làm); có việc mở quá hạn → có Chưa làm. */
+      const v = h.viecDungHan;
+      assert(!('xuLyViPham' in h) && (v.k !== 'so' || v.tong === v.dung + v.muon + v.chua) && (!(mo.get(h.id)?.length) || (v.k === 'so' && v.chua > 0)), `${h.ten}: ${JSON.stringify(v)}`);
       if (tong(h.ghiKetQuaPa) && !coViec) {
         coViec = true;
         const p = pt.oChiSoGv(P.mbManager, { ...ky, gv: h.id, cot: 'viec-dung-han' });
         assert(p.n === tong(h.viecDungHan) && p.tieuDe.endsWith(`${dung(h.viecDungHan)}/${tong(h.viecDungHan)} việc`), p.tieuDe);
-        const kq = p.rows.filter((r: any) => /^Kết quả PA/.test(r.sub) && !('viec' in r)).length;
-        assert(kq > 0 && kq <= tong(h.ghiKetQuaPa), JSON.stringify(p.rows[0]));
+        const kq = p.rows.filter((r: any) => /^Kết quả PA/.test(r.sub)).length;
+        assert(kq > 0, JSON.stringify(p.rows[0]));
       }
     }
     assert(coViec, 'seed không có GV nào có việc có hạn trong 13 tuần');
@@ -110,12 +107,14 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
     const soCn = get(`SELECT COUNT(DISTINCT c.branch_id) AS n FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE ta.user_id = ?`, h.id).n;
     const hoSo = pt.chiSoHoSoGv(P.mbManager, h.id, { tu: ky.tu, den: ky.den });
     const p = pt.oChiSoHoSoGv(P.mbManager, h.id, { tu: ky.tu, den: ky.den, cot: 'cham-diem' });
-    assert(p.n === hoSo.diemDungHan.tong && p.tieuDe.endsWith(`${hoSo.diemDungHan.dung}/${hoSo.diemDungHan.tong} bài`), JSON.stringify({ t: p.tieuDe, o: hoSo.diemDungHan }));
+    /* Sổ nghĩa vụ: panel có thêm nhóm "S chéo chung" ngoài 3 số riêng. */
+    assert(p.rows.filter((r: any) => !r.dongViec.sChung).length === hoSo.diemDungHan.tong && p.tieuDe.endsWith(`${hoSo.diemDungHan.dung}/${hoSo.diemDungHan.tong} bài`), JSON.stringify({ t: p.tieuDe, o: hoSo.diemDungHan }));
     if (soCn === 1 && !get(`SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id WHERE ta.user_id = ? AND c.is_fast_track = 0`, h.id)) {
       assert(hoSo.diemDungHan.tong === h.chamDiem.tong && hoSo.diemDungHan.dung === h.chamDiem.dung, 'hồ sơ ≠ bảng (một chi nhánh, một khung)');
     }
   }));
 
+  const nvSo: any = await import('../phanTich/soNghiaVu.ts');
   check('DEM-QUA-HAN (chủ SP 06/11) · việc Công việc còn mở đã quá hạn vào MẪU Việc đúng hạn của người giữ việc (không vào tử) — cùng dòng quá hạn Công việc "Tất cả"; panel + hồ sơ GV cùng số', () => thu(() => {
     const ky = { ct: 'ft', tu: week.mondayOf(t.addDays(D, -7 * 12)), den: tuanNay };
     const nc = pt.nguCanhPtGv(P.mbManager, ky);
@@ -133,17 +132,13 @@ export async function runPrSvSo2Tests(t: YThucTestKit) {
       const h = bang.hang.find((x: any) => x.id === gv);
       if (!h) continue;   // người giữ việc không có phân công ở khung này (QL, TVV) — không có hàng
       assert(ds.every((it) => it.urgency === 'overdue' && it.due < D), 'chỉ việc đã quá hạn');
-      /* XM-VIEC a: việc mở vào mẫu theo DÒNG Công việc (`prViecDong` kiểm số dòng); tử không lớn hơn nghĩa vụ Kết quả PA đúng hạn. */
-      const dongMo = d.demDongViec(d.gopViecTheoLop(ds, wl.nhanNhomViec)).n;
-      const xg: any[] = vx.viecDaXong(nc).get(gv) ?? [];   // XM-VIEC b: + việc đã xong có ngày xong
-      assert(h.viecDungHan.k === 'so' && h.viecDungHan.tong >= dongMo && h.viecDungHan.tong <= (h.ghiKetQuaPa.tong ?? 0) + dongMo + xg.length
-        && h.viecDungHan.dung <= (h.ghiKetQuaPa.dung ?? 0) + xg.filter((x) => x.dung).length,
-        `mẫu phải gồm ${dongMo} dòng mở: ${JSON.stringify(h.viecDungHan)}`);
+      /* SỔ NGHĨA VỤ (PR-2): mỗi việc mở quá hạn = một dòng Chưa làm (khoá đơn vị như Công việc); panel = ô; hồ sơ ⊇ bảng. */
+      const donVi = new Set(ds.map((it: any) => nvSo.khoaDonVi(it.key, it)));
+      assert(h.viecDungHan.k === 'so' && h.viecDungHan.chua >= donVi.size, `mẫu phải gồm ${donVi.size} việc mở: ${JSON.stringify(h.viecDungHan)}`);
       const p = pt.oChiSoGv(P.mbManager, { ...ky, gv, cot: 'viec-dung-han' });
-      /* DEM-QUA-HAN b: panel dòng việc ('viec') — việc mở = chính dòng Công việc (href, tab theo loại việc), đứng đầu. */
       assert(p.n === h.viecDungHan.tong && p.kieu === 'viec', JSON.stringify(p).slice(0, 300));
-      const moP = p.rows.filter((r: any) => r.dongViec.mo && !/^Kết quả PA/.test(r.sub)).map((r: any) => r.dongViec);
-      assert(moP.length === dongMo && moP.every((v: any) => v.mo && v.ngayXong === null && v.treNgay > 0 && ds.some((it: any) => it.href === v.href && d.tabViecHanCua(it.group) === v.tab)), JSON.stringify(moP));
+      const moP = p.rows.filter((r: any) => r.dongViec.trangThai === 'chua').map((r: any) => r.dongViec);
+      assert(moP.length === h.viecDungHan.chua && moP.every((v: any) => v.mo && v.ngayXong === null && v.treNgay > 0), JSON.stringify(moP));
       assert(p.rows.findIndex((r: any) => !r.dongViec.mo) === -1 || p.rows.slice(p.rows.findIndex((r: any) => !r.dongViec.mo)).every((r: any) => !r.dongViec.mo), 'việc mở phải đứng đầu panel');
       const hsP = pt.oChiSoHoSoGv(P.mbManager, gv, { tu: ky.tu, den: ky.den, cot: 'viec-dung-han' });
       assert(hsP.kieu === 'viec' && hsP.rows.every((r: any) => r.dongViec), 'hồ sơ GV: panel Việc đúng hạn cùng kiểu dòng việc');
