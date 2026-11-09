@@ -64,6 +64,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
   const dienThoai = useDienThoai();
   /* Chủ SP 28/10: lớp GV dạy mà không xếp được — chỉ xem: ô mở trang lượt (đổi trang), không hộp xếp / + MT / sửa ghi chú. */
   const chiXem = !!data.chiXem;
+  const chiMt0 = loai === 'thuong' && !!(data as LuoiThuongData).chiMt0;
   const cuon = useRef<HTMLDivElement>(null);
 
   const cots: Cot[] = useMemo(() => {
@@ -237,7 +238,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                       const m = (h as HangFT).mt0!;
                       return <div className="px-2 pb-1"><OMt v={{ so: 0, attemptId: m.attemptId, kn: m.kn, cu: false, khongDung: m.khongDung }} homNay={homNay} href={duongDotTest({ id: m.attemptId, kind: 'mt0' })} /></div>;
                     })()}
-                    {!homNay ? <span className="block px-2 text-xs text-faint">…</span> : dot.attemptId !== null ? (() => {
+                    {!homNay ? <span className="block px-2 text-xs text-faint">…</span> : chiMt0 ? <OTrong /> : dot.attemptId !== null ? (() => {
                       /* KHT-GON (mockup #659): ô = tuần + kết quả / một chữ; ô kỹ năng, dòng riêng, dòng vắng chỉ khi cần (`oGon`). */
                       const ct = loai === 'thuong' ? (data as LuoiThuongData).chuongTrinh : null;
                       const g = oGon(dot.kn, homNay, ct);
@@ -281,8 +282,8 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
                       return <div className="px-2 pb-1"><OMt v={{ so: 0, attemptId: m.attemptId, kn: m.kn, cu: false, khongDung: m.khongDung }} homNay={homNay} href={duongDotTest({ id: m.attemptId, kind: 'mt0' })} /></div>;
                     })()}
                     {/* C21: ghi chú lịch thi một dòng dưới chip — bấm sửa tại chỗ (Enter lưu · Esc huỷ). Chỉ ghi chú, không dời lịch. */}
-                    <GhiChuTaiCho khoa={{ classId: data.classId, studentId: h.studentId, dot: khoaDot(c.dot) }} ghiChu={h.ghiChu?.[khoaDot(c.dot)] ?? null}
-                      onDoi={onReload} nhan={t('Ghi chú lịch Test {dot}', { dot: nhanDot(c.dot) })} className="px-2 pb-1" chiDoc={chiXem} />
+                    {!chiMt0 && <GhiChuTaiCho khoa={{ classId: data.classId, studentId: h.studentId, dot: khoaDot(c.dot) }} ghiChu={h.ghiChu?.[khoaDot(c.dot)] ?? null}
+                      onDoi={onReload} nhan={t('Ghi chú lịch Test {dot}', { dot: nhanDot(c.dot) })} className="px-2 pb-1" chiDoc={chiXem} />}
                   </td>
                 );
               })}
