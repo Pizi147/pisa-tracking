@@ -1,4 +1,4 @@
-import { Fragment, type KeyboardEvent, type ReactNode, type TdHTMLAttributes } from 'react';
+import { Fragment, type KeyboardEvent, type MouseEvent, type ReactNode, type TdHTMLAttributes } from 'react';
 import { chiaThe, nhomTieuDe, rongCot, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { Empty } from './ui.tsx';
 import { useDienThoai } from './TheDong.tsx';
@@ -59,7 +59,13 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   const dienThoai = useDienThoai();
   const nhom = nhomTieuDe(cot);
   const lop = (h: H) => `${onHang ? 'bam' : cot.length >= 8 ? 'do-hang' : ''} ${dangMo?.(h) ? 'dang-mo' : ''} ${lopHang?.(h) ?? ''}`;
-  const phim = (h: H) => (e: KeyboardEvent) => { if (onHang && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onHang(h); } };
+  /* Link / nút trong hàng giữ việc của nó: bấm / Enter trên đó không mở hàng lần nữa (KIEM-TAY-1011: hàng sổ nghĩa vụ có link em, lớp). */
+  const tuConTuongTac = (e: { target: EventTarget; currentTarget: Element }) => {
+    const el = (e.target as Element).closest?.('a,button,input,select,textarea,label,summary');
+    return !!el && el !== e.currentTarget && e.currentTarget.contains(el);
+  };
+  const phim = (h: H) => (e: KeyboardEvent) => { if (onHang && (e.key === 'Enter' || e.key === ' ') && !tuConTuongTac(e)) { e.preventDefault(); onHang(h); } };
+  const bam = (h: H) => (onHang ? (e: MouseEvent) => { if (!tuConTuongTac(e)) onHang(h); } : undefined);
   const coPhu = (x: ReactNode) => x != null && x !== false && x !== '';
 
   let than: ReactNode;
@@ -99,7 +105,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
     };
     than = hang.map((h) => (
       <article key={khoa(h)} className={`border-t ${theLuoi && !theRieng ? 'grid gap-2.5 px-3.5 py-3' : 'px-3 py-2.5 first:border-t-0'} ${lop(h)}`} style={{ borderColor: 'var(--line)' }}
-        tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
+        tabIndex={onHang ? 0 : undefined} onClick={bam(h)} onKeyDown={phim(h)}>
         {theRieng ? theRieng(h) : theLuoi ? luoi(h) : <>
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">{phan.dau.map((k) => <Fragment key={k}>{o(h, k)}</Fragment>)}</div>
         {phuCua && coPhu(phuCua(h, theoKey.get(phan.dau[0])!)) && <div className="text-[13px] text-slate-400">{phuCua(h, theoKey.get(phan.dau[0])!)}</div>}
@@ -149,7 +155,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
               const phu = phuCua ? cot.map((c) => phuCua(h, c)) : [];
               return (
                 <tr key={khoa(h)} className={lop(h)}
-                  tabIndex={onHang ? 0 : undefined} onClick={onHang ? () => onHang(h) : undefined} onKeyDown={phim(h)}>
+                  tabIndex={onHang ? 0 : undefined} onClick={bam(h)} onKeyDown={phim(h)}>
                   {cot.map((c, i) => (
                     <td key={c.key} data-kieu={c.kieu} data-linh={c.linhHoat || undefined} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                       {oCua(h, c)}

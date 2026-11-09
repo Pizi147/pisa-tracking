@@ -336,6 +336,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const daGo = !daLuu && !ketThuc && (doiDiem || doiNx || doiGv || doiNhom || lyDo.trim() !== '');
   const hoiLyDo = !daLuu && coDiemChinhThuc(cell) && doiDiem && !!diem.patch && !('noShow' in diem.patch);
   const nhanVang = nhapDuoc && !vang && !chanDau(cell) && !doiDiem;   // RKC: ô đã có điểm vẫn ghi vắng — máy chủ hỏi "huỷ điểm rồi ghi vắng?"
+  /* KIEM-TAY-1011 (3): ô "Không dự thi" (MT0 / MT cũ) — "Bỏ vắng" ở chân hộp như ô vắng đã chốt (cùng lệnh gỡ "-" của máy chủ). */
+  const boKhongDuThi = nhapDuoc && !vang && cell.noShow?.state === 'khong-du-thi' && !doiDiem;
   /* Hộp có chữ đã gõ chưa gửi = một ô chưa lưu (bảng điểm theo lượt chặn đổi lượt — như hộp lý do cũ). */
   useBaoHopLyDoMo(busy, daGo);
   /* Luật 2: lỗi → focus ô sai (lỗi máy chủ không chỉ ô: ô điểm đầu). */
@@ -566,6 +568,11 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       {onTiep && nhanTiep && <span className="basis-full truncate text-xs text-slate-400" title={nhanTiep}>{t('Tiếp: {x}', { x: nhanTiep })}</span>}
       {cell.diemHuy && !daLuu && (
         <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ khoiPhuc: true }], onDong, 'khac')}>{dangLuu === 'khac' ? dangLuuChu : CHU_THAO_TAC['khoi-phuc-diem']}</button>
+      )}
+      {boKhongDuThi && !daLuu && (
+        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong, 'khac')}>
+          {dangLuu === 'khac' ? dangLuuChu : t('Bỏ vắng')}
+        </button>
       )}
       {nhanVang && !daLuu && (
         /* LUAT-34: một chữ "Vắng" — hậu quả (dời / thẻ QL / huỷ) nói ở thông báo sau khi ghi, kèm Hoàn tác 10 giây. Vắng kết thúc ô → sang bài tiếp. */

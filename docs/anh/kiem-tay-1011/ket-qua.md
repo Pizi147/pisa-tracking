@@ -32,6 +32,8 @@ về W3 SEP; ngày demo đổi tạm sang 21/09 để "-" được chốt, rồi
 
 ## Ghi lại, KHÔNG sửa (cần PTA / chủ SP quyết hoặc ngoài phạm vi)
 
+> Ghi chú 2–6 đã sửa sau đó — xem `docs/anh/kiem-tay-1011-sua/ket-qua.md`. Ghi chú 1 chờ chủ SP.
+
 1. **[Câu hỏi] Lớp đã kết thúc, em đã lưu trữ.** MB BE 08 đầu trang ghi "2 HV", tab Tổng kết 2 em, tab Học viên "Tất cả 1" (Vũ Thu Uyên lưu trữ 26/04 bị ẩn). % của em có ở cả hai tab khớp nhau. Em lưu trữ có nên hiện ở tab Học viên của lớp đã kết thúc không, hay đầu trang nên đếm 1?
 2. **Mã lớp trong Kế hoạch Test là link sang hồ sơ lớp** — GV chỉ xem (S chéo, cả lớp FT "Chỉ xem") bấm vào ra trang "Không có quyền" (có từ trước, cả FT). Đề xuất: lớp người xem không vào được thì mã lớp là chữ thường.
 3. **Gỡ "-" ở ô "Không dự thi" (MT0 / MT cũ)** không có nút "Bỏ vắng": phải xoá "-" trong ô rồi Lưu (luật LUAT-34 sẵn có), toast chỉ "✓ Đã lưu", không có "Đã bỏ vắng · Hoàn tác" như ô vắng đã dời. Trang Mock Test của QL: menu ⋯ cũng không có "Bỏ vắng" cho ô này. Đề xuất: hiện "Bỏ vắng" ở chân hộp cho ô Không dự thi giống ô vắng đã chốt.

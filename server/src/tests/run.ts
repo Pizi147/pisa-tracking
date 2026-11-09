@@ -9888,6 +9888,9 @@ await runPrLopThuongQuyenTests({ check, assert, assertThrows, conn, P, TODAY, ad
 // ==================================================================== CV-SUA-1011 (chủ SP 10/11: W "-" cả hai · bỏ Chấm Speaking của GVCN · theo dõi mở thẳng lưới)
 const { runPrCvSua1011Tests } = bocTep('prCvSua1011', await import('./prCvSua1011.tests.ts'));
 await runPrCvSua1011Tests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== KIEM-TAY-1011 (ghi chú 2–6: mã lớp theo quyền · Bỏ vắng ô Không dự thi · hàng sổ nghĩa vụ · Lọc 375)
+const { runPrKiemTay1011Tests } = bocTep('prKiemTay1011', await import('./prKiemTay1011.tests.ts'));
+await runPrKiemTay1011Tests({ check, assert, conn, P, classId } as any);
 // ==================================================================== LO-TRINH-GIU-LICH (chủ SP 10/11: chuyển lớp giữ lịch MT · Áp lịch chỉ xếp lượt chưa có lịch)
 const { runPrLoTrinhGiuLichTests } = bocTep('prLoTrinhGiuLich', await import('./prLoTrinhGiuLich.tests.ts'));
 await runPrLoTrinhGiuLichTests({ check, assert, conn, P, TODAY, addDays } as any);

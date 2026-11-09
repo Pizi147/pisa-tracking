@@ -226,6 +226,8 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
         gvcn: (r.gvcn ?? null) as string | null,
         dotChay: loai === 'ft' ? dotChay(r.id) : tomTatThuong(r.id),
         chiXem: chiXemLop(p, r.id),
+        /* KIEM-TAY-1011 (2): mã lớp là link chỉ khi người xem mở được hồ sơ lớp (cùng quyền `classOverview`; bảng lớp đã nhớ trong request GET — không thêm câu). */
+        xemHoSo: can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.id }),
       };
     }),
   };
