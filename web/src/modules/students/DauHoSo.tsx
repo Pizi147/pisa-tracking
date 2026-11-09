@@ -157,7 +157,8 @@ function OViec({ x, chinh, homNay, onLam }: { x: Viec; chinh: boolean; homNay: s
         ? <button type="button" className={['btn btn-sm sm:row-span-2 max-sm:min-h-[44px]', chinh && 'btn-primary'].filter(Boolean).join(' ')} onClick={() => onLam(x)}>{nutViec(x)}</button>
         : <span className="sm:row-span-2" />}
       <span className="flex min-w-0 flex-wrap items-center gap-1.5 max-sm:order-2">
-        {x.the?.map((th) => <span key={th.chu} className="the-phu nhat">{dichChu(th)}</span>)}
+        {/* v18 (chủ SP 10/11): thẻ PA dài ("PA Tutor 10 buổi/kỹ năng · tính vào buổi Free, có lương GV") tràn khỏi ô `nowrap` đè lên nút — chữ cắt "…" trong thẻ, đủ ở `title`. */}
+        {x.the?.map((th) => <span key={th.chu} className="the-phu nhat" title={dichChu(th)}><span className="truncate">{dichChu(th)}</span></span>)}
         {x.han ? <HanViec x={x} homNay={homNay} /> : <span className="text-[13px] text-slate-400">{t('không hạn')}</span>}
       </span>
     </div>

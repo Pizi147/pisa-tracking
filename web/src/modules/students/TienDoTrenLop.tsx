@@ -78,18 +78,31 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
       {loiHoanTac && <span className="font-normal text-bad" role="alert">{loiHoanTac}</span>}
     </p>
   );
+  const tieuDe = kn && tenKn ? t('Tiến độ trên lớp · {kn}', { kn: tenKn }) : t('Tiến độ trên lớp');
+  const nutLuat = <NutLuat label={t('Tiến độ trên lớp là gì')}>{t('GV ghi tuỳ ý: nhận xét, có thể kèm điểm bài hoặc band · không vào MT, Overall, KPI · góp ý tuần cũ chỉ đọc.')}</NutLuat>;
+  /* HS2 (mockup v18, chủ SP 10/11 — Tiến độ luôn cột trái, Case cột phải): rỗng → thẻ gọn hai hàng, không ngăn đầu thẻ: tên · ⓘ / "Chưa có ghi nhận" · + Ghi tiến độ.
+     Đang có form, báo "Đã lưu / Đã xoá · Hoàn tác" thì vẽ thẻ đủ như cũ. */
+  const rong = !!data && !error && !vua && mo !== 'moi' && (tomTat ? !knTomTat.some((k) => ds.some((x) => x.skill === k)) : !ds.length);
+  if (rong) {
+    return (
+      <section className="card flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3" aria-label={t('Tiến độ trên lớp')}>
+        <span className="flex min-w-0 items-center gap-x-2.5"><h2 className="m-0 text-[17px] font-bold text-slate-100">{tieuDe}</h2>{nutLuat}</span>
+        <span className="order-3 min-w-0 flex-[1_1_calc(100%-140px)] text-[14px] text-slate-400">{t('Chưa có ghi nhận')}</span>
+        {ghiDuoc && <button type="button" className="btn btn-sm order-4 ml-auto max-sm:min-h-[44px]" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
+      </section>
+    );
+  }
   return (
     <section className="card flex min-w-0 flex-col" aria-label={t('Tiến độ trên lớp')}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <h2 className="m-0 text-[17px] font-bold text-slate-100">{kn && tenKn ? t('Tiến độ trên lớp · {kn}', { kn: tenKn }) : t('Tiến độ trên lớp')}</h2>
-        <NutLuat label={t('Tiến độ trên lớp là gì')}>{t('GV ghi tuỳ ý: nhận xét, có thể kèm điểm bài hoặc band · không vào MT, Overall, KPI · góp ý tuần cũ chỉ đọc.')}</NutLuat>
+        <h2 className="m-0 text-[17px] font-bold text-slate-100">{tieuDe}</h2>
+        {nutLuat}
         {ghiDuoc && mo !== 'moi' && <button type="button" className="btn btn-sm ml-auto max-sm:min-h-[44px]" onClick={() => setMo('moi')}>{t('+ Ghi tiến độ')}</button>}
       </div>
       {tomTat ? (
         error ? <div className="px-4 py-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
           : !data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
-          /* HSHV-GON (M4, M7): chưa kỹ năng nào có ghi nhận → MỘT dòng ở đầu khung, không 4 dòng "Chưa có ghi nhận" lặp. */
-          : !knTomTat.some((k) => ds.some((x) => x.skill === k)) ? <p className="m-0 px-4 py-3 text-[14px] text-slate-400">{t('Chưa có ghi nhận')}</p>
+          /* Chưa kỹ năng nào có ghi nhận → thẻ gọn (`rong`, HS2) ở trên. */
           : (
             <ul className="m-0 list-none p-0">
               {knTomTat.map((k) => {
