@@ -8,7 +8,6 @@ import { demoToday } from '../demoConfig.ts';
 import { PERMISSIONS, khoangPtGv } from '../../../shared/domain/index.ts';
 import { chiSoHoSoGv } from '../phanTich/giaoVien.ts';
 import { demTheoNguoi, dongCuaNguoi, chuaPhanCong } from '../phanTich/demNghiaVu.ts';
-import { truocMoc } from '../phanTich/soNghiaVu.ts';
 import { addDays } from '../util.ts';
 import { chayTrongRequest } from '../platform/nguCanhRequest.ts';
 import type { Principal } from '../permissions.ts';
@@ -65,4 +64,3 @@ if (ngayReset) {
     console.log(`- ${r.kieu}: ${r.n} việc · đã làm ${r.da_lam} · chưa tới hạn mới ${r.chua_toi} · quá hạn mới chưa làm ${r.chua_lam}`);
   }
 }
-void truocMoc;

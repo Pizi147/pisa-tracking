@@ -50,9 +50,7 @@ export function tinhBai(attemptId: number): DongNv[] {
 /** Như `tinhBai` cho nhiều lượt — nạp theo lô (lượt, điểm, lịch, ghi danh, tạm dừng, phân công, lớp): số câu không theo số lượt. */
 export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
   /* Bộ nhớ tạm cho lời gọi (đề nghị dời, quyền theo lớp… `skillCells` hỏi mỗi lượt) — trong request ghi `nho` không mở, không có thì mỗi lượt một câu. */
-  return trongBoNho(() => tinhBaiLo(ids));
-}
-function tinhBaiLo(ids: readonly number[]): Map<number, DongNv[]> {
+  return trongBoNho(() => {
   const out = new Map<number, DongNv[]>();
   if (!ids.length) return out;
   const conn = db();
@@ -130,6 +128,7 @@ function tinhBaiLo(ids: readonly number[]): Map<number, DongNv[]> {
     out.set(a.id, ds);
   }
   return out;
+  });
 }
 
 // ------------------------------------------------------------------ ghi sổ
@@ -211,7 +210,7 @@ export function ghiSo(khoa: string): void {
  * Đổi phân công / mốc lớp: mọi lượt của lớp + của em từng ghi danh lớp (lớp lúc thi có thể là lớp này). Ghi lại MỌI dòng, không chỉ từ `tuNgay`:
  * phân công mới cũng lấp người cho ô cũ chưa có phân công (spec 1.2 a, `pcNhapSau`). Upsert chỉ ghi dòng đổi.
  */
-export function ghiSoTheoLop(lop: number, _tuNgay?: string): void {
+export function ghiSoTheoLop(lop: number): void {
   cho.lop.add(lop);
   hen();
 }
@@ -242,7 +241,7 @@ export function nguoiChiuViec(nguon: { ownerId: number | null | undefined }): nu
 }
 
 /** Hạn gốc từ nhật ký đặt lại hạn (`viec_han_lan`, lần đầu): theo loại việc. */
-function hanGocCn(cn: number): (loai: string, id: number | null | undefined) => string | null {
+function hanGocCn(): (loai: string, id: number | null | undefined) => string | null {
   const m = new Map<string, string>();
   for (const r of db().prepare(`SELECT h.loai, h.viec_id, h.han_cu FROM viec_han_lan h WHERE h.han_cu IS NOT NULL
       AND h.id IN (SELECT MIN(id) FROM viec_han_lan GROUP BY loai, viec_id)`).all() as any[]) m.set(`${r.loai}|${r.viec_id}`, String(r.han_cu).slice(0, 10));
@@ -267,7 +266,7 @@ const NHAT_KY_HAN: [RegExp, string][] = [
 export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null })[] {
   const homNay = demoToday();
   const ql = quanLyCn(cn);
-  const hanGoc = hanGocCn(cn);
+  const hanGoc = hanGocCn();
   const goc = (key: string, caseId?: number | null) => {
     for (const [re, loai] of NHAT_KY_HAN) { const m = re.exec(key); if (m) return hanGoc(loai, Number(m[1])); }
     return key.startsWith('xnpa:') ? hanGoc('reset_case:han_xac_nhan', caseId) : null;

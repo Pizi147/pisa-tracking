@@ -1175,7 +1175,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
 
   /* CV-LOI (A13): phân công vừa có người cho môn / GVCN → Case mở chưa có người phụ trách của lớp tự có chủ, cùng giao dịch, có lịch sử. */
   if (added) ganChuCaseThieu({ classId, actorId: p.userId, luc: nowIso(), ...(san?.caseThieu ? { caseThieu: san.caseThieu } : {}) });
-  if (added || ended) ghiSoTheoLop(classId, ngay);   // SỔ NGHĨA VỤ: người chịu trách nhiệm bài của lớp đổi theo phân công
+  if (added || ended) ghiSoTheoLop(classId);   // SỔ NGHĨA VỤ: người chịu trách nhiệm bài của lớp đổi theo phân công
   if (added || ended) {
     const code = maLop ?? (conn.prepare('SELECT code FROM classes WHERE id = ?').get(classId) as any)?.code ?? null;
     writeAudit({

@@ -160,7 +160,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
 
   check('NV-PC · đổi phân công L từ ngày X (ghiPhanCong) → ô hạn < X giữ người cũ, ô hạn ≥ X sang người mới', () => thu(() => {
     const a = oL();
-    nv.ghiSoTheoLop(a.class_id, '2000-01-01');
+    nv.ghiSoTheoLop(a.class_id);
     const dong = conn.prepare(`SELECT * FROM nghia_vu WHERE lop = ? AND kieu = 'listening' AND han IS NOT NULL ORDER BY han`).all(a.class_id) as any[];
     const han = [...new Set(dong.map((d) => d.han))];
     assert(han.length >= 2, `lớp cần ≥ 2 hạn L khác nhau: ${han.join(', ')}`);
