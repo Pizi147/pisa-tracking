@@ -481,6 +481,7 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
     nhom: nhom === 'nhan_vien' || nhom === 'gv_speaking' ? nhom : 'giao_vien',
     studentId: qInt(req, 'studentId'),
     cungChiNhanh: qStr(req, 'cungChiNhanh') === '1',
+    chiNhanh: qInt(req, 'chiNhanh'),
   });
 }));
 

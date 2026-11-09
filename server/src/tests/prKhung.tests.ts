@@ -34,7 +34,8 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
     const n = than(ui, 'NutChon');
     assert(/whitespace-normal/.test(n) && /min-w-0/.test(n), 'NutChon thiếu whitespace-normal / min-w-0');
     assert(!/invisible/.test(n), 'NutChon còn ô ✓ ẩn chiếm chỗ (invisible)');
-    const sai = tsx('web/src').filter((f) => /<NutChon\b[^>]*className=[^>]*whitespace-nowrap/.test(doc(f)));
+    /* B' 5 (chủ SP 10/11): ngoại lệ duy nhất — hàng nút Nhóm của Ghi vi phạm ("Thái độ / hành vi") không xuống dòng. */
+    const sai = tsx('web/src').filter((f) => !f.endsWith('RecordViolationPanel.tsx') && /<NutChon\b[^>]*className=[^>]*whitespace-nowrap/.test(doc(f)));
     assert(sai.length === 0, `chỗ gọi ép nowrap: ${sai.join(', ')}`);
   });
 

@@ -68,6 +68,11 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
     return dau ? t('không học từ {mt}', { mt: tenLuot(dau) }) : t('không học');
   };
   const nguonKv = (mt: string, kv: number | null | undefined) => (kv != null ? t('{mt} · kỳ vọng {kv}', { mt, kv: fmtBand(kv) }) : mt);
+  /* HS1 (mockup v18, chủ SP 10/11): nguồn ghi MỘT lần trên dải — "Mock Test gần nhất · MT3 · W2 SEP" (lượt Kết quả gần nhất); thẻ chỉ ghi khi khác thường
+     ("từ MT2" đậm, "chưa có điểm", "không học từ MT4"). Chưa có MT nào: "Chưa có điểm Mock Test", thẻ "—". Thi thật / lớp thường: giữ như cũ. */
+  const ft = !ratio && !daThi;
+  const nguon = ft && a && !laMt0(a) && a.weekStart ? `${tenLuot(a)} · ${tuanLich(a.weekStart)}` : null;
+  const coDiem = !!a || ds.some((r) => r.band !== null);
   const lech = (v: number, tg: number) => (v > tg ? `+${fmtBand(v - tg)}` : v < tg ? `−${fmtBand(tg - v)}` : '=');
   const oDau = daThi ? (
     <ODiemTo key="thi" nhan={t('Thi thật IELTS')} goc={daThi.layLai ? `${daThi.nhan} · ${t('thi lại {kn}', { kn: kyNangThiLai(daThi.layLai).map((k) => k.toUpperCase()).join(' · ') })}` : daThi.nhan} chon={chon === OVERALL} onClick={() => onChon(OVERALL)} thi
@@ -80,7 +85,8 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
     /* U02 dòng 2 (PTA: bỏ chênh lệch — đã ở U07): MỘT dòng phụ "MT2 · kỳ vọng 7.5" — nguồn + mốc so. */
     <ODiemTo key="ov" nhan="Overall" chon={chon === OVERALL} onClick={() => onChon(OVERALL)}
       phu={a?.khongDuBoMon && a.overall == null ? (hep ? t('thiếu môn') : t('không đủ bộ môn'))
-        : a?.overall == null ? t('chưa có điểm') : nguonKv(tenLuot(a), a.expectation)}>
+        : a?.overall == null ? (coDiem ? t('chưa có điểm') : null)
+        : nguon ? (a.expectation != null ? t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) }) : null) : nguonKv(tenLuot(a), a.expectation)}>
       <ODiem kieu="lon" so={a?.overall != null ? fmtBand(a.overall) : null} kq={soKyVong(a?.overall, a?.expectation)} nhan="Overall" kyVong={a?.expectation != null ? fmtBand(a.expectation) : undefined} />
     </ODiemTo>
   );
@@ -88,6 +94,12 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
   const coKq = daThi?.loai === 'kq';
   const dsO = coKq ? ds.filter((r) => r.category !== 'writing1' || !ds.some((x) => x.category === 'writing2')) : ds;
   return (
+    <div className="grid gap-2">
+    {ft && (nguon || !coDiem) && (
+      <p className="m-0 flex items-baseline gap-2 text-[13px] text-slate-400">
+        {nguon ? <>{t('Mock Test gần nhất')}<span aria-hidden>·</span><b className="font-semibold tabular-nums text-slate-100">{nguon}</b></> : t('Chưa có điểm Mock Test')}
+      </p>
+    )}
     <div role="group" aria-label={t('Chọn kỹ năng xem hành trình')}
       className={`grid gap-2.5 ${ratio ? 'grid-cols-2 sm:grid-cols-4'
         : coKq ? 'grid-cols-2 min-[900px]:grid-cols-[1.6fr_repeat(4,1fr)] [&>*:first-child]:max-[899px]:col-span-2'
@@ -110,13 +122,14 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
         }
         const boMon = !r.ratio && !!mon && !mon.includes(r.category);
         /* HSL-GON (chủ SP 05/11): không ghi "vắng W2 SEP" dưới điểm — ghi chú lịch chỉ ở màn Test; kỹ năng chưa điểm ghi "chưa có điểm". */
+        const khac = !!nguon && !boMon && !r.ratio && r.band !== null && !!r.bandAttemptNo && r.bandAttemptNo !== a!.attemptNo;
         const phu = boMon ? khongHocTu(r.category)
           : r.ratio ? (r.missed === false ? t('đạt') : r.missed === true ? t('chưa đạt') : t('chưa có điểm'))
-          : r.band === null ? t('chưa có điểm')
-            /* HSHV-GON (M3, M2): "MT2" thay "MT2 · kỳ vọng 5.5" ở cả 6 thẻ (kỳ vọng đã ở cột Kỳ vọng bảng Mock Test, ✓ / ✗ đã so) — kỳ vọng ở `title`; 375 hết cắt "kỳ vọn…". */
-            : r.bandAttemptNo ? `MT${r.bandAttemptNo}` : null;
+          : r.band === null ? (coDiem ? t('chưa có điểm') : null)
+            /* HS1: cùng nguồn với dòng trên dải → không dòng phụ; khác nguồn → "từ MT2" (đậm). Không có dòng nguồn → "MT2" như cũ. Kỳ vọng ở `title`. */
+            : khac ? t('từ {mt}', { mt: `MT${r.bandAttemptNo}` }) : nguon ? null : r.bandAttemptNo ? `MT${r.bandAttemptNo}` : null;
         return (
-          <ODiemTo key={r.category} nhan={r.short} title={!boMon && !r.ratio && r.band !== null && r.bandAttemptNo ? `${r.label} · ${nguonKv(`MT${r.bandAttemptNo}`, r.expectation)}` : r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu}>
+          <ODiemTo key={r.category} nhan={r.short} title={!boMon && !r.ratio && r.band !== null && r.bandAttemptNo ? `${r.label} · ${nguonKv(`MT${r.bandAttemptNo}`, r.expectation)}` : r.label} goc={daThi && !boMon && r.bandAttemptNo ? `MT${r.bandAttemptNo}` : undefined} chon={chon === r.category} onClick={() => onChon(r.category)} phu={phu} phuDam={khac}>
             {r.ratio
               ? <ODiem kieu="lon" so={r.score !== null ? String(r.score) : null} kq={r.missed === null ? null : r.missed ? 'duoi' : 'dat'} nhan={r.short} phu={r.total ? `/ ${r.total}` : undefined} />
               : <ODiem kieu="lon" so={!boMon && r.band !== null ? fmtBand(r.band) : null} kq={boMon ? null : soKyVong(r.band, r.expectation)} kck={r.kck} nhan={r.short} kyVong={r.expectation != null ? fmtBand(r.expectation) : undefined} />}
@@ -124,12 +137,14 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
         );
       })}
     </div>
+    </div>
   );
 }
 
-function ODiemTo({ nhan, goc, title, phu, chon, thi = false, onClick, children }: {
+function ODiemTo({ nhan, goc, title, phu, phuDam = false, chon, thi = false, onClick, children }: {
   nhan: string; /** Góc phải: nguồn số ("MT4 · W4 SEP", "thi thật", ngày thi). */ goc?: string; title?: string; phu?: string | null; chon: boolean;
   /** Ô Thi thật: viền + nền màu lịch thi (`--lich-*`), không nhầm Đạt. */ thi?: boolean; onClick: () => void; children: React.ReactNode;
+  /** HS1: dòng phụ là ngoại lệ ("từ MT2") — chữ chính, đậm. */ phuDam?: boolean;
 }) {
   return (
     <button type="button" aria-pressed={chon} title={title} onClick={onClick}
@@ -143,7 +158,7 @@ function ODiemTo({ nhan, goc, title, phu, chon, thi = false, onClick, children }
       </span>
       <span className="flex">{children}</span>
       {/* U02 B1: một dòng "MT2 · kỳ vọng 7.5" — 375 chữ 11 px, không xuống dòng (cắt "…" + title khi quá hẹp). */}
-      {phu && <span className="truncate whitespace-nowrap text-[12px] tabular-nums leading-4 text-slate-400" title={phu}>{phu}</span>}
+      {phu && <span className={`truncate whitespace-nowrap text-[12px] tabular-nums leading-4 ${phuDam ? 'font-semibold text-slate-100' : 'text-slate-400'}`} title={phu}>{phu}</span>}
     </button>
   );
 }

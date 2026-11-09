@@ -6,6 +6,7 @@ import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, padCode } f
 import { laNgonNgu } from '../../../shared/i18n/index.ts';
 import { COT_PRINCIPAL, laGvSpeaking, principalTuDong, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from './audit.ts';
+import { duocSuaKyNang } from '../giaoVien/phamVi.ts';
 
 /**
  * TÀI KHOẢN VÀ ĐĂNG NHẬP — mục 7.1 đến 7.3.
@@ -193,13 +194,18 @@ export function ghiLichSuKyNang(conn: any, userId: number, cu: readonly string[]
   for (const k of moi.filter((x) => !cu.includes(x))) conn.prepare('INSERT INTO user_skill_lich_su (user_id, skill, tu) VALUES (?, ?, ?)').run(userId, k, ngay);
 }
 
-function setSkills(conn: any, userId: number, skills: string[]) {
-  /* Form cũ còn mở trên máy GV có thể gửi mã lớp thường cũ → đổi đúng như migrate PR-MON (không bỏ im lặng):
-     `writing`/`prep_writing` → W1 + W2, `pronunciation` → S. */
+/* Form cũ còn mở trên máy GV có thể gửi mã lớp thường cũ → đổi đúng như migrate PR-MON (không bỏ im lặng):
+   `writing`/`prep_writing` → W1 + W2, `pronunciation` → S. */
+function chuanKyNang(skills: readonly unknown[]): string[] {
   const doi = skills.flatMap((s) => DOI_MA_CU[String(s)] ?? [String(s)]);
-  const wanted = [...new Set(doi)].filter((s) => ALL_SKILLS.includes(s));
-  const cu = (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(userId) as any[]).map((r) => r.skill as string);
-  ghiLichSuKyNang(conn, userId, cu, wanted);
+  return [...new Set(doi)].filter((s) => ALL_SKILLS.includes(s));
+}
+const docKyNang = (conn: any, userId: number) => (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(userId) as any[]).map((r) => r.skill as string);
+const cungBo = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x) => b.includes(x));
+
+function setSkills(conn: any, userId: number, skills: string[]) {
+  const wanted = chuanKyNang(skills);
+  ghiLichSuKyNang(conn, userId, docKyNang(conn, userId), wanted);
   conn.prepare('DELETE FROM user_skills WHERE user_id = ?').run(userId);
   for (const s of wanted) {
     conn.prepare('INSERT INTO user_skills (user_id, skill) VALUES (?,?)').run(userId, s);
@@ -514,6 +520,8 @@ export function myProfile(p: Principal) {
     /** Bộ kỹ năng chọn được — 5 ô L · R · W1 · W2 · S (MH1). */
     allSkills: ALL_SKILLS,
     canSetPassword: !!u.password_hash,
+    /** QUYEN-KY-NANG (B' 7): kỹ năng chỉ QL / Quản trị sửa — GV chỉ xem. */
+    suaKyNang: duocSuaKyNang(p, p.userId),
   };
 }
 
@@ -547,7 +555,11 @@ export function updateProfile(p: Principal, input: {
     if (input.phone !== undefined) {
       conn.prepare('UPDATE users SET phone = ? WHERE id = ?').run(chuTuDo(input.phone, 'Điện thoại', 20), p.userId);
     }
-    if (input.skills !== undefined) setSkills(conn, p.userId, input.skills);
+    if (input.skills !== undefined) {
+      /* QUYEN-KY-NANG (chủ SP 10/11, B' 7): GV chỉ xem kỹ năng — gửi lại đúng bộ đang có (form cũ luôn gửi kèm) thì bỏ qua, khác → 403. */
+      if (duocSuaKyNang(p, p.userId)) setSkills(conn, p.userId, input.skills);
+      else if (!cungBo(chuanKyNang(input.skills), docKyNang(conn, p.userId))) throw forbidden('Kỹ năng do Quản lý hoặc Quản trị hệ thống sửa.');
+    }
     if (input.extraEmails !== undefined) {
       if (!Array.isArray(input.extraEmails)) throw badRequest('Email khác: cần danh sách.');
       ghiEmailKhac(conn, p.userId, emailKhac(input.extraEmails, u.email));
@@ -687,9 +699,9 @@ export function listAccounts(p: Principal) {
   }));
 }
 
-/** K1-51, Q9: Quản trị sửa kỹ năng phụ trách được của một tài khoản. */
+/** K1-51, Q9: sửa kỹ năng phụ trách được của một tài khoản — QUYEN-KY-NANG (B' 7): Quản trị, hoặc QL chi nhánh của GV (Hồ sơ GV). */
 export function setUserSkills(p: Principal, userId: number, skills: string[]): { skills: string[] } {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống sửa được kỹ năng của tài khoản khác.');
+  if (!duocSuaKyNang(p, userId)) throw forbidden('Chỉ Quản lý chi nhánh của giáo viên hoặc Quản trị hệ thống sửa được kỹ năng.');
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');

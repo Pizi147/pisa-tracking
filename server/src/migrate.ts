@@ -116,6 +116,7 @@ import { migratePrGiamDoc0611h } from './migrate/prGiamDoc0611h.ts';
 import { migratePrNgayXong0711 } from './migrate/prNgayXong0711.ts';
 import { migratePrNghiaVu } from './migrate/prNghiaVu.ts';
 import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
+import { migratePrWLech } from './migrate/prWLech.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -452,7 +453,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* CHUONG-NHE: cột users.chuong_dong_bo_luc — mốc đồng bộ chuông ở DB thay bộ nhớ tiến trình (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrChuongNhe(conn, applied));
     /* DON-LUONG K6: chỉ mục idx_scores_no_show — lưới tuần gốc có hàng em vắng dời hết (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migrateDonLuong(conn, applied));
     /* PR-B BAN-GIAO-GV: ban_giao_gv · ban_giao_gv_mon · ban_giao_gv_em — việc bàn giao khi đổi GV (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBanGiaoGv(conn, applied));
-    /* TL-NEN: bảng moc_he_thong (phiên bản bảng tham chiếu + mốc quét đường đọc) + 15 trigger tg_tc_* (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNen(conn, applied));
+    /* TL-NEN: bảng moc_he_thong (phiên bản bảng tham chiếu + mốc quét đường đọc) + 20 trigger tg_tc_* (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNen(conn, applied));
     /* TL-NAPBAI: attempt_skills.branch_id + chỉ mục (chi nhánh, tuần), (lớp, tuần) + 5 trigger giữ cột — napBai cả chi nhánh theo kỳ (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNapBai(conn, applied));
     /* DOC-IT-2: chỉ mục một phần mini test chưa có tỉ lệ + hẹn Lộ trình mới — giảm dòng đọc Turso (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrDocIt2(conn, applied));
     /* DOC-IT-5: chỉ mục một phần học viên Lưu trữ — Học viên & Lớp thôi quét cả bảng students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrDocIt5(conn, applied));
@@ -477,6 +478,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrPaTrung0711(conn, applied));
   /* SỔ NGHĨA VỤ (chủ SP 09/11): bảng nghia_vu — bước CUỐI (không đổi số thứ tự bước cũ), chỉ tạo bảng, chạy lặp được. */
   buoc(() => migratePrNghiaVu(conn, applied));
+  /* W-LECH (chủ SP 10/11): lượt Writing một W "-" một W trống (trước #1273) → W trống nhận "-", chốt cả buổi; nhật ký (đổi dữ liệu MỘT lần, khoá demo_config). */
+  buoc(() => migratePrWLech(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

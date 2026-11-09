@@ -358,16 +358,15 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(ds.some((d: any) => d.sCheo && d.han === '2026-09-10'), 'hạn 10/09 không còn ai có S → Chưa phân công');
   }));
 
-  check('NV-SCHEO-HO-SO · sửa kỹ năng ở Hồ sơ cá nhân (updateProfile) ghi lịch sử: bỏ S → dòng đóng ngày hôm nay; thêm lại → dòng mới', () => thu(() => {
+  check('NV-SCHEO-HO-SO · sửa kỹ năng GV (QUYEN-KY-NANG: Quản trị / QL — setUserSkills) ghi lịch sử: bỏ S → dòng đóng ngày hôm nay; thêm lại → dòng mới', () => thu(() => {
     const g = gvMb[0];
     conn.prepare(`DELETE FROM user_skill_lich_su WHERE user_id = ?`).run(g);
     conn.prepare(`DELETE FROM user_skills WHERE user_id = ?`).run(g);
     conn.prepare(`INSERT INTO user_skills (user_id, skill) VALUES (?, 'speaking'), (?, 'listening')`).run(g, g);
-    const pg = loadPrincipal(g);
-    accounts.updateProfile(pg, { skills: ['listening'] });
+    accounts.setUserSkills(P.admin, g, ['listening']);
     const bo = conn.prepare(`SELECT * FROM user_skill_lich_su WHERE user_id = ? AND skill = 'speaking'`).all(g) as any[];
     assert(bo.length === 1 && bo[0].den === TODAY && bo[0].tu === '2000-01-01', `bỏ S: ${JSON.stringify(bo)}`);
-    accounts.updateProfile(pg, { skills: ['listening', 'speaking'] });
+    accounts.setUserSkills(P.admin, g, ['listening', 'speaking']);
     const lai = conn.prepare(`SELECT * FROM user_skill_lich_su WHERE user_id = ? AND skill = 'speaking' ORDER BY id`).all(g) as any[];
     assert(lai.length === 2 && lai[1].tu === TODAY && lai[1].den === null, `thêm lại S: ${JSON.stringify(lai)}`);
   }));

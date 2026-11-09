@@ -18,7 +18,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { classProgressMany } from '../classes/schedule.ts';
-import { allProgrammes, evaluateRegular } from './regular.ts';
+import { allProgrammes, evaluateRegular, maCtCuaLuot, nguongDatLop } from './regular.ts';
 import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
@@ -67,8 +67,13 @@ function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   theoLoJson([...new Set(attemptIds)], (json) => {   // S5: một tham số JSON
     const ph = DS_JSON;
     for (const r of conn.prepare(
-      `SELECT a.id, a.kind, c.programme_code, c.nguong_dat FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.id IN (${ph})`,
-    ).all(json) as any[]) luot.set(r.id, { kind: r.kind, ct: r.programme_code ?? null, nguong: r.nguong_dat ?? null });
+      `SELECT a.id, a.kind, a.class_id, c.programme_code, c.nguong_dat, cy.programme_code AS ct_lo_trinh FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
+         LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id AND a.class_id IS NULL   -- LECH-KHONG-LOP (maCtCuaLuot): chỉ lượt không lớp đọc lộ trình
+        WHERE a.id IN (${ph})`,
+    ).all(json) as any[]) {
+      const ct = maCtCuaLuot(r.class_id, r.programme_code, r.ct_lo_trinh);
+      luot.set(r.id, { kind: r.kind, ct, nguong: r.class_id ? r.nguong_dat ?? null : nguongDatLop(null, ct) });
+    }
     /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
     for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
         UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(json, json, ...GOP) as any[]) {
@@ -150,12 +155,13 @@ export function cuoiKhoaTheoHocVien(classId: number, sids?: readonly number[], o
   if (sids && !sids.length) return out;
   const conn = db();
   const loc = sids ? ` AND e.student_id IN (${sids.map(() => '?').join(',')})` : '';
-  /* `daRoi` (PR-S5F-a): cả em đã chuyển khỏi lớp — hồ sơ HV sau chuyển vẫn thấy % Cuối khoá của lớp cũ. */
+  /* `daRoi` (PR-S5F-a): cả em đã chuyển khỏi lớp — hồ sơ HV sau chuyển vẫn thấy % Cuối khoá của lớp cũ. Chủ SP 10/11 (B' 10): cả em đã học
+     xong (`completed` — ghi danh của lớp đã kết thúc), để bảng Học viên lớp đã kết thúc có % Final Test cùng số tab Tổng kết. */
   const dong = conn.prepare(
     `SELECT e.student_id, a.id AS attempt_id FROM enrollments e
        LEFT JOIN assessment_attempts a ON a.student_id = e.student_id AND a.class_id = e.class_id AND a.kind = 'final' AND a.status != 'cancelled'${
          o.daRoi ? '' : ` AND ${LUOT_LO_TRINH_CUOI_SQL('a')}`}   -- lỗi chủ SP 28/10: lộ trình mới nhất của em; hồ sơ (daRoi) giữ lịch sử
-      WHERE e.class_id = ? AND e.status ${o.daRoi ? "IN ('active', 'transferred')" : "= 'active'"}${loc} ORDER BY a.id`,
+      WHERE e.class_id = ? AND e.status ${o.daRoi ? "IN ('active', 'transferred', 'completed')" : "= 'active'"}${loc} ORDER BY a.id`,
   ).all(classId, ...(sids ?? [])) as any[];
   const luotCuaEm = new Map<number, number | null>();
   for (const r of dong) luotCuaEm.set(r.student_id, r.attempt_id ?? luotCuaEm.get(r.student_id) ?? null);   // nhiều bài Final Test → bài id lớn nhất

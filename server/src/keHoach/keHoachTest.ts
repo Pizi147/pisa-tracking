@@ -13,7 +13,7 @@ import { db, theoLo, tx } from '../db.ts';
 import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
-import { can, classScopeSql, lopFtChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { can, classScopeSql, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { entrySkillsOf, expectationFor, oNhapHoc } from '../fasttrack/scoring.ts';
@@ -42,8 +42,23 @@ const XEM_MSG = 'Bạn không dạy lớp này.';
  */
 function xemDuoc(p: Principal): (classId: number) => boolean {
   const lopS = new Set(lopFtChoGvSpeaking(p));
-  return (classId) => can(p, PERMISSIONS.PLAN_WEEK, { classId }) || teachesClass(p, classId) || lopS.has(classId);
+  let mt0: Set<number> | null = null;   // chỉ đọc khi cần (GV không dạy lớp đó)
+  return (classId) => can(p, PERMISSIONS.PLAN_WEEK, { classId }) || teachesClass(p, classId) || lopS.has(classId)
+    || (mt0 ??= lopMt0CoLuot(p)).has(classId);
 }
+/**
+ * B' 6b (chủ SP 10/11 tối): GV Speaking thấy lớp THƯỜNG có lượt MT0 (S chấm chéo, LOP-THUONG-QUYEN) — chỉ xem, chỉ ô MT0 (`chiMt0Lop`).
+ * Một câu cho mọi lớp trong phạm vi (chỉ mục một phần `idx_attempt_mt0`); không phải GV Speaking → không đọc.
+ */
+function lopMt0CoLuot(p: Principal): Set<number> {
+  const ds = lopMt0ChoGvSpeaking(p);
+  if (!ds.length) return new Set();
+  return new Set((db().prepare(`SELECT DISTINCT a.class_id FROM assessment_attempts a JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
+      WHERE a.kind = 'mt0' AND a.status != 'cancelled' AND a.class_id IN (${phOf(ds.length)})`)
+    .all(...ds) as any[]).map((r) => r.class_id as number));
+}
+/** Người xem chỉ vào lớp thường qua MT0 S chéo: Giữa / Cuối khoá không lộ (chủ SP 08/11 "Final / progress thì vẫn là GV lớp đó thấy thôi"). */
+const chiMt0Lop = (p: Principal, classId: number) => !can(p, PERMISSIONS.PLAN_WEEK, { classId }) && !teachesClass(p, classId);
 const requireXem = (p: Principal, classId: number) => { if (!xemDuoc(p)(classId)) throw forbidden(XEM_MSG); };
 /** Lớp này người xem chỉ xem được, không xếp (không `PLAN_WEEK`, và không phải GVCN lớp đó khi công tắc "Mở sửa lịch Test" BẬT). */
 const chiXemLop = (p: Principal, classId: number) => !choSuaLichTest(p, { classId });
@@ -918,11 +933,18 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
 
   const gc = docGhiChu(classId, students.map((s) => ({ id: s.id as number, cycleId: null })), false);   // OV-15c (C21)
   const sExTheoEm = sExCuaHv(p, students.map((s) => s.id as number), today);
+  /* B' 6b: GV S chỉ-MT0 — chỉ em có MT0, ô Giữa / Cuối khoá trống, không ghi chú theo đợt. */
+  const chiMt0 = chiMt0Lop(p, classId);
+  const hangXem = chiMt0
+    ? hang.filter((h) => h.mt0).map((h) => ({ ...h, dot: Object.fromEntries(Object.keys(h.dot).map((k) => [k, { attemptId: null, kn: {} }])) as Record<string, DotThuong> }))
+    : hang;
   const nhanKhoa = (n: number | null) => (n && progress.totalWeeks ? tuanKhoaCua(n, progress.totalWeeks) : null);
   const hvChuaCoLich = students.filter((s) => kinds.every((k) => !theoEm.has(`${s.id}:${k}`))).length;
   const cw = progress.currentWeek;
   return {
     classId, classCode: cls.code as string, chiXem: chiXemLop(p, classId), chuongTrinh: progress.programmeCode as string | null,
+    /** B' 6b: người xem chỉ thấy ô MT0 (GV Speaking chấm chéo) — web vẽ "—" ở Giữa / Cuối khoá. */
+    ...(chiMt0 ? { chiMt0: true } : {}),
     /** TAT-CHECKPOINT: ô Checkpoint em chưa có → nút "Xếp {tuần}" (QL xếp tay) thay "—". */
     cpTay,
     khaiGiang: progress.startWeekStart, tongTuan: progress.totalWeeks,
@@ -937,7 +959,7 @@ export function luoiThuong(p: Principal, classId: number, today: string = demoTo
     /** Bộ môn của chương trình (Pre FOU `tong_hop`) — hộp kỹ năng lặp đúng bộ này. */
     boMon: bo,
     /** SV-S-EXPERT: `sEx` = lượt S Expert của em (tách khỏi ô MT). */
-    hang: hang.map((h) => ({ ...h, ghiChu: gc.theoEm.get(h.studentId) ?? {}, sEx: sExTheoEm.get(h.studentId) ?? [] })),
+    hang: hangXem.map((h) => ({ ...h, ghiChu: chiMt0 ? {} : gc.theoEm.get(h.studentId) ?? {}, sEx: sExTheoEm.get(h.studentId) ?? [] })),
     /** OV-15c (C21): ghi chú lớp dưới bảng. */
     ghiChuLop: gc.lop,
   };

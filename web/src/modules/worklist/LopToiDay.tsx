@@ -67,10 +67,11 @@ export function LopToiDay() {
     <section className="card" aria-labelledby="lop-toi-day" data-hd="tq-lop-toi-day">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="lop-toi-day" className="m-0 text-sm font-semibold text-slate-200">{t('Lớp tôi dạy')}</h2>
-          {/* G9: không nút trong tiêu đề bảng — "?" của cột Dưới kỳ vọng / Chưa đạt nằm cạnh tiêu đề thẻ. */}
-          <NutLuat label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat>
+          {/* CV6 (mockup v18, chủ SP 10/11): khối chỉ nằm trong dải gập "Lớp tôi dạy" của Công việc — dải đã ghi tên, tiêu đề chỉ cho trình đọc màn hình. */}
+          <h2 id="lop-toi-day" className="sr-only">{t('Lớp tôi dạy')}</h2>
           {data && <CongTacKhung trang="tong-quan" value={ct} dem={{ ft: data.soFt, thuong: data.soThuong }} onChange={(k) => { daBam.current = true; setKhung(k === 'thuong' ? 'thuong' : 'ft'); }} />}
+          {/* G9: không nút trong tiêu đề bảng — "?" của cột Dưới kỳ vọng / Chưa đạt nằm cạnh tiêu đề thẻ (CV6 v18: sau Fast Track | Lớp thường). */}
+          <NutLuat label={nhanDuoi}>{GOI_Y_DUOI_KY_VONG[ct]}</NutLuat>
         </div>
       </header>
       {loading || !data ? <div className="p-4"><Skeleton rows={3} /></div> : !data.rows.length ? (
@@ -173,7 +174,9 @@ export function HaiKhoiGv() {
   const luoi = (trai: ReactNode) => <div data-hd="tq-lop-toi-day" className="flex min-w-0 flex-col gap-4">{trai}</div>;
   if (error) return luoi(<div className={O_MOT}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>);
   if (!data) return luoi(<Card className={O_MOT} title={t('Kỹ năng tôi dạy')} bodyClass="p-4"><Skeleton rows={3} /></Card>);
-  if (!data.day.length && !data.chuNhiem.length) {
+  /* B' 12c (chủ SP 10/11): lớp chủ nhiệm 0 HV, mọi số 0 (lớp chỉ còn bài nợ điểm) — không hiện hàng toàn 0. Chỉ lọc hiển thị, số máy chủ giữ nguyên. */
+  const chuNhiem = data.chuNhiem.filter((l) => l.hocVien > 0 || l.duoiKyVong > 0 || l.caseMo > 0 || l.thiThangNay > 0 || !!l.sosMuc?.some((n) => n > 0));
+  if (!data.day.length && !chuNhiem.length) {
     if (!session?.roles?.includes('teacher')) return luoi(null);   // Head tutor (góc nhìn GV, không dạy lớp): không thẻ rỗng
     return luoi(<Card className={O_MOT} title={t('Lớp của tôi')} bodyClass="p-0"><Empty title={t('Bạn chưa được phân công lớp nào đang mở')} hint={t('Khi QL phân công lớp, kỹ năng bạn dạy và lớp chủ nhiệm hiện ở đây.')} /></Card>);
   }
@@ -245,9 +248,9 @@ export function HaiKhoiGv() {
           <Bang ten={t('Kỹ năng tôi dạy')} cot={coTb ? COT_DAY : COT_DAY.filter((c) => c.key !== 'tb')} hang={data.day} khoa={(d) => d.classId} oCua={oDay} phuCua={phuDay} khung={false} theLuoi deu theRieng={theDay} />
         </Card>
       )}
-      {data.chuNhiem.length > 0 && (
+      {chuNhiem.length > 0 && (
         <Card className={O_MOT} bodyClass="p-0" title={<span className="inline-flex flex-wrap items-center gap-x-1">{t('Lớp tôi chủ nhiệm')} <NutLuat label={t('Lớp tôi chủ nhiệm')}>{t('Số chủ nhiệm tách riêng, không cộng vào việc kỹ năng.')}</NutLuat></span>}>
-          <Bang ten={t('Lớp tôi chủ nhiệm')} cot={data.chuNhiem.some((l) => l.khung === 'ft') ? COT_CN : COT_CN.filter((c) => c.key !== 'sos')} hang={data.chuNhiem} khoa={(l) => l.classId} oCua={oCn} phuCua={phuCn} khung={false} theLuoi />
+          <Bang ten={t('Lớp tôi chủ nhiệm')} cot={chuNhiem.some((l) => l.khung === 'ft') ? COT_CN : COT_CN.filter((c) => c.key !== 'sos')} hang={chuNhiem} khoa={(l) => l.classId} oCua={oCn} phuCua={phuCn} khung={false} theLuoi />
         </Card>
       )}
     </>,

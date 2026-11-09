@@ -2445,6 +2445,11 @@ CREATE TRIGGER tg_tc_programme_checkpoints_del AFTER DELETE ON programme_checkpo
 CREATE TRIGGER tg_tc_demo_config_ins AFTER INSERT ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_demo_config_upd AFTER UPDATE ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_demo_config_del AFTER DELETE ON demo_config BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_teacher_assignments_ins AFTER INSERT ON teacher_assignments BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_teacher_assignments_upd AFTER UPDATE ON teacher_assignments BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_teacher_assignments_del AFTER DELETE ON teacher_assignments BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_users_ten AFTER UPDATE OF full_name ON users BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_users_del AFTER DELETE ON users BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 
 /* BAO-CAO-PH (chủ SP 05–06/11): báo cáo gửi phụ huynh — MỘT dòng mỗi (đợt, em, phần). Đợt tính từ lịch lớp ('thang:2026-11' · 'progress:2026-11-16' · 'final:…'),
  * phần = kỹ năng phân công ('chung' = GVCN). `muc` JSON {tiêu chí: mức}, `dat_san` JSON [tiêu chí còn mức đặt sẵn theo đợt trước], `diem_sua` = điểm GV sửa tay

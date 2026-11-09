@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hồ sơ HV · HS1 HS2 · v18</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;600;700&display=swap">
+<!-- GIỮ bố cục U02 đã duyệt (= web hiện tại): CSS chung audit-0311. Phần <style> dưới chỉ vẽ hồ sơ + đè hai chỗ SỬA (HS1 dải ô điểm, HS2 Tiến độ rỗng). -->
+<link rel="stylesheet" href="../audit-0311/chung.css">
+<link rel="stylesheet" href="../audit-0311/ro.css">
+<style>
+.man.dai { height:auto; min-height:0; } .dt.dai { height:auto; min-height:0; }
+.hs { padding:16px 24px 24px; display:grid; gap:16px; }
+.dt .hs { padding:12px 16px 20px; gap:12px; }
+.lui { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-dim); }
+.hs-1 { display:flex; align-items:center; gap:10px; flex-wrap:wrap; } .hs-1 h1 { font-size:22px; font-weight:700; margin:0; } .hs-1 .phai { margin-left:auto; display:flex; gap:8px; }
+.truong-dau { display:flex; flex-wrap:wrap; gap:6px 22px; }
+.truong-dau div { display:grid; gap:2px; } .truong-dau span { font-size:13px; color:var(--text-dim); } .truong-dau b { font-size:15px; }
+.dt .truong-dau { gap:6px 16px; }
+.lien-he { display:flex; gap:6px; flex-wrap:wrap; }
+
+/* ===== Ô điểm (U02, giữ) ===== */
+.o-diem { display:grid; grid-template-columns:1.2fr repeat(5, minmax(0,1fr)); gap:10px; }
+.dt .o-diem { grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+.od { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 14px; display:flex; flex-direction:column; gap:2px; cursor:pointer; }
+.od.chon { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }
+.od .k { font-size:13px; color:var(--text-dim); font-weight:600; }
+.od .s { font:700 28px/1.1 var(--phong-so); color:var(--text); } .od .s.duoi { color:var(--bad); } .od .s.dat { color:var(--ok); } .od .s.bang { color:var(--accent); }
+.od .s small { font-size:16px; margin-right:3px; } .od .s.trong { color:var(--text-faint); font-weight:600; }
+.od .p.khac { color:var(--text); font-weight:600; }
+.od .p { font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dt .od { padding:10px; min-height:44px; } .dt .od .s { font-size:24px; } .dt .od .p { font-size:11px; }
+
+/* ===== HS1 · MỘT dòng nguồn trên dải (thay "MT3" lặp ở 6 thẻ) ===== */
+.nguon-dai { display:flex; align-items:baseline; gap:8px; margin:0; font-size:13px; color:var(--text-dim); }
+.nguon-dai b { color:var(--text); font-weight:600; font-family:var(--phong-so); }
+
+
+.the-viec { max-width:560px; background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:10px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 14px; align-items:center; }
+.tab { display:flex; gap:22px; border-bottom:1px solid var(--line); font-size:15px; }
+.tab span { padding:8px 12px; color:var(--text-dim); font-weight:500; } .tab span.dang { color:var(--text); font-weight:700; box-shadow:inset 0 -2px 0 var(--accent); }
+.dt .tab { gap:4px; font-size:14px; } .dt .tab span { white-space:nowrap; padding:10px 8px; }
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; min-width:0; }
+.the-dau { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid var(--line); }
+.the-dau h2 { font-size:17px; font-weight:700; margin:0; } .the-dau .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.doan2 { display:inline-flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+.doan2 span { padding:4px 12px; font:600 13px var(--phong); color:var(--text-dim); } .doan2 span.dang { background:var(--accent-soft); color:var(--text); }
+.doan2 span + span { border-left:1px solid var(--line-strong); }
+.bmt { width:100%; border-collapse:collapse; font-size:15px; }
+.bmt th { font:600 13px var(--phong); color:var(--text-dim); text-align:center; padding:9px 10px; border-bottom:1px solid var(--line); }
+.bmt th:nth-child(-n+3), .bmt td:nth-child(-n+3) { text-align:left; }
+.bmt td { padding:10px; border-bottom:1px solid var(--line); text-align:center; font-family:var(--phong-so); }
+.bmt td a { color:var(--accent); font-weight:600; text-decoration:none; }
+.dd { color:var(--bad); font-weight:700; } .dd::before { content:"✗ "; } .da { color:var(--ok); font-weight:700; } .da::before { content:"✓ "; }
+.kq { display:inline-flex; height:22px; align-items:center; padding:0 8px; border-radius:4px; border:1px solid var(--line-strong); font:600 12px var(--phong); white-space:nowrap; }
+.chu-mo { font-size:13px; color:var(--text-faint); padding:10px 12px; margin:0; }
+.bd { padding:12px 16px 14px; } .bd svg { width:100%; height:190px; display:block; }
+
+/* hai cột dưới Hành trình (U02, giữ khi Tiến độ CÓ ghi nhận) */
+.hai-cot { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:16px; align-items:start; }
+.dt .hai-cot { grid-template-columns:minmax(0,1fr); }
+.td-dong { display:grid; grid-template-columns:40px minmax(0,1fr); gap:4px 12px; padding:12px 16px; border-top:1px solid var(--line); align-items:start; }
+.td-dong:first-child { border-top:0; }
+.kn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:24px; border-radius:4px; border:1px solid var(--line-strong); font:700 12px var(--phong-so); color:var(--text); }
+.td-dong .nd { display:grid; gap:4px; min-width:0; } .td-dong .nd p { margin:0; font-size:14px; line-height:1.5; }
+.td-dong .chua-co { color:var(--text-faint); font-size:14px; padding-top:2px; }
+.cs { display:grid; grid-template-columns:40px minmax(0,1fr) auto; gap:6px 12px; align-items:center; padding:12px 16px; border-top:1px solid var(--line); }
+.the-dau + .cs { border-top:0; }
+.cs.mo { background:var(--surface-2); box-shadow:inset 3px 0 0 var(--accent); }
+.cs .ten { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font:600 15px var(--phong); }
+.cs .ben { display:flex; gap:14px; align-items:center; font-size:13px; color:var(--text-dim); }
+.dt .cs { grid-template-columns:34px minmax(0,1fr) auto; }
+.chi-tiet { padding:4px 16px 16px 68px; background:var(--surface-2); border-top:1px solid var(--line); display:grid; gap:12px; }
+.dt .chi-tiet { padding:4px 12px 14px; }
+.chan-case { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:12px; }
+.pa-the { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 12px; display:grid; gap:4px; }
+.rong-case { margin:0; padding:14px 16px; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; font-size:14px; color:var(--text-faint); }
+
+/* ===== HS2 · Tiến độ RỖNG → thẻ gọn trong CỘT TRÁI (chủ SP 10/11: Tiến độ luôn trái, Case phải): hàng 1 tên · ⓘ, hàng 2 "Chưa có ghi nhận" · + Ghi tiến độ; không kẻ ngăn đầu thẻ ===== */
+.td-mot-dong { display:flex; align-items:center; gap:6px 12px; flex-wrap:wrap; padding:12px 16px; }
+.td-mot-dong h2 { font-size:17px; font-weight:700; margin:0; }
+.td-mot-dong .td-rong { font-size:14px; color:var(--text-faint); padding:0; display:inline; order:3; flex:1 1 calc(100% - 140px); }
+.td-mot-dong .nut { order:4; margin-left:auto; }
+.dt .td-mot-dong { padding:10px 12px 10px 16px; }
+.hai-cot .form-td { grid-template-columns:minmax(0,1fr); }
+.form-td { padding:14px 16px 16px; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px 16px; max-width:760px; }
+.form-td .ca { grid-column:1 / -1; }
+.form-td label { display:grid; gap:4px; font:600 13px var(--phong); color:var(--text-dim); }
+.form-td label i { font-style:normal; font-weight:400; color:var(--text-faint); }
+.form-td .lua2 { display:flex; gap:6px; flex-wrap:wrap; }
+.form-td .lua2 span { height:32px; padding:0 12px; display:inline-flex; align-items:center; border-radius:8px; border:1px solid var(--line-strong); font:600 13px var(--phong); color:var(--text-dim); }
+.form-td .lua2 span.dang { border-color:var(--accent); background:var(--accent-soft); color:var(--text); }
+.form-td .chan { grid-column:1 / -1; display:flex; gap:8px; justify-content:flex-end; }
+.dt .form-td { grid-template-columns:minmax(0,1fr); padding:12px; }
+.ngay-o { display:flex; gap:6px; } .ngay-o .o { flex:1; } .ngay-o .nut { width:40px; padding:0; }
+
+/* trang mockup */
+.cap { display:grid; grid-template-columns:auto auto; gap:18px; align-items:start; justify-content:start; }
+.anh-truoc { width:700px; border:1px solid #b0b8cd; border-radius:6px; display:block; }
+.anh-truoc.dt-a { width:375px; }
+.bang-tt { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
+.bang-tt th, .bang-tt td { border:1px solid #d9deea; padding:6px 10px; text-align:left; vertical-align:top; }
+.bang-tt th { background:#f2f4f9; font-weight:700; white-space:nowrap; }
+.bang-tt td:first-child { font-weight:700; }
+.gi { color:#38674c; font-weight:600; } .doi { color:#7e5f36; font-weight:600; } .bo { color:#a63a2d; font-weight:600; }
+.mk-vien { outline:2px dashed #d9a93a; outline-offset:3px; border-radius:10px; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v18 · Hồ sơ HV — HS1 dải ô điểm · HS2 Tiến độ trên lớp rỗng</h1>
+    <p>Nguồn: audit 08/11 (<code>docs/superpowers/specs/2026-11-08-audit-ui/bao-cao.md</code> dòng HS1, HS2) → [XM] #1240–#1242 → chủ SP 10/11 "VẪN LÀM". <b>Giữ bố cục U02 đã duyệt</b>, chỉ sửa hai chỗ:
+      <span class="so-mk">HS1</span> thẻ nào cũng ghi "MT3" dưới số (375 cắt "MT3 · kỳ vọn…") → ghi nguồn <b>một lần</b> trên dải; thẻ chỉ ghi khi khác thường.
+      <span class="so-mk">HS2</span> Tiến độ trên lớp rỗng chiếm nửa hàng bên cạnh khối Case dài → <b>thẻ gọn</b> trong cột trái (hai hàng, không ngăn đầu thẻ), Case vẫn cột phải — chủ SP 10/11: "tiến độ trên lớp ở phía bên trái và case bên phải".
+      Mọi thao tác giữ (bảng D). Không thêm câu đọc máy chủ (bảng E). Demo Monbay, hôm nay <b>14/09/2026 · W3 SEP</b>, em <b>Bùi Thảo Vy</b> (MB FT 101 · LT1 · Target 7.0). 1440 <b>tối</b> · 375 <b>sáng</b>. Trái = ảnh chụp web hiện tại (main d8dec605f), phải = sau khi sửa. Viền đứt vàng = chỗ sửa (không lên web).</p>
+    <nav class="muc-mk"><a href="#a">A · 1440 trước | sau</a><a href="#b">B · 375 trước | sau</a><a href="#c">C · trạng thái</a><a href="#d">D · thao tác trước → sau</a><a href="#e">E · đọc dữ liệu</a></nav>
+  </header>
+
+  <section class="khu" id="a">
+    <h2>A1 · 1440 tối — Overall, đủ dữ liệu, Tiến độ CÓ ghi nhận (hai cột giữ nguyên)</h2>
+    <p class="ghi"><span class="so-mk">HS1</span>dòng "Mock Test gần nhất · <b>MT3 · W2 SEP</b>" một lần trên dải · Overall giữ "kỳ vọng 7.0" · 5 thẻ kỹ năng không còn dòng "MT3" · số, ✓ ✗, màu, cỡ, thứ tự thẻ, bấm đổi kỹ năng: <b>giữ</b>. Tiến độ có ghi nhận → hai cột 5 : 7 như U02.</p>
+    <div class="cap">
+      <figure><figcaption>Trước · web hiện tại (đầu trang)</figcaption><img class="anh-truoc" src="anh/truoc-hs-overall-1440.png" alt="Hồ sơ Bùi Thảo Vy hiện tại, 1440"></figure>
+      <figure><figcaption>Sau</figcaption><div class="man toi dai" data-k="a1" style="width:980px"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu">
+    <h2>A2 · 1440 tối — chọn ô S, Tiến độ RỖNG, Case dài</h2>
+    <p class="ghi"><span class="so-mk">HS2</span>trước: thẻ "Tiến độ trên lớp · Chưa có ghi nhận" chiếm 5/12 hàng, bên phải Case mở dài → khoảng trống lớn dưới thẻ. Sau (chủ SP 10/11): Tiến độ <b>vẫn cột trái</b>, Case cột phải; thẻ rỗng gọn hai hàng "Tiến độ trên lớp · Speaking ⓘ" / "Chưa có ghi nhận · + Ghi tiến độ", không ngăn đầu thẻ.</p>
+    <div class="cap">
+      <figure><figcaption>Trước · em Chu Nhật Minh (Case mở dài)</figcaption><img class="anh-truoc" src="anh/truoc-hs-hai-cot-1440.png" alt="Hồ sơ hiện tại: Tiến độ rỗng nửa hàng cạnh Case dài"></figure>
+      <figure><figcaption>Sau · Bùi Thảo Vy · ô S</figcaption><div class="man toi dai" data-k="a2" style="width:980px"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="b">
+    <h2>B · 375 sáng</h2>
+    <p class="ghi"><span class="so-mk">HS1</span>hết cắt "MT3 · kỳ vọn…": dòng nguồn trên dải, Overall chỉ "kỳ vọng 7.0" · <span class="so-mk">HS2</span>Case trước (giữ luật U02 #16), Tiến độ rỗng thẻ gọn sau Case — nút "+ Ghi tiến độ" 44 px.</p>
+    <div class="cap">
+      <figure><figcaption>Trước</figcaption><img class="anh-truoc dt-a" src="anh/truoc-hs-375.png" alt="Hồ sơ hiện tại 375"></figure>
+      <figure><figcaption>B1 · Sau · Overall</figcaption><div class="dt sang dai" data-k="b1"></div></figure>
+      <figure><figcaption>B2 · Sau · ô S (Tiến độ rỗng)</figcaption><div class="dt sang dai" data-k="b2"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="c">
+    <h2>C · Trạng thái (1440 tối trừ khi ghi)</h2>
+    <p class="ghi"><span class="so-mk">C1</span>bấm "+ Ghi tiến độ" ở dòng rỗng → thẻ mở form cũ <b>ngay trong cột trái</b> (không panel) · Huỷ → về thẻ gọn · Lưu → về hai cột, dòng vừa lưu viền nhấn + "✓ Đã lưu · Hoàn tác" 10 giây (như web).
+      <span class="so-mk">C2</span>nguồn lệch: S chưa có điểm MT3 (dời) → thẻ S ghi "<b>từ MT2</b>" chữ đậm, màu chữ chính (khác dòng phụ mờ — một ngoại lệ phải thấy ngay) (không chữ "vắng" — HSL-GON). <span class="so-mk">C3</span>em chưa có MT nào: dòng nguồn "Chưa có điểm Mock Test", thẻ "—" không lặp "chưa có điểm" 6 lần; Tiến độ + Case đều rỗng → hai thẻ gọn cạnh nhau.
+      <span class="so-mk">C4</span>Overall, Tiến độ rỗng: thẻ gọn, không nút (Overall chỉ đọc — ghi khi chọn kỹ năng, N33 ②). <span class="so-mk">C5</span>đã thi có KQ: ô Thi thật thay Overall — <b>giữ như web</b> (góc ghi nguồn từng ô), không dòng nguồn.</p>
+    <div class="hang-khung">
+      <figure><figcaption>C1 · + Ghi tiến độ từ dòng rỗng (ô S)</figcaption><div class="man toi dai" data-k="c1" style="width:980px"></div></figure>
+      <figure><figcaption>C2 · nguồn lệch — S từ MT2</figcaption><div class="man toi dai" data-k="c2" style="width:980px"></div></figure>
+      <figure><figcaption>C3 · em mới, chưa có MT (ô L)</figcaption><div class="man toi dai" data-k="c3" style="width:980px"></div></figure>
+      <figure><figcaption>C4 · Overall, Tiến độ rỗng</figcaption><div class="man toi dai" data-k="c4" style="width:980px"></div></figure>
+      <figure><figcaption>C6 · 375 · ghi tiến độ</figcaption><div class="dt sang dai" data-k="c6"></div></figure>
+      <figure><figcaption>C7 · 375 · em mới</figcaption><div class="dt sang dai" data-k="c7"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="d">
+    <h2>D · Thao tác / thành phần trước → sau</h2>
+    <table class="bang-tt">
+      <tr><th>Thao tác / thành phần</th><th>Trước (web)</th><th>Sau</th><th>Giữ / đổi / bỏ</th></tr>
+      <tr><td>Bấm ô điểm đổi kỹ năng (Hành trình, Tiến độ, Case lọc theo ô) · <code>aria-pressed</code> · bàn phím</td><td>có</td><td>có</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Số, ✓ ✗, màu kq, kck, thứ tự thẻ, lưới 1.2fr + 5 · 375 lưới 3</td><td>có</td><td>có</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Dòng phụ thẻ kỹ năng "MT3"</td><td>6 thẻ cùng "MT3"</td><td>một dòng nguồn trên dải "Mock Test gần nhất · MT3 · W2 SEP"; thẻ chỉ ghi khi khác nguồn ("từ MT2", đậm), "chưa có điểm" (khi các thẻ khác có), "không học từ MT4" (P8)</td><td class="doi">ĐỔI — HS1</td></tr>
+      <tr><td>Dòng phụ Overall "MT3 · kỳ vọng 7.0"</td><td>có (375 cắt)</td><td>"kỳ vọng 7.0" · thiếu môn: "không đủ bộ môn" (375 "thiếu môn") như cũ</td><td class="doi">ĐỔI chữ — HS1</td></tr>
+      <tr><td><code>title</code> thẻ "Listening · MT3 · kỳ vọng 7.0"</td><td>có</td><td>có (đọc đủ khi rê / trình đọc màn hình)</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Em chưa có MT</td><td>6 thẻ "chưa có điểm"</td><td>dòng nguồn "Chưa có điểm Mock Test", thẻ "—"</td><td class="doi">ĐỔI — HS1</td></tr>
+      <tr><td>Ô Thi thật (đã thi / chờ KQ) · góc "thi thật" / "lần trước" · Target ±</td><td>có</td><td>có, không thêm dòng nguồn</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Lớp thường (môn, "đạt / chưa đạt")</td><td>có</td><td>có, không dòng nguồn (mỗi môn một bài khác nhau)</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Tiến độ trên lớp CÓ ghi nhận · + Ghi tiến độ · bấm dòng sửa / xoá · Hoàn tác 10 giây · Góp ý tuần khoá · Xem thêm · rê dòng tô tuần trên chart · ⓘ</td><td>cột trái 5/12</td><td>như cũ</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Tiến độ trên lớp RỖNG</td><td>thẻ nửa hàng "Chưa có ghi nhận" (+ nút ở đầu thẻ khi ghi được)</td><td>vẫn cột trái 5/12, thẻ gọn hai hàng: tên · ⓘ / "Chưa có ghi nhận" · "+ Ghi tiến độ" (chỉ khi ghi được, quyền máy chủ như cũ); không ngăn đầu thẻ; Case cột phải</td><td class="doi">ĐỔI dáng thẻ rỗng — HS2</td></tr>
+      <tr><td>+ Ghi tiến độ → form (Kỹ năng · Tuần · Kết quả · Điểm / Thang / Band · Tên bài · Nhận xét)</td><td>form trong cột trái</td><td>form trong cột trái như cũ, không panel</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Thứ tự 375: Case trước, Tiến độ sau</td><td>có</td><td>có</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Case &amp; phương án (mọi thao tác trong Case, + Case cho kỹ năng, Case đã đóng)</td><td>cột phải 7/12</td><td>cột phải 7/12; bên trong không đổi</td><td class="gi">GIỮ</td></tr>
+    </table>
+  </section>
+
+  <section class="khu" id="e">
+    <h2>E · Đọc dữ liệu (Turso)</h2>
+    <p class="ghi">Không đường API mới, không câu mới. HS1: tuần của lượt "Kết quả gần nhất" lấy từ <code>attempts[].weekStart</code> đã có trong <code>GET /students/:id</code>; nguồn từng thẻ = <code>bandAttemptNo</code> của bảng kỹ năng đã nạp. HS2: "rỗng" = danh sách <code>/students/:id/bai-tren-lop</code> đã nạp (lọc theo kỹ năng ở máy khách). Đo câu / dòng trước → sau trong mô tả PR code: kỳ vọng <b>bằng nhau</b>.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var K = {};
+  var tag = function (t, c) { return '<span class="tag' + (c ? ' ' + c : '') + '">' + t + '</span>'; };
+  var thanh = function (dt) {
+    return dt ? '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span>Hà</span></span></div>'
+      : '<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m">Công việc <span class="so-nav">9</span></span><span class="phai"><span>Trần Ngọc Hà</span></span></div>';
+  };
+  /* Ô điểm: [nhãn, số, kq, phụ] — phụ null = không dòng phụ (HS1). */
+  var DU = [['Overall', '6.5', 'duoi', 'kỳ vọng 7.0'], ['L', '7.0', 'bang', null], ['R', '7.0', 'bang', null], ['W1', '7.0', 'bang', null], ['W2', '7.0', 'bang', null], ['S', '5.0', 'duoi', null]];
+  var LECH = [['Overall', '6.5', 'duoi', 'kỳ vọng 7.0'], ['L', '7.0', 'bang', null], ['R', '7.0', 'bang', null], ['W1', '7.0', 'bang', null], ['W2', '7.0', 'bang', null], ['S', '5.5', 'duoi', 'từ MT2', 'khac']];
+  var RONG = [['Overall', '—', 'trong', null], ['L', '—', 'trong', null], ['R', '—', 'trong', null], ['W1', '—', 'trong', null], ['W2', '—', 'trong', null], ['S', '—', 'trong', null]];
+  function dai(ds, chon, nguon) {
+    return '<div class="mk-vien" style="display:grid;gap:8px"><p class="nguon-dai">' + nguon + '</p><div class="o-diem">' + ds.map(function (x) {
+      return '<div class="od' + (x[0] === chon ? ' chon' : '') + '"><span class="k">' + x[0] + '</span><span class="s ' + x[2] + ' so">' + (x[2] === 'trong' ? '' : '<small>' + (x[2] === 'duoi' ? '✗' : '✓') + '</small>') + x[1] + '</span>' + (x[3] ? '<span class="p' + (x[4] ? ' ' + x[4] : '') + '">' + x[3] + '</span>' : '') + '</div>';
+    }).join('') + '</div></div>';
+  }
+  var NGUON = 'Mock Test gần nhất · <b>MT3 · W2 SEP</b>';
+  function dau(dt, em) {
+    em = em || { ten: 'Bùi Thảo Vy', tuan: '17', moi: false };
+    return '<div class="lui"><span class="nut nut-nho">‹ Học viên &amp; Lớp</span><span class="so">1/33 · Lớp MB FT 101</span></div>' +
+      '<div class="hs-1"><h1>' + em.ten + '</h1><span class="phai"><span class="nut nut-nho">+ Case</span><span class="nut nut-nho">⋯</span></span></div>' +
+      '<div class="truong-dau"><div><span>Lớp</span><b>MB FT 101</b></div><div><span>Lộ trình</span><b>LT1</b></div><div><span>Target</span><b class="so">7.0</b></div><div><span>Tuần học</span><b class="so">' + em.tuan + '</b></div>' +
+      '<div><span>Thi thật</span>' + tag('Chưa có lịch') + '</div><div><span>GVCN</span><b>Trần Ngọc Hà</b></div><div><span>TVV</span><b>Phan Mai</b></div></div>' +
+      (dt ? '' : '<div class="lien-he">' + tag('PH <b>0910380112</b>', 'nhat') + tag('hv.3@demo.test', 'nhat') + tag('Sinh 01/01/2010', 'nhat') + '</div>');
+  }
+  var tabs = '<div class="tab"><span class="dang">Học thuật</span><span>Ý thức &amp; Phối hợp</span><span>Lộ trình &amp; lớp</span></div>';
+  function mockTest(dt) {
+    if (dt) return '<div class="the"><div class="the-dau"><h2>Mock Test</h2><span class="nut-i">ⓘ</span></div>' +
+      [['MT1', 'W1 JUL · OVR —', 'Chưa có điểm · 0/4 kỹ năng'], ['MT2', 'W2 AUG · OVR <span class="da">6.5</span>', '✓ Đạt'], ['MT3', 'W2 SEP · OVR <span class="dd">6.5</span>', 'SOS 1']].map(function (r) {
+        return '<div class="cs" style="grid-template-columns:44px minmax(0,1fr) auto"><a style="color:var(--accent);font-weight:700">' + r[0] + ' ›</a><span class="so" style="font-size:14px">' + r[1] + '</span><span class="kq">' + r[2] + '</span></div>';
+      }).join('') + '</div>';
+    return '<div class="the"><div class="the-dau"><h2>Mock Test</h2><span class="nut-i">ⓘ</span></div><table class="bmt"><tr><th>MT</th><th>Lớp lúc đánh giá</th><th>Tuần</th><th>L</th><th>R</th><th>W1</th><th>W2</th><th>S</th><th>OVR</th><th>Kỳ vọng</th><th>Kết quả</th></tr>' +
+      '<tr><td><a>MT1 ›</a></td><td>MB FT 101</td><td>W1 JUL</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>–</td><td>6.0</td><td><span class="kq">Chưa có điểm · 0/4 kỹ năng</span></td></tr>' +
+      '<tr><td><a>MT2 ›</a></td><td>MB FT 101</td><td>W2 AUG</td><td class="da">7.0</td><td class="da">6.5</td><td class="dd">6.0</td><td class="da">6.5</td><td class="dd">6.0</td><td class="da">6.5</td><td>6.5</td><td><span class="kq">✓ Đạt kỳ vọng</span></td></tr>' +
+      '<tr><td><a>MT3 ›</a></td><td>MB FT 101</td><td>W2 SEP</td><td class="da">7.0</td><td class="da">7.0</td><td class="da">7.0</td><td class="da">7.0</td><td class="dd">5.0</td><td class="dd">6.5</td><td>7.0</td><td><span class="kq">SOS 1 · S</span></td></tr></table><p class="chu-mo">Chưa ghi điểm đầu vào.</p></div>';
+  }
+  function hanhTrinh(kn, ds) {
+    ds = ds || [[0, 6.0, 'duoi'], [1, 5.0, 'duoi']];
+    var x = function (i) { return 60 + i * 200; }, y = function (v) { return 170 - (v - 4) * 50; };
+    var pts = ds.map(function (p) { return x(p[0]) + ',' + y(p[1]); }).join(' ');
+    var svg = '<svg viewBox="0 0 900 190" preserveAspectRatio="none"><g stroke="var(--line)" stroke-width="1">' + [4, 5, 6, 7].map(function (v) { return '<line x1="40" x2="890" y1="' + y(v) + '" y2="' + y(v) + '"/>'; }).join('') + '</g>' +
+      '<g font-size="12" fill="var(--text-faint)" font-family="Inter">' + [4, 5, 6, 7].map(function (v) { return '<text x="8" y="' + (y(v) + 4) + '">' + v + '.0</text>'; }).join('') +
+      ['W2 AUG', 'W2 SEP', 'W3 SEP', 'W2 OCT'].map(function (t, i) { return '<text x="' + (x(i) - 22) + '" y="186">' + t + '</text>'; }).join('') + '</g>' +
+      '<rect x="' + (x(2) - 14) + '" y="0" width="28" height="172" fill="var(--hong)" opacity=".12"/>' +
+      '<line x1="40" x2="890" y1="' + y(7) + '" y2="' + y(7) + '" stroke="var(--text-dim)" stroke-dasharray="6 5"/>' +
+      (ds.length ? '<polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2"/>' + ds.map(function (p) { return '<circle cx="' + x(p[0]) + '" cy="' + y(p[1]) + '" r="6" fill="var(--' + (p[2] === 'dat' ? 'ok' : 'bad') + ')"/>'; }).join('') : '') + '</svg>';
+    return '<div class="the"><div class="the-dau"><h2>Hành trình · ' + kn + '</h2><span class="nut-i">ⓘ</span><span class="phai"><span class="doan2"><span class="dang">Biểu đồ</span><span>Bảng</span></span></span></div><div class="bd">' + svg + '</div></div>';
+  }
+  function bangKn375(kn) {
+    return '<div class="the"><div class="the-dau"><h2>Hành trình · ' + kn + '</h2><span class="nut-i">ⓘ</span></div>' +
+      [['MT2 ›', 'W2 AUG', '<span class="dd">6.0</span>', '6.5', '−0.5'], ['MT3 ›', 'W2 SEP', '<span class="dd">5.0</span>', '7.0', '−2.0']].map(function (r) {
+        return '<div class="cs" style="grid-template-columns:minmax(0,1fr) 54px 54px 44px;font-size:14px"><span><a style="color:var(--accent);font-weight:700">' + r[0] + '</a><br><span style="font-size:12px;color:var(--text-dim)">' + r[1] + '</span></span><span class="so">' + r[2] + '</span><span class="so">' + r[3] + '</span><span class="so" style="color:var(--bad)">' + r[4] + '</span></div>';
+      }).join('') + '</div>';
+  }
+  var TIEN = [['L', 'W2 SEP', 'Part 3 bắt được 6/10 ý chính, còn sót số liệu.'], ['R', 'W2 SEP', 'Matching headings 9/13, làm kịp giờ.'], ['W1', null], ['W2', 'W1 SEP', 'Dàn ý 3 đoạn rõ, thân bài thiếu ví dụ.'], ['S', null]];
+  function tienDoCo() {
+    return '<div class="the"><div class="the-dau"><h2>Tiến độ trên lớp</h2><span class="nut-i">ⓘ</span></div>' + TIEN.map(function (x) {
+      return '<div class="td-dong"><span class="kn">' + x[0] + '</span><span class="nd">' + (x[1] ? '<span class="tags">' + tag(x[1], 'nhat') + '</span><p>' + x[2] + '</p>' : '<span class="chua-co">Chưa có ghi nhận</span>') + '</span></div>';
+    }).join('') + '</div>';
+  }
+  /* HS2 · dòng rỗng: nút chỉ khi ghi được (chọn kỹ năng + quyền máy chủ). */
+  function tienDoRong(kn, nut) {
+    return '<div class="the mk-vien"><div class="td-mot-dong"><h2>Tiến độ trên lớp' + (kn ? ' · ' + kn : '') + '</h2><span class="nut-i">ⓘ</span><span class="td-rong">Chưa có ghi nhận</span>' + (nut ? '<span class="nut nut-nho">+ Ghi tiến độ</span>' : '') + '</div></div>';
+  }
+  function tienDoForm(kn) {
+    return '<div class="the mk-vien"><div class="the-dau"><h2>Tiến độ trên lớp · ' + kn + '</h2><span class="nut-i">ⓘ</span></div><div class="form-td">' +
+      '<label>Kỹ năng<span class="lua2"><span>L</span><span>R</span><span>W</span><span class="dang">S</span></span></label>' +
+      '<label>Tuần<span class="ngay-o"><input class="o so" value="14/09/2026 · W3 SEP"><span class="nut"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg></span></span></label>' +
+      '<label class="ca"><span>Kết quả <i>tuỳ chọn</i></span><span class="lua2"><span class="dang">Điểm bài</span><span>Band</span></span></label>' +
+      '<label>Điểm<input class="o so" value="6"></label><label>Thang<input class="o so" value="10"></label>' +
+      '<label class="ca"><span>Tên bài <i>tuỳ chọn</i></span><input class="o" value="Part 2 · Describe a place"></label>' +
+      '<label class="ca">Nhận xét<textarea class="o" style="height:72px;padding:8px 10px">Nói đủ 2 phút, còn ngập ngừng ở ý thứ hai.</textarea></label>' +
+      '<div class="chan"><span class="nut nut-nho">Huỷ</span><span class="nut nut-chinh nut-nho">Lưu</span></div></div></div>';
+  }
+  function caseS(dt) {
+    return '<div class="the"><div class="the-dau"><h2>Case &amp; phương án · Speaking</h2>' + tag('<b>1</b>&nbsp;đang mở') + '</div>' +
+      '<div class="cs mo"><span class="kn">S</span><span class="ten">Speaking <span class="sos m1">SOS 1</span>' + tag('Chờ xác nhận PA') + (dt ? '' : '<span style="font:400 13px var(--phong);color:var(--text-dim)">PA Tutor · đến lúc thi</span>') + '</span><span class="ben">' + (dt ? '' : '<span>Phạm Thu Trang</span><span class="so">hạn 18/09</span>') + '<span>▾</span></span></div>' +
+      '<div class="chi-tiet"><dl class="fld"><dt>Phụ trách</dt><dd>Phạm Thu Trang</dd><dt>Nguyên nhân</dt><dd><span class="tags">' + tag('Trôi chảy / mạch lạc') + tag('Từ vựng') + '</span></dd>' +
+      '<dt>Mô tả</dt><dd>Part 2 dừng giữa chừng, thiếu từ nối, phát âm đuôi chưa rõ.</dd><dt>Mở</dt><dd class="so">W2 SEP</dd>' +
+      '<dt>Phương án</dt><dd><div class="pa-the"><span><b>Học Tutor</b> ' + tag('đến lúc thi', 'nhat') + '</span><span style="font-size:14px;color:var(--text-dim)">người dạy Phạm Thu Trang · 0/10 buổi · chờ xác nhận</span></div></dd>' +
+      '<dt>Lịch sử</dt><dd><a href="#">1 thay đổi ›</a></dd><dt>Bằng chứng</dt><dd><span style="color:var(--text-faint)">chưa có</span></dd></dl>' +
+      '<p style="margin:0;font-size:14px;color:var(--text-dim)">Chỉ Phạm Thu Trang (phụ trách) hoặc Quản lý làm được việc ở Case này.</p></div></div>';
+  }
+  function caseTatCa() {
+    return '<div class="the"><div class="the-dau"><h2>Case &amp; phương án</h2>' + tag('<b>1</b>&nbsp;đang mở') + '</div>' +
+      '<div class="cs"><span class="kn">S</span><span class="ten">Speaking <span class="sos m1">SOS 1</span>' + tag('Chờ xác nhận PA') + '</span><span class="ben"><span>Phạm Thu Trang</span><span class="so">hạn 18/09</span><span>▸</span></span></div></div>';
+  }
+  var caseRong = function (kn, lbl) { return '<div class="the"><div class="the-dau"><h2>Case &amp; phương án · ' + kn + '</h2></div><p class="rong-case">Không có Case ' + kn + '.<span class="nut nut-nho">+ Case cho ' + lbl + '</span></p></div>'; };
+  var vo = function (dt, body) { return thanh(dt) + '<div class="hs">' + body + '</div>'; };
+
+  K.a1 = vo(false, dau() + dai(DU, 'Overall', NGUON) + tabs + mockTest() + '<div class="hai-cot">' + tienDoCo() + caseTatCa() + '</div>');
+  K.a2 = vo(false, dau() + dai(DU, 'S', NGUON) + tabs + hanhTrinh('Speaking') + '<div class="hai-cot">' + tienDoRong('Speaking', true) + caseS() + '</div>');
+  K.b1 = vo(true, dau(true) + dai(DU, 'Overall', NGUON) + tabs + mockTest(true) + caseTatCa() + tienDoCo());
+  K.b2 = vo(true, dau(true) + dai(DU, 'S', NGUON) + tabs + bangKn375('Speaking') + caseS(true) + tienDoRong('Speaking', true));
+  K.c1 = vo(false, dai(DU, 'S', NGUON) + hanhTrinh('Speaking') + '<div class="hai-cot">' + tienDoForm('Speaking') + caseS() + '</div>');
+  K.c2 = vo(false, dai(LECH, 'S', NGUON) + hanhTrinh('Speaking', [[0, 6.0, 'duoi'], [1, 5.5, 'duoi']]));
+  K.c3 = vo(false, dau(false, { ten: 'Lê Hoàng Nam', tuan: '1' }) + dai(RONG, 'L', 'Chưa có điểm Mock Test') + tabs + hanhTrinh('Listening', []) + '<div class="hai-cot">' + tienDoRong('Listening', true) + caseRong('Listening', 'Listening') + '</div>');
+  K.c4 = vo(false, dai(DU, 'Overall', NGUON) + '<div class="hai-cot">' + tienDoRong(null, false) + caseTatCa() + '</div>');
+  K.c6 = vo(true, dai(DU, 'S', NGUON) + caseS(true) + tienDoForm('Speaking'));
+  K.c7 = vo(true, dau(true, { ten: 'Lê Hoàng Nam', tuan: '1' }) + dai(RONG, 'L', 'Chưa có điểm Mock Test') + tabs + caseRong('Listening', 'Listening') + tienDoRong('Listening', true));
+  document.querySelectorAll('[data-k]').forEach(function (el) { el.innerHTML = K[el.dataset.k] || ''; });
+})();
+</script>
+</body>
+</html>
