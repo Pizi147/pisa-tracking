@@ -15,6 +15,8 @@ export type LopKH = {
   canXepLai: number;
   /** Chủ SP 28/10: lớp GV dạy mà không xếp được (không `plan.week`) — chỉ xem. */
   chiXem?: boolean;
+  /** KIEM-TAY-1011: người xem mở được hồ sơ lớp (máy chủ `attempt.view` theo lớp) — không thì mã lớp là chữ thường. */
+  xemHoSo?: boolean;
 };
 export type DanhSachLop = { tieuDe: string; lop: LopKH[] };
 

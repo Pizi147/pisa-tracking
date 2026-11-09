@@ -96,31 +96,33 @@ export function LopToiDay() {
         </div>
       ) : (
         <div className="table-scroll">   {/* CV-LOI (CV-10): bỏ `bang-dinh` — bảng trong thẻ 560 px cuộn ngang trong thẻ, không tràn ra ngoài */}
-          <table className="w-full min-w-[760px] border-collapse text-sm">
+          {/* KIEM-TAY-1011 (5): thẻ cột trái Công việc ~614 px ở 1440 — đệm cột 8 px, mã lớp một dòng (chương trình / lộ trình dòng dưới), "tuần này" dòng dưới:
+              đủ 8 cột không cuộn ngang; thẻ hẹp hơn vẫn cuộn trong thẻ. */}
+          <table className="w-full min-w-[600px] border-collapse text-sm">
             <thead>
               <tr className="text-left text-[12px] font-semibold text-slate-400">
-                <th className="px-4 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tôi dạy')}</th>
-                {laThuong && <th className="px-3 py-2 font-semibold">{t('Tuần học')}</th>}
-                <th className="px-3 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{nhanDuoi}</th>
-                {!laThuong && <th className="px-3 py-2 text-right font-semibold">SOS</th>}
-                <th className="px-3 py-2 text-right font-semibold">{t('Case đang mở')}</th><th className="px-3 py-2 text-right font-semibold">{t('Bài chờ chấm')}</th>
-                <th className="px-4 py-2 font-semibold">{t('Test sắp tới')}</th>
+                <th className="py-2 pl-4 pr-2 font-semibold">{t('Lớp')}</th><th className="px-2 py-2 font-semibold">{t('Tôi dạy')}</th>
+                {laThuong && <th className="px-2 py-2 font-semibold">{t('Tuần học')}</th>}
+                <th className="px-2 py-2 text-right font-semibold">{t('Học viên')}</th><th className="px-2 py-2 text-right font-semibold">{nhanDuoi}</th>
+                {!laThuong && <th className="px-2 py-2 text-right font-semibold">SOS</th>}
+                <th className="px-2 py-2 text-right font-semibold">{t('Case đang mở')}</th><th className="px-2 py-2 text-right font-semibold">{t('Bài chờ chấm')}</th>
+                <th className="py-2 pl-2 pr-4 font-semibold">{t('Test sắp tới')}</th>
               </tr>
             </thead>
             <tbody className="tabular-nums">
               {data.rows.map((h) => (
                 <tr key={h.classId} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                  <td className="px-4 py-2"><Link to={`/hoc-vien/lop/${h.classId}`} className="font-semibold text-slate-100 no-underline hover:underline">{h.code}</Link>
-                    {(h.route || h.ct) && <span className="ml-1.5 text-xs text-slate-500">{laThuong ? h.ct : h.route}</span>}</td>
-                  <td className="px-3 py-2 text-slate-300">{dich(h.toiDay)}</td>
-                  {laThuong && <td className="px-3 py-2 text-slate-300">{h.tuanHoc ?? '—'}</td>}
-                  <td className="px-3 py-2 text-right text-slate-300">{h.hocVien}</td>
-                  <td className="px-3 py-2 text-right">{so(h, 'duoiKyVong', h.duoiKyVong, nhanDuoi.toLowerCase())}</td>
-                  {!laThuong && <td className="px-3 py-2 text-right">{so(h, 'sos', h.sos ?? 0, t('học viên có SOS'))}</td>}
-                  <td className="px-3 py-2 text-right">{so(h, 'caseMo', h.caseMo, t('Case đang mở'))}</td>
-                  <td className="px-3 py-2 text-right">{baiCham(h)}</td>
-                  <td className="px-4 py-2 text-slate-300">{h.testKeTiep ?? <span className="text-slate-500">{t('chưa có lịch')}</span>}
-                    {h.testTuanNay && <span className="ml-1.5 text-xs text-slate-500">{t('tuần này')}</span>}</td>
+                  <td className="py-2 pl-4 pr-2"><Link to={`/hoc-vien/lop/${h.classId}`} className="whitespace-nowrap font-semibold text-slate-100 no-underline hover:underline">{h.code}</Link>
+                    {(h.route || h.ct) && <span className="block text-xs text-slate-500">{laThuong ? h.ct : h.route}</span>}</td>
+                  <td className="px-2 py-2 text-slate-300">{dich(h.toiDay)}</td>
+                  {laThuong && <td className="px-2 py-2 text-slate-300">{h.tuanHoc ?? '—'}</td>}
+                  <td className="px-2 py-2 text-right text-slate-300">{h.hocVien}</td>
+                  <td className="px-2 py-2 text-right">{so(h, 'duoiKyVong', h.duoiKyVong, nhanDuoi.toLowerCase())}</td>
+                  {!laThuong && <td className="px-2 py-2 text-right">{so(h, 'sos', h.sos ?? 0, t('học viên có SOS'))}</td>}
+                  <td className="px-2 py-2 text-right">{so(h, 'caseMo', h.caseMo, t('Case đang mở'))}</td>
+                  <td className="px-2 py-2 text-right">{baiCham(h)}</td>
+                  <td className="py-2 pl-2 pr-4 text-slate-300"><span className="whitespace-nowrap">{h.testKeTiep ?? <span className="text-slate-500">{t('chưa có lịch')}</span>}</span>
+                    {h.testTuanNay && <span className="block text-xs text-slate-500">{t('tuần này')}</span>}</td>
                 </tr>
               ))}
             </tbody>

@@ -40,6 +40,7 @@ export function KeHoachTestTab() {
 
   const { data, loading, error, reload } = useApi<DanhSachLop>(`/ke-hoach-test/lop${branchId ? `?branchId=${branchId}` : ''}`);
   const [chu, setChu] = useState('');
+  const [moLoc, setMoLoc] = useState(false);
   const [moList, setMoList] = useState<number[]>([]);
   const [daMoSan, setDaMoSan] = useState(false);
   const [hopMo, setHopMo] = useState(false);
@@ -178,16 +179,18 @@ export function KeHoachTestTab() {
           return dienThoai ? (
             <>
               <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 flex-1" />
-              <details className="contents">
-                <summary className="btn min-h-[44px] cursor-pointer list-none">{t('Lọc')}</summary>
-                <div className="flex basis-full flex-wrap items-center gap-2">
+              {/* KIEM-TAY-1011 (6): nút + khối là con trực tiếp của hàng flex — khối "Lọc" xuống dòng riêng (`basis-full`), không chen ô tìm
+                  (`<details className="contents">` làm khối thành một ô co lại: "Tìm l…", "Lớp thườ…"). */}
+              <button type="button" className="btn min-h-[44px]" aria-expanded={moLoc} aria-controls="kht-loc-them" onClick={() => setMoLoc((v) => !v)}>{t('Lọc')}</button>
+              {nutTrang}
+              {moLoc && (
+                <div id="kht-loc-them" className="order-1 flex basis-full flex-wrap items-center gap-2">
                   <CongTacKhung v8 trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
                     onChange={(k) => { if (k !== 'tat-ca') { setLopLoc(null); setLoai(k); } }} />
                   {chipKe}
                   {branchCount > 1 && <BranchFilter branchId={branchId} onBranch={doiCn} />}
                 </div>
-              </details>
-              {nutTrang}
+              )}
             </>
           ) : (
             <>
@@ -221,7 +224,7 @@ export function KeHoachTestTab() {
           {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>W5/10</b>).</span>}
           <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
         </NutLuat>
-        <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:basis-full max-sm:justify-end">
+        <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:order-2 max-sm:basis-full max-sm:justify-end">
           <span><b className="tabular-nums text-slate-100">{danhSach.reduce((n, l) => n + l.soHv, 0)}</b> HV</span>
           {nutMoHet}
         </span>

@@ -48,7 +48,8 @@ export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiChuaCoKe = false,
     <section aria-label={t('lớp {ma}', { ma: lop.code })}>
       <div className={`hl-kh ${mo ? 'mo-lop' : ''}`} onClick={onToggle}>
         <MuiTenMo mo={mo} onMo={onToggle} nhan={t('lớp {ma}', { ma: lop.code })} />
-        <Link to={`/hoc-vien/lop/${lop.id}`} className="ten-ho-so text-[15px] font-bold" onClick={(e) => e.stopPropagation()}>{lop.code}</Link>
+        {lop.xemHoSo === false ? <span className="text-[15px] font-bold">{lop.code}</span>
+          : <Link to={`/hoc-vien/lop/${lop.id}`} className="ten-ho-so text-[15px] font-bold" onClick={(e) => e.stopPropagation()}>{lop.code}</Link>}
         <span className="hl-kh-phu"><b className="tabular-nums">{lop.soHv}</b> HV</span>
         <span className="hl-kh-phu">{lop.gvcn ? <>{t('GVCN')} <b>{lop.gvcn}</b></> : lop.chiNhanh}</span>
         <span className="hl-kh-phu">{lop.dotChay ? dich(lop.dotChay) : lop.loai === 'thuong' ? dich(lop.tomTat) : ''}</span>

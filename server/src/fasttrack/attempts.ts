@@ -2450,7 +2450,8 @@ export function saveScore(
           entityLabel: r.skill, before: r === existing ? before : { ...r }, after: { noShow: false, ...(r === existing ? {} : { theo: skill }) },
         });
       }
-      return done();
+      /* KIEM-TAY-1011 (3): gỡ "Không dự thi" — web báo "Đã bỏ vắng · Hoàn tác" như ô vắng đã chốt (dấu chưa chốt: chỉ "✓ Đã lưu"). */
+      return existing.no_show_cu ? { ...done(), boKhongDuThi: true } : done();
     }
 
     const resultDate = patch.resultDate !== undefined ? patch.resultDate : existing?.result_date ?? null;

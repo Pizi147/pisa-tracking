@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { KhungPanel } from './KhungPanel.tsx';
 import { NutLuat } from './NutLuat.tsx';
 import { Bang } from './Bang.tsx';
@@ -123,6 +123,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
 }) {
   const { homNay } = useNgayNghiepVu();
   const { session } = useSession();
+  const navigate = useNavigate();
   /* KIEM-TAY-1011: QL mở số của GV khác — nhóm Chưa làm ghi "Bài của GV"; "Bài của bạn" chỉ khi panel là của chính người xem. */
   const gvPanel = Number((nguon && (/[?&]gv=(\d+)/.exec(nguon) ?? /^\/giao-vien\/(\d+)\//.exec(nguon))?.[1]) ?? NaN);
   const nhanBaiRieng = Number.isFinite(gvPanel) && gvPanel !== session?.user?.id ? t('Bài của GV') : t('Bài của bạn');
@@ -513,7 +514,9 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                   return (
                     <section key={String(chung)} className="grid gap-1.5" aria-label={nhom ?? tieuDe}>
                       {nhom && <h3 className="m-0 text-[14px] font-semibold text-dim">{nhom} <span className="tabular-nums">{tatVc.filter((h) => !!h.sChung === chung).length}</span></h3>}
-                      {hang.length || !nhom ? <Bang deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVc} hang={hang} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc} />
+                      {hang.length || !nhom ? <Bang deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVc} hang={hang} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc}
+                          /* KIEM-TAY-1011 (4): bấm cả dòng = bấm tên việc / bài (cùng `href`, mở đúng chỗ chấm / làm việc); link em, lớp giữ đích riêng. */
+                          onHang={(h) => navigate(h.href)} />
                         : <p className="m-0 text-[14px] text-dim">{t('Không có bài chưa làm.')}</p>}
                     </section>
                   );

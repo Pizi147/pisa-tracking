@@ -163,6 +163,10 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
         /* CV-SUA-1011: "Đã bỏ vắng · Hoàn tác" như gõ "-" — Hoàn tác = ghi lại "-" (máy chủ chốt lại theo luật vắng). */
         toast.push('ok', t('Đã bỏ vắng {x}{x2} · {x3} {tuanVe}', { x: ENTRY_SKILL_SHORT[skill as EntrySkill], x2: tenHv ? ` · ${tenHv}` : '', x3: r.goVang.giuLich ? t('giữ') : t('về'), tuanVe: r.goVang.tuanVe }),
           { key: `vang:${attemptId}:${skill}`, ms: HOAN_TAC_VANG_MS, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: () => void save(skill, { noShow: true }) } });
+      } else if (r?.boKhongDuThi) {
+        /* KIEM-TAY-1011: gỡ "Không dự thi" (MT0 / MT cũ) — tuần không đổi; Hoàn tác = ghi lại "-" (máy chủ chốt lại Không dự thi). */
+        toast.push('ok', t('Đã bỏ vắng {tenMonNgan}{x}', { tenMonNgan: ENTRY_SKILL_SHORT[skill as EntrySkill], x: tenHv ? ` · ${tenHv}` : '' }),
+          { key: `vang:${attemptId}:${skill}`, ms: HOAN_TAC_VANG_MS, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: () => void save(skill, { noShow: true }) } });
       }
       /* W1: điểm thường → gộp vô hiệu 1,5 s (mỗi ô từng kéo cả lưới lớp + /my-work tải lại); "-" / bỏ vắng / khôi phục đổi lịch → ngay.
          PR-S6F-a: /my-work có trong danh sách — badge quá hạn của GV vẫn tải lại sau khi nhập điểm. */
