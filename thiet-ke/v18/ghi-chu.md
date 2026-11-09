@@ -24,5 +24,8 @@ Nguồn: audit 08/11 (`docs/superpowers/specs/2026-11-08-audit-ui/bao-cao.md` d�
 ## Đề xuất kèm (nhỏ, bỏ được nếu chủ SP không muốn)
 - Lớp tôi dạy mở trong dải: bỏ tiêu đề lặp "Lớp tôi dạy" bên trong (giữ ⓘ + Fast Track | Lớp thường).
 
-## Ngoài phạm vi, thấy khi chụp ảnh (chưa sửa)
+## Ngoài phạm vi, thấy khi chụp ảnh — PTA 10/11: sửa trong PR code hồ sơ HV (Bước 2), ghi vào bảng truy vết
 - Hồ sơ HV (em Chu Nhật Minh, 1440): thẻ việc "Ghi kết quả PA · Reading" — nút "Ghi kết quả PA" đè lên dòng chữ PA (ảnh `anh/truoc-hs-hai-cot-1440.png`).
+
+## Ảnh "sau" (chụp từ mockup, phông Be Vietnam Pro + Inter đã nạp)
+`anh/sau-hs-co-ghi-nhan-{1440,375}.png` · `anh/sau-hs-rong-{1440,375}.png` · `anh/sau-cv-dong-{1440,375}.png` · `anh/sau-cv-mo-{1440,375}.png`
