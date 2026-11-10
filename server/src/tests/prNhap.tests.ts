@@ -88,19 +88,21 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(g.cotBoQua.join() === 'Ghi chú', JSON.stringify(g.cotBoQua));
   });
 
-  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu ngày sinh / email không lỗi (OV-11g Q3), dự kiến thi tháng, lộ trình theo lớp', () => {
+  check('NHAP (3) · xem trước FT: ngày không có thật, thiếu ngày sinh / email không lỗi (OV-11g Q3), dự kiến thi tháng, lộ trình theo em (#9: LT2 nhận, mã lạ lưu ý)', () => {
     const pv = intake.previewIntake(P.admin, { classId: ft, rows: [
       { fullName: 'A', dob: '31/02/2010', email: 'a@b.vn' },
       { fullName: 'B' },
       { fullName: 'C', dob: '2010-01-01', email: 'c@d.vn', examDate: '05/2027' },
       { fullName: 'D', dob: '2010-01-01', email: 'd@e.vn', route: 'LT2' },
+      { fullName: 'D2', dob: '2010-01-01', email: 'd2@e.vn', route: 'LT7' },
       { fullName: 'E', dob: '2010-01-01', email: 'e@f.vn', examDate: '13/2027' },
     ] });
-    const [a, b, c, dd, e] = pv.rows;
+    const [a, b, c, dd, d2, e] = pv.rows;
     assert(a.issues.some((i: any) => i.field === 'dob' && i.muc === 'loi' && i.message === 'Ngày không có thật'), JSON.stringify(a.issues));
     assert(!b.issues.some((i: any) => i.muc === 'loi'), JSON.stringify(b.issues));   // OV-11g (Q3): ngày sinh, email không bắt buộc
     assert(c.examDate === '2027-05' && !c.issues.some((i: any) => i.muc === 'loi'), JSON.stringify(c));
-    assert(dd.issues.some((i: any) => i.field === 'route' && i.muc === 'luu_y' && /LT1/.test(i.message)), JSON.stringify(dd.issues));
+    assert(dd.route === 'LT2' && !dd.issues.some((i: any) => i.field === 'route'), JSON.stringify(dd));
+    assert(d2.route === 'LT1' && d2.issues.some((i: any) => i.field === 'route' && i.muc === 'luu_y' && /LT1/.test(i.message)), JSON.stringify(d2.issues));
     assert(e.issues.some((i: any) => i.field === 'examDate' && i.muc === 'loi'), 'tháng 13 phải lỗi');
     assert(pv.issues.every((i: any) => i.muc === 'loi' || i.muc === 'luu_y'), 'mọi vấn đề phải có muc');
   });
@@ -119,7 +121,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     assert(r.added === 1, `trùng hồ sơ bị chặn: ${JSON.stringify(r.failed)}`);
   });
 
-  check('NHAP (3) · ghi: email, ngày thi (ngày → tháng + tuần), lộ trình theo lớp, hangDaThem', () => {
+  check('NHAP (3) · ghi: email, ngày thi (ngày → tháng + tuần), lộ trình theo em (#9), hangDaThem', () => {
     const r = intake.commitIntake(P.admin, { classId: ft, idempotencyKey: 'nhap-3-ghi', rows: [
       { fullName: 'Nhập Có Email', dob: '2010-01-01', email: 'X@Y.vn', examDate: '15/01/2027', route: 'LT2' },
       { fullName: 'Nhập Thiếu Email', dob: '31/02/2010' },   // OV-11g: thiếu ngày sinh / email đã thêm được — dòng lỗi giờ là ngày sinh sai
@@ -128,7 +130,7 @@ export async function runPrNhapTests(t: YThucTestKit) {
     const s = conn.prepare("SELECT id, email FROM students WHERE full_name = 'Nhập Có Email'").get() as any;
     assert(s.email === 'x@y.vn', String(s.email));
     const cy = conn.prepare('SELECT * FROM learning_cycles WHERE student_id = ?').get(s.id) as any;
-    assert(cy.exam_date === '2027-01-15' && cy.exam_month === '2027-01' && cy.exam_period_id && cy.route === 'LT1', JSON.stringify(cy));
+    assert(cy.exam_date === '2027-01-15' && cy.exam_month === '2027-01' && cy.exam_period_id && cy.route === 'LT2', JSON.stringify(cy));
     assert(!conn.prepare("SELECT id FROM students WHERE full_name = 'Nhập Thiếu Email'").get(), 'dòng thiếu email vẫn được ghi');
   });
 

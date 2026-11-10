@@ -108,6 +108,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /* MOCKUP-1111 màn 3: lớp chọn ở dải nhóm (khoá nhóm gợi ý) · em đã bấm "Đổi lớp" riêng. */
   const [lopNhom, setLopNhom] = useState<Partial<Record<'len' | 'lai' | 'cn' | 'cho', number | null>>>({});
   const [doiLopRieng, setDoiLopRieng] = useState<ReadonlySet<number>>(new Set());
+  /* GVCN: một nhận xét chung cho các em đã chọn (ghi vào ô Nhận xét từng em, lưu bằng "Lưu nhận xét · n em"). */
+  const [nxChung, setNxChung] = useState('');
   const [ap, setAp] = useState<{ huong: ChonHuong; quayLai: boolean; lop: number | null; tuan: string; kv: { dat: boolean; nn: 'trung_tam' | 'hoc_sinh' | null } | null }>(
     { huong: '', quayLai: true, lop: null, tuan: '', kv: null });
 
@@ -194,7 +196,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const khop = (e: Em) => (loc === 'chua-chot' ? !e.lenh : loc === 'con-ban-giao' ? conBanGiao(e) : loc === 'loi' ? !!loi[e.id] : loc === 'xet-lai' ? !!xetLai?.co.has(e.id) : true);
   const hien = dongs.filter((r) => khop(r.e));
   /* Dòng đã chốt Lên FT vẫn chọn được để áp Kỳ vọng FT (thanh Áp chỉ đổi Kỳ vọng ở dòng khoá). */
-  const chonDuoc = (e: Em) => laQl && (!khoa(e) || kvMo(e, dongCua(e)));
+  /* Chủ SP 11/11: ô tick ở MỌI vai — QL theo luật cũ (dòng đã chốt chỉ còn Kỳ vọng); GVCN chọn để ghi cùng nhận xét; vai khác chỉ đánh dấu. */
+  const chonDuoc = (e: Em) => (laQl ? !khoa(e) || kvMo(e, dongCua(e)) : true);
   const doi = (sid: number, p: Sua) => {
     /* Bỏ Lên FT → bỏ Kỳ vọng đang sửa (không gửi theo lô). */
     setSua((m) => { const n = { ...m[sid], ...p }; if (p.huong !== undefined && p.huong !== 'fast_track') delete n.kv; return { ...m, [sid]: n }; });
@@ -321,7 +324,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const HUONG_NHOM: Record<KhoaNhom, ChonHuong> = { len: ke && ke !== 'FT' ? 'len_lop' : 'fast_track', lai: 'hoc_lai', cn: '', cho: '' };
   const TEN_NHOM: Record<KhoaNhom, string> = { len: ke && ke !== 'FT' ? t('Lên {ke}', { ke: tenKe ?? '' }) : t('Lên FT'), lai: t('Học lại {ct}', { ct: ma ?? '' }), cn: t('Quản lý cân nhắc'), cho: t('Chờ Final') };
   const soNhom = (k: KhoaNhom) => dongs.filter((r) => nhomCua(r.e) === k).length;
-  const coDai = (k: KhoaNhom) => soNhom(k) >= 2;
+  /* Chủ SP 11/11: dải chỉ khi nhóm có gợi ý bước tiếp thật (Lên … / Học lại …) — không dải "Chờ Final" / "Quản lý cân nhắc". */
+  const coDai = (k: KhoaNhom) => soNhom(k) >= 2 && (k === 'len' || k === 'lai');
   const dongNhomHuong = (k: KhoaNhom) => dongs.filter((r) => nhomCua(r.e) === k && !khoa(r.e) && !!HUONG_NHOM[k] && r.x.huong === HUONG_NHOM[k]);
   const lopCuaNhom = (k: KhoaNhom): number | null => {
     if (lopNhom[k] !== undefined) return lopNhom[k] ?? null;
@@ -680,7 +684,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /* Cột cố định (chủ SP 11/11 "hàng cột cân đối"): QL ô tick · Học viên · Kết quả · Bước tiếp · Lớp mới (+ Bàn giao khi đã có em chốt); GVCN / người xem: Học viên · Kết quả · Bước tiếp · Nhận xét. */
   const coBg = ds.some((e) => e.lenh);
   const LUOI = laQl ? (coBg ? 'xl:grid-cols-[28px_200px_310px_400px_minmax(0,1fr)_150px]' : 'xl:grid-cols-[28px_210px_316px_400px_minmax(0,1fr)]')
-    : 'xl:grid-cols-[210px_316px_330px_minmax(0,1fr)]';
+    : 'xl:grid-cols-[28px_210px_316px_330px_minmax(0,1fr)]';
   const chip = (nhan: ReactNode, bat: boolean, onClick: () => void, key?: string) => (
     <button key={key} type="button" aria-pressed={bat} onClick={onClick}
       className={`btn btn-sm min-h-[44px] rounded-full sm:min-h-0 ${bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{nhan}</button>
@@ -692,14 +696,14 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     return (
       <div key={e.id} id={`ck-em-${e.id}`} className={`group/hang border-b ${le ? 'border-t-2' : ''} ${chon.has(e.id) ? 'bg-[color:var(--accent-soft)]' : ''} ${loi[e.id] ? 'shadow-[inset_3px_0_0_rgb(var(--bad-rgb))]' : chon.has(e.id) ? 'shadow-[inset_3px_0_0_var(--accent)]' : ''}`}
         style={{ borderColor: 'var(--line)', ...(le ? { borderTopColor: 'var(--line-strong)' } : {}) }}>
-        <div className={`grid grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 px-4 py-2.5 ${LUOI} ${laQl ? '' : 'max-xl:grid-cols-1'}`}>
-          {laQl && <span className="flex">{khoa(e) && !kvMo(e, x) ? null : oChon(e)}</span>}
+        <div className={`grid grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 px-4 py-2.5 ${LUOI}`}>
+          <span className="flex">{laQl && khoa(e) && !kvMo(e, x) ? null : oChon(e)}</span>
           <span className="min-w-0">
             <span className="flex flex-wrap items-center gap-x-1.5"><Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.fullName}</Link><ChipXetLaiDong sid={e.id} />
               {sua[e.id] && Object.keys(sua[e.id]).some((k) => k !== 'mo') && !loi[e.id] && <Nhan tone="doing">{t('đã sửa')}</Nhan>}</span>
-            {(mot || e.cuoiKhoa?.goiY?.baoPhTvv) && (
+            {((mot && nhomCua(e) !== 'cho') || e.cuoiKhoa?.goiY?.baoPhTvv) && (
               <span className="mt-0.5 flex items-center gap-2 whitespace-nowrap text-xs">
-                {mot && <span className="inline-flex h-5 items-center gap-1.5 rounded px-1.5 font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>
+                {mot && nhomCua(e) !== 'cho' && <span className="inline-flex h-5 items-center gap-1.5 rounded px-1.5 font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>
                   <span aria-hidden className="h-3 w-[3px] rounded-sm" style={{ background: nhomCua(e) === 'lai' ? 'rgb(var(--bad-rgb))' : nhomCua(e) === 'cn' ? 'rgb(var(--soon-rgb))' : 'var(--text-faint)' }} />{TEN_NHOM[nhomCua(e)]}</span>}
                 {e.cuoiKhoa?.goiY?.baoPhTvv && !e.lenh && <span className="text-faint">{t('Báo PH qua TVV')}</span>}
               </span>
@@ -707,13 +711,13 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           </span>
           <span className="min-w-0 max-xl:col-span-2 max-xl:[grid-column:1/-1]">{oKetQua(e)}</span>
           <span className="min-w-0 max-xl:[grid-column:1/-1]">{laQl ? oHuong(e, x) : oChiDoc(e)}</span>
-          {laQl ? <span className="min-w-0 max-xl:[grid-column:1/-1]">{oLop(e, x)}</span> : <span className="min-w-0">{oNhanXet(e)}</span>}
+          {laQl ? <span className="min-w-0 max-xl:[grid-column:1/-1]">{oLop(e, x)}</span> : <span className="min-w-0 max-xl:[grid-column:1/-1]">{oNhanXet(e)}</span>}
           {laQl && coBg && <span className="min-w-0 max-xl:[grid-column:1/-1]">{e.lenh ? oBanGiao(e) : null}</span>}
-          {phu && <span className={`min-w-0 [grid-column:1/-1] ${laQl ? 'xl:[grid-column:2/-1]' : ''}`}>{phu}</span>}
+          {phu && <span className="min-w-0 [grid-column:1/-1] xl:[grid-column:2/-1]">{phu}</span>}
         </div>
         {duoi && (
           <div className={`grid gap-x-3.5 px-4 pb-3 ${LUOI}`}>
-            <span className={`flex min-w-0 flex-col gap-2 rounded-lg border px-3 py-2.5 [grid-column:1/-1] ${laQl ? 'xl:[grid-column:4/6]' : 'xl:[grid-column:3/5]'}`} style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>{duoi}</span>
+            <span className={`flex min-w-0 flex-col gap-2 rounded-lg border px-3 py-2.5 [grid-column:1/-1] xl:[grid-column:4/6]`} style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>{duoi}</span>
           </div>
         )}
       </div>
@@ -729,9 +733,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     return (
       <div className={`grid min-h-[44px] grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 border-b px-4 py-2 pl-[13px] ${LUOI}`}
         style={{ background: 'var(--surface-2)', borderColor: 'var(--line)', borderLeft: `3px solid ${mauVach}` }}>
-        {laQl && <span className="flex">{idsChon.length > 0 && (
+        <span className="flex">{idsChon.length > 0 && (
           <input type="checkbox" className="h-[18px] w-[18px] cursor-pointer" aria-label={t('Chọn cả nhóm {nhom}', { nhom: TEN_NHOM[k] })} checked={tatCa}
-            onChange={() => setChon((s) => { const n = new Set(s); for (const id of idsChon) { if (tatCa) n.delete(id); else n.add(id); } return n; })} />)}</span>}
+            onChange={() => setChon((s) => { const n = new Set(s); for (const id of idsChon) { if (tatCa) n.delete(id); else n.add(id); } return n; })} />)}</span>
         <span className="flex items-center gap-2 whitespace-nowrap text-[15px] font-bold text-slate-100 xl:[grid-column:span_3]">
           {TEN_NHOM[k]}<span className="inline-flex h-[22px] items-center rounded border px-1.5 text-xs font-semibold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{t('{n} em', { n: rows.length })}</span>
           {k === 'cho' && <NutLuat label={t('Chờ Final')}>{t('Chốt trước Final được. Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final.')}</NutLuat>}
@@ -767,7 +771,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           <>
             {/* Hàng công cụ (ngoài tiêu đề cột — G9): Chọn tất cả · n | Lọc. */}
             <div className="flex flex-wrap items-center gap-2 border-b px-4 pb-3" style={{ borderColor: 'var(--line)' }}>
-              {laQl && tatCaQl.length > 0 && (
+              {tatCaQl.length > 0 && (
                 <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm font-semibold text-slate-100 sm:min-h-0">
                   <input type="checkbox" className="h-[18px] w-[18px]" checked={tatCaQl.every((e) => chon.has(e.id))}
                     onChange={() => setChon(tatCaQl.every((e) => chon.has(e.id)) ? new Set() : new Set(tatCaQl.map((e) => e.id)))} />
@@ -788,11 +792,19 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
                 {ketQua.loi > 0 && <span className="text-late">⚠ {t('{n} em chưa lưu — xem lý do ở dòng', { n: ketQua.loi })}</span>}
               </div>
             )}
-            {laQl && chon.size > 0 && (
+            {chon.size > 0 && (
+              /* Hàng thao tác theo quyền: QL áp bước tiếp / lớp / tuần / Kỳ vọng · GVCN ghi cùng một nhận xét · vai khác chỉ đánh dấu (không thao tác). */
               <div role="toolbar" aria-label={t('Áp cho các em đã chọn')} className="flex flex-wrap items-center gap-x-3.5 gap-y-2 border-b px-4 py-2.5"
                 style={{ borderColor: 'var(--accent)', background: 'var(--accent-soft)' }}>
                 <b className="text-sm tabular-nums text-slate-100">{t('{n} em đã chọn', { n: chon.size })}</b>
-                {thanhAp}
+                {laQl ? thanhAp : laGvcn && (
+                  <span className="flex min-w-0 flex-[1_1_22rem] items-center gap-2">
+                    <input className="field min-h-[44px] min-w-0 flex-1 text-[13px] sm:min-h-0" maxLength={2000} value={nxChung} onChange={(ev) => setNxChung(ev.target.value)}
+                      placeholder={t('Nhận xét chung')} aria-label={t('Nhận xét chung cho các em đã chọn')} />
+                    <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={!nxChung.trim()}
+                      onClick={() => setNhanXet((m) => { const n = { ...m }; for (const id of chon) n[id] = nxChung.trim(); return n; })}>{t('Ghi cho {n} em', { n: chon.size })}</button>
+                  </span>
+                )}
                 <button type="button" className="btn btn-sm btn-ghost ml-auto min-h-[44px] sm:min-h-0" onClick={() => { setChon(new Set()); setAp({ huong: '', quayLai: true, lop: null, tuan: '', kv: null }); }}>{t('Bỏ chọn')}</button>
               </div>
             )}
@@ -801,7 +813,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
               <div role="list" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })}>
                 {/* Tiêu đề cột (chữ, không điều khiển — G9); 375 không có. */}
                 <div aria-hidden className={`hidden gap-x-3.5 border-b px-4 py-2 text-xs font-semibold text-slate-500 xl:grid ${LUOI}`} style={{ borderColor: 'var(--line)' }}>
-                  {laQl && <span />}<span>{t('Học viên')}</span><span>{t('Kết quả')}</span><span>{laQl ? t('Bước tiếp') : t('Hướng · QL chốt')}</span>
+                  <span /><span>{t('Học viên')}</span><span>{t('Kết quả')}</span><span>{laQl ? t('Bước tiếp') : t('Hướng · QL chốt')}</span>
                   <span>{laQl ? t('Lớp mới') : t('Nhận xét')}</span>{laQl && coBg && <span>{t('Bàn giao')}</span>}
                 </div>
                 {dsDai.map((n) => <div key={n.k} role="group" aria-label={TEN_NHOM[n.k]}>{daiNhom(n.k, n.rows)}{n.rows.map((r) => dongEm(r, false))}</div>)}

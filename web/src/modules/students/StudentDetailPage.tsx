@@ -279,9 +279,10 @@ export default function StudentDetailPage() {
               {(() => {
                 const muc = mucQuanLyHocVien({
                   canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, nhapThiThat: !!data.viewer.coTheNhapThiThat, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
-                  deXuatSua: !!data.viewer.coTheDeXuatSua,
+                  deXuatSua: !!data.viewer.coTheDeXuatSua, buocTiep: !!bt?.chon && bt.coTheChon,
                 });
-                const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true) : setViecQuanLy(k));
+                /* #9 (G4-10): "Bước tiếp…" mở thẳng panel Bước tiếp đã chọn (xem / đổi / Hoàn tác) — cùng `?buoc-tiep=` của việc Chọn bước tiếp. */
+                const mo = (k: typeof muc[number]['key']) => (k === 'lo-trinh' ? setPlanOpen(true) : k === 'buoc-tiep' ? moBuocTiep(bt!.cycleId) : setViecQuanLy(k));
                 /* P7 (k6): hồ sơ lưu trữ — "Quay lại học" là nút chính đầu hồ sơ, không nằm trong ⋯. */
                 const nutQuayLai = data.lopHoc?.chiXem && muc.some((m) => m.key === 'quay-lai')
                   ? <button type="button" className={`${NUT_DAU_HO_SO} btn-primary`} onClick={() => mo('quay-lai')}>{t('Quay lại học')}</button> : null;

@@ -372,6 +372,16 @@ export function coTheXemLuotCham(p: Principal, ctx: Ctx & { kind?: string | null
 export function requireXemLuotCham(p: Principal, ctx: Ctx & { kind?: string | null }, message: string) {
   if (!coTheXemLuotCham(p, ctx)) require_(p, PERMISSIONS.ATTEMPT_VIEW, ctx, message);
 }
+/**
+ * LOP-CU (chủ SP 11/11) — Hành trình: GV / GVCN ĐANG DẠY em (phân công hiệu lực hôm nay ở lớp em đang học — `classesOfStudentDangHoc`) mở hồ sơ lượt
+ * của lớp CŨ của em — CHỈ XEM. Không mở theo grant chi nhánh (Quản lý chi nhánh khác) hay xem tạm (GV cũ). Chỉ dùng ở đường xem MỘT lượt
+ * (`attemptDetail`, `regularAttemptDetail`); mọi quyền sửa (nhập điểm, huỷ, dời, nhận xét) vẫn kiểm theo lớp của lượt nên không mở thêm.
+ */
+export function xemLuotQuaLopDangHoc(p: Principal, studentId: number, date = demoToday()): boolean {
+  if (!p.assignments.some((a) => activeAt(a, date))) return false;   // không phân công nào: khỏi đọc ghi danh
+  const lop = classesOfStudentDangHoc(studentId);
+  return p.assignments.some((a) => activeAt(a, date) && lop.includes(a.classId));
+}
 /** Phạm vi DANH SÁCH của đường chấm (Lịch Test, Test › Điểm theo lớp): `scopeFor(ATTEMPT_VIEW)` + lớp FT GV Speaking chấm S chéo. */
 export function scopeXemLuotCham(p: Principal, date = demoToday()): Scope {
   const s = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
@@ -563,6 +573,11 @@ export function duocSuaLichLop(p: Principal, classId: number): boolean {
   if (classIsFastTrack(classId)) return false;
   const ctx = { classId };
   return p.grants.some((g) => grantCovers(g, ctx) && (g.roleKey === 'office_admin' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));
+}
+
+/** [XM 2] chủ SP 11/11: Admin (`office_admin`) có phạm vi phủ ngữ cảnh (chi nhánh của em / lớp) — quyền HẸP suy từ vai, như `duocSuaLichLop`. */
+export function laAdminCua(p: Principal, ctx: Ctx): boolean {
+  return p.grants.some((g) => g.roleKey === 'office_admin' && grantCovers(g, ctx));
 }
 
 export function require_(p: Principal, permission: string, ctx: Ctx = {}, message?: string) {

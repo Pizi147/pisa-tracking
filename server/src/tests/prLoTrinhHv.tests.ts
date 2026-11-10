@@ -19,6 +19,8 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
   const { xoaNho, soCauSql, soDongSql } = await import('../platform/nguCanhRequest.ts');
   const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
+  const hvl: any = await import('../classes/hocVienLop.ts');
+  const qlhv: any = await import('../../../shared/domain/quanLyHocVien.ts');
   console.log('\nLO-TRINH-THEO-HV · đổi lộ trình của em · lượt có điểm đứng yên · lịch MT theo lộ trình mới · Hoàn tác');
 
   const thu = <T>(fn: () => T): T => {
@@ -132,25 +134,32 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
     assert(ky(mt(e.cy, 1).id) === 5.5, `MT1 LT: kỳ vọng Target − 1: ${ky(mt(e.cy, 1).id)}`);
   }));
 
-  check('LTHV-5 · quyền: QL, Quản trị, GVCN lớp đang học, TVV chi nhánh đổi được; GV bộ môn, Admin, CX, QL chi nhánh khác 403; hồ sơ có ô chọn đúng vai', () => thu(() => {
+  check('LTHV-5 · quyền: QL, Quản trị, GVCN lớp đang học, TVV, Admin chi nhánh ([XM 2]) đổi được; GV bộ môn, CX, QL / Admin chi nhánh khác 403; Admin không đổi Môn học', () => thu(() => {
     const lop = t.classId('MB FT 101');
     const e = them(lop, W(-7));
     const gvbm = loadPrincipal(one(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status = 'active'
       AND user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) LIMIT 1`, lop, lop).id);
     const khac = one(`SELECT b.code FROM branches b WHERE b.code != 'MB' AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
       WHERE r.key = 'manager' AND ur.branch_id = b.id AND ur.status = 'active') LIMIT 1`).code;
-    for (const [ai, ng] of [['GV bộ môn', gvbm], ['Admin', nguoiVai('office_admin', 'MB')], ['CX', nguoiVai('cx', null)], [`QL ${khac}`, nguoiVai('manager', khac)]] as const) {
+    const adminKhac = one(`SELECT b.code FROM branches b WHERE b.code != 'MB' AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+      WHERE r.key = 'office_admin' AND ur.branch_id = b.id AND ur.status = 'active') LIMIT 1`).code;
+    for (const [ai, ng] of [['GV bộ môn', gvbm], ['CX', nguoiVai('cx', null)], [`QL ${khac}`, nguoiVai('manager', khac)], [`Admin ${adminKhac}`, nguoiVai('office_admin', adminKhac)]] as const) {
       assert(ma(() => lt.doiLoTrinh(ng, e.cy, { route: 'LT2' })) === 403, `${ai} phải 403`);
       const hs = (() => { try { return profile.studentProfile(ng, e.sid); } catch { return null; } })();   // QL chi nhánh khác: không xem được hồ sơ
       assert(!hs?.cycle?.coTheDoiLoTrinh, `${ai}: hồ sơ không có ô chọn`);
     }
-    const ds = [['QL', P.mbManager], ['Quản trị', P.admin], ['GVCN', P.coreTeacher], ['TVV', nguoiVai('consultant', 'MB')]] as const;
+    const adminMb = nguoiVai('office_admin', 'MB');
+    assert(profile.studentProfile(adminMb, e.sid).cycle.coTheDoiMon === false, 'Admin: không đổi Môn học (chỉ lộ trình)');
+    const ds = [['QL', P.mbManager], ['Quản trị', P.admin], ['GVCN', P.coreTeacher], ['TVV', nguoiVai('consultant', 'MB')], ['Admin', adminMb]] as const;
     ds.forEach(([ai, ng], i) => {
       assert(profile.studentProfile(ng, e.sid).cycle.coTheDoiLoTrinh === true, `${ai}: hồ sơ có ô chọn`);
       lt.doiLoTrinh(ng, e.cy, { route: i % 2 ? 'LT1' : 'LT2' });
       xoaNho();
     });
-    assert(route(e.cy) === 'LT1', route(e.cy));
+    assert(route(e.cy) === 'LT2', route(e.cy));
+    const lt2 = one(`SELECT id FROM ghi_dao WHERE loai = 'lo_trinh.doi' AND doi_tuong_id = ? ORDER BY id DESC LIMIT 1`, e.cy).id;
+    lt.hoanTacDoiLoTrinh(adminMb, e.cy, lt2);
+    assert(route(e.cy) === 'LT1', `Admin Hoàn tác: ${route(e.cy)}`);
   }));
 
   check('LTHV-6 · chặn: lớp thường, "Khác", trùng, mã lạ, lộ trình đã đóng → 400 nói rõ; em tạm dừng vẫn đổi được', () => thu(() => {
@@ -207,4 +216,40 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
     console.log(`    (đo: đổi ${n} câu ${dong} dòng · Hoàn tác ${h} câu ${dongH} dòng)`);
     assert(n <= TRAN_GHI_LO.doiLoTrinh && h <= TRAN_GHI_LO.hoanTacDoiLoTrinh, `${n} / ${h}`);
   }));
+
+  check('LTHV-10 · Thêm học viên (#9): cột Lộ trình từng em — trống = lộ trình lớp; LT2 / rf nhận (chữ thường được); mã lạ / "Khác" lưu ý rồi theo lớp; lịch MT theo lộ trình em', () => thu(() => {
+    const lop = lopMoi('LT1', W(-7));
+    const dong = [['', 'LT1'], ['rf', 'RF'], ['LT2', 'LT2'], ['LT9', 'LT1'], ['KHAC', 'LT1']] as const;
+    const rows = dong.map(([r]) => ({ fullName: `LTHV Em ${++so}`, target: 6.5, startWeek: W(-7), email: emailThu(), dob: '2010-01-01', route: r }));
+    const pv = intake.previewIntake(P.mbManager, { classId: lop, rows });
+    dong.forEach(([, ky], i) => assert(pv.rows[i].route === ky, `xem trước dòng ${i + 1}: ${pv.rows[i].route}`));
+    for (const i of [0, 1, 2]) assert(!pv.rows[i].issues.some((x: any) => x.field === 'route'), JSON.stringify(pv.rows[i].issues));
+    for (const i of [3, 4]) {
+      const v = pv.rows[i].issues.filter((x: any) => x.field === 'route');
+      assert(v.length === 1 && v[0].muc === 'luu_y' && /LT1/.test(v[0].message), `dòng ${i + 1}: ${JSON.stringify(v)}`);
+    }
+    const r = intake.commitIntake(P.mbManager, { classId: lop, rows });
+    assert(r.added === 5, JSON.stringify(r.failed));
+    const cy = r.studentIds.map((sid: number) => one(`SELECT id, route FROM learning_cycles WHERE student_id = ?`, sid));
+    dong.forEach(([, ky], i) => assert(cy[i].route === ky, `ghi dòng ${i + 1}: ${cy[i].route}`));
+    /* Lịch MT theo lộ trình em: RF 2 MT (tuần 4 · 8), LT1 3 MT (6 · 12 · 16). */
+    assert(luot(cy[1].id).length === 2 && luot(cy[0].id).length === 3, `${luot(cy[1].id).length} / ${luot(cy[0].id).length}`);
+    assert(mt(cy[1].id, 1).tuan === W(-4) && mt(cy[0].id, 1).tuan === W(-2), `${mt(cy[1].id, 1).tuan} · ${mt(cy[0].id, 1).tuan}`);
+    assert(one(`SELECT 1 x FROM journey_events WHERE student_id = ? AND title = 'Bắt đầu lộ trình RF'`, r.studentIds[1]), 'Hành trình theo lộ trình em');
+  }));
+
+  check('LTHV-11 · Học viên & Lớp (#9): ô Lộ trình ghi mã lộ trình khi khác lộ trình lớp (0 câu thêm) — cùng lộ trình lớp thì không', () => thu(() => {
+    const lop = lopMoi('LT1', W(-7));
+    const r = intake.commitIntake(P.mbManager, { classId: lop, rows: ['', 'RF'].map((route) => ({ fullName: `LTHV Em ${++so}`, target: 6.5, startWeek: W(-7), email: emailThu(), dob: '2010-01-01', route })) });
+    const hv = hvl.danhSachHocVienLop(P.mbManager, { phamVi: 'chi-nhanh', q: 'MB LTHV' }).hocVien;
+    const cua = (sid: number) => hv.find((h: any) => h.id === sid)?.hang?.loTrinh;
+    assert(cua(r.studentIds[0]) && cua(r.studentIds[0]).khacLop === undefined, JSON.stringify(cua(r.studentIds[0])));
+    assert(cua(r.studentIds[1])?.khacLop === 'RF', JSON.stringify(cua(r.studentIds[1])));
+  }));
+
+  check('LTHV-12 · ⋯ hồ sơ (#9): mục "Lịch MT" (không còn "Lộ trình" — G4-03); "Bước tiếp…" chỉ khi đã chọn bước tiếp + đổi được (G4-10)', () => {
+    const muc = (buocTiep: boolean): any[] => qlhv.mucQuanLyHocVien({ canEdit: true, cycle: { ratio: false }, status: 'active', lopHoc: null, buocTiep });
+    assert(muc(false).find((m: any) => m.key === 'lo-trinh')?.nhan === 'Lịch MT', JSON.stringify(muc(false)));
+    assert(!muc(false).some((m: any) => m.key === 'buoc-tiep') && muc(true).find((m: any) => m.key === 'buoc-tiep')?.nhan === 'Bước tiếp…', JSON.stringify(muc(true)));
+  });
 }

@@ -402,7 +402,7 @@ function hangHvFt(hv: readonly any[], standing: Map<number, Standing>, allCases:
     const sos = st?.sosLevel && st.sosLevel > 0 ? st.sosLevel : null;
     out.set(h.id, {
       loTrinh: { mt: h.so_mt_xong ?? 0, soMt: h.so_mt_tong ?? 0,
-        target: h.target_score ?? null, kck: !!h.khong_cam_ket },
+        target: h.target_score ?? null, kck: !!h.khong_cam_ket, ...(h.route && h.lop_route && h.route !== h.lop_route ? { khacLop: h.route as string } : {}) },
       mtGan: coLuot ? { mt: st!.attemptNo!, tuan: st!.periodCode ? tuanCua.get(st!.periodCode) ?? null : null, ovr: st!.overall, kyVong: st!.expectation,
         kn: { L: band('listening'), R: band('reading'), W1: band('writing1'), W2: band('writing2'), S: band('speaking') },
         tp: Object.fromEntries(([['L', 'listening'], ['R', 'reading'], ['W1', 'writing1'], ['W2', 'writing2'], ['S', 'speaking']] as const)

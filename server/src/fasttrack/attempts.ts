@@ -7,7 +7,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  bangLop, can, classScopeSql, coTheXemLuotCham, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -38,7 +38,7 @@ import {
 import { chuanHoaNguoiThucHien } from '../cases/nguoiThucHien.ts';
 import { caseCuaLuot } from '../cases/caseLop.ts';
 import { allProgrammes, chuongTrinhCuaLuot, chuongTrinhTyLeCuaLuot, evaluateRegular, isRatioClass, maCtCuaLuot, nguongDatLop, refreshRegularOutcome } from '../normal/regular.ts';
-import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -796,9 +796,9 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     where.push(`a.class_id IN (${DS_JSON})`); params.push(JSON.stringify(f.classIds));
   }
   /* PR-S6F-a Q2: một điều kiện "em đang học" — cả danh sách "cần chấm" (`my_scores`), đích của badge "n bài chờ chấm" (số = danh sách). */
-  /* PR-Dọn (Q9): và CÙNG luật Nợ điểm (`scoreDebt.ts`) — lớp đã kết thúc không sinh việc nhập điểm. */
+  /* PR-Dọn (Q9) → LOP-CU (chủ SP 11/11): CÙNG luật Nợ điểm (`scoreDebt.ts`) — lớp đã kết thúc chỉ còn việc của lượt còn ô chờ từ trước ngày kết thúc. */
   /* Lỗi chủ SP 28/10: "đang học" của danh sách hiện tại = lượt hiện tại (lộ trình mới nhất + em đang học) — Lịch Test, Công việc, chip GVCN. */
-  if (f.chiDangHoc || f.need === 'my_scores') where.push(LUOT_HIEN_TAI_SQL('a', 's'), `c.status = 'active'`);
+  if (f.chiDangHoc || f.need === 'my_scores') where.push(LUOT_HIEN_TAI_SQL('a', 's'), LOP_CON_VIEC_SQL('a', 'c'));   // LOP-CU: + lớp kết thúc còn nợ
   if (f.studentId) { where.push('a.student_id = ?'); params.push(f.studentId); }
   if (f.status) { where.push('a.status = ?'); params.push(f.status); }
   const today = demoToday();
@@ -1171,7 +1171,9 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const conn = db();
   const a = conn.prepare(`${ATTEMPT_SELECT} WHERE a.id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt Mock Test');
-  requireXemLuotCham(p, { classId: a.class_id, studentId: a.student_id, kind: a.kind }, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
+  /* LOP-CU: hoặc người xem được lớp em đang học (Hành trình mở lượt lớp cũ) — chỉ xem, ô / nút sửa vẫn theo lớp của lượt. */
+  const ctx = { classId: a.class_id, studentId: a.student_id, kind: a.kind };
+  if (!coTheXemLuotCham(p, ctx) && !xemLuotQuaLopDangHoc(p, a.student_id)) requireXemLuotCham(p, ctx, 'Lượt Mock này nằm ngoài phạm vi bạn được xem.');
 
   const scores = scoresOf(attemptId);
   /*
@@ -2777,7 +2779,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
     attempts.push(...conn.prepare(
       `${ATTEMPT_SELECT}
         WHERE a.class_id IN (${ph}) AND a.kind IN ('mock', 'mt0') AND a.status != 'cancelled' AND a.lich_su = 0
-          AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND c.status = 'active' AND ${TUAN_S_SQL} <= ?
+          AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND ${LOP_CON_VIEC_SQL('a', 'c')} AND ${TUAN_S_SQL} <= ?
           AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND ${O_FT_XONG_SQL('sc', 'a')})
             OR ${TUAN_S_SQL} >= ?)`,
     ).all(...lo, today, tuanTruoc) as any[]);

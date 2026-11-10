@@ -102,7 +102,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
         : thuong
           ? <BangDiemLopThuong classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               chuongTrinh={lop.programme?.code ?? null} moc={lop.programme?.checkpoints ?? null} lienTuc={!!lop.lienTuc} cachXem={cachXem} nutChon={nutChon} daKetThuc={daKetThuc} />
-          : <BangHoSoLop classId={lop.id} maLop={lop.code} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
+          : <BangHoSoLop classId={lop.id} maLop={lop.code} loTrinhLop={lop.route} quyen={quyen} onDoi={onDoi} chon={coTheChon ? chon : undefined}
               onThemHocVien={lop.viewer.canAddStudents ? onThemHocVien : undefined} cachXem={cachXem} nutChon={nutChon} daKetThuc={daKetThuc} />}
       {coTheChon && (
         <ThanhChonNhieu chon={chon}

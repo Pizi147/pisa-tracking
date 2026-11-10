@@ -5,12 +5,13 @@ import { invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { daysBetween, nhanQuaHan, shortDate, tachViec, viecKeTiep } from '@shared/domain/index.ts';
+import { daysBetween, khoaGopCua, nhanQuaHan, shortDate, tachViec, viecKeTiep } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
+ * P1 G2-03: `dongToi` = DÒNG hiển thị của `cuaToi` như Công việc (dòng gộp "Cả lớp" = 1, không kèm `con`) — dải vẽ ô + đếm từ đây, cùng số `demDongViec`.
  * LOP-1-LOP: `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp (cùng lần `myWork`, cùng `demDongViec` — S11 đếm dòng); `null` = vai không có badge (TVV / CX / Admin). */
-export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[]; soQuaHanLop: number | null };
+export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[]; dongToi: WorkItem[]; soQuaHanLop: number | null };
 export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-em?chi=toi`;
 const TOI_DA = 3;   // mockup khu b: một hàng ba ô; còn lại ở Công việc
 
@@ -29,7 +30,13 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   const moTuThanh = (it: WorkItem) => { anhChup.current = ds; setMo(it); };
   const conKhoa = new Set(ds.map((x) => x.key));
   const keTiep = mo ? viecKeTiep((anhChup.current.length ? anhChup.current : ds).map((x) => ({ ...x, nhom: '' })), mo.key, (x) => conKhoa.has(x.key)) : null;
-  const con = ds.length - TOI_DA;
+  /* P1 G2-03: một ô = một DÒNG như Công việc (`dongToi`, "Báo PH qua TVV · 4 em" = 1) — số + "+n" đếm dòng. Bấm ô dòng gộp mở việc đầu của dòng (như trước),
+     "Việc tiếp ›" đi qua từng việc. */
+  const hang = data?.dongToi ?? ds;
+  const viecCua = (h: WorkItem) => ds.find((x) => x.key === h.key) ?? ds.find((x) => khoaGopCua(x) === h.key) ?? h;
+  const thuocHang = (h: WorkItem) => !!mo && (mo.key === h.key || khoaGopCua(mo) === h.key);
+  const soDong = hang.length;
+  const con = soDong - TOI_DA;
   /* "+n việc ở Công việc ›": 1440 xếp dưới nhãn (3 ô đủ rộng, không cắt chữ); 375 cuối dải. */
   const xemHet = (lop: string) => con > 0 && (
     <Link to="/cong-viec" className={`link relative whitespace-nowrap font-semibold ${lop}`}>{t('+{n} việc ở Công việc ›', { n: con })}</Link>
@@ -41,10 +48,10 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
            (tên việc · em / kỹ năng · số · hạn); chi tiết (tên em, điểm SOS…) ở panel khi bấm. 375: ô xếp dọc, mỗi ô cố định hai dòng. */
         <section aria-label={t('Việc của tôi')} className="grid items-center gap-1.5 pt-0.5 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))] lg:gap-2">
           <span className="grid gap-px pr-1 text-[13px] font-medium leading-[1.3] text-slate-400">
-            <span className="whitespace-nowrap">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{ds.length}</b></span>
+            <span className="whitespace-nowrap">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{soDong}</b></span>
             {xemHet('justify-self-start text-xs max-lg:hidden')}
           </span>
-          {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => moTuThanh(it)} />)}
+          {hang.slice(0, TOI_DA).map((h) => <OViec key={h.key} it={h} dangMo={thuocHang(h)} onMo={() => moTuThanh(viecCua(h))} />)}
           {xemHet('min-h-[44px] justify-self-end text-sm leading-[44px] lg:hidden')}
         </section>
       )}

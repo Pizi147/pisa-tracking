@@ -226,6 +226,10 @@ export async function runPrOv10bTests(t: YThucTestKit) {
       const c = one(`SELECT sc.id, sc.student_id FROM sos_cases sc JOIN students s ON s.id = sc.student_id JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
           JOIN classes cl ON cl.id = e.class_id WHERE sc.status != 'done' AND cl.branch_id = ? AND s.status = 'active' ORDER BY sc.id LIMIT 1`, mb);
       assert(c, 'demo MB cần một Case mở');
+      /* P1 G2-03: "Ghi kết quả PA" chỉ là việc từ hạn − 2 (như Công việc) — đưa hạn PA của Case vào khung để Case chắc có việc của người khác. */
+      conn.prepare(`UPDATE case_interventions SET action_due = ? WHERE case_id = ? AND status IN ('planned', 'started') AND action_due IS NOT NULL`)
+        .run((conn.prepare(`SELECT value FROM demo_config WHERE key = 'demo_date'`).get() as any).value, c.id);
+      xoaNho();
       const tvv = loadPrincipal(idTvv);
       const v = profile.studentProfile(tvv, c.student_id).dauHoSo.viec;
       assert(v.cuaBan.length === 0 && v.nguoiKhac.some((x: any) => x.caseId === c.id), `Đang xử lý: ${JSON.stringify(v.nguoiKhac.map((x: any) => x.key))}`);

@@ -53,7 +53,7 @@ export async function runPrSlTests(t: YThucTestKit) {
     const s = doc('web/src/modules/students/IntakePanel.tsx');
     assert(!/font-mono/.test(s), 'ô dán còn font-mono');
     assert(s.indexOf('<textarea') < s.lastIndexOf('Đọc nội dung đã dán') && !s.includes('sm:grid-cols-3'), 'nút Đọc phải nằm dưới ô dán');
-    assert(/dob: 170, email: 190, baselineScore: 72/.test(s), 'bề rộng cột (ô Ngày sinh = ONgay có nút lịch)');
+    assert(/dob: 170, email: 176, baselineScore: 72/.test(s), 'bề rộng cột (ô Ngày sinh = ONgay có nút lịch; #9 Email 176 để thêm cột Lộ trình)');
     assert(s.includes("fullName: t('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.')") && !s.includes('</p>\n          </div>\n        </div>\n      </div>\n    </KhungPanel>'), 'lời nhắc ở ⓘ cột Họ tên, không câu dưới lưới');
   });
 
