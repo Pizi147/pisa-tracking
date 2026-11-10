@@ -488,12 +488,14 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .hop-diem .tong { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
 .hop-diem .pt { font:700 18px/1.2 var(--phong-so); } .hop-diem .pt.cho { font:700 15px/1.2 var(--phong); color:var(--text); }
 .hop-diem .tong-phu { font:500 12px var(--phong); color:var(--text-dim); }
+.hop-diem .nhan-luot { font:600 13px var(--phong); color:var(--text-dim); }
 .cac-mon { display:grid; grid-template-columns:repeat(4, 68px); gap:4px; }
 .om { display:grid; justify-items:center; gap:0; padding:3px 0 4px; border-radius:6px; background:var(--surface); border:1px solid var(--line); }
 .om i { font:500 12px var(--phong); font-style:normal; color:var(--text-faint); }
 .om b { font:700 13px var(--phong-so); white-space:nowrap; }
 .om.dat b { color:var(--ok); } .om.kem b { color:var(--bad); } .om.trong b { color:var(--text-faint); }
 .om.kem { border-color:var(--bad-vien); }
+.om.dat { border-color:var(--ok-vien); }
 .phu-hang { grid-row:2; grid-column:2 / -1; display:flex; align-items:center; gap:6px; min-height:20px; font:500 12px var(--phong); color:var(--text-dim); white-space:nowrap; overflow:hidden; }
 .phu-hang .nx { overflow:hidden; text-overflow:ellipsis; max-width:520px; } .phu-hang .cham { color:var(--text-faint); }
 .phu-hang .khac { color:var(--soon); font-weight:600; } .phu-hang .link-nho { font-size:12px; }
@@ -564,7 +566,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k1">
   <h2>K1 · Vừa mở sau Final — em xếp theo bước tiếp gợi ý, mỗi em một dòng</h2>
-  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b>: nhóm ≥ 2 em có dải (như Công việc) với <b>ô Lớp + Tuần cho cả nhóm</b>; nhóm chỉ 1 em ("Học lại FOU", "QL cân nhắc", "Chờ Final") thành <b>nhãn nhỏ dưới tên</b>, đứng sau đường kẻ đậm — bảng không dài gấp đôi. Luật dải (≥ 60 %, 50–59 %…) ở ⓘ / rê nhãn. Bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>hộp điểm riêng</b> (nền nhạt + viền mảnh): <b>% tổng</b> to + ✓/✗, dưới là 4 ô môn L · R · G+V · P <b>thẳng cột giữa mọi em</b> (môn + ✓/✗ + <b>số câu đúng / tổng câu</b> — chủ SP 11/11; chưa có điểm giữ ô "—") → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn → <b>Lớp mới</b>. 4 cột rộng cố định: nút bước tiếp luôn cùng chỗ. "GVCN: …", "+ bổ trợ…", "+ Ghi chú" gom thành <b>một dải chữ nhỏ dưới hàng</b>, chạy hết bề ngang — mọi hàng cao bằng nhau; nhãn dưới tên một dòng: em theo lớp của dải <b>không lặp ô lớp</b> (rê dòng hiện "Đổi lớp"); ô lớp chỉ có ở em khác lớp nhóm / em không thuộc dải. (3) GIỮ "Chọn tất cả · n" ở hàng công cụ (ngoài tiêu đề bảng — G9). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần. Còn thiếu gì: ô vàng ở dải / dòng + chân đếm một lần.</p>
+  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b>: nhóm ≥ 2 em có dải (như Công việc) với <b>ô Lớp + Tuần cho cả nhóm</b>; nhóm chỉ 1 em ("Học lại FOU", "QL cân nhắc", "Chờ Final") thành <b>nhãn nhỏ dưới tên</b>, đứng sau đường kẻ đậm — bảng không dài gấp đôi. Luật dải (≥ 60 %, 50–59 %…) ở ⓘ / rê nhãn. Bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>hộp điểm riêng</b> (nền nhạt + viền mảnh): nhãn lượt đang có ("Final Test:" / "Progress Test:") + <b>% tổng</b> to + ✓/✗, dưới là 4 ô môn L · R · G+V · P <b>thẳng cột giữa mọi em</b> (môn + ✓/✗ + <b>số câu đúng / tổng câu</b> — chủ SP 11/11; chưa có điểm giữ ô "—") → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn → <b>Lớp mới</b>. 4 cột rộng cố định: nút bước tiếp luôn cùng chỗ. "GVCN: …", "+ bổ trợ…", "+ Ghi chú" gom thành <b>một dải chữ nhỏ dưới hàng</b>, chạy hết bề ngang — mọi hàng cao bằng nhau; nhãn dưới tên một dòng: em theo lớp của dải <b>không lặp ô lớp</b> (rê dòng hiện "Đổi lớp"); ô lớp chỉ có ở em khác lớp nhóm / em không thuộc dải. (3) GIỮ "Chọn tất cả · n" ở hàng công cụ (ngoài tiêu đề bảng — G9). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần. Còn thiếu gì: ô vàng ở dải / dòng + chân đếm một lần.</p>
   (3) Luật dải (≥ 60 %, 50–59 %…) vào ⓘ của dải. Dải nhóm có sẵn <b>ô Lớp + Tuần cho cả nhóm</b> (chỉ lớp cùng chi nhánh, đúng chương trình; "+ Mở lớp mới…" giữ ở cuối danh sách). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K1 · Cuối khoá MB FOU 21 · QL Nguyễn Khánh Vy · 1440 tối · vừa mở, chưa chọn lớp</figcaption>
   <div class="toi man vung" id="m-k1"></div></figure>
@@ -587,7 +589,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k4">
   <h2>K4 · Trước Final (MB FOU 15) — một nhóm "Chờ Final", chọn nhiều + thanh áp (GIỮ)</h2>
-  <p class="ghi"><b>GIỮ:</b> chốt trước Final được; Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final. Chọn em (ô tick đầu dải = cả nhóm, hoặc từng em) → thanh áp: <b>Bước tiếp (chip) · Lớp · Tuần</b> — bấm là áp ngay cho các em đã chọn (cùng mẫu màn 2, bỏ nút "Áp cho n em") — dùng khi muốn đặt cùng bước tiếp cho nhiều em khác nhóm. Chưa có Final thì hộp điểm ghi "Chờ Final" + ✓/✗ từng môn theo Progress.</p>
+  <p class="ghi"><b>GIỮ:</b> chốt trước Final được; Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final. Chọn em (ô tick đầu dải = cả nhóm, hoặc từng em) → thanh áp: <b>Bước tiếp (chip) · Lớp · Tuần</b> — bấm là áp ngay cho các em đã chọn (cùng mẫu màn 2, bỏ nút "Áp cho n em") — dùng khi muốn đặt cùng bước tiếp cho nhiều em khác nhóm. Chưa có Final thì hộp điểm ghi "Progress Test: %" + câu đúng / tổng từng môn.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K4 · Cuối khoá MB FOU 15 · QL · 1440 tối · trước Final W2 OCT, 6 em đã chọn</figcaption>
   <div class="toi man vung" id="m-k4"></div></figure>
 </section>
@@ -682,14 +684,14 @@ const EM = {
   huy:  { ten: 'Ngô Minh Huy CT', pt: 66, mon: [68, 64, 68, 64], goi: 'Lên BE', bo: '+ bổ trợ 4 buổi · 1 tuần', nx: 'Cần luyện thêm Reading' },
   vy:   { ten: 'Hoàng Khánh Vy CT', pt: 44, mon: [48, 44, 44, 40], goi: 'Học lại', ph: true, nhan: 'lai' },
   trang:{ ten: 'Bùi Thu Trang CT', pt: 57, mon: [60, 56, 56, 56], goi: null, bo: '+ bổ trợ 8 buổi · 2 tuần', nhan: 'cn' },
-  nam:  { ten: 'Phan Quang Nam CT', pt: null, dai: '3/4 môn', mon: [80, 76, 80, null], goi: null, nhan: 'cho' },
+  nam:  { ten: 'Phan Quang Nam CT', pt: null, mon: [80, 76, 80, null], goi: null, nhan: 'cho' },
 };
 /* HỘP ĐIỂM (chủ SP 11/11 duyệt): % tổng to + ✓/✗; ô môn ghi đúng / tổng câu, dưới là 4 ô môn cố định L · R · G+V · P (môn + ✓/✗ + số); môn chưa có điểm giữ ô "—" */
 const MON = ['L', 'R', 'G+V', 'P'];
 function oKq(e) {
-  const tong = e.pt == null
-    ? '<span class="tong"><b class="pt cho">Chờ Final</b><span class="tong-phu">' + (e.dai ?? '') + '</span></span>'
-    : '<span class="tong"><b class="pt ' + (e.pt >= 70 ? 'dat' : 'kem') + '">' + (e.pt >= 70 ? '✓ ' : '✗ ') + e.pt + ' %</b></span>';
+  /* chủ SP 11/11: chỉ ghi lượt đang có — "Final Test: ✓ 82 %" / "Progress Test: ✓ 80 %"; không "Chờ Final", không "n/4 môn" */
+  const tong = '<span class="tong"><span class="nhan-luot">' + (e.luot ?? 'Final Test') + ':</span>' +
+    (e.pt == null ? '' : '<b class="pt ' + (e.pt >= 70 ? 'dat' : 'kem') + '">' + (e.pt >= 70 ? '✓ ' : '✗ ') + e.pt + ' %</b>') + '</span>';
   const o = MON.map((k, i) => {
     if (e.prog) return '<span class="om ' + (e.prog[i] === '✗' ? 'kem' : 'dat') + '"><i>' + k + '</i><b>' + e.prog[i] + '</b></span>';
     const v = e.mon[i];
@@ -775,9 +777,9 @@ trang('m-k3', 'Nguyễn Khánh Vy', { daChot: 5, han: '', coTt: true, chonTat: 1
   '<div class="dai-kq" role="status"><span class="ok">✓ Đã chốt 5 em</span><span class="loi">⚠ 1 em chưa chốt</span><span class="phai"><span class="nut nut-nho nut-chinh">Thử lại 1 em</span><button class="x" aria-label="Ẩn thông báo">✕</button></span></div>');
 
 /* K4 — MB FOU 15 trước Final, chọn tất cả + thanh áp */
-/* trước Final: hộp điểm = "Chờ Final · Progress 07/09", ô môn theo Progress (✓ / ✗ từng môn) */
-const E15 = [['Bùi Minh Châu', '3/4', '✓✗✓✓'], ['Cao Thị Hằng', '4/4', '✓✓✓✓'], ['Đinh Gia Huy', '2/4', '✗✓✓✗'], ['Lê Bảo Ngọc', '4/4', '✓✓✓✓'], ['Phạm Minh Tú', '3/4', '✓✓✗✓'], ['Trần An Khang', '4/4', '✓✓✓✓']];
-const h15 = E15.map(([ten, d, p]) => hang({ ten, pt: null, dai: 'Progress 07/09 · ' + d + ' môn đạt', prog: [...p], mon: [], goi: null }, { chon: 'Lên BE', theoNhom: true, tick: true })).join('');
+/* trước Final (chủ SP 11/11): hộp điểm "Progress Test: ✓ 80 %", ô môn câu đúng / tổng */
+const E15 = [['Bùi Minh Châu', [80, 64, 76, 72]], ['Cao Thị Hằng', [84, 80, 76, 80]], ['Đinh Gia Huy', [60, 72, 76, 64]], ['Lê Bảo Ngọc', [88, 84, 80, 84]], ['Phạm Minh Tú', [76, 72, 60, 80]], ['Trần An Khang', [80, 76, 84, 76]]];
+const h15 = E15.map(([ten, m]) => hang({ ten, luot: 'Progress Test', pt: Math.round(m.reduce((a, b) => a + b, 0) / 4), mon: m, goi: null }, { chon: 'Lên BE', theoNhom: true, tick: true })).join('');
 trang('m-k4', 'Nguyễn Khánh Vy', { lop: 'MB FOU 15', final: 'W2 OCT', gvcn: 'Trần Ngọc Hà', han: '<span class="han xa">hạn 08/10</span>', tatCa: true },
   dai('cho', 'Chờ Final', 6, 'Chốt trước Final được · Bổ trợ Final, Xét lại tự sinh khi có Final', '', true) + h15,
   '<div class="ck-chan"><span class="tom"><b>Khi chốt 6 em: 6 → MB BE 09 · từ W3 OCT</b><span class="phu">Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final</span></span><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 6 em</span></div>',
