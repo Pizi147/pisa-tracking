@@ -223,9 +223,10 @@ export function LichTestTab() {
   const quaHan = oQuaHan.data;
   /*
    * Q14 — lưu một ô: gộp 1,5 s sau lần lưu cuối rồi mới tải lại dải số + nhãn. GIAM-COMPUTE (PTA 11/11): + ô "bài quá hạn" cùng nhịp — trước đó chấm hết
-   * bài quá hạn mà ô vẫn hiện số cũ tới khi tải lại trang (luật: việc đã xong không nơi nào còn báo quá hạn). Một GET mỗi đợt lưu, không mỗi ô.
+   * bài quá hạn mà ô vẫn hiện số cũ tới khi tải lại trang (luật: việc đã xong không nơi nào còn báo quá hạn). Một GET mỗi đợt lưu, không mỗi ô; lưu điểm chỉ
+   * làm GIẢM số quá hạn → ô đã 0 (của bạn và người khác) thì khỏi hỏi lại.
    */
-  const baoDaLuu = useGopTaiLai(() => { reload(); oQuaHan.reload(); });
+  const baoDaLuu = useGopTaiLai(() => { reload(); if (quaHan && (quaHan.n > 0 || quaHan.khac > 0)) oQuaHan.reload(); });
   /* M6 6b-1 (bảng kê lỗi 7): panel lên URL như ô số — ‹ / Back / F5 theo ngăn xếp `?panel=` (Nhập điểm của dòng là view kế). */
   const [moQuaHan, setMoQuaHan] = useMoSoLieu('qua-han-cham');
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));

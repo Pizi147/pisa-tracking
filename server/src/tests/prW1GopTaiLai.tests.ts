@@ -55,7 +55,7 @@ export async function runPrW1GopTaiLaiTests(t: YThucTestKit) {
   check('GIAM-COMPUTE · Lịch Test: lưu ô điểm → ô "bài quá hạn" tải lại CÙNG nhịp gộp 1,5 s với dải số (không giữ số cũ, không mỗi ô một GET)', () => {
     const lt = doc('web/src/modules/test/LichTestTab.tsx');
     assert(/const oQuaHan = useApi<[^>]+>\(`\/cham\/lich-test\/qua-han\?\$\{qsQuaHan\}`\)/.test(lt), 'ô bài quá hạn phải giữ hook (có reload)');
-    assert(/const baoDaLuu = useGopTaiLai\(\(\) => \{ reload\(\); oQuaHan\.reload\(\); \}\)/.test(lt), 'baoDaLuu phải tải lại cả ô bài quá hạn');
+    assert(/const baoDaLuu = useGopTaiLai\(\(\) => \{ reload\(\); if \(quaHan && \(quaHan\.n > 0 \|\| quaHan\.khac > 0\)\) oQuaHan\.reload\(\); \}\)/.test(lt), 'baoDaLuu phải tải lại cả ô bài quá hạn (khi còn số)');
     assert((lt.match(/onDaLuu=\{baoDaLuu\}/g) ?? []).length >= 2, 'hàng lớp + khối Nợ phải báo đã lưu qua baoDaLuu');
   });
 }
