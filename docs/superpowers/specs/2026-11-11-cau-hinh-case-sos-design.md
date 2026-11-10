@@ -177,6 +177,9 @@ Thay hằng số bằng hàm đọc cấu hình, **giữ tên hàm cũ làm vỏ
 
 ## 7. Giao diện (mockup `thiet-ke/2026-11-11-cau-hinh-case-sos/`)
 
+- **Lối vào giữ nguyên (chủ SP rà #1370, 11/11):** "không làm hẳn 1 tab cho quản trị, vẫn ở vị trí cũ" + "chưa làm tab 'tutor'" → thanh điều hướng trên **không thêm tab nào**
+  (không "Quản trị", không "Tutor"); vào như nay qua **menu tài khoản › Quản trị hệ thống** (QL: mục cấu hình chỉ xem như Bảng quy đổi). "Tutor" trong tài liệu này chỉ là
+  **loại PA "Học Tutor"** đang chạy (PA quy chế, Tutor 10 buổi) — không phải mục Tutor đang hoãn.
 - **Vị trí**: `/quan-tri/case-sos` — mục "Case & SOS" trong nhóm "Cấu hình hệ thống" ở cột trái Quản trị (khung QUAN-TRI-V2; mockup vẽ tạm cột trái theo ghi chú chung).
   Toàn bộ là MỘT thành phần `CauHinhCaseSos` (đầu mục + nội dung + nhật ký) lắp vào ô nội dung. Nếu PR này merge trước khung mới: tạm là tab "Case & SOS" của trang Quản trị cũ.
 - **Đầu mục** (mẫu chung): tên "Case & SOS" 22/700 · đoạn chọn **Nguyên nhân · Phương án · Mốc SOS** · đoạn **Fast Track · Lớp thường** (Nguyên nhân, Mốc SOS) · "Áp cho Case / SOS sinh sau ⓘ".

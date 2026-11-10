@@ -437,6 +437,8 @@ tr.vua td:first-child { box-shadow:none; }
 
 .cot-qt-dau { font:700 22px/1.3 var(--phong); padding:0 12px 6px; }
 .khung-qt { grid-template-columns:248px minmax(0,1fr) !important; }
+
+.tt .tk-mo { display:inline-flex; align-items:center; height:34px; padding:0 10px; border-radius:8px; background:rgb(255 255 255 / .12); color:#fff; font-weight:600; }
 </style>
 </head>
 <body>
@@ -454,7 +456,7 @@ tr.vua td:first-child { box-shadow:none; }
 <header class="dau-mk">
   <h1>Quản trị › Case &amp; SOS — mockup 11/11 (CHỜ chủ SP duyệt)</h1>
   <p>Chủ SP 11/11: Quản trị tự thêm / sửa / đổi thứ tự / tạm ẩn <b>nhóm nguyên nhân</b> (FT riêng, lớp thường riêng), <b>nhóm phương án</b> và <b>việc phải làm ở từng mốc SOS</b>.
-  Đổi chỉ áp cho Case / SOS sinh sau; Case cũ giữ nguyên. Thiết kế: <code>docs/superpowers/specs/2026-11-11-cau-hinh-case-sos-design.md</code>. 1440 tối · 375 sáng (+ 1 khung 375 tối). Dữ liệu: bản gốc đúng mã hiện tại, số "đang dùng" là số mẫu.</p>
+  Đổi chỉ áp cho Case / SOS sinh sau; Case cũ giữ nguyên. <b>Lối vào giữ nguyên</b> (chủ SP rà #1370): menu tài khoản › "Quản trị hệ thống" như hiện nay — thanh điều hướng trên KHÔNG thêm tab nào (không "Quản trị", không "Tutor"). Thiết kế: <code>docs/superpowers/specs/2026-11-11-cau-hinh-case-sos-design.md</code>. 1440 tối · 375 sáng (+ 1 khung 375 tối). Dữ liệu: bản gốc đúng mã hiện tại, số "đang dùng" là số mẫu.</p>
   <nav class="muc-mk">
     <a href="#k1">K1 Nguyên nhân FT</a><a href="#k2">K2 Sửa tại dòng · thêm</a><a href="#k3">K3 Lớp thường · ẩn</a><a href="#k4">K4 Phương án</a>
     <a href="#k5">K5 Mốc SOS FT</a><a href="#k6">K6 Việc phối hợp</a><a href="#k7">K7 Mốc lớp thường</a><a href="#k8">K8 Khôi phục</a>
@@ -587,11 +589,11 @@ const ve = (id, html) => { document.getElementById(id).innerHTML = html; };
 const iBtn = (title) => `<button class="nut-i" type="button" aria-label="Giải thích" title="${title}">ⓘ</button>`;
 
 /* ---------- khung chung ---------- */
-const MENU = ['Tổng quan', 'Học viên &amp; Lớp', 'Test', 'Công việc', 'Phân tích', 'Tutor', 'Quản trị'];
+const MENU = ['Tổng quan', 'Học viên &amp; Lớp', 'Test', 'Công việc', 'Phân tích'];
 function thanhTren(dt, vai = 'QT') {
-  if (dt) return `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Quản trị</span><span class="phai"><span>☰</span></span></div>`;
-  return `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${MENU.map((m) => `<span class="m${m === 'Quản trị' ? ' dang' : ''}">${m}</span>`).join('')}
-    <span class="phai"><span>${vai === 'QL' ? 'Mai · Quản lý CN Cầu Giấy' : 'Hà Hoàng · Quản trị hệ thống'}</span></span></div>`;
+  if (dt) return `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="tk-mo">Hà Hoàng ▾</span><span>☰</span></span></div>`;
+  return `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${MENU.map((m) => `<span class="m">${m}</span>`).join('')}
+    <span class="phai"><span class="tk-mo" title="Menu tài khoản › ${vai === 'QL' ? 'Bảng quy đổi band / Cấu hình' : 'Quản trị hệ thống'} (lối vào cũ, không đổi)">${vai === 'QL' ? 'Mai · Quản lý CN Cầu Giấy' : 'Hà Hoàng · Quản trị hệ thống'} ▾</span></span></div>`;
 }
 const NAV_QT = [['Tài khoản & quyền', ['Tài khoản', 'Quyền theo vai']], ['Cấu hình hệ thống', ['Chương trình & lộ trình', 'Band & ngưỡng', 'Hạn mặc định', 'Case &amp; SOS', 'Chi nhánh']], ['Vận hành', ['Mở sửa lịch Test', 'Nhật ký chung', 'Đã xoá']]];
 const NAV_QL = [['', ['Chương trình & lộ trình', 'Band & ngưỡng', 'Hạn mặc định', 'Case &amp; SOS', 'Chi nhánh']], ['Vận hành', ['Đã xoá']]];
