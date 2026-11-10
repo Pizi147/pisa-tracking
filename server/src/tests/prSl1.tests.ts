@@ -194,26 +194,18 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       assert(kq.soNut === 5, `V5 SV-SO1: số trên nút = tin chưa đọc, đếm trước gộp: ${kq.soNut}`);
     });
 
-    await checkAsync('SL1-10b · chuông thật: GV — mọi "Quá hạn chấm" ở Cần làm, có hạn, sắp theo hạn, 0 dòng SOS-lượt; QL — "Chốt lộ trình" ở Cần làm', async () => {
-      let soCham = 0;
-      for (const p of [P.w1Teacher, P.w2Teacher, P.lrTeacher, P.sTeacher, P.coreTeacher]) {
+    /* CHUONG-V2 (XM-3, thay SL1-10b cũ): thông báo tự động đã bỏ — việc (Quá hạn chấm, Chốt lộ trình…) chuông đọc từ `/my-work`; /notifications chỉ còn tin. */
+    await checkAsync('SL1-10b → CHUONG-V2 · /notifications thật: không còn thông báo tự động (việc ở /my-work); tin SOS-lượt không ở Cần làm; một Case một dòng', async () => {
+      const TU_DONG = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'xuat_bc_ph_qua_han'];
+      for (const p of [P.w1Teacher, P.w2Teacher, P.lrTeacher, P.sTeacher, P.coreTeacher, P.mbManager]) {
         const r = await goi(p.userId, '/notifications');
         assert(r.status === 200, `/notifications ${r.status}`);
+        assert(!(r.json as any[]).some((n) => TU_DONG.includes(n.kind)), `${p.userId}: còn thông báo tự động`);
         const kq = d.dongChuong(r.json, TODAY);
-        const cham = (r.json as any[]).filter((n) => n.kind === 'cham_qua_han');
-        soCham += cham.length;
-        assert(cham.every((n) => kq.canLam.some((x: any) => x.id === n.id) && n.han), 'Quá hạn chấm phải ở Cần làm, có hạn');
         assert(!kq.canLam.some((n: any) => n.kind === 'sos' && n.entity_type === 'assessment_attempt'), 'SOS-lượt không ở Cần làm');
-        const han = kq.canLam.map((n: any) => n.han).filter(Boolean);
-        assert(han.every((h: string, i: number) => !i || han[i - 1] <= h), `Cần làm phải sắp theo hạn: ${han}`);
         const caseKey = kq.canLam.filter((n: any) => n.entity_type === 'sos_case').map((n: any) => n.entity_id);
         assert(new Set(caseKey).size === caseKey.length, 'một Case một dòng');
       }
-      assert(soCham > 0, 'bộ demo phải có thông báo Quá hạn chấm');
-      const ql = await goi(P.mbManager.userId, '/notifications');
-      const kqQl = d.dongChuong(ql.json, TODAY);
-      const chot = (ql.json as any[]).filter((n) => n.kind === 'chot_lo_trinh');
-      assert(chot.length > 0 && chot.every((n) => kqQl.canLam.some((x: any) => x.id === n.id)), `QL: ${chot.length} Chốt lộ trình phải ở Cần làm`);
     });
 
     check('SL1-10c · Case tạo tay cho kỹ năng người khác phụ trách → chuông Cần làm của người phụ trách; thêm PA → rời Cần làm; tự phụ trách → không chuông', () => {

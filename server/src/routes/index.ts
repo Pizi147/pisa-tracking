@@ -51,8 +51,6 @@ import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, docNhieu, thongBaoCua } from '../platform/thongBao.ts';
-import { dongBoKhiMoChuong, dongBoSauMyWork } from '../platform/thongBaoTuDong.ts';
-import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
 import { luiMocQuetSauGhi } from '../platform/mocHeThong.ts';
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
 import * as tongQuanV5Svc from '../worklist/tongQuanV5.ts';   // UI-TONG-QUAN
@@ -164,13 +162,6 @@ api.use((req, _res, next) => {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
   }
-  next();
-});
-
-/* OV-15h1: ghi thành công → lần mở chuông kế của người đó đồng bộ thông báo tự động ngay (việc vừa xong hết khỏi "Cần làm", không chờ 5 phút). */
-api.use((req, res, next) => {
-  const p = req.method !== 'GET' ? req.principal : undefined;
-  if (p) res.on('finish', () => { if (res.statusCode < 400) { try { daGhi(p); } catch (e) { console.error('[chuong-da-ghi]', e); } } });
   next();
 });
 
@@ -576,7 +567,6 @@ api.get('/my-work', requireAuth, wrap((req) => {
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
   const kq = myWork(p, { branchId });
-  if (branchId == null && kq.items) dongBoSauMyWork(p, kq.items, demoToday());   // RA-DOC-0611b: chuông dùng lại việc vừa tính (tới chu kỳ 5 phút)
   return nheMyWork(kq);
 }));
 
@@ -2972,7 +2962,7 @@ api.patch('/tasks/:id', requireAuth, wrap((req) => {
 
 api.get('/notifications', requireAuth, wrap((req) => {
   const p = principalOf(req);
-  dongBoKhiMoChuong(p, demoToday());   // OV-15d (C03): thông báo tự động thay Nhắc — đồng bộ khi mở chuông, tối đa 5 phút / người
+  /* CHUONG-V2 (XM-3): không còn thông báo tự động — việc của chuông đọc từ `/my-work` (web), ở đây chỉ tin một chiều. */
   return thongBaoCua(p.userId);
 }));
 
