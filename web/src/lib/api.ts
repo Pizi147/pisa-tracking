@@ -97,6 +97,12 @@ const hoiLanLuot = (cau: string, nut?: string): Promise<boolean> => {
   hangHoi = p.catch(() => undefined);
   return p;
 };
+/** CAU-HINH-CASE-SOS: lỗi "danh mục vừa đổi" (nhóm / loại PA vừa bị ẩn) → phiên tải lại cấu hình (SessionProvider đặt). */
+let khiDanhMucDoi: (() => void) | null = null;
+export function datKhiDanhMucDoi(fn: () => void): () => void {
+  khiDanhMucDoi = fn;
+  return () => { if (khiDanhMucDoi === fn) khiDanhMucDoi = null; };
+}
 export function datHoiXacNhan(fn: (cau: string, nut?: string) => Promise<boolean>): () => void {
   hoiXacNhan = fn;
   return () => { if (hoiXacNhan === fn) hoiXacNhan = null; };
@@ -138,6 +144,10 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
       if (await hoiLanLuot(cau, nut)) return request<T>(method, path, body, isForm, [...xacNhan, ma]);   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
       /* Người dùng bấm Đóng / Esc = KHÔNG làm, không phải lỗi: dấu `huy` + câu trung tính; Toast bỏ qua, 409 xung đột thật vẫn là lỗi. */
       throw new ApiError(res.status, cauHuy(), payload?.details, true);
+    }
+    if (res.status === 400 && payload?.details?.danhMucDoi && khiDanhMucDoi) {
+      khiDanhMucDoi();
+      throw new ApiError(res.status, t('Danh mục vừa đổi, đã tải lại'), payload.details);
     }
     throw new ApiError(res.status, cau, payload?.details);
   }

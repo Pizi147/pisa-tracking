@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { datNguonCauHinh, type BanCauHinh, type LoaiCauHinh } from '@shared/domain/index.ts';
 import { useNavigate } from 'react-router-dom';
-import { api, invalidateAll } from './api.ts';
+import { api, datKhiDanhMucDoi, invalidateAll } from './api.ts';
 import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
 import { quaRoiNhap } from '../ui/chanRoiNhap.tsx';
 import { dongBoNgonNgu } from './ngonNgu.ts';
@@ -105,6 +105,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { void reload(); }, [reload]);
+  /* CAU-HINH-CASE-SOS: chọn nhóm / loại PA vừa bị Quản trị ẩn → tải lại phiên (mang cấu hình mới); câu lỗi "Danh mục vừa đổi, đã tải lại". */
+  useEffect(() => datKhiDanhMucDoi(() => void reload()), [reload]);
   /* PR-EN: mỗi lần vào một tài khoản — đồng bộ ngôn ngữ máy ↔ tài khoản (có thể tải lại trang một lần). */
   const uid = session?.authenticated ? session.user?.id : undefined;
   useEffect(() => { if (uid) dongBoNgonNgu(session?.ngonNgu); }, [uid]);   // eslint-disable-line react-hooks/exhaustive-deps

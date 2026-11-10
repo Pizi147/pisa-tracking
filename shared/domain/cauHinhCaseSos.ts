@@ -30,6 +30,13 @@ export type Viec = { ma: string; ten: string; tenEn?: string; aiLam: AiLam; hanN
   buocTvv?: { hanNgay: number; toiThieu: number }; an?: true };
 export type OMoc = { pa: { loai: string; den: AcademicSupportSpan } | null; viec: string[] };
 export const HANG_FT = ['mt1', 'mt2', 'mt3', 'mt4', 'mt5', 'rf'] as const;
+/** `details` của lỗi 400 khi người dùng chọn nhóm / loại PA vừa bị Quản trị ẩn (web giữ cấu hình theo phiên) — web thấy thì tải lại phiên. */
+export const DANH_MUC_DOI = { danhMucDoi: true } as const;
+/** Mã do Quản trị thêm (`….m<n>`) — mã gốc (hằng số cũ) luôn coi là đang dùng: chỉ ẩn được. */
+export const laMaThem = (ma: string): boolean => /\.m\d+$/.test(ma);
+/** Số ô Mốc SOS FT có PA quy chế là `ma` (một bản mốc). */
+export const soOMocCuaPa = (moc: MocSos, ma: string): number =>
+  HANG_FT.reduce((n, h) => n + (['1', '2', '3'] as const).filter((s) => moc.ft[h]?.[s]?.pa?.loai === ma).length, 0);
 export type HangFt = (typeof HANG_FT)[number];
 export type MucSos = '1' | '2' | '3';
 export type MocThuong = {
@@ -185,7 +192,7 @@ export function kiemCauHinh<L extends LoaiCauHinh>(l: L, d: unknown): LoiCauHinh
     /* PA đang là PA quy chế ở ô Mốc SOS: không ẩn / không chuyển sang Cần QL duyệt (bỏ khỏi ô trước). */
     const moc = cauHinh('moc_sos').du_lieu;
     for (const m of x.muc) {
-      const so = HANG_FT.reduce((n, h) => n + (['1', '2', '3'] as const).filter((s) => moc.ft[h][s].pa?.loai === m.ma).length, 0);
+      const so = soOMocCuaPa(moc, m.ma);
       if (so && (m.an || m.nhom !== 'gv_tu_lam')) loi.push({ duong: 'muc', loi: `"${m.ten}" đang ở ${so} ô Mốc SOS — bỏ khỏi ô trước.` });
     }
     for (const m of c.muc) if (!x.muc.some((y) => y.ma === m.ma)) loi.push({ duong: 'muc', loi: `Phương án "${m.ten}" đã có — chỉ ẩn được, không xoá.` });

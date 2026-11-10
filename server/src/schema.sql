@@ -2340,6 +2340,10 @@ CREATE TABLE IF NOT EXISTS cau_hinh_phien_ban (
   tao_luc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_chpb_loai ON cau_hinh_phien_ban(loai, id);
+-- CAU-HINH-CASE-SOS (rà PTA): đếm "Đang dùng" / xoá mục Quản trị thêm — đọc đúng dòng của mã, không quét cả bảng.
+CREATE INDEX IF NOT EXISTS idx_case_issue_ma ON case_issues(taxonomy_code);
+CREATE INDEX IF NOT EXISTS idx_iv_kind ON case_interventions(kind);
+CREATE INDEX IF NOT EXISTS idx_sca_kind ON sos_coordination_actions(kind);
 
 -- Q-RL2a THÙNG RÁC (N24 ②): bản chụp mục đã xoá (Case, PA, vi phạm, tệp…) — Hoàn tác / Khôi phục ở Quản trị › Đã xoá trong 30 ngày (`platform/thungRac.ts`).
 CREATE TABLE thung_rac (

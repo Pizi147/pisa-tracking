@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
-import { maNhomHopLe,
+import { maNhomHopLe, cauHinh, DANH_MUC_DOI,
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL, CHU_TOI_THIEU_CASE } from '../../../shared/domain/index.ts';
@@ -104,7 +104,8 @@ export function resyncUnconfirmedPresets(
   attempt: { id: number; attempt_no: number; cycle_id?: number | null },
   sosLevel: number | null,
 ) {
-  if (!presetFor(attempt, sosLevel)) return;
+  const p = presetFor(attempt, sosLevel);   // một lần cho cả lượt (đọc pb_moc của lượt một câu)
+  if (!p) return;
   /* PR-SOS: chỉ PA CHỜ XÁC NHẬN (PA đã xác nhận là việc thật — không đụng); `followup_due` luôn NULL tới lúc xác nhận. */
   const rows = db()
     .prepare(
@@ -117,14 +118,14 @@ export function resyncUnconfirmedPresets(
     .all(attempt.id) as any[];
   const lop = rows.length ? (db().prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.class_id ?? null : null;
   for (const iv of rows) {
-    const p = presetFor(attempt, sosLevel)!;
     /* PR-PA (§8): đổi loại thì người theo loại mới — Tự học không người; Tutor chưa có người → GVBM đúng kỹ năng (như lúc dựng). */
     const nguoi = coNguoiDay(p.kind) ? iv.performer_user_id ?? (iv.performer_name ? null : suggestCaseOwner({ classId: lop, category: iv.category })) : null;
     const ten = coNguoiDay(p.kind) ? iv.performer_name : null;
     if (iv.kind === p.kind && iv.description === p.description && iv.moc_quy_che === p.span && nguoi === iv.performer_user_id && ten === iv.performer_name) continue;
     db()
-      .prepare('UPDATE case_interventions SET kind = ?, description = ?, moc_quy_che = ?, performer_user_id = ?, performer_name = ?, updated_at = ? WHERE id = ?')
-      .run(p.kind, p.description, p.span, nguoi, ten, nowIso(), iv.id);
+      /* CAU-HINH-CASE-SOS: đổi loại → phiên bản danh sách PA đang dùng (như PA mới tạo, `chenPa`); giữ loại → giữ bản cũ. */
+      .prepare('UPDATE case_interventions SET pb_loai = CASE WHEN kind = ? THEN pb_loai ELSE ? END, kind = ?, description = ?, moc_quy_che = ?, performer_user_id = ?, performer_name = ?, updated_at = ? WHERE id = ?')
+      .run(p.kind, cauHinh('phuong_an').id || null, p.kind, p.description, p.span, nguoi, ten, nowIso(), iv.id);
     /* SOS-TAM-PA (3.4): loại PA quy chế đổi thành trùng PA của GV → PA của GV mang dấu quy chế, PA quy chế chờ thôi (hết việc "Chọn PA"). */
     if (iv.kind !== p.kind) {
       const g = paGvMo(iv.case_id).find((x) => x.kind === p.kind);
@@ -348,7 +349,7 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
   const primaryCode = String(input.primaryCode ?? '').trim();
   if (!primaryCode && !o.boNguyenNhan) throw badRequest('Chọn nhóm nguyên nhân.');
   if (primaryCode && (!issueBranchOf(primaryCode) || !maNhomHopLe(topic as string, ct, o.giu ?? []).has(primaryCode))) {
-    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic ?? '', ct) });
+    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic ?? '', ct) }, DANH_MUC_DOI);
   }
   const observation = String(input.observation ?? '').trim() || null;
   if (laKhac(primaryCode)) {
@@ -405,7 +406,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   if (new Set(nhom).size !== nhom.length) throw badRequest('Nhóm nguyên nhân bị trùng.');
   const giuNhom = maNhomCuaCase(c.id);
   const boNhom = maNhomHopLe(c.topic as string, ct, giuNhom);
-  if (nhom.slice(1).some((x) => !boNhom.has(x))) throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(c.topic ?? '', ct) });
+  if (nhom.slice(1).some((x) => !boNhom.has(x))) throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(c.topic ?? '', ct) }, DANH_MUC_DOI);
   const moTaGui = String(input.moTa ?? '').trim();
   const { primaryCode, observation, urgency, moTa, tenGiua } = kiemNoiDungCase(c.topic, ct, {
     ...input, primaryCode: nhom[0] ?? null,

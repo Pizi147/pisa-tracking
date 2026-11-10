@@ -285,4 +285,64 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
       assert(e2?.status === 400, `${l} sai dạng → 400, có ${e2?.status} ${e2?.message}`);
     }
   }));
+
+  /* ---- Rà PTA #1390 ---- */
+  check('CHCS-RA2 (1) · sửa Case đổi nhóm chính sang nhóm Quản trị thêm → taxonomy_version theo bản đang dùng, tên hiện đúng; giữ nhóm → giữ phiên bản; "Đang dùng" chỉ đếm mã thêm', () => thu(() => {
+    const c = taoCase(moiEm(), 'student.listening.language');
+    const r = svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: dm.cauHinh('nguyen_nhan').id });
+    cases.suaCase(P.lrTeacher, c, { primaryCode: 'student.listening.m1', summary: 'Section 1–2 sai 6/20 câu điền số, nhầm 15 và 50 — nghe sót từ khoá.' });
+    const v = () => mot(`SELECT taxonomy_code c, taxonomy_version v FROM case_issues WHERE case_id = ? AND role = 'primary'`, c);
+    assert(v().c === 'student.listening.m1' && v().v === r.nguyen_nhan.id, `đổi nhóm: ${JSON.stringify(v())}`);
+    const ten = () => cases.caseDetail(P.lrTeacher, c).issues.find((i: any) => i.role === 'primary')?.label;
+    assert(ten() === 'Nghe từ khoá', `tên nhóm mới: ${ten()}`);
+    const d = sao(dm.cauHinh('nguyen_nhan').du_lieu);
+    d.ft.listening.find((m: any) => m.ma === 'student.listening.m1').ten = 'Nghe sót từ khoá';
+    svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: d, tuPhienBan: dm.cauHinh('nguyen_nhan').id });
+    cases.suaCase(P.lrTeacher, c, { summary: 'Section 1–2 sai 6/20 câu điền số, nhầm 15 và 50 — nghe sót từ khoá, ghi lại.' });
+    assert(v().v === r.nguyen_nhan.id && ten() === 'Nghe từ khoá', `giữ nhóm → giữ phiên bản lúc chọn: ${JSON.stringify(v())} ${ten()}`);
+    const dd = svc.xemCauHinh(P.admin).dangDung;
+    assert(dd['student.listening.m1'] === 1 && dd['student.listening.language'] === undefined && dd.tutor === undefined, `đang dùng: ${JSON.stringify(dd)}`);
+  }));
+
+  check('CHCS-RA2 (2) · PA Quản trị thêm, chưa có PA nào, đang ở ô Mốc SOS: xoá → 400 (nói số ô); Khôi phục / Hoàn tác giữ PA HIỆN; lưu Mốc SOS sau đó vẫn được', () => thu(() => {
+    const d = sao(dm.cauHinh('phuong_an').du_lieu);
+    d.muc.splice(d.muc.findIndex((m: any) => m.nhom === 'can_ql_duyet'), 0, { ma: '', ten: 'Luyện đề có giờ', nhom: 'gv_tu_lam', nguoiDay: false, soBuoi: false });
+    const r1 = svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: d, tuPhienBan: dm.cauHinh('phuong_an').id });
+    doiMoc((m) => { m.ft.mt1['1'].pa = { loai: 'pa.m1', den: m.ft.mt1['1'].pa?.den ?? 'next_mt' }; });
+    const bo = sao(dm.cauHinh('phuong_an').du_lieu);
+    bo.muc = bo.muc.filter((m: any) => m.ma !== 'pa.m1');
+    const e = loi(() => svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: bo, tuPhienBan: dm.cauHinh('phuong_an').id }));
+    assert(e?.status === 400 && /1 ô Mốc SOS/.test(e.message), `xoá PA ở ô mốc: ${e?.status} ${e?.message}`);
+    for (const ve of [0, r1.truoc]) {
+      svc.luuCauHinh(P.admin, 'phuong_an', { khoiPhucTu: ve, tuPhienBan: dm.cauHinh('phuong_an').id });
+      const m = dm.cauHinh('phuong_an').du_lieu.muc.find((x: any) => x.ma === 'pa.m1');
+      assert(m && !m.an, `khôi phục về ${ve}: PA ở ô mốc giữ hiện — ${JSON.stringify(m)}`);
+    }
+    const r = doiMoc((m) => { m.ft.mt2['1'].viec = [...m.ft.mt2['1'].viec]; m.ft.mt1['2'].viec = m.ft.mt1['2'].viec.slice(0, 1); });
+    assert(r.moc_sos.id >= 2, 'lưu Mốc SOS sau đó được');
+  }));
+
+  check('CHCS-RA2 (3) · PA đã có PA dùng: đổi cờ (có người dạy / số buổi / nhóm) → 400, đổi tên được; Khôi phục về bản cờ khác giữ cờ đang dùng', () => thu(() => {
+    const d = sao(dm.cauHinh('phuong_an').du_lieu);
+    d.muc.splice(d.muc.findIndex((m: any) => m.nhom === 'can_ql_duyet'), 0, { ma: '', ten: 'Luyện đề có giờ', nhom: 'gv_tu_lam', nguoiDay: false, soBuoi: false });
+    const r1 = svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: d, tuPhienBan: dm.cauHinh('phuong_an').id });
+    const co = sao(dm.cauHinh('phuong_an').du_lieu);
+    co.muc.find((m: any) => m.ma === 'pa.m1').soBuoi = true;   // chưa có PA dùng → đổi cờ được
+    svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: co, tuPhienBan: dm.cauHinh('phuong_an').id });
+    const c = taoCase(moiEm(), 'student.listening.language');
+    cases.recordIntervention(P.lrTeacher, c, { kind: 'pa.m1', description: 'Luyện 2 đề Listening có bấm giờ mỗi tuần', status: 'planned', soBuoi: 4 });
+    for (const doi of [(m: any) => { m.nguoiDay = true; }, (m: any) => { m.soBuoi = false; }, (m: any) => { m.nhom = 'can_ql_duyet'; }]) {
+      const x = sao(dm.cauHinh('phuong_an').du_lieu);
+      doi(x.muc.find((m: any) => m.ma === 'pa.m1'));
+      const e = loi(() => svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: x, tuPhienBan: dm.cauHinh('phuong_an').id }));
+      assert(e?.status === 400 && /đã có PA dùng/.test(e.message), `đổi cờ PA đã dùng: ${e?.status} ${e?.message}`);
+    }
+    const ten = sao(dm.cauHinh('phuong_an').du_lieu);
+    ten.muc.find((m: any) => m.ma === 'pa.m1').ten = 'Luyện đề bấm giờ';
+    svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: ten, tuPhienBan: dm.cauHinh('phuong_an').id });
+    assert(dm.tenLoaiPa('pa.m1') === 'Luyện đề bấm giờ', 'đổi tên áp cho mọi PA');
+    svc.luuCauHinh(P.admin, 'phuong_an', { khoiPhucTu: r1.phuong_an.id, tuPhienBan: dm.cauHinh('phuong_an').id });
+    const m = dm.cauHinh('phuong_an').du_lieu.muc.find((x: any) => x.ma === 'pa.m1');
+    assert(m.soBuoi === true && m.ten === 'Luyện đề có giờ', `khôi phục: tên về bản cũ, cờ giữ đang dùng — ${JSON.stringify(m)}`);
+  }));
 }

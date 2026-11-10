@@ -1,6 +1,6 @@
 import { useState, type ReactNode, type KeyboardEvent } from 'react';
 import { t } from '@shared/i18n/index.ts';
-import { laKhac, type MocSos, type MucNguyenNhan, type MucPa, type NguyenNhan, type NhanhNN, type Viec } from '@shared/domain/index.ts';
+import { laKhac, soOMocCuaPa, type MocSos, type MucNguyenNhan, type MucPa, type NguyenNhan, type NhanhNN, type Viec } from '@shared/domain/index.ts';
 import type { DuLieuCauHinh, LuuDs } from '../CauHinhCaseSos.tsx';
 import { Bang, OBang, type CotBang } from '../../../ui/Bang.tsx';
 
@@ -110,9 +110,10 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                         : <button type="button" className="-ml-2 rounded-md px-2 py-1.5 text-left text-[15px] font-medium text-slate-100 hover:bg-[color:var(--accent-soft)]"
                             title={t('Sửa tên')} onClick={() => setSua({ nhom: n.key, idx: i, m: { ...m } })}>{m.ten} <span aria-hidden className="text-slate-500">✎</span></button>}
                       {phu && <div className="text-[13px] text-slate-400">{phu}</div>}
-                      <div className="text-[13px] text-slate-400 sm:hidden">{dung ? `${dung} ${p.donVi}` : t('Chưa dùng')}</div>
+                      {/* Mục gốc: máy chủ không đếm (luôn coi là đang dùng, chỉ ẩn được) → để trống. */}
+                      {(dung || !p.coDinh(m)) && <div className="text-[13px] text-slate-400 sm:hidden">{dung ? `${dung} ${p.donVi}` : t('Chưa dùng')}</div>}
                     </OBang>
-                    <OBang c={COT[2]} className="py-1.5 text-sm tabular-nums text-slate-400">{dung ? <><b className="font-semibold text-slate-100">{dung}</b> {p.donVi}</> : '—'}</OBang>
+                    <OBang c={COT[2]} className="py-1.5 text-sm tabular-nums text-slate-400">{dung ? <><b className="font-semibold text-slate-100">{dung}</b> {p.donVi}</> : p.coDinh(m) ? null : '—'}</OBang>
                     <OBang c={COT[3]} className="py-1.5 pr-3.5">
                       {p.chiXem ? (m.an ? <span className="text-[12px] font-semibold text-slate-400">{t('Đang ẩn')}</span> : null)
                         : khac ? <span className="text-[13px] text-slate-500">{t('Luôn cuối')}</span>
@@ -213,7 +214,7 @@ export function BangNguyenNhan({ duLieu, chiXem, luuDs, ben }: ChungProps & { be
 }
 
 /** Mục PA đang nằm trong ô PA quy chế của Mốc SOS — không ẩn được (lý do tại nút). */
-const oDungPa = (moc: MocSos, ma: string) => Object.values(moc.ft).reduce((n, h) => n + Object.values(h).filter((o) => o.pa?.loai === ma).length, 0);
+const oDungPa = soOMocCuaPa;   // cùng hàm máy chủ dùng để chặn ẩn / xoá
 export const oDungViec = (moc: MocSos, ma: string) => Object.values(moc.ft).reduce((n, h) => n + Object.values(h).filter((o) => o.viec.includes(ma)).length, 0)
   + Object.values(moc.thuong).filter((x) => x.viec.includes(ma)).length;
 
@@ -232,12 +233,18 @@ export function BangPhuongAn({ duLieu, chiXem, luuDs }: ChungProps) {
         khoaAn={(m) => (oDungPa(moc, m.ma) ? t('đang ở {n} ô Mốc SOS', { n: oDungPa(moc, m.ma) }) : null)}
         coDinh={(m) => gocMa.has(m.ma)}
         moi={(k) => ({ ma: '', ten: '', nhom: k as MucPa['nhom'], nguoiDay: false, soBuoi: false })}
-        oThem={(m, dat) => gocMa.has(m.ma) ? null : (
-          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-200">
-            <label className="inline-flex min-h-[44px] items-center gap-2 sm:min-h-0"><input type="checkbox" checked={m.nguoiDay} onChange={(e) => dat({ ...m, nguoiDay: e.target.checked })} />{t('Có người dạy')}</label>
-            <label className="inline-flex min-h-[44px] items-center gap-2 sm:min-h-0"><input type="checkbox" checked={m.soBuoi} onChange={(e) => dat({ ...m, soBuoi: e.target.checked })} />{t('Đếm số buổi')}</label>
-          </div>
-        )}
+        oThem={(m, dat) => {
+          if (gocMa.has(m.ma)) return null;
+          /* PA đã có PA dùng: cách chạy khoá (máy chủ cũng chặn) — chỉ đổi tên, thứ tự, ẩn. */
+          const khoa = (duLieu.dangDung[m.ma] ?? 0) > 0;
+          return (
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-200">
+              <label className="inline-flex min-h-[44px] items-center gap-2 sm:min-h-0"><input type="checkbox" checked={m.nguoiDay} disabled={khoa} onChange={(e) => dat({ ...m, nguoiDay: e.target.checked })} />{t('Có người dạy')}</label>
+              <label className="inline-flex min-h-[44px] items-center gap-2 sm:min-h-0"><input type="checkbox" checked={m.soBuoi} disabled={khoa} onChange={(e) => dat({ ...m, soBuoi: e.target.checked })} />{t('Đếm số buổi')}</label>
+              {khoa && <span className="text-[13px] text-slate-400">{t('{n} PA đang dùng — giữ cách chạy', { n: duLieu.dangDung[m.ma] })}</span>}
+            </div>
+          );
+        }}
         luu={(k, ds, chu) => {
           /* Giữ thứ tự: GV tự làm trước, Cần QL duyệt sau ("Khác" cuối cùng). */
           const ke = k === 'gv_tu_lam' ? [...ds, ...pa.filter((m) => m.nhom !== 'gv_tu_lam')] : [...pa.filter((m) => m.nhom === 'gv_tu_lam'), ...ds];

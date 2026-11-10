@@ -104,4 +104,8 @@ export const EN_CAU_HINH_CASE_SOS = {
   '→ TVV {n} ngày': '→ consultant {n} days',
   '→ TVV': '→ consultant',
   'Xem tất cả ›': 'See all ›',
+  'Phương án đang ở {n} ô Mốc SOS — bỏ khỏi ô trước, rồi mới xoá.': 'This plan is used in {n} SOS milestone cells — remove it from those cells first, then delete.',
+  '"{ten}" đã có PA dùng — chỉ đổi tên, thứ tự, ẩn được.': '"{ten}" is already used by plans — you can only rename, reorder or hide it.',
+  'Danh mục vừa đổi, đã tải lại': 'The list just changed — reloaded',
+  '{n} PA đang dùng — giữ cách chạy': '{n} plans use it — how it runs stays fixed',
 } as const;

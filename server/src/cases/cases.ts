@@ -37,7 +37,7 @@ import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
 import { CASE_THAT, HAN_KQ_NGOAI_TAM, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, sosCaseStateMany, xuLyCaseMany, type SosCaseState } from './sosState.ts';
-import { CHU_TOI_THIEU_CASE, PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
+import { CHU_TOI_THIEU_CASE, DANH_MUC_DOI, PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { ganMoTaTuO } from './nguyenNhanO.ts';
 import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
@@ -668,7 +668,7 @@ export function reportIssue(p: Principal, input: {
   const primaryCode = (input.primaryCode ?? '').trim();
   if (!primaryCode) throw badRequest('Chọn nhóm nguyên nhân — đây là căn cứ để tổng hợp về sau.');
   if (!allowed.includes(primaryCode)) {
-    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ctCuaCase) });
+    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ctCuaCase) }, DANH_MUC_DOI);
   }
   /* T13: "Khác" cần ô Ghi rõ ≥ 3 ký tự, lưu ở `case_issues.observation` (Q9). Luật cũ "mô tả ≥ 30 ký tự" đã bỏ. */
   if (laKhac(primaryCode)) {
@@ -810,7 +810,7 @@ export function reportIssue(p: Principal, input: {
     addJourney({
       studentId: input.studentId, cycleId: cycle?.id ?? null,
       eventType: 'case_opened', eventDate: detectedAt,
-      title: `${input.backfill ? '(nhập bù) ' : ''}Giáo viên ghi nhận vấn đề${input.primaryCode ? `: ${issueLabel(input.primaryCode)}` : ''}`,
+      title: `${input.backfill ? '(nhập bù) ' : ''}Giáo viên ghi nhận vấn đề${input.primaryCode ? `: ${issueLabel(input.primaryCode, null, ctCuaCase)}` : ''}`,
       detail: summary,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_open:${caseId}`,
@@ -1001,7 +1001,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   if (rutKtd) canXacNhan(CAU_RUT_KTD, undefined, NUT_RUT_KTD);
   /* CAU-HINH-CASE-SOS: loại PA = mã cũ chỉ đọc hoặc mục CHƯA ẨN của cấu hình; PA Bổ trợ chỉ máy tạo (PR-LT2a). */
   const mucLoai = mucPaCua(input.kind);
-  if ((SYSTEM_KINDS as readonly string[]).includes(input.kind) || (mucLoai ? mucLoai.an : !(INTERVENTION_KINDS as readonly string[]).includes(input.kind))) throw badRequest('Loại hỗ trợ không hợp lệ.');
+  if ((SYSTEM_KINDS as readonly string[]).includes(input.kind) || (mucLoai ? mucLoai.an : !(INTERVENTION_KINDS as readonly string[]).includes(input.kind))) throw badRequest('Loại hỗ trợ không hợp lệ.', DANH_MUC_DOI);
   const status = input.status && (INTERVENTION_STATUSES as readonly string[]).includes(input.status)
     ? input.status : 'completed';
   for (const [d, label] of [[input.plannedDate, 'Ngày dự kiến'], [input.startedDate, 'Ngày bắt đầu'],
@@ -1440,14 +1440,15 @@ export function suaCase(p: Principal, caseId: number, input: {
   if (typeof input.observation === 'string' && vuotTran(input.observation, TRAN_CHU.moTaCase, chinh?.observation)) {
     throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: input.observation.trim().length });
   }
+  const giuMa = maNhomCuaCase(caseId);   // một câu: nhóm đã gắn (kể cả nhóm Quản trị đã ẩn) giữ được khi sửa
   const nd = kiemNoiDungCase(topic, ct, {
     primaryCode: nhom?.[0] ?? input.primaryCode ?? (doiKyNang ? null : chinh?.taxonomy_code ?? null),
     observation: input.observation !== undefined ? input.observation : chinh?.observation ?? null,
     urgency: input.urgency ?? c.urgency ?? DEFAULT_URGENCY,
     moTa: input.summary ?? c.summary, tenGiua: input.title ?? c.title ?? tenGiuaCua(c),
-  }, { moTaCu: c.summary, khongDoiMoTa: st.laMt, boNguyenNhan: (st.laMt || daXong) && !chinh && !guiMoTa, giu: maNhomCuaCase(caseId) });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài; RKC-2b: Case đã xong chưa từng có nguyên nhân — đổi tên / mức không đòi nhóm
-  if (nhom?.slice(1).some((x) => !maNhomHopLe(topic, ct, maNhomCuaCase(caseId)).has(x))) {
-    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ct) });
+  }, { moTaCu: c.summary, khongDoiMoTa: st.laMt, boNguyenNhan: (st.laMt || daXong) && !chinh && !guiMoTa, giu: giuMa });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài; RKC-2b: Case đã xong chưa từng có nguyên nhân — đổi tên / mức không đòi nhóm
+  if (nhom?.slice(1).some((x) => !maNhomHopLe(topic, ct, giuMa).has(x))) {
+    throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ct) }, DANH_MUC_DOI);
   }
   const phuCu = (conn.prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? AND role = 'secondary' ORDER BY id`).all(caseId) as any[]).map((x) => x.taxonomy_code as string);
   let khoaMoi: string | null = c.dedup_key ?? null;
@@ -1484,8 +1485,9 @@ export function suaCase(p: Principal, caseId: number, input: {
     conn.prepare(`UPDATE sos_cases SET title = ?, summary = ?, urgency = ?, topic = ?, category = ?, dedup_key = ?, updated_at = ? WHERE id = ?`)
       .run(nd.tenGiua, nd.moTa, nd.urgency, topic, categoryOf(topic), khoaMoi, nowIso(), caseId);
     if (chinh) {
-      conn.prepare('UPDATE case_issues SET taxonomy_code = ?, observation = ?, skill = ?, created_by = ? WHERE id = ?')
-        .run(nd.primaryCode, nd.observation, topic, doiMoTa ? p.userId : chinh.created_by ?? null, chinh.id);
+      /* Đổi nhóm chính → ghi phiên bản đang dùng (nhóm mới có thể chỉ có ở bản này); giữ nhóm cũ → giữ phiên bản lúc chọn. */
+      conn.prepare('UPDATE case_issues SET taxonomy_version = CASE WHEN taxonomy_code IS ? THEN taxonomy_version ELSE ? END, taxonomy_code = ?, observation = ?, skill = ?, created_by = ? WHERE id = ?')
+        .run(nd.primaryCode, pbNguyenNhan(), nd.primaryCode, nd.observation, topic, doiMoTa ? p.userId : chinh.created_by ?? null, chinh.id);
     } else if (nd.primaryCode) addIssues(caseId, p.userId, { primaryCode: nd.primaryCode, observation: nd.observation, topic });
     if (doi.includes('nhomPhu')) {
       conn.prepare(`DELETE FROM case_issues WHERE case_id = ? AND role = 'secondary'`).run(caseId);
@@ -2301,6 +2303,9 @@ export function caseDetail(p: Principal, caseId: number) {
     ? conn.prepare('SELECT id, seq, route, target_score, exam_month, exam_period_id, programme_code FROM learning_cycles WHERE id = ?')
         .get(c.eff_cycle_id) as any
     : null;
+  /* PR-DEPLOY (0b-3): chương trình GỐC của Case (lúc mở) trước, rồi mới tới chương trình lộ trình — Case "G+V" của em đã lên BE vẫn ghi "G+V", bộ nguyên nhân của FOU.
+     CAU-HINH-CASE-SOS: cũng là bên (FT / lớp thường) của tên nhóm nguyên nhân. */
+  const ctCase: string | null = c.goc_programme_code ?? (cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null);
 
   const issues = (conn
     .prepare(
@@ -2311,7 +2316,7 @@ export function caseDetail(p: Principal, caseId: number) {
     .all(caseId) as any[])
     .map((i) => ({
       /* CAU-HINH-CASE-SOS: tên nhóm theo phiên bản lúc chọn (Quản trị đổi tên sau đó — Case cũ giữ tên cũ). */
-      id: i.id, role: i.role, code: i.taxonomy_code, label: issueLabel(i.taxonomy_code, i.taxonomy_version ?? null),
+      id: i.id, role: i.role, code: i.taxonomy_code, label: issueLabel(i.taxonomy_code, i.taxonomy_version ?? null, ctCase),
       branch: issueBranchOf(i.taxonomy_code), skill: i.skill, observation: i.observation,
       byName: i.by_name ?? null, /** 6b-2: ngày ghi mô tả (Case A "Mô tả · người · ngày"). */ createdAt: i.created_at ?? null,
     }));
@@ -2346,7 +2351,7 @@ export function caseDetail(p: Principal, caseId: number) {
   ).all(c.topic ?? '', caseId) as any[]).map((r) => ({
     attemptId: r.attempt_id as number, luot: `MT${r.attempt_no}`, nhanXet: (r.comment ?? null) as string | null,
     nhanXetPhuTrach: (r.nhan_xet_phu_trach ?? null) as string | null,
-    nhom: docNhomNguyenNhan(r.nhom_nguyen_nhan).map((code) => ({ code, label: issueLabel(code) })),
+    nhom: docNhomNguyenNhan(r.nhom_nguyen_nhan).map((code) => ({ code, label: issueLabel(code, null, ctCase) })),
   }));
 
   /* PR-S2 (S2): lịch sử điều chỉnh của mọi PA trong Case, một truy vấn. */
@@ -2543,8 +2548,6 @@ export function caseDetail(p: Principal, caseId: number) {
       xoa: f.intervention_id ? (interventions.find((iv) => iv.id === f.intervention_id)?.xoa ?? null) : null,
     }));
 
-  /* PR-DEPLOY (0b-3): chương trình GỐC của Case (lúc mở) trước, rồi mới tới chương trình lộ trình — Case "G+V" của em đã lên BE vẫn ghi "G+V", bộ nguyên nhân của FOU. */
-  const ctCase: string | null = c.goc_programme_code ?? (cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null);
   const hoanThanh = c.status === 'done' ? null : chanHoanThanhCua(caseId);
   const sosSt = sosCaseState(caseId);
   const suaDuoc = coTheSuaCase(p, c);
@@ -3034,7 +3037,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       categoryLabel: (r.category ?? categoryOf(r.topic)) ? tenMon(r.class_ct, r.category ?? categoryOf(r.topic)) : caseCategoryLabel(null),
       primaryCode: tachMaNhom(r.primary_ref).ma,
       /* CAU-HINH-CASE-SOS: tên nhóm theo phiên bản lúc chọn — cùng tên với màn Case. */
-      primaryLabel: tachMaNhom(r.primary_ref).ma ? issueLabel(tachMaNhom(r.primary_ref).ma, tachMaNhom(r.primary_ref).pb) : null,
+      primaryLabel: tachMaNhom(r.primary_ref).ma ? issueLabel(tachMaNhom(r.primary_ref).ma, tachMaNhom(r.primary_ref).pb, r.class_ct ?? null) : null,
       /** Chủ đề: một trong năm ô L·R·W1·W2·S. */
       topic: r.topic as string | null,
       topicLabel: r.topic ? caseTopicLabel(r.topic, r.class_ct) : null,
@@ -3734,8 +3737,8 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     /* Chủ đề gốc của Case (§7.5, PR-K) — để giao diện mở đúng danh mục phân loại (`issuesForTopic`) khi "Xác định nguyên nhân". */
     topic: c.topic ?? null,
     issueCode: issue?.taxonomy_code ?? null,
-    issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code, issue.taxonomy_version ?? null) : null,
-    nhomPhu: nhomCase.filter((i) => i.role === 'secondary').map((i) => issueLabel(i.taxonomy_code, i.taxonomy_version ?? null)),
+    issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code, issue.taxonomy_version ?? null, c.goc_programme_code ?? null) : null,
+    nhomPhu: nhomCase.filter((i) => i.role === 'secondary').map((i) => issueLabel(i.taxonomy_code, i.taxonomy_version ?? null, c.goc_programme_code ?? null)),
     nhanXet: (issue?.observation ?? null) as string | null,
     summary: c.summary ?? null,
     /* Case tự tạo từ SOS còn chờ GVBM xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5 — PR-K). */

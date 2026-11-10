@@ -732,7 +732,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   // --------------------------------------------------------- vấn đề đang theo dõi
   const caseRows = conn
     .prepare(
-      `SELECT sc.*, cy.seq AS cycle_seq, cy.route, u.full_name AS reporter_name,
+      `SELECT sc.*, cy.seq AS cycle_seq, cy.route, cy.programme_code AS cy_ct, u.full_name AS reporter_name,
               (SELECT COUNT(*) FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') AS iv_count,
               (SELECT MIN(followup_due) FROM case_interventions ci
                 WHERE ci.case_id = sc.id AND ci.status != 'cancelled' AND ci.followup_due IS NOT NULL
@@ -764,7 +764,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     // Vấn đề của lộ trình TRƯỚC vẫn hiện, nhưng dán nhãn rõ — không dời sang lộ trình mới
     // cho tiện hiển thị, vì như thế là viết lại lịch sử.
     carriedOver: !!(selected && c.cycle_id && c.cycle_id !== selected.id),
-    primaryCode: tachMaNhom(c.primary_ref).ma, primaryLabel: tachMaNhom(c.primary_ref).ma ? issueLabel(tachMaNhom(c.primary_ref).ma, tachMaNhom(c.primary_ref).pb) : null,   // CAU-HINH-CASE-SOS
+    primaryCode: tachMaNhom(c.primary_ref).ma, primaryLabel: tachMaNhom(c.primary_ref).ma ? issueLabel(tachMaNhom(c.primary_ref).ma, tachMaNhom(c.primary_ref).pb, c.goc_programme_code ?? c.cy_ct ?? null) : null,   // CAU-HINH-CASE-SOS: tên theo bên của Case
     interventionCount: c.iv_count, lastIntervention: c.last_iv,
     nextDue: c.next_due, dueOverdue: !!(c.next_due && c.next_due < today && c.status !== 'done'),
   }));

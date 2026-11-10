@@ -11,10 +11,10 @@
 import { db, tx } from '../db.ts';
 import { can, type Principal } from '../permissions.ts';
 import {
-  LOAI_CAU_HINH, PERMISSIONS, cauHinhGoc, datNguonCauHinh, kiemCauHinh, laKhac, laVaiQuanLy, thayDoi,
+  LOAI_CAU_HINH, PERMISSIONS, cauHinh, cauHinhGoc, datNguonCauHinh, kiemCauHinh, laKhac, laMaThem, laVaiQuanLy, soOMocCuaPa, thayDoi,
   type BanCauHinh, type DuLieuCauHinh, type LoaiCauHinh, type MocSos, type NguyenNhan, type PhuongAn, type ThayDoi,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, forbidden, nowIso } from '../util.ts';
+import { badRequest, conflict, forbidden, loi as loiHttp, nowIso } from '../util.ts';
 import { writeAudit } from './audit.ts';
 import { layMoc } from './nguCanhRequest.ts';
 import { thamChieuDayDuKhiKiem, type MocHeThong } from './mocHeThong.ts';
@@ -90,13 +90,17 @@ export function quenNhoCauHinh(): void {
 export const xemDuocCauHinh = (p: Principal) => can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }) || laVaiQuanLy(p.roleKeys);
 const suaDuocCauHinh = (p: Principal) => can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
 
-/** Số Case / PA / việc đang gắn mỗi mã (một câu) — màn hiện "Đang dùng" và quyết Xoá / Ẩn. */
-function demDangDung(): Record<string, number> {
-  const rows = db().prepare(
-    `SELECT taxonomy_code AS ma, COUNT(DISTINCT case_id) AS n FROM case_issues GROUP BY taxonomy_code
-     UNION ALL SELECT kind, COUNT(*) FROM case_interventions GROUP BY kind
-     UNION ALL SELECT kind, COUNT(*) FROM sos_coordination_actions GROUP BY kind`,
-  ).all() as { ma: string; n: number }[];
+/**
+ * Số Case / PA / việc đang gắn mỗi mã Quản trị THÊM (`….m<n>`) — màn hiện "Đang dùng" và quyết Xoá / Ẩn. Mã gốc luôn coi là đang dùng (chỉ ẩn được)
+ * nên không đếm. Một câu, đi chỉ mục theo mã (`idx_case_issue_ma`, `idx_iv_kind`, `idx_sca_kind`) — chỉ đọc dòng của mã thêm; chưa thêm mã nào → 0 câu.
+ */
+function demDangDung(ban: Map<LoaiCauHinh, Ban>): Record<string, number> {
+  const ma = (l: LoaiCauHinh) => maCua(l, ban.get(l)!.du_lieu).filter(laMaThem);
+  const phan = ([['case_issues', 'taxonomy_code', 'COUNT(DISTINCT case_id)', ma('nguyen_nhan')], ['case_interventions', 'kind', 'COUNT(*)', ma('phuong_an')],
+    ['sos_coordination_actions', 'kind', 'COUNT(*)', ma('moc_sos')]] as const).filter((x) => x[3].length);
+  if (!phan.length) return {};
+  const rows = db().prepare(phan.map(([b, c, dem, ds]) => `SELECT ${c} AS ma, ${dem} AS n FROM ${b} WHERE ${c} IN (${ds.map(() => '?').join(',')}) GROUP BY ${c}`).join(' UNION ALL '))
+    .all(...phan.flatMap((x) => x[3])) as { ma: string; n: number }[];
   const r: Record<string, number> = {};
   for (const x of rows) r[x.ma] = (r[x.ma] ?? 0) + Number(x.n);
   return r;
@@ -115,7 +119,7 @@ export function xemCauHinh(p: Principal) {
   }));
   return {
     nguyen_nhan: ban.get('nguyen_nhan')!, phuong_an: ban.get('phuong_an')!, moc_sos: ban.get('moc_sos')!,
-    dangDung: demDangDung(), nhatKy, suaDuoc: suaDuocCauHinh(p),
+    dangDung: demDangDung(ban), nhatKy, suaDuoc: suaDuocCauHinh(p),
   };
 }
 
@@ -142,14 +146,18 @@ function capMa(l: LoaiCauHinh, d: any): void {
 
 /** Mục Quản trị thêm mà bản mới bỏ đi: chưa có gì dùng → bỏ được; đã dùng → lưu thẳng thì 400, Hoàn tác / Khôi phục thì giữ lại ở dạng ẩn. */
 function daDung(l: LoaiCauHinh, ma: string): boolean {
+  if (!laMaThem(ma)) return true;
   const conn = db();
   if (l === 'nguyen_nhan') {
+    /* ponytail: ô nhận xét (assessment_scores) không có chỉ mục theo nhóm — chỉ quét khi XOÁ một nhóm Quản trị thêm mà chưa Case nào gắn (hiếm). */
     return !!conn.prepare('SELECT 1 FROM case_issues WHERE taxonomy_code = ? LIMIT 1').get(ma)
       || !!conn.prepare(`SELECT 1 FROM assessment_scores WHERE nhom_nguyen_nhan LIKE ? LIMIT 1`).get(`%"${ma}"%`);
   }
-  if (l === 'phuong_an') return !!conn.prepare('SELECT 1 FROM case_interventions WHERE kind = ? LIMIT 1').get(ma);
+  if (l === 'phuong_an') return paDaCoPa(ma) || soOMocCuaPa(cauHinh('moc_sos').du_lieu, ma) > 0;   // PA quy chế ở ô Mốc SOS đang dùng = đã dùng
   return !!conn.prepare('SELECT 1 FROM sos_coordination_actions WHERE kind = ? LIMIT 1').get(ma);
 }
+
+const paDaCoPa = (ma: string) => laMaThem(ma) ? !!db().prepare('SELECT 1 FROM case_interventions WHERE kind = ? LIMIT 1').get(ma) : true;
 
 function giuLaiDangAn(l: LoaiCauHinh, cu: any, moi: any, ma: string): void {
   if (l === 'nguyen_nhan') {
@@ -162,7 +170,8 @@ function giuLaiDangAn(l: LoaiCauHinh, cu: any, moi: any, ma: string): void {
     const m = (cu as PhuongAn).muc.find((x) => x.ma === ma);
     const ds = (moi as PhuongAn).muc;
     const khac = ds.findIndex((x) => laKhac(x.ma));
-    if (m) ds.splice(khac < 0 ? ds.length : khac, 0, { ...m, an: true });
+    /* Đang là PA quy chế ở ô Mốc SOS → giữ HIỆN (ô mốc không trỏ PA ẩn); không thì giữ ẩn. */
+    if (m) ds.splice(khac < 0 ? ds.length : khac, 0, soOMocCuaPa(cauHinh('moc_sos').du_lieu, ma) ? { ...m, an: undefined } : { ...m, an: true });
   } else {
     const v = (cu as MocSos).viec.find((x) => x.ma === ma);
     if (v) (moi as MocSos).viec.push({ ...v, an: true });
@@ -210,16 +219,37 @@ export function luuCauHinh(p: Principal, loai: unknown, input: { duLieu?: unknow
     const boDi = maCua(l, ht.du_lieu).filter((ma) => !maCua(l, moi).includes(ma));
     for (const ma of boDi) {
       if (!daDung(l, ma)) continue;
-      if (khoiPhucTu === null) throw badRequest('Mục đã có Case / ô nhận xét / việc dùng — chỉ ẩn được, không xoá.');
+      if (khoiPhucTu === null) {
+        const so = l === 'phuong_an' ? soOMocCuaPa(cauHinh('moc_sos').du_lieu, ma) : 0;
+        if (so) throw loiHttp(400, 'Phương án đang ở {n} ô Mốc SOS — bỏ khỏi ô trước, rồi mới xoá.', { n: so });
+        throw badRequest('Mục đã có Case / ô nhận xét / việc dùng — chỉ ẩn được, không xoá.');
+      }
       giuLaiDangAn(l, ht.du_lieu, moi, ma);
+    }
+    /* PA đã có PA dùng: khoá cách chạy (nhóm · có người dạy · đếm số buổi) — PA cũ đọc cờ của bản đang dùng; chỉ đổi tên / thứ tự / ẩn.
+       Lưu thẳng → 400; Hoàn tác / Khôi phục → giữ cờ của bản đang dùng. */
+    if (l === 'phuong_an') {
+      const cuMuc = new Map((ht.du_lieu as PhuongAn).muc.map((m) => [m.ma, m]));
+      for (const m of (moi as PhuongAn).muc) {
+        const c = cuMuc.get(m.ma);
+        if (!c || !laMaThem(m.ma) || (c.nhom === m.nhom && c.nguoiDay === m.nguoiDay && c.soBuoi === m.soBuoi) || !paDaCoPa(m.ma)) continue;
+        if (khoiPhucTu === null) throw loiHttp(400, '"{ten}" đã có PA dùng — chỉ đổi tên, thứ tự, ẩn được.', { ten: m.ten });
+        Object.assign(m, { nhom: c.nhom, nguoiDay: c.nguoiDay, soBuoi: c.soBuoi });
+      }
     }
     const loi = kiemCauHinh(l, moi);
     if (loi.length) throw badRequest(loi[0].loi, { loi });
     const doi = thayDoi(l, ht.du_lieu as DuLieuCauHinh[typeof l], moi);
     if (!doi.length) return { truoc: ht.id, moi: false };
     const id = idMoi();
-    db().prepare('INSERT INTO cau_hinh_phien_ban (id, loai, du_lieu, thay_doi, khoi_phuc_tu, nguoi_id, tao_luc) VALUES (?,?,?,?,?,?,?)')
-      .run(id, l, JSON.stringify(moi), JSON.stringify(doi), khoiPhucTu, p.userId, nowIso());
+    try {
+      db().prepare('INSERT INTO cau_hinh_phien_ban (id, loai, du_lieu, thay_doi, khoi_phuc_tu, nguoi_id, tao_luc) VALUES (?,?,?,?,?,?,?)')
+        .run(id, l, JSON.stringify(moi), JSON.stringify(doi), khoiPhucTu, p.userId, nowIso());
+    } catch (e: any) {
+      /* Hai lần lưu cùng lúc (hai tiến trình) lấy cùng MAX(id) + 1 → lần sau trùng khoá: báo như sửa đè. */
+      if (/UNIQUE|PRIMARY KEY/i.test(String(e?.message))) throw conflict('Vừa có người khác sửa danh sách này — tải lại để xem bản mới rồi sửa tiếp.');
+      throw e;
+    }
     writeAudit({
       actorUserId: p.userId, action: `cau_hinh_case_sos.${khoiPhucTu === null ? 'sua' : 'khoi_phuc'}`, entityType: 'cau_hinh_phien_ban', entityId: id,
       entityLabel: `Case & SOS · ${l}`, before: { phienBan: ht.id }, after: { thayDoi: doi, ...(khoiPhucTu !== null ? { khoiPhucTu } : {}) },
