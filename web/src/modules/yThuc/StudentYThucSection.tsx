@@ -6,7 +6,7 @@ import { BoLocDoan, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.t
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, addDaysIso, ngay, type ViolationCategory } from '@shared/domain/index.ts';
+import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, addDaysIso, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
 import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
@@ -138,10 +138,11 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     : <OBuoc badge={<BadgeViec xuong tong="xong" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{dich(x.nhan)} · {ngay(x.ngay, homNay)}</BadgeViec>} phu={[t('Đã xử lý'), x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null]} />;
 
   /* ---------------- Cần làm (K3) ---------------- */
-  const batBuoc = d.nhom === 'bat_buoc' || d.nhom === 'qua_han';
+  /* P1 G3-1: chỉ quá hạn "xem" (không vi phạm bắt buộc) → như Mới (Đã xem), badge vẫn "Quá hạn n ngày". */
+  const batBuoc = (d.nhom === 'bat_buoc' || d.nhom === 'qua_han') && !quaHanChiXem(d.nhom, d);
   const choGv = d.viPham.filter((v) => CHO_GV.has(v.trangThai)).sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id);
   const xemIds = choGv.filter((v) => v.trangThai === 'moi' || (v.trangThai === 'qua_han' && v.lyDoQuaHan === 'xem')).map((v) => v.id);
-  const nhomCho = batBuoc ? d.nhom : choGv.length ? 'moi' : null;
+  const nhomCho = batBuoc ? d.nhom : choGv.length ? (d.nhom === 'qua_han' ? 'qua_han' : 'moi') : null;
   const kCho = nhomCho ? khoi({
     key: 'cho', vp: choGv.map(vpDong), ph: null, moiIds: batBuoc ? undefined : xemIds,
     gv: (

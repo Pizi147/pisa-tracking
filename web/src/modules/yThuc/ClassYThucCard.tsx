@@ -7,7 +7,7 @@ import { Menu } from '../../ui/Menu.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { addDaysIso, ngay, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
+import { addDaysIso, ngay, quaHanChiXem, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
 import { usePanelYThuc, type PanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
@@ -253,8 +253,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const emThuHoi = [...d.nhom.da_xu_ly.filter((x) => x.thuHoi?.cho), ...d.choThuHoi];
   for (const x of emThuHoi) thuHoiCho.add(x.thuHoi!.id);
   const xls = d.dongThoiGian.filter((x): x is XuLyDong => x.loai === 'xu-ly');
-  const nhomBb = [...d.nhom.qua_han.map((x) => ({ x, k: 'qua_han' as NhomEm })), ...d.nhom.bat_buoc.map((x) => ({ x, k: 'bat_buoc' as NhomEm }))];
-  const conMoi = new Set(d.nhom.moi.map((x) => x.studentId));
+  /* P1 G3-1: em chỉ quá hạn "xem" (không vi phạm bắt buộc) về nhóm Mới, giữ "Đã xem" — cùng việc "Xem vi phạm mới" của Công việc. */
+  const nhomBb = [...d.nhom.qua_han.filter((x) => !quaHanChiXem('qua_han', x)).map((x) => ({ x, k: 'qua_han' as NhomEm })), ...d.nhom.bat_buoc.map((x) => ({ x, k: 'bat_buoc' as NhomEm }))];
+  const moiDs = [...d.nhom.qua_han.filter((x) => quaHanChiXem('qua_han', x)), ...d.nhom.moi];
+  const conMoi = new Set(moiDs.map((x) => x.studentId));
   const vua = Object.entries(vuaXem).filter(([sid]) => !conMoi.has(Number(sid))).map(([, v]) => v);
   const choTvv = xls.filter((x) => x.status === 'done' && x.baoPh?.trangThai === 'mo' && !thuHoiCho.has(x.id));
   const xong7 = xls.filter((x) => x.status === 'done' && x.baoPh?.trangThai !== 'mo' && x.ngay >= tuNgay && !thuHoiCho.has(x.id));
@@ -276,8 +278,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     return khoi({ key: `bb${x.studentId}`, sid: x.studentId, ten: x.ten, vp: vpCua(vp.map((v) => v.id), vp), gv, ph: null, tiep, chon: true });
   });
   const kMoi = [
-    ...d.nhom.moi.map((x) => {
-      const ids = x.viPhamCho.filter((v) => v.trangThai === 'moi').map((v) => v.id);
+    ...moiDs.map((x) => {
+      const ids = x.viPhamCho.filter((v) => v.trangThai === 'moi' || v.trangThai === 'qua_han').map((v) => v.id);
       const tiep = d.canManage && ids.length
         ? <>
             <button type="button" className="btn w-full justify-center max-sm:h-11" style={{ borderColor: 'var(--accent)', color: 'var(--accent)', background: 'transparent' }} disabled={dangGhi === x.studentId}
@@ -287,7 +289,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
             {nutPhu([[t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId: x.studentId })]], x.ten)}
           </>
         : choAi('GVCN', d.gvcn);
-      return khoi({ key: `moi${x.studentId}`, sid: x.studentId, ten: x.ten, vp: vpCua(x.viPhamCho.map((v) => v.id), x.viPhamCho), gv: <CanLamEm x={{ ...x, nhom: 'moi', deXuat: null }} homNay={homNay} hanDuoi />,
+      return khoi({ key: `moi${x.studentId}`, sid: x.studentId, ten: x.ten, vp: vpCua(x.viPhamCho.map((v) => v.id), x.viPhamCho), gv: <CanLamEm x={{ ...x, nhom: x.quaHanNgay ? 'qua_han' : 'moi', deXuat: null }} homNay={homNay} hanDuoi />,
         ph: null, tiep, chon: true, moiIds: ids });
     }),
     ...vua.map((v) => khoi({
@@ -335,7 +337,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     nen: vuaLuu?.sid === x.studentId && moiNhatEm.get(x.studentId) === x.id ? 'vua' : undefined,
   }));
   const soVp = (ds: { viPhamCho: unknown[] }[]) => ds.reduce((s, x) => s + x.viPhamCho.length, 0);
-  const emCanLam = new Set([...nhomBb.map((x) => x.x.studentId), ...d.nhom.moi.map((x) => x.studentId), ...d.nhom.cho_duyet.map((x) => x.studentId),
+  const emCanLam = new Set([...nhomBb.map((x) => x.x.studentId), ...moiDs.map((x) => x.studentId), ...d.nhom.cho_duyet.map((x) => x.studentId),
     ...emThuHoi.map((x) => x.studentId), ...choTvv.map((x) => x.studentId)]);
   const soCanLam = emCanLam.size;
   const coHang = kBb.length + kMoi.length + kChoQl.length + kTvv.length + kXong.length > 0;
@@ -447,7 +449,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
               i={<NutLuat label={t('Luật bắt buộc xử lý')}>{t('≥ 3 vi phạm trong tuần này + tuần trước → phải xử lý; "Đã xem" không còn.')}</NutLuat>}>{kBb}</NhomLan>
           )}
           {kMoi.length > 0 && (
-            <NhomLan chu={t('Mới, chưa xem')} dem={t('{n} HV · {so} vi phạm', { n: d.nhom.moi.length, so: soVp(d.nhom.moi) })}
+            <NhomLan chu={t('Mới, chưa xem')} dem={t('{n} HV · {so} vi phạm', { n: moiDs.length, so: soVp(moiDs) })}
               i={<NutLuat label={t('Đã xem là gì')}>{t('Đã xem: không lên bậc; vi phạm vẫn nằm trong 3 vi phạm / 2 tuần. Vi phạm nghiêm trọng: Xác nhận xử lý ngay.')}</NutLuat>}>{kMoi}</NhomLan>
           )}
           {kChoQl.length > 0 && <NhomLan chu={t('Chờ QL duyệt')} dem={t('{n} HV', { n: kChoQl.length })}>{kChoQl}</NhomLan>}

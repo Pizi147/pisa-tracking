@@ -9717,6 +9717,9 @@ await runPrKhtGonTests({ check, assert } as any);
 // ==================================================================== RA-LUONG (rà soát luồng đêm 29/10)
 const { runPrRaLuongTests } = bocTep('prRaLuong', await import('./prRaLuong.tests.ts'));
 await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== P1-Y-THUC (rà toàn bộ 11/11: quá hạn "xem" về nhóm Mới · Báo PH chờ QL duyệt)
+const { runPrP1YThucTests } = bocTep('prP1YThuc', await import('./prP1YThuc.tests.ts'));
+await runPrP1YThucTests({ check, assert, conn } as any);
 // ==================================================================== W1 (gộp tải lại sau lưu điểm — giảm dòng đọc Turso)
 const { runPrW1GopTaiLaiTests } = bocTep('prW1GopTaiLai', await import('./prW1GopTaiLai.tests.ts'));
 await runPrW1GopTaiLaiTests({ check, checkAsync, assert } as any);
