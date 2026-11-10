@@ -11,7 +11,6 @@ import { useDaXemHd } from '../huongDan/daXemHd.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { buocDanhSach, chuanHoaMaLop, ngayTheoGioVN, nhanPhamVi, type DemYeuCau } from '@shared/domain/index.ts';
 import { HopChuong, type ViecChuong } from './HopChuong.tsx';
-export type { ViecChuong };
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';

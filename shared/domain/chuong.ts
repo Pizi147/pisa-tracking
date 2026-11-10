@@ -66,7 +66,7 @@ const KIND_VIEC = new Set(['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh',
 export const laTinViec = (n: TinChuong) => KIND_VIEC.has(n.kind ?? '') || (n.kind === 'sos' && n.entity_type === 'sos_case');
 
 /** Việc không có trong `/my-work` nhưng vẫn là việc của người nhận (thông báo còn chờ) — thêm một dòng loại ở khối Việc cần làm. */
-export const VIEC_TU_TIN: Record<string, string> = { dang_ky: t('Duyệt tài khoản'), schedule_move: t('Duyệt dời lịch') };
+export const VIEC_TU_TIN: Record<string, string> = { dang_ky: t('Duyệt tài khoản'), schedule_move: t('Xếp lại lịch Test') };
 export const laViecTuTin = (n: TinChuong) => n.con_viec === 1 && n.kind != null && n.kind in VIEC_TU_TIN;
 
 /** Nhãn loại tin ở hàng trên của một tin Cập nhật. */

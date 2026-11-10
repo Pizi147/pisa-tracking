@@ -1335,16 +1335,16 @@ export const TRAN_GHI_LO = {
 /* ponytail: danh sách viết tay, phép quét (prDonA 9e) bắt route mới; chuyển sang hằng dùng chung với web khi Tổng quan ổn định. */
 export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number }> = {
   'GV trang Tổng quan': {
-    vai: 'GVCN', tran: 151,   // RA-DOC-0611: đo 116 (trước 128) → max(116 + 10, ⌈116 × 1,3⌉) · đo 157 (trước PR ≈ 157 + 2 × 66 = 289) · SV-TQ-GV: đo 208 — `/hai-khoi` đọc CẢ hai khung (Lớp thường +36 câu) thay `?ct=ft` · S1: đo 193 (bỏ `/chi-so` tính lại, + ô Case) → max(193 + 10, ⌈193 × 1,3⌉)
+    vai: 'GVCN', tran: 140,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 107 → max(107 + 10, ⌈107 × 1,3⌉) ·   // RA-DOC-0611: đo 116 (trước 128) → max(116 + 10, ⌈116 × 1,3⌉) · đo 157 (trước PR ≈ 157 + 2 × 66 = 289) · SV-TQ-GV: đo 208 — `/hai-khoi` đọc CẢ hai khung (Lớp thường +36 câu) thay `?ct=ft` · S1: đo 193 (bỏ `/chi-so` tính lại, + ô Case) → max(193 + 10, ⌈193 × 1,3⌉)
     urls: ['/demo/session', '/my-work', '/tong-quan/lop-toi-day/hai-khoi', '/yeu-cau/dem', '/giao-vien/{gv}/o?cot=case-mo'],   // UI-TONG-QUAN: + chỉ số GV · SV-TQ-GV: hai khối thay Lớp tôi dạy · S1: chỉ số GV theo `/hai-khoi` (bỏ GET `/giao-vien/{gv}/chi-so`), thêm ô Case đang xử lý (gọi lúc mở, trước sót)
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'TVV trang Tổng quan': {
-    vai: 'TVV', tran: 101,   // RA-DOC-0611: đo 77 (trước 79) → max(77 + 10, ⌈77 × 1,3⌉) · UI-TONG-QUAN: + /tong-quan/tvv + /my-work (n việc của tôi) — đo 143 → max(143 + 10, ⌈143 × 1,3⌉)
+    vai: 'TVV', tran: 43,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 33 → max(33 + 10, ⌈33 × 1,3⌉) ·   // RA-DOC-0611: đo 77 (trước 79) → max(77 + 10, ⌈77 × 1,3⌉) · UI-TONG-QUAN: + /tong-quan/tvv + /my-work (n việc của tôi) — đo 143 → max(143 + 10, ⌈143 × 1,3⌉)
     urls: ['/demo/session', '/tong-quan/hoc-vien', '/tong-quan/tvv', '/my-work'],   // UI-TONG-QUAN: 3 nhóm TVV
   },
   'QL trang Tổng quan': {
-    vai: 'QL', tran: 450,   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
+    vai: 'QL', tran: 141,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 108 → max(108 + 10, ⌈108 × 1,3⌉) ·   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
     /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới). OV-15d (Tổng quan QL A): bỏ sáu ô số + Điểm đáng chú ý;
        thêm bảng GV (Trễ chấm). Thẻ "Chờ duyệt" (`/yeu-cau?hop=cho-duyet`) chỉ tải khi có thẻ. */
     /* OV-15h1: GET dữ liệu 4 → 2 — Lớp cần chú ý + Tuần này + Trễ chấm thành một `/tong-quan/ql`; Cần bạn quyết giữ `/tong-quan/quan-ly` (gộp khung). */
@@ -1352,11 +1352,11 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft', '/yeu-cau?hop=cho-duyet&branchId={cn}', '/phan-tich/giao-vien?cn={cn}&ct=ft'],
   },
   'CX trang Tổng quan': {
-    vai: 'CX', tran: 142,   // RA-DOC-0611: đo 109 (trước 111) → max(109 + 10, ⌈109 × 1,3⌉)
+    vai: 'CX', tran: 80,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 61 → max(61 + 10, ⌈61 × 1,3⌉) ·   // RA-DOC-0611: đo 109 (trước 111) → max(109 + 10, ⌈109 × 1,3⌉)
     urls: ['/demo/session', '/ref/branches', '/tong-quan/hoc-vien', '/tong-quan/v5?ct=ft'],   // UI-TONG-QUAN: một GET
   },
   'Admin trang Tổng quan': {
-    vai: 'ADMIN', tran: 450,
+    vai: 'ADMIN', tran: 60,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 46 → max(46 + 10, ⌈46 × 1,3⌉) ·
     urls: ['/demo/session', '/ref/branches', '/tong-quan/mock-test', '/highlights'],
   },
 };

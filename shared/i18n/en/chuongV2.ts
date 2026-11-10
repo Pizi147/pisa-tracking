@@ -7,7 +7,6 @@ export const EN_CHUONG_V2 = {
   'Yêu cầu': 'Request',
   'Trước đó': 'Earlier',
   'Tự duyệt': 'Self-approved',
-  'Duyệt dời lịch': 'Approve reschedule',
   'Lịch lớp': 'Class schedule',
   'Xem tất cả': 'See all',
   '{n} chưa đọc': '{n} unread',

@@ -46,6 +46,10 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
   /* Mỗi lần mở hộp (component gắn lại) tải lại — như trước. */
   const tb = useApi<any[]>('/notifications');
   const [xemTatCa, setXemTatCa] = useState(false);
+  /* Đổi màn trong hộp gỡ nút vừa bấm → đưa focus sang nút tương ứng của màn mới (Esc / Tab vẫn trong hộp). Lần gắn đầu không đụng focus. */
+  const nutLai = useRef<HTMLButtonElement>(null), nutTatCa = useRef<HTMLButtonElement>(null), daDoiMan = useRef(false);
+  useEffect(() => { if (daDoiMan.current) (xemTatCa ? nutLai : nutTatCa).current?.focus(); }, [xemTatCa]);
+  const doiMan = (v: boolean) => { daDoiMan.current = true; setXemTatCa(v); };
 
   /* OV-11f (CA1-2, Q9): Góc nhìn khác vai gốc → chỉ tin vai đang chọn mở được; không đánh dấu đọc tin không mở được. */
   const gn = session?.gocNhin;
@@ -88,9 +92,9 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
 
   /* "● n mới": tập đã thấy đọc MỘT lần lúc mở; đóng hộp → ghi tập hiện có (lần mở sau những việc này hết "mới"). */
   const [daThay] = useState(() => docDaThay(uid));
-  const tatCaKhoa = useRef<string[]>([]);
-  tatCaKhoa.current = [...(loai ?? []), ...them].flatMap((l) => l.keys);
-  useEffect(() => () => { if (tatCaKhoa.current.length || daThay) ghiDaThay(uid, tatCaKhoa.current); }, [uid, daThay]);
+  const tatCaKhoa = useRef<string[] | null>(null);
+  useEffect(() => { tatCaKhoa.current = loai ? [...loai, ...them].flatMap((l) => l.keys) : null; }, [loai, them]);
+  useEffect(() => () => { if (tatCaKhoa.current) ghiDaThay(uid, tatCaKhoa.current); }, [uid]);
 
   const tong = (loai ?? []).reduce((a, l) => ({ n: a.n + l.n, qua: a.qua + l.quaHan, nay: a.nay + l.homNay }), { n: 0, qua: 0, nay: 0 });
   const maCn = new Map((viec?.chiNhanh ?? []).map((b) => [b.id, b.code]));
@@ -108,6 +112,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
       if (gocKhac) await api.post('/notifications/doc-nhieu', { ids: capNhat.filter((n) => !n.read_at).map((n) => n.id).slice(0, 200) });
       else await api.post('/notifications/doc-het');
       tb.reload();
+      nutLai.current?.focus();   // nút vừa bấm thành disabled → focus không rơi ra ngoài hộp
     } catch (e: any) { toast.push('error', e?.message || t('Chưa đánh dấu đã đọc được — thử lại.')); }
   };
 
@@ -155,9 +160,9 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
     for (const n of capNhat) { const k = nhomNgayTin(n.created_at, homNay); nhom.set(k, [...(nhom.get(k) ?? []), n]); }
     const thuTu: NhomNgayTin[] = ['hom-nay', 'hom-qua', 'tuan-nay', 'truoc'];
     return (
-      <div role="dialog" aria-label={t('Cập nhật')} className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[36rem] sm:w-[min(26rem,calc(100vw-2rem))] chv-hop">
+      <div role="dialog" aria-label={t('Cập nhật')} className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70dvh] overflow-y-auto shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[36rem] sm:w-[min(26rem,calc(100vw-2rem))] chv-hop">
         <div className="chv-x-dau">
-          <button type="button" className="chv-lai" onClick={() => setXemTatCa(false)} aria-label={t('Về Việc cần làm')}>
+          <button type="button" className="chv-lai" onClick={() => doiMan(false)} ref={nutLai} aria-label={t('Về Việc cần làm')}>
             <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M10 3.5 5.5 8l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <h2>{t('Cập nhật')}</h2>
@@ -177,7 +182,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
   }
 
   return (
-    <div role="dialog" aria-label={t('Thông báo')} className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70vh] flex flex-col overflow-hidden shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[36rem] sm:w-[min(26rem,calc(100vw-2rem))] chv-hop">
+    <div role="dialog" aria-label={t('Thông báo')} className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70dvh] flex flex-col overflow-hidden shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[36rem] sm:w-[min(26rem,calc(100vw-2rem))] chv-hop">
       {/* Việc nhiều loại thì danh sách việc cuộn bên trong — khối Cập nhật luôn thấy ở đáy hộp. */}
       {coViec && (
         <div className="flex min-h-0 flex-col">
@@ -205,9 +210,9 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
       {(tb.error || capNhat.length > 0 || !coViec) && (
         <div className={coViec ? 'chv-cn shrink-0' : 'chv-cn chv-cn-mot'}>
           <div className="chv-cn-dau">
-            <h3>{t('Cập nhật')}</h3>
+            <h2>{t('Cập nhật')}</h2>
             {chuaDoc > 0 && <span className="chv-dem">{t('{n} chưa đọc', { n: chuaDoc })}</span>}
-            {capNhat.length > 0 && <button type="button" className="chv-lk" onClick={() => setXemTatCa(true)}>{t('Xem tất cả')} <Mui /></button>}
+            {capNhat.length > 0 && <button type="button" className="chv-lk" onClick={() => doiMan(true)} ref={nutTatCa}>{t('Xem tất cả')} <Mui /></button>}
           </div>
           {tb.error ? <LoiTaiNho chu={t('Không tải được cập nhật.')} onRetry={tb.reload} />
             : !capNhat.length ? <p className="chv-rong">{tb.data ? t('Chưa có thông báo mới') : ''}</p>

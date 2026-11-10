@@ -853,7 +853,10 @@
   /* CHUONG-V2 (chủ SP 11/11 "Dùng số chung"): có việc quá hạn → chấm chuông cùng dáng badge Công việc quá hạn (nền / chữ / viền late). */
   .cham-chuong.chv-qua { background: rgb(var(--late-bg-rgb)); color: rgb(var(--late-rgb)); box-shadow: inset 0 0 0 1px rgb(var(--late-line-rgb)), 0 0 0 2px var(--dieu-huong-nen); }
   /* CHUONG-V2 — hộp chuông theo mockup `thiet-ke/2026-11-11-chuong-v2/chuong-v2.html` (duyệt vòng 2). Khối việc: 4 cột cố định; Cập nhật: tin 2 hàng. */
-  .chv-hop { border-color: var(--line-strong); box-shadow: 0 18px 40px -8px rgb(0 0 0 / .55), 0 2px 6px rgb(0 0 0 / .35); font-variant-numeric: tabular-nums; }
+  .chv-hop, .chv-hop .overflow-y-auto { overscroll-behavior: contain; }
+  /* nút cả hàng trong hộp cuộn: viền focus vào trong (không bị cắt) — như `.menu-muc` */
+  :is(.chv-viec, .chv-tin, .chv-lk, .chv-nut-chu, .chv-lai):focus-visible { outline-offset: -2px; }
+  .chv-hop { border-color: var(--line-strong); font-variant-numeric: tabular-nums; }
   .chv-mui { width: 12px; height: 12px; flex: none; color: var(--text-faint); }
   .chv-lk { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; min-height: 32px; padding: 0 4px; border: 0; background: none; border-radius: 6px;
     color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
@@ -875,7 +878,7 @@
   .chv-viec:hover .chv-mui, .chv-tin:hover .chv-mui { color: var(--accent); }
   .chv-viec .chv-ten { display: flex; flex-direction: column; min-width: 0; }
   .chv-viec .chv-t { font-size: 14px; font-weight: 500; line-height: 1.3; }
-  .chv-viec .chv-phu { display: flex; align-items: baseline; gap: 8px; margin-top: 1px; font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+  .chv-viec .chv-phu { display: flex; align-items: baseline; gap: 8px; min-width: 0; margin-top: 1px; font-size: 12px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chv-viec .chv-moi { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--accent); }
   .chv-viec .chv-moi::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
   .chv-viec .chv-so { text-align: right; font-size: 13px; color: var(--text-dim); white-space: nowrap; }
@@ -893,7 +896,7 @@
   .chv-cn { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 62%, var(--bg)); padding: 8px 0 6px; }
   .chv-cn-mot { border-top: 0; }
   .chv-cn-dau { display: flex; align-items: center; gap: 8px; padding: 2px 16px 4px; }
-  .chv-cn-dau h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-dim); }
+  .chv-cn-dau h2 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-dim); }
   .chv-cn-dau .chv-lk { font-size: 12px; min-height: 28px; }
   .chv-dem { font-size: 12px; color: var(--text-faint); }
   .chv-rong { margin: 0; padding: 4px 16px 6px; font-size: 13px; color: var(--text-faint); }
@@ -929,7 +932,7 @@
   @media (max-width: 639px) {
     .chv-v-dau { padding: 10px 12px 8px; }
     .chv-cn-dau { padding: 2px 12px 4px; }
-    .chv-viec { grid-template-columns: minmax(0, 1fr) 66px 90px 10px; column-gap: 6px; padding: 6px 12px; }
+    .chv-viec { grid-template-columns: minmax(0, 1fr) 66px 98px 10px; column-gap: 6px; padding: 6px 12px; }   /* chip "⚠ 12 quá hạn" ≈ 98 px */
     .chv-tin, .chv-tin.chv-day { padding: 8px 12px; min-height: 48px; }
     .chv-lk, .chv-cn-dau .chv-lk, .chv-nut-chu, .chv-lai { min-height: 44px; }
     .chv-lai { width: 44px; }
