@@ -55,7 +55,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
   const actionable = rows.filter((r) => r.apDuoc).length;
 
   return (
-    <KhungPanel tieuDe={t('Lộ trình')} hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
+    <KhungPanel tieuDe={t('Lịch MT')} hocVien={studentName} rong="rong" onDong={hopMo ? () => { /* Esc đóng hộp xếp lịch trước */ } : onClose}
       chan={{ huy: { nhan: t('Đóng'), onClick: onClose, disabled: busy } }}>
       {cycle.error ? <ErrorState message={cycle.error.message} hint={cycle.error.hint} status={cycle.error.status} onRetry={cycle.reload} />
         : cycle.loading ? <div className="pt-3"><Skeleton rows={6} /></div> : (

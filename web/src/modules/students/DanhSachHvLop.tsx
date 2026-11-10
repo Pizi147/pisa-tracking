@@ -17,7 +17,7 @@ import { ChipLichThi, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { boTenEm, chuPhuHuynh, dongTieuChi, duongHoSoHocVien, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { boTenEm, chuPhuHuynh, dongTieuChi, duongHoSoHocVien, maLoTrinhNgan, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
@@ -333,8 +333,9 @@ export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim 
     switch (c.key) {
       case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} tim={tim} />;
       case 'lo': return g
-        ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
-            {g.loTrinh.soMt ? `MT ${g.loTrinh.mt}/${g.loTrinh.soMt}` : '—'}</b>
+        ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${g.loTrinh.khacLop ? `${t('Lộ trình')} ${maLoTrinhNgan(g.loTrinh.khacLop)} · ` : ''}${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
+            {/* #9: em khác lộ trình lớp (RF trong lớp LT1…) — mã lộ trình trước "MT x/y". */}
+            {g.loTrinh.khacLop && `${maLoTrinhNgan(g.loTrinh.khacLop)} · `}{g.loTrinh.soMt ? `MT ${g.loTrinh.mt}/${g.loTrinh.soMt}` : '—'}</b>
             <span className="dong2">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-faint">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
       case 'mt': return g ? <OMtGan g={g} mo={dai.co(k)} onMo={() => dai.doi(k)} /> : trong;

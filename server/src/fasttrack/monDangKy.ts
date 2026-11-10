@@ -8,7 +8,7 @@
  */
 import { db, tx } from '../db.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, laAdminCua, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { capNhatConOCho } from './conOCho.ts';
@@ -50,6 +50,14 @@ export function docMon(mon: MonVao): string | null {
 export function duocDoiMon(p: Principal, ctx: { studentId?: number; classId?: number }): boolean {
   return can(p, PERMISSIONS.STUDENT_EDIT, ctx)
     || p.grants.some((g) => g.roleKey === 'consultant' && can({ ...p, grants: [g] }, PERMISSIONS.STUDENT_EDIT_MORE, ctx));
+}
+
+/**
+ * Ai đổi được LỘ TRÌNH của em (LO-TRINH-THEO-HV + [XM 2] chủ SP 11/11 "GVCN/ TVV/ Admin/ QL"): bốn vai đổi Môn học (`duocDoiMon`) + Admin chi nhánh em.
+ * Admin không đổi Môn học.
+ */
+export function duocDoiLoTrinh(p: Principal, ctx: { studentId?: number; classId?: number }): boolean {
+  return duocDoiMon(p, ctx) || laAdminCua(p, ctx);
 }
 
 export function apMonDangKy(p: Principal, cycleId: number, monVao: MonVao, o: { xemTruoc?: boolean; ngay?: string } = {}): TomTatMon {

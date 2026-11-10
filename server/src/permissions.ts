@@ -565,6 +565,11 @@ export function duocSuaLichLop(p: Principal, classId: number): boolean {
   return p.grants.some((g) => grantCovers(g, ctx) && (g.roleKey === 'office_admin' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));
 }
 
+/** [XM 2] chủ SP 11/11: Admin (`office_admin`) có phạm vi phủ ngữ cảnh (chi nhánh của em / lớp) — quyền HẸP suy từ vai, như `duocSuaLichLop`. */
+export function laAdminCua(p: Principal, ctx: Ctx): boolean {
+  return p.grants.some((g) => g.roleKey === 'office_admin' && grantCovers(g, ctx));
+}
+
 export function require_(p: Principal, permission: string, ctx: Ctx = {}, message?: string) {
   if (!can(p, permission, ctx)) {
     throw forbidden(message ?? 'Bạn không có quyền thực hiện thao tác này.', {

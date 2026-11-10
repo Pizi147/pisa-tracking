@@ -80,7 +80,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
     case 'lich-su-sua': return <LichSuThayDoi loai="hv" id={student.id} dong2={[student.name, lop]} onClose={onClose} />;
     case 'xoa-hoc-vien': return <XoaHocVienPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} />;
     case 'de-xuat-sua': return (
-      <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose}
+      <DeXuatSuaPanel studentId={student.id} studentName={student.name} lop={lop} onClose={onClose} boLoTrinh={!!cycle?.coTheDoiLoTrinh}
         hienTai={{ target: cycle?.target ?? null, khongCamKet: !!cycle?.khongCamKet, route: cycle?.route ?? null, kyThi: cycle?.kyThi ?? null }} />
     );
     default: return null;
@@ -315,7 +315,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [mon, setMon] = useState<string[] | null>(monCu);
   const doiMon = coMon && JSON.stringify(mon) !== JSON.stringify(monCu);
   const [monTom, setMonTom] = useState<{ dong: string[] } | null>(null);
-  /* LO-TRINH-THEO-HV (chủ SP 11/11): lộ trình theo EM — LT1 · LT2 · RF đổi tại đây (QL, Quản trị, GVCN, TVV — máy chủ `duocDoiMon`); lưu CUỐI (sau Target, môn). */
+  /* LO-TRINH-THEO-HV (chủ SP 11/11): lộ trình theo EM — LT1 · LT2 · RF đổi tại đây (QL, Quản trị, GVCN, TVV, Admin — máy chủ `duocDoiLoTrinh`); lưu CUỐI (sau Target, môn). */
   const coLt = !!cycle?.coTheDoiLoTrinh && !!cycle?.route;
   const [lt, setLt] = useState<string>(cycle?.route ?? '');
   const doiLt = coLt && lt !== cycle.route;
@@ -511,7 +511,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           luat={kt ? t('{ten}: Target theo điểm Cambridge {min}–{max} — không quy đổi band IELTS, không tính SOS.', { ten: kt.ten, min: kt.min, max: kt.max })
             : cycle.ratio
             ? t('Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.')
-            : t('Lịch MT sửa ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do.')}>
+            : t('Lịch MT sửa ở mục Lịch MT. Đổi Target ở đâu cũng bắt ghi lý do.')}>
           {coLt ? (
             <div role="radiogroup" aria-label={t('Lộ trình đang học')} className="flex flex-wrap gap-1.5">
               {ROUTE_LO_TRINH_MOI.filter((k) => k !== ROUTE_KHAC).map((k) => (
@@ -559,7 +559,9 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             </Truong>
           )}
           {targetDeXuat && onDeXuatSua && (
-            <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>{t('Đề xuất sửa lộ trình / thông tin khác…')}</button>
+            <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>
+              {/* #9 (G4-12): người đổi thẳng được lộ trình (ô trên) — đề xuất chỉ còn Target / thông tin khác. */}
+              {coLt ? t('Đề xuất sửa Target / thông tin khác…') : t('Đề xuất sửa lộ trình / thông tin khác…')}</button>
           )}
           {coMon && (
             <Truong as="div" nhan={`${t('Môn học')} · FT ${doiLt ? lt : cycle.label}`} loi={lf.loiCua(loi, 'mon')}>

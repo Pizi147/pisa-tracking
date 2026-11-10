@@ -3,7 +3,7 @@ import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PERMISSIONS, PROGRAMME_TEMPLATES, chuanHoaMaLop, ghepMaLop, khoaMaLopSql, kiemSoLop,
   moRongPhanCong, programmeOf, laLienTuc, type ProgrammeCode, TOI_DA_DONG_TAO_LOP, type LoiDong, type Route, type SlotPhanCong,
   NGAY_SINH_TOI_THIEU, canNamGan, chuTargetKck, chuanOTarget, hienTargetKck, tachKck, docDongDan, docEmail, docNgayNhap, laDongTieuDe, laMtCu, nhanCotNhap, mtDaThiChuaQua, tuanBatDauMacDinh, tuanHocCuaMt, tuanLich, type CachDoc, type VanDeNhap,
-  docTargetKyThi, kyThiCuaChuongTrinh,
+  docTargetKyThi, kyThiCuaChuongTrinh, ROUTE_KHAC,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong } from './classes.ts';
@@ -68,7 +68,7 @@ export type IntakeRow = {
   daThiToiMt?: number | string | null;
   /** Thứ Hai của TUẦN BẮT ĐẦU HỌC. Có mặc định cho cả lô, ghi đè được từng dòng. */
   startWeek?: string;
-  /** K2-20: lộ trình theo LỚP — cột này trong file chỉ nhận diện để báo "bỏ qua". */
+  /** #9 (LO-TRINH-THEO-HV, chủ SP 11/11): lộ trình của EM ở lớp FT — trống = lộ trình lớp; lớp thường bỏ qua (có báo). */
   route?: string;
   consultant?: string;
 };
@@ -237,6 +237,9 @@ export function previewIntake(
   if (w0?.loi) issues.push({ row: 0, field: 'startWeek', message: w0.loi, muc: 'loi' });
   const defaultWeek = w0?.loi ? null : w0?.iso ? mondayOf(w0.iso) : tuanMacDinh;
 
+  /* #9: lộ trình nhận được ở cột "Lộ trình" (lớp FT) — như ô ở Sửa thông tin: lộ trình FT đang dùng, trừ "Khác". */
+  const loTrinhNhap = cls.is_fast_track && cls.route ? activeRouteCodes().filter((c) => c !== ROUTE_KHAC) : [];
+
   /* TRÙNG HỒ SƠ đọc MỘT câu cho cả lô (PR-TOC), lọc theo ngày sinh từng dòng ở dưới. */
   const cungTen = new Map<string, any[]>();
   theoLo([...new Set(input.rows.map((r) => normalizeName((r.fullName ?? '').trim())).filter(Boolean))], (lo, ph) => {
@@ -332,11 +335,24 @@ export function previewIntake(
     if (!startWeek && !rowIssues.some((x) => x.field === 'startWeek')) loi('startWeek', 'Chưa có — chọn tuần bắt đầu ở đầu panel');
 
     /*
+     * #9 LỘ TRÌNH THEO EM (chủ SP 11/11 "lộ trình theo HV, không theo lớp"): lớp FT nhận LT1 / LT2 / RF từng dòng (chữ thường được), trống = lộ trình lớp;
+     * mã lạ / "Khác" (cần tên — Lộ trình mới) → lưu ý rồi theo lớp, không chặn dòng. Lớp thường đi theo chương trình: cột bỏ qua có báo (K2-20).
+     */
+    let route: string | null = cls.route ?? null;
+    if (coDuLieu(r.route)) {
+      const guiRoute = String(r.route).trim().toUpperCase();
+      if (!cls.is_fast_track || !cls.route) {
+        luuY('route', `Bỏ qua — lớp thường đi theo chương trình`);
+      } else if (loTrinhNhap.includes(guiRoute)) route = guiRoute;
+      else luuY('route', `Bỏ qua "${String(r.route).trim()}" — chọn ${loTrinhNhap.join(' · ')}; theo lớp (${cls.route})`);
+    }
+
+    /*
      * BÁO TRƯỚC MT CŨ (K2-19, T1 PR-MTa): cùng luật với `taoMtMacDinh` lúc ghi — MT(n) ở tuần học `tuanHocCuaMt`, là MT cũ khi tuần
      * thi cách tuần này ≥ 2 tuần (`laMtCu`). Em vào muộn mà để tuần khai giảng thì người nhập thấy ngay, trước khi lưu.
      */
-    if (cls.is_fast_track && cls.route && startWeek) {
-      const lich = lichMtCua(cls, cls.route);
+    if (cls.is_fast_track && route && startWeek) {
+      const lich = lichMtCua(cls, route);
       const soLuot = Math.max(lich.length, daThiToiMt ?? 0);
       const lichSu = Array.from({ length: soLuot }, (_, k) => k + 1).filter((n) =>
         laMtCu(addDays(startWeek!, (tuanHocCuaMt(lich, n) - 1) * 7 + 6), homNay));
@@ -350,10 +366,6 @@ export function previewIntake(
       }
     }
 
-    /* K2-20: lộ trình theo LỚP, không theo file. */
-    if (coDuLieu(r.route) && String(r.route).trim().toUpperCase() !== String(cls.route ?? '').toUpperCase()) {
-      luuY('route', `Bỏ qua — lộ trình theo lớp (${cls.route ?? 'lớp thường'})`);
-    }
     if (r.classCode && r.classCode.trim() && r.classCode.trim().toLowerCase() !== cls.code.toLowerCase()) {
       luuY('classCode', `Bỏ qua — cả lô vào ${cls.code} (lớp chọn ở đầu panel)`);
     }
@@ -391,6 +403,7 @@ export function previewIntake(
       examDate,
       daThiToiMt,
       startWeek: startWeek ?? undefined,
+      route: route ?? undefined,
       consultant: r.consultant,
       duplicates: duplicates.map((d) => ({ id: d.id, studentCode: d.student_code, fullName: d.full_name, dob: d.dob, email: d.email ?? null })),
       issues: rowIssues,
@@ -502,7 +515,7 @@ export function commitIntake(
         ok.map((r, i) => [sids[i], 'enrollment', startWeek(r), `Vào lớp ${cls.code}`, p.userId, now]));
 
       /*
-       * MỞ LỘ TRÌNH CHO MỌI EM, lộ trình theo LỚP em vào (K2-20) — cột "Lộ trình" trong file bị bỏ qua (có báo ở xem trước).
+       * MỞ LỘ TRÌNH CHO MỌI EM, lộ trình theo cột "Lộ trình" của dòng (#9 — xem trước đã chuẩn hoá, trống = lộ trình lớp).
        * Nhờ vậy em nào cũng có chỗ để gắn target, tuần bắt đầu, lịch MT.
        *
        * OVR VÀ BỐN BAND LÀ HAI NGUỒN KHÁC NHAU (mục 12.1). OVR là con số trên phiếu điểm; bốn band là bốn con số cũng trên
@@ -511,7 +524,7 @@ export function commitIntake(
        *
        * T9: dự kiến thi là NGÀY → lưu ngày + suy tháng, tuần; là THÁNG → chỉ tháng.
        */
-      const route = cls.route ?? null;
+      const routeOf = (r: (typeof ok)[number]) => (cls.route ? r.route ?? cls.route : null) as string | null;
       const examDateOf = (r: (typeof ok)[number]) => (r.examDate?.length === 10 ? r.examDate : null);
       const tuan = ensurePeriods([...ok.map(startWeek), ...ok.map(examDateOf).filter((x): x is string => !!x).map(mondayOf)]);
       const dongLt = ok.map((r, i) => {
@@ -523,7 +536,7 @@ export function commitIntake(
           /* TUẦN BẮT ĐẦU HỌC lấy từ ô của dòng, hoặc mặc định của cả lô (mục 12.1). */
           /* OV-6b2: lớp liên tục không có Target (cột Target của file bỏ qua) — trừ KET / PET (P13: Target Cambridge, đã kiểm ở bước xem trước). */
           const tg = laLienTuc(cls) && !kyThiCuaChuongTrinh(cls.programme_code) ? null : targetCua(r.target);
-          return [sids[i], 1, route, cls.programme_code ?? null, tg?.so ?? null, tg?.kck ? 1 : 0,
+          return [sids[i], 1, routeOf(r), cls.programme_code ?? null, tg?.so ?? null, tg?.kck ? 1 : 0,
             thi ? thi.slice(0, 7) : null,
             examDate, examDate ? tuan.get(mondayOf(examDate))!.id : null,
             ovr, hasEntry ? 'entrance' : null, ...bands,
@@ -552,11 +565,11 @@ export function commitIntake(
       });
       chenNhieuDong(
         'INSERT INTO journey_events (student_id, event_type, event_date, title, detail, ref_table, ref_id, created_by, created_at)',
-        ok.map((r, i) => [sids[i], 'cycle_start', startWeek(r), route ? `Bắt đầu lộ trình ${route}` : 'Bắt đầu khoá học',
+        ok.map((r, i) => [sids[i], 'cycle_start', startWeek(r), routeOf(r) ? `Bắt đầu lộ trình ${routeOf(r)}` : 'Bắt đầu khoá học',
           laLienTuc(cls) && !kyThiCuaChuongTrinh(cls.programme_code) ? null : r.target ? `Target ${hienTargetKck(targetCua(r.target).so, targetCua(r.target).kck)}` : 'Chưa có Target', 'learning_cycles', cycOf.get(sids[i]), p.userId, now]));
 
       /* M1: lịch MT mặc định tạo ngay, MT đã qua là MT lịch sử (T33, T34). Tuần do hệ thống tính, không lấy từ file dán. */
-      if (cls.is_fast_track && route) {
+      if (cls.is_fast_track && cls.route) {
         const luotOf = taoMtMacDinhLo(ok.map((r, i) => ({
           cycleId: cycOf.get(sids[i])!, daThiToiMt: r.daThiToiMt == null ? undefined : Number(r.daThiToiMt),
         })), { actorUserId: p.userId });
@@ -568,7 +581,7 @@ export function commitIntake(
         }
       }
       /* PR-LT2a M1b (K2-23): vào LỚP THƯỜNG = tự có bài Giữa khoá + Cuối khoá theo mốc của lớp (bỏ mốc đã qua). */
-      if (!cls.is_fast_track && !route) taoBaiThuongMacDinh(sids.map((s) => cycOf.get(s)!), p.userId);
+      if (!cls.is_fast_track && !cls.route) taoBaiThuongMacDinh(sids.map((s) => cycOf.get(s)!), p.userId);
     }
 
     const out: IntakeResult = { added: studentIds.length, skipped, failed, studentIds, hangDaThem, mt };

@@ -16,7 +16,7 @@ import { taoMtMacDinh } from './mtMacDinh.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { apDoiLoTrinh } from './doiLoTrinh.ts';
-import { duocDoiMon } from './monDangKy.ts';
+import { duocDoiLoTrinh } from './monDangKy.ts';
 import { programmeByCode } from '../normal/regular.ts';
 
 /**
@@ -280,10 +280,10 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     doiTarget = t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
   }
   patch = { ...patch, targetScore: undefined, khongCamKetGhi: undefined };
-  /* LO-TRINH-THEO-HV: đổi lộ trình đi lõi `apDoiLoTrinh` (lịch MT theo lộ trình mới, lượt có điểm giữ) — quyền như ô ở Sửa thông tin (`duocDoiMon`). */
+  /* LO-TRINH-THEO-HV: đổi lộ trình đi lõi `apDoiLoTrinh` (lịch MT theo lộ trình mới, lượt có điểm giữ) — quyền như ô ở Sửa thông tin (`duocDoiLoTrinh`). */
   const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
   if (doiTarget) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
-  if (doiLoTrinh && !duocDoiMon(p, { studentId: c.student_id })) throw forbidden(CHI_QL_SUA);
+  if (doiLoTrinh && !duocDoiLoTrinh(p, { studentId: c.student_id })) throw forbidden(CHI_QL_SUA);
   if (doiTarget && !(typeof patch.lyDo === 'string' && patch.lyDo.trim())) throw badRequest('Ghi lý do đổi Target.');
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
     throw badRequest('Trạng thái lộ trình không hợp lệ.');
