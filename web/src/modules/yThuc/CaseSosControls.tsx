@@ -64,6 +64,8 @@ export type PaQuyChe = {
   mocChu: string | null; awaitingConfirmation: boolean;
   /** OV-13b: đề xuất đổi PA mới nhất (chờ / bị từ chối kèm lý do). */
   doiPa?: { trangThai: 'cho' | 'tu_choi'; lyDoTuChoi: string | null; yeuCauId: number } | null;
+  /** SOS-TAM-PA (chủ SP 11/11): PA của GV đang chạy khác loại PA quy chế — việc "Chọn PA" (Theo PA quy chế · Giữ PA của tôi). */
+  chonPa?: { id: number; kind: string; description: string | null; performer: string | null }[] | null;
 };
 
 /** Đầu panel v3 cho việc của một Case: chip hạn (chỉ người làm) · tên em (link xem hồ sơ, tách khỏi nút làm) · lớp · ngữ cảnh ("MT2 · Reading"). */
@@ -220,6 +222,22 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
     ...(batDau ? [] : [{ khoa: 'bat-dau', nhan: t('Bắt đầu'), lyDo: t('Chọn ngày bắt đầu') }]),
   ];
   const tenLoai = dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? t('PA theo quy chế'));
+  /* SOS-TAM-PA: "Chọn PA" — PA của GV khác loại PA quy chế. "Theo PA quy chế" = Xác nhận PA (PA của GV dừng, "Được thay thế"); "Giữ PA của tôi" → QL duyệt 3 ngày. */
+  const paGv = pa.chonPa?.length ? pa.chonPa : null;
+  const tenGv = paGv ? paGv.map((g) => dich(INTERVENTION_KIND_LABEL[g.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? g.kind)).join(', ') : '';
+  const giu = async () => {
+    setBusy(true); setLoiLuu(null);
+    try {
+      const ct = await api.post<any>(`/interventions/${pa.id}/giu-pa-gv`, {});
+      invalidateCases();
+      const yc = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.doiPa?.yeuCauId ?? null;
+      onXong({
+        chu: t('Đã gửi Quản lý duyệt'),
+        phu: t('Giữ {gv} · quá 3 ngày chưa trả lời: chốt theo PA của bạn', { gv: tenGv }),
+        hoanTac: yc ? async () => { await api.post(`/yeu-cau/${yc}/rut`); invalidateCases(); } : undefined,
+      });
+    } catch (e: any) { setLoiLuu(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+  };
   const luu = async (diTiep = false) => {
     lf.bam();
     if (loi.length > 0) return;
@@ -246,8 +264,9 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
         const iv = (ct?.interventions ?? []).find((x: any) => x.id === pa.id);
         const traNhap = xoaNhap();
         const x = {
-          chu: t('Đã xác nhận PA'),
-          phu: [tenLoai, t('từ {tuanLich}', { tuanLich: tuanLich(batDau, homNay) }), iv?.actionDue ? t('hạn kết quả {ngay}', { ngay: ngan(iv.actionDue) }) : null].filter(Boolean).join(' · '),
+          chu: paGv ? t('Đã chọn PA quy chế') : t('Đã xác nhận PA'),
+          phu: [tenLoai, t('từ {tuanLich}', { tuanLich: tuanLich(batDau, homNay) }), iv?.actionDue ? t('hạn kết quả {ngay}', { ngay: ngan(iv.actionDue) }) : null,
+            paGv ? t('PA của GV dừng') : null].filter(Boolean).join(' · '),
           /* HOAN-TAC-XN: PA về chờ xác nhận (việc "Xác nhận PA" hiện lại cùng hạn), nội dung đã gõ về lại ô khi mở lại việc. */
           hoanTac: async () => {
             await api.post(`/interventions/${pa.id}/hoan-tac-xac-nhan`);
@@ -264,7 +283,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>
       {busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}
     </button>
-  ) : <NutVaTiep chu={t('Xác nhận PA')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
+  ) : <NutVaTiep chu={paGv ? t('Theo PA quy chế') : t('Xác nhận PA')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   const daSua = cheDo === 'doi' ? doi.daSua : !!v.description.trim();
   const theoLuot = data.nguyenNhanTheoLuot ?? [];
   const tuChoi = pa.doiPa?.trangThai === 'tu_choi' ? pa.doiPa : null;
@@ -274,7 +293,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   /* CASE-PA-UI: form nằm trong thẻ PA của panel Case — Case và tên PA đã ở ngay trên, không lặp. */
   const trongThe = useContext(KhungTrongThe);
   return (
-    <KhungPanel tieuDe={t('Xác nhận PA · {kn}', { kn: data.categoryLabel ?? '' })} {...chung} quayLai={xemCase ? undefined : chung.quayLai} onDong={chung.onClose}
+    <KhungPanel tieuDe={paGv ? t('Chọn PA · {kn}', { kn: data.categoryLabel ?? '' }) : t('Xác nhận PA · {kn}', { kn: data.categoryLabel ?? '' })} {...chung} quayLai={xemCase ? undefined : chung.quayLai} onDong={chung.onClose}
       dau={dauCase(data, chung.lop, [`MT${data.tenSos?.mt ?? data.attemptNo ?? ''}`, data.categoryLabel ?? ''].filter(Boolean).join(' · '), true)}
       /* U01 #6 / #23 (audit 03/11, khung A1 · C1): chân dính MỘT hàng — trạng thái lưu / "Tiếp: …" trái · Xác nhận PA (phụ) · Xác nhận · việc tiếp › (chính). */
       chan={cheDo === 'ktd' ? undefined : { huy: null, daSua, conThieu: lf.conThieu(loi), chinh: nut,
@@ -319,6 +338,17 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
             </>
           ) : (
             <>
+              {paGv && (
+                <div className="flex flex-col gap-2 rounded-lg px-3 py-2.5" style={{ background: 'var(--surface-2)' }} data-chon-pa>
+                  <p className="m-0 text-sm text-slate-200">
+                    {t('PA của GV')}: {paGv.map((g) => (
+                      <b key={g.id} className="font-semibold">{[dich(INTERVENTION_KIND_LABEL[g.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? g.kind), g.description, g.performer].filter(Boolean).join(' · ')}</b>
+                    ))} — {t('khác PA quy chế ({loai}). Chọn một:', { loai: tenLoai })}
+                  </p>
+                  <p className="m-0 text-[13px] text-slate-400">{t('Theo PA quy chế: PA của GV dừng. Giữ PA của tôi: QL duyệt, quá 3 ngày chưa trả lời thì chốt theo PA của bạn.')}</p>
+                  <div><button type="button" className="btn min-h-[44px] sm:min-h-[36px]" disabled={busy} onClick={() => void giu()}>{busy ? t('Đang gửi…') : t('Giữ PA của tôi')}</button></div>
+                </div>
+              )}
               {/* Mockup A1: "Phương án · Học Tutor" + thẻ "theo quy chế" · mốc — KHÔNG hộp lồng vạch trái. */}
               {!trongThe && <MucH>{t('Phương án · {loai}', { loai: tenLoai })}<TheMuc>{t('theo quy chế')}</TheMuc>{pa.mocChu && <TheMuc>{dich(pa.mocChu)}</TheMuc>}</MucH>}
               <FormPa phang batBuoc v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} toiThieu={CHU_TOI_THIEU_CASE} studentId={data.student?.id}

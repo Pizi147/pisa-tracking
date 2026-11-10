@@ -43,7 +43,7 @@ function lapKeHoach(conn: any): KeHoach[] {
     if (!isFastTrackMock(a, scoringModeOf(a))) continue;
     const result = resultOf(a);
     if (!result.chot) {
-      const dong = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE sc.student_id = ? AND ${CASE_CHUA_DUNG_OV1C('sc', '?')} ORDER BY sc.id`)
+      const dong = (conn.prepare(`SELECT sc.id FROM sos_cases sc WHERE sc.student_id = ? AND sc.tam = 0 AND ${CASE_CHUA_DUNG_OV1C('sc', '?')} ORDER BY sc.id`)   /* SOS-TAM-PA: Case tạm (cả ô chưa nhận xét) không phải Case cũ */
         .all(a.student_id, a.id) as any[]).map((r) => r.id as number);
       if (dong.length) ra.push({ a, loai: 'A', dong, giu: [], failing: [], result });
       continue;
