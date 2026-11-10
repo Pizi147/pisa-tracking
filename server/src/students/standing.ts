@@ -280,7 +280,7 @@ function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, St
       s.nextAttemptLabel = labelOf(moc.kind, moc.attempt_no);
       s.nextPeriodCode = moc.period_code ?? null;
       s.nextWeekStart = moc.weekStart ?? null;
-      if (!ratio) s.nextKyVong = expectationFor(moc.target_at_attempt ?? cycle.target_score ?? null, moc.attempt_no, moc.route ?? cycle.route);
+      if (!ratio) s.nextKyVong = expectationFor(moc.target_at_attempt ?? cycle.target_score ?? null, moc.attempt_no, moc.route ?? cycle.route, moc.created_at);
     }
     if (!ratio) {
       const chua = list.find((x) => x.status === 'planned' && !x.lich_su && !x.planned_period_id);   // `list` đã xếp theo attempt_no
@@ -310,7 +310,7 @@ function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, St
     const ct = maCtCuaLuot(a.class_id, a.programme_code, cycle.programme_code);
     const prog = chuongTrinhTyLeCuaLuot(ct, layCt);
     /* Một nguồn bộ môn: bảng `programme_skills` (qua `allProgrammes`, nhớ trong request), hằng số chỉ dự phòng (K5-45). */
-    const rr = prog ? evaluateRegular(boMonTheoLuot(boMonCua(prog.code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, prog.code, nguongDatLop(a.class_id, prog.code)) : null;
+    const rr = prog ? evaluateRegular(boMonTheoLuot(boMonCua(prog.code), daGhiLuot(bundle.skillRows.get(a.id), scores as any[])), scores as any, prog.code, nguongDatLop(a.class_id, prog.code), a.created_at) : null;
     const skips = prog ? [] : bundle.skips.get(a.id) ?? [];
     const ri = prog ? null : evaluateAttempt(
       /* T9 (23/09): kết quả gần nhất dùng Target TẠI THỜI ĐIỂM THI, không phải Target hiện tại của lộ
@@ -319,6 +319,7 @@ function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, St
       a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
       entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route_at_attempt ?? a.route ?? cycle.route,   // LO-TRINH-THEO-HV: lộ trình lúc thi
       kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any), kckCuaLuot({ ...a, khong_cam_ket: cycle.khong_cam_ket }),   // OV-11e (Q8)
+      a.created_at,   // QTV2-BAND: kỳ vọng theo bản lúc tạo lượt
     );
     /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
     if ((rr ? rr.scored : ri!.scoredRequired) === 0) return false;

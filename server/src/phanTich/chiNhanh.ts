@@ -6,18 +6,18 @@
  * Số mới: "vào · kết thúc" (em, 1 câu mỗi số) và "Chưa có KQ" (hiện tại, `sauThiTheoEm` → `da_thi_cho_kq`).
  */
 import { DS_JSON, db, theoLo } from '../db.ts';
-import { PERMISSIONS, coMucThi, mucThi, soSanhLop, type ChuongTrinh } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, coMucThi, mucThi, soSanhLop, trangThaiSauThi, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import type { ChiNhanhV2Kq, DongChiNhanhV2, TyLeCn } from '../../../shared/domain/index.ts';
-import { scopeFor, type Principal } from '../permissions.ts';
+import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { studentsInScope } from '../worklist/danhGia.ts';
 import { locTheoChuongTrinh } from '../worklist/chuongTrinh.ts';
-import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
+import { COT_SAU_THI, LO_TRINH_MOI_NHAT } from '../loTrinh/cotSauThi.ts';
 import { tapDatMt } from './baoCao.ts';
 import { tienBoTheoKyNang } from './giaoVien.ts';
 import { thiThatTrongKhoang } from './ketQuaThi.ts';
-import { tongHop } from './tongHop.ts';
+import { tongHop, tinhTongHop, cuoiKhoaTheoEm, COT_CUOI_KHOA, panelBaiThuong } from './tongHop.ts';
 
 export type LocChiNhanh = { branchId: number | null; ct: ChuongTrinh; tu: string; den: string };
 const THU_TU_KN = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
@@ -79,8 +79,24 @@ export function tapVaoKetThuc(p: Principal, f: LocChiNhanh): { vao: Map<number, 
 /** Chưa có KQ (đặc tả 9.9) — HIỆN TẠI, không lọc kỳ: em FT trong phạm vi đã qua ngày thi, chưa có KQ, chưa đánh Không thi. */
 export function tapChuaCoKq(p: Principal, f: LocChiNhanh): number[] {
   const { branchId } = phamVi(p, f);
-  const em = locTheoChuongTrinh('hoc-vien', studentsInScope(p, branchId), 'ft');
-  return [...sauThiTheoEm(em, demoToday())].filter(([, x]) => x.giaiDoan === 'da_thi_cho_kq').map(([sid]) => sid);
+  /*
+   * PTA rà #1410 (Turso): MỘT câu đi từ chỉ mục từng phần `idx_cycle_cho_kq` (lộ trình FT, chưa Không thi, chưa điểm) + ngày thi trước hôm nay, phạm vi em
+   * (ghi danh đang học ở lớp FT trong phạm vi, em chưa lưu trữ — như `studentsInScope` + `locTheoChuongTrinh`) bằng EXISTS ngay trong câu; chốt bằng CHÍNH
+   * `trangThaiSauThi` (cùng luật nhãn "Đã thi · chờ KQ"). Trước: nạp phạm vi em (~220 dòng seed) + giai đoạn sau thi của mọi em FT.
+   */
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (scope.none) return [];
+  const cs = classScopeSql(scope, 'k');
+  const homNay = demoToday();
+  const out = new Set<number>();
+  for (const c of db().prepare(`SELECT c.student_id, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
+      WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND c.outcome_score IS NULL AND s.archived_at IS NULL
+        AND COALESCE(substr(c.thi_that_ngay, 1, 10), substr(c.exam_date, 1, 10), substr(c.ended_at, 1, 10)) < ? AND ${LO_TRINH_MOI_NHAT}
+        AND EXISTS (SELECT 1 FROM enrollments e JOIN classes k ON k.id = e.class_id WHERE e.student_id = c.student_id AND e.status = 'active' AND k.is_fast_track = 1
+          AND ${cs.sql}${branchId ? ' AND k.branch_id = ?' : ''})`).all(homNay, ...cs.params, ...(branchId ? [branchId] : [])) as any[]) {
+    if (trangThaiSauThi(c, homNay).giaiDoan === 'da_thi_cho_kq') out.add(c.student_id);
+  }
+  return [...out].sort((a, b) => a - b);
 }
 
 const tyLe = (dat: number, mau: number): TyLeCn => ({ dat, mau });
@@ -161,18 +177,23 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
     thiThat = { ...(tong.thi ?? { vuot: 0, dat: 0, chuaDat: 0 }), emThi: ds.filter((x) => !x.kq.khongThi).length, chuaCoKq: tapChuaCoKq(p, f).length };
   } else {
     /* Lớp thường (9.2, 3): CHÍNH ô bảng Test lớp thường — Đạt Test = bài Progress "Đạt hết" + Final "Từ 70%" trên bài đủ điểm; Cuối khoá = 4 dải Final. */
-    const th = tongHop(p, { branchId, ct: 'thuong', soTuan: 8, theo: cheDo === 'lop' ? 'lop' : 'cn', tu: f.tu, den: f.den });
-    const tach = (o: Record<string, number>) => {
+    /* Cuối khoá = SỐ EM có Final đủ môn trong kỳ theo dải % tổng (`cuoiKhoaTheoEm`, PTA rà #1408) — cùng tập bài với bảng, + 1 câu mã em. */
+    const fTh = { branchId, ct: 'thuong' as const, soTuan: 8, theo: (cheDo === 'lop' ? 'lop' : 'cn') as 'lop' | 'cn', tu: f.tu, den: f.den };
+    const r0 = tinhTongHop(p, fTh);
+    const th = tongHop(p, fTh, r0);
+    const ckEm = cuoiKhoaTheoEm([r0.tongTap]);
+    const tapCua = new Map(r0.hang.map((h) => [h.khoa, h.tap]));
+    const tach = (o: Record<string, number>, tap: Parameters<typeof ckEm>[0] | undefined) => {
       const dat = (o['gk-dat'] ?? 0) + (o['ck-dat'] ?? 0);
       const mau = dat + (o['gk-1'] ?? 0) + (o['gk-2'] ?? 0) + (o['ck-60'] ?? 0) + (o['ck-50'] ?? 0) + (o['ck-duoi50'] ?? 0);
-      const ck: [number, number, number, number] = [o['ck-dat'] ?? 0, o['ck-60'] ?? 0, o['ck-50'] ?? 0, o['ck-duoi50'] ?? 0];
+      const ck = (tap ? ckEm(tap).map((x) => x.length) : [0, 0, 0, 0]) as [number, number, number, number];
       return { datTest: tyLe(dat, mau), cuoiKhoa: ck.some(Boolean) ? ck : null };
     };
     for (const r of th.hang) {
       const id = Number(r.khoa.split(':')[1]);
-      if (hang.has(id)) Object.assign(hang.get(id)!, tach(r.o));
+      if (hang.has(id)) Object.assign(hang.get(id)!, tach(r.o, tapCua.get(r.khoa)));
     }
-    const t = tach(th.tong);
+    const t = tach(th.tong, r0.tongTap);
     datTest = t.datTest; cuoiKhoa = t.cuoiKhoa ?? [0, 0, 0, 0];
     Object.assign(tong, t);
   }
@@ -184,6 +205,23 @@ export function chiNhanhV2(p: Principal, f: LocChiNhanh): ChiNhanhV2Kq {
     datMt, tienBo, tienBoKn, datTest, cuoiKhoa, thiThat,
     hang: [...hang.values()], tong: { ...tong, ten: cheDo === 'lop' ? '' : 'Toàn hệ thống' },
   };
+}
+
+/**
+ * Panel ô Cuối khoá (lớp thường): em có Final đủ môn trong kỳ ở một dải — mỗi em MỘT bài (mới nhất), bảng bài có % tổng. `khoa` = `tong` | `lop:<id>` | `cn:<id>`
+ * (cùng khoá hàng bảng Test). Số = số dòng = số của ô.
+ */
+export function oCuoiKhoaChiNhanh(p: Principal, f: LocChiNhanh & { o: string; khoa?: string | null }) {
+  const dai = (COT_CUOI_KHOA as readonly string[]).indexOf(f.o);
+  if (dai < 0) throw badRequest('Số này không có ở báo cáo Chi nhánh — có thể bộ lọc vừa đổi.');
+  const khoa = f.khoa || 'tong';
+  const theo = khoa.startsWith('cn:') ? 'cn' : 'lop';
+  const r0 = tinhTongHop(p, { branchId: f.branchId ?? null, ct: 'thuong', soTuan: 8, theo, tu: f.tu, den: f.den });
+  const tap = khoa === 'tong' ? r0.tongTap : r0.hang.find((h) => h.khoa === khoa)?.tap;
+  if (!tap) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
+  const ids = cuoiKhoaTheoEm([tap])(tap)[dai];
+  const nhan = ['Từ 70%', '60–69%', '50–59%', 'Dưới 50%'][dai];
+  return panelBaiThuong(ids, `${ids.length} HV — Final Test (% tổng) · ${nhan}`, 'Mỗi em một dòng: bài Final đủ môn mới nhất trong kỳ, xếp theo % tổng (Σ điểm / Σ câu các môn). Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.', f.branchId);
 }
 
 /** Panel ô mới của Chi nhánh: `vao` · `ket-thuc` · `chua-co-kq` (em). Các ô khác mở panel sẵn có (bảng chi nhánh, Báo cáo, Thi thật, Test). */

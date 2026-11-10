@@ -4,7 +4,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { FormPa } from './FormPa.tsx';
 import {
-  DOI_PA_TOI_THIEU, INTERVENTION_KIND_LABEL, LOAI_PA_DOI, loiFormPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa, type LoiTruong,
+  DOI_PA_TOI_THIEU, INTERVENTION_KIND_LABEL, loaiPaDoi, loiFormPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa, type LoiTruong,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -15,7 +15,7 @@ const tenLoai = (k: string) => dich(INTERVENTION_KIND_LABEL[k as keyof typeof IN
  * PA mới * (loại khác PA gốc) · Nội dung / hướng dẫn * · Người dạy · Số buổi (loại có số buổi) · Lý do * (≥ 10). Gửi: `deXuatPa` / `POST …/de-xuat-doi-pa`.
  */
 export function useDoiPa(gocKind: string, nhap?: { v: GiaTriPa; lyDo: string }) {
-  const dau = LOAI_PA_DOI.find((k) => k !== gocKind)!;
+  const dau = loaiPaDoi().find((k) => k !== gocKind)!;
   const [v, setV] = useState<GiaTriPa>(() => nhap?.v ?? paMoi(dau));
   const [lyDo, setLyDo] = useState(nhap?.lyDo ?? '');
   const loi: LoiTruong[] = [
@@ -44,7 +44,7 @@ export function FormDoiPa({ d, lf, studentId, chuNgay }: {
         <span id={idLoai} className="mb-1 block text-[12px] font-bold text-slate-200">{t('PA mới')}<span aria-hidden className="text-bad"> *</span></span>
         <span className="mb-1.5 block text-xs text-slate-400">{t('Thay cho {loai}', { loai: tenLoai(d.gocKind) })}</span>
         <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={idLoai}>
-          {LOAI_PA_DOI.filter((k) => k !== d.gocKind).map((k) => (
+          {loaiPaDoi().filter((k) => k !== d.gocKind).map((k) => (
             <NutChon key={k} nho chon={d.v.kind === k} onClick={() => d.dat({ kind: k })} className="rounded-full px-3">{tenLoai(k)}</NutChon>
           ))}
         </div>

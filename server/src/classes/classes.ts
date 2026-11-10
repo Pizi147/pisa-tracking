@@ -200,7 +200,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
   const attempts = conn
     .prepare(
       `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
-              a.deadline_override, a.target_at_attempt, a.kck_at_attempt, a.attempt_no, a.lich_su,
+              a.deadline_override, a.target_at_attempt, a.kck_at_attempt, a.attempt_no, a.lich_su, a.created_at,
               COALESCE(a.route_at_attempt, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id)) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               pr.week_start AS period_start, pr.week_end AS period_end
          FROM assessment_attempts a
@@ -493,7 +493,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         /* P13: bộ môn theo lượt (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ giữ L+S / R+W. */
         const mon = boMonTheoLuot(prog!.skills, daGhiLuot(bundle.skillRows.get(a.id), scores));
         const myLuot = mon === prog!.skills ? myRegularSkills : editableSkills(p, classId, mon, undefined, true);
-        const r = evaluateRegular(mon, scores, prog!.code, nguongDatLop(a.class_id));
+        const r = evaluateRegular(mon, scores, prog!.code, nguongDatLop(a.class_id), a.created_at);
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
         const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, mon);
         return {
@@ -518,7 +518,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
           ratios: Object.fromEntries(r.skills.map((x: any) => [
             x.skill, { score: x.score, total: x.total, outcome: x.outcome },
           ])),
-          nguong: r.passThreshold,   // OV-6b1: ngưỡng đạt của lớp lượt này
+          nguong: r.passThreshold, mocNguong: r.mocNguong,   // OV-6b1: ngưỡng đạt của lớp lượt này
           bands: null,
           caseStatus: c?.status ?? null,
           myPending: myLuot.filter((k) => {

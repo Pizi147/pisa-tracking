@@ -152,7 +152,7 @@ export function chepKetQuaNhom(conn: any, iv: any, followupId: number, x: {
 }
 
 export type BoTroDto = {
-  nhom: string; buoiMoiTuan: 1 | 2; chung: boolean;
+  nhom: string; buoiMoiTuan: number; chung: boolean;
   /** Mỗi môn của nhóm: Case, tên môn ngắn (PR-CT2: bỏ nguyên nhân / Mô tả / người dạy / mốc — chỉ form kế hoạch đã xoá đọc). */
   mon: { caseId: number; mon: string; tenMon: string }[];
 };
@@ -177,9 +177,11 @@ export function boTroCuaCase(caseIds: number[]): Map<number, BoTroDto> {
     const r0 = dong.find((r) => r.case_id === cid);
     if (!r0) continue;
     const rows = theoNhom.get(r0.nhom_bo_tro)!;
-    const b = boTroGiuaKhoa(r0.ct) ?? { buoiMoiTuan: 1 as const, chung: nhomChung(r0.nhom_bo_tro) };
+    const b = boTroGiuaKhoa(r0.ct) ?? { buoiMoiTuan: 1, chung: nhomChung(r0.nhom_bo_tro) };
+    /* CAU-HINH-CASE-SOS: PA đã tạo giữ số buổi / tuần lúc tạo (chụp trong mô tả); không có mới theo cấu hình. */
+    const daChup = Number(String(r0.description ?? '').match(/(\d+) buổi\/tuần/)?.[1]);
     out.set(cid, {
-      nhom: r0.nhom_bo_tro, buoiMoiTuan: b.buoiMoiTuan, chung: b.chung,
+      nhom: r0.nhom_bo_tro, buoiMoiTuan: Number.isFinite(daChup) && daChup > 0 ? daChup : b.buoiMoiTuan, chung: b.chung,
       mon: rows.map((r) => ({ caseId: r.case_id, mon: r.topic, tenMon: tenMonNgan(r.ct, r.topic) })),
     });
   }

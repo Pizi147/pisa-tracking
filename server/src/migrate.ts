@@ -69,6 +69,7 @@ import { themCotPrOv15f } from './migrate/prOv15f.ts';
 import { themCotPrBoQuaMoc } from './migrate/prBoQuaMoc.ts';
 import { themCotPrHanBaoPh } from './migrate/prHanBaoPh.ts';
 import { themCotPrBaoLaiPh } from './migrate/prBaoLaiPh.ts';
+import { themCotPrPhoiHopTvv } from './migrate/prPhoiHopTvv.ts';
 import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrDocIt2 } from './migrate/prDocIt2.ts';
@@ -121,6 +122,7 @@ import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 import { migratePrWLech } from './migrate/prWLech.ts';
 import { migratePrK316 } from './migrate/prK316.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
+import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
 
 /**
@@ -187,7 +189,9 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
     /* BO-QUA-XEP-MT: 3 cột case_interventions.bo_qua_* (Bỏ qua việc Xếp lịch MT) — ĐẦU migrate, chỉ thêm cột NULL (myWork đọc). */ buoc(() => themCotPrBoQuaMoc(conn, applied));
     /* HAN-BAO-PH: han_chon (Báo PH, Meeting CX) + viec_han_lan + viec_bao_ph_lan.khoa — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrHanBaoPh(conn, applied));
+    /* CAU-HINH-CASE-SOS (chủ SP 11/11): bảng phiên bản cấu hình + con trỏ pb_loai / pb_moc + trigger tham chiếu — ĐẦU migrate, chỉ thêm (bước sau đọc cột); bảng rỗng = bản gốc. */ buoc(() => migratePrCauHinhCaseSos(conn, applied));
     /* YT-BAO-PH: viec_bao_ph.bao_lai_cua — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrBaoLaiPh(conn, applied));
+    /* PHOI-HOP-V2: viec_bao_ph.phoi_hop_id — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrPhoiHopTvv(conn, applied));
     /* RESET-HAN-CASE: cột sos_cases.han_them_pa — ĐẦU migrate, chỉ thêm (`hanThemPa` / `XU_LY_COT_SQL` đọc). */ buoc(() => themCotHanThemPa(conn, applied));
     /* XM-VIEC-DUNG-HAN b: cột sos_cases.mo_ta_luc (ngày xong Xác nhận / Mô tả Case) — đầu migrate, chỉ thêm, chạy lặp được. */ buoc(() => migratePrNgayXong0711(conn, applied));
     buoc(() => {
@@ -443,6 +447,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* SV-YT-TVV: bảng việc Báo PH của TVV (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvYtTvv(conn, applied));
     /* HAN-BAO-PH: lần 2 — DB cũ vừa có bảng Báo PH ở bước trên (lần ĐẦU migrate bỏ qua bảng chưa có). */ buoc(() => themCotPrHanBaoPh(conn, applied));
     /* YT-BAO-PH: lần 2 (như HAN-BAO-PH). */ buoc(() => themCotPrBaoLaiPh(conn, applied));
+    /* PHOI-HOP-V2: lần 2 (như YT-BAO-PH). */ buoc(() => themCotPrPhoiHopTvv(conn, applied));
     /* SV-BAI-LOP: bảng bai_tren_lop — Bài trên lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvBaiLop(conn, applied));
     /* SV-S-EXPERT: bảng s_expert — lượt S Expert (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvSExpert(conn, applied));
     /* UI-HO-SO-LOP: bảng danh_gia_dau_ra — nhận xét + đề xuất của GVCN khi đánh giá đầu ra (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrUiHoSoLop(conn, applied));
@@ -493,6 +498,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrK316(conn, applied));
   /* SOS-TAM-PA (chủ SP 11/11): Case đã chốt có PA quy chế chờ + PA GV cùng loại → PA GV mang dấu quy chế, PA quy chế chờ huỷ (đổi dữ liệu MỘT lần, khoá demo_config). */
   buoc(() => migratePrSosTamPa(conn, applied));
+  /* CAU-HINH-CASE-SOS: lần 2 — DB cũ vừa có bảng Case / phối hợp ở bước trên (lần đầu bỏ qua bảng chưa có). */
+  buoc(() => migratePrCauHinhCaseSos(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

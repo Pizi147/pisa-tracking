@@ -376,6 +376,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích · Chi nhánh', vai: ['QT'], url: '/tong-quan/v5?ct=ft&baoCao=chi-nhanh&branchId={cn}&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=ft&o=vao&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=ft&o=chua-co-kq' },
+  /* PTA rà #1408: Cuối khoá lớp thường theo EM — panel một dải (mỗi em một bài, % tổng). */
+  { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=thuong&o=ck-dat&khoa=tong&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&o=tien-bo:tat-ca&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=tong:co-target&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=thuong&theo=lop&khoa=tong&cot=dat-test&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
@@ -437,6 +439,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan V5 · panel', vai: ['QL', 'QT'], url: '/tong-quan/gv-tre?gv={gv}' },
   { trang: 'Lịch Test', vai: ['QL', 'GVCN'], url: '/cham/lich-test/qua-han' },
   { trang: 'Quản trị', vai: ['QT'], url: '/admin/mo-sua-lich-test' },
+  /* CAU-HINH-CASE-SOS: tab Case & SOS — bản đang dùng (1 câu) + 30 dòng nhật ký + đếm "đang dùng" (1 câu UNION). QL chỉ xem. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh-case-sos' },
   /* QTV2-QUYEN: tab Quyền & nhật ký — nhật ký chung (thay /admin/overview) + đơn vị báo cáo ở tab Chi nhánh. */
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh' },
@@ -446,6 +450,10 @@ export const DUONG_DO: MucDo[] = [
   /* QTV2-HAN: tab Hạn mặc định — bản đang dùng (nhớ đệm) + 30 lần đổi; cột Nhật ký 8 dòng. */
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/han' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=han&gioi-han=8' },
+  /* QTV2-BAND: tab Band & ngưỡng — hai khối (bản đang dùng nhớ đệm + 30 lần đổi) + cột Nhật ký mục Band 8 dòng. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/ky-vong-ft' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/nguong-thuong' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=band&gioi-han=8' },
 ];
 
 /**
@@ -460,10 +468,12 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* CAU-HINH-CASE-SOS (11/11): 3 câu riêng của tab (bản đang dùng · nhật ký · đếm đang dùng) trên nền phiên như /admin/mo-sua-lich-test (12). */
+  'QT /admin/cau-hinh-case-sos': 15, 'QL /admin/cau-hinh-case-sos': 15,
   /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (đọc sổ, không ghi lại sổ việc) · panel một người mọi chi nhánh · panel Chưa phân công — đo 7 · 8 · 6 câu, trần max(đo + 10, ⌈đo × 1,3⌉). */
   'QT /phan-tich/giao-vien?ct=ft': 17, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 18, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 16,
-  /* PT-V2 Giáo viên: một chi nhánh bỏ Tiến bộ / PA / Thi thật / Case (dev đo QL FT 49 → 17 câu); tổng = từng chi nhánh (dev đo QT 5 → 55 câu, cảnh báo PTA). */
-  'QL /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QT /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QL /phan-tich/giao-vien?cn={cn}&ct=thuong&v2=1': 30, 'QT /phan-tich/giao-vien?ct=ft&v2=1': 80, 'QT /phan-tich/giao-vien/o?ct=ft&gv=0&cot=cham-diem': 20,
+  /* PT-V2 Giáo viên: một chi nhánh bỏ Tiến bộ / PA / Thi thật / Case (đo QL FT 44 → 18 câu); tổng tính MỘT lần cho mọi chi nhánh (PTA rà #1414: đo 63 → 16 câu). */
+  'QL /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QT /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QL /phan-tich/giao-vien?cn={cn}&ct=thuong&v2=1': 30, 'QT /phan-tich/giao-vien?ct=ft&v2=1': 26, 'QT /phan-tich/giao-vien/o?ct=ft&gv=0&cot=cham-diem': 20,
   'QL /phan-tich/giao-vien/danh-sach?cn={cn}&ct=ft': 20, 'QT /phan-tich/giao-vien/danh-sach?cn={cn}&ct=ft': 20, 'QT /phan-tich/giao-vien/danh-sach?ct=ft': 20,   // PT-V2 PR-5: dev đo 10 · 9
   /* DEM-QUA-HAN (chủ SP 06/11 — quá hạn vẫn phải tính): Phân tích GV bảng / panel Việc đúng hạn / hồ sơ GV dựng Công việc "Tất cả" của chi nhánh (`viecQuaHanMo`,
      một lần mỗi chi nhánh mỗi request) → +~30–40 câu. Trần nâng = min(100, max(đo + 10, ⌈đo × 1,3⌉)): đo bảng FT 79 · 78, thường 69 · 68, khoảng dài 75 · 74,
@@ -495,6 +505,9 @@ export const TRAN: Record<string, number> = {
   'QT /admin/nhat-ky': 14, 'QL /admin/nhat-ky': 14, 'QT /admin/nhat-ky?muc=chi-nhanh': 14, 'QL /admin/nhat-ky?muc=chi-nhanh': 14, 'QT /admin/don-vi': 13, 'QL /admin/don-vi': 13, 'QT /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13,
   /* QTV2-HAN: Hạn mặc định — trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/cau-hinh/han': 13, 'QL /admin/cau-hinh/han': 13, 'QT /admin/nhat-ky?muc=han&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=han&gioi-han=8': 13,
+  /* QTV2-BAND — trần = max(đo+10, ⌈đo×1,3⌉). */
+  'QT /admin/cau-hinh/ky-vong-ft': 13, 'QL /admin/cau-hinh/ky-vong-ft': 13, 'QT /admin/cau-hinh/nguong-thuong': 13, 'QL /admin/cau-hinh/nguong-thuong': 13,
+  'QT /admin/nhat-ky?muc=band&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=band&gioi-han=8': 13,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
   'QL /ban-giao-gv/1': 31, 'QT /ban-giao-gv/1': 30, 'GVCN /ban-giao-gv/1': 31, 'GVBM /ban-giao-gv/1': 30,
   'QL /lenh-chuyen/{lenhBg}/ban-giao': 23, 'QT /lenh-chuyen/{lenhBg}/ban-giao': 23,   // BAN-GIAO-NHAN 05/11: đo 13 → max(n+10, ⌈n×1,3⌉)
@@ -1086,11 +1099,13 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* CAU-HINH-CASE-SOS (11/11): bản đang dùng (≤ 3 dòng) + ≤ 30 dòng nhật ký + nhóm đếm theo mã (≈ 40 mã) trên nền phiên (≈ 51 như mo-sua-lich-test). */
+  'QT /admin/cau-hinh-case-sos': 160, 'QL /admin/cau-hinh-case-sos': 160,
   /* Y-THUC-V2 (11/11): tab Ý thức lớp / HV — Báo PH theo LẦN + Nội dung trong câu phụ sẵn có; đo trước = sau (340 · 336 · 53 dòng ×1) → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /classes/3/y-thuc': 442, 'GVCN /classes/3/y-thuc': 437, 'GVBM /classes/3/y-thuc': 437, 'QL /students/1/y-thuc': 103, 'GVCN /students/1/y-thuc': 103,
   /* SỔ NGHĨA VỤ (PR-2): đo 333 · 49 · 58 dòng → max(đo + 50, ⌈đo × 1,3⌉). */
   'QT /phan-tich/giao-vien?ct=ft': 433, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 99, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 108,
-  'QL /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 1000, 'QT /phan-tich/giao-vien?ct=ft&v2=1': 1500,   // PT-V2 Giáo viên: dev đo 480 · 881
+  'QL /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 1000, 'QT /phan-tich/giao-vien?ct=ft&v2=1': 1100,   // PT-V2 Giáo viên: đo 719 · 834 (QT tổng trước #1414: 1271)
   /* O-TQ-BAM: panel Đạt Target thi thật (chỉ khi bấm) — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 kỳ 6 tháng: 1 259 · 1 259 · 691. */
   'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'CX /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 899,
   /* GIAM-DOC-TQGV: Tổng quan GV — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1 (GVCN 1 839, GVBM 2 101; hai vai đều có lớp chủ nhiệm nên số không đổi — GV không chủ nhiệm khoá ở prSvTqGv). */
@@ -1118,7 +1133,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 663, 'QT /phan-tich/y-thuc/o?dong=tong&cot=vi-pham': 1000, 'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 1190, 'QT /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=viec-dung-han': 1187,   // PT-VP-PA: đo 510 · 769 · 352 · 300 — max(đo + 50, ⌈đo × 1,3⌉)
   /* PR-4 THI-THAT: tab + panel thi thật — trần = max(đo+50, ⌈đo×1,3⌉), đo 05/11 (bộ demo ít thi thật: QL 12 · QT / CX 22 · TVV 14 dòng). Ước bản chính 2 tháng ~1 000 dòng (ghi chú v13 mục 4). */
   /* Phân tích V2 · Thi thật: + "Chưa có KQ" hiện tại (em FT trong phạm vi → giai đoạn sau thi, `sauThiTheoEm`) — QL đo 283 dòng (trước ~48). */
-  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 370, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 520, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 520, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 370,
+  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 72, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 64,   // PTA rà #1410: Chưa có KQ một câu (chỉ mục chờ KQ) — đo 12 · 23 · 23 · 14 (trước 232 · 329 · 329 · 26); trần về mức trước V2
   'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 62, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 72,
   'QL /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 914, 'QT /phan-tich/tong-hop/o?ct=thuong&kieu=tuan&tu=2026-03-02&den=2026-09-14&khoa=tong&cot=luot': 1349, 'QL /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 688, 'QT /phan-tich/giao-vien/o?cn=1&ct=thuong&gv=7&tu=2026-03-02&den=2026-09-14&cot=ket-qua': 688,   // PT-LOP-THUONG: đo 703 · 1 037 · 529 · 529 — max(đo + 50, ⌈đo × 1,3⌉)
   /* PT-PANEL (PR-1, 05/11): panel bảng có điểm — max(đo + 50, ⌈đo × 1,3⌉); phần thêm (lượt theo id + điểm) ≈ +4 dòng so panel cũ (đo dat-mt 911 → 915). */

@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { datNguonCauHinh, type BanCauHinh, type LoaiCauHinh } from '@shared/domain/index.ts';
 import { useNavigate } from 'react-router-dom';
-import { api, invalidateAll } from './api.ts';
+import { api, datKhiDanhMucDoi, invalidateAll } from './api.ts';
 import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
 import { quaRoiNhap } from '../ui/chanRoiNhap.tsx';
 import { dongBoNgonNgu } from './ngonNgu.ts';
-import { datChuNhap, datNguonHan, type BanHan, type NavQuyen } from '@shared/domain/index.ts';
+import { datChuNhap, datNguonBand, datNguonHan, type BanHan, type BanPhienBan, type KyVongFt, type NavQuyen, type NguongThuong } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 const khoPhien = () => { try { return window.sessionStorage; } catch { return null; } };
@@ -21,6 +22,8 @@ export type Assignment = {
 };
 
 export type Session = {
+  /** CAU-HINH-CASE-SOS: bản cấu hình đang dùng (nhóm nguyên nhân / PA / mốc SOS) — ô chọn trên web đọc qua `datNguonCauHinh`. */
+  cauHinh?: { [L in LoaiCauHinh]: BanCauHinh<L> };
   authenticated: boolean;
   user?: { id: number; code: string; fullName: string; title: string | null };
   /** PR-EN: ngôn ngữ của tài khoản ('vi' | 'en'; null = chưa chọn). */
@@ -56,6 +59,8 @@ export type Session = {
   moSuaLichTest?: boolean;
   /** QTV2-HAN: các bản Hạn mặc định — hàm hạn dùng chung trên web tính đúng như máy chủ. */
   hanMacDinh?: BanHan[];
+  /** QTV2-BAND: các bản Kỳ vọng MT FT + Ngưỡng lớp thường. */
+  kyVongFt?: BanPhienBan<KyVongFt>[]; nguongThuong?: BanPhienBan<NguongThuong>[];
 };
 
 export type GocNhin = {
@@ -89,6 +94,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   /* Đặt nguồn hạn ngay khi vẽ (trước con) — không đợi effect, lần vẽ đầu có phiên đã tính theo bản trong DB. */
   const dsHan = session?.hanMacDinh;
   datNguonHan(dsHan?.length ? () => dsHan : null);
+  const dsKv = session?.kyVongFt, dsNg = session?.nguongThuong;
+  datNguonBand(dsKv?.length ? () => dsKv : null, dsNg?.length ? () => dsNg : null);
 
   const reload = useCallback(async () => {
     try {
@@ -107,9 +114,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { void reload(); }, [reload]);
+  /* CAU-HINH-CASE-SOS: chọn nhóm / loại PA vừa bị Quản trị ẩn → tải lại phiên (mang cấu hình mới); câu lỗi "Danh mục vừa đổi, đã tải lại". */
+  useEffect(() => datKhiDanhMucDoi(() => void reload()), [reload]);
   /* PR-EN: mỗi lần vào một tài khoản — đồng bộ ngôn ngữ máy ↔ tài khoản (có thể tải lại trang một lần). */
   const uid = session?.authenticated ? session.user?.id : undefined;
   useEffect(() => { if (uid) dongBoNgonNgu(session?.ngonNgu); }, [uid]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /* CAU-HINH-CASE-SOS: cấp nguồn cấu hình cho `shared/` (issuesForTopic, nhãn PA…) trước khi trang con đọc; chưa có phiên → bản gốc. */
+  const ch = session?.cauHinh;
+  datNguonCauHinh(ch ? { hienTai: (l) => ch[l] as any, theoPb: (l, id) => (ch[l].id === id ? ch[l] as any : null) } : null);
   /* Q7: khung đã nhớ (CongTacKhung) theo người — đặt trước khi trang con đọc. */
   datNguoiDungKhung(session?.user?.id ?? null, session?.gocNhin?.dangChon ?? null, session?.khungPhamVi ?? null);
   /* NEN-PANEL (rà #530): nháp panel thuộc một người + góc nhìn — phiên đã tải (không phải lỗi mạng) mà đổi chủ thì xoá hết nháp, trước khi trang con đọc. */

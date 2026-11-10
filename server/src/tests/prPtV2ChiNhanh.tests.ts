@@ -10,6 +10,7 @@ export async function runPrPtV2ChiNhanhTests(t: any) {
   const tt: any = await import('../phanTich/thiThatThongKe.ts');
   const th: any = await import('../phanTich/tongHop.ts');
   const d: any = await import('../../../shared/domain/index.ts');
+  const sx: any = await import('../loTrinh/thiThat.ts'), dg: any = await import('../worklist/danhGia.ts'), ct0: any = await import('../worklist/chuongTrinh.ts'), dc: any = await import('../demoConfig.ts');
   console.log('\nPhân tích V2 · Chi nhánh — một GET, số = hàm cũ, ô mới = panel, tháng mặc định, tab mới');
   const k = { tu: '2026-07-06', den: '2026-09-27' };
 
@@ -56,18 +57,37 @@ export async function runPrPtV2ChiNhanhTests(t: any) {
     for (const [o, n] of [['exceed', x.vuot], ['dat', x.dat], ['fail', x.chuaDat]] as const) assert(tt.oThiThat(P.mbManager, { ...f, o: `tong:${o}` }).n === n, o);
     const kq = cn.oChiNhanh(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k, o: 'chua-co-kq' });
     assert(kq.n === x.chuaCoKq, `Chưa có KQ ${x.chuaCoKq} ≠ panel ${kq.n}`);
+    /* PTA rà #1410: câu đếm thẳng (chỉ mục chờ KQ) = cách cũ — nhãn "Đã thi · chờ KQ" của mọi em FT trong phạm vi (`sauThiTheoEm`). */
+    const cu = [...sx.sauThiTheoEm(ct0.locTheoChuongTrinh('hoc-vien', dg.studentsInScope(P.mbManager, r.branchId), 'ft'), dc.demoToday())]
+      .filter(([, z]: any) => z.giaiDoan === 'da_thi_cho_kq').map(([sid]: any) => sid).sort((a2: number, b2: number) => a2 - b2);
+    assert(JSON.stringify(cn.tapChuaCoKq(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k })) === JSON.stringify(cu), `Chưa có KQ: câu mới ≠ cách cũ (${cu.length})`);
     for (const o of ['vao', 'ket-thuc'] as const) {
       const p = cn.oChiNhanh(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k, o });
       assert(p.n === (o === 'vao' ? r.hv.vao : r.hv.ketThuc), `${o}: ${p.n}`);
     }
   });
 
-  check('PT-V2 · Lớp thường: Đạt Test = Progress "Đạt hết" + Final "Từ 70%" của bảng Test; panel dat-test = số; Cuối khoá = 4 ô Final', () => {
+  check('PT-V2 · Lớp thường: Đạt Test = Progress "Đạt hết" + Final "Từ 70%" của bảng Test; panel dat-test = số; Cuối khoá = số EM theo dải % tổng, panel = số', () => {
     const r = cn.chiNhanhV2(P.mbManager, { branchId: null, ct: 'thuong', ...k });
     assert(r.datMt === null && r.thiThat === null && r.datTest, 'lớp thường không có Đạt MT / Thi thật');
     const tb = th.tongHop(P.mbManager, { branchId: r.branchId, ct: 'thuong', soTuan: 8, theo: 'lop', ...k });
     assert(r.datTest.dat === (tb.tong['gk-dat'] ?? 0) + (tb.tong['ck-dat'] ?? 0), 'Đạt Test ≠ bảng Test');
-    assert(JSON.stringify(r.cuoiKhoa) === JSON.stringify([tb.tong['ck-dat'] ?? 0, tb.tong['ck-60'] ?? 0, tb.tong['ck-50'] ?? 0, tb.tong['ck-duoi50'] ?? 0]), 'Cuối khoá');
+    /* PTA rà #1408: Cuối khoá đếm EM (Final đủ môn, bài mới nhất, theo % tổng) — mỗi em đúng một dải; ≤ số bài của bảng Test. */
+    const baiCk = (tb.tong['ck-dat'] ?? 0) + (tb.tong['ck-60'] ?? 0) + (tb.tong['ck-50'] ?? 0) + (tb.tong['ck-duoi50'] ?? 0);
+    const emCk = r.cuoiKhoa.reduce((a: number, x: number) => a + x, 0);
+    assert(emCk > 0 && emCk <= baiCk, `Cuối khoá ${emCk} em / ${baiCk} bài`);
+    const daThay = new Set<number>();
+    ['ck-dat', 'ck-60', 'ck-50', 'ck-duoi50'].forEach((o, i) => {
+      const pn = cn.oCuoiKhoaChiNhanh(P.mbManager, { branchId: r.branchId, ct: 'thuong', ...k, o, khoa: 'tong' });
+      assert(pn.n === r.cuoiKhoa[i] && pn.rows.length === pn.n, `panel ${o}: ${pn.n} ≠ ${r.cuoiKhoa[i]}`);
+      for (const row of pn.rows as any[]) {
+        assert(row.baiThuong && row.baiThuong.tong != null, `${o}: dòng không có % tổng`);
+        assert(!daThay.has(row.baiThuong.studentId), `${o}: em ${row.baiThuong.studentId} ở hai dải`);
+        daThay.add(row.baiThuong.studentId);
+      }
+    });
+    const lop0 = r.hang.find((h: any) => h.cuoiKhoa);
+    if (lop0) assert(cn.oCuoiKhoaChiNhanh(P.mbManager, { branchId: r.branchId, ct: 'thuong', ...k, o: 'ck-dat', khoa: lop0.khoa }).n === lop0.cuoiKhoa[0], 'panel một lớp');
     const o = th.oTongHop(P.mbManager, { branchId: r.branchId, ct: 'thuong', soTuan: 8, theo: 'lop', ...k, khoa: 'tong', cot: 'dat-test' });
     assert(o.n === r.datTest.dat, `panel Đạt Test ${o.n} ≠ ${r.datTest.dat}`);
   });
@@ -107,6 +127,20 @@ export async function runPrPtV2ChiNhanhTests(t: any) {
       if (bai.length) assert(h.chamDiem.k === 'so' && h.chamDiem.tong === bai.reduce((a: number, o: any) => a + o.tong, 0), `${h.ten}: Chấm Test tổng ≠ Σ chi nhánh`);
     }
     assert(coDat > 0, 'seed phải có GV có Đạt kỳ vọng');
+    /* PTA rà #1414: bảng tổng tính một lần — số từng chi nhánh = CHÍNH bảng một chi nhánh (Chấm Test · Việc · Đạt kỳ vọng · Chưa phân công). */
+    const cnIds = [...new Set(r.hang.flatMap((h: any) => (h.chiNhanh ?? []).map((x: any) => x.id)))] as number[];
+    const motCn = new Map(cnIds.map((b) => [b, gv.phanTichGiaoVien(P.admin, { cn: b, ct: 'ft', ...kGv, v2: true })]));   // trước: bảng một chi nhánh ghi lại sổ việc
+    const r2 = gv.phanTichGiaoVien(P.admin, { ct: 'ft', ...kGv, v2: true });
+    for (const b of cnIds) {
+      const mot = motCn.get(b);
+      for (const h of mot.hang) {
+        const x = r2.hang.find((y: any) => y.id === h.id)?.chiNhanh?.find((z: any) => z.id === b);
+        assert(x, `chi nhánh ${b}: thiếu ${h.ten} ở bảng tổng`);
+        for (const k of ['chamDiem', 'viecDungHan', 'datMt']) assert(JSON.stringify(x[k]) === JSON.stringify(h[k]), `chi nhánh ${b} · ${h.ten} · ${k}: ${JSON.stringify(x[k])} ≠ ${JSON.stringify(h[k])}`);
+      }
+      const cpc = r2.chuaPhanCong?.chiNhanh?.find((z: any) => z.id === b);
+      assert(JSON.stringify(cpc ? { chamDiem: cpc.chamDiem, viecDungHan: cpc.viecDungHan } : null) === JSON.stringify(mot.chuaPhanCong ?? null), `chi nhánh ${b}: Chưa phân công`);
+    }
     const cp = r.chuaPhanCong;
     if (cp) {
       const n = (o: any) => (o.k === 'so' ? o.tong : 0);

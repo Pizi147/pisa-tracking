@@ -27,11 +27,12 @@ export async function runPrSosTheTests(t: YThucTestKit & { P: any }) {
     assert(thuong.includes('43 %') && thuong.includes('70 %') && thuong.includes('trượt G+V'), `lớp thường: "${thuong}"`);
   });
 
-  check('S2 · dòng Phối hợp SOS (/my-work): thẻ = thẻ của chính lượt ở tab lớp và hồ sơ HV; ≤ 3 thẻ; count giữ số lượt', () => {
+  check('S2 · PHOI-HOP-V2 (chủ SP 11/11: ô việc không điểm): dòng Phối hợp SOS (/my-work) không mang thẻ; thẻ của tab lớp = hồ sơ HV', () => {
     let soThe = 0;
     for (const gv of [P.coreTeacher, P.mbManager, P.admin]) {
-      for (const it of (mywork.myWork(gv, gv === P.coreTeacher ? {} : { nguoi: 'tat-ca' }).items as any[]).filter((i) => i.group === 'phoi_hop_sos')) {
-        assert(Array.isArray(it.theSos) && it.theSos.length === Math.min(it.count, phoiHop.THE_SOS_TOI_DA), `lớp ${it.classCode}: ${it.theSos?.length} thẻ / ${it.count} lượt`);
+      for (const it0 of (mywork.myWork(gv, gv === P.coreTeacher ? {} : { nguoi: 'tat-ca' }).items as any[]).filter((i) => i.group === 'phoi_hop_sos')) {
+        assert(!('theSos' in it0) && Array.isArray(it0.emTen) && it0.emTen.length === Math.min(it0.count, 3), `lớp ${it0.classCode}: dòng còn thẻ / thiếu tên em`);
+        const it = { ...it0, theSos: phoiHop.coordinationOfClass(gv, it0.classId).rows.filter((r: any) => it0.emIds.includes(r.studentId)).slice(0, 3) };
         const lop = new Map<number, any>(phoiHop.coordinationOfClass(gv, it.classId).rows.map((r: any) => [r.attemptId, r]));
         for (const x of it.theSos as any[]) {
           soThe++;

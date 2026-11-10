@@ -144,6 +144,32 @@ export function dongMoiNguoi(q: Omit<Q, 'loai' | 'nguoi'>): (DongNvXem & { nguoi
 }
 
 /**
+ * PTA rà #1414 — bảng GV V2 · Tất cả chi nhánh: sổ bài + việc MỘT câu cho mọi chi nhánh, đếm theo (chi nhánh, người) như `demDong` (cùng `nguoiCua`, `tt`,
+ * `sChung`) + dòng Chưa phân công từng chi nhánh như `chuaPhanCong` (dòng không ai chịu). Không đọc lại sổ từng chi nhánh.
+ */
+export function demTheoCnNguoi(q: Omit<Q, 'loai' | 'nguoi'>): {
+  dem: Map<number, { bai: Map<number, So3 & { sChung: number }>; viec: Map<number, So3 & { sChung: number }> }>; chuaPc: Map<number, DongNvXem[]>;
+} {
+  const rows = docKy({ ...q, loai: 'bai-viec' });
+  const ai = nguoiCua(rows);
+  const dem = new Map<number, { bai: Map<number, So3 & { sChung: number }>; viec: Map<number, So3 & { sChung: number }> }>();
+  const chuaPc = new Map<number, DongNvXem[]>();
+  for (const r of rows) {
+    const t = tt(r, q.homNay);
+    if (t === 'chua-toi') continue;
+    const ds = ai(r);
+    if (!ds.length) { (chuaPc.get(r.chi_nhanh) ?? chuaPc.set(r.chi_nhanh, []).get(r.chi_nhanh)!).push(xem(r, t, q.homNay)); continue; }
+    const cn = dem.get(r.chi_nhanh) ?? dem.set(r.chi_nhanh, { bai: new Map(), viec: new Map() }).get(r.chi_nhanh)!;
+    const m = r.loai === 'bai' ? cn.bai : cn.viec;
+    for (const g of ds) {
+      const x = m.get(g) ?? m.set(g, { dung: 0, muon: 0, chua: 0, sChung: 0 }).get(g)!;
+      if (sChung(r)) { if (t === 'chua') x.sChung += 1; } else x[t] += 1;
+    }
+  }
+  return { dem, chuaPc };
+}
+
+/**
  * Bài / việc không có người (spec 1.2 a, "Chưa phân công") của một chi nhánh trong kỳ — cho QL. Gồm bài S chéo chưa ai nhận mà chi nhánh không còn GV nào có
  * kỹ năng S tại ngày hạn (chủ SP 10/11).
  */
