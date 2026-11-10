@@ -420,6 +420,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan V5 · panel', vai: ['QL', 'QT'], url: '/tong-quan/gv-tre?gv={gv}' },
   { trang: 'Lịch Test', vai: ['QL', 'GVCN'], url: '/cham/lich-test/qua-han' },
   { trang: 'Quản trị', vai: ['QT'], url: '/admin/mo-sua-lich-test' },
+  /* QTV2-QUYEN: tab Quyền & nhật ký — nhật ký chung (thay /admin/overview) + đơn vị báo cáo ở tab Chi nhánh. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/don-vi' },
 ];
 
 /**
