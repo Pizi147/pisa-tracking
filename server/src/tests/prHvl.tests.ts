@@ -573,7 +573,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     assert(!/Gọn|Đầy đủ/.test(r) && !/h\.lichSu \? null/.test(r), 'BangHoSoLop');  // PR-MTb T2 thay ChipLichSu → NhanCu
     /* P9b: TransitionPanel (FT) và BangLoTrinhTiep đã gỡ — trang Cuối khoá: cột "Kết quả đầu ra" theo Final, lỗi giữ tại dòng (R5.3). */
     const ck = web('modules/classes/CuoiKhoaLop.tsx');
-    assert(/t\('Kết quả đầu ra'\)/.test(ck) && /loi\[e\.id\]/.test(ck), 'CuoiKhoaLop: cột Kết quả đầu ra + lỗi tại dòng');
+    /* MOCKUP-1111 màn 3 (#1326): cột "Kết quả" (hộp điểm theo Final). */
+    assert(/t\('Kết quả'\)/.test(ck) && /loi\[e\.id\]/.test(ck), 'CuoiKhoaLop: cột Kết quả + lỗi tại dòng');
   });
 
   // ------------------------------------------------------------------ Task 9 · điện thoại: bảng → thẻ (D2)
