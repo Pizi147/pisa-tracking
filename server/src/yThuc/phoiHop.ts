@@ -688,7 +688,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
   const toiThieu = toiThieuGhiChu(r.kind, r.pb_moc ?? null);   // CAU-HINH-CASE-SOS: theo bản chụp của việc
   if (note.length < toiThieu) {
     throw laMeetingCx(r.kind) ? loi(400, 'Meeting CX/GĐCN (sau Mock): ghi chú nói rõ kết quả buổi gặp, ít nhất {n} ký tự.', { n: toiThieu })
-      : loi(400, 'Cần ít nhất {n} ký tự để lưu', { n: toiThieu });
+      : toiThieu <= 1 ? badRequest('Ghi Nội dung: đã làm gì, em / gia đình phản hồi gì.') : loi(400, 'Cần ít nhất {n} ký tự để lưu', { n: toiThieu });
   }
   tx(() => {
     /* PR-PHH: bản chụp 4 nội dung bằng CHÍNH `turnsOf` đang dùng để hiển thị, tính như sau khi xong (ngày thực hiện) — trước UPDATE, cùng giao dịch. */
