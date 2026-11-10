@@ -17,5 +17,5 @@ export const EN_CHUONG_V2 = {
   'Về Việc cần làm': 'Back to tasks',
   ', {n} việc cần làm ngay': (b) => `, ${so(b.n, 'task due now', 'tasks due now')}`,
   'Không tải được cập nhật.': 'Could not load updates.',
-  'Mở Công việc': 'Open Tasks',
+  'tài khoản': 'accounts',
 } satisfies Record<string, Dich>;

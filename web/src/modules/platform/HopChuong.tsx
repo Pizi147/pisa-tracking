@@ -67,8 +67,16 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
       if (nhieuCn) q.set('cn', 'tat-ca');
       ra.push({ ...l, den: `/cong-viec?${q}` });
     }
+    return ra;
+  }, [coViec, viec, nav]);
+  /*
+   * Ngoài `/my-work` (badge / Công việc không đếm): thẻ Chờ bạn duyệt (`/yeu-cau/dem`) + việc chỉ có ở thông báo (đăng ký tài khoản…). Nhóm riêng dưới vạch,
+   * KHÔNG cộng vào đầu khối — "n việc · ⚠ n quá hạn" giữ đúng số Công việc / ô "Việc của tôi" / chuông (một nguồn, một hàm).
+   */
+  const them = useMemo<DongLoai[]>(() => {
+    const ra: DongLoai[] = [];
     if (nav?.workApprove && dem?.cho) {
-      ra.push({ loai: 'duyet', ten: t('Duyệt yêu cầu'), n: dem.cho, quaHan: dem.quaHan ?? 0, homNay: 0, cn: new Map(), keys: [], den: '/cong-viec?nhom=duyet' });
+      ra.push({ loai: 'duyet', ten: t('Chờ bạn duyệt'), n: dem.cho, quaHan: dem.quaHan ?? 0, homNay: 0, cn: new Map(), keys: [], den: '/cong-viec?nhom=duyet' });
     }
     const tuTin = new Map<string, any[]>();
     for (const n of ds) if (laViecTuTin(n)) tuTin.set(n.kind, [...(tuTin.get(n.kind) ?? []), n]);
@@ -76,12 +84,12 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
       ra.push({ loai: kind, ten: VIEC_TU_TIN[kind], n: ns.length, quaHan: 0, homNay: 0, cn: new Map(), keys: ns.map((n) => `tb:${n.id}`), den: duongThongBao(ns[0]) ?? '/' });
     }
     return xepLoaiViec(ra);
-  }, [coViec, viec, dem, ds, nav]);
+  }, [dem, ds, nav]);
 
   /* "● n mới": tập đã thấy đọc MỘT lần lúc mở; đóng hộp → ghi tập hiện có (lần mở sau những việc này hết "mới"). */
   const [daThay] = useState(() => docDaThay(uid));
   const tatCaKhoa = useRef<string[]>([]);
-  tatCaKhoa.current = (loai ?? []).flatMap((l) => l.keys);
+  tatCaKhoa.current = [...(loai ?? []), ...them].flatMap((l) => l.keys);
   useEffect(() => () => { if (tatCaKhoa.current.length || daThay) ghiDaThay(uid, tatCaKhoa.current); }, [uid, daThay]);
 
   const tong = (loai ?? []).reduce((a, l) => ({ n: a.n + l.n, qua: a.qua + l.quaHan, nay: a.nay + l.homNay }), { n: 0, qua: 0, nay: 0 });
@@ -120,6 +128,28 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
     );
   };
 
+  const dongViec = (l: DongLoai) => {
+    const moi = soViecMoi(l.keys, daThay);
+    const cn = maCn.size > 1 && l.cn.size ? [...l.cn].map(([id, n]) => `${maCn.get(id) ?? '?'} ${n}`).join(' · ') : '';
+    const dv = l.loai === 'duyet' ? t('yêu cầu') : l.loai === 'dang_ky' ? t('tài khoản') : t('việc');   // đơn vị luôn ghi (V13)
+    const sr = `${l.ten}: ${l.n} ${dv}${l.quaHan ? t(', {n} quá hạn', { n: l.quaHan }) : ''}${l.homNay ? `, ${t('{n} hôm nay', { n: l.homNay })}` : ''}${moi ? `, ${t('{n} mới', { n: moi })}` : ''}`;
+    return (
+      <li key={l.loai}>
+        <button type="button" className="chv-viec" aria-label={sr} onClick={() => { navigate(l.den); onDong(); }}>
+          <span className="chv-ten"><span className="chv-t">{l.ten}</span>
+            {(moi > 0 || cn) && <span className="chv-phu">{moi > 0 && <span className="chv-moi">{t('{n} mới', { n: moi })}</span>}{cn && <span>{cn}</span>}</span>}
+          </span>
+          <span className="chv-so"><b>{l.n}</b> {dv}</span>
+          <span className="chv-tt">
+            {l.quaHan > 0 ? <span className="chv-td chv-qua">⚠ {t('{n} quá hạn', { n: l.quaHan })}</span>
+              : l.homNay > 0 ? <span className="chv-td chv-nay">{t('{n} hôm nay', { n: l.homNay })}</span> : null}
+          </span>
+          <Mui />
+        </button>
+      </li>
+    );
+  };
+
   if (xemTatCa) {
     const nhom = new Map<NhomNgayTin, any[]>();
     for (const n of capNhat) { const k = nhomNgayTin(n.created_at, homNay); nhom.set(k, [...(nhom.get(k) ?? []), n]); }
@@ -147,9 +177,10 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
   }
 
   return (
-    <div role="dialog" aria-label={t('Thông báo')} className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[36rem] sm:w-[min(26rem,calc(100vw-2rem))] chv-hop">
+    <div role="dialog" aria-label={t('Thông báo')} className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70vh] flex flex-col overflow-hidden shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[36rem] sm:w-[min(26rem,calc(100vw-2rem))] chv-hop">
+      {/* Việc nhiều loại thì danh sách việc cuộn bên trong — khối Cập nhật luôn thấy ở đáy hộp. */}
       {coViec && (
-        <div>
+        <div className="flex min-h-0 flex-col">
           <div className="chv-v-dau">
             <h2>{t('Việc cần làm')}</h2>
             <button type="button" className="chv-lk" onClick={() => { navigate('/cong-viec'); onDong(); }}>{t('Công việc')} <Mui /></button>
@@ -162,35 +193,17 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
             )}
           </div>
           {loai == null ? <div className="chv-tai" aria-busy="true"><i /><i /><i /></div>
-            : !loai.length ? <p className="chv-xong">{t('Không còn việc nào')}</p>
+            : !loai.length && !them.length ? <p className="chv-xong">{t('Không còn việc nào')}</p>
             : (
-              <ul className="chv-ds-v">
-                {loai.map((l) => {
-                  const moi = soViecMoi(l.keys, daThay);
-                  const cn = maCn.size > 1 && l.cn.size ? [...l.cn].map(([id, n]) => `${maCn.get(id) ?? '?'} ${n}`).join(' · ') : '';
-                  const sr = `${l.ten}: ${t('{n} việc', { n: l.n })}${l.quaHan ? t(', {n} quá hạn', { n: l.quaHan }) : ''}${l.homNay ? `, ${t('{n} hôm nay', { n: l.homNay })}` : ''}${moi ? `, ${t('{n} mới', { n: moi })}` : ''}`;
-                  return (
-                    <li key={l.loai}>
-                      <button type="button" className="chv-viec" aria-label={sr} onClick={() => { navigate(l.den); onDong(); }}>
-                        <span className="chv-ten"><span className="chv-t">{l.ten}</span>
-                          {(moi > 0 || cn) && <span className="chv-phu">{moi > 0 && <span className="chv-moi">{t('{n} mới', { n: moi })}</span>}{cn && <span>{cn}</span>}</span>}
-                        </span>
-                        <span className="chv-so"><b>{l.n}</b> {t('việc')}</span>
-                        <span className="chv-tt">
-                          {l.quaHan > 0 ? <span className="chv-td chv-qua">⚠ {t('{n} quá hạn', { n: l.quaHan })}</span>
-                            : l.homNay > 0 ? <span className="chv-td chv-nay">{t('{n} hôm nay', { n: l.homNay })}</span> : null}
-                        </span>
-                        <Mui />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <div className="min-h-0 overflow-y-auto">
+                {loai.length > 0 && <ul className="chv-ds-v">{loai.map(dongViec)}</ul>}
+                {them.length > 0 && <ul className="chv-ds-v chv-them">{them.map(dongViec)}</ul>}
+              </div>
             )}
         </div>
       )}
       {(tb.error || capNhat.length > 0 || !coViec) && (
-        <div className={coViec ? 'chv-cn' : 'chv-cn chv-cn-mot'}>
+        <div className={coViec ? 'chv-cn shrink-0' : 'chv-cn chv-cn-mot'}>
           <div className="chv-cn-dau">
             <h3>{t('Cập nhật')}</h3>
             {chuaDoc > 0 && <span className="chv-dem">{t('{n} chưa đọc', { n: chuaDoc })}</span>}
