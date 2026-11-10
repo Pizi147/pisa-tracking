@@ -5,10 +5,10 @@
  * lớp thường (`tongHop`, bài), Thi thật = `thiThatTrongKhoang` (em, trừ KCK) — rồi chỉ CHIA theo lớp (một chi nhánh) hoặc chi nhánh (Tất cả).
  * Số mới: "vào · kết thúc" (em, 1 câu mỗi số) và "Chưa có KQ" (hiện tại, `sauThiTheoEm` → `da_thi_cho_kq`).
  */
-import { DS_JSON, db, theoLo, theoLoJson } from '../db.ts';
+import { DS_JSON, db, theoLo } from '../db.ts';
 import { PERMISSIONS, coMucThi, mucThi, soSanhLop, trangThaiSauThi, type ChuongTrinh } from '../../../shared/domain/index.ts';
 import type { ChiNhanhV2Kq, DongChiNhanhV2, TyLeCn } from '../../../shared/domain/index.ts';
-import { scopeFor, type Principal } from '../permissions.ts';
+import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { studentsInScope } from '../worklist/danhGia.ts';
@@ -79,21 +79,24 @@ export function tapVaoKetThuc(p: Principal, f: LocChiNhanh): { vao: Map<number, 
 /** Chưa có KQ (đặc tả 9.9) — HIỆN TẠI, không lọc kỳ: em FT trong phạm vi đã qua ngày thi, chưa có KQ, chưa đánh Không thi. */
 export function tapChuaCoKq(p: Principal, f: LocChiNhanh): number[] {
   const { branchId } = phamVi(p, f);
-  const em = locTheoChuongTrinh('hoc-vien', studentsInScope(p, branchId), 'ft');
   /*
-   * PTA rà #1410 (Turso): chỉ đọc lộ trình ĐANG CHỜ KQ — chỉ mục từng phần `idx_cycle_cho_kq` (FT, chưa Không thi, chưa điểm) + ngày thi trước hôm nay trong SQL,
-   * rồi chốt bằng CHÍNH `trangThaiSauThi` (cùng luật nhãn "Đã thi · chờ KQ"). Trước: đọc giai đoạn sau thi của mọi em FT (seed 48 → 283 dòng).
+   * PTA rà #1410 (Turso): MỘT câu đi từ chỉ mục từng phần `idx_cycle_cho_kq` (lộ trình FT, chưa Không thi, chưa điểm) + ngày thi trước hôm nay, phạm vi em
+   * (ghi danh đang học ở lớp FT trong phạm vi, em chưa lưu trữ — như `studentsInScope` + `locTheoChuongTrinh`) bằng EXISTS ngay trong câu; chốt bằng CHÍNH
+   * `trangThaiSauThi` (cùng luật nhãn "Đã thi · chờ KQ"). Trước: nạp phạm vi em (~220 dòng seed) + giai đoạn sau thi của mọi em FT.
    */
+  const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+  if (scope.none) return [];
+  const cs = classScopeSql(scope, 'k');
   const homNay = demoToday();
-  const out: number[] = [];
-  theoLoJson(em, (json) => {
-    for (const c of db().prepare(`SELECT c.student_id, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
-        WHERE c.student_id IN (${DS_JSON}) AND c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND c.outcome_score IS NULL
-          AND COALESCE(substr(c.thi_that_ngay, 1, 10), substr(c.exam_date, 1, 10), substr(c.ended_at, 1, 10)) < ? AND ${LO_TRINH_MOI_NHAT}`).all(json, homNay) as any[]) {
-      if (trangThaiSauThi(c, homNay).giaiDoan === 'da_thi_cho_kq') out.push(c.student_id);
-    }
-  });
-  return [...new Set(out)].sort((a, b) => a - b);
+  const out = new Set<number>();
+  for (const c of db().prepare(`SELECT c.student_id, ${COT_SAU_THI} FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN report_periods ep ON ep.id = c.exam_period_id
+      WHERE c.route IS NOT NULL AND c.thi_that_khong_thi = 0 AND c.outcome_score IS NULL AND s.archived_at IS NULL
+        AND COALESCE(substr(c.thi_that_ngay, 1, 10), substr(c.exam_date, 1, 10), substr(c.ended_at, 1, 10)) < ? AND ${LO_TRINH_MOI_NHAT}
+        AND EXISTS (SELECT 1 FROM enrollments e JOIN classes k ON k.id = e.class_id WHERE e.student_id = c.student_id AND e.status = 'active' AND k.is_fast_track = 1
+          AND ${cs.sql}${branchId ? ' AND k.branch_id = ?' : ''})`).all(homNay, ...cs.params, ...(branchId ? [branchId] : [])) as any[]) {
+    if (trangThaiSauThi(c, homNay).giaiDoan === 'da_thi_cho_kq') out.add(c.student_id);
+  }
+  return [...out].sort((a, b) => a - b);
 }
 
 const tyLe = (dat: number, mau: number): TyLeCn => ({ dat, mau });
