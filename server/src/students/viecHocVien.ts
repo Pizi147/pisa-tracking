@@ -6,6 +6,7 @@ import { diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+import { hanGhiKetQuaToi } from '../worklist/mywork.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
 import { kem, type Bien } from '../../../shared/i18n/index.ts';
@@ -84,7 +85,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     for (const { c } of cases) for (const pl of c.plans) if (pl.kind === 'bo_tro' && pl.nhom && loc(pl)) m.set(pl.nhom, Math.min(m.get(pl.nhom) ?? Infinity, pl.id));
     return m;
   };
-  const chayDuoc = (pl: any) => (pl.status === 'planned' || pl.status === 'started') && !!pl.actionDue && !pl.pendingApproval && !(pl.preset && !pl.confirmedAt);
+  /* P1 G2-03 (rà 11/11): "Ghi kết quả PA" chỉ thành việc từ hạn − 2 — cùng khung Công việc (`hanGhiKetQuaToi`); sớm hơn thì PA có nút "Cập nhật trước hạn". */
+  const khungKq = hanGhiKetQuaToi(today);
+  const chayDuoc = (pl: any) => (pl.status === 'planned' || pl.status === 'started') && !!pl.actionDue && pl.actionDue <= khungKq && !pl.pendingApproval && !(pl.preset && !pl.confirmedAt);
   const minGhi = minNhom(chayDuoc);
 
   for (const { r, c } of cases) {
@@ -106,7 +109,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
         han: null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id } });
     }
     for (const pl of c.plans) {
-      if (pl.choXacNhan && c.sos?.hasCause) {
+      /* P1 G2-02: Case chờ QL duyệt "không theo dõi" — việc ở Quản lý, không giao Xác nhận PA (cùng `viecTiepCuaCase` và `mywork.ts` `CO_THE_KHONG_THEO_DOI`). */
+      if (pl.choXacNhan && c.sos?.hasCause && !c.sos?.choDuyetKhongTheoDoi) {
         ds.push({ key: `xnpa:${pl.id}`, loai: 'xac-nhan-pa', ...kem('Xác nhận PA {pa} · {kn}', { pa: pl.name, kn }), kyNang: r.category, caseId: c.id, paId: pl.id,
           han: c.sos?.dueOn ?? null, tone: 'info', nguoiId: c.ownerId ?? null, nut: 'Xác nhận PA', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'xac-nhan-pa' } });
       }

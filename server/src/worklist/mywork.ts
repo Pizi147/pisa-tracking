@@ -534,6 +534,9 @@ export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
  * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
  */
+/** "Ghi kết quả PA" thành việc từ hạn − 2: PA có `action_due` ≤ ngày này. Công việc và hồ sơ HV (`viecHocVien.ts`) dùng chung (P1 G2-03). */
+export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
+
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
   /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[];
   /** SUA-LOI-CV: việc Chấm Speaking chỉ tính lớp FT ở các chi nhánh này (QL xem việc GV — phạm vi người xem); null / không truyền = mọi chi nhánh. */ cnCheo?: readonly number[] | null;
@@ -863,7 +866,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND ${HV_DANG_HOC_SQL('s')}`,   /* K3-41: em Tạm dừng dừng hạn */
     )
-    .all(addDays(today, 2)) as any[];
+    .all(hanGhiKetQuaToi(today)) as any[];
   /*
    * TL-VIEC · PHA ĐỌC: mọi nguồn dòng việc đọc TRƯỚC (đoạn này không có ghi; đọc lại Mốc PA quy chế ở mục riêng sau `dienMocQuyChe`), rồi MỘT lần nạp phạm vi em / chủ Case /
    * tỷ lệ cho cả tập; pha DỰNG phía dưới giữ nguyên thứ tự `items.push`.
@@ -984,7 +987,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   // ------------------------------------------------- 2d. PR-LCb: Chốt lộ trình (một việc mỗi lớp thường, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`
   /*
    * Thay hai việc "Chốt lên FT" (trước tuần Final) và "Chuyển tiếp lớp" (từ tuần Final): MỘT việc từ thứ Hai tuần trước Final (N20) tới khi mọi em đang học
-   * có quyết định chuyển lớp; qua hạn vẫn còn, đỏ. Việc của cả lớp, không của riêng ai — không gán người phụ trách.
+   * có quyết định chuyển lớp; qua hạn vẫn còn, đỏ. Việc của cả lớp, không gán người phụ trách — nhưng là việc CỦA người xem (`mine`), vì `lopChoChotLoTrinh`
+   * chỉ trả lớp người xem chốt được (`class.edit` = quyền ra lệnh): badge, "Của tôi · Quá hạn" đếm như Xét lại lộ trình (P1 G5-01, rà 11/11).
    */
   for (const x of co('chot_len_ft') ? lopChoChotLoTrinh(p, f.branchId ?? null, today) : []) {
     const chu = chuViecChotLoTrinh(x);
@@ -995,7 +999,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: chu,
       tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Cuối khoá ›',
       href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`,
-      ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',
+      ownerId: null, owner: null, mine: true, due: x.han, statusLabel: 'Chưa chốt',
     });
   }
 
