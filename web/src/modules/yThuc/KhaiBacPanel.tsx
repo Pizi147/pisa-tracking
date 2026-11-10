@@ -5,7 +5,8 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { ErrorState, NutChon } from '../../ui/ui.tsx';
+import { ErrorState } from '../../ui/ui.tsx';
+import { ChipBac } from './KhaiBacLoPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
@@ -77,10 +78,9 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{sua ? t('Lưu') : t('Xác nhận')}</button>,
       }}>
       <Khoi tieuDe={t('Bậc cao nhất đã xử lý trước khi dùng web')}>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label={t('Bậc đã xử lý')} {...lf.o(loi, 'bac')}>
-          {BAC_KHAI.map((nhan, i) => (
-            <NutChon key={i} chon={bac === i} onClick={() => setBac(i)}>{nhan}</NutChon>
-          ))}
+        {/* MOCKUP-1111 K5: cùng hàng chip một bấm với panel cả lớp (cỡ lớn); bậc đã khai = chip nền nhạt. */}
+        <div {...lf.o(loi, 'bac')}>
+          <ChipBac lon chon={bac} cu={sua && d.khai ? d.khai.bac : null} onPick={setBac} nhan={t('Bậc đã xử lý')} />
         </div>
         {lf.loiCua(loi, 'bac') && <p className="m-0 text-xs text-late">{t('Chọn bậc cao nhất em đã bị xử lý')}</p>}
         {bac !== null && <p className="m-0 text-xs text-slate-500">{t('Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.', { nhanLoaiXuLy: nhanLoaiXuLy(kindCuaBac(bac + 1)) })}</p>}

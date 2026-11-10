@@ -6,6 +6,8 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
+import { IconKhoa } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, THANG, dsLoi, nhanLoaiXuLy, ngay } from '@shared/domain/index.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -17,6 +19,9 @@ import { invalidate } from '../../lib/api.ts';
 /** Bậc khai được: 0 "Chưa có xử lý vi phạm" + sáu bậc mạch chính (khai tối đa WL 2). */
 const BAC = [BAC_0_NHAN, ...THANG.map((k) => nhanLoaiXuLy(k))];
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
+/** MOCKUP-1111 màn 2: tên ngắn trên chip (tên đủ ở `title`). */
+const NGAN_BAC = [t('Không'), 'R1', 'R2', 'WL1', 'R4', 'R5', 'WL2'];
+export const nganBac = (b: number) => NGAN_BAC[b] ?? dich(BAC[b] ?? '');
 
 /**
  * KHAI / SỬA CẤP BẬC THEO LỚP — KHAI-BAC-LO (mockup `thiet-ke/v7/khai-bac-lo.html`, chủ SP duyệt 28/10): MỘT bảng mọi em (hoặc các em đã chọn),
@@ -34,7 +39,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
   const { homNay } = useNgayNghiepVu();
   const { data, error, reload } = useApi<BangLo>(`/classes/${classId}/y-thuc/lo`, [classId]);
   const [tick, setTick] = useState<Set<number>>(new Set());
-  const [apBac, setApBac] = useState<number | null>(null);
+  const [loc, setLoc] = useState<'tat' | 'chua' | 'co'>('tat');
   const [bacMoi, setBacMoi] = useState<Record<number, number>>({});
   const [rieng, setRieng] = useState<Set<number>>(new Set());
   const [thang, setThang] = useState(homNay ? homNay.slice(0, 7) : '');
@@ -70,12 +75,6 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
 
   const doiTick = (sid: number) => setTick((s) => { const n = new Set(s); if (n.has(sid)) n.delete(sid); else n.add(sid); return n; });
   const tickHet = () => setTick(tickDuoc === duoc.length ? new Set() : new Set(duoc.map((e) => e.studentId)));
-  const ap = () => {
-    if (apBac === null) return;
-    setBacMoi((b) => { const n = { ...b }; for (const e of duoc) if (tick.has(e.studentId)) n[e.studentId] = apBac; return n; });
-    boKq(duoc.filter((e) => tick.has(e.studentId)).map((e) => e.studentId));
-    setRieng((r) => { const n = new Set(r); for (const e of duoc) if (tick.has(e.studentId)) n.delete(e.studentId); return n; });
-  };
   const chonRieng = (sid: number, v: string) => {
     setBacMoi((b) => { const n = { ...b }; if (v === '') delete n[sid]; else n[sid] = Number(v); return n; });
     setRieng((r) => { const n = new Set(r); if (v === '') n.delete(sid); else n.add(sid); return n; });
@@ -111,7 +110,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
       setLoiLuu(e instanceof ApiError ? dich(e.message) : String(e?.message ?? e));
     } finally {
       setBusy(false);
-      if (okMoi.length) { setLoVua(okMoi); setApBac(null); onDone?.(); lamMoi(); reload(); }
+      if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoi(); reload(); }
     }
   };
 
@@ -137,117 +136,165 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
     for (const x of loVua) dem.set(x.nhan ?? '', (dem.get(x.nhan ?? '') ?? 0) + 1);
     return [...dem].map(([nhan, n]) => t('{nhan} ({n} em)', { nhan: dich(nhan), n })).join(' · ');
   };
-  const nhanDoi = (e: EmLo) => {
-    const moi = bacMoi[e.studentId];
+  /* Mockup: khoá một dòng ngay chỗ chọn — "Nhờ QL sửa" (có xử lý trên web) / "Chỉ QL sửa" (đã khai); lý do đủ ở `title`. */
+  const lyDoKhoa = (e: EmLo) => (e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ QL sửa'));
+  const ngan = nganBac;
+  /** Hiện tại MỘT dòng: bậc · nguồn ngắn; đang đổi em đã có bậc → "R2 → R1 ↓". Chưa khai mà đổi → giữ "Chưa khai" (chip nền đặc đã nói). */
+  const hienTai = (e: EmLo, doi: boolean) => {
     const cu = e.capBac.khai;
-    const goc = cu === null ? t('Khai mới') : moi < cu ? t('↓ Hạ từ {bac}', { bac: dich(BAC[cu]) }) : t('Nâng từ {bac}', { bac: dich(BAC[cu]) });
-    return rieng.has(e.studentId) ? `${goc} · ${t('sửa riêng')}` : goc;
+    if (doi && cu !== null) return `${ngan(cu)} → ${ngan(bacMoi[e.studentId])}${bacMoi[e.studentId] < cu ? ' ↓' : ''}`;
+    return cu !== null ? `${ngan(cu)}${e.capBac.luc ? ` · ${t('khai {ngay}', { ngay: ngay(e.capBac.luc, homNay) })}` : ''}`
+      : e.bacNhan ? `${dich(e.bacNhan)} · ${t('trên web')}` : t('Chưa khai');
   };
-  const hienTai = (e: EmLo) => (e.capBac.khai !== null
-    ? `${dich(BAC[e.capBac.khai])}${e.capBac.luc ? ` · ${t('khai {ngay}', { ngay: ngay(e.capBac.luc, homNay) })}` : ''}`
-    : !e.capBac.duoc && e.bacNhan ? `${dich(e.bacNhan)} · ${t('có xử lý trên web')}` : t('Chưa khai'));
-
-  /* Mockup: "Đã có xử lý trên web · chỉ QL sửa" — viết hoa đầu câu, luôn nói ai sửa được. */
-  const lyDoKhoa = (e: EmLo) => {
-    const chu = e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ QL sửa');
-    const hoa = chu.charAt(0).toUpperCase() + chu.slice(1);
-    return /QL/.test(hoa) ? hoa : `${hoa} · ${t('chỉ QL sửa')}`;
+  const coXuLy = (e: EmLo) => e.capBac.khai !== null || !!e.bacNhan;
+  const dsLoc = loc === 'chua' ? ds.filter((e) => !coXuLy(e)) : loc === 'co' ? ds.filter(coXuLy) : ds;
+  const duocLoc = dsLoc.filter((e) => e.capBac.duoc);
+  const tickLoc = duocLoc.filter((e) => tick.has(e.studentId)).length;
+  /* "Đặt bậc": bấm chip là áp ngay cho các em đã tick (bỏ bước "Áp cho n em"); thanh không giữ chip sáng — bấm lại không đè em đã sửa riêng. */
+  const datBac = (b: number) => {
+    const ids = duoc.filter((e) => tick.has(e.studentId)).map((e) => e.studentId);
+    setBacMoi((m) => { const n = { ...m }; for (const sid of ids) n[sid] = b; return n; });
+    setRieng((r) => { const n = new Set(r); for (const sid of ids) n.delete(sid); return n; });
+    boKq(ids);
   };
-  const chonBac = (value: number | undefined | null, onChange: (v: string) => void, nhan: string, goiY: string, doi = false) => (
-    <select className={`field min-h-[44px] w-full py-1 text-[13px] sm:min-h-0 ${doi ? 'border-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`}
-      aria-label={nhan} value={value ?? ''} onChange={(ev) => onChange(ev.target.value)}>
-      <option value="">{goiY}</option>
-      {BAC.map((b, i) => <option key={i} value={i}>{dich(b)}</option>)}
-    </select>
+  const chonMot = (e: EmLo, b: number) => chonRieng(e.studentId, bacMoi[e.studentId] === b ? '' : String(b));
+  const chiaBac = [...gui.reduce((m, e) => m.set(bacMoi[e.studentId], (m.get(bacMoi[e.studentId]) ?? 0) + 1), new Map<number, number>())]
+    .sort((a, b) => a[0] - b[0]).map(([b, n]) => `${n} ${ngan(b)}`).join(' · ');
+  const soHa = gui.filter((e) => e.capBac.khai !== null && bacMoi[e.studentId] < e.capBac.khai).length;
+  const nutLoc = (k: typeof loc, nhan: string, n: number) => (
+    <button type="button" aria-pressed={loc === k} onClick={() => setLoc(k)}
+      className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap border-0 px-3 text-[13px] sm:min-h-[32px] ${loc === k ? 'bg-[color:var(--accent-soft)] font-bold text-slate-100 shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-transparent font-medium text-dim'}`}>
+      {nhan} <span className="text-xs tabular-nums text-faint">{n}</span>
+    </button>
   );
 
-  const COT = '[@container(min-width:600px)]:grid-cols-[56px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,13rem)_minmax(0,1fr)] [@container(min-width:600px)]:items-center';
+  const COT = '[@container(min-width:600px)]:grid-cols-[28px_minmax(0,1fr)_150px_316px] [@container(min-width:600px)]:items-center';
   return (
     <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong"
       dau={{ loai: han ? t('Việc') : undefined, han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined,
-        dong2: [lop ?? data.classCode, t('{n} HV', { n: ds.length }), t('bậc cao nhất em đã bị xử lý trước khi dùng web')] }}
+        dong2: [lop ?? data.classCode, t('{n} HV', { n: ds.length }),
+          <NutLuat key="luat" label={t('Bậc khai là gì')}>{t('Bậc cao nhất em đã bị xử lý trước khi dùng web. R = Report · WL = thư cảnh cáo · R4 = Report 4 + Meeting CX/GĐCN.')}</NutLuat>] }}
       chan={{
         daSua: gui.length > 0,
         conThieu: lf.conThieu(loi),
         trai: busy ? <span role="status" className="text-[13px] text-dim">{t('Đang lưu…')}</span>
           : loiLuu ? <span role="alert" className="text-[13px] font-semibold text-bad">{loiLuu}</span>
-          : <span className="text-[13px] text-dim">{gui.length ? t('{n} em đổi bậc', { n: gui.length }) : t('Chưa đổi em nào')}{soKhoa ? ` · ${t('{n} em khoá (chỉ QL sửa)', { n: soKhoa })}` : ''}</span>,
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
-          {gui.length ? t('Lưu {n} em', { n: gui.length }) : t('Lưu')}</button>,
+          : gui.length ? (
+            <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-dim">
+              <b className="font-semibold text-slate-100">{t('Đổi {n} em', { n: gui.length })}</b><span>{chiaBac}</span>
+              {soHa > 0 && <span className="font-semibold text-soon">· {t('{n} em hạ bậc', { n: soHa })}</span>}
+            </span>
+          ) : <span className="text-[13px] text-dim">{t('Chưa đổi em nào')}{soKhoa ? ` · ${t('{n} em khoá (chỉ QL sửa)', { n: soKhoa })}` : ''}</span>,
+        chinh: (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
+            {gui.length ? t('Lưu · {n} em', { n: gui.length }) : t('Lưu')}</button>
+        ),
       }}>
       <div className="-mx-4 [container-type:inline-size] sm:-mx-5">
         {soOk > 0 && (
           <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-ok-bg px-4 py-2.5 text-[13px] font-semibold text-ok border-ok-line sm:px-5">
             <span>✓ {t('Đã lưu {n} em: {tom}', { n: soOk, tom: tomTatOk() })}</span>
             <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold underline underline-offset-2 appearance-none sm:min-h-0" disabled={busy} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
-            {soLoi > 0 && <span className="font-normal text-dim">{t('{n} em chưa lưu — xem dòng đỏ', { n: soLoi })}</span>}
+            {soLoi > 0 && <span className="font-normal text-bad">{t('{n} em chưa lưu', { n: soLoi })}</span>}
           </div>
         )}
-        <div className="surface-2 grid gap-2.5 border-b px-4 py-3 text-[13px] sm:px-5" style={{ borderColor: 'var(--line)' }}>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 font-semibold sm:min-h-0">
-              <input ref={tatCaRef} type="checkbox" className="h-4 w-4" checked={duoc.length > 0 && tickDuoc === duoc.length} disabled={!duoc.length} onChange={tickHet} />
-              {t('Chọn tất cả ({n})', { n: duoc.length })}
-            </label>
-            <span className="inline-flex flex-wrap items-center gap-2">
-              <span>{t('Áp bậc')}</span>
-              <span className="w-[11rem] max-w-full">{chonBac(apBac, (v) => setApBac(v === '' ? null : Number(v)), t('Bậc áp cho các em đã tick'), t('Chọn bậc…'))}</span>
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={apBac === null || !tickDuoc} onClick={ap}>{t('Áp cho {n} em', { n: tickDuoc })}</button>
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="inline-flex items-center gap-2">{t('Tháng')}
-              <ONgay kieu="thang" value={thang} onChange={(v) => { setThang(v); setThangCham(true); }} toiDa={homNay ? homNay.slice(0, 7) : null} ariaLabel={t('Tháng xử lý')} gon />
-            </span>
-            <label className="flex min-w-0 flex-[1_1_8rem] items-center gap-2">
-              <span className="max-sm:sr-only">{t('Ghi chú')}</span>
-              <input className="field min-h-[44px] min-w-0 flex-1 py-1 text-[13px] sm:min-h-0" value={ghiChu} maxLength={500}
-                onChange={(e) => setGhiChu(e.target.value)} placeholder={t('Ghi chú (tuỳ chọn)')} aria-label={t('Ghi chú chung')} />
-            </label>
-          </div>
+        {/* Tháng + ghi chú chung — một hàng đầu panel (375: nhãn cột 96 px thẳng hàng). */}
+        <div className="surface-2 flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3 text-[13px] sm:px-5" style={{ borderColor: 'var(--line)' }}>
+          <span className="grid grid-cols-[96px_auto] items-center font-semibold text-dim max-sm:w-full sm:inline-flex sm:gap-2">{t('Tháng xử lý')}
+            <ONgay kieu="thang" value={thang} onChange={(v) => { setThang(v); setThangCham(true); }} toiDa={homNay ? homNay.slice(0, 7) : null} ariaLabel={t('Tháng xử lý')} gon />
+          </span>
+          <label className="grid min-w-0 flex-[1_1_14rem] grid-cols-[96px_minmax(0,1fr)] items-center font-semibold text-dim sm:flex sm:gap-2">
+            <span>{t('Ghi chú chung')}</span>
+            <input className="field min-h-[44px] min-w-0 flex-1 py-1 text-[13px] font-normal sm:min-h-0" value={ghiChu} maxLength={500}
+              onChange={(e) => setGhiChu(e.target.value)} placeholder={t('Tuỳ chọn')} aria-label={t('Ghi chú chung')} />
+          </label>
         </div>
+        {/* Hàng công cụ (ngoài tiêu đề cột — G9): chưa tick → Chọn tất cả + lọc; có tick → "n em đã chọn · Đặt bậc [chip]". */}
+        {tickDuoc > 0 ? (
+          <div className="group/dong flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-[color:var(--accent-soft)] px-4 py-2.5 sm:px-5" style={{ borderColor: 'var(--accent)' }}>
+            <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm font-bold sm:min-h-0">
+              <input ref={tatCaRef} type="checkbox" className="h-4 w-4" checked onChange={() => setTick(new Set())} aria-label={t('Bỏ chọn')} />
+              {t('{n} em đã chọn', { n: tickDuoc })}
+            </label>
+            <span className="text-[13px] font-semibold text-dim">{t('Đặt bậc')}</span>
+            <span className="max-sm:w-full">{<ChipBac chon={undefined} cu={null} onPick={datBac} nhan={t('Đặt bậc cho các em đã chọn')} />}</span>
+            <button type="button" className="link ml-auto min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setTick(new Set())}>{t('Bỏ chọn')}</button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 sm:px-5" style={{ borderColor: 'var(--line)' }}>
+            <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-sm font-semibold sm:min-h-0">
+              <input ref={tatCaRef} type="checkbox" className="h-4 w-4" checked={false} disabled={!duocLoc.length}
+                onChange={() => setTick(new Set(duocLoc.map((e) => e.studentId)))} />
+              {loc === 'tat' ? t('Chọn tất cả') : t('Chọn {n} em đang lọc', { n: duocLoc.length })}
+            </label>
+            <span role="group" aria-label={t('Lọc')} className="ml-auto inline-flex overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
+              {nutLoc('tat', t('Tất cả'), ds.length)}{nutLoc('chua', t('Chưa khai'), ds.filter((e) => !coXuLy(e)).length)}{nutLoc('co', t('Đã có xử lý'), ds.filter(coXuLy).length)}
+            </span>
+          </div>
+        )}
         <div className={`hidden gap-x-2.5 border-b px-4 py-2 text-[12px] font-semibold text-dim sm:px-5 [@container(min-width:600px)]:grid ${COT}`} aria-hidden style={{ borderColor: 'var(--line)' }}>
-          <span>{t('Áp cho')}</span><span>{t('Học viên')}</span><span>{t('Bậc hiện tại')}</span><span>{t('Bậc mới')}</span><span />
+          <span /><span>{t('Học viên')}</span><span>{t('Hiện tại')}</span><span>{t('Bậc khai')}</span>
         </div>
         <ul className="m-0 list-none p-0">
-          {ds.map((e) => {
+          {dsLoc.map((e) => {
             const khoa = !e.capBac.duoc;
             const k = kq.get(e.studentId);
             const kh = kqHoanTac.get(e.studentId);
             const doi = bacMoi[e.studentId] !== undefined && bacMoi[e.studentId] !== e.capBac.khai;
             const vuaLuu = loVua.some((x) => x.studentId === e.studentId) && !doi;
             const ha = doi && e.capBac.khai !== null && bacMoi[e.studentId] < e.capBac.khai;
-            const ghi = khoa ? <span className="text-[12px] text-faint">{lyDoKhoa(e)}</span>
-              : kh?.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa hoàn tác: {loi}', { loi: dichChu(kh.loi) })}</span>
-              : k && !k.ok && k.loi ? <span role="alert" className="text-[12px] font-semibold text-bad">{t('Chưa lưu: {loi}', { loi: dichChu(k.loi) })}</span>
-              : doi ? <span className={`text-[12px] font-semibold ${ha ? 'text-soon' : 'text-[color:var(--accent)]'}`}>{nhanDoi(e)}</span>
-              : vuaLuu ? <span className="text-[12px] font-semibold text-dim">✓ {t('Đã lưu')}</span> : null;
+            const loiDong = kh?.loi ? t('Chưa hoàn tác: {loi}', { loi: dichChu(kh.loi) }) : k && !k.ok && k.loi ? t('Chưa lưu: {loi}', { loi: dichChu(k.loi) }) : null;
+            const chuHt = loiDong ?? (vuaLuu ? '✓' : hienTai(e, doi));
             return (
-              <li key={e.studentId} className={`grid grid-cols-[36px_minmax(0,1fr)] gap-x-2.5 gap-y-1 border-b px-4 py-2.5 sm:px-5 [@container(min-width:600px)]:py-1.5 ${COT} ${tick.has(e.studentId) && !khoa ? 'bg-[color:var(--accent-soft)]' : ''}`}
+              <li key={e.studentId} className={`group/dong grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 border-b px-4 py-2.5 sm:px-5 [@container(min-width:600px)]:h-11 [@container(min-width:600px)]:py-0 ${COT} ${tick.has(e.studentId) && !khoa ? 'bg-[color:var(--accent-soft)]' : ''}`}
                 style={{ borderColor: 'var(--line)' }}>
-                <span className="row-span-4 pt-0.5 [@container(min-width:600px)]:row-span-1 [@container(min-width:600px)]:pt-0">
+                <span className="flex">
                   {!khoa && (
                     /* Vùng bấm 44 px (cả nhãn bọc ô tick), ô 16 px như mockup. */
                     <label className="-m-3.5 inline-flex h-11 w-11 cursor-pointer items-center justify-center sm:m-0 sm:h-auto sm:w-auto">
                       <input type="checkbox" className="h-4 w-4 cursor-pointer" checked={tick.has(e.studentId)}
-                        onChange={() => doiTick(e.studentId)} aria-label={t('Áp cho {ten}', { ten: e.ten })} />
+                        onChange={() => doiTick(e.studentId)} aria-label={t('Chọn {ten}', { ten: e.ten })} />
                     </label>
                   )}
                 </span>
-                <span className={`truncate text-sm font-semibold ${khoa ? 'text-faint' : 'text-slate-100'}`}>{e.ten}</span>
-                <span className="text-[13px] text-dim">
-                  <span className="text-faint [@container(min-width:600px)]:sr-only">{t('Hiện tại')}: </span>{hienTai(e)}
+                <span className={`truncate text-[15px] font-semibold ${khoa ? 'font-medium text-dim' : 'text-slate-100'}`}>{e.ten}</span>
+                <span role={loiDong ? 'alert' : undefined} title={chuHt}
+                  className={`truncate text-[13px] ${loiDong ? 'font-semibold text-bad' : vuaLuu ? 'font-semibold text-ok' : ha ? 'font-semibold text-soon' : doi ? 'font-semibold text-[color:var(--accent)]' : e.capBac.khai === null && !e.bacNhan ? 'text-faint' : 'text-dim'}`}>
+                  {loiDong ? `⚠ ${chuHt}` : chuHt}
                 </span>
-                <span className={`min-w-0 ${khoa ? 'max-[599px]:hidden' : ''}`}>
-                  {khoa ? <span className="hidden text-faint [@container(min-width:600px)]:inline">—</span>
-                    : chonBac(bacMoi[e.studentId], (v) => chonRieng(e.studentId, v), t('Bậc mới của {ten}', { ten: e.ten }), t('— giữ nguyên —'), doi)}
+                <span className="col-span-3 min-w-0 [@container(min-width:600px)]:col-span-1">
+                  {khoa ? (
+                    <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-faint" title={lyDoKhoa(e)}>
+                      <IconKhoa />{/QL/.test(lyDoKhoa(e)) && /nhờ/i.test(lyDoKhoa(e)) ? t('Nhờ QL sửa') : t('Chỉ QL sửa')}
+                    </span>
+                  ) : <ChipBac chon={bacMoi[e.studentId]} cu={vuaLuu ? (loVua.find((x) => x.studentId === e.studentId)?.bac ?? e.capBac.khai) : e.capBac.khai} onPick={(b) => chonMot(e, b)} nhan={t('Bậc khai của {ten}', { ten: e.ten })} />}
                 </span>
-                <span className="min-w-0">{ghi}</span>
               </li>
             );
           })}
         </ul>
       </div>
     </KhungPanel>
+  );
+}
+
+/** Hàng 7 chip một bấm (MOCKUP-1111 màn 2): chưa chọn = chữ (viền khi rê / focus dòng, 375 luôn viền mảnh) · bậc đang có = nền nhạt · vừa chọn = nền đặc.
+ *  Bấm lại chip đang chọn = bỏ đổi. Tên đủ ở `title` + tên đọc màn. */
+export function ChipBac({ chon, cu, onPick, nhan, lon = false }: { chon: number | undefined | null; cu: number | null; onPick: (b: number) => void; nhan: string; lon?: boolean }) {
+  return (
+    <span role="group" aria-label={nhan} className={`grid grid-cols-[1.25fr_repeat(6,minmax(0,1fr))] gap-1.5 sm:inline-flex sm:gap-1 ${lon ? 'sm:gap-1.5' : ''}`}>
+      {BAC.map((b, i) => {
+        const dang = chon === i;
+        return (
+          <button key={i} type="button" aria-pressed={dang} title={dich(b)} aria-label={dich(b)} onClick={() => onPick(i)}
+            className={`min-h-[44px] rounded-md border px-1.5 text-[13px] font-semibold tabular-nums transition-colors sm:min-w-[38px] ${lon ? 'sm:h-9 sm:min-w-[44px] sm:px-2.5 sm:text-sm' : 'sm:h-[30px] sm:min-h-0'} ${
+              dang ? 'btn-primary'   /* nền đặc = nút chính (token `--nut-chinh-*`) */
+                : cu === i ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]'
+                : `border-[color:var(--line)] text-slate-300 hover:border-[color:var(--accent)] ${lon ? '' : 'sm:border-transparent sm:group-hover/dong:border-[color:var(--line-strong)] sm:group-focus-within/dong:border-[color:var(--line-strong)]'}`}`}>
+            {nganBac(i)}
+          </button>
+        );
+      })}
+    </span>
   );
 }
