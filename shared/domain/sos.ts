@@ -144,6 +144,13 @@ export function aiLamViec(dong: { kind: string; pb_moc?: number | null }): { aiL
   const v = viecCua(dong.kind, dong.pb_moc);
   return { aiLam: v?.aiLam ?? 'gvcn', buocTvv: v?.buocTvv ?? null };
 }
+/** Mã việc CÓ HẠN ở bản gốc hoặc bản đang dùng — lọc SQL trước (`kind IN (…)`), `hanPhoiHop(…, pb)` của từng dòng quyết sau.
+ *  ponytail: bản giữa (có hạn rồi bỏ) không vào lọc — thêm hợp mọi phiên bản nếu Quản trị hay đổi qua lại. */
+export function maViecCoHan(): string[] {
+  const r = new Set<string>(['cx_meeting_student', 'cx_meeting_family']);
+  for (const v of cauHinhPb('moc_sos', undefined).du_lieu.viec) if (v.hanNgay != null) r.add(v.ma);
+  return [...r];
+}
 /** Ghi chú tối thiểu khi xác nhận việc (0 = không bắt buộc) — theo bản chụp của dòng. */
 export const toiThieuGhiChu = (kind: string, pb?: number | null): number => {
   const v = viecCua(kind, pb);

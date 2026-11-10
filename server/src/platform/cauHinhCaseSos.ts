@@ -45,16 +45,18 @@ function docDangDung(): Map<LoaiCauHinh, Ban> {
 }
 
 /** Theo kết nối (như `nhoThamChieu`): phép kiểm đổi kết nối / DB chép lại không thấy nhớ của kết nối cũ. */
-const dangDungTheoKetNoi = new WeakMap<object, { so: number; v: Map<LoaiCauHinh, Ban> }>();
+const dangDungTheoKetNoi = new WeakMap<object, { so: number | null; v: Map<LoaiCauHinh, Ban> }>();
 const banTheoKetNoi = new WeakMap<object, Map<number, Ban | null>>();
-const trongRequest = () => {
-  const so = (layMoc() as MocHeThong | undefined)?.thamChieu;
-  return so == null || thamChieuDayDuKhiKiem.bat ? null : so;
-};
+const trongRequest = (): number | null => (layMoc() as MocHeThong | undefined)?.thamChieu ?? null;
 
+/**
+ * Trong request: khoá bằng mốc tham chiếu (tiến trình khác sửa → số đổi → đọc lại). NGOÀI request (phép kiểm, lệnh ops, việc nền): nhớ theo kết nối tới khi
+ * chính máy chủ này ghi cấu hình (`luuCauHinh` → `quenNhoCauHinh`) — không đọc lại mỗi lần tra nhãn trong một vòng tạo 80 Case.
+ * ponytail: việc nền chạy ngoài request ở tiến trình khác không thấy lần sửa từ tiến trình khác tới khi tiến trình đó khởi động lại; dùng mốc tham chiếu nếu việc nền tạo Case.
+ */
 export function cauHinhDangDung<L extends LoaiCauHinh>(l: L): BanCauHinh<L> {
+  if (thamChieuDayDuKhiKiem.bat) return docDangDung().get(l) as BanCauHinh<L>;
   const so = trongRequest();
-  if (so == null) return docDangDung().get(l) as BanCauHinh<L>;
   const conn = db();
   let c = dangDungTheoKetNoi.get(conn);
   if (!c || c.so !== so) dangDungTheoKetNoi.set(conn, c = { so, v: docDangDung() });
@@ -66,7 +68,7 @@ export function cauHinhTheoId<L extends LoaiCauHinh>(l: L, id: number): BanCauHi
     const r = db().prepare('SELECT id, loai, du_lieu FROM cau_hinh_phien_ban WHERE id = ?').get(id) as { id: number; loai: string; du_lieu: string } | undefined;
     return r && r.loai === l ? { id: r.id, du_lieu: JSON.parse(r.du_lieu) } : null;
   };
-  if (trongRequest() == null) return doc() as BanCauHinh<L> | null;
+  if (thamChieuDayDuKhiKiem.bat) return doc() as BanCauHinh<L> | null;
   const conn = db();
   let m = banTheoKetNoi.get(conn);
   if (!m) banTheoKetNoi.set(conn, m = new Map());

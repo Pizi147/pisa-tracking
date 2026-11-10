@@ -8,6 +8,7 @@
  * Dải xét trên tỷ lệ CHƯA làm tròn: 0.595 là 50–59, 0.6 là 60–69, 0.6999 là 60–69, 0.7 là Pass. Làm tròn chỉ để hiện.
  * Hướng gợi ý KHÔNG lưu (sửa điểm thì gợi ý đổi theo); Quản lý quyết ở màn Chuyển lớp (Q30-3: không còn thẻ duyệt).
  */
+import { mocThuong } from './sos.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, laChuongTrinhGoc, programmeOf, tenMonNgan, type RegularSkill } from './normal.ts';
 import { roundToHalf } from './tongKetLoTrinh.ts';
 import { NORMAL_LADDER } from './fasttrack.ts';
@@ -80,7 +81,7 @@ export function hanXetLai(x: { ma: MaXetLai; tuanBatDau: string; moc: string }):
   return cnTuan2 > cnMoc ? cnTuan2 : cnMoc;
 }
 
-export type BoTroMienPhi = { soBuoi: number; soTuan: 1 | 2; theoMon: boolean; mon: string[] /* ô chuẩn của lớp CŨ */ };
+export type BoTroMienPhi = { soBuoi: number; soTuan: number; theoMon: boolean; mon: string[] /* ô chuẩn của lớp CŨ */ };
 /** 'len' = lên bậc kế hoặc sang FT; null = 50–59, Quản lý cân nhắc. */
 export type HuongGoiY = 'hoc_lai' | 'len' | null;
 export type GoiYCuoiKhoa = {
@@ -115,8 +116,10 @@ export const chuMonTruot = (ct: string, mon: readonly string[]): string => mon.m
  * ELE không bổ trợ ("lên" = FT; `goiYCuoiKhoa` trả null).
  */
 function boTro(ct: ProgrammeCode, dai: '50_59' | '60_69', monTruot: readonly string[]): BoTroMienPhi | null {
-  const soTuan = dai === '50_59' ? 2 : 1;
-  if (CHUONG_TRINH_KHONG_CHIA_MON.includes(ct)) return { soBuoi: dai === '50_59' ? 4 : 2, soTuan, theoMon: false, mon: ['tong_hop'] };
+  /* CAU-HINH-CASE-SOS: số tuần (× môn trượt) và buổi Pre FOU Quản trị đặt (bản gốc 2 / 1 tuần, Pre FOU 4 / 2 buổi). */
+  const m = dai === '50_59' ? mocThuong().final5059Len : mocThuong().final6069;
+  const soTuan = m.tuan;
+  if (CHUONG_TRINH_KHONG_CHIA_MON.includes(ct)) return { soBuoi: m.preFou, soTuan, theoMon: false, mon: ['tong_hop'] };
   return monTruot.length ? { soBuoi: monTruot.length * soTuan, soTuan, theoMon: true, mon: [...monTruot] } : null;
 }
 
@@ -156,8 +159,19 @@ export const coBoTroFinal = (ct: string | null, toFt: boolean): boolean => !(toF
 export const coBoTroKhiChot = (huong: string | null, goiY: GoiYCuoiKhoa | null, ct: string | null, toFt: boolean): boolean =>
   (huong === 'len_lop' || huong === 'fast_track') && !!goiY?.boTroNeuLen && coBoTroFinal(ct, toFt);
 /** Báo PH qua TVV: Final < 50 % LUÔN (kể cả QL cho lên — PTA Plan 25/10), 50–59 % mà QL chọn học lại (Q6). Tạm dừng / Dừng học không qua đây. */
-export const coBaoPhKhiChot = (huong: string | null, goiY: GoiYCuoiKhoa | null): boolean =>
-  !!goiY && (huong === 'len_lop' || huong === 'fast_track' || huong === 'hoc_lai') && (goiY.baoPhTvv || (huong === 'hoc_lai' && goiY.dai === '50_59'));
+export const coBaoPhKhiChot = (huong: string | null, goiY: GoiYCuoiKhoa | null): boolean => viecKhiChot(huong, goiY).includes('bao_ph_tvv');
+/**
+ * CAU-HINH-CASE-SOS: việc phối hợp sinh khi thi hành Cuối khoá, theo dải Final + hướng (Quản trị đặt ở Mốc SOS › Lớp thường). Bản gốc = luật cũ:
+ * < 50 % → Báo PH qua TVV (kể cả cho lên), 50–59 % học lại → Báo PH qua TVV, còn lại không việc. Tạm dừng / Dừng học không qua đây.
+ */
+export function viecKhiChot(huong: string | null, goiY: GoiYCuoiKhoa | null): readonly string[] {
+  if (!goiY || !(huong === 'len_lop' || huong === 'fast_track' || huong === 'hoc_lai')) return [];
+  const m = mocThuong();
+  if (goiY.dai === 'duoi_50') return m.finalDuoi50.viec;
+  if (goiY.dai === '50_59') return huong === 'hoc_lai' ? m.final5059HocLai.viec : m.final5059Len.viec;
+  if (goiY.dai === '60_69' && huong !== 'hoc_lai') return m.final6069.viec;
+  return [];
+}
 
 /**
  * TÓM TẮT CHÂN trang Cuối khoá (GPT 3, N17) — CÙNG luật máy chủ chạy lúc thi hành (`sauChuyenCuoiKhoa`: `coBoTroKhiChot`, `coBaoPhKhiChot`, Case Kỳ vọng).
@@ -177,7 +191,7 @@ export function tacDongChot(ds: readonly DongTacDong[]): { caseBoTro: number; ba
 }
 
 /** M-05, Q4: buổi cuối = Chủ nhật của tuần cuối PA (`batDau` là thứ Hai); Mini Test hạn +2 ngày LỊCH (không phải `hanTheoNgay`). */
-export function lichBoTro(x: { batDau: string; soTuan: 1 | 2 }): { ngayMiniTest: string; hanMiniTest: string } {
+export function lichBoTro(x: { batDau: string; soTuan: number }): { ngayMiniTest: string; hanMiniTest: string } {
   const cong = (d: string, n: number) => new Date(Date.parse(`${d.slice(0, 10)}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
   const ngayMiniTest = cong(x.batDau, 7 * x.soTuan - 1);
   return { ngayMiniTest, hanMiniTest: cong(ngayMiniTest, 2) };

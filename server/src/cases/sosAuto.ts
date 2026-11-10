@@ -17,7 +17,7 @@ import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
-import { dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
+import { pbCuaLuot, dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { CHO_DOI_PA, LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
@@ -65,8 +65,10 @@ function examDateTu(c: Parameters<typeof examPlanOf>[0]): string | null {
 }
 
 /** Loại + mô tả + loại mốc (span) của PA quy chế cho một lượt ở mức SOS đó. `null` khi không có gì để điền. Mốc tính lúc Xác nhận PA. */
-export function presetFor(attempt: { attempt_no: number; cycle_id?: number | null }, sosLevel: number | null | undefined): AcademicSupportPreset | null {
-  return academicSupportFor(attempt.attempt_no, sosLevel, routeCuaLuot(attempt));   // T4: RF theo hàng "MT3 trở đi"
+export function presetFor(attempt: { id?: number; attempt_no: number; cycle_id?: number | null }, sosLevel: number | null | undefined): AcademicSupportPreset | null {
+  /* CAU-HINH-CASE-SOS: ô của bản mốc SOS của lượt (như việc phối hợp) — đổi cấu hình không đổi PA của SOS đang chạy. */
+  const pb = attempt.id ? pbCuaLuot(db().prepare('SELECT preset, pb_moc FROM sos_coordination_actions WHERE attempt_id = ?').all(attempt.id) as any[]) : undefined;
+  return academicSupportFor(attempt.attempt_no, sosLevel, routeCuaLuot(attempt), pb);   // T4: RF theo hàng RF
 }
 
 /**
@@ -75,7 +77,7 @@ export function presetFor(attempt: { attempt_no: number; cycle_id?: number | nul
  */
 export function createPresetPlan(input: {
   caseId: number;
-  attempt: { attempt_no: number; cycle_id?: number | null; class_id?: number | null };
+  attempt: { id?: number; attempt_no: number; cycle_id?: number | null; class_id?: number | null };
   category: string; sosLevel: number | null;
 }): number | null {
   const p = presetFor(input.attempt, input.sosLevel);

@@ -50,7 +50,7 @@ import { ChuDich } from '../../ui/ChuDich.tsx';
 
 /** Khối `boTro` như `GET /cases/:id` trả (xem `BoTroDto` ở máy chủ) — chỉ các trường giao diện cần. */
 export type BoTro = {
-  nhom: string; buoiMoiTuan: 1 | 2; chung: boolean;
+  nhom: string; buoiMoiTuan: number; chung: boolean;
   mon: { caseId: number; mon: string; tenMon: string }[];
 };
 

@@ -35,15 +35,15 @@ function giaTri(x: DongPa, luc: string): unknown[] {
     x.plannedDate ?? null, x.startedDate ?? null, x.completedDate ?? null, x.followupDue ?? null, x.actionDue ?? null, 1, x.cycleStartedOn ?? null,
     x.needsApproval ? 1 : 0, x.approvalState ?? null, x.approvalDue ?? null, x.rescheduleTarget ?? null,
     x.preset ? 1 : 0, x.confirmedBy ?? null, x.confirmedAt ?? null,
-    x.mocQuyChe ?? null, x.nhomBoTro ?? null, x.idempotencyKey ?? null, x.createdAt ?? luc,
-    /* CAU-HINH-CASE-SOS: phiên bản danh sách PA lúc tạo (bản gốc = NULL) — đổi tên / cờ về sau không đổi PA này. */
-    cauHinh('phuong_an').id || null];
+    x.mocQuyChe ?? null, x.nhomBoTro ?? null, x.idempotencyKey ?? null, x.createdAt ?? luc];
+    /* + `pb_loai` (CAU-HINH-CASE-SOS: phiên bản danh sách PA lúc tạo, bản gốc = NULL) — `chenPa` thêm một lần cho cả lô. */
 }
 
 /** Chèn THEO LÔ (≤ 900 tham số mỗi câu). Kiểm MỌI dòng trước khi ghi — một dòng sai thì không dòng nào được ghi. Trả id theo thứ tự `dong`. */
 export function chenPa(conn: any, dong: readonly DongPa[]): number[] {
   const luc = nowIso();
-  const rows = dong.map((x) => giaTri(x, luc));
+  const pb = cauHinh('phuong_an').id || null;   // CAU-HINH-CASE-SOS: một lần cho cả lô
+  const rows = dong.map((x) => [...giaTri(x, luc), pb]);
   const ids: number[] = [];
   const mot = `(${COT.map(() => '?').join(',')})`;
   theoLo(rows, (lo) => {

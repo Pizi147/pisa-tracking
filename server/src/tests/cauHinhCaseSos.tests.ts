@@ -208,4 +208,52 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     const e = loi(() => cases.recordIntervention(P.lrTeacher, c, { kind: 'extra_homework', description: 'Thêm 2 đề Listening mỗi tuần', status: 'started', startedDate: t.TODAY, performerSelf: true }));
     assert(e?.status === 400, `PA ẩn → 400, có ${e?.status}`);
   }));
+
+  /* ---- Task 5: mốc SOS theo bản của lượt ---- */
+  const phoiHop: any = await import('../yThuc/phoiHop.ts');
+  const luotMock = () => all(`SELECT id, student_id, attempt_no FROM assessment_attempts WHERE kind = 'mock' AND status != 'cancelled' ORDER BY id LIMIT 2`);
+  const viecCuaLuot = (id: number) => all(`SELECT kind, status, pb_moc FROM sos_coordination_actions WHERE attempt_id = ? AND preset = 1 ORDER BY kind`, id);
+  const doiMoc = (f: (d: any) => void) => {
+    const d = sao(dm.cauHinh('moc_sos').du_lieu);
+    f(d);
+    return svc.luuCauHinh(P.admin, 'moc_sos', { duLieu: d, tuPhienBan: dm.cauHinh('moc_sos').id });
+  };
+
+  check('CHCS-MOC · đổi ô MT1 · SOS 1: lượt mới theo ô mới + ghi pb_moc; lượt sinh trước GIỮ bản cũ khi điểm sửa (việc chờ không bị rút — XM-2)', () => thu(() => {
+    const [a, b] = luotMock().map((r: any) => ({ ...r, attempt_no: 1, cycle_id: null }));
+    conn.prepare('DELETE FROM sos_coordination_actions WHERE attempt_id IN (?, ?)').run(a.id, b.id);
+    phoiHop.syncSosCoordination(a, 1);
+    assert(viecCuaLuot(a.id).map((r: any) => `${r.kind}:${r.pb_moc}`).join() === 'talk_family:null,talk_student:null', `lượt A bản gốc: ${JSON.stringify(viecCuaLuot(a.id))}`);
+    const r = doiMoc((d) => { d.ft.mt1['1'].viec = ['talk_family']; });
+    phoiHop.syncSosCoordination(a, 1);
+    assert(viecCuaLuot(a.id).filter((x: any) => x.status === 'pending').length === 2, 'lượt A giữ cả 2 việc (bản của lượt = gốc)');
+    phoiHop.syncSosCoordination(b, 1);
+    const vb = viecCuaLuot(b.id);
+    assert(vb.length === 1 && vb[0].kind === 'talk_family' && vb[0].pb_moc === r.moc_sos.id, `lượt B theo ô mới: ${JSON.stringify(vb)}`);
+    assert(dm.academicSupportFor(1, 1, null, r.moc_sos.id).kind === 'self_study' && dm.sosCoordinationFor(1, 1, null, null).length === 2, 'tra theo bản');
+  }));
+
+  check('CHCS-HAN · đổi hạn Meeting CX 5 → 7, ghi chú tối thiểu 10 → 20, thêm bước TVV: việc mới theo bản mới, việc cũ giữ bản cũ', () => thu(() => {
+    const r = doiMoc((d) => {
+      const v = d.viec.find((x: any) => x.ma === 'cx_meeting_student');
+      v.hanNgay = 7; v.toiThieu = 20; v.buocTvv = { hanNgay: 5, toiThieu: 10 };
+    });
+    const id = r.moc_sos.id;
+    assert(dm.hanPhoiHop('cx_meeting_student', '2026-11-02T03:00:00Z', null, id) === '2026-11-09' && dm.hanPhoiHop('cx_meeting_student', '2026-11-02T03:00:00Z', null, null) === '2026-11-07', 'hạn theo bản');
+    assert(dm.toiThieuGhiChu('cx_meeting_student', id) === 20 && dm.toiThieuGhiChu('cx_meeting_student', null) === 10, 'ghi chú tối thiểu theo bản');
+    const ai = dm.aiLamViec({ kind: 'cx_meeting_student', pb_moc: id });
+    assert(ai.aiLam === 'gvcn' && ai.buocTvv?.hanNgay === 5, `aiLamViec: ${JSON.stringify(ai)}`);
+    const e = loi(() => doiMoc((d) => { d.viec.find((x: any) => x.ma === 'talk_student').an = true; }));
+    assert(e?.status === 400 && /đang ẩn/.test(e.message), 'ẩn việc đang nằm trong ô mốc → 400');
+  }));
+
+  check('CHCS-THUONG · lớp thường: Bổ trợ BE / ELE 1 → 2 buổi / tuần, Final 60–69 % 1 → 2 tuần, Tutor 10 → 12, việc Final < 50 % thêm Trao đổi với gia đình', () => thu(() => {
+    assert(dm.boTroGiuaKhoa('BE').buoiMoiTuan === 1 && dm.boTroGiuaKhoa('FOU').buoiMoiTuan === 2, 'bản gốc');
+    doiMoc((d) => { d.thuong.progress.beEle = 2; d.thuong.final6069.tuan = 2; d.thuong.khongDatKyVong.tutor = 12; d.thuong.finalDuoi50.viec = ['bao_ph_tvv', 'talk_family']; });
+    assert(dm.boTroGiuaKhoa('ELE').buoiMoiTuan === 2 && /Bổ trợ 2 buổi\/tuần/.test(dm.moTaBoTro('BE', 'listening')), 'Bổ trợ Giữa khoá theo số mới');
+    assert(dm.mocThuong().khongDatKyVong.tutor === 12, 'Tutor');
+    const goiY = { dai: 'duoi_50', baoPhTvv: true } as any;
+    assert(dm.viecKhiChot('hoc_lai', goiY).join() === 'bao_ph_tvv,talk_family' && dm.coBaoPhKhiChot('hoc_lai', goiY), 'việc Final < 50 %');
+    assert(dm.viecKhiChot('tam_dung', goiY).length === 0, 'Tạm dừng không qua Cuối khoá');
+  }));
 }
