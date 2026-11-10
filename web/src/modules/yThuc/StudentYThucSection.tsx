@@ -221,10 +221,10 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   return (
     <section ref={dauRef} className="card scroll-mt-24 [container-type:inline-size]" aria-label={t('Ý thức & Phối hợp')}>
       <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
-        <BoLocDoan v8 ariaLabel={t('Phần')} value={phan} onChange={setPhan}
+        <BoLocDoan v8 giuSo ariaLabel={t('Phần')} value={phan} onChange={setPhan}
           muc={[{ key: 'vi-pham', nhan: t('Vi phạm') }, { key: 'phoi-hop', nhan: tenPhoiHop, so: coord.data?.pendingCount ?? null }]} />
         {phan === 'vi-pham' && (
-          <BoLocDoan v8 ariaLabel={t('Vi phạm')} value={doan} onChange={setDoan}
+          <BoLocDoan v8 giuSo ariaLabel={t('Vi phạm')} value={doan} onChange={setDoan}
             muc={[{ key: 'can-lam', nhan: t('Cần làm'), so: soCanLam }, { key: 'lich-su', nhan: t('Lịch sử'), so: dongLs.length }]} />
         )}
         <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">
