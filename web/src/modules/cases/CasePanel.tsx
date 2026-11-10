@@ -358,6 +358,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
       <KhungTrongThe.Provider value>
         <HoanThanhCasePanel caseId={data.id} category={data.category} categoryLabel={data.categoryLabel} ratio={!!data.ratio}
           paGanNhat={(() => { const f = (data.followups ?? []).find((x: any) => x.outcome); return f ? outcomeLabelFor(f.outcome) : null; })()}
+          ketLuanSan={(data.followups ?? []).find((x: any) => x.outcome && x.note)?.note ?? null}
           onClose={() => setHoanThanh(false)} onSaved={() => { setHoanThanh(false); lamMoi(); }} />
       </KhungTrongThe.Provider>
     </div>
@@ -796,6 +797,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
       {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} onGhiKetQua={iv.kind === 'tutor' && iv.soBuoi == null ? undefined : () => setForm('ghi')} />   /* RKC-2b ③: Tutor chưa có Số buổi — xác nhận ở form (máy chủ đòi Số buổi) */
         : formHien === 'ghi' ? (
           <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove}
+            hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null}
             tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={t('Lưu · kỹ năng tiếp ›')}
             boiCanh={[[t('Kết quả kỳ trước'), fGan ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(fGan.outcome))}</b> · {tuanLich(fGan.observedOn, homNay)}</> : t('chưa có')], [t('Điểm'), ketQuaGanNhat(data)]]}
             pa={{
@@ -928,6 +930,16 @@ function DongDoiPaGon({ iv, ngan }: { iv: any; data: CaseDetail; ngan: (d: strin
         : <b className="font-semibold text-late">{t('QL từ chối đổi PA')}</b>}
     </p>
   );
+}
+
+/**
+ * #3 (G2-05): PA `paId` là PA CUỐI còn chạy của Case (không PA planned / started nào khác), Case chưa xong, người xem hoàn thành được Case (cùng điều kiện
+ * nút Hoàn thành Case: `canClose`, không Case tạm SOS).
+ */
+function paCuoiHoanThanh(data: CaseDetail, paId: number): boolean {
+  /* `hoanThanh.an` (PA quy chế chưa khép) không xét: PA đó chính là PA đang kết thúc ở form này (đã đòi không còn PA nào khác chạy). */
+  if (data.status === 'done' || !data.viewer.canClose || data.sos?.tam) return false;
+  return !(data.interventions ?? []).some((x: any) => x.id !== paId && (x.status === 'planned' || x.status === 'started'));
 }
 
 /** "Kết thúc sớm…" (v16 j3, OV-13a C): lý do ≥ 10 ngay trong thẻ → Kết thúc PA · toast Hoàn tác 5 giây (như cũ) + "Mở lại PA" về sau. */

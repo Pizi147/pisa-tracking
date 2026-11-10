@@ -9918,6 +9918,9 @@ await runPrChuyenLopSuaSaiTests({ check, assert, conn, P } as any);
 // ==================================================================== #4 bản rà 11/11: + Case gọn (mức mặc định, tên tự sinh, một ngưỡng chữ)
 const { runPrCaseGonTests } = bocTep('prCaseGon', await import('./prCaseGon.tests.ts'));
 await runPrCaseGonTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== #3 bản rà 11/11: Hoàn thành Case ngay khi kết thúc PA cuối
+const { runPrHoanThanhCaseTests } = bocTep('prHoanThanhCase', await import('./prHoanThanhCase.tests.ts'));
+await runPrHoanThanhCaseTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== KHONG-LOP-GHI (chủ SP 10/11 B' mục 8: lượt không lớp — đường ghi theo chương trình lộ trình)
 const { runPrKhongLopGhiTests } = bocTep('prKhongLopGhi', await import('./prKhongLopGhi.tests.ts'));
 await runPrKhongLopGhiTests({ check, assert, conn, P, TODAY } as any);

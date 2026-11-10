@@ -14,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
-import { CHU_TOI_THIEU_CASE,
+import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL,
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
@@ -94,7 +94,12 @@ const DA_LUU: Record<PlanDecision, string> = {
   ask_manager: t('Đã gửi Quản lý — PA vẫn chạy'),
 };
 
-export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat }: {
+export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat, hoanThanhCase }: {
+  /**
+   * #3 bản rà 11/11 (G2-05, chủ SP "chỉ để 'Hoàn thành Case', không có dấu '?'"): PA này là PA CUỐI còn chạy của Case và người xem hoàn thành được Case → kết thúc PA
+   * (Kết thúc PA / Kết quả cuối) có ô tick "Hoàn thành Case" ngay trong form: mức theo Tiến triển, kết luận điền sẵn Nhận xét (sửa được).
+   */
+  hoanThanhCase?: { caseId: number } | null;
   /** RKC-2c: người xem là Quản lý trong phạm vi Case — hiện đủ lựa chọn (máy chủ hỏi xác nhận nêu luật bị vượt). */
   vuotLuat?: boolean;
   /** U03 (mockup A2 chân): "Lưu · kỹ năng tiếp ›" — lưu xong sang Case kỹ năng kế của em (nơi mở quyết việc kế). */
@@ -133,6 +138,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const [reason, setReason] = useState<string>(k?.reason ?? g?.decisionNote ?? '');
   const [on, setOn] = useState<string>(k?.on ?? g?.observedOn ?? homNay);
   const [endOn, setEndOn] = useState<string>(k?.endOn ?? g?.completedOn ?? homNay);
+  /* #3: ô "Hoàn thành Case" (mặc định tắt) · mức (null = theo Tiến triển) · kết luận (null = theo Nhận xét). */
+  const [htCase, setHtCase] = useState(false);
+  const [htMuc, setHtMuc] = useState<string | null>(null);
+  const [htNote, setHtNote] = useState<string | null>(null);
   /* Điều chỉnh: cùng form PA (Nội dung · Số buổi · Người dạy), giá trị đầu = bản hiện tại (sửa: bản trước lần ghi); gửi ô đã đổi như Sửa PA (`thanSuaPa`). */
   const gocDc = dau.goc;
   const [dc, setDc] = useState<GiaTriPa>(k?.dc ?? dau.dc);
@@ -256,6 +265,13 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     loi.push(...loiFormPa(dc, { goc: gocDc, daDay: dem?.da ?? daDay, tienTo: 'dc-' }));
     if (!Object.keys(thanDc).length) loi.push({ khoa: 'dc-noi-dung', nhan: t('Nội dung'), lyDo: t('Đổi ít nhất một ô: nội dung, số buổi hoặc người') });
   }
+  /* #3: hiện ô khi lần ghi này kết thúc PA (Kết thúc PA / Kết quả cuối của PA quy chế) — không ở Sửa kết quả. */
+  const ketThucPa = !sua && (lanCuoi || decision === 'end');
+  const coHt = !!hoanThanhCase && ketThucPa && htCase;
+  const mucHt = htMuc ?? CASE_OUTCOMES.find((x) => CASE_OUTCOME_LABEL[x] === outcomeLabelFor(outcome)) ?? '';
+  const noteHt = htNote ?? (nhanXetTheoBuoi ? ghepBuoi : progress);
+  if (coHt) loi.push(...dsLoi([{ khoa: 'ht-muc', nhan: t('Em tiến bộ đến đâu'), chon: true }, { khoa: 'ht-ket-luan', nhan: t('Kết luận'), toiThieu: CHU_TOI_THIEU_CASE }],
+    { 'ht-muc': mucHt, 'ht-ket-luan': noteHt }));
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
   const o = (khoa: string) => lf.o(loi, khoa);
@@ -287,15 +303,24 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       if (deXuat) { body.decision = 'keep'; body.deXuatPa = doi.payload(); }
       const ct = await api.post<any>(sua ? `/followups/${sua.followupId}/sua` : `/interventions/${pa.id}/result`, body);
       const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/followups'); invalidate('/yeu-cau'); };
+      /* #3: kết quả đã lưu → hoàn thành Case cùng lần bấm. Lỗi ở bước này không mất kết quả: nói rõ "chưa hoàn thành Case", nút Hoàn thành Case vẫn ở Case. */
+      let daHt = false;
+      let loiHt: string | null = null;
+      if (coHt && hoanThanhCase) {
+        try { await api.post(`/cases/${hoanThanhCase.caseId}/outcome`, { outcome: mucHt, note: noteHt.trim(), closedOn: (decision === 'end' ? endOn : on) || undefined }); daHt = true; }
+        catch (e: any) { loiHt = e?.message ?? t('Không lưu được'); }
+      }
       lamMoi();
       xoaNhap();
       /* OV-13b: ở lại panel — "✓ Đã lưu · {quyết định}" + kết quả · hạn kế; Hoàn tác (ghi mới) = bỏ lần ghi này, chữ trả về form. */
       const f = sua ? null : (ct?.followups ?? []).find((x: any) => x.interventionId === pa.id) ?? null;
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;
       (diTiep && tiep ? tiep.lam : onSaved)({
-        chu: sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Quản lý duyệt đổi PA') : pa.choXacNhan && decision === 'keep' ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
+        chu: daHt ? t('Đã lưu kết quả · đã hoàn thành Case') : loiHt ? t('Đã lưu kết quả · chưa hoàn thành Case: {loi}', { loi: loiHt }) : sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Quản lý duyệt đổi PA') : pa.choXacNhan && decision === 'keep' ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
         phu: [dich(outcomeLabelFor(outcome)), hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
         hoanTac: f ? async () => {
+          /* #3: Hoàn tác cả hai bước — mở lại Case trước, rồi bỏ lần ghi kết quả (PA mở lại). */
+          if (daHt && hoanThanhCase) await api.post(`/cases/${hoanThanhCase.caseId}/mo-lai`);
           await api.post(`/followups/${f.id}/hoan-tac`); lamMoi();
           nhapKetQua.set(pa.id, { outcome, note: progress, khac: { deXuat, decision, reason, on, endOn, dc, tuan, buoi, nguoiDay, paThay, mtTyLe, mtNgay, doi: { v: doi.v, lyDo: doi.lyDo } } });
         } : undefined,
@@ -498,6 +523,29 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
                 </div>
               )}
               {loiCua('quyet-dinh') && <span className="block text-xs text-late">{loiCua('quyet-dinh')}</span>}
+            </div>
+          )}
+          {hoanThanhCase && ketThucPa && (
+            /* #3 (G2-05, G2-07): PA cuối của Case — tick là hoàn thành Case luôn; mức theo Tiến triển, kết luận = Nhận xét (sửa được). */
+            <div className="flex flex-col gap-2.5">
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] font-semibold text-slate-200 sm:min-h-0">
+                <input type="checkbox" className="h-4 w-4" checked={htCase} disabled={busy} onChange={(e) => setHtCase(e.target.checked)} />
+                {t('Hoàn thành Case')}
+              </label>
+              {htCase && (
+                <div className="ml-1 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
+                  <Truong nhan={t('Sau cả đợt hỗ trợ, em tiến bộ đến đâu?')} batBuoc as="div" loi={loiCua('ht-muc')}>
+                    <div className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" {...o('ht-muc')} tabIndex={-1}>
+                      {CASE_OUTCOMES.map((x) => (
+                        <NutChon key={x} nho chon={mucHt === x} className="justify-center" onClick={() => setHtMuc(x)}>{CASE_OUTCOME_LABEL[x]}</NutChon>
+                      ))}
+                    </div>
+                  </Truong>
+                  <Truong nhan={t('Kết luận')} batBuoc loi={loiCua('ht-ket-luan')} dem={{ co: noteHt.trim().length, can: CHU_TOI_THIEU_CASE }}>
+                    <textarea className="field w-full" rows={2} {...o('ht-ket-luan')} value={noteHt} readOnly={busy} onChange={(e) => setHtNote(e.target.value)} />
+                  </Truong>
+                </div>
+              )}
             </div>
           )}
           <Truong nhan={t('Ngày ghi')}><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
