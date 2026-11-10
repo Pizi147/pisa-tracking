@@ -55,12 +55,25 @@ export type DongThoiGianYt =
       /** PR-LUI-a1: dòng chính = ô `Vi phạm` (ngắn); mô tả đầy đủ chỉ hiện khi mở dòng (`ChiTietViPham`). */
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
       /** UI-2 (mockup K6 "Ai · lúc nào" của dòng Đã xem). */
-      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean }
+      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
+      /** Y-THUC-V2 (mockup 11/11): mã môn (chip) + mô tả cắt ngắn cho hộp rê — từ chính câu đã đọc, không thêm câu. */
+      skill: string | null; moTa: string }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
-      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null;
+      tenViPham: string[]; baoPh: BaoPhLan | null;
+      /** Y-THUC-V2: vi phạm của lần (một lần = một khối dòng). */
+      viPhamIds: number[];
       /** UI-2 (`danhDauChuoi`): dòng thuộc lộ trình hiện tại của em — tab lớp đổi phạm vi Lộ trình | Cả lịch sử tại trình duyệt, không đọc lại. */
       trongChuoi?: boolean };
+
+/**
+ * Y-THUC-V2 (chủ SP 11/11 — GV đọc được kết quả Báo PH): việc Báo PH CỦA ĐÚNG LẦN xử lý (`measure_id`), đọc trong câu phụ sẵn có của dòng thời gian.
+ * `lan` = lần ghi mới nhất của TVV (kết quả · ngày · nội dung); `ngay` = ngày "Đã báo PH" mới nhất. Mọi lần ghi: `GET /y-thuc/bao-ph/:id` khi người dùng mở.
+ */
+export type BaoPhLan = {
+  id: number; trangThai: 'mo' | 'xong' | 'bo'; ngay: string | null; han: string; quaHan: boolean; daChinh: boolean; coTheGhi: boolean;
+  soLan: number; lan: { ketQua: string; ngay: string; noiDung: string | null } | null;
+};
 
 export type BangYThucLop = {
   classId: number; classCode: string; homNay: string;
@@ -111,7 +124,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
  * `chiTrongChuoi`: chỉ vi phạm / lần xử lý thuộc chuỗi thang hiện tại của em (phạm vi mặc định của tab HV).
  * `danhDauChuoi` (UI-2, tab lớp): không lọc — ghi `trongChuoi` từng dòng để trình duyệt đổi phạm vi không cần request mới.
  */
-export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean; danhDauChuoi?: boolean } = {}): DongThoiGianYt[] {
+export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean; danhDauChuoi?: boolean; p?: Principal; homNay?: string } = {}): DongThoiGianYt[] {
   if (!emIds.length) return [];
   const conn = db();
   const ten = new Map<number, string>();
@@ -134,21 +147,39 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
       xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc, ...dau(v.studentId, v.cycleId),
+      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240),
     });
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
   const xuLy = emIds.flatMap((sid) => { const em = trang.get(sid); return [...(em?.xuLy ?? []), ...(em?.thuHoi ?? [])].filter((m) => trongChuoi(sid, m.cycleId)).map((m) => ({ sid, m })); });
-  const phu = new Map<number, { nguoi: string | null; soTep: number; baoPh: { trangThai: string; ngay: string | null } | null }>();
+  const phu = new Map<number, { nguoi: string | null; soTep: number; baoPh: BaoPhLan | null }>();
+  const homNay = o.homNay ?? demoToday();
+  const bp: any[] = [];
   const mIds = xuLy.map((x) => x.m.id);
   for (let i = 0; i < mIds.length; i += 400) {
     const lo = mIds.slice(i, i + 400);
     for (const r of conn.prepare(
       `SELECT m.id, COALESCE(m.performer_name, pu.full_name) AS nguoi,
               (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep,
-              (SELECT b.trang_thai FROM viec_bao_ph b WHERE b.measure_id = m.id) AS bp_tt,
-              (SELECT MAX(l.ngay) FROM viec_bao_ph b JOIN viec_bao_ph_lan l ON l.viec_id = b.id WHERE b.measure_id = m.id AND l.ket_qua = 'da_bao') AS bp_ngay
-         FROM discipline_measures m LEFT JOIN users pu ON pu.id = m.performed_by WHERE m.id IN (${lo.map(() => '?').join(',')})`,
-    ).all(...lo) as any[]) phu.set(r.id, { nguoi: r.nguoi ?? null, soTep: r.so_tep, baoPh: r.bp_tt ? { trangThai: r.bp_tt, ngay: r.bp_ngay ?? null } : null });
+              b.id AS bp_id, b.trang_thai AS bp_tt, b.han AS bp_han, b.han_chon AS bp_han_chon, m.student_id, s.consultant_user_id,
+              (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id AND l.ket_qua = 'da_bao') AS bp_ngay,
+              (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id) AS bp_so,
+              (SELECT json_object('k', l.ket_qua, 'n', l.ngay, 'g', l.ghi_chu) FROM viec_bao_ph_lan l WHERE l.viec_id = b.id ORDER BY l.id DESC LIMIT 1) AS bp_lan
+         FROM discipline_measures m LEFT JOIN users pu ON pu.id = m.performed_by LEFT JOIN viec_bao_ph b ON b.measure_id = m.id
+         LEFT JOIN students s ON s.id = m.student_id WHERE m.id IN (${lo.map(() => '?').join(',')})`,
+    ).all(...lo) as any[]) { phu.set(r.id, { nguoi: r.nguoi ?? null, soTep: r.so_tep, baoPh: null }); if (r.bp_id) bp.push(r); }
+  }
+  /* Hạn hiệu lực trừ Tạm dừng — chỉ đọc khi có việc đang mở (một câu cho các em đó). */
+  const mo = bp.filter((r) => r.bp_tt === 'mo');
+  const khoang = mo.length ? khoangTamDung(mo.map((r) => r.student_id)) : {};
+  for (const r of bp) {
+    const han = r.bp_tt === 'mo' ? hanBaoPhHieuLuc(r.bp_han, khoang[r.student_id], r.bp_han_chon) : (r.bp_han_chon ?? r.bp_han);
+    const lan = r.bp_lan ? JSON.parse(r.bp_lan) : null;
+    phu.get(r.id)!.baoPh = {
+      id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && han < homNay, daChinh: r.bp_han_chon != null,
+      coTheGhi: r.bp_tt === 'mo' && !!o.p && coTheGhi(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
+      soLan: r.bp_so, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
+    };
   }
   for (const { sid, m } of xuLy) {
     out.push({
@@ -156,7 +187,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       nhan: nhanLoaiXuLy(m.kind, m.customName), kind: m.kind, status: m.status,
       statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status,
       soViPham: m.violationIds.length, nguoi: phu.get(m.id)?.nguoi ?? null, soTep: phu.get(m.id)?.soTep ?? 0,
-      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null, ...dau(sid, m.cycleId),
+      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null, viPhamIds: m.violationIds, ...dau(sid, m.cycleId),
     });
   }
   out.sort((a, b) => b.ngay.localeCompare(a.ngay) || (a.loai === b.loai ? b.id - a.id : a.loai === 'xu-ly' ? -1 : 1));
@@ -220,7 +251,7 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
     canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
     nhom,
-    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, danhDauChuoi: true }),
+    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, danhDauChuoi: true, p, homNay }),
     choBaoPh: choBaoPh.sort((a, b) => (a.baoPh?.han ?? '').localeCompare(b.baoPh?.han ?? '') || a.ten.localeCompare(b.ten, 'vi')),
     choThuHoi: choThuHoi.sort((a, b) => a.ten.localeCompare(b.ten, 'vi')),
     coTheDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { classId }),

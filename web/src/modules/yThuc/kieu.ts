@@ -27,11 +27,21 @@ export type DongThoiGianYt =
   | { loai: 'vi-pham'; id: number; studentId: number; ten: string; ngay: string; nhom: string; category: string; mon: string | null;
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
       /** UI-2 (mockup K6): ai / lúc "Đã xem". */
-      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean }
+      xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
+      /** Y-THUC-V2: mã môn (chip) + mô tả cắt ngắn (hộp rê). */
+      skill: string | null; moTa: string }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       /** UI-3 (mockup K6): tên vi phạm của lần · Báo PH của lần (null = không có việc). */
-      tenViPham: string[]; baoPh: { trangThai: string; ngay: string | null } | null; trongChuoi?: boolean };
+      tenViPham: string[]; baoPh: BaoPhLan | null; trongChuoi?: boolean;
+      /** Y-THUC-V2: vi phạm của lần (một lần = một khối dòng). */
+      viPhamIds: number[] };
+
+/** Y-THUC-V2 — việc Báo PH của ĐÚNG lần xử lý (khớp `BaoPhLan` ở `server/src/yThuc/board.ts`). `lan` = lần ghi mới nhất của TVV. */
+export type BaoPhLan = {
+  id: number; trangThai: 'mo' | 'xong' | 'bo'; ngay: string | null; han: string; quaHan: boolean; daChinh: boolean; coTheGhi: boolean;
+  soLan: number; lan: { ketQua: string; ngay: string; noiDung: string | null } | null;
+};
 
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;

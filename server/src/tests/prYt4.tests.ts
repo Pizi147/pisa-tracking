@@ -936,15 +936,16 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   /* UI-Y-THUC-LOP (mockup V5): hai khung M6 thay bằng bảng theo HV — nhóm em (NhomHang), bốn khối nghĩa, chi tiết mở dưới hàng. */
   check('YT4 (9) · Tab lớp V5: bảng theo HV theo nhóm, chi tiết mở dưới hàng; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    assert(/function NhomHang/.test(s) && /function HangEm/.test(s) && /function ChiTietEm/.test(s) && /t\('Chờ TVV báo PH'\)/.test(s), 'bảng theo HV');
+    /* Y-THUC-V2 (mockup 11/11): một lần = một khối (KhoiLan), nhóm NhomLan, thang ở chip bậc (ThangEm). */
+    assert(/<NhomLan/.test(s) && /<KhoiLan/.test(s) && /function ThangEm/.test(s) && /t\('Chờ TVV báo PH'\)/.test(s), 'bảng theo lần');
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
     assert(/params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), '?mo, khối Phối hợp');
   });
   check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    /* UI-2 (mockup U10 K1 cột Việc, Q-7 viết lại): Đã xem / Xác nhận xử lý / Đề xuất chỉ khi canManage; Khai cấp bậc trong thang theo hv.canManage. */
-    assert(/const coXem = \(v: ViPhamV4\) => hv\.canManage &&/.test(s) && /else if \(c\.canManage && batBuoc && !x\.deXuat\)/.test(s) && /else if \(c\.canManage && k === 'moi' && idsMoi\.length\)/.test(s)
-      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /onKhai=\{hv\.canManage \?/.test(s) && /\{d\.canManage && \(\s*<>/.test(s), 'ẩn theo quyền');
+    /* Y-THUC-V2: Bước tiếp — Xác nhận xử lý / Đề xuất / Đã xem chỉ khi canManage; Khai bậc trong hộp thang theo hv.canManage. */
+    assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage && ids\.length/.test(s)
+      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\{d\.canManage && \(\s*<>/.test(s), 'ẩn theo quyền');
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" — nhãn một chỗ; UI-3 (mockup U10 K8) bỏ chữ phụ thừa, hàng 3 cột tên · hạn · nút', () => {
