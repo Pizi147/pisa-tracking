@@ -73,6 +73,8 @@ export function KetQuaThi(pv: PhamViPhanTich) {
     ? <OSo giaTri={n} nhan={nhan} nguon={nguon(o)} tieuDe={tieuDe} className={mau} vung="chi-so" />
     : <span className="font-medium text-faint">{nhan ?? 0}</span>);
 
+  /* V2 (đặc tả 5.2): hai ô là CÔNG TẮC — "Đạt Target · trừ KCK" (mặc định) / "Tổng thể · gồm KCK"; thanh đổi theo ô. Không gọi lại máy chủ. */
+  const [tongThe, setTongThe] = useState(false);
   async function xuatExcel() {
     if (!data) return;
     const XLSX = await import('xlsx');
@@ -91,8 +93,6 @@ export function KetQuaThi(pv: PhamViPhanTich) {
   }
 
   const tk = data?.thongKe;
-  /* V2 (đặc tả 5.2): hai ô là CÔNG TẮC — "Đạt Target · trừ KCK" (mặc định) / "Tổng thể · gồm KCK"; thanh đổi theo ô. Không gọi lại máy chủ. */
-  const [tongThe, setTongThe] = useState(false);
   return (
     <>
       <VaoHangLoc o="phai">
