@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -135,6 +135,9 @@ function SuaO({ q, n, onThoi, onLuu }: { q: Truong; n: number; onThoi: () => voi
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [hoiBo, setHoiBo] = useState(false);
+  /* Lỗi máy chủ: ô bị tắt lúc lưu nên mất focus — trả focus về ô đầu để Esc / sửa tiếp được bằng phím. */
+  const khung = useRef<HTMLSpanElement>(null);
+  useEffect(() => { if (!busy && loi) khung.current?.querySelector<HTMLElement>('input, select')?.focus(); }, [busy, loi]);
   const so = Number(x.replace(',', '.'));
   const daDoi = so !== n;
   const ngoai = () => { if (busy) return; if (daDoi) setHoiBo(true); else onThoi(); };
@@ -153,7 +156,7 @@ function SuaO({ q, n, onThoi, onLuu }: { q: Truong; n: number; onThoi: () => voi
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ngoai(); }
   };
   return (
-    <span className="grid justify-items-end gap-1.5" onKeyDown={phim}>
+    <span className="grid justify-items-end gap-1.5" onKeyDown={phim} ref={khung}>
       <label className="inline-flex items-center gap-1 text-[13px] text-slate-400">
         {q.buoc !== 1 && 'Target −'}
         <input autoFocus type="number" inputMode="decimal" step={q.buoc} min={q.min} max={q.max} className="field w-20 text-center tabular-nums max-sm:min-h-[44px]"
