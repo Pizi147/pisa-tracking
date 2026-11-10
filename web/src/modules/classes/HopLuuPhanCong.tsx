@@ -148,7 +148,8 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
   const khoa = (classId: number, k: string) => `${classId}|${k}`;
   const nhieu = lop.length > 1;
   const cap = (xt?.lop ?? []).flatMap((l) => l.cap.map((c) => ({ ...c, classId: l.classId, soEm: l.soEm })));
-  const tao = cap.filter((c) => !boTao.has(khoa(c.classId, c.khoa)));
+  /* #8 (G4-15): ô mà người giao vừa nhận lớp (việc bàn giao còn mở trỏ họ) — máy chủ không tạo việc mới (huỷ / đổi người nhận việc cũ). */
+  const tao = cap.filter((c) => !boTao.has(khoa(c.classId, c.khoa)) && !c.cotMo);
   /* Một việc = (lớp, người viết): cùng GV cũ cùng lớp nhiều ô → một việc nhiều cột (đặc tả 2b). */
   const viec = new Map<string, { cot: string[]; soEm: number; nguoi: string }>();
   for (const c of tao) {
@@ -182,7 +183,9 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
         })),
         hieuLuc,
       });
-      onDaLuu({ ...kq, viec: soViec, nguoiCu: soViec && motCap ? tenCu : null });
+      /* #8 (G4-15): toast theo số việc máy chủ thật sự tạo (đổi về GV cũ = huỷ việc cũ, không tạo việc). */
+      const soThat = kq.viec ?? soViec;
+      onDaLuu({ ...kq, viec: soThat, nguoiCu: soThat && motCap ? tenCu : null });
     } catch (e) {
       setBusy(false);
       onLoi?.(e);
@@ -197,11 +200,17 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
       <div key={k} className="pc-cap">
         <span className="ky">{c.nhan}</span>
         <span className="doi-ng"><span className="cu">{ten(c.nguoiCu)}{c.nguoiViet.loai !== 'gv-cu' ? ` (${t('đã nghỉ')})` : ''}</span> → <span className="moi">{ten(c.nguoiMoi)}</span></span>
-        <label className="tao">
-          <input type="checkbox" checked={!boTao.has(k)} aria-label={t('Tạo việc bàn giao {mon} cho {gv}', { mon: c.nhan, gv: ten(c.nguoiCu) })}
-            onChange={(e) => setBoTao((s) => { const n = new Set(s); if (e.target.checked) n.delete(k); else n.add(k); return n; })} />
-          {t('Tạo việc bàn giao')}
-        </label>
+        {c.cotMo ? (
+          <span className="ct">{c.cotMo.veLai
+            ? t('Không tạo việc — huỷ việc bàn giao của {gv}.', { gv: ten(c.cotMo.nguoiCuViec) })
+            : t('Không tạo việc — việc bàn giao của {gv} chuyển người nhận sang {moi}.', { gv: ten(c.cotMo.nguoiCuViec), moi: ten(c.nguoiMoi) })}</span>
+        ) : (
+          <label className="tao">
+            <input type="checkbox" checked={!boTao.has(k)} aria-label={t('Tạo việc bàn giao {mon} cho {gv}', { mon: c.nhan, gv: ten(c.nguoiCu) })}
+              onChange={(e) => setBoTao((s) => { const n = new Set(s); if (e.target.checked) n.delete(k); else n.add(k); return n; })} />
+            {t('Tạo việc bàn giao')}
+          </label>
+        )}
         {chuyen && <span className="ct">{t('Luôn chuyển sang {gv}: {ds}.', { gv: ten(c.nguoiMoi), ds: chuyen })}</span>}
         {c.nguoiViet.loai !== 'gv-cu' && (
           <span className="ct">{c.nguoiViet.loai === 'gvcn'

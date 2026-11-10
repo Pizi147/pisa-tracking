@@ -92,7 +92,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtDeXuat: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9136,6 +9136,9 @@ const { runPrQrl2cYThucTests } = bocTep('prQrl2cYThuc', await import('./prQrl2cY
 await runPrQrl2cYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrQrl2cDuyetTests } = bocTep('prQrl2cDuyet', await import('./prQrl2cDuyet.tests.ts'));
 await runPrQrl2cDuyetTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== P1-CASE (rà toàn bộ 11/11: xoá Case ở hồ sơ HV giữ Hoàn tác)
+const { runPrP1CaseTests } = bocTep('prP1Case', await import('./prP1Case.tests.ts'));
+await runPrP1CaseTests({ check, assert } as any);
 const { runPrThungRacTests } = bocTep('prThungRac', await import('./prThungRac.tests.ts'));
 await runPrThungRacTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
@@ -9504,6 +9507,8 @@ const { runPrLuat5Tests } = bocTep('prLuat5', await import('./prLuat5.tests.ts')
 await runPrLuat5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrYtGonTests } = bocTep('prYtGon', await import('./prYtGon.tests.ts'));
 await runPrYtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrYtBaoPhTests } = bocTep('prYtBaoPh', await import('./prYtBaoPh.tests.ts'));
+await runPrYtBaoPhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrYtDeXuatTests } = bocTep('prYtDeXuat', await import('./prYtDeXuat.tests.ts'));
 await runPrYtDeXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SUA-NO-RA (nợ rà sâu CV-LOI #499 + LUAT-5 #495: phân công có phiên bản, migrate một lần, thẻ thu hồi)
@@ -9762,6 +9767,9 @@ await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODA
 // ==================================================================== P1-CONG-VIEC (rà toàn bộ 11/11: một tập việc, một hàm đếm)
 const { runPrP1CongViecTests } = bocTep('prP1CongViec', await import('./prP1CongViec.tests.ts'));
 await runPrP1CongViecTests({ check, assert, conn, P } as any);
+// ==================================================================== VIEC-CUA-TOI (rà 11/11 đề xuất #1: một hàm việc của tôi cho mọi nơi)
+const { runPrViecCuaToiTests } = bocTep('prViecCuaToi', await import('./prViecCuaToi.tests.ts'));
+await runPrViecCuaToiTests({ check, assert, conn } as any);
 // ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
 const { runDonLuongTests } = bocTep('donLuong', await import('./donLuong.tests.ts'));
 await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
@@ -9911,6 +9919,9 @@ await runPrLoTrinhGiuLichTests({ check, assert, conn, P, TODAY, addDays } as any
 // ==================================================================== LO-TRINH-THEO-HV (chủ SP 11/11: lộ trình theo học viên — đổi LT1 / LT2 / RF ở Sửa thông tin)
 const { runPrLoTrinhHvTests } = bocTep('prLoTrinhHv', await import('./prLoTrinhHv.tests.ts'));
 await runPrLoTrinhHvTests({ check, assert, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== #8 bản rà 11/11: chuyển lớp sửa sai một bấm, bàn giao một phiếu
+const { runPrChuyenLopSuaSaiTests } = bocTep('prChuyenLopSuaSai', await import('./prChuyenLopSuaSai.tests.ts'));
+await runPrChuyenLopSuaSaiTests({ check, assert, conn, P } as any);
 // ==================================================================== KHONG-LOP-GHI (chủ SP 10/11 B' mục 8: lượt không lớp — đường ghi theo chương trình lộ trình)
 const { runPrKhongLopGhiTests } = bocTep('prKhongLopGhi', await import('./prKhongLopGhi.tests.ts'));
 await runPrKhongLopGhiTests({ check, assert, conn, P, TODAY } as any);

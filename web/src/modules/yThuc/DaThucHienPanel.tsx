@@ -23,12 +23,14 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   const [ngayTh, setNgayTh] = useState(homNay);
   const [nguoi, setNguoi] = useState<NguoiChon | null>({ kieu: 'toi' });
   const [ghiChu, setGhiChu] = useState('');
+  /* YT-BAO-PH ([XM 1]): Meeting CX/GĐCN có PH dự → việc Báo PH của TVV tự xong (mặc định có). */
+  const [phDu, setPhDu] = useState(true);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
   /* OV-11c (CV-7): ở Công việc (tại chỗ) lưu xong panel ở lại "Đã lưu", dòng giữ chỗ mờ + gạch; nơi khác đóng như cũ. */
   const taiCho = useContext(KhungTaiCho);
   const [daLuu, setDaLuu] = useState<string | null>(null);
-  useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); lf.datLai(); }, [measureId, homNay]);
+  useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); setPhDu(true); lf.datLai(); }, [measureId, homNay]);
 
   if (!measureId) return null;
   if (loiTai) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
@@ -44,12 +46,13 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   }
   const loiNgay = m.quyetLuc && ngayTh < m.quyetLuc.slice(0, 10) ? t('Chọn từ ngày QL duyệt ({ngay}) trở đi', { ngay: ngay(m.quyetLuc, homNay) }) : null;
   const loiNguoi = nguoiThieu(nguoi, true);
+  const laMeeting = m.kind === 'meeting_cx';
   const luu = async () => {
     lf.bam();
     if (loiNgay || loiNguoi) return;
     setBusy(true);
     try {
-      await api.post(`/y-thuc/xu-ly/${measureId}/da-thuc-hien`, { performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: ghiChu.trim() || undefined });
+      await api.post(`/y-thuc/xu-ly/${measureId}/da-thuc-hien`, { performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: ghiChu.trim() || undefined, ...(laMeeting ? { phDu } : {}) });
       onDone?.();
       DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
       const chu = t('Đã ghi {nhan} cho {ten} — {length} vi phạm chuyển sang Đã xử lý.', { nhan: m.nhan, ten: m.ten, length: m.viPham.length });
@@ -79,6 +82,12 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
           <textarea className="field w-full" rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)}
             placeholder={t('Ví dụ: Đã họp PH chiều 30/09, có biên bản')} />
         </Truong>
+        {laMeeting && (
+          <label className="flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:min-h-0">
+            <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" checked={phDu} onChange={(e) => setPhDu(e.target.checked)} />
+            {t('PH dự họp — việc Báo PH của TVV tự xong')}
+          </label>
+        )}
       </Khoi>
       <Khoi tieuDe={t('Vi phạm được xử lý · {length}', { length: m.viPham.length })}>
         <p className="m-0 text-xs text-slate-400">{m.viPham.map((v) => `${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}`).join(' · ') || '—'}</p>

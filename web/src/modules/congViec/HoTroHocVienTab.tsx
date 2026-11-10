@@ -239,7 +239,8 @@ export function HoTroHocVienTab() {
     if (data && tab && !choDemDuyet && tab !== params.get('nhom') && !params.get('loai') && !theId) setParam('nhom', tab);
   }, [data, tab, choDemDuyet]);   // eslint-disable-line react-hooks/exhaustive-deps
   const trongTab = useMemo(() => items.filter((it) => tabCua(it) === tab), [items, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
-  const demHan = useMemo(() => demLocNhanh(trongTab, 'tat-ca', homNay), [trongTab, homNay]);
+  /* P1 rà 11/11 G5-04 / G1-05: bộ lọc hạn áp CẢ trang (mọi tab, `locItems`) → số trong ô đếm cùng tập với đầu trang "n việc · m quá hạn" (`items`), không riêng tab. */
+  const demHan = useMemo(() => demLocNhanh(items, 'tat-ca', homNay), [items, homNay]);
   /* `viec` trỏ tới việc không có panel (đường cũ, gõ tay) → như chưa chọn. */
   const chon = useMemo(() => {
     /* DON-HINH: việc mở từ chuông / link có thể không thuộc "Của tôi" — tìm cả danh sách QL đã nạp, không riêng dòng đang lọc. */
@@ -321,7 +322,8 @@ export function HoTroHocVienTab() {
     : xoay.find((x) => x.nhom !== hienTai.nhom && x.mine === hienTai.mine && !laViecChamCheo(x) && !xong.has(x.key)) ?? null;
   const [het, setHet] = useState<{ nhom: string; ke: (WorkItem & { nhom: string }) | null } | null>(null);
   useEffect(() => { setHet(null); }, [viec]);
-  const daLam = (it: WorkItem) => setGiu((m) => new Map(m).set(it.key, it));
+  /* G1-13 / G4-18: giữ bản dòng lúc lưu LẦN ĐẦU — lưu tiếp (Lưu L rồi Vắng R) không đổi dòng vừa xong thành phần còn lại ("✓ Reading · 1 bài"). */
+  const daLam = (it: WorkItem) => setGiu((m) => (m.has(it.key) ? m : new Map(m).set(it.key, it)));
   /*
    * M6 6b-3 (mockup panel-pilot ②b, ②d): việc vừa lưu bằng "· việc tiếp ›" — dải "✓ … · Hoàn tác" ở đầu việc kế (`den`) hoặc thẻ "Hết việc" (`den` = null);
    * Hoàn tác xong mở lại việc đó để làm lại (`lan` dựng lại panel đang mở, không giữ "✓ Đã lưu" cũ).
@@ -480,7 +482,8 @@ export function HoTroHocVienTab() {
                     ...dsCn.map((b) => ({ key: String(b.id), nhan: b.name, so: demCn(b.id) }))]} />
               </span>
             )}
-            {/* Mockup "Mọi hạn ▾" — P7: hạn ghi ngày thật, không "tuần này". */}
+            {/* Mockup "Mọi hạn ▾" — P7: hạn ghi ngày thật, không "tuần này". G1-05: tab Chờ bạn duyệt không lọc theo hạn → không có ô. */}
+            {tab !== 'duyet' && (
             <ChonDangNut className="max-sm:w-full" aria-label={t('Lọc theo hạn')} value={loc === 'qua-han' || loc === 'hom-nay' || loc === 'den-het-tuan' ? loc : 'tat-ca'}
               onChange={(e) => setParam('loc', e.target.value === 'tat-ca' ? null : e.target.value)}>
               <option value="tat-ca">{t('Mọi hạn')}</option>
@@ -488,6 +491,7 @@ export function HoTroHocVienTab() {
               <option value="hom-nay">{t('Hôm nay')} · {demHan['hom-nay'] ?? 0}</option>
               <option value="den-het-tuan">{t('Hạn đến {ngay}', { ngay: shortDate(cuoiTuan, homNay) })} · {demHan['den-het-tuan'] ?? 0}</option>
             </ChonDangNut>
+            )}
             <button type="button" className={`btn btn-sm h-8 gap-1.5 pl-3 pr-2.5 text-[13px] font-semibold max-sm:min-h-[44px] max-sm:w-full ${soLocThem ? 'nut-loc-dang' : ''}`}
               aria-expanded={moLocThem} onClick={() => setMoLocThem((x) => !x)}>
               {t('Lọc thêm')}{soLocThem ? <span className="tabular-nums">· {soLocThem}</span> : null}

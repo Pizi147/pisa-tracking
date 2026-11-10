@@ -169,6 +169,8 @@ const LOAI_CAN_LAM = new Set([
   'bao_len',   // PR-S6F-a Q12: thẻ Báo QL đang chờ chính Quản lý quyết
   /* SL1 (A1-04, A7-05): ba thông báo tự động OV-15d thay "Nhắc" — chính là việc (máy chủ chỉ giữ khi việc còn). C23: Case tạo tay giao người khác phụ trách. */
   'cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'case_giao',
+  /* P1 rà 11/11 G5-11: Admin — Xuất báo cáo PH quá hạn (thông báo tự động, máy chủ chỉ giữ khi việc còn). */
+  'xuat_bc_ph_qua_han',
   /* SV-YT-TVV: việc Báo PH sau lưu xử lý vi phạm (một dòng mỗi việc; máy chủ báo `con_viec`). */
   'bao_ph_xu_ly',
   /* #6 (rà 11/11 G3-7): QL đã duyệt đề xuất Ý thức — GVCN ghi "Đã thực hiện" (máy chủ báo `con_viec`). */
@@ -188,6 +190,7 @@ export function loaiHanThongBao(n: { kind: string | null; entity_type?: string |
   if (n.kind === 'cham_qua_han') return 'nhap-diem';
   if (n.kind === 'chot_lo_trinh') return 'chot-len-ft';
   if (n.kind === 'bao_ph_xu_ly') return 'xu-ly-vi-pham';
+  if (n.kind === 'xuat_bc_ph_qua_han') return 'viec-van-hanh';
   if (n.entity_type === 'yeu_cau_duyet') return 'duyet';
   if (n.kind === 'sos' || n.kind === 'sos_new') return 'xac-minh-sos';
   return 'lap-pa';

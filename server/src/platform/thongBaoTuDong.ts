@@ -3,6 +3,7 @@
  *  · bài quá hạn chấm của CHÍNH GV — một thông báo mỗi lớp · đợt (cùng tập việc Nhập điểm quá hạn của `/my-work`);
  *  · Case chưa chốt PA quá hạn — người phụ trách Case (GVCN), cùng luật ⚠ cột Chờ duyệt (`xuLyCaseMany`, như chỉ số `case-xac-dinh-nguyen-nhan-qua-han`);
  *  · Chốt lộ trình — QL, ba mốc N20 (T2 nhắc · T5 hạn · từ T6 quá hạn), một dòng mỗi lớp mỗi mốc.
+ *  · P1 rà 11/11 G5-11: Admin — mỗi việc "Xuất báo cáo PH" quá hạn của chính Admin một dòng (`xuat_bc_ph`, như Chốt lộ trình của QL);
  *  · SV-YT-TVV: việc Báo PH sau lưu xử lý — người giữ HIỆN TẠI (TVV / QL khi em chưa có TVV), MỘT thông báo mỗi người (1 việc: tên em; nhiều: "· n em"),
  *    hạn sớm nhất, "Quá hạn · …" khi có việc quá hạn — không tràn chuông (50 dòng) khi QL giữ nhiều việc.
  * ĐỒNG BỘ, không chỉ thêm: thông báo của việc đã xong tự hết (xoá), thông báo còn việc thì cập nhật chữ; dedup theo (người, đối tượng).
@@ -20,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 export const CHOT_TOI_HAN_NGAY = 7;
 /** OV-15h1: luật "tới hạn" của "Cần bạn quyết" ở Tổng quan QL (chuông Chốt lộ trình theo ba mốc N20 — `viecMuon`). Không có hạn → chưa tới hạn. */
 export const toiHan = (han: string | null | undefined, homNay: string) => !!han && han <= addDays(homNay, CHOT_TOI_HAN_NGAY);
-const KIND = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly'] as const;
+const KIND = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'xuat_bc_ph_qua_han'] as const;
 type Muon = { kind: (typeof KIND)[number]; title: string; body: string; entityType: string; entityId: number | null; duong: string;
   /** SL1 (N1): hạn của việc — chuông sắp Cần làm theo hạn. */ han: string | null };
 
@@ -43,12 +44,12 @@ export function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
    */
   const ngay = demoToday();   // cùng ngày `myWork` / `mySkills` dùng để quyết `mine`
   const classIds = viecMuonDayDuKhiKiem.bat ? undefined : [...new Set(p.assignments.filter((a) => activeAt(a, ngay)).map((a) => a.classId))];
-  return muonTuViec(p, (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt']), classIds }).items ?? []) as WorkItem[], homNay);
+  return muonTuViec(p, (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt', 'xuat_bc_ph']), classIds }).items ?? []) as WorkItem[], homNay);
 }
 
 /**
- * RA-DOC-0611b: thông báo muốn có từ DANH SÁCH VIỆC đã tính — `viecMuon` (dựng một phần) và `GET /my-work` của chính người đó (đủ nhóm; chỉ đọc ba nhóm
- * score · chot_len_ft · bao_ph_yt, cùng hàm `myWork` nên cùng dòng — phép kiểm `RA-DOC-0611b` ở tocDo.run so mọi tài khoản).
+ * RA-DOC-0611b: thông báo muốn có từ DANH SÁCH VIỆC đã tính — `viecMuon` (dựng một phần) và `GET /my-work` của chính người đó (đủ nhóm; chỉ đọc bốn nhóm
+ * score · chot_len_ft · bao_ph_yt · xuat_bc_ph, cùng hàm `myWork` nên cùng dòng — phép kiểm `RA-DOC-0611b` ở tocDo.run so mọi tài khoản).
  */
 export function muonTuViec(p: Principal, items: readonly WorkItem[], homNay: string): Map<string, Muon> {
   const muon = new Map<string, Muon>();
@@ -96,6 +97,15 @@ export function muonTuViec(p: Principal, items: readonly WorkItem[], homNay: str
       kind: 'bao_ph_xu_ly', title: bp.some((x) => x.urgency === 'overdue') ? `Quá hạn · ${chu}` : chu, body: '',
       entityType: 'viec_bao_ph', entityId: dau.viecId ?? null,
       duong: bp.length === 1 ? dau.href : p.roleKeys.includes('consultant') ? '/' : `/cong-viec?viec=${encodeURIComponent(dau.key)}`, han: dau.due,
+    });
+  }
+
+  /* P1 rà 11/11 G5-11: Admin — "Xuất báo cáo PH" quá hạn (đợt quá hạn còn thiếu em) của chính Admin, một dòng mỗi lớp · đợt. Vai khác: `viecXuatBaoCaoPh` trả rỗng, 0 câu. */
+  for (const x of items) {
+    if (x.group !== 'xuat_bc_ph' || !x.mine || x.urgency !== 'overdue') continue;
+    muon.set(`tudong:xuat:${x.key}`, {
+      kind: 'xuat_bc_ph_qua_han', title: `Quá hạn · Xuất báo cáo PH · ${x.classCode ?? ''}`.trim(), body: x.contextLabel ?? '',
+      entityType: 'class', entityId: x.classId, duong: x.href, han: x.due,
     });
   }
 

@@ -28,7 +28,7 @@ import { noteMeasureChange, violationsByIds, type ViolationView } from './violat
 import { dongThoiGian, hangCuaEm, type DongEm, type DongThoiGianYt } from './board.ts';
 import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
-import { dongViecTheoXuLy, moLaiViecTheoXuLy, sinhViecBaoPh } from './baoPhTvv.ts';
+import { dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhViecBaoPh, xongBaoPhViMeeting } from './baoPhTvv.ts';
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = 10;
@@ -288,7 +288,8 @@ function hoiNgayTruocDuyet(m: { quyet_luc?: string | null }, performedOn: string
   if (duyet && performedOn < duyet) canXacNhan('Ngày thực hiện trước ngày QL duyệt ({x}) — vẫn lưu?', { x: duyet.split('-').reverse().join('/') }, 'Vẫn lưu');
 }
 
-export function daThucHien(p: Principal, measureId: number, v: { performedOn?: unknown; performerUserId?: unknown; performerName?: unknown; note?: unknown }) {
+/** YT-BAO-PH ([XM 1]): Meeting CX/GĐCN có PH dự (`phDu`, mặc định có) → việc Báo PH của TVV tự xong. */
+export function daThucHien(p: Principal, measureId: number, v: { performedOn?: unknown; performerUserId?: unknown; performerName?: unknown; note?: unknown; phDu?: unknown }) {
   const m = db().prepare('SELECT * FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy lần xử lý');
   const hv = hocVien(m.student_id);
@@ -305,8 +306,10 @@ export function daThucHien(p: Principal, measureId: number, v: { performedOn?: u
         WHERE id = ? AND status = 'da_duyet'`,
     ).run(performedOn, nguoi.by, nguoi.ten, p.userId, nowIso(), them, them, nowIso(), measureId).changes;
     if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
+    const phDu = m.kind === 'meeting_cx' && v.phDu !== false;
+    if (phDu) xongBaoPhViMeeting(measureId, performedOn, `PH dự Meeting CX/GĐCN — GVCN ghi Đã thực hiện${them ? `: ${them}` : ''}`, p.userId);
     writeAudit({ actorUserId: p.userId, action: 'discipline.performed', entityType: 'discipline_measure', entityId: measureId,
-      entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { performedOn } });
+      entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { performedOn, ...(m.kind === 'meeting_cx' ? { phDu } : {}) } });
   });
   return xemXuLy(p, measureId);
 }
@@ -325,6 +328,7 @@ export function chuaThucHien(p: Principal, measureId: number): XuLyView {
     ).run(nowIso(), measureId).changes;
     if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
     chotHanXuLy([m.student_id]);
+    moLaiBaoPhMeeting(measureId);   // YT-BAO-PH: Báo PH tự xong vì Meeting → mở lại
     writeAudit({ actorUserId: p.userId, action: 'discipline.not_performed', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · ${nhanLoaiXuLy(m.kind, m.custom_name)} · chưa thực hiện`,
       before: { status: 'done', performedOn: m.performed_on ?? null, performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null }, after: { status: 'da_duyet' } });
@@ -370,6 +374,8 @@ export type XuLyView = {
   coTheSua: boolean; coTheThuHoi: boolean; lanSau: string | null;
   /** LUAT-5: người xem thu hồi THẲNG được (quyền duyệt của em) — giao diện đọc cờ này, không tự đoán theo vai. */
   thuHoiThang: boolean;
+  /** YT-BAO-PH: TVV đã báo PH lần này (chỉ khi QL thu hồi thẳng được) — hộp Thu hồi hiện ô "Nhờ TVV báo lại PH". */
+  daBaoPh: boolean;
   /** Bậc của em SAU KHI thu hồi lần này (0 = chưa có bậc) — chỉ khi không còn lần sau; hộp hỏi nói "bậc về Report 1". */
   bacVe: number | null;
   /** Vi phạm của em CHƯA nằm trong lần xử lý nào — danh sách thêm của `Sửa vi phạm` (rỗng khi không sửa được). */
@@ -406,6 +412,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
     coTheSua, coTheThuHoi: coTheSua && THU_HOI_DUOC.has(m.status) && thuHoi?.trangThai !== 'cho',   // RKC-3a: lần giữa thu hồi được (máy chủ hỏi nêu lần sau)
     lanSau: sau ? nhanLoaiXuLy(sau.kind, sau.custom_name) : null, bacVe, thuHoi,
     thuHoiThang: coTheSua && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }),
+    daBaoPh: coTheSua && THU_HOI_DUOC.has(m.status) && !!db().prepare("SELECT 1 FROM viec_bao_ph WHERE measure_id = ? AND trang_thai = 'xong'").get(id),
     chuaXuLy: em ? violationsByIds(em.dsViPham.map((v) => v.id).filter((vid) => {
       const t = em.viPham.get(vid);
       return t && t.t !== 'da_xu_ly' && t.t !== 'cho_duyet' && !vIds.includes(vid);
@@ -738,7 +745,8 @@ export function xoaXuLy(p: Principal, measureId: number): never {
  * THU HỒI (luật 5): lý do bắt buộc · lần mới nhất của chuỗi · đã thực hiện hoặc QL đã duyệt. GVCN → thẻ `thu_hoi_y_thuc` (lần xử lý VẪN tính tới khi QL
  * duyệt; đã có thẻ chờ → 400). QL trong phạm vi em (C26) → áp thẳng; thẻ đóng "tự duyệt" (Quản trị được báo — Q-D) làm lịch sử ai · lúc · lý do.
  */
-export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown }): XuLyView {
+/** YT-BAO-PH ([XM 1]): `baoLai` (mặc định bật) — TVV đã báo PH thì sinh việc "Báo lại PH" khi thu hồi được áp. */
+export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown; baoLai?: unknown }): XuLyView {
   const m = loadXuLy(measureId);
   const hv = hocVien(m.student_id);
   requireSuaXuLy(p, m);
@@ -757,7 +765,7 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown 
     });
     if (id === null) throw badRequest('Lần xử lý này đang chờ QL duyệt thu hồi.');
     if (ql) {
-      apDungThuHoi(p, m, hv, lyDo);
+      apDungThuHoi(p, m, hv, lyDo, v.baoLai !== false);
       chotYeuCau(db(), theThuHoi(measureId), 'duyet', { nguoiDuyet: p.userId });
       /* QL làm thẳng → GVCN lớp em biết (thẻ đã đóng nên không có chuông kết quả của hộp). */
       if (em.gvcnId && em.gvcnId !== p.userId) {
@@ -774,26 +782,26 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown 
 }
 
 /** Áp thu hồi (TRONG tx): `thu_hoi` giữ dòng + liên kết + tệp; vi phạm về chưa xử lý (lịch sử vi phạm), hạn chốt lại; nhật ký đủ nội dung. */
-function apDungThuHoi(p: Principal, m: any, hv: { student_code: string }, lyDo: string): void {
+function apDungThuHoi(p: Principal, m: any, hv: { student_code: string }, lyDo: string, baoLai: boolean): void {
   const doi = db().prepare(`UPDATE discipline_measures SET status = 'thu_hoi', updated_at = ? WHERE id = ? AND status IN ('done', 'da_duyet')`)
     .run(nowIso(), m.id).changes;
   if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
   const vIds = viPhamCua(m.id);
   for (const vid of vIds) noteMeasureChange(vid, m.id, null, p.userId);
   chotHanXuLy([m.student_id]);
-  dongViecTheoXuLy(m.id, 'system_thu_hoi', lyDo, p.userId);
+  dongViecTheoXuLy(m.id, 'system_thu_hoi', lyDo, p.userId, { baoLai });
   const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
   writeAudit({ actorUserId: p.userId, action: 'discipline.revoke', entityType: 'discipline_measure', entityId: m.id,
     entityLabel: `${hv.student_code} · thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
-    before: { status: m.status, kind: m.kind, violations: vIds, daBaoPhuHuynh: daBaoPh }, after: { status: 'thu_hoi', lyDo } });
+    before: { status: m.status, kind: m.kind, violations: vIds, daBaoPhuHuynh: daBaoPh }, after: { status: 'thu_hoi', lyDo, baoLai } });
 }
 
 /** Hộp Chờ duyệt: QL Duyệt thẻ thu hồi (TRONG tx của hộp) — kiểm lại như lúc gửi rồi áp. */
-export function duyetThuHoiYThuc(p: Principal, measureId: number, lyDo: string): void {
+export function duyetThuHoiYThuc(p: Principal, measureId: number, lyDo: string, baoLai = true): void {
   const m = loadXuLy(measureId);
   if (!THU_HOI_DUOC.has(m.status)) throw badRequest('Lần xử lý này không còn để thu hồi. Danh sách đã được làm mới.');
   hoiLanSau(m, true);
-  apDungThuHoi(p, m, hocVien(m.student_id), lyDo);
+  apDungThuHoi(p, m, hocVien(m.student_id), lyDo, baoLai);
 }
 
 /**

@@ -1334,9 +1334,14 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* P1 G5-01 (rà 11/11): chụp lại 'QL toi' / 'QT toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: việc "Chốt lộ trình" (`chot_len_ft`) `mine: false → true`
        (việc của người chốt được) + `summary` đếm thêm các dòng đó. Trước: QL toi f2cc522d889b43ca, QT toi 51fe838d1a390ccb, QL tat-ca 68eb7bf00d5d3794,
        QT tat-ca 5a8f912d0266aeb4, QT tat-ca cn 699c581b1c85ef3a */
-    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': '9d92644a93b70d7c', 'GVBM toi': 'e089af060bbfcf23',
-    'GVCN_THUONG toi': '9d92644a93b70d7c', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '7f94dda317035ed0', 'QT tat-ca': '57fda42f27026a88',
-    'QT tat-ca cn': 'e2258962068479d4', 'QL gvcn': 'd72da0f9c7bf9628', 'GVS toi': '8925006102baff97',
+    /* YT-BAO-PH (rà 11/11 #7, [XM 1]): chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: seed ghi "Đã thực hiện" Meeting CX/GĐCN (Hà Phương Linh) nên việc
+       Báo PH của TVV tự xong, rời Công việc "Tất cả". Trước: QL tat-ca 7f94dda317035ed0, QT tat-ca 57fda42f27026a88, QT tat-ca cn e2258962068479d4. */
+    /* #8 bản rà 11/11 (G4-06): chụp lại 7 băm — đổi CÓ CHỦ Ý chỉ việc Bàn giao chuyển lớp: GVCN dạy luôn môn → không còn "Bàn giao môn …" (viết trong phiếu GVCN);
+       GVBM nhiều môn một lớp → MỘT việc "Bàn giao môn L · R" (count = số em khác nhau). Đã kiểm: trả banGiao.ts + mywork.ts về origin/main trên nhánh → TD4-a đạt
+       với băm cũ. Trước: GVCN toi 9d92644a93b70d7c, GVBM toi e089af060bbfcf23, GVCN_THUONG toi 9d92644a93b70d7c, QL tat-ca 44df50bdddf5043e, QT tat-ca 893884b8134ff493, QT tat-ca cn 0ae00a58528bfe32, QL gvcn d72da0f9c7bf9628 */
+    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': 'b365951571812c05', 'GVBM toi': '12e56e58ca3ab54f',
+    'GVCN_THUONG toi': 'b365951571812c05', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '82a113beaa654d50', 'QT tat-ca': '4ea0cb34545f1f71',
+    'QT tat-ca cn': '27514f17c920a385', 'QL gvcn': '1704e89b346dd3ad', 'GVS toi': '8925006102baff97',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

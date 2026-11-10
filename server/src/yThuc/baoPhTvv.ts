@@ -25,13 +25,14 @@ import { canManageDiscipline } from './access.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
 /** Lý do hệ thống đóng việc theo lần xử lý (Q-D1 ①). */
-const LY_DO_HE_THONG = { system_thu_hoi: 'Xử lý đã thu hồi', system_tu_choi: 'QL từ chối xử lý', system_rut: 'Đề xuất đã rút' } as const;
+const LY_DO_HE_THONG = { system_thu_hoi: 'Xử lý đã thu hồi', system_tu_choi: 'QL từ chối xử lý', system_rut: 'Đề xuất đã rút', system_huy_thu_hoi: 'QL huỷ thu hồi' } as const;
 type LyDoHeThong = keyof typeof LY_DO_HE_THONG;
 const nhanLyDo = (code: string | null): string | null =>
   code ? (LY_DO_HE_THONG as Record<string, string>)[code] ?? (COORDINATION_REMOVE_REASON_LABEL as Record<string, string>)[code] ?? code : null;
 
-/** Tên bậc của việc — đọc từ lần xử lý (rà #516: loại đổi thì tên theo); lần xử lý đã xoá (rút) → tên lưu lúc sinh việc. */
-const nhanViec = (r: { nhan: string; m_kind?: string | null; m_custom?: string | null }): string => (r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan);
+/** Tên bậc của việc — đọc từ lần xử lý (rà #516: loại đổi thì tên theo); lần xử lý đã xoá (rút) → tên lưu lúc sinh việc. YT-BAO-PH: việc báo lại → "{bậc} đã thu hồi". */
+const nhanViec = (r: { nhan: string; m_kind?: string | null; m_custom?: string | null; bao_lai_cua?: number | null }): string =>
+  (r.m_kind ? `${nhanLoaiXuLy(r.m_kind, r.m_custom ?? null)}${r.bao_lai_cua ? ' đã thu hồi' : ''}` : r.nhan);
 
 /** Chi nhánh của em = lớp đang học, không có thì chi nhánh hồ sơ. */
 const CHI_NHANH_EM = `COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), s.branch_id)`;
@@ -57,7 +58,7 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
  * TRONG tx: lần xử lý bị thu hồi (được duyệt) / QL từ chối / GVCN rút → việc chưa xong "Đã bỏ" kèm lý do; việc đã xong giữ + chuông để biết.
  * Rút xoá lần xử lý → gỡ `measure_id` (việc + lịch sử giữ, `nhan` còn tên bậc).
  */
-export function dongViecTheoXuLy(measureId: number, lyDo: LyDoHeThong, chu: string | null, boi: number | null): void {
+export function dongViecTheoXuLy(measureId: number, lyDo: LyDoHeThong, chu: string | null, boi: number | null, o: { baoLai?: boolean } = {}): void {
   const v = db().prepare(`SELECT v.*, s.full_name, m.kind AS m_kind, m.custom_name AS m_custom FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
     LEFT JOIN discipline_measures m ON m.id = v.measure_id WHERE v.measure_id = ?`).get(measureId) as any;
   if (!v) return;
@@ -65,6 +66,10 @@ export function dongViecTheoXuLy(measureId: number, lyDo: LyDoHeThong, chu: stri
   if (v.trang_thai === 'mo') {
     db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_ly_do_chu = ?, bo_boi = ?, bo_luc = ? WHERE id = ? AND trang_thai = 'mo'`)
       .run(lyDo, chu?.slice(0, 2000) ?? null, boi, nowIso(), v.id);
+  } else if (v.trang_thai === 'xong' && lyDo === 'system_thu_hoi' && o.baoLai) {
+    /* YT-BAO-PH ([XM 1], chủ SP 11/11): PH đã nghe biện pháp nay thu hồi → việc "Báo lại PH" cho TVV (cùng loại việc, cùng hạn 5 ngày); chuông theo việc. */
+    db().prepare(`INSERT INTO viec_bao_ph (measure_id, bao_lai_cua, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
+      .run(measureId, v.student_id, `${v.nhan} đã thu hồi`, hanBaoPh(demoToday()), nowIso());
   } else if (v.trang_thai === 'xong') {
     for (const uid of nguoiGiuBaoPh(v.student_id)) {
       notify({ userId: uid, kind: 'discipline_de_biet', title: `${LY_DO_HE_THONG[lyDo]} · Báo PH · ${v.nhan} · ${v.full_name} · để biết`, body: chu?.slice(0, 120) ?? null,
@@ -79,6 +84,33 @@ export function dongViecTheoXuLy(measureId: number, lyDo: LyDoHeThong, chu: stri
 export function moLaiViecTheoXuLy(measureId: number): void {
   db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL
                  WHERE measure_id = ? AND trang_thai = 'bo' AND bo_ly_do = 'system_thu_hoi'`).run(measureId);
+  /* YT-BAO-PH: việc "Báo lại PH" chưa ghi lần nào → gỡ hẳn (như chưa từng có); đã ghi → giữ lịch sử, "Đã bỏ" kèm lý do. */
+  db().prepare(`DELETE FROM viec_bao_ph WHERE bao_lai_cua = ? AND NOT EXISTS (SELECT 1 FROM viec_bao_ph_lan l WHERE l.viec_id = viec_bao_ph.id)`).run(measureId);
+  db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_huy_thu_hoi', bo_luc = ? WHERE bao_lai_cua = ? AND trang_thai = 'mo'`).run(nowIso(), measureId);
+}
+
+/** Dòng lịch sử máy ghi cho Meeting CX/GĐCN có PH dự — khoá riêng để "Chưa thực hiện" gỡ đúng dòng này. */
+const khoaMeeting = (measureId: number) => `meeting-ph-du:${measureId}`;
+
+/**
+ * TRONG tx (YT-BAO-PH, [XM 1] chủ SP 11/11): GVCN ghi "Đã thực hiện" Meeting CX/GĐCN có PH dự → việc Báo PH của lần đó tự xong — PH đã nghe ở cuộc họp.
+ * Một dòng `viec_bao_ph_lan` (Đã báo PH · ngày họp · người ghi = GVCN) để GV / TVV đọc được vì sao xong. Việc đã xong / đã bỏ: không đụng.
+ */
+export function xongBaoPhViMeeting(measureId: number, ngay: string, ghiChu: string, boi: number): void {
+  const v = db().prepare(`SELECT id, trang_thai FROM viec_bao_ph WHERE measure_id = ?`).get(measureId) as { id: number; trang_thai: string } | undefined;
+  if (!v || v.trang_thai !== 'mo') return;
+  db().prepare('INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_chu, ghi_boi, ghi_luc, khoa) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(khoa) DO NOTHING')
+    .run(v.id, 'da_bao', ngay, ghiChu.slice(0, 2000), boi, nowIso(), khoaMeeting(measureId));
+  db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'xong' WHERE id = ?`).run(v.id);
+}
+
+/** TRONG tx: "Chưa thực hiện" (bấm nhầm Đã thực hiện) → gỡ dòng máy ghi; việc về theo lần ghi còn lại (không còn → mở). */
+export function moLaiBaoPhMeeting(measureId: number): void {
+  const v = db().prepare(`SELECT id FROM viec_bao_ph WHERE measure_id = ?`).get(measureId) as { id: number } | undefined;
+  if (!v) return;
+  if (!db().prepare('DELETE FROM viec_bao_ph_lan WHERE viec_id = ? AND khoa = ?').run(v.id, khoaMeeting(measureId)).changes) return;
+  const cuoi = db().prepare('SELECT ket_qua FROM viec_bao_ph_lan WHERE viec_id = ? ORDER BY id DESC LIMIT 1').get(v.id) as { ket_qua: string } | undefined;
+  db().prepare(`UPDATE viec_bao_ph SET trang_thai = ? WHERE id = ? AND trang_thai != 'bo'`).run(cuoi?.ket_qua === 'da_bao' ? 'xong' : 'mo', v.id);
 }
 
 // ---------------------------------------------------------------- quyền + đọc
@@ -87,7 +119,7 @@ function loadViec(id: number): any {
   const v = db().prepare(
     `SELECT v.*, s.full_name, s.student_code, s.consultant_user_id, s.parent_name, s.parent_relation, s.parent_phone, m.status AS xu_ly_status,
             m.kind AS m_kind, m.custom_name AS m_custom, m.note AS m_note, m.created_at AS m_luc, mu.full_name AS m_nguoi, mc.code AS m_lop
-       FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
+       FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
        LEFT JOIN users mu ON mu.id = m.created_by LEFT JOIN classes mc ON mc.id = m.class_id WHERE v.id = ?`,
   ).get(id) as any;
   if (!v) throw notFound('Không tìm thấy việc Báo PH.');
@@ -108,7 +140,7 @@ function requireGhi(p: Principal, v: any): void {
 }
 /** Lần xử lý còn hiệu lực (không thu hồi / từ chối / rút). */
 const xuLyCon = (v: any): 'con' | 'thu_hoi' | 'tu_choi' | 'rut' =>
-  v.measure_id == null ? 'rut' : v.xu_ly_status === 'thu_hoi' ? 'thu_hoi' : v.xu_ly_status === 'tu_choi' ? 'tu_choi' : 'con';
+  v.bao_lai_cua != null ? 'con' : v.measure_id == null ? 'rut' : v.xu_ly_status === 'thu_hoi' ? 'thu_hoi' : v.xu_ly_status === 'tu_choi' ? 'tu_choi' : 'con';
 
 export type ViecBaoPhView = {
   id: number; measureId: number | null; studentId: number; ten: string; nhan: string; tieuDe: string;
@@ -168,7 +200,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     ? db().prepare(`SELECT ly_do FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`).get(v.measure_id) as { ly_do: string | null } | undefined
     : undefined;
   const nhanTrangThai = nhanTrangThaiBaoPh(v.trang_thai, lan.length > 0);
-  const vp = viPhamXuLy(v.measure_id ?? null);
+  const vp = viPhamXuLy(v.measure_id ?? v.bao_lai_cua ?? null);
   /* P1 G3-2: hạn QL trả lời — một câu, chỉ khi lần xử lý đang chờ duyệt (đa số việc không thêm câu). */
   const choQl = v.xu_ly_status === 'cho_duyet'
     ? { han: ((db().prepare(`SELECT han_duyet FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_loai = 'discipline_measure' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
@@ -351,12 +383,12 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   if (!ql && !p.roleKeys.includes('consultant')) return [];   // GV không giữ việc này — khỏi tốn câu
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const rows = db().prepare(
-    `SELECT v.id, v.student_id, v.nhan, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
+    `SELECT v.id, v.student_id, v.nhan, v.bao_lai_cua, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
             (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${HAN_BAO_PH_NGAY} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}
-       LEFT JOIN discipline_measures m ON m.id = v.measure_id
+       LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
        LEFT JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
        LEFT JOIN classes c ON c.id = e.class_id
       WHERE v.trang_thai = 'mo'${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : !ql ? ' AND s.consultant_user_id = ?'
@@ -377,7 +409,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       key: `bao-ph:${r.id}`, group: 'bao_ph_yt', urgency: han < o.today ? 'overdue' : han === o.today ? 'today' : 'normal',
       studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: r.nhan, count: null,
-      reason: `Đã lưu xử lý ${r.nhan} — báo phụ huynh và ghi kết quả`,
+      reason: r.bao_lai_cua ? `${r.nhan} — báo lại phụ huynh và ghi kết quả` : `Đã lưu xử lý ${r.nhan} — báo phụ huynh và ghi kết quả`,
       tieuDe: `Báo PH · ${r.nhan} · ${r.full_name}`, phu: `Báo PH · ${r.nhan}`, actionLabel: 'Ghi báo PH',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }), ownerId, owner: null, mine: ownerId === p.userId,
       due: han, statusLabel: r.so_lan ? 'Chưa liên hệ được' : 'Chưa báo', viecId: r.id, soLanThu: r.so_lan,
