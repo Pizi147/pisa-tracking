@@ -34,3 +34,9 @@ Seed 14/09/2026 · MB FT 101 · GVCN Trần Ngọc Hà · GVBM Phạm Thu Trang 
 | Đọc kết quả (GV, GVBM, TVV) | không hiện | ③ |
 
 Bỏ chữ thừa: "Học thuật theo dõi ở bảng kỹ năng", nhãn "Đang làm" / "Xong", "Còn: …".
+
+## Chủ SP rà ảnh 12/11 (không mockup lại)
+| Chỗ | Mockup #1368 | Web | |
+|---|---|---|---|
+| Dòng phụ dưới tên em / lượt | một chuỗi "MT4 · ✗ 5.0 / 6.5 · trượt L, R, W, S" | CHIA LOẠI (cùng thành phần `DiemMotDong` với panel Công việc): thẻ lượt · "Overall" mờ + số ✗ / ✓ ba màu + "/ kỳ vọng" · "Trượt" mờ + chip L R W S; hồ sơ HV bỏ thẻ lượt (ô đã ghi MT2); xuống dòng giữa các khối, không cắt | KHÁC — chủ SP 12/11 |
+Ảnh: `anh-cap/hs-lop-1440-diem-web.png`, `anh-cap/hs-hv-1440-diem-web.png`, `anh-cap/hs-lop-375-gvcn-web.png`, `anh-cap/hs-hv-375-tvv-web.png`.
