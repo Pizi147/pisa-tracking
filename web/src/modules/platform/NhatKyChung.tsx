@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ChonDangNut, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -97,5 +97,38 @@ export function NhatKyChung() {
         </div>
       )}
     </Card>
+  );
+}
+
+/**
+ * CỘT NHẬT KÝ của một tab cấu hình (mẫu chung QTV2, spec mục 5.0): 8 lần đổi gần nhất của mục đó (`/admin/nhat-ky?muc=`, cùng đường Nhật ký chung).
+ * Quản trị: "Xem tất cả ›" mở Nhật ký chung lọc sẵn mục (tab Quyền & nhật ký). Quản lý: chỉ xem 8 dòng (tab Quyền & nhật ký là của Quản trị).
+ */
+export function NhatKyMuc({ muc, quanTri }: { muc: Muc; quanTri: boolean }) {
+  const r = useApi<Trang>(`/admin/nhat-ky?muc=${muc}&gioi-han=8`);
+  const dong = r.data?.dong ?? [];
+  return (
+    <aside className="card min-w-0 self-start" aria-label={t('Nhật ký')}>
+      <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+        <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Nhật ký')}</h3>
+        {quanTri && <Link className="ml-auto text-[13px] font-semibold" to={`/quan-tri?tab=config&muc=${muc}`}>{t('Xem tất cả')} ›</Link>}
+      </div>
+      {r.error ? <div className="p-3"><ErrorState message={r.error.message} hint={r.error.hint} status={r.error.status} onRetry={r.reload} /></div>
+        : !r.data ? <div className="p-3"><Skeleton rows={3} /></div>
+        : dong.length === 0 ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Chưa đổi lần nào.')}</p>
+        : (
+          <ul className="m-0 list-none p-0">
+            {dong.map((d) => (
+              <li key={d.id} className="grid gap-0.5 border-t px-4 py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+                <span className="text-xs font-semibold text-slate-400">{dich(nhanHanhDongNhatKy(d.viec))}{d.doiTuong ? ` · ${dich(nhanDoiTuongNhatKy(d.doiTuong))}` : ''}</span>
+                {d.truong.slice(0, 2).map((x, i) => (
+                  <span key={i} className="break-words text-sm text-slate-100">{dich(x.ten)}: {x.cu !== null && <s className="text-slate-500">{ngan(x.cu)}</s>}{x.cu !== null && ' → '}{x.moi !== null ? ngan(x.moi) : <i>{t('trống')}</i>}</span>
+                ))}
+                <span className="text-[13px] text-slate-400">{d.nguoi} · <span className="tabular-nums">{lucNgan(d.luc)}</span></span>
+              </li>
+            ))}
+          </ul>
+        )}
+    </aside>
   );
 }

@@ -451,8 +451,9 @@ export function Header() {
                   onClick={() => setOpenMenu(null)}>{t('Quản trị hệ thống')}</Link>
               ) : session?.nav?.bangQuyDoi && (
                 /* BAND-QUY-DOI: Quản lý xem bảng quy đổi (chỉ đọc) — trang Quản trị chỉ có tab này. */
-                <Link to="/quan-tri?tab=band" className="btn w-full justify-center no-underline"
-                  onClick={() => setOpenMenu(null)}>{t('Bảng quy đổi band')}</Link>
+                /* QTV2-CAU-HINH: Quản lý xem cấu hình hệ thống (chương trình, chi nhánh, bảng quy đổi — chỉ đọc) + Đã xoá. */
+                <Link to="/quan-tri" className="btn w-full justify-center no-underline"
+                  onClick={() => setOpenMenu(null)}>{t('Cấu hình hệ thống')}</Link>
               )}
             </div>
             <div className="border-t pt-1 mb-2" style={{ borderColor: 'var(--line)' }}>

@@ -34,16 +34,17 @@ const TABS = [
 export default function AdminPage() {
   const [params, setParams] = useSearchParams();
   const quanTri = !!useSession().session?.nav?.admin;
-  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'band' || x.key === 'da-xoa');
+  /* QTV2-CAU-HINH (chủ SP 11/11 "QL xem"): Quản lý thấy các tab cấu hình (chỉ đọc) + Đã xoá. */
+  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'catalog' || x.key === 'chi-nhanh' || x.key === 'band' || x.key === 'da-xoa');
   const tab = tabs.find((x) => x.key === params.get('tab'))?.key ?? tabs[0].key;
   /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
-  const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === 'accounts' ? {} : { tab: k });
+  const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === tabs[0].key ? {} : { tab: k });
 
   return (
     <div className="page space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-100">{quanTri ? t('Quản trị hệ thống') : tab === 'da-xoa' ? t('Quản trị') : t('Bảng quy đổi band')}</h1>
-        {!quanTri && tab === 'band' && <p className="text-xs text-slate-500 mt-0.5">{t('Quản trị hệ thống sửa; Quản lý xem.')}</p>}
+        <h1 className="text-xl font-bold text-slate-100">{quanTri ? t('Quản trị hệ thống') : t('Cấu hình hệ thống')}</h1>
+        {!quanTri && tab !== 'da-xoa' && <p className="text-xs text-slate-500 mt-0.5">{t('Quản trị hệ thống sửa; Quản lý xem.')}</p>}
       </div>
 
       {tabs.length > 1 && (

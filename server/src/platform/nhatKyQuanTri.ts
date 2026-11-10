@@ -33,7 +33,8 @@ const docJson = (s: string | null): Record<string, unknown> => { try { const v =
 
 export type DongNhatKy = { id: number; luc: string; nguoi: string; muc: MucNhatKy; viec: string; doiTuong: string | null; truong: { ten: string; cu: string | null; moi: string | null }[] };
 
-export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: number | null; tu?: string | null; den?: string | null; tiep?: number | null }) {
+/** `gioiHan` (1–8): cột Nhật ký của một tab — chỉ đọc đúng n dòng, không trang tiếp, không đọc danh sách người. */
+export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: number | null; tu?: string | null; den?: string | null; tiep?: number | null; gioiHan?: number | null }) {
   const laQt = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
   if (!laQt && !xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được nhật ký cấu hình.');
   if (q.muc && !(MUC_NHAT_KY as readonly string[]).includes(q.muc)) throw badRequest('Mục nhật ký không hợp lệ.');
@@ -41,6 +42,7 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
   if (muc && CHI_QUAN_TRI.has(muc) && !laQt) throw forbidden('Chỉ Quản trị hệ thống xem được nhật ký tài khoản và quyền.');
   const ngay = /^\d{4}-\d{2}-\d{2}$/;
   if ((q.tu && !ngay.test(q.tu)) || (q.den && !ngay.test(q.den))) throw badRequest('Ngày lọc phải dạng YYYY-MM-DD.');
+  const gioiHan = q.gioiHan ? Math.min(8, Math.max(1, Math.trunc(q.gioiHan))) : null;
   const cacMuc = muc ? [muc] : MUC_NHAT_KY.filter((m) => laQt || !CHI_QUAN_TRI.has(m));
   const loai = cacMuc.flatMap((m) => ENTITY_CUA_MUC[m]);
   const mucCua = new Map(cacMuc.flatMap((m) => ENTITY_CUA_MUC[m].map((e) => [e, m] as const)));
@@ -52,7 +54,7 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
   if (q.tiep) { where.push('a.id < ?'); ts.push(q.tiep); }
   const rows = db().prepare(
     `SELECT a.id, a.action, a.entity_type, a.entity_label, a.before_json, a.after_json, a.created_at, u.full_name AS ten
-       FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id WHERE ${where.join(' AND ')} ORDER BY a.id DESC LIMIT ${TRANG + 1}`,
+       FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id WHERE ${where.join(' AND ')} ORDER BY a.id DESC LIMIT ${gioiHan ?? TRANG + 1}`,
   ).all(...ts) as any[];
   const dong: DongNhatKy[] = rows.slice(0, TRANG).map((r) => {
     const truoc = docJson(r.before_json); const sau = docJson(r.after_json);
@@ -61,11 +63,11 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
     return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong: r.entity_label ?? null, truong };
   });
   /* Ô lọc "Người": ai đã từng đổi trong các mục này — chỉ trang đầu (web dùng danh sách của trang đầu). */
-  const nguoi = q.tiep ? [] : db().prepare(
+  const nguoi = q.tiep || gioiHan ? [] : db().prepare(
     `SELECT DISTINCT u.id, u.full_name AS ten FROM audit_logs a JOIN users u ON u.id = a.actor_user_id
       WHERE a.entity_type IN (${loai.map(() => '?').join(',')}) ORDER BY u.full_name`,
   ).all(...loai) as { id: number; ten: string }[];
-  return { dong, tiep: rows.length > TRANG ? dong[dong.length - 1].id : null, nguoi, muc: cacMuc };
+  return { dong, tiep: !gioiHan && rows.length > TRANG ? dong[dong.length - 1].id : null, nguoi, muc: cacMuc };
 }
 
 /** Đơn vị báo cáo (chỉ xem, tab Chi nhánh — chuyển từ `/admin/overview` cũ): một câu. */
