@@ -34,6 +34,8 @@ export type DongThoiGianYt =
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       /** UI-3 (mockup K6): tên vi phạm của lần · Báo PH của lần (null = không có việc). */
       tenViPham: string[]; baoPh: BaoPhLan | null; trongChuoi?: boolean;
+      /** G3-14: lần đã thu hồi — việc "Báo lại PH" của TVV (`baoPh` giữ việc gốc). */
+      baoLai?: BaoPhLan | null;
       /** Y-THUC-V2: vi phạm của lần (một lần = một khối dòng). */
       viPhamIds: number[] };
 

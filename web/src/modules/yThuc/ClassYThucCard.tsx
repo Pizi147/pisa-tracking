@@ -258,7 +258,9 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const moiDs = [...d.nhom.qua_han.filter((x) => quaHanChiXem('qua_han', x)), ...d.nhom.moi];
   const conMoi = new Set(moiDs.map((x) => x.studentId));
   const vua = Object.entries(vuaXem).filter(([sid]) => !conMoi.has(Number(sid))).map(([, v]) => v);
-  const choTvv = xls.filter((x) => x.status === 'done' && x.baoPh?.trangThai === 'mo' && !thuHoiCho.has(x.id));
+  /* G3-14: việc Báo PH đang mở gắn với lần xử lý — cả việc "Báo lại PH" của lần đã thu hồi (cùng việc của TVV ở Công việc). */
+  const phMo = (x: XuLyDong) => (x.status === 'thu_hoi' ? x.baoLai : x.baoPh) ?? null;
+  const choTvv = xls.filter((x) => (x.status === 'done' || x.status === 'thu_hoi') && phMo(x)?.trangThai === 'mo' && !thuHoiCho.has(x.id));
   const xong7 = xls.filter((x) => x.status === 'done' && x.baoPh?.trangThai !== 'mo' && x.ngay >= tuNgay && !thuHoiCho.has(x.id));
   const moiNhatEm = new Map<number, number>();
   for (const x of xls) if (x.status === 'done' && !moiNhatEm.has(x.studentId)) moiNhatEm.set(x.studentId, x.id);
@@ -269,7 +271,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
    * "Xong · 7 ngày" ẩn khi em còn dòng ở nhóm khác.
    */
   const laGvcn = !!d.laGvcn;
-  const giuPh = (sid: number, measureId: number | undefined) => !!tra.em.get(sid)?.giuBaoPh && !!measureId && tra.xl.get(measureId)?.baoPh?.trangThai === 'mo';
+  const giuPh = (sid: number, measureId: number | undefined) => { const x = measureId ? tra.xl.get(measureId) : undefined; return !!tra.em.get(sid)?.giuBaoPh && !!x && phMo(x)?.trangThai === 'mo'; };
   const viecDx = (x: (typeof d.nhom.cho_duyet)[number]) => !!x.deXuat && ((x.deXuat.status === 'cho_duyet' ? d.coTheDuyet : laGvcn) || giuPh(x.studentId, x.deXuat.id));
   const choDuyetDx = d.nhom.cho_duyet.filter((x) => x.deXuat);
   const gan = <T,>(ds: T[], sid: (x: T) => number, cuaToi: (x: T) => boolean) => ds.map((x, i) => ({ i, sid: sid(x), cuaToi: cuaToi(x) }));
@@ -348,10 +350,12 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     }),
   ];
   const kTvv = choTvvHien.map((x) => {
-    const b = x.baoPh!;
+    const b = phMo(x)!;
     const tvv = tra.em.get(x.studentId)?.tvv ?? null;
     const tiep = b.coTheGhi ? nutChinh(t('Ghi kết quả báo PH'), x.ten, () => ghiBaoPh(x.studentId, b), d.canManage) : choAi('TVV', tvv);
-    return khoi({ key: `tvv${x.id}`, sid: x.studentId, ten: x.ten, vp: vpCua(x.viPhamIds), gv: oXl(x), ph: ph(x.studentId, b), tiep, b });
+    return khoi({ key: `tvv${x.id}`, sid: x.studentId, ten: x.ten, vp: vpCua(x.viPhamIds), gv: oXl(x), tiep, b,
+      /* G3-14: việc báo lại sau thu hồi — cùng ô ③, nhãn nói rõ vì sao TVV gọi lại PH. */
+      ph: x.status === 'thu_hoi' ? <span className="flex flex-col items-start gap-1"><span className="text-xs font-semibold text-slate-400">{t('Báo lại · đã thu hồi')}</span>{ph(x.studentId, b)}</span> : ph(x.studentId, b) });
   });
   const kXong = xong7Hien.map((x) => khoi({
     key: `xong${x.id}`, sid: x.studentId, ten: x.ten, vp: vpCua(x.viPhamIds), gv: oXl(x), ph: ph(x.studentId, x.baoPh), b: x.baoPh,
