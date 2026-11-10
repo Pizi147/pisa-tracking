@@ -7,7 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, nhanLoaiXuLy } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, luuRoiTiep, nhanLoaiXuLy } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -19,8 +19,10 @@ const tenBac = (b: number) => BAC_KHAI[b] ?? '';
  * KHAI BẬC — "em đã bị xử lý trước khi dùng web" (H5, T27). Một lần cho mỗi chuỗi thang, chỉ khi chuỗi chưa có lần xử lý nào trên web.
  * Sửa (`sua`, OV-7a): GVCN khi chuỗi chưa có lần xử lý; QL cả sau đó (máy chủ quyết — `canSuaKhai`). Bậc kế tiếp của em đi tiếp từ bậc khai.
  */
-export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
+export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }: {
   studentId: number | null; sua?: boolean; onClose: () => void; onDone?: () => void;
+  /** MOCKUP-1111 K5 (V12): mở từ Công việc có việc kế → "Lưu · việc tiếp ›" (chỉ sang việc kế khi máy chủ đã nhận; lỗi ở lại, giữ chữ). */
+  onTiep?: (() => void) | null;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -45,16 +47,18 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
   if (daLuu) {
     return (
       <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
-        chan={{ huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
+        chan={{ huy: null, chinh: onTiep
+          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
+          : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
         <Khoi tieuDe={t('Đã lưu')}><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
       </KhungPanel>
     );
   }
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú tuỳ chọn — chỉ bậc là bắt buộc. */
   const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc'), chon: true }], { bac: bac === null ? '' : 'co' });
-  const luu = async () => {
+  const luu = async (): Promise<boolean> => {
     lf.bam();
-    if (loi.length || bac === null) return;
+    if (loi.length || bac === null) return false;
     setBusy(true);
     try {
       const body = { bac, thang: thang || undefined, ghiChu: ghiChu.trim() };
@@ -64,8 +68,9 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
       const chu = t('Đã xác nhận cấp bậc {nhanLoaiXuLy} cho {ten}. Lần xử lý kế tiếp: {nhanLoaiXuLy2}.', { nhanLoaiXuLy: tenBac(bac), ten: d.ten, nhanLoaiXuLy2: nhanLoaiXuLy(kindCuaBac(bac + 1)) });
       toast.push('ok', chu);
-      if (taiCho) setDaLuu(chu); else onClose();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+      if (taiCho || onTiep) setDaLuu(chu); else onClose();   // V12 ①: có việc kế → "Lưu" ở lại, "✓ Đã lưu" + Việc tiếp ›
+      return true;
+    } catch (e: any) { toast.push('error', e.message); return false; } finally { setBusy(false); }
   };
 
   return (
@@ -74,7 +79,11 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone }: {
       chan={{
         daSua: !daLuu && (bac !== (sua && d.khai ? d.khai.bac : null) || thang !== (sua && d.khai?.thang ? d.khai.thang : '') || ghiChu !== (sua && d.khai ? d.khai.ghiChu : '')),
         conThieu: lf.conThieu(loi),
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{sua ? t('Lưu') : t('Xác nhận')}</button>,
+        /* V12: có việc kế → "Lưu" phụ + "Lưu · việc tiếp ›" chính; không có → một nút như cũ. */
+        phu: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{t('Lưu')}</button> : undefined,
+        chinh: onTiep
+          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>{t('Lưu · việc tiếp ›')}</button>
+          : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{sua ? t('Lưu') : t('Xác nhận')}</button>,
       }}>
       <Khoi tieuDe={t('Bậc cao nhất đã xử lý trước khi dùng web')}>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-label={t('Bậc đã xử lý')} {...lf.o(loi, 'bac')}>
