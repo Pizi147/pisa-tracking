@@ -149,8 +149,10 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const thamTheo = `theoCuoiKhoa=${theoCk ? 1 : 0}`;
   const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}&${thamTheo}${dx ? '&bac=1' : ''}`, [studentId, theoCk]);
   const [toClassId, setToClassId] = useState<number | null>(duyet?.lopDichId ?? null);
-  /* GVCN không có quyền xem luật ra lệnh (403) — chỉ Quản lý gọi đường xem trước. */
-  const xem = useApi<XemChuyenLopData>(dx ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}&${thamTheo}` : `/students/${studentId}/chuyen-lop?${thamTheo}`), [studentId, toClassId, dx, theoCk]);
+  /* OV-13l: "Ngay hôm nay" đã thi hành → panel ở trạng thái "Đã chuyển". #8 (G4-14): `dao` có → "Hoàn tác" ngay tại dòng trạng thái (em về lớp cũ y như trước). */
+  const [daChuyen, setDaChuyen] = useState<{ lop: { id: number; code: string }; han: string; dao?: number } | null>(null);
+  /* GVCN không có quyền xem luật ra lệnh (403) — chỉ Quản lý gọi đường xem trước. Đã chuyển ngay → thôi tải lại (em đã ở lớp đích: xem trước lớp đó 400). */
+  const xem = useApi<XemChuyenLopData>(dx || daChuyen ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}&${thamTheo}` : `/students/${studentId}/chuyen-lop?${thamTheo}`), [studentId, toClassId, dx, theoCk]);
   const chonTheoCk = !dx && !duyet && !!lopDich.data?.nguon.coTheChon;
   const [tuan, setTuan] = useState(duyet?.tuan ?? '');
   const [lyDo, setLyDo] = useState(duyet?.lyDo ?? '');
@@ -158,8 +160,6 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const [resetBac, setResetBac] = useState(!!duyet?.resetBac);
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
-  /* OV-13l: "Ngay hôm nay" đã thi hành → panel ở trạng thái "Đã chuyển". #8 (G4-14): `dao` có → "Hoàn tác" ngay tại dòng trạng thái (em về lớp cũ y như trước). */
-  const [daChuyen, setDaChuyen] = useState<{ lop: { id: number; code: string }; han: string; dao?: number } | null>(null);
   /* Đổi lớp → đường xem trước mới (dữ liệu về null một lúc): phần không theo lớp (đang học, lệnh, tuần) giữ bản đã nạp — không nháy khung. */
   const nenRef = useRef<XemChuyenLopData | null>(null);
   if (xem.data) nenRef.current = xem.data;
