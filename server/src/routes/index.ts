@@ -1469,7 +1469,9 @@ api.put('/students/:id/y-thuc/khai-bac', requireAuth, wrap((req) => {
 }));
 api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
+  /* #6 (G3-5): `kemTep=1` — panel duyệt QL đọc vi phạm + bằng chứng trong MỘT request (chỉ khi mở panel). */
+  const v = xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
+  return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(principalOf(req), 'discipline_measure', v.id) } : v;
 }));
 /** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
 api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {

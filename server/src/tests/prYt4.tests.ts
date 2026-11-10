@@ -653,7 +653,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (5) · (bấm thử) thẻ Ý thức nói có bao nhiêu bằng chứng — QL biết mà bấm Mở xem trước khi duyệt (V4-10)', () => {
     const sid = hv(); deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
     const the = yc.hopChoDuyet(P.mbManager, { studentId: sid }).the.find((x: any) => x.loai === 'y_thuc');
-    assert(the.dong.includes('Kèm 1 bằng chứng (tệp / liên kết) — bấm Mở để xem') && /tab=y-thuc/.test(the.mo ?? ''), JSON.stringify(the.dong));
+    assert(/1 bằng chứng/.test(the.phu ?? '') && /tab=y-thuc/.test(the.mo ?? ''), JSON.stringify([the.phu, the.dong]));   // #6: bằng chứng xem trong panel duyệt
   });
   check('YT4 (5) · GVCN không duyệt được (403) — thẻ chỉ QL / Quản trị (T69, K5-32)', () => {
     const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);

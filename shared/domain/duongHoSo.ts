@@ -171,6 +171,8 @@ const LOAI_CAN_LAM = new Set([
   'cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'case_giao',
   /* SV-YT-TVV: việc Báo PH sau lưu xử lý vi phạm (một dòng mỗi việc; máy chủ báo `con_viec`). */
   'bao_ph_xu_ly',
+  /* #6 (rà 11/11 G3-7): QL đã duyệt đề xuất Ý thức — GVCN ghi "Đã thực hiện" (máy chủ báo `con_viec`). */
+  'yt_da_duyet',
 ]);
 export function nhomThongBao(n: { kind: string | null; con_viec?: number | null; entity_type?: string | null; read_at?: string | null }): 'can-lam' | 'de-biet' {
   if (n.con_viec === 0) return 'de-biet';

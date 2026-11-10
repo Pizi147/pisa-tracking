@@ -33,7 +33,7 @@ import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import type { BanGhiDao } from '../platform/ghiDao.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
-import { duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { baoSauDuyetDeXuat, duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 
 /**
@@ -509,9 +509,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-YT4 · Xử lý Ý thức cần duyệt (V4-9, V4-10, M-11, T29, T30) */
   {
     loai: 'y_thuc',
-    khiDuyet: (_p, yc) => {
-      db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
-        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id);
+    khiDuyet: (p, yc) => {
+      const doi = db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
+        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id).changes;
+      if (doi) baoSauDuyetDeXuat(p, yc.doi_tuong_id, demoToday());   // #6 (G3-7, G3-8): GVCN "Cần làm" + CX khi Meeting
     },
     /* Từ chối → vi phạm về Cần xử lý từ ngày quyết (batBuocTu), bậc giữ; lý do nằm ở thẻ (Q13). */
     khiTuChoi: (p, yc, lyDo) => {
@@ -561,14 +562,13 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const khongTang = (THANG as readonly string[]).includes(d.kind ?? '');
       return {
         tieuDe: khongTang ? `Không tăng bậc · ${nhan}` : `Đề xuất ${nhan}`,
-        phu: d.soViPham ? `${d.soViPham} vi phạm` : null,
+        /* #6 (G3-5): vi phạm + bằng chứng xem NGAY trong panel duyệt (web đọc khi mở panel) — dòng thẻ chỉ còn số. */
+        phu: [d.soViPham ? `${d.soViPham} vi phạm` : null, d.soTep ? `${d.soTep} bằng chứng` : null].filter(Boolean).join(' · ') || null,
         dong: [
           `${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
           ...(d.bacKe ? [`Bậc thang kế tiếp đang là ${d.bacKe} — duyệt đề xuất này không đổi bậc`] : []),
-          /* Bằng chứng bắt buộc khi gửi (V4-10): đếm lúc gửi, xem ở tab Ý thức của em (nút Mở) — không thêm câu SQL mỗi thẻ. */
-          ...(d.soTep ? [`Kèm ${d.soTep} bằng chứng (tệp / liên kết) — bấm Mở để xem`] : []),
         ],
-        neuDuyet: 'GVCN ghi "Đã thực hiện" trong 5 ngày.',
+        neuDuyet: d.kind === 'meeting_cx' ? 'GVCN ghi "Đã thực hiện" trong 5 ngày · CX chi nhánh được báo có họp.' : 'GVCN ghi "Đã thực hiện" trong 5 ngày.',
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
       };
     },

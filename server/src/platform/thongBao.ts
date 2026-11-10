@@ -31,7 +31,7 @@ const CASE_CUA_THE = (y: string) => `(CASE ${y}.doi_tuong_loai WHEN 'sos_case' T
 export const CAN_LAM_DA_DOC_THEM = 20;
 /** Loại thông báo có nhánh `con_viec` = 1 trong `thongBaoCua` (giữ khớp nhánh CASE; `case_signal` lọc theo `entity_type`). */
 const KIND_CAN_LAM = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'case_giao', 'phoi_hop', 'sos', 'sos_new', 'dang_ky', 'schedule_move',
-  'duyet_moi', 'duyet_qua_han', 'bao_len', 'duyet_tu_choi'] as const;
+  'duyet_moi', 'duyet_qua_han', 'bao_len', 'duyet_tu_choi', 'yt_da_duyet'] as const;
 
 export function thongBaoCua(userId: number) {
   /* Một mẫu câu cho cả hai lượt đọc (50 dòng đầu · dòng Cần làm đã đọc bị đẩy ra) — `con_viec` cùng một luật. */
@@ -71,6 +71,8 @@ export function thongBaoCua(userId: number) {
                       CASE WHEN sc.status != 'done' AND ${LA_CASE_SOS('sc')} AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
                                 AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') THEN 1 ELSE 0 END
                     /* SL1 (rà #502): đăng ký còn việc khi tài khoản còn chờ duyệt; đề nghị dời lịch còn việc khi còn chờ. */
+                    /* #6 (rà 11/11 G3-7): QL đã duyệt đề xuất Ý thức → GVCN còn việc tới khi ghi "Đã thực hiện" (hoặc lần xử lý đổi khác). */
+                    WHEN n.kind = 'yt_da_duyet' THEN CASE WHEN dm.status = 'da_duyet' THEN 1 ELSE 0 END
                     WHEN n.kind = 'dang_ky' AND n.entity_type = 'user' THEN CASE WHEN uu.approval_state = 'pending' THEN 1 ELSE 0 END
                     WHEN n.kind = 'schedule_move' AND n.entity_type = 'skill_move_requests' THEN CASE WHEN smr.status = 'pending' THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind IN ('duyet_moi', 'duyet_qua_han', 'bao_len') THEN
