@@ -421,7 +421,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       } else if (!daLt) toast.push('ok', cau);
       if (daLt) {
         const r = daLt;
-        toast.hoanTac([t('Đã đổi lộ trình {cu} → {moi}', { cu: r.cu, moi: r.moi }), r.cau].filter(Boolean).join(' · '), () => {
+        /* Không ô thông tin nào đổi → toast chung không hiện; giữ câu "Target gửi Quản lý duyệt" ở đây. */
+        toast.hoanTac([!khoaDoi.length && targetDeXuat && doiTarget ? cau : null, t('Đã đổi lộ trình {cu} → {moi}', { cu: r.cu, moi: r.moi }), r.cau].filter(Boolean).join(' · '), () => {
           api.post(`/cycles/${cycle.id}/lo-trinh/hoan-tac`, { dao: r.dao })
             .then(() => { for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop']) invalidate(k); toast.push('ok', t('Đã hoàn tác')); },
               (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));

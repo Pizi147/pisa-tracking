@@ -12,6 +12,7 @@ import { CHI_DOI_KCK } from '../fasttrack/cycles.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { TRUONG_DE_XUAT, chuTargetKck, docTargetKyThi, kyThiCuaChuongTrinh, tachKck, thangKyThi, type TruongDeXuat } from '../../../shared/domain/index.ts';
 import { taoYeuCau } from './yeuCau.ts';
+import { kiemLoTrinhMoi } from '../fasttrack/doiLoTrinh.ts';
 
 export const NHAN_TRUONG_DE_XUAT: Record<TruongDeXuat, string> = {
   target: 'Target', 'lo-trinh': 'lộ trình', 'lich-mt': 'lịch MT', khac: 'thông tin khác',
@@ -93,11 +94,9 @@ export function kiemGiaTriDeXuat(conn: any, studentId: number, truong: TruongDeX
     if (cu === moi) throw badRequest('Target mới trùng Target hiện tại.');
     if (kt) return { cu, moi, kyThi: kt.ma };   // P13: thẻ nhớ thang (KET / PET) — Sửa đề xuất kiểm cùng thang
   } else if (truong === 'lo-trinh') {
-    const code = String(moiVao ?? '').trim();
-    if (!conn.prepare(`SELECT 1 FROM routes WHERE code = ? AND status = 'active'`).get(code)) throw badRequest('Chọn một lộ trình còn dùng.');
     if (!ht.cycle) throw badRequest('Em chưa có lộ trình đang chạy để đổi.');
-    moi = code; cu = ht.cycle.route ?? null;
-    if (cu === code) throw badRequest('Lộ trình mới trùng lộ trình hiện tại.');
+    moi = kiemLoTrinhMoi({ route: ht.cycle.route ?? null, status: 'active' }, moiVao);   // LO-TRINH-THEO-HV: cùng luật lúc Duyệt (`apDoiLoTrinh`)
+    cu = ht.cycle.route ?? null;
   } else {
     const chu = String(moiVao ?? '').trim();
     if (chu.length < 2) throw badRequest('Ghi giá trị mới cần sửa.');

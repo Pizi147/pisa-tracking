@@ -10,7 +10,7 @@
  *   ghi       Hành trình + nhật ký `cycle.update` (Lịch sử sửa "Lộ trình"); Hoàn tác qua `ghi_dao` (mọi dòng còn y như sau lúc đổi).
  *   chặn      lớp thường (đổi chương trình = Chuyển lớp) · "Khác" (Lộ trình mới) · lộ trình đã đóng · trùng.
  */
-import { db, theoLo, tx } from '../db.ts';
+import { chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { addJourney, writeAudit } from '../platform/audit.ts';
@@ -22,13 +22,14 @@ import { huyLuotChuaDiem } from './mt0.ts';
 import { duocDoiMon } from './monDangKy.ts';
 import { demoToday } from '../demoConfig.ts';
 import { CO_DIEM_SQL, ROUTE_KHAC, tuanLich } from '../../../shared/domain/index.ts';
+import type { DongDao } from '../duyet/loaiYeuCau.ts';
+import { mondayOf } from '../platform/week.ts';
 
-export type DongDaoLoTrinh = { bang: string; dk: string; args: unknown[]; k: 'sua' | 'them' | 'ca' };
 export type TomTatDoiLoTrinh = { cu: string; moi: string; doi: string[]; tao: string[]; huy: string[]; giu: number };
 
 const LUOT = 'attempt_id IN (SELECT id FROM assessment_attempts WHERE cycle_id = ?)';
 /** Bảng + điều kiện đổi lộ trình chạm — MỘT nguồn cho Hoàn tác (Sửa thông tin) và Huỷ quyết định (đề xuất "lộ trình" ở Chờ duyệt). */
-export function dongDaoDoiLoTrinh(cycleId: number, studentId: number): DongDaoLoTrinh[] {
+export function dongDaoDoiLoTrinh(cycleId: number, studentId: number): DongDao[] {
   return [
     { bang: 'learning_cycles', dk: 'id = ?', args: [cycleId], k: 'sua' },
     { bang: 'assessment_attempts', dk: 'cycle_id = ?', args: [cycleId], k: 'ca' },
@@ -42,11 +43,15 @@ export function dongDaoDoiLoTrinh(cycleId: number, studentId: number): DongDaoLo
 /** Lộ trình chọn được ở ô (thứ tự danh mục): lộ trình FT đang dùng, trừ "Khác" (cần tên — Lộ trình mới). */
 const loTrinhChonDuoc = (): string[] => activeRouteCodes().filter((c) => c !== ROUTE_KHAC);
 
-/** Câu chặn (null = đổi được) — web hiện tại ô, máy chủ 400 cùng câu. */
-export function lyDoKhongDoi(c: { route: string | null; status: string }): string | null {
-  if (!c.route) return 'Lớp thường đi theo chương trình — đổi bằng Chuyển lớp.';
-  if (c.status !== 'active') return 'Lộ trình đã kết thúc — không đổi lộ trình.';
-  return null;
+/** Kiểm lộ trình đích của lộ trình `c` (400 nói rõ) → mã đã chuẩn hoá. Một luật cho đổi thẳng, Duyệt và lúc GV gửi đề xuất. */
+export function kiemLoTrinhMoi(c: { route: string | null; status: string }, route: unknown): string {
+  if (!c.route) throw badRequest('Lớp thường đi theo chương trình — đổi bằng Chuyển lớp.');
+  if (c.status !== 'active') throw badRequest('Lộ trình đã kết thúc — không đổi lộ trình.');
+  const moi = String(route ?? '').trim();
+  if (moi === ROUTE_KHAC) throw badRequest('Lộ trình "Khác" mở ở Bước tiếp › Lộ trình mới.');
+  if (!loTrinhChonDuoc().includes(moi)) throw badRequest('Chọn một lộ trình còn dùng.');
+  if (moi === c.route) throw badRequest('Lộ trình mới trùng lộ trình hiện tại.');
+  return moi;
 }
 
 /**
@@ -59,14 +64,10 @@ export function apDoiLoTrinh(actorUserId: number | null, cycleId: number, route:
   const conn = db();
   const c = conn.prepare('SELECT id, student_id, route, status FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  const chan = lyDoKhongDoi(c);
-  if (chan) throw badRequest(chan);
-  const moi = String(route ?? '').trim();
-  if (moi === ROUTE_KHAC) throw badRequest('Lộ trình "Khác" mở ở Bước tiếp › Lộ trình mới.');
-  if (!loTrinhChonDuoc().includes(moi)) throw badRequest('Chọn một lộ trình còn dùng.');
-  if (moi === c.route) throw badRequest('Lộ trình mới trùng lộ trình hiện tại.');
+  const moi = kiemLoTrinhMoi(c, route);
   const cu = c.route as string;
   const homNay = demoToday();
+  const tuanNay = mondayOf(homNay);
   const now = nowIso();
   const lyDo = `Đổi lộ trình ${cu} → ${moi}`;
 
@@ -80,25 +81,30 @@ export function apDoiLoTrinh(actorUserId: number | null, cycleId: number, route:
   const lop = conn.prepare(`SELECT c.lich_mt, c.route FROM enrollments e JOIN classes c ON c.id = e.class_id
                              WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`).get(c.student_id) as any;
   const soMt = lichMtCua(lop, moi).length;
-  /* Đổi qua lại (RF → LT → RF…): lượt chính lần đổi trước huỷ, nay nằm trong số MT mới, chưa có lượt cùng số còn hiệu lực → mở lại để lõi xếp tuần. */
+  /* Đổi qua lại (RF → LT → RF…): lượt chính lần đổi trước huỷ, nay nằm trong số MT mới, chưa có lượt cùng số còn hiệu lực, tuần chưa qua → mở lại để lõi xếp
+     tuần. Tuần đã qua thì để huỷ (không dựng lượt quá hạn) — QL Khôi phục / "+ MT" nếu cần. */
   const moLai = (conn.prepare(
-    `SELECT a.id FROM assessment_attempts a WHERE a.cycle_id = ? AND a.kind = 'mock' AND a.status = 'cancelled' AND a.attempt_no <= ? AND a.cancel_reason LIKE 'Đổi lộ trình %'
+    `SELECT a.id FROM assessment_attempts a LEFT JOIN report_periods p ON p.id = a.planned_period_id
+      WHERE a.cycle_id = ? AND a.kind = 'mock' AND a.status = 'cancelled' AND a.attempt_no <= ? AND a.cancel_reason LIKE 'Đổi lộ trình %'
+        AND (p.week_start IS NULL OR p.week_start >= ?)
         AND NOT EXISTS (SELECT 1 FROM assessment_attempts b WHERE b.cycle_id = a.cycle_id AND b.kind = 'mock' AND b.attempt_no = a.attempt_no AND b.status != 'cancelled')`)
-    .all(cycleId, soMt) as any[]).map((r) => r.id as number);
+    .all(cycleId, soMt, tuanNay) as any[]).map((r) => r.id as number);
   theoLo(moLai, (lo, ph) => {
     conn.prepare(`UPDATE assessment_attempts SET status = 'planned', cancel_reason = NULL, cancelled_at = NULL, updated_at = ? WHERE id IN (${ph})`).run(now, ...lo);
-    for (const id of lo) conn.prepare(`INSERT INTO attempt_schedule_history (attempt_id, action, reason, actor_user_id, created_at) VALUES (?, 'reopened', ?, ?, ?)`).run(id, lyDo, actorUserId, now);
   });
+  chenNhieuDong('INSERT INTO attempt_schedule_history (attempt_id, action, reason, actor_user_id, created_at)', moLai.map((id) => [id, 'reopened', lyDo, actorUserId, now]));
 
   /* Cùng lõi đổi tuần bắt đầu (K2-33): lượt `auto` chưa điểm dời theo lịch mới — trừ tuần đã qua (chủ SP 10/11); số còn thiếu thì tạo. */
   const kq = apLichMacDinh(cycleId, actorUserId, { theoMoc: true, khongVeQua: true });
 
-  /* Thừa: lượt tự xếp số > số MT của lộ trình mới, chưa có dấu gì (điểm, "-"), không kỹ năng nào xếp tay. */
+  /* Thừa: lượt tự xếp số > số MT của lộ trình mới, chưa có dấu gì (điểm, "-"), không kỹ năng nào xếp tay, tuần chưa qua (tuần đã qua có thể đã thi, chưa nhập). */
   const thua = conn.prepare(
-    `SELECT a.id, a.attempt_no FROM assessment_attempts a WHERE a.cycle_id = ? AND a.kind = 'mock' AND a.status = 'planned' AND a.plan_source = 'auto' AND a.attempt_no > ?
+    `SELECT a.id, a.attempt_no FROM assessment_attempts a LEFT JOIN report_periods p ON p.id = a.planned_period_id
+      WHERE a.cycle_id = ? AND a.kind = 'mock' AND a.status = 'planned' AND a.plan_source = 'auto' AND a.attempt_no > ?
+        AND (p.week_start IS NULL OR p.week_start >= ?)
         AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id)
         AND NOT EXISTS (SELECT 1 FROM attempt_skills k WHERE k.attempt_id = a.id AND k.plan_source != 'auto')
-      ORDER BY a.attempt_no`).all(cycleId, soMt) as any[];
+      ORDER BY a.attempt_no`).all(cycleId, soMt, tuanNay) as any[];
   huyLuotChuaDiem(actorUserId as number, thua.map((r) => r.id), lyDo);
 
   const tom: TomTatDoiLoTrinh = {

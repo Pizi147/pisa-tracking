@@ -101,6 +101,27 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
     assert(mt(e.cy, 3).status === 'cancelled', 'MT3 thừa vẫn huỷ');
   }));
 
+  check('LTHV-3b · lượt thừa ở tuần đã qua (có thể đã thi, chưa nhập) không huỷ; lượt huỷ do đổi lộ trình ở tuần đã qua không mở lại', () => thu(() => {
+    const e = them(lopMoi('LT1', W(-17)), W(-17));   // tuần học 18: MT3 tuần 16 = W(-2) đã qua
+    const r = lt.doiLoTrinh(P.mbManager, e.cy, { route: 'RF' });
+    assert(mt(e.cy, 3).status !== 'cancelled' && !r.huy.length, `MT3 tuần đã qua giữ: ${JSON.stringify(r)}`);
+    const e2 = them(lopMoi('LT1', W(-7)), W(-7));
+    lt.doiLoTrinh(P.mbManager, e2.cy, { route: 'RF' });   // MT3 W(8) huỷ
+    conn.prepare(`UPDATE assessment_attempts SET planned_period_id = ? WHERE id = ?`).run(week.ensurePeriod(W(-1)).id, mt(e2.cy, 3).id);   // giả: tuần đó đã qua
+    lt.doiLoTrinh(P.mbManager, e2.cy, { route: 'LT1' });
+    assert(mt(e2.cy, 3).status === 'cancelled', 'không mở lại lượt tuần đã qua');
+  }));
+
+  check('LTHV-3c · GV gửi đề xuất lộ trình cùng luật Duyệt: "Khác" / lớp thường → 400 ngay lúc gửi', () => thu(() => {
+    const lop = t.classId('MB FT 101');
+    const e = them(lop, W(-7));
+    const gvbm = loadPrincipal(one(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status = 'active'
+      AND user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) LIMIT 1`, lop, lop).id);
+    assert(/Lộ trình mới/.test(loiCua(() => deXuat.guiDeXuatSua(gvbm, e.sid, { truong: 'lo-trinh', moi: 'KHAC', lyDo: 'Thử' }))), 'Khác');
+    conn.prepare(`UPDATE learning_cycles SET route = NULL WHERE id = ?`).run(e.cy);
+    assert(/Chuyển lớp/.test(loiCua(() => deXuat.guiDeXuatSua(gvbm, e.sid, { truong: 'lo-trinh', moi: 'LT2', lyDo: 'Thử' }))), 'lớp thường');
+  }));
+
   check('LTHV-4 · RF → LT2 (em RF trong lớp RF): MT1–MT2 dời theo lịch LT, MT3 tạo; lượt QL xếp tay đứng yên', () => thu(() => {
     const e = them(lopMoi('RF', W(-2)), W(-2));   // RF 4/8 = W(1) · W(5); LT 6/12/16 = W(3) · W(9) · W(13)
     conn.prepare(`UPDATE assessment_attempts SET plan_source = 'manual' WHERE id = ?`).run(mt(e.cy, 2).id);
@@ -161,15 +182,19 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
     assert(route(e.cy) === 'LT1' && JSON.stringify(luot(e.cy).map((a) => [a.attempt_no, a.status, a.tuan, a.route_at_attempt])) === truoc, 'Huỷ quyết định trả y như trước');
   }));
 
-  check('LTHV-8 · kỳ vọng lượt có điểm theo lộ trình lúc thi ở hồ sơ + bản chụp lộ trình (RF → LT: MT1 RF giữ kỳ vọng = Target)', () => thu(() => {
+  check('LTHV-8 · kỳ vọng lượt có điểm theo lộ trình lúc thi ở hồ sơ (RF → LT1: MT1 thi lúc RF giữ kỳ vọng = Target)', () => thu(() => {
     const e = them(lopMoi('RF', W(-5)), W(-5));   // RF MT1 tuần 4 = W(-2)
     const m1 = mt(e.cy, 1).id;
     diem(m1);
     lt.doiLoTrinh(P.mbManager, e.cy, { route: 'LT1' });
     assert(ky(m1) === 6.5, `MT1 thi lúc RF: kỳ vọng = Target: ${ky(m1)}`);
     const hs = profile.studentProfile(P.mbManager, e.sid);
-    const dong = JSON.stringify(hs).includes('"route":"LT1"');
-    assert(dong && hs.cycle.route === 'LT1', 'hồ sơ: lộ trình hiện tại LT1');
+    /* Mọi chỗ hồ sơ nêu kỳ vọng của MT1 phải là kỳ vọng lúc thi RF = Target 6.5, không phải LT1 (5.5). */
+    const kyMt1: number[] = [];
+    const noi: string[] = [];
+    const duyet = (x: any, d = '') => { if (!x || typeof x !== 'object') return; if (x.attemptNo === 1 && typeof x.expectation === 'number') { kyMt1.push(x.expectation); noi.push(d); } Object.entries(x).forEach(([k, v]) => duyet(v, `${d}.${k}`)); };
+    duyet(hs);
+    assert(hs.cycle.route === 'LT1' && kyMt1.length > 0 && kyMt1.every((k) => k === 6.5), `hồ sơ MT1: ${JSON.stringify(kyMt1)} ${noi.join(" ")} · ${hs.cycle.route}`);
   }));
 
   check(`LTHV-9 · trần câu SQL: đổi lộ trình ≤ ${TRAN_GHI_LO.doiLoTrinh} · Hoàn tác ≤ ${TRAN_GHI_LO.hoanTacDoiLoTrinh}; lộ trình FT trong danh mục`, () => thu(() => {
