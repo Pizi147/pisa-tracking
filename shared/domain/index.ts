@@ -54,6 +54,7 @@ export * from './vang.ts';
 export * from './congViec.ts';
 export * from './khoaGui.ts';
 export * from './lenLop.ts';
+export * from './chuong.ts';
 export * from './mauNghia.ts';
 export * from './bang.ts';
 export * from './khoPanel.ts';

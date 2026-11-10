@@ -9,8 +9,9 @@ import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { lazyTai } from '../../lib/taiLaiManh.ts';
 import { useDaXemHd } from '../huongDan/daXemHd.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
-import { buocDanhSach, chuanHoaMaLop, dongChuong, duongThongBao, loaiHanThongBao, moDuocThongBao, ngayTheoGioVN, nhanPhamVi, noiDenThongBao, thoiGianThongBao } from '@shared/domain/index.ts';
-import { Han } from '../../ui/Han.tsx';
+import { buocDanhSach, chuanHoaMaLop, ngayTheoGioVN, nhanPhamVi, type DemYeuCau } from '@shared/domain/index.ts';
+import { HopChuong, type ViecChuong } from './HopChuong.tsx';
+export type { ViecChuong };
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -36,9 +37,8 @@ const laPhimTim = (e: KeyboardEvent) => {
 type LopRef = { id: number; code: string; student_count: number };
 
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
-const boTienToQuaHan = (chu: string) => { const tien = `${t('Quá hạn')} · `; return chu.startsWith(tien) ? chu.slice(tien.length) : chu; };
 
-export function Header() {
+export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined; dem: DemYeuCau | null | undefined; so: { n: number; quaHan: boolean; sr: string } | null }) {
   const { session, signOut, doiGocNhin } = useSession();
   const toast = useToast();
   const navigate = useNavigate();
@@ -66,15 +66,6 @@ export function Header() {
   const nutThongBao = useRef<HTMLButtonElement>(null);
   const nutTaiKhoan = useRef<HTMLButtonElement>(null);
   const idDs = useId();
-  /* RA-DOC-0611b: tab mở nền (ẩn) không tải chuông (mỗi lần tải có thể đồng bộ việc ở máy chủ) — tải lần đầu khi tab hiện; đang dùng thì như cũ. */
-  const [tabDaHien, setTabDaHien] = useState(() => !document.hidden);
-  useEffect(() => {
-    if (tabDaHien) return undefined;
-    const khiHien = () => { if (!document.hidden) setTabDaHien(true); };
-    document.addEventListener('visibilitychange', khiHien);
-    return () => document.removeEventListener('visibilitychange', khiHien);
-  }, [tabDaHien]);
-  const notifications = useApi<any[]>(tabDaHien ? '/notifications' : null);
   const { homNay, nhan } = useNgayNghiepVu();
   const timGv = !!session?.nav?.analysis;
   const timDu = q.trim().length >= 2;
@@ -152,17 +143,6 @@ export function Header() {
     onClick: () => moMuc(i),
   });
 
-  /*
-   * OV-11f (CA1-2, Q9): ở Góc nhìn khác vai gốc, chuông chỉ hiện thông báo vai đang chọn MỞ ĐƯỢC (`moDuocThongBao` theo `nav`); về vai gốc thấy lại.
-   * Bấm thông báo không mở được thì không đánh dấu đọc (không mất nhắc việc).
-   */
-  const gn = session?.gocNhin;
-  const gocKhac = !!gn?.dangChon && gn.dangChon !== gn.vaiGoc;
-  const moDuoc = (n: any) => moDuocThongBao(n, session?.nav ?? {});
-  const dsThongBao = useMemo(() => (notifications.data ?? []).filter((n) => !gocKhac || moDuocThongBao(n, session?.nav ?? {})), [notifications.data, gocKhac, session?.nav]);
-  /* SL1 (chuông N1): hai nhóm Cần làm / Để biết (một Case một dòng). V5 SV-SO1 (brief 7): số trên nút = tin chưa đọc — số việc ở badge Công việc. */
-  const chuong = useMemo(() => dongChuong(dsThongBao), [dsThongBao]);
-  const unread = chuong.soNut;   // một số cho nút chuông và dòng "n chưa đọc" trong hộp
   /* Chữ cái đầu của TÊN GỌI (chữ cuối của họ tên: "Nguyễn Khánh Vy" → V) cho vòng tròn tài khoản trên điện thoại. */
   const hoTen = session?.user?.fullName ?? '';
   const chuCaiDau = [...(hoTen.trim().split(/\s+/).pop() ?? '')][0]?.toUpperCase() ?? '';
@@ -290,84 +270,15 @@ export function Header() {
 
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent sm:min-h-[36px] sm:min-w-[36px]"
-          onClick={() => { if (openMenu !== 'notif') notifications.reload(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
-          aria-label={t('Thông báo') + (chuong.soNut ? t(', {n} tin chưa đọc', { n: chuong.soNut }) : '')} aria-expanded={openMenu === 'notif'}>
-          {/* UI-CON-LAI k4: chuông nét mảnh mọi bề rộng; số = tin CHƯA ĐỌC, chấm tròn nền trắng chữ xanh — khác dáng badge việc ở mục Công việc. */}
+          onClick={() => { setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
+          aria-label={t('Thông báo') + (so ? `, ${so.sr}` : '')} aria-expanded={openMenu === 'notif'}>
+          {/* UI-CON-LAI k4: chuông nét mảnh mọi bề rộng. */}
           <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" strokeLinejoin="round" /></svg>
-          {chuong.soNut > 0 && <span aria-hidden className="cham-chuong">{chuong.soNut > 99 ? '99+' : chuong.soNut}</span>}
+          {/* CHUONG-V2 (chủ SP 11/11 "Dùng số chung"): số = badge Công việc (việc cần làm ngay); có quá hạn → cùng dáng đỏ của badge. */}
+          {so && <span aria-hidden className={`cham-chuong${so.quaHan ? ' chv-qua' : ''}`}>{so.n > 99 ? '99+' : so.n}</span>}
         </button>
-        {openMenu === 'notif' && (
-          /*
-           * PR-VAI-a (mockup 23 màn D, T76, UX-D6): hai nhóm Cần làm / Để biết, giờ, dòng "bấm tới đâu", Đọc hết. Máy tính: thả dưới nút.
-           * Điện thoại (< 640 px): neo HAI MÉP ngay dưới ĐÁY `<header>` (CSS: header `relative`, khung bọc nút chỉ `sm:relative`), cao tối đa 70 vh, cuộn trong — có DemoBar hay không đều đúng.
-           */
-          <div role="dialog" aria-label={t('Thông báo')}
-            className="card absolute inset-x-2 top-full z-40 mt-1 max-h-[70vh] overflow-y-auto shadow-2xl sm:inset-x-auto sm:right-0 sm:max-h-[32rem] sm:w-[min(26rem,calc(100vw-2rem))]">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b px-3.5 py-2" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-              <h2 className="m-0 text-sm font-semibold text-slate-100">{t('Thông báo')} <span className="font-normal text-slate-500">· <span className="tabular-nums">{unread}</span> {t('chưa đọc')}</span></h2>
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!unread}
-                onClick={async () => {
-                  /* Góc nhìn khác: chỉ đánh dấu những thông báo đang thấy (vai này mở được) — thông báo của vai gốc giữ chưa đọc. */
-                  try {
-                    if (gocKhac) {
-                      /* DON-LUONG A6: một lệnh `doc-nhieu` (≤ 200 id — chuông ≤ 70 dòng) thay vòng lô 20 yêu cầu. */
-                      await api.post('/notifications/doc-nhieu', { ids: dsThongBao.filter((n) => !n.read_at).map((n) => n.id) });
-                    }
-                    else await api.post('/notifications/doc-het');
-                    notifications.reload();
-                  }
-                  catch (e: any) { toast.push('error', e?.message || t('Chưa đánh dấu đã đọc được — thử lại.')); }
-                }}>{t('Đánh dấu đã đọc')}</button>
-            </div>
-            {notifications.error ? <LoiTaiNho chu={t('Không tải được thông báo.')} onRetry={notifications.reload} />
-              : dsThongBao.length === 0 && <div className="px-3.5 py-2.5 text-[13px] text-slate-500">{t('Chưa có thông báo mới')}</div>}
-            {(['can-lam', 'de-biet'] as const).map((nhom) => {
-              const ds = nhom === 'can-lam' ? chuong.canLam : chuong.deBiet;
-              if (!ds.length) return null;
-              return (
-                <div key={nhom}>
-                  <div className="flex items-baseline gap-2 border-b px-3.5 py-1.5 text-xs font-semibold text-slate-400"
-                    style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-                    {nhom === 'can-lam' ? t('Cần làm') : t('Để biết')} <span className="tabular-nums">{ds.length}</span>
-                  </div>
-                  {ds.map((n) => {
-                    const toi = noiDenThongBao(n);
-                    return (
-                      <button key={n.id} type="button"
-                        className="grid w-full grid-cols-[10px_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-0.5 border-b px-3.5 py-2.5 text-left bam"
-                        style={{ borderColor: 'var(--line)' }}
-                        onClick={async () => {
-                          if (!moDuoc(n)) { toast.push('error', t('Mở ở vai gốc (đổi Góc nhìn trong menu tài khoản).')); return; }
-                          await api.post(`/notifications/${n.id}/read`);
-                          notifications.reload();
-                          /* Mỗi loại thông báo về đúng chỗ làm được việc của nó (R8, Q12) — một quy ước duy nhất. */
-                          const den = duongThongBao(n);
-                          if (den) navigate(den);
-                          setOpenMenu(null);
-                        }}>
-                        <span aria-hidden className={`mt-1.5 h-1.5 w-1.5 rounded-full ${n.read_at ? '' : 'bg-[color:var(--accent)]'}`} />
-                        <span className={`text-[13px] leading-snug text-slate-100 ${n.read_at ? 'font-normal' : 'font-semibold'}`}>
-                          {/* AUDIT-UI TB1: dòng hạn "⚠ quá hạn n ngày" ngay dưới đã nói → bỏ tiền tố "Quá hạn · " ở tiêu đề. */}
-                          {!n.read_at && <span className="sr-only">{t('Chưa đọc: ')}</span>}{nhom === 'can-lam' && n.han ? boTienToQuaHan(dich(n.title)) : dich(n.title)}
-                        </span>
-                        <time className="whitespace-nowrap pt-px text-xs tabular-nums text-slate-500" title={nhan(homNay, n.created_at)}>{thoiGianThongBao(n.created_at, homNay)}</time>
-                        {n.body && <span className="col-start-2 text-xs text-slate-400">{dich(n.body)}</span>}
-                        {nhom === 'can-lam' && n.han && <span className="col-start-2 text-xs"><Han loai={loaiHanThongBao(n)} han={n.han} /></span>}
-                        {toi && (
-                          <span className="col-start-2 inline-flex items-center gap-1 text-xs text-[color:var(--accent)]">
-                            {toi}
-                            <svg aria-hidden width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 3.5 4.5 4.5L6 12.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {openMenu === 'notif' && <HopChuong viec={viec} dem={dem} onDong={() => setOpenMenu(null)} />}
       </div>
 
       {/* OV-15a (C11): Giao diện, Ngôn ngữ ở menu Tài khoản. HD-V2 thay C11 cho Hướng dẫn: nút "?" trên thanh, menu không còn mục Hướng dẫn. */}

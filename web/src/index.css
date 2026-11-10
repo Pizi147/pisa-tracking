@@ -846,10 +846,94 @@
 
   /* UI-CON-LAI k1: chữ khớp trong kết quả tìm — hồng nhận diện, không phải cảnh báo. */
   .tim-khop { background: var(--hong-nen); color: var(--hong-chu); border-radius: 3px; padding: 0 1px; }
-  /* k4: số tin CHƯA ĐỌC trên chuông — chấm tròn nền trắng chữ xanh, khác dáng badge việc (chữ nhật, nền màu) ở mục Công việc. */
+  /* k4 → CHUONG-V2: số trên chuông = số badge Công việc (việc cần làm ngay) — chấm tròn nền trắng chữ xanh. */
   .cham-chuong { position: absolute; top: 4px; right: 3px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--dieu-huong-chu-mo);
     color: var(--dieu-huong-nen); font-size: 12px; font-weight: 700; line-height: 17px; text-align: center; font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 2px var(--dieu-huong-nen); }
+  /* CHUONG-V2 (chủ SP 11/11 "Dùng số chung"): có việc quá hạn → chấm chuông cùng dáng badge Công việc quá hạn (nền / chữ / viền late). */
+  .cham-chuong.chv-qua { background: rgb(var(--late-bg-rgb)); color: rgb(var(--late-rgb)); box-shadow: inset 0 0 0 1px rgb(var(--late-line-rgb)), 0 0 0 2px var(--dieu-huong-nen); }
+  /* CHUONG-V2 — hộp chuông theo mockup `thiet-ke/2026-11-11-chuong-v2/chuong-v2.html` (duyệt vòng 2). Khối việc: 4 cột cố định; Cập nhật: tin 2 hàng. */
+  .chv-hop { border-color: var(--line-strong); box-shadow: 0 18px 40px -8px rgb(0 0 0 / .55), 0 2px 6px rgb(0 0 0 / .35); font-variant-numeric: tabular-nums; }
+  .chv-mui { width: 12px; height: 12px; flex: none; color: var(--text-faint); }
+  .chv-lk { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; min-height: 32px; padding: 0 4px; border: 0; background: none; border-radius: 6px;
+    color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  .chv-lk .chv-mui { color: currentColor; }
+  .chv-lk:hover { background: var(--accent-soft); }
+  .chv-v-dau { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; padding: 12px 16px 10px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .chv-v-dau h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .chv-tom { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: -2px; font-size: 13px; }
+  .chv-tom > * + *::before { content: "·"; margin-right: 10px; color: var(--text-faint); font-weight: 400; }
+  .chv-tom .chv-qua { font-weight: 700; color: rgb(var(--late-rgb)); white-space: nowrap; }
+  .chv-tom .chv-nay { font-weight: 600; color: rgb(var(--soon-rgb)); white-space: nowrap; }
+  .chv-tom .chv-tong { color: var(--text-dim); white-space: nowrap; }
+  .chv-ds-v, .chv-ds { list-style: none; margin: 0; padding: 0; }
+  .chv-ds-v { padding: 4px 0; }
+  .chv-viec { display: grid; grid-template-columns: minmax(0, 1fr) 60px 100px 12px; align-items: center; column-gap: 10px; width: 100%; min-height: 48px; padding: 6px 16px;
+    border: 0; background: none; text-align: left; color: var(--text); cursor: pointer; }
+  .chv-viec:hover { background: var(--accent-soft); }
+  .chv-viec:hover .chv-mui, .chv-tin:hover .chv-mui { color: var(--accent); }
+  .chv-viec .chv-ten { display: flex; flex-direction: column; min-width: 0; }
+  .chv-viec .chv-t { font-size: 14px; font-weight: 500; line-height: 1.3; }
+  .chv-viec .chv-phu { display: flex; align-items: baseline; gap: 8px; margin-top: 1px; font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+  .chv-viec .chv-moi { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--accent); }
+  .chv-viec .chv-moi::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .chv-viec .chv-so { text-align: right; font-size: 13px; color: var(--text-dim); white-space: nowrap; }
+  .chv-viec .chv-so b { margin-right: 2px; font-size: 15px; font-weight: 600; color: var(--text); }
+  .chv-viec .chv-tt { justify-self: start; }
+  .chv-viec .chv-td { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .chv-viec .chv-td.chv-qua { color: rgb(var(--late-rgb)); background: rgb(var(--late-bg-rgb)); }
+  .chv-viec .chv-td.chv-nay { color: rgb(var(--soon-rgb)); background: rgb(var(--soon-bg-rgb)); box-shadow: inset 0 0 0 1px rgb(var(--soon-line-rgb)); }
+  .chv-xong { display: flex; align-items: center; gap: 8px; margin: 0; padding: 14px 16px; font-size: 14px; color: var(--text-dim); }
+  .chv-xong::before { content: "✓"; color: var(--ok); font-weight: 700; }
+  .chv-tai { display: grid; gap: 10px; padding: 12px 16px; }
+  .chv-tai i { display: block; height: 16px; border-radius: 4px; background: var(--surface-2); }
+  .chv-tai i:nth-child(2) { width: 78%; }
+  .chv-tai i:nth-child(3) { width: 86%; }
+  .chv-cn { border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 62%, var(--bg)); padding: 8px 0 6px; }
+  .chv-cn-mot { border-top: 0; }
+  .chv-cn-dau { display: flex; align-items: center; gap: 8px; padding: 2px 16px 4px; }
+  .chv-cn-dau h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-dim); }
+  .chv-cn-dau .chv-lk { font-size: 12px; min-height: 28px; }
+  .chv-dem { font-size: 12px; color: var(--text-faint); }
+  .chv-rong { margin: 0; padding: 4px 16px 6px; font-size: 13px; color: var(--text-faint); }
+  .chv-ds > li + li .chv-tin { border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+  .chv-tin { display: grid; grid-template-columns: 8px minmax(0, 1fr) 12px; column-gap: 8px; row-gap: 1px; width: 100%; padding: 7px 16px 8px;
+    border: 0; background: none; text-align: left; color: var(--text-dim); cursor: pointer; }
+  .chv-tin:hover { background: var(--accent-soft); }
+  .chv-tin .chv-c { grid-row: 1 / span 2; width: 6px; height: 6px; margin-top: 6px; border-radius: 50%; }
+  .chv-tin .chv-m { display: flex; align-items: baseline; gap: 8px; }
+  .chv-tin .chv-l { font-size: 12px; font-weight: 600; color: var(--text-faint); }
+  .chv-tin time { margin-left: auto; font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+  .chv-tin .chv-x { grid-column: 2; font-size: 13px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chv-tin .chv-mui { grid-column: 3; grid-row: 1 / span 2; align-self: center; }
+  .chv-tin.chv-chua .chv-c { background: var(--accent); }
+  .chv-tin.chv-chua .chv-x { color: var(--text); font-weight: 500; }
+  .chv-tin.chv-chua .chv-l { color: var(--text-dim); }
+  .chv-tin.chv-day { padding: 8px 16px 9px; }
+  .chv-tin.chv-day .chv-x { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .chv-tin .chv-kq { font-weight: 700; }
+  .chv-tin .chv-kq.chv-ok { color: var(--ok); }
+  .chv-tin .chv-kq.chv-bad { color: rgb(var(--bad-rgb)); }
+  .chv-x-dau { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 6px; padding: 8px 12px 8px 8px; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .chv-x-dau h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); }
+  .chv-x-dau .chv-dem { margin-right: auto; }
+  .chv-x-dau h2 + .chv-nut-chu { margin-left: auto; }
+  .chv-lai { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: var(--text-dim); cursor: pointer; }
+  .chv-lai:hover { background: var(--accent-soft); }
+  .chv-nut-chu { display: inline-flex; align-items: center; height: 30px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--accent);
+    font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+  .chv-nut-chu:hover:not(:disabled) { background: var(--accent-soft); }
+  .chv-nut-chu:disabled { opacity: .45; cursor: not-allowed; }
+  .chv-x-nhom { position: sticky; top: 49px; z-index: 1; margin: 0; padding: 7px 16px 5px; font-size: 12px; font-weight: 700; color: var(--text-faint); background: var(--surface); border-bottom: 1px solid var(--line); }
+  @media (max-width: 639px) {
+    .chv-v-dau { padding: 10px 12px 8px; }
+    .chv-cn-dau { padding: 2px 12px 4px; }
+    .chv-viec { grid-template-columns: minmax(0, 1fr) 50px 90px 10px; column-gap: 6px; padding: 6px 12px; }
+    .chv-tin, .chv-tin.chv-day { padding: 8px 12px; min-height: 48px; }
+    .chv-lk, .chv-cn-dau .chv-lk, .chv-nut-chu, .chv-lai { min-height: 44px; }
+    .chv-lai { width: 44px; }
+    .chv-x-nhom { top: 61px; padding: 7px 12px 5px; }
+  }
   .link { color: var(--accent); text-decoration: none; }
   /* = mockup audit-0311 `.link-nho` / `.bc` (U10.8): link hành động nhỏ + khối Bằng chứng dùng chung (BangChung, TepCho) — một dòng, không khung. */
   .link-nho { appearance: none; border: 0; background: none; padding: 0; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }

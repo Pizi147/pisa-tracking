@@ -9770,6 +9770,9 @@ await runPrP1CongViecTests({ check, assert, conn, P } as any);
 // ==================================================================== VIEC-CUA-TOI (rà 11/11 đề xuất #1: một hàm việc của tôi cho mọi nơi)
 const { runPrViecCuaToiTests } = bocTep('prViecCuaToi', await import('./prViecCuaToi.tests.ts'));
 await runPrViecCuaToiTests({ check, assert, conn } as any);
+// ==================================================================== CHUONG-V2 (chủ SP 11/11: chuông Việc cần làm theo loại + Cập nhật, số chung với badge)
+const { runPrChuongV2Tests } = bocTep('prChuongV2', await import('./prChuongV2.tests.ts'));
+await runPrChuongV2Tests({ check, assert, conn } as any);
 // ==================================================================== TQ-VIEC-CUA-TOI ([XM 3] rà 11/11: ô Việc của tôi ở Tổng quan TVV / QL / Admin)
 const { runPrTqViecCuaToiTests } = bocTep('prTqViecCuaToi', await import('./prTqViecCuaToi.tests.ts'));
 await runPrTqViecCuaToiTests({ check, assert, conn, P } as any);
