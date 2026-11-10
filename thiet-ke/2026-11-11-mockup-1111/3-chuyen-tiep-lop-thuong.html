@@ -401,8 +401,8 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .chon-lop.tuan { min-width:96px; font-family:var(--phong-so); }
 
 /* hàng em */
-.hang, .duoi { display:grid; grid-template-columns:28px 210px 296px 400px minmax(0,1fr); }
-.co-tt .hang, .co-tt .duoi { grid-template-columns:28px 200px 290px 400px minmax(0,1fr) 150px; }
+.hang, .duoi { display:grid; grid-template-columns:28px 210px 316px 400px minmax(0,1fr); }
+.co-tt .hang, .co-tt .duoi { grid-template-columns:28px 200px 310px 400px minmax(0,1fr) 150px; }
 .hang { column-gap:14px; align-items:center; min-height:60px; padding:8px 20px; border-bottom:1px solid var(--line); }
 .hang.dau { min-height:36px; padding-top:0; padding-bottom:0; font:600 12px var(--phong); color:var(--text-faint); background:var(--surface); border-bottom:1px solid var(--line); }
 .hang.tick, .hang.noi { background:var(--accent-soft); }
@@ -488,7 +488,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .hop-diem .tong { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
 .hop-diem .pt { font:700 18px/1.2 var(--phong-so); } .hop-diem .pt.cho { font:700 15px/1.2 var(--phong); color:var(--text); }
 .hop-diem .tong-phu { font:500 12px var(--phong); color:var(--text-dim); }
-.cac-mon { display:grid; grid-template-columns:repeat(4, 60px); gap:4px; }
+.cac-mon { display:grid; grid-template-columns:repeat(4, 68px); gap:4px; }
 .om { display:grid; justify-items:center; gap:0; padding:3px 0 4px; border-radius:6px; background:var(--surface); border:1px solid var(--line); }
 .om i { font:500 12px var(--phong); font-style:normal; color:var(--text-faint); }
 .om b { font:700 13px var(--phong-so); white-space:nowrap; }
@@ -498,7 +498,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .phu-hang .nx { overflow:hidden; text-overflow:ellipsis; max-width:520px; } .phu-hang .cham { color:var(--text-faint); }
 .phu-hang .khac { color:var(--soon); font-weight:600; } .phu-hang .link-nho { font-size:12px; }
 .ten-phu { display:flex; align-items:center; gap:8px; white-space:nowrap; } .ten-phu small { font-size:12px; color:var(--text-faint); }
-.hang.gv { grid-template-columns:210px 296px 330px minmax(0,1fr); }
+.hang.gv { grid-template-columns:210px 316px 330px minmax(0,1fr); }
 .hang.gv .phu-hang { display:none; }
 .dt .hang { grid-template-columns:28px minmax(0,1fr); grid-template-rows:none; row-gap:8px; }
 .dt .hang > * { grid-row:auto; } .dt .hang .kq { grid-column:1 / -1; } .dt .hang .buoc, .dt .hang .lop-o, .dt .hang .tt-o { grid-column:1 / -1; }
@@ -507,8 +507,8 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 @container (max-width:300px) { .cac-mon { grid-template-columns:repeat(2, 1fr); } }
 
 /* dải nhóm cùng lưới cột với hàng: ô Lớp cho cả nhóm thẳng cột "Lớp mới" */
-.the-ck > .nh-dai { display:grid; grid-template-columns:28px 210px 296px 400px minmax(0,1fr); column-gap:14px; padding-left:17px; }
-.co-tt > .nh-dai { grid-template-columns:28px 200px 290px 400px minmax(0,1fr) 150px; }
+.the-ck > .nh-dai { display:grid; grid-template-columns:28px 210px 316px 400px minmax(0,1fr); column-gap:14px; padding-left:17px; }
+.co-tt > .nh-dai { grid-template-columns:28px 200px 310px 400px minmax(0,1fr) 150px; }
 .the-ck > .nh-dai > .o-tich { grid-column:1; } .the-ck > .nh-dai > .ten-n { grid-column:2; display:inline-flex; align-items:center; gap:8px; }
 .the-ck > .nh-dai .dem, .the-ck > .nh-dai .nut-i { display:none; }
 .the-ck > .nh-dai .ap-n { grid-column:5; margin-left:0; justify-self:start; }
@@ -564,7 +564,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k1">
   <h2>K1 · Vừa mở sau Final — em xếp theo bước tiếp gợi ý, mỗi em một dòng</h2>
-  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b>: nhóm ≥ 2 em có dải (như Công việc) với <b>ô Lớp + Tuần cho cả nhóm</b>; nhóm chỉ 1 em ("Học lại FOU", "QL cân nhắc", "Chờ Final") thành <b>nhãn nhỏ dưới tên</b>, đứng sau đường kẻ đậm — bảng không dài gấp đôi. Luật dải (≥ 60 %, 50–59 %…) ở ⓘ / rê nhãn. Bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>hộp điểm riêng</b> (nền nhạt + viền mảnh): % tổng to + ✓/✗, dưới là 4 ô môn L · R · G+V · P <b>thẳng cột giữa mọi em</b> (môn + ✓/✗ + số; chưa có điểm giữ ô "—") → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn → <b>Lớp mới</b>. 4 cột rộng cố định: nút bước tiếp luôn cùng chỗ. "GVCN: …", "+ bổ trợ…", "+ Ghi chú" gom thành <b>một dải chữ nhỏ dưới hàng</b>, chạy hết bề ngang — mọi hàng cao bằng nhau; nhãn dưới tên một dòng: em theo lớp của dải <b>không lặp ô lớp</b> (rê dòng hiện "Đổi lớp"); ô lớp chỉ có ở em khác lớp nhóm / em không thuộc dải. (3) GIỮ "Chọn tất cả · n" ở hàng công cụ (ngoài tiêu đề bảng — G9). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần. Còn thiếu gì: ô vàng ở dải / dòng + chân đếm một lần.</p>
+  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b>: nhóm ≥ 2 em có dải (như Công việc) với <b>ô Lớp + Tuần cho cả nhóm</b>; nhóm chỉ 1 em ("Học lại FOU", "QL cân nhắc", "Chờ Final") thành <b>nhãn nhỏ dưới tên</b>, đứng sau đường kẻ đậm — bảng không dài gấp đôi. Luật dải (≥ 60 %, 50–59 %…) ở ⓘ / rê nhãn. Bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>hộp điểm riêng</b> (nền nhạt + viền mảnh): <b>số câu đúng / tổng câu</b> to + ✓/✗ (không % — chủ SP 11/11), dưới là 4 ô môn L · R · G+V · P <b>thẳng cột giữa mọi em</b> (môn + ✓/✗ + đúng/tổng; chưa có điểm giữ ô "—") → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn → <b>Lớp mới</b>. 4 cột rộng cố định: nút bước tiếp luôn cùng chỗ. "GVCN: …", "+ bổ trợ…", "+ Ghi chú" gom thành <b>một dải chữ nhỏ dưới hàng</b>, chạy hết bề ngang — mọi hàng cao bằng nhau; nhãn dưới tên một dòng: em theo lớp của dải <b>không lặp ô lớp</b> (rê dòng hiện "Đổi lớp"); ô lớp chỉ có ở em khác lớp nhóm / em không thuộc dải. (3) GIỮ "Chọn tất cả · n" ở hàng công cụ (ngoài tiêu đề bảng — G9). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần. Còn thiếu gì: ô vàng ở dải / dòng + chân đếm một lần.</p>
   (3) Luật dải (≥ 60 %, 50–59 %…) vào ⓘ của dải. Dải nhóm có sẵn <b>ô Lớp + Tuần cho cả nhóm</b> (chỉ lớp cùng chi nhánh, đúng chương trình; "+ Mở lớp mới…" giữ ở cuối danh sách). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K1 · Cuối khoá MB FOU 21 · QL Nguyễn Khánh Vy · 1440 tối · vừa mở, chưa chọn lớp</figcaption>
   <div class="toi man vung" id="m-k1"></div></figure>
@@ -587,7 +587,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k4">
   <h2>K4 · Trước Final (MB FOU 15) — một nhóm "Chờ Final", chọn nhiều + thanh áp (GIỮ)</h2>
-  <p class="ghi"><b>GIỮ:</b> chốt trước Final được; Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final. Chọn em (ô tick đầu dải = cả nhóm, hoặc từng em) → thanh áp: <b>Bước tiếp (chip) · Lớp · Tuần</b> — bấm là áp ngay cho các em đã chọn (cùng mẫu màn 2, bỏ nút "Áp cho n em") — dùng khi muốn đặt cùng bước tiếp cho nhiều em khác nhóm. Dòng "Progress" thay % Final khi chưa có Final.</p>
+  <p class="ghi"><b>GIỮ:</b> chốt trước Final được; Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final. Chọn em (ô tick đầu dải = cả nhóm, hoặc từng em) → thanh áp: <b>Bước tiếp (chip) · Lớp · Tuần</b> — bấm là áp ngay cho các em đã chọn (cùng mẫu màn 2, bỏ nút "Áp cho n em") — dùng khi muốn đặt cùng bước tiếp cho nhiều em khác nhóm. Chưa có Final thì hộp điểm ghi "Chờ Final" + ✓/✗ từng môn theo Progress.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K4 · Cuối khoá MB FOU 15 · QL · 1440 tối · trước Final W2 OCT, 6 em đã chọn</figcaption>
   <div class="toi man vung" id="m-k4"></div></figure>
 </section>
@@ -634,7 +634,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
       <tr><td>Cột "Gợi ý", hàng chip "Chọn nhóm", cột Bàn giao trước khi chốt, ô lớp lặp ở mọi dòng</td><td>có</td><td>bỏ — gộp vào nhóm / dải; nhóm 1 em thành nhãn dưới tên; Bàn giao chỉ sau chốt</td><td class="b">BỎ (lặp)</td></tr>
     </tbody>
   </table>
-  <p class="ghi" style="margin-top:10px"><b>Dòng đọc Turso:</b> không đổi — một <code>GET /classes/:id/transition</code> khi mở; chọn lớp / nhóm làm trên dữ liệu đã nạp; chốt vẫn <code>POST /classes/:id/transition</code> theo lô.</p>
+  <p class="ghi" style="margin-top:10px"><b>Dòng đọc Turso:</b> không đổi — một <code>GET /classes/:id/transition</code> khi mở; chọn lớp / nhóm làm trên dữ liệu đã nạp; chốt vẫn <code>POST /classes/:id/transition</code> theo lô. Hộp điểm ghi <b>đúng / tổng câu</b> (chủ SP 11/11, thay %): <code>GET /classes/:id/transition</code> trả thêm số câu đúng + tổng câu từng môn (điểm lớp thường đã lưu sẵn đúng / tổng — cùng câu SQL, thêm cột, 0 request thêm).</p>
 </section>
 
 <section class="khu" id="ra">
@@ -682,19 +682,19 @@ const EM = {
   huy:  { ten: 'Ngô Minh Huy CT', pt: 66, mon: [68, 64, 68, 64], goi: 'Lên BE', bo: '+ bổ trợ 4 buổi · 1 tuần', nx: 'Cần luyện thêm Reading' },
   vy:   { ten: 'Hoàng Khánh Vy CT', pt: 44, mon: [48, 44, 44, 40], goi: 'Học lại', ph: true, nhan: 'lai' },
   trang:{ ten: 'Bùi Thu Trang CT', pt: 57, mon: [60, 56, 56, 56], goi: null, bo: '+ bổ trợ 8 buổi · 2 tuần', nhan: 'cn' },
-  nam:  { ten: 'Phan Quang Nam CT', pt: null, dai: '3/4 môn', mon: [80, 76, 80, null], goi: null, nhan: 'cho' },
+  nam:  { ten: 'Phan Quang Nam CT', pt: null, dai: '3/4 môn · 59/75 câu', mon: [80, 76, 80, null], goi: null, nhan: 'cho' },
 };
-/* HỘP ĐIỂM (chủ SP 11/11 duyệt): % tổng to + ✓/✗, dưới là 4 ô môn cố định L · R · G+V · P (môn + ✓/✗ + số); môn chưa có điểm giữ ô "—" */
+/* HỘP ĐIỂM (chủ SP 11/11 duyệt): số câu đúng / tổng to + ✓/✗ (không %), dưới là 4 ô môn cố định L · R · G+V · P (môn + ✓/✗ + số); môn chưa có điểm giữ ô "—" */
 const MON = ['L', 'R', 'G+V', 'P'];
 function oKq(e) {
   const tong = e.pt == null
     ? '<span class="tong"><b class="pt cho">Chờ Final</b><span class="tong-phu">' + (e.dai ?? '') + '</span></span>'
-    : '<span class="tong"><b class="pt ' + (e.pt >= 70 ? 'dat' : 'kem') + '">' + (e.pt >= 70 ? '✓ ' : '✗ ') + e.pt + ' %</b></span>';
+    : '<span class="tong"><b class="pt ' + (e.pt >= 70 ? 'dat' : 'kem') + '">' + (e.pt >= 70 ? '✓ ' : '✗ ') + (e.dung ?? e.pt) + '/' + (e.tong ?? 100) + '</b><span class="tong-phu">câu</span></span>';
   const o = MON.map((k, i) => {
     if (e.prog) return '<span class="om ' + (e.prog[i] === '✗' ? 'kem' : 'dat') + '"><i>' + k + '</i><b>' + e.prog[i] + '</b></span>';
     const v = e.mon[i];
     return v == null ? '<span class="om trong"><i>' + k + '</i><b>—</b></span>'
-      : '<span class="om ' + (v < 70 ? 'kem' : 'dat') + '"><i>' + k + '</i><b>' + (v < 70 ? '✗ ' : '✓ ') + v + '</b></span>';
+      : '<span class="om ' + (v < 70 ? 'kem' : 'dat') + '"><i>' + k + '</i><b>' + (v < 70 ? '✗ ' : '✓ ') + Math.round(v / 4) + '/25</b></span>';
   }).join('');
   return '<span class="kq"><span class="hop-diem" role="group" aria-label="Kết quả ' + e.ten + '">' + tong + '<span class="cac-mon">' + o + '</span></span></span>';
 }
