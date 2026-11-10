@@ -401,6 +401,8 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .dai-viec .nv { font-size:13px; color:var(--text-dim); font-weight:500; white-space:nowrap; padding-right:4px; }
 .dai-viec .nv b { color:var(--text); font-family:var(--phong-so); font-weight:700; }
 .dai-viec.du { grid-template-columns:auto repeat(3, minmax(0,1fr)); }
+.dai-viec.xep { grid-template-columns:auto repeat(3, minmax(0,1fr)); }
+.dai-viec .nv.xep { display:grid; gap:1px; line-height:1.3; } .dai-viec .nv.xep .them { justify-self:start; font-size:12px; }
 .dai-viec .them { justify-self:end; font:600 13px var(--phong); white-space:nowrap; }
 .ov { appearance:none; display:flex; align-items:center; gap:8px; min-width:0; height:40px; padding:0 12px 0 11px; border-radius:8px; border:1px solid var(--line); border-left:3px solid var(--accent); background:var(--surface); color:var(--text); text-align:left; cursor:pointer; font:inherit; }
 .ov:hover { background:var(--accent-soft); }
@@ -516,12 +518,11 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
           <div class="f"><span>Đạt MT</span><b><span class="so">60 %</span><span class="m so">12/20 HV</span><span class="nut-i" style="width:22px;height:22px">ⓘ</span></b></div>
           <div class="f"><span>SOS</span><b><span class="so">11 HV</span><span class="sos m1">SOS 1 · 4</span><span class="sos m2">SOS 2 · 2</span><span class="sos m3">SOS 3 · 5</span></b></div>
         </div>
-        <div class="dai-viec" aria-label="Việc của tôi">
-          <span class="nv">Việc của tôi · <b>8</b></span>
+        <div class="dai-viec xep" aria-label="Việc của tôi">
+          <span class="nv xep"><span>Việc của tôi · <b>8</b></span><a class="them" href="#">+5 việc ở Công việc ›</a></span>
           <button class="ov qua" title="Ghi kết quả PA · Lý Minh Châu · Reading — quá hạn 6 ngày"><span class="vt">Ghi kết quả PA</span><span class="vm">Lý Minh Châu · R</span><span class="hn qua">quá hạn 6 ngày</span></button>
           <button class="ov qua" title="Nhập điểm MT3 · Listening, Reading — 4 bài — quá hạn 2 ngày"><span class="vt">Nhập điểm</span><span class="vm">L · R · <span class="so">4</span> bài</span><span class="hn qua">quá hạn 2 ngày</span></button>
           <button class="ov qua" title="Phối hợp SOS — 10 lượt — quá hạn 1 ngày"><span class="vt">Phối hợp SOS</span><span class="vm so">10 lượt</span><span class="hn qua">quá hạn 1 ngày</span></button>
-          <a class="them" href="#">+5 việc ở Công việc ›</a>
         </div>
       </div>
       <div class="tabs-l"><span class="dang">Học viên</span><span>Ý thức &amp; Phối hợp</span><span>Phân tích lớp</span><span>Báo cáo PH</span></div>
@@ -542,8 +543,8 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
         <div class="hang-0"><span class="quay-n">‹ Học viên &amp; Lớp</span></div>
         <div class="hang-1"><h1>MB FT 101</h1><span class="tag nhat">Fast Track</span><span class="tag nhat">33 HV</span><span class="tag nhat">tuần 16</span></div>
         <div class="hang-gv"><div><span>GVCN</span><b>Trần Ngọc Hà</b></div><div><span>L · R</span><b>Trần Ngọc Hà</b></div><div><span>S</span><b>Phạm Thu Trang</b></div></div>
-        <div class="dai-viec">
-          <span class="nv">Việc của tôi · <b>8</b></span>
+        <div class="dai-viec xep">
+          <span class="nv xep"><span>Việc của tôi · <b>8</b></span><a class="them" href="#">+5 việc ở Công việc ›</a></span>
           <button class="ov qua" title="Ghi kết quả PA · Lý Minh Châu · Reading — quá hạn 6 ngày"><span class="vt">Ghi kết quả PA</span><span class="vm">Lý Minh Châu · R</span><span class="hn qua">quá hạn 6 ngày</span></button>
           <button class="ov qua" title="Nhập điểm MT3 · Listening, Reading — 4 bài — quá hạn 2 ngày"><span class="vt">Nhập điểm</span><span class="vm">L · R · <span class="so">4</span> bài</span><span class="hn qua">quá hạn 2 ngày</span></button>
           <button class="ov qua dang" aria-expanded="true" title="Phối hợp SOS — 10 lượt — quá hạn 1 ngày"><span class="vt">Phối hợp SOS</span><span class="vm so">10 lượt</span><span class="hn qua">quá hạn 1 ngày</span></button>
@@ -615,8 +616,8 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
           <div class="hang-1"><h1>MB FT 101</h1><span class="tag nhat">Fast Track</span><span class="tag nhat">33 HV</span><span class="tag nhat">tuần 16</span>
             <span class="bdg-1"><span class="vien"><span class="so">21</span> bài chờ chấm ›</span><span class="vien qua">⚠ <span class="so">6</span> việc quá hạn của lớp ›</span></span>
             <span class="hd"><span class="nut">Nhập điểm</span><span class="nut">+ Case</span><span class="nut">⋯</span></span></div>
-          <div class="hang-gv"><div><span>GVCN</span><b>Trần Ngọc Hà</b></div><div><span>L · R</span><b>Trần Ngọc Hà</b></div><a class="link-nho" href="#" style="align-self:end">+4</a></div>
-          <div class="hang-so"><div class="f"><span>Lượt mới nhất</span><b>MT3 · W2 AUG</b></div><div class="f"><span>Đạt MT</span><b><span class="so">60 %</span><span class="m so">12/20 HV</span></b></div><div class="f" style="flex-basis:100%"><span>SOS</span><b><span class="so">11 HV</span><span class="sos m1">SOS 1 · 4</span><span class="sos m2">SOS 2 · 2</span><span class="sos m3">SOS 3 · 5</span></b></div></div>
+          <div class="hang-gv"><div><span>GVCN</span><b>Trần Ngọc Hà</b></div><div><span>L · R</span><b>Trần Ngọc Hà</b></div><a class="link-nho" href="#" style="align-self:end">+4 người</a></div>
+          <div class="hang-so"><div class="f"><span>Lượt mới nhất</span><b>MT3 · W2 AUG</b></div><div class="f"><span>Đạt MT</span><b><span class="so">60 %</span><span class="m so">12/20 HV</span><span class="nut-i" style="width:28px;height:28px;margin:-4px 0">ⓘ</span></b></div><div class="f" style="flex-basis:100%"><span>SOS</span><b><span class="so">11 HV</span><span class="sos m1">SOS 1 · 4</span><span class="sos m2">SOS 2 · 2</span><span class="sos m3">SOS 3 · 5</span></b></div></div>
           <div class="dai-viec"><span class="nv">Việc của tôi · <b>8</b></span>
             <button class="ov qua" title="Ghi kết quả PA · Lý Minh Châu · Reading — quá hạn 6 ngày"><span class="vt">Ghi kết quả PA</span><span class="vm">Lý Minh Châu · R</span><span class="hn qua">quá hạn 6 ngày</span></button>
             <button class="ov qua" title="Nhập điểm MT3 · Listening, Reading — 4 bài — quá hạn 2 ngày"><span class="vt">Nhập điểm</span><span class="vm">L · R · <span class="so">4</span> bài</span><span class="hn qua">quá hạn 2 ngày</span></button>
@@ -689,7 +690,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
       <tr><td>Mở làm một việc</td><td>bấm cả ô → PanelViec tại trang</td><td>như cũ (K2)</td><td class="k">GIỮ</td></tr>
       <tr><td>Xem tên em + điểm của Phối hợp SOS</td><td>trong ô (2 lượt + "+n lượt nữa")</td><td>trong panel khi bấm, đủ mọi lượt</td><td class="c">DỜI vào panel</td></tr>
       <tr><td>Biết việc nào gấp</td><td>vạch trái + viên hạn nền màu</td><td>vạch trái + chữ hạn (⚠ khi quá hạn / hôm nay)</td><td class="k">GIỮ · bớt nền</td></tr>
-      <tr><td>Xem hết việc</td><td>"+n ở Công việc ›"</td><td>như cũ, cột cố định cuối hàng</td><td class="k">GIỮ</td></tr>
+      <tr><td>Xem hết việc</td><td>"+n ở Công việc ›"</td><td>như cũ; 1440 xếp ngay dưới nhãn "Việc của tôi · n" để 3 ô đủ rộng, không cắt chữ</td><td class="k">GIỮ</td></tr>
       <tr><td>Việc tiếp sau khi xong</td><td>"Việc tiếp ›" trong panel theo thứ tự dải</td><td>như cũ</td><td class="k">GIỮ</td></tr>
       <tr><td>Viên "n việc quá hạn" (của lớp)</td><td>"⚠ 6 việc quá hạn ›" sát dải của tôi</td><td>"⚠ 6 việc quá hạn của lớp ›" — khỏi lẫn với "Việc của tôi · 8"</td><td class="c">ĐỔI chữ</td></tr>
       <tr><td>Tên lớp trong ô ("· CP FT 131")</td><td>có</td><td>bỏ — đang ở chính lớp đó</td><td class="b">BỎ (lặp)</td></tr>
@@ -707,7 +708,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
     <thead><tr><th>Ý (lời giao)</th><th>Chỗ trong mockup</th><th>Đạt?</th></tr></thead>
     <tbody>
       <tr><td>"nhìn hơi rối mắt" — nêu vì sao</td><td>mục 0, 5 nguyên nhân từ seed + ảnh chủ SP</td><td class="k">Đạt</td></tr>
-      <tr><td>Thẻ cùng chiều cao, một dòng mỗi việc (tên việc · số · hạn)</td><td>K1, K3, K4 — 40 px (375: 44 px)</td><td class="k">Đạt</td></tr>
+      <tr><td>Thẻ cùng chiều cao, một dòng mỗi việc (tên việc · số · hạn)</td><td>K1, K3, K4 — 40 px (375: hai dòng cố định 56 px)</td><td class="k">Đạt</td></tr>
       <tr><td>Chi tiết (tên em, điểm) để trong panel khi bấm</td><td>K2, K4b</td><td class="k">Đạt</td></tr>
       <tr><td>Cách hiện khi 1 / 3 / 8 việc</td><td>K3a · K3b · K1</td><td class="k">Đạt</td></tr>
       <tr><td>Giữ "+n ở Công việc ›"</td><td>K1, K4a</td><td class="k">Đạt</td></tr>
