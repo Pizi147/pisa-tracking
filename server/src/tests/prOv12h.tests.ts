@@ -224,18 +224,65 @@ export async function runPrOv12hTests(t: any) {
     assert(viecTvv(id).trang_thai === 'mo', 'xác nhận lại: việc TVV mở lại');
   }));
 
-  check('PHV2-3 · Hoàn tác khi TVV chưa ghi → gỡ hẳn việc TVV; em chưa có TVV → GVCN giữ việc, ghi được', () => thu(() => {
+  check('PHV2-3 · Hoàn tác khi TVV chưa ghi → việc TVV "Đã bỏ" lý do hệ thống (không xoá dòng); em chưa có TVV → GVCN giữ việc, ghi được', () => thu(() => {
     const { id, studentId } = meeting(addDays(TODAY, -1));
     conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(studentId);
     phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    const id0 = viecTvv(id).id;
     phoiHop.moLaiCoordination(gvcn(), id);
-    assert(!viecTvv(id), 'Hoàn tác khi chưa ghi: việc TVV phải gỡ hẳn');
+    assert(viecTvv(id)?.id === id0 && viecTvv(id).trang_thai === 'bo' && viecTvv(id).bo_ly_do === bp.LY_DO_MEETING_MO_LAI, 'Hoàn tác khi chưa ghi: giữ dòng, "Đã bỏ" lý do hệ thống');
     phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
     const v = viecTvv(id);
+    assert(v.id === id0 && v.trang_thai === 'mo', 'xác nhận lại: mở lại CHÍNH dòng cũ');
     xoaNho();
     const cua = mywork.myWork(gvcn(), {}).items.flatMap((x: any) => [x, ...(x.con ?? [])]).find((x: any) => x.key === `bao-ph:${v.id}`);
     assert(cua?.group === 'phoi_hop_tvv' && cua.mine, `GVCN giữ việc báo PH khi em chưa có TVV: ${JSON.stringify(cua && cua.group)}`);
     bp.ghiKetQuaBaoPh(gvcn(), { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Đã họp bố mẹ với GĐCN ngày 12/09' });
     assert(viecTvv(id).trang_thai === 'xong', 'GVCN ghi xong');
+  }));
+
+  check('PHV2-4 · rà PTA (1–2): Hoàn tác (= Đưa lại) chỉ sau lần chuyển Cần xử lý → Xong; Sửa việc đã xong / TVV ghi kết quả không Hoàn tác', () => {
+    assert(d.hoanTacXacNhanDuoc('pending', false) === true, 'xác nhận lần đầu → có Hoàn tác');
+    assert(d.hoanTacXacNhanDuoc('done', false) === false, 'Sửa việc đã xong → không Hoàn tác (mất ngày / người làm)');
+    assert(d.hoanTacXacNhanDuoc('done', true) === false && d.hoanTacXacNhanDuoc('pending', true) === false, 'TVV ghi kết quả → không gọi mo-lai Meeting');
+  });
+
+  check('PHV2-5 · rà PTA (4, 10): Sửa Meeting đã xác nhận không sinh lại việc TVV; "Chưa liên hệ được" ghi nhanh được; mở lại xoá hạn chọn', () => thu(() => {
+    const { id, studentId } = meeting(addDays(TODAY, -1));
+    const tvv = tvvMoi();
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv.userId, studentId);
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    const v = viecTvv(id);
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [v.id], ketQua: 'chua_lien_he', ghiChu: 'Gọi máy' });   // (10) ngắn vẫn được khi chưa liên hệ
+    bp.boViecBaoPh(tvv, v.id, { lyDo: 'not_needed' });
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: addDays(TODAY, -1), note: 'Sửa ngày gặp' });   // Sửa
+    const sau = conn.prepare('SELECT id, trang_thai, bo_ly_do FROM viec_bao_ph WHERE phoi_hop_id = ?').all(id) as any[];
+    assert(sau.length === 1 && sau[0].id === v.id && sau[0].trang_thai === 'bo' && sau[0].bo_ly_do === 'not_needed', `Sửa không sinh / mở lại việc TVV: ${JSON.stringify(sau)}`);
+  }));
+
+  check('PHV2-5b · rà PTA (10): việc hệ thống đóng (Đưa lại) có hạn chọn → xác nhận lại: hạn mới, hạn chọn xoá', () => thu(() => {
+    const tvv = tvvMoi();
+    const { id: id2, studentId: sid2 } = meeting(addDays(TODAY, -1));
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv.userId, sid2);
+    phoiHop.confirmCoordination(gvcn(), id2, { performedOn: TODAY });
+    conn.prepare('UPDATE viec_bao_ph SET han_chon = ? WHERE phoi_hop_id = ?').run('2020-01-01', id2);
+    phoiHop.moLaiCoordination(gvcn(), id2);
+    phoiHop.confirmCoordination(gvcn(), id2, { performedOn: TODAY });
+    const w = viecTvv(id2);
+    assert(w.trang_thai === 'mo' && w.han_chon === null && w.han === d.hanBaoPh(TODAY), `mở lại: ${JSON.stringify({ t: w.trang_thai, hc: w.han_chon, h: w.han })}`);
+  }));
+
+  check('PHV2-6 · rà PTA (5): không xoá dòng việc TVV — Đưa lại giữ dòng "Đã bỏ" hệ thống; việc người dùng đã bỏ giữ lý do', () => thu(() => {
+    const { id, studentId } = meeting(addDays(TODAY, -1));
+    const tvv = tvvMoi();
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv.userId, studentId);
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    const v = viecTvv(id);
+    bp.boViecBaoPh(tvv, v.id, { lyDo: 'handled_otherwise' });
+    phoiHop.moLaiCoordination(gvcn(), id);
+    const sau = viecTvv(id);
+    assert(sau?.id === v.id && sau.trang_thai === 'bo' && sau.bo_ly_do === 'handled_otherwise', `giữ lý do người dùng: ${JSON.stringify(sau)}`);
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    assert(viecTvv(id).trang_thai === 'bo', 'việc người dùng đã bỏ không tự mở lại');
   }));
 }

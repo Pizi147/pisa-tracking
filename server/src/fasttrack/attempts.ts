@@ -1803,6 +1803,9 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
     if (phoiHopIds.length) conn.prepare(
       `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_luot_huy', removed_by = NULL,
               removed_at = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`).run(nowIso(), nowIso(), attemptId);
+    /* PHOI-HOP-V2 (rà PTA 9): việc TVV sau Meeting CX đã xác nhận của lượt này — lượt huỷ thì việc còn mở đóng, lý do hệ thống. */
+    conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_luot_huy', bo_luc = ?
+                   WHERE trang_thai = 'mo' AND phoi_hop_id IN (SELECT id FROM sos_coordination_actions WHERE attempt_id = ?)`).run(nowIso(), attemptId);
     const caseIds = caseSinhRieng(attemptId);   // lớp thường: đọc lại SAU khi xoá điểm — Case sinh từ điểm vừa xoá cũng đóng
     const chup = caseIds.length
       ? closeCasesBySystem({ actorUserId: p.userId, studentId: a.student_id, reason: 'luot_da_huy', on: demoToday(), caseIds }).chup

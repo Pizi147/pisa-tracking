@@ -13,7 +13,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, chuDiem, chuTruotSos, kiemGhiRoKhac, laMeetingCx, nhanHan,
-  reasonNeedsText, daysBetween, shortDate, type NguoiChon,
+  reasonNeedsText, daysBetween, shortDate, hoanTacXacNhanDuoc, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { CoordAction, CoordTurn } from './PhoiHopSosSection.tsx';
@@ -111,9 +111,10 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged }: { d: Dong; tvv: boo
   const moLai = async () => {
     try { await api.post(`/phoi-hop-sos/${a.id}/mo-lai`); onVua(false); doi(); } catch (e: any) { toast.push('error', e.message); }
   };
-  const daLuu = () => {
+  /* Rà PTA (1–2): Hoàn tác (= Đưa lại) chỉ khi lần lưu chuyển Cần xử lý → Xong; Sửa việc đã xong / TVV ghi kết quả: chỉ báo Đã lưu. */
+  const daLuu = (truoc: string, laGhiTvv: boolean) => {
     setMo(null); onVua(true); doi();
-    if (!tvv) toast.hoanTac(t('Đã lưu'), () => void moLai(), { key: `phoi-hop:${a.id}`, ms: HOAN_TAC_PHOI_HOP_MS });
+    if (hoanTacXacNhanDuoc(truoc, laGhiTvv)) toast.hoanTac(t('Đã lưu'), () => void moLai(), { key: `phoi-hop:${a.id}`, ms: HOAN_TAC_PHOI_HOP_MS });
     else toast.push('ok', t('Đã lưu'));
   };
   const nen = vua ? 'bg-[rgb(var(--ok-bg-rgb)/0.7)]' : mo === 'xac-nhan' || mo === 'ghi' ? 'bg-[color:var(--accent-soft)]' : noi ? 'shadow-[inset_3px_0_0_var(--accent)]' : '';
@@ -129,7 +130,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged }: { d: Dong; tvv: boo
         {han && <HanEm han={han} />}
       </span>
       {mo === 'xac-nhan' ? (
-        <span role="cell" className={`${O} col-span-3 max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={daLuu} /></span>
+        <span role="cell" className={`${O} col-span-3 max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} /></span>
       ) : (
         <>
           <span role="cell" className={`${O} max-sm:order-3`}>
@@ -145,7 +146,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged }: { d: Dong; tvv: boo
             ) : <span className="text-[13px] text-dim">{t('Chờ GVCN')}</span>}
           </span>
           {mo === 'ghi' ? (
-            <span role="cell" className={`${O} col-span-2 max-sm:order-4`}><FormTvv a={a} onDong={() => setMo(null)} onLuu={daLuu} /></span>
+            <span role="cell" className={`${O} col-span-2 max-sm:order-4`}><FormTvv a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, true)} /></span>
           ) : (
             <>
               <span role="cell" className={`${O} max-sm:order-4`}><OKetQua a={a} tvv={tvv} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>
@@ -175,8 +176,8 @@ function OKetQua({ a, tvv, du, onDu, onGhi }: { a: CoordAction; tvv: boolean; du
       {s.length > 90 && <button type="button" className="link mt-1 appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold" aria-expanded={du} onClick={onDu}>{du ? t('Thu gọn') : t('Xem đủ')}</button>}
     </>
   ) : null;
-  if (laMeetingCx(a.kind) && (tvv || a.status === 'done')) {
-    if (!v) return null;
+  /* Rà PTA (3): Meeting xác nhận trước PR không có việc TVV — hiện ghi chú GVCN như việc khác. */
+  if (laMeetingCx(a.kind) && (tvv || a.status === 'done') && v) {
     const ten = v.tvv ? t('TVV {ten}', { ten: v.tvv }) : t('GVCN');
     return (
       <span className="grid justify-items-start gap-1">
