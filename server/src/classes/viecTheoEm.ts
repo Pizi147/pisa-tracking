@@ -44,7 +44,8 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
   if (!lop || (!em.size && !coBadge)) return { theoEm, cuaToi: [], dongToi: [], soQuaHanLop: coBadge ? 0 : null };
   const f = { branchId: lop.branch_id ?? undefined, ...(viecLopDayDuKhiKiem.bat ? {} : { classIds: [classId] }) };
   const cuaLop = (it: WorkItem) => it.studentId !== null && em.has(it.studentId) && (it.classId === null || it.classId === classId);
-  const capLop = (it: WorkItem) => it.studentId === null && it.classId === classId && it.mine;
+  /* P1 G5-01: "Chốt lộ trình" (việc QL) đã có dải riêng ở đầu hồ sơ lớp (`DaiChuyenLop`, nút Cuối khoá ›) — không thêm ô trùng ở "Việc của tôi". */
+  const capLop = (it: WorkItem) => it.studentId === null && it.classId === classId && it.mine && it.group !== 'chot_len_ft';
 
   let w: WorkItem[];
   if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })) w = itemsCua(myWork(p, { ...f, chiNhom: NHOM_VIEC_TVV }));

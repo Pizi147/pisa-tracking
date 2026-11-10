@@ -534,6 +534,9 @@ export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
  * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
  */
+/** "Ghi kết quả PA" thành việc từ hạn − 2: PA có `action_due` ≤ ngày này. Công việc và hồ sơ HV (`viecHocVien.ts`) dùng chung (P1 G2-03). */
+export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
+
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
   /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[];
   /** SUA-LOI-CV: việc Chấm Speaking chỉ tính lớp FT ở các chi nhánh này (QL xem việc GV — phạm vi người xem); null / không truyền = mọi chi nhánh. */ cnCheo?: readonly number[] | null;
@@ -863,7 +866,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND ${HV_DANG_HOC_SQL('s')}`,   /* K3-41: em Tạm dừng dừng hạn */
     )
-    .all(addDays(today, 2)) as any[];
+    .all(hanGhiKetQuaToi(today)) as any[];
   /*
    * TL-VIEC · PHA ĐỌC: mọi nguồn dòng việc đọc TRƯỚC (đoạn này không có ghi; đọc lại Mốc PA quy chế ở mục riêng sau `dienMocQuyChe`), rồi MỘT lần nạp phạm vi em / chủ Case /
    * tỷ lệ cho cả tập; pha DỰNG phía dưới giữ nguyên thứ tự `items.push`.

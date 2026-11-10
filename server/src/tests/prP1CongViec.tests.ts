@@ -29,6 +29,10 @@ export async function runPrP1CongViecTests(t: any) {
     xoaNho();
     const tc: any = myWork(P.mbManager, { nguoi: 'tat-ca' });
     assert(tc.items.filter((i: any) => i.group === 'chot_len_ft').every((i: any) => i.mine), '"Tất cả": Chốt lộ trình vẫn của tôi');
+    /* Hồ sơ lớp đã có dải "Chốt lộ trình" riêng (nút Cuối khoá ›) — thanh "Việc của tôi" không thêm ô trùng. */
+    xoaNho();
+    const r = vt.viecTheoEmCuaLop(P.mbManager, chot[0].classId, { chiToi: true });
+    assert(![...r.cuaToi, ...r.dongToi].some((i: any) => i.group === 'chot_len_ft'), 'thanh Việc của tôi lớp không có ô Chốt lộ trình');
   });
 
   check('G2-02 · hồ sơ HV: Case "Chờ Quản lý duyệt · không theo dõi" không có việc "Xác nhận PA" (như Công việc)', () => {

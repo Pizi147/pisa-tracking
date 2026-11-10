@@ -2,10 +2,11 @@ import { db } from '../db.ts';
 import { CHU_DA_XONG, CHU_THEM_PA, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays, diffDays } from '../util.ts';
+import { diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
+import { hanGhiKetQuaToi } from '../worklist/mywork.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
 import { kem, type Bien } from '../../../shared/i18n/index.ts';
@@ -84,8 +85,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     for (const { c } of cases) for (const pl of c.plans) if (pl.kind === 'bo_tro' && pl.nhom && loc(pl)) m.set(pl.nhom, Math.min(m.get(pl.nhom) ?? Infinity, pl.id));
     return m;
   };
-  /* P1 G2-03 (rà 11/11): "Ghi kết quả PA" chỉ thành việc từ hạn − 2 — cùng khung `mywork.ts` 2c (`action_due <= hôm nay + 2`); sớm hơn thì PA có nút "Cập nhật trước hạn". */
-  const khungKq = addDays(today, 2);
+  /* P1 G2-03 (rà 11/11): "Ghi kết quả PA" chỉ thành việc từ hạn − 2 — cùng khung Công việc (`hanGhiKetQuaToi`); sớm hơn thì PA có nút "Cập nhật trước hạn". */
+  const khungKq = hanGhiKetQuaToi(today);
   const chayDuoc = (pl: any) => (pl.status === 'planned' || pl.status === 'started') && !!pl.actionDue && pl.actionDue <= khungKq && !pl.pendingApproval && !(pl.preset && !pl.confirmedAt);
   const minGhi = minNhom(chayDuoc);
 
