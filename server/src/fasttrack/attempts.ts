@@ -1123,7 +1123,7 @@ export function scoreHistoryOf(attemptId: number, chiTiet = false) {
       /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. OV-13k: nhận xét GV phụ trách cùng dạng (khoá `nhanXetPhuTrach`). */
       const khoa = l.action === 'score.nhan_xet' ? 'comment' : 'nhanXetPhuTrach';
       const doiNx = (before?.[khoa] ?? null) !== (after?.[khoa] ?? null);
-      const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
+      const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map((c) => issueLabel(c)).join(', ') || 'Trống';
       /* OV-13o: một lần lưu đổi CẢ nhận xét lẫn nhóm → hai dòng (dòng nhóm mang `phan: 'nhom'` — khoá riêng ở web). */
       const dong = (phan: 'nx' | 'nhom' | 'gv') => ({
         id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string,

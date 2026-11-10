@@ -3,6 +3,7 @@
 import { ENTRY_SKILLS } from './skills.ts';
 import { CHUONG_TRINH_LIEN_TUC_CO_SAN, REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
 import { t } from '../i18n/index.ts';
+import { benCua, cauHinh, cauHinhPb, tenHien, type MucNguyenNhan, type NhanhNN } from './cauHinhCaseSos.ts';
 
 // ------------------------------------------------ Chủ đề của một Case học thuật
 
@@ -333,6 +334,8 @@ export type IssueNode = {
   label: string;
   /** Một câu giải thích khi nhãn dễ bị hiểu lẫn với nhãn bên cạnh. */
   hint?: string;
+  /** CAU-HINH-CASE-SOS: nhóm Quản trị đã ẩn — chỉ còn hiện khi Case / ô đang gắn nó (`giu`). */
+  an?: true;
 };
 
 export type IssueBranch = {
@@ -434,19 +437,27 @@ export const ISSUE_TAXONOMY: IssueBranch[] = [
   },
 ];
 
-const ISSUE_INDEX: Record<string, { label: string; branch: IssueBranch['key'] }> = {};
-for (const b of ISSUE_TAXONOMY) {
-  for (const it of b.items) ISSUE_INDEX[it.code] = { label: it.label, branch: b.key };
-}
+const NHANH_KEYS: readonly IssueBranch['key'][] = ['listening', 'reading', 'writing', 'speaking', 'gv', 'phat_am', 'tong_hop'];
+const nodeCua = (m: MucNguyenNhan): IssueNode => ({ code: m.ma, label: tenHien(m), ...(m.giaiThich ? { hint: dichGiai(m.giaiThich) } : {}), ...(m.an ? { an: true as const } : {}) });
+const dichGiai = (s: string) => tenHien({ ten: s });
 
-export function issueLabel(code: string | null | undefined): string {
+/**
+ * CAU-HINH-CASE-SOS: nhãn đọc từ cấu hình (Quản trị sửa được). `pb` = phiên bản Case chụp lúc chọn (`case_issues.taxonomy_version`) — đổi tên sau
+ * đó Case cũ vẫn ra tên lúc chọn; `ct` chọn bên FT / lớp thường trước, không thấy thì bên kia. Mã không còn trong cấu hình → chính mã (không đoán).
+ */
+export function issueLabel(code: string | null | undefined, pb?: number | null, ct?: string | null): string {
   if (!code) return t('Chưa phân loại');
-  return ISSUE_INDEX[code]?.label ?? code;
+  const nn = cauHinhPb('nguyen_nhan', pb).du_lieu;
+  const k = issueBranchOf(code);
+  const ben = benCua(ct);
+  const m = (k && (nn[ben][k as NhanhNN]?.find((x) => x.ma === code) ?? nn[ben === 'ft' ? 'thuong' : 'ft'][k as NhanhNN]?.find((x) => x.ma === code)));
+  return m ? tenHien(m) : code;
 }
 
-/** Nhánh phân loại của một mã. NULL nghĩa là mã không còn dùng — không đoán bừa. */
+/** Nhánh phân loại của một mã — đọc từ chính mã (`student.<nhánh>.…`). NULL nghĩa là mã không thuộc nhánh nào — không đoán bừa. */
 export function issueBranchOf(code: string | null | undefined): IssueBranch['key'] | null {
-  return code ? ISSUE_INDEX[code]?.branch ?? null : null;
+  const k = code?.match(/^student\.([a-z_]+)\./)?.[1];
+  return k && (NHANH_KEYS as readonly string[]).includes(k) ? (k as IssueBranch['key']) : null;
 }
 
 /**
@@ -463,9 +474,31 @@ export function nhanhPhanLoai(topic: string, ct?: string | null): IssueBranch['k
   const k = topic === 'writing1' || topic === 'writing2' || topic === 'prep_writing' ? 'writing' : topic === 'pronunciation' ? 'speaking' : topic;
   return (['listening', 'reading', 'writing', 'speaking'] as const).includes(k as any) ? (k as IssueBranch['key']) : null;
 }
-export function issuesForTopic(topic: string, ct?: string | null): IssueNode[] {
+/**
+ * CAU-HINH-CASE-SOS: nhóm CHƯA ẨN của bên FT / lớp thường (`benCua(ct)`), đúng thứ tự Quản trị xếp. `giu` = mã đang gắn trên Case / ô — vẫn trả kể cả
+ * đã ẩn (`an: true`), để sửa Case cũ không mất nhóm đã chọn.
+ */
+export function issuesForTopic(topic: string, ct?: string | null, o: { giu?: readonly (string | null | undefined)[] } = {}): IssueNode[] {
   const key = nhanhPhanLoai(topic, ct);
-  return ISSUE_TAXONOMY.find((b) => b.key === key)?.items ?? [];
+  if (!key) return [];
+  const nn = cauHinh('nguyen_nhan').du_lieu;
+  const ben = benCua(ct);
+  /* Nhánh chỉ có ở một bên (Tổng hợp, G+V, Pronunciation = lớp thường) mà nơi gọi không biết chương trình → lấy bên có nhánh (như mã cũ). */
+  const ds = nn[ben][key] ?? nn[ben === 'ft' ? 'thuong' : 'ft'][key] ?? [];
+  const giu = new Set(o.giu?.filter(Boolean) as string[] | undefined);
+  return ds.filter((m) => !m.an || giu.has(m.ma)).map(nodeCua);
+}
+
+/**
+ * Mã nhóm được LƯU cho một kỹ năng: nhóm chưa ẩn của CẢ HAI bên (nơi gọi không phải lúc nào cũng biết chương trình) + mã đang có trên dòng (`giu`).
+ * Ô chọn dùng `issuesForTopic` (đúng bên); máy chủ kiểm bằng hàm này để không 400 nhầm.
+ */
+export function maNhomHopLe(topic: string, ct?: string | null, giu: readonly (string | null | undefined)[] = []): Set<string> {
+  const key = nhanhPhanLoai(topic, ct);
+  const r = new Set<string>(giu.filter((x): x is string => !!x && issueBranchOf(x) === key));
+  if (!key) return r;
+  for (const ben of ['ft', 'thuong'] as const) for (const m of cauHinh('nguyen_nhan').du_lieu[ben][key] ?? []) if (!m.an) r.add(m.ma);
+  return r;
 }
 
 /**
@@ -580,7 +613,8 @@ export const PROPOSAL_KINDS = ['reschedule_mt', 'extra_support', 'meeting_cx', '
 export const SYSTEM_KINDS = ['bo_tro', 'bo_tro_mien_phi'] as const;
 export const INTERVENTION_KINDS = [...SUPPORT_KINDS, ...PROPOSAL_KINDS, ...SYSTEM_KINDS] as const;
 export type InterventionKind = (typeof INTERVENTION_KINDS)[number];
-export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
+/** Nhãn GỐC (mã) — bản gốc của cấu hình + nhãn mã chỉ đọc / mã hệ thống. Nơi hiển thị đọc `INTERVENTION_KIND_LABEL` / `tenLoaiPa`. */
+export const NHAN_LOAI_PA_GOC: Record<InterventionKind, string> = {
   self_study: t('Xếp tự học'),
   tutor: t('Học Tutor'),
   teaching_adjust: t('Điều chỉnh cách dạy'),
@@ -596,6 +630,19 @@ export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = {
   /** PR-LT2b (T47, M-05): sau Cuối khoá — miễn phí học viên, không tính lương GV; kết quả cuối là Mini Test. */
   bo_tro_mien_phi: t('Bổ trợ miễn phí'),
 };
+/** CAU-HINH-CASE-SOS: tên loại PA theo cấu hình (bản `pb` của PA, null → đang dùng); mã hệ thống / mã cũ chỉ đọc → nhãn gốc; mã lạ → chính mã. */
+export function tenLoaiPa(kind: string, pb?: number | null): string {
+  const m = cauHinhPb('phuong_an', pb).du_lieu.muc.find((x) => x.ma === kind);
+  return m ? tenHien(m) : NHAN_LOAI_PA_GOC[kind as InterventionKind] ?? kind;
+}
+/**
+ * `INTERVENTION_KIND_LABEL[kind]` giữ nguyên cho ~60 chỗ đọc, nhưng tra cấu hình đang dùng (Quản trị đổi tên → mọi nơi đổi theo).
+ * ponytail: Proxy để không sửa 60 chỗ; chỗ nào cần tên theo bản PA (đổi tên sau khi tạo) → `tenLoaiPa(kind, pb)`.
+ */
+export const INTERVENTION_KIND_LABEL: Record<InterventionKind, string> = new Proxy(NHAN_LOAI_PA_GOC, {
+  get: (goc, k) => (typeof k === 'string' ? tenLoaiPa(k) : Reflect.get(goc, k)),
+});
+
 /**
  * Tên PA trong câu VIỆC TIẾP (`Ghi kết quả PA …`): PA do hệ thống tạo nói tên loại ("Bổ trợ", "Bổ trợ miễn phí") — mô tả dài của nó
  * (`1 buổi miễn phí (P) · 1 tuần · Mini Test sau buổi cuối · …`) nằm ở hàng PA, không nhồi vào cột Việc tiếp (PR-S5F-a). PA khác: câu người dạy viết.
@@ -615,13 +662,23 @@ export function tenPaViecTiep(kind: string, moTa: string | null | undefined): st
  * (Trước 21/09/2026 danh mục còn tách theo nhóm Case và có bộ riêng cho Ý thức — gặp em, gặp phụ huynh, thư cảnh cáo. Bộ đó đã
  * thay bằng chín loại BIỆN PHÁP XỬ LÝ ở `./yThuc.ts`, một bảng riêng, không còn là phương án của case.)
  */
+/** Bản GỐC hai họ (thứ tự + nhóm ban đầu của cấu hình). Danh sách chọn thật đọc cấu hình: `interventionKindsFor`. */
 export const SELF_SERVE_KINDS: readonly InterventionKind[] = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework'];
 export const ACADEMIC_PROPOSAL_KINDS: readonly InterventionKind[] = ['extra_support', 'other_proposal'];
 
-/** Toàn bộ phương án chọn được cho một Case học thuật, theo đúng thứ tự bày ra trên form. */
-export function interventionKindsFor(): { selfServe: readonly InterventionKind[]; proposals: readonly InterventionKind[] } {
-  return { selfServe: SELF_SERVE_KINDS, proposals: ACADEMIC_PROPOSAL_KINDS };
+/**
+ * Toàn bộ phương án chọn được cho một Case học thuật, theo đúng thứ tự bày ra trên form — CAU-HINH-CASE-SOS: mục CHƯA ẨN của cấu hình, theo nhóm
+ * Quản trị đặt. `giu` = loại PA đang có (sửa PA cũ không mất loại đã ẩn).
+ */
+export function interventionKindsFor(giu?: string | null): { selfServe: readonly InterventionKind[]; proposals: readonly InterventionKind[] } {
+  const ds = cauHinh('phuong_an').du_lieu.muc.filter((m) => !m.an || m.ma === giu);
+  return {
+    selfServe: ds.filter((m) => m.nhom === 'gv_tu_lam').map((m) => m.ma as InterventionKind),
+    proposals: ds.filter((m) => m.nhom === 'can_ql_duyet').map((m) => m.ma as InterventionKind),
+  };
 }
+/** Cờ của loại PA theo cấu hình (bản `pb`; mã không có → null). */
+export const mucPaCua = (kind: string, pb?: number | null) => cauHinhPb('phuong_an', pb).du_lieu.muc.find((m) => m.ma === kind) ?? null;
 
 /**
  * "Lùi lịch thi" phải nói rõ LÙI CÁI GÌ (mục 8.1).
@@ -640,7 +697,8 @@ export const RESCHEDULE_TARGET_LABEL: Record<RescheduleTarget, string> = {
 
 /** Chọn một loại trong nhóm Đề xuất TỨC LÀ đang xin ý kiến — không phải tick thêm gì. */
 export function isProposalKind(kind: string): boolean {
-  return (PROPOSAL_KINDS as readonly string[]).includes(kind);
+  if ((PROPOSAL_KINDS as readonly string[]).includes(kind)) return true;   // mã cũ chỉ đọc (reschedule_mt, meeting_cx) vẫn là đề xuất
+  return mucPaCua(kind)?.nhom === 'can_ql_duyet';
 }
 
 /**
