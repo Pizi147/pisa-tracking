@@ -62,16 +62,6 @@ import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/ye
  *   - `teacher_report`: giáo viên chủ động báo, `sos_level` để NULL và dùng `urgency`.
  */
 
-// ---------------------------------------------------------------- quyền
-
-/** Người đang xem có được đóng Case này không: GVCN của lớp, hoặc Quản lý trong phạm vi. */
-/**
- * TÊN CASE — tự sinh, cập nhật theo MỐC MỚI NHẤT.
- *
- * Suy lúc đọc chứ không ghi vào database: sửa điểm thì tên đổi theo, không để lại một cái
- * tên cũ nói sai sự thật. Tiền tố `MT{n}` là cách nhận ra Case đã bị điểm chạm vào; Case
- * giáo viên tự báo mà chưa lượt MT nào chạm thì không có tiền tố.
- */
 /**
  * GIAM-COMPUTE: câu "mỗi Case một câu" của thẻ Case — [tiền tố nhớ, SQL lọc `case_id IN (${DS_JSON})`] cho `docNhoTheoId`. Hàm một Case đọc qua đây;
  * bảng kỹ năng hồ sơ HV (`skillSupportBoard`) nạp trước cả tập Case một câu mỗi loại (trước: ~11 câu × số Case). ORDER BY giữ đúng thứ tự câu một Case cũ
@@ -104,6 +94,16 @@ const NAP_CASE = {
         ORDER BY m.attempt_no`],
 } as const;
 
+// ---------------------------------------------------------------- quyền
+
+/** Người đang xem có được đóng Case này không: GVCN của lớp, hoặc Quản lý trong phạm vi. */
+/**
+ * TÊN CASE — tự sinh, cập nhật theo MỐC MỚI NHẤT.
+ *
+ * Suy lúc đọc chứ không ghi vào database: sửa điểm thì tên đổi theo, không để lại một cái
+ * tên cũ nói sai sự thật. Tiền tố `MT{n}` là cách nhận ra Case đã bị điểm chạm vào; Case
+ * giáo viên tự báo mà chưa lượt MT nào chạm thì không có tiền tố.
+ */
 export function caseTitleOf(c: {
   id: number; category?: string | null; topic?: string | null;
   origin_kind?: string | null; sos_level?: number | null; title?: string | null; kck?: number | null;
@@ -3342,7 +3342,12 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   /* Phần thẻ Case (`caseCardOf`, `closeBlockers`, `caseTitleOf`) của mọi Case: nạp trước một câu mỗi loại; hàm một Case sau đó đọc nhớ (0 câu).
      Chỉ khi bộ nhớ request mở (GET) — không thì hàm một Case tự đọc như cũ, nạp trước là thừa. */
   if (coNho()) {
-    for (const [tienTo, sql] of Object.values(NAP_CASE)) docNhoTheoId(tienTo, idCase, sql);
+    /* Chỉ Case thật sự hỏi: tên — Case không có tên riêng hoặc Case từ điểm (`caseTitleOf` trả tên riêng khỏi đọc); chặn Hoàn thành — Case chưa xong. */
+    const chiCase: Partial<Record<keyof typeof NAP_CASE, number[]>> = {
+      ten: caseRows.filter((c) => !((c.title ?? '').trim() && c.origin_kind !== 'mock')).map((c) => c.id as number),
+      paChan: caseRows.filter((c) => c.status !== 'done').map((c) => c.id as number),
+    };
+    for (const [k, [tienTo, sql]] of Object.entries(NAP_CASE)) docNhoTheoId(tienTo, chiCase[k as keyof typeof NAP_CASE] ?? idCase, sql);
     docNhoTheoId(NAP_DIEU_CHINH[0], idCase, NAP_DIEU_CHINH[1]);
   }
   const sosCua = sosCaseStateMany(idCase);
