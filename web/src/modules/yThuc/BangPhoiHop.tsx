@@ -8,20 +8,21 @@ import { NutChon } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
 import { AddCoordinationForm } from './PhoiHopSosSection.tsx';
+import { ODiem } from '../../ui/ODiem.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, chuDiem, chuTruotSos, kiemGhiRoKhac, laMeetingCx, nhanHan,
-  reasonNeedsText, daysBetween, shortDate, hoanTacXacNhanDuoc, type NguoiChon,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, chuDiem, kiemGhiRoKhac, laMeetingCx, nhanHan,
+  reasonNeedsText, daysBetween, shortDate, hoanTacXacNhanDuoc, datTheSos, mucDiem, nhanDocTheSos, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { CoordAction, CoordTurn } from './PhoiHopSosSection.tsx';
 
 /**
- * PHOI-HOP-V2 (chủ SP 11/11, mockup `thiet-ke/2026-11-11-phoi-hop-sos-v2` K1–K3): BẢNG ① Học viên cần làm → ② Đã làm → ③ Kết quả, mỗi em một dòng.
+ * PHOI-HOP-V2 (chủ SP 11/11, mockup `thiet-ke/2026-11-11-phoi-hop-sos-v2` K1–K3): BẢNG ① Học viên → ② Đã làm → ③ Kết quả, mỗi em một dòng.
  * `gvcn` (khoa = một loại việc): nút Xác nhận ở chính ô ② (ngày sẽ hiện ở đó), form tại dòng — Ngày + MỘT ô Nội dung (+ Tệp, Người thực hiện); Hoàn tác 10 s.
  * `tvv`: việc sau Meeting CX — ② GVCN đã xác nhận (ngày, nội dung gửi TVV), ③ Kết quả · Ngày · Nội dung như Báo PH ý thức (`/y-thuc/bao-ph/ghi`).
  * Dữ liệu: MỘT request khi mở panel (`/classes/:id/phoi-hop-sos`, việc TVV đã nạp theo lô ở máy chủ); SĐT phụ huynh chỉ đọc khi mở form TVV.
@@ -29,16 +30,32 @@ import type { CoordAction, CoordTurn } from './PhoiHopSosSection.tsx';
 export const HOAN_TAC_PHOI_HOP_MS = 10_000;
 type Dong = { luot: CoordTurn; a: CoordAction };
 
-/** Một dòng điểm gọn, chữ phụ ("MT4 · ✗ 5.0 / 6.5 · trượt L, R") — Phối hợp SOS là SOS học thuật; không màu đậm. */
+/**
+ * Rà chủ SP 12/11 ("các trường thông tin dưới tên HV… chưa phân loại rõ"): dòng phụ dưới tên em CHIA LOẠI, một thành phần cho panel Công việc,
+ * tab hồ sơ lớp, hồ sơ HV — thẻ LƯỢT (nền nhạt) · "Overall" mờ + số ✓ / ✗ ba màu (`ODiem`) + "/ kỳ vọng" · "Trượt" mờ + chip kỹ năng. Mỗi khối không ngắt
+ * dòng bên trong; thiếu chỗ thì xuống dòng GIỮA các khối — không cắt "…". `anLuot`: ô đã ghi lượt (hồ sơ HV).
+ */
 export function DiemMotDong({ th, anLuot = false }: { th: CoordTurn['the']; anLuot?: boolean }) {
   const pt = !!th.pt;
-  const dat = th.ovr == null || th.moc == null ? null : th.ovr >= th.moc;
-  const truot = chuTruotSos(th);
   return (
-    <span className="mt-0.5 block text-[13px] leading-snug text-dim">
-      {!anLuot && th.luot}
-      {th.ovr != null && <>{anLuot ? '' : ' · '}<span className="font-semibold tabular-nums">{dat === false ? '✗ ' : dat ? '✓ ' : ''}{chuDiem(th.ovr, pt)}</span>{th.moc != null && <span className="tabular-nums"> / {chuDiem(th.moc, pt)}</span>}</>}
-      {truot && <> · {truot}</>}
+    <span role="img" aria-label={nhanDocTheSos(th)} className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] leading-snug">
+      {!anLuot && <span aria-hidden className="inline-flex h-5 items-center whitespace-nowrap rounded-md px-1.5 text-xs font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>{th.luot}</span>}
+      {th.ovr != null && (
+        <span aria-hidden className="inline-flex items-baseline gap-1 whitespace-nowrap">
+          <span className="text-xs font-medium text-faint">{pt ? t('Tổng') : t('Overall')}</span>
+          <ODiem so={chuDiem(th.ovr, pt)} kq={mucDiem(datTheSos(th), th.ovr, th.moc)} />
+          {th.moc != null && <span className="tabular-nums text-dim">/ {chuDiem(th.moc, pt)}</span>}
+          {th.tam && <span className="text-xs text-faint">{t('tạm')}</span>}
+        </span>
+      )}
+      {th.truot.length > 0 && (
+        <span aria-hidden className="inline-flex flex-wrap items-center gap-1">
+          <span className="mr-0.5 text-xs font-medium text-faint">{t('Trượt')}</span>
+          {th.truot.map((k) => (
+            <span key={k} className="inline-flex h-5 min-w-5 items-center justify-center whitespace-nowrap rounded border px-1 text-xs font-semibold text-late" style={{ borderColor: 'var(--line-strong)' }}>{k}</span>
+          ))}
+        </span>
+      )}
     </span>
   );
 }
@@ -65,7 +82,7 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm }: {
   return (
     <div role="table" className="text-sm" aria-label={tvv ? t('Báo PH · kết quả') : t('Kết quả')}>
       <div role="row" className={`${HANG} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
-        <span role="columnheader" className="pr-2.5">{'① '}{tvv ? t('Học viên cần báo') : t('Học viên cần làm')}</span>
+        <span role="columnheader" className="pr-2.5">{'① '}{t('Học viên')}</span>
         <span role="columnheader" className="px-2.5">{'② '}{tvv || laMeetingCx(che.loai === 'gvcn' ? che.khoa : '') ? t('GVCN xác nhận') : t('Đã làm')}</span>
         <span role="columnheader" className="px-2.5">{'③ '}{tvv ? t('Báo PH · kết quả') : t('Kết quả')}</span>
         <span role="columnheader"><span className="sr-only">{t('Thao tác khác')}</span></span>

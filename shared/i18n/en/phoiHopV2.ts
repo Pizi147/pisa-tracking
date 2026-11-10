@@ -9,8 +9,6 @@ export const EN_PHOI_HOP_V2 = {
   'Báo PH · Meeting CX/GĐCN': 'Parent call · CX/Head meeting',
   '{n} em cần báo': '{n} students to inform',
   '{n} em cần làm': '{n} students to do',
-  'Học viên cần báo': 'Students to inform',
-  'Học viên cần làm': 'Students to do',
   'GVCN xác nhận': 'Homeroom confirmed',
   'Báo PH · kết quả': 'Parent call · result',
   'Đã báo': 'Informed',

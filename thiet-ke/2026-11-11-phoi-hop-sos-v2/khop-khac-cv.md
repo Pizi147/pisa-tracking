@@ -36,3 +36,10 @@ Seed 14/09/2026, GVCN Trần Ngọc Hà (MB FT 101), TVV Phan Mai. Phông Be Vie
 | + Thêm việc | đầu thẻ em (panel) | hồ sơ lớp / HV (giữ như cũ) — panel Công việc là việc của một loại |
 | Nội dung đã báo TVV (lớp thường) | panel Báo phụ huynh qua TVV | không đổi (`PanelBaoPh`) |
 | Việc tiếp › | không có | chân panel |
+
+## Chủ SP rà ảnh 12/11 (không mockup lại)
+| Chỗ | Mockup #1368 | Web | |
+|---|---|---|---|
+| Tiêu đề cột ① | "Học viên cần làm" / "Học viên cần báo" | "Học viên" | KHÁC — chủ SP 12/11 |
+| Dòng phụ dưới tên em | một chuỗi "MT2 · ✗ 5.5 / 6.0 · trượt L, R, W, S" | CHIA LOẠI: thẻ lượt "MT2" · "Overall" mờ + số ✗ / ✓ ba màu + "/ 6.0" · "Trượt" mờ + chip L R W S; xuống dòng giữa các khối, không cắt | KHÁC — chủ SP 12/11; một thành phần `DiemMotDong` cho panel, hồ sơ lớp, hồ sơ HV |
+Ảnh: `anh-cap/cv-1440-panel-diem-web.png`, `anh-cap/cv-375-panel-web.png`.
