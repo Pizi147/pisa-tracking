@@ -44,8 +44,10 @@ export function dongDaoChuyenNgay(sid: number, lopIds: readonly number[]): DongD
     /* Nhật ký dời hạn khi chuyển lớp: `viec_id` là Case (hạn xác nhận / thêm PA) hoặc PA (hạn kết quả) — bản chép thật 07/11 có cả hai. */
     { bang: 'viec_han_lan', dk: `loai LIKE 'chuyen_lop:%' AND (viec_id IN (SELECT id FROM sos_cases WHERE student_id = ?) OR viec_id IN (SELECT id FROM case_interventions WHERE ${CASE_EM}))`, args: [sid, sid], k: 'them' },
     { bang: 'journey_events', dk: 'student_id = ?', args: [sid], k: 'them' },
-    /* Chuông của lần chuyển (vào lớp, giao Case) — Hoàn tác thì gỡ, không để GV lớp mới thấy em "đã chuyển vào". Chuông cấp lớp ("Sắp nhận n em") giữ. */
+    /* Chuông của lần chuyển (vào lớp, giao Case) — Hoàn tác thì gỡ, không để GV lớp mới thấy em "đã chuyển vào". */
     { bang: 'notifications', dk: `(entity_type = 'student' AND entity_id = ?) OR (entity_type = 'sos_case' AND entity_id IN (SELECT id FROM sos_cases WHERE student_id = ?))`, args: [sid, sid], k: 'them' },
+    /* Chuông cấp lớp "Sắp nhận / Đã nhận n em" (`thongBaoSapNhan` — đếm lại, sửa tại chỗ theo khoá) — Hoàn tác trả về như trước, GVCN lớp mới không thấy em "đã nhận". */
+    { bang: 'notifications', dk: `entity_type = 'class' AND entity_id IN (${lopIds.map(() => '?').join(',')})`, args: [...lopIds], k: 'ca' },
   ];
 }
 

@@ -27,6 +27,7 @@ import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { dongDaoDoiLoTrinh } from '../fasttrack/doiLoTrinh.ts';
+import { dongDaoChuyenNgay } from '../classes/hoanTacChuyenNgay.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, kiemGiaTriDeXuat, lyDoDeXuat } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
@@ -633,8 +634,17 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return { lyDo: k.lyDo, duLieu: { lopDichId: k.toClassId, tuan: k.tuan, resetBac: k.resetBac } };
     },
     khiRut: () => {},
-    /* Q-RL2c: Từ chối chỉ đổi thẻ (Duyệt = ra lệnh — có đường huỷ lệnh riêng). */
-    dao: { tuChoi: () => [] },
+    /* Q-RL2c: Từ chối chỉ đổi thẻ. #8 (G4-14, bản rà 11/11): Duyệt = ra lệnh (kể cả "Ngay hôm nay" — thi hành luôn) → chụp mọi dòng của em như
+       chuyển ngay một em (`dongDaoChuyenNgay`) — "Huỷ quyết định" / Hoàn tác ở panel trả em + thẻ về y như trước. */
+    dao: {
+      tuChoi: () => [],
+      duyet: (yc) => {
+        if (!yc.hoc_vien_id) return [];
+        const nguon = (db().prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' LIMIT 1`).get(yc.hoc_vien_id) as any)?.class_id as number | undefined;
+        const deXuat = (() => { try { return Number(JSON.parse(yc.du_lieu ?? '{}').lopDichId) || null; } catch { return null; } })();
+        return dongDaoChuyenNgay(yc.hoc_vien_id, [...new Set([nguon, deXuat].filter((x): x is number => !!x))]);
+      },
+    },
     /* Em không còn học, hoặc đã có quyết định chuyển lớp từ đường khác → thẻ không còn ý nghĩa. */
     chet: {
       sql: `NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = y.hoc_vien_id AND e.status = 'active')

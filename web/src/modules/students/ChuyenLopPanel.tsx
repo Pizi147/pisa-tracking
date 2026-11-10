@@ -150,7 +150,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}&${thamTheo}${dx ? '&bac=1' : ''}`, [studentId, theoCk]);
   const [toClassId, setToClassId] = useState<number | null>(duyet?.lopDichId ?? null);
   /* OV-13l: "Ngay hôm nay" đã thi hành → panel ở trạng thái "Đã chuyển". #8 (G4-14): `dao` có → "Hoàn tác" ngay tại dòng trạng thái (em về lớp cũ y như trước). */
-  const [daChuyen, setDaChuyen] = useState<{ lop: { id: number; code: string }; han: string; dao?: number } | null>(null);
+  const [daChuyen, setDaChuyen] = useState<{ lop: { id: number; code: string }; han: string; dao?: number; theDuyet?: number } | null>(null);
   /* GVCN không có quyền xem luật ra lệnh (403) — chỉ Quản lý gọi đường xem trước. Đã chuyển ngay → thôi tải lại (em đã ở lớp đích: xem trước lớp đó 400). */
   const xem = useApi<XemChuyenLopData>(dx || daChuyen ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}&${thamTheo}` : `/students/${studentId}/chuyen-lop?${thamTheo}`), [studentId, toClassId, dx, theoCk]);
   const chonTheoCk = !dx && !duyet && !!lopDich.data?.nguon.coTheChon;
@@ -240,7 +240,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         xong(t('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt'));
       } else if (duyet) {
         await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac } });
-        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
+        /* #8: Duyệt "Ngay hôm nay" — Hoàn tác = Huỷ quyết định của thẻ (thẻ về Chờ duyệt, em về lớp cũ). */
+        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn, theDuyet: duyet.id }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
       } else {
         /* PR-CL (B1, D15): ra mới hoặc sửa lệnh đang chờ — cùng một đường, máy chủ tính bối cảnh + hướng. */
         const r = await api.post<{ daChuyen?: number[]; dao?: number }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac, ...(chonTheoCk ? { theoCuoiKhoa: theoCk } : {}) });
@@ -264,11 +265,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     /* Nơi gọi đóng panel trong `onDone` → chỉ báo xong khi người dùng rời trạng thái "Đã chuyển". */
     const dong = () => { onDone?.(); onClose(); };
     const hoanTac = async () => {
-      if (!daChuyen.dao || busy) return;
+      if ((!daChuyen.dao && !daChuyen.theDuyet) || busy) return;
       setBusy(true);
       try {
-        await api.post(`/students/${studentId}/hoan-tac-chuyen-ngay`, { dao: daChuyen.dao });
-        xongChuyen();
+        if (daChuyen.dao) await api.post(`/students/${studentId}/hoan-tac-chuyen-ngay`, { dao: daChuyen.dao });
+        else await api.post(`/yeu-cau/${daChuyen.theDuyet}/huy-quyet-dinh`, {});
+        xongChuyen(); invalidate('/yeu-cau');
         toast.push('ok', t('Đã hoàn tác — em về lại {lop}', { lop: dangHoc?.lop.code ?? lop ?? '' }));
         dong();
       } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
@@ -278,7 +280,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         chan={{ huy: { onClick: dong }, chinh: <Link className="btn min-h-[44px] max-sm:flex-1 sm:min-h-0" to={`/hoc-vien/lop/${daChuyen.lop.id}`} onClick={dong}>{t('Hồ sơ {lop}', { lop: daChuyen.lop.code })} ›</Link> }}>
         <p role="status" className="mb-0 mt-3 text-sm text-ok">
           ✓ {t('Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}', { lop: daChuyen.lop.code, ngay: thuNgay(homNayMay ?? '', homNayMay ?? ''), han: ngay(daChuyen.han, homNayMay ?? '') })}
-          {daChuyen.dao && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={hoanTac}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button></>}
+          {(daChuyen.dao || daChuyen.theDuyet) && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={hoanTac}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button></>}
         </p>
       </KhungPanel>
     );

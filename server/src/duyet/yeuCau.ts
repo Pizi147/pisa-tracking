@@ -776,6 +776,8 @@ export function huyQuyetDinh(p: Principal, id: number) {
       throw badRequest('Đã có yêu cầu mới đang chờ cho cùng việc này — xử lý yêu cầu đó, không huỷ quyết định cũ được.');
     }
     const def = dinhNghiaCua(yc.loai)!;
+    /* #8: đảo xoá dòng thêm trước, trả dòng sửa sau (lộ trình / lượt mới của Duyệt chuyển lớp) — khoá ngoại kiểm lúc chốt giao dịch. */
+    conn.pragma('defer_foreign_keys = ON');
     if (def.khiHuy) {
       def.khiHuy(p, yc);
       const doi = conn.prepare(`UPDATE yeu_cau_duyet SET trang_thai = 'cho', nguoi_duyet = NULL, ly_do_tu_choi = NULL, tra_loi = NULL, ly_do_dong = NULL,

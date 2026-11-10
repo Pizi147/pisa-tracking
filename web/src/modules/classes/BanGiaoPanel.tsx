@@ -210,7 +210,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
 
             <section aria-label={t('Thông tin bàn giao của GVBM')}>
               <h4 className="mb-2 mt-0 text-[13px] font-semibold text-slate-500">
-                {t('Bàn giao của GVBM · mỗi môn một câu')}{ghi && !em.xacNhan && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">{t('GVCN điền thay được')}</span>}
+                {t('Bàn giao của GVBM · mỗi môn một câu')}{ghi && !em.xacNhan && em.mon.some((m) => !dto.nguoiXem.monDay?.includes(m.ma) && !m.cungGv) && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">{t('GVCN điền thay được')}</span>}
               </h4>
               <ul className="m-0 list-none space-y-1.5 p-0">
                 {em.mon.map((m) => (

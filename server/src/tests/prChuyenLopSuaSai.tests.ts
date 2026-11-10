@@ -11,6 +11,7 @@ export async function runPrChuyenLopSuaSaiTests(t: any) {
   const banGiao: any = await import('../classes/banGiao.ts');
   const dai: any = await import('../classes/daiChuyenLop.ts');
   const hl: any = await import('../students/hangLoat.ts');
+  const yeuCau: any = await import('../duyet/yeuCau.ts');
   const { xepLopDich } = await import('../../../shared/domain/chuyenLop.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { demoToday } = await import('../demoConfig.ts');
@@ -152,5 +153,24 @@ export async function runPrChuyenLopSuaSaiTests(t: any) {
       return `${soCauSql() - c0} câu ${soDongSql() - r0} dòng`; });
     console.log(`    (đo: chuyển ngay KHÔNG chụp ${khong} · CÓ chụp ${n} câu ${dong} dòng · Hoàn tác ${h} câu ${dh} dòng)`);
     assert(n <= TRAN_GHI_LO.chuyenNgay && h <= TRAN_GHI_LO.hoanTacChuyenNgay, `${n} / ${h}`);
+    assert(dong <= 2000 && dh <= 2000, `dòng ${dong} / ${dh} — vượt ngưỡng cảnh báo CLAUDE.md`);
   }));
+
+  for (const [ten, tuanCua] of [['Ngay hôm nay', () => today], ['tuần sau', (sid: number) => llt.xemChuyenLop(P.mbManager, sid).tuanChon[1]]] as const) {
+    check(`CLSS-7 · Duyệt đề xuất chuyển lớp (${ten}) → "Huỷ quyết định" của thẻ: thẻ về Chờ duyệt, em + lệnh y như trước (so mọi bảng trừ nhật ký / chuông)`, () => thu(() => {
+      const sid = emCua('MB FT 101');
+      const tuan = (tuanCua as any)(sid);
+      const gvcn = loadPrincipal(one(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`, lop('MB FT 101')).id);
+      const { id } = lenh.guiDeXuatChuyenLop(gvcn, sid, { toClassId: lop('MB FT 102'), tuan, lyDo: 'Đổi lịch học' });
+      xoaNho();
+      const truoc = chup();
+      yeuCau.duyetYeuCau(P.mbManager, id, { duLieu: { lopDichId: lop('MB FT 102'), tuan, lyDo: 'Đổi lịch học' } });
+      const daSang = one(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, sid).class_id === lop('MB FT 102');
+      assert(daSang === (ten === 'Ngay hôm nay'), `chuyển ngay: ${daSang}`);
+      xoaNho();
+      yeuCau.huyQuyetDinh(P.mbManager, id);
+      const d = khac(truoc, chup());
+      assert(!d.length, `còn khác sau Huỷ quyết định: ${d.join(', ')}`);
+    }));
+  }
 }

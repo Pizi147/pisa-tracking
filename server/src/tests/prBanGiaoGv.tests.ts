@@ -412,4 +412,15 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     const ph2 = banGiao.phieuBanGiao(P.mbManager, { lopNguonId: em.class_id });
     assert(ph2.ds.find((x: any) => x.lenhId === id).diemMon === null, 'phiếu đã xác nhận vẫn có diemMon');
   }));
+
+  check('#8 G4-15 · đổi R C → F hôm nay (tạo việc cho C) rồi F → C: xem trước báo "không tạo việc · huỷ việc của C" (cotMo.veLai), lưu trả viec = 0, việc của C huỷ', () => thu(() => {
+    const r1 = luu(X, { reading: gF });
+    assert(r1.viec === 1 && viecCua(X).filter((v: any) => v.trang_thai === 'mo').length === 1, JSON.stringify(r1));
+    xoaNho();
+    const xt = pc.xemTruocLuu(QL, { lop: [{ classId: X, slots: doi(X, { reading: gC }) }] });
+    const c = xt.lop[0].cap.find((x: any) => x.khoa === 'reading');
+    assert(c && c.cotMo && c.cotMo.veLai === true && c.cotMo.nguoiCuViec === gC, JSON.stringify(c));
+    const r2 = luu(X, { reading: gC });
+    assert(r2.viec === 0 && !viecCua(X).some((v: any) => v.trang_thai === 'mo'), `${JSON.stringify(r2)} · ${JSON.stringify(viecCua(X).map((v: any) => v.trang_thai))}`);
+  }));
 }
