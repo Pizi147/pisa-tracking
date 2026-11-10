@@ -353,7 +353,7 @@ export function suaLenh(p: Principal, id: number, v: Partial<DongLenhVao>): void
 }
 
 /** Huỷ MỘT lệnh còn `cho` trong giao dịch đang mở — không kiểm quyền, không gửi chuông (nơi gọi lo). */
-function huyMotLenh(p: Principal, l: any, why: string): void {
+function huyMotLenh(p: Principal, l: any, why: string | null): void {
   const conn = db();
   const r = conn.prepare(
     `UPDATE lenh_chuyen_lop SET trang_thai = 'huy', huy_boi = ?, huy_luc = ?, ly_do_huy = ?, sua_luc = ? WHERE id = ? AND trang_thai = 'cho'`,
@@ -378,11 +378,11 @@ function huyMotLenh(p: Principal, l: any, why: string): void {
   writeAudit({ actorUserId: p.userId, action: 'lenh_chuyen.huy', entityType: 'student', entityId: l.student_id, entityLabel: hv?.full_name ?? null, before: { huong: l.huong, tuan: l.tuan_bat_dau }, after: { lyDo: why } });
 }
 
-export function huyLenh(p: Principal, id: number, lyDo: string): void {
+export function huyLenh(p: Principal, id: number, lyDo?: string | null): void {
   const l = docLenh(id);
   require_(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id }, CUNG_LOP_CHI_NHANH);
-  const why = String(lyDo ?? '').trim();
-  if (!why) throw badRequest('Ghi lý do huỷ quyết định.');
+  /* #8 (G4-08, chủ SP 11/11): huỷ là một bấm + Hoàn tác — lý do không bắt buộc (có thì ghi vào nhật ký / chuông). */
+  const why = String(lyDo ?? '').trim().slice(0, 2000) || null;
   kiemConSuaDuoc(l);
   tx(() => {
     const conn = db();
@@ -395,7 +395,7 @@ export function huyLenh(p: Principal, id: number, lyDo: string): void {
       if (userId === p.userId) continue;
       notify({
         userId, kind: 'huy_lenh', title: `Đã huỷ quyết định chuyển lớp · ${hv?.full_name ?? 'học viên'}`,
-        body: `${ma.get(l.lop_nguon_id)}${l.lop_dich_id ? ` → ${ma.get(l.lop_dich_id)}` : ''} · ${why}`,
+        body: `${ma.get(l.lop_nguon_id)}${l.lop_dich_id ? ` → ${ma.get(l.lop_dich_id)}` : ''}${why ? ` · ${why}` : ''}`,
         entityType: 'student', entityId: l.student_id, dedupKey: `huy_lenh:${id}`,
       });
     }
@@ -419,8 +419,7 @@ function docDanhSachLenh(v: unknown): number[] {
  */
 export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaLenhNhieu {
   const ds = docDanhSachLenh(ids);
-  const why = String(lyDo ?? '').trim();
-  if (!why) throw badRequest('Ghi lý do huỷ quyết định.');
+  const why = String(lyDo ?? '').trim().slice(0, 2000) || null;   // #8: lý do không bắt buộc
   const kq: KetQuaLenhNhieu = { ok: [], failed: [] };
   const daHuy: any[] = [];
   let ngoaiQuyen = 0;
@@ -443,7 +442,7 @@ export function huyNhieuLenh(p: Principal, ids: unknown, lyDo: unknown): KetQuaL
 }
 
 /** Một chuông / người nhận / lớp nguồn. `dedupKey` theo lệnh đầu của nhóm: gọi lại cùng lô không nhân chuông. */
-function guiChuongHuyNhieu(p: Principal, ds: any[], why: string) {
+function guiChuongHuyNhieu(p: Principal, ds: any[], why: string | null) {
   if (!ds.length) return;
   const conn = db();
   const theoNguon = new Map<number, any[]>();

@@ -145,6 +145,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
       setDangSua(false); setDaBam(false); reload();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
+  const chuGhi = (mon: string) => (dto.nguoiXem.monDay?.includes(mon) ? t('Viết') : t('Điền thay'));
   const luuDienThay = async () => {
     if (!dienThay || !dienThay.chu.trim()) return;
     try {
@@ -209,7 +210,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
 
             <section aria-label={t('Thông tin bàn giao của GVBM')}>
               <h4 className="mb-2 mt-0 text-[13px] font-semibold text-slate-500">
-                {t('Bàn giao của GVBM · mỗi môn một câu')}{ghi && !em.xacNhan && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">{t('GVCN điền thay được')}</span>}
+                {t('Bàn giao của GVBM · mỗi môn một câu')}{ghi && !em.xacNhan && em.mon.some((m) => !dto.nguoiXem.monDay?.includes(m.ma) && !m.cungGv) && <span className="ml-2 font-normal normal-case tracking-normal text-slate-500">{t('GVCN điền thay được')}</span>}
               </h4>
               <ul className="m-0 list-none space-y-1.5 p-0">
                 {em.mon.map((m) => (
@@ -226,17 +227,18 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
                       ) : (
                         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="text-slate-400">{t('Chưa có')}{m.gvbm.length ? ` · ${m.gvbm.join(', ')}` : ''}, <Han loai="viec-van-hanh" han={em.hanGvbm} /></span>
-                          {ghi && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={t('Điền thay {mon} · {ten}', { mon: m.ngan, ten: em.ten })} onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: '' })}>{t('Điền thay')}</button>}
+                          {/* #8 (G4-07): môn của chính người xem (GVCN dạy luôn L, R) → "Viết", không "Điền thay". */}
+                          {ghi && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={`${chuGhi(m.ma)} ${m.ngan} · ${em.ten}`} onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: '' })}>{chuGhi(m.ma)}</button>}
                         </span>
                       )}
                       {suaPhieu && (dto.nguoiXem.monGhi.includes(m.ma) || dto.nguoiXem.ql) && !(dienThay?.lenhId === em.lenhId && dienThay.mon === m.ma) && (
                         <button type="button" className="link ml-2 border-0 bg-transparent p-0 text-xs" onClick={() => setDienThay({ lenhId: em.lenhId, mon: m.ma, chu: m.noiDung ?? '' })}>
-                          {m.noiDung ? t('Sửa') : t('Điền thay')}
+                          {m.noiDung ? t('Sửa') : chuGhi(m.ma)}
                         </button>
                       )}
                       {dienThay && dienThay.lenhId === em.lenhId && dienThay.mon === m.ma && (
                         <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                          <input className="field min-w-[14rem] flex-1" autoFocus maxLength={300} aria-label={t('{viec} môn {mon}', { viec: m.noiDung ? t('Sửa') : t('Điền thay'), mon: m.ngan })} value={dienThay.chu}
+                          <input className="field min-w-[14rem] flex-1" autoFocus maxLength={300} aria-label={t('{viec} môn {mon}', { viec: m.noiDung ? t('Sửa') : chuGhi(m.ma), mon: m.ngan })} value={dienThay.chu}
                             placeholder={t('Viết một câu…')} onChange={(e) => setDienThay({ ...dienThay, chu: e.target.value })}
                             onKeyDown={(e) => { if (e.key === 'Enter') void luuDienThay(); if (e.key === 'Escape') { e.stopPropagation(); setDienThay(null); } }} />
                           <button type="button" className="btn btn-sm btn-primary" disabled={!dienThay.chu.trim()} onClick={luuDienThay}>{t('Lưu')}</button>

@@ -41,6 +41,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { DiemKq } from '../../ui/KhuonViec.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
+import { huyQuyetDinhNgay } from './ChuyenLopPanel.tsx';
+import { useToast } from '../../ui/Toast.tsx';
 import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import { DaiXetLai } from '../classes/PanelXetLai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -83,6 +85,7 @@ export default function StudentDetailPage() {
   const p = docThamSoHoSo((k) => params.get(k));
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
+  const toast = useToast();
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const [giaHan, setGiaHan] = useState(false);   // OV-13q
   const [quayLaiBt, setQuayLaiBt] = useState(false);   // OV-13m: Quay lại học sau Tạm dừng sau thi = panel Bước tiếp mở sẵn Lộ trình mới
@@ -308,8 +311,9 @@ export default function StudentDetailPage() {
       {/* PR-CT (mockup 20 — E): dải Sắp chuyển / Đã chuyển ngay dưới dòng thông tin đầu trang; nút theo vai do máy chủ quyết. */}
       <DaiHocVienChuyen dai={data.dai ?? null} homNay={homNay}
         onLam={(k) => {
-          if (k === 'huy-lenh') { setViecQuanLy('chuyen-lop'); return; }
           const d = data.dai;
+          /* #8 (G4-08): huỷ thẳng tại dải + Hoàn tác — không mở lại panel, không hỏi lý do. */
+          if (k === 'huy-lenh') { huyQuyetDinhNgay(toast, d.lenhId, data.id, reload).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được — thử lại.'))); return; }
           /* BAN-GIAO-NHAN (chủ SP 05/11): đọc phiếu tại hồ sơ — trang lớp cũ 403 với GV lớp mới không dạy lớp cũ. */
           if (k === 'doc-ban-giao') { const n = new URLSearchParams(params); n.set('ban-giao', String(d.lenhId)); setParams(n, { replace: true }); return; }
           navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);

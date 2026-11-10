@@ -244,7 +244,9 @@ export async function runPrRaLuongTests(t: YThucTestKit) {
 
   check('RA-LUONG-5 · Huỷ quyết định chuyển lớp một em có Hoàn tác (cùng đường khôi phục `huy-lenh` → `khoi-phuc-lenh` của Cuối khoá)', () => {
     const nguon = fsMod.readFileSync('web/src/modules/students/ChuyenLopPanel.tsx', 'utf8') as string;
-    const huy = nguon.slice(nguon.indexOf('const huyLenh = async'), nguon.indexOf('const nhanChinh'));
+    /* #8 (bản rà 11/11): huỷ một bấm dùng chung `huyQuyetDinhNgay` (dải hồ sơ HV + chân panel) — Hoàn tác nằm ở hàm chung. */
+    const huy = nguon.slice(nguon.indexOf('export async function huyQuyetDinhNgay'), nguon.indexOf('export function ChuyenLopPanel'));
     assert(/toast\.hoanTac\(/.test(huy) && /hoanTacHangLoat\('huy-lenh', \[studentId\]\)/.test(huy), 'huyLenh thiếu Hoàn tác');
+    assert(/huyQuyetDinhNgay\(toast, lenh\.id, studentId/.test(nguon), 'chân panel phải gọi huyQuyetDinhNgay');
   });
 }
