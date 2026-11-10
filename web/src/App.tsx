@@ -207,7 +207,8 @@ export default function App() {
    */
   const [lanViec, setLanViec] = useState(0);
   const viecCu = useRef(false);
-  useEffect(() => onInvalidate((p) => { if (p === null || '/my-work'.startsWith(p)) viecCu.current = true; }), []);
+  /* Vô hiệu TOÀN BỘ (đổi tài khoản / góc nhìn) → tải lại ngay: không giữ số của người trước dù vẫn đứng cùng trang. */
+  useEffect(() => onInvalidate((p) => { if (p === null) setLanViec((n) => n + 1); else if ('/my-work'.startsWith(p)) viecCu.current = true; }), []);
   useEffect(() => { if (viecCu.current) { viecCu.current = false; setLanViec((n) => n + 1); } }, [location.pathname]);
   useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
   useTieuDeTab(!!session?.authenticated);   // OV-11i (P1-3): tiêu đề tab theo màn
