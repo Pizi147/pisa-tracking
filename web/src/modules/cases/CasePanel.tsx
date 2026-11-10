@@ -610,7 +610,8 @@ function XoaCase({ data, toi, onXong, onDaXoa }: { data: CaseDetail; toi: number
   const vw = data.viewer;
   const pas = data.interventions ?? [];
   const tenCase = (() => { const x = data.title ?? tenNganCase(data); const kn = data.categoryLabel; return kn && !x.startsWith(kn) ? `${kn} — ${x}` : x; })();
-  const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
+  /* P1 G2-01: sau khi Case đã xoá thật chỉ tải lại danh sách Case (`/cases?`) — `/cases/:id` của chính Case vừa xoá trả 404. */
+  const lamMoi = (daXoa = false) => { invalidate(daXoa ? '/cases?' : '/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/tong-quan'); invalidate('/yeu-cau'); };
   const gui = async () => {
     setBusy(true);
     try {
@@ -618,7 +619,7 @@ function XoaCase({ data, toi, onXong, onDaXoa }: { data: CaseDetail; toi: number
       setHoi(false);
       if (r?.choDuyet) { lamMoi(); onXong(); return; }
       onDaXoa({ thungRacId: r?.thungRacId ?? null, ten: tenCase, soPa: pas.length });
-      lamMoi();
+      lamMoi(true);
     } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
   };
   const the = vw.theXoa ?? null;

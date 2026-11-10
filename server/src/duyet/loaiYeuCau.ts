@@ -829,11 +829,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ LUAT-5 · Thu hồi lần xử lý Ý thức (luật 5, 21/10 — thay Xoá lần xử lý) */
   {
     loai: 'thu_hoi_y_thuc',
-    khiDuyet: (p, yc) => {
+    khiDuyet: (p, yc, v) => {
       /* SUA-NO-RA (LUAT-5-b): thẻ lưu lại đúng số QL vừa duyệt (bậc về / số vi phạm lúc duyệt), không phải số lúc gửi. */
       const sl = yc.hoc_vien_id ? soLieuThuHoi([{ measureId: yc.doi_tuong_id, studentId: yc.hoc_vien_id }]).get(yc.doi_tuong_id) : undefined;
       if (sl) db().prepare('UPDATE yeu_cau_duyet SET du_lieu = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(yc.du_lieu ?? '{}'), ...sl }), yc.id);
-      duyetThuHoiYThuc(p, yc.doi_tuong_id, yc.ly_do ?? '');
+      duyetThuHoiYThuc(p, yc.doi_tuong_id, yc.ly_do ?? '', (v.duLieu as { baoLai?: unknown } | undefined)?.baoLai !== false);   // YT-BAO-PH: ô "Nhờ TVV báo lại PH"
     },
     /* Từ chối: lần xử lý giữ nguyên — lý do nằm ở thẻ, GVCN đọc ở panel lần xử lý. Rút: chưa đổi gì ở bảng nguồn. */
     khiSua: (p, yc, v) => {
@@ -884,9 +884,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         phu: d.soViPham ? `${d.soViPham} vi phạm` : null,
         dong: [`${nguoiXin(yc, ngu)} xin ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
           ...(x?.performed_on ? [`Đã thực hiện ${ngay(x.performed_on, ngu)}`] : []), ...(tvv ? [tvv] : [])],
-        neuDuyet: `Lần xử lý thành "Đã thu hồi" — bậc về ${bacVe}, ${d.soViPham ?? 0} vi phạm về chưa xử lý.${x?.bao_tt === 'xong' ? ' Cần thì nhờ TVV báo lại PH — hệ thống không tự tạo việc.' : ''}`,
+        neuDuyet: `Lần xử lý thành "Đã thu hồi" — bậc về ${bacVe}, ${d.soViPham ?? 0} vi phạm về chưa xử lý.${x?.bao_tt === 'xong' ? ' TVV đã báo PH.' : ''}`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
-        duLieu: { bacVe: d.bacVe ?? 0, soViPham: d.soViPham ?? 0 },
+        duLieu: { bacVe: d.bacVe ?? 0, soViPham: d.soViPham ?? 0, daBaoPh: x?.bao_tt === 'xong' },   // YT-BAO-PH: web hiện ô "Nhờ TVV báo lại PH"
       };
     },
   },

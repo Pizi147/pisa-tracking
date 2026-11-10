@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { KhungTrongCot } from '../../ui/KhungPanel.tsx';
 import { xepCase, type SkillBoardRow } from '../cases/SkillBoard.tsx';
-import { NganCase } from './NganCase.tsx';
+import { NganCase, type DaXoaCase } from './NganCase.tsx';
+import { DaiDaXoa } from '../cases/TaiCho.tsx';
+import { invalidate } from '../../lib/api.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
 import { IconCanhBao, IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
@@ -36,10 +38,14 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
   /* Bấm dòng: mở / gập do tay (thắng mặc định). Nút việc ở dòng: mở Case thẳng view việc. */
   const [tay, setTay] = useState<Record<number, boolean>>({});
   const [moDong, setMoDong] = useState(false);
+  /* P1 G2-01: Case vừa xoá — dải "Đã xoá … Hoàn tác" giữ ĐÚNG chỗ dòng Case (`i`) 10 giây dù danh sách đã tải lại (Case rời `rows`), như Xoá PA / panel Case. */
+  const [vuaXoa, setVuaXoa] = useState<{ id: number; i: number; x: DaXoaCase }[]>([]);
+  const boXoa = (id: number) => setVuaXoa((ds) => ds.filter((v) => v.id !== id));
+  const daXoaIds = new Set(vuaXoa.map((v) => v.id));
   const theoCase = new Map(rows.flatMap((r) => r.cases.map((c) => [c.id, r] as const)));
   const cuaToi = (c: CaseCard) => !!toi && c.nguoiLam?.id === toi && !!c.viecTiep;
   const thu = (c: CaseCard) => (cuaToi(c) ? 0 : c.trangThaiV4.t === 'qua-han' ? 1 : 2);
-  const tat = xepCase(rows.flatMap((r) => r.cases));
+  const tat = xepCase(rows.flatMap((r) => r.cases)).filter((c) => !daXoaIds.has(c.id));
   const dangMo: Dong[] = tat.filter((c) => !dong(c)).sort((a, b) => thu(a) - thu(b)).map((c) => ({ c, r: theoCase.get(c.id)! }));
   const daDongDs: Dong[] = tat.filter(dong).map((c) => ({ c, r: theoCase.get(c.id)! }));
   /* Case duy nhất mở sẵn chỉ với người làm được việc ở Case (vai xem TVV / CX: không Case nào mở sẵn — U02 dòng 15). */
@@ -87,7 +93,8 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
           <div className="cs-mo">
             <KhungTrongCot.Provider value>
               <NganCase key={`${c.id}:${ep?.n ?? 0}:${lai[c.id] ?? 0}`} caseId={c.id} paId={ep?.paId} viec={ep?.viec} hocVien={hocVien} lop={lop}
-                onClose={() => { if (ep) setDaDong((x) => ({ ...x, [c.id]: ep.n })); setLai((x) => ({ ...x, [c.id]: (x[c.id] ?? 0) + 1 })); }} onChanged={onChanged} />
+                onClose={() => { if (ep) setDaDong((x) => ({ ...x, [c.id]: ep.n })); setLai((x) => ({ ...x, [c.id]: (x[c.id] ?? 0) + 1 })); }} onChanged={onChanged}
+                onDaXoa={(x) => setVuaXoa((ds) => [...ds, { id: c.id, i: Math.max(0, dangMo.findIndex((d) => d.c.id === c.id)), x }])} />
             </KhungTrongCot.Provider>
           </div>
         )}
@@ -95,12 +102,22 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
     );
   };
 
+  const daiXoa = (v: (typeof vuaXoa)[number]) => (
+    <div key={`xoa-${v.id}`} className="border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
+      <DaiDaXoa chu={<>{t('Đã xoá Case')} <b>{v.x.ten}</b>{v.x.soPa ? ` ${t('cùng {n} PA', { n: v.x.soPa })}` : ''}</>} thungRacId={v.x.thungRacId}
+        onKhoiPhuc={() => { boXoa(v.id); invalidate('/my-work'); onChanged(); }} onHet={() => boXoa(v.id)}
+        phu={t('Việc của Case này cũng rời danh sách.')} />
+    </div>
+  );
+  const hangMo = dangMo.map(veDong);
+  for (const v of [...vuaXoa].sort((a, b) => a.i - b.i)) hangMo.splice(Math.min(v.i, hangMo.length), 0, daiXoa(v));
   return (
     <section className="card flex min-w-0 flex-col overflow-hidden [container-type:inline-size]" aria-label={t('Case & phương án · {kn}', { kn: tenKn })}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <h2 className="m-0 text-[17px] font-bold text-slate-100">{mot ? t('Case & phương án · {kn}', { kn: tenKn }) : t('Case & phương án')}</h2>
         {dangMo.length > 0 && <span className="the-phu"><b>{dangMo.length}</b> {t('đang mở')}</span>}
       </div>
+      {!dangMo.length && vuaXoa.length > 0 && <div>{vuaXoa.map(daiXoa)}</div>}
       {!dangMo.length && !daDongDs.length ? (
         <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 text-[14px] text-slate-400">
           {t('Không có Case {kn}.', { kn: tenKn })}
@@ -108,7 +125,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
         </p>
       ) : (
         <>
-          {dangMo.length > 0 ? <div>{dangMo.map(veDong)}</div> : (
+          {dangMo.length > 0 ? <div>{hangMo}</div> : (
             <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 text-[14px] text-slate-400">
               {t('Không có Case {kn} đang mở.', { kn: tenKn })}
               {mot && onReport && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onReport(mot.category)}>{t('+ Case cho {label}', { label: dich(mot.label) })}</button>}

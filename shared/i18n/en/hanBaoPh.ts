@@ -15,4 +15,7 @@ export const EN_HAN_BAO_PH = {
   'Người lưu': 'Saved by',
   'Lúc lưu': 'Saved at',
   'Ghi chú GVCN': 'Homeroom note',
+  /* YT-BAO-PH (rà 11/11 #7, [XM 1]). */
+  'PH dự họp — việc Báo PH của TVV tự xong': 'Parents attended — the consultant parent-call task closes itself',
+  'Nhờ TVV báo lại PH': 'Ask the consultant to update parents',
 } satisfies Record<string, Dich>;

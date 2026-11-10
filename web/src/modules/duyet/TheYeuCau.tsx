@@ -70,6 +70,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const [daBam, setDaBam] = useState(false);
   const [loiMay, setLoiMay] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /* YT-BAO-PH: thẻ Thu hồi Ý thức — ô "Nhờ TVV báo lại PH" (mặc định bật; máy chủ cũng mặc định bật khi Duyệt nhanh ở dòng). */
+  const [baoLai, setBaoLai] = useState(true);
   const [moHet, setMoHet] = useState(!!panel);
   /* PR-CT: Duyệt thẻ Đề xuất chuyển lớp = mở panel ra lệnh điền sẵn (Quản lý sửa lớp, tuần rồi `Duyệt và quyết định`). */
   const [moChuyenLop, setMoChuyenLop] = useState(false);
@@ -160,7 +162,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
     if (yc.duLieu?.moPanelChuyenLop) return setMoChuyenLop(true);
     if (yc.loai === 'lich_thi') return moO('tuan', nut);
     if (canGhiChu) return moO('ghi-chu', nut);
-    void gui(`/yeu-cau/${yc.id}/duyet`, {}, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }));
+    void gui(`/yeu-cau/${yc.id}/duyet`, yc.loai === 'thu_hoi_y_thuc' && yc.duLieu?.daBaoPh === true ? { duLieu: { baoLai } } : {}, t('Đã duyệt: {tieuDe}', { tieuDe: yc.tieuDe }));
   };
   const daMoSan = useRef(false);
   useEffect(() => {
@@ -296,6 +298,13 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               <div className="mt-3 rounded-lg border px-3 py-2.5 text-[13px]" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
                 <b className="block font-semibold" style={{ color: 'rgb(var(--soon-rgb))' }}>{t('Sau khi duyệt:')}</b>
                 <span className="text-slate-200">{dich(yc.neuDuyet)}</span>
+                {/* YT-BAO-PH ([XM 1], chủ SP 11/11): PH đã nghe biện pháp sắp thu hồi → mặc định nhờ TVV báo lại; QL bỏ tick khi không cần. */}
+                {thuHoi && yc.duLieu?.daBaoPh === true && (
+                  <label className="mt-2 flex min-h-[44px] items-center gap-2 text-slate-200 sm:min-h-0">
+                    <input type="checkbox" className="h-[18px] w-[18px] accent-[color:var(--accent)]" checked={baoLai} disabled={busy} onChange={(e) => setBaoLai(e.target.checked)} />
+                    {t('Nhờ TVV báo lại PH')}
+                  </label>
+                )}
               </div>
             ) : moHet && <p className="m-0 mt-1 basis-full text-[12px] text-slate-400">{t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(yc.neuDuyet) })}</p>)}
             {!cho && <div className="basis-full"><KetQua yc={yc} ngan={ngan} /></div>}
