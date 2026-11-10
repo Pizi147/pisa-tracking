@@ -404,19 +404,20 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .dong .ht.doi { color:var(--accent); } .dong .ht.doi b { color:var(--accent); font-weight:700; }
 .dong .ht.ha { color:var(--soon); } .dong .ht.ha b { color:var(--soon); font-weight:700; }
 .dong .ht.ok { color:var(--ok); } .dong .ht.ok b { color:var(--ok); }
-.dong .ht.loi { color:var(--bad); font-weight:600; white-space:normal; line-height:1.3; }
+.dong .ht.loi { color:var(--bad); font-weight:600; }
 .dong.co-loi { height:auto; min-height:44px; padding-top:6px; padding-bottom:6px; }
 .dong .ly-khoa { display:inline-flex; align-items:center; gap:6px; font:500 13px var(--phong); color:var(--text-faint); white-space:nowrap; }
 
 /* chip bậc: một hàng 7 nút, một bấm */
 .bac { display:inline-flex; gap:4px; }
-.bac button { appearance:none; height:30px; min-width:38px; padding:0 7px; border-radius:6px; border:1px solid var(--line); background:transparent; color:var(--text-faint); font:600 13px var(--phong); cursor:pointer; white-space:nowrap; }
-.dong:hover .bac button, .cong-cu .bac button { border-color:var(--line-strong); color:var(--text-dim); }
+.bac button { appearance:none; height:30px; min-width:38px; padding:0 7px; border-radius:6px; border:1px solid var(--line); background:transparent; color:var(--text-dim); font:600 13px var(--phong); cursor:pointer; white-space:nowrap; }
+.dong:hover .bac button, .dong:focus-within .bac button { border-color:var(--line-strong); color:var(--text); }
 .bac button:hover { border-color:var(--accent); color:var(--text); }
 .bac button.cu { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
 .bac button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700; }
 .bac.lon button { height:36px; min-width:44px; padding:0 10px; font-size:14px; }
-.dt .bac button { height:40px; min-width:40px; padding:0 6px; }
+.dt .bac button { height:44px; min-width:40px; padding:0 6px; }
+.dt .bac { gap:6px; }
 
 .dai-ok { display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; padding:10px 20px; background:var(--ok-nen); border-bottom:1px solid var(--ok-vien); font:600 13px var(--phong); color:var(--ok); }
 .dai-ok .link-nho { color:var(--ok); text-decoration:underline; text-underline-offset:2px; }
@@ -436,6 +437,9 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 /* một em */
 .mot-em { display:grid; gap:18px; padding:18px 20px; }
 .mot-em .truong .nhan { font:700 15px var(--phong); }
+
+/* nhãn loại panel = KhungPanel web (13/600 xám, chữ thường) */
+.loai { font:600 13px var(--phong); letter-spacing:0; color:var(--text-dim); } .loai::before { display:none; }
 </style>
 </head>
 <body>
@@ -483,7 +487,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k1">
   <h2>K1 · Mở panel — mỗi em một dòng, bậc chọn bằng chip một bấm</h2>
-  <p class="ghi"><b>SỬA:</b> ô thả → <b>hàng 7 chip</b> "Chưa có · R1 · R2 · WL1 · R4 · R5 · WL2" (rê = tên đủ "Report 4 + Meeting CX/GĐCN"; ⓘ ở cột giải thích viết tắt). Chip chưa chọn chữ mờ, viền mảnh (dòng đang rê rõ hơn) — không còn "bức tường nút"; bậc đang có = chip nền nhạt; bậc vừa chọn = chip nền đặc. Chưa khai = không chip nào sáng (giữ nguyên = không bấm gì).
+  <p class="ghi"><b>SỬA:</b> ô thả → <b>hàng 7 chip</b> "Chưa có · R1 · R2 · WL1 · R4 · R5 · WL2" (rê = tên đủ "Report 4 + Meeting CX/GĐCN"; ⓘ ở cột giải thích viết tắt). Chip chưa chọn chỉ chữ mờ, không viền (dòng đang rê / focus mới hiện viền) — không còn "bức tường nút"; bậc đang có = chip nền nhạt; bậc vừa chọn = chip nền đặc. Chưa khai = không chip nào sáng (giữ nguyên = không bấm gì).
   "Hiện tại" một dòng: <b>bậc</b> · nguồn ngắn ("khai 08/2026" / "trên web"), chưa khai "–". Dòng khoá: tên mờ, thay chip bằng <b>khoá + "Nhờ QL sửa"</b> ngay chỗ chọn. Tháng + ghi chú chung lên đầu (một hàng).</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K1 · Panel Khai / sửa cấp bậc · GVCN Trần Ngọc Hà · 1440 tối · vừa mở, chưa đổi</figcaption>
   <div class="toi man" id="m-k1"></div></figure>
@@ -492,14 +496,14 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 <section class="khu" id="k2">
   <h2>K2 · Khai ban đầu cả lớp: Chọn tất cả → bấm "Chưa có" → sửa 2 em khác → Lưu</h2>
   <p class="ghi"><b>SỬA:</b> có em được tick → hàng công cụ đổi thành <b>"27 em đã chọn · Đặt bậc [chip]"</b>: bấm chip = áp ngay cho các em đã tick (bỏ bước "Áp cho n em"). Sửa riêng một em = bấm chip trên dòng em đó. Bấm lại chip đang sáng = bỏ đổi (về giữ nguyên).
-  Dòng đổi: chip nền đặc; em đã có bậc thì "Hiện tại" thành <b>"R2 → R1 ↓"</b> màu nhấn; hạ bậc → màu vàng + "↓". Chân: <b>"Đổi 27 em"</b> + nút "Lưu · 27 em". Cả lần = <b>5 bấm</b> (trước: 8 bấm + 2 lần mở danh sách thả).</p>
+  Dòng đổi: chip nền đặc; em đã có bậc thì "Hiện tại" thành <b>"R2 → R1 ↓"</b> màu nhấn; hạ bậc → màu vàng + "↓". Chân: <b>"Đổi 27 em"</b> + chia theo bậc + nút "Lưu". Em đã có bậc cao hơn (Tô Ngọc Hân R2, cuối danh sách) bị "Đặt bậc · Chưa có" → dòng em "R2 → Chưa có ↓" vàng + chân "1 em hạ bậc" — không hạ im lặng. Cả lần = <b>5 bấm</b> (trước: 8 bấm + 2 lần mở danh sách thả).</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K2 · Panel Khai / sửa cấp bậc · GVCN · 1440 tối · 27 em đã chọn, đặt "Chưa có", 2 em sửa riêng</figcaption>
   <div class="toi man" id="m-k2"></div></figure>
 </section>
 
 <section class="khu" id="k3">
   <h2>K3 · Sau lưu: "✓ Đã lưu" + Hoàn tác cả lô · một em lỗi giữ dòng</h2>
-  <p class="ghi"><b>GIỮ:</b> lưu theo lô, em lỗi báo ngay dòng ("Chưa lưu: …", một dòng, đủ chữ ở <code>title</code>), các em khác đã lưu; panel dùng tiếp. Nút chính thành "Lưu · 1 em" để thử lại em lỗi.</p>
+  <p class="ghi"><b>GIỮ:</b> lưu theo lô, em lỗi báo ngay dòng (một dòng, đủ chữ ở <code>title</code>), các em khác đã lưu; panel dùng tiếp. Em lỗi vì vừa có xử lý trên web → dòng chuyển sang khoá "Nhờ QL sửa" (không mời thử lại vô ích). Em vừa lưu: chip về dáng "đang có", Hiện tại "Chưa có ✓"; "1 em chưa lưu ›" cuộn tới dòng đó; chưa đổi gì thì nút Lưu tắt.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K3 · Panel Khai / sửa cấp bậc · GVCN · 1440 tối · đã lưu 26 em, 1 em lỗi</figcaption>
   <div class="toi man" id="m-k3"></div></figure>
 </section>
@@ -513,7 +517,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k5">
   <h2>K5 · Một em (từ hồ sơ HV / việc "Xác nhận cấp bậc vi phạm HV cũ")</h2>
-  <p class="ghi"><b>Thống nhất:</b> cùng hàng chip (cỡ lớn 36 px) + tháng + ghi chú, panel hẹp 480. Mở từ Công việc → đầu panel có chip hạn như mọi việc.</p>
+  <p class="ghi"><b>Thống nhất:</b> cùng hàng chip (cỡ lớn 36 px) + tháng + ghi chú, panel hẹp 480. Mở từ Công việc → hạn ở dòng phụ như mọi việc, chân "Lưu" + "Lưu · việc tiếp ›" (V12).</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K5 · Panel Khai cấp bậc · GVCN · 1440 tối · một em, mở từ Công việc (có hạn)</figcaption>
   <div class="toi man" id="m-k5" style="height:620px"></div></figure>
 </section>
@@ -560,6 +564,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
       <tr><td>Tháng + ghi chú chung</td><td>hàng đầu panel</td><td class="k">Đạt</td></tr>
       <tr><td>Chân lưu nói rõ "Đổi n em"</td><td>K2–K4 chân</td><td class="k">Đạt</td></tr>
       <tr><td>Giữ mọi thao tác cũ</td><td>bảng trên — không dòng nào mất</td><td class="k">Đạt</td></tr>
+      <tr><td>Critique vòng 1 P0 "K3: em vừa lưu vẫn sửa được" — BÁO NHẦM</td><td>Theo mã: GV vẫn sửa bậc em mình vừa khai khi em chưa có xử lý trên web (<code>capBac.duoc = true</code>, seed: Tô Ngọc Hân khai R2 vẫn <code>duoc</code>); chỉ khoá khi có xử lý trên web / em đã khai có xử lý → "chỉ QL sửa". K3 đúng luật.</td><td class="k">Giữ</td></tr>
       <tr><td>[XM] viết tắt R1 / WL1 trên chip</td><td>chữ đủ ở rê + ⓘ; trình đọc màn đọc tên đủ</td><td class="c">Chờ chủ SP nếu muốn chữ đủ (panel phải rộng 880)</td></tr>
     </tbody>
   </table>
@@ -581,9 +586,10 @@ function chips(cu, moi, lon) {
 }
 function hienTai(e, o) {
   const [ten, khai, nhan, nguon] = e;
-  if (o.loi) return '<span class="ht loi">⚠ Chưa lưu: em vừa có xử lý trên web</span>';
+  if (o.loi) return '<span class="ht loi" title="Chưa lưu: em vừa có xử lý trên web — chỉ QL sửa">⚠ Có xử lý trên web</span>';
   const cu = nhan ? '<b>' + nhan.replace(/^R(\d)/, 'R$1') + '</b>' : null;
-  if (o.moi && !(khai || nhan)) return o.daLuu ? '<span class="ht ok">✓ Đã lưu</span>' : '<span class="ht trong">–</span>';
+  if (o.daLuu) return '<span class="ht ok"><b>' + o.moi + '</b> ✓</span>';
+  if (o.moi && !(khai || nhan)) return '<span class="ht trong">–</span>';
   if (o.moi) {
     const ha = khai && BAC.indexOf(o.moi) < BAC.indexOf(khai);
     return '<span class="ht ' + (o.daLuu ? 'ok' : ha ? 'ha' : 'doi') + '">' + (o.daLuu ? '✓ ' : '') + (khai || nhan || '') + (khai || nhan ? ' ' : '') + '→ <b>' + o.moi + '</b>' + (ha && !o.daLuu ? ' ↓' : '') + '</span>';
@@ -593,12 +599,12 @@ function hienTai(e, o) {
 }
 function dong(e, o = {}, ql = false) {
   const [ten, khai, nhan, nguon] = e;
-  const khoa = !ql && (nguon === 'web' || nguon === 'khai');
-  const ly = nguon === 'web' ? 'Nhờ QL sửa' : 'Chỉ QL sửa';
-  return '<div class="dong' + (khoa ? ' khoa' : '') + (o.tick ? ' tick' : '') + (o.loi ? ' co-loi' : '') + '">' +
+  const khoa = !ql && (nguon === 'web' || nguon === 'khai' || o.loi);
+  const ly = nguon === 'web' || o.loi ? 'Nhờ QL sửa' : 'Chỉ QL sửa';
+  return '<div class="dong' + (khoa ? ' khoa' : '') + (o.tick ? ' tick' : '') + '' + '">' +
     (khoa ? '<span></span>' : '<input type="checkbox" class="o-tich" aria-label="Chọn ' + ten + '"' + (o.tick ? ' checked' : '') + '>') +
     '<span class="ten">' + ten + '</span>' + hienTai(e, o) +
-    (khoa ? '<span class="ly-khoa">' + IC_KHOA + ly + '</span>' : chips(khai, o.moi, false)) + '</div>';
+    (khoa ? '<span class="ly-khoa">' + IC_KHOA + ly + '</span>' : chips(o.daLuu ? o.moi : (khai || nhan), o.daLuu ? null : o.moi, false)) + '</div>';
 }
 const dauBang = '<div class="dong dau"><span></span><span>Học viên</span><span>Hiện tại</span><span>Bậc khai</span></div>';
 function hangChung(thang = '09/2026') {
@@ -606,11 +612,11 @@ function hangChung(thang = '09/2026') {
 }
 function congCu(o) {
   if (o.chon) return '<div class="cong-cu chon"><label class="tat-ca"><input type="checkbox" class="o-tich" checked> <span class="dem-c"><span>' + o.chon + '</span> em đã chọn</span></label><span class="dat">Đặt bậc</span>' + chips(null, o.dat, false) + '<button class="link-nho loc-b">Bỏ chọn</button></div>';
-  return '<div class="cong-cu"><label class="tat-ca"><input type="checkbox" class="o-tich"> ' + (o.loc === 'co' ? 'Chọn 7 em đang lọc' : 'Chọn tất cả (' + (o.tong ?? 27) + ')') + '</label>' +
+  return '<div class="cong-cu"><label class="tat-ca"><input type="checkbox" class="o-tich"> ' + (o.loc === 'co' ? 'Chọn 7 em đang lọc' : 'Chọn tất cả') + '</label>' +
     '<span class="doan loc-b" role="group"><button aria-pressed="' + (o.loc === 'tat') + '">Tất cả <span class="so">33</span></button><button aria-pressed="' + (o.loc === 'chua') + '">Chưa khai <span class="so">26</span></button><button aria-pressed="' + (o.loc === 'co') + '">Đã có bậc <span class="so">7</span></button></span></div>';
 }
 function panel(ten, than, chan, dauPhu, hep) {
-  return '<div class="pn-noi' + (hep ? ' hep' : '') + '"><div class="pn"><div class="pn-dau"><div class="pn-h1"><span class="loai">Ý THỨC</span><button class="x" aria-label="Đóng">✕</button></div>' +
+  return '<div class="pn-noi' + (hep ? ' hep' : '') + '"><div class="pn"><div class="pn-dau"><div class="pn-h1"><span class="loai">Ý thức</span><button class="x" aria-label="Đóng">✕</button></div>' +
     '<div class="pn-tieu"><h2>' + ten + '</h2><span class="nut-i" title="Bậc cao nhất em đã bị xử lý trước khi dùng web. R = Report · WL = thư cảnh cáo · R4 = Report 4 + Meeting CX/GĐCN">ⓘ</span></div><div class="pn-ngu">' + (dauPhu?.ngu ?? '<span>MB FT 101</span><span><b class="so">33</b> HV</span>') + (dauPhu?.han ? '<span>' + dauPhu.han + '</span>' : '') + '</div></div>' +
     '<div class="pn-than sat">' + than + '</div><div class="pn-chan">' + chan + '</div></div></div>';
 }
@@ -628,32 +634,32 @@ ve('m-k2', tt.replace('TEN', 'Trần Ngọc Hà') + nen + panel('Khai / sửa c�
     const khoa = e[3] === 'web' || e[3] === 'khai';
     return khoa ? dong(e) : dong(e, { tick: true, moi: k2[e[0]] ?? 'Chưa có' });
   }).join('') + '</div>',
-  '<span class="trai"><span class="chan-dem">Đổi <span class="so">27</span> em</span><span class="phu">25 Chưa có · 1 R1 · 1 R2</span></span><span class="nut nut-ma">Bỏ thay đổi</span><span class="nut nut-chinh">Lưu · 27 em</span>'));
+  '<span class="trai"><span class="chan-dem">Đổi <span class="so">27</span> em</span><span class="phu">25 Chưa có · 1 R1 · 1 R2</span><span class="chan-dem ha">· 1 em hạ bậc</span></span><span class="nut nut-ma">Bỏ thay đổi</span><span class="nut nut-chinh">Lưu</span>'));
 
 /* K3 */
 ve('m-k3', tt.replace('TEN', 'Trần Ngọc Hà') + nen + panel('Khai / sửa cấp bậc vi phạm',
-  '<div class="dai-ok" role="status">✓ Đã lưu 26 em: Chưa có (24) · R1 (1) · R2 (1)<button class="link-nho">Hoàn tác</button><span class="phu">1 em chưa lưu — dòng đỏ</span></div>' +
+  '<div class="dai-ok" role="status">✓ Đã lưu 26 em: 24 Chưa có · 1 R1 · 1 R2<button class="link-nho">Hoàn tác</button><a class="link-nho" href="#" style="color:var(--bad)">1 em chưa lưu ›</a></div>' +
   hangChung() + congCu({ loc: 'tat' }) + '<div class="ds-em">' + dauBang + EM.slice(0, 16).map((e) => {
     const khoa = e[3] === 'web' || e[3] === 'khai';
     if (khoa) return dong(e);
     if (e[0] === 'Hồ Gia Hân') return dong(e, { moi: 'Chưa có', loi: true });
     return dong(e, { moi: k2[e[0]] ?? 'Chưa có', daLuu: true });
   }).join('') + '</div>',
-  '<span class="trai"><span class="chan-dem">Đổi <span class="so">1</span> em</span></span><span class="nut nut-chinh">Lưu · 1 em</span>'));
+  '<span class="trai"><span class="chan-dem phu">Chưa đổi em nào</span></span><span class="nut nut-chinh" aria-disabled="true" style="opacity:.5">Lưu</span>'));
 
 /* K4 — QL, lọc "Đã có bậc" */
 const co = EM.filter((e) => e[3]);
 const k4 = { 'Mạc Tuấn Kiệt': 'R2', 'Nguyễn Minh An': 'WL2' };
 ve('m-k4', tt.replace('TEN', 'Nguyễn Khánh Vy') + nen + panel('Khai / sửa cấp bậc vi phạm',
   hangChung() + congCu({ loc: 'co', tong: 33 }) + '<div class="ds-em">' + dauBang + co.map((e) => dong(e, { moi: k4[e[0]] }, true)).join('') + '</div>',
-  '<span class="trai"><span class="chan-dem">Đổi <span class="so">2</span> em</span><span class="chan-dem ha">· 1 em hạ bậc</span></span><span class="nut nut-ma">Bỏ thay đổi</span><span class="nut nut-chinh">Lưu · 2 em</span>'));
+  '<span class="trai"><span class="chan-dem">Đổi <span class="so">2</span> em</span><span class="chan-dem ha">· 1 em hạ bậc</span></span><span class="nut nut-ma">Bỏ thay đổi</span><span class="nut nut-chinh">Lưu</span>'));
 
 /* K5 — một em */
-const motEm = (lon) => '<div class="mot-em"><div class="truong"><span class="nhan">Bậc cao nhất trước khi dùng web</span>' + chips(null, 'R1', lon) + '<span class="phu-t">Report 1</span></div>' +
+const motEm = (lon) => '<div class="mot-em"><div class="truong"><span class="nhan">Bậc cao nhất trước khi dùng web</span>' + chips(null, 'R1', lon) + '</div>' +
   '<div class="truong"><span class="nhan">Tháng xử lý</span><span class="o-thang" style="justify-self:start"><span>09/2026</span><i>' + IC_LICH + '</i></span></div>' +
   '<div class="truong"><span class="nhan">Ghi chú <span class="phu-t">tuỳ chọn</span></span><textarea class="o" rows="2"></textarea></div></div>';
 ve('m-k5', tt.replace('TEN', 'Trần Ngọc Hà') + nen + panel('Khai cấp bậc · Lê Quang Huy', motEm(true),
-  '<span class="trai"><span class="chan-dem">→ <b style="color:var(--accent)">R1</b></span></span><span class="nut nut-chinh">Lưu</span>',
+  '<span class="trai"><span class="chan-dem">Khai <b style="color:var(--accent)">Report 1</b></span></span><span class="nut">Lưu</span><span class="nut nut-chinh">Lưu · việc tiếp ›</span>',
   { han: '<span class="han nay">hạn hôm nay</span>', ngu: '<span>MB FT 101</span><span>Chưa khai</span>' }, true));
 
 /* K6 — 375 */
@@ -664,9 +670,9 @@ ve('m-k6a', '<div class="pn-toan"><div class="pn"><div class="pn-dau"><div class
     const khoa = e[3] === 'web' || e[3] === 'khai';
     return khoa ? dong(e) : dong(e, k6tick[e[0]] ? { tick: true, moi: 'Chưa có' } : {});
   }).join('') + '</div></div>' +
-  '<div class="pn-chan"><span class="trai"><span class="chan-dem">Đổi <span class="so">3</span> em</span></span><span class="nut nut-chinh">Lưu · 3 em</span></div></div></div>');
-ve('m-k6b', '<div class="pn-toan"><div class="pn"><div class="pn-dau"><div class="pn-h1"><button class="quay">‹ Lê Quang Huy</button><button class="x" aria-label="Đóng">✕</button></div><div class="pn-tieu"><h2>Khai cấp bậc · Lê Quang Huy</h2></div><div class="pn-ngu"><span>MB FT 101</span><span class="han nay">hạn hôm nay</span></div></div>' +
-  '<div class="pn-than sat">' + motEm(false) + '</div><div class="pn-chan"><span class="trai"><span class="chan-dem">→ <b style="color:var(--accent)">R1</b></span></span><span class="nut nut-chinh">Lưu</span></div></div></div>');
+  '<div class="pn-chan"><span class="trai"><span class="chan-dem">Đổi <span class="so">3</span> em</span></span><span class="nut nut-chinh">Lưu</span></div></div></div>');
+ve('m-k6b', '<div class="pn-toan"><div class="pn"><div class="pn-dau"><div class="pn-h1"><button class="quay">‹ Lê Quang Huy</button><button class="x" aria-label="Đóng">✕</button></div><div class="pn-tieu"><h2>Khai cấp bậc</h2></div><div class="pn-ngu"><span>MB FT 101</span><span class="han nay">hạn hôm nay</span></div></div>' +
+  '<div class="pn-than sat">' + motEm(false) + '</div><div class="pn-chan"><span class="trai"><span class="chan-dem">Khai <b style="color:var(--accent)">Report 1</b></span></span><span class="nut">Lưu</span><span class="nut nut-chinh">Lưu · việc tiếp ›</span></div></div></div>');
 </script>
 </body>
 </html>

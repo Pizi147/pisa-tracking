@@ -374,6 +374,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .the-ck { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:clip; display:flex; flex-direction:column; }
 .ck-dau { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:16px 20px 12px; }
 .ck-dau h1 { font-size:22px; font-weight:700; }
+.meta-d { font-size:14px; color:var(--text-dim); } .meta-d b { color:var(--text); font-weight:600; font-family:var(--phong-so); }
 .ck-dau .phai { margin-left:auto; font-size:14px; color:var(--text-dim); white-space:nowrap; } .ck-dau .phai b { color:var(--text); font-family:var(--phong-so); }
 .ck-cc { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:0 20px 12px; }
 .ck-cc .phai { margin-left:auto; display:inline-flex; gap:8px; align-items:center; }
@@ -387,7 +388,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .thanh-ap .nh { font:600 13px var(--phong); color:var(--text-dim); }
 
 /* dải nhóm = bước tiếp gợi ý theo Final (V21: vạch theo nhóm, màu luôn kèm tên) */
-.nh-dai { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; min-height:52px; padding:8px 20px 8px 17px; background:var(--surface-2); border-left:3px solid var(--accent); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.nh-dai { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; min-height:44px; padding:8px 20px 8px 17px; background:var(--surface-2); border-left:3px solid var(--accent); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
 .nh-dai.len { border-left-color:var(--ok); } .nh-dai.lai { border-left-color:var(--bad); } .nh-dai.cn { border-left-color:var(--soon); } .nh-dai.cho { border-left-color:var(--text-faint); }
 .nh-dai .ten-n { font:700 15px var(--phong); white-space:nowrap; } .nh-dai .dem { margin-left:2px; }
 .nh-dai .phu-n { font:500 13px var(--phong); color:var(--text-dim); }
@@ -400,7 +401,8 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .chon-lop.tuan { min-width:96px; font-family:var(--phong-so); }
 
 /* hàng em */
-.hang, .duoi { display:grid; grid-template-columns:28px minmax(0,1.15fr) minmax(0,1fr) 392px minmax(0,0.9fr) 156px; }
+.hang, .duoi { display:grid; grid-template-columns:28px minmax(0,1.15fr) minmax(0,1fr) 392px minmax(0,1fr); }
+.co-tt .hang, .co-tt .duoi { grid-template-columns:28px minmax(0,1.15fr) minmax(0,1fr) 392px minmax(0,0.9fr) 156px; }
 .hang { column-gap:14px; align-items:center; min-height:60px; padding:8px 20px; border-bottom:1px solid var(--line); }
 .hang.dau { min-height:36px; padding-top:0; padding-bottom:0; font:600 12px var(--phong); color:var(--text-faint); background:var(--surface); border-bottom:1px solid var(--line); }
 .hang.tick, .hang.noi { background:var(--accent-soft); }
@@ -467,6 +469,10 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .dt .hang.dau { display:none; }
 .dt .hang .ten .ten-em { white-space:normal; }
 .dt .dai-kq { padding:10px 16px; }
+.kq .nx-gv { font:500 12px var(--phong); color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chon-lop.loi { border-color:var(--bad); border-style:solid; color:var(--text); }
+.lop-o .loi-t { font:600 12px var(--phong); color:var(--bad); }
+.dt .an-dt { display:none; }
 </style>
 </head>
 <body>
@@ -517,7 +523,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k1">
   <h2>K1 · Vừa mở sau Final — em xếp theo bước tiếp gợi ý, mỗi em một dòng</h2>
-  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b> (dải nhóm như Công việc): "Lên BE · 3", "Học lại FOU · 1", "Quản lý cân nhắc · 1", "Chờ Final · 1" — bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>Kết quả</b> (% Final + dải, dòng nhỏ % từng môn, môn &lt; 70 có ✗) → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn → <b>Lớp mới · tuần</b> → <b>Trạng thái</b> (Sẵn sàng / ⚠ Thiếu lớp / ⚠ Chọn bước tiếp).
+  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b> (dải nhóm như Công việc): "Lên BE · 3", "Học lại FOU · 1", "Quản lý cân nhắc · 1", "Chờ Final · 1" — bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>Kết quả</b> (% Final + dải, dòng nhỏ % từng môn, môn &lt; 70 có ✗) → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn → <b>Lớp mới</b>. Còn thiếu gì thấy ngay ở chính ô (ô lớp viền vàng "Chọn lớp…", chưa chip nào sáng = chưa có bước tiếp) và chân đếm một lần — bỏ cột trạng thái "Sẵn sàng" lặp mọi dòng; cột Bàn giao chỉ có sau khi chốt (K3).
   (3) Luật dải (≥ 60 %, 50–59 %…) vào ⓘ của dải. Dải nhóm có sẵn <b>ô Lớp + Tuần cho cả nhóm</b> (chỉ lớp cùng chi nhánh, đúng chương trình; "+ Mở lớp mới…" giữ ở cuối danh sách). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K1 · Cuối khoá MB FOU 21 · QL Nguyễn Khánh Vy · 1440 tối · vừa mở, chưa chọn lớp</figcaption>
   <div class="toi man vung" id="m-k1"></div></figure>
@@ -547,7 +553,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k5">
   <h2>K5 · GVCN — xem bước tiếp QL đã chốt, ghi nhận xét</h2>
-  <p class="ghi"><b>GIỮ luật N22:</b> GVCN không chọn bước tiếp; cột Bước tiếp chỉ chữ (đã chốt / "QL chưa chốt"); ô Nhận xét mỗi em (không bắt buộc) → "Lưu nhận xét · n em". TVV / CX / Admin: như GVCN nhưng không ô nhận xét.</p>
+  <p class="ghi"><b>GIỮ luật N22:</b> GVCN xem cùng nhóm theo gợi ý như QL (biết gợi ý cả khi QL chưa chốt), không chọn bước tiếp; cột Bước tiếp chỉ chữ (đã chốt / "QL chưa chốt"); ô Nhận xét mỗi em (không bắt buộc) → "Lưu nhận xét · n em". TVV / CX / Admin: như GVCN nhưng không ô nhận xét.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K5 · Cuối khoá MB FOU 21 · GVCN Lê Minh Khoa · 1440 tối · QL đã chốt 5 em</figcaption>
   <div class="toi man vung" id="m-k5"></div></figure>
 </section>
@@ -571,6 +577,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
       <tr><td>Chọn nhiều em bất kỳ + áp chung</td><td>ô tick + thanh Áp (Hướng · Lớp · Tuần · Kỳ vọng FT)</td><td>như cũ, Hướng thành chip (K4)</td><td class="k">GIỮ</td></tr>
       <tr><td>Lớp riêng một em · + Mở lớp mới…</td><td>ô gõ tìm trên dòng</td><td>như cũ (ô Lớp của dòng)</td><td class="k">GIỮ</td></tr>
       <tr><td>Tuần bắt đầu · Ngay hôm nay</td><td>thanh Áp: nút "Ngay hôm nay" + ô tuần</td><td>ô Tuần trên dải nhóm / thanh áp; "Ngay hôm nay" là mục đầu danh sách tuần; vẫn hỏi một lần khi chốt</td><td class="k">GIỮ · bớt bấm nhầm</td></tr>
+      <tr><td>+ Ghi chú cho GV lớp mới (không bắt buộc)</td><td>link "+ Ghi chú" dưới ô Hướng</td><td>link "+ Ghi chú" dưới chip → ô mở dưới hàng (K2 Vũ Gia An)</td><td class="k">GIỮ</td></tr>
       <tr><td>Lý do khi khác gợi ý / dừng học</td><td>ô dưới ô Hướng</td><td>mở dưới hàng khi cần</td><td class="k">GIỮ</td></tr>
       <tr><td>Có thể quay lại học · tuần xem lại</td><td>ô tick + ô tuần trong ô Hướng</td><td>mở dưới hàng</td><td class="k">GIỮ</td></tr>
       <tr><td>Target · Kỳ vọng FT (Đạt / Không đạt · nguyên nhân · kỹ năng · phương án)</td><td>khối trong ô Hướng</td><td>mở dưới hàng khi chọn Lên FT</td><td class="k">GIỮ</td></tr>
@@ -580,8 +587,9 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
       <tr><td>Reset bậc vi phạm (N36)</td><td>ô tick ở chân khi có em có bậc</td><td>như cũ</td><td class="k">GIỮ</td></tr>
       <tr><td>Sửa · Huỷ quyết định · Bàn giao · Xét lại</td><td>trên dòng đã chốt</td><td>như cũ (K3)</td><td class="k">GIỮ</td></tr>
       <tr><td>GVCN nhận xét</td><td>cột Nhận xét + "Lưu nhận xét"</td><td>như cũ (K5)</td><td class="k">GIỮ</td></tr>
+      <tr><td>QL đọc nhận xét GVCN khi chốt</td><td>dòng "GVCN: …" dưới cột Gợi ý</td><td>dòng "GVCN: …" dưới Kết quả (K1–K3; đủ chữ ở <code>title</code>)</td><td class="k">GIỮ</td></tr>
       <tr><td>Từng em (từ hồ sơ HV)</td><td>sang trang lớp, em chọn sẵn, cuộn tới</td><td>như cũ, dòng em nền nhấn + vạch trái (K6b)</td><td class="k">GIỮ</td></tr>
-      <tr><td>Cột "Gợi ý", hàng chip "Chọn nhóm", cột Bàn giao trước khi chốt</td><td>có</td><td>bỏ — gộp vào nhóm / chỉ hiện sau chốt (cột Trạng thái)</td><td class="b">BỎ (lặp)</td></tr>
+      <tr><td>Cột "Gợi ý", hàng chip "Chọn nhóm", cột Bàn giao trước khi chốt, viên "Sẵn sàng" mọi dòng</td><td>có</td><td>bỏ — gộp vào nhóm / chỉ hiện sau chốt (cột Trạng thái)</td><td class="b">BỎ (lặp)</td></tr>
     </tbody>
   </table>
   <p class="ghi" style="margin-top:10px"><b>Dòng đọc Turso:</b> không đổi — một <code>GET /classes/:id/transition</code> khi mở; chọn lớp / nhóm làm trên dữ liệu đã nạp; chốt vẫn <code>POST /classes/:id/transition</code> theo lô.</p>
@@ -598,6 +606,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
       <tr><td>Thao tác cả lớp nhanh</td><td>K2: 11 bấm cho 6 em (trước ≈ 22)</td><td class="k">Đạt</td></tr>
       <tr><td>Sửa từng em tại chỗ</td><td>chip + ô lớp trên dòng; mở dưới hàng khi cần (K2); từ hồ sơ HV (K6b)</td><td class="k">Đạt</td></tr>
       <tr><td>Không đổi luật (plan.md 1.6, thi thật là kết thúc, quy chế lớp thường)</td><td>dải Final 70 %, QL chốt, GVCN nhận xét, Kỳ vọng chỉ Lên FT, bổ trợ / Báo PH theo dải — y như mã hiện tại</td><td class="k">Đạt</td></tr>
+      <tr><td>Critique vòng 1 P0 "K2: Đỗ Bảo Linh Lên FT khác gợi ý mà không lý do" — BÁO NHẦM</td><td>Theo mã <code>khacGoiY</code> (<code>shared/domain/chuyenLop</code>, truy vết v6 mục 3): gợi ý "lên" khớp CẢ Lên BE và Lên FT → không bắt lý do. Chip Lên BE viền đứt chỉ là gợi ý lớp kế. Chỉ "Học lại" ↔ "lên", hoặc dừng học, mới cần lý do.</td><td class="k">Giữ</td></tr>
       <tr><td>[XM] nhóm theo gợi ý hay theo bước đang chọn</td><td>theo <b>gợi ý</b> (cố định, dòng không nhảy khi bấm chip); ô Lớp nhóm áp cho mọi em đang chọn đúng bước đó</td><td class="c">Đề xuất — chủ SP xem K2</td></tr>
     </tbody>
   </table>
@@ -620,17 +629,17 @@ function mon(ds, cho) {
   return '<span class="mon">' + ['L', 'R', 'G+V', 'P'].map((k, i) => ds[i] == null ? k + ' —' : (ds[i] < 70 ? '<span class="tr">✗ ' + k + ' ' + ds[i] + '</span>' : k + ' ' + ds[i])).join(' · ') + '</span>';
 }
 const EM = {
-  an:   { ten: 'Vũ Gia An CT', pt: 82, dai: 'Pass', mon: [84, 80, 84, 80], goi: 'Lên BE' },
+  an:   { ten: 'Vũ Gia An CT', pt: 82, dai: 'Pass', mon: [84, 80, 84, 80], goi: 'Lên BE', nx: 'Tiến bộ đều, Speaking tự tin hơn' },
   linh: { ten: 'Đỗ Bảo Linh CT', pt: 74, dai: 'Pass', mon: [76, 72, 76, 72], goi: 'Lên BE' },
-  huy:  { ten: 'Ngô Minh Huy CT', pt: 66, dai: 'Lên BE + bổ trợ', mon: [68, 64, 68, 64], goi: 'Lên BE', bo: '+ bổ trợ 4 buổi · 1 tuần' },
+  huy:  { ten: 'Ngô Minh Huy CT', pt: 66, dai: 'Lên BE + bổ trợ', mon: [68, 64, 68, 64], goi: 'Lên BE', bo: '+ bổ trợ 4 buổi · 1 tuần', nx: 'Cần luyện thêm Reading' },
   vy:   { ten: 'Hoàng Khánh Vy CT', pt: 44, dai: 'Học lại FOU', mon: [48, 44, 44, 40], goi: 'Học lại', ph: true },
   trang:{ ten: 'Bùi Thu Trang CT', pt: 57, dai: 'QL cân nhắc', mon: [60, 56, 56, 56], goi: null, bo: '+ bổ trợ 8 buổi · 2 tuần' },
-  nam:  { ten: 'Phan Quang Nam CT', pt: null, dai: 'Chờ Final · 3/4 môn', mon: [80, 76, 80, null], goi: null },
+  nam:  { ten: 'Phan Quang Nam CT', pt: null, dai: '3/4 môn', mon: [80, 76, 80, null], goi: null },
 };
-function oKq(e) {
+function oKq(e, gv) {
   const d1 = e.pt == null ? '<span class="pt cho">' + e.dai + '</span>'
     : '<span class="pt ' + (e.pt >= 70 ? 'dat' : 'kem') + '">' + (e.pt >= 70 ? '✓ ' : '✗ ') + e.pt + ' %</span>';
-  return '<span class="kq"><span class="d1">' + d1 + '</span>' + mon(e.mon) + '</span>';
+  return '<span class="kq"><span class="d1">' + d1 + '</span>' + mon(e.mon) + (e.nx && !gv ? '<span class="nx-gv" title="GVCN: ' + e.nx + '">GVCN: ' + e.nx + '</span>' : '') + '</span>';
 }
 /* o: chon (chip), lop, theoNhom, tuan, tt, tick, khoa, loi, phu (dòng nhỏ dưới chip), noi */
 function hang(e, o = {}) {
@@ -639,29 +648,31 @@ function hang(e, o = {}) {
   if (o.khoa) buoc = '<span class="buoc"><span class="buoc-chu" style="display:inline-flex;gap:6px;align-items:center;color:var(--text)">' + IC.khoa + o.khoa + '<button class="link-nho" style="margin-left:6px">Sửa</button></span>' + (e.bo && chon === 'Lên BE' ? '<span class="phu-b">' + e.bo + '</span>' : '') + '</span>';
   else {
     const phu = o.phu ?? (chon === 'Lên BE' && e.bo ? e.bo : chon && e.goi && chon !== e.goi ? 'khác gợi ý · cần lý do' : '');
-    buoc = '<span class="buoc">' + chips(e.goi, chon) + (phu ? '<span class="phu-b' + (/khác/.test(phu) ? ' khac' : '') + '">' + phu + '</span>' : '') + '</span>';
+    const gc = chon && !o.duoi ? '<button class="link-nho" style="font-size:12px">+ Ghi chú</button>' : '';
+    buoc = '<span class="buoc">' + chips(e.goi, chon) + (phu || gc ? '<span class="phu-b' + (/khác/.test(phu) ? ' khac' : '') + '" style="display:inline-flex;gap:10px;align-items:center">' + phu + gc + '</span>' : '') + '</span>';
   }
   let lop;
   if (chon === 'Tạm dừng/ Kết thúc học') lop = '<span class="lop-o"><span class="khong">Không chuyển lớp</span></span>';
   else if (!chon) lop = '<span class="lop-o"><span class="khong">—</span></span>';
   else if (o.khoa) lop = '<span class="lop-o"><b style="font-weight:700">' + o.lop + '</b><span class="tuan-t">từ ' + (o.tuan ?? 'W4 SEP') + '</span></span>';
-  else lop = '<span class="lop-o">' + (o.lop ? '<span class="chon-lop nho">' + o.lop + '</span>' : '<span class="chon-lop nho trong">' + (chon === 'Lên FT' ? 'Chọn lớp FT…' : 'Chọn lớp…') + '</span>') +
-    (o.lop && !o.theoNhom ? '<span class="tuan-t">từ ' + (o.tuan ?? 'W4 SEP') + '</span>' : '') + '</span>';
-  const ttO = '<span class="tt-o">' + (o.tt ?? (!chon ? '<span class="tt-c thieu">Chọn bước tiếp</span>' : chon !== 'Tạm dừng/ Kết thúc học' && !o.lop ? '<span class="tt-c thieu">Thiếu lớp</span>' : '<span class="tt-c san">Sẵn sàng</span>')) + '</span>';
-  return '<div class="hang' + (o.tick ? ' tick' : '') + (o.noi ? ' noi' : '') + '"><input type="checkbox" class="o-tich" aria-label="Chọn ' + e.ten + '"' + (o.tick ? ' checked' : '') + (o.khoa ? ' disabled' : '') + '>' +
+  else lop = '<span class="lop-o">' + (o.lop ? '<span class="chon-lop nho' + (o.loiLop ? ' loi' : '') + '">' + o.lop + '</span>' + (o.loiLop ? '<span class="loi-t">⚠ ' + o.loiLop + '</span>' : '') : '<span class="chon-lop nho trong">' + (chon === 'Lên FT' ? 'Chọn lớp FT…' : 'Chọn lớp…') + '</span>') +
+    (o.lop && !o.theoNhom && !o.loiLop ? '<span class="tuan-t">từ ' + (o.tuan ?? 'W4 SEP') + '</span>' : '') + '</span>';
+  const ttO = o.tt ? '<span class="tt-o">' + o.tt + '</span>' : '';
+  return '<div class="hang' + (o.tick ? ' tick' : '') + (o.noi ? ' noi' : '') + '">' + (o.khoa ? '<span></span>' : '<input type="checkbox" class="o-tich" aria-label="Chọn ' + e.ten + '"' + (o.tick ? ' checked' : '') + '>') +
     '<span class="ten"><a class="ten-em" href="#">' + e.ten + '</a>' + (e.ph && !o.khoa ? '<small>Báo PH qua TVV</small>' : '') + '</span>' + oKq(e) + buoc + lop + ttO + '</div>' + (o.duoi ? '<div class="duoi' + (o.tick ? ' tick' : '') + '"><div class="hop">' + o.duoi + '</div></div>' : '');
 }
-const dauCot = '<div class="hang dau"><span></span><span>Học viên</span><span>Kết quả</span><span>Bước tiếp</span><span>Lớp mới</span><span>Trạng thái</span></div>';
-function dai(loai, ten, so, phu, ap) {
-  return '<div class="nh-dai ' + loai + '"><input type="checkbox" class="o-tich" aria-label="Chọn cả nhóm ' + ten + '"><span class="ten-n">' + ten + '</span><span class="dem">' + so + ' em</span>' + (phu ? '<span class="nut-i" style="width:24px;height:24px" title="' + phu + '">ⓘ</span>' : '') +
+const dauCot = '<div class="hang dau"><span></span><span>Học viên</span><span>Kết quả</span><span>Bước tiếp</span><span>Lớp mới</span></div>';
+const dauCotTt = '<div class="hang dau"><span></span><span>Học viên</span><span>Kết quả</span><span>Bước tiếp</span><span>Lớp mới</span><span>Bàn giao</span></div>';
+function dai(loai, ten, so, phu, ap, tick, khongTick) {
+  return '<div class="nh-dai ' + loai + '">' + (khongTick ? '' : '<input type="checkbox" class="o-tich" aria-label="Chọn cả nhóm ' + ten + '"' + (tick ? ' checked' : '') + '>') + '<span class="ten-n">' + ten + '</span><span class="dem">' + so + ' em</span>' + (phu ? '<span class="nut-i" style="width:24px;height:24px" title="' + phu + '">ⓘ</span>' : '') +
     (ap ? '<span class="ap-n"><span class="nh">Lớp cho cả nhóm</span>' + ap + '</span>' : '') + '</div>';
 }
 const apLop = (lop, ma) => (lop ? '<span class="chon-lop">' + lop + '</span>' : '<span class="chon-lop trong">Chọn lớp ' + ma + '…</span>') + '<span class="chon-lop tuan">W4 SEP</span>';
 function dau(o) {
   return '<a class="lui" href="#">‹ ' + (o.lop ?? 'MB FOU 21') + '</a>' +
-    '<div class="ck-dau"><h1>Cuối khoá · ' + (o.lop ?? 'MB FOU 21') + '</h1><span class="tag nhat">FOU</span><span class="tag nhat">' + (o.so ?? 6) + ' HV</span><span class="tag nhat">Final ' + (o.final ?? 'W1 SEP') + '</span><span class="tag nhat">GVCN ' + (o.gvcn ?? 'Lê Minh Khoa') + '</span>' +
+    '<div class="ck-dau"><h1>Cuối khoá · ' + (o.lop ?? 'MB FOU 21') + '</h1><span class="meta-d">FOU · <b>' + (o.so ?? 6) + '</b> HV · Final <b>' + (o.final ?? 'W1 SEP') + '</b><span class="an-dt"> · GVCN ' + (o.gvcn ?? 'Lê Minh Khoa') + '</span></span>' +
     (o.han ?? '<span class="han qua">quá hạn 18 ngày · hạn 27/08</span>') + '<span class="phai"><b>' + (o.daChot ?? 0) + '/' + (o.so ?? 6) + '</b> em đã chốt</span>' +
-    '<span class="loc-d"><span class="nhan-c">Lọc</span><span class="doan" role="group">' + (o.loc ?? '<button aria-pressed="true">Tất cả <span class="so">6</span></button><button aria-pressed="false">Chưa chốt <span class="so">6</span></button>') + '</span></span></div>' +
+    (o.loc ? '<span class="loc-d"><span class="nhan-c">Lọc</span><span class="doan" role="group">' + o.loc + '</span></span>' : '') + '</div>' +
     (o.trai ? '<div class="ck-cc"><span style="font:600 13px var(--phong);color:var(--text-dim)">' + o.trai + '</span></div>' : '');
 }
 function ve(id, html) { document.getElementById(id).innerHTML = html; }
@@ -677,7 +688,7 @@ function trang(id, ten, o, than, chan, thanhAp, dauDai) {
   const d = dau(o);
   const lui = d.match(/^<a[^>]*>.*?<\/a>/)[0];
   ve(id, ten === '375' ? tt375 : tt(ten));
-  document.getElementById(id).insertAdjacentHTML('beforeend', '<div class="noi-dung" style="padding-bottom:20px">' + lui + '<div class="the-ck">' + d.slice(lui.length) + (dauDai ?? '') + (thanhAp ?? '') + (id.startsWith('m-k6') ? '' : dauCot) + than + chan + '</div></div>');
+  document.getElementById(id).insertAdjacentHTML('beforeend', '<div class="noi-dung" style="padding-bottom:20px">' + lui + '<div class="the-ck' + (o.coTt ? ' co-tt' : '') + '">' + d.slice(lui.length) + (dauDai ?? '') + (thanhAp ?? '') + (id.startsWith('m-k6') ? '' : o.coTt ? dauCotTt : dauCot) + than + chan + '</div></div>');
 }
 
 trang('m-k1', 'Nguyễn Khánh Vy', {}, thanK1, chanK1);
@@ -686,30 +697,30 @@ trang('m-k1', 'Nguyễn Khánh Vy', {}, thanK1, chanK1);
 const lyDoDung = '<label><input type="checkbox" class="o-tich" checked> Có thể quay lại học</label><label>Xem lại <span class="chon-lop tuan nho" style="min-width:96px">W2 NOV</span></label><label class="dai-o">Lý do <input class="o" value="Gia đình chuyển công tác 2 tháng"></label>';
 const ft = '<label>Target <input class="o so" style="width:64px" value="5.0"></label><span class="kv">Kỳ vọng IELTS &gt; 3.5 <span>· chờ MT0</span></span>';
 trang('m-k2', 'Nguyễn Khánh Vy', {},
-  dai('len', 'Lên BE', 3, 'Final ≥ 60 %', apLop('MB BE 05', 'BE')) + hang(EM.an, { lop: 'MB BE 05', theoNhom: true }) +
+  dai('len', 'Lên BE', 3, 'Final ≥ 60 %', apLop('MB BE 05', 'BE')) + hang(EM.an, { lop: 'MB BE 05', theoNhom: true, duoi: '<label class="dai-o">Ghi chú cho GV lớp mới <input class="o" value="Cần ôn Speaking Part 2"></label>' }) +
   hang(EM.linh, { chon: 'Lên FT', lop: 'MB FT 105', phu: '', duoi: ft }) + hang(EM.huy, { lop: 'MB BE 05', theoNhom: true }) +
   dai('lai', 'Học lại FOU', 1, 'Final < 50 % · Báo PH qua TVV', apLop('MB FOU 16', 'FOU')) + hang(EM.vy, { lop: 'MB FOU 16', theoNhom: true }) +
   dai('cn', 'Quản lý cân nhắc', 1, 'Final 50–59 %: học lại FOU hoặc lên BE + bổ trợ', '') + hang(EM.trang, { chon: 'Lên BE', lop: 'MB BE 05', theoNhom: true }) +
-  dai('cho', 'Chờ Final', 1, 'chốt trước được', '') + hang(EM.nam, { chon: 'Tạm dừng/ Kết thúc học', phu: 'cần lý do', duoi: lyDoDung }),
+  dai('cho', 'Chờ Final', 1, 'chốt trước được', '') + hang(EM.nam, { chon: 'Tạm dừng/ Kết thúc học', phu: '', duoi: lyDoDung }),
   '<div class="ck-chan"><span class="tom"><b>Khi chốt 6 em: 3 → MB BE 05 · 1 → MB FT 105 · 1 → MB FOU 16 · 1 tạm dừng · từ W4 SEP</b><span class="phu">Tạo 2 Case bổ trợ Final · 1 việc Báo PH qua TVV</span></span><label class="reset"><input type="checkbox" class="o-tich"> Reset bậc vi phạm <span class="mo2">(1 em có bậc)</span></label><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 6 em</span></div>');
 
 /* K3 */
-trang('m-k3', 'Nguyễn Khánh Vy', { daChot: 5, han: '', loc: '<button aria-pressed="true">Tất cả <span class="so">6</span></button><button aria-pressed="false">Chưa chốt <span class="so">1</span></button><button aria-pressed="false">Lỗi <span class="so">1</span></button><button aria-pressed="false">Còn bàn giao <span class="so">4</span></button>' },
-  dai('len', 'Lên BE', 3, 'Final ≥ 60 %', '') +
+trang('m-k3', 'Nguyễn Khánh Vy', { daChot: 5, han: '', coTt: true, loc: '<button aria-pressed="true">Tất cả <span class="so">6</span></button><button aria-pressed="false">Chưa chốt <span class="so">1</span></button><button aria-pressed="false">Lỗi <span class="so">1</span></button><button aria-pressed="false">Còn bàn giao <span class="so">4</span></button>' },
+  dai('len', 'Lên BE', 3, 'Final ≥ 60 %', '', false, true) +
   hang(EM.an, { khoa: 'Lên BE', lop: 'MB BE 05', tt: '<span class="tt-c chot">Chờ bàn giao</span><span class="phu-t">hạn 18/09</span>' }) +
-  hang(EM.linh, { chon: 'Lên FT', lop: 'MB FT 105', phu: '', tt: '<span class="tt-c loi">Chưa lưu</span><span class="phu-t" style="color:var(--bad)">Lớp đã đủ sĩ số</span>' }) +
+  hang(EM.linh, { chon: 'Lên FT', lop: 'MB FT 105', loiLop: 'Lớp đã đủ sĩ số', phu: '', tt: '<span class="tt-c loi">Chưa chốt</span>' }) +
   hang(EM.huy, { khoa: 'Lên BE', lop: 'MB BE 05', tt: '<span class="tt-c chot">Chờ bàn giao</span><span class="phu-t">hạn 18/09</span>' }) +
-  dai('lai', 'Học lại FOU', 1, 'Final < 50 %', '') + hang(EM.vy, { khoa: 'Học lại', lop: 'MB FOU 16', tt: '<span class="tt-c chot">Chờ bàn giao</span><span class="phu-t">hạn 18/09</span>' }) +
-  dai('cn', 'Quản lý cân nhắc', 1, '', '') + hang(EM.trang, { khoa: 'Lên BE', lop: 'MB BE 05', bo: true, tt: '<span class="tt-c chot">Chờ bàn giao</span><span class="phu-t">hạn 18/09</span>' }) +
-  dai('cho', 'Chờ Final', 1, '', '') + hang(EM.nam, { khoa: 'Tạm dừng/ Kết thúc học', tt: '<span class="tt-c chot">Đã chốt</span><span class="phu-t">xem lại W2 NOV</span>' }),
-  '<div class="ck-chan"><span class="tom"><b>Khi chốt 1 em: Đỗ Bảo Linh → MB FT 105</b><span class="phu"><span class="soon">MB FT 105 đủ sĩ số — chọn lớp khác để chốt lại</span></span></span><span class="nut nut-chinh" aria-disabled="true" style="opacity:.5">Chốt · 1 em</span></div>', '',
-  '<div class="dai-kq" role="status"><span class="ok">✓ Đã chốt 5 em</span><span class="loi">⚠ 1 em chưa lưu</span><span class="phai"><span class="nut nut-nho">Đóng</span></span></div>');
+  dai('lai', 'Học lại FOU', 1, 'Final < 50 %', '', false, true) + hang(EM.vy, { khoa: 'Học lại', lop: 'MB FOU 16', tt: '<span class="tt-c chot">Chờ bàn giao</span><span class="phu-t">hạn 18/09</span>' }) +
+  dai('cn', 'Quản lý cân nhắc', 1, '', '', false, true) + hang(EM.trang, { khoa: 'Lên BE', lop: 'MB BE 05', bo: true, tt: '<span class="tt-c chot">Chờ bàn giao</span><span class="phu-t">hạn 18/09</span>' }) +
+  dai('cho', 'Chờ Final', 1, '', '', false, true) + hang(EM.nam, { khoa: 'Tạm dừng/ Kết thúc học', tt: '<span class="tt-c chot">Đã chốt</span><span class="phu-t">xem lại W2 NOV</span>' }),
+  '<div class="ck-chan"><span class="tom"><b>Khi chốt 1 em: Đỗ Bảo Linh</b></span><span class="nut nut-chinh" aria-disabled="true" style="opacity:.5">Chốt · 1 em</span></div>', '',
+  '<div class="dai-kq" role="status"><span class="ok">✓ Đã chốt 5 em</span><span class="loi">⚠ 1 em chưa chốt</span><span class="phai"><button class="x" aria-label="Ẩn thông báo">✕</button></span></div>');
 
 /* K4 — MB FOU 15 trước Final */
 const E15 = [['Bùi Minh Châu', 'Progress 07/09 · 3/4 môn đạt', 'R'], ['Cao Thị Hằng', 'Progress 07/09 · 4/4 môn đạt', ''], ['Đinh Gia Huy', 'Progress 07/09 · 2/4 môn đạt', 'L, P'], ['Lê Bảo Ngọc', 'Progress 07/09 · 4/4 môn đạt', ''], ['Phạm Minh Tú', 'Progress 07/09 · 3/4 môn đạt', 'W'], ['Trần An Khang', 'Progress 07/09 · 4/4 môn đạt', '']];
 const h15 = E15.map(([ten, p, k]) => '<div class="hang tick"><input type="checkbox" class="o-tich" checked aria-label="Chọn ' + ten + '"><span class="ten"><a class="ten-em" href="#">' + ten + '</a></span>' +
-  '<span class="kq"><span class="d1"><span class="pt cho">Chờ Final · 0/4 môn</span></span><span class="mon">' + p + (k ? ' · <span class="tr">✗ ' + k + '</span>' : '') + '</span></span>' +
-  '<span class="buoc">' + chips(null, 'Lên BE') + '</span><span class="lop-o"><span class="chon-lop nho">MB BE 09</span><span class="tuan-t">từ W3 OCT</span></span><span class="tt-o"><span class="tt-c san">Sẵn sàng</span></span></div>').join('');
+  '<span class="kq"><span class="d1"><span class="pt cho">0/4 môn</span></span><span class="mon">' + p + (k ? ' · <span class="tr">✗ ' + k + '</span>' : '') + '</span></span>' +
+  '<span class="buoc">' + chips(null, 'Lên BE') + '</span><span class="lop-o"><span class="chon-lop nho">MB BE 09</span></span></div>').join('');
 trang('m-k4', 'Nguyễn Khánh Vy', { lop: 'MB FOU 15', final: 'W2 OCT', gvcn: 'Trần Ngọc Hà', han: '<span class="han xa">hạn 08/10</span>', loc: '<button aria-pressed="true">Tất cả <span class="so">6</span></button><button aria-pressed="false">Chưa chốt <span class="so">6</span></button>' },
   dai('cho', 'Chờ Final', 6, 'chốt trước được', '', true) + h15,
   '<div class="ck-chan"><span class="tom"><b>Khi chốt 6 em: 6 → MB BE 09 · từ W3 OCT</b><span class="phu">Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final</span></span><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 6 em</span></div>',
@@ -717,24 +728,26 @@ trang('m-k4', 'Nguyễn Khánh Vy', { lop: 'MB FOU 15', final: 'W2 OCT', gvcn: '
 
 /* K5 — GVCN */
 const gvDau = '<div class="hang gv dau"><span>Học viên</span><span>Kết quả</span><span>Bước tiếp · QL chốt</span><span>Nhận xét</span></div>';
-const gvH = (e, buoc, nx) => '<div class="hang gv"><span class="ten"><a class="ten-em" href="#">' + e.ten + '</a></span>' + oKq(e) + '<span class="buoc-chu' + (buoc ? '' : ' trong') + '">' + (buoc || 'QL chưa chốt') + '</span><input class="o" placeholder="Nhận xét (không bắt buộc)" value="' + (nx ?? '') + '"></div>';
+const gvH = (e, buoc, nx) => '<div class="hang gv"><span class="ten"><a class="ten-em" href="#">' + e.ten + '</a></span>' + oKq(e, true) + '<span class="buoc-chu' + (buoc ? '' : ' trong') + '">' + (buoc || 'QL chưa chốt') + '</span><input class="o" placeholder="Nhận xét (không bắt buộc)" value="' + (nx ?? '') + '"></div>';
 ve('m-k5', tt('Lê Minh Khoa'));
 document.getElementById('m-k5').insertAdjacentHTML('beforeend', '<div class="noi-dung" style="padding-bottom:20px"><a class="lui" href="#">‹ MB FOU 21</a><div class="the-ck">' +
   dau({ daChot: 5, han: '', loc: '<button aria-pressed="true">Tất cả <span class="so">6</span></button><button aria-pressed="false">Chưa chốt <span class="so">1</span></button>' }).replace(/^<a[^>]*>.*?<\/a>/, '') + gvDau +
-  gvH(EM.an, 'Lên BE → MB BE 05', 'Tiến bộ đều, Speaking tự tin hơn') + gvH(EM.linh, '') + gvH(EM.huy, 'Lên BE → MB BE 05 · bổ trợ 4 buổi', 'Cần luyện thêm Reading') +
-  gvH(EM.vy, 'Học lại → MB FOU 16') + gvH(EM.trang, 'Lên BE → MB BE 05 · bổ trợ 8 buổi') + gvH(EM.nam, 'Tạm dừng/ Kết thúc học') +
+  dai('len', 'Lên BE', 3, 'Final ≥ 60 %', '', false, true) + gvH(EM.an, 'Lên BE → MB BE 05', 'Tiến bộ đều, Speaking tự tin hơn') + gvH(EM.linh, '') + gvH(EM.huy, 'Lên BE → MB BE 05 · bổ trợ 4 buổi', 'Cần luyện thêm Reading') +
+  dai('lai', 'Học lại FOU', 1, 'Final < 50 %', '', false, true) + gvH(EM.vy, 'Học lại → MB FOU 16') +
+  dai('cn', 'Quản lý cân nhắc', 1, 'Final 50–59 %', '', false, true) + gvH(EM.trang, 'Lên BE → MB BE 05 · bổ trợ 8 buổi') +
+  dai('cho', 'Chờ Final', 1, 'chốt trước được', '', false, true) + gvH(EM.nam, 'Tạm dừng/ Kết thúc học') +
   '<div class="ck-chan"><span class="tom"><b>2 nhận xét đã sửa</b></span><span class="nut nut-chinh">Lưu nhận xét · 2 em</span></div></div></div>');
 
 /* K6 — 375 */
 const dau375 = { trai: '' };
 trang('m-k6a', '375', dau375,
-  dai('len', 'Lên BE', 3, '', apLop('MB BE 05', 'BE')) + hang(EM.an, { lop: 'MB BE 05', theoNhom: true }) + hang(EM.linh, { lop: 'MB BE 05', theoNhom: true }) +
+  dai('len', 'Lên BE', 3, '', apLop('MB BE 05', 'BE')) + hang(EM.an, { lop: 'MB BE 05', theoNhom: true }) + hang(EM.linh, { lop: 'MB BE 05', theoNhom: true }) + hang(EM.huy, { lop: 'MB BE 05', theoNhom: true }) +
   dai('lai', 'Học lại FOU', 1, '', apLop(null, 'FOU')) + hang(EM.vy),
-  '<div class="ck-chan"><span class="tom"><b>Khi chốt 2 em: 2 → MB BE 05</b><span class="phu"><span class="soon">2 em thiếu lớp · 1 em chưa có bước tiếp</span></span></span><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 2 em</span></div>');
+  '<div class="ck-chan"><span class="tom"><b>Khi chốt 3 em: 3 → MB BE 05</b><span class="phu"><span class="soon">1 em thiếu lớp · 2 em chưa có bước tiếp</span></span></span><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 3 em</span></div>');
 trang('m-k6b', '375', dau375,
   dai('cn', 'Quản lý cân nhắc', 1, '', '') + hang(EM.trang, { chon: 'Lên BE', lop: 'MB BE 05', theoNhom: false, tick: true, noi: true }) +
   dai('cho', 'Chờ Final', 1, '', '') + hang(EM.nam),
-  '<div class="ck-chan"><span class="tom"><b>Khi chốt 1 em: Bùi Thu Trang → MB BE 05 · từ W4 SEP</b><span class="phu">Tạo 1 Case bổ trợ Final</span></span><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 1 em</span></div>');
+  '<div class="ck-chan"><span class="tom"><b>Chốt 1 em → MB BE 05 · W4 SEP</b><span class="phu">Tạo 1 Case bổ trợ Final</span></span><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 1 em</span></div>');
 </script>
 </body>
 </html>
