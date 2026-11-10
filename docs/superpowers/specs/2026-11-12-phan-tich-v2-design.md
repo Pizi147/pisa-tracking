@@ -22,7 +22,7 @@ Mỗi chặng một báo cáo, thầy cô một báo cáo:
 |---|---|---|
 | **Chi nhánh** | Các em có theo kịp bài không? | Học viên đang học · Đạt kỳ vọng Test · Tiến bộ · (lớp thường) Cuối khoá |
 | **SOS** | Em bị tụt có được giúp không? | SOS 1 · 2 · 3 · Thiếu điểm · SOS theo kỹ năng · Xử lý (Case, PA) · PA nào hiệu quả |
-| **Thi thật** | Đi thi có đạt Target không? | Em thi · Vượt / Đạt / Chưa đạt · Không thi · Chưa có KQ · KCK · Theo kỹ năng · Theo GV |
+| **Thi thật** | Đi thi có đạt Target không? | Đạt Target · Tổng thể · Vượt / Đạt / Chưa đạt · Không thi · Chưa có KQ · Theo kỹ năng · Theo GV |
 | **Giáo viên** | Thầy cô làm việc có đúng hạn, học trò có theo kịp không? | Chấm Test và Việc: Đúng hạn · Làm muộn · Chưa làm · Đạt kỳ vọng Test của học trò GV |
 
 Thêm **Ý thức** (giữ nguyên). Tab Phân tích: **Chi nhánh · SOS · Thi thật · Giáo viên · Ý thức** (6 → 5).
@@ -37,7 +37,7 @@ Thêm **Ý thức** (giữ nguyên). Tab Phân tích: **Chi nhánh · SOS · Thi
 ### 2.1b Bấm một lần (chủ SP 12/11)
 "Khi bấm gì dó thì có thể làm gọn hơn là bấm 1 lần thôi thì ra box thông tin/ panel thông tin liên quan và nhanh chóng luôn hạn chế bấm nhiều lần đi".
 - Mọi số, mọi đoạn thanh, mọi ô: **bấm một lần là mở panel / hộp thông tin đúng tập**. Không có thông tin chỉ hiện khi rê chuột, không có bước trung gian kiểu "bấm để xem chi tiết rồi bấm tiếp".
-- Panel mở nhanh: một lần tải, đọc đúng tập của ô (không đọc lại cả báo cáo). Đầu panel tóm tắt luôn phần chia nhỏ (vd nhóm Ngoài cam kết: KCK n · WL 2 m), không phải bấm thêm.
+- Panel mở nhanh: một lần tải, đọc đúng tập của ô (không đọc lại cả báo cáo). Đầu panel tóm tắt luôn phần chia nhỏ (vd panel "Chưa đạt": chia theo lớp n · m), không phải bấm thêm.
 
 ### 2.2 Một khuôn cho mọi báo cáo
 1. Hàng lọc chung như bây giờ (Fast Track / Lớp thường · khoảng tuần · lớp). Nút Xuất Excel ở cuối hàng (Excel định dạng mới làm sau, mục 7).
@@ -89,7 +89,7 @@ Thêm **Ý thức** (giữ nguyên). Tab Phân tích: **Chi nhánh · SOS · Thi
 - Nghĩa là số Không thi hiện chưa thật vì chưa ai đánh. Các em không thi đang nằm lẫn trong "chưa có KQ".
 
 ### 5.2 Số chính (chủ SP 12/11, ba lần: KCK gồm WL 2 · cần tỉ lệ đạt tổng thể · "KCK không cần quan tâm quá nhiều, cho vào danh sách tổng hợp điểm thi/ danh sách thi là được" · đổi chữ "có cam kết", "mọi em có target")
-- **KCK** trong báo cáo này = em không cam kết Target **và em đã nhận WL 2** (bậc `wl_2` thang Ý thức, cùng lộ trình, trước ngày thi). Chỉ gom trong báo cáo; web KHÔNG tự chuyển em sang KCK (luật không đổi).
+- **KCK** trong báo cáo này = em không cam kết Target **hoặc em đã nhận WL 2** (bậc `wl_2` thang Ý thức, cùng lộ trình, trước ngày thi). Chỉ gom trong báo cáo; web KHÔNG tự chuyển em sang KCK (luật không đổi).
 - Một khối "Kết quả thi thật", hai số %, một thanh:
   - **Đạt Target** (số to) — Vượt + Đạt trên số em thi có KQ, **trừ KCK**. Dòng nhỏ: "18/25 em · trừ KCK".
   - **Tổng thể** (cạnh đó, nhỏ hơn) — cùng cách tính nhưng **gồm cả KCK**. Dòng nhỏ: "20/31 em · gồm KCK".
