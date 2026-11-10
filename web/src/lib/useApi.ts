@@ -22,7 +22,8 @@ const DA_XEM_TOI_DA = 60;
  */
 const MOI_MS = 10_000;
 /** Gần như tĩnh — giữ tới khi `invalidate` (đổi tài khoản / ghi trúng tiền tố), không tải lại mỗi lần gắn (PR-TD2-c). */
-const TINH = new Set(['/ref/branches', '/ref/periods']);
+/* GIAM-COMPUTE: + bảng quy đổi band — hộp nhập điểm L / R đọc ở MỖI lần mở (20 ô = 20 GET); Quản trị lưu bảng thì `invalidate('/ref/bang-quy-doi')`. */
+const TINH = new Set(['/ref/branches', '/ref/periods', '/ref/bang-quy-doi']);
 onInvalidate((prefix) => {
   for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
   for (const k of [...daXem.keys()]) if (prefix === null || k.startsWith(prefix)) daXem.delete(k);
@@ -42,12 +43,47 @@ export function ngheBanMoi(path: string, f: (d: unknown) => void): () => void {
   ngheBan.set(path, ds.add(f));
   return () => { ds.delete(f); if (!ds.size && ngheBan.get(path) === ds) ngheBan.delete(path); };
 }
+/**
+ * GIAM-COMPUTE (badge `/my-work`, chủ SP duyệt 11/11 #1320): `cu()` đánh dấu bản đang hiện đã cũ → `taiLai` MỘT lần khi `doiTrang()`, hoặc khi bản đã
+ * ≥ `choMs` (tính từ `coBan()` gần nhất) VÀ tab đang hiện (tab ẩn → chờ tới lúc hiện). `coBan()`: bản mới đã về → hết cũ, bỏ hẹn. `ngay()`: tải lại ngay.
+ */
+export function henTaiLaiKhiCu(taiLai: () => void, choMs = 60_000) {
+  let cu = false;
+  let luc = Date.now();
+  let hen: ReturnType<typeof setTimeout> | null = null;
+  let choHien = false;
+  /* Qua `globalThis`: tệp này còn được dựng cho phép kiểm máy chủ (không có kiểu DOM, không có `document`). */
+  type Doc = { hidden: boolean; addEventListener(k: string, f: () => void): void; removeEventListener(k: string, f: () => void): void };
+  const doc = () => (globalThis as { document?: Doc }).document;
+  const an = () => !!doc()?.hidden;
+  const khiHien = () => { if (!an()) { boChoHien(); if (cu) chay(); } };
+  const boChoHien = () => { if (choHien) { doc()?.removeEventListener('visibilitychange', khiHien); choHien = false; } };
+  const bo = () => { if (hen) { clearTimeout(hen); hen = null; } boChoHien(); };
+  const chay = () => { cu = false; bo(); taiLai(); };
+  const toiHen = () => {
+    hen = null;
+    if (!cu) return;
+    if (!an()) { chay(); return; }
+    if (!choHien) { choHien = true; doc()?.addEventListener('visibilitychange', khiHien); }
+  };
+  return {
+    cu() { cu = true; if (!hen && !choHien) hen = setTimeout(toiHen, Math.max(0, luc + choMs - Date.now())); },
+    doiTrang() { if (cu) chay(); },
+    coBan() { cu = false; luc = Date.now(); bo(); },
+    ngay: chay,
+    huy: bo,
+  };
+}
+
+/** GIAM-COMPUTE: lúc lời gọi mạng ĐANG BAY của mỗi đường bắt đầu (0 = bản nhớ `cachedGet`, không rõ lúc) — hook dùng chung lời gọi lấy đúng lúc này. */
+const batDauGoi = new Map<string, number>();
 function getChung<T>(path: string): Promise<T> {
   const cu = dangBay.get(path) as Promise<T> | undefined;
   if (cu) return cu;
   const p = TINH.has(path) ? cachedGet<T>(path) : api.get<T>(path);
   dangBay.set(path, p);
-  const bo = () => { if (dangBay.get(path) === p) dangBay.delete(path); };
+  batDauGoi.set(path, TINH.has(path) ? 0 : Date.now());
+  const bo = () => { if (dangBay.get(path) === p) { dangBay.delete(path); batDauGoi.delete(path); } };
   p.then(bo, bo);
   return p;
 }
@@ -107,6 +143,8 @@ type Ref<V> = { current: V };
 /** Thân effect tải của `useApi` — tách ra để phép kiểm gọi không cần React (OV-14a F06, F09). */
 export function batDauTai<T>(path: string | null, b: {
   latest: Ref<number>; currentPath: Ref<string | null>; coDuLieu: Ref<boolean>;
+  /** GIAM-COMPUTE: lúc BẮT ĐẦU lời gọi đã cho dữ liệu đang hiện (0 = chưa có / bản lưu không rõ lúc) — vô hiệu gộp cũ hơn thì khỏi tải lại. */
+  banTu?: Ref<number>;
   setData: (d: T | null) => void; setFetching: (v: boolean) => void; setError: (e: ApiError | null) => void; reload: () => void;
   /** HV-LOC: đổi truy vấn mà chưa có bản vừa xem → giữ dữ liệu cũ tới khi bản mới về (`setCu(true)` trong lúc đó), không về null. */
   giuCu?: boolean; setCu?: (v: boolean) => void;
@@ -123,6 +161,7 @@ export function batDauTai<T>(path: string | null, b: {
   // Đổi sang truy vấn khác thì mới bỏ dữ liệu cũ đi.
   if (currentPath.current !== path) {
     xaGop(path);   // W1: còn vô hiệu đang gộp cho đường này → xả trước, không dùng bản lưu cũ
+    if (b.banTu) b.banTu.current = 0;   // dữ liệu sắp hiện là bản lưu / null — không rõ lúc tải
     const banXem = daXem.get(path)?.d as T | undefined;
     /* HV-LOC: trang lọc / tìm theo truy vấn — gỡ dữ liệu làm trang cha hiện khung chờ, gỡ luôn ô đang gõ (mất focus, hỏng bộ gõ). */
     if (banXem === undefined && b.giuCu && coDuLieu.current) b.setCu?.(true);
@@ -134,12 +173,15 @@ export function batDauTai<T>(path: string | null, b: {
   const seq = ++latest.current;
   b.setFetching(true);
   b.setError(null);
-  taiVaNho<T>(path)
+  const tai = taiVaNho<T>(path);
+  const batDauLuc = batDauGoi.get(path) ?? 0;   // lời gọi mạng thật (có thể của khối khác, bắt đầu trước lần ghi)
+  tai
     .then((kq) => {
       if (seq !== latest.current) return;   // bỏ qua phản hồi cũ
       if (!kq) { b.setFetching(false); return; }   // bị xoá giữa chừng: giữ dữ liệu đang có (invalidate tự tải lại)
       loiNen.delete(reload);
       b.setData(kq.d);
+      if (b.banTu) b.banTu.current = batDauLuc;
       b.setCu?.(false);
       b.setFetching(false);
     })
@@ -155,6 +197,17 @@ export function batDauTai<T>(path: string | null, b: {
         ngheLoi.forEach((f) => f());
       }
     });
+}
+
+/**
+ * Hook đường `path` có phải tải lại khi vô hiệu `prefix` không. GIAM-COMPUTE: vô hiệu GỘP (`luc` = lần ghi cuối) mà bản đang hiện đã tải XONG từ lời gọi
+ * bắt đầu từ lần ghi đó trở đi (`banTu` — lưới tự tải lại ngay sau khi lưu) → bản đó đã gồm lần ghi, tải lại chỉ ra đúng dữ liệu này. Đang bay thì `banTu` còn
+ * là bản trước → vẫn tải lại (lời gọi đang bay bị vô hiệu bỏ).
+ */
+export function canTaiLaiKhiVoHieu(path: string | null, prefix: string | null, luc: number | undefined, banTu: number): boolean {
+  if (prefix === null) return true;
+  if (!path?.startsWith(prefix)) return false;
+  return !(luc !== undefined && banTu >= luc);
 }
 
 export type ApiState<T> = {
@@ -192,6 +245,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
   const [cu, setCu] = useState(false);
   const [tick, setTick] = useState(0);
   const latest = useRef(0);
+  const banTu = useRef(0);
   const currentPath = useRef<string | null>(null);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
@@ -200,8 +254,8 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
   useEffect(() => () => { loiNen.delete(reload); }, [reload]);
 
   useEffect(
-    () => opts.chiNghe ? undefined : onInvalidate((prefix) => {
-      if (prefix === null || (path && path.startsWith(prefix))) reload();
+    () => opts.chiNghe ? undefined : onInvalidate((prefix, luc) => {
+      if (canTaiLaiKhiVoHieu(path, prefix, luc, banTu.current)) reload();
     }),
     [reload, path, opts.chiNghe],
   );
@@ -211,7 +265,7 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
   }, [path, opts.chiNghe]);
 
   useEffect(() => {
-    batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload, giuCu: opts.giuCu, setCu });
+    batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload, giuCu: opts.giuCu, setCu, banTu });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, tick, ...deps]);
 
