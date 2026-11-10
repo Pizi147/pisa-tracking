@@ -288,6 +288,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 — #1337 (duyệt ảnh, rồi):** "Ơ nhưng mà dấu tick đâu? và không cần chữ Chờ FInal trên đầu nữa trời ơi không thêm nếm gì nữa, không cần mockup nữa làm luôn di" → PR nối tiếp: ô tick + Chọn tất cả ở mọi vai (GVCN thiếu), bỏ dải "Chờ Final" đầu bảng.
 
+**Chủ SP 11/11 tối:** "tiếp tục tất cả những gì đang dở, tự rà, tự merge và tự archive những cái đã xong" → PTA tự chốt theo khuyến nghị: SOS-TAM-PA Q1–Q8 (theo thiết kế `docs/superpowers/specs/2026-11-11-sos-tam-pa-design.md`) · #1350 LOP-CU merge (bản chép: +55 bài Công việc cho 3 GV; CP FOU 23 22 bài cũ: QL đánh "Không dự thi" nếu không cần — không thêm luật) · duyệt mockup #6 #1346 · merge #1348 #1349 #1351.
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
