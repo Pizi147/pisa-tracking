@@ -8,7 +8,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { BoiCanh, CanLam, DongTiep, NutVaTiep, TrangThaiLuu, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import {
+import { CHU_TOI_THIEU_CASE,
   CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, moiKhoaGui, loiFormPa, paMoi, paPayload, type GiaTriPa, } from '@shared/domain/index.ts';
@@ -164,8 +164,10 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
  * HOÀN THÀNH CASE — MỘT NÚT, MỘT PANEL (mục 9.3). Sau cả đợt, em tiến bộ đến đâu (bốn mức, bấm một cái) · kết luận (BẮT BUỘC —
  * ba tháng sau chính người viết cũng cần đọc lại) · ngày hoàn thành. Điểm chi tiết theo kỹ năng: tuỳ chọn, đúng kỹ năng của Case.
  */
-export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paGanNhat, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
+export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paGanNhat, ketLuanSan, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
   caseId: number; category: string | null; categoryLabel: string | null; ratio: boolean;
+  /** #3 (G2-07): Nhận xét của Kết quả PA gần nhất — điền sẵn ô kết luận (sửa được), không gõ lại cùng một ý. */
+  ketLuanSan?: string | null;
   /** C6: kết quả cuối của PA gần nhất — gợi ý khi chọn mức. */
   paGanNhat?: string | null;
 }) {
@@ -173,7 +175,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
   const { homNay } = useNgayNghiepVu();
   /* OV-11d (HV-22, thay K3-19): điền sẵn theo Kết quả của PA gần nhất (cùng thang chữ) — đổi một bấm; PA "Chưa đủ dữ liệu" / chưa có thì để trống. */
   const [outcome, setOutcome] = useState<string>(() => CASE_OUTCOMES.find((o) => CASE_OUTCOME_LABEL[o] === paGanNhat) ?? '');
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(ketLuanSan ?? '');
   const [closedOn, setClosedOn] = useState(homNay);
   const [metrics, setMetrics] = useState<Record<string, { score: string; total: string }>>({});
   const lf = useLoiForm();
@@ -182,7 +184,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
   const counts = componentsAreCounts(category);
   const loi = dsLoi([
     { khoa: 'muc', nhan: t('Em tiến bộ đến đâu'), chon: true },
-    { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: 10 },
+    { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: CHU_TOI_THIEU_CASE },   // #4 ngưỡng chung
   ], { muc: outcome, 'vi-sao': note });
   const thieu = loi.map((l) => l.nhan);
 
@@ -223,7 +225,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
           </div>
         </Truong>
         <Truong nhan={t('Vì sao kết luận vậy')} batBuoc
-          loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: 10 }}>
+          loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: CHU_TOI_THIEU_CASE }}>
           {/* AUDIT-UI C6: câu hướng dẫn chuyển vào `title` của ô (ví dụ vẫn ở placeholder). */}
           <textarea className="field w-full" title={t('Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây')} {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder={t('Ví dụ: MT3 Listening lên 6.0')} />

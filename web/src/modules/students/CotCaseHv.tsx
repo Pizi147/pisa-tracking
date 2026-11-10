@@ -66,7 +66,8 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
     const chuHan = dong(c) ? <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />
       : han ? <span title={han.text} className={`inline-flex items-center gap-1 whitespace-nowrap text-[13px] tabular-nums ${han.quaHan ? 'font-bold text-bad' : han.ganHan ? 'font-semibold text-slate-100' : 'text-slate-400'}`}>
         {han.quaHan && <IconCanhBao />}{han.han}</span> : null;
-    const chuPa = pa ? `PA ${pa.name}` : !dong(c) ? t('Chưa có PA') : null;
+    /* #3 (G2-04): mọi PA đã khép mà Case chưa xong → "n PA xong · chờ Hoàn thành" (không phải "Chưa có PA"). */
+    const chuPa = pa ? `PA ${pa.name}` : dong(c) ? null : c.plans.length ? t('{n} PA xong · chờ Hoàn thành', { n: c.plans.length }) : t('Chưa có PA');
     return (
       <div key={c.id} id={`case-${c.id}`} className="border-t px-4 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
         <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_140px_minmax(0,1fr)_150px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>

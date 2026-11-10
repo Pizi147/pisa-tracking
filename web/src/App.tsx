@@ -2,6 +2,7 @@ import { Component, Suspense, useEffect, useLayoutEffect, useRef, useState, type
 import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
+import { ViecCuaToiCtx, type SoViecCuaToi } from './lib/viecCuaToi.ts';
 import { henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { onInvalidate, xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
@@ -263,7 +264,7 @@ export default function App() {
    * Q16: giáo viên đọc MỘT lần — tải lại khi đổi trang sau một lần vô hiệu `/my-work` (`lanViec`, GIAM-COMPUTE ở trên). D14: chính `/my-work` (Tổng quan,
    * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần; badge nhận bản của trang qua `chiNghe`).
    */
-  const viecGv = useApi<{ summary: { canLamNgay: number; viecQuaHan: number } }>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, [lanViec], { chiNghe: true }).data;
+  const viecGv = useApi<{ summary: SoViecCuaToi }>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, [lanViec], { chiNghe: true }).data;
   /* Bản mới đã về (của badge hay của trang) → hết cũ, bỏ hẹn 60 s, mốc 60 s tính lại từ đây. */
   useEffect(() => { henViec.coBan(); }, [viecGv, henViec]);
   const gv = viecGv ? { n: viecGv.summary?.canLamNgay ?? 0, quaHan: viecGv.summary?.viecQuaHan ?? 0 } : null;
@@ -291,6 +292,8 @@ export default function App() {
   const gocNhin = session.gocNhin;
 
   return (
+    /* XM 3 (rà 11/11): số Việc của tôi của badge — ô Tổng quan đọc chung (`useSoViecCuaToi`), không GET thêm. */
+    <ViecCuaToiCtx.Provider value={viecGv?.summary ?? null}>
     <div className="h-full flex flex-col">
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">{t('Bỏ qua tới nội dung')}</a>
@@ -404,5 +407,6 @@ export default function App() {
         </nav>
       )}
     </div>
+    </ViecCuaToiCtx.Provider>
   );
 }

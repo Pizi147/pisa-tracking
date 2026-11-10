@@ -1247,6 +1247,8 @@ export const TRAN_GHI_LO = {
   /** OV-7b: GET /followups/:id/sua — điền sẵn form Sửa kết quả (PA như trước lần ghi, giá trị cũ, câu chặn). */
   moSuaKetQua: 18,   // đo 8 câu → max(8 + 10, ⌈8 × 1,3⌉)
   /** OV-13b: POST /interventions/:id/de-xuat-doi-pa — PA mới chờ duyệt + thẻ "Đề xuất PA" + PA gốc trỏ PA mới, trả Case. */
+  /** SOS-TAM-PA: POST /interventions/:id/giu-pa-gv — kiểm (trước + trong giao dịch) + thẻ `giu_pa_gv` + PA quy chế trỏ PA GV + nhật ký, trả Case. */
+  giuPaGv: 145,   // đo 111 câu (~40 là `caseDetail` trả về) → max(111 + 10, ⌈111 × 1,3⌉)
   deXuatDoiPa: 123,   // đo 94 câu (~40 là `caseDetail` trả về) → max(94 + 10, ⌈94 × 1,3⌉)
   /** OV-13b: POST /followups/:id/hoan-tac — đảo lần ghi kết quả vừa lưu (như Sửa đảo) + rút đề xuất cùng lần, trả Case. */
   /** OV-13k: PUT /attempts/:id/scores/speaking/phu-trach — nhận xét GV phụ trách + nhóm ô S, nhật ký, đồng bộ nguyên nhân Case MT. */

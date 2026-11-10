@@ -4,7 +4,7 @@ import { Khoi, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
-import {
+import { CHU_TOI_THIEU_CASE,
   GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU,
   coNguoiDay, coSoBuoi, interventionKindsFor, khacNguoi, kiemGhiRoKhac, nguoiMacDinh, nhanNguoiDay, nhatKyPa,
   type GiaTriPa, type KetQuaNhatKy, type LoiTruong, type PaNhatKy,
@@ -20,7 +20,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 const tenLoai = (k: string) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k;
 
-export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = 8, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '', batBuoc = false }: {
+export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_THIEU_CASE, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '', batBuoc = false }: {
   v: GiaTriPa; dat: (p: Partial<GiaTriPa>) => void;
   lf: ReturnType<typeof useLoiForm>; loi: readonly LoiTruong[];
   /** Thêm PA / Thay PA: chọn Loại. Không có = Loại khoá (Sửa PA, Xác nhận PA); `phang` mà không chọn Loại (Điều chỉnh) = không có ô Loại. */

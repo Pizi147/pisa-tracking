@@ -167,6 +167,7 @@
  "web/src/modules/yThuc/DeleteViolationConfirm.tsx",
  "web/src/modules/yThuc/KhaiBacLoPanel.tsx",
  "web/src/modules/yThuc/KhaiBacPanel.tsx",
+ "web/src/modules/yThuc/KhoiDuyetYThuc.tsx",
  "web/src/modules/yThuc/LoYThucPanel.tsx",
  "web/src/modules/yThuc/NhanViPham.tsx",
  "web/src/modules/yThuc/PanelXemViPham.tsx",

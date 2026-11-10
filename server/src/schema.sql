@@ -2277,6 +2277,7 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_phoi_hop ON viec_bao_ph(phoi_hop_id) WHERE phoi_hop_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_bao_lai ON viec_bao_ph(bao_lai_cua);   -- YT-BAO-PH / G3-14
 -- Mỗi lần TVV ghi (kể cả "Chưa liên hệ được" — việc vẫn mở, hạn giữ) là MỘT dòng; không sửa, không xoá.
 CREATE TABLE IF NOT EXISTS viec_bao_ph_lan (
   id INTEGER PRIMARY KEY,

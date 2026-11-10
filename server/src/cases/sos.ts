@@ -15,7 +15,7 @@ import { resultOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { laLopKetThuc } from '../fasttrack/hoanTat.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
-import { announceAutoCase, createPresetPlan, isFastTrackMock, paHetMocTruotLai, paSangKetQuaCuoi, resyncUnconfirmedPresets } from './sosAuto.ts';
+import { announceAutoCase, createPresetPlan, hanKqLucChot, isFastTrackMock, paHetMocTruotLai, paQuyCheTheoGv, paSangKetQuaCuoi, resyncUnconfirmedPresets } from './sosAuto.ts';
 import { CO_THE_KHONG_THEO_DOI, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { closeCasesBySystem } from './systemClose.ts';
 import { xoaCaseHeThong } from './cases.ts';
@@ -512,7 +512,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
           conn.prepare('UPDATE sos_cases SET kck = 0, han_xac_nhan = ?, updated_at = ? WHERE id = ?')
             .run(hanXacNhan(demoToday(), { sosLevel: result.sosLevel, urgency: open.urgency }), nowIso(), open.id);
           recordChange(open.id, 'kck', '1', '0', p.userId);
-          createPresetPlan({ caseId: open.id, attempt, category, sosLevel: result.sosLevel });
+          paQuyCheTheoGv({ caseId: open.id, attempt, category, sosLevel: result.sosLevel }, p.userId);   // SOS-TAM-PA: PA GV trùng loại → không PA mới
           open.kck = 0;
         }
         /*
@@ -523,7 +523,8 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
          */
         if (autoCases && !kck && sosCaseState(open.id).hasCause
             && !conn.prepare(`SELECT 1 FROM case_interventions iv WHERE iv.case_id = ? AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned'`).get(open.id)) {
-          if (createPresetPlan({ caseId: open.id, attempt, category, sosLevel: result.sosLevel })) {
+          /* SOS-TAM-PA (Q8): PA của GV đang chạy trùng loại PA quy chế mới → giữ, không PA mới, không đặt lại hạn. */
+          if (typeof paQuyCheTheoGv({ caseId: open.id, attempt, category, sosLevel: result.sosLevel }, p.userId) === 'number') {
             conn.prepare('UPDATE sos_cases SET han_xac_nhan = ? WHERE id = ?').run(hanXacNhan(demoToday(), { sosLevel: result.sosLevel, urgency: open.urgency }), open.id);
           }
         }
@@ -613,12 +614,18 @@ export function xoaSosOverallDat(actor: number | null, attempt: any, result: Att
         WHERE attempt_id = ? AND status = 'linked' AND case_id IN (${dong.map(() => '?').join(',')})`,
     ).run(SYSTEM_CLOSE_REASON_LABEL.overall_dat, nowIso(), attempt.id, ...dong);
     if (luatOv1c) closeCasesBySystem({ actorUserId: actor, studentId: attempt.student_id, reason: 'overall_dat', on, caseIds: dong });
-    else for (const id of dong) xoaCaseHeThong(conn, id, actor, `${SYSTEM_CLOSE_REASON_LABEL.overall_dat} — em đạt lại, Case chưa có PA được xác nhận`);
+    else for (const id of dong) {
+      /* SOS-TAM-PA (Q5): Case tạm có mô tả GV sửa riêng / tệp → đóng, không xoá. */
+      if (tamCua(id) && giuCaseTamDaLam(actor, id, attempt, `Overall ${result.overall} ≥ kỳ vọng ${result.expectation}`)) continue;
+      xoaCaseHeThong(conn, id, actor, `${SYSTEM_CLOSE_REASON_LABEL.overall_dat} — em đạt lại, Case chưa có PA được xác nhận`);
+    }
   }
   if (!luatOv1c && giu.length) {
     paSangKetQuaCuoi(giu, on, actor);   // OV-13a (A): Overall đạt mà Case đã có PA → PA quy chế sang "Kết quả cuối" → Hoàn thành được
-    /* Case tạm "giữ" chỉ vì có tệp → đóng (không thành việc). */
-    for (const r of conn.prepare(`SELECT id FROM sos_cases WHERE tam = 1 AND id IN (${giu.map(() => '?').join(',')})`).all(...giu) as any[]) dongCaseTamCoTep(actor, r.id);
+    /* Case tạm "giữ": có PA → Case thường + mốc; chỉ tệp / mô tả riêng → đóng (`giuCaseTamDaLam`). */
+    for (const r of conn.prepare(`SELECT id FROM sos_cases WHERE tam = 1 AND id IN (${giu.map(() => '?').join(',')})`).all(...giu) as any[]) {
+      if (!giuCaseTamDaLam(actor, r.id, attempt, `Overall ${result.overall} ≥ kỳ vọng ${result.expectation}`)) dongCaseTamCoTep(actor, r.id);
+    }
   }
   for (const id of giu) {
     addMilestone({
@@ -629,6 +636,8 @@ export function xoaSosOverallDat(actor: number | null, attempt: any, result: Att
   }
   return { dong, giu };
 }
+
+const tamCua = (id: number) => !!(db().prepare('SELECT tam FROM sos_cases WHERE id = ?').get(id) as any)?.tam;
 
 function recordChange(caseId: number, field: string, oldValue: string | null, newValue: string | null, actor: number | null) {
   db()
@@ -721,9 +730,10 @@ export function taoCaseTuDong(p: Principal, x: {
  */
 export function keHoachCaseTam(attempt: { id: number; student_id: number; cycle_id?: number | null }, failing: readonly string[]): { tao: string[]; xoa: number[] } {
   const conn = db();
-  const coNx = new Set((conn.prepare(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND TRIM(COALESCE(comment, '')) != ''
-      AND (band IS NOT NULL OR raw_score IS NOT NULL)`).all(attempt.id) as any[]).map((r) => r.skill as string));
-  const muon = failing.filter((s) => coNx.has(s) && !!categoryOf(s));
+  /* SOS-TAM-PA (Q1, chủ SP 11/11): ô dưới kỳ vọng CÓ ĐIỂM là đủ (không cần nhận xét) — GV ghi mô tả thẳng ở Case tạm. */
+  const coDiem = new Set((conn.prepare(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND (band IS NOT NULL OR raw_score IS NOT NULL)`)
+    .all(attempt.id) as any[]).map((r) => r.skill as string));
+  const muon = failing.filter((s) => coDiem.has(s) && !!categoryOf(s));
   /* DB CHƯA migrate (chưa có cột `tam`) → chưa có Case tạm nào để xoá. */
   const coCot = nho('co_cot_tam', () => !!conn.prepare(`SELECT 1 FROM pragma_table_info('sos_cases') WHERE name = 'tam'`).get());
   const xoa = !coCot ? [] : (conn.prepare(`SELECT id, topic FROM sos_cases WHERE attempt_id = ? AND tam = 1 AND status != 'done'`).all(attempt.id) as any[])
@@ -743,18 +753,39 @@ function dongCaseTamCoTep(actor: number | null, id: number) {
   recordChange(id, 'status', 'open', 'done', actor);
 }
 
-/** Xoá hẳn Case tạm (thu hồi tín hiệu, gỡ mốc "Tái diễn" đã ghi vào Case cũ). Case tạm có tệp → đóng, không xoá (`dongCaseTamCoTep`). */
+/**
+ * SOS-TAM-PA (Q5, chủ SP 11/11): Case tạm HẾT LÝ DO (không còn SOS) mà GV đã làm gì đó — KHÔNG xoá:
+ *   · có PA (chưa huỷ) → thành Case thường (hết tạm, không hạn, không PA quy chế), PA chạy tiếp (hạn ghi kết quả từ hôm nay), mốc "Không còn SOS — GV xem và tự đóng";
+ *   · không PA mà có tệp / mô tả GV sửa riêng → đóng (giữ lịch sử, Mở lại được);
+ *   · còn lại → null (nơi gọi xoá như cũ). Tín hiệu của lượt thu hồi ở nơi gọi.
+ */
+function giuCaseTamDaLam(actor: number | null, id: number, attempt: { id: number; attempt_no?: number | null } | null, ghiChu: string): 'giu' | 'dong' | null {
+  const conn = db();
+  if (conn.prepare(`SELECT 1 FROM case_interventions WHERE case_id = ? AND status != 'cancelled' LIMIT 1`).get(id)) {
+    conn.prepare('UPDATE sos_cases SET tam = 0, han_xac_nhan = NULL, updated_at = ? WHERE id = ?').run(nowIso(), id);
+    recordChange(id, 'tam', '1', '0', actor);
+    hanKqLucChot(id);
+    addMilestone({ caseId: id, kind: 'overall_dat', attemptId: attempt?.id ?? null, attemptNo: attempt?.attempt_no ?? null, occurredOn: demoToday(),
+      note: `${ghiChu} — Case giữ vì đã có PA; GV xem và tự đóng Case`, createdBy: actor, dedupKey: `mt:${attempt?.id ?? 0}:${id}:overall_dat` });   // cùng khoá mốc của `xoaSosOverallDat` — không hai mốc
+    dongBoTrangThaiCase(id);
+    return 'giu';
+  }
+  if (conn.prepare(`SELECT 1 FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?`).get(id)
+      || conn.prepare(`SELECT 1 FROM case_issues WHERE case_id = ? AND role = 'primary' AND created_by IS NOT NULL`).get(id)) {
+    dongCaseTamCoTep(actor, id);
+    return 'dong';
+  }
+  return null;
+}
+
+/** Xoá hẳn Case tạm (thu hồi tín hiệu, gỡ mốc "Tái diễn" đã ghi vào Case cũ). Case tạm GV đã làm (PA / tệp / mô tả riêng) → giữ hoặc đóng (`giuCaseTamDaLam`). */
 function xoaCaseTamThua(actor: number | null, attemptId: number, ids: readonly number[]) {
   const conn = db();
+  const a = ids.length ? conn.prepare('SELECT id, attempt_no FROM assessment_attempts WHERE id = ?').get(attemptId) as any : null;
   for (const id of ids) {
-    if (conn.prepare(`SELECT 1 FROM attachments WHERE owner_type = 'sos_case' AND owner_id = ?`).get(id)) {
-      conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE attempt_id = ? AND case_id = ? AND status = 'linked'`)
-        .run('Case tạm — kỹ năng không còn dưới kỳ vọng trước khi lượt chốt', nowIso(), attemptId, id);
-      dongCaseTamCoTep(actor, id);
-      continue;
-    }
     conn.prepare(`UPDATE case_signals SET status = 'withdrawn', withdrawn_reason = ?, updated_at = ? WHERE attempt_id = ? AND case_id = ? AND status = 'linked'`)
       .run('Case tạm — kỹ năng không còn dưới kỳ vọng trước khi lượt chốt', nowIso(), attemptId, id);
+    if (giuCaseTamDaLam(actor, id, a ?? null, 'Kỹ năng không còn dưới kỳ vọng trước khi SOS chốt')) continue;
     conn.prepare(`DELETE FROM case_milestones WHERE kind = 'recurrence' AND attempt_id = ? AND case_id = (SELECT previous_case_id FROM sos_cases WHERE id = ?)`)
       .run(attemptId, id);
     xoaCaseHeThong(conn, id, actor, 'Case tạm — kỹ năng không còn dưới kỳ vọng / chưa có nhận xét trước khi lượt chốt', 'case.xoa_tam');
@@ -812,7 +843,9 @@ function chotCaseTam(actor: number | null, c: any, attempt: any, sosLevel: numbe
   const han = kck ? null : hanXacNhan(demoToday(), { sosLevel, urgency: c.urgency });
   conn.prepare('UPDATE sos_cases SET tam = 0, kck = ?, han_xac_nhan = ?, sos_level = ?, updated_at = ? WHERE id = ?').run(kck ? 1 : 0, han, sosLevel, nowIso(), c.id);
   recordChange(c.id, 'tam', '1', '0', actor);
-  if (!kck) createPresetPlan({ caseId: c.id, attempt, category: c.category, sosLevel });
+  /* SOS-TAM-PA: PA GV ghi lúc tạm — trùng loại PA quy chế thì giữ (không PA mới); hạn ghi kết quả của PA GV tính từ ngày chốt. */
+  if (!kck) paQuyCheTheoGv({ caseId: c.id, attempt, category: c.category, sosLevel }, actor);
+  hanKqLucChot(c.id);
   dongBoNguyenNhanMt({ caseIds: [c.id] });
   dongBoTrangThaiCase(c.id);   // có PA quy chế chờ xác nhận → "Chưa xử lý" (Q28-5), như Case mới
   announceAutoCase({

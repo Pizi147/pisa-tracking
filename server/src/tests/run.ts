@@ -92,7 +92,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -7234,8 +7234,8 @@ check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, kh�
     title: `${authSubjectSkill}: kiểm ghi chú bắt buộc`, summary: 'Case nhập bù để kiểm ghi chú kết luận bắt buộc ở tầng máy chủ.',
     fromDate: '2025-07-01', toDate: '2025-07-05',
     actions: [{ ketQua: 'improved', description: 'Trao đổi với em', performerName: 'GVCN', fromDate: '2025-07-01', toDate: '2025-07-05' }],
-    outcome: 'improved', note: 'quá ngắn',
-  }), /ghi chú/, 'Gọi thẳng API nhập bù với ghi chú quá ngắn (dưới 10 ký tự)');
+    outcome: 'improved', note: 'ngắn',   // #4: ngưỡng chung CHU_TOI_THIEU_CASE = 8
+  }), /ghi chú/, 'Gọi thẳng API nhập bù với ghi chú quá ngắn (dưới 8 ký tự)');
   assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === before, 'Ghi chú quá ngắn bị từ chối mà vẫn để lại một case');
 });
 
@@ -7889,7 +7889,7 @@ check('PR-F · Drill-down: số = độ dài tập, và tập trùng với đố
   const r = metricsSvc.metricSet(P.admin, 'hv-co-case-mo', {}) as any;
   const sql = (conn.prepare(
     `SELECT COUNT(DISTINCT COALESCE(sc.student_id, a.student_id)) n FROM sos_cases sc
-       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.status != 'done'`,
+       LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id WHERE sc.status != 'done' AND sc.tam = 0`,   // OV-13a: Case tạm không đếm
   ).get() as any).n;
   assert(r.n === r.ids.length, `Số ${r.n} khác độ dài tập ${r.ids.length}`);
   assert(r.n === sql, `hv-co-case-mo=${r.n} nhưng đếm thẳng bằng SQL ra ${sql}`);
@@ -9509,6 +9509,8 @@ const { runPrYtGonTests } = bocTep('prYtGon', await import('./prYtGon.tests.ts')
 await runPrYtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrYtBaoPhTests } = bocTep('prYtBaoPh', await import('./prYtBaoPh.tests.ts'));
 await runPrYtBaoPhTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrYtDeXuatTests } = bocTep('prYtDeXuat', await import('./prYtDeXuat.tests.ts'));
+await runPrYtDeXuatTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SUA-NO-RA (nợ rà sâu CV-LOI #499 + LUAT-5 #495: phân công có phiên bản, migrate một lần, thẻ thu hồi)
 const { runPrSuaNoRaTests } = bocTep('prSuaNoRa', await import('./prSuaNoRa.tests.ts'));
 await runPrSuaNoRaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9768,6 +9770,9 @@ await runPrP1CongViecTests({ check, assert, conn, P } as any);
 // ==================================================================== VIEC-CUA-TOI (rà 11/11 đề xuất #1: một hàm việc của tôi cho mọi nơi)
 const { runPrViecCuaToiTests } = bocTep('prViecCuaToi', await import('./prViecCuaToi.tests.ts'));
 await runPrViecCuaToiTests({ check, assert, conn } as any);
+// ==================================================================== TQ-VIEC-CUA-TOI ([XM 3] rà 11/11: ô Việc của tôi ở Tổng quan TVV / QL / Admin)
+const { runPrTqViecCuaToiTests } = bocTep('prTqViecCuaToi', await import('./prTqViecCuaToi.tests.ts'));
+await runPrTqViecCuaToiTests({ check, assert, conn, P } as any);
 // ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
 const { runDonLuongTests } = bocTep('donLuong', await import('./donLuong.tests.ts'));
 await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
@@ -9920,6 +9925,12 @@ await runPrLoTrinhHvTests({ check, assert, conn, P, TODAY, addDays, classId } as
 // ==================================================================== #8 bản rà 11/11: chuyển lớp sửa sai một bấm, bàn giao một phiếu
 const { runPrChuyenLopSuaSaiTests } = bocTep('prChuyenLopSuaSai', await import('./prChuyenLopSuaSai.tests.ts'));
 await runPrChuyenLopSuaSaiTests({ check, assert, conn, P } as any);
+// ==================================================================== #4 bản rà 11/11: + Case gọn (mức mặc định, tên tự sinh, một ngưỡng chữ)
+const { runPrCaseGonTests } = bocTep('prCaseGon', await import('./prCaseGon.tests.ts'));
+await runPrCaseGonTests({ check, assert, conn, P, classId } as any);
+// ==================================================================== #3 bản rà 11/11: Hoàn thành Case ngay khi kết thúc PA cuối
+const { runPrHoanThanhCaseTests } = bocTep('prHoanThanhCase', await import('./prHoanThanhCase.tests.ts'));
+await runPrHoanThanhCaseTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== KHONG-LOP-GHI (chủ SP 10/11 B' mục 8: lượt không lớp — đường ghi theo chương trình lộ trình)
 const { runPrKhongLopGhiTests } = bocTep('prKhongLopGhi', await import('./prKhongLopGhi.tests.ts'));
 await runPrKhongLopGhiTests({ check, assert, conn, P, TODAY } as any);
@@ -9929,6 +9940,9 @@ await runPrQuyenKyNangTests({ check, assert, conn, P } as any);
 // ==================================================================== GIAM-DOC-HSGV (trang Hồ sơ GV đọc ít câu — số trước = sau)
 const { runPrGiamDocHsgvTests } = bocTep('prGiamDocHsgv', await import('./prGiamDocHsgv.tests.ts'));
 await runPrGiamDocHsgvTests({ check, assert, conn, P } as any);
+// ==================================================================== SOS-TAM-PA (chủ SP 11/11: SOS tạm ghi mô tả + PA · PA GV ↔ PA quy chế lúc chốt · Chọn PA · thẻ QL 3 ngày)
+const { runPrSosTamPaTests } = bocTep('prSosTamPa', await import('./prSosTamPa.tests.ts'));
+await runPrSosTamPaTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

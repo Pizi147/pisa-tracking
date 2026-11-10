@@ -144,7 +144,7 @@ export const EN_HD = {
   'Cần đổi: <b>Điều chỉnh…</b> (PA quy chế) hoặc <b>Điều chỉnh / Kết thúc…</b>; tới mốc: việc "Kết quả cuối · tên PA", nút <b>Kết quả cuối</b>.': 'To change it: <b>Adjust…</b> (rule-based PA) or <b>Adjust / End…</b>; at the milestone: the task "Final result · PA name", button <b>Final result</b>.',
   'Lưu trên dòng: "✓ Đã lưu · … · Hoàn tác" rồi tự sang việc kế; panel: <b>Việc tiếp ›</b>.': 'Saved on the row: "✓ Saved · … · Undo", then the next task opens; panel: <b>Next task ›</b>.',
   'Gỡ vắng: xoá "-", lúc nào cũng được.': 'Undo absent: delete the "-", any time.',
-  'Lượt chưa chốt: Case tạm "Chờ chốt SOS" — chưa hạn, chưa việc.': 'Round not closed: provisional case "Awaiting SOS close" — no deadline, no task yet.',
+  'Lượt chưa chốt: Case tạm "Chờ chốt SOS" — ghi mô tả, thêm PA được; chưa hạn, chưa việc.': 'Round not closed: provisional case "Awaiting SOS close" — description and PAs can be added; no deadline, no task yet.',
   'Lượt chốt → "Chờ xác nhận PA"; Overall đạt mà chưa xác nhận PA → Case tự xoá.': 'Round closed → "Awaiting PA confirmation"; Overall meets expected before the PA is confirmed → the case is removed.',
   'Kết thúc PA sớm': 'End a PA early',
   'PA quy chế: GVCN / QL vào <b>⋯ › Kết thúc PA</b>.': 'Rule-based PA: the core teacher / manager uses <b>⋯ › End PA</b>.',

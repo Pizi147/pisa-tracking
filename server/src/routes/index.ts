@@ -1470,7 +1470,9 @@ api.put('/students/:id/y-thuc/khai-bac', requireAuth, wrap((req) => {
 }));
 api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
+  /* #6 (G3-5): `kemTep=1` — panel duyệt QL đọc vi phạm + bằng chứng trong MỘT request (chỉ khi mở panel). */
+  const v = xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
+  return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(principalOf(req), 'discipline_measure', v.id) } : v;
 }));
 /** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
 api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {
@@ -2330,6 +2332,11 @@ api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
 api.post('/interventions/:id/de-xuat-doi-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return doiPaSvc.deXuatDoiPa(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** SOS-TAM-PA (chủ SP 11/11): "Chọn PA" · Giữ PA của tôi — thẻ QL `giu_pa_gv` hạn 3 ngày (quá hạn chốt theo GV); rút = `POST /yeu-cau/:id/rut`. */
+api.post('/interventions/:id/giu-pa-gv', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.giuPaGv(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
 /** OV-13c: Xác nhận PA cùng lúc (dòng gộp Công việc) — mỗi PA một giao dịch, PA lỗi báo riêng. */
 api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {

@@ -18,15 +18,18 @@ import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, TRAN_CHU, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU,
+  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, TRAN_CHU, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU, CHU_TOI_THIEU_CASE,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** `ids`: các Case nhận tệp (người xem sửa được); `chu`: câu báo khi lưu nhiều Case một lần (CASE-NHIEU). */
 type DaLuu = { id: number; tieuDe: string; gop: boolean; canEdit: boolean; viecTiep?: { chu: string; han: string | null } | null; ids: number[]; boTep?: boolean; chu?: string };
 /** Một thẻ kỹ năng. Phân loại "Khác" (T13): ô Ghi rõ lưu ở `case_issues.observation` (Q9); đổi phân loại vẫn giữ chữ đã gõ. `gop`: kỹ năng có Case mở cùng hạng mục. */
-type The = { primaryCode: string; ghiRo: string; title: string; summary: string; gop: 'ghi-vao' | 'rieng' };
+/** `tenTay` (#4): người tạo đã gõ Tên Case — chưa gõ thì tên tự sinh "{Kỹ năng} · {nhóm nguyên nhân}" (sửa được). */
+type The = { primaryCode: string; ghiRo: string; title: string; summary: string; gop: 'ghi-vao' | 'rieng'; tenTay?: boolean };
 const THE_TRONG: The = { primaryCode: '', ghiRo: '', title: '', summary: '', gop: 'ghi-vao' };
+/** #4 bản rà 11/11 (G2-06): Mức độ mặc định "Bình thường" (`attention`) — đổi một bấm sang Gấp; không còn ô bắt chọn. */
+const MUC_DO_MAC_DINH = 'attention';
 type DangMo = { id: number; title: string; detectedAt: string; soPa: number };
 /** YC-12.5.3: mỗi PA nhập bù có Kết quả PA (bắt buộc). */
 type BfAction = { description: string; nguoi: NguoiChon; fromDate: string; toDate: string; ketQua: string };
@@ -84,7 +87,7 @@ export function QuickReport({
   /* Lỗi máy chủ trả về theo kỹ năng (`details.kyNang`) — hiện đầu đúng thẻ. */
   const [loiThe, setLoiThe] = useState<Record<string, string>>({});
   /* I2 (PR-SL): không chọn sẵn mức độ — người báo tự chọn (ô bắt buộc). */
-  const [urgency, setUrgency] = useState('');
+  const [urgency, setUrgency] = useState(MUC_DO_MAC_DINH);
   const [detectedAt, setDetectedAt] = useState('');
   const [busy, setBusy] = useState(false);
   /* YC-12.5.2: lỗi hiện dưới ô khi rời ô; sau khi bấm nút chính, chân có thêm "n ô cần sửa ↑". */
@@ -166,8 +169,15 @@ export function QuickReport({
   /* Thẻ của kỹ năng `kn` ('' = chưa chọn kỹ năng). Một kỹ năng / ghi bù đọc thẳng thẻ đầu — các ô bên dưới viết như trước. */
   const cua = (kn: string): The => the[kn] ?? THE_TRONG;
   const sua = (kn: string, v: Partial<The>) => setThe((x) => ({ ...x, [kn]: { ...(x[kn] ?? THE_TRONG), ...v } }));
+  /* #4 (G2-06): Tên Case tự sinh "{Kỹ năng} · {nhóm nguyên nhân}" ("Khác" → chữ ghi rõ) tới khi người tạo tự gõ; gửi đúng chữ đang hiện trong ô. */
+  const tenTuDong = (kn: string): string => {
+    const v = cua(kn);
+    const nhom = laKhac(v.primaryCode) ? v.ghiRo.trim() : issuesForTopic(kn, ct).find((i) => i.code === v.primaryCode)?.label ?? '';
+    return kn ? [topicLabel(kn), nhom].filter(Boolean).join(' · ') : '';
+  };
+  const tenGui = (kn: string): string => (cua(kn).tenTay ? cua(kn).title.trim() : '') || tenTuDong(kn);
   const topic = chon[0] ?? '';
-  const { primaryCode, ghiRo, title, summary } = cua(topic);
+  const { primaryCode, ghiRo, summary } = cua(topic);
   /* Bấm chip: ghi bù chọn một; còn lại bật / tắt, giữ thứ tự chip. Chọn chip đầu tiên thì chữ đã gõ trước (thẻ '') sang kỹ năng đó. */
   const chonChip = (k: string) => {
     if (!chon.length && the[''] && !the[k]) setThe((x) => ({ ...x, [k]: { ...x[''], primaryCode: '' } }));
@@ -176,7 +186,7 @@ export function QuickReport({
   };
 
   const reset = () => {
-    setChon([]); setThe({}); setLoiThe({}); setUrgency('');
+    setChon([]); setThe({}); setLoiThe({}); setUrgency(MUC_DO_MAC_DINH);
     setDetectedAt(''); lf.datLai(); setMoSua([0]);
     setMode('now'); setBfFrom(''); setBfTo('');
     setBfActions([{ description: '', nguoi: { kieu: 'toi' }, fromDate: '', toDate: '', ketQua: '' }]);
@@ -219,7 +229,7 @@ export function QuickReport({
         kyNang: lo.map((kn) => {
           const v = cua(kn);
           return { topic: kn, primaryCode: v.primaryCode || undefined, observation: laKhac(v.primaryCode) ? v.ghiRo.trim() : undefined,
-            title: ghiVao(kn) ? null : v.title.trim() || null, summary: v.summary, gop: dm(kn) ? v.gop : undefined };
+            title: ghiVao(kn) ? null : tenGui(kn) || null, summary: v.summary, gop: dm(kn) ? v.gop : undefined };
         }),
       });
       const ds = res.cases;
@@ -280,7 +290,7 @@ export function QuickReport({
         studentId, cycleId: cycleId ?? undefined,
         topic, primaryCode: primaryCode || undefined,
         observation: laKhac(primaryCode) ? ghiRo.trim() : undefined,
-        title: title.trim() || null, summary,
+        title: tenGui(topic) || null, summary,
         fromDate: bfFrom, toDate: bfTo,
         actions: bfActions.map((a) => ({
           description: a.description.trim(), ...nguoiThanhPayload(a.nguoi),
@@ -350,7 +360,7 @@ export function QuickReport({
       /* PR-NEN (T13): phân loại "Khác" → ô Ghi rõ ≥ 3 ký tự ngay dưới (OKhac); Mô tả chỉ còn luật 15 ký tự. */
       ...(laKhac(cua(kn).primaryCode) ? [{ khoa: `${tien}ghi-ro`, nhan: t('Ghi rõ') + s, toiThieu: KHAC_TOI_THIEU }] : []),
       ...(ghiVao(kn) ? [] : [{ khoa: `${tien}ten`, nhan: t('Tên Case') + s, toiThieu: 6 }]),
-      { khoa: `${tien}mo-ta`, nhan: t('Mô tả') + s, toiThieu: 15, toiDa: TRAN_CHU.moTaCase },   // N35
+      { khoa: `${tien}mo-ta`, nhan: t('Mô tả') + s, toiThieu: CHU_TOI_THIEU_CASE, toiDa: TRAN_CHU.moTaCase },   // N35 · #4 ngưỡng chung
     ];
   };
   const LUAT: LuatTruong[] = [
@@ -360,14 +370,14 @@ export function QuickReport({
     ...(mode === 'now' ? [{ khoa: 'muc-do', nhan: t('Mức độ'), chon: true }] : []),
     ...theKiem.flatMap((kn) => (nhieu ? [...luatDau(kn), ...luatSau(kn)] : luatSau(kn))),
     ...(mode === 'backfill' ? [{ khoa: 'tu-tuan', nhan: t('Từ tuần'), chon: true }, { khoa: 'den-tuan', nhan: t('Đến tuần'), chon: true },
-      { khoa: 'ket-qua', nhan: t('Kết quả cuối'), chon: true }, { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: 10 }] : []),
+      { khoa: 'ket-qua', nhan: t('Kết quả cuối'), chon: true }, { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: CHU_TOI_THIEU_CASE }] : []),
   ];
   const giaTri: Record<string, unknown> = { 'hoc-vien': studentId, 'ky-nang': topic, 'muc-do': urgency,
     'tu-tuan': bfFrom, 'den-tuan': bfTo, 'ket-qua': bfOutcome, 'vi-sao': bfNote };
   for (const kn of theKiem) {
     const v = cua(kn);
     const tien = tienCua(kn);
-    Object.assign(giaTri, { [`${tien}phan-loai`]: v.primaryCode, [`${tien}ghi-ro`]: v.ghiRo, [`${tien}ten`]: v.title, [`${tien}mo-ta`]: v.summary });
+    Object.assign(giaTri, { [`${tien}phan-loai`]: v.primaryCode, [`${tien}ghi-ro`]: v.ghiRo, [`${tien}ten`]: tenGui(kn), [`${tien}mo-ta`]: v.summary });
   }
   const loi = dsLoi(LUAT, giaTri);
   if (mode === 'backfill' && bfFrom && bfTo && bfFrom > bfTo) loi.push({ khoa: 'den-tuan', nhan: t('Đến tuần'), lyDo: t('Không được trước Từ tuần') });
@@ -455,15 +465,15 @@ export function QuickReport({
     const k = (s: string) => tienCua(kn) + s;
     const v = cua(kn);
     return (<>
-      {/* TÊN CASE DO NGƯỜI TẠO ĐẶT (mục 7.3): Case tạo tay không có gì để suy, hệ thống không được tự gán "… dưới kỳ vọng". Ghi vào Case đang có: giữ tên Case đó. */}
+      {/* #4 (G2-06, thay mục 7.3): tên tự sinh từ kỹ năng + nhóm nguyên nhân người tạo vừa chọn (không phải "… dưới kỳ vọng" máy gán) — sửa được; xoá trống thì về tên tự sinh. */}
       {!ghiVao(kn) && (
-        <Truong nhan={t('Tên Case')} batBuoc loi={loiCua(k('ten'))}>
-          <input className="field w-full" {...o(k('ten'))} value={v.title} onChange={(e) => sua(kn, { title: e.target.value })}
+        <Truong nhan={t('Tên Case')} loi={loiCua(k('ten'))}>
+          <input className="field w-full" {...o(k('ten'))} value={v.tenTay ? v.title : tenTuDong(kn)} onChange={(e) => sua(kn, { title: e.target.value, tenTay: true })}
             placeholder={t('Ví dụ: Reading — sai dạng True/False/Not Given')} />
         </Truong>
       )}
       <Truong nhan={t('Mô tả và dẫn chứng')} batBuoc loi={loiCua(k('mo-ta'))}
-        dem={{ co: v.summary.trim().length, can: 15, toiDa: TRAN_CHU.moTaCase }}>
+        dem={{ co: v.summary.trim().length, can: CHU_TOI_THIEU_CASE, toiDa: TRAN_CHU.moTaCase }}>
         <textarea className="field w-full" {...o(k('mo-ta'))} rows={3} value={v.summary} onChange={(e) => sua(kn, { summary: e.target.value })}
           placeholder={t('Ví dụ: Progress Test sai 4/5 câu Not Given')} />
       </Truong>
@@ -471,7 +481,7 @@ export function QuickReport({
   };
   /* Nhập bù là chuyện ĐÃ XONG — không còn "mức độ" để xin. Nhiều kỹ năng: một mức cho cả lô (khác thì sửa từng Case sau). */
   const mucDo = mode === 'now' && (
-    <Truong nhan={t('Mức độ')} batBuoc as="div" loi={loiCua('muc-do')}>
+    <Truong nhan={t('Mức độ')} as="div" loi={loiCua('muc-do')}>
       <div className="grid grid-cols-2 gap-2 outline-none" {...o('muc-do')} tabIndex={-1}>
         {URGENCY_LEVELS.map((u) => (
           <NutChon key={u} chon={urgency === u} className="justify-center" onClick={() => setUrgency(u)}>
@@ -486,7 +496,7 @@ export function QuickReport({
   const tenChon = (students ?? []).find((st) => st.id === studentId)?.name ?? studentName;
   const nhanTuan = (iso: string) => (iso ? tuanLich(iso, homNay) : '');
   /* Luật S3 (I1): đã gõ / chọn ô nào → nút trái "Huỷ thay đổi". Chọn học viên (trang lớp) không tính là sửa. */
-  const daSua = !!(chon.length || Object.values(the).some((v) => v.title.trim() || v.summary.trim() || v.primaryCode || v.ghiRo.trim()) || detectedAt || urgency || tep.length
+  const daSua = !!(chon.length || Object.values(the).some((v) => v.title.trim() || v.summary.trim() || v.primaryCode || v.ghiRo.trim()) || detectedAt || urgency !== MUC_DO_MAC_DINH || tep.length
     || bfFrom || bfTo || bfOutcome || bfNote.trim() || bfActions.some((a) => a.description.trim()));
 
   /* ─────────────── bước "Đã lưu" (chỉ khi có tệp lỗi — PR-LUI-a2): tệp lỗi + `Thử lại`, tệp đã tải ở Bằng chứng; chân chỉ còn "Xong". */

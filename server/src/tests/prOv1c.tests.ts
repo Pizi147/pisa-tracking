@@ -74,10 +74,10 @@ export async function runPrOv1cTests(t: YThucTestKit) {
   const vang = (aid: number, s: string, today = TRONG) => attempts.saveScore(QL, aid, s, { noShow: true }, today);
   const kq = (aid: number) => { xoaNho(); return attempts.resultOf(one('SELECT * FROM assessment_attempts WHERE id = ?', aid)); };
   const caseCua = (aid: number) => all(
-    `SELECT DISTINCT c.* FROM sos_cases c JOIN case_signals g ON g.case_id = c.id WHERE g.attempt_id = ? ORDER BY c.id`, aid);
+    `SELECT DISTINCT c.* FROM sos_cases c JOIN case_signals g ON g.case_id = c.id WHERE g.attempt_id = ? AND c.tam = 0 ORDER BY c.id`, aid);   // SOS-TAM-PA (11/11): Case tạm (cả ô chưa nhận xét) không tính
   const soViec = (aid: number) => ({
     case: caseCua(aid).length,
-    tinHieu: one('SELECT COUNT(*) n FROM case_signals WHERE attempt_id = ? AND status != ?', aid, 'withdrawn').n as number,
+    tinHieu: one(`SELECT COUNT(*) n FROM case_signals WHERE attempt_id = ? AND status != ? AND NOT EXISTS (SELECT 1 FROM sos_cases t WHERE t.id = case_signals.case_id AND t.tam = 1)`, aid, 'withdrawn').n as number,
     phoiHop: one(`SELECT COUNT(*) n FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'pending'`, aid).n as number,
     chuong: one(`SELECT COUNT(*) n FROM notifications WHERE dedup_key LIKE ?`, `sos:${aid}:%`).n as number,
   });

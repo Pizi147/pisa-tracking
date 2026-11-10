@@ -16,7 +16,7 @@ import {
 import { apDungXinXoa, caseTitleOf, huyQuyetDinhPa, moLaiCase, respondToPlan } from '../cases/cases.ts';
 import { khoiPhucRac } from '../platform/khoiPhucRac.ts';
 import { apDungDoiPa, doiPaHuyDuoc, duLieuDoiPa, rutDoiPa, tenLoaiPa } from '../cases/doiPa.ts';
-import { apDungKhongTheoDoi, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
+import { apDungGiuPaGv, apDungKhongTheoDoi, quetGiuPaGv, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { chuTheDoiLan2, decideAbsenceMove, huyQuyetDinhDoi } from '../fasttrack/absence.ts';
 import { attemptHref } from '../fasttrack/attempts.ts';
 import { ensurePeriod } from '../platform/week.ts';
@@ -29,12 +29,12 @@ import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { dongDaoDoiLoTrinh } from '../fasttrack/doiLoTrinh.ts';
 import { dongDaoChuyenNgay } from '../classes/hoanTacChuyenNgay.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, kiemGiaTriDeXuat, lyDoDeXuat } from './deXuatSua.ts';
-import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
+import { CO_THE_KHONG_THEO_DOI, PA_GV_MO, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import type { BanGhiDao } from '../platform/ghiDao.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
-import { duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { baoSauDuyetDeXuat, duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 
 /**
@@ -510,9 +510,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-YT4 · Xử lý Ý thức cần duyệt (V4-9, V4-10, M-11, T29, T30) */
   {
     loai: 'y_thuc',
-    khiDuyet: (_p, yc) => {
-      db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
-        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id);
+    khiDuyet: (p, yc) => {
+      const doi = db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
+        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id).changes;
+      if (doi) baoSauDuyetDeXuat(p, yc.doi_tuong_id, demoToday());   // #6 (G3-7, G3-8): GVCN "Cần làm" + CX khi Meeting
     },
     /* Từ chối → vi phạm về Cần xử lý từ ngày quyết (batBuocTu), bậc giữ; lý do nằm ở thẻ (Q13). */
     khiTuChoi: (p, yc, lyDo) => {
@@ -562,14 +563,13 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const khongTang = (THANG as readonly string[]).includes(d.kind ?? '');
       return {
         tieuDe: khongTang ? `Không tăng bậc · ${nhan}` : `Đề xuất ${nhan}`,
-        phu: d.soViPham ? `${d.soViPham} vi phạm` : null,
+        /* #6 (G3-5): vi phạm + bằng chứng xem NGAY trong panel duyệt (web đọc khi mở panel) — dòng thẻ chỉ còn số. */
+        phu: [d.soViPham ? `${d.soViPham} vi phạm` : null, d.soTep ? `${d.soTep} bằng chứng` : null].filter(Boolean).join(' · ') || null,
         dong: [
           `${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
           ...(d.bacKe ? [`Bậc thang kế tiếp đang là ${d.bacKe} — duyệt đề xuất này không đổi bậc`] : []),
-          /* Bằng chứng bắt buộc khi gửi (V4-10): đếm lúc gửi, xem ở tab Ý thức của em (nút Mở) — không thêm câu SQL mỗi thẻ. */
-          ...(d.soTep ? [`Kèm ${d.soTep} bằng chứng (tệp / liên kết) — bấm Mở để xem`] : []),
         ],
-        neuDuyet: 'GVCN ghi "Đã thực hiện" trong 5 ngày.',
+        neuDuyet: d.kind === 'meeting_cx' ? 'GVCN ghi "Đã thực hiện" trong 5 ngày · CX chi nhánh được báo có họp.' : 'GVCN ghi "Đã thực hiện" trong 5 ngày.',
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
       };
     },
@@ -935,6 +935,56 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         mo: yc.trang_thai === 'cho' && yc.hoc_vien_id
           ? duongHoSoHocVien(yc.hoc_vien_id, laCase ? { caseId: yc.doi_tuong_id } : { caseId: d.caseId, paId: yc.doi_tuong_id }) : undefined,
         duLieu: !laCase && d.caseId ? { caseId: d.caseId } : undefined,
+      };
+    },
+  },
+  /* ------------------------------------------------------------ SOS-TAM-PA (chủ SP 11/11) · GV giữ PA của mình khác PA quy chế — đối tượng = PA quy chế chờ */
+  {
+    loai: 'giu_pa_gv',
+    khiDuyet: (p, yc) => apDungGiuPaGv(yc, 'duyet', p.userId),
+    khiTuChoi: (p, yc) => apDungGiuPaGv(yc, 'tu_choi', p.userId),
+    khiRut: (_p, yc) => apDungGiuPaGv(yc, 'tra', null),
+    /* Huỷ quyết định trong ngày: chụp PA của Case + Case + Hành trình (thêm) lúc quyết — đảo trả PA quy chế / PA GV y như trước. */
+    dao: (() => {
+      const ds = (yc: YeuCauRow): DongDao[] => [
+        { bang: 'case_interventions', dk: 'case_id = (SELECT case_id FROM case_interventions WHERE id = ?)', args: [yc.doi_tuong_id], k: 'sua' },
+        { bang: 'sos_cases', dk: 'id = (SELECT case_id FROM case_interventions WHERE id = ?)', args: [yc.doi_tuong_id], k: 'sua' },
+        ...hanhTrinh(yc),
+      ];
+      return { duyet: ds, tuChoi: ds };
+    })(),
+    /* PA quy chế đã thôi chờ (xác nhận / xoá / Case đóng) hoặc PA GV không còn chạy → thẻ không còn ý nghĩa; PA quy chế (nếu còn chờ) về chờ chọn. */
+    chet: {
+      sql: `NOT EXISTS (SELECT 1 FROM case_interventions q JOIN sos_cases sc ON sc.id = q.case_id WHERE q.id = y.doi_tuong_id AND q.preset = 1
+               AND q.confirmed_at IS NULL AND q.status = 'planned' AND sc.status != 'done')
+         OR NOT EXISTS (SELECT 1 FROM case_interventions g, json_each(y.du_lieu, '$.paGv') j WHERE g.id = j.value AND ${PA_GV_MO('g')})`,
+      lyDo: 'PA quy chế hoặc PA của GV đã đổi',
+      sau: (yc) => apDungGiuPaGv(yc, 'tra', null),
+    },
+    quet: (conn, homNay) => quetGiuPaGv(conn, homNay),
+    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
+      `SELECT q.id, q.kind, q.description, q.case_id, sc.topic, a.attempt_no, a.kind AS attempt_kind,
+              (SELECT g.description FROM case_interventions g WHERE g.id = json_extract(y.du_lieu, '$.paGv[0]')) AS mo_ta_gv,
+              (SELECT COALESCE(u.full_name, g.performer_name) FROM case_interventions g LEFT JOIN users u ON u.id = g.performer_user_id
+                 WHERE g.id = json_extract(y.du_lieu, '$.paGv[0]')) AS nguoi_gv
+         FROM case_interventions q JOIN sos_cases sc ON sc.id = q.case_id LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         JOIN yeu_cau_duyet y ON y.doi_tuong_id = q.id AND y.loai = 'giu_pa_gv'
+        WHERE q.id IN (?) GROUP BY q.id`),
+    moTa: (yc, ngu) => {
+      const x = ngu.them.get(yc.id);
+      const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as { kindQ?: string; kindG?: string };
+      return {
+        tieuDe: `PA khác quy chế${x?.topic ? ` · ${caseTopicLabel(x.topic)}` : ''}`,
+        phu: x ? nhanDotNgan(x.attempt_kind, x.attempt_no) : null,
+        dong: [
+          `${tenLoaiPa(d.kindQ ?? '')} (quy chế) → ${[tenLoaiPa(d.kindG ?? ''), x?.nguoi_gv].filter(Boolean).join(' · ')} (GV)`,
+          ...(x?.mo_ta_gv ? [`“${x.mo_ta_gv}”`] : []),
+          `${nguoiXin(yc, ngu)}${yc.ly_do ? ` · Lý do: “${yc.ly_do}”` : ''}`,
+          ...(yc.trang_thai === 'cho' && yc.han_duyet ? [`Quá ${ngay(yc.han_duyet, ngu)} chưa trả lời: chốt theo PA của GV`] : []),
+        ],
+        neuDuyet: 'Giữ PA của GV, PA quy chế kết thúc. Từ chối: PA quy chế chạy từ hôm nay, PA của GV dừng.',
+        mo: yc.trang_thai === 'cho' && yc.hoc_vien_id && x ? duongHoSoHocVien(yc.hoc_vien_id, { caseId: x.case_id, paId: yc.doi_tuong_id }) : undefined,
+        duLieu: x ? { caseId: x.case_id } : undefined,
       };
     },
   },
