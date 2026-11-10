@@ -1,0 +1,986 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đề xuất QL duyệt Ý thức · mockup 11/11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;600;700&display=swap">
+<style>/* ==== nhúng nguyên audit-0311/chung.css (đã duyệt 29/10 – 03/11) ==== */
+/* audit-0311 — CSS chung 4 mockup UX-A, chép nguyên từ v8/cong-viec-ql.html (đã duyệt 29/10) + phần thêm cuối tệp. */
+/* V8 · Công việc vai QL — ĐỀ XUẤT bố cục (29/10). Hình ảnh theo mockup đã duyệt `v7/cong-viec-2.html` (khung C1); token = giá trị web hiện tại
+   (`web/src/index.css`, gồm SOS MAU-MUC 28/10: 1 rỗng · 2 nền vừa · 3 đặc). Khung 1440 luôn TỐI (.toi), 375 luôn SÁNG (.sang).
+   Nền vàng viền đứt = chú thích mockup, không lên web. */
+.toi {
+  --bg:#050a16; --surface:#111c33; --surface-2:#172440; --line:#22324f; --line-strong:#33496f;
+  --accent:#9cbde7; --accent-strong:#bdd3ef; --accent-soft:#192b46; --accent-ink:#060c1a;
+  --nc-nen:#22406c; --nc-vien:#4d72a8; --nc-chu:#eaf1fb;
+  --text:#e7edf7; --text-dim:rgb(183 194 216); --text-faint:rgb(154 168 194);
+  --hong:#f57aae; --dh-nen:#0a1a3a; --dh-chu:#c3d2ec;
+  --ok:rgb(148 209 174); --ok-nen:rgb(30 50 43); --ok-vien:rgb(73 117 92);
+  --bad:rgb(232 154 140); --bad-nen:rgb(52 28 29); --bad-vien:rgb(126 72 65);
+  --soon:rgb(228 199 132); --soon-nen:rgb(48 42 26); --soon-vien:rgb(118 102 63);
+  --doing:rgb(156 189 231); --doing-nen:rgb(25 43 70); --muted-nen:rgb(22 34 58);
+  --o-nen:#0b1427; --o-vien:#66789f; --nen-chim:#0b1427; --phu-hop:rgb(0 0 0 / .6);
+  --sos1:rgb(204 185 109); --sos1-chu:rgb(217 201 129); --sos2:rgb(154 102 51); --sos2-chu:rgb(243 199 156); --sos2-nen:#5a320f;
+  --sos3-nen:#a33d2d; --sos3-vien:#c45a47; --sos3-tren:#fff;
+  color-scheme: dark;
+}
+.sang {
+  --bg:#f3f5f9; --surface:#fff; --surface-2:#f2f4f9; --line:#d9deea; --line-strong:#b0b8cd;
+  --accent:#273c8f; --accent-strong:#1f3077; --accent-soft:#eef1fa; --accent-ink:#fff;
+  --nc-nen:#273c8f; --nc-vien:#273c8f; --nc-chu:#fff;
+  --text:#141a2b; --text-dim:rgb(74 83 108); --text-faint:rgb(95 105 132);
+  --hong:#f25a98; --dh-nen:#273c8f; --dh-chu:#dce2f4;
+  --ok:rgb(56 103 76); --ok-nen:rgb(231 243 236); --ok-vien:rgb(124 178 147);
+  --bad:rgb(166 58 45); --bad-nen:rgb(251 237 235); --bad-vien:rgb(222 156 148);
+  --soon:rgb(126 95 54); --soon-nen:rgb(251 244 225); --soon-vien:rgb(203 173 110);
+  --doing:rgb(58 80 166); --doing-nen:rgb(238 241 250); --muted-nen:rgb(242 244 249);
+  --o-nen:#fff; --o-vien:#7f8aa6; --nen-chim:#eceff5; --phu-hop:rgb(17 26 66 / .45);
+  --sos1:rgb(155 126 71); --sos1-chu:rgb(113 92 50); --sos2:rgb(185 119 63); --sos2-chu:rgb(124 67 22); --sos2-nen:#f6d8b8;
+  --sos3-nen:#862e27; --sos3-vien:#862e27; --sos3-tren:#fff;
+  color-scheme: light;
+}
+/* bí danh token V5 (v5-nen.css) để thành phần dùng chung đọc đúng chế độ của khung */
+.toi, .sang { --be-mat:var(--surface); --be-mat-2:var(--surface-2); --be-mat-noi:var(--surface); --vien:var(--line); --vien-dam:var(--line-strong);
+  --vien-o:var(--o-vien); --chu:var(--text); --chu-2:var(--text-dim); --chu-3:var(--text-faint); --nhan:var(--accent); --nhan-nen:var(--accent-soft);
+  --focus:var(--accent); --hover:var(--accent-soft); --phong:'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif; --phong-so:'Inter','Be Vietnam Pro',system-ui,sans-serif;
+  color: var(--text); font: 15px/1.45 var(--phong); }
+
+/* ---- phần đọc mockup (KHÔNG phải giao diện web) ---- */
+body { margin:0; background:#e4e8ef; color:#141a2b; font:15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; }
+.trang { padding:20px 24px 56px; display:grid; gap:28px; }
+.dau-mk h1 { font-size:22px; margin:0 0 6px; }
+.dau-mk p { margin:0; color:#4a536c; max-width:110ch; }
+.muc-mk { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.muc-mk a { font:600 13px var(--phong,inherit); padding:5px 10px; border-radius:6px; border:1px solid #b0b8cd; background:#fff; color:#141a2b; text-decoration:none; }
+.khu > h2 { font-size:17px; margin:0 0 10px; }
+.ghi { background:#fffbea; color:#4a3a06; border:1px dashed #d9a93a; border-radius:8px; padding:8px 12px; font-size:13px; margin:0 0 10px; max-width:150ch; }
+.ghi b { font-weight:700; }
+.hang-khung { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; }
+.hang-khung > figure { margin:0; display:grid; gap:6px; }
+figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; background:#fffbea; border:1px dashed #d9a93a; border-radius:6px; padding:3px 8px; justify-self:start; }
+.so-mk { display:inline-flex; width:20px; height:20px; border-radius:50%; background:#d9a93a; color:#fff; font:700 12px/20px sans-serif; justify-content:center; margin-right:4px; }
+
+/* ================= GIAO DIỆN WEB (mô phỏng) ================= */
+.man, .dt { position:relative; overflow:hidden; background:var(--bg); border-radius:6px; display:flex; flex-direction:column; }
+.man { width:1408px; height:880px; }
+.dt { width:375px; height:780px; }
+.so { font-family:var(--phong-so); font-variant-numeric:tabular-nums; }
+:where(.toi, .sang) a { color:var(--accent); text-decoration:none; }
+:where(.toi, .sang) a:hover { text-decoration:underline; text-underline-offset:3px; }
+:where(.toi, .sang) :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+:where(.toi, .sang) button { font:inherit; color:inherit; }
+:where(.toi, .sang) :is(h1, h2, h3) { margin:0; line-height:1.3; }
+:where(.toi, .sang) p { margin:0; }
+
+/* thanh trên */
+.tt { flex:none; height:52px; background:var(--dh-nen); display:flex; align-items:center; gap:2px; padding:0 16px; color:var(--dh-chu); font-size:14px; }
+.tt .logo { display:inline-flex; align-items:baseline; gap:6px; margin-right:18px; }
+.tt .logo b { color:var(--hong); font-size:22px; font-weight:800; letter-spacing:.02em; }
+.tt .logo span { color:#fff; font-size:12px; letter-spacing:.24em; }
+.tt .m { padding:0 12px; height:52px; display:inline-flex; align-items:center; gap:6px; border-bottom:3px solid transparent; white-space:nowrap; }
+.tt .m.dang { color:#fff; font-weight:700; border-bottom-color:var(--hong); }
+.tt .so-nav { min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#fff; color:#0a1a3a; font:700 12px/20px var(--phong-so); text-align:center; }
+.tt .phai { margin-left:auto; display:inline-flex; gap:14px; align-items:center; font-size:13px; }
+.dt .tt { padding:0 8px; } .dt .tt .logo { margin-right:6px; } .dt .tt .logo span { display:none; } .dt .tt .m { padding:0 8px; font-size:13px; }
+
+.noi-dung { flex:1; min-height:0; padding:18px 24px 0; display:flex; flex-direction:column; gap:14px; }
+.dt .noi-dung { padding:12px 16px 0; gap:10px; overflow:hidden; }
+.dau-trang { flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+.dau-trang h1 { font-size:22px; font-weight:700; }
+.dem-tong { font-size:14px; color:var(--text-dim); white-space:nowrap; }
+.dem-tong b { color:var(--text); font-weight:600; font-family:var(--phong-so); }
+.bao-qua { font:700 13px var(--phong); color:var(--bad); white-space:nowrap; }
+.bao-nay { font:600 13px var(--phong); color:var(--soon); white-space:nowrap; }
+.xong-nay { font-size:13px; color:var(--ok); font-weight:600; }
+.loc { margin-left:auto; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.dt .loc { margin-left:0; width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.dt .loc .doan { grid-column:1 / -1; }
+.o-chon { appearance:none; height:36px; padding:0 30px 0 12px; border-radius:8px; border:1px solid var(--o-vien); background:var(--o-nen) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%237f8aa6' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 11px center; color:var(--text); font:500 14px var(--phong); display:inline-flex; align-items:center; white-space:nowrap; cursor:pointer; }
+.o-chon .so { color:var(--text-faint); font-size:12px; margin-left:6px; }
+.o-chon.dang-loc { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); font-weight:700; }
+.dt .o-chon { height:44px; font-size:16px; }
+.doan { display:inline-flex; height:36px; border:1px solid var(--o-vien); border-radius:8px; overflow:hidden; }
+.doan button { appearance:none; border:0; background:var(--o-nen); padding:0 12px; font:500 14px var(--phong); color:var(--text-dim); cursor:pointer; display:inline-flex; gap:6px; align-items:center; white-space:nowrap; }
+.doan button + button { border-left:1px solid var(--o-vien); }
+.doan button[aria-pressed="true"] { background:var(--accent-soft); color:var(--text); font-weight:700; box-shadow:inset 0 -2px 0 var(--accent); }
+.doan .so { font-size:12px; color:var(--text-faint); }
+.dt .doan { height:44px; width:100%; } .dt .doan button { flex:1; justify-content:center; padding:0 6px; font-size:15px; }
+.bao-chi-xem { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:9px 12px; border-radius:8px; background:var(--surface-2); color:var(--text-dim); font-size:14px; flex:none; }
+.bao-chi-xem b { color:var(--text); font-weight:600; }
+
+.bo-cuc { flex:1; min-height:0; display:grid; grid-template-columns:600px minmax(0,1fr); gap:16px; align-items:stretch; }
+.cot-ds { min-height:0; overflow:hidden; padding-bottom:24px; display:grid; gap:14px; align-content:start; position:relative; }
+.cot-pn { min-height:0; padding-bottom:16px; display:flex; flex-direction:column; }
+.dt .bo-cuc { display:block; }
+
+/* nút, ô */
+.nut { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:36px; padding:0 14px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text); font:600 14px var(--phong); cursor:pointer; white-space:nowrap; width:auto; }
+.nut:hover { border-color:var(--accent); }
+.nut-chinh { background:var(--nc-nen); border-color:var(--nc-vien); color:var(--nc-chu); font-weight:700; }
+.nut-ma { background:transparent; border-color:transparent; color:var(--accent); }
+.nut-nho { height:30px; padding:0 10px; font-size:13px; }
+.nut[disabled] { opacity:.45; cursor:not-allowed; }
+.dt .nut { height:44px; } .dt .nut-nho { height:36px; }
+.o { font:15px var(--phong); color:var(--text); background:var(--o-nen); border:1px solid var(--o-vien); border-radius:8px; height:40px; padding:0 10px; width:100%; }
+textarea.o { height:auto; min-height:76px; padding:8px 10px; resize:vertical; line-height:1.45; }
+.dt .o { font-size:16px; height:44px; } .dt textarea.o { height:auto; }
+.o-loi { border-color:var(--bad); }
+.link-nho { appearance:none; border:0; background:none; padding:0; color:var(--accent); font:600 13px var(--phong); cursor:pointer; white-space:nowrap; }
+.nut-i { appearance:none; width:28px; height:28px; border-radius:6px; border:0; background:transparent; color:var(--text-dim); font:400 17px/1 var(--phong); cursor:help; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.o-tich { width:18px; height:18px; accent-color:var(--accent); margin:0; cursor:pointer; }
+
+/* chip */
+.td { display:inline-flex; align-items:center; gap:5px; height:22px; padding:0 9px; border-radius:999px; background:var(--muted-nen); color:var(--text-dim); font:600 12px var(--phong); white-space:nowrap; }
+.td.sap { color:var(--soon); background:var(--soon-nen); } .td.qua { color:var(--bad); background:var(--bad-nen); }
+.td.qua::before, .td.sap::before { content:"⚠"; font-size:12px; }
+.td.sap.nay { font-weight:700; box-shadow:inset 0 0 0 1px var(--soon-vien); }
+.td.khong { background:none; color:var(--text-faint); font-weight:500; padding:0; }
+.sos { display:inline-flex; align-items:center; height:22px; padding:0 7px; border-radius:4px; font:600 12px var(--phong); white-space:nowrap; border:1px solid; }
+.sos.m1 { color:var(--sos1-chu); background:transparent; border-color:var(--sos1); }
+.sos.m2 { color:var(--sos2-chu); background:var(--sos2-nen); border-color:var(--sos2); }
+.sos.m3 { color:var(--sos3-tren); background:var(--sos3-nen); border-color:var(--sos3-vien); }
+.dem { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; border-radius:4px; border:1px solid var(--line-strong); background:var(--surface); font:600 12px var(--phong); color:var(--text); white-space:nowrap; }
+.loai-yc { font:600 12px var(--phong); color:var(--text-faint); white-space:nowrap; }
+.diem-duoi { color:var(--bad); font-weight:700; font-family:var(--phong-so); white-space:nowrap; }
+.diem-duoi::before { content:"✗ "; }
+.mo { color:var(--text-dim); } .mo2 { color:var(--text-faint); }
+.ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.nw { white-space:nowrap; }
+
+/* ---------- DANH SÁCH BA TẦNG (V18, mockup C1) ---------- */
+.nhom { background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.dai-nhom { position:sticky; top:0; z-index:3; display:flex; align-items:center; gap:8px; min-height:48px; padding:0 8px 0 13px; background:var(--surface-2); border-left:3px solid var(--accent); border-bottom:1px solid var(--line); border-radius:11px 11px 0 0; font:700 15px/1.35 var(--phong); }
+.nhom.gap .dai-nhom { border-bottom:0; border-radius:11px; }
+.dai-nhom .bam-nhom { appearance:none; border:0; background:none; padding:12px 0; display:flex; align-items:center; gap:8px; flex:0 1 auto; min-width:0; text-align:left; cursor:pointer; font:inherit; white-space:nowrap; }
+.dai-nhom .ic { color:var(--accent); }
+.dai-nhom .sau-ten { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; min-width:0; }
+.dai-nhom .phu { font:400 13px var(--phong); color:var(--text-dim); }
+.dai-nhom .phu b { font-weight:600; color:var(--text); font-family:var(--phong-so); }
+.dai-nhom .mui { appearance:none; border:0; background:none; margin-left:auto; color:var(--text-dim); font-size:13px; width:32px; height:32px; border-radius:6px; cursor:pointer; flex:none; }
+.dt .dai-nhom { flex-wrap:wrap; column-gap:8px; }
+.dt .dai-nhom .bam-nhom { flex:1 1 0; white-space:normal; }
+.dt .dai-nhom .sau-ten { order:3; flex-basis:100%; padding:0 0 10px 24px; margin-top:-6px; }
+.vach-han { display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:0 16px; font:600 13px var(--phong); color:var(--text-dim); background:none; border:0; border-top:1px solid var(--line); text-align:left; }
+.dai-nhom + .vach-han { border-top:0; }
+button.vach-han { cursor:pointer; }
+.khoi { border-top:1px solid var(--line-strong); padding:12px 0 6px; }
+.khoi.dau-tien, .vach-han + .khoi { border-top:0; }
+.dt-khoi { display:flex; align-items:center; gap:10px; padding:0 16px 4px; min-height:30px; }
+.av { width:28px; height:28px; flex:none; border-radius:50%; background:var(--surface-2); border:1px solid var(--line-strong); color:var(--text-dim); font:700 12px/26px var(--phong); text-align:center; }
+.av.vuong { border-radius:8px; background:var(--accent-soft); border-color:transparent; color:var(--accent); display:inline-flex; align-items:center; justify-content:center; }
+.av.gop { position:relative; border-radius:8px; background:var(--surface); border:1.5px solid var(--accent); color:var(--accent); font:700 13px/25px var(--phong-so); margin:3px 3px 0 0; }
+.av.gop::before { content:""; position:absolute; inset:-5px -5px 3px 3px; border:1.5px solid var(--accent); border-radius:8px; opacity:.5; z-index:-1; }
+.viec.gop { isolation:isolate; }
+/* G6 (chủ SP 28/10): tên em là link hồ sơ, KHÔNG "↗" — rê = màu nhấn + gạch chân */
+.ten-em { font:600 15px/1.35 var(--phong); color:var(--text) !important; white-space:nowrap; }
+.ten-em:hover { color:var(--accent) !important; text-decoration:underline; }
+.dt-ten { display:flex; flex-wrap:wrap; align-items:center; gap:2px 10px; min-width:0; }
+.dt-khoi .lop { font-size:13px; color:var(--text-dim); white-space:nowrap; }
+.ds-viec { list-style:none; margin:0; padding:0; }
+.viec { display:grid; grid-template-columns:minmax(0,1fr) 136px 112px; column-gap:12px; align-items:center; min-height:50px; padding:6px 16px 6px 54px; cursor:pointer; position:relative; }
+.ds-viec .viec::before { content:""; position:absolute; left:30px; top:0; bottom:0; width:1px; background:var(--line-strong); }
+.ds-viec > li:last-child > .viec::before { bottom:50%; }
+.ds-viec .viec::after { content:""; position:absolute; left:30px; top:50%; width:12px; height:1px; background:var(--line-strong); }
+.viec:hover { background:var(--accent-soft); }
+.viec.chon { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+.viec .tv { appearance:none; border:0; background:none; padding:0; margin:0; font:inherit; color:inherit; text-align:left; cursor:pointer; min-width:0; display:grid; gap:1px; }
+.viec .t1 { font:500 15px/1.35 var(--phong); color:var(--text); display:flex; flex-wrap:wrap; gap:2px 8px; align-items:center; }
+.viec .t1 .doi-trang { font-size:13px; color:var(--accent); }
+.viec .t2 { font-size:13px; line-height:1.4; color:var(--text-dim); }
+.viec .t2 + .t2 { color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.viec .h { display:grid; gap:2px; justify-items:start; }
+.viec .h .ai { font-size:13px; color:var(--text); padding-left:2px; white-space:nowrap; }
+.viec .h .ai.toi { color:var(--hong); font-weight:600; }
+.viec .n { justify-self:stretch; display:flex; }
+.viec .n .nut { width:100%; }
+.viec .n.ba { flex-direction:column; gap:2px; align-items:stretch; }
+.viec .n.ba .duoi { display:flex; justify-content:space-between; gap:4px; }
+.viec .n.ba .duoi .nut-ma { height:26px; padding:0 4px; width:auto; }
+/* dòng duyệt: ô tích trong rãnh cây (chỉ loại duyệt nhiều được) */
+.viec.duyet { padding-left:76px; }
+.viec.duyet > .tich { position:absolute; left:48px; top:14px; }
+.viec.duyet.lop { padding-left:16px; grid-template-columns:28px minmax(0,1fr) 136px 112px; }
+.viec.dt-lop { grid-template-columns:28px minmax(0,1fr) 136px 112px; padding-left:16px; column-gap:12px; min-height:56px; }
+.viec.dt-lop .t1 { font-weight:600; }
+.cuoi-nhom { display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; padding:10px 16px 12px; border-top:1px solid var(--line); font-size:13px; }
+.cuoi-nhom a { font-weight:600; }
+.skel { height:14px; border-radius:6px; background:linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); }
+.skel.tron { width:28px; height:28px; border-radius:50%; flex:none; }
+.rong { text-align:center; padding:32px 16px; color:var(--text-dim); display:grid; gap:8px; justify-items:center; }
+.rong .tieu { color:var(--text); font-weight:600; font-size:17px; }
+.bao-loi { display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:8px; background:var(--bad-nen); border:1px solid var(--bad-vien); font-size:14px; color:var(--text); }
+.bao-loi b { color:var(--bad); }
+/* panel trống: cao hết cột (sửa mục 12 critique) */
+.cho-chon { flex:1; border:1px dashed var(--line-strong); border-radius:12px; display:grid; place-content:center; gap:6px; text-align:center; color:var(--text-dim); font-size:15px; }
+.cho-chon .phim { font-size:13px; color:var(--text-faint); }
+.cho-chon kbd { font:600 12px var(--phong-so); border:1px solid var(--line-strong); border-radius:4px; padding:1px 5px; color:var(--text-dim); }
+
+/* thanh chọn nhiều (dính chân cột danh sách) */
+.thanh-chon { position:absolute; left:0; right:0; bottom:12px; z-index:5; background:var(--surface); border:1px solid var(--accent); border-radius:10px; box-shadow:0 8px 24px rgb(0 0 0 / .35); padding:8px 10px; display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.thanh-chon .dem-chon { flex:1; min-width:0; font-size:14px; color:var(--text); font-weight:600; white-space:nowrap; }
+.thanh-chon .dem-chon span { font-weight:400; color:var(--text-dim); }
+.thanh-chon .ly-do { flex-basis:100%; display:grid; gap:6px; border-top:1px solid var(--line); padding-top:8px; }
+.thanh-chon .ly-do label { font:700 13px var(--phong); }
+.thanh-chon .ly-do .chan { display:flex; justify-content:flex-end; gap:8px; }
+.dt .thanh-chon { position:absolute; left:12px; right:12px; bottom:12px; }
+.dt .thanh-chon .dem-chon { flex-basis:100%; }
+.dt .thanh-chon > .nut { flex:1; }
+
+/* ---------- PANEL (KhungPanel, M6) ---------- */
+.pn { flex:1; min-height:0; background:var(--surface); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; overflow:clip; }
+.dt .pn-toan { position:absolute; inset:0; z-index:6; background:var(--bg); display:flex; flex-direction:column; }
+.dt .pn-toan .pn { border-radius:0; border:0; }
+.pn-dau { padding:10px 20px 14px; border-bottom:1px solid var(--line); display:grid; gap:4px; flex:none; }
+.dt .pn-dau { padding:6px 16px 12px; }
+.pn-h1 { display:flex; align-items:center; gap:8px; min-height:36px; }
+.quay { appearance:none; border:0; background:none; color:var(--accent); font:600 14px var(--phong); padding:6px 8px; margin-left:-8px; border-radius:6px; cursor:pointer; display:inline-flex; gap:4px; align-items:center; min-height:44px; }
+.x { margin-left:auto; appearance:none; border:0; background:transparent; color:var(--text-dim); width:36px; height:36px; border-radius:8px; font-size:17px; cursor:pointer; flex:none; }
+.dt .x { width:44px; height:44px; margin-right:-8px; }
+.loai { display:flex; align-items:center; gap:6px; font:700 12px/1.4 var(--phong); letter-spacing:.06em; color:var(--text-faint); }
+.loai::before { content:""; width:14px; height:3px; border-radius:2px; background:var(--hong); }
+.pn-tieu { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+.pn-tieu h2 { flex:1; min-width:12ch; font-size:17px; font-weight:700; line-height:1.35; }
+.pn-ngu { font-size:14px; color:var(--text-dim); display:flex; flex-wrap:wrap; align-items:center; gap:2px 0; }
+.pn-ngu > span + span:not(.sos)::before { content:"·"; margin:0 7px; color:var(--text-faint); }
+.pn-ngu .ten-em { font-size:14px; }
+.pn-ngu > .sos { margin-left:10px; }
+.pn-than { flex:1; min-height:0; overflow:hidden; padding:0 20px 20px; }
+.dt .pn-than { padding:0 16px 20px; }
+.pn-chan { flex:none; border-top:1px solid var(--line-strong); padding:10px 20px; display:flex; align-items:center; gap:10px; background:var(--surface); flex-wrap:wrap; }
+.pn-chan .trai { flex:1; min-width:0; font-size:13px; color:var(--text-dim); display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.dt .pn-chan { padding:10px 16px 14px; }
+.dt .pn-chan .trai { flex-basis:100%; }
+.dt .pn-chan .nut { flex:1; }
+.tt-luu { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; }
+.tt-luu.da { color:var(--ok); } .tt-luu.nhap { color:var(--soon); }
+.form { display:grid; gap:20px; padding-top:18px; }
+.boi-canh { background:var(--surface-2); border-radius:8px; padding:12px 14px; display:grid; grid-template-columns:7.5rem minmax(0,1fr); gap:8px 14px; font-size:15px; margin:0; align-items:baseline; }
+.boi-canh dt { color:var(--text-dim); font-size:13px; font-weight:500; } .boi-canh dd { margin:0; }
+.dt .boi-canh { grid-template-columns:minmax(0,1fr); gap:0; } .dt .boi-canh dd { margin-bottom:6px; }
+.khoi-hau-qua { border:1px solid var(--soon-vien); background:var(--soon-nen); border-radius:8px; padding:10px 14px; font-size:14px; }
+.khoi-hau-qua b { color:var(--soon); display:block; font-size:13px; }
+.truong { display:grid; gap:8px; }
+.truong > .nhan { font:700 15px/1.35 var(--phong); color:var(--text); }
+.truong > .nhan .bb { color:var(--bad); }
+.truong .phu-t { font-size:13px; color:var(--text-faint); font-weight:400; }
+.lua { display:flex; flex-wrap:wrap; gap:8px; }
+.lua button { appearance:none; height:36px; padding:0 12px; border-radius:8px; border:1px solid var(--o-vien); background:var(--o-nen); font:500 14px var(--phong); color:var(--text); cursor:pointer; }
+.lua button[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:700; box-shadow:inset 0 0 0 1px var(--accent); }
+.dt .lua button { height:44px; }
+.lich-su { border-top:1px solid var(--line); padding-top:12px; font:600 14px var(--phong); color:var(--text-dim); }
+.dai-xong { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:8px 12px; border-radius:8px; background:var(--ok-nen); border:1px solid var(--ok-vien); font-size:14px; color:var(--text); }
+.dai-xong b { color:var(--ok); }
+.dai-xong .link-nho { margin-left:auto; }
+.dai-theo-doi { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:9px 12px; border-radius:8px; background:var(--surface-2); color:var(--text-dim); font-size:14px; margin-top:14px; }
+.dai-theo-doi span:nth-child(2) { flex:1; min-width:0; }
+fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { opacity:.55; }
+.tag-mk { display:inline-flex; align-items:center; height:20px; padding:0 6px; border-radius:10px; background:#fffbea; color:#4a3a06; border:1px dashed #d9a93a; font:700 12px var(--phong); white-space:nowrap; }
+
+/* ---------- 375 ---------- */
+.dt .viec { grid-template-columns:minmax(0,1fr); row-gap:4px; min-height:56px; padding:8px 12px 8px 46px; }
+.dt .ds-viec .viec::before, .dt .ds-viec .viec::after { left:26px; }
+.dt .viec .n { display:none; }
+.dt .viec .h { display:flex; gap:8px; align-items:center; }
+.dt .viec.dt-lop { grid-template-columns:28px minmax(0,1fr); padding-left:12px; }
+.dt .viec.dt-lop .h, .dt .viec.dt-lop .n { grid-column:2; }
+.dt .viec.dt-lop .av { align-self:start; margin-top:2px; }
+.dt .viec.duyet { padding-left:72px; }
+.dt .viec.duyet > .tich { left:36px; top:10px; width:28px; height:28px; display:grid; place-items:center; }
+.dt .viec.duyet.lop { padding-left:12px; grid-template-columns:28px minmax(0,1fr); }
+.dt .viec .n.luon { display:flex; }
+.dt .viec .n.ba { flex-direction:row; gap:8px; align-items:center; }
+.dt .viec .n.ba .nut:not(.nut-ma) { width:auto; padding:0 16px; }
+.dt .viec .n.ba .duoi { gap:4px; }
+.dt .viec .n.ba .duoi .nut-ma { height:36px; padding:0 8px; }
+.dt .dt-khoi { padding:0 12px 4px; }
+.dt .vach-han { padding:0 12px; min-height:44px; }
+.dt .cuoi-nhom a { padding:10px 0; }
+
+/* ==== nhúng nguyên audit-0311/ro.css ==== */
+/* audit-0311 vòng 2 (chủ SP 03/11: "các trường díu vào nhau, text liên tục") — thành phần TÁCH TRƯỜNG dùng chung U01 · U02 · U03.
+   Luật: nhãn 12–13 mờ ĐỨNG RIÊNG trên / trái giá trị; giá trị 15 đậm; không nối nhiều trường bằng "·" thành một câu; tách bằng khoảng + đường kẻ, không thêm nền lồng nền. */
+.o { box-sizing:border-box; }
+/* dải sự kiện: mỗi trường một ô, nhãn trên – giá trị dưới */
+.facts { display:flex; flex-wrap:wrap; gap:0; }
+.fact { display:grid; gap:2px; padding:2px 18px; border-left:1px solid var(--line); min-width:0; }
+.fact:first-child { padding-left:0; border-left:0; }
+.fact > span { font:500 12px/1.3 var(--phong); color:var(--text-faint); white-space:nowrap; }
+.fact > b { font:600 15px/1.35 var(--phong); color:var(--text); white-space:nowrap; }
+.dt .fact { padding:2px 12px; } .dt .fact > b { font-size:14px; }
+/* thẻ meta nhỏ thay chuỗi "a · b · c" */
+.tags { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.tag { display:inline-flex; align-items:center; gap:4px; height:22px; padding:0 8px; border-radius:6px; border:1px solid var(--line-strong); font:600 12px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.tag.nhat { border-color:transparent; background:var(--surface-2); }
+.tag b { color:var(--text); font-weight:700; }
+/* khung trường: nhãn trái cột cố định, giá trị phải, mỗi trường một hàng kẻ */
+.fld { display:grid; grid-template-columns:8.5rem minmax(0,1fr); margin:0; }
+.fld > dt { padding:10px 0; font:500 13px/1.4 var(--phong); color:var(--text-faint); border-top:1px solid var(--line); }
+.fld > dd { margin:0; padding:9px 0; font:15px/1.5 var(--phong); color:var(--text); border-top:1px solid var(--line); min-width:0; }
+.fld > dt:first-of-type, .fld > dt:first-of-type + dd { border-top:0; }
+.dt .fld { grid-template-columns:minmax(0,1fr); } .dt .fld > dd { border-top:0; padding-top:0; }
+/* đoạn mô tả: chữ thường, vạch trái, tối đa 3 dòng */
+.trich { margin:0; padding:2px 0 2px 12px; border-left:3px solid var(--line-strong); font:15px/1.55 var(--phong); color:var(--text); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; max-width:80ch; }
+.trich.hai { -webkit-line-clamp:2; }
+.nguon { font-size:12px; color:var(--text-faint); }
+/* số chính */
+.stat { display:grid; gap:2px; }
+.stat > span { font:500 12px var(--phong); color:var(--text-faint); }
+.stat > b { font:700 22px/1.15 var(--phong-so); }
+.stat > b.duoi { color:var(--bad); } .stat > b.dat { color:var(--ok); } .stat > b.bang { color:var(--doing); }
+.stat > small { font-size:12px; color:var(--text-dim); }
+/* tiêu đề mục trong khối */
+.muc-h { display:flex; align-items:center; gap:8px; font:700 15px/1.3 var(--phong); color:var(--text); margin:0 0 6px; }
+.muc-h::before { content:""; width:3px; height:18px; border-radius:2px; background:var(--accent); flex:none; }
+.muc-h .dem { font-size:12px; }
+/* chuỗi điểm theo lượt */
+.chuoi { display:flex; align-items:center; gap:4px; flex-wrap:nowrap; }
+.chuoi .m { display:grid; justify-items:center; gap:1px; padding:4px 8px; border-radius:8px; border:1px solid var(--line); min-width:52px; }
+.chuoi .m span { font:500 12px var(--phong); color:var(--text-faint); white-space:nowrap; }
+.chuoi .m b { font:700 16px var(--phong-so); }
+.chuoi .m.moi { border-color:var(--line-strong); background:var(--surface-2); }
+.chuoi .mui-c { color:var(--text-faint); font-size:13px; }
+.ket { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 10px; border-radius:999px; font:600 13px var(--phong); white-space:nowrap; }
+.ket.tb { background:var(--ok-nen); color:var(--ok); } .ket.mp { background:var(--soon-nen); color:var(--soon); } .ket.ko { background:var(--bad-nen); color:var(--bad); } .ket.cd { background:var(--muted-nen); color:var(--text-dim); }
+.dem-chu { font:500 12px var(--phong-so); color:var(--text-faint); justify-self:end; }
+.dem-chu.gan { color:var(--soon); font-weight:700; }
+/* hạn = chữ (DESIGN "Hạn — chỉ chữ"; U01 #27): quá hạn đỏ + ⚠ không nền — khác chip SOS 3 nền đỏ đặc */
+.td.qua, .td.sap { background:none; padding:0; }
+.td.qua { font-weight:700; }
+/* hạn dùng chung (U01 · U02 · U03) */
+.han { font:600 13px var(--phong); }
+.han.qua { color:var(--bad); font-weight:700; } .han.qua::before { content:"⚠ "; }
+.han.nay { color:var(--soon); font-weight:700; } .han.nay::before { content:"⚠ "; }
+.han.sap { color:var(--text); } .han.xa { color:var(--text-dim); font-weight:500; }
+
+</style>
+<style>
+/* ---- chép từ audit-0311/u10-y-thuc.html (đã duyệt 03/11) ---- */
+/* U10 — chỉ phần riêng của màn Ý thức; còn lại dùng chung.css + ro.css (U01–U09). */
+.man.dai { height:auto; min-height:880px; } .dt.dai { height:auto; }
+.trang-l { padding:14px 24px 28px; display:grid; gap:14px; }
+.dt .trang-l { padding:12px 16px 24px; gap:12px; }
+.l1 { display:flex; align-items:center; gap:14px; flex-wrap:wrap; } .l1 h1 { font-size:22px; font-weight:700; } .l1 .phai { margin-left:auto; display:flex; gap:8px; }
+.tab { display:flex; gap:22px; border-bottom:1px solid var(--line); font-size:15px; }
+.tab span { padding:8px 0; color:var(--text-dim); font-weight:500; } .tab span.dang { color:var(--text); font-weight:700; box-shadow:inset 0 -2px 0 var(--accent); }
+.dt .tab { gap:16px; overflow:hidden; white-space:nowrap; }
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.cong-cu { display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid var(--line); }
+.cong-cu .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.dt .cong-cu { padding:10px 12px; } .dt .cong-cu .doan { order:5; }
+
+/* badge việc (chủ SP 03/11, U04): khung + chấm màu theo trạng thái + chữ */
+.bv { display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 9px; border-radius:6px; border:1px solid var(--line-strong); background:var(--surface); font:600 12px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.bv::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--text-faint); flex:none; }
+.bv.cho { color:var(--soon); border-color:var(--soon-vien); } .bv.cho::before { background:var(--soon); }
+.bv.qua { color:var(--bad); border-color:var(--bad-vien); background:var(--bad-nen); } .bv.qua::before { content:"⚠"; width:auto; height:auto; background:none; font-size:11px; }
+.bv.dang { color:var(--doing); border-color:var(--accent); } .bv.dang::before { background:var(--doing); }
+.bv.xong { color:var(--ok); border-color:var(--ok-vien); } .bv.xong::before { content:"✓"; width:auto; height:auto; background:none; font-size:11px; }
+.bv.xam { color:var(--text-faint); } .bv.xam::before { background:var(--text-faint); }
+.bv .so { color:inherit; }
+
+/* bảng Ý thức lớp */
+.byt { width:100%; border-collapse:collapse; font-size:14px; }
+.byt th { font:600 13px var(--phong); color:var(--text-dim); text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:bottom; white-space:nowrap; }
+.byt td { padding:12px; border-bottom:1px solid var(--line); vertical-align:top; }
+.byt td:first-child, .byt th:first-child { padding-left:16px; }
+.byt td:last-child, .byt th:last-child { padding-right:16px; }
+.byt tr.nhom-h td { background:var(--surface-2); padding:10px 16px; border-bottom:1px solid var(--line); }
+.nh-h { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.nh-h b { font:700 15px var(--phong); color:var(--text); }
+.nh-h .dem2 { font:600 13px var(--phong-so); color:var(--text-dim); }
+.nh-h .luat { font:400 13px var(--phong); color:var(--text-dim); }
+.nh-h .nut-i { margin-left:-4px; }
+.byt { table-layout:fixed; }
+.c-hv .ten-em { display:block; white-space:normal; }
+.c-hv > span { display:block; font-size:12px; color:var(--text-faint); margin-top:2px; }
+.c-hv .mo-dong { appearance:none; border:0; background:none; padding:0; color:var(--accent); font:600 13px var(--phong); margin-top:6px; cursor:pointer; }
+.ds-vp { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.ds-vp li { display:grid; grid-template-columns:44px minmax(0,1fr); gap:8px; font-size:14px; color:var(--text); }
+.ds-vp .ng { font:600 13px var(--phong-so); color:var(--text-dim); }
+.cl { display:grid; gap:6px; justify-items:start; }
+.cl .ph { font-size:12px; color:var(--text-faint); }
+.bac { display:grid; grid-template-columns:auto minmax(0,1fr); gap:3px 10px; font-size:14px; }
+.bac dt { font:500 12px/1.6 var(--phong); color:var(--text-faint); white-space:nowrap; }
+.bac dd { margin:0; font-weight:600; color:var(--text); }
+.bac dd.nhe { font-weight:500; color:var(--text-dim); }
+.bph { display:grid; gap:5px; justify-items:start; }
+.bph .lan { font:500 12px var(--phong); color:var(--text-faint); }
+.bph .lan b { color:var(--text-dim); font-weight:600; }
+.trong { color:var(--text-faint); }
+.c-viec { width:176px; }
+.c-viec .nut { width:100%; }
+.c-viec .duoi2 { display:flex; justify-content:space-between; margin-top:4px; }
+tr.dang-mo > td { background:var(--accent-soft); } tr.dang-mo > td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
+tr.vua-xem > td { background:color-mix(in srgb, var(--ok-nen) 70%, transparent); }
+.da-xem { display:grid; gap:6px; }
+.da-xem b { color:var(--ok); font:600 14px var(--phong); }
+.da-xem .lk { display:flex; gap:14px; }
+
+/* chi tiết em mở dưới hàng: 3 khối có nhãn */
+tr.mo-ct > td { padding:0 16px 16px !important; background:var(--accent-soft); }
+.ct { display:grid; grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:14px; }
+.ct .k { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 14px; display:grid; gap:10px; align-content:start; }
+.ct .k-h { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ct .k-h h4 { margin:0; font:700 15px var(--phong); color:var(--text); }
+.ct .k-h .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.ct .phai-cot { display:grid; gap:14px; align-content:start; }
+.vp { display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:4px 10px; padding:9px 0; border-top:1px solid var(--line); align-items:start; }
+.vp:first-of-type { border-top:0; padding-top:0; }
+.vp .ng { font:600 13px/1.5 var(--phong-so); color:var(--text-dim); }
+.vp .t { font:600 15px/1.4 var(--phong); color:var(--text); }
+.vp .tags { margin-top:4px; }
+.vp.mo { padding-bottom:12px; }
+.vp .them { grid-column:2 / -1; display:grid; gap:10px; margin-top:6px; }
+.vp .bc { display:flex; align-items:center; gap:12px; font-size:13px; color:var(--text-dim); }
+.vp .bc .nh { font:500 12px var(--phong); color:var(--text-faint); width:72px; }
+.vp .hd { display:flex; gap:8px; }
+.ly-do-bb { display:flex; gap:8px; align-items:baseline; font-size:13px; color:var(--text-dim); }
+.ly-do-bb b { color:var(--soon); font-weight:600; }
+.chuoi-bac { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:13px; }
+.chuoi-bac .b { display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:6px; border:1px solid var(--line); color:var(--text-faint); }
+.chuoi-bac .b.qua { color:var(--text-dim); border-color:var(--line-strong); } .chuoi-bac .b.qua::before { content:"✓ "; color:var(--ok); }
+.chuoi-bac .b.nay { color:var(--text); border-color:var(--accent); background:var(--accent-soft); font-weight:700; }
+.chuoi-bac .m { color:var(--text-faint); }
+.lan-cu { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 12px; align-items:baseline; font-size:14px; padding-top:10px; border-top:1px solid var(--line); }
+.lan-cu .ng { font:600 13px var(--phong-so); color:var(--text-dim); }
+.lan-cu .ph { grid-column:2 / -1; font-size:13px; color:var(--text-dim); }
+.lich-em { display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-dim); }
+
+/* thẻ 375 */
+.the-em { border-top:1px solid var(--line); padding:12px; display:grid; gap:10px; }
+.the-em .d1 { display:flex; align-items:flex-start; gap:8px; }
+.the-em .d1 .ten-em { white-space:normal; }
+.the-em .d1 .bv { margin-left:auto; }
+.the-em .hai { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.the-em .o2 { display:grid; gap:2px; }
+.the-em .o2 > span { font:500 12px var(--phong); color:var(--text-faint); }
+.the-em .o2 > b { font:600 14px var(--phong); color:var(--text); }
+.the-em .nut { width:100%; }
+.nhom-375 { padding:10px 12px; background:var(--surface-2); border-top:1px solid var(--line); display:grid; gap:2px; }
+.nhom-375 b { font:700 15px var(--phong); } .nhom-375 span { font-size:13px; color:var(--text-dim); }
+
+/* lịch sử */
+.ls { width:100%; border-collapse:collapse; font-size:14px; }
+.ls th { font:600 13px var(--phong); color:var(--text-dim); text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); }
+.ls td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+.ls td:first-child, .ls th:first-child { padding-left:16px; }
+.ls .ng { font:600 13px var(--phong-so); color:var(--text-dim); white-space:nowrap; }
+.ls tr.vua td { background:color-mix(in srgb, var(--ok-nen) 70%, transparent); }
+.ls .moi-lam { font:600 12px var(--phong); color:var(--ok); display:block; margin-top:2px; }
+.ls .t { font-weight:600; color:var(--text); }
+.ls .ph { font-size:12px; color:var(--text-faint); display:block; }
+
+/* panel Báo PH + trạng thái hạn */
+.co-pn2 { display:grid; grid-template-columns:520px 600px; gap:16px; align-items:start; padding:14px 24px 28px; }
+.ds-tvv { display:grid; gap:0; }
+.ds-tvv .dong { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 10px; padding:10px 16px; border-top:1px solid var(--line); align-items:center; }
+.ds-tvv .dong:first-child { border-top:0; }
+.ds-tvv .dong.chon { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+.ds-tvv .dong b { font:500 15px var(--phong); color:var(--text); }
+.ds-tvv .dong span.ph { grid-column:1; font-size:13px; color:var(--text-dim); }
+.pn2 { background:var(--surface); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; }
+.pn2 .pn-than { overflow:visible; padding:0 20px 20px; }
+.dong-han { display:grid; grid-template-columns:8.5rem minmax(0,1fr); padding:12px 0; border-bottom:1px solid var(--line); align-items:center; }
+.dong-han > span:first-child { font:500 13px var(--phong); color:var(--text-faint); }
+.gia-han { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.gia-han b { font:700 17px var(--phong-so); color:var(--text); }
+.gia-han .nguon { font:500 12px var(--phong); color:var(--text-faint); }
+.sua-han { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.o-ngay { display:inline-flex; align-items:center; height:40px; border:1px solid var(--accent); box-shadow:inset 0 0 0 1px var(--accent); border-radius:8px; background:var(--o-nen); overflow:hidden; }
+.o-ngay input { border:0; background:none; color:var(--text); font:600 15px var(--phong-so); width:110px; padding:0 10px; outline:none; }
+.o-ngay button { appearance:none; border:0; border-left:1px solid var(--o-vien); background:none; width:40px; height:40px; color:var(--text-dim); cursor:pointer; }
+.bao-409 { grid-column:1 / -1; margin-top:8px; }
+.tt-han { display:grid; gap:12px; }
+.tt-han .the { padding:0 16px; }
+.lsu { display:grid; gap:0; }
+.lsu > div { display:grid; grid-template-columns:92px minmax(0,1fr); gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:14px; }
+.lsu > div:first-child { border-top:0; }
+.lsu .ng { font:600 13px var(--phong-so); color:var(--text-dim); }
+.lsu .ph { display:block; font-size:12px; color:var(--text-faint); }
+
+/* hộp nhỏ tại chỗ (HV & Lớp) */
+.hop { position:absolute; z-index:4; width:340px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 10px 28px rgb(0 0 0 / .4); padding:12px 14px; display:grid; gap:10px; }
+.hop h4 { margin:0; font:700 15px var(--phong); }
+.hop .fld { grid-template-columns:6.5rem minmax(0,1fr); }
+.hop .fld > dt, .hop .fld > dd { padding:6px 0; }
+.hop .chan2 { display:flex; gap:8px; justify-content:flex-end; }
+.chip-bac { display:inline-flex; align-items:center; height:24px; padding:0 8px; border-radius:6px; border:1px solid var(--line-strong); font:600 12px var(--phong); color:var(--text); cursor:pointer; }
+.chip-bac.chon { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }
+
+/* critique 03/11: hai nhóm khác màu — Phải xử lý = nền vàng đặc; Chưa xem = xanh, viền chấm, không nền */
+.bv.cho { background:var(--soon-nen); }
+.bv.xem { color:var(--doing); border:1px dashed var(--accent); background:transparent; } .bv.xem::before { background:var(--doing); }
+.byt tr.nhom-h.bb td { background:var(--soon-nen); } .byt tr.nhom-h.bb .nh-h b { color:var(--soon); }
+.byt tr.nhom-h.gap td { background:var(--surface); }
+.nhom-375.bb { background:var(--soon-nen); } .nhom-375.bb b { color:var(--soon); }
+.nut-xem { background:transparent; border-color:var(--accent); color:var(--accent); }
+tr.vua-luu > td { background:color-mix(in srgb, var(--ok-nen) 70%, transparent); }
+.nut, .o-ngay { box-sizing:border-box; }
+:where(.toi, .sang) ::placeholder { color:var(--text-faint); opacity:1; }
+.dt .the-em .d1 .ten-em, .dt a.so, .dt .vp a { display:inline-flex; align-items:center; min-height:44px; }
+.ds-tvv .dong .tags { grid-column:1; }
+/* phối hợp SOS */
+.ph-luot { border-top:1px solid var(--line); padding:12px 16px; display:grid; gap:10px; }
+.ph-luot .d1 { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ph-viec { display:grid; grid-template-columns:minmax(0,1fr) 220px 150px; gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:14px; }
+.ph-viec:first-of-type { border-top:0; }
+.ph-viec .t { font-weight:600; color:var(--text); }
+
+/* bảng đọc mockup */
+.bang-tt { width:100%; border-collapse:collapse; font-size:14px; background:#fff; }
+.bang-tt th, .bang-tt td { border:1px solid #d9deea; padding:6px 10px; text-align:left; vertical-align:top; }
+.bang-tt th { background:#f2f4f9; font-weight:700; }
+.bang-tt td.gi { color:#38674c; font-weight:600; } .bang-tt td.doi { color:#7e5f36; font-weight:600; } .bang-tt td.moi { color:#273c8f; font-weight:600; }
+
+/* ================= Ý THỨC V2 (11/11) — chỉ phần mới; hình ảnh (màu, badge .bv, nhóm, nền) giữ U10 đã duyệt 03/11 ================= */
+/* bảng "một lần = một khối, một vi phạm = một dòng": ô Học viên · GVCN xử lý · TVV báo PH · Bước tiếp gộp (rowspan) cho cả lần */
+.ytv { width:100%; border-collapse:collapse; table-layout:fixed; font-size:14px; }
+.ytv th { font:600 13px var(--phong); color:var(--text-dim); text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:bottom; white-space:nowrap; }
+.ytv th .b { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--line-strong); font:700 11px/1 var(--phong-so); color:var(--text-dim); margin-right:6px; vertical-align:-3px; }
+.ytv th .mui-h { color:var(--text-faint); font-weight:400; margin-left:4px; }
+.ytv td { padding:10px 12px; vertical-align:top; }
+.ytv td:first-child, .ytv th:first-child { padding-left:16px; }
+.ytv td:last-child, .ytv th:last-child { padding-right:16px; }
+.ytv th { vertical-align:middle; height:40px; }
+.ytv td.vpo { padding-left:12px; } .ytv.khong-hv td.vpo { padding-left:16px; }
+button.chip-bac { background:transparent; }
+.dt .vp1 .ng { align-self:center; }
+.the-lan .hd .nut { width:auto; }
+.dt .chip-bac, .dt button.bv { min-height:44px; }
+.c-tiep .ai-lam b { white-space:nowrap; }
+.dt .lan-ghi .nd { grid-template-columns:92px minmax(0,1fr) !important; }
+.ytv tbody.lan > tr:first-child > td { border-top:1px solid var(--line); }
+.ytv tbody.lan > tr + tr > td.vpo { border-top:1px dashed var(--line); }
+.ytv tbody.lan > tr > td.gop { border-left:1px solid var(--line); }
+.ytv tbody.lan > tr > td.gop.hv { border-left:0; }
+.ytv tr.nhom-h td { background:var(--surface-2); padding:10px 16px; border-top:1px solid var(--line); }
+.ytv tr.nhom-h.bb td { background:var(--soon-nen); } .ytv tr.nhom-h.bb .nh-h b { color:var(--soon); }
+.ytv tbody.lan.mo-lan > tr > td { background:var(--accent-soft); }
+.ytv tbody.lan.mo-lan > tr:first-child > td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
+.ytv tbody.lan.vua > tr > td { background:color-mix(in srgb, var(--ok-nen) 70%, transparent); }
+/* ô Học viên */
+.hv-o .ten-em { display:block; white-space:normal; }
+.hv-o .phu { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-top:6px; font-size:12px; color:var(--text-faint); }
+.chip-bac .nh { font-weight:500; color:var(--text-faint); margin-right:4px; }
+.chip-bac::after { content:"▾"; font-size:10px; color:var(--text-faint); margin-left:5px; }
+/* ô vi phạm (mỗi dòng một vi phạm) */
+.vp1 { display:grid; grid-template-columns:44px minmax(0,1fr); gap:2px 8px; }
+.vp1 .ng { font:600 13px/1.5 var(--phong-so); color:var(--text-dim); }
+.vp1 .ten { appearance:none; border:0; background:none; padding:0; text-align:left; font:500 14px/1.45 var(--phong); color:var(--text); cursor:pointer; }
+.vp1 .ten:hover { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+.vp1 .me { grid-column:2; font-size:12px; color:var(--text-faint); }
+.vp1 .them { grid-column:2; display:grid; gap:10px; margin-top:8px; padding:10px 12px; border-radius:8px; background:var(--surface); border:1px solid var(--line); }
+/* ô bước (GVCN / TVV) */
+.buoc { display:grid; gap:5px; justify-items:start; }
+.buoc .ph { font-size:12px; color:var(--text-faint); }
+.buoc .ph b { color:var(--text-dim); font-weight:600; }
+.buoc .gt { font-size:13px; color:var(--text-dim); }
+.buoc .gt b { color:var(--text); font-weight:600; }
+.buoc .cho-sau { font-size:13px; color:var(--text-faint); }
+button.bv { cursor:pointer; font:600 12px var(--phong); }
+button.bv:hover { border-color:var(--accent); }
+.bv.mo-pn::after { content:"›"; margin-left:2px; color:var(--text-faint); }
+/* trích Báo PH: nhãn ngắn trái, nội dung phải, tối đa 2 dòng */
+.trich-ph { display:grid; grid-template-columns:62px minmax(0,1fr); gap:3px 8px; width:100%; font-size:13px; line-height:1.45; }
+.trich-ph > span:nth-child(odd) { font:500 12px/1.6 var(--phong); color:var(--text-faint); }
+.trich-ph > span:nth-child(even) { color:var(--text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.trich-ph .chua { color:var(--text-faint) !important; font-style:italic; }
+/* bước tiếp */
+.c-tiep .nut { width:100%; }
+.c-tiep .duoi2 { display:flex; justify-content:center; margin-top:4px; }
+.c-tiep .ai-lam { font-size:13px; color:var(--text-faint); display:block; }
+.c-tiep .ai-lam b { color:var(--text-dim); font-weight:600; }
+.da-xem-v { display:grid; gap:4px; } .da-xem-v b { color:var(--ok); font:600 14px var(--phong); } .da-xem-v .lk { display:flex; gap:14px; }
+/* dòng mở Báo PH đủ (tại chỗ, không panel) */
+tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); }
+.bph-du { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 16px; display:grid; gap:10px; }
+.bph-du .k-h { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.bph-du .k-h h4 { margin:0; font:700 15px var(--phong); }
+.bph-du .k-h .phai { margin-left:auto; display:flex; gap:14px; align-items:center; }
+.lan-ghi { display:grid; grid-template-columns:120px 180px minmax(0,1fr); gap:6px 16px; padding:10px 0; border-top:1px solid var(--line); font-size:14px; }
+.lan-ghi:first-of-type { border-top:0; }
+.lan-ghi .luc { font:600 13px var(--phong-so); color:var(--text-dim); }
+.lan-ghi .luc span { display:block; font:500 12px var(--phong); color:var(--text-faint); margin-top:2px; }
+.lan-ghi .kq { display:grid; gap:4px; justify-items:start; }
+.lan-ghi .kq span { font-size:12px; color:var(--text-faint); }
+.lan-ghi .nd { display:grid; grid-template-columns:96px minmax(0,1fr); gap:4px 12px; }
+.lan-ghi .nd dt { font:500 13px/1.5 var(--phong); color:var(--text-faint); }
+.lan-ghi .nd dd { margin:0; color:var(--text); line-height:1.5; }
+/* hộp thang tại chỗ */
+.hop-thang { position:absolute; z-index:5; width:420px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 12px 30px rgb(0 0 0 / .45); padding:12px 14px; display:grid; gap:10px; }
+.hop-thang h4 { margin:0; font:700 15px var(--phong); display:flex; align-items:center; }
+.hop-thang h4 .x { margin-left:auto; font:400 18px var(--phong); color:var(--text-dim); }
+.hop-thang .chan2 { display:flex; justify-content:space-between; align-items:center; }
+/* dải bậc hồ sơ HV */
+.dai-bac { display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; padding:12px 16px; border-bottom:1px solid var(--line); }
+.dai-bac .fact > b .mo2 { font-weight:500; }
+/* 375: thẻ một lần */
+.the-lan { border-top:1px solid var(--line); padding:12px; display:grid; gap:10px; }
+.the-lan.mo-lan { background:var(--accent-soft); }
+.the-lan .d1 { display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap; }
+.the-lan .d1 .ten-em { white-space:normal; min-height:44px; display:inline-flex; align-items:center; }
+.the-lan .d1 .chip-bac { margin-top:10px; }
+.the-lan .ds { display:grid; gap:6px; }
+.the-lan .b2 { display:grid; grid-template-columns:96px minmax(0,1fr); gap:4px 10px; padding-top:8px; border-top:1px dashed var(--line); }
+.the-lan .b2 > span:first-child { font:500 12px/1.9 var(--phong); color:var(--text-faint); }
+.the-lan .nut { width:100%; }
+.the-lan .duoi2 { display:flex; justify-content:center; }
+.dt .vp1 .ten { min-height:44px; display:inline-flex; align-items:center; }
+.dt .link-nho { min-height:44px; display:inline-flex; align-items:center; }
+.dt .bph-du { padding:10px 12px; }
+.dt .lan-ghi { grid-template-columns:minmax(0,1fr); gap:6px; }
+.dt .lan-ghi .nd { grid-template-columns:74px minmax(0,1fr); }
+/* panel TVV mới */
+.pn-tvv { width:600px; }
+.pn-tvv .pn-dau { display:flex; align-items:center; gap:10px; padding:16px 20px; border-bottom:1px solid var(--line); }
+.pn-tvv .pn-dau h3 { font:700 17px var(--phong); }
+.pn-tvv .pn-dau .x { margin-left:auto; color:var(--text-dim); font-size:20px; }
+.pn-tvv .truong { display:grid; gap:6px; padding:12px 0 0; }
+.pn-tvv .truong > label, .pn-tvv .truong > span.nh { font:600 13px var(--phong); color:var(--text-dim); }
+.pn-tvv .truong .tc { font-weight:400; color:var(--text-faint); }
+.lua { display:flex; flex-wrap:wrap; gap:8px; }
+.lua label { display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 14px; border-radius:8px; border:1px solid var(--o-vien); font-size:14px; cursor:pointer; }
+.lua label.chon { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:600; box-shadow:inset 0 0 0 1px var(--accent); }
+.lua.nho label { height:34px; padding:0 12px; }
+.pn-chan { display:flex; align-items:center; gap:10px; padding:14px 20px; border-top:1px solid var(--line); margin-top:16px; }
+.pn-chan .trai { font-size:13px; color:var(--text-faint); margin-right:auto; }
+/* bảng vai */
+.vai { width:100%; border-collapse:collapse; font-size:14px; }
+.vai th { text-align:left; font:600 13px var(--phong); color:var(--text-dim); padding:8px 12px; border-bottom:1px solid var(--line); }
+.vai td { padding:10px 12px; border-top:1px solid var(--line); vertical-align:top; }
+.vai td:first-child { font-weight:700; width:150px; }
+.rong-o { padding:28px 16px; display:grid; gap:6px; justify-items:start; }
+.rong-o b { font:600 15px var(--phong); color:var(--text); }
+.rong-o span { font-size:13px; color:var(--text-dim); }
+.sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+/* ---- vòng 2 (chủ SP 11/11): chip môn · hộp rê · tiến trình ①②③ ở panel ---- */
+.mon { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:20px; padding:0 5px; margin-right:8px; border-radius:4px; border:1px solid var(--line-strong); background:var(--surface-2); font:700 11px/1 var(--phong-so); color:var(--text-dim); vertical-align:1px; }
+.ytv td.vpo { padding-top:8px; padding-bottom:8px; }
+.mon.an { visibility:hidden; }
+.vp1 .ten { display:flex; align-items:flex-start; text-align:left; }
+.vp1 .ten .mon { flex:none; margin-top:1px; }
+.dt .vp1 .ten { display:flex; align-items:center; }
+.ds-pn label > span:last-child { display:flex; align-items:flex-start; } .ds-pn .mon { flex:none; margin-top:1px; }
+.hop-vp { position:absolute; z-index:6; width:400px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 12px 30px rgb(0 0 0 / .45); padding:12px 14px; display:grid; gap:8px; }
+.hop-vp h4 { margin:0; font:700 15px/1.4 var(--phong); }
+.hop-vp .fld { grid-template-columns:6.5rem minmax(0,1fr); }
+.hop-vp .fld > dt, .hop-vp .fld > dd { padding:6px 0; font-size:14px; }
+.hop-vp .chan-hop { font-size:12px; color:var(--text-faint); }
+.hop-vp::before { content:""; position:absolute; top:-7px; left:28px; width:12px; height:12px; background:var(--surface); border-left:1px solid var(--line-strong); border-top:1px solid var(--line-strong); transform:rotate(45deg); }
+.ten.dang-re { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+/* tiến trình ①②③ — cùng thứ tự cột tab Ý thức */
+.tien-trinh { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:14px; }
+.tien-trinh > div { padding:10px 12px; display:grid; gap:4px; align-content:start; border-left:1px solid var(--line); }
+.tien-trinh > div:first-child { border-left:0; }
+.tien-trinh .nh { font:600 12px var(--phong); color:var(--text-faint); display:flex; align-items:center; gap:6px; }
+.tien-trinh .nh .b { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--line-strong); font:700 11px/1 var(--phong-so); color:var(--text-dim); }
+.tien-trinh .gt { font:600 14px/1.4 var(--phong); color:var(--text); }
+.tien-trinh .ph { font-size:12px; color:var(--text-faint); }
+.tien-trinh > div.nay { background:var(--accent-soft); box-shadow:inset 0 2px 0 var(--accent); }
+.tien-trinh > div.nay .nh { color:var(--accent); }
+.tien-trinh .ban { display:inline-flex; height:18px; align-items:center; padding:0 6px; border-radius:4px; background:var(--accent); color:var(--accent-ink); font:700 11px var(--phong); margin-left:auto; }
+.dt .tien-trinh { grid-template-columns:minmax(0,1fr); }
+.dt .tien-trinh > div { border-left:0; border-top:1px solid var(--line); grid-template-columns:96px minmax(0,1fr); }
+.dt .tien-trinh > div:first-child { border-top:0; }
+.dt .tien-trinh > div .nh { grid-row:span 2; align-self:start; }
+.dt .tien-trinh .ban { margin-left:0; }
+/* danh sách vi phạm trong panel: tích + ngày + chip + tên */
+.ds-pn { display:grid; gap:0; margin-top:6px; }
+.ds-pn label { display:grid; grid-template-columns:22px 44px minmax(0,1fr); gap:8px; align-items:center; min-height:40px; border-top:1px solid var(--line); font-size:14px; }
+.ds-pn label:first-child { border-top:0; }
+.ds-pn .ng { font:600 13px var(--phong-so); color:var(--text-dim); }
+.dt .ds-pn label { min-height:44px; }
+.pn-muc { font:700 14px var(--phong); color:var(--text); margin:16px 0 0; display:flex; align-items:center; gap:8px; }
+.pn-muc .dem { font-size:12px; }
+/* trang Công việc rút gọn */
+.cv { display:grid; grid-template-columns:520px minmax(0,1fr); gap:16px; padding:14px 24px 24px; align-items:start; }
+.cv-ds { background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.cv-ds .dai { padding:12px 16px; font:700 15px var(--phong); background:var(--surface-2); border-bottom:1px solid var(--line); border-radius:12px 12px 0 0; }
+.cv-ds .v { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 10px; padding:10px 16px; border-top:1px solid var(--line); align-items:center; }
+.cv-ds .v:first-of-type { border-top:0; }
+.cv-ds .v b { font:500 15px var(--phong); color:var(--text); }
+.cv-ds .v span.ph { font-size:13px; color:var(--text-dim); }
+.cv-ds .v.chon { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+.pn-tvv.rong-pn { width:auto; }
+.dt .pn-tvv { width:auto; border:0; border-radius:0; }
+.dt .pn-tvv .pn-than { padding:0 16px 16px; }
+.dt .pn-tvv .pn-dau { padding:12px 16px; }
+.dt .pn-chan { padding:12px 16px; flex-wrap:wrap; }
+.dt .pn-chan .nut { flex:1; }
+.anh-web { display:block; max-width:1400px; border:1px solid #b0b8cd; border-radius:6px; }
+.danh-dau { outline:3px solid #d9a93a; outline-offset:-3px; }
+</style>
+<style>
+/* ---- riêng mockup #6 (11/11): bằng chứng chọn trước (TepCho), khối duyệt QL, chuông ---- */
+.bc { border:1px dashed var(--line-strong); border-radius:8px; padding:10px 12px; display:grid; gap:6px; font-size:14px; }
+.bc ul { margin:0; padding:0; list-style:none; display:grid; gap:6px; }
+.bc li { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; }
+.bc .mo { font-size:12px; color:var(--text-faint); }
+.bc .go { appearance:none; border:0; background:none; color:var(--text-dim); font-size:14px; cursor:pointer; padding:0 4px; }
+.bc .loi { font-size:12px; color:var(--bad); }
+.bc .them { display:flex; gap:14px; }
+.bc.loi-o { border-color:var(--bad); border-style:solid; }
+.thieu { font-size:13px; color:var(--bad); }
+.vien-loi { box-shadow:0 0 0 2px var(--bad) !important; }
+.toast { display:inline-flex; align-items:center; gap:12px; background:var(--surface-2); border:1px solid var(--line-strong); border-radius:10px; padding:10px 14px; font-size:14px; box-shadow:0 10px 24px rgb(0 0 0 / .4); }
+.toast b { color:var(--ok); }
+.khoi-dx { background:var(--surface-2); border-radius:8px; padding:12px 14px; font-size:14px; line-height:1.5; color:var(--text-dim); margin-top:14px; }
+.khoi-dx p { margin:0; }
+.khoi-dx p + p { margin-top:2px; }
+.dm { display:flex; align-items:center; gap:8px; margin:20px 0 6px; font:700 15px var(--phong); color:var(--text); }
+.dm::before { content:""; width:3px; height:18px; border-radius:2px; background:var(--accent); }
+.dm .dem { font-size:12px; }
+.vp-ql { display:grid; grid-template-columns:44px minmax(0,1fr); gap:2px 8px; padding:8px 0; border-top:1px solid var(--line); font-size:14px; }
+.vp-ql:first-of-type { border-top:0; }
+.vp-ql .ng { font:600 13px var(--phong-so); color:var(--text-dim); padding-top:1px; }
+.vp-ql .ph { grid-column:2; font-size:13px; color:var(--text-faint); }
+.tep-ql { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 12px; padding:8px 0; border-top:1px solid var(--line); font-size:14px; align-items:center; }
+.tep-ql:first-of-type, .dm + .vp-ql, .dm + .tep-ql { border-top:0; }
+.tep-ql .ph { font-size:12px; color:var(--text-faint); }
+.anh-nho { width:100%; max-width:360px; height:120px; border-radius:6px; border:1px solid var(--line); background:repeating-linear-gradient(45deg, var(--surface-2) 0 10px, var(--surface) 10px 20px); display:grid; place-items:center; color:var(--text-faint); font-size:12px; grid-column:1 / -1; }
+.sau-duyet { margin-top:16px; border:1px solid var(--line); border-radius:8px; padding:10px 14px; font-size:14px; color:var(--text-dim); }
+.sau-duyet b { color:var(--text); }
+.chuong { width:420px; background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; overflow:hidden; }
+.chuong .d { padding:10px 16px; font:700 15px var(--phong); border-bottom:1px solid var(--line); }
+.chuong .n { padding:6px 16px; font:600 13px var(--phong); color:var(--text-dim); background:var(--surface-2); }
+.chuong .tb { padding:10px 16px 10px 30px; border-top:1px solid var(--line); font-size:14px; position:relative; display:grid; gap:2px; }
+.chuong .tb::before { content:""; position:absolute; left:14px; top:17px; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+.chuong .tb b { font-weight:600; }
+.chuong .tb .ph { font-size:13px; color:var(--text-dim); }
+.chuong .tb .lk { font:600 13px var(--phong); color:var(--accent); }
+.hop-th { width:520px; background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; padding:16px 18px; display:grid; gap:12px; font-size:14px; }
+.hop-th h4 { margin:0; font:700 17px var(--phong); }
+.hop-th label.tich { display:flex; gap:10px; align-items:flex-start; }
+.hop-th .ph { font-size:13px; color:var(--text-faint); }
+.hop-th .chan2 { display:flex; justify-content:flex-end; gap:10px; }
+</style>
+</head>
+<body>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>Đề xuất QL duyệt Ý thức một màn + QL duyệt tại chỗ — mockup #6 (rà toàn bộ 11/11, CHỜ DUYỆT)</h1>
+    <p>Nguồn: bản rà toàn bộ 11/11 mục 3 #6 (G3-4, G3-5, G3-7, G3-8) — chủ SP 11/11 "Theo hết 10 đề xuất". Ngày demo <b>14/09/2026 · W3 SEP</b>, em <b>Trịnh Gia Bảo</b> (MB FT 101, GVCN Trần Ngọc Hà, TVV Lê Thu, QL Nguyễn Khánh Vy, CX Vũ Thanh Tâm).
+      Hình ảnh giữ panel Ý thức V2 đã duyệt (K8: dải ①②③, chip môn, chân lưu). Luật nghiệp vụ <b>không đổi</b>: bằng chứng bắt buộc khi gửi (V4-10, LUAT-5), QL trả lời trong 5 ngày, việc TVV sinh ngay (N1).</p>
+    <nav class="muc-mk"><a href="#k0">K0 · hiện trạng</a><a href="#k1">K1 · GVCN một màn 1440</a><a href="#k2">K2 · thiếu bằng chứng / tệp lỗi</a><a href="#k3">K3 · QL duyệt tại chỗ 1440</a><a href="#k4">K4 · sau duyệt: chuông GVCN + CX</a><a href="#k5">K5 · 375</a><a href="#bang">Bảng TRƯỚC → SAU</a></nav>
+  </header>
+
+  <!-- ===================== K0 ===================== -->
+  <section class="khu" id="k0">
+    <h2>K0 · Hiện trạng (seed 11/11, ảnh của bản rà)</h2>
+    <p class="ghi"><span class="so-mk">1</span>GVCN: chọn loại + lý do → <b>"Tiếp: đính kèm bằng chứng"</b> (màn 2, tạo nháp trên máy chủ) → + Liên kết → Lưu → Gửi = 10 bấm. Đóng ở màn 2 = xoá nháp, lý do đã gõ mất; đóng tab = nháp mồ côi.
+      · <span class="so-mk">2</span>QL: thẻ chỉ có lý do + "Kèm 1 bằng chứng — bấm Mở để xem" → phải sang hồ sơ HV rồi quay lại.
+      · <span class="so-mk">3</span>Duyệt xong: chuông GVCN ở "Để biết" (việc Đã thực hiện có hạn 5 ngày); CX không được báo có họp.</p>
+    <div class="hang-khung">
+      <figure><figcaption>Màn 1 (GVCN)</figcaption><img class="anh-web" style="max-width:680px" src="../../docs/superpowers/specs/2026-11-11-ra-toan-bo/anh/G3-19a-de-xuat-dien.png" alt="Đề xuất màn 1"></figure>
+      <figure><figcaption>Màn 2 (GVCN)</figcaption><img class="anh-web" style="max-width:680px" src="../../docs/superpowers/specs/2026-11-11-ra-toan-bo/anh/G3-19b-de-xuat-buoc2.png" alt="Đề xuất màn 2"></figure>
+    </div>
+    <div class="hang-khung" style="margin-top:16px">
+      <figure><figcaption>QL › Chờ bạn duyệt › Ý thức</figcaption><img class="anh-web" style="max-width:900px" src="../../docs/superpowers/specs/2026-11-11-ra-toan-bo/anh/G3-25a-ql-chi-tiet-de-xuat.png" alt="QL duyệt hiện tại"></figure>
+    </div>
+  </section>
+
+  <!-- ===================== K1 ===================== -->
+  <section class="khu" id="k1">
+    <h2>K1 · GVCN · Đề xuất QL duyệt — MỘT màn · 1440 tối</h2>
+    <p class="ghi"><span class="so-mk">1</span>mở từ "Đề xuất QL duyệt" (nút chữ ở Xác nhận xử lý / ⋯ dòng em) — cùng panel, cùng dải ①②③; ô ② ghi "Đề xuất · QL trả lời trong 5 ngày", ô ③ "việc cho TVV Lê Thu, hạn 5 ngày" (N1 giữ)
+      · <span class="so-mk">2</span><b>Bằng chứng chọn ngay trong form</b> (+ Tệp · + Liên kết · dán ảnh · kéo thả — cùng khối của Ghi vi phạm), chưa tải lên tới khi bấm Gửi
+      · <span class="so-mk">3</span>một nút <b>"Gửi QL duyệt"</b>: máy chủ nhận đề xuất → tải tệp → gửi; bỏ "Tiếp: đính kèm bằng chứng" và màn 2
+      · <span class="so-mk">4</span>chữ đang gõ (lý do) giữ ở nháp của panel (như mọi panel) — đóng giữa chừng, mở lại vẫn còn; không còn nháp trên máy chủ.</p>
+    <div class="hang-khung"><figure><figcaption>K1 · Hồ sơ lớp › Ý thức › panel Đề xuất QL duyệt · Trịnh Gia Bảo</figcaption>
+    <div class="man toi" style="height:auto">
+      <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m">Công việc <span class="so-nav">9</span></span><span class="m">Phân tích</span><span class="phai"><span>Trần Ngọc Hà</span></span></div>
+      <div class="cv">
+        <div class="cv-ds">
+          <div class="dai">MB FT 101 › Ý thức · Cần làm</div>
+          <div class="v chon"><b>Trịnh Gia Bảo</b><span class="bv cho">hạn 18/09</span><span class="ph">14/09 · <span class="mon">S</span>G3 Xúc phạm bạn trong giờ Speaking</span></div>
+          <div class="v"><b>Mạc Tuấn Kiệt</b><span class="ph so">xem trước 16/09</span><span class="ph">12/09 · <span class="mon">W1</span>Không nộp bài Writing Task 1</span></div>
+          <div class="v"><b>Nguyễn Minh An</b><span class="ph so">xem trước 16/09</span><span class="ph">12/09 · <span class="mon">W1</span>Không nộp bài Writing Task 1</span></div>
+        </div>
+        <div class="pn2 pn-tvv rong-pn">
+          <div class="pn-dau"><h3>Đề xuất QL duyệt · <a href="#">Trịnh Gia Bảo</a></h3><span class="tag nhat">MB FT 101</span><span class="x" aria-label="Đóng">×</span></div>
+          <div class="pn-than">
+            <div class="tien-trinh">
+              <div><span class="nh"><span class="b">1</span>Vi phạm</span><span class="gt">1 vi phạm</span><span class="ph">14/09 · Phạm Thu Trang ghi</span></div>
+              <div class="nay"><span class="nh"><span class="b">2</span>GVCN đề xuất<span class="ban">Bạn</span></span><span class="gt">Gửi QL duyệt</span><span class="ph">QL trả lời trong 5 ngày</span></div>
+              <div><span class="nh"><span class="b">3</span>TVV báo PH</span><span class="gt" style="font-weight:500;color:var(--text-dim)">Sau khi gửi</span><span class="ph">việc cho TVV Lê Thu, hạn 5 ngày</span></div>
+            </div>
+            <div class="truong"><span class="nh">Loại cần QL duyệt <span class="tc">*</span></span>
+              <span class="lua"><label><input type="radio" name="l1"> WL 3</label><label class="chon"><input type="radio" name="l1" checked> Meeting CX/GĐCN</label><label><input type="radio" name="l1"> Đình chỉ học tạm thời</label><label><input type="radio" name="l1"> Khác</label></span></div>
+            <p class="pn-muc">Vi phạm đưa vào <span class="dem">1</span></p>
+            <div class="ds-pn">
+              <label><input type="checkbox" class="o-tich" checked><span class="ng">14/09</span><span><span class="mon">S</span>G3 Xúc phạm bạn trong giờ Speaking</span></label>
+            </div>
+            <div class="truong"><label>Lý do đề xuất <span class="tc">*</span></label><textarea class="o" rows="3">G3 Em xúc phạm bạn, cần họp với gia đình và CX.</textarea></div>
+            <div class="truong"><span class="nh">Bằng chứng <span class="tc">*</span></span>
+              <div class="bc"><ul>
+                <li><span>bien-ban-14-09.jpg</span><span class="mo">240 KB</span><span class="go" aria-label="Bỏ bien-ban-14-09.jpg">✕</span></li>
+                <li><span>Tin nhắn nhóm lớp</span><span class="mo">zalo.me</span><span class="go" aria-label="Bỏ Tin nhắn nhóm lớp">✕</span></li>
+              </ul><span class="them"><span class="link-nho">+ Tệp</span><span class="link-nho">+ Liên kết</span></span></div></div>
+          </div>
+          <div class="pn-chan"><span class="trai">● Nháp</span><span class="nut nut-ma">← Xác nhận xử lý</span><span class="nut nut-chinh">Gửi QL duyệt</span></div>
+        </div>
+      </div>
+    </div></figure></div>
+    <div class="hang-khung" style="margin-top:12px"><figure><figcaption>K1b · sau Gửi: panel đóng, dòng em đổi ngay</figcaption>
+      <div class="man toi" style="width:auto;height:auto;padding:16px;display:grid;gap:12px;justify-items:start">
+        <span class="toast"><b>✓</b> Đã gửi QL duyệt Meeting CX/GĐCN cho Trịnh Gia Bảo · QL trả lời trước 18/09</span>
+        <span style="font-size:14px;color:var(--text-dim)">Dòng em ở "Chờ QL duyệt": <span class="bv dang">Đề xuất Meeting CX/GĐCN · chờ QL</span> · Xem (Rút / sửa lý do / thêm bằng chứng như cũ)</span>
+      </div></figure></div>
+  </section>
+
+  <!-- ===================== K2 ===================== -->
+  <section class="khu" id="k2">
+    <h2>K2 · Thiếu bằng chứng · tệp tải lỗi — ở lại, không mất chữ</h2>
+    <p class="ghi"><span class="so-mk">1</span>bấm Gửi khi chưa có bằng chứng (loại cần tệp — LUAT-5) → khung bằng chứng viền đỏ, chân "Còn thiếu: Bằng chứng"; không gọi máy chủ
+      · <span class="so-mk">2</span>tệp tải lỗi giữa chừng → đề xuất <b>chưa gửi</b> (QL chưa thấy gì), dòng tệp lỗi có "Thử lại", chữ giữ nguyên; đóng panel lúc này = bỏ đề xuất dở trên máy chủ, lý do vẫn ở nháp của panel
+      · <span class="so-mk">3</span>loại "Không tăng bậc" (bậc ≤ bậc hiện tại) chỉ cần lý do — khung bằng chứng không có dấu *.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K2a · chưa có bằng chứng</figcaption>
+      <div class="man toi" style="width:auto;height:auto;padding:14px"><div class="pn2 pn-tvv">
+        <div class="pn-dau"><h3>Đề xuất QL duyệt · <a href="#">Trịnh Gia Bảo</a></h3><span class="tag nhat">MB FT 101</span><span class="x">×</span></div>
+        <div class="pn-than">
+          <div class="truong"><label>Lý do đề xuất <span class="tc">*</span></label><textarea class="o" rows="2">G3 Em xúc phạm bạn, cần họp với gia đình và CX.</textarea></div>
+          <div class="truong"><span class="nh">Bằng chứng <span class="tc">*</span></span>
+            <div class="bc loi-o"><span class="them"><span class="link-nho">+ Tệp</span><span class="link-nho">+ Liên kết</span></span></div>
+            <span class="thieu">Cần đính kèm tệp hoặc liên kết</span></div>
+        </div>
+        <div class="pn-chan"><span class="trai" style="color:var(--bad)">Còn thiếu: Bằng chứng</span><span class="nut nut-ma">← Xác nhận xử lý</span><span class="nut nut-chinh">Gửi QL duyệt</span></div>
+      </div></div></figure>
+      <figure><figcaption>K2b · một tệp tải lỗi</figcaption>
+      <div class="man toi" style="width:auto;height:auto;padding:14px"><div class="pn2 pn-tvv">
+        <div class="pn-dau"><h3>Đề xuất QL duyệt · <a href="#">Trịnh Gia Bảo</a></h3><span class="tag nhat">MB FT 101</span><span class="x">×</span></div>
+        <div class="pn-than">
+          <div class="truong"><label>Lý do đề xuất <span class="tc">*</span></label><textarea class="o" rows="2">G3 Em xúc phạm bạn, cần họp với gia đình và CX.</textarea></div>
+          <div class="truong"><span class="nh">Bằng chứng <span class="tc">*</span></span>
+            <div class="bc"><ul>
+              <li><span>bien-ban-14-09.jpg</span><span class="mo">240 KB</span><span class="loi">Không tải được tệp — kiểm tra kết nối rồi thử lại.</span><span class="link-nho">Thử lại</span></li>
+              <li><span>Tin nhắn nhóm lớp</span><span class="mo">zalo.me</span><span class="mo" style="color:var(--ok)">Đã tải</span></li>
+            </ul></div></div>
+        </div>
+        <div class="pn-chan"><span class="trai" style="color:var(--bad)">Chưa gửi — 1 tệp tải lỗi</span><span class="nut nut-chinh">Thử lại · Gửi QL duyệt</span></div>
+      </div></div></figure>
+    </div>
+  </section>
+
+  <!-- ===================== K3 ===================== -->
+  <section class="khu" id="k3">
+    <h2>K3 · QL · Công việc › Chờ bạn duyệt › panel duyệt — vi phạm + bằng chứng tại chỗ · 1440 tối</h2>
+    <p class="ghi"><span class="so-mk">1</span>khung panel duyệt GIỮ (đầu: loại · tên · em · lớp · chip hạn; chân dính "Tiếp: …" · Từ chối… · Duyệt; Lịch sử · n gập cuối)
+      · <span class="so-mk">2</span>thêm đầu mục <b>Vi phạm · n</b> (ngày · chip môn · tên · ai ghi · mô tả một dòng) và <b>Bằng chứng · n</b> (ảnh xem ngay, tệp / liên kết mở tab mới) — bỏ câu "bấm Mở để xem"
+      · <span class="so-mk">3</span>chỉ đọc khi panel MỞ (1 request cho vi phạm + bằng chứng), danh sách Chờ duyệt không đọc thêm
+      · <span class="so-mk">4</span>"Sau khi duyệt" nói đủ ai nhận việc / tin: GVCN ghi Đã thực hiện trong 5 ngày · Meeting: CX chi nhánh được báo.</p>
+    <div class="hang-khung"><figure><figcaption>K3 · Nguyễn Khánh Vy (QL) · Đề xuất Meeting CX/GĐCN · Trịnh Gia Bảo</figcaption>
+    <div class="man toi" style="height:auto">
+      <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m dang">Công việc</span><span class="m">Phân tích</span><span class="phai"><span>Nguyễn Khánh Vy</span></span></div>
+      <div class="cv">
+        <div class="cv-ds">
+          <div class="dai">Chờ bạn duyệt · Ý thức · 2 yêu cầu</div>
+          <div class="v"><b>Đề xuất WL 3 · Lương Gia Bảo</b><span class="ph so">hạn 15/09</span><span class="ph">MB FT 101 · 3 vi phạm · Trần Ngọc Hà</span></div>
+          <div class="v chon"><b>Đề xuất Meeting CX/GĐCN · Trịnh Gia Bảo</b><span class="ph so">hạn 18/09</span><span class="ph">MB FT 101 · 1 vi phạm · Trần Ngọc Hà</span></div>
+        </div>
+        <div class="pn2 pn-tvv rong-pn">
+          <div class="pn-dau" style="display:grid;gap:4px"><span class="loai">Việc · Duyệt · Ý thức</span>
+            <span style="display:flex;align-items:center;gap:10px"><h3>Đề xuất Meeting CX/GĐCN</h3><span class="ph so" style="margin-left:auto;font-size:13px">hạn 18/09</span><span class="x" style="margin-left:0">×</span></span>
+            <span style="font-size:14px;color:var(--text-dim)"><a href="#">Trịnh Gia Bảo</a> · MB FT 101 · 1 vi phạm</span></div>
+          <div class="pn-than">
+            <div class="khoi-dx"><p>Trần Ngọc Hà đề xuất 14/09: “G3 Em xúc phạm bạn, cần họp với gia đình và CX.”</p><p>Bậc thang kế tiếp đang là Report 1 — duyệt đề xuất này không đổi bậc</p></div>
+            <p class="dm">Vi phạm <span class="dem">1</span></p>
+            <div class="vp-ql"><span class="ng">14/09</span><span><span class="mon">S</span><b style="font-weight:600">G3 Xúc phạm bạn trong giờ Speaking</b></span><span class="ph">Thái độ / hành vi · Phạm Thu Trang ghi · “Em nói lời xúc phạm bạn cùng nhóm khi bị góp ý.”</span></div>
+            <p class="dm">Bằng chứng <span class="dem">2</span></p>
+            <div class="tep-ql"><span>bien-ban-14-09.jpg <span class="ph">240 KB</span></span><span class="link-nho">Mở</span><span class="anh-nho">ảnh xem trước</span></div>
+            <div class="tep-ql"><span>Tin nhắn nhóm lớp <span class="ph">zalo.me</span></span><span class="link-nho">Mở</span></div>
+            <dl class="fld" style="margin-top:14px"><dt>Điểm</dt><dd style="font-size:14px">MT2 · W3 AUG &nbsp; L ✓ 6.5 · R ✓ 6.5 · W ✓ 6.5 · S ✓ 6.5 &nbsp; Overall <b>✓ 6.5</b> / KV 6.5</dd></dl>
+            <div class="sau-duyet"><b>Sau khi duyệt:</b> GVCN ghi "Đã thực hiện" trong 5 ngày · CX chi nhánh được báo có họp.</div>
+            <p style="margin:14px 0 0;text-align:right"><span class="link-nho">Hồ sơ Ý thức ›</span></p>
+            <p style="margin:10px 0 0;font:600 14px var(--phong);color:var(--text-dim)">Lịch sử · 2 ▸</p>
+          </div>
+          <div class="pn-chan"><span class="trai">Tiếp: Đề xuất WL 3 · Lương Gia Bảo</span><span class="nut">Từ chối…</span><span class="nut nut-chinh">Duyệt</span></div>
+        </div>
+      </div>
+    </div></figure></div>
+  </section>
+
+  <!-- ===================== K4 ===================== -->
+  <section class="khu" id="k4">
+    <h2>K4 · Sau khi QL duyệt — chuông GVCN (Cần làm) + CX (Để biết)</h2>
+    <p class="ghi"><span class="so-mk">1</span>GVCN: tin "Đã duyệt" vào nhóm <b>Cần làm</b> kèm hạn, link mở thẳng việc "Đánh dấu đã thực hiện" ở Công việc (không còn "Để biết · Yêu cầu của tôi")
+      · <span class="so-mk">2</span>CX chi nhánh (người dự họp): tin <b>Để biết</b> khi duyệt <b>Meeting CX/GĐCN</b> — em · lớp · GVCN; link hồ sơ Ý thức của em. Loại khác (WL 3, Đình chỉ…) không báo CX
+      · <span class="so-mk">3</span>Từ chối giữ như cũ (Cần làm GVCN: "QL từ chối · lý do").</p>
+    <div class="hang-khung">
+      <figure><figcaption>K4a · chuông Trần Ngọc Hà (GVCN)</figcaption>
+        <div class="man toi" style="width:auto;height:auto;padding:14px"><div class="chuong">
+          <div class="d">Thông báo · 1 chưa đọc</div><div class="n">Cần làm · 1</div>
+          <div class="tb"><b>QL đã duyệt Meeting CX/GĐCN · Trịnh Gia Bảo</b><span class="ph">MB FT 101 · Ghi "Đã thực hiện" · hạn 18/09</span><span class="lk">Công việc ›</span></div>
+        </div></div></figure>
+      <figure><figcaption>K4b · chuông Vũ Thanh Tâm (CX)</figcaption>
+        <div class="man toi" style="width:auto;height:auto;padding:14px"><div class="chuong">
+          <div class="d">Thông báo · 1 chưa đọc</div><div class="n">Để biết · 1</div>
+          <div class="tb"><b>Có Meeting CX/GĐCN · Trịnh Gia Bảo</b><span class="ph">MB FT 101 · GVCN Trần Ngọc Hà · QL Nguyễn Khánh Vy duyệt 14/09</span><span class="lk">Hồ sơ Ý thức ›</span></div>
+        </div></div></figure>
+    </div>
+  </section>
+
+  <!-- ===================== K5 ===================== -->
+  <section class="khu" id="k5">
+    <h2>K5 · 375 tối — GVCN đề xuất · QL duyệt</h2>
+    <div class="hang-khung">
+      <figure><figcaption>K5a · GVCN · Đề xuất QL duyệt (toàn màn)</figcaption>
+      <div class="dt toi dai"><div class="pn-tvv">
+        <div class="pn-dau"><h3>Đề xuất QL duyệt · <a href="#">Trịnh Gia Bảo</a></h3><span class="x">×</span></div>
+        <div class="pn-than">
+          <div class="tien-trinh">
+            <div><span class="nh"><span class="b">1</span>Vi phạm</span><span class="gt">1 vi phạm</span><span class="ph">14/09</span></div>
+            <div class="nay"><span class="nh"><span class="b">2</span>GVCN</span><span class="gt">Gửi QL duyệt <span class="ban">Bạn</span></span><span class="ph">QL trả lời trong 5 ngày</span></div>
+            <div><span class="nh"><span class="b">3</span>Báo PH</span><span class="gt" style="font-weight:500;color:var(--text-dim)">Sau khi gửi</span><span class="ph">việc cho TVV Lê Thu</span></div>
+          </div>
+          <div class="truong"><span class="nh">Loại cần QL duyệt <span class="tc">*</span></span>
+            <span class="lua" style="display:grid;grid-template-columns:1fr"><label style="height:44px"><input type="radio"> WL 3</label><label class="chon" style="height:44px"><input type="radio" checked> Meeting CX/GĐCN</label><label style="height:44px"><input type="radio"> Đình chỉ học tạm thời</label><label style="height:44px"><input type="radio"> Khác</label></span></div>
+          <p class="pn-muc">Vi phạm đưa vào <span class="dem">1</span></p>
+          <div class="ds-pn"><label><input type="checkbox" class="o-tich" checked><span class="ng">14/09</span><span><span class="mon">S</span>G3 Xúc phạm bạn trong giờ Speaking</span></label></div>
+          <div class="truong"><label>Lý do đề xuất <span class="tc">*</span></label><textarea class="o" rows="3">G3 Em xúc phạm bạn, cần họp với gia đình và CX.</textarea></div>
+          <div class="truong"><span class="nh">Bằng chứng <span class="tc">*</span></span>
+            <div class="bc"><ul><li><span>bien-ban-14-09.jpg</span><span class="mo">240 KB</span><span class="go" style="min-width:44px;min-height:44px;display:grid;place-items:center">✕</span></li></ul>
+              <span class="them"><span class="link-nho">+ Tệp</span><span class="link-nho">+ Liên kết</span></span></div></div>
+        </div>
+        <div class="pn-chan"><span class="nut nut-chinh">Gửi QL duyệt</span><span class="nut nut-ma">← Xác nhận xử lý</span></div>
+      </div></div></figure>
+      <figure><figcaption>K5b · QL · panel duyệt (toàn màn)</figcaption>
+      <div class="dt toi dai"><div class="pn-tvv">
+        <div class="pn-dau" style="display:grid;gap:4px"><span class="loai">Việc · Duyệt · Ý thức</span><span style="display:flex;align-items:center"><h3>Đề xuất Meeting CX/GĐCN</h3><span class="x">×</span></span>
+          <span style="font-size:14px;color:var(--text-dim)"><a href="#">Trịnh Gia Bảo</a> · MB FT 101 · hạn 18/09</span></div>
+        <div class="pn-than">
+          <div class="khoi-dx"><p>Trần Ngọc Hà đề xuất 14/09: “G3 Em xúc phạm bạn, cần họp với gia đình và CX.”</p></div>
+          <p class="dm">Vi phạm <span class="dem">1</span></p>
+          <div class="vp-ql"><span class="ng">14/09</span><span><span class="mon">S</span><b style="font-weight:600">G3 Xúc phạm bạn trong giờ Speaking</b></span><span class="ph">Phạm Thu Trang ghi</span></div>
+          <p class="dm">Bằng chứng <span class="dem">2</span></p>
+          <div class="tep-ql"><span>bien-ban-14-09.jpg</span><span class="link-nho">Mở</span><span class="anh-nho">ảnh xem trước</span></div>
+          <div class="tep-ql"><span>Tin nhắn nhóm lớp <span class="ph">zalo.me</span></span><span class="link-nho">Mở</span></div>
+          <div class="sau-duyet"><b>Sau khi duyệt:</b> GVCN ghi "Đã thực hiện" trong 5 ngày · CX chi nhánh được báo có họp.</div>
+        </div>
+        <div class="pn-chan"><span class="trai">Tiếp: Đề xuất WL 3 · Lương Gia Bảo</span><span class="nut">Từ chối…</span><span class="nut nut-chinh">Duyệt</span></div>
+      </div></div></figure>
+    </div>
+  </section>
+
+  <!-- ===================== Bảng ===================== -->
+  <section class="khu" id="bang">
+    <h2>Bảng thao tác TRƯỚC → SAU (không mất thao tác)</h2>
+    <table class="vai">
+      <tr><th>Thao tác</th><th>Trước</th><th>Sau</th></tr>
+      <tr><td>GVCN gửi đề xuất có bằng chứng</td><td>Loại · Lý do · Tiếp (màn 2) · + Liên kết · dán · Lưu · Gửi = 10 bấm, 2 màn</td><td>Loại · Lý do · + Liên kết · dán · Thêm · Gửi QL duyệt = 7 bấm, 1 màn</td></tr>
+      <tr><td>Đóng panel giữa chừng</td><td>màn 2: xoá nháp, mất lý do · đóng tab: nháp mồ côi trên máy chủ</td><td>lý do giữ ở nháp panel (mở lại còn) · máy chủ chỉ có đề xuất khi đã gửi; đề xuất dở (tệp lỗi) bị bỏ khi đóng; nháp cũ của cùng người · cùng em tự dọn khi gửi lần sau</td></tr>
+      <tr><td>Thiếu bằng chứng</td><td>chỉ biết ở màn 2</td><td>báo ngay khi bấm Gửi, không gọi máy chủ</td></tr>
+      <tr><td>Rút / sửa lý do / thêm, bỏ bằng chứng khi chờ</td><td>Xem lần xử lý · Yêu cầu của tôi</td><td>GIỮ như cũ</td></tr>
+      <tr><td>QL xem vi phạm + bằng chứng</td><td>Mở › hồ sơ HV › tab Ý thức › quay lại (1 chuyển trang mỗi thẻ)</td><td>ngay trong panel duyệt (0 chuyển trang); "Hồ sơ Ý thức ›" giữ</td></tr>
+      <tr><td>QL Duyệt / Từ chối… / Hoàn tác / Tiếp</td><td>panel duyệt</td><td>GIỮ</td></tr>
+      <tr><td>GVCN biết đã duyệt</td><td>chuông "Để biết" → Yêu cầu của tôi</td><td>chuông "Cần làm" + hạn → thẳng việc Đánh dấu đã thực hiện</td></tr>
+      <tr><td>CX biết có Meeting</td><td>không có (GVCN báo ngoài)</td><td>chuông "Để biết" khi QL duyệt Meeting CX/GĐCN</td></tr>
+    </table>
+    <p class="ghi" style="margin-top:12px"><b>Đọc Turso:</b> GVCN gửi = 3 request như cũ (đề xuất · tệp · gửi), bớt 1 GET nháp. QL: danh sách Chờ duyệt không đổi; mở panel một thẻ Ý thức +1 request (vi phạm + tệp của MỘT lần xử lý, ≤ 3 câu, &lt; 20 dòng). Tin CX: +1 dòng ghi mỗi lần duyệt Meeting.</p>
+  </section>
+</div>
+</body>
+</html>
