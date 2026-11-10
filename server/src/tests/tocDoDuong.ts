@@ -355,6 +355,11 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien?ct=ft' },
   { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han' },
   { trang: 'Phân tích GV', vai: ['QL'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem' },
+  /* PHÂN TÍCH V2 · Giáo viên (đặc tả 6): `v2=1` chỉ phần báo cáo cần; tổng = bảng một chi nhánh × từng chi nhánh (Đạt kỳ vọng, Chưa phân công) · panel Chưa phân công mọi chi nhánh. */
+  { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft&v2=1' },
+  { trang: 'Phân tích GV', vai: ['QL'], url: '/phan-tich/giao-vien?cn={cn}&ct=thuong&v2=1' },
+  { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien?ct=ft&v2=1' },
+  { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien/o?ct=ft&gv=0&cot=cham-diem' },
 
   // ---------------------------------------------------------------- OV-15e — Báo cáo + Kết quả thi (QL, QT; GVCN → 403) + panel chỉ số GV
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/bao-cao?ct=ft', maChuDich: { GVCN: 403 } },
@@ -454,6 +459,8 @@ export const DUONG_DO: MucDo[] = [
 export const TRAN: Record<string, number> = {
   /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (đọc sổ, không ghi lại sổ việc) · panel một người mọi chi nhánh · panel Chưa phân công — đo 7 · 8 · 6 câu, trần max(đo + 10, ⌈đo × 1,3⌉). */
   'QT /phan-tich/giao-vien?ct=ft': 17, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 18, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 16,
+  /* PT-V2 Giáo viên: một chi nhánh bỏ Tiến bộ / PA / Thi thật / Case (dev đo QL FT 49 → 17 câu); tổng = từng chi nhánh (dev đo QT 5 → 55 câu, cảnh báo PTA). */
+  'QL /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QT /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QL /phan-tich/giao-vien?cn={cn}&ct=thuong&v2=1': 30, 'QT /phan-tich/giao-vien?ct=ft&v2=1': 80, 'QT /phan-tich/giao-vien/o?ct=ft&gv=0&cot=cham-diem': 20,
   /* DEM-QUA-HAN (chủ SP 06/11 — quá hạn vẫn phải tính): Phân tích GV bảng / panel Việc đúng hạn / hồ sơ GV dựng Công việc "Tất cả" của chi nhánh (`viecQuaHanMo`,
      một lần mỗi chi nhánh mỗi request) → +~30–40 câu. Trần nâng = min(100, max(đo + 10, ⌈đo × 1,3⌉)): đo bảng FT 79 · 78, thường 69 · 68, khoảng dài 75 · 74,
      panel 56 · 55, hồ sơ GV 80–82. Đã cảnh báo PTA (dòng / ngày trong mô tả PR). */
@@ -1079,6 +1086,7 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /classes/3/y-thuc': 442, 'GVCN /classes/3/y-thuc': 437, 'GVBM /classes/3/y-thuc': 437, 'QL /students/1/y-thuc': 103, 'GVCN /students/1/y-thuc': 103,
   /* SỔ NGHĨA VỤ (PR-2): đo 333 · 49 · 58 dòng → max(đo + 50, ⌈đo × 1,3⌉). */
   'QT /phan-tich/giao-vien?ct=ft': 433, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 99, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 108,
+  'QL /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 1000, 'QT /phan-tich/giao-vien?ct=ft&v2=1': 1500,   // PT-V2 Giáo viên: dev đo 480 · 881
   /* O-TQ-BAM: panel Đạt Target thi thật (chỉ khi bấm) — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 kỳ 6 tháng: 1 259 · 1 259 · 691. */
   'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'CX /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 899,
   /* GIAM-DOC-TQGV: Tổng quan GV — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1 (GVCN 1 839, GVBM 2 101; hai vai đều có lớp chủ nhiệm nên số không đổi — GV không chủ nhiệm khoá ở prSvTqGv). */

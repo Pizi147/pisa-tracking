@@ -80,4 +80,39 @@ export async function runPrPtV2ChiNhanhTests(t: any) {
     try { cn.chiNhanhV2(P.subjectTeacher, { branchId: null, ct: 'ft', ...k }); } catch (e: any) { loi = e.status ?? 403; }
     assert(loi === 403, `GV phải bị chặn: ${loi}`);
   });
+  /* PR-4 Giáo viên (đặc tả 6, mockup D1–D2): `v2` chỉ bỏ cột không còn dùng — sổ nghĩa vụ + Đạt kỳ vọng = CHÍNH bảng cũ; tổng = Σ chi nhánh. */
+  const gv: any = await import('../phanTich/giaoVien.ts');
+  const kGv = { tu: '2026-03-02', den: '2026-09-14' };
+  check('PT-V2 · Giáo viên một chi nhánh: v2 = bảng cũ ở Chấm Test · Việc · Đạt kỳ vọng · Chưa phân công; bỏ Tiến bộ / PA / Thi thật', () => {
+    for (const ct of ['ft', 'thuong']) {
+      const cu = gv.phanTichGiaoVien(P.mbManager, { ct, ...kGv }), moi = gv.phanTichGiaoVien(P.mbManager, { ct, ...kGv, v2: true });
+      assert(moi.hang.length === cu.hang.length, `${ct}: số GV ${moi.hang.length} ≠ ${cu.hang.length}`);
+      for (const h of moi.hang) {
+        const c = cu.hang.find((x: any) => x.id === h.id);
+        for (const k of ['chamDiem', 'viecDungHan', 'datMt', 'ketQua']) assert(JSON.stringify(h[k]) === JSON.stringify(c[k]), `${ct} ${h.ten} ${k}`);
+        assert(h.tienBo == null && h.paHieuQua == null && h.thiThat == null, `${ct} ${h.ten}: v2 còn cột bỏ`);
+      }
+      assert(JSON.stringify(moi.chuaPhanCong) === JSON.stringify(cu.chuaPhanCong), `${ct}: Chưa phân công`);
+    }
+  });
+  check('PT-V2 · Giáo viên tất cả chi nhánh: Đạt kỳ vọng, Chưa phân công = Σ chi nhánh; panel gv=0 = số hàng tổng', () => {
+    const r = gv.phanTichGiaoVien(P.admin, { ct: 'ft', ...kGv, v2: true });
+    assert(r.cn == null && r.hang.length > 0, 'chế độ tổng');
+    let coDat = 0;
+    for (const h of r.hang) {
+      const ds = h.chiNhanh ?? [];
+      const so = ds.map((x: any) => x.datMt).filter((o: any) => o?.k === 'so');
+      if (so.length) { coDat++; assert(h.datMt.k === 'so' && h.datMt.tong === so.reduce((a: number, o: any) => a + o.tong, 0) && h.datMt.dung === so.reduce((a: number, o: any) => a + o.dung, 0), `${h.ten} Đạt kỳ vọng`); }
+      const bai = ds.map((x: any) => x.chamDiem).filter((o: any) => o.k === 'so');
+      if (bai.length) assert(h.chamDiem.k === 'so' && h.chamDiem.tong === bai.reduce((a: number, o: any) => a + o.tong, 0), `${h.ten}: Chấm Test tổng ≠ Σ chi nhánh`);
+    }
+    assert(coDat > 0, 'seed phải có GV có Đạt kỳ vọng');
+    const cp = r.chuaPhanCong;
+    if (cp) {
+      const n = (o: any) => (o.k === 'so' ? o.tong : 0);
+      assert(n(cp.chamDiem) === cp.chiNhanh.reduce((a: number, x: any) => a + n(x.chamDiem), 0), 'Chưa phân công ≠ Σ chi nhánh');
+      const o = gv.oChiSoGv(P.admin, { ct: 'ft', ...kGv, gv: 0, cot: 'cham-diem' });
+      assert(o.n === n(cp.chamDiem), `panel gv=0 ${o.n} ≠ ${n(cp.chamDiem)}`);
+    }
+  });
 }
