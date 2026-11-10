@@ -8,7 +8,7 @@
  *
  * Quyền: MỌI hàm ở đây gọi `require_(PLAN_WEEK, { classId })` TRƯỚC khi đọc gì của lớp/em (QL chi nhánh khác → 403).
  */
-import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
+import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_LO_TRINH_CUOI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
 import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
@@ -194,7 +194,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
             AND NOT EXISTS (
               SELECT 1 FROM assessment_attempts a
                WHERE a.student_id = s.id AND a.class_id = e.class_id AND a.kind IN ('progress', 'final', 'checkpoint') AND a.status != 'cancelled'
-                 AND ${LUOT_HIEN_TAI_SQL('a', 's')})   -- lỗi chủ SP 28/10: bài lộ trình cũ không tính là "đã có lịch"
+                 AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND ${LUOT_LO_TRINH_CUOI_SQL('a', true)})   -- lỗi chủ SP 28/10: bài lộ trình cũ (cả bài nợ — LOP-CU) không tính là "đã có lịch"
           GROUP BY e.class_id`,
       )
       .all(...thuongIds) as any[]) hvChuaCoLich.set(r.class_id, r.n);

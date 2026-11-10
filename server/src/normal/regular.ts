@@ -6,7 +6,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -1131,13 +1131,15 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   /** OV-6b2: số Checkpoint (`kind = 'checkpoint'`); hoặc gửi thẳng khoá bài `checkpoint:2` ở `kind`. */
   attemptNo?: number,
   /** HSL-MAY-CHU: chỉ MỘT lượt (`regularAttemptDetail`) — kể cả lượt đã huỷ, em đã rời lớp / ở Lưu trữ. */
-  chiLuot?: number) {
+  chiLuot?: number,
+  /** LOP-CU: `regularAttemptDetail` đã cho xem qua lớp em đang học (`xemLuotQuaLopDangHoc`) — bỏ kiểm xem lớp; ô sửa vẫn theo lớp. */
+  xemQuaEm = false) {
   const conn = db();
   const cls = conn
     .prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?')
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được cấp quyền.');
+  if (!(xemQuaEm && chiLuot)) require_(p, PERMISSIONS.ATTEMPT_VIEW, { classId }, 'Lớp này nằm ngoài phạm vi bạn được cấp quyền.');
 
   const progLop = programmeOfClass(classId);
   if (!progLop || progLop.scoringMode !== 'ratio') {
@@ -1369,7 +1371,9 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
 export function regularAttemptDetail(p: Principal, attemptId: number) {
   const a = db().prepare('SELECT id, class_id, student_id, kind, cycle_id, attempt_no FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a || !a.class_id || !['progress', 'final', 'checkpoint'].includes(a.kind)) throw loi(404, 'Không tìm thấy lượt Test lớp thường.');
-  const { rows, ...bang } = regularSheet(p, a.class_id, undefined, demoToday(), undefined, attemptId);
+  /* LOP-CU (chủ SP 11/11): Hành trình — người xem được lớp em đang học mở lượt lớp cũ, chỉ xem (cờ sửa trong bảng vẫn theo lớp của lượt). */
+  const quaEm = !can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: a.class_id }) && xemLuotQuaLopDangHoc(p, a.student_id);
+  const { rows, ...bang } = regularSheet(p, a.class_id, undefined, demoToday(), undefined, attemptId, quaEm);
   const history = lichSuLichCua(attemptId);
   return {
     ...bang,
