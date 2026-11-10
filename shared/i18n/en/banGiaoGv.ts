@@ -77,4 +77,8 @@ export const EN_BAN_GIAO_GV = {
   /* bàn giao chuyển lớp — chủ SP 30/10 */
   'Cùng GV · không cần bàn giao': 'Same teacher · no handover needed',
   'GVCN lớp mới là bạn — nhận xét chung không bắt buộc.': 'You are also the new homeroom teacher — the general note is optional.',
+  /* #8 bản rà 11/11: môn của chính người xem */
+  'Viết': 'Write',
+  'Đã hoàn tác — em về lại {lop}': 'Undone — the student is back in {lop}',
+  'Chỉ Quản lý lớp cũ của em hoàn tác được lần chuyển này.': "Only a Manager of the student's previous class can undo this transfer.",
 } satisfies Record<string, Dich>;
