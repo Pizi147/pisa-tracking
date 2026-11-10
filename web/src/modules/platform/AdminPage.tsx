@@ -46,7 +46,7 @@ const TABS = [
   { key: 'chi-nhanh', label: t('Chi nhánh') },
   { key: 'band', label: t('Bảng quy đổi') },
   /* CAU-HINH-CASE-SOS (chủ SP 11/11): nhóm nguyên nhân / PA / mốc SOS — Quản trị sửa, Quản lý xem; đặt ở trang Quản trị hiện có, không khung mới. */
-  { key: 'case-sos', label: t('Case & SOS') },
+  { key: 'case-sos', label: 'Case & SOS' },   // tên riêng (EN giống VI)
   { key: 'config', label: t('Quyền & nhật ký') },
   { key: 'da-xoa', label: t('Đã xoá') },
 ] as const;

@@ -90,7 +90,7 @@ export function CauHinhCaseSos() {
   return (
     <div className="grid gap-4" data-hd="cau-hinh-case-sos">
       <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2.5">
-        <h2 className="m-0 text-lg font-bold text-slate-100">{t('Case & SOS')}</h2>
+        <h2 className="m-0 text-lg font-bold text-slate-100">Case &amp; SOS</h2>
         <BoLocDoan v8 ariaLabel={t('Danh sách')} value={ds} onChange={setDs}
           muc={[{ key: 'nn', nhan: t('Nguyên nhân') }, { key: 'pa', nhan: t('Phương án') }, { key: 'moc', nhan: t('Mốc SOS') }]} />
         {ds !== 'pa' && <BoLocDoan v8 ariaLabel={t('Loại lớp')} value={ben} onChange={setBen}
@@ -99,7 +99,7 @@ export function CauHinhCaseSos() {
           {t('Áp cho Case / SOS sinh sau')}
           <NutLuat label={t('Giải thích')} phai>{t('Lưu là áp ngay cho Case, PA, SOS sinh SAU lúc lưu. Case, PA, việc đã sinh giữ đúng bản lúc sinh (tên, hạn, người làm). Đổi tên = cùng nghĩa (Phân tích gộp theo nhóm); muốn đổi nghĩa thì Ẩn nhóm cũ, Thêm nhóm mới.')}</NutLuat>
         </span>
-        {chiXem && <span className="text-[13px] font-semibold text-slate-300" title={t('Quản trị hệ thống sửa')}>🔒 {t('Chỉ xem')}</span>}
+        {chiXem && <span className="text-[13px] font-semibold text-slate-300" title={t('Quản trị hệ thống sửa')}><span aria-hidden>🔒</span> {t('Chỉ xem')}</span>}
       </div>
 
       {xung && (

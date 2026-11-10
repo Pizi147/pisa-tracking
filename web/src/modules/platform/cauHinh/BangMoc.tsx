@@ -3,6 +3,17 @@ import { t } from '@shared/i18n/index.ts';
 import { HANG_FT, laMeetingCx, type HangFt, type MocSos, type MocThuong, type MucSos, type OMoc } from '@shared/domain/index.ts';
 import type { DuLieuCauHinh, LuuDs } from '../CauHinhCaseSos.tsx';
 import { DanhMucViec } from './BangDanhSach.tsx';
+import { Bang, OBang, type CotBang } from '../../../ui/Bang.tsx';
+
+/* Bảng chung (Bang) — tiêu đề chỉ chữ (G9); hàng tự vẽ (`hangRieng`) để mở khung sửa ngay dưới hàng. */
+const COT_FT: CotBang[] = [
+  { key: 'moc', nhan: t('Mốc'), kieu: 'chu', rong: 104 },
+  { key: 's1', nhan: 'SOS 1', kieu: 'chu' }, { key: 's2', nhan: 'SOS 2', kieu: 'chu' }, { key: 's3', nhan: 'SOS 3', kieu: 'chu', linhHoat: true },
+];
+const COT_THUONG: CotBang[] = [
+  { key: 'moc', nhan: t('Mốc'), kieu: 'chu', rong: 160 }, { key: 'case', nhan: 'Case', kieu: 'chu', rong: 150 },
+  { key: 'pa', nhan: t('PA quy chế'), kieu: 'chu', linhHoat: true }, { key: 'viec', nhan: t('Việc phối hợp'), kieu: 'chu', rong: 190 },
+];
 
 /**
  * MỐC SOS (CAU-HINH-CASE-SOS, mockup K5–K7). FT: bảng MT1…MT5+, RF × SOS 1 · 2 · 3 — mỗi ô PA quy chế + việc; bấm ô → khung sửa ngay dưới hàng
@@ -11,12 +22,6 @@ import { DanhMucViec } from './BangDanhSach.tsx';
 type ChungProps = { duLieu: DuLieuCauHinh; chiXem: boolean; luuDs: LuuDs };
 const TEN_HANG: Record<HangFt, string> = { mt1: 'MT1', mt2: 'MT2', mt3: 'MT3', mt4: 'MT4', mt5: t('MT5 trở đi'), rf: 'RF' };
 const DEN: Record<string, string> = { one_month: t('1 tháng'), until_next_mt: t('đến MT kế'), until_exam: t('đến lúc thi') };
-const MAU_SOS: Record<MucSos, string> = {
-  '1': 'border-[color:var(--sos1)] text-[color:var(--sos1-chu,var(--sos1))]',
-  '2': 'border-[color:var(--sos2)] bg-[color:var(--sos2-nen)] text-[color:var(--sos2-chu,var(--chu-1))]',
-  '3': 'border-[color:var(--sos3-vien,var(--sos3))] bg-[color:var(--sos3-nen)] text-white',
-};
-const ChipSos = ({ s }: { s: MucSos }) => <span className={`inline-flex h-[22px] items-center rounded border px-1.5 text-[12px] font-semibold ${MAU_SOS[s]}`}>SOS {s}</span>;
 
 function NoiDungO({ o, moc, tenPa }: { o: OMoc; moc: MocSos; tenPa: (ma: string) => string }) {
   return (
@@ -49,12 +54,12 @@ function KhungO({ tieuDe, o, moc, duLieu, coPa, cungAp, onThoi, onLuu, busy }: {
       {coPa && (
         <div className="grid gap-2 sm:grid-cols-2">
           <label className="grid gap-1 text-[13px] font-medium text-slate-400">{t('Loại PA quy chế')}
-            <select className="input" value={nhap.pa?.loai ?? ''} onChange={(e) => setNhap({ ...nhap, pa: e.target.value ? { loai: e.target.value, den: nhap.pa?.den ?? 'one_month' } : null })}>
+            <select className="field" value={nhap.pa?.loai ?? ''} onChange={(e) => setNhap({ ...nhap, pa: e.target.value ? { loai: e.target.value, den: nhap.pa?.den ?? 'one_month' } : null })}>
               <option value="">{t('Không có PA quy chế')}</option>
               {paGv.map((m) => <option key={m.ma} value={m.ma}>{m.ten}</option>)}
             </select></label>
           <label className="grid gap-1 text-[13px] font-medium text-slate-400">{t('Đến khi')}
-            <select className="input" value={nhap.pa?.den ?? 'one_month'} disabled={!nhap.pa} onChange={(e) => setNhap({ ...nhap, pa: nhap.pa && { ...nhap.pa, den: e.target.value as NonNullable<OMoc['pa']>['den'] } })}>
+            <select className="field" value={nhap.pa?.den ?? 'one_month'} disabled={!nhap.pa} onChange={(e) => setNhap({ ...nhap, pa: nhap.pa && { ...nhap.pa, den: e.target.value as NonNullable<OMoc['pa']>['den'] } })}>
               {Object.entries(DEN).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select></label>
         </div>
@@ -110,45 +115,33 @@ export function MocSosFt({ duLieu, chiXem, luuDs }: ChungProps) {
   };
   return (
     <div className="grid gap-4">
-      <div className="card overflow-x-auto p-0">
-        <table className="w-full min-w-[640px] table-fixed border-collapse">
-          <thead>
-            <tr className="border-b text-left text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-              <th className="w-24 py-2.5 pl-4">{t('Mốc')}</th>
-              {(['1', '2', '3'] as MucSos[]).map((s) => <th key={s} className="py-2.5 pl-3"><ChipSos s={s} /></th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {HANG_FT.map((h) => (
+      <Bang<HangFt> ten={t('Mốc SOS')} cot={COT_FT} hang={HANG_FT} khoa={(h) => h} the375={false} hangRieng={(h) => (
               <Fragment key={h}>
                 <tr className="border-b" style={{ borderColor: 'var(--line)' }}>
-                  <th scope="row" className="py-3 pl-4 text-left align-top text-[15px] font-bold text-slate-100">{TEN_HANG[h]}{h === 'rf' && <span className="block text-[12px] font-normal text-slate-500">{t('mọi MT')}</span>}</th>
-                  {(['1', '2', '3'] as MucSos[]).map((s) => {
+                  <OBang c={COT_FT[0]} className="py-3 pl-4 align-top text-[15px] font-bold text-slate-100">{TEN_HANG[h]}{h === 'rf' && <span className="block text-[12px] font-normal text-slate-500">{t('mọi MT')}</span>}</OBang>
+                  {(['1', '2', '3'] as MucSos[]).map((s, i) => {
                     const dang = chon?.h === h && chon.s === s;
                     const noi = <NoiDungO o={moc.ft[h][s]} moc={moc} tenPa={tenPa} />;
                     return (
-                      <td key={s} className="border-l align-top" style={{ borderColor: 'var(--line)' }}>
+                      <OBang key={s} c={COT_FT[i + 1]} className="!whitespace-normal border-l p-0 align-top" style={{ borderColor: 'var(--line)' }}>
                         {chiXem ? <div className="px-3 py-2.5">{noi}</div> : (
-                          <button type="button" aria-pressed={dang} onClick={() => setChon(dang ? null : { h, s })}
+                          <button type="button" aria-pressed={dang} aria-label={`${TEN_HANG[h]} · SOS ${s}`} onClick={() => setChon(dang ? null : { h, s })}
                             className={`block min-h-[96px] w-full px-3 py-2.5 text-left hover:bg-[color:var(--accent-soft)] ${dang ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : ''}`}>{noi}</button>
                         )}
-                      </td>
+                      </OBang>
                     );
                   })}
                 </tr>
                 {chon?.h === h && (
                   <tr className="border-b" style={{ borderColor: 'var(--line)' }}>
-                    <td colSpan={4} className="p-3">
+                    <OBang c={COT_FT[0]} colSpan={4} className="!whitespace-normal p-3">
                       <KhungO key={`${chon.h}-${chon.s}`} tieuDe={`${TEN_HANG[chon.h]} · SOS ${chon.s}`} o={moc.ft[chon.h][chon.s]} moc={moc} duLieu={duLieu} coPa busy={busy}
                         cungAp={HANG_FT.filter((x) => x !== chon.h).map((x) => ({ key: x, ten: TEN_HANG[x] }))} onThoi={() => setChon(null)} onLuu={luuO} />
-                    </td>
+                    </OBang>
                   </tr>
                 )}
               </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )} />
       <DanhMucViec duLieu={duLieu} chiXem={chiXem} luuDs={luuDs} />
     </div>
   );
@@ -171,7 +164,7 @@ function OSoSua({ v, chiXem, onLuu, nhan }: { v: number; chiXem: boolean; onLuu:
   if (sua === null) return <button type="button" aria-label={nhan} className="inline-flex h-[26px] min-w-[30px] items-center justify-center rounded-md border px-1.5 text-sm font-bold tabular-nums text-[color:var(--accent)] hover:border-[color:var(--accent)]" style={{ borderColor: 'var(--line-strong)' }} onClick={() => setSua(String(v))}>{v}</button>;
   const n = Number(sua), sai = !Number.isInteger(n) || n < 1 || n > 60;
   const xong = () => { if (!sai && n !== v) onLuu(n); setSua(null); };
-  return <input autoFocus aria-label={nhan} aria-invalid={sai} className={`input inline-block h-[28px] w-14 px-1 text-center ${sai ? 'border-[color:var(--bad)]' : ''}`} inputMode="numeric" value={sua}
+  return <input autoFocus aria-label={nhan} aria-invalid={sai} className={`field inline-block h-[28px] w-14 px-1 text-center ${sai ? 'border-[color:var(--bad)]' : ''}`} inputMode="numeric" value={sua}
     onChange={(e) => setSua(e.target.value)} onBlur={xong} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); xong(); } if (e.key === 'Escape') setSua(null); }} />;
 }
 
@@ -195,41 +188,30 @@ export function MocSosThuong({ duLieu, chiXem, luuDs }: ChungProps) {
   };
   return (
     <div className="grid gap-4">
-      <div className="card overflow-x-auto p-0">
-        <table className="w-full min-w-[640px] table-fixed border-collapse text-sm">
-          <thead>
-            <tr className="border-b text-left text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-              <th className="w-40 py-2.5 pl-4">{t('Mốc')}</th><th className="w-36 py-2.5 pl-3">Case</th><th className="py-2.5 pl-3">{t('PA quy chế')}</th><th className="w-44 py-2.5 pl-3">{t('Việc phối hợp')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {MOC_THUONG.map((m) => (
+      <Bang<(typeof MOC_THUONG)[number]> ten={t('Mốc SOS · Lớp thường')} cot={COT_THUONG} hang={MOC_THUONG} khoa={(m) => m.k} the375={false} hangRieng={(m) => (
               <Fragment key={m.k}>
                 <tr className="border-b align-top" style={{ borderColor: 'var(--line)' }}>
-                  <th scope="row" className="py-3 pl-4 text-left text-[15px] font-bold text-slate-100">{m.ten}<span className="block text-[12px] font-normal text-slate-500">{m.phu}</span></th>
-                  <td className="py-3 pl-3 text-slate-200">{m.caseChu}</td>
-                  <td className="py-3 pl-3 pr-3 text-slate-100">{pa(m.k)}</td>
-                  <td className="border-l p-0" style={{ borderColor: 'var(--line)' }}>
+                  <OBang c={COT_THUONG[0]} className="!whitespace-normal py-3 pl-4 text-[15px] font-bold text-slate-100">{m.ten}<span className="block text-[12px] font-normal text-slate-500">{m.phu}</span></OBang>
+                  <OBang c={COT_THUONG[1]} className="!whitespace-normal py-3 text-sm text-slate-200">{m.caseChu}</OBang>
+                  <OBang c={COT_THUONG[2]} className="!whitespace-normal py-3 pr-3 text-sm text-slate-100">{pa(m.k)}</OBang>
+                  <OBang c={COT_THUONG[3]} className="border-l p-0" style={{ borderColor: 'var(--line)' }}>
                     {m.k === 'khongDatKyVong' || chiXem
                       ? <div className="px-3 py-3 text-[13px] text-slate-300">{th[m.k].viec.length ? th[m.k].viec.map(ten).join(' · ') : t('Không có việc')}</div>
                       : <button type="button" aria-pressed={chon === m.k} onClick={() => setChon(chon === m.k ? null : m.k)}
                           className={`block w-full px-3 py-3 text-left text-[13px] text-slate-300 hover:bg-[color:var(--accent-soft)] ${chon === m.k ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : ''}`}>
                           {th[m.k].viec.length ? th[m.k].viec.map((x) => <span key={x} className="block">· {ten(x)}</span>) : t('Không có việc')} <span aria-hidden className="text-slate-500">›</span></button>}
-                  </td>
+                  </OBang>
                 </tr>
                 {chon === m.k && (
                   <tr className="border-b" style={{ borderColor: 'var(--line)' }}>
-                    <td colSpan={4} className="p-3">
+                    <OBang c={COT_THUONG[0]} colSpan={4} className="!whitespace-normal p-3">
                       <KhungO key={m.k} tieuDe={`${m.ten} · ${m.phu}`} o={{ pa: null, viec: th[m.k].viec }} moc={moc} duLieu={duLieu} coPa={false} busy={busy}
                         onThoi={() => setChon(null)} onLuu={async (o) => { setBusy(true); const ok = await doi(m.k, { viec: o.viec }, t('Đã lưu việc · {moc}', { moc: m.ten })); setBusy(false); if (ok) setChon(null); }} />
-                    </td>
+                    </OBang>
                   </tr>
                 )}
               </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      )} />
       <DanhMucViec duLieu={duLieu} chiXem={chiXem} luuDs={luuDs} />
     </div>
   );

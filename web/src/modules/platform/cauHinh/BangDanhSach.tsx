@@ -2,6 +2,15 @@ import { useState, type ReactNode, type KeyboardEvent } from 'react';
 import { t } from '@shared/i18n/index.ts';
 import { laKhac, type MocSos, type MucNguyenNhan, type MucPa, type NguyenNhan, type NhanhNN, type Viec } from '@shared/domain/index.ts';
 import type { DuLieuCauHinh, LuuDs } from '../CauHinhCaseSos.tsx';
+import { Bang, OBang, type CotBang } from '../../../ui/Bang.tsx';
+
+/** Cột chung (Bang): kéo · tên (linh hoạt) · đang dùng · nút. Tiêu đề chỉ chữ (G9). */
+const COT: CotBang[] = [
+  { key: 'tay', nhan: '', kieu: 'chu', rong: 32 },
+  { key: 'ten', nhan: t('Tên'), kieu: 'chu', linhHoat: true },
+  { key: 'dung', nhan: t('Đang dùng'), kieu: 'so', rong: 96 },
+  { key: 'nut', nhan: '', kieu: 'nut', rong: 160 },
+];
 
 /**
  * BẢNG DANH SÁCH SỬA TẠI DÒNG (CAU-HINH-CASE-SOS, mockup K1–K4, K6): một bảng nhóm theo dải; tên bấm thẳng = sửa tại dòng (Enter lưu, Esc thôi);
@@ -71,27 +80,17 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
   };
 
   return (
-    <div className="card overflow-hidden p-0">
-      <table className="w-full table-fixed border-collapse">
-        <thead>
-          <tr className="border-b text-left text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-            <th className="w-10 py-2.5 pl-3.5 max-sm:w-7 max-sm:pl-2" aria-label={t('Thứ tự')} />
-            <th className="py-2.5 pr-3">{t('Tên')}</th>
-            <th className="w-28 py-2.5 pr-3 text-right max-sm:hidden">{t('Đang dùng')}</th>
-            <th className="w-[200px] py-2.5 pr-3.5 max-sm:w-[72px]" aria-label={t('Thao tác')} />
-          </tr>
-        </thead>
-        <tbody>
+    <Bang<number> ten={p.nhom.map((n) => n.ten).join(' · ')} cot={COT} hang={[0]} khoa={() => 0} the375={false} hangRieng={() => <>
           {p.nhom.map((n) => {
             const hien = n.muc.filter((m) => !m.an).length, an = n.muc.length - hien;
             return [
               <tr key={`d-${n.key}`} className="border-b" style={{ borderColor: 'var(--line)' }}>
-                <td colSpan={4} className="bg-[color:var(--surface-2)] py-2.5 pl-3.5 pr-3 shadow-[inset_3px_0_0_var(--line-strong)]">
+                <OBang c={COT[0]} colSpan={4} className="!whitespace-normal bg-[color:var(--surface-2)] py-2.5 pl-3.5 pr-3 shadow-[inset_3px_0_0_var(--line-strong)]">
                   <span className="flex flex-wrap items-center gap-2.5 text-[15px] font-bold text-slate-100">
                     {n.ten}<span className="rounded border px-1.5 text-[12px] font-semibold tabular-nums text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{hien}</span>
                     {an > 0 && <span className="text-[13px] font-normal text-slate-400">· {t('{n} đang ẩn', { n: an })}</span>}
                   </span>
-                </td>
+                </OBang>
               </tr>,
               ...n.muc.map((m, i) => {
                 if (sua && sua.nhom === n.key && sua.idx === i) return <DongSua key={m.ma} {...p} n={n} sua={sua} setSua={setSua} loi={loiTen(n, sua.m, i)} busy={busy} onLuu={luuSua} phim={phim} doiCho={(d) => void doiCho(n, i, i + d)} />;
@@ -102,19 +101,19 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                     draggable={!p.chiXem && !khac && !busy} onDragStart={() => setKeo({ nhom: n.key, idx: i })} onDragOver={(e) => { if (keo?.nhom === n.key) e.preventDefault(); }}
                     onDrop={() => { if (keo?.nhom === n.key) void doiCho(n, keo.idx, i); setKeo(null); }}
                     onKeyDown={(e) => { if (!p.chiXem && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); void doiCho(n, i, i + (e.key === 'ArrowUp' ? -1 : 1)); } }}>
-                    <td className="py-1.5 pl-3.5 align-middle">
+                    <OBang c={COT[0]} className="py-1.5 pl-3.5 align-middle">
                       {!p.chiXem && !khac && <span className="cursor-grab select-none text-slate-500" title={t('Kéo để đổi thứ tự · Alt + ↑ ↓')} aria-hidden>⠿</span>}
-                    </td>
-                    <td className="py-1.5 pr-3">
+                    </OBang>
+                    <OBang c={COT[1]} className="!whitespace-normal py-1.5 pr-3">
                       {p.chiXem || m.an
                         ? <span className={`text-[15px] font-medium ${m.an ? 'line-through decoration-1' : 'text-slate-100'}`}>{m.ten}</span>
                         : <button type="button" className="-ml-2 rounded-md px-2 py-1.5 text-left text-[15px] font-medium text-slate-100 hover:bg-[color:var(--accent-soft)]"
                             title={t('Sửa tên')} onClick={() => setSua({ nhom: n.key, idx: i, m: { ...m } })}>{m.ten} <span aria-hidden className="text-slate-500">✎</span></button>}
                       {phu && <div className="text-[13px] text-slate-400">{phu}</div>}
                       <div className="text-[13px] text-slate-400 sm:hidden">{dung ? `${dung} ${p.donVi}` : t('Chưa dùng')}</div>
-                    </td>
-                    <td className="py-1.5 pr-3 text-right text-sm tabular-nums text-slate-400 max-sm:hidden">{dung ? <><b className="font-semibold text-slate-100">{dung}</b> {p.donVi}</> : '—'}</td>
-                    <td className="py-1.5 pr-3.5 text-right">
+                    </OBang>
+                    <OBang c={COT[2]} className="py-1.5 text-sm tabular-nums text-slate-400">{dung ? <><b className="font-semibold text-slate-100">{dung}</b> {p.donVi}</> : '—'}</OBang>
+                    <OBang c={COT[3]} className="py-1.5 pr-3.5">
                       {p.chiXem ? (m.an ? <span className="text-[12px] font-semibold text-slate-400">{t('Đang ẩn')}</span> : null)
                         : khac ? <span className="text-[13px] text-slate-500">{t('Luôn cuối')}</span>
                         : m.an ? <span className="inline-flex items-center gap-2"><span className="text-[12px] font-semibold text-slate-400 max-sm:hidden">{t('Đang ẩn')}</span>
@@ -125,7 +124,7 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                             onClick={() => void ghi(n.key, n.muc.filter((x) => x.ma !== m.ma), t('Đã xoá "{ten}"', { ten: m.ten }))}>{t('Xoá')}</button>
                         : <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
                             onClick={() => void ghi(n.key, n.muc.map((x) => (x.ma === m.ma ? { ...x, an: true } as M : x)), dung ? t('Đã ẩn "{ten}" — {n} {donVi} giữ nguyên', { ten: m.ten, n: dung, donVi: p.donVi }) : t('Đã ẩn "{ten}"', { ten: m.ten }))}>{t('Ẩn')}</button>}
-                    </td>
+                    </OBang>
                   </tr>
                 );
               }),
@@ -133,15 +132,13 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                 ? <DongSua key={`moi-${n.key}`} {...p} n={n} sua={sua} setSua={setSua} loi={sua.m.ten ? loiTen(n, sua.m, 'moi') : null} busy={busy} onLuu={luuSua} phim={phim} />
                 : !p.chiXem && n.themChu && (
                   <tr key={`t-${n.key}`} className="border-b" style={{ borderColor: 'var(--line)' }}>
-                    <td />
-                    <td colSpan={3} className="py-1.5"><button type="button" className="btn btn-ghost btn-sm -ml-2 min-h-[44px] text-[color:var(--accent)] sm:min-h-0" onClick={() => setSua({ nhom: n.key, idx: 'moi', m: p.moi(n.key) })}>+ {n.themChu}</button></td>
+                    <OBang c={COT[0]} />
+                    <OBang c={COT[1]} colSpan={3} className="py-1.5"><button type="button" className="btn btn-ghost btn-sm -ml-2 min-h-[44px] text-[color:var(--accent)] sm:min-h-0" onClick={() => setSua({ nhom: n.key, idx: 'moi', m: p.moi(n.key) })}>+ {n.themChu}</button></OBang>
                   </tr>
                 ),
             ];
           })}
-        </tbody>
-      </table>
-    </div>
+        </>} />
   );
 }
 
@@ -154,19 +151,19 @@ function DongSua<M extends MucChung>(p: Props<M> & {
   const moi = sua.idx === 'moi';
   return (
     <tr className="border-b bg-[color:var(--surface-2)] shadow-[inset_3px_0_0_var(--accent)]" style={{ borderColor: 'var(--line)' }} onKeyDown={p.phim}>
-      <td />
-      <td colSpan={3} className="py-3 pr-3.5">
+      <OBang c={COT[0]} />
+      <OBang c={COT[1]} colSpan={3} className="!whitespace-normal py-3 pr-3.5">
         <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
           <label className="grid gap-1 text-[13px] font-medium text-slate-400">
             <span className="flex justify-between">{t('Tên')}<span className="tabular-nums text-slate-500">{sua.m.ten.length}/60</span></span>
-            <input className={`input ${p.loi ? 'border-[color:var(--bad)]' : ''}`} autoFocus value={sua.m.ten} maxLength={80} aria-invalid={!!p.loi}
+            <input className={`field ${p.loi ? 'border-[color:var(--bad)]' : ''}`} autoFocus value={sua.m.ten} maxLength={80} aria-invalid={!!p.loi}
               onChange={(e) => dat({ ...sua.m, ten: e.target.value })} />
             {p.loi && <span className="text-[13px] text-bad">⚠ {p.loi}</span>}
           </label>
           {p.oThem?.(sua.m, dat, moi)}
           <div className="flex flex-wrap items-center gap-2.5 text-[13px] text-slate-400 sm:col-span-2">
             <span>{t('Tên tiếng Anh')}</span>
-            <input className="input min-w-[200px] flex-1" value={sua.m.tenEn ?? ''} maxLength={60} placeholder={t('Không bắt buộc')} onChange={(e) => dat({ ...sua.m, tenEn: e.target.value })} />
+            <input className="field min-w-[200px] flex-1" value={sua.m.tenEn ?? ''} maxLength={60} placeholder={t('Không bắt buộc')} onChange={(e) => dat({ ...sua.m, tenEn: e.target.value })} />
             {p.doiCho && !laKhac(sua.m.ma) && (
               <span className="inline-flex overflow-hidden rounded-lg border" role="group" aria-label={t('Đổi thứ tự')} style={{ borderColor: 'var(--line-strong)' }}>
                 <button type="button" className="btn btn-ghost btn-sm min-h-[44px] rounded-none sm:min-h-0" aria-label={t('Lên')} onClick={() => p.doiCho!(-1)}>↑</button>
@@ -180,7 +177,7 @@ function DongSua<M extends MucChung>(p: Props<M> & {
             </span>
           </div>
         </div>
-      </td>
+      </OBang>
     </tr>
   );
 }
@@ -207,7 +204,7 @@ export function BangNguyenNhan({ duLieu, chiXem, luuDs, ben }: ChungProps & { be
       oThem={(m, dat) => (
         <label className="grid gap-1 text-[13px] font-medium text-slate-400">
           <span className="flex justify-between">{t('Giải thích')}<span className="tabular-nums text-slate-500">{(m.giaiThich ?? '').length}/160</span></span>
-          <input className="input" value={m.giaiThich ?? ''} maxLength={160} placeholder={t('Không bắt buộc — GV thấy ở ⓘ')}
+          <input className="field" value={m.giaiThich ?? ''} maxLength={160} placeholder={t('Không bắt buộc — GV thấy ở ⓘ')}
             onChange={(e) => dat({ ...m, giaiThich: e.target.value.trim() ? e.target.value : undefined })} />
         </label>
       )}
@@ -269,24 +266,24 @@ export function DanhMucViec({ duLieu, chiXem, luuDs }: ChungProps) {
       oThem={(v, dat) => (
         <div className="grid gap-2 text-[13px] text-slate-400 sm:col-span-2 sm:grid-cols-3">
           <label className="grid gap-1 font-medium">{t('Ai làm')}
-            <select className="input" value={v.aiLam} onChange={(e) => dat({ ...v, aiLam: e.target.value as Viec['aiLam'] })}>
+            <select className="field" value={v.aiLam} onChange={(e) => dat({ ...v, aiLam: e.target.value as Viec['aiLam'] })}>
               <option value="gvcn">GVCN</option><option value="tvv">{t('TVV của em')}</option><option value="cx">CX</option>
             </select></label>
           <label className="grid gap-1 font-medium">{t('Hạn (ngày, trống = không hạn)')}
-            <input className="input" inputMode="numeric" value={v.hanNgay ?? ''} onChange={(e) => dat({ ...v, hanNgay: e.target.value.trim() ? Number(e.target.value) : null })} /></label>
+            <input className="field" inputMode="numeric" value={v.hanNgay ?? ''} onChange={(e) => dat({ ...v, hanNgay: e.target.value.trim() ? Number(e.target.value) : null })} /></label>
           <label className="grid gap-1 font-medium">{t('Ghi chú khi xác nhận')}
             <span className="flex items-center gap-2">
-              <select className="input" value={v.ghiChu} onChange={(e) => dat({ ...v, ghiChu: e.target.value as Viec['ghiChu'], toiThieu: e.target.value === 'bat_buoc' ? v.toiThieu ?? 10 : undefined })}>
+              <select className="field" value={v.ghiChu} onChange={(e) => dat({ ...v, ghiChu: e.target.value as Viec['ghiChu'], toiThieu: e.target.value === 'bat_buoc' ? v.toiThieu ?? 10 : undefined })}>
                 <option value="khong">{t('Không bắt buộc')}</option><option value="bat_buoc">{t('Bắt buộc')}</option>
               </select>
-              {v.ghiChu === 'bat_buoc' && <><span>≥</span><input className="input w-16 text-center" inputMode="numeric" value={v.toiThieu ?? ''} onChange={(e) => dat({ ...v, toiThieu: Number(e.target.value) || undefined })} /></>}
+              {v.ghiChu === 'bat_buoc' && <><span>≥</span><input className="field w-16 text-center" inputMode="numeric" value={v.toiThieu ?? ''} onChange={(e) => dat({ ...v, toiThieu: Number(e.target.value) || undefined })} /></>}
             </span></label>
           <label className="inline-flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:col-span-3 sm:min-h-0">
             <input type="checkbox" checked={!!v.buocTvv} onChange={(e) => dat({ ...v, buocTvv: e.target.checked ? { hanNgay: 5, toiThieu: 10 } : undefined })} />
             {t('Sau xác nhận: sinh việc TVV báo gia đình')}
             {v.buocTvv && <>
-              <span className="text-slate-400">· {t('hạn')}</span><input className="input w-16 text-center" inputMode="numeric" value={v.buocTvv.hanNgay} onChange={(e) => dat({ ...v, buocTvv: { ...v.buocTvv!, hanNgay: Number(e.target.value) } })} />
-              <span className="text-slate-400">{t('ngày · tối thiểu')}</span><input className="input w-16 text-center" inputMode="numeric" value={v.buocTvv.toiThieu} onChange={(e) => dat({ ...v, buocTvv: { ...v.buocTvv!, toiThieu: Number(e.target.value) } })} />
+              <span className="text-slate-400">· {t('hạn')}</span><input className="field w-16 text-center" inputMode="numeric" value={v.buocTvv.hanNgay} onChange={(e) => dat({ ...v, buocTvv: { ...v.buocTvv!, hanNgay: Number(e.target.value) } })} />
+              <span className="text-slate-400">{t('ngày · tối thiểu')}</span><input className="field w-16 text-center" inputMode="numeric" value={v.buocTvv.toiThieu} onChange={(e) => dat({ ...v, buocTvv: { ...v.buocTvv!, toiThieu: Number(e.target.value) } })} />
               <span className="text-slate-400">{t('ký tự')}</span></>}
           </label>
         </div>
