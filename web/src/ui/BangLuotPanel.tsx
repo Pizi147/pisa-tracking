@@ -255,9 +255,14 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (k !== 'ovr' && h.layLai.includes(k) && o) return <span className="whitespace-nowrap tabular-nums text-faint" title={t('lấy từ lần thi trước')}><span aria-hidden>↺ </span><span className="sr-only">{t('lấy từ lần thi trước')} </span>{fmtBand(o.v)}</span>;
     return <ODiem so={o ? fmtBand(o.v) : null} kq={o?.kq ?? null} nhan={k === 'ovr' ? 'OVR' : k.toUpperCase()} />;
   };
+  /* Phân tích V2 (đặc tả 5.2): panel ô "Tổng thể" có chip KCK / WL 2 ở từng em. */
+  const chipKckH = (h: HH) => (h.wl2 ? <span className="inline-flex h-[22px] items-center rounded border border-soon-line bg-soon-bg px-[7px] text-xs font-semibold text-soon">WL 2</span>
+    : h.kck ? <span className="inline-flex h-[22px] items-center rounded border px-[7px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>KCK</span> : null);
+  /* 2.1b: đầu panel chia sẵn theo lớp (không phải bấm thêm). */
+  const chiaLopH = (() => { const m = new Map<string, number>(); for (const h of tatH) m.set(h.lop || '—', (m.get(h.lop || '—') ?? 0) + 1); return m.size > 1 ? [...m] : []; })();
   const tuanH = (h: HH) => (h.tuan ? <span className="whitespace-nowrap tabular-nums text-dim">{h.tuan.day}/{h.tuan.tong} · {h.tuan.tong ? Math.round((100 * h.tuan.day) / h.tuan.tong) : 0} %</span> : null);
   const oH = (h: HH, c: DinhNghiaCot): ReactNode => {
-    if (c.key === 'ten') return lkHv(h.studentId, h.ten);
+    if (c.key === 'ten') return <span className="inline-flex items-center gap-1.5">{lkHv(h.studentId, h.ten)}{chipKckH(h)}</span>;
     if (c.key === 'lop') return lkLop(h.classId, h.lop);
     if (c.key === 'ngay') return <span className="tabular-nums text-dim">{h.ngay ? ngay(h.ngay, homNay).slice(0, 5) : '—'}</span>;
     if (c.key === 'tg') return <span className="tabular-nums text-dim">{h.kck ? 'KCK' : h.target === null ? '—' : fmtBand(h.target)}</span>;
@@ -266,7 +271,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   };
   const theH = (h: HH) => (
     <div className="grid gap-1.5">
-      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}
+      <div className="flex items-baseline gap-2 text-[15px]">{lkHv(h.studentId, h.ten)}{chipKckH(h)}
         <span className="ml-auto whitespace-nowrap text-[13px] text-dim">Target <b className="text-[14px] font-semibold tabular-nums text-[color:var(--text)]">{h.kck ? 'KCK' : h.target === null ? '—' : fmtBand(h.target)}</b></span>
       </div>
       <div className="flex flex-wrap gap-x-3 text-[14px]">{lkLop(h.classId, h.lop)}<span className="tabular-nums text-dim">{h.ngay ? ngay(h.ngay, homNay).slice(0, 5) : '—'}</span>{tuanH(h)}</div>
@@ -522,7 +527,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                   );
                 })
               : tt
-                ? <Bang deu day ten={tieuDe} cot={cotH} hang={hangH} khoa={(h) => h.id} oCua={oH} khung={false} theRieng={theH} />
+                ? <>
+                  {!!chiaLopH.length && <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[13px] text-dim">{chiaLopH.map(([l, n]) => (
+                    <span key={l} className="inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5" style={{ borderColor: 'var(--o-nhap-vien)' }}>{l} <b className="tabular-nums text-[color:var(--text)]">{n}</b></span>))}</div>}
+                  <Bang deu day ten={tieuDe} cot={cotH} hang={hangH} khoa={(h) => h.id} oCua={oH} khung={false} theRieng={theH} />
+                </>
               : vpk ? (tatVl.length ? <Bang deu day ten={tieuDe} cot={cotVl} hang={pt.cat(tatVl)} khoa={(h) => h.id} oCua={oVl} khung={false} />
                 : tatVe.length ? <Bang deu day ten={tieuDe} cot={cotVe} hang={pt.cat(tatVe)} khoa={(h) => h.id} oCua={oVe} khung={false} />
                 : <Bang deu day ten={tieuDe} cot={cotV} hang={pt.cat(tatV)} khoa={(h) => h.id} oCua={oV} phuCua={(h, c) => (c.key === 'vp' && h.moTa ? h.moTa : null)} khung={false} theRieng={theV} />)

@@ -202,7 +202,7 @@ function BaThi({ cot, fail, pass, exceed, nguonCua, ten, motDong, gon }: {
       <OSo giaTri={n} tieuDe={`${ten} · ${chu}`} nguon={nguonCua(cot, loc)} className={`${vung} font-bold ${n > 0 ? MAU_THI[loc] : ''}`} />
     </span>
   );
-  return <span className={`inline-flex items-baseline gap-x-3 gap-y-0.5 ${motDong ? 'whitespace-nowrap' : 'flex-wrap'}`}>{o('chua', '▼', 'Fail', fail)}{o('dat', '▲', 'Pass', pass)}{o('vuot', '★', 'Exceed', exceed)}</span>;
+  return <span className={`inline-flex items-baseline gap-x-3 gap-y-0.5 ${motDong ? 'whitespace-nowrap' : 'flex-wrap'}`}>{o('chua', '▼', t('Chưa đạt'), fail)}{o('dat', '▲', t('Đạt Target'), pass)}{o('vuot', '★', t('Vượt'), exceed)}</span>;
 }
 
 /* Chủ SP 23/10 (lượt 3): dải 4 ô — Đúng hạn · Đạt kỳ vọng Test · Case có PA · Kết quả thi thật (cuối). Quá hạn hiện tại đã ở "Việc đang tồn". */
@@ -408,7 +408,7 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   const COT: CotBang[] = [
     { key: 'kn', nhan: t('Kỹ năng'), kieu: 'chu' },
     { key: 'kq', nhan: ft ? t('Đạt kỳ vọng Test') : t('Đạt Test'), kieu: 'chu', rong: RONG_TL },
-    ...(ft ? [{ key: 'thi', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: 150, goiY: 'Fail · Pass · Exceed' } as CotBang] : []),
+    ...(ft ? [{ key: 'thi', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: 150, goiY: `${t('Chưa đạt')} · ${t('Đạt Target')} · ${t('Vượt')}` } as CotBang] : []),
   ];
   const oCua = (h: HangKn, c: CotBang): ReactNode => {
     const cot = `ket-qua:${khung}:${h.skill}`;
@@ -421,7 +421,7 @@ function BangKyNang({ id, d, ky, khung }: { id: number; d: ChiSoHoSoGv; ky: stri
   return (
     <KhungBang ten={t('Theo kỹ năng')} phai={ft && hang.some((h) => h.thi) && (
       /* Chú giải ký hiệu thi thật vào ⓘ (CHU-GIAI 07/11) — ô bảng chỉ còn ký hiệu + số. */
-      <NutLuat label={t('Ký hiệu')} phai><span className="flex gap-2.5 font-semibold"><span className={MAU_THI.chua}>▼ Fail</span><span className={MAU_THI.dat}>▲ Pass</span><span className={MAU_THI.vuot}>★ Exceed</span></span></NutLuat>
+      <NutLuat label={t('Ký hiệu')} phai><span className="flex gap-2.5 font-semibold"><span className={MAU_THI.chua}>▼ {t('Chưa đạt')}</span><span className={MAU_THI.dat}>▲ {t('Đạt Target')}</span><span className={MAU_THI.vuot}>★ {t('Vượt')}</span></span></NutLuat>
     )}>
       {dienThoai ? <BangGon cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} />
         : <Bang ten={t('Theo kỹ năng')} cot={COT} hang={hang} khoa={(h) => h.skill} oCua={oCua} khung={false}

@@ -7,6 +7,7 @@ import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { lopKq } from '../../ui/BieuTuong.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { NhanKq } from '../../ui/Nhan.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -24,10 +25,10 @@ import {
  */
 /** Link chữ thường (U08-6): rê / focus mới báo. */
 const LINK_CHU = 'rounded-sm text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline hover:underline-offset-[3px] focus-visible:text-[color:var(--accent)] focus-visible:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]';
-type TabThiThat = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb };
+type TabThiThat = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb; chuaCoKq: number };
 const KN4: readonly KnThiThat[] = ['l', 'r', 'w', 's'];
 const MUC: readonly MucThi[] = ['exceed', 'dat', 'fail'];
-const NHAN_MUC: Record<MucThi, string> = { exceed: 'Exceed', dat: t('Đạt'), fail: 'Fail' };
+const NHAN_MUC: Record<MucThi, string> = { exceed: t('Vượt'), dat: t('Đạt'), fail: t('Chưa đạt') };   // V2 (XM-1): Vượt · Đạt · Chưa đạt
 const MAU_MUC: Record<MucThi, string> = { exceed: lopKq('vuot'), dat: lopKq('bang'), fail: lopKq('duoi') };
 const NHAN_KN: Record<string, string> = { l: 'L', r: 'R', w: 'W', w1: 'W1', w2: 'W2', s: 'S' };
 const pt = (a: number, b: number) => (b > 0 ? Math.round((a * 100) / b) : 0);
@@ -43,11 +44,20 @@ const mucDong = (r: DongThiThat): MucThi | null => {
   const tg = targetCua(r);
   return r.khongThi || tg.kck || Number.isNaN(tg.v) || r.ovr === null ? null : mucThi(r.ovr, tg.v);
 };
+/** V2 (đặc tả 5.3): em KCK / WL 2 giữ trong danh sách, chip cạnh mức (mức theo Target nếu có — như ô "Tổng thể"). */
+const CHIP_KCK = 'inline-flex h-[22px] items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold';
+const chipKck = (r: DongThiThat) => (r.wl2 ? <span className={`${CHIP_KCK} border-soon-line bg-soon-bg text-soon`}>WL 2</span>
+  : r.kck ? <span className={`${CHIP_KCK} text-dim`} style={{ borderColor: 'var(--line-strong)' }}>KCK</span> : null);
 const chipMuc = (r: DongThiThat) => {
   if (r.khongThi) return <span className="text-xs text-muted">{t('Không thi')}</span>;
-  const m = mucDong(r);
-  if (!m) return <span className="text-faint">—</span>;
-  return <NhanKq kq={m === 'exceed' ? 'vuot' : m === 'dat' ? 'dat' : 'chua-dat'}>{NHAN_MUC[m]}</NhanKq>;
+  const tg = targetCua(r);
+  const m = Number.isNaN(tg.v) || r.ovr === null ? null : mucThi(r.ovr, tg.v);
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      {m ? <NhanKq kq={m === 'exceed' ? 'vuot' : m === 'dat' ? 'dat' : 'chua-dat'}>{NHAN_MUC[m]}</NhanKq> : !chipKck(r) && <span className="text-faint">—</span>}
+      {chipKck(r)}
+    </span>
+  );
 };
 
 export function KetQuaThi(pv: PhamViPhanTich) {
@@ -81,7 +91,8 @@ export function KetQuaThi(pv: PhamViPhanTich) {
   }
 
   const tk = data?.thongKe;
-  const coMuc = tk ? tk.tong.exceed + tk.tong.dat + tk.tong.fail : 0;
+  /* V2 (đặc tả 5.2): hai ô là CÔNG TẮC — "Đạt Target · trừ KCK" (mặc định) / "Tổng thể · gồm KCK"; thanh đổi theo ô. Không gọi lại máy chủ. */
+  const [tongThe, setTongThe] = useState(false);
   return (
     <>
       <VaoHangLoc o="phai">
@@ -93,14 +104,13 @@ export function KetQuaThi(pv: PhamViPhanTich) {
           : !rows.length ? <Card bodyClass="p-0"><RongDau chu={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} nut={<NutXemToanBo />} /></Card>
           : (
             <>
-              <DaiChiSo ds={[
-                { ten: t('HV thi'), ky: t('trong khoảng'), gt: so(tk.tong.thi, 'tong:thi', t('HV thi')), mau: tk.tong.kck ? t('trừ {n} KCK khi tính %', { n: tk.tong.kck }) : t('{n} có Target', { n: coMuc }) },
-                ...MUC.map((m) => ({
-                  ten: NHAN_MUC[m], gt: so(tk.tong[m], `tong:${m}`, `${NHAN_MUC[m]} · ${t('Thi thật')}`, MAU_MUC[m]), nho: coMuc ? `${pt(tk.tong[m], coMuc)} %` : undefined,
-                  mau: m === 'exceed' ? t('OVR trên Target') : m === 'dat' ? t('OVR bằng Target') : t('OVR dưới Target'),
-                })),
-                { ten: t('Không thi'), gt: so(tk.tong.khongThi, 'tong:khong-thi', t('Không thi')), mau: t('không vào %') },
-              ]} />
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+                <KhoiKetQua tk={tk} tongThe={tongThe} onTongThe={setTongThe} so={so} />
+                <DaiChiSo cot={1} ds={[
+                  { ten: t('Không thi'), ky: t('trong kỳ'), gt: so(tk.tong.khongThi, 'tong:khong-thi', t('Không thi')), mau: t('không vào %') },
+                  { ten: t('Chưa có KQ'), ky: t('hiện tại'), gt: data.chuaCoKq ? <OSo giaTri={data.chuaCoKq} nguon={`/tong-quan/chi-nhanh-v2/o?${query}&ct=ft&o=chua-co-kq`} tieuDe={t('Chưa có KQ')} vung="chi-so" /> : <span className="font-medium text-faint">0</span>, mau: t('đã qua ngày thi') },
+                ]} />
+              </div>
               {tk.gv && !dienThoai
                 ? <div className="grid items-start gap-3" style={{ gridTemplateColumns: 'minmax(0, 430px) minmax(0, 1fr)' }}><BangKyNang tk={tk} so={so} /><BangGv gv={tk.gv} so={so} /></div>
                 : <><BangKyNang tk={tk} so={so} />{tk.gv && <TheGv gv={tk.gv} so={so} />}</>}
@@ -121,8 +131,8 @@ function BangKyNang({ tk, so }: { tk: ThongKeThiThatWeb; so: So }) {
     <Card bodyClass="p-0">
       <DauThe ten={t('Từng kỹ năng')} phu={dienThoai ? undefined : t('so Target overall')}
         cachTinh={<>
-          <p className="m-0">{t('Điểm kỹ năng so Target overall của HV: trên = Exceed · bằng = Đạt · dưới = Fail.')}</p>
-          <p className="m-0 mt-1">{t('Thi lại một kỹ năng: chỉ kỹ năng thi lần này. HV KCK không vào %.')}</p>
+          <p className="m-0">{t('Điểm kỹ năng so Target overall của HV: trên = Vượt · bằng = Đạt · dưới = Chưa đạt.')}</p>
+          <p className="m-0 mt-1">{t('Thi lại một kỹ năng: chỉ kỹ năng thi lần này. KCK (gồm WL 2) không vào %.')}</p>
         </>} />
       <table className="w-full" style={{ tableLayout: 'fixed' }}>
         <colgroup><col style={{ width: dienThoai ? 40 : 72 }} /><col style={{ width: dienThoai ? 44 : 64 }} /><col /><col /><col /><col style={{ width: dienThoai ? 48 : 84 }} /></colgroup>
@@ -156,13 +166,18 @@ function BangKyNang({ tk, so }: { tk: ThongKeThiThatWeb; so: So }) {
 
 const cachTinhGv = (
   <>
-    <p className="m-0">{t('Mọi GV từng dạy kỹ năng cho HV đều tính. % theo tuần dạy: mỗi HV tính theo tuần GV dạy kỹ năng đó ÷ tổng tuần HV học kỹ năng đó, tới ngày thi.')}</p>
-    <p className="m-0 mt-1">{t('OVR dưới Target → Fail; OVR đạt: kỹ năng GV dạy trên Target → Exceed, còn lại → Đạt. KN dưới Target: điểm kỹ năng dưới Target, kể cả HV OVR đạt (cột riêng, không cộng vào Exceed · Đạt · Fail).')}</p>
-    <p className="m-0 mt-1">{t('W1 / W2: mỗi task tính nửa W, cùng band W thi thật. GV có Fail cao trước.')}</p>
+    <p className="m-0">{t('Mỗi GV đếm em mình từng dạy kỹ năng đó có KQ trong kỳ, trừ KCK. Một em có thể tính cho nhiều GV.')}</p>
+    <p className="m-0 mt-1">{t('OVR dưới Target → Chưa đạt; OVR đạt: kỹ năng GV dạy trên Target → Vượt, còn lại → Đạt. KN dưới Target: điểm kỹ năng dưới Target, kể cả HV OVR đạt.')}</p>
+    <p className="m-0 mt-1">{t('W1 / W2: cùng band W thi thật. GV có Chưa đạt cao trước.')}</p>
   </>
 );
-/** % một nhóm của dòng GV: số = % theo tuần dạy; bấm → HV của nhóm đó (số dòng = HV, đầu panel ghi %). 0 HV → "0 %" mờ. */
-const oPct = (g: DongGvThiWeb, m: MucThi | 'duoi', so: So) => so(g.so[m], `gv:${g.userId}:${g.kn}:${m}`, `${g.ten} · ${NHAN_KN[g.kn]} · ${m === 'duoi' ? t('KN dưới Target') : NHAN_MUC[m]}`, MAU_MUC[m === 'duoi' ? 'fail' : m], `${g[m]} %`);
+/** V2 (đặc tả 11): một nhóm của dòng GV — SỐ EM là chữ chính, % nhỏ bên dưới; bấm → em của nhóm (số = số dòng). */
+const oPct = (g: DongGvThiWeb, m: MucThi | 'duoi', so: So) => (
+  <span className="inline-flex flex-col items-center leading-tight">
+    {so(g.so[m], `gv:${g.userId}:${g.kn}:${m}`, `${g.ten} · ${NHAN_KN[g.kn]} · ${m === 'duoi' ? t('KN dưới Target') : NHAN_MUC[m]}`, MAU_MUC[m === 'duoi' ? 'fail' : m])}
+    {g.so[m] > 0 && <span className="text-xs font-medium tabular-nums text-dim">{g[m]} %</span>}
+  </span>
+);
 const nhomGv = (gv: DongGvThiWeb[]) => {
   const ds: { userId: number; ten: string; hang: DongGvThiWeb[] }[] = [];
   for (const g of gv) { const cu = ds.find((x) => x.userId === g.userId); if (cu) cu.hang.push(g); else ds.push({ userId: g.userId, ten: g.ten, hang: [g] }); }
@@ -174,13 +189,13 @@ function BangGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
   const nhom = nhomGv(gv);
   return (
     <Card bodyClass="p-0">
-      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('% theo tuần dạy, Fail cao trước')} cachTinh={cachTinhGv} />
+      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
       {!nhom.length ? <p className="m-0 p-4 text-sm text-dim">{t('Chưa có phân công kỹ năng cho HV thi trong khoảng này.')}</p> : (
         <div className="table-scroll">
-          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: 660 }}>
-            <colgroup><col style={{ width: 170 }} /><col style={{ width: 64 }} /><col style={{ width: 52 }} /><col style={{ width: 76 }} /><col style={{ width: 76 }} /><col /><col /><col /><col style={{ width: 124 }} /></colgroup>
+          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: 600 }}>
+            <colgroup><col style={{ width: 170 }} /><col style={{ width: 64 }} /><col style={{ width: 52 }} /><col style={{ width: 76 }} /><col /><col /><col /><col style={{ width: 124 }} /></colgroup>
             <thead><tr>
-              <th className="th">{t('Giáo viên')}</th><th className="th">{t('Kỹ năng')}</th><th className="th text-center">HV</th><th className="th text-center">{t('Tuần dạy')}</th>
+              <th className="th">{t('Giáo viên')}</th><th className="th">{t('Kỹ năng')}</th><th className="th text-center">HV</th>
               <th className="th text-center">{t('Điểm TB')}</th>{MUC.map((m) => <th key={m} className="th text-center">{NHAN_MUC[m]}</th>)}
               <th className="th border-l text-center" style={{ borderColor: 'var(--line)' }}>{t('KN dưới Target')}</th>
             </tr></thead>
@@ -190,7 +205,6 @@ function BangGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
                   <td className="td font-semibold">{j === 0 ? n.ten : ''}</td>
                   <td className="td">{NHAN_KN[g.kn]}</td>
                   <td className="td text-center">{so(g.hv, `gv:${g.userId}:${g.kn}:hv`, `HV · ${g.ten} · ${NHAN_KN[g.kn]}`)}</td>
-                  <td className="td text-center tabular-nums text-dim">{g.tuan}</td>
                   <td className="td text-center tabular-nums">{g.tb === null ? '—' : fmtBand(g.tb)}</td>
                   {MUC.map((m) => <td key={m} className="td text-center">{oPct(g, m, so)}</td>)}
                   <td className="td border-l text-center" style={{ borderColor: 'var(--line)' }}>{oPct(g, 'duoi', so)}</td>
@@ -212,7 +226,7 @@ function TheGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
   const o = (nhan: string, gt: ReactNode) => <span className="grid gap-0.5"><span className="text-xs text-dim">{nhan}</span><b className="text-[15px] font-semibold tabular-nums">{gt}</b></span>;
   return (
     <div className="space-y-2">
-      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('Fail cao trước')} cachTinh={cachTinhGv} />
+      <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
       {hien.map((n) => (
         <div key={n.userId} className={THE_HV} style={nenThe}>
           <span className="text-[15px] font-semibold">{n.ten}</span>
@@ -220,7 +234,7 @@ function TheGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
             <div key={g.kn} className="grid grid-cols-[28px_1fr] items-center gap-2 border-t pt-1.5" style={{ borderColor: 'var(--line)' }}>
               <b className="text-sm">{NHAN_KN[g.kn]}</b>
               <div className="grid grid-cols-4 gap-x-1 gap-y-1.5">
-                {o('HV', so(g.hv, `gv:${g.userId}:${g.kn}:hv`, `HV · ${g.ten} · ${NHAN_KN[g.kn]}`))}{o(t('Tuần'), <span className="font-normal text-dim">{g.tuan}</span>)}
+                {o('HV', so(g.hv, `gv:${g.userId}:${g.kn}:hv`, `HV · ${g.ten} · ${NHAN_KN[g.kn]}`))}
                 {o('TB', g.tb === null ? '—' : fmtBand(g.tb))}{MUC.map((m) => <Fragment key={m}>{o(NHAN_MUC[m], oPct(g, m, so))}</Fragment>)}{o(t('KN dưới'), oPct(g, 'duoi', so))}
               </div>
             </div>
@@ -256,9 +270,9 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
   );
   const ketQua = (r: DongThiThat) => <span className="inline-flex flex-col items-start gap-0.5">{chipMuc(r)}{r.thiLai && <span className="text-xs text-dim">{thiLai(r.thiLai)}</span>}</span>;
   const dau = (
-    <DauThe ten={t('Kết quả thi thật')} dem={t('{n} HV', { n: rows.length })}
+    <DauThe ten={t('Danh sách kết quả')} dem={t('{n} HV', { n: rows.length })} phu={t('theo lớp → ngày thi')}
       cachTinh={<>
-        <p className="m-0">{t('OVR so Target lúc nhập kết quả: trên = Exceed · bằng = Đạt · dưới = Fail. KCK không xếp nhóm.')}</p>
+        <p className="m-0">{t('OVR so Target lúc nhập kết quả: trên = Vượt · bằng = Đạt · dưới = Chưa đạt. KCK (gồm WL 2) giữ trong danh sách, có chip; không vào % chính.')}</p>
         <p className="m-0 mt-1">{t('Bước tiếp chọn ở Sau thi (Công việc TVV / hồ sơ HV); ở đây chỉ xem.')}</p>
       </>} />
   );
@@ -288,9 +302,9 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
       <div className="table-scroll bang-dinh">
         <table className="w-full" style={{ tableLayout: 'fixed', minWidth: 1000 }}>
           <colgroup>
-            <col style={{ width: 200 }} /><col style={{ width: 96 }} />
-            {KN4.map((k) => <col key={k} style={{ width: 70 }} />)}
-            <col style={{ width: 76 }} /><col style={{ width: 76 }} /><col style={{ width: 130 }} /><col />
+            <col style={{ width: '20%' }} /><col style={{ width: '7%' }} />
+            {KN4.map((k) => <col key={k} style={{ width: '6.5%' }} />)}
+            <col style={{ width: '6.5%' }} /><col style={{ width: '6.5%' }} /><col style={{ width: '17%' }} /><col style={{ width: '17%' }} />
           </colgroup>
           <thead><tr>
             <th className="th sticky-col">{t('Học viên')}</th><th className="th">{t('Ngày thi')}</th>
@@ -326,5 +340,62 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
       </div>
       <div className="border-t px-3 empty:hidden" style={{ borderColor: 'var(--line)' }}><PhanTrang {...phan.thanh} duoi /></div>
     </Card>
+  );
+}
+
+/**
+ * KHỐI "KẾT QUẢ THI THẬT" (V2, đặc tả 5.2, mockup #1400 C1 / C2): hai ô công tắc (`aria-pressed`, dáng tab chọn — không gạch như ô số) + thanh
+ * Vượt · Đạt · Chưa đạt theo ô đang chọn; mỗi đoạn bấm MỘT lần → panel đoạn đó (Tổng thể: `tt-<mức>`, gồm KCK). Hai % luôn hiện.
+ */
+type Dem3 = { vuot: number; dat: number; chua: number };
+function KhoiKetQua({ tk, tongThe, onTongThe, so }: { tk: ThongKeThiThatWeb; tongThe: boolean; onTongThe: (v: boolean) => void; so: So }) {
+  const dienThoai = useDienThoai();
+  const tru: Dem3 = { vuot: tk.tong.exceed, dat: tk.tong.dat, chua: tk.tong.fail };
+  const gom: Dem3 = { vuot: tk.tong.tongThe.exceed, dat: tk.tong.tongThe.dat, chua: tk.tong.tongThe.fail };
+  const mau = (x: Dem3) => x.vuot + x.dat + x.chua;
+  const o = (dang: boolean, ten: string, x: Dem3, chu: string, to: boolean, bam: () => void) => (
+    <button type="button" aria-pressed={dang} onClick={bam}
+      className={`grid content-start gap-0.5 rounded-xl px-3.5 pb-3 pt-2.5 text-left ${dang ? 'border-2 border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : 'border border-[color:var(--line-strong)] bg-[color:var(--surface-2)] hover:border-[color:var(--o-nhap-vien)]'}`}>
+      <span className={`flex items-center gap-2 text-sm font-semibold ${dang ? 'text-[color:var(--text)]' : 'text-dim'}`}>
+        {ten}
+        <span className={`ml-auto inline-flex h-5 items-center rounded px-2 text-xs font-semibold ${dang ? 'border border-[color:var(--accent)] text-[color:var(--accent)]' : 'border border-[color:var(--o-nhap-vien)] text-dim'}`}>
+          {dang ? (dienThoai ? '✓' : t('✓ đang xem')) : (dienThoai ? '○' : t('Xem'))}
+        </span>
+      </span>
+      <span className={`font-bold leading-tight tabular-nums ${to ? 'text-[40px] max-sm:text-[28px]' : 'text-[28px] max-sm:text-[22px]'}`}>{mau(x) ? `${pt(x.vuot + x.dat, mau(x))} %` : '—'}</span>
+      <span className="text-[13px] text-dim">{mau(x) ? <><b className="font-semibold tabular-nums text-[color:var(--text)]">{x.vuot + x.dat}/{mau(x)}</b> {t('em')} · {chu}</> : t('chưa em nào có KQ')}</span>
+    </button>
+  );
+  const x = tongThe ? gom : tru;
+  const tong = mau(x);
+  const doan = [
+    ['vuot', 'exceed', t('Vượt'), '✓', 'border-ok-line bg-ok-bg', lopKq('vuot')],
+    ['dat', 'dat', t('Đạt'), '✓', 'border-[color:var(--line-strong)] bg-[color:var(--accent-soft)]', lopKq('bang')],
+    ['chua', 'fail', t('Chưa đạt'), '✗', 'border-bad-line bg-bad-bg', lopKq('duoi')],
+  ] as const;
+  const ky = tongThe ? t('gồm KCK') : t('trừ KCK');
+  return (
+    <section className="card grid gap-2.5 px-4 pb-4 pt-3">
+      <div className="flex items-center gap-2 text-[13px] font-medium text-dim">
+        {t('Kết quả thi thật')} <i className="not-italic text-faint">· {t('trong kỳ')}</i>
+        <span className="ml-auto"><NutLuat label={t('Cách tính')} phai>{t('KCK gồm em không cam kết Target và em đã nhận WL 2. Em không có Target không tính vào %.')}</NutLuat></span>
+      </div>
+      <div role="group" aria-label={t('Cách tính thanh kết quả')} className="grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-2.5">
+        {o(!tongThe, t('Đạt Target'), tru, t('trừ KCK'), true, () => onTongThe(false))}
+        {o(tongThe, t('Tổng thể'), gom, t('gồm KCK'), false, () => onTongThe(true))}
+      </div>
+      {tong > 0 && (
+        <div className="flex h-11 gap-0.5 max-sm:h-[52px]" role="group" aria-label={`${t('Vượt')} · ${t('Đạt')} · ${t('Chưa đạt')} · ${ky}`}>
+          {doan.filter(([k]) => x[k] > 0).map(([k, o2, nhan, dau, nen, chu], i, arr) => (
+            <span key={k} style={{ flex: `${x[k]} 1 0` }}
+              className={`flex min-w-fit items-center justify-center gap-1.5 border px-2 text-sm font-semibold max-sm:flex-col max-sm:gap-0 max-sm:px-0.5 max-sm:text-xs ${nen} ${chu} ${i === 0 ? 'rounded-l-lg' : ''} ${i === arr.length - 1 ? 'rounded-r-lg' : ''}`}>
+              <span className="whitespace-nowrap max-sm:order-2">{dau} {nhan}</span>
+              <b className="text-[17px] max-sm:order-1">{so(x[k], tongThe ? `tong:tt-${o2}` : `tong:${o2}`, `${nhan} · ${ky}`, chu)}</b>
+              <span className="text-xs font-medium tabular-nums opacity-85 max-sm:hidden">{pt(x[k], tong)} %</span>
+            </span>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

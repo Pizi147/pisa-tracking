@@ -534,7 +534,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
             {coTab && (
               <div role="tablist" aria-label={t('Kết quả')} onKeyDown={phimHangTab} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
                 {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */}
-                {([['chua', laThi ? 'Fail' : t('Chưa đạt'), soChua, ''], ['dat', laThi ? 'Pass' : t('Đạt'), soDat, ''], ...(soVuot ? [['vuot', 'Exceed', soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
+                {([['chua', t('Chưa đạt'), soChua, ''], ['dat', laThi ? t('Đạt Target') : t('Đạt'), soDat, ''], ...(soVuot ? [['vuot', t('Vượt'), soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} aria-controls={idPanel} tabIndex={tab === k ? 0 : -1} onClick={() => setTab(k)}
                     className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tab === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
                     {dau}{nhan} <span className="tabular-nums">{n}</span>

@@ -43,6 +43,7 @@ export type KetQuaMockKq = { loai: 'mock'; tu: string; den: string; tong: TongMo
 
 export type DongThiThat = {
   cycleId: number; studentId: number; ten: string; classId: number | null; lop: string | null; ngayThi: string | null; khongThi: boolean;
+  /** Phân tích V2: chip trong danh sách — KCK (không cam kết) · WL 2 (đã nhận WL 2 trước ngày thi). Cả hai vào nhóm KCK của báo cáo. */ kck?: boolean; wl2?: boolean;
   ovr: number | null; l: number | null; r: number | null; w: number | null; s: number | null; target: string;
   /** THI-LAI-1-KN: kỹ năng em thi lại lần này ("W"), các kỹ năng khác lấy KQ lần trước; null = thi đủ. */
   thiLai: string[] | null;

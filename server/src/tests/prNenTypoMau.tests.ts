@@ -38,8 +38,8 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
   };
   const tom = (h: string[]) => h.slice(0, 10).join(' · ') + (h.length > 10 ? ` … (${h.length})` : '');
   const ngoai = (n: number) => !THANG_CHU.includes(n);
-  /* Phân tích V2 (XM-10, PTA chốt 12/11): số cỡ trình chiếu của báo cáo Chi nhánh — 48 px (đặc tả 3) và 40 px (ô Thi thật / màn thấp). Chỉ tệp này. */
-  const ngoaiLe = (f: string, n: number) => f === 'web/src/modules/phanTich/BaoCao.tsx' && (n === 48 || n === 40);
+  /* Phân tích V2 (XM-10, PTA chốt 12/11): số cỡ trình chiếu của báo cáo Chi nhánh — 48 px (đặc tả 3) và 40 px (ô Thi thật / màn thấp); số "Đạt Target" của tab Thi thật 40 px. Chỉ hai tệp này. */
+  const ngoaiLe = (f: string, n: number) => (f === 'web/src/modules/phanTich/BaoCao.tsx' && (n === 48 || n === 40)) || (f === 'web/src/modules/phanTich/KetQuaThi.tsx' && n === 40);   // + số "Đạt Target" (đặc tả 5.2)
 
   // ------------------------------------------------------------------ chữ
   check('NEN · K-CHU-1: mọi cỡ chữ viết tay (text-[Npx], fontSize, font-size) thuộc thang 12·13·14·15·17·22·28', () => {

@@ -37,6 +37,7 @@ export type KnThiBang = 'l' | 'r' | 'w' | 's';
 export type DongThiThatBang = {
   cycleId: number; studentId: number; ten: string; classId: number | null; lop: string; ngay: string | null;
   kn: Record<KnThiBang, ODiemLuot>; ovr: ODiemLuot; target: number | null; kck: boolean; layLai: KnThiBang[];
+  /** Phân tích V2: em đã nhận WL 2 trước ngày thi — chip "WL 2" (nhóm KCK của báo cáo). */ wl2?: boolean;
   tuan?: { day: number; tong: number };
 };
 

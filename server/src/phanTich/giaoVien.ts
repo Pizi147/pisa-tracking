@@ -35,7 +35,7 @@ import { KN_LUOT_CUA, NHAN_KN_LUOT, duongCaseRieng, duongDotTest, tabViecHanCua,
 
 const LO = 400;
 const KN_NGAN: Record<KnDay, string> = { l: 'L', r: 'R', w1: 'W1', w2: 'W2', s: 'S' };
-const NHAN_MUC_THI = { exceed: 'Exceed', dat: t('Đạt'), fail: 'Fail' } as const;
+const NHAN_MUC_THI = { exceed: t('Vượt'), dat: t('Đạt'), fail: t('Chưa đạt') } as const;   // Phân tích V2 (PTA chốt XM-1): Vượt · Đạt · Chưa đạt mọi nơi
 const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
 const theoLo = <T>(ds: readonly T[]) => Array.from({ length: Math.ceil(ds.length / LO) }, (_, i) => ds.slice(i * LO, (i + 1) * LO));
 /** Thứ tự môn ở dòng phụ "R · W1 · W2 · GVCN …". */
@@ -1003,7 +1003,7 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
     ketQuaTheoLop: theoLop.sort((a, b) => a.ma.localeCompare(b.ma, 'vi', { numeric: true }) || COT_KET_QUA_GV[a.khung].indexOf(a.skill) - COT_KET_QUA_GV[b.khung].indexOf(b.skill)),
     tienBo: oTuTap(coFt, gopTap(...tb)),
     paHieuQua: oTuTap(coFt, gopTap(...pa)),
-    /* 2F: mục = em × kỹ năng GV từng dạy; Pass = Exceed + Đạt; số to `pt` theo tuần dạy. */
+    /* 2F: mục = em × kỹ năng GV từng dạy; Đạt Target = Vượt + Đạt; số to `pt` = số em (V2: không trọng số). */
     thiThat: coFt ? oThiGv(thi) : { k: 'na' },
     thiThatVuot: thi.filter((m) => m.muc === 'exceed').length,
     thiThatTheoKyNang: coFt ? COT_KET_QUA_GV.ft.map((skill) => {
@@ -1080,7 +1080,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
           kn: (['l', 'r', 'w', 's'] as const).map((k) => ({ k: k.toUpperCase(), v: kq[k], dat: kq[k] === null || kq.target === null ? null : kq[k]! >= kq.target, cua: k === m.kn[0] })) },
         /* một em có thể có nhiều mục (nhiều kỹ năng, hai lần thi) — id theo dòng */ id: i + 1, title: x.ten, href: `/hoc-vien/${x.studentId}`, lop: x.lop,
         sub: [x.lop, `${t('Thi thật')} ${ngay}`, `${kn} ${m.band.toFixed(1)}${m.duoi ? ` (${t('dưới Target')})` : ''}`, soVoi ? `Target ${soVoi.v.toFixed(1)}` : null,
-          t('tuần dạy {a}/{b}', { a: m.tuan, b: m.tongTuan }), NHAN_MUC_THI[m.muc]].filter(Boolean).join(' · '),
+          NHAN_MUC_THI[m.muc]].filter(Boolean).join(' · '),   // V2: bỏ trọng số tuần dạy
       };
     });
     const nhan = mt[2] ? `${t('Kết quả thi thật')} ${tenMonNgan(null, mt[2])}` : t('Kết quả thi thật');
