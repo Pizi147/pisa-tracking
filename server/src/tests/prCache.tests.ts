@@ -75,7 +75,8 @@ export async function runPrCacheTests(t: YThucTestKit) {
       const lam = () => {
         const log = { data: [] as unknown[] };
         return { log, b: {
-          latest: { current: 0 }, currentPath: { current: null as string | null }, coDuLieu: { current: false }, banTu: { current: 0 },
+          /* Lưới ĐÃ gắn tự tải lại sau khi lưu (cùng đường) — hook mới gắn thì `xaGop(path)` xả gộp ngay (W1), không phải kịch bản này. */
+          latest: { current: 0 }, currentPath: { current: '/classes/3/cham' as string | null }, coDuLieu: { current: true }, banTu: { current: 0 },
           setData: (d: unknown) => log.data.push(d), setFetching: () => {}, setError: () => {}, reload: () => {},
         } };
       };

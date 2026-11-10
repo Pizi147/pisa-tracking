@@ -54,17 +54,17 @@ export function henTaiLaiKhiCu(taiLai: () => void, choMs = 60_000) {
   let choHien = false;
   /* Qua `globalThis`: tệp này còn được dựng cho phép kiểm máy chủ (không có kiểu DOM, không có `document`). */
   type Doc = { hidden: boolean; addEventListener(k: string, f: () => void): void; removeEventListener(k: string, f: () => void): void };
-  const doc = () => (globalThis as { document?: Doc }).document;
-  const an = () => !!doc()?.hidden;
+  const layDoc = () => (globalThis as { document?: Doc }).document;
+  const an = () => Boolean(layDoc()?.hidden);
   const khiHien = () => { if (!an()) { boChoHien(); if (cu) chay(); } };
-  const boChoHien = () => { if (choHien) { doc()?.removeEventListener('visibilitychange', khiHien); choHien = false; } };
+  const boChoHien = () => { if (choHien) { layDoc()?.removeEventListener('visibilitychange', khiHien); choHien = false; } };
   const bo = () => { if (hen) { clearTimeout(hen); hen = null; } boChoHien(); };
   const chay = () => { cu = false; bo(); taiLai(); };
   const toiHen = () => {
     hen = null;
     if (!cu) return;
     if (!an()) { chay(); return; }
-    if (!choHien) { choHien = true; doc()?.addEventListener('visibilitychange', khiHien); }
+    if (!choHien) { choHien = true; layDoc()?.addEventListener('visibilitychange', khiHien); }
   };
   return {
     cu() { cu = true; if (!hen && !choHien) hen = setTimeout(toiHen, Math.max(0, luc + choMs - Date.now())); },
