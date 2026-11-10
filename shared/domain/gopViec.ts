@@ -12,6 +12,7 @@
  * dòng. Nhập điểm gộp theo TUẦN THI qua mọi lớp của cùng người giữ việc (lưới Lịch Test) — mỗi em con là một lớp của tuần đó.
  */
 import { tuanLich } from './hienThiNgay.ts';
+import { dich, t } from '../i18n/index.ts';
 
 
 export type ViecGopDuoc = {
@@ -162,4 +163,26 @@ export function dongTheoChiNhanh<T extends ViecGopDuoc & { cn?: number | null; c
     const nhan = x.tieuDe.split(' · ')[0];   // tên loại việc của dòng gộp (`${nhan} · tuần · số`)
     return con.length ? (gopViecTheoLop(con, () => nhan) as T[]) : [];
   });
+}
+
+/* MOCKUP-1111 màn 1 (dải Việc của tôi hồ sơ lớp) — mockup v8: tên kỹ năng trong ô việc viết tắt "L · R" — ô một dòng. */
+const TAT: Record<string, string> = { 'Writing Task 1': 'W1', 'Writing Task 2': 'W2', Listening: 'L', Reading: 'R', Writing: 'W', Speaking: 'S' };
+const gonKyNang = (s: string) => s.replace(/Writing Task [12]|Listening|Reading|Writing|Speaking/g, (k) => TAT[k]).replace(/, /g, ' · ');
+
+/**
+ * Tách tiêu đề việc thành TÊN VIỆC (động từ, giữ đủ) + PHẦN PHỤ (em nếu việc của một em · kỹ năng · số + đơn vị; cắt "…" trước).
+ * Bỏ mã lớp (đang ở chính lớp đó). Nhập điểm: tên = nhãn hành động, phần phụ = kỹ năng · n bài.
+ */
+export function tachViec(it: { tieuDe: string; actionLabel: string; group: string; studentId: number | null; studentName: string; classCode: string | null; soBai?: number }): { ten: string; phu: string } {
+  const tieuDe = dich(it.tieuDe);
+  const hd = dich(it.actionLabel);
+  if (it.group === 'score' && tieuDe.startsWith(hd)) {
+    const kn = gonKyNang(tieuDe.slice(hd.length).trim());
+    const em = it.studentId !== null ? it.studentName : '';
+    return { ten: hd, phu: [em, kn, it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : ''].filter(Boolean).join(' · ') };
+  }
+  const [ten, ...con] = tieuDe.split(' · ');
+  const em = it.studentId !== null ? con.find((x) => x.startsWith(it.studentName)) ?? it.studentName : '';
+  const phu = con.filter((x) => x !== it.classCode && x !== em).map(gonKyNang);
+  return { ten, phu: [em, ...phu].filter(Boolean).join(' · ') };
 }

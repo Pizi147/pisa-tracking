@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { CHIP_TRON } from '../../ui/Nhan.tsx';
-import { TheSosViec } from '../../ui/TheKetQuaSos.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { daysBetween, nhanQuaHan, shortDate, viecKeTiep } from '@shared/domain/index.ts';
-import { dich, t } from '@shared/i18n/index.ts';
+import { daysBetween, nhanQuaHan, shortDate, tachViec, viecKeTiep } from '@shared/domain/index.ts';
+import { t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
  * LOP-1-LOP: `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp (cùng lần `myWork`, cùng `demDongViec` — S11 đếm dòng); `null` = vai không có badge (TVV / CX / Admin). */
@@ -19,7 +17,7 @@ const TOI_DA = 3;   // mockup khu b: một hàng ba ô; còn lại ở Công vi�
 /**
  * THANH "VIỆC CẦN LÀM" ĐẦU HỒ SƠ LỚP (`dieu-chinh-cuoi.html` khu b, `.thanh-viec`): mỗi việc CỦA NGƯỜI XEM ở lớp một ô — tên việc (+ em) · trạng thái
  * hạn + hạn `dd/mm` (P7) · nút động từ. Vạch trái: quá hạn đỏ · hạn hôm nay vàng · còn lại xanh. Bấm nút = panel Công việc ngay tại trang (`PanelViec`,
- * không đổi trang). Không có việc → không vẽ thanh. Quá 3 việc → "Xem tất cả ở Công việc ›".
+ * không đổi trang). Không có việc → không vẽ thanh. Quá 3 việc → "+n việc ở Công việc ›" (MOCKUP-1111: ô một dòng cùng cao, chi tiết ở panel).
  */
 export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () => void }) {
   const { data, reload } = useApi<ViecLop>(duongViecLop(classId), [classId]);
@@ -31,16 +29,23 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   const moTuThanh = (it: WorkItem) => { anhChup.current = ds; setMo(it); };
   const conKhoa = new Set(ds.map((x) => x.key));
   const keTiep = mo ? viecKeTiep((anhChup.current.length ? anhChup.current : ds).map((x) => ({ ...x, nhom: '' })), mo.key, (x) => conKhoa.has(x.key)) : null;
+  const con = ds.length - TOI_DA;
+  /* "+n việc ở Công việc ›": 1440 xếp dưới nhãn (3 ô đủ rộng, không cắt chữ); 375 cuối dải. */
+  const xemHet = (lop: string) => con > 0 && (
+    <Link to="/cong-viec" className={`link relative whitespace-nowrap font-semibold ${lop}`}>{t('+{n} việc ở Công việc ›', { n: con })}</Link>
+  );
   return (
     <>
       {ds.length > 0 && (
-        /* V8-HSL hàng ⑤ (mockup v8 `.hang-viec`): "Việc của tôi · n" + tối đa 3 ô cao 36 trên MỘT hàng + "+n ở Công việc ›". 375: ô xếp dọc. */
-        <section aria-label={t('Việc của tôi')} className="grid items-center gap-1.5 pt-0.5 lg:gap-2 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))_auto]">
-          <span className="whitespace-nowrap pr-1 text-[13px] font-medium text-slate-400">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{ds.length}</b></span>
+        /* MOCKUP-1111 màn 1 (`thiet-ke/2026-11-11-mockup-1111/1-dai-viec-cua-toi.html` K1–K4, chủ SP duyệt 11/11): nhãn + tối đa 3 ô CÙNG CAO, một dòng
+           (tên việc · em / kỹ năng · số · hạn); chi tiết (tên em, điểm SOS…) ở panel khi bấm. 375: ô xếp dọc, mỗi ô cố định hai dòng. */
+        <section aria-label={t('Việc của tôi')} className="grid items-center gap-1.5 pt-0.5 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))] lg:gap-2">
+          <span className="grid gap-px pr-1 text-[13px] font-medium leading-[1.3] text-slate-400">
+            <span className="whitespace-nowrap">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{ds.length}</b></span>
+            {xemHet('justify-self-start text-xs max-lg:hidden')}
+          </span>
           {ds.slice(0, TOI_DA).map((it) => <OViec key={it.key} it={it} dangMo={mo?.key === it.key} onMo={() => moTuThanh(it)} />)}
-          {ds.length > TOI_DA && (
-            <Link to="/cong-viec" className="link relative justify-self-end whitespace-nowrap text-sm font-semibold after:absolute after:inset-x-0 after:-inset-y-3 after:content-[''] lg:after:hidden">{t('+{n} ở Công việc ›', { n: ds.length - TOI_DA })}</Link>
-          )}
+          {xemHet('min-h-[44px] justify-self-end text-sm leading-[44px] lg:hidden')}
         </section>
       )}
       {mo && <PanelViec key={mo.key} it={mo} onDong={() => setMo(null)} onDaLam={daLam} onTiep={keTiep ? () => setMo(keTiep) : null}
@@ -49,36 +54,29 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   );
 }
 
-/* Mockup v8: tên kỹ năng trong ô việc viết tắt "Nhập điểm L · R" — ô 36 px một dòng. */
-const TAT: Record<string, string> = { 'Writing Task 1': 'W1', 'Writing Task 2': 'W2', Listening: 'L', Reading: 'R', Writing: 'W', Speaking: 'S' };
-const gonKyNang = (s: string) => s.replace(/Writing Task [12]|Listening|Reading|Writing|Speaking/g, (k) => TAT[k]).replace(/\b(L|R|W1|W2|W|S), (?=(L|R|W1|W2|W|S)\b)/g, '$1 · ');
-
 /**
- * Một ô việc (mockup v8 `.viec`): CẢ Ô là nút mở panel việc tại trang — tên việc đậm 14 · phụ 13 (số bài) · viên hạn bên phải
- * (quá hạn đỏ ⚠ · hôm nay vàng · còn lại xám). Vạch trái 3 px theo hạn (mockup đã duyệt).
+ * Một ô việc: CẢ Ô là nút mở panel việc tại trang. Cao 40 px một dòng — tên việc 14/600 (không cắt trước phần phụ) · phần phụ 13 mờ · hạn chữ bên phải
+ * (⚠ quá hạn đỏ · ⚠ hôm nay vàng · còn lại mờ; không hạn → trống). Vạch trái 3 px theo hạn (giữ mockup v8). 375: hai dòng cố định 56 px.
  */
 function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
-  const sos = it.theSos?.length ? it.theSos : null;
   const vach = it.urgency === 'overdue' ? 'rgb(var(--bad-rgb))' : it.urgency === 'today' ? 'rgb(var(--soon-line-rgb))' : 'var(--accent)';
-  const tieuDe = gonKyNang(dich(it.tieuDe));
-  const ten = it.studentId !== null && !tieuDe.includes(it.studentName) ? `${tieuDe} · ${it.studentName}` : tieuDe;
+  const { ten, phu } = tachViec(it);
   /* U01 / U03 (PTA 03/11): quá hạn mọi màn "⚠ quá hạn n ngày". */
   const han = it.due ? (it.urgency === 'overdue' && homNay ? nhanQuaHan(Math.max(1, daysBetween(it.due.slice(0, 10), homNay))) : it.urgency === 'today' ? t('hạn hôm nay') : t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })) : null;
+  const canhBao = it.urgency === 'overdue' || it.urgency === 'today';
   return (
-    <button type="button" onClick={onMo} aria-expanded={dangMo} title={`${ten} — ${dich(it.actionLabel)}`}
-      className={`flex ${sos ? 'min-h-9 flex-wrap py-1.5' : 'h-9'} min-w-0 items-center gap-x-2 gap-y-0.5 rounded-lg border border-l-[3px] px-3 text-left max-lg:h-auto max-lg:min-h-[44px] max-lg:flex-wrap max-lg:py-1.5 ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)] hover:bg-[color:var(--nut-hover)]'}`}
-      style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
-      <span className={`min-w-0 text-sm font-semibold text-slate-100 ${sos ? '' : 'truncate'}`}>{ten}</span>
-      {it.group === 'score' && it.soBai ? <span className="whitespace-nowrap text-[13px] tabular-nums text-slate-400">{t('{soBai} bài', { soBai: it.soBai })}</span> : null}
+    <button type="button" onClick={onMo} aria-expanded={dangMo} title={[ten, phu, han].filter(Boolean).join(' — ')} aria-label={[ten, phu, han].filter(Boolean).join(', ')}
+      className={`grid min-w-0 grid-cols-[minmax(0,1fr)_auto] content-center gap-x-2 gap-y-0.5 rounded-lg border border-l-[3px] px-3 text-left max-lg:h-14 lg:flex lg:h-10 lg:items-center ${dangMo ? 'bg-[color:var(--accent-soft)]' : 'bg-[color:var(--surface)] hover:bg-[color:var(--nut-hover)]'}`}
+      style={{ borderColor: dangMo ? 'var(--accent)' : 'var(--line)', borderLeftColor: vach }}>
+      <span className="truncate text-sm font-semibold text-slate-100 lg:max-w-[72%] lg:shrink-0">{ten}</span>
       {han && (
-        <span className={`${CHIP_TRON} ml-auto shrink-0 tabular-nums ${
-          it.urgency === 'overdue' ? 'bg-bad-bg text-bad' : it.urgency === 'today' ? 'bg-soon-bg text-soon' : 'bg-[color:var(--surface-2)] text-slate-400'}`}>
-          {it.urgency === 'overdue' && <span aria-hidden className="mr-0.5">⚠</span>}{han}
+        <span className={`col-start-2 row-start-1 shrink-0 whitespace-nowrap text-[13px] tabular-nums lg:order-last lg:ml-auto ${
+          it.urgency === 'overdue' ? 'font-bold text-bad' : it.urgency === 'today' ? 'font-bold text-soon' : 'font-semibold text-slate-400'}`}>
+          {canhBao && <span aria-hidden className="mr-0.5">⚠</span>}{han}
         </span>
       )}
-      {/* PHOI-HOP-SOS-INFO: Phối hợp SOS — em thi thế nào, trượt kỹ năng nào (cùng thẻ với Công việc / thẻ Phối hợp); ô thanh hiện 2 lượt, còn lại "+n lượt nữa". */}
-      {sos && <span className="min-w-0 basis-full"><TheSosViec ds={sos} tong={it.count} toiDa={2} /></span>}
+      {phu && <span className="col-span-2 min-w-0 truncate text-[13px] font-medium text-slate-400 lg:min-w-0">{phu}</span>}
     </button>
   );
 }

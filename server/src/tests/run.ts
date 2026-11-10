@@ -9792,6 +9792,8 @@ await runDonMaTests({ check, checkAsync, assert, conn, P } as any);
 // ==================================================================== DON-HINH (hình còn sót)
 const { runDonHinhTests } = bocTep('donHinh', await import('./donHinh.tests.ts'));
 await runDonHinhTests({ check, assert } as any);
+const { runM1111Tests } = bocTep('prM1111', await import('./prM1111.tests.ts'));
+await runM1111Tests({ check, assert } as any);
 // ==================================================================== TL-TQ (`/tong-quan/v5` dùng chung dữ liệu nạp — TRANG-LON S3)
 const { runPrTlTqTests } = bocTep('prTlTq', await import('./prTlTq.tests.ts'));
 await runPrTlTqTests({ check, assert, P, TODAY } as any);
