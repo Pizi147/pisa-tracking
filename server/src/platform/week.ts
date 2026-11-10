@@ -1,3 +1,4 @@
+import { hanTai, lechTuThuHai } from '../../../shared/domain/hanMacDinh.ts';
 import { DS_JSON, chenNhieuDong, db, theoLoJson } from '../db.ts';
 import { addDays, nowIso, parseDate } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -66,7 +67,8 @@ export function weekInfo(date: string): WeekInfo {
  * Hết ngày thứ Tư mới tính quá hạn, không đánh quá hạn ngay đầu ngày.
  */
 export function defaultScoreDeadline(baseDate: string): string {
-  return addDays(mondayOf(baseDate), 7 + 2);
+  const t2 = mondayOf(baseDate);
+  return addDays(t2, lechTuThuHai(hanTai('cham_test', t2)));   // QTV2-HAN (gốc T4 tuần sau = +9)
 }
 
 /** Lớp nào chấm theo band IELTS (Fast Track), lớp nào chấm theo tỷ lệ điểm đạt (Normal). */
@@ -89,7 +91,8 @@ export type ScoringMode = 'band' | 'ratio';
 export function skillScoreDeadline(_mode: ScoringMode, weekStart: string, mt0 = false): string {
   if (mt0) return hanChamMt0(weekStart);   // PR-MT0, PR-CT2: thứ Tư tuần sau tuần thi (như lớp thường)
   /* T19 (PR-MTa, chủ sản phẩm 06/10): lớp thường cũng hết THỨ TƯ tuần kế tiếp như Fast Track (trước đây Chủ nhật tuần thi). */
-  return addDays(mondayOf(weekStart), 7 + 2);
+  const t2 = mondayOf(weekStart);
+  return addDays(t2, lechTuThuHai(hanTai('cham_test', t2)));   // QTV2-HAN (gốc +9)
 }
 
 export function isOverdue(deadline: string, today: string): boolean {

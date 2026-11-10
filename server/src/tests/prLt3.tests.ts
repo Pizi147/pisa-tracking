@@ -238,7 +238,6 @@ export async function runPrLt3Tests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ LT3-4 "quá hạn" chỉ ghi (chủ SP 06/11)
   const ops: any = await import('../ops/chotVangDinhKy.ts');
-  const td: any = await import('../platform/thongBaoTuDong.ts');
   check('LT3-4 S chấm chéo quá hạn: GV phụ trách S + GV S chấm chéo thấy "quá hạn" ở Công việc / Chấm Speaking; KHÔNG chuông, KHÔNG vào số quá hạn / badge', () => {
     const aid = emMoi(5, HAI, true);
     const gvS = debt.phanCongDangHieuLuc([LOP], TODAY).get(`${LOP}|speaking`)?.userId;
@@ -256,7 +255,7 @@ export async function runPrLt3Tests(t: YThucTestKit) {
       /* Không tính: số quá hạn đầu nhóm / badge / Tổng quan (demDongViec), tóm tắt máy chủ, chuông. */
       const khac = (w.items as any[]).filter((x) => x.key !== d.KHOA_CHAM_SPEAKING && !d.laViecChamCheo(x));
       assert(d.demDongViec(w.items as any[]).quaHan === d.demDongViec(khac).quaHan, `${uid}: demDongViec đếm việc chấm chéo`);
-      assert(![...td.muonTuViec(p, [it], TODAY).keys()].some((k: string) => k.startsWith('tudong:cham:')), `${uid}: việc chấm chéo quá hạn sinh chuông "cham_qua_han"`);
+      assert(d.gomViecChuong([it]).length === 0, `${uid}: việc chấm chéo quá hạn sinh chuông "cham_qua_han"`);
       /* Hàng đợi (Chấm Test + panel): bài quá hạn có cờ + hạn. */
       const h = att.baiChamSpeaking(p, TODAY).rows.find((r: any) => r.attemptId === aid);
       assert(h && h.cho && h.cell.overdue === true && !!h.cell.deadline, `${uid}: Chấm Test thiếu bài quá hạn`);

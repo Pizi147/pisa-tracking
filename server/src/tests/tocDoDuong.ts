@@ -420,12 +420,17 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan V5 · panel', vai: ['QL', 'QT'], url: '/tong-quan/gv-tre?gv={gv}' },
   { trang: 'Lịch Test', vai: ['QL', 'GVCN'], url: '/cham/lich-test/qua-han' },
   { trang: 'Quản trị', vai: ['QT'], url: '/admin/mo-sua-lich-test' },
+  /* CAU-HINH-CASE-SOS: tab Case & SOS — bản đang dùng (1 câu) + 30 dòng nhật ký + đếm "đang dùng" (1 câu UNION). QL chỉ xem. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh-case-sos' },
   /* QTV2-QUYEN: tab Quyền & nhật ký — nhật ký chung (thay /admin/overview) + đơn vị báo cáo ở tab Chi nhánh. */
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/don-vi' },
   /* QTV2-CAU-HINH: cột Nhật ký của tab cấu hình — 8 dòng, không đọc danh sách người. */
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh&gioi-han=8' },
+  /* QTV2-HAN: tab Hạn mặc định — bản đang dùng (nhớ đệm) + 30 lần đổi; cột Nhật ký 8 dòng. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/han' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=han&gioi-han=8' },
 ];
 
 /**
@@ -440,6 +445,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* CAU-HINH-CASE-SOS (11/11): 3 câu riêng của tab (bản đang dùng · nhật ký · đếm đang dùng) trên nền phiên như /admin/mo-sua-lich-test (12). */
+  'QT /admin/cau-hinh-case-sos': 15, 'QL /admin/cau-hinh-case-sos': 15,
   /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (đọc sổ, không ghi lại sổ việc) · panel một người mọi chi nhánh · panel Chưa phân công — đo 7 · 8 · 6 câu, trần max(đo + 10, ⌈đo × 1,3⌉). */
   'QT /phan-tich/giao-vien?ct=ft': 17, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 18, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 16,
   /* DEM-QUA-HAN (chủ SP 06/11 — quá hạn vẫn phải tính): Phân tích GV bảng / panel Việc đúng hạn / hồ sơ GV dựng Công việc "Tất cả" của chi nhánh (`viecQuaHanMo`,
@@ -470,6 +477,8 @@ export const TRAN: Record<string, number> = {
   'QT /admin/accounts': 21,
   /* QTV2-QUYEN: nhật ký chung + đơn vị báo cáo (thay /admin/overview: đọc mọi tài khoản + 6 COUNT(*)) — đo 11/11: 4 · 3 câu; trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/nhat-ky': 14, 'QL /admin/nhat-ky': 14, 'QT /admin/nhat-ky?muc=chi-nhanh': 14, 'QL /admin/nhat-ky?muc=chi-nhanh': 14, 'QT /admin/don-vi': 13, 'QL /admin/don-vi': 13, 'QT /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13,
+  /* QTV2-HAN: Hạn mặc định — trần = max(đo+10, ⌈đo×1,3⌉). */
+  'QT /admin/cau-hinh/han': 13, 'QL /admin/cau-hinh/han': 13, 'QT /admin/nhat-ky?muc=han&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=han&gioi-han=8': 13,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
   'QL /ban-giao-gv/1': 31, 'QT /ban-giao-gv/1': 30, 'GVCN /ban-giao-gv/1': 31, 'GVBM /ban-giao-gv/1': 30,
   'QL /lenh-chuyen/{lenhBg}/ban-giao': 23, 'QT /lenh-chuyen/{lenhBg}/ban-giao': 23,   // BAN-GIAO-NHAN 05/11: đo 13 → max(n+10, ⌈n×1,3⌉)
@@ -884,7 +893,7 @@ export const TRAN: Record<string, number> = {
   'GVCN /notifications': 13,
   'GVBM /notifications': 13,
   'GVCN_THUONG /notifications': 13,
-  'QT /notifications': 25,   // OV-15h1: QT vừa ghi (POST) ở phép kiểm trước → lần mở chuông này đồng bộ ngay (`daGhi`). PR CHUONG-NHE: đo 27 (trước 35) — đồng bộ chỉ đọc lượt lớp đang dạy; trong mốc 4; TL-NEN: đo 15 (trước 25)
+  'QT /notifications': 13,   // CHUONG-V2 (XM-3): bỏ đồng bộ thông báo tự động — đo 3 (trước 3 trong mốc / ~21 khi đồng bộ, QT vừa ghi) → max(3 + 10, ⌈3 × 1,3⌉)
   'QL /ke-hoach-test/lop?branchId=1': 22,   // PR-XLMT: +1 câu đếm "cần xếp lại"
   'GVCN /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
   'GVBM /ke-hoach-test/lop?branchId=1': 15,   // QUYEN-LICH-MT: GV nay thấy lớp mình dạy (chỉ xem) → chạy các câu đếm theo lớp (HV, lượt, cần xếp lại, tiến độ) như QL; đo 15 / 14
@@ -1057,6 +1066,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* CAU-HINH-CASE-SOS (11/11): bản đang dùng (≤ 3 dòng) + ≤ 30 dòng nhật ký + nhóm đếm theo mã (≈ 40 mã) trên nền phiên (≈ 51 như mo-sua-lich-test). */
+  'QT /admin/cau-hinh-case-sos': 160, 'QL /admin/cau-hinh-case-sos': 160,
   /* Y-THUC-V2 (11/11): tab Ý thức lớp / HV — Báo PH theo LẦN + Nội dung trong câu phụ sẵn có; đo trước = sau (340 · 336 · 53 dòng ×1) → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /classes/3/y-thuc': 442, 'GVCN /classes/3/y-thuc': 437, 'GVBM /classes/3/y-thuc': 437, 'QL /students/1/y-thuc': 103, 'GVCN /students/1/y-thuc': 103,
   /* SỔ NGHĨA VỤ (PR-2): đo 333 · 49 · 58 dòng → max(đo + 50, ⌈đo × 1,3⌉). */
@@ -1108,8 +1119,8 @@ export const TRAN_DONG: Record<string, number> = {
      badge quá hạn nay trong cùng đường (trước thêm `/my-work` QL 1 414 · GV 921–944 dòng). Trần = max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /classes/3/viec-theo-em?chi=toi': 1304, 'QT /classes/3/viec-theo-em?chi=toi': 1304,   // TL-NEN: đo 1155 · 1155 (trước 1245 · 1245); TL-VIEC: đo 1003 · 1003 (trước 1155 · 1155)
   'GVCN /classes/3/viec-theo-em?chi=toi': 930, 'GVBM /classes/3/viec-theo-em?chi=toi': 920, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 930,   // TL-NEN: đo 731 (trước 821); TL-VIEC: đo 759 · 745 · 759 (trước 731 · 727 · 731 — nạp mọi phân công đổi lấy −13 câu; ×3 giảm 1601 → 1537)   // RA-DOC-0611b: đo 715 · 707 · 715 (trước 779 · 765 · 779)
-  /* PR CHUONG-NHE: chuông — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trong mốc QL 34 · GVCN 47 · GVBM 16 · GVCN_THUONG 47; QT đồng bộ vì vừa ghi 345, trước 853). */
-  'QL /notifications': 84, 'GVCN /notifications': 97, 'GVBM /notifications': 66, 'GVCN_THUONG /notifications': 97, 'QT /notifications': 449,
+  /* CHUONG-V2 (XM-3): không đồng bộ, không đọc thông báo tự động cũ — trần = max(đo+50, ⌈đo×1,3⌉), đo 12/11 QL 19 · GVCN 39 · GVBM 10 · GVCN_THUONG 39 · QT 18 (trước 25 · 45 · 14 · 45 · 26; QT đồng bộ khi vừa ghi ~241). */
+  'QL /notifications': 69, 'GVCN /notifications': 89, 'GVBM /notifications': 60, 'GVCN_THUONG /notifications': 89, 'QT /notifications': 68,
   /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */
   'QL /tong-quan/v5?ct=ft&kemBaoCao=1': 3507, 'QT /tong-quan/v5?ct=ft&kemBaoCao=1': 4586,   // TL-TQ: đo 2979 (trước 3216) · 3527 (trước 3970)   // DOC-PT: QL đo 2697 (trước 2979)
   'QL /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 3104, 'QT /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 4094,   // đo 2 673 · 3 149   // DOC-PT: QL đo 2387 (trước 2613)
@@ -1273,11 +1284,6 @@ export const TRAN_GHI_LO = {
   /** RKC-2b ③: POST /interventions/:id/result lần đầu trên PA quy chế chờ = Xác nhận PA + ghi KQ (một giao dịch) · PATCH /cases/:id trên Case chưa xác nhận = Xác nhận Case. */
   ghiKqXacNhanNgam: 153,   // đo 117 câu (riêng hai bước 194) → max(117 + 10, ⌈117 × 1,3⌉)
   suaCaseXacNhan: 132,   // đo 101 câu → max(101 + 10, ⌈101 × 1,3⌉)
-  /** OV-15d: đồng bộ thông báo tự động của MỘT người (`dongBoThongBaoTuDong`, khi mở chuông ≤ 1 lần / 5 phút) — QL / GVCN, trong giao dịch rồi cuộn lại. */
-  dongBoThongBaoQL: 33,   // PR CHUONG-NHE: đo 23 câu, 308 dòng (×3; trước 33 câu, 1 189 dòng — QL không dạy lớp nên không đọc lượt) → max(23 + 10, ⌈23 × 1,3⌉)
-  dongBoTuMyWork: 14,   // RA-DOC-0611b: đồng bộ chuông sau GET /my-work từ việc đã tính (thông báo cũ + Case người đó + xử lý Case) — đo ×3 QL 3 · GVCN 4 · QT 3 câu (đường cũ 19 · 26 · 19) → max(4 + 10, ⌈4 × 1,3⌉)
-  dongBoThongBaoGVCN: 43,   // PR CHUONG-NHE: đo 33 câu (×3, 1 101 dòng; trước cũng 33 — GVCN đọc lượt lớp mình dạy như cũ) → max(33 + 10, ⌈33 × 1,3⌉)
-  dongBoThongBaoQT: 33,   // PR CHUONG-NHE: đo 23 câu, 312 dòng (×3; trước 33 câu, 1 703 dòng) → max(23 + 10, ⌈23 × 1,3⌉)
   /** BO-QUA-XEP-MT: POST /my-work/bo-qua — đọc lại MỘT PA (câu `moc:` + id), kiểm quyền, ghi 3 cột + nhật ký trong một giao dịch. */
   boQuaViec: 20,   // trần đặt trước khi đo — sửa theo số đo
   /** HAN-BAO-PH (UI-1): POST /y-thuc/bao-ph/:id/han — đọc việc + quyền + Tạm dừng, so-và-đổi `han_chon`, lịch sử, nhật ký, trả `xemViecBaoPh`. */

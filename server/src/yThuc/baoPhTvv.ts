@@ -11,8 +11,8 @@
  */
 import { DS_JSON, db, tx } from '../db.ts';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, GHI_CHU_MEETING_TOI_THIEU, KET_QUA_BAO_PH, PERMISSIONS,
-  HAN_BAO_PH_NGAY, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
+  GHI_CHU_MEETING_TOI_THIEU, aiLamViec, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -51,7 +51,7 @@ export function nguoiGiuBaoPh(studentId: number): number[] {
 export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; customName?: string | null }, homNay: string): void {
   const nhan = nhanLoaiXuLy(m.kind, m.customName ?? null);
   const han = hanBaoPh(homNay);
-  /* Chuông: đồng bộ tự động (`thongBaoTuDong`) theo người giữ HIỆN TẠI — đổi TVV thì chuông sang người mới (rà #516). */
+  /* Chuông (CHUONG-V2): việc Báo PH của người giữ HIỆN TẠI đọc từ `/my-work` (`bao_ph_yt`) — đổi TVV thì chuông sang người mới. */
   db().prepare(
     `INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (?,?,?,?, 'mo', ?) ON CONFLICT(measure_id) DO NOTHING`,
   ).run(m.id, m.studentId, nhan, han, nowIso());
@@ -122,7 +122,7 @@ function loadViec(id: number): any {
   const v = db().prepare(
     `SELECT v.*, s.full_name, s.student_code, s.consultant_user_id, s.parent_name, s.parent_relation, s.parent_phone, m.status AS xu_ly_status,
             m.kind AS m_kind, m.custom_name AS m_custom, m.note AS m_note, m.created_at AS m_luc, mu.full_name AS m_nguoi, mc.code AS m_lop,
-            ph.note AS ph_note, ph.performed_on AS ph_ngay, COALESCE(ph.performer_name, pu.full_name) AS ph_nguoi
+            ph.note AS ph_note, ph.performed_on AS ph_ngay, COALESCE(ph.performer_name, pu.full_name) AS ph_nguoi, ph.kind AS ph_kind, ph.pb_moc AS ph_pb
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
        LEFT JOIN users mu ON mu.id = m.created_by LEFT JOIN classes mc ON mc.id = m.class_id
        LEFT JOIN sos_coordination_actions ph ON ph.id = v.phoi_hop_id LEFT JOIN users pu ON pu.id = ph.performed_by WHERE v.id = ?`,
@@ -267,7 +267,8 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
       const xl = xuLyCon(x);
       if (xl !== 'con') throw badRequest(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — việc Báo PH chỉ xem.`);
       /* PHOI-HOP-V2: kết quả buổi Meeting CX/GĐCN — luật ≥ 10 ký tự (OV-12h) chuyển từ bước GVCN sang bước TVV. */
-      if (x.phoi_hop_id != null && ketQua === 'da_bao' && ghiChu.trim().length < GHI_CHU_MEETING_TOI_THIEU) throw badRequest(`Meeting CX/GĐCN: Nội dung ít nhất ${GHI_CHU_MEETING_TOI_THIEU} ký tự.`);
+      const toiThieu = x.phoi_hop_id != null ? aiLamViec({ kind: x.ph_kind, pb_moc: x.ph_pb ?? null }).buocTvv?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU : 0;   // CAU-HINH-CASE-SOS
+      if (ketQua === 'da_bao' && ghiChu.trim().length < toiThieu) throw badRequest(`Meeting CX/GĐCN: Nội dung ít nhất ${toiThieu} ký tự.`);
       db().prepare('INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_chu, ghi_boi, ghi_luc, khoa) VALUES (?,?,?,?,?,?,?)')
         .run(id, ketQua, ngay, ghiChu, p.userId, nowIso(), khoa ? `${khoa}:${id}` : null);
       const sau = ketQua === 'da_bao' ? 'xong' : 'mo';
@@ -402,7 +403,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const COT = `SELECT v.id, v.student_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
-            (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${HAN_BAO_PH_NGAY} day')
+            (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai,
             CASE WHEN v.phoi_hop_id IS NOT NULL AND s.consultant_user_id IS NULL THEN (SELECT ta.user_id FROM teacher_assignments ta
               WHERE ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?1 AND (ta.effective_to IS NULL OR ta.effective_to >= ?1)

@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM TL-NEN (TRANG-LON S3, kế hoạch `docs/superpowers/plans/2026-10-31-trang-lon.md`):
- * N1 bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB (`moc_he_thong` 'tham-chieu' + 20 trigger) ·
+ * N1 bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB (`moc_he_thong` 'tham-chieu' + 23 trigger) ·
  * N2 quét đường đọc theo mốc DB toàn hệ thống (60 s, sau mỗi lần ghi qua API khi lượt trước ≥ 15 s — GIAM-DOC-0611, sang ngày nghiệp vụ).
  */
 import fs from 'node:fs';
@@ -65,14 +65,14 @@ export async function runPrTlNenTests(t: any) {
   ];
 
   // ---------------------------------------------------------------- N1
-  check('N1-a · migrate chạy hai lần không lỗi; schema.sql có moc_he_thong + 20 trigger; dòng tham-chieu so ≠ 0', () => {
+  check('N1-a · migrate chạy hai lần không lỗi; schema.sql có moc_he_thong + 23 trigger; dòng tham-chieu so ≠ 0', () => {
     const lan1: string[] = []; mig.migratePrTlNen(c(), lan1);
     const lan2: string[] = []; mig.migratePrTlNen(c(), lan2);
     assert(lan1.length === 0 && lan2.length === 0, `DB seed đã có đủ, migrate phải không làm gì: ${lan1.join(' · ')} | ${lan2.join(' · ')}`);
     const schema = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
-    assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 20, 'schema.sql thiếu bảng / trigger');
+    assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 23, 'schema.sql thiếu bảng / trigger');
     const tg = c().prepare(`SELECT COUNT(*) n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_%'`).get() as any;
-    assert(tg.n === 20, `${tg.n} trigger`);
+    assert(tg.n === 23, `${tg.n} trigger`);
     assert(soThamChieu() > 0 && (c().prepare('SELECT COUNT(*) n FROM moc_he_thong').get() as any).n === 5, 'dòng mốc');   // + 'so-viec' (sổ nghĩa vụ PR-2)
   });
 

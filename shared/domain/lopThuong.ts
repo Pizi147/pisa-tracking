@@ -5,15 +5,18 @@
  * FOU: 2 buổi/tuần CHUNG cho mọi môn trượt (một nhóm); BE/ELE: 1 buổi/tuần/môn (nhóm một dòng). Pre FOU không có Giữa khoá (PF2).
  * LT2b thêm hàm Cuối khoá (% hướng) CUỐI file này.
  */
+import { mocThuong } from './sos.ts';
 import { programmeOf, RATIO_PASS_THRESHOLD, tenMonNgan, nhanBaiThuong } from './normal.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { t } from '../i18n/index.ts';
 
 /** N1: FOU bổ trợ CHUNG 2 buổi/tuần cho mọi môn trượt; BE/ELE 1 buổi/tuần/môn. Pre FOU (và FT) không có Giữa khoá → null. */
-export function boTroGiuaKhoa(ct: string | null | undefined): { buoiMoiTuan: 1 | 2; chung: boolean } | null {
+export function boTroGiuaKhoa(ct: string | null | undefined): { buoiMoiTuan: number; chung: boolean } | null {
   const c = programmeOf(ct);
-  if (c === 'FOU') return { buoiMoiTuan: 2, chung: true };
-  if (c === 'BE' || c === 'ELE') return { buoiMoiTuan: 1, chung: false };
+  /* CAU-HINH-CASE-SOS: số buổi / tuần Quản trị đặt (bản gốc FOU 2, BE / ELE 1); PA đã tạo giữ số trong mô tả. */
+  const m = mocThuong().progress;
+  if (c === 'FOU') return { buoiMoiTuan: m.fou, chung: true };
+  if (c === 'BE' || c === 'ELE') return { buoiMoiTuan: m.beEle, chung: false };
   return null;
 }
 

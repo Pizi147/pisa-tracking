@@ -3,7 +3,6 @@ import { tenMon } from '../../../shared/domain/index.ts';
 import { CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, xuLyCaseMany } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
 import { trangThaiYThuc } from '../yThuc/trangThai.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { loi } from '../util.ts';
 
 /** Chuông trả tối đa bấy nhiêu dòng: MỌI dòng chưa đọc trước, rồi dòng mới nhất (PR-VAI-a Q18). */
@@ -30,7 +29,12 @@ const CASE_CUA_THE = (y: string) => `(CASE ${y}.doi_tuong_loai WHEN 'sos_case' T
 /** DON-LUONG K42a: dòng "Cần làm" ĐÃ ĐỌC bị dòng mới đẩy khỏi 50 dòng đầu — lấy thêm tối đa bấy nhiêu, xếp sau (thứ tự 50 dòng đầu giữ). */
 export const CAN_LAM_DA_DOC_THEM = 20;
 /** Loại thông báo có nhánh `con_viec` = 1 trong `thongBaoCua` (giữ khớp nhánh CASE; `case_signal` lọc theo `entity_type`). */
-const KIND_CAN_LAM = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'xuat_bc_ph_qua_han', 'case_giao', 'phoi_hop', 'sos', 'sos_new', 'dang_ky', 'schedule_move',
+/**
+ * CHUONG-V2 (XM-3): thông báo tự động cũ (đồng bộ đã bỏ — chuông đọc việc từ `/my-work` ở web). Dòng cũ còn trong DB không đọc nữa (lọc trong SQL).
+ * ponytail: dòng cũ để nguyên trong bảng (vài dòng / người, đi chỉ mục user_id); xoá hẳn bằng migrate nếu muốn bảng gọn.
+ */
+const KIND_TU_DONG_CU = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'xuat_bc_ph_qua_han'] as const;
+const KIND_CAN_LAM = ['case_giao', 'phoi_hop', 'sos', 'sos_new', 'dang_ky', 'schedule_move',
   'duyet_moi', 'duyet_qua_han', 'bao_len', 'duyet_tu_choi', 'yt_da_duyet'] as const;
 
 export function thongBaoCua(userId: number) {
@@ -46,24 +50,6 @@ export function thongBaoCua(userId: number) {
                   CASE WHEN n.entity_type = 'assessment_attempt' THEN n.entity_id ELSE smr.attempt_id END AS attempt_id,
                   COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id, ycd.han_duyet AS han_the,
                   CASE
-                    /* OV-15d: thông báo tự động chỉ còn khi việc còn (đồng bộ xoá khi xong) — luôn là Cần làm. */
-                    WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'xuat_bc_ph_qua_han') THEN 1
-                    /* SV-YT-TVV (rà #516): việc Báo PH — MỘT thông báo mỗi người (quá hạn chỉ đổi chữ), Cần làm khi người nhận còn GIỮ ít nhất một việc mở của em
-                       đang học (TVV của em; em chưa có TVV → QL chi nhánh của em). Đồng bộ thông báo tự động xoá dòng của người không còn giữ việc nào. */
-                    WHEN n.kind = 'bao_ph_xu_ly' THEN CASE WHEN EXISTS (
-                      SELECT 1 FROM viec_bao_ph vb JOIN students sv ON sv.id = vb.student_id
-                       WHERE vb.trang_thai = 'mo' AND ${HV_DANG_HOC_SQL('sv')}
-                         AND (sv.consultant_user_id = n.user_id OR (sv.consultant_user_id IS NULL AND EXISTS (
-                           SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
-                            WHERE ur.user_id = n.user_id AND r.key = 'manager' AND ur.status = 'active'
-                              AND (ur.branch_id IS NULL OR ur.branch_id = COALESCE((SELECT c2.branch_id FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
-                                     WHERE e2.student_id = sv.id AND e2.status = 'active' ORDER BY e2.id DESC LIMIT 1), sv.branch_id))))
-                           /* PHOI-HOP-V2: việc sau Meeting CX của em chưa có TVV — GVCN đang chủ nhiệm lớp em giữ. */
-                           OR (sv.consultant_user_id IS NULL AND vb.phoi_hop_id IS NOT NULL AND EXISTS (
-                             SELECT 1 FROM enrollments e3 JOIN teacher_assignments ta3 ON ta3.class_id = e3.class_id AND ta3.is_core = 1 AND ta3.status = 'active'
-                                     AND ta3.effective_from <= '${demoToday()}' AND (ta3.effective_to IS NULL OR ta3.effective_to >= '${demoToday()}')
-                              WHERE e3.student_id = sv.id AND e3.status = 'active' AND ta3.user_id = n.user_id)))
-                    ) THEN 1 ELSE 0 END
                     /* SL1 (C23): Case tạo tay giao người phụ trách — còn việc tới khi Case có PA (hoặc đã đóng). */
                     /* RA-LUONG-19: chỉ người ĐANG phụ trách còn việc — đổi người phụ trách thì chuông của người cũ thành "Để biết" (giữ lịch sử). */
                     WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done' AND sc.owner_user_id = n.user_id
@@ -102,7 +88,7 @@ export function thongBaoCua(userId: number) {
              LEFT JOIN discipline_measures dm ON n.entity_type = 'discipline_measure' AND dm.id = n.entity_id
              LEFT JOIN yeu_cau_duyet ycd ON n.entity_type = 'yeu_cau_duyet' AND ycd.id = n.entity_id
              LEFT JOIN users uu ON n.kind = 'dang_ky' AND n.entity_type = 'user' AND uu.id = n.entity_id
-            WHERE n.user_id = ? ${trong}
+            WHERE n.user_id = ? AND n.kind NOT IN (${KIND_TU_DONG_CU.map((k) => `'${k}'`).join(', ')}) ${trong}
          ) x
          LEFT JOIN students s ON s.id = x.student_id
         WHERE s.status IS NOT 'finished'   -- NGHI-HOC-LUU-TRU (chủ SP 05/11): em đã nghỉ học không hiện ở chuông; Học lại thì hiện lại

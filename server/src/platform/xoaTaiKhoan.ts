@@ -96,6 +96,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
   c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),
   c('bang_quy_doi', 'nguoi_id', DV, 'bảng quy đổi band'),   // BAND-QUY-DOI
+  c('cau_hinh_phien_ban', 'nguoi_id', DV, 'cấu hình hệ thống'),   // QTV2-HAN · CAU-HINH-CASE-SOS (cùng bảng)
 ];
 
 const COT_DAU_VET = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'dau_vet');

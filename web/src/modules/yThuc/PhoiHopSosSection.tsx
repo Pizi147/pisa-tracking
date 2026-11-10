@@ -32,6 +32,8 @@ export type CoordAction = {
   han?: string | null;
   /** HAN-BAO-PH (N34 ②): meeting CX — hạn mặc định (tạo + 5) · hạn người dùng chọn (null = mặc định). */
   hanMacDinh?: string | null; hanChon?: string | null;
+  /** CAU-HINH-CASE-SOS: ghi chú tối thiểu theo bản chụp của việc (máy chủ tính). */
+  toiThieuGhiChu?: number;
   /** Báo phụ huynh qua TVV (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
   noiDung?: string[] | null;
   /** PR-PHH: việc đã xong mà chưa lưu bản chụp (xác nhận trước PR-PHH) — `noiDung` là nội dung hiện tại. */
@@ -39,7 +41,7 @@ export type CoordAction = {
   /** PHOI-HOP-V2: việc TVV sau Meeting CX (máy chủ nạp theo lô). */
   tvv?: {
     viecId: number; trangThai: 'mo' | 'xong' | 'bo'; han: string; hanMacDinh: string; hanChon: string | null; quaHan: boolean; tvv: string | null;
-    lan: { ketQua: string; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null } | null; soLan: number; coTheGhi: boolean; coTheSuaHan: boolean;
+    lan: { ketQua: string; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null } | null; soLan: number; coTheGhi: boolean; coTheSuaHan: boolean; toiThieu?: number;
   } | null;
 };
 export type CoordTurn = {
@@ -293,7 +295,7 @@ function ConfirmCoordinationForm({ a, onClose, onChanged }: {
   const [busy, setBusy] = useState(false);
   const loiNguoi = nguoiThieu(nguoi, false);
   /* OV-12h: meeting CX / GĐCN — Ghi chú bắt buộc ≥ 10 ký tự (máy chủ kiểm cùng số). */
-  const canGhiChu = laMeetingCx(a.kind) ? GHI_CHU_MEETING_TOI_THIEU : 0;
+  const canGhiChu = a.toiThieuGhiChu ?? (laMeetingCx(a.kind) ? GHI_CHU_MEETING_TOI_THIEU : 0);   // CAU-HINH-CASE-SOS: số máy chủ gửi
   const [daBam, setDaBam] = useState(false);
   const loiGhiChu = canGhiChu && note.trim().length < canGhiChu ? t('Ít nhất {canGhiChu} ký tự', { canGhiChu }) : null;
 
