@@ -286,6 +286,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 — ĐỔI LUẬT SOS tạm / PA (chờ PTA nhắc lại cho chủ SP xác nhận):** "Ngoài ra, sửa lại luật, kể cả khi chưa chốt SOS status, các GV vẫn được phép cập nhật mô tả case (kể cả trực tiếp hay qua nhận xét MT), và cập nhật phương án luôn. Trong trường hợp SOS cần có phương án quy chế, nếu trùng phương án, mọi thứ giữ nguyên và không sinh thêm việc, nếu khác PA, GV sẽ phải vào chọn 1 trong 2, và nếu khác PA quy chế, thì QL phải duyệt, nếu chưa duyệt hoặc không duyệt sau 3 ngày, PA sẽ chốt theo lựa chọn của GV." (thay phần liên quan của luật SOS MT 11/10 "SOS tạm thời không Case, không hạn" và K3-16 / PA-TRUNG).
 
+**Chủ SP 11/11 — #1337 (duyệt ảnh, rồi):** "Ơ nhưng mà dấu tick đâu? và không cần chữ Chờ FInal trên đầu nữa trời ơi không thêm nếm gì nữa, không cần mockup nữa làm luôn di" → PR nối tiếp: ô tick + Chọn tất cả ở mọi vai (GVCN thiếu), bỏ dải "Chờ Final" đầu bảng.
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
