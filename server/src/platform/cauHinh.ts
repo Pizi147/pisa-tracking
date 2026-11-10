@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { HAN_MAC_DINH_GOC, MA_HAN, PERMISSIONS, datNguonHan, kiemHanMacDinh, type BanHan, type HanMacDinh } from '../../../shared/domain/index.ts';
+import { HAN_MAC_DINH_GOC, MA_HAN, PERMISSIONS, datNguonHan, kiemHanMacDinh, nhanTruongHan, type BanHan, type HanMacDinh, type MaHan } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden } from '../util.ts';
 import { nowNghiepVu } from '../demoConfig.ts';
 import { writeAudit } from './audit.ts';
@@ -102,7 +102,7 @@ export function luuHanMacDinh(p: Principal, input: { han?: unknown; tuPhienBan?:
   writeAudit({
     actorUserId: p.userId, action: khoiPhucTu ? 'cau_hinh.han_mac_dinh.khoi_phuc' : 'cau_hinh.han_mac_dinh.sua', entityType: 'cau_hinh.han_mac_dinh', entityId: id,
     entityLabel: 'Hạn mặc định',
-    before: Object.fromEntries(doi.map((d) => [`${d.ma}.${d.truong}`, d.truoc])), after: Object.fromEntries(doi.map((d) => [`${d.ma}.${d.truong}`, d.sau])),
+    before: Object.fromEntries(doi.map((d) => [nhanTruongHan(d.ma as MaHan, d.truong), d.truoc])), after: Object.fromEntries(doi.map((d) => [nhanTruongHan(d.ma as MaHan, d.truong), d.sau])),
   });
   xoaNhoHan();
   return { id, doi, truocId: hien.id, truocHan: hien.han };

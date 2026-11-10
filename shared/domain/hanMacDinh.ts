@@ -33,6 +33,15 @@ export const HAN_MAC_DINH_GOC = {
 } as const;
 
 export type MaHan = keyof typeof HAN_MAC_DINH_GOC;
+/** Tên việc của từng hạn (màn Hạn mặc định + nhật ký "trước → sau"). Trường phụ: `ngayGap` "(gấp)", `xemNgay` "(xem thêm)". */
+export const TEN_HAN: Record<MaHan, string> = {
+  cham_test: 'Chấm Mock / Test lớp thường', xac_nhan_case: 'Xác nhận Case · thêm PA', xac_minh_tin_hieu: 'Xác minh tín hiệu', ql_duyet_pa: 'QL trả lời Chờ duyệt',
+  ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm', meeting_cx: 'Meeting CX / GĐCN',
+  chot_lo_trinh: 'Chốt lộ trình lớp thường', ban_giao_chuyen_lop: 'Bàn giao chuyển lớp', ban_giao_doi_gv: 'Bàn giao đổi GV', buoc_tiep_sau_thi: 'Bước tiếp sau thi thật', xet_lai: 'Xét lại lộ trình',
+};
+const TEN_TRUONG_HAN: Record<string, string> = { ngay: '', ngayGap: ' (gấp)', xemNgay: ' (xem thêm)', kyTuan: ' (tuần)', tuanLech: ' (tuần)', thu: ' (thứ)' };
+/** Nhãn một trường của một hạn cho nhật ký: "Meeting CX / GĐCN", "Xác nhận Case · thêm PA (gấp)". */
+export const nhanTruongHan = (ma: MaHan, truong: string) => `${TEN_HAN[ma]}${TEN_TRUONG_HAN[truong] ?? ` (${truong})`}`;
 export type HanMacDinh = { -readonly [K in MaHan]: { -readonly [F in keyof (typeof HAN_MAC_DINH_GOC)[K]]: number } };
 export const MA_HAN = Object.keys(HAN_MAC_DINH_GOC) as MaHan[];
 /** Một phiên bản: `tu` = lúc có hiệu lực (ISO, đồng hồ nghiệp vụ); bản gốc `tu` = '' (trước mọi việc). */
