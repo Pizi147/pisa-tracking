@@ -68,6 +68,81 @@ export async function runPrCacheTests(t: YThucTestKit) {
       assert(nhan.length === 1, 'đã gỡ mà vẫn nhận');
     });
 
+    await checkAsync('GIAM-COMPUTE · lưu ô điểm: lưới đã tự tải lại SAU lần ghi → hẹn vô hiệu gộp 1,5 s không tải lại lần hai; dùng chung lời gọi bắt đầu TRƯỚC lần ghi → vẫn tải lại', async () => {
+      batDau();
+      const nghe: [string | null, number | undefined][] = [];
+      const go = api.onInvalidate((p: string | null, luc?: number) => { nghe.push([p, luc]); });
+      const lam = () => {
+        const log = { data: [] as unknown[] };
+        return { log, b: {
+          /* Lưới ĐÃ gắn tự tải lại sau khi lưu (cùng đường) — hook mới gắn thì `xaGop(path)` xả gộp ngay (W1), không phải kịch bản này. */
+          latest: { current: 0 }, currentPath: { current: '/classes/3/cham' as string | null }, coDuLieu: { current: true }, banTu: { current: 0 },
+          setData: (d: unknown) => log.data.push(d), setFetching: () => {}, setError: () => {}, reload: () => {},
+        } };
+      };
+      try {
+        /* (1) ghi → gộp → lưới tự tải lại (lời gọi mới) → hẹn tới: bỏ qua. */
+        const truocGhi = Date.now();
+        api.invalidateGop('/classes');
+        const a = lam();
+        ua.batDauTai('/classes/3/cham', a.b);
+        tra('/classes/3/cham', { v: 1 });
+        await xong(); await xong();
+        api.xaGop();
+        const [p1, luc1] = nghe.at(-1)!;
+        assert(p1 === '/classes' && luc1 !== undefined && luc1 >= truocGhi, `xaGop phải truyền lúc ghi: ${JSON.stringify(nghe)}`);
+        assert(a.b.banTu.current >= luc1!, `banTu ${a.b.banTu.current} < lúc ghi ${luc1}`);
+        assert(!ua.canTaiLaiKhiVoHieu('/classes/3/cham', p1, luc1, a.b.banTu.current), 'lưới vừa tải sau lần ghi vẫn bị tải lại');
+        assert(ua.canTaiLaiKhiVoHieu('/classes/3/cham?periodId=4', p1, luc1, 0), 'lưới khác chưa tải lại phải tải lại');
+        assert(ua.canTaiLaiKhiVoHieu('/classes/3/cham', '/classes', undefined, a.b.banTu.current), 'invalidate thường (không gộp) phải tải lại như cũ');
+        assert(ua.canTaiLaiKhiVoHieu('/x', null, undefined, Date.now() + 1e6), 'vô hiệu toàn bộ phải tải lại');
+        /* (2) khối khác bắt đầu tải TRƯỚC lần ghi; lưới tự tải lại dùng chung lời gọi đó → banTu = lúc lời gọi thật → vẫn tải lại. */
+        batDau();
+        ua.taiTruoc('/classes/3/cham');
+        await new Promise((r) => setTimeout(r, 5));
+        api.invalidateGop('/classes');
+        const b2 = lam();
+        ua.batDauTai('/classes/3/cham', b2.b);
+        assert(soGoi('/classes/3/cham') === 1, 'phải dùng chung lời gọi đang bay');
+        tra('/classes/3/cham', { v: 'truoc-ghi' });
+        await xong(); await xong();
+        api.xaGop();
+        const [p2, luc2] = nghe.at(-1)!;
+        assert(ua.canTaiLaiKhiVoHieu('/classes/3/cham', p2, luc2, b2.b.banTu.current), `bản bắt đầu trước lần ghi bị coi là mới (banTu ${b2.b.banTu.current}, ghi ${luc2})`);
+      } finally { go(); }
+    });
+
+    await checkAsync('GIAM-COMPUTE · badge henTaiLaiKhiCu: cũ → tải lại MỘT lần sau hạn; bản mới về trước hạn → không; đổi trang → ngay; tab ẩn → chờ tới lúc hiện', async () => {
+      const ngu = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let n = 0;
+      const h = ua.henTaiLaiKhiCu(() => { n += 1; }, 40);
+      h.cu(); h.cu();
+      await ngu(70);
+      assert(n === 1, `sau hạn: ${n} lần`);
+      h.coBan(); h.cu(); h.coBan();
+      await ngu(70);
+      assert(n === 1, `bản mới về trước hạn vẫn tải lại: ${n}`);
+      h.doiTrang();
+      assert(n === 1, 'đổi trang khi không cũ vẫn tải lại');
+      h.cu(); h.doiTrang();
+      assert(n === 2, 'đổi trang khi cũ phải tải lại ngay');
+      await ngu(70);
+      assert(n === 2, 'đổi trang rồi mà hẹn cũ vẫn chạy');
+      /* Tab ẩn: tới hạn không tải; hiện lại → tải một lần. */
+      const goc = (globalThis as any).document;
+      const nghe = new Set<() => void>();
+      const docGia = { hidden: true, addEventListener: (_: string, f: () => void) => nghe.add(f), removeEventListener: (_: string, f: () => void) => nghe.delete(f) };
+      (globalThis as any).document = docGia;
+      try {
+        h.coBan(); h.cu();
+        await ngu(70);
+        assert(n === 2 && nghe.size === 1, `tab ẩn vẫn tải (${n}) hoặc không chờ hiện (${nghe.size})`);
+        docGia.hidden = false;
+        [...nghe].forEach((f) => f());
+        assert(n === 3 && nghe.size === 0, `hiện lại: ${n} lần, còn ${nghe.size} người nghe`);
+      } finally { (globalThis as any).document = goc; h.huy(); }
+    });
+
     await checkAsync('PR-CACHE · hai hook cùng đường dùng chung MỘT lời gọi, cả hai nhận dữ liệu; vào lại thì dùng bản vừa xem', async () => {
       batDau();
       const h1 = ua.taiVaNho('/cache/chung');

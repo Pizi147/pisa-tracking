@@ -24,8 +24,11 @@ export function theHe(path: string): number {
   for (const [p, c] of lanXoa) if (path.startsWith(p)) n += c;
   return n;
 }
-/** `null` = vô hiệu toàn bộ; chuỗi = chỉ vô hiệu các đường dẫn bắt đầu bằng tiền tố đó. */
-type InvalidateListener = (prefix: string | null) => void;
+/**
+ * `null` = vô hiệu toàn bộ; chuỗi = chỉ vô hiệu các đường dẫn bắt đầu bằng tiền tố đó. `luc` (chỉ vô hiệu gộp — `xaGop`): lúc lần ghi CUỐI gọi
+ * `invalidateGop` cho tiền tố này — hook đã có bản tải bắt đầu từ lúc đó trở đi thì bản đó đã gồm lần ghi, khỏi tải lại (GIAM-COMPUTE).
+ */
+type InvalidateListener = (prefix: string | null, luc?: number) => void;
 const listeners = new Set<InvalidateListener>();
 
 /** Gọi khi đổi tài khoản: mọi dữ liệu của tài khoản cũ bị vô hiệu. */
@@ -40,12 +43,12 @@ export function invalidateAll() {
  * Chỉ các truy vấn khớp tiền tố mới tải lại — nếu đánh thức tất cả, một lần lưu ô này
  * sẽ khiến bảng đang nhập tải lại và làm mất bản nháp người dùng đang gõ ở ô khác.
  */
-export function invalidate(prefix: string) {
+export function invalidate(prefix: string, luc?: number) {
   demXoa(prefix);
   for (const key of [...cache.keys()]) {
     if (key.startsWith(prefix)) cache.delete(key);
   }
-  listeners.forEach((l) => l(prefix));
+  listeners.forEach((l) => l(prefix, luc));
 }
 
 /*
@@ -55,20 +58,22 @@ export function invalidate(prefix: string) {
  * đổi trang thì xả hết (App) — không nơi nào còn báo việc đã xong.
  */
 export const GOP_VO_HIEU_MS = 1500;
-const choGop = new Set<string>();
+/** Tiền tố đang chờ → lúc lần ghi cuối gọi gộp cho nó (`luc` của listener). */
+const choGop = new Map<string, number>();
 let henGop: ReturnType<typeof setTimeout> | null = null;
 export function invalidateGop(...prefixes: string[]) {
-  for (const p of prefixes) choGop.add(p);
+  const bayGio = Date.now();
+  for (const p of prefixes) choGop.set(p, bayGio);
   if (henGop) clearTimeout(henGop);
   henGop = setTimeout(() => { henGop = null; xaGop(); }, GOP_VO_HIEU_MS);
 }
 /** Xả ngay các tiền tố đang chờ: không truyền = tất cả; truyền `path` = chỉ tiền tố mà `path` bắt đầu bằng. */
 export function xaGop(path?: string) {
-  const ds = [...choGop].filter((p) => path === undefined || path.startsWith(p));
+  const ds = [...choGop].filter(([p]) => path === undefined || path.startsWith(p));
   if (!ds.length) return;
-  for (const p of ds) choGop.delete(p);
+  for (const [p] of ds) choGop.delete(p);
   if (!choGop.size && henGop) { clearTimeout(henGop); henGop = null; }
-  ds.forEach(invalidate);
+  ds.forEach(([p, luc]) => invalidate(p, luc));
 }
 
 /** OV-14a (F03): như `invalidate` nhưng KHÔNG gọi tải lại — chỉ để lời gọi đang bay của tiền tố này về sau bị bỏ (đã tự cập nhật tại chỗ). */

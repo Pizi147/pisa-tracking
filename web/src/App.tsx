@@ -2,7 +2,7 @@ import { Component, Suspense, useEffect, useLayoutEffect, useRef, useState, type
 import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
-import { onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
+import { henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { onInvalidate, xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { ChanRoiNhapGoc } from './ui/chanRoiNhap.tsx';
@@ -203,26 +203,14 @@ export default function App() {
   /*
    * GIAM-COMPUTE (log Netlify 09/11: `/my-work` tốn compute gấp 5 đường kế tiếp): badge từng tải lại `/my-work` sau MỌI lần ghi (mỗi ô điểm ~1,8 s
    * máy chủ) dù đang ở lưới điểm. Chủ SP duyệt 11/11 (#1320): vô hiệu chỉ đánh dấu cũ; tải lại khi đổi trang (SAU `xaGop` ở trên — vô hiệu đang gộp đã tới)
-   * hoặc khi bản đang hiện đã ≥ 60 s. Trang Công việc / Tổng quan đang mở tự tải lại như cũ và badge nhận luôn bản đó (`chiNghe`).
+   * hoặc khi bản đang hiện đã ≥ 60 s và tab đang hiện (`henTaiLaiKhiCu`). Trang Công việc / Tổng quan đang mở tự tải lại như cũ và badge nhận luôn bản đó (`chiNghe`).
    */
   const [lanViec, setLanViec] = useState(0);
-  const viecCu = useRef(false);
-  const lucViec = useRef(Date.now());
-  const henViec = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const taiLaiViec = () => {
-    viecCu.current = false;
-    if (henViec.current) { clearTimeout(henViec.current); henViec.current = null; }
-    setLanViec((n) => n + 1);
-  };
-  useEffect(() => onInvalidate((p) => {
-    /* Vô hiệu TOÀN BỘ (đổi tài khoản / góc nhìn) → tải lại ngay: không giữ số của người trước dù vẫn đứng cùng trang. */
-    if (p === null) { taiLaiViec(); return; }
-    if (!'/my-work'.startsWith(p)) return;
-    viecCu.current = true;
-    henViec.current ??= setTimeout(taiLaiViec, Math.max(0, lucViec.current + 60_000 - Date.now()));
-  }), []);   // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => () => { if (henViec.current) clearTimeout(henViec.current); }, []);
-  useEffect(() => { if (viecCu.current) taiLaiViec(); }, [location.pathname]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const [henViec] = useState(() => henTaiLaiKhiCu(() => setLanViec((n) => n + 1)));
+  /* Vô hiệu TOÀN BỘ (đổi tài khoản / góc nhìn) → tải lại ngay: không giữ số của người trước dù vẫn đứng cùng trang. */
+  useEffect(() => onInvalidate((p) => { if (p === null) henViec.ngay(); else if ('/my-work'.startsWith(p)) henViec.cu(); }), [henViec]);
+  useEffect(() => () => henViec.huy(), [henViec]);
+  useEffect(() => { henViec.doiTrang(); }, [location.pathname, henViec]);
   useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
   useTieuDeTab(!!session?.authenticated);   // OV-11i (P1-3): tiêu đề tab theo màn
   /* HOTFIX-3: đã có dữ liệu mà tải lại nền lỗi → giữ bảng, báo nhỏ (một toast cho mọi khối). */
@@ -277,11 +265,7 @@ export default function App() {
    */
   const viecGv = useApi<{ summary: { canLamNgay: number; viecQuaHan: number } }>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, [lanViec], { chiNghe: true }).data;
   /* Bản mới đã về (của badge hay của trang) → hết cũ, bỏ hẹn 60 s, mốc 60 s tính lại từ đây. */
-  useEffect(() => {
-    viecCu.current = false;
-    lucViec.current = Date.now();
-    if (henViec.current) { clearTimeout(henViec.current); henViec.current = null; }
-  }, [viecGv]);
+  useEffect(() => { henViec.coBan(); }, [viecGv, henViec]);
   const gv = viecGv ? { n: viecGv.summary?.canLamNgay ?? 0, quaHan: viecGv.summary?.viecQuaHan ?? 0 } : null;
   const so: SoBadge = gv?.n ? { n: gv.n, quaHan: gv.quaHan > 0, sr: t('{n} việc cần làm ngay', { n: gv.n }) + (gv.quaHan ? t(', {n} quá hạn', { n: gv.quaHan }) : '') } : null;
 
