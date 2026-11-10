@@ -72,10 +72,10 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
       <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="border-b text-left text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>
-            <th className="w-10 py-2.5 pl-3.5" aria-label={t('Thứ tự')} />
+            <th className="w-10 py-2.5 pl-3.5 max-sm:w-7 max-sm:pl-2" aria-label={t('Thứ tự')} />
             <th className="py-2.5 pr-3">{t('Tên')}</th>
             <th className="w-28 py-2.5 pr-3 text-right max-sm:hidden">{t('Đang dùng')}</th>
-            <th className="w-[200px] py-2.5 pr-3.5 max-sm:w-[104px]" aria-label={t('Thao tác')} />
+            <th className="w-[200px] py-2.5 pr-3.5 max-sm:w-[72px]" aria-label={t('Thao tác')} />
           </tr>
         </thead>
         <tbody>

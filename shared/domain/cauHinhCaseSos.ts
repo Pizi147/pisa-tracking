@@ -256,12 +256,14 @@ function doiDs(ds0: readonly { ma: string; ten: string; an?: true }[], ds1: read
   if (thu0 !== thu1) r.push({ viec: 'thu_tu', muc: nhom || 'danh sách' });
 }
 
+const TEN_NHANH_NK: Partial<Record<NhanhNN, string>> = { listening: 'Listening', reading: 'Reading', writing: 'Writing', speaking: 'Speaking',
+  gv: 'G+V', phat_am: 'Pronunciation', tong_hop: 'Tổng hợp' };
 export function thayDoi<L extends LoaiCauHinh>(l: L, a: DuLieuCauHinh[L], b: DuLieuCauHinh[L]): ThayDoi[] {
   const r: ThayDoi[] = [];
   if (l === 'nguyen_nhan') {
     const x = a as NguyenNhan, y = b as NguyenNhan;
     for (const ben of ['ft', 'thuong'] as const) for (const k of Object.keys(y[ben]) as NhanhNN[]) {
-      doiDs(x[ben][k] ?? [], y[ben][k] ?? [], `${ben === 'ft' ? 'FT' : 'Lớp thường'} · ${k}`, r,
+      doiDs(x[ben][k] ?? [], y[ben][k] ?? [], `${ben === 'ft' ? 'FT' : 'Lớp thường'} · ${TEN_NHANH_NK[k] ?? k}`, r,
         (p, q) => ((p.giaiThich ?? '') !== (q.giaiThich ?? '') ? ['giải thích'] : []).concat((p.tenEn ?? '') !== (q.tenEn ?? '') ? ['tên tiếng Anh'] : []));
     }
   } else if (l === 'phuong_an') {

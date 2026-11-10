@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApi, quenBanXem } from '../../lib/useApi.ts';
 import { ApiError, api } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -116,7 +117,11 @@ export function CauHinhCaseSos() {
           {ds === 'moc' && (ben === 'ft' ? <MocSosFt {...chung} /> : <MocSosThuong {...chung} />)}
         </div>
         <aside className="card min-w-0 px-4 pb-1.5 pt-3.5" aria-label={t('Nhật ký')}>
-          <h3 className="m-0 mb-1 text-[15px] font-bold text-slate-100">{t('Nhật ký')}</h3>
+          <div className="mb-1 flex items-center gap-2">
+            <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Nhật ký')}</h3>
+            {/* Nhật ký chung (Quản trị › Quyền & nhật ký) có mọi lần đổi (audit `cau_hinh_case_sos.*`); ở đây 8 lần gần nhất của danh sách đang xem. */}
+            {nk.length > 8 && <Link to="/quan-tri?tab=config&muc=case-sos" className="ml-auto text-[13px] font-semibold">{t('Xem tất cả ›')}</Link>}
+          </div>
           <ul className="m-0 list-none p-0">
             {nk.slice(0, 8).map((d) => (
               <li key={d.id} className="grid gap-0.5 border-t py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>

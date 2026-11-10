@@ -104,4 +104,5 @@ export const EN_CAU_HINH_CASE_SOS = {
   'đến MT kế': 'until next MT',
   '→ TVV {n} ngày': '→ consultant {n} days',
   '→ TVV': '→ consultant',
+  'Xem tất cả ›': 'See all ›',
 } as const;
