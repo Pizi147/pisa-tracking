@@ -75,6 +75,8 @@ export type XuLyView = {
   thuHoi: TheYeuCauDto | null;
   /** LUAT-5: máy chủ tính — người xem thu hồi thẳng (QL trong phạm vi em) hay gửi QL. */
   thuHoiThang: boolean;
+  /** YT-BAO-PH: TVV đã báo PH lần này — hộp Thu hồi (QL thẳng) hiện ô "Nhờ TVV báo lại PH". */
+  daBaoPh?: boolean;
 };
 
 export type DongEm = {

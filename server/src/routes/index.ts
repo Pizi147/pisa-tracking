@@ -1430,7 +1430,7 @@ api.delete('/discipline-measures/:id', requireAuth, wrap((req) => {
 /** LUAT-5 (luật 5): Thu hồi — GVCN gửi thẻ Chờ duyệt, QL thu hồi thẳng; lý do bắt buộc (máy chủ kiểm). */
 api.post('/discipline-measures/:id/thu-hoi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return xuLySvc.thuHoiXuLy(principalOf(req), pInt(req, 'id'), { lyDo: yThucBody(req).lyDo });
+  return xuLySvc.thuHoiXuLy(principalOf(req), pInt(req, 'id'), { lyDo: yThucBody(req).lyDo, baoLai: yThucBody(req).baoLai });
 }));
 /** OV-7a: sửa mô tả / ngày / người thực hiện của lần xử lý đã xong — chỉ trường có gửi mới đổi. Quyền như Sửa vi phạm. */
 api.patch('/discipline-measures/:id', requireAuth, wrap((req) => {
@@ -1495,7 +1495,7 @@ api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   const b = yThucBody(req);
   return xuLySvc.daThucHien(principalOf(req), pInt(req, 'id'), {
-    performedOn: b.performedOn, performerUserId: b.performerUserId, performerName: b.performerName, note: b.note,
+    performedOn: b.performedOn, performerUserId: b.performerUserId, performerName: b.performerName, note: b.note, phDu: b.phDu,
   });
 }));
 
