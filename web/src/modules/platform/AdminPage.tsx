@@ -14,6 +14,7 @@ import { ChiNhanhAdmin } from './ChiNhanhAdmin.tsx';
 import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
 import { MoSuaLichTest } from './MoSuaLichTest.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
+import { CauHinhCaseSos } from './CauHinhCaseSos.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { fmtDateTime } from '../../lib/format.ts';
@@ -44,6 +45,8 @@ const TABS = [
   { key: 'catalog', label: t('Chương trình') },
   { key: 'chi-nhanh', label: t('Chi nhánh') },
   { key: 'band', label: t('Bảng quy đổi') },
+  /* CAU-HINH-CASE-SOS (chủ SP 11/11): nhóm nguyên nhân / PA / mốc SOS — Quản trị sửa, Quản lý xem; đặt ở trang Quản trị hiện có, không khung mới. */
+  { key: 'case-sos', label: t('Case & SOS') },
   { key: 'config', label: t('Quyền & nhật ký') },
   { key: 'da-xoa', label: t('Đã xoá') },
 ] as const;
@@ -51,7 +54,7 @@ const TABS = [
 export default function AdminPage() {
   const [params, setParams] = useSearchParams();
   const quanTri = !!useSession().session?.nav?.admin;
-  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'band' || x.key === 'da-xoa');
+  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'band' || x.key === 'case-sos' || x.key === 'da-xoa');
   const tab = tabs.find((x) => x.key === params.get('tab'))?.key ?? tabs[0].key;
   /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
   const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === 'accounts' ? {} : { tab: k });
@@ -77,6 +80,7 @@ export default function AdminPage() {
         {tab === 'catalog' && <CatalogAdmin />}
         {tab === 'chi-nhanh' && <ChiNhanhAdmin />}
         {tab === 'band' && <BangQuyDoiAdmin />}
+        {tab === 'case-sos' && <CauHinhCaseSos />}
         {tab === 'da-xoa' && <DaXoaAdmin />}
         {tab === 'config' && error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
         {tab === 'config' && (loading || !data) && !error && <Skeleton rows={8} />}

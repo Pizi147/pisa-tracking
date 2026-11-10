@@ -447,6 +447,8 @@ const dichGiai = (s: string) => tenHien({ ten: s });
  */
 export function issueLabel(code: string | null | undefined, pb?: number | null, ct?: string | null): string {
   if (!code) return t('Chưa phân loại');
+  /* `.map(issueLabel)` truyền (chỉ số, mảng) — coi như không có phiên bản / chương trình (tên đang dùng). */
+  if (ct != null && typeof ct !== 'string') { ct = null; pb = undefined; }
   const nn = cauHinhPb('nguyen_nhan', pb).du_lieu;
   const k = issueBranchOf(code);
   const ben = benCua(ct);
