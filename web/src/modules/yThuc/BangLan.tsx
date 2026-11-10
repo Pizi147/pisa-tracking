@@ -150,13 +150,6 @@ export function OBuoc({ badge, phu }: { badge: ReactNode; phu?: (ReactNode | nul
   );
 }
 
-/** Trích Nội dung Báo PH (2 dòng) — chủ SP 11/11: một ô Nội dung cho mọi kết quả. */
-const TrichNd = ({ chu }: { chu: string }) => (
-  <span className="grid w-full grid-cols-[62px_minmax(0,1fr)] gap-x-2 text-[13px] leading-snug">
-    <span className="text-xs leading-5 text-slate-500">{t('Nội dung')}</span><span className="line-clamp-2 text-slate-100">{chu}</span>
-  </span>
-);
-
 /**
  * Ô ③ TVV báo PH của ĐÚNG lần (Y-THUC-V2). GV đọc trạng thái + Nội dung; "Xem đủ ▾" mở mọi lần ghi tại chỗ (`onXemDu`).
  * `null` = lần chưa có việc (chưa lưu xử lý / dữ liệu cũ).
@@ -173,7 +166,12 @@ export function OBaoPh({ b, homNay, tvv, moDu, onXemDu }: { b: BaoPhLan | null |
       {b.trangThai === 'mo' && b.lan && <span className="text-xs tabular-nums text-slate-400">{t('ghi {ngay}', { ngay: ngay(b.lan.ngay, homNay) })}</span>}
       {b.trangThai === 'mo' && <span className="text-xs tabular-nums text-slate-400">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}{b.daChinh ? ` · ${t('đã chỉnh')}` : ''}{tvv ? ` · ${t('TVV {ten}', { ten: tvv })}` : ''}</span>}
       {b.trangThai === 'xong' && tvv && <span className="text-xs text-slate-400">{t('TVV {ten}', { ten: tvv })}</span>}
-      {b.lan?.noiDung && <TrichNd chu={b.lan.noiDung} />}
+      {/* Trích Nội dung (2 dòng) — chủ SP 11/11: một ô Nội dung cho mọi kết quả. */}
+      {b.lan?.noiDung && (
+        <span className="grid w-full grid-cols-[62px_minmax(0,1fr)] gap-x-2 text-[13px] leading-snug">
+          <span className="text-xs leading-5 text-slate-500">{t('Nội dung')}</span><span className="line-clamp-2 text-slate-100">{b.lan.noiDung}</span>
+        </span>
+      )}
       {b.soLan > 0 && onXemDu && (
         <button type="button" aria-expanded={!!moDu} onClick={onXemDu}
           className="link min-h-[28px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]">

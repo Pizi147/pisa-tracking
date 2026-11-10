@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react';
 import { ngay } from '@shared/domain/index.ts';
-import { dich, t } from '@shared/i18n/index.ts';
-import { MuiTenGap } from './NhanViPham.tsx';
-import { NutLuat } from '../../ui/NutLuat.tsx';
-import type { DongEm, ViPhamV4, YThucHocVien } from './kieu.ts';
+import { t } from '@shared/i18n/index.ts';
+import type { YThucHocVien } from './kieu.ts';
 
 /**
  * KHỐI Ý THỨC DÙNG CHUNG (mockup `thiet-ke/audit-0311/u10-y-thuc.html`, chủ SP duyệt 03/11) — tab Ý thức hồ sơ HV (UI-3) và hồ sơ lớp (UI-2)
@@ -69,101 +67,6 @@ export function CanLamEm({ x, homNay, onXem, hanDuoi = false, laQl = false }: {
   }
 }
 
-/** Ô "Báo PH" — ghi rõ của LẦN xử lý nào (U10.7); bấm được khi người xem ghi kết quả được (TVV / QL). `coLan={false}`: nhãn ô đã nói lần (K3). */
-export function BaoPhEm({ b, homNay, onMo, coLan = true }: { b: DongEm['baoPh']; homNay: string; onMo?: () => void; coLan?: boolean }) {
-  if (!b) return <span className="text-slate-500">—</span>;
-  const mo = b.trangThai === 'mo' && b.coTheGhi ? onMo : undefined;
-  const bv = b.trangThai === 'xong' ? <BadgeViec tong="xong">{b.ngayXong ? t('Đã báo {ngay}', { ngay: ngay(b.ngayXong, homNay) }) : t('Đã báo PH')}</BadgeViec>
-    : b.trangThai === 'bo' ? <BadgeViec tong="xam">{t('Đã bỏ')}</BadgeViec>
-    : <BadgeViec tong={b.quaHan ? 'qua' : 'cho'} onClick={mo} title={mo ? t('Ghi kết quả báo PH') : undefined}>{dich(b.nhanTrangThai)}</BadgeViec>;
-  return (
-    /* Mockup K1 `.bph`: lần · badge · hạn — ba dòng (hạn đã sửa ghi "đã chỉnh"). */
-    <span className="flex flex-col items-start gap-[5px]">
-      {coLan && <span className="text-xs font-medium text-slate-500">{t('Lần')} <b className="font-semibold text-slate-400">{dich(b.nhan)}</b></span>}
-      {bv}
-      {b.trangThai === 'mo' && <span className="text-xs tabular-nums text-slate-500">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}{b.daChinh ? ` · ${t('đã chỉnh')}` : ''}</span>}
-    </span>
-  );
-}
-
-/** Dải tóm tắt một em (mockup K3 `.facts`): mỗi trường một ô, nhãn trên – giá trị dưới, kẻ dọc giữa các ô. */
-export function TomTatEm({ d, homNay, onBaoPh, onXem, thang }: {
-  d: TomTatVao & Pick<YThucHocVien, 'bacNhan' | 'keTiep' | 'canManage' | 'gvcn'> & { baoPh: DongEm['baoPh'] };
-  homNay: string; onBaoPh?: () => void; onXem?: (id: number) => void;
-  /** Thang xử lý đầy đủ — trong ⓘ cạnh "Đã tới" (mockup K3 không vẽ thang trên tab). */
-  thang?: ReactNode;
-}) {
-  const o = (nhan: ReactNode, gt: ReactNode) => (
-    <div className="grid min-w-0 content-start gap-1 py-0.5 [@container(min-width:900px)]:border-l [@container(min-width:900px)]:px-[18px] [@container(min-width:900px)]:first:border-l-0 [@container(min-width:900px)]:first:pl-0" style={{ borderColor: 'var(--line)' }}>
-      <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-slate-500">{nhan}</span>
-      <span className="text-[15px] font-semibold text-slate-100">{gt}</span>
-    </div>
-  );
-  return (
-    <div className="flex flex-wrap gap-x-6 gap-y-3 [@container(min-width:900px)]:gap-x-0">
-      {o(t('Cần làm'), <CanLamEm x={d} homNay={homNay} onXem={onXem} />)}
-      {!d.canManage && d.gvcn && o(t('Người xử lý'), t('GVCN {ten}', { ten: d.gvcn }))}
-      {o(<>{t('Đã tới')}{thang && <NutLuat label={t('Thang xử lý vi phạm')}>{thang}</NutLuat>}</>, d.bacNhan ? dich(d.bacNhan) : <span className="font-medium text-slate-400">{t('chưa có')}</span>)}
-      {o(t('Lần này'), dich(d.keTiep.nhan))}
-      {o(d.baoPh ? t('Báo PH · lần {nhan}', { nhan: dich(d.baoPh.nhan) }) : t('Báo PH'), <BaoPhEm b={d.baoPh} homNay={homNay} onMo={onBaoPh} coLan={false} />)}
-    </div>
-  );
-}
-
-/**
- * Danh sách vi phạm chờ (mockup K1 "Vi phạm của lần này", K3): ngày | tên + thẻ (nhóm · người ghi) | thao tác. Bấm tên → mở tại chỗ (mô tả,
- * bằng chứng, Sửa / Xoá, Đã xem một vi phạm). Không badge lặp ở từng dòng — trạng thái nói ở ô Cần làm; chỉ in nhãn khi khác trạng thái chung.
- */
-export function DsViPhamCho({ ds, homNay, moId, onMo, chiTiet, nhanRieng, nguoiGhi = false }: {
-  ds: ViPhamV4[]; homNay: string; moId: number | null; onMo: (id: number) => void; chiTiet: (v: ViPhamV4) => ReactNode;
-  /** Tab lớp (mockup K1): thẻ "… ghi" — cả lớp nhiều người ghi; tab HV (K3) không in. */
-  nguoiGhi?: boolean;
-  /** Nhãn cuối dòng khi vi phạm khác trạng thái chung của em (vd một vi phạm đã trong đề xuất). */
-  nhanRieng?: (v: ViPhamV4) => ReactNode;
-}) {
-  return (
-    <ul className="m-0 list-none p-0">
-      {ds.map((v) => {
-        const mo = moId === v.id;
-        return (
-          <li key={v.id} className="grid grid-cols-[52px_minmax(0,1fr)_auto] items-start gap-x-2.5 border-t py-2.5 first:border-t-0 first:pt-0" style={{ borderColor: 'var(--line)' }}>
-            <span className="pt-0.5 text-[13px] font-semibold tabular-nums text-slate-400">{ngay(v.occurredOn, homNay)}</span>
-            <span className="min-w-0">
-              <button type="button" aria-expanded={mo} onClick={() => onMo(v.id)}
-                className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-left text-[15px] font-semibold text-slate-100 appearance-none hover:underline sm:min-h-0">
-                {v.ten}
-              </button>
-              <span className="mt-1 flex flex-wrap gap-1.5">
-                <span className={TAG}>{dich(v.categoryLabel)}</span>
-                {nguoiGhi && v.reportedByName && <span className={TAG}>{t('{ten} ghi', { ten: v.reportedByName })}</span>}
-                {!!v.soTep && <button type="button" className={`${TAG} cursor-pointer appearance-none border-0 hover:text-slate-200`} onClick={() => onMo(v.id)}>{t('{soTep} tệp', { soTep: v.soTep })} ›</button>}
-              </span>
-            </span>
-            <span className="flex items-center justify-end">{nhanRieng?.(v)}</span>
-            {mo && <div className="col-start-2 col-end-4 pt-2">{chiTiet(v)}</div>}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-/**
- * Dòng "Lần trước" (mockup K1 khối Lần xử lý · K3): lần xử lý gần nhất là link mở Xem lần xử lý (nơi Thu hồi…); chỉ thêm chữ khi đổi quyết định —
- * đang xin thu hồi / đã thu hồi / QL từ chối. Bỏ "Thu hồi được · QL duyệt" (audit U10.2: chip thừa).
- */
-export function LanTruoc({ x, homNay, onXem }: { x: Pick<DongEm, 'xuLyGanNhat' | 'thuHoi' | 'tuChoi'>; homNay: string; onXem: (id: number) => void }) {
-  const link = (id: number, chu: ReactNode) => (
-    <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-left text-sm font-semibold sm:min-h-0" onClick={() => onXem(id)}>
-      <span className="sr-only">{t('Xem lần xử lý')} </span>{chu} ›
-    </button>
-  );
-  if (x.thuHoi) return <span className="flex flex-wrap items-center gap-2">{link(x.thuHoi.id, dich(x.thuHoi.nhan))}<BadgeViec tong={x.thuHoi.cho ? 'dang' : 'xam'}>{x.thuHoi.cho ? t('Đang xin thu hồi') : t('Đã thu hồi')}</BadgeViec></span>;
-  if (x.tuChoi) return <span className="flex flex-wrap items-center gap-2">{link(x.tuChoi.id, dich(x.tuChoi.nhan))}<BadgeViec tong="qua">{t('QL từ chối · chọn cách khác')}</BadgeViec></span>;
-  if (x.xuLyGanNhat) return <span className="flex flex-wrap items-center gap-2"><b className="font-semibold text-slate-100">{dich(x.xuLyGanNhat.nhan)}</b><span className="text-[13px] tabular-nums text-slate-400">{ngay(x.xuLyGanNhat.ngay, homNay)}</span>{link(x.xuLyGanNhat.id, t('Xem'))}</span>;
-  return null;
-}
-
 /** Chip lọc Lịch sử (mockup `.lua`): mỗi mục một nút viền riêng, có số; mục chọn viền nhấn + nền nhấn nhạt. */
 export function ChipLoc<K extends string>({ muc, value, onChange, ariaLabel }: { muc: { key: K; nhan: string; so: number }[]; value: K; onChange: (k: K) => void; ariaLabel: string }) {
   return (
@@ -183,66 +86,3 @@ export function ChipLoc<K extends string>({ muc, value, onChange, ariaLabel }: {
   );
 }
 
-/**
- * BẢNG LỊCH SỬ (mockup K6): ba loại dòng — Đã xem (vi phạm) · Đã xử lý / Đã thu hồi / đang chờ (lần xử lý) — mỗi dòng: Ngày · Loại (badge) ·
- * Nội dung (tên + trường phụ có nhãn) · Ai · lúc nào · thao tác. Vi phạm đã xử lý xem qua "Xem" lần xử lý (Sửa / Thu hồi ở đó).
- * `coTen`: tab lớp (UI-2) thêm cột Học viên. `vuaXem`: dòng vừa "Đã xem" sáng + "vừa xong" (đến từ "Xem lại").
- */
-export type DongLs = { key: string; ngay: string; ten?: ReactNode; tong: TongBv; loai: string; kieu: 'xem' | 'xu-ly' | 'thu-hoi' | 'khac';
-  tieuDe: ReactNode; truong: [string, ReactNode][]; ai: string | null; luc: string | null; vua?: boolean; cuoi?: ReactNode;
-  /** Dòng "Đã xem" mở tại chỗ (mô tả, bằng chứng, Sửa / Xoá — người ghi vẫn sửa được sau khi GVCN đã xem). */
-  mo?: boolean; onMo?: () => void; chiTiet?: ReactNode };
-/* Lớp của BangLichSu theo ngưỡng khung (viết đủ chữ — Tailwind chỉ sinh CSS cho tên lớp thấy được trong mã). */
-const LS_HV = {
-  dau: '[@container(min-width:720px)]:grid [@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]',
-  hang: '[@container(min-width:720px)]:grid-cols-[72px_130px_minmax(0,1fr)_200px_120px]',
-  ten: '[@container(min-width:720px)]:col-span-1', loai: '[@container(min-width:720px)]:col-start-auto',
-  o: '[@container(min-width:720px)]:col-span-1 [@container(min-width:720px)]:col-start-auto',
-  cuoi: '[@container(min-width:720px)]:col-start-auto [@container(min-width:720px)]:row-start-auto',
-};
-const LS_LOP = {
-  dau: '[@container(min-width:900px)]:grid [@container(min-width:900px)]:grid-cols-[90px_200px_130px_minmax(0,1fr)_200px_140px]',
-  hang: '[@container(min-width:900px)]:grid-cols-[90px_200px_130px_minmax(0,1fr)_200px_140px]',
-  ten: '[@container(min-width:900px)]:col-span-1', loai: '[@container(min-width:900px)]:col-start-auto',
-  o: '[@container(min-width:900px)]:col-span-1 [@container(min-width:900px)]:col-start-auto',
-  cuoi: '[@container(min-width:900px)]:col-start-auto [@container(min-width:900px)]:row-start-auto',
-};
-export function BangLichSu({ dong, coTen, homNay, rong }: { dong: DongLs[]; coTen?: boolean; homNay: string; rong: ReactNode }) {
-  if (!dong.length) return <>{rong}</>;
-  /* Lưới (không <table> — BANG-3). Theo KHUNG (container), không theo màn: panel Công việc 480 px dùng bản hẹp — "Ai · lúc nào" xuống dưới nội dung. */
-  /* Lớp viết đủ chữ (Tailwind chỉ sinh CSS cho tên lớp thấy được trong mã). */
-  /* Có cột Học viên (tab lớp): bảng từ khung 900 px — 6 cột cố định cần ~850 px; tab HV / panel: 720 px. */
-  const L = coTen ? LS_LOP : LS_HV;
-  const dau = 'text-[13px] font-semibold text-slate-400';
-  return (
-    <div role="list" aria-label={t('Lịch sử')}>
-      <div aria-hidden className={`hidden gap-x-3 border-b px-4 py-2 ${L.dau}`} style={{ borderColor: 'var(--line)' }}>
-        <span className={dau}>{t('Ngày')}</span>{coTen && <span className={dau}>{t('Học viên')}</span>}<span className={dau}>{t('Loại')}</span>
-        <span className={dau}>{t('Nội dung')}</span><span className={dau}>{t('Ai · lúc nào')}</span><span />
-      </div>
-      {dong.map((x) => (
-        <div key={x.key} role="listitem" className={`grid grid-cols-[56px_minmax(0,1fr)_auto] gap-x-3 gap-y-1 border-b px-4 py-2.5 last:border-b-0 ${L.hang} ${x.vua ? 'bg-ok-bg' : ''}`} style={{ borderColor: 'var(--line)' }}>
-          <span className="text-[13px] font-semibold tabular-nums text-slate-400">{ngay(x.ngay, homNay)}</span>
-          {coTen && <span className={`font-semibold text-slate-100 col-span-2 ${L.ten}`}>{x.ten}</span>}
-          <span className={`col-start-2 ${L.loai}`}><BadgeViec tong={x.tong}>{x.loai}</BadgeViec></span>
-          <span className={`min-w-0 col-span-2 col-start-2 ${L.o}`}>
-            {x.onMo
-              ? <button type="button" aria-expanded={!!x.mo} onClick={x.onMo} className="inline-flex min-h-[44px] items-center gap-1 border-0 bg-transparent p-0 text-left font-semibold text-slate-100 appearance-none hover:underline sm:min-h-0">{x.tieuDe}<span className="text-slate-500"><MuiTenGap mo={!!x.mo} /></span></button>
-              : <span className="font-semibold text-slate-100">{x.tieuDe}</span>}
-            {x.vua && <span className="block text-xs font-semibold text-ok">{t('vừa xong')}</span>}
-            {x.truong.length > 0 && (
-              <dl className="m-0 mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5">
-                {x.truong.map(([n, g]) => <div key={n} className="contents"><dt className="text-xs font-medium leading-5 text-slate-500">{n}</dt><dd className="m-0 text-[13px] text-slate-300">{g}</dd></div>)}
-              </dl>
-            )}
-          </span>
-          <span className={`min-w-0 col-span-2 col-start-2 ${L.o}`}>
-            <span className="text-sm text-slate-200">{x.ai ?? '—'}</span>{x.luc && <span className="block text-xs tabular-nums text-slate-500">{x.luc}</span>}
-          </span>
-          <span className={`flex items-start justify-end col-start-3 row-start-1 ${L.cuoi}`}>{x.cuoi}</span>
-          {x.mo && x.chiTiet && <div className="col-span-full pt-1">{x.chiTiet}</div>}
-        </div>
-      ))}
-    </div>
-  );
-}

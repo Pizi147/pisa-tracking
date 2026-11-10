@@ -287,10 +287,12 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   });
   check('UXF-b (7) · quét chữ: panel Tạm dừng có câu "n vi phạm Ý thức đang chờ xử lý"; dòng em Ý thức nhánh tuChoi không in "vi phạm / 2 tuần"', () => {
     assert(/vi phạm Ý thức đang chờ xử lý/.test(doc('web/src/modules/students/StudentManagePanel.tsx')) && /soViPhamMo=\{data\.dauHoSo\?\.soViPhamMo\}/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'O2');
-    /* UI-2 / UI-3: nhánh tuChoi nằm ở `LanTruoc` (khối Lần xử lý dùng chung hai tab), chữ theo mockup "chọn cách khác". */
-    const cy = doc('web/src/modules/yThuc/khoiYThuc.tsx');
-    const nhanh = cy.slice(cy.indexOf('if (x.tuChoi)'), cy.indexOf('if (x.xuLyGanNhat)'));
-    assert(nhanh.includes('chọn cách khác') && !/vi phạm \/ 2 tuần/.test(nhanh), 'VN26');
+    /* Y-THUC-V2 (mockup 11/11 K9b): QL từ chối → khối "Bắt buộc xử lý", ô ② badge "QL từ chối" + tên lần (bấm mở lần xử lý) — hai tab cùng chữ, không "vi phạm / 2 tuần". */
+    for (const f of ['web/src/modules/yThuc/ClassYThucCard.tsx', 'web/src/modules/yThuc/StudentYThucSection.tsx']) {
+      const cy = doc(f);
+      const i = cy.indexOf("t('QL từ chối')");
+      assert(i > 0 && !/vi phạm \/ 2 tuần/.test(cy.slice(i - 200, i + 300)), `VN26 ${f}`);
+    }
   });
 
   // ------------------------------------------------------------------ Task 8 · chữ nhỏ: lý do nhiều dòng (VN01), "hạn hết T2" (VN28)
