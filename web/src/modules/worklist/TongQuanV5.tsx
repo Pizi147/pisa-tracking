@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
+import { useSoViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, ErrorState, OChiSo, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
@@ -333,7 +334,9 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
   const ft = d.ct === 'ft';
   return (
     <>
-      <DaiChiSo>
+      {/* XM 3 (chủ SP 11/11): "Việc của tôi ›" đầu dải — có Chờ duyệt thì 5 ô. */}
+      <DaiChiSo nam={duyet && !!session?.nav?.workSupport}>
+        <OViecCuaToi />
         <ChiSo ten={t('Đạt MT')} ky={t('trong kỳ')} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. Ngoài mẫu: HV chưa đủ dữ liệu.')}
           giaTri={ft ? <PhanTram x={d.datMt} nguon={qBc(d, '&o=dat-mt')} tieuDe={t('Đạt MT')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? mauDatMt(d.datMt) : t('chỉ Fast Track')} />
@@ -446,6 +449,26 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
   );
 }
 
+/* ───────────── Việc của tôi (mọi vai có Công việc) ───────────── */
+
+/**
+ * Ô "Việc của tôi ›" — GV (chủ SP 23/10) + [XM 3] chủ SP 11/11: TVV · QL · Admin cũng có (CLAUDE.md "việc của tôi ở trang đầu vai"). Số = `summary.viec` của `/my-work`
+ * (cùng `demDongViec` với badge / Công việc), đọc từ bản khung App đã tải cho badge (`useSoViecCuaToi`) — KHÔNG GET `/my-work` lần nữa (trước XM 3 Tổng quan GV
+ * tự gọi nên thường thành hai lời gọi `/my-work` mỗi lần mở trang). Cả ô là link Công việc (MO-TAT-CA 05/11).
+ * Head tutor chưa có Công việc (không `workSupport`) → không ô.
+ */
+export function OViecCuaToi() {
+  const { session } = useSession();
+  const viec = useSoViecCuaToi();
+  if (!session?.nav?.workSupport) return null;
+  /* TQ-GON (M4, V13): dòng phụ = đơn vị (+ ⚠ quá hạn khi có). */
+  const o = <ChiSo ten={session.nav.work ? `${t('Việc của tôi')} ›` : t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
+    mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />;
+  return session.nav.work
+    ? <Link to="/cong-viec" className="block h-full rounded-xl no-underline hover:[&>.card]:border-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]">{o}</Link>
+    : o;
+}
+
 /* ───────────── GV ───────────── */
 
 type ChiSoGv = { tu: string; den: string; ketQua: OPtGv; tienBo: OPtGv };
@@ -456,7 +479,6 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: ReactNode }) {
   const id = session?.user?.id;
   /* S1: chỉ số GV lấy từ CÙNG GET của khối hai bảng (`HaiKhoiGv` — `useApi` gộp một request), không GET thêm chỉ số hồ sơ GV (tính lại y hệt). */
   const cs = useApi<{ chiSo: ChiSoGv }>('/tong-quan/lop-toi-day/hai-khoi', []).data?.chiSo;
-  const viec = useApi<{ summary: { viec: number; viecQuaHan: number } }>(session?.nav?.workSupport ? '/my-work' : null, []).data?.summary;
   const nguonCase = `/giao-vien/${id}/o?cot=case-mo`;
   const caseMo = useApi<{ n: number }>(id ? nguonCase : null, [id]).data?.n;
   const o = (x: OPtGv | undefined, cot: string, nhan: string) => <PhanTram x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}`} tieuDe={nhan} className="so-chinh" />;
@@ -464,13 +486,7 @@ export function TongQuanGvV5({ lopToiDay }: { lopToiDay: ReactNode }) {
   return (
     <>
       <DaiChiSo>
-        {/* Head tutor chưa có Công việc (không `workSupport`) → không ô Việc. */}
-        {/* TQ-GON (M4, V13): dòng phụ = đơn vị (+ ⚠ quá hạn khi có) — bỏ "không việc nào quá hạn", "Case tôi phụ trách" (trang của tôi đã nói). */}
-        {/* MO-TAT-CA (chủ SP 05/11): cả ô là link sang Công việc góc Của tôi ("›" = đổi trang) — số quá hạn trong ô cũng dẫn tới đó. */}
-        {session?.nav?.workSupport && ((o) => (session.nav.work
-          ? <Link to="/cong-viec" className="block h-full rounded-xl no-underline hover:[&>.card]:border-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]">{o}</Link>
-          : o))(<ChiSo ten={session.nav.work ? `${t('Việc của tôi')} ›` : t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
-          mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />)}
+        <OViecCuaToi />
         <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} className="so-chinh" />}
           mau="Case" />
         <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs?.ketQua), t('lượt Test'))} />
@@ -494,8 +510,9 @@ export function TongQuanTvvV5() {
   const choKq = hv.data?.dem['da-thi'] ?? 0, buoc = hv.data?.dem['cho-buoc-tiep'] ?? 0;
   return (
     <>
-      {/* AUDIT-UI B2 (chủ SP 08/11): 4 ô, mỗi ô một số — thay ô hai số "Chờ KQ · Lộ trình tiếp" + thẻ link "Thi thật"; 1440 bốn cột, 375 lưới 2 × 2. */}
-      <DaiChiSo>
+      {/* AUDIT-UI B2 (chủ SP 08/11): mỗi ô một số — thay ô hai số "Chờ KQ · Lộ trình tiếp" + thẻ link "Thi thật". XM 3 (chủ SP 11/11): + "Việc của tôi ›" đầu dải → 5 ô. */}
+      <DaiChiSo nam>
+        <OViecCuaToi />
         <ChiSo ten={t('Báo PH đúng hạn')} ky={kyChu(d.ky)} luat={t('Việc Báo PH đã báo trước hạn / việc Báo PH phát sinh trong kỳ.')}
           /* AUDIT-UI B2 (mockup `.gt0`): chưa có việc Báo PH → "—" mờ + dòng phụ "chưa có dữ liệu" (cùng dáng ô 0 bên cạnh). */
           giaTri={d.baoPh.tong ? <PhanTram x={{ dat: d.baoPh.dung, mau: d.baoPh.tong }} nguon="/tong-quan/tvv/o?o=bao-ph" tieuDe={t('Báo PH đúng hạn')} className="so-chinh" />
@@ -513,6 +530,7 @@ export function TongQuanTvvV5() {
 
 /* ───────────── Admin · Head tutor ───────────── */
 
+/** XM 3 (chủ SP 11/11): ô "Việc của tôi ›" của Admin đứng đầu dải ô Mock Test (`MockTestAdmin`) — 4 ô một hàng. */
 export function TongQuanAdminV5({ mockTest, lich }: { mockTest: ReactNode; lich: ReactNode }) {
   return <BoCuc trai={<>{mockTest}{lich}</>} />;
 }
