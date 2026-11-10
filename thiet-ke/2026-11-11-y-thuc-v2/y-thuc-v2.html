@@ -309,6 +309,58 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
 .rong-o b { font:600 15px var(--phong); color:var(--text); }
 .rong-o span { font-size:13px; color:var(--text-dim); }
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+/* ---- vòng 2 (chủ SP 11/11): chip môn · hộp rê · tiến trình ①②③ ở panel ---- */
+.mon { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:20px; padding:0 5px; margin-right:8px; border-radius:4px; border:1px solid var(--line-strong); background:var(--surface-2); font:700 11px/1 var(--phong-so); color:var(--text-dim); vertical-align:1px; }
+.ytv td.vpo { padding-top:8px; padding-bottom:8px; }
+.mon.an { visibility:hidden; vertical-align:middle; }
+.hop-vp { position:absolute; z-index:6; width:400px; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 12px 30px rgb(0 0 0 / .45); padding:12px 14px; display:grid; gap:8px; }
+.hop-vp h4 { margin:0; font:700 15px/1.4 var(--phong); }
+.hop-vp .fld { grid-template-columns:6.5rem minmax(0,1fr); }
+.hop-vp .fld > dt, .hop-vp .fld > dd { padding:6px 0; font-size:14px; }
+.hop-vp .chan-hop { font-size:12px; color:var(--text-faint); }
+.hop-vp::before { content:""; position:absolute; top:-7px; left:28px; width:12px; height:12px; background:var(--surface); border-left:1px solid var(--line-strong); border-top:1px solid var(--line-strong); transform:rotate(45deg); }
+.ten.dang-re { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+/* tiến trình ①②③ — cùng thứ tự cột tab Ý thức */
+.tien-trinh { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:14px; }
+.tien-trinh > div { padding:10px 12px; display:grid; gap:4px; align-content:start; border-left:1px solid var(--line); }
+.tien-trinh > div:first-child { border-left:0; }
+.tien-trinh .nh { font:600 12px var(--phong); color:var(--text-faint); display:flex; align-items:center; gap:6px; }
+.tien-trinh .nh .b { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--line-strong); font:700 11px/1 var(--phong-so); color:var(--text-dim); }
+.tien-trinh .gt { font:600 14px/1.4 var(--phong); color:var(--text); }
+.tien-trinh .ph { font-size:12px; color:var(--text-faint); }
+.tien-trinh > div.nay { background:var(--accent-soft); box-shadow:inset 0 2px 0 var(--accent); }
+.tien-trinh > div.nay .nh { color:var(--accent); }
+.tien-trinh .ban { display:inline-flex; height:18px; align-items:center; padding:0 6px; border-radius:4px; background:var(--accent); color:var(--accent-ink); font:700 11px var(--phong); margin-left:auto; }
+.dt .tien-trinh { grid-template-columns:minmax(0,1fr); }
+.dt .tien-trinh > div { border-left:0; border-top:1px solid var(--line); grid-template-columns:96px minmax(0,1fr); }
+.dt .tien-trinh > div:first-child { border-top:0; }
+.dt .tien-trinh > div .nh { grid-row:span 2; align-self:start; }
+.dt .tien-trinh .ban { margin-left:0; }
+/* danh sách vi phạm trong panel: tích + ngày + chip + tên */
+.ds-pn { display:grid; gap:0; margin-top:6px; }
+.ds-pn label { display:grid; grid-template-columns:22px 44px minmax(0,1fr); gap:8px; align-items:center; min-height:40px; border-top:1px solid var(--line); font-size:14px; }
+.ds-pn label:first-child { border-top:0; }
+.ds-pn .ng { font:600 13px var(--phong-so); color:var(--text-dim); }
+.dt .ds-pn label { min-height:44px; }
+.pn-muc { font:700 14px var(--phong); color:var(--text); margin:16px 0 0; display:flex; align-items:center; gap:8px; }
+.pn-muc .dem { font-size:12px; }
+/* trang Công việc rút gọn */
+.cv { display:grid; grid-template-columns:520px minmax(0,1fr); gap:16px; padding:14px 24px 24px; align-items:start; }
+.cv-ds { background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.cv-ds .dai { padding:12px 16px; font:700 15px var(--phong); background:var(--surface-2); border-bottom:1px solid var(--line); border-radius:12px 12px 0 0; }
+.cv-ds .v { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 10px; padding:10px 16px; border-top:1px solid var(--line); align-items:center; }
+.cv-ds .v:first-of-type { border-top:0; }
+.cv-ds .v b { font:500 15px var(--phong); color:var(--text); }
+.cv-ds .v span.ph { font-size:13px; color:var(--text-dim); }
+.cv-ds .v.chon { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+.pn-tvv.rong-pn { width:auto; }
+.dt .pn-tvv { width:auto; border:0; border-radius:0; }
+.dt .pn-tvv .pn-than { padding:0 16px 16px; }
+.dt .pn-tvv .pn-dau { padding:12px 16px; }
+.dt .pn-chan { padding:12px 16px; flex-wrap:wrap; }
+.dt .pn-chan .nut { flex:1; }
+.anh-web { display:block; max-width:1400px; border:1px solid #b0b8cd; border-radius:6px; }
+.danh-dau { outline:3px solid #d9a93a; outline-offset:-3px; }
 </style>
 </head>
 <body>
@@ -317,7 +369,7 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
     <h1>Ý thức V2 · tab Ý thức hồ sơ lớp + hồ sơ HV — mockup 11/11 (CHỜ CHỦ SP DUYỆT)</h1>
     <p>Hôm nay <b>thứ Tư 11/11 · W2 NOV</b>, lớp <b>CP FT 116</b> (GVCN Nguyễn Hoàng Dũng, TVV Lê Thu). Bảng việc → ai → hiện tại → đề xuất, ý → chỗ, câu hỏi: <a href="bang-y.md">bang-y.md</a>.
       Luật <b>không đổi</b> (L1–L5, N34, N36). Hình ảnh giữ mockup U10 đã duyệt 03/11; chỉ đổi <b>cách đọc một dòng</b> và thêm <b>GV đọc được kết quả Báo PH</b>.</p>
-    <nav class="muc-mk"><a href="#k1">K1 · lớp GVCN 1440</a><a href="#k2">K2 · lớp 375</a><a href="#k3">K3 · HV 1440</a><a href="#k4">K4 · HV 375</a><a href="#k5">K5 · 4 vai + panel TVV</a><a href="#k6">K6 · Lịch sử</a><a href="#k7">K7 · rỗng</a><a href="#bang">Bảng TRƯỚC → SAU</a></nav>
+    <nav class="muc-mk"><a href="#k1">K1 · lớp GVCN 1440</a><a href="#k2">K2 · lớp 375</a><a href="#k3">K3 · HV 1440</a><a href="#k4">K4 · HV 375</a><a href="#k5">K5 · 4 vai + panel TVV</a><a href="#k6">K6 · Lịch sử</a><a href="#k7">K7 · rỗng</a><a href="#k8">K8 · panel Công việc</a><a href="#k9">K9 · Chờ QL / QL từ chối ở đâu</a><a href="#bang">Bảng TRƯỚC → SAU</a></nav>
   </header>
 
   <!-- ===================== K1 ===================== -->
@@ -326,8 +378,8 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
     <p class="ghi"><span class="so-mk">1</span>tiêu đề cột là <b>thứ tự xử lý</b>: ① Vi phạm (ai ghi) → ② GVCN xử lý → ③ TVV báo PH → <b>Bước tiếp</b> (một nút của người đang xem)
       · <span class="so-mk">2</span><b>một lần = một khối</b>: mỗi vi phạm một dòng, các ô bên phải gộp cho cả lần (Thanh Lâm 3 vi phạm → một Xác nhận xử lý)
       · <span class="so-mk">3</span>ô ③ <b>gắn đúng lần</b> (web hiện lấy việc Báo PH mới nhất của em — Kiều Minh Đức trên seed ghi "Đình chỉ · Đã bỏ" cạnh lần Report 1 đang chờ)
-      · <span class="so-mk">4</span><b>GV đọc được Báo PH</b>: trạng thái + kênh + "Đã báo" + "PH" ngay trên dòng; Quang Huy bấm "Xem đủ" → mọi lần ghi mở tại chỗ
-      · <span class="so-mk">5</span>bỏ "▾ Chi tiết" cả hàng (chỉ lặp lại hàng): bấm đúng thứ cần mở — tên vi phạm, ô ② (Xem lần xử lý), "Xem đủ" ở ô ③, chip bậc (thang).</p>
+      · <span class="so-mk">4</span><b>GV đọc được Báo PH</b>: trạng thái + <b>Nội dung</b> TVV ghi (đã báo gì, PH nói gì) ngay trên dòng; Quang Huy bấm "Xem đủ" → mọi lần ghi mở tại chỗ
+      · <span class="so-mk">6</span><b>vòng 2 (chủ SP 11/11)</b>: mỗi vi phạm thêm <b>chip môn</b> (L · R · W1 · W2 · S; lớp thường: môn của lớp; không ghi môn thì không chip); bảng gọn — bỏ dòng phụ "nhóm · người ghi", <b>rê / focus vào vi phạm hiện hộp thông tin</b> (Khôi, Writing Task 1); 375: chạm tên mở tại chỗ · <span class="so-mk">5</span>bỏ "▾ Chi tiết" cả hàng (chỉ lặp lại hàng): bấm đúng thứ cần mở — tên vi phạm, ô ② (Xem lần xử lý), "Xem đủ" ở ô ③, chip bậc (thang).</p>
     <div class="hang-khung"><figure><figcaption>K1 · GVCN Nguyễn Hoàng Dũng</figcaption>
     <div class="man toi dai" style="position:relative">
       <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m dang">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m">Công việc <span class="so-nav">12</span></span><span class="m">Phân tích</span><span class="phai"><span>Nguyễn Hoàng Dũng</span></span></div>
@@ -348,31 +400,31 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o" rowspan="3"><a class="ten-em" href="#">Vũ Hoàng Thanh Lâm</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>Report 1</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">02/11</span><button class="ten">Thiếu bài Homework W1 NOV</button><span class="me">BTVN · Trần Thị Thanh Hằng</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">02/11</span><button class="ten"><span class="mon">R</span>Thiếu bài tập về nhà</button></div></td>
                 <td class="gop" rowspan="3"><span class="buoc"><span class="bv qua">Quá hạn 2 ngày</span><span class="ph">hạn 09/11</span><span class="gt">Lần này <b>Report 2</b></span></span></td>
                 <td class="gop" rowspan="3"><span class="buoc"><span class="cho-sau">—</span></span></td>
                 <td class="gop c-tiep" rowspan="3"><span class="nut nut-chinh">Xác nhận xử lý</span><span class="duoi2"><span class="nut nut-ma nut-nho">Đề xuất QL duyệt</span></span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten">Đi muộn 25 phút buổi Listening</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td></tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">05/11</span><button class="ten">Dùng điện thoại trong giờ sau khi đã nhắc</button><span class="me">Kỷ luật lớp học · Miguel Stichini</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon">L</span>Đi muộn 25 phút buổi Listening</button></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">05/11</span><button class="ten"><span class="mon">S</span>Dùng điện thoại trong giờ sau khi đã nhắc</button></div></td></tr>
             </tbody>
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o" rowspan="3"><a class="ten-em" href="#">Lê Thảo Nhi</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>WL 1</button><span>TVV Khoa Thanh</span></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten">Homework W1 NOV</button><span class="me">BTVN · Miguel Stichini</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten"><span class="mon">W2</span>Không nộp Homework Writing Task 2</button></div></td>
                 <td class="gop" rowspan="3"><span class="buoc"><span class="bv cho">Phải xử lý</span><span class="ph">hạn 14/11 · còn 3 ngày</span><span class="gt">Lần này <b>Report 4 + Meeting CX/GĐCN</b></span></span></td>
                 <td class="gop" rowspan="3"><span class="buoc"><span class="cho-sau">—</span></span></td>
                 <td class="gop c-tiep" rowspan="3"><span class="nut nut-chinh">Xác nhận xử lý</span><span class="duoi2"><span class="nut nut-ma nut-nho">Đề xuất QL duyệt</span></span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">09/11</span><button class="ten">Lack of Attendance</button><span class="me">Chuyên cần · Miguel Stichini</span></div></td></tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten">Homework W2 NOV</button><span class="me">BTVN · Miguel Stichini</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">09/11</span><button class="ten"><span class="mon">S</span>Lack of Attendance</button></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten"><span class="mon">S</span>Không nộp Homework Speaking Part 2</button></div></td></tr>
             </tbody>
 
             <tr class="nhom-h"><td colspan="5"><span class="nh-h"><b>Mới, chưa xem</b><span class="dem2">2 HV · 2 vi phạm</span><button class="nut-i" aria-label="Đã xem là gì">ⓘ</button></span></td></tr>
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o"><a class="ten-em" href="#">Mai Hồng Ngọc</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>chưa có</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten">Nói chuyện riêng, nhắc ba lần trong giờ Reading</button><span class="me">Kỷ luật lớp học · Trần Thị Thanh Hằng</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten"><span class="mon">R</span>Nói chuyện riêng, nhắc ba lần trong giờ Reading</button></div></td>
                 <td class="gop"><span class="buoc"><span class="bv xem">Chưa xem</span><span class="ph">xem trước 14/11</span></span></td>
                 <td class="gop"><span class="buoc"><span class="cho-sau">—</span></span></td>
                 <td class="gop c-tiep"><span class="nut nut-xem">Đã xem · 1</span><span class="duoi2"><span class="nut nut-ma nut-nho">Xác nhận xử lý</span></span></td>
@@ -381,7 +433,7 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
             <tbody class="lan vua">
               <tr>
                 <td class="gop hv hv-o"><a class="ten-em" href="#">Trần Đức Anh</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>Report 1</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten">Quên sách Cambridge 18</button><span class="me">Kỷ luật lớp học · Đỗ Vũ Tuấn Phong</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten"><span class="mon">W2</span>Quên sách Cambridge 18</button></div></td>
                 <td class="gop" colspan="2" role="status"><span class="da-xem-v"><b>✓ Đã xem 1 vi phạm · 10:42</b></span></td>
                 <td class="gop c-tiep"><span class="da-xem-v"><span class="lk"><button class="link-nho">Hoàn tác</button><button class="link-nho">Xem lại</button></span></span></td>
               </tr>
@@ -391,31 +443,31 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o" rowspan="2"><a class="ten-em" href="#">Hà Trần Phúc</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>WL 2</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten">Quay video bạn trong giờ, đăng lên nhóm lớp</button><span class="me">Thái độ / hành vi · Nguyễn Hoàng Dũng</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Quay video bạn trong giờ, đăng lên nhóm lớp</button></div></td>
                 <td class="gop" rowspan="2"><span class="buoc"><button class="bv dang mo-pn">Đề xuất WL 3 · chờ QL</button><span class="ph">QL trả lời trước 13/11</span></span></td>
                 <td class="gop" rowspan="2"><span class="buoc"><span class="bv cho">Chưa báo</span><span class="ph">hạn 13/11 · TVV Lê Thu</span></span></td>
                 <td class="gop c-tiep" rowspan="2"><span class="ai-lam" style="white-space:nowrap">Chờ QL <b>Phạm Thu Trang</b></span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">09/11</span><button class="ten">Cãi lại giáo viên trong giờ Speaking</button><span class="me">Thái độ / hành vi · Miguel Stichini</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">09/11</span><button class="ten"><span class="mon">S</span>Cãi lại giáo viên trong giờ Speaking</button></div></td></tr>
             </tbody>
 
             <tr class="nhom-h"><td colspan="5"><span class="nh-h"><b>Chờ TVV báo PH</b><span class="dem2">2 HV</span></span></td></tr>
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o" rowspan="3"><a class="ten-em" href="#">Đặng Minh Khôi</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>Report 1</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten">Nghỉ học không báo</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không báo</button></div></td>
                 <td class="gop" rowspan="3"><span class="buoc"><button class="bv xong mo-pn">Report 1 · 09/11</button><span class="ph">Đã xử lý</span></span></td>
-                <td class="gop" rowspan="3"><span class="buoc"><span class="bv cho">Chưa liên hệ được · lần 1</span><span class="ph">10/11 · Gọi điện</span><span class="ph">hạn <b>13/11</b></span>
-                  <span class="trich-ph"><span>Ghi chú</span><span>Gọi hai lần, mẹ không nghe máy. Hẹn gọi lại tối 11/11.</span></span></span></td>
+                <td class="gop" rowspan="3"><span class="buoc"><span class="bv cho">Chưa liên hệ được · lần 1</span><span class="ph">ghi 10/11 · TVV Lê Thu</span><span class="ph">hạn <b>13/11</b></span>
+                  <span class="trich-ph"><span>Nội dung</span><span>Gọi hai lần, mẹ không nghe máy. Hẹn gọi lại tối 11/11.</span></span></span></td>
                 <td class="gop c-tiep" rowspan="3"><span class="ai-lam">Chờ TVV <b>Lê Thu</b></span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten">Không nộp bài Writing Task 1</button><span class="me">BTVN · Lê Minh Khoa</span></div></td></tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">09/11</span><button class="ten">Nghỉ học không báo</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten dang-re"><span class="mon">W1</span>Không nộp bài Writing Task 1</button></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">09/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không báo</button></div></td></tr>
             </tbody>
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o"><a class="ten-em" href="#">Phạm Gia Hân</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>Report 2</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten">Nhờ bạn làm hộ bài Writing Task 2</button><span class="me">Khác · Đỗ Vũ Tuấn Phong</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten"><span class="mon">W2</span>Nhờ bạn làm hộ bài Writing Task 2</button></div></td>
                 <td class="gop"><span class="buoc"><button class="bv xong mo-pn">Report 2 · 10/11</button><span class="ph">Đã xử lý</span></span></td>
                 <td class="gop"><span class="buoc"><span class="bv cho">Chưa báo</span><span class="ph">hạn 14/11</span></span></td>
                 <td class="gop c-tiep"><span class="ai-lam">Chờ TVV <b>Lê Thu</b></span></td>
@@ -426,34 +478,34 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
             <tbody class="lan mo-lan">
               <tr>
                 <td class="gop hv hv-o" rowspan="3"><a class="ten-em" href="#">Nguyễn Quang Huy</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>Report 1</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">02/11</span><button class="ten">Nghỉ học không phép</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">02/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div></td>
                 <td class="gop" rowspan="3"><span class="buoc"><button class="bv xong mo-pn">Report 1 · 05/11</button><span class="ph">Đã xử lý</span></span></td>
-                <td class="gop" rowspan="3"><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">Gọi điện · TVV Lê Thu</span>
-                  <span class="trich-ph"><span>Nội dung</span><span>Em nghỉ 2 buổi không phép, thiếu 1 bài; trung tâm nhắc lần 1 (Report 1).</span><span>PH</span><span>Mẹ xin lỗi, em ốm nhưng quên báo; hứa nhắc em nộp bù trước 12/11.</span></span>
+                <td class="gop" rowspan="3"><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">TVV Lê Thu</span>
+                  <span class="trich-ph"><span>Nội dung</span><span>Em nghỉ 2 buổi không phép, thiếu 1 bài; trung tâm nhắc lần 1 (Report 1). Mẹ xin lỗi, em ốm nhưng quên báo; hứa nhắc em nộp bù trước 12/11.</span></span>
                   <button class="link-nho" aria-expanded="true">▴ Thu gọn</button></span></td>
                 <td class="gop c-tiep" rowspan="3"><span class="ai-lam">✓ Xong</span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten">Thiếu bài Homework W1 NOV</button><span class="me">BTVN · Trần Thị Thanh Hằng</span></div></td></tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten">Nghỉ học không phép</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">R</span>Thiếu bài tập về nhà</button></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div></td></tr>
               <tr class="mo-bph"><td colspan="5"><div class="bph-du">
                 <div class="k-h"><h4>Báo PH · lần Report 1</h4><span class="tags"><span class="tag nhat">hạn <b>09/11</b></span><span class="tag nhat">đúng hạn</span><span class="tag nhat">PH: bà Nguyễn Thị Lan (mẹ)</span></span><span class="phai"><a class="link-nho" href="#">Xem lần xử lý</a></span></div>
-                <div class="lan-ghi"><span class="luc">06/11 09:05<span>TVV Lê Thu</span></span><span class="kq"><span class="bv xong">Đã báo PH</span><span>Gọi điện</span></span>
-                  <dl class="nd" style="margin:0"><dt>Nội dung</dt><dd>Em nghỉ 2 buổi không phép (02/11, 04/11), thiếu bài Homework W1 NOV; trung tâm nhắc lần 1 theo thang (Report 1). Nếu tái phạm sẽ lên Report 2.</dd><dt>PH phản hồi</dt><dd>Mẹ xin lỗi, tuần trước em ốm nhưng nhà quên báo. Mẹ hứa nhắc em nộp bù bài trước 12/11 và xin số GVCN để báo khi em nghỉ.</dd></dl></div>
-                <div class="lan-ghi"><span class="luc">05/11 16:20<span>TVV Lê Thu</span></span><span class="kq"><span class="bv cho">Chưa liên hệ được</span><span>Gọi điện</span></span>
-                  <dl class="nd" style="margin:0"><dt>Ghi chú</dt><dd>Mẹ bận họp, hẹn gọi lại sáng mai.</dd></dl></div>
+                <div class="lan-ghi"><span class="luc">06/11 09:05<span>TVV Lê Thu</span></span><span class="kq"><span class="bv xong">Đã báo PH</span></span>
+                  <dl class="nd" style="margin:0"><dt>Nội dung</dt><dd>Gọi mẹ: em nghỉ 2 buổi không phép (02/11, 04/11), thiếu 1 bài tập về nhà; trung tâm nhắc lần 1 theo thang (Report 1), tái phạm sẽ lên Report 2. Mẹ xin lỗi, tuần trước em ốm nhưng nhà quên báo. Mẹ hứa nhắc em nộp bù bài trước 12/11 và xin số GVCN để báo khi em nghỉ.</dd></dl></div>
+                <div class="lan-ghi"><span class="luc">05/11 16:20<span>TVV Lê Thu</span></span><span class="kq"><span class="bv cho">Chưa liên hệ được</span></span>
+                  <dl class="nd" style="margin:0"><dt>Nội dung</dt><dd>Mẹ bận họp, hẹn gọi lại sáng mai.</dd></dl></div>
               </div></td></tr>
             </tbody>
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o" rowspan="2"><a class="ten-em" href="#">Đỗ Khánh Linh</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>WL 1</button></span></td>
-                <td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten">Bỏ buổi Speaking không xin phép</button><span class="me">Chuyên cần · Miguel Stichini</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">S</span>Bỏ buổi Speaking không xin phép</button></div></td>
                 <td class="gop" rowspan="2"><span class="buoc"><button class="bv xong mo-pn">WL 1 · 06/11</button><span class="ph">Đã xử lý</span></span></td>
-                <td class="gop" rowspan="2"><span class="buoc"><span class="bv xong">Đã báo 07/11</span><span class="ph">Zalo · TVV Lê Thu</span>
-                  <span class="trich-ph"><span>Nội dung</span><span>Gửi thư cảnh cáo WL 1 qua Zalo, nêu 2 vi phạm W1 NOV.</span><span>PH</span><span class="chua">chưa phản hồi</span></span>
+                <td class="gop" rowspan="2"><span class="buoc"><span class="bv xong">Đã báo 07/11</span><span class="ph">TVV Lê Thu</span>
+                  <span class="trich-ph"><span>Nội dung</span><span>Đã gửi thư cảnh cáo WL 1 cho mẹ qua Zalo, nêu 2 vi phạm. Mẹ đã xem, chưa trả lời.</span></span>
                   <button class="link-nho">Xem đủ ▾</button></span></td>
                 <td class="gop c-tiep" rowspan="2"><span class="ai-lam">✓ Xong</span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">05/11</span><button class="ten">Không làm bài kiểm tra từ vựng</button><span class="me">BTVN · Trần Thị Thanh Hằng</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">05/11</span><button class="ten"><span class="mon">R</span>Không làm bài kiểm tra từ vựng</button></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -462,6 +514,11 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
         <h4>Thang · Vũ Hoàng Thanh Lâm<span class="x" aria-label="Đóng">×</span></h4>
         <div class="chuoi-bac"><span class="b qua">Report 1</span><span class="m">›</span><span class="b nay">Report 2</span><span class="m">›</span><span class="b">WL 1</span><span class="m">›</span><span class="b">Report 4 + Meeting</span><span class="m">›</span><span class="b">Report 5</span><span class="m">›</span><span class="b">WL 2</span><span class="m">›</span><span class="b">Report 7</span></div>
         <div class="chan2"><a class="link-nho" href="#k6">Lịch sử của em ›</a><span class="nut nut-nho">Khai / sửa cấp bậc</span></div>
+      </div>
+      <div class="hop-vp" role="tooltip" style="top:1084px;left:268px">
+        <h4><span class="mon">W1</span>Không nộp bài Writing Task 1</h4>
+        <dl class="fld"><dt>Nhóm</dt><dd>BTVN</dd><dt>Xảy ra</dt><dd class="so">06/11</dd><dt>Người ghi</dt><dd>Lê Minh Khoa · 06/11 15:20</dd><dt>Mô tả</dt><dd>Đề Task 1 (bar chart) giao 04/11, hạn 06/11; em không nộp, báo quên vở ở nhà.</dd><dt>Bằng chứng</dt><dd>1 tệp</dd><dt>Trong lần</dt><dd>Report 1 · 09/11</dd></dl>
+        <span class="chan-hop">Bấm để mở · Sửa · Xoá</span>
       </div>
     </div></figure></div>
   </section>
@@ -487,9 +544,9 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <div class="the-lan">
             <div class="d1"><a class="ten-em" href="#">Vũ Hoàng Thanh Lâm</a><button class="chip-bac"><span class="nh">Đã tới</span>Report 1</button></div>
             <div class="ds">
-              <div class="vp1"><span class="ng">02/11</span><button class="ten">Thiếu bài Homework W1 NOV</button></div>
-              <div class="vp1"><span class="ng">04/11</span><button class="ten">Đi muộn 25 phút buổi Listening</button></div>
-              <div class="vp1"><span class="ng">05/11</span><button class="ten">Dùng điện thoại trong giờ sau khi đã nhắc</button></div>
+              <div class="vp1"><span class="ng">02/11</span><button class="ten"><span class="mon">R</span>Thiếu bài tập về nhà</button></div>
+              <div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon">L</span>Đi muộn 25 phút buổi Listening</button></div>
+              <div class="vp1"><span class="ng">05/11</span><button class="ten"><span class="mon">S</span>Dùng điện thoại trong giờ sau khi đã nhắc</button></div>
             </div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><span class="bv qua">Quá hạn 2 ngày</span><span class="ph">hạn 09/11 · lần này <b>Report 2</b></span></span></div>
             <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="cho-sau">—</span></span></div>
@@ -498,7 +555,7 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <div class="nhom-375"><b>Mới, chưa xem</b><span>2 HV · 2 vi phạm</span></div>
           <div class="the-lan">
             <div class="d1"><a class="ten-em" href="#">Mai Hồng Ngọc</a><button class="chip-bac"><span class="nh">Đã tới</span>chưa có</button></div>
-            <div class="ds"><div class="vp1"><span class="ng">10/11</span><button class="ten">Nói chuyện riêng, nhắc ba lần trong giờ Reading</button></div></div>
+            <div class="ds"><div class="vp1"><span class="ng">10/11</span><button class="ten"><span class="mon">R</span>Nói chuyện riêng, nhắc ba lần trong giờ Reading</button></div></div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><span class="bv xem">Chưa xem</span><span class="ph">xem trước 14/11</span></span></div>
             <span class="nut nut-xem">Đã xem · 1</span><span class="duoi2"><span class="nut nut-ma nut-nho">Xác nhận xử lý</span></span>
           </div>
@@ -514,29 +571,29 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <div class="the-lan">
             <div class="d1"><a class="ten-em" href="#">Đặng Minh Khôi</a><button class="chip-bac"><span class="nh">Đã tới</span>Report 1</button></div>
             <div class="ds">
-              <div class="vp1"><span class="ng">04/11</span><button class="ten">Nghỉ học không báo</button></div>
-              <div class="vp1"><span class="ng">06/11</span><button class="ten">Không nộp bài Writing Task 1</button></div>
-              <div class="vp1"><span class="ng">09/11</span><button class="ten">Nghỉ học không báo</button></div>
+              <div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không báo</button></div>
+              <div class="vp1"><span class="ng">06/11</span><button class="ten"><span class="mon">W1</span>Không nộp bài Writing Task 1</button></div>
+              <div class="vp1"><span class="ng">09/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không báo</button></div>
             </div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><button class="bv xong mo-pn">Report 1 · 09/11</button></span></div>
-            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv cho">Chưa liên hệ được · lần 1</span><span class="ph">10/11 · Gọi điện</span><span class="ph">hạn <b>13/11</b></span><span class="trich-ph"><span>Ghi chú</span><span>Gọi hai lần, mẹ không nghe máy. Hẹn gọi lại tối 11/11.</span></span><button class="link-nho">Xem đủ ▾</button></span></div>
+            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv cho">Chưa liên hệ được · lần 1</span><span class="ph">ghi 10/11 · TVV Lê Thu</span><span class="ph">hạn <b>13/11</b></span><span class="trich-ph"><span>Nội dung</span><span>Gọi hai lần, mẹ không nghe máy. Hẹn gọi lại tối 11/11.</span></span><button class="link-nho">Xem đủ ▾</button></span></div>
             <span class="c-tiep"><span class="ai-lam">Chờ TVV <b>Lê Thu</b></span></span>
           </div>
           <div class="nhom-375" style="background:var(--surface)"><b>Xong · 7 ngày</b><span>2 HV</span></div>
           <div class="the-lan mo-lan">
             <div class="d1"><a class="ten-em" href="#">Nguyễn Quang Huy</a><button class="chip-bac"><span class="nh">Đã tới</span>Report 1</button></div>
             <div class="ds">
-              <div class="vp1"><span class="ng">02/11</span><button class="ten">Nghỉ học không phép</button></div>
-              <div class="vp1"><span class="ng">03/11</span><button class="ten">Thiếu bài Homework W1 NOV</button></div>
-              <div class="vp1"><span class="ng">04/11</span><button class="ten">Nghỉ học không phép</button></div>
+              <div class="vp1"><span class="ng">02/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div>
+              <div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">R</span>Thiếu bài tập về nhà</button></div>
+              <div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div>
             </div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><button class="bv xong mo-pn">Report 1 · 05/11</button></span></div>
-            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">Gọi điện · TVV Lê Thu</span><button class="link-nho" aria-expanded="true">▴ Thu gọn</button></span></div>
+            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">TVV Lê Thu</span><button class="link-nho" aria-expanded="true">▴ Thu gọn</button></span></div>
             <div class="bph-du">
-              <div class="lan-ghi"><span class="luc">06/11 09:05 · TVV Lê Thu</span><span class="kq"><span class="bv xong">Đã báo PH</span><span>Gọi điện</span></span>
-                <dl class="nd" style="margin:0"><dt>Nội dung</dt><dd>Em nghỉ 2 buổi không phép (02/11, 04/11), thiếu bài Homework W1 NOV; trung tâm nhắc lần 1 (Report 1).</dd><dt>PH phản hồi</dt><dd>Mẹ xin lỗi, tuần trước em ốm nhưng nhà quên báo; hứa nhắc em nộp bù trước 12/11.</dd></dl></div>
-              <div class="lan-ghi"><span class="luc">05/11 16:20 · TVV Lê Thu</span><span class="kq"><span class="bv cho">Chưa liên hệ được</span><span>Gọi điện</span></span>
-                <dl class="nd" style="margin:0"><dt>Ghi chú</dt><dd>Mẹ bận họp, hẹn gọi lại sáng mai.</dd></dl></div>
+              <div class="lan-ghi"><span class="luc">06/11 09:05 · TVV Lê Thu</span><span class="kq"><span class="bv xong">Đã báo PH</span></span>
+                <dl class="nd" style="margin:0"><dt>Nội dung</dt><dd>Gọi mẹ: em nghỉ 2 buổi không phép (02/11, 04/11), thiếu 1 bài tập về nhà; trung tâm nhắc lần 1 (Report 1). Mẹ xin lỗi, tuần trước em ốm nhưng nhà quên báo; hứa nhắc em nộp bù trước 12/11.</dd></dl></div>
+              <div class="lan-ghi"><span class="luc">05/11 16:20 · TVV Lê Thu</span><span class="kq"><span class="bv cho">Chưa liên hệ được</span></span>
+                <dl class="nd" style="margin:0"><dt>Nội dung</dt><dd>Mẹ bận họp, hẹn gọi lại sáng mai.</dd></dl></div>
             </div>
           </div>
         </div>
@@ -574,9 +631,10 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
             <tr class="nhom-h"><td colspan="4"><span class="nh-h"><b>Mới, chưa xem</b><span class="dem2">2 vi phạm</span><button class="nut-i" aria-label="Đã xem là gì">ⓘ</button></span></td></tr>
             <tbody class="lan">
               <tr>
-                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten" aria-expanded="true">Không nộp bài Writing Task 2 lần hai</button><span class="me">BTVN · Đỗ Vũ Tuấn Phong</span>
+                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten" aria-expanded="true"><span class="mon">W2</span>Không nộp bài Writing Task 2 lần hai</button>
                   <div class="them">
                     <p class="trich">Em hẹn nộp bù bài Writing Task 2 (đề "remote work") trước buổi 10/11 nhưng tới giờ học vẫn chưa nộp; lý do em đưa ra là máy tính hỏng, cũng không nộp bản viết tay.</p>
+                    <div class="bc"><span class="nh">Ghi bởi</span><span>BTVN · Đỗ Vũ Tuấn Phong · 10/11 18:05</span></div>
                     <div class="bc"><span class="nh">Bằng chứng</span><span class="tag nhat">1 tệp ›</span><span class="link-nho">+ Tệp / liên kết</span></div>
                     <div class="hd"><span class="nut nut-nho">Sửa</span><span class="nut nut-nho nut-ma" style="color:var(--bad)">Xoá</span><span class="nut nut-nho nut-xem" style="margin-left:auto">Đã xem vi phạm này</span></div>
                   </div></div></td>
@@ -584,20 +642,20 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
                 <td class="gop" rowspan="2"><span class="buoc"><span class="cho-sau">—</span></span></td>
                 <td class="gop c-tiep" rowspan="2"><span class="nut nut-xem">Đã xem · 2</span><span class="duoi2"><span class="nut nut-ma nut-nho">Xác nhận xử lý</span></span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">11/11</span><button class="ten">Đi muộn 15 phút</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">11/11</span><button class="ten"><span class="mon">L</span>Đi muộn 15 phút</button></div></td></tr>
             </tbody>
             <tr class="nhom-h gap"><td colspan="4"><span class="nh-h"><b>Xong · 7 ngày</b><span class="dem2">1 lần</span></span></td></tr>
             <tbody class="lan">
               <tr>
-                <td class="vpo"><div class="vp1"><span class="ng">02/11</span><button class="ten">Nghỉ học không phép</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">02/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div></td>
                 <td class="gop" rowspan="3"><span class="buoc"><button class="bv xong mo-pn">Report 1 · 05/11</button><span class="ph">Đã xử lý</span></span></td>
-                <td class="gop" rowspan="3"><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">Gọi điện · TVV Lê Thu</span>
-                  <span class="trich-ph"><span>Nội dung</span><span>Em nghỉ 2 buổi không phép, thiếu 1 bài; trung tâm nhắc lần 1 (Report 1).</span><span>PH</span><span>Mẹ xin lỗi, em ốm nhưng quên báo; hứa nhắc em nộp bù trước 12/11.</span></span>
+                <td class="gop" rowspan="3"><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">TVV Lê Thu</span>
+                  <span class="trich-ph"><span>Nội dung</span><span>Em nghỉ 2 buổi không phép, thiếu 1 bài; trung tâm nhắc lần 1 (Report 1). Mẹ xin lỗi, em ốm nhưng quên báo; hứa nhắc em nộp bù trước 12/11.</span></span>
                   <button class="link-nho">Xem đủ · 2 lần ghi ▾</button></span></td>
                 <td class="gop c-tiep" rowspan="3"><span class="ai-lam">✓ Xong</span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten">Thiếu bài Homework W1 NOV</button><span class="me">BTVN · Trần Thị Thanh Hằng</span></div></td></tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten">Nghỉ học không phép</button><span class="me">Chuyên cần · Nguyễn Hoàng Dũng</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">R</span>Thiếu bài tập về nhà</button></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -626,8 +684,8 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <div class="nhom-375"><b>Mới, chưa xem</b><span>2 vi phạm</span></div>
           <div class="the-lan">
             <div class="ds">
-              <div class="vp1"><span class="ng">10/11</span><button class="ten">Không nộp bài Writing Task 2 lần hai</button></div>
-              <div class="vp1"><span class="ng">11/11</span><button class="ten">Đi muộn 15 phút</button></div>
+              <div class="vp1"><span class="ng">10/11</span><button class="ten"><span class="mon">W2</span>Không nộp bài Writing Task 2 lần hai</button></div>
+              <div class="vp1"><span class="ng">11/11</span><button class="ten"><span class="mon">L</span>Đi muộn 15 phút</button></div>
             </div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><span class="bv xem">Chưa xem · 2</span><span class="ph">xem trước 15/11</span></span></div>
             <span class="nut nut-xem">Đã xem · 2</span><span class="duoi2"><span class="nut nut-ma nut-nho">Xác nhận xử lý</span></span>
@@ -635,13 +693,13 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <div class="nhom-375" style="background:var(--surface)"><b>Xong · 7 ngày</b><span>1 lần</span></div>
           <div class="the-lan">
             <div class="ds">
-              <div class="vp1"><span class="ng">02/11</span><button class="ten">Nghỉ học không phép</button></div>
-              <div class="vp1"><span class="ng">03/11</span><button class="ten">Thiếu bài Homework W1 NOV</button></div>
-              <div class="vp1"><span class="ng">04/11</span><button class="ten">Nghỉ học không phép</button></div>
+              <div class="vp1"><span class="ng">02/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div>
+              <div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">R</span>Thiếu bài tập về nhà</button></div>
+              <div class="vp1"><span class="ng">04/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không phép</button></div>
             </div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><button class="bv xong mo-pn">Report 1 · 05/11</button></span></div>
-            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">Gọi điện · TVV Lê Thu</span>
-              <span class="trich-ph"><span>Nội dung</span><span>Em nghỉ 2 buổi không phép, thiếu 1 bài; trung tâm nhắc lần 1 (Report 1).</span><span>PH</span><span>Mẹ xin lỗi, em ốm nhưng quên báo; hứa nhắc em nộp bù trước 12/11.</span></span>
+            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv xong">Đã báo 06/11</span><span class="ph">TVV Lê Thu</span>
+              <span class="trich-ph"><span>Nội dung</span><span>Em nghỉ 2 buổi không phép, thiếu 1 bài; trung tâm nhắc lần 1 (Report 1). Mẹ xin lỗi, em ốm nhưng quên báo; hứa nhắc em nộp bù trước 12/11.</span></span>
               <button class="link-nho">Xem đủ · 2 lần ghi ▾</button></span></div>
           </div>
         </div>
@@ -664,7 +722,7 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <div class="nhom-375"><b>Mới, chưa xem</b><span>1 vi phạm</span></div>
           <div class="the-lan mo-lan">
             <div class="ds">
-              <div class="vp1"><span class="ng">11/11</span><button class="ten" aria-expanded="true">Không làm bài nghe ở nhà</button>
+              <div class="vp1"><span class="ng">11/11</span><button class="ten" aria-expanded="true"><span class="mon">L</span>Không làm bài nghe ở nhà</button>
                 <div class="them"><p class="trich hai">Bài Listening Test 3 (Cam 18) giao 09/11, em không làm, lý do quên.</p><div class="hd"><span class="nut nut-nho">Sửa</span><span class="nut nut-nho nut-ma" style="color:var(--bad)">Xoá</span></div></div></div>
             </div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><span class="bv xem">Chưa xem</span><span class="ph">xem trước 15/11</span></span></div>
@@ -673,12 +731,12 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <div class="nhom-375" style="background:var(--surface)"><b>Xong · 7 ngày</b><span>1 lần</span></div>
           <div class="the-lan">
             <div class="ds">
-              <div class="vp1"><span class="ng">03/11</span><button class="ten">Bỏ buổi Speaking không xin phép</button></div>
-              <div class="vp1"><span class="ng">05/11</span><button class="ten">Không làm bài kiểm tra từ vựng</button></div>
+              <div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">S</span>Bỏ buổi Speaking không xin phép</button></div>
+              <div class="vp1"><span class="ng">05/11</span><button class="ten"><span class="mon">R</span>Không làm bài kiểm tra từ vựng</button></div>
             </div>
             <div class="b2"><span>GVCN xử lý</span><span class="buoc"><button class="bv xong mo-pn">WL 1 · 06/11</button></span></div>
-            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv xong">Đã báo 07/11</span><span class="ph">Zalo · TVV Lê Thu</span>
-              <span class="trich-ph"><span>Nội dung</span><span>Gửi thư cảnh cáo WL 1 qua Zalo, nêu 2 vi phạm W1 NOV.</span><span>PH</span><span class="chua">chưa phản hồi</span></span><button class="link-nho">Xem đủ ▾</button></span></div>
+            <div class="b2"><span>TVV báo PH</span><span class="buoc"><span class="bv xong">Đã báo 07/11</span><span class="ph">TVV Lê Thu</span>
+              <span class="trich-ph"><span>Nội dung</span><span>Đã gửi thư cảnh cáo WL 1 cho mẹ qua Zalo, nêu 2 vi phạm. Mẹ đã xem, chưa trả lời.</span></span><button class="link-nho">Xem đủ ▾</button></span></div>
           </div>
         </div>
       </div>
@@ -689,8 +747,7 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
   <section class="khu" id="k5">
     <h2>K5 · Cùng một lần, bốn vai — Bước tiếp đúng vai + panel TVV ghi kết quả (form tách trường)</h2>
     <p class="ghi"><span class="so-mk">1</span>một nút cho người đang xem; không phải việc của mình → ghi <b>ai đang làm</b>, không nút
-      · <span class="so-mk">2</span>panel Báo PH giữ (Công việc, tab lớp, tab HV cùng một panel); form thêm <b>Kênh</b>, tách <b>Đã báo PH</b> / <b>PH phản hồi</b> (luật L1 đã ghi "phụ huynh phản hồi")
-      · <span class="so-mk">3</span>Khánh Linh "PH chưa phản hồi": TVV có chữ "+ Ghi phản hồi PH" — <b>không</b> mở lại việc, không đổi hạn [XM câu 1].</p>
+      · <span class="so-mk">2</span>panel Báo PH giữ (Công việc, tab lớp, tab HV cùng một panel); form: <b>Kết quả · Ngày · Nội dung</b> — một ô Nội dung cho mọi kết quả (chủ SP 11/11: không Kênh, không ô PH phản hồi riêng).</p>
     <div class="hang-khung"><figure><figcaption>K5a · Đặng Minh Khôi (lần Report 1) — ô Bước tiếp theo vai</figcaption>
     <div class="man toi" style="width:620px;height:auto;padding:14px">
       <div class="the">
@@ -702,8 +759,7 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
           <tr><td>GVBM</td><td class="c-tiep"><span class="ai-lam">Chờ TVV <b>Lê Thu</b></span></td><td class="mo">chỉ đọc</td></tr>
           <tr><td colspan="3" style="font-weight:600;color:var(--text-dim)">Hà Trần Phúc (Đề xuất WL 3 chờ QL) — vai QL</td></tr>
           <tr><td>QL</td><td class="c-tiep"><span class="nut nut-chinh">Duyệt</span><span class="duoi2" style="justify-content:space-between"><span class="nut nut-ma nut-nho">Từ chối…</span><span class="nut nut-ma nut-nho">Xem</span></span></td><td class="mo">như web</td></tr>
-          <tr><td colspan="3" style="font-weight:600;color:var(--text-dim)">Đỗ Khánh Linh (đã báo, PH chưa phản hồi) — ô ③ vai TVV</td></tr>
-          <tr><td>TVV Lê Thu</td><td colspan="2"><span class="buoc"><span class="bv xong">Đã báo 07/11</span><span class="ph">Zalo · TVV Lê Thu</span><span class="trich-ph"><span>PH</span><span class="chua">chưa phản hồi</span></span><button class="link-nho">+ Ghi phản hồi PH</button></span></td></tr>
+          
         </table>
       </div>
     </div></figure>
@@ -712,17 +768,21 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
       <div class="pn2 pn-tvv">
         <div class="pn-dau"><h3>Báo PH · Đặng Minh Khôi</h3><span class="tag nhat">CP FT 116</span><span class="nut nut-nho" aria-label="Thao tác phụ">⋯</span><span class="x" aria-label="Đóng">×</span></div>
         <div class="pn-than">
-          <div class="dong-han"><span>Hạn</span><span class="gia-han"><b>13/11</b><span class="nguon">mặc định · còn 2 ngày</span><span class="nut nut-nho">Sửa hạn</span></span></div>
-          <dl class="fld" style="margin-top:4px"><dt>Lần xử lý</dt><dd><b>Report 1</b></dd><dt>Người lưu</dt><dd>GVCN Nguyễn Hoàng Dũng</dd><dt>Lúc lưu</dt><dd class="so">09/11 17:40</dd><dt>Vi phạm</dt><dd><span class="so mo">04/11</span> Nghỉ học không báo<br><span class="so mo">06/11</span> Không nộp bài Writing Task 1<br><span class="so mo">09/11</span> Nghỉ học không báo</dd><dt>Phụ huynh</dt><dd>Đặng Thu Hà (mẹ)</dd><dt>Điện thoại</dt><dd><span class="nut nut-nho so">📞 0912 345 678</span></dd></dl>
-          <div class="truong"><span class="nh">Kết quả</span><span class="lua"><label class="chon"><input type="radio" checked> Đã báo PH</label><label><input type="radio"> Chưa liên hệ được</label></span></div>
-          <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px">
-            <div class="truong"><span class="nh">Ngày</span><span class="o-ngay" style="border-color:var(--o-vien);box-shadow:none"><input value="11/11/2026" aria-label="Ngày"><button aria-label="Chọn ngày">▦</button></span></div>
-            <div class="truong"><span class="nh">Kênh</span><span class="lua nho"><label class="chon">Gọi điện</label><label>Zalo</label><label>Gặp trực tiếp</label><label>Khác</label></span></div>
+          <div class="tien-trinh">
+            <div><span class="nh"><span class="b">1</span>Vi phạm</span><span class="gt">3 vi phạm</span><span class="ph">04/11 – 09/11</span></div>
+            <div><span class="nh"><span class="b">2</span>GVCN xử lý</span><span class="bv xong">Report 1 · 09/11</span><span class="ph">GVCN Nguyễn Hoàng Dũng lưu 17:40</span></div>
+            <div class="nay"><span class="nh"><span class="b">3</span>TVV báo PH<span class="ban">Bạn</span></span><span class="bv cho">Chưa liên hệ được · lần 1</span><span class="ph">ghi 10/11</span></div>
           </div>
-          <div class="truong"><label>Nội dung <span class="tc">*</span></label><textarea class="o" rows="2">Em nghỉ 2 buổi không báo, thiếu bài Writing Task 1; trung tâm nhắc lần 1 (Report 1).</textarea></div>
-          <div class="truong"><label>PH phản hồi</label><textarea class="o" rows="2" placeholder="PH nói gì, hẹn gì">Bố nhận, sẽ cho em đi học đều; xin nghỉ buổi 14/11 vì về quê.</textarea></div>
+          <div class="dong-han"><span>Hạn</span><span class="gia-han"><b>13/11</b><span class="nguon">mặc định · còn 2 ngày</span><span class="nut nut-nho">Sửa hạn</span></span></div>
+          <dl class="fld" style="margin-top:4px"><dt>Vi phạm</dt><dd><span class="so mo">04/11</span> Nghỉ học không báo<br><span class="so mo">06/11</span> <span class="mon">W1</span>Không nộp bài Writing Task 1<br><span class="so mo">09/11</span> Nghỉ học không báo</dd><dt>Ghi chú GVCN</dt><dd>Em nghỉ 2 buổi liền không báo; cần PH xác nhận lý do.</dd><dt>Phụ huynh</dt><dd>Đặng Thu Hà (mẹ)</dd><dt>Điện thoại</dt><dd><span class="nut nut-nho so">📞 0912 345 678</span></dd></dl>
+          <div class="truong"><span class="nh">Kết quả</span><span class="lua"><label class="chon"><input type="radio" checked> Đã báo PH</label><label><input type="radio"> Chưa liên hệ được</label></span></div>
+          <div>
+            <div class="truong"><span class="nh">Ngày</span><span class="o-ngay" style="border-color:var(--o-vien);box-shadow:none"><input value="11/11/2026" aria-label="Ngày"><button aria-label="Chọn ngày">▦</button></span></div>
+            
+          </div>
+          <div class="truong"><label>Nội dung <span class="tc">*</span></label><textarea class="o" rows="3" placeholder="Đã báo PH gì, PH nói gì, hẹn gì">Gọi bố: em nghỉ 2 buổi không báo, thiếu bài Writing Task 1; trung tâm nhắc lần 1 (Report 1). Bố nhận, sẽ cho em đi học đều; xin nghỉ buổi 14/11 vì về quê.</textarea></div>
           <details style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px" open><summary class="mo" style="font:600 14px var(--phong)">Lịch sử (1)</summary>
-            <div class="lsu" style="margin-top:6px"><div><span class="ng">10/11 19:12</span><span><b>Chưa liên hệ được</b> · Gọi điện<span class="ph">TVV Lê Thu · Gọi hai lần, mẹ không nghe máy. Hẹn gọi lại tối 11/11.</span></span></div></div></details>
+            <div class="lsu" style="margin-top:6px"><div><span class="ng">10/11 19:12</span><span><b>Chưa liên hệ được</b><span class="ph">TVV Lê Thu · Gọi hai lần, mẹ không nghe máy. Hẹn gọi lại tối 11/11.</span></span></div></div></details>
         </div>
         <div class="pn-chan"><span class="trai">● Nháp</span><span class="nut">Lưu</span><span class="nut nut-chinh">Lưu · việc tiếp ›</span></div>
       </div>
@@ -750,7 +810,7 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o"><a class="ten-em" href="#">Trần Đức Anh</a></td>
-                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten">Quên sách Cambridge 18</button><span class="me">Kỷ luật lớp học · Đỗ Vũ Tuấn Phong</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">10/11</span><button class="ten"><span class="mon">W2</span>Quên sách Cambridge 18</button></div></td>
                 <td class="gop"><span class="buoc"><span class="bv xam">Đã xem</span><span class="ph">11/11 10:42 · Nguyễn Hoàng Dũng</span></span></td>
                 <td class="gop"><span class="buoc"><span class="cho-sau">—</span></span></td>
                 <td class="gop c-tiep"><button class="link-nho">Bỏ xem</button></td>
@@ -759,17 +819,17 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o" rowspan="2"><a class="ten-em" href="#">Đỗ Khánh Linh</a></td>
-                <td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten">Bỏ buổi Speaking không xin phép</button><span class="me">Chuyên cần · Miguel Stichini</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">S</span>Bỏ buổi Speaking không xin phép</button></div></td>
                 <td class="gop" rowspan="2"><span class="buoc"><button class="bv xong mo-pn">WL 1 · 06/11</button><span class="ph">Đã xử lý · 1 tệp</span></span></td>
-                <td class="gop" rowspan="2"><span class="buoc"><span class="bv xong">Đã báo 07/11</span><span class="ph">Zalo · TVV Lê Thu</span><span class="trich-ph"><span>Nội dung</span><span>Gửi thư cảnh cáo WL 1 qua Zalo, nêu 2 vi phạm W1 NOV.</span><span>PH</span><span class="chua">chưa phản hồi</span></span><button class="link-nho">Xem đủ ▾</button></span></td>
+                <td class="gop" rowspan="2"><span class="buoc"><span class="bv xong">Đã báo 07/11</span><span class="ph">TVV Lê Thu</span><span class="trich-ph"><span>Nội dung</span><span>Đã gửi thư cảnh cáo WL 1 cho mẹ qua Zalo, nêu 2 vi phạm. Mẹ đã xem, chưa trả lời.</span></span><button class="link-nho">Xem đủ ▾</button></span></td>
                 <td class="gop c-tiep" rowspan="2"><span class="ai-lam">—</span></td>
               </tr>
-              <tr><td class="vpo"><div class="vp1"><span class="ng">05/11</span><button class="ten">Không làm bài kiểm tra từ vựng</button><span class="me">BTVN · Trần Thị Thanh Hằng</span></div></td></tr>
+              <tr><td class="vpo"><div class="vp1"><span class="ng">05/11</span><button class="ten"><span class="mon">R</span>Không làm bài kiểm tra từ vựng</button></div></td></tr>
             </tbody>
             <tbody class="lan">
               <tr>
                 <td class="gop hv hv-o"><a class="ten-em" href="#">Kiều Minh Đức</a></td>
-                <td class="vpo"><div class="vp1"><span class="ng">28/10</span><button class="ten">Xô đẩy bạn trong giờ nghỉ, bạn bị trầy tay</button><span class="me">Thái độ / hành vi · Nguyễn Hoàng Dũng</span></div></td>
+                <td class="vpo"><div class="vp1"><span class="ng">28/10</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Xô đẩy bạn trong giờ nghỉ, bạn bị trầy tay</button></div></td>
                 <td class="gop"><span class="buoc"><button class="bv xam mo-pn">Đã thu hồi</button><span class="gt">Đình chỉ học tạm thời</span><span class="ph">QL duyệt thu hồi 31/10</span></span></td>
                 <td class="gop"><span class="buoc"><span class="bv xam">Đã bỏ</span><span class="ph">Xử lý đã thu hồi</span></span></td>
                 <td class="gop c-tiep"><span class="ai-lam">—</span></td>
@@ -807,6 +867,148 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
     </div></figure></div>
   </section>
 
+  <!-- ===================== K8 ===================== -->
+  <section class="khu" id="k8">
+    <h2>K8 · Panel ở trang Công việc — cùng ngôn ngữ, cùng thứ tự ①②③ với tab Ý thức</h2>
+    <p class="ghi"><span class="so-mk">1</span>mọi panel việc Ý thức (Xác nhận xử lý · Xem vi phạm mới · Báo PH — K5b) mở đầu bằng <b>dải tiến trình ① Vi phạm → ② GVCN xử lý → ③ TVV báo PH</b>, bước đang làm nền nhấn + chữ <b>"Bạn"</b> (không chỉ màu)
+      · <span class="so-mk">2</span>vi phạm trong panel cùng dòng với tab: ngày · chip môn · tên
+      · <span class="so-mk">3</span>"Xem vi phạm mới" (web hiện nhét cả tab hồ sơ HV vào panel) → panel gọn: tiến trình + vi phạm + Đã xem / Xác nhận xử lý; "Hồ sơ Ý thức ›" sang trang khi cần đủ
+      · <span class="so-mk">4</span>trường form giữ như web (bậc tự điền, Ngày, Người thực hiện, Mô tả; Báo PH: Kết quả, Ngày, Nội dung).</p>
+    <div class="hang-khung"><figure><figcaption>K8a · Công việc · GVCN · Xác nhận xử lý · 1440 tối</figcaption>
+    <div class="man toi" style="height:auto">
+      <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m">Tổng quan</span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m dang">Công việc <span class="so-nav">12</span></span><span class="m">Phân tích</span><span class="phai"><span>Nguyễn Hoàng Dũng</span></span></div>
+      <div class="cv">
+        <div class="cv-ds">
+          <div class="dai">Ý thức · 4 việc</div>
+          <div class="v chon"><b>Xử lý vi phạm · Vũ Hoàng Thanh Lâm</b><span class="bv qua">Quá hạn 2 ngày</span><span class="ph">CP FT 116 · 3 vi phạm</span></div>
+          <div class="v"><b>Xử lý vi phạm · Lê Thảo Nhi</b><span class="bv cho">hạn 14/11</span><span class="ph">CP FT 116 · 3 vi phạm</span></div>
+          <div class="v"><b>Xem vi phạm mới · Mai Hồng Ngọc</b><span class="ph so">xem trước 14/11</span><span class="ph">CP FT 116 · 1 vi phạm</span></div>
+          <div class="v"><b>Đánh dấu đã thực hiện · Trịnh Bảo Châu</b><span class="ph so">hạn 15/11</span><span class="ph">CP FT 116 · WL 3 đã duyệt</span></div>
+        </div>
+        <div class="pn2 pn-tvv rong-pn">
+          <div class="pn-dau"><h3>Xác nhận xử lý · <a href="#">Vũ Hoàng Thanh Lâm</a></h3><span class="tag nhat">CP FT 116</span><span class="x" aria-label="Đóng">×</span></div>
+          <div class="pn-than">
+            <div class="tien-trinh">
+              <div><span class="nh"><span class="b">1</span>Vi phạm</span><span class="gt">3 vi phạm</span><span class="ph">02/11 – 05/11</span></div>
+              <div class="nay"><span class="nh"><span class="b">2</span>GVCN xử lý<span class="ban">Bạn</span></span><span class="bv qua">Quá hạn 2 ngày</span><span class="ph">hạn 09/11 · lần này <b>Report 2</b></span></div>
+              <div><span class="nh"><span class="b">3</span>TVV báo PH</span><span class="gt" style="font-weight:500;color:var(--text-dim)">Sau khi lưu</span><span class="ph">việc cho TVV Lê Thu, hạn 5 ngày</span></div>
+            </div>
+            <p class="pn-muc">Vi phạm đưa vào lần này <span class="dem">3</span></p>
+            <div class="ds-pn">
+              <label><input type="checkbox" class="o-tich" checked><span class="ng">02/11</span><span><span class="mon">R</span>Thiếu bài tập về nhà</span></label>
+              <label><input type="checkbox" class="o-tich" checked><span class="ng">04/11</span><span><span class="mon">L</span>Đi muộn 25 phút buổi Listening</span></label>
+              <label><input type="checkbox" class="o-tich" checked><span class="ng">05/11</span><span><span class="mon">S</span>Dùng điện thoại trong giờ sau khi đã nhắc</span></label>
+            </div>
+            <dl class="fld" style="margin-top:12px"><dt>Bậc xử lý</dt><dd><b>Report 2</b> <span class="mo2" style="font-size:13px">tự điền theo thang</span></dd>
+              <dt>Ngày *</dt><dd><span class="o-ngay" style="border-color:var(--o-vien);box-shadow:none"><input value="11/11/2026" aria-label="Ngày"><button aria-label="Chọn ngày">▦</button></span></dd>
+              <dt>Người thực hiện *</dt><dd><span class="o" style="display:flex;align-items:center;max-width:320px">Nguyễn Hoàng Dũng</span></dd>
+              <dt>Mô tả *</dt><dd><textarea class="o" rows="2">Gặp em sau giờ học, ký Report 2; nhắc nộp bù bài tập trước 14/11.</textarea></dd></dl>
+          </div>
+          <div class="pn-chan"><span class="trai">● Nháp</span><span class="nut nut-ma">Đề xuất QL duyệt</span><span class="nut nut-chinh">Xác nhận xử lý</span></div>
+        </div>
+      </div>
+    </div></figure>
+    <figure><figcaption>K8b · Công việc · GVCN · Xem vi phạm mới (thay tab HV nhét trong panel)</figcaption>
+    <div class="man toi" style="width:auto;height:auto;padding:14px">
+      <div class="pn2 pn-tvv">
+        <div class="pn-dau"><h3>Xem vi phạm mới · <a href="#">Mai Hồng Ngọc</a></h3><span class="tag nhat">CP FT 116</span><span class="x" aria-label="Đóng">×</span></div>
+        <div class="pn-than">
+          <div class="tien-trinh">
+            <div><span class="nh"><span class="b">1</span>Vi phạm</span><span class="gt">1 vi phạm</span><span class="ph">10/11 · Trần Thị Thanh Hằng ghi</span></div>
+            <div class="nay"><span class="nh"><span class="b">2</span>GVCN xử lý<span class="ban">Bạn</span></span><span class="bv xem">Chưa xem</span><span class="ph">xem trước 14/11</span></div>
+            <div><span class="nh"><span class="b">3</span>TVV báo PH</span><span class="gt" style="font-weight:500;color:var(--text-dim)">—</span><span class="ph">chỉ khi xử lý</span></div>
+          </div>
+          <p class="pn-muc">Vi phạm</p>
+          <dl class="fld"><dt>10/11</dt><dd><span class="mon">R</span><b>Nói chuyện riêng, nhắc ba lần trong giờ Reading</b><br><span class="mo" style="font-size:14px">Đã nhắc ba lần, em vẫn quay xuống nói chuyện với bạn bàn sau.</span></dd><dt>Đã tới</dt><dd>chưa có · bậc kế <b>Report 1</b></dd></dl>
+          <div style="margin-top:8px"><a class="link-nho" href="#">Hồ sơ Ý thức của em ›</a></div>
+        </div>
+        <div class="pn-chan"><span class="trai"></span><span class="nut nut-ma">Xác nhận xử lý</span><span class="nut nut-xem">Đã xem · 1</span></div>
+      </div>
+    </div></figure></div>
+    <div class="hang-khung" style="margin-top:16px"><figure><figcaption>K8c · 375 · GVCN · Xác nhận xử lý</figcaption>
+    <div class="dt toi dai">
+      <div class="pn-tvv">
+        <div class="pn-dau"><h3>Xác nhận xử lý · <a href="#">Vũ Hoàng Thanh Lâm</a></h3><span class="x" aria-label="Đóng">×</span></div>
+        <div class="pn-than">
+          <div class="tien-trinh">
+            <div><span class="nh"><span class="b">1</span>Vi phạm</span><span class="gt">3 vi phạm</span><span class="ph">02/11 – 05/11</span></div>
+            <div class="nay"><span class="nh"><span class="b">2</span>GVCN</span><span class="gt"><span class="bv qua">Quá hạn 2 ngày</span> <span class="ban">Bạn</span></span><span class="ph">hạn 09/11 · lần này <b>Report 2</b></span></div>
+            <div><span class="nh"><span class="b">3</span>Báo PH</span><span class="gt" style="font-weight:500;color:var(--text-dim)">Sau khi lưu</span><span class="ph">việc cho TVV Lê Thu</span></div>
+          </div>
+          <p class="pn-muc">Vi phạm đưa vào lần này <span class="dem">3</span></p>
+          <div class="ds-pn">
+            <label><input type="checkbox" class="o-tich" checked><span class="ng">02/11</span><span><span class="mon">R</span>Thiếu bài tập về nhà</span></label>
+            <label><input type="checkbox" class="o-tich" checked><span class="ng">04/11</span><span><span class="mon">L</span>Đi muộn 25 phút buổi Listening</span></label>
+            <label><input type="checkbox" class="o-tich" checked><span class="ng">05/11</span><span><span class="mon">S</span>Dùng điện thoại trong giờ sau khi đã nhắc</span></label>
+          </div>
+          <dl class="fld" style="margin-top:10px"><dt>Bậc xử lý</dt><dd><b>Report 2</b></dd><dt>Ngày *</dt><dd><span class="o-ngay" style="border-color:var(--o-vien);box-shadow:none;height:44px"><input value="11/11/2026" aria-label="Ngày"><button aria-label="Chọn ngày" style="height:44px;width:44px">▦</button></span></dd><dt>Người thực hiện *</dt><dd><span class="o" style="display:flex;align-items:center">Nguyễn Hoàng Dũng</span></dd><dt>Mô tả *</dt><dd><textarea class="o" rows="2">Gặp em sau giờ học, ký Report 2.</textarea></dd></dl>
+        </div>
+        <div class="pn-chan"><span class="nut nut-chinh">Xác nhận xử lý</span><span class="nut nut-ma">Đề xuất QL duyệt</span></div>
+      </div>
+    </div></figure>
+    <figure><figcaption>K8d · 375 · TVV · Báo PH</figcaption>
+    <div class="dt toi dai">
+      <div class="pn-tvv">
+        <div class="pn-dau"><h3>Báo PH · <a href="#">Đặng Minh Khôi</a></h3><span class="nut nut-nho" aria-label="Thao tác phụ">⋯</span><span class="x" aria-label="Đóng">×</span></div>
+        <div class="pn-than">
+          <div class="tien-trinh">
+            <div><span class="nh"><span class="b">1</span>Vi phạm</span><span class="gt">3 vi phạm</span><span class="ph">04/11 – 09/11</span></div>
+            <div><span class="nh"><span class="b">2</span>GVCN</span><span class="gt"><span class="bv xong">Report 1 · 09/11</span></span><span class="ph">GVCN Nguyễn Hoàng Dũng</span></div>
+            <div class="nay"><span class="nh"><span class="b">3</span>Báo PH</span><span class="gt"><span class="bv cho">Chưa liên hệ được · lần 1</span> <span class="ban">Bạn</span></span><span class="ph">hạn <b>13/11</b> · mặc định</span></div>
+          </div>
+          <dl class="fld" style="margin-top:10px"><dt>Phụ huynh</dt><dd>Đặng Thu Hà (mẹ)</dd><dt>Điện thoại</dt><dd><span class="nut nut-nho so">📞 0912 345 678</span></dd></dl>
+          <div class="truong"><span class="nh">Kết quả</span><span class="lua"><label class="chon"><input type="radio" checked> Đã báo PH</label><label><input type="radio"> Chưa liên hệ được</label></span></div>
+          <div class="truong"><span class="nh">Ngày</span><span class="o-ngay" style="border-color:var(--o-vien);box-shadow:none;height:44px"><input value="11/11/2026" aria-label="Ngày"><button aria-label="Chọn ngày" style="height:44px;width:44px">▦</button></span></div>
+          <div class="truong"><label>Nội dung <span class="tc">*</span></label><textarea class="o" rows="4" placeholder="Đã báo PH gì, PH nói gì, hẹn gì">Gọi bố: em nghỉ 2 buổi không báo, thiếu bài Writing Task 1; trung tâm nhắc lần 1 (Report 1). Bố nhận, sẽ cho em đi học đều.</textarea></div>
+        </div>
+        <div class="pn-chan"><span class="nut">Lưu</span><span class="nut nut-chinh">Lưu · việc tiếp ›</span></div>
+      </div>
+    </div></figure></div>
+  </section>
+
+  <!-- ===================== K9 ===================== -->
+  <section class="khu" id="k9">
+    <h2>K9 · "Chờ QL duyệt" / "QL từ chối" — hiện ở đâu (để hỏi lại chủ SP)</h2>
+    <p class="ghi"><span class="so-mk">1</span><b>Web hiện tại</b> (seed 11/11, cô Hà, MB FT 101 › Ý thức › Lịch sử): hai dòng viền vàng là lần xử lý <b>QL từ chối</b> (Kiều Minh Đức · Đình chỉ học tạm thời) và <b>Chờ QL duyệt</b> (Lương Gia Bảo · WL 3) — chúng nằm trong Lịch sử dù việc chưa xong, và không thuộc chip lọc nào (Tất cả 15 ≠ Đã xem 5 + Đã xử lý 8 + Đã thu hồi 0)
+      · <span class="so-mk">2</span><b>V2</b>: hai trường hợp này ở <b>Cần làm</b> (K9b): Chờ QL duyệt có nhóm riêng; QL từ chối → vi phạm về lại "Bắt buộc xử lý" (luật V4-10), ô ② ghi "QL từ chối WL 3" + lý do, GVCN làm tiếp
+      · <span class="so-mk">3</span>Câu hỏi: Lịch sử chỉ còn <b>Đã xem · Đã xử lý · Đã thu hồi</b> (K6), không lặp hai trường hợp này — đồng ý?</p>
+    <div class="hang-khung" style="flex-direction:column"><figure><figcaption>K9a · Web hiện tại — Lịch sử (ảnh chụp seed)</figcaption>
+      <div style="position:relative;width:1400px"><img class="anh-web" src="anh/hien-trang-lich-su.png" alt="Lịch sử Ý thức web hiện tại, có dòng QL từ chối và Chờ QL duyệt"><span style="position:absolute;left:2px;top:106px;width:1394px;height:129px;outline:3px solid #d9a93a;border-radius:4px"></span><span style="position:absolute;left:2px;top:297px;width:1394px;height:128px;outline:3px solid #d9a93a;border-radius:4px"></span><span style="position:absolute;left:470px;top:20px;width:420px;height:36px;outline:3px dashed #d9a93a;border-radius:6px"></span></div>
+    </figure>
+    <figure><figcaption>K9b · V2 — Cần làm</figcaption>
+    <div class="man toi" style="height:auto;padding:14px">
+      <div class="the">
+        <table class="ytv">
+          <colgroup><col style="width:200px"><col><col style="width:232px"><col style="width:330px"><col style="width:180px"></colgroup>
+          <thead><tr><th>Học viên</th><th><span class="b">1</span>Vi phạm</th><th><span class="b">2</span>GVCN xử lý</th><th><span class="b">3</span>TVV báo PH</th><th>Bước tiếp</th></tr></thead>
+          <tr class="nhom-h bb"><td colspan="5"><span class="nh-h"><b>Bắt buộc xử lý</b><span class="dem2">1 HV · 3 vi phạm</span><button class="nut-i" aria-label="Luật bắt buộc xử lý">ⓘ</button></span></td></tr>
+          <tbody class="lan danh-dau">
+            <tr>
+              <td class="gop hv hv-o" rowspan="3"><a class="ten-em" href="#">Ngô Thanh Tùng</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>Report 5</button></span></td>
+              <td class="vpo"><div class="vp1"><span class="ng">03/11</span><button class="ten"><span class="mon">S</span>Bỏ buổi Speaking không xin phép</button></div></td>
+              <td class="gop" rowspan="3"><span class="buoc"><button class="bv qua mo-pn">QL từ chối WL 3</button><span class="ph">10/11 · QL Phạm Thu Trang</span><span class="trich-ph"><span>Lý do</span><span>Chưa có Report 5 tuần này; xử lý theo thang trước.</span></span><button class="link-nho">Xem đủ ▾</button><span class="ph">hạn mới 14/11</span></span></td>
+              <td class="gop" rowspan="3"><span class="buoc"><span class="bv xam">Đã bỏ</span><span class="ph">QL từ chối xử lý</span></span></td>
+              <td class="gop c-tiep" rowspan="3"><span class="nut nut-chinh">Xác nhận xử lý</span><span class="duoi2"><span class="nut nut-ma nut-nho">Đề xuất QL duyệt</span></span></td>
+            </tr>
+            <tr><td class="vpo"><div class="vp1"><span class="ng">05/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Nghỉ học không báo</button></div></td></tr>
+            <tr><td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten"><span class="mon">W1</span>Không nộp bài Writing Task 1</button></div></td></tr>
+          </tbody>
+          <tr class="nhom-h"><td colspan="5"><span class="nh-h"><b>Chờ QL duyệt</b><span class="dem2">1 HV</span></span></td></tr>
+          <tbody class="lan danh-dau">
+            <tr>
+              <td class="gop hv hv-o" rowspan="2"><a class="ten-em" href="#">Hà Trần Phúc</a><span class="phu"><button class="chip-bac"><span class="nh">Đã tới</span>WL 2</button></span></td>
+              <td class="vpo"><div class="vp1"><span class="ng">06/11</span><button class="ten"><span class="mon an" aria-hidden="true"></span>Quay video bạn trong giờ, đăng lên nhóm lớp</button></div></td>
+              <td class="gop" rowspan="2"><span class="buoc"><button class="bv dang mo-pn">Đề xuất WL 3 · chờ QL</button><span class="ph">QL trả lời trước 13/11</span></span></td>
+              <td class="gop" rowspan="2"><span class="buoc"><span class="bv cho">Chưa báo</span><span class="ph">hạn 13/11 · TVV Lê Thu</span></span></td>
+              <td class="gop c-tiep" rowspan="2"><span class="ai-lam" style="white-space:nowrap">Chờ QL <b>Phạm Thu Trang</b></span></td>
+            </tr>
+            <tr><td class="vpo"><div class="vp1"><span class="ng">09/11</span><button class="ten"><span class="mon">S</span>Cãi lại giáo viên trong giờ Speaking</button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div></figure></div>
+  </section>
+
   <!-- ===================== BẢNG ===================== -->
   <section class="khu" id="bang">
     <h2>Bảng thao tác TRƯỚC → SAU (không mất thao tác)</h2>
@@ -820,11 +1022,10 @@ tr.mo-bph > td { padding:0 16px 16px !important; background:var(--accent-soft); 
       <tr><td>Sửa · Xoá vi phạm · bằng chứng</td><td>▾ Chi tiết › tên vi phạm</td><td>bấm tên vi phạm trên dòng</td><td class="gi">GIỮ · bớt 1 bấm</td></tr>
       <tr><td>Xem lần xử lý · Thu hồi… · Sửa vi phạm của lần · Rút đề xuất</td><td>nút "Xem lần xử lý"</td><td>bấm ô ② ("Report 1 · 05/11 ›"); Lịch sử: Thu hồi… ở Bước tiếp</td><td class="gi">GIỮ</td></tr>
       <tr><td>Duyệt · Từ chối… (QL)</td><td>cột Việc</td><td>Bước tiếp</td><td class="gi">GIỮ</td></tr>
-      <tr><td>Ghi kết quả báo PH · Sửa hạn · Bỏ việc · Khôi phục</td><td>badge / nút → panel</td><td>Bước tiếp (TVV / QL) → cùng panel; form + Kênh + tách 2 ô</td><td class="gi">GIỮ</td></tr>
+      <tr><td>Ghi kết quả báo PH · Sửa hạn · Bỏ việc · Khôi phục</td><td>badge / nút → panel</td><td>Bước tiếp (TVV / QL) → cùng panel; ô "Ghi chú kết quả" đổi tên <b>Nội dung</b> (bắt buộc)</td><td class="gi">GIỮ</td></tr>
       <tr><td>Thang · Lịch sử của em ›</td><td>trong ▾ Chi tiết</td><td>chip bậc cạnh tên → hộp nhỏ tại chỗ (HV: "Thang ▾")</td><td class="doi">ĐỔI chỗ</td></tr>
       <tr><td>▾ Chi tiết cả hàng</td><td>có</td><td>—</td><td class="doi">BỎ: chỉ lặp lại hàng (mở đúng thứ cần)</td></tr>
       <tr><td><b>Đọc kết quả Báo PH (GV, GVCN, QL)</b></td><td>không có</td><td>ô ③ + Xem đủ ▾ tại chỗ</td><td class="moi">MỚI</td></tr>
-      <tr><td><b>+ Ghi phản hồi PH (TVV, QL)</b></td><td>không có</td><td>ô ③ khi PH chưa phản hồi</td><td class="moi">MỚI</td></tr>
     </table>
   </section>
 </div>

@@ -31,9 +31,8 @@ Mockup: `y-thuc-v2.html` (cùng thư mục). Ảnh: `anh/`.
 | Duyệt / Từ chối đề xuất, thu hồi | QL | nhóm Chờ QL duyệt, nút Duyệt + Từ chối… | giữ; ô Bước tiếp của vai QL |
 | Đánh dấu đã thực hiện (đề xuất đã duyệt) | GVCN | nút chính | giữ, ô Bước tiếp |
 | Xem lần xử lý · Thu hồi… · Sửa vi phạm của lần · Rút đề xuất | GVCN, QL (máy chủ quyết) | nút "Xem lần xử lý" / "Xem" | bấm **ô "GVCN xử lý"** của lần (chữ "Report 2 · 05/11") → panel `XemXuLyPanel` như cũ (thêm khối Báo PH chỉ đọc) |
-| Báo PH sau xử lý — ghi KQ | TVV của em, TVV cùng CN, QL | badge / nút "Ghi kết quả báo PH" → `PanelBaoPhTvv` (Kết quả · Ngày · Ghi chú) | ô Bước tiếp của vai TVV: "Ghi kết quả báo PH" → **cùng panel**, form tách: Kết quả · Ngày · **Kênh** · **Nội dung** · **PH phản hồi** |
-| Ghi phản hồi PH đến sau | TVV, QL | không có (phải "Sửa" ngay sau lưu) | **mới**: lần đã báo mà "PH chưa phản hồi" → chữ "+ Ghi phản hồi PH" trong ô Báo PH (TVV) — **không** mở lại việc, không đổi hạn / Báo PH đúng hạn |
-| **Đọc KQ Báo PH** | GV của lớp (GVCN, GVBM), QL, TVV | KHÔNG có | ô **"TVV báo PH"** của lần: trạng thái + ngày + kênh + 1 dòng "Nội dung" + 1 dòng "PH" ; "Xem đủ ▾" mở tại chỗ mọi lần ghi (thử lần 1, lần 2…) |
+| Báo PH sau xử lý — ghi KQ | TVV của em, TVV cùng CN, QL | badge / nút "Ghi kết quả báo PH" → `PanelBaoPhTvv` (Kết quả · Ngày · Ghi chú) | ô Bước tiếp của vai TVV: "Ghi kết quả báo PH" → **cùng panel**, form: Kết quả · Ngày · **Nội dung** (một ô cho mọi kết quả — đổi tên "Ghi chú kết quả", bắt buộc) |
+| **Đọc KQ Báo PH** | GV của lớp (GVCN, GVBM), QL, TVV | KHÔNG có | ô **"TVV báo PH"** của lần: trạng thái + ngày + 2 dòng "Nội dung" (TVV ghi đã báo gì, PH nói gì) ; "Xem đủ ▾" mở tại chỗ mọi lần ghi (thử lần 1, lần 2…) |
 | Sửa hạn Báo PH | TVV, TVV cùng CN, GVCN lớp em, QL (N34) | trong panel Báo PH | giữ trong panel; dòng mở "Xem đủ" có "Sửa hạn" cho GVCN (không đổi luật) |
 | Bỏ việc / Khôi phục Báo PH | TVV, QL | ⋯ trong panel | giữ |
 | Khai / sửa cấp bậc | GVCN, QL | nút đầu tab | giữ |
@@ -45,22 +44,23 @@ Mockup: `y-thuc-v2.html` (cùng thư mục). Ảnh: `anh/`.
 
 ## 3. Nguyên tắc V2 (một câu mỗi ý)
 1. **Một lần = một khối dòng, một vi phạm = một dòng.** Các vi phạm cùng một lần (đang chờ, hoặc trong một lần xử lý) nằm liền nhau; ô bên phải gộp (rowspan) cho cả lần.
-2. **Đọc trái → phải đúng thứ tự xử lý**: Vi phạm (ai ghi) → **GVCN xử lý** (Đã xem / bậc + ngày / chờ QL) → **TVV báo PH** (trạng thái, kênh, đã báo gì, PH phản hồi gì) → **Bước tiếp** (một nút đúng vai người xem; không phải việc của mình thì ghi ai đang làm).
+2. **Đọc trái → phải đúng thứ tự xử lý**: Vi phạm (ai ghi) → **GVCN xử lý** (Đã xem / bậc + ngày / chờ QL) → **TVV báo PH** (trạng thái, Nội dung TVV ghi) → **Bước tiếp** (một nút đúng vai người xem; không phải việc của mình thì ghi ai đang làm).
 3. **Báo PH đúng lần** của khối (sửa R2).
 4. **GV đọc được Báo PH** ngay trên dòng; "Xem đủ ▾" mở tại chỗ (không panel).
 5. **Một kiểu dòng cho Cần làm, Lịch sử, hồ sơ HV**; hồ sơ HV bỏ cột Học viên.
-6. Không thêm bước, không thêm trạng thái chặn; PH chưa phản hồi **không** thành việc.
+6. Không thêm bước, không thêm trạng thái chặn.
+7. **Vòng 2 (chủ SP 11/11):** chip môn trên mỗi vi phạm (dữ liệu `violations.skill` đã có — ô Môn tuỳ chọn khi ghi; không môn thì không chip) · bảng lớp gọn: bỏ dòng phụ "nhóm · người ghi", rê / focus tên vi phạm hiện hộp thông tin (nhóm, ngày, người ghi, mô tả, bằng chứng, trong lần nào); 375 chạm tên mở tại chỗ · panel Công việc (Xác nhận xử lý, Xem vi phạm mới, Báo PH) mở đầu bằng dải tiến trình ①②③ cùng tab, bước đang làm có chữ "Bạn".
 
 ## 4. Ý trong yêu cầu → chỗ trong mockup
 
 | # | Ý (nguồn) | Chỗ trong mockup |
 |---|---|---|
 | 1 | Ý thức hồ sơ lớp + HV "rối, không biết thao tác thế nào cho đúng" (chủ SP 11/11) | K1–K4: tiêu đề cột là thứ tự xử lý; ô Bước tiếp một nút chính |
-| 2 | GV đọc được KQ Báo PH: TVV báo gì, PH phản hồi gì (chủ SP 11/11) | K1 hàng Quang Huy (mở "Xem đủ"), Khánh Linh (PH chưa phản hồi), K3 hồ sơ HV, K2/K4 375 |
+| 2 | GV đọc được KQ Báo PH: TVV báo gì, PH phản hồi gì (chủ SP 11/11) | K1 hàng Quang Huy (mở "Xem đủ"), Khánh Linh (Nội dung ghi PH chưa trả lời), K3 hồ sơ HV, K2/K4 375 |
 | 3 | Một vi phạm một dòng, trái → phải theo thứ tự xử lý (PTA) | mọi bảng: cột Vi phạm mỗi dòng một vi phạm; ô gộp theo lần |
 | 4 | Bước kế tiếp: một nút đúng vai (PTA) | cột Bước tiếp; K5 so 4 vai (GVCN · TVV · QL · GVBM) cùng một lần |
 | 5 | Thao tác tại chỗ, không thêm bước (PTA, CLAUDE.md) | mở dòng tại chỗ (vi phạm, Báo PH); panel cũ giữ cho việc nhiều trường |
-| 6 | Tóm tắt Báo PH: ngày, kênh, nội dung, phản hồi; xem đủ tại chỗ (PTA) | ô "TVV báo PH" + dòng mở K1 |
+| 6 | Tóm tắt Báo PH: ngày, nội dung; xem đủ tại chỗ (PTA; vòng 2 bỏ kênh) | ô "TVV báo PH" + dòng mở K1 |
 | 7 | Quyền xem theo vai GV lớp, GVCN, QL; máy chủ trả dữ liệu, đọc theo lô (PTA) | mục 6 dưới — máy chủ đã cho; bảng lớp thêm cột vào câu sẵn có |
 | 8 | Trạng thái: chưa có vi phạm · chờ xử lý · đã báo chờ PH · PH đã phản hồi · nhiều vi phạm (PTA) | K6 rỗng · K1 Bắt buộc / Mới · K1 Khánh Linh · K1 Quang Huy · K1 Thanh Lâm (3 vi phạm) |
 | 9 | 1440 + 375, tối (CLAUDE.md) | K1 · K2 · K3 · K4 (375 tối) |
@@ -68,6 +68,10 @@ Mockup: `y-thuc-v2.html` (cùng thư mục). Ảnh: `anh/`.
 | 11 | Trạng thái không chỉ bằng màu (CLAUDE.md) | mọi badge có chữ + dấu (✓ ⚠ ●) |
 | 12 | Không chú thích tĩnh (bo-chu-thich) | luật nhóm vào ⓘ; chỉ giữ hạn, ai đang làm |
 | 13 | Mã tuần ưu tiên; ngày cho hạn / ngày vi phạm (CLAUDE.md) | dải đầu "W2 NOV"; ngày dd/mm cho vi phạm, hạn, ngày báo |
+| 15 | Chip môn mỗi vi phạm; bảng lớp gọn + hộp rê (chủ SP 11/11 vòng 2) | K1 (hộp ở hàng Khôi) · mọi bảng / thẻ |
+| 16 | Panel Công việc đồng bộ ①②③ (chủ SP 11/11 vòng 2) | K8a–d + K5b |
+| 17 | Chỉ một ô Nội dung, không Kênh (chủ SP 11/11 vòng 2) | K5b · K8d · mọi ô ③ |
+| 18 | Chỉ rõ chỗ "Chờ QL duyệt" / "QL từ chối" (chủ SP 11/11 vòng 2) | K9a web hiện tại · K9b V2 |
 | 14 | Hình ảnh theo mockup đã duyệt (màu, nền, viền) (nang-cap-khong-bat-chuoc) | dùng `audit-0311/chung.css` + `ro.css` + badge `.bv` của U10 |
 
 ## 5. Bảng thao tác TRƯỚC → SAU (không mất thao tác)
@@ -89,25 +93,24 @@ Mockup: `y-thuc-v2.html` (cùng thư mục). Ảnh: `anh/`.
 | Xem lần xử lý · Thu hồi… · Rút | nút Xem | bấm ô "GVCN xử lý" | GIỮ |
 | Duyệt · Từ chối (QL) | cột Việc | Bước tiếp | GIỮ |
 | Đánh dấu đã thực hiện | cột Việc | Bước tiếp | GIỮ |
-| Ghi kết quả báo PH (TVV) | badge / nút | Bước tiếp | GIỮ, form thêm Kênh + tách 2 ô |
+| Ghi kết quả báo PH (TVV) | badge / nút | Bước tiếp | GIỮ, ô "Ghi chú kết quả" → "Nội dung" |
 | Sửa hạn / Bỏ việc / Khôi phục Báo PH | panel | panel | GIỮ |
 | Thang › | trong Chi tiết | chip bậc → hộp nhỏ | ĐỔI chỗ |
 | Lịch sử của em › | trong Chi tiết | chip bậc hộp nhỏ "Lịch sử của em ›" | ĐỔI chỗ |
 | "▾ Chi tiết" cả hàng | có | **BỎ** — mở đúng thứ cần (vi phạm / Báo PH / lần xử lý) | BỎ: chỉ lặp thông tin (R5) |
 | **Đọc KQ Báo PH (GV)** | không có | ô TVV báo PH + Xem đủ ▾ | **MỚI** |
-| **+ Ghi phản hồi PH (TVV)** | không có | trong ô TVV báo PH | **MỚI** |
 
 ## 6. Máy chủ (cho bước code — đo trước → sau trong PR)
 - Quyền đọc: `xemViecBaoPh` đã cho `STUDENT_VIEW` (GV có phân công ở lớp em, QL, Quản trị); SĐT PH chỉ cho người ghi được — giữ.
-- Bảng lớp (`bangYThucLop`): Báo PH lấy **theo lần xử lý** (đã có `measure_id` trong câu `dongThoiGian`), thêm vào câu sẵn có: lần ghi mới nhất (kết quả, ngày, kênh, đã báo, PH phản hồi, người) + số lần ghi. Không thêm câu; thêm ~1–2 dòng đọc / lần xử lý (chỉ mục `idx_viec_bao_ph_lan`). Ước: lớp 30 lần xử lý → +~60 dòng / lần mở tab.
+- Bảng lớp (`bangYThucLop`): Báo PH lấy **theo lần xử lý** (đã có `measure_id` trong câu `dongThoiGian`), thêm vào câu sẵn có: lần ghi mới nhất (kết quả, ngày, nội dung, người) + số lần ghi. Không thêm câu; thêm ~1–2 dòng đọc / lần xử lý (chỉ mục `idx_viec_bao_ph_lan`). Ước: lớp 30 lần xử lý → +~60 dòng / lần mở tab.
 - "Xem đủ ▾": gọi `GET /y-thuc/bao-ph/:id` có sẵn **khi mở** (3–4 câu, < 20 dòng); không gọi trước.
-- DB: `viec_bao_ph_lan` thêm `kenh TEXT`, `phan_hoi TEXT` (migrate thêm cột, dữ liệu cũ: `ghi_chu` hiện là "Ghi chú"); lần "Ghi phản hồi PH" = một dòng mới `ket_qua = 'phan_hoi'`, không đổi trạng thái việc.
+- DB: **không migrate** (chủ SP 11/11: một ô Nội dung) — dùng cột `ghi_chu` sẵn có, đổi nhãn web "Ghi chú kết quả" → "Nội dung"; máy chủ kiểm Nội dung bắt buộc. Chip môn dùng `violations.skill` sẵn có.
 - Trần ở `tocDoDuong.ts` cho `/classes/:id/y-thuc` + `/students/:id/y-thuc` (đo trước → sau).
 
-## 7. Câu hỏi [XM] cho chủ SP (khuyến nghị in đậm)
-1. Khi chọn **Đã báo PH**: **"Nội dung" bắt buộc** (để GV luôn đọc được TVV báo gì); **"PH phản hồi" không bắt buộc** — để trống thì dòng hiện "PH chưa phản hồi" + TVV "+ Ghi phản hồi PH" sau (không thành việc, không trễ hạn). Đồng ý?
-2. Kênh: **Gọi điện · Zalo · Gặp trực tiếp · Khác**, mặc định **Gọi điện**. Đủ chưa?
-3. Lịch sử: dòng "Chờ QL duyệt" / "QL từ chối" hiện ở Cần làm, **bỏ khỏi Lịch sử** (chỉ Đã xem · Đã xử lý · Đã thu hồi)?
+## 7. Câu hỏi [XM] cho chủ SP
+- Vòng 1 (đã trả lời 11/11): một ô Nội dung cho mọi kết quả · bỏ Kênh.
+- Còn 1 câu (K9): "Chờ QL duyệt" / "QL từ chối" chỉ ở **Cần làm**, Lịch sử chỉ Đã xem · Đã xử lý · Đã thu hồi? (web hiện để 2 dòng này trong Lịch sử, không thuộc chip lọc nào — ảnh `anh/k9a.png`; V2 `anh/k9b.png`.)
+- Đề xuất nhỏ: ô Nội dung **bắt buộc** (GV luôn đọc được); để trống thì không lưu được.
 
 ## 8. Vòng tự rà + critique
 Agent rà riêng (impeccable critique + ui-ux-pro-max, đọc 11 ảnh):
@@ -115,3 +118,4 @@ Agent rà riêng (impeccable critique + ui-ux-pro-max, đọc 11 ảnh):
 - Vòng 2: **33/40**, không còn P0 / P1. Sửa thêm P2: nhãn "Nội dung" dùng chung ở mọi nơi; tên QL nằm trên một dòng.
 - Theo luật cổng (đã qua 30): dừng ở đây.
 - Tự rà theo từng ý của chủ SP (mục 4): đạt cả 14 ý.
+- **Vòng 3 (sau góp ý chủ SP 11/11):** chip môn · bảng gọn + hộp rê · một ô Nội dung, bỏ Kênh · K8 panel Công việc · K9 Chờ QL / QL từ chối. Agent rà: **33/40**, sửa 1 P1 (trùng tên em K8a / K9b) + P2 (thứ tự nút chân 375, chừa chỗ chip khi không môn, "Xem đủ" lý do từ chối). Không còn P0 / P1.
