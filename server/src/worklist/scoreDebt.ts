@@ -4,7 +4,7 @@ import { activeAt, phanCongDaNap, type Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
 import { allProgrammes } from '../normal/regular.ts';
-import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
+import { LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 
 /**
@@ -78,7 +78,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
   const conn = db();
   /* PR-MT (M3, K4-01): MT lịch sử không bao giờ là nợ — bỏ từ câu SQL (phủ Theo giáo viên, bai-qua-han-nhap-diem, Tổng quan). */
   /* PR-UXF-a T65 → PR-S6F-a Q2: em không đang học (Tạm dừng, Kết thúc học, lưu trữ) không sinh nợ điểm. Hồ sơ HV vẫn hiện ô (đường riêng). */
-  const where = [`a.status != 'cancelled'`, `cl.status = 'active'`, LUOT_HIEN_TAI_SQL('a', 's'), LUOT_TINH_NO_SQL('a')];
+  const where = [`a.status != 'cancelled'`, LOP_CON_VIEC_SQL('a', 'cl'), LUOT_HIEN_TAI_SQL('a', 's'), LUOT_TINH_NO_SQL('a')];   // LOP-CU: lớp kết thúc còn nợ vẫn là nợ
   const args: unknown[] = [];
   /* S5: chi nhánh giữ `?,?,…` (json_each làm `classes` bỏ idx_class_branch); danh sách lớp lọc thẳng trên lượt nên đổi được. */
   if (branchIds) { where.push(`cl.branch_id IN (${branchIds.map(() => '?').join(',')})`); args.push(...branchIds); }
