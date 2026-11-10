@@ -2509,3 +2509,22 @@ CREATE TABLE IF NOT EXISTS user_skill_lich_su (id INTEGER PRIMARY KEY, user_id I
 CREATE INDEX IF NOT EXISTS idx_user_skill_lich_su ON user_skill_lich_su(skill, user_id);
 -- SỔ NGHĨA VỤ (spec 2.3): nhật ký dòng BÀI lệch khi đối chiếu đêm (trước / sau dạng JSON) — thao tác nào quên gọi ghiSo.
 CREATE TABLE IF NOT EXISTS nghia_vu_lech (id INTEGER PRIMARY KEY, khoa TEXT NOT NULL, truoc TEXT, sau TEXT, luc TEXT NOT NULL);
+
+-- QTV2-HAN (chủ SP 11/11): cấu hình có phiên bản (hạn mặc định; Case & SOS cùng bảng, `loai` khác). Rỗng = bản gốc trong mã. Cùng câu ở
+-- `platform/cauHinh.ts` (`DDL_CAU_HINH_PHIEN_BAN`, migrate `prCauHinhPhienBan`).
+CREATE TABLE IF NOT EXISTS cau_hinh_phien_ban (
+    id INTEGER PRIMARY KEY,
+    loai TEXT NOT NULL,
+    du_lieu TEXT NOT NULL,
+    thay_doi TEXT,
+    khoi_phuc_tu INTEGER,
+    nguoi_id INTEGER REFERENCES users(id),
+    tao_luc TEXT NOT NULL
+  );
+CREATE INDEX IF NOT EXISTS idx_chpb_loai ON cau_hinh_phien_ban(loai, id);
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_ins AFTER INSERT ON cau_hinh_phien_ban
+    BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_upd AFTER UPDATE ON cau_hinh_phien_ban
+    BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_del AFTER DELETE ON cau_hinh_phien_ban
+    BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;

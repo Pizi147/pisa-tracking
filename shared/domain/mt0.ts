@@ -4,6 +4,7 @@
  * SOS chỉ để nhìn (không tín hiệu / Case / PA / Phối hợp). Chốt ở Chuyển tiếp lớp thì thành mốc đầu vào của lộ trình FT mới.
  * Thuần: không đọc DB, ngày truyền vào.
  */
+import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { mondayOfDate } from './week.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { addDaysIso } from './sos.ts';
@@ -23,7 +24,7 @@ export const coMt0 = (ma: ProgrammeCode | string | null, huong: Huong | string):
   huong === 'fast_track' && !!ma && (MT0_CHUONG_TRINH as readonly string[]).includes(ma);
 
 /** Hạn chấm MT0 = thứ Tư tuần sau tuần thi (= luật lớp thường, đặc tả §1; PR-CT2). Tính khi đọc nên không migrate. */
-export const hanChamMt0 = (tuanThi: string): string => addDaysIso(mondayOfDate(tuanThi.slice(0, 10)), 9);
+export const hanChamMt0 = (tuanThi: string): string => { const t2 = mondayOfDate(tuanThi.slice(0, 10)); return addDaysIso(t2, lechTuThuHai(hanTai('cham_test', t2))); };   // QTV2-HAN (gốc +9)
 
 /** Tuần muộn nhất của MT0: thứ Hai tuần 2 FT; chưa có lộ trình FT thì tuần Cuối khoá + 14 ngày (tuần 1 FT = tuần ngay sau Final). */
 export function tuanMuonNhatMt0(o: { tuanBatDauFt: string | null; tuanCuoiKhoa: string | null }): string | null {

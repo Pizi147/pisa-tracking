@@ -9,6 +9,7 @@ import { sweepExpiredMoves } from '../fasttrack/absence.ts';
 import { donThungRac } from '../platform/thungRac.ts';
 import { donGhiDao } from '../platform/ghiDao.ts';
 import { apDoiDenHan } from '../classes/phanCongGv.ts';
+import { xoaNhoHan } from '../platform/cauHinh.ts';
 
 /**
  * QUÉT ĐỊNH KỲ SÁNG THỨ HAI (RB-1, PR-AN): thi hành quyết định chuyển lớp tới hạn + chuông "Speaking quá hạn chấm". Netlify gọi hàm `chot-vang`
@@ -30,6 +31,7 @@ export function chotVangDinhKy(o: {
   const batDau = Date.now();
   const ngay = o.ngay ?? todayInBusinessTz();
   if (!(o.daKhoiTao ?? isInitialised)()) return { ngay, daChuyen: 0, boQua: 'chua-khoi-tao', ms: Date.now() - batDau };
+  xoaNhoHan();   // QTV2-HAN: hạn mặc định đọc lại một lần mỗi lượt (lambda ấm giữ bản cũ)
   /* Lỗi chuyển lớp không làm hỏng việc sau — lượt sáng sau / quét khi đọc thử lại. */
   let daChuyen = 0;
   try { daChuyen = (o.chuyen ?? ((n) => thiHanhLenhDenHan(n).daChuyen))(ngay); } catch (e) { console.error('[chot-vang] chuyển lớp', e); }

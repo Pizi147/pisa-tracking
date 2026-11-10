@@ -154,6 +154,6 @@ export async function runPrBandQuyDoiTests(t: YThucTestKit) {
     const hd = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/Header.tsx'), 'utf8');
     assert(!hd.includes("{t('Đã xoá')}") && !hd.includes('to="/quan-tri?tab=da-xoa"'), 'Header: không còn nút Đã xoá ở menu Tài khoản');
     const ap = fs.readFileSync(path.join(REPO, 'web/src/modules/platform/AdminPage.tsx'), 'utf8');
-    assert(/key: 'da-xoa', label: t\('Đã xoá'\)/.test(ap) && /x\.key === 'band' \|\| x\.key === 'da-xoa'/.test(ap), 'Trang Quản trị có tab Đã xoá (QT đủ tab; QL: Bảng quy đổi + Đã xoá)');
+    assert(/key: 'da-xoa', label: t\('Đã xoá'\)/.test(ap) && /x\.key === 'band' \|\| x\.key === 'han' \|\| x\.key === 'da-xoa'/.test(ap), 'Trang Quản trị có tab Đã xoá (QT đủ tab; QL: Bảng quy đổi + Đã xoá)');
   });
 }

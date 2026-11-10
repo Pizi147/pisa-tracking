@@ -5,6 +5,7 @@ import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { ChiNhanhAdmin } from './ChiNhanhAdmin.tsx';
 import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
+import { HanMacDinhAdmin } from './HanMacDinhAdmin.tsx';
 import { MoSuaLichTest } from './MoSuaLichTest.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
 import { QuyenTheoVai } from './QuyenTheoVai.tsx';
@@ -27,6 +28,7 @@ const TABS = [
   { key: 'catalog', label: t('Chương trình') },
   { key: 'chi-nhanh', label: t('Chi nhánh') },
   { key: 'band', label: t('Bảng quy đổi') },
+  { key: 'han', label: t('Hạn mặc định') },
   { key: 'config', label: t('Quyền & nhật ký') },
   { key: 'da-xoa', label: t('Đã xoá') },
 ] as const;
@@ -35,7 +37,7 @@ export default function AdminPage() {
   const [params, setParams] = useSearchParams();
   const quanTri = !!useSession().session?.nav?.admin;
   /* QTV2-CAU-HINH (chủ SP 11/11 "QL xem"): Quản lý thấy các tab cấu hình (chỉ đọc) + Đã xoá. */
-  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'catalog' || x.key === 'chi-nhanh' || x.key === 'band' || x.key === 'da-xoa');
+  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'catalog' || x.key === 'chi-nhanh' || x.key === 'band' || x.key === 'han' || x.key === 'da-xoa');
   const tab = tabs.find((x) => x.key === params.get('tab'))?.key ?? tabs[0].key;
   /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
   const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === tabs[0].key ? {} : { tab: k });
@@ -60,6 +62,7 @@ export default function AdminPage() {
         {tab === 'catalog' && <CatalogAdmin />}
         {tab === 'chi-nhanh' && <ChiNhanhAdmin />}
         {tab === 'band' && <BangQuyDoiAdmin />}
+        {tab === 'han' && <HanMacDinhAdmin />}
         {tab === 'da-xoa' && <DaXoaAdmin />}
         {tab === 'config' && (
           <>

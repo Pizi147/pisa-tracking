@@ -18,7 +18,7 @@ import { mocChuBoTro } from './lopThuong.ts';
 import { t } from '../i18n/index.ts';
 
 /** Hạn Xác nhận PA (MT) / Xác nhận Case (Progress): 5 ngày ('2026-09-14' → '2026-09-18'); MT Gấp / SOS 3: 3 ngày (→ '2026-09-16'); Progress luôn 5. */
-export const hanXacNhan = (ngay: string, muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean } = {}) => hanTheoNgay(ngay, soNgayHanXacNhan(muc));
+export const hanXacNhan = (ngay: string, muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean } = {}) => hanTheoNgay(ngay, soNgayHanXacNhan({ ...muc, moc: ngay }));
 
 export const GOI_Y_MO_TA_PA = t('Nêu hướng dẫn và trọng tâm cụ thể; ai sẽ thực hiện / hỗ trợ / Tutor');                       // Q28-1
 export const GOI_Y_KET_QUA_PA = t('Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể');  // Q28-2; PR-LUI-a2: "ai" đã có ô Người phụ trách

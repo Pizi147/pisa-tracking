@@ -110,6 +110,7 @@ import * as gioiHan from '../platform/gioiHanThu.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as bangQuyDoiSvc from '../platform/bangQuyDoi.ts';
 import * as nhatKyQuanTriSvc from '../platform/nhatKyQuanTri.ts';
+import * as cauHinhSvc from '../platform/cauHinh.ts';
 import * as moSuaLichTestSvc from '../platform/moSuaLichTest.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
@@ -242,6 +243,8 @@ api.get('/demo/session', wrap((req) => {
     dichBat: cauHinhDich().bat,
     /* Mở sửa lịch Test (chủ SP 06/11): web bỏ chip khoá cuối tuần N15 cho người sửa được lịch — máy chủ vẫn kiểm lại từng lần ghi. */
     moSuaLichTest: moSuaLichTestSvc.dangMoSuaLichTest(),
+    /* QTV2-HAN: các bản Hạn mặc định — web tính hạn bằng cùng hàm dùng chung (nhớ đệm, 0 câu khi không ai sửa). */
+    hanMacDinh: cauHinhSvc.dsBanHan(),
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
@@ -3042,6 +3045,9 @@ api.get('/admin/roles/:key/permissions/:perm/impact', requireAuth, wrap((req) =>
   sysconfigSvc.anhHuongOVai(principalOf(req), String(req.params.key), String(req.params.perm))));
 
 /* QTV2-QUYEN: Nhật ký chung của Quản trị (thay `/admin/overview` — 6 câu COUNT(*), đọc mọi tài khoản, 40 dòng nhật ký). */
+/* QTV2-HAN: Hạn mặc định — Quản trị sửa, Quản lý xem; mỗi lần lưu một phiên bản (chỉ áp cho việc sinh sau). */
+api.get('/admin/cau-hinh/han', requireAuth, wrap((req) => cauHinhSvc.xemHanMacDinh(principalOf(req))));
+api.put('/admin/cau-hinh/han', requireAuth, wrap((req) => cauHinhSvc.luuHanMacDinh(principalOf(req), req.body ?? {})));
 api.get('/admin/don-vi', requireAuth, wrap((req) => nhatKyQuanTriSvc.donViBaoCao(principalOf(req))));
 api.get('/admin/nhat-ky', requireAuth, wrap((req) => nhatKyQuanTriSvc.nhatKyQuanTri(principalOf(req), {
   muc: typeof req.query.muc === 'string' ? req.query.muc : null, nguoi: toInt(req.query.nguoi) ?? null,

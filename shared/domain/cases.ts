@@ -1,5 +1,6 @@
 /** CASE — hạng mục, nhóm nguyên nhân, phương án, phê duyệt và kết quả. */
 
+import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { ENTRY_SKILLS } from './skills.ts';
 import { CHUONG_TRINH_LIEN_TUC_CO_SAN, REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
 import { t } from '../i18n/index.ts';
@@ -710,6 +711,8 @@ export function hanTheoNgay(batDau: string, n: number): string {
 }
 /** Quản lý trả lời Đề xuất PA / Xin hỗ trợ trong 5 ngày, tính cả ngày gửi (T54, K3-18). */
 export const HAN_DUYET_NGAY = 5;
+/** QTV2-HAN: hạn QL duyệt đề xuất PA (ngày) — bản tại `moc` (thiếu = bây giờ). `HAN_DUYET_NGAY` = bản gốc. */
+export const hanDuyetNgay = (moc?: string | null) => hanTai('ql_duyet_pa', moc).ngay;
 
 /**
  * Hạn của một chu kỳ xử lý, tính từ ngày chu kỳ BẮT ĐẦU. Phương án cần duyệt thì ngày bắt đầu là NGÀY ĐƯỢC DUYỆT, không phải
@@ -725,7 +728,7 @@ export function cycleDeadline(startDate: string): string {
  * `HAN_DUYET_NGAY`; `cycleDeadline` ở trên chỉ còn bộ demo dùng.
  */
 export function cycleDeadlineHint(): string {
-  return t('Hạn Quản lý trả lời: {HAN_DUYET_NGAY} ngày, tính cả ngày gửi.', { HAN_DUYET_NGAY });
+  return t('Hạn Quản lý trả lời: {HAN_DUYET_NGAY} ngày, tính cả ngày gửi.', { HAN_DUYET_NGAY: hanDuyetNgay() });
 }
 
 /**
@@ -763,7 +766,6 @@ export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
  * Tín hiệu ghi nhận thứ Hai thì hết thứ Tư, không phải hết thứ Năm. Đây là chỗ rất dễ lệch
  * một ngày, nên con số cộng thêm là 2 chứ không phải 3.
  */
-export const SIGNAL_VERIFY_DAYS = 3;
 
 /**
  * Hạn xác minh, tính từ NGÀY TÍN HIỆU ĐƯỢC GHI NHẬN — không phải từ thứ Hai của tuần thi.
@@ -773,7 +775,7 @@ export const SIGNAL_VERIFY_DAYS = 3;
  * giây điểm được công bố — phạt người ta vì việc của người khác.
  */
 export function signalVerifyDue(raisedOn: string): string {
-  return hanTheoNgay(raisedOn, SIGNAL_VERIFY_DAYS);
+  return hanTheoNgay(raisedOn, hanTai('xac_minh_tin_hieu', raisedOn).ngay);   // QTV2-HAN: bản tại ngày ghi tín hiệu
 }
 
 /** Lý do chuẩn khi một tín hiệu mất căn cứ vì điểm được sửa lại (mục 9.4). */
@@ -787,9 +789,10 @@ export const SIGNAL_WITHDRAW_SCORE_FIXED = 'Không còn hợp lệ do sửa đi�
  * Chỉ áp cho hạn sinh từ nay; Case đang mở giữ `sos_cases.han_xac_nhan` đã ghi.
  * OV-12c (chủ SP 14/10): Xác nhận Case Progress Test lớp thường (`thuong`) = **5 ngày CỐ ĐỊNH**, kể cả SOS 3.
  */
-export function soNgayHanXacNhan(muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean }): number {
-  if (muc.thuong) return 5;
-  return muc.urgency === 'urgent' || (muc.sosLevel ?? 0) >= 3 ? 3 : 5;
+export function soNgayHanXacNhan(muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean; moc?: string | null }): number {
+  const h = hanTai('xac_nhan_case', muc.moc);   // QTV2-HAN: bản tại mốc Case (thiếu = bây giờ — hạn lưu lúc sinh)
+  if (muc.thuong) return h.ngay;
+  return muc.urgency === 'urgent' || (muc.sosLevel ?? 0) >= 3 ? h.ngayGap : h.ngay;
 }
 
 /**
@@ -801,7 +804,7 @@ export function soNgayHanXacNhan(muc: { sosLevel?: number | null; urgency?: stri
  * gốc, vì một nghĩa vụ đã phát sinh thì không biến mất khi người giữ nó đổi tên.
  */
 export function planDueDate(assignedOn: string, urgency: string | null | undefined): string {
-  return hanTheoNgay(assignedOn, soNgayHanXacNhan({ urgency }));
+  return hanTheoNgay(assignedOn, soNgayHanXacNhan({ urgency, moc: assignedOn }));
 }
 
 /**

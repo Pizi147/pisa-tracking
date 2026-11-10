@@ -52,7 +52,7 @@ Vấn đề thấy được (đối chiếu lời chủ SP "gọn, dễ dùng, d
 | Band | **Kỳ vọng MT FT**: MT1 = Target − 1.0 · MT2 = − 0.5 · MT3+ = Target · RF = Target | `shared/domain/fasttrack.ts:14` `expectationDelta` | **Không** — viết cứng |
 | Band | **Ngưỡng lớp thường**: Học lại < 50 % · 50–59 % · Lên từ 60 % · Mini Test đạt 70 % | `shared/domain/cuoiKhoa.ts:22–25` | **Không** |
 | Band | Thang Cambridge KET 100–150 / PET 120–170, mốc grade + CEFR | `shared/domain/kyThi.ts:21` | Không — **giữ trong mã** (thang của Cambridge, không phải luật trung tâm) |
-| Hạn | 14 hạn mặc định (mục 5.5) | hằng số `HAN_*`, `soNgayHanXacNhan`, `defaultScoreDeadline`, `mocLoTrinh`, `hanXetLai`… | **Không** — viết cứng; vài việc có cột ghi đè từng dòng (`han_chon`, `han_them_pa`, `han_sau_thi`) |
+| Hạn | 13 hạn mặc định (mục 5.5) | hằng số `HAN_*`, `soNgayHanXacNhan`, `defaultScoreDeadline`, `mocLoTrinh`, `hanXetLai`… | **Không** — viết cứng; vài việc có cột ghi đè từng dòng (`han_chon`, `han_them_pa`, `han_sau_thi`) |
 | Case & SOS | nhóm nguyên nhân, nhóm PA, PA quy chế, việc phối hợp mốc SOS | `cases.ts`, `sos.ts` | Không — CAU-HINH-CASE-SOS thêm |
 | Chi nhánh | tên, địa chỉ, SĐT | `branches` | **Có** — `PUT /admin/chi-nhanh/:id`; không thêm / xoá (thêm qua lệnh `them-chi-nhanh`) |
 | Đơn vị báo cáo | 5 chi nhánh + "Tutor part-time" | `reporting_units` | Có bảng, **không** đường sửa — chỉ xem (giữ) |
@@ -71,7 +71,7 @@ không trang mục lục. Đổi: thêm 2 tab, đổi tên 1 tab, dọn nội du
 | Quyền & nhật ký (`config`) | công tắc **Mở sửa lịch Test** (một dòng) · **Quyền theo vai** (5.2) · **Nhật ký chung** có lọc (5.8) | Quản trị |
 | Chương trình (`catalog`) | hai nhóm: Loại lớp thường · Fast Track · lộ trình (5.3) | Quản trị sửa · **QL xem** |
 | **Band & ngưỡng** (`band`, đổi tên từ "Bảng quy đổi") | kỳ vọng FT · ngưỡng lớp thường · bảng quy đổi (5.5) | Quản trị sửa · QL xem |
-| **Hạn mặc định** (`han`, MỚI) | 14 hạn (5.4) | Quản trị sửa · QL xem |
+| **Hạn mặc định** (`han`, MỚI) | 13 hạn (5.4) | Quản trị sửa · QL xem |
 | **Case & SOS** (`case-sos`, MỚI — CAU-HINH-CASE-SOS) | nguyên nhân · PA · mốc SOS | Quản trị sửa · QL xem |
 | Chi nhánh (`chi-nhanh`) | sửa tại dòng + dòng "Đơn vị báo cáo" (5.7) | Quản trị sửa · **QL xem** |
 | Đã xoá (`da-xoa`) | như nay | như nay |
@@ -98,7 +98,7 @@ không trang mục lục. Đổi: thêm 2 tab, đổi tên 1 tab, dọn nội du
 - **Một cách báo "sửa được"** ở mọi mục: giá trị sửa được là **ô có viền** (bấm = mở tại chỗ, ✎ hiện khi rê / focus); chỉ đọc = chữ thường; dòng nhiều trường có thêm nút **"Sửa"** cuối dòng (mở khung phải), dòng không tự bấm được.
 - **Sửa tại dòng** khi ≤ 3 trường (tên, một số, một ô chọn); **khung phải** (thay chỗ cột Nhật ký, cùng 400 px, không panel nổi) khi nhiều trường (lịch MT, chương trình mới, tài khoản mới).
 - **Một thao tác một lần lưu**, máy chủ kiểm, lỗi tại ô (`aria-describedby`), giữ chữ. Không có chế độ "Sửa" riêng cho cả bảng (bỏ "Sửa quyền", "Sửa" bảng quy đổi giữ vì sửa 41 ô một lượt).
-- **Toast sau lưu nêu cái giữ bản cũ** khi có: "✓ Đã lưu · Meeting CX / GĐCN 5 → 7 ngày · 3 việc đang chờ giữ 5 ngày" (một câu `COUNT` lúc lưu, chỉ ở mục Hạn / Band — hiếm).
+- **Toast sau lưu nêu cái giữ bản cũ** khi có: "✓ Đã lưu · Xử lý vi phạm 5 → 7 ngày · 3 việc đang chờ giữ 5 ngày" (một câu `COUNT` lúc lưu, chỉ ở mục Hạn / Band — hiếm).
 - **ⓘ** = thành phần sẵn có của web (`NutLuat` / ⓘ bấm mở, chạy trên cảm ứng); mockup dùng `title` cho gọn.
 - **Hoàn tác 10 s** sau mọi lần lưu (đảo về bản trước, thành một bản mới) + **Khôi phục về đây** ở từng dòng nhật ký. Không thao tác nào không đảo được.
 - **Mục đang dùng không xoá — chỉ Ẩn** (mờ tại chỗ + chip "đã ẩn" + "Hiện lại"); mục chưa từng dùng có Xoá (vẫn Hoàn tác được).
@@ -142,7 +142,7 @@ không trang mục lục. Đổi: thêm 2 tab, đổi tên 1 tab, dọn nội du
 
 ### 5.4. Hạn mặc định (B — MỚI)
 
-Bảng 14 hạn, nhóm theo nơi việc phát sinh. Cột: **Việc** · **Hạn** (giá trị sửa được — ô có viền, như "ô số = mở tại chỗ"; hàng có hai giá trị sửa cả hai trong một dòng: Xác nhận Case "5 ngày · gấp 3 ngày", Bàn giao đổi GV "5 ngày · xem thêm 7") · **Tính từ** (mốc, chỉ đọc) · **Ai làm** (chỉ đọc) · ⓘ (luật gốc). Giá trị ngày đầu = đúng mã hiện tại:
+Bảng 13 hạn, nhóm theo nơi việc phát sinh. Cột: **Việc** · **Hạn** (giá trị sửa được — ô có viền, như "ô số = mở tại chỗ"; hàng có hai giá trị sửa cả hai trong một dòng: Xác nhận Case "5 ngày · gấp 3 ngày", Bàn giao đổi GV "5 ngày · xem thêm 7") · **Tính từ** (mốc, chỉ đọc) · **Ai làm** (chỉ đọc) · ⓘ (luật gốc). Giá trị ngày đầu = đúng mã hiện tại:
 
 | Nhóm | Việc | Hạn hiện tại | Tính từ | Nguồn mã |
 |---|---|---|---|---|
@@ -152,15 +152,15 @@ Bảng 14 hạn, nhóm theo nơi việc phát sinh. Cột: **Việc** · **Hạn
 | | QL duyệt đề xuất PA | **5 ngày** | ngày đề xuất | `HAN_DUYET_NGAY` |
 | | Ghi kết quả PA | **2 tuần / lần**, hết **thứ Ba** | lần ghi trước | `hanKyGhiKetQua` |
 | | Dự kiến kết thúc PA | **CN tuần kế tiếp** ("1 tháng" = + 31 ngày tới CN) | ngày tạo PA | `planEndDefault`, `sosPlanEndDate` |
-| Ý thức & phối hợp | Xử lý vi phạm (sau duyệt) | **5 ngày** | ngày QL duyệt | `HAN_Y_THUC_NGAY` |
+| Ý thức | Xử lý vi phạm (sau duyệt) | **5 ngày** | ngày QL duyệt | `HAN_Y_THUC_NGAY` |
 | | Báo PH sau xử lý vi phạm (TVV) | **5 ngày lịch** (ngày lưu = ngày 1) | ngày GVCN lưu | `HAN_BAO_PH_NGAY` = 4 (N1, N2) |
-| | Meeting CX / GĐCN | **5 ngày** | ngày sinh việc | `HAN_MEETING_CX_NGAY` (N34) |
 | Lộ trình & lớp | Chốt lộ trình lớp thường | **T5 tuần trước** tuần Final (nhắc từ T2) | tuần Final | `mocLoTrinh` (N20) |
 | | Bàn giao chuyển lớp | **7 ngày** (tính cả ngày ra lệnh) | ngày ra lệnh | `HAN_BAN_GIAO_NGAY` |
 | | Bàn giao đổi GV | **5 ngày**; GV cũ xem thêm **7 ngày** | ngày đổi | `HAN_BAN_GIAO_GV_NGAY`, `XEM_TAM_NGAY` (N29) |
 | | Bước tiếp sau thi thật (TVV) | **7 ngày** | ngày có KQ thi | `NGAY_HAN_SAU_THI` (N6) |
 | | Xét lại lộ trình | **CN tuần 2** lớp mới (Mini Test: CN tuần sau ngày ghi) | tuần bắt đầu lớp mới | `hanXetLai` (N21) |
 
+- **Một hạn một chỗ sửa (PTA 11/11, #1399 ↔ #1390):** Meeting CX / GĐCN (N34) và bước TVV của Phối hợp SOS sửa ở **Case & SOS** (hạn theo từng việc mốc SOS) — không có dòng ở Hạn mặc định. Chi tiết: `thiet-ke/2026-11-11-quan-tri-v2/khop-khac-han.md`.
 - **Hai kiểu giá trị**: "n ngày" (ô số 1–60) · "thứ + tuần lệch" (ô chọn T2…CN + ô chọn "tuần này / tuần sau / tuần trước"). Sửa tại dòng, Enter lưu.
 - **Chỉ áp cho việc sinh sau** — không thêm cột chụp: mỗi hàm hạn tra **phiên bản có hiệu lực lúc việc sinh** (`tao_luc` / ngày ra lệnh / ngày phát hiện ≥ `tao_luc` của phiên bản).
   Việc đang chạy giữ hạn cũ; ghi đè từng việc (`han_chon`, `han_them_pa`, `han_sau_thi`) vẫn thắng như nay.
@@ -302,7 +302,7 @@ là migrate cũ — không đổi; câu SQL đang chạy dùng hằng số → �
 
 1. **QTV2-KHUNG** — thêm tab Hạn mặc định / Case & SOS (ô chờ), đổi tên Band & ngưỡng, QL thấy các tab cấu hình (`nav.cauHinh`), bỏ 4 ô đếm + `/admin/overview` ở Quyền & nhật ký. Ảnh trước | sau.
 2. **QTV2-NEN** (máy chủ) — bảng `cau_hinh_phien_ban` (hoặc dùng bảng CAU-HINH-CASE-SOS nếu merge trước) + `banTaiLuc` + nhớ đệm + `GET/PUT /admin/cau-hinh/:loai` + nhật ký mục + trần `tocDoDuong`. TDD: bản 1 = hằng số cũ.
-3. **QTV2-HAN** — chuyển 14 hàm hạn sang đọc bản; màn Hạn mặc định. Thử migrate trên bản chép `mig.sqlite`: đếm việc đang mở trước / sau = không đổi hạn.
+3. **QTV2-HAN** — chuyển 13 hàm hạn sang đọc bản; màn Hạn mặc định. Thử migrate trên bản chép `mig.sqlite`: đếm việc đang mở trước / sau = không đổi hạn.
 4. **QTV2-BAND** — kỳ vọng FT + ngưỡng lớp thường + gọn Bảng quy đổi. Phép kiểm SOS / dải cuối khoá trên seed không đổi.
 5. **QTV2-TK** — Tài khoản: popover vai · kỹ năng tại dòng.
 6. **QTV2-QUYEN** — Quyền theo vai: chọn vai + "So sánh mọi vai".

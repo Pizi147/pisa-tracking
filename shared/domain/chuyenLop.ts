@@ -5,6 +5,7 @@
  * bằng luật lộ trình đang có (`lenLop.ts`). Có lệnh → phiếu bàn giao: GVBM ghi một câu mỗi em (hạn 2 ngày), GVCN lớp
  * cũ xác nhận (hạn 3 ngày, tính cả ngày ra lệnh). Một nguồn cho máy chủ và web.
  */
+import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { hanTheoNgay } from './cases.ts';
 import type { HuongGoiY } from './cuoiKhoa.ts';
 import { NORMAL_LADDER } from './fasttrack.ts';
@@ -80,7 +81,7 @@ export const nhanTuanBatDau = (tuan: string, homNay: string): string =>
 /** OV-13l (chủ SP 15/10): hạn bàn giao tối thiểu — 7 ngày tính cả ngày ra lệnh, GVBM = GVCN. */
 export const HAN_BAN_GIAO_NGAY = 7;
 export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
-  const h = hanTheoNgay(ngayRaLenh, HAN_BAN_GIAO_NGAY);
+  const h = hanTheoNgay(ngayRaLenh, hanTai('ban_giao_chuyen_lop', ngayRaLenh).ngay);   // QTV2-HAN (gốc 7)
   return { gvbm: h, gvcn: h };
 }
 
@@ -90,7 +91,7 @@ export function hanBanGiao(ngayRaLenh: string): { gvbm: string; gvcn: string } {
  */
 export function mocLoTrinh(tuanFinal: string): { nhacTu: string; hanChot: string; hanBanGiao: string } {
   const t2 = mondayOfDate(tuanFinal.slice(0, 10));
-  return { nhacTu: congNgay(t2, -7), hanChot: congNgay(t2, -4), hanBanGiao: congNgay(t2, 6) };
+  return { nhacTu: congNgay(t2, -7), hanChot: congNgay(t2, lechTuThuHai(hanTai('chot_lo_trinh', t2))), hanBanGiao: congNgay(t2, 6) };   // QTV2-HAN: hạn chốt (gốc T5 tuần trước = −4)
 }
 
 /**
