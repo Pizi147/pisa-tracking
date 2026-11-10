@@ -65,14 +65,14 @@ export async function runPrTlNenTests(t: any) {
   ];
 
   // ---------------------------------------------------------------- N1
-  check('N1-a · migrate chạy hai lần không lỗi; schema.sql có moc_he_thong + 20 trigger; dòng tham-chieu so ≠ 0', () => {
+  check('N1-a · migrate chạy hai lần không lỗi; schema.sql có moc_he_thong + 23 trigger; dòng tham-chieu so ≠ 0', () => {
     const lan1: string[] = []; mig.migratePrTlNen(c(), lan1);
     const lan2: string[] = []; mig.migratePrTlNen(c(), lan2);
     assert(lan1.length === 0 && lan2.length === 0, `DB seed đã có đủ, migrate phải không làm gì: ${lan1.join(' · ')} | ${lan2.join(' · ')}`);
     const schema = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
-    assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 20, 'schema.sql thiếu bảng / trigger');
+    assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 23, 'schema.sql thiếu bảng / trigger');
     const tg = c().prepare(`SELECT COUNT(*) n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_%'`).get() as any;
-    assert(tg.n === 20, `${tg.n} trigger`);
+    assert(tg.n === 23, `${tg.n} trigger`);   // + 3 cau_hinh_phien_ban (CAU-HINH-CASE-SOS)
     assert(soThamChieu() > 0 && (c().prepare('SELECT COUNT(*) n FROM moc_he_thong').get() as any).n === 5, 'dòng mốc');   // + 'so-viec' (sổ nghĩa vụ PR-2)
   });
 
@@ -81,6 +81,8 @@ export async function runPrTlNenTests(t: any) {
       c().exec('BEGIN IMMEDIATE');
       try {
         c().exec('PRAGMA defer_foreign_keys = ON');
+        /* cau_hinh_phien_ban rỗng ở seed (rỗng = bản gốc) → chèn một dòng thử trong giao dịch (ROLLBACK cuối). */
+        if (b === 'cau_hinh_phien_ban') c().prepare(`INSERT INTO cau_hinh_phien_ban (id, loai, du_lieu, tao_luc) VALUES (2, 'nguyen_nhan', '{}', '2026-11-11')`).run();
         const row = c().prepare(`SELECT rowid AS r__, * FROM ${b} LIMIT 1`).get() as any;
         assert(row, `${b} rỗng`);
         const s0 = soThamChieu();

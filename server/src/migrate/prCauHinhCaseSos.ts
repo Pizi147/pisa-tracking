@@ -18,7 +18,9 @@ export function migratePrCauHinhCaseSos(conn: any, applied: string[]): void {
   for (const [bang, cot] of [['case_interventions', 'pb_loai'], ['sos_coordination_actions', 'pb_moc']] as const) {
     if (coBang(bang) && !coCot(bang, cot)) { conn.exec(`ALTER TABLE ${bang} ADD COLUMN ${cot} INTEGER`); lam.push(`${bang}.${cot}`); }
   }
-  for (const t of TRIGGER_THAM_CHIEU.filter((x) => x.ten.startsWith('tg_tc_cau_hinh_phien_ban_'))) {
+  /* DB cũ chưa có `moc_he_thong` (trước TL-NEN): trigger để TL-NEN tạo (nó chạy sau, tạo đủ TRIGGER_THAM_CHIEU). */
+  const coMoc = coBang('moc_he_thong');
+  for (const t of TRIGGER_THAM_CHIEU.filter((x) => coMoc && x.ten.startsWith('tg_tc_cau_hinh_phien_ban_'))) {
     if (conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = ?`).get(t.ten)) continue;
     conn.exec(t.sql);
     lam.push(t.ten);

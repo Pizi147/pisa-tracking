@@ -54,7 +54,7 @@ const TABS = [
 export default function AdminPage() {
   const [params, setParams] = useSearchParams();
   const quanTri = !!useSession().session?.nav?.admin;
-  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'band' || x.key === 'case-sos' || x.key === 'da-xoa');
+  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'band' || x.key === 'da-xoa' || x.key === 'case-sos');
   const tab = tabs.find((x) => x.key === params.get('tab'))?.key ?? tabs[0].key;
   /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
   const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === 'accounts' ? {} : { tab: k });

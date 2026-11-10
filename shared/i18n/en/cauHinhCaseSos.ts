@@ -55,7 +55,6 @@ export const EN_CAU_HINH_CASE_SOS = {
   'Thêm phương án cần QL duyệt': 'Add plan needing approval',
   'Thêm phương án': 'Add plan',
   'Thêm việc': 'Add task',
-  'Thôi': 'Cancel',
   'Thứ tự': 'Order',
   'Trùng tên với "{ten}" trong {nhom} — đổi tên khác.': 'Same name as "{ten}" in {nhom} — choose another name.',
   'Tên tiếng Anh': 'English name',

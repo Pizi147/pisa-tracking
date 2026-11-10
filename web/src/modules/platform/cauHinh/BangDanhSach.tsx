@@ -156,7 +156,7 @@ function DongSua<M extends MucChung>(p: Props<M> & {
         <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
           <label className="grid gap-1 text-[13px] font-medium text-slate-400">
             <span className="flex justify-between">{t('Tên')}<span className="tabular-nums text-slate-500">{sua.m.ten.length}/60</span></span>
-            <input className={`field ${p.loi ? 'border-[color:var(--bad)]' : ''}`} autoFocus value={sua.m.ten} maxLength={80} aria-invalid={!!p.loi}
+            <input className={`field ${p.loi ? 'border-[color:var(--danger)]' : ''}`} autoFocus value={sua.m.ten} maxLength={80} aria-invalid={!!p.loi}
               onChange={(e) => dat({ ...sua.m, ten: e.target.value })} />
             {p.loi && <span className="text-[13px] text-bad">⚠ {p.loi}</span>}
           </label>
@@ -171,7 +171,7 @@ function DongSua<M extends MucChung>(p: Props<M> & {
               </span>
             )}
             <span className="ml-auto flex gap-2">
-              <button type="button" className="btn btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setSua(null)}>{t('Thôi')}</button>
+              <button type="button" className="btn btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setSua(null)}>{t('Đóng')}</button>
               <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={p.busy || !!p.loi || !sua.m.ten.trim()} onClick={p.onLuu}>
                 {p.busy ? t('Đang lưu…') : moi ? t('Thêm') : t('Lưu')}</button>
             </span>

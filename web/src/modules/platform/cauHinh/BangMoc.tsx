@@ -90,7 +90,7 @@ function KhungO({ tieuDe, o, moc, duLieu, coPa, cungAp, onThoi, onLuu, busy }: {
       <div className="flex flex-wrap items-center gap-2">
         {doi && <span className="text-[13px] font-semibold text-soon">● {t('Chưa lưu · {n} ô', { n: 1 + cung.length })}</span>}
         <span className="ml-auto flex gap-2">
-          <button type="button" className="btn btn-ghost min-h-[44px] sm:min-h-0" onClick={onThoi}>{t('Thôi')}</button>
+          <button type="button" className="btn btn-ghost min-h-[44px] sm:min-h-0" onClick={onThoi}>{t('Đóng')}</button>
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={!doi || busy} onClick={() => onLuu(nhap, cung)}>
             {busy ? t('Đang lưu…') : t('Lưu {n} ô', { n: 1 + cung.length })}</button>
         </span>
@@ -164,7 +164,7 @@ function OSoSua({ v, chiXem, onLuu, nhan }: { v: number; chiXem: boolean; onLuu:
   if (sua === null) return <button type="button" aria-label={nhan} className="inline-flex h-[26px] min-w-[30px] items-center justify-center rounded-md border px-1.5 text-sm font-bold tabular-nums text-[color:var(--accent)] hover:border-[color:var(--accent)]" style={{ borderColor: 'var(--line-strong)' }} onClick={() => setSua(String(v))}>{v}</button>;
   const n = Number(sua), sai = !Number.isInteger(n) || n < 1 || n > 60;
   const xong = () => { if (!sai && n !== v) onLuu(n); setSua(null); };
-  return <input autoFocus aria-label={nhan} aria-invalid={sai} className={`field inline-block h-[28px] w-14 px-1 text-center ${sai ? 'border-[color:var(--bad)]' : ''}`} inputMode="numeric" value={sua}
+  return <input autoFocus aria-label={nhan} aria-invalid={sai} className={`field inline-block h-[28px] w-14 px-1 text-center ${sai ? 'border-[color:var(--danger)]' : ''}`} inputMode="numeric" value={sua}
     onChange={(e) => setSua(e.target.value)} onBlur={xong} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); xong(); } if (e.key === 'Escape') setSua(null); }} />;
 }
 
