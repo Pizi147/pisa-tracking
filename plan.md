@@ -278,6 +278,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 (nhắn thẳng session MOCKUP-1111, session chuyển lại):** "Tôi nghĩ là nên để bao nhiêu câu / bao nhiêu câu thay vì phần trăm nhé" rồi "Không nhưng tổng bên trên thì vẫn để rõ phần trăm nhé" → LUẬT: màn chuyển tiếp lớp thường, hộp điểm ghi TỔNG bằng % ("✓ 82 %"), 4 ô môn ghi đúng / tổng câu ("✓ 21/25"); ngưỡng luật trong ⓘ vẫn %. Ý thức V2 xong: #1327 #1328 #1330 đã merge.
 
+**Chủ SP 11/11 — RÀ TOÀN BỘ:** "RÀ LẠI MỘT LƯỢT TẤT CẢ CÁC THAO TÁC Ở TẤT CẢ CÁC TRANG, TẤT CẢ CÁC NÚT, XEM CÓ QUY TRÌNH NÀO ĐANG BỊ KÌ QUẶC, BỊ CHẶN CỨNG, BỊ LỖI, HOẶC BỊ THỪA. Xem xét lại mọi thứ để cân đối xem những cái gì chưa ok và đề xuất giúp tôi nhé, dùng skills cần thiết để r soát và brainstorm để sửa lại những thứ cần thiết để có thể làm logic hóa và đơn giản hóa workflow" → session RA-TOAN-BO-1111 (Opus 5.5 · high): bản đồ trang × vai × nút, bấm thử seed 1440 + 375, xếp KÌ QUẶC / CHẶN CỨNG / LỖI / THỪA + mức + đề xuất, top 10 gộp / đơn giản hoá → báo cáo `docs/superpowers/specs/2026-11-11-ra-toan-bo/`; PTA + chủ SP brainstorm chọn việc sửa. Đã duyệt + merge: #1334 (dải việc hồ sơ lớp); duyệt #1335 #1336.
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
