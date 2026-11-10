@@ -51,4 +51,11 @@ export async function runPrW1GopTaiLaiTests(t: YThucTestKit) {
     assert(/if \(currentPath\.current !== path\) \{\s*xaGop\(path\)/.test(doc('web/src/lib/useApi.ts')), 'useApi.batDauTai phải xả trước khi dùng bản lưu');
     assert(/useEffect\(\(\) => \{ xaGop\(\); \}, \[location\.pathname\]\)/.test(doc('web/src/App.tsx')), 'App phải xả khi đổi trang');
   });
+
+  check('GIAM-COMPUTE · Lịch Test: lưu ô điểm → ô "bài quá hạn" tải lại CÙNG nhịp gộp 1,5 s với dải số (không giữ số cũ, không mỗi ô một GET)', () => {
+    const lt = doc('web/src/modules/test/LichTestTab.tsx');
+    assert(/const oQuaHan = useApi<[^>]+>\(`\/cham\/lich-test\/qua-han\?\$\{qsQuaHan\}`\)/.test(lt), 'ô bài quá hạn phải giữ hook (có reload)');
+    assert(/const baoDaLuu = useGopTaiLai\(\(\) => \{ reload\(\); oQuaHan\.reload\(\); \}\)/.test(lt), 'baoDaLuu phải tải lại cả ô bài quá hạn');
+    assert((lt.match(/onDaLuu=\{baoDaLuu\}/g) ?? []).length >= 2, 'hàng lớp + khối Nợ phải báo đã lưu qua baoDaLuu');
+  });
 }

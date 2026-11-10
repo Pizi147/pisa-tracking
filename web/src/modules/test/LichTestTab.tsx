@@ -82,9 +82,6 @@ export function LichTestTab() {
     setParams(next, { replace: true });
   };
 
-  /* Q14 — lưu một ô: gộp 1,5 s sau lần lưu cuối rồi mới tải lại dải số + nhãn. */
-  const baoDaLuu = useGopTaiLai(reload);
-
   /* Hàng đang mở: nhớ theo tuần xem (localStorage, khoá `khoaHang`) + hàng bị "ép mở" bởi đường dẫn / dải số. */
   const tuanId = data?.tuan?.id ?? null;
   useTenTrang(null, data?.tuan ? tuanLich(data.tuan.weekStart, homNay) : null);   // PR-OV5b: "‹ Lịch Test · W2 OCT"
@@ -222,7 +219,13 @@ export function LichTestTab() {
    */
   const qsQuaHan = new URLSearchParams([...qs].filter(([k]) => k !== 'periodId'));
   if (loai) qsQuaHan.set('khung', loai);
-  const quaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`).data;
+  const oQuaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`);
+  const quaHan = oQuaHan.data;
+  /*
+   * Q14 — lưu một ô: gộp 1,5 s sau lần lưu cuối rồi mới tải lại dải số + nhãn. GIAM-COMPUTE (PTA 11/11): + ô "bài quá hạn" cùng nhịp — trước đó chấm hết
+   * bài quá hạn mà ô vẫn hiện số cũ tới khi tải lại trang (luật: việc đã xong không nơi nào còn báo quá hạn). Một GET mỗi đợt lưu, không mỗi ô.
+   */
+  const baoDaLuu = useGopTaiLai(() => { reload(); oQuaHan.reload(); });
   /* M6 6b-1 (bảng kê lỗi 7): panel lên URL như ô số — ‹ / Back / F5 theo ngăn xếp `?panel=` (Nhập điểm của dòng là view kế). */
   const [moQuaHan, setMoQuaHan] = useMoSoLieu('qua-han-cham');
   const cuon = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }));
