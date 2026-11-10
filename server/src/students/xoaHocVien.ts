@@ -111,8 +111,8 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'sos_cases', sql: `DELETE FROM sos_cases WHERE id IN (${C})` },
   /* Ý thức: vi phạm ↔ PA xử lý (Q4 — PA của em khác lỡ nối vi phạm của em: chỉ mất dòng nối) */
   /* SV-YT-TVV: việc Báo PH của em / của lần xử lý của em (+ lịch sử ghi) trước lần xử lý */
-  { bang: 'viec_bao_ph_lan', sql: `DELETE FROM viec_bao_ph_lan WHERE viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}))` },
-  { bang: 'viec_bao_ph', sql: `DELETE FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M})` },
+  { bang: 'viec_bao_ph_lan', sql: `DELETE FROM viec_bao_ph_lan WHERE viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M}))` },
+  { bang: 'viec_bao_ph', sql: `DELETE FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})` },
   { bang: 'measure_violations', sql: `DELETE FROM measure_violations WHERE violation_id IN (${V}) OR measure_id IN (${M})` },
   { bang: 'violation_history', sql: `DELETE FROM violation_history WHERE violation_id IN (${V})` },
   { bang: 'discipline_measures', sql: `DELETE FROM discipline_measures WHERE id IN (${M})` },
