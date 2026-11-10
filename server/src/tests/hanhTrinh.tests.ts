@@ -792,8 +792,8 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     assert(!/to=\{h\.kind === 'mock' \? `\/mock-test\//.test(src), 'Không còn tự dựng /mock-test/ ở nhãn đợt');
   });
 
-  check('PR-Qb (7) · Header.tsx dùng duongThongBao để điều hướng thông báo', () => {
-    assert(doc('web/src/modules/platform/Header.tsx').includes('duongThongBao'), 'Phải gọi duongThongBao');
+  check('PR-Qb (7) · hộp chuông (HopChuong.tsx, CHUONG-V2) dùng duongThongBao để điều hướng thông báo', () => {
+    assert(doc('web/src/modules/platform/HopChuong.tsx').includes('duongThongBao'), 'Phải gọi duongThongBao');
   });
 
   // ==================================================================== PR-UX5 (5) — ?dot= cuộn ổn định (quét nguồn)

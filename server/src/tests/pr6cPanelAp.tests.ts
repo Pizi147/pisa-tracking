@@ -52,7 +52,7 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
       ['students/StudentPlanPanel.tsx', /cycle\.error \? <ErrorState[^]*sugg\.error \? <ErrorState/],
       ['students/HangLichMt.tsx', /if \(ct\.error\) return <ErrorState/],
       ['students/DauHoSo.tsx', /<LoiTaiNho /],
-      ['platform/Header.tsx', /notifications\.error \? <LoiTaiNho /],
+      ['platform/HopChuong.tsx', /tb\.error \? <LoiTaiNho /],
       ['worklist/SignalList.tsx', /if \(error\) return <Card[^\n]*<ErrorState/],
       ['yThuc/XacNhanXuLyPanel.tsx', /<ErrorState message=\{loiTai\.message\}/],
       ['yThuc/KhaiBacPanel.tsx', /<ErrorState message=\{loiTai\.message\}/],

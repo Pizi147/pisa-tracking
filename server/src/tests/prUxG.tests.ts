@@ -81,8 +81,8 @@ export async function runPrUxGTests(t: YThucTestKit) {
     assert(f(null, '2026-09-14') === '', 'null → rỗng');
   });
   check('G3b · Header dùng thoiGianThongBao (không tự dựng giờ), tooltip nói cả ngày nghiệp vụ', () => {
-    const s = doc('web/src/modules/platform/Header.tsx');
-    assert(/thoiGianThongBao\(/.test(s) && !/function gioThongBao/.test(s), 'Header chưa dùng thoiGianThongBao');
+    const s = doc('web/src/modules/platform/HopChuong.tsx');   // CHUONG-V2: hộp chuông tách khỏi Header
+    assert(/thoiGianThongBao\(/.test(s) && !/function gioThongBao/.test(s), 'HopChuong chưa dùng thoiGianThongBao');
   });
   check('G3c · việc "Báo phụ huynh qua TVV": không còn "Tạo task cho TVV trên Base"; câu mới nhờ TVV báo + đánh dấu đã làm (thông báo, hint Việc cần làm, lý do)', () => {
     const CAU = 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm';

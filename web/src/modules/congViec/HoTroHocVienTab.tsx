@@ -35,6 +35,7 @@ import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
+  NHAN_LOAI_VIEC,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
@@ -53,8 +54,6 @@ type Work = {
 };
 type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
 
-/** Tên loại việc mở từ Tổng quan bằng `loai=` (dòng "Đang xem"). */
-const TEN_LOAI: Record<string, string> = { ghi_ket_qua_pa: t('Kết quả PA') };
 
 /** OV-15d: `nguoi` = `toi` · `gv` · `tat-ca` · id một GV. */
 const thamSoNguoi = (s: string | null): LocNguoiViec | number => {
@@ -370,7 +369,7 @@ export function HoTroHocVienTab() {
   /* Chip bộ lọc đến từ link (Tổng quan, chuông): mỗi chip có ✕ (C10). */
   const chipLoc: { k: string; nhan: string; bo: () => void }[] = [
     ...(loc !== 'tat-ca' && loc !== 'qua-han' && loc !== 'hom-nay' && loc !== 'den-het-tuan' ? [{ k: 'loc', nhan: LOC_NHANH_LABEL[loc], bo: () => setParam('loc', null) }] : []),
-    ...(loai ? [{ k: 'nhom', nhan: TEN_LOAI[loai] ?? NHOM_VIEC_LABEL[nhomViecCua(loai)], bo: () => {
+    ...(loai ? [{ k: 'nhom', nhan: NHAN_LOAI_VIEC[loai] ?? NHOM_VIEC_LABEL[nhomViecCua(loai)]   /* CHUONG-V2: cùng tên dòng loại ở chuông / Tổng quan (`loai=`) */, bo: () => {
       const next = new URLSearchParams(params); next.delete('nhom'); next.delete('loai'); setParams(next, { replace: true });
     } }] : []),
   ];

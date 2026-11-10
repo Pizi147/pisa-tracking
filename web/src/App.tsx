@@ -10,6 +10,7 @@ import { ChanRoiNhapGoc } from './ui/chanRoiNhap.tsx';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { useGhiNguon, useTieuDeTab } from './lib/quayLai.ts';
 import { Header } from './modules/platform/Header.tsx';
+import type { ViecChuong } from './modules/platform/HopChuong.tsx';
 import { Skeleton } from './ui/ui.tsx';
 import { useToast } from './ui/Toast.tsx';
 import { CHIP_TRON } from './ui/Nhan.tsx';
@@ -264,7 +265,7 @@ export default function App() {
    * Q16: giáo viên đọc MỘT lần — tải lại khi đổi trang sau một lần vô hiệu `/my-work` (`lanViec`, GIAM-COMPUTE ở trên). D14: chính `/my-work` (Tổng quan,
    * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần; badge nhận bản của trang qua `chiNghe`).
    */
-  const viecGv = useApi<{ summary: SoViecCuaToi }>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, [lanViec], { chiNghe: true }).data;
+  const viecGv = useApi<{ summary: SoViecCuaToi } & ViecChuong>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, [lanViec], { chiNghe: true }).data;
   /* Bản mới đã về (của badge hay của trang) → hết cũ, bỏ hẹn 60 s, mốc 60 s tính lại từ đây. */
   useEffect(() => { henViec.coBan(); }, [viecGv, henViec]);
   const gv = viecGv ? { n: viecGv.summary?.canLamNgay ?? 0, quaHan: viecGv.summary?.viecQuaHan ?? 0 } : null;
@@ -321,7 +322,8 @@ export default function App() {
           </Link>
           <ThanhTren items={items} dangO={dangO} so={so} />
           <div className="flex-1 min-w-0 md:hidden" />
-          <Header />
+          {/* CHUONG-V2: chuông dùng CHÍNH bản `/my-work` + `/yeu-cau/dem` của badge (0 request thêm); số chuông = `so` của badge Công việc. */}
+          <Header viec={viecGv} dem={dem} so={so} />
         </div>
       </header>
       {/* PR-OV2a (mockup overhaul-3 §2): đang ở một góc nhìn → dải mỏng luôn nói vai + phạm vi, có lối về vai gốc. */}
