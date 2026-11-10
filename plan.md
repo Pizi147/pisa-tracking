@@ -298,6 +298,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 khuya (brainstorming):** "Ngoài ra, tôi nghĩ cần làm gọn hơn phần chuong báo, đang dày thông tin quá mức và thiếu trọng tâm, trường thông tin trông vẫn rất rối, thiết kế lại nhé" → đang bàn (chuông thông báo).
 
+**Chủ SP 11/11 khuya — LUẬT Phối hợp SOS:** "Phối hợp SOS thì chỉ có GVCN được làm, QL có thể theo dõi và làm thay (không cần phải bấm nút làm thay hay gì hết, làm là làm thôi), còn TVV chỉ là báo cáo lại kết quả khi có phần meeting với CX/ GĐCN thôi, vì việc này khi GVCN xác nhận là sẽ báo, thì TVV phải báo với gia đình, sắp xếp buổi họp và báo lại kết quả nhé, như phần ý thức thôi." (thay chốt PTA "Trao đổi với gia đình = TVV").
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
