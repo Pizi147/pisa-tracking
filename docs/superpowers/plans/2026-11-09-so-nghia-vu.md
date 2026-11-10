@@ -22,7 +22,7 @@
 - Sổ không có giao diện riêng. Giao diện chỉ đổi số và panel 3 tab.
 - Dòng đọc Turso: mỗi đường mới / đổi có trần ở `server/src/tests/tocDoDuong.ts`. Mô tả PR ghi số đo trước → sau.
 - `server/src/db.ts`: không gọi `prepare` của libsql bằng đường vòng (CLAUDE.md, mục Bộ nhớ).
-- Bản chính có cột ACTION / KEY viết hoa. Migrate phải thử trên bản chép `D:\pisa-mig\mig.sqlite` (chép ra thư mục tạm, chỉ đọc).
+- Bản chính có cột ACTION / KEY viết hoa. Migrate phải thử trên bản chép `D:\Github\pisa-mig\mig.sqlite` (chép ra thư mục tạm, chỉ đọc).
 - Skill: `karpathy-guidelines`, `ponytail` full (riêng PR-2 có giao diện: `/ponytail lite` + `impeccable` harden / adapt), `superpowers:test-driven-development`. `/code-review high` trước mỗi PR, `/ponytail-review`.
 - Không dùng Fable. Model: Opus 5.5 high, phương án B Sonnet 5.5 high.
 

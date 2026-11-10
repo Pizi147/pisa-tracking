@@ -16,7 +16,7 @@ python -I scripts/do-it.py <thư mục>/x3 --top "QL /my-work"
   lượt quét nền chạy (khoá `QUET …`), rồi chép DB ×3. `do-it.py` chạy lại từng câu SELECT trên bản chép, đếm bằng `sqlite3_stmt_status`:
   **quét cả bảng** (FULLSCAN_STEP — dòng đi qua khi quét cả bảng), **tự dựng** (AUTOINDEX — thiếu chỉ mục, SQLite dựng tạm mỗi lần),
   **bước VM** (bước máy ảo — tỉ lệ với số dòng đọc qua chỉ mục; dùng để xếp hạng, không phải số dòng Turso).
-- Cỡ bảng: DB ×3 gần bằng bản chép bản chính 29/10 (chỉ đếm dòng, `D:\pisa-mig\mig.sqlite`): HV 447 / 844 · Case 327 / 573 · ghi danh 498 / 893 ·
+- Cỡ bảng: DB ×3 gần bằng bản chép bản chính 29/10 (chỉ đếm dòng, `D:\Github\pisa-mig\mig.sqlite`): HV 447 / 844 · Case 327 / 573 · ghi danh 498 / 893 ·
   lộ trình 489 / 891 · PA 330 / 467 · lượt 1 026 / 2 572 · ô kỹ năng 4 059 / 10 288 · `sqlite_master` 304 / 271. Số đo ×3 ≈ 0,5–1 lần bản chính.
 
 ## Tải trang đầu (×3, trước DOC-IT)
