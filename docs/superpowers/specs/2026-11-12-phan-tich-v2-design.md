@@ -94,7 +94,12 @@ Thêm **Ý thức** (giữ nguyên). Tab Phân tích: **Chi nhánh · SOS · Thi
   - **Đạt Target** (số to) — Vượt + Đạt trên số em thi có KQ, **trừ KCK**. Dòng nhỏ: "18/25 em · trừ KCK".
   - **Tổng thể** (cạnh đó, nhỏ hơn) — cùng cách tính nhưng **gồm cả KCK**. Dòng nhỏ: "20/31 em · gồm KCK".
   - Em không có Target (phần lớn em KCK — bản chép 07/11: 16/20 lộ trình KCK không có Target) không tính vào % nào; ghi trong ⓘ, không thành số riêng.
-  - **Thanh** Vượt · Đạt · Chưa đạt (chỉ phần trừ KCK, màu `lopKq` như bây giờ). Bấm một đoạn = mở panel danh sách đoạn đó (luật 2.1b).
+  - **Hai ô này là công tắc** (chủ SP 12/11: "Thế tôi xem số lịe vượt đạt chưa đạt cho cả phần KCK thì sao? có 1 cái toggle ở đâu đó hoặc ở ngay khu vực 2 ô bên trên thì số liệu sẽ thay đổi?"):
+    - Bấm ô "Đạt Target" hoặc "Tổng thể" thì ô được chọn sáng viền (như tab đang chọn), và thanh ngay dưới đổi theo ô đó. Mặc định chọn "Đạt Target" (trừ KCK).
+    - Hai % luôn hiện cả hai, không ẩn số nào khi đổi.
+    - Hai ô vẽ như tab chọn (có `aria-pressed`, không gạch chân như ô số), để khỏi lẫn với ô số mở panel.
+  - **Thanh** Vượt · Đạt · Chưa đạt **theo ô đang chọn**, số ghi ngay trên từng đoạn, màu `lopKq` như bây giờ. Bấm một đoạn = mở panel danh sách đoạn đó (luật 2.1b). Panel của ô "Tổng thể" có chip KCK / WL 2 ở từng em.
+  - Bảng Từng kỹ năng, Theo GV, Theo lớp: luôn **trừ KCK** (công bằng với GV), ghi trong ⓘ. Công tắc chỉ đổi thanh.
   - Chữ cấm dùng trên màn: "có cam kết", "mọi em có Target". ⓘ giải thích: "KCK gồm em không cam kết Target và em đã nhận WL 2. Em không có Target không tính vào %."
 - **Không thi** — em được đánh "Không thi", không vào %.
 - **Chưa có KQ** (**số mới**, hiện tại) — em đã qua ngày thi, chưa có KQ, chưa đánh Không thi (`trangThaiSauThi`, `da_thi_cho_kq`). Bấm ra danh sách để TVV / QL gọi hỏi rồi nhập KQ hoặc đánh Không thi.
