@@ -16,6 +16,7 @@ Mockup: `y-thuc-v2.html` K3 (1440) · K4a / K4b (375). Ảnh cặp mockup | web:
 | K6 Lịch sử cùng kiểu dòng, cột Thao tác, Đã xem · Đã xử lý · Đã thu hồi + phạm vi + nhóm | `kLs` | — | KHỚP |
 | BỎ: dải 5 ô "Cần làm · Người xử lý · Đã tới · Lần này · Báo PH" + hàng 4 nút khác kiểu (`TomTatEm`) | — | — | BỎ (mockup) — thay bằng dải bậc + Bước tiếp |
 | BỎ: khối cũ không còn ai dùng ở `khoiYThuc.tsx` (`BaoPhEm`, `TomTatEm`, `DsViPhamCho`, `LanTruoc`, `BangLichSu`) | — | — | BỎ (−~190 dòng) |
+| K3 nút "Khai / sửa cấp bậc" cạnh "+ Ghi vi phạm" |  đầu thẻ — hiện theo QUYỀN / LUẬT như web cũ:  (em CHƯA có lần xử lý nào trên web, chưa khai) hoặc  (đã khai, người được sửa) |  (Vũ Hải Đăng: 0 lần xử lý → có nút) · cap-hv-1440b (Phạm Bảo Ngọc: đã có Report 1 → không nút) | KHÁC có lý do: mockup vẽ nút cho em đã có Report 1 — luật Q7/Q8 không cho khai bậc khi đã có lần xử lý trên web; không đổi luật |
 | GIỮ: thẻ việc của tôi đầu hồ sơ (vd "Xác nhận xử lý Ý thức · Report 2") | `StudentDetailPage` | cap-hv-375 | GIỮ (luật "việc của tôi ở trang đầu") |
 
 ## Thao tác TRƯỚC → SAU
