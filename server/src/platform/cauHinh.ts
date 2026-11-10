@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import { can, require_, type Principal } from '../permissions.ts';
-import { HAN_MAC_DINH_GOC, MA_HAN, PERMISSIONS, datNguonHan, kiemHanMacDinh, nhanTruongHan, type BanHan, type HanMacDinh, type MaHan } from '../../../shared/domain/index.ts';
+import { HAN_MAC_DINH_GOC, MA_HAN, PERMISSIONS, datNguonHan, ngayTheoGioVN, kiemHanMacDinh, nhanTruongHan, type BanHan, type HanMacDinh, type MaHan } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden } from '../util.ts';
 import { nowNghiepVu } from '../demoConfig.ts';
 import { writeAudit } from './audit.ts';
@@ -33,16 +33,25 @@ export const DDL_CAU_HINH_PHIEN_BAN = [
 const LOAI_HAN = 'han_mac_dinh';
 type Dong = { id: number; du_lieu: string; thay_doi: string | null; khoi_phuc_tu: number | null; tao_luc: string; ten?: string | null };
 
-/** Bản đã lưu (cũ → mới) ghép lên bản gốc theo từng khoá — bản cũ thiếu khoá mới thì lấy gốc. */
+/** Bản đã lưu (cũ → mới) ghép lên bản gốc theo từng hạn VÀ từng trường — bản cũ thiếu hạn / trường mới thì lấy gốc. `tu` = NGÀY giờ VN của lần lưu
+ * (cùng ngày nghiệp vụ với mốc của việc; lưu 00:00–06:59 sáng VN không áp ngược cho hôm trước). Dòng hỏng bỏ qua, không làm sập mọi phép tính hạn. */
 function docDsHan(): BanHan[] {
   let rows: Dong[] = [];
   try { rows = db().prepare('SELECT id, du_lieu, tao_luc FROM cau_hinh_phien_ban WHERE loai = ? ORDER BY id').all(LOAI_HAN) as Dong[]; } catch { rows = []; }   // DB chưa migrate
   const goc = HAN_MAC_DINH_GOC as unknown as HanMacDinh;
-  return [{ id: 0, tu: '', han: goc }, ...rows.map((r) => ({ id: r.id, tu: r.tao_luc, han: { ...goc, ...(JSON.parse(r.du_lieu) as HanMacDinh) } }))];
+  const ds: BanHan[] = [{ id: 0, tu: '', han: goc }];
+  for (const r of rows) {
+    let du: Partial<HanMacDinh>;
+    try { du = JSON.parse(r.du_lieu); } catch { console.error('[cau-hinh] bản hạn hỏng', r.id); continue; }
+    const han = Object.fromEntries(MA_HAN.map((ma) => [ma, { ...goc[ma], ...(du[ma] ?? {}) }])) as HanMacDinh;
+    ds.push({ id: r.id, tu: ngayTheoGioVN(r.tao_luc) ?? r.tao_luc.slice(0, 10), han });
+  }
+  return ds;
 }
 
 const nhoTheoKetNoi = new WeakMap<object, { so: number | null; ds: BanHan[] }>();
-/** Danh sách bản, nhớ theo kết nối: trong request có phiên → làm mới khi mốc `tham-chieu` đổi; ngoài request → tới khi `xoaNhoHan` (sau lưu). */
+/** Danh sách bản, nhớ theo kết nối: trong request có phiên → làm mới khi mốc `tham-chieu` đổi; ngoài request → tới khi `xoaNhoHan` (sau lưu; hàm định kỳ
+ * gọi đầu mỗi lượt — lần lưu ở lambda khác không xoá được nhớ của lambda này). */
 export function dsBanHan(): BanHan[] {
   const conn = db();
   const so = (layMoc() as { thamChieu?: number } | undefined)?.thamChieu ?? null;
@@ -100,7 +109,7 @@ export function luuHanMacDinh(p: Principal, input: { han?: unknown; tuPhienBan?:
     'INSERT INTO cau_hinh_phien_ban (loai, du_lieu, thay_doi, khoi_phuc_tu, nguoi_id, tao_luc) VALUES (?, ?, ?, ?, ?, ?)',
   ).run(LOAI_HAN, JSON.stringify(moi), JSON.stringify(doi), Number.isFinite(khoiPhucTu) ? khoiPhucTu : null, p.userId, nowNghiepVu()).lastInsertRowid);
   writeAudit({
-    actorUserId: p.userId, action: khoiPhucTu ? 'cau_hinh.han_mac_dinh.khoi_phuc' : 'cau_hinh.han_mac_dinh.sua', entityType: 'cau_hinh.han_mac_dinh', entityId: id,
+    actorUserId: p.userId, action: khoiPhucTu != null ? 'cau_hinh.han_mac_dinh.khoi_phuc' : 'cau_hinh.han_mac_dinh.sua', entityType: 'cau_hinh.han_mac_dinh', entityId: id,
     entityLabel: 'Hạn mặc định',
     before: Object.fromEntries(doi.map((d) => [nhanTruongHan(d.ma as MaHan, d.truong), d.truoc])), after: Object.fromEntries(doi.map((d) => [nhanTruongHan(d.ma as MaHan, d.truong), d.sau])),
   });

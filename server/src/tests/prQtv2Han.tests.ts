@@ -54,5 +54,22 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     const h = ch.luuHanMacDinh(P.admin, { han: r.truocHan, tuPhienBan: r.id, khoiPhucTu: r.truocId });
     assert(h.id > r.id && d.hanBaoPh(sau) === d.addDaysIso(sau, 4), 'Hoàn tác không về hạn cũ');
     assert((conn.prepare(`SELECT COUNT(*) n FROM cau_hinh_phien_ban`).get() as any).n === 2, 'Hoàn tác xoá bản thay vì thêm');
+    const nk = conn.prepare(`SELECT action FROM audit_logs WHERE entity_type = 'cau_hinh.han_mac_dinh' ORDER BY id DESC LIMIT 1`).get() as any;
+    assert(nk?.action === 'cau_hinh.han_mac_dinh.khoi_phuc', `Hoàn tác về bản gốc (id 0) ghi "${nk?.action}"`);
+  }));
+
+  check('QTV2-H-4 · khoá lạ (kể cả tên của prototype) bị chặn; ngày hiệu lực theo giờ VN; dòng hỏng / thiếu trường không làm sập', () => thu(() => {
+    for (const x of [{ ...goc(), constructor: 1 }, { ...goc(), toString: 1 }]) assert(d.kiemHanMacDinh(x)?.loi?.startsWith('Hạn không có'), 'khoá lạ lọt');
+    const con = goc(); con.cham_test.toString = 1;
+    assert(d.kiemHanMacDinh(con)?.loi === 'Có trường lạ.', 'trường lạ lọt');
+    conn.exec('DELETE FROM cau_hinh_phien_ban');
+    const them = conn.prepare(`INSERT INTO cau_hinh_phien_ban (loai, du_lieu, tao_luc) VALUES ('han_mac_dinh', ?, ?)`);
+    them.run('{hỏng', '2026-11-09T03:00:00.000Z');
+    them.run(JSON.stringify({ ...goc(), xac_nhan_case: { ngay: 6 } }), '2026-11-10T20:00:00.000Z');   // 03:00 sáng 11/11 giờ VN; thiếu ngayGap
+    ch.xoaNhoHan();
+    const ds = ch.dsBanHan();
+    assert(ds.length === 2 && ds[1].tu === '2026-11-11', `tu ${ds.at(-1)?.tu} · ${ds.length} bản`);
+    assert(d.hanTai('xac_nhan_case', '2026-11-10').ngay === 5 && d.hanTai('xac_nhan_case', '2026-11-11').ngay === 6, 'áp ngược cho hôm trước');
+    assert(d.hanTai('xac_nhan_case', '2026-11-11').ngayGap === 3, 'thiếu trường không lấy gốc');
   }));
 }

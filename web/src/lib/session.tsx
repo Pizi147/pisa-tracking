@@ -86,7 +86,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  useEffect(() => { const ds = session?.hanMacDinh; datNguonHan(ds?.length ? () => ds : null); }, [session]);
+  /* Đặt nguồn hạn ngay khi vẽ (trước con) — không đợi effect, lần vẽ đầu có phiên đã tính theo bản trong DB. */
+  const dsHan = session?.hanMacDinh;
+  datNguonHan(dsHan?.length ? () => dsHan : null);
 
   const reload = useCallback(async () => {
     try {

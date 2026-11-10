@@ -13,14 +13,14 @@ type Xem = { id: number; han: HanMacDinh; goc: HanMacDinh; suaDuoc: boolean };
 type GiaTri = Record<string, number>;
 
 const THU: Record<number, string> = { 2: t('T2'), 3: t('T3'), 4: t('T4'), 5: t('T5'), 6: t('T6'), 7: t('T7'), 8: t('CN') };
-const TUAN: Record<number, string> = { [-2]: t('2 tuần trước'), [-1]: t('tuần trước'), 0: t('tuần đó'), 1: t('tuần sau'), 2: t('2 tuần sau') };
+const TUAN: Record<number, string> = { [-2]: t('trước 2 tuần'), [-1]: t('tuần trước'), 0: t('tuần đó'), 1: t('tuần sau'), 2: t('sau 2 tuần') };
 const ngay = (n: number) => t('{n} ngày', { n });
 
 /** Mỗi hạn: tên việc · tính từ · ai làm · cách hiện giá trị · ⓘ luật gốc. Thứ tự + nhóm = bảng spec mục 5.4. */
 const DONG: { ma: MaHan; nhom: string; viec: string; tu: string; ai: string; hien: (v: GiaTri) => string; luat?: string }[] = [
   { ma: 'cham_test', nhom: t('Test & điểm'), viec: t('Chấm Mock / Test lớp thường'), tu: t('tuần thi'), ai: t('GV chấm'), hien: (v) => `${THU[v.thu]} ${TUAN[v.tuanLech]}`, luat: t('T19 · cả Fast Track và lớp thường; MT0 cùng hạn.') },
   { ma: 'xac_nhan_case', nhom: t('Case & PA'), viec: t('Xác nhận Case · thêm PA'), tu: t('ngày phát hiện'), ai: t('GV phụ trách'), hien: (v) => t('{a} ngày · gấp {b}', { a: v.ngay, b: v.ngayGap }), luat: t('Gấp = Case gấp hoặc SOS 3. Progress Test lớp thường luôn theo hạn thường.') },
-  { ma: 'xac_minh_tin_hieu', nhom: t('Case & PA'), viec: t('Xác minh tín hiệu'), tu: t('ngày có tín hiệu'), ai: t('GV phụ trách'), hien: (v) => ngay(v.ngay) },
+  { ma: 'xac_minh_tin_hieu', nhom: t('Case & PA'), viec: t('Xác nhận nguyên nhân Case'), tu: t('ngày Case chờ xác nhận nguyên nhân'), ai: t('GV phụ trách'), hien: (v) => ngay(v.ngay) },
   { ma: 'ql_duyet_pa', nhom: t('Case & PA'), viec: t('QL trả lời Chờ duyệt'), tu: t('ngày gửi'), ai: t('QL chi nhánh'), hien: (v) => ngay(v.ngay), luat: t('Đề xuất PA, xin ý kiến, đề xuất sửa thông tin, xử lý / thu hồi Ý thức, xin xoá — tính cả ngày gửi.') },
   { ma: 'ghi_kq_pa', nhom: t('Case & PA'), viec: t('Ghi kết quả PA'), tu: t('ngày bắt đầu PA'), ai: t('người làm PA'), hien: (v) => t('{n} tuần / lần · hết T3', { n: v.kyTuan }) },
   { ma: 'ket_thuc_pa', nhom: t('Case & PA'), viec: t('PA quy chế "1 tháng"'), tu: t('ngày tạo PA'), ai: '—', hien: (v) => t('{n} ngày, tới CN', { n: v.ngay }) },
@@ -28,12 +28,12 @@ const DONG: { ma: MaHan; nhom: string; viec: string; tu: string; ai: string; hie
   { ma: 'bao_ph_vi_pham', nhom: t('Ý thức & phối hợp'), viec: t('Báo PH sau xử lý vi phạm'), tu: t('ngày GVCN lưu'), ai: t('TVV của em'), hien: (v) => ngay(v.ngay), luat: t('N1, N2 · ngày lưu là ngày 1 · gồm T7, CN · hết 23:59.') },
   { ma: 'meeting_cx', nhom: t('Ý thức & phối hợp'), viec: t('Meeting CX / GĐCN'), tu: t('ngày sinh việc'), ai: t('GVCN'), hien: (v) => ngay(v.ngay) },
   { ma: 'chot_lo_trinh', nhom: t('Lộ trình & lớp'), viec: t('Chốt lộ trình lớp thường'), tu: t('tuần Final'), ai: t('QL'), hien: (v) => `${THU[v.thu]} ${TUAN[v.tuanLech]}`, luat: t('N20 · nhắc từ T2 tuần trước Final; bàn giao hết CN tuần Final.') },
-  { ma: 'ban_giao_chuyen_lop', nhom: t('Lộ trình & lớp'), viec: t('Bàn giao chuyển lớp'), tu: t('ngày ra lệnh'), ai: t('GV lớp cũ'), hien: (v) => ngay(v.ngay), luat: t('Tính cả ngày ra lệnh.') },
-  { ma: 'ban_giao_doi_gv', nhom: t('Lộ trình & lớp'), viec: t('Bàn giao đổi GV'), tu: t('ngày đổi GV'), ai: t('GV cũ'), hien: (v) => t('{a} ngày · xem thêm {b}', { a: v.ngay, b: v.xemNgay }), luat: t('N29 · GV cũ còn xem lớp cũ thêm số ngày này.') },
-  { ma: 'buoc_tiep_sau_thi', nhom: t('Lộ trình & lớp'), viec: t('Bước tiếp sau thi thật'), tu: t('ngày có KQ thi'), ai: t('TVV của em'), hien: (v) => ngay(v.ngay), luat: t('N6') },
+  { ma: 'ban_giao_chuyen_lop', nhom: t('Lộ trình & lớp'), viec: t('Bàn giao chuyển lớp'), tu: t('ngày quyết định chuyển lớp'), ai: t('GV lớp cũ'), hien: (v) => ngay(v.ngay), luat: t('Tính cả ngày quyết định.') },
+  { ma: 'ban_giao_doi_gv', nhom: t('Lộ trình & lớp'), viec: t('Bàn giao đổi GV'), tu: t('ngày đổi GV'), ai: t('GV cũ'), hien: (v) => t('{a} ngày · còn xem {b}', { a: v.ngay, b: v.xemNgay }), luat: t('N29 · GV cũ còn xem lớp cũ thêm số ngày này.') },
+  { ma: 'buoc_tiep_sau_thi', nhom: t('Lộ trình & lớp'), viec: t('Bước tiếp sau thi thật'), tu: t('ngày có KQ thi'), ai: t('TVV của em'), hien: (v) => ngay(v.ngay), luat: 'N6' },
   { ma: 'xet_lai', nhom: t('Lộ trình & lớp'), viec: t('Xét lại lộ trình'), tu: t('tuần đầu lớp mới'), ai: t('QL'), hien: (v) => `${THU[v.thu]} ${TUAN[v.tuanLech]}`, luat: t('N21 · Mini Test: CN tuần sau ngày ghi (giữ).') },
 ];
-const NHAN_TRUONG: Record<string, string> = { ngay: t('Số ngày'), ngayGap: t('Gấp'), xemNgay: t('Xem thêm'), kyTuan: t('Số tuần'), tuanLech: t('Tuần'), thu: t('Thứ') };
+const NHAN_TRUONG: Record<string, string> = { ngay: t('Số ngày'), ngayGap: t('Gấp'), xemNgay: t('Còn xem'), kyTuan: t('Số tuần'), tuanLech: t('Tuần'), thu: t('Thứ') };
 const GIOI: Record<string, [number, number]> = { ngay: [1, 60], ngayGap: [1, 60], xemNgay: [0, 60], kyTuan: [1, 4] };
 
 /**
@@ -43,7 +43,8 @@ const GIOI: Record<string, [number, number]> = { ngay: [1, 60], ngayGap: [1, 60]
  */
 export function HanMacDinhAdmin() {
   const r = useApi<Xem>('/admin/cau-hinh/han');
-  const quanTri = !!useSession().session?.nav?.admin;
+  const phien = useSession();
+  const quanTri = !!phien.session?.nav?.admin;
   const toast = useToast();
   const [sua, setSua] = useState<MaHan | null>(null);
   if (r.error) return <Card title={t('Hạn mặc định')}><ErrorState message={r.error.message} hint={r.error.hint} status={r.error.status} onRetry={r.reload} /></Card>;
@@ -53,7 +54,7 @@ export function HanMacDinhAdmin() {
 
   const gui = async (han: HanMacDinh, tuPhienBan: number, khoiPhucTu?: number) => {
     const x = await api.put<{ id: number; truocId: number; truocHan: HanMacDinh; doi: unknown[] }>('/admin/cau-hinh/han', { han, tuPhienBan, khoiPhucTu });
-    r.reload(); invalidate('/admin/nhat-ky'); invalidate('/demo/session');
+    r.reload(); invalidate('/admin/nhat-ky'); void phien.reload();   // phiên mang bản hạn — các màn khác tính theo bản mới ngay
     return x;
   };
   const luu = async (ma: MaHan, v: GiaTri) => {

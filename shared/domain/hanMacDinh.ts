@@ -33,24 +33,26 @@ export const HAN_MAC_DINH_GOC = {
 } as const;
 
 export type MaHan = keyof typeof HAN_MAC_DINH_GOC;
-/** Tên việc của từng hạn (màn Hạn mặc định + nhật ký "trước → sau"). Trường phụ: `ngayGap` "(gấp)", `xemNgay` "(xem thêm)". */
+/** Tên việc của từng hạn (màn Hạn mặc định + nhật ký "trước → sau"). Trường phụ: `ngayGap` "(gấp)", `xemNgay` "(còn xem)". */
 export const TEN_HAN: Record<MaHan, string> = {
-  cham_test: 'Chấm Mock / Test lớp thường', xac_nhan_case: 'Xác nhận Case · thêm PA', xac_minh_tin_hieu: 'Xác minh tín hiệu', ql_duyet_pa: 'QL trả lời Chờ duyệt',
+  cham_test: 'Chấm Mock / Test lớp thường', xac_nhan_case: 'Xác nhận Case · thêm PA', xac_minh_tin_hieu: 'Xác nhận nguyên nhân Case', ql_duyet_pa: 'QL trả lời Chờ duyệt',
   ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm', meeting_cx: 'Meeting CX / GĐCN',
   chot_lo_trinh: 'Chốt lộ trình lớp thường', ban_giao_chuyen_lop: 'Bàn giao chuyển lớp', ban_giao_doi_gv: 'Bàn giao đổi GV', buoc_tiep_sau_thi: 'Bước tiếp sau thi thật', xet_lai: 'Xét lại lộ trình',
 };
-const TEN_TRUONG_HAN: Record<string, string> = { ngay: '', ngayGap: ' (gấp)', xemNgay: ' (xem thêm)', kyTuan: ' (tuần)', tuanLech: ' (tuần)', thu: ' (thứ)' };
+const TEN_TRUONG_HAN: Record<string, string> = { ngay: '', ngayGap: ' (gấp)', xemNgay: ' (còn xem)', kyTuan: ' (tuần)', tuanLech: ' (tuần)', thu: ' (thứ)' };
 /** Nhãn một trường của một hạn cho nhật ký: "Meeting CX / GĐCN", "Xác nhận Case · thêm PA (gấp)". */
 export const nhanTruongHan = (ma: MaHan, truong: string) => `${TEN_HAN[ma]}${TEN_TRUONG_HAN[truong] ?? ` (${truong})`}`;
 export type HanMacDinh = { -readonly [K in MaHan]: { -readonly [F in keyof (typeof HAN_MAC_DINH_GOC)[K]]: number } };
 export const MA_HAN = Object.keys(HAN_MAC_DINH_GOC) as MaHan[];
-/** Một phiên bản: `tu` = lúc có hiệu lực (ISO, đồng hồ nghiệp vụ); bản gốc `tu` = '' (trước mọi việc). */
+/** Một phiên bản: `tu` = NGÀY có hiệu lực (giờ VN, đồng hồ nghiệp vụ); bản gốc `tu` = '' (trước mọi việc). */
 export type BanHan = { id: number; tu: string; han: HanMacDinh };
 
 const GOC: BanHan = { id: 0, tu: '', han: HAN_MAC_DINH_GOC as unknown as HanMacDinh };
 let nguon: () => readonly BanHan[] = () => [GOC];
 /** Máy chủ / web đặt nguồn danh sách bản (cũ → mới). Phép kiểm đặt lại `datNguonHan(null)` = chỉ bản gốc. */
 export function datNguonHan(f: (() => readonly BanHan[]) | null): void { nguon = f ?? (() => [GOC]); }
+/** Mọi bản (cũ → mới) — câu SQL cần cửa sổ rộng nhất qua mọi bản rồi lọc lại bằng hàm theo bản của từng việc. */
+export const cacBanHan = (): readonly BanHan[] => nguon();
 
 /** Bản có hiệu lực tại `moc` (ngày / lúc của việc; thiếu = bây giờ = bản mới nhất). Khoá thiếu trong bản (bản cũ hơn mã) → giá trị gốc. */
 export function hanTai<K extends MaHan>(ma: K, moc?: string | null): HanMacDinh[K] {
@@ -69,7 +71,7 @@ const GIOI: Record<string, [number, number]> = { ngay: [1, 60], ngayGap: [1, 60]
 export function kiemHanMacDinh(v: unknown): { ma: MaHan | null; loi: string } | null {
   if (!v || typeof v !== 'object') return { ma: null, loi: 'Thiếu dữ liệu hạn.' };
   const o = v as Record<string, Record<string, unknown>>;
-  for (const ma of Object.keys(o)) if (!(ma in HAN_MAC_DINH_GOC)) return { ma: null, loi: `Hạn không có: ${ma}.` };
+  for (const ma of Object.keys(o)) if (!Object.hasOwn(HAN_MAC_DINH_GOC, ma)) return { ma: null, loi: `Hạn không có: ${ma}.` };
   for (const ma of MA_HAN) {
     const goc = HAN_MAC_DINH_GOC[ma] as Record<string, number>;
     const x = o[ma];
@@ -79,7 +81,7 @@ export function kiemHanMacDinh(v: unknown): { ma: MaHan | null; loi: string } | 
       const [a, b] = GIOI[k];
       if (typeof n !== 'number' || !Number.isInteger(n) || n < a || n > b) return { ma, loi: `Phải là số nguyên từ ${a} đến ${b}.` };
     }
-    if (Object.keys(x).some((k) => !(k in goc))) return { ma, loi: 'Có trường lạ.' };
+    if (Object.keys(x).some((k) => !Object.hasOwn(goc, k))) return { ma, loi: 'Có trường lạ.' };
   }
   if ((o.xac_nhan_case.ngayGap as number) > (o.xac_nhan_case.ngay as number)) return { ma: 'xac_nhan_case', loi: 'Hạn Case gấp không dài hơn hạn thường.' };
   return null;

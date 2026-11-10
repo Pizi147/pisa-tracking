@@ -2522,9 +2522,9 @@ CREATE TABLE IF NOT EXISTS cau_hinh_phien_ban (
     tao_luc TEXT NOT NULL
   );
 CREATE INDEX IF NOT EXISTS idx_chpb_loai ON cau_hinh_phien_ban(loai, id);
-CREATE TRIGGER IF NOT EXISTS tg_tc_cau_hinh_phien_ban_ins AFTER INSERT ON cau_hinh_phien_ban
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_ins AFTER INSERT ON cau_hinh_phien_ban
     BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
-CREATE TRIGGER IF NOT EXISTS tg_tc_cau_hinh_phien_ban_upd AFTER UPDATE ON cau_hinh_phien_ban
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_upd AFTER UPDATE ON cau_hinh_phien_ban
     BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
-CREATE TRIGGER IF NOT EXISTS tg_tc_cau_hinh_phien_ban_del AFTER DELETE ON cau_hinh_phien_ban
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_del AFTER DELETE ON cau_hinh_phien_ban
     BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
