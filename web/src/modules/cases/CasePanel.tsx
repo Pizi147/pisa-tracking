@@ -290,7 +290,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
 
   /* ─── Phương án */
   /* RKC-2a / 2b: Case đã hoàn thành, chờ duyệt "Không cần theo dõi" → vẫn hiện; máy chủ hỏi (Mở lại Case / rút đề nghị). */
-  const themPaDuoc = !!vw.canEdit && !(data.sos?.awaitingCause || data.sos?.choNhanXet || data.sos?.tam);
+  /* SOS-TAM-PA (chủ SP 11/11): Case tạm (SOS chưa chốt) thêm PA được — chưa có hạn ghi kết quả tới khi chốt. */
+  const themPaDuoc = !!vw.canEdit && !(data.sos?.awaitingCause || data.sos?.choNhanXet);
   const coPaBatBuoc = (data.interventions ?? []).some((x: any) => x.batBuoc && (x.status === 'planned' || x.status === 'started'));
   const the = (iv: any) => (
     <ThePa key={iv.id} iv={iv} data={data} homNay={homNay} ngan={ngan} toi={toi}
@@ -750,8 +751,8 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   const vien = (chu: string, cham: string) => <span className="tt-pa" style={{ ['--cham' as any]: cham }}>{chu}</span>;
   const trangThai = theXoa ? vien(t('Chờ QL duyệt xoá'), 'rgb(var(--soon-rgb))')
     : formHien === 'ghi' ? vien(t('Đang ghi kết quả'), 'rgb(var(--soon-rgb))')
-    : iv.awaitingConfirmation ? (xacNhanDuoc && !mo ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('xac-nhan')}>{t('Xác nhận PA')}</button> : vien(t('Chờ xác nhận'), 'rgb(var(--doing-rgb))'))
-    : choDuyet ? vien(t('Chờ Quản lý duyệt'), 'rgb(var(--soon-rgb))')
+    : iv.awaitingConfirmation ? (xacNhanDuoc && !mo ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('xac-nhan')}>{iv.chonPa ? t('Chọn PA') : t('Xác nhận PA')}</button> : vien(iv.chonPa ? t('Chờ chọn PA') : t('Chờ xác nhận'), 'rgb(var(--doing-rgb))'))
+    : choDuyet || (iv.preset && !iv.confirmedAt && iv.status === 'planned' && iv.doiPa?.trangThai === 'cho') ? vien(t('Chờ Quản lý duyệt'), 'rgb(var(--soon-rgb))')   // PA quy chế chưa chạy chờ QL duyệt đổi / giữ PA GV
     : iv.chuaChay ? vien(t('Chưa bắt đầu'), 'var(--text-faint)')
     : dangChay ? (ghiDuoc && toiKy && !mo
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
@@ -898,7 +899,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
           {formThan}
           {!formHien && <>
             {theXoa && vw.canApprove && <div className="pt-2.5"><TheYeuCau gon yc={theXoa} onXong={lamMoi} /></div>}
-            {vw.canApprove && iv.yeuCau && iv.yeuCau.loai === 'de_xuat_pa' && <div className="pt-2.5"><TheYeuCau gon yc={iv.yeuCau} onXong={lamMoi} /></div>}
+            {vw.canApprove && iv.yeuCau && (iv.yeuCau.loai === 'de_xuat_pa' || iv.yeuCau.loai === 'giu_pa_gv') && <div className="pt-2.5"><TheYeuCau gon yc={iv.yeuCau} onXong={lamMoi} /></div>}
             <div className="pt-1"><DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={lamMoi} /></div>
             {fld}
             {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
@@ -919,12 +920,12 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
 
 /** Thẻ gập: đề xuất đổi PA đang chờ vẫn thấy ("Chờ duyệt đổi PA → …") — mở thẻ thấy đủ + Rút. */
 function DongDoiPaGon({ iv, ngan }: { iv: any; data: CaseDetail; ngan: (d: string | null | undefined) => string; onDoi: () => void }) {
-  const d = iv.doiPa as { trangThai: 'cho' | 'tu_choi'; loaiMoi: string; guiLuc: string } | null;
+  const d = iv.doiPa as { trangThai: 'cho' | 'tu_choi'; loaiMoi: string; guiLuc: string; giuPaGv?: boolean } | null;
   if (!d) return null;
   const tenMoi = dich(INTERVENTION_KIND_LABEL[d.loaiMoi as keyof typeof INTERVENTION_KIND_LABEL] ?? d.loaiMoi);
   return (
     <p className="m-0 px-3.5 pb-2 text-[13px] text-slate-300">
-      {d.trangThai === 'cho' ? <>{t('Chờ duyệt đổi PA')} → <b className="font-semibold text-slate-100">{tenMoi}</b> · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}</>
+      {d.trangThai === 'cho' ? <>{d.giuPaGv ? t('Chờ QL duyệt PA của GV') : t('Chờ duyệt đổi PA')} → <b className="font-semibold text-slate-100">{tenMoi}</b> · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}</>
         : <b className="font-semibold text-late">{t('QL từ chối đổi PA')}</b>}
     </p>
   );
@@ -999,7 +1000,8 @@ function DaiVuaDoi({ x, onHoanTac }: { x: VuaDoiPa; onHoanTac?: () => void }) {
  * Rút (người gửi) / thẻ duyệt tại chỗ (QL); bị từ chối: "QL từ chối đổi PA: “…”" + Đề xuất lại (form ngay dưới).
  */
 function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan: (d: string | null | undefined) => string; onDoi?: () => void }) {
-  const d = iv.doiPa as { trangThai: 'cho' | 'tu_choi'; paMoiId: number; loaiMoi: string; guiLuc: string; hanDuyet: string | null; lyDoTuChoi: string | null; yeuCauId: number; laNguoiGui: boolean } | null;
+  const d = iv.doiPa as { trangThai: 'cho' | 'tu_choi'; paMoiId: number; loaiMoi: string; guiLuc: string; hanDuyet: string | null; lyDoTuChoi: string | null; yeuCauId: number; laNguoiGui: boolean;
+    /** SOS-TAM-PA: GV giữ PA của mình khác PA quy chế — quá hạn QL chưa trả lời thì chốt theo GV. */ giuPaGv?: boolean } | null;
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [lai, setLai] = useState(false);
@@ -1010,13 +1012,13 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
     try { await api.post(`/yeu-cau/${d.yeuCauId}/rut`); invalidate('/cases'); invalidate('/my-work'); invalidate('/yeu-cau'); onDoi?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
   if (d.trangThai === 'cho') {
-    const the = data.viewer.canApprove ? (data.interventions ?? []).find((x: any) => x.id === d.paMoiId)?.yeuCau ?? null : null;
+    const the = data.viewer.canApprove && !d.giuPaGv ? (data.interventions ?? []).find((x: any) => x.id === d.paMoiId)?.yeuCau ?? null : null;   // giữ PA GV: thẻ nằm ở chính PA quy chế (`iv.yeuCau`)
     return (
       <div className="flex flex-col gap-1.5">
         <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-300">
-          <Nhan tone="muted">{t('Chờ duyệt đổi PA')}</Nhan>
+          <Nhan tone="muted">{d.giuPaGv ? t('Chờ QL duyệt PA của GV') : t('Chờ duyệt đổi PA')}</Nhan>
           <span>→ <b className="font-semibold text-slate-100">{tenMoi}</b></span>
-          <span className="text-slate-400">· {iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${t('QL hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
+          <span className="text-slate-400">· {d.giuPaGv ? t('PA của GV vẫn chạy') : iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${d.giuPaGv ? t('quá {ngay} tự chốt theo GV', { ngay: ngan(d.hanDuyet) }) : t('QL hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
           {d.laNguoiGui && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void rut()}>{busy ? t('Đang lưu…') : t('Rút')}</button>}
           {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
         </p>

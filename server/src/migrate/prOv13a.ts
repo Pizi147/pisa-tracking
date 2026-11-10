@@ -53,9 +53,9 @@ const PA_DA_DAT = `SELECT iv.id, iv.case_id, (SELECT MIN(m.occurred_on) FROM cas
      AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = iv.case_id AND m.kind IN ('passed', 'overall_dat') AND m.created_at >= iv.created_at)
    ORDER BY iv.id`;
 
-/** Lượt Mock chưa hoàn tất có ô có điểm + nhận xét — ứng viên Case tạm (luật chính xác ở `caseTamCuaLuot`). */
+/** Lượt Mock chưa hoàn tất có ô có điểm — ứng viên Case tạm (luật chính xác ở `caseTamCuaLuot`; SOS-TAM-PA 11/11: không cần nhận xét). */
 const LUOT_CHUA_CHOT = `SELECT DISTINCT a.id FROM assessment_attempts a JOIN assessment_scores s ON s.attempt_id = a.id
-   WHERE a.kind = 'mock' AND a.status NOT IN ('cancelled', 'done') AND TRIM(COALESCE(s.comment, '')) != '' AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)
+   WHERE a.kind = 'mock' AND a.status NOT IN ('cancelled', 'done') AND (s.band IS NOT NULL OR s.raw_score IS NOT NULL)
    ORDER BY a.id`;
 
 const tenCase = (r: any) => CASE_CATEGORY_LABEL[(r.category ?? r.topic) as CaseCategory] ?? r.topic ?? '?';
