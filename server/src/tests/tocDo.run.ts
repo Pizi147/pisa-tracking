@@ -1336,9 +1336,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        với băm cũ. Trước: GVCN toi 9d92644a93b70d7c, GVBM toi e089af060bbfcf23, GVCN_THUONG toi 9d92644a93b70d7c, QL tat-ca 44df50bdddf5043e, QT tat-ca 893884b8134ff493, QT tat-ca cn 0ae00a58528bfe32, QL gvcn d72da0f9c7bf9628 */
     /* SOS-TAM-PA (11/11): chụp lại 8 băm (QL / QT toi, ADMIN giữ) — seed sinh Case tạm cho cả ô chưa nhận xét nên id Case sau đó dời. Đã kiểm (seed main a9da41132 ↔
        nhánh): 8 góc nhìn cùng số việc + cùng nội dung, chỉ khác khoá / caseId / href. Trước: GVCN toi b365951571812c05, GVBM toi 12e56e58ca3ab54f, GVCN_THUONG toi b365951571812c05, QL tat-ca 82a113beaa654d50, QT tat-ca 4ea0cb34545f1f71, QT tat-ca cn 27514f17c920a385, QL gvcn 1704e89b346dd3ad, GVS toi 8925006102baff97. */
-    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': '97704c72a022da09', 'GVBM toi': 'cb36a0c9a8c1097c',
-    'GVCN_THUONG toi': '97704c72a022da09', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '082861122d840ef9', 'QT tat-ca': '78fce69d8f1a611c',
-    'QT tat-ca cn': '2307ec8ad59a2c92', 'QL gvcn': '1e7cab7eba1cc163', 'GVS toi': '85067c7b764cb801',
+    /* QTV2-BAND (11/11): chụp lại 9 băm — đổi CÓ CHỦ Ý chỉ chữ `hint` / `reason` mô tả luật (Mini Test "Đạt thì Case tự hoàn thành…", Xét lại "dưới mức
+       Học lại…") để không lệch khi Quản trị đổi ngưỡng. Đã kiểm: trả mywork.ts về origin/main trên nhánh → TD4-a đạt với băm cũ. Trước: QL toi 15eb3872996a260a,
+       QT toi 6627fb30cb9de2f7, GVCN toi 97704c72a022da09, GVCN_THUONG toi 97704c72a022da09, QL tat-ca 082861122d840ef9, QT tat-ca 78fce69d8f1a611c,
+       QT tat-ca cn 2307ec8ad59a2c92, QL gvcn 1e7cab7eba1cc163, GVS toi 85067c7b764cb801 */
+    'QL toi': '6335bcebd923e71b', 'QT toi': '83c44c6822338633', 'GVCN toi': 'a4c421fb3266114d', 'GVBM toi': 'cb36a0c9a8c1097c',
+    'GVCN_THUONG toi': 'a4c421fb3266114d', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': 'aac8f51d953c864a', 'QT tat-ca': '43c708b306f6a6de',
+    'QT tat-ca cn': '022205fe411a2009', 'QL gvcn': '5b5450def242ac93', 'GVS toi': '4377448ab54bea37',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
