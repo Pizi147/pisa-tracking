@@ -28,10 +28,19 @@ onInvalidate((prefix) => {
   for (const k of [...daXem.keys()]) if (prefix === null || k.startsWith(prefix)) daXem.delete(k);
 });
 const conMoi = (path: string) => { const x = daXem.get(path); return !!x && Date.now() - x.luc < MOI_MS; };
+/** GIAM-COMPUTE: hook `chiNghe` nhận mọi bản mới của đường mình — khối khác tải cùng đường thì hook này có luôn, không gọi thêm. */
+const ngheBan = new Map<string, Set<(d: unknown) => void>>();
 function nhoBanXem(path: string, d: unknown) {
   daXem.delete(path);
   daXem.set(path, { d, luc: Date.now() });
   if (daXem.size > DA_XEM_TOI_DA) daXem.delete(daXem.keys().next().value as string);
+  ngheBan.get(path)?.forEach((f) => f(d));
+}
+/** Nghe mọi bản mới (đã nhớ, không bị vô hiệu giữa chừng) của `path`; trả hàm gỡ. */
+export function ngheBanMoi(path: string, f: (d: unknown) => void): () => void {
+  const ds = ngheBan.get(path) ?? new Set();
+  ngheBan.set(path, ds.add(f));
+  return () => { ds.delete(f); if (!ds.size && ngheBan.get(path) === ds) ngheBan.delete(path); };
 }
 function getChung<T>(path: string): Promise<T> {
   const cu = dangBay.get(path) as Promise<T> | undefined;
@@ -169,7 +178,14 @@ export type ApiState<T> = {
  * cho mọi lần tải lại, trang cha sẽ đổi sang skeleton và làm unmount bảng đang nhập,
  * khiến bản nháp của người dùng bị mất.
  */
-export function useApi<T>(path: string | null, deps: unknown[] = [], opts: { giuCu?: boolean } = {}): ApiState<T> {
+export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
+  giuCu?: boolean;
+  /**
+   * GIAM-COMPUTE (badge `/my-work` ở App): KHÔNG tự tải lại khi đường bị vô hiệu — nơi gọi tự quyết lúc tải lại (qua `deps`); khối khác tải cùng đường
+   * thì nhận luôn bản mới đó (số không lệch với trang đang mở, không thêm lời gọi).
+   */
+  chiNghe?: boolean;
+} = {}): ApiState<T> {
   const [data, setDataState] = useState<T | null>(() => (path ? (daXem.get(path)?.d as T | undefined) ?? null : null));
   const [fetching, setFetching] = useState(!!path);
   const [error, setError] = useState<ApiError | null>(null);
@@ -184,11 +200,15 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: { giu
   useEffect(() => () => { loiNen.delete(reload); }, [reload]);
 
   useEffect(
-    () => onInvalidate((prefix) => {
+    () => opts.chiNghe ? undefined : onInvalidate((prefix) => {
       if (prefix === null || (path && path.startsWith(prefix))) reload();
     }),
-    [reload, path],
+    [reload, path, opts.chiNghe],
   );
+  useEffect(() => {
+    if (!opts.chiNghe || !path) return undefined;
+    return ngheBanMoi(path, (d) => setDataState(d as T));
+  }, [path, opts.chiNghe]);
 
   useEffect(() => {
     batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload, giuCu: opts.giuCu, setCu });
