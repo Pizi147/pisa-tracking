@@ -365,7 +365,7 @@ export const HD_QL: HuongDan = {
       id: 'quan-tri', ten: 'Cấu hình hệ thống', duong: ['/quan-tri'],
       dangO: { cau: 'Chương trình, chi nhánh, bảng quy đổi (chỉ xem — Quản trị hệ thống sửa) và mục đã xoá.', truoc: { chu: 'Tổng quan', duong: '/' } },
       muc: [{ id: 'ql-da-xoa', viec: 'khoi-phuc', ten: 'Khôi phục thứ đã xoá', buoc: ['Tab <b>Đã xoá</b>: chọn mục đã xoá, bấm <b>Khôi phục</b>.', 'Mục khôi phục về đúng chỗ cũ; nhật ký ghi lại.'] },
-        { id: 'ql-cau-hinh', ten: 'Xem cấu hình hệ thống', buoc: ['Menu Tài khoản › <b>Cấu hình hệ thống</b>: tab Chương trình, Chi nhánh, Bảng quy đổi — chỉ xem.'] }],
+        { id: 'ql-cau-hinh', ten: 'Xem cấu hình hệ thống', buoc: ['Menu Tài khoản › <b>Cấu hình hệ thống</b>: tab Chương trình, Chi nhánh, Band & ngưỡng, Hạn mặc định — chỉ xem.'] }],
     },
     {
       id: 'ho-so-ca-nhan', ten: 'Hồ sơ cá nhân', duong: ['/ho-so-ca-nhan'],

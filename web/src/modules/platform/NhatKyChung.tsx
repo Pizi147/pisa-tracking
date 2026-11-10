@@ -17,7 +17,7 @@ type Trang = { dong: Dong[]; tiep: number | null; nguoi: { id: number; ten: stri
 const ngan = (v: string) => (v.length > 80 ? `${v.slice(0, 80)}…` : v);
 const TEN_MUC: Record<Muc, string> = {
   'tai-khoan': t('Tài khoản'), quyen: t('Quyền theo vai trò'), 'mo-sua-lich': t('Mở sửa lịch Test'),
-  'chuong-trinh': t('Chương trình'), 'chi-nhanh': t('Chi nhánh'), band: t('Bảng quy đổi'), han: t('Hạn mặc định'), 'case-sos': 'Case & SOS',
+  'chuong-trinh': t('Chương trình'), 'chi-nhanh': t('Chi nhánh'), band: t('Band & ngưỡng'), han: t('Hạn mặc định'), 'case-sos': 'Case & SOS',
 };
 
 /**
