@@ -10,6 +10,7 @@ export async function runPrQtv2QuyenTests(t: { check: any; assert: any; assertTh
   const { check, assert, assertThrows, conn, P } = t;
   const nk: any = await import('../platform/nhatKyQuanTri.ts');
   const sc: any = await import('../platform/sysconfig.ts');
+  const nav: any = await import('../platform/nav.ts');
   console.log('\nQTV2-QUYEN — Quyền & nhật ký: nhật ký chung, quyền theo vai');
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { return fn(); } finally { conn.exec('ROLLBACK'); } };
   const cp = () => conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any;
@@ -52,5 +53,15 @@ export async function runPrQtv2QuyenTests(t: { check: any; assert: any; assertTh
     assert(!ap.includes('/admin/overview') && !rt.includes("'/admin/overview'"), 'còn /admin/overview');
     assert(!ap.includes("t('Sửa quyền')") && !qv.includes("t('Sửa quyền')"), 'còn nút Sửa quyền');
     assert(qv.includes('role="switch"') && qv.includes('aria-checked'), 'công tắc thiếu role="switch" / aria-checked');
+  });
+
+  check('QTV2-CH-1 · Quản lý XEM chương trình, lộ trình, chi nhánh; không sửa được; GV bị chặn; nav có tab cấu hình cho QL', () => {
+    const { navOf } = nav;
+    assert(Array.isArray(sc.listProgrammes(P.mbManager)) && sc.listChiNhanh(P.mbManager).length > 0, 'QL không xem được');
+    assertThrows(() => sc.saveProgramme(P.mbManager, { code: 'FOU', name: 'X' }), /Quản trị/, 'QL sửa được chương trình');
+    assertThrows(() => sc.saveRoute(P.mbManager, { code: 'LT1', name: 'X' }), /Quản trị/, 'QL sửa được lộ trình');
+    assertThrows(() => sc.luuChiNhanh(P.mbManager, cp().id, { name: 'X', diaChi: '', soDienThoai: '' }), /Quản trị/, 'QL sửa được chi nhánh');
+    assertThrows(() => sc.listProgrammes(P.lrTeacher), /Quản trị/, 'GV xem được chương trình');
+    assert(navOf(P.mbManager).bangQuyDoi && !navOf(P.mbManager).admin && !navOf(P.lrTeacher).bangQuyDoi, 'cờ nav cấu hình');
   });
 }

@@ -3167,7 +3167,8 @@ api.post('/admin/accounts/:id/khoi-phuc', requireAuth, wrap((req) => {
 /* PR-Dọn (quét #10): danh mục cần đăng nhập; số "đang dùng" (lộ quy mô) chỉ ở bản Quản trị. */
 api.get('/ref/routes', requireAuth, wrap(() => sysconfigSvc.listRoutes()));
 api.get('/admin/routes', requireAuth, wrap((req) => {
-  require_(principalOf(req), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được danh mục lộ trình đầy đủ.');
+  /* QTV2-CAU-HINH: Quản lý xem (chỉ đọc) — sửa vẫn `ADMIN_CONFIG` trong `saveRoute`. */
+  if (!bangQuyDoiSvc.xemDuocBangQuyDoi(principalOf(req))) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được danh mục lộ trình đầy đủ.');
   return sysconfigSvc.listRoutes(true);
 }));
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));

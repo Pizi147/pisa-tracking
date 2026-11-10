@@ -7,6 +7,8 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { MON_CHON, MON_GOP, MT_TOI_DA, dsLoi, kyHieuLop, oPhanCong, skillShort, thuTuKyHieu, type LoiTruong } from '@shared/domain/index.ts';
 import { PhanDoan } from '../classes/ClassCreatePanel.tsx';
+import { useSession } from '../../lib/session.tsx';
+import { NhatKyMuc } from './NhatKyChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 type RouteRow = { code: string; name: string; note: string | null; seq: number; status: string; inUse: number; lichMt: number[]; lopDangChay: number };
@@ -59,6 +61,9 @@ export function CatalogAdmin() {
   const routes = useApi<RouteRow[]>('/admin/routes');
   const programmes = useApi<Programme[]>('/admin/programmes');
   const [sua, setSua] = useState<Dong | null>(null);
+  /* QTV2-CAU-HINH: Quản lý xem (chỉ đọc) — không Sửa, không + Chương trình, dòng không bấm. */
+  const quanTri = !!useSession().session?.nav?.admin;
+  const moSua = (d: Dong) => { if (quanTri) setSua(d); };
 
   /* Không có quyền thì nói thẳng, đừng để một khối trống — xem chú thích ở `AccountsAdmin`. */
   /* 6c (lỗi 6): chỉ 403 mới là thiếu quyền — lỗi mạng / máy chủ thì nói thật + Thử lại. */
@@ -80,9 +85,18 @@ export function CatalogAdmin() {
   ];
   const dangSua = sua ? khoaDong(sua) : null;
   const ngung = (d: DongCo) => !conDung(d) && <span className="ml-1.5"><Info pending>{t('ngừng dùng')}</Info></span>;
+  /* QTV2-CAU-HINH: hai nhóm (dải V21) — loại lớp thường · Fast Track theo lộ trình — thay một bảng lẫn lộn. */
+  const nhom = [
+    { key: 'thuong', ten: t('Lớp thường'), ds: dong.filter((d) => d.loai === 'ct') },
+    { key: 'ft', ten: t('Fast Track · lộ trình'), ds: dong.filter((d) => d.loai === 'ft') },
+  ].filter((g) => g.ds.length > 0);
+  const dai = (g: (typeof nhom)[number]) => (
+    <span className="flex items-center gap-2 text-[15px] font-bold text-slate-100">{g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{g.ds.length}</span></span>
+  );
 
   return (
     <>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Card className="min-w-0" bodyClass="p-0">
         {routes.loading || programmes.loading ? <div className="p-4"><Skeleton rows={6} /></div> : (
           <>
@@ -93,10 +107,12 @@ export function CatalogAdmin() {
                   <th className="th">{t('Mốc Test')}</th><th className="th text-right">{t('Lớp đang chạy')}</th><th className="th" />
                 </tr>
               </thead>
-              <tbody>
-                {dong.map((d) => (
-                  <tr key={khoaDong(d)} onClick={() => setSua(d)}
-                    className={`bam cursor-pointer ${dangSua === khoaDong(d) ? 'row-active' : ''}`}>
+              {nhom.map((g) => (
+              <tbody key={g.key}>
+                <tr><td colSpan={6} className="td border-t" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>{dai(g)}</td></tr>
+                {g.ds.map((d) => (
+                  <tr key={khoaDong(d)} onClick={() => moSua(d)}
+                    className={`${quanTri ? 'bam cursor-pointer' : ''} ${dangSua === khoaDong(d) ? 'row-active' : ''}`}>
                     {/* AUDIT-UI C11: ngừng dùng = tên `text-faint` + nhãn "ngừng dùng", không opacity (chữ còn 2,1 : 1 ở chế độ sáng). */}
                     <td className={`td whitespace-nowrap ${conDung(d) ? 'text-slate-100' : 'text-faint'}`}>{tenDong(d)}{ngung(d)}</td>
                     <td className="td whitespace-nowrap text-slate-400">{d.loai === 'ft' || d.ct.scoringMode !== 'ratio' ? 'band IELTS' : t('đúng / tổng')}</td>
@@ -104,17 +120,20 @@ export function CatalogAdmin() {
                     <td className="td whitespace-nowrap tabular-nums text-slate-300">{chuMoc(d)}</td>
                     <td className="td text-right tabular-nums text-slate-300">{soLop(d)}</td>
                     <td className="td text-right">
-                      <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setSua(d); }}>{t('Sửa')}</button>
+                      {quanTri && <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setSua(d); }}>{t('Sửa')}</button>}
                     </td>
                   </tr>
                 ))}
               </tbody>
+              ))}
             </table></div>
             {/* Điện thoại: mỗi chương trình một dòng bấm được — tên + một dòng độ dài · mốc. */}
             <ul className="sm:hidden m-0 list-none p-0">
-              {dong.map((d) => (
+              {nhom.map((g) => [
+                <li key={`dai-${g.key}`} className="flex min-h-[44px] items-center border-b px-4" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>{dai(g)}</li>,
+                ...g.ds.map((d) => (
                 <li key={khoaDong(d)} className="border-b last:border-b-0" style={{ borderColor: 'var(--line)' }}>
-                  <button type="button" onClick={() => setSua(d)}
+                  <button type="button" onClick={() => moSua(d)} disabled={!quanTri}
                     className="flex min-h-[44px] w-full items-center gap-2 px-4 py-2.5 text-left">
                     <span className="min-w-0 flex-1">
                       <span className={`block text-sm ${conDung(d) ? 'text-slate-100' : 'text-faint'}`}>{tenDong(d)}{ngung(d)}</span>
@@ -122,17 +141,22 @@ export function CatalogAdmin() {
                         {doDai(d) !== '—' ? `${doDai(d).replace(/^./, (c) => c.toUpperCase())} · ` : ''}{chuMoc(d, true)}
                       </span>
                     </span>
-                    <span aria-hidden className="text-slate-500">›</span>
+                    {quanTri && <span aria-hidden className="text-slate-500">›</span>}
                   </button>
                 </li>
-              ))}
+                )),
+              ])}
             </ul>
-            <div className="border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua({ loai: 'moi' })}>{t('+ Chương trình')}</button>
-            </div>
+            {quanTri && (
+              <div className="border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua({ loai: 'moi' })}>{t('+ Chương trình')}</button>
+              </div>
+            )}
           </>
         )}
       </Card>
+      <NhatKyMuc muc="chuong-trinh" quanTri={quanTri} />
+      </div>
       {sua && (
         <SuaChuongTrinh key={khoaDong(sua)} dong={sua} onClose={() => setSua(null)}
           onDone={() => {

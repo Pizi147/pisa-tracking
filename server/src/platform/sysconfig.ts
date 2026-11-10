@@ -3,10 +3,14 @@ import {
   MA_CHUONG_TRINH_MOI, MON_CHON, MON_GOP, MT_TOI_DA, PERMISSIONS, QUYEN_SUY_RA_GV, RATIO_PASS_THRESHOLD, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, docLichMt,
   laChuongTrinhGoc, lichMtGoc, lyDoCamVai, nhanBaiThuong, programmeOf,
 } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
+import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
+
+/** QTV2-CAU-HINH (chủ SP 11/11: "chỉ vai Quản trị sửa, QL xem") — Quản lý XEM cấu hình (chương trình, lộ trình, chi nhánh); mọi đường sửa giữ `ADMIN_CONFIG`. */
+const xemCauHinh = (p: Principal, cau: string) => { if (!xemDuocBangQuyDoi(p)) throw forbidden(cau); };
 
 /**
  * CẤU HÌNH HỆ THỐNG — mục 7.3: Quản trị hệ thống SỬA lộ trình và chương trình.
@@ -84,7 +88,7 @@ function kiemLichMt(v: unknown): number[] {
 /* ------------------------------------------------------------------ chương trình */
 
 export function listProgrammes(p: Principal) {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được cấu hình chương trình.');
+  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Quản lý xem được cấu hình chương trình.');
   const conn = db();
   return (conn.prepare('SELECT * FROM programmes ORDER BY code').all() as any[]).map((r) => ({
     code: r.code, name: r.name, weeks: r.weeks, scoringMode: r.scoring_mode, status: r.status,
@@ -448,7 +452,7 @@ const lienHe = (r: any): LienHeCn => ({ name: r.name, diaChi: r.dia_chi ?? null,
 
 /** GET /admin/chi-nhanh — Quản trị › Chi nhánh: tên hiển thị, địa chỉ, SĐT (đầu tệp Báo cáo PH). Một câu, ≤ số chi nhánh dòng. */
 export function listChiNhanh(p: Principal) {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được thông tin chi nhánh.');
+  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Quản lý xem được thông tin chi nhánh.');
   return (db().prepare('SELECT id, code, name, status, dia_chi, so_dien_thoai FROM branches ORDER BY id').all() as any[])
     .map((r) => ({ id: r.id, code: r.code, status: r.status, ...lienHe(r) }));
 }
