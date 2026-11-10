@@ -19,6 +19,16 @@ export function IconCanhBao(p: P) {
   );
 }
 
+/** Khoá — dòng chỉ QL sửa (MOCKUP-1111 Khai cấp bậc). */
+export function IconKhoa(p: P) {
+  return (
+    <svg {...khung(p)}>
+      <rect x="2.5" y="5.5" width="7" height="5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4.2 5.5V4a1.8 1.8 0 0 1 3.6 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 /** Mũi tên gập/mở xuống (mở thì lật lên). */
 export function IconGap({ mo, ...p }: P & { mo: boolean }) {
   return (
