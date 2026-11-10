@@ -3,7 +3,7 @@
 Mockup đã duyệt: `thiet-ke/2026-11-11-mockup-1111/3-chuyen-tiep-lop-thuong.html` (#1326, chủ SP duyệt 11/11 + chỉnh: hộp điểm riêng, ô môn thẳng cột, hàng cao đều; tổng giữ %, ô môn ghi câu đúng / tổng).
 Ảnh cặp (seed): `cap-mo-1440.png` (K1 · QL · MB FOU 21 vừa mở) · `cap-1440.png` (K2 · chọn lớp dải + sửa 2 em) · `cap-375.png` (K6a) · `cap-gvcn-1440.png` (K4 so với web GVCN · MB FOU 15 trước Final) · `cap-gvcn-375.png`.
 
-**Chủ SP rà ảnh 11/11:** (1) "để màu xanh lá cho những cái đạt đi" → % tổng đạt + ô môn đạt dùng token đạt `kq-vuot` (như ✓ bảng Mock Test), viền ô đạt xanh nhạt, trượt giữ đỏ · (2) trước Final "cần có phần trăm điểm tổng, và bao nhiêu câu trên bao nhiêu câu" → hộp điểm dùng lượt Progress: "Chờ Final · Progress 07/09 · 80 %" + ô môn "✓ 18/20"; em chưa có lượt nào giữ "—". Máy chủ: `progress.mon` (đúng / tổng) từ cùng lần `tyLeTongLo` — 0 câu thêm.
+**Chủ SP rà ảnh 11/11:** (1) "để màu xanh lá cho những cái đạt đi" → % tổng đạt + ô môn đạt dùng token đạt `kq-vuot` (như ✓ bảng Mock Test), viền ô đạt xanh nhạt, trượt giữ đỏ · (2) trước Final "cần có phần trăm điểm tổng, và bao nhiêu câu trên bao nhiêu câu" → hộp điểm dùng lượt Progress: "Chờ Final · Progress 07/09 · 80 %" + ô môn "✓ 18/20"; em chưa có lượt nào giữ "—". Máy chủ: `progress.mon` (đúng / tổng) từ cùng lần `tyLeTongLo` — 0 câu thêm. · (3) "Chỉ cần đơn giản là hiện điểm nào đang có thôi… chỉ cần ghi Progress test: là được" → nhãn hộp chỉ ghi lượt đang có: "Final Test: ✓ 82 %" / "Progress Test: ✓ 80 %"; bỏ "Chờ Final", "n/4 môn", ngày trong hộp (dải nhóm "Chờ Final" giữ — nói gợi ý, không lặp trong hộp).
 
 ## Truy vết khung → thành phần → ảnh
 

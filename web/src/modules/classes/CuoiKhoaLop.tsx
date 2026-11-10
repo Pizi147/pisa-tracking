@@ -351,16 +351,17 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const theoProgress = !coFinal && !(c && c.scored > 0) && !!p && p.scored > 0;
     const monTrong = REGULAR_SKILLS.map((skill) => ({ skill, ratio: null, dung: null, tong: null }));
     const dsMon = theoProgress ? (p!.mon?.length ? p!.mon : monTrong) : c?.mon.length ? c.mon : monTrong;
-    const phu = coFinal ? null : c && c.scored > 0 ? t('{a}/{b} môn', { a: c.scored, b: c.required || 4 })
-      : theoProgress ? [`Progress ${p!.tuan ? shortDate(p!.tuan, h) : ''}`.trim(), p!.tyLe != null ? `${Math.round(p!.tyLe * 100)} %` : null].filter(Boolean).join(' · ') : null;
+    /* Chủ SP 11/11: chỉ ghi lượt đang có — "Final Test: ✓ 82 %" / "Progress Test: ✓ 80 %"; không "Chờ Final", không "n/4 môn", không ngày. */
+    const coFinalDiem = coFinal || !!(c && c.scored > 0);
+    const nhanLuot = coFinalDiem ? 'Final Test:' : theoProgress ? 'Progress Test:' : null;   // tên lượt tiếng Anh, giữ nguyên ở hai tiếng
+    const tyLe = coFinal ? c!.tyLe! : theoProgress ? p!.tyLe : null;
+    const datTong = coFinal ? g!.dai === 'dat' : tyLe != null && tyLe >= nguong;
     return (
       <span className="inline-grid gap-1.5 rounded-[10px] border px-2.5 py-2" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}
         role="group" aria-label={t('Kết quả · {ten}', { ten: e.fullName })}>
         <span className="flex items-baseline gap-2 whitespace-nowrap">
-          {coFinal
-            ? <b className={`text-lg font-bold tabular-nums ${g!.dai === 'dat' ? 'text-kq-vuot' : 'text-kq-duoi'}`}>{g!.dai === 'dat' ? '✓' : '✗'} {Math.round(c!.tyLe! * 100)} %</b>
-            : <b className="text-[15px] font-bold text-slate-100">{t('Chờ Final')}</b>}
-          {phu && <span className="text-xs font-medium tabular-nums text-slate-400">{phu}</span>}
+          {nhanLuot ? <span className="text-[13px] font-semibold text-slate-400">{nhanLuot}</span> : <b className="text-[15px] font-bold text-faint">—</b>}
+          {tyLe != null && <b className={`text-lg font-bold tabular-nums ${datTong ? 'text-kq-vuot' : 'text-kq-duoi'}`}>{datTong ? '✓' : '✗'} {Math.round(tyLe * 100)} %</b>}
         </span>
         <span className="grid grid-cols-[repeat(4,68px)] gap-1 max-sm:grid-cols-[repeat(4,minmax(0,1fr))]">
           {dsMon.map((m) => {
