@@ -13,7 +13,8 @@ export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'catego
 export type PanelYThuc =
   | { loai: 'ghi'; studentId: number; studentName?: string }
   | { loai: 'sua'; v: ViolationChoSua; studentName?: string }
-  | { loai: 'xu-ly'; studentId: number; cheDo?: 'xu-ly' | 'de-xuat' }
+  /** `tick`: vi phạm chọn thêm (mở từ dòng Đã xem — rà 11/11 G3-6). */
+  | { loai: 'xu-ly'; studentId: number; cheDo?: 'xu-ly' | 'de-xuat'; tick?: number[] }
   | { loai: 'khai'; studentId: number; sua?: boolean }
   | { loai: 'da-thuc-hien'; id: number }
   | { loai: 'xem'; id: number }
@@ -56,7 +57,7 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
         onDelete={(id) => { dong(); setDeleteId(id); }}
       />
       {panel?.loai === 'xu-ly' && (
-        <XacNhanXuLyPanel studentId={panel.studentId} cheDo={panel.cheDo} lop={maLop} onClose={dong} onDone={onDone}
+        <XacNhanXuLyPanel key={panel.tick?.join(',')} studentId={panel.studentId} cheDo={panel.cheDo} tickThem={panel.tick} lop={maLop} onClose={dong} onDone={onDone}
           onKhai={(sid) => mo({ loai: 'khai', studentId: sid })} />
       )}
       {panel?.loai === 'khai' && <KhaiBacPanel studentId={panel.studentId} sua={panel.sua} onClose={dong} onDone={onDone} />}

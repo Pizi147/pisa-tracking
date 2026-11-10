@@ -77,6 +77,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ct2_dien_buoi', now, now);
   /* PR-OV13a (d): DB mới không có Case "Chờ chốt SOS" kiểu cũ — khoá trước để migrate không chạy `prOv1c` (chỉ chạy một lần trên DB cũ). */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_ov1c_da_chay', now, now);
+  /* SOS-TAM-PA: DB mới chốt SOS theo luật PA GV ↔ PA quy chế từ đầu — khoá trước, migrate `prSosTamPa` chỉ chạy một lần trên DB cũ. */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_sos_tam_pa_da_chay', now, now);
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('lich_su_thay_doi_tu', now, now);   // OV-15g: DB mới = lịch sử ghi từ lúc khởi tạo (`MOC_LICH_SU`)
   /* SUA-NO-RA: DB mới không có Case cũ trống chủ — khoá trước để migrate không chạy bước gán chủ `prCvLoi` (chỉ một lần trên DB cũ). */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_cv_loi_gan_chu_case_at', now, now);

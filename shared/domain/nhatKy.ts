@@ -22,7 +22,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case',
   'case.preset.confirm_undo': 'Hoàn tác xác nhận PA', 'case.confirm_undo': 'Hoàn tác xác nhận Case', 'case.xac_nhan_s_undo': 'Hoàn tác xác nhận Case Speaking',   // HOAN-TAC-XN
   'case.dismiss.request': 'Gửi Không cần theo dõi',
-  'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Kết quả PA', 'case.result.edit': 'Sửa kết quả PA', 'case.result.undo': 'Hoàn tác kết quả PA', 'case.result.delete': 'Xoá kết quả PA', 'case.plan.doi_pa': 'Đề xuất PA khác', 'case.followup.edit': 'Sửa xem lại', 'intervention.edit': 'Sửa PA',
+  'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Kết quả PA', 'case.result.edit': 'Sửa kết quả PA', 'case.result.undo': 'Hoàn tác kết quả PA', 'case.result.delete': 'Xoá kết quả PA', 'case.plan.doi_pa': 'Đề xuất PA khác', 'case.plan.giu_pa_gv': 'Giữ PA của GV (gửi QL duyệt)', 'case.followup.edit': 'Sửa xem lại', 'intervention.edit': 'Sửa PA',
   'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.xoa_overall_dat': 'Xoá Case vì em đạt lại (chưa có PA xác nhận)', 'case.system_close': 'Hệ thống đóng Case', 'case.system_reopen': 'Mở lại Case hệ thống đã đóng', 'case.mo_lai_xoa_diem': 'Mở lại Case (nhập lại điểm)',
   'case.tam': 'Tạo Case tạm (chờ chốt SOS)', 'case.xoa_tam': 'Xoá Case tạm (trước khi chốt SOS)', 'case.xoa_cho_chot_sos': 'Xoá Case "Chờ chốt SOS" cũ (đổi luật)',
   'class.assign': 'Phân công giáo viên', 'class.assign.hoan_tac': 'Hoàn tác phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp', 'class.finish_scheduled': 'Hẹn kết thúc lớp', 'class.reopened': 'Mở lại lớp',
@@ -41,6 +41,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'discipline.not_performed': 'Đưa lần xử lý về Chưa thực hiện', 'discipline.edit_info': 'Sửa ngày / người / mô tả lần xử lý', 'discipline.unacknowledge': 'Bỏ ghi nhận vi phạm',
   'discipline.declare_level': 'Xác nhận cấp bậc vi phạm từ trước', 'discipline.declare_level_edit': 'Sửa cấp bậc vi phạm', 'discipline.declare_level_undo': 'Hoàn tác cấp bậc vi phạm',
   'discipline.revoke_request': 'Xin thu hồi lần xử lý', 'discipline.revoke': 'Thu hồi lần xử lý', 'discipline.revoke_undo': 'Huỷ thu hồi lần xử lý',   // LUAT-5
+  'discipline.measure_undo': 'Hoàn tác Xác nhận xử lý',   // [XM 5] rà 11/11
   'case.owner_assign': 'Gán người phụ trách Case',   // SUA-NO-RA (migrate prCvLoi)
   'case.owner_change': 'Đổi người phụ trách Case',   // R1-NO-CU (D17)
   'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh', 'discipline.bao_ph_khoi_phuc': 'Khôi phục việc báo phụ huynh',   // SV-YT-TVV

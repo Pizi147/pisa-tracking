@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ChiSo } from './TongQuanV5.tsx';
+import { ChiSo, OViecCuaToi } from './TongQuanV5.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import { nhanQuaHan, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -41,8 +41,10 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
 
   return (
     <div className="space-y-3">
-      {/* SUA-CHAM-LAI L8: ô chỉ số V5 (tên · số · mẫu · kỳ) như mọi vai, 3 cột như Tổng quan TVV; số = link đổi trang (mở đúng danh sách đã lọc). Đơn vị "bài" như Lịch Test. */}
-      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
+      {/* SUA-CHAM-LAI L8: ô chỉ số V5 (tên · số · mẫu · kỳ) như mọi vai; số = link đổi trang (mở đúng danh sách đã lọc). Đơn vị "bài" như Lịch Test.
+          XM 3 (chủ SP 11/11): "Việc của tôi ›" đầu dải → 4 ô một hàng (như Tổng quan QL / GV). */}
+      <div data-hd="tq-tom-tat" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4 max-lg:[&>*:last-child:nth-child(odd)]:col-span-2">
+        <OViecCuaToi />
         <ChiSo ten={ten(t('Lượt MT tuần này'), data.luotTuanNay.so)} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
           mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
         <ChiSo ten={ten(t('Bài chưa nhập điểm'), data.oChuaNhap.so)} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&nguoi=tat-ca&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}

@@ -1482,6 +1482,11 @@ api.post('/y-thuc/xu-ly/:id/gui', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.guiDeXuat(principalOf(req), pInt(req, 'id'));
 }));
+/** [XM 5]: Hoàn tác Xác nhận xử lý (toast 10 s) — người vừa lưu, TVV chưa ghi; quá hạn thì Thu hồi. */
+api.post('/y-thuc/xu-ly/:id/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.hoanTacXuLy(principalOf(req), pInt(req, 'id'));
+}));
 api.delete('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.xoaNhap(principalOf(req), pInt(req, 'id'));
@@ -2325,6 +2330,11 @@ api.post('/interventions/:id/xac-nhan-pa', requireAuth, wrap((req) => {
 api.post('/interventions/:id/de-xuat-doi-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return doiPaSvc.deXuatDoiPa(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
+/** SOS-TAM-PA (chủ SP 11/11): "Chọn PA" · Giữ PA của tôi — thẻ QL `giu_pa_gv` hạn 3 ngày (quá hạn chốt theo GV); rút = `POST /yeu-cau/:id/rut`. */
+api.post('/interventions/:id/giu-pa-gv', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.giuPaGv(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
 /** OV-13c: Xác nhận PA cùng lúc (dòng gộp Công việc) — mỗi PA một giao dịch, PA lỗi báo riêng. */
 api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {

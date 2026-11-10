@@ -9,7 +9,7 @@
  * Bậc kế cần QL (WL 3) hoặc hết thang → phải đi đường Đề xuất (thẻ `y_thuc`, `deXuat*` ở cuối file). Bậc không lùi (V4-12): bậc đọc từ
  * `kind` của lần xử lý, xoá vi phạm không xoá lần xử lý. Trạng thái mọi vi phạm đọc qua `trangThaiYThuc()` (một cửa).
  * LUAT-5 (luật 5, 21/10): lần xử lý đã lưu KHÔNG xoá — "Thu hồi…" kèm lý do (GVCN gửi QL duyệt, QL làm thẳng) → `thu_hoi` giữ dòng; xử lý không
- * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. Không Hoàn tác sau lưu (02 4.7 B15): bấm nhầm cũng gửi Thu hồi.
+ * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. [XM 5] (PTA 11/11, thay B15): Hoàn tác 10 s ở toast (`hoanTacXuLy`); quá hạn thì Thu hồi.
  */
 import { DS_JSON, db, tx } from '../db.ts';
 import {
@@ -870,6 +870,51 @@ export function xoaNhap(p: Principal, measureId: number): { ok: true } {
     purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
     db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
     db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'nhap'`).run(measureId);
+  });
+  xoaTepSauGiaoDich(khoaTep);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------- [XM 5] Hoàn tác Xác nhận xử lý (10 s)
+
+/** Toast 10 s + trễ mạng: máy chủ nhận Hoàn tác trong 60 s kể từ lúc lưu. */
+const HOAN_TAC_XU_LY_GIAY = 60;
+
+/**
+ * [XM 5] (PTA Plan 11/11 duyệt, theo lời chủ SP mới hơn B15 / LUAT-5: 07/11 "mở mọi chặn cứng", 11/11 #10 "Hoàn tác 10 s ở mọi nơi"): người VỪA lưu
+ * Xác nhận xử lý bấm Hoàn tác ở toast → xoá hẳn lần xử lý + việc Báo PH (TVV chưa ghi), vi phạm về như trước. Quá hạn / TVV đã ghi / đã có lần sau /
+ * lần qua QL duyệt → 400, dùng Thu hồi như cũ. Nhật ký `discipline.measure_undo` đủ nội dung.
+ */
+export function hoanTacXuLy(p: Principal, measureId: number): { ok: true } {
+  const m = loadXuLy(measureId);
+  const hv = hocVien(m.student_id);
+  requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
+  const chuaXong = 'Quá thời gian Hoàn tác — dùng Thu hồi… ở lần xử lý.';
+  if (m.status !== 'done' || m.quyet_luc || m.created_by !== p.userId) throw badRequest(chuaXong);
+  if (Date.now() - Date.parse(m.created_at) > HOAN_TAC_XU_LY_GIAY * 1000) throw badRequest(chuaXong);
+  const viec = db().prepare('SELECT id FROM viec_bao_ph WHERE measure_id = ?').get(measureId) as { id: number } | undefined;
+  if (viec && db().prepare('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ? LIMIT 1').get(viec.id)) throw badRequest('TVV đã ghi báo PH cho lần này — dùng Thu hồi… ở lần xử lý.');
+  if (db().prepare(`SELECT 1 FROM discipline_measures WHERE student_id = ? AND id > ? AND status != 'nhap' LIMIT 1`).get(m.student_id, measureId)) {
+    throw badRequest('Đã có lần xử lý sau lần này — dùng Thu hồi… ở lần xử lý.');
+  }
+  const vIds = viPhamCua(measureId);
+  const khoaTep: string[] = [];
+  tx(() => {
+    purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
+    if (viec) db().prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(viec.id);
+    db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
+    db().prepare(`DELETE FROM notifications WHERE dedup_key = ?`).run(`yt-xu-ly:${measureId}`);
+    db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'done'`).run(measureId);
+    for (const vid of vIds) noteMeasureChange(vid, measureId, null, p.userId);
+    /* ponytail: phản hồi đặt hôm nay bởi chính lần này → gỡ khi vi phạm không còn dấu khác (chưa Đã xem, không lần xử lý khác); dấu cũ hơn giữ. */
+    if (vIds.length) {
+      db().prepare(`UPDATE violations SET phan_hoi_ngay = NULL WHERE id IN (${vIds.map(() => '?').join(',')}) AND phan_hoi_ngay = ? AND ghi_nhan_luc IS NULL
+        AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = violations.id)`).run(...vIds, demoToday());
+    }
+    chotHanXuLy([m.student_id]);
+    writeAudit({ actorUserId: p.userId, action: 'discipline.measure_undo', entityType: 'discipline_measure', entityId: measureId,
+      entityLabel: `${hv.student_code} · hoàn tác ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
+      before: { studentId: m.student_id, kind: m.kind, status: m.status, note: m.note ?? null, performedOn: m.performed_on ?? null, violations: vIds } });
   });
   xoaTepSauGiaoDich(khoaTep);
   return { ok: true };
