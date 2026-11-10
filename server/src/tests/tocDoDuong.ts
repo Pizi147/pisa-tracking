@@ -554,8 +554,8 @@ export const TRAN: Record<string, number> = {
   'CX /hoc-vien-lop/theo-vai': 30,   // TL-NEN: đo 75 (trước 84); TL-HVL: đo 64 (trước 70); RA-DOC-0611: đo 62; GIAM-DOC-0611: đo 20 (trước 62) — cờ Thiếu thông tin không dựng cả danh sách
   'CX /hoc-vien-lop/theo-vai?branchId=1': 30,   // TL-NEN: đo 67 (trước 79); TL-HVL: đo 58 (trước 62); RA-DOC-0611: đo 56; GIAM-DOC-0611: đo 20 (trước 56) — cờ Thiếu thông tin không dựng cả danh sách
   'ADMIN /hoc-vien-lop': 63,   // TL-NEN: đo 55 (trước 69); TL-HVL: đo 48 (trước 51)
-  'CX /students/1': 99,   // TL-NEN: đo 76 (trước 82)
-  'ADMIN /students/1': 100,
+  'CX /students/1': 88,   // TL-NEN: đo 76 (trước 82); GIAM-COMPUTE: đo 67 (trước 79)
+  'ADMIN /students/1': 88,   // GIAM-COMPUTE: đo 67 (trước 79)
   'ADMIN /tong-quan/mock-test': 38,   // TL-NEN: đo 28 (trước 42)
   'ADMIN /highlights': 20,
   /* OV-15h1: trần = đo + 6 (đo demo 20/10: QL 56 · 54 · 21 · 15; QT 52 · 50 · 19 · 14). */
@@ -807,10 +807,11 @@ export const TRAN: Record<string, number> = {
   // PR-VAI-b: đầu hồ sơ 30 giây (việc theo người, câu tóm tắt, bốn ô, Tạm dừng) — đo 97/94/99/99 (phiên 2, Task 9 bỏ `journeyRows`/`episodes`: 96/93/98/98) sau khi nhớ `programmeOfClass` theo request
   // và lấy tên người làm qua JOIN; giữ trần cứng 100 (luật +10/+30 % cho 107–109, vượt trần cứng).
   /* PR-Dọn (Task 9): gom câu hồ sơ HV 93–98 → 81–86 (JSON 4 vai × 3 em giống hệt) — trần hạ xuống đo + 10. */
-  'QL /students/1': 94,
-  'QT /students/1': 91,
-  'GVCN /students/1': 96,
-  'GVBM /students/1': 96,
+  /* GIAM-COMPUTE: phần thẻ Case của mọi Case trên bảng kỹ năng nạp một câu mỗi loại (trước ~11 câu × số Case) — đo 67 · 67 · 69 · 67 (trước 79 · 79 · 81 · 79), trần max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /students/1': 88,
+  'QT /students/1': 88,
+  'GVCN /students/1': 90,
+  'GVBM /students/1': 88,
   /* PR-Dọn (Task 1, Q2): ô chọn người theo một em — đo + 10. */
   'QL /ref/nguoi?nhom=giao_vien&studentId=1': 19,
   'QT /ref/nguoi?nhom=giao_vien&studentId=1': 17,
@@ -840,10 +841,11 @@ export const TRAN: Record<string, number> = {
   'QT /students/1/chuyen-lop?toClassId=6': 21,
   'GVCN /students/1/chuyen-lop?toClassId=6': 13,
   'GVBM /students/1/chuyen-lop?toClassId=6': 13,
-  'QL /students/1/skill-board': 52,
-  'QT /students/1/skill-board': 49,
-  'GVCN /students/1/skill-board': 52,
-  'GVBM /students/1/skill-board': 52,
+  /* GIAM-COMPUTE: đo 28 · 26 · 28 · 28 (trước 40 · 38 · 40 · 40). */
+  'QL /students/1/skill-board': 38,
+  'QT /students/1/skill-board': 36,
+  'GVCN /students/1/skill-board': 38,
+  'GVBM /students/1/skill-board': 38,
   'QL /cases/1': 41,
   'QT /cases/1': 38,
   'GVCN /cases/1': 41,
