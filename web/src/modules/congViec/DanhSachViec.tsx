@@ -427,7 +427,8 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   /* SOS ghi ở từng em trong khay — dòng gộp không lặp. 06/11: Xét lại lộ trình không liệt kê tên em — chỉ "n em"; tên mở ở panel. */
   const soTong = Number(phan.find((x) => LA_SO.test(x))?.split(' ')[0]);
   /* 06/11: thẻ "n em quá hạn" bằng đúng tổng thì bỏ (cột hạn đỏ đã nói); chỉ giữ khi quá hạn MỘT PHẦN. */
-  const ngCanh = it.group === 'xet_lai_lo_trinh' || caTuan ? null : gop
+  /* P1 rà 11/11 G4-18: dòng vừa xong không ghi tiến độ cũ ("GVCN · 0/1 đã xác nhận · chờ môn…", "n em chưa chọn") — tiến độ là của lúc trước khi lưu. */
+  const ngCanh = it.group === 'xet_lai_lo_trinh' || caTuan || (daXong && (it.group === 'ban_giao' || viecCaLop)) ? null : gop
     ? it.contextLabel?.split(' · ').filter((x) => !/^SOS \d/.test(x) && !(soTong && dich(x) === t('{n} em quá hạn', { n: soTong }))).join(' · ') : it.contextLabel;
   const tenGoc = phan.filter((x) => x !== it.classCode && !laThe(x)).join(' · ') || phan[0];
   /* 06/11: số em chỉ ghi MỘT lần — tên việc đã có "n em", hoặc việc cả lớp có thẻ ngữ cảnh "n em chưa chọn" thì không thêm "n HV". */

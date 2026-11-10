@@ -9763,6 +9763,9 @@ await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODA
 // ==================================================================== P1-CONG-VIEC (rà toàn bộ 11/11: một tập việc, một hàm đếm)
 const { runPrP1CongViecTests } = bocTep('prP1CongViec', await import('./prP1CongViec.tests.ts'));
 await runPrP1CongViecTests({ check, assert, conn, P } as any);
+// ==================================================================== VIEC-CUA-TOI (rà 11/11 đề xuất #1: một hàm việc của tôi cho mọi nơi)
+const { runPrViecCuaToiTests } = bocTep('prViecCuaToi', await import('./prViecCuaToi.tests.ts'));
+await runPrViecCuaToiTests({ check, assert, conn } as any);
 // ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
 const { runDonLuongTests } = bocTep('donLuong', await import('./donLuong.tests.ts'));
 await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);

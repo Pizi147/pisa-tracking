@@ -190,7 +190,8 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   /* V8-HSL (mockup v8 `ho-so-lop.html`, chủ SP duyệt 29/10): đầu trang 4 hàng ~170 px — ① ‹ nguồn · trước / sau ② mã lớp + chương trình · HV · tuần ·
      khai giảng | Nhập điểm · + Case · ⋯ ③ GVCN + GV bộ môn một dòng 13 px ④ số (Lượt gần nhất · Đạt ⓘ · SOS chip mức + số HV ngoài chip) | badge đổi
      trang "›" ⑤ Việc của tôi. GIỮ mọi nút / badge / đích (bảng thao tác `thiet-ke/v8/ho-so-lop-ghi-chu.md`). */
-  const bConLai = b;
+  /* P1 rà 11/11 G4-23: một badge ẩn thì hiện thẳng ("+1 việc" mở ra "15 việc quá hạn" là sai đơn vị); nhiều badge ẩn → chip "+n". */
+  const bConLai = b.an.length === 1 ? { hien: [...b.hien, ...b.an], an: [] as typeof b.an } : b;
   const nhom = nhomGiaoVienBoMon(data.skills.map((x) => x.skill), data.skillTeachers, data.programme?.code ?? null);
   /* HSL-GON (M1, M4): viên chương trình · HV · tuần chữ 500 mờ (không số đậm trong viên); "khai giảng" không thành viên — rê chuột viên tuần (`title`). */
   const khaiGiang = data.startDate ? t('khai giảng {ngay}', { ngay: `${data.startDate.slice(8, 10)}/${data.startDate.slice(5, 7)}` }) : undefined;
@@ -215,7 +216,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
     <span className="flex flex-wrap items-center gap-2 max-sm:basis-full">
       {bConLai.hien.map(nutBadge)}
       {bConLai.an.length > 0 && (
-        <MenuDong kieu="chip" bieuTuong={t('+{n} việc', { n: bConLai.an.length })} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
+        <MenuDong kieu="chip" bieuTuong={`+${bConLai.an.length}`} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
           muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
       )}
     </span>
