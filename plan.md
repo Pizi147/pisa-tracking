@@ -296,6 +296,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 khuya:** "Tôi muốn thay đổi danh sách nhóm nguyên nhân cho vấn đề của học sinh, FT lẫn lớp thường. Việc phải thực hiện phối hợp theo quy chế khi có SOS cũng sẽ có thay đổi trong tương lai và tôi muốn mình có thể chủ động đổi được." · "bạn cứ làm theo những gì bạn đoán đi, chuẩn rồi đấy" → duyệt mô tả PTA: (a) CAU-HINH-CASE-SOS — mục Quản trị (chỉ Quản trị sửa, QL xem): nhóm nguyên nhân FT / lớp thường · nhóm PA · việc phối hợp từng mốc SOS (ai làm, hạn, có ghi KQ); thêm / sửa / thứ tự / tạm ẩn; chỉ áp Case / SOS sinh sau; mục đang dùng chỉ ẩn; nhật ký · (b) PHOI-HOP-SOS-V2 — ô việc phân cấp (áp cả Ý thức), panel ①②③ ghi kết quả tại dòng, chuyển sang tab "Ý thức & Phối hợp", tab hồ sơ lớp / HV cùng kiểu. Overhaul Quản trị: đang bàn.
 
+**Chủ SP 11/11 khuya (brainstorming):** "Ngoài ra, tôi nghĩ cần làm gọn hơn phần chuong báo, đang dày thông tin quá mức và thiếu trọng tâm, trường thông tin trông vẫn rất rối, thiết kế lại nhé" → đang bàn (chuông thông báo).
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
