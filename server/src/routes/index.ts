@@ -2326,6 +2326,11 @@ api.post('/interventions/:id/de-xuat-doi-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return doiPaSvc.deXuatDoiPa(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
+/** SOS-TAM-PA (chủ SP 11/11): "Chọn PA" · Giữ PA của tôi — thẻ QL `giu_pa_gv` hạn 3 ngày (quá hạn chốt theo GV); rút = `POST /yeu-cau/:id/rut`. */
+api.post('/interventions/:id/giu-pa-gv', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.giuPaGv(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
 /** OV-13c: Xác nhận PA cùng lúc (dòng gộp Công việc) — mỗi PA một giao dịch, PA lỗi báo riêng. */
 api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

@@ -524,7 +524,7 @@ function thamChieuCaseIds(
   f: { branchId?: number; classId?: number; studentId?: number; status?: string },
 ): Set<number> {
   if (scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none) return new Set();
-  const where: string[] = ['1=1'];
+  const where: string[] = ['sc.tam = 0'];   // OV-13a: listCases không kèm Case tạm (`CASE_THAT`) — SOS-TAM-PA sinh Case tạm cả ô chưa nhận xét
   const params: unknown[] = [];
   if (f.studentId) { where.push('COALESCE(sc.student_id, a.student_id) = ?'); params.push(f.studentId); }
   if (f.classId) { where.push('COALESCE(cur.class_id, a.class_id) = ?'); params.push(f.classId); }

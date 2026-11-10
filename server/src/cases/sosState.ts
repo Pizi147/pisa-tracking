@@ -31,6 +31,18 @@ export const choDoiPa = (iv: { superseded_by?: number | null; closed_reason?: st
  * PA THEO QUY CHẾ DO MÁY GÁN mà CHƯA có kết quả tuần nào (S4-1, S08 bản 28/09). Máy gán ⇔ `preset = 1 AND confirmed_by IS NULL`.
  * Dùng cho: đồng bộ theo mức SOS mới nhất, huỷ khi "Không cần theo dõi", huỷ khi sửa điểm thành đạt. Có kết quả tuần rồi = việc thật.
  */
+/**
+ * SOS-TAM-PA (chủ SP 11/11): PA CỦA GV đang mở trên Case — không phải PA quy chế / Bổ trợ, đã duyệt (hoặc không cần duyệt), chưa khép. Lúc SOS chốt so loại
+ * với PA quy chế: trùng → PA này mang dấu quy chế, không PA mới; khác → việc "Chọn PA". `a` là bí danh `case_interventions`.
+ */
+export const PA_GV_MO = (a = 'g') => `(${a}.preset = 0 AND ${a}.status IN ('planned', 'started') AND ${a}.closed_reason IS NULL
+  AND COALESCE(${a}.approval_state, 'approved') = 'approved' AND ${a}.kind NOT IN ('bo_tro', 'bo_tro_mien_phi'))`;
+/**
+ * SOS-TAM-PA (Q6): PA trên Case tạm KHÔNG có hạn ghi kết quả tới khi SOS chốt — mọi câu ghi `action_due` của `case_interventions` bọc giá trị bằng biểu thức này
+ * (một chỗ, không sót đường: thêm PA, duyệt, ghi kết quả kỳ sau, hoàn tác, sửa ngày bắt đầu). Chốt → `hanKqLucChot` đặt hạn từ ngày chốt.
+ */
+export const HAN_KQ_NGOAI_TAM = (gt = '?') => `CASE WHEN EXISTS (SELECT 1 FROM sos_cases t_k WHERE t_k.id = case_interventions.case_id AND t_k.tam = 1) THEN NULL ELSE ${gt} END`;
+
 export const PA_QUY_CHE_CHUA_GHI = (a = 'iv') => `(${a}.preset = 1 AND ${a}.confirmed_by IS NULL AND ${a}.status IN ('planned', 'started')
   AND NOT EXISTS (SELECT 1 FROM case_followups f_qc WHERE f_qc.intervention_id = ${a}.id))`;
 

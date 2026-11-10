@@ -1,6 +1,6 @@
 # SOS tạm — GV ghi mô tả + PA trước khi chốt; PA GV ↔ PA quy chế (chủ SP 11/11)
 
-Trạng thái: **bản thiết kế, chờ PTA / chủ SP chốt ca biên (mục 6)** — chưa code.
+Trạng thái: **PTA chốt Q1–Q8 theo khuyến nghị (chủ SP 11/11: "tiếp tục tất cả những gì đang dở, tự rà, tự merge")** — đã code (PR SOS-TAM-PA). Khác bản nháp: thẻ QL là loại riêng `giu_pa_gv` (cùng hộp Chờ duyệt, đối tượng = PA quy chế chờ) thay vì dùng lại `de_xuat_pa` — `de_xuat_pa` coi đối tượng là PA mới CHỜ duyệt, còn PA của GV đang chạy.
 Thay phần liên quan của: luật SOS MT 11/10 ("SOS tạm thời không Case, không hạn"), N8 ④, OV-13a (Case tạm không PA), K3-16 #1303 (nhánh trượt lại sinh PA quy chế mới),
 PA-TRUNG #1207, gộp xác nhận #1308. Không đổi luật nào khác.
 
@@ -46,7 +46,7 @@ Q = PA quy chế theo bảng (`presetFor`, mức SOS lúc chốt). G = PA của 
 
 **"Theo PA quy chế"** = Xác nhận PA (hàm có sẵn) + G kết thúc lý do mới "Thay bằng PA quy chế" (kết quả đã ghi giữ). Hoàn tác (toast) trả cả Q lẫn G.
 
-**"Giữ PA của tôi"** → thẻ QL, **dùng lại `de_xuat_pa`** (đối tượng = G, `du_lieu.thayPaId` = Q, `giuPaGv: true`), `han_duyet` = ngày gửi + 3. Q chờ (`superseded_by`, Case "Chờ duyệt đổi PA"),
+**"Giữ PA của tôi"** → thẻ QL loại `giu_pa_gv` (đối tượng = Q, `du_lieu.paGv` = G), `han_duyet` = ngày gửi + 3. Q chờ (`superseded_by`, Case "Chờ duyệt đổi PA"),
 việc Chọn PA rời GV, **G vẫn chạy**. Lý do: [hỏi Q3].
 - QL **Duyệt** → Q "Đã kết thúc · Đổi PA" (`apDungDoiPa 'duyet'`), G giữ.
 - QL **Không duyệt** (lý do bắt buộc như thẻ hiện nay) → Q xác nhận, chạy từ hôm nay; G kết thúc "Thay bằng PA quy chế"; GV nhận chuông kèm lý do — [hỏi Q4].
@@ -124,3 +124,8 @@ Mỗi kỹ năng một Case (N8 ②), xét riêng: vd W1 trùng, R khác → ch�
 - **Q6** PA trên Case tạm: **chưa có hạn ghi kết quả** (không trễ, không dòng sổ nghĩa vụ) tới khi lượt chốt; chốt rồi tính hạn như PA thường — **khuyến nghị: có** (đúng "SOS tạm không hạn / không trễ").
 - **Q7** Dữ liệu cũ (Case đã chốt trước luật): 3 Case PA GV cùng loại → áp ca (1) (PA quy chế chờ huỷ, hết việc) · 1 Case khác loại → thành "Chọn PA" — **khuyến nghị: áp** (migrate có nhật ký, khôi phục được).
 - **Q8** Nhánh trượt lại (K3-16) dùng cùng luật: G không tính PA quy chế cũ đang sang Kết quả cuối — **khuyến nghị: có**.
+
+## 7. Kết quả thử trên bản chép `mig.sqlite` 07/11 (migrate + thao tác thật, cuộn lại)
+- Migrate: **+119 Case tạm** (177 → 296; 130 ước ở mục 4 gồm cả lượt lớp kết thúc / tín hiệu đã nối) · **3 Case** (427 · 635 · 659) PA GV trùng loại → PA GV mang dấu quy chế, PA quy chế chờ huỷ (`khoiPhucSosTamPa`) · **1 Case** (634) → việc "Chọn PA".
+- 20 Case tạm: người phụ trách thêm PA → 20/20 lưu được, không hạn ghi kết quả.
+- Case 634: caseDetail có `chonPa`, Công việc QL "Chọn PA"; Giữ PA → QL Duyệt (PA quy chế "Đổi PA") · Không duyệt (PA quy chế chạy) · quá hạn (thẻ tự đóng, PA quy chế "Đổi PA") — 3/3 đúng.
