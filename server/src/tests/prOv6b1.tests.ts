@@ -153,7 +153,9 @@ export async function runPrOv6b1Tests(t: YThucTestKit) {
     for (const p of [P.mbManager, P.coreTeacher]) {
       assert(loi400(() => sysconfig.saveProgramme(p, goc))?.status === 403, 'saveProgramme không 403');
       assert(loi400(() => sysconfig.saveRoute(p, { ...lt, lichMt: [6, 12, 16] }))?.status === 403, 'saveRoute không 403');
-      assert(loi400(() => sysconfig.listProgrammes(p))?.status === 403, 'listProgrammes không 403');
+      /* QTV2-CAU-HINH (chủ SP 11/11 "QL xem"): Quản lý XEM được danh sách chương trình; GV vẫn 403. */
+      if (p === P.coreTeacher) assert(loi400(() => sysconfig.listProgrammes(p))?.status === 403, 'listProgrammes không 403 với GV');
+      else assert(Array.isArray(sysconfig.listProgrammes(p)), 'QL không xem được danh sách chương trình');
     }
   }));
 

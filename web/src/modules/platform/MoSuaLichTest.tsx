@@ -4,7 +4,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { fmtDateTime } from '../../lib/format.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Card, ErrorState, SectionNote, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -36,33 +37,27 @@ export function MoSuaLichTest() {
     } finally { setBusy(false); }
   };
 
+  if (error) return <Card title={t('Mở sửa lịch Test')}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
+  if (loading || !data) return <Card title={t('Mở sửa lịch Test')}><Skeleton rows={1} /></Card>;
   return (
-    <Card title={t('Mở sửa lịch Test')}
-      action={data && (
-        <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${data.bat ? '' : 'btn-primary'}`} disabled={busy} aria-busy={busy || undefined}
-          aria-label={`${data.bat ? t('Tắt') : t('Bật')} — ${t('Mở sửa lịch Test')}`} onClick={() => void doi(!data.bat)}>
-          {busy ? t('Đang lưu…') : data.bat ? t('Tắt') : t('Bật')}
-        </button>
-      )}>
-      {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
-        : loading || !data ? <Skeleton rows={2} />
-        : (
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2" role="status">
-              <span className={`${CHIP_TRON} ${data.bat ? 'border-ok-line bg-ok-bg text-ok' : 'border-[var(--line-strong)] bg-[var(--surface)] text-dim'}`}>
-                {data.bat ? t('Đang mở') : t('Đang tắt')}
-              </span>
-              {data.bat && (
-                <span className="min-w-0 break-words text-sm text-slate-300">
-                  {t('Bật bởi {nguoi} lúc {luc}', { nguoi: data.nguoi ?? '—', luc: data.luc ? fmtDateTime(data.luc) : '—' })}
-                </span>
-              )}
-            </div>
-            <SectionNote>
-              {t('Mở: GVCN (lớp mình), Admin, Quản lý sửa được lịch Test kể cả Thứ Sáu – CN.')}
-            </SectionNote>
-          </div>
+    /* QTV2-QUYEN: MỘT hàng — tên + ⓘ (hậu quả) · trạng thái · ai bật · nút. */
+    <section className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+      <h2 className="h-khoi m-0 inline-flex items-center gap-1.5 text-lg font-bold text-slate-100">{t('Mở sửa lịch Test')}
+        <NutLuat label={t('Mở sửa lịch Test')}>{t('Mở: GVCN (lớp mình), Admin, Quản lý sửa được lịch Test kể cả Thứ Sáu – CN.')}</NutLuat></h2>
+      <span className="inline-flex min-w-0 flex-wrap items-center gap-2" role="status">
+        <span className={`${CHIP_TRON} ${data.bat ? 'border-ok-line bg-ok-bg text-ok' : 'border-[var(--line-strong)] bg-[var(--surface)] text-dim'}`}>
+          {data.bat ? t('Đang mở') : t('Đang tắt')}
+        </span>
+        {data.bat && (
+          <span className="min-w-0 break-words text-sm text-slate-300">
+            {t('Bật bởi {nguoi} lúc {luc}', { nguoi: data.nguoi ?? '—', luc: data.luc ? fmtDateTime(data.luc) : '—' })}
+          </span>
         )}
-    </Card>
+      </span>
+      <button type="button" className={`btn ml-auto min-h-[44px] sm:min-h-0 ${data.bat ? '' : 'btn-primary'}`} disabled={busy} aria-busy={busy || undefined}
+        aria-label={`${data.bat ? t('Tắt') : t('Bật')} — ${t('Mở sửa lịch Test')}`} onClick={() => void doi(!data.bat)}>
+        {busy ? t('Đang lưu…') : data.bat ? t('Tắt') : t('Bật')}
+      </button>
+    </section>
   );
 }
