@@ -368,6 +368,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích · Chi nhánh', vai: ['QT'], url: '/tong-quan/v5?ct=ft&baoCao=chi-nhanh&branchId={cn}&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=ft&o=vao&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=ft&o=chua-co-kq' },
+  /* PTA rà #1408: Cuối khoá lớp thường theo EM — panel một dải (mỗi em một bài, % tổng). */
+  { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=thuong&o=ck-dat&khoa=tong&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&o=tien-bo:tat-ca&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=tong:co-target&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=thuong&theo=lop&khoa=tong&cot=dat-test&kieu=tuan&tu=2026-08-31&den=2026-09-27' },

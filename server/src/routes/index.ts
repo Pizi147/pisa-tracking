@@ -2284,7 +2284,10 @@ api.get('/tong-quan/v5', requireAuth, wrap((req) => {
 api.get('/tong-quan/chi-nhanh-v2/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   const k = khoangOf(req) ?? khoangChiNhanhMacDinh(demoToday());
-  const x = chiNhanhSvc.oChiNhanh(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), tu: k.tu, den: k.den, o: qStr(req, 'o') ?? '' });
+  const f = { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), tu: k.tu, den: k.den, o: qStr(req, 'o') ?? '', khoa: qStr(req, 'khoa') ?? null };
+  /* Cuối khoá lớp thường (PTA rà #1408): số EM theo dải % tổng — panel bảng bài, mỗi em một dòng. */
+  if (f.o.startsWith('ck-')) return chiNhanhSvc.oCuoiKhoaChiNhanh(principalOf(req), f);
+  const x = chiNhanhSvc.oChiNhanh(principalOf(req), f);
   return { n: x.n, unit: 'hoc-vien', tieuDe: x.tieuDe, rows: rowsFor('hoc-vien', x.ids, undefined, principalOf(req)) };
 }));
 /** UI-TONG-QUAN: Tổng quan TVV (Báo PH đúng hạn · Thi tháng này) + panel `o=bao-ph`. */
