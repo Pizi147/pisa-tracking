@@ -308,6 +308,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **12/11 #1374 #1375 (top 10 #3 #4, PTA chốt):** một ngưỡng chữ chung `CHU_TOI_THIEU_CASE` = 8 ký tự (mô tả Case 15 → 8, Xác nhận PA quy chế 15 → 8, kết luận 10 → 8) · Mức độ mặc định Bình thường · Tên Case tự sinh "{Kỹ năng} · {nhóm}" · Kết thúc PA cuối có ô "Hoàn thành Case". Việc để sau: ô "Hoàn thành Case" ở form "Kết thúc sớm…" PA quy chế (form đó chỉ có lý do).
 
+**12/11 Phân tích V2 — công tắc KCK (chủ SP):** "Thế tôi xem số lịe vượt đạt chưa đạt cho cả phần KCK thì sao? có 1 cái toggle ở đâu đó hoặc ở ngay khu vực 2 ô bên trên thì số liệu sẽ thay đổi?" → hai ô "Đạt Target · trừ KCK" / "Tổng thể · gồm KCK" là công tắc: bấm ô nào thì thanh Vượt · Đạt · Chưa đạt đổi theo ô đó (mặc định trừ KCK); hai % luôn hiện; bảng kỹ năng / GV / lớp luôn trừ KCK. Đặc tả 5.2 đã sửa.
+
 **12/11 Phân tích V2 — KCK chốt (chủ SP):** "1. KCK không cần quan tâm quá nhiều, cho vào danh sách tổng hợp điểm thi/ danh sách thi là được 2. Ngôn từ ở những chỗ 'có cam kết' và 'mọi em có target' đang hơi nhiễu loạn và khó hiểu, đổi từ khác" → Thi thật: "Đạt Target" (trừ KCK) to + "Tổng thể" (gồm KCK) nhỏ + thanh Vượt · Đạt · Chưa đạt; KCK (gồm WL 2) chỉ có chip trong danh sách; bỏ thẻ KCK; em không Target không vào % (ⓘ). Đặc tả mục 5.2–5.3 đã sửa.
 
 **12/11 (chủ SP):** "#1386 duyệt nhé" — duyệt ảnh QTV2-CAU-HINH-CU (QL xem cấu hình, Chi nhánh sửa tại ô, Chương trình hai nhóm + Nhật ký) → check chung + merge.
