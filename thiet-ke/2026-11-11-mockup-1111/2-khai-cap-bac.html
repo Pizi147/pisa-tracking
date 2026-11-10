@@ -425,7 +425,8 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .chan-dem { font:600 14px var(--phong); color:var(--text); } .chan-dem .phu { font-weight:500; color:var(--text-dim); } .chan-dem .ha { color:var(--soon); }
 
 /* 375 */
-.dt .hang-chung { padding:10px 16px; } .dt .hang-chung .gc { flex-basis:100%; } .dt .hang-chung .gc .o { height:44px; }
+.dt .hang-chung { padding:10px 16px; }
+.dt .hang-chung label { display:grid; grid-template-columns:96px minmax(0,1fr); width:100%; } .dt .hang-chung .o-thang { justify-self:start; } .dt .hang-chung .gc { flex-basis:100%; } .dt .hang-chung .gc .o { height:44px; }
 .dt .cong-cu { padding:8px 16px; } .dt .cong-cu .tat-ca { min-height:44px; }
 .dt .dong { grid-template-columns:28px minmax(0,1fr) auto; row-gap:6px; padding:8px 16px; height:auto; }
 .dt .dong .bac, .dt .dong .ly-khoa { grid-column:1 / -1; }

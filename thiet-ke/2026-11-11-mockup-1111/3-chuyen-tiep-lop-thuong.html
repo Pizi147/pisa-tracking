@@ -401,14 +401,13 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .chon-lop.tuan { min-width:96px; font-family:var(--phong-so); }
 
 /* hàng em */
-.hang, .duoi { display:grid; grid-template-columns:28px minmax(0,1.15fr) minmax(0,1fr) 392px minmax(0,1fr); }
-.co-tt .hang, .co-tt .duoi { grid-template-columns:28px minmax(0,1.15fr) minmax(0,1fr) 392px minmax(0,0.9fr) 156px; }
+.hang, .duoi { display:grid; grid-template-columns:28px 210px 296px 400px minmax(0,1fr); }
+.co-tt .hang, .co-tt .duoi { grid-template-columns:28px 200px 290px 400px minmax(0,1fr) 150px; }
 .hang { column-gap:14px; align-items:center; min-height:60px; padding:8px 20px; border-bottom:1px solid var(--line); }
 .hang.dau { min-height:36px; padding-top:0; padding-bottom:0; font:600 12px var(--phong); color:var(--text-faint); background:var(--surface); border-bottom:1px solid var(--line); }
 .hang.tick, .hang.noi { background:var(--accent-soft); }
 .hang.noi { box-shadow:inset 3px 0 0 var(--accent); }
 .hang .ten { display:grid; gap:1px; min-width:0; } .hang .ten .ten-em { overflow:hidden; text-overflow:ellipsis; }
-.hang .ten small { font-size:12px; color:var(--text-faint); white-space:nowrap; }
 .kq { display:grid; gap:2px; min-width:0; }
 .kq .d1 { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
 .kq .pt { font:700 16px var(--phong-so); } .kq .pt.dat { color:var(--ok); } .kq .pt.kem { color:var(--bad); } .kq .pt.cho { color:var(--text-dim); font:600 14px var(--phong); }
@@ -482,6 +481,39 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 .chon-tat { display:inline-flex; align-items:center; gap:8px; font:600 14px var(--phong); color:var(--text); white-space:nowrap; cursor:pointer; }
 .ck-cc { justify-content:space-between; }
 .kq .nx-gv { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+/* ===== chủ SP 11/11: hộp điểm + hàng cao đều ===== */
+.hang { grid-template-rows:auto auto; row-gap:4px; min-height:0; padding:10px 20px 8px; align-items:center; }
+.hang > .o-tich, .hang > span:first-child { grid-row:1; }
+.hop-diem { display:inline-grid; gap:6px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface-2); justify-self:start; }
+.hop-diem .tong { display:flex; align-items:baseline; gap:8px; white-space:nowrap; }
+.hop-diem .pt { font:700 18px/1.2 var(--phong-so); } .hop-diem .pt.cho { font:700 15px/1.2 var(--phong); color:var(--text); }
+.hop-diem .tong-phu { font:500 12px var(--phong); color:var(--text-dim); }
+.cac-mon { display:grid; grid-template-columns:repeat(4, 60px); gap:4px; }
+.om { display:grid; justify-items:center; gap:0; padding:3px 0 4px; border-radius:6px; background:var(--surface); border:1px solid var(--line); }
+.om i { font:500 12px var(--phong); font-style:normal; color:var(--text-faint); }
+.om b { font:700 13px var(--phong-so); white-space:nowrap; }
+.om.dat b { color:var(--ok); } .om.kem b { color:var(--bad); } .om.trong b { color:var(--text-faint); }
+.om.kem { border-color:var(--bad-vien); }
+.phu-hang { grid-row:2; grid-column:2 / -1; display:flex; align-items:center; gap:6px; min-height:20px; font:500 12px var(--phong); color:var(--text-dim); white-space:nowrap; overflow:hidden; }
+.phu-hang .nx { overflow:hidden; text-overflow:ellipsis; max-width:520px; } .phu-hang .cham { color:var(--text-faint); }
+.phu-hang .khac { color:var(--soon); font-weight:600; } .phu-hang .link-nho { font-size:12px; }
+.ten-phu { display:flex; align-items:center; gap:8px; white-space:nowrap; } .ten-phu small { font-size:12px; color:var(--text-faint); }
+.hang.gv { grid-template-columns:210px 296px 330px minmax(0,1fr); }
+.hang.gv .phu-hang { display:none; }
+.dt .hang { grid-template-columns:28px minmax(0,1fr); grid-template-rows:none; row-gap:8px; }
+.dt .hang > * { grid-row:auto; } .dt .hang .kq { grid-column:1 / -1; } .dt .hang .buoc, .dt .hang .lop-o, .dt .hang .tt-o { grid-column:1 / -1; }
+.dt .phu-hang { grid-column:1 / -1; grid-row:auto; white-space:normal; flex-wrap:wrap; }
+.dt .cac-mon { grid-template-columns:repeat(4, minmax(56px, 1fr)); } .dt .hop-diem { display:grid; justify-self:stretch; }
+@container (max-width:300px) { .cac-mon { grid-template-columns:repeat(2, 1fr); } }
+
+/* dải nhóm cùng lưới cột với hàng: ô Lớp cho cả nhóm thẳng cột "Lớp mới" */
+.the-ck > .nh-dai { display:grid; grid-template-columns:28px 210px 296px 400px minmax(0,1fr); column-gap:14px; padding-left:17px; }
+.co-tt > .nh-dai { grid-template-columns:28px 200px 290px 400px minmax(0,1fr) 150px; }
+.the-ck > .nh-dai > .o-tich { grid-column:1; } .the-ck > .nh-dai > .ten-n { grid-column:2; display:inline-flex; align-items:center; gap:8px; }
+.the-ck > .nh-dai .dem, .the-ck > .nh-dai .nut-i { display:none; }
+.the-ck > .nh-dai .ap-n { grid-column:5; margin-left:0; justify-self:start; }
+.dt .the-ck > .nh-dai { display:flex; }
+.dt .the-ck > .nh-dai .dem, .dt .the-ck > .nh-dai .nut-i { display:inline-flex; }
 </style>
 </head>
 <body>
@@ -532,7 +564,7 @@ fieldset { border:0; margin:0; padding:0; min-width:0; } fieldset[disabled] { op
 
 <section class="khu" id="k1">
   <h2>K1 · Vừa mở sau Final — em xếp theo bước tiếp gợi ý, mỗi em một dòng</h2>
-  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b>: nhóm ≥ 2 em có dải (như Công việc) với <b>ô Lớp + Tuần cho cả nhóm</b>; nhóm chỉ 1 em ("Học lại FOU", "QL cân nhắc", "Chờ Final") thành <b>nhãn nhỏ dưới tên</b>, đứng sau đường kẻ đậm — bảng không dài gấp đôi. Luật dải (≥ 60 %, 50–59 %…) ở ⓘ / rê nhãn. Bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>Kết quả</b> (% Final, % từng môn, môn &lt; 70 có ✗, "GVCN: nhận xét" nếu có) → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn (+ Ghi chú) → <b>Lớp mới</b>: em theo lớp của dải <b>không lặp ô lớp</b> (rê dòng hiện "Đổi lớp"); ô lớp chỉ có ở em khác lớp nhóm / em không thuộc dải. (3) GIỮ "Chọn tất cả · n" ở hàng công cụ (ngoài tiêu đề bảng — G9). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần. Còn thiếu gì: ô vàng ở dải / dòng + chân đếm một lần.</p>
+  <p class="ghi"><b>SỬA:</b> (1) <b>Nhóm theo gợi ý Final</b>: nhóm ≥ 2 em có dải (như Công việc) với <b>ô Lớp + Tuần cho cả nhóm</b>; nhóm chỉ 1 em ("Học lại FOU", "QL cân nhắc", "Chờ Final") thành <b>nhãn nhỏ dưới tên</b>, đứng sau đường kẻ đậm — bảng không dài gấp đôi. Luật dải (≥ 60 %, 50–59 %…) ở ⓘ / rê nhãn. Bỏ cột Gợi ý và hàng chip "Chọn nhóm". (2) Mỗi dòng: <b>hộp điểm riêng</b> (nền nhạt + viền mảnh): % tổng to + ✓/✗, dưới là 4 ô môn L · R · G+V · P <b>thẳng cột giữa mọi em</b> (môn + ✓/✗ + số; chưa có điểm giữ ô "—") → <b>Bước tiếp</b> = 4 chip, gợi ý sáng sẵn → <b>Lớp mới</b>. 4 cột rộng cố định: nút bước tiếp luôn cùng chỗ. "GVCN: …", "+ bổ trợ…", "+ Ghi chú" gom thành <b>một dải chữ nhỏ dưới hàng</b>, chạy hết bề ngang — mọi hàng cao bằng nhau; nhãn dưới tên một dòng: em theo lớp của dải <b>không lặp ô lớp</b> (rê dòng hiện "Đổi lớp"); ô lớp chỉ có ở em khác lớp nhóm / em không thuộc dải. (3) GIỮ "Chọn tất cả · n" ở hàng công cụ (ngoài tiêu đề bảng — G9). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần. Còn thiếu gì: ô vàng ở dải / dòng + chân đếm một lần.</p>
   (3) Luật dải (≥ 60 %, 50–59 %…) vào ⓘ của dải. Dải nhóm có sẵn <b>ô Lớp + Tuần cho cả nhóm</b> (chỉ lớp cùng chi nhánh, đúng chương trình; "+ Mở lớp mới…" giữ ở cuối danh sách). Tuần mặc định = tuần sau Final; "Ngay hôm nay" chỉ trong danh sách tuần.</p>
   <figure style="margin:0;display:grid;gap:6px"><figcaption>K1 · Cuối khoá MB FOU 21 · QL Nguyễn Khánh Vy · 1440 tối · vừa mở, chưa chọn lớp</figcaption>
   <div class="toi man vung" id="m-k1"></div></figure>
@@ -652,24 +684,33 @@ const EM = {
   trang:{ ten: 'Bùi Thu Trang CT', pt: 57, mon: [60, 56, 56, 56], goi: null, bo: '+ bổ trợ 8 buổi · 2 tuần', nhan: 'cn' },
   nam:  { ten: 'Phan Quang Nam CT', pt: null, dai: '3/4 môn', mon: [80, 76, 80, null], goi: null, nhan: 'cho' },
 };
-function oKq(e, gv) {
-  const d1 = e.pt == null ? '<span class="pt cho">' + e.dai + '</span>'
-    : '<span class="pt ' + (e.pt >= 70 ? 'dat' : 'kem') + '">' + (e.pt >= 70 ? '✓ ' : '✗ ') + e.pt + ' %</span>';
-  return '<span class="kq"><span class="d1">' + d1 + '</span>' + mon(e.mon) + (e.nx && !gv ? '<span class="nx-gv" title="GVCN: ' + e.nx + '">GVCN: ' + e.nx + '</span>' : '') + '</span>';
+/* HỘP ĐIỂM (chủ SP 11/11 duyệt): % tổng to + ✓/✗, dưới là 4 ô môn cố định L · R · G+V · P (môn + ✓/✗ + số); môn chưa có điểm giữ ô "—" */
+const MON = ['L', 'R', 'G+V', 'P'];
+function oKq(e) {
+  const tong = e.pt == null
+    ? '<span class="tong"><b class="pt cho">Chờ Final</b><span class="tong-phu">' + (e.dai ?? '') + '</span></span>'
+    : '<span class="tong"><b class="pt ' + (e.pt >= 70 ? 'dat' : 'kem') + '">' + (e.pt >= 70 ? '✓ ' : '✗ ') + e.pt + ' %</b></span>';
+  const o = MON.map((k, i) => {
+    if (e.prog) return '<span class="om ' + (e.prog[i] === '✗' ? 'kem' : 'dat') + '"><i>' + k + '</i><b>' + e.prog[i] + '</b></span>';
+    const v = e.mon[i];
+    return v == null ? '<span class="om trong"><i>' + k + '</i><b>—</b></span>'
+      : '<span class="om ' + (v < 70 ? 'kem' : 'dat') + '"><i>' + k + '</i><b>' + (v < 70 ? '✗ ' : '✓ ') + v + '</b></span>';
+  }).join('');
+  return '<span class="kq"><span class="hop-diem" role="group" aria-label="Kết quả ' + e.ten + '">' + tong + '<span class="cac-mon">' + o + '</span></span></span>';
 }
+/* nhãn dưới tên: MỘT dòng */
 const oTen = (e, o = {}) => '<span class="ten"><a class="ten-em" href="#">' + e.ten + '</a>' +
-  (e.nhan ? '<span class="tag-n ' + e.nhan + '" title="' + NHAN[e.nhan].ly + '">' + NHAN[e.nhan].ten + '</span>' : '') +
-  (e.ph && !o.khoa ? '<small>Báo PH qua TVV</small>' : '') + '</span>';
+  (e.nhan || (e.ph && !o.khoa) ? '<span class="ten-phu">' + (e.nhan ? '<span class="tag-n ' + e.nhan + '" title="' + NHAN[e.nhan].ly + '">' + NHAN[e.nhan].ten + '</span>' : '') + (e.ph && !o.khoa ? '<small>Báo PH qua TVV</small>' : '') + '</span>' : '') + '</span>';
 /* o: chon, lop, theoNhom (lớp lấy từ dải → ô lớp ẩn, chỉ "Đổi lớp" khi rê), tuan, tt, tick, khoa, loiLop, phu, duoi, noi, le (dòng lẻ đầu tiên sau dải) */
 function hang(e, o = {}) {
   const chon = o.khoa ? o.khoa : o.chon === undefined ? e.goi : o.chon;
   let buoc;
-  if (o.khoa) buoc = '<span class="buoc"><span class="buoc-chu" style="display:inline-flex;gap:6px;align-items:center;color:var(--text)">' + IC.khoa + o.khoa + '<button class="link-nho" style="margin-left:6px">Sửa</button></span>' + (e.bo && chon === 'Lên BE' ? '<span class="phu-b">' + e.bo + '</span>' : '') + '</span>';
-  else {
-    const phu = o.phu ?? (chon === 'Lên BE' && e.bo ? e.bo : chon && e.goi && chon !== e.goi ? 'khác gợi ý · cần lý do' : '');
-    const gc = chon && !o.duoi ? '<button class="link-nho" style="font-size:12px">+ Ghi chú</button>' : '';
-    buoc = '<span class="buoc">' + chips(e.goi, chon) + (phu || gc ? '<span class="phu-b' + (/khác/.test(phu) ? ' khac' : '') + '" style="display:inline-flex;gap:10px;align-items:center">' + phu + gc + '</span>' : '') + '</span>';
-  }
+  if (o.khoa) buoc = '<span class="buoc"><span class="buoc-chu" style="display:inline-flex;gap:6px;align-items:center;color:var(--text)">' + IC.khoa + o.khoa + '<button class="link-nho" style="margin-left:6px">Sửa</button></span></span>';
+  else buoc = '<span class="buoc">' + chips(e.goi, chon) + '</span>';
+  /* dải chữ nhỏ dưới hàng, chạy hết bề ngang: GVCN · bổ trợ · khác gợi ý · + Ghi chú (mọi dòng có dải → hàng cao đều) */
+  const khac = !o.khoa && chon && e.goi && chon !== e.goi && o.phu !== '' ? '<span class="khac">khác gợi ý · cần lý do</span>' : '';
+  const phuHang = [e.nx ? '<span class="nx" title="GVCN: ' + e.nx + '">GVCN: ' + e.nx + '</span>' : '', chon === 'Lên BE' && e.bo ? '<span>' + e.bo + '</span>' : '', khac,
+    !o.khoa && chon && !o.duoi ? '<button class="link-nho">+ Ghi chú</button>' : ''].filter(Boolean).join('<span class="cham">·</span>');
   let lop;
   if (chon === 'Tạm dừng/ Kết thúc học') lop = '<span class="lop-o"><span class="khong">Không chuyển lớp</span></span>';
   else if (!chon) lop = '<span class="lop-o"></span>';
@@ -679,13 +720,13 @@ function hang(e, o = {}) {
     : '<span class="chon-lop nho trong">' + (chon === 'Lên FT' ? 'Chọn lớp FT…' : chon === 'Học lại' ? 'Chọn lớp FOU…' : 'Chọn lớp BE…') + '</span>') + '</span>';
   const ttO = o.tt ? '<span class="tt-o">' + o.tt + '</span>' : '';
   return '<div class="hang' + (o.tick ? ' tick' : '') + (o.noi ? ' noi' : '') + (o.le ? ' le' : '') + '">' + (o.khoa ? '<span></span>' : '<input type="checkbox" class="o-tich" aria-label="Chọn ' + e.ten + '"' + (o.tick ? ' checked' : '') + '>') +
-    oTen(e, o) + oKq(e) + buoc + lop + ttO + '</div>' + (o.duoi ? '<div class="duoi' + (o.tick ? ' tick' : '') + '"><div class="hop">' + o.duoi + '</div></div>' : '');
+    oTen(e, o) + oKq(e) + buoc + lop + ttO + '<div class="phu-hang">' + phuHang + '</div></div>' + (o.duoi ? '<div class="duoi' + (o.tick ? ' tick' : '') + '"><div class="hop">' + o.duoi + '</div></div>' : '');
 }
 const dauCot = '<div class="hang dau"><span></span><span>Học viên</span><span>Kết quả</span><span>Bước tiếp</span><span>Lớp mới</span></div>';
 const dauCotTt = '<div class="hang dau"><span></span><span>Học viên</span><span>Kết quả</span><span>Bước tiếp</span><span>Lớp mới</span><span>Bàn giao</span></div>';
 function dai(loai, ten, so, phu, ap, tick, khongTick) {
-  return '<div class="nh-dai ' + loai + '">' + (khongTick ? '' : '<input type="checkbox" class="o-tich" aria-label="Chọn cả nhóm ' + ten + '"' + (tick ? ' checked' : '') + '>') + '<span class="ten-n">' + ten + '</span><span class="dem">' + so + ' em</span>' + (phu ? '<span class="nut-i" style="width:24px;height:24px" title="' + phu + '">ⓘ</span>' : '') +
-    (ap ? '<span class="ap-n"><span class="nh">Lớp cho cả nhóm</span>' + ap + '</span>' : '') + '</div>';
+  return '<div class="nh-dai ' + loai + '">' + (khongTick ? '' : '<input type="checkbox" class="o-tich" aria-label="Chọn cả nhóm ' + ten + '"' + (tick ? ' checked' : '') + '>') + '<span class="ten-n">' + ten + '<span class="dem" style="display:inline-flex">' + so + ' em</span>' + (phu ? '<span class="nut-i" style="width:24px;height:24px;display:inline-flex" title="' + phu + '">ⓘ</span>' : '') + '</span>' +
+    (ap ? '<span class="ap-n" title="Lớp cho cả nhóm">' + ap + '</span>' : '') + '</div>';
 }
 const apLop = (lop, ma) => (lop ? '<span class="chon-lop">' + lop + '</span>' : '<span class="chon-lop trong">Chọn lớp ' + ma + '…</span>') + '<span class="chon-lop tuan">W4 SEP</span>';
 /* "Chọn tất cả · n" (GIỮ như web, ngoài tiêu đề bảng — G9); o.chonTat = '' → không có (GVCN) */
@@ -734,10 +775,9 @@ trang('m-k3', 'Nguyễn Khánh Vy', { daChot: 5, han: '', coTt: true, chonTat: 1
   '<div class="dai-kq" role="status"><span class="ok">✓ Đã chốt 5 em</span><span class="loi">⚠ 1 em chưa chốt</span><span class="phai"><span class="nut nut-nho nut-chinh">Thử lại 1 em</span><button class="x" aria-label="Ẩn thông báo">✕</button></span></div>');
 
 /* K4 — MB FOU 15 trước Final, chọn tất cả + thanh áp */
-const E15 = [['Bùi Minh Châu', 'Progress 07/09 · 3/4 môn đạt', 'R'], ['Cao Thị Hằng', 'Progress 07/09 · 4/4 môn đạt', ''], ['Đinh Gia Huy', 'Progress 07/09 · 2/4 môn đạt', 'L, P'], ['Lê Bảo Ngọc', 'Progress 07/09 · 4/4 môn đạt', ''], ['Phạm Minh Tú', 'Progress 07/09 · 3/4 môn đạt', 'W'], ['Trần An Khang', 'Progress 07/09 · 4/4 môn đạt', '']];
-const h15 = E15.map(([ten, p, k]) => '<div class="hang tick"><input type="checkbox" class="o-tich" checked aria-label="Chọn ' + ten + '"><span class="ten"><a class="ten-em" href="#">' + ten + '</a></span>' +
-  '<span class="kq"><span class="d1"><span class="pt cho">Chờ Final</span></span><span class="mon">' + p + (k ? ' · <span class="tr">✗ ' + k + '</span>' : '') + '</span></span>' +
-  '<span class="buoc">' + chips(null, 'Lên BE') + '</span><span class="lop-o"><button class="link-nho doi-lop">Đổi lớp</button></span></div>').join('');
+/* trước Final: hộp điểm = "Chờ Final · Progress 07/09", ô môn theo Progress (✓ / ✗ từng môn) */
+const E15 = [['Bùi Minh Châu', '3/4', '✓✗✓✓'], ['Cao Thị Hằng', '4/4', '✓✓✓✓'], ['Đinh Gia Huy', '2/4', '✗✓✓✗'], ['Lê Bảo Ngọc', '4/4', '✓✓✓✓'], ['Phạm Minh Tú', '3/4', '✓✓✗✓'], ['Trần An Khang', '4/4', '✓✓✓✓']];
+const h15 = E15.map(([ten, d, p]) => hang({ ten, pt: null, dai: 'Progress 07/09 · ' + d + ' môn đạt', prog: [...p], mon: [], goi: null }, { chon: 'Lên BE', theoNhom: true, tick: true })).join('');
 trang('m-k4', 'Nguyễn Khánh Vy', { lop: 'MB FOU 15', final: 'W2 OCT', gvcn: 'Trần Ngọc Hà', han: '<span class="han xa">hạn 08/10</span>', tatCa: true },
   dai('cho', 'Chờ Final', 6, 'Chốt trước Final được · Bổ trợ Final, Xét lại tự sinh khi có Final', '', true) + h15,
   '<div class="ck-chan"><span class="tom"><b>Khi chốt 6 em: 6 → MB BE 09 · từ W3 OCT</b><span class="phu">Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final</span></span><span class="nut">Lưu nháp</span><span class="nut nut-chinh">Chốt · 6 em</span></div>',
