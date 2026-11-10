@@ -424,6 +424,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/don-vi' },
+  /* QTV2-CAU-HINH: cột Nhật ký của tab cấu hình — 8 dòng, không đọc danh sách người. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh&gioi-han=8' },
 ];
 
 /**
@@ -467,7 +469,7 @@ export const TRAN: Record<string, number> = {
   /* SUA-NHO-QUYEN: Quản trị › Tài khoản — đo 30/10 trước 138 câu (4 câu × tài khoản) → sau 11; trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/accounts': 21,
   /* QTV2-QUYEN: nhật ký chung + đơn vị báo cáo (thay /admin/overview: đọc mọi tài khoản + 6 COUNT(*)) — đo 11/11: 4 · 3 câu; trần = max(đo+10, ⌈đo×1,3⌉). */
-  'QT /admin/nhat-ky': 14, 'QL /admin/nhat-ky': 14, 'QT /admin/nhat-ky?muc=chi-nhanh': 14, 'QL /admin/nhat-ky?muc=chi-nhanh': 14, 'QT /admin/don-vi': 13, 'QL /admin/don-vi': 13,
+  'QT /admin/nhat-ky': 14, 'QL /admin/nhat-ky': 14, 'QT /admin/nhat-ky?muc=chi-nhanh': 14, 'QL /admin/nhat-ky?muc=chi-nhanh': 14, 'QT /admin/don-vi': 13, 'QL /admin/don-vi': 13, 'QT /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
   'QL /ban-giao-gv/1': 31, 'QT /ban-giao-gv/1': 30, 'GVCN /ban-giao-gv/1': 31, 'GVBM /ban-giao-gv/1': 30,
   'QL /lenh-chuyen/{lenhBg}/ban-giao': 23, 'QT /lenh-chuyen/{lenhBg}/ban-giao': 23,   // BAN-GIAO-NHAN 05/11: đo 13 → max(n+10, ⌈n×1,3⌉)

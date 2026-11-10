@@ -3056,7 +3056,7 @@ api.get('/admin/don-vi', requireAuth, wrap((req) => nhatKyQuanTriSvc.donViBaoCao
 api.get('/admin/nhat-ky', requireAuth, wrap((req) => nhatKyQuanTriSvc.nhatKyQuanTri(principalOf(req), {
   muc: typeof req.query.muc === 'string' ? req.query.muc : null, nguoi: toInt(req.query.nguoi) ?? null,
   tu: typeof req.query.tu === 'string' ? req.query.tu : null, den: typeof req.query.den === 'string' ? req.query.den : null,
-  tiep: toInt(req.query.tiep) ?? null,
+  tiep: toInt(req.query.tiep) ?? null, gioiHan: toInt(req.query['gioi-han']) ?? null,
 })));
 
 // ==================================================================== tài khoản (vòng 4 phase 4)
@@ -3169,7 +3169,7 @@ api.get('/ref/routes', requireAuth, wrap(() => sysconfigSvc.listRoutes()));
 api.get('/admin/routes', requireAuth, wrap((req) => {
   /* QTV2-CAU-HINH: Quản lý xem (chỉ đọc) — sửa vẫn `ADMIN_CONFIG` trong `saveRoute`. */
   if (!bangQuyDoiSvc.xemDuocBangQuyDoi(principalOf(req))) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được danh mục lộ trình đầy đủ.');
-  return sysconfigSvc.listRoutes(true);
+  return sysconfigSvc.listRoutes(true, can(principalOf(req), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }));
 }));
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));
 api.get('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.listProgrammes(principalOf(req))));

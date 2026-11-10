@@ -16,11 +16,14 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem 
   const [v, setV] = useState('');
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  /* Esc / Đóng khi đã gõ khác → hỏi MỘT lần "Bỏ thay đổi · Ở lại" (cùng phản hồi với `SuaTaiDong`), không mất chữ đang gõ. */
+  const [hoiBo, setHoiBo] = useState(false);
   const o = useRef<HTMLInputElement>(null);
   const idLoi = useId();
   const goc = giaTri ?? '';
   if (chiXem) return <span className={goc ? 'text-slate-100' : 'text-slate-500'}>{goc || t('Chưa có')}</span>;
-  const thoi = () => { setSua(false); setLoi(null); };
+  const thoi = () => { setSua(false); setLoi(null); setHoiBo(false); };
+  const ngoai = () => { if (busy) return; if (v !== goc) setHoiBo(true); else thoi(); };
   const luu = async () => {
     if (busy) return;
     if (v.trim() === goc.trim()) { thoi(); return; }
@@ -44,13 +47,21 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem 
         onChange={(e) => setV(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); void luu(); }
-          if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); thoi(); }
+          if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ngoai(); }
         }} />
       {loi && <span id={idLoi} className="text-xs text-late" role="alert">{loi}</span>}
-      <span className="flex gap-1.5">
-        <button type="button" className="btn btn-sm max-sm:min-h-[44px]" disabled={busy} onClick={thoi}>{v !== goc ? t('Huỷ thay đổi') : t('Đóng')}</button>
-        <button type="button" className="btn btn-sm btn-primary max-sm:min-h-[44px]" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
-      </span>
+      {hoiBo ? (
+        <span className="flex flex-wrap items-center gap-1.5" role="status">
+          <span className="text-xs text-slate-300">{t('Chưa lưu thay đổi')}</span>
+          <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => { setHoiBo(false); o.current?.focus(); }}>{t('Ở lại')}</button>
+          <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={thoi}>{t('Bỏ thay đổi')}</button>
+        </span>
+      ) : (
+        <span className="flex gap-1.5">
+          <button type="button" className="btn btn-sm max-sm:min-h-[44px]" disabled={busy} onClick={ngoai}>{v !== goc ? t('Huỷ thay đổi') : t('Đóng')}</button>
+          <button type="button" className="btn btn-sm btn-primary max-sm:min-h-[44px]" disabled={busy} onClick={() => void luu()}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
+        </span>
+      )}
     </span>
   );
 }

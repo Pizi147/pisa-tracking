@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -25,12 +26,15 @@ export function ChiNhanhAdmin() {
   const donVi = useApi<{ id: number; name: string; kind: string }[]>('/admin/don-vi');
   const quanTri = !!useSession().session?.nav?.admin;
   const toast = useToast();
+  /* Giá trị vừa lưu theo chi nhánh — sửa ô thứ hai trước khi tải lại xong vẫn ghép đúng bản mới nhất (không ghi đè ô vừa lưu về giá trị cũ). */
+  const moi = useRef<Record<number, LienHe>>({});
   if (error && error.status === 403) return <Forbidden message={t('Phần này chỉ dành cho Quản trị hệ thống.')} />;
   if (error) return <Card title={t('Chi nhánh')}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
 
   /** Lưu một chi nhánh; `hoanTac` = đang trả giá trị cũ (không hiện Hoàn tác lần nữa). Lỗi ném ra để ô giữ chữ + báo tại ô. */
   const gui = async (b: ChiNhanh, v: LienHe, hoanTac = false) => {
     const r = await api.put<{ truoc: LienHe }>(`/admin/chi-nhanh/${b.id}`, v);
+    moi.current[b.id] = v;
     invalidate('/ref/branches'); invalidate('/admin/nhat-ky');
     reload();
     if (hoanTac) { toast.push('ok', t('Đã hoàn tác')); return; }
@@ -38,7 +42,7 @@ export function ChiNhanhAdmin() {
       gui(b, r.truoc, true).catch((e) => toast.push('error', (e as Error).message));
     }, { key: `chi-nhanh:${b.id}` });
   };
-  const lienHe = (b: ChiNhanh): LienHe => ({ name: b.name, diaChi: b.diaChi ?? '', soDienThoai: b.soDienThoai ?? '' });
+  const lienHe = (b: ChiNhanh): LienHe => moi.current[b.id] ?? { name: b.name, diaChi: b.diaChi ?? '', soDienThoai: b.soDienThoai ?? '' };
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">

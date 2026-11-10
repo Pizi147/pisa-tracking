@@ -105,8 +105,8 @@ export function NhatKyChung() {
  * Quản trị: "Xem tất cả ›" mở Nhật ký chung lọc sẵn mục (tab Quyền & nhật ký). Quản lý: chỉ xem 8 dòng (tab Quyền & nhật ký là của Quản trị).
  */
 export function NhatKyMuc({ muc, quanTri }: { muc: Muc; quanTri: boolean }) {
-  const r = useApi<Trang>(`/admin/nhat-ky?muc=${muc}`);
-  const dong = (r.data?.dong ?? []).slice(0, 8);
+  const r = useApi<Trang>(`/admin/nhat-ky?muc=${muc}&gioi-han=8`);
+  const dong = r.data?.dong ?? [];
   return (
     <aside className="card min-w-0 self-start" aria-label={t('Nhật ký')}>
       <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>

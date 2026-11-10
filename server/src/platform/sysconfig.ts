@@ -5,7 +5,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
 
@@ -30,8 +30,9 @@ const loiO = (o: string, m: string) => badRequest(m, { o });
 
 /* ------------------------------------------------------------------ lộ trình */
 
-/** `includeInactive` = bản Quản trị: cả mã đã ngừng, kèm `inUse`. Bản chọn (`/ref/routes`) không có `inUse` (PR-Dọn, quét #10). */
-export function listRoutes(includeInactive = false) {
+/** `includeInactive` = bản Quản trị: cả mã đã ngừng, kèm `inUse`. Bản chọn (`/ref/routes`) không có `inUse` (PR-Dọn, quét #10).
+ *  `demSo` = kèm số "đang dùng" (lộ quy mô): chỉ Quản trị — Quản lý xem cấu hình không thấy (QTV2-CAU-HINH, PTA chốt 11/11). */
+export function listRoutes(includeInactive = false, demSo = includeInactive) {
   const conn = db();
   const rows = conn
     .prepare(`SELECT * FROM routes ${includeInactive ? '' : "WHERE status = 'active'"} ORDER BY seq, code`)
@@ -41,7 +42,7 @@ export function listRoutes(includeInactive = false) {
     /* OV-6b1: tuần học của từng MT — Quản trị sửa, chép vào lớp FT lúc tạo. */
     lichMt: docLichMt(r.lich_mt) ?? lichMtGoc(r.code),
     /* Đang có bao nhiêu lộ trình học viên dùng mã này — con số quyết định có ngừng được không. */
-    ...(includeInactive ? {
+    ...(demSo ? {
       inUse: (conn.prepare('SELECT COUNT(*) n FROM learning_cycles WHERE route = ?').get(r.code) as any).n
         + (conn.prepare('SELECT COUNT(*) n FROM classes WHERE route = ?').get(r.code) as any).n,
       lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE is_fast_track = 1 AND route = ? AND status = 'active'").get(r.code) as any).n,
@@ -89,6 +90,8 @@ function kiemLichMt(v: unknown): number[] {
 
 export function listProgrammes(p: Principal) {
   xemCauHinh(p, 'Chỉ Quản trị hệ thống và Quản lý xem được cấu hình chương trình.');
+  /* Số lớp (lộ quy mô, PR-Dọn quét #10) chỉ ở bản Quản trị; Quản lý xem cấu hình không có. */
+  const laQt = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
   const conn = db();
   return (conn.prepare('SELECT * FROM programmes ORDER BY code').all() as any[]).map((r) => ({
     code: r.code, name: r.name, weeks: r.weeks, scoringMode: r.scoring_mode, status: r.status,
@@ -100,9 +103,11 @@ export function listProgrammes(p: Principal) {
     nguongDat: r.scoring_mode === 'ratio' ? Math.round((r.nguong_dat ?? RATIO_PASS_THRESHOLD) * 1000) / 10 : null,   // 0.725 → 72.5
     /* OV-6b2: liên tục — Checkpoint mỗi n tuần; `goc` = chương trình có sẵn trong mã (môn, cách chấm khoá); `coLop` = đã có lớp (môn khoá, mã không đổi). */
     lapMoiTuan: r.lap_moi_tuan ?? null, goc: laChuongTrinhGoc(r.code),
-    coLop: !!conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(r.code),
-    /* Chỉ lớp ĐANG CHẠY — lớp đã kết thúc không còn chịu ảnh hưởng gì của cấu hình. */
-    lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE programme_code = ? AND status = 'active'").get(r.code) as any).n,
+    ...(laQt ? {
+      coLop: !!conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(r.code),
+      /* Chỉ lớp ĐANG CHẠY — lớp đã kết thúc không còn chịu ảnh hưởng gì của cấu hình. */
+      lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE programme_code = ? AND status = 'active'").get(r.code) as any).n,
+    } : {}),
   }));
 }
 

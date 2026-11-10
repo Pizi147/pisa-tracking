@@ -104,12 +104,12 @@ export function CatalogAdmin() {
               <thead>
                 <tr>
                   <th className="th">{t('Chương trình')}</th><th className="th">{t('Cách chấm')}</th><th className="th text-right">{t('Độ dài')}</th>
-                  <th className="th">{t('Mốc Test')}</th><th className="th text-right">{t('Lớp đang chạy')}</th><th className="th" />
+                  <th className="th tabular-nums">{t('Mốc Test')}</th>{quanTri && <th className="th text-right">{t('Lớp đang chạy')}</th>}<th className="th" />
                 </tr>
               </thead>
               {nhom.map((g) => (
               <tbody key={g.key}>
-                <tr><td colSpan={6} className="td border-t" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>{dai(g)}</td></tr>
+                <tr><td colSpan={quanTri ? 6 : 5} className="td border-t" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--accent)' }}>{dai(g)}</td></tr>
                 {g.ds.map((d) => (
                   <tr key={khoaDong(d)} onClick={() => moSua(d)}
                     className={`${quanTri ? 'bam cursor-pointer' : ''} ${dangSua === khoaDong(d) ? 'row-active' : ''}`}>
@@ -118,7 +118,7 @@ export function CatalogAdmin() {
                     <td className="td whitespace-nowrap text-slate-400">{d.loai === 'ft' || d.ct.scoringMode !== 'ratio' ? 'band IELTS' : t('đúng / tổng')}</td>
                     <td className="td whitespace-nowrap text-right tabular-nums text-slate-300">{doDai(d)}</td>
                     <td className="td whitespace-nowrap tabular-nums text-slate-300">{chuMoc(d)}</td>
-                    <td className="td text-right tabular-nums text-slate-300">{soLop(d)}</td>
+                    {quanTri && <td className="td text-right tabular-nums text-slate-300">{soLop(d)}</td>}
                     <td className="td text-right">
                       {quanTri && <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setSua(d); }}>{t('Sửa')}</button>}
                     </td>
