@@ -45,7 +45,7 @@ table.mk td:first-child { white-space:nowrap; }
 /* ================= GIAO DIỆN WEB (mô phỏng) ================= */
 .man, .dt { position:relative; overflow:hidden; background:var(--bg); border-radius:6px; }
 .man { width:1408px; height:660px; }
-.dt { width:375px; height:780px; }
+.dt { width:375px; height:812px; }
 .cat { overflow:visible; background:none; }   /* khung chỉ cắt hộp (so trước | sau) */
 .so { font-family:var(--phong-so); font-variant-numeric:tabular-nums; }
 :where(.toi) a { color:var(--accent); text-decoration:none; }
@@ -85,11 +85,14 @@ table.mk td:first-child { white-space:nowrap; }
   background:var(--surface); border:1px solid var(--line-strong); border-radius:10px;
   box-shadow:0 18px 40px -8px rgb(0 0 0 / .55), 0 2px 6px rgb(0 0 0 / .35); }
 .cat .hop { position:static; max-height:none; }
-.dt .hop { top:56px; left:8px; right:8px; width:auto; max-height:70vh; max-height:546px; }
+.dt .hop { top:56px; left:8px; right:8px; width:auto; max-height:568px; }   /* 70 vh của máy 375 × 812 */
 
 /* khối Việc cần làm */
 .v-dau { position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:10px; padding:12px 16px 10px; background:var(--surface); border-bottom:1px solid var(--line); }
+.v-dau { flex-wrap:wrap; row-gap:0; }
 .v-dau h2 { font-size:15px; font-weight:700; white-space:nowrap; }
+.v-tom { flex-basis:100%; display:flex; align-items:baseline; gap:6px 10px; flex-wrap:wrap; margin-top:-2px; }
+.v-tom > * + *::before { content:"·"; margin-right:10px; color:var(--text-faint); font-weight:400; }
 .v-dem { font-size:13px; color:var(--text-dim); white-space:nowrap; }
 .v-dem b { color:var(--text); font:600 13px var(--phong-so); }
 .v-qua { font:700 13px var(--phong); color:var(--bad); white-space:nowrap; }
@@ -117,7 +120,7 @@ table.mk td:first-child { white-space:nowrap; }
 .td.qua { color:var(--bad); background:var(--bad-nen); }
 .td.qua::before { content:"⚠"; }
 .td.nay { color:var(--soon); background:var(--soon-nen); box-shadow:inset 0 0 0 1px var(--soon-vien); }
-.dt .dong-v { grid-template-columns:minmax(0,1fr) 50px 90px 10px; column-gap:6px; padding:6px 12px; min-height:52px; }
+.dt .dong-v { grid-template-columns:minmax(0,1fr) 50px 90px 10px; column-gap:6px; padding:6px 12px; min-height:48px; }
 .dt .v-dau { padding:10px 12px 8px; flex-wrap:wrap; row-gap:0; }
 
 .v-rong { display:flex; align-items:center; gap:8px; padding:14px 16px; font-size:14px; color:var(--text-dim); }
@@ -125,35 +128,46 @@ table.mk td:first-child { white-space:nowrap; }
 .v-tai { padding:8px 16px; display:grid; gap:10px; }
 .v-tai i { display:block; height:16px; border-radius:4px; background:var(--surface-2); }
 
-/* khối Để biết — nhẹ */
-.b-khoi { border-top:1px solid var(--line); background:color-mix(in srgb, var(--surface) 70%, var(--bg)); padding:6px 0 8px; }
-.b-dau { display:flex; align-items:center; gap:8px; padding:4px 16px 2px; }
-.b-dau h3 { font-size:12px; font-weight:600; color:var(--text-faint); letter-spacing:.01em; }
+/* khối Cập nhật — dưới Việc cần làm, nhẹ hơn: nền lặng, chữ 13 px. Mỗi tin hai hàng: loại · giờ (nhãn), rồi nội dung. */
+.v-nay { font:600 13px var(--phong); color:var(--soon); white-space:nowrap; }
+.b-khoi { border-top:1px solid var(--line); background:color-mix(in srgb, var(--surface) 62%, var(--bg)); padding:8px 0 6px; }
+.b-dau { display:flex; align-items:center; gap:8px; padding:2px 16px 4px; }
+.b-dau h3 { font-size:13px; font-weight:700; color:var(--text-dim); }
+.b-dem { font-size:12px; color:var(--text-faint); } .b-dem b { font:600 12px var(--phong-so); color:var(--accent); }
 .b-dau .lk { font-size:12px; min-height:28px; }
-.dt .b-dau { padding:2px 12px; }
+.dt .b-dau { padding:2px 12px 4px; } .dt .b-dau .lk { min-height:44px; }
 .ds-b { list-style:none; margin:0; padding:0; }
-.dong-b { display:grid; grid-template-columns:8px minmax(0,1fr) auto; align-items:baseline; column-gap:8px; padding:5px 16px; text-decoration:none; color:var(--text-dim); font-size:13px; line-height:1.4; }
+.ds-b > li + li .dong-b { border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.dong-b { display:grid; grid-template-columns:8px minmax(0,1fr) 12px; column-gap:8px; row-gap:1px; padding:7px 16px 8px; text-decoration:none; color:var(--text-dim); }
 .dong-b:hover { background:var(--accent-soft); }
-.dong-b .c { width:6px; height:6px; border-radius:50%; align-self:center; }
-.dong-b.chua { color:var(--text); }
+.dong-b .c { grid-row:1 / span 2; width:6px; height:6px; border-radius:50%; margin-top:6px; }
+.dong-b .m { display:flex; align-items:baseline; gap:8px; }
+.dong-b .l { font:600 12px var(--phong); color:var(--text-faint); }
+.dong-b time { margin-left:auto; font:12px var(--phong-so); color:var(--text-faint); white-space:nowrap; }
+.dong-b .mui { grid-column:3; grid-row:1 / span 2; align-self:center; color:var(--text-faint); }
+.dong-b:hover .mui { color:var(--accent); }
+.dong-b .x { grid-column:2; font-size:13px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .dong-b.chua .c { background:var(--accent); }
-.dong-b .x { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.x-khoi .dong-b .x { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-.dong-b time { font:12px var(--phong-so); color:var(--text-faint); white-space:nowrap; }
-.dong-b .tu { color:var(--bad); font-weight:600; }
-.dt .dong-b { padding:8px 12px; min-height:44px; align-items:center; }
+.dong-b.chua .x { color:var(--text); font-weight:500; }
+.dong-b.chua .l { color:var(--text-dim); }
+.kq { font-weight:700; } .kq.ok { color:var(--ok); } .kq.bad { color:var(--bad); }
+.dt .dong-b { padding:8px 12px; min-height:48px; }
 .b-loi { display:flex; gap:10px; align-items:center; padding:6px 16px; font-size:13px; color:var(--text-dim); }
 
-/* xem tất cả Để biết */
-.x-dau { position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:6px; padding:8px 12px 8px 8px; background:var(--surface); border-bottom:1px solid var(--line); }
+/* Xem tất cả: thay nội dung hộp tại chỗ, nhóm theo ngày, nội dung đủ (tối đa 2 hàng) */
+.x-dau { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:6px; padding:8px 12px 8px 8px; background:var(--surface); border-bottom:1px solid var(--line); }
 .x-dau h2 { font-size:15px; font-weight:700; }
 .x-dau .v-dem { margin-right:auto; }
 .nut-lai { width:32px; height:32px; display:grid; place-items:center; border:0; background:transparent; border-radius:6px; color:var(--text-dim); cursor:pointer; }
 .nut { display:inline-flex; align-items:center; height:30px; padding:0 10px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text); font:600 13px var(--phong); cursor:pointer; white-space:nowrap; }
+.nut-chu { border-color:transparent; background:transparent; color:var(--accent); padding:0 8px; }
+.nut-chu:hover { background:var(--accent-soft); }
 .nut[disabled] { opacity:.45; cursor:not-allowed; }
 .dt .nut-lai { width:44px; height:44px; } .dt .nut { height:44px; }
-.x-nhom { padding:8px 16px 2px; font:600 12px var(--phong); color:var(--text-faint); }
-.x-khoi .dong-b { font-size:13.5px; padding:7px 16px; }
+.x-nhom { position:sticky; top:49px; z-index:1; margin:0; padding:7px 16px 5px; font:700 12px var(--phong); color:var(--text-faint); background:var(--surface); border-bottom:1px solid var(--line); }
+.dt .x-nhom { top:61px; padding:7px 12px 5px; }
+.x-khoi .dong-b { padding:8px 16px 9px; }
+.x-khoi .dong-b .x { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .dt .x-khoi .dong-b { padding:9px 12px; }
 
 /* bản TRƯỚC (chép từ Header.tsx hiện tại) */
@@ -175,58 +189,64 @@ table.mk td:first-child { white-space:nowrap; }
 <div class="trang">
 
 <header class="dau-mk">
-  <h1>Chuông V2 — mockup 11/11 (chờ chủ SP duyệt)</h1>
-  <p>Mở chuông: <b>trên</b> là Việc cần làm gom theo loại việc (mỗi loại một dòng: loại · số việc · quá hạn / hôm nay · chi nhánh), bấm → Công việc lọc sẵn loại đó.
-    <b>Dưới</b> là "Để biết" nhẹ: chữ nhỏ, 3 tin gần nhất, "Xem tất cả". Số trên chuông = số việc, cùng hàm đếm với Công việc (<code>demDongViec</code>).</p>
-  <p>Nguồn số: bản <code>/my-work</code> App đã tải cho badge Công việc — chuông không gọi thêm. Bảng loại tin + dòng đọc: <code>bang-tin.md</code>.</p>
+  <h1>Chuông V2 — mockup 11/11 · vòng 2 (chờ chủ SP duyệt khối Cập nhật)</h1>
+  <p>Mở chuông: <b>trên</b> là Việc cần làm gom theo loại việc (đã duyệt vòng 1, giữ nguyên). <b>Dưới</b> là <b>Cập nhật</b> (trước gọi "Để biết") — vẽ lại:
+    mỗi tin hai hàng (loại tin · giờ, rồi nội dung), kết quả có chữ màu (Đã duyệt / Từ chối / Chưa thi hành được), "Xem tất cả" nhóm theo ngày.</p>
+  <p><b>Một số chung:</b> số trên chuông = số badge Công việc = việc cần làm ngay (quá hạn + hạn hôm nay), cùng <code>demDongViec</code>; đầu khối việc ghi đủ "11 việc · ⚠ 3 quá hạn · 1 hôm nay" (3 + 1 = 4 trên chuông).
+    Nguồn: bản <code>/my-work</code> App đã tải — chuông không gọi thêm. Bảng loại tin + dòng đọc: <code>bang-tin.md</code>.</p>
   <nav class="muc-mk">
-    <a href="#y">Ý chủ SP → chỗ</a><a href="#a">Trước | Sau</a><a href="#b">1440 · trạng thái</a><a href="#c">375</a><a href="#d">Thao tác trước → sau</a><a href="#e">[XM] hỏi PTA</a>
+    <a href="#y">Ý chủ SP → chỗ</a><a href="#a">Trước | Sau</a><a href="#b">1440 · trạng thái</a><a href="#c">375</a><a href="#d">Thao tác trước → sau</a><a href="#e">Đã chốt</a>
   </nav>
 </header>
 
 <section class="khu" id="y">
-  <h2>Ý chủ SP 11/11 → chỗ trong mockup</h2>
+  <h2>Ý chủ SP → chỗ trong mockup</h2>
   <table class="mk">
     <tr><th>Lời chủ SP</th><th>Làm trong mockup</th><th>Rà</th></tr>
-    <tr><td>"dày thông tin quá mức, thiếu trọng tâm"</td><td>Một loại việc = một hàng chữ (trước: một việc = 3–4 hàng). Việc cần làm ở trên, chữ 14–15 px; Để biết dưới, chữ 12–13 px mờ.</td><td class="dat">đạt</td></tr>
-    <tr><td>"trường thông tin trông vẫn rất rối"</td><td>Bốn cột cố định, thẳng hàng mọi dòng: loại việc · số việc · trạng thái hạn · ›. Bỏ dòng thân, dòng hạn riêng, dòng "bấm tới đâu".</td><td class="dat">đạt</td></tr>
-    <tr><td>"chỉ cần thấy công việc cần làm, bao nhiêu việc, ở CN nào"</td><td>Đầu khối "11 việc · ⚠ 3 quá hạn"; mỗi dòng có số việc; việc ở &gt; 1 chi nhánh → hàng nhỏ "MB 3 · BC 1" dưới tên (B2, B3, C2). Một chi nhánh → không ghi.</td><td class="dat">đạt</td></tr>
+    <tr><td colspan="3"><b>Vòng 2 (11/11, duyệt #1365)</b></td></tr>
+    <tr><td>"1. Dùng số chung"</td><td>Chuông = badge Công việc (B1: 4 · 4; B2: 5 · 5; B3: 2 · 2; C3: 2 · 2). Đầu khối việc thêm "n hôm nay" để thấy 4 = 3 quá hạn + 1 hôm nay. Không quá hạn, không hôm nay → không số (B4, B5).</td><td class="dat">đạt</td></tr>
+    <tr><td>"2. … phần 'để biết' nên đổi tên khác"</td><td><b>Cập nhật</b> — nội dung là thay đổi người khác / hệ thống vừa làm liên quan tới mình (QL duyệt yêu cầu, em chuyển lớp, đổi lịch, đổi phân công); "Tin khác" mơ hồ, "Hoạt động" giống nhật ký. Đổi ở hộp, Xem tất cả, chữ lỗi tải.</td><td class="dat">đạt</td></tr>
+    <tr><td>"3. … sửa lại bố cục cấu trúc cho rõ ràng và đẹp hơn"</td><td>Mỗi tin hai hàng cố định: <b>loại tin · giờ</b> (nhãn nhỏ, giờ thẳng mép phải) rồi <b>nội dung</b> (13 px, một hàng ở hộp, hai hàng ở Xem tất cả). Kết quả đứng đầu nội dung, có màu + chữ. Chưa đọc: chấm + chữ sáng + nhãn sáng; đã đọc: chữ mờ. Kẻ mảnh giữa các tin. Đầu khối "n chưa đọc". Xem tất cả: nhóm Hôm nay / Hôm qua / Tuần này / Trước đó, đầu nhóm dính khi cuộn.</td><td class="dat">đạt</td></tr>
+    <tr><td colspan="3"><b>Vòng 1 (11/11)</b></td></tr>
+    <tr><td>"dày thông tin quá mức, thiếu trọng tâm"</td><td>Một loại việc = một hàng chữ (trước: một việc = 3–4 hàng). Việc cần làm ở trên, chữ 14–15 px; Cập nhật dưới, chữ 12–13 px, nền lặng.</td><td class="dat">đạt</td></tr>
+    <tr><td>"trường thông tin trông vẫn rất rối"</td><td>Bốn cột cố định ở khối việc: loại việc · số việc · trạng thái hạn · ›. Khối Cập nhật: hai hàng cố định loại · giờ / nội dung.</td><td class="dat">đạt</td></tr>
+    <tr><td>"chỉ cần thấy công việc cần làm, bao nhiêu việc, ở CN nào"</td><td>Đầu khối "11 việc · ⚠ 3 quá hạn · 1 hôm nay"; mỗi dòng có số việc; việc ở &gt; 1 chi nhánh → hàng nhỏ "MB 3 · BC 1" dưới tên (B2, B3, C2).</td><td class="dat">đạt</td></tr>
     <tr><td>"gộp số công việc vào cho đỡ bị rối"</td><td>Không liệt kê từng em / lớp; đếm theo dòng việc như Công việc (dòng gộp "Cả lớp" = 1).</td><td class="dat">đạt</td></tr>
-    <tr><td>"ngoài CV ra… nếu không cần thì thôi không báo, nếu cần thì báo nhẹ nhàng ở phần dưới"</td><td>Khối Để biết: ≤ 3 tin, nền lặng hơn, không số trên chuông. Tin trùng việc và việc đã xong bỏ khỏi chuông (bang-tin.md).</td><td class="dat">đạt</td></tr>
-    <tr><td>"không bỏ việc phải thông báo… công việc là cái cần nhất"</td><td>MỌI việc của tôi vào số (cả loại trước không có chuông: Mô tả Case, Kết quả PA, Ý thức…). Việc mới: chữ "● 2 mới"; sắp hạn: "1 hôm nay"; quá hạn: "⚠ 2 quá hạn"; chuông đỏ khi có quá hạn.</td><td class="dat">đạt</td></tr>
+    <tr><td>"ngoài CV ra… nếu cần thì báo nhẹ nhàng ở phần dưới"</td><td>Cập nhật ≤ 3 tin, không vào số chuông; tin trùng việc và việc đã xong bỏ khỏi chuông (bang-tin.md).</td><td class="dat">đạt</td></tr>
+    <tr><td>"không bỏ việc phải thông báo… công việc là cái cần nhất"</td><td>Mọi việc của tôi vào số khối việc (cả loại trước không có chuông). Việc mới "● n mới"; hôm nay "n hôm nay"; quá hạn "⚠ n quá hạn"; chuông đỏ khi có quá hạn.</td><td class="dat">đạt</td></tr>
   </table>
 </section>
 
 <section class="khu" id="a">
-  <h2>Trước | Sau — cùng một GVCN (11 việc, 3 quá hạn)</h2>
-  <p class="ghi">Trước = vẽ lại từ <code>Header.tsx</code> hiện tại: chỉ việc nào có thông báo mới vào "Cần làm" (ở đây 4 / 11 việc), mỗi việc 3–4 hàng chữ, số chuông 9 = tin chưa đọc.</p>
+  <h2>Trước | Sau — cùng một GVCN (11 việc, 3 quá hạn, 1 hôm nay)</h2>
+  <p class="ghi">Trước = vẽ lại từ <code>Header.tsx</code> hiện tại: chỉ việc nào có thông báo mới vào "Cần làm" (ở đây 4 / 11 việc), mỗi việc 3–4 hàng chữ, số chuông 9 = tin chưa đọc. Ảnh khối Cập nhật vòng 1 | vòng 2: <code>anh/cap-nhat-truoc-sau-*.png</code>.</p>
   <div class="hang-khung">
     <figure><figcaption>TRƯỚC · chuông "9" = tin chưa đọc</figcaption><div class="toi cat" id="truoc"></div></figure>
-    <figure><figcaption>SAU · chuông "11" = số việc (đỏ: có quá hạn)</figcaption><div class="toi cat" data-ve="gv"></div></figure>
+    <figure><figcaption>SAU · chuông "4" = badge Công việc (đỏ: có quá hạn)</figcaption><div class="toi cat" data-ve="gv"></div></figure>
   </div>
 </section>
 
 <section class="khu" id="b">
   <h2>1440 · tối · các trạng thái</h2>
   <div class="hang-khung">
-    <figure><figcaption>B1 · GVCN + GVBM một chi nhánh — nhiều loại việc, quá hạn, hôm nay, việc mới; Để biết 2 chưa đọc, 1 đã đọc</figcaption><div class="toi man" data-ve="gv" data-menu="Tổng quan"></div></figure>
-    <figure><figcaption>B2 · QL hai chi nhánh — hàng chi nhánh dưới tên; Duyệt yêu cầu lấy số hộp Chờ duyệt; bấm dòng → Công việc lọc loại, mọi chi nhánh của mình</figcaption><div class="toi man" data-ve="ql" data-menu="Công việc"></div></figure>
-    <figure><figcaption>B3 · Quản trị ba chi nhánh — có Duyệt tài khoản; không quá hạn → chuông trắng</figcaption><div class="toi man" data-ve="qt" data-menu="Quản trị"></div></figure>
-    <figure><figcaption>B4 · Không còn việc, có Để biết — chuông không số</figcaption><div class="toi man" data-ve="rong-viec"></div></figure>
+    <figure><figcaption>B1 · GVCN + GVBM một chi nhánh — nhiều loại việc, quá hạn, hôm nay, việc mới; Cập nhật 2 chưa đọc, 1 đã đọc</figcaption><div class="toi man" data-ve="gv" data-menu="Tổng quan"></div></figure>
+    <figure><figcaption>B2 · QL hai chi nhánh — hàng chi nhánh dưới tên; Cập nhật có tin lỗi "Chưa thi hành được"</figcaption><div class="toi man" data-ve="ql" data-menu="Công việc"></div></figure>
+    <figure><figcaption>B3 · Quản trị ba chi nhánh — không quá hạn, 2 hôm nay → chuông trắng "2"</figcaption><div class="toi man" data-ve="qt" data-menu="Quản trị"></div></figure>
+    <figure><figcaption>B4 · Không còn việc, có Cập nhật — chuông không số</figcaption><div class="toi man" data-ve="rong-viec"></div></figure>
     <figure><figcaption>B5 · Không việc, không tin</figcaption><div class="toi man" data-ve="rong-het"></div></figure>
-    <figure><figcaption>B6 · "Xem tất cả" Để biết — thay nội dung hộp tại chỗ (‹ về lại), chưa đọc trước, "Đánh dấu đã đọc"</figcaption><div class="toi man" data-ve="tat-ca"></div></figure>
-    <figure><figcaption>B7 · Việc đang tải lần đầu (khung xám) · Để biết lỗi tải → Thử lại; việc vẫn hiện khi Để biết lỗi</figcaption><div class="toi man" data-ve="loi"></div></figure>
+    <figure><figcaption>B6 · Xem tất cả Cập nhật — thay nội dung hộp tại chỗ (‹ về lại), nhóm theo ngày, "Đánh dấu đã đọc"</figcaption><div class="toi man" data-ve="tat-ca"></div></figure>
+    <figure><figcaption>B7 · Việc đang tải lần đầu (khung xám) · Cập nhật lỗi tải → Thử lại; việc vẫn hiện khi Cập nhật lỗi</figcaption><div class="toi man" data-ve="loi"></div></figure>
   </div>
 </section>
 
 <section class="khu" id="c">
   <h2>375 · tối</h2>
-  <p class="ghi">Hộp neo hai mép dưới thanh trên (như web hiện tại), cao tối đa 70 vh, cuộn trong. Dòng cao ≥ 52 px, link ≥ 44 px.</p>
+  <p class="ghi">Hộp neo hai mép dưới thanh trên (như web hiện tại), cao tối đa 70 vh, cuộn trong. Khung 375 × 812. Dòng việc và tin ≥ 48 px, link ≥ 44 px.</p>
   <div class="hang-khung">
     <figure><figcaption>C1 · GV</figcaption><div class="toi dt" data-ve="gv"></div></figure>
     <figure><figcaption>C2 · QL hai chi nhánh</figcaption><div class="toi dt" data-ve="ql"></div></figure>
-    <figure><figcaption>C3 · TVV — nhóm việc TVV</figcaption><div class="toi dt" data-ve="tvv"></div></figure>
-    <figure><figcaption>C4 · Xem tất cả Để biết</figcaption><div class="toi dt" data-ve="tat-ca"></div></figure>
+    <figure><figcaption>C3 · TVV — nhóm việc TVV, tin "Từ chối"</figcaption><div class="toi dt" data-ve="tvv"></div></figure>
+    <figure><figcaption>C4 · Xem tất cả Cập nhật</figcaption><div class="toi dt" data-ve="tat-ca"></div></figure>
   </div>
 </section>
 
@@ -235,25 +255,25 @@ table.mk td:first-child { white-space:nowrap; }
   <table class="mk">
     <tr><th>Thao tác</th><th>Trước</th><th>Sau</th></tr>
     <tr><td>Mở / đóng chuông</td><td>bấm chuông; Esc, bấm ngoài để đóng</td><td>giữ</td></tr>
-    <tr><td>Số trên chuông</td><td>số tin chưa đọc</td><td>số việc của tôi (= "n việc" của Công việc, cùng <code>demDongViec</code>); đỏ khi có quá hạn; 0 → không số — [XM-1]</td></tr>
+    <tr><td>Số trên chuông</td><td>số tin chưa đọc</td><td>= badge Công việc (việc cần làm ngay, <code>demDongViec</code>); đỏ khi có quá hạn; 0 → không số. Sửa DESIGN V13 trong PR code.</td></tr>
     <tr><td>Bấm một việc</td><td>dòng thông báo → chỗ làm (hồ sơ HV › Case, Công việc, Lịch Test…)</td><td>dòng loại → <code>/cong-viec?loai=…</code> (QL / QT nhiều chi nhánh thêm <code>cn=tat-ca</code>), mở từng việc tại chỗ ở Công việc. Lý do: chuông không liệt kê từng em (chủ SP). Thêm "Công việc ›" ở đầu khối.</td></tr>
     <tr><td>Thẻ chờ duyệt</td><td>từng thẻ một dòng → hộp Chờ duyệt</td><td>một dòng "Duyệt yêu cầu · n" → Công việc › Chờ bạn duyệt (số = <code>/yeu-cau/dem</code>)</td></tr>
-    <tr><td>Bấm tin Để biết</td><td>mở đường của tin + đánh dấu đọc</td><td>giữ (cả tin "Từ chối" → Yêu cầu của tôi)</td></tr>
-    <tr><td>Đánh dấu đã đọc</td><td>nút ở đầu hộp</td><td>ở "Xem tất cả" (B6, C4); tin đã đọc khi bấm vào. Việc không cần "đọc" — hết khi xong.</td></tr>
-    <tr><td>Xem tin cũ</td><td>cuộn hộp (≤ 70 dòng lẫn việc)</td><td>"Xem tất cả ›" thay nội dung hộp tại chỗ, "‹" về lại</td></tr>
-    <tr><td>Góc nhìn khác vai gốc</td><td>chỉ tin vai đó mở được; bấm tin không mở được → báo "Mở ở vai gốc"</td><td>giữ cho Để biết; Việc theo <code>/my-work</code> của Góc nhìn (như badge)</td></tr>
-    <tr><td>Lỗi tải</td><td>"Không tải được thông báo · Thử lại"</td><td>giữ ở Để biết (B7); khối việc dùng bản <code>/my-work</code> đang có</td></tr>
-    <tr><td>Hạn từng việc, dòng "bấm tới đâu ›"</td><td>mỗi dòng Cần làm</td><td>bỏ ở chuông: hạn gom thành "n quá hạn" / "n hôm nay"; hạn chi tiết ở Công việc. Dòng là link, <code>aria-label</code> ghi nơi đến.</td></tr>
+    <tr><td>Bấm một tin Cập nhật</td><td>mở đường của tin + đánh dấu đọc</td><td>giữ (cả tin "Từ chối" → Yêu cầu của tôi)</td></tr>
+    <tr><td>Đánh dấu đã đọc</td><td>nút ở đầu hộp</td><td>ở Xem tất cả (B6, C4); tin đã đọc khi bấm vào. Việc không cần "đọc" — hết khi xong.</td></tr>
+    <tr><td>Xem tin cũ</td><td>cuộn hộp (≤ 70 dòng lẫn việc)</td><td>"Xem tất cả ›" thay nội dung hộp tại chỗ, nhóm theo ngày, "‹" về lại</td></tr>
+    <tr><td>Góc nhìn khác vai gốc</td><td>chỉ tin vai đó mở được; bấm tin không mở được → báo "Mở ở vai gốc"</td><td>giữ cho Cập nhật; Việc theo <code>/my-work</code> của Góc nhìn (như badge)</td></tr>
+    <tr><td>Lỗi tải</td><td>"Không tải được thông báo · Thử lại"</td><td>giữ ở Cập nhật (B7); khối việc dùng bản <code>/my-work</code> đang có</td></tr>
+    <tr><td>Hạn từng việc, dòng "bấm tới đâu ›"</td><td>mỗi dòng Cần làm</td><td>bỏ ở chuông: hạn gom thành "n quá hạn" / "n hôm nay"; hạn chi tiết ở Công việc. Dòng là link, <code>aria-label</code> đọc đủ.</td></tr>
   </table>
 </section>
 
 <section class="khu" id="e">
-  <h2>[XM] hỏi PTA Plan — mỗi mục một khuyến nghị</h2>
+  <h2>Đã chốt (PTA Plan theo chủ SP 11/11)</h2>
   <table class="mk">
-    <tr><th>#</th><th>Câu hỏi</th><th>Khuyến nghị</th></tr>
-    <tr><td>XM-1</td><td>Chuông = tổng việc (11), badge menu Công việc = cần làm ngay (quá hạn + hôm nay, 4) → hai số khác nhau trên thanh trên 1440.</td><td>Giữ như mockup: chuông trả lời "bao nhiêu việc", badge trả lời "việc gấp"; cả hai cùng hàm. DESIGN V13 "chuông = tin chưa đọc" đổi theo lời chủ SP 11/11 — PTA sửa DESIGN.md khi duyệt.</td></tr>
-    <tr><td>XM-2</td><td>"● n mới" = việc chưa có ở lần mở chuông trước.</td><td>Nhớ khoá việc đã thấy trên trình duyệt (<code>localStorage</code>, bọc try/catch): 0 dòng đọc, không thêm cột. Đổi máy thì lần đầu không có "mới" — chấp nhận.</td></tr>
-    <tr><td>XM-3</td><td>Chuông không còn đọc 5 loại thông báo tự động (quá hạn chấm, Case chưa chốt PA, Chốt lộ trình, Báo PH, Xuất BC PH).</td><td>Bỏ đồng bộ tự động khi mở chuông và sau <code>/my-work</code> (bớt ghi + đọc mỗi 5 phút / người); <code>/notifications</code> chỉ tải khi mở chuông, ≤ 20 tin Để biết. Đo trước → sau ở PR code.</td></tr>
+    <tr><th>#</th><th>Việc</th><th>Chốt</th></tr>
+    <tr><td>XM-1</td><td>Số trên chuông</td><td>Một số chung với badge Công việc (chủ SP: "Dùng số chung").</td></tr>
+    <tr><td>XM-2</td><td>"● n mới"</td><td>Nhớ khoá việc đã thấy trên trình duyệt (<code>localStorage</code>, bọc try/catch): 0 dòng đọc; đổi máy thì lần đầu không có "mới".</td></tr>
+    <tr><td>XM-3</td><td>Thông báo tự động (quá hạn chấm, Case chưa chốt PA, Chốt lộ trình, Báo PH, Xuất BC PH)</td><td>Bỏ đồng bộ khi mở chuông và sau <code>/my-work</code>; <code>/notifications</code> chỉ tải khi mở chuông, ≤ 20 tin Cập nhật. Đo trước → sau ở PR code.</td></tr>
   </table>
 </section>
 </div>
@@ -264,41 +284,46 @@ const MUI = '<svg class="mui" viewBox="0 0 16 16" fill="none" stroke="currentCol
 const CHUONG = '<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11L4 11ZM6.5 14a1.5 1.5 0 0 0 3 0" stroke-linejoin="round"/></svg>';
 const LAI = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-const DE_BIET = {
+/* Cập nhật: loại tin (nhãn) · kết quả (chữ màu + chữ, không chỉ màu) · nội dung · giờ. */
+const CAP_NHAT = {
   gv: [
-    { x: 'QL đã duyệt đổi Target · Nguyễn Minh An', luc: '09:40', chua: 1 },
-    { x: 'Lê Gia Hân chuyển vào lớp MB FT 101 · Đọc bàn giao', luc: 'Hôm qua', chua: 1 },
-    { x: 'QL đã dời Progress Test lớp MB 12 sang W3 NOV', luc: 'T2' },
+    { l: 'Yêu cầu', kq: ['ok', 'Đã duyệt'], x: 'Đổi Target · Nguyễn Minh An', luc: '09:40', chua: 1 },
+    { l: 'Chuyển lớp', x: 'Lê Gia Hân vào MB FT 101 · có bàn giao', luc: 'Hôm qua', chua: 1 },
+    { l: 'Lịch Test', x: 'Progress Test MB 12 dời sang W3 NOV', luc: 'T2' },
   ],
   ql: [
-    { x: 'Phạm Thu Trang (GVCN) đổi GV Reading lớp BC FT 56', luc: '10:15', chua: 1 },
-    { x: 'Trần Đức Huy đã đóng Case Writing của Đỗ Minh Khôi', luc: 'Hôm qua' },
-    { x: 'Chưa thi hành được quyết định chuyển lớp · Vũ Hà My', luc: 'T2', chua: 1 },
+    { l: 'Phân công', x: 'BC FT 56 đổi GV Reading · Phạm Thu Trang (GVCN)', luc: '10:15', chua: 1 },
+    { l: 'Chuyển lớp', kq: ['bad', 'Chưa thi hành được'], x: 'Vũ Hà My · MB 12 → MB FT 103', luc: 'Hôm qua', chua: 1 },
+    { l: 'Case', x: 'Đóng Case Writing · Đỗ Minh Khôi · Trần Đức Huy', luc: 'T2' },
   ],
   qt: [
-    { x: 'Quản lý tự duyệt · Đổi lịch Test · MB FT 103', luc: '08:05', chua: 1 },
-    { x: 'Ngô Thanh Bình đã đóng Case Speaking của Hà Anh Thư', luc: 'Hôm qua' },
+    { l: 'Yêu cầu', kq: ['', 'Tự duyệt'], x: 'Đổi lịch Test · MB FT 103 · Trần Quang Minh', luc: '08:05', chua: 1 },
+    { l: 'Case', x: 'Đóng Case Speaking · Hà Anh Thư · Ngô Thanh Bình', luc: 'Hôm qua' },
   ],
   tvv: [
-    { x: '<span class="tu">Từ chối</span> · Sửa thông tin · Đào Khánh Linh', luc: '11:20', chua: 1 },
-    { x: 'Nguyễn Bảo Châu chuyển sang lớp MB FT 104', luc: 'T3' },
+    { l: 'Yêu cầu', kq: ['bad', 'Từ chối'], x: 'Sửa thông tin · Đào Khánh Linh — sửa và gửi lại', luc: '11:20', chua: 1 },
+    { l: 'Chuyển lớp', x: 'Nguyễn Bảo Châu sang MB FT 104', luc: 'T3' },
   ],
 };
+/* Xem tất cả: nhóm theo ngày; chưa đọc = chấm + chữ sáng, ở mọi nhóm. */
 const TAT_CA = [
-  ['Chưa đọc', [
-    { x: 'QL đã duyệt đổi Target · Nguyễn Minh An', luc: '09:40', chua: 1 },
-    { x: 'Lê Gia Hân chuyển vào lớp MB FT 101 · Đọc bàn giao', luc: 'Hôm qua', chua: 1 },
-    { x: '<span class="tu">Từ chối</span> · Xin dời MT3 · Trịnh Quốc Bảo — sửa và gửi lại', luc: 'Hôm qua', chua: 1 },
+  ['Hôm nay', [
+    { l: 'Yêu cầu', kq: ['ok', 'Đã duyệt'], x: 'Đổi Target · Nguyễn Minh An', luc: '09:40', chua: 1 },
   ]],
-  ['Đã đọc', [
-    { x: 'QL đã dời Progress Test lớp MB 12 sang W3 NOV', luc: 'T2' },
-    { x: 'Mang theo PA Bổ trợ miễn phí · Hoàng Yến Nhi · Final 58%', luc: 'T2' },
-    { x: 'Bạn nhận lớp MB 14 · Writing, Speaking', luc: '07/11' },
-    { x: 'Đã dời bài vắng · Phan Tuấn Kiệt · Listening sang W2 NOV', luc: '06/11' },
-    { x: 'Báo PH · Đi muộn lần 3 · Mai Ngọc Diệp · để biết', luc: '05/11' },
-    { x: 'QL đã duyệt Không cần theo dõi · Case Reading · Lý Thảo Vy', luc: '04/11' },
-    { x: 'Đã có bàn giao · Bùi Khánh Toàn · lớp MB 9', luc: '03/11' },
-    { x: 'Vương Nhật Nam chuyển vào lớp MB 12', luc: '03/11' },
+  ['Hôm qua', [
+    { l: 'Chuyển lớp', x: 'Lê Gia Hân vào MB FT 101 · có bàn giao', luc: '16:20', chua: 1 },
+    { l: 'Yêu cầu', kq: ['bad', 'Từ chối'], x: 'Xin dời MT3 · Trịnh Quốc Bảo — sửa và gửi lại', luc: '14:05', chua: 1 },
+  ]],
+  ['Tuần này', [
+    { l: 'Lịch Test', x: 'Progress Test MB 12 dời sang W3 NOV', luc: 'T2 08:15' },
+    { l: 'Case', x: 'Mang theo PA Bổ trợ miễn phí · Hoàng Yến Nhi · Final 58%', luc: 'T2 07:30' },
+  ]],
+  ['Trước đó', [
+    { l: 'Phân công', x: 'Bạn nhận lớp MB 14 · Writing, Speaking', luc: '07/11' },
+    { l: 'Lịch Test', x: 'Phan Tuấn Kiệt vắng Listening — dời sang W2 NOV', luc: '06/11' },
+    { l: 'Ý thức', x: 'Báo PH · Đi muộn lần 3 · Mai Ngọc Diệp', luc: '05/11' },
+    { l: 'Yêu cầu', kq: ['ok', 'Đã duyệt'], x: 'Không cần theo dõi · Case Reading · Lý Thảo Vy', luc: '04/11' },
+    { l: 'Bàn giao', x: 'Bùi Khánh Toàn · lớp MB 9', luc: '03/11' },
   ]],
 ];
 
@@ -331,6 +356,7 @@ const VIEC = {
   ] },
 };
 
+const nayCua = (v) => v.ds.reduce((t, d) => t + (d.nay || 0), 0);
 const so = (n) => `<span class="so">${n}</span>`;
 function dongViec(v, nhieuCn) {
   const tt = v.qua ? `<span class="td qua">${so(v.qua)} quá hạn</span>` : v.nay ? `<span class="td nay">${so(v.nay)} hôm nay</span>` : '';
@@ -344,32 +370,36 @@ function dongViec(v, nhieuCn) {
     <span class="so-v"><b>${v.n}</b>việc</span><span class="tt-v">${tt}</span>${MUI}</a></li>`;
 }
 function dongBiet(b) {
-  return `<li><a class="dong-b${b.chua ? ' chua' : ''}" href="#" title="${b.x.replace(/<[^>]+>/g, '')}"><span class="c"></span><span class="x">${b.chua ? '<span hidden>Chưa đọc: </span>' : ''}${b.x}</span><time>${b.luc}</time></a></li>`;
+  const kq = b.kq ? `<b class="kq ${b.kq[0]}">${b.kq[1]}</b> · ` : '';
+  const chu = `${b.l}: ${b.kq ? b.kq[1] + ' · ' : ''}${b.x}`;
+  return `<li><a class="dong-b${b.chua ? ' chua' : ''}" href="#" title="${chu}" aria-label="${b.chua ? 'Chưa đọc. ' : ''}${chu}, ${b.luc}">
+    <span class="c" aria-hidden="true"></span><span class="m"><span class="l">${b.l}</span><time>${b.luc}</time></span><span class="x">${kq}${b.x}</span>${MUI}</a></li>`;
 }
 function khoiViec(k) {
   if (k === 'tai') return `<div class="v-dau"><h2>Việc cần làm</h2><a class="lk" href="#">Công việc ${MUI}</a></div><div class="v-tai" aria-busy="true"><i></i><i style="width:78%"></i><i style="width:86%"></i></div>`;
   const v = VIEC[k];
   if (!v) return `<div class="v-dau"><h2>Việc cần làm</h2><a class="lk" href="#">Công việc ${MUI}</a></div><div class="v-rong">Không còn việc nào</div>`;
   const nhieuCn = v.ds.some((d) => d.cn && d.cn.length) && new Set(v.ds.flatMap((d) => (d.cn || []).map((c) => c[0]))).size > 1;
-  return `<div class="v-dau"><h2>Việc cần làm</h2><span class="v-dem"><b>${v.tong}</b> việc</span>${v.qua ? `<span class="v-qua">⚠ ${so(v.qua)} quá hạn</span>` : ''}<a class="lk" href="#">Công việc ${MUI}</a></div>
+  return `<div class="v-dau"><h2>Việc cần làm</h2><a class="lk" href="#">Công việc ${MUI}</a><span class="v-tom">${v.qua ? `<span class="v-qua">⚠ ${so(v.qua)} quá hạn</span>` : ''}${nayCua(v) ? `<span class="v-nay">${so(nayCua(v))} hôm nay</span>` : ''}<span class="v-dem"><b>${v.tong}</b> việc</span></span></div>
     <ul class="ds-v">${v.ds.map((d) => dongViec(d, nhieuCn)).join('')}</ul>`;
 }
 function khoiBiet(ds, tong, loi) {
-  if (loi) return `<div class="b-khoi"><div class="b-dau"><h3>Để biết</h3></div><div class="b-loi">Không tải được tin để biết. <button class="nut" type="button">Thử lại</button></div></div>`;
+  if (loi) return `<div class="b-khoi"><div class="b-dau"><h3>Cập nhật</h3></div><div class="b-loi">Không tải được cập nhật. <button class="nut" type="button">Thử lại</button></div></div>`;
   if (!ds || !ds.length) return '';
-  return `<div class="b-khoi"><div class="b-dau"><h3>Để biết</h3><a class="lk" href="#">Xem tất cả ${MUI}</a></div><ul class="ds-b">${ds.map(dongBiet).join('')}</ul></div>`;
+  const chua = ds.filter((b) => b.chua).length;
+  return `<div class="b-khoi"><div class="b-dau"><h3>Cập nhật</h3>${chua ? `<span class="b-dem"><b>${chua}</b> chưa đọc</span>` : ''}<a class="lk" href="#">Xem tất cả ${MUI}</a></div><ul class="ds-b">${ds.map(dongBiet).join('')}</ul></div>`;
 }
 function hopTatCa() {
-  return `<div class="hop x-khoi" role="dialog" aria-label="Thông báo để biết">
-    <div class="x-dau"><button class="nut-lai" type="button" aria-label="Về Việc cần làm">${LAI}</button><h2>Để biết</h2><span class="v-dem"><b>3</b> chưa đọc</span><button class="nut" type="button">Đánh dấu đã đọc</button></div>
-    ${TAT_CA.map(([nhom, ds]) => `<div class="x-nhom">${nhom}</div><ul class="ds-b">${ds.map(dongBiet).join('')}</ul>`).join('')}</div>`;
+  return `<div class="hop x-khoi" role="dialog" aria-label="Cập nhật">
+    <div class="x-dau"><button class="nut-lai" type="button" aria-label="Về Việc cần làm">${LAI}</button><h2>Cập nhật</h2><span class="v-dem"><b>3</b> chưa đọc</span><button class="nut nut-chu" type="button">Đánh dấu đã đọc</button></div>
+    ${TAT_CA.map(([nhom, ds]) => `<section><h3 class="x-nhom">${nhom}</h3><ul class="ds-b">${ds.map(dongBiet).join('')}</ul></section>`).join('')}</div>`;
 }
 const CAU = {
-  gv: { viec: 'gv', biet: DE_BIET.gv, tong: 11 },
-  ql: { viec: 'ql', biet: DE_BIET.ql, tong: 24 },
-  qt: { viec: 'qt', biet: DE_BIET.qt, tong: 9 },
-  tvv: { viec: 'tvv', biet: DE_BIET.tvv, tong: 5 },
-  'rong-viec': { viec: null, biet: DE_BIET.gv.slice(0, 2), tong: 2 },
+  gv: { viec: 'gv', biet: CAP_NHAT.gv, tong: 11 },
+  ql: { viec: 'ql', biet: CAP_NHAT.ql, tong: 24 },
+  qt: { viec: 'qt', biet: CAP_NHAT.qt, tong: 9 },
+  tvv: { viec: 'tvv', biet: CAP_NHAT.tvv, tong: 5 },
+  'rong-viec': { viec: null, biet: CAP_NHAT.gv.slice(0, 2), tong: 2 },
   'rong-het': { viec: null, biet: [], tong: 0 },
   loi: { viec: 'tai', loi: true },
 };
@@ -384,14 +414,15 @@ function ve(el) {
     : `<div class="hop" role="dialog" aria-label="Thông báo">${khoiViec(c.viec)}${khoiBiet(c.biet, c.tong, c.loi)}</div>`;
   if (el.classList.contains('cat')) { el.innerHTML = hop; return; }
   const soChuong = k === 'tat-ca' ? VIEC.gv : v;
-  const cham = soChuong ? `<span class="cham-chuong${soChuong.qua ? ' qua' : ''}" aria-hidden="true">${soChuong.tong}</span>` : '';
+  /* Một số chung (chủ SP 11/11): chuông = badge Công việc = việc cần làm ngay (quá hạn + hạn hôm nay), cùng `demDongViec`. */
   const [nNgay, quaNgay] = v || k === 'tat-ca' ? CAN_NGAY[vai] : [0, 0];
+  const cham = nNgay ? `<span class="cham-chuong${quaNgay ? ' qua' : ''}" aria-hidden="true">${nNgay}</span>` : '';
   const dang = el.dataset.menu || 'Tổng quan';
   const menu = (MENU[vai] || MENU.gv).map((m) => `<span class="m${m === dang ? ' dang' : ''}">${m}${m === 'Công việc' && nNgay ? ` <span class="so-nav${quaNgay ? ' qua' : ''}">${nNgay}</span>` : ''}</span>`).join('');
   const ten = { ql: 'Trần Quang Minh', qt: 'Lê Thị Hoa', tvv: 'Đặng Mai Phương' }[vai] || 'Nguyễn Khánh Vy';
   el.innerHTML = `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${menu}
     <span class="phai"><button class="nut-tt" type="button" aria-label="Tìm"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3" stroke-linecap="round"/></svg></button><button class="nut-tt" type="button" aria-label="Hướng dẫn">?</button>
-    <button class="nut-tt mo" type="button" aria-expanded="true" aria-label="Thông báo${soChuong ? `, ${soChuong.tong} việc cần làm${soChuong.qua ? `, ${soChuong.qua} quá hạn` : ''}` : ''}">${CHUONG}${cham}</button>
+    <button class="nut-tt mo" type="button" aria-expanded="true" aria-label="Thông báo${nNgay ? `, ${nNgay} việc cần làm ngay${soChuong.qua ? `, ${soChuong.qua} quá hạn` : ''}` : ''}">${CHUONG}${cham}</button>
     <span class="tk">${el.classList.contains('dt') ? `<span class="vong">${ten.split(' ').pop()[0]}</span>` : ten}</span></span></div>
     <div class="nen-trang" aria-hidden="true"><h1>${dang}</h1><div class="luoi-mo"><div class="khoi-mo thap"></div><div class="khoi-mo thap"></div><div class="khoi-mo thap"></div><div class="khoi-mo thap"></div></div><div class="khoi-mo"></div><div class="khoi-mo"></div><div class="khoi-mo"></div></div>
     ${hop}`;
