@@ -171,7 +171,8 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     yc.duyetYeuCau(ql, hang("SELECT id FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'", r2.id)[0].id);
     const b = viecCua(sid).find((x: any) => x.id === vB.id);
     assert(b.trang_thai === 'bo' && b.bo_ly_do === 'system_thu_hoi' && b.bo_ly_do_chu === 'Bấm nhầm em', JSON.stringify(b));
-    xu.thuHoiXuLy(ql, r1.id, { lyDo: 'Ghi nhầm' });
+    /* YT-BAO-PH ([XM 1] chủ SP 11/11): QL tắt "Nhờ TVV báo lại PH" → như cũ (giữ + nhãn + chuông để biết); bật (mặc định) — xem prYtBaoPh. */
+    xu.thuHoiXuLy(ql, r1.id, { lyDo: 'Ghi nhầm', baoLai: false });
     const a = bp.xemViecBaoPh(tvv, vA.id);
     assert(a.trangThai === 'xong' && a.xuLy === 'thu_hoi' && a.nhanXuLy === 'Xử lý đã thu hồi' && a.lan.length === 1 && a.coTheGhi === false, JSON.stringify(a));
     assert(hang("SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?", tvv.userId, `bao-ph-dong:${vA.id}`).length === 1, 'chuông để biết');
