@@ -292,6 +292,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 tối:** "những vấn đề liên quan đến ý thức thì đừng nhét thêm điểm làm gì, và chú ý là phần phối hợp SOS cũng cần phải hiển thị kết quả của việc này nhé" → màn Ý thức không hiện dòng điểm; tab Phối hợp SOS hiện kết quả phối hợp (TVV báo PH: ngày, trạng thái, Nội dung, Xem đủ) như Báo PH ý thức — YTHUC-GON.
 
+**Chủ SP 11/11 khuya (brainstorming, đang bàn):** "Cho tôi quyền chỉnh sửa/ tạo nhóm nguyên nhân của các case, các nhóm phương án của các case và quy định các mốc SOS cần phải làm gì cho cả lớp thường và lớp FT. Đồng thời overhaul lại TOÀN BỘ giao diện trong quản trị hệ thốngđể mọi thứ gọn gàng hơn, dễ sử dụng hơn, dễ nhìn hơn. Sử dụng các skills thiết kế cần thiết để thực hiện mockup nhé." · Phối hợp SOS (đang bàn): "đơn giản là thấy những việc cần làm, xác nhận đã làm và báo cáo kết quả, TVV thì cần thấy task trong công việc, và nhập luôn kết quả trên công việc luôn, khi vào HS lớp/ HS HV thì cũng thấy tương tự" · (ảnh khung trái Công việc) "nhìn cái khung bên trái trông có rối không? trường thông tin khác nhau, nhưng nhìn y như nhau, rất khó chịu, chú ý cho cả phần ý thức nữa đấy".
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
