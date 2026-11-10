@@ -344,7 +344,9 @@ export const tenChiNhanh = (branchId: number | null | undefined): string | null 
 export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: string }):
   { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: boolean; kieu?: 'luot' | 'bai-thuong'; knNhan?: string | null; nguong?: number | null; cachTinh?: string | null; chiNhanh?: string | null } {
   /* PT-LOP-THUONG: tra cả cột Excel cũ (Checkpoint, Mini Test, Xử lý lớp thường) — đường / link cũ vẫn mở panel cũ, không lỗi. */
-  const cotDef = (cotExcel(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
+  /* Phân tích V2 · Chi nhánh lớp thường: ô "Đạt Test" = HỢP hai ô đạt của bảng (Progress "Đạt hết" + Final "Từ 70%") — cùng tập, không tính lại. */
+  const hop = f.ct === 'thuong' && f.cot === 'dat-test' ? ['gk-dat', 'ck-dat'] : null;
+  const cotDef = (cotExcel(f.ct) as CotTongHop[]).find((c) => c.khoa === (hop ? 'gk-dat' : f.cot));
   if (!cotDef) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const r = tinh(p, f);
   let tap: Tap | null = null; let luotEm: LuotEm | null = null; let nhanDong = '';
@@ -357,8 +359,9 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
     }
   }
   if (!tap) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
-  const ids = [...(tap.get(f.cot) ?? new Set<number>())].sort((a, b) => a - b);
-  const tieuDe = `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`;
+  const ids = [...new Set((hop ?? [f.cot]).flatMap((k) => [...(tap!.get(k) ?? [])]))].sort((a, b) => a - b);
+  const tieuDe = hop ? `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — Đạt Test · ${nhanDong}`
+    : `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`;
   const rows = rowsFor(cotDef.donVi, ids);
   if (cotDef.donVi === 'case') return { n: ids.length, tieuDe, rows };
   /* PT-LOP-THUONG (PR-2, mockup v13 A3): ô lớp thường (đều là ô bài) → bảng bài có điểm theo môn của chương trình. */

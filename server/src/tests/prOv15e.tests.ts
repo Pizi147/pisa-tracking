@@ -97,8 +97,8 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(d.khuVucHienThi(n).map((k: any) => k.key).join(',') === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', d.khuVucHienThi(n).map((k: any) => k.key).join(','));
     assert(!d.khuVucHienThi(navOf(P.w1Teacher)).some((k: any) => k.key === 'phan-tich'), 'GV không có mục Phân tích');
     assert(d.khuVucCuaDuong('/phan-tich') === 'phan-tich', 'tô sáng mục Phân tích');
-    assert([...d.GOC_NHIN].join(',') === 'bao-cao,giao-vien,ket-qua-thi,tong-hop,hieu-qua-pa,y-thuc', [...d.GOC_NHIN].join(','));   // UI-PHAN-TICH: thứ tự mockup V5; 06/11: KQ Thi thật đứng thứ 3
-    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Báo cáo HV · Phân tích GV · KQ Thi thật · Test + SOS · Hiệu quả PA · Ý thức', 'tên tab');
+    assert([...d.GOC_NHIN].join(',') === 'bao-cao,ket-qua-thi,tong-hop,hieu-qua-pa,giao-vien,y-thuc', [...d.GOC_NHIN].join(','));   // Phân tích V2 (12/11): Chi nhánh · Thi thật · SOS; Hiệu quả PA tới PR SOS
+    assert(d.GOC_NHIN.map((g: string) => d.GOC_NHIN_LABEL[g]).join(' · ') === 'Chi nhánh · Thi thật · SOS · Hiệu quả PA · Giáo viên · Ý thức', 'tên tab');
     const g = (s: string) => d.gocNhinTuThamSo(new URLSearchParams(s));
     assert(g('').goc === 'bao-cao', 'không tham số → Báo cáo');
     assert(g('goc=van-de').goc === 'tong-hop' && g('goc=van-de').gocMoi === 'tong-hop', 'van-de cũ → Test + SOS');

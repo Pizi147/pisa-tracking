@@ -5,6 +5,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
+import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { BaoCao } from './BaoCao.tsx';
@@ -17,7 +18,7 @@ import { YThucPhoiHop } from './YThucPhoiHop.tsx';
 import { KheHangLoc, OChon, type PhamViPhanTich } from './dungChung.tsx';
 import { dich as dichGoc, t } from '@shared/i18n/index.ts';
 import {
-  GOC_NHIN, PERMISSIONS, chuongTrinhTuThamSo, gocNhinTuThamSo, khoangPhanTichMacDinh, khoangTuUrl, nhanGocNhin, thamSoKhoang, thamSoXoaKhiDoiGoc,
+  GOC_NHIN, PERMISSIONS, chuongTrinhTuThamSo, gocNhinTuThamSo, khoangChiNhanhMacDinh, khoangPhanTichMacDinh, khoangTuUrl, nhanGocNhin, thamSoKhoang, thamSoXoaKhiDoiGoc,
   type ChuongTrinh, type GocNhin, type KhoangNgay,
 } from '@shared/domain/index.ts';
 
@@ -38,8 +39,20 @@ export function PhanTich() {
   const { ct: ctTuLoaiLop, boThamSo, gocMoi } = doc;
   const goc = gocCo.includes(doc.goc) ? doc.goc : gocCo[0];
   const ct = chuongTrinhTuThamSo(params.get('ct'));
-  /* 06/11: URL không ghi khoảng → 2 tuần gần nhất (Thứ Hai tuần trước → hết tuần này); link có tu / den / kieu theo link. */
-  const mdPt = khoangPhanTichMacDinh(homNay);
+  /* Phân tích V2 (E5, PTA chốt): link `?goc=` tới tab không có quyền (TVV / CX → Giáo viên) → về tab đầu + toast nói lý do, thay URL (không để lại tab ảo). */
+  const toast = useToast();
+  const chan = !!params.get('goc') && doc.goc !== goc && (GOC_NHIN as readonly string[]).includes(doc.goc);
+  useEffect(() => {
+    if (!chan || !session) return;
+    if (doc.goc === 'giao-vien') toast.push('info', t('Tab Giáo viên chỉ QL, Quản trị xem — đang mở Chi nhánh'), { key: 'pt-goc-chan' });
+    const next = new URLSearchParams(params);
+    next.set('goc', goc);
+    setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chan, !!session]);
+  /* 06/11: URL không ghi khoảng → 2 tuần gần nhất (Thứ Hai tuần trước → hết tuần này); link có tu / den / kieu theo link.
+     Phân tích V2 (chủ SP 12/11): Chi nhánh là báo cáo DUY NHẤT mặc định một tháng (tuần của tháng chứa hôm nay); khoảng đã chọn vẫn giữ khi đổi tab (C29). */
+  const mdPt = goc === 'bao-cao' ? khoangChiNhanhMacDinh(homNay) : khoangPhanTichMacDinh(homNay);
   const khoang = khoangTuUrl(params, homNay, mdPt);
   const classId = params.get('lop') ? Number(params.get('lop')) : null;
 

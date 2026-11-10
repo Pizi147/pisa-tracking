@@ -1,0 +1,83 @@
+/**
+ * PHÉP KIỂM PHÂN TÍCH V2 · CHI NHÁNH (đặc tả `2026-11-12-phan-tich-v2-design.md` mục 3, 9, 11, 12): một GET chỉ phần cần — số = CHÍNH hàm tập cũ
+ * (Đạt MT `tapDatMt`, Tiến bộ `tienBoTheoKyNang`, Test lớp thường `tongHop`, Thi thật `thiThatTrongKhoang`); Σ hàng ≤ tổng (tổng là tập gốc);
+ * ô mới (vào · kết thúc · Chưa có KQ) = số dòng panel; khoảng mặc định = các tuần của tháng; tab mới + link `?goc=` cũ.
+ */
+export async function runPrPtV2ChiNhanhTests(t: any) {
+  const { check, assert, P } = t;
+  const cn: any = await import('../phanTich/chiNhanh.ts');
+  const bc: any = await import('../phanTich/baoCao.ts');
+  const tt: any = await import('../phanTich/thiThatThongKe.ts');
+  const th: any = await import('../phanTich/tongHop.ts');
+  const d: any = await import('../../../shared/domain/index.ts');
+  console.log('\nPhân tích V2 · Chi nhánh — một GET, số = hàm cũ, ô mới = panel, tháng mặc định, tab mới');
+  const k = { tu: '2026-07-06', den: '2026-09-27' };
+
+  check('PT-V2 · khoảng mặc định Chi nhánh = mọi tuần của tháng chứa hôm nay (W1 → tuần cuối), kiểu "mặc định của tab"', () => {
+    const m = d.khoangChiNhanhMacDinh('2026-11-12');
+    assert(m.tu === '2026-11-02' && m.den === '2026-11-29' && m.kieu === '2-tuan', JSON.stringify(m));
+    assert(Object.keys(d.thamSoKhoang(m, '2026-11-12', m)).length === 0, 'URL phải trống khi đúng mặc định');
+  });
+
+  check('PT-V2 · tab: Chi nhánh · Thi thật · SOS đầu; khoá URL cũ giữ (link ?goc= cũ vào đúng báo cáo)', () => {
+    assert(d.GOC_NHIN[0] === 'bao-cao' && d.GOC_NHIN[1] === 'ket-qua-thi' && d.GOC_NHIN[2] === 'tong-hop', [...d.GOC_NHIN].join(','));
+    assert(d.GOC_NHIN_LABEL['bao-cao'] === 'Chi nhánh' && d.GOC_NHIN_LABEL['giao-vien'] === 'Giáo viên', 'nhãn');
+    for (const g of ['bao-cao', 'tong-hop', 'ket-qua-thi', 'giao-vien']) assert(d.gocNhinTuThamSo({ get: (x: string) => (x === 'goc' ? g : null) }).goc === g, g);
+  });
+
+  check('PT-V2 · FT một chi nhánh: Đạt MT = tapDatMt, Tiến bộ = Σ kỹ năng; Σ hàng ≤ tổng; HV tổng = dân số chỉ số', () => {
+    const r = cn.chiNhanhV2(P.mbManager, { branchId: null, ct: 'ft', ...k });
+    assert(r.cheDo === 'lop' && r.branchId, 'QL một chi nhánh → chế độ lớp');
+    const dm = bc.tapDatMt(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k });
+    assert(r.datMt.dat === dm.dat.size && r.datMt.mau === dm.mau.size && r.datMt.chuaDu === dm.chuaDu.size, `Đạt MT ${JSON.stringify(r.datMt)}`);
+    const sum = (f: (h: any) => number) => r.hang.reduce((a: number, h: any) => a + f(h), 0);
+    assert(sum((h) => h.datMt.dat) <= r.datMt.dat && sum((h) => h.datMt.mau) <= r.datMt.mau, 'Σ hàng Đạt MT vượt tổng');
+    assert(r.tienBo.mau === r.tienBoKn.reduce((a: number, x: any) => a + x.tong, 0) && r.tienBo.dat === r.tienBoKn.reduce((a: number, x: any) => a + x.tang, 0), 'Tiến bộ ≠ Σ kỹ năng');
+    assert(sum((h) => h.tienBo.mau) <= r.tienBo.mau, 'Σ hàng Tiến bộ vượt tổng');
+    assert(sum((h) => h.hv) >= 0 && r.tong.hv === r.hv.dangHoc, 'HV tổng');
+    /* Ô Tiến bộ (mọi kỹ năng) và một lớp = dòng panel. */
+    const o = bc.oBaoCao(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k, o: 'tien-bo:tat-ca' });
+    assert(o.n === r.tienBo.mau, `panel Tiến bộ ${o.n} ≠ ${r.tienBo.mau}`);
+    const h = r.hang.find((x: any) => x.tienBo.mau > 0);
+    if (h) {
+      const ol = bc.oBaoCao(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k, classId: h.id, o: 'tien-bo:tat-ca' });
+      assert(ol.n === h.tienBo.mau, `panel Tiến bộ lớp ${h.ten}: ${ol.n} ≠ ${h.tienBo.mau}`);
+    }
+  });
+
+  check('PT-V2 · Thi thật ở Chi nhánh = tập Thi thật (trừ KCK); Em thi = panel tong:thi; co-target = mẫu Đạt Target; Chưa có KQ = panel', () => {
+    const r = cn.chiNhanhV2(P.mbManager, { branchId: null, ct: 'ft', ...k });
+    const x = r.thiThat;
+    const f = { branchId: r.branchId, tu: k.tu, den: k.den };
+    const thi = tt.oThiThat(P.mbManager, { ...f, o: 'tong:thi' });
+    assert(thi.n === x.emThi, `Em thi ${x.emThi} ≠ panel ${thi.n}`);
+    const mau = tt.oThiThat(P.mbManager, { ...f, o: 'tong:co-target' });
+    assert(mau.n === x.vuot + x.dat + x.chuaDat, `mẫu Đạt Target ${x.vuot + x.dat + x.chuaDat} ≠ panel ${mau.n}`);
+    for (const [o, n] of [['exceed', x.vuot], ['dat', x.dat], ['fail', x.chuaDat]] as const) assert(tt.oThiThat(P.mbManager, { ...f, o: `tong:${o}` }).n === n, o);
+    const kq = cn.oChiNhanh(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k, o: 'chua-co-kq' });
+    assert(kq.n === x.chuaCoKq, `Chưa có KQ ${x.chuaCoKq} ≠ panel ${kq.n}`);
+    for (const o of ['vao', 'ket-thuc'] as const) {
+      const p = cn.oChiNhanh(P.mbManager, { branchId: r.branchId, ct: 'ft', ...k, o });
+      assert(p.n === (o === 'vao' ? r.hv.vao : r.hv.ketThuc), `${o}: ${p.n}`);
+    }
+  });
+
+  check('PT-V2 · Lớp thường: Đạt Test = Progress "Đạt hết" + Final "Từ 70%" của bảng Test; panel dat-test = số; Cuối khoá = 4 ô Final', () => {
+    const r = cn.chiNhanhV2(P.mbManager, { branchId: null, ct: 'thuong', ...k });
+    assert(r.datMt === null && r.thiThat === null && r.datTest, 'lớp thường không có Đạt MT / Thi thật');
+    const tb = th.tongHop(P.mbManager, { branchId: r.branchId, ct: 'thuong', soTuan: 8, theo: 'lop', ...k });
+    assert(r.datTest.dat === (tb.tong['gk-dat'] ?? 0) + (tb.tong['ck-dat'] ?? 0), 'Đạt Test ≠ bảng Test');
+    assert(JSON.stringify(r.cuoiKhoa) === JSON.stringify([tb.tong['ck-dat'] ?? 0, tb.tong['ck-60'] ?? 0, tb.tong['ck-50'] ?? 0, tb.tong['ck-duoi50'] ?? 0]), 'Cuối khoá');
+    const o = th.oTongHop(P.mbManager, { branchId: r.branchId, ct: 'thuong', soTuan: 8, theo: 'lop', ...k, khoa: 'tong', cot: 'dat-test' });
+    assert(o.n === r.datTest.dat, `panel Đạt Test ${o.n} ≠ ${r.datTest.dat}`);
+  });
+
+  check('PT-V2 · QT Tất cả chi nhánh: hàng = chi nhánh, Σ Đạt MT hàng ≤ tổng; GV / TVV không có Phân tích → 403', () => {
+    const r = cn.chiNhanhV2(P.admin, { branchId: null, ct: 'ft', ...k });
+    assert(r.cheDo === 'chi-nhanh' && r.hang.every((h: any) => h.khoa.startsWith('cn:')), 'chế độ chi nhánh');
+    assert(r.hang.reduce((a: number, h: any) => a + h.datMt.mau, 0) <= r.datMt.mau, 'Σ chi nhánh vượt tổng');
+    let loi = 0;
+    try { cn.chiNhanhV2(P.subjectTeacher, { branchId: null, ct: 'ft', ...k }); } catch (e: any) { loi = e.status ?? 403; }
+    assert(loi === 403, `GV phải bị chặn: ${loi}`);
+  });
+}

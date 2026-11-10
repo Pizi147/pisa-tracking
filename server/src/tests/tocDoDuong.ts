@@ -362,6 +362,15 @@ export const DUONG_DO: MucDo[] = [
   /* QUET-THEO-KY Q3: Báo cáo HV MỘT GET — Tổng quan + `baoCao` (web chỉ gọi đường này; `/phan-tich/bao-cao` giữ cho nơi khác). */
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/v5?ct=ft&kemBaoCao=1', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1' },
+  /* Phân tích V2 · Chi nhánh (XM-2): MỘT GET chỉ phần cần — FT một chi nhánh 31 câu / 1 376 dòng trên seed (trước 74 / 3 254), lớp thường 16 / 749; QT 55 câu (Tiến bộ theo từng chi nhánh). */
+  { trang: 'Phân tích · Chi nhánh', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27', maChuDich: { GVCN: 403 } },
+  { trang: 'Phân tích · Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=thuong&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
+  { trang: 'Phân tích · Chi nhánh', vai: ['QT'], url: '/tong-quan/v5?ct=ft&baoCao=chi-nhanh&branchId={cn}&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
+  { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=ft&o=vao&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
+  { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh-v2/o?ct=ft&o=chua-co-kq' },
+  { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&o=tien-bo:tat-ca&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
+  { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=tong:co-target&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  { trang: 'Phân tích · panel Chi nhánh', vai: ['QL', 'QT'], url: '/phan-tich/tong-hop/o?ct=thuong&theo=lop&khoa=tong&cot=dat-test&kieu=tuan&tu=2026-08-31&den=2026-09-27' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/bao-cao/o?ct=ft&o=bai-qua-han' },
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/ket-qua-thi?loai=mock&xep=sos&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích QL', vai: ['QL', 'QT'], url: '/phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
@@ -1013,6 +1022,10 @@ export const TRAN: Record<string, number> = {
   'GVCN /phan-tich/bao-cao?ct=ft': 14,   // đo 4
   /* QUET-THEO-KY Q3: Báo cáo HV một GET (trước: /tong-quan/v5 + /phan-tich/bao-cao = QL ft 65 + 65 câu, QT 60 + 61). max(đo+10, ⌈đo×1,3⌉), cắt ở trần cứng 100. */
   'QL /tong-quan/v5?ct=ft&kemBaoCao=1': 68,   // DOC-PT: đo 52 (trước 58)
+  /* Phân tích V2 · Chi nhánh (`baoCao=chi-nhanh`): đo seed QL FT 31 · LT 16 · QT FT 55 câu (Tiến bộ theo từng chi nhánh) — trần max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 41, 'QT /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 72,
+  'GVCN /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 14,
+  'QL /tong-quan/v5?ct=thuong&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 26,
   'QT /tong-quan/v5?ct=ft&kemBaoCao=1': 63,   // TL-TQ: đo 48 (trước 66)
   'GVCN /tong-quan/v5?ct=ft&kemBaoCao=1': 14,   // 403, đo 4
   'QL /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 52,   // DOC-PT: đo 40 (trước 45)
@@ -1116,6 +1129,9 @@ export const TRAN_DONG: Record<string, number> = {
   /* CHUONG-V2 (XM-3): không đồng bộ, không đọc thông báo tự động cũ — trần = max(đo+50, ⌈đo×1,3⌉), đo 12/11 QL 19 · GVCN 39 · GVBM 10 · GVCN_THUONG 39 · QT 18 (trước 25 · 45 · 14 · 45 · 26; QT đồng bộ khi vừa ghi ~241). */
   'QL /notifications': 69, 'GVCN /notifications': 89, 'GVBM /notifications': 60, 'GVCN_THUONG /notifications': 89, 'QT /notifications': 68,
   /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */
+  /* Phân tích V2 · Chi nhánh: đo seed QL FT 1 376 · LT 749 · QT FT 1 984 dòng (trước kemBaoCao 2 901 + Kết quả MT 353). */
+  'QL /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 1789, 'QT /tong-quan/v5?ct=ft&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 2580,
+  'QL /tong-quan/v5?ct=thuong&baoCao=chi-nhanh&kieu=tuan&tu=2026-08-31&den=2026-09-27': 974,
   'QL /tong-quan/v5?ct=ft&kemBaoCao=1': 3507, 'QT /tong-quan/v5?ct=ft&kemBaoCao=1': 4586,   // TL-TQ: đo 2979 (trước 3216) · 3527 (trước 3970)   // DOC-PT: QL đo 2697 (trước 2979)
   'QL /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 3104, 'QT /tong-quan/v5?ct=thuong&kieu=tuan&tu=2026-07-06&den=2026-09-20&kemBaoCao=1': 4094,   // đo 2 673 · 3 149   // DOC-PT: QL đo 2387 (trước 2613)
   /* SUA-NHO-QUYEN: Quản trị › Tài khoản — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (163 dòng). */

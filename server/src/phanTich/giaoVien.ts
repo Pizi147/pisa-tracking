@@ -331,7 +331,8 @@ function tapKetQua(c: NguCanhPtGv, muc: readonly MucKq[]): Map<string, TapKq> {
 /** PANEL-MC: `doi` — điểm hai lượt của từng mục (lượt trước → lượt này), dựng trong CÙNG vòng (0 câu) cho chip Tăng / Giảm ở panel. */
 /** PT-PANEL: `truoc.mt` — số MT lượt trước (cột Trước "MT1 5.0" của panel Tăng / Giữ / Giảm). */
 type DoiTb = Map<number, { truoc: { luot: string; v: number; mt: number }; sau: { luot: string; v: number } }>;
-type TapKn = Map<string, { dung: number[]; giam: number[]; tong: number[]; doi: DoiTb }>;
+/** `lop`: bài → lớp của bài (Chi nhánh V2 chia Tiến bộ theo lớp — 0 câu thêm). */
+type TapKn = Map<string, { dung: number[]; giam: number[]; tong: number[]; doi: DoiTb; lop: Map<number, number> }>;
 function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<number>>; theoLop?: Map<number, Tap>; theoKyNang: TapKn } {
   const tap: Tap = new Map();
   const lop = new Map<number, Set<number>>();
@@ -339,7 +340,7 @@ function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<n
   const theoLop = new Map<number, Tap>();
   /* UI-PHAN-TICH (Báo cáo HV · Tiến bộ theo kỹ năng): CÙNG mục, gom theo kỹ năng cho cả chi nhánh (không cần người dạy): tăng (`dung`) · giảm · còn lại giữ nguyên. */
   const theoKyNang: TapKn = new Map();
-  const kn = (skill: string) => theoKyNang.get(skill) ?? theoKyNang.set(skill, { dung: [], giam: [], tong: [], doi: new Map() }).get(skill)!;
+  const kn = (skill: string) => theoKyNang.get(skill) ?? theoKyNang.set(skill, { dung: [], giam: [], tong: [], doi: new Map(), lop: new Map() }).get(skill)!;
   const coBand = nap.o.filter((x) => x.band !== null && (nap.attempts.get(x.attemptId)?.kind ?? 'mock') === 'mock');
   const em = [...new Set(coBand.map((x) => x.studentId))];
   const truoc = new Map<string, { tuan: string; id: number; band: number; no: number }[]>();
@@ -360,6 +361,7 @@ function tapTienBo(c: NguCanhPtGv, nap: NapBai): Tap & { lop?: Map<number, Set<n
       .sort((a, b) => a.tuan.localeCompare(b.tuan) || a.id - b.id).pop();
     if (!cu) continue;
     kn(x.skill).tong.push(x.id);
+    kn(x.skill).lop.set(x.id, x.classId);
     kn(x.skill).doi.set(x.id, { truoc: { luot: `MT${cu.no}`, v: cu.band, mt: cu.no }, sau: { luot: `MT${nap.attempts.get(x.attemptId)?.attempt_no ?? '?'}`, v: x.band! } });
     if (x.band! > cu.band) kn(x.skill).dung.push(x.id);
     else if (x.band! < cu.band) kn(x.skill).giam.push(x.id);

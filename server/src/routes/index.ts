@@ -5,7 +5,7 @@ import { cauHinhDich, laBanChinh } from '../moiTruong.ts';
 import {
   ENTRY_SKILLS, THEO_DONG, ghepMucTieu, tenMonNgan, canNamGan, docBoLocXuatMt, kiemGhiRoKhac, laKhac, soSanhLop, transferReasonText,
   PERMISSIONS, ROLE_LABEL, coTheDoiGocNhin, WORK_SCOPES, chuongTrinhTuThamSo, ctTuyChon, khoangTuThamSo, thamSoNguoi, tuDauKhoang,
-  khoangTuUrl, loiKhoang, mondayOfDate,
+  khoangChiNhanhMacDinh, khoangTuUrl, loiKhoang, mondayOfDate,
   type Role, type TheoDong, type WorkScope,
 } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
@@ -54,6 +54,7 @@ import { docHet, docNhieu, thongBaoCua } from '../platform/thongBao.ts';
 import { luiMocQuetSauGhi } from '../platform/mocHeThong.ts';
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
 import * as tongQuanV5Svc from '../worklist/tongQuanV5.ts';   // UI-TONG-QUAN
+import * as chiNhanhSvc from '../phanTich/chiNhanh.ts';   // Phân tích V2 · Chi nhánh
 import * as yeuCauSvc from '../duyet/yeuCau.ts';
 import * as deXuatSuaSvc from '../duyet/deXuatSua.ts';
 import * as classSvc from '../classes/classes.ts';
@@ -2270,9 +2271,21 @@ api.get('/tong-quan/ql', requireAuth, wrap((req) => {
 api.get('/tong-quan/v5', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* UI-PHAN-TICH: Báo cáo HV gửi khoảng đang chọn (`kieu`/`tu`/`den`) — vắng = kỳ mặc định của Tổng quan. */
+  /* Phân tích V2 · Chi nhánh (XM-2, PTA chốt): `baoCao=chi-nhanh` = CHỈ phần báo cáo Chi nhánh cần (không Case / SOS / Trễ chấm của Tổng quan) — cùng hàm tập. */
+  if (qStr(req, 'baoCao') === 'chi-nhanh') {
+    const k = khoangOf(req) ?? khoangChiNhanhMacDinh(demoToday());
+    return chiNhanhSvc.chiNhanhV2(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), tu: k.tu, den: k.den });
+  }
   const tq = tongQuanV5Svc.tongQuanV5(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), ky: khoangOf(req) });
   /* QUET-THEO-KY Q3: Báo cáo HV MỘT request — kèm CHÍNH `/phan-tich/bao-cao` (cùng hàm, cùng quyền); dưới `/tong-quan` để `invalidate('/tong-quan')` vẫn trúng. */
   return qStr(req, 'kemBaoCao') === '1' ? { ...tq, baoCao: baoCaoSvc.baoCao(principalOf(req), filterBaoCaoOf(req)) } : tq;
+}));
+/** Phân tích V2 · Chi nhánh: panel ô mới — `o` = vao · ket-thuc · chua-co-kq (em). Dưới `/tong-quan` như GET của báo cáo. */
+api.get('/tong-quan/chi-nhanh-v2/o', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const k = khoangOf(req) ?? khoangChiNhanhMacDinh(demoToday());
+  const x = chiNhanhSvc.oChiNhanh(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')), tu: k.tu, den: k.den, o: qStr(req, 'o') ?? '' });
+  return { n: x.n, unit: 'hoc-vien', tieuDe: x.tieuDe, rows: rowsFor('hoc-vien', x.ids, undefined, principalOf(req)) };
 }));
 /** UI-TONG-QUAN: Tổng quan TVV (Báo PH đúng hạn · Thi tháng này) + panel `o=bao-ph`. */
 api.get('/tong-quan/tvv', requireAuth, wrap((req) => {

@@ -54,8 +54,8 @@ export async function runPhanTichTests(t: YThucTestKit) {
     eq(g('goc=van-de').goc, 'tong-hop', 'van-de (đã bỏ) → Test + SOS');
     eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan').goc, 'tong-hop', 'danh-sach đã bỏ (PR-Pb2-a)');
     /* OV-15e (C28, plan §7): sáu tab, Báo cáo đầu. */
-    eq([...d.GOC_NHIN], ['bao-cao', 'giao-vien', 'ket-qua-thi', 'tong-hop', 'hieu-qua-pa', 'y-thuc'], 'đúng thứ tự (UI-PHAN-TICH: Báo cáo HV · Phân tích GV đầu; 06/11 KQ Thi thật thứ 3)');
-    eq(d.GOC_NHIN_LABEL['tong-hop'], 'Test + SOS', 'nhãn');
+    eq([...d.GOC_NHIN], ['bao-cao', 'ket-qua-thi', 'tong-hop', 'hieu-qua-pa', 'giao-vien', 'y-thuc'], 'đúng thứ tự (Phân tích V2: Chi nhánh · Thi thật · SOS · … · Giáo viên · Ý thức)');
+    eq(d.GOC_NHIN_LABEL['tong-hop'], 'SOS', 'nhãn');
     eq(d.GOC_NHIN_LABEL['hieu-qua-pa'], 'Hiệu quả PA', 'nhãn');
   });
 
@@ -126,7 +126,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     const flat = JSON.stringify(day);
     assert(!flat.includes('kn:'), 'ẩn nhóm ky-nang thì không còn khoá kn: nào trong bảng xuất');
     assert(!/\d{4}-\d{2}-\d{2}/.test(flat), 'không có chuỗi ISO nào trong bảng xuất');
-    assert(day[0][0].startsWith('Test + SOS · '), 'dòng 1 là tiêu đề + mô tả bộ lọc (OV-15e: tên tab "Test + SOS")');
+    assert(day[0][0].startsWith('SOS · '), 'dòng 1 là tiêu đề + mô tả bộ lọc (Phân tích V2: tên tab "SOS")');
     const dongChinh = day.find((r: any[]) => r[0] === 'W3 SEP · 21/09–27/09 · tuần này');
     assert(!!dongChinh, 'dòng chính có nhãn + phụ');
     const dongCon = day.find((r: any[]) => typeof r[0] === 'string' && r[0].startsWith('  FT101'));

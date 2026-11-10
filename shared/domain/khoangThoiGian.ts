@@ -34,6 +34,15 @@ export function khoangPhanTichMacDinh(homNay: string): KhoangNgay {
   return { kieu: '2-tuan', tu: addDaysIso(t2, -7), den: addDaysIso(t2, 6) };
 }
 
+/**
+ * Phân tích V2 (chủ SP 12/11, đặc tả 9.5): báo cáo CHI NHÁNH mặc định một tháng — mọi tuần mang mã tháng chứa hôm nay (`W1 NOV` → tuần cuối NOV, kể cả
+ * tuần chưa tới). Kiểu '2-tuan' = "mặc định của tab": URL trống vẫn là khoảng này (`thamSoKhoang`), đổi tab khác về 2 tuần của tab đó.
+ */
+export function khoangChiNhanhMacDinh(homNay: string): KhoangNgay {
+  const { year, month } = owningMonthOf(mondayOfDate(homNay));
+  return { kieu: '2-tuan', ...khoangThang(`${year}-${String(month).padStart(2, '0')}`)! };
+}
+
 /** Các tuần thuộc tháng `YYYY-MM` (Thứ Hai đầu → Chủ nhật cuối). Tháng sai → null. */
 export function khoangThang(thang: string): { tu: string; den: string } | null {
   const m = /^(\d{4})-(\d{2})$/.exec(thang);
