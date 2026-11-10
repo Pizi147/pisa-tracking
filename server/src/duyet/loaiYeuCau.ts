@@ -7,9 +7,10 @@
  * Hàm nguồn tự gọi `chotYeuCau` (idempotent) — đường cũ không qua hộp vẫn chốt đúng thẻ.
  */
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { sqlNguongMiniTest } from '../platform/cauHinh.ts';
 import type { Principal } from '../permissions.ts';
 import {
-  CO_DIEM_SQL, INTERVENTION_KIND_LABEL, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
+  CO_DIEM_SQL, INTERVENTION_KIND_LABEL, nguongMiniTest, REGULAR_SKILLS, THANG, caseTopicLabel, hanKyGhiKetQua, duongHoSoHocVien, kindCuaBac, moTaBoTro, nhanDotNgan, nhanLoaiXuLy, outcomeLabelFor, shortDate, tenMonNgan, tuanLich,
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
@@ -787,8 +788,11 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     loai: 'bao_len_mini_test',
     /* Hết ý nghĩa khi Mini Test đã đạt (sửa điểm) hoặc mọi Case của nhóm đã Hoàn thành (QL xử lý xong). */
     chet: {
-      sql: `NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.id = y.doi_tuong_id AND m.ty_le < 0.7
-             AND EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND sc.status != 'done'))`,
+      /* QTV2-BAND: ngưỡng theo bản tại ngày làm — getter: tính lúc chạy (bản có thể đổi), không lúc nạp mô-đun. */
+      get sql() {
+        return `NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.id = y.doi_tuong_id AND m.ty_le < ${sqlNguongMiniTest('m.ngay_lam')}
+             AND EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND sc.status != 'done'))`;
+      },
       lyDo: 'Case đã hoàn thành hoặc Mini Test đã đạt',
     },
     nap: (conn, ds) => napNguoiNhac(conn, ds, napTheoDoiTuong(conn, ds,
@@ -800,7 +804,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Mini Test chưa đạt${pt ? ` · ${pt}` : ''}`,
         phu: x?.ten_gv ?? null,   // OV-11c (CV-10): người giữ việc — tên em đã ở dòng phụ của thẻ
-        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ 70%) — Case để mở, Quản lý xử lý từng trường hợp.`],
+        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ ${Math.round(nguongMiniTest(x?.ngay_lam) * 100)}%) — Case để mở, Quản lý xử lý từng trường hợp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null },
       };

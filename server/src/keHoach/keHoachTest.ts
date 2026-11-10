@@ -535,7 +535,7 @@ export function lichMtLoTrinh(cycleId: number, today: string = demoToday()): {
       : batBuoc.length && batBuoc.every((k) => !k.weekStart) || (!ds.length && !a.planned_period_id) ? 'chua-xep' : 'da-xep';
     return {
       attemptId: a.id, trangThai, lichSu: !!a.lich_su, kyNang, kn,
-      kyVong: a.kind === 'mt0' ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, a.route_at_attempt ?? cy.route ?? null),
+      kyVong: a.kind === 'mt0' ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, a.route_at_attempt ?? cy.route ?? null, a.created_at),
       ketQuaHuy: daHuy.get(a.id) ?? null,
     };
   };

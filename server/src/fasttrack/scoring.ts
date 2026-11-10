@@ -105,10 +105,10 @@ export function failingEntrySkills(
 /** P8: task Writing bỏ nằm trong danh sách kỹ năng bỏ của lượt (`skippedSkillsOf`). */
 export const boTaskTrong = (skipped: readonly string[]): string | null => skipped.find((k) => k === 'writing1' || k === 'writing2') ?? null;
 
-/** `route` = lộ trình CỦA LƯỢT (K5-49): RF mọi MT kỳ vọng = target (M2). */
-export function expectationFor(target: number | null, attemptNo: number, route?: string | null): number | null {
+/** `route` = lộ trình CỦA LƯỢT (K5-49): RF mọi MT kỳ vọng = target (M2). `moc` = ngày TẠO LƯỢT (`created_at`, QTV2-BAND); thiếu = bản mới nhất. */
+export function expectationFor(target: number | null, attemptNo: number, route?: string | null, moc?: string | null): number | null {
   if (target === null || target === undefined) return null;
-  return target - expectationDelta(attemptNo, route);
+  return target - expectationDelta(attemptNo, route, moc);
 }
 
 export type SkillVerdict = {
@@ -177,8 +177,10 @@ export function evaluateAttempt(
   xongThieu: readonly string[] = [],
   /** OV-9: lộ trình của lượt có dấu KCK (`kckCuaLuot`) — kỳ vọng tính như thường, dưới kỳ vọng không thành SOS. */
   kck = false,
+  /** QTV2-BAND: ngày tạo lượt (`assessment_attempts.created_at`) — chọn bản "Kỳ vọng MT FT". Thiếu = bản mới nhất. */
+  moc?: string | null,
 ): AttemptResult {
-  const expectation = expectationFor(target, attemptNo, route);
+  const expectation = expectationFor(target, attemptNo, route, moc);
   const boTask = boTaskTrong(skippedSkills);
   const bands = assessedBands(entry, boTask);
   const skipped = ASSESSED_SKILLS.filter((s) => skippedSkills.includes(s));

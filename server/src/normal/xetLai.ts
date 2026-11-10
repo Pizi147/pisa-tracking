@@ -168,12 +168,13 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
     const suaDuoc = quyet[0] && CHUYEN.includes(quyet[0].quyet_dinh) && quyet[0].lm_tt === 'cho' ? quyet[0] : null;
     const ly = lyDoXetLai({
       huong: l.huong, tyLe: t?.tyLe ?? null, du: !!t?.du, ngayRaLenh: l.ngay_ra_lenh, mocFinal: m?.luc ?? null, ngayFinal: m?.ngay ?? null,
-      miniTest: mt && mt.ty_le !== null ? { tyLe: mt.ty_le, luc: mt.ghi_luc ?? mt.ngay_lam } : null, quyetLuc: quyet[0]?.luc ?? null,
+      miniTest: mt && mt.ty_le !== null ? { tyLe: mt.ty_le, luc: mt.ghi_luc ?? mt.ngay_lam, ngay: mt.ngay_lam } : null, quyetLuc: quyet[0]?.luc ?? null,
+      mocNguong: t?.mocNguong ?? null,
     });
     const lyDo = ly ?? (suaDuoc ? { ma: suaDuoc.ly_do_ma, chu: '', moc: suaDuoc.moc } : null);
     if (!lyDo) continue;
     const ct = t?.ct ?? l.nguon_ct ?? null;
-    const goiY = t && t.tyLe !== null ? goiYCuoiKhoa({ ct, tyLe: t.tyLe, monTruot: t.monTruot, nguong: t.nguong }) : null;
+    const goiY = t && t.tyLe !== null ? goiYCuoiKhoa({ ct, tyLe: t.tyLe, monTruot: t.monTruot, nguong: t.nguong, moc: t.mocNguong }) : null;
     /* Hạn tính từ NGÀY của mốc mở dòng (điểm Final nhập / sửa cuối, ghi Mini Test) — dòng mở lại sau hạn có hạn mới. */
     const mo = ngayCuaMoc(lyDo.moc) ?? l.ngay_ra_lenh;
     const ngayMoc = lyDo.ma === 'd' && mt?.ngay_lam && mt.ngay_lam > mo ? mt.ngay_lam : mo;
@@ -345,7 +346,7 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
     cot.chu = e.daThiHanh ? `Tiếp tục ${e.lopHienTai.ft ? 'FT' : kyHieuLop(e.lopHienTai.ct, null) ?? e.lopHienTai.code}` : `Giữ ${e.daChot.chu}`;
   } else if (it.quyetDinh === 'hoc_lai' || it.quyetDinh === 'len') {
     const len = it.quyetDinh === 'len';
-    if (len && e.lyDo.ma !== 'c') throw badRequest('Lên lớp chỉ dùng cho em đang học lại mà Final từ 60 %.');
+    if (len && e.lyDo.ma !== 'c') throw badRequest('Lên lớp chỉ dùng cho em đang học lại mà Final đạt mức "Lên từ".');
     const dich = it.toClassId ? lopDichHopLe(it.toClassId, e.lopHienTai.id) : null;
     if (!dich) throw badRequest(len ? 'Chọn lớp' : 'Chọn lớp học lại');
     const ke = NORMAL_LADDER[e.lopNguon.ct as ProgrammeCode] ?? null;

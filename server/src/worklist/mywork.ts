@@ -270,7 +270,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
   mini_test: {
     label: 'Ghi Mini Test',
-    hint: 'Em đã học bổ trợ miễn phí xong — ghi % và ngày làm Mini Test. Từ 70% thì Case tự hoàn thành, dưới 70% Quản lý được báo.',
+    hint: 'Em đã học bổ trợ miễn phí xong — ghi % và ngày làm Mini Test. Đạt thì Case tự hoàn thành, chưa đạt thì Quản lý được báo.',
   },
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
@@ -299,7 +299,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   xet_lai_lo_trinh: {
     label: 'Xét lại lộ trình',
-    hint: 'Final chưa khớp hướng đã chốt (lên mà dưới 50 %, chốt trước Final mà 50–59 %, học lại mà từ 60 %) hoặc Mini Test dưới 70 %. Hết hạn: em ở lại lớp đang học.',
+    hint: 'Final chưa khớp hướng đã chốt (lên mà dưới mức Học lại, chốt trước Final mà ở mức Cân nhắc, học lại mà đạt mức Lên) hoặc Mini Test chưa đạt. Hết hạn: em ở lại lớp đang học.',
   },
   missing_data: {
     label: 'Thiếu dữ liệu đánh giá',
@@ -1328,7 +1328,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       classId: m.cur_class_id, classCode: m.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: m.case_id ?? null, level: null,
       contextLabel: 'Bổ trợ miễn phí', count: null,
-      reason: 'Em đã học bổ trợ miễn phí — ghi Mini Test (% và ngày làm). Từ 70% thì Case tự hoàn thành.',
+      reason: 'Em đã học bổ trợ miễn phí — ghi Mini Test (% và ngày làm). Đạt thì Case tự hoàn thành.',
       tieuDe: `Ghi Mini Test · ${m.full_name ?? 'Học viên'}`,
       actionLabel: 'Ghi Mini Test',
       href: duongHoSoHocVien(m.student_id, { caseId: m.case_id ?? undefined, paId: m.pa_id ?? undefined, viec: 'ghi-ket-qua' }),

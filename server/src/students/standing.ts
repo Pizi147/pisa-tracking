@@ -280,7 +280,7 @@ function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, St
       s.nextAttemptLabel = labelOf(moc.kind, moc.attempt_no);
       s.nextPeriodCode = moc.period_code ?? null;
       s.nextWeekStart = moc.weekStart ?? null;
-      if (!ratio) s.nextKyVong = expectationFor(moc.target_at_attempt ?? cycle.target_score ?? null, moc.attempt_no, moc.route ?? cycle.route);
+      if (!ratio) s.nextKyVong = expectationFor(moc.target_at_attempt ?? cycle.target_score ?? null, moc.attempt_no, moc.route ?? cycle.route, moc.created_at);
     }
     if (!ratio) {
       const chua = list.find((x) => x.status === 'planned' && !x.lich_su && !x.planned_period_id);   // `list` đã xếp theo attempt_no
@@ -319,6 +319,7 @@ function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, St
       a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
       entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route_at_attempt ?? a.route ?? cycle.route,   // LO-TRINH-THEO-HV: lộ trình lúc thi
       kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any), kckCuaLuot({ ...a, khong_cam_ket: cycle.khong_cam_ket }),   // OV-11e (Q8)
+      a.created_at,   // QTV2-BAND: kỳ vọng theo bản lúc tạo lượt
     );
     /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */
     if ((rr ? rr.scored : ri!.scoredRequired) === 0) return false;

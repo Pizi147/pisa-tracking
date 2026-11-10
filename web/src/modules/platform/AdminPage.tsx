@@ -6,11 +6,12 @@ import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { ChiNhanhAdmin } from './ChiNhanhAdmin.tsx';
 import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
 import { HanMacDinhAdmin } from './HanMacDinhAdmin.tsx';
+import { KyVongNguongAdmin } from './KyVongNguongAdmin.tsx';
 import { MoSuaLichTest } from './MoSuaLichTest.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
 import { CauHinhCaseSos } from './CauHinhCaseSos.tsx';
 import { QuyenTheoVai } from './QuyenTheoVai.tsx';
-import { NhatKyChung } from './NhatKyChung.tsx';
+import { NhatKyChung, NhatKyMuc } from './NhatKyChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { useSession } from '../../lib/session.tsx';
 
@@ -28,7 +29,7 @@ const TABS = [
   { key: 'accounts', label: t('Tài khoản') },
   { key: 'catalog', label: t('Chương trình') },
   { key: 'chi-nhanh', label: t('Chi nhánh') },
-  { key: 'band', label: t('Bảng quy đổi') },
+  { key: 'band', label: t('Band & ngưỡng') },
   { key: 'han', label: t('Hạn mặc định') },
   /* CAU-HINH-CASE-SOS (chủ SP 11/11): nhóm nguyên nhân / PA / mốc SOS — Quản trị sửa, Quản lý xem; đặt ở trang Quản trị hiện có, không khung mới. */
   { key: 'case-sos', label: 'Case & SOS' },   // tên riêng (EN giống VI)
@@ -64,7 +65,7 @@ export default function AdminPage() {
         {tab === 'accounts' && <AccountsAdmin />}
         {tab === 'catalog' && <CatalogAdmin />}
         {tab === 'chi-nhanh' && <ChiNhanhAdmin />}
-        {tab === 'band' && <BangQuyDoiAdmin />}
+        {tab === 'band' && <BangQuyDoiAdmin dau={<KyVongNguongAdmin />} phai={<NhatKyMuc muc="band" quanTri={quanTri} />} />}
         {tab === 'han' && <HanMacDinhAdmin />}
         {tab === 'case-sos' && <CauHinhCaseSos />}
         {tab === 'da-xoa' && <DaXoaAdmin />}

@@ -6,6 +6,8 @@
  * ra lệnh…, cùng đồng hồ nghiệp vụ với `tu` của bản). Việc sinh trước lần sửa tra ra bản cũ ⇒ giữ hạn cũ; không thêm cột chụp.
  * Nguồn danh sách bản: máy chủ (`platform/cauHinh.ts`, nhớ theo tiến trình) và web (phiên đăng nhập) gọi `datNguonHan`. Chưa đặt → bản gốc.
  */
+import { banTaiMoc, type BanCauHinh } from './phienBan.ts';
+
 export const HAN_MAC_DINH_GOC = {
   /** Chấm Mock / Test lớp thường: thứ `thu` (2 = T2 … 8 = CN) của tuần lệch `tuanLech` so với tuần thi (T19: T4 tuần sau). */
   cham_test: { tuanLech: 1, thu: 4 },
@@ -47,25 +49,18 @@ export const nhanTruongHan = (ma: MaHan | string, truong: string) => `${(TEN_HAN
 export type HanMacDinh = { -readonly [K in MaHan]: { -readonly [F in keyof (typeof HAN_MAC_DINH_GOC)[K]]: number } };
 export const MA_HAN = Object.keys(HAN_MAC_DINH_GOC) as MaHan[];
 /** Một phiên bản: `tu` = NGÀY có hiệu lực (giờ VN, đồng hồ nghiệp vụ); bản gốc `tu` = '' (trước mọi việc). */
-export type BanHan = { id: number; tu: string; han: HanMacDinh };
+export type BanHan = BanCauHinh<HanMacDinh>;
 
-const GOC: BanHan = { id: 0, tu: '', han: HAN_MAC_DINH_GOC as unknown as HanMacDinh };
+const GOC: BanHan = { id: 0, tu: '', v: HAN_MAC_DINH_GOC as unknown as HanMacDinh };
 let nguon: () => readonly BanHan[] = () => [GOC];
 /** Máy chủ / web đặt nguồn danh sách bản (cũ → mới). Phép kiểm đặt lại `datNguonHan(null)` = chỉ bản gốc. */
 export function datNguonHan(f: (() => readonly BanHan[]) | null): void { nguon = f ?? (() => [GOC]); }
 /** Mọi bản (cũ → mới) — câu SQL cần cửa sổ rộng nhất qua mọi bản rồi lọc lại bằng hàm theo bản của từng việc. */
 export const cacBanHan = (): readonly BanHan[] => nguon();
 
-/** Ngày giờ VN của một mốc: ISO có múi giờ (`Z`, `+07:00`) → cộng về +7; chỉ ngày / không múi giờ → giữ (không import display.ts: vòng import). */
-const ngayVN = (s: string) => (/T.*([zZ]|[+-]\d{2}:?\d{2})$/.test(s) && Number.isFinite(Date.parse(s)) ? new Date(Date.parse(s) + 7 * 3_600_000).toISOString().slice(0, 10) : s.slice(0, 10));
-
 /** Bản có hiệu lực tại `moc` (ngày / lúc của việc; thiếu = bây giờ = bản mới nhất). Khoá thiếu trong bản (bản cũ hơn mã) → giá trị gốc. */
 export function hanTai<K extends MaHan>(ma: K, moc?: string | null): HanMacDinh[K] {
-  const ds = nguon();
-  let chon: BanHan | undefined;
-  const ngay = moc ? ngayVN(moc) : null;   // so theo NGÀY giờ VN: việc sinh cùng ngày lưu theo bản mới
-  for (const b of ds) if (!ngay || b.tu.slice(0, 10) <= ngay) chon = b;
-  return ((chon ?? GOC).han[ma] ?? HAN_MAC_DINH_GOC[ma]) as HanMacDinh[K];
+  return ((banTaiMoc(nguon(), moc) ?? GOC).v[ma] ?? HAN_MAC_DINH_GOC[ma]) as HanMacDinh[K];
 }
 
 /** Ngày lệch từ thứ Hai của tuần mốc: `tuanLech` tuần + (`thu` − 2) ngày. */
