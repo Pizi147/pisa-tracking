@@ -17,7 +17,7 @@ import { mucPaCua, maNhomHopLe, cauHinh,
   NEXT_STEP_LABEL, isProposalKind, outcomeLabelFor,
   RESCHEDULE_TARGETS, RESCHEDULE_TARGET_LABEL, RESULT_MODES, RESULT_MODE_LABEL,
   canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua, LY_DO_KET_THUC_PA_TOI_THIEU,
-  HAN_DUYET_NGAY, hanTheoNgay,
+  hanDuyetNgay, hanTheoNgay,
   type NextStep, type RescheduleTarget,
   issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU, TRAN_CHU, vuotTran,
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
@@ -1102,7 +1102,7 @@ export function recordIntervention(p: Principal, caseId: number, input: {
      * Quá hạn KHÔNG chặn gì cả; nó nổi lên màn của Quản lý để một đề xuất không nằm
      * im mãi, và thời gian chờ đó tính cho QUẢN LÝ chứ không phải cho giáo viên.
      */
-    const approvalDue = needsApproval ? hanTheoNgay(today, HAN_DUYET_NGAY) : null;
+    const approvalDue = needsApproval ? hanTheoNgay(today, hanDuyetNgay(today)) : null;   // QTV2-HAN
 
     /*
      * CHU KỲ ĐẦU TIÊN bắt đầu NGAY, trừ hai trường hợp:

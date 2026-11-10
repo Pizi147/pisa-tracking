@@ -87,14 +87,14 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     assert(d7.length === 1 && d7[0].viec === 'them' && /Nghe từ khoá/.test(d7[0].muc), `thayDoi: ${JSON.stringify(d7)}`);
   });
 
-  check('CHCS-MIG · migrate: tạo bảng + 3 trigger, chạy lặp không làm gì; ghi bảng tăng mốc tham chiếu; dòng loại khác không đổi bản nguyên nhân', () => thu(() => {
+  check('CHCS-MIG · migrate: 2 cột con trỏ + 3 chỉ mục một phần (bảng chung do QTV2-HAN tạo), chạy lặp không làm gì; ghi bảng tăng mốc tham chiếu; dòng loại khác không đổi bản nguyên nhân', () => thu(() => {
     const coCot = (b: string, c: string) => all(`PRAGMA table_info(${b})`).some((x: any) => x.name === c);
     assert(coCot('case_interventions', 'pb_loai') && coCot('sos_coordination_actions', 'pb_moc'), 'schema.sql có 2 cột');
-    conn.exec('DROP TABLE cau_hinh_phien_ban');
+    for (const [ten] of svc.CHI_MUC_MA) conn.exec(`DROP INDEX ${ten}`);
     const a: string[] = [];
     mig.migratePrCauHinhCaseSos(conn, a);
-    assert(a.length === 1 && /cau_hinh_phien_ban/.test(a[0]) && all(`SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_cau_hinh_phien_ban_%'`).length === 3,
-      `tạo bảng + trigger: ${JSON.stringify(a)}`);
+    assert(a.length === 1 && svc.CHI_MUC_MA.every(([ten]: any) => a[0].includes(ten)) && !/bảng|trigger/.test(a[0]), `chỉ thêm chỉ mục: ${JSON.stringify(a)}`);
+    assert(all(`SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_cau_hinh_phien_ban_%'`).length === 3, 'trigger chung (QTV2-HAN) vẫn đủ');
     assert(!all('SELECT 1 FROM cau_hinh_phien_ban').length, 'không chèn dòng: bảng rỗng = bản gốc');
     const b: string[] = [];
     mig.migratePrCauHinhCaseSos(conn, b);

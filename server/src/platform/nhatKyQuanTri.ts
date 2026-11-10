@@ -7,21 +7,27 @@
  */
 import { db } from '../db.ts';
 import { can, type Principal } from '../permissions.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, laMaHanNhatKy, nhanTruongHan } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
 
-export const MUC_NHAT_KY = ['tai-khoan', 'quyen', 'mo-sua-lich', 'chuong-trinh', 'chi-nhanh', 'band', 'case-sos'] as const;
+export const MUC_NHAT_KY = ['tai-khoan', 'quyen', 'mo-sua-lich', 'chuong-trinh', 'chi-nhanh', 'band', 'han', 'case-sos'] as const;
 export type MucNhatKy = (typeof MUC_NHAT_KY)[number];
 /** `entity_type` mỗi mục ghi (kiểm trong mã: accounts / xoaTaiKhoan `users` + `user`, sysconfig `role` · `routes` · `programmes` · `branch`, moSuaLichTest `cai_dat`, bangQuyDoi). */
 export const ENTITY_CUA_MUC: Record<MucNhatKy, string[]> = {
   'tai-khoan': ['users', 'user'], quyen: ['role'], 'mo-sua-lich': ['cai_dat'],
-  'chuong-trinh': ['routes', 'programmes'], 'chi-nhanh': ['branch'], band: ['bang_quy_doi'], 'case-sos': ['cau_hinh_phien_ban'],   // CAU-HINH-CASE-SOS
+  'chuong-trinh': ['routes', 'programmes'], 'chi-nhanh': ['branch'], band: ['bang_quy_doi'], han: ['cau_hinh.han_mac_dinh'], 'case-sos': ['cau_hinh_phien_ban'],   // CAU-HINH-CASE-SOS
 };
 const CHI_QUAN_TRI: ReadonlySet<MucNhatKy> = new Set(['tai-khoan', 'quyen', 'mo-sua-lich']);
 const TRANG = 50;
 
 /** Tên trường hay gặp trong before / after — còn lại giữ khoá gốc. */
+/** Tên trường cho người đọc; khoá thô `ma_han.truong` (dòng hạn mặc định cũ) → "Tên việc (trường)". */
+const tenTruong = (k: string): string => {
+  if (TEN_TRUONG[k]) return TEN_TRUONG[k];
+  const [ma, truong] = k.split('.');
+  return truong && laMaHanNhatKy(ma) ? nhanTruongHan(ma, truong) : k;
+};
 const TEN_TRUONG: Record<string, string> = {
   name: 'Tên', fullName: 'Họ tên', email: 'Email', phone: 'Số điện thoại', title: 'Chức danh', diaChi: 'Địa chỉ', soDienThoai: 'Số điện thoại',
   status: 'Trạng thái', weeks: 'Số tuần', nguongDat: 'Đạt từ', lapMoiTuan: 'Checkpoint mỗi', lichMt: 'Lịch MT', roles: 'Vai trò', skills: 'Kỹ năng',
@@ -33,7 +39,8 @@ const docJson = (s: string | null): Record<string, unknown> => { try { const v =
 
 export type DongNhatKy = { id: number; luc: string; nguoi: string; muc: MucNhatKy; viec: string; doiTuong: string | null; truong: { ten: string; cu: string | null; moi: string | null }[] };
 
-export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: number | null; tu?: string | null; den?: string | null; tiep?: number | null }) {
+/** `gioiHan` (1–8): cột Nhật ký của một tab — chỉ đọc đúng n dòng, không trang tiếp, không đọc danh sách người. */
+export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: number | null; tu?: string | null; den?: string | null; tiep?: number | null; gioiHan?: number | null }) {
   const laQt = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
   if (!laQt && !xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được nhật ký cấu hình.');
   if (q.muc && !(MUC_NHAT_KY as readonly string[]).includes(q.muc)) throw badRequest('Mục nhật ký không hợp lệ.');
@@ -41,6 +48,7 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
   if (muc && CHI_QUAN_TRI.has(muc) && !laQt) throw forbidden('Chỉ Quản trị hệ thống xem được nhật ký tài khoản và quyền.');
   const ngay = /^\d{4}-\d{2}-\d{2}$/;
   if ((q.tu && !ngay.test(q.tu)) || (q.den && !ngay.test(q.den))) throw badRequest('Ngày lọc phải dạng YYYY-MM-DD.');
+  const gioiHan = q.gioiHan ? Math.min(8, Math.max(1, Math.trunc(q.gioiHan))) : null;
   const cacMuc = muc ? [muc] : MUC_NHAT_KY.filter((m) => laQt || !CHI_QUAN_TRI.has(m));
   const loai = cacMuc.flatMap((m) => ENTITY_CUA_MUC[m]);
   const mucCua = new Map(cacMuc.flatMap((m) => ENTITY_CUA_MUC[m].map((e) => [e, m] as const)));
@@ -52,20 +60,22 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
   if (q.tiep) { where.push('a.id < ?'); ts.push(q.tiep); }
   const rows = db().prepare(
     `SELECT a.id, a.action, a.entity_type, a.entity_label, a.before_json, a.after_json, a.created_at, u.full_name AS ten
-       FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id WHERE ${where.join(' AND ')} ORDER BY a.id DESC LIMIT ${TRANG + 1}`,
+       FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id WHERE ${where.join(' AND ')} ORDER BY a.id DESC LIMIT ${gioiHan ?? TRANG + 1}`,
   ).all(...ts) as any[];
   const dong: DongNhatKy[] = rows.slice(0, TRANG).map((r) => {
     const truoc = docJson(r.before_json); const sau = docJson(r.after_json);
     const truong = [...new Set([...Object.keys(truoc), ...Object.keys(sau)])].filter((k) => !k.startsWith('_') && chu(truoc[k]) !== chu(sau[k]))
-      .map((k) => ({ ten: TEN_TRUONG[k] ?? k, cu: chu(truoc[k]), moi: chu(sau[k]) }));
-    return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong: r.entity_label ?? null, truong };
+      .map((k) => ({ ten: tenTruong(k), cu: chu(truoc[k]), moi: chu(sau[k]) }));
+    /* Hạn mặc định: tên việc đã nằm trong "Sửa hạn mặc định" — bỏ "· Hạn mặc định" lặp. */
+    const doiTuong = r.entity_type === 'cau_hinh.han_mac_dinh' ? null : r.entity_label ?? null;
+    return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong, truong };
   });
   /* Ô lọc "Người": ai đã từng đổi trong các mục này — chỉ trang đầu (web dùng danh sách của trang đầu). */
-  const nguoi = q.tiep ? [] : db().prepare(
+  const nguoi = q.tiep || gioiHan ? [] : db().prepare(
     `SELECT DISTINCT u.id, u.full_name AS ten FROM audit_logs a JOIN users u ON u.id = a.actor_user_id
       WHERE a.entity_type IN (${loai.map(() => '?').join(',')}) ORDER BY u.full_name`,
   ).all(...loai) as { id: number; ten: string }[];
-  return { dong, tiep: rows.length > TRANG ? dong[dong.length - 1].id : null, nguoi, muc: cacMuc };
+  return { dong, tiep: !gioiHan && rows.length > TRANG ? dong[dong.length - 1].id : null, nguoi, muc: cacMuc };
 }
 
 /** Đơn vị báo cáo (chỉ xem, tab Chi nhánh — chuyển từ `/admin/overview` cũ): một câu. */

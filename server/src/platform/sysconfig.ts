@@ -3,10 +3,14 @@ import {
   MA_CHUONG_TRINH_MOI, MON_CHON, MON_GOP, MT_TOI_DA, PERMISSIONS, QUYEN_SUY_RA_GV, RATIO_PASS_THRESHOLD, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, docLichMt,
   laChuongTrinhGoc, lichMtGoc, lyDoCamVai, nhanBaiThuong, programmeOf,
 } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
-import { require_, type Principal } from '../permissions.ts';
+import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
+import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
+
+/** QTV2-CAU-HINH (chủ SP 11/11: "chỉ vai Quản trị sửa, QL xem") — Quản lý XEM cấu hình (chương trình, lộ trình, chi nhánh); mọi đường sửa giữ `ADMIN_CONFIG`. */
+const xemCauHinh = (p: Principal, cau: string) => { if (!xemDuocBangQuyDoi(p)) throw forbidden(cau); };
 
 /**
  * CẤU HÌNH HỆ THỐNG — mục 7.3: Quản trị hệ thống SỬA lộ trình và chương trình.
@@ -26,8 +30,9 @@ const loiO = (o: string, m: string) => badRequest(m, { o });
 
 /* ------------------------------------------------------------------ lộ trình */
 
-/** `includeInactive` = bản Quản trị: cả mã đã ngừng, kèm `inUse`. Bản chọn (`/ref/routes`) không có `inUse` (PR-Dọn, quét #10). */
-export function listRoutes(includeInactive = false) {
+/** `includeInactive` = bản Quản trị: cả mã đã ngừng, kèm `inUse`. Bản chọn (`/ref/routes`) không có `inUse` (PR-Dọn, quét #10).
+ *  `demSo` = kèm số "đang dùng" (lộ quy mô): chỉ Quản trị — Quản lý xem cấu hình không thấy (QTV2-CAU-HINH, PTA chốt 11/11). */
+export function listRoutes(includeInactive = false, demSo = includeInactive) {
   const conn = db();
   const rows = conn
     .prepare(`SELECT * FROM routes ${includeInactive ? '' : "WHERE status = 'active'"} ORDER BY seq, code`)
@@ -37,7 +42,7 @@ export function listRoutes(includeInactive = false) {
     /* OV-6b1: tuần học của từng MT — Quản trị sửa, chép vào lớp FT lúc tạo. */
     lichMt: docLichMt(r.lich_mt) ?? lichMtGoc(r.code),
     /* Đang có bao nhiêu lộ trình học viên dùng mã này — con số quyết định có ngừng được không. */
-    ...(includeInactive ? {
+    ...(demSo ? {
       inUse: (conn.prepare('SELECT COUNT(*) n FROM learning_cycles WHERE route = ?').get(r.code) as any).n
         + (conn.prepare('SELECT COUNT(*) n FROM classes WHERE route = ?').get(r.code) as any).n,
       lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE is_fast_track = 1 AND route = ? AND status = 'active'").get(r.code) as any).n,
@@ -84,7 +89,9 @@ function kiemLichMt(v: unknown): number[] {
 /* ------------------------------------------------------------------ chương trình */
 
 export function listProgrammes(p: Principal) {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được cấu hình chương trình.');
+  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Quản lý xem được cấu hình chương trình.');
+  /* Số lớp (lộ quy mô, PR-Dọn quét #10) chỉ ở bản Quản trị; Quản lý xem cấu hình không có. */
+  const laQt = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
   const conn = db();
   return (conn.prepare('SELECT * FROM programmes ORDER BY code').all() as any[]).map((r) => ({
     code: r.code, name: r.name, weeks: r.weeks, scoringMode: r.scoring_mode, status: r.status,
@@ -96,9 +103,11 @@ export function listProgrammes(p: Principal) {
     nguongDat: r.scoring_mode === 'ratio' ? Math.round((r.nguong_dat ?? RATIO_PASS_THRESHOLD) * 1000) / 10 : null,   // 0.725 → 72.5
     /* OV-6b2: liên tục — Checkpoint mỗi n tuần; `goc` = chương trình có sẵn trong mã (môn, cách chấm khoá); `coLop` = đã có lớp (môn khoá, mã không đổi). */
     lapMoiTuan: r.lap_moi_tuan ?? null, goc: laChuongTrinhGoc(r.code),
-    coLop: !!conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(r.code),
-    /* Chỉ lớp ĐANG CHẠY — lớp đã kết thúc không còn chịu ảnh hưởng gì của cấu hình. */
-    lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE programme_code = ? AND status = 'active'").get(r.code) as any).n,
+    ...(laQt ? {
+      coLop: !!conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(r.code),
+      /* Chỉ lớp ĐANG CHẠY — lớp đã kết thúc không còn chịu ảnh hưởng gì của cấu hình. */
+      lopDangChay: (conn.prepare("SELECT COUNT(*) n FROM classes WHERE programme_code = ? AND status = 'active'").get(r.code) as any).n,
+    } : {}),
   }));
 }
 
@@ -448,7 +457,7 @@ const lienHe = (r: any): LienHeCn => ({ name: r.name, diaChi: r.dia_chi ?? null,
 
 /** GET /admin/chi-nhanh — Quản trị › Chi nhánh: tên hiển thị, địa chỉ, SĐT (đầu tệp Báo cáo PH). Một câu, ≤ số chi nhánh dòng. */
 export function listChiNhanh(p: Principal) {
-  require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được thông tin chi nhánh.');
+  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Quản lý xem được thông tin chi nhánh.');
   return (db().prepare('SELECT id, code, name, status, dia_chi, so_dien_thoai FROM branches ORDER BY id').all() as any[])
     .map((r) => ({ id: r.id, code: r.code, status: r.status, ...lienHe(r) }));
 }

@@ -254,7 +254,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     }
     assert(/width="20" height="20"/.test(nut('ref={nutTim}')) && /aria-hidden width="20" height="20"/.test(nut('ref={nutThongBao}')), 'biểu tượng Tìm / chuông phải 20 px');
     /* UI-CON-LAI k4: chuông mọi bề rộng; số = `.cham-chuong` (absolute, đè góc) — khác dáng badge việc. */
-    assert(/className="cham-chuong"/.test(nut('{chuong.soNut > 0 &&')) && /\.cham-chuong \{ position: absolute/.test(doc('web/src/index.css')), 'số trên chuông phải đè góc chuông');
+    assert(/className=\{`cham-chuong/.test(nut('{so && <span aria-hidden')) && /\.cham-chuong \{ position: absolute/.test(doc('web/src/index.css')), 'số trên chuông phải đè góc chuông');
   });
 
   /* OV-15a (C11): mọi kích thước — Giao diện nằm trong menu Tài khoản (phép kiểm thanh trên ở prOv15a). */

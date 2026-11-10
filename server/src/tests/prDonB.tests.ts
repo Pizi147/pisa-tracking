@@ -207,7 +207,7 @@ export async function runPrDonBTests(t: YThucTestKit) {
   });
   check('Dọn-b (C3) · điện thoại: bấm chuông / tài khoản đóng ô tìm (không chồng hai khung); web không còn invalidate(\'/overview\') (route đã xoá)', () => {
     const h = doc('web/src/modules/platform/Header.tsx');
-    assert(/notifications\.reload\(\);[^\n]*setMoTimDt\(false\)/.test(h) && /'account'\); setMoTimDt\(false\)/.test(h), 'Header: chuông + tài khoản phải đóng ô tìm');
+    assert(/setOpenMenu\(openMenu === 'notif' \? null : 'notif'\); setMoTimDt\(false\)/.test(h) && /'account'\); setMoTimDt\(false\)/.test(h), 'Header: chuông + tài khoản phải đóng ô tìm');
     const sot = webSrc().filter((x) => x.s.includes("invalidate('/overview')")).map((x) => x.f);
     assert(sot.length === 0, sot.join(', '));
   });

@@ -12,7 +12,7 @@
 import { DS_JSON, db, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  HAN_BAO_PH_NGAY, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
+  ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -48,7 +48,7 @@ export function nguoiGiuBaoPh(studentId: number): number[] {
 export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; customName?: string | null }, homNay: string): void {
   const nhan = nhanLoaiXuLy(m.kind, m.customName ?? null);
   const han = hanBaoPh(homNay);
-  /* Chuông: đồng bộ tự động (`thongBaoTuDong`) theo người giữ HIỆN TẠI — đổi TVV thì chuông sang người mới (rà #516). */
+  /* Chuông (CHUONG-V2): việc Báo PH của người giữ HIỆN TẠI đọc từ `/my-work` (`bao_ph_yt`) — đổi TVV thì chuông sang người mới. */
   db().prepare(
     `INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (?,?,?,?, 'mo', ?) ON CONFLICT(measure_id) DO NOTHING`,
   ).run(m.id, m.studentId, nhan, han, nowIso());
@@ -385,7 +385,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   const rows = db().prepare(
     `SELECT v.id, v.student_id, v.nhan, v.bao_lai_cua, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
-            (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${HAN_BAO_PH_NGAY} day')
+            (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}
        LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)

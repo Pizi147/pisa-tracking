@@ -13,7 +13,7 @@
  */
 import { DS_JSON, db, tx } from '../db.ts';
 import {
-  HAN_Y_THUC_NGAY, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
+  hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
   bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
@@ -952,7 +952,7 @@ export function baoSauDuyetDeXuat(p: Principal, measureId: number, homNay: strin
   for (const uid of new Set([em.gvcnId, m.created_by].filter((x): x is number => !!x && x !== p.userId))) {
     notify({ userId: uid, kind: 'yt_da_duyet', title: `QL đã duyệt ${nhan} · ${hv.full_name} · ghi "Đã thực hiện"`,
       entityType: 'discipline_measure', entityId: measureId, dedupKey: `yt-da-duyet:${measureId}`,
-      duong: `/cong-viec?viec=${encodeURIComponent(`yt_thuc_hien:${measureId}`)}`, han: hanTheoNgay(homNay, HAN_Y_THUC_NGAY) });
+      duong: `/cong-viec?viec=${encodeURIComponent(`yt_thuc_hien:${measureId}`)}`, han: hanTheoNgay(homNay, hanTai('xu_ly_vi_pham', homNay).ngay) });
   }
   if (m.kind !== 'meeting_cx') return;
   const maLop = lop?.code ?? '—';

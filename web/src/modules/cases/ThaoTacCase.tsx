@@ -9,7 +9,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { BoiCanh, CanLam, DongTiep, NutVaTiep, TrangThaiLuu, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHU_TOI_THIEU_CASE,
-  CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
+  CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, hanDuyetNgay,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, moiKhoaGui, loiFormPa, paMoi, paPayload, type GiaTriPa, } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
@@ -146,7 +146,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
           {coPaBatBuoc && <p className="m-0 text-xs text-slate-300">{t('PA theo quy chế vẫn chạy — PA này là hỗ trợ thêm.')}</p>}
           <FormPa phang v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} chonLoai studentId={studentId}
             luat={deXuat
-              ? t('Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong {HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.', { HAN_DUYET_NGAY })
+              ? t('Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong {HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.', { HAN_DUYET_NGAY: hanDuyetNgay() })
               : t('Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.')}
             ngay={ngay} cuoi={cuoi} />
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>

@@ -5,6 +5,7 @@ import { AccountsAdmin } from './AccountsAdmin.tsx';
 import { CatalogAdmin } from './CatalogAdmin.tsx';
 import { ChiNhanhAdmin } from './ChiNhanhAdmin.tsx';
 import { BangQuyDoiAdmin } from './BangQuyDoiAdmin.tsx';
+import { HanMacDinhAdmin } from './HanMacDinhAdmin.tsx';
 import { MoSuaLichTest } from './MoSuaLichTest.tsx';
 import { DaXoaAdmin } from './DaXoaAdmin.tsx';
 import { CauHinhCaseSos } from './CauHinhCaseSos.tsx';
@@ -28,6 +29,7 @@ const TABS = [
   { key: 'catalog', label: t('Chương trình') },
   { key: 'chi-nhanh', label: t('Chi nhánh') },
   { key: 'band', label: t('Bảng quy đổi') },
+  { key: 'han', label: t('Hạn mặc định') },
   /* CAU-HINH-CASE-SOS (chủ SP 11/11): nhóm nguyên nhân / PA / mốc SOS — Quản trị sửa, Quản lý xem; đặt ở trang Quản trị hiện có, không khung mới. */
   { key: 'case-sos', label: 'Case & SOS' },   // tên riêng (EN giống VI)
   { key: 'config', label: t('Quyền & nhật ký') },
@@ -37,16 +39,17 @@ const TABS = [
 export default function AdminPage() {
   const [params, setParams] = useSearchParams();
   const quanTri = !!useSession().session?.nav?.admin;
-  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'band' || x.key === 'da-xoa' || x.key === 'case-sos');
+  /* QTV2-CAU-HINH (chủ SP 11/11 "QL xem"): Quản lý thấy các tab cấu hình (chỉ đọc) + Đã xoá. */
+  const tabs = quanTri ? TABS : TABS.filter((x) => x.key === 'catalog' || x.key === 'chi-nhanh' || x.key === 'band' || x.key === 'han' || x.key === 'da-xoa' || x.key === 'case-sos');
   const tab = tabs.find((x) => x.key === params.get('tab'))?.key ?? tabs[0].key;
   /* Đổi tab: bỏ bộ lọc của tab cũ (bộ lọc Tài khoản cũng ở URL), thêm một mục lịch sử để Quay lại về tab trước. */
-  const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === 'accounts' ? {} : { tab: k });
+  const setTab = (k: (typeof TABS)[number]['key']) => setParams(k === tabs[0].key ? {} : { tab: k });
 
   return (
     <div className="page space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-slate-100">{quanTri ? t('Quản trị hệ thống') : tab === 'da-xoa' ? t('Quản trị') : t('Bảng quy đổi band')}</h1>
-        {!quanTri && tab === 'band' && <p className="text-xs text-slate-500 mt-0.5">{t('Quản trị hệ thống sửa; Quản lý xem.')}</p>}
+        <h1 className="text-xl font-bold text-slate-100">{quanTri ? t('Quản trị hệ thống') : t('Cấu hình hệ thống')}</h1>
+        {!quanTri && tab !== 'da-xoa' && <p className="text-xs text-slate-500 mt-0.5">{t('Quản trị hệ thống sửa; Quản lý xem.')}</p>}
       </div>
 
       {tabs.length > 1 && (
@@ -62,6 +65,7 @@ export default function AdminPage() {
         {tab === 'catalog' && <CatalogAdmin />}
         {tab === 'chi-nhanh' && <ChiNhanhAdmin />}
         {tab === 'band' && <BangQuyDoiAdmin />}
+        {tab === 'han' && <HanMacDinhAdmin />}
         {tab === 'case-sos' && <CauHinhCaseSos />}
         {tab === 'da-xoa' && <DaXoaAdmin />}
         {tab === 'config' && (

@@ -19,17 +19,7 @@ import { writeAudit } from './audit.ts';
 import { layMoc } from './nguCanhRequest.ts';
 import { thamChieuDayDuKhiKiem, type MocHeThong } from './mocHeThong.ts';
 
-/** Cùng câu ở `schema.sql` (migrate `prCauHinhCaseSos` chạy câu này). `IF NOT EXISTS`: mục khác của Quản trị có thể đã tạo bảng. */
-export const DDL_CAU_HINH_PHIEN_BAN = `CREATE TABLE IF NOT EXISTS cau_hinh_phien_ban (
-  id INTEGER PRIMARY KEY,
-  loai TEXT NOT NULL,
-  du_lieu TEXT NOT NULL,
-  thay_doi TEXT,
-  khoi_phuc_tu INTEGER,
-  nguoi_id INTEGER REFERENCES users(id),
-  tao_luc TEXT NOT NULL
-)`;
-export const DDL_CAU_HINH_PHIEN_BAN_IDX = 'CREATE INDEX IF NOT EXISTS idx_chpb_loai ON cau_hinh_phien_ban(loai, id)';
+/* Bảng chung `cau_hinh_phien_ban` (+ chỉ mục, trigger tham chiếu): QTV2-HAN (`platform/cauHinh.ts`, migrate `prCauHinhPhienBan`); Case & SOS dùng `loai` riêng. */
 /** Chỉ mục một phần theo mã (như schema.sql): dòng sinh từ bản ≥ 2 — nơi duy nhất có mã Quản trị thêm. Điều kiện phải khớp câu đọc bên dưới (`demDangDung`, `daDung`). */
 export const CHI_MUC_MA = [
   ['idx_case_issue_ma', 'case_issues', 'taxonomy_code', 'taxonomy_version > 1'],
@@ -195,6 +185,11 @@ function hinhHopLe(l: LoaiCauHinh, d: any): boolean {
   return dsMuc(d.viec) && !!d.ft && typeof d.ft === 'object' && !!d.thuong && typeof d.thuong === 'object';
 }
 
+const TEN_LOAI: Record<LoaiCauHinh, string> = { nguyen_nhan: 'Nguyên nhân', phuong_an: 'Phương án', moc_sos: 'Mốc SOS' };
+const VIEC_CHU: Record<ThayDoi['viec'], string> = { them: 'Thêm', sua: 'Sửa', an: 'Ẩn', hien: 'Hiện lại', xoa: 'Xoá', thu_tu: 'Đổi thứ tự', o_moc: 'Sửa ô' };
+/** Cùng chữ với cột nhật ký của tab (web `chuDoi`). */
+const chuThayDoi = (d: ThayDoi) => `${VIEC_CHU[d.viec]} · ${d.muc}${d.truoc || d.sau ? `: ${d.truoc ?? ''}${d.truoc && d.sau ? ' → ' : ''}${d.sau ?? ''}` : ''}`;
+
 const idMoi = () => Math.max(Number((db().prepare('SELECT MAX(id) AS m FROM cau_hinh_phien_ban').get() as any)?.m ?? 0), 1) + 1;
 
 /**
@@ -260,7 +255,9 @@ export function luuCauHinh(p: Principal, loai: unknown, input: { duLieu?: unknow
     }
     writeAudit({
       actorUserId: p.userId, action: `cau_hinh_case_sos.${khoiPhucTu === null ? 'sua' : 'khoi_phuc'}`, entityType: 'cau_hinh_phien_ban', entityId: id,
-      entityLabel: `Case & SOS · ${l}`, before: { phienBan: ht.id }, after: { thayDoi: doi, ...(khoiPhucTu !== null ? { khoiPhucTu } : {}) },
+      /* Nhật ký chung đọc trường không gạch dưới: một dòng "Thay đổi" dễ đọc; chi tiết (máy đọc) để ở khoá `_…`. */
+      entityLabel: `Case & SOS · ${TEN_LOAI[l]}`, before: { _phienBan: ht.id },
+      after: { 'Thay đổi': doi.map(chuThayDoi).join(' · '), _thayDoi: doi, ...(khoiPhucTu !== null ? { _khoiPhucTu: khoiPhucTu } : {}) },
     });
     return { truoc: ht.id, moi: true };
   });

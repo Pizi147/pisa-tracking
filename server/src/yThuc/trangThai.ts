@@ -10,7 +10,7 @@ import { DS_JSON, db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coNho, coKhoa, datNho, nho, xoaNho } from '../platform/nguCanhRequest.ts';
 import {
-  bacHienTai, bacKeTiep, batBuocTu, chuoiThang, nhomEm, trangThaiViPham, hanTheoNgay, HAN_Y_THUC_NGAY,
+  bacHienTai, bacKeTiep, batBuocTu, chuoiThang, nhomEm, trangThaiViPham, hanTheoNgay, hanTai,
   type MeasureStatus, type NhanYThucEm, type NhomEm, type TrangThaiViPhamKq, type TrangThaiVp, type ViPhamVao,
 } from '../../../shared/domain/index.ts';
 
@@ -180,7 +180,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     const bac = bacHienTai(xongChuoi, khaiRow?.bac ?? null);
 
     /* PR-S3F #7: V4-9 cho đề xuất bất cứ lúc nào nên có thể hai đề xuất cùng lúc — đã duyệt (sớm nhất) thắng, rồi mới tới chờ duyệt (mới nhất). */
-    const hanThucHien = (m: XuLyEm) => (m.quyetLuc && !g.tamDung ? hanTheoNgay(m.quyetLuc.slice(0, 10), HAN_Y_THUC_NGAY) : null);
+    const hanThucHien = (m: XuLyEm) => (m.quyetLuc && !g.tamDung ? hanTheoNgay(m.quyetLuc.slice(0, 10), hanTai('xu_ly_vi_pham', m.quyetLuc.slice(0, 10)).ngay) : null);
     const daDuyet = dsXl.filter((m) => m.status === 'da_duyet')
       .sort((a, b) => (a.quyetLuc ?? '').localeCompare(b.quyetLuc ?? '') || a.id - b.id)
       .map((m) => { const han = hanThucHien(m); return { id: m.id, kind: m.kind, customName: m.customName, han, quaHan: !!han && homNay > han }; });

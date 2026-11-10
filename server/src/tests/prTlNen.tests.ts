@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM TL-NEN (TRANG-LON S3, kế hoạch `docs/superpowers/plans/2026-10-31-trang-lon.md`):
- * N1 bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB (`moc_he_thong` 'tham-chieu' + 20 trigger) ·
+ * N1 bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB (`moc_he_thong` 'tham-chieu' + 23 trigger) ·
  * N2 quét đường đọc theo mốc DB toàn hệ thống (60 s, sau mỗi lần ghi qua API khi lượt trước ≥ 15 s — GIAM-DOC-0611, sang ngày nghiệp vụ).
  */
 import fs from 'node:fs';
@@ -72,7 +72,7 @@ export async function runPrTlNenTests(t: any) {
     const schema = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
     assert(schema.includes('CREATE TABLE moc_he_thong') && (schema.match(/CREATE TRIGGER tg_tc_/g) ?? []).length === 23, 'schema.sql thiếu bảng / trigger');
     const tg = c().prepare(`SELECT COUNT(*) n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_%'`).get() as any;
-    assert(tg.n === 23, `${tg.n} trigger`);   // + 3 cau_hinh_phien_ban (CAU-HINH-CASE-SOS)
+    assert(tg.n === 23, `${tg.n} trigger`);
     assert(soThamChieu() > 0 && (c().prepare('SELECT COUNT(*) n FROM moc_he_thong').get() as any).n === 5, 'dòng mốc');   // + 'so-viec' (sổ nghĩa vụ PR-2)
   });
 
@@ -81,8 +81,6 @@ export async function runPrTlNenTests(t: any) {
       c().exec('BEGIN IMMEDIATE');
       try {
         c().exec('PRAGMA defer_foreign_keys = ON');
-        /* cau_hinh_phien_ban rỗng ở seed (rỗng = bản gốc) → chèn một dòng thử trong giao dịch (ROLLBACK cuối). */
-        if (b === 'cau_hinh_phien_ban') c().prepare(`INSERT INTO cau_hinh_phien_ban (id, loai, du_lieu, tao_luc) VALUES (2, 'nguyen_nhan', '{}', '2026-11-11')`).run();
         const row = c().prepare(`SELECT rowid AS r__, * FROM ${b} LIMIT 1`).get() as any;
         assert(row, `${b} rỗng`);
         const s0 = soThamChieu();

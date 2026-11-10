@@ -51,8 +51,6 @@ import * as tongKetSvc from '../loTrinh/tongKet.ts';
 import * as profileSvc from '../students/profile.ts';
 import { hanhTrinhHocVien } from '../students/hanhTrinh.ts';
 import { docHet, docNhieu, thongBaoCua } from '../platform/thongBao.ts';
-import { dongBoKhiMoChuong, dongBoSauMyWork } from '../platform/thongBaoTuDong.ts';
-import { daGhi } from '../platform/thongBaoTuDong.ts';   // OV-15h1
 import { luiMocQuetSauGhi } from '../platform/mocHeThong.ts';
 import * as tongQuanQlSvc from '../worklist/tongQuanQl.ts';   // OV-15h1
 import * as tongQuanV5Svc from '../worklist/tongQuanV5.ts';   // UI-TONG-QUAN
@@ -113,6 +111,7 @@ import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as bangQuyDoiSvc from '../platform/bangQuyDoi.ts';
 import * as cauHinhCaseSosSvc from '../platform/cauHinhCaseSos.ts';
 import * as nhatKyQuanTriSvc from '../platform/nhatKyQuanTri.ts';
+import * as cauHinhSvc from '../platform/cauHinh.ts';
 import * as moSuaLichTestSvc from '../platform/moSuaLichTest.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
@@ -165,13 +164,6 @@ api.use((req, _res, next) => {
     next(forbidden(quyen === PERMISSIONS.TEST_VIEW ? 'Vai trò của bạn không có khu Test.' : 'Vai trò của bạn không có khu Công việc.'));
     return;
   }
-  next();
-});
-
-/* OV-15h1: ghi thành công → lần mở chuông kế của người đó đồng bộ thông báo tự động ngay (việc vừa xong hết khỏi "Cần làm", không chờ 5 phút). */
-api.use((req, res, next) => {
-  const p = req.method !== 'GET' ? req.principal : undefined;
-  if (p) res.on('finish', () => { if (res.statusCode < 400) { try { daGhi(p); } catch (e) { console.error('[chuong-da-ghi]', e); } } });
   next();
 });
 
@@ -252,6 +244,8 @@ api.get('/demo/session', wrap((req) => {
     dichBat: cauHinhDich().bat,
     /* Mở sửa lịch Test (chủ SP 06/11): web bỏ chip khoá cuối tuần N15 cho người sửa được lịch — máy chủ vẫn kiểm lại từng lần ghi. */
     moSuaLichTest: moSuaLichTestSvc.dangMoSuaLichTest(),
+    /* QTV2-HAN: các bản Hạn mặc định — web tính hạn bằng cùng hàm dùng chung (nhớ đệm, 0 câu khi không ai sửa). */
+    hanMacDinh: cauHinhSvc.dsBanHan(),
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
@@ -579,7 +573,6 @@ api.get('/my-work', requireAuth, wrap((req) => {
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
   const kq = myWork(p, { branchId });
-  if (branchId == null && kq.items) dongBoSauMyWork(p, kq.items, demoToday());   // RA-DOC-0611b: chuông dùng lại việc vừa tính (tới chu kỳ 5 phút)
   return nheMyWork(kq);
 }));
 
@@ -2975,7 +2968,7 @@ api.patch('/tasks/:id', requireAuth, wrap((req) => {
 
 api.get('/notifications', requireAuth, wrap((req) => {
   const p = principalOf(req);
-  dongBoKhiMoChuong(p, demoToday());   // OV-15d (C03): thông báo tự động thay Nhắc — đồng bộ khi mở chuông, tối đa 5 phút / người
+  /* CHUONG-V2 (XM-3): không còn thông báo tự động — việc của chuông đọc từ `/my-work` (web), ở đây chỉ tin một chiều. */
   return thongBaoCua(p.userId);
 }));
 
@@ -3055,11 +3048,14 @@ api.get('/admin/roles/:key/permissions/:perm/impact', requireAuth, wrap((req) =>
   sysconfigSvc.anhHuongOVai(principalOf(req), String(req.params.key), String(req.params.perm))));
 
 /* QTV2-QUYEN: Nhật ký chung của Quản trị (thay `/admin/overview` — 6 câu COUNT(*), đọc mọi tài khoản, 40 dòng nhật ký). */
+/* QTV2-HAN: Hạn mặc định — Quản trị sửa, Quản lý xem; mỗi lần lưu một phiên bản (chỉ áp cho việc sinh sau). */
+api.get('/admin/cau-hinh/han', requireAuth, wrap((req) => cauHinhSvc.xemHanMacDinh(principalOf(req))));
+api.put('/admin/cau-hinh/han', requireAuth, wrap((req) => cauHinhSvc.luuHanMacDinh(principalOf(req), req.body ?? {})));
 api.get('/admin/don-vi', requireAuth, wrap((req) => nhatKyQuanTriSvc.donViBaoCao(principalOf(req))));
 api.get('/admin/nhat-ky', requireAuth, wrap((req) => nhatKyQuanTriSvc.nhatKyQuanTri(principalOf(req), {
   muc: typeof req.query.muc === 'string' ? req.query.muc : null, nguoi: toInt(req.query.nguoi) ?? null,
   tu: typeof req.query.tu === 'string' ? req.query.tu : null, den: typeof req.query.den === 'string' ? req.query.den : null,
-  tiep: toInt(req.query.tiep) ?? null,
+  tiep: toInt(req.query.tiep) ?? null, gioiHan: toInt(req.query['gioi-han']) ?? null,
 })));
 
 // ==================================================================== tài khoản (vòng 4 phase 4)
@@ -3170,8 +3166,9 @@ api.post('/admin/accounts/:id/khoi-phuc', requireAuth, wrap((req) => {
 /* PR-Dọn (quét #10): danh mục cần đăng nhập; số "đang dùng" (lộ quy mô) chỉ ở bản Quản trị. */
 api.get('/ref/routes', requireAuth, wrap(() => sysconfigSvc.listRoutes()));
 api.get('/admin/routes', requireAuth, wrap((req) => {
-  require_(principalOf(req), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống xem được danh mục lộ trình đầy đủ.');
-  return sysconfigSvc.listRoutes(true);
+  /* QTV2-CAU-HINH: Quản lý xem (chỉ đọc) — sửa vẫn `ADMIN_CONFIG` trong `saveRoute`. */
+  if (!bangQuyDoiSvc.xemDuocBangQuyDoi(principalOf(req))) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được danh mục lộ trình đầy đủ.');
+  return sysconfigSvc.listRoutes(true, can(principalOf(req), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }));
 }));
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));
 api.get('/admin/programmes', requireAuth, wrap((req) => sysconfigSvc.listProgrammes(principalOf(req))));

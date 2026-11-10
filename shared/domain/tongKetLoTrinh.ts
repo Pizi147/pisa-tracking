@@ -2,6 +2,7 @@
  * TỔNG KẾT LỘ TRÌNH (PR-TK) — luật thuần: lý do đóng, hướng tiếp, kết quả thi thật (Đích → Kết quả → Hướng tiếp), việc nhắc GVCN.
  * Bản chụp ghi ở `server/src/loTrinh/banChup.ts`; file này không đọc DB.
  */
+import { hanTai } from './hanMacDinh.ts';
 import { addDaysIso } from './sos.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { t } from '../i18n/index.ts';
@@ -136,14 +137,14 @@ export function ngayThiSauThi(c: DongSauThi): string | null {
 export function trangThaiSauThi(c: DongSauThi, homNay: string): TrangThaiSauThi {
   const coKq = !!c.thi_that_khong_thi || [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((x) => x !== null && x !== undefined) || coKetQuaCu(c);
   const ngayThi = ngayThiSauThi(c);
-  const hanGoc = ngayThi ? addDaysIso(ngayThi, NGAY_HAN_SAU_THI) : null;
+  const hanGoc = ngayThi ? addDaysIso(ngayThi, hanTai('buoc_tiep_sau_thi', ngayThi).ngay) : null;   // QTV2-HAN
   const gh = c.han_sau_thi ? c.han_sau_thi.slice(0, 10) : null;
   const daGiaHan = !!gh && (!hanGoc || gh > hanGoc);
   let han = daGiaHan ? gh : hanGoc;
   const giaiDoan: GiaiDoanSauThi = coKq ? (c.buoc_tiep ? 'xong' : 'cho_buoc_tiep') : ngayThi && ngayThi < homNay ? 'da_thi_cho_kq' : 'chua_thi';
   const nkq = c.ngay_kq ? c.ngay_kq.slice(0, 10) : null;
   /* 21/10-TVV: hạn Chọn bước tiếp = muộn hơn của hạn gốc (ngày thi + 7 / gia hạn) và ngày có kết quả + 7 — không có ngày thi thì chỉ ngày có KQ + 7. */
-  const mocKq = nkq ? addDaysIso(nkq, NGAY_HAN_SAU_THI) : null;
+  const mocKq = nkq ? addDaysIso(nkq, hanTai('buoc_tiep_sau_thi', nkq).ngay) : null;
   if (giaiDoan === 'cho_buoc_tiep' && mocKq && (!han || mocKq > han)) han = mocKq;
   if (giaiDoan === 'da_thi_cho_kq') han = null;
   return {

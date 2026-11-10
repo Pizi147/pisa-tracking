@@ -9,6 +9,7 @@
  * SOS Event KHÔNG có bảng riêng: nó là chính lượt Mock Test Fast Track (`assessment_attempts`) có `sos_level ≥ 1` (đặc tả §2).
  * Lớp thường không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
  */
+import { hanTai } from './hanMacDinh.ts';
 import type { InterventionKind } from './cases.ts';
 import { ngayTheoGioVN } from './display.ts';
 import { dich, t } from '../i18n/index.ts';
@@ -99,7 +100,7 @@ export function sosPlanEndDate(
   ctx: { createdOn: string; nextMtSunday?: string | null; examDate?: string | null },
 ): string | null {
   switch (span) {
-    case 'one_month': return chuNhatCuaTuan(addDaysIso(ctx.createdOn, 31));
+    case 'one_month': return chuNhatCuaTuan(addDaysIso(ctx.createdOn, hanTai('ket_thuc_pa', ctx.createdOn).ngay));   // QTV2-HAN (gốc 31)
     case 'until_next_mt': return ctx.nextMtSunday ?? null;
     case 'until_exam': return ctx.examDate ?? null;
   }

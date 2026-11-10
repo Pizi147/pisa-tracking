@@ -2328,18 +2328,6 @@ CREATE TABLE IF NOT EXISTS bang_quy_doi (
   tao_luc TEXT NOT NULL
 );
 
--- CAU-HINH-CASE-SOS (chủ SP 11/11): phiên bản cấu hình (nhóm nguyên nhân / PA / mốc SOS + loại của mục Quản trị khác), mỗi lần lưu một dòng,
--- không sửa / xoá; bản đang dùng = id lớn nhất của loại; chưa có dòng = bản gốc trong mã. Id mới ≥ 2 (`taxonomy_version = 1` cũ = bản gốc). Migrate `prCauHinhCaseSos`.
-CREATE TABLE IF NOT EXISTS cau_hinh_phien_ban (
-  id INTEGER PRIMARY KEY,
-  loai TEXT NOT NULL,
-  du_lieu TEXT NOT NULL,
-  thay_doi TEXT,
-  khoi_phuc_tu INTEGER,
-  nguoi_id INTEGER REFERENCES users(id),
-  tao_luc TEXT NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_chpb_loai ON cau_hinh_phien_ban(loai, id);
 -- CAU-HINH-CASE-SOS (rà PTA): đếm "Đang dùng" / xoá mục Quản trị thêm — đọc đúng dòng của mã, không quét cả bảng. Chỉ mục MỘT PHẦN (dòng sinh từ
 -- bản ≥ 2 — mã Quản trị thêm chỉ có ở đó): nhỏ, và không giành kế hoạch của câu khác (vd idx_sca_cho của việc Báo PH đang chờ).
 CREATE INDEX IF NOT EXISTS idx_case_issue_ma ON case_issues(taxonomy_code) WHERE taxonomy_version > 1;
@@ -2473,9 +2461,6 @@ CREATE TRIGGER tg_tc_teacher_assignments_upd AFTER UPDATE ON teacher_assignments
 CREATE TRIGGER tg_tc_teacher_assignments_del AFTER DELETE ON teacher_assignments BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_users_ten AFTER UPDATE OF full_name ON users BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_users_del AFTER DELETE ON users BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
-CREATE TRIGGER tg_tc_cau_hinh_phien_ban_ins AFTER INSERT ON cau_hinh_phien_ban BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
-CREATE TRIGGER tg_tc_cau_hinh_phien_ban_upd AFTER UPDATE ON cau_hinh_phien_ban BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
-CREATE TRIGGER tg_tc_cau_hinh_phien_ban_del AFTER DELETE ON cau_hinh_phien_ban BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 
 /* BAO-CAO-PH (chủ SP 05–06/11): báo cáo gửi phụ huynh — MỘT dòng mỗi (đợt, em, phần). Đợt tính từ lịch lớp ('thang:2026-11' · 'progress:2026-11-16' · 'final:…'),
  * phần = kỹ năng phân công ('chung' = GVCN). `muc` JSON {tiêu chí: mức}, `dat_san` JSON [tiêu chí còn mức đặt sẵn theo đợt trước], `diem_sua` = điểm GV sửa tay
@@ -2532,3 +2517,22 @@ CREATE TABLE IF NOT EXISTS user_skill_lich_su (id INTEGER PRIMARY KEY, user_id I
 CREATE INDEX IF NOT EXISTS idx_user_skill_lich_su ON user_skill_lich_su(skill, user_id);
 -- SỔ NGHĨA VỤ (spec 2.3): nhật ký dòng BÀI lệch khi đối chiếu đêm (trước / sau dạng JSON) — thao tác nào quên gọi ghiSo.
 CREATE TABLE IF NOT EXISTS nghia_vu_lech (id INTEGER PRIMARY KEY, khoa TEXT NOT NULL, truoc TEXT, sau TEXT, luc TEXT NOT NULL);
+
+-- QTV2-HAN (chủ SP 11/11): cấu hình có phiên bản (hạn mặc định; Case & SOS cùng bảng, `loai` khác). Rỗng = bản gốc trong mã. Cùng câu ở
+-- `platform/cauHinh.ts` (`DDL_CAU_HINH_PHIEN_BAN`, migrate `prCauHinhPhienBan`).
+CREATE TABLE IF NOT EXISTS cau_hinh_phien_ban (
+    id INTEGER PRIMARY KEY,
+    loai TEXT NOT NULL,
+    du_lieu TEXT NOT NULL,
+    thay_doi TEXT,
+    khoi_phuc_tu INTEGER,
+    nguoi_id INTEGER REFERENCES users(id),
+    tao_luc TEXT NOT NULL
+  );
+CREATE INDEX IF NOT EXISTS idx_chpb_loai ON cau_hinh_phien_ban(loai, id);
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_ins AFTER INSERT ON cau_hinh_phien_ban
+    BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_upd AFTER UPDATE ON cau_hinh_phien_ban
+    BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+CREATE TRIGGER tg_tc_cau_hinh_phien_ban_del AFTER DELETE ON cau_hinh_phien_ban
+    BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;

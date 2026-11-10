@@ -251,7 +251,7 @@ export async function runPrHdTests(t: any) {
     assert(xoa(ql).vaiKhac.some((v: any) => v.cua === 'việc của Quản trị'), 'QL: xoá tài khoản là việc của Quản trị');
     assert(xoa(qt).viec.some((v: any) => v.id === 'tai-khoan'), 'QT: xoá tài khoản là việc của mình');
     /* Bước 2–4 mỗi việc, mọi màn của QT có "Việc làm ở đây" (HD-MOT) — QT có thêm màn Quản trị hệ thống đủ ba tab. */
-    assert(hd.manTheoId(qt, 'quan-tri').ten === 'Quản trị hệ thống' && hd.manTheoId(ql, 'quan-tri').ten === 'Đã xoá', 'màn /quan-tri: QL chỉ Đã xoá, QT đủ ba tab');
+    assert(hd.manTheoId(qt, 'quan-tri').ten === 'Quản trị hệ thống' && hd.manTheoId(ql, 'quan-tri').ten === 'Cấu hình hệ thống', 'màn /quan-tri: QL Cấu hình hệ thống (chỉ xem, QTV2), QT đủ tab');
   });
 
   check('HD-V2 · tiêu đề phần của trang luôn có h2 trên màn hình (sr-only, in vẫn thấy); ô "Vai: …" của panel là viên gọn `o-chon-vai`', () => {
