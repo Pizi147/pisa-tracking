@@ -38,11 +38,13 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
   };
   const tom = (h: string[]) => h.slice(0, 10).join(' · ') + (h.length > 10 ? ` … (${h.length})` : '');
   const ngoai = (n: number) => !THANG_CHU.includes(n);
+  /* Phân tích V2 (XM-10, PTA chốt 12/11): số cỡ trình chiếu của báo cáo Chi nhánh — 48 px (đặc tả 3) và 40 px (ô Thi thật / màn thấp). Chỉ tệp này. */
+  const ngoaiLe = (f: string, n: number) => f === 'web/src/modules/phanTich/BaoCao.tsx' && (n === 48 || n === 40);
 
   // ------------------------------------------------------------------ chữ
   check('NEN · K-CHU-1: mọi cỡ chữ viết tay (text-[Npx], fontSize, font-size) thuộc thang 12·13·14·15·17·22·28', () => {
     const hong = dong((_f, s) => {
-      for (const m of s.matchAll(/text-\[(\d+(?:\.\d+)?)px\]/g)) if (ngoai(Number(m[1]))) return m[0];
+      for (const m of s.matchAll(/text-\[(\d+(?:\.\d+)?)px\]/g)) if (ngoai(Number(m[1])) && !ngoaiLe(_f, Number(m[1]))) return m[0];
       for (const m of s.matchAll(/fontSize:\s*['"]?(\d+(?:\.\d+)?)/g)) if (ngoai(Number(m[1]))) return m[0];
       return /text-\[\d+(?:\.\d+)?r?em\]/.exec(s)?.[0] ?? null;
     });

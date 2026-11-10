@@ -9593,6 +9593,9 @@ await runPrUiHoSoGvTests({ check, assert, conn, P } as any);
 // ==================================================================== V5 UI-PHAN-TICH (Báo cáo HV = Tổng quan, Phân tích GV cột mới = panel, Toàn bộ)
 const { runPrUiPhanTichTests } = bocTep('prUiPhanTich', await import('./prUiPhanTich.tests.ts'));
 await runPrUiPhanTichTests({ check, assert, conn, P } as any);
+// ==================================================================== Phân tích V2 · Chi nhánh (một GET chỉ phần cần, ô mới = panel, tháng mặc định)
+const { runPrPtV2ChiNhanhTests } = bocTep('prPtV2ChiNhanh', await import('./prPtV2ChiNhanh.tests.ts'));
+await runPrPtV2ChiNhanhTests({ check, assert, conn, P } as any);
 // ==================================================================== V5 UI-CON-LAI (nợ #528: badge việc của tôi chỉ việc mine, quá hạn theo kỹ năng)
 const { runPrUiConLaiTests } = bocTep('prUiConLai', await import('./prUiConLai.tests.ts'));
 await runPrUiConLaiTests({ check, assert, P } as any);

@@ -88,7 +88,7 @@ const NHAN_KN: Record<KnDay | KnThiThat, string> = { l: 'L', r: 'R', w: 'W', w1:
 export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): {
   n: number; tieuDe: string; rows: { id: number; thiThat: DongThiThatBang }[]; bangLuot: true; kieu: 'thi-that'; knNhan: string | null; cachTinh: string; chiNhanh: string | null; dem: string | null;
 } {
-  const m = /^(?:tong:(thi|exceed|dat|fail|khong-thi)|kn:([lrws]):(hv|exceed|dat|fail)|gv:(\d+):(l|r|w1|w2|s):(hv|exceed|dat|fail|duoi))$/.exec(f.o);
+  const m = /^(?:tong:(thi|co-target|exceed|dat|fail|khong-thi)|kn:([lrws]):(hv|exceed|dat|fail)|gv:(\d+):(l|r|w1|w2|s):(hv|exceed|dat|fail|duoi))$/.exec(f.o);
   if (!m) throw badRequest('Số này không có trong Thi thật — có thể bộ lọc vừa đổi.');
   if (m[4] && !coTheoGv(p)) throw forbidden('Theo GV dành cho Quản lý, Quản trị và CX.');
   const ds = thiThatTrongKhoang(p, f, { boQuyen: true });
@@ -107,8 +107,10 @@ export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): {
   let dem: string | null = null;
   if (m[1]) {
     const o = m[1];
-    rows = ds.filter((x) => (o === 'khong-thi' ? x.kq.khongThi : o === 'thi' ? !x.kq.khongThi : coMucThi(x.kq) && x.kq.ovr !== null && mucThi(x.kq.ovr, x.kq.target!) === o)).map((x) => dong(x));
-    nhan = o === 'khong-thi' ? t('Không thi') : o === 'thi' ? t('HV thi') : NHAN_MUC[o as 'exceed'];
+    /* Chi nhánh V2: `co-target` = mẫu của "Đạt Target · trừ KCK" (em có mức thi) — panel liệt kê cả Vượt · Đạt · Chưa đạt. */
+    rows = ds.filter((x) => (o === 'khong-thi' ? x.kq.khongThi : o === 'thi' ? !x.kq.khongThi : o === 'co-target' ? coMucThi(x.kq) && x.kq.ovr !== null
+      : coMucThi(x.kq) && x.kq.ovr !== null && mucThi(x.kq.ovr, x.kq.target!) === o)).map((x) => dong(x));
+    nhan = o === 'khong-thi' ? t('Không thi') : o === 'thi' ? t('HV thi') : o === 'co-target' ? t('Đạt Target · trừ KCK') : NHAN_MUC[o as 'exceed'];
   } else if (m[2]) {
     const kn = m[2] as KnThiThat;
     rows = ds.filter((x) => coMucThi(x.kq) && x.kq[kn] !== null && kyNangThiLanNay(x.kq, kn) && (m[3] === 'hv' || mucThi(x.kq[kn]!, x.kq.target!) === m[3])).map((x) => dong(x));

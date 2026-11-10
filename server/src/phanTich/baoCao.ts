@@ -428,13 +428,23 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     /* PT-VP-PA (P-PA): bảng PA đủ cột — kết quả, loại PA, người phụ trách; chưa cải thiện lên đầu. */
     return { n: ids.length, tieuDe: t('PA cải thiện · {a}/{b} PA', { a: cai.size, b: ids.length }), ...bangPa(dongPa(ids)), chiNhanh: tenChiNhanh(f.branchId) };
   }
-  const tb = /^tien-bo:(\w+)(?::(tang|giu|giam))?$/.exec(f.o);
+  const tb = /^tien-bo:([\w-]+)(?::(tang|giu|giam))?$/.exec(f.o);
   if (tb) {
     /* Panel chỉ đọc Tiến bộ theo kỹ năng: mục của kỹ năng (bài), chưa tăng trước — cùng tập với số. Đuôi `:tang|giu|giam` = ô Tăng / Giữ nguyên /
        Giảm của bảng: chỉ các lượt của ô đó (số = dòng panel), lọc trên chính tập đã tính — 0 câu thêm. */
-    if (f.ct !== 'ft' || !f.branchId) throw badRequest('Tiến bộ theo kỹ năng cần Fast Track và một chi nhánh.');
-    phamViPhanTich(p, f.branchId, null);
-    const x = tienBoTheoKyNang(p, f.branchId, f).get(tb[1]);
+    /* Chi nhánh V2: `tien-bo:tat-ca` = mọi kỹ năng (ô Tiến bộ); `lop` = một lớp (hàng Theo lớp); không chi nhánh = mọi chi nhánh FT trong phạm vi (Tất cả). */
+    if (f.ct !== 'ft' || (!f.branchId && tb[1] !== 'tat-ca')) throw badRequest('Tiến bộ theo kỹ năng cần Fast Track và một chi nhánh.');
+    const { scope } = phamViPhanTich(p, f.branchId ?? null, f.classId ?? null);
+    const cns = f.branchId ? [f.branchId] : (db().prepare(`SELECT DISTINCT branch_id AS id FROM classes WHERE is_fast_track = 1 AND status = 'active'${scope.all ? '' : ` AND branch_id IN (${scope.branchIds.map(() => '?').join(',') || 'NULL'})`}`)
+      .all(...(scope.all ? [] : scope.branchIds)) as any[]).map((r) => r.id as number);
+    const gom = { dung: [] as number[], giam: [] as number[], tong: [] as number[], doi: new Map(), lop: new Map<number, number>() };
+    for (const cn of cns) for (const [skill, v] of tienBoTheoKyNang(p, cn, f)) {
+      if (tb[1] !== 'tat-ca' && skill !== tb[1]) continue;
+      const lay = (id: number) => !f.classId || v.lop.get(id) === f.classId;
+      gom.dung.push(...v.dung.filter(lay)); gom.giam.push(...v.giam.filter(lay)); gom.tong.push(...v.tong.filter(lay));
+      for (const [k, d] of v.doi) gom.doi.set(k, d);
+    }
+    const x = gom;
     const dung = new Set(x?.dung ?? []), giam = new Set(x?.giam ?? []);
     const hang = (id: number) => (dung.has(id) ? 0 : giam.has(id) ? 2 : 1);
     const chiHang = tb[2] ? ['tang', 'giu', 'giam'].indexOf(tb[2]) : -1;
@@ -442,8 +452,8 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const rows = rowsFor('bai', ids, undefined, p).map((row) => ({ ...row, sub: [row.sub, [t('Tăng'), t('Giữ nguyên'), t('Giảm')][hang(row.id)]].filter(Boolean).join(' · '),
       xuHuong: { huong: (['tang', 'giu', 'giam'] as const)[hang(row.id)], ...x?.doi.get(row.id) } }));
     const bang = ganTangGiam(p, rows, x?.doi ?? new Map());
-    return { n: ids.length, tieuDe: t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows: bang,
-      ...dauBang(f, bang, 'Điểm kỹ năng ở lượt MT so lượt MT liền trước có điểm kỹ năng đó của chính HV. Ô "Sau" ✓ / ✗ so kỳ vọng của lượt đó.', tenMonNgan(null, tb[1])) };
+    return { n: ids.length, tieuDe: tb[1] === 'tat-ca' ? `${t('Tiến bộ')} · ${dung.size}/${ids.length}` : t('Tiến bộ {kn} · {dung}/{tong}', { kn: tenMonNgan(null, tb[1]), dung: dung.size, tong: ids.length }), rows: bang,
+      ...dauBang(f, bang, 'Điểm kỹ năng ở lượt MT so lượt MT liền trước có điểm kỹ năng đó của chính HV. Ô "Sau" ✓ / ✗ so kỳ vọng của lượt đó.', tb[1] === 'tat-ca' ? undefined : tenMonNgan(null, tb[1])) };
   }
   if (f.o === 'hv-da-thi') return ra('hoc-vien', r.hvDaThi, 'đã làm bài', r.mk ? diemTrongKy(() => true) : diemLuotThuong(r.daCham, r.cua));
   if (f.o === 'bai-da-cham') return ra('bai', r.daCham, 'đã chấm');

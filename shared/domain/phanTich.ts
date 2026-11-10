@@ -24,14 +24,16 @@ import { t } from '../i18n/index.ts';
  */
 /** UI-PHAN-TICH (`phan-tich.html`): Báo cáo HV · Phân tích GV đứng đầu (C22 — tách báo cáo HV / GV), các tab cũ giữ sau. */
 /* 06/11 (chủ SP): KQ Thi thật đứng thứ 3, ngay sau Phân tích GV; khoá URL `ket-qua-thi` giữ (link cũ). */
-export const GOC_NHIN = ['bao-cao', 'giao-vien', 'ket-qua-thi', 'tong-hop', 'hieu-qua-pa', 'y-thuc'] as const;
+/* Phân tích V2 (chủ SP 12/11, đặc tả mục 2, 11): Chi nhánh · Thi thật · SOS · Giáo viên · Ý thức — khoá URL cũ GIỮ (`bao-cao` = Chi nhánh, `ket-qua-thi` = Thi thật,
+   `tong-hop` = SOS, `giao-vien` = Giáo viên) nên link cũ `?goc=` vào thẳng đúng báo cáo. Hiệu quả PA còn là tab riêng tới PR SOS (gộp vào SOS). */
+export const GOC_NHIN = ['bao-cao', 'ket-qua-thi', 'tong-hop', 'hieu-qua-pa', 'giao-vien', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
-  'bao-cao': 'Báo cáo HV',
-  'tong-hop': 'Test + SOS',
-  'ket-qua-thi': 'KQ Thi thật',   // THI-THAT (05/11): bỏ phần Mock, tab chỉ thi thật — khoá URL giữ; 06/11 đổi tên "KQ Thi thật"
+  'bao-cao': 'Chi nhánh',
+  'tong-hop': 'SOS',
+  'ket-qua-thi': 'Thi thật',   // THI-THAT (05/11): bỏ phần Mock, tab chỉ thi thật — khoá URL giữ
   'hieu-qua-pa': 'Hiệu quả PA',
-  'giao-vien': 'Phân tích GV',
+  'giao-vien': 'Giáo viên',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
 };
 export const GOC_NHIN_MAC_DINH: GocNhin = 'bao-cao';
@@ -525,3 +527,24 @@ export function bangXuatTongHop(
   out.push([`Tổng ${kq.hang.length} ${THEO_DONG_DANH_TU[kq.theo]}`, ...cols.map((c) => (oKhongApDung(c, kq.tongCoDot) ? '—' : kq.tong[c.khoa] ?? 0))]);
   return out;
 }
+
+// ------------------------------------------------------------------ Phân tích V2 · báo cáo Chi nhánh (đặc tả 2026-11-12 mục 3, 11, 12)
+
+export type TyLeCn = { dat: number; mau: number };
+/** Một hàng bảng Theo lớp / Theo chi nhánh. `khoa` = `lop:<id>` | `cn:<id>` | `tong` — cùng khoá hàng của bảng chi nhánh (panel Học viên). */
+export type DongChiNhanhV2 = {
+  id: number; khoa: string; ten: string; hv: number;
+  datMt: TyLeCn | null; tienBo: TyLeCn | null;
+  /** Lớp thường: bài Progress "Đạt hết" + Final "Từ 70%" / bài đủ điểm. */ datTest: TyLeCn | null;
+  /** Lớp thường: Final Đạt (≥ 70 %) · 60–69 · 50–59 · < 50 (bài); null = lớp không có Final trong kỳ. */ cuoiKhoa: [number, number, number, number] | null;
+  /** FT: Vượt · Đạt · Chưa đạt Target, trừ KCK; null = không em nào thi trong kỳ. */ thi: { vuot: number; dat: number; chuaDat: number } | null;
+};
+export type ChiNhanhV2Kq = {
+  tu: string; den: string; ct: ChuongTrinh; branchId: number | null; tenChiNhanh: string | null; cheDo: 'lop' | 'chi-nhanh';
+  hv: { dangHoc: number; vao: number; ketThuc: number };
+  datMt: (TyLeCn & { chuaDu: number }) | null; tienBo: TyLeCn | null; tienBoKn: { skill: string; tang: number; giam: number; tong: number }[] | null;
+  datTest: TyLeCn | null; cuoiKhoa: [number, number, number, number] | null;
+  /** FT: tổng ô Thi thật — Vượt · Đạt · Chưa đạt (trừ KCK) · Em thi (có KQ hoặc Không thi, gồm KCK) · Chưa có KQ (hiện tại). */
+  thiThat: { vuot: number; dat: number; chuaDat: number; emThi: number; chuaCoKq: number } | null;
+  hang: DongChiNhanhV2[]; tong: DongChiNhanhV2;
+};
