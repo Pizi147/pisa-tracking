@@ -9,7 +9,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
-type Muc = 'tai-khoan' | 'quyen' | 'mo-sua-lich' | 'chuong-trinh' | 'chi-nhanh' | 'band' | 'han';
+type Muc = 'tai-khoan' | 'quyen' | 'mo-sua-lich' | 'chuong-trinh' | 'chi-nhanh' | 'band' | 'han' | 'case-sos';
 type Dong = { id: number; luc: string; nguoi: string; muc: Muc; viec: string; doiTuong: string | null; truong: { ten: string; cu: string | null; moi: string | null }[] };
 type Trang = { dong: Dong[]; tiep: number | null; nguoi: { id: number; ten: string }[]; muc: Muc[] };
 
@@ -17,7 +17,7 @@ type Trang = { dong: Dong[]; tiep: number | null; nguoi: { id: number; ten: stri
 const ngan = (v: string) => (v.length > 80 ? `${v.slice(0, 80)}…` : v);
 const TEN_MUC: Record<Muc, string> = {
   'tai-khoan': t('Tài khoản'), quyen: t('Quyền theo vai trò'), 'mo-sua-lich': t('Mở sửa lịch Test'),
-  'chuong-trinh': t('Chương trình'), 'chi-nhanh': t('Chi nhánh'), band: t('Bảng quy đổi'), han: t('Hạn mặc định'),
+  'chuong-trinh': t('Chương trình'), 'chi-nhanh': t('Chi nhánh'), band: t('Bảng quy đổi'), han: t('Hạn mặc định'), 'case-sos': 'Case & SOS',
 };
 
 /**

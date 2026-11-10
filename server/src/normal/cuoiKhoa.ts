@@ -1,7 +1,7 @@
 import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';
-import { CASE_OUTCOME_LABEL, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua, type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { cauHinh, viecKhiChot, CASE_OUTCOME_LABEL, NGUONG_MINI_TEST, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua, type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -269,7 +269,7 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
   }
   const tyLe = tyLeTongLo([...luotCua.values()].map((l) => l.id));
 
-  const boTro: DongBoTroFinal[] = [], baoPh = new Map<number, number>(), kyVongCase: DongCaseKyVong[] = [];
+  const boTro: DongBoTroFinal[] = [], baoPh = new Map<number, { sid: number; viec: readonly string[] }>(), kyVongCase: DongCaseKyVong[] = [];
   for (const d of dongs) {
     const luot = luotCua.get(d.sid), t = luot ? tyLe.get(luot.id) : undefined, toCycle = moi.get(d.sid);
     if (!luot || !t || t.tyLe === null || !toCycle) continue;   // chưa đủ điểm (Q30-4) hoặc không thuộc lớp thường — điểm nhập sau áp ở `capNhatCuoiKhoaSauChuyen`
@@ -283,7 +283,9 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
       });
     }
     /* (3) Quản lý báo PH qua TVV: < 50 % luôn (kể cả cho lên — PTA Plan 25/10), 50–59 % Quản lý quyết học lại (Q6). Cùng luật tóm tắt chân (`tacDongChot`). */
-    if (coBaoPhKhiChot(d.huong, goiY)) baoPh.set(luot.id, d.sid);
+    /* CAU-HINH-CASE-SOS: mọi việc phối hợp của dải (bản gốc chỉ Báo PH qua TVV). */
+    const viec = viecKhiChot(d.huong, goiY);
+    if (viec.length) baoPh.set(luot.id, { sid: d.sid, viec });
   }
   /* (4) sang FT có kết luận Không đạt kỳ vọng (PR-KV): Trung tâm → Case + Tutor, Học viên → Case không PA. Không cần điểm Final — theo lô. */
   for (const d of dongs) {
@@ -297,12 +299,13 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
   /* PR-DON (CT2, chủ SP 10/10): SAU `taoBoTroFinal` (bộ cũ còn chặn sinh trùng) — em sang FT còn Mini Test chưa ghi ở lộ trình cũ → tự đóng. */
   dongMiniTestSangFt(p, dongs.filter((d) => d.toFt && cu.has(d.sid)).map((d) => [d.sid, cu.get(d.sid)!]));
   if (baoPh.size) {
-    const co = new Set<number>();
+    const co = new Set<string>();
     theoLo([...baoPh.keys()], (lo, ph) => {
-      for (const r of conn.prepare(`SELECT attempt_id FROM sos_coordination_actions WHERE kind = 'bao_ph_tvv' AND attempt_id IN (${ph})`).all(...lo) as any[]) co.add(r.attempt_id);
+      for (const r of conn.prepare(`SELECT attempt_id, kind FROM sos_coordination_actions WHERE custom_name IS NULL AND attempt_id IN (${ph})`).all(...lo) as any[]) co.add(`${r.attempt_id}|${r.kind}`);
     });
-    chenNhieuDong('INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at)',
-      [...baoPh].filter(([attemptId]) => !co.has(attemptId)).map(([attemptId, sid]) => [attemptId, sid, 'bao_ph_tvv', null, 1, 'pending', nowIso()]));
+    const pb = cauHinh('moc_sos').id || null;
+    chenNhieuDong('INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at, pb_moc)',
+      [...baoPh].flatMap(([attemptId, x]) => x.viec.filter((k) => !co.has(`${attemptId}|${k}`)).map((k) => [attemptId, x.sid, k, null, 1, 'pending', nowIso(), pb])));
   }
 }
 

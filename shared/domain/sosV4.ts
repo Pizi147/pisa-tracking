@@ -9,6 +9,7 @@
  * `dat_ky_vong` (Kết quả cuối ngay kỳ này) · "đến lúc thi" chưa có ngày thi → mốc MT cuối của lộ trình · GVCN / QL "Kết thúc PA" sớm, lý do ≥ 10 ký tự.
  * Case tạm (lượt chưa chốt): "Chờ chốt SOS" — không hạn / PA / việc.
  */
+import { interventionKindsFor } from './cases.ts';
 import { hanTheoNgay, PLAN_DECISIONS, soNgayHanXacNhan, type PlanDecision } from './cases.ts';
 import { sosPlanEndDate, type AcademicSupportSpan } from './sos.ts';
 import { CHU_THEM_PA, type DeadlineKind } from './display.ts';
@@ -127,6 +128,8 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
  * thường (trừ loại của PA gốc); lý do ≥ `DOI_PA_TOI_THIEU` ký tự.
  */
 export const LOAI_PA_DOI = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework'] as const;
+/** CAU-HINH-CASE-SOS: loại đổi được = PA "GV tự làm" chưa ẩn của cấu hình (bản gốc = `LOAI_PA_DOI`). */
+export const loaiPaDoi = (): readonly string[] => interventionKindsFor().selfServe;
 export const DOI_PA_TOI_THIEU = 10;
 export const laPaMacDinh = (pa: { preset?: boolean | number | null; kind: string }) => pa.preset === true || pa.preset === 1 || pa.kind === 'bo_tro';
 

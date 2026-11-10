@@ -9273,6 +9273,9 @@ await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== BAND-QUY-DOI (bảng quy đổi band ở DB, Quản trị sửa)
 const { runPrBandQuyDoiTests } = bocTep('prBandQuyDoi', await import('./prBandQuyDoi.tests.ts'));
 await runPrBandQuyDoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== CAU-HINH-CASE-SOS (Quản trị sửa nhóm nguyên nhân / PA / việc mốc SOS)
+const { runCauHinhCaseSosTests } = bocTep('cauHinhCaseSos', await import('./cauHinhCaseSos.tests.ts'));
+await runCauHinhCaseSosTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
 const { runPrOv6b1Tests } = bocTep('prOv6b1', await import('./prOv6b1.tests.ts'));
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);

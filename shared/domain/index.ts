@@ -62,6 +62,7 @@ export * from './roiNhap.ts';
 export * from './chonNgay.ts';
 export * from './oNgay.ts';
 export * from './khac.ts';
+export * from './cauHinhCaseSos.ts';
 export * from './trangThai.ts';
 export * from './banPhim.ts';
 export * from './quanLyHocVien.ts';

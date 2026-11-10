@@ -420,6 +420,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan V5 · panel', vai: ['QL', 'QT'], url: '/tong-quan/gv-tre?gv={gv}' },
   { trang: 'Lịch Test', vai: ['QL', 'GVCN'], url: '/cham/lich-test/qua-han' },
   { trang: 'Quản trị', vai: ['QT'], url: '/admin/mo-sua-lich-test' },
+  /* CAU-HINH-CASE-SOS: tab Case & SOS — bản đang dùng (1 câu) + 30 dòng nhật ký + đếm "đang dùng" (1 câu UNION). QL chỉ xem. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh-case-sos' },
   /* QTV2-QUYEN: tab Quyền & nhật ký — nhật ký chung (thay /admin/overview) + đơn vị báo cáo ở tab Chi nhánh. */
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh' },
@@ -443,6 +445,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* CAU-HINH-CASE-SOS (11/11): 3 câu riêng của tab (bản đang dùng · nhật ký · đếm đang dùng) trên nền phiên như /admin/mo-sua-lich-test (12). */
+  'QT /admin/cau-hinh-case-sos': 15, 'QL /admin/cau-hinh-case-sos': 15,
   /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (đọc sổ, không ghi lại sổ việc) · panel một người mọi chi nhánh · panel Chưa phân công — đo 7 · 8 · 6 câu, trần max(đo + 10, ⌈đo × 1,3⌉). */
   'QT /phan-tich/giao-vien?ct=ft': 17, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 18, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 16,
   /* DEM-QUA-HAN (chủ SP 06/11 — quá hạn vẫn phải tính): Phân tích GV bảng / panel Việc đúng hạn / hồ sơ GV dựng Công việc "Tất cả" của chi nhánh (`viecQuaHanMo`,
@@ -1062,6 +1066,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* CAU-HINH-CASE-SOS (11/11): bản đang dùng (≤ 3 dòng) + ≤ 30 dòng nhật ký + nhóm đếm theo mã (≈ 40 mã) trên nền phiên (≈ 51 như mo-sua-lich-test). */
+  'QT /admin/cau-hinh-case-sos': 160, 'QL /admin/cau-hinh-case-sos': 160,
   /* Y-THUC-V2 (11/11): tab Ý thức lớp / HV — Báo PH theo LẦN + Nội dung trong câu phụ sẵn có; đo trước = sau (340 · 336 · 53 dòng ×1) → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /classes/3/y-thuc': 442, 'GVCN /classes/3/y-thuc': 437, 'GVBM /classes/3/y-thuc': 437, 'QL /students/1/y-thuc': 103, 'GVCN /students/1/y-thuc': 103,
   /* SỔ NGHĨA VỤ (PR-2): đo 333 · 49 · 58 dòng → max(đo + 50, ⌈đo × 1,3⌉). */

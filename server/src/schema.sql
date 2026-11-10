@@ -1252,7 +1252,8 @@ CREATE TABLE case_interventions (
   idempotency_key TEXT,               -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
   so_buoi INTEGER,                    -- PR-PA (§8): Số buổi (1–60) — chỉ Tutor, Tự học, Bổ trợ, Bổ trợ miễn phí; NULL = không đếm
   /* BO-QUA-XEP-MT: QL bỏ qua việc "Xếp lịch MTn" / "Nhập dự kiến thi" của PA này — mốc đã bỏ qua (`mt{n}` | `thi`), người, lúc. Chỉ ẩn việc. */
-  bo_qua_moc TEXT, bo_qua_boi INTEGER, bo_qua_luc TEXT
+  bo_qua_moc TEXT, bo_qua_boi INTEGER, bo_qua_luc TEXT,
+  pb_loai INTEGER                        -- CAU-HINH-CASE-SOS: phiên bản danh sách PA lúc tạo (NULL = bản gốc)
 );
 CREATE UNIQUE INDEX ux_case_interventions_khoa_gui ON case_interventions(recorded_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 -- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.
@@ -1993,7 +1994,8 @@ CREATE TABLE sos_coordination_actions (
   removed_by INTEGER REFERENCES users(id), removed_at TEXT,
   created_at TEXT NOT NULL, updated_at TEXT,
   noi_dung_luc_bao TEXT,                -- PR-PHH: JSON mảng 4 chuỗi Báo PH lúc xác nhận (chỉ bao_ph_tvv); NULL = việc cũ/loại khác
-  han_chon TEXT                         -- HAN-BAO-PH: hạn người dùng chọn của meeting CX (YYYY-MM-DD), NULL = mặc định
+  han_chon TEXT,                        -- HAN-BAO-PH: hạn người dùng chọn của meeting CX (YYYY-MM-DD), NULL = mặc định
+  pb_moc INTEGER                        -- CAU-HINH-CASE-SOS: phiên bản mốc SOS lúc sinh việc (NULL = bản gốc)
 );
 CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
 CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
@@ -2325,6 +2327,12 @@ CREATE TABLE IF NOT EXISTS bang_quy_doi (
   nguoi_id INTEGER REFERENCES users(id),
   tao_luc TEXT NOT NULL
 );
+
+-- CAU-HINH-CASE-SOS (rà PTA): đếm "Đang dùng" / xoá mục Quản trị thêm — đọc đúng dòng của mã, không quét cả bảng. Chỉ mục MỘT PHẦN (dòng sinh từ
+-- bản ≥ 2 — mã Quản trị thêm chỉ có ở đó): nhỏ, và không giành kế hoạch của câu khác (vd idx_sca_cho của việc Báo PH đang chờ).
+CREATE INDEX IF NOT EXISTS idx_case_issue_ma ON case_issues(taxonomy_code) WHERE taxonomy_version > 1;
+CREATE INDEX IF NOT EXISTS idx_iv_kind ON case_interventions(kind) WHERE pb_loai IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_sca_kind ON sos_coordination_actions(kind) WHERE pb_moc IS NOT NULL;
 
 -- Q-RL2a THÙNG RÁC (N24 ②): bản chụp mục đã xoá (Case, PA, vi phạm, tệp…) — Hoàn tác / Khôi phục ở Quản trị › Đã xoá trong 30 ngày (`platform/thungRac.ts`).
 CREATE TABLE thung_rac (

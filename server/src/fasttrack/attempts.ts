@@ -1123,7 +1123,7 @@ export function scoreHistoryOf(attemptId: number, chiTiet = false) {
       /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. OV-13k: nhận xét GV phụ trách cùng dạng (khoá `nhanXetPhuTrach`). */
       const khoa = l.action === 'score.nhan_xet' ? 'comment' : 'nhanXetPhuTrach';
       const doiNx = (before?.[khoa] ?? null) !== (after?.[khoa] ?? null);
-      const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
+      const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map((c) => issueLabel(c)).join(', ') || 'Trống';
       /* OV-13o: một lần lưu đổi CẢ nhận xét lẫn nhóm → hai dòng (dòng nhóm mang `phan: 'nhom'` — khoá riêng ở web). */
       const dong = (phan: 'nx' | 'nhom' | 'gv') => ({
         id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string,
@@ -2179,7 +2179,8 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
   const nx = coNx ? kiemNhanXet(body.nhanXetPhuTrach, TRAN_CHU.nhanXetMt,
     () => (conn.prepare(`SELECT nhan_xet_phu_trach AS c FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(attemptId) as any)?.c) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);
-  const nhomKiem = coNhom ? kiemNhomNguyenNhan(body.nhomNguyenNhan, 'speaking') : null;
+  /* CAU-HINH-CASE-SOS: nhóm ô đang có (Quản trị đã ẩn) vẫn giữ được. */
+  const nhomKiem = coNhom ? kiemNhomNguyenNhan(body.nhomNguyenNhan, 'speaking', null, nhomCuaO(attemptId, 'speaking')) : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   return tx(() => {
     /* RKC (N8 ③ không đòi điểm trước): GV phụ trách ghi nhận xét trước khi người chấm nhập điểm — chưa có dòng ô thì tạo dòng trống. */
@@ -2310,7 +2311,7 @@ export function saveScore(
   }
   const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham, laChamCheo(a.kind, skill)) : null) : undefined;
   const coNhom = patch.nhomNguyenNhan !== undefined;
-  const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill) : null;
+  const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill, null, nhomCuaO(attemptId, skill)) : null;   // CAU-HINH-CASE-SOS: giữ nhóm đã ẩn
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
   /* RKC: chưa tới tuần thi → người dời được lịch hỏi "Dời về tuần này" (dời trong giao dịch lưu, dưới); người khác: câu chỉ đường. */
@@ -2828,4 +2829,9 @@ function pendingView(attemptId: number, skill: string) {
   const r = pendingMove(attemptId, skill);
   if (!r) return null;
   return { id: r.id, decideBy: r.decide_by, toWeek: r.to_code ?? null, moveNo: r.move_no };
+}
+
+/** CAU-HINH-CASE-SOS: mã nhóm nguyên nhân ô đang có (một câu, chỉ khi người gửi đổi nhóm). */
+function nhomCuaO(attemptId: number, skill: string): string[] {
+  return docNhomNguyenNhan((db().prepare('SELECT nhom_nguyen_nhan AS n FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any)?.n);
 }
