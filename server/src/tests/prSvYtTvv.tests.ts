@@ -23,10 +23,9 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
   const board: any = await import('../yThuc/board.ts');
   const loaiYc: any = await import('../duyet/loaiYeuCau.ts');
   const { myWork } = await import('../worklist/mywork.ts');
-  const { dongBoThongBaoTuDong } = await import('../platform/thongBaoTuDong.ts');
-  const { thongBaoCua } = await import('../platform/thongBao.ts');
-  /** Chuông Báo PH của một người sau đồng bộ (như lúc mở chuông) — kèm `con_viec` (Cần làm) đúng câu của trang chuông. */
-  const chuong = (p: any) => { xoaNho(); dongBoThongBaoTuDong(p, TODAY); return (thongBaoCua(p.userId) as any[]).filter((n) => n.kind === 'bao_ph_xu_ly'); };
+  const { gomViecChuong } = await import('../../../shared/domain/chuong.ts');
+  /** CHUONG-V2: dòng "Báo PH vi phạm" của chuông = việc `bao_ph_yt` của chính người đó trong `/my-work` (không còn thông báo tự động). */
+  const chuong = (p: any) => { xoaNho(); return gomViecChuong(((myWork(p, {}) as any).dong ?? []) as any[]).filter((l) => l.loai === 'bao_ph_yt'); };
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const gvbm = P.w1Teacher; const gvcn = P.coreTeacher; const ql = P.mbManager;
@@ -82,7 +81,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(it.length === 1 && it[0].mine && it[0].ownerId === tvv.userId && it[0].due === addDays(TODAY, 4) && /^Báo PH · Report 1 · SVYT em/.test(it[0].tieuDe)
       && it[0].viecId === ds[0].id && it[0].urgency === 'normal' && it[0].statusLabel === 'Chưa báo', JSON.stringify(it));
     const tb = chuong(tvv);
-    assert(tb.length === 1 && tb[0].han === addDays(TODAY, 4) && /^Báo PH · Report 1/.test(tb[0].title) && tb[0].con_viec === 1 && tb[0].student_id === sid, JSON.stringify(tb));
+    assert(tb.length === 1 && tb[0].n === 1 && tb[0].quaHan === 0, 'chuông TVV: ' + JSON.stringify(tb));
     assert(viecToi(gvcn, sid).length === 0 && viecToi(ql, sid).length === 0, 'GVCN / QL "Của tôi" không có việc TVV giữ');
     assert(viecToi(ql, sid, { nguoi: 'tat-ca' }).some((x: any) => x.ownerId === tvv.userId), 'QL "Của GV" thấy việc của TVV');
   }));
@@ -104,7 +103,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     xuLy(gvcn, sid, [v1]);
     const it = viecToi(ql, sid);
     assert(it.length === 1 && it[0].mine && it[0].ownerId === ql.userId, 'QL giữ: ' + JSON.stringify(it));
-    assert(chuong(ql).some((n) => n.con_viec === 1), 'QL nhận chuông (một dòng gộp mọi việc QL giữ)');
+    assert(chuong(ql).length === 1, 'QL nhận chuông (một dòng loại Báo PH vi phạm)');
     const han = viecCua(sid)[0].han;
     const a = tvvMoi(); const b = tvvMoi();
     conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(a.userId, sid);
@@ -254,28 +253,25 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(viecCua(s3)[0].trang_thai === 'mo' && hang('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ?', viecCua(s3)[0].id).length === 0, 'lui cả lần ghi');
   }));
 
-  await checkAsync('SVYT-K11 · chuông Báo PH: MỘT dòng mỗi người (quá hạn đổi chữ; nhiều việc gộp "· n em") · đổi TVV → chuông sang người mới · em Tạm dừng → không đếm · ghi xong → hết', () => thu(() => {
+  await checkAsync('SVYT-K11 · chuông Báo PH (CHUONG-V2, từ `/my-work`): MỘT dòng loại mỗi người · quá hạn đếm · đổi TVV → sang người mới · em Tạm dừng → không đếm · ghi xong → hết', () => thu(() => {
     const tvv = tvvMoi(); const moi = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
     xuLy(gvcn, sid, [v1]);
     const [v] = viecCua(sid);
     conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -2), v.id);
-    chuong(tvv);
     const tb = chuong(tvv);
-    assert(tb.length === 1 && /^Quá hạn · Báo PH · Report 1/.test(tb[0].title) && tb[0].han === addDays(TODAY, -2) && tb[0].con_viec === 1, 'quá hạn 1 dòng: ' + JSON.stringify(tb));
+    assert(tb.length === 1 && tb[0].n === 1 && tb[0].quaHan === 1, 'quá hạn 1 dòng: ' + JSON.stringify(tb));
     conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(moi.userId, sid);
-    assert(chuong(moi).filter((n) => n.student_id === sid && n.con_viec === 1).length === 1, 'TVV mới có chuông');
-    assert(!(thongBaoCua(tvv.userId) as any[]).some((n) => n.kind === 'bao_ph_xu_ly' && n.con_viec === 1), 'TVV cũ (chưa mở chuông) không còn Cần làm');
-    assert(chuong(tvv).length === 0, 'TVV cũ mở chuông → dòng hết');
+    assert(chuong(moi).length === 1 && chuong(moi)[0].quaHan === 1, 'TVV mới có chuông');
+    assert(chuong(tvv).length === 0, 'TVV cũ hết dòng');
     conn.prepare("UPDATE students SET status = 'inactive' WHERE id = ?").run(sid);
-    assert(!(thongBaoCua(moi.userId) as any[]).some((n) => n.kind === 'bao_ph_xu_ly' && n.con_viec === 1), 'em Tạm dừng: không đếm');
-    assert(chuong(moi).length === 0, 'em Tạm dừng: đồng bộ xoá');
+    assert(chuong(moi).length === 0, 'em Tạm dừng: không đếm');
     conn.prepare("UPDATE students SET status = 'active' WHERE id = ?").run(sid);
     assert(chuong(moi).length === 1, 'quay lại: chuông lại');
     const s2 = moiEm(moi); xuLy(gvcn, s2, [nVp(s2, 1)[0]]);
     const gop = chuong(moi);
-    assert(gop.length === 1 && /^Quá hạn · Báo PH vi phạm · 2 em$/.test(gop[0].title) && gop[0].han === addDays(TODAY, -2), 'hai việc → MỘT dòng: ' + JSON.stringify(gop));
+    assert(gop.length === 1 && gop[0].n >= 1 && gop[0].quaHan === 1, 'hai việc → MỘT dòng loại: ' + JSON.stringify(gop));
     ghi(moi, [v.id], 'da_bao');
-    assert(chuong(moi)[0]?.title.startsWith('Báo PH · Report 1 ·') && chuong(moi)[0].con_viec === 1, 'còn một việc: dòng về tên em, hết "Quá hạn"');
+    assert(chuong(moi).length === 1 && chuong(moi)[0].quaHan === 0, 'còn một việc: hết quá hạn');
     ghi(moi, [viecCua(s2)[0].id], 'da_bao');
     assert(chuong(moi).length === 0, 'ghi xong hết → hết');
   }));

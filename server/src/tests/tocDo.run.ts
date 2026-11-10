@@ -36,11 +36,9 @@ const { listCases } = await import('../cases/cases.ts');
 const { standingFor } = await import('../students/standing.ts');   // RA-DOC-0611
 const { chiSoHoSoGv, phanTichGiaoVien } = await import('../phanTich/giaoVien.ts');   // RA-DOC-0611 · GIAM-DOC-0711a
 const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');   // RA-DOC-0611b
-const { muonTuViec, viecMuon } = await import('../platform/thongBaoTuDong.ts');   // RA-DOC-0611b
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
 const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');   // GIAM-DOC-0611f
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
-const td15d = await import('../platform/thongBaoTuDong.ts');   // OV-15d
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
 runSeed();
@@ -639,7 +637,7 @@ check('RA-DOC-0611 · standingFor nhớ theo em (tập con, khác thứ tự: 0 
   }
 });
 
-check('RA-DOC-0611b · /my-work mọi tài khoản: tập cha Case theo lớp (GV) giống hệt đọc cả hệ thống · chuông từ /my-work đủ = viecMuon', () => {
+check('RA-DOC-0611b · /my-work mọi tài khoản: tập cha Case theo lớp (GV) giống hệt đọc cả hệ thống', () => {
   const sai: string[] = [];
   for (const uid of TOAN_BO_TK) {
     const p = PRINCIPAL_CUA.get(uid)!;
@@ -648,9 +646,6 @@ check('RA-DOC-0611b · /my-work mọi tài khoản: tập cha Case theo lớp (G
     caseMoTapChaKhiKiem.tat = false;
     const moi = chayTrongRequest('GET', () => JSON.stringify(myWork(p, {})));
     if (cu !== moi) sai.push(`${uid}: myWork khác`);
-    const [tuViec, muon] = chayTrongRequest('GET', () => [
-      JSON.stringify([...muonTuViec(p, (myWork(p, {}).items ?? []) as any[], demoToday15d())]), JSON.stringify([...viecMuon(p, demoToday15d())])]);
-    if (tuViec !== muon) sai.push(`${uid}: chuông khác`);
   }
   caseMoTapChaKhiKiem.tat = false;
   assert(!sai.length, sai.slice(0, 10).join(' | '));
@@ -1750,35 +1745,6 @@ await checkAsync(`OV-15f · Xuất Excel danh sách HV mẫu Theo dõi SOS cả 
   console.log(`      (đo: ${sids.length} em, ${n} câu, ${soDongSql() - dongTruoc} dòng)`);
   assert(n <= TRAN_GHI_LO.xuatDanhSachSos, `${n} câu > trần ${TRAN_GHI_LO.xuatDanhSachSos}`);
 });
-
-for (const [vai, tran] of [['QL', TRAN_GHI_LO.dongBoThongBaoQL], ['GVCN', TRAN_GHI_LO.dongBoThongBaoGVCN], ['QT', TRAN_GHI_LO.dongBoThongBaoQT]] as const) {
-  check(`OV-15d · đồng bộ thông báo tự động (dongBoThongBaoTuDong) ${vai} ≤ ${tran} câu SQL`, () => {
-    const { dongBoThongBaoTuDong } = td15d;
-    const p = loadPrincipal(USER[vai]);
-    let n = 0, dong = 0, n2 = 0, dong2 = 0;
-    conn.exec('BEGIN IMMEDIATE');
-    try {
-      chayTrongRequest('GET', () => {
-        const truoc = soCauSql(), dongTruoc = soDongSql();
-        dongBoThongBaoTuDong(p, demoToday15d());
-        n = soCauSql() - truoc; dong = soDongSql() - dongTruoc;
-      });
-    } finally { conn.exec('ROLLBACK'); }
-    /* RA-DOC-0611b: đồng bộ sau `GET /my-work` — từ việc đã tính (không chạy lại `myWork`). */
-    conn.exec('BEGIN IMMEDIATE');
-    try {
-      chayTrongRequest('GET', () => {
-        const items = (myWork(p, {}).items ?? []) as any[];
-        const truoc = soCauSql(), dongTruoc = soDongSql();
-        dongBoThongBaoTuDong(p, demoToday15d(), items);
-        n2 = soCauSql() - truoc; dong2 = soDongSql() - dongTruoc;
-      });
-    } finally { conn.exec('ROLLBACK'); }
-    console.log(`      (đo ×3: ${n} câu, ${dong} dòng · từ /my-work: ${n2} câu, ${dong2} dòng)`);
-    assert(n <= tran, `${n} câu > trần ${tran}`);
-    assert(n2 <= TRAN_GHI_LO.dongBoTuMyWork, `từ /my-work ${n2} câu > trần ${TRAN_GHI_LO.dongBoTuMyWork}`);
-  });
-}
 
 await checkAsync(`PR-TOC · Thêm 35 em lớp FT (POST /intake/commit) ≤ ${TRAN_GHI_LO.themHocVien35FT} câu SQL, đủ lịch MT mặc định`, async () => {
   const r = await doGhi('QL', '/intake/commit', { classId: LOP_FT, rows: dongNhap('Tốc Độ FT', 35, true), idempotencyKey: 'pr-toc-35' });

@@ -53,7 +53,6 @@ export async function runPrCuoiKhoaTests(t: any) {
   const kv: any = await import('../normal/kyVong.ts');
   const ck: any = await import('../normal/cuoiKhoa.ts');
   const ss: any = await import('../fasttrack/skillSchedule.ts');
-  const tb: any = await import('../platform/thongBaoTuDong.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -107,26 +106,6 @@ export async function runPrCuoiKhoaTests(t: any) {
     assert(viec('2026-09-17').every((x) => x.urgency === 'today'), 'T5 phải "hôm nay"');
     assert(viec('2026-09-18').every((x) => x.urgency === 'overdue'), 'T6 phải quá hạn');
     assert(viec('2026-09-22').length === 3, 'sau CN vẫn còn việc (không chặn)');
-  }));
-
-  check('CK-1e · chuông QL: T2 (hạn T5) · T5 (hôm nay hạn) · T6 (quá hạn) — mỗi lớp mỗi mốc một dòng, mở lại không lặp', () => thu(() => {
-    const id = lop('FOU', '2026-08-03');
-    hocVien(id, 'FOU');
-    const dongBo = (ngay: string) => {
-      datNgay(ngay);
-      tb.dongBoThongBaoTuDong(QL, ngay);
-      return all(`SELECT id, dedup_key, title FROM notifications WHERE user_id = ? AND kind = 'chot_lo_trinh' AND entity_id = ?`, QL.userId, id);
-    };
-    const a = dongBo('2026-09-14');
-    assert(a.length === 1 && a[0].dedup_key.endsWith(':nhac') && /T5 17\/09/.test(a[0].title), JSON.stringify(a));
-    const b = dongBo('2026-09-16');
-    assert(b.length === 1 && b[0].id === a[0].id, 'T4 sinh chuông mới (lặp)');
-    const c = dongBo('2026-09-17');
-    assert(c.length === 1 && c[0].dedup_key.endsWith(':han') && /hôm nay/i.test(c[0].title), JSON.stringify(c));
-    const e = dongBo('2026-09-18');
-    assert(e.length === 1 && e[0].dedup_key.endsWith(':qua') && /Quá hạn/.test(e[0].title), JSON.stringify(e));
-    const f = dongBo('2026-09-20');
-    assert(f.length === 1 && f[0].id === e[0].id, 'CN sinh chuông quá hạn lần hai');
   }));
 
   /* BE Final 21/09 (thứ Hai tuần 10) — em Lên FT. */

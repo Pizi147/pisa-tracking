@@ -261,13 +261,12 @@ export async function runPrEnTests(t: any) {
    * hàm máy chủ sinh ra nó (chữ tiêu đề / nội dung là chữ thật của máy chủ), TRƯỚC `duLieu` (tên em / lớp / lý do mới là dữ liệu).
    * EN-TB soi thông báo của GVCN, GVBM + mỗi loại một người nhận; EN-TB-LOAI giữ tập loại không teo lại.
    */
-  const LOAI_TB_GV = ['cham_qua_han', 'case_chua_chot_pa', 'doi_lich_thuong', 'huy_lenh', 'lam_lai_ban_giao', 'phan_cong_moi', 'discipline'];
+  const LOAI_TB_GV = ['doi_lich_thuong', 'huy_lenh', 'lam_lai_ban_giao', 'phan_cong_moi', 'discipline'];
   const loiDung: string[] = [];
   {
     const TODAY = t.TODAY;
     const QL = P.mbManager;
     const thu = (ten: string, fn: () => void) => { try { fn(); } catch (e: any) { loiDung.push(`${ten}: ${e?.message ?? e}`); } };
-    const td: any = await import('../platform/thongBaoTuDong.ts');
     const mywork: any = await import('../worklist/mywork.ts');
     const { xuLyCaseMany } = await import('../cases/sosState.ts');
     const { loadPrincipal } = await import('../permissions.ts');
@@ -295,18 +294,6 @@ export async function runPrEnTests(t: any) {
         .run(sid, ma ? null : 'LT1', ma ?? 'FT', ma ? null : 6.5, TODAY, NOW).lastInsertRowid);
       return { sid, cy };
     };
-    /* cham_qua_han + case_chua_chot_pa: đồng bộ thông báo tự động (như mở chuông) cho GV có bài quá hạn / người phụ trách Case chưa chốt PA quá hạn. */
-    thu('cham_qua_han', () => {
-      const coQuaHan = (p: any) => (mywork.myWork(p, { chiNhom: new Set(['score']) }).items as any[]).some((x) => x.group === 'score' && x.mine && x.urgency === 'overdue');
-      td.dongBoThongBaoTuDong([P.w1Teacher, P.w2Teacher, P.lrTeacher, P.coreTeacher, P.subjectTeacher, P.sTeacher].find(coQuaHan), TODAY);
-    });
-    thu('case_chua_chot_pa', () => {
-      const mo = conn.prepare(`SELECT sc.id, sc.owner_user_id FROM sos_cases sc JOIN students s ON s.id = sc.student_id
-        WHERE sc.status != 'done' AND sc.owner_user_id IS NOT NULL AND sc.tam = 0 AND s.archived_at IS NULL`).all() as any[];
-      const xl = xuLyCaseMany(mo.map((c) => c.id), TODAY);
-      const qh = mo.find((c) => xl.get(c.id)?.cot === 'choDuyet' && xl.get(c.id)?.quaHan);
-      td.dongBoThongBaoTuDong(loadPrincipal(qh.owner_user_id), TODAY);
-    });
     /* doi_lich_thuong: QL dời một bài Progress Test của lớp thường → GVCN; bản cả lớp. */
     thu('doi_lich_thuong', () => {
       const a = get(`SELECT a.id, a.class_id, a.student_id, a.kind, a.attempt_no FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
