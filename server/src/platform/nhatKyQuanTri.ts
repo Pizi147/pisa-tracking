@@ -11,12 +11,12 @@ import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
 
-export const MUC_NHAT_KY = ['tai-khoan', 'quyen', 'mo-sua-lich', 'chuong-trinh', 'chi-nhanh', 'band'] as const;
+export const MUC_NHAT_KY = ['tai-khoan', 'quyen', 'mo-sua-lich', 'chuong-trinh', 'chi-nhanh', 'band', 'han'] as const;
 export type MucNhatKy = (typeof MUC_NHAT_KY)[number];
 /** `entity_type` mỗi mục ghi (kiểm trong mã: accounts / xoaTaiKhoan `users` + `user`, sysconfig `role` · `routes` · `programmes` · `branch`, moSuaLichTest `cai_dat`, bangQuyDoi). */
 export const ENTITY_CUA_MUC: Record<MucNhatKy, string[]> = {
   'tai-khoan': ['users', 'user'], quyen: ['role'], 'mo-sua-lich': ['cai_dat'],
-  'chuong-trinh': ['routes', 'programmes'], 'chi-nhanh': ['branch'], band: ['bang_quy_doi'],
+  'chuong-trinh': ['routes', 'programmes'], 'chi-nhanh': ['branch'], band: ['bang_quy_doi'], han: ['cau_hinh.han_mac_dinh'],
 };
 const CHI_QUAN_TRI: ReadonlySet<MucNhatKy> = new Set(['tai-khoan', 'quyen', 'mo-sua-lich']);
 const TRANG = 50;

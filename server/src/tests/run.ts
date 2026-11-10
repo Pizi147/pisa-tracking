@@ -9946,6 +9946,9 @@ await runPrSosTamPaTests({ check, assert, assertThrows, conn, TODAY, P, addDays,
 // ==================================================================== QTV2-QUYEN (chủ SP 11/11, Quản trị V2 PR-2: nhật ký chung, quyền theo vai)
 const { runPrQtv2QuyenTests } = bocTep('prQtv2Quyen', await import('./prQtv2Quyen.tests.ts'));
 await runPrQtv2QuyenTests({ check, assert, assertThrows, conn, P } as any);
+// ==================================================================== QTV2-HAN (chủ SP 11/11, Quản trị V2 PR-4: Hạn mặc định có phiên bản)
+const { runPrQtv2HanTests } = bocTep('prQtv2Han', await import('./prQtv2Han.tests.ts'));
+await runPrQtv2HanTests({ check, assert, assertThrows, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

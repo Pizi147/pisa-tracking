@@ -111,3 +111,4 @@ export * from './baiKeTiep.ts';
 export * from './diemDong.ts';
 export * from './bangLuot.ts';
 export * from './baoCaoPh.ts';
+export * from './hanMacDinh.ts';

@@ -4,7 +4,7 @@
  * Mọi thứ "ai đó xin Quản lý quyết" là MỘT thẻ trong bảng `yeu_cau_duyet`, hiện ở MỘT hộp (Công việc › Chờ duyệt).
  * Loại thẻ là một mảng: PR sau (SOS, YT4, LT2…) chỉ thêm khoá vào CUỐI `LOAI_YEU_CAU` + một dòng `LOAI_YC_META`.
  */
-import { hanTheoNgay, HAN_DUYET_NGAY } from './cases.ts';
+import { hanDuyetNgay, hanTheoNgay, HAN_DUYET_NGAY } from './cases.ts';
 import type { TrangThai } from './trangThai.ts';
 import { t } from '../i18n/index.ts';
 import type { DiemHv } from './diemDong.ts';
@@ -42,20 +42,22 @@ export type LoaiYcMeta = {
   kieuNut: KieuNut;
   /** Hạn duyệt mặc định (ngày, tính cả ngày gửi — M-16). `null` = hạn do luồng nguồn truyền vào (hoặc không có). */
   hanNgay: number | null;
+  /** QTV2-HAN: hạn lấy từ "QL trả lời Chờ duyệt" ở Hạn mặc định (bản tại ngày gửi); `hanNgay` = bản gốc. */
+  theoCauHinh?: true;
   /** Duyệt hàng loạt được (chỉ khi đang lọc đúng một loại). */
   hangLoat: boolean;
 };
 
 export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
-  de_xuat_pa: { phanLoai: 'hoc-thuat', nhan: t('Đề xuất PA'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: true },
-  xin_y_kien: { phanLoai: 'hoc-thuat', nhan: t('Xin ý kiến'), kieuNut: 'tra-loi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  de_xuat_pa: { phanLoai: 'hoc-thuat', nhan: t('Đề xuất PA'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: true },
+  xin_y_kien: { phanLoai: 'hoc-thuat', nhan: t('Xin ý kiến'), kieuNut: 'tra-loi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   lich_thi: { phanLoai: 'lich-thi', nhan: t('Dời lịch Test lần 2'), kieuNut: 'duyet-tu-choi', hanNgay: null, hangLoat: true },
-  sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất sửa'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất sửa'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: t('Case quá hạn xác nhận'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-SOS (S4-5, T23): GVBM xin không theo dõi Case SOS chờ nguyên nhân — Quản lý duyệt trong 5 ngày. */
   khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: t('Không cần theo dõi'), kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
   /* PR-YT4 (V4-9, V4-10): Meeting CX/GĐCN · WL 3 · Đình chỉ · Khác — QL duyệt trong 5 ngày. */
-  y_thuc: { phanLoai: 'y-thuc', nhan: t('Xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  y_thuc: { phanLoai: 'y-thuc', nhan: t('Xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* PR-YT4 (V4-4, V4-5, K3-37, Q9): một thẻ mỗi em — không duyệt, QL biết và nhắc. */
   bao_len_y_thuc: { phanLoai: 'bao-len', nhan: t('Ý thức quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo QL bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo QL lớp hết khoá còn em chưa có lệnh. */
@@ -68,9 +70,9 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   bao_len_mini_test: { phanLoai: 'bao-len', nhan: t('Mini Test chưa đạt'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   bao_len_cuoi_khoa: { phanLoai: 'bao-len', nhan: t('Final Test dời quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* LUAT-5 (luật 5, 21/10): GVCN xin thu hồi một lần xử lý đã lưu — lý do bắt buộc, QL duyệt trong 5 ngày. */
-  thu_hoi_y_thuc: { phanLoai: 'y-thuc', nhan: t('Thu hồi xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  thu_hoi_y_thuc: { phanLoai: 'y-thuc', nhan: t('Thu hồi xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* N37 (chủ SP 05/11): GV xin xoá Case SOS / PA theo quy chế (MỘT loại, đối tượng Case hoặc PA) — QL duyệt thì vào Thùng rác. */
-  xin_xoa: { phanLoai: 'hoc-thuat', nhan: t('Xin xoá'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, hangLoat: false },
+  xin_xoa: { phanLoai: 'hoc-thuat', nhan: t('Xin xoá'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* SOS-TAM-PA (chủ SP 11/11): GV giữ PA của mình khác PA quy chế lúc SOS chốt — QL duyệt trong 3 ngày (hạn = ngày gửi + 3), quá hạn máy chốt theo GV. */
   giu_pa_gv: { phanLoai: 'hoc-thuat', nhan: t('PA khác quy chế'), kieuNut: 'duyet-tu-choi', hanNgay: 4, hangLoat: false },
 };
@@ -81,7 +83,8 @@ export function laPhanLoai(x: unknown): x is PhanLoai {
 
 /** Hạn duyệt mặc định của một loại, tính từ ngày gửi (cả ngày gửi). `null` khi loại không có hạn mặc định. */
 export function hanDuyetMacDinh(loai: LoaiYeuCau, ngayXin: string): string | null {
-  const n = LOAI_YC_META[loai].hanNgay;
+  const m = LOAI_YC_META[loai];
+  const n = m.theoCauHinh ? hanDuyetNgay(ngayXin.slice(0, 10)) : m.hanNgay;
   return n ? hanTheoNgay(ngayXin.slice(0, 10), n) : null;
 }
 

@@ -8,6 +8,7 @@
  * Dải xét trên tỷ lệ CHƯA làm tròn: 0.595 là 50–59, 0.6 là 60–69, 0.6999 là 60–69, 0.7 là Pass. Làm tròn chỉ để hiện.
  * Hướng gợi ý KHÔNG lưu (sửa điểm thì gợi ý đổi theo); Quản lý quyết ở màn Chuyển lớp (Q30-3: không còn thẻ duyệt).
  */
+import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, laChuongTrinhGoc, programmeOf, tenMonNgan, type RegularSkill } from './normal.ts';
 import { roundToHalf } from './tongKetLoTrinh.ts';
 import { NORMAL_LADDER } from './fasttrack.ts';
@@ -76,7 +77,8 @@ export function hanXetLai(x: { ma: MaXetLai; tuanBatDau: string; moc: string }):
   const cong = (d: string, n: number) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
   const cnMoc = cong(mondayOfDate(x.moc.slice(0, 10)), 6);
   if (x.ma === 'd') return cong(cnMoc, 7);
-  const cnTuan2 = cong(mondayOfDate(x.tuanBatDau.slice(0, 10)), 13);
+  const t2 = mondayOfDate(x.tuanBatDau.slice(0, 10));
+  const cnTuan2 = cong(t2, lechTuThuHai(hanTai('xet_lai', t2)));   // QTV2-HAN (gốc CN tuần 2 = T2 + 13)
   return cnTuan2 > cnMoc ? cnTuan2 : cnMoc;
 }
 

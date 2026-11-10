@@ -2,6 +2,7 @@
  * PHÂN CÔNG GV CÓ HIỆU LỰC (PC-GV, đặc tả 2026-10-30-phan-cong-gv-design.md mục 2b): luật thuần — so hai bức tranh phân công theo Ô
  * (`gvcn` hoặc kỹ năng), áp các dòng đổi, đếm cho hai bảng tổng hợp, mốc xem tạm / hạn bàn giao. Máy chủ và web dùng chung (một nguồn).
  */
+import { hanTai } from './hanMacDinh.ts';
 import { hanTheoNgay } from './cases.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, kyNangPhuTrach } from './normal.ts';
 import { gopChonSau409, kiemPhanCong, moRongPhanCong, oPhanCong, type LoiPhanCong, type OPhanCong, type SlotPhanCong } from './phanCong.ts';
@@ -78,8 +79,8 @@ export function demPhanCong(lop: readonly { ft: boolean; slots: readonly SlotPha
 /** Hạn việc bàn giao: 5 ngày tính cả ngày tạo (hàm chung). GV cũ xem lớp cũ tối thiểu 7 ngày từ hiệu lực. */
 export const HAN_BAN_GIAO_GV_NGAY = 5;
 export const XEM_TAM_NGAY = 7;
-export const hanBanGiaoGv = (ngayTao: string) => hanTheoNgay(ngayTao, HAN_BAN_GIAO_GV_NGAY);
-export const xemDen = (hieuLuc: string) => addDaysIso(hieuLuc, XEM_TAM_NGAY);
+export const hanBanGiaoGv = (ngayTao: string) => hanTheoNgay(ngayTao, hanTai('ban_giao_doi_gv', ngayTao).ngay);   // QTV2-HAN
+export const xemDen = (hieuLuc: string) => addDaysIso(hieuLuc, hanTai('ban_giao_doi_gv', hieuLuc).xemNgay);
 
 /** Ai viết phiếu bàn giao: GV cũ; GV cũ đã nghỉ → GVCN lớp; chính GVCN nghỉ (hoặc lớp không GVCN) → QL chi nhánh (`id` null). */
 export function nguoiVietBanGiao(o: { cuNghi: boolean; nguoiCu: number; gvcn: number | null; gvcnNghi: boolean }): { loai: 'gv-cu' | 'gvcn' | 'ql'; id: number | null } {

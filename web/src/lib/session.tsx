@@ -4,7 +4,7 @@ import { api, invalidateAll } from './api.ts';
 import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
 import { quaRoiNhap } from '../ui/chanRoiNhap.tsx';
 import { dongBoNgonNgu } from './ngonNgu.ts';
-import { datChuNhap, type NavQuyen } from '@shared/domain/index.ts';
+import { datChuNhap, datNguonHan, type BanHan, type NavQuyen } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 const khoPhien = () => { try { return window.sessionStorage; } catch { return null; } };
@@ -54,6 +54,8 @@ export type Session = {
   dichBat?: boolean;
   /** Mở sửa lịch Test (chủ SP 06/11): công tắc Quản trị đang BẬT — người sửa được lịch Test bỏ chip khoá cuối tuần (máy chủ vẫn kiểm). */
   moSuaLichTest?: boolean;
+  /** QTV2-HAN: các bản Hạn mặc định — hàm hạn dùng chung trên web tính đúng như máy chủ. */
+  hanMacDinh?: BanHan[];
 };
 
 export type GocNhin = {
@@ -84,6 +86,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  useEffect(() => { const ds = session?.hanMacDinh; datNguonHan(ds?.length ? () => ds : null); }, [session]);
 
   const reload = useCallback(async () => {
     try {
