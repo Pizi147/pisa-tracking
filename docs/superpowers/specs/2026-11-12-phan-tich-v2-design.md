@@ -173,3 +173,11 @@ Từng kỹ năng (so Target overall) · Theo GV (QL / QT / CX, trọng số tu�
   - Từng kỹ năng: cũng số là chính, % nhỏ bên dưới.
   - **Danh sách kết quả:** cân lại cột (tên rộng, điểm L R W S OVR Target hẹp đều nhau, Kết quả và Bước tiếp đủ chỗ, không khoảng trống lệch).
 - **Giáo viên:** giữ như mockup vòng 1.
+
+## 12. Sau rà mockup vòng 2 (chủ SP 12/11) — mockup #1400 vòng 2 DUYỆT, trừ điểm dưới (không mockup lại)
+
+- **Bỏ bảng "Theo lớp" ở báo cáo Thi thật.** Thi thật còn: dải số → Từng kỹ năng + Theo GV → Danh sách kết quả.
+- **Bảng Theo lớp của Chi nhánh thêm cột "Thi thật"** (cả bảng Theo chi nhánh khi xem Tất cả chi nhánh): ba số **Vượt · Đạt · Chưa đạt** (trừ KCK, theo kỳ của Chi nhánh), tô màu như `lopKq` (Vượt xanh lá · Đạt xanh dương · Chưa đạt đỏ); số 0 mờ. Lớp không có em thi trong kỳ → ô trống. Bấm một lần ra danh sách em thi của lớp đó (cùng panel Thi thật). Hàng tổng = cùng số ô "Thi thật" bên trái.
+- PTA chọn: em tính vào lớp em học lúc thi (lớp của lộ trình có KQ, như danh sách kết quả nhóm theo lớp).
+- Tiêu đề cột ghi "Thi thật" + ⓘ ("Vượt · Đạt · Chưa đạt Target, trừ KCK"); 375: ba số một dòng, không xuống hàng.
+
