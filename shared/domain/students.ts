@@ -47,6 +47,8 @@ export type Route = (typeof ROUTES)[number];
 export const ROUTE_NAME: Record<Route, string> = { LT1: t('Lộ trình 1'), LT2: t('Lộ trình 2'), RF: 'Refire', KHAC: t('Khác') };
 /** P7 (N12, Q3): lộ trình "Khác" — chỉ của lộ trình (`learning_cycles.route`), không mở lớp; tên do người dùng ghi (`route_ten`), 0 MT, Target tuỳ chọn. */
 export const ROUTE_KHAC = 'KHAC';
+/** #9: mã lộ trình ngắn trên bảng / dòng em ("RF", "LT2"; mã KHAC ghi "Khác"). */
+export const maLoTrinhNgan = (route: string): string => (route === ROUTE_KHAC ? ROUTE_NAME.KHAC : route);
 /** Lộ trình mở được ở Bước tiếp › Lộ trình mới (thứ tự nút). */
 export const ROUTE_LO_TRINH_MOI = ['LT1', 'LT2', 'RF', 'KHAC'] as const;
 /** Lộ trình gợi ý ở panel Lộ trình mới: LT1 xong → LT2; còn lại giữ lộ trình cũ (không có → LT1). */

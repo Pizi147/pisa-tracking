@@ -165,8 +165,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
             <Truong nhan={t('Chương trình')}><input className="field w-full" value={kieu === 'FT' ? 'Fast Track' : kyHieuLop(ct, lt) ?? ct} disabled /></Truong>
             <Truong nhan={t('Chi nhánh')}><input className="field w-full" value={branch?.name ?? '…'} disabled /></Truong>
             {kieu === 'FT' && (
-              <div className="col-span-2"><Truong nhan={t('Lộ trình')} as="div">
-                <PhanDoan nhan={t('Lộ trình')} giaTri={loTrinh} onChon={setLoTrinh} muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
+              <div className="col-span-2"><Truong nhan={t('Lịch MT mặc định')} as="div">
+                <PhanDoan nhan={t('Lịch MT mặc định')} giaTri={loTrinh} onChon={setLoTrinh} muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
               </Truong></div>
             )}
           </div>
@@ -185,8 +185,9 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
         </Truong>
 
         {kieu === 'FT' ? (
-          <Truong nhan={t('Lộ trình')} as="div">
-            <PhanDoan nhan={t('Lộ trình')} giaTri={loTrinh} onChon={setLoTrinh}
+          /* #9 (G4-16): lộ trình theo EM (#1329) — lộ trình của lớp chỉ là lịch MT mặc định cho em mới vào. */
+          <Truong nhan={t('Lịch MT mặc định')} as="div">
+            <PhanDoan nhan={t('Lịch MT mặc định')} giaTri={loTrinh} onChon={setLoTrinh}
               muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name }))} />
           </Truong>
         ) : (

@@ -17,8 +17,10 @@ const TRUONG: { key: TruongDeXuat; nhan: string }[] = [
   { key: 'khac', nhan: t('Thông tin khác') },
 ];
 
-export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, sua, onClose, onDone }: {
+export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai, sua, boLoTrinh = false, onClose, onDone }: {
   studentId: number; studentName: string; lop?: string | null;
+  /** #9 (G4-12): người đổi thẳng được lộ trình (ô "Lộ trình đang học" ở Sửa thông tin) — bỏ lựa chọn Lộ trình, khỏi hai đường cho một việc. */
+  boLoTrinh?: boolean;
   truongDau?: TruongDeXuat;
   /** Giá trị đang có — hiện cạnh ô mới để người gửi thấy mình đổi từ đâu. */
   hienTai?: { target?: number | null; khongCamKet?: boolean; route?: string | null;
@@ -76,10 +78,11 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
           {busy ? t('Đang lưu…') : sua ? t('Lưu') : t('Gửi Quản lý')}
         </button>,
       }}>
-      <Khoi tieuDe={t('Đề xuất sửa')} luat={t('Target và lộ trình do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.')}>
+      <Khoi tieuDe={t('Đề xuất sửa')} luat={boLoTrinh ? t('Target do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.')
+        : t('Target và lộ trình do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.')}>
         <Truong nhan={t('Thông tin cần sửa')} batBuoc loi={lf.loiCua(loi, 'truong')}>
           <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'truong')}>
-            {TRUONG.map((x) => (
+            {TRUONG.filter((x) => !(boLoTrinh && x.key === 'lo-trinh' && sua?.truong !== 'lo-trinh')).map((x) => (
               <NutChon key={x.key} nho chon={truong === x.key} disabled={!!sua && sua.truong !== x.key} onClick={() => { setTruong(x.key); setMoi(''); }}>{dich(x.nhan)}</NutChon>
             ))}
           </div>

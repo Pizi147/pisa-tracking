@@ -5,13 +5,14 @@
 import { t } from '../i18n/index.ts';
 /* P7 SV-LO-TRINH (N11): một mục "Tạm dừng/ Kết thúc học" thay Tạm dừng / Thôi học + Lưu trữ + Bỏ lưu trữ + Học lại; "Quay lại học" cho em tạm dừng
    và em đã kết thúc (đường `hocLai` cũ). API cũ (`archive`, `unarchive`, `hoc-lai`) giữ ở máy chủ cho dữ liệu cũ — web không bày. */
-export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'chuyen-lop' | 'outcome' | 'tam-dung-ket-thuc' | 'quay-lai'
+export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'buoc-tiep' | 'chuyen-lop' | 'outcome' | 'tam-dung-ket-thuc' | 'quay-lai'
   | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop' | 'lich-su-sua';
 
 export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   info: t('Sửa thông tin'),
   'lo-trinh-tiep': t('Cuối khoá…'),
-  'lo-trinh': t('Lộ trình'),
+  'lo-trinh': t('Lịch MT'),   // #9 (G4-03): mục mở lịch MT hệ thống đề xuất — "Lộ trình" (LT1 · LT2 · RF) đổi ở Sửa thông tin
+  'buoc-tiep': t('Bước tiếp…'),
   'chuyen-lop': t('Chuyển lớp…'),
   'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
   outcome: t('Kết quả thi thật'),
@@ -49,7 +50,7 @@ export function coTheTamDungKetThuc(quyen: Pick<LopHocQuyen, 'tamDung' | 'ketThu
  * (TVV / CX, `student.edit_more`) thêm Kết quả thi thật; Tạm dừng/ Kết thúc học / Quay lại học theo cờ `lopHoc.quyen` của máy chủ.
  * Không có mục nào → nơi gọi không vẽ ⋯. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
-export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, lopHoc, cycle, status, coTheXoa, deXuatSua }: {
+export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, lopHoc, cycle, status, coTheXoa, deXuatSua, buocTiep }: {
   canEdit: boolean;
   /** PR-OV2b: có `student.edit_info` (không cần `student.edit`). */
   suaThongTin?: boolean;
@@ -65,6 +66,8 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
   coTheXoa?: boolean;
   /** PR-DUYET (T44): GV của lớp KHÔNG có `cycle.edit` (`viewer.coTheDeXuatSua`) — GVBM nay có ⋮ với đúng mục này. */
   deXuatSua?: boolean;
+  /** #9 (G4-10): đã chọn Bước tiếp sau thi + người xem đổi được (`buocTiep.chon && coTheChon`) — xem / đổi / Hoàn tác ngay từ ⋯. */
+  buocTiep?: boolean;
 }): { key: ViecQuanLy; nhan: string; phu?: string; nguyHiem?: boolean; keTruoc?: boolean | 'dam' | 'do' }[] {
   const quyen = lopHoc?.quyen;
   /* Hồ sơ Lưu trữ (`chiXem`): việc CẦN LỚP (Chuyển lớp, Lộ trình tiếp theo) đi qua Quay lại học. RKC (mở Q-B1): Lộ trình FT, Kết quả thi thật,
@@ -79,6 +82,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
   const td = coTheTamDungKetThuc(quyen, status);
   if (td.tamDung || td.ketThuc) dau.push('tam-dung-ket-thuc');
   if (quyen?.ghiLoTrinhTiep && !chiXem) sau.push('lo-trinh-tiep');
+  if (buocTiep) sau.push('buoc-tiep');
   if (canEdit && cycle && !ratio) sau.push('lo-trinh');
   /* OV-11d (HV-15): GVCN (`canEdit`) gửi đề xuất Target ngay ở Sửa thông tin — không thêm cửa thứ hai; GVBM giữ mục này. */
   if (deXuatSua && !canEdit) sau.push('de-xuat-sua');   // RKC-3b: mọi trạng thái — máy chủ cờ `coTheDeXuatSua` theo GV lớp ghi danh gần nhất

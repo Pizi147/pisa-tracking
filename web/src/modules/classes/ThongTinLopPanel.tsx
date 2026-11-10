@@ -162,7 +162,7 @@ function PhanLop({ lop, suaDuoc, onDone }: {
         <DongXem dong={[
           [t('Số lớp'), <span className="tabular-nums">{soCu ?? lop.code}</span>],
           [t('Chương trình'), lop.programmeName ?? lop.programmeCode ?? '—'],
-          ...(lop.programmeCode === 'FT' ? [[t('Lộ trình'), lop.route ?? '—'] as [string, ReactNode]] : []),
+          ...(lop.programmeCode === 'FT' ? [[t('Lịch MT mặc định'), lop.route ?? '—'] as [string, ReactNode]] : []),   // #9 (G4-16)
         ]} />
       ) : (
         <div className="space-y-3">
@@ -193,8 +193,8 @@ function PhanLop({ lop, suaDuoc, onDone }: {
             </select>
           </Truong>
           {ft && (
-            <Truong nhan={t('Lộ trình')} as="div">
-              <PhanDoan nhan={t('Lộ trình')} giaTri={loTrinh} onChon={setLoTrinh}
+            <Truong nhan={t('Lịch MT mặc định')} as="div">
+              <PhanDoan nhan={t('Lịch MT mặc định')} giaTri={loTrinh} onChon={setLoTrinh}
                 muc={(routes.data ?? []).map((r) => ({ v: r.code, nhan: r.code, title: r.name, tat: !doiDuoc && r.code !== loTrinh }))} />
               {!doiDuoc && (
                 <span className="mt-1 block text-xs text-slate-400">
