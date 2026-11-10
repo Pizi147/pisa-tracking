@@ -358,6 +358,6 @@ export async function runPrGvTests(t: YThucTestKit) {
     /* UI-TONG-QUAN: BranchPulse (Tổng quan CX cũ) đã gỡ; 6c-2: `BangGiaoVienChiNhanh` (0 nơi gọi) đã xoá — bảng GV chi nhánh ở Phân tích GV. */
     const header = doc('modules/platform/Header.tsx');
     assert(/roles\?\.includes\('teacher'\)/.test(header) && header.includes('/giao-vien/'), 'menu tài khoản: Hồ sơ giáo viên cho vai Giáo viên');
-    assert(doc('modules/platform/AdminPage.tsx').includes('Quyền dẫn xuất'), 'bảng quyền ghi quyền dẫn xuất (K1-53)');
+    assert(doc('modules/platform/QuyenTheoVai.tsx').includes('Quyền dẫn xuất'), 'bảng quyền ghi quyền dẫn xuất (K1-53)');   // QTV2-QUYEN: bảng quyền chuyển sang QuyenTheoVai
   });
 }

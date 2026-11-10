@@ -23,6 +23,7 @@ const COT: CotBang[] = [
 export function ChiNhanhAdmin() {
   const { data, loading, error, reload } = useApi<ChiNhanh[]>('/admin/chi-nhanh');
   const [sua, setSua] = useState<ChiNhanh | null>(null);
+  const donVi = useApi<{ id: number; name: string; kind: string }[]>('/admin/don-vi');
   const toast = useToast();
   if (error && error.status === 403) return <Forbidden message={t('Phần này chỉ dành cho Quản trị hệ thống.')} />;
   if (error) return <Card title={t('Chi nhánh')}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
@@ -51,6 +52,10 @@ export function ChiNhanhAdmin() {
             if (c.key === 'sdt') return <span className="tabular-nums">{chu(b.soDienThoai)}</span>;
             return <button type="button" className="btn btn-sm" onClick={(e) => { e.stopPropagation(); setSua(b); }}>{t('Sửa')}</button>;
           }} />
+      )}
+      {/* QTV2-QUYEN: đơn vị báo cáo (chỉ xem) chuyển từ tab Quyền & nhật ký về đây. */}
+      {donVi.data && donVi.data.length > 0 && (
+        <p className="m-0 text-sm text-slate-400">{t('Đơn vị báo cáo')}: <span className="text-slate-200">{donVi.data.map((d) => d.name).join(' · ')}</span></p>
       )}
       {sua && <SuaChiNhanh key={sua.id} cn={sua} onClose={() => setSua(null)} onLuu={async (v) => { await gui(sua, v); setSua(null); }} />}
     </>
