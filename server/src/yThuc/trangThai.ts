@@ -29,7 +29,7 @@ export type EmYThuc = {
   khai: { bac: number; thang: string | null; ghiChu: string; boi: string | null; luc: string; coTheSua: boolean; cycleId: number } | null;
   /** Em đã từng khai ở chuỗi nào chưa (Q8: không hỏi khai lại). */
   tungKhai: boolean;
-  /** Số lần xử lý (mọi trạng thái trừ nháp) trong chuỗi hiện tại — khai bậc chỉ khi 0 (Q7, H5). */
+  /** Số lần xử lý ĐÃ XONG (`done`) trong chuỗi hiện tại — khai bậc chỉ khi 0 (Q7, H5; rà 11/11 G3-3: đề xuất chờ / bị từ chối không tính). */
   soXuLyChuoi: number;
   viPham: Map<number, TrangThaiViPhamKq>;
   dsViPham: ViPhamEm[];
@@ -175,7 +175,9 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
        trong một chuỗi (dữ liệu cũ) → dòng ở lộ trình MỚI nhất, đúng bậc em đang thấy trước N36. */
     const khaiRow = (kb.get(sid) ?? []).filter((k) => trongChuoi.has(k.chuoi_cycle_id))
       .sort((a, b) => chuoi.indexOf(b.chuoi_cycle_id) - chuoi.indexOf(a.chuoi_cycle_id))[0] ?? null;
-    const bac = bacHienTai(xlChuoi.filter((m) => m.status === 'done'), khaiRow?.bac ?? null);
+    /* Rà 11/11 G3-3: chỉ lần `done` là lần xử lý — đề xuất chờ duyệt / bị từ chối / đã duyệt chưa làm không khoá Khai cấp bậc. */
+    const xongChuoi = xlChuoi.filter((m) => m.status === 'done');
+    const bac = bacHienTai(xongChuoi, khaiRow?.bac ?? null);
 
     /* PR-S3F #7: V4-9 cho đề xuất bất cứ lúc nào nên có thể hai đề xuất cùng lúc — đã duyệt (sớm nhất) thắng, rồi mới tới chờ duyệt (mới nhất). */
     const hanThucHien = (m: XuLyEm) => (m.quyetLuc && !g.tamDung ? hanTheoNgay(m.quyetLuc.slice(0, 10), HAN_Y_THUC_NGAY) : null);
@@ -203,10 +205,10 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       bac, keTiep: bacKeTiep(bac),
       khai: khaiRow ? {
         bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: khaiRow.khai_luc,
-        coTheSua: xlChuoi.length === 0, cycleId: khaiRow.chuoi_cycle_id,
+        coTheSua: xongChuoi.length === 0, cycleId: khaiRow.chuoi_cycle_id,
       } : null,
       tungKhai: (kb.get(sid) ?? []).length > 0,
-      soXuLyChuoi: xlChuoi.length,
+      soXuLyChuoi: xongChuoi.length,
       viPham, dsViPham: dsVp, xuLy: dsXl, thuHoi: tatCaXl.filter((m) => m.status === 'thu_hoi'),
       nhom: nhomEm({ ds, coDeXuatCho: !!dx, xuLyGanNhat: xong }, homNay),
       han: minHan(batBuoc), soMoi: moi.length, soBatBuoc: batBuoc.length, hanXem: minHan(moi),
