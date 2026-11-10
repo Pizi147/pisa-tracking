@@ -6,7 +6,7 @@
  * ra lệnh…, cùng đồng hồ nghiệp vụ với `tu` của bản). Việc sinh trước lần sửa tra ra bản cũ ⇒ giữ hạn cũ; không thêm cột chụp.
  * Nguồn danh sách bản: máy chủ (`platform/cauHinh.ts`, nhớ theo tiến trình) và web (phiên đăng nhập) gọi `datNguonHan`. Chưa đặt → bản gốc.
  */
-import { banTaiMoc, type BanCauHinh } from './phienBan.ts';
+import { banTaiMoc, type BanPhienBan } from './phienBan.ts';
 
 export const HAN_MAC_DINH_GOC = {
   /** Chấm Mock / Test lớp thường: thứ `thu` (2 = T2 … 8 = CN) của tuần lệch `tuanLech` so với tuần thi (T19: T4 tuần sau). */
@@ -49,7 +49,7 @@ export const nhanTruongHan = (ma: MaHan | string, truong: string) => `${(TEN_HAN
 export type HanMacDinh = { -readonly [K in MaHan]: { -readonly [F in keyof (typeof HAN_MAC_DINH_GOC)[K]]: number } };
 export const MA_HAN = Object.keys(HAN_MAC_DINH_GOC) as MaHan[];
 /** Một phiên bản: `tu` = NGÀY có hiệu lực (giờ VN, đồng hồ nghiệp vụ); bản gốc `tu` = '' (trước mọi việc). */
-export type BanHan = BanCauHinh<HanMacDinh>;
+export type BanHan = BanPhienBan<HanMacDinh>;
 
 const GOC: BanHan = { id: 0, tu: '', v: HAN_MAC_DINH_GOC as unknown as HanMacDinh };
 let nguon: () => readonly BanHan[] = () => [GOC];

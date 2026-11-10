@@ -5,7 +5,7 @@ import { api, datKhiDanhMucDoi, invalidateAll } from './api.ts';
 import { datNguoiDungKhung } from '../ui/CongTacKhung.tsx';
 import { quaRoiNhap } from '../ui/chanRoiNhap.tsx';
 import { dongBoNgonNgu } from './ngonNgu.ts';
-import { datChuNhap, datNguonBand, datNguonHan, type BanCauHinh, type BanHan, type KyVongFt, type NavQuyen, type NguongThuong } from '@shared/domain/index.ts';
+import { datChuNhap, datNguonBand, datNguonHan, type BanHan, type BanPhienBan, type KyVongFt, type NavQuyen, type NguongThuong } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 const khoPhien = () => { try { return window.sessionStorage; } catch { return null; } };
@@ -60,7 +60,7 @@ export type Session = {
   /** QTV2-HAN: các bản Hạn mặc định — hàm hạn dùng chung trên web tính đúng như máy chủ. */
   hanMacDinh?: BanHan[];
   /** QTV2-BAND: các bản Kỳ vọng MT FT + Ngưỡng lớp thường. */
-  kyVongFt?: BanCauHinh<KyVongFt>[]; nguongThuong?: BanCauHinh<NguongThuong>[];
+  kyVongFt?: BanPhienBan<KyVongFt>[]; nguongThuong?: BanPhienBan<NguongThuong>[];
 };
 
 export type GocNhin = {

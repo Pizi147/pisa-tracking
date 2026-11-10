@@ -10,7 +10,7 @@ import { db } from '../db.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import {
   HAN_MAC_DINH_GOC, KY_VONG_FT_GOC, MA_HAN, NGUONG_THUONG_GOC, PERMISSIONS, TEN_KY_VONG_FT, TEN_NGUONG_THUONG, datNguonBand, datNguonHan, kiemHanMacDinh,
-  kiemKyVongFt, kiemNguongThuong, ngayTheoGioVN, nhanTruongHan, type BanCauHinh, type HanMacDinh, type KyVongFt, type MaHan, type NguongThuong,
+  kiemKyVongFt, kiemNguongThuong, ngayTheoGioVN, nhanTruongHan, type BanPhienBan, type HanMacDinh, type KyVongFt, type MaHan, type NguongThuong,
 } from '../../../shared/domain/index.ts';
 import { badRequest, conflict, forbidden } from '../util.ts';
 import { nowNghiepVu } from '../demoConfig.ts';
@@ -46,10 +46,10 @@ type DinhNghia<T> = {
 function taoLoai<T>(d: DinhNghia<T>) {
   const entityType = `cau_hinh.${d.loai}`;
   /** Bản đã lưu (cũ → mới). `tu` = NGÀY giờ VN của lần lưu (lưu 00:00–06:59 sáng VN không áp ngược cho hôm trước). Dòng hỏng bỏ qua. */
-  const doc = (): BanCauHinh<T>[] => {
+  const doc = (): BanPhienBan<T>[] => {
     let rows: Dong[] = [];
     try { rows = db().prepare('SELECT id, du_lieu, tao_luc FROM cau_hinh_phien_ban WHERE loai = ? ORDER BY id').all(d.loai) as Dong[]; } catch { rows = []; }   // DB chưa migrate
-    const ds: BanCauHinh<T>[] = [{ id: 0, tu: '', v: d.goc }];
+    const ds: BanPhienBan<T>[] = [{ id: 0, tu: '', v: d.goc }];
     for (const r of rows) {
       let du: unknown;
       try { du = JSON.parse(r.du_lieu); } catch { console.error('[cau-hinh] bản hỏng', d.loai, r.id); continue; }
@@ -57,9 +57,9 @@ function taoLoai<T>(d: DinhNghia<T>) {
     }
     return ds;
   };
-  const nho = new WeakMap<object, { so: number | null; ds: BanCauHinh<T>[] }>();
+  const nho = new WeakMap<object, { so: number | null; ds: BanPhienBan<T>[] }>();
   /** Nhớ theo kết nối: trong request có phiên → làm mới khi mốc `tham-chieu` đổi; ngoài request → tới khi `xoaNho` (sau lưu; hàm định kỳ gọi đầu lượt). */
-  const ds = (): BanCauHinh<T>[] => {
+  const ds = (): BanPhienBan<T>[] => {
     const conn = db();
     const so = (layMoc() as { thamChieu?: number } | undefined)?.thamChieu ?? null;
     const c = nho.get(conn);

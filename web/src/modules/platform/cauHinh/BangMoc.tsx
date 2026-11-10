@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { t } from '@shared/i18n/index.ts';
-import { HANG_FT, laMeetingCx, type HangFt, type MocSos, type MocThuong, type MucSos, type OMoc } from '@shared/domain/index.ts';
+import { HANG_FT, RATIO_PASS_THRESHOLD, khoangDai, laMeetingCx, type HangFt, type MocSos, type MocThuong, type MucSos, type OMoc } from '@shared/domain/index.ts';
 import type { DuLieuCauHinh, LuuDs } from '../CauHinhCaseSos.tsx';
 import { DanhMucViec } from './BangDanhSach.tsx';
 import { Bang, OBang, type CotBang } from '../../../ui/Bang.tsx';
@@ -150,10 +150,11 @@ export function MocSosFt({ duLieu, chiXem, luuDs }: ChungProps) {
 type KhoaThuong = keyof MocThuong;
 const MOC_THUONG: { k: KhoaThuong; ten: string; phu: string; caseChu: string }[] = [
   { k: 'progress', ten: 'Progress Test', phu: t('môn trượt · FOU, BE, ELE'), caseChu: t('Case mỗi môn trượt · xác nhận 5 ngày') },
-  { k: 'final6069', ten: 'Final 60–69 %', phu: t('lên'), caseChu: t('Case mỗi môn trượt') },
-  { k: 'final5059Len', ten: 'Final 50–59 %', phu: t('QL cho lên'), caseChu: t('Case mỗi môn trượt') },
-  { k: 'final5059HocLai', ten: 'Final 50–59 %', phu: t('học lại'), caseChu: '—' },
-  { k: 'finalDuoi50', ten: 'Final < 50 %', phu: t('học lại / lên'), caseChu: '—' },
+  /* QTV2-BAND (PTA XM-1): khoảng % đọc bản Ngưỡng lớp thường mới nhất (Band & ngưỡng) — getter: tính lúc vẽ, không lúc nạp mô-đun. */
+  { k: 'final6069', get ten() { return `Final ${khoangDai('60_69', RATIO_PASS_THRESHOLD)}`; }, phu: t('lên'), caseChu: t('Case mỗi môn trượt') },
+  { k: 'final5059Len', get ten() { return `Final ${khoangDai('50_59', RATIO_PASS_THRESHOLD)}`; }, phu: t('QL cho lên'), caseChu: t('Case mỗi môn trượt') },
+  { k: 'final5059HocLai', get ten() { return `Final ${khoangDai('50_59', RATIO_PASS_THRESHOLD)}`; }, phu: t('học lại'), caseChu: '—' },
+  { k: 'finalDuoi50', get ten() { return `Final ${khoangDai('duoi_50', RATIO_PASS_THRESHOLD)}`; }, phu: t('học lại / lên'), caseChu: '—' },
   { k: 'khongDatKyVong', ten: t('Lên FT'), phu: t('không đạt kỳ vọng · Trung tâm'), caseChu: t('Case mỗi kỹ năng') },
 ];
 
