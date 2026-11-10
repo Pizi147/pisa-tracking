@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { DS_JSON, db, docNhoTheoId } from '../db.ts';
 import { badRequest, chuTuDo, nowIso, loi as loiHttp } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
@@ -134,18 +134,16 @@ export function apDungDieuChinh(iv: any, patch: DieuChinhPA, ctx: {
  * Mọi bản điều chỉnh của một Case, gom theo PA, cũ trước mới sau THEO THỨ TỰ GHI (`id`), không theo ngày cập nhật: lần sau có thể
  * ghi ngày cập nhật sớm hơn lần trước, và bản cũ của lần sau luôn là bản mới của lần trước. MỘT câu truy vấn cho cả Case.
  */
-export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh[]> {
-  const rows = db()
-    .prepare(
-      `SELECT r.*, a.full_name AS actor_name, ou.full_name AS old_perf_acc, nu.full_name AS new_perf_acc
+/** GIAM-COMPUTE: [tiền tố nhớ, SQL] của `lichSuDieuChinhCuaCase` cho `docNhoTheoId` — bảng kỹ năng hồ sơ HV nạp trước mọi Case một câu. */
+export const NAP_DIEU_CHINH = ['case-dieu-chinh:', `SELECT r.*, a.full_name AS actor_name, ou.full_name AS old_perf_acc, nu.full_name AS new_perf_acc
          FROM case_intervention_revisions r
          LEFT JOIN users a ON a.id = r.actor_user_id
          LEFT JOIN users ou ON ou.id = r.old_performer_user_id
          LEFT JOIN users nu ON nu.id = r.new_performer_user_id
-        WHERE r.case_id = ?
-        ORDER BY r.id`,
-    )
-    .all(caseId) as any[];
+        WHERE r.case_id IN (${DS_JSON})
+        ORDER BY r.id`] as const;
+export function lichSuDieuChinhCuaCase(caseId: number): Map<number, BanDieuChinh[]> {
+  const rows = docNhoTheoId(NAP_DIEU_CHINH[0], [caseId], NAP_DIEU_CHINH[1]).get(caseId) ?? [];
   const out = new Map<number, BanDieuChinh[]>();
   for (const r of rows) {
     const ban: BanDieuChinh = {

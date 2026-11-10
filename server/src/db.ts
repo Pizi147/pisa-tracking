@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } from './platform/hanGio.ts';
-import { daGhiDb, demCau, demDong, xoaNho } from './platform/nguCanhRequest.ts';
+import { daGhiDb, demCau, demDong, nhoTheoId, xoaNho } from './platform/nguCanhRequest.ts';
 import { HttpError } from './util.ts';
 
 /** Câu SQL vừa prepare gần nhất — chỉ để ghi log khi giao dịch hỏng (gán trong khối vá `prepare` bên dưới). */
@@ -449,6 +449,25 @@ export function theoLoJson<T extends number | string>(ds: readonly T[], fn: (jso
     const lo = ds.slice(i, i + co);
     fn(JSON.stringify(lo), lo);
   }
+}
+
+/**
+ * GIAM-COMPUTE: `sql` lọc `WHERE <cot> IN (${DS_JSON})` (một tham số JSON) — gom dòng theo cột `cot` (giữ thứ tự câu), nhớ THEO ID trong request GET
+ * (`nhoTheoId`). Hàm một id gọi `[id]`; nơi có cả tập (bảng kỹ năng hồ sơ HV) gọi trước với mọi id CÙNG `tienTo` + `sql` → mỗi id sau đó 0 câu.
+ * Ngoài bộ nhớ (request ghi, phép kiểm gọi thẳng) chạy thẳng như cũ. Dòng trả về là bản chép nông — nơi gọi sửa tại chỗ không hỏng nhớ.
+ */
+export function docNhoTheoId(tienTo: string, ids: readonly number[], sql: string, cot = 'case_id'): Map<number, any[]> {
+  return nhoTheoId(tienTo, [...ids], (thieu) => {
+    const out = new Map<number, any[]>();
+    theoLoJson(thieu, (json) => {
+      for (const r of db().prepare(sql).all(json) as any[]) {
+        const id = Number(r[cot]);
+        if (!out.has(id)) out.set(id, []);
+        out.get(id)!.push(r);
+      }
+    });
+    return out;
+  });
 }
 
 /**

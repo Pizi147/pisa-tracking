@@ -1,4 +1,4 @@
-import { DS_JSON, db, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, docNhoTheoId, laTrungKhoa, theoKhoaGui, theoLo, tx } from '../db.ts';
 import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
@@ -26,7 +26,7 @@ import {
 import { HttpError, addDays, badRequest, canXacNhan, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { nho, nhoTheoId, trongBoNho } from '../platform/nguCanhRequest.ts';
+import { coNho, nho, nhoTheoId, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
@@ -36,13 +36,13 @@ import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regu
 import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
-import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, xuLyCaseMany } from './sosState.ts';
+import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, sosCaseStateMany, xuLyCaseMany, type SosCaseState } from './sosState.ts';
 import { PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { ganMoTaTuO } from './nguyenNhanO.ts';
 import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
-import { apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
+import { NAP_DIEU_CHINH, apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { CAU_RUT_KTD, NUT_RUT_KTD, chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, rutKhongTheoDoiTrongTx, tenGiuaCua, traXacNhanNgam, xacNhanCase, xacNhanPaQuyChe } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
@@ -61,6 +61,38 @@ import { boSungYeuCau, chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/ye
  *   - `mock`: hệ thống tự mở khi có kỹ năng dưới kỳ vọng, `sos_level` là số kỹ năng đó.
  *   - `teacher_report`: giáo viên chủ động báo, `sos_level` để NULL và dùng `urgency`.
  */
+
+/**
+ * GIAM-COMPUTE: câu "mỗi Case một câu" của thẻ Case — [tiền tố nhớ, SQL lọc `case_id IN (${DS_JSON})`] cho `docNhoTheoId`. Hàm một Case đọc qua đây;
+ * bảng kỹ năng hồ sơ HV (`skillSupportBoard`) nạp trước cả tập Case một câu mỗi loại (trước: ~11 câu × số Case). ORDER BY giữ đúng thứ tự câu một Case cũ
+ * (chỉ mục `case_id` — thêm khoá phụ cho chắc khi câu cũ không có ORDER BY).
+ */
+const NAP_CASE = {
+  ten: ['case-ten:', `SELECT m.case_id, m.attempt_no, a.kind, cl.programme_code AS ct,
+              (SELECT cl2.programme_code FROM case_milestones m2 JOIN assessment_attempts a2 ON a2.id = m2.attempt_id JOIN classes cl2 ON cl2.id = a2.class_id
+                WHERE m2.case_id = m.case_id ORDER BY m2.id LIMIT 1) AS ct_goc
+         FROM case_milestones m
+         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+         LEFT JOIN classes cl ON cl.id = a.class_id
+        WHERE m.case_id IN (${DS_JSON}) AND m.attempt_no IS NOT NULL ORDER BY m.occurred_on, m.id`],
+  paChan: ['case-pa-chan:', `SELECT * FROM case_interventions WHERE case_id IN (${DS_JSON}) AND status != 'cancelled' ORDER BY id`],
+  mocMt: ['case-moc-mt:', `SELECT case_id, attempt_no, created_at FROM case_milestones WHERE case_id IN (${DS_JSON}) AND kind IN ('opened', 'repeat')
+      AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`],
+  nhom: ['case-nhom:', `SELECT case_id, taxonomy_code, role, observation FROM case_issues WHERE case_id IN (${DS_JSON}) AND role IN ('primary', 'secondary')
+               ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`],
+  paThe: ['case-pa-the:', `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name FROM case_interventions iv
+         LEFT JOIN users u ON u.id = iv.performer_user_id LEFT JOIN users rb ON rb.id = iv.recorded_by
+        WHERE iv.case_id IN (${DS_JSON}) AND iv.status != 'cancelled'
+        ORDER BY iv.status IN ('completed'), COALESCE(iv.started_date, iv.planned_date, iv.created_at) DESC, iv.id DESC`],
+  theoDoi: ['case-theo-doi:', `SELECT fu.*, u.full_name AS observer, pt.full_name AS phu_trach_account FROM case_followups fu
+         LEFT JOIN users u ON u.id = fu.observer_user_id LEFT JOIN users pt ON pt.id = fu.phu_trach_user_id
+        WHERE fu.case_id IN (${DS_JSON}) ORDER BY fu.observed_on DESC, fu.id DESC`],
+  dot: ['case-dot:', `SELECT DISTINCT m.case_id, m.attempt_no, rp.week_start, a.kind AS attempt_kind FROM case_milestones m
+         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
+         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
+        WHERE m.case_id IN (${DS_JSON}) AND m.attempt_no IS NOT NULL
+        ORDER BY m.attempt_no`],
+} as const;
 
 // ---------------------------------------------------------------- quyền
 
@@ -82,17 +114,8 @@ export function caseTitleOf(c: {
    */
   const own = (c.title ?? '').trim();
   if (own && c.origin_kind !== 'mock') return own;
-  const latest = db()
-    .prepare(
-      `SELECT m.attempt_no, a.kind, cl.programme_code AS ct,
-              (SELECT cl2.programme_code FROM case_milestones m2 JOIN assessment_attempts a2 ON a2.id = m2.attempt_id JOIN classes cl2 ON cl2.id = a2.class_id
-                WHERE m2.case_id = m.case_id ORDER BY m2.id LIMIT 1) AS ct_goc
-         FROM case_milestones m
-         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
-         LEFT JOIN classes cl ON cl.id = a.class_id
-        WHERE m.case_id = ? AND m.attempt_no IS NOT NULL`,
-    )
-    .all(c.id).sort(moiNhatTruoc as any)[0] as any;   // lớp thường: Final mới hơn Progress dù attempt_no nhỏ hơn
+  const latest = (docNhoTheoId(NAP_CASE.ten[0], [c.id], NAP_CASE.ten[1]).get(c.id) ?? [])
+    .sort(moiNhatTruoc as any)[0] as any;   // lớp thường: Final mới hơn Progress dù attempt_no nhỏ hơn
   /* PR-S5F-a: tên môn theo chương trình LÚC MỞ Case (FOU "G+V") — Case bàn giao sang BE vẫn một tên, không lúc "G+V" lúc "Writing". */
   const ctTen = latest?.ct_goc ?? latest?.ct ?? null;
   /* PR-SOS T21: Case SOS Fast Track = `[MT1] {phần giữa} [SOS 3]`; phần giữa người sửa được (`title`), mặc định `{kỹ năng} không đạt`. */
@@ -3275,10 +3298,12 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
      (lớp hiện tại trước, lớp của lượt sau). Một câu PA + `nguoiGiuKetQua` theo lô + một câu tên — không câu mỗi thẻ. */
   const caseTheoId = new Map(caseRows.map((c) => [c.id as number, c]));
   const lopCase = (c: any) => (lopDangHoc ?? c.attempt_class_id ?? null) as number | null;
-  const paBang: any[] = [];
-  theoLo([...caseTheoId.keys()], (lo, ph) => {
-    paBang.push(...conn.prepare(`SELECT id, case_id, nhom_bo_tro FROM case_interventions WHERE case_id IN (${ph})`).all(...lo) as any[]);
-  });
+  /* GIAM-COMPUTE: mọi PA của mọi Case trên bảng — MỘT câu dùng cho người giữ việc ở đây và PA của Case đại diện mỗi hàng (`dongKyNang`). */
+  const idCase = caseRows.map((c) => c.id as number);
+  const paChinh = docNhoTheoId('case-pa-chinh:', idCase, `SELECT iv.*, u.full_name AS performer_name_user FROM case_interventions iv
+             LEFT JOIN users u ON u.id = iv.performer_user_id
+            WHERE iv.case_id IN (${DS_JSON}) ORDER BY iv.id DESC`);
+  const paBang = idCase.flatMap((id) => paChinh.get(id) ?? []);
   const giuId = nguoiGiuKetQua(paBang.map((iv) => {
     const c = caseTheoId.get(iv.case_id);
     return { id: iv.id, topic: c.topic ?? null, nhomBoTro: iv.nhom_bo_tro ?? null, classId: lopCase(c), ownerUserId: c.owner_user_id ?? null };
@@ -3304,17 +3329,28 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * đổi kết luận. KHÔNG dùng `updated_at` chung: một lần chạy nền chạm vào bản ghi sẽ đẩy
    * Case đó lên đầu như thể vừa có người xử lý, và thứ tự trên màn hình thành vô nghĩa.
    */
-  const lastTouch = (caseId: number): string | null => {
-    const r = conn
-      .prepare(
-        `SELECT MAX(d) AS d FROM (
-            SELECT MAX(observed_on) d FROM case_followups WHERE case_id = ?
-            UNION ALL SELECT MAX(COALESCE(completed_date, started_date, planned_date)) FROM case_interventions WHERE case_id = ?
-            UNION ALL SELECT MAX(occurred_on) FROM case_milestones WHERE case_id = ?)`,
-      )
-      .get(caseId, caseId, caseId) as any;
-    return r?.d ?? null;
-  };
+  /* GIAM-COMPUTE: một câu cho mọi Case trên bảng (trước: một câu mỗi Case). Case không có dòng nào → null như cũ. */
+  const lanCham = docNhoTheoId('case-lan-cham:', idCase, `SELECT case_id, MAX(d) AS d FROM (
+            SELECT case_id, MAX(observed_on) d FROM case_followups WHERE case_id IN (SELECT value FROM json_each(?1)) GROUP BY case_id
+            UNION ALL SELECT case_id, MAX(COALESCE(completed_date, started_date, planned_date)) FROM case_interventions WHERE case_id IN (SELECT value FROM json_each(?1)) GROUP BY case_id
+            UNION ALL SELECT case_id, MAX(occurred_on) FROM case_milestones WHERE case_id IN (SELECT value FROM json_each(?1)) GROUP BY case_id)
+          GROUP BY case_id`);
+  const lastTouch = (caseId: number): string | null => lanCham.get(caseId)?.[0]?.d ?? null;
+  /* Số lượt MT của Case đại diện mỗi hàng — một câu cho mọi Case (trước: một câu mỗi hàng có Case; PA của nó: `paChinh` ở trên). */
+  const soLuotMt = docNhoTheoId('case-so-luot:', idCase, `SELECT case_id, COUNT(DISTINCT attempt_id) n FROM case_milestones
+            WHERE case_id IN (${DS_JSON}) AND attempt_id IS NOT NULL GROUP BY case_id`);
+  /* Phần thẻ Case (`caseCardOf`, `closeBlockers`, `caseTitleOf`) của mọi Case: nạp trước một câu mỗi loại; hàm một Case sau đó đọc nhớ (0 câu).
+     Chỉ khi bộ nhớ request mở (GET) — không thì hàm một Case tự đọc như cũ, nạp trước là thừa. */
+  if (coNho()) {
+    /* Chỉ Case thật sự hỏi: tên — Case không có tên riêng hoặc Case từ điểm (`caseTitleOf` trả tên riêng khỏi đọc); chặn Hoàn thành — Case chưa xong. */
+    const chiCase: Partial<Record<keyof typeof NAP_CASE, number[]>> = {
+      ten: caseRows.filter((c) => !((c.title ?? '').trim() && c.origin_kind !== 'mock')).map((c) => c.id as number),
+      paChan: caseRows.filter((c) => c.status !== 'done').map((c) => c.id as number),
+    };
+    for (const [k, [tienTo, sql]] of Object.entries(NAP_CASE)) docNhoTheoId(tienTo, chiCase[k as keyof typeof NAP_CASE] ?? idCase, sql);
+    docNhoTheoId(NAP_DIEU_CHINH[0], idCase, NAP_DIEU_CHINH[1]);
+  }
+  const sosCua = sosCaseStateMany(idCase);
 
   /* MH2 + PF6: bảng kỹ năng theo chương trình lộ trình — FOU G+V/P, Pre FOU một hàng "Tổng hợp". */
   const ctBang: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
@@ -3352,16 +3388,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
     let interventions: any[] = [];
     let milestoneCount = 0;
     if (primary) {
-      interventions = conn
-        .prepare(
-          `SELECT iv.*, u.full_name AS performer_name_user FROM case_interventions iv
-             LEFT JOIN users u ON u.id = iv.performer_user_id
-            WHERE iv.case_id = ? ORDER BY iv.id DESC`,
-        )
-        .all(primary.id) as any[];
-      milestoneCount = (conn
-        .prepare('SELECT COUNT(DISTINCT attempt_id) n FROM case_milestones WHERE case_id = ? AND attempt_id IS NOT NULL')
-        .get(primary.id) as any).n;
+      interventions = paChinh.get(primary.id) ?? [];
+      milestoneCount = soLuotMt.get(primary.id)?.[0]?.n ?? 0;
     }
     const openIv = interventions.filter((i) => i.status === 'planned' || i.status === 'started');
 
@@ -3492,7 +3520,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           canClose: canCloseCase(p, { class_id: lopDangHoc, student_id: studentId, topic: c.topic }),
           closeBlockers: c.status === 'done' ? [] : closeBlockers(c.id),
           /* Đủ thứ để vẽ MỘT THẺ CASE mà không phải gọi thêm một đường nữa (mục 1 · 2). */
-          ...caseCardOf(p, c.id, { ...c, class_id: lopCase(c), eff_student_id: studentId }, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua, giuKq),
+          ...caseCardOf(p, c.id, { ...c, class_id: lopCase(c), eff_student_id: studentId }, soBangChung, boTroMap.get(c.id) ?? null, xinYKienCua, giuKq, sosCua),
         }))
         .sort((a, b) => {
           const open = (x: typeof a) => (x.status === 'done' ? 1 : 0);
@@ -3560,33 +3588,17 @@ function luotCuaCase(caseId: number): LuotCase | null {
 }
 
 function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<number, number>, boTro: BoTroDto | null,
-  xinYKienCua: ReadonlyMap<number, unknown>, giuKq: ReadonlyMap<number, { id: number | null; ten: string | null }>) {
+  xinYKienCua: ReadonlyMap<number, unknown>, giuKq: ReadonlyMap<number, { id: number | null; ten: string | null }>, sosCua: ReadonlyMap<number, SosCaseState>) {
   const conn = db();
   const today = demoToday();
 
   /* Hotfix 15/10 (L2): nhóm chính + phụ + nhận xét (Case MT: nhận xét của bài) cho dòng phụ ở hồ sơ HV. */
-  const nhomCase = conn
-    .prepare(`SELECT taxonomy_code, role, observation FROM case_issues WHERE case_id = ? AND role IN ('primary', 'secondary')
-               ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`)
-    .all(caseId) as any[];
+  const nhomCase = docNhoTheoId(NAP_CASE.nhom[0], [caseId], NAP_CASE.nhom[1]).get(caseId) ?? [];
   const issue = nhomCase.find((i) => i.role === 'primary');
 
-  const ivs = conn
-    .prepare(
-      `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name FROM case_interventions iv
-         LEFT JOIN users u ON u.id = iv.performer_user_id LEFT JOIN users rb ON rb.id = iv.recorded_by
-        WHERE iv.case_id = ? AND iv.status != 'cancelled'
-        ORDER BY iv.status IN ('completed'), COALESCE(iv.started_date, iv.planned_date, iv.created_at) DESC, iv.id DESC`,
-    )
-    .all(caseId) as any[];
+  const ivs = docNhoTheoId(NAP_CASE.paThe[0], [caseId], NAP_CASE.paThe[1]).get(caseId) ?? [];
 
-  const follows = conn
-    .prepare(
-      `SELECT fu.*, u.full_name AS observer, pt.full_name AS phu_trach_account FROM case_followups fu
-         LEFT JOIN users u ON u.id = fu.observer_user_id LEFT JOIN users pt ON pt.id = fu.phu_trach_user_id
-        WHERE fu.case_id = ? ORDER BY fu.observed_on DESC, fu.id DESC`,
-    )
-    .all(caseId) as any[];
+  const follows = docNhoTheoId(NAP_CASE.theoDoi[0], [caseId], NAP_CASE.theoDoi[1]).get(caseId) ?? [];
   /* PR-S2 (S2): lịch sử điều chỉnh, một truy vấn cho cả Case (gộp nhiều Case: xem plan PR-S2 Q18). */
   const revs = lichSuDieuChinhCuaCase(caseId);
   const mtKe = mtKeTheoPa(caseId);
@@ -3680,7 +3692,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     };
   });
 
-  const sos = sosCaseState(caseId);
+  const sos = sosCua.get(caseId) ?? sosCaseState(caseId);
   const v4 = {
     status: c.status, fromSos: sos.fromSos, hasCause: sos.hasCause, laMt: sos.laMt, dismissed: !!sos.dismissed, systemClosed: !!c.system_close_reason,
     choDuyetKhongTheoDoi: !!sos.choDuyetKhongTheoDoi, coPaChoXacNhan: sos.coPaChoXacNhan, choDoiPa: sos.choDoiPa, hanXacNhan: sos.dueOn, tam: sos.tam,
@@ -3693,15 +3705,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     actionDue: pl.actionDue, followupDue: pl.followupDue, choDuyet: pl.pendingApproval, mienPhi: pl.kind === 'bo_tro_mien_phi',
   })), today, hanThemPa(c))   // OV-11c (HV-14);
   /* Lượt đánh giá mà Case này đã đi qua — "MT2 · 17/08" ở chân thẻ (lớp thường: "Giữa khoá"/"Cuối khoá" thay MT{n}). */
-  const attempts = (conn
-    .prepare(
-      `SELECT DISTINCT m.attempt_no, rp.week_start, a.kind AS attempt_kind FROM case_milestones m
-         LEFT JOIN assessment_attempts a ON a.id = m.attempt_id
-         LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
-        WHERE m.case_id = ? AND m.attempt_no IS NOT NULL
-        ORDER BY m.attempt_no`,
-    )
-    .all(caseId) as any[])
+  const attempts = (docNhoTheoId(NAP_CASE.dot[0], [caseId], NAP_CASE.dot[1]).get(caseId) ?? [])
     .map((r) => ({ attemptNo: r.attempt_no as number, week: r.week_start ?? null, attemptKind: r.attempt_kind ?? null }));
 
   return {
@@ -4843,7 +4847,7 @@ export function closeBlockers(caseId: number): string[] {
 
 /** PR-SOS (K3 §4a, K3-09): chặn Hoàn thành — PA theo quy chế chưa khép thì ẨN nút (`an`) + một dòng; còn lại lý do như cũ. */
 export function chanHoanThanhCua(caseId: number) {
-  const rows = db().prepare(`SELECT * FROM case_interventions WHERE case_id = ? AND status != 'cancelled'`).all(caseId) as any[];
+  const rows = docNhoTheoId(NAP_CASE.paChan[0], [caseId], NAP_CASE.paChan[1]).get(caseId) ?? [];
   const mtKe = mtKeTheoPa(caseId);
   const mtCuoi = rows.some((r) => r.preset === 1 && r.moc_quy_che === 'until_exam') ? mtCuoiNho((db().prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(caseId) as any)?.cycle_id) : null;
   return chanHoanThanh(rows.map((r) => ({
@@ -4854,8 +4858,7 @@ export function chanHoanThanhCua(caseId: number) {
 
 /** Số MT kế tiếp của lượt đã sinh mỗi PA quy chế: mốc `opened`/`repeat` mới nhất không muộn hơn PA. MỘT câu cho cả Case. */
 export function mtKeTheoPa(caseId: number): (iv: { created_at: string }) => number | null {
-  const moc = db().prepare(`SELECT attempt_no, created_at FROM case_milestones WHERE case_id = ? AND kind IN ('opened', 'repeat')
-      AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`).all(caseId) as any[];
+  const moc = docNhoTheoId(NAP_CASE.mocMt[0], [caseId], NAP_CASE.mocMt[1]).get(caseId) ?? [];
   return (iv) => {
     const m = moc.find((x) => x.created_at <= iv.created_at) ?? moc[moc.length - 1];
     return m ? m.attempt_no + 1 : null;
