@@ -3,8 +3,18 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrYtGonTests(t: YThucTestKit) {
-  const { checkAsync, assert, conn, TODAY, P, classId } = t;
+  const { check, checkAsync, assert, conn, TODAY, P, classId } = t as any;
   console.log('\nYT-GON · Khai cấp bậc khi đề xuất chờ / bị từ chối');
+
+  const { locCanLam } = await import('../../../shared/domain/index.ts') as any;
+  check('GON-0 · G3-14 locCanLam: một em một dòng (bỏ dòng không phải việc mình khi em có việc của mình; Xong bỏ khi em còn dòng) · số = em có việc của mình', () => {
+    /* GVCN: em 1 Mới (của mình) + Chờ TVV (không) · em 2 chỉ Chờ TVV · em 3 Mới + Xong · em 4 chỉ Xong. */
+    const r = locCanLam([[{ sid: 1, cuaToi: true }, { sid: 3, cuaToi: true }], [{ sid: 1, cuaToi: false }, { sid: 2, cuaToi: false }]], [{ sid: 3 }, { sid: 4 }]);
+    assert(JSON.stringify(r.nhom.map((ds: any[]) => ds.map((x) => x.sid))) === '[[1,3],[2]]' && JSON.stringify(r.xong.map((x: any) => x.sid)) === '[4]' && r.soEm === 2, JSON.stringify(r));
+    /* TVV: em 1 Mới (không) + Chờ TVV (của mình) → chỉ dòng TVV. */
+    const v = locCanLam([[{ sid: 1, cuaToi: false }], [{ sid: 1, cuaToi: true }]], []);
+    assert(JSON.stringify(v.nhom.map((ds: any[]) => ds.map((x) => x.sid))) === '[[],[1]]' && v.soEm === 1, JSON.stringify(v));
+  });
 
   const thu = async (fn: () => void | Promise<void>) => { conn.exec('BEGIN IMMEDIATE'); try { await fn(); } finally { conn.exec('ROLLBACK'); } };
   const intake = await import('../classes/intake.ts');
