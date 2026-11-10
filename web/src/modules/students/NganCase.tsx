@@ -24,12 +24,14 @@ export type { ViewCase };
  * mục — không view riêng, không panel lồng panel). Tải `/cases/{id}` MỘT lần; lưu tại chỗ thay dữ liệu bằng Case máy chủ trả (không tải lại).
  * Trong cột hồ sơ HV (`KhungTrongCot`, N33 ①): cùng thân, không vỏ, không chân.
  */
+export type DaXoaCase = { thungRacId: number | null; ten: string; soPa: number };
+
 export function NganCase(p: Parameters<typeof ThanNganCase>[0]) {
   /* Đổi Case khi panel còn mở (thông báo, đổi `?case=`) → dựng lại — form, chữ của Case trước không mang sang Case sau. */
   return <ThanNganCase key={p.caseId} {...p} />;
 }
 
-function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, veNguon, onTiep, kyNangTiep = null }: {
+function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, onDaXoa, veNguon, onTiep, kyNangTiep = null }: {
   /** U03 A2: Case kỹ năng kế của em — Ghi kết quả có "Lưu · kỹ năng tiếp ›". */
   kyNangTiep?: { ten: string; di: () => void } | null;
   /** Giữ chữ ký cũ (nơi gọi chưa đổi) — nút việc ở dòng tóm tắt cột hồ sơ HV; panel v16 không còn nút việc riêng ở chân. */
@@ -41,6 +43,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   viecBanDau?: ViewCase;
   hocVien?: string | null; lop?: string | null;
   onClose: () => void; onChanged?: () => void;
+  /** P1 G2-01: nơi gọi giữ dải "Đã xoá … Hoàn tác" (cột Case hồ sơ HV — danh sách tải lại gỡ Ngăn Case của Case vừa xoá). Không truyền = dải trong Ngăn. */
+  onDaXoa?: (x: DaXoaCase) => void;
   /** Nơi mở giữ view bằng state (Panel một em, panel việc) — "‹ {tên em}" về đúng nơi đó. */
   veNguon?: { nhan: string; onClick: () => void };
   /** Việc kế của danh sách nơi mở (Công việc) — nút chính "Việc tiếp ›" ở chân. */
@@ -57,7 +61,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const [luu, setLuu] = useState<TtLuuCase | null>(null);
   const [formMo, setFormMo] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<DaLuuPanel | null>(null);
-  const [daXoa, setDaXoa] = useState<{ thungRacId: number | null; ten: string; soPa: number } | null>(null);
+  const [daXoa, setDaXoa] = useState<DaXoaCase | null>(null);
   const [suaTen, setSuaTen] = useState(false);
   /* Lối vào → phần mở sẵn (v16 i2). Đường cũ trên URL (`?panel=ghi-ket-qua:12`) vẫn mở đúng phần. */
   const [dich] = useState<DichCase | null>(() => {
@@ -156,7 +160,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
           </div>
         ) : (
           <ThanCase data={data} setData={setData} reload={reload} onChanged={onChanged} dich={dich} bao={bao} kyNangTiep={kyNangTiep}
-            onDaXoaCase={(x) => { setDaXoa(x); onChanged?.(); }} />
+            onDaXoaCase={(x) => { if (onDaXoa) onDaXoa(x); else setDaXoa(x); onChanged?.(); }} />
         )}
         {laTvvCx && ph && (chuPhuHuynh(ph) || ph.parentPhone) && !daXoa && (
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[10px] border px-3 py-2.5 text-sm text-slate-200" style={{ borderColor: 'var(--line)' }}>

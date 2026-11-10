@@ -9136,6 +9136,9 @@ const { runPrQrl2cYThucTests } = bocTep('prQrl2cYThuc', await import('./prQrl2cY
 await runPrQrl2cYThucTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 const { runPrQrl2cDuyetTests } = bocTep('prQrl2cDuyet', await import('./prQrl2cDuyet.tests.ts'));
 await runPrQrl2cDuyetTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== P1-CASE (rà toàn bộ 11/11: xoá Case ở hồ sơ HV giữ Hoàn tác)
+const { runPrP1CaseTests } = bocTep('prP1Case', await import('./prP1Case.tests.ts'));
+await runPrP1CaseTests({ check, assert } as any);
 const { runPrThungRacTests } = bocTep('prThungRac', await import('./prThungRac.tests.ts'));
 await runPrThungRacTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 
