@@ -162,7 +162,8 @@ export function transitionPlan(p: Principal, classId: number) {
   const tlPg = tyLeTongLo([...luotPg.values()].map((x) => x.id));
   const progressCua = (sid: number) => {
     const l = luotPg.get(sid), x = l ? tlPg.get(l.id) : undefined;
-    return l && x ? { tuan: l.tuan, scored: x.scored, required: x.required, monTruot: x.monTruot, tyLe: x.tyLe } : null;
+    /* MOCKUP-1111 màn 3 (chủ SP 11/11): chưa có Final → hộp điểm ghi % + câu đúng / tổng từng môn của lượt Progress — `mon` cùng lần tính, 0 câu thêm. */
+    return l && x ? { tuan: l.tuan, scored: x.scored, required: x.required, monTruot: x.monTruot, tyLe: x.tyLe, mon: x.mon } : null;
   };
   const nhanXet = new Map(ft ? [] : (conn.prepare('SELECT student_id, nhan_xet, sua_luc FROM danh_gia_dau_ra WHERE class_id = ?').all(classId) as any[])
     .filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId, studentId: r.student_id }))

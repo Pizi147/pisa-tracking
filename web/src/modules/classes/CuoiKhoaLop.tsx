@@ -38,7 +38,7 @@ type Em = {
   id: number; fullName: string; target: number | null; kck: boolean;
   /** N36: bậc vi phạm hiện tại (0 = chưa bậc; chỉ Quản lý nhận). */ bacYThuc?: number;
   cuoiKhoa: { tyLe: number | null; scored: number; required: number; nguong: number | null; mon: { skill: string; ratio: number | null; dung: number | null; tong: number | null }[]; goiY: GoiYCuoiKhoa | null } | null;
-  progress: { tuan: string | null; scored: number; required: number; monTruot: string[]; tyLe: number | null } | null;
+  progress: { tuan: string | null; scored: number; required: number; monTruot: string[]; tyLe: number | null; mon?: { skill: string; ratio: number | null; dung: number | null; tong: number | null }[] } | null;
   lenh: Lenh | null; nhap?: Nhap | null; nhanXet: string | null; nhanXetLuc: string | null;
   kqdr: { goiY: { overall: number; dat: boolean; monTruot: RegularSkill[] } | null; mt0: { overall: number } | null; moTay: boolean;
     bands: Record<RegularSkill, number | null> | null; chot: KetLuanKv | null } | null;
@@ -347,29 +347,30 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const nguong = c?.nguong ?? RATIO_PASS_THRESHOLD;
     const coFinal = !!g && c?.tyLe != null;
     const p = e.progress;
+    /* Chưa Final (chủ SP 11/11): hộp điểm dùng lượt Progress — % tổng + câu đúng / tổng từng môn; em chưa có lượt nào giữ "—". */
     const theoProgress = !coFinal && !(c && c.scored > 0) && !!p && p.scored > 0;
-    const dsMon = c?.mon.length ? c.mon : REGULAR_SKILLS.map((skill) => ({ skill, ratio: null, dung: null, tong: null }));
+    const monTrong = REGULAR_SKILLS.map((skill) => ({ skill, ratio: null, dung: null, tong: null }));
+    const dsMon = theoProgress ? (p!.mon?.length ? p!.mon : monTrong) : c?.mon.length ? c.mon : monTrong;
     const phu = coFinal ? null : c && c.scored > 0 ? t('{a}/{b} môn', { a: c.scored, b: c.required || 4 })
-      : p && p.scored > 0 ? `Progress ${p.tuan ? shortDate(p.tuan, h) : ''}` : null;
+      : theoProgress ? [`Progress ${p!.tuan ? shortDate(p!.tuan, h) : ''}`.trim(), p!.tyLe != null ? `${Math.round(p!.tyLe * 100)} %` : null].filter(Boolean).join(' · ') : null;
     return (
       <span className="inline-grid gap-1.5 rounded-[10px] border px-2.5 py-2" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}
         role="group" aria-label={t('Kết quả · {ten}', { ten: e.fullName })}>
         <span className="flex items-baseline gap-2 whitespace-nowrap">
           {coFinal
-            ? <b className={`text-lg font-bold tabular-nums ${g!.dai === 'dat' ? 'text-kq-bang' : 'text-kq-duoi'}`}>{g!.dai === 'dat' ? '✓' : '✗'} {Math.round(c!.tyLe! * 100)} %</b>
+            ? <b className={`text-lg font-bold tabular-nums ${g!.dai === 'dat' ? 'text-kq-vuot' : 'text-kq-duoi'}`}>{g!.dai === 'dat' ? '✓' : '✗'} {Math.round(c!.tyLe! * 100)} %</b>
             : <b className="text-[15px] font-bold text-slate-100">{t('Chờ Final')}</b>}
           {phu && <span className="text-xs font-medium tabular-nums text-slate-400">{phu}</span>}
         </span>
         <span className="grid grid-cols-[repeat(4,68px)] gap-1 max-sm:grid-cols-[repeat(4,minmax(0,1fr))]">
           {dsMon.map((m) => {
-            const truotProgress = theoProgress && p!.monTruot.includes(m.skill);
-            const kq = m.ratio != null ? (m.ratio < nguong ? 'duoi' : 'dat') : theoProgress ? (truotProgress ? 'duoi' : 'dat') : null;
+            const kq = m.ratio != null ? (m.ratio < nguong ? 'duoi' : 'dat') : null;
             const so = m.ratio != null ? (m.dung != null && m.tong != null ? `${m.dung}/${m.tong}` : `${Math.round(m.ratio * 100)}`) : '';
             return (
               <span key={m.skill} className="grid justify-items-center rounded-md border py-0.5" title={tenMonNgan(ma, m.skill)}
-                style={{ background: 'var(--surface)', borderColor: kq === 'duoi' ? 'rgb(var(--bad-rgb) / .45)' : 'var(--line)' }}>
+                style={{ background: 'var(--surface)', borderColor: kq === 'duoi' ? 'rgb(var(--kq-duoi-rgb) / .45)' : kq === 'dat' ? 'rgb(var(--kq-vuot-rgb) / .35)' : 'var(--line)' }}>
                 <span className="text-xs font-medium text-faint">{tenMonNgan(ma, m.skill)}</span>
-                <b className={`whitespace-nowrap text-[13px] font-bold tabular-nums ${kq === 'duoi' ? 'text-kq-duoi' : kq === 'dat' ? 'text-kq-bang' : 'text-faint'}`}>
+                <b className={`whitespace-nowrap text-[13px] font-bold tabular-nums ${kq === 'duoi' ? 'text-kq-duoi' : kq === 'dat' ? 'text-kq-vuot' : 'text-faint'}`}>
                   {kq ? `${kq === 'duoi' ? '✗' : '✓'}${so ? ` ${so}` : ''}` : '—'}
                 </b>
               </span>
