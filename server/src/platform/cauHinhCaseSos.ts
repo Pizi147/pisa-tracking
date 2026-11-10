@@ -45,21 +45,22 @@ function docDangDung(): Map<LoaiCauHinh, Ban> {
 }
 
 /** Theo kết nối (như `nhoThamChieu`): phép kiểm đổi kết nối / DB chép lại không thấy nhớ của kết nối cũ. */
-const dangDungTheoKetNoi = new WeakMap<object, { so: number | null; v: Map<LoaiCauHinh, Ban> }>();
+const dangDungTheoKetNoi = new WeakMap<object, { so: number | null; luc: number; v: Map<LoaiCauHinh, Ban> }>();
+const NHO_NGOAI_REQUEST_MS = 60_000;
 const banTheoKetNoi = new WeakMap<object, Map<number, Ban | null>>();
 const trongRequest = (): number | null => (layMoc() as MocHeThong | undefined)?.thamChieu ?? null;
 
 /**
- * Trong request: khoá bằng mốc tham chiếu (tiến trình khác sửa → số đổi → đọc lại). NGOÀI request (phép kiểm, lệnh ops, việc nền): nhớ theo kết nối tới khi
- * chính máy chủ này ghi cấu hình (`luuCauHinh` → `quenNhoCauHinh`) — không đọc lại mỗi lần tra nhãn trong một vòng tạo 80 Case.
- * ponytail: việc nền chạy ngoài request ở tiến trình khác không thấy lần sửa từ tiến trình khác tới khi tiến trình đó khởi động lại; dùng mốc tham chiếu nếu việc nền tạo Case.
+ * Trong request: khoá bằng mốc tham chiếu (tiến trình khác sửa → số đổi → đọc lại). NGOÀI request (phép kiểm, lệnh ops, việc nền): nhớ theo kết nối tối đa
+ * 60 s hoặc tới khi chính máy chủ này ghi cấu hình (`luuCauHinh` → `quenNhoCauHinh`) — không đọc lại mỗi lần tra nhãn trong một vòng tạo 80 Case,
+ * mà lần sửa ở tiến trình khác vẫn tới việc nền trong 60 s.
  */
 export function cauHinhDangDung<L extends LoaiCauHinh>(l: L): BanCauHinh<L> {
   if (thamChieuDayDuKhiKiem.bat) return docDangDung().get(l) as BanCauHinh<L>;
   const so = trongRequest();
   const conn = db();
   let c = dangDungTheoKetNoi.get(conn);
-  if (!c || c.so !== so) dangDungTheoKetNoi.set(conn, c = { so, v: docDangDung() });
+  if (!c || c.so !== so || (so == null && Date.now() - c.luc > NHO_NGOAI_REQUEST_MS)) dangDungTheoKetNoi.set(conn, c = { so, luc: Date.now(), v: docDangDung() });
   return c.v.get(l) as BanCauHinh<L>;
 }
 
@@ -168,6 +169,15 @@ function giuLaiDangAn(l: LoaiCauHinh, cu: any, moi: any, ma: string): void {
   }
 }
 
+/** Hình tối thiểu trước khi cấp mã (danh sách là mảng mục có `ma` chuỗi) — chi tiết từng ô do `kiemCauHinh`. */
+function hinhHopLe(l: LoaiCauHinh, d: any): boolean {
+  const dsMuc = (ds: unknown) => Array.isArray(ds) && ds.every((m) => m && typeof m === 'object' && typeof (m as any).ma === 'string');
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return false;
+  if (l === 'nguyen_nhan') return (['ft', 'thuong'] as const).every((b) => d[b] && typeof d[b] === 'object' && Object.values(d[b]).every(dsMuc));
+  if (l === 'phuong_an') return dsMuc(d.muc);
+  return dsMuc(d.viec) && !!d.ft && typeof d.ft === 'object' && !!d.thuong && typeof d.thuong === 'object';
+}
+
 const idMoi = () => Math.max(Number((db().prepare('SELECT MAX(id) AS m FROM cau_hinh_phien_ban').get() as any)?.m ?? 0), 1) + 1;
 
 /**
@@ -194,7 +204,7 @@ export function luuCauHinh(p: Principal, loai: unknown, input: { duLieu?: unknow
       khoiPhucTu = id as number;
     } else {
       moi = JSON.parse(JSON.stringify(input.duLieu ?? null));
-      if (!moi || typeof moi !== 'object') throw badRequest('Dữ liệu cấu hình không hợp lệ.');
+      if (!hinhHopLe(l, moi)) throw badRequest('Dữ liệu cấu hình không hợp lệ.');
       capMa(l, moi);
     }
     const boDi = maCua(l, ht.du_lieu).filter((ma) => !maCua(l, moi).includes(ma));

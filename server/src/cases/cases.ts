@@ -2945,8 +2945,8 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
               (SELECT MIN(iv.action_due) FROM case_interventions iv
                 WHERE iv.case_id = sc.id AND iv.action_due IS NOT NULL AND iv.status IN ('planned','started')
                   AND ${NOT_UNCONFIRMED_PRESET('iv')}) AS next_due,
-              (SELECT ci.taxonomy_code FROM case_issues ci
-                WHERE ci.case_id = sc.id AND ci.role = 'primary' LIMIT 1) AS primary_code
+              (SELECT ci.taxonomy_code || '|' || ci.taxonomy_version FROM case_issues ci
+                WHERE ci.case_id = sc.id AND ci.role = 'primary' LIMIT 1) AS primary_ref
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -3014,13 +3014,14 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
       chuongTrinh: (r.class_ct ?? null) as string | null,
       category: r.category ?? categoryOf(r.topic),
       categoryLabel: (r.category ?? categoryOf(r.topic)) ? tenMon(r.class_ct, r.category ?? categoryOf(r.topic)) : caseCategoryLabel(null),
-      primaryCode: r.primary_code,
-      primaryLabel: r.primary_code ? issueLabel(r.primary_code) : null,
+      primaryCode: tachMaNhom(r.primary_ref).ma,
+      /* CAU-HINH-CASE-SOS: tên nhóm theo phiên bản lúc chọn — cùng tên với màn Case. */
+      primaryLabel: tachMaNhom(r.primary_ref).ma ? issueLabel(tachMaNhom(r.primary_ref).ma, tachMaNhom(r.primary_ref).pb) : null,
       /** Chủ đề: một trong năm ô L·R·W1·W2·S. */
       topic: r.topic as string | null,
       topicLabel: r.topic ? caseTopicLabel(r.topic, r.class_ct) : null,
       /** Nhánh nhóm nguyên nhân, khi đã có người dạy nhận định. */
-      issueBranch: issueBranchOf(r.primary_code),
+      issueBranch: issueBranchOf(tachMaNhom(r.primary_ref).ma),
       status: r.status as string,
       disposition: r.disposition,
       detectedAt: r.detected_at ?? (r.created_at ?? '').slice(0, 10),
@@ -4873,3 +4874,9 @@ export const pbNguyenNhan = (): number => cauHinh('nguyen_nhan').id || 1;
 /** Mã nhóm đang gắn trên Case — sửa / xác nhận Case giữ được nhóm Quản trị đã ẩn. */
 export const maNhomCuaCase = (caseId: number): string[] =>
   (db().prepare('SELECT taxonomy_code FROM case_issues WHERE case_id = ?').all(caseId) as any[]).map((x) => x.taxonomy_code as string);
+/** `primary_ref` = "mã|phiên bản" (một câu con cho cả hai) → { ma, pb }. */
+export const tachMaNhom = (ref: string | null | undefined): { ma: string | null; pb: number | null } => {
+  if (!ref) return { ma: null, pb: null };
+  const i = ref.lastIndexOf('|');
+  return i < 0 ? { ma: ref, pb: null } : { ma: ref.slice(0, i), pb: Number(ref.slice(i + 1)) || null };
+};

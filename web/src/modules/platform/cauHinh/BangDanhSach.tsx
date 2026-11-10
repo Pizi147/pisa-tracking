@@ -36,13 +36,15 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
     setBusy(true);
     try { return await p.luu(nhomKey, ds, chu); } finally { setBusy(false); }
   };
-  const doiCho = (n: NhomDs<M>, tu: number, toi: number) => {
+  const doiCho = async (n: NhomDs<M>, tu: number, toi: number) => {
     const ds = [...n.muc];
     const cuoi = ds.length - (ds.length && laKhac(ds[ds.length - 1].ma) ? 1 : 0);   // "Khác" luôn cuối
     if (toi < 0 || toi >= cuoi || tu >= cuoi || tu === toi) return;
     const [m] = ds.splice(tu, 1);
     ds.splice(toi, 0, m);
-    void ghi(n.key, ds, t('Đã đổi thứ tự · {nhom}', { nhom: n.ten }));
+    const ok = await ghi(n.key, ds, t('Đã đổi thứ tự · {nhom}', { nhom: n.ten }));
+    /* Đang sửa đúng mục vừa dời → chỉ số đi theo (Lưu sau đó ghi đúng mục, không đè mục bên cạnh). */
+    if (ok) setSua((s) => (s && s.nhom === n.key && s.idx === tu ? { ...s, idx: toi } : s));
   };
   const loiTen = (n: NhomDs<M>, m: M, idx: number | 'moi'): string | null => {
     const ten = m.ten.trim();
@@ -63,7 +65,8 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
     if (ok) setSua(null);   // lỗi → ở lại, giữ chữ
   };
   const phim = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); void luuSua(); }
+    /* Enter = Lưu chỉ khi đang gõ trong ô nhập (Enter trên nút ↑ ↓ / Thôi giữ việc của nút). */
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing && (e.target as HTMLElement).tagName === 'INPUT' && (e.target as HTMLInputElement).type !== 'checkbox') { e.preventDefault(); void luuSua(); }
     if (e.key === 'Escape') { e.preventDefault(); setSua(null); }
   };
 
@@ -91,14 +94,14 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                 </td>
               </tr>,
               ...n.muc.map((m, i) => {
-                if (sua && sua.nhom === n.key && sua.idx === i) return <DongSua key={m.ma} {...p} n={n} sua={sua} setSua={setSua} loi={loiTen(n, sua.m, i)} busy={busy} onLuu={luuSua} phim={phim} doiCho={(d) => doiCho(n, i, i + d)} />;
+                if (sua && sua.nhom === n.key && sua.idx === i) return <DongSua key={m.ma} {...p} n={n} sua={sua} setSua={setSua} loi={loiTen(n, sua.m, i)} busy={busy} onLuu={luuSua} phim={phim} doiCho={(d) => void doiCho(n, i, i + d)} />;
                 const khac = laKhac(m.ma), dung = p.dangDung[m.ma] ?? 0, khoa = p.khoaAn?.(m) ?? null;
                 const phu = p.phu(m);
                 return (
                   <tr key={m.ma} className={`border-b ${m.an ? 'text-slate-500' : ''}`} style={{ borderColor: 'var(--line)' }}
                     draggable={!p.chiXem && !khac && !busy} onDragStart={() => setKeo({ nhom: n.key, idx: i })} onDragOver={(e) => { if (keo?.nhom === n.key) e.preventDefault(); }}
-                    onDrop={() => { if (keo?.nhom === n.key) doiCho(n, keo.idx, i); setKeo(null); }}
-                    onKeyDown={(e) => { if (!p.chiXem && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); doiCho(n, i, i + (e.key === 'ArrowUp' ? -1 : 1)); } }}>
+                    onDrop={() => { if (keo?.nhom === n.key) void doiCho(n, keo.idx, i); setKeo(null); }}
+                    onKeyDown={(e) => { if (!p.chiXem && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); void doiCho(n, i, i + (e.key === 'ArrowUp' ? -1 : 1)); } }}>
                     <td className="py-1.5 pl-3.5 align-middle">
                       {!p.chiXem && !khac && <span className="cursor-grab select-none text-slate-500" title={t('Kéo để đổi thứ tự · Alt + ↑ ↓')} aria-hidden>⠿</span>}
                     </td>

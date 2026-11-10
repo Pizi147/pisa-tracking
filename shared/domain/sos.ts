@@ -151,6 +151,8 @@ export function maViecCoHan(): string[] {
   for (const v of cauHinhPb('moc_sos', undefined).du_lieu.viec) if (v.hanNgay != null) r.add(v.ma);
   return [...r];
 }
+/** Hạn dài nhất (ngày) trong danh mục việc đang dùng — cửa sổ đọc của số liệu "việc đúng hạn". */
+export const hanViecLonNhat = (): number => Math.max(HAN_MEETING_CX_NGAY, ...cauHinhPb('moc_sos', undefined).du_lieu.viec.map((v) => v.hanNgay ?? 0));
 /** Ghi chú tối thiểu khi xác nhận việc (0 = không bắt buộc) — theo bản chụp của dòng. */
 export const toiThieuGhiChu = (kind: string, pb?: number | null): number => {
   const v = viecCua(kind, pb);

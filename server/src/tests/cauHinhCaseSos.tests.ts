@@ -268,4 +268,15 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     assert(ten(cu) === 'Tư duy và kỹ năng làm bài' && ten(moi) === 'Chiến thuật làm bài', `Case cũ ${ten(cu)} · Case mới ${ten(moi)}`);
     assert(dm.issueLabel(ma) === 'Chiến thuật làm bài', 'không phiên bản → tên đang dùng');
   }));
+
+  check('CHCS-RA · rà code: ẩn / chuyển nhóm PA đang ở ô PA quy chế → 400; dữ liệu sai dạng → 400 (không 500)', () => thu(() => {
+    const d = sao(dm.cauHinh('phuong_an').du_lieu);
+    d.muc.find((m: any) => m.ma === 'tutor').an = true;
+    const e = loi(() => svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: d, tuPhienBan: 0 }));
+    assert(e?.status === 400 && /đang ở \d+ ô Mốc SOS/.test(e.message), `ẩn Tutor: ${e?.status} ${e?.message}`);
+    for (const [l, x] of [['nguyen_nhan', { ft: { listening: 'x' }, thuong: {} }], ['phuong_an', { muc: 'x' }], ['moc_sos', [1]]] as const) {
+      const e2 = loi(() => svc.luuCauHinh(P.admin, l, { duLieu: x, tuPhienBan: 0 }));
+      assert(e2?.status === 400, `${l} sai dạng → 400, có ${e2?.status} ${e2?.message}`);
+    }
+  }));
 }

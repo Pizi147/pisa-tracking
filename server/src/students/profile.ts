@@ -1,4 +1,5 @@
 import { db, theoLo } from '../db.ts';
+import { tachMaNhom } from '../cases/cases.ts';
 import { datNho } from '../platform/nguCanhRequest.ts';
 import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0, ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseHeadline, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, studyWeekOf, tenMon, tuanHocTai, tuanLich, type AssessedSkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode, coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -739,8 +740,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
                   AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = ci.id)) AS next_due,
               (SELECT ci.description FROM case_interventions ci WHERE ci.case_id = sc.id
                 ORDER BY COALESCE(ci.completed_date, ci.started_date, ci.created_at) DESC LIMIT 1) AS last_iv,
-              (SELECT ip.taxonomy_code FROM case_issues ip
-                WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_code,
+              (SELECT ip.taxonomy_code || '|' || ip.taxonomy_version FROM case_issues ip
+                WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_ref,
               a.attempt_no AS attempt_no, a.kind AS attempt_kind
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -763,7 +764,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     // Vấn đề của lộ trình TRƯỚC vẫn hiện, nhưng dán nhãn rõ — không dời sang lộ trình mới
     // cho tiện hiển thị, vì như thế là viết lại lịch sử.
     carriedOver: !!(selected && c.cycle_id && c.cycle_id !== selected.id),
-    primaryCode: c.primary_code, primaryLabel: c.primary_code ? issueLabel(c.primary_code) : null,
+    primaryCode: tachMaNhom(c.primary_ref).ma, primaryLabel: tachMaNhom(c.primary_ref).ma ? issueLabel(tachMaNhom(c.primary_ref).ma, tachMaNhom(c.primary_ref).pb) : null,   // CAU-HINH-CASE-SOS
     interventionCount: c.iv_count, lastIntervention: c.last_iv,
     nextDue: c.next_due, dueOverdue: !!(c.next_due && c.next_due < today && c.status !== 'done'),
   }));

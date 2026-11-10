@@ -182,6 +182,12 @@ export function kiemCauHinh<L extends LoaiCauHinh>(l: L, d: unknown): LoiCauHinh
     });
     if (x.muc.length && !laKhac(x.muc[x.muc.length - 1].ma)) loi.push({ duong: 'muc', loi: '"Khác" (cần QL duyệt) phải đứng cuối.' });
     if (x.muc.find((m) => laKhac(m.ma))?.an) loi.push({ duong: 'muc', loi: '"Khác" không ẩn được.' });
+    /* PA đang là PA quy chế ở ô Mốc SOS: không ẩn / không chuyển sang Cần QL duyệt (bỏ khỏi ô trước). */
+    const moc = cauHinh('moc_sos').du_lieu;
+    for (const m of x.muc) {
+      const so = HANG_FT.reduce((n, h) => n + (['1', '2', '3'] as const).filter((s) => moc.ft[h][s].pa?.loai === m.ma).length, 0);
+      if (so && (m.an || m.nhom !== 'gv_tu_lam')) loi.push({ duong: 'muc', loi: `"${m.ten}" đang ở ${so} ô Mốc SOS — bỏ khỏi ô trước.` });
+    }
     for (const m of c.muc) if (!x.muc.some((y) => y.ma === m.ma)) loi.push({ duong: 'muc', loi: `Phương án "${m.ten}" đã có — chỉ ẩn được, không xoá.` });
   } else {
     const x = d as MocSos, c = cu as MocSos;

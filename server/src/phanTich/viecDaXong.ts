@@ -18,7 +18,7 @@ import { db } from '../db.ts';
 import { LA_CASE_MT, LA_CASE_SOS } from '../cases/sosState.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from '../loTrinh/cotSauThi.ts';
 import { nguoiGiuMiniTest } from '../normal/cuoiKhoa.ts';
-import { maViecCoHan, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhoiHop, hanThemPa, laMeetingCx, ngayTheoGioVN, trangThaiSauThi, type ViecGopDuoc } from '../../../shared/domain/index.ts';
+import { hanViecLonNhat, maViecCoHan, duongHoSoHocVien, hanBaoPhHieuLuc, hanPhoiHop, hanThemPa, laMeetingCx, ngayTheoGioVN, trangThaiSauThi, type ViecGopDuoc } from '../../../shared/domain/index.ts';
 
 export type ViecXong = ViecGopDuoc & { xong: string; dung: boolean };
 type Ky = { cn: number; khung: 'ft' | 'thuong'; tu: string; cuoi: string; homNay: string };
@@ -149,9 +149,9 @@ function dungTap(c: Ky, kemThieuNgay = false): ViecXong[] {
        FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id LEFT JOIN assessment_attempts a ON a.id = x.attempt_id
        JOIN classes l ON l.id = ${lopEm('x.student_id', 'a.class_id')}
       WHERE s.branch_id = ? AND x.status = 'done' AND x.performed_on IS NOT NULL AND x.kind IN (${maViecCoHan().map(() => '?').join(',')})
-        AND COALESCE(x.han_chon, substr(x.created_at, 1, 10)) BETWEEN date(?, '-60 day') AND ?`,
-  ).all(c.cn, ...maViecCoHan(), c.tu, c.cuoi) as any[]) {
-    /* CAU-HINH-CASE-SOS: việc có hạn theo bản chụp của dòng (bản gốc: chỉ Meeting CX, 5 ngày; hạn tối đa 60 ngày → cửa sổ 60). */
+        AND COALESCE(x.han_chon, substr(x.created_at, 1, 10)) BETWEEN date(?, ?) AND ?`,
+  ).all(c.cn, ...maViecCoHan(), c.tu, `-${Math.max(10, hanViecLonNhat() + 5)} day`, c.cuoi) as any[]) {
+    /* CAU-HINH-CASE-SOS: việc có hạn theo bản chụp của dòng (bản gốc: chỉ Meeting CX, 5 ngày → cửa sổ 10 như cũ; Quản trị đặt hạn dài → cửa sổ theo hạn). */
     const han = hanPhoiHop(r.kind, r.created_at, r.han_chon, r.pb_moc ?? null);
     if (!han) continue;
     them({ ...lopCua(r), hv: null, ten: null, owner: r.owner, han, xong: String(r.xong).slice(0, 10) },
