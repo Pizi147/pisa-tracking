@@ -398,6 +398,28 @@ export async function runAnToanTests(t: AnToanTestKit) {
     } finally { console.error = gocLoi; }
   });
 
+  const dbK: any = await import('../db.ts');
+  check('HOTFIX-CHAM-1011 · Luồng Turso hết hạn ("stream not found") → bỏ kết nối chết, hỏi lại một lần → 200, không 503', () => {
+    const cu = dbK.db();
+    let soLanHoi = 0;
+    const sk = suKhoeMod.taoSuKhoe(() => {
+      soLanHoi += 1;
+      if (soLanHoi === 1) throw new Error('Hrana(Api("status=404 Not Found, body={\\"error\\":\\"stream not found: 933994f1:2469dbb\\"}"))');
+      return true;
+    }, () => 0);
+    const r = giaRes();
+    try {
+      sk({} as any, r);
+      assert(r.code !== 503 && JSON.stringify(r.body) === '{"ok":true,"seeded":true}', `Nhận ${r.code} ${JSON.stringify(r.body)}`);
+      assert(soLanHoi === 2, `Hỏi ${soLanHoi} lần (phải 2: lỗi luồng rồi hỏi lại)`);
+      assert(dbK.db() !== cu, 'Không bỏ kết nối chết — request kế sẽ hỏng lại cùng luồng');
+    } finally {
+      const moi = dbK.db();
+      if (moi !== cu) { try { moi.close(); } catch { /* đã đóng */ } }
+      dbK.datKetNoiChoPhepKiem(cu);
+    }
+  });
+
   // ================================================================== 7. AN-5 — hạn 10 giây
 
   console.log('\nPR-AN · 7. Không mở giao dịch Turso khi hàm Netlify sắp hết 10 giây');
