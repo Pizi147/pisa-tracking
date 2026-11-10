@@ -262,20 +262,12 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### ⭐ VIỆC CÒN LẠI — tổng hợp 10/11 tối (PTA Plan bàn giao sang session planning mới; chủ SP: "liệt kê ra còn những gì chưa làm, cho hết vào plan tối nay")
 Đọc mục này TRƯỚC. Mục cũ hơn bên dưới là nhật ký; dòng nào ghi "chờ chủ SP" mà không có ở đây → đối chiếu mã thật (grep) trước khi coi là còn.
 
-**A. Đang làm / làm tiếp ngay**
-1. **Sổ nghĩa vụ PR-1 #1270** — chủ SP 10/11 "Duyệt" bảng chênh lệch; PTA đang check chung + merge (nếu chưa merge: `bash C:/Users/Admin/AppData/Local/Temp/pisa-slot/batch2.sh 1270`). Khi deploy PHẢI chạy `npm run migrate` rồi `npm run nap-so`.
-2. **Sổ nghĩa vụ PR-2 (giao diện)** — CHƯA CODE. Kế hoạch: `docs/superpowers/plans/2026-11-09-so-nghia-vu.md` mục PR-2 (đã cập nhật 10/11: gắn ghiSo đường ghi việc, khoá việc như Công việc, S chéo chung tách dòng phụ, Chưa phân công, ảnh cặp). Giao session **PT-DEM-VIEC** (`local_6829e51d-79d6-4f50-834c-496b0ff494f6`, đã nắm mã; Opus 5.5 · high). Ảnh → chủ SP duyệt.
-3. **Sổ nghĩa vụ PR-3** — bỏ cách đếm cũ (Task 8), sau PR-2.
-
-**B. Chờ chủ SP quyết (đã có đề xuất)**
-4. Dọn **13 lượt W lệch** trên bản chính (một W "-", W kia trống / một W Không dự thi) — cần migrate riêng; danh sách ở ghi chú `cv-sua-1011-dem-w-lech.md` (#1273). Sau #1273 GV gõ "-" vào W còn trống là chốt cả buổi.
-5. [XM] #1240–#1242 (dòng "Việc để sau — [XM] từ #1240–#1242" bên dưới): HL1 "Fast Track 6" đơn vị · HL3 ẩn cột Ghi chú · HS1 / HS2 / CV6 cần mockup · F2 "Thái độ / hành vi" gãy dòng (đổi chữ hay nới K2).
-6. **#1258 để sau:** GV S chéo chưa gỡ được "-" đã chốt ở MT0 S · Kế hoạch Test của GV S chưa gồm lớp thường.
-7. **Xác minh:** "TVV lớp" ở đầu hồ sơ lớp lấy từ đâu (seed: TVV đầu lớp ≠ TVV đa số em) — B9 chủ SP chọn giữ TVV mọi dòng.
-8. RA-LOI-MAY / RA-LOI-WEB (dòng "Chờ chủ SP (RA-LOI-…" bên dưới): QUYEN-KY-NANG đã giải một phần bằng lịch sử kỹ năng (#1270) — kiểm lại còn cần "chỉ Quản trị sửa kỹ năng" không · LECH-KHONG-LOP · giao việc người ngoài chi nhánh · HSL-KET-THUC-SO · Head tutor link Công việc.
-9. [XM-A] quét nền SOS sau mỗi lần ghi (đề xuất ≥ 15 s) · [XM] Tổng quan hàng lớp toàn 0 · `phanCongDangHoatDong` 527 dòng / request.
-10. BAO-CAO-PH [XM]: "Lớp tiếp ›" · Excel gộp ô.
-11. KET-PET-THI-THAT (chủ SP: tạm chưa làm) · Tutor (hoãn vô thời hạn — không hỏi).
+**TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
+- ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
+- ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
+- ✅ Dòng "chờ chủ SP" CŨ đã xong / đã quyết (đừng đọc nhầm là còn mở): 8.1 Báo PH tính TVV hiện tại (07/11 giữ) · U05 tên PDF / U04 "Đang tạo n/m" #1234 · chú giải màu → ⓘ #1192 · #911 (1)(3) #914 #917 · #860 · U05 nút từng môn #928 · BangChung #917 · #924 → #934 · [XM] #923 → #950 · [XM] #926 → #947 · CV-TAB #1260 · "Việc bàn giao a/b" có · "Lịch sử · n" #968 · hộp Chờ duyệt có `boiCanh` (B6) · Phân tích lớp FT thêm MT0: KHÔNG · xoá KQ PA "chưa làm": KHÔNG · [XM-BE-1] giữ lưới 5 ô · PR-C / PR-D Phân công giữ như web · DUYET-QL không thêm ô ghi chú · PANEL-RIENG "Phân công ›" giữ link (chủ SP 11/11).
+- ✅ Đêm 11/11: K3-16 #1303 (+ migrate `prK316`) · gộp xác nhận Case → PA #1308 · #1306 #1307 · phép kiểm chập chờn #1310 · kiểm tay #1297 #1302 · hồ sơ GV đọc ít #1298 · lớp kết thúc hiện em lưu trữ #1301.
+- Còn (không chặn): KET-PET-THI-THAT (tạm chưa làm) · Tutor (hoãn) · [XM-B] QL / QT / CX quét mọi Case — xem Top Queries Turso sau deploy · sổ nghĩa vụ không tách GV cũ / mới cho lần chuyển lớp trước #1270 (chấp nhận, `ponytail:`).
 
 **B'. CHỦ SP QUYẾT 10/11 tối** (PTA liệt kê 14 mục kèm khuyến nghị; chủ SP: "4 vẫn sẽ làm nhé, còn lại theo đề xuất"):
 1. Migrate dọn 13 lượt W lệch: W còn trống nhận "-", chốt cả buổi; nhật ký + GV "Bỏ vắng" được · 2. "Fast Track 6" giữ không đơn vị · 3. Giữ cột Ghi chú (Lịch thi) ·
@@ -297,11 +289,9 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 **Chủ SP 11/11 (đi ngủ):** "ok chọn theo bạn đề xuất, bắt đầu làm đêm, tôi đi ngủ, tự chủ động rà, duyệt, merge, cần hỏi tôi gì hỏi luôn, nhớ khi giao việc cho session tự chọn model, effort phù hợp nhé" → PANEL-RIENG (a) "Phân công ›" **giữ link** sang hồ sơ lớp · chủ SP chạy 3 session SUA-NHO-1111, KIEM-ON-DINH, GOP-XAC-NHAN · **GOP-XAC-NHAN (PR RKC-2b ③):** Sửa Case chưa xác nhận = Xác nhận Case (máy chủ, cùng luật / quyền / nhật ký `nguon`); Ghi KQ PA lần đầu = Xác nhận PA (lối "Ghi kết quả…" trong form Xác nhận PA, trừ Tutor chưa có Số buổi); Hoàn tác lần ghi đầu trả PA về chờ; bản chép 07/11: 35/35 Case chờ → 0, PA ghi được 12 / 115 (54 chặn "Case chưa có mô tả", 49 Tutor chưa Số buổi) · K3-16: "Được, ghi số em" — được migrate dọn Case đang chạy 2 PA quy chế (PA cũ sang Kết quả cuối, khôi phục được, nhật ký), PTA ghi số Case đổi vào plan.md. PTA tự rà / duyệt / merge / archive, tự kiểm ~30 phút; không deploy.
 **Đêm 11/11 (PTA tự duyệt):** #1303 K3-16 + migrate `prK316` (bản chép 07/11: 5 PA quy chế cũ · 5 Case · 3 em chạy cạnh PA mới → Kết quả cuối; khôi phục `khoiPhucK316`) · #1306 dòng loại "Xuất" + % từng môn Lịch thi lớp thường · #1307 bấm thử F07 / 8.3 đạt, bỏ * ô Tuần bắt đầu. Deploy tới: `npm run migrate` gồm thêm `prK316`.
 
-**C. Chưa kiểm bằng tay (chỉ mã + phép kiểm)**
-12. F07, 8.3 (#1230) · #1273: lưới chỉ xem khi người xem không có quyền nhập; "-" W trên giao diện.
-13. Sổ nghĩa vụ: các lần chuyển lớp TRƯỚC #1270 không tách được GV cũ / mới; vai GV ở chi nhánh đọc theo hiện tại (`ponytail:`); Mini Test không tính lại hạn khi chuyển lớp (đi theo GVCN lớp đang học).
+**C. Kiểm tay** — ✅ #1297 #1302 #1307 (F07, 8.3, #1273, #1283, #1285, #1287, #1288, #1291, #1292).
 
-**D. Deploy** — chỉ khi chủ SP bảo (bộ nhớ `cach-deploy`, `deploy-khi-bao`). Lần cuối 07/11 09:37. Migrate mới từ đó gồm sổ nghĩa vụ (`prNghiaVu`, `prNghiaVuNap` / `npm run nap-so`, `user_skill_lich_su`) — chạy theo mô tả #1270.
+**D. Deploy** — chỉ khi chủ SP bảo (bộ nhớ `cach-deploy`, `deploy-khi-bao`). Lần cuối 07/11 09:37. `npm run migrate` lần tới gồm: sổ nghĩa vụ (`prNghiaVu`, `user_skill_lich_su`) · W-LECH (13 lượt) · 5 trigger TL-NEN (#1284) · `prK316` (5 PA / 5 Case / 3 em) — rồi `npm run nap-so`.
 
 
 ### 08/11 — RÀ TOÀN BỘ UI/UX + SỬA QUA ĐÊM (chủ SP — session AUDIT-UI)
