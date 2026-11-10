@@ -63,6 +63,7 @@ import * as scheduleSvc from '../classes/schedule.ts';
 import * as intakeSvc from '../classes/intake.ts';
 import * as transitionSvc from '../classes/transition.ts';
 import * as lenhSvc from '../classes/lenhChuyen.ts';
+import * as hoanTacChuyenNgaySvc from '../classes/hoanTacChuyenNgay.ts';
 import * as phanCongGvSvc from '../classes/phanCongGv.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as banGiaoGvSvc from '../classes/banGiaoGv.ts';
@@ -1472,7 +1473,9 @@ api.put('/students/:id/y-thuc/khai-bac', requireAuth, wrap((req) => {
 }));
 api.get('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
+  /* #6 (G3-5): `kemTep=1` — panel duyệt QL đọc vi phạm + bằng chứng trong MỘT request (chỉ khi mở panel). */
+  const v = xuLySvc.xemXuLy(principalOf(req), pInt(req, 'id'));
+  return qStr(req, 'kemTep') === '1' ? { ...v, tep: attachmentSvc.listAttachments(principalOf(req), 'discipline_measure', v.id) } : v;
 }));
 /** V4-9/V4-10 (Q10): Đề xuất QL duyệt = nháp (để tải bằng chứng) → gửi (thẻ `y_thuc`). Đóng panel giữa chừng → xoá nháp. */
 api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {
@@ -1483,6 +1486,11 @@ api.post('/students/:id/y-thuc/de-xuat', requireAuth, wrap((req) => {
 api.post('/y-thuc/xu-ly/:id/gui', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.guiDeXuat(principalOf(req), pInt(req, 'id'));
+}));
+/** [XM 5]: Hoàn tác Xác nhận xử lý (toast 10 s) — người vừa lưu, TVV chưa ghi; quá hạn thì Thu hồi. */
+api.post('/y-thuc/xu-ly/:id/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.hoanTacXuLy(principalOf(req), pInt(req, 'id'));
 }));
 api.delete('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2328,6 +2336,11 @@ api.post('/interventions/:id/de-xuat-doi-pa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return doiPaSvc.deXuatDoiPa(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
 }));
+/** SOS-TAM-PA (chủ SP 11/11): "Chọn PA" · Giữ PA của tôi — thẻ QL `giu_pa_gv` hạn 3 ngày (quá hạn chốt theo GV); rút = `POST /yeu-cau/:id/rut`. */
+api.post('/interventions/:id/giu-pa-gv', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return sosAutoSvc.giuPaGv(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as any);
+}));
 /** OV-13c: Xác nhận PA cùng lúc (dòng gộp Công việc) — mỗi PA một giao dịch, PA lỗi báo riêng. */
 api.post('/interventions/xac-nhan-pa-lo', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2732,13 +2745,17 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     const vang = (v: unknown) => v === undefined || v === null || v === '';
     const mucTieuGui = vang(mucTieu) && cu?.huong === 'fast_track' && huong === 'fast_track' ? (ghepMucTieu(cu.muc_tieu, cu.khong_cam_ket) ?? undefined) : mucTieu;
     const ngayThiGui = vang(req.body?.ngayThi ?? thangThi) && cu ? cu.ngay_thi ?? undefined : req.body?.ngayThi ?? thangThi;
-    const r = lenhSvc.raLenh(principalOf(req), {
+    const raLenh = () => lenhSvc.raLenh(principalOf(req), {
       lopNguonId: enr.class_id, boiCanh, tuanChung: req.body?.tuan ?? effectiveDate ?? null,
       dongs: [lenhSvc.dongTuBody({
         studentId: sid, huong, toClassId, lyDo: reason,
         mucTieu: mucTieuGui, ngayThi: ngayThiGui, resetBac: req.body?.resetBac,   // N36: vắng = giữ cờ của lệnh đang chờ
       })],
     });
+    /* #8 (G4-14): "Ngay hôm nay" — chụp để Hoàn tác (`dao`); tuần sau giữ đường cũ (lệnh chờ, đã có Huỷ quyết định + Khôi phục). */
+    const r = (req.body?.tuan ?? effectiveDate) === demoToday()
+      ? hoanTacChuyenNgaySvc.chuyenNgayCoHoanTac(principalOf(req), sid, [enr.class_id, dich.id], raLenh, (x) => x.daChuyen.includes(sid))
+      : raLenh();
     if (r.failed.length) throw badRequest(r.failed[0].message);
     return r;
   }
@@ -2851,6 +2868,11 @@ api.get('/students/:id/quay-lai', requireAuth, wrap((req) => trangThaiHvSvc.thon
 api.post('/students/:id/quay-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return trangThaiHvSvc.quayLaiHoc(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+/** #8 (G4-14): Hoàn tác "Ngay hôm nay" { dao } — em về lớp cũ y như trước lần chuyển; có thay đổi sau đó → 409. */
+api.post('/students/:id/hoan-tac-chuyen-ngay', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return hoanTacChuyenNgaySvc.hoanTacChuyenNgay(principalOf(req), pInt(req, 'id'), req.body?.dao);
 }));
 api.post('/students/:id/hoan-tac-quay-lai', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

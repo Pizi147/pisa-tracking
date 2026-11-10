@@ -17,7 +17,7 @@ import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
 import { viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
-import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
+import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, PA_GV_MO, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, henTyLe, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { emXetLaiLoTrinh } from '../normal/xetLai.ts';
@@ -114,6 +114,8 @@ export type WorkItem = {
   count: number | null;
   /** PR-GOP: Case sinh từ SOS — ở lớp FT giữ từng dòng; Case GV/QL tự tạo thì gộp theo lớp (chủ sản phẩm 08/10). */
   caseSos?: boolean;
+  /** SOS-TAM-PA: dòng Xác nhận PA là "Chọn PA" (PA của GV khác PA quy chế) — không gộp vào Xác nhận PA cùng lúc. */
+  chonPa?: boolean;
   /** CV-LOI (A13): Case chưa có người phụ trách vì lớp thiếu GV môn (`mon` = kỹ năng) hoặc thiếu GVCN (`mon` null) — panel Phân công đúng ô đó. */
   thieuNguoi?: { mon: string | null };
   /** PR-GOP (§5): dòng gộp "Loại việc · lớp · n em" — các việc thật của dòng (khoá, nút, hạn riêng). Chỉ có ở `dong`. */
@@ -880,7 +882,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     .prepare(
       `SELECT sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id, sc.kck,
               ${COT_CASE}, iv.id AS iv_id, iv.kind AS iv_kind, iv.description AS iv_mo_ta, iv.performer_user_id AS iv_nguoi_id, iv.so_buoi AS iv_so_buoi,
-              COALESCE(pu.full_name, iv.performer_name) AS iv_nguoi
+              COALESCE(pu.full_name, iv.performer_name) AS iv_nguoi,
+              EXISTS (SELECT 1 FROM case_interventions g WHERE g.case_id = sc.id AND ${PA_GV_MO('g')} AND g.kind != iv.kind) AS chon_pa   /* SOS-TAM-PA: "Chọn PA" */
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${NOI_CASE} LEFT JOIN users pu ON pu.id = iv.performer_user_id
         WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
           AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
@@ -1039,9 +1042,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       });
     } else {
       items.push({
-        ...chung, key: `ban_giao_mon:${v.lopId}:${v.mon}`, count: v.n - v.daGhi,
+        ...chung, key: `ban_giao_mon:${v.lopId}:${v.mon}`, count: v.tung ? v.emIds.length : v.n - v.daGhi,   // #8: việc gộp nhiều môn — số EM khác nhau
         contextLabel: `GVBM · ${v.tung ? v.tung.map((x) => `${x.monNgan} ${x.daGhi}/${x.n} em`).join(' · ') : `${v.daGhi}/${v.n} em`}`,
-        reason: v.tung ? v.tung.filter((x) => x.n > x.daGhi).map((x) => `${x.n - x.daGhi} em chưa có câu ${x.monNgan}`).join(' · ') : `${v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
+        /* #8: việc gộp nhiều môn — số EM còn thiếu ít nhất một môn (số từng môn ở contextLabel), cùng mẫu câu một môn. */
+        reason: `${v.tung ? v.emIds.length : v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
         tieuDe: `Bàn giao môn ${v.monNgan} · ${v.code}`, actionLabel: `Bàn giao môn ${v.monNgan}`,
         href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao&mon=${v.mon}`, statusLabel: 'Chờ bàn giao',
       });
@@ -1184,7 +1188,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         tieuDe: `Xác nhận Case · ${skillLabel}${kck} · ${hv}`, nut: 'Xác nhận Case', tt: 'Chờ xác nhận Case' },
       ghi_nhan_xet: { key: `ghi_nhan_xet:${c.id}`, ly: `${skillLabel} dưới kỳ vọng${kck} — Case chưa có mô tả`,
         tieuDe: `Mô tả Case · ${skillLabel}${kck} · ${mt} · ${hv}`, nut: 'Mô tả Case', tt: 'Chờ mô tả Case' },
-      xac_nhan_pa: { key: `xnpa:${c.iv_id}`, ly: `${skillLabel} — PA theo quy chế chưa bắt đầu`,
+      xac_nhan_pa: c.chon_pa
+        /* SOS-TAM-PA (chủ SP 11/11): PA của GV khác PA quy chế — GV chọn một trong hai (cùng dòng việc, cùng hạn). */
+        ? { key: `xnpa:${c.iv_id}`, ly: `${skillLabel} — PA của GV khác PA quy chế, chọn một`, tieuDe: `Chọn PA · ${skillLabel} · ${hv}`, nut: 'Chọn PA', tt: 'Chờ chọn PA' }
+        : { key: `xnpa:${c.iv_id}`, ly: `${skillLabel} — PA theo quy chế chưa bắt đầu`,
         tieuDe: `Xác nhận PA · ${skillLabel} · ${hv}`, nut: 'Xác nhận PA', tt: 'Chờ xác nhận PA' },
     }[loai];
     items.push({
@@ -1205,6 +1212,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       caseSos: true,   // LA_CASE_SOS / PA quy chế — luôn là Case sinh từ SOS
       /* OV-13c (Q4): dòng gộp theo tuần thi + mức SOS; Xác nhận PA cùng lúc cần loại PA, nội dung máy gán, người dạy đã có. */
       tuanThi: c.tuan_thi ?? null, sos: c.sos_level ?? null,
+      ...(loai === 'xac_nhan_pa' && c.chon_pa ? { chonPa: true } : {}),
       ...(loai === 'xac_nhan_pa' ? { pa: { kind: c.iv_kind, moTa: c.iv_mo_ta ?? null, nguoiId: c.iv_nguoi_id ?? null, nguoi: c.iv_nguoi ?? null, soBuoi: c.iv_so_buoi ?? null } } : {}),
       /* OV-12c: lượt + kỹ năng của bài Case (Công việc mở Ngăn Case "Mô tả Case"; nơi khác dùng để tới đúng bài). */
       ...(loai === 'ghi_nhan_xet' ? { luot: `mt:${c.attempt_no}`, kn: c.topic ?? undefined } : {}),

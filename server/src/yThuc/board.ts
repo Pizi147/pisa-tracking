@@ -48,6 +48,8 @@ export type DongEm = {
   baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean; daChinh: boolean } | null;
   /** UI-2 (mockup K1): TVV của em dưới tên — chỉ `bangYThucLop` điền (cùng câu đọc tên em). */
   tvv: string | null;
+  /** G3-14: người xem GIỮ việc Báo PH của em (TVV của em; em chưa có TVV → QL) — chỉ bảng lớp. */
+  giuBaoPh?: boolean;
 };
 
 export type DongThoiGianYt =
@@ -61,6 +63,8 @@ export type DongThoiGianYt =
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       tenViPham: string[]; baoPh: BaoPhLan | null;
+      /** G3-14 (YT-BAO-PH): lần ĐÃ THU HỒI — việc "Báo lại PH" của TVV (`viec_bao_ph.bao_lai_cua`); `baoPh` giữ việc gốc (lịch sử). */
+      baoLai?: BaoPhLan | null;
       /** Y-THUC-V2: vi phạm của lần (một lần = một khối dòng). */
       viPhamIds: number[];
       /** UI-2 (`danhDauChuoi`): dòng thuộc lộ trình hiện tại của em — tab lớp đổi phạm vi Lộ trình | Cả lịch sử tại trình duyệt, không đọc lại. */
@@ -88,6 +92,8 @@ export type BangYThucLop = {
   coTheDuyet: boolean;
   /** UI-2 (mockup K4): GVCN của lớp — dòng dưới tên em ở nhóm Chờ QL duyệt (QL biết ai đề xuất / xin thu hồi). */
   gvcn: string | null;
+  /** G3-14: người xem là GVCN của lớp. */
+  laGvcn: boolean;
 };
 
 const DONG_THOI_GIAN_TOI_DA = 150;
@@ -152,7 +158,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
   const xuLy = emIds.flatMap((sid) => { const em = trang.get(sid); return [...(em?.xuLy ?? []), ...(em?.thuHoi ?? [])].filter((m) => trongChuoi(sid, m.cycleId)).map((m) => ({ sid, m })); });
-  const phu = new Map<number, { nguoi: string | null; soTep: number; baoPh: BaoPhLan | null }>();
+  const phu = new Map<number, { nguoi: string | null; soTep: number; baoPh: BaoPhLan | null; baoLai?: BaoPhLan | null }>();
   const homNay = o.homNay ?? demoToday();
   const bp: any[] = [];
   const mIds = xuLy.map((x) => x.m.id);
@@ -169,13 +175,25 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
          LEFT JOIN students s ON s.id = m.student_id WHERE m.id IN (${lo.map(() => '?').join(',')})`,
     ).all(...lo) as any[]) { phu.set(r.id, { nguoi: r.nguoi ?? null, soTep: r.so_tep, baoPh: null }); if (r.bp_id) bp.push(r); }
   }
+  /* G3-14: việc "Báo lại PH" của các lần đã thu hồi — MỘT câu (chỉ mục bao_lai_cua), chỉ khi lớp có lần thu hồi. */
+  const thIds = xuLy.filter((x) => x.m.status === 'thu_hoi').map((x) => x.m.id);
+  for (let i = 0; i < thIds.length; i += 400) {
+    const lo = thIds.slice(i, i + 400);
+    for (const r of conn.prepare(
+      `SELECT v.bao_lai_cua AS id, v.id AS bp_id, v.trang_thai AS bp_tt, v.han AS bp_han, v.han_chon AS bp_han_chon, v.student_id, s.consultant_user_id,
+              (SELECT MAX(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS bp_ngay,
+              (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS bp_so,
+              (SELECT json_object('k', l.ket_qua, 'n', l.ngay, 'g', l.ghi_chu) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id ORDER BY l.id DESC LIMIT 1) AS bp_lan
+         FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE v.bao_lai_cua IN (${lo.map(() => '?').join(',')}) ORDER BY v.id`,
+    ).all(...lo) as any[]) bp.push({ ...r, laBaoLai: true });
+  }
   /* Hạn hiệu lực trừ Tạm dừng — chỉ đọc khi có việc đang mở (một câu cho các em đó). */
   const mo = bp.filter((r) => r.bp_tt === 'mo');
   const khoang = mo.length ? khoangTamDung(mo.map((r) => r.student_id)) : {};
   for (const r of bp) {
     const han = r.bp_tt === 'mo' ? hanBaoPhHieuLuc(r.bp_han, khoang[r.student_id], r.bp_han_chon) : (r.bp_han_chon ?? r.bp_han);
     const lan = r.bp_lan ? JSON.parse(r.bp_lan) : null;
-    phu.get(r.id)!.baoPh = {
+    phu.get(r.id)![r.laBaoLai ? 'baoLai' : 'baoPh'] = {
       id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && han < homNay, daChinh: r.bp_han_chon != null,
       coTheGhi: r.bp_tt === 'mo' && !!o.p && coTheGhi(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
       soLan: r.bp_so, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
@@ -187,7 +205,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       nhan: nhanLoaiXuLy(m.kind, m.customName), kind: m.kind, status: m.status,
       statusLabel: (XU_LY_STATUS_LABEL as Record<string, string>)[m.status] ?? m.status,
       soViPham: m.violationIds.length, nguoi: phu.get(m.id)?.nguoi ?? null, soTep: phu.get(m.id)?.soTep ?? 0,
-      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null, viPhamIds: m.violationIds, ...dau(sid, m.cycleId),
+      tenViPham: m.violationIds.map((id) => tenVp.get(id)).filter((x): x is string => !!x), baoPh: phu.get(m.id)?.baoPh ?? null, ...(m.status === 'thu_hoi' ? { baoLai: phu.get(m.id)?.baoLai ?? null } : {}), viPhamIds: m.violationIds, ...dau(sid, m.cycleId),
     });
   }
   out.sort((a, b) => b.ngay.localeCompare(a.ngay) || (a.loai === b.loai ? b.id - a.id : a.loai === 'xu-ly' ? -1 : 1));
@@ -200,17 +218,17 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   requireViewClass(p, classId);
   const ids = emCuaLop(classId);
   const trang = trangThaiYThuc(ids, homNay);
-  const info = new Map<number, { ten: string; ma: string; tvv: string | null }>();
+  const info = new Map<number, { ten: string; ma: string; tvv: string | null; tvvId: number | null }>();
   /* Em đang học ở lớp cùng GVCN — tên GVCN đi kèm câu đọc tên em (câu con hằng, không thêm câu). */
   const gvcnId = ids.length ? trang.get(ids[0])?.gvcnId ?? 0 : 0;
   let gvcn: string | null = null;
   for (let i = 0; i < ids.length; i += 400) {
     const lo = ids.slice(i, i + 400);
     for (const r of db().prepare(
-      `SELECT s.id, s.full_name, s.student_code, u.full_name AS tvv, (SELECT full_name FROM users WHERE id = ?) AS gvcn
+      `SELECT s.id, s.full_name, s.student_code, u.full_name AS tvv, s.consultant_user_id AS tvv_id, (SELECT full_name FROM users WHERE id = ?) AS gvcn
          FROM students s LEFT JOIN users u ON u.id = s.consultant_user_id WHERE s.id IN (${lo.map(() => '?').join(',')})`,
     ).all(gvcnId, ...lo) as any[]) {
-      info.set(r.id, { ten: r.full_name, ma: r.student_code, tvv: r.tvv ?? null });
+      info.set(r.id, { ten: r.full_name, ma: r.student_code, tvv: r.tvv ?? null, tvvId: r.tvv_id ?? null });
       gvcn = r.gvcn ?? null;
     }
   }
@@ -220,7 +238,10 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   const choThuHoi: DongEm[] = [];
   const dongCuaEm = new Map<number, DongEm>();
   /* Hàng dựng trong bộ nhớ cho mọi em; "đang xin thu hồi" đọc MỘT câu cho cả lớp (UI-2: em chỉ còn việc thu hồi chờ QL vẫn có hàng — K4). */
-  const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null }));
+  /* G3-14: người GIỮ việc Báo PH của em (như Công việc): TVV của em; em chưa có TVV → QL trong phạm vi. */
+  const coTheDuyet = can(p, PERMISSIONS.REQUEST_APPROVE, { classId });
+  const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null,
+    giuBaoPh: info.get(id)?.tvvId != null ? info.get(id)!.tvvId === p.userId : coTheDuyet }));
   danhDauDangXinThuHoi(tatCa);
   for (const dong of tatCa) {
     const em = trang.get(dong.studentId)!;
@@ -254,8 +275,10 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, danhDauChuoi: true, p, homNay }),
     choBaoPh: choBaoPh.sort((a, b) => (a.baoPh?.han ?? '').localeCompare(b.baoPh?.han ?? '') || a.ten.localeCompare(b.ten, 'vi')),
     choThuHoi: choThuHoi.sort((a, b) => a.ten.localeCompare(b.ten, 'vi')),
-    coTheDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { classId }),
+    coTheDuyet,
     gvcn,
+    /* G3-14: việc GVCN (xử lý / xem / ghi Đã thực hiện) là việc CỦA người xem khi người xem là GVCN lớp — như Công việc "Của tôi". */
+    laGvcn: gvcnId === p.userId,
   };
 }
 

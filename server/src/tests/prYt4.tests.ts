@@ -653,7 +653,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (5) · (bấm thử) thẻ Ý thức nói có bao nhiêu bằng chứng — QL biết mà bấm Mở xem trước khi duyệt (V4-10)', () => {
     const sid = hv(); deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
     const the = yc.hopChoDuyet(P.mbManager, { studentId: sid }).the.find((x: any) => x.loai === 'y_thuc');
-    assert(the.dong.includes('Kèm 1 bằng chứng (tệp / liên kết) — bấm Mở để xem') && /tab=y-thuc/.test(the.mo ?? ''), JSON.stringify(the.dong));
+    assert(/1 bằng chứng/.test(the.phu ?? '') && /tab=y-thuc/.test(the.mo ?? ''), JSON.stringify([the.phu, the.dong]));   // #6: bằng chứng xem trong panel duyệt
   });
   check('YT4 (5) · GVCN không duyệt được (403) — thẻ chỉ QL / Quản trị (T69, K5-32)', () => {
     const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
@@ -917,11 +917,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(payload && !/\bkind\b/.test(payload) && /bacDaThay/.test(payload), payload);
     assert(/status === 409/.test(s) && /Bậc vừa đổi — đã mở lại với bậc mới/.test(s), '409');
   });
-  check('YT4 (8) · Đề xuất QL duyệt: nháp → bằng chứng bắt buộc → "Gửi Quản lý duyệt · trả lời trong 5 ngày"; đóng giữa chừng xoá nháp', () => {
+  check('YT4 (8) · Đề xuất QL duyệt: MỘT màn (#6): bằng chứng chọn trong form (bắt buộc loại ngoài thang) → "Gửi Quản lý duyệt" = nháp → tải tệp → gửi; đóng khi dở xoá nháp', () => {
     const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
-    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /Gửi Quản lý duyệt · trả lời trong 5 ngày/.test(s), 'luồng');
-    assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
-    assert(/Cần xử lý nặng hơn/.test(s) && /Xác nhận cấp bậc vi phạm trước/.test(s), 'nút Đề xuất + dòng Xác nhận cấp bậc (Q7)');
+    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /t\('Gửi Quản lý duyệt'\)/.test(s) && /taiTepCho\(/.test(s) && !/Tiếp: đính kèm bằng chứng/.test(s), 'luồng');
+    assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{nhapDo\.current\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
+    assert(/Cần xử lý nặng hơn/.test(s) && /t\('Khai cấp bậc'\)/.test(s), 'nút Đề xuất + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
   });
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú khai TUỲ CHỌN (từng em và theo lô). */
   check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú tuỳ chọn; QL sửa bằng PUT', () => {

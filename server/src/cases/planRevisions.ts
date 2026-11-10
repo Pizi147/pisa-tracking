@@ -3,7 +3,7 @@ import { badRequest, chuTuDo, nowIso, loi as loiHttp } from '../util.ts';
 import type { Principal } from '../permissions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
 import { caseAccess } from './cases.ts';
-import { TRAN_CHU, coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
+import { CHU_TOI_THIEU_CASE, TRAN_CHU, coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
 
 /**
  * LỊCH SỬ ĐIỀU CHỈNH PHƯƠNG ÁN HỌC THUẬT (PR-S2 · S2 · rulebook §18.2 điểm 2, nguồn §7).
@@ -72,7 +72,7 @@ export function chuanHoaDieuChinh(p: Principal, iv: any, input: DieuChinhVao | n
   let description = oldDesc;
   if (typeof a.description === 'string' && a.description.trim() !== oldDesc) {
     description = chuTuDo(a.description, 'Mô tả ngắn', TRAN_CHU.noiDungPa) ?? '';   // N35 (chỉ khi chữ đổi)
-    if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em, ít nhất 8 ký tự.');
+    if (description.length < CHU_TOI_THIEU_CASE) throw loiHttp(400, 'Mô tả ngắn phải nói rõ làm gì cho em — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   /* Người thực hiện đi qua luật chung (PR-Form F-2). PR-PA (§8): như Sửa PA — gửi BẤT KỲ khoá người nào = đặt lại (cả ba trống = xoá
      người); không gửi khoá nào = giữ người cũ. Tự học không có ô người — bỏ qua. */

@@ -119,6 +119,7 @@ import { migratePrNghiaVu } from './migrate/prNghiaVu.ts';
 import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 import { migratePrWLech } from './migrate/prWLech.ts';
 import { migratePrK316 } from './migrate/prK316.ts';
+import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
 
@@ -490,6 +491,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrWLech(conn, applied));
   /* K3-16 (chủ SP 11/11): PA quy chế cũ "đến MTn" / "1 tháng" đang chạy cạnh PA mới (trượt lại trước #1303) → Kết quả cuối; nhật ký giữ mốc cũ (đổi dữ liệu MỘT lần, khoá demo_config). */
   buoc(() => migratePrK316(conn, applied));
+  /* SOS-TAM-PA (chủ SP 11/11): Case đã chốt có PA quy chế chờ + PA GV cùng loại → PA GV mang dấu quy chế, PA quy chế chờ huỷ (đổi dữ liệu MỘT lần, khoá demo_config). */
+  buoc(() => migratePrSosTamPa(conn, applied));
   /* CAU-HINH-CASE-SOS: lần 2 — DB cũ vừa có bảng Case / phối hợp ở bước trên (lần đầu bỏ qua bảng chưa có). */
   buoc(() => migratePrCauHinhCaseSos(conn, applied));
 

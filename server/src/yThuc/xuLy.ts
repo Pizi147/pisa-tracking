@@ -9,11 +9,11 @@
  * Bậc kế cần QL (WL 3) hoặc hết thang → phải đi đường Đề xuất (thẻ `y_thuc`, `deXuat*` ở cuối file). Bậc không lùi (V4-12): bậc đọc từ
  * `kind` của lần xử lý, xoá vi phạm không xoá lần xử lý. Trạng thái mọi vi phạm đọc qua `trangThaiYThuc()` (một cửa).
  * LUAT-5 (luật 5, 21/10): lần xử lý đã lưu KHÔNG xoá — "Thu hồi…" kèm lý do (GVCN gửi QL duyệt, QL làm thẳng) → `thu_hoi` giữ dòng; xử lý không
- * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. Không Hoàn tác sau lưu (02 4.7 B15): bấm nhầm cũng gửi Thu hồi.
+ * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. [XM 5] (PTA 11/11, thay B15): Hoàn tác 10 s ở toast (`hoanTacXuLy`); quá hạn thì Thu hồi.
  */
 import { DS_JSON, db, tx } from '../db.ts';
 import {
-  NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL,
+  HAN_Y_THUC_NGAY, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
   bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
@@ -554,7 +554,14 @@ export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; cus
   }
   const note = moTa(v.note);
   const ids = viPhamChon(em, v.violationIds);
-  return tx(() => {
+  const khoaTep: string[] = [];
+  const kq = tx(() => {
+    /* #6 (G3-4): nháp cũ của CHÍNH người này cho em này (đóng tab giữa lúc gửi) dọn trước khi tạo nháp mới — không còn nháp mồ côi. */
+    for (const cu of db().prepare(`SELECT id FROM discipline_measures WHERE student_id = ? AND created_by = ? AND status = 'nhap'`).all(studentId, p.userId) as { id: number }[]) {
+      purgeAttachmentsOf('discipline_measure', cu.id, p.userId, khoaTep);
+      db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(cu.id);
+      db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'nhap'`).run(cu.id);
+    }
     const info = db().prepare(
       `INSERT INTO discipline_measures (student_id, cycle_id, class_id, kind, custom_name, status, owner_user_id, note, created_at, created_by)
        VALUES (?,?,?,?,?, 'nhap', ?,?,?,?)`,
@@ -566,6 +573,8 @@ export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; cus
       entityLabel: `${hv.student_code} · nháp ${nhanLoaiXuLy(kind, customName)}`, after: { kind, violations: ids } });
     return { id, kind, nhan: nhanLoaiXuLy(kind, customName) };
   });
+  xoaTepSauGiaoDich(khoaTep);
+  return kq;
 }
 
 /** LUAT-5: loại thang ở bậc hiện tại hoặc thấp hơn = "xử lý không tăng bậc" (em chưa có bậc thì không có). */
@@ -859,7 +868,7 @@ function xoaXuLyTrongTx(p: Principal, m: any, hv: { student_code: string }, khoa
       performedBy: m.performed_by ?? null, performerName: m.performer_name ?? null, createdBy: m.created_by, violations: vIds, attachments: files, daBaoPhuHuynh: daBaoPh } });
 }
 
-/** Đóng panel giữa chừng: xoá NHÁP (chỉ `nhap`). Tệp trong kho xoá SAU khi giao dịch chốt. ponytail: nháp bỏ dở (đóng tab) không dọn tự động. */
+/** Đóng panel giữa chừng: xoá NHÁP (chỉ `nhap`). Tệp trong kho xoá SAU khi giao dịch chốt. Nháp bỏ dở (đóng tab) dọn ở lần `deXuat` sau của cùng người · cùng em (#6). */
 export function xoaNhap(p: Principal, measureId: number): { ok: true } {
   const m = db().prepare('SELECT id, student_id, status FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) throw notFound('Không tìm thấy đề xuất');
@@ -873,4 +882,85 @@ export function xoaNhap(p: Principal, measureId: number): { ok: true } {
   });
   xoaTepSauGiaoDich(khoaTep);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------- [XM 5] Hoàn tác Xác nhận xử lý (10 s)
+
+/** Toast 10 s + trễ mạng: máy chủ nhận Hoàn tác trong 60 s kể từ lúc lưu. */
+const HOAN_TAC_XU_LY_GIAY = 60;
+
+/**
+ * [XM 5] (PTA Plan 11/11 duyệt, theo lời chủ SP mới hơn B15 / LUAT-5: 07/11 "mở mọi chặn cứng", 11/11 #10 "Hoàn tác 10 s ở mọi nơi"): người VỪA lưu
+ * Xác nhận xử lý bấm Hoàn tác ở toast → xoá hẳn lần xử lý + việc Báo PH (TVV chưa ghi), vi phạm về như trước. Quá hạn / TVV đã ghi / đã có lần sau /
+ * lần qua QL duyệt → 400, dùng Thu hồi như cũ. Nhật ký `discipline.measure_undo` đủ nội dung.
+ */
+export function hoanTacXuLy(p: Principal, measureId: number): { ok: true } {
+  const m = loadXuLy(measureId);
+  const hv = hocVien(m.student_id);
+  requireManageDiscipline(p, m.student_id, MANAGE_MESSAGE);
+  const chuaXong = 'Quá thời gian Hoàn tác — dùng Thu hồi… ở lần xử lý.';
+  if (m.status !== 'done' || m.quyet_luc || m.created_by !== p.userId) throw badRequest(chuaXong);
+  if (Date.now() - Date.parse(m.created_at) > HOAN_TAC_XU_LY_GIAY * 1000) throw badRequest(chuaXong);
+  const viec = db().prepare('SELECT id FROM viec_bao_ph WHERE measure_id = ?').get(measureId) as { id: number } | undefined;
+  if (viec && db().prepare('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ? LIMIT 1').get(viec.id)) throw badRequest('TVV đã ghi báo PH cho lần này — dùng Thu hồi… ở lần xử lý.');
+  if (db().prepare(`SELECT 1 FROM discipline_measures WHERE student_id = ? AND id > ? AND status != 'nhap' LIMIT 1`).get(m.student_id, measureId)) {
+    throw badRequest('Đã có lần xử lý sau lần này — dùng Thu hồi… ở lần xử lý.');
+  }
+  const vIds = viPhamCua(measureId);
+  const khoaTep: string[] = [];
+  tx(() => {
+    purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
+    if (viec) db().prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(viec.id);
+    db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
+    db().prepare(`DELETE FROM notifications WHERE dedup_key = ?`).run(`yt-xu-ly:${measureId}`);
+    db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'done'`).run(measureId);
+    for (const vid of vIds) noteMeasureChange(vid, measureId, null, p.userId);
+    /* ponytail: phản hồi đặt hôm nay bởi chính lần này → gỡ khi vi phạm không còn dấu khác (chưa Đã xem, không lần xử lý khác); dấu cũ hơn giữ. */
+    if (vIds.length) {
+      db().prepare(`UPDATE violations SET phan_hoi_ngay = NULL WHERE id IN (${vIds.map(() => '?').join(',')}) AND phan_hoi_ngay = ? AND ghi_nhan_luc IS NULL
+        AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = violations.id)`).run(...vIds, demoToday());
+    }
+    chotHanXuLy([m.student_id]);
+    writeAudit({ actorUserId: p.userId, action: 'discipline.measure_undo', entityType: 'discipline_measure', entityId: measureId,
+      entityLabel: `${hv.student_code} · hoàn tác ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
+      before: { studentId: m.student_id, kind: m.kind, status: m.status, note: m.note ?? null, performedOn: m.performed_on ?? null, violations: vIds } });
+  });
+  xoaTepSauGiaoDich(khoaTep);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------- #6 (rà 11/11 G3-7, G3-8) — ai biết khi QL duyệt đề xuất
+
+/** CX còn hoạt động của chi nhánh (vai toàn hệ thống: `branch_id` NULL). */
+function cxCuaChiNhanh(branchId: number | null): number[] {
+  return (db().prepare(
+    `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+      WHERE r.key = 'cx' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL AND (ur.branch_id IS NULL OR ur.branch_id IS ?)`,
+  ).all(branchId) as any[]).map((r) => r.id as number);
+}
+
+/**
+ * TRONG tx của Duyệt thẻ `y_thuc`: GVCN lớp em (+ người gửi) có tin "Cần làm" kèm hạn, mở thẳng việc "Đánh dấu đã thực hiện" (rời nhóm khi lần xử lý
+ * hết "đã duyệt"); Meeting CX/GĐCN → CX chi nhánh "Để biết" (người dự họp). Thay tin chung "Yêu cầu … · Đã duyệt" (Để biết) của hộp duyệt.
+ */
+export function baoSauDuyetDeXuat(p: Principal, measureId: number, homNay: string): void {
+  const m = db().prepare('SELECT id, student_id, kind, custom_name, created_by FROM discipline_measures WHERE id = ?').get(measureId) as any;
+  if (!m) return;
+  const em = emCua(m.student_id); const hv = hocVien(m.student_id);
+  const nhan = nhanLoaiXuLy(m.kind, m.custom_name);
+  const lop = em.lopId ? db().prepare('SELECT code, branch_id FROM classes WHERE id = ?').get(em.lopId) as { code: string; branch_id: number | null } | undefined : undefined;
+  for (const uid of new Set([em.gvcnId, m.created_by].filter((x): x is number => !!x && x !== p.userId))) {
+    notify({ userId: uid, kind: 'yt_da_duyet', title: `QL đã duyệt ${nhan} · ${hv.full_name} · ghi "Đã thực hiện"`,
+      entityType: 'discipline_measure', entityId: measureId, dedupKey: `yt-da-duyet:${measureId}`,
+      duong: `/cong-viec?viec=${encodeURIComponent(`yt_thuc_hien:${measureId}`)}`, han: hanTheoNgay(homNay, HAN_Y_THUC_NGAY) });
+  }
+  if (m.kind !== 'meeting_cx') return;
+  const maLop = lop?.code ?? '—';
+  const gvcn = em.gvcnId ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(em.gvcnId) as { full_name: string } | undefined)?.full_name : undefined;
+  for (const uid of cxCuaChiNhanh(lop?.branch_id ?? hv.branch_id)) {
+    if (uid === p.userId) continue;
+    notify({ userId: uid, kind: 'discipline_de_biet', title: `Có Meeting CX/GĐCN · ${hv.full_name} · ${maLop}`,
+      body: gvcn ? `GVCN ${gvcn}` : null, entityType: 'discipline_measure', entityId: measureId, dedupKey: `yt-meeting-cx:${measureId}`,
+      duong: duongHoSoHocVien(m.student_id, { tab: 'y-thuc' }) });
+  }
 }

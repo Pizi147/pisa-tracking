@@ -3,7 +3,7 @@ import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { maNhomHopLe,
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
-  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL } from '../../../shared/domain/index.ts';
+  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL, CHU_TOI_THIEU_CASE } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, canXacNhan, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -18,7 +18,7 @@ import { mondayOf } from '../platform/week.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { pbCuaLuot, dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
-import { CHO_DOI_PA, LA_CASE_MT, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
+import { CHO_DOI_PA, LA_CASE_MT, PA_GV_MO, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, choDoiPa, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
@@ -108,7 +108,7 @@ export function resyncUnconfirmedPresets(
   /* PR-SOS: chỉ PA CHỜ XÁC NHẬN (PA đã xác nhận là việc thật — không đụng); `followup_due` luôn NULL tới lúc xác nhận. */
   const rows = db()
     .prepare(
-      `SELECT iv.id, iv.kind, iv.description, iv.moc_quy_che, iv.performer_user_id, iv.performer_name, sc.category
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.moc_quy_che, iv.performer_user_id, iv.performer_name, sc.category
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done'
@@ -125,7 +125,157 @@ export function resyncUnconfirmedPresets(
     db()
       .prepare('UPDATE case_interventions SET kind = ?, description = ?, moc_quy_che = ?, performer_user_id = ?, performer_name = ?, updated_at = ? WHERE id = ?')
       .run(p.kind, p.description, p.span, nguoi, ten, nowIso(), iv.id);
+    /* SOS-TAM-PA (3.4): loại PA quy chế đổi thành trùng PA của GV → PA của GV mang dấu quy chế, PA quy chế chờ thôi (hết việc "Chọn PA"). */
+    if (iv.kind !== p.kind) {
+      const g = paGvMo(iv.case_id).find((x) => x.kind === p.kind);
+      if (g) {
+        ganDauQuyChe(g, p, attempt, null);
+        db().prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'dismissed', updated_at = ? WHERE id = ?`).run(nowIso(), iv.id);
+        /* Cùng nhật ký migrate prSosTamPa — `khoiPhucSosTamPa` trả lại được (PA quy chế về chờ, PA GV bỏ dấu). */
+        db().prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_quy_che_trung_gv', ?, 'cancelled', NULL, ?)`)
+          .run(iv.case_id, JSON.stringify({ q: iv.id, g: g.id, status: 'planned', closed_reason: null }), nowIso());
+        dongBoTrangThaiCase(iv.case_id);
+      }
+    }
   }
+}
+
+// ---------------------------------------------------------------- SOS-TAM-PA (chủ SP 11/11): PA của GV ↔ PA quy chế lúc SOS chốt
+
+/** PA của GV đang mở trên Case (`PA_GV_MO`), cũ trước. */
+export function paGvMo(caseId: number): any[] {
+  return db().prepare(`SELECT g.* FROM case_interventions g WHERE g.case_id = ? AND ${PA_GV_MO('g')} ORDER BY g.id`).all(caseId) as any[];
+}
+
+/**
+ * PA GV TRÙNG LOẠI PA quy chế → mang dấu quy chế: `preset`, loại mốc + mốc tính từ hôm nay (như Xác nhận PA), người xác nhận = người ghi PA. Nội dung, người dạy,
+ * ngày bắt đầu, kết quả giữ nguyên — không việc mới. Lịch sử `pa_gv_quy_che` giữ bản cũ (`khoiPhucSosTamPa` trả lại).
+ */
+export function ganDauQuyChe(g: any, p: AcademicSupportPreset, luot: any | null, actor: number | null): void {
+  const conn = db();
+  const today = demoToday();
+  const moc = mocQuyChe(p.span, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(luot?.cycle_id ?? null, today) });
+  conn.prepare(`UPDATE case_interventions SET preset = 1, moc_quy_che = ?, followup_due = ?, confirmed_by = COALESCE(confirmed_by, recorded_by, performer_user_id, ?),
+      confirmed_at = COALESCE(confirmed_at, ?), updated_at = ? WHERE id = ?`).run(p.span, moc, actor, nowIso(), nowIso(), g.id);
+  conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_gv_quy_che', ?, ?, ?, ?)`)
+    .run(g.case_id, JSON.stringify({ pa: g.id, moc_quy_che: g.moc_quy_che ?? null, followup_due: g.followup_due ?? null, confirmed_by: g.confirmed_by ?? null, confirmed_at: g.confirmed_at ?? null }),
+      p.span, actor, nowIso());
+}
+
+/**
+ * PA QUY CHẾ CHO CASE LÚC SOS CHỐT / TRƯỢT LẠI (thay `createPresetPlan` ở các đường đó — luật chủ SP 11/11): PA GV cùng loại → gắn dấu, KHÔNG PA mới ('trung');
+ * không → PA quy chế chờ xác nhận như cũ (id; có PA GV khác loại thì việc là "Chọn PA"); không có gì để điền / PA-TRUNG → null.
+ */
+export function paQuyCheTheoGv(input: Parameters<typeof createPresetPlan>[0] & { attempt: any }, actor: number | null): 'trung' | number | null {
+  const p = presetFor(input.attempt, input.sosLevel);
+  if (!p) return null;
+  const g = paGvMo(input.caseId).find((x) => x.kind === p.kind);
+  if (g) { ganDauQuyChe(g, p, input.attempt, actor); return 'trung'; }
+  return createPresetPlan(input);
+}
+
+/** Đặt hạn ghi kết quả (từ hôm nay) cho PA đang chạy chưa có hạn của Case vừa hết tạm — PA ghi lúc SOS tạm không có hạn (`HAN_KQ_NGOAI_TAM`). */
+/* ponytail: PA nhập bù đang chạy (không hạn) trên Case tạm cũng nhận hạn ở đây — hiếm; cần tách thì thêm cờ nhập bù trên PA. */
+export function hanKqLucChot(caseId: number): void {
+  const today = demoToday();
+  db().prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE case_id = ? AND status = 'started' AND action_due IS NULL AND cycle_started_on IS NOT NULL
+      AND NOT ${UNCONFIRMED_PRESET('case_interventions')}`).run(hanKyGhiKetQua(today, today), nowIso(), caseId);
+}
+
+/** PA GV khác loại PA quy chế `q` (việc "Chọn PA") — rỗng khi không có. */
+export const paGvKhacLoai = (q: { case_id: number; kind: string }): any[] => paGvMo(q.case_id).filter((x) => x.kind !== q.kind);
+
+/** Cột PA GV đổi khi "chọn PA quy chế" — chụp trước để Hoàn tác / Huỷ quyết định trả lại. */
+const COT_PA_GV = ['status', 'completed_date', 'closed_reason', 'superseded_by'] as const;
+/** PA GV khép vì chọn PA quy chế `qId`: "Được thay thế" bởi PA quy chế (kết quả đã ghi giữ). Trả bản chụp trước. */
+export function thayPaGvBangQuyChe(gs: readonly any[], qId: number): { id: number; truoc: Record<string, unknown> }[] {
+  const up = db().prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'superseded', superseded_by = ?, updated_at = ? WHERE id = ?`);
+  return gs.map((g) => {
+    up.run(demoToday(), qId, nowIso(), g.id);
+    return { id: g.id as number, truoc: Object.fromEntries(COT_PA_GV.map((k) => [k, g[k] ?? null])) };
+  });
+}
+function traPaGv(conn: any, ds: readonly { id: number; truoc: Record<string, unknown> }[] | undefined): void {
+  for (const x of ds ?? []) {
+    conn.prepare(`UPDATE case_interventions SET ${COT_PA_GV.map((k) => `${k} = ?`).join(', ')}, updated_at = ? WHERE id = ?`)
+      .run(...COT_PA_GV.map((k) => x.truoc[k] ?? null), nowIso(), x.id);
+  }
+}
+
+/**
+ * "GIỮ PA CỦA TÔI" (việc Chọn PA): thẻ `giu_pa_gv` cho QL (đối tượng = PA quy chế chờ, hạn 3 ngày — quá hạn máy chốt theo GV), PA quy chế chờ
+ * (`superseded_by` → PA GV, Case "Chờ duyệt đổi PA", việc Chọn PA rời GV), PA GV vẫn chạy. Lý do không bắt buộc (Q3). Quyền như Xác nhận PA.
+ */
+export function giuPaGv(p: Principal, qId: number, input: { lyDo?: unknown } = {}) {
+  const conn = db();
+  const kiem = () => {
+    const q = conn.prepare(`SELECT iv.*, sc.status AS case_status, sc.student_id AS sid FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`).get(qId) as any;
+    if (!q) throw notFound('Không tìm thấy phương án.');
+    caseAccess(q.case_id).requireEdit(p, EDIT_MESSAGE);
+    if (q.case_status === 'done') throw badRequest('Case đã đóng — không còn chọn PA được.');
+    if (!q.preset || q.kind === 'bo_tro' || q.confirmed_at || q.status !== 'planned') throw badRequest('PA quy chế này không còn chờ chọn.');
+    if (choDoiPa(q)) throw badRequest('Đang chờ Quản lý duyệt — Rút trước nếu muốn chọn lại.');
+    const gs = paGvKhacLoai(q);
+    if (!gs.length) throw badRequest('Case không có PA của GV khác PA quy chế — Xác nhận PA quy chế.');
+    return { q, gs };
+  };
+  kiem();
+  const lyDo = typeof input.lyDo === 'string' ? input.lyDo.trim().slice(0, 1000) || null : null;
+  return tx(() => {
+    const { q, gs } = kiem();
+    const id = taoYeuCau(conn, { loai: 'giu_pa_gv', doiTuongLoai: 'intervention', doiTuongId: q.id, hocVienId: q.sid, nguoiXin: p.userId, lyDo,
+      duLieu: { paGv: gs.map((g) => g.id), kindQ: q.kind, kindG: gs[0].kind } });
+    if (id == null) throw badRequest('Đã gửi Quản lý duyệt rồi.');
+    conn.prepare('UPDATE case_interventions SET superseded_by = ?, updated_at = ? WHERE id = ?').run(gs[0].id, nowIso(), q.id);
+    dongBoTrangThaiCase(q.case_id);
+    writeAudit({ actorUserId: p.userId, action: 'case.plan.giu_pa_gv', entityType: 'case_intervention', entityId: q.id, entityLabel: `Case ${q.case_id} · ${q.kind}`,
+      after: { yeuCau: id, paGv: gs.map((g) => g.id), lyDo } });
+    return caseDetail(p, q.case_id);
+  });
+}
+
+/**
+ * HỆ QUẢ thẻ `giu_pa_gv` lên PA (trong giao dịch của hộp / quét):
+ *   · `duyet` (QL Duyệt, hoặc quá 3 ngày QL chưa trả lời): PA quy chế "Đã kết thúc · Đổi PA" — PA GV giữ;
+ *   · `tu_choi` (Q4): PA quy chế chạy từ hôm nay (người xác nhận = QL), PA GV "Được thay thế";
+ *   · `tra` (người gửi Rút / thẻ tự đóng): PA quy chế về chờ chọn.
+ */
+export function apDungGiuPaGv(yc: { doi_tuong_id: number; du_lieu: string | null }, kieu: 'duyet' | 'tu_choi' | 'tra', actor: number | null): void {
+  const conn = db();
+  const q = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(yc.doi_tuong_id) as any;
+  if (!q || q.confirmed_at || q.status !== 'planned') return;
+  const today = demoToday();
+  if (kieu === 'duyet') {
+    conn.prepare(`UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'doi_pa', updated_at = ? WHERE id = ?`).run(today, nowIso(), q.id);
+  } else if (kieu === 'tra') {
+    conn.prepare('UPDATE case_interventions SET superseded_by = NULL, updated_at = ? WHERE id = ?').run(nowIso(), q.id);
+  } else {
+    let ids: number[] = [];
+    try { ids = (JSON.parse(yc.du_lieu ?? '{}').paGv ?? []) as number[]; } catch { ids = []; }
+    const gs = ids.length ? conn.prepare(`SELECT g.* FROM case_interventions g WHERE g.id IN (${ids.map(() => '?').join(',')}) AND ${PA_GV_MO('g')}`).all(...ids) as any[] : [];
+    thayPaGvBangQuyChe(gs, q.id);
+    /* Q4: chạy ngay — Tutor máy gán chưa có Số buổi vẫn chạy (Số buổi trống = không đếm buổi); GV điền ở Sửa PA. */
+    const luot = luotSinhPa(q);
+    const c = conn.prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(q.case_id) as any;
+    const moc = q.moc_quy_che ? mocQuyChe(q.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(c?.cycle_id ?? null, today) }) : null;
+    conn.prepare(`UPDATE case_interventions SET superseded_by = NULL, status = 'started', started_date = ?, cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?,
+        confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`).run(today, today, hanKyGhiKetQua(today, today), moc, actor, nowIso(), nowIso(), q.id);
+  }
+  dongBoTrangThaiCase(q.case_id);
+}
+
+/** Quét (`quetYeuCau`): thẻ `giu_pa_gv` quá hạn (hết ngày gửi + 3) QL chưa trả lời → chốt theo PA của GV (`tu_dong`). Trả số thẻ. */
+export function quetGiuPaGv(conn: any, homNay: string): number {
+  const ds = conn.prepare(`SELECT id, doi_tuong_id, du_lieu FROM yeu_cau_duyet WHERE loai = 'giu_pa_gv' AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`).all(homNay) as any[];
+  if (!ds.length) return 0;
+  tx(() => {
+    for (const y of ds) {
+      apDungGiuPaGv(y, 'duyet', null);
+      chotYeuCau(conn, { loai: 'giu_pa_gv', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong',
+        { lyDo: 'Quá 3 ngày Quản lý chưa trả lời — chốt theo PA của GV' });
+    }
+  });
+  return ds.length;
 }
 
 /** Ghi hành trình + audit + báo GVBM (người phụ trách) cho một Case vừa được SOS tự tạo. `hanXacNhan` = `sos_cases.han_xac_nhan`. */
@@ -209,7 +359,7 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
   if (!(URGENCY_LEVELS as readonly string[]).includes(urgency)) throw badRequest('Chọn mức độ gấp.');
   const moTa = String(input.moTa ?? '').trim();
   /* Hotfix 15/10 (L2): Case MT nguyên nhân từ ô — nhận xét của bài thay Mô tả, không đòi. */
-  if (moTa.length < 15 && !(o.khongDoiMoTa && !moTa)) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
+  if (moTa.length < CHU_TOI_THIEU_CASE && !(o.khongDoiMoTa && !moTa)) throw loi(400, 'Mô tả cần ít nhất {n} ký tự — sai ở đâu, bài hay buổi nào.', { n: CHU_TOI_THIEU_CASE });
   if (vuotTran(moTa, TRAN_CHU.moTaCase, o.moTaCu)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: moTa.length });   // N35
   const tenGiua = String(input.tenGiua ?? '').trim();
   if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
@@ -521,7 +671,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     throw badRequest('Thiếu mô tả PA — ghi hướng dẫn, trọng tâm và ai thực hiện rồi mới xác nhận.');
   }
   const description = input.description.trim();
-  if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
+  if (description.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Mô tả PA cần ít nhất {n} ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.', { n: CHU_TOI_THIEU_CASE });
   if (vuotTran(description, TRAN_CHU.noiDungPa, iv.description)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả ngắn', toiDa: TRAN_CHU.noiDungPa, n: description.length });   // N35
   /* PR-PA (§8): như Sửa PA — không gửi khoá người = giữ người máy gán. */
   const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
@@ -549,6 +699,8 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
         after: { description, performerUserId, performerName, followupDue: iv.followup_due ?? null, soBuoi, startedDate: iv.started_date ?? null },
       });
     }
+    /* SOS-TAM-PA (Chọn PA · "Theo PA quy chế"): PA của GV khác loại khép "Được thay thế" bởi PA quy chế — Hoàn tác trả lại (`paGvThay`). */
+    const paGvThay = thayPaGvBangQuyChe(paGvKhacLoai(iv), interventionId);
     dongBoTrangThaiCase(iv.case_id);
     const c = conn.prepare('SELECT student_id, cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any;
     addJourney({
@@ -558,7 +710,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     });
     writeAudit({
       actorUserId: p.userId, action: 'case.preset.confirm', entityType: 'case_intervention', entityId: interventionId,
-      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description, hoanTac: chupPa(iv) }, after: { description, followupDue: moc, performerUserId, revId, ...(o.nguon ? { nguon: o.nguon } : {}) },
+      entityLabel: `Case ${iv.case_id} · ${iv.kind}`, before: { description: iv.description, hoanTac: chupPa(iv) }, after: { description, followupDue: moc, performerUserId, revId, ...(o.nguon ? { nguon: o.nguon } : {}), ...(paGvThay.length ? { paGvThay } : {}) },
     });
     return o.chiGhi ? null : caseDetail(p, iv.case_id);
   });
@@ -624,6 +776,9 @@ export function xacNhanPaNhieu(p: Principal, body: unknown): { ok: number[]; loi
       ...(r.soBuoi !== undefined ? { soBuoi: r.soBuoi } : chung.soBuoi !== undefined ? { soBuoi: chung.soBuoi } : {}),
       ...(coNguoiRieng ? Object.fromEntries(KHOA_NGUOI.filter((k) => k in r).map((k) => [k, r[k]])) : nguoiChung && !hien.get(id)?.co_nguoi ? nguoiChung : {}),
     };
+    /* SOS-TAM-PA: Case có PA của GV khác PA quy chế = việc "Chọn PA" — không chọn thay GV trong lô (xác nhận sẽ khép PA của GV). */
+    const q = db().prepare('SELECT case_id, kind FROM case_interventions WHERE id = ?').get(id) as any;
+    if (q && paGvKhacLoai(q).length) { hong.push({ id, loi: 'Case có PA của GV khác PA quy chế — mở "Chọn PA" cho em này.', ma: 409 }); continue; }
     try { xacNhanPaQuyChe(p, id, than, { chiGhi: true }); ok.push(id); } catch (e: any) { hong.push({ id, loi: e?.message ?? 'Không xác nhận được.', ma: e?.status ?? 500 }); }
   }
   return { ok, loi: hong, chuaLam };
@@ -691,6 +846,7 @@ export function hoanTacXacNhanPa(p: Principal, interventionId: number, o: { chiG
     if ((conn.prepare('SELECT status FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.status === 'done') throw conflict('Case đã đóng — Mở lại Case trước.');
     if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) throw conflict('PA đã có kết quả — không hoàn tác được; sửa kết quả nếu cần.');
     traPa(conn, interventionId, truoc.hoanTac);
+    traPaGv(conn, sau?.paGvThay);
     if (sau?.revId) conn.prepare('DELETE FROM case_intervention_revisions WHERE id = ? AND intervention_id = ?').run(sau.revId, interventionId);
     conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`preset-confirm:${interventionId}`);
     dongBoTrangThaiCase(iv.case_id);
@@ -718,6 +874,7 @@ export function traXacNhanNgam(p: Principal, interventionId: number): boolean {
     .get(interventionId, nk.id)) return false;
   const iv = conn.prepare('SELECT case_id, kind FROM case_interventions WHERE id = ?').get(interventionId) as any;
   traPa(conn, interventionId, truoc.hoanTac);
+  traPaGv(conn, sau.paGvThay);
   if (sau.revId) conn.prepare('DELETE FROM case_intervention_revisions WHERE id = ? AND intervention_id = ?').run(sau.revId, interventionId);
   conn.prepare('DELETE FROM journey_events WHERE dedup_key = ?').run(`preset-confirm:${interventionId}`);
   dongBoTrangThaiCase(iv.case_id);

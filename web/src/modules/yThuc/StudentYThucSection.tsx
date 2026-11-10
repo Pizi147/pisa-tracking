@@ -206,7 +206,13 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
       return khoi({
         key: `ls-v${x.id}`, vp: vpCua([x.id]), nen: lsVua.includes(x.id) ? 'vua' : undefined, ph: null,
         gv: <OBuoc badge={<BadgeViec tong="xam">{t('Đã xem')}</BadgeViec>} phu={[x.xemLuc && x.xemBoi ? `${lucVn(x.xemLuc)} · ${x.xemBoi}` : x.xemBoi]} />,
-        tiep: d.canManage ? <button type="button" className={LINK} disabled={dangGhi} aria-label={`${t('Bỏ xem')} · ${x.viPham}`} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button> : <span className="text-slate-500">—</span>,
+        /* Rà 11/11 G3-6: vi phạm đã xem vẫn xử lý ngay được (cùng nút như dòng Mới), không phải Bỏ xem rồi đổi tab. */
+        tiep: d.canManage ? (
+          <span className="flex flex-wrap justify-center gap-x-3">
+            {x.trongChuoi !== false && <button type="button" className={LINK} aria-label={`${t('Xác nhận xử lý')} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>}
+            <button type="button" className={LINK} disabled={dangGhi} aria-label={`${t('Bỏ xem')} · ${x.viPham}`} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button>
+          </span>
+        ) : <span className="text-slate-500">—</span>,
       });
     }
     return khoi({ key: `ls-x${x.id}`, vp: vpCua(x.viPhamIds), gv: oXl(x), ph: ph(x.baoPh), b: x.baoPh, tiep: <span className="text-slate-500">—</span> });

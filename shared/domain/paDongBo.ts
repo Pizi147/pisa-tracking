@@ -6,7 +6,7 @@ import { dsLoi, type LoiTruong } from './loiForm.ts';
 import { nguoiThanhPayload, nguoiThieu, type NguoiChon } from './nguoiThucHien.ts';
 import { KHAC_TOI_THIEU } from './khac.ts';
 import { TRAN_CHU } from './nhanXet.ts';
-import { INTERVENTION_KIND_LABEL, mucPaCua } from './cases.ts';
+import { CHU_TOI_THIEU_CASE, INTERVENTION_KIND_LABEL, mucPaCua } from './cases.ts';
 import { kyGhiKetQua, ngayTheoGioVN } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { addDaysIso } from './sos.ts';
@@ -196,7 +196,7 @@ export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; g
   const doi = (k: 'description' | 'soBuoi') => !goc || v[k].trim() !== goc[k].trim();
   const loi = dsLoi([
     ...(v.kind === 'other_proposal' && !goc ? [{ khoa: `${tien}ghi-ro`, nhan: t('Tên đề xuất'), toiThieu: KHAC_TOI_THIEU }] : []),
-    ...(doi('description') ? [{ khoa: `${tien}noi-dung`, nhan: t('Nội dung'), toiThieu: o.toiThieu ?? 8, toiDa: TRAN_CHU.noiDungPa }] : []),   // N35
+    ...(doi('description') ? [{ khoa: `${tien}noi-dung`, nhan: t('Nội dung'), toiThieu: o.toiThieu ?? CHU_TOI_THIEU_CASE, toiDa: TRAN_CHU.noiDungPa }] : []),   // N35
   ], { [`${tien}ghi-ro`]: v.ghiRo, [`${tien}noi-dung`]: v.description });
   const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0)
     ?? (o.batBuoc && v.kind === 'tutor' && !v.soBuoi.trim() ? t('Nhập số buổi') : null) : null;

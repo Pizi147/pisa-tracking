@@ -3,7 +3,7 @@ import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_KHAC, coMt0, mocLoTrinh, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
+  PERMISSIONS, ROUTE_KHAC, coMt0, mocLoTrinh, xepLopDich, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -116,7 +116,9 @@ export function lopDichChoChuyen(p: Principal, sid: number, theo?: boolean | nul
   }, { maTu }));
   /* N36: +3 câu, chỉ khi form Đề xuất hỏi (`bac`) và em đang ở lớp thường. */
   const bacYThuc = bac && !enr.is_fast_track && !enr.route ? trangThaiYThuc([sid]).get(sid)?.bac ?? 0 : 0;
-  return { ...ds, lop, nguon: { ft: !!enr.is_fast_track, tuCuoiKhoa, coTheChon, ma: maTu, bacYThuc } };
+  /* #8 (G4-05): cùng chi nhánh, cùng loại lên đầu ô gõ tên lớp. */
+  const xep = xepLopDich(lop, { chiNhanhId: enr.branch_id, ft: !!enr.is_fast_track, route: enr.route ?? null, ma: maTu });
+  return { ...ds, lop: xep, nguon: { ft: !!enr.is_fast_track, tuCuoiKhoa, coTheChon, ma: maTu, bacYThuc } };
 }
 
 /** Lớp ĐANG hoạt động để chọn làm lớp chuyển đến (trừ lớp `boQuaLopId`) + chi nhánh — dùng chung Chuyển lớp và Học lại sang lớp mới (PR-LUI-b). */

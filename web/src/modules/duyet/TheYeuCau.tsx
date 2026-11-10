@@ -8,6 +8,7 @@ import { NhanTrangThai, NutChon } from '../../ui/ui.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { NguoiGiu, ThePhu } from '../congViec/DanhSachViec.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
+import { KhoiDuyetYThuc } from '../yThuc/KhoiDuyetYThuc.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -288,6 +289,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
                 </dl>
               )}
             </div>
+            {/* #6 (G3-5, mockup #1346 K3): đề xuất / thu hồi Ý thức — vi phạm + bằng chứng ngay trong panel duyệt (đọc khi mở). */}
+            {panel && cho && (yc.loai === 'y_thuc' || yc.loai === 'thu_hoi_y_thuc') && yc.doiTuongId != null && <KhoiDuyetYThuc measureId={yc.doiTuongId} />}
             {/* CD-GON (M4): "Nếu duyệt" lặp ý tiêu đề → mở bằng "Xem thêm" (và `title` nút Duyệt); panel vẫn có khối "Sau khi duyệt". */}
             {(biCat || moHet || (!!yc.neuDuyet && cho)) && !panel && (
               <button type="button" className="order-last shrink-0 min-h-[44px] text-[12px] text-[color:var(--accent-strong)] hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}

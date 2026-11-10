@@ -410,6 +410,8 @@ export const EN_SOT_QUAN_TRI = {
   'Xin thu hồi lần xử lý': 'Request action withdrawal',
   'Thu hồi lần xử lý': 'Withdraw action',
   'Huỷ thu hồi lần xử lý': 'Cancel action withdrawal',
+  'Hoàn tác Xác nhận xử lý': 'Undo confirmed action',
+  'Báo lại · đã thu hồi': 'Update parents · withdrawn',
   'Gán người phụ trách Case': 'Assign case owner',
   'Ghi kết quả báo phụ huynh': 'Record parent contact result',
   'Bỏ việc báo phụ huynh': 'Drop parent contact task',

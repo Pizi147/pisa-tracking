@@ -570,6 +570,11 @@ export function xemTruocLuu(p: Principal, body: { lop?: unknown }): XemTruocLuu 
   const hienTai = docHienTai(ids);
   const tienDo = classProgressMany(ids);
   const xepNho = new Map<number, DuocXep>();
+  /* #8 (G4-15): cột việc bàn giao còn mở của các lớp — MỘT câu; cùng điều kiện "B vừa nhận lớp" của `dongBoViecBanGiao`. */
+  const cotMo = db().prepare(
+    `SELECT b.class_id, m.mon, m.nguoi_moi, b.nguoi_cu FROM ban_giao_gv_mon m JOIN ban_giao_gv b ON b.id = m.ban_giao_id
+      WHERE b.class_id IN (${inHang(ids.length)}) AND b.trang_thai = 'mo' AND m.trang_thai = 'mo'`,
+  ).all(...ids) as any[];
   return {
     lop: vao.map((l) => {
       const classId = Number(l.classId);
@@ -594,6 +599,8 @@ export function xemTruocLuu(p: Principal, body: { lop?: unknown }): XemTruocLuu 
           ...d, nhan: d.khoa === 'gvcn' ? 'GVCN' : tenMonNgan(ct, d.khoa),
           soCase: chon.get(d.khoa)?.caseIds.length ?? 0, soPa: chon.get(d.khoa)?.paIds.length ?? 0,
           nguoiViet: nguoiVietBanGiao({ cuNghi: xep.get(d.nguoiCu!) === 'nghi', nguoiCu: d.nguoiCu!, gvcn, gvcnNghi: gvcn !== null && xep.get(gvcn) === 'nghi' }),
+          cotMo: ((c) => (c ? { nguoiCuViec: c.nguoi_cu as number, veLai: c.nguoi_cu === d.nguoiMoi } : null))(
+            cotMo.find((c) => c.class_id === classId && c.mon === d.khoa && c.nguoi_moi === d.nguoiCu)),
         })),
       };
     }),

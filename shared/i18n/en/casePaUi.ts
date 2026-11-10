@@ -88,4 +88,15 @@ export const EN_CASE_PA_UI = {
   /* RKC-2b ③: Ghi kết quả PA chờ xác nhận = Xác nhận PA. */
   'Ghi kết quả…': 'Record result…',
   'Đã lưu kết quả · đã xác nhận PA': 'Result saved · plan confirmed',
+  /* #4 bản rà 11/11: một ngưỡng chữ tối thiểu chung (CHU_TOI_THIEU_CASE) */
+  'Hoàn thành Case thì phải ghi kết luận — ít nhất {n} ký tự.': 'Closing a case needs a conclusion — at least {n} characters.',
+  'Mô tả ngắn phải nói rõ làm gì cho em — ít nhất {n} ký tự.': 'The short description must say what will be done — at least {n} characters.',
+  'Nhập bù phải có ghi chú kết luận — ít nhất {n} ký tự.': 'A back-entry needs a conclusion — at least {n} characters.',
+  'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.': 'The note must say what was observed — at least {n} characters.',
+  'Mô tả cần ít nhất {n} ký tự — sai ở đâu, bài hay buổi nào.': 'Details need at least {n} characters — where it went wrong, which test or lesson.',
+  'Mô tả PA cần ít nhất {n} ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.': 'PA details need at least {n} characters — guidance, focus and who does it.',
+  /* #3 bản rà 11/11: Hoàn thành Case ngay khi kết thúc PA cuối */
+  'Đã lưu kết quả · đã hoàn thành Case': 'Result saved · case completed',
+  'Đã lưu kết quả · chưa hoàn thành Case: {loi}': 'Result saved · case not completed: {loi}',
+  '{n} PA xong · chờ Hoàn thành': '{n} PA done · awaiting completion',
 } satisfies Record<string, Dich>;

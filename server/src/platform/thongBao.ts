@@ -30,8 +30,8 @@ const CASE_CUA_THE = (y: string) => `(CASE ${y}.doi_tuong_loai WHEN 'sos_case' T
 /** DON-LUONG K42a: dòng "Cần làm" ĐÃ ĐỌC bị dòng mới đẩy khỏi 50 dòng đầu — lấy thêm tối đa bấy nhiêu, xếp sau (thứ tự 50 dòng đầu giữ). */
 export const CAN_LAM_DA_DOC_THEM = 20;
 /** Loại thông báo có nhánh `con_viec` = 1 trong `thongBaoCua` (giữ khớp nhánh CASE; `case_signal` lọc theo `entity_type`). */
-const KIND_CAN_LAM = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'case_giao', 'phoi_hop', 'sos', 'sos_new', 'dang_ky', 'schedule_move',
-  'duyet_moi', 'duyet_qua_han', 'bao_len', 'duyet_tu_choi'] as const;
+const KIND_CAN_LAM = ['cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'bao_ph_xu_ly', 'xuat_bc_ph_qua_han', 'case_giao', 'phoi_hop', 'sos', 'sos_new', 'dang_ky', 'schedule_move',
+  'duyet_moi', 'duyet_qua_han', 'bao_len', 'duyet_tu_choi', 'yt_da_duyet'] as const;
 
 export function thongBaoCua(userId: number) {
   /* Một mẫu câu cho cả hai lượt đọc (50 dòng đầu · dòng Cần làm đã đọc bị đẩy ra) — `con_viec` cùng một luật. */
@@ -47,7 +47,7 @@ export function thongBaoCua(userId: number) {
                   COALESCE(sc.category, sc.topic) AS mon_goc, cy.programme_code AS ct, cs.case_id, ycd.han_duyet AS han_the,
                   CASE
                     /* OV-15d: thông báo tự động chỉ còn khi việc còn (đồng bộ xoá khi xong) — luôn là Cần làm. */
-                    WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh') THEN 1
+                    WHEN n.kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh', 'xuat_bc_ph_qua_han') THEN 1
                     /* SV-YT-TVV (rà #516): việc Báo PH — MỘT thông báo mỗi người (quá hạn chỉ đổi chữ), Cần làm khi người nhận còn GIỮ ít nhất một việc mở của em
                        đang học (TVV của em; em chưa có TVV → QL chi nhánh của em). Đồng bộ thông báo tự động xoá dòng của người không còn giữ việc nào. */
                     WHEN n.kind = 'bao_ph_xu_ly' THEN CASE WHEN EXISTS (
@@ -63,14 +63,17 @@ export function thongBaoCua(userId: number) {
                     /* RA-LUONG-19: chỉ người ĐANG phụ trách còn việc — đổi người phụ trách thì chuông của người cũ thành "Để biết" (giữ lịch sử). */
                     WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done' AND sc.owner_user_id = n.user_id
                       AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') THEN 1 ELSE 0 END
-                    /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
-                    WHEN n.entity_type = 'case_signal' THEN CASE WHEN cs.status = 'pending' THEN 1 ELSE 0 END
+                    /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). P1 rà 11/11 G5-05: tín hiệu pending cũng KHÔNG còn việc —
+                       hàng chờ "Xác minh" đã bỏ (cases/signals.ts), Công việc không đọc tín hiệu chờ → luôn Để biết. Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
+                    WHEN n.entity_type = 'case_signal' THEN 0
                     WHEN n.entity_type = 'assessment_attempt' AND n.kind = 'phoi_hop' THEN
                       CASE WHEN EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = aa.id AND x.kind = 'bao_ph_tvv' AND x.status = 'pending') THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'sos_case' AND n.kind IN ('sos', 'sos_new') THEN
                       CASE WHEN sc.status != 'done' AND ${LA_CASE_SOS('sc')} AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
                                 AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') THEN 1 ELSE 0 END
                     /* SL1 (rà #502): đăng ký còn việc khi tài khoản còn chờ duyệt; đề nghị dời lịch còn việc khi còn chờ. */
+                    /* #6 (rà 11/11 G3-7): QL đã duyệt đề xuất Ý thức → GVCN còn việc tới khi ghi "Đã thực hiện" (hoặc lần xử lý đổi khác). */
+                    WHEN n.kind = 'yt_da_duyet' THEN CASE WHEN dm.status = 'da_duyet' THEN 1 ELSE 0 END
                     WHEN n.kind = 'dang_ky' AND n.entity_type = 'user' THEN CASE WHEN uu.approval_state = 'pending' THEN 1 ELSE 0 END
                     WHEN n.kind = 'schedule_move' AND n.entity_type = 'skill_move_requests' THEN CASE WHEN smr.status = 'pending' THEN 1 ELSE 0 END
                     WHEN n.entity_type = 'yeu_cau_duyet' AND n.kind IN ('duyet_moi', 'duyet_qua_han', 'bao_len') THEN
@@ -108,7 +111,7 @@ export function thongBaoCua(userId: number) {
     const daDoc = rows.filter((r) => r.read_at).map((r) => r.id as number);
     const moc = daDoc.length ? Math.min(...daDoc) : Number.MAX_SAFE_INTEGER;
     rows.push(...db().prepare(cau(
-      `AND n.read_at IS NOT NULL AND n.id < ? AND (n.kind IN (${KIND_CAN_LAM.map((k) => `'${k}'`).join(', ')}) OR n.entity_type = 'case_signal')`,
+      `AND n.read_at IS NOT NULL AND n.id < ? AND n.kind IN (${KIND_CAN_LAM.map((k) => `'${k}'`).join(', ')})`,
       `AND x.con_viec = 1 ORDER BY x.id DESC LIMIT ${CAN_LAM_DA_DOC_THEM}`,
     )).all(userId, moc) as any[]);
   }

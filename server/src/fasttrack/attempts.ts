@@ -212,7 +212,7 @@ export function loadBundle(attemptIds: number[], o: { boCase?: boolean } = {}): 
            FROM sos_cases c
            /* TD6: nối thẳng theo Case (idx_intervention_case) — bảng con gộp cũ đọc MỌI PA mỗi lần gọi. MIN / MAX không đổi khi dòng Case lặp. */
            LEFT JOIN case_interventions iv ON iv.case_id = c.id AND iv.status != 'cancelled'
-          WHERE c.attempt_id IN (${ph})
+          WHERE c.attempt_id IN (${ph}) AND c.tam = 0   /* OV-13a: Case tạm không vào số đếm / cột Case (SOS-TAM-PA: có cả ô chưa nhận xét) */
           GROUP BY c.attempt_id`))) {
     const status = r.st === 0 ? 'open' : r.st === 1 ? 'in_progress' : 'done';
     bundle.cases.set(id, {

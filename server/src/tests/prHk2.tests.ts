@@ -77,7 +77,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(con.length === 0, `còn ⋮: ${con.join(', ')}`);
     assert(/kieu === 'chip'/.test(doc('web/src/ui/MenuDong.tsx')), 'MenuDong thiếu kieu="chip"');
     for (const f of ['web/src/modules/classes/DauTrangLop.tsx']) {   // UI-HV-LOP: dải lớp ở Học viên & Lớp hiện đủ badge (không "+n")
-      assert(/<MenuDong kieu="chip" bieuTuong=\{t\('\+\{n\} việc'/.test(doc(f)), `${f}: "+n" chưa dùng kieu="chip"`);
+      /* Đề xuất #1 rà 11/11 (G4-23): hồ sơ lớp ghi "+n" không đơn vị (badge ẩn không phải "việc"). */
+      assert(/<MenuDong kieu="chip" bieuTuong=\{(t\('\+\{n\} việc'|`\+\$\{)/.test(doc(f)), `${f}: "+n" chưa dùng kieu="chip"`);
     }
     assert(!/label="⋮"/.test(doc('web/src/modules/students/StudentDetailPage.tsx')), 'StudentDetailPage còn label="⋮"');
   });

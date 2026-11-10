@@ -323,7 +323,9 @@ export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: nu
   return {
     lop: { id: nguon.id, code: nguon.code, ct, ft: !!nguon.is_fast_track, mon: monDs },
     homNay,
-    nguoiXem: { gvcn: q.laGvcn, qlThay: q.qlThay, monGhi, xacNhan: q.xacNhan, xemTuNguon: q.doNguon, ql },
+    /* #8 (G4-07): `monDay` = môn người xem được phân công dạy ở lớp nguồn — phiếu ghi "Viết" (không "Điền thay") cho môn của chính mình. */
+    nguoiXem: { gvcn: q.laGvcn, qlThay: q.qlThay, monGhi, monDay: q.doNguon ? monDs.filter((m) => kyNangPhuTrach(ct, m.ma).some((k) => q.kyNang.has(k))).map((m) => m.ma) : [],
+      xacNhan: q.xacNhan, xemTuNguon: q.doNguon, ql },
     tong: ds.length, daXacNhan: ds.filter((e) => e.xacNhan).length,
     hanGvcn: som?.han_gvcn ?? null, hanGvcnEm: som?.full_name ?? null,
     theoMon: monDs.map((m) => ({
@@ -487,7 +489,7 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
 export type ViecBanGiao =
   | { loai: 'gvcn'; userId: number; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null; emIds: number[] }
   | { loai: 'gvbm'; userId: number; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string; emIds: number[];
-      /** Việc gộp W1 · W2 (cùng GV): số em từng task. */
+      /** Việc gộp nhiều môn của cùng GV (W1 · W2, L · R…): số em từng môn. */
       tung?: { mon: string; monNgan: string; daGhi: number; n: number }[] };
 
 /**
@@ -562,6 +564,8 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
         motEm: cua.length === 1 ? { ten: cua[0].full_name, lopDich: cua[0].dich ?? null } : null,
         emIds: cua.map((l) => l.student_id as number),
       });
+      /* #8 (G4-06, chủ SP 11/11): GVCN dạy luôn môn của em → môn đó viết ngay trong phiếu GVCN (một việc "Bàn giao", không thêm "Bàn giao môn L / R"). */
+      continue;
     }
     for (const m of mons) {
       if (!kyNangPhuTrach(x.ct, m).some((k) => x.kyNang.has(k))) continue;
@@ -575,24 +579,23 @@ export function viecBanGiao(userId: number | null, branchId?: number | null): Vi
       });
     }
   }
-  return gopViecW(out);
+  return gopViecMon(out);
 }
 
 /**
- * Chủ SP 03/11 (mockup v11 đã duyệt): GV dạy CẢ W1 + W2 của một lớp → MỘT việc "Bàn giao môn W1 · W2" (mở bảng hai cột), không hai việc / hai lần mở.
- * `mon` = "writing1,writing2" (panel tách theo dấu phẩy); số em giữ riêng từng task ở `tung`.
+ * Chủ SP 03/11 (mockup v11 đã duyệt) + #8 (G4-06, chủ SP 11/11): MỘT GV nhiều môn của cùng lớp (W1 + W2, L + R…) → MỘT việc "Bàn giao môn L · R" (mở bảng
+ * nhiều cột), không mỗi môn một việc / một lần mở. `mon` = "listening,reading" (panel tách theo dấu phẩy, thứ tự môn của lớp); số em từng môn ở `tung`.
  */
-function gopViecW(ds: ViecBanGiao[]): ViecBanGiao[] {
+function gopViecMon(ds: ViecBanGiao[]): ViecBanGiao[] {
   const out: ViecBanGiao[] = [];
   for (const v of ds) {
-    const w = v.loai === 'gvbm' && (v.mon === 'writing1' || v.mon === 'writing2');
-    const cap = w ? out.find((x) => x.loai === 'gvbm' && x.userId === v.userId && x.lopId === v.lopId && (x.mon === 'writing1' || x.mon === 'writing2') && x.mon !== v.mon) : undefined;
-    if (!w || !cap || cap.loai !== 'gvbm' || v.loai !== 'gvbm') { out.push(v); continue; }
-    const [a, b] = cap.mon === 'writing1' ? [cap, v] : [v, cap];
+    const cap = v.loai === 'gvbm' ? out.find((x) => x.loai === 'gvbm' && x.userId === v.userId && x.lopId === v.lopId) : undefined;
+    if (!cap || cap.loai !== 'gvbm' || v.loai !== 'gvbm') { out.push(v); continue; }
+    const tung = [...(cap.tung ?? [{ mon: cap.mon, monNgan: cap.monNgan, daGhi: cap.daGhi, n: cap.n }]), { mon: v.mon, monNgan: v.monNgan, daGhi: v.daGhi, n: v.n }];
     Object.assign(cap, {
-      mon: 'writing1,writing2', monNgan: `${a.monNgan} · ${b.monNgan}`, daGhi: a.daGhi + b.daGhi, n: a.n + b.n,
-      han: [a.han, b.han].filter(Boolean).sort()[0] ?? '', emIds: [...new Set([...a.emIds, ...b.emIds])],
-      tung: [a, b].map((x) => ({ mon: x.mon, monNgan: x.monNgan, daGhi: x.daGhi, n: x.n })),
+      mon: tung.map((x) => x.mon).join(','), monNgan: tung.map((x) => x.monNgan).join(' · '),
+      daGhi: cap.daGhi + v.daGhi, n: cap.n + v.n,
+      han: [cap.han, v.han].filter(Boolean).sort()[0] ?? '', emIds: [...new Set([...cap.emIds, ...v.emIds])], tung,
     });
   }
   return out;

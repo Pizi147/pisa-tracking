@@ -528,6 +528,11 @@ export const ISSUE_ROLES = ['primary', 'secondary'] as const;
  *
  * Hai mức còn lại đều DẪN TỚI MỘT HẠN KHÁC NHAU, nên chúng có việc để làm.
  */
+/**
+ * #4 bản rà 11/11 (G2-11, chủ SP "Theo hết 10 đề xuất"): MỘT ngưỡng chữ tối thiểu cho Mô tả Case · Nội dung PA (cả Xác nhận PA quy chế) · Nhận xét kết quả PA ·
+ * Kết luận Hoàn thành Case / Nhập bù. Trước: 15 · 8 / 15 · 8 · 10 — mỗi nơi một số, bị chặn vô cớ. Web + máy chủ dùng chung.
+ */
+export const CHU_TOI_THIEU_CASE = 8;
 export const URGENCY_LEVELS = ['attention', 'urgent'] as const;
 export type UrgencyLevel = (typeof URGENCY_LEVELS)[number];
 
