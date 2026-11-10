@@ -183,7 +183,8 @@ export function chotYeuCau(
         trangThai === 'tu_dong' ? lyDo : null, tuDuyet ? 1 : 0, mocNghiepVu(), r.id).changes as number;
       if (!doi) continue;
       n += doi;
-      const baoNguoiXin = r.nguoi_xin != null && r.nguoi_xin !== nguoiDuyet && !(trangThai === 'tu_dong' && meta.kieuNut === 'nhac');
+      /* #6 (rà 11/11 G3-7): Duyệt đề xuất Ý thức có tin RIÊNG "Cần làm" (`baoSauDuyetDeXuat`) — không gửi thêm tin chung "Đã duyệt" (Để biết). */
+      const baoNguoiXin = r.nguoi_xin != null && r.nguoi_xin !== nguoiDuyet && !(trangThai === 'tu_dong' && meta.kieuNut === 'nhac') && !(trangThai === 'duyet' && r.loai === 'y_thuc');
       if (baoNguoiXin) {
         const ketQua = trangThai === 'duyet' ? 'Đã duyệt'
           : trangThai === 'tu_choi' ? `Bị từ chối: ${lyDo ?? ''}`
@@ -416,12 +417,15 @@ export const soLichSuYeuCau = (id: number): number =>
  * Thẻ Chờ duyệt: chip SOS + dòng điểm — MỘT `latestAttempts` cho mọi em của các thẻ (CÙNG hàm chỉ số "SOS hiện tại"; lượt + lịch kỹ năng + điểm theo lô,
  * không đọc lộ trình / Case như `standingFor`) + số Lịch sử (đã đếm trong câu đọc thẻ — `so_lich_su`).
  */
+/** Chủ SP 11/11: "những vấn đề liên quan đến ý thức thì đừng nhét thêm điểm" — thẻ Ý thức không có dòng điểm / chip SOS (và không đọc lượt cho chúng). */
+const LOAI_Y_THUC: ReadonlySet<string> = new Set(['y_thuc', 'thu_hoi_y_thuc', 'bao_len_y_thuc']);
 function ganBoiCanh(the: TheYeuCauDto[], rows: any[]) {
   if (!the.length || diemHvKhiKiem.tat) return;
-  const luot = latestAttempts([...new Set(the.map((x) => x.hocVienId).filter((x): x is number => x != null))].sort((a, b) => a - b), 'valid', demoToday());
+  const coDiem = (x: TheYeuCauDto) => x.hocVienId != null && !LOAI_Y_THUC.has(x.loai);
+  const luot = latestAttempts([...new Set(the.filter(coDiem).map((x) => x.hocVienId!))].sort((a, b) => a - b), 'valid', demoToday());
   const so = new Map(rows.map((r) => [r.id as number, Number(r.so_lich_su ?? 0)]));
   for (const x of the) {
-    const ev = x.hocVienId != null ? luot.get(x.hocVienId) : undefined;
+    const ev = coDiem(x) ? luot.get(x.hocVienId!) : undefined;
     const d = ev ? diemTuEval(ev) : null;
     x.sos = ev && d && (ev.sosLevel ?? 0) > 0 ? { muc: ev.sosLevel!, tam: d.tam, kyNang: d.kn.filter((k) => k.dat === false).map((k) => k.k) } : null;
     x.diemHv = d;
