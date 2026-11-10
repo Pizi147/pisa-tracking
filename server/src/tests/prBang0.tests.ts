@@ -33,7 +33,7 @@ const MIEN_TABLE: string[] = [
   'web/src/modules/phanTich/TongHopTestSos.tsx',
   'web/src/modules/phanTich/YThucPhoiHop.tsx',
   'web/src/modules/platform/AccountsAdmin.tsx',
-  'web/src/modules/platform/AdminPage.tsx',
+  'web/src/modules/platform/QuyenTheoVai.tsx',   // QTV2-QUYEN: ma trận quyền (chỉ đọc) chuyển từ AdminPage
   'web/src/modules/platform/CatalogAdmin.tsx',
   'web/src/modules/platform/XoaTaiKhoanPanel.tsx',
   'web/src/modules/students/CacLoTrinh.tsx',
@@ -68,7 +68,7 @@ const MIEN_CAN: string[] = [
   'web/src/modules/phanTich/KetQuaThi.tsx',
   'web/src/modules/phanTich/TongHopTestSos.tsx',
   'web/src/modules/phanTich/YThucPhoiHop.tsx',
-  'web/src/modules/platform/AdminPage.tsx',
+  'web/src/modules/platform/QuyenTheoVai.tsx',   // QTV2-QUYEN: ma trận quyền (chỉ đọc) chuyển từ AdminPage
   'web/src/modules/platform/CatalogAdmin.tsx',
   'web/src/modules/platform/XoaTaiKhoanPanel.tsx',
   'web/src/modules/students/CacLoTrinh.tsx',
