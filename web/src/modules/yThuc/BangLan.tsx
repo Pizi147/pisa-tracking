@@ -213,6 +213,33 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
   );
 }
 
+/**
+ * DẢI TIẾN TRÌNH ① Vi phạm → ② GVCN xử lý → ③ TVV báo PH (mockup K8, chủ SP 11/11: panel Công việc cùng thứ tự với tab Ý thức).
+ * `nay` = bước người xem đang làm: nền nhấn + chữ "Bạn" (không chỉ màu). Khung hẹp: mỗi bước một hàng.
+ */
+export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay: number | null }) {
+  const ten = [t('Vi phạm'), t('GVCN xử lý'), t('TVV báo PH')];
+  /* 375 (mockup K8c / K8d): nhãn ngắn để cột nhãn không xuống ba dòng. */
+  const ngan = [t('Vi phạm'), 'GVCN', t('Báo PH')];
+  return (
+    <ol aria-label={t('Tiến trình xử lý')} className="m-0 grid list-none overflow-hidden rounded-[10px] border p-0 sm:grid-cols-3" style={{ borderColor: 'var(--line)' }}>
+      {buoc.map(([gt, ph], i) => (
+        <li key={i} aria-current={nay === i ? 'step' : undefined}
+          className={`grid content-start gap-1 border-t px-3 py-2.5 first:border-t-0 max-sm:grid-cols-[92px_minmax(0,1fr)] sm:border-l sm:border-t-0 sm:first:border-l-0 ${nay === i ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_2px_0_var(--accent)]' : ''}`}
+          style={{ borderColor: 'var(--line)' }}>
+          <span className={`flex items-center gap-1.5 text-xs font-semibold max-sm:row-span-2 ${nay === i ? 'text-[color:var(--accent)]' : 'text-slate-500'}`}>
+            <span aria-hidden className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{i + 1}</span>
+            <span className="max-sm:hidden">{ten[i]}</span><span className="sm:hidden">{ngan[i]}</span>
+            {nay === i && <span className="ml-auto rounded border border-[color:var(--accent)] px-1.5 text-xs font-bold leading-4 text-[color:var(--accent)] max-sm:ml-0">{t('Bạn')}</span>}
+          </span>
+          <span className="min-w-0 text-sm font-semibold text-slate-100">{gt}</span>
+          {ph && <span className="text-xs text-slate-400">{ph}</span>}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /** Chip bậc cạnh tên em → hộp nhỏ tại chỗ (thang, Khai bậc, Lịch sử của em) — thay "Thang ›" trong "▾ Chi tiết" cũ. */
 export function ChipBac({ nhan, ten, children }: { nhan: string | null; ten: string; children: (dong: () => void) => ReactNode }) {
   const [mo, setMo] = useState(false);

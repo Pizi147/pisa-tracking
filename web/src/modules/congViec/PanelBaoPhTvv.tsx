@@ -8,6 +8,8 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { ChipMon, TienTrinh } from '../yThuc/BangLan.tsx';
+import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -19,13 +21,13 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 
 /** `GET /y-thuc/bao-ph/:id` (máy chủ `xemViecBaoPh`). */
 type ViecBaoPh = {
-  id: number; studentId: number; ten: string; nhan: string; han: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'bo';
+  id: number; studentId: number; ten: string; nhan: string; han: string; quaHan: boolean; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string;
   lan: { ketQua: KetQuaBaoPh; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null; luc: string }[];
   lienHe: { ten: string | null; quanHe: string | null; sdt: string | null };
   coTheGhi: boolean; nhanXuLy: string | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
   khoiPhucDuoc: boolean;
-  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null; viPham: { ngay: string; ten: string }[]; ghiChu: string | null };
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null; viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
   thuHoiCho: { lyDo: string | null } | null;
   /** HAN-BAO-PH (N34): `han` = hạn hiệu lực; mặc định · đã chọn (null) · sửa được · mỗi lần đổi hạn. */
   hanMacDinh: string; hanChon: string | null; coTheSuaHan: boolean;
@@ -86,10 +88,14 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
 
   const sua = !daLuu && v.coTheGhi;
   const daGo = sua && (!!kq || !!ghiChu.trim() || ngay !== hn);
-  const loiO = !kq ? [{ khoa: 'kq', nhan: t('Kết quả'), lyDo: t('Chọn kết quả') }] : [];
+  /* Y-THUC-V2 (chủ SP 11/11): một ô Nội dung cho mọi kết quả, bắt buộc (máy chủ cũng kiểm). */
+  const loiO = [
+    ...(!kq ? [{ khoa: 'kq', nhan: t('Kết quả'), lyDo: t('Chọn kết quả') }] : []),
+    ...(!ghiChu.trim() ? [{ khoa: 'noi-dung', nhan: t('Nội dung'), lyDo: t('Ghi đã báo PH gì, PH nói gì') }] : []),
+  ];
   const luu = async (): Promise<boolean> => {
     lf.bam();
-    if (!kq) return false;
+    if (!kq || loiO.length) return false;
     setTt('dang'); setLoi(null);
     try {
       const nd = JSON.stringify([kq, ngay || hn, ghiChu.trim()]);
@@ -154,15 +160,18 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
             <span className="text-slate-300">{t('Lần báo PH của bạn vẫn giữ trong lịch sử. Bạn không cần làm gì.')}</span>
           </div>
         )}
+        {/* Mockup K5b / K8d: dải ①②③ cùng thứ tự tab Ý thức — bước TVV là việc của người ghi. */}
+        <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
+          [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
+          [<BadgeViec xuong tong="xong">{v.nhan}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
+          [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{v.nhanTrangThai}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
+        ]} />
         <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[
-          [t('Lần xử lý'), <b className="font-semibold">{v.nhan}</b>],
-          [t('Người lưu'), v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`],
-          [t('Lúc lưu'), v.boiCanh.luuLuc && <span className="tabular-nums">{lucVn(v.boiCanh.luuLuc)}</span>],
           [t('Vi phạm'), v.boiCanh.viPham.length > 0 && (
             <ul className="m-0 list-none space-y-0.5 p-0">
-              {v.boiCanh.viPham.map((x, i) => <li key={i} className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2"><span className="tabular-nums text-slate-400">{shortDate(x.ngay, hn)}</span><span>{x.ten}</span></li>)}
+              {v.boiCanh.viPham.map((x, i) => <li key={i} className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2"><span className="tabular-nums text-slate-400">{shortDate(x.ngay, hn)}</span><span className="flex items-start"><ChipMon skill={x.skill} />{x.ten}</span></li>)}
             </ul>
           )],
           [t('Ghi chú GVCN'), v.boiCanh.ghiChu && <span className="font-normal">{v.boiCanh.ghiChu}</span>],
@@ -185,8 +194,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
                 onChange={(k) => { setKq(k); if (tt === 'loi') setTt(null); }} /></div>
             </Truong>
             <Truong nhan={t('Ngày')}><div className="max-w-[220px]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={hn} /></div></Truong>
-            <Truong nhan={t('Ghi chú kết quả')}>
-              <textarea className="field w-full" rows={3} maxLength={2000} autoComplete="off" value={ghiChu} placeholder={t('PH nói gì, hẹn gì')} onChange={(e) => setGhiChu(e.target.value)} />
+            <Truong nhan={t('Nội dung')} batBuoc loi={lf.loiCua(loiO, 'noi-dung')}>
+              <textarea className="field w-full" {...lf.o(loiO, 'noi-dung')} rows={4} maxLength={2000} autoComplete="off" value={ghiChu} placeholder={t('Đã báo PH gì, PH nói gì, hẹn gì')} onChange={(e) => setGhiChu(e.target.value)} />
             </Truong>
           </>
         )}

@@ -52,7 +52,8 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
   const viecCua = (sid: number) => hang('SELECT * FROM viec_bao_ph WHERE student_id = ? ORDER BY id', sid);
   const viecToi = (p: any, sid: number, o: any = {}) => { xoaNho(); return ((myWork(p, o) as any).items as any[]).filter((x) => x.group === 'bao_ph_yt' && x.studentId === sid); };
   const ma = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
-  const ghi = (p: any, ids: number[], ketQua: string, o: any = {}) => bp.ghiKetQuaBaoPh(p, { viecIds: ids, ketQua, ...o });
+  /* Y-THUC-V2 (chủ SP 11/11): Nội dung BẮT BUỘC — phép kiểm ghi một câu mặc định khi không nói gì. */
+  const ghi = (p: any, ids: number[], ketQua: string, o: any = {}) => bp.ghiKetQuaBaoPh(p, { viecIds: ids, ketQua, ghiChu: 'Đã gọi PH', ...o });
 
   check('SVYT-K2 · hạn = 23:59 giờ VN ngày (lưu + 4): 23:30 VN không lệch UTC, 00:30 VN là ngày sau; T7 / CN tính như ngày thường', () => {
     assert(d.hanBaoPh('2026-09-14') === '2026-09-18', 'T2 14/09 → T6 18/09');
@@ -210,6 +211,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(hang("SELECT 1 FROM audit_logs WHERE action = 'discipline.bao_ph' AND actor_user_id = ?", tvv.userId).length === 3, 'nhật ký 3 lần');
     assert(ma(() => ghi(tvv, [v.id], 'da_bao', { ngay: addDays(TODAY, 1) })) === 400, 'ngày sau hôm nay');
     assert(ma(() => ghi(tvv, [v.id], 'khac')) === 400, 'kết quả lạ');
+    assert(ma(() => ghi(tvv, [v.id], 'da_bao', { ghiChu: '  ' })) === 400 && ma(() => ghi(tvv, [v.id], 'chua_lien_he', { ghiChu: null })) === 400, 'Y-THUC-V2: thiếu Nội dung → 400');
     assert(ma(() => ghi(tvv, [v.id], 'da_bao', { ngay: '31/12' })) === 400, 'ngày sai dạng');
   }));
 

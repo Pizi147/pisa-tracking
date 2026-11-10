@@ -168,6 +168,7 @@
  "web/src/modules/yThuc/KhaiBacPanel.tsx",
  "web/src/modules/yThuc/LoYThucPanel.tsx",
  "web/src/modules/yThuc/NhanViPham.tsx",
+ "web/src/modules/yThuc/PanelXemViPham.tsx",
  "web/src/modules/yThuc/PhoiHopSosSection.tsx",
  "web/src/modules/yThuc/RecordViolationPanel.tsx",
  "web/src/modules/yThuc/StudentYThucSection.tsx",

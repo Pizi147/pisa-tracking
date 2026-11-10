@@ -957,7 +957,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('UI-Y-THUC-HV · tab HV tự biết lớp thường khi không truyền `thuong` (panel Công việc yt_xem): "Phối hợp" không chữ SOS', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
     assert(/const thuong = thuongVao \?\? d\.chuoi\.nhan === 'lớp thường'/.test(s) && !/thuong = false/.test(s), 'tự biết lớp thường');
-    assert(/<StudentYThucSection studentId=\{it\.studentId!\} \/>/.test(docW('web/src/modules/congViec/PanelViec.tsx')), 'panel Công việc dựa vào mặc định');
+    /* Y-THUC-V2 (mockup K8b): việc yt_xem mở panel gọn PanelXemViPham (dải ①②③ + vi phạm mới), không nhét cả tab HV. */
+    assert(/<PanelXemViPham key=\{it\.key\} studentId=\{it\.studentId!\}/.test(docW('web/src/modules/congViec/PanelViec.tsx')), 'panel Công việc yt_xem');
   });
   check('YT4 (10) · Tab HV (UI-3, mockup U10 K3): phân đoạn Vi phạm | Phối hợp + Cần làm | Lịch sử, khối dùng chung, Lịch sử lọc Đã xem / Đã xử lý / Đã thu hồi + phạm vi, không ô tick', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
