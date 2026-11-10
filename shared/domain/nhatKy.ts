@@ -88,6 +88,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'bang_quy_doi.sua': 'Sửa bảng quy đổi band', 'bang_quy_doi.khoi_phuc': 'Khôi phục bảng quy đổi band',
   /* QTV2-HAN */ 'cau_hinh.han_mac_dinh.sua': 'Sửa hạn mặc định', 'cau_hinh.han_mac_dinh.khoi_phuc': 'Khôi phục hạn mặc định',
   /* CAU-HINH-CASE-SOS */ 'cau_hinh_case_sos.sua': 'Sửa cấu hình Case & SOS', 'cau_hinh_case_sos.khoi_phuc': 'Khôi phục cấu hình Case & SOS',
+  /* QTV2-BAND */ 'cau_hinh.ky_vong_ft.sua': 'Sửa kỳ vọng MT FT', 'cau_hinh.ky_vong_ft.khoi_phuc': 'Khôi phục kỳ vọng MT FT',
+  'cau_hinh.nguong_thuong.sua': 'Sửa ngưỡng lớp thường', 'cau_hinh.nguong_thuong.khoi_phuc': 'Khôi phục ngưỡng lớp thường',
   'user_roles_set': 'Đổi vai tài khoản', 'user_permissions_set': 'Đổi quyền tài khoản', 'user_skills_set': 'Sửa kỹ năng tài khoản', 'password_reset': 'Đặt lại mật khẩu',
   'violation.delete': 'Xoá vi phạm', 'violation.edit': 'Sửa vi phạm', 'violation.record': 'Ghi vi phạm',
   'work.remind': 'Nhắc việc',

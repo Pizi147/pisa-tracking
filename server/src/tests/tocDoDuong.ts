@@ -431,6 +431,10 @@ export const DUONG_DO: MucDo[] = [
   /* QTV2-HAN: tab Hạn mặc định — bản đang dùng (nhớ đệm) + 30 lần đổi; cột Nhật ký 8 dòng. */
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/han' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=han&gioi-han=8' },
+  /* QTV2-BAND: tab Band & ngưỡng — hai khối (bản đang dùng nhớ đệm + 30 lần đổi) + cột Nhật ký mục Band 8 dòng. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/ky-vong-ft' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/nguong-thuong' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=band&gioi-han=8' },
 ];
 
 /**
@@ -479,6 +483,9 @@ export const TRAN: Record<string, number> = {
   'QT /admin/nhat-ky': 14, 'QL /admin/nhat-ky': 14, 'QT /admin/nhat-ky?muc=chi-nhanh': 14, 'QL /admin/nhat-ky?muc=chi-nhanh': 14, 'QT /admin/don-vi': 13, 'QL /admin/don-vi': 13, 'QT /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=chi-nhanh&gioi-han=8': 13,
   /* QTV2-HAN: Hạn mặc định — trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/cau-hinh/han': 13, 'QL /admin/cau-hinh/han': 13, 'QT /admin/nhat-ky?muc=han&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=han&gioi-han=8': 13,
+  /* QTV2-BAND — trần = max(đo+10, ⌈đo×1,3⌉). */
+  'QT /admin/cau-hinh/ky-vong-ft': 13, 'QL /admin/cau-hinh/ky-vong-ft': 13, 'QT /admin/cau-hinh/nguong-thuong': 13, 'QL /admin/cau-hinh/nguong-thuong': 13,
+  'QT /admin/nhat-ky?muc=band&gioi-han=8': 13, 'QL /admin/nhat-ky?muc=band&gioi-han=8': 13,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
   'QL /ban-giao-gv/1': 31, 'QT /ban-giao-gv/1': 30, 'GVCN /ban-giao-gv/1': 31, 'GVBM /ban-giao-gv/1': 30,
   'QL /lenh-chuyen/{lenhBg}/ban-giao': 23, 'QT /lenh-chuyen/{lenhBg}/ban-giao': 23,   // BAN-GIAO-NHAN 05/11: đo 13 → max(n+10, ⌈n×1,3⌉)

@@ -8,7 +8,7 @@ import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { REGULAR_SKILLS, chuHopKetLuan, dsLoi, duongLoTrinhLop, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
+import { REGULAR_SKILLS, nguongMiniTest, chuHopKetLuan, dsLoi, duongLoTrinhLop, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `studentProfile().cuoiKhoa` — cùng hình với `EmCuoiKhoa` của máy chủ. */
@@ -23,7 +23,7 @@ export type CuoiKhoaEm = {
   ct?: string | null; lop?: string | null; daChuyen?: boolean;
 };
 export type MiniTestEm = {
-  id: number; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: string | null;
+  id: number; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: string | null; ghiLuc?: string | null;
   caseId: number | null; paId: number | null; coTheGhi: boolean;
   /** OV-7a: người ghi được (người dạy · GVCN · người giữ việc · QL) sửa % và ngày của Mini Test đã ghi. */
   coTheSua?: boolean;
@@ -183,7 +183,7 @@ function MiniTestDaGhi({ mt }: { mt: MiniTestEm & { tyLe: number } }) {
   const [sua, setSua] = useState<{ pt: string; ngay: string } | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const dat = mt.tyLe >= 0.7;
+  const dat = mt.tyLe >= nguongMiniTest(mt.ghiLuc ?? mt.ngayLam);   // QTV2-BAND: bản tại lúc ghi
   const pt = sua ? Number(sua.pt.replace(',', '.')) : NaN;
   const loiPt = sua && (sua.pt.trim() === '' || !Number.isFinite(pt) || pt < 0 || pt > 100) ? t('Nhập % từ 0 đến 100') : null;
   const luu = async () => {

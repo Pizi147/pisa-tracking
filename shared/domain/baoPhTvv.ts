@@ -11,7 +11,7 @@ import { ngayTheoGioVN } from './display.ts';
 /** QTV2-HAN: số ngày cộng thêm = hạn (tính cả ngày lưu) − 1, theo bản tại `moc` (gốc 5 − 1 = 4). */
 export const ngayCongBaoPh = (moc?: string | null) => hanTai('bao_ph_vi_pham', moc).ngay - 1;
 /** Cửa sổ SQL "quay lại": N lớn nhất qua mọi bản (giảm hạn không làm sót việc cũ); `hanBaoPhHieuLuc` lọc lại đúng bản. */
-export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.han.bao_ph_vi_pham.ngay)) - 1;
+export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.v.bao_ph_vi_pham.ngay)) - 1;
 export const hanBaoPh = (luu: string): string => { const d = ngayTheoGioVN(luu) ?? luu.slice(0, 10); return addDaysIso(d, ngayCongBaoPh(d)); };
 
 /**

@@ -16,7 +16,7 @@ export type MucNhatKy = (typeof MUC_NHAT_KY)[number];
 /** `entity_type` mỗi mục ghi (kiểm trong mã: accounts / xoaTaiKhoan `users` + `user`, sysconfig `role` · `routes` · `programmes` · `branch`, moSuaLichTest `cai_dat`, bangQuyDoi). */
 export const ENTITY_CUA_MUC: Record<MucNhatKy, string[]> = {
   'tai-khoan': ['users', 'user'], quyen: ['role'], 'mo-sua-lich': ['cai_dat'],
-  'chuong-trinh': ['routes', 'programmes'], 'chi-nhanh': ['branch'], band: ['bang_quy_doi'], han: ['cau_hinh.han_mac_dinh'], 'case-sos': ['cau_hinh_phien_ban'],   // CAU-HINH-CASE-SOS
+  'chuong-trinh': ['routes', 'programmes'], 'chi-nhanh': ['branch'], band: ['bang_quy_doi', 'cau_hinh.ky_vong_ft', 'cau_hinh.nguong_thuong'], han: ['cau_hinh.han_mac_dinh'], 'case-sos': ['cau_hinh_phien_ban'],   // CAU-HINH-CASE-SOS
 };
 const CHI_QUAN_TRI: ReadonlySet<MucNhatKy> = new Set(['tai-khoan', 'quyen', 'mo-sua-lich']);
 const TRANG = 50;
@@ -67,7 +67,7 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
     const truong = [...new Set([...Object.keys(truoc), ...Object.keys(sau)])].filter((k) => !k.startsWith('_') && chu(truoc[k]) !== chu(sau[k]))
       .map((k) => ({ ten: tenTruong(k), cu: chu(truoc[k]), moi: chu(sau[k]) }));
     /* Hạn mặc định: tên việc đã nằm trong "Sửa hạn mặc định" — bỏ "· Hạn mặc định" lặp. */
-    const doiTuong = r.entity_type === 'cau_hinh.han_mac_dinh' ? null : r.entity_label ?? null;
+    const doiTuong = r.entity_type.startsWith('cau_hinh.') ? null : r.entity_label ?? null;   // tên mục đã nằm trong việc ("Sửa hạn mặc định")
     return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong, truong };
   });
   /* Ô lọc "Người": ai đã từng đổi trong các mục này — chỉ trang đầu (web dùng danh sách của trang đầu). */

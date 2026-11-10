@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   KN_LUOT_BANG, KN_LUOT_CUA, NHAN_KN_LUOT, khoaBai, nhanBai, soSanhDiem, tenMonNgan, type DongBaiThuong, type DongLuotDiem, type ODiemLuot,
-  LEGACY_REGULAR_SKILL_MAP, nhanDonVi, NGUONG_MINI_TEST, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, khoaDot,
+  LEGACY_REGULAR_SKILL_MAP, nhanDonVi, nguongMiniTest, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, khoaDot,
   nhanDot, soSanhLop, thuTuDot, tuDauKhoang, type ChuongTrinh, type CotTongHop, type DongTongHop, type TheoDong, type TongHopKetQua,
 } from '../../../shared/domain/index.ts';
 import { cotExcel, cotTongHopFor } from '../../../shared/domain/phanTich.ts';
@@ -46,9 +46,9 @@ export function phanLoaiLuot(ev: { sosLevel: number | null; complete: boolean; c
  * luật chấm đã sinh Case); Cuối khoá theo dải % tổng (`daiCuoiKhoa` — một nơi ra 50/60/70).
  */
 const DAI_COT: Record<string, string> = { duoi_50: 'ck-duoi50', '50_59': 'ck-50', '60_69': 'ck-60', dat: 'ck-dat' };
-export function phanLoaiBaiThuong(kind: string, ev: { complete: boolean; skills: Record<string, { under: boolean }>; tyLeTong?: number | null; nguong?: number }): string {
+export function phanLoaiBaiThuong(kind: string, ev: { complete: boolean; skills: Record<string, { under: boolean }>; tyLeTong?: number | null; nguong?: number; mocNguong?: string | null }): string {
   if (!ev.complete) return 'chuaDu';
-  if (kind === 'final') return ev.tyLeTong == null ? 'chuaDu' : DAI_COT[daiCuoiKhoa(ev.tyLeTong, ev.nguong)];
+  if (kind === 'final') return ev.tyLeTong == null ? 'chuaDu' : DAI_COT[daiCuoiKhoa(ev.tyLeTong, ev.nguong, ev.mocNguong)];
   const truot = Object.values(ev.skills).filter((s) => s.under).length;
   const nhom = kind === 'checkpoint' ? 'cp' : 'gk';   // OV-11h (PT-1): Checkpoint PET / KET nhóm riêng, không dưới Progress Test
   return truot === 0 ? `${nhom}-dat` : truot === 1 ? `${nhom}-1` : `${nhom}-2`;
@@ -80,7 +80,7 @@ function cmpKey(a: readonly unknown[], b: readonly unknown[]): number {
 export function luotTrongKhoang(where: string, args: readonly unknown[]): any[] {
   return db()
     .prepare(
-      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.cycle_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id,
+      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.cycle_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id, a.created_at,
               COALESCE(a.route_at_attempt, cy.route) AS route, cy.khong_cam_ket AS cy_kck, cy.khong_cam_ket AS kck, cy.programme_code AS cy_programme_code,
               c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
               b.name AS branch_name,
@@ -132,7 +132,7 @@ export function phanLoaiCacLuot(attempts: readonly any[]): Map<number, LuotPhanL
     const kyNangDuoi: string[] = prog?.scoringMode === 'ratio'
       ? Object.entries(ev.skills).filter(([, v]) => (v as { under: boolean }).under).map(([k]) => LEGACY_REGULAR_SKILL_MAP[k] ?? k)
       : failingEntrySkills(
-          expectationFor(a.target_at_attempt, a.attempt_no, a.route),
+          expectationFor(a.target_at_attempt, a.attempt_no, a.route, a.created_at),
           entryBandsOf(bundle.scores.get(a.id) ?? []),
           bundle.skips.get(a.id) ?? [],
         );
@@ -274,15 +274,15 @@ function tinh(p: Principal, f: FilterTongHop) {
     }
   }
 
-  /* PR-Pb2-a: Mini Test (đếm HỌC VIÊN) vào dòng của bài Cuối khoá sinh ra nó — MỘT câu theo lô 400, ngưỡng `NGUONG_MINI_TEST`. */
+  /* PR-Pb2-a: Mini Test (đếm HỌC VIÊN) vào dòng của bài Cuối khoá sinh ra nó — MỘT câu theo lô 400, ngưỡng `nguongMiniTest(lúc ghi)` (QTV2-BAND). */
   for (let i = 0; i < cuoiDaDem.length; i += 400) {
     const chunk = cuoiDaDem.slice(i, i + 400);
     for (const r of conn.prepare(
-      `SELECT tu_attempt_id, student_id, ty_le FROM mini_test WHERE tu_attempt_id IN (${chunk.map(() => '?').join(',')}) AND ty_le IS NOT NULL`,
+      `SELECT tu_attempt_id, student_id, ty_le, ghi_luc FROM mini_test WHERE tu_attempt_id IN (${chunk.map(() => '?').join(',')}) AND ty_le IS NOT NULL`,
     ).all(...chunk) as any[]) {
       const dong = dongCua.get(r.tu_attempt_id)!;
       const cha = hangMap.get(dong.cha)!, con = cha.con.get(dong.con)!;
-      for (const tap of [cha.tap, con.tap, tongTap]) them(tap, r.ty_le >= NGUONG_MINI_TEST ? 'mini-dat' : 'mini-truot', r.student_id);
+      for (const tap of [cha.tap, con.tap, tongTap]) them(tap, r.ty_le >= nguongMiniTest(r.ghi_luc) ? 'mini-dat' : 'mini-truot', r.student_id);
     }
   }
 

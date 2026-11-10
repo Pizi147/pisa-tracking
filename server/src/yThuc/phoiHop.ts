@@ -432,7 +432,7 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       sosLevel = res.sosLevel; the = theSosTuKetQua(a, { ft: res });
     } else {
       /* Lớp thường: KHÔNG có mức SOS — chữ kết quả qua `nhanKetQuaThuong`, đọc từ điểm đã nạp (không SQL, không `resultOf` FT). */
-      const r = evaluateRegular(boMonTheoLuot(chuongTrinh.get(a.programme_code)?.skills ?? [], daGhiLuot(bundle.skillRows.get(a.id), bundle.scores.get(a.id))), bundle.scores.get(a.id) ?? [], a.programme_code, nguongDatLop(a.class_id, a.programme_code, nguongKhac));
+      const r = evaluateRegular(boMonTheoLuot(chuongTrinh.get(a.programme_code)?.skills ?? [], daGhiLuot(bundle.skillRows.get(a.id), bundle.scores.get(a.id))), bundle.scores.get(a.id) ?? [], a.programme_code, nguongDatLop(a.class_id, a.programme_code, nguongKhac), a.created_at);
       skills = r.skills.filter((x) => x.outcome === 'fail').map((x) => x.skill);
       the = theSosTuKetQua(a, { thuong: r, truot: skills });
       const kq = ketQua = nhanKetQuaThuong({

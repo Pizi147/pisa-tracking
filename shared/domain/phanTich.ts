@@ -212,17 +212,18 @@ const COT_KET_QUA_THUONG: CotTongHop[] = [
   { khoa: 'gk-dat', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Progress Test đủ điểm, mọi môn từ 70%.' },
   { khoa: 'gk-1', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '1 môn trượt', goiY: 'Bài Progress Test đủ điểm, đúng một môn dưới 70%.' },
   { khoa: 'gk-2', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '≥ 2 môn trượt', goiY: 'Bài Progress Test đủ điểm, từ hai môn dưới 70%.' },
-  { khoa: 'ck-duoi50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Dưới 50%', goiY: 'Bài Final Test đủ điểm, % tổng dưới 50% — gợi ý học lại.' },
-  { khoa: 'ck-50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '50–59%', goiY: 'Bài Final Test đủ điểm, % tổng 50–59% — Quản lý cân nhắc.' },
-  { khoa: 'ck-60', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => '60–69%', goiY: 'Bài Final Test đủ điểm, % tổng 60–69% — lên lớp kèm bổ trợ.' },
+  /* QTV2-BAND (PTA 11/11): mỗi bài theo bản ngưỡng của lớp nó ⇒ cột theo TÊN dải, không kèm số % (Quản trị › Band & ngưỡng). */
+  { khoa: 'ck-duoi50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Học lại', goiY: 'Bài Final Test đủ điểm, % tổng dưới mức "Học lại dưới" — gợi ý học lại.' },
+  { khoa: 'ck-50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Cân nhắc', goiY: 'Bài Final Test đủ điểm, % tổng từ "Học lại dưới" tới dưới "Lên từ" — Quản lý cân nhắc.' },
+  { khoa: 'ck-60', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Lên + bổ trợ', goiY: 'Bài Final Test đủ điểm, % tổng từ "Lên từ" tới dưới "Đạt từ" — lên lớp kèm bổ trợ.' },
   { khoa: 'ck-dat', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Từ 70%', goiY: 'Bài Final Test đủ điểm, % tổng từ 70% — Pass.' },
   /* OV-11h (PT-1): Checkpoint PET / KET — cùng luật đếm môn trượt như Progress Test, nhóm riêng (chỉ hiện khi bảng có Checkpoint: `cotTheoDuLieu`). */
   { khoa: 'cp-dat', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Checkpoint đủ điểm, mọi môn đạt.' },
   { khoa: 'cp-1', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => '1 môn trượt', goiY: 'Bài Checkpoint đủ điểm, đúng một môn chưa đạt.' },
   { khoa: 'cp-2', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => '≥ 2 môn trượt', goiY: 'Bài Checkpoint đủ điểm, từ hai môn chưa đạt.' },
   { khoa: 'chuaDu', nhom: 'ket-qua', donVi: 'dot-test', nhan: () => 'Thiếu điểm', goiY: 'Bài Progress Test, Final Test chưa nhập đủ điểm các môn — chưa xếp vào cột Progress Test hay Final Test.' },
-  { khoa: 'mini-dat', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Đạt', goiY: 'Học viên làm Mini Test sau bổ trợ (từ bài Final Test của dòng này) đạt từ 70% — đếm học viên.' },
-  { khoa: 'mini-truot', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Trượt', goiY: 'Học viên làm Mini Test sau bổ trợ dưới 70% — đếm học viên.' },
+  { khoa: 'mini-dat', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Đạt', goiY: 'Học viên làm Mini Test sau bổ trợ (từ bài Final Test của dòng này) và đạt — đếm học viên.' },
+  { khoa: 'mini-truot', nhom: 'ket-qua', nhomCon: 'mini', donVi: 'hoc-vien', nhan: () => 'Trượt', goiY: 'Học viên làm Mini Test sau bổ trợ và chưa đạt — đếm học viên.' },
 ];
 /** Cột Kết quả cộng lại đúng bằng cột Bài/Lượt (theo khung) — Mini Test đếm học viên nên đứng ngoài. */
 export function cotKetQuaCong(ct: ChuongTrinh): string[] {

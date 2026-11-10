@@ -18,7 +18,7 @@ export const EN_QUAN_TRI_V2 = {
   'Chương trình, chi nhánh, bảng quy đổi (chỉ xem — Quản trị hệ thống sửa) và mục đã xoá.': 'Programmes, branches, conversion table (view only — the System admin edits) and deleted items.',
   'Tab <b>Đã xoá</b>: chọn mục đã xoá, bấm <b>Khôi phục</b>.': 'Tab <b>Deleted</b>: pick the deleted item, press <b>Restore</b>.',
   'Xem cấu hình hệ thống': 'View system settings',
-  'Menu Tài khoản › <b>Cấu hình hệ thống</b>: tab Chương trình, Chi nhánh, Bảng quy đổi — chỉ xem.': 'Account menu › <b>System settings</b>: Programmes, Branches, Conversion table tabs — view only.',
+  'Menu Tài khoản › <b>Cấu hình hệ thống</b>: tab Chương trình, Chi nhánh, Band & ngưỡng, Hạn mặc định — chỉ xem.': 'Account menu › <b>System settings</b>: Programmes, Branches, Bands & thresholds, Default deadlines tabs — view only.',
   'Fast Track · lộ trình': 'Fast Track · routes',
   'Chưa đổi lần nào.': 'No changes yet.',
   'Xem tất cả': 'See all',

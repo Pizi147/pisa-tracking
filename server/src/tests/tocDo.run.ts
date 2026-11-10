@@ -1339,9 +1339,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* PHOI-HOP-V2 (chủ SP 11/11, mockup #1368): chụp lại 7 băm — đổi CÓ CHỦ Ý: dòng Phối hợp SOS một / (lớp × việc) thay một / lớp, bỏ thẻ điểm (`theSos`),
        thêm `phoiHop` / `emIds` / `emTen` (GVBM toi: tài khoản đo cũng có việc Phối hợp SOS — cùng lý do); chụp lại sau gộp SOS-TAM-PA. Trước: GVCN toi b365951571812c05, GVBM toi 12e56e58ca3ab54f,
        GVCN_THUONG toi b365951571812c05, QL tat-ca 82a113beaa654d50, QT tat-ca 4ea0cb34545f1f71, QT tat-ca cn 27514f17c920a385, QL gvcn 1704e89b346dd3ad */
-    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': '6f6d75efb833e0e7', 'GVBM toi': '619ada104fec5944',
-    'GVCN_THUONG toi': '6f6d75efb833e0e7', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': 'f35cfb2ed97a60cc', 'QT tat-ca': '650abfb450588c2e',
-    'QT tat-ca cn': '46b64ddbd555658b', 'QL gvcn': 'f6ba5ccba208842e', 'GVS toi': '85067c7b764cb801',
+    /* QTV2-BAND (11/11): chụp lại 9 băm — đổi CÓ CHỦ Ý chỉ chữ `hint` / `reason` mô tả luật (Mini Test "Đạt thì Case tự hoàn thành…", Xét lại "dưới mức
+       Học lại…") để không lệch khi Quản trị đổi ngưỡng. Đã kiểm: trả mywork.ts về origin/main (sau #1384) trên nhánh → TD4-a đạt với băm cũ. Trước: QL toi
+       15eb3872996a260a, QT toi 6627fb30cb9de2f7, GVCN toi 6f6d75efb833e0e7, GVCN_THUONG toi 6f6d75efb833e0e7, QL tat-ca f35cfb2ed97a60cc, QT tat-ca 650abfb450588c2e,
+       QT tat-ca cn 46b64ddbd555658b, QL gvcn f6ba5ccba208842e, GVS toi 85067c7b764cb801 */
+    'QL toi': '6335bcebd923e71b', 'QT toi': '83c44c6822338633', 'GVCN toi': 'a1ddc620fbe9804b', 'GVBM toi': '619ada104fec5944',
+    'GVCN_THUONG toi': 'a1ddc620fbe9804b', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '5c5af8972637a00a', 'QT tat-ca': '7dc7d873f49c2b9c',
+    'QT tat-ca cn': 'e96ba2d7deeea372', 'QL gvcn': 'b52f38f51cd37797', 'GVS toi': '4377448ab54bea37',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

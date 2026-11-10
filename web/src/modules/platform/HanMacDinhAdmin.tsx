@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -134,6 +134,9 @@ function SuaHan({ v, onThoi, onLuu }: { v: GiaTri; onThoi: () => void; onLuu: (v
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [hoiBo, setHoiBo] = useState(false);
+  /* Lỗi máy chủ: ô bị tắt lúc lưu nên mất focus — trả focus về ô đầu để Esc / sửa tiếp được bằng phím. */
+  const khung = useRef<HTMLSpanElement>(null);
+  useEffect(() => { if (!busy && loi) khung.current?.querySelector<HTMLElement>('input, select')?.focus(); }, [busy, loi]);
   const daDoi = JSON.stringify(x) !== JSON.stringify(v);
   const ngoai = () => { if (busy) return; if (daDoi) setHoiBo(true); else onThoi(); };
   const luu = async () => {
@@ -150,7 +153,7 @@ function SuaHan({ v, onThoi, onLuu }: { v: GiaTri; onThoi: () => void; onLuu: (v
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ngoai(); }
   };
   return (
-    <span className="grid gap-1.5" onKeyDown={phim}>
+    <span className="grid gap-1.5" onKeyDown={phim} ref={khung}>
       <span className="flex flex-wrap items-center gap-1.5">
         {Object.keys(v).map((k, i) => (k === 'thu' || k === 'tuanLech' ? (
           <select key={k} autoFocus={i === 0} className="field w-auto max-sm:min-h-[44px]" aria-label={NHAN_TRUONG[k]} value={x[k]} disabled={busy}

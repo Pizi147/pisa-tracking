@@ -36,8 +36,9 @@ const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '�
 const NGAN_KN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 const chuKqdr = (k: { dat: boolean; nguyenNhan: string | null; mon: string[] }) => (k.dat ? t('Đạt')
   : [t('Không đạt'), k.nguyenNhan === 'hoc_sinh' ? t('Học viên') : k.nguyenNhan === 'trung_tam' ? t('Trung tâm') : null, k.mon.map((m) => NGAN_KN[m] ?? m).join(' ') || null].filter(Boolean).join(' · '));
+/* QTV2-BAND (PTA 11/11): dải đã CHỤP theo bản lúc đó — nhãn theo TÊN dải, không kèm số % (bản mới có thể khác). */
 const DAI: Record<string, { nhan: string; tone: ToneNhan }> = {
-  dat: { nhan: '≥ 70%', tone: 'ok' }, '60_69': { nhan: '60–69%', tone: 'soon' }, '50_59': { nhan: '50–59%', tone: 'soon' }, duoi_50: { nhan: '< 50%', tone: 'bad' },
+  dat: { nhan: 'Pass', tone: 'ok' }, '60_69': { nhan: t('Lên + bổ trợ'), tone: 'soon' }, '50_59': { nhan: t('Cân nhắc'), tone: 'soon' }, duoi_50: { nhan: t('Học lại'), tone: 'bad' },
 };
 const MUI = (
   <span className="flex items-center justify-center text-slate-600 max-sm:rotate-90" aria-hidden>

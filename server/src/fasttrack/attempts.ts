@@ -71,7 +71,7 @@ export type ScoreRow = {
 };
 
 /** OV-12b: kỳ vọng của lượt cho chip nhóm nguyên nhân (MT0 không kỳ vọng) — cùng `expectationFor` với `resultOf`. */
-export const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a)));
+export const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a), a.created_at));
 
 /** LUAT-34 (T20b): ô có điểm đã huỷ còn cất (`ket_qua_huy` loại `huy_diem`) — cột trong CÂU ĐỌC ĐIỂM sẵn có (không thêm câu SQL). */
 const DIEM_HUY_SQL = `EXISTS (SELECT 1 FROM ket_qua_huy k WHERE k.attempt_id = s.attempt_id AND k.loai = 'huy_diem' AND k.khoi_phuc_luc IS NULL
@@ -277,6 +277,7 @@ export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[
     routeCuaLuot(attempt),
     kyNangXongThieu(skillRows ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores),
     kckCuaLuot(attempt),
+    attempt.created_at,   // QTV2-BAND: kỳ vọng theo bản lúc tạo lượt
   );
 }
 
@@ -859,7 +860,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     const regularSkills = boLop && [...boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), scores))];   // P13: lượt đã ghi môn gộp cũ giữ L+S / R+W
 
     if (regularSkills) {
-      const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma));
+      const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma), a.created_at);
       /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
       const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];
       /*
