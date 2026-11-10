@@ -58,6 +58,8 @@ export type AttemptEval = {
   tyLeTong?: number | null;
   /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — dải Cuối khoá đọc cùng ngưỡng. */
   nguong?: number;
+  /** QTV2-BAND: ngày nhập điểm đầu (lớp thường) — dải Cuối khoá theo bản ngưỡng lúc đó. */
+  mocNguong?: string | null;
   /** PANEL-MC: FT Overall (đủ bốn kỹ năng) · lớp thường % tổng (đủ môn); kỳ vọng của lượt (FT) · ngưỡng % (lớp thường); mã chương trình (tên môn). */
   overall: number | null;
   kyVong: number | null;
@@ -77,14 +79,14 @@ export function evaluateAttemptRow(
   const prog = chuongTrinhTyLeCuaLuot(ma, () => programmes);
   if (prog) {
     const nguong = a.class_id && 'lop_nguong_dat' in a ? a.lop_nguong_dat || RATIO_PASS_THRESHOLD : nguongDatLop(a.class_id, prog.code);   // cùng luật `nguongDatLop` (thiếu → 70 %)
-    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguong);   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores)), scores, prog.code, nguong, a.created_at);   // P13: bộ môn theo lượt
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {
       skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail', v: s.ratio === null ? null : s.ratio * 100 };
     }
     return {
       complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills,
-      khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold,
+      khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold, mocNguong: r.mocNguong,
       overall: r.tyLeTong === null ? null : r.tyLeTong * 100, kyVong: r.passThreshold * 100, chuongTrinh: prog.code,
     };
   }

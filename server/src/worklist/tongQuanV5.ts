@@ -112,7 +112,7 @@ function baoPhTrongKy(p: Principal, ky: { tu: string; den: string }): DongBaoPh[
             (SELECT MIN(l.ngay) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao') AS ngayBao
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id
       WHERE s.consultant_user_id = ? AND s.status != 'finished'   -- NGHI-HOC-LUU-TRU: bỏ em đã nghỉ học
-        AND v.trang_thai != 'bo' AND substr(v.tao_luc, 1, 10) BETWEEN ? AND ? ORDER BY v.han, v.id`,
+        AND v.trang_thai != 'bo' AND v.phoi_hop_id IS NULL AND substr(v.tao_luc, 1, 10) BETWEEN ? AND ? ORDER BY v.han, v.id`,   // PHOI-HOP-V2: việc Meeting CX tách khỏi Báo PH vi phạm
   ).all(p.userId, ky.tu, ky.den) as (DongBaoPh & { han_chon: string | null })[]);
   /* HAN-BAO-PH (chủ SP 03/11, 17.3): "đúng hạn" so với HẠN HIỆU LỰC (hạn đã chọn, Quay lại học) — cùng hàm với Công việc / hồ sơ; một câu Tạm dừng. */
   const khoang = khoangTamDung([...new Set(ds.map((d) => d.hv))]);

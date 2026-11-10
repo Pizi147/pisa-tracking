@@ -2,6 +2,7 @@
 
 import type { ProgrammeCode } from './normal.ts';
 import { t } from '../i18n/index.ts';
+import { kyVongFtTai } from './bandNguong.ts';
 
 // ---------------------------------------------------------------- Mock Test
 
@@ -10,10 +11,13 @@ import { t } from '../i18n/index.ts';
  * MT1 trừ 1.0, MT2 trừ 0.5, từ MT3 trở đi bằng đúng target (nguồn: Quy trình SOS mục 3).
  * Học lại trong cùng lộ trình làm số MT tăng tiếp, nên MT6, MT7… cũng bằng target.
  * RF (M2, Q27-4): MỌI MT bằng target — `route` là lộ trình CỦA LƯỢT (`learning_cycles.route` theo `cycle_id`, K5-49).
+ * QTV2-BAND: mức trừ đọc bản "Kỳ vọng MT FT" tại `moc` = ngày TẠO LƯỢT (`assessment_attempts.created_at`; thiếu = bản mới nhất — lượt sắp tạo).
  */
-export function expectationDelta(attemptNo: number, route?: string | null): number {
-  if (attemptNo <= 0 || route === 'RF') return 0;
-  return attemptNo === 1 ? 1.0 : attemptNo === 2 ? 0.5 : 0;
+export function expectationDelta(attemptNo: number, route?: string | null, moc?: string | null): number {
+  if (attemptNo <= 0) return 0;
+  const k = kyVongFtTai(moc);
+  if (route === 'RF') return k.rf;
+  return attemptNo === 1 ? k.mt1 : attemptNo === 2 ? k.mt2 : k.mt3;
 }
 
 /**

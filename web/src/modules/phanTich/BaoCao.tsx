@@ -54,19 +54,20 @@ export function BaoCao(pv: PhamViPhanTich) {
   const nBc = (h: DongChiNhanhV2, o: string) => `/phan-tich/bao-cao/o?${qHang(h)}&o=${encodeURIComponent(o)}`;
   const nThi = (h: DongChiNhanhV2, o: string) => `/phan-tich/thi-that/o?${qHang(h)}&o=${encodeURIComponent(o)}`;
   const nTest = (h: DongChiNhanhV2, cot: string) => `/phan-tich/tong-hop/o?${q}&theo=${lop ? 'lop' : 'cn'}&khoa=${encodeURIComponent(h.khoa)}&cot=${cot}`;
-  const nMoi = (o: string) => `/tong-quan/chi-nhanh-v2/o?${q}&o=${o}`;
+  const nMoi = (o: string, khoa?: string) => `/tong-quan/chi-nhanh-v2/o?${q}&o=${o}${khoa ? `&khoa=${encodeURIComponent(khoa)}` : ''}`;
   const chonCn = (id: number) => { const n = new URLSearchParams(params); n.set('cn', String(id)); setParams(n); };
 
+  /* SL1: ô trong bảng `vung="bang"` — ô hàng Tổng cùng nguồn với dải số bên trái, khoá panel phải khác (không thì hai panel mở rồi tự đóng). */
   const phanTram = (x: TyLeCn | null, nguon: string, tieuDe: string, nho?: boolean) => {
     const v = pt(x);
     if (v == null) return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
-    return <OSo giaTri={x!.mau} nhan={`${v} %`} nguon={nguon} tieuDe={tieuDe} className={nho ? '' : 'so-chinh'} />;
+    return <OSo giaTri={x!.mau} nhan={`${v} %`} nguon={nguon} tieuDe={tieuDe} className={nho ? '' : 'so-chinh'} vung={nho ? 'bang' : undefined} />;
   };
   const mauSo = (x: TyLeCn | null, dv: string) => (x && x.mau ? <span className={`ml-1.5 text-xs font-normal tabular-nums ${MO}`}>{x.dat}/{x.mau}{dv && ` ${dv}`}</span> : null);
   const thi = (h: DongChiNhanhV2) => {
     if (!h.thi) return <span className="text-slate-500" title={t('Không em nào thi trong kỳ')}>—</span>;
     const o = (n: number, k: 'exceed' | 'dat' | 'fail', kq: 'vuot' | 'dat' | 'duoi', nhan: string) =>
-      <OSo giaTri={n} nguon={nThi(h, `tong:${k}`)} tieuDe={`${t('Thi thật')} · ${nhan} · ${h.ten || d.tenChiNhanh || ''}`} className={n ? lopKq(kq) : ''} />;
+      <OSo giaTri={n} nguon={nThi(h, `tong:${k}`)} tieuDe={`${t('Thi thật')} · ${nhan} · ${h.ten || d.tenChiNhanh || ''}`} className={n ? lopKq(kq) : ''} vung="bang" />;
     return <span className="inline-flex items-baseline gap-2 whitespace-nowrap tabular-nums">{o(h.thi.vuot, 'exceed', 'vuot', t('Vượt'))}<span className={MO}>·</span>{o(h.thi.dat, 'dat', 'dat', t('Đạt'))}<span className={MO}>·</span>{o(h.thi.chuaDat, 'fail', 'duoi', t('Chưa đạt'))}</span>;
   };
   const CK = [['Đạt', 'ck-dat', 'text-kq-vuot'], ['60–69 %', 'ck-60', 'text-soon'], ['50–59 %', 'ck-50', 'text-kq-thieu10'], ['< 50 %', 'ck-duoi50', 'text-bad']] as const;
@@ -107,15 +108,15 @@ export function BaoCao(pv: PhamViPhanTich) {
   ) : (
     <>
       {soHv}
-      <SoTo ten={t('Đạt Test')} ky={t('trong kỳ')} luat={t('Bài Progress Test đạt hết và bài Final Test từ 70 % trên bài đủ điểm trong kỳ — cùng ô của bảng Test lớp thường.')}
+      <SoTo ten={t('Đạt Test')} ky={t('trong kỳ')} luat={t('Đếm BÀI: mỗi bài Progress Test / Final Test của một em (đủ điểm mọi môn) tính một lần. Đạt = Progress đạt hết các môn, Final từ 70 % tổng — cùng ô của bảng Test lớp thường.')}
         gt={phanTram(d.datTest, nTest(tong, 'dat-test'), t('Đạt Test'))} phu={d.datTest?.mau ? <><Dam>{d.datTest.dat}/{d.datTest.mau}</Dam> {t('bài · Progress, Final')}</> : t('Chưa có dữ liệu')} />
-      <SoTo ten={t('Cuối khoá')} ky={t('trong kỳ')} luat={t('Bài Final Test đủ điểm trong kỳ theo % tổng: Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.')}
-        gt={<>{(d.cuoiKhoa ?? [0, 0, 0, 0]).reduce((a, b) => a + b, 0)}<small className="text-[15px] font-medium text-[color:var(--text-dim)]">{t('bài Final')}</small></>}>
+      <SoTo ten={t('Cuối khoá')} ky={t('trong kỳ')} luat={t('Đếm HỌC VIÊN có bài Final Test đủ môn trong kỳ (thi lại: bài mới nhất), xếp theo % tổng = Σ điểm / Σ câu các môn: Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.')}
+        gt={<>{(d.cuoiKhoa ?? [0, 0, 0, 0]).reduce((a, b) => a + b, 0)}<small className="text-[15px] font-medium text-[color:var(--text-dim)]">{t('HV có Final')}</small></>}>
         <span className="mt-1.5 grid grid-cols-4 gap-1.5">
           {CK.map(([nhan, cot, mau], i) => (
             <span key={cot} className="grid rounded-lg border px-2.5 pb-1.5 pt-1 text-sm font-medium text-[color:var(--text-dim)]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
               <span className="whitespace-nowrap">{nhan === 'Đạt' ? t('Đạt') : nhan}</span>
-              <b className="text-[22px] font-bold leading-tight tabular-nums"><OSo giaTri={d.cuoiKhoa?.[i] ?? 0} nguon={nTest(tong, cot)} tieuDe={`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`} className={d.cuoiKhoa?.[i] ? mau : ''} /></b>
+              <b className="text-[22px] font-bold leading-tight tabular-nums"><OSo giaTri={d.cuoiKhoa?.[i] ?? 0} nguon={nMoi(cot, 'tong')} tieuDe={`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`} className={d.cuoiKhoa?.[i] ? mau : ''} /></b>
             </span>
           ))}
         </span>
@@ -151,7 +152,7 @@ export function BaoCao(pv: PhamViPhanTich) {
         if (i < 0) return null;
         if (!h.cuoiKhoa) return <span className="text-slate-500" title={t('Không có bài Final trong kỳ')}>—</span>;
         const n = h.cuoiKhoa[i];
-        return <OSo giaTri={n} nguon={nTest(h, c.key)} tieuDe={`${t('Cuối khoá')} · ${CK[i][0] === 'Đạt' ? t('Đạt') : CK[i][0]} · ${h.ten || d.tenChiNhanh || ''}`} className={n ? CK[i][2] : ''} />;
+        return <OSo giaTri={n} nguon={nMoi(c.key, h.khoa)} tieuDe={`${t('Cuối khoá')} · ${CK[i][0] === 'Đạt' ? t('Đạt') : CK[i][0]} · ${h.ten || d.tenChiNhanh || ''}`} className={n ? CK[i][2] : ''} vung="bang" />;
       }
     }
   };

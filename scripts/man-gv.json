@@ -159,6 +159,7 @@
  "web/src/modules/worklist/TongQuanV5.tsx",
  "web/src/modules/worklist/WorkList.tsx",
  "web/src/modules/yThuc/BangLan.tsx",
+ "web/src/modules/yThuc/BangPhoiHop.tsx",
  "web/src/modules/yThuc/CaseSosControls.tsx",
  "web/src/modules/yThuc/ChiTietViPham.tsx",
  "web/src/modules/yThuc/ClassYThucCard.tsx",

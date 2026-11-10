@@ -438,7 +438,7 @@ export async function runPrPb2aTests(t: YThucTestKit) {
     const k = th.tongHop(P.admin, T());
     const aoa = d.bangXuatTongHop(k, new Set(['ket-qua', 'xu-ly']), 'thử') as any[][];
     assert(aoa[2].includes('Progress Test (theo môn)') && aoa[2].includes('Final Test (% tổng)') && aoa[2].includes('Mini Test'), JSON.stringify(aoa[2]));
-    assert(aoa[3].includes('Dưới 50%') && aoa[3].includes('Từ 70%') && !aoa[3].some((x: any) => /SOS/.test(String(x))), JSON.stringify(aoa[3]));
+    assert(aoa[3].includes('Học lại') && aoa[3].includes('Từ 70%') && !aoa[3].some((x: any) => /SOS/.test(String(x))), JSON.stringify(aoa[3]));
     const giua = k.hang.findIndex((h: any) => h.khoa === 'dot:giua');
     if (giua >= 0) {
       const dong = aoa[4 + giua + k.hang.slice(0, giua).reduce((n: number, h: any) => n + (h.con?.length ?? 0), 0)];

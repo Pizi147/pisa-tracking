@@ -9273,6 +9273,9 @@ await runPrOv4bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== BAND-QUY-DOI (bảng quy đổi band ở DB, Quản trị sửa)
 const { runPrBandQuyDoiTests } = bocTep('prBandQuyDoi', await import('./prBandQuyDoi.tests.ts'));
 await runPrBandQuyDoiTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== CAU-HINH-CASE-SOS (Quản trị sửa nhóm nguyên nhân / PA / việc mốc SOS)
+const { runCauHinhCaseSosTests } = bocTep('cauHinhCaseSos', await import('./cauHinhCaseSos.tests.ts'));
+await runCauHinhCaseSosTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== PR-OV6b1 (Quản trị › Chương trình: cấu hình, bản chụp lớp, tuần MT FT, ngưỡng đạt)
 const { runPrOv6b1Tests } = bocTep('prOv6b1', await import('./prOv6b1.tests.ts'));
 await runPrOv6b1Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
@@ -9951,6 +9954,9 @@ await runPrQtv2QuyenTests({ check, assert, assertThrows, conn, P } as any);
 // ==================================================================== QTV2-HAN (chủ SP 11/11, Quản trị V2 PR-4: Hạn mặc định có phiên bản)
 const { runPrQtv2HanTests } = bocTep('prQtv2Han', await import('./prQtv2Han.tests.ts'));
 await runPrQtv2HanTests({ check, assert, assertThrows, conn, P } as any);
+// ==================================================================== QTV2-BAND (chủ SP 11/11, Quản trị V2 PR-5: Kỳ vọng MT FT + Ngưỡng lớp thường có phiên bản)
+const { runPrQtv2BandTests } = bocTep('prQtv2Band', await import('./prQtv2Band.tests.ts'));
+await runPrQtv2BandTests({ check, assert, assertThrows, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

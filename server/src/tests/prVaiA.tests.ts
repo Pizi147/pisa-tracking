@@ -381,7 +381,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
   check('VAI-a (6a) · T75: tên nhóm, khoá ghi_ket_qua_pa (không còn "result" trong mywork.ts), hạn cap-nhat-pa; gomNhomViec một tham số', () => {
     eq(Object.values(d.NHOM_VIEC_LABEL), ['Chấm điểm', 'Case học thuật', 'Ý thức & Phối hợp', 'Vận hành'], 'tên nhóm');
     eq([d.nhomViecCua('ghi_ket_qua_pa'), d.LOAI_HAN_CUA_VIEC.ghi_ket_qua_pa], ['case-hoc-thuat', 'cap-nhat-pa'], 'khoá mới');
-    eq([d.nhomViecCua('phoi_hop_sos'), d.nhomViecCua('khai_bac'), d.nhomViecCua('ky_vong_dau_ra')], ['case-hoc-thuat', 'y-thuc', 'van-hanh'], 'ba loại mới');
+    eq([d.nhomViecCua('phoi_hop_sos'), d.nhomViecCua('khai_bac'), d.nhomViecCua('ky_vong_dau_ra')], ['y-thuc', 'y-thuc', 'van-hanh'], 'ba loại mới (PHOI-HOP-V2: Phối hợp SOS ở Ý thức & Phối hợp)');
     const src = fs.readFileSync(pathM.join(REPO, 'server/src/worklist/mywork.ts'), 'utf8');
     assert(!/'result'/.test(src) && !/'next_step'/.test(src), 'mywork.ts còn khoá result / next_step');
     eq(d.gomNhomViec.length, 1, 'gomNhomViec không còn tham số soNhacYThuc');
@@ -400,18 +400,19 @@ export async function runPrVaiATests(t: YThucTestKit) {
     eq(d.LOC_NHANH_LABEL['den-het-tuan'], 'Đến hết tuần', 'nhãn chip');
   });
 
-  check('VAI-a (6c) · Phối hợp SOS là việc thật: một dòng mỗi lớp GVCN, count = pendingCount của tab Phối hợp lớp (hai đường); GVBM không có', () => {
+  check('VAI-a (6c) · PHOI-HOP-V2: Phối hợp SOS là việc thật — một dòng mỗi (lớp × việc), count = số em còn việc đó ở tab Phối hợp lớp (hai đường); GVBM không có', () => {
     let thay = 0;
     for (const gv of [P.coreTeacher, P.normalCoreTeacher]) {
       const viec = (mywork.myWork(gv).items as any[]).filter((i) => i.group === 'phoi_hop_sos');
       for (const it of viec) {
         thay++;
-        eq(it.count, phoiHop.coordinationOfClass(gv, it.classId).pendingCount, `lớp ${it.classCode}: count = số lượt tab Phối hợp`);
-        /* OV-12h: không hạn, trừ meeting CX / GĐCN (hạn sớm nhất của lớp, `myCoordinationLines`). */
-        const han = phoiHop.myCoordinationLines(gv).find((l: any) => l.classId === it.classId)?.han ?? null;
-        assert(it.due === han && it.urgency === (han && han < TODAY ? 'overdue' : han === TODAY ? 'today' : 'normal') && it.actionLabel === 'Mở Phối hợp SOS' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
+        const cho = phoiHop.coordinationOfClass(gv, it.classId).rows.flatMap((r: any) => r.actions.map((a: any) => ({ r, a })))
+          .filter(({ a }: any) => a.status === 'pending' && (a.kind === 'other' ? `other:${encodeURIComponent(a.customName ?? '')}` : a.kind) === it.phoiHop.khoa);
+        eq(it.count, new Set(cho.map(({ r }: any) => r.studentId)).size, `lớp ${it.classCode} · ${it.phoiHop.khoa}: count = số em tab Phối hợp`);
+        /* OV-12h: không hạn, trừ meeting CX / GĐCN (hạn sớm nhất của việc đó trong lớp). */
+        const han = cho.map(({ a }: any) => a.han).filter(Boolean).sort()[0] ?? null;
+        assert(it.due === han && it.urgency === (han && han < TODAY ? 'overdue' : han === TODAY ? 'today' : 'normal') && it.actionLabel === 'Xác nhận' && it.href.endsWith('?tab=y-thuc&sub=phoi-hop'), JSON.stringify(it));
       }
-      eq(viec.length, phoiHop.myCoordinationLines(gv).length, 'một dòng mỗi lớp của myCoordinationLines');
     }
     assert(thay > 0, 'bộ demo phải có lớp còn lượt Phối hợp SOS');
     /* P.subjectTeacher không chủ nhiệm MB FT 101 (có thể chủ nhiệm lớp khác) — không có việc Phối hợp SOS của lớp này. */

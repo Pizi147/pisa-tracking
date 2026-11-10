@@ -199,7 +199,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
           khongChiaMon: r.skills.length === 1 && r.skills[0].skill === 'tong_hop', tyLe: r.tyLeTong,
           /* PR-LT2b: hướng gợi ý Cuối khoá (chỉ Cuối khoá đủ điểm) — cùng luật `goiYCuoiKhoa`. */
           goiY: a.kind === 'final' && a.class_programme
-            ? goiYCuoiKhoa({ ct: a.class_programme, tyLe: r.tyLeTong, monTruot: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string), nguong: r.passThreshold }) : null,
+            ? goiYCuoiKhoa({ ct: a.class_programme, tyLe: r.tyLeTong, monTruot: r.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill as string), nguong: r.passThreshold, moc: r.mocNguong }) : null,
         };
       }
       const r = t.ft!;

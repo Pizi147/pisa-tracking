@@ -38,9 +38,6 @@ export const EN_PHAN_TICH_V2 = {
   'Vượt · Đạt · Chưa đạt Target, trừ KCK': 'Above · Met · Below Target, excl. no-commitment',
   'Không em nào thi trong kỳ': 'No one sat the exam in this period',
   'bài · Progress, Final': 'tests · Progress, Final',
-  'Bài Progress Test đạt hết và bài Final Test từ 70 % trên bài đủ điểm trong kỳ — cùng ô của bảng Test lớp thường.': 'Progress Tests with every subject passed and Final Tests from 70 %, over fully scored tests in the period — the same cells as the standard-class Test table.',
-  'Bài Final Test đủ điểm trong kỳ theo % tổng: Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.': 'Fully scored Final Tests in the period by total %: Pass from 70 % · 60–69 % · 50–59 % · under 50 %.',
-  'bài Final': 'Final tests',
   'Không có bài Final trong kỳ': 'No Final Test in this period',
   'Chi nhánh chưa có lớp đang học ở khung này': 'This branch has no active class in this programme',
   'Chưa có chi nhánh nào trong phạm vi': 'No branch in your scope',
@@ -58,4 +55,8 @@ export const EN_PHAN_TICH_V2 = {
   'Chấm Test và Việc theo sổ nghĩa vụ: tỉ lệ = đúng hạn / (đúng hạn + làm muộn + chưa làm). S chéo chung = bài Speaking chấm chéo chưa ai nhận, mọi GV có kỹ năng S cùng thấy, không vào tỉ lệ. Xếp theo tên, không xếp hạng.': 'Marking and Tasks from the duty ledger: rate = on time / (on time + late + not done). Shared S cross-marking = Speaking tests to cross-mark that nobody has taken; every teacher with the S skill sees them; not in the rate. Sorted by name, not ranked.',
   'Giáo viên — Chấm Test và Việc': 'Teachers — Marking and Tasks',
   'Bấm ▸ xem từng chi nhánh': 'Press ▸ to see each branch',
+  'HV có Final': 'students with a Final',
+  'Đếm BÀI: mỗi bài Progress Test / Final Test của một em (đủ điểm mọi môn) tính một lần. Đạt = Progress đạt hết các môn, Final từ 70 % tổng — cùng ô của bảng Test lớp thường.': 'Counts TESTS: each Progress Test / Final Test of one student (every subject scored) counts once. Passed = Progress with every subject passed, Final from 70 % overall — the same cells as the standard-class Test table.',
+  'Đếm HỌC VIÊN có bài Final Test đủ môn trong kỳ (thi lại: bài mới nhất), xếp theo % tổng = Σ điểm / Σ câu các môn: Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.': 'Counts STUDENTS with a fully scored Final Test in the period (retake: latest test), by overall % = total marks / total questions: Pass from 70 % · 60–69 % · 50–59 % · under 50 %.',
+  'Số · Chi nhánh': 'Number · branch',
 } satisfies Record<string, Dich>;

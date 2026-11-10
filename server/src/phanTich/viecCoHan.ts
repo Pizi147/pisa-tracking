@@ -9,7 +9,7 @@ import type { Principal } from '../permissions.ts';
 import type { WorkGroupKey } from '../worklist/mywork.ts';
 
 export const VIEC_CO_HAN: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>([
-  'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop_sos', 'mini_test', 'no_plan', 'bao_ph_yt', 'buoc_tiep', 'ban_giao', 'yt_xu_ly',
+  'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop_sos', 'mini_test', 'no_plan', 'bao_ph_yt', 'phoi_hop_tvv', 'buoc_tiep', 'ban_giao', 'yt_xu_ly',
 ]);
 
 /**

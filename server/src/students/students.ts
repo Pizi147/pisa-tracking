@@ -109,7 +109,7 @@ export function latestResult(studentId: number) {
     )
     .all(studentId) as any[];
   for (const a of attempts) {
-    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route, [], kckCuaLuot(a));   // OV-11e (Q8)
+    const r = evaluateAttempt(a.target_at_attempt, a.attempt_no, entryBandsOf(scoresOf(a.id)), skipsOf(a.id), a.route, [], kckCuaLuot(a), a.created_at);   // OV-11e (Q8)
     if (r.evaluable) {
       return {
         attemptId: a.id, attemptNo: a.attempt_no, route: a.route, cycleSeq: a.cycle_seq,

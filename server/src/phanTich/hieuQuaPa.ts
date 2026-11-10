@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
-import {
-  CASE_CATEGORY_SHORT, NGUONG_MINI_TEST, addDaysIso, categoryOf, type CaseCategory, type DongPa,
+import { interventionKindsFor, NHAN_LOAI_PA_GOC,
+  CASE_CATEGORY_SHORT, nguongMiniTest, addDaysIso, categoryOf, type CaseCategory, type DongPa,
   INTERVENTION_KIND_LABEL, NGUONG_IT_DU_LIEU, NHAN_HO_KY_NANG, hoKyNang, issueBranchOf, issueLabel, loiKhoangTuan, mondayOfDate, nenDung,
   tuDauKhoang, tuanTrungVi,
   type ChuongTrinh, type DongHieuQuaPa, type HieuQuaPaKetQua, type HoKyNang, type InterventionKind,
@@ -113,7 +113,8 @@ const NHAN_QUY_CHE: Record<string, string> = {
 };
 const THU_TU_QUY_CHE = Object.keys(NHAN_QUY_CHE);
 /** PR-S6F-a Q8: hàng con (loại PA) của khối quy chế theo thứ tự cố định — không xếp theo số PA. */
-const THU_TU_LOAI = Object.keys(INTERVENTION_KIND_LABEL);
+/* CAU-HINH-CASE-SOS: thứ tự Quản trị xếp (loại hệ thống / mã cũ theo sau) — tính lúc gọi, không lúc nạp module. */
+const thuTuLoai = () => [...interventionKindsFor().selfServe, ...interventionKindsFor().proposals, ...Object.keys(NHAN_LOAI_PA_GOC)];
 /** PR-S6F-a Q20: PA GV thêm của Case chưa có lỗi chính — một hàng riêng để Σ hàng = tóm tắt = `paCoKetQua` (cột "PA hiệu quả" bảng GV). */
 const KHOA_CHUA_PHAN_LOAI = 'chua-phan-loai';
 /* ponytail: FT xếp theo mức SOS HIỆN TẠI của Case (Q22) — Case trượt lại thì PA cũ hiện ở hàng mức mới; ghi mức vào PA lúc sinh nếu cần mức lúc chạy. */
@@ -210,7 +211,8 @@ export function hieuQuaPa(p: Principal, f: FilterHieuQuaPa): HieuQuaPaKetQua {
       for (const c of con) c.nenDung = nenDung(c, con.filter((x) => x !== c));
       lon.push({ ...dongOf(r, khoa), con });
     } else {
-      con.sort((a, b) => THU_TU_LOAI.indexOf(a.khoa.split('|')[1]) - THU_TU_LOAI.indexOf(b.khoa.split('|')[1]));
+      const thu = thuTuLoai();
+      con.sort((a, b) => thu.indexOf(a.khoa.split('|')[1]) - thu.indexOf(b.khoa.split('|')[1]));
       quyChe.push({ ...dongOf(r, khoa), ...(con.length ? { con } : {}) });
     }
   }
@@ -280,7 +282,7 @@ export const bangPa = (rows: MetricRow[]) => ({ rows, ...(rows.length ? { bangLu
 const PA_SQL = `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.nhom_bo_tro, COALESCE(iv.started_date, iv.planned_date) AS bat_dau, iv.action_due,
         sc.student_id, s.full_name, sc.category, sc.topic, COALESCE(ou.full_name, pu.full_name, NULLIF(iv.performer_name, '')) AS nguoi,
         (SELECT fu.outcome FROM case_followups fu WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS kq,
-        mt.ty_le AS mini, lc.id AS lop_id, lc.code AS lop
+        mt.ty_le AS mini, mt.ghi_luc AS mini_luc, lc.id AS lop_id, lc.code AS lop
    FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
    LEFT JOIN students s ON s.id = sc.student_id
    LEFT JOIN users pu ON pu.id = iv.performer_user_id
@@ -298,7 +300,7 @@ function napPa(ivIds: readonly number[]): Map<number, DongPa> {
     const lo = ds.slice(i, i + 400);
     for (const r of db().prepare(`${PA_SQL}(${lo.map(() => '?').join(',')})`).all(...lo) as any[]) {
       /* Kết quả cuối — cùng luật `planOutcomes`: PA bổ trợ sau Cuối khoá (`mt:`) chưa có kết quả tuần thì Mini Test quyết. */
-      const kq = r.kq ?? (typeof r.nhom_bo_tro === 'string' && r.nhom_bo_tro.startsWith('mt:') && r.mini != null ? (r.mini >= NGUONG_MINI_TEST ? 'improved' : 'unchanged') : null);
+      const kq = r.kq ?? (typeof r.nhom_bo_tro === 'string' && r.nhom_bo_tro.startsWith('mt:') && r.mini != null ? (r.mini >= nguongMiniTest(r.mini_luc) ? 'improved' : 'unchanged') : null);
       const cat = (r.category ?? categoryOf(r.topic)) as CaseCategory | null;
       out.set(r.id, {
         id: r.id, studentId: r.student_id, ten: r.full_name ?? '', classId: r.lop_id ?? null, lop: r.lop ?? '', caseId: r.case_id,
