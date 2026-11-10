@@ -26,7 +26,7 @@ import { dongNghiaVu, dongPa, paCoKetQua } from './hieuQuaPa.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { dangHocLuc, lopLucThi, nguoiPcLuc } from './luatBai.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
-import { chuaPhanCong, demTheoNguoi, demTheoNguoiHaiLoai, dongCuaNguoi, type DongNvXem, type So3 } from './demNghiaVu.ts';
+import { chuaPhanCong, demTheoNguoi, demTheoNguoiHaiLoai, dongCuaNguoi, dongMoiNguoi, type DongNvXem, type So3 } from './demNghiaVu.ts';
 import { lamMoiViec } from './soNghiaVu.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -743,6 +743,27 @@ function phanTichGiaoVienTong(p: Principal, f: LocPtGv, cns: number[] | null): P
   }).sort((a, b) => a.ten.localeCompare(b.ten, 'vi') || a.id - b.id);
   const chuaPc = cpcCn.length ? { chamDiem: congO(cpcCn.map((x) => x.chamDiem)), viecDungHan: congO(cpcCn.map((x) => x.viecDungHan)), chiNhanh: cpcCn } : null;
   return { cn: null, tenChiNhanh: t('Tất cả chi nhánh'), khung: v.khung, tu: v.tu, den: v.den, thang: f.thang ?? null, homNay: v.homNay, hang, chuaPhanCong: chuaPc };
+}
+
+/**
+ * EXCEL GIÁO VIÊN · sheet Danh sách (Phân tích V2 · PR-5): mọi bài / việc có hạn trong kỳ của mọi người — dòng = dòng panel sổ nghĩa vụ (`dongPanelSo`)
+ * + tên người chịu (`gv`, null = Chưa phân công). Một chi nhánh: ghi lại sổ việc như bảng; Tất cả chi nhánh: đọc sổ đang có như bảng tổng.
+ * Chỉ gọi lúc bấm Xuất. Một câu sổ + 4 câu tên (em, lớp, lượt, người).
+ */
+export function danhSachSoGv(p: Principal, f: LocPtGv): { rows: (MetricRow & { gv: string | null })[] } {
+  let v: PhamViSo;
+  const tong = f.cn == null ? phamViTong(p) : null;
+  if (tong) v = phamViSoTong(f, tong.cns);
+  else {
+    const c = nguCanhPtGv(p, f);
+    v = { cn: c.cn, khung: c.khung, tu: c.tu, cuoi: c.cuoi, homNay: c.homNay };
+    moiViec(v);
+  }
+  const ds = dongMoiNguoi({ chiNhanh: v.cn, tu: v.tu, den: v.cuoi, homNay: v.homNay, khung: v.khung ?? null });
+  const ids = [...new Set(ds.map((d) => d.nguoi).filter((x): x is number => x != null))];
+  const ten = new Map(ids.length ? (db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(JSON.stringify(ids)) as any[]).map((r) => [r.id as number, r.full_name as string]) : []);
+  const dong = dongPanelSo(ds, !!tong);
+  return { rows: dong.map((d, i) => ({ ...d.row, gv: ds[i].nguoi != null ? ten.get(ds[i].nguoi!) ?? null : null })) };
 }
 
 /** Tiêu đề panel "{nhãn} · {ai / kỳ} · {đúng}/{tổng} {đơn vị}" — qua `t()` để web tiếng Anh dịch theo mẫu (K5: đơn vị ghi đúng chữ). */

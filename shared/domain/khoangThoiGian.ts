@@ -108,7 +108,8 @@ export function khoangTruoc(k: { tu: string; den: string }): { tu: string; den: 
   return { tu: addDaysIso(k.tu, -n), den: addDaysIso(k.tu, -1) };
 }
 
-const maTuan = (d: string) => {
+/** Mã tuần của một ngày ("W2 SEP") + tháng / năm sở hữu tuần. */
+export const maTuan = (d: string) => {
   const t2 = mondayOfDate(d);
   return { ma: `W${weekNumberInMonthOf(t2)} ${MONTH_CODE[owningMonthOf(t2).month - 1]}`, nam: owningMonthOf(t2).year, thang: owningMonthOf(t2).month };
 };

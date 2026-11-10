@@ -126,6 +126,24 @@ export function dongCuaNguoi(q: Q & { nguoi: number }): DongNvXem[] {
 }
 
 /**
+ * Dòng của MỌI người trong kỳ, bài + việc MỘT câu (Excel Giáo viên · sheet Danh sách) — cùng tập với `demTheoNguoiHaiLoai`.
+ * Bài S chéo chưa ai nhận (S chéo chung, của cả nhóm GV có S) MỘT dòng `nguoi: null, sChung: true`; dòng không ai chịu (Chưa phân công) `nguoi: null`.
+ */
+export function dongMoiNguoi(q: Omit<Q, 'loai' | 'nguoi'>): (DongNvXem & { nguoi: number | null })[] {
+  const rows = docKy({ ...q, loai: 'bai-viec' });
+  const ai = nguoiCua(rows);
+  const out: (DongNvXem & { nguoi: number | null })[] = [];
+  for (const r of rows) {
+    const t = tt(r, q.homNay);
+    if (t === 'chua-toi') continue;
+    const x = xem(r, t, q.homNay);
+    const ds = x.sChung ? [] : ai(r);
+    for (const n of ds.length ? ds : [null]) out.push({ ...x, nguoi: n });
+  }
+  return out.sort((a, b) => THU_TU[a.trangThai] - THU_TU[b.trangThai] || a.han.localeCompare(b.han));
+}
+
+/**
  * Bài / việc không có người (spec 1.2 a, "Chưa phân công") của một chi nhánh trong kỳ — cho QL. Gồm bài S chéo chưa ai nhận mà chi nhánh không còn GV nào có
  * kỹ năng S tại ngày hạn (chủ SP 10/11).
  */

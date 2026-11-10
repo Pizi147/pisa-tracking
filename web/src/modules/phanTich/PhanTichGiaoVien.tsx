@@ -9,14 +9,18 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
-import { DaiChiSo, DauThe, VaoHangLoc } from './dungChung.tsx';
+import { DaiChiSo, DauThe, NutXuat, VaoHangLoc } from './dungChung.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { napDanhSach, ptX, sheetDanhSachHoacLoi, soX, xuatBaoCao } from './xuatV2.ts';
+import type { OXlsx } from '../../lib/xlsxDep.ts';
 
 /**
  * BÁO CÁO GIÁO VIÊN (Phân tích V2 — đặc tả `2026-11-12-phan-tich-v2-design.md` mục 6; mockup #1400 D1–D4): "Thầy cô làm việc có đúng hạn, học trò có theo kịp không?"
  * Sổ nghĩa vụ: Chấm Test (bài) và Việc — mỗi nhóm Đúng hạn · Làm muộn · Chưa làm (+ "S chéo chung"); Đạt kỳ vọng Test của học trò GV (lượt; lớp thường "Đạt Test").
  * Xếp theo tên, không xếp hạng, không màu ngưỡng (C08) — Chưa làm đỏ là trạng thái quá hạn (PTA chốt XM-8). Hàng "Chưa phân công" cuối bảng (ô gộp).
  * Tất cả chi nhánh: mỗi người một dòng, ▸ tách từng chi nhánh. GET `/phan-tich/giao-vien?v2=1` — chỉ phần cần (bỏ Tiến bộ / HV cần chú ý / Case / PA / Thi thật).
- * Bấm số → panel sổ nghĩa vụ 3 tab (Chưa làm · Làm muộn · Đúng hạn), cùng đường cũ. Bỏ Gọn / Đầy đủ (`?cot=day` cũ vẫn vào màn). Xuất Excel ẩn tới PR Excel.
+ * Bấm số → panel sổ nghĩa vụ 3 tab (Chưa làm · Làm muộn · Đúng hạn), cùng đường cũ. Bỏ Gọn / Đầy đủ (`?cot=day` cũ vẫn vào màn).
+ * Xuất Excel (PR-5): sheet Giáo viên (mọi người, kèm dòng từng chi nhánh ở Tất cả) + Danh sách (mọi bài / việc, `/phan-tich/giao-vien/danh-sach`).
  */
 const ID_CHUA_PC = 0;
 const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
@@ -32,6 +36,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const [tim, setTim] = useState('');
   const [mo, setMo] = useState<Set<number>>(new Set());
   const dienThoai = useDienThoai();
+  const { homNay } = useNgayNghiepVu();
+  const [dangXuat, setDangXuat] = useState(false);
   const q = new URLSearchParams({ ct: khung, ...(branchId ? { cn: String(branchId) } : {}), kieu: khoang.kieu, tu: khoang.tu, den: khoang.den });
   const { data, loading, error, reload } = useApi<PhanTichGvKq>(`/phan-tich/giao-vien?${q}&v2=1`, [q.toString()]);
   const tong = !!data && data.cn == null;
@@ -169,10 +175,40 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
       </div>
     );
   };
+  async function xuatExcel() {
+    if (!data) return;
+    setDangXuat(true);
+    try {
+      const ba = (o: OPtGv | undefined): OXlsx[] => { const x = so3(o); return x ? [x.dung, x.muon, soX(x.chua, 'chua-dat'), ptX(x.dung, x.dung + x.muon + x.chua)] : ['—', '—', '—', '—']; };
+      const dat = (h: HangPtGv): OXlsx[] => { const x = h.datMt ? tyLeGv(h.datMt) : gopKq(h.ketQua); return x && x.mau ? [x.dat, x.mau, ptX(x.dat, x.mau)] : ['—', '—', '—']; };
+      /* 14 cột: tên · môn · Chấm Test (đúng, muộn, chưa, %) · S chéo chung · Việc (đúng, muộn, chưa, %) · Đạt (đạt, mẫu, %). */
+      const dongCua = (ten: string, mon: string, h: HangPtGv): OXlsx[] => [ten, mon, ...ba(h.chamDiem), so3(h.chamDiem)?.sChung || '', ...ba(h.viecDungHan), ...dat(h)];
+      const hang: OXlsx[][] = [];
+      for (const h of data.hang) {
+        hang.push(dongCua(h.ten, phuCua({ khoa: '', h }, cot[0]) as string ?? '', h));
+        if (tong && (h.chiNhanh?.length ?? 0) > 1) for (const c of h.chiNhanh!) hang.push(dongCua(`    ${c.ten}`, '', { ...h, chamDiem: c.chamDiem, viecDungHan: c.viecDungHan, datMt: c.datMt, ketQua: c.ketQua ?? {} }));
+      }
+      if (data.chuaPhanCong) hang.push([t('Chưa phân công'), '', '', '', soX(cpc, 'chua-dat'), '', '', '', '', '', '', '', '', '']);
+      const tongBai = bai.dung + bai.muon + bai.chua, tongViec = viec.dung + viec.muon + viec.chua;
+      hang.push([t('Tổng'), '', bai.dung, bai.muon, bai.chua, ptX(bai.dung, tongBai), '', viec.dung, viec.muon, viec.chua, ptX(viec.dung, tongViec), '', '', '']);
+      const ds = await napDanhSach(`/phan-tich/giao-vien/danh-sach?${q}`);
+      const nhanDat = ft ? t('Đạt kỳ vọng Test') : t('Đạt Test');
+      xuatBaoCao({ bao: t('Giáo viên'), cn: data.cn == null ? null : data.tenChiNhanh, ct: khung, khoang, homNay }, [
+        { ten: t('Giáo viên'), tong: [hang.length - 1],
+          dau: [[t('Giáo viên'), t('Môn'), NHOM_CT, null, null, null, null, NHOM_V, null, null, null, nhanDat, null, null],
+            [null, null, t('Đúng hạn'), t('Làm muộn'), t('Chưa làm'), t('% đúng hạn'), t('S chéo chung'), t('Đúng hạn'), t('Làm muộn'), t('Chưa làm'), t('% đúng hạn'), t('Đạt'), ft ? t('Lượt') : t('Bài'), '%']],
+          hang },
+        sheetDanhSachHoacLoi(ds, (r) => r.gv ?? (r.dongViec?.sChung ? t('S chéo chung') : null)),
+      ]);
+    } finally { setDangXuat(false); }
+  }
   const lienKet = `?${new URLSearchParams({ ...Object.fromEntries(params), goc: 'ket-qua-thi' })}`;
 
   return (
     <div className="space-y-3">
+      <VaoHangLoc o="phai">
+        <NutXuat nhan={t('Xuất Excel')} tat={!data || dangXuat} onClick={xuatExcel} />
+      </VaoHangLoc>
       <VaoHangLoc>
         <input type="search" name="tim-gv" autoComplete="off" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)}
           className="h-9 w-[220px] rounded-lg border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-3 text-sm text-[color:var(--text)] placeholder:text-[color:var(--text-faint)] max-sm:h-11 max-sm:w-full" />

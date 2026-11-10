@@ -360,6 +360,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Phân tích GV', vai: ['QL'], url: '/phan-tich/giao-vien?cn={cn}&ct=thuong&v2=1' },
   { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien?ct=ft&v2=1' },
   { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien/o?ct=ft&gv=0&cot=cham-diem' },
+  /* PT-V2 · PR-5: sheet Danh sách của Excel Giáo viên (chỉ gọi lúc bấm Xuất) — một chi nhánh · tất cả chi nhánh; GV bộ môn bị chặn. */
+  { trang: 'Phân tích GV', vai: ['QL', 'QT', 'GVBM'], url: '/phan-tich/giao-vien/danh-sach?cn={cn}&ct=ft', maChuDich: { GVBM: 403 } },
+  { trang: 'Phân tích GV', vai: ['QT'], url: '/phan-tich/giao-vien/danh-sach?ct=ft' },
 
   // ---------------------------------------------------------------- OV-15e — Báo cáo + Kết quả thi (QL, QT; GVCN → 403) + panel chỉ số GV
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN'], url: '/phan-tich/bao-cao?ct=ft', maChuDich: { GVCN: 403 } },
@@ -461,6 +464,7 @@ export const TRAN: Record<string, number> = {
   'QT /phan-tich/giao-vien?ct=ft': 17, 'QT /phan-tich/giao-vien/o?ct=ft&gv={gv}&cot=viec-dung-han': 18, 'QL /phan-tich/giao-vien/o?cn={cn}&ct=ft&gv=0&cot=cham-diem': 16,
   /* PT-V2 Giáo viên: một chi nhánh bỏ Tiến bộ / PA / Thi thật / Case (dev đo QL FT 49 → 17 câu); tổng = từng chi nhánh (dev đo QT 5 → 55 câu, cảnh báo PTA). */
   'QL /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QT /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30, 'QL /phan-tich/giao-vien?cn={cn}&ct=thuong&v2=1': 30, 'QT /phan-tich/giao-vien?ct=ft&v2=1': 80, 'QT /phan-tich/giao-vien/o?ct=ft&gv=0&cot=cham-diem': 20,
+  'QL /phan-tich/giao-vien/danh-sach?cn={cn}&ct=ft': 20, 'QT /phan-tich/giao-vien/danh-sach?cn={cn}&ct=ft': 20, 'QT /phan-tich/giao-vien/danh-sach?ct=ft': 20,   // PT-V2 PR-5: dev đo 10 · 9
   /* DEM-QUA-HAN (chủ SP 06/11 — quá hạn vẫn phải tính): Phân tích GV bảng / panel Việc đúng hạn / hồ sơ GV dựng Công việc "Tất cả" của chi nhánh (`viecQuaHanMo`,
      một lần mỗi chi nhánh mỗi request) → +~30–40 câu. Trần nâng = min(100, max(đo + 10, ⌈đo × 1,3⌉)): đo bảng FT 79 · 78, thường 69 · 68, khoảng dài 75 · 74,
      panel 56 · 55, hồ sơ GV 80–82. Đã cảnh báo PTA (dòng / ngày trong mô tả PR). */

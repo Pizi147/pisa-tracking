@@ -15,11 +15,13 @@ import { DaiChiSo, DauThe, DINH_TRAI, NutXemToanBo, NutXuat, OChon, RongDau, SO_
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { HieuQuaPa } from './HieuQuaPa.tsx';
+import { napDanhSach, ptX, sheetDanhSachHoacLoi, sheetTuBangCu, soX, xuatBaoCao } from './xuatV2.ts';
+import type { SheetDep } from '../../lib/xlsxDep.ts';
 import { NGON_NGU, dich, t } from '@shared/i18n/index.ts';
 import {
   CHUONG_TRINH_LABEL, GOI_Y_XU_LY, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU,
   NHAN_NHOM_CON, bangXuatTongHop, cotSoLieu, cotTheoDuLieu, cotTongHopFor, mauOKetQua, mondayOfDate, ngay, nhanKhoang, nhomCotLabel, nhomCotNhanNgan, oKhongApDung,
-  type ChuongTrinh, type CotTongHop, type DongTongHop, type KhoangNgay, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
+  type ChuongTrinh, type CotTongHop, type DongHieuQuaPa, type HieuQuaPaKetQua, type DongTongHop, type KhoangNgay, type MauOKetQua, type NhomCot, type TheoDong, type TongHopKetQua,
 } from '@shared/domain/index.ts';
 
 const KHOA_LUU_COT_HIEN = 'pisa.phan-tich.tong-hop.cot-hien';
@@ -89,6 +91,9 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   }, [theo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const branches = useApi<any[]>('/ref/branches');
+  /* PR-5: bảng PA đã nạp ở khối cuối trang — Excel dùng lại, không gọi thêm. */
+  const paRef = useRef<HieuQuaPaKetQua | null>(null);
+  const nhanPa = useRef((d: HieuQuaPaKetQua | null) => { paRef.current = d; }).current;
   const classes = useApi<any[]>(`/ref/classes${branchId ? `?branchId=${branchId}` : ''}`);
   const anCotChiNhanh = !!branchId || (branches.data?.length ?? 0) <= 1;
 
@@ -171,19 +176,28 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const branchName = branchId ? branches.data?.find((b) => b.id === branchId)?.name ?? null : null;
   const className = classId ? classes.data?.find((c) => c.id === classId)?.code ?? null : null;
 
+  /*
+   * PR-5 Excel (đặc tả 7): sheet Test + SOS = ĐỦ cột Excel cũ (`bangXuatTongHop`, giữ "Cột hiện") có định dạng · PA do GV thêm · PA theo quy chế (dữ liệu khối PA
+   * đã nạp) · Danh sách = lượt của hàng Tổng (panel `cot=luot`, gọi lúc bấm Xuất).
+   */
   async function xuatExcel() {
     if (!data || !demoDate) return;
-    const XLSX = await import('xlsx');
     const moTa = [
       branchName ?? t('Tất cả chi nhánh'), CHUONG_TRINH_LABEL[ct], nhanKy,
       className, t('dữ liệu đến {ngay}', { ngay: ngay(demoDate) }),
     ].filter(Boolean).join(' · ');
     const aoa = bangXuatTongHop(goc!, cotHien, moTa);   // Excel: dữ liệu đủ (kể cả dòng chỉ Checkpoint)
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, NGON_NGU === 'en' ? 'Summary' : 'Tổng hợp');   // khoá 'Tổng hợp' = Integrated (tên kỹ năng)
-    const ten = ngay(demoDate).split('/').join('-');
-    XLSX.writeFile(wb, `${ct === 'thuong' ? 'tong-hop-test' : 'tong-hop-test-sos'}-${ten}.xlsx`);   // D8: lớp thường không chữ SOS
+    const pa = paRef.current;
+    const bangPa = (ten: string, hang: readonly DongHieuQuaPa[]): SheetDep => ({ ten,
+      dau: [[t('Vấn đề · PA'), t('PA có kết quả'), t('Có cải thiện'), '%', t('Học viên'), t('Gợi ý')]],
+      hang: hang.flatMap((h) => [h, ...(h.con ?? [])].map((x, i) => [i ? `    ${dich(x.nhan)}` : dich(x.nhan), x.soPa, soX(x.caiThien, 'vuot'), ptX(x.caiThien, x.soPa), x.hocVien,
+        x.nenDung ? t('Nên dùng') : x.itDuLieu ? t('Ít dữ liệu') : ''])) });
+    const ds = await napDanhSach(`/phan-tich/tong-hop/o?${query}&khoa=tong&cot=luot`);
+    xuatBaoCao({ bao: ct === 'thuong' ? t('Test') : 'SOS', cn: branchName, ct, khoang, homNay: demoDate }, [
+      sheetTuBangCu(ct === 'thuong' ? t('Test') : t('Test + SOS'), aoa),
+      ...(pa ? [bangPa(t('PA do GV thêm'), pa.gvThem.hang), bangPa(t('PA theo quy chế'), pa.quyChe.hang)] : []),
+      sheetDanhSachHoacLoi(ds),
+    ]);
   }
 
   /**
@@ -446,7 +460,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
         </div>
       )}
     {/* V2 (đặc tả 4, 9.6): khối "PA nào hiệu quả" (= tab Hiệu quả PA cũ) cùng trang, dưới bảng; link cũ `goc=hieu-qua-pa` cuộn tới `#khoi-pa`. */}
-    <div className="mt-3"><HieuQuaPa branchId={branchId} ct={ct} khoang={khoang} classId={classId} /></div>
+    <div className="mt-3"><HieuQuaPa branchId={branchId} ct={ct} khoang={khoang} classId={classId} onData={nhanPa} /></div>
         {moXuat && demoDate && (
       <NganXuatMt khung={ct === 'thuong' ? 'thuong' : 'ft'} chiNhanh={branchId} lop={classId ? { id: classId, ma: className ?? `#${classId}` } : null}
         thoiGianMacDinh={{ kieu: 'tuan', tu: mondayOfDate(khoang.tu), den: mondayOfDate(khoang.den) }} onDong={() => setMoXuat(false)} />
