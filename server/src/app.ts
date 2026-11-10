@@ -53,7 +53,8 @@ export function createApp() {
  * ĐẾM GIỜ MỖI LỜI GỌI (AN-5). Đặt SAU express.json/cookieParser: ngữ cảnh AsyncLocalStorage không đi qua sự kiện luồng của bộ đọc
  * thân yêu cầu. Đường tải tệp (multer) có thể mất hạn — khi đó chỉ là không chặn (an toàn như trước PR này).
  *   · Dọn giao dịch treo của lần gọi trước.
- *   · Log `[cham]` mọi lời gọi ≥ LOG_CHAM_MS kèm số câu SQL và số dòng trả về (TD2-0, `res.locals.dem` do moNguCanhRequest gắn).
+ *   · Log `[cham]` mọi lời gọi ≥ LOG_CHAM_MS kèm số câu SQL và số dòng trả về (TD2-0, `res.locals.dem` do moNguCanhRequest gắn);
+ *     bản chính: lời gọi nhanh hơn ghi `[t]` cùng dạng, không kèm `top` (GIAM-COMPUTE).
  *   · Bản chính: gắn hạn HAN_HAM_NETLIFY_MS cho cả lời gọi.
  */
 export function demGio(req: Request, res: Response, next: NextFunction): void {
@@ -62,7 +63,11 @@ export function demGio(req: Request, res: Response, next: NextFunction): void {
   res.on('finish', () => {
     const ms = Date.now() - batDau;
     const dem = res.locals?.dem as Dem | undefined;
-    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${req.method} ${req.path} ${ms} ms · ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng${topLog(dem)}`);
+    const dong = `${req.method} ${req.path} ${ms} ms · ${dem?.n ?? 0} câu, ${dem?.dong ?? 0} dòng`;
+    if (ms >= LOG_CHAM_MS) console.warn(`[cham] ${dong}${topLog(dem)}`);
+    /* GIAM-COMPUTE: bản chính ghi MỌI lời gọi một dòng — log Netlify 09/11: 61 % thời gian hàm ở lời gọi < 1 s không có tên đường; nay xếp được
+       đường theo tổng thời gian (số lần × ms). Máy dev không ghi (đã có `PISA_DEM_SQL`). */
+    else if (laBanChinh()) console.log(`[t] ${dong}`);
   });
   if (!laBanChinh()) { next(); return; }
   chayVoiHan(batDau + HAN_HAM_NETLIFY_MS, next);

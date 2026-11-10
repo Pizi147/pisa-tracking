@@ -449,6 +449,23 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(dev === null, `Máy dev có hạn: ${dev}`);
   });
 
+  check('GIAM-COMPUTE · demGio: bản chính ghi `[t]` mỗi lời gọi nhanh (đường · ms · câu); máy dev không ghi', () => {
+    const ghi = (banChinh: boolean) => {
+      let xong: (() => void) | undefined;
+      const res = { ...giaRes(), locals: { dem: { n: 3, dong: 7, top: [], theoCau: new Map() } }, on: (_e: string, f: () => void) => { xong = f; } };
+      const dong: string[] = [];
+      const goc = console.log;
+      if (banChinh) process.env.BAN_CHINH = '1';
+      console.log = (...a: unknown[]) => { dong.push(a.join(' ')); };
+      try { appMod.demGio({ method: 'GET', path: '/my-work' } as any, res as any, () => {}); xong?.(); }
+      finally { console.log = goc; delete process.env.BAN_CHINH; }
+      return dong.filter((d) => d.startsWith('[t]'));
+    };
+    const ban = ghi(true);
+    assert(ban.length === 1 && /^\[t\] GET \/my-work \d+ ms · 3 câu, 7 dòng$/.test(ban[0]), `Bản chính: ${JSON.stringify(ban)}`);
+    assert(ghi(false).length === 0, 'Máy dev vẫn ghi [t]');
+  });
+
   // ================================================================== 8. AN-8 — N+1 đếm bằng chứng
 
   console.log('\nPR-AN · 8. Bảng kỹ năng đếm bằng chứng một lần cho mọi thẻ Case');
