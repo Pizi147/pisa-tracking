@@ -17,7 +17,7 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
   const hl: any = await import('../worklist/highlights.ts');
   const m: any = await import('../worklist/metrics.ts');
   const gv: any = await import('../giaoVien/hoSo.ts');
-  const td: any = await import('../platform/thongBaoTuDong.ts');
+  const td: any = await import('../worklist/tongQuan.ts');   // CHOT_TOI_HAN_NGAY (ngưỡng "Cần bạn quyết")
   const yc: any = await import('../duyet/yeuCau.ts');
   const util: any = await import('../util.ts');
   const d: any = await import('../../../shared/domain/index.ts');
@@ -88,56 +88,6 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
       const r = GET(() => tq.tongQuanQuanLy(p, { branchId: null }));
       assert(r.canQuyet.sauThi.every((x: any) => !!x.due && x.due <= moc), `còn việc hạn > 7 ngày: ${r.canQuyet.sauThi.filter((x: any) => !x.due || x.due > moc).map((x: any) => x.key).join(', ')}`);
     }
-  });
-
-  check('H1-5 · thông báo tự động ghi MỘT câu cho cả lô; đổi chữ không reset đã đọc; ghi (POST) xong thì lần mở chuông kế đồng bộ ngay', () => {
-    const nguoi = [P.w1Teacher, P.w2Teacher, P.lrTeacher, P.coreTeacher, P.subjectTeacher, P.sTeacher, P.mbManager];
-    conn.exec('BEGIN IMMEDIATE');
-    const goc = conn.prepare;
-    let ghi = 0;
-    try {
-      xoaNho();
-      conn.prepare = function (this: any, sql: string) { if (/^\s*(INSERT|UPDATE|DELETE)[^;]*notifications/i.test(sql)) ghi += 1; return goc.call(this, sql); };
-      const p = nguoi.find((x) => { conn.prepare(`DELETE FROM notifications WHERE user_id = ? AND kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh')`).run(x.userId); ghi = 0; return td.dongBoThongBaoTuDong(x, TODAY) >= 2; });
-      assert(p, 'dữ liệu demo: phải có người có ≥ 2 thông báo tự động');
-      assert(ghi === 1, `ghi ${ghi} câu cho cả lô (phải 1)`);
-      const mot = conn.prepare(`SELECT id, dedup_key FROM notifications WHERE user_id = ? AND kind IN ('cham_qua_han', 'case_chua_chot_pa', 'chot_lo_trinh') ORDER BY id LIMIT 1`).get(p.userId) as any;
-      conn.prepare(`UPDATE notifications SET read_at = ?, title = 'chữ cũ' WHERE id = ?`).run(TODAY, mot.id);
-      ghi = 0;
-      td.dongBoThongBaoTuDong(p, TODAY);
-      const sau = conn.prepare('SELECT id, read_at, title FROM notifications WHERE id = ?').get(mot.id) as any;
-      assert(sau && sau.title !== 'chữ cũ' && sau.read_at === TODAY, `đổi chữ phải giữ đã đọc: ${JSON.stringify(sau)}`);
-      assert(ghi === 1, `sửa một thông báo: ${ghi} câu`);
-      ghi = 0;
-      td.dongBoThongBaoTuDong(p, TODAY);
-      assert(ghi === 0, `không đổi gì thì không ghi (${ghi} câu)`);
-      /* Chu kỳ 5 phút: mở chuông lần hai không đồng bộ — trừ khi người đó vừa ghi. */
-      td.dongBoKhiMoChuong(p, TODAY);
-      conn.prepare(`INSERT INTO notifications (user_id, kind, title, dedup_key, created_at) VALUES (?, 'cham_qua_han', 'việc đã xong', 'tudong:cham:0:0:0', ?)`).run(p.userId, TODAY);
-      td.dongBoKhiMoChuong(p, TODAY);
-      const con = () => !!conn.prepare(`SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = 'tudong:cham:0:0:0'`).get(p.userId);
-      assert(con(), 'trong chu kỳ 5 phút, không ghi gì: chưa đồng bộ lại');
-      td.daGhi(p);
-      td.dongBoKhiMoChuong(p, TODAY);
-      assert(!con(), 'vừa ghi xong: lần mở chuông kế đồng bộ ngay, thông báo của việc đã xong hết');
-    } finally { conn.prepare = goc; conn.exec('ROLLBACK'); xoaNho(); }
-  });
-
-  check('H1-7 · xoá thông báo hết việc chia lô ≤ 900 tham số (Turso) — 403 của panel Trễ chấm nay kiểm ở `gvTre` (prPilotGvTre)', () => {
-    const p = P.w1Teacher;
-    conn.exec('BEGIN IMMEDIATE');
-    const goc = conn.prepare;
-    let xoa = 0;
-    try {
-      xoaNho();
-      const chen = conn.prepare(`INSERT INTO notifications (user_id, kind, title, dedup_key, created_at) VALUES (?, 'cham_qua_han', 'cũ', ?, ?)`);
-      for (let i = 0; i < 950; i++) chen.run(p.userId, `tudong:cham:cu:${i}`, TODAY);
-      conn.prepare = function (this: any, sql: string) { if (/^\s*DELETE FROM notifications/i.test(sql)) xoa += 1; return goc.call(this, sql); };
-      td.dongBoThongBaoTuDong(p, TODAY);
-      conn.prepare = goc;
-      const con = (conn.prepare(`SELECT COUNT(*) n FROM notifications WHERE user_id = ? AND dedup_key LIKE 'tudong:cham:cu:%'`).get(p.userId) as any).n;
-      assert(con === 0 && xoa === 2, `còn ${con} thông báo cũ, ${xoa} câu DELETE (phải 0 · 2)`);
-    } finally { conn.prepare = goc; conn.exec('ROLLBACK'); xoaNho(); }
   });
 
   check('H1-6 · Chờ bạn duyệt theo chi nhánh: đếm chi nhánh = số thẻ hộp lọc chi nhánh đó; Σ chi nhánh = không lọc', () => {

@@ -1,5 +1,5 @@
 import { db } from '../db.ts';
-import {
+import { interventionKindsFor, NHAN_LOAI_PA_GOC,
   CASE_CATEGORY_SHORT, NGUONG_MINI_TEST, addDaysIso, categoryOf, type CaseCategory, type DongPa,
   INTERVENTION_KIND_LABEL, NGUONG_IT_DU_LIEU, NHAN_HO_KY_NANG, hoKyNang, issueBranchOf, issueLabel, loiKhoangTuan, mondayOfDate, nenDung,
   tuDauKhoang, tuanTrungVi,
@@ -113,7 +113,8 @@ const NHAN_QUY_CHE: Record<string, string> = {
 };
 const THU_TU_QUY_CHE = Object.keys(NHAN_QUY_CHE);
 /** PR-S6F-a Q8: hàng con (loại PA) của khối quy chế theo thứ tự cố định — không xếp theo số PA. */
-const THU_TU_LOAI = Object.keys(INTERVENTION_KIND_LABEL);
+/* CAU-HINH-CASE-SOS: thứ tự Quản trị xếp (loại hệ thống / mã cũ theo sau) — tính lúc gọi, không lúc nạp module. */
+const thuTuLoai = () => [...interventionKindsFor().selfServe, ...interventionKindsFor().proposals, ...Object.keys(NHAN_LOAI_PA_GOC)];
 /** PR-S6F-a Q20: PA GV thêm của Case chưa có lỗi chính — một hàng riêng để Σ hàng = tóm tắt = `paCoKetQua` (cột "PA hiệu quả" bảng GV). */
 const KHOA_CHUA_PHAN_LOAI = 'chua-phan-loai';
 /* ponytail: FT xếp theo mức SOS HIỆN TẠI của Case (Q22) — Case trượt lại thì PA cũ hiện ở hàng mức mới; ghi mức vào PA lúc sinh nếu cần mức lúc chạy. */
@@ -210,7 +211,8 @@ export function hieuQuaPa(p: Principal, f: FilterHieuQuaPa): HieuQuaPaKetQua {
       for (const c of con) c.nenDung = nenDung(c, con.filter((x) => x !== c));
       lon.push({ ...dongOf(r, khoa), con });
     } else {
-      con.sort((a, b) => THU_TU_LOAI.indexOf(a.khoa.split('|')[1]) - THU_TU_LOAI.indexOf(b.khoa.split('|')[1]));
+      const thu = thuTuLoai();
+      con.sort((a, b) => thu.indexOf(a.khoa.split('|')[1]) - thu.indexOf(b.khoa.split('|')[1]));
       quyChe.push({ ...dongOf(r, khoa), ...(con.length ? { con } : {}) });
     }
   }

@@ -11,6 +11,7 @@
  * File này chỉ có TỪ VỰNG và LUẬT THUẦN (không đụng database) để máy chủ và giao diện đọc cùng một nơi.
  */
 
+import { hanTai } from './hanMacDinh.ts';
 import { ENTRY_SKILLS } from './skills.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, boMonLich, programmeOf } from './normal.ts';
 import { hanTheoNgay } from './cases.ts';
@@ -258,7 +259,7 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
   if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: t('Chờ QL duyệt'), han: null, quaHanNgay: null, lyDoQuaHan: null };
   const duyet = v.xuLy.find((x) => x.status === 'da_duyet');
   if (duyet) {
-    const han = duyet.quyetLuc && !n.tamDung ? hanTheoNgay(duyet.quyetLuc.slice(0, 10), HAN_Y_THUC_NGAY) : null;
+    const han = duyet.quyetLuc && !n.tamDung ? hanTheoNgay(duyet.quyetLuc.slice(0, 10), hanTai('xu_ly_vi_pham', duyet.quyetLuc.slice(0, 10)).ngay) : null;
     return {
       t: 'cho_duyet', nhan: t('Đã duyệt · chờ thực hiện'), han,
       quaHanNgay: han && n.homNay > han ? ngayCach(han, n.homNay) : null, lyDoQuaHan: null,
@@ -266,7 +267,8 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
   }
   const tinh = (k: 'can_xu_ly' | 'moi', batDau: string, lyDo: 'xu-ly' | 'xem'): TrangThaiViPhamKq => {
     if (n.tamDung) return { t: k, nhan: TRANG_THAI_VP_LABEL[k], han: null, quaHanNgay: null, lyDoQuaHan: null };
-    const han = hanTheoNgay(maxNgay(batDau, n.mocLop)!, HAN_Y_THUC_NGAY);
+    const moc = maxNgay(batDau, n.mocLop)!;
+    const han = hanTheoNgay(moc, hanTai('xu_ly_vi_pham', moc).ngay);   // QTV2-HAN
     if (n.homNay > han) {
       const q = ngayCach(han, n.homNay);
       return { t: 'qua_han', nhan: t('Quá hạn {q} ngày', { q }), han, quaHanNgay: q, lyDoQuaHan: lyDo };

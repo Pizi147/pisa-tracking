@@ -279,7 +279,10 @@ function FormXacNhan({ a, onDong, onLuu }: { a: CoordAction; onDong: () => void;
   const [tep, setTep] = useState(false);
   const [busy, setBusy] = useState(false);
   const [daBam, setDaBam] = useState(false);
-  const loi = !meeting && !nd.trim() ? t('Ghi Nội dung: đã làm gì, em / gia đình phản hồi gì.') : null;
+  /* CAU-HINH-CASE-SOS: số ký tự tối thiểu máy chủ gửi theo bản chụp của việc (bản gốc: việc GVCN 1, Meeting CX 0 — gửi TVV tuỳ chọn). */
+  const toiThieu = a.toiThieuGhiChu ?? (meeting ? 0 : 1);
+  const loi = toiThieu > 0 && nd.trim().length < toiThieu
+    ? (toiThieu > 1 ? t('Nội dung ít nhất {n} ký tự.', { n: toiThieu }) : t('Ghi Nội dung: đã làm gì, em / gia đình phản hồi gì.')) : null;
   const luu = async () => {
     setDaBam(true);
     if (loi || !ngay) return;
@@ -295,7 +298,8 @@ function FormXacNhan({ a, onDong, onLuu }: { a: CoordAction; onDong: () => void;
       <span className="flex flex-wrap items-center gap-x-3 gap-y-2"><span className="text-sm font-bold">{t('Ngày')} <span className="text-late">*</span></span>
         <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={homNay} ariaLabel={t('Ngày')} /></span></span>
       <label className="grid gap-1.5 text-sm font-bold">
-        <span>{meeting ? <>{t('Nội dung gửi TVV')} <span className="font-normal text-faint">{t('tuỳ chọn')}</span></> : <>{t('Nội dung')} <span className="text-late">*</span></>}</span>
+        <span>{toiThieu > 0 ? <>{t('Nội dung')} <span className="text-late">*</span></>
+          : <>{meeting ? t('Nội dung gửi TVV') : t('Nội dung')} <span className="font-normal text-faint">{t('tuỳ chọn')}</span></>}</span>
         <textarea className="field min-h-[76px] w-full font-normal" rows={3} value={nd} onChange={(e) => setNd(e.target.value)} aria-invalid={daBam && !!loi} aria-describedby={daBam && loi ? idLoi : undefined}
           placeholder={meeting ? t('Cần báo gia đình gì, mời ai họp') : t('Đã trao đổi gì, em / gia đình phản hồi gì, hẹn gì')} />
       </label>
@@ -326,7 +330,8 @@ function FormTvv({ a, onDong, onLuu }: { a: CoordAction; onDong: () => void; onL
   const [busy, setBusy] = useState(false);
   const [daBam, setDaBam] = useState(false);
   const khoa = useRef(`${v.viecId}-${Date.now()}`);
-  const loi = nd.trim().length < GHI_CHU_MEETING_TOI_THIEU ? t('Nội dung ít nhất {n} ký tự.', { n: GHI_CHU_MEETING_TOI_THIEU }) : null;
+  const toiThieu = v.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU;   // CAU-HINH-CASE-SOS: bước TVV của bản chụp
+  const loi = kq === 'da_bao' && nd.trim().length < toiThieu ? t('Nội dung ít nhất {n} ký tự.', { n: toiThieu }) : null;
   const luu = async () => {
     setDaBam(true);
     if (loi) return;

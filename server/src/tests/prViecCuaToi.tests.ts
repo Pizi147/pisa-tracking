@@ -13,7 +13,6 @@ export async function runPrViecCuaToiTests(t: any) {
   const { check, assert, conn } = t;
   console.log('\nVIEC-CUA-TOI · một hàm việc của tôi cho mọi nơi');
   const { thongBaoCua } = await import('../platform/thongBao.ts');
-  const tuDong: any = await import('../platform/thongBaoTuDong.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
@@ -32,17 +31,6 @@ export async function runPrViecCuaToiTests(t: any) {
       .run(cs.owner_user_id, cs.id, new Date().toISOString()).lastInsertRowid);
     const r = (thongBaoCua(cs.owner_user_id) as any[]).find((x) => x.id === nid);
     assert(r && r.con_viec === 0 && d.nhomThongBao(r) === 'de-biet', `dòng tín hiệu pending: ${JSON.stringify(r && { con_viec: r.con_viec })}`);
-  }));
-
-  check('G5-11 · Admin: mỗi việc "Xuất báo cáo PH" quá hạn có MỘT thông báo tự động "Cần làm" (như QL / GV); hết việc → hết dòng', () => thu(() => {
-    const ad = loadPrincipal(get(`SELECT id FROM users WHERE email = 'xuan.pham.pisa@gmail.com'`).id);
-    const qh = ((myWork(ad, {}) as any).items as any[]).filter((x) => x.group === 'xuat_bc_ph' && x.mine && x.urgency === 'overdue');
-    assert(qh.length > 0, 'seed: Admin có việc Xuất báo cáo PH quá hạn');
-    const muon = [...tuDong.viecMuon(ad, demoToday()).values()].filter((m: any) => m.kind === 'xuat_bc_ph_qua_han');
-    assert(muon.length === qh.length, `thông báo muốn ${muon.length} ≠ việc quá hạn ${qh.length}`);
-    tuDong.dongBoThongBaoTuDong(ad, demoToday());
-    const ds = (thongBaoCua(ad.userId) as any[]).filter((r) => r.kind === 'xuat_bc_ph_qua_han');
-    assert(ds.length === qh.length && ds.every((r) => d.nhomThongBao(r) === 'can-lam'), `chuông: ${ds.length} dòng, nhóm ${ds.map((r) => d.nhomThongBao(r)).join(',')}`);
   }));
 
   check('G5-04 / G1-05 · Công việc: ô lọc hạn đếm cùng tập với đầu trang ("n việc · m quá hạn"), ẩn ở tab Chờ bạn duyệt', () => {

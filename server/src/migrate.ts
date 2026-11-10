@@ -96,6 +96,7 @@ import { migratePrBaoCaoLichSu } from './migrate/prBaoCaoLichSu.ts';
 import { migratePrKetPet } from './migrate/prKetPet.ts';
 import { migratePrSl1 } from './migrate/prSl1.ts';
 import { migratePrBandQuyDoi } from './migrate/prBandQuyDoi.ts';
+import { migratePrCauHinhPhienBan } from './migrate/prCauHinhPhienBan.ts';
 import { migratePrDich } from './migrate/prDich.ts';
 import { migratePrSvYtTvv } from './migrate/prSvYtTvv.ts';
 import { migratePrOv15g } from './migrate/prOv15g.ts';
@@ -121,6 +122,7 @@ import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 import { migratePrWLech } from './migrate/prWLech.ts';
 import { migratePrK316 } from './migrate/prK316.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
+import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
 
 /**
@@ -187,6 +189,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-15f: 5 cột learning_cycles.lich_thi_* (kết luận + ghi chú họp Lịch thi) — cũng ĐẦU migrate, chỉ thêm cột NULL. */ buoc(() => themCotPrOv15f(conn, applied));
     /* BO-QUA-XEP-MT: 3 cột case_interventions.bo_qua_* (Bỏ qua việc Xếp lịch MT) — ĐẦU migrate, chỉ thêm cột NULL (myWork đọc). */ buoc(() => themCotPrBoQuaMoc(conn, applied));
     /* HAN-BAO-PH: han_chon (Báo PH, Meeting CX) + viec_han_lan + viec_bao_ph_lan.khoa — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrHanBaoPh(conn, applied));
+    /* CAU-HINH-CASE-SOS (chủ SP 11/11): bảng phiên bản cấu hình + con trỏ pb_loai / pb_moc + trigger tham chiếu — ĐẦU migrate, chỉ thêm (bước sau đọc cột); bảng rỗng = bản gốc. */ buoc(() => migratePrCauHinhCaseSos(conn, applied));
     /* YT-BAO-PH: viec_bao_ph.bao_lai_cua — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrBaoLaiPh(conn, applied));
     /* PHOI-HOP-V2: viec_bao_ph.phoi_hop_id — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrPhoiHopTvv(conn, applied));
     /* RESET-HAN-CASE: cột sos_cases.han_them_pa — ĐẦU migrate, chỉ thêm (`hanThemPa` / `XU_LY_COT_SQL` đọc). */ buoc(() => themCotHanThemPa(conn, applied));
@@ -464,6 +467,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* DON-LUONG K6: chỉ mục idx_scores_no_show — lưới tuần gốc có hàng em vắng dời hết (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migrateDonLuong(conn, applied));
     /* PR-B BAN-GIAO-GV: ban_giao_gv · ban_giao_gv_mon · ban_giao_gv_em — việc bàn giao khi đổi GV (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBanGiaoGv(conn, applied));
     /* TL-NEN: bảng moc_he_thong (phiên bản bảng tham chiếu + mốc quét đường đọc) + 20 trigger tg_tc_* (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNen(conn, applied));
+    /* QTV2-HAN: bảng chung cau_hinh_phien_ban (cấu hình có phiên bản; rỗng = bản gốc) — sau prTlNen (cần moc_he_thong cho trigger). */ buoc(() => migratePrCauHinhPhienBan(conn, applied));
     /* TL-NAPBAI: attempt_skills.branch_id + chỉ mục (chi nhánh, tuần), (lớp, tuần) + 5 trigger giữ cột — napBai cả chi nhánh theo kỳ (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTlNapBai(conn, applied));
     /* DOC-IT-2: chỉ mục một phần mini test chưa có tỉ lệ + hẹn Lộ trình mới — giảm dòng đọc Turso (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrDocIt2(conn, applied));
     /* DOC-IT-5: chỉ mục một phần học viên Lưu trữ — Học viên & Lớp thôi quét cả bảng students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrDocIt5(conn, applied));
@@ -494,6 +498,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrK316(conn, applied));
   /* SOS-TAM-PA (chủ SP 11/11): Case đã chốt có PA quy chế chờ + PA GV cùng loại → PA GV mang dấu quy chế, PA quy chế chờ huỷ (đổi dữ liệu MỘT lần, khoá demo_config). */
   buoc(() => migratePrSosTamPa(conn, applied));
+  /* CAU-HINH-CASE-SOS: lần 2 — DB cũ vừa có bảng Case / phối hợp ở bước trên (lần đầu bỏ qua bảng chưa có). */
+  buoc(() => migratePrCauHinhCaseSos(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

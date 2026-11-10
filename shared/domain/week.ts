@@ -11,6 +11,7 @@
  * cáo, giao diện khi vẽ trục thời gian của hành trình. Hai bản cài đặt cho một quy ước là
  * cách chắc chắn nhất để hai chỗ gọi cùng một tuần bằng hai cái tên.
  */
+import { hanTai } from './hanMacDinh.ts';
 
 const MONTH_CODE = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const DAY_MS = 86_400_000;
@@ -40,8 +41,9 @@ export function tuanKetQuaCuaHan(han: string): string {
  */
 export function hanKyGhiKetQua(batDau: string, sau?: string | null): string {
   const t2 = ms(mondayOfDate(batDau));
-  const k = sau ? Math.max(1, Math.floor((ms(sau) - t2 - DAY_MS) / (14 * DAY_MS)) + 1) : 1;
-  return iso(t2 + (14 * k + 1) * DAY_MS);
+  const ky = 7 * hanTai('ghi_kq_pa', batDau).kyTuan;   // QTV2-HAN: chu kỳ theo bản tại ngày bắt đầu PA (gốc 14 ngày)
+  const k = sau ? Math.max(1, Math.floor((ms(sau) - t2 - DAY_MS) / (ky * DAY_MS)) + 1) : 1;
+  return iso(t2 + (ky * k + 1) * DAY_MS);
 }
 
 /**
@@ -49,7 +51,7 @@ export function hanKyGhiKetQua(batDau: string, sau?: string | null): string {
  * hạn kỳ đầu tiên > max(hạn hiện tại, ngày ghi) — ghi sớm, muộn hay bù nhiều kỳ đều khép tới đó. `hanHienTai` null = như lúc mới bắt đầu.
  */
 export function hanKe(batDau: string, hanHienTai: string | null, ngayGhi: string): string {
-  if (hanHienTai && ngayGhi < iso(ms(hanHienTai) - 15 * DAY_MS)) return hanHienTai;
+  if (hanHienTai && ngayGhi < iso(ms(hanHienTai) - (7 * hanTai('ghi_kq_pa', batDau).kyTuan + 1) * DAY_MS)) return hanHienTai;
   return hanKyGhiKetQua(batDau, hanHienTai && hanHienTai > ngayGhi ? hanHienTai : ngayGhi);
 }
 
