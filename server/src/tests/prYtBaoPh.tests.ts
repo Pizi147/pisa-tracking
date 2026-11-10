@@ -128,4 +128,27 @@ export async function runPrYtBaoPhTests(t: YThucTestKit) {
     xu.thuHoiXuLy(ql, m2, { lyDo: 'Ghi nhầm em, vi phạm của bạn khác', baoLai: false });
     assert(baoLaiCua(m2).length === 0, 'QL thẳng tắt');
   }));
+
+  const board: any = await import('../yThuc/board.ts');
+  const vte: any = await import('../classes/viecTheoEm.ts');
+  await checkAsync('BPH-7 · G3-14: việc "Báo lại PH" có dòng ở tab Ý thức lớp (lần đã thu hồi, baoLai mở, TVV ghi được) — em Báo PH của TVV: tab = dải Việc của tôi = Công việc', () => thu(() => {
+    const sid = moiEm(); const mid = daXuLyDaBao(sid);
+    xu.thuHoiXuLy(ql, mid, { lyDo: 'Ghi nhầm em, vi phạm của bạn khác' });
+    const sid2 = moiEm(); xu.xacNhanXuLy(gvcn, sid2, { violationIds: [vp(sid2)], performedOn: TODAY, performerName: 'Cô Hà', note: 'Gặp em sau giờ học, ký Report 1' });
+    const lop = classId('MB FT 101');
+    xoaNho();
+    const bd = board.bangYThucLop(tvv, lop);
+    const dong = bd.dongThoiGian.find((x: any) => x.loai === 'xu-ly' && x.id === mid);
+    assert(dong?.status === 'thu_hoi' && dong.baoLai?.trangThai === 'mo' && dong.baoLai.coTheGhi === true && dong.baoPh?.trangThai === 'xong', JSON.stringify(dong && { st: dong.status, bl: dong.baoLai, bp: dong.baoPh?.trangThai }));
+    /* Tập em mà TVV giữ việc Báo PH đang mở — ba nơi. */
+    const giu = new Set([...Object.values(bd.nhom).flat(), ...bd.choBaoPh, ...bd.choThuHoi].filter((e: any) => e.giuBaoPh).map((e: any) => e.studentId));
+    const tab = new Set(bd.dongThoiGian.filter((x: any) => x.loai === 'xu-ly' && giu.has(x.studentId)
+      && ((x.status === 'thu_hoi' ? x.baoLai : x.baoPh)?.trangThai === 'mo')).map((x: any) => x.studentId));
+    xoaNho();
+    const cv = new Set(((myWork(tvv, {}) as any).items as any[]).filter((x) => x.group === 'bao_ph_yt' && x.classId === lop).map((x) => x.studentId));
+    xoaNho();
+    const dai = new Set((vte.viecTheoEmCuaLop(tvv, lop, { chiToi: true }).cuaToi as any[]).filter((x) => x.group === 'bao_ph_yt').map((x) => x.studentId));
+    const s = (x: Set<any>) => JSON.stringify([...x].sort((a, b) => a - b));
+    assert(tab.has(sid) && tab.has(sid2) && s(tab) === s(cv) && s(cv) === s(dai), JSON.stringify({ tab: s(tab), cv: s(cv), dai: s(dai) }));
+  }));
 }

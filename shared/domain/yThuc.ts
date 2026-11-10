@@ -379,3 +379,15 @@ export function dongThang(bac: number, khai: { bac: number } | null): {
     return { kind, nhan: nhanLoaiXuLy(kind), trangThai };
   });
 }
+
+/**
+ * Rà 11/11 G3-14 — tab Ý thức lớp › Cần làm: MỘT em MỘT dòng + số = em có việc của CHÍNH người xem (cùng tập Công việc của người đó).
+ * `nhom`: các nhóm việc theo thứ tự hiện (mỗi dòng: em · là việc của người xem không) · `xong`: dòng "Xong · 7 ngày".
+ * Dòng KHÔNG phải việc của người xem bị bỏ khi em đã có dòng là việc của người xem; dòng Xong bị bỏ khi em còn dòng ở nhóm khác.
+ */
+export function locCanLam<T extends { sid: number; cuaToi: boolean }, X extends { sid: number }>(nhom: T[][], xong: X[]): { nhom: T[][]; xong: X[]; soEm: number } {
+  const cuaToi = new Set(nhom.flat().filter((x) => x.cuaToi).map((x) => x.sid));
+  const giu = nhom.map((ds) => ds.filter((x) => x.cuaToi || !cuaToi.has(x.sid)));
+  const con = new Set(giu.flat().map((x) => x.sid));
+  return { nhom: giu, xong: xong.filter((x) => !con.has(x.sid)), soEm: cuaToi.size };
+}

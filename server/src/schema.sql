@@ -2275,6 +2275,7 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   bao_lai_cua INTEGER REFERENCES discipline_measures(id)   -- YT-BAO-PH: lần xử lý đã thu hồi cần báo lại PH (measure_id NULL); NULL = việc thường
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_bao_lai ON viec_bao_ph(bao_lai_cua);   -- YT-BAO-PH / G3-14
 -- Mỗi lần TVV ghi (kể cả "Chưa liên hệ được" — việc vẫn mở, hạn giữ) là MỘT dòng; không sửa, không xoá.
 CREATE TABLE IF NOT EXISTS viec_bao_ph_lan (
   id INTEGER PRIMARY KEY,
