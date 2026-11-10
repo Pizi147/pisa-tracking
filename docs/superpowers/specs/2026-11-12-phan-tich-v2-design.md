@@ -34,6 +34,11 @@ Thêm **Ý thức** (giữ nguyên). Tab Phân tích: **Chi nhánh · SOS · Thi
 - **Tổng quan giữ nguyên.** Đó là trang nhìn nhanh mỗi ngày, không phải báo cáo chính. Số ở Tổng quan bấm vẫn mở cùng danh sách, vì dùng cùng hàm tính.
 - Mỗi số vẫn theo Hợp đồng số liệu (`thiet-ke/HOP_DONG_SO_LIEU.md`): một số = một hàm, số trên ô = số dòng khi bấm, ghi rõ "trong kỳ" / "hiện tại".
 
+### 2.1b Bấm một lần (chủ SP 12/11)
+"Khi bấm gì dó thì có thể làm gọn hơn là bấm 1 lần thôi thì ra box thông tin/ panel thông tin liên quan và nhanh chóng luôn hạn chế bấm nhiều lần đi".
+- Mọi số, mọi đoạn thanh, mọi ô: **bấm một lần là mở panel / hộp thông tin đúng tập**. Không có thông tin chỉ hiện khi rê chuột, không có bước trung gian kiểu "bấm để xem chi tiết rồi bấm tiếp".
+- Panel mở nhanh: một lần tải, đọc đúng tập của ô (không đọc lại cả báo cáo). Đầu panel tóm tắt luôn phần chia nhỏ (vd nhóm Ngoài cam kết: KCK n · WL 2 m), không phải bấm thêm.
+
 ### 2.2 Một khuôn cho mọi báo cáo
 1. Hàng lọc chung như bây giờ (Fast Track / Lớp thường · khoảng tuần · lớp). Nút Xuất Excel ở cuối hàng (Excel định dạng mới làm sau, mục 7).
 2. Dải 3–4 số chính. Bấm số ra danh sách (panel bảng có điểm như bây giờ, `BangLuotPanel`).
