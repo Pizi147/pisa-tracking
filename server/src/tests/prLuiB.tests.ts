@@ -227,10 +227,10 @@ export async function runPrLuiBTests(t: YThucTestKit) {
   };
   const idLenh = (sid: number) => (conn.prepare(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(sid) as any).id as number;
 
-  await checkAsync('LUIb-11 · huyNhieuLenh: lý do bắt buộc (không tối thiểu ký tự); QL khác chi nhánh 403; lệnh lỗi không cuộn lại lệnh khác; MỘT chuông mỗi người nhận. khoiPhucLenh: chỉ lệnh do người huỷ, còn tương lai, học viên chưa có lệnh khác, trong 24 giờ', () => thu(() => {
+  await checkAsync('LUIb-11 · huyNhieuLenh: lý do không bắt buộc (#8); QL khác chi nhánh 403; lệnh lỗi không cuộn lại lệnh khác; MỘT chuông mỗi người nhận. khoiPhucLenh: chỉ lệnh do người huỷ, còn tương lai, học viên chưa có lệnh khác, trong 24 giờ', () => thu(() => {
     const { em } = taoLenhChoEm(3);
     const ids = em.map(idLenh);
-    assert(maLoi(() => lenhSvc.huyNhieuLenh(P.mbManager, ids, '  ')) === 400, 'thiếu lý do');
+    /* #8 (bản rà 11/11): lý do không bắt buộc — không còn 400 thiếu lý do. */
     assert(maLoi(() => lenhSvc.huyNhieuLenh(P.cpManager, ids, 'Đã đổi ý')) === 403, 'QL chi nhánh khác 403 cả lô');
     conn.prepare(`DELETE FROM notifications WHERE kind = 'huy_lenh'`).run();
     const kq = lenhSvc.huyNhieuLenh(P.mbManager, [...ids, 999999], 'Đã đổi ý');
@@ -260,7 +260,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     const xt = hl.xemTruoc(P.mbManager, { viec: 'huy-lenh', studentIds: em });
     assert(xt.tong.duoc === 2 && xt.tong.boQua === 1 && xt.tong.theoHuong.bao_luu === 2, JSON.stringify(xt.tong));
     assert(xt.rows.find((r: any) => r.studentId === em[2]).lyDoBo === 'Chưa có quyết định chuyển lớp', 'học viên không có quyết định phải bị bỏ qua');
-    assert(maLoi(() => hl.chay(P.mbManager, { viec: 'huy-lenh', studentIds: em, lyDo: '  ' })) === 400, 'thiếu lý do');
+    /* #8: lý do không bắt buộc. */
     const kq = hl.chay(P.mbManager, { viec: 'huy-lenh', studentIds: em, lyDo: 'Đã đổi ý' });
     assert(kq.ok.length === 2 && kq.failed.length === 1 && kq.failed[0].studentId === em[2], JSON.stringify(kq));
     assert((conn.prepare(`SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id IN (${em[0]}, ${em[1]}) AND trang_thai = 'cho'`).get() as any).n === 0, 'cả hai phải huỷ');

@@ -313,9 +313,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(maLoi(() => luatLoTrinh.lopDichChoChuyen(gvcnNguon, em[1])) === 'không ném' && maLoi(() => luatLoTrinh.lopDichChoChuyen(gvbm2, em[1])) === 403, 'GVCN xem được danh sách lớp để Đề xuất chuyển lớp; GVBM thì không');
     assert(!luatLoTrinh.coTheChuyenLop(gvcnNguon, em[1]) && !!luatLoTrinh.coTheChuyenLop(P.mbManager, em[1]), 'coTheChuyenLop: QL có, GVCN không');
   });
-  check('CT (3f) · sửa / huỷ đúng luật: huỷ cần lý do ≥ 3 ký tự; huỷ xong → em có thể có lệnh mới; huỷ hai lần → 409; sau tuần bắt đầu giữ tuần cũ → 400', () => {
+  check('CT (3f) · sửa / huỷ đúng luật: lý do huỷ ghi lại khi có; huỷ xong → em có thể có lệnh mới; huỷ hai lần → 409; sau tuần bắt đầu giữ tuần cũ → 400', () => {
     const l = lenhCua(em[2]);
-    assert(maLoi(() => lenh.huyLenh(P.mbManager, l.id, '  ')) === 400, 'lý do trống');   // PR-MTa T7: bỏ tối thiểu 3 ký tự
+    /* #8 (bản rà 11/11): lý do huỷ không bắt buộc — ca trống ở prChuyenLopSuaSai. */
     lenh.huyLenh(P.mbManager, l.id, 'Phụ huynh xin ở lại');
     const sau = lenhCua(em[2]);
     assert(sau.trang_thai === 'huy' && sau.huy_boi === P.mbManager.userId && sau.ly_do_huy === 'Phụ huynh xin ở lại', JSON.stringify(sau));

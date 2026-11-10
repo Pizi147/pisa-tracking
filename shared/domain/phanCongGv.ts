@@ -99,7 +99,12 @@ export type LopPc = {
 /** `nghi`: tài khoản xoá / hết mọi vai · `ngoai-cn`: còn vai ở chi nhánh khác — cả hai chặn Lưu dòng đang giữ ô của người đó. */
 export type GvPc = { id: number; ten: string; kyNang: string[]; nghi: 'nghi' | 'ngoai-cn' | null };
 export type TrangPhanCongGv = { chiNhanh: { id: number; code: string } | null; canChonChiNhanh: boolean; sua: boolean; homNay: string; lop: LopPc[]; gv: GvPc[] };
-export type CapXemTruoc = DoiO & { nhan: string; soCase: number; soPa: number; nguoiViet: { loai: 'gv-cu' | 'gvcn' | 'ql'; id: number | null } };
+/**
+ * `cotMo` (#8, G4-15): người giao đang là NGƯỜI NHẬN của một việc bàn giao còn mở cùng ô (vừa nhận lớp) → lưu KHÔNG tạo việc mới cho họ; việc đó của
+ * `nguoiCuViec` bị huỷ khi đổi về đúng người cũ (`veLai`), không thì đổi người nhận (cùng luật `dongBoViecBanGiao`).
+ */
+export type CapXemTruoc = DoiO & { nhan: string; soCase: number; soPa: number; nguoiViet: { loai: 'gv-cu' | 'gvcn' | 'ql'; id: number | null };
+  cotMo?: { nguoiCuViec: number; veLai: boolean } | null };
 export type XemTruocLuu = { lop: { classId: number; code: string; soEm: number; cap: CapXemTruoc[] }[] };
 
 /* ================= PC-GV-C · góc Phân công GV (web) — hàm thuần, kiểm ở `prGocPhanCong.tests.ts` ================= */
@@ -222,7 +227,8 @@ export function lopSauNhap(lop: readonly LopPc[], nhap: Readonly<Record<number, 
   return lop.map((l) => (nhap[l.id] ? { ...l, slots: moRongPhanCong(l.ct, l.kyNang, slotsDongPc(l, nhap[l.id])) } : l));
 }
 /** Kết quả `POST /phan-cong/luu` (máy chủ `KetQuaLuu`): `lo` = khoá Hoàn tác; mỗi lớp `cho` = lịch đổi tương lai (chưa áp). */
-export type KetQuaLuuPc = { lo: number | null; lop: { classId: number; cho: boolean; soO: number; phienBan: string }[] };
+/** `viec` = số việc bàn giao MỚI máy chủ đã tạo (#8, G4-15: toast theo số thật, không theo đếm ở web). */
+export type KetQuaLuuPc = { lo: number | null; lop: { classId: number; cho: boolean; soO: number; phienBan: string }[]; viec?: number };
 
 /** 375 (mockup v9 khu 1): mỗi nhóm thẻ hiện `toiDa` thẻ đầu + mọi thẻ ghim (ô thiếu / nháp / chờ đổi / đang sửa); còn lại gom "… n lớp nữa". */
 export function rutGonThe<T>(ds: readonly T[], ghim: (x: T) => boolean, toiDa = 3): { hien: T[]; con: number } {

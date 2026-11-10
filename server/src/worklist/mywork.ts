@@ -1039,9 +1039,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       });
     } else {
       items.push({
-        ...chung, key: `ban_giao_mon:${v.lopId}:${v.mon}`, count: v.n - v.daGhi,
+        ...chung, key: `ban_giao_mon:${v.lopId}:${v.mon}`, count: v.tung ? v.emIds.length : v.n - v.daGhi,   // #8: việc gộp nhiều môn — số EM khác nhau
         contextLabel: `GVBM · ${v.tung ? v.tung.map((x) => `${x.monNgan} ${x.daGhi}/${x.n} em`).join(' · ') : `${v.daGhi}/${v.n} em`}`,
-        reason: v.tung ? v.tung.filter((x) => x.n > x.daGhi).map((x) => `${x.n - x.daGhi} em chưa có câu ${x.monNgan}`).join(' · ') : `${v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
+        /* #8: việc gộp nhiều môn — số EM còn thiếu ít nhất một môn (số từng môn ở contextLabel), cùng mẫu câu một môn. */
+        reason: `${v.tung ? v.emIds.length : v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
         tieuDe: `Bàn giao môn ${v.monNgan} · ${v.code}`, actionLabel: `Bàn giao môn ${v.monNgan}`,
         href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao&mon=${v.mon}`, statusLabel: 'Chờ bàn giao',
       });

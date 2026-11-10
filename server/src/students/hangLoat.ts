@@ -143,7 +143,6 @@ export function chay(p: Principal, input: {
   const lyDo = chuTuDo(input.lyDo, 'Lý do', 2000);
   const date = typeof input.date === 'string' && input.date ? input.date : undefined;
   /* P7 (k2): lý do không bắt buộc ở hộp "Tạm dừng/ Kết thúc học" — một em hay nhiều em cùng luật. */
-  if (viec === 'huy-lenh' && !lyDo) throw badRequest('Ghi lý do huỷ quyết định.');
   const lopMoiId = input.lopMoiId === undefined || input.lopMoiId === null ? null : Number(input.lopMoiId);
   if (lopMoiId !== null && (!Number.isInteger(lopMoiId) || lopMoiId <= 0)) throw badRequest('Lớp chuyển đến không hợp lệ.');
   /* Sang lớp Fast Track cần Target của từng em — làm từng em ở hồ sơ, không làm hàng loạt. */
