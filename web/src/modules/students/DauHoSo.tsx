@@ -122,7 +122,7 @@ function NutGap({ mo, onClick, children }: { mo: boolean; onClick: () => void; c
 
 /**
  * THANH "VIỆC CẦN LÀM" (UI-HO-SO-HV, `ho-so-hv.html` `.thanh-viec` + ô việc của Hồ sơ lớp khu b) — CHỖ DUY NHẤT trên hồ sơ có việc: mỗi việc CỦA NGƯỜI XEM
- * với em một ô (tên việc · hạn `dd/mm` · nút động từ), vạch trái theo hạn (quá hạn đỏ · còn lại xanh), việc gấp nhất là nút chính. Bấm = mở đúng chỗ làm
+ * với em một ô một dòng (MOCKUP-1111: cả ô là nút — tên việc · phần phụ · hạn), vạch trái theo hạn (quá hạn đỏ · còn lại xanh). Bấm = mở đúng chỗ làm
  * ngay tại trang (cột Case & PA / ngăn Case / tab Ý thức / panel). Quá 3 việc → "+n việc khác của tôi". UI-HO-SO-HV-2 (mockup M5): CHỈ việc của người xem — bỏ
  * "n việc của người khác" (TVV / CX / Admin vẫn có khối Đang xử lý). Người xem không có việc → không vẽ (T72).
  */
@@ -131,38 +131,44 @@ export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; ngu
   if (!viec?.cuaBan.length) return null;
   const hien = mo ? viec.cuaBan : viec.cuaBan.slice(0, 3);
   const con = viec.cuaBan.length - 3;
+  /* MOCKUP-1111 K5: "+n việc khác" mở thêm tại chỗ (việc của một em ít) — 1440 dưới nhãn, 375 cuối dải. */
+  const nutCon = (lop: string) => con > 0 && <span className={lop}><NutGap mo={mo} onClick={() => setMo(!mo)}>{t('{n} việc khác của tôi', { n: con })}</NutGap></span>;
   return (
-    <section aria-label={t('Việc của tôi')} className="flex flex-col gap-1.5">
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        {hien.map((x, i) => <OViec key={x.key} x={x} chinh={i === 0} homNay={homNay} onLam={onLam} />)}
-      </div>
-      {con > 0 && (
-        <div className="flex justify-end">
-          <NutGap mo={mo} onClick={() => setMo(!mo)}>{t('{n} việc khác của tôi', { n: con })}</NutGap>
-        </div>
-      )}
+    /* MOCKUP-1111 màn 1 K5 (chủ SP duyệt 11/11): CÙNG ô việc một dòng với hồ sơ lớp — nhãn "Việc của tôi · n" + ô cao 40 px (375: hai dòng 56 px). */
+    <section aria-label={t('Việc của tôi')} className="grid items-start gap-1.5 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))] lg:gap-2">
+      <span className="grid gap-px pr-1 text-[13px] font-medium leading-[1.3] text-slate-400 lg:row-span-full lg:pt-2.5">
+        <span className="whitespace-nowrap">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{viec.cuaBan.length}</b></span>
+        {nutCon('max-lg:hidden')}
+      </span>
+      {hien.map((x) => <OViec key={x.key} x={x} homNay={homNay} onLam={onLam} />)}
+      {nutCon('justify-self-end lg:hidden')}
     </section>
   );
 }
 
-/** Một ô việc (mockup U02 `.the-viec`): tên việc đậm 15 · thẻ phụ (kỳ, PA) + hạn · nút bên phải; vạch trái nhấn (quá hạn đỏ). */
-function OViec({ x, chinh, homNay, onLam }: { x: Viec; chinh: boolean; homNay: string | null; onLam: (x: Viec) => void }) {
+/**
+ * Một ô việc (MOCKUP-1111, cùng dáng `ThanhViecLop`): CẢ Ô là nút làm việc — tên việc = nhãn hành động (14/600, không cắt trước) · phần phụ
+ * (kỹ năng, kỳ, PA — 13 mờ, cắt "…" trước) · hạn bên phải. Vạch trái 3 px: quá hạn đỏ, còn lại nhấn. Việc không mở được tại hồ sơ → ô không bấm.
+ */
+function OViec({ x, homNay, onLam }: { x: Viec; homNay: string | null; onLam: (x: Viec) => void }) {
   const vach = x.quaHanNgay !== null ? 'rgb(var(--bad-rgb))' : 'var(--accent)';
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-1.5 rounded-[10px] border border-l-[3px] bg-[color:var(--surface)] px-3.5 py-2.5 max-sm:grid-cols-1"
-      style={{ borderColor: 'var(--line)', borderLeftColor: vach }}>
-      {/* SUA-375-2: điện thoại tên việc xuống dòng (không cắt "…"); ≥ 640 px tối đa hai dòng + title như cũ. */}
-      <b className="min-w-0 text-[15px] font-semibold text-slate-100 sm:line-clamp-2" title={chuViec(x)}>{chuViec(x)}</b>
-      {x.mo
-        ? <button type="button" className={['btn btn-sm sm:row-span-2 max-sm:min-h-[44px]', chinh && 'btn-primary'].filter(Boolean).join(' ')} onClick={() => onLam(x)}>{nutViec(x)}</button>
-        : <span className="sm:row-span-2" />}
-      <span className="flex min-w-0 flex-wrap items-center gap-1.5 max-sm:order-2">
-        {/* v18 (chủ SP 10/11): thẻ PA dài ("PA Tutor 10 buổi/kỹ năng · tính vào buổi Free, có lương GV") tràn khỏi ô `nowrap` đè lên nút — chữ cắt "…" trong thẻ, đủ ở `title`. */}
-        {x.the?.map((th) => <span key={th.chu} className="the-phu nhat" title={dichChu(th)}><span className="truncate">{dichChu(th)}</span></span>)}
-        {x.han ? <HanViec x={x} homNay={homNay} /> : <span className="text-[13px] text-slate-400">{t('không hạn')}</span>}
-      </span>
-    </div>
+  const chu = chuViec(x);
+  const nut = nutViec(x);
+  /* Tên việc thường bắt đầu bằng nhãn nút ("Ghi kết quả PA · Reading") → tên = nhãn, phần còn lại vào phần phụ; không thì giữ cả chữ. */
+  const ten = chu.startsWith(nut) ? nut : chu;
+  const phu = [chu.startsWith(nut) ? chu.slice(nut.length).replace(/^[\s·]+/, '') : '', ...(x.the ?? []).map((th) => dichChu(th))].filter(Boolean).join(' · ');
+  const lop = 'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] content-center gap-x-2 gap-y-0.5 rounded-lg border border-l-[3px] bg-[color:var(--surface)] px-3 text-left max-lg:h-14 lg:flex lg:h-10 lg:items-center';
+  const trong = (
+    <>
+      <span className="truncate text-sm font-semibold text-slate-100 lg:max-w-[72%] lg:shrink-0">{ten}</span>
+      {x.han && <span className="col-start-2 row-start-1 shrink-0 lg:order-last lg:ml-auto"><HanViec x={x} homNay={homNay} chiQuaHan /></span>}
+      {phu && <span className="col-span-2 min-w-0 truncate text-[13px] font-medium text-slate-400">{phu}</span>}
+    </>
   );
+  const nhan = [ten, phu].filter(Boolean).join(', ');
+  return x.mo
+    ? <button type="button" className={`${lop} hover:bg-[color:var(--nut-hover)]`} style={{ borderColor: 'var(--line)', borderLeftColor: vach }} title={chu} aria-label={nhan} onClick={() => onLam(x)}>{trong}</button>
+    : <div className={lop} style={{ borderColor: 'var(--line)', borderLeftColor: vach }} title={chu}>{trong}</div>;
 }
 
 /**
