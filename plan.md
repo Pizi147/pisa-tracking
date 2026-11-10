@@ -262,6 +262,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 ### ⭐ VIỆC CÒN LẠI — tổng hợp 10/11 tối (PTA Plan bàn giao sang session planning mới; chủ SP: "liệt kê ra còn những gì chưa làm, cho hết vào plan tối nay")
 Đọc mục này TRƯỚC. Mục cũ hơn bên dưới là nhật ký; dòng nào ghi "chờ chủ SP" mà không có ở đây → đối chiếu mã thật (grep) trước khi coi là còn.
 
+**Chủ SP 11/11 (ảnh Usage Netlify: Functions compute 11,53 GB-Hrs = 115,3 credits, 133 847 web requests, 2 hàm api + chot-vang):** "Tôi thấy phần functions compute quá nhiều, tại sao nhiều vậy, tìm cách giảm tải đi, chỉ có mỗi 2 functions mà sao nhiều thế?" → PTA: compute = thời gian chạy × 1 GB; cả ứng dụng nằm trong hàm `api`, mỗi giây chờ Turso đều bị tính; Netlify + Turso cùng us-east-2 (không lệch vùng). Session GIAM-COMPUTE (Opus 5.5 · high) đo top đường theo tổng thời gian, khởi động lạnh, việc nền trong hàm, gọi thừa phía web → báo bảng trước khi sửa lớn. Chủ SP: "dọn dẹp ổ C D" → 9 worktree (~11 GB D) + %TEMP% rác phép kiểm (~20 GB C) bị chặn quyền, đưa lệnh chủ SP tự chạy; session KIEM-DON-TAM làm phép kiểm tự dọn.
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
