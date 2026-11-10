@@ -25,7 +25,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import {
   CASE_CATEGORY_LABEL, GIAI_THICH_KCK, INTERVENTION_KIND_LABEL, KCK, OUTCOME_TONE, chipSosTuKetQua, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
-  lyDoChuaDu, nhanThang, outcomeLabelFor, soKyVong, tuanLich, dongTabHocVien, tvvChinhCuaLop, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
+  lyDoChuaDu, maLoTrinhNgan, nhanThang, outcomeLabelFor, soKyVong, tuanLich, dongTabHocVien, tvvChinhCuaLop, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -92,8 +92,10 @@ const cotCua = (theoVai: boolean): DinhNghiaCot[] => [
  * Rê / focus ô W · S → thẻ tiêu chí (`dongTieuChi`; ô chỉ có band không thẻ). "Xem chi tiết" → panel Case phải (`NganCase`); "Hồ sơ HV ›" đổi trang.
  * < 640 px: mỗi em một thẻ (lưới 5 ô L R W S Overall), chạm tên mở cùng vùng mở rộng cuối thẻ (`sauThe`).
  */
-export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien, cachXem, nutChon, daKetThuc = false }: {
-  classId: number; maLop: string; quyen: QuyenDong; onDoi: () => void; onThemHocVien?: () => void;
+export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, onThemHocVien, cachXem, nutChon, daKetThuc = false }: {
+  classId: number; maLop: string;
+  /** #9: lộ trình (lịch MT mặc định) của lớp — em khác lộ trình lớp ghi mã lộ trình dưới tên. */
+  loTrinhLop?: string | null; quyen: QuyenDong; onDoi: () => void; onThemHocVien?: () => void;
   /** HSL-LUU-TRU: lớp đã kết thúc — giữ cả em đã lưu trữ (nhãn "Lưu trữ", không ⋯), khớp "n HV" đầu trang + Tổng kết. */
   daKetThuc?: boolean;
   /** V8-HSL: nút đoạn Cách xem (tab Học viên) đứng ĐẦU hàng công cụ của thẻ bảng; `nutChon` = "Chọn nhiều" (QL) cuối hàng. */
@@ -127,6 +129,9 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
   /* HSL-GON (M3): TVV chính đã ghi ở đầu hồ sơ lớp (hàng GV) — dòng em chỉ ghi TVV khác TVV chính. */
   const tvvChinh = tvvChinhCuaLop(dangLuu);
   const tvvRieng = (r: Hang) => !!r.tvv && r.tvv !== tvvChinh;
+  /* #9 (chủ SP 11/11 lộ trình theo em): em RF trong lớp LT1… — chữ mờ như TVV, không màu (không phải việc cần làm). */
+  const ltKhac = (r: Hang) => (loTrinhLop && r.cycle?.route && r.cycle.route !== loTrinhLop ? r.cycle.route : null);
+  const chuLt = (r: Hang) => ltKhac(r) && <span className="tvv">{t('Lộ trình')} {maLoTrinhNgan(ltKhac(r)!)}</span>;
   const xong = () => { invalidate(`/cases?classId=${classId}`); cases.reload(); roster.reload(); onDoi(); };
   /* `moiVao` = vào lớp từ đầu tuần này → tuần của hôm nay. */
   const nhanPhu = (r: Hang) => <>{r.archived && <Nhan tone="muted">{t('Lưu trữ')}</Nhan>}{r.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></>;
@@ -165,7 +170,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
           <span className="flex min-w-0 flex-col items-start">
             <TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />
             {/* Dòng dưới tên (mockup v10 `.chip-phu`): TVV (chữ mờ) · mới vào (chữ) · thiếu thông tin · Ý thức — chỉ việc cần làm có màu. */}
-            <ChipXetLaiDong sid={r.id} />{(tvvRieng(r) || r.archived || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}{nhanPhu(r)}</span>}
+            <ChipXetLaiDong sid={r.id} />{(tvvRieng(r) || ltKhac(r) || r.archived || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{chuLt(r)}{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}{nhanPhu(r)}</span>}
           </span>
         </span>
       );
@@ -196,7 +201,7 @@ export function BangHoSoLop({ classId, maLop, quyen, onDoi, chon, onThemHocVien,
       <div className="flex cursor-pointer flex-col gap-2" onClick={bamHang(() => moTen(r))}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
           <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
-            <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}</span></span>
+            <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{(ltKhac(r) || tvvRieng(r)) && <span className="flex flex-wrap gap-1.5">{chuLt(r)}{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}</span>}</span></span>
           {o(r, 'kq')}
           <MenuDong muc={r.archived ? [] : tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
             lopNut="btn h-11 w-11 shrink-0 !px-0 text-[13px] font-bold tracking-wider" />

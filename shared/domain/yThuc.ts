@@ -343,6 +343,13 @@ export function nhomEm(e: { ds: readonly TrangThaiVp[]; coDeXuatCho: boolean; xu
 }
 
 /**
+ * P1 G3-1 (rà 11/11): em ở nhóm "Quá hạn" CHỈ vì vi phạm mới chưa xem quá hạn (`lyDoQuaHan 'xem'`): không vi phạm bắt buộc, không đề xuất. Việc của GVCN là
+ * "Xem vi phạm mới" (Công việc `yt_xem`; máy chủ `ghiNhan` không chặn) — tab Ý thức (lớp · hồ sơ HV) xếp em vào nhóm Mới, giữ nút "Đã xem", badge vẫn
+ * "Quá hạn n ngày". `nhomEm` không đổi (dòng em ở danh sách lớp / Tổng quan vẫn ghi Quá hạn).
+ */
+export const quaHanChiXem = (nhom: NhomEm | null, x: { soBatBuoc: number; deXuat: unknown }): boolean => nhom === 'qua_han' && x.soBatBuoc === 0 && !x.deXuat;
+
+/**
  * TICK MẶC ĐỊNH của panel Xác nhận xử lý (K3-36, M5): vi phạm chưa xử lý xảy ra từ Thứ Hai tuần trước trở đi + mọi vi phạm Mới +
  * mọi vi phạm bắt buộc (Cần xử lý / Quá hạn — phải xử lý dù cũ). "Đã ghi nhận" cũ hơn vào `cuHon` (không tick, nhóm gập).
  */

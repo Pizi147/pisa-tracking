@@ -54,7 +54,8 @@ export function laVaiQuanLy(roles: readonly string[] | null | undefined): boolea
  * có Overall gần nhất trước đó cùng lộ trình (`soMt` = số MT của lượt đó); Hỗ trợ = SOS + kỹ năng dưới kỳ vọng + Case / PA đang mở; Ý thức = bậc hiện tại.
  */
 export type HangHv = {
-  loTrinh: { mt: number; soMt: number; target: number | null; kck: boolean };
+  /** `khacLop` (#9): mã lộ trình của em khi khác lộ trình lớp (em RF trong lớp LT1…) — cùng lộ trình lớp thì không có. */
+  loTrinh: { mt: number; soMt: number; target: number | null; kck: boolean; khacLop?: string };
   mtGan: { mt: number; tuan: string | null; ovr: number | null; kyVong: number | null; kn: Record<'L' | 'R' | 'W1' | 'W2' | 'S', number | null>;
     /** U04-1: điểm thành phần của lượt (L, R [số câu, tổng] · W1 W2 S [c1–c4]) — hộp nhỏ ô kỹ năng (`chuThanhPhan`); từ `diemCuaLuot` đã đọc. */
     tp?: Partial<Record<'L' | 'R' | 'W1' | 'W2' | 'S', (number | null)[]>> } | null;

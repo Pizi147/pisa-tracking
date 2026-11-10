@@ -9114,6 +9114,8 @@ const { runPrMt0Tests } = bocTep('prMt0', await import('./prMt0.tests.ts'));
 await runPrMt0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 const { runPrMt0EmTests } = bocTep('prMt0Em', await import('./prMt0Em.tests.ts'));
 await runPrMt0EmTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+const { runPrLopCuTests } = bocTep('prLopCu', await import('./prLopCu.tests.ts'));
+await runPrLopCuTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
 // ==================================================================== PR-BV (xoá "-" trả lại như cũ + đường lui điểm) — trước PR-TK (PR-TK luôn cuối)
 const { runPrBvTests } = bocTep('prBv', await import('./prBv.tests.ts'));
 await runPrBvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
@@ -9719,6 +9721,9 @@ await runPrKhtGonTests({ check, assert } as any);
 // ==================================================================== RA-LUONG (rà soát luồng đêm 29/10)
 const { runPrRaLuongTests } = bocTep('prRaLuong', await import('./prRaLuong.tests.ts'));
 await runPrRaLuongTests({ check, assert, conn, P, TODAY, addDays } as any);
+// ==================================================================== P1-Y-THUC (rà toàn bộ 11/11: quá hạn "xem" về nhóm Mới · Báo PH chờ QL duyệt)
+const { runPrP1YThucTests } = bocTep('prP1YThuc', await import('./prP1YThuc.tests.ts'));
+await runPrP1YThucTests({ check, assert, conn } as any);
 // ==================================================================== W1 (gộp tải lại sau lưu điểm — giảm dòng đọc Turso)
 const { runPrW1GopTaiLaiTests } = bocTep('prW1GopTaiLai', await import('./prW1GopTaiLai.tests.ts'));
 await runPrW1GopTaiLaiTests({ check, checkAsync, assert } as any);

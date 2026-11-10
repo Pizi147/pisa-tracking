@@ -22,10 +22,20 @@ export const HV_DANG_HOC_SQL = (s: string) => `${s}.status = 'active' AND ${s}.a
 export const LUOT_HIEN_TAI_SQL = (a: string, s: string, kemTamDung = false) =>
   `${kemTamDung ? `(${HV_DANG_HOC_SQL(s)} OR (${s}.status = 'inactive' AND ${s}.archived_at IS NULL))` : HV_DANG_HOC_SQL(s)} AND ${LUOT_LO_TRINH_CUOI_SQL(a)} AND ${LUOT_CON_KE_HOACH_SQL(a)}`;
 /** Phần "lộ trình mới nhất" của `LUOT_HIEN_TAI_SQL` — cho câu đã lọc em đang học bằng ghi danh (LEFT JOIN lượt, không có `students`).
- *  Lượt bị thay khi em có lộ trình `seq` lớn hơn CÙNG LOẠI (FT / lớp thường — em học FT vẫn có thể có khoá lớp thường mở song song, `regular.ts`). */
-export const LUOT_LO_TRINH_CUOI_SQL = (a: string) =>
+ *  Lượt bị thay khi em có lộ trình `seq` lớn hơn CÙNG LOẠI (FT / lớp thường — em học FT vẫn có thể có khoá lớp thường mở song song, `regular.ts`).
+ *  LOP-CU (chủ SP 11/11): lượt khoá LỚP THƯỜNG cũ còn ô chờ điểm từ trước ngày khoá mới bắt đầu (`o_cho_tu` ≤ `started_at`) KHÔNG bị thay — Final /
+ *  Progress chưa nhập vẫn là việc của GV lớp lúc thi tới khi nhập xong. Lượt xếp sau ngày đó, khoá FT cũ (học lại = reset) vẫn bị thay như trước.
+ *  `chat`: chỉ lộ trình mới nhất, không ngoại lệ — nơi hỏi "bài của khoá hiện tại" (MT sắp tới, em chưa có bài ở Kế hoạch Test). */
+export const LUOT_LO_TRINH_CUOI_SQL = (a: string, chat = false) =>
   `NOT EXISTS (SELECT 1 FROM learning_cycles cyo JOIN learning_cycles cyn ON cyn.student_id = cyo.student_id AND cyn.seq > cyo.seq
-     AND (cyn.route IS NULL) = (cyo.route IS NULL) WHERE cyo.id = ${a}.cycle_id)`;
+     AND (cyn.route IS NULL) = (cyo.route IS NULL) WHERE cyo.id = ${a}.cycle_id${chat ? '' : `
+     AND (cyo.route IS NOT NULL OR ${a}.o_cho_tu IS NULL OR ${a}.o_cho_tu > cyn.started_at)`})`;
+/**
+ * LOP-CU (chủ SP 11/11): lớp của lượt còn sinh việc nhập điểm — lớp đang học, HOẶC lớp đã kết thúc (em cuối chuyển đi) mà lượt còn ô chờ điểm từ
+ * trước ngày kết thúc (`o_cho_tu` ≤ `finished_at`): việc thuộc GV lớp lúc thi tới khi nhập xong. Lượt xếp sau ngày kết thúc, lượt huỷ, ô "-"
+ * (lọc ở `skillCells`) không kéo lại. `a` bí danh `assessment_attempts`, `c` bí danh `classes` của lượt.
+ */
+export const LOP_CON_VIEC_SQL = (a: string, c: string) => `(${c}.status = 'active' OR ${a}.o_cho_tu <= ${c}.finished_at)`;
 /** Lộ trình FT có kết quả thi thật: đủ 4 kỹ năng, "Không thi", hoặc kết quả CŨ (Overall / kết luận chọn tay) — MỘT điều kiện với Bước tiếp
  *  (`loTrinh/buocTiep.ts` `CO_KET_QUA`, `coKetQuaThi`). `c` bí danh `learning_cycles`. */
 export const CO_KET_QUA_THI_SQL = (c: string) => `(${c}.thi_that_khong_thi = 1 OR (${c}.thi_that_l IS NOT NULL AND ${c}.thi_that_r IS NOT NULL AND ${c}.thi_that_w IS NOT NULL AND ${c}.thi_that_s IS NOT NULL)

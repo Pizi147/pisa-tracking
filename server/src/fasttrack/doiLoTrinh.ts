@@ -2,7 +2,7 @@
  * ĐỔI LỘ TRÌNH CỦA EM (LO-TRINH-THEO-HV, chủ SP 11/11: "Lộ trình là theo HV, KHÔNG PHẢI THEO LỚP… luật liên quan đến MT các thứ thì vẫn là
  * theo lộ trình của học viên") — LT1 · LT2 · RF của lộ trình FT đang chạy, ô "Lộ trình đang học" ở Sửa thông tin.
  *
- *   quyền     `duocDoiMon` — QL · Quản trị (chi nhánh em) · GVCN lớp em đang học · TVV chi nhánh em (cùng bốn vai đổi Môn học).
+ *   quyền     `duocDoiLoTrinh` — QL · Quản trị (chi nhánh em) · GVCN lớp em đang học · TVV chi nhánh em (bốn vai đổi Môn học) + Admin chi nhánh em ([XM 2]).
  *   đứng yên  lượt đã có điểm / đã xong: lịch giữ, kỳ vọng + SOS giữ theo lộ trình lúc thi (`route_at_attempt`); lượt QL xếp tay (`manual`) giữ.
  *   theo mới  lượt hệ thống tự xếp chưa có điểm: dời theo lịch MT lộ trình mới (cùng lõi đổi tuần bắt đầu, KHÔNG về tuần đã qua); thiếu thì tạo;
  *             thừa (lộ trình mới ít MT hơn, chưa có dấu gì) huỷ — đổi lại sau thì mở lại đúng lượt đã huỷ.
@@ -19,7 +19,7 @@ import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts
 import { apLichMacDinh, lichMtCua } from '../classes/schedule.ts';
 import { chuyenCaseSangLoTrinh } from '../cases/systemClose.ts';
 import { huyLuotChuaDiem } from './mt0.ts';
-import { duocDoiMon } from './monDangKy.ts';
+import { duocDoiLoTrinh } from './monDangKy.ts';
 import { demoToday } from '../demoConfig.ts';
 import { CO_DIEM_SQL, ROUTE_KHAC, tuanLich } from '../../../shared/domain/index.ts';
 import type { DongDao } from '../duyet/loaiYeuCau.ts';
@@ -134,13 +134,14 @@ export function cauTomTat(t: TomTatDoiLoTrinh): string {
 }
 
 const LOAI_DAO = 'lo_trinh.doi';
+const CHI_DOI_LO_TRINH = 'Chỉ Quản lý, Admin, GVCN hoặc TVV của em đổi được lộ trình.';
 
 /** Sửa thông tin › ô "Lộ trình đang học": kiểm quyền, đổi + chụp `ghi_dao` cùng giao dịch. Trả tóm tắt + id bản ghi Hoàn tác. */
 export function doiLoTrinh(p: Principal, cycleId: number, body: { route?: unknown; lyDo?: unknown }): TomTatDoiLoTrinh & { dao: number; cau: string } {
   const conn = db();
   const c = conn.prepare('SELECT id, student_id FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!duocDoiMon(p, { studentId: c.student_id })) throw forbidden('Chỉ Quản lý, GVCN hoặc TVV của em đổi được lộ trình.');
+  if (!duocDoiLoTrinh(p, { studentId: c.student_id })) throw forbidden(CHI_DOI_LO_TRINH);
   const lyDo = typeof body.lyDo === 'string' ? body.lyDo.slice(0, 2000) : null;
   return tx(() => {
     const g = new GhiDao(conn);
@@ -160,7 +161,7 @@ export function hoanTacDoiLoTrinh(p: Principal, cycleId: number, daoId: unknown)
   const conn = db();
   const c = conn.prepare('SELECT id, student_id, route FROM learning_cycles WHERE id = ?').get(cycleId) as any;
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!duocDoiMon(p, { studentId: c.student_id })) throw forbidden('Chỉ Quản lý, GVCN hoặc TVV của em đổi được lộ trình.');
+  if (!duocDoiLoTrinh(p, { studentId: c.student_id })) throw forbidden(CHI_DOI_LO_TRINH);
   return tx(() => {
     const g = conn.prepare(`SELECT * FROM ghi_dao WHERE id = ? AND loai = ? AND bang = 'learning_cycles' AND doi_tuong_id = ?`)
       .get(Number(daoId), LOAI_DAO, cycleId) as BanGhiDao | undefined;

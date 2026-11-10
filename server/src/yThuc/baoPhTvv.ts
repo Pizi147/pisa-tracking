@@ -161,6 +161,8 @@ export type ViecBaoPhView = {
     viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
   /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
   thuHoiCho: { lyDo: string | null } | null;
+  /** P1 G3-2: lần xử lý còn CHỜ QL duyệt (đề xuất WL 3, Meeting…) — ô ② "Chờ QL duyệt", hạn QL trả lời; null = đã chốt. Việc vẫn sinh ngay (N1). */
+  choQlDuyet: { han: string | null } | null;
 };
 
 /** Vi phạm của lần xử lý (ngày tăng dần) — `noiDung` một câu ("Không làm bài tập về nhà (09/09, 10/09)") + danh sách cho panel tách trường. */
@@ -199,6 +201,11 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     : undefined;
   const nhanTrangThai = nhanTrangThaiBaoPh(v.trang_thai, lan.length > 0);
   const vp = viPhamXuLy(v.measure_id ?? v.bao_lai_cua ?? null);
+  /* P1 G3-2: hạn QL trả lời — một câu, chỉ khi lần xử lý đang chờ duyệt (đa số việc không thêm câu). */
+  const choQl = v.xu_ly_status === 'cho_duyet'
+    ? { han: ((db().prepare(`SELECT han_duyet FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_loai = 'discipline_measure' AND doi_tuong_id = ? AND trang_thai = 'cho'`)
+      .get(v.measure_id) as { han_duyet: string | null } | undefined)?.han_duyet ?? null) }
+    : null;
   return {
     id, measureId: v.measure_id ?? null, studentId: v.student_id, ten: v.full_name, nhan: v.nhan, tieuDe: `Báo PH · ${v.nhan} · ${v.full_name}`,
     han, quaHan: v.trang_thai === 'mo' && han < homNay, trangThai: v.trang_thai, nhanTrangThai,
@@ -211,6 +218,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     khoiPhucDuoc: v.trang_thai === 'bo' && xl === 'con' && ghi && laLyDoNguoiDung(v.bo_ly_do) && daoDuocHoacCu(id),
     boiCanh: { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
+    choQlDuyet: choQl,
   };
 }
 

@@ -11,7 +11,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import {
   chuanOTarget, cotLuoiNhap, dsLoi, duongDotTest, nhanCotNhap, tuanBatDauMacDinh, type CachDoc, type CotNhap, type VanDeNhap,
-  kyThiCuaChuongTrinh,
+  kyThiCuaChuongTrinh, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, type CotLuoi,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -34,8 +34,9 @@ const dongTrong = (r: Row) => Object.values(r).every((v) => !String(v ?? '').tri
 /* Bề rộng cột theo M2 (px). Cột Tình trạng do panel vẽ, không nằm trong `cotLuoiNhap`. */
 const RONG: Partial<Record<CotNhap, number>> = {
   /* I3 (PR-SL): "Overall" và chữ mẫu "dd/mm/yyyy" không bị cắt. */
-  fullName: 170, dob: 170, email: 190, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
-  entrySpeaking: 48, target: 80, examDate: 104, daThiToiMt: 104, startWeek: 172,   // OV-9: Target 80 cho "6.5 KCK"
+  /* #9: thêm cột Lộ trình 80 — Họ tên, Email, Dự kiến thi, Đã thi tới MT, Tuần bắt đầu, Trạng thái gọn lại để lưới FT vẫn vừa 1440 (không cuộn ngang). */
+  fullName: 160, dob: 170, email: 176, baselineScore: 72, entryListening: 48, entryReading: 48, entryWriting: 48,
+  entrySpeaking: 48, target: 80, examDate: 96, daThiToiMt: 96, startWeek: 150, route: 80,   // OV-9: Target 80 cho "6.5 KCK"
 };
 const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   fullName: t('Em đã có hồ sơ thì dùng Chuyển lớp, không tạo mới.'),
@@ -45,7 +46,11 @@ const GOI_Y_COT: Partial<Record<CotNhap, string>> = {
   examDate: t('Gõ dd/mm/yyyy nếu đã biết ngày, mm/yyyy nếu mới biết tháng.'),
   daThiToiMt: t('Em cũ đã thi tới MT mấy ngoài web — web tạo sẵn các lượt đó là MT cũ để nhập điểm bù. Bỏ trống = em mới.'),
   startWeek: t('Theo tuần chọn ở đầu panel; đổi riêng từng dòng được. Em vào muộn: cột Trạng thái báo trước MT nào sẽ là MT cũ.'),
+  route: t('Lộ trình của em — mặc định theo lớp; đổi riêng từng em. Lịch MT tạo theo lộ trình em.'),
 };
+/** #9 (LO-TRINH-THEO-HV, chủ SP 11/11): lớp FT có cột Lộ trình từng em (LT1 · LT2 · RF; "Khác" mở ở Bước tiếp › Lộ trình mới). */
+const COT_LO_TRINH: CotLuoi = { key: 'route', nhan: 'Lộ trình' };
+const LO_TRINH_NHAP: readonly string[] = ROUTE_LO_TRINH_MOI.filter((k) => k !== ROUTE_KHAC);
 
 /** Mũi tên nhỏ vẽ SVG (▸/▾ của Inter ở cỡ chữ nhỏ chỉ còn như một dấu chấm). */
 function MuiTen({ mo }: { mo: boolean }) {
@@ -97,7 +102,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const cls = (classes.data ?? []).find((c: any) => c.id === classId) ?? null;
   const lopThuong = cls?.scoring_mode === 'ratio';
   const ktLop = kyThiCuaChuongTrinh(cls?.programme_code);   // P13: lớp KET / PET — Target theo thang Cambridge
-  const cols = cotLuoiNhap(lopThuong);
+  const cols = lopThuong || !cls?.route ? cotLuoiNhap(lopThuong) : [...cotLuoiNhap(false), COT_LO_TRINH];
   const macDinh = cls ? tuanBatDauMacDinh({ lopThuong, khaiGiang: cls.start_date ?? null }, homNay) : null;
   const tuanChung = startWeek || macDinh || '';
 
@@ -263,11 +268,11 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 960 : 1300 }}>
+          <table className="w-full table-fixed text-sm" style={{ minWidth: lopThuong ? 960 : 1390 }}>
             <colgroup>
               <col style={{ width: 32 }} />
               {cols.map((c) => <col key={c.key} style={{ width: RONG[c.key] }} />)}
-              <col style={{ width: 120 }} />
+              <col style={{ width: 100 }} />
             </colgroup>
             <thead>
               <tr>
@@ -287,6 +292,9 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                 const nLuuY = ds.length - nLoi;
                 const mo = moDong === i && ds.length > 0;
                 const giaTriTuan = String(r.startWeek ?? '') || tuanChung;
+                /* #9: ô trống = lộ trình lớp; chữ dán không phải mã (sai / chữ lạ) giữ ô gõ — xem trước báo lưu ý, lưu theo lớp. */
+                const ltGo = String(r.route ?? '').trim().toUpperCase();
+                const ltO = ltGo || cls?.route || '';
                 return (
                   <Fragment key={i}>
                     <tr data-needs-fix={nLoi > 0 ? 'true' : undefined}>
@@ -299,7 +307,12 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
                         const nhan = t('{cot} dòng {n}', { cot: nhanCot(c.nhan), n: i + 1 });
                         return (
                           <td key={c.key} className="td px-1.5 py-1.5">
-                            {c.key === 'startWeek' && (!giaTriTuan || ISO_NGAY.test(giaTriTuan)) ? (
+                            {c.key === 'route' && LO_TRINH_NHAP.includes(ltO) ? (
+                              <select className={`field !pl-2${vien}`} aria-label={nhan} title={title} aria-invalid={loiO || undefined} value={ltO}
+                                onChange={(e) => setCell(i, 'route', e.target.value === cls?.route ? '' : e.target.value)}>
+                                {LO_TRINH_NHAP.map((k) => <option key={k} value={k}>{k}</option>)}
+                              </select>
+                            ) : c.key === 'startWeek' && (!giaTriTuan || ISO_NGAY.test(giaTriTuan)) ? (
                               <ONgay gon kieu="tuan" value={giaTriTuan} ariaLabel={nhan} invalid={loiO}
                                 onChange={(v) => setCell(i, 'startWeek', v === tuanChung ? '' : v)} />
                             ) : c.key === 'dob' && (!r.dob || ISO_NGAY.test(String(r.dob))) ? (
