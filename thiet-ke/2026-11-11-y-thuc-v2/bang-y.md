@@ -107,10 +107,11 @@ Mockup: `y-thuc-v2.html` (cùng thư mục). Ảnh: `anh/`.
 - DB: **không migrate** (chủ SP 11/11: một ô Nội dung) — dùng cột `ghi_chu` sẵn có, đổi nhãn web "Ghi chú kết quả" → "Nội dung"; máy chủ kiểm Nội dung bắt buộc. Chip môn dùng `violations.skill` sẵn có.
 - Trần ở `tocDoDuong.ts` cho `/classes/:id/y-thuc` + `/students/:id/y-thuc` (đo trước → sau).
 
-## 7. Câu hỏi [XM] cho chủ SP
-- Vòng 1 (đã trả lời 11/11): một ô Nội dung cho mọi kết quả · bỏ Kênh.
-- Còn 1 câu (K9): "Chờ QL duyệt" / "QL từ chối" chỉ ở **Cần làm**, Lịch sử chỉ Đã xem · Đã xử lý · Đã thu hồi? (web hiện để 2 dòng này trong Lịch sử, không thuộc chip lọc nào — ảnh `anh/k9a.png`; V2 `anh/k9b.png`.)
-- Đề xuất nhỏ: ô Nội dung **bắt buộc** (GV luôn đọc được); để trống thì không lưu được.
+## 7. Chủ SP đã chốt (11/11, qua PTA: "ok theo đề xuất của bạn, làm đi")
+- Duyệt hướng mockup V2.
+- Báo PH: một ô **Nội dung**, **bắt buộc**, cho mọi kết quả; không Kênh; không ô PH phản hồi riêng.
+- "Chờ QL duyệt" / "QL từ chối" chỉ ở **Cần làm**; Lịch sử chỉ Đã xem · Đã xử lý · Đã thu hồi.
+- Chủ SP xem kỹ bản HTML trước khi code (PTA báo).
 
 ## 8. Vòng tự rà + critique
 Agent rà riêng (impeccable critique + ui-ux-pro-max, đọc 11 ảnh):
