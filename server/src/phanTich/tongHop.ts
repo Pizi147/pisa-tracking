@@ -80,7 +80,7 @@ function cmpKey(a: readonly unknown[], b: readonly unknown[]): number {
 export function luotTrongKhoang(where: string, args: readonly unknown[]): any[] {
   return db()
     .prepare(
-      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.cycle_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id,
+      `SELECT a.id, a.status, a.kind, a.attempt_no, a.class_id, a.cycle_id, a.planned_period_id, a.target_at_attempt, a.kck_at_attempt, a.student_id, a.created_at,
               COALESCE(a.route_at_attempt, cy.route) AS route, cy.khong_cam_ket AS cy_kck, cy.khong_cam_ket AS kck, cy.programme_code AS cy_programme_code,
               c.programme_code, c.code AS class_code, c.branch_id, c.is_fast_track,
               b.name AS branch_name,
@@ -274,15 +274,15 @@ function tinh(p: Principal, f: FilterTongHop) {
     }
   }
 
-  /* PR-Pb2-a: Mini Test (đếm HỌC VIÊN) vào dòng của bài Cuối khoá sinh ra nó — MỘT câu theo lô 400, ngưỡng `nguongMiniTest(ngày làm)` (QTV2-BAND). */
+  /* PR-Pb2-a: Mini Test (đếm HỌC VIÊN) vào dòng của bài Cuối khoá sinh ra nó — MỘT câu theo lô 400, ngưỡng `nguongMiniTest(lúc ghi)` (QTV2-BAND). */
   for (let i = 0; i < cuoiDaDem.length; i += 400) {
     const chunk = cuoiDaDem.slice(i, i + 400);
     for (const r of conn.prepare(
-      `SELECT tu_attempt_id, student_id, ty_le, ngay_lam FROM mini_test WHERE tu_attempt_id IN (${chunk.map(() => '?').join(',')}) AND ty_le IS NOT NULL`,
+      `SELECT tu_attempt_id, student_id, ty_le, ghi_luc FROM mini_test WHERE tu_attempt_id IN (${chunk.map(() => '?').join(',')}) AND ty_le IS NOT NULL`,
     ).all(...chunk) as any[]) {
       const dong = dongCua.get(r.tu_attempt_id)!;
       const cha = hangMap.get(dong.cha)!, con = cha.con.get(dong.con)!;
-      for (const tap of [cha.tap, con.tap, tongTap]) them(tap, r.ty_le >= nguongMiniTest(r.ngay_lam) ? 'mini-dat' : 'mini-truot', r.student_id);
+      for (const tap of [cha.tap, con.tap, tongTap]) them(tap, r.ty_le >= nguongMiniTest(r.ghi_luc) ? 'mini-dat' : 'mini-truot', r.student_id);
     }
   }
 

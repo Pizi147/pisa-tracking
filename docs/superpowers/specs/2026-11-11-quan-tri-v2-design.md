@@ -170,9 +170,9 @@ Bảng 13 hạn, nhóm theo nơi việc phát sinh. Cột: **Việc** · **Hạn
 ### 5.5. Band & ngưỡng (B)
 
 Ba khối trong một mục:
-1. **Kỳ vọng band FT** (MỚI): bảng MT1 · MT2 · MT3+ · RF × "Target − x" (x = 1.0 · 0.5 · 0 · 0; bước 0.5, 0–3). Sửa tại ô. Áp cho **lượt MT tạo sau** (lượt mang bản chụp như CAU-HINH-CASE-SOS — mục 6.2).
+1. **Kỳ vọng band FT** (MỚI): bảng MT1 · MT2 · MT3+ · RF × "Target − x" (x = 1.0 · 0.5 · 0 · 0; bước 0.5, 0–3). Sửa tại ô. Áp cho **lộ trình mở từ nay** (PTA chốt 11/11: lượt MT tạo một lần khi mở lộ trình ⇒ MT sắp tới của lộ trình đang chạy giữ mức cũ).2).
 2. **Ngưỡng lớp thường** (MỚI): Học lại dưới **50 %** · Cân nhắc **50–59 %** · Lên từ **60 %** · Mini Test đạt từ **70 %**; "Đạt từ" từng chương trình ở Chương trình & lộ trình (link). Kiểm: 0 < học lại < lên ≤ 100.
-   Áp cho **Final chấm sau** (theo phiên bản lúc lưu điểm Final). Case & SOS đọc nhãn mốc ("Final {a}–{b} %") từ đây — **PTA chốt 11/11** (XM-1).
+   Áp cho **lớp mở từ nay** (PTA chốt 11/11, thay "Final chấm sau": mốc = `created_at` của lượt Final — không mất khi huỷ điểm; Mini Test theo lúc ghi). Case & SOS đọc nhãn mốc ("Final {a}–{b} %") từ đây — **PTA chốt 11/11** (XM-1).
 3. **Bảng quy đổi số câu → band**: thành phần `BangQuyDoiAdmin` hiện có, gọn lại khung (bỏ khối "Áp dụng" chữ dài → ⓘ; "Lịch sử phiên bản" chuyển vào cột Nhật ký chung). Sửa 41 ô một lượt giữ "Sửa".
 - Thang Cambridge KET / PET: một dòng chỉ đọc "KET 100–150 · PET 120–170 (thang Cambridge)" ⓘ.
 
@@ -218,8 +218,8 @@ CREATE INDEX idx_chpb_loai ON cau_hinh_phien_ban(loai, id);
 | Loại | Cách | Ghi chú |
 |---|---|---|
 | `han_mac_dinh` | **con trỏ phiên bản trên dòng việc** khi bảng việc đã lưu hạn / có dòng riêng (`pb_han INTEGER`, NULL = bản 1 — như `pb_loai` / `pb_moc` của CAU-HINH-CASE-SOS); hạn chỉ tính lúc đọc (không có dòng việc lưu, vd hạn chấm từ tuần thi) → bản có hiệu lực tại **thời điểm tạo dòng gốc** (`attempts.created_at`…, cùng đồng hồ `nowNghiepVu` với `tao_luc` của phiên bản), **không** theo ngày nghiệp vụ người dùng gõ (ngày ra lệnh lùi ngày) | danh sách từng hạn → cột / mốc lập ở `writing-plans`; dữ liệu cũ = bản 1 |
-| `ky_vong_ft` | `expectationDelta(lanThu, loTrinh, ban)` — `ban` = bản tại `tao_luc` của lượt MT (`attempts.created_at`) | điểm sửa lại vẫn theo bản lúc tạo lượt |
-| `nguong_thuong` | bản tại lúc lưu điểm Final đầu tiên của em (`daiCuoiKhoa`) | Xét lại, Kết quả đầu ra dùng cùng bản |
+| `ky_vong_ft` | `expectationDelta(lanThu, loTrinh, moc)` — bản có hiệu lực tại `created_at` của lượt MT, **so cả giờ** với lúc lưu bản (PTA 11/11; lưu 15:00 không đổi lượt tạo 9:00 cùng ngày) | lượt tạo một lần khi mở lộ trình ⇒ áp cho lộ trình mở từ nay; điểm sửa lại vẫn theo bản lúc tạo lượt |
+| `nguong_thuong` | dải Cuối khoá: bản tại `created_at` của lượt Final (so cả giờ); Mini Test: bản tại `ghi_luc` (PTA 11/11 — không dùng `nhap_dau_ngay` vì bị xoá khi huỷ điểm) | Xét lại, gợi ý Cuối khoá, bản chụp lộ trình dùng cùng bản; nhãn dải trên báo cáo theo TÊN (Học lại · Cân nhắc · Lên + bổ trợ), không kèm số |
 | routes / programmes | bản chụp vào `classes` lúc tạo lớp (đã có) | giữ |
 
 Hàm dùng chung ở `shared/` (web cũng tính hạn) ⇒ nhận `ban` làm tham số, mặc định = bản gốc; máy chủ truyền bản đúng; web nhận bản hiện hành qua `/ref/cau-hinh?pb=…`

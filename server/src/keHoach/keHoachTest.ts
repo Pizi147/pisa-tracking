@@ -1599,7 +1599,7 @@ export function xuatDiemTest(p: Principal, f: BoLocXuatDiem, luc = nowIso()) {
   theoLo([...maLop.keys()], (lo, ph) => {
     ung.push(...conn.prepare(
       /* OV-15i2: chỉ cột `resultOf` + bảng cần (không `a.*`). */
-      `SELECT a.id, a.kind, a.class_id, a.student_id, a.cycle_id, a.attempt_no, a.target_at_attempt, a.kck_at_attempt,
+      `SELECT a.id, a.kind, a.class_id, a.student_id, a.cycle_id, a.attempt_no, a.target_at_attempt, a.kck_at_attempt, a.created_at,
               st.full_name, st.email, COALESCE(a.route_at_attempt, cy.route) AS route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a
          JOIN students st ON st.id = a.student_id JOIN learning_cycles cy ON cy.id = a.cycle_id
         WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND ${LUOT_XUAT_SQL('a', 'st')}

@@ -84,9 +84,9 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
   /* LECH-KHONG-LOP (`maCtCuaLuot`): lượt không lớp theo chương trình lộ trình — dòng cần `cy_programme_code` (thiếu = band như cũ). */
   const prog = pre ? pre.prog : attempt.class_id ? programmeOfClass(attempt.class_id) : programmeByCode(attempt.cy_programme_code);
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
-    const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total, no_show_cu, nhap_dau_ngay FROM assessment_scores WHERE attempt_id = ?')
+    const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
-    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(kyNang ?? lichGopCua([attempt.id]).get(attempt.id), rows)), rows, prog.code, nguongDatLop(attempt.class_id, prog.code));   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(kyNang ?? lichGopCua([attempt.id]).get(attempt.id), rows)), rows, prog.code, nguongDatLop(attempt.class_id, prog.code), attempt.created_at);   // P13: bộ môn theo lượt
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const scores = pre?.scores ?? scoresOf(attempt.id);
@@ -453,7 +453,7 @@ function boOVaCau(i: {
         next: i.mt0Ke ? { dau: 'MT0', attemptNo: 0, tuan: i.mt0Ke.tuan, soPhan: i.mt0Ke.soPhan, final: false, kyVong: null }
           : nextA ? {
           dau: dauDot(nextA), attemptNo: nextA.attemptNo, tuan: nextA.weekStart ?? null, soPhan: nextA.required, final: nextA.kind === 'final',
-          kyVong: nextA.mode === 'ratio' ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
+          kyVong: nextA.mode === 'ratio' ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null, i.nextRow?.created_at ?? null),   // QTV2-BAND: bản lúc tạo lượt
         } : null,
         ratio: i.mt0Ke ? false : !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck: i.mt0Ke ? false : kck,
         bacKe: !i.lenFt && pc && pc !== 'FT' && laChuongTrinhGoc(pc) ? tenBacKe(pc as ProgrammeCode) : null, homNay: today,

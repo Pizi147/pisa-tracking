@@ -56,11 +56,11 @@ export type LyDoXetLai = { ma: MaXetLai; chu: string; moc: string };
  */
 export function lyDoXetLai(x: {
   huong: string; tyLe: number | null; du: boolean; ngayRaLenh: string; mocFinal: string | null; ngayFinal: string | null;
-  /** QTV2-BAND: `ngay` = ngày làm Mini Test (chọn bản ngưỡng; thiếu → `luc`). `mocNguong` = ngày nhập điểm Final đầu tiên. */
-  miniTest: { tyLe: number; luc: string; ngay?: string | null } | null; quyetLuc: string | null; mocNguong?: string | null;
+  /** QTV2-BAND: Mini Test chọn bản ngưỡng theo `luc` (lúc ghi). `mocNguong` = `created_at` của lượt Final. */
+  miniTest: { tyLe: number; luc: string } | null; quyetLuc: string | null; mocNguong?: string | null;
 }): LyDoXetLai | null {
   const daQuyet = (moc: string) => !!x.quyetLuc && x.quyetLuc > moc;
-  const mini = x.miniTest ? nguongMiniTest(x.miniTest.ngay ?? x.miniTest.luc) : 0;
+  const mini = x.miniTest ? nguongMiniTest(x.miniTest.luc) : 0;
   if (x.miniTest && x.miniTest.tyLe < mini && !daQuyet(x.miniTest.luc)) {
     return { ma: 'd', chu: t('Mini Test {pt} · cần ≥ {n} %', { pt: chuTyLeXetLai(x.miniTest.tyLe), n: Math.round(mini * 100) }), moc: x.miniTest.luc };
   }

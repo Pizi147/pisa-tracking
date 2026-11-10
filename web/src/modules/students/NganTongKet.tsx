@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { NHAN_SAU_THI, RATIO_PASS_THRESHOLD, khoangDai, chuGradeKyThi, duongHoSoHocVien, hienTargetKck, ngay, tuanLich, type KetQuaKyThi } from '@shared/domain/index.ts';
+import { NHAN_SAU_THI, chuGradeKyThi, duongHoSoHocVien, hienTargetKck, ngay, tuanLich, type KetQuaKyThi } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
@@ -36,8 +36,10 @@ const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '�
 const NGAN_KN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 const chuKqdr = (k: { dat: boolean; nguyenNhan: string | null; mon: string[] }) => (k.dat ? t('Đạt')
   : [t('Không đạt'), k.nguyenNhan === 'hoc_sinh' ? t('Học viên') : k.nguyenNhan === 'trung_tam' ? t('Trung tâm') : null, k.mon.map((m) => NGAN_KN[m] ?? m).join(' ') || null].filter(Boolean).join(' · '));
-/* QTV2-BAND: khoảng % theo bản Ngưỡng lớp thường mới nhất (Band & ngưỡng). */
-const TONE_DAI: Record<string, ToneNhan> = { dat: 'ok', '60_69': 'soon', '50_59': 'soon', duoi_50: 'bad' };
+/* QTV2-BAND (PTA 11/11): dải đã CHỤP theo bản lúc đó — nhãn theo TÊN dải, không kèm số % (bản mới có thể khác). */
+const DAI: Record<string, { nhan: string; tone: ToneNhan }> = {
+  dat: { nhan: 'Pass', tone: 'ok' }, '60_69': { nhan: t('Lên + bổ trợ'), tone: 'soon' }, '50_59': { nhan: t('Cân nhắc'), tone: 'soon' }, duoi_50: { nhan: t('Học lại'), tone: 'bad' },
+};
 const MUI = (
   <span className="flex items-center justify-center text-slate-600 max-sm:rotate-90" aria-hidden>
     <svg viewBox="0 0 8 8" width="10" height="10"><path d="M2.5 1 6 4 2.5 7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -238,7 +240,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                     </O>
                   ) : kq.tyLe === null
                     ? <O nho="Final Test" cho><div className="text-sm font-semibold text-slate-400">{t('Chưa có điểm')}</div></O>
-                    : <O nho="Final Test"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && TONE_DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={TONE_DAI[kq.dai]}>{khoangDai(kq.dai, RATIO_PASS_THRESHOLD)}</Nhan></div>}</O>}
+                    : <O nho="Final Test"><Lon>{Math.round(kq.tyLe * 100)}%</Lon>{kq.dai && DAI[kq.dai] && <div className="mt-1.5"><Nhan tone={DAI[kq.dai].tone}>{DAI[kq.dai].nhan}</Nhan></div>}</O>}
                   {MUI}
                 </>
               )}

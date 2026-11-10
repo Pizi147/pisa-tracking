@@ -64,22 +64,22 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
 function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   const out = new Map<number, TyLeLuot>();
   const conn = db();
-  const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null }>();
+  const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null; tao: string | null }>();
   const diem = new Map<number, any[]>();
   const lichGop = new Map<number, any[]>();
   theoLoJson([...new Set(attemptIds)], (json) => {   // S5: một tham số JSON
     const ph = DS_JSON;
     for (const r of conn.prepare(
-      `SELECT a.id, a.kind, a.class_id, c.programme_code, c.nguong_dat, cy.programme_code AS ct_lo_trinh FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
+      `SELECT a.id, a.kind, a.class_id, a.created_at, c.programme_code, c.nguong_dat, cy.programme_code AS ct_lo_trinh FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id AND a.class_id IS NULL   -- LECH-KHONG-LOP (maCtCuaLuot): chỉ lượt không lớp đọc lộ trình
         WHERE a.id IN (${ph})`,
     ).all(json) as any[]) {
       const ct = maCtCuaLuot(r.class_id, r.programme_code, r.ct_lo_trinh);
-      luot.set(r.id, { kind: r.kind, ct, nguong: r.class_id ? r.nguong_dat ?? null : nguongDatLop(null, ct) });
+      luot.set(r.id, { kind: r.kind, ct, nguong: r.class_id ? r.nguong_dat ?? null : nguongDatLop(null, ct), tao: r.created_at ?? null });
     }
     /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
-    for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, nhap_dau_ngay AS nhap_dau_ngay, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
-        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(json, json, ...GOP) as any[]) {
+    for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(json, json, ...GOP) as any[]) {
       const m = r.la_lich ? lichGop : diem;
       if (!m.has(r.attempt_id)) m.set(r.attempt_id, []);
       m.get(r.attempt_id)!.push(r);
@@ -89,7 +89,7 @@ function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
     if (!prog || prog.scoringMode !== 'ratio') continue;
-    const kq = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(lichGop.get(id), diem.get(id))), diem.get(id) ?? [], prog.code, l.nguong ?? undefined);   // P13: bộ môn theo lượt   // OV-6b1: ngưỡng lớp đọc cùng câu
+    const kq = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(lichGop.get(id), diem.get(id))), diem.get(id) ?? [], prog.code, l.nguong ?? undefined, l.tao);   // P13: bộ môn theo lượt   // OV-6b1: ngưỡng lớp đọc cùng câu
     out.set(id, {
       tyLe: kq.tyLeTong, du: kq.complete, nguong: kq.passThreshold, mocNguong: kq.mocNguong, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),
@@ -656,8 +656,9 @@ function hoanThanhCaseMiniTest(conn: any, caseId: number, p: Principal, ghiChu: 
  * không thì thẻ Báo QL cho Quản lý như trước (thông báo do `taoYeuCau`). Trả `dat`.
  */
 export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: number; ngay: string }, mucPa?: string | null): { dat: boolean } {
-  conn.prepare('UPDATE mini_test SET ty_le = ?, ngay_lam = ?, ghi_boi = ?, ghi_luc = ? WHERE id = ?').run(x.tyLe, x.ngay, p.userId, nowIso(), mt.id);
-  const nguongMt = nguongMiniTest(x.ngay);   // QTV2-BAND: bản tại ngày làm
+  const luc = nowIso();
+  conn.prepare('UPDATE mini_test SET ty_le = ?, ngay_lam = ?, ghi_boi = ?, ghi_luc = ? WHERE id = ?').run(x.tyLe, x.ngay, p.userId, luc, mt.id);
+  const nguongMt = nguongMiniTest(luc);   // QTV2-BAND: bản tại lúc ghi (cùng `ghi_luc`)
   const dat = x.tyLe >= nguongMt;
   const ptNguong = Math.round(nguongMt * 100);
   const cases = (conn.prepare(
@@ -708,7 +709,7 @@ export function ghiMiniTest(p: Principal, miniTestId: number, input: { tyLe?: un
         `UPDATE case_interventions SET status = 'completed', completed_date = ?, closed_reason = 'het_moc', started_date = COALESCE(started_date, cycle_started_on, ?), updated_at = ?
           WHERE nhom_bo_tro = ? AND kind = 'bo_tro_mien_phi' AND status IN ('planned', 'started')`,
       ).run(v.ngay, v.ngay, nowIso(), mt.nhom_bo_tro);
-    } else if (mt.ty_le >= nguongMiniTest(mt.ngay_lam)) {
+    } else if (mt.ty_le >= nguongMiniTest(mt.ghi_luc ?? mt.ngay_lam)) {
       daoCaseMiniTest(conn, p, mt, v);
     }
     const kq = ghiMiniTestTrongTx(conn, p, mt, v);
@@ -738,7 +739,7 @@ function daoCaseMiniTest(conn: any, p: Principal, mt: any, x: { tyLe: number; ng
   ).all(mt.nhom_bo_tro) as { id: number; closed_at: string }[];
   if (!ds.length) return;
   const now = nowIso();
-  const nguongMt = nguongMiniTest(x.ngay);
+  const nguongMt = nguongMiniTest(nowIso());   // sửa = ghi lại bây giờ
   if (x.tyLe >= nguongMt) {
     const ghiChu = `Mini Test ${Math.round(x.tyLe * 100)}% ≥ ${Math.round(nguongMt * 100)}%`;
     for (const c of ds) {
@@ -760,11 +761,11 @@ function daoCaseMiniTest(conn: any, p: Principal, mt: any, x: { tyLe: number; ng
 }
 
 /** Mini Test của các em (theo lộ trình mới), MỘT câu — cho hồ sơ HV, việc, Excel. */
-export function miniTestCuaHocVien(sids: readonly number[]): Map<number, { id: number; cycleId: number; nhom: string; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: number | string | null }> {
+export function miniTestCuaHocVien(sids: readonly number[]): Map<number, { id: number; cycleId: number; nhom: string; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: number | string | null; ghiLuc: string | null }> {
   const out = new Map<number, any>();
   theoLo([...sids], (lo, ph) => {
     for (const r of db().prepare(`SELECT * FROM mini_test WHERE student_id IN (${ph}) ORDER BY id`).all(...lo) as any[]) {
-      out.set(r.student_id, { id: r.id, cycleId: r.cycle_id, nhom: r.nhom_bo_tro, soBuoi: r.so_buoi, ngayDuKien: r.ngay_du_kien, han: r.han, tyLe: r.ty_le, ngayLam: r.ngay_lam });
+      out.set(r.student_id, { id: r.id, cycleId: r.cycle_id, nhom: r.nhom_bo_tro, soBuoi: r.so_buoi, ngayDuKien: r.ngay_du_kien, han: r.han, tyLe: r.ty_le, ngayLam: r.ngay_lam, ghiLuc: r.ghi_luc ?? null });
     }
   });
   return out;

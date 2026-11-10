@@ -13,8 +13,7 @@ import {
 import { mondayOfDate } from './week.ts';
 import { type ChuongTrinh } from './tongQuan.ts';
 import type { TrangThaiCaseV4 } from './sosV4.ts';
-import { khoaBai, nhanBai, nhanBaiThuong, RATIO_PASS_THRESHOLD } from './normal.ts';
-import { khoangDai, nguongThuongHienTai } from './bandNguong.ts';
+import { khoaBai, nhanBai, nhanBaiThuong } from './normal.ts';
 import { t } from '../i18n/index.ts';
 
 // ------------------------------------------------------------------ góc nhìn (Q1, Q16)
@@ -213,13 +212,10 @@ const COT_KET_QUA_THUONG: CotTongHop[] = [
   { khoa: 'gk-dat', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Progress Test đủ điểm, mọi môn từ 70%.' },
   { khoa: 'gk-1', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '1 môn trượt', goiY: 'Bài Progress Test đủ điểm, đúng một môn dưới 70%.' },
   { khoa: 'gk-2', nhom: 'ket-qua', nhomCon: 'giua', donVi: 'dot-test', nhan: () => '≥ 2 môn trượt', goiY: 'Bài Progress Test đủ điểm, từ hai môn dưới 70%.' },
-  /* QTV2-BAND: khoảng % theo bản Ngưỡng lớp thường mới nhất (Quản trị › Band & ngưỡng). */
-  { khoa: 'ck-duoi50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => t('Dưới {n}%', { n: nguongThuongHienTai().hocLai }),
-    get goiY() { return t('Bài Final Test đủ điểm, % tổng dưới {n}% — gợi ý học lại.', { n: nguongThuongHienTai().hocLai }); } },
-  { khoa: 'ck-50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => khoangDai('50_59', RATIO_PASS_THRESHOLD)!,
-    get goiY() { return t('Bài Final Test đủ điểm, % tổng {k} — Quản lý cân nhắc.', { k: khoangDai('50_59', RATIO_PASS_THRESHOLD)! }); } },
-  { khoa: 'ck-60', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => khoangDai('60_69', RATIO_PASS_THRESHOLD)!,
-    get goiY() { return t('Bài Final Test đủ điểm, % tổng {k} — lên lớp kèm bổ trợ.', { k: khoangDai('60_69', RATIO_PASS_THRESHOLD)! }); } },
+  /* QTV2-BAND (PTA 11/11): mỗi bài theo bản ngưỡng của lớp nó ⇒ cột theo TÊN dải, không kèm số % (Quản trị › Band & ngưỡng). */
+  { khoa: 'ck-duoi50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Học lại', goiY: 'Bài Final Test đủ điểm, % tổng dưới mức "Học lại dưới" — gợi ý học lại.' },
+  { khoa: 'ck-50', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Cân nhắc', goiY: 'Bài Final Test đủ điểm, % tổng từ "Học lại dưới" tới dưới "Lên từ" — Quản lý cân nhắc.' },
+  { khoa: 'ck-60', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Lên + bổ trợ', goiY: 'Bài Final Test đủ điểm, % tổng từ "Lên từ" tới dưới "Đạt từ" — lên lớp kèm bổ trợ.' },
   { khoa: 'ck-dat', nhom: 'ket-qua', nhomCon: 'cuoi', donVi: 'dot-test', nhan: () => 'Từ 70%', goiY: 'Bài Final Test đủ điểm, % tổng từ 70% — Pass.' },
   /* OV-11h (PT-1): Checkpoint PET / KET — cùng luật đếm môn trượt như Progress Test, nhóm riêng (chỉ hiện khi bảng có Checkpoint: `cotTheoDuLieu`). */
   { khoa: 'cp-dat', nhom: 'ket-qua', nhomCon: 'checkpoint', donVi: 'dot-test', nhan: () => 'Đạt hết', goiY: 'Bài Checkpoint đủ điểm, mọi môn đạt.' },

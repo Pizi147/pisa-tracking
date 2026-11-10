@@ -213,7 +213,7 @@ export type RegularResult = {
   failedCount: number | null;
   sosLevel: SosLevel | null;
   passThreshold: number;
-  /** QTV2-BAND: ngày nhập điểm ĐẦU TIÊN của lượt (`nhap_dau_ngay` nhỏ nhất) — chọn bản "Ngưỡng lớp thường" (dải Cuối khoá). Thiếu = bản mới nhất. */
+  /** QTV2-BAND (PTA 11/11): `created_at` của lượt — chọn bản "Ngưỡng lớp thường" (dải Cuối khoá). Thiếu = bản mới nhất. */
   mocNguong: string | null;
   /** K5-44, MH7: Σ điểm / Σ tổng — CHỈ khi đủ mọi môn (thiếu → null), không làm tròn. Pre FOU hiện đúng số này. */
   tyLeTong: number | null;
@@ -233,8 +233,10 @@ export type RegularResult = {
  * kỹ năng của chương trình luôn đủ.
  */
 export function evaluateRegular(
-  skillsVao: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null; no_show_cu?: number | null; nhap_dau_ngay?: string | null }[], ct?: string | null,
+  skillsVao: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null; no_show_cu?: number | null }[], ct?: string | null,
   nguong: number = RATIO_PASS_THRESHOLD,   // OV-6b1: ngưỡng đạt của LỚP — `nguongDatLop(classId)`
+  /** QTV2-BAND: `created_at` của lượt (chọn bản Ngưỡng lớp thường). */
+  mocLuot?: string | null,
 ): RegularResult {
   /* Q-RL1 (chủ SP 29/10): môn Không dự thi (chưa có điểm) không còn làm kết quả "chưa đủ môn" mãi — tính trên các môn đã thi. */
   const khongDuThi = skillsVao.filter((k) => rows.some((r) => r.skill === k && !!r.no_show_cu && r.raw_score == null));
@@ -275,7 +277,7 @@ export function evaluateRegular(
     failedCount,
     sosLevel,
     passThreshold: nguong,
-    mocNguong: rows.reduce<string | null>((m, r) => (r.nhap_dau_ngay && (!m || r.nhap_dau_ngay < m) ? r.nhap_dau_ngay : m), null),
+    mocNguong: mocLuot ?? null,
     tyLeTong: complete
       ? results.reduce((s, r) => s + (r.score ?? 0), 0) / results.reduce((s, r) => s + (r.total ?? 0), 0)
       : null,
@@ -299,11 +301,11 @@ export function regularDeadline(attempt: { planned_period_id?: number | null; de
 
 export function regularResultOf(attemptId: number): RegularResult {
   const conn = db();
-  const a = conn.prepare('SELECT class_id, cycle_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  const a = conn.prepare('SELECT class_id, cycle_id, created_at FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   const prog = a ? chuongTrinhCuaLuot(a) : null;
-  const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu, nhap_dau_ngay FROM assessment_scores WHERE attempt_id = ?')
+  const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows)) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code));
+  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows)) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code), a?.created_at ?? null);
 }
 
 /** Lớp có ngưỡng đạt khác 70 % — MỘT câu, nhớ trong request GET (thường rỗng: chỉ lớp mở sau khi Quản trị đổi "Đạt từ"). */
@@ -1269,7 +1271,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];
       const mon = monDong(a.id);
-      const result = evaluateRegular(mon, rows, prog.code, nguongDatLop(classId));
+      const result = evaluateRegular(mon, rows, prog.code, nguongDatLop(classId), a.created_at);
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
       const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
       const c = dongCases[0] ?? null;

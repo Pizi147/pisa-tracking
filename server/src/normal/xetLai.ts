@@ -168,7 +168,7 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
     const suaDuoc = quyet[0] && CHUYEN.includes(quyet[0].quyet_dinh) && quyet[0].lm_tt === 'cho' ? quyet[0] : null;
     const ly = lyDoXetLai({
       huong: l.huong, tyLe: t?.tyLe ?? null, du: !!t?.du, ngayRaLenh: l.ngay_ra_lenh, mocFinal: m?.luc ?? null, ngayFinal: m?.ngay ?? null,
-      miniTest: mt && mt.ty_le !== null ? { tyLe: mt.ty_le, luc: mt.ghi_luc ?? mt.ngay_lam, ngay: mt.ngay_lam } : null, quyetLuc: quyet[0]?.luc ?? null,
+      miniTest: mt && mt.ty_le !== null ? { tyLe: mt.ty_le, luc: mt.ghi_luc ?? mt.ngay_lam } : null, quyetLuc: quyet[0]?.luc ?? null,
       mocNguong: t?.mocNguong ?? null,
     });
     const lyDo = ly ?? (suaDuoc ? { ma: suaDuoc.ly_do_ma, chu: '', moc: suaDuoc.moc } : null);

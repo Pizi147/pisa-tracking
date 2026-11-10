@@ -48,7 +48,7 @@ export function tinhLuot(
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
   if (!nc.laFt) {
-    const r = evaluateRegular(boMonTheoLuot(nc.mon, daGhiLuot(lich, rows)), diemRows, nc.maCt, nc.nguong);   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(nc.mon, daGhiLuot(lich, rows)), diemRows, nc.maCt, nc.nguong, a.created_at ?? null);   // P13: bộ môn theo lượt
     const dong = r.skills.map((s) => ({
       kyNang: s.skill, batBuoc: 1, boQua: 0, diem: s.score, diemTho: null, diemTong: s.total,
       dat: s.outcome === 'missing' ? null : s.outcome === 'pass' ? 1 : 0,
@@ -201,7 +201,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     });
     const plan = laFt ? examPlanOf(c) : null;
     const luotCuoiKhoa = luot.filter((a) => a.kind === 'final' && a.status !== 'cancelled').at(-1);
-    const kqCk = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id))), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong) : null;
+    const kqCk = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id))), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong, luotCuoiKhoa.created_at) : null;
     const tyLe = kqCk ? kqCk.tyLeTong : null;
     const routeMoi = o.routeMoi !== undefined ? o.routeMoi : (cungEm.get(c.student_id) ?? []).find((x) => x.seq > c.seq)?.route ?? null;
     const lan = (lanCuoi.get(c.id) ?? 0) + 1;

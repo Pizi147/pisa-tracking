@@ -23,7 +23,7 @@ export type CuoiKhoaEm = {
   ct?: string | null; lop?: string | null; daChuyen?: boolean;
 };
 export type MiniTestEm = {
-  id: number; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: string | null;
+  id: number; soBuoi: number; ngayDuKien: string; han: string; tyLe: number | null; ngayLam: string | null; ghiLuc?: string | null;
   caseId: number | null; paId: number | null; coTheGhi: boolean;
   /** OV-7a: người ghi được (người dạy · GVCN · người giữ việc · QL) sửa % và ngày của Mini Test đã ghi. */
   coTheSua?: boolean;
@@ -183,7 +183,7 @@ function MiniTestDaGhi({ mt }: { mt: MiniTestEm & { tyLe: number } }) {
   const [sua, setSua] = useState<{ pt: string; ngay: string } | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const dat = mt.tyLe >= nguongMiniTest(mt.ngayLam);   // QTV2-BAND: bản tại ngày làm
+  const dat = mt.tyLe >= nguongMiniTest(mt.ghiLuc ?? mt.ngayLam);   // QTV2-BAND: bản tại lúc ghi
   const pt = sua ? Number(sua.pt.replace(',', '.')) : NaN;
   const loiPt = sua && (sua.pt.trim() === '' || !Number.isFinite(pt) || pt < 0 || pt > 100) ? t('Nhập % từ 0 đến 100') : null;
   const luu = async () => {

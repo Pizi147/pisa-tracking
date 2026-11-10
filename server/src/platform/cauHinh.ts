@@ -9,10 +9,10 @@
 import { db } from '../db.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import {
-  HAN_MAC_DINH_GOC, KY_VONG_FT_GOC, MA_HAN, NGUONG_THUONG_GOC, PERMISSIONS, TEN_KY_VONG_FT, TEN_NGUONG_THUONG, datNguonBand, datNguonHan, kiemHanMacDinh,
+  HAN_MAC_DINH_GOC, KY_VONG_FT_GOC, MA_HAN, NGUONG_THUONG_GOC, PERMISSIONS, RATIO_PASS_THRESHOLD, TEN_KY_VONG_FT, TEN_NGUONG_THUONG, datNguonBand, datNguonHan, kiemHanMacDinh,
   kiemKyVongFt, kiemNguongThuong, ngayTheoGioVN, nhanTruongHan, type BanPhienBan, type HanMacDinh, type KyVongFt, type MaHan, type NguongThuong,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, forbidden } from '../util.ts';
+import { badRequest, conflict, forbidden, nowIso } from '../util.ts';
 import { nowNghiepVu } from '../demoConfig.ts';
 import { writeAudit } from './audit.ts';
 import { layMoc } from './nguCanhRequest.ts';
@@ -41,6 +41,8 @@ type Doi = { ma: string; truong: string; truoc: number; sau: number };
 type DinhNghia<T> = {
   loai: string; ten: string; goc: T; ghep: (goc: T, du: any) => T; kiem: (v: unknown) => { ma: string | null; loi: string } | null;
   khac: (cu: T, moi: T) => Doi[]; nhan: (d: Doi) => string;
+  /** Đồng hồ đóng dấu bản: Hạn = đồng hồ nghiệp vụ (cùng mốc ngày của việc); Band = giờ thật (cùng đồng hồ `created_at` / `ghi_luc` của lượt). */
+  dongHo?: () => string;
 };
 
 function taoLoai<T>(d: DinhNghia<T>) {
@@ -53,7 +55,7 @@ function taoLoai<T>(d: DinhNghia<T>) {
     for (const r of rows) {
       let du: unknown;
       try { du = JSON.parse(r.du_lieu); } catch { console.error('[cau-hinh] bản hỏng', d.loai, r.id); continue; }
-      ds.push({ id: r.id, tu: ngayTheoGioVN(r.tao_luc) ?? r.tao_luc.slice(0, 10), v: d.ghep(d.goc, du ?? {}) });
+      ds.push({ id: r.id, tu: ngayTheoGioVN(r.tao_luc) ?? r.tao_luc.slice(0, 10), luc: r.tao_luc, v: d.ghep(d.goc, du ?? {}) });
     }
     return ds;
   };
@@ -101,7 +103,7 @@ function taoLoai<T>(d: DinhNghia<T>) {
     const khoiPhucTu = input.khoiPhucTu == null ? null : Number(input.khoiPhucTu);
     const id = Number(db().prepare(
       'INSERT INTO cau_hinh_phien_ban (loai, du_lieu, thay_doi, khoi_phuc_tu, nguoi_id, tao_luc) VALUES (?, ?, ?, ?, ?, ?)',
-    ).run(d.loai, JSON.stringify(moi), JSON.stringify(doi), Number.isFinite(khoiPhucTu) ? khoiPhucTu : null, p.userId, nowNghiepVu()).lastInsertRowid);
+    ).run(d.loai, JSON.stringify(moi), JSON.stringify(doi), Number.isFinite(khoiPhucTu) ? khoiPhucTu : null, p.userId, (d.dongHo ?? nowNghiepVu)()).lastInsertRowid);
     writeAudit({
       actorUserId: p.userId, action: `${entityType}.${khoiPhucTu != null ? 'khoi_phuc' : 'sua'}`, entityType, entityId: id, entityLabel: d.ten,
       before: Object.fromEntries(doi.map((x) => [d.nhan(x), x.truoc])), after: Object.fromEntries(doi.map((x) => [d.nhan(x), x.sau])),
@@ -131,11 +133,19 @@ const HAN = taoLoai<HanMacDinh>({
   nhan: (x) => nhanTruongHan(x.ma as MaHan, x.truong),
 });
 const KY_VONG = taoLoai<KyVongFt>({
-  loai: 'ky_vong_ft', ten: 'kỳ vọng MT Fast Track', goc: { ...KY_VONG_FT_GOC }, kiem: kiemKyVongFt,
+  loai: 'ky_vong_ft', ten: 'kỳ vọng MT Fast Track', goc: { ...KY_VONG_FT_GOC }, kiem: kiemKyVongFt, dongHo: nowIso,
   ghep: (goc, du) => ({ ...goc, ...du }), khac: khacPhang, nhan: (x) => TEN_KY_VONG_FT[x.ma as keyof KyVongFt] ?? x.ma,
 });
+/** "Lên từ" phải dưới "Đạt từ" nhỏ nhất của các chương trình đúng / tổng đang dùng (không thì dải "Lên + bổ trợ" rỗng). Một câu, chỉ lúc lưu. */
+function kiemNguongVoiChuongTrinh(v: unknown) {
+  const loi = kiemNguongThuong(v);
+  if (loi) return loi;
+  const r = db().prepare(`SELECT MIN(COALESCE(nguong_dat, ?)) AS n FROM programmes WHERE scoring_mode = 'ratio' AND status = 'active'`).get(RATIO_PASS_THRESHOLD) as { n: number | null } | undefined;
+  const dat = Math.round((r?.n ?? RATIO_PASS_THRESHOLD) * 100);
+  return (v as NguongThuong).len >= dat ? { ma: 'len', loi: `"Lên từ" phải dưới "Đạt từ" nhỏ nhất của các chương trình (${dat} %).` } : null;
+}
 const NGUONG = taoLoai<NguongThuong>({
-  loai: 'nguong_thuong', ten: 'ngưỡng lớp thường', goc: { ...NGUONG_THUONG_GOC }, kiem: kiemNguongThuong,
+  loai: 'nguong_thuong', ten: 'ngưỡng lớp thường', goc: { ...NGUONG_THUONG_GOC }, kiem: kiemNguongVoiChuongTrinh, dongHo: nowIso,
   ghep: (goc, du) => ({ ...goc, ...du }), khac: khacPhang, nhan: (x) => TEN_NGUONG_THUONG[x.ma as keyof NguongThuong] ?? x.ma,
 });
 /* Nạp mô-đun này (routes, hàm định kỳ) = mọi hàm luật dùng chung đọc bản trong DB. */
@@ -147,13 +157,14 @@ export const dsBanHan = HAN.ds;
 export const dsBanKyVong = KY_VONG.ds;
 export const dsBanNguong = NGUONG.ds;
 /**
- * SQL: ngưỡng Mini Test (tỉ lệ) theo bản tại ngày làm (`cot` = cột ngày, vd `m.ngay_lam`) — CASE từ bản mới về cũ. Chỉ chèn số và ngày
- * `YYYY-MM-DD` đã kiểm (bản lưu qua `kiemNguongThuong`, `tu` từ `ngayTheoGioVN`) — không có chữ người dùng.
+ * SQL: ngưỡng Mini Test (tỉ lệ) theo bản tại LÚC GHI (`cot` = cột giờ ISO, vd `m.ghi_luc`) — CASE từ bản mới về cũ. Chỉ chèn số và giờ ISO đã kiểm
+ * (bản lưu qua `kiemNguongThuong`, `luc` do máy chủ đóng dấu) — không có chữ người dùng.
  */
 export function sqlNguongMiniTest(cot: string): string {
   const ds = NGUONG.ds();
   const so = (n: number) => { const x = Number(n) / 100; if (!Number.isFinite(x)) throw new Error('ngưỡng hỏng'); return String(x); };
-  const nhanh = ds.slice(1).reverse().filter((b) => /^\d{4}-\d{2}-\d{2}$/.test(b.tu)).map((b) => `WHEN ${cot} >= '${b.tu}' THEN ${so(b.v.miniTest)}`);
+  const nhanh = ds.slice(1).reverse().filter((b) => !!b.luc && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/.test(b.luc))
+    .map((b) => `WHEN ${cot} >= '${b.luc}' THEN ${so(b.v.miniTest)}`);
   return nhanh.length ? `(CASE ${nhanh.join(' ')} ELSE ${so(ds[0].v.miniTest)} END)` : so(ds[0].v.miniTest);
 }
 /** Xoá nhớ của cả ba loại (lần lưu ở lambda khác không xoá được nhớ của lambda này — hàm định kỳ gọi đầu mỗi lượt). */

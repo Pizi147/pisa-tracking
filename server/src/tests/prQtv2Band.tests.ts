@@ -12,6 +12,8 @@ export async function runPrQtv2BandTests(t: { check: any; assert: any; assertThr
   const reg: any = await import('../normal/regular.ts');
   const sc: any = await import('../fasttrack/scoring.ts');
   const dm: any = await import('../demoConfig.ts');
+  const th: any = await import('../phanTich/tongHop.ts');
+  const prof: any = await import('../students/profile.ts');
   console.log('\nQTV2-BAND — Kỳ vọng MT FT + Ngưỡng lớp thường có phiên bản, chỉ áp cho cái sinh sau');
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { ch.xoaNhoHan(); return fn(); } finally { conn.exec('ROLLBACK'); ch.xoaNhoHan(); } };
   const xoa = () => { conn.exec(`DELETE FROM cau_hinh_phien_ban WHERE loai IN ('ky_vong_ft', 'nguong_thuong')`); ch.xoaNhoHan(); };
@@ -51,41 +53,67 @@ export async function runPrQtv2BandTests(t: { check: any; assert: any; assertThr
 
   check('QTV2-B-3 · chỉ áp cho cái sinh sau: lượt MT / Final / Mini Test trước ngày sửa giữ bản cũ; Hoàn tác = bản mới', () => thu(() => {
     xoa();
-    const homNay = dm.nowNghiepVu().slice(0, 10);
-    const truoc = d.addDaysIso(homNay, -3);
+    const sau = '2999-01-01T00:00:00.000Z';   // lượt tạo SAU lúc lưu (giờ thật — cùng đồng hồ `created_at`)
+    const truoc = '2020-01-01T00:00:00.000Z';
     const k = ch.luuBand(P.admin, 'ky-vong-ft', { giaTri: { ...kv(), mt1: 0.5, rf: 0.5 }, tuPhienBan: 0 });
-    assert(d.expectationDelta(1, null, truoc) === 1 && d.expectationDelta(1, null, homNay) === 0.5 && d.expectationDelta(1) === 0.5, 'kỳ vọng MT1 trước / sau');
-    assert(d.expectationDelta(3, 'RF', `${truoc}T02:00:00.000Z`) === 0 && d.expectationDelta(3, 'RF', homNay) === 0.5, 'RF trước / sau');
+    assert(d.expectationDelta(1, null, truoc) === 1 && d.expectationDelta(1, null, sau) === 0.5 && d.expectationDelta(1) === 0.5, 'kỳ vọng MT1 trước / sau');
+    assert(d.expectationDelta(3, 'RF', truoc) === 0 && d.expectationDelta(3, 'RF', sau) === 0.5, 'RF trước / sau');
     const r = sc.evaluateAttempt(6.5, 1, { listening: 5.5, reading: 5.5, writing1: 5.5, writing2: 5.5, speaking: 5.5 }, [], null, [], false, truoc);
-    const r2 = sc.evaluateAttempt(6.5, 1, { listening: 5.5, reading: 5.5, writing1: 5.5, writing2: 5.5, speaking: 5.5 }, [], null, [], false, homNay);
+    const r2 = sc.evaluateAttempt(6.5, 1, { listening: 5.5, reading: 5.5, writing1: 5.5, writing2: 5.5, speaking: 5.5 }, [], null, [], false, sau);
     assert(r.expectation === 5.5 && r.sosLevel === 0 && r2.expectation === 6 && r2.sosLevel === 3, `SOS theo bản lúc tạo lượt: ${r.sosLevel} / ${r2.sosLevel}`);
     ch.luuBand(P.admin, 'nguong-thuong', { giaTri: { hocLai: 45, len: 55, miniTest: 65 }, tuPhienBan: 0 });
-    assert(d.daiCuoiKhoa(0.57, 0.7, truoc) === '50_59' && d.daiCuoiKhoa(0.57, 0.7, homNay) === '60_69' && d.daiCuoiKhoa(0.47, 0.7, homNay) === '50_59', 'dải trước / sau');
-    assert(d.nguongMiniTest(truoc) === 0.7 && d.nguongMiniTest(homNay) === 0.65, 'Mini Test theo ngày làm');
+    assert(d.daiCuoiKhoa(0.57, 0.7, truoc) === '50_59' && d.daiCuoiKhoa(0.57, 0.7, sau) === '60_69' && d.daiCuoiKhoa(0.47, 0.7, sau) === '50_59', 'dải trước / sau');
+    assert(d.nguongMiniTest(truoc) === 0.7 && d.nguongMiniTest(sau) === 0.65, 'Mini Test theo lúc ghi');
     const g = d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.57, monTruot: ['listening'], nguong: 0.7, moc: truoc });
-    const g2 = d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.57, monTruot: ['listening'], nguong: 0.7, moc: homNay });
+    const g2 = d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.57, monTruot: ['listening'], nguong: 0.7, moc: sau });
     assert(g?.dai === '50_59' && g?.canQuanLy && g2?.dai === '60_69' && !g2?.canQuanLy, 'gợi ý Cuối khoá theo bản');
-    const sql = ch.sqlNguongMiniTest('m.ngay_lam');
-    assert(sql === `(CASE WHEN m.ngay_lam >= '${homNay}' THEN 0.65 ELSE 0.7 END)`, sql);
-    const ly = d.lyDoXetLai({ huong: 'hoc_lai', tyLe: 0.57, du: true, ngayRaLenh: truoc, mocFinal: `${homNay}T03:00:00.000Z`, ngayFinal: homNay, miniTest: null, quyetLuc: null, mocNguong: truoc });
+    const sql = ch.sqlNguongMiniTest('m.ghi_luc');
+    assert(sql === `(CASE WHEN m.ghi_luc >= '${ch.dsBanNguong().at(-1).luc}' THEN 0.65 ELSE 0.7 END)`, sql);
+    const ly = d.lyDoXetLai({ huong: 'hoc_lai', tyLe: 0.57, du: true, ngayRaLenh: truoc, mocFinal: sau, ngayFinal: '2999-01-01', miniTest: null, quyetLuc: null, mocNguong: truoc });
     assert(ly === null, `học lại 57 % theo bản cũ (lên từ 60) không có Xét lại: ${JSON.stringify(ly)}`);
-    const ly2 = d.lyDoXetLai({ huong: 'hoc_lai', tyLe: 0.57, du: true, ngayRaLenh: truoc, mocFinal: `${homNay}T03:00:00.000Z`, ngayFinal: homNay, miniTest: null, quyetLuc: null, mocNguong: homNay });
+    const ly2 = d.lyDoXetLai({ huong: 'hoc_lai', tyLe: 0.57, du: true, ngayRaLenh: truoc, mocFinal: sau, ngayFinal: '2999-01-01', miniTest: null, quyetLuc: null, mocNguong: sau });
     assert(ly2?.ma === 'c', 'học lại 57 % theo bản mới (lên từ 55) phải Xét lại');
     const h = ch.luuBand(P.admin, 'ky-vong-ft', { giaTri: k.truocGiaTri, tuPhienBan: k.id, khoiPhucTu: k.truocId });
-    assert(h.id > k.id && d.expectationDelta(1, null, homNay) === 1, 'Hoàn tác không về kỳ vọng cũ');
+    assert(h.id > k.id && d.expectationDelta(1, null, sau) === 1, 'Hoàn tác không về kỳ vọng cũ');
     const nk = conn.prepare(`SELECT action FROM audit_logs WHERE entity_type = 'cau_hinh.ky_vong_ft' ORDER BY id DESC LIMIT 1`).get() as any;
     assert(nk?.action === 'cau_hinh.ky_vong_ft.khoi_phuc', `Hoàn tác ghi ${nk?.action}`);
   }));
 
-  check('QTV2-B-4 · evaluateRegular mang ngày nhập điểm đầu; dòng hỏng không làm sập', () => thu(() => {
+  check('QTV2-B-4 · mốc = created_at của lượt, so cả GIỜ (lượt 9:00, lưu 15:00 → giữ bản cũ); dòng hỏng không làm sập', () => thu(() => {
     xoa();
-    const r = reg.evaluateRegular(['listening', 'reading'], [
-      { skill: 'listening', raw_score: 6, raw_total: 10, nhap_dau_ngay: '2026-09-16' }, { skill: 'reading', raw_score: 5, raw_total: 10, nhap_dau_ngay: '2026-09-14' },
-    ], 'FOU', 0.7);
-    assert(r.mocNguong === '2026-09-14', `mocNguong ${r.mocNguong}`);
-    assert(reg.evaluateRegular(['listening'], [{ skill: 'listening', raw_score: 6, raw_total: 10 }], 'FOU', 0.7).mocNguong === null, 'thiếu cột → null');
-    conn.prepare(`INSERT INTO cau_hinh_phien_ban (loai, du_lieu, tao_luc) VALUES ('nguong_thuong', '{hỏng', '2026-09-01T03:00:00.000Z')`).run();
+    const r = reg.evaluateRegular(['listening'], [{ skill: 'listening', raw_score: 6, raw_total: 10 }], 'FOU', 0.7, '2026-09-14T02:00:00.000Z');
+    assert(r.mocNguong === '2026-09-14T02:00:00.000Z', `mocNguong ${r.mocNguong}`);
+    const them = conn.prepare(`INSERT INTO cau_hinh_phien_ban (loai, du_lieu, tao_luc) VALUES (?, ?, ?)`);
+    them.run('ky_vong_ft', JSON.stringify({ ...kv(), mt1: 0 }), '2026-09-14T08:00:00.000Z');   // 15:00 giờ VN
+    them.run('nguong_thuong', JSON.stringify({ ...ng(), len: 55 }), '2026-09-14T08:00:00.000Z');
     ch.xoaNhoHan();
-    assert(ch.dsBanNguong().length === 1 && d.nguongMiniTest() === 0.7, 'dòng hỏng làm sập');
+    assert(d.expectationDelta(1, null, '2026-09-14T02:00:00.000Z') === 1 && d.expectationDelta(1, null, '2026-09-14T09:00:00.000Z') === 0, 'kỳ vọng lưu cùng ngày áp ngược');
+    assert(d.daiCuoiKhoa(0.57, 0.7, '2026-09-14T02:00:00.000Z') === '50_59' && d.daiCuoiKhoa(0.57, 0.7, '2026-09-14T09:00:00.000Z') === '60_69', 'ngưỡng lưu cùng ngày áp ngược');
+    them.run('nguong_thuong', '{hỏng', '2026-09-15T03:00:00.000Z');
+    ch.xoaNhoHan();
+    assert(ch.dsBanNguong().length === 2 && d.nguongMiniTest() === 0.7, 'dòng hỏng làm sập');
+    assertThrows(() => ch.luuBand(P.admin, 'nguong-thuong', { giaTri: { ...ng(), len: 70 }, tuPhienBan: ch.dsBanNguong().at(-1).id }), /Đạt từ/, 'Lên từ ≥ Đạt từ lưu được');
+  }));
+
+  check('QTV2-B-5 · một lượt MT thật: lưu kỳ vọng mới SAU lúc tạo lượt → Tổng hợp (phanLoaiCacLuot ∘ luotTrongKhoang) = hồ sơ (typedResult), giữ SOS cũ', () => thu(() => {
+    xoa();
+    const a = conn.prepare(`SELECT a.* FROM assessment_attempts a JOIN learning_cycles cy ON cy.id = a.cycle_id
+       WHERE a.kind = 'mock' AND a.attempt_no = 1 AND a.status != 'cancelled' AND a.planned_period_id IS NOT NULL AND a.target_at_attempt IS NOT NULL AND cy.khong_cam_ket = 0
+         AND (SELECT COUNT(*) FROM assessment_scores s WHERE s.attempt_id = a.id AND s.band IS NOT NULL) >= 4 ORDER BY a.id LIMIT 1`).get() as any;
+    assert(!!a, 'seed thiếu lượt MT1 đủ điểm');
+    const sos = () => {
+      const tong = th.phanLoaiCacLuot(th.luotTrongKhoang('a.id = ?', [a.id])).get(a.id)?.sosLevel ?? null;
+      const hs = prof.typedResult(conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(a.id)).ft?.sosLevel ?? null;
+      return { tong, hs };
+    };
+    const truoc = sos();
+    assert(truoc.tong === truoc.hs, `trước: Tổng hợp ${truoc.tong} ≠ hồ sơ ${truoc.hs}`);
+    ch.luuBand(P.admin, 'ky-vong-ft', { giaTri: { ...kv(), mt1: 0 }, tuPhienBan: 0 });   // lưu BÂY GIỜ — sau created_at của lượt seed
+    const sau = sos();
+    assert(sau.tong === truoc.tong && sau.hs === truoc.hs, `lượt tạo trước lúc sửa đổi SOS: ${JSON.stringify({ truoc, sau })}`);
+    conn.prepare('UPDATE assessment_attempts SET created_at = ? WHERE id = ?').run('2999-01-01T00:00:00.000Z', a.id);   // lượt "mở sau" lúc sửa
+    ch.xoaNhoHan();
+    const moi = sos();
+    assert(moi.tong === moi.hs, `lượt mở sau: Tổng hợp ${moi.tong} ≠ hồ sơ ${moi.hs}`);
   }));
 }

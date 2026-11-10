@@ -790,7 +790,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     chet: {
       /* QTV2-BAND: ngưỡng theo bản tại ngày làm — getter: tính lúc chạy (bản có thể đổi), không lúc nạp mô-đun. */
       get sql() {
-        return `NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.id = y.doi_tuong_id AND m.ty_le < ${sqlNguongMiniTest('m.ngay_lam')}
+        return `NOT EXISTS (SELECT 1 FROM mini_test m WHERE m.id = y.doi_tuong_id AND m.ty_le < ${sqlNguongMiniTest('m.ghi_luc')}
              AND EXISTS (SELECT 1 FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND sc.status != 'done'))`;
       },
       lyDo: 'Case đã hoàn thành hoặc Mini Test đã đạt',
@@ -804,7 +804,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Mini Test chưa đạt${pt ? ` · ${pt}` : ''}`,
         phu: x?.ten_gv ?? null,   // OV-11c (CV-10): người giữ việc — tên em đã ở dòng phụ của thẻ
-        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ ${Math.round(nguongMiniTest(x?.ngay_lam) * 100)}%) — Case để mở, Quản lý xử lý từng trường hợp.`],
+        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ ${Math.round(nguongMiniTest(x?.ghi_luc ?? x?.ngay_lam) * 100)}%) — Case để mở, Quản lý xử lý từng trường hợp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null },
       };

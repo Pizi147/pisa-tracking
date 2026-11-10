@@ -1,11 +1,11 @@
 /**
  * BAND & NGƯỠNG (QTV2-BAND, chủ SP 11/11 "band điểm"; PTA chốt XM-1 11/11; đặc tả `2026-11-11-quan-tri-v2-design.md` mục 5.5, 6.2).
  * Hai cấu hình có phiên bản (bảng `cau_hinh_phien_ban`, Quản trị sửa, Quản lý xem):
- *  · KỲ VỌNG MT FAST TRACK — kỳ vọng = Target − x theo lần MT: MT1 1.0 · MT2 0.5 · MT3+ 0 · lộ trình RF mọi MT 0. Bản tại NGÀY TẠO LƯỢT MT
- *    (`assessment_attempts.created_at`) — điểm sửa lại vẫn theo bản lúc tạo lượt.
+ *  · KỲ VỌNG MT FAST TRACK — kỳ vọng = Target − x theo lần MT: MT1 1.0 · MT2 0.5 · MT3+ 0 · lộ trình RF mọi MT 0.
  *  · NGƯỠNG LỚP THƯỜNG (%) — Học lại dưới `hocLai` · Cân nhắc `hocLai`–(`len` − 1) · Lên từ `len` · Mini Test đạt từ `miniTest`. "Đạt từ" của lớp vẫn
- *    là ngưỡng của chương trình (Chương trình & lộ trình). Bản tại NGÀY NHẬP ĐIỂM FINAL ĐẦU TIÊN (`assessment_scores.nhap_dau_ngay`, nhỏ nhất của
- *    lượt); Mini Test: ngày làm.
+ *    là ngưỡng của chương trình (Chương trình & lộ trình).
+ * MỐC CHỌN BẢN (PTA chốt 11/11): `created_at` của LƯỢT (MT / Final), so cả GIỜ với lúc lưu bản. Lượt được tạo một lần khi mở lộ trình / lớp ⇒ sửa chỉ
+ * áp cho lộ trình / lớp MỞ TỪ NAY; lượt của lộ trình đang chạy giữ mức cũ (sửa điểm sau vẫn theo mức đó). Mini Test: ngày làm.
  * Bảng rỗng = bản gốc (đúng giá trị cũ) ⇒ ngày đầu không đổi hành vi. Máy chủ (`platform/cauHinh.ts`) và web (phiên) gọi `datNguonBand`.
  */
 import { banTaiMoc, type BanPhienBan } from './phienBan.ts';
@@ -25,11 +25,11 @@ export function datNguonBand(kv: (() => readonly BanPhienBan<KyVongFt>[]) | null
   nguonNg = ng ?? (() => [GOC_NG]);
 }
 
-/** Bản kỳ vọng FT tại `moc` (ngày tạo lượt MT; thiếu = bản mới nhất — lượt sắp tạo). */
-export const kyVongFtTai = (moc?: string | null): KyVongFt => ({ ...KY_VONG_FT_GOC, ...(banTaiMoc(nguonKv(), moc) ?? GOC_KV).v });
-/** Ngưỡng lớp thường tại `moc` (ngày nhập điểm Final đầu / ngày làm Mini Test; thiếu = bản mới nhất). Trả TỈ LỆ 0–1 (so với tỷ lệ chưa làm tròn). */
+/** Bản kỳ vọng FT tại `moc` (`created_at` của lượt MT; thiếu = bản mới nhất — lượt sắp tạo). */
+export const kyVongFtTai = (moc?: string | null): KyVongFt => ({ ...KY_VONG_FT_GOC, ...(banTaiMoc(nguonKv(), moc, true) ?? GOC_KV).v });
+/** Ngưỡng lớp thường tại `moc` (`created_at` của lượt Final / ngày làm Mini Test; thiếu = bản mới nhất). Trả TỈ LỆ 0–1 (so với tỷ lệ chưa làm tròn). */
 export function nguongThuongTai(moc?: string | null): { hocLai: number; len: number; miniTest: number } {
-  const v = { ...NGUONG_THUONG_GOC, ...(banTaiMoc(nguonNg(), moc) ?? GOC_NG).v };
+  const v = { ...NGUONG_THUONG_GOC, ...(banTaiMoc(nguonNg(), moc, true) ?? GOC_NG).v };
   return { hocLai: v.hocLai / 100, len: v.len / 100, miniTest: v.miniTest / 100 };
 }
 /** Mini Test đạt khi tỷ lệ ≥ ngưỡng của bản tại ngày làm (thay hằng `NGUONG_MINI_TEST`). */

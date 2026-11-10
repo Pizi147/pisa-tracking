@@ -38,9 +38,9 @@ export function KyVongNguongAdmin() {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <KhoiCauHinh duong="/admin/cau-hinh/ky-vong-ft" tieuDe={t('Kỳ vọng MT Fast Track')} truong={KY_VONG} sauLuu={cap}
-        apDung={t('Áp cho lượt MT tạo sau')} giaiThich={t('Kỳ vọng của một lượt = Target − mức trừ theo lần MT trong lộ trình. Lượt đã tạo giữ mức lúc tạo — sửa điểm sau vẫn theo mức đó. SOS = số kỹ năng dưới kỳ vọng.')} />
+        apDung={t('Áp cho lộ trình mở từ nay')} giaiThich={t('Kỳ vọng của một lượt = Target − mức trừ theo lần MT trong lộ trình. Lượt MT tạo một lần khi mở lộ trình, nên mức mới chỉ áp cho lộ trình mở từ lúc lưu; MT sắp tới của lộ trình đang chạy giữ mức cũ, sửa điểm sau cũng vậy. SOS = số kỹ năng dưới kỳ vọng.')} />
       <KhoiCauHinh duong="/admin/cau-hinh/nguong-thuong" tieuDe={t('Ngưỡng lớp thường')} truong={NGUONG} sauLuu={cap}
-        apDung={t('Áp cho Final nhập điểm sau')} giaiThich={t('Em đã có điểm Final giữ dải cũ; Final nhập điểm đầu từ ngày lưu theo ngưỡng mới. Xét lại và gợi ý sau Final dùng cùng bản.')}
+        apDung={t('Áp cho lớp mở từ nay')} giaiThich={t('Bài Final tạo một lần khi mở lớp, nên ngưỡng mới chỉ áp cho lớp mở từ lúc lưu; lớp đang học giữ ngưỡng cũ. Mini Test theo ngày làm. Xét lại và gợi ý sau Final dùng cùng bản.')}
         them={(v) => (
           <>
             <DongChiXem nhan={t('Cân nhắc')} gia={`${v.hocLai}–${v.len - 1} %`} />

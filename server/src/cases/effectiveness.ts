@@ -226,7 +226,7 @@ function queryPlans(sids: number[], scope: Scope) {
               ${SUPPORT_DAY} AS day,
               COALESCE(iv.started_date, iv.planned_date) AS started_on,
               sc.id AS case_id, sc.student_id, sc.category, sc.topic,
-              iv.preset, iv.nhom_bo_tro, iv.moc_quy_che, sc.owner_user_id, sc.sos_level, mt.ty_le AS mini_ty_le, mt.ngay_lam AS mini_ngay,
+              iv.preset, iv.nhom_bo_tro, iv.moc_quy_che, sc.owner_user_id, sc.sos_level, mt.ty_le AS mini_ty_le, mt.ngay_lam AS mini_ngay, mt.ghi_luc AS mini_luc,
               (SELECT fu.outcome FROM case_followups fu
                 WHERE fu.intervention_id = iv.id AND fu.outcome IS NOT NULL
                 ORDER BY fu.observed_on DESC, fu.id DESC LIMIT 1) AS final_outcome,
@@ -254,7 +254,7 @@ type PlanRow = ReturnType<typeof shapePlan>;
 function ketQuaCuoi(r: any): { outcome: string | null; on: string | null } {
   if (r.final_outcome) return { outcome: r.final_outcome, on: r.outcome_on ?? null };
   if (typeof r.nhom_bo_tro === 'string' && r.nhom_bo_tro.startsWith('mt:') && r.mini_ty_le !== null && r.mini_ty_le !== undefined) {
-    return { outcome: r.mini_ty_le >= nguongMiniTest(r.mini_ngay) ? 'improved' : 'unchanged', on: r.mini_ngay ?? null };
+    return { outcome: r.mini_ty_le >= nguongMiniTest(r.mini_luc ?? r.mini_ngay) ? 'improved' : 'unchanged', on: r.mini_ngay ?? null };
   }
   return { outcome: null, on: r.outcome_on ?? null };
 }
