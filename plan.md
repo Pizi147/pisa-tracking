@@ -268,6 +268,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 rà mockup Ý thức v2 #1316 (CHƯA duyệt):** "Tôi vẫn cần thêm thông tin ví dụ như một cái badge nhỏ thể hiện report này ở kĩ năng nào, bảng ở Hồ sơ Lớp có thể gọn hơn nhưng khi hover qua lỗi có thể hiện lên box thông tin cụ thể hơn? Và khi hiển thị panel ở công việc cũng cần phải đồng bộ và hợp lý nhé" · Báo PH: "Khi chọn gì đi chăng nữa, chỉ cần một ô 'nội dung' để nhập, đơn giản thế thôi" · Kênh báo PH: "Không cần phần đó" · Lịch sử Chờ QL duyệt / QL từ chối: "tôi chưa thấy ở đâu cả" → Y-THUC-V2 sửa mockup vòng 2.
 
+**Chủ SP 11/11 — GIAM-COMPUTE:** log Netlify 3 giờ: `/my-work` 88 s / 49 lần (TB 1,8 s, 44 câu) gấp 5 đường thứ hai — badge App.tsx + ~70 chỗ `invalidate('/my-work')` sau mỗi lần ghi. Chủ SP chọn "Đồng ý": số trên menu Công việc chỉ tải lại khi đổi trang hoặc ≥ 60 s; đang mở trang Công việc / Tổng quan vẫn tải lại ngay → PR-3 GIAM-COMPUTE. Đã merge #1317 (hồ sơ HV nạp Case theo lô, −21 % câu). #1318 log mỗi request `[t]`. Credits Free kỳ 21/10–20/11 còn 70 → trong kỳ chỉ deploy MỘT lần (gộp #1317 #1318 + PR-3).
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
