@@ -8,19 +8,19 @@
  *    lượt); Mini Test: ngày làm.
  * Bảng rỗng = bản gốc (đúng giá trị cũ) ⇒ ngày đầu không đổi hành vi. Máy chủ (`platform/cauHinh.ts`) và web (phiên) gọi `datNguonBand`.
  */
-import { banTaiMoc, type BanCauHinh } from './phienBan.ts';
+import { banTaiMoc, type BanPhienBan } from './phienBan.ts';
 
 export const KY_VONG_FT_GOC = { mt1: 1, mt2: 0.5, mt3: 0, rf: 0 } as const;
 export const NGUONG_THUONG_GOC = { hocLai: 50, len: 60, miniTest: 70 } as const;
 export type KyVongFt = { -readonly [K in keyof typeof KY_VONG_FT_GOC]: number };
 export type NguongThuong = { -readonly [K in keyof typeof NGUONG_THUONG_GOC]: number };
 
-const GOC_KV: BanCauHinh<KyVongFt> = { id: 0, tu: '', v: { ...KY_VONG_FT_GOC } };
-const GOC_NG: BanCauHinh<NguongThuong> = { id: 0, tu: '', v: { ...NGUONG_THUONG_GOC } };
-let nguonKv: () => readonly BanCauHinh<KyVongFt>[] = () => [GOC_KV];
-let nguonNg: () => readonly BanCauHinh<NguongThuong>[] = () => [GOC_NG];
+const GOC_KV: BanPhienBan<KyVongFt> = { id: 0, tu: '', v: { ...KY_VONG_FT_GOC } };
+const GOC_NG: BanPhienBan<NguongThuong> = { id: 0, tu: '', v: { ...NGUONG_THUONG_GOC } };
+let nguonKv: () => readonly BanPhienBan<KyVongFt>[] = () => [GOC_KV];
+let nguonNg: () => readonly BanPhienBan<NguongThuong>[] = () => [GOC_NG];
 /** Máy chủ / web đặt nguồn (cũ → mới); `null` = chỉ bản gốc (phép kiểm). */
-export function datNguonBand(kv: (() => readonly BanCauHinh<KyVongFt>[]) | null, ng: (() => readonly BanCauHinh<NguongThuong>[]) | null): void {
+export function datNguonBand(kv: (() => readonly BanPhienBan<KyVongFt>[]) | null, ng: (() => readonly BanPhienBan<NguongThuong>[]) | null): void {
   nguonKv = kv ?? (() => [GOC_KV]);
   nguonNg = ng ?? (() => [GOC_NG]);
 }
