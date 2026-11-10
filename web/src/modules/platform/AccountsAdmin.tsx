@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -20,6 +20,8 @@ import {
 import { HangNhom } from '../../ui/HangNhom.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { XoaTaiKhoanPanel } from './XoaTaiKhoanPanel.tsx';
+import { OKyNangTaiDong, OVaiTaiDong } from './SuaTaiDong.tsx';
+import { SuaVaiChiNhanh, capTuTaiKhoan, khoaVai, loiThieuChiNhanh, payloadVai, type CapVai } from './SuaVaiChiNhanh.tsx';
 import { CapQuyenRieng, khoaTapQuyen, quyenThieuPhamVi, type QuyenRieng } from './CapQuyenRieng.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -68,6 +70,7 @@ export function AccountsAdmin() {
   /* B14 (mockup audit-ui 08/11): < 640 px — chi nhánh, vai trò, kỹ năng, nhóm gom vào nút "Lọc ▾"; bảng thành thẻ. */
   const dienThoai = useDienThoai();
   const [moLoc, setMoLoc] = useState(false);
+  const { session } = useSession();
 
   if (accounts.loading) return <Card title={t('Tài khoản')}><Skeleton rows={5} /></Card>;
   /*
@@ -114,11 +117,13 @@ export function AccountsAdmin() {
   const xoaLoc = () => datParams(ghiBoLocTaiKhoan(BO_LOC_TAI_KHOAN_TRONG));
   const nhom = nhomTheo ? nhomTaiKhoan(rows, nhomTheo, new Map((branches.data ?? []).map((b) => [b.code, b.name])), (r) => dich(roleLabel(r)), loc3) : null;
   const hang = (u: Account, key: string | number) => (
-    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} onKhoiPhuc={() => void khoiPhuc(u)}
+    <HangTaiKhoan key={key} u={u} hienQuyenRieng={hienQuyenRieng} tai={taiDong} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} onKhoiPhuc={() => void khoiPhuc(u)}
       onDuyetLai={() => setDuyetLai(u)} />
   );
   const pending = accounts.data?.pending ?? [];
   const reload = () => { accounts.reload(); invalidate('/demo/accounts'); };
+  /* QTV2-TK: sửa vai / kỹ năng tại dòng — dữ liệu chung cho mọi hàng. */
+  const taiDong: TaiDong = { branches: branches.data ?? [], toiId: session?.user?.id ?? null, onDaLuu: reload };
   /* RKC-6: Khôi phục tài khoản xoá mềm — một bấm; máy chủ trả câu nhắc (email trùng, đặt lại mật khẩu, phân công lại). Lỡ tay thì Xoá lại. */
   const khoiPhuc = async (u: Account) => {
     try {
@@ -173,7 +178,7 @@ export function AccountsAdmin() {
   const soLocTam = [loc3.chiNhanh !== 'tat-ca', loc3.vai !== 'tat-ca', loc3.kyNang !== 'tat-ca', !!nhomTheo].filter(Boolean).length;
   const moDongNhom = (k: string) => setDongNhom((s0) => { const n = new Set(s0); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const theTk = (u: Account, key: string | number) => (
-    <TheTaiKhoan key={key} u={u} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} onKhoiPhuc={() => void khoiPhuc(u)}
+    <TheTaiKhoan key={key} u={u} tai={taiDong} onSua={() => setEditing(u)} onSuaTt={() => setSuaTt(u)} onXoa={() => setXoaId(u.id)} onKhoiPhuc={() => void khoiPhuc(u)}
       onDuyetLai={() => setDuyetLai(u)} />
   );
 
@@ -317,8 +322,21 @@ const NHAN_PHAN_LOAI: Record<(typeof PHAN_LOAI_TAI_KHOAN)[number], string> = {
 };
 
 /** Một hàng của bảng Tài khoản — tách ra để dùng chung cho bảng phẳng và bảng nhóm (PR-BC L3); markup giữ nguyên. */
-function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, onKhoiPhuc }: {
-  u: Account; hienQuyenRieng: boolean; onSua: () => void; onSuaTt: () => void; onXoa: () => void; onDuyetLai: () => void;
+type TaiDong = { branches: Branch[]; toiId: number | null; onDaLuu: () => void };
+
+/** QTV2-TK: tài khoản đang dùng, đã duyệt → ô vai / kỹ năng sửa tại dòng; còn lại chỉ hiện. */
+const suaDuocTaiDong = (u: Account) => u.status !== 'deleted' && u.approvalState === 'approved';
+function OVai({ u, tai, children }: { u: Account; tai: TaiDong; children: ReactNode }) {
+  if (!suaDuocTaiDong(u)) return <>{children}</>;
+  return <OVaiTaiDong u={u} branches={tai.branches} laMinh={u.id === tai.toiId} mat={children} onDaLuu={tai.onDaLuu} />;
+}
+function OKyNang({ u, tai, children }: { u: Account; tai: TaiDong; children: ReactNode }) {
+  if (!suaDuocTaiDong(u)) return <>{children}</>;
+  return <OKyNangTaiDong u={u} mat={children} onDaLuu={tai.onDaLuu} />;
+}
+
+function HangTaiKhoan({ u, hienQuyenRieng, tai, onSua, onSuaTt, onXoa, onDuyetLai, onKhoiPhuc }: {
+  u: Account; hienQuyenRieng: boolean; tai: TaiDong; onSua: () => void; onSuaTt: () => void; onXoa: () => void; onDuyetLai: () => void;
   /** RKC-6 (PTA 8): tài khoản đã xoá mềm → Khôi phục. */
   onKhoiPhuc?: () => void;
 }) {
@@ -334,12 +352,7 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, on
       <td className="td">
         <span className="flex flex-wrap gap-1">
           {khongDuyet && <Info pending title={u.declineReason ?? undefined}>{t('Không duyệt')}</Info>}
-          {u.roles.length === 0 && !khongDuyet && <span className="text-xs text-slate-500">{t('chưa có vai trò')}</span>}
-          {u.roles.map((g, i) => (
-            <Info key={i}>
-              {dich(roleLabel(g.role) || g.roleName)} · {g.branchName ?? t('Toàn hệ thống')}
-            </Info>
-          ))}
+          <OVai u={u} tai={tai}><ChipVai u={u} khongDuyet={khongDuyet} /></OVai>
         </span>
         {khongDuyet && u.declineReason && <span className="mt-0.5 block text-xs text-slate-400">{u.declineReason}</span>}
       </td>
@@ -356,7 +369,7 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, on
       <td className="td text-xs text-slate-400">
         {/* AUDIT-UI QT4: chip ngắn L · R · W1 … (tên đủ ở title) + "Chấm S" cùng hàng — hàng cao đều. */}
         <span className="flex flex-wrap items-center gap-1">
-          {u.skills.length ? u.skills.map((s) => <span key={s} title={skillLabel(s)}><ChipKy k={skillShort(s)} /></span>) : '—'}
+          <OKyNang u={u} tai={tai}>{u.skills.length ? <ChipKyNang skills={u.skills} /> : '—'}</OKyNang>
           {/* OV-14c: ai được tính là GV Speaking chấm chéo (kỹ năng S hoặc dạy S lớp FT, có vai GV) — vì sao một GV thấy / không thấy bài S. */}
           {u.chamSpeaking && <Info title={t('Kỹ năng Speaking hoặc dạy Speaking lớp FT — chấm S Mock mọi lớp FT chi nhánh của vai GV')}>{t('Chấm S')}</Info>}
         </span>
@@ -365,6 +378,13 @@ function HangTaiKhoan({ u, hienQuyenRieng, onSua, onSuaTt, onXoa, onDuyetLai, on
     </tr>
   );
 }
+
+/** Chip vai · chi nhánh — chung cho hàng bảng và thẻ 375. */
+function ChipVai({ u, khongDuyet }: { u: Account; khongDuyet: boolean }) {
+  if (u.roles.length === 0) return khongDuyet ? null : <span className="text-xs text-slate-500">{t('chưa có vai trò')}</span>;
+  return <>{u.roles.map((g, i) => <Info key={i}>{dich(roleLabel(g.role) || g.roleName)} · {g.branchName ?? t('Toàn hệ thống')}</Info>)}</>;
+}
+const ChipKyNang = ({ skills }: { skills: string[] }) => <>{skills.map((s) => <span key={s} title={skillLabel(s)}><ChipKy k={skillShort(s)} /></span>)}</>;
 
 type ThaoTacTk = { u: Account; onSua: () => void; onSuaTt: () => void; onXoa: () => void; onDuyetLai: () => void; onKhoiPhuc?: () => void };
 
@@ -397,8 +417,8 @@ function NutTaiKhoan({ u, onSua, onSuaTt, onXoa, onDuyetLai, onKhoiPhuc }: ThaoT
  * B14 (mockup audit-ui 08/11 khung 375): một tài khoản một thẻ — tên · mã · Sửa · ⋯ / email / vai · chi nhánh, kỹ năng, Chấm S, quyền cấp riêng.
  * Cùng dữ liệu, cùng thao tác với hàng bảng (`NutTaiKhoan`).
  */
-function TheTaiKhoan(p: ThaoTacTk) {
-  const { u } = p;
+function TheTaiKhoan(p: ThaoTacTk & { tai: TaiDong }) {
+  const { u, tai } = p;
   const khongDuyet = u.approvalState === 'declined';
   return (
     <div className="grid gap-1.5 border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
@@ -412,9 +432,8 @@ function TheTaiKhoan(p: ThaoTacTk) {
       <div className="truncate text-[13px] text-slate-400" title={u.email ?? undefined}>{u.email ?? <span className="text-rose-200">{t('chưa có email')}</span>}</div>
       <div className="flex flex-wrap items-center gap-1">
         {khongDuyet && <Info pending title={u.declineReason ?? undefined}>{t('Không duyệt')}</Info>}
-        {u.roles.length === 0 && !khongDuyet && <span className="text-xs text-slate-500">{t('chưa có vai trò')}</span>}
-        {u.roles.map((g, i) => <Info key={i}>{dich(roleLabel(g.role) || g.roleName)} · {g.branchName ?? t('Toàn hệ thống')}</Info>)}
-        {u.skills.map((s) => <span key={s} title={skillLabel(s)}><ChipKy k={skillShort(s)} /></span>)}
+        <OVai u={u} tai={tai}><ChipVai u={u} khongDuyet={khongDuyet} /></OVai>
+        <OKyNang u={u} tai={tai}>{u.skills.length ? <ChipKyNang skills={u.skills} /> : <span className="text-xs text-slate-500">{t('chưa có kỹ năng')}</span>}</OKyNang>
         {u.chamSpeaking && <Info title={t('Kỹ năng Speaking hoặc dạy Speaking lớp FT — chấm S Mock mọi lớp FT chi nhánh của vai GV')}>{t('Chấm S')}</Info>}
         {u.extra.map((x, i) => <Info key={`q${i}`}>{dich(x.name)}{x.branchCode ? ` · ${x.branchCode}` : ` · ${t('toàn hệ thống')}`}</Info>)}
       </div>
@@ -518,15 +537,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     fullName: account?.fullName ?? '', email: account?.email ?? '', password: '',
     phone: account?.phone ?? '', title: account?.title ?? '',
   });
-  const [grants, setGrants] = useState<{ role: string; branches: Set<string> }[]>(() => {
-    if (!account) return [{ role: 'teacher', branches: new Set<string>() }];
-    const m = new Map<string, Set<string>>();
-    for (const g of account.roles) {
-      if (!m.has(g.role)) m.set(g.role, new Set());
-      if (g.branchCode) m.get(g.role)!.add(g.branchCode);
-    }
-    return [...m.entries()].map(([role, b]) => ({ role, branches: b }));
-  });
+  const [grants, setGrants] = useState<CapVai[]>(() => (account ? capTuTaiKhoan(account.roles) : [{ role: 'teacher', branches: new Set<string>() }]));
   /*
    * PR-QU QU-7: quyền cấp riêng theo nhóm. Quyền cũ không còn cấp riêng được (ví dụ `admin.config`) thì không đưa vào form — máy chủ từ chối
    * lưu chúng; lưu lần tới sẽ gỡ, và form nói trước điều đó (`quyenBo`). `chonQuyen` giữ cả quyền đã tick mà chưa chọn phạm vi.
@@ -558,11 +569,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     finally { setBusy(false); }
   };
 
-  const payloadRoles = () => grants
-    .filter((g) => g.role)
-    .map((g) => ({ role: g.role, branches: [...g.branches] }));
+  const payloadRoles = () => payloadVai(grants);
   /* Chân panel: chưa đổi gì thì "Đóng", đã đổi thì "Huỷ thay đổi" — nói rõ bấm vào là bỏ những gì vừa sửa. */
-  const khoaVai = (ds: typeof grants) => ds.map((g) => `${g.role}:${[...g.branches].sort().join(',')}`).sort().join('|');
   const [vaiGoc] = useState(() => khoaVai(grants));
   const daDoi = editing
     ? khoaVai(grants) !== vaiGoc || quyenDoi || !!newPassword || kyNangDoi
@@ -579,8 +587,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
     ...(!editing && form.password.length < 6 ? [{ khoa: 'mat-khau', nhan: t('Mật khẩu ban đầu'), lyDo: t('Cần ít nhất {toiThieu} ký tự (đang có {n})', { toiThieu: 6, n: form.password.length }) }] : []),
     ...(!editing && payloadRoles().length === 0 ? [{ khoa: 'vai-tro', nhan: t('Vai trò'), lyDo: t('Cấp ít nhất một vai trò') }] : []),
     /* OV-11b (QT-1): vai (trừ Quản trị, CX) chưa chọn chi nhánh — máy chủ cũng chặn 400. */
-    ...grants.flatMap((g, i) => (g.role && g.role !== 'system_admin' && g.role !== 'cx' && g.role !== 'head_tutor' && g.branches.size === 0
-      ? [{ khoa: `vai-${i}`, nhan: t('Vai trò'), lyDo: t('Chọn chi nhánh cho vai {vai}', { vai: roleLabel(g.role) }) }] : [])),
+    ...loiThieuChiNhanh(grants).map(({ i, lyDo }) => ({ khoa: `vai-${i}`, nhan: t('Vai trò'), lyDo })),
     ...(editing && newPassword && newPassword.length < 6 ? [{ khoa: 'mat-khau-moi', nhan: t('Đặt lại mật khẩu'), lyDo: t('Cần ít nhất {toiThieu} ký tự (đang có {n})', { toiThieu: 6, n: newPassword.length }) }] : []),
     ...(editing && thieuPhamVi.length ? [{ khoa: 'quyen-rieng', nhan: t('Quyền cấp riêng'), lyDo: t('Chưa chọn phạm vi cho: {ds}', { ds: thieuPhamVi.map((k) => dich(PERMISSION_LABEL[k] ?? k)).join(', ') }) }] : []),
     ...(quyenDoi ? dsLoi([{ khoa: 'ly-do-quyen', nhan: t('Lý do đổi quyền'), toiThieu: 1 }], { 'ly-do-quyen': lyDoQuyen.trim() }) : []),
@@ -650,47 +657,8 @@ function AccountDialog({ account, branches, onClose, onDone }: {
           </div>
           <div className="space-y-2" {...lf.o(loi, 'vai-tro')}>
             {lf.loiCua(loi, 'vai-tro') && <p className="m-0 text-xs text-late">{lf.loiCua(loi, 'vai-tro')}</p>}
-            {grants.map((g, i) => {
-              const khoaQt = qtCuaMinh && g.role === 'system_admin';
-              const loiVai = lf.loiCua(loi, `vai-${i}`);
-              return (
-              <div key={i} className="surface-2 rounded-lg p-2.5">
-              <div className="flex flex-wrap items-center gap-2" {...lf.o(loi, `vai-${i}`)} tabIndex={-1}>
-                <select className="field w-44" aria-label={t('Vai trò')} value={g.role} disabled={khoaQt}
-                  onChange={(e) => setGrants(grants.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}>
-                  {ROLES.map((r) => <option key={r} value={r}>{dich(ROLE_LABEL[r as Role])}</option>)}
-                </select>
-                {/* TU-a: Head tutor như Quản trị — luôn toàn hệ thống. */}
-                {g.role === 'system_admin' || g.role === 'head_tutor' ? (
-                  <span className="text-xs text-slate-400">{t('Toàn hệ thống — không gắn chi nhánh')}</span>
-                ) : (<>
-                  {/* PR-OV2a: CX mặc định toàn hệ thống (không chọn chi nhánh nào); chọn chi nhánh thì theo chi nhánh như vai khác. */}
-                  {g.role === 'cx' && (
-                    <NutChon nho chon={g.branches.size === 0}
-                      onClick={() => setGrants(grants.map((x, j) => (j === i ? { ...x, branches: new Set<string>() } : x)))}>
-                      {t('Toàn hệ thống')}
-                    </NutChon>
-                  )}
-                  {branches.map((b) => (
-                    <NutChon key={b.code} nho chon={g.branches.has(b.code)}
-                      onClick={() => setGrants(grants.map((x, j) => {
-                        if (j !== i) return x;
-                        const next = new Set(x.branches);
-                        if (next.has(b.code)) next.delete(b.code); else next.add(b.code);
-                        return { ...x, branches: next };
-                      }))}>
-                      {b.code}
-                    </NutChon>
-                  ))}
-                </>)}
-                <button className="btn btn-sm btn-ghost ml-auto" type="button" disabled={khoaQt}
-                  onClick={() => setGrants(grants.filter((_, j) => j !== i))}>{t('Gỡ')}</button>
-              </div>
-              {khoaQt && <p className="m-0 mt-1.5 text-xs text-slate-400">{t('Không tự gỡ vai Quản trị của mình')}</p>}
-              {loiVai && <p className="m-0 mt-1.5 text-xs text-late">{loiVai}</p>}
-              </div>
-              );
-            })}
+            <SuaVaiChiNhanh value={grants} onChange={setGrants} branches={branches} qtCuaMinh={qtCuaMinh}
+              loiHang={(i) => lf.loiCua(loi, `vai-${i}`)} propsHang={(i) => lf.o(loi, `vai-${i}`)} />
           </div>
         </div>
 
