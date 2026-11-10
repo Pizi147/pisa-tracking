@@ -1,7 +1,7 @@
 /**
  * HẠN MẶC ĐỊNH (QTV2-HAN, chủ SP 11/11 "luật lệ hạn mặc định" — Quản trị sửa, Quản lý xem; spec `2026-11-11-quan-tri-v2-design.md` mục 5.4, 6).
  *
- * MỘT chỗ giữ 14 hạn đang viết cứng rải trong mã. Bản 1 = đúng giá trị cũ (`HAN_MAC_DINH_GOC`) ⇒ ngày đầu không đổi hành vi.
+ * MỘT chỗ giữ 13 hạn đang viết cứng rải trong mã. Bản 1 = đúng giá trị cũ (`HAN_MAC_DINH_GOC`) ⇒ ngày đầu không đổi hành vi.
  * ÁP CHO VIỆC SINH SAU: mỗi hàm hạn tra `hanTai(ma, moc)` — bản có hiệu lực TẠI MỐC CỦA CHÍNH VIỆC ĐÓ (ngày lưu, ngày phát hiện, tuần thi, ngày
  * ra lệnh…, cùng đồng hồ nghiệp vụ với `tu` của bản). Việc sinh trước lần sửa tra ra bản cũ ⇒ giữ hạn cũ; không thêm cột chụp.
  * Nguồn danh sách bản: máy chủ (`platform/cauHinh.ts`, nhớ theo tiến trình) và web (phiên đăng nhập) gọi `datNguonHan`. Chưa đặt → bản gốc.
@@ -20,7 +20,6 @@ export const HAN_MAC_DINH_GOC = {
   xu_ly_vi_pham: { ngay: 5 },
   /** Báo PH sau xử lý vi phạm (N2): `ngay` ngày lịch TÍNH CẢ ngày lưu (lưu T2 14/09 → hết T6 18/09). */
   bao_ph_vi_pham: { ngay: 5 },
-  meeting_cx: { ngay: 5 },
   /** Chốt lộ trình lớp thường (N20): thứ `thu` của tuần lệch `tuanLech` so với tuần Final (T5 tuần trước). */
   chot_lo_trinh: { tuanLech: -1, thu: 5 },
   /** Bàn giao chuyển lớp: `ngay` ngày tính cả ngày ra lệnh (OV-13l). */
@@ -36,12 +35,15 @@ export type MaHan = keyof typeof HAN_MAC_DINH_GOC;
 /** Tên việc của từng hạn (màn Hạn mặc định + nhật ký "trước → sau"). Trường phụ: `ngayGap` "(gấp)", `xemNgay` "(còn xem)". */
 export const TEN_HAN: Record<MaHan, string> = {
   cham_test: 'Chấm Mock / Test lớp thường', xac_nhan_case: 'Xác nhận Case · thêm PA', xac_minh_tin_hieu: 'Xác nhận nguyên nhân Case', ql_duyet_pa: 'QL trả lời Chờ duyệt',
-  ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm', meeting_cx: 'Meeting CX / GĐCN',
+  ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm',
   chot_lo_trinh: 'Chốt lộ trình lớp thường', ban_giao_chuyen_lop: 'Bàn giao chuyển lớp', ban_giao_doi_gv: 'Bàn giao đổi GV', buoc_tiep_sau_thi: 'Bước tiếp sau thi thật', xet_lai: 'Xét lại lộ trình',
 };
 const TEN_TRUONG_HAN: Record<string, string> = { ngay: '', ngayGap: ' (gấp)', xemNgay: ' (còn xem)', kyTuan: ' (tuần)', tuanLech: ' (tuần)', thu: ' (thứ)' };
 /** Nhãn một trường của một hạn cho nhật ký: "Meeting CX / GĐCN", "Xác nhận Case · thêm PA (gấp)". */
-export const nhanTruongHan = (ma: MaHan, truong: string) => `${TEN_HAN[ma]}${TEN_TRUONG_HAN[truong] ?? ` (${truong})`}`;
+/* Hạn đã chuyển nhà (chỉ còn trong nhật ký cũ): Meeting CX / GĐCN → Quản trị › Case & SOS (PTA 11/11, một hạn một chỗ sửa). */
+const TEN_HAN_CU: Record<string, string> = { meeting_cx: 'Meeting CX / GĐCN' };
+export const laMaHanNhatKy = (ma: string) => Object.hasOwn(TEN_HAN, ma) || Object.hasOwn(TEN_HAN_CU, ma);
+export const nhanTruongHan = (ma: MaHan | string, truong: string) => `${(TEN_HAN as Record<string, string>)[ma] ?? TEN_HAN_CU[ma] ?? ma}${TEN_TRUONG_HAN[truong] ?? ` (${truong})`}`;
 export type HanMacDinh = { -readonly [K in MaHan]: { -readonly [F in keyof (typeof HAN_MAC_DINH_GOC)[K]]: number } };
 export const MA_HAN = Object.keys(HAN_MAC_DINH_GOC) as MaHan[];
 /** Một phiên bản: `tu` = NGÀY có hiệu lực (giờ VN, đồng hồ nghiệp vụ); bản gốc `tu` = '' (trước mọi việc). */

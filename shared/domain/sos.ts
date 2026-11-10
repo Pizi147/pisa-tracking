@@ -120,13 +120,14 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
  * OV-12h (chủ SP 14/10): "CX / GĐCN meeting với HV" và "… với HV / PH" phải XÁC NHẬN trong 5 ngày kể từ lúc tạo việc — hạn = ngày tạo (giờ VN) + 5,
  * quá hạn khi hôm nay > hạn. Xác nhận cần Ghi chú ≥ 10 ký tự. Việc phối hợp khác giữ không hạn (P10).
  */
+export const HAN_MEETING_CX_NGAY = 5;
 export const GHI_CHU_MEETING_TOI_THIEU = 10;
 export const laMeetingCx = (kind: string): boolean => kind === 'cx_meeting_student' || kind === 'cx_meeting_family';
 /** HAN-BAO-PH (chủ SP 03/11, 17.2): `hanChon` (cột `han_chon`) thắng hạn mặc định — chỉ việc meeting CX (việc khác không hạn, P10). */
 export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined, hanChon?: string | null): string | null => {
   if (laMeetingCx(kind) && hanChon) return hanChon;
   const ngay = laMeetingCx(kind) ? ngayTheoGioVN(taoLuc) : null;
-  return ngay ? addDaysIso(ngay, hanTai('meeting_cx', ngay).ngay) : null;   // QTV2-HAN: bản tại ngày sinh việc
+  return ngay ? addDaysIso(ngay, HAN_MEETING_CX_NGAY) : null;
 };
 
 export const COORDINATION_STATUSES = ['pending', 'done', 'removed'] as const;

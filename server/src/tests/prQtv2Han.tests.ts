@@ -23,6 +23,7 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     assert(d.hanDuyetNgay() === 5 && d.hanBanGiao('2026-09-14').gvcn === d.hanTheoNgay('2026-09-14', 7), 'duyệt 5, bàn giao 7');
     assert(d.hanKyGhiKetQua('2026-09-17') === '2026-09-29', 'ghi KQ PA kỳ 1 hạn 29/09');
     assert(d.hanXetLai({ ma: 'a', tuanBatDau: '2026-09-14', moc: '2026-09-14' }) === '2026-09-27', 'xét lại CN tuần 2');
+    assert(!('meeting_cx' in d.HAN_MAC_DINH_GOC) && d.MA_HAN.length === 13, 'Meeting CX / GĐCN phải ở Case & SOS (một hạn một chỗ sửa)');
   }));
 
   check('QTV2-H-2 · lưu: chỉ Quản trị; sai → 400 nêu hạn; tuPhienBan cũ → 409; giống hệt → không thêm bản', () => thu(() => {
@@ -30,14 +31,14 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     assertThrows(() => ch.luuHanMacDinh(P.mbManager, { han: goc(), tuPhienBan: 0 }), /Quản trị/, 'QL sửa được');
     assert(ch.xemHanMacDinh(P.mbManager).suaDuoc === false && ch.xemHanMacDinh(P.admin).suaDuoc === true, 'cờ suaDuoc');
     assertThrows(() => ch.xemHanMacDinh(P.lrTeacher), /Quản trị/, 'GV xem được');
-    const sai = goc(); sai.meeting_cx.ngay = 0;
+    const sai = goc(); sai.xu_ly_vi_pham.ngay = 0;
     assertThrows(() => ch.luuHanMacDinh(P.admin, { han: sai, tuPhienBan: 0 }), /từ 1 đến 60/, 'hạn 0 ngày lưu được');
     const gap = goc(); gap.xac_nhan_case.ngayGap = 9;
     assertThrows(() => ch.luuHanMacDinh(P.admin, { han: gap, tuPhienBan: 0 }), /gấp/, 'gấp dài hơn thường lưu được');
     assert(ch.luuHanMacDinh(P.admin, { han: goc(), tuPhienBan: 0 }).id === 0, 'giống hệt vẫn thêm bản');
-    const moi = goc(); moi.meeting_cx.ngay = 7;
+    const moi = goc(); moi.xu_ly_vi_pham.ngay = 7;
     const r = ch.luuHanMacDinh(P.admin, { han: moi, tuPhienBan: 0 });
-    assert(r.id > 0 && r.doi.length === 1 && r.doi[0].ma === 'meeting_cx', JSON.stringify(r.doi));
+    assert(r.id > 0 && r.doi.length === 1 && r.doi[0].ma === 'xu_ly_vi_pham', JSON.stringify(r.doi));
     assertThrows(() => ch.luuHanMacDinh(P.admin, { han: goc(), tuPhienBan: 0 }), /Vừa có người sửa/, '409 không chặn');
     const nk = conn.prepare(`SELECT action FROM audit_logs WHERE entity_type = 'cau_hinh.han_mac_dinh' ORDER BY id DESC LIMIT 1`).get() as any;
     assert(nk?.action === 'cau_hinh.han_mac_dinh.sua', 'thiếu nhật ký');

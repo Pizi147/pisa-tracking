@@ -7,7 +7,7 @@
  */
 import { db } from '../db.ts';
 import { can, type Principal } from '../permissions.ts';
-import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, laMaHanNhatKy, nhanTruongHan } from '../../../shared/domain/index.ts';
 import { badRequest, forbidden } from '../util.ts';
 import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
 
@@ -22,6 +22,12 @@ const CHI_QUAN_TRI: ReadonlySet<MucNhatKy> = new Set(['tai-khoan', 'quyen', 'mo-
 const TRANG = 50;
 
 /** Tên trường hay gặp trong before / after — còn lại giữ khoá gốc. */
+/** Tên trường cho người đọc; khoá thô `ma_han.truong` (dòng hạn mặc định cũ) → "Tên việc (trường)". */
+const tenTruong = (k: string): string => {
+  if (TEN_TRUONG[k]) return TEN_TRUONG[k];
+  const [ma, truong] = k.split('.');
+  return truong && laMaHanNhatKy(ma) ? nhanTruongHan(ma, truong) : k;
+};
 const TEN_TRUONG: Record<string, string> = {
   name: 'Tên', fullName: 'Họ tên', email: 'Email', phone: 'Số điện thoại', title: 'Chức danh', diaChi: 'Địa chỉ', soDienThoai: 'Số điện thoại',
   status: 'Trạng thái', weeks: 'Số tuần', nguongDat: 'Đạt từ', lapMoiTuan: 'Checkpoint mỗi', lichMt: 'Lịch MT', roles: 'Vai trò', skills: 'Kỹ năng',
@@ -59,8 +65,10 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
   const dong: DongNhatKy[] = rows.slice(0, TRANG).map((r) => {
     const truoc = docJson(r.before_json); const sau = docJson(r.after_json);
     const truong = [...new Set([...Object.keys(truoc), ...Object.keys(sau)])].filter((k) => !k.startsWith('_') && chu(truoc[k]) !== chu(sau[k]))
-      .map((k) => ({ ten: TEN_TRUONG[k] ?? k, cu: chu(truoc[k]), moi: chu(sau[k]) }));
-    return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong: r.entity_label ?? null, truong };
+      .map((k) => ({ ten: tenTruong(k), cu: chu(truoc[k]), moi: chu(sau[k]) }));
+    /* Hạn mặc định: tên việc đã nằm trong "Sửa hạn mặc định" — bỏ "· Hạn mặc định" lặp. */
+    const doiTuong = r.entity_type === 'cau_hinh.han_mac_dinh' ? null : r.entity_label ?? null;
+    return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong, truong };
   });
   /* Ô lọc "Người": ai đã từng đổi trong các mục này — chỉ trang đầu (web dùng danh sách của trang đầu). */
   const nguoi = q.tiep || gioiHan ? [] : db().prepare(
