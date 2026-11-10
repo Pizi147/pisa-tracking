@@ -62,5 +62,6 @@ export default function OverviewPage() {
       : vai === 'cx' ? <TongQuanCxV5 d={d} onChiNhanh={setBranchId} />
         : d.lop ? <TongQuanQlV5 d={d} />
           : <TongQuanQtV5 d={d} onChiNhanh={setBranchId} />;
-  return trang(vai === 'cx' ? `${phamVi} · ${t('chỉ xem')}` : phamVi, than, <>{congTac}{chiNhanh}</>, d?.ky);
+  /* [XM 4] chủ SP 11/11: CX giữ quyền sửa (+ Thêm học viên, + Lớp, Sửa thông tin) → đầu trang không ghi "chỉ xem". */
+  return trang(phamVi, than, <>{congTac}{chiNhanh}</>, d?.ky);
 }
