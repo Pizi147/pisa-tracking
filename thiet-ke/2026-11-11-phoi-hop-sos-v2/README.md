@@ -9,7 +9,7 @@ Thao tác TRƯỚC → SAU: [`khop-khac.md`](khop-khac.md). Thế giới hình �
 |---|---|
 | Chủ SP 11/11 (qua PTA, mới nhất) | Mọi việc Phối hợp SOS là của **GVCN**; **QL** thấy và bấm thẳng như GVCN (không nút / chữ "làm thay"). |
 | như trên | **Meeting CX/GĐCN (sau Mock)** (HV và HV / PH): GVCN xác nhận → **sinh việc cho TVV của em**: báo gia đình, sắp xếp buổi họp, báo lại kết quả — **như Báo PH Ý thức**. |
-| Báo PH Ý thức (sẵn có, áp theo "như phần ý thức") | Hạn TVV **4 ngày** (`hanBaoPh`) · em không có TVV → **QL** giữ việc (`nguoiGiuBaoPh`) · form Kết quả (Đã báo PH / Chưa liên hệ được) · Ngày · Nội dung · "Chưa liên hệ được" giữ việc mở, đếm lần. |
+| Báo PH Ý thức (áp theo "như phần ý thức") + **PTA chốt 11/11** | **Nội dung bắt buộc** khi GVCN xác nhận · hạn TVV **5 ngày** từ ngày GVCN xác nhận (N34; lưu ý mã `HAN_BAO_PH_NGAY` hiện = 4 — PR code đọc lại N34 rồi dùng chung một hằng) · em **chưa có TVV → GVCN** báo ("Chưa có TVV — GVCN báo") · form Kết quả (Đã báo PH / Chưa liên hệ được) · Ngày · Nội dung · "Chưa liên hệ được" giữ việc mở, đếm lần. |
 | Giữ (không đổi) | Bảng việc theo mốc SOS (`DEFAULT_SOS_COORDINATION`) · hạn Meeting CX bước GVCN (`hanPhoiHop`, tạo + 5) · Sửa hạn (N34) · Bỏ việc / Khôi phục / Đưa lại · + Thêm việc · Tệp · Báo PH qua TVV lớp thường (GVCN). |
 | CAU-HINH-CASE-SOS | "ai làm / hạn / bắt ghi KQ / bước TVV" sẽ đọc từ cấu hình mốc SOS — code KHÔNG viết cứng; mặc định ngày đầu = bảng trên (đã báo session đó). |
 
@@ -44,7 +44,7 @@ Thao tác TRƯỚC → SAU: [`khop-khac.md`](khop-khac.md). Thế giới hình �
 | 9 | Việc Phối hợp SOS sang tab "Ý thức & Phối hợp" | K1 tab | đạt |
 | 10 | Hoàn tác 10 s | K2a (Kiều Thảo Nhi), K5 | đạt |
 | 11 | 1440 + 375, tối, đủ trạng thái: chưa làm · đã xác nhận chưa kết quả · có kết quả · quá hạn · nhiều em · rỗng | chưa làm K1/K5 · "Chưa ghi kết quả" K5 (Ngô Bảo Châu) · có KQ K1/K5/K6 · quá hạn K2/K5 · nhiều em K1/K5 · rỗng K8 · chờ TVV K2/K5 · chưa liên hệ được K3 | đạt |
-| 12 | Không chú thích tĩnh (bo-chu-thich) | chỉ giữ hậu quả cần thiết: "Lưu xong: việc cho TVV…, hạn 4 ngày" (K2b) | đạt |
+| 12 | Không chú thích tĩnh (bo-chu-thich) | chỉ giữ hậu quả cần thiết: "Lưu xong: việc cho TVV…, hạn 5 ngày" (K2b) | đạt |
 | 13 | QL làm thẳng, không "làm thay" | ⓘ: QL thấy cùng màn K1/K5 (cùng nút) | đạt (không vẽ riêng — giống hệt GVCN) |
 
 ## 3. Turso — đọc bao nhiêu khi mở trang
@@ -61,8 +61,8 @@ Thao tác TRƯỚC → SAU: [`khop-khac.md`](khop-khac.md). Thế giới hình �
 
 ## 4. [XM] — cần PTA / chủ SP chốt
 
-1. **Nội dung bắt buộc** cho việc GVCN (Trao đổi ngắn, gia đình, GVCN meeting, Khác)? Mockup: bắt buộc (là "báo cáo kết quả"); Meeting CX bước GVCN: tuỳ chọn (kết quả do TVV ghi, ≥ 10 ký tự chuyển sang bước TVV). Việc đã xác nhận trước PR không có Nội dung → "Chưa ghi kết quả · Ghi", không chặn, không tính là chưa xong.
-2. **Hạn TVV 4 ngày** từ ngày GVCN xác nhận, em không có TVV → QL — theo Báo PH Ý thức. Đúng ý "như phần ý thức"?
+1. ĐÃ CHỐT (PTA 11/11): Nội dung bắt buộc khi GVCN xác nhận. Còn hỏi: Meeting CX bước GVCN — mockup để "Nội dung gửi TVV" **tuỳ chọn** (kết quả do TVV ghi ≥ 10 ký tự); muốn bắt buộc cả bước này thì báo. Việc xác nhận trước PR không có Nội dung → "Chưa ghi kết quả · Ghi", không chặn.
+2. ĐÃ CHỐT (PTA 11/11): hạn TVV 5 ngày · em chưa có TVV → GVCN báo.
 3. **Một dòng mỗi (lớp × loại việc)** ở Công việc → số "n việc" trên menu tăng (CP FT 131: 1 → 4). Mockup chọn vậy để thấy đúng việc cần làm; muốn giữ một dòng / lớp thì báo.
 4. Tab Ý thức & Phối hợp gộp mục "Xử lý vi phạm / Xem vi phạm / Ghi đã thực hiện / Xác nhận cấp bậc" thành **một mục "Vi phạm"** (tên dòng nói loại việc) — tránh tên mục = tên dòng.
 5. Hoàn tác 10 s của Meeting CX = gỡ cả việc TVV vừa sinh; sau 10 s "Đưa lại Cần xử lý" (⋯) khi TVV **chưa** ghi → huỷ việc TVV; TVV đã ghi → giữ kết quả TVV, chỉ mở lại bước GVCN.
