@@ -14,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
-import {
+import { CHU_TOI_THIEU_CASE,
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
@@ -223,11 +223,11 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     { khoa: 'ket-qua', nhan: t('Tiến triển (2 tuần)'), chon: true },
     /* Chủ SP 14/10 tối: PA Tutor có buổi — nhận xét nằm ở từng buổi, không ô Nhận xét chung (máy chủ nhận nhận xét buổi ghép làm ghi chú). */
     /* N35: nhận xét kết quả ≤ 200 khi chữ ĐÃ ĐỔI (sửa lần ghi cũ dài vẫn sửa được ô khác); PA Tutor ghép theo buổi — không áp. */
-    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: 8, toiDa: progress.trim() !== (sua?.giaTri.note ?? '').trim() ? TRAN_CHU.ketQuaPa : undefined }]),
+    ...(nhanXetTheoBuoi ? [] : [{ khoa: 'tien-trien', nhan: t('Nhận xét'), toiThieu: CHU_TOI_THIEU_CASE, toiDa: progress.trim() !== (sua?.giaTri.note ?? '').trim() ? TRAN_CHU.ketQuaPa : undefined }]),
     ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: t('Quyết định'), chon: true }]),
     ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: t('Lý do chưa đủ dữ liệu'), toiThieu: 1 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? t('Lý do điều chỉnh') : t('Lý do thay'), toiThieu: 1 }] : []),
-    ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: t('Cần Quản lý giúp gì'), toiThieu: 8 }] : []),
+    ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: t('Cần Quản lý giúp gì'), toiThieu: CHU_TOI_THIEU_CASE }] : []),
   ];
   const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'ly-do': reason });
   if (decision === 'replace') loi.push(...loiFormPa(paThay, { tienTo: 'moi-' }));   // khoá riêng: không đụng ô Số buổi tuần này
@@ -247,7 +247,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       }
     }
   }
-  if (nhanXetTheoBuoi && !loi.some((l) => l.khoa.startsWith('buoi-')) && ghepBuoi.replace(/^Buổi \d+: /, '').length < 8) {
+  if (nhanXetTheoBuoi && !loi.some((l) => l.khoa.startsWith('buoi-')) && ghepBuoi.replace(/^Buổi \d+: /, '').length < CHU_TOI_THIEU_CASE) {
     loi.push({ khoa: 'buoi-0-nx', nhan: t('Nhận xét buổi {n}', { n: 1 }), lyDo: t('Ghi rõ hơn — ít nhất 8 ký tự') });
   }
   if (deXuat) loi.push(...doi.loi);
@@ -425,7 +425,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
           </div>
           {!nhanXetTheoBuoi && (
-            <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: 8, toiDa: TRAN_CHU.ketQuaPa }}>
+            <Truong nhan={t('Nhận xét')} batBuoc loi={loiCua('tien-trien')} dem={{ co: progress.trim().length, can: CHU_TOI_THIEU_CASE, toiDa: TRAN_CHU.ketQuaPa }}>
               <textarea className="field w-full" {...o('tien-trien')} rows={2} value={progress} readOnly={busy} onChange={(e) => setProgress(e.target.value)}
                 placeholder={dich(GOI_Y_KET_QUA_PA)} />
             </Truong>

@@ -553,10 +553,10 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /đã được xác nhận rồi/, 'Xác nhận PA hai lần');
   });
 
-  check('PR-T · S04 "Chỉnh" → PR-SOS: Xác nhận PA kèm mô tả mới — mô tả đổi, bản máy gán giữ trong lịch sử; mô tả < 15 ký tự → 400', () => {
+  check('PR-T · S04 "Chỉnh" → PR-SOS: Xác nhận PA kèm mô tả mới — mô tả đổi, bản máy gán giữ trong lịch sử; mô tả < 8 ký tự → 400 (#4 ngưỡng chung)', () => {
     const f = freshSos('S04b');
     xacNhanCaseW2(w2T, f);
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: 'Tự học' })), /ít nhất 15/, 'Mô tả quá ngắn');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: 'Tự' })), /ít nhất 8/, 'Mô tả quá ngắn');
     sosAuto.xacNhanPaQuyChe(w2T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));
     const iv = get('SELECT * FROM case_interventions WHERE id = ?', f.w2Plan.id);
     assert(iv.description === MO_TA_PA && iv.confirmed_by === w2T.userId, `Sau xác nhận: ${JSON.stringify(iv)}`);

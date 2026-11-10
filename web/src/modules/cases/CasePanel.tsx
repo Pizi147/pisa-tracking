@@ -17,7 +17,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
-  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, NEXT_STEP_LABEL, NHAN_XET_MT_TOI_THIEU, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
+  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, CHU_TOI_THIEU_CASE, NEXT_STEP_LABEL, NHAN_XET_MT_TOI_THIEU, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
   chuAiLamDuoc, chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, giaTriCuaPa, issuesForTopic, laKhac, laPaMacDinh, loiFormPa, nhanNguoiDay, nutDongPa, outcomeLabelFor,
   tenMon, thanSuaPa, toiKyGhi, tuanLich,
   type GiaTriPa, type TrangThai,
@@ -535,7 +535,7 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
   const [daXn, setDaXn] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
-  const toiThieu = laMt ? NHAN_XET_MT_TOI_THIEU : 15;
+  const toiThieu = laMt ? NHAN_XET_MT_TOI_THIEU : CHU_TOI_THIEU_CASE;   // #4 ngưỡng chung (trước 15)
   const luu = async (x: string) => {
     if (s) { await api.post(`/cases/${data.id}/xac-nhan-s`, { cach: 'viet', moTa: x }); setDaXn(t('Đã xác nhận Case')); onXong(); return; }
     const body = laMt ? { luc: data.capNhatLuc, observation: x, ...(!chinh ? { nhom: nhomNhap } : {}) } : { luc: data.capNhatLuc, summary: x };
@@ -818,7 +818,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         {nut.sua && <NutLuat label={t('Đổi loại PA')}>{iv.preset ? t('Loại không sửa được. PA quy chế: Đề xuất PA khác.') : t('Loại không sửa được. Đổi loại: Ghi kết quả › Điều chỉnh › Thay PA.')}</NutLuat>}</dd>
       <dt>{t('Nội dung')}</dt>
       <dd>{tt('noiDung')
-        ? <OGoTuLuu dau={iv.description ?? ''} toiThieu={8} toiDa={TRAN_CHU.noiDungPa} nhan={t('Nội dung PA')} luu={(x) => luuTruong({ description: x })} onDong={() => setSua(null)} />
+        ? <OGoTuLuu dau={iv.description ?? ''} toiThieu={CHU_TOI_THIEU_CASE} toiDa={TRAN_CHU.noiDungPa} nhan={t('Nội dung PA')} luu={(x) => luuTruong({ description: x })} onDong={() => setSua(null)} />
         : iv.description
           ? <GiaTriSua kieu="chu" nhan={t('Sửa nội dung PA')} sua={nut.sua} onClick={() => setSua('noiDung')}><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></GiaTriSua>
           : <GiaTriSua kieu="chu" nhan={t('Sửa nội dung PA')} sua={nut.sua} onClick={() => setSua('noiDung')}><span className="text-faint">{t('Chưa có')}</span></GiaTriSua>}</dd>

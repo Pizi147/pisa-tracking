@@ -366,7 +366,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     const iv = plansOf(c.id)[0];
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /chưa có mô tả/, 'chưa nguyên nhân (OV-12c: bài chưa nhận xét)');
     nhanXet(P.admin, c.id, { ...XN, primaryCode: d.issuesForTopic('reading', null)[0].code });
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'ngắn' })), /ít nhất 15/, 'mô tả ngắn');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'ngắn' })), /ít nhất 8/, 'mô tả ngắn');   // #4 ngưỡng chung
     assertThrows(() => sosAuto.xacNhanPaQuyChe(P.w1Teacher, iv.id, duXacNhan(conn, iv.id, { description: MO_TA })), /phân công/, 'GV W1');
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: MO_TA, performerUserId: P.coreTeacher.userId }));
     const sau = get('SELECT * FROM case_interventions WHERE id = ?', iv.id);
