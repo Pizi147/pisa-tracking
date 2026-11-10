@@ -267,7 +267,7 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
       const xl = xuLyCon(x);
       if (xl !== 'con') throw badRequest(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — việc Báo PH chỉ xem.`);
       /* PHOI-HOP-V2: kết quả buổi Meeting CX/GĐCN — luật ≥ 10 ký tự (OV-12h) chuyển từ bước GVCN sang bước TVV. */
-      if (x.phoi_hop_id != null && ghiChu.trim().length < GHI_CHU_MEETING_TOI_THIEU) throw badRequest(`Meeting CX/GĐCN: Nội dung ít nhất ${GHI_CHU_MEETING_TOI_THIEU} ký tự.`);
+      if (x.phoi_hop_id != null && ketQua === 'da_bao' && ghiChu.trim().length < GHI_CHU_MEETING_TOI_THIEU) throw badRequest(`Meeting CX/GĐCN: Nội dung ít nhất ${GHI_CHU_MEETING_TOI_THIEU} ký tự.`);
       db().prepare('INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_chu, ghi_boi, ghi_luc, khoa) VALUES (?,?,?,?,?,?,?)')
         .run(id, ketQua, ngay, ghiChu, p.userId, nowIso(), khoa ? `${khoa}:${id}` : null);
       const sau = ketQua === 'da_bao' ? 'xong' : 'mo';
@@ -405,7 +405,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
             (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${HAN_BAO_PH_NGAY} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai,
             CASE WHEN v.phoi_hop_id IS NOT NULL AND s.consultant_user_id IS NULL THEN (SELECT ta.user_id FROM teacher_assignments ta
-              WHERE ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) END AS gvcn_id
+              WHERE ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?1 AND (ta.effective_to IS NULL OR ta.effective_to >= ?1)
+              ORDER BY ta.id LIMIT 1) END AS gvcn_id
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id AND ${HV_DANG_HOC_SQL('s')}
        LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
        LEFT JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
@@ -414,11 +415,11 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   const rows = !ql && !tvv ? [] : db().prepare(
     `${COT}${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : !ql ? ' AND s.consultant_user_id = ?'
         : pv.all ? '' : ` AND (s.consultant_user_id = ? OR ${CHI_NHANH_EM} IN (${DS_JSON}))`} ORDER BY v.han, v.id`,
-  ).all(...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify(pv.branchIds)])) as any[];
+  ).all(o.today, ...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify(pv.branchIds)])) as any[];   // ?1 = hôm nay (GVCN hiệu lực)
   if (lopCn.length) {
     const co = new Set(rows.map((r) => r.id));
     for (const r of db().prepare(`${COT} AND v.phoi_hop_id IS NOT NULL AND s.consultant_user_id IS NULL AND e.class_id IN (${DS_JSON}) ORDER BY v.han, v.id`)
-      .all(JSON.stringify(lopCn)) as any[]) if (!co.has(r.id)) rows.push(r);
+      .all(o.today, JSON.stringify(lopCn)) as any[]) if (!co.has(r.id)) rows.push(r);
   }
   const items: WorkItem[] = [];
   for (const r of rows) {

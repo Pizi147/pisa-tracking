@@ -336,27 +336,28 @@ export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number
 
 /**
  * PHOI-HOP-V2 (chủ SP 11/11: "TVV… báo với gia đình, sắp xếp buổi họp và báo lại kết quả, như phần ý thức") — TRONG tx, sau mọi lần đổi trạng thái một
- * hành động Meeting CX: đã xác nhận → có việc TVV (sinh mới, hạn = hôm nay + 4 như Báo PH; việc hệ thống đóng khi "Đưa lại" thì mở lại); không còn xác nhận
- * (Hoàn tác / Đưa lại / Bỏ) → việc TVV chưa ghi lần nào thì gỡ hẳn, đã ghi thì giữ kết quả, còn mở thì "Đã bỏ" lý do hệ thống. Chạy lặp không đổi gì.
+ * hành động Meeting CX: chuyển sang Xong → có việc TVV (sinh mới, hạn = hôm nay + 4 như Báo PH; việc hệ thống đóng khi "Đưa lại" thì mở lại); không còn xác nhận
+ * (Hoàn tác / Đưa lại / Bỏ) → việc TVV còn mở thành "Đã bỏ" lý do hệ thống (không xoá dòng), đã xong giữ kết quả. Chạy lặp không đổi gì.
  */
-function dongBoViecTvv(id: number): void {
+function dongBoViecTvv(id: number, truoc: string): void {
   const r = loadAction(id);
   if (!laMeetingCx(r.kind)) return;
   const v = db().prepare('SELECT id, trang_thai, bo_ly_do FROM viec_bao_ph WHERE phoi_hop_id = ?').get(id) as { id: number; trang_thai: string; bo_ly_do: string | null } | undefined;
   if (r.status === 'done') {
+    /* Rà PTA (4): "Sửa" việc đã xong (ngày, chữ) không sinh lại việc TVV / chuông — chỉ lần chuyển sang Xong. */
+    if (truoc === 'done') return;
     if (!v) {
       db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
         .run(id, r.student_id, COORDINATION_KIND_LABEL[r.kind as CoordinationKind], hanBaoPh(demoToday()), nowIso());
     } else if (v.trang_thai === 'bo' && v.bo_ly_do === LY_DO_MEETING_MO_LAI) {
-      db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ? WHERE id = ?`).run(hanBaoPh(demoToday()), v.id);
+      /* (10) mở lại = hạn mới từ hôm nay, bỏ hạn người dùng chọn của lần trước. */
+      db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`)
+        .run(hanBaoPh(demoToday()), v.id);
     }
     return;
   }
-  if (!v) return;
-  if (!db().prepare('SELECT 1 FROM viec_bao_ph_lan WHERE viec_id = ?').get(v.id)) {
-    db().prepare(`DELETE FROM viec_han_lan WHERE loai = 'bao_ph' AND viec_id = ?`).run(v.id);
-    db().prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(v.id);
-  } else if (v.trang_thai === 'mo') {
+  /* Rà PTA (5): không xoá dòng (id có thể bị dùng lại; chuông / bản ghi đảo còn trỏ id) — việc còn mở → "Đã bỏ" lý do hệ thống; việc đã xong / người dùng đã bỏ giữ nguyên. */
+  if (v?.trang_thai === 'mo') {
     db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_luc = ? WHERE id = ?`).run(LY_DO_MEETING_MO_LAI, nowIso(), v.id);
   }
 }
@@ -683,7 +684,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
       before: r.status === 'done' ? { status: r.status, performedOn: r.performed_on, note: r.note, performerName: r.performer_name } : { status: r.status },
       after: { status: 'done', performedOn: input.performedOn, note: note || null, performerName: who || null, ...(r.kind === 'bao_ph_tvv' ? { noiDungLuu: !!chup } : {}) },
     });
-    dongBoViecTvv(id);
+    dongBoViecTvv(id, r.status);
   });
   return viewOf(id, p);
 }
@@ -720,7 +721,7 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
       actorUserId: p.userId, action: 'sos_coordination.remove', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'removed', reason: code, text: text || null },
     });
-    dongBoViecTvv(id);
+    dongBoViecTvv(id, r.status);
   });
   return viewOf(id, p);
 }
@@ -752,7 +753,7 @@ export function moLaiCoordination(p: Principal, id: number): CoordinationAction 
       before: { status: r.status, performedOn: r.performed_on, performerName: r.performer_name, removeReason: r.remove_reason_code, removeText: r.remove_reason_text },
       after: { status: 'pending', ...(g ? { hoanTac: true } : {}) },
     });
-    dongBoViecTvv(id);   // Hoàn tác / Đưa lại / Khôi phục — việc TVV theo trạng thái mới
+    dongBoViecTvv(id, r.status);   // Hoàn tác / Đưa lại / Khôi phục — việc TVV theo trạng thái mới
   });
   return viewOf(id, p);
 }

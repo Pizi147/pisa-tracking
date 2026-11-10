@@ -185,6 +185,12 @@ export const DEFAULT_SOS_COORDINATION: Record<1 | 2 | 3 | 4, Record<SosLevelKey,
 };
 
 /** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. RF (T4): hàng MT4 cho mọi MT. */
+/**
+ * PHOI-HOP-V2 (rà PTA 1–2): toast Hoàn tác sau "Lưu" ở ô ② chỉ khi lần lưu đó chuyển việc Cần xử lý → Xong (Hoàn tác = Đưa lại Cần xử lý).
+ * "Sửa" việc đã xong và lần TVV ghi kết quả không có Hoàn tác kiểu này — đưa lại sẽ xoá ngày / người làm hoặc trả Meeting về Cần xử lý.
+ */
+export const hoanTacXacNhanDuoc = (truoc: string, laGhiTvv: boolean): boolean => !laGhiTvv && truoc === 'pending';
+
 export function sosCoordinationFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null): readonly CoordinationKind[] {
   if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(t('Số MT không hợp lệ: {attemptNo}', { attemptNo }));
   if (sosLevel !== 1 && sosLevel !== 2 && sosLevel !== 3) return [];

@@ -93,7 +93,9 @@ export function muonTuViec(p: Principal, items: readonly WorkItem[], homNay: str
   const bp = items.filter((x) => (x.group === 'bao_ph_yt' || x.group === 'phoi_hop_tvv') && x.mine).sort((a, b) => String(a.due).localeCompare(String(b.due)));
   if (bp.length) {
     const dau = bp[0];
-    const chu = bp.length === 1 ? dau.tieuDe : `Báo PH vi phạm · ${bp.length} em`;
+    /* PHOI-HOP-V2: chỉ việc sau Meeting CX → nhãn riêng (không gọi là "vi phạm"); lẫn hai loại → "Báo PH". */
+    const chiMeeting = bp.every((x) => x.group === 'phoi_hop_tvv'), coMeeting = bp.some((x) => x.group === 'phoi_hop_tvv');
+    const chu = bp.length === 1 ? dau.tieuDe : `${chiMeeting ? 'Báo PH · Meeting CX/GĐCN' : coMeeting ? 'Báo PH' : 'Báo PH vi phạm'} · ${bp.length} em`;
     muon.set('tudong:bao-ph', {
       kind: 'bao_ph_xu_ly', title: bp.some((x) => x.urgency === 'overdue') ? `Quá hạn · ${chu}` : chu, body: '',
       entityType: 'viec_bao_ph', entityId: dau.viecId ?? null,

@@ -57,7 +57,12 @@ export function thongBaoCua(userId: number) {
                            SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
                             WHERE ur.user_id = n.user_id AND r.key = 'manager' AND ur.status = 'active'
                               AND (ur.branch_id IS NULL OR ur.branch_id = COALESCE((SELECT c2.branch_id FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
-                                     WHERE e2.student_id = sv.id AND e2.status = 'active' ORDER BY e2.id DESC LIMIT 1), sv.branch_id)))))
+                                     WHERE e2.student_id = sv.id AND e2.status = 'active' ORDER BY e2.id DESC LIMIT 1), sv.branch_id))))
+                           /* PHOI-HOP-V2: việc sau Meeting CX của em chưa có TVV — GVCN đang chủ nhiệm lớp em giữ. */
+                           OR (sv.consultant_user_id IS NULL AND vb.phoi_hop_id IS NOT NULL AND EXISTS (
+                             SELECT 1 FROM enrollments e3 JOIN teacher_assignments ta3 ON ta3.class_id = e3.class_id AND ta3.is_core = 1 AND ta3.status = 'active'
+                                     AND ta3.effective_from <= '${demoToday()}' AND (ta3.effective_to IS NULL OR ta3.effective_to >= '${demoToday()}')
+                              WHERE e3.student_id = sv.id AND e3.status = 'active' AND ta3.user_id = n.user_id)))
                     ) THEN 1 ELSE 0 END
                     /* SL1 (C23): Case tạo tay giao người phụ trách — còn việc tới khi Case có PA (hoặc đã đóng). */
                     /* RA-LUONG-19: chỉ người ĐANG phụ trách còn việc — đổi người phụ trách thì chuông của người cũ thành "Để biết" (giữ lịch sử). */
