@@ -460,6 +460,9 @@ const EN_D_WEB = {
   'lộ trình {nhan}': 'route {nhan}',
   'Bậc tự điền theo thang — không chọn.': 'Level follows the ladder — not chosen.',
   'Khai cấp bậc': 'Declare level',
+  /* [XM 5] (rà 11/11): Xác nhận xử lý tự đóng + Hoàn tác. */
+  'Đã xác nhận {nhan} cho {ten}.': 'Confirmed {nhan} for {ten}.',
+  'Đã hoàn tác — vi phạm về như trước.': 'Undone — the incidents are back as before.',
   'Loại cần QL duyệt': 'Type needing approval',
   'Ví dụ: Gặp phụ huynh tại trung tâm': 'E.g. Meet parents at the centre',
   'Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {nhan}.': 'Approving an off-ladder proposal keeps the level — next is still {nhan}.',

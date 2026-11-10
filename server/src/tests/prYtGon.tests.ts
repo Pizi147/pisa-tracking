@@ -54,4 +54,33 @@ export async function runPrYtGonTests(t: YThucTestKit) {
     xu.xacNhanXuLy(gvcn, sid, { violationIds: [v], performedOn: TODAY, performerName: 'Cô Hà', note: 'Đã gặp em và gửi Report 1' });
     assert(xu.yThucHocVien(gvcn, sid).coTheKhai === false, 'đã có lần xử lý');
   }));
+
+  const bp: any = await import('../yThuc/baoPhTvv.ts');
+  const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const xuLy = (sid: number, ids: number[]) => xu.xacNhanXuLy(gvcn, sid, { violationIds: ids, performedOn: TODAY, performerName: 'Cô Hà', note: 'Gặp em sau giờ học, ký Report 1' });
+  const ma = (fn: () => unknown): number | null => { try { fn(); return null; } catch (e: any) { return e?.status ?? -1; } };
+
+  await checkAsync('GON-4 · [XM 5] Hoàn tác ngay sau Xác nhận xử lý: lần xử lý + việc Báo PH xoá hẳn, vi phạm về Mới, bậc về 0, nhật ký measure_undo', () => thu(() => {
+    const sid = moiEm(); const v = vp(sid);
+    const m = xuLy(sid, [v]);
+    assert(hang('SELECT 1 FROM viec_bao_ph WHERE measure_id = ?', m.id).length === 1, 'có việc Báo PH');
+    xu.hoanTacXuLy(gvcn, m.id);
+    const hs = xu.yThucHocVien(gvcn, sid);
+    assert(hang('SELECT 1 FROM discipline_measures WHERE id = ?', m.id).length === 0 && hang('SELECT 1 FROM viec_bao_ph WHERE measure_id = ?', m.id).length === 0, 'xoá hẳn');
+    assert(hs.bac === 0 && hs.viPham.find((x: any) => x.id === v)?.trangThai === 'moi', JSON.stringify({ bac: hs.bac, vp: hs.viPham.map((x: any) => x.trangThai) }));
+    assert(hang("SELECT 1 FROM audit_logs WHERE action = 'discipline.measure_undo' AND entity_id = ?", m.id).length === 1, 'nhật ký');
+  }));
+
+  await checkAsync('GON-5 · [XM 5] Hoàn tác bị chặn: người khác · đã có lần sau · đã ghi Báo PH · quá 60 s → 400 (dùng Thu hồi)', () => thu(() => {
+    const sid = moiEm(); const [a, b] = [vp(sid), vp(sid)];
+    const m1 = xuLy(sid, [a]);
+    assert(ma(() => xu.hoanTacXuLy(ql, m1.id)) === 400, 'QL không phải người vừa lưu');
+    const m2 = xuLy(sid, [b]);
+    assert(ma(() => xu.hoanTacXuLy(gvcn, m1.id)) === 400, 'đã có lần sau');
+    bp.ghiKetQuaBaoPh(ql, { viecIds: [hang('SELECT id FROM viec_bao_ph WHERE measure_id = ?', m2.id)[0].id], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em' });
+    assert(ma(() => xu.hoanTacXuLy(gvcn, m2.id)) === 400, 'đã ghi Báo PH');
+    const sid2 = moiEm(); const m3 = xuLy(sid2, [vp(sid2)]);
+    conn.prepare('UPDATE discipline_measures SET created_at = ? WHERE id = ?').run(new Date(Date.now() - 61_000).toISOString(), m3.id);
+    assert(ma(() => xu.hoanTacXuLy(gvcn, m3.id)) === 400, 'quá 60 s');
+  }));
 }

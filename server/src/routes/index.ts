@@ -1481,6 +1481,11 @@ api.post('/y-thuc/xu-ly/:id/gui', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.guiDeXuat(principalOf(req), pInt(req, 'id'));
 }));
+/** [XM 5]: Hoàn tác Xác nhận xử lý (toast 10 s) — người vừa lưu, TVV chưa ghi; quá hạn thì Thu hồi. */
+api.post('/y-thuc/xu-ly/:id/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.hoanTacXuLy(principalOf(req), pInt(req, 'id'));
+}));
 api.delete('/y-thuc/xu-ly/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return xuLySvc.xoaNhap(principalOf(req), pInt(req, 'id'));
