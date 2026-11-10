@@ -304,6 +304,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **#1366 SOS-TAM-PA (PTA chốt Q1–Q8 theo khuyến nghị, chủ SP cho tự rà / merge):** LUẬT MỚI — SOS tạm: GV sửa mô tả Case (trực tiếp / nhận xét MT) + đặt / sửa PA, không hạn tới khi chốt; Case tạm cho mọi kỹ năng dưới kỳ vọng có điểm; chốt cần PA quy chế: cùng loại → PA GV mang dấu quy chế, không việc · khác → việc "Chọn PA" (Theo quy chế / Giữ PA của tôi) → Giữ = thẻ QL "PA khác quy chế" hạn 3 ngày, quá hạn tự duyệt, Không duyệt → PA quy chế chạy ngay; mất SOS khi tạm: có PA giữ Case + mốc, chỉ mô tả / tệp → đóng, còn lại xoá; K3-16 cùng luật. Bản chép 07/11: +119 Case tạm (177 → 296) · 3 Case đổi (PA GV mang dấu quy chế, PA quy chế chờ huỷ; khôi phục `khoiPhucSosTamPa`) · 1 Case → "Chọn PA". Deploy: migrate mới.
 
+**Chủ SP 12/11 (rà mockup cấu hình #1370):** "Thứ nhất, chưa làm tab 'tutor'. Thứ 2, không làm hẳn 1 tab cho quản trị, vẫn ở vị trí cũ" → bỏ Tutor (hoãn); không dựng tab / khung điều hướng Quản trị mới, giữ vị trí cũ (CAU-HINH-CASE-SOS + QUAN-TRI-V2).
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
