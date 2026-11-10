@@ -1,6 +1,6 @@
 # GIAM-DOC-BC — giảm dòng đọc sau deploy 07/11 (log bản chính)
 
-Đo trên **bản chép bản chính 07/11 đã migrate** (`D:\pisa-mig\mig.sqlite`, chép ra tạm, chỉ đọc), mọi tài khoản đã duyệt (85),
+Đo trên **bản chép bản chính 07/11 đã migrate** (`D:\Github\pisa-mig\mig.sqlite`, chép ra tạm, chỉ đọc), mọi tài khoản đã duyệt (85),
 gọi HTTP thật (`createApp`, phiên từng người, `BAN_CHINH=1`), đếm câu · dòng trả như log `[cham]` (`soCauSql` / `soDongSql`). JSON so từng byte (chuẩn hoá giờ).
 
 ## a — `CON_O_SQL` bỏ lượt MT lịch sử chấm band

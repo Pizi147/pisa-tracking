@@ -3,7 +3,7 @@
 Chủ SP 06/11 khuya: "Rà lại một lần nữa và giảm dòng đọc turso + tăng tốc độ website + cắt gọn code ở tất cả mọi nơi". Phần máy chủ (`server/src`).
 Cách đo như `ra-doc-0611.md`: `tocDo.run` (`PISA_IN_JSON` + `PISA_IN_DO` + `PISA_DO_IT`) rồi `scripts/do-it.py` trên DB ×3.
 Thêm: **quét thật** = dòng của bảng > 50 dòng bị `SCAN` không qua chỉ mục (bỏ `SCAN ids` / `json_each` / hằng — `do-it.py` đếm cả các bước đó vào "quét cả bảng").
-Cỡ bảng bản chính lấy từ bản chép 29/10 (`D:\pisa-mig\mig.sqlite`, chỉ đếm).
+Cỡ bảng bản chính lấy từ bản chép 29/10 (`D:\Github\pisa-mig\mig.sqlite`, chỉ đếm).
 
 ## Đường chưa đo (đối chiếu `DUONG_DO` với mọi `api.get` + chỗ web gọi)
 

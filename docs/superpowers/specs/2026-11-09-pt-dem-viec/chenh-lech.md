@@ -1,6 +1,6 @@
 # Bảng chênh lệch: cách đếm cũ ↔ sổ nghĩa vụ (PR-1, cập nhật 10/11/2026)
 
-Bản chép `D:\pisa-mig\mig.sqlite` (bản chính 07/11 09:24) → `npm run migrate` → `npm run nap-so` → `npm run so-sanh-so`. Hôm nay = 10/11 (đồng hồ máy; dữ liệu tới 07/11).
+Bản chép `D:\Github\pisa-mig\mig.sqlite` (bản chính 07/11 09:24) → `npm run migrate` → `npm run nap-so` → `npm run so-sanh-so`. Hôm nay = 10/11 (đồng hồ máy; dữ liệu tới 07/11).
 Không tên thật (GV #mã). Giao diện CHƯA đổi — đây là số sổ sẽ hiện ở PR-2 nếu chủ SP duyệt.
 
 ## Đọc nhanh cho chủ SP

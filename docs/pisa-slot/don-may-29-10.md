@@ -27,7 +27,7 @@ Không thấy vite / sqld mồ côi.
 jovial-clarke-de2947 (847, PR #669) · loc-hien-tai-95bb81 (698, #665) · panel-6c-d34757 (706, #661). Xoá được nếu PTA Plan xác nhận launch.json đó vô giá trị (tôi sẽ KHÔNG xoá nếu không có chữ "xác nhận").
 
 ## GIỮ
-- Thư mục chính + node_modules (159 MB), `.git` (1 GB), `pisa-slot`, `D:\pisa-mig` (kiem.sqlite, mig.sqlite — 19 MB, cần deploy), `H:\My Drive\PISA TRACKING\back-up` (còn nguyên, không đụng).
+- Thư mục chính + node_modules (159 MB), `.git` (1 GB), `pisa-slot`, `D:\Github\pisa-mig` (kiem.sqlite, mig.sqlite — 19 MB, cần deploy), `H:\My Drive\PISA TRACKING\back-up` (còn nguyên, không đụng).
 - Worktree session đang chạy: hsl-lt-5f54ac (gon-ma) · hv-lop-gon-0bacf9 (ra-luong) · ra-ui-6da7f6 (ra-ui) · pta-dot1 (PTA) · ke-hoach-test-23b141 (PR #673 mở) · mockup-m6-e3379b (PR #672 mở) · hoan-tac-xn-06228d (PR #674 mở).
 - `.claude/projects` 2,4 GB, plugins, bộ nhớ; Claude-Data 10,5 GB (vm_bundles 8,3 GB của ứng dụng); `Temp/claude/*` thư mục tạm của session hiện có.
 - ms-playwright (chỉ 1 bản 1248 — đang dùng), Programs, GitHubDesktop.

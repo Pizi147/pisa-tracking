@@ -1,7 +1,7 @@
 # GIAM-DOC-0711 — giảm dòng đọc Turso (đêm 07/11)
 
 Cách đo như `ra-doc-0611.md` / `giam-doc-0611.md`: `tocDo.run` (`PISA_IN_JSON` + `PISA_IN_DO` + `PISA_DO_IT`) rồi `scripts/do-it.py` trên DB ×3.
-Thêm: chạy lại đúng câu đã ghi trên **bản chép bản chính 29/10** (`D:\pisa-mig\mig.sqlite`, chép ra tạm, chỉ đọc) để lấy tỷ lệ bớt theo phân bố thật.
+Thêm: chạy lại đúng câu đã ghi trên **bản chép bản chính 29/10** (`D:\Github\pisa-mig\mig.sqlite`, chép ra tạm, chỉ đọc) để lấy tỷ lệ bớt theo phân bố thật.
 
 ## Mốc 07/11 (main 5e347763b, ×1 câu · dòng trả)
 
