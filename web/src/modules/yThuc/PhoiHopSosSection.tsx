@@ -396,7 +396,7 @@ function RemoveCoordinationForm({ actionId, onClose, onChanged }: {
   );
 }
 
-function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
+export function AddCoordinationForm({ attemptId, existing, onClose, onChanged }: {
   attemptId: number; existing: string[]; onClose: () => void; onChanged?: () => void;
 }) {
   const toast = useToast();
