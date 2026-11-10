@@ -6,7 +6,8 @@
  * Chỉ thêm bảng + dòng + trigger, chạy lặp được. Cùng định nghĩa trong `schema.sql` (seed không chạy migrate).
  */
 /* GIAM-DOC-1011 (B' 12b): + `teacher_assignments` và tên / xoá `users` — `phanCongDangHoatDong` (Công việc) nhớ theo tiến trình như bảng lớp. */
-export const BANG_THAM_CHIEU = ['classes', 'programmes', 'programme_skills', 'programme_checkpoints', 'demo_config', 'teacher_assignments'] as const;
+/* CAU-HINH-CASE-SOS (11/11): + `cau_hinh_phien_ban` — cấu hình nhóm nguyên nhân / PA / mốc SOS nhớ theo tiến trình (`platform/cauHinhCaseSos.ts`). */
+export const BANG_THAM_CHIEU = ['classes', 'programmes', 'programme_skills', 'programme_checkpoints', 'demo_config', 'teacher_assignments', 'cau_hinh_phien_ban'] as const;
 const VIEC = [['ins', 'INSERT'], ['upd', 'UPDATE'], ['del', 'DELETE']] as const;
 
 export const TRIGGER_THAM_CHIEU = BANG_THAM_CHIEU.flatMap((b) => VIEC.map(([ma, viec]) => ({

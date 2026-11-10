@@ -45,8 +45,11 @@ export type MocSos = { viec: Viec[]; ft: Record<HangFt, Record<MucSos, OMoc>>; t
 export type DuLieuCauHinh = { nguyen_nhan: NguyenNhan; phuong_an: PhuongAn; moc_sos: MocSos };
 export type BanCauHinh<L extends LoaiCauHinh = LoaiCauHinh> = { id: number; du_lieu: DuLieuCauHinh[L] };
 
-/** Id ba bản gốc (migrate chèn theo thứ tự này vào bảng mới; `case_issues.taxonomy_version = 1` có sẵn trỏ bản gốc nguyên nhân). */
-export const ID_GOC: Record<LoaiCauHinh, number> = { nguyen_nhan: 1, phuong_an: 2, moc_sos: 3 };
+/**
+ * Quy ước phiên bản: bảng rỗng = BẢN GỐC (id 0). Dòng mới luôn có id ≥ 2 (máy chủ đặt `MAX(MAX(id), 1) + 1`), nên con trỏ cũ
+ * `case_issues.taxonomy_version = 1` (mặc định từ trước khi có cấu hình), NULL, 0 hay id không còn → đều là bản gốc.
+ */
+export const PB_GOC = 0;
 
 const NHANH_FT: readonly NhanhNN[] = ['listening', 'reading', 'writing', 'speaking'];
 const NHANH_THUONG: readonly NhanhNN[] = ['listening', 'reading', 'writing', 'speaking', 'gv', 'phat_am', 'tong_hop'];
@@ -98,17 +101,15 @@ export type NguonCauHinh = {
   hienTai: <L extends LoaiCauHinh>(l: L) => BanCauHinh<L>;
   theoPb: <L extends LoaiCauHinh>(l: L, id: number) => BanCauHinh<L> | null;
 };
-const nguonGoc: NguonCauHinh = {
-  hienTai: (l) => ({ id: ID_GOC[l], du_lieu: cauHinhGoc()[l] }),
-  theoPb: (l, id) => (id === ID_GOC[l] ? { id, du_lieu: cauHinhGoc()[l] } : null),
-};
+const banGoc = <L extends LoaiCauHinh>(l: L): BanCauHinh<L> => ({ id: PB_GOC, du_lieu: cauHinhGoc()[l] });
+const nguonGoc: NguonCauHinh = { hienTai: banGoc, theoPb: () => null };
 let nguon: NguonCauHinh = nguonGoc;
 /** Máy chủ (DB) / web (phiên) cấp nguồn; `null` → về bản gốc (phép kiểm). */
 export function datNguonCauHinh(n: NguonCauHinh | null): void { nguon = n ?? nguonGoc; }
 export const cauHinh = <L extends LoaiCauHinh>(l: L): BanCauHinh<L> => nguon.hienTai(l);
-/** Bản `pb` (Case / PA / việc chụp lúc sinh); null / không thấy → bản đang dùng. */
+/** Bản `pb` mà Case / PA / việc chụp lúc sinh: `undefined` → bản đang dùng; NULL / 0 / 1 cũ / không thấy → bản gốc. */
 export const cauHinhPb = <L extends LoaiCauHinh>(l: L, pb: number | null | undefined): BanCauHinh<L> =>
-  (pb != null ? nguon.theoPb(l, pb) : null) ?? nguon.hienTai(l);
+  pb === undefined ? nguon.hienTai(l) : (pb ? nguon.theoPb(l, pb) : null) ?? banGoc(l);
 
 /** Tên hiện: giao diện tiếng Anh dùng `tenEn` nếu có, không thì từ điển (mục gốc) / chính tên. */
 export const tenHien = (m: { ten: string; tenEn?: string }): string => (NGON_NGU === 'en' && m.tenEn ? m.tenEn : dich(m.ten));
@@ -142,8 +143,12 @@ function kiemTen(ds: readonly { ma: unknown; ten: unknown; tenEn?: unknown }[], 
   });
 }
 
-/** Lỗi theo ô (rỗng = hợp lệ). `goc` = bản đang dùng: mã cố định / mã cũ không được biến mất (chỉ ẩn). */
-export function kiemCauHinh<L extends LoaiCauHinh>(l: L, d: unknown, cu: DuLieuCauHinh[L] = cauHinhGoc()[l]): LoiCauHinh[] {
+/**
+ * Lỗi theo ô (rỗng = hợp lệ). Mục của BẢN GỐC (mã có hành vi trong mã) không được biến mất — chỉ ẩn. Mục Quản trị thêm: bỏ được khi CHƯA có gì dùng —
+ * máy chủ kiểm bằng DB (`luuCauHinh`), ở đây không biết.
+ */
+export function kiemCauHinh<L extends LoaiCauHinh>(l: L, d: unknown): LoiCauHinh[] {
+  const cu = cauHinhGoc()[l];
   const loi: LoiCauHinh[] = [];
   if (!d || typeof d !== 'object') return [{ duong: '', loi: 'Dữ liệu cấu hình không hợp lệ.' }];
   if (l === 'nguyen_nhan') {

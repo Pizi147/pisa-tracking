@@ -6,8 +6,25 @@
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runCauHinhCaseSosTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, assert, conn, P } = t;
   const dm: any = await import('../../../shared/domain/index.ts');
+  const svc: any = await import('../platform/cauHinhCaseSos.ts');
+  const mig: any = await import('../migrate/prCauHinhCaseSos.ts');
+  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const thu = <T>(fn: () => T): T => {
+    conn.exec('BEGIN IMMEDIATE');
+    try { return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); svc.quenNhoCauHinh(); }
+  };
+  const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
+  const one = (sql: string, ...a: unknown[]) => all(sql, ...a)[0];
+  const loi = (fn: () => unknown): any => { try { fn(); } catch (e) { return e; } return null; };
+  const sao = (x: unknown) => JSON.parse(JSON.stringify(x));
+  /** Bản nguyên nhân đang dùng + một nhóm mới "Nghe từ khoá" ở Listening FT (trước "Khác"). */
+  const themNghe = () => {
+    const d = sao(dm.cauHinh('nguyen_nhan').du_lieu);
+    d.ft.listening.splice(d.ft.listening.length - 1, 0, { ma: '', ten: 'Nghe từ khoá' });
+    return d;
+  };
   console.log('\nCAU-HINH-CASE-SOS · cấu hình Case & SOS (bản gốc = hằng số cũ, phiên bản, chỉ áp cho cái sinh sau)');
 
   check('CHCS-GOC · bản gốc ra đúng hằng số cũ: nhóm nguyên nhân mọi kỹ năng × chương trình, 18 ô FT × (PA, việc) + RF, kiểm hợp lệ', () => {
@@ -68,4 +85,68 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     const d7 = dm.thayDoi('nguyen_nhan', dm.cauHinhGoc().nguyen_nhan, g7);
     assert(d7.length === 1 && d7[0].viec === 'them' && /Nghe từ khoá/.test(d7[0].muc), `thayDoi: ${JSON.stringify(d7)}`);
   });
+
+  check('CHCS-MIG · migrate: tạo bảng + 3 trigger, chạy lặp không làm gì; ghi bảng tăng mốc tham chiếu; dòng loại khác không đổi bản nguyên nhân', () => thu(() => {
+    const coCot = (b: string, c: string) => all(`PRAGMA table_info(${b})`).some((x: any) => x.name === c);
+    assert(coCot('case_interventions', 'pb_loai') && coCot('sos_coordination_actions', 'pb_moc'), 'schema.sql có 2 cột');
+    conn.exec('DROP TABLE cau_hinh_phien_ban');
+    const a: string[] = [];
+    mig.migratePrCauHinhCaseSos(conn, a);
+    assert(a.length === 1 && /cau_hinh_phien_ban/.test(a[0]) && all(`SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'tg_tc_cau_hinh_phien_ban_%'`).length === 3,
+      `tạo bảng + trigger: ${JSON.stringify(a)}`);
+    assert(!all('SELECT 1 FROM cau_hinh_phien_ban').length, 'không chèn dòng: bảng rỗng = bản gốc');
+    const b: string[] = [];
+    mig.migratePrCauHinhCaseSos(conn, b);
+    assert(!b.length, 'chạy lặp không làm gì');
+    const so = () => one(`SELECT so FROM moc_he_thong WHERE khoa = 'tham-chieu'`)?.so;
+    const truoc = so();
+    conn.prepare(`INSERT INTO cau_hinh_phien_ban (id, loai, du_lieu, tao_luc) VALUES (5, 'han_mac_dinh', '{}', 'x')`).run();
+    assert(so() === truoc + 1, 'ghi bảng cấu hình tăng mốc tham chiếu');
+    assert(dm.cauHinh('nguyen_nhan').id === 0, 'dòng loại khác không đổi bản nguyên nhân (vẫn bản gốc)');
+  }));
+
+  check('CHCS-QUYEN · Quản trị sửa; Quản lý xem, lưu 403; GV xem 403; lưu bị chặn không ghi dòng', () => thu(() => {
+    const x = svc.xemCauHinh(P.admin);
+    assert(x.suaDuoc && x.nguyen_nhan.id === 0 && x.moc_sos.du_lieu.ft.mt3['3'].viec.includes('cx_meeting_family') && Array.isArray(x.nhatKy), 'QT xem bản gốc');
+    assert(svc.xemCauHinh(P.mbManager).suaDuoc === false, 'QL xem, không sửa');
+    assert(loi(() => svc.xemCauHinh(P.lrTeacher))?.status === 403, 'GV xem → 403');
+    assert(loi(() => svc.luuCauHinh(P.mbManager, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: 0 }))?.status === 403, 'QL lưu → 403');
+    assert(loi(() => svc.luuCauHinh(P.admin, 'khac', { duLieu: {}, tuPhienBan: 0 }))?.status === 400, 'loại lạ → 400');
+    assert(!all('SELECT 1 FROM cau_hinh_phien_ban').length, 'lưu bị chặn không ghi');
+  }));
+
+  check('CHCS-LUU · thêm nhóm: cấp mã m1, chỉ bên FT, id ≥ 2, nhật ký + audit; giống hệt không thêm bản; 409; Hoàn tác về bản gốc; mã không dùng lại', () => thu(() => {
+    const r = svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: 0 });
+    const id = r.nguyen_nhan.id;
+    assert(r.truoc === 0 && id >= 2, `phiên bản mới ${id}`);
+    assert(dm.issuesForTopic('listening', 'FT').some((i: any) => i.code === 'student.listening.m1' && i.label === 'Nghe từ khoá'), 'FT có nhóm mới, mã cấp tự động');
+    assert(!dm.issuesForTopic('listening', 'BE').some((i: any) => i.code === 'student.listening.m1'), 'lớp thường không có');
+    assert(r.nhatKy[0].id === id && r.nhatKy[0].thayDoi[0].viec === 'them' && r.nhatKy[0].nguoi, `nhật ký: ${JSON.stringify(r.nhatKy[0])}`);
+    assert(one(`SELECT action FROM audit_logs WHERE entity_type = 'cau_hinh_phien_ban' AND entity_id = ?`, id)?.action === 'cau_hinh_case_sos.sua', 'audit');
+    const lai = svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: r.nguyen_nhan.du_lieu, tuPhienBan: id });
+    assert(lai.nguyen_nhan.id === id && all('SELECT 1 FROM cau_hinh_phien_ban').length === 1, 'giống hệt → không thêm bản');
+    assert(loi(() => svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: 0 }))?.status === 409, 'sửa từ bản cũ → 409');
+    assert(loi(() => svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe() }))?.status === 400, 'thiếu tuPhienBan → 400');
+    const ht = svc.luuCauHinh(P.admin, 'nguyen_nhan', { khoiPhucTu: 0, tuPhienBan: id });
+    assert(ht.truoc === id && ht.nguyen_nhan.id > id && !dm.issuesForTopic('listening', 'FT').some((i: any) => i.code === 'student.listening.m1'), 'Hoàn tác: mục chưa dùng biến mất');
+    assert(ht.nhatKy[0].khoiPhucTu === 0, 'nhật ký ghi khôi phục');
+    const r2 = svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: ht.nguyen_nhan.id });
+    assert(dm.issuesForTopic('listening', 'FT').some((i: any) => i.code === 'student.listening.m2'), `mã không dùng lại (m2): ${r2.nguyen_nhan.du_lieu.ft.listening.map((m: any) => m.ma)}`);
+  }));
+
+  check('CHCS-XOA · bỏ mục đã có Case dùng: lưu thẳng 400; Hoàn tác giữ lại ở dạng ẩn; mục gốc không bỏ được', () => thu(() => {
+    const r = svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: 0 });
+    const ca = one('SELECT id FROM sos_cases ORDER BY id LIMIT 1')?.id;
+    conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, taxonomy_version, skill, created_at) VALUES (?, 'secondary', 'student.listening.m1', ?, 'listening', 'x')`).run(ca, r.nguyen_nhan.id);
+    const bo = sao(r.nguyen_nhan.du_lieu); bo.ft.listening = bo.ft.listening.filter((m: any) => m.ma !== 'student.listening.m1');
+    const e = loi(() => svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: bo, tuPhienBan: r.nguyen_nhan.id }));
+    assert(e?.status === 400 && /chỉ ẩn được/.test(e.message), `xoá mục đang dùng: ${e?.status} ${e?.message}`);
+    const ht = svc.luuCauHinh(P.admin, 'nguyen_nhan', { khoiPhucTu: 0, tuPhienBan: r.nguyen_nhan.id });
+    const m = ht.nguyen_nhan.du_lieu.ft.listening.find((x: any) => x.ma === 'student.listening.m1');
+    assert(m?.an === true && dm.issueLabel('student.listening.m1') === 'Nghe từ khoá', 'Hoàn tác giữ nhóm đang dùng ở dạng ẩn, nhãn còn');
+    assert(!dm.issuesForTopic('listening', 'FT').some((i: any) => i.code === 'student.listening.m1')
+      && dm.issuesForTopic('listening', 'FT', { giu: ['student.listening.m1'] }).some((i: any) => i.code === 'student.listening.m1' && i.an), 'ẩn: không ở ô chọn, còn khi giữ');
+    const goc = sao(dm.cauHinhGoc().phuong_an); goc.muc = goc.muc.filter((x: any) => x.ma !== 'teaching_adjust');
+    assert(loi(() => svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: goc, tuPhienBan: 0 }))?.status === 400, 'mục gốc không bỏ được');
+  }));
 }

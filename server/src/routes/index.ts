@@ -110,6 +110,7 @@ import * as accountSvc from '../platform/accounts.ts';
 import * as gioiHan from '../platform/gioiHanThu.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as bangQuyDoiSvc from '../platform/bangQuyDoi.ts';
+import * as cauHinhCaseSosSvc from '../platform/cauHinhCaseSos.ts';
 import * as moSuaLichTestSvc from '../platform/moSuaLichTest.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
@@ -3198,3 +3199,6 @@ api.get('/admin/mo-sua-lich-test', requireAuth, wrap((req) => moSuaLichTestSvc.x
 api.put('/admin/mo-sua-lich-test', requireAuth, wrap((req) => moSuaLichTestSvc.datMoSua(principalOf(req), req.body?.bat)));
 api.get('/admin/bang-quy-doi', requireAuth, wrap((req) => bangQuyDoiSvc.xemBangQuyDoi(principalOf(req))));
 api.put('/admin/bang-quy-doi', requireAuth, wrap((req) => bangQuyDoiSvc.luuBangQuyDoi(principalOf(req), req.body ?? {})));
+/* CAU-HINH-CASE-SOS: nhóm nguyên nhân / PA / mốc SOS — QT sửa, QL xem; mỗi lần lưu một phiên bản (`tuPhienBan` chặn ghi đè). */
+api.get('/admin/cau-hinh-case-sos', requireAuth, wrap((req) => cauHinhCaseSosSvc.xemCauHinh(principalOf(req))));
+api.put('/admin/cau-hinh-case-sos/:loai', requireAuth, wrap((req) => cauHinhCaseSosSvc.luuCauHinh(principalOf(req), req.params.loai, req.body ?? {})));
