@@ -357,7 +357,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const act = luot.actions.find((x: any) => x.kind === 'bao_ph_tvv');
     assert(act && act.kindLabel === 'Báo phụ huynh qua TVV' && act.noiDung?.length === 4, JSON.stringify(act && act.noiDung));
     assert(act.noiDung[0].includes('2/4 môn đạt') && act.noiDung[1].includes('G+V, P') && act.noiDung[2].includes('Em mất điểm ở phần này') && act.noiDung[3].includes('học lại'), act.noiDung.join(' | '));
-    assert(maLoi(() => phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY })) === 403, 'GVBM không phải GVCN đánh dấu → 403');
+    assert(maLoi(() => phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY, note: 'Đã làm' })) === 403, 'GVBM không phải GVCN đánh dấu → 403');
     phoiHop.confirmCoordination(ha, act.id, { performedOn: TODAY, note: 'Đã gửi task cho TVV trên Base.' });
     assert(get('SELECT status FROM sos_coordination_actions WHERE id = ?', act.id).status === 'done', 'xong');
     assert(!dongViec(ha, 'baoph:', em.id).length, 'đã làm → hết việc');

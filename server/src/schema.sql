@@ -2272,9 +2272,11 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   bo_ly_do TEXT, bo_ly_do_chu TEXT, bo_boi INTEGER REFERENCES users(id), bo_luc TEXT,
   tao_luc TEXT NOT NULL,
   han_chon TEXT,                         -- HAN-BAO-PH: hạn người dùng chọn (YYYY-MM-DD), NULL = mặc định; thắng Tạm dừng
-  bao_lai_cua INTEGER REFERENCES discipline_measures(id)   -- YT-BAO-PH: lần xử lý đã thu hồi cần báo lại PH (measure_id NULL); NULL = việc thường
+  bao_lai_cua INTEGER REFERENCES discipline_measures(id),  -- YT-BAO-PH: lần xử lý đã thu hồi cần báo lại PH (measure_id NULL); NULL = việc thường
+  phoi_hop_id INTEGER                    -- PHOI-HOP-V2: việc Meeting CX/GĐCN (sos_coordination_actions.id) TVV báo gia đình; NULL = Báo PH ý thức
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_phoi_hop ON viec_bao_ph(phoi_hop_id) WHERE phoi_hop_id IS NOT NULL;
 -- Mỗi lần TVV ghi (kể cả "Chưa liên hệ được" — việc vẫn mở, hạn giữ) là MỘT dòng; không sửa, không xoá.
 CREATE TABLE IF NOT EXISTS viec_bao_ph_lan (
   id INTEGER PRIMARY KEY,

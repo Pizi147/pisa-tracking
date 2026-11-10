@@ -155,7 +155,8 @@ export async function runPrOv12hTests(t: any) {
   };
   /** GVCN hiện tại của lớp (đọc lúc chạy — bộ kiểm trước có thể đổi phân công). */
   const gvcn = () => loadPrincipal(get(`SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active' ORDER BY id LIMIT 1`, LOP).user_id);
-  const dongPhoiHop = (p: any, o: any = {}) => mywork.myWork(p, o).items.find((it: any) => it.key === `phoi_hop_sos:${LOP}`);
+  /* PHOI-HOP-V2: một dòng mỗi (lớp × việc) — khoá `phoi_hop_sos:{lớp}:{việc}`; lớp thử chỉ còn một việc. */
+  const dongPhoiHop = (p: any, o: any = {}) => mywork.myWork(p, o).items.find((it: any) => it.group === 'phoi_hop_sos' && it.classId === LOP);
 
   check('OV12h-4a · meeting CX tạo 6 ngày trước → GVCN thấy Phối hợp SOS quá hạn (hạn = ngày tạo + 5), QL thấy ở Của GV', () => thu(() => {
     meeting(addDays(TODAY, -6));
@@ -180,13 +181,61 @@ export async function runPrOv12hTests(t: any) {
     assert(dongPhoiHop(gvcn()).due === null, 'việc không phải meeting CX vẫn có hạn');
   }));
 
-  check('OV12h-4c · xác nhận meeting CX: ghi chú < 10 ký tự → 400; đủ → xong, hết quá hạn', () => thu(() => {
+  check('OV12h-4c · PHOI-HOP-V2: xác nhận meeting CX — nội dung gửi TVV tuỳ chọn (≥ 10 ký tự chuyển sang bước TVV); xong, hết quá hạn', () => thu(() => {
     const { id } = meeting(addDays(TODAY, -6));
-    assert(maLoi(() => phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY, note: 'Đã gặp' })) === 400, 'ghi chú ngắn phải 400');
-    assert(maLoi(() => phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY })) === 400, 'thiếu ghi chú phải 400');
-    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY, note: 'Đã gặp em và CX, thống nhất lịch tutor' });
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
     xoaNho();
     assert(!dongPhoiHop(gvcn()), 'xong rồi vẫn còn việc');
     assert(metrics.metricSet(P.mbManager, 'phoi-hop-qua-han', {}).ids.length === 0, 'xong rồi vẫn báo quá hạn');
+  }));
+
+  // ------------------------------------------------------------------ (5) PHOI-HOP-V2 (chủ SP 11/11, mockup #1368)
+  const bp: any = await import('../yThuc/baoPhTvv.ts');
+  const viecTvv = (id: number) => conn.prepare('SELECT * FROM viec_bao_ph WHERE phoi_hop_id = ?').get(id) as any;
+  const tvvMoi = (() => { let p: any = null; return () => p ??= (() => {
+    const acc: any = conn.prepare(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles ro ON ro.id = ur.role_id WHERE ro.key = 'consultant' AND u.status = 'active' ORDER BY u.id LIMIT 1`).get();
+    return loadPrincipal(acc.id);
+  })(); })();
+
+  check('PHV2-1 · Công việc GVCN: một dòng mỗi (lớp × việc), tên việc + số em + tên em; không thẻ điểm', () => thu(() => {
+    const { studentId } = meeting(addDays(TODAY, -1));
+    const it = dongPhoiHop(gvcn());
+    assert(it && it.key === `phoi_hop_sos:${LOP}:cx_meeting_student` && it.count === 1, `dòng: ${JSON.stringify(it && { k: it.key, n: it.count })}`);
+    assert(it.emIds?.[0] === studentId && it.emTen?.length === 1 && it.phoiHop?.khoa === 'cx_meeting_student' && !('theSos' in it), `em: ${JSON.stringify(it.emIds)}`);
+  }));
+
+  check('PHV2-2 · GVCN xác nhận Meeting CX → việc TVV (hạn + 4, nhóm phoi_hop_tvv); TVV ghi ≥ 10 ký tự; Đưa lại khi đã ghi → giữ KQ, việc "Đã bỏ"; xác nhận lại → mở', () => thu(() => {
+    const { id, studentId } = meeting(addDays(TODAY, -1));
+    const tvv = tvvMoi();
+    conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvv.userId, studentId);
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY, note: 'Mời bố mẹ họp với GĐCN' });
+    const v = viecTvv(id);
+    assert(v && v.trang_thai === 'mo' && v.han === d.hanBaoPh(TODAY) && v.measure_id === null, `việc TVV: ${JSON.stringify(v)}`);
+    xoaNho();
+    const cua = mywork.myWork(tvv, {}).items.flatMap((x: any) => [x, ...(x.con ?? [])]).find((x: any) => x.key === `bao-ph:${v.id}`);
+    assert(cua?.group === 'phoi_hop_tvv' && cua.mine, `TVV thấy: ${JSON.stringify(cua && { g: cua.group, m: cua.mine })}`);
+    const a = phoiHop.coordinationOfClass(gvcn(), LOP, { includeDone: true }).rows.flatMap((x: any) => x.actions).find((x: any) => x.id === id);
+    assert(a?.tvv?.viecId === v.id && a.tvv.trangThai === 'mo' && a.tvv.coTheGhi === false, `GVCN đọc ô ③: ${JSON.stringify(a?.tvv)}`);
+    assert(maLoi(() => bp.ghiKetQuaBaoPh(tvv, { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Đã gọi' })) === 400, 'Nội dung < 10 ký tự phải 400');
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [v.id], ketQua: 'chua_lien_he', ghiChu: 'Gọi mẹ hai lần không nghe máy' });
+    phoiHop.moLaiCoordination(gvcn(), id);
+    assert(viecTvv(id).trang_thai === 'bo', 'Đưa lại khi TVV đã ghi: việc TVV phải "Đã bỏ", giữ lần ghi');
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    assert(viecTvv(id).trang_thai === 'mo', 'xác nhận lại: việc TVV mở lại');
+  }));
+
+  check('PHV2-3 · Hoàn tác khi TVV chưa ghi → gỡ hẳn việc TVV; em chưa có TVV → GVCN giữ việc, ghi được', () => thu(() => {
+    const { id, studentId } = meeting(addDays(TODAY, -1));
+    conn.prepare('UPDATE students SET consultant_user_id = NULL WHERE id = ?').run(studentId);
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    phoiHop.moLaiCoordination(gvcn(), id);
+    assert(!viecTvv(id), 'Hoàn tác khi chưa ghi: việc TVV phải gỡ hẳn');
+    phoiHop.confirmCoordination(gvcn(), id, { performedOn: TODAY });
+    const v = viecTvv(id);
+    xoaNho();
+    const cua = mywork.myWork(gvcn(), {}).items.flatMap((x: any) => [x, ...(x.con ?? [])]).find((x: any) => x.key === `bao-ph:${v.id}`);
+    assert(cua?.group === 'phoi_hop_tvv' && cua.mine, `GVCN giữ việc báo PH khi em chưa có TVV: ${JSON.stringify(cua && cua.group)}`);
+    bp.ghiKetQuaBaoPh(gvcn(), { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Đã họp bố mẹ với GĐCN ngày 12/09' });
+    assert(viecTvv(id).trang_thai === 'xong', 'GVCN ghi xong');
   }));
 }

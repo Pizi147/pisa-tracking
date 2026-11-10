@@ -3,7 +3,7 @@ import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, type TheSosEm, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, REGULAR_SKILLS, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
 import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
@@ -21,7 +21,7 @@ import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIR
 import { quyenBoTro } from '../cases/boTro.ts';
 import { boKetQuaChoMiniTest, henTyLe, nguoiGiuMiniTest, tyLeTongLo } from '../normal/cuoiKhoa.ts';
 import { emXetLaiLoTrinh } from '../normal/xetLai.ts';
-import { dongPhoiHopLop, myCoordinationLines } from '../yThuc/phoiHop.ts';
+import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
 import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
@@ -147,8 +147,9 @@ export type WorkItem = {
   lamThay?: boolean;
   /** BO-QUA-XEP-MT: việc QL bỏ qua được ngay trên dòng (`moc:` — Xếp lịch MT / Nhập dự kiến thi). */
   boQuaDuoc?: boolean;
-  /** PHOI-HOP-SOS-INFO: dòng Phối hợp SOS — thẻ kết quả (em · lượt · Overall so kỳ vọng · kỹ năng trượt) của tối đa 3 lượt chưa xong; `count` là số lượt. */
-  theSos?: TheSosEm[];
+  /** PHOI-HOP-V2 (mockup #1368): dòng Phối hợp SOS (lớp × việc) — loại việc + khoá (việc "Khác" theo tên) để panel lọc đúng việc; `emIds` + `emTen` (tên ≤ 3 em đầu, chip ở ô việc). */
+  phoiHop?: { kind: string; khoa: string };
+  emTen?: string[];
 };
 
 /**
@@ -165,6 +166,8 @@ export type WorkGroupKey =
   | 'no_owner' | 'missing_data' | 'mgmt'
   /* PR-VAI-a: Phối hợp SOS là việc thật (K5-10); khai bậc Ý thức HS cũ (K1-15); kỳ vọng đầu ra (K5-11). */
   | 'phoi_hop_sos' | 'khai_bac' | 'ky_vong_dau_ra'
+  /* PHOI-HOP-V2: TVV báo gia đình / sắp họp / ghi kết quả sau khi GVCN xác nhận Meeting CX/GĐCN (bảng `viec_bao_ph`, như Báo PH ý thức). */
+  | 'phoi_hop_tvv'
   /* PR-TK (TK-K): GVCN cập nhật kết quả thi thật (L R W S) của em FT đã qua mốc thi. */
   | 'thi_that'
   /* OV-8a: Quản lý chọn bước tiếp sau khi lộ trình FT có kết quả thi thật (Kết thúc · Học tiếp lộ trình mới · Học lại). */
@@ -226,10 +229,15 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm.',
   },
 
-  /* PR-VAI-a (K5-10, Q14): Phối hợp SOS của GVCN là VIỆC THẬT — một dòng mỗi lớp chủ nhiệm, không hạn (P10). */
+  /* PR-VAI-a (K5-10, Q14): Phối hợp SOS của GVCN là VIỆC THẬT. PHOI-HOP-V2: một dòng mỗi (lớp × việc); chỉ Meeting CX có hạn. */
   phoi_hop_sos: {
     label: 'Phối hợp SOS',
-    hint: 'Lượt Mock Test có SOS của lớp bạn chủ nhiệm còn việc phối hợp chưa xong. Không có hạn — làm xong từng việc thì dòng tự hết.',
+    hint: 'Việc phối hợp sau lượt Mock Test có SOS của lớp bạn chủ nhiệm. Xác nhận đã làm và ghi Nội dung; xong từng em thì em đó rời dòng.',
+  },
+  /* PHOI-HOP-V2 (chủ SP 11/11): TVV báo gia đình, sắp xếp buổi họp, ghi kết quả sau khi GVCN xác nhận Meeting CX/GĐCN — như Báo PH ý thức. */
+  phoi_hop_tvv: {
+    label: 'Báo PH · Meeting CX/GĐCN',
+    hint: 'GVCN đã xác nhận Meeting CX/GĐCN (sau Mock) — báo gia đình, sắp xếp buổi họp và ghi kết quả. Em chưa có TVV thì GVCN báo.',
   },
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {
@@ -1279,17 +1287,22 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * `myCoordinationLines` (cùng số với tab Phối hợp của lớp). Không hạn (P10) — trừ OV-12h: meeting CX / GĐCN hạn 5 ngày từ lúc tạo (`hanPhoiHop`),
    * dòng lớp mang hạn sớm nhất, quá hạn tô như việc khác.
    */
-  for (const l of !co('phoi_hop_sos') ? [] : tatCa ? dongPhoiHopLop([...gvcnLop().keys()]) : myCoordinationLines(p)) {
+  /* PHOI-HOP-V2 (mockup #1368 K1): một dòng mỗi (lớp × việc) — QL "Tất cả" dựng cho mọi GVCN trong phạm vi, cùng hàm. QL bấm thẳng như GVCN. */
+  const lopCnPhoiHop = () => [...new Set(p.assignments
+    .filter((a) => a.isCore && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today)).map((a) => a.classId))];
+  for (const l of !co('phoi_hop_sos') ? [] : dongPhoiHopTheoViec(tatCa ? [...gvcnLop().keys()] : lopCnPhoiHop())) {
     if (f.branchId && bangLop().get(l.classId)?.branchId !== f.branchId) continue;
     const gv = tatCa ? gvcnLop().get(l.classId) ?? p.userId : p.userId;
+    const n = l.em.length;
     items.push({
-      key: `phoi_hop_sos:${l.classId}`, group: 'phoi_hop_sos', urgency: urgencyOf(l.han, today),   // OV-12h: meeting CX có hạn 5 ngày
+      key: `phoi_hop_sos:${l.classId}:${l.khoa}`, group: 'phoi_hop_sos', urgency: urgencyOf(l.han, today),   // OV-12h: meeting CX có hạn 5 ngày
       studentId: null, studentName: `Lớp ${l.className}`, classId: l.classId, classCode: l.className,
-      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: 'Phối hợp SOS', count: l.pendingCount,
-      reason: `${l.pendingCount} lượt Phối hợp SOS chưa xong`,
-      tieuDe: `Phối hợp SOS · ${l.className} · ${l.pendingCount} lượt`, actionLabel: 'Mở Phối hợp SOS',
+      attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: n,
+      reason: `${l.ten} · ${n} em cần làm`,
+      tieuDe: `${l.ten} · ${l.className} · ${n} em`, actionLabel: 'Xác nhận',
       href: `/hoc-vien/lop/${l.classId}?tab=y-thuc&sub=phoi-hop`,
-      ownerId: gv, owner: null, mine: gv === p.userId, due: l.han, statusLabel: 'Chưa xong', theSos: l.sos,
+      ownerId: gv, owner: null, mine: gv === p.userId, due: l.han, statusLabel: 'Chưa làm',
+      phoiHop: { kind: l.kind, khoa: l.khoa }, emIds: l.em.map((x) => x.id), emTen: l.em.slice(0, 3).map((x) => x.ten),
     });
   }
   /*
@@ -1548,7 +1561,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   // ------------------------------------------------- 5e. chọn bước tiếp sau thi (OV-8a) — việc của Quản lý
   if (co('buoc_tiep')) items.push(...viecBuocTiep(p, { today, tatCa, branchId: f.branchId ?? null }));
   // ------------------------------------------------- 5f. Báo PH sau lưu xử lý vi phạm (SV-YT-TVV) — TVV của em / QL khi em chưa có TVV
-  if (co('bao_ph_yt')) items.push(...viecBaoPhCuaToi(p, { today, tatCa, branchId: f.branchId ?? null }));
+  if (co('bao_ph_yt', 'phoi_hop_tvv')) items.push(...viecBaoPhCuaToi(p, { today, tatCa, branchId: f.branchId ?? null }));
 
   // ------------------------------------------------- 6. công việc quản lý được giao
   /*
@@ -1593,7 +1606,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* OV-11c (CV-11): QL / Quản trị "Của tôi" = việc mình giữ (hoặc chưa ai giữ mà mình làm được); việc GV giữ chỉ ở "Của GV". */
   if (xemNguoiKhac && !tatCa) for (let i = items.length - 1; i >= 0; i--) if (items[i].ownerId !== null && items[i].ownerId !== p.userId) items.splice(i, 1);
   const order: WorkGroupKey[] = [
-    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'bao_ph_yt', 'khai_bac',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv', 'khai_bac',
     'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data', 'bo_sung_ho_so',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
@@ -1680,7 +1693,7 @@ const chiNhanhCuaViec = (ds: readonly WorkItem[]) => {
 };
 
 /** SV-YT-TVV + SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
-export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['bao_ph_yt', 'missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
+export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['bao_ph_yt', 'phoi_hop_tvv', 'missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
 export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`). OV-12h: bỏ Nhắc trên dòng. */

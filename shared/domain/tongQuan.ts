@@ -40,7 +40,8 @@ export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
   cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
-  do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat', phoi_hop_sos: 'case-hoc-thuat',
+  /* PHOI-HOP-V2 (mockup #1368): Phối hợp SOS sang tab "Ý thức & Phối hợp". */
+  do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat', phoi_hop_sos: 'y-thuc', phoi_hop_tvv: 'y-thuc',
   mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh', buoc_tiep: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc',
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
@@ -83,7 +84,7 @@ export type NhomViecTvv = (typeof NHOM_CV_TVV)[number];
 export const NHOM_CV_TVV_LABEL: Record<NhomViecTvv, string> = {
   'bao-ph': t('Báo PH'), 'sau-thi': t('Sau thi'), 'chot-ngay-thi': t('Chốt ngày thi'), 'bo-sung': t('Bổ sung hồ sơ'),
 };
-const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
+const NHOM_TVV_CUA_LOAI: Record<string, NhomViecTvv> = { bao_ph_yt: 'bao-ph', phoi_hop_tvv: 'bao-ph', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', missing_data: 'chot-ngay-thi', bo_sung_ho_so: 'bo-sung' };
 export const nhomViecTvvCua = (loai: string): NhomViecTvv => NHOM_TVV_CUA_LOAI[loai] ?? 'bo-sung';
 
 export type ViecGom = { group: string; urgency: 'overdue' | 'today' | 'normal'; due: string | null; key?: string };
@@ -132,7 +133,7 @@ export const nhanTabCv = (k: string, tvv = false): string =>
 const MUC_CV = [
   ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Speaking chấm chéo')],
   ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['phoi-hop', t('Phối hợp SOS')], ['bao-ph', t('Báo PH')], ['phan-cong', t('Phân công')],
-  ['xu-ly', t('Xử lý vi phạm')], ['xem-vp', t('Xem vi phạm')], ['da-th', t('Ghi đã thực hiện')], ['cap-bac', t('Xác nhận cấp bậc')],
+  ['vi-pham', t('Vi phạm')],
   ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['thieu', t('Thiếu dữ liệu')],
   ['bo-sung', t('Bổ sung hồ sơ')], ['giao', t('Việc được giao')], ['bc-ph', t('Báo cáo PH')], ['khac', t('Khác')],
 ] as const;
@@ -140,8 +141,9 @@ type MaMuc = (typeof MUC_CV)[number][0];
 const MUC_CUA_LOAI: Record<string, MaMuc> = {
   cause: 'mo-ta', ghi_nhan_xet: 'mo-ta', xem_nx_s: 'mo-ta',
   no_plan: 'pa', xac_nhan_pa: 'pa', do_plan: 'pa', mini_test: 'pa',
-  ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop: 'bao-ph', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
-  yt_xu_ly: 'xu-ly', yt_xem: 'xem-vp', yt_thuc_hien: 'da-th', khai_bac: 'cap-bac',
+  ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop_tvv: 'phoi-hop', phoi_hop: 'bao-ph', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
+  /* PHOI-HOP-V2 (mockup #1368 K1): việc Ý thức chung MỘT mục "Vi phạm" — tên dòng nói loại việc, không lặp tên mục. */
+  yt_xu_ly: 'vi-pham', yt_xem: 'vi-pham', yt_thuc_hien: 'vi-pham', khai_bac: 'vi-pham',
   ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
   missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph',
 };

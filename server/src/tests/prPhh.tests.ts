@@ -45,7 +45,7 @@ export async function runPrPhhTests(t: AnToanTestKit) {
     assert(bai, 'seed không có việc Báo PH chờ có Case chưa đóng');
     const truoc = doc1(bai.sid, bai.id, bai.vid);
     assert(truoc.noiDung?.length === 4 && truoc.noiDungLaHienTai === false, `trước xác nhận: ${JSON.stringify(truoc)}`);
-    ph.confirmCoordination(P.admin, bai.vid, { performedOn: TODAY });
+    ph.confirmCoordination(P.admin, bai.vid, { performedOn: TODAY, note: 'Đã làm' });
     const cot = viec(bai.vid).noi_dung_luc_bao;
     assert(typeof cot === 'string' && JSON.stringify(JSON.parse(cot)) === JSON.stringify(truoc.noiDung), `cột ≠ nội dung lúc xác nhận: ${cot}`);
     /* Sửa sau xác nhận: rút tín hiệu (môn hết trượt), đổi nguyên nhân, QL duyệt "Không cần theo dõi" một Case. */
@@ -68,7 +68,7 @@ export async function runPrPhhTests(t: AnToanTestKit) {
     const v = conn.prepare(`SELECT co.id, co.student_id sid, co.attempt_id aid FROM sos_coordination_actions co JOIN assessment_attempts a ON a.id = co.attempt_id
       WHERE co.kind != 'bao_ph_tvv' AND co.status = 'pending' AND a.status != 'cancelled' ORDER BY co.id LIMIT 1`).get() as any;   // GIAM-DOC-0611c: idx_sca_cho đổi thứ tự khi không ORDER BY
     assert(v, 'seed không có việc phối hợp loại khác đang chờ');
-    ph.confirmCoordination(P.admin, v.id, { performedOn: TODAY });
+    ph.confirmCoordination(P.admin, v.id, { performedOn: TODAY, note: 'Đã làm' });
     const x = doc1(v.sid, v.aid, v.id);
     assert(viec(v.id).noi_dung_luc_bao === null && x.noiDung === null && x.noiDungLaHienTai === false, JSON.stringify(x));
   });

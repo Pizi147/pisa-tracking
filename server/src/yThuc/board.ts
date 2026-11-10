@@ -289,7 +289,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
               (SELECT l.ngay FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao' ORDER BY l.id DESC LIMIT 1) AS ngay_xong
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
-        WHERE v.id IN (SELECT MAX(id) FROM viec_bao_ph WHERE student_id IN (${ph}) GROUP BY student_id)`,
+        WHERE v.id IN (SELECT MAX(id) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
     ).all(...lo) as any[]) {
       const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
       out.set(r.student_id, {

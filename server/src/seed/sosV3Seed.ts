@@ -156,7 +156,7 @@ export function buildSosV3Demo(ctx: BuildCtx): { students: number; cases: number
   for (const k of ['listening', 'reading', 'writing1', 'writing2']) score(vyA, k, 7);
   score(vyA, 'speaking', 5);                                                                       // kỳ vọng MT3 7.0: chỉ Speaking dưới → SOS1 (Overall 6.5)
   caseOf(vy.id, 'speaking');   // D7 (7): PA còn chờ xác nhận
-  for (const kind of ['talk_student', 'talk_family']) confirmCoordination(gvcn, actionOf(vyA.id, kind).id, { performedOn: addDays(DEMO_DATE, -1) });
+  for (const kind of ['talk_student', 'talk_family']) confirmCoordination(gvcn, actionOf(vyA.id, kind).id, { performedOn: addDays(DEMO_DATE, -1), note: 'Đã làm' });
 
   // ---------------------------------------------------------------- D7 (4): Trịnh Gia Bảo — MT1 · Listening, Quản lý từ chối "không theo dõi"
   const bao = addStudent('Trịnh Gia Bảo', 1, 3);

@@ -394,7 +394,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     const x = ph.suaHanPhoiHop(gvcn, m, { han: '2020-01-01', hanCu: null });
     assert(x.han === '2020-01-01' && x.hanChon === '2020-01-01' && x.hanMacDinh === addDays(TODAY, 5) && x.quaHan, JSON.stringify(x));
     xoaNho();
-    const dong = ((myWork(gvcn, {}) as any).items as any[]).find((i) => i.group === 'phoi_hop_sos' && i.key === `phoi_hop_sos:${classId(LOP)}`);
+    const dong = ((myWork(gvcn, {}) as any).items as any[]).find((i) => i.group === 'phoi_hop_sos' && i.key === `phoi_hop_sos:${classId(LOP)}:cx_meeting_family`);   // PHOI-HOP-V2: dòng lớp × việc
     assert(dong?.due === '2020-01-01', 'Công việc cùng hạn ' + dong?.due);
     assert(ma(() => ph.suaHanPhoiHop(gvbm, m, { han: TODAY, hanCu: '2020-01-01' })) === 403, 'GVBM 403');
     assert(ma(() => ph.suaHanPhoiHop(gvcn, tf, { han: TODAY, hanCu: null })) === 400, 'việc không hạn');

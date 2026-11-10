@@ -23,7 +23,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 import { MuiTenGap } from './NhanViPham.tsx';
 import { BadgeViec } from './khoiYThuc.tsx';
 
-type CoordAction = {
+export type CoordAction = {
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
   preset: boolean; status: 'pending' | 'done' | 'removed'; statusLabel: string;
   performedOn: string | null; performerName: string | null; note: string | null;
@@ -36,6 +36,11 @@ type CoordAction = {
   noiDung?: string[] | null;
   /** PR-PHH: việc đã xong mà chưa lưu bản chụp (xác nhận trước PR-PHH) — `noiDung` là nội dung hiện tại. */
   noiDungLaHienTai?: boolean;
+  /** PHOI-HOP-V2: việc TVV sau Meeting CX (máy chủ nạp theo lô). */
+  tvv?: {
+    viecId: number; trangThai: 'mo' | 'xong' | 'bo'; han: string; hanMacDinh: string; hanChon: string | null; quaHan: boolean; tvv: string | null;
+    lan: { ketQua: string; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null } | null; soLan: number; coTheGhi: boolean; coTheSuaHan: boolean;
+  } | null;
 };
 export type CoordTurn = {
   attemptId: number; attemptNo: number; studentId: number; studentName: string;

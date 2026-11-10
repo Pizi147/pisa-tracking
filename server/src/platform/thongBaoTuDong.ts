@@ -44,7 +44,7 @@ export function viecMuon(p: Principal, homNay: string): Map<string, Muon> {
    */
   const ngay = demoToday();   // cùng ngày `myWork` / `mySkills` dùng để quyết `mine`
   const classIds = viecMuonDayDuKhiKiem.bat ? undefined : [...new Set(p.assignments.filter((a) => activeAt(a, ngay)).map((a) => a.classId))];
-  return muonTuViec(p, (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt', 'xuat_bc_ph']), classIds }).items ?? []) as WorkItem[], homNay);
+  return muonTuViec(p, (myWork(p, { chiNhom: new Set(['score', 'chot_len_ft', 'bao_ph_yt', 'phoi_hop_tvv', 'xuat_bc_ph']), classIds }).items ?? []) as WorkItem[], homNay);
 }
 
 /**
@@ -89,7 +89,8 @@ export function muonTuViec(p: Principal, items: readonly WorkItem[], homNay: str
   }
 
   /* SV-YT-TVV: Báo PH — việc của chính người xem (đổi TVV → chuông sang người mới; em Tạm dừng / ghi xong / bỏ → hết). MỘT dòng mỗi người. */
-  const bp = items.filter((x) => x.group === 'bao_ph_yt' && x.mine).sort((a, b) => String(a.due).localeCompare(String(b.due)));
+  /* PHOI-HOP-V2: việc TVV sau Meeting CX chung dòng chuông Báo PH (cùng bảng, cùng người giữ). */
+  const bp = items.filter((x) => (x.group === 'bao_ph_yt' || x.group === 'phoi_hop_tvv') && x.mine).sort((a, b) => String(a.due).localeCompare(String(b.due)));
   if (bp.length) {
     const dau = bp[0];
     const chu = bp.length === 1 ? dau.tieuDe : `Báo PH vi phạm · ${bp.length} em`;

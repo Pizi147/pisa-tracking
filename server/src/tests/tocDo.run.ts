@@ -1339,9 +1339,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* #8 bản rà 11/11 (G4-06): chụp lại 7 băm — đổi CÓ CHỦ Ý chỉ việc Bàn giao chuyển lớp: GVCN dạy luôn môn → không còn "Bàn giao môn …" (viết trong phiếu GVCN);
        GVBM nhiều môn một lớp → MỘT việc "Bàn giao môn L · R" (count = số em khác nhau). Đã kiểm: trả banGiao.ts + mywork.ts về origin/main trên nhánh → TD4-a đạt
        với băm cũ. Trước: GVCN toi 9d92644a93b70d7c, GVBM toi e089af060bbfcf23, GVCN_THUONG toi 9d92644a93b70d7c, QL tat-ca 44df50bdddf5043e, QT tat-ca 893884b8134ff493, QT tat-ca cn 0ae00a58528bfe32, QL gvcn d72da0f9c7bf9628 */
-    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': 'b365951571812c05', 'GVBM toi': '12e56e58ca3ab54f',
-    'GVCN_THUONG toi': 'b365951571812c05', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '82a113beaa654d50', 'QT tat-ca': '4ea0cb34545f1f71',
-    'QT tat-ca cn': '27514f17c920a385', 'QL gvcn': '1704e89b346dd3ad', 'GVS toi': '8925006102baff97',
+    /* PHOI-HOP-V2 (chủ SP 11/11, mockup #1368): chụp lại 7 băm — đổi CÓ CHỦ Ý: dòng Phối hợp SOS một / (lớp × việc) thay một / lớp, bỏ thẻ điểm (`theSos`),
+       thêm `phoiHop` / `emIds` / `emTen` (GVBM toi: tài khoản đo cũng có việc Phối hợp SOS — cùng lý do). Trước: GVCN toi b365951571812c05, GVBM toi 12e56e58ca3ab54f,
+       GVCN_THUONG toi b365951571812c05, QL tat-ca 82a113beaa654d50, QT tat-ca 4ea0cb34545f1f71, QT tat-ca cn 27514f17c920a385, QL gvcn 1704e89b346dd3ad */
+    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': '86ac984ea21de32a', 'GVBM toi': 'b50e92f990512ed8',
+    'GVCN_THUONG toi': '86ac984ea21de32a', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '10fb2f5a29820ef9', 'QT tat-ca': '813b33ee602d4082',
+    'QT tat-ca cn': '3cb5fb6a1f956483', 'QL gvcn': '0f442ddb47992e73', 'GVS toi': '8925006102baff97',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
