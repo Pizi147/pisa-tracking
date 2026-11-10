@@ -752,7 +752,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   const trangThai = theXoa ? vien(t('Chờ QL duyệt xoá'), 'rgb(var(--soon-rgb))')
     : formHien === 'ghi' ? vien(t('Đang ghi kết quả'), 'rgb(var(--soon-rgb))')
     : iv.awaitingConfirmation ? (xacNhanDuoc && !mo ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('xac-nhan')}>{iv.chonPa ? t('Chọn PA') : t('Xác nhận PA')}</button> : vien(iv.chonPa ? t('Chờ chọn PA') : t('Chờ xác nhận'), 'rgb(var(--doing-rgb))'))
-    : choDuyet ? vien(t('Chờ Quản lý duyệt'), 'rgb(var(--soon-rgb))')
+    : choDuyet || (iv.preset && !iv.confirmedAt && iv.status === 'planned' && iv.doiPa?.trangThai === 'cho') ? vien(t('Chờ Quản lý duyệt'), 'rgb(var(--soon-rgb))')   // PA quy chế chưa chạy chờ QL duyệt đổi / giữ PA GV
     : iv.chuaChay ? vien(t('Chưa bắt đầu'), 'var(--text-faint)')
     : dangChay ? (ghiDuoc && toiKy && !mo
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
