@@ -454,9 +454,12 @@ const EN_D_WEB = {
   'Biên bản, thư, ảnh chụp… — QL xem bằng chứng trước khi duyệt.': 'Minutes, letters, photos… — the manager reviews evidence before approving.',
   'Cần xử lý nặng hơn: Meeting CX/GĐCN, WL 3, Đình chỉ…': 'Need a stronger action: Meeting CX/BD, WL 3, Suspension…',
   /* #6 (rà 11/11): đề xuất một màn. */
-  'Gửi QL duyệt': 'Send for approval',
+
   'Sau khi gửi': 'After sending',
   'QL trả lời trong 5 ngày': 'Manager replies within 5 days',
+  'QL đã duyệt {nhan} · {full_name} · ghi "Đã thực hiện"': 'Manager approved {nhan} · {full_name} · mark "Done"',
+  'Có Meeting CX/GĐCN · {full_name} · {maLop}': 'Meeting CX/BD scheduled · {full_name} · {maLop}',
+  'GVCN {gvcn}': 'HRT {gvcn}',
   'Chưa gửi — {n} tệp tải lỗi': 'Not sent — {n} files failed to upload',
   'Không có tệp hoặc liên kết.': 'No files or links.',
   'Bậc xử lý': 'Action level',

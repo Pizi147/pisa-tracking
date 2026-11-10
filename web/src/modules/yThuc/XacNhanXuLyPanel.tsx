@@ -227,7 +227,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const bacSau = iNay >= 0 ? d.dongThang[iNay + 1]?.nhan ?? null : null;
   const nutChinh = cheDo === 'xu-ly'
     ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luuXuLy}>{busy ? t('Đang lưu…') : t('Xác nhận xử lý')}</button>
-    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void guiDeXuat()}>{busy ? t('Đang gửi…') : t('Gửi QL duyệt')}</button>;
+    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void guiDeXuat()}>{busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}</button>;
   const nhanO = (chu: string, batBuoc = false) => <span className="mb-1.5 block text-[13px] font-semibold text-slate-300">{chu}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>;
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={() => void dong()} dau={dau(cheDo === 'xu-ly')}
@@ -241,7 +241,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
         <TienTrinh nay={1} buoc={[
           [t('{n} vi phạm', { n: tick.length + cuHon.length }), ngayVp.length ? `${ngay(ngayVp[0], homNay)} – ${ngay(ngayVp[ngayVp.length - 1], homNay)}` : null],
           /* #6 (mockup #1346 K1): đề xuất — ô ② nói việc đang làm (Gửi QL duyệt) + ai trả lời khi nào. */
-          cheDo === 'de-xuat' ? [t('Gửi QL duyệt'), t('QL trả lời trong 5 ngày')]
+          cheDo === 'de-xuat' ? [t('Gửi Quản lý duyệt'), t('QL trả lời trong 5 ngày')]
             : [d.nhom ? <CanLamEm x={d} homNay={homNay} /> : t('Xác nhận xử lý'), bacKe ? <>{t('Lần này')} <b className="text-slate-100">{dich(bacKe.nhan)}</b></> : null],
           [<span className="font-medium text-slate-400">{cheDo === 'xu-ly' ? t('Sau khi lưu') : t('Sau khi gửi')}</span>, t('việc cho TVV của em, hạn 5 ngày')],
         ]} />

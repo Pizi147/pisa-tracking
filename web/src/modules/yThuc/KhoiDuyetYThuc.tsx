@@ -28,7 +28,7 @@ function DauMuc({ chu, n }: { chu: string; n: number }) {
 export function KhoiDuyetYThuc({ measureId }: { measureId: number }) {
   const { homNay } = useNgayNghiepVu();
   const { data, error, reload } = useApi<XuLyView & { tep: Tep[] }>(`/y-thuc/xu-ly/${measureId}?kemTep=1`, [measureId]);
-  if (error) return <div className="mt-3"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>;
+  if (error) return <div className="mt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>;
   if (!data) return <div className="mt-3"><Skeleton rows={2} /></div>;
   return (
     <div className="text-sm">

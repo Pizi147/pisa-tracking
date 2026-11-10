@@ -7,7 +7,7 @@
 | K1 | dải ①②③ (② "Gửi QL duyệt · QL trả lời trong 5 ngày", ③ "Sau khi gửi · việc cho TVV") | cap-k1 | KHỚP |
 | K1 | Loại cần QL duyệt (4 nút chọn) · Vi phạm đưa vào · Lý do * | cap-k1 | KHỚP |
 | K1 | Bằng chứng * chọn trong form (+ Tệp · + Liên kết, dán / kéo thả) | cap-k1 | KHỚP |
-| K1 | nút "Gửi QL duyệt" + "← Quay lại Xác nhận xử lý" | cap-k1 | KHÁC (GIỮ): web đặt hai nút trong khối Cần làm như mọi panel v3 (375: nút chính ở chân) — mockup vẽ ở chân 1440 |
+| K1 | nút "Gửi QL duyệt" + "← Quay lại Xác nhận xử lý" | cap-k1 | KHÁC (GIỮ): web đặt hai nút trong khối Cần làm như mọi panel v3 (375: nút chính ở chân) — mockup vẽ ở chân 1440; chữ nút "Gửi Quản lý duyệt" theo luật chữ S3 (không viết tắt "QL" trên nút gửi duyệt — phép kiểm `prS3Chu`) |
 | K1 | dòng "Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là …" | cap-k1 | KHÁC (GIỮ): lưu ý hậu quả sẵn có (bo-chu-thich: giữ lưu ý cần thiết) |
 | K1b | sau Gửi: panel đóng, toast, dòng em "Đề xuất … · chờ QL" | cap-k1 | KHỚP |
 | K2a | thiếu bằng chứng: lỗi tại ô + chân "Còn 1 ô cần sửa" | cap-k2 | KHỚP (chữ chân theo mẫu chung "Còn n ô cần sửa") |

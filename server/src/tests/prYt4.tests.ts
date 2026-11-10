@@ -917,9 +917,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(payload && !/\bkind\b/.test(payload) && /bacDaThay/.test(payload), payload);
     assert(/status === 409/.test(s) && /Bậc vừa đổi — đã mở lại với bậc mới/.test(s), '409');
   });
-  check('YT4 (8) · Đề xuất QL duyệt: MỘT màn (#6): bằng chứng chọn trong form (bắt buộc loại ngoài thang) → "Gửi QL duyệt" = nháp → tải tệp → gửi; đóng khi dở xoá nháp', () => {
+  check('YT4 (8) · Đề xuất QL duyệt: MỘT màn (#6): bằng chứng chọn trong form (bắt buộc loại ngoài thang) → "Gửi Quản lý duyệt" = nháp → tải tệp → gửi; đóng khi dở xoá nháp', () => {
     const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
-    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /t\('Gửi QL duyệt'\)/.test(s) && /taiTepCho\(/.test(s) && !/Tiếp: đính kèm bằng chứng/.test(s), 'luồng');
+    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /t\('Gửi Quản lý duyệt'\)/.test(s) && /taiTepCho\(/.test(s) && !/Tiếp: đính kèm bằng chứng/.test(s), 'luồng');
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{nhapDo\.current\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     assert(/Cần xử lý nặng hơn/.test(s) && /t\('Khai cấp bậc'\)/.test(s), 'nút Đề xuất + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
   });

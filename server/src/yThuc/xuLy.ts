@@ -947,10 +947,11 @@ export function baoSauDuyetDeXuat(p: Principal, measureId: number, homNay: strin
       duong: `/cong-viec?viec=${encodeURIComponent(`yt_thuc_hien:${measureId}`)}`, han: hanTheoNgay(homNay, HAN_Y_THUC_NGAY) });
   }
   if (m.kind !== 'meeting_cx') return;
+  const maLop = lop?.code ?? '—';
   const gvcn = em.gvcnId ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(em.gvcnId) as { full_name: string } | undefined)?.full_name : undefined;
   for (const uid of cxCuaChiNhanh(lop?.branch_id ?? hv.branch_id)) {
     if (uid === p.userId) continue;
-    notify({ userId: uid, kind: 'discipline_de_biet', title: `Có Meeting CX/GĐCN · ${hv.full_name}${lop ? ` · ${lop.code}` : ''}`,
+    notify({ userId: uid, kind: 'discipline_de_biet', title: `Có Meeting CX/GĐCN · ${hv.full_name} · ${maLop}`,
       body: gvcn ? `GVCN ${gvcn}` : null, entityType: 'discipline_measure', entityId: measureId, dedupKey: `yt-meeting-cx:${measureId}`,
       duong: duongHoSoHocVien(m.student_id, { tab: 'y-thuc' }) });
   }
