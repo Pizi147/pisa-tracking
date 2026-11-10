@@ -266,6 +266,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 11/11 — Ý THỨC VI PHẠM làm lại:** "Ngoài ra, vẫn cần làm lại phần Ý thức vi phạm nhé, nhìn vẫn hơi rối không biết phải thao tác như thế nào cho đúng, cả HS lớp lẫn HS HV, và đồng thời cần phải sửa lại để sau khi TVV cập nhật kết quả báo PH sau vi phạm phải có hiển thị được cho GV biết và đọc được chứ, hiện tại GV KHÔNG CÓ CÁCH NÀO ĐỌC ĐƯỢC KẾT QUẢ cụ thể, chỉ biết là đã báo, còn báo như nào, PH phản hồi như nào không biết luôn?" → session Y-THUC-V2: mockup tab Ý thức hồ sơ lớp + hồ sơ HV (thao tác rõ thứ tự, một việc một chỗ) + GV đọc được nội dung Báo PH (TVV báo gì, PH phản hồi gì) → chủ SP duyệt mockup → code.
 
+**Chủ SP 11/11 rà mockup Ý thức v2 #1316 (CHƯA duyệt):** "Tôi vẫn cần thêm thông tin ví dụ như một cái badge nhỏ thể hiện report này ở kĩ năng nào, bảng ở Hồ sơ Lớp có thể gọn hơn nhưng khi hover qua lỗi có thể hiện lên box thông tin cụ thể hơn? Và khi hiển thị panel ở công việc cũng cần phải đồng bộ và hợp lý nhé" · Báo PH: "Khi chọn gì đi chăng nữa, chỉ cần một ô 'nội dung' để nhập, đơn giản thế thôi" · Kênh báo PH: "Không cần phần đó" · Lịch sử Chờ QL duyệt / QL từ chối: "tôi chưa thấy ở đâu cả" → Y-THUC-V2 sửa mockup vòng 2.
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
