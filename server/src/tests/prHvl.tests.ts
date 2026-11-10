@@ -548,7 +548,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (7) · web đầu hồ sơ lớp: nút cố định Nhập điểm · + Case · ⋯ (menuHoSoLop), Thông tin lớp có phần Tuần khai giảng / Lịch Test, LT bọc abbr; không "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Progress Test ẩn với Pre FOU', () => {
     const dau = web('modules/classes/DauTrangLop.tsx'); const pn = web('modules/classes/ClassProgressPanel.tsx'); const pg = web('modules/classes/ClassOverviewPage.tsx');
     const tt = web('modules/classes/ThongTinLopPanel.tsx');
-    assert(/menuHoSoLop\(/.test(dau) && /onViec\('case'\)/.test(dau) && /'Tuần khai giảng'/.test(tt) && /<MenuDong kieu="chip" bieuTuong=\{t\('\+\{n\} việc', \{ n: bConLai\.an\.length \}\)\}/.test(dau), 'DauTrangLop');
+    assert(/menuHoSoLop\(/.test(dau) && /onViec\('case'\)/.test(dau) && /'Tuần khai giảng'/.test(tt) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{bConLai\.an\.length\}`\}/.test(dau), 'DauTrangLop');
     assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
     assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && /Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel');
     assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');

@@ -49,7 +49,7 @@ export async function runDonHinhTests(t: any) {
     const s = doc('web/src/modules/congViec/DanhSachViec.tsx');
     /* CV-TAB (mockup v17): mã lớp sang dòng phụ ("MB FT 101 · MT3 · W1 NOV · 8 bài"), tên dòng = tên việc. */
     assert(!/Cả lớp \{lop\}/.test(s) && /caLop \? it\.classCode/.test(s), 'tên dòng cả lớp còn "Cả lớp"');
-    assert(/it\.group === 'xet_lai_lo_trinh'( \|\| caTuan)? \? null/.test(s), 'Xét lại lộ trình còn thẻ tên em');
+    assert(/it\.group === 'xet_lai_lo_trinh'( \|\| caTuan)?( \|\| \(daXong && [^?]+\))? \? null/.test(s), 'Xét lại lộ trình còn thẻ tên em');
     /* AUDIT-UI B5 (V18): 375 ẩn nút, "›" mờ bên phải mọi dòng — "›" sau tên chỉ ≥ 640 và khi dòng chưa có nút. */
     assert(/it\.group === 'xuat_bc_ph' \|\| nut\) return null/.test(s) && /\u00A0/.test(s), '"›" chưa ẩn khi có nút / chưa dính chữ');
   });
