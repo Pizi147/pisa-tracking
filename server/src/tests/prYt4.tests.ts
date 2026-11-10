@@ -961,7 +961,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (10) · Tab HV (UI-3, mockup U10 K3): phân đoạn Vi phạm | Phối hợp + Cần làm | Lịch sử, khối dùng chung, Lịch sử lọc Đã xem / Đã xử lý / Đã thu hồi + phạm vi, không ô tick', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
-    assert(/<TomTatEm/.test(s) && /<DsViPhamCho/.test(s) && /<BangLichSu/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s), 'bố cục');
+    /* Y-THUC-V2 (mockup 11/11 K3): cùng khối lần với tab lớp (KhoiLan, hv=null), dải bậc + Thang ▾, Lịch sử cùng kiểu dòng. */
+    assert(/<KhoiLan/.test(s) && /hv=\{null\}/.test(s) && /<DauCot coHv=\{false\}/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s), 'bố cục');
     assert(/key: 'vi-pham'/.test(s) && /key: 'phoi-hop'/.test(s) && /key: 'can-lam'/.test(s) && /key: 'lich-su'/.test(s) && /'Đã thu hồi'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'phân đoạn + lọc, không tick');
     assert(!/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ không gọi violation-warning');
   });

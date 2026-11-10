@@ -17,4 +17,5 @@ export const EN_Y_THUC_V2 = {
     'When the homeroom teacher saves an action (including a proposal awaiting the manager), the student\'s consultant gets a parent-report task due in 5 days. The consultant writes the Content: what was told and what the parent said.',
   'Xong · 7 ngày': 'Done · 7 days',
   'Thang · {ten}': 'Ladder · {ten}',
+  'Không còn vi phạm nào cần làm': 'No violations left to handle',
 } satisfies Record<string, Dich>;
