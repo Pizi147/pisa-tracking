@@ -36,7 +36,7 @@ import { laLo, soCuaKhoa } from './lamTaiCho.ts';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
 import { PanelChotNgayThi, PanelSauThi } from './PanelSauThi.tsx';
 import { PanelBaoPhTvv } from './PanelBaoPhTvv.tsx';
-import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
+import { PanelXemViPham } from '../yThuc/PanelXemViPham.tsx';
 import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -146,9 +146,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       }
       if (it.group === 'yt_xem') {
         return (
-          <KhungPanel key={it.key} tieuDe={dich(it.tieuDe)} dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.yt_xem ?? 'viec-van-hanh'} han={it.due} /> : null, em: hv ? { id: it.studentId!, ten: hv } : null, lop })} onDong={onDong}>
-            <div className="pt-3"><StudentYThucSection studentId={it.studentId!} /></div>
-          </KhungPanel>
+          <PanelXemViPham key={it.key} studentId={it.studentId!} onDong={onDong} onDaLam={doi}
+            dau={dauViec({ han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.yt_xem ?? 'viec-van-hanh'} han={it.due} /> : null, em: hv ? { id: it.studentId!, ten: hv } : null, lop })} />
         );
       }
       return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} lop={lop} onClose={onDong} onDone={doi} />;

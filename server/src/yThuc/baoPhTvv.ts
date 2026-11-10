@@ -126,18 +126,18 @@ export type ViecBaoPhView = {
   /** UI-CV-TVV (mockup `tvv.html` khối bối cảnh): lần xử lý GVCN đã lưu — người lưu · giờ lưu · lớp · nội dung (vi phạm + ghi chú GVCN). */
   boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null;
     /** UI-1 (mockup U10 K5): vi phạm của lần xử lý, mỗi dòng một (ngày · tên) + ghi chú GVCN riêng — panel tách trường. */
-    viPham: { ngay: string; ten: string }[]; ghiChu: string | null };
+    viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
   /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
   thuHoiCho: { lyDo: string | null } | null;
 };
 
 /** Vi phạm của lần xử lý (ngày tăng dần) — `noiDung` một câu ("Không làm bài tập về nhà (09/09, 10/09)") + danh sách cho panel tách trường. */
-function viPhamXuLy(measureId: number | null): { ngay: string; ten: string }[] {
+function viPhamXuLy(measureId: number | null): { ngay: string; ten: string; skill: string | null }[] {
   if (!measureId) return [];
   return (db().prepare(
-    `SELECT COALESCE(NULLIF(x.ten, ''), NULLIF(x.description, ''), x.category) AS ten, x.occurred_on FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id
+    `SELECT COALESCE(NULLIF(x.ten, ''), NULLIF(x.description, ''), x.category) AS ten, x.occurred_on, x.skill FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id
       WHERE mv.measure_id = ? ORDER BY x.occurred_on, x.id`,
-  ).all(measureId) as any[]).map((r) => ({ ngay: r.occurred_on as string, ten: (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten) }));
+  ).all(measureId) as any[]).map((r) => ({ ngay: r.occurred_on as string, ten: (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten), skill: r.skill ?? null }));
 }
 function noiDungXuLy(vp: { ngay: string; ten: string }[], note: string | null): string | null {
   const theoTen = new Map<string, string[]>();
@@ -197,7 +197,9 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
   const ngay = v.ngay == null || v.ngay === '' ? homNay : String(v.ngay);
   if (!isIsoDate(ngay)) throw badRequest('Ngày không hợp lệ.');
   if (ngay > homNay) throw badRequest('Ngày báo không được sau hôm nay.');
-  const ghiChu = chuTuDo(v.ghiChu, 'Ghi chú', 2000);
+  const ghiChu = chuTuDo(v.ghiChu, 'Nội dung', 2000);
+  /* Y-THUC-V2 (chủ SP 11/11): MỘT ô "Nội dung" cho mọi kết quả, BẮT BUỘC — GV của lớp đọc được TVV báo gì, PH nói gì. */
+  if (!ghiChu?.trim()) throw badRequest('Ghi Nội dung: đã báo PH gì, PH nói gì.');
   /* X04 (audit 03/11): web gửi MỘT khoá cho mỗi ý định ghi; gửi lại sau mất phản hồi (máy chủ đã lưu) → trả bản đã lưu, không thêm lần liên hệ.
      Hai lần liên hệ thật = hai khoá. */
   const khoa = v.khoa == null || v.khoa === '' ? null : String(v.khoa).slice(0, 80);

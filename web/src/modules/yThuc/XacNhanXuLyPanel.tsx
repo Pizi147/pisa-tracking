@@ -17,6 +17,8 @@ import {
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
+import { ChipMon, TienTrinh } from './BangLan.tsx';
+import { CanLamEm } from './khoiYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 const MO_TA_MIN = 10;
@@ -84,6 +86,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
   const tick = d.macDinh.tick.map((id) => theoId.get(id)).filter((v): v is ViPhamV4 => !!v);
   const cuHon = d.macDinh.cuHon.map((id) => theoId.get(id)).filter((v): v is ViPhamV4 => !!v);
+  const ngayVp = [...tick, ...cuHon].map((v) => v.occurredOn).sort();
   const doi = (id: number) => setChon((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const loi = dsLoi([
@@ -201,7 +204,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
           aria-label={`${ngay(v.occurredOn, homNay)} ${dich(v.categoryLabel)}: ${v.ten}`} />
         <span className="w-11 shrink-0 pt-0.5 text-xs tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span>
         <span className="min-w-0 flex-1 text-sm text-slate-200">
-          {v.ten}
+          <ChipMon skill={v.skill} />{v.ten}
           <span className="block text-xs text-slate-500">{dich(v.categoryLabel)}{v.reportedByName ? ` · ${v.reportedByName} ghi` : ''}</span>
         </span>
         <NhanViPham t={v.trangThai} nhan={dich(v.nhanTrangThai)} />
@@ -226,6 +229,12 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
         dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luuXuLy()} /> : undefined,
       }}>
       <div className="flex flex-col gap-5 pt-4">
+        {/* Y-THUC-V2 (mockup K8a / K8c): dải ①②③ cùng thứ tự tab Ý thức — bước GVCN là việc của người xem. */}
+        <TienTrinh nay={1} buoc={[
+          [t('{n} vi phạm', { n: tick.length + cuHon.length }), ngayVp.length ? `${ngay(ngayVp[0], homNay)} – ${ngay(ngayVp[ngayVp.length - 1], homNay)}` : null],
+          [d.nhom ? <CanLamEm x={d} homNay={homNay} /> : t('Xác nhận xử lý'), cheDo === 'xu-ly' && bacKe ? <>{t('Lần này')} <b className="text-slate-100">{dich(bacKe.nhan)}</b></> : null],
+          [<span className="font-medium text-slate-400">{t('Sau khi lưu')}</span>, t('việc cho TVV của em, hạn 5 ngày')],
+        ]} />
         <CanLam>
           {cheDo === 'xu-ly' && bacKe ? (
             <div>
