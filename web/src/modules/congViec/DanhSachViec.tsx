@@ -527,7 +527,13 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
           </span>
         </span>
         <CotHan it={it} daXong={daXong} />
-        <CotNut it={it} nut={nut} daXong={daXong} mo={con ? mo : undefined} onBam={bam} nutPhu={dong.nutPhu?.(it)} />
+        {/* 375: dòng gộp — chạm cả dòng mở khay, "▾" mờ thay nút (nút chiếm chỗ làm chip tên xuống dòng). */}
+        {con ? (
+          <>
+            <span aria-hidden className={`self-start text-[15px] leading-snug text-faint max-sm:col-start-2 max-sm:row-start-1 sm:hidden ${mo ? 'rotate-180' : ''}`}>▾</span>
+            <span className="contents max-sm:[&>*]:hidden"><CotNut it={it} nut={nut} daXong={daXong} mo={mo} onBam={bam} nutPhu={dong.nutPhu?.(it)} /></span>
+          </>
+        ) : <CotNut it={it} nut={nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />}
       </div>
       {con && mo && (
         <ul id={maDs} className="m-0 list-none border-t border-dashed p-0 pb-1.5" style={{ borderColor: 'var(--line-strong)' }} aria-label={ten}>

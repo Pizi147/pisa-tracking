@@ -435,7 +435,8 @@ function PanelChonPhuTrach({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
  */
 function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null }) {
   const tvv = it.group === 'phoi_hop_tvv';
-  const { data, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos${tvv ? '?includeDone=1' : ''}`, [it.classId, tvv]);
+  /* `includeDone`: em vừa xong việc cuối của lượt vẫn ở lại (nhóm "Đã làm", Hoàn tác tại dòng) — một lớp, một request. */
+  const { data, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos?includeDone=1`, [it.classId]);
   const ten = tvv ? t('Báo PH · Meeting CX/GĐCN') : dich(it.tieuDe.split(' · ')[0]);
   const n = it.con?.length ?? it.count ?? 1;
   const dau = dauViec({

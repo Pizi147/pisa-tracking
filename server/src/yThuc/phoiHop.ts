@@ -366,8 +366,8 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
   if (!rows.length) return [];
   const conn = db();
   const attachments = countAttachments('sos_coordination_action', rows.map((r) => r.id));
-  const tvv = tvvCuaHanhDong(p, rows.filter((r) => laMeetingCx(r.kind) && r.status === 'done').map((r) => r.id as number));
   napTruocPhamVi([...new Set(rows.map((r) => r.student_id as number))]);   // `canManageDiscipline` từng em đọc bộ nhớ, không N+1
+  const tvv = tvvCuaHanhDong(p, rows.filter((r) => laMeetingCx(r.kind) && r.status === 'done').map((r) => r.id as number));   // sau nạp phạm vi: quyền ghi không thêm câu
   const byAttempt = new Map<number, any[]>();
   for (const r of rows) byAttempt.set(r.attempt_id, [...(byAttempt.get(r.attempt_id) ?? []), r]);
   const out: CoordinationTurn[] = [];

@@ -1283,9 +1283,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     });
   }
   /*
-   * PR-VAI-a (K5-10, Q14): PHỐI HỢP SOS là việc thật — một dòng mỗi lớp GVCN chủ nhiệm còn lượt chưa xong, đếm bằng CHÍNH
-   * `myCoordinationLines` (cùng số với tab Phối hợp của lớp). Không hạn (P10) — trừ OV-12h: meeting CX / GĐCN hạn 5 ngày từ lúc tạo (`hanPhoiHop`),
-   * dòng lớp mang hạn sớm nhất, quá hạn tô như việc khác.
+   * PR-VAI-a (K5-10, Q14): PHỐI HỢP SOS là việc thật. Không hạn (P10) — trừ OV-12h: meeting CX / GĐCN hạn 5 ngày từ lúc tạo (`hanPhoiHop`),
+   * dòng mang hạn sớm nhất, quá hạn tô như việc khác.
    */
   /* PHOI-HOP-V2 (mockup #1368 K1): một dòng mỗi (lớp × việc) — QL "Tất cả" dựng cho mọi GVCN trong phạm vi, cùng hàm. QL bấm thẳng như GVCN. */
   const lopCnPhoiHop = () => [...new Set(p.assignments

@@ -132,8 +132,7 @@ export const nhanTabCv = (k: string, tvv = false): string =>
  */
 const MUC_CV = [
   ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Speaking chấm chéo')],
-  ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['phoi-hop', t('Phối hợp SOS')], ['bao-ph', t('Báo PH')], ['phan-cong', t('Phân công')],
-  ['vi-pham', t('Vi phạm')],
+  ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['bao-ph', t('Báo PH')], ['vi-pham', t('Vi phạm')], ['phoi-hop', t('Phối hợp SOS')], ['phan-cong', t('Phân công')],
   ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['thieu', t('Thiếu dữ liệu')],
   ['bo-sung', t('Bổ sung hồ sơ')], ['giao', t('Việc được giao')], ['bc-ph', t('Báo cáo PH')], ['khac', t('Khác')],
 ] as const;

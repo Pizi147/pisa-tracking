@@ -1342,9 +1342,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* PHOI-HOP-V2 (chủ SP 11/11, mockup #1368): chụp lại 7 băm — đổi CÓ CHỦ Ý: dòng Phối hợp SOS một / (lớp × việc) thay một / lớp, bỏ thẻ điểm (`theSos`),
        thêm `phoiHop` / `emIds` / `emTen` (GVBM toi: tài khoản đo cũng có việc Phối hợp SOS — cùng lý do). Trước: GVCN toi b365951571812c05, GVBM toi 12e56e58ca3ab54f,
        GVCN_THUONG toi b365951571812c05, QL tat-ca 82a113beaa654d50, QT tat-ca 4ea0cb34545f1f71, QT tat-ca cn 27514f17c920a385, QL gvcn 1704e89b346dd3ad */
-    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': '86ac984ea21de32a', 'GVBM toi': 'b50e92f990512ed8',
-    'GVCN_THUONG toi': '86ac984ea21de32a', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '10fb2f5a29820ef9', 'QT tat-ca': '813b33ee602d4082',
-    'QT tat-ca cn': '3cb5fb6a1f956483', 'QL gvcn': '0f442ddb47992e73', 'GVS toi': '8925006102baff97',
+    'QL toi': '15eb3872996a260a', 'QT toi': '6627fb30cb9de2f7', 'GVCN toi': 'd02ffa733137ff72', 'GVBM toi': 'aee1d734d47c2a09',
+    'GVCN_THUONG toi': 'd02ffa733137ff72', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '9cc603cfa39c2cda', 'QT tat-ca': '3b4aac1ccbc683a3',
+    'QT tat-ca cn': '6eee0fe26aeb3ae9', 'QL gvcn': 'e4c2043a2f1c4039', 'GVS toi': '8925006102baff97',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
