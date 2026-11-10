@@ -78,7 +78,7 @@ const NAP_CASE = {
   paChan: ['case-pa-chan:', `SELECT * FROM case_interventions WHERE case_id IN (${DS_JSON}) AND status != 'cancelled' ORDER BY id`],
   mocMt: ['case-moc-mt:', `SELECT case_id, attempt_no, created_at FROM case_milestones WHERE case_id IN (${DS_JSON}) AND kind IN ('opened', 'repeat')
       AND attempt_no IS NOT NULL ORDER BY created_at DESC, id DESC`],
-  nhom: ['case-nhom:', `SELECT case_id, taxonomy_code, role, observation FROM case_issues WHERE case_id IN (${DS_JSON}) AND role IN ('primary', 'secondary')
+  nhom: ['case-nhom:', `SELECT case_id, taxonomy_code, taxonomy_version, role, observation FROM case_issues WHERE case_id IN (${DS_JSON}) AND role IN ('primary', 'secondary')
                ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`],
   paThe: ['case-pa-the:', `SELECT iv.*, u.full_name AS performer_user_name, rb.full_name AS recorder_user_name FROM case_interventions iv
          LEFT JOIN users u ON u.id = iv.performer_user_id LEFT JOIN users rb ON rb.id = iv.recorded_by
@@ -2310,7 +2310,8 @@ export function caseDetail(p: Principal, caseId: number) {
     )
     .all(caseId) as any[])
     .map((i) => ({
-      id: i.id, role: i.role, code: i.taxonomy_code, label: issueLabel(i.taxonomy_code),
+      /* CAU-HINH-CASE-SOS: tên nhóm theo phiên bản lúc chọn (Quản trị đổi tên sau đó — Case cũ giữ tên cũ). */
+      id: i.id, role: i.role, code: i.taxonomy_code, label: issueLabel(i.taxonomy_code, i.taxonomy_version ?? null),
       branch: issueBranchOf(i.taxonomy_code), skill: i.skill, observation: i.observation,
       byName: i.by_name ?? null, /** 6b-2: ngày ghi mô tả (Case A "Mô tả · người · ngày"). */ createdAt: i.created_at ?? null,
     }));
@@ -3714,8 +3715,8 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
     /* Chủ đề gốc của Case (§7.5, PR-K) — để giao diện mở đúng danh mục phân loại (`issuesForTopic`) khi "Xác định nguyên nhân". */
     topic: c.topic ?? null,
     issueCode: issue?.taxonomy_code ?? null,
-    issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code) : null,
-    nhomPhu: nhomCase.filter((i) => i.role === 'secondary').map((i) => issueLabel(i.taxonomy_code)),
+    issueLabel: issue?.taxonomy_code ? issueLabel(issue.taxonomy_code, issue.taxonomy_version ?? null) : null,
+    nhomPhu: nhomCase.filter((i) => i.role === 'secondary').map((i) => issueLabel(i.taxonomy_code, i.taxonomy_version ?? null)),
     nhanXet: (issue?.observation ?? null) as string | null,
     summary: c.summary ?? null,
     /* Case tự tạo từ SOS còn chờ GVBM xác định nguyên nhân / xác nhận phương án điền sẵn (§3.2, §7.5 — PR-K). */

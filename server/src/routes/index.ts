@@ -284,6 +284,8 @@ api.get('/demo/session', wrap((req) => {
     gocNhin: gocNhinCua(p),
     /* UX-2 (5): khung có lớp trong phạm vi — công tắc Fast Track / Lớp thường. */
     khungPhamVi: khungPhamVi(p),
+    /* CAU-HINH-CASE-SOS: bản cấu hình đang dùng cho ô chọn trên web (nhớ theo tiến trình — 0 câu khi không ai sửa). */
+    cauHinh: { nguyen_nhan: cauHinhCaseSosSvc.cauHinhDangDung('nguyen_nhan'), phuong_an: cauHinhCaseSosSvc.cauHinhDangDung('phuong_an'), moc_sos: cauHinhCaseSosSvc.cauHinhDangDung('moc_sos') },
   };
 }));
 

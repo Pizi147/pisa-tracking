@@ -256,4 +256,16 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     assert(dm.viecKhiChot('hoc_lai', goiY).join() === 'bao_ph_tvv,talk_family' && dm.coBaoPhKhiChot('hoc_lai', goiY), 'việc Final < 50 %');
     assert(dm.viecKhiChot('tam_dung', goiY).length === 0, 'Tạm dừng không qua Cuối khoá');
   }));
+
+  check('CHCS-TEN-CASE · đổi tên nhóm: Case cũ (chọn trước khi đổi) giữ tên lúc chọn, Case mới tên mới; Phân tích dùng tên đang dùng', () => thu(() => {
+    const ma = 'student.listening.technique';
+    const cu = taoCase(moiEm(), ma);
+    const d = sao(dm.cauHinh('nguyen_nhan').du_lieu);
+    d.ft.listening.find((m: any) => m.ma === ma).ten = 'Chiến thuật làm bài';
+    svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: d, tuPhienBan: dm.cauHinh('nguyen_nhan').id });
+    const moi = taoCase(moiEm(), ma);
+    const ten = (id: number) => cases.caseDetail(P.lrTeacher, id).issues.find((i: any) => i.role === 'primary')?.label;
+    assert(ten(cu) === 'Tư duy và kỹ năng làm bài' && ten(moi) === 'Chiến thuật làm bài', `Case cũ ${ten(cu)} · Case mới ${ten(moi)}`);
+    assert(dm.issueLabel(ma) === 'Chiến thuật làm bài', 'không phiên bản → tên đang dùng');
+  }));
 }
