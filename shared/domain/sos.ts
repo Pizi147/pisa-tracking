@@ -233,6 +233,12 @@ export const DEFAULT_SOS_COORDINATION: Record<1 | 2 | 3 | 4, Record<SosLevelKey,
   4: { 1: HS_GD, 2: GD_GVCN, 3: [...GD_GVCN, 'cx_meeting_student'] },
 };
 
+/**
+ * PHOI-HOP-V2 (rà PTA 1–2): toast Hoàn tác sau "Lưu" ở ô ② chỉ khi lần lưu đó chuyển việc Cần xử lý → Xong (Hoàn tác = Đưa lại Cần xử lý).
+ * "Sửa" việc đã xong và lần TVV ghi kết quả không có Hoàn tác kiểu này — đưa lại sẽ xoá ngày / người làm hoặc trả Meeting về Cần xử lý.
+ */
+export const hoanTacXacNhanDuoc = (truoc: string, laGhiTvv: boolean): boolean => !laGhiTvv && truoc === 'pending';
+
 /** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. RF (T4): hàng RF.
  *  CAU-HINH-CASE-SOS: ô của bản `pb` (bản của lượt). */
 export function sosCoordinationFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null, pb?: number | null): readonly CoordinationKind[] {

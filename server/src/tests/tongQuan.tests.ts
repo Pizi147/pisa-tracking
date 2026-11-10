@@ -77,7 +77,8 @@ export async function runTongQuanTests(t: YThucTestKit) {
   check('PR-Pa · Gom nhóm việc GV: 10 loại việc về đúng 4 nhóm, nhóm có việc quá hạn tự mở, Ý thức không bao giờ tự mở', () => {
     /* PR-DUYET: `decide`, `decide_move` không còn là loại việc (thẻ ở hộp Chờ duyệt). */
     const cham = ['score'];
-    const kase = ['cause', 'no_plan', 'ghi_ket_qua_pa', 'do_plan', 'no_owner', 'phoi_hop_sos'];   // PR-VAI-a: result → ghi_ket_qua_pa (V3), Phối hợp SOS thành việc
+    const kase = ['cause', 'no_plan', 'ghi_ket_qua_pa', 'do_plan', 'no_owner'];   // PR-VAI-a: result → ghi_ket_qua_pa (V3). PHOI-HOP-V2: Phối hợp SOS sang Ý thức & Phối hợp
+    eq(d.nhomViecCua('phoi_hop_sos'), 'y-thuc', 'phoi_hop_sos');
     const van = ['chot_len_ft', 'mgmt', 'missing_data'];   // PR-LCb: placement → chot_len_ft (Chốt lộ trình)
     for (const g of cham) eq(d.nhomViecCua(g), 'cham-diem', g);
     for (const g of kase) eq(d.nhomViecCua(g), 'case-hoc-thuat', g);

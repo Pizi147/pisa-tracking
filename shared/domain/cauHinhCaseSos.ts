@@ -81,12 +81,20 @@ export function cauHinhGoc(): DuLieuCauHinh {
     },
     phuong_an: { muc: [...SELF_SERVE_KINDS.map((k) => mucPa(k, 'gv_tu_lam')), ...ACADEMIC_PROPOSAL_KINDS.map((k) => mucPa(k, 'can_ql_duyet'))] },
     moc_sos: {
-      viec: COORDINATION_KINDS.map((k) => ({
-        ma: k, ten: NHAN_VIEC_GOC[k], aiLam: 'gvcn' as const,
-        hanNgay: k === 'cx_meeting_student' || k === 'cx_meeting_family' ? HAN_MEETING_CX_NGAY : null,
-        ghiChu: k === 'cx_meeting_student' || k === 'cx_meeting_family' ? 'bat_buoc' as const : 'khong' as const,
-        ...(k === 'cx_meeting_student' || k === 'cx_meeting_family' ? { toiThieu: GHI_CHU_MEETING_TOI_THIEU } : {}),
-      })),
+      /* PHOI-HOP-V2 XM-1 (chủ SP 11/11 qua PTA): mọi việc GVCN làm (QL làm thẳng); Nội dung BẮT BUỘC khi xác nhận (≥ 1 ký tự) — trừ Meeting CX/GĐCN
+         (nội dung gửi TVV tuỳ chọn) và Báo PH qua TVV lớp thường (4 nội dung máy dựng). Meeting CX/GĐCN: GVCN xác nhận → bước TVV báo gia đình,
+         sắp họp, ghi kết quả — hạn 5 ngày lịch, Nội dung ≥ 10 ký tự (luật OV-12h chuyển sang bước TVV). */
+      viec: COORDINATION_KINDS.map((k) => {
+        const meeting = k === 'cx_meeting_student' || k === 'cx_meeting_family';
+        const batBuoc = !meeting && k !== 'bao_ph_tvv';
+        return {
+          ma: k, ten: NHAN_VIEC_GOC[k], aiLam: 'gvcn' as const,
+          hanNgay: meeting ? HAN_MEETING_CX_NGAY : null,
+          ghiChu: batBuoc ? 'bat_buoc' as const : 'khong' as const,
+          ...(batBuoc ? { toiThieu: 1 } : {}),
+          ...(meeting ? { buocTvv: { hanNgay: HAN_MEETING_CX_NGAY, toiThieu: GHI_CHU_MEETING_TOI_THIEU } } : {}),
+        };
+      }),
       /* RF: mã cũ dùng hàng MT3 cho PA (≡ MT4 ≡ MT5) và hàng MT4 cho việc → hàng riêng = MT4. */
       ft: { mt1: hang(1), mt2: hang(2), mt3: hang(3), mt4: hang(4), mt5: hang(5), rf: hang(4) },
       thuong: {
