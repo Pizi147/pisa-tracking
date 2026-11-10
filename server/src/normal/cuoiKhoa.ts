@@ -33,7 +33,8 @@ export type TyLeLuot = {
   /** OV-6b1: ngưỡng đạt của lớp của lượt — dải / gợi ý Cuối khoá đọc cùng ngưỡng. */
   nguong: number;
   /** % từng môn (chưa làm tròn; null = chưa có điểm) — hộp Kết luận khoá ở hồ sơ HV. */
-  mon: { skill: string; ratio: number | null }[];
+  /* MOCKUP-1111 màn 3 (chủ SP 11/11): ô môn ghi số câu đúng / tổng câu — cùng câu SQL đã đọc (`raw_score`, `raw_total`), 0 câu thêm. */
+  mon: { skill: string; ratio: number | null; dung: number | null; tong: number | null }[];
 };
 
 /** % tổng của nhiều lượt lớp thường — 2 câu cho cả lô (lượt + điểm), mỗi lượt qua `evaluateRegular`. Lượt không phải lớp thường → không có trong kết quả. */
@@ -90,7 +91,7 @@ function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
     out.set(id, {
       tyLe: kq.tyLeTong, du: kq.complete, nguong: kq.passThreshold, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),
-      mon: kq.skills.map((s) => ({ skill: s.skill, ratio: s.ratio })),
+      mon: kq.skills.map((s) => ({ skill: s.skill, ratio: s.ratio, dung: s.score, tong: s.total })),
     });
   }
   return out;

@@ -269,7 +269,9 @@ export async function runPrS5fATests(t: YThucTestKit) {
     const h = (tyLe: number, truot: string[] = []) => d.goiYCuoiKhoa({ ct: 'FOU', tyLe, monTruot: truot }).nhanHuong;
     assert(h(0.8) === 'Lên BE' && h(0.65, ['reading']) === 'Lên BE + bổ trợ' && h(0.55, ['reading']) === 'Quản lý cân nhắc' && h(0.4) === 'Học lại FOU',
       [h(0.8), h(0.65, ['reading']), h(0.55, ['reading']), h(0.4)].join(' | '));
-    assert(!/goiY\.nhanNgan/.test(src('web/src/modules/classes/CuoiKhoaLop.tsx')) && /goiY\.nhanHuong/.test(src('web/src/modules/classes/CuoiKhoaLop.tsx')), 'Cuối khoá: cột Gợi ý ghi hướng (nhanHuong), không nhanNgan');
+    /* MOCKUP-1111 màn 3 (#1326): bỏ cột Gợi ý — em xếp NHÓM theo hướng gợi ý (`goiY.huong`: Lên · Học lại · QL cân nhắc · Chờ Final), không nhanNgan. */
+    const ck = src('web/src/modules/classes/CuoiKhoaLop.tsx');
+    assert(!/goiY\.nhanNgan/.test(ck) && /const nhomCua = \(e: Em\): KhoaNhom => \{ const g = e\.cuoiKhoa\?\.goiY; return !g \? 'cho' : g\.huong === 'len' \? 'len' : g\.huong === 'hoc_lai' \? 'lai' : 'cn'; \};/.test(ck), 'Cuối khoá: nhóm theo hướng gợi ý, không nhanNgan');
     assert(/loTrinh \? ds\.filter\(\(x\) => x\.key !== 'xep-lop'\)/.test(src('web/src/modules/classes/DauTrangLop.tsx')), 'DauTrangLop bỏ chip xep-lop khi có dải');
   });
 
