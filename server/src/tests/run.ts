@@ -9750,6 +9750,9 @@ await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== LOP-1-LOP (hồ sơ lớp đọc lượt một lớp; badge quá hạn từ viec-theo-em — giảm dòng đọc Turso)
 const { runPrLop1LopTests } = bocTep('prLop1Lop', await import('./prLop1Lop.tests.ts'));
 await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY } as any);
+// ==================================================================== P1-CONG-VIEC (rà toàn bộ 11/11: một tập việc, một hàm đếm)
+const { runPrP1CongViecTests } = bocTep('prP1CongViec', await import('./prP1CongViec.tests.ts'));
+await runPrP1CongViecTests({ check, assert, conn, P } as any);
 // ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
 const { runDonLuongTests } = bocTep('donLuong', await import('./donLuong.tests.ts'));
 await runDonLuongTests({ check, assert, conn, P, TODAY, addDays } as any);

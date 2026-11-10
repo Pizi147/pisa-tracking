@@ -984,7 +984,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   // ------------------------------------------------- 2d. PR-LCb: Chốt lộ trình (một việc mỗi lớp thường, Quản lý) — cùng hàm với chỉ số `lop-chua-chot-len-ft`
   /*
    * Thay hai việc "Chốt lên FT" (trước tuần Final) và "Chuyển tiếp lớp" (từ tuần Final): MỘT việc từ thứ Hai tuần trước Final (N20) tới khi mọi em đang học
-   * có quyết định chuyển lớp; qua hạn vẫn còn, đỏ. Việc của cả lớp, không của riêng ai — không gán người phụ trách.
+   * có quyết định chuyển lớp; qua hạn vẫn còn, đỏ. Việc của cả lớp, không gán người phụ trách — nhưng là việc CỦA người xem (`mine`), vì `lopChoChotLoTrinh`
+   * chỉ trả lớp người xem chốt được (`class.edit` = quyền ra lệnh): badge, "Của tôi · Quá hạn" đếm như Xét lại lộ trình (P1 G5-01, rà 11/11).
    */
   for (const x of co('chot_len_ft') ? lopChoChotLoTrinh(p, f.branchId ?? null, today) : []) {
     const chu = chuViecChotLoTrinh(x);
@@ -995,7 +996,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: chu,
       tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Cuối khoá ›',
       href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`,
-      ownerId: null, owner: null, mine: false, due: x.han, statusLabel: 'Chưa chốt',
+      ownerId: null, owner: null, mine: true, due: x.han, statusLabel: 'Chưa chốt',
     });
   }
 
