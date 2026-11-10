@@ -88,19 +88,22 @@ Thêm **Ý thức** (giữ nguyên). Tab Phân tích: **Chi nhánh · SOS · Thi
 - Bản chép thật (07/11): **0 em** được đánh Không thi · 34 lộ trình có đủ 4 kỹ năng · **khoảng 49 lộ trình đã qua ngày thi mà chưa có KQ, cũng chưa đánh Không thi** (đếm thô, session đếm lại đúng hàm) · 20 lộ trình KCK, 1 em có KQ.
 - Nghĩa là số Không thi hiện chưa thật vì chưa ai đánh. Các em không thi đang nằm lẫn trong "chưa có KQ".
 
-### 5.2 Số chính
-- **Em thi** (ngày thi trong kỳ, có KQ).
-- **Vượt · Đạt · Chưa đạt Target** — số + %; chỉ em có cam kết Target (bỏ KCK, bỏ em chưa có Target).
+### 5.2 Số chính (chủ SP 12/11, ba lần: KCK gồm WL 2 · cần tỉ lệ đạt tổng thể · "KCK không cần quan tâm quá nhiều, cho vào danh sách tổng hợp điểm thi/ danh sách thi là được" · đổi chữ "có cam kết", "mọi em có target")
+- **KCK** trong báo cáo này = em không cam kết Target **và em đã nhận WL 2** (bậc `wl_2` thang Ý thức, cùng lộ trình, trước ngày thi). Chỉ gom trong báo cáo; web KHÔNG tự chuyển em sang KCK (luật không đổi).
+- Một khối "Kết quả thi thật", hai số %, một thanh:
+  - **Đạt Target** (số to) — Vượt + Đạt trên số em thi có KQ, **trừ KCK**. Dòng nhỏ: "18/25 em · trừ KCK".
+  - **Tổng thể** (cạnh đó, nhỏ hơn) — cùng cách tính nhưng **gồm cả KCK**. Dòng nhỏ: "20/31 em · gồm KCK".
+  - Em không có Target (phần lớn em KCK — bản chép 07/11: 16/20 lộ trình KCK không có Target) không tính vào % nào; ghi trong ⓘ, không thành số riêng.
+  - **Thanh** Vượt · Đạt · Chưa đạt (chỉ phần trừ KCK, màu `lopKq` như bây giờ). Bấm một đoạn = mở panel danh sách đoạn đó (luật 2.1b).
+  - Chữ cấm dùng trên màn: "có cam kết", "mọi em có Target". ⓘ giải thích: "KCK gồm em không cam kết Target và em đã nhận WL 2. Em không có Target không tính vào %."
 - **Không thi** — em được đánh "Không thi", không vào %.
-- **Chưa có KQ** (**số mới**) — em đã qua ngày thi, chưa có KQ, chưa đánh Không thi (cùng hàm `trangThaiSauThi`, giai đoạn `da_thi_cho_kq`). Bấm ra danh sách để TVV / QL gọi hỏi rồi nhập KQ hoặc đánh Không thi. Nhờ số này mà số Không thi dần thành thật.
-- Không có số "Sau thi" / bước tiếp (chủ SP bỏ). Cột "Bước tiếp" trong danh sách kết quả: giữ như bây giờ (thao tác cũ, chỉ đọc).
+- **Chưa có KQ** (**số mới**, hiện tại) — em đã qua ngày thi, chưa có KQ, chưa đánh Không thi (`trangThaiSauThi`, `da_thi_cho_kq`). Bấm ra danh sách để TVV / QL gọi hỏi rồi nhập KQ hoặc đánh Không thi.
+- Không có số "Sau thi" / bước tiếp (chủ SP bỏ). Cột "Bước tiếp" trong danh sách kết quả: giữ như bây giờ (chỉ đọc).
 
-### 5.3 Em KCK (không cam kết Target) — PTA đề xuất
-- Không vào số chính, không vào % (luật cũ giữ).
-- **Một thẻ nhỏ "KCK · n em" đứng riêng cuối dải số**, màu trầm hơn, dưới ghi "không vào %". Trong thẻ: Vượt a · Đạt b · Chưa đạt c, so Target nếu em có Target. Em KCK không có Target thì ghi "OVR TB x.x". Bấm thẻ ra danh sách em KCK có điểm.
-- Danh sách kết quả: em KCK giữ trong danh sách, có chip "KCK" cạnh mức. Bộ lọc mức có thêm lựa chọn "KCK" nếu bảng có bộ lọc mức.
+### 5.3 Em KCK trong danh sách
+- KHÔNG có thẻ / đoạn thanh KCK riêng (bỏ đề xuất thẻ KCK trước đó).
+- Danh sách kết quả thi thật: em KCK giữ trong danh sách, có chip "KCK" (em WL 2: chip "WL 2") cạnh mức; bộ lọc mức (nếu có) thêm "KCK".
 - Bảng Từng kỹ năng và Theo GV: không tính KCK (như bây giờ).
-- Người làm mockup vẽ thẻ này trong dải số; nếu chật ở 375 thì cho thẻ KCK xuống hàng riêng.
 
 ### 5.4 Giữ
 Từng kỹ năng (so Target overall) · Theo GV (QL / QT / CX, trọng số tuần dạy) · Danh sách kết quả thi thật (nhóm lớp, phân trang, Xuất Excel hiện có). Thêm bảng Theo lớp / Theo chi nhánh: Em thi · Vượt · Đạt · Chưa đạt · Không thi · Chưa có KQ.
@@ -143,10 +146,10 @@ Từng kỹ năng (so Target overall) · Theo GV (QL / QT / CX, trọng số tu�
 5. **Tháng mặc định của Chi nhánh:** dùng đúng cách chia tuần vào tháng của mã tuần đang có (`tuanLich`). Tháng hiện tại = mọi tuần mang mã tháng đó, kể cả tuần chưa tới. Đầu tháng ít số thì người dùng chọn lại khoảng; không tự lùi tháng.
 6. **Khối PA ở SOS:** có ở cả Fast Track và Lớp thường, như tab Hiệu quả PA bây giờ (PA theo quy chế lớp thường = Bổ trợ). Hai tab cũ không chặn quyền riêng nên khối PA hiện cho mọi người đang xem được SOS. Link cũ `goc=hieu-qua-pa` → SOS và cuộn tới khối PA.
 7. **Bỏ "Đạt" ở SOS:** mẫu số là "Lượt MT". Ô SOS ghi "n · x %" trên số lượt. Không vẽ ô "còn lại".
-8. **Thẻ KCK:** "KCK · n em" = mọi em KCK có KQ trong kỳ. Bên trong: Vượt a · Đạt b · Chưa đạt c (em KCK có Target) + "không Target k" (OVR TB). a + b + c + k = n. Bấm ra đủ n em.
+8. ~~Thẻ KCK~~ — bỏ (chủ SP 12/11: KCK chỉ trong danh sách, xem 5.2–5.3).
 9. **"Chưa có KQ" là số HIỆN TẠI:** mọi em đã qua ngày thi, chưa có KQ, chưa đánh Không thi, không lọc theo kỳ, nhãn ghi "hiện tại". Lý do: số này để TVV / QL gọi hỏi, lọc theo kỳ thì em thi tháng trước sẽ mất khỏi số. Các số còn lại của Thi thật vẫn theo kỳ (ngày thi trong kỳ).
 
 ## 10. Để người làm quyết
 - Cỡ chữ, khoảng cách chính xác của dải số trình chiếu (mục 3). Thứ tự khối trong từng báo cáo. Cách xếp 375.
-- Cách vẽ thẻ KCK (mục 5.3), miễn là nằm riêng, rõ "không vào %".
+- Cách vẽ khối "Đạt Target · Tổng thể" + thanh (mục 5.2), miễn là hai số không lẫn nhau và đọc được trong 3 giây.
 - Lớp thường ở SOS: giữ những cột nào sau khi bỏ "đạt" (mục 4). Ghi lý do trong bảng truy vết.
