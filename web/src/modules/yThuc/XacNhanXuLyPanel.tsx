@@ -147,7 +147,12 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const xongTep = async (id: number, nhan: string, ds: TepChoMuc[], traNhap?: () => void) => {
     const kq = ds.some((x) => !x.xong) ? await taiTepCho(ds, { ownerType: 'discipline_measure', ownerIds: [id] }) : ds;
     setTep(kq);
-    if (kq.every((x) => x.xong)) { toast.hoanTac(cauXong(nhan), () => void hoanTac(id, traNhap)); onClose(); return; }
+    if (kq.every((x) => x.xong)) {
+      toast.hoanTac(cauXong(nhan), () => void hoanTac(id, traNhap));
+      /* Chữ đã lưu — xoá khỏi ô rồi mới đóng (đóng lúc ô còn chữ thì khung hỏi "Bỏ chữ đang gõ?"). */
+      setMoTa(''); setTimeout(onClose, 0);
+      return;
+    }
     setDaLuu({ id, loai: 'xu-ly', nhan });
   };
 
