@@ -1,4 +1,4 @@
-import { db } from '../db.ts';
+import { DS_JSON, db, theoLoJson } from '../db.ts';
 import {
   KN_LUOT_BANG, KN_LUOT_CUA, NHAN_KN_LUOT, khoaBai, nhanBai, soSanhDiem, tenMonNgan, type DongBaiThuong, type DongLuotDiem, type ODiemLuot,
   LEGACY_REGULAR_SKILL_MAP, nhanDonVi, nguongMiniTest, NHAN_NHOM_CON, PERMISSIONS, daiCuoiKhoa, khoaDot,
@@ -322,8 +322,9 @@ export function lopKetThucCoLuot(p: Principal, soTuan: number, branchId: number 
     .map((c) => ({ ...c, ket_thuc: true }));
 }
 
-export function tongHop(p: Principal, f: FilterTongHop): TongHopKetQua {
-  const r = tinh(p, f);
+/** Tính bảng một lần, dùng cho cả số (`tongHop`) lẫn tập bài (Chi nhánh V2 · Cuối khoá theo em). */
+export const tinhTongHop = (p: Principal, f: FilterTongHop) => tinh(p, f);
+export function tongHop(p: Principal, f: FilterTongHop, r = tinh(p, f)): TongHopKetQua {
   /* OV-12d: `choDuyetQuaHan` đi kèm (⚠ n của cột Chờ duyệt), không phải cột riêng. */
   const cols = cotTongHopFor(r.ct).map((c) => c.khoa);
   const oCols = [...cotExcel(r.ct).map((c) => c.khoa), 'choDuyetQuaHan'];   // PT-LOP-THUONG: tính cả cột Excel cũ (Checkpoint, Mini Test, Xử lý)   // cột ghép "HV - Case" mang hai số: hvCoCase và case
@@ -344,7 +345,9 @@ export const tenChiNhanh = (branchId: number | null | undefined): string | null 
 export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: string }):
   { n: number; tieuDe: string; rows: MetricRow[]; bangLuot?: boolean; kieu?: 'luot' | 'bai-thuong'; knNhan?: string | null; nguong?: number | null; cachTinh?: string | null; chiNhanh?: string | null } {
   /* PT-LOP-THUONG: tra cả cột Excel cũ (Checkpoint, Mini Test, Xử lý lớp thường) — đường / link cũ vẫn mở panel cũ, không lỗi. */
-  const cotDef = (cotExcel(f.ct) as CotTongHop[]).find((c) => c.khoa === f.cot);
+  /* Phân tích V2 · Chi nhánh lớp thường: ô "Đạt Test" = HỢP hai ô đạt của bảng (Progress "Đạt hết" + Final "Từ 70%") — cùng tập, không tính lại. */
+  const hop = f.ct === 'thuong' && f.cot === 'dat-test' ? ['gk-dat', 'ck-dat'] : null;
+  const cotDef = (cotExcel(f.ct) as CotTongHop[]).find((c) => c.khoa === (hop ? 'gk-dat' : f.cot));
   if (!cotDef) throw badRequest(`Cột "${f.cot}" không có trong bảng.`);
   const r = tinh(p, f);
   let tap: Tap | null = null; let luotEm: LuotEm | null = null; let nhanDong = '';
@@ -357,17 +360,13 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
     }
   }
   if (!tap) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
-  const ids = [...(tap.get(f.cot) ?? new Set<number>())].sort((a, b) => a - b);
-  const tieuDe = `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`;
+  const ids = [...new Set((hop ?? [f.cot]).flatMap((k) => [...(tap!.get(k) ?? [])]))].sort((a, b) => a - b);
+  const tieuDe = hop ? `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — Đạt Test · ${nhanDong}`
+    : `${ids.length} ${nhanDonVi(cotDef.donVi, f.ct)} — ${cotDef.nhomCon ? `${NHAN_NHOM_CON[cotDef.nhomCon]} · ` : ''}${cotDef.nhan(f.ct)} · ${nhanDong}`;
   const rows = rowsFor(cotDef.donVi, ids);
   if (cotDef.donVi === 'case') return { n: ids.length, tieuDe, rows };
   /* PT-LOP-THUONG (PR-2, mockup v13 A3): ô lớp thường (đều là ô bài) → bảng bài có điểm theo môn của chương trình. */
-  if (f.ct === 'thuong' && cotDef.donVi === 'dot-test') {
-    const bai = dongBaiThuongCua(ids);
-    const bang = rows.map((r) => (bai.has(r.id) ? ({ ...r, baiThuong: bai.get(r.id) } as MetricRow) : r));
-    return { n: ids.length, tieuDe, rows: bang, ...(bang.every((r: any) => r.baiThuong) ? { bangLuot: true, kieu: 'bai-thuong' as const } : {}),
-      nguong: nguongCua(bai), cachTinh: cotDef.goiY ?? null, chiNhanh: tenChiNhanh(f.branchId) };
-  }
+  if (f.ct === 'thuong' && cotDef.donVi === 'dot-test') return panelBaiThuong(ids, tieuDe, cotDef.goiY ?? null, f.branchId);
   if (f.ct === 'thuong') return { n: ids.length, tieuDe, rows };   // Mini Test (đếm HV, chỉ còn ở Excel): panel cũ
   /* PT-PANEL (PR-1): mọi ô FT không phải Case → panel BẢNG có điểm. Ô lượt: chính lượt; ô đếm HV: lượt làm em vào ô (`luotEm`). */
   const em = luotEm?.get(f.cot);
@@ -376,6 +375,31 @@ export function oTongHop(p: Principal, f: FilterTongHop & { khoa: string; cot: s
     n: ids.length, tieuDe, rows: ganLuotDiem(p, rows, luotCua),
     bangLuot: true, kieu: 'luot', knNhan: f.cot.startsWith('kn:') ? (KN_LUOT_CUA[f.cot.slice(3)] ? NHAN_KN_LUOT[KN_LUOT_CUA[f.cot.slice(3)]] : null) : null,
     cachTinh: cotDef.goiY ?? null, chiNhanh: tenChiNhanh(f.branchId),
+  };
+}
+
+/** Panel BẢNG bài lớp thường (điểm từng môn + % tổng) của một tập bài — ô Test lớp thường và Cuối khoá của Chi nhánh V2. */
+export function panelBaiThuong(ids: readonly number[], tieuDe: string, cachTinh: string | null, branchId: number | null | undefined) {
+  const rows = rowsFor('dot-test', [...ids]);
+  const bai = dongBaiThuongCua(ids);
+  const bang = rows.map((r) => (bai.has(r.id) ? ({ ...r, baiThuong: bai.get(r.id) } as MetricRow) : r));
+  return { n: ids.length, tieuDe, rows: bang, ...(bang.every((r: any) => r.baiThuong) ? { bangLuot: true as const, kieu: 'bai-thuong' as const } : {}),
+    nguong: nguongCua(bai), cachTinh, chiNhanh: tenChiNhanh(branchId) };
+}
+
+/**
+ * Phân tích V2 · Chi nhánh lớp thường — CUỐI KHOÁ THEO EM (PTA rà #1408, Rulebook §20.6): dải Đạt · 60–69 · 50–59 · < 50 là % TỔNG CỦA EM (Σ điểm / Σ câu các
+ * môn, chỉ bài ĐỦ môn — đúng các ô `ck-*` của bảng). Một em nhiều bài Final trong kỳ (thi lại) → bài mới nhất. Trả bài đại diện của mỗi em theo dải (số = số em).
+ */
+export const COT_CUOI_KHOA = ['ck-dat', 'ck-60', 'ck-50', 'ck-duoi50'] as const;
+export function cuoiKhoaTheoEm(taps: readonly Tap[]): (tap: Tap) => number[][] {
+  const ids = [...new Set(taps.flatMap((tp) => COT_CUOI_KHOA.flatMap((k) => [...(tp.get(k) ?? [])])))];
+  const em = new Map<number, number>();
+  theoLoJson(ids, (json) => { for (const r of db().prepare(`SELECT id, student_id FROM assessment_attempts WHERE id IN (${DS_JSON})`).all(json) as any[]) em.set(r.id, r.student_id); });
+  return (tap) => {
+    const moi = new Map<number, { id: number; dai: number }>();
+    COT_CUOI_KHOA.forEach((k, dai) => { for (const id of tap.get(k) ?? []) { const s = em.get(id)!; if (!moi.has(s) || moi.get(s)!.id < id) moi.set(s, { id, dai }); } });   // ponytail: "mới nhất" = id lượt lớn nhất (id tăng theo lúc tạo)
+    return COT_CUOI_KHOA.map((_, dai) => [...moi.values()].filter((x) => x.dai === dai).map((x) => x.id).sort((a, b) => a - b));
   };
 }
 

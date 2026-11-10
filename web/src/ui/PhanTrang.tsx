@@ -19,17 +19,19 @@ function docCo(uid: number | null): CoTrang {
 export type ThanhPhanTrang = {
   tong: number; trang: number; soTrang: number; co: CoTrang; dau: number; cuoi: number; donVi: string;
   onTrang: (n: number) => void; onCo: (n: CoTrang) => void; dauBang: RefObject<HTMLDivElement>;
+  /** Cỡ trang cố định (Chi nhánh V2: 6 lớp / trang) — không ô "Mỗi trang". */ coDinh?: number;
 };
 
-export function usePhanTrang(tong: number, khoa: string, donVi: string) {
+export function usePhanTrang(tong: number, khoa: string, donVi: string, coDinh?: number) {
   const uid = useSession().session?.user?.id ?? null;
-  const [co, setCo] = useState<CoTrang>(() => docCo(uid));
+  const [coNho, setCo] = useState<CoTrang>(() => docCo(uid));
+  const co = (coDinh ?? coNho) as CoTrang;
   const [trang, setTrang] = useState(1);
   const dauBang = useRef<HTMLDivElement>(null);
   useEffect(() => { setTrang(1); }, [khoa]);
   const c = catTrang(tong, trang, co);
   const thanh: ThanhPhanTrang = {
-    tong, trang: c.trang, soTrang: c.soTrang, co, dau: c.dau, cuoi: c.cuoi, donVi, dauBang,
+    tong, trang: c.trang, soTrang: c.soTrang, co, dau: c.dau, cuoi: c.cuoi, donVi, dauBang, coDinh,
     onTrang: setTrang,
     onCo: (n) => { setCo(n); setTrang(1); try { localStorage.setItem(khoaNho(uid), String(n)); } catch { /* không nhớ được thì dùng cỡ này đến khi tải lại */ } },
   };
@@ -38,7 +40,7 @@ export function usePhanTrang(tong: number, khoa: string, donVi: string) {
 
 /** Thanh "1–10 / 34 lượt · 1 2 3 4 · Mỗi trang 10 20 50". Ít hơn 11 dòng → không hiện (không có gì để lật). */
 export function PhanTrang({ duoi, ...p }: ThanhPhanTrang & { duoi?: boolean }) {
-  if (p.tong <= CO_TRANG[0]) return duoi ? null : <div ref={p.dauBang} />;
+  if (p.tong <= (p.coDinh ?? CO_TRANG[0])) return duoi ? null : <div ref={p.dauBang} />;
   const doi = (n: number) => {
     p.onTrang(n);
     if (duoi) p.dauBang.current?.scrollIntoView({ block: 'start' });
@@ -63,13 +65,13 @@ export function PhanTrang({ duoi, ...p }: ThanhPhanTrang & { duoi?: boolean }) {
         ))}
         <button type="button" className={`${nut} bg-transparent text-slate-300 disabled:opacity-40`} disabled={p.trang >= p.soTrang} onClick={() => doi(p.trang + 1)} aria-label={t('Trang sau')}>›</button>
       </span>
-      <span className="flex items-center gap-1">
+      {!p.coDinh && <span className="flex items-center gap-1">
         <span>{t('Mỗi trang')}</span>
         {CO_TRANG.map((n) => (
           <button key={n} type="button" aria-pressed={n === p.co} onClick={() => p.onCo(n)}
             className={`${nut} ${n === p.co ? 'bg-[color:var(--accent-soft)] font-semibold text-slate-100' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}>{n}</button>
         ))}
-      </span>
+      </span>}
     </nav>
   );
 }

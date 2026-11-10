@@ -98,6 +98,7 @@ export function loaiBangLuot(nguon: string): string {
   if (nguon.startsWith('/phan-tich/giao-vien')) return t('Số · Phân tích GV');
   if (nguon.startsWith('/phan-tich/y-thuc')) return t('Số · Ý thức');
   if (nguon.startsWith('/phan-tich/hieu-qua-pa')) return t('Số · Hiệu quả PA');
+  if (nguon.startsWith('/tong-quan/chi-nhanh-v2')) return t('Số · Chi nhánh');
   if (nguon.startsWith('/phan-tich/thi-that')) return /[?&]o=gv:/.test(nguon) ? t('Số · Thi thật · theo GV') : t('Số · Thi thật');
   return t('Báo cáo · chỉ đọc');
 }

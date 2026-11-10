@@ -13,9 +13,9 @@ export async function runPrS6fBTests(t: YThucTestKit) {
   console.log('\nPR-S6F-b · Sửa sau rà đợt 6 — giao diện, chữ, tốc độ');
 
   // ------------------------------------------------------------------ Task 5 · Phân tích — chữ và link (D8)
-  check('S6F-b (5) · nhãn tab Tổng hợp theo khung: lớp thường "Test", FT "Test + SOS" (OV-15e, C28); góc khác như cũ', () => {
+  check('S6F-b (5) · nhãn tab Tổng hợp theo khung: lớp thường "Test", FT "SOS" (Phân tích V2 12/11; D8 giữ); góc khác như cũ', () => {
     assert(d.nhanGocNhin('tong-hop', 'thuong') === 'Test', d.nhanGocNhin('tong-hop', 'thuong'));
-    assert(d.nhanGocNhin('tong-hop', 'ft') === 'Test + SOS', d.nhanGocNhin('tong-hop', 'ft'));
+    assert(d.nhanGocNhin('tong-hop', 'ft') === 'SOS', d.nhanGocNhin('tong-hop', 'ft'));
     for (const g of d.GOC_NHIN) if (g !== 'tong-hop') assert(d.nhanGocNhin(g, 'thuong') === d.GOC_NHIN_LABEL[g], g);
   });
 
@@ -23,7 +23,7 @@ export async function runPrS6fBTests(t: YThucTestKit) {
     const kq = (ct: string) => ({ theo: 'lop', ct, cot: [], hang: [], tong: {}, scopeEmpty: false });
     const dau = (ct: string) => String(d.bangXuatTongHop(kq(ct), new Set(), 'MB')[0][0]);
     assert(!dau('thuong').includes('SOS') && dau('thuong').startsWith('Test · '), dau('thuong'));
-    assert(dau('ft').startsWith('Test + SOS'), dau('ft'));
+    assert(dau('ft').startsWith('SOS · '), dau('ft'));
     const tsx = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
     assert(/ct === 'thuong' \? 'tong-hop-test' : 'tong-hop-test-sos'/.test(tsx), 'tên file Excel theo khung');
   });
