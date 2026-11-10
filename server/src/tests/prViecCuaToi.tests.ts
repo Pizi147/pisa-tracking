@@ -33,6 +33,12 @@ export async function runPrViecCuaToiTests(t: any) {
     assert(r && r.con_viec === 0 && d.nhomThongBao(r) === 'de-biet', `dòng tín hiệu pending: ${JSON.stringify(r && { con_viec: r.con_viec })}`);
   }));
 
+  check('G5-04 / G1-05 · Công việc: ô lọc hạn đếm cùng tập với đầu trang ("n việc · m quá hạn"), ẩn ở tab Chờ bạn duyệt', () => {
+    const s = nguon('web/src/modules/congViec/HoTroHocVienTab.tsx');
+    assert(/demLocNhanh\(items, 'tat-ca', homNay\)/.test(s), 'demLocNhanh trên items (mọi tab)');
+    assert(/tab !== 'duyet' && \(\s*<ChonDangNut/.test(s), 'ẩn ô lọc hạn ở tab duyệt');
+  });
+
   check('G1-13 / G4-18 · dòng vừa xong giữ bản dòng lúc lưu LẦN ĐẦU (tên việc gốc), không bản sau lần lưu cuối', () => {
     assert(/setGiu\(\(m\) => \(m\.has\(it\.key\) \? m : new Map\(m\)\.set\(it\.key, it\)\)\)/.test(nguon('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'daLam giữ bản đầu');
     assert(/daXong && \(it\.group === 'ban_giao' \|\| viecCaLop\)\) \? null/.test(nguon('web/src/modules/congViec/DanhSachViec.tsx')), 'dòng xong bỏ tiến độ cũ (bàn giao, việc cả lớp)');

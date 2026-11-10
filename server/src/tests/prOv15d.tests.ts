@@ -77,6 +77,10 @@ export async function runPrOv15dTests(t: YThucTestKit) {
 
   const audit: any = await import('../platform/audit.ts');
 
+  check('OV15d-9 · chỉ mục idx_case_owner (sos_cases theo người phụ trách) có (CHUONG-V2 XM-3: câu thông báo Case tự động đã bỏ — kiểm câu đó cũng bỏ)', () => {
+    assert(conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_case_owner'`).get(), 'thiếu chỉ mục idx_case_owner');
+  });
+
   check('OV15d-10 · notify upsert cập nhật cả đường mở (duong) — thông báo cũ trỏ đúng việc mới', () => {
     thu(() => {
       const uid = P.w1Teacher.userId;
