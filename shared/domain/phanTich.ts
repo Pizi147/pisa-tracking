@@ -26,13 +26,12 @@ import { t } from '../i18n/index.ts';
 /* 06/11 (chủ SP): KQ Thi thật đứng thứ 3, ngay sau Phân tích GV; khoá URL `ket-qua-thi` giữ (link cũ). */
 /* Phân tích V2 (chủ SP 12/11, đặc tả mục 2, 11): Chi nhánh · Thi thật · SOS · Giáo viên · Ý thức — khoá URL cũ GIỮ (`bao-cao` = Chi nhánh, `ket-qua-thi` = Thi thật,
    `tong-hop` = SOS, `giao-vien` = Giáo viên) nên link cũ `?goc=` vào thẳng đúng báo cáo. Hiệu quả PA còn là tab riêng tới PR SOS (gộp vào SOS). */
-export const GOC_NHIN = ['bao-cao', 'ket-qua-thi', 'tong-hop', 'hieu-qua-pa', 'giao-vien', 'y-thuc'] as const;
+export const GOC_NHIN = ['bao-cao', 'ket-qua-thi', 'tong-hop', 'giao-vien', 'y-thuc'] as const;
 export type GocNhin = (typeof GOC_NHIN)[number];
 export const GOC_NHIN_LABEL: Record<GocNhin, string> = {
   'bao-cao': 'Chi nhánh',
   'tong-hop': 'SOS',
   'ket-qua-thi': 'Thi thật',   // THI-THAT (05/11): bỏ phần Mock, tab chỉ thi thật — khoá URL giữ
-  'hieu-qua-pa': 'Hiệu quả PA',
   'giao-vien': 'Giáo viên',
   'y-thuc': 'Ý thức',   // PR-YT4 (K1-25): Phối hợp SOS ở Việc của GVCN, không ở góc nhìn này
 };
@@ -54,7 +53,8 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
   const gocParam = params.get('goc');
   let gocMoi: GocNhin | null = null;
   let goc: GocNhin;
-  if (gocParam === 'ket-qua') { goc = 'hieu-qua-pa'; gocMoi = goc; }
+  /* V2 (PR-3): Hiệu quả PA gộp vào SOS — `hieu-qua-pa` / `ket-qua` cũ → SOS (web cuộn tới khối PA `#khoi-pa`). */
+  if (gocParam === 'ket-qua' || gocParam === 'hieu-qua-pa') { goc = 'tong-hop'; gocMoi = goc; }
   else if (gocParam === 'chua-ai-nhan' || gocParam === 'van-de') { goc = 'tong-hop'; gocMoi = goc; }
   else if ((GOC_NHIN as readonly string[]).includes(gocParam ?? '')) goc = gocParam as GocNhin;
   else goc = ['xem', 'loai-lop', 'hang-doi', 'tinh-hinh', 'ky-nang', 'theo', 'goc', 'tg'].some((k) => params.get(k) !== null) ? 'tong-hop' : GOC_NHIN_MAC_DINH;
@@ -74,7 +74,7 @@ export function gocNhinTuThamSo(params: { get(key: string): string | null }): Ke
  * OV-15e (C29): `kieu`/`tu`/`den` là bộ chọn thời gian CHUNG — giữ khi đổi tab; `thang` cũ của GV đã đổi sang `kieu=thang`.
  */
 export function thamSoXoaKhiDoiGoc(goc: GocNhin, _tuGoc?: GocNhin): readonly string[] {
-  return goc === 'hieu-qua-pa' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv'];
+  return goc === 'tong-hop' ? ['hang-doi', 'tinh-hinh', 'ky-nang'] : ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv'];   // `gv` = lọc khối PA của SOS
 }
 
 // ------------------------------------------------------------------ khoảng thời gian (Q5)

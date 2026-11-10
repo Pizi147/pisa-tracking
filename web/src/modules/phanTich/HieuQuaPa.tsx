@@ -46,6 +46,13 @@ export function HieuQuaPa(props: PhamViPhanTich) {
     if (!data) return;
     setMo(new Set(data.gvThem.hang.filter((h) => !h.itDuLieu).map((h) => h.khoa)));
   }, [data]);
+  /* V2 (PR-3): đến từ link cũ `goc=hieu-qua-pa` → cuộn tới khối này một lần khi đã có số, rồi bỏ `cuon` khỏi URL. */
+  useEffect(() => {
+    if (!data || params.get('cuon') !== 'pa') return;
+    document.getElementById('khoi-pa')?.scrollIntoView({ block: 'start' });
+    boLoc('cuon');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
   const doiMo = (khoa: string) => setMo((cu) => { const n = new Set(cu); if (n.has(khoa)) n.delete(khoa); else n.add(khoa); return n; });
 
   const goiY = (d: DongHieuQuaPa) => (d.nenDung ? t('Nên dùng') : d.itDuLieu && d.khoa !== 'chua-phan-loai' ? t('Ít dữ liệu') : null);
@@ -54,10 +61,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
     const v = rateView(d.caiThien, d.soPa);
     if (v.kind !== 'value') return <TyLe n={d.caiThien} N={d.soPa} />;
     return (
-      <span className="inline-flex items-center gap-2 tabular-nums">
-        <span aria-hidden className="h-1.5 w-16 shrink-0 overflow-hidden rounded-[3px] border max-sm:hidden" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
-          <i className="block h-full" style={{ width: `${v.percent}%`, background: 'var(--ok)' }} />
-        </span>
+      /* V2 (khối gọn, hai bảng cạnh nhau): bỏ vạch tỷ lệ — ô hẹp chỉ "n / N · %", một dòng. */
+      <span className="inline-flex items-center gap-2 whitespace-nowrap tabular-nums">
         <OSo giaTri={d.caiThien} nguon={nguon(d.khoa, 'cai-thien')} tieuDe={t('{ten} · có cải thiện', { ten })} />
         <span className="text-[color:var(--text-faint)] max-sm:text-xs"><span className="max-sm:hidden">/ {v.N} · </span>{v.percent} %</span>
       </span>
@@ -70,7 +75,6 @@ export function HieuQuaPa(props: PhamViPhanTich) {
         <td className="td text-center tabular-nums"><OSo giaTri={d.soPa} nguon={nguon(d.khoa, 'pa')} tieuDe={t('{ten} · PA có kết quả', { ten })} /></td>
         <td className="td text-center tabular-nums"><OSo giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={t('{ten} · học viên', { ten })} /></td>
         <td className="td max-sm:text-center">{caiThien(d, ten)}</td>
-        <td className="td text-center tabular-nums max-sm:hidden">{d.tvTuan !== null ? t('{n} tuần', { n: d.tvTuan }) : <span className="text-[color:var(--text-faint)]">—</span>}</td>
         <td className="td max-sm:hidden">
           {g && <Nhan tone={d.nenDung ? 'ok' : 'muted'} title={d.nenDung ? t('Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này') : t('Dưới {n} PA có kết quả — chưa đủ để so sánh', { n: NGUONG_IT_DU_LIEU })}>{g}</Nhan>}
         </td>
@@ -80,7 +84,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
 
   /** Ô đầu: tên + (P9b) "k PA chạy cùng PA khác" + (375) dòng phụ thời gian · Nên dùng. */
   const tenDong = (d: DongHieuQuaPa, ten: ReactNode = d.nhan) => {
-    const phu375 = [d.tvTuan !== null ? t('{n} tuần', { n: d.tvTuan }) : null, goiY(d)].filter(Boolean).join(' · ');
+    const phu375 = [goiY(d)].filter(Boolean).join(' · ');   // V2: bỏ "Thời gian thường mất"
     return (
       <span className="block min-w-0">
         <span className="block sm:truncate">{ten}</span>
@@ -118,8 +122,8 @@ export function HieuQuaPa(props: PhamViPhanTich) {
   const dauBang = (cotDau: string, coGoiY: boolean) => (
     <>
       <colgroup>
-        <col className="w-[43%] sm:w-[34%]" /><col className="w-[15%] sm:w-[90px]" /><col className="w-[14%] sm:w-[90px]" />
-        <col className="w-[28%] sm:w-[240px]" /><col className="w-0 sm:w-[160px]" /><col className="w-0 sm:w-auto" />
+        <col className="w-[43%] sm:w-[40%]" /><col className="w-[15%] sm:w-[13%]" /><col className="w-[14%] sm:w-[11%]" />
+        <col className="w-[28%] sm:w-[22%]" /><col className="w-0 sm:w-auto" />
       </colgroup>
       <thead>
         <tr>
@@ -127,13 +131,12 @@ export function HieuQuaPa(props: PhamViPhanTich) {
           <Th align="center">{t('Số PA')}</Th>
           <Th align="center">{t('HV')}</Th>
           <Th className="max-sm:text-center"><span className="max-sm:hidden">{t('Có cải thiện')}</span><span className="sm:hidden">{t('Cải thiện')}</span></Th>
-          <Th align="center" className="max-sm:hidden">{t('Thời gian thường mất')}</Th>
           <Th className="max-sm:hidden">{coGoiY ? t('Gợi ý') : ' '}</Th>
         </tr>
       </thead>
     </>
   );
-  const BANG = 'w-full table-fixed text-sm sm:min-w-[700px]';
+  const BANG = 'w-full table-fixed text-sm';
 
   const khoang = nhanKhoang(props.khoang).chinh;
   const tongPa = data ? data.gvThem.tomTat.paCoKetQua + data.quyChe.tomTat.paCoKetQua : 0;
@@ -147,12 +150,12 @@ export function HieuQuaPa(props: PhamViPhanTich) {
   const cachDoc = (
     <>
       <p className="m-0">{t('"Có cải thiện" = Tiến bộ rõ + Tiến bộ một phần, trên PA đã kết thúc có kết quả xác định. PA huỷ vì "không cần theo dõi" không tính. Học viên: một em nhiều PA chỉ tính một lần.')}</p>
-      <p className="m-0">{t('Dưới {n} PA ghi "Ít dữ liệu". "Thời gian thường mất" = trung vị từ ngày bắt đầu đến ngày có kết quả của PA có cải thiện, chỉ hiện khi từ {n} PA.', { n: NGUONG_IT_DU_LIEU })}</p>
+      <p className="m-0">{t('Dưới {n} PA ghi "Ít dữ liệu".', { n: NGUONG_IT_DU_LIEU })}</p>
     </>
   );
 
   return (
-    <div className="space-y-3">
+    <section id="khoi-pa" className="card scroll-mt-4 overflow-clip">
       {params.get('gv') && (
         <VaoHangLoc o="giua">
           {data?.loc.gv ? (
@@ -164,38 +167,28 @@ export function HieuQuaPa(props: PhamViPhanTich) {
           )}
         </VaoHangLoc>
       )}
-      {error ? <Card><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
-        : loading || !data ? <Card><Skeleton rows={8} /></Card>
-        : data.scopeEmpty ? <Card bodyClass="p-0"><RongDau chu={t('Bạn chưa được cấp phạm vi nào')} /></Card>
+      {error ? <div className="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
+        : loading || !data ? <div className="p-4"><Skeleton rows={6} /></div>
+        : data.scopeEmpty ? <RongDau chu={t('Bạn chưa được cấp phạm vi nào')} />
         : (
           <>
-            {/* Thẻ chỉ số — cùng số với đầu hai thẻ bảng (tóm tắt máy chủ). "Chưa tính" = ba số "Để số liệu đủ tin" cũ ở chân bảng. */}
-            <DaiChiSo ds={[
-              { ten: t('PA có kết quả'), ky: t('trong kỳ'), gt: <OSo giaTri={tongPa} nguon={nguon('tong', 'pa')} tieuDe={t('PA có kết quả')} vung="chi-so" />, mau: t('GV thêm {a} · quy chế {b}', { a: data.gvThem.tomTat.paCoKetQua, b: data.quyChe.tomTat.paCoKetQua }) },
-              { ten: t('Có cải thiện'), gt: <OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" />, nho: pctCt.kind === 'value' ? `${pctCt.percent} %` : undefined },   // PT-GON (M4): định nghĩa ở ⓘ đầu bảng
-              data.thoiGianThuongMat !== null
-                ? { ten: t('Thời gian thường mất'), gt: data.thoiGianThuongMat, nho: t('{n} tuần', { n: data.thoiGianThuongMat }).replace(String(data.thoiGianThuongMat), '').trim() }   // PT-GON (M4): "trung vị" ở ⓘ đầu bảng
-                : { ten: t('Thời gian thường mất'), gt: <span className="text-[color:var(--text-faint)]">—</span>, mau: t('Ít dữ liệu') },
-              {
-                ten: t('Chưa tính'),
-                gt: (
-                  /* PT-GON (M4): dòng bằng 0 không hiện; cả ba bằng 0 → "0". */
-                  data.chuaGhiKetQua + data.caseChuaPhanLoai + data.chuaRoNguon === 0 ? 0 : (
-                  <span className="mt-1 grid w-full gap-1 text-[13px] font-normal leading-normal text-[color:var(--text-dim)] [font-family:inherit]">
-                    {data.chuaGhiKetQua > 0 && chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', t('PA chưa có kết quả'), t('Không tính vào bảng hiệu quả tới khi có kết quả'))}
-                    {data.caseChuaPhanLoai > 0 && chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', t('Case chưa chọn nhóm nguyên nhân'))}
-                    {data.chuaRoNguon > 0 && (
-                      <span title={t('PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào')}>
-                        {chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', t('PA chưa rõ nơi học lúc làm PA'))}
-                      </span>
-                    )}
-                  </span>)
-                ),
-              },
-            ]} />
+            {/* V2 (đặc tả 11, mockup #1400 B1): một khối gọn — đầu khối 2 số (PA có kết quả · Có cải thiện); bỏ "Thời gian thường mất"; "Chưa tính" một dòng nhỏ khi > 0. */}
+            <DauThe ten={t('PA nào hiệu quả')}
+              phu={<span className="inline-flex flex-wrap items-baseline gap-x-1.5">{t('PA có kết quả')} <b className="text-[17px]"><OSo giaTri={tongPa} nguon={nguon('tong', 'pa')} tieuDe={t('PA có kết quả')} vung="chi-so" /></b>
+                · {t('có cải thiện')} <b className="text-[17px]"><OSo giaTri={tongCt} nguon={nguon('tong', 'cai-thien')} tieuDe={t('Có cải thiện')} vung="chi-so" /></b>{pctCt.kind === 'value' && <span className="text-faint">{pctCt.percent} %</span>}</span>}
+              cachTinh={cachDoc} />
+            {data.chuaGhiKetQua + data.caseChuaPhanLoai + data.chuaRoNguon > 0 && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b px-4 py-2 text-[13px] text-[color:var(--text-dim)]" style={{ borderColor: 'var(--line)' }}>
+                <span className="font-semibold">{t('Chưa tính')}:</span>
+                {data.chuaGhiKetQua > 0 && chuaTinh(data.chuaGhiKetQua, 'chua-ghi-ket-qua', 'pa', t('PA chưa có kết quả'), t('Không tính vào bảng hiệu quả tới khi có kết quả'))}
+                {data.caseChuaPhanLoai > 0 && chuaTinh(data.caseChuaPhanLoai, 'case-chua-phan-loai', 'case', t('Case chưa chọn nhóm nguyên nhân'))}
+                {data.chuaRoNguon > 0 && chuaTinh(data.chuaRoNguon, 'chua-ro-nguon', 'pa', t('PA chưa rõ nơi học lúc làm PA'), t('PA có kết quả nhưng chưa có lần ghi danh nào cho biết em học ở đâu lúc làm PA — không tính vào bảng nào'))}
+              </div>
+            )}
+            <div className="grid xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
 
             {/* ---------------------------------------------------------------- 1. PA do giáo viên thêm */}
-            <Card bodyClass="p-0">
+            <div className="min-w-0">
               <DauThe ten={t('PA do GV thêm')} dem={t('{n} PA', { n: data.gvThem.tomTat.paCoKetQua })}
                 phu={data.gvThem.tomTat.paCoKetQua ? t('{n} có cải thiện', { n: data.gvThem.tomTat.caiThien }) : undefined}
                 cachTinh={(
@@ -217,7 +210,7 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                           {ptGv.cat(data.gvThem.hang).map(hangLon)}
                           {data.gvThem.gom && (
                             <Fragment>
-                              <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('vấn đề khác')} soCotDau={6} className={HANG_LON}
+                              <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('vấn đề khác')} soCotDau={5} className={HANG_LON}
                                 tieuDe={(
                                   <span className="block min-w-0 truncate" title={t('mỗi vấn đề ≤ 2 PA có kết quả')}>{t('{n} vấn đề khác', { n: data.gvThem.gom.soVanDe })}</span>   /* PT-GON (M4): câu giải thích khi rê */
                                 )} />
@@ -232,10 +225,10 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                     <div className="px-3"><PhanTrang {...ptGv.thanh} duoi /></div>
                   </>
                 )}
-            </Card>
+            </div>
 
             {/* ---------------------------------------------------------------- 2. PA theo quy chế */}
-            <Card bodyClass="p-0">
+            <div className="min-w-0 border-[color:var(--line-strong)] max-xl:border-t xl:border-l">
               <DauThe ten={t('PA theo quy chế')} dem={t('{n} PA', { n: data.quyChe.tomTat.paCoKetQua })}
                 cachTinh={(
                   <>
@@ -259,9 +252,10 @@ export function HieuQuaPa(props: PhamViPhanTich) {
                     <div className="px-3"><PhanTrang {...ptQc.thanh} duoi /></div>
                   </>
                 )}
-            </Card>
+            </div>
+            </div>
           </>
         )}
-    </div>
+    </section>
   );
 }

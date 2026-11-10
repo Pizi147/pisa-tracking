@@ -7,7 +7,7 @@
  */
 import { NHOM_VIEC_LABEL, type NhomViec } from './tongQuan.ts';
 import { LOC_NHANH_LABEL, type LocNhanh } from './congViec.ts';
-import { GOC_NHIN_LABEL, GOC_NHIN_MAC_DINH, type GocNhin } from './phanTich.ts';
+import { GOC_NHIN_LABEL, gocNhinTuThamSo } from './phanTich.ts';
 import { DUONG_TAB_TEST, TAB_CONG_VIEC_LABEL, tabCongViecTuDuong } from './dieuHuong.ts';
 import { dich, t } from '../i18n/index.ts';
 
@@ -113,7 +113,8 @@ export function tenNguon(url: string): TenTrang {
   const hs = loaiHoSo(p);
   if (hs) return { ten: TEN_HO_SO[hs] };
   if (p === '/') return { ten: t('Tổng quan') };
-  if (p === '/phan-tich') return { ten: t('Phân tích'), chiTiet: dich(nhan<GocNhin>(GOC_NHIN_LABEL, q.get('goc')) ?? GOC_NHIN_LABEL[GOC_NHIN_MAC_DINH]) };
+  /* V2: khoá cũ (`hieu-qua-pa`, `ket-qua`…) → tab mới qua `gocNhinTuThamSo` — tên nguồn đúng tab đang mở. */
+  if (p === '/phan-tich') return { ten: t('Phân tích'), chiTiet: dich(GOC_NHIN_LABEL[gocNhinTuThamSo(q).goc]) };
   const cv = /^\/cong-viec(?:\/([^/]+))?$/.exec(p);
   if (cv) {
     const tab = tabCongViecTuDuong(cv[1]);

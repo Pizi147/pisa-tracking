@@ -48,15 +48,15 @@ export async function runPhanTichTests(t: YThucTestKit) {
 
   check('UX4 · gocNhinTuThamSo: ket-qua→hieu-qua-pa; OV-15e: chua-ai-nhan / van-de (tab đã bỏ) → Test + SOS, gocMoi đúng', () => {
     const g = (qs: string) => d.gocNhinTuThamSo(new URLSearchParams(qs));
-    eq(g('goc=ket-qua'), { goc: 'hieu-qua-pa', ct: null, boThamSo: [], gocMoi: 'hieu-qua-pa' }, 'ket-qua → Hiệu quả PA');
+    eq(g('goc=ket-qua'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: 'tong-hop' }, 'ket-qua → SOS (V2: Hiệu quả PA gộp vào SOS)');
+    eq(g('goc=hieu-qua-pa'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: 'tong-hop' }, 'hieu-qua-pa → SOS');
     eq(g('goc=chua-ai-nhan'), { goc: 'tong-hop', ct: null, boThamSo: [], gocMoi: 'tong-hop' }, 'chua-ai-nhan → Test + SOS');
-    eq(g('goc=hieu-qua-pa').gocMoi, null, 'khoá mới không cần thay URL');
+    eq(g('goc=giao-vien').gocMoi, null, 'khoá mới không cần thay URL');
     eq(g('goc=van-de').goc, 'tong-hop', 'van-de (đã bỏ) → Test + SOS');
     eq(g('goc=danh-sach&hang-doi=can-ho-tro-2-lan').goc, 'tong-hop', 'danh-sach đã bỏ (PR-Pb2-a)');
     /* OV-15e (C28, plan §7): sáu tab, Báo cáo đầu. */
-    eq([...d.GOC_NHIN], ['bao-cao', 'ket-qua-thi', 'tong-hop', 'hieu-qua-pa', 'giao-vien', 'y-thuc'], 'đúng thứ tự (Phân tích V2: Chi nhánh · Thi thật · SOS · … · Giáo viên · Ý thức)');
+    eq([...d.GOC_NHIN], ['bao-cao', 'ket-qua-thi', 'tong-hop', 'giao-vien', 'y-thuc'], 'đúng thứ tự (Phân tích V2: Chi nhánh · Thi thật · SOS · Giáo viên · Ý thức)');
     eq(d.GOC_NHIN_LABEL['tong-hop'], 'SOS', 'nhãn');
-    eq(d.GOC_NHIN_LABEL['hieu-qua-pa'], 'Hiệu quả PA', 'nhãn');
   });
 
   check('UX4 · LOI_CHUNG: mọi mã có trong ISSUE_TAXONOMY; R/L language ở cả Ngữ pháp lẫn Từ vựng', () => {
@@ -790,7 +790,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
     for (const k of d.thamSoXoaKhiDoiGoc('tong-hop')) next.delete(k);
     eq(d.gocNhinTuThamSo(next).goc, 'tong-hop', 'Sau khi bấm Tổng hợp: phải sang Tổng hợp, không kẹt lại Danh sách Case');
     eq(d.thamSoXoaKhiDoiGoc('y-thuc'), ['hang-doi', 'tinh-hinh', 'ky-nang', 'gv'], 'Sang góc nhìn khác: xoá `gv` của Hiệu quả PA; OV-15e: tu/den là khoảng chung — giữ');
-    eq(d.thamSoXoaKhiDoiGoc('hieu-qua-pa'), ['hang-doi', 'tinh-hinh', 'ky-nang'], 'Vào Hiệu quả PA: giữ gv/tu/den');
+    eq(d.thamSoXoaKhiDoiGoc('tong-hop'), ['hang-doi', 'tinh-hinh', 'ky-nang'], 'Vào SOS (có khối PA): giữ gv/tu/den');
     // gocNhinTuThamSo tự nó cũng phải để `goc` tường minh thắng heuristic, không cần chờ dọn tham số.
     eq(d.gocNhinTuThamSo(new URLSearchParams('goc=tong-hop&tinh-hinh=no_plan')).goc, 'tong-hop',
       'goc=tong-hop tường minh phải thắng dù tinh-hinh còn sót trên URL');
