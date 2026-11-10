@@ -53,7 +53,6 @@ const GIU_CHUOI = new Set([
   'sosV3', 'prSos',   // Case seed chưa có Mô tả → không xác nhận được PA
   'prYt4', 'prUx1', 'keHoachTest', 'xoaDuLieu', 'prVaiB', 'prGop', 'prOv12c', 'prOv13a',
   'luatMayChu',       // keHoachTest dùng lượt nó tạo (cùng sosV3) — dò chia đôi CN-2
-  'prChuongNhe',      // C1 so tỷ lệ dòng đọc (đường mới < đường đủ ÷ 3): trên bản gốc nhỏ 166 vs 489 ÷ 3 — cần DB cỡ chuỗi
 ]);
 const DOC_LAP_ENV = process.env.PISA_DOC_LAP?.split(',').map((s) => s.trim().replace(/\.tests\.ts$/, ''));
 const docLapCua = (ten: string) => (DOC_LAP_ENV ? DOC_LAP_ENV.includes(ten) : !GIU_CHUOI.has(ten));
@@ -72,7 +71,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prOv15e2: 1100, prS5JsonEach: 1100, hoSoHocVien: 1000, lenLop: 1000, prS3Chu: 1000, prDl: 1000, prOv2a: 1000, prSvSExpert: 1000, prXetLai: 1000,
   congViec: 900, prS4f: 900, prOv13h: 900, prOv13p: 900, prOv15c: 900, prOv15h1: 900, prSvTvvViec: 900, prLt2a: 800, prPb2a: 800, prMta: 800,
   prThungRac: 800, prCt2: 800, prOv8b: 800, prOv10b: 800, prOv11g: 800, prOv15f: 800, prSl1: 800, prSl2: 800, prSvNxCase: 800, prHoanTacXn: 800, prChanRoiNhap: 100,
-  prChuongNhe: 800, nenGiaoDien: 700, prUxG: 700, prOv11c: 600, panelUx3: 600, suaLoiNong: 600, prMon: 600, prXuat: 600, prMtb: 600, prBv: 600,
+  nenGiaoDien: 700, prUxG: 700, prOv11c: 600, panelUx3: 600, suaLoiNong: 600, prMon: 600, prXuat: 600, prMtb: 600, prBv: 600,
   prKv: 600, prOv12f: 600, prOv13o: 600, prOv14c: 600, prOv15g: 600, prOv15i1: 600, prBaoCaoLichSu: 600, prChiNhanhLienHe: 100, prBaoCaoPhPdf: 600, prPhanCongGv: 600, prDuyet: 500,
   prXlmt: 500, prSl: 500, prQrl2cPa: 500, prQtTk: 500, prLc: 500, prOv4a: 500, prOv10c: 500, prOv12a: 500, prOv13b: 500, prOv13i: 500, prOv13g: 500,
   prPtGvOverall: 500, prSvSo1: 500, prSvLop: 500, prUiHoSoLop: 500, prKetPet: 500, prTlNen: 500, prTlViec: 600, prTlHvl: 600, dieuChinhPa: 400, form: 400, prS3f: 400,
@@ -9752,9 +9751,6 @@ await runPrS3CauConTests({ check, assert, conn } as any);
 // ==================================================================== S5 (danh sách IN ở đường nóng thành json_each một tham số — giảm phân mảnh câu Turso)
 const { runPrS5JsonEachTests } = bocTep('prS5JsonEach', await import('./prS5JsonEach.tests.ts'));
 await runPrS5JsonEachTests({ check, checkAsync, assert, conn, P, classId } as any);
-// ==================================================================== CHUONG-NHE (chuông chỉ đọc lượt lớp đang dạy, mốc đồng bộ ở DB — giảm dòng đọc Turso)
-const { runPrChuongNheTests } = bocTep('prChuongNhe', await import('./prChuongNhe.tests.ts'));
-await runPrChuongNheTests({ check, checkAsync, assert, conn, P, TODAY } as any);
 // ==================================================================== QUET-THEO-KY (quét theo chỉ mục, theo kỳ — giảm dòng đọc Turso)
 const { runPrQuetTheoKyTests } = bocTep('prQuetTheoKy', await import('./prQuetTheoKy.tests.ts'));
 await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as any);

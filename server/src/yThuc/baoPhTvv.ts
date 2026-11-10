@@ -48,7 +48,7 @@ export function nguoiGiuBaoPh(studentId: number): number[] {
 export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; customName?: string | null }, homNay: string): void {
   const nhan = nhanLoaiXuLy(m.kind, m.customName ?? null);
   const han = hanBaoPh(homNay);
-  /* Chuông: đồng bộ tự động (`thongBaoTuDong`) theo người giữ HIỆN TẠI — đổi TVV thì chuông sang người mới (rà #516). */
+  /* Chuông (CHUONG-V2): việc Báo PH của người giữ HIỆN TẠI đọc từ `/my-work` (`bao_ph_yt`) — đổi TVV thì chuông sang người mới. */
   db().prepare(
     `INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (?,?,?,?, 'mo', ?) ON CONFLICT(measure_id) DO NOTHING`,
   ).run(m.id, m.studentId, nhan, han, nowIso());

@@ -21,8 +21,11 @@ import { chiSoHoSoGv } from '../phanTich/giaoVien.ts';
 import { tapThiThangNayLop } from '../phanTich/baoCao.ts';
 import { phamViXemViec } from './xemViec.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
-import { toiHan } from '../platform/thongBaoTuDong.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
+
+/** "Tới hạn" = hạn trong 7 ngày tới (hoặc đã qua) — luật "Cần bạn quyết" (OV-15h1). Không có hạn → chưa tới hạn. */
+export const CHOT_TOI_HAN_NGAY = 7;
+export const toiHan = (han: string | null | undefined, homNay: string) => !!han && han <= addDays(homNay, CHOT_TOI_HAN_NGAY);
 
 /**
  * TỔNG QUAN (PR-Pa, đặc tả §3.2). File này KHÔNG ĐẾM gì: mọi số lấy từ `metricSet` (hợp đồng số liệu luật 1), ở đây chỉ
