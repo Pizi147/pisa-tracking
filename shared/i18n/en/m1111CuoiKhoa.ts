@@ -16,4 +16,6 @@ export const EN_M1111_CUOI_KHOA = {
   'Tuần cho cả nhóm {nhom}': 'Week for the whole {nhom} group',
   'Lớp mới': 'New class',
   'từ {tuan}': 'from {tuan}',
+  'Nhận xét chung cho các em đã chọn': 'Shared comment for the selected students',
+  'Ghi cho {n} em': 'Write for {n} students',
 } satisfies Record<string, Dich>;
