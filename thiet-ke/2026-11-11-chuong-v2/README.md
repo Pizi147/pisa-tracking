@@ -19,7 +19,7 @@
 | `b1-gv.png` | GV: nhiều loại việc, quá hạn, hôm nay, việc mới; Cập nhật chưa đọc / đã đọc |
 | `b2-ql-hai-cn.png` | QL hai chi nhánh: hàng chi nhánh, Duyệt yêu cầu |
 | `b3-quan-tri.png` | Quản trị ba chi nhánh, Duyệt tài khoản, không quá hạn |
-| `b4-khong-viec.png` · `b5-rong.png` | Không việc (có / không Để biết) |
+| `b4-khong-viec.png` · `b5-rong.png` | Không việc (có / không Cập nhật) |
 | `b6-xem-tat-ca.png` | Xem tất cả Cập nhật (thay nội dung hộp tại chỗ) |
 | `b7-tai-loi.png` | Việc đang tải · Cập nhật lỗi tải |
 | `c-375.png` · `c4-375-xem-tat-ca.png` | 375 (khung 812): GV · QL · TVV · Xem tất cả |
