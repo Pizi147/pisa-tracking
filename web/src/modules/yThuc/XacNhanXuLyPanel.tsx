@@ -39,8 +39,10 @@ const canTep = (loai: string) => (LOAI_DE_XUAT as readonly string[]).includes(lo
  * OV-12e (mockup v3 §8): khuôn panel v3 — đầu "Xác nhận xử lý" + chip hạn / tên em (link) · lớp · Ý thức; MỘT khối Cần làm (Bậc xử lý tự điền · vi phạm đưa vào
  * · Ngày * (ô ngày gõ được) · Người * · Mô tả * · nút chính; "Đề xuất QL duyệt" là nút chữ); Bối cảnh: Lần trước · Bậc tiếp theo; chân trạng thái lưu.
  */
-export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onClose, onDone, onKhai }: {
+export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem, lop, onClose, onDone, onKhai }: {
   studentId: number | null; cheDo?: 'xu-ly' | 'de-xuat';
+  /** Rà 11/11 G3-6: mở từ dòng Đã xem — vi phạm đó tick sẵn (cùng tick mặc định), nằm ở "Cũ hơn" thì mở sẵn nhóm đó. */
+  tickThem?: readonly number[];
   /** Mã lớp ở dòng 2 đầu panel (nơi gọi biết). */
   lop?: string | null;
   onClose: () => void; onDone?: () => void;
@@ -70,10 +72,11 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
 
   useEffect(() => {
     if (!d) return;
-    setChon(new Set(d.macDinh.tick));
+    const them = (tickThem ?? []).filter((id) => d.macDinh.tick.includes(id) || d.macDinh.cuHon.includes(id));
+    setChon(new Set([...d.macDinh.tick, ...them]));
     if (daNapEm.current !== null) setMoTa('');   // NEN-PANEL: lần nạp đầu giữ nháp (K12); đổi em thì bỏ chữ của em trước
     daNapEm.current = d.studentId;
-    setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setLoai(''); setTenKhac(''); setDaLuu(null); setMoCu(false); lf.datLai();
+    setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setLoai(''); setTenKhac(''); setDaLuu(null); setMoCu(them.some((id) => d.macDinh.cuHon.includes(id))); lf.datLai();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d?.studentId]);
 
@@ -242,7 +245,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', lop, onC
               <p className="m-0 text-[15px] font-bold text-slate-100">{dich(bacKe.nhan)}</p>
               {d.chuoi.soXuLy === 0 && !d.khai && d.coTheKhai && onKhai && (
                 <p className="m-0 mt-1 text-xs text-slate-300">
-                  <button type="button" title={t('Đã có mức độ vi phạm từ trước?')} className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Xác nhận cấp bậc vi phạm trước')}</button>
+                  <button type="button" title={t('Đã có mức độ vi phạm từ trước?')} className="link inline-flex min-h-[44px] items-center appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => onKhai(d.studentId)}>{t('Khai cấp bậc')}</button>
                 </p>
               )}
             </div>

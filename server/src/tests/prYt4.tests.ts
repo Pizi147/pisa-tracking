@@ -921,7 +921,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
     assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /Gửi Quản lý duyệt · trả lời trong 5 ngày/.test(s), 'luồng');
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{daLuu\.id\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
-    assert(/Cần xử lý nặng hơn/.test(s) && /Xác nhận cấp bậc vi phạm trước/.test(s), 'nút Đề xuất + dòng Xác nhận cấp bậc (Q7)');
+    assert(/Cần xử lý nặng hơn/.test(s) && /t\('Khai cấp bậc'\)/.test(s), 'nút Đề xuất + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');
   });
   /* KHAI-BAC-LO (chủ SP 28/10): ghi chú khai TUỲ CHỌN (từng em và theo lô). */
   check('YT4 (8) · Khai bậc: bậc 0 "Chưa có xử lý vi phạm" (OV-13d) + sáu bậc (Report 1 … WL 2), tháng tuỳ chọn, ghi chú tuỳ chọn; QL sửa bằng PUT', () => {

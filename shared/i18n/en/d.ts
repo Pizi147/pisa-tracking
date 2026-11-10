@@ -459,7 +459,7 @@ const EN_D_WEB = {
   'các khoá lớp thường': 'Normal courses',
   'lộ trình {nhan}': 'route {nhan}',
   'Bậc tự điền theo thang — không chọn.': 'Level follows the ladder — not chosen.',
-  'Xác nhận cấp bậc vi phạm trước': 'Confirm the incident level first',
+  'Khai cấp bậc': 'Declare level',
   'Loại cần QL duyệt': 'Type needing approval',
   'Ví dụ: Gặp phụ huynh tại trung tâm': 'E.g. Meet parents at the centre',
   'Duyệt đề xuất ngoài thang không đổi bậc — bậc kế vẫn là {nhan}.': 'Approving an off-ladder proposal keeps the level — next is still {nhan}.',

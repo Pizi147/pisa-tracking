@@ -92,7 +92,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -9502,6 +9502,8 @@ await runPrBang0Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== LUAT-5 (luật 5: thu hồi / không tăng bậc qua QL, lý do bắt buộc, "Đã thu hồi" giữ dòng)
 const { runPrLuat5Tests } = bocTep('prLuat5', await import('./prLuat5.tests.ts'));
 await runPrLuat5Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+const { runPrYtGonTests } = bocTep('prYtGon', await import('./prYtGon.tests.ts'));
+await runPrYtGonTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== SUA-NO-RA (nợ rà sâu CV-LOI #499 + LUAT-5 #495: phân công có phiên bản, migrate một lần, thẻ thu hồi)
 const { runPrSuaNoRaTests } = bocTep('prSuaNoRa', await import('./prSuaNoRa.tests.ts'));
 await runPrSuaNoRaTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
