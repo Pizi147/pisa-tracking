@@ -30,6 +30,12 @@ export const DDL_CAU_HINH_PHIEN_BAN = `CREATE TABLE IF NOT EXISTS cau_hinh_phien
   tao_luc TEXT NOT NULL
 )`;
 export const DDL_CAU_HINH_PHIEN_BAN_IDX = 'CREATE INDEX IF NOT EXISTS idx_chpb_loai ON cau_hinh_phien_ban(loai, id)';
+/** Chỉ mục một phần theo mã (như schema.sql): dòng sinh từ bản ≥ 2 — nơi duy nhất có mã Quản trị thêm. Điều kiện phải khớp câu đọc bên dưới (`demDangDung`, `daDung`). */
+export const CHI_MUC_MA = [
+  ['idx_case_issue_ma', 'case_issues', 'taxonomy_code', 'taxonomy_version > 1'],
+  ['idx_iv_kind', 'case_interventions', 'kind', 'pb_loai IS NOT NULL'],
+  ['idx_sca_kind', 'sos_coordination_actions', 'kind', 'pb_moc IS NOT NULL'],
+] as const;
 
 type Ban = BanCauHinh;
 const LOAI_SQL = LOAI_CAU_HINH.map((l) => `'${l}'`).join(',');
@@ -96,11 +102,12 @@ const suaDuocCauHinh = (p: Principal) => can(p, PERMISSIONS.ADMIN_CONFIG, { anyS
  */
 function demDangDung(ban: Map<LoaiCauHinh, Ban>): Record<string, number> {
   const ma = (l: LoaiCauHinh) => maCua(l, ban.get(l)!.du_lieu).filter(laMaThem);
-  const phan = ([['case_issues', 'taxonomy_code', 'COUNT(DISTINCT case_id)', ma('nguyen_nhan')], ['case_interventions', 'kind', 'COUNT(*)', ma('phuong_an')],
-    ['sos_coordination_actions', 'kind', 'COUNT(*)', ma('moc_sos')]] as const).filter((x) => x[3].length);
+  const dem = { case_issues: 'COUNT(DISTINCT case_id)', case_interventions: 'COUNT(*)', sos_coordination_actions: 'COUNT(*)' } as const;
+  const dsMa = [ma('nguyen_nhan'), ma('phuong_an'), ma('moc_sos')];
+  const phan = CHI_MUC_MA.map(([, b, c, dk], i) => ({ b, c, dk, ds: dsMa[i] })).filter((x) => x.ds.length);
   if (!phan.length) return {};
-  const rows = db().prepare(phan.map(([b, c, dem, ds]) => `SELECT ${c} AS ma, ${dem} AS n FROM ${b} WHERE ${c} IN (${ds.map(() => '?').join(',')}) GROUP BY ${c}`).join(' UNION ALL '))
-    .all(...phan.flatMap((x) => x[3])) as { ma: string; n: number }[];
+  const rows = db().prepare(phan.map(({ b, c, dk, ds }) => `SELECT ${c} AS ma, ${dem[b]} AS n FROM ${b} WHERE ${dk} AND ${c} IN (${ds.map(() => '?').join(',')}) GROUP BY ${c}`).join(' UNION ALL '))
+    .all(...phan.flatMap((x) => x.ds)) as { ma: string; n: number }[];
   const r: Record<string, number> = {};
   for (const x of rows) r[x.ma] = (r[x.ma] ?? 0) + Number(x.n);
   return r;
@@ -150,14 +157,15 @@ function daDung(l: LoaiCauHinh, ma: string): boolean {
   const conn = db();
   if (l === 'nguyen_nhan') {
     /* ponytail: ô nhận xét (assessment_scores) không có chỉ mục theo nhóm — chỉ quét khi XOÁ một nhóm Quản trị thêm mà chưa Case nào gắn (hiếm). */
-    return !!conn.prepare('SELECT 1 FROM case_issues WHERE taxonomy_code = ? LIMIT 1').get(ma)
+    return !!conn.prepare('SELECT 1 FROM case_issues WHERE taxonomy_version > 1 AND taxonomy_code = ? LIMIT 1').get(ma)
       || !!conn.prepare(`SELECT 1 FROM assessment_scores WHERE nhom_nguyen_nhan LIKE ? LIMIT 1`).get(`%"${ma}"%`);
   }
   if (l === 'phuong_an') return paDaCoPa(ma) || soOMocCuaPa(cauHinh('moc_sos').du_lieu, ma) > 0;   // PA quy chế ở ô Mốc SOS đang dùng = đã dùng
-  return !!conn.prepare('SELECT 1 FROM sos_coordination_actions WHERE kind = ? LIMIT 1').get(ma);
+  return !!conn.prepare('SELECT 1 FROM sos_coordination_actions WHERE pb_moc IS NOT NULL AND kind = ? LIMIT 1').get(ma);
 }
 
-const paDaCoPa = (ma: string) => laMaThem(ma) ? !!db().prepare('SELECT 1 FROM case_interventions WHERE kind = ? LIMIT 1').get(ma) : true;
+/* ponytail: dòng mang mã Quản trị thêm luôn sinh từ bản ≥ 2 (con trỏ khác NULL) — đọc qua chỉ mục một phần `CHI_MUC_MA`. */
+const paDaCoPa = (ma: string) => laMaThem(ma) ? !!db().prepare('SELECT 1 FROM case_interventions WHERE pb_loai IS NOT NULL AND kind = ? LIMIT 1').get(ma) : true;
 
 function giuLaiDangAn(l: LoaiCauHinh, cu: any, moi: any, ma: string): void {
   if (l === 'nguyen_nhan') {

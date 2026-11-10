@@ -3,7 +3,7 @@
  * `case_interventions.pb_loai`, `sos_coordination_actions.pb_moc` + trigger tham chiếu (nhớ theo tiến trình). KHÔNG chèn dòng: bảng rỗng = bản gốc
  * (đúng hằng số trong mã) → ngày đầu hành vi không đổi. DB dựng từ `schema.sql` (seed, phép kiểm) đã có đủ → không làm gì. Chạy lặp không làm gì.
  */
-import { DDL_CAU_HINH_PHIEN_BAN, DDL_CAU_HINH_PHIEN_BAN_IDX } from '../platform/cauHinhCaseSos.ts';
+import { CHI_MUC_MA, DDL_CAU_HINH_PHIEN_BAN, DDL_CAU_HINH_PHIEN_BAN_IDX } from '../platform/cauHinhCaseSos.ts';
 import { TRIGGER_THAM_CHIEU } from './prTlNen.ts';
 
 export function migratePrCauHinhCaseSos(conn: any, applied: string[]): void {
@@ -19,9 +19,9 @@ export function migratePrCauHinhCaseSos(conn: any, applied: string[]): void {
     if (coBang(bang) && !coCot(bang, cot)) { conn.exec(`ALTER TABLE ${bang} ADD COLUMN ${cot} INTEGER`); lam.push(`${bang}.${cot}`); }
   }
   /* Chỉ mục theo mã: đếm "Đang dùng" của mục Quản trị thêm đọc đúng dòng của mã. */
-  for (const [ten, bang, cot] of [['idx_case_issue_ma', 'case_issues', 'taxonomy_code'], ['idx_iv_kind', 'case_interventions', 'kind'], ['idx_sca_kind', 'sos_coordination_actions', 'kind']] as const) {
-    if (!coBang(bang) || conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?`).get(ten)) continue;
-    conn.exec(`CREATE INDEX ${ten} ON ${bang}(${cot})`);
+  for (const [ten, bang, cot, dk] of CHI_MUC_MA) {
+    if (!coBang(bang) || !coCot(bang, dk.split(' ')[0]) || conn.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?`).get(ten)) continue;
+    conn.exec(`CREATE INDEX ${ten} ON ${bang}(${cot}) WHERE ${dk}`);
     lam.push(ten);
   }
   /* DB cũ chưa có `moc_he_thong` (trước TL-NEN): trigger để TL-NEN tạo (nó chạy sau, tạo đủ TRIGGER_THAM_CHIEU). */
