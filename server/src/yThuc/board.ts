@@ -48,6 +48,8 @@ export type DongEm = {
   baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean; daChinh: boolean } | null;
   /** UI-2 (mockup K1): TVV của em dưới tên — chỉ `bangYThucLop` điền (cùng câu đọc tên em). */
   tvv: string | null;
+  /** G3-14: người xem GIỮ việc Báo PH của em (TVV của em; em chưa có TVV → QL) — chỉ bảng lớp. */
+  giuBaoPh?: boolean;
 };
 
 export type DongThoiGianYt =
@@ -88,6 +90,8 @@ export type BangYThucLop = {
   coTheDuyet: boolean;
   /** UI-2 (mockup K4): GVCN của lớp — dòng dưới tên em ở nhóm Chờ QL duyệt (QL biết ai đề xuất / xin thu hồi). */
   gvcn: string | null;
+  /** G3-14: người xem là GVCN của lớp. */
+  laGvcn: boolean;
 };
 
 const DONG_THOI_GIAN_TOI_DA = 150;
@@ -200,17 +204,17 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   requireViewClass(p, classId);
   const ids = emCuaLop(classId);
   const trang = trangThaiYThuc(ids, homNay);
-  const info = new Map<number, { ten: string; ma: string; tvv: string | null }>();
+  const info = new Map<number, { ten: string; ma: string; tvv: string | null; tvvId: number | null }>();
   /* Em đang học ở lớp cùng GVCN — tên GVCN đi kèm câu đọc tên em (câu con hằng, không thêm câu). */
   const gvcnId = ids.length ? trang.get(ids[0])?.gvcnId ?? 0 : 0;
   let gvcn: string | null = null;
   for (let i = 0; i < ids.length; i += 400) {
     const lo = ids.slice(i, i + 400);
     for (const r of db().prepare(
-      `SELECT s.id, s.full_name, s.student_code, u.full_name AS tvv, (SELECT full_name FROM users WHERE id = ?) AS gvcn
+      `SELECT s.id, s.full_name, s.student_code, u.full_name AS tvv, s.consultant_user_id AS tvv_id, (SELECT full_name FROM users WHERE id = ?) AS gvcn
          FROM students s LEFT JOIN users u ON u.id = s.consultant_user_id WHERE s.id IN (${lo.map(() => '?').join(',')})`,
     ).all(gvcnId, ...lo) as any[]) {
-      info.set(r.id, { ten: r.full_name, ma: r.student_code, tvv: r.tvv ?? null });
+      info.set(r.id, { ten: r.full_name, ma: r.student_code, tvv: r.tvv ?? null, tvvId: r.tvv_id ?? null });
       gvcn = r.gvcn ?? null;
     }
   }
@@ -220,7 +224,10 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   const choThuHoi: DongEm[] = [];
   const dongCuaEm = new Map<number, DongEm>();
   /* Hàng dựng trong bộ nhớ cho mọi em; "đang xin thu hồi" đọc MỘT câu cho cả lớp (UI-2: em chỉ còn việc thu hồi chờ QL vẫn có hàng — K4). */
-  const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null }));
+  /* G3-14: người GIỮ việc Báo PH của em (như Công việc): TVV của em; em chưa có TVV → QL trong phạm vi. */
+  const coTheDuyet = can(p, PERMISSIONS.REQUEST_APPROVE, { classId });
+  const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null,
+    giuBaoPh: info.get(id)?.tvvId != null ? info.get(id)!.tvvId === p.userId : coTheDuyet }));
   danhDauDangXinThuHoi(tatCa);
   for (const dong of tatCa) {
     const em = trang.get(dong.studentId)!;
@@ -254,8 +261,10 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, danhDauChuoi: true, p, homNay }),
     choBaoPh: choBaoPh.sort((a, b) => (a.baoPh?.han ?? '').localeCompare(b.baoPh?.han ?? '') || a.ten.localeCompare(b.ten, 'vi')),
     choThuHoi: choThuHoi.sort((a, b) => a.ten.localeCompare(b.ten, 'vi')),
-    coTheDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { classId }),
+    coTheDuyet,
     gvcn,
+    /* G3-14: việc GVCN (xử lý / xem / ghi Đã thực hiện) là việc CỦA người xem khi người xem là GVCN lớp — như Công việc "Của tôi". */
+    laGvcn: gvcnId === p.userId,
   };
 }
 

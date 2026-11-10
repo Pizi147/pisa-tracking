@@ -264,16 +264,19 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   for (const x of xls) if (x.status === 'done' && !moiNhatEm.has(x.studentId)) moiNhatEm.set(x.studentId, x.id);
 
   /*
-   * Rà 11/11 G3-14: số "Cần làm" = số EM có việc của CHÍNH người xem (cùng tập Công việc của người đó — dữ liệu đã nạp, không thêm request): GVCN xử lý /
-   * xem / ghi Đã thực hiện · QL duyệt · TVV ghi Báo PH. MỘT em MỘT dòng: dòng không phải việc của người xem bị ẩn khi em đã có dòng là việc của người xem;
+   * Rà 11/11 G3-14: số "Cần làm" = số EM có việc của CHÍNH người xem (cùng tập Công việc "Của tôi" — dữ liệu đã nạp, không thêm request): GVCN của lớp
+   * xử lý / xem / ghi Đã thực hiện · QL duyệt · người giữ Báo PH (TVV của em; em chưa có TVV → QL) ghi Báo PH. MỘT em MỘT dòng: dòng không phải việc của người xem bị ẩn khi em đã có dòng là việc của người xem;
    * "Xong · 7 ngày" ẩn khi em còn dòng ở nhóm khác.
    */
-  const viecDx = (x: (typeof d.nhom.cho_duyet)[number]) => !!x.deXuat && (x.deXuat.status === 'cho_duyet' ? d.coTheDuyet : d.canManage);
+  const laGvcn = !!d.laGvcn;
+  const giuPh = (sid: number, measureId: number | undefined) => !!tra.em.get(sid)?.giuBaoPh && !!measureId && tra.xl.get(measureId)?.baoPh?.trangThai === 'mo';
+  const viecDx = (x: (typeof d.nhom.cho_duyet)[number]) => !!x.deXuat && ((x.deXuat.status === 'cho_duyet' ? d.coTheDuyet : laGvcn) || giuPh(x.studentId, x.deXuat.id));
   const choDuyetDx = d.nhom.cho_duyet.filter((x) => x.deXuat);
   const gan = <T,>(ds: T[], sid: (x: T) => number, cuaToi: (x: T) => boolean) => ds.map((x, i) => ({ i, sid: sid(x), cuaToi: cuaToi(x) }));
   const canLam = locCanLam([
-    gan(nhomBb, (o) => o.x.studentId, (o) => d.canManage && !o.x.deXuat), gan(moiDs, (x) => x.studentId, () => d.canManage),
-    gan(choDuyetDx, (x) => x.studentId, viecDx), gan(emThuHoi, (x) => x.studentId, () => d.coTheDuyet), gan(choTvv, (x) => x.studentId, (x) => !!x.baoPh?.coTheGhi),
+    gan(nhomBb, (o) => o.x.studentId, (o) => laGvcn && !o.x.deXuat), gan(moiDs, (x) => x.studentId, () => laGvcn),
+    gan(choDuyetDx, (x) => x.studentId, viecDx), gan(emThuHoi, (x) => x.studentId, (x) => d.coTheDuyet || giuPh(x.studentId, x.thuHoi?.id)),
+    gan(choTvv, (x) => x.studentId, (x) => giuPh(x.studentId, x.id)),
   ], xong7.map((x, i) => ({ i, sid: x.studentId })));
   const nhomBbHien = canLam.nhom[0].map((m) => nhomBb[m.i]);
   const moiHien = canLam.nhom[1].map((m) => moiDs[m.i]);

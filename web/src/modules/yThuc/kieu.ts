@@ -93,6 +93,8 @@ export type DongEm = {
   baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean; daChinh: boolean } | null;
   /** UI-2: TVV của em (chỉ bảng lớp). */
   tvv: string | null;
+  /** G3-14: người xem GIỮ việc Báo PH của em — chỉ bảng lớp. */
+  giuBaoPh?: boolean;
 };
 
 export type BangYThucLop = {
@@ -104,6 +106,8 @@ export type BangYThucLop = {
   choThuHoi: DongEm[];
   coTheDuyet: boolean;
   gvcn: string | null;
+  /** G3-14: người xem là GVCN của lớp. */
+  laGvcn?: boolean;
 };
 
 /** Làm mới mọi dữ liệu Ý thức sau một thao tác ghi (tab lớp, tab HV, việc, hộp, số liệu). */
