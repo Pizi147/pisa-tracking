@@ -106,6 +106,21 @@ const xongChuyen = () => {
 };
 
 /**
+ * #8 (G4-08, bản rà 11/11): "Huỷ quyết định" = MỘT bấm + Hoàn tác (khôi phục đúng quyết định — `khoi-phuc-lenh`), không hỏi lý do, không mở lại panel.
+ * Dùng chung nút ở dải "Sắp chuyển" của hồ sơ HV và chân panel Chuyển lớp. Lỗi ném cho nơi gọi báo.
+ */
+export async function huyQuyetDinhNgay(toast: ReturnType<typeof useToast>, lenhId: number, studentId: number, onDoi?: () => void): Promise<void> {
+  await api.post(`/lenh-chuyen/${lenhId}/huy`, {});
+  xongChuyen(); onDoi?.();
+  /* RA-LUONG-5 (luật không khoá cứng): Hoàn tác tại chỗ — cùng đường khôi phục của Cuối khoá lớp (`khoi-phuc-lenh`). */
+  toast.hoanTac(t('Đã huỷ quyết định chuyển lớp'), async () => {
+    const r = await hoanTacHangLoat('huy-lenh', [studentId]);
+    xongChuyen(); onDoi?.();
+    toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? r.failed[0].message : t('Đã khôi phục quyết định'));
+  }, { key: `huy-lenh-${studentId}` });
+}
+
+/**
  * CHUYỂN MỘT EM (PR-CT; làm lại PR-CL — mockup cuối khoá 2 phần 2 + đặc tả 08/10 §1, §7) — MỘT panel `KhungPanel`, hai chế độ theo vai:
  *   · `cheDo="lenh"` (Quản lý): MỘT ô gõ tên lớp (mọi chi nhánh, máy chủ đã lọc lớp hợp lệ), Tuần bắt đầu, Lý do → `Quyết định chuyển lớp`.
  *     Khối "Khi chuyển, web sẽ" do máy chủ tính (`dongKhiChuyen`); FT → Thường viền vàng. Target chỉ hỏi khi Lên FT mà em chưa có Target nào (§7).
@@ -134,19 +149,17 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const thamTheo = `theoCuoiKhoa=${theoCk ? 1 : 0}`;
   const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${studentId}&${thamTheo}${dx ? '&bac=1' : ''}`, [studentId, theoCk]);
   const [toClassId, setToClassId] = useState<number | null>(duyet?.lopDichId ?? null);
-  /* GVCN không có quyền xem luật ra lệnh (403) — chỉ Quản lý gọi đường xem trước. */
-  const xem = useApi<XemChuyenLopData>(dx ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}&${thamTheo}` : `/students/${studentId}/chuyen-lop?${thamTheo}`), [studentId, toClassId, dx, theoCk]);
+  /* OV-13l: "Ngay hôm nay" đã thi hành → panel ở trạng thái "Đã chuyển". #8 (G4-14): `dao` có → "Hoàn tác" ngay tại dòng trạng thái (em về lớp cũ y như trước). */
+  const [daChuyen, setDaChuyen] = useState<{ lop: { id: number; code: string }; han: string; dao?: number; theDuyet?: number } | null>(null);
+  /* GVCN không có quyền xem luật ra lệnh (403) — chỉ Quản lý gọi đường xem trước. Đã chuyển ngay → thôi tải lại (em đã ở lớp đích: xem trước lớp đó 400). */
+  const xem = useApi<XemChuyenLopData>(dx || daChuyen ? null : (toClassId ? `/students/${studentId}/chuyen-lop?toClassId=${toClassId}&${thamTheo}` : `/students/${studentId}/chuyen-lop?${thamTheo}`), [studentId, toClassId, dx, theoCk]);
   const chonTheoCk = !dx && !duyet && !!lopDich.data?.nguon.coTheChon;
   const [tuan, setTuan] = useState(duyet?.tuan ?? '');
   const [lyDo, setLyDo] = useState(duyet?.lyDo ?? '');
   const [mucTieu, setMucTieu] = useState('');
   const [resetBac, setResetBac] = useState(!!duyet?.resetBac);
-  const [dangHuy, setDangHuy] = useState(false);
-  const [lyDoHuy, setLyDoHuy] = useState('');
   const lf = useLoiForm();
   const [busy, setBusy] = useState(false);
-  /* OV-13l: "Ngay hôm nay" đã thi hành → panel ở trạng thái "Đã chuyển" (không Hoàn tác). */
-  const [daChuyen, setDaChuyen] = useState<{ lop: { id: number; code: string }; han: string } | null>(null);
   /* Đổi lớp → đường xem trước mới (dữ liệu về null một lúc): phần không theo lớp (đang học, lệnh, tuần) giữ bản đã nạp — không nháy khung. */
   const nenRef = useRef<XemChuyenLopData | null>(null);
   if (xem.data) nenRef.current = xem.data;
@@ -227,27 +240,20 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         xong(t('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt'));
       } else if (duyet) {
         await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac } });
-        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
+        /* #8: Duyệt "Ngay hôm nay" — Hoàn tác = Huỷ quyết định của thẻ (thẻ về Chờ duyệt, em về lớp cũ). */
+        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn, theDuyet: duyet.id }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
       } else {
         /* PR-CL (B1, D15): ra mới hoặc sửa lệnh đang chờ — cùng một đường, máy chủ tính bối cảnh + hướng. */
-        const r = await api.post<{ daChuyen?: number[] }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac, ...(chonTheoCk ? { theoCuoiKhoa: theoCk } : {}) });
-        if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn }); } else xong(t('Đã lưu quyết định chuyển lớp'));
+        const r = await api.post<{ daChuyen?: number[]; dao?: number }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac, ...(chonTheoCk ? { theoCuoiKhoa: theoCk } : {}) });
+        if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn, dao: r.dao }); } else xong(t('Đã lưu quyết định chuyển lớp'));
       }
     } catch (e: any) { toast.push('error', ngayNay ? `${t('Không lưu được — chưa chuyển')} · ${loiMayChu(e)}` : loiMayChu(e)); } finally { setBusy(false); }
   };
   const huyLenh = async () => {
-    if (!lenh || !lyDoHuy.trim()) return;
+    if (!lenh) return;
     setBusy(true);
-    try {
-      await api.post(`/lenh-chuyen/${lenh.id}/huy`, { lyDo: lyDoHuy.trim() });
-      xongChuyen(); onDone?.(); onClose();
-      /* RA-LUONG-5 (luật không khoá cứng): Hoàn tác tại chỗ — cùng đường khôi phục của Cuối khoá lớp (`khoi-phuc-lenh`). */
-      toast.hoanTac(t('Đã huỷ quyết định chuyển lớp'), async () => {
-        const r = await hoanTacHangLoat('huy-lenh', [studentId]);
-        xongChuyen(); onDone?.();
-        toast.push(r.failed.length ? 'error' : 'ok', r.failed.length ? r.failed[0].message : t('Đã khôi phục quyết định'));
-      }, { key: `huy-lenh-${studentId}` });
-    } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
+    try { await huyQuyetDinhNgay(toast, lenh.id, studentId, onDone); onClose(); }
+    catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
   };
 
   const nhanChinh = dx ? (duyet ? t('Lưu') : t('Gửi đề xuất')) : ngayNay ? t('Chuyển ngay') : duyet ? t('Duyệt và quyết định') : dichChu(lenh ? CHU_CHUYEN_LOP.luu : CHU_CHUYEN_LOP.quyetDinh);
@@ -258,11 +264,23 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   if (daChuyen) {
     /* Nơi gọi đóng panel trong `onDone` → chỉ báo xong khi người dùng rời trạng thái "Đã chuyển". */
     const dong = () => { onDone?.(); onClose(); };
+    const hoanTac = async () => {
+      if ((!daChuyen.dao && !daChuyen.theDuyet) || busy) return;
+      setBusy(true);
+      try {
+        if (daChuyen.dao) await api.post(`/students/${studentId}/hoan-tac-chuyen-ngay`, { dao: daChuyen.dao });
+        else await api.post(`/yeu-cau/${daChuyen.theDuyet}/huy-quyet-dinh`, {});
+        xongChuyen(); invalidate('/yeu-cau');
+        toast.push('ok', t('Đã hoàn tác — em về lại {lop}', { lop: dangHoc?.lop.code ?? lop ?? '' }));
+        dong();
+      } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
+    };
     return (
       <KhungPanel tieuDe={t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={dong}
         chan={{ huy: { onClick: dong }, chinh: <Link className="btn min-h-[44px] max-sm:flex-1 sm:min-h-0" to={`/hoc-vien/lop/${daChuyen.lop.id}`} onClick={dong}>{t('Hồ sơ {lop}', { lop: daChuyen.lop.code })} ›</Link> }}>
         <p role="status" className="mb-0 mt-3 text-sm text-ok">
           ✓ {t('Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}', { lop: daChuyen.lop.code, ngay: thuNgay(homNayMay ?? '', homNayMay ?? ''), han: ngay(daChuyen.han, homNayMay ?? '') })}
+          {(daChuyen.dao || daChuyen.theDuyet) && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={hoanTac}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button></>}
         </p>
       </KhungPanel>
     );
@@ -274,7 +292,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     <KhungPanel tieuDe={dx ? (duyet ? t('Sửa đề xuất chuyển lớp') : t('Đề xuất chuyển lớp')) : t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
       chan={{
         daSua, huy: { onClick: onClose, disabled: busy },
-        ...(!dx && lenh && !duyet ? { xoa: { nhan: dichChu(CHU_CHUYEN_LOP.huy), onClick: () => setDangHuy((v) => !v) } } : {}),
+        ...(!dx && lenh && !duyet ? { xoa: { nhan: dichChu(CHU_CHUYEN_LOP.huy), onClick: () => { if (!busy) void huyLenh(); } } } : {}),
         conThieu: conThieuChu(lf.daBam, loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] max-sm:flex-1 sm:min-h-0" onClick={gui} disabled={busy || !!loiNap || choXem}>{busy ? (ngayNay ? t('Đang chuyển…') : t('Đang lưu…')) : nhanChinh}</button>,
         dongTren: !dx && dangHoc ? (
@@ -294,14 +312,6 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
           {lenh?.loi && !duyet && <p role="alert" className="mb-0 mt-2 text-xs text-late">{t('Chưa chuyển được: {loi}', { loi: dichChu(lenh.loi) })}</p>}
           {!dx && lenh && !duyet && !lenh.loi && <p className="mb-0 mt-2 text-xs text-slate-400">{t('Em đã có quyết định chuyển lớp bắt đầu {tuan} — sửa hoặc huỷ trước tuần đó.', { tuan: nhanTuanBatDau(lenh.tuan, homNayMay ?? '') })}</p>}
           {!dx && lenh?.loi && !duyet && <p className="mb-0 mt-1 text-xs text-slate-400">{t('Chọn tuần hoặc lớp chuyển đến mới rồi lưu, hoặc huỷ quyết định.')}</p>}
-          {dangHuy && (
-            <Khoi tieuDe={dichChu(CHU_CHUYEN_LOP.huy)}>
-              <Truong nhan={t('Lý do huỷ')} batBuoc>
-                <input className="field w-full" value={lyDoHuy} onChange={(e) => setLyDoHuy(e.target.value)} />
-              </Truong>
-              <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !lyDoHuy.trim()} onClick={huyLenh}>{t('Xác nhận huỷ quyết định')}</button>
-            </Khoi>
-          )}
 
           <Khoi tieuDe={dx ? t('Đề xuất') : t('Lớp chuyển đến')}>
             {chonTheoCk && (

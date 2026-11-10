@@ -87,7 +87,8 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
   /* Audit 03/11 F05: W1 · W2 riêng; em không học môn (N13) không tính. Lệnh đã xác nhận không có dòng `mdk` — đủ môn như cũ. */
   const mdk = new Map(rows.filter((r) => r.k === 'mdk').map((r) => [r.a as number, (r.b ?? null) as string | null]));
   const hoc = (lenhId: number, m: string) => boMonBanGiaoCt(o.ct, mdk.get(lenhId)).includes(m);
-  const banGiaoMon = chuaXn.length
+  /* #8 (G4-06): GVCN dạy luôn môn → viết trong phiếu GVCN (dải "Bàn giao"), không thêm dải môn; GVBM nhiều môn → MỘT dải "Bàn giao môn L · R". */
+  const banGiaoMon = gopMonDai(chuaXn.length && !pc.gvcn
     ? boMonBanGiaoCt(o.ct).filter((m) => kyNangPhuTrach(o.ct, m).some((k) => pc.kyNang.has(k))).map((m) => {
       const can = nguon.filter((r) => hoc(r.a, m) && !cung.get(r.a)?.mon.has(m));
       return {
@@ -95,7 +96,7 @@ export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: bo
         han: min(chuaXn.filter((r) => hoc(r.a, m) && !daGhi.get(m)?.has(r.a) && !cung.get(r.a)?.mon.has(m)).map((r) => r.g)),
       };
     }).filter((x) => x.tong > 0)
-    : [];
+    : []);
   const { banGiaoGv, xemTam } = daiBanGiaoGv(p, classId, o.ct, rows, ra, homNay);
 
   const nhom = (dich: any[]) => dich.length
@@ -183,7 +184,9 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
   const phieu = l.huong !== 'dung_hoc';
   const qlThay = ra && (!!l.han_gvcn && homNay > l.han_gvcn);   // lớp không GVCN được `daiLop` xử lý ở phía lớp; ở đây chỉ quá hạn
   const nut: DaiHocVien['nut'] = [];
-  const monToi = mons.find((m) => !daGhi.has(m) && kyNangPhuTrach(l.ct, m).some((k) => pc.kyNang.has(k))) ?? null;
+  /* #8 (G4-06): mọi môn còn thiếu của người xem — MỘT nút (mở bảng nhiều cột); GVCN viết trong phiếu GVCN, không thêm nút môn. */
+  const monToiDs = pc.gvcn ? [] : mons.filter((m) => !daGhi.has(m) && kyNangPhuTrach(l.ct, m).some((k) => pc.kyNang.has(k)));
+  const monToi = monToiDs.length ? monToiDs.join(',') : null;
   if (phieu && !l.xac_nhan_luc && l.trang_thai !== 'huy') {
     if (pc.gvcn || qlThay) nut.push('ban-giao');
     if (monToi) nut.push('ban-giao-mon');
@@ -199,7 +202,7 @@ export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
     } : null,
     loi: ra ? l.loi ?? null : null,   // "Chưa chuyển được: …" chỉ cho Quản lý
     nut,
-    mon: monToi ? { ma: monToi, ngan: tenMonNgan(l.ct, monToi) } : null,
+    mon: monToi ? { ma: monToi, ngan: monToiDs.map((m) => tenMonNgan(l.ct, m)).join(' · ') } : null,
   };
 }
 
@@ -218,4 +221,11 @@ function deXuatDangCho(conn: ReturnType<typeof db>, studentId: number): DaiHocVi
     loai: 'cho-duyet', lenhId: 0, lopNguon: { id: y.lop_id, code: y.nguon }, lopDich: dich ? { id: dich.id, code: dich.code } : null, huong: '',
     tuan: d.tuan ?? '', nguoiRaLenh: y.gui ?? null, ngayRaLenh: y.tao_luc, banGiao: null, loi: null, nut: [], mon: null,
   };
+}
+
+/** #8 (G4-06): nhiều dải môn của CÙNG người xem → một dải ("L · R", số em cộng, hạn sớm nhất). Một môn / không môn giữ nguyên. */
+function gopMonDai<T extends { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }>(ds: T[]): T[] {
+  if (ds.length < 2) return ds;
+  return [{ ...ds[0], mon: ds.map((x) => x.mon).join(','), monNgan: ds.map((x) => x.monNgan).join(' · '),
+    daGhi: ds.reduce((a, x) => a + x.daGhi, 0), tong: ds.reduce((a, x) => a + x.tong, 0), han: ds.map((x) => x.han).filter((x): x is string => !!x).sort()[0] ?? null }];
 }

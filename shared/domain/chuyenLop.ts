@@ -339,7 +339,8 @@ export type PhieuBanGiaoDto = {
   lop: { id: number; code: string; ct: string | null; ft: boolean; mon: { ma: string; ten: string; ngan: string }[] };
   homNay: string;
   /** `ql`: Quản lý lớp nguồn — OV-7a: sửa được phiếu đã xác nhận cả sau ngày thi hành. */
-  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; xacNhan: boolean; xemTuNguon: boolean; ql: boolean };
+  /** `monDay` (#8): môn người xem dạy ở lớp nguồn — nút "Viết" thay "Điền thay". */
+  nguoiXem: { gvcn: boolean; qlThay: boolean; monGhi: string[]; monDay: string[]; xacNhan: boolean; xemTuNguon: boolean; ql: boolean };
   tong: number; daXacNhan: number; hanGvcn: string | null;
   /** Tên em có `hanGvcn` (hạn sớm nhất trong các em chưa xác nhận). */
   hanGvcnEm: string | null;
@@ -510,4 +511,15 @@ export function docOTarget(v: string): { giaTri: MucTieuLenh | undefined; loi: s
   const t = tachMucTieu(s);
   const g = t.kck ? ghepMucTieu(t.target, true)! : Number(s);
   return mucTieuHopLe(g) ? { giaTri: g, loi: null } : { giaTri: undefined, loi: 'Gõ band 0–9, bước 0,5 (ví dụ 6.5), thêm KCK nếu không cam kết' };
+}
+
+/**
+ * #8 (G4-05, bản rà 11/11): ô "Lớp chuyển đến" — lớp hay chọn nhất lên đầu: cùng chi nhánh, rồi cùng loại (FT ↔ FT cùng lộ trình · lớp thường cùng chương
+ * trình), rồi mã lớp theo số (MB FT 102 trước MB FT 103). Không bỏ lớp nào.
+ */
+export function xepLopDich<T extends { code: string; chiNhanhId: number; ft: boolean; route: string | null; ma: string | null }>(
+  lop: readonly T[], nguon: { chiNhanhId: number; ft: boolean; route: string | null; ma: string | null },
+): T[] {
+  const diem = (l: T) => (l.chiNhanhId === nguon.chiNhanhId ? 0 : 4) + (l.ft === nguon.ft ? 0 : 2) + ((nguon.ft ? l.route === nguon.route : l.ma === nguon.ma) ? 0 : 1);
+  return [...lop].sort((a, b) => diem(a) - diem(b) || a.code.localeCompare(b.code, 'vi', { numeric: true }));
 }
