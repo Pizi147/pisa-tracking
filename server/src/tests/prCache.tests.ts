@@ -47,6 +47,27 @@ export async function runPrCacheTests(t: YThucTestKit) {
       await xong();
     });
 
+    await checkAsync('GIAM-COMPUTE · badge `chiNghe`: khối khác tải cùng đường → nhận bản đó (0 lời gọi thêm); phản hồi bị vô hiệu giữa chừng → không nhận', async () => {
+      batDau();
+      const nhan: unknown[] = [];
+      const go = ua.ngheBanMoi('/my-work', (d) => nhan.push(d));
+      try {
+        const p = ua.taiVaNho('/my-work');
+        tra('/my-work', { v: 1 });
+        await p;
+        assert(JSON.stringify(nhan) === JSON.stringify([{ v: 1 }]) && soGoi('/my-work') === 0, `nhận: ${JSON.stringify(nhan)}`);
+        const cu = ua.taiVaNho('/my-work');
+        api.invalidate('/my-work');
+        tra('/my-work', { v: 'cu' });
+        await cu;
+        assert(nhan.length === 1, 'bản bị vô hiệu giữa chừng vẫn tới badge');
+      } finally { go(); }
+      ua.taiTruoc('/my-work');
+      tra('/my-work', { v: 2 });
+      await xong();
+      assert(nhan.length === 1, 'đã gỡ mà vẫn nhận');
+    });
+
     await checkAsync('PR-CACHE · hai hook cùng đường dùng chung MỘT lời gọi, cả hai nhận dữ liệu; vào lại thì dùng bản vừa xem', async () => {
       batDau();
       const h1 = ua.taiVaNho('/cache/chung');
