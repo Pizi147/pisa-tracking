@@ -9770,6 +9770,9 @@ await runPrP1CongViecTests({ check, assert, conn, P } as any);
 // ==================================================================== VIEC-CUA-TOI (rà 11/11 đề xuất #1: một hàm việc của tôi cho mọi nơi)
 const { runPrViecCuaToiTests } = bocTep('prViecCuaToi', await import('./prViecCuaToi.tests.ts'));
 await runPrViecCuaToiTests({ check, assert, conn } as any);
+// ==================================================================== CHUONG-V2 (chủ SP 11/11: chuông Việc cần làm theo loại + Cập nhật, số chung với badge)
+const { runPrChuongV2Tests } = bocTep('prChuongV2', await import('./prChuongV2.tests.ts'));
+await runPrChuongV2Tests({ check, assert, conn } as any);
 // ==================================================================== TQ-VIEC-CUA-TOI ([XM 3] rà 11/11: ô Việc của tôi ở Tổng quan TVV / QL / Admin)
 const { runPrTqViecCuaToiTests } = bocTep('prTqViecCuaToi', await import('./prTqViecCuaToi.tests.ts'));
 await runPrTqViecCuaToiTests({ check, assert, conn, P } as any);
@@ -9943,6 +9946,9 @@ await runPrGiamDocHsgvTests({ check, assert, conn, P } as any);
 // ==================================================================== SOS-TAM-PA (chủ SP 11/11: SOS tạm ghi mô tả + PA · PA GV ↔ PA quy chế lúc chốt · Chọn PA · thẻ QL 3 ngày)
 const { runPrSosTamPaTests } = bocTep('prSosTamPa', await import('./prSosTamPa.tests.ts'));
 await runPrSosTamPaTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
+// ==================================================================== QTV2-QUYEN (chủ SP 11/11, Quản trị V2 PR-2: nhật ký chung, quyền theo vai)
+const { runPrQtv2QuyenTests } = bocTep('prQtv2Quyen', await import('./prQtv2Quyen.tests.ts'));
+await runPrQtv2QuyenTests({ check, assert, assertThrows, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
