@@ -158,3 +158,18 @@ Từng kỹ năng (so Target overall) · Theo GV (QL / QT / CX, trọng số tu�
 - Cỡ chữ, khoảng cách chính xác của dải số trình chiếu (mục 3). Thứ tự khối trong từng báo cáo. Cách xếp 375.
 - Cách vẽ khối "Đạt Target · Tổng thể" + thanh (mục 5.2), miễn là hai số không lẫn nhau và đọc được trong 3 giây.
 - Lớp thường ở SOS: giữ những cột nào sau khi bỏ "đạt" (mục 4). Ghi lý do trong bảng truy vết.
+
+## 11. Sửa sau rà mockup #1400 (chủ SP 12/11) — thắng các mục trên khi trái
+
+- **Thứ tự tab:** Chi nhánh · **Thi thật** · SOS · Giáo viên · Ý thức (Thi thật là bảng thứ 2).
+- **Chi nhánh:**
+  - Thêm 1–2 ô số về thi thật ở cột trái, dưới ba ô hiện có. PTA gợi ý: "Đạt Target thi thật · trừ KCK" (x %, n/m em) và "Em thi · trong kỳ" (dòng nhỏ: Chưa có KQ n). Cùng hàm với báo cáo Thi thật, bấm một lần ra danh sách. Đây là ngoại lệ có chủ ý cho luật không trùng (mục 2.1), chủ SP muốn để trình chiếu.
+  - Bảng Theo lớp: mỗi trang 5–6 lớp, có chuyển trang (mẫu `PhanTrang` sẵn có). Hàng tổng chi nhánh luôn hiện.
+- **SOS:**
+  - Cân đối cột / hàng cho chuẩn: độ rộng cột theo nhóm, số căn giữa thẳng hàng, chiều cao hàng đều.
+  - Khối "PA nào hiệu quả" thiết kế lại cho gọn. Bỏ "Thời gian thường mất". Giữ: PA có kết quả · Có cải thiện; bảng PA do GV thêm (vấn đề → loại PA, "Nên dùng"); bảng PA theo quy chế.
+- **Thi thật — thứ tự khối:** dải số (Đạt Target / Tổng thể + thanh · Không thi · Chưa có KQ) → **Từng kỹ năng + Theo GV** (ngay dưới, hai bảng cạnh nhau ở 1440) → Theo lớp (xuống dưới, ít quan trọng) → Danh sách kết quả.
+  - **Theo GV:** bỏ cột "Tuần dạy" và bỏ trọng số tuần dạy. Mỗi GV × kỹ năng đếm **số em** GV từng dạy kỹ năng đó có KQ trong kỳ (trừ KCK). Vượt · Đạt · Chưa đạt là **số nguyên**, chữ chính; % nhỏ bên dưới. Đổi luôn ở Phân tích GV / hồ sơ GV vì dùng chung `thongKeThiThat` (thay luật trọng số 05/11 — chủ SP đã cho "nếu rối quá thì thôi").
+  - Từng kỹ năng: cũng số là chính, % nhỏ bên dưới.
+  - **Danh sách kết quả:** cân lại cột (tên rộng, điểm L R W S OVR Target hẹp đều nhau, Kết quả và Bước tiếp đủ chỗ, không khoảng trống lệch).
+- **Giáo viên:** giữ như mockup vòng 1.
