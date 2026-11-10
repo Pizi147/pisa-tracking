@@ -7,7 +7,7 @@
  *    Bắt đầu một Thứ Hai sau (không qua lệnh) = "Hẹn bắt đầu" (`buoc_tiep_hen`), tới tuần đó tự bắt đầu (`batDauHenDenHan`, cùng cron / quét khi đọc).
  *  · `hoc_tiep` / `hoc_lai` (OV-8a) — chỉ dữ liệu / API cũ.
  * P7 SV-LO-TRINH (N12): web hai hướng — "Tạm dừng/ Kết thúc học" (`tam_dung` / `ket_thuc` theo ô "Có thể quay lại học", ngày + lý do của hộp) · "Lộ trình mới" chọn
- *  LT1 / LT2 / RF / Khác (`route`, `routeTen`, `boTarget`): lớp đích phải hợp loại (`kiemLopLoTrinhMoi`), không chép ngày thi (E1), đầu vào = KQ thi thật (E3), Giữ lớp đã
+ *  LT1 / LT2 / RF / Khác (`route`, `routeTen`, `boTarget`): lớp đích là lớp FT bất kỳ (`kiemLopLoTrinhMoi`, lộ trình theo em), không chép ngày thi (E1), đầu vào = KQ thi thật (E3), Giữ lớp đã
  *  kết thúc → máy chủ tự mở lại lớp (E2), Case chưa xong của lộ trình cũ đóng "Kết thúc lộ trình" (PA "Dừng — kết thúc lộ trình", không vào Hiệu quả PA).
  * Mỗi lựa chọn MỘT giao dịch; đổi lựa chọn = hoàn tác đúng lựa chọn cũ (`buoc_tiep_json`) rồi làm cái mới. Target giữ (Sửa = `mucTieu`).
  * Việc "Chọn bước tiếp" (QL / TVV): lộ trình FT mới nhất có kết quả, chưa chọn, em chưa Lưu trữ; hạn = hạn sau thi (OV-13q `trangThaiSauThi`), đỏ không chặn.

@@ -173,7 +173,7 @@ export { ngayTaoLuot } from '../fasttrack/skillSchedule.ts';
  *         ý nghĩa của hàm này: đổi tuần bắt đầu học thì lịch đề xuất chạy theo, còn cái người đã chốt thì đứng yên.
  */
 export function apLichMacDinh(cycleId: number, actorUserId: number | null, o: {
-  ngayTao?: string; daThiToiMt?: number; chiTao?: boolean; theoMoc?: boolean;
+  ngayTao?: string; daThiToiMt?: number; chiTao?: boolean; theoMoc?: boolean; khongVeQua?: boolean;
 } = {}): KetQuaLichMacDinh {
   return apLichMacDinhLo([{ cycleId, daThiToiMt: o.daThiToiMt }], actorUserId, o).get(cycleId) ?? { created: [], moved: [], kept: 0 };
 }
@@ -187,7 +187,8 @@ export function apLichMacDinh(cycleId: number, actorUserId: number | null, o: {
  * Tạo sau dời không đổi kết quả: `kiemSoMtMoi` chỉ đọc số lượt, trạng thái và có điểm — thứ phần dời không chạm.
  */
 export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number | null, o: {
-  ngayTao?: string; chiTao?: boolean; theoMoc?: boolean;
+  /** LO-TRINH-THEO-HV: với `theoMoc` — chỉ dời lượt còn ở tuần này trở đi, sang tuần này trở đi (lượt tuần đã qua có thể đã thi, chưa nhập điểm). */
+  ngayTao?: string; chiTao?: boolean; theoMoc?: boolean; khongVeQua?: boolean;
 } = {}): Map<number, KetQuaLichMacDinh> {
   const conn = db();
   const kqs = new Map<number, KetQuaLichMacDinh>();
@@ -203,7 +204,8 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
     const daCo = new Set<number>();
     theoLo(cycleIds, (lo, ph) => {
       for (const a of conn.prepare(
-        `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.plan_source, a.planned_period_id, a.created_at, ${CO_DIEM_SQL('a')} AS coDiem
+        `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.plan_source, a.planned_period_id, a.created_at, ${CO_DIEM_SQL('a')} AS coDiem${o.khongVeQua
+          ? ', (SELECT p.week_start FROM report_periods p WHERE p.id = a.planned_period_id) AS tuan_cu' : ''}
            FROM assessment_attempts a WHERE a.cycle_id IN (${ph})`).all(...lo) as any[]) {
         dsOf.get(a.cycle_id)!.push(a); daCo.add(a.id);
       }
@@ -224,6 +226,7 @@ export function apLichMacDinhLo(yc: readonly YeuCauLichMt[], actorUserId: number
           continue;
         }
         const xep = o.theoMoc ? had.status === 'planned' && had.plan_source === 'auto' && had.planned_period_id !== s.periodId
+            && (!o.khongVeQua || (s.weekStart >= mondayOf(ngayTao) && (!had.tuan_cu || had.tuan_cu >= mondayOf(ngayTao))))
           : xepTheoDeXuat(had, s.weekStart, ngayTao);
         if (o.chiTao || had.coDiem || !xep) {
           kq.kept += 1; continue;

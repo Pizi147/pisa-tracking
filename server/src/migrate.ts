@@ -118,6 +118,7 @@ import { migratePrNghiaVu } from './migrate/prNghiaVu.ts';
 import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 import { migratePrWLech } from './migrate/prWLech.ts';
 import { migratePrK316 } from './migrate/prK316.ts';
+import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -174,6 +175,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* Lỗi giữa chừng: không bật lại ở đây — run.ts đóng kết nối, kết nối mới mặc định bật. */
   conn.pragma('foreign_keys = OFF');
     /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
+    /* LO-TRINH-THEO-HV (chủ SP 11/11): cột assessment_attempts.route_at_attempt — TRƯỚC mọi bước tính kết quả lượt (câu lượt đọc `COALESCE(a.route_at_attempt, cy.route)`). Chỉ thêm cột. */ buoc(() => migratePrLoTrinhHv(conn, applied));
     /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
     /* SV-NX-CASE: cột sos_cases.mo_ta_attempt_id (nguồn mô tả Case MT) — TRƯỚC mọi bước có thể đồng bộ mô tả Case (`dongBoNguyenNhanMt` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrSvNxCase(conn, applied));
     /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));

@@ -84,7 +84,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const xem = useApi<XemTruoc>(`/cycles/${bt.cycleId}/lo-trinh-moi/xem-truoc${q ? `?${q}` : ''}`, [q]);
   const r = route ?? xem.data?.routeGoiY ?? null;
   const dsLop = useApi<{ lop: LopDich[] }>(lopKhac ? `/students/${bt.studentId}/hoc-lai/lop-dich` : null, [lopKhac, bt.studentId]);
-  /* Lớp đúng loại lộ trình (luật chung `kiemLopLoTrinhMoi`) — tìm mã lớp đã chọn. Ô "Lớp khác" bày cả lớp FT sai loại, mờ + lý do (U4). */
+  /* Lớp đích hợp lệ (luật chung `kiemLopLoTrinhMoi`: mọi lớp FT — lộ trình theo em) — tìm mã lớp đã chọn. */
   const lopDung = (dsLop.data?.lop ?? []).filter((l) => r && !kiemLopLoTrinhMoi(r, { code: l.code, ft: l.ft, route: l.route }));
   const loiTen = khac && !ten.trim() ? t('Ghi tên lộ trình "Khác".') : null;
   const loiMon = mon?.length === 0 ? t('Chọn ít nhất một môn.') : null;

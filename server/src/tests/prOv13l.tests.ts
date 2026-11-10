@@ -117,13 +117,13 @@ export async function runPrOv13lTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ chuyển ngay — FT → FT khác lộ trình (điểm đi theo)
-  await checkAsync('L13-4 · FT LT1 → FT LT2 ngay hôm nay: GIỮ lộ trình (cùng id, đổi mã LT2), điểm + lượt + Case giữ lộ trình, không mở lộ trình mới', async () => {
+  await checkAsync('L13-4 · FT LT1 → lớp FT LT2 ngay hôm nay: GIỮ lộ trình của em (cùng id, vẫn LT1 — LO-TRINH-THEO-HV), điểm + lượt + Case giữ lộ trình, không mở lộ trình mới', async () => {
     const nguon = lop('FT', 5), dich = lop('FT', 2, 'LT2');
     const b = em(nguon, { ft: true });
     const x = luot(b.cyc, b.sid, nguon, 1, 'done');
     await voiNgay(THU5, () => ra(nguon, 'giua-khoa', { studentId: b.sid, huong: 'chuyen_lop', toClassId: dich, tuan: THU5 }));
     const k = khoa(b.sid);
-    assert(k.id === b.cyc && k.route === 'LT2', JSON.stringify(k));
+    assert(k.id === b.cyc && k.route === 'LT1', JSON.stringify(k));
     assert(get('SELECT COUNT(*) n FROM learning_cycles WHERE student_id = ?', b.sid).n === 1, 'không mở lộ trình mới');
     assert(get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', x).cycle_id === b.cyc, 'điểm vẫn thuộc lộ trình đang chạy');
   });
@@ -191,14 +191,18 @@ export async function runPrOv13lTests(t: YThucTestKit) {
     const c = get('SELECT status, finished_at FROM classes WHERE id = ?', fou);
     assert(c.status === 'finished' && c.finished_at === THU5, JSON.stringify(c));
   });
-  await checkAsync('L13-13 · Case: LT1 → LT2 → LT1 cùng ngày đủ hai mốc "Sang lộ trình"', async () => {
+  await checkAsync('L13-13 · Case: chuyển lớp LT1 → lớp LT2 → lớp LT1 giữ lộ trình em (LO-TRINH-THEO-HV), không mốc; đổi lộ trình LT2 → LT1 cùng ngày đủ hai mốc "Sang lộ trình"', async () => {
     const l1 = lop('FT', 5), l2 = lop('FT', 2, 'LT2'), l1b = lop('FT', 2);
     const e = em(l1, { ft: true });
     const c = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, sos_level, detected_at, created_at) VALUES (?,?, 'reading', 'reading', 'teacher_report', 'open', 1, ?, ?)`)
       .run(e.sid, e.cyc, TODAY, NOW).lastInsertRowid);
     await voiNgay(THU5, () => ra(l1, 'giua-khoa', { studentId: e.sid, huong: 'chuyen_lop', toClassId: l2, tuan: THU5 }));
     await voiNgay(THU5, () => ra(l2, 'giua-khoa', { studentId: e.sid, huong: 'chuyen_lop', toClassId: l1b, tuan: THU5 }));
-    const m = all(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'route_changed' ORDER BY id`, c).map((x) => x.note);
+    const moc = () => all(`SELECT note FROM case_milestones WHERE case_id = ? AND kind = 'route_changed' ORDER BY id`, c).map((x) => x.note);
+    assert(!moc().length && khoa(e.sid).route === 'LT1', `chuyển lớp giữ lộ trình: ${JSON.stringify(moc())} · ${khoa(e.sid).route}`);
+    const doiLt: any = await import('../fasttrack/doiLoTrinh.ts');
+    await voiNgay(THU5, () => { doiLt.doiLoTrinh(QL, e.cyc, { route: 'LT2' }); doiLt.doiLoTrinh(QL, e.cyc, { route: 'LT1' }); });
+    const m = moc();
     assert(m.join('|') === 'Sang lộ trình LT2|Sang lộ trình LT1' && khoa(e.sid).route === 'LT1', JSON.stringify(m));
   });
   await checkAsync('L13-14 · GVCN đề xuất "Ngay hôm nay" (T5), QL duyệt hôm sau (T6) → chuyển ngay ngày duyệt, không báo lỗi tuần', async () => {

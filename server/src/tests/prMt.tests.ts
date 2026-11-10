@@ -192,7 +192,8 @@ export async function runPrMtTests(t: YThucTestKit) {
     assert(cy.start_period_id, 'thiếu tuần bắt đầu');
     assert(luotCua(sH1).map((x) => x.no).join() === '1,2,3', JSON.stringify(luotCua(sH1)));
   });
-  check('PR-MT (3) · Chuyển em LT1 → lớp RF (OV-13l): GIỮ lộ trình đang chạy (đổi mã RF), Case đang mở giữ, mốc Sang lộ trình, không Case trùng (K5-60)', () => {
+  const doiLt: any = await import('../fasttrack/doiLoTrinh.ts');
+  check('PR-MT (3) · Chuyển em LT1 → lớp RF: GIỮ lộ trình của em (LO-TRINH-THEO-HV, thay OV-13l đổi mã); đổi RF ở Sửa thông tin → Case giữ, mốc Sang lộ trình, không Case trùng (K5-60)', () => {
     /* OV-13l: chạy trong giao dịch cuộn lại — em demo không bị chuyển thật cho các phép kiểm sau. */
     conn.exec('BEGIN IMMEDIATE');
     try {
@@ -206,6 +207,10 @@ export async function runPrMtTests(t: YThucTestKit) {
           AND (SELECT COUNT(*) FROM learning_cycles x WHERE x.student_id = sc.student_id AND x.status = 'active') = 1 LIMIT 1`).get() as any;
     assert(c, 'seed thiếu em FT LT1 có Case mở');
     luat.apDungMotDong(P.admin, { sid: c.student_id, toClassId: classId('MB FT RF 12'), ngay: TODAY, boiCanh: 'giua-khoa' });
+    const giu = conn.prepare(`SELECT id, route FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(c.student_id) as any;
+    assert(giu.route === 'LT1' && giu.id === c.cycle_id, `chuyển lớp phải giữ lộ trình em: ${JSON.stringify(giu)}`);
+    assert(!conn.prepare(`SELECT 1 FROM case_milestones WHERE case_id = ? AND kind = 'route_changed'`).get(c.id), 'chuyển lớp không còn mốc Sang lộ trình');
+    doiLt.doiLoTrinh(P.admin, c.cycle_id, { route: 'RF' });
     const moi = conn.prepare(`SELECT id, route FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(c.student_id) as any;
     assert(moi.route === 'RF' && moi.id === c.cycle_id, JSON.stringify(moi));
     const sau = conn.prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(c.id) as any;

@@ -299,11 +299,11 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     conn.prepare('UPDATE learning_cycles SET target_score = 6.5 WHERE student_id = ?').run(sid);
     return { sid, cyc: cycCua(sid) };
   };
-  check('DUYET (6) · GVCN không tự sửa target/lộ trình (403, chỉ lối Đề xuất sửa); ghi chú, tháng thi vẫn sửa được; QL sửa được', () => {
+  check('DUYET (6) · GVCN không tự sửa target (403, chỉ lối Đề xuất sửa); lộ trình: GV bộ môn 403 (GVCN đổi được — LO-TRINH-THEO-HV 11/11, phép kiểm prLoTrinhHv); ghi chú, tháng thi vẫn sửa được; QL sửa được', () => {
     const { cyc } = hvCoTarget();
     assert(maLoi(() => cyclesSvc.reviseTarget(P.coreTeacher, cyc.id, { newTarget: 7, reason: 'Thử' })) === 403
       && /Đề xuất sửa/.test(chuLoi(() => cyclesSvc.reviseTarget(P.coreTeacher, cyc.id, { newTarget: 7, reason: 'Thử' }))), 'GVCN đổi target');
-    assert(maLoi(() => cyclesSvc.updateCycle(P.coreTeacher, cyc.id, { route: 'LT2' })) === 403, 'GVCN đổi lộ trình');
+    assert(maLoi(() => cyclesSvc.updateCycle(P.subjectTeacher, cyc.id, { route: 'LT2' })) === 403, 'GV bộ môn đổi lộ trình');
     assert(maLoi(() => cyclesSvc.createCycle(P.coreTeacher, { studentId: cyc.student_id, route: 'LT2' })) === 403, 'GVCN mở lộ trình mới');
     cyclesSvc.updateCycle(P.coreTeacher, cyc.id, { note: 'Ghi chú của GVCN', examMonth: '2026-12', targetScore: 6.5, route: cyc.route });
     assert(cycCua(cyc.student_id).exam_month === '2026-12', 'GVCN không sửa được tháng thi');

@@ -788,6 +788,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       tuanKetThuc: lopDangGiu.class_start_week && progHienTai.weeks ? addDays(lopDangGiu.class_start_week, (progHienTai.weeks - 1) * 7) : null,
     }
     : null;
+  /* P8 Môn học + LO-TRINH-THEO-HV: bốn vai đổi được (QL · Quản trị · GVCN lớp đang học · TVV) — lộ trình FT đang chạy. */
+  const doiMonLt = !!selected?.route && selected.status === 'active' && duocDoiMon(p, { studentId });
   const startWeekSel = selected?.start_period_id
     ? (conn.prepare('SELECT week_start, code FROM report_periods WHERE id = ?').get(selected.start_period_id) as any) ?? null
     : null;
@@ -920,7 +922,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         programmeCode: selected.programme_code, ratio: isRatioCycle(selected),
         /* P8 (N13, N22 ④): môn đăng ký — chỉ lộ trình FT (null = đủ môn); `monHoc` = "L · R · W2 · S" khi thiếu môn (dòng đầu hồ sơ, k7). */
         ...(selected.route ? { monDangKy: selected.mon_dang_ky ? JSON.parse(selected.mon_dang_ky) as string[] : null, monHoc: selected.mon_dang_ky ? chuMon(selected.mon_dang_ky) : null,
-          coTheDoiMon: selected.status === 'active' && duocDoiMon(p, { studentId }) } : {}),
+          /* LO-TRINH-THEO-HV: ô "Lộ trình đang học" chọn được — cùng bốn vai Môn học; danh sách LT1 · LT2 · RF ở web, máy chủ kiểm danh mục khi lưu (mở hồ sơ không thêm câu). */
+          coTheDoiMon: doiMonLt, coTheDoiLoTrinh: doiMonLt } : {}),
         /** P13 KET-PET: kỳ thi Cambridge của lộ trình (KET / PET) — Target + thi thật theo thang này; null = không kỳ thi. */
         kyThi: !selected.route ? kyThiCuaChuongTrinh(selected.programme_code) : null,
         /* OV-6b1: tuần MT của lớp em đang học — web báo trước "MT sẽ dời" bằng đúng lịch này (`cauMtSeDoi`). */
