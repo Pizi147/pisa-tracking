@@ -478,7 +478,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     /* UI-3 (mockup U10 K3): "Người xử lý" — GVCN lớp em đang học (một câu, chỉ khi có). */
     gvcn: mot.gvcn ?? null,
     macDinh: macDinhTick(viPham.map((v) => ({ id: v.id, t: v.trangThai, occurredOn: v.occurredOn })), homNay),
-    dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi' }),
+    dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi', p, homNay }),
     hang: (({ xuLyGanNhat, tuChoi, thuHoi, baoPh }) => ({ xuLyGanNhat, tuChoi, thuHoi, baoPh }))(hangCuaEm(p, em, hv.full_name, hv.student_code, homNay)),
     demCuoi: {
       tong: viPham.length,

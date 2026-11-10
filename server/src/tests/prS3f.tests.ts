@@ -275,7 +275,8 @@ export async function runPrS3fTests(t: YThucTestKit) {
     assert(lyDoBaoLenYThuc({ ...em3, gvcnId: null }) !== null, 'lớp chưa có GVCN vẫn phải Báo QL');
   });
   check('S3F (12) · ClassYThucCard: lỗi tải hồ sơ Ý thức của em → ErrorState; chú thích yeuCauDuyet.ts nêu cả hai khoá y_thuc, bao_len_y_thuc', () => {
-    assert(/hvY\.error\)? [\s\S]{0,120}ErrorState/.test(web('yThuc/ClassYThucCard.tsx')), 'lỗi hvY chưa có ErrorState');
+    /* Y-THUC-V2: hồ sơ Ý thức của em chỉ đọc khi mở hộp thang (ThangEm) — lỗi tải có Thử lại, không xoay mãi. */
+    assert(/function ThangEm[\s\S]{0,600}error \? <LoiTaiNho[^>]*onRetry=\{reload\}/.test(web('yThuc/ClassYThucCard.tsx')), 'lỗi hồ sơ em chưa có Thử lại');
     assert(/'y_thuc' \+ 'bao_len_y_thuc'/.test(fs.readFileSync(path.join(REPO, 'shared/domain/yeuCauDuyet.ts'), 'utf8')), 'chú thích hai khoá');
   });
 }

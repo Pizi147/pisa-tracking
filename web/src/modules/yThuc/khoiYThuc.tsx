@@ -23,13 +23,15 @@ const LOP_BV: Record<TongBv, string> = {
   xem: 'border-dashed border-[color:var(--accent)] text-doing',
   xam: 'border-[color:var(--line-strong)] text-slate-500',
 };
-export function BadgeViec({ tong, children, onClick, title }: { tong: TongBv; children: ReactNode; onClick?: () => void; title?: string }) {
+export function BadgeViec({ tong, children, onClick, title, xuong = false }: { tong: TongBv; children: ReactNode; onClick?: () => void; title?: string;
+  /** Y-THUC-V2: chữ dài (tên bậc + ngày) được xuống dòng trong cột hẹp thay vì tràn sang cột bên. */
+  xuong?: boolean }) {
   /* Badge bấm được (Báo PH, đề xuất): `title` cũng là tên truy cập — nói việc sẽ mở, không chỉ trạng thái. */
   const dau = tong === 'qua' ? <span aria-hidden className="text-xs">⚠</span>
     : tong === 'xong' ? <span aria-hidden className="text-xs">✓</span>
     : <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full bg-current" />;
-  const lop = `inline-flex h-6 max-w-full items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-semibold ${LOP_BV[tong]}`;
-  if (onClick) return <button type="button" title={title} aria-label={title} className={`${lop} cursor-pointer appearance-none hover:brightness-110 max-sm:min-h-[44px]`} onClick={onClick}>{dau}{children} <span aria-hidden>›</span></button>;
+  const lop = `inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-semibold ${xuong ? 'min-h-6 py-[3px] text-left leading-snug' : 'h-6 whitespace-nowrap'} ${LOP_BV[tong]}`;
+  if (onClick) return <button type="button" title={title} className={`${lop} cursor-pointer appearance-none hover:brightness-110 max-sm:min-h-[44px]`} onClick={onClick}>{title && <span className="sr-only">{title}: </span>}{dau}{children} <span aria-hidden>›</span></button>;
   return <span title={title} className={lop}>{dau}{children}</span>;
 }
 
