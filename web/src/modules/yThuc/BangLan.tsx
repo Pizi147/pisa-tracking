@@ -230,7 +230,7 @@ export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay:
           <span className={`flex items-center gap-1.5 text-xs font-semibold max-sm:row-span-2 ${nay === i ? 'text-[color:var(--accent)]' : 'text-slate-500'}`}>
             <span aria-hidden className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{i + 1}</span>
             <span className="max-sm:hidden">{ten[i]}</span><span className="sm:hidden">{ngan[i]}</span>
-            {nay === i && <span className="ml-auto rounded px-1.5 text-xs font-bold leading-[18px] text-[color:var(--accent-ink)] max-sm:ml-0" style={{ background: 'var(--accent)' }}>{t('Bạn')}</span>}
+            {nay === i && <span className="ml-auto rounded border border-[color:var(--accent)] px-1.5 text-xs font-bold leading-4 text-[color:var(--accent)] max-sm:ml-0">{t('Bạn')}</span>}
           </span>
           <span className="min-w-0 text-sm font-semibold text-slate-100">{gt}</span>
           {ph && <span className="text-xs text-slate-400">{ph}</span>}
