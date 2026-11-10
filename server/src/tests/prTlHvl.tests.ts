@@ -81,7 +81,7 @@ export async function runPrTlHvlTests(t: any) {
   });
 
   await checkAsync('H2 · /hoc-vien-lop QL: Case chi tiết + Ý thức + tiến độ lớp mỗi thứ một lượt, câu ≤ 48 (them=1 ≤ 49)', async () => {
-    for (const [url, tran] of [['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1', 50], ['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1', 51]]   /* GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): hai lần nạp lịch có tuần mới → +2 */  as [string, number][]) {
+    for (const [url, tran] of [['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1', 51], ['/hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1', 52]]   /* GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): hai lần nạp lịch có tuần mới → +2; LO-TRINH-THEO-HV: em chuyển FT → FT giữ lộ trình em (khác lộ trình lớp) → lịch MT đọc cấu hình lộ trình (`routes`, 1 câu / request, ~4 dòng) → +1 */  as [string, number][]) {
       const { cau } = await doGet(P.mbManager.userId, url);
       const so = { 'Case chi tiết': dem(cau, /^SELECT id, title, system_close_reason, cycle_id FROM sos_cases WHERE id IN/), 'Ý thức': dem(cau, /^SELECT 0 AS loai, id AS id/),
         'tiến độ lớp': dem(cau, /^SELECT e\.class_id, COUNT\(\*\) n, SUM/) };
