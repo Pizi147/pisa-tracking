@@ -306,6 +306,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **Chủ SP 12/11 (rà mockup cấu hình #1370):** "Thứ nhất, chưa làm tab 'tutor'. Thứ 2, không làm hẳn 1 tab cho quản trị, vẫn ở vị trí cũ" → bỏ Tutor (hoãn); không dựng tab / khung điều hướng Quản trị mới, giữ vị trí cũ (CAU-HINH-CASE-SOS + QUAN-TRI-V2).
 
+**12/11 #1374 #1375 (top 10 #3 #4, PTA chốt):** một ngưỡng chữ chung `CHU_TOI_THIEU_CASE` = 8 ký tự (mô tả Case 15 → 8, Xác nhận PA quy chế 15 → 8, kết luận 10 → 8) · Mức độ mặc định Bình thường · Tên Case tự sinh "{Kỹ năng} · {nhóm}" · Kết thúc PA cuối có ô "Hoàn thành Case". Việc để sau: ô "Hoàn thành Case" ở form "Kết thúc sớm…" PA quy chế (form đó chỉ có lý do).
+
 **TRẠNG THÁI 11/11 (PTA dọn sau khi rà bằng agent, main 77570f66e) — không còn PR mở, không còn việc chờ chủ SP duyệt.**
 - ✅ A. Sổ nghĩa vụ PR-1 #1270 · PR-2 #1292 · PR-3 #1294.
 - ✅ B.4–B.10 (xem B' + nhật ký bên dưới): W lệch #1281 · [XM] #1240–#1242 (HL1 / HL3 / F2 theo B', HS1 / HS2 / CV6 #1279 #1288 #1291) · #1258 để sau #1285 · B.7 "TVV lớp" = `tvvChinhCuaLop` (đa số em, đầu trang + bảng cùng hàm) — đóng · B.8 #1283 #1287 #1290 · B.9 #1099 #1284 #1289 · B.10 #1289.
