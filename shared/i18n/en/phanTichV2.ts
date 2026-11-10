@@ -62,7 +62,6 @@ export const EN_PHAN_TICH_V2 = {
   'Trên': 'Out of',
   'Vào học': 'Enrolled',
   'trong kỳ · HV': 'in period · students',
-  'trong kỳ · bài Final': 'in period · Final tests',
   'trong kỳ · bài': 'in period · tests',
   'trong kỳ · lượt kỹ năng': 'in period · skill attempts',
   'trong kỳ · trừ KCK': 'in period · excl. no-commitment',

@@ -179,7 +179,7 @@ export function BaoCao(pv: PhamViPhanTich) {
           ] : []),
         ] : [
           [t('Đạt Test'), t('trong kỳ · bài'), ...tyLe(d.datTest)],
-          ...CK.map(([nhan], i): OXlsx[] => [`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`, t('trong kỳ · bài Final'), d.cuoiKhoa ? soX(d.cuoiKhoa[i], i ? 'chua-dat' : 'vuot') : '—',
+          ...CK.map(([nhan], i): OXlsx[] => [`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`, t('trong kỳ · HV'), d.cuoiKhoa ? soX(d.cuoiKhoa[i], i ? 'chua-dat' : 'vuot') : '—',
             d.cuoiKhoa ? d.cuoiKhoa.reduce((a, b) => a + b, 0) : '', d.cuoiKhoa ? ptX(d.cuoiKhoa[i], d.cuoiKhoa.reduce((a, b) => a + b, 0)) : '']),
         ]),
       ];
@@ -192,7 +192,7 @@ export function BaoCao(pv: PhamViPhanTich) {
         { ten: lop ? t('Theo lớp') : t('Theo chi nhánh'), tong: [bangHang.length - 1], hang: bangHang,
           dau: ft ? [[lop ? t('Lớp') : t('Chi nhánh'), t('HV đang học'), t('Đạt MT'), null, null, t('Tiến bộ'), null, null, t('Thi thật'), null, null],
             [null, null, t('Đạt'), t('HV'), '%', t('Tăng'), t('Lượt'), '%', t('Vượt'), t('Đạt'), t('Chưa đạt')]]
-            : [[lop ? t('Lớp') : t('Chi nhánh'), t('HV đang học'), t('Đạt Test'), null, null, t('Cuối khoá'), null, null, null],
+            : [[lop ? t('Lớp') : t('Chi nhánh'), t('HV đang học'), t('Đạt Test'), null, null, `${t('Cuối khoá')} · ${t('HV')}`, null, null, null],
               [null, null, t('Đạt'), t('Bài'), '%', t('Đạt'), '60–69 %', '50–59 %', '< 50 %']] },
         ...(ft && d.tienBoKn ? [{ ten: t('Tiến bộ theo kỹ năng'), coDinhCot: false, dau: [[t('Kỹ năng'), t('Tăng'), t('Giữ nguyên'), t('Giảm'), t('Lượt'), `% ${t('Tăng')}`]],
           hang: d.tienBoKn.map((x): OXlsx[] => [tenMonNgan(null, x.skill), soX(x.tang, 'vuot'), x.tong - x.tang - x.giam, soX(x.giam, 'chua-dat'), x.tong, ptX(x.tang, x.tong)]) }] : []),
