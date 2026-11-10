@@ -40,7 +40,7 @@ export function KyVongNguongAdmin() {
       <KhoiCauHinh duong="/admin/cau-hinh/ky-vong-ft" tieuDe={t('Kỳ vọng MT Fast Track')} truong={KY_VONG} sauLuu={cap}
         apDung={t('Áp cho lượt MT tạo sau')} giaiThich={t('Kỳ vọng của một lượt = Target − mức trừ theo lần MT trong lộ trình. Lượt đã tạo giữ mức lúc tạo — sửa điểm sau vẫn theo mức đó. SOS = số kỹ năng dưới kỳ vọng.')} />
       <KhoiCauHinh duong="/admin/cau-hinh/nguong-thuong" tieuDe={t('Ngưỡng lớp thường')} truong={NGUONG} sauLuu={cap}
-        apDung={t('Áp cho Final nhập điểm sau')} giaiThich={t('Em đã có điểm Final giữ dải cũ; Final nhập điểm đầu từ ngày lưu theo ngưỡng mới. Xét lại, gợi ý Cuối khoá dùng cùng bản.')}
+        apDung={t('Áp cho Final nhập điểm sau')} giaiThich={t('Em đã có điểm Final giữ dải cũ; Final nhập điểm đầu từ ngày lưu theo ngưỡng mới. Xét lại và gợi ý sau Final dùng cùng bản.')}
         them={(v) => (
           <>
             <DongChiXem nhan={t('Cân nhắc')} gia={`${v.hocLai}–${v.len - 1} %`} />

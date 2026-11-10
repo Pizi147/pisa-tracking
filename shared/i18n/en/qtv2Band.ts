@@ -9,7 +9,7 @@ export const EN_QTV2_BAND = {
   'Áp cho Final nhập điểm sau': 'Applies to Finals scored later',
   'Kỳ vọng của một lượt = Target − mức trừ theo lần MT trong lộ trình. Lượt đã tạo giữ mức lúc tạo — sửa điểm sau vẫn theo mức đó. SOS = số kỹ năng dưới kỳ vọng.':
     'An MT\'s expectation = Target − the deduction for that MT number in the route. MTs already created keep the value they were created with — later score edits still use it. SOS = number of skills below expectation.',
-  'Em đã có điểm Final giữ dải cũ; Final nhập điểm đầu từ ngày lưu theo ngưỡng mới. Xét lại, gợi ý Cuối khoá dùng cùng bản.':
+  'Em đã có điểm Final giữ dải cũ; Final nhập điểm đầu từ ngày lưu theo ngưỡng mới. Xét lại và gợi ý sau Final dùng cùng bản.':
     'Students with Final scores keep their old band; Finals first scored from the save date use the new thresholds. Route review and end-of-course suggestions use the same version.',
   'MT3 trở đi': 'MT3 onwards',
   'Lộ trình RF (mọi MT)': 'RF route (every MT)',
