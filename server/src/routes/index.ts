@@ -246,6 +246,8 @@ api.get('/demo/session', wrap((req) => {
     moSuaLichTest: moSuaLichTestSvc.dangMoSuaLichTest(),
     /* QTV2-HAN: các bản Hạn mặc định — web tính hạn bằng cùng hàm dùng chung (nhớ đệm, 0 câu khi không ai sửa). */
     hanMacDinh: cauHinhSvc.dsBanHan(),
+    /* QTV2-BAND: Kỳ vọng MT FT + Ngưỡng lớp thường — cùng cách (nhớ đệm, 0 câu khi không ai sửa). */
+    kyVongFt: cauHinhSvc.dsBanKyVong(), nguongThuong: cauHinhSvc.dsBanNguong(),
     roles: p.roleKeys,
     roleLabels: p.roleKeys.map((r) => ROLE_LABEL[r as Role] ?? r),
     grants: permissionSummary(p),
@@ -3051,6 +3053,9 @@ api.get('/admin/roles/:key/permissions/:perm/impact', requireAuth, wrap((req) =>
 /* QTV2-HAN: Hạn mặc định — Quản trị sửa, Quản lý xem; mỗi lần lưu một phiên bản (chỉ áp cho việc sinh sau). */
 api.get('/admin/cau-hinh/han', requireAuth, wrap((req) => cauHinhSvc.xemHanMacDinh(principalOf(req))));
 api.put('/admin/cau-hinh/han', requireAuth, wrap((req) => cauHinhSvc.luuHanMacDinh(principalOf(req), req.body ?? {})));
+/* QTV2-BAND: Band & ngưỡng — Kỳ vọng MT FT, Ngưỡng lớp thường (Quản trị sửa, Quản lý xem; chỉ áp cho cái sinh sau). */
+api.get('/admin/cau-hinh/:loai(ky-vong-ft|nguong-thuong)', requireAuth, wrap((req) => cauHinhSvc.xemBand(principalOf(req), String(req.params.loai))));
+api.put('/admin/cau-hinh/:loai(ky-vong-ft|nguong-thuong)', requireAuth, wrap((req) => cauHinhSvc.luuBand(principalOf(req), String(req.params.loai), req.body ?? {})));
 api.get('/admin/don-vi', requireAuth, wrap((req) => nhatKyQuanTriSvc.donViBaoCao(principalOf(req))));
 api.get('/admin/nhat-ky', requireAuth, wrap((req) => nhatKyQuanTriSvc.nhatKyQuanTri(principalOf(req), {
   muc: typeof req.query.muc === 'string' ? req.query.muc : null, nguoi: toInt(req.query.nguoi) ?? null,

@@ -32,7 +32,7 @@ export type DongLuotTinh = {
   kyNang: string; batBuoc: number | null; boQua: number | null; diem: number | null; diemTho: number | null; diemTong: number | null; dat: number | null;
 };
 export type LuotTinh = {
-  kyVong: number | null; overall: number | null; tyLeTong: number | null; sos: number | null; ketQua: 'dat' | 'chua_dat' | 'cho' | 'huy';
+  kyVong: number | null; overall: number | null; tyLeTong: number | null; mocNguong?: string | null; sos: number | null; ketQua: 'dat' | 'chua_dat' | 'cho' | 'huy';
   dong: DongLuotTinh[];
 };
 
@@ -43,7 +43,7 @@ const ketQuaTu = (huy: boolean, sos: number | null): LuotTinh['ketQua'] => (huy 
  * `target` là `target_at_attempt` của lượt (hoặc giá trị đóng băng ở bản chụp).
  */
 export function tinhLuot(
-  nc: NguCanhLuot, a: { attempt_no: number; kck_at_attempt?: number | null; route_at_attempt?: string | null }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
+  nc: NguCanhLuot, a: { attempt_no: number; kck_at_attempt?: number | null; route_at_attempt?: string | null; created_at?: string | null }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
   /** P13: dòng lịch của lượt (`daGhiLuot`). */ lich?: readonly { skill: string }[],
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
@@ -53,12 +53,12 @@ export function tinhLuot(
       kyNang: s.skill, batBuoc: 1, boQua: 0, diem: s.score, diemTho: null, diemTong: s.total,
       dat: s.outcome === 'missing' ? null : s.outcome === 'pass' ? 1 : 0,
     }));
-    return { kyVong: null, overall: null, tyLeTong: r.tyLeTong, sos: huy ? null : r.sosLevel, ketQua: ketQuaTu(huy, r.sosLevel), dong };
+    return { kyVong: null, overall: null, tyLeTong: r.tyLeTong, mocNguong: r.mocNguong, sos: huy ? null : r.sosLevel, ketQua: ketQuaTu(huy, r.sosLevel), dong };
   }
   const entry: Record<string, number | null> = {};
   for (const r of diemRows) entry[r.skill] = r.band ?? null;
   /* OV-11e (Q8): lượt có dấu KCK lúc chốt thì theo dấu đó; chưa có thì theo cờ của lộ trình (bản chụp). */
-  const res = evaluateAttempt(target, a.attempt_no, entry, skips, a.route_at_attempt ?? nc.route, [], a.kck_at_attempt != null ? !!a.kck_at_attempt : !!nc.kck);
+  const res = evaluateAttempt(target, a.attempt_no, entry, skips, a.route_at_attempt ?? nc.route, [], a.kck_at_attempt != null ? !!a.kck_at_attempt : !!nc.kck, a.created_at);
   const dong: DongLuotTinh[] = ASSESSED_SKILLS.map((k: AssessedSkill) => {
     const v = res.verdicts.find((x) => x.skill === k)!;
     const t = k === 'listening' || k === 'reading' ? diemRows.find((r) => r.skill === k) : null;
@@ -68,7 +68,7 @@ export function tinhLuot(
   for (const k of KY_NANG_THO) {
     dong.push({ kyNang: k, batBuoc: bangMot(wReq), boQua: bangMot(!wReq), diem: entry[k] ?? null, diemTho: null, diemTong: null, dat: null });
   }
-  return { kyVong: res.expectation, overall: res.overall, tyLeTong: null, sos: huy ? null : res.sosLevel, ketQua: !huy && res.kckDuoi ? 'chua_dat' : ketQuaTu(huy, res.sosLevel), dong };
+  return { kyVong: res.expectation, overall: res.overall, tyLeTong: null, mocNguong: null, sos: huy ? null : res.sosLevel, ketQua: !huy && res.kckDuoi ? 'chua_dat' : ketQuaTu(huy, res.sosLevel), dong };
 }
 
 const cot = (n: number) => Array(n).fill('?').join(',');
@@ -201,7 +201,8 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     });
     const plan = laFt ? examPlanOf(c) : null;
     const luotCuoiKhoa = luot.filter((a) => a.kind === 'final' && a.status !== 'cancelled').at(-1);
-    const tyLe = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id))), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong).tyLeTong : null;
+    const kqCk = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id))), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong) : null;
+    const tyLe = kqCk ? kqCk.tyLeTong : null;
     const routeMoi = o.routeMoi !== undefined ? o.routeMoi : (cungEm.get(c.student_id) ?? []).find((x) => x.seq > c.seq)?.route ?? null;
     const lan = (lanCuoi.get(c.id) ?? 0) + 1;
 
@@ -214,7 +215,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
       c.thi_that_ngay ?? null, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, thi.ovr, c.thi_that_khong_thi ? 1 : 0,
       c.thi_that_nhap_boi ?? null, c.thi_that_nhap_luc ?? null,
       laFt ? thi.ketLuan : null, huongTiep(o.lyDo, routeMoi),
-      !laFt && lopId ? kyVongDat.get(`${c.student_id}:${lopId}`)?.ky_vong_dat ?? null : null, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe, nc.nguong),
+      !laFt && lopId ? kyVongDat.get(`${c.student_id}:${lopId}`)?.ky_vong_dat ?? null : null, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe, nc.nguong, kqCk?.mocNguong),
       luot.length, null, ngayGhi];
     const dongLuot: unknown[][] = [];
     for (const a of luot) {
@@ -254,7 +255,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
   if (!attemptIds.length) return;
   const dong: any[] = [];
   theoLo(attemptIds, (lo, ph) => {
-    dong.push(...conn.prepare(`SELECT a.id, a.attempt_no, a.status, a.cycle_id, a.kind, a.kck_at_attempt, a.route_at_attempt FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
+    dong.push(...conn.prepare(`SELECT a.id, a.attempt_no, a.status, a.cycle_id, a.kind, a.kck_at_attempt, a.route_at_attempt, a.created_at FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
       WHERE a.id IN (${ph}) AND c.status <> 'active'`).all(...lo));
   }, LO);
   const ngay = nowIso();
@@ -277,8 +278,9 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
           rieng.some((r) => r.no_show_at) ? 1 : 0, nhap?.entered_at ?? null, nhap?.entered_by ?? null, bc.id, a.id, d.kyNang);
     }
     let tyLe: number | null = bc.ty_le_cuoi_khoa;
-    if (!nc.laFt && a.kind === 'final') tyLe = t.tyLeTong;
+    let dai: string | null = bc.dai_cuoi_khoa ?? (tyLe === null ? null : daiCuoiKhoa(tyLe, nc.nguong));   // lượt khác Final: giữ dải đã chụp (QTV2-BAND)
+    if (!nc.laFt && a.kind === 'final') { tyLe = t.tyLeTong; dai = tyLe === null ? null : daiCuoiKhoa(tyLe, nc.nguong, t.mocNguong); }
     conn.prepare('UPDATE ban_chup_lo_trinh SET lam_moi_luc = ?, ty_le_cuoi_khoa = ?, dai_cuoi_khoa = ? WHERE id = ?')
-      .run(ngay, tyLe, tyLe === null ? null : daiCuoiKhoa(tyLe, nc.nguong), bc.id);
+      .run(ngay, tyLe, dai, bc.id);
   }
 }

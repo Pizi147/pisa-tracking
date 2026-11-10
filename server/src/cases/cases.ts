@@ -3237,7 +3237,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    */
   const scoreRows = conn
     .prepare(
-      `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt, a.kck_at_attempt, a.class_id,
+      `SELECT a.attempt_no, a.id AS attempt_id, a.kind, rp.code AS period_code, a.target_at_attempt, a.kck_at_attempt, a.class_id, a.created_at,
               COALESCE(a.route_at_attempt, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id)) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               sc.skill, sc.band, sc.raw_score, sc.raw_total
          FROM assessment_attempts a
@@ -3274,7 +3274,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
       week: r.period_code ?? null,
       /* PR-MT0: MT0 không có kỳ vọng (T5) — chỉ chip SOS hiển thị. */
       expectation: !ratio && r.kind !== 'mt0' && r.target_at_attempt !== null && r.target_at_attempt !== undefined
-        ? expectationFor(r.target_at_attempt, r.attempt_no, r.route) : null,
+        ? expectationFor(r.target_at_attempt, r.attempt_no, r.route, r.created_at) : null,
       attemptKind: r.kind ?? null,
     });
     byCategory.set(cat, list);
@@ -4578,7 +4578,7 @@ function daoKetQua(conn: any, p: Principal, x: NguCanhSua, khoaTep: string[]): v
   /* Mini Test về "chưa ghi"; Case do chính nó đóng mở lại (bỏ mốc đóng). Thẻ Báo QL để `ghiMiniTestTrongTx` lần mới viết lại / đóng. */
   if (x.mt) {
     for (const c of conn.prepare(`SELECT DISTINCT sc.id, sc.closed_at FROM case_interventions i JOIN sos_cases sc ON sc.id = i.case_id
-        WHERE i.nhom_bo_tro = ? AND sc.status = 'done' AND sc.outcome_note LIKE 'Mini Test %≥ 70%'`).all(x.mt.nhom_bo_tro) as any[]) {
+        WHERE i.nhom_bo_tro = ? AND sc.status = 'done' AND sc.outcome_note LIKE 'Mini Test %≥ %'`).all(x.mt.nhom_bo_tro) as any[]) {
       conn.prepare(`UPDATE sos_cases SET status = 'open', outcome = NULL, outcome_note = NULL, outcome_decision = NULL, outcome_by = NULL, outcome_at = NULL,
           closed_by = NULL, closed_at = NULL, updated_at = ? WHERE id = ?`).run(now, c.id);
       conn.prepare('DELETE FROM case_milestones WHERE dedup_key = ?').run(`outcome:${c.id}:${c.closed_at}:end`);

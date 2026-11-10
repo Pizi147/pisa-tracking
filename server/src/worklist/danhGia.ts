@@ -58,6 +58,8 @@ export type AttemptEval = {
   tyLeTong?: number | null;
   /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — dải Cuối khoá đọc cùng ngưỡng. */
   nguong?: number;
+  /** QTV2-BAND: ngày nhập điểm đầu (lớp thường) — dải Cuối khoá theo bản ngưỡng lúc đó. */
+  mocNguong?: string | null;
   /** PANEL-MC: FT Overall (đủ bốn kỹ năng) · lớp thường % tổng (đủ môn); kỳ vọng của lượt (FT) · ngưỡng % (lớp thường); mã chương trình (tên môn). */
   overall: number | null;
   kyVong: number | null;
@@ -84,7 +86,7 @@ export function evaluateAttemptRow(
     }
     return {
       complete: r.complete, scored: r.scored, required: r.required, sosLevel: r.sosLevel, provisional: r.provisional, skills,
-      khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold,
+      khongChiaMon: CHUONG_TRINH_KHONG_CHIA_MON.includes(prog.code), tyLeTong: r.tyLeTong, nguong: r.passThreshold, mocNguong: r.mocNguong,
       overall: r.tyLeTong === null ? null : r.tyLeTong * 100, kyVong: r.passThreshold * 100, chuongTrinh: prog.code,
     };
   }

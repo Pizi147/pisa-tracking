@@ -144,7 +144,7 @@ function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: stri
     tyLeTong: phanTram(r.tyLeTong),
     /* PR-LT2b: cùng luật `goiYCuoiKhoa` với lưới / hồ sơ HV — chỉ Cuối khoá đủ điểm. */
     huong: a.kind === 'final' && r.tyLeTong !== null
-      ? goiYCuoiKhoa({ ct: prog.code, tyLe: r.tyLeTong, monTruot: r.skills.filter((m) => m.outcome === 'fail').map((m) => m.skill), nguong: r.passThreshold })?.nhanExcel ?? null : null,
+      ? goiYCuoiKhoa({ ct: prog.code, tyLe: r.tyLeTong, monTruot: r.skills.filter((m) => m.outcome === 'fail').map((m) => m.skill), nguong: r.passThreshold, moc: r.mocNguong })?.nhanExcel ?? null : null,
     // T58: lớp thường không có SOS — `tamThoi: false`, không "SOS tạm thời" trong trạng thái.
     trangThai: trangThaiLuotXuat({
       coDiem: r.scored, yeuCau: r.required, du: r.complete, lichSu: !!a.lich_su,

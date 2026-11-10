@@ -1,4 +1,4 @@
-import { useState, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -10,6 +10,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { fmtBand, fmtDateTime } from '../../lib/format.ts';
 import { BANG_IDP, BANG_QUY_DOI_GOC, kiemBangQuyDoi, type BangQuyDoi, type LoiTruong } from '@shared/domain/index.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 type PhienBan = { id: number; luc: string | null; nguoi: string | null; lyDo: string | null; khoiPhucTu: number | null; doi: Record<string, [number, number]> };
@@ -53,7 +54,8 @@ const oKhac = (a: BangQuyDoi, b: BangQuyDoi) => KY.flatMap((x) => a[x.k].flatMap
  * Quản trị sửa trong panel (cả bảng một lần Lưu) → toast Hoàn tác; mỗi lần lưu một phiên bản, Khôi phục bản bất kỳ (hộp nêu ô sẽ đổi).
  * Quản lý chỉ xem. Bảng mới áp cho điểm nhập SAU khi lưu — điểm đã nhập giữ band (máy chủ lưu band kèm điểm).
  */
-export function BangQuyDoiAdmin() {
+/** QTV2-BAND: `dau` = khối Kỳ vọng FT + Ngưỡng lớp thường (trên bảng); `phai` = cột Nhật ký chung (trên Lịch sử phiên bản). */
+export function BangQuyDoiAdmin({ dau, phai }: { dau?: ReactNode; phai?: ReactNode } = {}) {
   const { data, error, loading, reload } = useApi<DuLieu>('/admin/bang-quy-doi');
   const toast = useToast();
   const [sua, setSua] = useState(false);
@@ -68,7 +70,7 @@ export function BangQuyDoiAdmin() {
   const cacBan = bangCacBan(data.phienBan);
   const soLech = demLech(data.bang, 'listening') + demLech(data.bang, 'reading');
   /* Lưu xong (sửa / Hoàn tác / khôi phục): web lấy lại bảng đang dùng — hộp nhập điểm xem trước band theo bản mới. */
-  const daLuu = () => { invalidate('/ref/bang-quy-doi'); reload(); };
+  const daLuu = () => { invalidate('/ref/bang-quy-doi'); invalidate('/admin/nhat-ky'); reload(); };
   /** Hoàn tác / khôi phục = chép phiên bản `id` thành phiên bản MỚI (không xoá bản nào). */
   const chepLai = async (id: number, tuPhienBan: number, lyDo: string) => {
     const r = await api.put<DuLieu>('/admin/bang-quy-doi', { khoiPhucTu: id, tuPhienBan, lyDo });
@@ -91,30 +93,35 @@ export function BangQuyDoiAdmin() {
   return (
     <>
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid min-w-0 gap-4">
+        {dau}
         <Card title={t('Bảng quy đổi band')} className={`min-w-0 ${TRAN_MEP}`} bodyClass="p-0"
           action={data.suaDuoc ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua(true)}>{t('Sửa')}</button> : undefined}>
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b px-4 py-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
             <span><span className="max-sm:hidden">{t('Số câu đúng → band (số đậm = số câu đầu tiên lên band mới).')} </span>{t('Đang dùng:')} <b className="font-semibold text-slate-100">{tenPb(dangDung.id)}</b>
               {dangDung.luc && <> · <span className="tabular-nums">{fmtDateTime(dangDung.luc)}</span>{dangDung.nguoi ? ` · ${dangDung.nguoi}` : ''}</>}</span>
             <span className="flex-1" />
+            <span className="inline-flex items-center gap-1">{t('Áp cho điểm L / R nhập')} {t('từ lúc lưu')}
+              <NutLuat label={t('Áp dụng')}>
+                <ul className="m-0 grid list-disc gap-1.5 pl-4">
+                  <li>{t('Điểm đã nhập giữ band cũ — SOS, Case, kết quả không đổi.')}</li>
+                  <li>{t('Sửa số câu đúng của một bài cũ → tính lại theo bảng đang dùng (như nhập mới).')}</li>
+                </ul>
+                <p className="m-0 mt-2">
+                  {t('IDP = bảng trung bình IDP công bố (tra 28/10/2026): Listening')}{' '}
+                  <a href="https://ielts.idp.com/vietnam/results/scores/listening" target="_blank" rel="noreferrer">ielts.idp.com/vietnam</a> · Academic Reading{' '}
+                  <a href="https://ielts.idp.com/southafrica/results/scores/reading" target="_blank" rel="noreferrer">ielts.idp.com/southafrica</a> {t('(bảng chung mọi nước). Mỗi đề lệch khoảng ±1 câu. "—" = IDP không công bố.')}
+                </p>
+              </NutLuat>
+            </span>
             <ChipIdp n={soLech} />
           </div>
           <BangXem bang={data.bang} />
         </Card>
+        </div>
 
         <div className="grid min-w-0 gap-4">
-          <Card title={t('Áp dụng')} className={TRAN_MEP}>
-            <ul className="m-0 grid list-disc gap-1.5 pl-4 text-[13px] text-slate-200">
-              <li>{t('Áp cho điểm L / R nhập')} <b className="font-semibold text-slate-100">{t('từ lúc lưu')}</b>.</li>
-              <li>{t('Điểm đã nhập giữ band cũ — SOS, Case, kết quả không đổi.')}</li>
-              <li>{t('Sửa số câu đúng của một bài cũ → tính lại theo bảng đang dùng (như nhập mới).')}</li>
-            </ul>
-            <p className="m-0 mt-3 border-l-2 pl-2.5 text-xs text-slate-500" style={{ borderColor: 'var(--line-strong)' }}>
-              {t('IDP = bảng trung bình IDP công bố (tra 28/10/2026): Listening')}{' '}
-              <a href="https://ielts.idp.com/vietnam/results/scores/listening" target="_blank" rel="noreferrer">ielts.idp.com/vietnam</a> · Academic Reading{' '}
-              <a href="https://ielts.idp.com/southafrica/results/scores/reading" target="_blank" rel="noreferrer">ielts.idp.com/southafrica</a> {t('(bảng chung mọi nước). Mỗi đề lệch khoảng ±1 câu. "—" = IDP không công bố.')}
-            </p>
-          </Card>
+          {phai}
 
           <Card title={t('Lịch sử phiên bản')} className={TRAN_MEP} bodyClass="p-0">
             <ul className="m-0 list-none p-0">

@@ -17,19 +17,20 @@ import type { ProgrammeCode } from './normal.ts';
 import { kyHieuLop } from './tenLop.ts';
 import { ngay } from './hienThiNgay.ts';
 import { mondayOfDate } from './week.ts';
+import { nguongMiniTest, nguongThuongTai } from './bandNguong.ts';
 import { dich as dichChuoi, dichChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
 
 export type DaiCuoiKhoa = 'duoi_50' | '50_59' | '60_69' | 'dat';
-/** Ngưỡng dưới của hai dải giữa; ngưỡng Pass là ngưỡng đạt của LỚP (OV-6b1, mặc định `RATIO_PASS_THRESHOLD`). */
-const NGUONG_HOC_LAI = 0.5;
-const NGUONG_LEN = 0.6;
-/** Mini Test ≥ 70 % là đạt (= `RATIO_PASS_THRESHOLD`). PR-Pb2-a: chuyển lên shared — ghi Mini Test, Hiệu quả PA và Tổng hợp Test đọc chung. */
-export const NGUONG_MINI_TEST = RATIO_PASS_THRESHOLD;
-
-export function daiCuoiKhoa(tyLe: number, nguong: number = RATIO_PASS_THRESHOLD): DaiCuoiKhoa {
+/**
+ * Ngưỡng Pass là ngưỡng đạt của LỚP (OV-6b1, mặc định `RATIO_PASS_THRESHOLD`). Hai ngưỡng dưới (Học lại · Lên) — QTV2-BAND: bản "Ngưỡng lớp thường"
+ * tại `moc` = ngày nhập điểm Final đầu tiên (`mocNguong` của `evaluateRegular`); thiếu = bản mới nhất. Mini Test: `nguongMiniTest(ngày làm)`.
+ * Mã dải (`50_59`, `60_69`) giữ tên cũ — chữ trên màn đọc `nguongThuongHienTai()`.
+ */
+export function daiCuoiKhoa(tyLe: number, nguong: number = RATIO_PASS_THRESHOLD, moc?: string | null): DaiCuoiKhoa {
+  const n = nguongThuongTai(moc);
   if (tyLe >= nguong) return 'dat';
-  if (tyLe >= NGUONG_LEN) return '60_69';
-  return tyLe >= NGUONG_HOC_LAI ? '50_59' : 'duoi_50';
+  if (tyLe >= n.len) return '60_69';
+  return tyLe >= n.hocLai ? '50_59' : 'duoi_50';
 }
 
 /**
@@ -55,15 +56,18 @@ export type LyDoXetLai = { ma: MaXetLai; chu: string; moc: string };
  */
 export function lyDoXetLai(x: {
   huong: string; tyLe: number | null; du: boolean; ngayRaLenh: string; mocFinal: string | null; ngayFinal: string | null;
-  miniTest: { tyLe: number; luc: string } | null; quyetLuc: string | null;
+  /** QTV2-BAND: `ngay` = ngày làm Mini Test (chọn bản ngưỡng; thiếu → `luc`). `mocNguong` = ngày nhập điểm Final đầu tiên. */
+  miniTest: { tyLe: number; luc: string; ngay?: string | null } | null; quyetLuc: string | null; mocNguong?: string | null;
 }): LyDoXetLai | null {
   const daQuyet = (moc: string) => !!x.quyetLuc && x.quyetLuc > moc;
-  if (x.miniTest && x.miniTest.tyLe < NGUONG_MINI_TEST && !daQuyet(x.miniTest.luc)) {
-    return { ma: 'd', chu: t('Mini Test {pt} · cần ≥ 70 %', { pt: chuTyLeXetLai(x.miniTest.tyLe) }), moc: x.miniTest.luc };
+  const mini = x.miniTest ? nguongMiniTest(x.miniTest.ngay ?? x.miniTest.luc) : 0;
+  if (x.miniTest && x.miniTest.tyLe < mini && !daQuyet(x.miniTest.luc)) {
+    return { ma: 'd', chu: t('Mini Test {pt} · cần ≥ {n} %', { pt: chuTyLeXetLai(x.miniTest.tyLe), n: Math.round(mini * 100) }), moc: x.miniTest.luc };
   }
   if (!x.du || x.tyLe === null || !x.mocFinal || daQuyet(x.mocFinal)) return null;
   const len = x.huong === 'len_lop' || x.huong === 'fast_track';
   const pt = chuTyLeXetLai(x.tyLe);
+  const { hocLai: NGUONG_HOC_LAI, len: NGUONG_LEN } = nguongThuongTai(x.mocNguong ?? x.ngayFinal);
   if (len && x.tyLe < NGUONG_HOC_LAI) return { ma: 'a', chu: t('Final {pt} · đã cho lên', { pt }), moc: x.mocFinal };
   if (len && x.tyLe < NGUONG_LEN && !!x.ngayFinal && x.ngayRaLenh < x.ngayFinal) return { ma: 'b', chu: t('Final {pt} · chốt trước Final', { pt }), moc: x.mocFinal };
   if (x.huong === 'hoc_lai' && x.tyLe >= NGUONG_LEN) return { ma: 'c', chu: t('Final {pt} · đang học lại', { pt }), moc: x.mocFinal };
@@ -126,11 +130,11 @@ function boTro(ct: ProgrammeCode, dai: '50_59' | '60_69', monTruot: readonly str
 }
 
 /** `null` khi chưa đủ điểm (không gợi ý, không đoán) hoặc không phải lớp thường. `monTruot` = ô chuẩn của lớp cũ dưới ngưỡng; `nguong` = ngưỡng đạt của lớp. */
-export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTruot: readonly string[]; nguong?: number }): GoiYCuoiKhoa | null {
+export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTruot: readonly string[]; nguong?: number; moc?: string | null }): GoiYCuoiKhoa | null {
   /* OV-6b2: chỉ chương trình có bậc kế (FOU/BE/ELE/Pre FOU) — chương trình Quản trị tạo không có luật % Cuối khoá. */
   const ct = programmeOf(x.ct) as ProgrammeCode | null;
   if (!ct || ct === 'FT' || !laChuongTrinhGoc(ct) || x.tyLe === null || !Number.isFinite(x.tyLe)) return null;
-  const dai = daiCuoiKhoa(x.tyLe, x.nguong);
+  const dai = daiCuoiKhoa(x.tyLe, x.nguong, x.moc);   // QTV2-BAND: `moc` = ngày nhập điểm Final đầu (`mocNguong`)
   const ke = tenBacKe(ct);
   const chung = { dai, tyLe: x.tyLe };
   const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhanK: ChuKhoa, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa => ({

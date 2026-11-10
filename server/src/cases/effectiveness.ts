@@ -1,6 +1,6 @@
 import { db, theoLo } from '../db.ts';
 import { CASE_THAT, NOT_UNCONFIRMED_PRESET } from './sosState.ts';
-import { NGUONG_MINI_TEST } from '../../../shared/domain/cuoiKhoa.ts';
+import { nguongMiniTest } from '../../../shared/domain/bandNguong.ts';
 import {
   CASE_CATEGORY_SHORT, INTERVENTION_KIND_LABEL,
   caseCategoryLabel, categoryOf, isNoPlanCase, issueBoardCategoriesFor, issueLabel,
@@ -254,7 +254,7 @@ type PlanRow = ReturnType<typeof shapePlan>;
 function ketQuaCuoi(r: any): { outcome: string | null; on: string | null } {
   if (r.final_outcome) return { outcome: r.final_outcome, on: r.outcome_on ?? null };
   if (typeof r.nhom_bo_tro === 'string' && r.nhom_bo_tro.startsWith('mt:') && r.mini_ty_le !== null && r.mini_ty_le !== undefined) {
-    return { outcome: r.mini_ty_le >= NGUONG_MINI_TEST ? 'improved' : 'unchanged', on: r.mini_ngay ?? null };
+    return { outcome: r.mini_ty_le >= nguongMiniTest(r.mini_ngay) ? 'improved' : 'unchanged', on: r.mini_ngay ?? null };
   }
   return { outcome: null, on: r.outcome_on ?? null };
 }

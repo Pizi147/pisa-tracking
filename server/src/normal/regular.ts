@@ -213,6 +213,8 @@ export type RegularResult = {
   failedCount: number | null;
   sosLevel: SosLevel | null;
   passThreshold: number;
+  /** QTV2-BAND: ngày nhập điểm ĐẦU TIÊN của lượt (`nhap_dau_ngay` nhỏ nhất) — chọn bản "Ngưỡng lớp thường" (dải Cuối khoá). Thiếu = bản mới nhất. */
+  mocNguong: string | null;
   /** K5-44, MH7: Σ điểm / Σ tổng — CHỈ khi đủ mọi môn (thiếu → null), không làm tròn. Pre FOU hiện đúng số này. */
   tyLeTong: number | null;
   /** Q-RL1 (chủ SP 29/10): môn "Không dự thi" (dấu "-" ≥ 2 tuần, không điểm) — ra khỏi bộ môn cần đủ; kết quả tính trên môn đã thi, giao diện ghi rõ. */
@@ -231,7 +233,7 @@ export type RegularResult = {
  * kỹ năng của chương trình luôn đủ.
  */
 export function evaluateRegular(
-  skillsVao: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null; no_show_cu?: number | null }[], ct?: string | null,
+  skillsVao: readonly string[], rows: { skill: string; raw_score: number | null; raw_total: number | null; no_show_cu?: number | null; nhap_dau_ngay?: string | null }[], ct?: string | null,
   nguong: number = RATIO_PASS_THRESHOLD,   // OV-6b1: ngưỡng đạt của LỚP — `nguongDatLop(classId)`
 ): RegularResult {
   /* Q-RL1 (chủ SP 29/10): môn Không dự thi (chưa có điểm) không còn làm kết quả "chưa đủ môn" mãi — tính trên các môn đã thi. */
@@ -273,6 +275,7 @@ export function evaluateRegular(
     failedCount,
     sosLevel,
     passThreshold: nguong,
+    mocNguong: rows.reduce<string | null>((m, r) => (r.nhap_dau_ngay && (!m || r.nhap_dau_ngay < m) ? r.nhap_dau_ngay : m), null),
     tyLeTong: complete
       ? results.reduce((s, r) => s + (r.score ?? 0), 0) / results.reduce((s, r) => s + (r.total ?? 0), 0)
       : null,
@@ -298,7 +301,7 @@ export function regularResultOf(attemptId: number): RegularResult {
   const conn = db();
   const a = conn.prepare('SELECT class_id, cycle_id FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   const prog = a ? chuongTrinhCuaLuot(a) : null;
-  const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
+  const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu, nhap_dau_ngay FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
   return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows)) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code));
 }
@@ -1353,7 +1356,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         status: a.status,
         result,
         /** PR-LT2b: hướng gợi ý Cuối khoá — chỉ dòng Cuối khoá đủ điểm (null còn lại). Cùng luật `goiYCuoiKhoa` với hồ sơ HV / Excel. */
-        goiY: a.kind === 'final' ? goiYCuoiKhoa({ ct: prog.code, tyLe: result.tyLeTong, monTruot: failing, nguong: result.passThreshold }) : null,
+        goiY: a.kind === 'final' ? goiYCuoiKhoa({ ct: prog.code, tyLe: result.tyLeTong, monTruot: failing, nguong: result.passThreshold, moc: result.mocNguong }) : null,
         /** Các Case gắn với những môn CHƯA ĐẠT của chính dòng này (theo học viên + khoá + hạng mục). */
         cases: dongCases,
         caseId: c?.id ?? null, caseStatus: c?.status ?? null, caseLevel: c?.level ?? null,
