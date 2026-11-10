@@ -203,11 +203,23 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   ].filter(Boolean);
   const nutBadge = (x: BadgeLop) => {
     const bam = bamBadge(x);
+    /* MOCKUP-1111 màn 1: "n việc quá hạn của lớp" — phạm vi lớp, khỏi lẫn với "Việc của tôi · n" ngay dưới. */
+    const nhan = x.key === 'qua-han' ? `${x.nhan} ${t('của lớp')}` : x.nhan;
     /* G6: badge đổi trang có "›". */
     return bam
-      ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{x.nhan} <span aria-hidden className="font-bold">›</span></Nhan>
-      : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{x.nhan}</Nhan>;
+      ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{nhan} <span aria-hidden className="font-bold">›</span></Nhan>
+      : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{nhan}</Nhan>;
   };
+  /* MOCKUP-1111 màn 1: badge phạm vi lớp lên hàng tiêu đề (sau chip chương trình · HV · tuần), tách khỏi dải "Việc của tôi". */
+  const badgeLopNode = (bConLai.hien.length > 0 || bConLai.an.length > 0) && (
+    <span className="flex flex-wrap items-center gap-2 max-sm:basis-full">
+      {bConLai.hien.map(nutBadge)}
+      {bConLai.an.length > 0 && (
+        <MenuDong kieu="chip" bieuTuong={t('+{n} việc', { n: bConLai.an.length })} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
+          muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
+      )}
+    </span>
+  );
 
   return (
     <header className="flex flex-col gap-1.5">
@@ -230,6 +242,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
         <span className="flex flex-wrap items-center gap-1.5 max-sm:basis-full">
           {meta.map((m, i) => <span key={i} className="inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md bg-[color:var(--surface-2)] px-2 text-xs font-medium text-dim">{m}</span>)}
         </span>
+        {badgeLopNode}
         <div className="ml-auto flex items-center gap-2 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">
           {data.viewer.canEnterScores && <button type="button" className={NUT_DAU_HO_SO} onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
           {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
@@ -244,7 +257,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
         ...(tomTat?.tvv ? [{ nhan: 'TVV', title: t('Tư vấn viên chính của lớp'), id: null, ten: tomTat.tvv, kyNang: [], tvv: true }] : [])]} />
       <DongChoDoi cho={data.phanCongCho ?? []} ct={data.programme?.code ?? null} homNay={homNay} />
 
-      {/* ④ số của lớp | badge đổi trang. */}
+      {/* ④ số của lớp (badge đổi trang đã lên hàng ② — MOCKUP-1111). */}
       <div className="flex min-h-7 flex-wrap items-center gap-x-[26px] gap-y-2">
         {/* U03 (mockup `.facts`): Lượt mới nhất · Đạt · SOS là ô nhãn 12 trên – giá trị 15 dưới, vạch ngăn trái. */}
         <span className="flex flex-wrap items-stretch gap-y-2">
@@ -270,15 +283,6 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
             )} />
           )}
         </span>
-        {(bConLai.hien.length > 0 || bConLai.an.length > 0) && (
-          <div className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0">
-            {bConLai.hien.map(nutBadge)}
-            {bConLai.an.length > 0 && (
-              <MenuDong kieu="chip" bieuTuong={t('+{n} việc', { n: bConLai.an.length })} nhan={t('{n} việc khác của lớp', { n: bConLai.an.length })}
-                muc={bConLai.an.map((x) => { const bam = bamBadge(x); return { key: x.key, nhan: x.nhan, tieuDe: !bam, onChon: bam ?? (() => undefined) }; })} />
-            )}
-          </div>
-        )}
       </div>
 
       <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} onBanGiaoGv={onBanGiaoGv} />
